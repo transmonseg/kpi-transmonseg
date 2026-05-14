@@ -1,0 +1,131 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
+import { parseUnitrac } from '@/lib/parsers/unitrac'
+
+export const runtime = 'nodejs'
+export const maxDuration = 120
+
+export async function POST(req: NextRequest) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return new NextResponse('Não autenticado', { status: 401 })
+
+  const formData = await req.formData()
+  const arquivo = formData.get('arquivo')
+  const data = formData.get('data') as string  // YYYY-MM-DD
+  const replace = formData.get('replace') === 'true'
+
+  if (!(arquivo instanceof File))
+    return new NextResponse('Arquivo não enviado.', { status: 400 })
+
+  if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data))
+    return new NextResponse('Data inválida. Use YYYY-MM-DD.', { status: 400 })
+
+  if (!arquivo.name.toLowerCase().endsWith('.xlsx'))
+    return new NextResponse('Envie um arquivo .xlsx.', { status: 400 })
+
+  const svc = createServiceClient()
+
+  // Check for duplicate
+  const { data: existente } = await svc
+    .from('unitrac_uploads')
+    .select('id')
+    .eq('data_relatorio', data)
+    .single()
+
+  if (existente && !replace)
+    return new NextResponse(
+      `Já existe upload Unitrac para ${data}. Use replace=true para sobrescrever.`,
+      { status: 409 }
+    )
+
+  const arrayBuffer = await arquivo.arrayBuffer()
+  let veiculos
+
+  try {
+    veiculos = await parseUnitrac(arrayBuffer)
+  } catch (e) {
+    return new NextResponse(
+      e instanceof Error ? e.message : 'Erro ao parsear relatório Unitrac.',
+      { status: 400 }
+    )
+  }
+
+  if (veiculos.length === 0)
+    return new NextResponse('Nenhum veículo encontrado no arquivo.', { status: 400 })
+
+  const qtdParadas = veiculos.reduce((acc, v) => acc + v.paradas.length, 0)
+
+  // Upload to Storage
+  const storagePath = `unitrac-raw/${data}/unitrac.xlsx`
+  const { error: storageErr } = await svc.storage
+    .from('unitrac-raw')
+    .upload(storagePath, Buffer.from(arrayBuffer), {
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      upsert: true,
+    })
+
+  if (storageErr)
+    return new NextResponse(`Erro ao salvar arquivo: ${storageErr.message}`, { status: 500 })
+
+  if (existente) {
+    await svc.from('unitrac_uploads').delete().eq('id', existente.id)
+  }
+
+  // Insert upload record
+  const { data: upload, error: uploadErr } = await svc
+    .from('unitrac_uploads')
+    .insert({
+      data_relatorio: data,
+      arquivo_path: storagePath,
+      qtd_abas: veiculos.length,
+      qtd_paradas: qtdParadas,
+      status: 'processado',
+      uploaded_by: user.id,
+    })
+    .select('id')
+    .single()
+
+  if (uploadErr || !upload)
+    return new NextResponse(`Erro ao registrar upload: ${uploadErr?.message}`, { status: 500 })
+
+  // Insert paradas in batches
+  const BATCH = 200
+  const todasParadas = veiculos.flatMap((v) =>
+    v.paradas.map((p) => ({
+      unitrac_upload_id: upload.id,
+      placa_norm: p.placa_norm,
+      chegada: p.chegada.toISOString(),
+      saida: p.saida.toISOString(),
+      duracao_seg: p.duracao_seg,
+      distancia_km: p.distancia_km,
+      endereco: p.endereco,
+      lat: p.lat,
+      lng: p.lng,
+      local_parada: p.local_parada,
+      codigo_loja: p.codigo_loja,
+      nome_loja: p.nome_loja,
+      classificacao: p.classificacao,
+      loja_id: null,
+      ordem: p.ordem,
+    }))
+  )
+
+  for (let i = 0; i < todasParadas.length; i += BATCH) {
+    const { error: insertErr } = await svc
+      .from('unitrac_paradas')
+      .insert(todasParadas.slice(i, i + BATCH))
+
+    if (insertErr)
+      return new NextResponse(`Erro ao inserir paradas: ${insertErr.message}`, { status: 500 })
+  }
+
+  return NextResponse.json({
+    upload_id: upload.id,
+    qtd_abas: veiculos.length,
+    qtd_paradas: qtdParadas,
+  })
+}

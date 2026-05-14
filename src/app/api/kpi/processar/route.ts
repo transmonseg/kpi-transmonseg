@@ -1,0 +1,224 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
+import { cruzaEscalaUnitrac } from '@/lib/kpi/matcher'
+import { detectaAnomalias } from '@/lib/kpi/anomalia'
+
+export const runtime = 'nodejs'
+export const maxDuration = 120
+
+export async function POST(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return new NextResponse('Não autenticado', { status: 401 })
+
+  const body = await req.json() as { data: string; rede_id?: string }
+  const { data: dataParam, rede_id } = body
+
+  if (!dataParam || !/^\d{4}-\d{2}-\d{2}$/.test(dataParam))
+    return new NextResponse('Parâmetro data inválido. Use YYYY-MM-DD.', { status: 400 })
+
+  const svc = createServiceClient()
+
+  // Fetch escala_linhas
+  let escalaQuery = svc
+    .from('escala_linhas')
+    .select('id, rede_id, placa_norm, loja_nome_raw, loja_codigo_raw, motorista_nome, carro_ordem, data_entrega')
+    .eq('data_entrega', dataParam)
+
+  if (rede_id) escalaQuery = escalaQuery.eq('rede_id', rede_id)
+
+  const { data: escalaLinhas, error: escalaErr } = await escalaQuery
+  if (escalaErr) return new NextResponse(`Erro ao buscar escala: ${escalaErr.message}`, { status: 500 })
+  if (!escalaLinhas || escalaLinhas.length === 0)
+    return new NextResponse('Nenhuma linha de escala encontrada para esta data.', { status: 404 })
+
+  const placas = [...new Set(escalaLinhas.filter((l) => l.placa_norm).map((l) => l.placa_norm as string))]
+
+  // Fetch unitrac_paradas via join on unitrac_uploads.data_relatorio
+  const { data: paradaRows, error: paradaErr } = await svc
+    .from('unitrac_paradas')
+    .select(`
+      id, placa_norm, chegada, saida, duracao_seg, distancia_km,
+      endereco, lat, lng, local_parada, codigo_loja, nome_loja,
+      classificacao, loja_id, ordem,
+      unitrac_uploads!inner(data_relatorio)
+    `)
+    .eq('unitrac_uploads.data_relatorio', dataParam)
+    .in('placa_norm', placas.length > 0 ? placas : ['__nenhuma__'])
+
+  if (paradaErr) return new NextResponse(`Erro ao buscar paradas: ${paradaErr.message}`, { status: 500 })
+
+  // Fetch lojas
+  const { data: lojas, error: lojasErr } = await svc
+    .from('lojas')
+    .select('id, rede_id, nome, nome_normalizado, codigo_escala, codigo_unitrac, nome_unitrac, lat, lng, raio_metros')
+
+  if (lojasErr) return new NextResponse(`Erro ao buscar lojas: ${lojasErr.message}`, { status: 500 })
+
+  // Fetch redes
+  const redeIds = [...new Set(escalaLinhas.map((l) => l.rede_id as string))]
+  const { data: redes, error: redesErr } = await svc
+    .from('redes')
+    .select('id, nome, janela_inicio, janela_fim')
+    .in('id', redeIds)
+
+  if (redesErr) return new NextResponse(`Erro ao buscar redes: ${redesErr.message}`, { status: 500 })
+
+  const janelasRede = new Map(
+    (redes ?? [])
+      .filter((r) => r.janela_inicio && r.janela_fim)
+      .map((r) => [r.id as string, { janela_inicio: r.janela_inicio as string, janela_fim: r.janela_fim as string }]),
+  )
+
+  const distinctRedeIds = redeIds
+
+  const allKpiIds: string[] = []
+  let totalAnomalias = { HIGH: 0, MEDIUM: 0, LOW: 0 }
+
+  for (const rid of distinctRedeIds) {
+    const linhasRede = escalaLinhas.filter((l) => l.rede_id === rid)
+    const placasRede = new Set(linhasRede.filter((l) => l.placa_norm).map((l) => l.placa_norm as string))
+    const paradasRede = (paradaRows ?? []).filter((p) => placasRede.has(p.placa_norm))
+
+    const rotas = cruzaEscalaUnitrac(
+      linhasRede,
+      paradasRede,
+      (lojas ?? []).filter((l) => l.rede_id === rid),
+    )
+
+    // Build paradasIndex for anomalia detection
+    const paradasIndex = new Map<string, Array<{
+      id: string; classificacao: string; chegada: Date; saida: Date | null
+      duracao_seg: number | null; lat: number | null; lng: number | null
+    }>>()
+    for (const p of paradasRede) {
+      const list = paradasIndex.get(p.placa_norm) ?? []
+      list.push({
+        id: p.id as string,
+        classificacao: p.classificacao as string,
+        chegada: new Date(p.chegada as string),
+        saida: p.saida ? new Date(p.saida as string) : null,
+        duracao_seg: p.duracao_seg as number | null,
+        lat: p.lat as number | null,
+        lng: p.lng as number | null,
+      })
+      paradasIndex.set(p.placa_norm, list)
+    }
+
+    const anomalias = detectaAnomalias({
+      rotas,
+      escalaLinhas: linhasRede,
+      paradasIndex,
+      janelasRede,
+      data: dataParam,
+    })
+
+    // UPSERT kpis record
+    const { data: kpiRecord, error: kpiErr } = await svc
+      .from('kpis')
+      .upsert(
+        {
+          data: dataParam,
+          rede_id: rid,
+          status: 'rascunho',
+          qtd_linhas: rotas.length,
+          qtd_anomalias_high: anomalias.filter((a) => a.severidade === 'HIGH').length,
+          qtd_anomalias_medium: anomalias.filter((a) => a.severidade === 'MEDIUM').length,
+          qtd_anomalias_low: anomalias.filter((a) => a.severidade === 'LOW').length,
+          gerada_em: new Date().toISOString(),
+          gerada_por: user.id,
+        },
+        { onConflict: 'data,rede_id', ignoreDuplicates: false },
+      )
+      .select('id')
+      .single()
+
+    if (kpiErr || !kpiRecord)
+      return new NextResponse(`Erro ao upsert kpis: ${kpiErr?.message}`, { status: 500 })
+
+    const kpiId = kpiRecord.id as string
+    allKpiIds.push(kpiId)
+
+    // UPSERT kpi_rotas
+    const rotaRows = rotas.map((r) => ({
+      escala_linha_id: r.escala_linha_id,
+      data: r.data,
+      rede_id: r.rede_id,
+      placa_norm: r.placa_norm,
+      saida_cd: r.saida_cd?.toISOString() ?? null,
+      paradas_json: r.paradas.map((p) => ({
+        parada_id: p.parada_id,
+        loja_id: p.loja_id,
+        nome: p.nome,
+        chegada: p.chegada.toISOString(),
+        saida: p.saida.toISOString(),
+        duracao_min: p.duracao_min,
+        classificacao: p.classificacao,
+      })),
+      anomalias_codigos: r.anomalias_codigos,
+      status: r.status,
+    }))
+
+    if (rotaRows.length > 0) {
+      const { error: rotaErr } = await svc
+        .from('kpi_rotas')
+        .upsert(rotaRows, { onConflict: 'escala_linha_id', ignoreDuplicates: false })
+      if (rotaErr)
+        return new NextResponse(`Erro ao upsert kpi_rotas: ${rotaErr.message}`, { status: 500 })
+    }
+
+    // Re-fetch kpi_rota ids for anomalia linking
+    const { data: rotasDb } = await svc
+      .from('kpi_rotas')
+      .select('id, escala_linha_id')
+      .in('escala_linha_id', rotas.map((r) => r.escala_linha_id))
+
+    const rotaIdByEscalaLinhaId = new Map(
+      (rotasDb ?? []).map((r) => [r.escala_linha_id as string, r.id as string]),
+    )
+
+    // Delete existing anomalias for these kpi_rota_ids
+    const kpiRotaIds = [...rotaIdByEscalaLinhaId.values()]
+    if (kpiRotaIds.length > 0) {
+      await svc.from('anomalias').delete().in('kpi_rota_id', kpiRotaIds)
+    }
+
+    // Insert anomalias
+    if (anomalias.length > 0) {
+      const anomaliaRows = anomalias.map((a) => {
+        const rotaId = a.kpi_rota_id ??
+          (a.kpi_rota_id === null && a.parada_id === null
+            ? null
+            : rotaIdByEscalaLinhaId.get(a.kpi_rota_id ?? '') ?? null)
+        return {
+          data: a.data,
+          kpi_rota_id: rotaId,
+          parada_id: a.parada_id,
+          codigo: a.codigo,
+          severidade: a.severidade,
+          descricao: a.descricao,
+          sugestao: a.sugestao,
+          payload_json: a.payload,
+          status: 'pendente',
+        }
+      })
+
+      const { error: anomErr } = await svc.from('anomalias').insert(anomaliaRows)
+      if (anomErr)
+        return new NextResponse(`Erro ao inserir anomalias: ${anomErr.message}`, { status: 500 })
+    }
+
+    totalAnomalias.HIGH += anomalias.filter((a) => a.severidade === 'HIGH').length
+    totalAnomalias.MEDIUM += anomalias.filter((a) => a.severidade === 'MEDIUM').length
+    totalAnomalias.LOW += anomalias.filter((a) => a.severidade === 'LOW').length
+  }
+
+  return NextResponse.json({
+    kpi_ids: allKpiIds,
+    qtd_rotas: escalaLinhas.length,
+    qtd_anomalias_high: totalAnomalias.HIGH,
+    qtd_anomalias_medium: totalAnomalias.MEDIUM,
+    qtd_anomalias_low: totalAnomalias.LOW,
+  })
+}
