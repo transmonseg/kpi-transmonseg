@@ -198,11 +198,18 @@ export async function parseCozinha(
 }
 
 export function calcularEstatisticas(rotas: RotaCozinha[]): EstatisticasCozinha {
+  // semPlaca e semMotorista contam TODAS as rotas onde falta esse campo,
+  // incluindo as vazias (que faltam ambos). Vazias é mostrado separado
+  // para indicar quantas estão totalmente em branco.
   return {
     total: rotas.length,
     completas: rotas.filter(r => r.status === 'completa').length,
-    semPlaca: rotas.filter(r => r.status === 'sem-placa').length,
-    semMotorista: rotas.filter(r => r.status === 'sem-motorista').length,
+    semPlaca: rotas.filter(
+      r => r.status === 'sem-placa' || r.status === 'vazia'
+    ).length,
+    semMotorista: rotas.filter(
+      r => r.status === 'sem-motorista' || r.status === 'vazia'
+    ).length,
     vazias: rotas.filter(r => r.status === 'vazia').length,
     duplicadas: new Set(rotas.filter(r => r.duplicada).map(r => r.rota)).size,
   }
