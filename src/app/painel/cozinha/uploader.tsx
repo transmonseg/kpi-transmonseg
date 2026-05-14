@@ -487,7 +487,7 @@ function FiltroChips({
   setFiltro: (f: 'todas' | 'problemas' | 'completas') => void
   stats: Estatisticas
 }) {
-  const problemas = stats.semPlaca + stats.semMotorista + stats.vazias
+  const problemas = stats.total - stats.completas
   const opts: { id: typeof filtro; label: string; count: number }[] = [
     { id: 'todas', label: 'Todas', count: stats.total },
     { id: 'problemas', label: 'Com problemas', count: problemas },
@@ -521,7 +521,7 @@ function FiltroExportControl({
   setFiltro: (f: FiltroExport) => void
   stats: Estatisticas
 }) {
-  const pendentes = stats.semPlaca + stats.semMotorista + stats.vazias
+  const pendentes = stats.total - stats.completas
   const opts: { id: FiltroExport; label: string; count: number }[] = [
     { id: 'todos', label: 'Todos', count: stats.total },
     { id: 'pendentes', label: 'Pendentes', count: pendentes },
