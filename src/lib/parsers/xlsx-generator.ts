@@ -30,8 +30,8 @@ export async function gerarXlsx(
     { key: 'rota', width: 28 },
     { key: 'motorista', width: 28 },
     { key: 'placa', width: 13 },
-    { key: 'veiculo', width: 14 },
-    { key: 'status', width: 14 },
+    { key: 'veiculo', width: 22 },
+    { key: 'status', width: 16 },
   ]
 
   // Título
