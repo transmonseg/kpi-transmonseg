@@ -12,7 +12,7 @@ const SKIP_COL4 = new Set([
 function cellVal(cell: ExcelJS.Cell | undefined): unknown {
   if (!cell) return null
   const v = cell.value
-  if (!v) return null
+  if (v === null || v === undefined) return null
   if (typeof v === 'object') {
     if ('text' in v) return (v as { text: string }).text
     if ('result' in v) return (v as { result: unknown }).result

@@ -27,18 +27,28 @@ export async function POST(req: NextRequest) {
   if (kpiErr || !kpi) return new NextResponse('KPI não encontrado', { status: 404 })
 
   if (kpi.qtd_anomalias_high > 0) {
-    const { count } = await svc
-      .from('anomalias')
-      .select('id', { count: 'exact', head: true })
-      .eq('kpi_rota_id', kpi_id)
-      .eq('severidade', 'HIGH')
-      .eq('status', 'pendente')
+    const { data: rotaIds } = await svc
+      .from('kpi_rotas')
+      .select('id')
+      .eq('data', kpi.data)
+      .eq('rede_id', kpi.rede_id)
 
-    if ((count ?? 0) > 0) {
-      return new NextResponse(
-        'Existem anomalias HIGH pendentes. Resolva antes de gerar.',
-        { status: 422 }
-      )
+    const ids = (rotaIds ?? []).map((r) => r.id as string)
+
+    if (ids.length > 0) {
+      const { count } = await svc
+        .from('anomalias')
+        .select('id', { count: 'exact', head: true })
+        .in('kpi_rota_id', ids)
+        .eq('severidade', 'HIGH')
+        .eq('status', 'pendente')
+
+      if ((count ?? 0) > 0) {
+        return new NextResponse(
+          'Existem anomalias HIGH pendentes. Resolva antes de gerar.',
+          { status: 422 }
+        )
+      }
     }
   }
 

@@ -16,6 +16,14 @@ export type AnomaliaRow = {
 }
 
 type ActionStatus = 'ignorada' | 'aceita' | 'sem_entrega' | 'corrigida'
+type AcaoValue = 'ignorar' | 'aceitar' | 'sem_entrega' | 'corrigir'
+
+const STATUS_TO_ACAO: Record<ActionStatus, AcaoValue> = {
+  ignorada: 'ignorar',
+  aceita: 'aceitar',
+  sem_entrega: 'sem_entrega',
+  corrigida: 'corrigir',
+}
 
 function SevBadge({ sev }: { sev: string }) {
   const map: Record<string, string> = {
@@ -71,7 +79,10 @@ function AnomaliaRow({
       const res = await fetch(`/api/anomalias/${anomalia.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, ...extra }),
+        body: JSON.stringify({
+          acao: STATUS_TO_ACAO[status],
+          ...(extra ? { correcao: { placa_norm: extra.placa, motorista: extra.motorista } } : {}),
+        }),
       })
       if (!res.ok) {
         alert(`Erro: ${await res.text()}`)
@@ -170,9 +181,12 @@ export function AnomaliaLista({ anomalias: initial }: { anomalias: AnomaliaRow[]
 
   const highPendentes = anomalias.filter(a => a.severidade === 'HIGH' && a.status === 'pendente').length
 
-  function handleUpdate(id: string, status: ActionStatus) {
+  function handleUpdate(id: string, status: ActionStatus, extra?: { placa?: string; motorista?: string }) {
     setAnomalias(prev =>
-      prev.map(a => a.id === id ? { ...a, status } : a)
+      prev.map(a => a.id === id
+        ? { ...a, status, ...(extra?.placa ? { placa: extra.placa } : {}) }
+        : a
+      )
     )
   }
 

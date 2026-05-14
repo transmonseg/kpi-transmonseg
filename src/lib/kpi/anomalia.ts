@@ -17,6 +17,7 @@ type DetectaParams = {
     placa_norm: string | null
     rede_id: string
     data_entrega: string
+    loja_nome_raw?: string
   }>
   paradasIndex: Map<string, ParadaIndexEntry[]>
   janelasRede: Map<string, { janela_inicio: string; janela_fim: string }>
@@ -58,7 +59,7 @@ export function detectaAnomalias(params: DetectaParams): AnomaliaDetectada[] {
   }
 
   for (const rota of rotas) {
-    const rotaId = null as string | null
+    const rotaId = rota.escala_linha_id  // resolved to DB kpi_rota id in processar/route
 
     // ANOM-01: placa com escala mas sem paradas GPS
     if (rota.placa_norm && rota.paradas.length === 0 && rota.status !== 'sem_entrega') {
@@ -121,10 +122,9 @@ export function detectaAnomalias(params: DetectaParams): AnomaliaDetectada[] {
 
     // ANOM-05: divergência de rota (paradas LOJA != 1 quando loja única na escala)
     // Only applies when loja_nome_raw represents a single store (heuristic: no "/" or "E " separator)
-    const lojaRaw = escalaLinhas.find((l) => l.id === rota.escala_linha_id)?.data_entrega
     const escalaLinha = escalaLinhas.find((l) => l.id === rota.escala_linha_id)
     if (escalaLinha) {
-      const lojaStr = (escalaLinha as unknown as { loja_nome_raw?: string }).loja_nome_raw ?? ''
+      const lojaStr = escalaLinha.loja_nome_raw ?? ''
       const isMultiLoja = /\s*[/\\]\s*|\s+E\s+/i.test(lojaStr)
       if (!isMultiLoja) {
         const qtdLojaParadas = rota.paradas.filter((p) => p.classificacao === 'LOJA').length
@@ -232,7 +232,7 @@ export function detectaAnomalias(params: DetectaParams): AnomaliaDetectada[] {
         const foraJanela =
           fimMin > inicioMin
             ? saidaMin < inicioMin || saidaMin > fimMin
-            : saidaMin < inicioMin && saidaMin > fimMin
+            : saidaMin > inicioMin || saidaMin < fimMin
         if (foraJanela) {
           anomalias.push({
             kpi_rota_id: rotaId,

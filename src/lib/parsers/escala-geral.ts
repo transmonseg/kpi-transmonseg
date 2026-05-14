@@ -335,14 +335,11 @@ export async function parseEscalaGeral(
     if (!RE_DIA_ABA.test(trimmed)) return
 
     const dateFromSheet = extractDateFromWorksheet(ws)
-    let dataISO: string
-
-    if (dateFromSheet) {
-      dataISO = formataDataISO(dateFromSheet)
-    } else {
-      // Fallback: use tab number with current month/year (best effort)
-      dataISO = `0000-00-${trimmed.padStart(2, '0')}`
+    if (!dateFromSheet) {
+      console.warn(`[escala-geral] Aba "${trimmed}": data não encontrada, aba ignorada.`)
+      return
     }
+    const dataISO = formataDataISO(dateFromSheet)
 
     if (dataAlvo && dataISO !== dataAlvo) return
 

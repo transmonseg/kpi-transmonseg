@@ -49,10 +49,11 @@ export async function POST(req: NextRequest) {
 
   if (paradaErr) return new NextResponse(`Erro ao buscar paradas: ${paradaErr.message}`, { status: 500 })
 
-  // Fetch lojas
+  // Fetch lojas (only active)
   const { data: lojas, error: lojasErr } = await svc
     .from('lojas')
     .select('id, rede_id, nome, nome_normalizado, codigo_escala, codigo_unitrac, nome_unitrac, lat, lng, raio_metros')
+    .eq('ativo', true)
 
   if (lojasErr) return new NextResponse(`Erro ao buscar lojas: ${lojasErr.message}`, { status: 500 })
 
@@ -187,10 +188,10 @@ export async function POST(req: NextRequest) {
     // Insert anomalias
     if (anomalias.length > 0) {
       const anomaliaRows = anomalias.map((a) => {
-        const rotaId = a.kpi_rota_id ??
-          (a.kpi_rota_id === null && a.parada_id === null
-            ? null
-            : rotaIdByEscalaLinhaId.get(a.kpi_rota_id ?? '') ?? null)
+        // a.kpi_rota_id stores escala_linha_id; resolve to actual kpi_rota DB id
+        const rotaId = a.kpi_rota_id
+          ? rotaIdByEscalaLinhaId.get(a.kpi_rota_id) ?? null
+          : null
         return {
           data: a.data,
           kpi_rota_id: rotaId,
