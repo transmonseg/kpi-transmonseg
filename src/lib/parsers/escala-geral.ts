@@ -98,7 +98,10 @@ function inferRedeFromSeparator(sep: string): string | null {
 function extractDateFromWorksheet(ws: ExcelJS.Worksheet): Date | null {
   const row1 = ws.getRow(1)
   const v = cellVal(row1.getCell(13))
-  if (v instanceof Date) return v
+  if (v instanceof Date) {
+    // ExcelJS creates UTC midnight dates; normalize to local midnight to avoid off-by-one in UTC-3
+    return new Date(v.getUTCFullYear(), v.getUTCMonth(), v.getUTCDate())
+  }
   if (typeof v === 'string') {
     const m = v.match(/(\d{2})\/(\d{2})\/(\d{4})/)
     if (m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]))

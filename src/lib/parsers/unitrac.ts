@@ -1,6 +1,46 @@
 import ExcelJS from 'exceljs'
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const JSZip = require('jszip')
 import type { ParadaUnitrac, ResumoVeiculo } from '@/lib/types/unitrac'
 import { normalizaPlaca } from '@/lib/utils/placa'
+
+/**
+ * Some Unitrac XLSX files are generated with namespace prefixes on all XML element names
+ * (e.g. <x:worksheet>, <ap:Properties>) which ExcelJS can't parse. This function
+ * detects and strips ALL namespace prefixes from element names across all XML files
+ * in the ZIP before handing the buffer to ExcelJS.
+ */
+async function normalizeXlsxNamespaces(buf: Buffer): Promise<Buffer> {
+  try {
+    const zip = new JSZip()
+    await zip.loadAsync(buf)
+
+    let needsRebuild = false
+    const xmlEntries = zip.file(/\.xml$/)
+
+    for (const entry of xmlEntries) {
+      const xml: string = await entry.async('string')
+      // Only process files that actually have prefixed element names like <ns:tag or </ns:tag
+      if (!/<\w+:\w/.test(xml)) continue
+      // Strip prefix from element names: <ns:tag → <tag, </ns:tag → </tag
+      // Also convert xmlns:ns= → xmlns= for the primary namespace declaration
+      const normalized = xml
+        .replace(/(<\/?)(\w+):(\w)/g, '$1$3')
+        .replace(/xmlns:\w+="http:\/\/schemas\.openxmlformats\.org\/spreadsheetml/g,
+          'xmlns="http://schemas.openxmlformats.org/spreadsheetml')
+        .replace(/xmlns:\w+="http:\/\/schemas\.openxmlformats\.org\/officeDocument\/2006\/extended-properties/g,
+          'xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties')
+      zip.file(entry.name, normalized)
+      needsRebuild = true
+    }
+
+    if (!needsRebuild) return buf
+    const fixed: Buffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' })
+    return fixed
+  } catch {
+    return buf
+  }
+}
 
 function parseDuracao(s: string): number {
   if (!s) return 0
@@ -82,7 +122,8 @@ export async function parseUnitrac(
   buffer: ArrayBuffer | Buffer
 ): Promise<ResumoVeiculo[]> {
   const wb = new ExcelJS.Workbook()
-  const buf = buffer instanceof ArrayBuffer ? Buffer.from(buffer) : buffer
+  let buf = buffer instanceof ArrayBuffer ? Buffer.from(buffer) : buffer
+  buf = await normalizeXlsxNamespaces(buf)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await wb.xlsx.load(buf as any)
 
