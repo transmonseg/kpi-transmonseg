@@ -258,7 +258,7 @@ export function CozinhaUploader() {
       {resultado && rotasEditadas && (
         <>
           {/* Alertas */}
-          <AlertasResumo estatisticas={resultado.estatisticas} declaradas={resultado.declaradas} />
+          <AlertasResumo estatisticas={resultado.estatisticas} declaradas={resultado.declaradas} rotas={rotasEditadas} />
 
           {/* Tabela editável + downloads */}
           <div className="rounded-xl border border-border bg-white shadow-sm overflow-hidden">
@@ -387,12 +387,16 @@ export function CozinhaUploader() {
 function AlertasResumo({
   estatisticas,
   declaradas,
+  rotas,
 }: {
   estatisticas: Estatisticas
   declaradas: number
+  rotas: Rota[]
 }) {
-  const parseadas = estatisticas.total
-  const divergencia = declaradas !== parseadas
+  // parseadas = nomes únicos produzidos (ignora 2º carro da mesma rota)
+  const parseadas = new Set(rotas.map(r => r.rota)).size
+  // só alerta quando há rotas declaradas que não geraram nenhum resultado
+  const divergencia = declaradas > parseadas
 
   const itens = [
     {
