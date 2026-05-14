@@ -25,10 +25,13 @@ type Estatisticas = {
 type Resultado = {
   rotas: Rota[]
   estatisticas: Estatisticas
+  declaradas: number
   xlsxBase64: string
   pdfBase64: string
   nomeBase: string
 }
+
+type FiltroExport = 'todos' | 'pendentes' | 'completas'
 
 const SEM_VALOR = '—'
 
@@ -43,6 +46,8 @@ export function CozinhaUploader() {
   const [pending, startTransition] = useTransition()
   const [pendingRegen, startRegen] = useTransition()
   const [filtro, setFiltro] = useState<'todas' | 'problemas' | 'completas'>('todas')
+  const [filtroExport, setFiltroExport] = useState<FiltroExport>('todos')
+  const [pendingDownload, startDownload] = useTransition()
 
   async function processar() {
     if (!arquivo) {
@@ -116,7 +121,51 @@ export function CozinhaUploader() {
     URL.revokeObjectURL(url)
   }
 
-  const dataFormatada = formatarDataPtBr(dataRef)
+  async function baixarFiltrado(tipo: 'xlsx' | 'pdf') {
+    if (!rotasEditadas || !resultado) return
+
+    const rotasFiltExport = (() => {
+      if (filtroExport === 'pendentes') return rotasEditadas.filter(r => r.status !== 'completa')
+      if (filtroExport === 'completas') return rotasEditadas.filter(r => r.status === 'completa')
+      return rotasEditadas
+    })()
+
+    const dataFormatada = formatarDataPtBr(dataRef)
+
+    startDownload(async () => {
+      try {
+        const res = await fetch('/api/cozinha/regenerar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            rotas: rotasFiltExport,
+            dataRef: dataFormatada,
+            nomeBase: resultado.nomeBase,
+          }),
+        })
+        if (!res.ok) throw new Error((await res.text()) || 'Erro ao gerar arquivo.')
+        const data = (await res.json()) as Resultado
+
+        const sufixo = filtroExport === 'pendentes' ? '_PENDENTES' : filtroExport === 'completas' ? '_COMPLETAS' : ''
+        if (tipo === 'xlsx') {
+          baixar(
+            data.xlsxBase64,
+            `${resultado.nomeBase}${sufixo}_LIMPO.xlsx`,
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+          )
+        } else {
+          baixar(
+            data.pdfBase64,
+            `${resultado.nomeBase}${sufixo}_LIMPO.pdf`,
+            'application/pdf'
+          )
+        }
+      } catch (e) {
+        setErro(e instanceof Error ? e.message : String(e))
+      }
+    })
+  }
+
   const editou = useMemo(() => {
     if (!rotasEditadas || !resultado) return false
     return rotasEditadas.some(
@@ -209,7 +258,7 @@ export function CozinhaUploader() {
       {resultado && rotasEditadas && (
         <>
           {/* Alertas */}
-          <AlertasResumo estatisticas={resultado.estatisticas} />
+          <AlertasResumo estatisticas={resultado.estatisticas} declaradas={resultado.declaradas} />
 
           {/* Tabela editável + downloads */}
           <div className="rounded-xl border border-border bg-white shadow-sm overflow-hidden">
@@ -238,34 +287,23 @@ export function CozinhaUploader() {
                     )}
                   </button>
                 )}
+                <FiltroExportControl filtro={filtroExport} setFiltro={setFiltroExport} stats={resultado.estatisticas} />
                 <button
-                  onClick={() =>
-                    baixar(
-                      resultado.xlsxBase64,
-                      `${resultado.nomeBase}_LIMPO.xlsx`,
-                      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                    )
-                  }
-                  disabled={editou}
+                  onClick={() => baixarFiltrado('xlsx')}
+                  disabled={editou || pendingDownload}
                   title={editou ? 'Salve as edições primeiro' : ''}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition shadow-sm shadow-brand-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <IconDownload />
+                  {pendingDownload ? <Spinner /> : <IconDownload />}
                   XLSX
                 </button>
                 <button
-                  onClick={() =>
-                    baixar(
-                      resultado.pdfBase64,
-                      `${resultado.nomeBase}_LIMPO.pdf`,
-                      'application/pdf'
-                    )
-                  }
-                  disabled={editou}
+                  onClick={() => baixarFiltrado('pdf')}
+                  disabled={editou || pendingDownload}
                   title={editou ? 'Salve as edições primeiro' : ''}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong bg-white px-3.5 py-2 text-sm font-semibold text-ink hover:bg-surface-hover transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <IconDownload />
+                  {pendingDownload ? <Spinner /> : <IconDownload />}
                   PDF
                 </button>
               </div>
@@ -346,7 +384,16 @@ export function CozinhaUploader() {
   )
 }
 
-function AlertasResumo({ estatisticas }: { estatisticas: Estatisticas }) {
+function AlertasResumo({
+  estatisticas,
+  declaradas,
+}: {
+  estatisticas: Estatisticas
+  declaradas: number
+}) {
+  const parseadas = estatisticas.total
+  const divergencia = declaradas !== parseadas
+
   const itens = [
     {
       label: 'Total',
@@ -393,18 +440,40 @@ function AlertasResumo({ estatisticas }: { estatisticas: Estatisticas }) {
   ]
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-      {itens.map(it => (
-        <div
-          key={it.label}
-          className={`rounded-xl border ${it.cor} px-4 py-3`}
-        >
-          <div className="text-2xl font-bold leading-tight">{it.valor}</div>
-          <div className="text-[11px] font-semibold uppercase tracking-wider mt-1 opacity-80">
-            {it.label}
+    <div className="space-y-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {itens.map(it => (
+          <div
+            key={it.label}
+            className={`rounded-xl border ${it.cor} px-4 py-3`}
+          >
+            <div className="text-2xl font-bold leading-tight">{it.valor}</div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider mt-1 opacity-80">
+              {it.label}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
+      <div
+        className={`inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium ${
+          divergencia
+            ? 'bg-red-50 border-red-200 text-red-700'
+            : 'bg-slate-50 border-slate-200 text-slate-500'
+        }`}
+      >
+        <span>
+          <span className="font-bold">{declaradas}</span> declaradas
+        </span>
+        <span className="opacity-40">/</span>
+        <span>
+          <span className="font-bold">{parseadas}</span> parseadas
+        </span>
+        {divergencia && (
+          <span className="ml-1 text-xs font-semibold bg-red-100 text-red-700 px-1.5 py-0.5 rounded">
+            {declaradas - parseadas} bloco{Math.abs(declaradas - parseadas) !== 1 ? 's' : ''} não lido{Math.abs(declaradas - parseadas) !== 1 ? 's' : ''}
+          </span>
+        )}
+      </div>
     </div>
   )
 }
@@ -437,6 +506,40 @@ function FiltroChips({
           }
         >
           {o.label} <span className="opacity-70">({o.count})</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function FiltroExportControl({
+  filtro,
+  setFiltro,
+  stats,
+}: {
+  filtro: FiltroExport
+  setFiltro: (f: FiltroExport) => void
+  stats: Estatisticas
+}) {
+  const pendentes = stats.semPlaca + stats.semMotorista + stats.vazias
+  const opts: { id: FiltroExport; label: string; count: number }[] = [
+    { id: 'todos', label: 'Todos', count: stats.total },
+    { id: 'pendentes', label: 'Pendentes', count: pendentes },
+    { id: 'completas', label: 'Completas', count: stats.completas },
+  ]
+  return (
+    <div className="flex items-center gap-1 rounded-lg border border-border-strong bg-surface-alt p-0.5">
+      {opts.map(o => (
+        <button
+          key={o.id}
+          onClick={() => setFiltro(o.id)}
+          className={
+            filtro === o.id
+              ? 'px-2.5 py-1 rounded-md text-xs font-semibold bg-brand-600 text-white shadow-sm'
+              : 'px-2.5 py-1 rounded-md text-xs font-semibold text-ink-soft hover:bg-white hover:text-ink transition'
+          }
+        >
+          {o.label} <span className="opacity-60">({o.count})</span>
         </button>
       ))}
     </div>

@@ -97,9 +97,14 @@ function cellValue(cell: ExcelJS.Cell | undefined): unknown {
   return v
 }
 
+export type ResultadoCozinha = {
+  rotas: RotaCozinha[]
+  declaradas: number
+}
+
 export async function parseCozinha(
   buffer: ArrayBuffer | Buffer
-): Promise<RotaCozinha[]> {
+): Promise<ResultadoCozinha> {
   const workbook = new ExcelJS.Workbook()
   const buf =
     buffer instanceof ArrayBuffer
@@ -126,7 +131,7 @@ export async function parseCozinha(
     })
   })
 
-  if (rotasPorLinha.size === 0) return []
+  if (rotasPorLinha.size === 0) return { rotas: [], declaradas: 0 }
 
   let linhaPrincipal = -1
   let maxRotas = 0
@@ -194,7 +199,7 @@ export async function parseCozinha(
   }
 
   final.sort((a, b) => a.rota.localeCompare(b.rota, 'pt-BR'))
-  return final
+  return { rotas: final, declaradas: celulasRota.length }
 }
 
 export function calcularEstatisticas(rotas: RotaCozinha[]): EstatisticasCozinha {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { parseCozinha, calcularEstatisticas } from '@/lib/parsers/cozinha-parser'
+import { parseCozinha, calcularEstatisticas, type ResultadoCozinha } from '@/lib/parsers/cozinha-parser'
 import { gerarXlsx } from '@/lib/parsers/xlsx-generator'
 import { gerarPdf } from '@/lib/parsers/pdf-generator'
 
@@ -31,15 +31,17 @@ export async function POST(req: NextRequest) {
 
   const arrayBuffer = await arquivo.arrayBuffer()
 
-  let rotas: Awaited<ReturnType<typeof parseCozinha>>
+  let resultado: ResultadoCozinha
   try {
-    rotas = await parseCozinha(arrayBuffer)
+    resultado = await parseCozinha(arrayBuffer)
   } catch (e) {
     return new NextResponse(
       e instanceof Error ? e.message : 'Erro ao ler XLSX.',
       { status: 400 }
     )
   }
+
+  const { rotas, declaradas } = resultado
 
   if (rotas.length === 0) {
     return new NextResponse(
@@ -58,6 +60,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     rotas,
     estatisticas,
+    declaradas,
     xlsxBase64: xlsxBuffer.toString('base64'),
     pdfBase64: pdfBuffer.toString('base64'),
     nomeBase,
