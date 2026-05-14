@@ -139,14 +139,24 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
 
     if (!s1) return
 
-    const isSeparator = v4 === null || v4 === undefined || asStr(v4) === null
+    const n0 = normText(s1)
+
+    // Skip column-header rows (appear inside BENASSI/FORA_ESCALA sub-sections)
+    if (n0.includes('REDES') && (n0.includes('FILIAI') || n0.includes('FILIAL'))) return
+    // Skip TOTAL summary rows (col4 may carry a formula, so isSeparator won't catch them)
+    if (n0.startsWith('TOTAL')) return
+
+    // Merged-cell rows: all columns carry the same text (ExcelJS propagates the master cell value).
+    // These are either rede section headers or BENASSI/FORA_ESCALA mode switches.
+    const v4str = asStr(v4)
+    const isMergedHeader = v4str !== null && v4str === s1
+
+    const isSeparator = isMergedHeader || v4 === null || v4 === undefined || v4str === null
 
     if (isSeparator) {
-      // Also check that it's not a data row with weight but no qtd
-      // A true separator has col1 text and col2/col3/col4 all null
-      const hasWeight = v2 !== null && v2 !== undefined && asStr(String(v2 ?? '')) !== null
-      // If col2 has a number value, it might be a secondary delivery row (col4 null, col2 has peso)
-      // Secondary delivery: col4 null, col2 has value → belongs to previous loja
+      // Secondary delivery row: col4 is genuinely null AND col2 is a numeric weight.
+      // (Merged-cell headers are excluded — their col2 carries the same text as col1, not a number.)
+      const hasWeight = !isMergedHeader && asNum(v2) !== null
       if (hasWeight && ultimaLoja !== null) {
         // This is an additional delivery row for the previous loja
         const v5 = cellVal(row.getCell(5))
@@ -162,7 +172,10 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
         const placaRaw2 = asStr(v12)
 
         const tipoEmissao = modoBenassi ? 'BENASSI' : modoForaEscala ? 'FORA_ESCALA' : 'NORMAL'
-        const redeId = modoBenassi ? 'SENDAS' : modoForaEscala ? inferRedeFromLoja(ultimaLoja.nome) : redeAtual
+        const redeFromLoja2 = inferRedeFromLoja(ultimaLoja.nome)
+        const redeId = modoBenassi ? 'SENDAS'
+          : modoForaEscala ? redeFromLoja2
+          : redeFromLoja2 !== 'DESCONHECIDO' ? redeFromLoja2 : redeAtual
 
         const carro1: LinhaEscala = {
           data: dataISO,
@@ -267,7 +280,10 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
     const placaRaw2 = asStr(v12)
 
     const tipoEmissao = modoBenassi ? 'BENASSI' : modoForaEscala ? 'FORA_ESCALA' : 'NORMAL'
-    const redeId = modoBenassi ? 'SENDAS' : modoForaEscala ? inferRedeFromLoja(nomeLoja) : redeAtual
+    const redeFromLoja = inferRedeFromLoja(nomeLoja)
+    const redeId = modoBenassi ? 'SENDAS'
+      : modoForaEscala ? redeFromLoja
+      : redeFromLoja !== 'DESCONHECIDO' ? redeFromLoja : redeAtual
 
     const restricao1: string | null = (() => {
       const motor2 = asStr(v10)
