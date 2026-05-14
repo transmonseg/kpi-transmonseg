@@ -7,7 +7,7 @@ import { parseEscalaPax } from '@/lib/parsers/escala-pax'
 import type { LinhaEscala } from '@/lib/types/escala'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60
+export const maxDuration = 120
 
 type TipoEscala = 'GERAL' | 'ZONA_SUL' | 'PAX'
 
@@ -18,26 +18,21 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
 
-  const formData = await req.formData()
-  const arquivo = formData.get('arquivo')
-  const tipo = (formData.get('tipo') as string ?? '').toUpperCase() as TipoEscala
-  const data = formData.get('data') as string  // YYYY-MM-DD
-  const replace = formData.get('replace') === 'true'
-
-  if (!(arquivo instanceof File))
-    return new NextResponse('Arquivo não enviado.', { status: 400 })
+  const { tipo: tipoRaw, data, storagePath, replace } = await req.json()
+  const tipo = (tipoRaw as string)?.toUpperCase() as TipoEscala
 
   if (!['GERAL', 'ZONA_SUL', 'PAX'].includes(tipo))
     return new NextResponse('Tipo inválido. Use GERAL, ZONA_SUL ou PAX.', { status: 400 })
 
-  if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data))
+  if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data as string))
     return new NextResponse('Data inválida. Use YYYY-MM-DD.', { status: 400 })
 
-  if (!arquivo.name.toLowerCase().endsWith('.xlsx'))
-    return new NextResponse('Envie um arquivo .xlsx.', { status: 400 })
+  if (!storagePath || typeof storagePath !== 'string')
+    return new NextResponse('storagePath ausente.', { status: 400 })
 
-  // Check for duplicate upload
   const svc = createServiceClient()
+
+  // Check for duplicate
   const { data: existente } = await svc
     .from('escala_uploads')
     .select('id')
@@ -51,16 +46,27 @@ export async function POST(req: NextRequest) {
       { status: 409 }
     )
 
-  const arrayBuffer = await arquivo.arrayBuffer()
+  // Read file from Storage
+  const { data: fileBlob, error: downloadErr } = await svc.storage
+    .from('escalas-raw')
+    .download(storagePath)
+
+  if (downloadErr || !fileBlob)
+    return new NextResponse(
+      `Erro ao ler arquivo do storage: ${downloadErr?.message ?? 'arquivo não encontrado'}`,
+      { status: 500 }
+    )
+
+  const arrayBuffer = await fileBlob.arrayBuffer()
   let linhas: LinhaEscala[]
 
   try {
     if (tipo === 'GERAL') {
-      linhas = await parseEscalaGeral(arrayBuffer, data)
+      linhas = await parseEscalaGeral(arrayBuffer, data as string)
     } else if (tipo === 'ZONA_SUL') {
-      linhas = await parseEscalaZonaSul(arrayBuffer, data)
+      linhas = await parseEscalaZonaSul(arrayBuffer, data as string)
     } else {
-      linhas = await parseEscalaPax(arrayBuffer, data)
+      linhas = await parseEscalaPax(arrayBuffer, data as string)
     }
   } catch (e) {
     return new NextResponse(
@@ -75,31 +81,17 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     )
 
-  // Upload to Storage
-  const storagePath = `escalas-raw/${data}/${tipo.toLowerCase()}.xlsx`
-  const { error: storageErr } = await svc.storage
-    .from('escalas-raw')
-    .upload(storagePath, Buffer.from(arrayBuffer), {
-      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      upsert: true,
-    })
-
-  if (storageErr)
-    return new NextResponse(`Erro ao salvar arquivo: ${storageErr.message}`, { status: 500 })
-
-  // Delete existing upload if replacing
   if (existente) {
     await svc.from('escala_uploads').delete().eq('id', existente.id)
   }
 
-  // Insert upload record
   const { data: upload, error: uploadErr } = await svc
     .from('escala_uploads')
     .insert({
       data_escala: data,
       tipo,
       arquivo_path: storagePath,
-      nome_arquivo: arquivo.name,
+      nome_arquivo: (storagePath as string).split('/').pop() ?? 'escala.xlsx',
       qtd_linhas: linhas.length,
       status: 'processado',
       uploaded_by: user.id,
@@ -110,7 +102,6 @@ export async function POST(req: NextRequest) {
   if (uploadErr || !upload)
     return new NextResponse(`Erro ao registrar upload: ${uploadErr?.message}`, { status: 500 })
 
-  // Insert escala_linhas in batches
   const BATCH = 100
   let qtdOrfas = 0
 
@@ -119,7 +110,7 @@ export async function POST(req: NextRequest) {
     const rows = batch.map((l) => ({
       escala_upload_id: upload.id,
       rede_id: l.rede_id,
-      loja_id: null,  // resolved asynchronously by catalog
+      loja_id: null,
       loja_nome_raw: l.loja_nome_raw,
       loja_codigo_raw: l.loja_codigo_raw,
       placa_norm: l.placa_norm || null,

@@ -1,12 +1,13 @@
 'use client'
 
 import { useRef, useState, useTransition } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
 type EscalaResult = { upload_id: string; qtd_linhas: number; qtd_orfas: number }
 type UnitracResult = { upload_id: string; qtd_abas: number; qtd_paradas: number }
 type CardState =
   | { status: 'idle' }
-  | { status: 'uploading' }
+  | { status: 'uploading'; step: string }
   | { status: 'ok'; payload: EscalaResult | UnitracResult }
   | { status: 'conflict'; message: string }
   | { status: 'error'; message: string }
@@ -19,21 +20,51 @@ function useUploadCard() {
   return { arquivo, setArquivo, data, setData, state, setState, pending, start }
 }
 
+// ─── Upload helpers ────────────────────────────────────────────────────────────
+
 async function uploadEscala(
   arquivo: File,
   data: string,
   tipo: string,
   replace: boolean,
+  onStep: (s: string) => void,
 ): Promise<EscalaResult> {
-  const fd = new FormData()
-  fd.append('arquivo', arquivo)
-  fd.append('data', data)
-  fd.append('tipo', tipo)
-  fd.append('replace', String(replace))
-  const res = await fetch('/api/escalas/upload', { method: 'POST', body: fd })
+  // 1. Get presigned upload URL
+  onStep('Preparando upload…')
+  const presignRes = await fetch('/api/escalas/presign', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tipo, data }),
+  })
+  if (!presignRes.ok) {
+    const text = await presignRes.text()
+    const err = new Error(text || 'Erro ao preparar upload.')
+    ;(err as Error & { status: number }).status = presignRes.status
+    throw err
+  }
+  const { token, path } = await presignRes.json()
+
+  // 2. Upload file directly to Supabase Storage (bypasses Vercel body limit)
+  onStep('Enviando arquivo…')
+  const supabase = createClient()
+  const { error: storageErr } = await supabase.storage
+    .from('escalas-raw')
+    .uploadToSignedUrl(path, token, arquivo, {
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      upsert: true,
+    })
+  if (storageErr) throw new Error(storageErr.message || 'Erro ao enviar arquivo.')
+
+  // 3. Trigger server-side parsing + DB insert
+  onStep('Processando…')
+  const res = await fetch('/api/escalas/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tipo, data, storagePath: path, replace }),
+  })
   if (!res.ok) {
     const text = await res.text()
-    const err = new Error(text || 'Erro ao enviar.')
+    const err = new Error(text || 'Erro ao processar escala.')
     ;(err as Error & { status: number }).status = res.status
     throw err
   }
@@ -44,15 +75,44 @@ async function uploadUnitrac(
   arquivo: File,
   data: string,
   replace: boolean,
+  onStep: (s: string) => void,
 ): Promise<UnitracResult> {
-  const fd = new FormData()
-  fd.append('arquivo', arquivo)
-  fd.append('data', data)
-  fd.append('replace', String(replace))
-  const res = await fetch('/api/unitrac/upload', { method: 'POST', body: fd })
+  // 1. Get presigned upload URL
+  onStep('Preparando upload…')
+  const presignRes = await fetch('/api/unitrac/presign', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data }),
+  })
+  if (!presignRes.ok) {
+    const text = await presignRes.text()
+    const err = new Error(text || 'Erro ao preparar upload.')
+    ;(err as Error & { status: number }).status = presignRes.status
+    throw err
+  }
+  const { token, path } = await presignRes.json()
+
+  // 2. Upload file directly to Supabase Storage
+  onStep('Enviando arquivo…')
+  const supabase = createClient()
+  const { error: storageErr } = await supabase.storage
+    .from('unitrac-raw')
+    .uploadToSignedUrl(path, token, arquivo, {
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      upsert: true,
+    })
+  if (storageErr) throw new Error(storageErr.message || 'Erro ao enviar arquivo.')
+
+  // 3. Trigger server-side parsing + DB insert
+  onStep('Processando…')
+  const res = await fetch('/api/unitrac/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data, storagePath: path, replace }),
+  })
   if (!res.ok) {
     const text = await res.text()
-    const err = new Error(text || 'Erro ao enviar.')
+    const err = new Error(text || 'Erro ao processar Unitrac.')
     ;(err as Error & { status: number }).status = res.status
     throw err
   }
@@ -115,7 +175,7 @@ function StatusArea({ state, onReplace }: { state: CardState; onReplace: () => v
   if (state.status === 'uploading') {
     return (
       <div className="flex items-center gap-2 text-sm text-ink-soft">
-        <Spinner /> Enviando…
+        <Spinner /> {state.step}
       </div>
     )
   }
@@ -165,10 +225,12 @@ function EscalaCard({ tipo, label, desc }: { tipo: string; label: string; desc: 
 
   function doUpload(replace = false) {
     if (!arquivo) return
-    setState({ status: 'uploading' })
+    setState({ status: 'uploading', step: 'Iniciando…' })
     start(async () => {
       try {
-        const res = await uploadEscala(arquivo, data, tipo, replace)
+        const res = await uploadEscala(arquivo, data, tipo, replace, (step) =>
+          setState({ status: 'uploading', step })
+        )
         setState({ status: 'ok', payload: res })
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
@@ -180,6 +242,8 @@ function EscalaCard({ tipo, label, desc }: { tipo: string; label: string; desc: 
       }
     })
   }
+
+  const busy = pending || state.status === 'uploading'
 
   return (
     <div className="rounded-xl border border-border bg-white p-5 shadow-sm space-y-4">
@@ -204,11 +268,11 @@ function EscalaCard({ tipo, label, desc }: { tipo: string; label: string; desc: 
 
       <button
         onClick={() => doUpload(false)}
-        disabled={!arquivo || pending || state.status === 'uploading'}
+        disabled={!arquivo || busy}
         className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition shadow-sm shadow-brand-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {pending || state.status === 'uploading' ? (
-          <><Spinner className="mr-1" /> Enviando…</>
+        {busy ? (
+          <><Spinner className="mr-1" /> {state.status === 'uploading' ? state.step : 'Enviando…'}</>
         ) : (
           'Enviar escala'
         )}
@@ -222,10 +286,12 @@ function UnitracCard() {
 
   function doUpload(replace = false) {
     if (!arquivo) return
-    setState({ status: 'uploading' })
+    setState({ status: 'uploading', step: 'Iniciando…' })
     start(async () => {
       try {
-        const res = await uploadUnitrac(arquivo, data, replace)
+        const res = await uploadUnitrac(arquivo, data, replace, (step) =>
+          setState({ status: 'uploading', step })
+        )
         setState({ status: 'ok', payload: res })
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
@@ -237,6 +303,8 @@ function UnitracCard() {
       }
     })
   }
+
+  const busy = pending || state.status === 'uploading'
 
   return (
     <div className="rounded-xl border border-border bg-white p-5 shadow-sm space-y-4">
@@ -263,11 +331,11 @@ function UnitracCard() {
 
       <button
         onClick={() => doUpload(false)}
-        disabled={!arquivo || pending || state.status === 'uploading'}
+        disabled={!arquivo || busy}
         className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {pending || state.status === 'uploading' ? (
-          <><Spinner className="mr-1" /> Enviando…</>
+        {busy ? (
+          <><Spinner className="mr-1" /> {state.status === 'uploading' ? state.step : 'Enviando…'}</>
         ) : (
           'Enviar Unitrac'
         )}

@@ -13,19 +13,13 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
 
-  const formData = await req.formData()
-  const arquivo = formData.get('arquivo')
-  const data = formData.get('data') as string  // YYYY-MM-DD
-  const replace = formData.get('replace') === 'true'
+  const { data, storagePath, replace } = await req.json()
 
-  if (!(arquivo instanceof File))
-    return new NextResponse('Arquivo não enviado.', { status: 400 })
-
-  if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data))
+  if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data as string))
     return new NextResponse('Data inválida. Use YYYY-MM-DD.', { status: 400 })
 
-  if (!arquivo.name.toLowerCase().endsWith('.xlsx'))
-    return new NextResponse('Envie um arquivo .xlsx.', { status: 400 })
+  if (!storagePath || typeof storagePath !== 'string')
+    return new NextResponse('storagePath ausente.', { status: 400 })
 
   const svc = createServiceClient()
 
@@ -42,7 +36,18 @@ export async function POST(req: NextRequest) {
       { status: 409 }
     )
 
-  const arrayBuffer = await arquivo.arrayBuffer()
+  // Read file from Storage
+  const { data: fileBlob, error: downloadErr } = await svc.storage
+    .from('unitrac-raw')
+    .download(storagePath)
+
+  if (downloadErr || !fileBlob)
+    return new NextResponse(
+      `Erro ao ler arquivo do storage: ${downloadErr?.message ?? 'arquivo não encontrado'}`,
+      { status: 500 }
+    )
+
+  const arrayBuffer = await fileBlob.arrayBuffer()
   let veiculos
 
   try {
@@ -59,23 +64,10 @@ export async function POST(req: NextRequest) {
 
   const qtdParadas = veiculos.reduce((acc, v) => acc + v.paradas.length, 0)
 
-  // Upload to Storage
-  const storagePath = `unitrac-raw/${data}/unitrac.xlsx`
-  const { error: storageErr } = await svc.storage
-    .from('unitrac-raw')
-    .upload(storagePath, Buffer.from(arrayBuffer), {
-      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      upsert: true,
-    })
-
-  if (storageErr)
-    return new NextResponse(`Erro ao salvar arquivo: ${storageErr.message}`, { status: 500 })
-
   if (existente) {
     await svc.from('unitrac_uploads').delete().eq('id', existente.id)
   }
 
-  // Insert upload record
   const { data: upload, error: uploadErr } = await svc
     .from('unitrac_uploads')
     .insert({
@@ -92,7 +84,6 @@ export async function POST(req: NextRequest) {
   if (uploadErr || !upload)
     return new NextResponse(`Erro ao registrar upload: ${uploadErr?.message}`, { status: 500 })
 
-  // Insert paradas in batches
   const BATCH = 200
   const todasParadas = veiculos.flatMap((v) =>
     v.paradas.map((p) => ({
