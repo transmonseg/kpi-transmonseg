@@ -199,7 +199,12 @@ export async function parseCozinha(
   }
 
   final.sort((a, b) => a.rota.localeCompare(b.rota, 'pt-BR'))
-  return { rotas: final, declaradas: celulasRota.length }
+  // declaradas = células ROTA: com nome válido (mesmo critério do parser)
+  const declaradas = celulasRota.filter(({ value }) => {
+    const nome = normalizaRota(value)
+    return nome.length >= 3
+  }).length
+  return { rotas: final, declaradas }
 }
 
 export function calcularEstatisticas(rotas: RotaCozinha[]): EstatisticasCozinha {
