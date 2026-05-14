@@ -25,8 +25,8 @@ const C_OK_BG = rgb(0.82, 0.98, 0.91)
 const C_OK_TXT = rgb(0.024, 0.373, 0.275)
 const C_WARN_BG = rgb(0.996, 0.953, 0.78)
 const C_WARN_TXT = rgb(0.573, 0.251, 0.055)
-const C_EMPTY_BG = rgb(0.945, 0.96, 0.973)
-const C_EMPTY_TXT = rgb(0.392, 0.451, 0.518)
+const C_EMPTY_BG = rgb(0.996, 0.988, 0.906)  // #FEFCE8 yellow-50
+const C_EMPTY_TXT = rgb(0.48, 0.29, 0.0)     // #7A4A00 yellow-dark
 
 type StatusKey = RotaCozinha['status']
 
@@ -268,14 +268,22 @@ function drawRow(
   i: number,
   r: RotaCozinha
 ) {
-  // Fundo alternado
-  if (i % 2 === 1) {
+  // Status-aware row background
+  let rowBg: ReturnType<typeof rgb> | null = null
+  if (r.status === 'vazia') {
+    rowBg = C_EMPTY_BG
+  } else if (r.status === 'sem-placa' || r.status === 'sem-motorista') {
+    rowBg = rgb(1, 0.984, 0.906) // #FFF9C3 amber-100 light
+  } else if (i % 2 === 1) {
+    rowBg = C_ALT_ROW
+  }
+  if (rowBg !== null) {
     page.drawRectangle({
       x: xStart,
       y: y - h,
       width: TABLE_WIDTH,
       height: h,
-      color: C_ALT_ROW,
+      color: rowBg,
     })
   }
 
@@ -332,7 +340,7 @@ function drawStatusBadge(
   status: StatusKey
 ) {
   const { bg, txt, label } = badgeConfig(status)
-  const badgeW = 22
+  const badgeW = 30
   const badgeH = 12
   const bx = x + (w - badgeW) / 2
   const by = y + (h - badgeH) / 2
@@ -365,11 +373,11 @@ function badgeConfig(s: StatusKey): {
     case 'completa':
       return { bg: C_OK_BG, txt: C_OK_TXT, label: 'OK' }
     case 'sem-placa':
-      return { bg: C_WARN_BG, txt: C_WARN_TXT, label: 'PL.' }
+      return { bg: C_WARN_BG, txt: C_WARN_TXT, label: 'S/PLACA' }
     case 'sem-motorista':
-      return { bg: C_WARN_BG, txt: C_WARN_TXT, label: 'MT.' }
+      return { bg: C_WARN_BG, txt: C_WARN_TXT, label: 'S/MOT.' }
     case 'vazia':
-      return { bg: C_EMPTY_BG, txt: C_EMPTY_TXT, label: '—' }
+      return { bg: C_EMPTY_BG, txt: C_EMPTY_TXT, label: 'VAZIA' }
   }
 }
 

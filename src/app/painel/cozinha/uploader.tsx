@@ -287,7 +287,10 @@ export function CozinhaUploader() {
                     )}
                   </button>
                 )}
-                <FiltroExportControl filtro={filtroExport} setFiltro={setFiltroExport} stats={resultado.estatisticas} />
+                <div className="flex items-center gap-1.5 border-l border-border pl-3 ml-1">
+                  <span className="text-xs font-medium text-ink-soft">Exportar:</span>
+                  <FiltroExportControl filtro={filtroExport} setFiltro={setFiltroExport} stats={resultado.estatisticas} />
+                </div>
                 <button
                   onClick={() => baixarFiltrado('xlsx')}
                   disabled={editou || pendingDownload}
@@ -336,7 +339,15 @@ export function CozinhaUploader() {
                     return (
                       <tr
                         key={idx}
-                        className={idx % 2 === 1 ? 'bg-surface-alt' : 'bg-white'}
+                        className={
+                          r.status === 'vazia'
+                            ? 'bg-yellow-50'
+                            : r.status === 'sem-placa' || r.status === 'sem-motorista'
+                            ? 'bg-amber-50'
+                            : idx % 2 === 1
+                            ? 'bg-surface-alt'
+                            : 'bg-white'
+                        }
                       >
                         <td className="px-4 py-2 text-ink-soft">{idx + 1}</td>
                         <td className="px-4 py-2 text-ink font-medium">
@@ -555,7 +566,7 @@ function StatusBadge({ status }: { status: Status }) {
     completa: { label: 'OK', cls: 'bg-emerald-100 text-emerald-700' },
     'sem-placa': { label: 'SEM PLACA', cls: 'bg-amber-100 text-amber-700' },
     'sem-motorista': { label: 'SEM MOT.', cls: 'bg-amber-100 text-amber-700' },
-    vazia: { label: 'VAZIA', cls: 'bg-slate-200 text-slate-600' },
+    vazia: { label: 'VAZIA', cls: 'bg-yellow-100 text-yellow-800' },
   }[status]
   return (
     <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${cfg.cls}`}>

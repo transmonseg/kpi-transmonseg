@@ -9,8 +9,8 @@ const COR_BG_ALT = 'FFF8FAFC'
 const COR_BORDER = 'FFE2E8F0'
 const COR_AMBAR_BG = 'FFFEF3C7'
 const COR_AMBAR_TXT = 'FF92400E'
-const COR_CINZA_BG = 'FFF1F5F9'
-const COR_CINZA_TXT = 'FF64748B'
+const COR_AMARELO_BG = 'FFFEFCE8'  // yellow-50
+const COR_AMARELO_TXT = 'FF713F12' // yellow-900 dark
 
 export async function gerarXlsx(
   rotas: RotaCozinha[],
@@ -99,6 +99,16 @@ export async function gerarXlsx(
     row.values = [i + 1, r.rota, r.motorista, r.placa, r.veiculo, statusLabel]
     row.height = 20
 
+    // Determine row background based on status
+    const rowArgb =
+      r.status === 'vazia'
+        ? 'FFFEFCE8'
+        : r.status === 'sem-placa' || r.status === 'sem-motorista'
+        ? 'FFFEF9C3'
+        : i % 2 === 1
+        ? COR_BG_ALT
+        : null
+
     row.eachCell((cell, colNumber) => {
       cell.border = borderThin
       cell.alignment = {
@@ -110,17 +120,17 @@ export async function gerarXlsx(
       }
       cell.font = { size: 11 }
 
-      // Linhas alternadas
-      if (i % 2 === 1) {
+      // Row tint based on status (completa keeps alternating)
+      if (rowArgb !== null) {
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: COR_BG_ALT },
+          fgColor: { argb: rowArgb },
         }
       }
     })
 
-    // Pinta a célula de status conforme o tipo
+    // Status cell always gets its specific color regardless of row bg
     const statusCell = row.getCell(6)
     statusCell.font = { size: 10, bold: true, color: { argb: corStatusTxt(r.status) } }
     statusCell.fill = {
@@ -154,7 +164,7 @@ function corStatusBg(s: RotaCozinha['status']): string {
     case 'sem-motorista':
       return COR_AMBAR_BG
     case 'vazia':
-      return COR_CINZA_BG
+      return COR_AMARELO_BG
   }
 }
 
@@ -166,6 +176,6 @@ function corStatusTxt(s: RotaCozinha['status']): string {
     case 'sem-motorista':
       return COR_AMBAR_TXT
     case 'vazia':
-      return COR_CINZA_TXT
+      return COR_AMARELO_TXT
   }
 }
