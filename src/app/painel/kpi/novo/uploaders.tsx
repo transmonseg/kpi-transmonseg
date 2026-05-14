@@ -29,38 +29,29 @@ async function uploadEscala(
   replace: boolean,
   onStep: (s: string) => void,
 ): Promise<EscalaResult> {
-  // 1. Get presigned upload URL
-  onStep('Preparando upload…')
-  const presignRes = await fetch('/api/escalas/presign', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tipo, data }),
-  })
-  if (!presignRes.ok) {
-    const text = await presignRes.text()
-    const err = new Error(text || 'Erro ao preparar upload.')
-    ;(err as Error & { status: number }).status = presignRes.status
-    throw err
-  }
-  const { token, path } = await presignRes.json()
+  const storagePath = `${data}/${tipo.toLowerCase()}.xlsx`
 
-  // 2. Upload file directly to Supabase Storage (bypasses Vercel body limit)
+  // 1. Upload directly to Supabase Storage (bypasses Vercel body limit)
   onStep('Enviando arquivo…')
   const supabase = createClient()
   const { error: storageErr } = await supabase.storage
     .from('escalas-raw')
-    .uploadToSignedUrl(path, token, arquivo, {
+    .upload(storagePath, arquivo, {
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      upsert: true,
+      upsert: replace,
     })
-  if (storageErr) throw new Error(storageErr.message || 'Erro ao enviar arquivo.')
+  if (storageErr) {
+    const err = new Error(storageErr.message || 'Erro ao enviar arquivo.')
+    ;(err as Error & { status: number }).status = (storageErr as unknown as { status?: number }).status ?? 500
+    throw err
+  }
 
-  // 3. Trigger server-side parsing + DB insert
+  // 2. Trigger server-side parsing + DB insert
   onStep('Processando…')
   const res = await fetch('/api/escalas/upload', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tipo, data, storagePath: path, replace }),
+    body: JSON.stringify({ tipo, data, storagePath, replace }),
   })
   if (!res.ok) {
     const text = await res.text()
@@ -77,38 +68,29 @@ async function uploadUnitrac(
   replace: boolean,
   onStep: (s: string) => void,
 ): Promise<UnitracResult> {
-  // 1. Get presigned upload URL
-  onStep('Preparando upload…')
-  const presignRes = await fetch('/api/unitrac/presign', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ data }),
-  })
-  if (!presignRes.ok) {
-    const text = await presignRes.text()
-    const err = new Error(text || 'Erro ao preparar upload.')
-    ;(err as Error & { status: number }).status = presignRes.status
-    throw err
-  }
-  const { token, path } = await presignRes.json()
+  const storagePath = `${data}/unitrac.xlsx`
 
-  // 2. Upload file directly to Supabase Storage
+  // 1. Upload directly to Supabase Storage (bypasses Vercel body limit)
   onStep('Enviando arquivo…')
   const supabase = createClient()
   const { error: storageErr } = await supabase.storage
     .from('unitrac-raw')
-    .uploadToSignedUrl(path, token, arquivo, {
+    .upload(storagePath, arquivo, {
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      upsert: true,
+      upsert: replace,
     })
-  if (storageErr) throw new Error(storageErr.message || 'Erro ao enviar arquivo.')
+  if (storageErr) {
+    const err = new Error(storageErr.message || 'Erro ao enviar arquivo.')
+    ;(err as Error & { status: number }).status = (storageErr as unknown as { status?: number }).status ?? 500
+    throw err
+  }
 
-  // 3. Trigger server-side parsing + DB insert
+  // 2. Trigger server-side parsing + DB insert
   onStep('Processando…')
   const res = await fetch('/api/unitrac/upload', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ data, storagePath: path, replace }),
+    body: JSON.stringify({ data, storagePath, replace }),
   })
   if (!res.ok) {
     const text = await res.text()
@@ -120,7 +102,10 @@ async function uploadUnitrac(
 }
 
 function isConflict(e: unknown): boolean {
-  return (e as Error & { status?: number })?.status === 409
+  const err = e as Error & { status?: number }
+  if (err?.status === 409) return true
+  const msg = err?.message?.toLowerCase() ?? ''
+  return msg.includes('already exists') || msg.includes('duplicate') || msg.includes('23505')
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────

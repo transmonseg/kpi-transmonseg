@@ -25,15 +25,24 @@ export async function POST(req: NextRequest) {
   const storagePath = `${data}/${tipoUp.toLowerCase()}.xlsx`
   const svc = createServiceClient()
 
-  const { data: signed, error } = await svc.storage
-    .from('escalas-raw')
-    .createSignedUploadUrl(storagePath, { upsert: true })
+  try {
+    const { data: signed, error } = await svc.storage
+      .from('escalas-raw')
+      .createSignedUploadUrl(storagePath, { upsert: true })
 
-  if (error) return new NextResponse(error.message, { status: 500 })
+    if (error) {
+      console.error('[presign/escalas] storage error:', error)
+      return new NextResponse(error.message, { status: 500 })
+    }
 
-  return NextResponse.json({
-    signedUrl: signed.signedUrl,
-    token: signed.token,
-    path: storagePath,
-  })
+    return NextResponse.json({
+      signedUrl: signed.signedUrl,
+      token: signed.token,
+      path: storagePath,
+    })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[presign/escalas] unexpected error:', e)
+    return new NextResponse(`Erro interno: ${msg}`, { status: 500 })
+  }
 }
