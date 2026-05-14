@@ -1,10 +1,23 @@
 import ExcelJS from 'exceljs'
 
+export type StatusRota = 'completa' | 'sem-placa' | 'sem-motorista' | 'vazia'
+
 export type RotaCozinha = {
   rota: string
   motorista: string
   placa: string
   veiculo: string
+  status: StatusRota
+  duplicada: boolean
+}
+
+export type EstatisticasCozinha = {
+  total: number
+  completas: number
+  semPlaca: number
+  semMotorista: number
+  vazias: number
+  duplicadas: number
 }
 
 const PLACA_INVALIDA = new Set([
@@ -19,12 +32,14 @@ const PLACA_INVALIDA = new Set([
 
 const PLACA_REGEX = /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/
 
+const SEM_VALOR = '—'
+
 function normalizaPlaca(valor: unknown): string {
-  if (valor === null || valor === undefined) return '—'
+  if (valor === null || valor === undefined) return SEM_VALOR
   const s = String(valor).toUpperCase().trim().replace(/[^A-Z0-9]/g, '')
-  if (!s) return '—'
+  if (!s) return SEM_VALOR
   if (s.length === 7 && PLACA_REGEX.test(s)) return `${s.slice(0, 3)}-${s.slice(3)}`
-  return s || '—'
+  return s || SEM_VALOR
 }
 
 function placaValida(valor: unknown): boolean {
@@ -36,10 +51,9 @@ function placaValida(valor: unknown): boolean {
 }
 
 function normalizaNome(valor: unknown): string {
-  if (valor === null || valor === undefined) return '—'
+  if (valor === null || valor === undefined) return SEM_VALOR
   const s = String(valor).trim().replace(/\s+/g, ' ')
-  if (!s) return '—'
-  // Title case
+  if (!s) return SEM_VALOR
   return s
     .toLowerCase()
     .split(' ')
@@ -49,6 +63,22 @@ function normalizaNome(valor: unknown): string {
 
 function normalizaRota(valor: string): string {
   return valor.replace(/ROTA:/i, '').trim().toUpperCase().replace(/\s+/g, ' ')
+}
+
+function normalizaVeiculo(valor: unknown): string {
+  if (valor === null || valor === undefined) return SEM_VALOR
+  const s = String(valor).trim().replace(/\s+/g, ' ')
+  if (!s || s === 'VEÍCULO :' || s === 'VEICULO :') return SEM_VALOR
+  return s
+}
+
+function classificaStatus(motorista: string, placa: string): StatusRota {
+  const semMot = motorista === SEM_VALOR
+  const semPl = placa === SEM_VALOR
+  if (semMot && semPl) return 'vazia'
+  if (semMot) return 'sem-motorista'
+  if (semPl) return 'sem-placa'
+  return 'completa'
 }
 
 function cellValue(cell: ExcelJS.Cell | undefined): unknown {
@@ -67,7 +97,9 @@ function cellValue(cell: ExcelJS.Cell | undefined): unknown {
   return v
 }
 
-export async function parseCozinha(buffer: ArrayBuffer | Buffer): Promise<RotaCozinha[]> {
+export async function parseCozinha(
+  buffer: ArrayBuffer | Buffer
+): Promise<RotaCozinha[]> {
   const workbook = new ExcelJS.Workbook()
   const buf =
     buffer instanceof ArrayBuffer
@@ -81,7 +113,6 @@ export async function parseCozinha(buffer: ArrayBuffer | Buffer): Promise<RotaCo
   const ws = workbook.getWorksheet('MODELO')
   if (!ws) throw new Error('Aba MODELO não encontrada')
 
-  // Encontra todas as células com "ROTA:"
   const rotasPorLinha = new Map<number, { row: number; col: number; value: string }[]>()
 
   ws.eachRow((row, rowNumber) => {
@@ -97,7 +128,6 @@ export async function parseCozinha(buffer: ArrayBuffer | Buffer): Promise<RotaCo
 
   if (rotasPorLinha.size === 0) return []
 
-  // Linha com mais ROTAs = tabela principal
   let linhaPrincipal = -1
   let maxRotas = 0
   for (const [linha, lista] of rotasPorLinha) {
@@ -109,13 +139,12 @@ export async function parseCozinha(buffer: ArrayBuffer | Buffer): Promise<RotaCo
 
   const celulasRota = rotasPorLinha.get(linhaPrincipal)!
   const rotas: RotaCozinha[] = []
-  const seen = new Set<string>()
+  const contagem = new Map<string, number>()
 
   for (const { row, col, value } of celulasRota) {
     const rotaNome = normalizaRota(value)
     if (!rotaNome || rotaNome.length < 3) continue
 
-    // Busca motorista e placa nas 24 linhas abaixo
     let motoristaRaw: unknown = null
     let placaRaw: unknown = null
     for (let off = 2; off <= 25; off++) {
@@ -129,19 +158,52 @@ export async function parseCozinha(buffer: ArrayBuffer | Buffer): Promise<RotaCo
 
     const veiculoRaw = cellValue(ws.getRow(row).getCell(col + 2))
 
-    const registro: RotaCozinha = {
-      rota: rotaNome,
-      motorista: normalizaNome(motoristaRaw),
-      placa: normalizaPlaca(placaRaw),
-      veiculo: veiculoRaw ? String(veiculoRaw).trim() : '—',
+    const motorista = normalizaNome(motoristaRaw)
+    const placa = normalizaPlaca(placaRaw)
+
+    const chave = `${rotaNome}|${motorista}|${placa}`
+    if (chave === `${rotaNome}|${SEM_VALOR}|${SEM_VALOR}`) {
+      // permite múltiplas linhas vazias da mesma rota (caso COPACABANA 02)
     }
 
-    const chave = `${registro.rota}|${registro.motorista}|${registro.placa}`
-    if (seen.has(chave)) continue
-    seen.add(chave)
-    rotas.push(registro)
+    contagem.set(rotaNome, (contagem.get(rotaNome) ?? 0) + 1)
+
+    rotas.push({
+      rota: rotaNome,
+      motorista,
+      placa,
+      veiculo: normalizaVeiculo(veiculoRaw),
+      status: classificaStatus(motorista, placa),
+      duplicada: false,
+    })
   }
 
-  rotas.sort((a, b) => a.rota.localeCompare(b.rota, 'pt-BR'))
-  return rotas
+  // Marca duplicadas
+  for (const r of rotas) {
+    if ((contagem.get(r.rota) ?? 0) > 1) r.duplicada = true
+  }
+
+  // Dedup exata (mesma rota+motorista+placa)
+  const seen = new Set<string>()
+  const final: RotaCozinha[] = []
+  for (const r of rotas) {
+    const k = `${r.rota}|${r.motorista}|${r.placa}`
+    if (seen.has(k)) continue
+    seen.add(k)
+    final.push(r)
+  }
+
+  final.sort((a, b) => a.rota.localeCompare(b.rota, 'pt-BR'))
+  return final
+}
+
+export function calcularEstatisticas(rotas: RotaCozinha[]): EstatisticasCozinha {
+  return {
+    total: rotas.length,
+    completas: rotas.filter(r => r.status === 'completa').length,
+    semPlaca: rotas.filter(r => r.status === 'sem-placa').length,
+    semMotorista: rotas.filter(r => r.status === 'sem-motorista').length,
+    vazias: rotas.filter(r => r.status === 'vazia').length,
+    duplicadas: new Set(rotas.filter(r => r.duplicada).map(r => r.rota)).size,
+  }
 }

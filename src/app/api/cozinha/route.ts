@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { parseCozinha } from '@/lib/parsers/cozinha-parser'
+import { parseCozinha, calcularEstatisticas } from '@/lib/parsers/cozinha-parser'
 import { gerarXlsx } from '@/lib/parsers/xlsx-generator'
 import { gerarPdf } from '@/lib/parsers/pdf-generator'
 
@@ -48,14 +48,16 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  const estatisticas = calcularEstatisticas(rotas)
   const dataFormatada = formatarData(dataRef)
-  const xlsxBuffer = await gerarXlsx(rotas, dataFormatada)
-  const pdfBuffer = await gerarPdf(rotas, dataFormatada)
+  const xlsxBuffer = await gerarXlsx(rotas, estatisticas, dataFormatada)
+  const pdfBuffer = await gerarPdf(rotas, estatisticas, dataFormatada)
 
   const nomeBase = nome.replace(/\.xlsx$/i, '')
 
   return NextResponse.json({
     rotas,
+    estatisticas,
     xlsxBase64: xlsxBuffer.toString('base64'),
     pdfBase64: pdfBuffer.toString('base64'),
     nomeBase,
