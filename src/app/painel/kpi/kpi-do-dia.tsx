@@ -117,20 +117,52 @@ function KpiActions({ kpi, data }: { kpi: KpiRow; data: string }) {
   )
 }
 
+function ProcessarAgoraButton({ data }: { data: string }) {
+  const [pending, start] = useTransition()
+  function processar() {
+    start(async () => {
+      const res = await fetch('/api/kpi/processar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data }),
+      })
+      if (!res.ok) {
+        const msg = await res.text()
+        alert(`Erro: ${msg}`)
+        return
+      }
+      window.location.reload()
+    })
+  }
+  return (
+    <button
+      onClick={processar}
+      disabled={pending}
+      className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {pending && <Spinner />}
+      Processar agora
+    </button>
+  )
+}
+
 export function KpiDoDia({ kpis, data }: { kpis: KpiRow[]; data: string }) {
   if (kpis.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-white p-10 text-center">
         <p className="text-ink-soft text-sm mb-3">Nenhum KPI encontrado para esta data.</p>
-        <p className="text-xs text-ink-muted">
-          Faça o upload das escalas e do relatório Unitrac primeiro.
+        <p className="text-xs text-ink-muted mb-4">
+          Se já fez o upload das escalas e do Unitrac, clique abaixo para processar.
         </p>
-        <Link
-          href="/painel/kpi/novo"
-          className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition"
-        >
-          Upload de Relatórios
-        </Link>
+        <div className="flex items-center justify-center gap-3 flex-wrap">
+          <ProcessarAgoraButton data={data} />
+          <Link
+            href="/painel/kpi/novo"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong bg-white px-4 py-2 text-sm font-semibold text-ink hover:bg-surface-hover transition"
+          >
+            Upload de Relatórios
+          </Link>
+        </div>
       </div>
     )
   }
