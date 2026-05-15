@@ -41,6 +41,39 @@ type LojaRow = {
   raio_metros: number
 }
 
+/**
+ * Consolida paradas LOJA consecutivas com mesmo codigo_loja em UMA só parada.
+ *
+ * Cenário (confirmado pela Tia Érica nos vídeos): quando o caminhão entrega
+ * num cliente, ele pode "pular pra rua lateral" e voltar, gerando 2-3
+ * registros consecutivos com o mesmo Local da Parada no Unitrac. A
+ * interpretação correta é UMA parada: chegada = primeira, saída = última.
+ *
+ * Mantém ordem temporal, só junta paradas LOJA com codigo_loja não-nulo iguais.
+ */
+function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
+  const out: UnitracParadaRow[] = []
+  for (const p of paradas) {
+    const last = out[out.length - 1]
+    const mesmaLoja =
+      last &&
+      last.classificacao === 'LOJA' &&
+      p.classificacao === 'LOJA' &&
+      last.codigo_loja &&
+      p.codigo_loja &&
+      last.codigo_loja === p.codigo_loja
+    if (mesmaLoja && last.saida && p.saida && last.chegada) {
+      last.saida = p.saida
+      last.duracao_seg = Math.round(
+        (new Date(p.saida).getTime() - new Date(last.chegada).getTime()) / 1000,
+      )
+    } else {
+      out.push({ ...p })
+    }
+  }
+  return out
+}
+
 function resolveLojaId(
   parada: UnitracParadaRow,
   lojas: LojaRow[],
@@ -130,9 +163,8 @@ export function cruzaEscalaUnitrac(
       }
     }
 
-    const nonBaseParadas = semFake.filter(
-      (p) => p.classificacao !== 'BASE',
-    ).slice(0, 10)
+    const nonBaseParadasRaw = semFake.filter((p) => p.classificacao !== 'BASE')
+    const nonBaseParadas = consolidarParadasMesmoCliente(nonBaseParadasRaw).slice(0, 10)
 
     const paradas: ParadaKpi[] = nonBaseParadas.map((p) => {
       const chegada = new Date(p.chegada)

@@ -63,7 +63,10 @@ function resolveDataEntrega(
     return formataDataISO(proximoDiaUtil(dataCarga))
   }
 
-  if (hora && (hora.hh > 17 || (hora.hh === 17 && hora.mm > 0))) {
+  // Érica (vídeo): "os caminhões que são carregados às 17 horas, eles são
+  // caminhões que vão ser carregados e que sairão no primeiro horário do
+  // dia seguinte". Inclui 17:00 exatas.
+  if (hora && hora.hh >= 17) {
     return formataDataISO(proximoDiaUtil(dataCarga))
   }
 
