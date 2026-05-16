@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { DropZone } from './DropZone'
 import { EscalaItem } from './EscalaItem'
 import { GerarSection } from './GerarSection'
@@ -20,13 +21,38 @@ type Props = {
   todosTipos: string[]
 }
 
+export function traduzErro(msg: string): string {
+  const lower = msg.toLowerCase()
+  if (lower.includes('function_payload_too_large') || lower.includes('payload_too_large') || lower.includes('413')) {
+    return 'Arquivo grande demais (máx ~4.5MB)'
+  }
+  if (lower.includes('não foi possível detectar') || lower.includes('nao foi possivel detectar')) {
+    return 'Não foi possível detectar o tipo da escala. Verifique o arquivo.'
+  }
+  if (lower.includes('failed to fetch') || lower.includes('networkerror') || lower.includes('network error')) {
+    return 'Sem conexão, tente de novo'
+  }
+  // 5xx pattern
+  if (/\b5\d{2}\b/.test(msg) || lower.includes('internal server error') || lower.includes('bad gateway') || lower.includes('service unavailable')) {
+    return 'Erro do servidor, tente de novo'
+  }
+  if (lower.startsWith('error:')) return msg.slice(6).trim()
+  return msg.length > 140 ? msg.slice(0, 137) + '…' : msg
+}
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+}
+
 export function DiaPage({ data: dataInicial, hoje, escalasIniciais, todosTipos }: Props) {
   const router = useRouter()
   const [data, setData] = useState(dataInicial)
   const [escalas, setEscalas] = useState<EscalaUpload[]>(escalasIniciais)
   const [uploadingTipos, setUploadingTipos] = useState<Set<string>>(new Set())
+  const [parsingTipos, setParsingTipos] = useState<Set<string>>(new Set())
   const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({})
   const [loadingEscalas, setLoadingEscalas] = useState(false)
+  const [unitracSentAt, setUnitracSentAt] = useState<string | null>(null)
 
   function formatarData(iso: string): string {
     const d = new Date(iso + 'T12:00:00')
@@ -47,12 +73,19 @@ export function DiaPage({ data: dataInicial, hoje, escalasIniciais, todosTipos }
 
   async function navegarPara(novaData: string) {
     setData(novaData)
+    setUnitracSentAt(null)
+    setUploadErrors({})
     router.push(`/painel/kpi/dia?data=${novaData}`)
     setLoadingEscalas(true)
-    const res = await fetch(`/api/escalas/dia?data=${novaData}`)
-    if (res.ok) setEscalas(await res.json())
-    else setEscalas([])
-    setLoadingEscalas(false)
+    try {
+      const res = await fetch(`/api/escalas/dia?data=${novaData}`)
+      if (res.ok) setEscalas(await res.json())
+      else setEscalas([])
+    } catch {
+      setEscalas([])
+    } finally {
+      setLoadingEscalas(false)
+    }
   }
 
   async function uploadArquivo(file: File, tipoExplicito: string) {
@@ -62,63 +95,88 @@ export function DiaPage({ data: dataInicial, hoje, escalasIniciais, todosTipos }
       : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     const storagePath = `${data}/${tipoExplicito.toLowerCase()}_${Date.now()}.${ext}`
 
-    const { createClient } = await import('@/lib/supabase/client')
     const sb = createClient()
     const { error: storageErr } = await sb.storage
       .from('escalas-raw')
       .upload(storagePath, file, { contentType, upsert: true })
     if (storageErr) throw new Error(storageErr.message)
 
+    return { storagePath, tipoExplicito }
+  }
+
+  async function parseArquivo(storagePath: string, tipoExplicito: string) {
     const res = await fetch('/api/escalas/upload', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tipo: tipoExplicito.toUpperCase(), data, storagePath }),
     })
     if (!res.ok) throw new Error(await res.text())
-    return res.json()
+    return res.json() as Promise<{ tipo_detectado?: string }>
   }
 
   async function recarregarEscalas() {
-    const res = await fetch(`/api/escalas/dia?data=${data}`)
-    if (res.ok) setEscalas(await res.json())
+    try {
+      const res = await fetch(`/api/escalas/dia?data=${data}`)
+      if (res.ok) setEscalas(await res.json())
+    } catch {
+      // silencioso — usuário pode F5
+    }
+  }
+
+  async function processarUpload(key: string, file: File, tipo: string) {
+    setUploadErrors(prev => { const e = { ...prev }; delete e[key]; return e })
+    setUploadingTipos(prev => new Set([...prev, key]))
+    try {
+      const { storagePath } = await uploadArquivo(file, tipo)
+      // Mudança de fase: uploading → parsing
+      setUploadingTipos(prev => { const s = new Set(prev); s.delete(key); return s })
+      setParsingTipos(prev => new Set([...prev, key]))
+      await parseArquivo(storagePath, tipo)
+      await recarregarEscalas()
+    } catch (e) {
+      setUploadErrors(prev => ({ ...prev, [key]: traduzErro(e instanceof Error ? e.message : String(e)) }))
+    } finally {
+      setUploadingTipos(prev => { const s = new Set(prev); s.delete(key); return s })
+      setParsingTipos(prev => { const s = new Set(prev); s.delete(key); return s })
+    }
   }
 
   async function handleFiles(files: File[]) {
-    await Promise.all(files.map(async (file) => {
-      const key = 'AUTO_' + file.name + '_' + Date.now()
-      setUploadingTipos(prev => new Set([...prev, key]))
-      try {
-        await uploadArquivo(file, 'auto')
-        await recarregarEscalas()
-      } catch (e) {
-        setUploadErrors(prev => ({ ...prev, [key]: e instanceof Error ? e.message : String(e) }))
-      } finally {
-        setUploadingTipos(prev => { const s = new Set(prev); s.delete(key); return s })
-      }
+    await Promise.all(files.map(async (file, i) => {
+      const key = 'AUTO_' + file.name + '_' + Date.now() + '_' + i
+      await processarUpload(key, file, 'auto')
     }))
   }
 
   async function handleEnviarTipo(tipo: string, file: File) {
-    setUploadingTipos(prev => new Set([...prev, tipo]))
+    await processarUpload(tipo, file, tipo)
+  }
+
+  function tentarNovamenteTipo(tipo: string) {
     setUploadErrors(prev => { const e = { ...prev }; delete e[tipo]; return e })
-    try {
-      await uploadArquivo(file, tipo)
-      await recarregarEscalas()
-    } catch (e) {
-      setUploadErrors(prev => ({ ...prev, [tipo]: e instanceof Error ? e.message : String(e) }))
-    } finally {
-      setUploadingTipos(prev => { const s = new Set(prev); s.delete(tipo); return s })
-    }
   }
 
   const isHoje = data === hoje
   const dataLabel = formatarData(data)
-  const autoUploading = [...uploadingTipos].some(k => k.startsWith('AUTO_'))
+  const autoUploads = useMemo(
+    () => [...uploadingTipos, ...parsingTipos].filter(k => k.startsWith('AUTO_')),
+    [uploadingTipos, parsingTipos]
+  )
+  const autoUploading = autoUploads.length > 0
+
+  // Status strip
+  const escalasCount = escalas.length
+  const escalasTotal = todosTipos.length
+  const escalasStatus: 'ok' | 'partial' | 'empty' =
+    escalasCount === 0 ? 'empty' : escalasCount === escalasTotal ? 'ok' : 'partial'
+
+  const unitracStatus: 'ok' | 'pending' = unitracSentAt ? 'ok' : 'pending'
+  const prontoPraGerar = escalasStatus === 'ok' && unitracStatus === 'ok'
 
   return (
     <div className="max-w-2xl mx-auto">
       {/* Date header */}
-      <div className="bg-slate-800 rounded-xl px-5 py-3 flex items-center justify-between gap-4 mb-6 shadow-lg shadow-slate-900/20">
+      <div className="bg-slate-800 rounded-xl px-5 py-3 flex items-center justify-between gap-4 mb-3 shadow-lg shadow-slate-900/20">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navegarPara(diaAnterior())}
@@ -151,11 +209,68 @@ export function DiaPage({ data: dataInicial, hoje, escalasIniciais, todosTipos }
         />
       </div>
 
+      {/* Day Status Strip */}
+      <div className="flex flex-wrap items-center gap-2 mb-5 px-1">
+        <span
+          className={[
+            'inline-flex items-center gap-1.5 text-[11px] font-semibold rounded-full px-2.5 py-1 border tabular-nums',
+            escalasStatus === 'ok'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : escalasStatus === 'partial'
+                ? 'bg-amber-50 border-amber-200 text-amber-800'
+                : 'bg-red-50 border-red-200 text-red-800',
+          ].join(' ')}
+        >
+          <span
+            className={[
+              'inline-block w-1.5 h-1.5 rounded-full',
+              escalasStatus === 'ok' ? 'bg-emerald-500' : escalasStatus === 'partial' ? 'bg-amber-500' : 'bg-red-500',
+            ].join(' ')}
+          />
+          {escalasCount}/{escalasTotal} escalas
+        </span>
+
+        <span
+          className={[
+            'inline-flex items-center gap-1.5 text-[11px] font-semibold rounded-full px-2.5 py-1 border tabular-nums',
+            unitracStatus === 'ok'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-sky-50 border-sky-200 text-sky-800',
+          ].join(' ')}
+        >
+          <span
+            className={[
+              'inline-block w-1.5 h-1.5 rounded-full',
+              unitracStatus === 'ok' ? 'bg-emerald-500' : 'bg-sky-500',
+            ].join(' ')}
+          />
+          {unitracStatus === 'ok' && unitracSentAt
+            ? `Unitrac: enviado ${formatTime(unitracSentAt)}`
+            : 'Unitrac: pendente'}
+        </span>
+
+        <span
+          className={[
+            'inline-flex items-center gap-1.5 text-[11px] font-semibold rounded-full px-2.5 py-1 border ml-auto',
+            prontoPraGerar
+              ? 'bg-emerald-600 border-emerald-600 text-white'
+              : 'bg-slate-100 border-slate-200 text-slate-600',
+          ].join(' ')}
+        >
+          {prontoPraGerar ? '✓ Pronto pra gerar' : '○ Aguardando'}
+        </span>
+      </div>
+
       {/* Escalas card */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden mb-4">
         <div className="px-4 pt-4 pb-2">
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3">Escalas do dia</p>
-          <DropZone onFiles={handleFiles} uploading={autoUploading} />
+          <DropZone
+            onFiles={handleFiles}
+            uploading={autoUploading}
+            uploadingCount={autoUploads.length}
+            variant="escalas"
+          />
         </div>
 
         <div className="px-4 pb-4 mt-3 flex flex-col gap-1.5">
@@ -173,29 +288,53 @@ export function DiaPage({ data: dataInicial, hoje, escalasIniciais, todosTipos }
               {todosTipos.map(tipo => {
                 const upload = escalas.find(e => e.tipo === tipo) ?? null
                 const uploading = uploadingTipos.has(tipo)
+                const parsing = parsingTipos.has(tipo)
                 const erro = uploadErrors[tipo]
+                const phase = uploading ? 'uploading' : parsing ? 'parsing' : 'idle'
+
+                if (upload) {
+                  return (
+                    <EscalaItem
+                      key={tipo}
+                      tipo={tipo}
+                      upload={upload}
+                      onReenviar={handleEnviarTipo}
+                      phase={phase}
+                      erro={erro}
+                      onTentarNovamente={() => tentarNovamenteTipo(tipo)}
+                    />
+                  )
+                }
                 return (
-                  <div key={tipo}>
-                    {upload ? (
-                      <EscalaItem tipo={tipo} upload={upload} onReenviar={handleEnviarTipo} />
-                    ) : (
-                      <EscalaItem tipo={tipo} upload={null} onEnviar={handleEnviarTipo} uploading={uploading} />
-                    )}
-                    {erro && (
-                      <p className="text-xs text-red-600 mt-1 px-1">{erro}</p>
-                    )}
-                  </div>
+                  <EscalaItem
+                    key={tipo}
+                    tipo={tipo}
+                    upload={null}
+                    onEnviar={handleEnviarTipo}
+                    phase={phase}
+                    erro={erro}
+                    onTentarNovamente={() => tentarNovamenteTipo(tipo)}
+                  />
                 )
               })}
             </>
           )}
         </div>
 
-        {/* Erros de upload AUTO */}
+        {/* Erros de upload AUTO (sem tipo conhecido) */}
         {Object.entries(uploadErrors)
           .filter(([k]) => k.startsWith('AUTO_'))
           .map(([k, msg]) => (
-            <div key={k} className="mx-4 mb-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">{msg}</div>
+            <div key={k} className="mx-4 mb-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700 flex items-start justify-between gap-2">
+              <span className="flex-1">{msg}</span>
+              <button
+                onClick={() => setUploadErrors(prev => { const e = { ...prev }; delete e[k]; return e })}
+                className="text-red-500 hover:text-red-700 cursor-pointer shrink-0"
+                title="Dispensar"
+              >
+                ✕
+              </button>
+            </div>
           ))
         }
       </div>
@@ -204,6 +343,8 @@ export function DiaPage({ data: dataInicial, hoje, escalasIniciais, todosTipos }
         data={data}
         escalas={escalas}
         todosTipos={todosTipos}
+        onUnitracSent={() => setUnitracSentAt(new Date().toISOString())}
+        traduzErro={traduzErro}
       />
     </div>
   )
