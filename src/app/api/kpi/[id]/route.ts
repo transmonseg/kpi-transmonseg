@@ -24,6 +24,15 @@ export async function GET(
 
   if (kpiErr || !kpi) return new NextResponse('KPI não encontrado', { status: 404 })
 
+  // Buscar rotas pertencentes a este KPI (kpi_rotas se relaciona a kpi via data+rede_id).
+  // anomalias.kpi_rota_id aponta para kpi_rotas.id (NÃO para kpis.id).
+  const { data: rotasDoKpi } = await svc
+    .from('kpi_rotas')
+    .select('id')
+    .eq('data', kpi.data)
+    .eq('rede_id', kpi.rede_id)
+  const rotaIds = (rotasDoKpi ?? []).map((r) => r.id as string)
+
   const { data: linhasRaw } = await svc
     .from('kpi_linhas')
     .select('*')
@@ -51,12 +60,15 @@ export async function GET(
     observacao: r.observacao,
   }))
 
-  const [high, medium, low, pendentes] = await Promise.all([
-    svc.from('anomalias').select('id', { count: 'exact', head: true }).eq('kpi_rota_id', id).eq('severidade', 'HIGH'),
-    svc.from('anomalias').select('id', { count: 'exact', head: true }).eq('kpi_rota_id', id).eq('severidade', 'MEDIUM'),
-    svc.from('anomalias').select('id', { count: 'exact', head: true }).eq('kpi_rota_id', id).eq('severidade', 'LOW'),
-    svc.from('anomalias').select('id', { count: 'exact', head: true }).eq('kpi_rota_id', id).eq('status', 'pendente'),
-  ])
+  // Se o KPI não tem rotas, todas as contagens são 0 (evita .in() com array vazio).
+  const [high, medium, low, pendentes] = rotaIds.length === 0
+    ? [{ count: 0 }, { count: 0 }, { count: 0 }, { count: 0 }]
+    : await Promise.all([
+        svc.from('anomalias').select('id', { count: 'exact', head: true }).in('kpi_rota_id', rotaIds).eq('severidade', 'HIGH'),
+        svc.from('anomalias').select('id', { count: 'exact', head: true }).in('kpi_rota_id', rotaIds).eq('severidade', 'MEDIUM'),
+        svc.from('anomalias').select('id', { count: 'exact', head: true }).in('kpi_rota_id', rotaIds).eq('severidade', 'LOW'),
+        svc.from('anomalias').select('id', { count: 'exact', head: true }).in('kpi_rota_id', rotaIds).eq('status', 'pendente'),
+      ])
 
   return NextResponse.json({
     kpi,

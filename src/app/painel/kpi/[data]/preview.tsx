@@ -48,16 +48,26 @@ export function KpiPreview({ kpiId }: { kpiId: string }) {
 
   function download(tipo: 'xlsx' | 'pdf') {
     startDl(async () => {
+      // /api/kpi/gerar gera ambos os formatos e retorna { xlsx_url, pdf_url }.
+      // Selecionamos a URL correspondente ao tipo solicitado.
       const res = await fetch('/api/kpi/gerar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kpi_id: kpiId, tipo }),
+        body: JSON.stringify({ kpi_id: kpiId }),
       })
       if (!res.ok) {
         alert(`Erro: ${await res.text()}`)
         return
       }
-      const { url } = await res.json() as { url: string }
+      const { xlsx_url, pdf_url } = await res.json() as {
+        xlsx_url: string | null
+        pdf_url: string | null
+      }
+      const url = tipo === 'xlsx' ? xlsx_url : pdf_url
+      if (!url) {
+        alert(`URL ${tipo.toUpperCase()} indisponível`)
+        return
+      }
       window.open(url, '_blank')
     })
   }
