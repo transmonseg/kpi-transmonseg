@@ -1,8 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { Badge, Button, Card, CardContent, cn } from '@/components/ui'
 import { DropZone } from './DropZone'
 
 type EscalaUpload = {
@@ -10,14 +10,6 @@ type EscalaUpload = {
   tipo: string
   qtd_linhas: number | null
   created_at: string
-}
-
-type ResultadoKpi = {
-  rede: string
-  kpi_id: string
-  xlsx_url: string | null
-  pdf_url: string | null
-  bloqueado?: boolean
 }
 
 type StepStatus = 'pending' | 'running' | 'done' | 'error' | 'skipped'
@@ -34,28 +26,29 @@ type Props = {
   escalas: EscalaUpload[]
   todosTipos: string[]
   onUnitracSent?: () => void
+  onGerou?: () => void
   traduzErro?: (msg: string) => string
 }
 
 const LABEL: Record<string, string> = {
-  GERAL:        'GERAL',
-  ZONA_SUL:     'ZONA SUL',
-  PAX:          'PAX',
-  GUANABARA:    'GUANABARA',
+  GERAL: 'GERAL',
+  ZONA_SUL: 'ZONA SUL',
+  PAX: 'PAX',
+  GUANABARA: 'GUANABARA',
   ARMAZEM_GRAO: 'ARMAZÉM DO GRÃO',
 }
 
 function StepIcon({ status }: { status: StepStatus }) {
   if (status === 'done') {
     return (
-      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 text-white text-[11px] font-bold shrink-0">
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--color-success)] text-white text-[11px] font-bold shrink-0">
         ✓
       </span>
     )
   }
   if (status === 'running') {
     return (
-      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-100 text-brand-700 shrink-0">
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--color-accent-soft)] text-[var(--color-accent)] shrink-0">
         <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
           <path fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z" />
@@ -65,53 +58,80 @@ function StepIcon({ status }: { status: StepStatus }) {
   }
   if (status === 'error') {
     return (
-      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-[11px] font-bold shrink-0">
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--color-danger)] text-white text-[11px] font-bold shrink-0">
         ✕
       </span>
     )
   }
   if (status === 'skipped') {
     return (
-      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 text-slate-400 text-[11px] font-bold shrink-0">
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--color-bg-subtle)] text-[var(--color-fg-subtle)] text-[11px] font-bold shrink-0 border border-[var(--color-border)]">
         –
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 text-slate-400 text-[10px] shrink-0">
+    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--color-bg-subtle)] text-[var(--color-fg-subtle)] text-[10px] shrink-0 border border-[var(--color-border)]">
       ⏳
     </span>
   )
 }
 
-export function GerarSection({ data, escalas, todosTipos, onUnitracSent, traduzErro }: Props) {
+export function GerarSection({
+  data,
+  escalas,
+  todosTipos,
+  onUnitracSent,
+  onGerou,
+  traduzErro,
+}: Props) {
   const tiposComEscala = useMemo(
-    () => todosTipos.filter(t => escalas.some(e => e.tipo === t)),
-    [todosTipos, escalas]
+    () => todosTipos.filter((t) => escalas.some((e) => e.tipo === t)),
+    [todosTipos, escalas],
   )
 
-  const [selecionados, setSelecionados] = useState<Set<string>>(() => new Set(tiposComEscala))
+  // Set imutável usado pra detectar mudança nos tipos disponíveis sem useEffect
+  const tiposKey = tiposComEscala.join('|')
+  const [prevTiposKey, setPrevTiposKey] = useState(tiposKey)
+  const [selecionados, setSelecionados] = useState<Set<string>>(
+    () => new Set(tiposComEscala),
+  )
+  // Sincroniza durante render quando lista muda (padrão React 19: reset-by-key)
+  if (prevTiposKey !== tiposKey) {
+    setPrevTiposKey(tiposKey)
+    setSelecionados((prev) => {
+      const next = new Set<string>()
+      for (const t of tiposComEscala) if (prev.has(t)) next.add(t)
+      // Se nada da seleção anterior sobreviveu, pré-marca todos disponíveis
+      return next.size > 0 ? next : new Set(tiposComEscala)
+    })
+  }
+
   const [unitracFile, setUnitracFile] = useState<File | null>(null)
   const [gerando, setGerando] = useState(false)
   const [steps, setSteps] = useState<Step[]>([])
-  const [resultado, setResultado] = useState<ResultadoKpi[] | null>(null)
   const [erroGerar, setErroGerar] = useState<string>('')
 
   const traduz = traduzErro ?? ((m: string) => m)
 
   function toggleRede(tipo: string) {
-    setSelecionados(prev => {
+    setSelecionados((prev) => {
       const s = new Set(prev)
-      if (s.has(tipo)) s.delete(tipo); else s.add(tipo)
+      if (s.has(tipo)) s.delete(tipo)
+      else s.add(tipo)
       return s
     })
   }
 
-  function marcarTodas() { setSelecionados(new Set(tiposComEscala)) }
-  function desmarcarTodas() { setSelecionados(new Set()) }
+  function marcarTodas() {
+    setSelecionados(new Set(tiposComEscala))
+  }
+  function desmarcarTodas() {
+    setSelecionados(new Set())
+  }
 
   function setStep(id: string, patch: Partial<Step>) {
-    setSteps(prev => prev.map(s => (s.id === id ? { ...s, ...patch } : s)))
+    setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
   }
 
   function handleUnitracDrop(files: File[]) {
@@ -123,24 +143,40 @@ export function GerarSection({ data, escalas, todosTipos, onUnitracSent, traduzE
     if (!unitracFile || selecionados.size === 0) return
     setGerando(true)
     setErroGerar('')
-    setResultado(null)
 
-    const redesSelecionadas = todosTipos.filter(t => selecionados.has(t))
+    const redesSelecionadas = todosTipos.filter((t) => selecionados.has(t))
     const initialSteps: Step[] = [
       { id: 'upload_unitrac', label: 'Enviar Unitrac', status: 'pending' },
       { id: 'process_gps', label: 'Processar GPS', status: 'pending' },
-      ...redesSelecionadas.flatMap(t => [
-        { id: `processar_${t}`, label: `Processar ${LABEL[t] ?? t}`, status: 'pending' as StepStatus },
-        { id: `gerar_${t}`, label: `Gerar ${LABEL[t] ?? t}`, status: 'pending' as StepStatus },
+      ...redesSelecionadas.flatMap((t) => [
+        {
+          id: `processar_${t}`,
+          label: `Processar ${LABEL[t] ?? t}`,
+          status: 'pending' as StepStatus,
+        },
+        {
+          id: `gerar_${t}`,
+          label: `Gerar ${LABEL[t] ?? t}`,
+          status: 'pending' as StepStatus,
+        },
       ]),
     ]
     setSteps(initialSteps)
 
+    let geracaoAconteceu = false
+
     try {
-      // 1. Upload Unitrac para Storage
-      setSteps(prev => prev.map(s => s.id === 'upload_unitrac' ? { ...s, status: 'running' } : s))
+      // 1. Upload Unitrac
+      setSteps((prev) =>
+        prev.map((s) =>
+          s.id === 'upload_unitrac' ? { ...s, status: 'running' } : s,
+        ),
+      )
       const ext = unitracFile.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'xlsx'
-      const contentType = ext === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      const contentType =
+        ext === 'pdf'
+          ? 'application/pdf'
+          : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       const storagePath = `${data}/unitrac.${ext}`
 
       const sb = createClient()
@@ -153,7 +189,7 @@ export function GerarSection({ data, escalas, todosTipos, onUnitracSent, traduzE
       }
       setStep('upload_unitrac', { status: 'done' })
 
-      // 2. Processar Unitrac (parse e salvar paradas)
+      // 2. Processar Unitrac
       setStep('process_gps', { status: 'running' })
       const unitracRes = await fetch('/api/unitrac/upload', {
         method: 'POST',
@@ -168,8 +204,6 @@ export function GerarSection({ data, escalas, todosTipos, onUnitracSent, traduzE
       onUnitracSent?.()
 
       // 3. Para cada rede selecionada: processar + gerar
-      const resultados: ResultadoKpi[] = []
-
       for (const tipo of redesSelecionadas) {
         setStep(`processar_${tipo}`, { status: 'running' })
 
@@ -179,11 +213,14 @@ export function GerarSection({ data, escalas, todosTipos, onUnitracSent, traduzE
           body: JSON.stringify({ data, rede_id: tipo }),
         })
         if (!processarRes.ok) {
-          setStep(`processar_${tipo}`, { status: 'error', detail: traduz(await processarRes.text()) })
+          setStep(`processar_${tipo}`, {
+            status: 'error',
+            detail: traduz(await processarRes.text()),
+          })
           setStep(`gerar_${tipo}`, { status: 'skipped' })
           continue
         }
-        const { kpi_ids } = await processarRes.json() as { kpi_ids: string[] }
+        const { kpi_ids } = (await processarRes.json()) as { kpi_ids: string[] }
         setStep(`processar_${tipo}`, { status: 'done' })
 
         if (!kpi_ids || kpi_ids.length === 0) {
@@ -204,9 +241,7 @@ export function GerarSection({ data, escalas, todosTipos, onUnitracSent, traduzE
 
           if (!gerarRes.ok) {
             const text = await gerarRes.text()
-            // 409 = anomalias bloqueando — registra como bloqueado, não aborta
-            if (gerarRes.status === 409) {
-              resultados.push({ rede: tipo, kpi_id, xlsx_url: null, pdf_url: null, bloqueado: true })
+            if (gerarRes.status === 409 || gerarRes.status === 422) {
               geracaoBloqueada = true
               continue
             }
@@ -214,190 +249,161 @@ export function GerarSection({ data, escalas, todosTipos, onUnitracSent, traduzE
             throw new Error(`Erro ao gerar ${LABEL[tipo] ?? tipo}: ${text}`)
           }
 
-          const { xlsx_url, pdf_url } = await gerarRes.json() as { xlsx_url: string | null; pdf_url: string | null }
-          resultados.push({ rede: tipo, kpi_id, xlsx_url, pdf_url })
           geracaoOk = true
+          geracaoAconteceu = true
         }
 
         if (geracaoOk) {
-          setStep(`gerar_${tipo}`, { status: 'done', detail: geracaoBloqueada ? 'Parcial — algumas bloqueadas' : undefined })
+          setStep(`gerar_${tipo}`, {
+            status: 'done',
+            detail: geracaoBloqueada ? 'Parcial — algumas bloqueadas' : undefined,
+          })
         } else if (geracaoBloqueada) {
-          setStep(`gerar_${tipo}`, { status: 'error', detail: 'Bloqueado por anomalias' })
+          setStep(`gerar_${tipo}`, {
+            status: 'error',
+            detail: 'Bloqueado por anomalias',
+          })
         }
       }
-
-      setResultado(resultados)
     } catch (e) {
       setErroGerar(traduz(e instanceof Error ? e.message : String(e)))
     } finally {
       setGerando(false)
+      if (geracaoAconteceu) onGerou?.()
     }
   }
 
   function resetar() {
-    setResultado(null)
     setUnitracFile(null)
     setSteps([])
     setErroGerar('')
   }
 
   const podeGerar = unitracFile !== null && selecionados.size > 0 && !gerando
+  const semEscalas = tiposComEscala.length === 0
+  const concluido = steps.length > 0 && !gerando
 
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 overflow-hidden shadow-sm shadow-amber-100/60">
-      <div className="px-4 pt-4 pb-2 flex items-center justify-between">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-amber-800">Gerar KPIs</p>
-        {tiposComEscala.length > 0 && !gerando && !resultado && (
+    <Card>
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[var(--color-border)]">
+        <div className="flex items-center gap-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">
+            Gerar KPIs
+          </p>
+          {tiposComEscala.length > 0 && (
+            <Badge variant="default">
+              {selecionados.size}/{tiposComEscala.length} selecionada
+              {selecionados.size === 1 ? '' : 's'}
+            </Badge>
+          )}
+        </div>
+        {tiposComEscala.length > 0 && !gerando && !concluido && (
           <div className="flex gap-3">
-            <button onClick={marcarTodas} className="text-[11px] text-amber-700 underline underline-offset-2 cursor-pointer">marcar todas</button>
-            <button onClick={desmarcarTodas} className="text-[11px] text-amber-700 underline underline-offset-2 cursor-pointer">desmarcar</button>
+            <button
+              onClick={marcarTodas}
+              className="text-[11px] text-[var(--color-fg-muted)] hover:text-[var(--color-fg)] underline underline-offset-2 cursor-pointer"
+            >
+              marcar todas
+            </button>
+            <button
+              onClick={desmarcarTodas}
+              className="text-[11px] text-[var(--color-fg-muted)] hover:text-[var(--color-fg)] underline underline-offset-2 cursor-pointer"
+            >
+              desmarcar
+            </button>
           </div>
         )}
       </div>
 
-      <div className="px-4 pb-4 flex flex-col gap-3">
-        {/* Resultado final */}
-        {resultado && (
-          <div className="flex flex-col gap-1.5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700 mb-1">KPIs gerados</p>
-            {resultado.length === 0 && (
-              <div className="rounded-lg bg-amber-100 border border-amber-300 px-3 py-3 text-xs text-amber-800">
-                Nenhum KPI gerado — verifique se há dados para as redes selecionadas.
-              </div>
-            )}
-            {resultado.map(r => (
-              <div
-                key={r.kpi_id}
-                className={[
-                  'flex items-center justify-between px-3 py-2 border rounded-lg',
-                  r.bloqueado ? 'bg-amber-50 border-amber-300' : 'bg-white border-emerald-200',
-                ].join(' ')}
-              >
-                <span
-                  className={[
-                    'text-xs font-semibold flex items-center gap-2',
-                    r.bloqueado ? 'text-amber-800' : 'text-emerald-800',
-                  ].join(' ')}
-                >
-                  <span className={r.bloqueado ? 'text-amber-500' : 'text-emerald-500'}>
-                    {r.bloqueado ? '⚠' : '✓'}
-                  </span>
-                  {LABEL[r.rede] ?? r.rede}
-                  {r.bloqueado && (
-                    <span className="text-[11px] font-medium text-amber-700">Bloqueado por anomalias</span>
-                  )}
-                </span>
-                <div className="flex items-center gap-1.5">
-                  {r.bloqueado ? (
-                    <Link
-                      href="/painel/revisao"
-                      className="bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all duration-150"
-                    >
-                      Revisar →
-                    </Link>
-                  ) : (
-                    <>
-                      {r.xlsx_url && (
-                        <a
-                          href={r.xlsx_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all duration-150"
-                        >
-                          ↓ XLSX
-                        </a>
-                      )}
-                      {r.pdf_url && (
-                        <a
-                          href={r.pdf_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all duration-150"
-                        >
-                          ↓ PDF
-                        </a>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-            <button
-              onClick={resetar}
-              className="text-xs text-slate-500 underline underline-offset-2 mt-1 cursor-pointer text-left"
-            >
-              ↻ Gerar novamente
-            </button>
-          </div>
-        )}
-
-        {/* Steps durante geração */}
-        {gerando && steps.length > 0 && !resultado && (
-          <div className="rounded-lg bg-white border border-amber-200 p-3 flex flex-col gap-1.5">
-            {steps.map(step => (
-              <div key={step.id} className="flex items-center gap-2.5 text-xs">
+      <CardContent className="flex flex-col gap-3">
+        {/* Steps timeline */}
+        {steps.length > 0 && (
+          <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-subtle)] p-3 flex flex-col gap-1.5">
+            {steps.map((step) => (
+              <div key={step.id} className="flex items-center gap-2.5 text-[12px]">
                 <StepIcon status={step.status} />
                 <span
-                  className={[
+                  className={cn(
                     'flex-1',
-                    step.status === 'done' ? 'text-slate-600' :
-                    step.status === 'running' ? 'text-brand-700 font-semibold' :
-                    step.status === 'error' ? 'text-red-700 font-semibold' :
-                    step.status === 'skipped' ? 'text-slate-400 line-through' :
-                    'text-slate-400',
-                  ].join(' ')}
+                    step.status === 'done' && 'text-[var(--color-fg-muted)]',
+                    step.status === 'running' &&
+                      'text-[var(--color-fg)] font-medium',
+                    step.status === 'error' &&
+                      'text-[var(--color-danger-soft-fg)] font-medium',
+                    step.status === 'skipped' &&
+                      'text-[var(--color-fg-subtle)] line-through',
+                    step.status === 'pending' && 'text-[var(--color-fg-subtle)]',
+                  )}
                 >
                   {step.label}
                 </span>
                 {step.detail && (
                   <span
-                    className={[
+                    className={cn(
                       'text-[10px]',
-                      step.status === 'error' ? 'text-red-600' : 'text-slate-500',
-                    ].join(' ')}
+                      step.status === 'error'
+                        ? 'text-[var(--color-danger-soft-fg)]'
+                        : 'text-[var(--color-fg-subtle)]',
+                    )}
                   >
                     {step.detail}
                   </span>
                 )}
               </div>
             ))}
+            {concluido && (
+              <div className="pt-1 mt-1 border-t border-[var(--color-border)]">
+                <button
+                  onClick={resetar}
+                  className="text-[11px] text-[var(--color-fg-muted)] hover:text-[var(--color-fg)] underline underline-offset-2 cursor-pointer"
+                >
+                  ↻ Gerar novamente
+                </button>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Seleção de redes — antes de gerar */}
-        {!resultado && !gerando && (
+        {/* Seleção de redes */}
+        {!gerando && !concluido && (
           <>
-            {todosTipos.length === 0 ? (
-              <p className="text-xs text-amber-600 py-2">Envie ao menos uma escala para gerar KPIs.</p>
+            {semEscalas ? (
+              <p className="text-[12px] text-[var(--color-fg-muted)] py-1">
+                Envie ao menos uma escala para gerar KPIs.
+              </p>
             ) : (
-              <div className="flex flex-col gap-1.5">
-                {todosTipos.map(tipo => {
+              <div className="flex flex-col gap-1">
+                {todosTipos.map((tipo) => {
                   const temEscala = tiposComEscala.includes(tipo)
                   const checked = selecionados.has(tipo)
                   return (
                     <label
                       key={tipo}
-                      className={[
-                        'flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-150',
+                      className={cn(
+                        'flex items-center gap-2.5 px-2.5 py-1.5 rounded-md border transition-colors',
                         temEscala
-                          ? 'bg-white border border-amber-200 hover:bg-amber-50 cursor-pointer'
-                          : 'bg-slate-50 border border-dashed border-slate-200 cursor-default opacity-60',
-                      ].join(' ')}
+                          ? 'bg-[var(--color-bg)] border-[var(--color-border)] hover:bg-[var(--color-bg-hover)] cursor-pointer'
+                          : 'bg-[var(--color-bg-subtle)] border-dashed border-[var(--color-border)] cursor-default opacity-50',
+                      )}
                     >
                       <input
                         type="checkbox"
                         checked={checked}
                         disabled={!temEscala}
                         onChange={() => temEscala && toggleRede(tipo)}
-                        className="accent-amber-600 w-3.5 h-3.5"
+                        className="accent-[var(--color-accent)] w-3.5 h-3.5"
                       />
-                      <span className="text-xs font-semibold text-slate-700 flex-1">{LABEL[tipo] ?? tipo}</span>
+                      <span className="text-[12px] font-medium text-[var(--color-fg)] flex-1">
+                        {LABEL[tipo] ?? tipo}
+                      </span>
                       {temEscala ? (
-                        <span className="text-[11px] text-amber-700 tabular-nums">
-                          {escalas.find(e => e.tipo === tipo)?.qtd_linhas ?? '?'} linhas
+                        <span className="text-[11px] text-[var(--color-fg-muted)] tabular-nums">
+                          {escalas.find((e) => e.tipo === tipo)?.qtd_linhas ?? '?'} linhas
                         </span>
                       ) : (
-                        <span className="text-[11px] text-slate-400">escala não enviada</span>
+                        <span className="text-[11px] text-[var(--color-fg-subtle)]">
+                          sem escala
+                        </span>
                       )}
                     </label>
                   )
@@ -407,22 +413,35 @@ export function GerarSection({ data, escalas, todosTipos, onUnitracSent, traduzE
           </>
         )}
 
-        {/* Unitrac picker — drag & drop */}
-        {!resultado && !gerando && (
-          <div className="rounded-lg bg-amber-100/60 border border-amber-300 p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm">🛰️</span>
-              <span className="text-xs font-bold text-amber-900">Relatório Unitrac — obrigatório para gerar</span>
+        {/* Unitrac picker */}
+        {!gerando && !concluido && (
+          <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-subtle)] p-3">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-[12px] font-medium text-[var(--color-fg)]">
+                Relatório Unitrac
+              </span>
+              <Badge variant="warning">obrigatório</Badge>
             </div>
             {unitracFile ? (
-              <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
-                <span className="text-xs font-semibold text-emerald-800 flex items-center gap-2 min-w-0">
-                  <span className="shrink-0">📄</span>
-                  <span className="truncate" title={unitracFile.name}>{unitracFile.name}</span>
+              <div className="flex items-center justify-between bg-[var(--color-bg)] border border-[var(--color-border)] rounded-md px-3 py-2">
+                <span className="text-[12px] font-medium text-[var(--color-fg)] flex items-center gap-2 min-w-0">
+                  <svg
+                    className="h-3.5 w-3.5 shrink-0 text-[var(--color-fg-muted)]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  <span className="truncate" title={unitracFile.name}>
+                    {unitracFile.name}
+                  </span>
                 </span>
                 <button
                   onClick={() => setUnitracFile(null)}
-                  className="text-slate-400 hover:text-slate-600 text-sm cursor-pointer shrink-0 ml-2"
+                  className="text-[var(--color-fg-subtle)] hover:text-[var(--color-fg)] text-sm cursor-pointer shrink-0 ml-2"
                   title="Remover"
                 >
                   ✕
@@ -438,13 +457,12 @@ export function GerarSection({ data, escalas, todosTipos, onUnitracSent, traduzE
           </div>
         )}
 
-        {/* Erro de geração */}
         {erroGerar && (
-          <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700 flex items-start justify-between gap-2">
+          <div className="rounded-md bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/30 px-3 py-2 text-[12px] text-[var(--color-danger-soft-fg)] flex items-start justify-between gap-2">
             <span className="flex-1">{erroGerar}</span>
             <button
               onClick={() => setErroGerar('')}
-              className="text-red-500 hover:text-red-700 cursor-pointer shrink-0"
+              className="text-[var(--color-danger-soft-fg)]/70 hover:text-[var(--color-danger-soft-fg)] cursor-pointer shrink-0"
               title="Dispensar"
             >
               ✕
@@ -452,27 +470,22 @@ export function GerarSection({ data, escalas, todosTipos, onUnitracSent, traduzE
           </div>
         )}
 
-        {/* Botão gerar */}
-        {!resultado && !gerando && (
-          <button
+        {!gerando && !concluido && (
+          <Button
+            variant="primary"
+            size="lg"
             onClick={handleGerar}
             disabled={!podeGerar}
-            className={[
-              'w-full rounded-xl py-3 text-sm font-bold transition-all duration-200',
-              podeGerar
-                ? 'bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-white shadow-sm shadow-amber-500/30 hover:shadow-md cursor-pointer'
-                : 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60',
-            ].join(' ')}
+            fullWidth
           >
             {podeGerar
-              ? `⚡ Gerar ${selecionados.size} KPI${selecionados.size > 1 ? 's' : ''} selecionado${selecionados.size > 1 ? 's' : ''}`
+              ? `Gerar ${selecionados.size} KPI${selecionados.size > 1 ? 's' : ''}`
               : !unitracFile
                 ? 'Anexe o Unitrac para continuar'
-                : 'Selecione ao menos uma rede para gerar'
-            }
-          </button>
+                : 'Selecione ao menos uma rede'}
+          </Button>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

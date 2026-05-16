@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { cn } from '@/components/ui'
 
 type Props = {
   onFiles: (files: File[]) => void
@@ -28,48 +29,60 @@ export function DropZone({
     if (inputRef.current) inputRef.current.value = ''
   }
 
-  const titleIdle = variant === 'unitrac'
-    ? 'Arraste o Unitrac aqui ou clique'
-    : 'Arraste arquivos aqui ou clique'
+  const titleIdle =
+    variant === 'unitrac'
+      ? 'Arraste o Unitrac aqui ou clique'
+      : 'Arraste arquivos aqui ou clique'
 
-  const titleUploading = uploadingCount && uploadingCount > 1
-    ? `Enviando ${uploadingCount} arquivos…`
-    : 'Enviando…'
+  const titleUploading =
+    uploadingCount && uploadingCount > 1
+      ? `Enviando ${uploadingCount} arquivos…`
+      : 'Enviando…'
 
   const subtitle = hint ?? '.xlsx · .pdf — detecta o tipo automaticamente'
+
+  const stateClass = dragging
+    ? 'border-solid border-[var(--color-accent)] bg-[var(--color-accent-soft)]/40 ring-2 ring-[var(--color-accent)]/30'
+    : uploading
+      ? 'border-dashed border-[var(--color-accent)]/60 bg-[var(--color-bg-subtle)]'
+      : 'border-dashed border-[var(--color-border-strong)] bg-[var(--color-bg-subtle)] hover:border-[var(--color-accent)]/70 hover:bg-[var(--color-bg-hover)] cursor-pointer'
 
   return (
     <div
       onClick={() => !disabled && !uploading && inputRef.current?.click()}
-      onDragOver={e => { e.preventDefault(); if (!disabled && !uploading) setDragging(true) }}
+      onDragOver={(e) => {
+        e.preventDefault()
+        if (!disabled && !uploading) setDragging(true)
+      }}
       onDragLeave={() => setDragging(false)}
-      onDrop={e => {
+      onDrop={(e) => {
         e.preventDefault()
         setDragging(false)
         if (!disabled && !uploading) handleFiles(e.dataTransfer.files)
       }}
-      className={[
-        'flex flex-col items-center justify-center w-full py-6 rounded-xl border-2 transition-all duration-200 select-none text-center px-4',
-        dragging
-          ? 'border-solid border-brand-500 bg-brand-100 ring-2 ring-brand-200'
-          : uploading
-            ? 'border-dashed border-brand-300 bg-brand-50/70'
-            : 'border-dashed border-slate-300 bg-slate-50 hover:border-brand-400 hover:bg-brand-50 cursor-pointer',
-        disabled ? 'opacity-40 cursor-not-allowed' : '',
-        uploading ? 'cursor-wait' : '',
-      ].join(' ')}
+      className={cn(
+        'flex flex-col items-center justify-center w-full py-6 px-4',
+        'rounded-lg border text-center select-none transition-colors',
+        stateClass,
+        disabled && 'opacity-40 cursor-not-allowed',
+        uploading && 'cursor-wait',
+      )}
     >
       {uploading ? (
-        <svg className="animate-spin h-5 w-5 text-brand-500 mb-2 pointer-events-none" viewBox="0 0 24 24" fill="none">
+        <svg
+          className="animate-spin h-5 w-5 text-[var(--color-accent)] mb-2 pointer-events-none"
+          viewBox="0 0 24 24"
+          fill="none"
+        >
           <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
           <path fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z" />
         </svg>
       ) : (
         <svg
-          className={[
-            'h-6 w-6 mb-2 pointer-events-none transition-colors duration-200',
-            dragging ? 'text-brand-600' : 'text-slate-400',
-          ].join(' ')}
+          className={cn(
+            'h-6 w-6 mb-2 pointer-events-none transition-colors',
+            dragging ? 'text-[var(--color-accent)]' : 'text-[var(--color-fg-subtle)]',
+          )}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -80,16 +93,22 @@ export function DropZone({
           <line x1="12" y1="3" x2="12" y2="15" />
         </svg>
       )}
-      <p className={[
-        'text-sm font-semibold pointer-events-none transition-colors duration-200',
-        uploading ? 'text-brand-700' : dragging ? 'text-brand-700' : 'text-slate-700',
-      ].join(' ')}>
+      <p
+        className={cn(
+          'text-sm font-semibold pointer-events-none transition-colors',
+          uploading || dragging
+            ? 'text-[var(--color-fg)]'
+            : 'text-[var(--color-fg)]',
+        )}
+      >
         {uploading ? titleUploading : titleIdle}
       </p>
-      <p className={[
-        'text-xs mt-1 pointer-events-none',
-        uploading ? 'text-brand-500' : 'text-slate-500',
-      ].join(' ')}>
+      <p
+        className={cn(
+          'text-xs mt-1 pointer-events-none',
+          'text-[var(--color-fg-muted)]',
+        )}
+      >
         {subtitle}
       </p>
       <input
@@ -97,7 +116,7 @@ export function DropZone({
         type="file"
         accept=".xlsx,.pdf"
         multiple={variant === 'escalas'}
-        onChange={e => handleFiles(e.target.files)}
+        onChange={(e) => handleFiles(e.target.files)}
         className="hidden"
       />
     </div>
