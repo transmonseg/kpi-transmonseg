@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Badge, Button, Card, cn } from '@/components/ui'
 import { DropZone } from './DropZone'
 import { EscalaItem } from './EscalaItem'
@@ -159,37 +158,6 @@ export function DiaPage({
     }
   }
 
-  async function uploadArquivo(file: File, tipoExplicito: string) {
-    const ext = file.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'xlsx'
-    const contentType =
-      ext === 'pdf'
-        ? 'application/pdf'
-        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    const storagePath = `${data}/${tipoExplicito.toLowerCase()}_${Date.now()}.${ext}`
-
-    const sb = createClient()
-    const { error: storageErr } = await sb.storage
-      .from('escalas-raw')
-      .upload(storagePath, file, { contentType, upsert: true })
-    if (storageErr) throw new Error(storageErr.message)
-
-    return { storagePath, tipoExplicito }
-  }
-
-  async function parseArquivo(storagePath: string, tipoExplicito: string) {
-    const res = await fetch('/api/escalas/upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tipo: tipoExplicito.toUpperCase(),
-        data,
-        storagePath,
-      }),
-    })
-    if (!res.ok) throw new Error(await res.text())
-    return res.json() as Promise<{ tipo_detectado?: string }>
-  }
-
   async function recarregarEscalas() {
     try {
       const res = await fetch(`/api/escalas/dia?data=${data}`)
@@ -206,7 +174,7 @@ export function DiaPage({
       return e
     })
 
-    // Preview de validação — roda antes do upload real
+    // Preview de validação — não bloqueia o upload
     setPreviewData(null)
     setPreviewLoading(true)
     try {
@@ -215,10 +183,7 @@ export function DiaPage({
       if (tipo !== 'auto') fd.append('tipo', tipo)
       fd.append('data', data)
       const res = await fetch('/api/escalas/preview', { method: 'POST', body: fd })
-      if (res.ok) {
-        const pv = await res.json()
-        setPreviewData(pv)
-      }
+      if (res.ok) setPreviewData(await res.json())
     } catch (e) {
       console.error('Erro no preview de escala:', e)
     } finally {
@@ -227,14 +192,15 @@ export function DiaPage({
 
     setUploadingTipos((prev) => new Set([...prev, key]))
     try {
-      const { storagePath } = await uploadArquivo(file, tipo)
-      setUploadingTipos((prev) => {
-        const s = new Set(prev)
-        s.delete(key)
-        return s
-      })
-      setParsingTipos((prev) => new Set([...prev, key]))
-      await parseArquivo(storagePath, tipo)
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('tipo', tipo === 'auto' ? 'AUTO' : tipo.toUpperCase())
+      fd.append('data', data)
+
+      const res = await fetch('/api/escalas/upload', { method: 'POST', body: fd })
+      if (!res.ok) throw new Error(await res.text())
+
+      setPreviewData(null)
       await recarregarEscalas()
     } catch (e) {
       setUploadErrors((prev) => ({

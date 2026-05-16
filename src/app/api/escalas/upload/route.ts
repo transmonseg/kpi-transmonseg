@@ -6,8 +6,6 @@ import { parseEscalaGeral } from '@/lib/parsers/escala-geral'
 import { parseEscalaZonaSul } from '@/lib/parsers/escala-zona-sul'
 import { parseEscalaPax } from '@/lib/parsers/escala-pax'
 import { parseEscalaArmazemGrao } from '@/lib/parsers/escala-armazem-grao'
-// parseEscalaGuanabaraPdf carrega pdf-parse (depende de DOMMatrix); import dinâmico
-// dentro do handler pra não falhar no "collect page data" do build.
 import type { LinhaEscala } from '@/lib/types/escala'
 
 export const runtime = 'nodejs'
@@ -19,7 +17,6 @@ type Formato = 'xlsx' | 'pdf'
 const TIPOS_VALIDOS: TipoEscala[] = ['GERAL', 'ZONA_SUL', 'PAX', 'ARMAZEM_GRAO', 'GUANABARA', 'AUTO']
 const MIN_LINHAS_DETECCAO = 3
 
-// Formato esperado por tipo (pra mensagem de erro amigável)
 const FORMATO_ESPERADO: Record<Exclude<TipoEscala, 'AUTO'>, Formato> = {
   GERAL: 'xlsx',
   ZONA_SUL: 'xlsx',
@@ -28,8 +25,8 @@ const FORMATO_ESPERADO: Record<Exclude<TipoEscala, 'AUTO'>, Formato> = {
   GUANABARA: 'pdf',
 }
 
-function detectaFormato(path: string): Formato | null {
-  const lower = path.toLowerCase()
+function detectaFormato(filename: string): Formato | null {
+  const lower = filename.toLowerCase()
   if (lower.endsWith('.pdf')) return 'pdf'
   if (lower.endsWith('.xlsx')) return 'xlsx'
   return null
@@ -42,8 +39,19 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
 
-  const { tipo: tipoRaw, data, storagePath } = await req.json()
-  const tipo = (tipoRaw as string)?.toUpperCase() as TipoEscala
+  let formData: FormData
+  try {
+    formData = await req.formData()
+  } catch {
+    return new NextResponse('Body deve ser multipart/form-data.', { status: 400 })
+  }
+
+  const file = formData.get('file') as File | null
+  if (!file) return new NextResponse('Campo "file" obrigatório.', { status: 400 })
+
+  const tipoRaw = (formData.get('tipo') as string | null) ?? 'AUTO'
+  const tipo = tipoRaw.toUpperCase() as TipoEscala
+  const data = formData.get('data') as string | null
 
   if (!TIPOS_VALIDOS.includes(tipo))
     return new NextResponse(
@@ -51,13 +59,10 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     )
 
-  if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data as string))
+  if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data))
     return new NextResponse('Data inválida. Use YYYY-MM-DD.', { status: 400 })
 
-  if (!storagePath || typeof storagePath !== 'string')
-    return new NextResponse('storagePath ausente.', { status: 400 })
-
-  const formato = detectaFormato(storagePath)
+  const formato = detectaFormato(file.name)
   if (!formato)
     return new NextResponse(
       'Extensão do arquivo não suportada. Use .xlsx ou .pdf.',
@@ -75,33 +80,24 @@ export async function POST(req: NextRequest) {
 
   const svc = createServiceClient()
 
-  let tipoDetectado: TipoEscala = tipo
-
-  // Read file from Storage
-  const { data: fileBlob, error: downloadErr } = await svc.storage
-    .from('escalas-raw')
-    .download(storagePath)
-
-  if (downloadErr || !fileBlob)
-    return new NextResponse(
-      `Erro ao ler arquivo do storage: ${downloadErr?.message ?? 'arquivo não encontrado'}`,
-      { status: 500 }
-    )
-
-  const arrayBuffer = await fileBlob.arrayBuffer()
+  const arrayBuffer = await file.arrayBuffer()
   let linhas: LinhaEscala[] = []
+  let tipoDetectado: TipoEscala = tipo
 
   try {
     if (tipo === 'AUTO') {
       const tentativas: Array<{ t: TipoEscala; fn: () => Promise<LinhaEscala[]> }> = [
-        { t: 'ZONA_SUL',     fn: () => parseEscalaZonaSul(arrayBuffer, data as string) },
-        { t: 'ARMAZEM_GRAO', fn: () => parseEscalaArmazemGrao(arrayBuffer, data as string) },
-        { t: 'PAX',          fn: () => parseEscalaPax(arrayBuffer, data as string) },
-        { t: 'GERAL',        fn: () => parseEscalaGeral(arrayBuffer, data as string) },
+        { t: 'ZONA_SUL',     fn: () => parseEscalaZonaSul(arrayBuffer, data) },
+        { t: 'ARMAZEM_GRAO', fn: () => parseEscalaArmazemGrao(arrayBuffer, data) },
+        { t: 'PAX',          fn: () => parseEscalaPax(arrayBuffer, data) },
+        { t: 'GERAL',        fn: () => parseEscalaGeral(arrayBuffer, data) },
       ]
       if (formato === 'pdf') {
         const { parseEscalaGuanabaraPdf } = await import('@/lib/parsers/escala-guanabara-pdf')
-        tentativas.push({ t: 'GUANABARA', fn: () => parseEscalaGuanabaraPdf(Buffer.from(arrayBuffer), data as string) })
+        tentativas.push({
+          t: 'GUANABARA',
+          fn: () => parseEscalaGuanabaraPdf(Buffer.from(arrayBuffer), data),
+        })
       }
 
       for (const { t, fn } of tentativas) {
@@ -123,18 +119,17 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         )
     } else if (tipo === 'GERAL' && formato === 'xlsx') {
-      linhas = await parseEscalaGeral(arrayBuffer, data as string)
+      linhas = await parseEscalaGeral(arrayBuffer, data)
     } else if (tipo === 'ZONA_SUL' && formato === 'xlsx') {
-      linhas = await parseEscalaZonaSul(arrayBuffer, data as string)
+      linhas = await parseEscalaZonaSul(arrayBuffer, data)
     } else if (tipo === 'PAX' && formato === 'xlsx') {
-      linhas = await parseEscalaPax(arrayBuffer, data as string)
+      linhas = await parseEscalaPax(arrayBuffer, data)
     } else if (tipo === 'ARMAZEM_GRAO' && formato === 'xlsx') {
-      linhas = await parseEscalaArmazemGrao(arrayBuffer, data as string)
+      linhas = await parseEscalaArmazemGrao(arrayBuffer, data)
     } else if (tipo === 'GUANABARA' && formato === 'pdf') {
       const { parseEscalaGuanabaraPdf } = await import('@/lib/parsers/escala-guanabara-pdf')
-      linhas = await parseEscalaGuanabaraPdf(Buffer.from(arrayBuffer), data as string)
+      linhas = await parseEscalaGuanabaraPdf(Buffer.from(arrayBuffer), data)
     } else {
-      // Defesa em profundidade — checagem acima já barra, mas TS pede caminho explícito
       return new NextResponse(
         `Formato ${formato} ainda não suportado para tipo ${tipo}.`,
         { status: 501 }
@@ -153,8 +148,7 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     )
 
-  // Cenário A: sempre sobrescreve a versão anterior, sem perguntar
-  // (feito após detecção pois tipoDetectado só é resolvido depois do parse AUTO)
+  // Sobrescreve upload anterior do mesmo dia/tipo
   const { data: existente } = await svc
     .from('escala_uploads')
     .select('id')
@@ -166,13 +160,27 @@ export async function POST(req: NextRequest) {
     await svc.from('escala_uploads').delete().eq('id', existente.id)
   }
 
+  // Upload para Storage usando service role (evita dependência de policies do browser)
+  const contentType =
+    formato === 'pdf'
+      ? 'application/pdf'
+      : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  const storagePath = `${data}/${tipoDetectado.toLowerCase()}_${Date.now()}.${formato}`
+  const { error: storageErr } = await svc.storage
+    .from('escalas-raw')
+    .upload(storagePath, Buffer.from(arrayBuffer), { contentType, upsert: true })
+  if (storageErr) {
+    console.error('[escalas/upload] Storage upload error:', storageErr.message)
+    // Não bloqueia: arquivo parseado com sucesso — só o arquivo armazenado falhou
+  }
+
   const { data: upload, error: uploadErr } = await svc
     .from('escala_uploads')
     .insert({
       data_escala: data,
       tipo: tipoDetectado,
-      arquivo_path: storagePath,
-      nome_arquivo: (storagePath as string).split('/').pop() ?? `escala.${formato}`,
+      arquivo_path: storageErr ? null : storagePath,
+      nome_arquivo: file.name,
       qtd_linhas: linhas.length,
       status: 'processado',
       uploaded_by: user.id,
@@ -183,8 +191,6 @@ export async function POST(req: NextRequest) {
   if (uploadErr || !upload)
     return new NextResponse(`Erro ao registrar upload: ${uploadErr?.message}`, { status: 500 })
 
-  // PostgreSQL/JSON rejeitam null bytes (U+0000) e outros control chars.
-  // pdf-parse v1 às vezes deixa esses bytes na extração — sanitizar.
   const CONTROL_CHARS_RE = new RegExp('[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]', 'g')
   const clean = <T>(v: T): T => {
     if (typeof v === 'string') return v.replace(CONTROL_CHARS_RE, '') as T
