@@ -15,7 +15,11 @@ const KPI_ITEMS = [
   { href: '/painel/historico', label: 'Histórico' },
 ]
 
-const SOON = ['Alterações de Escala', 'Cadastro de Lojas']
+const ALTERACOES_ITEMS = [
+  { href: '/painel/alteracoes/nova', label: 'Nova alteração' },
+]
+
+const SOON = ['Cadastro de Lojas']
 
 export function PainelNav() {
   const pathname = usePathname()
@@ -43,6 +47,26 @@ export function PainelNav() {
         KPI Benassi
       </div>
       {KPI_ITEMS.map(item => {
+        const active = pathname === item.href
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={
+              active
+                ? 'px-3 py-2 rounded-lg bg-brand-50 text-brand-700 font-semibold transition'
+                : 'px-3 py-2 rounded-lg text-ink hover:bg-surface-hover transition'
+            }
+          >
+            {item.label}
+          </Link>
+        )
+      })}
+
+      <div className="px-3 pt-5 pb-2 text-ink-muted text-xs uppercase tracking-wider font-semibold">
+        Alterações
+      </div>
+      {ALTERACOES_ITEMS.map(item => {
         const active = pathname === item.href
         return (
           <Link
