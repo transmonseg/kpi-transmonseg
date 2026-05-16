@@ -139,7 +139,7 @@ export function DiaPage({
     linhas_validas: unknown[]
     linhas_problematicas: Array<{ linha: number; motivo: string; conteudo: string }>
   } | null>(null)
-  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewLoading] = useState(false)
 
   async function navegarPara(novaData: string) {
     setData(novaData)
@@ -173,32 +173,61 @@ export function DiaPage({
       delete e[key]
       return e
     })
-
-    // Preview de validação — não bloqueia o upload
     setPreviewData(null)
-    setPreviewLoading(true)
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      if (tipo !== 'auto') fd.append('tipo', tipo)
-      fd.append('data', data)
-      const res = await fetch('/api/escalas/preview', { method: 'POST', body: fd })
-      if (res.ok) setPreviewData(await res.json())
-    } catch (e) {
-      console.error('Erro no preview de escala:', e)
-    } finally {
-      setPreviewLoading(false)
-    }
 
     setUploadingTipos((prev) => new Set([...prev, key]))
     try {
-      const fd = new FormData()
-      fd.append('file', file)
-      fd.append('tipo', tipo === 'auto' ? 'AUTO' : tipo.toUpperCase())
-      fd.append('data', data)
+      // Passo 1: obter URL assinada para upload direto no Storage
+      const presignRes = await fetch('/api/escalas/presign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: file.name, data, tipo }),
+      })
+      if (!presignRes.ok) throw new Error(await presignRes.text())
+      const { signedUrl, path: storagePath } = await presignRes.json() as {
+        signedUrl: string
+        path: string
+      }
 
-      const res = await fetch('/api/escalas/upload', { method: 'POST', body: fd })
-      if (!res.ok) throw new Error(await res.text())
+      // Passo 2: enviar arquivo direto ao Storage (sem passar pelo Vercel)
+      const contentType = file.name.toLowerCase().endsWith('.pdf')
+        ? 'application/pdf'
+        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      const putRes = await fetch(signedUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': contentType },
+      })
+      if (!putRes.ok) throw new Error('Falha ao enviar arquivo para o storage')
+
+      // Transicionar para fase de processamento
+      setParsingTipos((prev) => new Set([...prev, key]))
+      setUploadingTipos((prev) => {
+        const s = new Set(prev)
+        s.delete(key)
+        return s
+      })
+
+      const tipoApi = tipo === 'auto' ? 'AUTO' : tipo.toUpperCase()
+
+      // Passo 3: parse + preview em paralelo (preview é best-effort)
+      const [parseRes] = await Promise.all([
+        fetch('/api/escalas/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ storagePath, tipo: tipoApi, data, nomeArquivo: file.name }),
+        }),
+        fetch('/api/escalas/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ storagePath, tipo: tipoApi, data }),
+        })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d) => d && setPreviewData(d))
+          .catch(() => null),
+      ])
+
+      if (!parseRes.ok) throw new Error(await parseRes.text())
 
       setPreviewData(null)
       await recarregarEscalas()

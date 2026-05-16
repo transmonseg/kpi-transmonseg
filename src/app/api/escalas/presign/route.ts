@@ -4,8 +4,6 @@ import { createServiceClient } from '@/lib/supabase/service'
 
 export const runtime = 'nodejs'
 
-const TIPOS_VALIDOS = ['GERAL', 'ZONA_SUL', 'PAX']
-
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const {
@@ -13,16 +11,17 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
 
-  const { tipo, data } = await req.json()
-
-  const tipoUp = (tipo as string)?.toUpperCase()
-  if (!TIPOS_VALIDOS.includes(tipoUp))
-    return new NextResponse('Tipo inválido.', { status: 400 })
+  const { filename, data, tipo } = await req.json()
 
   if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data as string))
     return new NextResponse('Data inválida.', { status: 400 })
 
-  const storagePath = `${data}/${tipoUp.toLowerCase()}.xlsx`
+  if (!filename || typeof filename !== 'string')
+    return new NextResponse('Campo "filename" obrigatório.', { status: 400 })
+
+  const ext = filename.toLowerCase().endsWith('.pdf') ? 'pdf' : 'xlsx'
+  const tipoSlug = tipo && typeof tipo === 'string' ? tipo.toLowerCase() : 'auto'
+  const storagePath = `${data}/${tipoSlug}_${Date.now()}.${ext}`
   const svc = createServiceClient()
 
   try {

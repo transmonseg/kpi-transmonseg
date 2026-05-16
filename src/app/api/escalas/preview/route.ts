@@ -1,6 +1,7 @@
 import '@/lib/polyfills/pdf-parse-polyfill'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { parseEscalaGeral } from '@/lib/parsers/escala-geral'
 import { parseEscalaZonaSul } from '@/lib/parsers/escala-zona-sul'
 import { parseEscalaPax } from '@/lib/parsers/escala-pax'
@@ -60,35 +61,24 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
 
-  let formData: FormData
-  try {
-    formData = await req.formData()
-  } catch {
-    return new NextResponse('Body deve ser multipart/form-data.', { status: 400 })
-  }
+  const { storagePath, tipo: tipoRaw, data } = await req.json()
 
-  const file = formData.get('file') as File | null
-  if (!file) return new NextResponse('Campo "file" obrigatório.', { status: 400 })
+  if (!storagePath || typeof storagePath !== 'string')
+    return new NextResponse('Campo "storagePath" obrigatório.', { status: 400 })
 
-  const tipoRaw = (formData.get('tipo') as string | null) ?? 'AUTO'
-  const tipo = tipoRaw.toUpperCase() as TipoEscala
+  const tipo = ((tipoRaw as string | undefined) ?? 'AUTO').toUpperCase() as TipoEscala
 
   if (!TIPOS_VALIDOS.includes(tipo))
     return new NextResponse(
       `Tipo inválido. Use ${TIPOS_VALIDOS.join(', ')}.`,
-      { status: 400 }
+      { status: 400 },
     )
 
-  // data is optional for preview — parsers accept undefined and will read date from the sheet
-  const data = (formData.get('data') as string | null) ?? undefined
-  if (data && !/^\d{4}-\d{2}-\d{2}$/.test(data))
-    return new NextResponse('Data inválida. Use YYYY-MM-DD.', { status: 400 })
-
-  const formato = detectaFormato(file.name)
+  const formato = detectaFormato(storagePath)
   if (!formato)
     return new NextResponse(
       'Extensão não suportada. Envie .xlsx ou .pdf.',
-      { status: 400 }
+      { status: 400 },
     )
 
   if (tipo !== 'AUTO') {
@@ -96,11 +86,22 @@ export async function POST(req: NextRequest) {
     if (formato !== formatoEsperado)
       return new NextResponse(
         `Formato ${formato} não suportado para tipo ${tipo}. Envie em ${formatoEsperado}.`,
-        { status: 501 }
+        { status: 501 },
       )
   }
 
-  const arrayBuffer = await file.arrayBuffer()
+  const svc = createServiceClient()
+  const { data: fileBlob, error: downloadErr } = await svc.storage
+    .from('escalas-raw')
+    .download(storagePath)
+
+  if (downloadErr || !fileBlob)
+    return new NextResponse(
+      `Erro ao baixar arquivo: ${downloadErr?.message ?? 'não encontrado'}`,
+      { status: 500 },
+    )
+
+  const arrayBuffer = await fileBlob.arrayBuffer()
   let linhas: LinhaEscala[] = []
   let tipoDetectado: TipoEscala = tipo
 
@@ -129,14 +130,14 @@ export async function POST(req: NextRequest) {
             break
           }
         } catch {
-          // Parser nao reconheceu o formato — tentar o proximo
+          // Parser não reconheceu — tentar próximo
         }
       }
 
       if (linhas.length === 0)
         return new NextResponse(
-          'Não foi possível detectar o tipo da escala. Verifique se o arquivo é uma das escalas suportadas (GERAL, ZONA SUL, PAX, ARMAZÉM DO GRÃO, GUANABARA).',
-          { status: 400 }
+          'Não foi possível detectar o tipo da escala.',
+          { status: 400 },
         )
     } else if (tipo === 'GERAL' && formato === 'xlsx') {
       linhas = await parseEscalaGeral(arrayBuffer, data)
@@ -152,23 +153,22 @@ export async function POST(req: NextRequest) {
     } else {
       return new NextResponse(
         `Formato ${formato} não suportado para tipo ${tipo}.`,
-        { status: 501 }
+        { status: 501 },
       )
     }
   } catch (e) {
     return new NextResponse(
       e instanceof Error ? e.message : 'Erro ao parsear arquivo.',
-      { status: 400 }
+      { status: 400 },
     )
   }
 
   if (linhas.length === 0)
     return new NextResponse(
       'Nenhuma linha encontrada. Confirme que o arquivo e o tipo estão corretos.',
-      { status: 400 }
+      { status: 400 },
     )
 
-  // Classify lines as valid or problematic
   const linhasValidas: LinhaEscala[] = []
   const linhasProblematicas: LinhaProblematica[] = []
 

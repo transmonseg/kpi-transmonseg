@@ -25,8 +25,8 @@ const FORMATO_ESPERADO: Record<Exclude<TipoEscala, 'AUTO'>, Formato> = {
   GUANABARA: 'pdf',
 }
 
-function detectaFormato(filename: string): Formato | null {
-  const lower = filename.toLowerCase()
+function detectaFormato(path: string): Formato | null {
+  const lower = path.toLowerCase()
   if (lower.endsWith('.pdf')) return 'pdf'
   if (lower.endsWith('.xlsx')) return 'xlsx'
   return null
@@ -39,34 +39,34 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
 
-  let formData: FormData
+  let body: { storagePath: string; tipo?: string; data: string; nomeArquivo?: string }
   try {
-    formData = await req.formData()
+    body = await req.json()
   } catch {
-    return new NextResponse('Body deve ser multipart/form-data.', { status: 400 })
+    return new NextResponse('Body deve ser JSON.', { status: 400 })
   }
 
-  const file = formData.get('file') as File | null
-  if (!file) return new NextResponse('Campo "file" obrigatório.', { status: 400 })
+  const { storagePath, tipo: tipoRaw = 'AUTO', data, nomeArquivo } = body
 
-  const tipoRaw = (formData.get('tipo') as string | null) ?? 'AUTO'
-  const tipo = tipoRaw.toUpperCase() as TipoEscala
-  const data = formData.get('data') as string | null
-
-  if (!TIPOS_VALIDOS.includes(tipo))
-    return new NextResponse(
-      `Tipo inválido. Use ${TIPOS_VALIDOS.join(', ')}.`,
-      { status: 400 }
-    )
+  if (!storagePath)
+    return new NextResponse('Campo "storagePath" obrigatório.', { status: 400 })
 
   if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data))
     return new NextResponse('Data inválida. Use YYYY-MM-DD.', { status: 400 })
 
-  const formato = detectaFormato(file.name)
+  const tipo = (tipoRaw ?? 'AUTO').toUpperCase() as TipoEscala
+
+  if (!TIPOS_VALIDOS.includes(tipo))
+    return new NextResponse(
+      `Tipo inválido. Use ${TIPOS_VALIDOS.join(', ')}.`,
+      { status: 400 },
+    )
+
+  const formato = detectaFormato(storagePath)
   if (!formato)
     return new NextResponse(
       'Extensão do arquivo não suportada. Use .xlsx ou .pdf.',
-      { status: 400 }
+      { status: 400 },
     )
 
   if (tipo !== 'AUTO') {
@@ -74,13 +74,25 @@ export async function POST(req: NextRequest) {
     if (formato !== formatoEsperado)
       return new NextResponse(
         `Formato ${formato} ainda não suportado para tipo ${tipo}. Envie em ${formatoEsperado}.`,
-        { status: 501 }
+        { status: 501 },
       )
   }
 
   const svc = createServiceClient()
 
-  const arrayBuffer = await file.arrayBuffer()
+  const { data: fileBlob, error: downloadErr } = await svc.storage
+    .from('escalas-raw')
+    .download(storagePath)
+
+  if (downloadErr || !fileBlob)
+    return new NextResponse(
+      `Erro ao baixar arquivo do storage: ${downloadErr?.message ?? 'arquivo não encontrado'}`,
+      { status: 500 },
+    )
+
+  const arrayBuffer = await fileBlob.arrayBuffer()
+  const fileName = nomeArquivo ?? storagePath.split('/').pop() ?? storagePath
+
   let linhas: LinhaEscala[] = []
   let tipoDetectado: TipoEscala = tipo
 
@@ -116,7 +128,7 @@ export async function POST(req: NextRequest) {
       if (linhas.length === 0)
         return new NextResponse(
           'Não foi possível detectar o tipo da escala. Verifique se o arquivo é uma das escalas suportadas (GERAL, ZONA SUL, PAX, ARMAZÉM DO GRÃO, GUANABARA).',
-          { status: 400 }
+          { status: 400 },
         )
     } else if (tipo === 'GERAL' && formato === 'xlsx') {
       linhas = await parseEscalaGeral(arrayBuffer, data)
@@ -132,20 +144,20 @@ export async function POST(req: NextRequest) {
     } else {
       return new NextResponse(
         `Formato ${formato} ainda não suportado para tipo ${tipo}.`,
-        { status: 501 }
+        { status: 501 },
       )
     }
   } catch (e) {
     return new NextResponse(
       e instanceof Error ? e.message : 'Erro ao parsear arquivo.',
-      { status: 400 }
+      { status: 400 },
     )
   }
 
   if (linhas.length === 0)
     return new NextResponse(
       'Nenhuma linha encontrada. Confirme que o arquivo e o tipo estão corretos.',
-      { status: 400 }
+      { status: 400 },
     )
 
   // Sobrescreve upload anterior do mesmo dia/tipo
@@ -160,27 +172,13 @@ export async function POST(req: NextRequest) {
     await svc.from('escala_uploads').delete().eq('id', existente.id)
   }
 
-  // Upload para Storage usando service role (evita dependência de policies do browser)
-  const contentType =
-    formato === 'pdf'
-      ? 'application/pdf'
-      : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-  const storagePath = `${data}/${tipoDetectado.toLowerCase()}_${Date.now()}.${formato}`
-  const { error: storageErr } = await svc.storage
-    .from('escalas-raw')
-    .upload(storagePath, Buffer.from(arrayBuffer), { contentType, upsert: true })
-  if (storageErr) {
-    console.error('[escalas/upload] Storage upload error:', storageErr.message)
-    // Não bloqueia: arquivo parseado com sucesso — só o arquivo armazenado falhou
-  }
-
   const { data: upload, error: uploadErr } = await svc
     .from('escala_uploads')
     .insert({
       data_escala: data,
       tipo: tipoDetectado,
-      arquivo_path: storageErr ? null : storagePath,
-      nome_arquivo: file.name,
+      arquivo_path: storagePath,
+      nome_arquivo: fileName,
       qtd_linhas: linhas.length,
       status: 'processado',
       uploaded_by: user.id,
