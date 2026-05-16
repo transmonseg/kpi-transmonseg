@@ -249,8 +249,28 @@ server.registerTool(
           processado_em: new Date().toISOString(),
         }).select('id').single()
         if (upErr) throw new Error(`upload ${e.tipo}: ${upErr.message}`)
-        // Insere linhas
-        const rows = linhas.map((l: any) => ({ ...l, escala_upload_id: up.id }))
+        // Insere linhas — mapping explícito igual ao /api/escalas/upload (campo `data` da LinhaEscala não existe na tabela; vai pro raw_json)
+        const rows = linhas.map((l: any) => ({
+          escala_upload_id: up.id,
+          rede_id: l.rede_id,
+          loja_id: null,
+          loja_nome_raw: l.loja_nome_raw,
+          loja_codigo_raw: l.loja_codigo_raw,
+          placa_norm: l.placa_norm || null,
+          placa_raw: l.placa_raw,
+          motorista_nome: l.motorista_nome,
+          motorista_codigo: l.motorista_codigo,
+          tipo_carro: l.tipo_carro,
+          turno: l.turno,
+          carro_ordem: l.carro_ordem,
+          obs: l.obs,
+          restricao: l.restricao,
+          peso_kg: l.peso_kg,
+          paletes: l.paletes,
+          data_entrega: l.data_entrega,
+          raw_row_num: l.raw_row_num,
+          raw_json: l,
+        }))
         const { error: linhasErr } = await supabase.from('escala_linhas').insert(rows)
         if (linhasErr) throw new Error(`linhas ${e.tipo}: ${linhasErr.message}`)
         results.inserted[e.tipo] = { linhas: linhas.length, upload_id: up.id }
@@ -535,6 +555,81 @@ server.registerTool(
       await supabase.from('escala_linhas').delete().gt('data', '1900-01-01')
       await supabase.from('escala_uploads').delete().gt('data_escala', '1900-01-01')
       return ok({ msg: 'TODOS os dados apagados (lojas e redes mantidas)' })
+    } catch (e: any) {
+      return err(e.message)
+    }
+  },
+)
+
+// ─── gerar_kpi ───────────────────────────────────────────────
+server.registerTool(
+  'gerar_kpi',
+  {
+    title: 'Gerar XLSX de KPI por rede',
+    description: 'Gera arquivos XLSX (1 por rede) usando os kpi_rotas processados. Salva em pasta local. Use após processar_kpi.',
+    inputSchema: {
+      data: z.string().describe('Data YYYY-MM-DD'),
+      out_dir: z.string().optional().describe('Diretório de saída (default C:/Users/media/Desktop/kpi-test)'),
+      redes: z.array(z.string()).optional().describe('Filtrar redes específicas (default: todas)'),
+    },
+  },
+  async ({ data, out_dir, redes }) => {
+    try {
+      const supabase = sb()
+      const { gerarKpi } = await import('../src/lib/kpi/gerador-kpi.js')
+      const { writeFile, mkdir } = await import('node:fs/promises')
+      const outDir = out_dir || 'C:/Users/media/Desktop/kpi-test'
+      await mkdir(outDir, { recursive: true })
+
+      const { data: kpis } = await supabase.from('kpis').select('rede_id').eq('data', data)
+      const todasRedes = [...new Set((kpis ?? []).map(k => k.rede_id))]
+      const redesAlvo = redes?.length ? redes.filter(r => todasRedes.includes(r)) : todasRedes
+
+      const results: any[] = []
+      for (const rede_id of redesAlvo) {
+        const { data: rotas } = await supabase.from('kpi_rotas')
+          .select('id, escala_linha_id, placa_norm, saida_cd, paradas_json, anomalias_codigos')
+          .eq('data', data).eq('rede_id', rede_id)
+        if (!rotas?.length) {
+          results.push({ rede_id, ok: false, msg: 'sem rotas' })
+          continue
+        }
+        const escalaIds = rotas.map(r => r.escala_linha_id)
+        const { data: escLinhas } = await supabase.from('escala_linhas')
+          .select('id, loja_nome_raw, motorista_nome, motorista_codigo, carro_ordem, placa_raw')
+          .in('id', escalaIds.length ? escalaIds : ['__none__'])
+        const escMap = new Map((escLinhas ?? []).map(e => [e.id, e]))
+        const linhas = rotas.map((r, idx) => {
+          const e = escMap.get(r.escala_linha_id)
+          const paradas = (r.paradas_json as any[]) ?? []
+          const p1 = paradas[0]; const p2 = paradas[1]; const p3 = paradas[2]
+          return {
+            kpi_id: '', escala_linha_id: r.escala_linha_id, ordem: idx + 1,
+            loja_nome: e?.loja_nome_raw ?? '(sem nome)',
+            motorista: e?.motorista_nome ?? null,
+            motorista_codigo: e?.motorista_codigo ?? null,
+            placa: e?.placa_raw ?? r.placa_norm,
+            carro_ordem: ((e?.carro_ordem ?? 1) as 1 | 2),
+            saida_cd: r.saida_cd ? new Date(r.saida_cd) : null,
+            chd_loja_1: p1 ? new Date(p1.chegada) : null,
+            saida_loja_1: p1 ? new Date(p1.saida) : null,
+            tempo_loja_1_min: p1?.duracao_min ?? null,
+            chd_loja_2: p2 ? new Date(p2.chegada) : null,
+            saida_loja_2: p2 ? new Date(p2.saida) : null,
+            tempo_loja_2_min: p2?.duracao_min ?? null,
+            chd_loja_3: p3 ? new Date(p3.chegada) : null,
+            saida_loja_3: p3 ? new Date(p3.saida) : null,
+            tempo_loja_3_min: p3?.duracao_min ?? null,
+            observacao: null,
+            anomalias_codigos: (r.anomalias_codigos as string[]) ?? [],
+          }
+        })
+        const buf = await gerarKpi({ rede_id, data, linhas })
+        const fname = `KPI ${rede_id}.xlsx`
+        await writeFile(`${outDir}/${fname}`, buf)
+        results.push({ rede_id, ok: true, linhas: linhas.length, path: `${outDir}/${fname}` })
+      }
+      return ok({ data, out_dir: outDir, results })
     } catch (e: any) {
       return err(e.message)
     }

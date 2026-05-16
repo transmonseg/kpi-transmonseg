@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { gerarKpiXlsx } from '@/lib/kpi/gerador-xlsx'
+import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
 import type { KpiLinha } from '@/lib/types/kpi'
 
@@ -60,7 +60,27 @@ export async function POST(req: NextRequest) {
 
   if (linhasErr) return new NextResponse('Erro ao buscar linhas', { status: 500 })
 
-  const linhas: KpiLinha[] = (linhasRaw ?? []).map(r => ({
+  // Buscar anomalias_codigos por escala_linha_id pra enriquecer as linhas (OBS no XLSX)
+  const { data: rotasComCodigos } = await svc
+    .from('kpi_rotas')
+    .select('escala_linha_id, anomalias_codigos')
+    .eq('data', kpi.data)
+    .eq('rede_id', kpi.rede_id)
+  const anomMap = new Map<string, string[]>(
+    (rotasComCodigos ?? []).map(r => [r.escala_linha_id as string, (r.anomalias_codigos as string[]) ?? []]),
+  )
+
+  // Buscar motorista_codigo das escala_linhas
+  const escalaIds = (linhasRaw ?? []).map((l: any) => l.escala_linha_id).filter(Boolean)
+  const { data: escLinhas } = await svc
+    .from('escala_linhas')
+    .select('id, motorista_codigo')
+    .in('id', escalaIds.length ? escalaIds : ['__none__'])
+  const codMap = new Map<string, string | number | null>(
+    (escLinhas ?? []).map(e => [e.id as string, (e.motorista_codigo as string | number | null) ?? null]),
+  )
+
+  const linhas: LinhaParaKpi[] = (linhasRaw ?? []).map(r => ({
     kpi_id: r.kpi_id,
     escala_linha_id: r.escala_linha_id,
     ordem: r.ordem,
@@ -79,6 +99,8 @@ export async function POST(req: NextRequest) {
     saida_loja_3: r.saida_loja_3 ? new Date(r.saida_loja_3) : null,
     tempo_loja_3_min: r.tempo_loja_3_min,
     observacao: r.observacao,
+    motorista_codigo: r.escala_linha_id ? codMap.get(r.escala_linha_id) ?? null : null,
+    anomalias_codigos: r.escala_linha_id ? anomMap.get(r.escala_linha_id) ?? [] : [],
   }))
 
   const { data: rede, error: redeErr } = await svc
@@ -89,12 +111,20 @@ export async function POST(req: NextRequest) {
 
   if (redeErr || !rede) return new NextResponse('Rede não encontrada', { status: 404 })
 
+  // Carregar XLSX existente do mês (acumula abas por dia)
+  const mesPath = kpi.data.slice(0, 7) // YYYY-MM
+  const arquivoMesPath = `kpis-gerados/${mesPath}/${kpi.rede_id}.xlsx`
+  let arquivoExistente: Buffer | null = null
+  const { data: existente } = await svc.storage.from('kpis-gerados').download(arquivoMesPath)
+  if (existente) arquivoExistente = Buffer.from(await existente.arrayBuffer())
+
   const [xlsxBuffer, pdfBuffer] = await Promise.all([
-    gerarKpiXlsx({ rede_id: kpi.rede_id, rede_nome: rede.nome, data: kpi.data, linhas }),
-    gerarKpiPdf({ rede_id: kpi.rede_id, rede_nome: rede.nome, data: kpi.data, linhas }),
+    gerarKpi({ rede_id: kpi.rede_id, data: kpi.data, linhas, arquivoExistente }),
+    gerarKpiPdf({ rede_id: kpi.rede_id, rede_nome: rede.nome, data: kpi.data, linhas: linhas as KpiLinha[] }),
   ])
 
-  const xlsxPath = `kpis-gerados/${kpi.data}/${kpi.rede_id}.xlsx`
+  // XLSX acumula no mês (1 arquivo/rede/mês), PDF é por dia
+  const xlsxPath = arquivoMesPath
   const pdfPath = `kpis-gerados/${kpi.data}/${kpi.rede_id}.pdf`
 
   const [xlsxUpload, pdfUpload] = await Promise.all([
