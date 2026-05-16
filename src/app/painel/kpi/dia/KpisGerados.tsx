@@ -42,6 +42,7 @@ type KpiLinha = {
   saida_loja_3: string | null
   tempo_loja_3_min: number | null
   observacao: string | null
+  anomalias_codigos: string[]
 }
 
 type KpiDetalhe = {
@@ -65,16 +66,18 @@ function fmtHora(iso: string | null): string {
   })
 }
 
-function linhaTemAnomalia(l: KpiLinha): boolean {
-  return !!l.observacao && l.observacao.trim().length > 0
+const HIGH_CODES = new Set(['ANOM-01', 'ANOM-04', 'ANOM-06', 'ANOM-07'])
+const MEDIUM_CODES = new Set(['ANOM-03', 'ANOM-05', 'ANOM-08', 'ANOM-10', 'ANOM-11'])
+
+function severidadeDaCodigos(codigos: string[]): 'HIGH' | 'MEDIUM' | 'LOW' | null {
+  if (codigos.length === 0) return null
+  if (codigos.some((c) => HIGH_CODES.has(c))) return 'HIGH'
+  if (codigos.some((c) => MEDIUM_CODES.has(c))) return 'MEDIUM'
+  return 'LOW'
 }
 
-function severidadeFromObs(obs: string | null): 'HIGH' | 'MEDIUM' | 'LOW' | null {
-  if (!obs) return null
-  const u = obs.toUpperCase()
-  if (u.includes('ANOM-01') || u.includes('ANOM-04') || u.includes('ANOM-06') || u.includes('ANOM-07')) return 'HIGH'
-  if (u.includes('ANOM-03') || u.includes('ANOM-05') || u.includes('ANOM-08') || u.includes('ANOM-10') || u.includes('ANOM-11')) return 'MEDIUM'
-  return 'LOW'
+function linhaTemAnomalia(l: KpiLinha): boolean {
+  return l.anomalias_codigos.length > 0
 }
 
 export function KpisGerados({
@@ -413,8 +416,12 @@ function TabelaRevisao({
 }) {
   const stats = useMemo(() => {
     const total = det.linhas.length
-    const comAnom = det.linhas.filter(linhaTemAnomalia).length
-    return { total, comAnom, sem: total - comAnom }
+    const altas = det.linhas.filter((l) => severidadeDaCodigos(l.anomalias_codigos) === 'HIGH').length
+    const medias = det.linhas.filter((l) => severidadeDaCodigos(l.anomalias_codigos) === 'MEDIUM').length
+    const baixas = det.linhas.filter((l) => severidadeDaCodigos(l.anomalias_codigos) === 'LOW').length
+    const semAnomalia = det.linhas.filter((l) => l.anomalias_codigos.length === 0).length
+    const comAnom = total - semAnomalia
+    return { total, altas, medias, baixas, semAnomalia, comAnom }
   }, [det.linhas])
 
   const linhasFiltradas = useMemo(() => {
@@ -426,11 +433,29 @@ function TabelaRevisao({
   const chips: Array<{ id: FiltroLinhas; label: string; count: number }> = [
     { id: 'todas', label: 'Todas', count: stats.total },
     { id: 'com_anomalia', label: 'Com anomalia', count: stats.comAnom },
-    { id: 'sem_anomalia', label: 'Sem anomalia', count: stats.sem },
+    { id: 'sem_anomalia', label: 'Sem anomalia', count: stats.semAnomalia },
   ]
 
   return (
     <div>
+      {/* Stats bar */}
+      <div className="flex gap-3 px-3 pt-3 pb-2 flex-wrap">
+        {([
+          { label: 'Total', value: stats.total, cls: '' },
+          { label: 'Alta', value: stats.altas, cls: stats.altas > 0 ? 'text-red-500' : '' },
+          { label: 'Média', value: stats.medias, cls: stats.medias > 0 ? 'text-yellow-600' : '' },
+          { label: 'Baixa', value: stats.baixas, cls: '' },
+          { label: 'OK', value: stats.semAnomalia, cls: 'text-green-600' },
+        ] as const).map(({ label, value, cls }) => (
+          <Card key={label} className="px-3 py-1.5 min-w-[70px]">
+            <CardContent className="p-0">
+              <div className="text-xs text-muted-foreground">{label}</div>
+              <div className={cn('text-lg font-bold', cls)}>{value}</div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       {/* Barra de controles */}
       <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-[var(--color-bg-subtle)] border-b border-[var(--color-border)]">
         {/* Filtro chips */}
@@ -512,7 +537,7 @@ function TabelaRevisao({
           </thead>
           <tbody>
             {linhasFiltradas.map((l) => {
-              const sev = severidadeFromObs(l.observacao)
+              const sev = severidadeDaCodigos(l.anomalias_codigos)
               const rowBg =
                 sev === 'HIGH'
                   ? 'bg-[var(--color-danger-soft)]'
