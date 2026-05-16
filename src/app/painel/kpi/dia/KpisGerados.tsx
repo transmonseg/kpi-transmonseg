@@ -357,11 +357,6 @@ export function KpisGerados({
                   {k.qtd_anomalias_low > 0 && (
                     <Badge variant="default">{k.qtd_anomalias_low} baixa</Badge>
                   )}
-                  {temAnomaliasBloqueando && (
-                    <span className="text-[10px] text-[var(--color-danger-soft-fg)] font-medium">
-                      Bloqueado — resolva anomalias altas
-                    </span>
-                  )}
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <Button
@@ -532,7 +527,7 @@ function PainelRevisao({
         <div className="border-b border-[var(--color-border)]">
           <div className="px-3 py-2 bg-[var(--color-danger-soft)]/60">
             <p className="text-[11px] font-semibold text-[var(--color-danger-soft-fg)] mb-1.5">
-              Anomalias Altas ({anomaliasAltas.length}) — resolva para desbloquear a geração
+              Anomalias Altas ({anomaliasAltas.length})
             </p>
             <div className="flex flex-col gap-1.5">
               {anomaliasAltas.map((a) => (

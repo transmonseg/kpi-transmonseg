@@ -255,10 +255,6 @@ export function GerarSection({
 
           if (!gerarRes.ok) {
             const text = await gerarRes.text()
-            if (gerarRes.status === 409 || gerarRes.status === 422) {
-              geracaoBloqueada = true
-              continue
-            }
             setStep(`gerar_${tipo}`, { status: 'error', detail: traduz(text) })
             throw new Error(`Erro ao gerar ${LABEL[tipo] ?? tipo}: ${text}`)
           }
@@ -268,15 +264,7 @@ export function GerarSection({
         }
 
         if (geracaoOk) {
-          setStep(`gerar_${tipo}`, {
-            status: 'done',
-            detail: geracaoBloqueada ? 'Parcial — algumas bloqueadas' : undefined,
-          })
-        } else if (geracaoBloqueada) {
-          setStep(`gerar_${tipo}`, {
-            status: 'error',
-            detail: 'Bloqueado por anomalias',
-          })
+          setStep(`gerar_${tipo}`, { status: 'done' })
         }
       }
     } catch (e) {
