@@ -42,6 +42,14 @@ export async function GET(
     .eq('rede_id', kpi.rede_id)
   const rotaIds = (rotasDoKpi ?? []).map((r) => r.id as string)
 
+  // Map de escala_linha_id → anomalias_codigos vindos de kpi_rotas
+  const codigosMap = new Map<string, string[]>(
+    (rotasDoKpi ?? []).map((r) => [
+      r.escala_linha_id as string,
+      (r.anomalias_codigos as string[] | null) ?? [],
+    ])
+  )
+
   const { data: linhasRaw } = await svc
     .from('kpi_linhas')
     .select('*')
@@ -71,6 +79,7 @@ export async function GET(
       saida_loja_3: r.saida_loja_3 ? new Date(r.saida_loja_3) : null,
       tempo_loja_3_min: r.tempo_loja_3_min,
       observacao: r.observacao,
+      anomalias_codigos: codigosMap.get(r.escala_linha_id as string) ?? [],
     }))
   } else {
     // Fallback: monta linhas direto de kpi_rotas (antes do gerar)
@@ -113,6 +122,7 @@ export async function GET(
           saida_loja_3: p3 ? new Date(p3.saida) : null,
           tempo_loja_3_min: p3?.duracao_min ?? null,
           observacao: joinObsTexts(codigos) || null,
+          anomalias_codigos: (rota.anomalias_codigos as string[] | null) ?? [],
         } satisfies KpiLinha
       })
   }
