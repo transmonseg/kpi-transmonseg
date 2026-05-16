@@ -8,7 +8,6 @@ import { joinObsTexts, temAnomaliaHigh } from './anomalia-obs'
 /** Linha enriquecida com info que não está no schema kpi_linhas. */
 export interface LinhaParaKpi extends KpiLinha {
   motorista_codigo?: number | string | null
-  anomalias_codigos?: string[]
 }
 
 export interface GerarKpiInput {

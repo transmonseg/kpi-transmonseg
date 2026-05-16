@@ -36,6 +36,7 @@ export type KpiLinha = {
   chd_loja_2: Date | null; saida_loja_2: Date | null; tempo_loja_2_min: number | null
   chd_loja_3: Date | null; saida_loja_3: Date | null; tempo_loja_3_min: number | null
   observacao: string | null
+  anomalias_codigos: string[]
 }
 
 export type AnomaliaDetectada = {

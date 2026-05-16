@@ -97,6 +97,7 @@ export async function consolidaKpi(params: {
         saida_loja_3: p3 ? new Date(p3.saida) : null,
         tempo_loja_3_min: p3?.duracao_min ?? null,
         observacao,
+        anomalias_codigos: codigos,
       } satisfies KpiLinha
     })
 
