@@ -64,12 +64,12 @@ async function preencherAba(
 ) {
   const { rede_id, redeNome, data, linhas } = ctx
   const maxLojas = detectarMaxLojasPorRota(linhas)
-  const totalCols = 4 + maxLojas * 3 + 1
+  const totalCols = 5 + maxLojas * 3 + 1
   const lastCol = colLetter(totalCols)
 
   // Larguras
   ws.columns = [
-    { width: 35 }, { width: 28 }, { width: 10 }, { width: 12 },
+    { width: 35 }, { width: 28 }, { width: 10 }, { width: 12 }, { width: 12 },
     ...Array.from({ length: maxLojas * 3 }, () => ({ width: 12 })),
     { width: 30 },
   ]
@@ -106,7 +106,7 @@ async function preencherAba(
   ws.getRow(3).height = 8
 
   // Row 4: headers
-  const headers: string[] = ['REDES / FILIAIS', 'MOTORISTA', 'CÓDIGO', 'PLACA']
+  const headers: string[] = ['REDES / FILIAIS', 'MOTORISTA', 'CÓDIGO', 'PLACA', 'SAÍDA CD']
   for (let n = 1; n <= maxLojas; n++) {
     headers.push(`CHD LOJA ${n}`, `SAÍDA LOJA ${n}`, `TEMPO LOJA ${n}`)
   }
@@ -142,7 +142,7 @@ async function preencherAba(
 function escreverLinhaPlaceholder(ws: ExcelJS.Worksheet, row: number, loja: string, maxLojas: number) {
   const r = ws.getRow(row)
   r.height = 22
-  const empties = Array(4 + maxLojas * 3 + 1 - 1).fill('')
+  const empties = Array(5 + maxLojas * 3 + 1 - 1).fill('')
   r.values = [loja, ...empties]
   r.eachCell({ includeEmpty: true }, (cell, colNum) => {
     cell.font = colNum === 1 ? KPI_FONTS.BODY_MUTED : KPI_FONTS.BODY
@@ -184,7 +184,7 @@ function escreverLinhaDados(ws: ExcelJS.Worksheet, row: number, linha: LinhaPara
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } }
     cell.border = KPI_BORDER_THIN
     // Formatação condicional do TEMPO LOJA
-    const tempoCols = Array.from({ length: maxLojas }, (_, i) => 5 + (i * 3) + 2) // 7, 10, 13
+    const tempoCols = Array.from({ length: maxLojas }, (_, i) => 6 + (i * 3) + 2) // 8, 11, 14
     if (tempoCols.includes(colNum) && typeof cell.value === 'number') {
       const tempo = cell.value as number
       let color: string

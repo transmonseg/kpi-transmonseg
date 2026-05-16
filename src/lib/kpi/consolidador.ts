@@ -59,7 +59,9 @@ export async function consolidaKpi(params: {
     .sort((a, b) => {
       const nomeA = a.escala_linhas?.loja_nome_raw ?? ''
       const nomeB = b.escala_linhas?.loja_nome_raw ?? ''
-      return nomeA.localeCompare(nomeB)
+      const nomeComp = nomeA.localeCompare(nomeB)
+      if (nomeComp !== 0) return nomeComp
+      return (a.escala_linhas?.carro_ordem ?? 1) - (b.escala_linhas?.carro_ordem ?? 1)
     })
     .map((rota, idx) => {
       const escala = rota.escala_linhas

@@ -74,8 +74,8 @@ export async function POST(req: NextRequest) {
 
   if (lojasErr) return new NextResponse(`Erro ao buscar lojas: ${lojasErr.message}`, { status: 500 })
 
-  // Fetch redes
-  const redeIds = [...new Set(escalaLinhas.map((l) => l.rede_id as string))]
+  // Fetch redes (filtra nulls para não quebrar o upsert)
+  const redeIds = [...new Set(escalaLinhas.filter((l) => l.rede_id).map((l) => l.rede_id as string))]
   const { data: redes, error: redesErr } = await svc
     .from('redes')
     .select('id, nome, janela_inicio, janela_fim')

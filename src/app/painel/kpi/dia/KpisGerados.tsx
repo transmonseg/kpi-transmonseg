@@ -226,7 +226,7 @@ export function KpisGerados({
       // 4. Limpa edições e recarrega detalhe
       setEditMap((prev) => { const e = { ...prev }; delete e[kpi.kpi_id]; return e })
       setSignedUrls((prev) => { const e = { ...prev }; delete e[kpi.kpi_id]; return e })
-      delete detalhe[kpi.kpi_id]
+      setDetalhe((prev) => { const e = { ...prev }; delete e[kpi.kpi_id]; return e })
       await carregarDetalhe(targetId !== kpi.kpi_id ? targetId : kpi.kpi_id)
 
       // Atualiza lista de KPIs para refletir novos contadores
@@ -247,17 +247,14 @@ export function KpisGerados({
     try {
       let urls = signedUrls[kpiId]
       if (!urls) {
-        const res = await fetch('/api/kpi/gerar', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ kpi_id: kpiId }),
-        })
+        const res = await fetch(`/api/kpi/${kpiId}/signed-urls`)
         if (!res.ok) throw new Error(await res.text())
         urls = (await res.json()) as { xlsx_url: string | null; pdf_url: string | null }
         setSignedUrls((prev) => ({ ...prev, [kpiId]: urls! }))
       }
       const url = tipo === 'xlsx' ? urls.xlsx_url : urls.pdf_url
       if (url) window.open(url, '_blank', 'noopener,noreferrer')
+      else alert('Arquivo ainda não gerado. Clique em "Gerar" primeiro.')
     } catch (e) {
       console.error('Falha ao baixar', e)
     } finally {
