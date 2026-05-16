@@ -1,6 +1,16 @@
 @import "tailwindcss";
 
+/* Enable class-based dark mode in Tailwind v4. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
+  /* Fonts */
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", "Menlo",
+    "Consolas", monospace;
+
+  /* Brand (Transmonseg blue) — preserved palette for accents. */
   --color-brand-50: #f0f6fb;
   --color-brand-100: #d9e7f3;
   --color-brand-200: #b3cfe7;
@@ -12,48 +22,182 @@
   --color-brand-800: #143355;
   --color-brand-900: #0e2542;
 
-  --color-ink: #0f172a;
-  --color-ink-soft: #475569;
-  --color-ink-muted: #94a3b8;
+  /* Semantic surface/foreground tokens (LIGHT defaults).
+     Dark mode overrides them on `.dark` below. */
+  --color-bg: #ffffff;
+  --color-bg-elevated: #fafafa;
+  --color-bg-subtle: #f4f4f5;
+  --color-bg-hover: #ececef;
 
-  --color-surface: #ffffff;
-  --color-surface-alt: #f8fafc;
-  --color-surface-hover: #f1f5f9;
+  --color-border: #e4e4e7;
+  --color-border-strong: #d4d4d8;
 
-  --color-border: #e2e8f0;
-  --color-border-strong: #cbd5e1;
+  --color-fg: #09090b;
+  --color-fg-muted: #52525b;
+  --color-fg-subtle: #a1a1aa;
 
-  --font-sans: var(--font-sans);
+  --color-accent: #1f4e78;
+  --color-accent-fg: #ffffff;
+  --color-accent-hover: #1a426a;
+  --color-accent-soft: #d9e7f3;
+  --color-accent-soft-fg: #1a426a;
+
+  --color-success: #16a34a;
+  --color-success-soft: #dcfce7;
+  --color-success-soft-fg: #166534;
+
+  --color-warning: #d97706;
+  --color-warning-soft: #fef3c7;
+  --color-warning-soft-fg: #92400e;
+
+  --color-danger: #dc2626;
+  --color-danger-soft: #fee2e2;
+  --color-danger-soft-fg: #991b1b;
+
+  --color-info: #2563eb;
+  --color-info-soft: #dbeafe;
+  --color-info-soft-fg: #1d4ed8;
+
+  /* Sidebar (always-dark, independent of theme). */
+  --color-sidebar-bg: #09090b;
+  --color-sidebar-bg-2: #0c0c0e;
+  --color-sidebar-border: #1f1f23;
+  --color-sidebar-fg: #d4d4d8;
+  --color-sidebar-fg-muted: #71717a;
+  --color-sidebar-fg-strong: #fafafa;
+  --color-sidebar-hover: #18181b;
+  --color-sidebar-active: #1f1f23;
+
+  /* Legacy aliases — keep existing pages (text-ink, bg-surface, brand-*, etc.)
+     working without touching every component. These resolve to semantic
+     tokens so they automatically adapt to the active theme. */
+  --color-ink: var(--color-fg);
+  --color-ink-soft: var(--color-fg-muted);
+  --color-ink-muted: var(--color-fg-subtle);
+  --color-surface: var(--color-bg);
+  --color-surface-alt: var(--color-bg-elevated);
+  --color-surface-hover: var(--color-bg-hover);
 }
 
-html {
-  color-scheme: light;
+/* DARK theme overrides — applied when <html class="dark">. */
+.dark {
+  --color-bg: #09090b;
+  --color-bg-elevated: #111113;
+  --color-bg-subtle: #18181b;
+  --color-bg-hover: #1f1f23;
+
+  --color-border: #1f1f23;
+  --color-border-strong: #2e2e33;
+
+  --color-fg: #fafafa;
+  --color-fg-muted: #a1a1aa;
+  --color-fg-subtle: #71717a;
+
+  --color-accent: #5392c2;
+  --color-accent-fg: #ffffff;
+  --color-accent-hover: #84b1d6;
+  --color-accent-soft: #143355;
+  --color-accent-soft-fg: #b3cfe7;
+
+  --color-success: #22c55e;
+  --color-success-soft: #052e16;
+  --color-success-soft-fg: #86efac;
+
+  --color-warning: #f59e0b;
+  --color-warning-soft: #451a03;
+  --color-warning-soft-fg: #fcd34d;
+
+  --color-danger: #ef4444;
+  --color-danger-soft: #450a0a;
+  --color-danger-soft-fg: #fca5a5;
+
+  --color-info: #3b82f6;
+  --color-info-soft: #172554;
+  --color-info-soft-fg: #93c5fd;
+}
+
+html,
+body {
+  background-color: var(--color-bg);
+  color: var(--color-fg);
 }
 
 body {
-  background-color: var(--color-surface-alt);
-  color: var(--color-ink);
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv11", "ss01";
 }
 
-/* Custom focus ring */
+/* Tighter, more confident headings. */
+h1,
+h2,
+h3,
+h4 {
+  letter-spacing: -0.015em;
+}
+
+/* Subtle focus ring tied to accent token. */
 *:focus-visible {
-  outline: 2px solid var(--color-brand-500);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
   border-radius: 6px;
 }
 
-/* Inputs */
+/* Selection. */
+::selection {
+  background-color: color-mix(in oklab, var(--color-accent) 30%, transparent);
+  color: var(--color-fg);
+}
+
+/* Scrollbar — discreet, theme-aware. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-fg-subtle);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+/* Native form controls inherit the page colors so dark mode looks right. */
+input,
+textarea,
+select,
+button {
+  font: inherit;
+  color: inherit;
+}
+
 input[type="text"],
 input[type="email"],
 input[type="password"],
 input[type="date"],
-input[type="file"] {
-  color: var(--color-ink);
+input[type="number"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+input[type="file"],
+textarea,
+select {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-fg);
 }
 
-/* Tables clean borders */
 table {
   border-collapse: collapse;
 }

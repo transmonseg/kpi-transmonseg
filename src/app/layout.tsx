@@ -1,10 +1,18 @@
 import type { Metadata } from 'next'
-import { Geist } from 'next/font/google'
+import { Geist, Geist_Mono } from 'next/font/google'
+import { ThemeProvider, THEME_INIT_SCRIPT } from '@/lib/theme/ThemeProvider'
 import './globals.css'
 
-const geist = Geist({
+const geistSans = Geist({
   variable: '--font-sans',
   subsets: ['latin'],
+  display: 'swap',
+})
+
+const geistMono = Geist_Mono({
+  variable: '--font-mono',
+  subsets: ['latin'],
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
@@ -18,9 +26,19 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR" className={`${geist.variable} h-full antialiased`}>
-      <body className="min-h-full bg-zinc-50 text-zinc-900 font-sans">
-        {children}
+    <html
+      lang="pt-BR"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      <head>
+        <script
+          // Anti-FOUC: apply theme class before React mounts.
+          dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
+        />
+      </head>
+      <body className="min-h-full bg-[var(--color-bg)] text-[var(--color-fg)] font-sans">
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   )
