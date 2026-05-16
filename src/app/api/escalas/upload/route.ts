@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
 
-  const { tipo: tipoRaw, data, storagePath, replace } = await req.json()
+  const { tipo: tipoRaw, data, storagePath } = await req.json()
   const tipo = (tipoRaw as string)?.toUpperCase() as TipoEscala
 
   if (!TIPOS_VALIDOS.includes(tipo))
@@ -72,19 +72,13 @@ export async function POST(req: NextRequest) {
 
   const svc = createServiceClient()
 
-  // Check for duplicate
+  // Cenário A: sempre sobrescreve a versão anterior, sem perguntar
   const { data: existente } = await svc
     .from('escala_uploads')
     .select('id')
     .eq('data_escala', data)
     .eq('tipo', tipo)
-    .single()
-
-  if (existente && !replace)
-    return new NextResponse(
-      `Já existe upload de escala ${tipo} para ${data}. Use replace=true para sobrescrever.`,
-      { status: 409 }
-    )
+    .maybeSingle()
 
   // Read file from Storage
   const { data: fileBlob, error: downloadErr } = await svc.storage
@@ -191,5 +185,6 @@ export async function POST(req: NextRequest) {
     upload_id: upload.id,
     qtd_linhas: linhas.length,
     qtd_orfas: qtdOrfas,
+    substituiu: !!existente,
   })
 }

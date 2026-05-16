@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
 
-  const { data, storagePath, replace } = await req.json()
+  const { data, storagePath } = await req.json()
 
   if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data as string))
     return new NextResponse('Data inválida. Use YYYY-MM-DD.', { status: 400 })
@@ -42,18 +42,12 @@ export async function POST(req: NextRequest) {
 
   const svc = createServiceClient()
 
-  // Check for duplicate
+  // Cenário A: sempre sobrescreve, sem perguntar
   const { data: existente } = await svc
     .from('unitrac_uploads')
     .select('id')
     .eq('data_relatorio', data)
-    .single()
-
-  if (existente && !replace)
-    return new NextResponse(
-      `Já existe upload Unitrac para ${data}. Use replace=true para sobrescrever.`,
-      { status: 409 }
-    )
+    .maybeSingle()
 
   // Read file from Storage
   const { data: fileBlob, error: downloadErr } = await svc.storage
@@ -142,5 +136,6 @@ export async function POST(req: NextRequest) {
     upload_id: upload.id,
     qtd_abas: veiculos.length,
     qtd_paradas: qtdParadas,
+    substituiu: !!existente,
   })
 }

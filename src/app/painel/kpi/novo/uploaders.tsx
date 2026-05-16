@@ -3,13 +3,12 @@
 import { useRef, useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-type EscalaResult = { upload_id: string; qtd_linhas: number; qtd_orfas: number }
-type UnitracResult = { upload_id: string; qtd_abas: number; qtd_paradas: number }
+type EscalaResult = { upload_id: string; qtd_linhas: number; qtd_orfas: number; substituiu?: boolean }
+type UnitracResult = { upload_id: string; qtd_abas: number; qtd_paradas: number; substituiu?: boolean }
 type CardState =
   | { status: 'idle' }
   | { status: 'uploading'; step: string }
   | { status: 'ok'; payload: EscalaResult | UnitracResult }
-  | { status: 'conflict'; message: string }
   | { status: 'error'; message: string }
 
 function useUploadCard() {
@@ -26,7 +25,6 @@ async function uploadEscala(
   arquivo: File,
   data: string,
   tipo: string,
-  replace: boolean,
   onStep: (s: string) => void,
 ): Promise<EscalaResult> {
   const ext = arquivo.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'xlsx'
@@ -35,41 +33,26 @@ async function uploadEscala(
     : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   const storagePath = `${data}/${tipo.toLowerCase()}.${ext}`
 
-  // 1. Upload directly to Supabase Storage (bypasses Vercel body limit)
   onStep('Enviando arquivo…')
   const supabase = createClient()
   const { error: storageErr } = await supabase.storage
     .from('escalas-raw')
-    .upload(storagePath, arquivo, {
-      contentType,
-      upsert: replace,
-    })
-  if (storageErr) {
-    const err = new Error(storageErr.message || 'Erro ao enviar arquivo.')
-    ;(err as Error & { status: number }).status = (storageErr as unknown as { status?: number }).status ?? 500
-    throw err
-  }
+    .upload(storagePath, arquivo, { contentType, upsert: true })
+  if (storageErr) throw new Error(storageErr.message || 'Erro ao enviar arquivo.')
 
-  // 2. Trigger server-side parsing + DB insert
   onStep('Processando…')
   const res = await fetch('/api/escalas/upload', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tipo, data, storagePath, replace }),
+    body: JSON.stringify({ tipo, data, storagePath }),
   })
-  if (!res.ok) {
-    const text = await res.text()
-    const err = new Error(text || 'Erro ao processar escala.')
-    ;(err as Error & { status: number }).status = res.status
-    throw err
-  }
+  if (!res.ok) throw new Error((await res.text()) || 'Erro ao processar escala.')
   return res.json()
 }
 
 async function uploadUnitrac(
   arquivo: File,
   data: string,
-  replace: boolean,
   onStep: (s: string) => void,
 ): Promise<UnitracResult> {
   const ext = arquivo.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'xlsx'
@@ -78,42 +61,21 @@ async function uploadUnitrac(
     : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   const storagePath = `${data}/unitrac.${ext}`
 
-  // 1. Upload directly to Supabase Storage (bypasses Vercel body limit)
   onStep('Enviando arquivo…')
   const supabase = createClient()
   const { error: storageErr } = await supabase.storage
     .from('unitrac-raw')
-    .upload(storagePath, arquivo, {
-      contentType,
-      upsert: replace,
-    })
-  if (storageErr) {
-    const err = new Error(storageErr.message || 'Erro ao enviar arquivo.')
-    ;(err as Error & { status: number }).status = (storageErr as unknown as { status?: number }).status ?? 500
-    throw err
-  }
+    .upload(storagePath, arquivo, { contentType, upsert: true })
+  if (storageErr) throw new Error(storageErr.message || 'Erro ao enviar arquivo.')
 
-  // 2. Trigger server-side parsing + DB insert
   onStep('Processando…')
   const res = await fetch('/api/unitrac/upload', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ data, storagePath, replace }),
+    body: JSON.stringify({ data, storagePath }),
   })
-  if (!res.ok) {
-    const text = await res.text()
-    const err = new Error(text || 'Erro ao processar Unitrac.')
-    ;(err as Error & { status: number }).status = res.status
-    throw err
-  }
+  if (!res.ok) throw new Error((await res.text()) || 'Erro ao processar Unitrac.')
   return res.json()
-}
-
-function isConflict(e: unknown): boolean {
-  const err = e as Error & { status?: number }
-  if (err?.status === 409) return true
-  const msg = err?.message?.toLowerCase() ?? ''
-  return msg.includes('already exists') || msg.includes('duplicate') || msg.includes('23505')
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -164,7 +126,7 @@ function DateField({ value, onChange }: { value: string; onChange: (v: string) =
   )
 }
 
-function StatusArea({ state, onReplace }: { state: CardState; onReplace: () => void }) {
+function StatusArea({ state }: { state: CardState }) {
   if (state.status === 'idle') return null
 
   if (state.status === 'uploading') {
@@ -178,26 +140,13 @@ function StatusArea({ state, onReplace }: { state: CardState; onReplace: () => v
   if (state.status === 'ok') {
     const p = state.payload
     const isUnitrac = 'qtd_abas' in p
+    const detalhe = isUnitrac
+      ? `${(p as UnitracResult).qtd_abas} veículos · ${(p as UnitracResult).qtd_paradas} paradas`
+      : `${(p as EscalaResult).qtd_linhas} linhas · ${(p as EscalaResult).qtd_orfas} sem placa`
+    const prefix = p.substituiu ? 'Substituído.' : 'Enviado.'
     return (
       <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-sm text-emerald-800 font-medium">
-        Enviado com sucesso.{' '}
-        {isUnitrac
-          ? `${(p as UnitracResult).qtd_abas} veículos · ${(p as UnitracResult).qtd_paradas} paradas`
-          : `${(p as EscalaResult).qtd_linhas} linhas · ${(p as EscalaResult).qtd_orfas} sem placa`}
-      </div>
-    )
-  }
-
-  if (state.status === 'conflict') {
-    return (
-      <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800 space-y-1.5">
-        <p>{state.message}</p>
-        <button
-          onClick={onReplace}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-amber-900 underline underline-offset-2 hover:text-amber-700"
-        >
-          Sobrescrever mesmo assim
-        </button>
+        {prefix} {detalhe}
       </div>
     )
   }
@@ -228,22 +177,17 @@ function EscalaCard({
 }) {
   const { arquivo, setArquivo, data, setData, state, setState, pending, start } = useUploadCard()
 
-  function doUpload(replace = false) {
+  function doUpload() {
     if (!arquivo) return
     setState({ status: 'uploading', step: 'Iniciando…' })
     start(async () => {
       try {
-        const res = await uploadEscala(arquivo, data, tipo, replace, (step) =>
+        const res = await uploadEscala(arquivo, data, tipo, (step) =>
           setState({ status: 'uploading', step })
         )
         setState({ status: 'ok', payload: res })
       } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e)
-        if (isConflict(e)) {
-          setState({ status: 'conflict', message: msg })
-        } else {
-          setState({ status: 'error', message: msg })
-        }
+        setState({ status: 'error', message: e instanceof Error ? e.message : String(e) })
       }
     })
   }
@@ -269,10 +213,10 @@ function EscalaCard({
         <DateField value={data} onChange={setData} />
       </div>
 
-      <StatusArea state={state} onReplace={() => doUpload(true)} />
+      <StatusArea state={state} />
 
       <button
-        onClick={() => doUpload(false)}
+        onClick={() => doUpload()}
         disabled={!arquivo || busy}
         className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition shadow-sm shadow-brand-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
       >
@@ -289,22 +233,17 @@ function EscalaCard({
 function UnitracCard() {
   const { arquivo, setArquivo, data, setData, state, setState, pending, start } = useUploadCard()
 
-  function doUpload(replace = false) {
+  function doUpload() {
     if (!arquivo) return
     setState({ status: 'uploading', step: 'Iniciando…' })
     start(async () => {
       try {
-        const res = await uploadUnitrac(arquivo, data, replace, (step) =>
+        const res = await uploadUnitrac(arquivo, data, (step) =>
           setState({ status: 'uploading', step })
         )
         setState({ status: 'ok', payload: res })
       } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e)
-        if (isConflict(e)) {
-          setState({ status: 'conflict', message: msg })
-        } else {
-          setState({ status: 'error', message: msg })
-        }
+        setState({ status: 'error', message: e instanceof Error ? e.message : String(e) })
       }
     })
   }
@@ -332,10 +271,10 @@ function UnitracCard() {
         <DateField value={data} onChange={setData} />
       </div>
 
-      <StatusArea state={state} onReplace={() => doUpload(true)} />
+      <StatusArea state={state} />
 
       <button
-        onClick={() => doUpload(false)}
+        onClick={() => doUpload()}
         disabled={!arquivo || busy}
         className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
       >
