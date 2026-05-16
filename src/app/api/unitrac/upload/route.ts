@@ -92,7 +92,9 @@ export async function POST(req: NextRequest) {
   const qtdParadas = veiculos.reduce((acc, v) => acc + v.paradas.length, 0)
 
   if (existente) {
-    await svc.from('unitrac_uploads').delete().eq('id', existente.id)
+    await svc.from('unitrac_paradas').delete().eq('unitrac_upload_id', existente.id)
+    const { error: deleteErr } = await svc.from('unitrac_uploads').delete().eq('id', existente.id)
+    if (deleteErr) console.error('[unitrac/upload] delete existente error:', deleteErr.message)
   }
 
   const { data: upload, error: uploadErr } = await svc
