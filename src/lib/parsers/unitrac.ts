@@ -19,10 +19,11 @@ async function normalizeXlsxNamespaces(buf: Buffer): Promise<Buffer> {
     const xmlEntries = zip.file(/\.xml$/)
 
     for (const entry of xmlEntries) {
-      // Only normalize spreadsheet-related XMLs (xl/*). NEVER touch docProps/*
-      // because Dublin Core / extended-properties XMLs use prefixes like <dc:creator>
-      // that ExcelJS depends on. Stripping them breaks valid files.
-      if (!entry.name.startsWith('xl/')) continue
+      // Normalize xl/* AND docProps/app.xml (uses ap: prefix that ExcelJS can't parse).
+      // Skip docProps/core.xml: it uses dc:/cp: prefixes that ExcelJS depends on.
+      const isXl = entry.name.startsWith('xl/')
+      const isAppXml = entry.name === 'docProps/app.xml'
+      if (!isXl && !isAppXml) continue
       const xml: string = await entry.async('string')
       // Only process files that actually have prefixed element names like <ns:tag or </ns:tag
       if (!/<\w+:\w/.test(xml)) continue

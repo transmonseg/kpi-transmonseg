@@ -98,7 +98,10 @@ function numVal(cell: ExcelJS.Cell | undefined): number | null {
 
 function dateVal(cell: ExcelJS.Cell | undefined): Date | null {
   const v = cellVal(cell)
-  if (v instanceof Date) return v
+  if (v instanceof Date) {
+    // ExcelJS returns UTC midnight — normalize to local date to avoid off-by-one in UTC-3
+    return new Date(v.getUTCFullYear(), v.getUTCMonth(), v.getUTCDate())
+  }
   if (typeof v === 'string') {
     const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
     if (m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]))

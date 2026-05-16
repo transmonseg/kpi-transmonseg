@@ -42,10 +42,11 @@ function toStr(v: unknown): string | null {
   return s === '' ? null : s
 }
 
-function primeiraNome(v: unknown): string | null {
+function ultimoNome(v: unknown): string | null {
   const s = toStr(v)
   if (!s) return null
-  return s.split('/')[0].trim() || null
+  const parts = s.split('/')
+  return parts[parts.length - 1].trim() || null
 }
 
 function resolveDataEntrega(
@@ -122,7 +123,8 @@ export async function parseEscalaZonaSul(
       // date is in col 18 (1-based) = r[17]
       const dateVal = r[17]
       if (dateVal instanceof Date) {
-        currentDate = dateVal
+        // ExcelJS returns UTC midnight — normalize to local date to avoid off-by-one in UTC-3
+        currentDate = new Date(dateVal.getUTCFullYear(), dateVal.getUTCMonth(), dateVal.getUTCDate())
       }
       return
     }
@@ -150,8 +152,8 @@ export async function parseEscalaZonaSul(
     const totalKilos = toNum(r[9])
     const totalPallets = toNum(r[10])
     const tipoVeiculo = toStr(r[12])
-    const placaRaw = toStr(r[13])
-    const motoristaRaw = primeiraNome(r[18])
+    const placaRaw = toStr(r[14])
+    const motoristaRaw = ultimoNome(r[18])
     const codMotorista = toStr(r[19])
 
     const placaNorm = normalizaPlaca(placaRaw)
