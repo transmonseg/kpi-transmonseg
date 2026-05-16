@@ -183,6 +183,23 @@ export async function POST(req: NextRequest) {
   if (uploadErr || !upload)
     return new NextResponse(`Erro ao registrar upload: ${uploadErr?.message}`, { status: 500 })
 
+  // PostgreSQL/JSON rejeitam null bytes (U+0000) e outros control chars.
+  // pdf-parse v1 às vezes deixa esses bytes na extração — sanitizar.
+  const CONTROL_CHARS_RE = new RegExp('[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]', 'g')
+  const clean = <T>(v: T): T => {
+    if (typeof v === 'string') return v.replace(CONTROL_CHARS_RE, '') as T
+    if (v == null) return v
+    if (Array.isArray(v)) return v.map(clean) as T
+    if (typeof v === 'object') {
+      const out: Record<string, unknown> = {}
+      for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+        out[k] = clean(val)
+      }
+      return out as T
+    }
+    return v
+  }
+
   const BATCH = 100
   let qtdOrfas = 0
 
@@ -192,22 +209,22 @@ export async function POST(req: NextRequest) {
       escala_upload_id: upload.id,
       rede_id: l.rede_id,
       loja_id: null,
-      loja_nome_raw: l.loja_nome_raw,
-      loja_codigo_raw: l.loja_codigo_raw,
+      loja_nome_raw: clean(l.loja_nome_raw),
+      loja_codigo_raw: clean(l.loja_codigo_raw),
       placa_norm: l.placa_norm || null,
-      placa_raw: l.placa_raw,
-      motorista_nome: l.motorista_nome,
-      motorista_codigo: l.motorista_codigo,
-      tipo_carro: l.tipo_carro,
+      placa_raw: clean(l.placa_raw),
+      motorista_nome: clean(l.motorista_nome),
+      motorista_codigo: clean(l.motorista_codigo),
+      tipo_carro: clean(l.tipo_carro),
       turno: l.turno,
       carro_ordem: l.carro_ordem,
-      obs: l.obs,
-      restricao: l.restricao,
+      obs: clean(l.obs),
+      restricao: clean(l.restricao),
       peso_kg: l.peso_kg,
       paletes: l.paletes,
       data_entrega: l.data_entrega,
       raw_row_num: l.raw_row_num,
-      raw_json: l,
+      raw_json: clean(l),
     }))
 
     const { error: insertErr } = await svc.from('escala_linhas').insert(rows)

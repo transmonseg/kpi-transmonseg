@@ -18,6 +18,15 @@ function detectaFormato(path: string): Formato | null {
   return null
 }
 
+// PostgreSQL/JSON rejeitam null bytes (U+0000) e outros control chars em texto.
+// pdf-parse v1 às vezes deixa esses bytes na extração — sanitizar antes do insert.
+// Mantém TAB (U+0009), LF (U+000A) e CR (U+000D); remove o resto do range 0x00-0x1F.
+const CONTROL_CHARS_RE = new RegExp('[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]', 'g')
+function sanitizeText(s: string | null | undefined): string | null {
+  if (s == null) return null
+  return s.replace(CONTROL_CHARS_RE, '')
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const {
@@ -111,12 +120,12 @@ export async function POST(req: NextRequest) {
       saida: p.saida.toISOString(),
       duracao_seg: p.duracao_seg,
       distancia_km: p.distancia_km,
-      endereco: p.endereco,
+      endereco: sanitizeText(p.endereco),
       lat: p.lat,
       lng: p.lng,
-      local_parada: p.local_parada,
-      codigo_loja: p.codigo_loja,
-      nome_loja: p.nome_loja,
+      local_parada: sanitizeText(p.local_parada),
+      codigo_loja: sanitizeText(p.codigo_loja),
+      nome_loja: sanitizeText(p.nome_loja),
       classificacao: p.classificacao,
       loja_id: null,
       ordem: p.ordem,
