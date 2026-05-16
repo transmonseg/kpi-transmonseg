@@ -80,6 +80,44 @@ export function AlteracaoForm() {
   const [pending, start] = useTransition()
   const [err, setErr] = useState<string | null>(null)
   const [savedResult, setSavedResult] = useState<AplicarResult | null>(null)
+  const [arquivoNome, setArquivoNome] = useState<string | null>(null)
+  const [uploadLoading, setUploadLoading] = useState(false)
+  const [reprocessando, setReprocessando] = useState(false)
+
+  async function handleArquivoUpload(file: File) {
+    setArquivoNome(file.name)
+    setUploadLoading(true)
+    setErr(null)
+    setSavedResult(null)
+    setParsed(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('data_escala', data)
+      const res = await fetch('/api/alteracoes/upload', { method: 'POST', body: fd })
+      if (!res.ok) throw new Error(await res.text())
+      const resultado = (await res.json()) as AlteracaoParsed
+      setParsed(resultado)
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Erro no upload.')
+    } finally {
+      setUploadLoading(false)
+    }
+  }
+
+  async function reprocessarKpi(dataParam: string, redeId: string | null) {
+    try {
+      const body: Record<string, string> = { data: dataParam }
+      if (redeId) body.rede_id = redeId
+      await fetch('/api/kpi/processar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+    } catch (e) {
+      console.error('Erro ao reprocessar:', e)
+    }
+  }
 
   function analisar() {
     setErr(null)
@@ -118,6 +156,12 @@ export function AlteracaoForm() {
         if (!res.ok) throw new Error(await res.text())
         const json = (await res.json()) as AplicarResult
         setSavedResult(json)
+        setReprocessando(true)
+        try {
+          await reprocessarKpi(data, parsed.rede_id)
+        } finally {
+          setReprocessando(false)
+        }
       } catch (e) {
         setErr(e instanceof Error ? e.message : 'Erro ao aplicar.')
       }
@@ -152,6 +196,27 @@ export function AlteracaoForm() {
               placeholder={PLACEHOLDER}
               className="font-mono text-[12px] min-h-[200px]"
             />
+          </div>
+
+          {/* Upload de arquivo de alteracao */}
+          <div className="border rounded-lg p-4 mt-2">
+            <Label className="mb-2 block text-sm font-medium">Upload de Arquivo (PDF ou XLSX)</Label>
+            <input
+              type="file"
+              accept=".pdf,.xlsx,.xls"
+              disabled={uploadLoading}
+              className="block w-full text-sm text-muted-foreground file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-muted file:text-muted-foreground hover:file:bg-accent"
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) handleArquivoUpload(f)
+              }}
+            />
+            {arquivoNome && (
+              <p className="mt-1 text-xs text-muted-foreground">{arquivoNome}</p>
+            )}
+            {uploadLoading && (
+              <p className="mt-2 text-sm text-muted-foreground animate-pulse">Analisando arquivo...</p>
+            )}
           </div>
 
           <div className="flex items-center gap-3 pt-1">
@@ -216,15 +281,20 @@ export function AlteracaoForm() {
 
           <div className="flex items-center gap-3 border-t border-[var(--color-border)] px-5 py-3">
             {savedResult ? (
-              <div
-                className={cn(
-                  'inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-[13px] font-semibold',
-                  'border-transparent bg-[var(--color-success-soft)] text-[var(--color-success-soft-fg)]',
+              <>
+                <div
+                  className={cn(
+                    'inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-[13px] font-semibold',
+                    'border-transparent bg-[var(--color-success-soft)] text-[var(--color-success-soft-fg)]',
+                  )}
+                >
+                  <span aria-hidden="true">✓</span>
+                  <span>Salvo (status: {savedResult.status})</span>
+                </div>
+                {reprocessando && (
+                  <Badge variant="default" className="animate-pulse">Reprocessando KPI...</Badge>
                 )}
-              >
-                <span aria-hidden="true">✓</span>
-                <span>Salvo (status: {savedResult.status})</span>
-              </div>
+              </>
             ) : (
               <Button
                 type="button"
