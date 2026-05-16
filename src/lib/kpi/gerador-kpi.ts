@@ -2,8 +2,9 @@ import ExcelJS from 'exceljs'
 import type { KpiLinha } from '@/lib/types/kpi'
 import { KPI_COLORS, KPI_FONTS, KPI_BORDER_THIN, REDE_NOMES_CANONICOS, formataDataPtBr } from './kpi-styles'
 import { getLogoBuffer, carregarOuCriarWorkbook, nomeAbaDoDia } from './template-loader'
-import { getMatrizLojas, detectarMaxLojasPorRota } from '@/lib/lojas/catalogo-matriz'
+import { getMatrizLojas } from '@/lib/lojas/catalogo-matriz'
 import { joinObsTexts, temAnomaliaHigh } from './anomalia-obs'
+import { agruparPorLoja, type LinhaAgrupada } from './agrupar-por-loja'
 
 /** Linha enriquecida com info que não está no schema kpi_linhas. */
 export interface LinhaParaKpi extends KpiLinha {
@@ -18,19 +19,10 @@ export interface GerarKpiInput {
   arquivoExistente?: Buffer | null
 }
 
-function fmt(d: Date | null | undefined): string {
-  if (!d) return ''
-  return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
-}
-
-function colLetter(n: number): string {
-  let result = ''
-  while (n > 0) {
-    const rem = (n - 1) % 26
-    result = String.fromCharCode(65 + rem) + result
-    n = Math.floor((n - 1) / 26)
-  }
-  return result
+function toExcelTime(d: Date | null | undefined): number | null {
+  if (!d) return null
+  const brt = new Date(d.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
+  return (brt.getHours() * 3600 + brt.getMinutes() * 60 + brt.getSeconds()) / 86400
 }
 
 export async function gerarKpi(input: GerarKpiInput): Promise<Buffer> {
@@ -62,18 +54,16 @@ async function preencherAba(
   ctx: { rede_id: string; redeNome: string; data: string; linhas: LinhaParaKpi[] },
 ) {
   const { rede_id, redeNome, data, linhas } = ctx
-  const maxLojas = detectarMaxLojasPorRota(linhas)
-  const totalCols = 5 + maxLojas * 3 + 1
-  const lastCol = colLetter(totalCols)
+  const TOTAL_COLS = 15
+  const lastCol = 'O'
 
-  // Larguras
   ws.columns = [
-    { width: 35 }, { width: 28 }, { width: 10 }, { width: 12 }, { width: 12 },
-    ...Array.from({ length: maxLojas * 3 }, () => ({ width: 12 })),
-    { width: 30 },
+    { width: 35 }, { width: 28 }, { width: 8 },  { width: 10 }, { width: 8 },
+    { width: 8 },  { width: 8 },  { width: 8 },  { width: 28 }, { width: 8 },
+    { width: 10 }, { width: 8 },  { width: 8 },  { width: 8 },  { width: 30 },
   ]
 
-  // Row 1: header amarelo com logo
+  // Row 1: header amarelo + logo
   ws.mergeCells(`A1:${lastCol}1`)
   const c1 = ws.getCell('A1')
   c1.value = `RELATÓRIO KPI · ${redeNome}`
@@ -87,32 +77,41 @@ async function preencherAba(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const logoId = wb.addImage({ buffer: logoBuf as any, extension: 'png' })
     ws.addImage(logoId, { tl: { col: 0, row: 0 }, ext: { width: 100, height: 50 }, editAs: 'oneCell' })
-    ws.addImage(logoId, { tl: { col: totalCols - 1, row: 0 }, ext: { width: 100, height: 50 }, editAs: 'oneCell' })
+    ws.addImage(logoId, { tl: { col: TOTAL_COLS - 1, row: 0 }, ext: { width: 100, height: 50 }, editAs: 'oneCell' })
   } catch (e) {
     console.warn(`Logo não encontrada: ${(e as Error).message}`)
   }
 
-  // Row 2: subtítulo BENASSI + data
-  ws.mergeCells(`A2:${lastCol}2`)
-  const c2 = ws.getCell('A2')
-  c2.value = `BENASSI · ${formataDataPtBr(data)}`
-  c2.font = KPI_FONTS.SUBTITLE
-  c2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: KPI_COLORS.BG_WHITE } }
-  c2.alignment = { horizontal: 'center', vertical: 'middle' }
+  // Row 2: subtítulo + grupos de carro
+  ws.getCell('A2').value = `BENASSI · ${formataDataPtBr(data)}`
+  ws.getCell('A2').font = KPI_FONTS.SUBTITLE
+  ws.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' }
+
+  ws.mergeCells('B2:H2')
+  ws.getCell('B2').value = `${redeNome} — 1º CARRO`
+  ws.getCell('B2').font = { ...KPI_FONTS.HEADER, color: { argb: 'FFFFFFFF' } }
+  ws.getCell('B2').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: KPI_COLORS.BRAND_BLUE } }
+  ws.getCell('B2').alignment = { horizontal: 'center', vertical: 'middle' }
+
+  ws.mergeCells('I2:N2')
+  ws.getCell('I2').value = `${redeNome} — 2º CARRO`
+  ws.getCell('I2').font = { ...KPI_FONTS.HEADER, color: { argb: 'FFFFFFFF' } }
+  ws.getCell('I2').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A3A5C' } }
+  ws.getCell('I2').alignment = { horizontal: 'center', vertical: 'middle' }
+
   ws.getRow(2).height = 22
 
   // Row 3: separador
   ws.getRow(3).height = 8
 
   // Row 4: headers
-  const headers: string[] = ['REDES / FILIAIS', 'MOTORISTA', 'CÓDIGO', 'PLACA', 'SAÍDA CD']
-  for (let n = 1; n <= maxLojas; n++) {
-    headers.push(`CHD LOJA ${n}`, `SAÍDA LOJA ${n}`, `TEMPO LOJA ${n}`)
-  }
-  headers.push('OBS')
-
   const headerRow = ws.getRow(4)
-  headerRow.values = headers
+  headerRow.values = [
+    'REDES / FILIAIS',
+    'MOTORISTA', 'CÓD', 'PLACA', 'SAÍDA CD', 'CHD LOJA', 'SAÍDA LOJA', 'TEMPO',
+    'MOTORISTA', 'CÓD', 'PLACA', 'CHD LOJA', 'SAÍDA LOJA', 'TEMPO',
+    'OBS',
+  ]
   headerRow.height = 30
   headerRow.eachCell((cell) => {
     cell.font = KPI_FONTS.HEADER
@@ -120,60 +119,74 @@ async function preencherAba(
     cell.alignment = { horizontal: 'center', vertical: 'middle' }
   })
 
-  // Dados na ordem da matriz
+  // Dados agrupados por loja
   const lojasNoDia = [...new Set(linhas.map((l) => l.loja_nome).filter(Boolean))]
-  const ordem = getMatrizLojas(rede_id, lojasNoDia)
+  const ordemLojas = getMatrizLojas(rede_id, lojasNoDia)
+  const agrupadas = agruparPorLoja(linhas)
+  const agrupadasMap = new Map(agrupadas.map((a) => [a.loja_nome, a]))
+
   let rowIdx = 5
-  for (const loja of ordem) {
-    const linhasDessaLoja = linhas.filter((l) => l.loja_nome === loja)
-    if (linhasDessaLoja.length === 0) {
-      escreverLinhaPlaceholder(ws, rowIdx, loja, maxLojas)
-      rowIdx++
-      continue
+  for (const loja of ordemLojas) {
+    const agrupada = agrupadasMap.get(loja) ?? { loja_nome: loja, carro1: null, carro2: null }
+    if (!agrupada.carro1 && !agrupada.carro2) {
+      escreverLinhaPlaceholder15(ws, rowIdx, loja)
+    } else {
+      escreverLinhaDados15(ws, rowIdx, agrupada)
     }
-    for (const linha of linhasDessaLoja) {
-      escreverLinhaDados(ws, rowIdx, linha, maxLojas)
-      rowIdx++
-    }
+    rowIdx++
   }
 }
 
-function escreverLinhaPlaceholder(ws: ExcelJS.Worksheet, row: number, loja: string, maxLojas: number) {
-  const r = ws.getRow(row)
-  r.height = 22
-  const empties = Array(5 + maxLojas * 3 + 1 - 1).fill('')
-  r.values = [loja, ...empties]
-  r.eachCell({ includeEmpty: true }, (cell, colNum) => {
-    cell.font = colNum === 1 ? KPI_FONTS.BODY_MUTED : KPI_FONTS.BODY
-    cell.alignment = { horizontal: colNum === 1 ? 'left' : 'center', vertical: 'middle' }
-    cell.border = KPI_BORDER_THIN
-  })
-}
-
-function escreverLinhaDados(ws: ExcelJS.Worksheet, row: number, linha: LinhaParaKpi, maxLojas: number) {
+function escreverLinhaDados15(ws: ExcelJS.Worksheet, row: number, ag: LinhaAgrupada) {
   const r = ws.getRow(row)
   r.height = 22
 
-  const motoristaTexto = (linha.motorista ?? '') + (linha.carro_ordem === 2 ? ' (2º CARRO)' : '')
-  const values: (string | number | null)[] = [
-    linha.loja_nome,
-    motoristaTexto,
-    linha.motorista_codigo ?? '',
-    linha.placa ?? '',
-    fmt(linha.saida_cd),
+  const c1 = ag.carro1
+  const c2 = ag.carro2
+
+  const saida1 = toExcelTime(c1?.saida_cd)
+  const chd1   = toExcelTime(c1?.chd_loja_1)
+  const sai1   = toExcelTime(c1?.saida_loja_1)
+  const chd2   = toExcelTime(c2?.chd_loja_1)
+  const sai2   = toExcelTime(c2?.saida_loja_1)
+
+  r.values = [
+    ag.loja_nome,
+    c1?.motorista ?? '',
+    c1?.motorista_codigo ?? '',
+    c1?.placa ?? '',
+    saida1 ?? '',
+    chd1 ?? '',
+    sai1 ?? '',
+    '',
+    c2?.motorista ?? '',
+    c2?.motorista_codigo ?? '',
+    c2?.placa ?? '',
+    chd2 ?? '',
+    sai2 ?? '',
+    '',
+    joinObsTexts([
+      ...((c1?.anomalias_codigos) ?? []),
+      ...((c2?.anomalias_codigos) ?? []),
+    ]) || '',
   ]
-  for (let n = 1; n <= maxLojas; n++) {
-    const chd = n === 1 ? linha.chd_loja_1 : n === 2 ? linha.chd_loja_2 : linha.chd_loja_3
-    const sai = n === 1 ? linha.saida_loja_1 : n === 2 ? linha.saida_loja_2 : linha.saida_loja_3
-    const tempo = n === 1 ? linha.tempo_loja_1_min : n === 2 ? linha.tempo_loja_2_min : linha.tempo_loja_3_min
-    values.push(fmt(chd), fmt(sai), tempo ?? '')
+
+  if (chd1 !== null && sai1 !== null) {
+    ws.getCell(row, 8).value = { formula: `MOD(G${row}-F${row},1)` }
+    ws.getCell(row, 8).numFmt = 'HH:MM'
   }
-  const obs = joinObsTexts(linha.anomalias_codigos ?? [])
-  values.push(obs)
+  if (chd2 !== null && sai2 !== null) {
+    ws.getCell(row, 14).value = { formula: `MOD(M${row}-L${row},1)` }
+    ws.getCell(row, 14).numFmt = 'HH:MM'
+  }
 
-  r.values = values
+  for (const colIdx of [5, 6, 7, 12, 13]) {
+    const cell = ws.getCell(row, colIdx)
+    if (cell.value !== '') cell.numFmt = 'HH:MM'
+  }
 
-  const hasHigh = temAnomaliaHigh(linha.anomalias_codigos ?? [])
+  const codigos = [...((c1?.anomalias_codigos) ?? []), ...((c2?.anomalias_codigos) ?? [])]
+  const hasHigh = temAnomaliaHigh(codigos)
   const zebraColor = row % 2 === 0 ? KPI_COLORS.BG_ZEBRA : KPI_COLORS.BG_WHITE
   const bgColor = hasHigh ? KPI_COLORS.ANOMALIA_HIGH_BG : zebraColor
 
@@ -182,15 +195,17 @@ function escreverLinhaDados(ws: ExcelJS.Worksheet, row: number, linha: LinhaPara
     cell.alignment = { horizontal: colNum === 1 ? 'left' : 'center', vertical: 'middle' }
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } }
     cell.border = KPI_BORDER_THIN
-    // Formatação condicional do TEMPO LOJA
-    const tempoCols = Array.from({ length: maxLojas }, (_, i) => 6 + (i * 3) + 2) // 8, 11, 14
-    if (tempoCols.includes(colNum) && typeof cell.value === 'number') {
-      const tempo = cell.value as number
-      let color: string
-      if (tempo <= 60) color = KPI_COLORS.TEMPO_GOOD
-      else if (tempo <= 120) color = KPI_COLORS.TEMPO_MEDIUM
-      else color = KPI_COLORS.TEMPO_HIGH
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: color } }
-    }
   })
 }
+
+function escreverLinhaPlaceholder15(ws: ExcelJS.Worksheet, row: number, loja: string) {
+  const r = ws.getRow(row)
+  r.height = 22
+  r.values = [loja, ...Array(14).fill('')]
+  r.eachCell({ includeEmpty: true }, (cell, colNum) => {
+    cell.font = colNum === 1 ? KPI_FONTS.BODY_MUTED : KPI_FONTS.BODY
+    cell.alignment = { horizontal: colNum === 1 ? 'left' : 'center', vertical: 'middle' }
+    cell.border = KPI_BORDER_THIN
+  })
+}
+
