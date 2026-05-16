@@ -29,7 +29,11 @@ async function uploadEscala(
   replace: boolean,
   onStep: (s: string) => void,
 ): Promise<EscalaResult> {
-  const storagePath = `${data}/${tipo.toLowerCase()}.xlsx`
+  const ext = arquivo.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'xlsx'
+  const contentType = ext === 'pdf'
+    ? 'application/pdf'
+    : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  const storagePath = `${data}/${tipo.toLowerCase()}.${ext}`
 
   // 1. Upload directly to Supabase Storage (bypasses Vercel body limit)
   onStep('Enviando arquivo…')
@@ -37,7 +41,7 @@ async function uploadEscala(
   const { error: storageErr } = await supabase.storage
     .from('escalas-raw')
     .upload(storagePath, arquivo, {
-      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      contentType,
       upsert: replace,
     })
   if (storageErr) {
@@ -68,7 +72,11 @@ async function uploadUnitrac(
   replace: boolean,
   onStep: (s: string) => void,
 ): Promise<UnitracResult> {
-  const storagePath = `${data}/unitrac.xlsx`
+  const ext = arquivo.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'xlsx'
+  const contentType = ext === 'pdf'
+    ? 'application/pdf'
+    : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  const storagePath = `${data}/unitrac.${ext}`
 
   // 1. Upload directly to Supabase Storage (bypasses Vercel body limit)
   onStep('Enviando arquivo…')
@@ -76,7 +84,7 @@ async function uploadUnitrac(
   const { error: storageErr } = await supabase.storage
     .from('unitrac-raw')
     .upload(storagePath, arquivo, {
-      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      contentType,
       upsert: replace,
     })
   if (storageErr) {
@@ -113,9 +121,11 @@ function isConflict(e: unknown): boolean {
 function FileZone({
   arquivo,
   onChange,
+  accept = '.xlsx,.pdf',
 }: {
   arquivo: File | null
   onChange: (f: File | null) => void
+  accept?: string
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   return (
@@ -131,11 +141,11 @@ function FileZone({
       <span className="text-xs font-medium text-ink leading-tight pointer-events-none">
         {arquivo ? arquivo.name : 'Clique para selecionar'}
       </span>
-      <span className="text-[10px] text-ink-soft mt-0.5 pointer-events-none">.xlsx</span>
+      <span className="text-[10px] text-ink-soft mt-0.5 pointer-events-none">{accept}</span>
       <input
         ref={inputRef}
         type="file"
-        accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        accept={accept}
         onChange={e => onChange(e.target.files?.[0] ?? null)}
         className="hidden"
       />
@@ -205,7 +215,17 @@ function StatusArea({ state, onReplace }: { state: CardState; onReplace: () => v
 
 // ─── Upload cards ──────────────────────────────────────────────────────────────
 
-function EscalaCard({ tipo, label, desc }: { tipo: string; label: string; desc: string }) {
+function EscalaCard({
+  tipo,
+  label,
+  desc,
+  accept = '.xlsx,.pdf',
+}: {
+  tipo: string
+  label: string
+  desc: string
+  accept?: string
+}) {
   const { arquivo, setArquivo, data, setData, state, setState, pending, start } = useUploadCard()
 
   function doUpload(replace = false) {
@@ -242,7 +262,7 @@ function EscalaCard({ tipo, label, desc }: { tipo: string; label: string; desc: 
         <p className="text-xs text-ink-soft">{desc}</p>
       </div>
 
-      <FileZone arquivo={arquivo} onChange={setArquivo} />
+      <FileZone arquivo={arquivo} onChange={setArquivo} accept={accept} />
 
       <div>
         <label className="block text-xs font-medium text-ink-soft mb-1">Data da escala</label>
@@ -301,11 +321,11 @@ function UnitracCard() {
           <h3 className="font-semibold text-ink text-sm">Relatório Unitrac</h3>
         </div>
         <p className="text-xs text-ink-soft">
-          Relatório de paradas exportado do Unitrac. Uma aba por veículo.
+          Relatório Parada x Serviço (analítico). PDF é o formato preferido.
         </p>
       </div>
 
-      <FileZone arquivo={arquivo} onChange={setArquivo} />
+      <FileZone arquivo={arquivo} onChange={setArquivo} accept=".xlsx,.pdf" />
 
       <div>
         <label className="block text-xs font-medium text-ink-soft mb-1">Data do relatório</label>
@@ -335,24 +355,37 @@ export function Uploaders() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-sm font-semibold text-ink-soft uppercase tracking-wider mb-3">
+        <h2 className="text-sm font-semibold text-ink-soft uppercase tracking-wider mb-1">
           Escalas
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <p className="text-xs text-ink-soft mb-3">
+          Você pode enviar cada escala em <b>XLSX</b> ou <b>PDF</b> — o sistema detecta o formato.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <EscalaCard
             tipo="GERAL"
             label="Escala Geral"
-            desc="Assaí, Sendas e demais redes. Abas por dia."
+            desc="Princesa, Assaí, Prezunic, Carrefour e demais redes. Aceita XLSX ou PDF."
           />
           <EscalaCard
             tipo="ZONA_SUL"
             label="Escala Zona Sul"
-            desc="Aba MATRIZ. Carregamentos D/D+1 por horário e filial."
+            desc="Matriz por dia, regra D+1 nas filiais 17h+. XLSX ou PDF."
           />
           <EscalaCard
             tipo="PAX"
             label="Escala PAX"
-            desc="Super Pax, Feira Nova e Rede Emanuel. Abas por dia."
+            desc="Super Pax, Feira Nova e Rede Emanuel. XLSX ou PDF."
+          />
+          <EscalaCard
+            tipo="ARMAZEM_GRAO"
+            label="Armazém do Grão"
+            desc="Rede própria (Regina, Abastecedora, Armazém do Grão). Aceita XLSX ou PDF."
+          />
+          <EscalaCard
+            tipo="GUANABARA"
+            label="Escala Guanabara"
+            desc="Escala diária HLOG. 31 rotas numeradas. PDF do dia ou XLSX."
           />
         </div>
       </div>
