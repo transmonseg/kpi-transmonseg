@@ -7,7 +7,6 @@ type EscalaUpload = {
   id: string
   tipo: string
   qtd_linhas: number | null
-  qtd_orfas: number | null
   created_at: string
 }
 

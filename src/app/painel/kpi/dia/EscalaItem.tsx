@@ -6,7 +6,6 @@ type EscalaUpload = {
   id: string
   tipo: string
   qtd_linhas: number | null
-  qtd_orfas: number | null
   created_at: string
 }
 
@@ -47,9 +46,6 @@ export function EscalaItem(props: Props) {
           <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${badge}`}>{label}</span>
           <span className="text-xs font-semibold text-emerald-800">
             {upload.qtd_linhas ?? '?'} linhas
-            {upload.qtd_orfas != null && upload.qtd_orfas > 0 && (
-              <span className="text-emerald-600 font-normal"> · {upload.qtd_orfas} sem placa</span>
-            )}
           </span>
         </div>
         <div className="flex items-center gap-2">

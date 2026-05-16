@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
   const { data: rows, error } = await svc
     .from('escala_uploads')
-    .select('id, tipo, qtd_linhas, qtd_orfas, created_at')
+    .select('id, tipo, qtd_linhas, created_at')
     .eq('data_escala', data)
     .order('tipo')
 

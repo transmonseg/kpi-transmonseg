@@ -11,7 +11,6 @@ type EscalaUpload = {
   id: string
   tipo: string
   qtd_linhas: number | null
-  qtd_orfas: number | null
   created_at: string
 }
 
@@ -19,7 +18,7 @@ async function fetchEscalasDoDia(data: string): Promise<EscalaUpload[]> {
   const svc = createServiceClient()
   const { data: rows, error } = await svc
     .from('escala_uploads')
-    .select('id, tipo, qtd_linhas, qtd_orfas, created_at')
+    .select('id, tipo, qtd_linhas, created_at')
     .eq('data_escala', data)
     .order('tipo')
   if (error) throw new Error(error.message)
