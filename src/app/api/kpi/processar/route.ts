@@ -245,6 +245,24 @@ export async function POST(req: NextRequest) {
       const { error: anomErr } = await svc.from('anomalias').insert(anomaliaRows)
       if (anomErr)
         return new NextResponse(`Erro ao inserir anomalias: ${anomErr.message}`, { status: 500 })
+
+      // Escrever anomalias_codigos de volta em kpi_rotas (para exibição no front-end)
+      const codigosByRotaId = new Map<string, string[]>()
+      for (const a of anomalias) {
+        const rotaId = a.kpi_rota_id
+          ? rotaIdByEscalaLinhaId.get(a.kpi_rota_id) ?? null
+          : null
+        if (!rotaId) continue
+        const list = codigosByRotaId.get(rotaId) ?? []
+        list.push(a.codigo)
+        codigosByRotaId.set(rotaId, list)
+      }
+      for (const [rotaId, codigos] of codigosByRotaId) {
+        await svc
+          .from('kpi_rotas')
+          .update({ anomalias_codigos: codigos })
+          .eq('id', rotaId)
+      }
     }
 
     totalAnomalias.HIGH += anomalias.filter((a) => a.severidade === 'HIGH').length
