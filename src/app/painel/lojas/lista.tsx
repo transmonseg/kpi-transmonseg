@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useEffect, useCallback } from 'react'
+import { Badge, Button, Card, Input, Label } from '@/components/ui'
 
 type LojaRow = {
   id: string
@@ -167,249 +168,282 @@ export function LojasList() {
 
   return (
     <div className="space-y-4">
+      {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3">
-        <input
+        <Input
           type="text"
           placeholder="Buscar por nome…"
           value={q}
           onChange={e => setQ(e.target.value)}
-          className="rounded-lg border border-border-strong bg-white px-3 py-2 text-sm text-ink focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition w-56"
+          className="w-56"
         />
         <div className="flex flex-wrap gap-1.5">
-          {chips.map(c => (
-            <button
-              key={c.value}
-              onClick={() => setFilter(c.value)}
-              className={
-                filter === c.value
-                  ? 'px-3 py-1 rounded-full text-xs font-semibold bg-brand-600 text-white transition'
-                  : 'px-3 py-1 rounded-full text-xs font-medium bg-surface-hover text-ink-soft hover:bg-brand-50 hover:text-brand-700 transition'
-              }
-            >
-              {c.label}
-            </button>
-          ))}
+          {chips.map(c => {
+            const active = filter === c.value
+            return (
+              <button
+                key={c.value}
+                onClick={() => setFilter(c.value)}
+                className={
+                  active
+                    ? 'rounded-md border border-[var(--color-accent)] bg-[var(--color-accent-soft)] px-2.5 py-1 text-[12px] font-medium text-[var(--color-accent-soft-fg)] transition'
+                    : 'rounded-md border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2.5 py-1 text-[12px] font-medium text-[var(--color-fg-muted)] transition hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-fg)]'
+                }
+              >
+                {c.label}
+              </button>
+            )
+          })}
         </div>
         <div className="ml-auto">
-          <button
+          <Button
             onClick={() => { setCreating(true); setError(null) }}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition shadow-sm shadow-brand-600/20"
+            size="md"
           >
             + Nova loja
-          </button>
+          </Button>
         </div>
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+        <div
+          role="alert"
+          className="rounded-md border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-3 py-2 text-[12px] text-[var(--color-danger-soft-fg)]"
+        >
           {error}
         </div>
       )}
 
+      {/* Form criação */}
       {creating && (
-        <div className="rounded-xl border border-border bg-white p-5 shadow-sm">
-          <h3 className="font-semibold text-ink mb-4">Nova loja</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <FormField
-              label="Rede *"
-              value={createState.rede_id}
-              onChange={v => setCreateState(s => ({ ...s, rede_id: v }))}
-            />
-            <FormField
-              label="Nome *"
-              value={createState.nome}
-              onChange={v => setCreateState(s => ({ ...s, nome: v }))}
-            />
-            <FormField
-              label="Nome curto"
-              value={createState.nome_curto}
-              onChange={v => setCreateState(s => ({ ...s, nome_curto: v }))}
-            />
-            <FormField
-              label="Código Escala"
-              value={createState.codigo_escala}
-              onChange={v => setCreateState(s => ({ ...s, codigo_escala: v }))}
-            />
-            <FormField
-              label="Código Unitrac"
-              value={createState.codigo_unitrac}
-              onChange={v => setCreateState(s => ({ ...s, codigo_unitrac: v }))}
-            />
-            <FormField
-              label="Latitude"
-              value={createState.lat}
-              onChange={v => setCreateState(s => ({ ...s, lat: v }))}
-            />
-            <FormField
-              label="Longitude"
-              value={createState.lng}
-              onChange={v => setCreateState(s => ({ ...s, lng: v }))}
-            />
+        <Card>
+          <div className="p-5">
+            <h3 className="mb-4 text-[13px] font-semibold text-[var(--color-fg)]">
+              Nova loja
+            </h3>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+              <FormField
+                label="Rede *"
+                value={createState.rede_id}
+                onChange={v => setCreateState(s => ({ ...s, rede_id: v }))}
+              />
+              <FormField
+                label="Nome *"
+                value={createState.nome}
+                onChange={v => setCreateState(s => ({ ...s, nome: v }))}
+              />
+              <FormField
+                label="Nome curto"
+                value={createState.nome_curto}
+                onChange={v => setCreateState(s => ({ ...s, nome_curto: v }))}
+              />
+              <FormField
+                label="Código Escala"
+                value={createState.codigo_escala}
+                onChange={v => setCreateState(s => ({ ...s, codigo_escala: v }))}
+              />
+              <FormField
+                label="Código Unitrac"
+                value={createState.codigo_unitrac}
+                onChange={v => setCreateState(s => ({ ...s, codigo_unitrac: v }))}
+              />
+              <FormField
+                label="Latitude"
+                value={createState.lat}
+                onChange={v => setCreateState(s => ({ ...s, lat: v }))}
+              />
+              <FormField
+                label="Longitude"
+                value={createState.lng}
+                onChange={v => setCreateState(s => ({ ...s, lng: v }))}
+              />
+            </div>
+            <div className="mt-4 flex gap-2">
+              <Button onClick={createLoja} disabled={pending}>
+                Criar
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => { setCreating(false); setCreateState(EMPTY_CREATE); setError(null) }}
+              >
+                Cancelar
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2 mt-4">
-            <button
-              onClick={createLoja}
-              disabled={pending}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition disabled:opacity-50"
-            >
-              Criar
-            </button>
-            <button
-              onClick={() => { setCreating(false); setCreateState(EMPTY_CREATE); setError(null) }}
-              className="inline-flex items-center rounded-lg border border-border px-4 py-2 text-sm font-medium text-ink-soft hover:bg-surface-hover transition"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
+        </Card>
       )}
 
-      <div className="rounded-xl border border-border bg-white shadow-sm overflow-hidden">
+      {/* Tabela */}
+      <Card className="overflow-hidden">
         {pending && (
-          <div className="px-5 py-2 text-xs text-ink-muted bg-surface-alt border-b border-border">
+          <div className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-5 py-2 text-[11px] text-[var(--color-fg-muted)]">
             Carregando…
           </div>
         )}
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-brand-600 text-white text-xs uppercase tracking-wide">
-              <th className="text-left px-4 py-3 font-semibold">Rede</th>
-              <th className="text-left px-4 py-3 font-semibold">Nome</th>
-              <th className="text-left px-4 py-3 font-semibold">Cód. Escala</th>
-              <th className="text-left px-4 py-3 font-semibold">Cód. Unitrac</th>
-              <th className="text-left px-4 py-3 font-semibold">GPS</th>
-              <th className="text-left px-4 py-3 font-semibold">D+1</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {lojas.length === 0 && !pending && (
-              <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-sm text-ink-muted">
-                  Nenhuma loja encontrada.
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-[13px]">
+            <thead>
+              <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] text-[10px] uppercase tracking-[0.08em] text-[var(--color-fg-muted)]">
+                <th className="px-4 py-2.5 text-left font-semibold">Rede</th>
+                <th className="px-4 py-2.5 text-left font-semibold">Nome</th>
+                <th className="px-4 py-2.5 text-left font-semibold">Cód. Escala</th>
+                <th className="px-4 py-2.5 text-left font-semibold">Cód. Unitrac</th>
+                <th className="px-4 py-2.5 text-left font-semibold">GPS</th>
+                <th className="px-4 py-2.5 text-left font-semibold">D+1</th>
+                <th className="px-4 py-2.5" />
               </tr>
-            )}
-            {lojas.map((loja, i) => {
-              const isEditing = editingId === loja.id
-              const rowClass = i % 2 === 0 ? 'bg-white' : 'bg-surface-alt'
+            </thead>
+            <tbody>
+              {lojas.length === 0 && !pending && (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="px-4 py-10 text-center text-[13px] text-[var(--color-fg-muted)]"
+                  >
+                    Nenhuma loja encontrada.
+                  </td>
+                </tr>
+              )}
+              {lojas.map((loja) => {
+                const isEditing = editingId === loja.id
 
-              if (isEditing && editState) {
+                if (isEditing && editState) {
+                  return (
+                    <tr
+                      key={loja.id}
+                      className="border-t border-[var(--color-border)] bg-[var(--color-accent-soft)]/40"
+                    >
+                      <td className="px-4 py-2 text-[12px] text-[var(--color-fg-muted)]">
+                        {loja.rede_id}
+                      </td>
+                      <td className="px-4 py-2">
+                        <Input
+                          value={editState.nome}
+                          onChange={e => setEditState(s => s ? { ...s, nome: e.target.value } : s)}
+                          className="h-8"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <Input
+                          value={editState.codigo_escala}
+                          onChange={e => setEditState(s => s ? { ...s, codigo_escala: e.target.value } : s)}
+                          className="h-8 w-24"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <Input
+                          value={editState.codigo_unitrac}
+                          onChange={e => setEditState(s => s ? { ...s, codigo_unitrac: e.target.value } : s)}
+                          className="h-8 w-28"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <div className="flex gap-1">
+                          <Input
+                            value={editState.lat}
+                            placeholder="lat"
+                            onChange={e => setEditState(s => s ? { ...s, lat: e.target.value } : s)}
+                            className="h-8 w-24"
+                          />
+                          <Input
+                            value={editState.lng}
+                            placeholder="lng"
+                            onChange={e => setEditState(s => s ? { ...s, lng: e.target.value } : s)}
+                            className="h-8 w-24"
+                          />
+                        </div>
+                      </td>
+                      <td className="px-4 py-2 text-[12px] text-[var(--color-fg-muted)]">
+                        {loja.entrega_d1_fixo ? 'Sim' : '—'}
+                      </td>
+                      <td className="px-4 py-2">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => saveEdit(loja.id)}
+                            disabled={pending}
+                          >
+                            Salvar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={cancelEdit}
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                }
+
                 return (
-                  <tr key={loja.id} className="border-t border-border bg-brand-50">
-                    <td className="px-4 py-2 text-xs text-ink-soft">{loja.rede_id}</td>
-                    <td className="px-4 py-2">
-                      <input
-                        value={editState.nome}
-                        onChange={e => setEditState(s => s ? { ...s, nome: e.target.value } : s)}
-                        className="w-full rounded border border-border-strong px-2 py-1 text-sm text-ink focus:border-brand-500 focus:outline-none"
-                      />
+                  <tr
+                    key={loja.id}
+                    className="border-t border-[var(--color-border)] transition-colors hover:bg-[var(--color-bg-hover)]"
+                  >
+                    <td className="px-4 py-2.5 text-[12px] font-medium text-[var(--color-fg-muted)]">
+                      {loja.rede_id}
                     </td>
-                    <td className="px-4 py-2">
-                      <input
-                        value={editState.codigo_escala}
-                        onChange={e => setEditState(s => s ? { ...s, codigo_escala: e.target.value } : s)}
-                        className="w-24 rounded border border-border-strong px-2 py-1 text-sm text-ink focus:border-brand-500 focus:outline-none"
-                      />
+                    <td className="px-4 py-2.5 font-medium text-[var(--color-fg)]">
+                      {loja.nome}
                     </td>
-                    <td className="px-4 py-2">
-                      <input
-                        value={editState.codigo_unitrac}
-                        onChange={e => setEditState(s => s ? { ...s, codigo_unitrac: e.target.value } : s)}
-                        className="w-28 rounded border border-border-strong px-2 py-1 text-sm text-ink focus:border-brand-500 focus:outline-none"
-                      />
+                    <td className="px-4 py-2.5 font-mono text-[12px] text-[var(--color-fg-muted)]">
+                      {loja.codigo_escala ?? '—'}
                     </td>
-                    <td className="px-4 py-2">
-                      <div className="flex gap-1">
-                        <input
-                          value={editState.lat}
-                          placeholder="lat"
-                          onChange={e => setEditState(s => s ? { ...s, lat: e.target.value } : s)}
-                          className="w-24 rounded border border-border-strong px-2 py-1 text-sm text-ink focus:border-brand-500 focus:outline-none"
-                        />
-                        <input
-                          value={editState.lng}
-                          placeholder="lng"
-                          onChange={e => setEditState(s => s ? { ...s, lng: e.target.value } : s)}
-                          className="w-24 rounded border border-border-strong px-2 py-1 text-sm text-ink focus:border-brand-500 focus:outline-none"
-                        />
-                      </div>
+                    <td className="px-4 py-2.5">
+                      {loja.codigo_unitrac ? (
+                        <span className="font-mono text-[12px] text-[var(--color-fg-muted)]">
+                          {loja.codigo_unitrac}
+                        </span>
+                      ) : (
+                        <Badge variant="warning">Órfã</Badge>
+                      )}
                     </td>
-                    <td className="px-4 py-2 text-ink-muted text-xs">
-                      {loja.entrega_d1_fixo ? 'Sim' : '—'}
+                    <td className="px-4 py-2.5 text-[12px]">
+                      {loja.lat !== null && loja.lng !== null ? (
+                        <span className="text-[var(--color-success-soft-fg)]">
+                          {loja.lat.toFixed(4)}, {loja.lng.toFixed(4)}
+                        </span>
+                      ) : (
+                        <span className="text-[var(--color-fg-subtle)]">—</span>
+                      )}
                     </td>
-                    <td className="px-4 py-2">
-                      <div className="flex gap-2 justify-end">
-                        <button
-                          onClick={() => saveEdit(loja.id)}
+                    <td className="px-4 py-2.5 text-[12px]">
+                      {loja.entrega_d1_fixo ? (
+                        <span className="font-medium text-[var(--color-accent)]">Sim</span>
+                      ) : (
+                        <span className="text-[var(--color-fg-subtle)]">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEdit(loja)}
+                        >
+                          Editar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => deleteRow(loja.id)}
                           disabled={pending}
-                          className="text-xs font-semibold text-brand-600 hover:text-brand-800 transition disabled:opacity-50"
+                          className="hover:text-[var(--color-danger)]"
                         >
-                          Salvar
-                        </button>
-                        <button
-                          onClick={cancelEdit}
-                          className="text-xs font-medium text-ink-soft hover:text-ink transition"
-                        >
-                          Cancelar
-                        </button>
+                          Excluir
+                        </Button>
                       </div>
                     </td>
                   </tr>
                 )
-              }
-
-              return (
-                <tr key={loja.id} className={`${rowClass} border-t border-border hover:bg-brand-50 transition`}>
-                  <td className="px-4 py-2.5 text-xs font-medium text-ink-soft">{loja.rede_id}</td>
-                  <td className="px-4 py-2.5 font-medium text-ink">{loja.nome}</td>
-                  <td className="px-4 py-2.5 text-ink-soft font-mono text-xs">{loja.codigo_escala ?? '—'}</td>
-                  <td className="px-4 py-2.5">
-                    {loja.codigo_unitrac ? (
-                      <span className="font-mono text-xs text-ink-soft">{loja.codigo_unitrac}</span>
-                    ) : (
-                      <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
-                        Órfã
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2.5 text-xs">
-                    {loja.lat !== null && loja.lng !== null ? (
-                      <span className="text-emerald-700 font-medium">
-                        {loja.lat.toFixed(4)}, {loja.lng.toFixed(4)}
-                      </span>
-                    ) : (
-                      <span className="text-ink-muted">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2.5 text-xs text-ink-soft">
-                    {loja.entrega_d1_fixo ? (
-                      <span className="text-brand-600 font-semibold">Sim</span>
-                    ) : '—'}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <div className="flex gap-3 justify-end">
-                      <button
-                        onClick={() => startEdit(loja)}
-                        className="text-xs font-medium text-ink-soft hover:text-brand-600 transition"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => deleteRow(loja.id)}
-                        disabled={pending}
-                        className="text-xs font-medium text-ink-soft hover:text-red-600 transition disabled:opacity-50"
-                      >
-                        Excluir
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
     </div>
   )
 }
@@ -424,13 +458,12 @@ function FormField({
   onChange: (v: string) => void
 }) {
   return (
-    <div>
-      <label className="block text-xs font-medium text-ink-soft mb-1">{label}</label>
-      <input
+    <div className="flex flex-col gap-1.5">
+      <Label>{label}</Label>
+      <Input
         type="text"
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="w-full rounded-lg border border-border-strong bg-white px-3 py-2 text-sm text-ink focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition"
       />
     </div>
   )

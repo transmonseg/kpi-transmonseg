@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { Button, Card, CardContent, Input, Label } from '@/components/ui'
+import { ThemeToggle } from '@/lib/theme/ThemeToggle'
 import { cadastrar } from './actions'
 
 export default async function CadastroPage({
@@ -9,81 +11,84 @@ export default async function CadastroPage({
   const { erro, sucesso } = await searchParams
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-gradient-to-br from-brand-50 to-white">
-      <div className="w-full max-w-sm">
-        <Link
-          href="/"
-          className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-brand-600 text-white font-bold mb-6 shadow-md shadow-brand-600/20"
-        >
-          T
-        </Link>
-        <h1 className="text-2xl font-bold text-ink">Criar conta</h1>
-        <p className="mt-2 text-sm text-ink-soft">
-          Cadastre-se para acessar o sistema.
-        </p>
+    <div className="relative flex min-h-screen items-center justify-center bg-[var(--color-bg-subtle)] px-6">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
 
-        <form action={cadastrar} className="mt-8 flex flex-col gap-4">
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-ink mb-1.5"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              autoComplete="email"
-              className="w-full rounded-lg border border-border-strong bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition"
-              placeholder="voce@empresa.com"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="senha"
-              className="block text-sm font-medium text-ink mb-1.5"
-            >
-              Senha
-            </label>
-            <input
-              id="senha"
-              name="senha"
-              type="password"
-              required
-              minLength={6}
-              autoComplete="new-password"
-              className="w-full rounded-lg border border-border-strong bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition"
-              placeholder="Mínimo 6 caracteres"
-            />
-          </div>
-
-          {erro && (
-            <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-700">
-              {decodeURIComponent(erro)}
-            </div>
-          )}
-
-          {sucesso && (
-            <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2.5 text-sm text-emerald-700">
-              {decodeURIComponent(sucesso)}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            className="mt-2 inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition shadow-sm shadow-brand-600/20"
+      <div className="w-full max-w-[380px]">
+        <div className="mb-6 flex flex-col items-center text-center">
+          <Link
+            href="/"
+            className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-accent)] text-[13px] font-bold text-[var(--color-accent-fg)]"
           >
+            T
+          </Link>
+          <h1 className="text-[20px] font-semibold tracking-tight text-[var(--color-fg)]">
             Criar conta
-          </button>
-        </form>
+          </h1>
+          <p className="mt-1 text-[13px] text-[var(--color-fg-muted)]">
+            Cadastre-se para acessar o painel.
+          </p>
+        </div>
 
-        <p className="mt-6 text-center text-sm text-ink-soft">
+        <Card>
+          <CardContent className="p-6">
+            <form action={cadastrar} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  placeholder="voce@empresa.com"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="senha">Senha</Label>
+                <Input
+                  id="senha"
+                  name="senha"
+                  type="password"
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                  placeholder="Mínimo 6 caracteres"
+                />
+              </div>
+
+              {erro && (
+                <div
+                  role="alert"
+                  className="rounded-md border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-3 py-2 text-[12px] text-[var(--color-danger-soft-fg)]"
+                >
+                  {decodeURIComponent(erro)}
+                </div>
+              )}
+
+              {sucesso && (
+                <div
+                  role="status"
+                  className="rounded-md border border-[var(--color-success)]/30 bg-[var(--color-success-soft)] px-3 py-2 text-[12px] text-[var(--color-success-soft-fg)]"
+                >
+                  {decodeURIComponent(sucesso)}
+                </div>
+              )}
+
+              <Button type="submit" size="lg" fullWidth className="mt-1">
+                Criar conta
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <p className="mt-5 text-center text-[13px] text-[var(--color-fg-muted)]">
           Já tem conta?{' '}
           <Link
             href="/login"
-            className="font-semibold text-brand-600 hover:text-brand-700 hover:underline"
+            className="font-medium text-[var(--color-accent)] hover:underline"
           >
             Entrar
           </Link>

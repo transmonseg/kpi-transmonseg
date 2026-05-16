@@ -1,3 +1,4 @@
+import { Badge } from '@/components/ui'
 import { createServiceClient } from '@/lib/supabase/service'
 import { LojasList } from './lista'
 
@@ -10,13 +11,21 @@ export default async function LojasPage() {
   ])
 
   return (
-    <div className="max-w-6xl">
-      <div className="border-b border-border pb-5 mb-8 flex items-start justify-between gap-4">
+    <div className="mx-auto max-w-6xl">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-[var(--color-border)] pb-5">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-ink">Catálogo de Lojas</h1>
-          <p className="mt-1.5 text-sm text-ink-soft">
-            {total ?? 0} lojas ativas · {orfas ?? 0} órfãs (sem código Unitrac)
+          <h1 className="text-[22px] font-semibold tracking-tight text-[var(--color-fg)]">
+            Catálogo de Lojas
+          </h1>
+          <p className="mt-1 text-[13px] text-[var(--color-fg-muted)]">
+            Cadastro de lojas, códigos de escala/Unitrac e coordenadas.
           </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="info">{total ?? 0} ativas</Badge>
+          {(orfas ?? 0) > 0 && (
+            <Badge variant="warning">{orfas} órfãs</Badge>
+          )}
         </div>
       </div>
 
