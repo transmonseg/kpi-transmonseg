@@ -148,7 +148,7 @@ export function DiaPage({ data: dataInicial, hoje, escalasIniciais, todosTipos }
           value={data}
           max={hoje}
           onChange={e => navegarPara(e.target.value)}
-          className="bg-slate-700 border border-slate-600 text-slate-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+          className="hidden sm:block bg-slate-700 border border-slate-600 text-slate-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/30"
         />
       </div>
 
