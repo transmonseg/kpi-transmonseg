@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { DropZone } from './DropZone'
 import { EscalaItem } from './EscalaItem'
+import { GerarSection } from './GerarSection'
 
 type EscalaUpload = {
   id: string
@@ -199,6 +200,12 @@ export function DiaPage({ data: dataInicial, hoje, escalasIniciais, todosTipos }
           ))
         }
       </div>
+
+      <GerarSection
+        data={data}
+        escalas={escalas}
+        todosTipos={todosTipos}
+      />
     </div>
   )
 }
