@@ -91,32 +91,49 @@ export async function POST(req: NextRequest) {
 
   const qtdParadas = veiculos.reduce((acc, v) => acc + v.paradas.length, 0)
 
-  if (existente) {
-    await svc.from('unitrac_paradas').delete().eq('unitrac_upload_id', existente.id)
-    const { error: deleteErr } = await svc.from('unitrac_uploads').delete().eq('id', existente.id)
-    if (deleteErr) console.error('[unitrac/upload] delete existente error:', deleteErr.message)
+  const uploadPayload = {
+    data_relatorio: data,
+    arquivo_path: storagePath,
+    qtd_abas: veiculos.length,
+    qtd_paradas: qtdParadas,
+    status: 'processado',
+    uploaded_by: user.id,
   }
 
-  const { data: upload, error: uploadErr } = await svc
-    .from('unitrac_uploads')
-    .insert({
-      data_relatorio: data,
-      arquivo_path: storagePath,
-      qtd_abas: veiculos.length,
-      qtd_paradas: qtdParadas,
-      status: 'processado',
-      uploaded_by: user.id,
-    })
-    .select('id')
-    .single()
+  let uploadId: string
 
-  if (uploadErr || !upload)
-    return new NextResponse(`Erro ao registrar upload: ${uploadErr?.message}`, { status: 500 })
+  if (existente) {
+    // Limpa paradas antigas e reutiliza o mesmo registro de upload (evita violar UNIQUE)
+    const { error: delParadasErr } = await svc
+      .from('unitrac_paradas')
+      .delete()
+      .eq('unitrac_upload_id', existente.id)
+    if (delParadasErr)
+      return new NextResponse(`Erro ao limpar paradas antigas: ${delParadasErr.message}`, { status: 500 })
+
+    const { error: updErr } = await svc
+      .from('unitrac_uploads')
+      .update(uploadPayload)
+      .eq('id', existente.id)
+    if (updErr)
+      return new NextResponse(`Erro ao atualizar upload: ${updErr.message}`, { status: 500 })
+
+    uploadId = existente.id
+  } else {
+    const { data: upload, error: uploadErr } = await svc
+      .from('unitrac_uploads')
+      .insert(uploadPayload)
+      .select('id')
+      .single()
+    if (uploadErr || !upload)
+      return new NextResponse(`Erro ao registrar upload: ${uploadErr?.message}`, { status: 500 })
+    uploadId = upload.id
+  }
 
   const BATCH = 200
   const todasParadas = veiculos.flatMap((v) =>
     v.paradas.map((p) => ({
-      unitrac_upload_id: upload.id,
+      unitrac_upload_id: uploadId,
       placa_norm: p.placa_norm,
       chegada: p.chegada.toISOString(),
       saida: p.saida.toISOString(),
@@ -144,7 +161,7 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({
-    upload_id: upload.id,
+    upload_id: uploadId,
     qtd_abas: veiculos.length,
     qtd_paradas: qtdParadas,
     substituiu: !!existente,
