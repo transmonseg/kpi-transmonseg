@@ -17,6 +17,7 @@ type TipoEscala = 'GERAL' | 'ZONA_SUL' | 'PAX' | 'ARMAZEM_GRAO' | 'GUANABARA' | 
 type Formato = 'xlsx' | 'pdf'
 
 const TIPOS_VALIDOS: TipoEscala[] = ['GERAL', 'ZONA_SUL', 'PAX', 'ARMAZEM_GRAO', 'GUANABARA', 'AUTO']
+const MIN_LINHAS_DETECCAO = 3
 
 // Formato esperado por tipo (pra mensagem de erro amigável)
 const FORMATO_ESPERADO: Record<Exclude<TipoEscala, 'AUTO'>, Formato> = {
@@ -93,10 +94,10 @@ export async function POST(req: NextRequest) {
   try {
     if (tipo === 'AUTO') {
       const tentativas: Array<{ t: TipoEscala; fn: () => Promise<LinhaEscala[]> }> = [
-        { t: 'GERAL',        fn: () => parseEscalaGeral(arrayBuffer, data as string) },
         { t: 'ZONA_SUL',     fn: () => parseEscalaZonaSul(arrayBuffer, data as string) },
-        { t: 'PAX',          fn: () => parseEscalaPax(arrayBuffer, data as string) },
         { t: 'ARMAZEM_GRAO', fn: () => parseEscalaArmazemGrao(arrayBuffer, data as string) },
+        { t: 'PAX',          fn: () => parseEscalaPax(arrayBuffer, data as string) },
+        { t: 'GERAL',        fn: () => parseEscalaGeral(arrayBuffer, data as string) },
       ]
       if (formato === 'pdf') {
         const { parseEscalaGuanabaraPdf } = await import('@/lib/parsers/escala-guanabara-pdf')
@@ -106,7 +107,7 @@ export async function POST(req: NextRequest) {
       for (const { t, fn } of tentativas) {
         try {
           const resultado = await fn()
-          if (resultado.length > 0) {
+          if (resultado.length >= MIN_LINHAS_DETECCAO) {
             linhas = resultado
             tipoDetectado = t
             break
