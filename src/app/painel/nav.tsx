@@ -10,7 +10,7 @@ const ITEMS = [
 
 const KPI_ITEMS = [
   { href: '/painel/kpi', label: 'KPI do Dia' },
-  { href: '/painel/kpi/novo', label: 'Upload de Relatórios' },
+  { href: '/painel/kpi/dia', label: 'Gestão do Dia' },
   { href: '/painel/revisao', label: 'Revisar Anomalias' },
   { href: '/painel/historico', label: 'Histórico' },
 ]
