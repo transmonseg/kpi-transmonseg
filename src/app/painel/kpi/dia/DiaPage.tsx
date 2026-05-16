@@ -134,6 +134,13 @@ export function DiaPage({
   const [loadingEscalas, setLoadingEscalas] = useState(false)
   const [unitracSentAt, setUnitracSentAt] = useState<string | null>(null)
   const [kpisRefreshKey, setKpisRefreshKey] = useState(0)
+  const [previewData, setPreviewData] = useState<{
+    tipo_detectado: string
+    total_linhas: number
+    linhas_validas: unknown[]
+    linhas_problematicas: Array<{ linha: number; motivo: string; conteudo: string }>
+  } | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
 
   async function navegarPara(novaData: string) {
     setData(novaData)
@@ -198,6 +205,26 @@ export function DiaPage({
       delete e[key]
       return e
     })
+
+    // Preview de validação — roda antes do upload real
+    setPreviewData(null)
+    setPreviewLoading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      if (tipo !== 'auto') fd.append('tipo', tipo)
+      fd.append('data', data)
+      const res = await fetch('/api/escalas/preview', { method: 'POST', body: fd })
+      if (res.ok) {
+        const pv = await res.json()
+        setPreviewData(pv)
+      }
+    } catch (e) {
+      console.error('Erro no preview de escala:', e)
+    } finally {
+      setPreviewLoading(false)
+    }
+
     setUploadingTipos((prev) => new Set([...prev, key]))
     try {
       const { storagePath } = await uploadArquivo(file, tipo)
@@ -354,6 +381,39 @@ export function DiaPage({
             uploadingCount={autoUploads.length}
             variant="escalas"
           />
+
+          {previewLoading && (
+            <p className="text-[12px] text-[var(--color-fg-muted)] animate-pulse">
+              Validando arquivo...
+            </p>
+          )}
+          {previewData && previewData.linhas_problematicas.length > 0 && (
+            <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2.5 dark:border-yellow-700/50 dark:bg-yellow-900/20">
+              <p className="text-[12px] font-semibold text-yellow-800 dark:text-yellow-300">
+                {previewData.linhas_problematicas.length} linha(s) com problema
+              </p>
+              <ul className="mt-1 space-y-0.5">
+                {previewData.linhas_problematicas.slice(0, 5).map((p, i) => (
+                  <li key={i} className="text-[11px] text-yellow-700 dark:text-yellow-400">
+                    Linha {p.linha}: {p.motivo}
+                  </li>
+                ))}
+                {previewData.linhas_problematicas.length > 5 && (
+                  <li className="text-[11px] text-yellow-600 dark:text-yellow-500">
+                    +{previewData.linhas_problematicas.length - 5} outros problemas
+                  </li>
+                )}
+              </ul>
+              <p className="mt-1.5 text-[11px] text-yellow-600 dark:text-yellow-500">
+                Revise o arquivo antes de confirmar.
+              </p>
+            </div>
+          )}
+          {previewData && previewData.linhas_problematicas.length === 0 && (
+            <p className="text-[12px] text-[var(--color-success-soft-fg)]">
+              Arquivo válido: {previewData.total_linhas} linha(s) detectada(s) — {previewData.tipo_detectado}
+            </p>
+          )}
 
           <div className="flex flex-col gap-1.5">
             {loadingEscalas ? (
