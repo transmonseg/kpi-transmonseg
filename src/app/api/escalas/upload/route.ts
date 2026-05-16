@@ -13,13 +13,13 @@ import type { LinhaEscala } from '@/lib/types/escala'
 export const runtime = 'nodejs'
 export const maxDuration = 120
 
-type TipoEscala = 'GERAL' | 'ZONA_SUL' | 'PAX' | 'ARMAZEM_GRAO' | 'GUANABARA'
+type TipoEscala = 'GERAL' | 'ZONA_SUL' | 'PAX' | 'ARMAZEM_GRAO' | 'GUANABARA' | 'AUTO'
 type Formato = 'xlsx' | 'pdf'
 
-const TIPOS_VALIDOS: TipoEscala[] = ['GERAL', 'ZONA_SUL', 'PAX', 'ARMAZEM_GRAO', 'GUANABARA']
+const TIPOS_VALIDOS: TipoEscala[] = ['GERAL', 'ZONA_SUL', 'PAX', 'ARMAZEM_GRAO', 'GUANABARA', 'AUTO']
 
 // Formato esperado por tipo (pra mensagem de erro amigável)
-const FORMATO_ESPERADO: Record<TipoEscala, Formato> = {
+const FORMATO_ESPERADO: Record<Exclude<TipoEscala, 'AUTO'>, Formato> = {
   GERAL: 'xlsx',
   ZONA_SUL: 'xlsx',
   PAX: 'xlsx',
@@ -63,22 +63,18 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     )
 
-  const formatoEsperado = FORMATO_ESPERADO[tipo]
-  if (formato !== formatoEsperado)
-    return new NextResponse(
-      `Formato ${formato} ainda não suportado para tipo ${tipo}. Envie em ${formatoEsperado}.`,
-      { status: 501 }
-    )
+  if (tipo !== 'AUTO') {
+    const formatoEsperado = FORMATO_ESPERADO[tipo]
+    if (formato !== formatoEsperado)
+      return new NextResponse(
+        `Formato ${formato} ainda não suportado para tipo ${tipo}. Envie em ${formatoEsperado}.`,
+        { status: 501 }
+      )
+  }
 
   const svc = createServiceClient()
 
-  // Cenário A: sempre sobrescreve a versão anterior, sem perguntar
-  const { data: existente } = await svc
-    .from('escala_uploads')
-    .select('id')
-    .eq('data_escala', data)
-    .eq('tipo', tipo)
-    .maybeSingle()
+  let tipoDetectado: TipoEscala = tipo
 
   // Read file from Storage
   const { data: fileBlob, error: downloadErr } = await svc.storage
@@ -92,10 +88,40 @@ export async function POST(req: NextRequest) {
     )
 
   const arrayBuffer = await fileBlob.arrayBuffer()
-  let linhas: LinhaEscala[]
+  let linhas: LinhaEscala[] = []
 
   try {
-    if (tipo === 'GERAL' && formato === 'xlsx') {
+    if (tipo === 'AUTO') {
+      const tentativas: Array<{ t: TipoEscala; fn: () => Promise<LinhaEscala[]> }> = [
+        { t: 'GERAL',        fn: () => parseEscalaGeral(arrayBuffer, data as string) },
+        { t: 'ZONA_SUL',     fn: () => parseEscalaZonaSul(arrayBuffer, data as string) },
+        { t: 'PAX',          fn: () => parseEscalaPax(arrayBuffer, data as string) },
+        { t: 'ARMAZEM_GRAO', fn: () => parseEscalaArmazemGrao(arrayBuffer, data as string) },
+      ]
+      if (formato === 'pdf') {
+        const { parseEscalaGuanabaraPdf } = await import('@/lib/parsers/escala-guanabara-pdf')
+        tentativas.push({ t: 'GUANABARA', fn: () => parseEscalaGuanabaraPdf(Buffer.from(arrayBuffer), data as string) })
+      }
+
+      for (const { t, fn } of tentativas) {
+        try {
+          const resultado = await fn()
+          if (resultado.length > 0) {
+            linhas = resultado
+            tipoDetectado = t
+            break
+          }
+        } catch {
+          // Parser não reconheceu — tentar próximo
+        }
+      }
+
+      if (linhas.length === 0)
+        return new NextResponse(
+          'Não foi possível detectar o tipo da escala. Verifique se o arquivo é uma das escalas suportadas (GERAL, ZONA SUL, PAX, ARMAZÉM DO GRÃO, GUANABARA).',
+          { status: 400 }
+        )
+    } else if (tipo === 'GERAL' && formato === 'xlsx') {
       linhas = await parseEscalaGeral(arrayBuffer, data as string)
     } else if (tipo === 'ZONA_SUL' && formato === 'xlsx') {
       linhas = await parseEscalaZonaSul(arrayBuffer, data as string)
@@ -109,7 +135,7 @@ export async function POST(req: NextRequest) {
     } else {
       // Defesa em profundidade — checagem acima já barra, mas TS pede caminho explícito
       return new NextResponse(
-        `Formato ${formato} ainda não suportado para tipo ${tipo}. Envie em ${formatoEsperado}.`,
+        `Formato ${formato} ainda não suportado para tipo ${tipo}.`,
         { status: 501 }
       )
     }
@@ -126,6 +152,15 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     )
 
+  // Cenário A: sempre sobrescreve a versão anterior, sem perguntar
+  // (feito após detecção pois tipoDetectado só é resolvido depois do parse AUTO)
+  const { data: existente } = await svc
+    .from('escala_uploads')
+    .select('id')
+    .eq('data_escala', data)
+    .eq('tipo', tipoDetectado)
+    .maybeSingle()
+
   if (existente) {
     await svc.from('escala_uploads').delete().eq('id', existente.id)
   }
@@ -134,7 +169,7 @@ export async function POST(req: NextRequest) {
     .from('escala_uploads')
     .insert({
       data_escala: data,
-      tipo,
+      tipo: tipoDetectado,
       arquivo_path: storagePath,
       nome_arquivo: (storagePath as string).split('/').pop() ?? `escala.${formato}`,
       qtd_linhas: linhas.length,
@@ -186,5 +221,6 @@ export async function POST(req: NextRequest) {
     qtd_linhas: linhas.length,
     qtd_orfas: qtdOrfas,
     substituiu: !!existente,
+    tipo_detectado: tipoDetectado,
   })
 }
