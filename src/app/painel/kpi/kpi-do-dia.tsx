@@ -1,6 +1,7 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 type KpiRow = {
@@ -46,13 +47,47 @@ function Spinner() {
   )
 }
 
+function SuccessBadge({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-200 px-2 py-1 text-[11px] font-semibold text-emerald-700">
+      ✓ {label}
+    </span>
+  )
+}
+
+function ErrorCard({ message }: { message: string }) {
+  return (
+    <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-3 py-2 rounded-lg w-full">
+      {message}
+    </div>
+  )
+}
+
 function KpiActions({ kpi, data }: { kpi: KpiRow; data: string }) {
+  const router = useRouter()
   const [processPending, startProcess] = useTransition()
   const [gerarPending, startGerar] = useTransition()
+  const [erroProcessar, setErroProcessar] = useState<string | null>(null)
+  const [erroGerar, setErroGerar] = useState<string | null>(null)
+  const [sucessoProcessar, setSucessoProcessar] = useState(false)
+  const [sucessoGerar, setSucessoGerar] = useState(false)
 
   const highPendentes = (kpi.qtd_anomalias_high ?? 0) > 0 && kpi.status !== 'revisada' && kpi.status !== 'finalizada'
 
+  useEffect(() => {
+    if (!sucessoProcessar) return
+    const t = setTimeout(() => setSucessoProcessar(false), 2000)
+    return () => clearTimeout(t)
+  }, [sucessoProcessar])
+
+  useEffect(() => {
+    if (!sucessoGerar) return
+    const t = setTimeout(() => setSucessoGerar(false), 2000)
+    return () => clearTimeout(t)
+  }, [sucessoGerar])
+
   function processar() {
+    setErroProcessar(null)
     startProcess(async () => {
       const res = await fetch('/api/kpi/processar', {
         method: 'POST',
@@ -61,14 +96,16 @@ function KpiActions({ kpi, data }: { kpi: KpiRow; data: string }) {
       })
       if (!res.ok) {
         const msg = await res.text()
-        alert(`Erro: ${msg}`)
+        setErroProcessar(msg || 'Falha ao processar')
         return
       }
-      window.location.reload()
+      setSucessoProcessar(true)
+      router.refresh()
     })
   }
 
   function gerar() {
+    setErroGerar(null)
     startGerar(async () => {
       const res = await fetch('/api/kpi/gerar', {
         method: 'POST',
@@ -77,49 +114,76 @@ function KpiActions({ kpi, data }: { kpi: KpiRow; data: string }) {
       })
       if (!res.ok) {
         const msg = await res.text()
-        alert(`Erro: ${msg}`)
+        setErroGerar(msg || 'Falha ao gerar')
         return
       }
-      window.location.reload()
+      setSucessoGerar(true)
+      router.refresh()
     })
   }
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <button
-        onClick={processar}
-        disabled={processPending}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong bg-white px-3 py-1.5 text-xs font-semibold text-ink hover:bg-surface-hover transition disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {processPending && <Spinner />}
-        Processar
-      </button>
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-col gap-0.5">
+          <button
+            onClick={processar}
+            disabled={processPending}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong bg-white px-3 py-1.5 text-xs font-semibold text-ink hover:bg-surface-hover transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {processPending && <Spinner />}
+            Processar
+          </button>
+        </div>
 
-      <button
-        onClick={gerar}
-        disabled={gerarPending || highPendentes}
-        title={highPendentes ? 'Revise as anomalias HIGH antes de gerar' : undefined}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {gerarPending && <Spinner />}
-        Gerar XLSX/PDF
-      </button>
+        <div className="flex flex-col gap-0.5">
+          <button
+            onClick={gerar}
+            disabled={gerarPending || highPendentes}
+            title={highPendentes ? 'Revise as anomalias HIGH antes de gerar' : undefined}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {gerarPending && <Spinner />}
+            Gerar XLSX/PDF
+          </button>
+          {highPendentes && (
+            <p className="text-[10px] text-amber-700 mt-0.5">Revise as anomalias HIGH primeiro</p>
+          )}
+        </div>
 
-      {kpi.xlsx_path && (
-        <Link
-          href={`/painel/kpi/${data}?rede=${kpi.rede_id}`}
-          className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition"
-        >
-          Ver / Download
-        </Link>
-      )}
+        {kpi.xlsx_path && (
+          <Link
+            href={`/painel/kpi/${data}?rede=${kpi.rede_id}`}
+            className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition"
+          >
+            Ver / Download
+          </Link>
+        )}
+
+        {sucessoProcessar && <SuccessBadge label="Processado" />}
+        {sucessoGerar && <SuccessBadge label="Gerado" />}
+      </div>
+
+      {erroProcessar && <ErrorCard message={`Processar: ${erroProcessar}`} />}
+      {erroGerar && <ErrorCard message={`Gerar: ${erroGerar}`} />}
     </div>
   )
 }
 
 function ProcessarAgoraButton({ data }: { data: string }) {
+  const router = useRouter()
   const [pending, start] = useTransition()
+  const [erro, setErro] = useState<string | null>(null)
+  const [sucesso, setSucesso] = useState(false)
+
+  useEffect(() => {
+    if (!sucesso) return
+    const t = setTimeout(() => setSucesso(false), 2000)
+    return () => clearTimeout(t)
+  }, [sucesso])
+
   function processar() {
+    setErro(null)
     start(async () => {
       const res = await fetch('/api/kpi/processar', {
         method: 'POST',
@@ -128,21 +192,28 @@ function ProcessarAgoraButton({ data }: { data: string }) {
       })
       if (!res.ok) {
         const msg = await res.text()
-        alert(`Erro: ${msg}`)
+        setErro(msg || 'Falha ao processar')
         return
       }
-      window.location.reload()
+      setSucesso(true)
+      router.refresh()
     })
   }
   return (
-    <button
-      onClick={processar}
-      disabled={pending}
-      className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      {pending && <Spinner />}
-      Processar agora
-    </button>
+    <div className="flex flex-col items-center gap-2">
+      <div className="flex items-center gap-2">
+        <button
+          onClick={processar}
+          disabled={pending}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {pending && <Spinner />}
+          Processar agora
+        </button>
+        {sucesso && <SuccessBadge label="Processado" />}
+      </div>
+      {erro && <ErrorCard message={erro} />}
+    </div>
   )
 }
 
