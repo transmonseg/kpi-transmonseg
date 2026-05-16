@@ -116,6 +116,46 @@
   --color-info-soft-fg: #93c5fd;
 }
 
+/* Semantic utility classes — shortcuts for the design tokens above.
+   Use these instead of the verbose `bg-[var(--color-bg)]` form:
+     `bg-[var(--color-bg)]`      → `bg-bg`
+     `text-[var(--color-fg)]`    → `text-fg`
+     `border-[var(--color-border)]` → `border-default`
+   They auto-adapt to light/dark because they resolve to CSS variables. */
+@utility bg-bg {
+  background-color: var(--color-bg);
+}
+@utility bg-bg-elevated {
+  background-color: var(--color-bg-elevated);
+}
+@utility bg-bg-subtle {
+  background-color: var(--color-bg-subtle);
+}
+@utility bg-bg-hover {
+  background-color: var(--color-bg-hover);
+}
+@utility text-fg {
+  color: var(--color-fg);
+}
+@utility text-fg-muted {
+  color: var(--color-fg-muted);
+}
+@utility text-fg-subtle {
+  color: var(--color-fg-subtle);
+}
+@utility border-default {
+  border-color: var(--color-border);
+}
+@utility border-strong {
+  border-color: var(--color-border-strong);
+}
+@utility bg-accent {
+  background-color: var(--color-accent);
+}
+@utility text-accent {
+  color: var(--color-accent);
+}
+
 html,
 body {
   background-color: var(--color-bg);
