@@ -70,16 +70,45 @@ function computeSaidaCd(paradas: ParadaUnitrac[]): Date | null {
   return null
 }
 
+// pdf-parse v1 (pdfjs-dist v2) extrai texto SEM espaços entre fragmentos adjacentes
+// — datas, horas, placas, coordenadas e palavras vêm grudadas. Esta função insere
+// espaços nos limites conhecidos antes do parser regex.
+function normalizeSpaces(raw: string): string {
+  return raw
+    // Cabeçalhos de coluna grudados (Veículo|Início Viagem|Fim Viagem|Qtd. Paradas)
+    .replace(/Veículo(?=Início)/g, 'Veículo ')
+    .replace(/Viagem(?=Fim|Qtd)/g, 'Viagem ')
+    .replace(/Paradas(?=Distância|Tempo|Condutor)/g, 'Paradas ')
+    // Placa (ABC-1234 ou ABC1D23) seguida de dígito (ex: AKZ-274515/05/2026)
+    .replace(/([A-Z]{3}-?\d[A-Z0-9]\d{2})(\d)/g, '$1 $2')
+    // Ano YYYY seguido de hora HH: (ex: 15/05/202604:38)
+    .replace(/(\d{4})(\d{2}:\d{2})/g, '$1 $2')
+    // Hora HH:MM seguida de data DD/MM (ex: 04:3815/05/2026)
+    .replace(/(\d{2}:\d{2})(\d{2}\/\d{2}\/\d{4})/g, '$1 $2')
+    // Hora HH:MM seguida de número (ex: 14:30956 = "14:30" + "9" + "56")
+    .replace(/(\d{2}:\d{2})(\d)/g, '$1 $2')
+    // Duração 0D HH:MM:SS seguida de dígito
+    .replace(/(\d+D \d{2}:\d{2}:\d{2})(\d)/g, '$1 $2')
+    // Latitude seguida de longitude (-22.123-43.456)
+    .replace(/(-?\d+\.\d+)(-\d+\.\d+)/g, '$1 $2')
+    // Coordenada seguida de letra (ex: -43.341840BASE)
+    .replace(/(-?\d+\.\d+)([A-ZÀ-Ý])/g, '$1 $2')
+    // Número decimal seguido de "0D" (duração) — ex: "56,20D" = "56,2" + "0D"
+    .replace(/(\d+,\d+)(0D )/g, '$1 $2')
+}
+
 // Limpa quebras de linha pra texto contínuo (mas preserva delimitadores chave)
 function preprocess(raw: string): string {
-  return raw
+  const normalized = normalizeSpaces(raw)
+  return normalized
     // Remove "Página X de Y" e marcadores
     .replace(/Página \d+ de \d+/g, '')
     .replace(/-- \d+ of \d+ --/g, '')
     // Remove cabeçalhos repetidos de tabela
-    .replace(/Condutor Data parada Data Saída Duração\s+Parada[\s\S]*?Local da\s+Parada/g, '')
+    .replace(/Condutor\s*Data parada\s*Data Saída[\s\S]*?Local da\s*Parada/g, '')
     .replace(/Relatório Parada e Serviço\s+Data Inicio:.*?\s+Data Fim:.*?(?=\s)/g, '')
-    .replace(/Veículo Início Viagem Fim Viagem Qtd\. Paradas[\s\S]*?Cada Parada \(h\)/g, '|VEHICLE_HEADER|')
+    // Cabeçalho do bloco veículo (com ou sem espaços já inseridos)
+    .replace(/Veículo\s+Início Viagem\s+Fim Viagem\s+Qtd\.\s*Paradas[\s\S]*?Cada Parada \(h\)/g, '|VEHICLE_HEADER|')
 }
 
 type RawVeiculo = {
