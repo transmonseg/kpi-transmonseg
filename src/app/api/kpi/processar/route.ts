@@ -132,33 +132,45 @@ export async function POST(req: NextRequest) {
       data: dataParam,
     })
 
-    // UPSERT kpis record
-    const { data: kpiRecord, error: kpiErr } = await svc
+    // Busca KPI existente para esta data+rede (sem depender de UNIQUE constraint)
+    const { data: kpiExisting } = await svc
       .from('kpis')
-      .upsert(
-        {
-          data: dataParam,
-          rede_id: rid,
-          status: 'rascunho',
-          qtd_linhas: rotas.length,
-          qtd_anomalias_high: anomalias.filter((a) => a.severidade === 'HIGH').length,
-          qtd_anomalias_medium: anomalias.filter((a) => a.severidade === 'MEDIUM').length,
-          qtd_anomalias_low: anomalias.filter((a) => a.severidade === 'LOW').length,
-          gerada_em: new Date().toISOString(),
-          gerada_por: user.id,
-        },
-        { onConflict: 'data,rede_id', ignoreDuplicates: false },
-      )
       .select('id')
-      .single()
+      .eq('data', dataParam)
+      .eq('rede_id', rid)
+      .maybeSingle()
 
-    if (kpiErr || !kpiRecord)
-      return new NextResponse(`Erro ao upsert kpis: ${kpiErr?.message}`, { status: 500 })
+    const kpiPayload = {
+      data: dataParam,
+      rede_id: rid,
+      status: 'rascunho',
+      qtd_linhas: rotas.length,
+      qtd_anomalias_high: anomalias.filter((a) => a.severidade === 'HIGH').length,
+      qtd_anomalias_medium: anomalias.filter((a) => a.severidade === 'MEDIUM').length,
+      qtd_anomalias_low: anomalias.filter((a) => a.severidade === 'LOW').length,
+      gerada_em: new Date().toISOString(),
+      gerada_por: user.id,
+    }
 
-    const kpiId = kpiRecord.id as string
+    let kpiId: string
+    if (kpiExisting) {
+      const { error: updErr } = await svc.from('kpis').update(kpiPayload).eq('id', kpiExisting.id)
+      if (updErr)
+        return new NextResponse(`Erro ao atualizar kpi: ${updErr.message}`, { status: 500 })
+      kpiId = kpiExisting.id as string
+    } else {
+      const { data: kpiNew, error: insErr } = await svc
+        .from('kpis')
+        .insert(kpiPayload)
+        .select('id')
+        .single()
+      if (insErr || !kpiNew)
+        return new NextResponse(`Erro ao criar kpi: ${insErr?.message}`, { status: 500 })
+      kpiId = kpiNew.id as string
+    }
     allKpiIds.push(kpiId)
 
-    // UPSERT kpi_rotas
+    // kpi_rotas: apaga registros anteriores para estas linhas e re-insere (idempotente)
     const rotaRows = rotas.map((r) => ({
       escala_linha_id: r.escala_linha_id,
       data: r.data,
@@ -178,12 +190,20 @@ export async function POST(req: NextRequest) {
       status: r.status,
     }))
 
-    if (rotaRows.length > 0) {
-      const { error: rotaErr } = await svc
+    const escalaLinhaIds = rotaRows.map((r) => r.escala_linha_id).filter(Boolean) as string[]
+    if (escalaLinhaIds.length > 0) {
+      const { error: delRotaErr } = await svc
         .from('kpi_rotas')
-        .upsert(rotaRows, { onConflict: 'escala_linha_id', ignoreDuplicates: false })
+        .delete()
+        .in('escala_linha_id', escalaLinhaIds)
+      if (delRotaErr)
+        return new NextResponse(`Erro ao limpar kpi_rotas: ${delRotaErr.message}`, { status: 500 })
+    }
+
+    if (rotaRows.length > 0) {
+      const { error: rotaErr } = await svc.from('kpi_rotas').insert(rotaRows)
       if (rotaErr)
-        return new NextResponse(`Erro ao upsert kpi_rotas: ${rotaErr.message}`, { status: 500 })
+        return new NextResponse(`Erro ao inserir kpi_rotas: ${rotaErr.message}`, { status: 500 })
     }
 
     // Re-fetch kpi_rota ids for anomalia linking
