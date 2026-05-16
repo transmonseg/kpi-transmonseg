@@ -98,35 +98,71 @@ type Row = {
   carro2: CarroTokens | null
 }
 
-function parseRow(line: string): Row | null {
-  // Linha vem com tabs (\t) como separadores
-  // Ex: "1 \t 2 \t RONALDO \t 35 \t KSG 5412 \t TRUCK \t JOSE NILDON (DOCA) \t 753 \t KVG 7A00 \t TRUCK"
-  // Tokens podem vir com vírgulas vazias (ex: ", " em "14") — limpar.
-  const cleaned = line.replace(/\s*,\s*/g, ' ').trim()
-  const tokens = cleaned.split(/\t+/).map((t) => t.trim()).filter((t) => t.length > 0)
-  if (tokens.length < 5) return null
+// Pattern interno pra placa (ABC1234, ABC-1234, ABC 1234, ABC1D23, ABC-1D23, ABC 1D23)
+const PLACA_INLINE_RE = String.raw`[A-Z]{3}[\s-]?\d[A-Z0-9]\d{2}|[A-Z]{3}[\s-]?\d{4}`
+// Pattern interno pra tipo
+const TIPO_INLINE_RE = String.raw`TRUCK|TOCO\s*REFRIGERADO|TOCO|VUC|3\/4|KIA|CARRETA`
+// Combinado pra placa+tipo grudado (sem espaço entre eles)
+const PLACA_TIPO_RE = new RegExp(`(${PLACA_INLINE_RE})(${TIPO_INLINE_RE})\\b`, 'g')
 
-  // Primeiro token = rota (numero)
+function parseRow(line: string): Row | null {
+  const cleaned = line.replace(/\s*,\s*/g, ' ').replace(/\s+/g, ' ').trim()
+  if (!cleaned) return null
+
+  // Caminho 1: formato antigo com tabs entre tokens
+  const tabTokens = cleaned.split(/\t+/).map((t) => t.trim()).filter((t) => t.length > 0)
+  if (tabTokens.length >= 5) return parseRowFromTokens(tabTokens)
+
+  // Caminho 2: formato grudado (pdf-parse v1)
+  // Ex: "12RONALDO35KSG 5412TRUCKJOSE NILDON (DOCA) 753KVG 7A00TRUCK"
+  //      rota=1, qtd=2, motor1=RONALDO, cod1=35, placa1=KSG 5412, tipo1=TRUCK, ...
+  const startMatch = cleaned.match(/^(\d{1,2})([12])(?=[A-ZÀ-Ý])/)
+  if (!startMatch) return null
+  const rota = parseInt(startMatch[1], 10)
+  const qtd = parseInt(startMatch[2], 10)
+  if (rota < 1 || rota > 99) return null
+
+  const rest = cleaned.slice(startMatch[0].length)
+  const carros: CarroTokens[] = []
+  let cursor = 0
+  let m: RegExpExecArray | null
+  PLACA_TIPO_RE.lastIndex = 0
+
+  while ((m = PLACA_TIPO_RE.exec(rest)) !== null) {
+    const before = rest.slice(cursor, m.index)
+    const placa = m[1].trim()
+    const tipo = m[2].toUpperCase().replace(/\s+/g, ' ')
+
+    // before = motorista + codigo (1-7 dígitos no final)
+    let motorista = before.trim()
+    let codigo: string | null = null
+    const codMatch = before.match(/^([\s\S]+?)(\d{1,7})$/)
+    if (codMatch) {
+      motorista = codMatch[1].trim()
+      codigo = codMatch[2]
+    }
+
+    if (motorista) carros.push({ motorista, codigo, placa, tipo })
+    cursor = m.index + m[0].length
+  }
+
+  if (carros.length === 0) return null
+
+  return { rota, qtd, carro1: carros[0] ?? null, carro2: carros[1] ?? null }
+}
+
+function parseRowFromTokens(tokens: string[]): Row | null {
   if (!/^\d{1,3}$/.test(tokens[0])) return null
   const rota = parseInt(tokens[0], 10)
   if (rota < 1 || rota > 99) return null
-
-  // Segundo token = qtd_carros (1 ou 2)
   if (!/^[12]$/.test(tokens[1])) return null
   const qtd = parseInt(tokens[1], 10)
 
   const restAll = tokens.slice(2)
-
-  // Se qtd=1 → um carro só (3 ou 4 tokens em restAll)
-  // Se qtd=2 → dois carros (6 a 8 tokens)
-  // Mas é mais robusto procurar o "ponto de virada" entre carro1 e carro2 olhando pra placas.
-
-  // Estratégia: encontrar todas as posições onde token bate como placa
   const placaIdxs: number[] = []
   for (let i = 0; i < restAll.length; i++) {
     if (PLACA_RE.test(restAll[i])) placaIdxs.push(i)
   }
-
   if (placaIdxs.length === 0) return null
 
   let carro1Tokens: string[]
@@ -135,13 +171,9 @@ function parseRow(line: string): Row | null {
   if (qtd === 1 || placaIdxs.length === 1) {
     carro1Tokens = restAll
   } else {
-    // qtd=2 → dividir em dois carros usando a 1ª placa como divisor
-    // Carro1 termina logo após a 1ª placa (+1 se houver tipo TRUCK/TOCO)
     const placaIdx1 = placaIdxs[0]
-    let cutEnd = placaIdx1 + 1 // inclui placa
-    if (cutEnd < restAll.length && TIPO_RE.test(restAll[cutEnd])) {
-      cutEnd++ // inclui tipo
-    }
+    let cutEnd = placaIdx1 + 1
+    if (cutEnd < restAll.length && TIPO_RE.test(restAll[cutEnd])) cutEnd++
     carro1Tokens = restAll.slice(0, cutEnd)
     carro2Tokens = restAll.slice(cutEnd)
   }
@@ -152,6 +184,44 @@ function parseRow(line: string): Row | null {
   return { rota, qtd, carro1, carro2 }
 }
 
+// Junta linhas de continuação (formato grudado pode quebrar uma linha em várias)
+function joinContinuationLines(lines: string[]): string[] {
+  const out: string[] = []
+  let current = ''
+
+  for (const raw of lines) {
+    const t = raw.replace(/\s+/g, ' ').trim()
+    if (!t) continue
+
+    // Headers e total: descarrega current e ignora (ou guarda header pra detecção de data)
+    if (/^\(HLOG\)|ESCALA\s+GUANABARA/i.test(t)) {
+      if (current) { out.push(current); current = '' }
+      out.push(t)
+      continue
+    }
+    if (/QTD\s*\.\s*CARROS|1°\s*CARRO|^TOTAL|^--\s*\d+\s+of/i.test(t)) {
+      if (current) { out.push(current); current = '' }
+      continue
+    }
+
+    // Nova linha começa com rota+qtd+letra
+    if (/^\d{1,2}[12][A-ZÀ-Ý]/.test(t)) {
+      if (current) out.push(current)
+      current = t
+    } else if (/^\d{1,2}[12]$/.test(t) || /^\d{1,7}$/.test(t)) {
+      // Possível rota+qtd sozinho OU continuação numérica (código) — anexa à atual
+      if (current) current += t
+      else current = t
+    } else {
+      // Continuação textual
+      if (current) current += t
+      else current = t
+    }
+  }
+  if (current) out.push(current)
+  return out
+}
+
 export async function parseEscalaGuanabaraPdf(
   buffer: ArrayBuffer | Buffer,
   dataAlvo?: string,
@@ -160,7 +230,8 @@ export async function parseEscalaGuanabaraPdf(
   const result = await pdfParse(buf)
   const fullText = result.text ?? ''
 
-  const lines = fullText.split(/\r?\n/)
+  // pdf-parse v1 pode quebrar uma linha de rota em várias — junta continuações
+  const lines = joinContinuationLines(fullText.split(/\r?\n/))
 
   // Detecta data
   let dataISO: string | null = null
