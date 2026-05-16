@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
+import { consolidaKpi } from '@/lib/kpi/consolidador'
 import type { KpiLinha } from '@/lib/types/kpi'
 
 export const runtime = 'nodejs'
@@ -52,55 +53,47 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const { data: linhasRaw, error: linhasErr } = await svc
-    .from('kpi_linhas')
-    .select('*')
-    .eq('kpi_id', kpi_id)
-    .order('ordem')
+  // Consolida kpi_linhas a partir de kpi_rotas (idempotente — recria sempre)
+  let linhasBase: KpiLinha[]
+  try {
+    linhasBase = await consolidaKpi({ kpi_id, data: kpi.data, rede_id: kpi.rede_id, svc })
+  } catch (e) {
+    return new NextResponse(
+      e instanceof Error ? e.message : 'Erro ao consolidar KPI.',
+      { status: 500 },
+    )
+  }
 
-  if (linhasErr) return new NextResponse('Erro ao buscar linhas', { status: 500 })
+  if (linhasBase.length === 0)
+    return new NextResponse('Nenhuma rota encontrada para este KPI.', { status: 404 })
 
-  // Buscar anomalias_codigos por escala_linha_id pra enriquecer as linhas (OBS no XLSX)
+  // Enriquecer com motorista_codigo (para XLSX)
+  const escalaIds = linhasBase.map((l) => l.escala_linha_id).filter(Boolean) as string[]
+  const { data: escLinhas } = await svc
+    .from('escala_linhas')
+    .select('id, motorista_codigo')
+    .in('id', escalaIds.length ? escalaIds : ['__none__'])
+  const codMap = new Map<string, string | number | null>(
+    (escLinhas ?? []).map((e) => [e.id as string, (e.motorista_codigo as string | number | null) ?? null]),
+  )
+
+  // anomalias_codigos já estão em kpi_rotas — buscamos pra passar ao gerador de XLSX
   const { data: rotasComCodigos } = await svc
     .from('kpi_rotas')
     .select('escala_linha_id, anomalias_codigos')
     .eq('data', kpi.data)
     .eq('rede_id', kpi.rede_id)
   const anomMap = new Map<string, string[]>(
-    (rotasComCodigos ?? []).map(r => [r.escala_linha_id as string, (r.anomalias_codigos as string[]) ?? []]),
+    (rotasComCodigos ?? []).map((r) => [
+      r.escala_linha_id as string,
+      (r.anomalias_codigos as string[]) ?? [],
+    ]),
   )
 
-  // Buscar motorista_codigo das escala_linhas
-  const escalaIds = (linhasRaw ?? []).map((l: any) => l.escala_linha_id).filter(Boolean)
-  const { data: escLinhas } = await svc
-    .from('escala_linhas')
-    .select('id, motorista_codigo')
-    .in('id', escalaIds.length ? escalaIds : ['__none__'])
-  const codMap = new Map<string, string | number | null>(
-    (escLinhas ?? []).map(e => [e.id as string, (e.motorista_codigo as string | number | null) ?? null]),
-  )
-
-  const linhas: LinhaParaKpi[] = (linhasRaw ?? []).map(r => ({
-    kpi_id: r.kpi_id,
-    escala_linha_id: r.escala_linha_id,
-    ordem: r.ordem,
-    loja_nome: r.loja_nome,
-    motorista: r.motorista,
-    placa: r.placa,
-    carro_ordem: r.carro_ordem as 1 | 2,
-    saida_cd: r.saida_cd ? new Date(r.saida_cd) : null,
-    chd_loja_1: r.chd_loja_1 ? new Date(r.chd_loja_1) : null,
-    saida_loja_1: r.saida_loja_1 ? new Date(r.saida_loja_1) : null,
-    tempo_loja_1_min: r.tempo_loja_1_min,
-    chd_loja_2: r.chd_loja_2 ? new Date(r.chd_loja_2) : null,
-    saida_loja_2: r.saida_loja_2 ? new Date(r.saida_loja_2) : null,
-    tempo_loja_2_min: r.tempo_loja_2_min,
-    chd_loja_3: r.chd_loja_3 ? new Date(r.chd_loja_3) : null,
-    saida_loja_3: r.saida_loja_3 ? new Date(r.saida_loja_3) : null,
-    tempo_loja_3_min: r.tempo_loja_3_min,
-    observacao: r.observacao,
-    motorista_codigo: r.escala_linha_id ? codMap.get(r.escala_linha_id) ?? null : null,
-    anomalias_codigos: r.escala_linha_id ? anomMap.get(r.escala_linha_id) ?? [] : [],
+  const linhas: LinhaParaKpi[] = linhasBase.map((l) => ({
+    ...l,
+    motorista_codigo: l.escala_linha_id ? (codMap.get(l.escala_linha_id) ?? null) : null,
+    anomalias_codigos: l.escala_linha_id ? (anomMap.get(l.escala_linha_id) ?? []) : [],
   }))
 
   const { data: rede, error: redeErr } = await svc

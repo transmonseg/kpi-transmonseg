@@ -1,5 +1,6 @@
 import type { KpiLinha } from '@/lib/types/kpi'
 import { createServiceClient } from '@/lib/supabase/service'
+import { joinObsTexts } from './anomalia-obs'
 
 type ParadaJson = {
   loja_id: string | null
@@ -16,6 +17,7 @@ type KpiRotaJoined = {
   placa_norm: string | null
   saida_cd: string | null
   paradas_json: ParadaJson[]
+  anomalias_codigos: string[] | null
   escala_linhas: {
     motorista_nome: string | null
     loja_nome_raw: string
@@ -39,6 +41,7 @@ export async function consolidaKpi(params: {
       placa_norm,
       saida_cd,
       paradas_json,
+      anomalias_codigos,
       escala_linhas (
         motorista_nome,
         loja_nome_raw,
@@ -70,6 +73,8 @@ export async function consolidaKpi(params: {
       const p1 = paradas[0] ?? null
       const p2 = paradas[1] ?? null
       const p3 = paradas[2] ?? null
+      const codigos = rota.anomalias_codigos ?? []
+      const observacao = joinObsTexts(codigos) || null
 
       return {
         kpi_id,
@@ -89,7 +94,7 @@ export async function consolidaKpi(params: {
         chd_loja_3: p3 ? new Date(p3.chegada) : null,
         saida_loja_3: p3 ? new Date(p3.saida) : null,
         tempo_loja_3_min: p3?.duracao_min ?? null,
-        observacao: null,
+        observacao,
       } satisfies KpiLinha
     })
 

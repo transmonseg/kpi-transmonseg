@@ -12,13 +12,29 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
 
-  const body = await req.json() as { data: string; rede_id?: string }
-  const { data: dataParam, rede_id } = body
+  const body = await req.json() as { data: string; rede_id?: string; tipo?: string }
+  const { data: dataParam, rede_id, tipo } = body
 
   if (!dataParam || !/^\d{4}-\d{2}-\d{2}$/.test(dataParam))
     return new NextResponse('Parâmetro data inválido. Use YYYY-MM-DD.', { status: 400 })
 
   const svc = createServiceClient()
+
+  // Resolve upload IDs para filtrar por tipo de escala
+  let escalaUploadIds: string[] | null = null
+  if (tipo) {
+    const { data: uploads } = await svc
+      .from('escala_uploads')
+      .select('id')
+      .eq('data_escala', dataParam)
+      .eq('tipo', tipo.toUpperCase())
+    escalaUploadIds = (uploads ?? []).map((u) => u.id as string)
+    if (escalaUploadIds.length === 0)
+      return new NextResponse(
+        `Nenhuma escala do tipo ${tipo} encontrada para esta data.`,
+        { status: 404 },
+      )
+  }
 
   // Fetch escala_linhas
   let escalaQuery = svc
@@ -27,6 +43,7 @@ export async function POST(req: NextRequest) {
     .eq('data_entrega', dataParam)
 
   if (rede_id) escalaQuery = escalaQuery.eq('rede_id', rede_id)
+  if (escalaUploadIds) escalaQuery = escalaQuery.in('escala_upload_id', escalaUploadIds)
 
   const { data: escalaLinhas, error: escalaErr } = await escalaQuery
   if (escalaErr) return new NextResponse(`Erro ao buscar escala: ${escalaErr.message}`, { status: 500 })

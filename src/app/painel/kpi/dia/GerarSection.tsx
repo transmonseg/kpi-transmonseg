@@ -210,7 +210,7 @@ export function GerarSection({
         const processarRes = await fetch('/api/kpi/processar', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data, rede_id: tipo }),
+          body: JSON.stringify({ data, tipo }),
         })
         if (!processarRes.ok) {
           setStep(`processar_${tipo}`, {

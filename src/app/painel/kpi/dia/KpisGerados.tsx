@@ -46,19 +46,16 @@ type KpiLinha = {
 
 type KpiDetalhe = {
   kpi: { id: string; data: string; rede_id: string; status: string }
-  linhas: Array<Omit<KpiLinha, 'saida_cd' | 'chd_loja_1' | 'saida_loja_1' | 'chd_loja_2' | 'saida_loja_2' | 'chd_loja_3' | 'saida_loja_3'> & {
-    saida_cd: string | null
-    chd_loja_1: string | null
-    saida_loja_1: string | null
-    chd_loja_2: string | null
-    saida_loja_2: string | null
-    chd_loja_3: string | null
-    saida_loja_3: string | null
-  }>
+  linhas: KpiLinha[]
   anomalias: { high: number; medium: number; low: number; pendentes: number }
 }
 
 type FiltroLinhas = 'todas' | 'com_anomalia' | 'sem_anomalia'
+
+// Edições locais por kpi_id → escala_linha_id → campos
+type EditMap = Record<string, Record<string, { motorista?: string; placa?: string }>>
+
+const SEM_VALOR = '—'
 
 function fmtHora(iso: string | null): string {
   if (!iso) return '—'
@@ -68,15 +65,15 @@ function fmtHora(iso: string | null): string {
   })
 }
 
-function linhaTemAnomalia(l: KpiDetalhe['linhas'][number]): boolean {
+function linhaTemAnomalia(l: KpiLinha): boolean {
   return !!l.observacao && l.observacao.trim().length > 0
 }
 
 function severidadeFromObs(obs: string | null): 'HIGH' | 'MEDIUM' | 'LOW' | null {
   if (!obs) return null
-  const upper = obs.toUpperCase()
-  if (upper.includes('SEM_ENTREGA') || upper.includes('FORA_JANELA') || upper.includes('SEM_PARADA')) return 'HIGH'
-  if (upper.includes('PARADA_CURTA') || upper.includes('PARADA_LONGA')) return 'MEDIUM'
+  const u = obs.toUpperCase()
+  if (u.includes('ANOM-01') || u.includes('ANOM-04') || u.includes('ANOM-06') || u.includes('ANOM-07')) return 'HIGH'
+  if (u.includes('ANOM-03') || u.includes('ANOM-05') || u.includes('ANOM-08') || u.includes('ANOM-10') || u.includes('ANOM-11')) return 'MEDIUM'
   return 'LOW'
 }
 
@@ -92,7 +89,10 @@ export function KpisGerados({
   const [expanded, setExpanded] = useState<string | null>(null)
   const [detalhe, setDetalhe] = useState<Record<string, KpiDetalhe>>({})
   const [loadingDetalhe, setLoadingDetalhe] = useState<string | null>(null)
-  const [filtro, setFiltro] = useState<FiltroLinhas>('todas')
+  const [filtros, setFiltros] = useState<Record<string, FiltroLinhas>>({})
+  const [editMap, setEditMap] = useState<EditMap>({})
+  const [salvando, setSalvando] = useState<string | null>(null)
+  const [erroSalvar, setErroSalvar] = useState<Record<string, string>>({})
   const [signedUrls, setSignedUrls] = useState<
     Record<string, { xlsx_url: string | null; pdf_url: string | null }>
   >({})
@@ -109,10 +109,11 @@ export function KpisGerados({
       .then((rows) => {
         if (!active) return
         setKpis(rows ?? [])
-        // Limpa caches relacionados ao dia/refresh
         setExpanded(null)
         setDetalhe({})
         setSignedUrls({})
+        setEditMap({})
+        setErroSalvar({})
       })
       .catch(() => {
         if (active) setKpis([])
@@ -128,6 +129,19 @@ export function KpisGerados({
     }
   }, [data, refreshKey])
 
+  async function carregarDetalhe(kpiId: string) {
+    setLoadingDetalhe(kpiId)
+    try {
+      const res = await fetch(`/api/kpi/${kpiId}`)
+      if (res.ok) {
+        const d = (await res.json()) as KpiDetalhe
+        setDetalhe((prev) => ({ ...prev, [kpiId]: d }))
+      }
+    } finally {
+      setLoadingDetalhe(null)
+    }
+  }
+
   async function toggleExpand(kpiId: string) {
     if (expanded === kpiId) {
       setExpanded(null)
@@ -135,16 +149,96 @@ export function KpisGerados({
     }
     setExpanded(kpiId)
     if (!detalhe[kpiId]) {
-      setLoadingDetalhe(kpiId)
-      try {
-        const res = await fetch(`/api/kpi/${kpiId}`)
-        if (res.ok) {
-          const d = (await res.json()) as KpiDetalhe
-          setDetalhe((prev) => ({ ...prev, [kpiId]: d }))
-        }
-      } finally {
-        setLoadingDetalhe(null)
+      await carregarDetalhe(kpiId)
+    }
+  }
+
+  function editarCelula(
+    kpiId: string,
+    escalaLinhaId: string,
+    campo: 'motorista' | 'placa',
+    valor: string,
+  ) {
+    setEditMap((prev) => ({
+      ...prev,
+      [kpiId]: {
+        ...(prev[kpiId] ?? {}),
+        [escalaLinhaId]: {
+          ...(prev[kpiId]?.[escalaLinhaId] ?? {}),
+          [campo]: valor,
+        },
+      },
+    }))
+  }
+
+  function hasEdits(kpiId: string): boolean {
+    const edits = editMap[kpiId]
+    return !!edits && Object.keys(edits).length > 0
+  }
+
+  async function salvarEReGerar(kpi: KpiDoDia) {
+    const edits = editMap[kpi.kpi_id]
+    if (!edits) return
+    setSalvando(kpi.kpi_id)
+    setErroSalvar((prev) => { const e = { ...prev }; delete e[kpi.kpi_id]; return e })
+
+    try {
+      // 1. PATCH escala_linhas para cada linha editada
+      await Promise.all(
+        Object.entries(edits).map(([linhaId, campos]) =>
+          fetch('/api/escalas/linha', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: linhaId,
+              ...(campos.motorista !== undefined && { motorista_nome: campos.motorista }),
+              ...(campos.placa !== undefined && { placa_raw: campos.placa }),
+            }),
+          }).then((r) => {
+            if (!r.ok) throw new Error(`Falha ao atualizar linha ${linhaId}`)
+          }),
+        ),
+      )
+
+      // 2. Re-processar a rede
+      const processarRes = await fetch('/api/kpi/processar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data, rede_id: kpi.rede_id }),
+      })
+      if (!processarRes.ok)
+        throw new Error(await processarRes.text())
+
+      const { kpi_ids } = (await processarRes.json()) as { kpi_ids: string[] }
+
+      // 3. Re-gerar KPI
+      const targetId = kpi_ids.includes(kpi.kpi_id) ? kpi.kpi_id : (kpi_ids[0] ?? kpi.kpi_id)
+      const gerarRes = await fetch('/api/kpi/gerar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kpi_id: targetId }),
+      })
+      if (!gerarRes.ok) {
+        const txt = await gerarRes.text()
+        if (gerarRes.status !== 422) throw new Error(txt)
       }
+
+      // 4. Limpa edições e recarrega detalhe
+      setEditMap((prev) => { const e = { ...prev }; delete e[kpi.kpi_id]; return e })
+      setSignedUrls((prev) => { const e = { ...prev }; delete e[kpi.kpi_id]; return e })
+      delete detalhe[kpi.kpi_id]
+      await carregarDetalhe(targetId !== kpi.kpi_id ? targetId : kpi.kpi_id)
+
+      // Atualiza lista de KPIs para refletir novos contadores
+      const diasRes = await fetch(`/api/kpi/dia?data=${data}`)
+      if (diasRes.ok) setKpis(await diasRes.json())
+    } catch (e) {
+      setErroSalvar((prev) => ({
+        ...prev,
+        [kpi.kpi_id]: e instanceof Error ? e.message : 'Erro ao salvar.',
+      }))
+    } finally {
+      setSalvando(null)
     }
   }
 
@@ -153,7 +247,6 @@ export function KpisGerados({
     try {
       let urls = signedUrls[kpiId]
       if (!urls) {
-        // Chama /api/kpi/gerar — idempotente, retorna signed URLs frescas
         const res = await fetch('/api/kpi/gerar', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -201,11 +294,17 @@ export function KpisGerados({
         {kpis.map((k) => {
           const isExpanded = expanded === k.kpi_id
           const det = detalhe[k.kpi_id]
+          const filtro = filtros[k.kpi_id] ?? 'todas'
+          const temEdits = hasEdits(k.kpi_id)
+          const isSalvando = salvando === k.kpi_id
+          const erroK = erroSalvar[k.kpi_id]
+
           return (
             <div
               key={k.kpi_id}
               className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg)]"
             >
+              {/* Cabeçalho do card */}
               <div className="flex items-center justify-between gap-3 px-3 py-2.5">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-[13px] font-semibold text-[var(--color-fg)] truncate">
@@ -226,11 +325,11 @@ export function KpisGerados({
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <Button
-                    variant="ghost"
+                    variant={isExpanded ? 'primary' : 'ghost'}
                     size="sm"
                     onClick={() => toggleExpand(k.kpi_id)}
                   >
-                    {isExpanded ? 'Fechar' : 'Ver'}
+                    {isExpanded ? 'Fechar' : 'Revisar'}
                   </Button>
                   <Button
                     variant="secondary"
@@ -251,25 +350,35 @@ export function KpisGerados({
                 </div>
               </div>
 
+              {/* Painel de revisão */}
               {isExpanded && (
-                <div className="border-t border-[var(--color-border)] bg-[var(--color-bg-subtle)]">
+                <div className="border-t border-[var(--color-border)]">
                   {loadingDetalhe === k.kpi_id && (
-                    <div className="px-3 py-3 text-[12px] text-[var(--color-fg-muted)]">
+                    <div className="px-4 py-4 text-[12px] text-[var(--color-fg-muted)]">
                       Carregando linhas…
                     </div>
                   )}
+                  {erroK && (
+                    <div className="mx-3 mt-3 rounded-md bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/30 px-3 py-2 text-[12px] text-[var(--color-danger-soft-fg)]">
+                      {erroK}
+                    </div>
+                  )}
                   {det && (
-                    <DetalheLinhas
+                    <TabelaRevisao
                       kpi={k}
                       det={det}
                       filtro={filtro}
-                      setFiltro={setFiltro}
-                      onBaixarFiltrado={(tipo) => {
-                        // Filtro real no servidor é TODO.
-                        // Por enquanto baixa o arquivo completo do KPI; o filtro
-                        // só atua na visualização da tabela acima.
-                        baixar(k.kpi_id, tipo)
-                      }}
+                      setFiltro={(f) =>
+                        setFiltros((prev) => ({ ...prev, [k.kpi_id]: f }))
+                      }
+                      editMap={editMap[k.kpi_id] ?? {}}
+                      onEditarCelula={(linhaId, campo, valor) =>
+                        editarCelula(k.kpi_id, linhaId, campo, valor)
+                      }
+                      temEdits={temEdits}
+                      salvando={isSalvando}
+                      onSalvar={() => salvarEReGerar(k)}
+                      onBaixar={(tipo) => baixar(k.kpi_id, tipo)}
                     />
                   )}
                 </div>
@@ -282,31 +391,40 @@ export function KpisGerados({
   )
 }
 
-function DetalheLinhas({
+function TabelaRevisao({
   kpi,
   det,
   filtro,
   setFiltro,
-  onBaixarFiltrado,
+  editMap,
+  onEditarCelula,
+  temEdits,
+  salvando,
+  onSalvar,
+  onBaixar,
 }: {
   kpi: KpiDoDia
   det: KpiDetalhe
   filtro: FiltroLinhas
   setFiltro: (f: FiltroLinhas) => void
-  onBaixarFiltrado: (tipo: 'xlsx' | 'pdf') => void
+  editMap: Record<string, { motorista?: string; placa?: string }>
+  onEditarCelula: (linhaId: string, campo: 'motorista' | 'placa', valor: string) => void
+  temEdits: boolean
+  salvando: boolean
+  onSalvar: () => void
+  onBaixar: (tipo: 'xlsx' | 'pdf') => void
 }) {
-  const linhasFiltradas = useMemo(() => {
-    if (filtro === 'todas') return det.linhas
-    if (filtro === 'com_anomalia') return det.linhas.filter(linhaTemAnomalia)
-    return det.linhas.filter((l) => !linhaTemAnomalia(l))
-  }, [det.linhas, filtro])
-
   const stats = useMemo(() => {
     const total = det.linhas.length
     const comAnom = det.linhas.filter(linhaTemAnomalia).length
-    const sem = total - comAnom
-    return { total, comAnom, sem }
+    return { total, comAnom, sem: total - comAnom }
   }, [det.linhas])
+
+  const linhasFiltradas = useMemo(() => {
+    if (filtro === 'com_anomalia') return det.linhas.filter(linhaTemAnomalia)
+    if (filtro === 'sem_anomalia') return det.linhas.filter((l) => !linhaTemAnomalia(l))
+    return det.linhas
+  }, [det.linhas, filtro])
 
   const chips: Array<{ id: FiltroLinhas; label: string; count: number }> = [
     { id: 'todas', label: 'Todas', count: stats.total },
@@ -316,34 +434,70 @@ function DetalheLinhas({
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-[var(--color-border)]">
-        <div className="flex items-center gap-1">
+      {/* Barra de controles */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-[var(--color-bg-subtle)] border-b border-[var(--color-border)]">
+        {/* Filtro chips */}
+        <div className="flex items-center gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] p-0.5">
           {chips.map((c) => (
             <button
               key={c.id}
               onClick={() => setFiltro(c.id)}
               className={cn(
-                'inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer',
+                'rounded-[5px] px-2 py-0.5 text-[11px] font-medium transition-colors cursor-pointer',
                 filtro === c.id
-                  ? 'bg-[var(--color-accent)] text-[var(--color-accent-fg)]'
-                  : 'bg-[var(--color-bg)] text-[var(--color-fg-muted)] border border-[var(--color-border)] hover:text-[var(--color-fg)] hover:bg-[var(--color-bg-hover)]',
+                  ? 'bg-[var(--color-bg-elevated)] text-[var(--color-fg)] shadow-sm'
+                  : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]',
               )}
             >
-              {c.label}
-              <span className="opacity-70 tabular-nums">({c.count})</span>
+              {c.label} <span className="opacity-60">({c.count})</span>
             </button>
           ))}
         </div>
+
+        {/* Ações */}
         <div className="flex items-center gap-1.5">
-          <Button variant="secondary" size="sm" onClick={() => onBaixarFiltrado('xlsx')}>
-            ↓ XLSX
+          {temEdits && (
+            <Button
+              size="sm"
+              onClick={onSalvar}
+              disabled={salvando}
+              className="bg-[var(--color-warning)] text-white hover:opacity-90"
+            >
+              {salvando ? (
+                <>
+                  <Spinner />
+                  Salvando…
+                </>
+              ) : (
+                <>
+                  <IconSave />
+                  Salvar e Re-gerar
+                </>
+              )}
+            </Button>
+          )}
+          <Button variant="secondary" size="sm" onClick={() => onBaixar('xlsx')}>
+            <IconDownload />
+            XLSX
           </Button>
-          <Button variant="secondary" size="sm" onClick={() => onBaixarFiltrado('pdf')}>
-            ↓ PDF
+          <Button variant="secondary" size="sm" onClick={() => onBaixar('pdf')}>
+            <IconDownload />
+            PDF
           </Button>
         </div>
       </div>
 
+      {temEdits && (
+        <div className="border-b border-[var(--color-border)] bg-[var(--color-warning-soft)]/40 px-4 py-1.5 text-[11px] text-[var(--color-warning-soft-fg)] font-medium">
+          Você tem alterações não salvas. Clique em "Salvar e Re-gerar" para aplicar.
+        </div>
+      )}
+
+      <div className="px-3 py-1.5 bg-[var(--color-bg-subtle)] border-b border-[var(--color-border)] text-[11px] text-[var(--color-fg-muted)]">
+        Clique em qualquer célula de motorista ou placa para editar.
+      </div>
+
+      {/* Tabela */}
       <div className="overflow-x-auto">
         <table className="w-full text-[11px] tabular-nums">
           <thead className="bg-[var(--color-bg-subtle)] text-[var(--color-fg-muted)]">
@@ -368,6 +522,10 @@ function DetalheLinhas({
                   : sev === 'MEDIUM'
                     ? 'bg-[var(--color-warning-soft)]/60'
                     : ''
+              const edits = l.escala_linha_id ? (editMap[l.escala_linha_id] ?? {}) : {}
+              const motoristaVal = edits.motorista !== undefined ? edits.motorista : (l.motorista ?? '')
+              const placaVal = edits.placa !== undefined ? edits.placa : (l.placa ?? '')
+
               return (
                 <tr
                   key={`${l.kpi_id}-${l.ordem}-${l.carro_ordem}`}
@@ -378,13 +536,37 @@ function DetalheLinhas({
                   )}
                 >
                   <Td>{l.ordem}</Td>
-                  <Td align="left" className="font-medium text-[var(--color-fg)] max-w-[180px] truncate">
+                  <Td
+                    align="left"
+                    className="font-medium text-[var(--color-fg)] max-w-[180px] truncate"
+                  >
                     {l.loja_nome}
                   </Td>
-                  <Td align="left" className="max-w-[140px] truncate">
-                    {l.motorista ?? '—'}
+                  <Td align="left" className="px-1 py-0.5 max-w-[160px]">
+                    {l.escala_linha_id ? (
+                      <CelulaEditavel
+                        valor={motoristaVal}
+                        onChange={(v) =>
+                          onEditarCelula(l.escala_linha_id!, 'motorista', v)
+                        }
+                      />
+                    ) : (
+                      <span className="px-2">{l.motorista ?? '—'}</span>
+                    )}
                   </Td>
-                  <Td className="font-mono text-[10.5px]">{l.placa ?? '—'}</Td>
+                  <Td className="px-1 py-0.5 w-28">
+                    {l.escala_linha_id ? (
+                      <CelulaEditavel
+                        valor={placaVal}
+                        onChange={(v) =>
+                          onEditarCelula(l.escala_linha_id!, 'placa', v)
+                        }
+                        monospace
+                      />
+                    ) : (
+                      <span className="font-mono text-[10.5px] px-2">{l.placa ?? '—'}</span>
+                    )}
+                  </Td>
                   <Td>{fmtHora(l.saida_cd)}</Td>
                   <ParadaCell
                     chegada={l.chd_loja_1}
@@ -401,7 +583,10 @@ function DetalheLinhas({
                     saida={l.saida_loja_3}
                     min={l.tempo_loja_3_min}
                   />
-                  <Td align="left" className="max-w-[200px] truncate text-[var(--color-fg-muted)]">
+                  <Td
+                    align="left"
+                    className="max-w-[200px] truncate text-[var(--color-fg-muted)]"
+                  >
                     {l.observacao ?? '—'}
                   </Td>
                 </tr>
@@ -411,7 +596,7 @@ function DetalheLinhas({
               <tr>
                 <td
                   colSpan={9}
-                  className="px-3 py-4 text-center text-[12px] text-[var(--color-fg-subtle)]"
+                  className="px-3 py-5 text-center text-[12px] text-[var(--color-fg-subtle)]"
                 >
                   Nenhuma linha nesse filtro.
                 </td>
@@ -421,17 +606,38 @@ function DetalheLinhas({
         </table>
       </div>
 
-      <div className="px-3 py-2 text-[10px] text-[var(--color-fg-subtle)] border-t border-[var(--color-border)] flex items-center justify-between">
-        <span>
-          {linhasFiltradas.length} de {stats.total} linha
-          {stats.total === 1 ? '' : 's'} · KPI {kpi.kpi_id.slice(0, 8)}
-        </span>
-        <span>
-          {/* TODO(server-filter): hoje download ignora o filtro acima e retorna sempre o KPI completo. Pra suportar export filtrado precisaria de endpoint que aceite lista de escala_linha_id. */}
-          Download retorna sempre o arquivo completo do KPI.
-        </span>
+      <div className="px-3 py-1.5 text-[10px] text-[var(--color-fg-subtle)] border-t border-[var(--color-border)]">
+        {linhasFiltradas.length} de {stats.total} linha
+        {stats.total === 1 ? '' : 's'} · KPI {kpi.kpi_id.slice(0, 8)}
       </div>
     </div>
+  )
+}
+
+function CelulaEditavel({
+  valor,
+  onChange,
+  monospace,
+}: {
+  valor: string
+  onChange: (v: string) => void
+  monospace?: boolean
+}) {
+  const vazio = !valor || valor === SEM_VALOR
+  return (
+    <input
+      value={vazio ? '' : valor}
+      placeholder={SEM_VALOR}
+      onChange={(e) => onChange(e.target.value)}
+      className={cn(
+        'w-full rounded-md border border-transparent bg-transparent px-2 py-1 text-[11px] transition-colors',
+        'placeholder:text-[var(--color-fg-subtle)]',
+        'hover:border-[var(--color-border)] hover:bg-[var(--color-bg-subtle)]',
+        'focus:border-[var(--color-accent)] focus:bg-[var(--color-bg-elevated)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30',
+        monospace && 'font-mono text-[10.5px]',
+        vazio ? 'italic text-[var(--color-fg-subtle)]' : 'text-[var(--color-fg)]',
+      )}
+    />
   )
 }
 
@@ -501,5 +707,54 @@ function ParadaCell({
         )}
       </span>
     </Td>
+  )
+}
+
+function Spinner({ className = '' }: { className?: string }) {
+  return (
+    <svg
+      className={cn('h-3.5 w-3.5 animate-spin', className)}
+      viewBox="0 0 24 24"
+      fill="none"
+    >
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+      <path fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z" />
+    </svg>
+  )
+}
+
+function IconDownload() {
+  return (
+    <svg
+      className="h-3.5 w-3.5"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  )
+}
+
+function IconSave() {
+  return (
+    <svg
+      className="h-3.5 w-3.5"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+      <polyline points="17 21 17 13 7 13 7 21" />
+      <polyline points="7 3 7 8 15 8" />
+    </svg>
   )
 }
