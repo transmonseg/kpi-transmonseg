@@ -127,24 +127,26 @@ export async function GET(
       })
   }
 
-  // Se o KPI não tem rotas, todas as contagens são 0 (evita .in() com array vazio).
-  const [high, medium, low, pendentes] = rotaIds.length === 0
-    ? [{ count: 0 }, { count: 0 }, { count: 0 }, { count: 0 }]
-    : await Promise.all([
-        svc.from('anomalias').select('id', { count: 'exact', head: true }).in('kpi_rota_id', rotaIds).eq('severidade', 'HIGH'),
-        svc.from('anomalias').select('id', { count: 'exact', head: true }).in('kpi_rota_id', rotaIds).eq('severidade', 'MEDIUM'),
-        svc.from('anomalias').select('id', { count: 'exact', head: true }).in('kpi_rota_id', rotaIds).eq('severidade', 'LOW'),
-        svc.from('anomalias').select('id', { count: 'exact', head: true }).in('kpi_rota_id', rotaIds).eq('status', 'pendente'),
-      ])
+  const anomaliasRows = rotaIds.length === 0 ? [] : await svc
+    .from('anomalias')
+    .select('id, codigo, severidade, descricao, sugestao, status, kpi_rota_id, parada_id')
+    .in('kpi_rota_id', rotaIds)
+    .then((r) => r.data ?? [])
+
+  const high = anomaliasRows.filter((a) => a.severidade === 'HIGH').length
+  const medium = anomaliasRows.filter((a) => a.severidade === 'MEDIUM').length
+  const low = anomaliasRows.filter((a) => a.severidade === 'LOW').length
+  const pendentes = anomaliasRows.filter((a) => a.status === 'pendente').length
 
   return NextResponse.json({
     kpi,
     linhas,
     anomalias: {
-      high: high.count ?? 0,
-      medium: medium.count ?? 0,
-      low: low.count ?? 0,
-      pendentes: pendentes.count ?? 0,
+      high,
+      medium,
+      low,
+      pendentes,
+      lista: anomaliasRows,
     },
   })
 }

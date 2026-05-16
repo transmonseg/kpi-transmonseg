@@ -45,15 +45,31 @@ type KpiLinha = {
   anomalias_codigos: string[]
 }
 
+type AnomaliaItem = {
+  id: string
+  codigo: string
+  severidade: string
+  descricao: string
+  sugestao: string | null
+  status: string
+  kpi_rota_id: string | null
+  parada_id: string | null
+}
+
 type KpiDetalhe = {
   kpi: { id: string; data: string; rede_id: string; status: string }
   linhas: KpiLinha[]
-  anomalias: { high: number; medium: number; low: number; pendentes: number }
+  anomalias: {
+    high: number
+    medium: number
+    low: number
+    pendentes: number
+    lista: AnomaliaItem[]
+  }
 }
 
 type FiltroLinhas = 'todas' | 'com_anomalia' | 'sem_anomalia'
 
-// Edições locais por kpi_id → escala_linha_id → campos
 type EditMap = Record<string, Record<string, { motorista?: string; placa?: string }>>
 
 const SEM_VALOR = '—'
@@ -100,6 +116,7 @@ export function KpisGerados({
     Record<string, { xlsx_url: string | null; pdf_url: string | null }>
   >({})
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
+  const [resolvendo, setResolvendo] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -186,7 +203,6 @@ export function KpisGerados({
     setErroSalvar((prev) => { const e = { ...prev }; delete e[kpi.kpi_id]; return e })
 
     try {
-      // 1. PATCH escala_linhas para cada linha editada
       await Promise.all(
         Object.entries(edits).map(([linhaId, campos]) =>
           fetch('/api/escalas/linha', {
@@ -203,7 +219,6 @@ export function KpisGerados({
         ),
       )
 
-      // 2. Re-processar a rede
       const processarRes = await fetch('/api/kpi/processar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -214,7 +229,6 @@ export function KpisGerados({
 
       const { kpi_ids } = (await processarRes.json()) as { kpi_ids: string[] }
 
-      // 3. Re-gerar KPI
       const targetId = kpi_ids.includes(kpi.kpi_id) ? kpi.kpi_id : (kpi_ids[0] ?? kpi.kpi_id)
       const gerarRes = await fetch('/api/kpi/gerar', {
         method: 'POST',
@@ -226,13 +240,11 @@ export function KpisGerados({
         if (gerarRes.status !== 422) throw new Error(txt)
       }
 
-      // 4. Limpa edições e recarrega detalhe
       setEditMap((prev) => { const e = { ...prev }; delete e[kpi.kpi_id]; return e })
       setSignedUrls((prev) => { const e = { ...prev }; delete e[kpi.kpi_id]; return e })
       setDetalhe((prev) => { const e = { ...prev }; delete e[kpi.kpi_id]; return e })
       await carregarDetalhe(targetId !== kpi.kpi_id ? targetId : kpi.kpi_id)
 
-      // Atualiza lista de KPIs para refletir novos contadores
       const diasRes = await fetch(`/api/kpi/dia?data=${data}`)
       if (diasRes.ok) setKpis(await diasRes.json())
     } catch (e) {
@@ -242,6 +254,28 @@ export function KpisGerados({
       }))
     } finally {
       setSalvando(null)
+    }
+  }
+
+  async function resolverAnomalia(kpiId: string, anomaliaId: string, acao: 'ignorar' | 'aceitar') {
+    setResolvendo(anomaliaId)
+    try {
+      const res = await fetch(`/api/anomalias/${anomaliaId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ acao }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      // Recarrega detalhe para atualizar status das anomalias
+      setDetalhe((prev) => { const e = { ...prev }; delete e[kpiId]; return e })
+      await carregarDetalhe(kpiId)
+      // Atualiza contadores do card
+      const diasRes = await fetch(`/api/kpi/dia?data=${data}`)
+      if (diasRes.ok) setKpis(await diasRes.json())
+    } catch (e) {
+      console.error('Erro ao resolver anomalia', e)
+    } finally {
+      setResolvendo(null)
     }
   }
 
@@ -298,15 +332,16 @@ export function KpisGerados({
           const temEdits = hasEdits(k.kpi_id)
           const isSalvando = salvando === k.kpi_id
           const erroK = erroSalvar[k.kpi_id]
+          const temAnomaliasBloqueando = k.qtd_anomalias_high > 0
 
           return (
             <div
               key={k.kpi_id}
               className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg)]"
             >
-              {/* Cabeçalho do card */}
+              {/* Cabeçalho */}
               <div className="flex items-center justify-between gap-3 px-3 py-2.5">
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0 flex-wrap">
                   <span className="text-[13px] font-semibold text-[var(--color-fg)] truncate">
                     {k.rede_nome}
                   </span>
@@ -321,6 +356,11 @@ export function KpisGerados({
                   )}
                   {k.qtd_anomalias_low > 0 && (
                     <Badge variant="default">{k.qtd_anomalias_low} baixa</Badge>
+                  )}
+                  {temAnomaliasBloqueando && (
+                    <span className="text-[10px] text-[var(--color-danger-soft-fg)] font-medium">
+                      Bloqueado — resolva anomalias altas
+                    </span>
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
@@ -350,12 +390,11 @@ export function KpisGerados({
                 </div>
               </div>
 
-              {/* Painel de revisão */}
               {isExpanded && (
                 <div className="border-t border-[var(--color-border)]">
                   {loadingDetalhe === k.kpi_id && (
-                    <div className="px-4 py-4 text-[12px] text-[var(--color-fg-muted)]">
-                      Carregando linhas…
+                    <div className="px-4 py-4 text-[12px] text-[var(--color-fg-muted)] animate-pulse">
+                      Carregando…
                     </div>
                   )}
                   {erroK && (
@@ -364,7 +403,7 @@ export function KpisGerados({
                     </div>
                   )}
                   {det && (
-                    <TabelaRevisao
+                    <PainelRevisao
                       kpi={k}
                       det={det}
                       filtro={filtro}
@@ -379,6 +418,8 @@ export function KpisGerados({
                       salvando={isSalvando}
                       onSalvar={() => salvarEReGerar(k)}
                       onBaixar={(tipo) => baixar(k.kpi_id, tipo)}
+                      onResolver={(anomId, acao) => resolverAnomalia(k.kpi_id, anomId, acao)}
+                      resolvendo={resolvendo}
                     />
                   )}
                 </div>
@@ -391,7 +432,7 @@ export function KpisGerados({
   )
 }
 
-function TabelaRevisao({
+function PainelRevisao({
   kpi,
   det,
   filtro,
@@ -402,6 +443,8 @@ function TabelaRevisao({
   salvando,
   onSalvar,
   onBaixar,
+  onResolver,
+  resolvendo,
 }: {
   kpi: KpiDoDia
   det: KpiDetalhe
@@ -413,6 +456,8 @@ function TabelaRevisao({
   salvando: boolean
   onSalvar: () => void
   onBaixar: (tipo: 'xlsx' | 'pdf') => void
+  onResolver: (anomId: string, acao: 'ignorar' | 'aceitar') => void
+  resolvendo: string | null
 }) {
   const stats = useMemo(() => {
     const total = det.linhas.length
@@ -430,35 +475,123 @@ function TabelaRevisao({
     return det.linhas
   }, [det.linhas, filtro])
 
+  const anomaliasAltas = det.anomalias.lista.filter((a) => a.severidade === 'HIGH')
+  const anomaliasOutras = det.anomalias.lista.filter((a) => a.severidade !== 'HIGH')
+  const temAnomaliasPendentes = det.anomalias.lista.some((a) => a.status === 'pendente' && a.severidade === 'HIGH')
+
   const chips: Array<{ id: FiltroLinhas; label: string; count: number }> = [
     { id: 'todas', label: 'Todas', count: stats.total },
     { id: 'com_anomalia', label: 'Com anomalia', count: stats.comAnom },
-    { id: 'sem_anomalia', label: 'Sem anomalia', count: stats.semAnomalia },
+    { id: 'sem_anomalia', label: 'OK', count: stats.semAnomalia },
   ]
 
   return (
     <div>
-      {/* Stats bar */}
-      <div className="flex gap-3 px-3 pt-3 pb-2 flex-wrap">
+      {/* Barra de stats simples */}
+      <div className="flex items-center gap-4 px-3 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)]">
         {([
-          { label: 'Total', value: stats.total, cls: '' },
-          { label: 'Alta', value: stats.altas, cls: stats.altas > 0 ? 'text-red-500' : '' },
-          { label: 'Média', value: stats.medias, cls: stats.medias > 0 ? 'text-yellow-600' : '' },
-          { label: 'Baixa', value: stats.baixas, cls: '' },
-          { label: 'OK', value: stats.semAnomalia, cls: 'text-green-600' },
-        ] as const).map(({ label, value, cls }) => (
-          <Card key={label} className="px-3 py-1.5 min-w-[70px]">
-            <CardContent className="p-0">
-              <div className="text-xs text-muted-foreground">{label}</div>
-              <div className={cn('text-lg font-bold', cls)}>{value}</div>
-            </CardContent>
-          </Card>
+          { label: 'Total', value: stats.total, color: 'text-[var(--color-fg)]' },
+          { label: 'Alta', value: stats.altas, color: stats.altas > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-fg-muted)]' },
+          { label: 'Média', value: stats.medias, color: stats.medias > 0 ? 'text-[var(--color-warning)]' : 'text-[var(--color-fg-muted)]' },
+          { label: 'Baixa', value: stats.baixas, color: 'text-[var(--color-fg-muted)]' },
+          { label: 'OK', value: stats.semAnomalia, color: 'text-[var(--color-success)]' },
+        ] as const).map(({ label, value, color }) => (
+          <div key={label} className="flex items-baseline gap-1">
+            <span className={cn('text-[14px] font-bold tabular-nums', color)}>{value}</span>
+            <span className="text-[10px] text-[var(--color-fg-subtle)]">{label}</span>
+          </div>
         ))}
+        <div className="flex-1" />
+        {/* Ações */}
+        {temEdits && (
+          <Button
+            size="sm"
+            onClick={onSalvar}
+            disabled={salvando}
+            className="bg-[var(--color-warning)] text-white hover:opacity-90"
+          >
+            {salvando ? <><Spinner />Salvando…</> : <><IconSave />Salvar e Re-gerar</>}
+          </Button>
+        )}
+        <Button variant="secondary" size="sm" onClick={() => onBaixar('xlsx')}>
+          <IconDownload />XLSX
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => onBaixar('pdf')}>
+          <IconDownload />PDF
+        </Button>
       </div>
 
-      {/* Barra de controles */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-[var(--color-bg-subtle)] border-b border-[var(--color-border)]">
-        {/* Filtro chips */}
+      {temEdits && (
+        <div className="border-b border-[var(--color-border)] bg-[var(--color-warning-soft)]/40 px-4 py-1.5 text-[11px] text-[var(--color-warning-soft-fg)] font-medium">
+          Alterações não salvas — clique em "Salvar e Re-gerar" para aplicar.
+        </div>
+      )}
+
+      {/* Painel de anomalias altas */}
+      {anomaliasAltas.length > 0 && (
+        <div className="border-b border-[var(--color-border)]">
+          <div className="px-3 py-2 bg-[var(--color-danger-soft)]/60">
+            <p className="text-[11px] font-semibold text-[var(--color-danger-soft-fg)] mb-1.5">
+              Anomalias Altas ({anomaliasAltas.length}) — resolva para desbloquear a geração
+            </p>
+            <div className="flex flex-col gap-1.5">
+              {anomaliasAltas.map((a) => (
+                <div
+                  key={a.id}
+                  className={cn(
+                    'rounded-md border px-3 py-2 text-[11px]',
+                    a.status === 'pendente'
+                      ? 'bg-[var(--color-bg)] border-[var(--color-danger)]/30'
+                      : 'bg-[var(--color-bg-subtle)] border-[var(--color-border)] opacity-60',
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <span className="font-mono text-[10px] font-bold text-[var(--color-danger-soft-fg)] mr-1.5">
+                        {a.codigo}
+                      </span>
+                      <span className="text-[var(--color-fg)]">{a.descricao}</span>
+                      {a.sugestao && (
+                        <p className="text-[var(--color-fg-muted)] mt-0.5 italic">{a.sugestao}</p>
+                      )}
+                    </div>
+                    {a.status === 'pendente' ? (
+                      <div className="flex gap-1 shrink-0">
+                        <button
+                          onClick={() => onResolver(a.id, 'ignorar')}
+                          disabled={resolvendo === a.id}
+                          className="rounded px-2 py-0.5 text-[10px] font-medium bg-[var(--color-danger-soft)] text-[var(--color-danger-soft-fg)] hover:opacity-80 disabled:opacity-50 cursor-pointer"
+                        >
+                          {resolvendo === a.id ? '…' : 'Ignorar'}
+                        </button>
+                        <button
+                          onClick={() => onResolver(a.id, 'aceitar')}
+                          disabled={resolvendo === a.id}
+                          className="rounded px-2 py-0.5 text-[10px] font-medium bg-[var(--color-bg-subtle)] text-[var(--color-fg-muted)] hover:bg-[var(--color-bg-hover)] disabled:opacity-50 cursor-pointer"
+                        >
+                          Aceitar
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-[var(--color-fg-subtle)] shrink-0 capitalize">
+                        {a.status}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Anomalias médias/baixas — colapsável */}
+      {anomaliasOutras.length > 0 && (
+        <AnomaliasMediasLowPanel anomalias={anomaliasOutras} onResolver={onResolver} resolvendo={resolvendo} />
+      )}
+
+      {/* Barra de filtro + dica */}
+      <div className="flex items-center gap-2 px-3 py-2 bg-[var(--color-bg-subtle)] border-b border-[var(--color-border)]">
         <div className="flex items-center gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] p-0.5">
           {chips.map((c) => (
             <button
@@ -475,48 +608,9 @@ function TabelaRevisao({
             </button>
           ))}
         </div>
-
-        {/* Ações */}
-        <div className="flex items-center gap-1.5">
-          {temEdits && (
-            <Button
-              size="sm"
-              onClick={onSalvar}
-              disabled={salvando}
-              className="bg-[var(--color-warning)] text-white hover:opacity-90"
-            >
-              {salvando ? (
-                <>
-                  <Spinner />
-                  Salvando…
-                </>
-              ) : (
-                <>
-                  <IconSave />
-                  Salvar e Re-gerar
-                </>
-              )}
-            </Button>
-          )}
-          <Button variant="secondary" size="sm" onClick={() => onBaixar('xlsx')}>
-            <IconDownload />
-            XLSX
-          </Button>
-          <Button variant="secondary" size="sm" onClick={() => onBaixar('pdf')}>
-            <IconDownload />
-            PDF
-          </Button>
-        </div>
-      </div>
-
-      {temEdits && (
-        <div className="border-b border-[var(--color-border)] bg-[var(--color-warning-soft)]/40 px-4 py-1.5 text-[11px] text-[var(--color-warning-soft-fg)] font-medium">
-          Você tem alterações não salvas. Clique em "Salvar e Re-gerar" para aplicar.
-        </div>
-      )}
-
-      <div className="px-3 py-1.5 bg-[var(--color-bg-subtle)] border-b border-[var(--color-border)] text-[11px] text-[var(--color-fg-muted)]">
-        Clique em qualquer célula de motorista ou placa para editar.
+        <span className="text-[10px] text-[var(--color-fg-subtle)]">
+          Clique em motorista ou placa para editar
+        </span>
       </div>
 
       {/* Tabela */}
@@ -532,7 +626,7 @@ function TabelaRevisao({
               <Th>Par. 1</Th>
               <Th>Par. 2</Th>
               <Th>Par. 3</Th>
-              <Th align="left">Anomalias</Th>
+              <Th align="left">Obs</Th>
             </tr>
           </thead>
           <tbody>
@@ -542,7 +636,7 @@ function TabelaRevisao({
                 sev === 'HIGH'
                   ? 'bg-[var(--color-danger-soft)]'
                   : sev === 'MEDIUM'
-                    ? 'bg-[var(--color-warning-soft)]/60'
+                    ? 'bg-[var(--color-warning-soft)]/50'
                     : ''
               const edits = l.escala_linha_id ? (editMap[l.escala_linha_id] ?? {}) : {}
               const motoristaVal = edits.motorista !== undefined ? edits.motorista : (l.motorista ?? '')
@@ -557,7 +651,22 @@ function TabelaRevisao({
                     !rowBg && 'hover:bg-[var(--color-bg-hover)]',
                   )}
                 >
-                  <Td>{l.ordem}</Td>
+                  <Td>
+                    <span className="flex items-center gap-1">
+                      {l.ordem}
+                      {l.anomalias_codigos.length > 0 && (
+                        <span
+                          title={l.anomalias_codigos.join(', ')}
+                          className={cn(
+                            'inline-block w-1.5 h-1.5 rounded-full',
+                            sev === 'HIGH' ? 'bg-[var(--color-danger)]' :
+                            sev === 'MEDIUM' ? 'bg-[var(--color-warning)]' :
+                            'bg-[var(--color-fg-subtle)]',
+                          )}
+                        />
+                      )}
+                    </span>
+                  </Td>
                   <Td
                     align="left"
                     className="font-medium text-[var(--color-fg)] max-w-[180px] truncate"
@@ -608,6 +717,7 @@ function TabelaRevisao({
                   <Td
                     align="left"
                     className="max-w-[200px] truncate text-[var(--color-fg-muted)]"
+                    title={l.observacao ?? undefined}
                   >
                     {l.observacao ?? '—'}
                   </Td>
@@ -632,6 +742,78 @@ function TabelaRevisao({
         {linhasFiltradas.length} de {stats.total} linha
         {stats.total === 1 ? '' : 's'} · KPI {kpi.kpi_id.slice(0, 8)}
       </div>
+    </div>
+  )
+}
+
+function AnomaliasMediasLowPanel({
+  anomalias,
+  onResolver,
+  resolvendo,
+}: {
+  anomalias: AnomaliaItem[]
+  onResolver: (anomId: string, acao: 'ignorar' | 'aceitar') => void
+  resolvendo: string | null
+}) {
+  const [open, setOpen] = useState(false)
+  const pendentes = anomalias.filter((a) => a.status === 'pendente').length
+  return (
+    <div className="border-b border-[var(--color-border)]">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-medium text-[var(--color-fg-muted)] hover:bg-[var(--color-bg-hover)] transition-colors cursor-pointer"
+      >
+        <span>
+          {anomalias.length} anomalia{anomalias.length === 1 ? '' : 's'} média/baixa
+          {pendentes > 0 && <span className="ml-1 text-[var(--color-warning)]">({pendentes} pendente{pendentes === 1 ? '' : 's'})</span>}
+        </span>
+        <span>{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div className="px-3 pb-2 flex flex-col gap-1.5">
+          {anomalias.map((a) => (
+            <div
+              key={a.id}
+              className={cn(
+                'rounded-md border px-3 py-2 text-[11px]',
+                a.status === 'pendente'
+                  ? 'bg-[var(--color-bg)] border-[var(--color-border)]'
+                  : 'bg-[var(--color-bg-subtle)] border-[var(--color-border)] opacity-60',
+              )}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <span className={cn(
+                    'font-mono text-[10px] font-bold mr-1.5',
+                    a.severidade === 'MEDIUM' ? 'text-[var(--color-warning)]' : 'text-[var(--color-fg-muted)]',
+                  )}>
+                    {a.codigo}
+                  </span>
+                  <span className="text-[var(--color-fg)]">{a.descricao}</span>
+                  {a.sugestao && (
+                    <p className="text-[var(--color-fg-muted)] mt-0.5 italic">{a.sugestao}</p>
+                  )}
+                </div>
+                {a.status === 'pendente' ? (
+                  <div className="flex gap-1 shrink-0">
+                    <button
+                      onClick={() => onResolver(a.id, 'ignorar')}
+                      disabled={resolvendo === a.id}
+                      className="rounded px-2 py-0.5 text-[10px] font-medium bg-[var(--color-bg-subtle)] text-[var(--color-fg-muted)] hover:bg-[var(--color-bg-hover)] disabled:opacity-50 cursor-pointer"
+                    >
+                      {resolvendo === a.id ? '…' : 'Ignorar'}
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-[10px] text-[var(--color-fg-subtle)] shrink-0 capitalize">
+                    {a.status}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -687,13 +869,16 @@ function Td({
   children,
   align = 'center',
   className,
+  title,
 }: {
   children: React.ReactNode
   align?: 'left' | 'center' | 'right'
   className?: string
+  title?: string
 }) {
   return (
     <td
+      title={title}
       className={cn(
         'px-2 py-1.5 text-[var(--color-fg)] whitespace-nowrap',
         align === 'left' ? 'text-left' : align === 'right' ? 'text-right' : 'text-center',

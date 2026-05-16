@@ -11,12 +11,16 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
 
-  const { data } = await req.json()
+  const { data, filename } = await req.json()
 
   if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data as string))
     return new NextResponse('Data inválida.', { status: 400 })
 
-  const storagePath = `${data}/unitrac.xlsx`
+  const ext =
+    typeof filename === 'string' && filename.toLowerCase().endsWith('.pdf')
+      ? 'pdf'
+      : 'xlsx'
+  const storagePath = `${data}/unitrac.${ext}`
   const svc = createServiceClient()
 
   try {

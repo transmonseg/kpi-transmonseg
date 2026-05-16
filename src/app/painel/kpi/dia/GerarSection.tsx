@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Badge, Button, Card, CardContent, cn } from '@/components/ui'
 import { DropZone } from './DropZone'
 
@@ -177,15 +176,30 @@ export function GerarSection({
         ext === 'pdf'
           ? 'application/pdf'
           : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      const storagePath = `${data}/unitrac.${ext}`
 
-      const sb = createClient()
-      const { error: storageErr } = await sb.storage
-        .from('unitrac-raw')
-        .upload(storagePath, unitracFile, { contentType, upsert: true })
-      if (storageErr) {
+      // Presign → PUT direto ao Storage (evita limite 4.5 MB do Vercel)
+      const presignRes = await fetch('/api/unitrac/presign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data, filename: unitracFile.name }),
+      })
+      if (!presignRes.ok) {
         setStep('upload_unitrac', { status: 'error' })
-        throw new Error(`Erro ao enviar Unitrac: ${storageErr.message}`)
+        throw new Error(`Erro ao obter URL de upload: ${await presignRes.text()}`)
+      }
+      const { signedUrl, path: storagePath } = await presignRes.json() as {
+        signedUrl: string
+        path: string
+      }
+
+      const putRes = await fetch(signedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': contentType },
+        body: unitracFile,
+      })
+      if (!putRes.ok) {
+        setStep('upload_unitrac', { status: 'error' })
+        throw new Error(`Erro ao enviar Unitrac: ${putRes.status} ${putRes.statusText}`)
       }
       setStep('upload_unitrac', { status: 'done' })
 
