@@ -1,15 +1,20 @@
 import { CozinhaUploader } from './uploader'
 
+export const metadata = { title: 'Cozinha — Transmonseg' }
+
 export default function CozinhaPage() {
   return (
-    <div className="max-w-5xl">
-      <div className="border-b border-border pb-5 mb-8">
-        <h1 className="text-2xl font-bold tracking-tight text-ink">Cozinha</h1>
-        <p className="mt-1.5 text-sm text-ink-soft">
+    <div className="mx-auto w-full max-w-5xl">
+      <header className="mb-6 flex flex-col gap-1 border-b border-[var(--color-border)] pb-5">
+        <h1 className="text-[20px] font-semibold tracking-tight text-[var(--color-fg)]">
+          Cozinha
+        </h1>
+        <p className="text-[13px] text-[var(--color-fg-muted)]">
           Faça upload da escala da Cozinha Industrial em XLSX. O sistema extrai
-          rota, motorista e placa de cada bloco e gera dois arquivos limpos.
+          rota, motorista e placa de cada bloco e gera dois arquivos limpos
+          (XLSX e PDF).
         </p>
-      </div>
+      </header>
 
       <CozinhaUploader />
     </div>

@@ -4,11 +4,17 @@ export const metadata = { title: 'Nova alteração — Transmonseg' }
 
 export default function NovaAlteracaoPage() {
   return (
-    <div className="container mx-auto py-6 px-4 max-w-3xl">
-      <h1 className="text-2xl font-bold mb-1 text-ink">Nova alteração</h1>
-      <p className="text-sm text-ink-soft mb-6">
-        Cole a mensagem do WhatsApp. O sistema identifica rede, loja, placas e motorista. Confira e clique em Aplicar.
-      </p>
+    <div className="mx-auto w-full max-w-3xl">
+      <header className="mb-6 flex flex-col gap-1 border-b border-[var(--color-border)] pb-5">
+        <h1 className="text-[20px] font-semibold tracking-tight text-[var(--color-fg)]">
+          Nova alteração
+        </h1>
+        <p className="text-[13px] text-[var(--color-fg-muted)]">
+          Cole a mensagem do WhatsApp. O sistema identifica rede, loja, placas
+          e motorista. Confira o resultado e clique em Aplicar.
+        </p>
+      </header>
+
       <AlteracaoForm />
     </div>
   )
