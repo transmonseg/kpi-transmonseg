@@ -10,9 +10,10 @@
 import type { ParadaUnitrac, ResumoVeiculo } from '@/lib/types/unitrac'
 import { normalizaPlaca } from '@/lib/utils/placa'
 
-// pdf-parse precisa ser carregado via require por causa de problemas ESM
+// pdf-parse v1.1.1 — default export é função (buf) => Promise<{text}>.
+// v1 funciona em Node serverless sem depender de @napi-rs/canvas.
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
-const { PDFParse } = require('pdf-parse') as any
+const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
 
 const BASE_LOCAL = 'BASE BENASSI - BASE BENASSI'
 const FORA_LOCAL = 'FORA DE BASE E LOCAL DE SERVIÇO'
@@ -177,9 +178,8 @@ export async function parseUnitracPdf(
   buffer: ArrayBuffer | Buffer,
 ): Promise<ResumoVeiculo[]> {
   const buf = buffer instanceof ArrayBuffer ? Buffer.from(buffer) : buffer
-  const parser = new PDFParse({ data: buf })
-  const result = await parser.getText()
-  const fullText = result.text as string
+  const result = await pdfParse(buf)
+  const fullText = result.text
 
   const cleaned = preprocess(fullText)
   const rawVeiculos = splitByVeiculo(cleaned)

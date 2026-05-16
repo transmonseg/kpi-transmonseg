@@ -15,9 +15,10 @@
 import type { LinhaEscala } from '@/lib/types/escala'
 import { normalizaPlaca } from '@/lib/utils/placa'
 
-// pdf-parse v2 — PDFParse class (carregado via require por compatibilidade)
+// pdf-parse v1.1.1 — default export é função (buf) => Promise<{text}>.
+// v1 funciona em Node serverless sem depender de @napi-rs/canvas.
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
-const { PDFParse } = require('pdf-parse') as any
+const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
 
 // Regex pra placa (aceita formato antigo ABC1234 / ABC-1234 / ABC 1234 e Mercosul ABC1D23 / ABC-1D23 / ABC 1D23)
 const PLACA_RE = /\b([A-Z]{3}[\s-]?\d[A-Z0-9]\d{2}|[A-Z]{3}[\s-]?\d{4})\b/
@@ -156,9 +157,8 @@ export async function parseEscalaGuanabaraPdf(
   dataAlvo?: string,
 ): Promise<LinhaEscala[]> {
   const buf = buffer instanceof ArrayBuffer ? Buffer.from(buffer) : buffer
-  const parser = new PDFParse({ data: buf })
-  const result = await parser.getText()
-  const fullText = (result.text as string) ?? ''
+  const result = await pdfParse(buf)
+  const fullText = result.text ?? ''
 
   const lines = fullText.split(/\r?\n/)
 
