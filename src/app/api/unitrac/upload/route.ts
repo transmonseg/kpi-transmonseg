@@ -2,9 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { parseUnitrac } from '@/lib/parsers/unitrac'
+// parseUnitracPdf carrega pdf-parse (depende de DOMMatrix); import dinâmico
+// dentro do handler pra não falhar no "collect page data" do build.
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
+
+type Formato = 'xlsx' | 'pdf'
+
+function detectaFormato(path: string): Formato | null {
+  const lower = path.toLowerCase()
+  if (lower.endsWith('.pdf')) return 'pdf'
+  if (lower.endsWith('.xlsx')) return 'xlsx'
+  return null
+}
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -20,6 +31,13 @@ export async function POST(req: NextRequest) {
 
   if (!storagePath || typeof storagePath !== 'string')
     return new NextResponse('storagePath ausente.', { status: 400 })
+
+  const formato = detectaFormato(storagePath)
+  if (!formato)
+    return new NextResponse(
+      'Extensão do arquivo não suportada. Use .xlsx ou .pdf.',
+      { status: 400 }
+    )
 
   const svc = createServiceClient()
 
@@ -51,7 +69,12 @@ export async function POST(req: NextRequest) {
   let veiculos
 
   try {
-    veiculos = await parseUnitrac(arrayBuffer)
+    if (formato === 'pdf') {
+      const { parseUnitracPdf } = await import('@/lib/parsers/unitrac-pdf')
+      veiculos = await parseUnitracPdf(Buffer.from(arrayBuffer))
+    } else {
+      veiculos = await parseUnitrac(arrayBuffer)
+    }
   } catch (e) {
     return new NextResponse(
       e instanceof Error ? e.message : 'Erro ao parsear relatório Unitrac.',

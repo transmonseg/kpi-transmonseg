@@ -4,12 +4,34 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { parseEscalaGeral } from '@/lib/parsers/escala-geral'
 import { parseEscalaZonaSul } from '@/lib/parsers/escala-zona-sul'
 import { parseEscalaPax } from '@/lib/parsers/escala-pax'
+import { parseEscalaArmazemGrao } from '@/lib/parsers/escala-armazem-grao'
+// parseEscalaGuanabaraPdf carrega pdf-parse (depende de DOMMatrix); import dinâmico
+// dentro do handler pra não falhar no "collect page data" do build.
 import type { LinhaEscala } from '@/lib/types/escala'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
 
-type TipoEscala = 'GERAL' | 'ZONA_SUL' | 'PAX'
+type TipoEscala = 'GERAL' | 'ZONA_SUL' | 'PAX' | 'ARMAZEM_GRAO' | 'GUANABARA'
+type Formato = 'xlsx' | 'pdf'
+
+const TIPOS_VALIDOS: TipoEscala[] = ['GERAL', 'ZONA_SUL', 'PAX', 'ARMAZEM_GRAO', 'GUANABARA']
+
+// Formato esperado por tipo (pra mensagem de erro amigável)
+const FORMATO_ESPERADO: Record<TipoEscala, Formato> = {
+  GERAL: 'xlsx',
+  ZONA_SUL: 'xlsx',
+  PAX: 'xlsx',
+  ARMAZEM_GRAO: 'xlsx',
+  GUANABARA: 'pdf',
+}
+
+function detectaFormato(path: string): Formato | null {
+  const lower = path.toLowerCase()
+  if (lower.endsWith('.pdf')) return 'pdf'
+  if (lower.endsWith('.xlsx')) return 'xlsx'
+  return null
+}
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -21,14 +43,31 @@ export async function POST(req: NextRequest) {
   const { tipo: tipoRaw, data, storagePath, replace } = await req.json()
   const tipo = (tipoRaw as string)?.toUpperCase() as TipoEscala
 
-  if (!['GERAL', 'ZONA_SUL', 'PAX'].includes(tipo))
-    return new NextResponse('Tipo inválido. Use GERAL, ZONA_SUL ou PAX.', { status: 400 })
+  if (!TIPOS_VALIDOS.includes(tipo))
+    return new NextResponse(
+      `Tipo inválido. Use ${TIPOS_VALIDOS.join(', ')}.`,
+      { status: 400 }
+    )
 
   if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data as string))
     return new NextResponse('Data inválida. Use YYYY-MM-DD.', { status: 400 })
 
   if (!storagePath || typeof storagePath !== 'string')
     return new NextResponse('storagePath ausente.', { status: 400 })
+
+  const formato = detectaFormato(storagePath)
+  if (!formato)
+    return new NextResponse(
+      'Extensão do arquivo não suportada. Use .xlsx ou .pdf.',
+      { status: 400 }
+    )
+
+  const formatoEsperado = FORMATO_ESPERADO[tipo]
+  if (formato !== formatoEsperado)
+    return new NextResponse(
+      `Formato ${formato} ainda não suportado para tipo ${tipo}. Envie em ${formatoEsperado}.`,
+      { status: 501 }
+    )
 
   const svc = createServiceClient()
 
@@ -61,16 +100,27 @@ export async function POST(req: NextRequest) {
   let linhas: LinhaEscala[]
 
   try {
-    if (tipo === 'GERAL') {
+    if (tipo === 'GERAL' && formato === 'xlsx') {
       linhas = await parseEscalaGeral(arrayBuffer, data as string)
-    } else if (tipo === 'ZONA_SUL') {
+    } else if (tipo === 'ZONA_SUL' && formato === 'xlsx') {
       linhas = await parseEscalaZonaSul(arrayBuffer, data as string)
-    } else {
+    } else if (tipo === 'PAX' && formato === 'xlsx') {
       linhas = await parseEscalaPax(arrayBuffer, data as string)
+    } else if (tipo === 'ARMAZEM_GRAO' && formato === 'xlsx') {
+      linhas = await parseEscalaArmazemGrao(arrayBuffer, data as string)
+    } else if (tipo === 'GUANABARA' && formato === 'pdf') {
+      const { parseEscalaGuanabaraPdf } = await import('@/lib/parsers/escala-guanabara-pdf')
+      linhas = await parseEscalaGuanabaraPdf(Buffer.from(arrayBuffer), data as string)
+    } else {
+      // Defesa em profundidade — checagem acima já barra, mas TS pede caminho explícito
+      return new NextResponse(
+        `Formato ${formato} ainda não suportado para tipo ${tipo}. Envie em ${formatoEsperado}.`,
+        { status: 501 }
+      )
     }
   } catch (e) {
     return new NextResponse(
-      e instanceof Error ? e.message : 'Erro ao parsear XLSX.',
+      e instanceof Error ? e.message : 'Erro ao parsear arquivo.',
       { status: 400 }
     )
   }
@@ -91,7 +141,7 @@ export async function POST(req: NextRequest) {
       data_escala: data,
       tipo,
       arquivo_path: storagePath,
-      nome_arquivo: (storagePath as string).split('/').pop() ?? 'escala.xlsx',
+      nome_arquivo: (storagePath as string).split('/').pop() ?? `escala.${formato}`,
       qtd_linhas: linhas.length,
       status: 'processado',
       uploaded_by: user.id,
