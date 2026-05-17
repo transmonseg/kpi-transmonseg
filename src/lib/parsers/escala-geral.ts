@@ -68,6 +68,7 @@ function inferRedeFromLoja(nome: string): string {
   if (n.includes('ARMAZEM') && n.includes('GRAO')) return 'ARMAZEM_GRAO'
   if (n.includes('SUPER PAX') || n.includes('SUPERPAX')) return 'SUPER_PAX'
   if (n.includes('SUPER PRIX') || n.includes('SUPERPRIX')) return 'SUPERPRIX'
+  if (n.includes('MUNDIAL')) return 'MUNDIAL'
   return 'DESCONHECIDO'
 }
 
@@ -92,6 +93,7 @@ function inferRedeFromSeparator(sep: string): string | null {
   if (n.includes('GRUPO EMANUEL') || (n.includes('EMANUEL') && !n.includes('ATACADAO'))) return 'EMANUEL'
   if ((n.includes('ARMAZEM') || n.includes('ARMAZÉM')) && (n.includes('GRAO') || n.includes('GRÃO'))) return 'ARMAZEM_GRAO'
   if (n.includes('SUPER PAX') || n.includes('SUPERPAX')) return 'SUPER_PAX'
+  if (n.includes('MUNDIAL')) return 'MUNDIAL'
   return null
 }
 

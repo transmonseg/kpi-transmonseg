@@ -44,6 +44,7 @@ export const REDE_NOMES_CANONICOS: Record<string, string> = {
   EMANUEL: 'Rede Emanuel',
   ARMAZEM_GRAO: 'Armazém do Grão',
   ZONA_SUL: 'Zona Sul',
+  MUNDIAL: 'Mundial',
   DESCONHECIDO: 'Outros',
 }
 

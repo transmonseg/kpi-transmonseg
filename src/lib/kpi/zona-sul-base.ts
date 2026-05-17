@@ -43,9 +43,19 @@ export const FILIAIS_ZONA_SUL: Array<{ numero: number | string; nome: string }> 
   { numero: 38, nome: 'Zona Sul Loja 38 - Copacabana' },
   { numero: 39, nome: 'Zona Sul Loja 39 - Centro' },
   { numero: 40, nome: 'Zona Sul Loja 40 - Ipanema' },
+  { numero: 41, nome: 'Zona Sul Loja 41 - Laranjeiras' },
+  { numero: 42, nome: 'Zona Sul Loja 42 - Botafogo' },
+  { numero: 43, nome: 'Zona Sul Loja 43 - Barra (Península)' },
+  { numero: 44, nome: 'Zona Sul Loja 44 - Barra' },
+  { numero: 45, nome: 'Zona Sul Loja 45 - Flamengo' },
+  { numero: 46, nome: 'Zona Sul Loja 46 - Botafogo' },
+  { numero: 47, nome: 'Zona Sul Loja 47' },
+  { numero: 48, nome: 'Zona Sul Loja 48 - Recreio' },
   { numero: 1129, nome: 'Zona Sul Olaria' },
   { numero: 'MEGA BOX 01', nome: 'MEGA BOX 01 - Olaria' },
+  { numero: 'MEGA BOX 1', nome: 'MEGA BOX 01 - Olaria' },
   { numero: 'MEGA BOX 02', nome: 'MEGA BOX 02 - Olaria' },
+  { numero: 'MEGA BOX 2', nome: 'MEGA BOX 2 - Recreio' },
 ]
 
 export function gerarAbaBaseZonaSul(wb: ExcelJS.Workbook): void {
