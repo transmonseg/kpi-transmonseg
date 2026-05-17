@@ -300,6 +300,31 @@ export default function KpiSimplesPage() {
     setAlteracoes(prev => prev.filter((_, i) => i !== idx))
   }
 
+  async function uploadComPresign(file: File, isUnitrac: boolean): Promise<string> {
+    const endpoint = isUnitrac ? '/api/unitrac/presign' : '/api/escalas/presign'
+    const body = isUnitrac
+      ? { data, filename: file.name }
+      : { data, filename: file.name, tipo: 'auto' }
+
+    const presignRes = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (!presignRes.ok) throw new Error(`Presign falhou: ${await presignRes.text()}`)
+    const { signedUrl, path } = await presignRes.json() as { signedUrl: string; path: string }
+
+    const ext = file.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'xlsx'
+    const contentType = ext === 'pdf'
+      ? 'application/pdf'
+      : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+    const putRes = await fetch(signedUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: file })
+    if (!putRes.ok) throw new Error(`Upload falhou (${putRes.status}): ${putRes.statusText}`)
+
+    return path
+  }
+
   async function processar() {
     if (!escala) { setErro('Selecione a escala.'); return }
     if (!unitrac) { setErro('Selecione o Unitrac.'); return }
@@ -308,17 +333,19 @@ export default function KpiSimplesPage() {
     setErro(null)
     setRedes(null)
 
-    const fd = new FormData()
-    fd.append('escala', escala)
-    fd.append('unitrac', unitrac)
-    fd.append('data', data)
-    if (alteracoes.length > 0) {
-      fd.append('alteracoes', JSON.stringify(alteracoes))
-    }
-
     startTransition(async () => {
       try {
-        const res = await fetch('/api/kpi/simples', { method: 'POST', body: fd })
+        // Upload direto ao Storage (evita limite 4.5 MB do Vercel)
+        const [escalaBucketPath, unitracBucketPath] = await Promise.all([
+          uploadComPresign(escala, false),
+          uploadComPresign(unitrac, true),
+        ])
+
+        const res = await fetch('/api/kpi/simples', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ escalaBucketPath, unitracBucketPath, data, alteracoes }),
+        })
         if (!res.ok) throw new Error((await res.text()) || 'Erro ao processar.')
         const json = await res.json() as { redes: RedeResult[] }
         setRedes(json.redes)

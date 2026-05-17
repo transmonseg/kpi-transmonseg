@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { parseEscalaGeral } from '@/lib/parsers/escala-geral'
 import { parseEscalaZonaSul } from '@/lib/parsers/escala-zona-sul'
 import { parseEscalaPax } from '@/lib/parsers/escala-pax'
@@ -15,11 +16,13 @@ import type { LinhaEscala } from '@/lib/types/escala'
 export const runtime = 'nodejs'
 export const maxDuration = 120
 
-function rotaToLinha(
-  rota: RotaKpi,
-  escala: LinhaEscala,
-  ordem: number,
-): LinhaParaKpi {
+type AltConfirmada = {
+  tipo: string
+  entra: { motorista_nome: string | null; motorista_codigo: number | null; placa_raw: string | null; placa_norm: string | null } | null
+  sai: { motorista_nome: string | null; placa_norm: string | null } | null
+}
+
+function rotaToLinha(rota: RotaKpi, escala: LinhaEscala, ordem: number): LinhaParaKpi {
   const p1 = rota.paradas[0] ?? null
   const p2 = rota.paradas[1] ?? null
   const p3 = rota.paradas[2] ?? null
@@ -51,37 +54,70 @@ function rotaToLinha(
   }
 }
 
+function aplicaAlteracoes(linhas: LinhaEscala[], alts: AltConfirmada[]): LinhaEscala[] {
+  for (const alt of alts) {
+    if (alt.tipo !== 'SUBSTITUICAO' && alt.tipo !== 'INCLUSAO') continue
+    if (!alt.entra) continue
+    const idx = linhas.findIndex(l => {
+      if (alt.sai?.placa_norm && l.placa_norm === alt.sai.placa_norm) return true
+      if (alt.sai?.motorista_nome) {
+        const needle = alt.sai.motorista_nome.toLowerCase().split(' ')[0]
+        if (needle.length >= 3 && l.motorista_nome?.toLowerCase().includes(needle)) return true
+      }
+      return false
+    })
+    if (idx >= 0) {
+      const l = { ...linhas[idx] }
+      if (alt.entra.placa_norm) l.placa_norm = alt.entra.placa_norm
+      if (alt.entra.placa_raw) l.placa_raw = alt.entra.placa_raw
+      if (alt.entra.motorista_nome) l.motorista_nome = alt.entra.motorista_nome
+      if (alt.entra.motorista_codigo !== null && alt.entra.motorista_codigo !== undefined)
+        l.motorista_codigo = String(alt.entra.motorista_codigo)
+      linhas[idx] = l
+    }
+  }
+  return linhas
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
 
-  const formData = await req.formData()
-  const escalaFile = formData.get('escala')
-  const unitracFile = formData.get('unitrac')
-  const data = String(formData.get('data') ?? '')
-  const altJson = formData.get('alteracoes')
-  const alteracoes: Array<{
-    tipo: string
-    entra: { motorista_nome: string | null; motorista_codigo: number | null; placa_raw: string | null; placa_norm: string | null } | null
-    sai: { motorista_nome: string | null; placa_norm: string | null } | null
-  }> = altJson ? JSON.parse(String(altJson)) : []
+  const body = await req.json().catch(() => null)
+  if (!body) return new NextResponse('Body JSON inválido.', { status: 400 })
 
-  if (!(escalaFile instanceof File))
-    return new NextResponse('Arquivo de escala não enviado.', { status: 400 })
-  if (!(unitracFile instanceof File))
-    return new NextResponse('Arquivo Unitrac não enviado.', { status: 400 })
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(data))
-    return new NextResponse('Data inválida. Use YYYY-MM-DD.', { status: 400 })
+  const { escalaBucketPath, unitracBucketPath, data, alteracoes = [] } = body as {
+    escalaBucketPath: string
+    unitracBucketPath: string
+    data: string
+    alteracoes?: AltConfirmada[]
+  }
 
-  // Parse escala — AUTO detect (mesma ordem do upload route)
-  const escalaBuffer = await escalaFile.arrayBuffer()
-  const escalaName = escalaFile.name.toLowerCase()
+  if (!escalaBucketPath) return new NextResponse('"escalaBucketPath" obrigatório.', { status: 400 })
+  if (!unitracBucketPath) return new NextResponse('"unitracBucketPath" obrigatório.', { status: 400 })
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return new NextResponse('Data inválida. Use YYYY-MM-DD.', { status: 400 })
+
+  const svc = createServiceClient()
+
+  // Baixa escala do Storage
+  const { data: escalaBlob, error: escalaErr } = await svc.storage.from('escalas-raw').download(escalaBucketPath)
+  if (escalaErr || !escalaBlob)
+    return new NextResponse(`Erro ao baixar escala: ${escalaErr?.message ?? 'não encontrado'}`, { status: 500 })
+  const escalaBuffer = await escalaBlob.arrayBuffer()
+
+  // Baixa unitrac do Storage
+  const { data: unitracBlob, error: unitracErr } = await svc.storage.from('unitrac-raw').download(unitracBucketPath)
+  if (unitracErr || !unitracBlob)
+    return new NextResponse(`Erro ao baixar unitrac: ${unitracErr?.message ?? 'não encontrado'}`, { status: 500 })
+  const unitracBuffer = await unitracBlob.arrayBuffer()
+
+  // Parse escala — AUTO detect
   let escalaLinhas: LinhaEscala[] = []
   const MIN = 3
 
   try {
-    if (escalaName.endsWith('.pdf')) {
+    if (escalaBucketPath.endsWith('.pdf')) {
       const { parseEscalaGuanabaraPdf } = await import('@/lib/parsers/escala-guanabara-pdf')
       escalaLinhas = await parseEscalaGuanabaraPdf(Buffer.from(escalaBuffer), data)
     } else {
@@ -99,57 +135,28 @@ export async function POST(req: NextRequest) {
       }
     }
   } catch (e) {
-    return new NextResponse(
-      e instanceof Error ? e.message : 'Erro ao ler escala.',
-      { status: 400 },
-    )
+    return new NextResponse(e instanceof Error ? e.message : 'Erro ao ler escala.', { status: 400 })
   }
-  if (escalaLinhas.length === 0)
-    return new NextResponse(
-      'Não foi possível detectar o tipo da escala. Verifique se o arquivo é uma escala suportada.',
-      { status: 400 },
-    )
 
-  // Aplica alterações confirmadas in-memory (SUBSTITUICAO / INCLUSAO)
+  if (escalaLinhas.length === 0)
+    return new NextResponse('Não foi possível detectar o tipo da escala. Verifique se o arquivo é uma escala suportada.', { status: 400 })
+
+  // Aplica alterações confirmadas in-memory
   if (alteracoes.length > 0) {
-    for (const alt of alteracoes) {
-      if (alt.tipo !== 'SUBSTITUICAO' && alt.tipo !== 'INCLUSAO') continue
-      if (!alt.entra) continue
-      const idx = escalaLinhas.findIndex(l => {
-        if (alt.sai?.placa_norm && l.placa_norm === alt.sai.placa_norm) return true
-        if (alt.sai?.motorista_nome) {
-          const needle = alt.sai.motorista_nome.toLowerCase().split(' ')[0]
-          if (needle.length >= 3 && l.motorista_nome?.toLowerCase().includes(needle)) return true
-        }
-        return false
-      })
-      if (idx >= 0) {
-        const l = { ...escalaLinhas[idx] }
-        if (alt.entra.placa_norm) l.placa_norm = alt.entra.placa_norm
-        if (alt.entra.placa_raw) l.placa_raw = alt.entra.placa_raw
-        if (alt.entra.motorista_nome) l.motorista_nome = alt.entra.motorista_nome
-        if (alt.entra.motorista_codigo !== null && alt.entra.motorista_codigo !== undefined)
-          l.motorista_codigo = String(alt.entra.motorista_codigo)
-        escalaLinhas[idx] = l
-      }
-    }
+    escalaLinhas = aplicaAlteracoes([...escalaLinhas], alteracoes)
   }
 
   // Parse unitrac
   let veiculos
   try {
-    const unitracName = unitracFile.name.toLowerCase()
-    if (unitracName.endsWith('.pdf')) {
+    if (unitracBucketPath.endsWith('.pdf')) {
       const { parseUnitracPdf } = await import('@/lib/parsers/unitrac-pdf')
-      veiculos = await parseUnitracPdf(Buffer.from(await unitracFile.arrayBuffer()))
+      veiculos = await parseUnitracPdf(Buffer.from(unitracBuffer))
     } else {
-      veiculos = await parseUnitrac(await unitracFile.arrayBuffer())
+      veiculos = await parseUnitrac(unitracBuffer)
     }
   } catch (e) {
-    return new NextResponse(
-      e instanceof Error ? e.message : 'Erro ao ler Unitrac.',
-      { status: 400 },
-    )
+    return new NextResponse(e instanceof Error ? e.message : 'Erro ao ler Unitrac.', { status: 400 })
   }
   if (veiculos.length === 0)
     return new NextResponse('Nenhum veículo encontrado no Unitrac.', { status: 400 })
@@ -188,10 +195,8 @@ export async function POST(req: NextRequest) {
     }))
   )
 
-  // Cross
   const rotas = cruzaEscalaUnitrac(escalaRows, paradaRows, [])
 
-  // Group by rede
   const redeMap = new Map<string, { rotas: RotaKpi[]; escala: LinhaEscala[] }>()
   for (const rota of rotas) {
     const escala = escalaMap.get(rota.escala_linha_id)
@@ -202,16 +207,13 @@ export async function POST(req: NextRequest) {
     redeMap.get(rede_id)!.escala.push(escala)
   }
 
-  // Generate per rede
   const results = await Promise.all(
     Array.from(redeMap.entries()).map(async ([rede_id, { rotas: redeRotas, escala: redeEscala }]) => {
-      // Sort by loja_nome + carro_ordem
       const sorted = redeRotas
         .map((r, i) => ({ rota: r, esc: redeEscala[i] }))
         .sort((a, b) => {
           const cmp = a.esc.loja_nome_raw.localeCompare(b.esc.loja_nome_raw)
-          if (cmp !== 0) return cmp
-          return a.esc.carro_ordem - b.esc.carro_ordem
+          return cmp !== 0 ? cmp : a.esc.carro_ordem - b.esc.carro_ordem
         })
 
       const linhas: LinhaParaKpi[] = sorted.map(({ rota, esc }, idx) =>
