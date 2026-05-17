@@ -1,13 +1,14 @@
 import Link from 'next/link'
-import { createServiceClient } from '@/lib/supabase/service'
 import {
-  Badge,
-  Button,
-  Card,
-  Input,
-  Label,
-  cn,
-} from '@/components/ui'
+  FunnelSimple,
+  WarningCircle,
+  ArrowUpRight,
+  CaretLeft,
+  CaretRight,
+  FileMagnifyingGlass,
+} from '@phosphor-icons/react/dist/ssr'
+import { createServiceClient } from '@/lib/supabase/service'
+import { cn } from '@/components/ui'
 
 export const metadata = { title: 'Histórico de KPIs — Transmonseg' }
 
@@ -89,45 +90,38 @@ async function fetchRedes() {
   return data ?? []
 }
 
-const STATUS_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'info'> = {
-  rascunho: 'default',
-  gerada: 'info',
-  revisada: 'warning',
-  finalizada: 'success',
+const STATUS_TOM: Record<string, { dot: string; label: string }> = {
+  rascunho: { dot: 'bg-[var(--color-fg-subtle)]', label: 'rascunho' },
+  gerada: { dot: 'bg-[var(--color-accent)]', label: 'gerada' },
+  revisada: { dot: 'bg-[var(--color-warning)]', label: 'revisada' },
+  finalizada: { dot: 'bg-[var(--color-success)]', label: 'finalizada' },
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const variant = STATUS_VARIANT[status] ?? 'default'
-  return <Badge variant={variant}>{status}</Badge>
+function StatusInline({ status }: { status: string }) {
+  const tom = STATUS_TOM[status] ?? STATUS_TOM.rascunho
+  return (
+    <span className="inline-flex items-center gap-2 text-[12px] text-[var(--color-fg-muted)]">
+      <span aria-hidden className={cn('inline-block h-1.5 w-1.5 rounded-full', tom.dot)} />
+      {tom.label}
+    </span>
+  )
 }
 
 function formatarData(iso: string): string {
   const [a, m, d] = iso.split('-')
   if (!a || !m || !d) return iso
-  const meses = [
-    'jan',
-    'fev',
-    'mar',
-    'abr',
-    'mai',
-    'jun',
-    'jul',
-    'ago',
-    'set',
-    'out',
-    'nov',
-    'dez',
-  ]
+  const meses = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
   const mi = Number.parseInt(m, 10) - 1
   return `${Number.parseInt(d, 10)} ${meses[mi] ?? m} ${a}`
 }
 
-const SELECT_CLS = cn(
-  'h-9 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-subtle)]',
-  'px-3 text-[13px] text-[var(--color-fg)]',
-  'transition-colors focus-visible:outline-none focus-visible:border-[var(--color-accent)]',
-  'focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30',
-)
+const INPUT_CLS =
+  'h-10 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] text-[var(--color-fg)] transition-colors focus-visible:outline-none focus-visible:border-[var(--color-fg)]'
+
+const SELECT_CLS = cn(INPUT_CLS, 'pr-7 appearance-none')
+
+const LABEL_CLS =
+  'text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--color-fg-subtle)]'
 
 export default async function HistoricoPage({
   searchParams,
@@ -169,234 +163,246 @@ export default async function HistoricoPage({
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl">
-      <header className="mb-6 flex flex-col gap-1 border-b border-[var(--color-border)] pb-5">
-        <h1 className="text-[20px] font-semibold tracking-tight text-[var(--color-fg)]">
-          Histórico de KPIs
+    <div className="mx-auto w-full max-w-[1300px]">
+      <header className="mb-10 flex flex-col gap-1.5">
+        <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
+          Histórico
+        </span>
+        <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.02em] text-[var(--color-fg)] md:text-[34px]">
+          Todas as gerações
         </h1>
-        <p className="text-[13px] text-[var(--color-fg-muted)]">
-          Todos os KPIs gerados, com links para download. Clique em uma data para
-          abrir o detalhe.
+        <p className="mt-1 max-w-[55ch] text-[14px] leading-relaxed text-[var(--color-fg-muted)]">
+          Todos os KPIs gerados, com filtros por data, rede e status.
+          Clique numa linha pra abrir o detalhe.
         </p>
       </header>
 
-      <Card className="mb-6">
-        <form
-          method="GET"
-          action="/painel/historico"
-          className="grid grid-cols-1 items-end gap-3 px-5 py-4 sm:grid-cols-[1fr_1fr_1fr_1fr_auto]"
+      {/* Filtros — linha editorial sem card wrapper */}
+      <form
+        method="GET"
+        action="/painel/historico"
+        className="mb-8 flex flex-wrap items-end gap-4 border-y border-[var(--color-border)] py-6"
+      >
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="hist-inicio" className={LABEL_CLS}>De</label>
+          <input id="hist-inicio" type="date" name="inicio" defaultValue={dataInicio} className={INPUT_CLS} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="hist-fim" className={LABEL_CLS}>Até</label>
+          <input id="hist-fim" type="date" name="fim" defaultValue={dataFim} className={INPUT_CLS} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="hist-rede" className={LABEL_CLS}>Rede</label>
+          <select id="hist-rede" name="rede" defaultValue={redeId} className={SELECT_CLS}>
+            <option value="all">Todas</option>
+            {redes.map((r: { id: string; nome: string }) => (
+              <option key={r.id} value={r.id}>{r.nome}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="hist-status" className={LABEL_CLS}>Status</label>
+          <select id="hist-status" name="status" defaultValue={status} className={SELECT_CLS}>
+            <option value="all">Todos</option>
+            <option value="rascunho">Rascunho</option>
+            <option value="gerada">Gerada</option>
+            <option value="revisada">Revisada</option>
+            <option value="finalizada">Finalizada</option>
+          </select>
+        </div>
+        <button
+          type="submit"
+          className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-fg)] px-5 text-[13px] font-medium text-[var(--color-bg)] transition-all duration-150 active:scale-[0.97] hover:bg-[var(--color-fg-muted)]"
         >
-          <div className="space-y-1.5">
-            <Label htmlFor="hist-inicio">Data início</Label>
-            <Input
-              id="hist-inicio"
-              type="date"
-              name="inicio"
-              defaultValue={dataInicio}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="hist-fim">Data fim</Label>
-            <Input
-              id="hist-fim"
-              type="date"
-              name="fim"
-              defaultValue={dataFim}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="hist-rede">Rede</Label>
-            <select
-              id="hist-rede"
-              name="rede"
-              defaultValue={redeId}
-              className={SELECT_CLS}
-            >
-              <option value="all">Todas</option>
-              {redes.map((r: { id: string; nome: string }) => (
-                <option key={r.id} value={r.id}>
-                  {r.nome}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="hist-status">Status</Label>
-            <select
-              id="hist-status"
-              name="status"
-              defaultValue={status}
-              className={SELECT_CLS}
-            >
-              <option value="all">Todos</option>
-              <option value="rascunho">Rascunho</option>
-              <option value="gerada">Gerada</option>
-              <option value="revisada">Revisada</option>
-              <option value="finalizada">Finalizada</option>
-            </select>
-          </div>
-          <div>
-            <Button type="submit" size="md" fullWidth>
-              Filtrar
-            </Button>
-          </div>
-        </form>
-      </Card>
+          <FunnelSimple size={14} weight="bold" />
+          Filtrar
+        </button>
+      </form>
 
       {kpis.length === 0 ? (
-        <Card className="px-6 py-12 text-center">
-          <p className="text-[13px] text-[var(--color-fg-muted)]">
+        <div className="flex flex-col items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-6 py-16 text-center">
+          <FileMagnifyingGlass size={28} weight="bold" className="text-[var(--color-fg-subtle)]" />
+          <p className="text-[14px] text-[var(--color-fg-muted)]">
             Nenhum KPI encontrado para os filtros selecionados.
           </p>
-          <p className="mt-1 text-[12px] text-[var(--color-fg-subtle)]">
-            Acesse{' '}
-            <Link
-              href="/painel/kpi/dia"
-              className="font-medium text-[var(--color-accent)] hover:underline"
-            >
-              Dia
-            </Link>{' '}
-            para começar a gerar KPIs.
-          </p>
-        </Card>
+          <Link
+            href="/painel/kpi/dia"
+            className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline"
+          >
+            Gerar novo KPI
+            <ArrowUpRight size={12} weight="bold" />
+          </Link>
+        </div>
       ) : (
-        <Card className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] text-left">
-                  <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">
-                    Data
-                  </th>
-                  <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">
-                    Rede
-                  </th>
-                  <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">
-                    Status
-                  </th>
-                  <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">
-                    Linhas
-                  </th>
-                  <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">
-                    Anomalias
-                  </th>
-                  <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">
-                    Gerado em
-                  </th>
-                  <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">
-                    Downloads
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {kpis.map((k) => {
-                  const hrefDia = `/painel/kpi/dia?data=${k.data}&rede=${k.rede_id}`
-                  return (
-                    <tr
-                      key={k.id}
-                      className="border-b border-[var(--color-border)] transition-colors last:border-0 hover:bg-[var(--color-bg-subtle)]"
-                    >
-                      <td className="whitespace-nowrap px-4 py-2.5">
-                        <Link
-                          href={hrefDia}
-                          className="font-medium text-[var(--color-fg)] hover:text-[var(--color-accent)]"
-                        >
+        // Tabela editorial — anti-card, sticky header, mono nos números
+        <div className="overflow-x-auto border-y border-[var(--color-border)]">
+          <table className="w-full text-[13px]">
+            <thead>
+              <tr className="text-left">
+                <Th>Data</Th>
+                <Th>Rede</Th>
+                <Th>Status</Th>
+                <Th align="right">Linhas</Th>
+                <Th>Anomalias</Th>
+                <Th>Gerado</Th>
+                <Th>Ação</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {kpis.map((k) => {
+                const hrefDia = `/painel/kpi/dia?data=${k.data}&rede=${k.rede_id}`
+                const hasAnomalias =
+                  (k.qtd_anomalias_high ?? 0) + (k.qtd_anomalias_medium ?? 0) + (k.qtd_anomalias_low ?? 0) > 0
+                return (
+                  <tr
+                    key={k.id}
+                    className="border-t border-[var(--color-border)] transition-colors hover:bg-[var(--color-bg-subtle)]"
+                  >
+                    <Td>
+                      <Link href={hrefDia} className="flex flex-col">
+                        <span className="font-medium text-[var(--color-fg)] transition-colors hover:text-[var(--color-accent)]">
                           {formatarData(k.data)}
-                        </Link>
-                        <div className="mt-0.5 font-mono text-[11px] text-[var(--color-fg-subtle)]">
+                        </span>
+                        <span className="text-numeric text-[11px] text-[var(--color-fg-subtle)]">
                           {k.data}
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-2.5 text-[var(--color-fg-muted)]">
-                        {k.rede_nome}
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <StatusBadge status={k.status} />
-                      </td>
-                      <td className="px-4 py-2.5 text-[var(--color-fg-muted)]">
+                        </span>
+                      </Link>
+                    </Td>
+                    <Td><span className="text-[var(--color-fg-muted)]">{k.rede_nome}</span></Td>
+                    <Td><StatusInline status={k.status} /></Td>
+                    <Td align="right">
+                      <span className="text-numeric text-[14px] font-medium text-[var(--color-fg)]">
                         {k.qtd_linhas ?? '—'}
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <div className="flex items-center gap-1.5">
+                      </span>
+                    </Td>
+                    <Td>
+                      {hasAnomalias ? (
+                        <div className="flex items-center gap-2">
                           {(k.qtd_anomalias_high ?? 0) > 0 && (
-                            <Badge variant="danger">
-                              {k.qtd_anomalias_high} H
-                            </Badge>
+                            <AnomaliaChip count={k.qtd_anomalias_high!} tone="danger" />
                           )}
                           {(k.qtd_anomalias_medium ?? 0) > 0 && (
-                            <Badge variant="warning">
-                              {k.qtd_anomalias_medium} M
-                            </Badge>
+                            <AnomaliaChip count={k.qtd_anomalias_medium!} tone="warning" />
                           )}
                           {(k.qtd_anomalias_low ?? 0) > 0 && (
-                            <Badge variant="default">
-                              {k.qtd_anomalias_low} L
-                            </Badge>
+                            <AnomaliaChip count={k.qtd_anomalias_low!} tone="muted" />
                           )}
-                          {!k.qtd_anomalias_high &&
-                            !k.qtd_anomalias_medium &&
-                            !k.qtd_anomalias_low && (
-                              <span className="text-[12px] text-[var(--color-fg-subtle)]">
-                                —
-                              </span>
-                            )}
                         </div>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-2.5 text-[12px] text-[var(--color-fg-muted)]">
+                      ) : (
+                        <span className="text-[12px] text-[var(--color-fg-subtle)]">limpo</span>
+                      )}
+                    </Td>
+                    <Td>
+                      <span className="text-numeric text-[12px] text-[var(--color-fg-muted)]">
                         {k.gerada_em
                           ? new Date(k.gerada_em).toLocaleString('pt-BR', {
                               dateStyle: 'short',
                               timeStyle: 'short',
                             })
                           : '—'}
-                      </td>
-                      <td className="px-4 py-2.5">
-                        {k.xlsx_path || k.pdf_path ? (
-                          <Link
-                            href={hrefDia}
-                            className="text-[12px] font-medium text-[var(--color-accent)] hover:underline"
-                          >
-                            Ver / Baixar
-                          </Link>
-                        ) : (
-                          <span className="text-[12px] text-[var(--color-fg-subtle)]">
-                            —
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+                      </span>
+                    </Td>
+                    <Td>
+                      {k.xlsx_path || k.pdf_path ? (
+                        <Link
+                          href={hrefDia}
+                          className="group inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-fg)] hover:text-[var(--color-accent)]"
+                        >
+                          Abrir
+                          <ArrowUpRight
+                            size={12}
+                            weight="bold"
+                            className="transition-transform duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                          />
+                        </Link>
+                      ) : (
+                        <span className="text-[12px] text-[var(--color-fg-subtle)]">—</span>
+                      )}
+                    </Td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {totalPages > 1 && (
-        <div className="mt-5 flex items-center justify-between">
+        <div className="mt-6 flex items-center justify-between">
           <p className="text-[12px] text-[var(--color-fg-muted)]">
-            {total} resultado{total !== 1 ? 's' : ''} — página {page} de{' '}
-            {totalPages}
+            <span className="text-numeric font-medium text-[var(--color-fg)]">{total}</span>{' '}
+            resultado{total !== 1 ? 's' : ''} · página{' '}
+            <span className="text-numeric text-[var(--color-fg)]">{page}</span> de{' '}
+            <span className="text-numeric">{totalPages}</span>
           </p>
           <div className="flex items-center gap-2">
-            {page > 1 && (
-              <Link href={buildHref({ page: page - 1 })}>
-                <Button variant="secondary" size="sm" type="button">
-                  Anterior
-                </Button>
+            {page > 1 ? (
+              <Link
+                href={buildHref({ page: page - 1 })}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[12px] font-medium text-[var(--color-fg)] transition-colors active:scale-[0.97] hover:border-[var(--color-fg)]"
+              >
+                <CaretLeft size={12} weight="bold" />
+                Anterior
               </Link>
+            ) : (
+              <span className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 text-[12px] text-[var(--color-fg-subtle)]">
+                <CaretLeft size={12} weight="bold" />
+                Anterior
+              </span>
             )}
-            {page < totalPages && (
-              <Link href={buildHref({ page: page + 1 })}>
-                <Button variant="secondary" size="sm" type="button">
-                  Próxima
-                </Button>
+            {page < totalPages ? (
+              <Link
+                href={buildHref({ page: page + 1 })}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[12px] font-medium text-[var(--color-fg)] transition-colors active:scale-[0.97] hover:border-[var(--color-fg)]"
+              >
+                Próxima
+                <CaretRight size={12} weight="bold" />
               </Link>
+            ) : (
+              <span className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 text-[12px] text-[var(--color-fg-subtle)]">
+                Próxima
+                <CaretRight size={12} weight="bold" />
+              </span>
             )}
           </div>
         </div>
       )}
     </div>
+  )
+}
+
+function Th({ children, align = 'left' }: { children: React.ReactNode; align?: 'left' | 'right' }) {
+  return (
+    <th
+      className={cn(
+        'px-4 py-3 text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--color-fg-subtle)]',
+        align === 'right' && 'text-right'
+      )}
+    >
+      {children}
+    </th>
+  )
+}
+
+function Td({ children, align = 'left' }: { children: React.ReactNode; align?: 'left' | 'right' }) {
+  return (
+    <td className={cn('whitespace-nowrap px-4 py-4', align === 'right' && 'text-right')}>{children}</td>
+  )
+}
+
+function AnomaliaChip({ count, tone }: { count: number; tone: 'danger' | 'warning' | 'muted' }) {
+  const toneClass =
+    tone === 'danger'
+      ? 'border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] text-[var(--color-danger-soft-fg)]'
+      : tone === 'warning'
+        ? 'border-[var(--color-warning)]/30 bg-[var(--color-warning-soft)] text-[var(--color-warning-soft-fg)]'
+        : 'border-[var(--color-border)] bg-[var(--color-bg-subtle)] text-[var(--color-fg-muted)]'
+  const letter = tone === 'danger' ? 'H' : tone === 'warning' ? 'M' : 'L'
+  return (
+    <span className={cn('inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium', toneClass)}>
+      {tone === 'danger' && <WarningCircle size={10} weight="fill" />}
+      <span className="text-numeric">{count}</span>
+      <span className="text-[9px] tracking-[0.1em]">{letter}</span>
+    </span>
   )
 }
