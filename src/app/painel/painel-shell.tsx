@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { List, X, SignOut } from '@phosphor-icons/react/dist/ssr'
 import { ThemeToggle } from '@/lib/theme/ThemeToggle'
 import { HeaderTitle } from './header-title'
 import { PainelNav } from './nav'
@@ -43,10 +44,10 @@ export function PainelShell({ userEmail, sairAction, children }: Props) {
   }, [open])
 
   return (
-    <div className="flex min-h-screen bg-[var(--color-bg)] text-[var(--color-fg)]">
+    <div className="flex min-h-[100dvh] bg-[var(--color-bg)] text-[var(--color-fg)]">
       {/* Desktop sidebar — always dark, regardless of app theme. */}
       <aside
-        className="sticky top-0 hidden h-screen w-[220px] shrink-0 flex-col border-r border-zinc-900 bg-gradient-to-b from-zinc-950 to-[#0a0a0c] md:flex"
+        className="sticky top-0 hidden h-screen w-[196px] shrink-0 flex-col border-r border-white/[0.06] bg-[#0a0a0a] md:flex"
         style={{ colorScheme: 'dark' }}
       >
         <SidebarBrand />
@@ -77,7 +78,7 @@ export function PainelShell({ userEmail, sairAction, children }: Props) {
           aria-label="Menu de navegação"
           style={{ colorScheme: 'dark' }}
           className={
-            'absolute left-0 top-0 flex h-full w-[260px] max-w-[80vw] flex-col border-r border-zinc-900 bg-gradient-to-b from-zinc-950 to-[#0a0a0c] shadow-2xl transition-transform duration-200 ease-out ' +
+            'absolute left-0 top-0 flex h-full w-[260px] max-w-[80vw] flex-col border-r border-white/[0.06] bg-[#0a0a0a] shadow-2xl transition-transform duration-200 ease-out ' +
             (open ? 'translate-x-0' : '-translate-x-full')
           }
         >
@@ -89,39 +90,28 @@ export function PainelShell({ userEmail, sairAction, children }: Props) {
 
       {/* Main column. */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-[var(--color-bg)]/70 md:px-6">
-          <div className="flex min-w-0 items-center gap-2">
+        <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-[var(--color-bg)]/70 md:px-8">
+          <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
               onClick={() => setOpen(true)}
               aria-label="Abrir menu"
               aria-expanded={open}
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-fg-muted)] transition hover:border-[var(--color-border-strong)] hover:text-[var(--color-fg)] md:hidden"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-fg-muted)] transition active:scale-[0.96] hover:border-[var(--color-border-strong)] hover:text-[var(--color-fg)] md:hidden"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.8}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                aria-hidden
-              >
-                <path d="M3 6h18M3 12h18M3 18h18" />
-              </svg>
+              <List size={18} weight="bold" />
             </button>
             <HeaderTitle />
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <div className="hidden h-7 items-center rounded-md border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2.5 text-[12px] font-medium text-[var(--color-fg-muted)] sm:flex">
+            <div className="hidden h-8 items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[12px] font-medium text-[var(--color-fg-muted)] sm:flex">
               {userEmail}
             </div>
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-4 md:px-8 md:py-6">{children}</main>
+        <main className="flex-1 px-4 py-6 md:px-10 md:py-10">{children}</main>
       </div>
     </div>
   )
@@ -129,20 +119,20 @@ export function PainelShell({ userEmail, sairAction, children }: Props) {
 
 function SidebarBrand({ onCloseHint }: { onCloseHint?: () => void }) {
   return (
-    <div className="flex h-14 items-center justify-between border-b border-zinc-900/80 px-4">
+    <div className="flex h-16 items-center justify-between border-b border-white/[0.06] px-4">
       <Link
         href="/painel"
-        className="flex items-center gap-2.5 outline-none"
+        className="group flex items-center gap-3 outline-none"
         onClick={onCloseHint}
       >
-        <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-brand-600 text-[13px] font-bold text-white shadow-sm shadow-black/40">
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/15 text-[13px] font-semibold tracking-tight text-[#84b1d6] transition group-hover:bg-[var(--color-accent)]/25">
           T
         </span>
-        <span className="flex flex-col leading-tight">
-          <span className="text-[13px] font-semibold tracking-tight text-zinc-50">
+        <span className="flex flex-col leading-none">
+          <span className="text-[14px] font-medium tracking-tight text-zinc-50">
             Transmonseg
           </span>
-          <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">
+          <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-600">
             KPI
           </span>
         </span>
@@ -152,20 +142,9 @@ function SidebarBrand({ onCloseHint }: { onCloseHint?: () => void }) {
           type="button"
           onClick={onCloseHint}
           aria-label="Fechar menu"
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-800/60 hover:text-zinc-100 md:hidden"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition active:scale-[0.96] hover:bg-white/[0.06] hover:text-zinc-100 md:hidden"
         >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.8}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-4 w-4"
-            aria-hidden
-          >
-            <path d="M6 6l12 12M18 6L6 18" />
-          </svg>
+          <X size={16} weight="bold" />
         </button>
       )}
     </div>
@@ -180,15 +159,16 @@ function SidebarFooter({
   sairAction: () => void | Promise<void>
 }) {
   return (
-    <div className="mt-auto border-t border-zinc-900/80 px-3 py-3">
-      <div className="truncate px-2 pb-2 text-[11px] text-zinc-500">
+    <div className="mt-auto border-t border-white/[0.06] p-3">
+      <div className="truncate px-2.5 pb-2 text-[11px] text-zinc-600">
         {userEmail}
       </div>
       <form action={sairAction}>
         <button
           type="submit"
-          className="w-full rounded-md px-2 py-1.5 text-left text-[13px] font-medium text-zinc-400 transition hover:bg-zinc-800/60 hover:text-zinc-100"
+          className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium text-zinc-500 transition-all duration-150 active:scale-[0.98] hover:bg-white/[0.04] hover:text-zinc-100"
         >
+          <SignOut size={15} weight="bold" />
           Sair
         </button>
       </form>
