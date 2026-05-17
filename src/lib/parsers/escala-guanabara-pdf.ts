@@ -159,20 +159,27 @@ function parseRowFromTokens(tokens: string[]): Row | null {
   const qtd = parseInt(tokens[1], 10)
 
   const restAll = tokens.slice(2)
-  const placaIdxs: number[] = []
+
+  type PlacaHit = { idx: number; width: 1 | 2 }
+  const placaHits: PlacaHit[] = []
   for (let i = 0; i < restAll.length; i++) {
-    if (PLACA_RE.test(restAll[i])) placaIdxs.push(i)
+    if (PLACA_RE.test(restAll[i])) {
+      placaHits.push({ idx: i, width: 1 })
+    } else if (i + 1 < restAll.length && PLACA_RE.test(`${restAll[i]} ${restAll[i + 1]}`)) {
+      placaHits.push({ idx: i, width: 2 })
+      i++
+    }
   }
-  if (placaIdxs.length === 0) return null
+  if (placaHits.length === 0) return null
 
   let carro1Tokens: string[]
   let carro2Tokens: string[] | null = null
 
-  if (qtd === 1 || placaIdxs.length === 1) {
+  if (qtd === 1 || placaHits.length === 1) {
     carro1Tokens = restAll
   } else {
-    const placaIdx1 = placaIdxs[0]
-    let cutEnd = placaIdx1 + 1
+    const hit1 = placaHits[0]
+    let cutEnd = hit1.idx + hit1.width
     if (cutEnd < restAll.length && TIPO_RE.test(restAll[cutEnd])) cutEnd++
     carro1Tokens = restAll.slice(0, cutEnd)
     carro2Tokens = restAll.slice(cutEnd)
