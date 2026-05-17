@@ -11,6 +11,7 @@ const PRINCIPAL: Item[] = [
 ]
 
 const KPI_BENASSI: Item[] = [
+  { href: '/painel/kpi/simples', label: 'Simples' },
   { href: '/painel/kpi/dia', label: 'Dia' },
   { href: '/painel/historico', label: 'Histórico' },
 ]

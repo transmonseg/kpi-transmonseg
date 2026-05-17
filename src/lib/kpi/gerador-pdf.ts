@@ -18,6 +18,16 @@ const C_INK_SOFT = rgb(0.278, 0.333, 0.412)
 const C_MUTED = rgb(0.58, 0.64, 0.72)
 const C_WHITE = rgb(1, 1, 1)
 
+const WINSANI_MAP: Record<string, string> = {
+  '→': '>', '←': '<', '↑': '^', '↓': 'v',
+  '⚠': '!', '·': '.', '…': '...',
+  '’': "'", '‘': "'", '“': '"', '”': '"',
+  '–': '-', '—': '-', '•': '*', '●': '*',
+}
+function safeText(s: string): string {
+  return s.replace(/[^\x00-\xFF]/g, c => WINSANI_MAP[c] ?? '?')
+}
+
 function fmt(date: Date | null): string {
   if (!date) return '—'
   return date.toLocaleTimeString('pt-BR', {
@@ -57,14 +67,14 @@ function buildHeaders(nLojas: number): string[] {
 }
 
 function rowValues(l: KpiLinha, nLojas: number): string[] {
-  const vals = [l.loja_nome, l.motorista ?? '—', l.placa ?? '—', fmt(l.saida_cd)]
+  const vals = [safeText(l.loja_nome), safeText(l.motorista ?? '—'), l.placa ?? '—', fmt(l.saida_cd)]
   for (let n = 1; n <= nLojas; n++) {
     const chd = n === 1 ? l.chd_loja_1 : n === 2 ? l.chd_loja_2 : l.chd_loja_3
     const sai = n === 1 ? l.saida_loja_1 : n === 2 ? l.saida_loja_2 : l.saida_loja_3
     const tempo = n === 1 ? l.tempo_loja_1_min : n === 2 ? l.tempo_loja_2_min : l.tempo_loja_3_min
     vals.push(fmt(chd), fmt(sai), tempo !== null ? `${tempo}m` : '—')
   }
-  vals.push(l.observacao ?? '')
+  vals.push(safeText(l.observacao ?? ''))
   return vals
 }
 
@@ -134,7 +144,7 @@ function drawCabecalho(
 
   page.drawRectangle({ x: 0, y: y - 5, width: PAGE_W, height: 5, color: C_BRAND_600 })
 
-  const title = `KPI - ${redeNome}`
+  const title = `KPI - ${safeText(redeNome)}`
   const titleSize = 16
   const titleW = fontBold.widthOfTextAtSize(title, titleSize)
   page.drawText(title, {
