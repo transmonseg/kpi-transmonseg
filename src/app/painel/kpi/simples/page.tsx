@@ -62,9 +62,9 @@ const TIPO_LABELS: Record<AlteracaoParsed['tipo'], string> = {
 }
 
 const CONF_CLASS: Record<string, string> = {
-  alta: 'text-emerald-400',
-  media: 'text-amber-400',
-  baixa: 'text-red-400',
+  alta: 'text-[var(--color-success)]',
+  media: 'text-[var(--color-warning)]',
+  baixa: 'text-[var(--color-danger)]',
 }
 
 // ─── Seção de alterações ────────────────────────────────────────────────────
@@ -130,20 +130,20 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove }: AlteracoesCardProp
       <button
         type="button"
         onClick={() => setExpanded(v => !v)}
-        className="w-full flex items-center justify-between px-5 py-3 cursor-pointer text-left hover:bg-zinc-800/40 transition-colors"
+        className="w-full flex items-center justify-between px-5 py-3 cursor-pointer text-left hover:bg-[var(--color-bg-hover)] transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">
             Alterações de Escala
           </span>
           {count > 0 && (
-            <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full font-medium">
+            <span className="text-xs bg-[var(--color-info-soft)] text-[var(--color-info-soft-fg)] px-2 py-0.5 rounded-full font-medium">
               {count} confirmada{count !== 1 ? 's' : ''}
             </span>
           )}
         </div>
         <svg
-          className={cn('h-4 w-4 text-zinc-400 transition-transform', expanded && 'rotate-180')}
+          className={cn('h-4 w-4 text-[var(--color-fg-muted)] transition-transform', expanded && 'rotate-180')}
           viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
         >
           <polyline points="6 9 12 15 18 9" />
@@ -151,23 +151,23 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove }: AlteracoesCardProp
       </button>
 
       {expanded && (
-        <CardContent className="space-y-4 pt-0 border-t border-zinc-800">
+        <CardContent className="space-y-4 pt-0 border-t border-[var(--color-border)]">
           {/* Lista de confirmadas */}
           {confirmadas.length > 0 && (
             <div className="space-y-1">
-              <p className="text-xs font-medium text-zinc-500 pt-1">Confirmadas</p>
+              <p className="text-xs font-medium text-[var(--color-fg-subtle)] pt-1">Confirmadas</p>
               {confirmadas.map((a, i) => (
-                <div key={i} className="flex items-center justify-between gap-2 rounded bg-zinc-800 px-3 py-2 text-xs">
-                  <span className="text-zinc-200">
+                <div key={i} className="flex items-center justify-between gap-2 rounded bg-[var(--color-bg-subtle)] px-3 py-2 text-xs">
+                  <span className="text-[var(--color-fg)]">
                     <span className="font-medium">{TIPO_LABELS[a.tipo]}</span>
-                    {a.rede_id && <span className="text-zinc-400"> · {a.rede_id}</span>}
-                    {a.loja_nome_raw && <span className="text-zinc-500"> · {a.loja_nome_raw}</span>}
-                    {a.entra && <span className="text-emerald-400"> → {fmtSlot(a.entra)}</span>}
+                    {a.rede_id && <span className="text-[var(--color-fg-muted)]"> · {a.rede_id}</span>}
+                    {a.loja_nome_raw && <span className="text-[var(--color-fg-subtle)]"> · {a.loja_nome_raw}</span>}
+                    {a.entra && <span className="text-[var(--color-success)]"> → {fmtSlot(a.entra)}</span>}
                   </span>
                   <button
                     type="button"
                     onClick={() => onRemove(i)}
-                    className="ml-2 shrink-0 text-zinc-500 hover:text-red-400 transition-colors"
+                    className="ml-2 shrink-0 text-[var(--color-fg-subtle)] hover:text-[var(--color-danger)] transition-colors"
                   >
                     ✕
                   </button>
@@ -186,8 +186,8 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove }: AlteracoesCardProp
                 className={cn(
                   'text-xs px-3 py-1 rounded border transition-colors',
                   modo === m
-                    ? 'border-zinc-500 bg-zinc-700 text-zinc-100'
-                    : 'border-zinc-700 text-zinc-400 hover:border-zinc-600',
+                    ? 'border-[var(--color-border-strong)] bg-[var(--color-bg-subtle)] text-[var(--color-fg)]'
+                    : 'border-[var(--color-border)] text-[var(--color-fg-muted)] hover:border-[var(--color-border-strong)]',
                 )}
               >
                 {m === 'texto' ? 'Mensagem de texto' : 'PDF'}
@@ -203,7 +203,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove }: AlteracoesCardProp
                 onChange={e => { setTexto(e.target.value); resetPreviews() }}
                 rows={5}
                 placeholder={`🚨 ALTERAÇÃO 🚨\nZona Sul Tijuca\nEntra: Carlos 432 ABC1D23\nSai: José 811 XYZ9876\nMotivo: falta`}
-                className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs font-mono text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 resize-y"
+                className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-3 py-2 text-xs font-mono text-[var(--color-fg)] placeholder:text-[var(--color-fg-subtle)] focus:outline-none focus:border-[var(--color-border-strong)] resize-y"
               />
               <Button
                 size="sm"
@@ -227,47 +227,41 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove }: AlteracoesCardProp
                   if (f) analisarPdf(f)
                 }}
               />
-              {analisando && <p className="text-xs text-zinc-400">Lendo PDF…</p>}
+              {analisando && <p className="text-xs text-[var(--color-fg-muted)]">Lendo PDF…</p>}
             </div>
           )}
 
-          {err && <p className="text-xs text-red-400">{err}</p>}
+          {err && <p className="text-xs text-[var(--color-danger)]">{err}</p>}
 
           {/* Previews para confirmar/descartar */}
           {previews.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-medium text-zinc-400">
+              <p className="text-xs font-medium text-[var(--color-fg-muted)]">
                 {previews.length} alteração{previews.length !== 1 ? 'ões' : ''} identificada{previews.length !== 1 ? 's' : ''} — confirme antes de gerar
               </p>
               {previews.map((a, i) => (
-                <div key={i} className="rounded-md border border-zinc-700 bg-zinc-900/60">
-                  <div className="flex items-center gap-2 border-b border-zinc-800 px-3 py-2">
-                    <span className="text-xs font-semibold text-zinc-200">{TIPO_LABELS[a.tipo]}</span>
-                    <span className={cn('text-xs', CONF_CLASS[a.confianca] ?? 'text-zinc-400')}>
+                <div key={i} className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
+                  <div className="flex items-center gap-2 border-b border-[var(--color-border)] px-3 py-2">
+                    <span className="text-xs font-semibold text-[var(--color-fg)]">{TIPO_LABELS[a.tipo]}</span>
+                    <span className={cn('text-xs', CONF_CLASS[a.confianca] ?? 'text-[var(--color-fg-muted)]')}>
                       confiança {a.confianca}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 px-3 py-2.5 text-xs">
-                    <div><span className="text-zinc-500">Rede </span><span className="text-zinc-200">{a.rede_id ?? '—'}</span></div>
-                    <div><span className="text-zinc-500">Loja </span><span className="text-zinc-200">{a.loja_nome_raw ?? '—'}</span></div>
-                    <div><span className="text-zinc-500">Entra </span><span className="text-emerald-300">{fmtSlot(a.entra)}</span></div>
-                    <div><span className="text-zinc-500">Sai </span><span className="text-red-300">{fmtSlot(a.sai)}</span></div>
+                    <div><span className="text-[var(--color-fg-subtle)]">Rede </span><span className="text-[var(--color-fg)]">{a.rede_id ?? '—'}</span></div>
+                    <div><span className="text-[var(--color-fg-subtle)]">Loja </span><span className="text-[var(--color-fg)]">{a.loja_nome_raw ?? '—'}</span></div>
+                    <div><span className="text-[var(--color-fg-subtle)]">Entra </span><span className="text-[var(--color-success)]">{fmtSlot(a.entra)}</span></div>
+                    <div><span className="text-[var(--color-fg-subtle)]">Sai </span><span className="text-[var(--color-danger)]">{fmtSlot(a.sai)}</span></div>
                     {a.motivo && (
                       <div className="col-span-2">
-                        <span className="text-zinc-500">Motivo </span>
-                        <span className="text-zinc-300">{a.motivo}</span>
+                        <span className="text-[var(--color-fg-subtle)]">Motivo </span>
+                        <span className="text-[var(--color-fg-muted)]">{a.motivo}</span>
                       </div>
                     )}
                   </div>
                   <div className="flex gap-2 px-3 pb-3">
-                    <Button size="sm" onClick={() => confirmar(a)}>
-                      Confirmar
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setPreviews(prev => prev.filter((_, j) => j !== i))}
-                    >
+                    <Button size="sm" onClick={() => confirmar(a)}>Confirmar</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setPreviews(prev => prev.filter((_, j) => j !== i))}>
                       Descartar
                     </Button>
                   </div>
@@ -292,13 +286,8 @@ export default function KpiSimplesPage() {
   const [erro, setErro] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
-  function addAlteracao(a: AlteracaoParsed) {
-    setAlteracoes(prev => [...prev, a])
-  }
-
-  function removeAlteracao(idx: number) {
-    setAlteracoes(prev => prev.filter((_, i) => i !== idx))
-  }
+  function addAlteracao(a: AlteracaoParsed) { setAlteracoes(prev => [...prev, a]) }
+  function removeAlteracao(idx: number) { setAlteracoes(prev => prev.filter((_, i) => i !== idx)) }
 
   async function uploadComPresign(file: File, isUnitrac: boolean): Promise<string> {
     const endpoint = isUnitrac ? '/api/unitrac/presign' : '/api/escalas/presign'
@@ -321,7 +310,6 @@ export default function KpiSimplesPage() {
 
     const putRes = await fetch(signedUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: file })
     if (!putRes.ok) throw new Error(`Upload falhou (${putRes.status}): ${putRes.statusText}`)
-
     return path
   }
 
@@ -335,7 +323,6 @@ export default function KpiSimplesPage() {
 
     startTransition(async () => {
       try {
-        // Upload direto ao Storage (evita limite 4.5 MB do Vercel)
         const [escalaBucketPath, unitracBucketPath] = await Promise.all([
           uploadComPresign(escala, false),
           uploadComPresign(unitrac, true),
@@ -358,8 +345,8 @@ export default function KpiSimplesPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6 py-8 px-4">
       <div>
-        <h1 className="text-xl font-semibold text-zinc-100">KPI Simples</h1>
-        <p className="mt-1 text-sm text-zinc-400">
+        <h1 className="text-xl font-semibold text-[var(--color-fg)]">KPI Simples</h1>
+        <p className="mt-1 text-sm text-[var(--color-fg-muted)]">
           Upload de escala e Unitrac para gerar KPIs sem banco de dados.
         </p>
       </div>
@@ -371,24 +358,14 @@ export default function KpiSimplesPage() {
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="escala">Escala (XLSX ou PDF)</Label>
-            <Input
-              id="escala"
-              type="file"
-              accept=".xlsx,.pdf"
-              onChange={e => setEscala(e.target.files?.[0] ?? null)}
-            />
-            {escala && <p className="text-xs text-zinc-400">{escala.name}</p>}
+            <Input id="escala" type="file" accept=".xlsx,.pdf" onChange={e => setEscala(e.target.files?.[0] ?? null)} />
+            {escala && <p className="text-xs text-[var(--color-fg-muted)]">{escala.name}</p>}
           </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="unitrac">Unitrac (XLSX ou PDF)</Label>
-            <Input
-              id="unitrac"
-              type="file"
-              accept=".xlsx,.pdf"
-              onChange={e => setUnitrac(e.target.files?.[0] ?? null)}
-            />
-            {unitrac && <p className="text-xs text-zinc-400">{unitrac.name}</p>}
+            <Input id="unitrac" type="file" accept=".xlsx,.pdf" onChange={e => setUnitrac(e.target.files?.[0] ?? null)} />
+            {unitrac && <p className="text-xs text-[var(--color-fg-muted)]">{unitrac.name}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -404,25 +381,17 @@ export default function KpiSimplesPage() {
         </CardContent>
       </Card>
 
-      <AlteracoesCard
-        confirmadas={alteracoes}
-        onConfirm={addAlteracao}
-        onRemove={removeAlteracao}
-      />
+      <AlteracoesCard confirmadas={alteracoes} onConfirm={addAlteracao} onRemove={removeAlteracao} />
 
-      {erro && <p className="text-sm text-red-400">{erro}</p>}
+      {erro && <p className="text-sm text-[var(--color-danger)]">{erro}</p>}
 
-      <Button
-        onClick={processar}
-        disabled={pending || !escala || !unitrac || !data}
-        className="w-full"
-      >
+      <Button onClick={processar} disabled={pending || !escala || !unitrac || !data} className="w-full">
         {pending ? 'Processando...' : `Gerar KPIs${alteracoes.length > 0 ? ` (${alteracoes.length} alt.)` : ''}`}
       </Button>
 
       {redes && redes.length === 0 && (
         <Card>
-          <CardContent className="py-6 text-center text-sm text-zinc-400">
+          <CardContent className="py-6 text-center text-sm text-[var(--color-fg-muted)]">
             Nenhuma rede encontrada. Verifique os arquivos enviados.
           </CardContent>
         </Card>
@@ -430,57 +399,42 @@ export default function KpiSimplesPage() {
 
       {redes && redes.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--color-fg-muted)]">
             Resultado — {redes.length} {redes.length === 1 ? 'rede' : 'redes'}
           </h2>
-          {redes.map(r => {
-            const dataFmt = data.split('-').reverse().join('/')
-            return (
-              <Card key={r.rede_id}>
-                <CardContent className="flex items-center justify-between gap-4 py-4">
-                  <div>
-                    <p className="font-medium text-zinc-100">{r.rede_nome}</p>
-                    <p className="text-xs text-zinc-400">
-                      {r.qtd_rotas} {r.qtd_rotas === 1 ? 'rota' : 'rotas'}
-                      {r.qtd_sem_gps > 0 && (
-                        <span className="ml-2 text-amber-400">
-                          · {r.qtd_sem_gps} sem GPS
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() =>
-                        downloadBase64(
-                          r.xlsxBase64,
-                          `KPI-${r.rede_id}-${data}.xlsx`,
-                          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                        )
-                      }
-                    >
-                      XLSX
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() =>
-                        downloadBase64(
-                          r.pdfBase64,
-                          `KPI-${r.rede_id}-${data}.pdf`,
-                          'application/pdf',
-                        )
-                      }
-                    >
-                      PDF
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
+          {redes.map(r => (
+            <Card key={r.rede_id}>
+              <CardContent className="flex items-center justify-between gap-4 py-4">
+                <div>
+                  <p className="font-medium text-[var(--color-fg)]">{r.rede_nome}</p>
+                  <p className="text-xs text-[var(--color-fg-muted)]">
+                    {r.qtd_rotas} {r.qtd_rotas === 1 ? 'rota' : 'rotas'}
+                    {r.qtd_sem_gps > 0 && (
+                      <span className="ml-2 text-[var(--color-warning)]">
+                        · {r.qtd_sem_gps} sem GPS
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => downloadBase64(r.xlsxBase64, `KPI-${r.rede_id}-${data}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+                  >
+                    XLSX
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => downloadBase64(r.pdfBase64, `KPI-${r.rede_id}-${data}.pdf`, 'application/pdf')}
+                  >
+                    PDF
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
     </div>

@@ -49,7 +49,8 @@ export async function gerarKpi(input: GerarKpiInput): Promise<Buffer> {
 }
 
 const NAVY = 'FF1F3864'
-const ROW_BG = 'FFFFFFCC'
+const ROW_BG     = 'FFFFFFCC'
+const ROW_BG_ALT = 'FFFFFFFF'
 
 const FONT_HEADER = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FFFFFFFF' } }
 const FONT_BODY   = { name: 'Calibri', size: 12, color: { argb: 'FF000000' } }
@@ -190,7 +191,8 @@ function escreverLinha(ws: ExcelJS.Worksheet, row: number, ag: LinhaAgrupada) {
   }
 
   const codigos = [...((c1?.anomalias_codigos) ?? []), ...((c2?.anomalias_codigos) ?? [])]
-  const bgColor = temAnomaliaHigh(codigos) ? KPI_COLORS.ANOMALIA_HIGH_BG : ROW_BG
+  const isAlt = (row - 5) % 2 === 1
+  const bgColor = temAnomaliaHigh(codigos) ? KPI_COLORS.ANOMALIA_HIGH_BG : isAlt ? ROW_BG_ALT : ROW_BG
 
   r.eachCell({ includeEmpty: true }, (cell, colNum) => {
     cell.font = FONT_BODY
