@@ -50,8 +50,8 @@
   --color-border-strong: #d6d3d1;
 
   --color-fg: #0a0a0a;
-  --color-fg-muted: #57534e;
-  --color-fg-subtle: #a8a29e;
+  --color-fg-muted: #44403c;   /* stone-700 — 9.5:1 em bg light, sólido pra body */
+  --color-fg-subtle: #78716c;  /* stone-500 — 4.6:1 em bg light, AA pra small text */
 
   --color-accent: #1f4e78;
   --color-accent-fg: #ffffff;
@@ -108,8 +108,8 @@
   --color-border-strong: #333333;
 
   --color-fg: #fafaf9;
-  --color-fg-muted: #a8a29e;
-  --color-fg-subtle: #78716c;
+  --color-fg-muted: #d6d3d1;   /* stone-300 — alto contraste em bg dark */
+  --color-fg-subtle: #a8a29e;  /* stone-400 — captions em bg dark */
 
   --shadow-diffusion: 0 20px 40px -15px rgba(0, 0, 0, 0.4);
   --shadow-soft: 0 1px 0 0 rgba(0, 0, 0, 0.4),
