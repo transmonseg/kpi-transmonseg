@@ -4,11 +4,28 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* Fonts */
+  /* Fonts — Geist via next/font (Inter está banido em dashboards). */
   --font-sans: var(--font-sans), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", "Menlo",
-    "Consolas", monospace;
+  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, "JetBrains Mono",
+    "Menlo", "Consolas", monospace;
+
+  /* Tracking scales (anti-slop: hierarquia por peso/letter-spacing, não só tamanho). */
+  --tracking-display: -0.04em;
+  --tracking-tight: -0.018em;
+
+  /* Radii — bento 2.0 generoso (Section 9 do design-taste-frontend). */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-card: 1.5rem;
+  --radius-display: 2rem;
+
+  /* Diffusion shadow (tinted, não puro preto). */
+  --shadow-diffusion: 0 20px 40px -15px rgba(15, 23, 42, 0.06);
+  --shadow-soft: 0 1px 0 0 rgba(15, 23, 42, 0.04),
+    0 4px 12px -2px rgba(15, 23, 42, 0.04);
+  --shadow-inner-edge: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 
   /* Brand (Transmonseg blue) — preserved palette for accents. */
   --color-brand-50: #f0f6fb;
@@ -23,23 +40,23 @@
   --color-brand-900: #0e2542;
 
   /* Semantic surface/foreground tokens (LIGHT defaults).
-     Dark mode overrides them on `.dark` below. */
-  --color-bg: #ffffff;
-  --color-bg-elevated: #fafafa;
-  --color-bg-subtle: #f4f4f5;
-  --color-bg-hover: #ececef;
+     Off-white de fundo, off-black (zinc-950) de texto — pure black/white banidos. */
+  --color-bg: #fafaf9;
+  --color-bg-elevated: #ffffff;
+  --color-bg-subtle: #f4f4f3;
+  --color-bg-hover: #ececea;
 
-  --color-border: #e4e4e7;
-  --color-border-strong: #d4d4d8;
+  --color-border: #e7e5e4;
+  --color-border-strong: #d6d3d1;
 
-  --color-fg: #09090b;
-  --color-fg-muted: #52525b;
-  --color-fg-subtle: #a1a1aa;
+  --color-fg: #0a0a0a;
+  --color-fg-muted: #57534e;
+  --color-fg-subtle: #a8a29e;
 
   --color-accent: #1f4e78;
   --color-accent-fg: #ffffff;
   --color-accent-hover: #1a426a;
-  --color-accent-soft: #d9e7f3;
+  --color-accent-soft: #eaf1f7;
   --color-accent-soft-fg: #1a426a;
 
   --color-success: #16a34a;
@@ -79,19 +96,25 @@
   --color-surface-hover: var(--color-bg-hover);
 }
 
-/* DARK theme overrides — applied when <html class="dark">. */
+/* DARK theme overrides — applied when <html class="dark">.
+   Zinc-950 puro (não black puro) com tons quentes pra equilibrar o blue accent. */
 .dark {
-  --color-bg: #09090b;
-  --color-bg-elevated: #111113;
-  --color-bg-subtle: #18181b;
-  --color-bg-hover: #1f1f23;
+  --color-bg: #0a0a0a;
+  --color-bg-elevated: #141414;
+  --color-bg-subtle: #1c1c1c;
+  --color-bg-hover: #232323;
 
-  --color-border: #1f1f23;
-  --color-border-strong: #2e2e33;
+  --color-border: #242424;
+  --color-border-strong: #333333;
 
-  --color-fg: #fafafa;
-  --color-fg-muted: #a1a1aa;
-  --color-fg-subtle: #71717a;
+  --color-fg: #fafaf9;
+  --color-fg-muted: #a8a29e;
+  --color-fg-subtle: #78716c;
+
+  --shadow-diffusion: 0 20px 40px -15px rgba(0, 0, 0, 0.4);
+  --shadow-soft: 0 1px 0 0 rgba(0, 0, 0, 0.4),
+    0 4px 12px -2px rgba(0, 0, 0, 0.3);
+  --shadow-inner-edge: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 
   --color-accent: #5392c2;
   --color-accent-fg: #ffffff;
@@ -166,15 +189,39 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: "cv11", "ss01";
+  font-feature-settings: "cv11", "ss01", "ss03";
+  font-variant-numeric: tabular-nums;
 }
 
-/* Tighter, more confident headings. */
-h1,
-h2,
-h3,
-h4 {
-  letter-spacing: -0.015em;
+/* Hierarquia tipográfica — controla pelo peso/letter-spacing, não só pelo size. */
+h1, h2, h3, h4 {
+  letter-spacing: var(--tracking-tight);
+}
+h1 {
+  letter-spacing: var(--tracking-display);
+}
+
+/* Display class: número/header gigante de KPI hero (Section 3 Rule 1 do skill). */
+@utility text-display {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: var(--tracking-display);
+  line-height: 0.95;
+}
+
+/* Numeric class: pra horários/placas/IDs operacionais (mono tabular). */
+@utility text-numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums slashed-zero;
+  letter-spacing: -0.01em;
+}
+
+/* Shadow utilities (Section 9 — diffusion shadow). */
+@utility shadow-diffusion {
+  box-shadow: var(--shadow-diffusion);
+}
+@utility shadow-soft {
+  box-shadow: var(--shadow-soft);
 }
 
 /* Subtle focus ring tied to accent token. */

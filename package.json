@@ -9,9 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.4",
     "exceljs": "^4.4.0",
+    "geist": "^1.7.0",
+    "motion": "^12.38.0",
     "next": "16.2.6",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "1.1.1",
