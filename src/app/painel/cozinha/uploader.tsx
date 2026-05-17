@@ -2,6 +2,12 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import {
+  UploadSimple,
+  DownloadSimple,
+  FloppyDisk,
+  CircleNotch,
+} from '@phosphor-icons/react/dist/ssr'
+import {
   Badge,
   Button,
   Card,
@@ -676,80 +682,19 @@ function CelulaEditavel({
 }
 
 function Spinner({ className = '' }: { className?: string }) {
-  return (
-    <svg
-      className={cn('h-3.5 w-3.5 animate-spin', className)}
-      viewBox="0 0 24 24"
-      fill="none"
-    >
-      <circle
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="3"
-        className="opacity-25"
-      />
-      <path
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z"
-      />
-    </svg>
-  )
+  return <CircleNotch size={14} weight="bold" className={cn('animate-spin', className)} />
 }
 
 function IconUpload({ className = '' }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
-    </svg>
-  )
+  return <UploadSimple size={24} weight="bold" className={className} />
 }
 
 function IconDownload() {
-  return (
-    <svg
-      className="h-3.5 w-3.5"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" y1="15" x2="12" y2="3" />
-    </svg>
-  )
+  return <DownloadSimple size={14} weight="bold" />
 }
 
 function IconSave() {
-  return (
-    <svg
-      className="h-3.5 w-3.5"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-      <polyline points="17 21 17 13 7 13 7 21" />
-      <polyline points="7 3 7 8 15 8" />
-    </svg>
-  )
+  return <FloppyDisk size={14} weight="bold" />
 }
 
 function formatarDataPtBr(iso: string): string {

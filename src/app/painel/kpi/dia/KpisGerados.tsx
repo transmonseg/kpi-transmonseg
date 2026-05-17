@@ -2,6 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import {
+  DownloadSimple,
+  FloppyDisk,
+  CircleNotch,
+  CaretDown,
+} from '@phosphor-icons/react/dist/ssr'
+import {
   Badge,
   Button,
   Card,
@@ -372,7 +378,9 @@ export function KpisGerados({
                     onClick={() => baixar(k.kpi_id, 'xlsx')}
                     disabled={downloadingId === `${k.kpi_id}:xlsx`}
                   >
-                    {downloadingId === `${k.kpi_id}:xlsx` ? '…' : '↓ XLSX'}
+                    {downloadingId === `${k.kpi_id}:xlsx`
+                      ? <CircleNotch size={13} weight="bold" className="animate-spin" />
+                      : <><DownloadSimple size={13} weight="bold" />XLSX</>}
                   </Button>
                   <Button
                     variant="secondary"
@@ -380,7 +388,9 @@ export function KpisGerados({
                     onClick={() => baixar(k.kpi_id, 'pdf')}
                     disabled={downloadingId === `${k.kpi_id}:pdf`}
                   >
-                    {downloadingId === `${k.kpi_id}:pdf` ? '…' : '↓ PDF'}
+                    {downloadingId === `${k.kpi_id}:pdf`
+                      ? <CircleNotch size={13} weight="bold" className="animate-spin" />
+                      : <><DownloadSimple size={13} weight="bold" />PDF</>}
                   </Button>
                 </div>
               </div>
@@ -762,7 +772,11 @@ function AnomaliasMediasLowPanel({
           {anomalias.length} anomalia{anomalias.length === 1 ? '' : 's'} média/baixa
           {pendentes > 0 && <span className="ml-1 text-[var(--color-warning)]">({pendentes} pendente{pendentes === 1 ? '' : 's'})</span>}
         </span>
-        <span>{open ? '▲' : '▼'}</span>
+        <CaretDown
+          size={13}
+          weight="bold"
+          className={cn('transition-transform duration-200', open && 'rotate-180')}
+        />
       </button>
       {open && (
         <div className="px-3 pb-2 flex flex-col gap-1.5">
@@ -913,50 +927,13 @@ function ParadaCell({
 }
 
 function Spinner({ className = '' }: { className?: string }) {
-  return (
-    <svg
-      className={cn('h-3.5 w-3.5 animate-spin', className)}
-      viewBox="0 0 24 24"
-      fill="none"
-    >
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
-      <path fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z" />
-    </svg>
-  )
+  return <CircleNotch size={14} weight="bold" className={cn('animate-spin', className)} />
 }
 
 function IconDownload() {
-  return (
-    <svg
-      className="h-3.5 w-3.5"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" y1="15" x2="12" y2="3" />
-    </svg>
-  )
+  return <DownloadSimple size={14} weight="bold" />
 }
 
 function IconSave() {
-  return (
-    <svg
-      className="h-3.5 w-3.5"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-      <polyline points="17 21 17 13 7 13 7 21" />
-      <polyline points="7 3 7 8 15 8" />
-    </svg>
-  )
+  return <FloppyDisk size={14} weight="bold" />
 }

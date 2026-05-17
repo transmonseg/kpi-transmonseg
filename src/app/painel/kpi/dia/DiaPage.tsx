@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { CaretLeft, CaretRight, X } from '@phosphor-icons/react/dist/ssr'
 import { Badge, Button, Card, cn } from '@/components/ui'
 import { DropZone } from './DropZone'
 import { EscalaItem } from './EscalaItem'
@@ -306,7 +307,7 @@ export function DiaPage({
               onClick={() => navegarPara(shiftDay(data, -1))}
               aria-label="Dia anterior"
             >
-              ←
+              <CaretLeft size={14} weight="bold" />
             </Button>
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-[13px] font-semibold text-[var(--color-fg)] capitalize truncate">
@@ -321,7 +322,7 @@ export function DiaPage({
               disabled={isHoje}
               aria-label="Próximo dia"
             >
-              →
+              <CaretRight size={14} weight="bold" />
             </Button>
           </div>
           <input
@@ -472,10 +473,10 @@ export function DiaPage({
                       return e
                     })
                   }
-                  className="text-[var(--color-danger-soft-fg)]/70 hover:text-[var(--color-danger-soft-fg)] cursor-pointer shrink-0"
+                  className="text-[var(--color-danger-soft-fg)]/70 hover:text-[var(--color-danger-soft-fg)] cursor-pointer shrink-0 inline-flex items-center justify-center h-5 w-5 rounded hover:bg-[var(--color-danger)]/10 transition-colors"
                   title="Dispensar"
                 >
-                  ✕
+                  <X size={13} weight="bold" />
                 </button>
               </div>
             ))}

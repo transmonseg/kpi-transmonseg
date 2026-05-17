@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { UploadSimple, CircleNotch } from '@phosphor-icons/react/dist/ssr'
 import { cn } from '@/components/ui'
 
 type Props = {
@@ -69,46 +70,25 @@ export function DropZone({
       )}
     >
       {uploading ? (
-        <svg
-          className="animate-spin h-5 w-5 text-[var(--color-accent)] mb-2 pointer-events-none"
-          viewBox="0 0 24 24"
-          fill="none"
-        >
-          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
-          <path fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z" />
-        </svg>
+        <CircleNotch
+          size={22}
+          weight="bold"
+          className="animate-spin text-[var(--color-accent)] mb-2 pointer-events-none"
+        />
       ) : (
-        <svg
+        <UploadSimple
+          size={22}
+          weight="bold"
           className={cn(
-            'h-6 w-6 mb-2 pointer-events-none transition-colors',
+            'mb-2 pointer-events-none transition-colors',
             dragging ? 'text-[var(--color-accent)]' : 'text-[var(--color-fg-subtle)]',
           )}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <polyline points="17 8 12 3 7 8" />
-          <line x1="12" y1="3" x2="12" y2="15" />
-        </svg>
+        />
       )}
-      <p
-        className={cn(
-          'text-sm font-semibold pointer-events-none transition-colors',
-          uploading || dragging
-            ? 'text-[var(--color-fg)]'
-            : 'text-[var(--color-fg)]',
-        )}
-      >
+      <p className="text-sm font-semibold pointer-events-none text-[var(--color-fg)]">
         {uploading ? titleUploading : titleIdle}
       </p>
-      <p
-        className={cn(
-          'text-xs mt-1 pointer-events-none',
-          'text-[var(--color-fg-muted)]',
-        )}
-      >
+      <p className="text-xs mt-1 pointer-events-none text-[var(--color-fg-muted)]">
         {subtitle}
       </p>
       <input

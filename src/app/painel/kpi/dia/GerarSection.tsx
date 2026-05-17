@@ -1,6 +1,14 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import {
+  Check,
+  X,
+  Clock,
+  Minus,
+  CircleNotch,
+  ArrowsClockwise,
+} from '@phosphor-icons/react/dist/ssr'
 import { Badge, Button, Card, CardContent, cn } from '@/components/ui'
 import { DropZone } from './DropZone'
 
@@ -40,38 +48,35 @@ const LABEL: Record<string, string> = {
 function StepIcon({ status }: { status: StepStatus }) {
   if (status === 'done') {
     return (
-      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--color-success)] text-white text-[11px] font-bold shrink-0">
-        ✓
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--color-success)] shrink-0">
+        <Check size={11} weight="bold" className="text-white" />
       </span>
     )
   }
   if (status === 'running') {
     return (
-      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--color-accent-soft)] text-[var(--color-accent)] shrink-0">
-        <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
-          <path fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z" />
-        </svg>
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--color-accent-soft)] shrink-0">
+        <CircleNotch size={12} weight="bold" className="animate-spin text-[var(--color-accent)]" />
       </span>
     )
   }
   if (status === 'error') {
     return (
-      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--color-danger)] text-white text-[11px] font-bold shrink-0">
-        ✕
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--color-danger)] shrink-0">
+        <X size={11} weight="bold" className="text-white" />
       </span>
     )
   }
   if (status === 'skipped') {
     return (
-      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--color-bg-subtle)] text-[var(--color-fg-subtle)] text-[11px] font-bold shrink-0 border border-[var(--color-border)]">
-        –
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--color-bg-subtle)] shrink-0 border border-[var(--color-border)]">
+        <Minus size={11} weight="bold" className="text-[var(--color-fg-subtle)]" />
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--color-bg-subtle)] text-[var(--color-fg-subtle)] text-[10px] shrink-0 border border-[var(--color-border)]">
-      ⏳
+    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--color-bg-subtle)] shrink-0 border border-[var(--color-border)]">
+      <Clock size={11} weight="bold" className="text-[var(--color-fg-subtle)]" />
     </span>
   )
 }
@@ -89,19 +94,16 @@ export function GerarSection({
     [todosTipos, escalas],
   )
 
-  // Set imutável usado pra detectar mudança nos tipos disponíveis sem useEffect
   const tiposKey = tiposComEscala.join('|')
   const [prevTiposKey, setPrevTiposKey] = useState(tiposKey)
   const [selecionados, setSelecionados] = useState<Set<string>>(
     () => new Set(tiposComEscala),
   )
-  // Sincroniza durante render quando lista muda (padrão React 19: reset-by-key)
   if (prevTiposKey !== tiposKey) {
     setPrevTiposKey(tiposKey)
     setSelecionados((prev) => {
       const next = new Set<string>()
       for (const t of tiposComEscala) if (prev.has(t)) next.add(t)
-      // Se nada da seleção anterior sobreviveu, pré-marca todos disponíveis
       return next.size > 0 ? next : new Set(tiposComEscala)
     })
   }
@@ -165,7 +167,6 @@ export function GerarSection({
     let geracaoAconteceu = false
 
     try {
-      // 1. Upload Unitrac
       setSteps((prev) =>
         prev.map((s) =>
           s.id === 'upload_unitrac' ? { ...s, status: 'running' } : s,
@@ -177,7 +178,6 @@ export function GerarSection({
           ? 'application/pdf'
           : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
-      // Presign → PUT direto ao Storage (evita limite 4.5 MB do Vercel)
       const presignRes = await fetch('/api/unitrac/presign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -203,7 +203,6 @@ export function GerarSection({
       }
       setStep('upload_unitrac', { status: 'done' })
 
-      // 2. Processar Unitrac
       setStep('process_gps', { status: 'running' })
       const unitracRes = await fetch('/api/unitrac/upload', {
         method: 'POST',
@@ -217,7 +216,6 @@ export function GerarSection({
       setStep('process_gps', { status: 'done' })
       onUnitracSent?.()
 
-      // 3. Para cada rede selecionada: processar + gerar
       for (const tipo of redesSelecionadas) {
         setStep(`processar_${tipo}`, { status: 'running' })
 
@@ -244,7 +242,6 @@ export function GerarSection({
 
         setStep(`gerar_${tipo}`, { status: 'running' })
         let geracaoOk = false
-        let geracaoBloqueada = false
 
         for (const kpi_id of kpi_ids) {
           const gerarRes = await fetch('/api/kpi/gerar', {
@@ -328,12 +325,9 @@ export function GerarSection({
                   className={cn(
                     'flex-1',
                     step.status === 'done' && 'text-[var(--color-fg-muted)]',
-                    step.status === 'running' &&
-                      'text-[var(--color-fg)] font-medium',
-                    step.status === 'error' &&
-                      'text-[var(--color-danger-soft-fg)] font-medium',
-                    step.status === 'skipped' &&
-                      'text-[var(--color-fg-subtle)] line-through',
+                    step.status === 'running' && 'text-[var(--color-fg)] font-medium',
+                    step.status === 'error' && 'text-[var(--color-danger-soft-fg)] font-medium',
+                    step.status === 'skipped' && 'text-[var(--color-fg-subtle)] line-through',
                     step.status === 'pending' && 'text-[var(--color-fg-subtle)]',
                   )}
                 >
@@ -354,12 +348,13 @@ export function GerarSection({
               </div>
             ))}
             {concluido && (
-              <div className="pt-1 mt-1 border-t border-[var(--color-border)]">
+              <div className="pt-1 mt-1 border-t border-[var(--color-border)] flex items-center gap-1.5">
+                <ArrowsClockwise size={12} weight="bold" className="text-[var(--color-fg-muted)]" />
                 <button
                   onClick={resetar}
                   className="text-[11px] text-[var(--color-fg-muted)] hover:text-[var(--color-fg)] underline underline-offset-2 cursor-pointer"
                 >
-                  ↻ Gerar novamente
+                  Gerar novamente
                 </button>
               </div>
             )}
@@ -443,10 +438,10 @@ export function GerarSection({
                 </span>
                 <button
                   onClick={() => setUnitracFile(null)}
-                  className="text-[var(--color-fg-subtle)] hover:text-[var(--color-fg)] text-sm cursor-pointer shrink-0 ml-2"
+                  className="text-[var(--color-fg-subtle)] hover:text-[var(--color-fg)] cursor-pointer shrink-0 ml-2 inline-flex items-center justify-center h-5 w-5 rounded hover:bg-[var(--color-bg-hover)] transition-colors"
                   title="Remover"
                 >
-                  ✕
+                  <X size={13} weight="bold" />
                 </button>
               </div>
             ) : (
@@ -464,10 +459,10 @@ export function GerarSection({
             <span className="flex-1">{erroGerar}</span>
             <button
               onClick={() => setErroGerar('')}
-              className="text-[var(--color-danger-soft-fg)]/70 hover:text-[var(--color-danger-soft-fg)] cursor-pointer shrink-0"
+              className="text-[var(--color-danger-soft-fg)]/70 hover:text-[var(--color-danger-soft-fg)] cursor-pointer shrink-0 inline-flex items-center justify-center h-5 w-5 rounded hover:bg-[var(--color-danger)]/10 transition-colors"
               title="Dispensar"
             >
-              ✕
+              <X size={13} weight="bold" />
             </button>
           </div>
         )}

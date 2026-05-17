@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
+import { CaretDown, X } from '@phosphor-icons/react/dist/ssr'
 import {
   Badge,
   Button,
@@ -220,18 +221,14 @@ export function AlteracaoInline({ data }: { data: string }) {
           {count > 0 && <Badge variant="info">{count} aplicada{count === 1 ? '' : 's'}</Badge>}
           {savedFlash && <Badge variant="success">salvo</Badge>}
         </div>
-        <svg
+        <CaretDown
+          size={16}
+          weight="bold"
           className={cn(
-            'h-4 w-4 text-[var(--color-fg-muted)] transition-transform',
+            'text-[var(--color-fg-muted)] transition-transform duration-200',
             expanded && 'rotate-180',
           )}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+        />
       </button>
 
       {expanded && (
@@ -268,8 +265,15 @@ export function AlteracaoInline({ data }: { data: string }) {
           </div>
 
           {err && (
-            <div className="rounded-md bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/30 px-3 py-2 text-[12px] text-[var(--color-danger-soft-fg)]">
-              {err}
+            <div className="rounded-md bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/30 px-3 py-2 text-[12px] text-[var(--color-danger-soft-fg)] flex items-start justify-between gap-2">
+              <span className="flex-1">{err}</span>
+              <button
+                onClick={() => setErr(null)}
+                className="text-[var(--color-danger-soft-fg)]/70 hover:text-[var(--color-danger-soft-fg)] cursor-pointer shrink-0 inline-flex items-center justify-center h-5 w-5 rounded hover:bg-[var(--color-danger)]/10 transition-colors"
+                title="Dispensar"
+              >
+                <X size={13} weight="bold" />
+              </button>
             </div>
           )}
 

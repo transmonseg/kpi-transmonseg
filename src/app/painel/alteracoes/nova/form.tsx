@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
+import { Check, X, FilePdf, FileXls, UploadSimple } from '@phosphor-icons/react/dist/ssr'
 import {
   Badge,
   Button,
@@ -74,6 +75,7 @@ function fmtSlot(slot: VeiculoSlot | null): string {
 }
 
 export function AlteracaoForm() {
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [texto, setTexto] = useState('')
   const [data, setData] = useState(() => new Date().toISOString().slice(0, 10))
   const [parsed, setParsed] = useState<AlteracaoParsed | null>(null)
@@ -171,6 +173,9 @@ export function AlteracaoForm() {
   const podeAnalisar = texto.trim().length > 0 && !pending
   const podeAplicar = !!parsed && !pending && !savedResult
 
+  const isPdf = arquivoNome?.toLowerCase().endsWith('.pdf')
+  const FileIcon = isPdf ? FilePdf : FileXls
+
   return (
     <div className="flex flex-col gap-5">
       <Card>
@@ -198,25 +203,63 @@ export function AlteracaoForm() {
             />
           </div>
 
-          {/* Upload de arquivo de alteracao */}
-          <div className="border rounded-lg p-4 mt-2">
-            <Label className="mb-2 block text-sm font-medium">Upload de Arquivo (PDF ou XLSX)</Label>
+          {/* Upload de arquivo */}
+          <div className="space-y-1.5">
+            <Label>Upload de arquivo</Label>
+            <div
+              onClick={() => !uploadLoading && fileInputRef.current?.click()}
+              className={cn(
+                'flex items-center gap-3 rounded-md border px-3 py-2.5 transition-colors',
+                uploadLoading
+                  ? 'border-[var(--color-border)] bg-[var(--color-bg-subtle)] cursor-wait'
+                  : 'border-dashed border-[var(--color-border-strong)] bg-[var(--color-bg-subtle)] hover:border-[var(--color-accent)]/70 hover:bg-[var(--color-bg-hover)] cursor-pointer',
+              )}
+            >
+              {arquivoNome ? (
+                <>
+                  <FileIcon size={18} weight="duotone" className="shrink-0 text-[var(--color-fg-muted)]" />
+                  <span className="flex-1 min-w-0 text-[12px] font-medium text-[var(--color-fg)] truncate">
+                    {arquivoNome}
+                  </span>
+                  {uploadLoading ? (
+                    <span className="text-[11px] text-[var(--color-fg-muted)] animate-pulse shrink-0">
+                      Analisando…
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setArquivoNome(null)
+                        setParsed(null)
+                        if (fileInputRef.current) fileInputRef.current.value = ''
+                      }}
+                      className="text-[var(--color-fg-subtle)] hover:text-[var(--color-fg)] shrink-0 inline-flex items-center justify-center h-5 w-5 rounded hover:bg-[var(--color-bg-hover)] transition-colors"
+                    >
+                      <X size={13} weight="bold" />
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <UploadSimple size={16} weight="bold" className="shrink-0 text-[var(--color-fg-subtle)]" />
+                  <span className="text-[12px] text-[var(--color-fg-muted)]">
+                    PDF ou XLSX — clique para selecionar
+                  </span>
+                </>
+              )}
+            </div>
             <input
+              ref={fileInputRef}
               type="file"
               accept=".pdf,.xlsx,.xls"
               disabled={uploadLoading}
-              className="block w-full text-sm text-muted-foreground file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-muted file:text-muted-foreground hover:file:bg-accent"
+              className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0]
                 if (f) handleArquivoUpload(f)
               }}
             />
-            {arquivoNome && (
-              <p className="mt-1 text-xs text-muted-foreground">{arquivoNome}</p>
-            )}
-            {uploadLoading && (
-              <p className="mt-2 text-sm text-muted-foreground animate-pulse">Analisando arquivo...</p>
-            )}
           </div>
 
           <div className="flex items-center gap-3 pt-1">
@@ -246,13 +289,15 @@ export function AlteracaoForm() {
       </Card>
 
       {err && (
-        <div
-          className={cn(
-            'rounded-md border px-4 py-3 text-[13px]',
-            'border-transparent bg-[var(--color-danger-soft)] text-[var(--color-danger-soft-fg)]',
-          )}
-        >
-          {err}
+        <div className="rounded-md border border-transparent bg-[var(--color-danger-soft)] text-[var(--color-danger-soft-fg)] px-4 py-3 text-[13px] flex items-start justify-between gap-2">
+          <span className="flex-1">{err}</span>
+          <button
+            type="button"
+            onClick={() => setErr(null)}
+            className="text-[var(--color-danger-soft-fg)]/70 hover:text-[var(--color-danger-soft-fg)] cursor-pointer shrink-0 inline-flex items-center justify-center h-5 w-5 rounded hover:bg-[var(--color-danger)]/10 transition-colors"
+          >
+            <X size={13} weight="bold" />
+          </button>
         </div>
       )}
 
@@ -282,17 +327,12 @@ export function AlteracaoForm() {
           <div className="flex items-center gap-3 border-t border-[var(--color-border)] px-5 py-3">
             {savedResult ? (
               <>
-                <div
-                  className={cn(
-                    'inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-[13px] font-semibold',
-                    'border-transparent bg-[var(--color-success-soft)] text-[var(--color-success-soft-fg)]',
-                  )}
-                >
-                  <span aria-hidden="true">✓</span>
+                <div className="inline-flex items-center gap-2 rounded-md border border-transparent bg-[var(--color-success-soft)] text-[var(--color-success-soft-fg)] px-3 py-1.5 text-[13px] font-semibold">
+                  <Check size={14} weight="bold" />
                   <span>Salvo (status: {savedResult.status})</span>
                 </div>
                 {reprocessando && (
-                  <Badge variant="default" className="animate-pulse">Reprocessando KPI...</Badge>
+                  <Badge variant="default" className="animate-pulse">Reprocessando KPI…</Badge>
                 )}
               </>
             ) : (
