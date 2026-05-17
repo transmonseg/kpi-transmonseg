@@ -17,10 +17,64 @@ export const MATRIZ_LOJAS: Record<string, string[]> = {
   ],
 }
 
+// Aliases por rede: nomes alternativos usados nas escalas que mapeiam pro nome canônico do catálogo.
+// Necessário quando a escala usa nomes ligeiramente diferentes (ex: "Arraial 1" vs "Arraial do Cabo 1").
+const LOJA_ALIASES_BRUTOS: Record<string, Record<string, string>> = {
+  PRINCESA: {
+    'princesa - arraial 1': 'Princesa - Arraial do Cabo 1 (1ª)',
+    'princesa - arraial 2': 'Princesa - Arraial do Cabo 2 (2ª)',
+    'princesa - arraial 3': 'Princesa - Arraial do Cabo 3 (3ª)',
+    'princesa - iguaba': 'Princesa - Iguaba Grande (1ª)',
+  },
+}
+
+// Normaliza nome de loja para comparação: remove acentos, lowercase, remove "(Xª Entrega)" e "(Xº Entrega)",
+// colapsa espaços, remove pontuação dupla.
+function normalizaParaMatch(nome: string): string {
+  return nome
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/\(\s*\d+\s*[ºoa°ª]\s*entrega\s*\)/gi, '')
+    .replace(/\(\s*\d+\s*[ºoa°ª]\s*\)/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// Constrói índice de match por rede: chave normalizada → nome canônico do catálogo
+function buildIndice(): Record<string, Map<string, string>> {
+  const out: Record<string, Map<string, string>> = {}
+  for (const [rede, lojas] of Object.entries(MATRIZ_LOJAS)) {
+    const idx = new Map<string, string>()
+    for (const canon of lojas) idx.set(normalizaParaMatch(canon), canon)
+    // adiciona aliases
+    const aliases = LOJA_ALIASES_BRUTOS[rede] ?? {}
+    for (const [alias, canon] of Object.entries(aliases)) {
+      idx.set(normalizaParaMatch(alias), canon)
+    }
+    out[rede] = idx
+  }
+  return out
+}
+
+const INDICES = buildIndice()
+
+/**
+ * Tenta achar o nome canônico do catálogo para uma loja da escala.
+ * Retorna null se não houver match.
+ */
+export function resolverNomeCanonico(rede_id: string, nomeEscala: string): string | null {
+  const idx = INDICES[rede_id]
+  if (!idx) return null
+  const chave = normalizaParaMatch(nomeEscala)
+  return idx.get(chave) ?? null
+}
+
 export function getMatrizLojas(rede_id: string, lojasDescobertasNoDia: string[]): string[] {
   const fixo = MATRIZ_LOJAS[rede_id]
   if (fixo) {
-    const novas = lojasDescobertasNoDia.filter(l => !fixo.includes(l))
+    const fixoSet = new Set(fixo)
+    const novas = lojasDescobertasNoDia.filter(l => !fixoSet.has(l))
     return [...fixo, ...novas]
   }
   return [...new Set(lojasDescobertasNoDia)].sort()

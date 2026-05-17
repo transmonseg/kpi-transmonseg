@@ -2,7 +2,7 @@ import ExcelJS from 'exceljs'
 import type { KpiLinha } from '@/lib/types/kpi'
 import { KPI_COLORS, REDE_NOMES_CANONICOS, formataDataPtBr } from './kpi-styles'
 import { getLogoBuffer, carregarOuCriarWorkbook, nomeAbaDoDia } from './template-loader'
-import { getMatrizLojas } from '@/lib/lojas/catalogo-matriz'
+import { getMatrizLojas, resolverNomeCanonico } from '@/lib/lojas/catalogo-matriz'
 import { temAnomaliaHigh } from './anomalia-obs'
 import { agruparPorLoja, type LinhaAgrupada } from './agrupar-por-loja'
 
@@ -96,7 +96,13 @@ async function preencherAba(
   wb: ExcelJS.Workbook,
   ctx: { rede_id: string; redeNome: string; data: string; linhas: LinhaParaKpi[] },
 ) {
-  const { rede_id, redeNome, data, linhas } = ctx
+  const { rede_id, redeNome, data, linhas: linhasRaw } = ctx
+
+  // Renomeia lojas da escala para nome canônico do catálogo (resolve variações de acento/sufixo)
+  const linhas = linhasRaw.map(l => {
+    const canon = resolverNomeCanonico(rede_id, l.loja_nome)
+    return canon ? { ...l, loja_nome: canon } : l
+  })
 
   const agrupadas = agruparPorLoja(linhas)
   const duplo = agrupadas.some(a => a.carro2 !== null)

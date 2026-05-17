@@ -102,8 +102,9 @@ type Row = {
 const PLACA_INLINE_RE = String.raw`[A-Z]{3}[\s-]?\d[A-Z0-9]\d{2}|[A-Z]{3}[\s-]?\d{4}`
 // Pattern interno pra tipo
 const TIPO_INLINE_RE = String.raw`TRUCK|TOCO\s*REFRIGERADO|TOCO|VUC|3\/4|KIA|CARRETA`
-// Combinado pra placa+tipo grudado (sem espaço entre eles)
-const PLACA_TIPO_RE = new RegExp(`(${PLACA_INLINE_RE})(${TIPO_INLINE_RE})\\b`, 'g')
+// Combinado pra placa+tipo — sem \b no final: "TRUCKJOSE" é válido (tipo no meio da linha).
+// \s? aceita espaço opcional entre placa e tipo.
+const PLACA_TIPO_RE = new RegExp(`(${PLACA_INLINE_RE})\\s?(${TIPO_INLINE_RE})`, 'g')
 
 function parseRow(line: string): Row | null {
   const cleaned = line.replace(/\s*,\s*/g, ' ').replace(/\s+/g, ' ').trim()
@@ -215,8 +216,12 @@ function joinContinuationLines(lines: string[]): string[] {
     if (/^\d{1,2}[12][A-ZÀ-Ý]/.test(t)) {
       if (current) out.push(current)
       current = t
-    } else if (/^\d{1,2}[12]$/.test(t) || /^\d{1,7}$/.test(t)) {
-      // Possível rota+qtd sozinho OU continuação numérica (código) — anexa à atual
+    } else if (/^\d{1,2}[12]$/.test(t)) {
+      // Rota+qtd sozinho (motorista na próxima linha): começa novo row
+      if (current) out.push(current)
+      current = t
+    } else if (/^\d{1,7}$/.test(t)) {
+      // Número puro (código de motorista): anexa à linha atual
       if (current) current += t
       else current = t
     } else {

@@ -142,6 +142,17 @@ export async function POST(req: NextRequest) {
   if (escalaLinhas.length === 0)
     return new NextResponse('Não foi possível detectar o tipo da escala. Verifique se os arquivos são escalas suportadas.', { status: 400 })
 
+  // Deduplicação multi-escala: quando GERAL + PAX cobrem a mesma rede,
+  // PAX tem placa real enquanto GERAL tem placa vazia.
+  // Para redes com ao menos uma linha com placa, remove linhas sem placa
+  // (exceto SEM PEDIDO, que é ausência legítima de entrega).
+  const redesComPlaca = new Set(escalaLinhas.filter(l => l.placa_norm).map(l => l.rede_id))
+  escalaLinhas = escalaLinhas.filter(l =>
+    l.placa_norm ||
+    !redesComPlaca.has(l.rede_id) ||
+    l.obs === 'SEM PEDIDO'
+  )
+
   // Baixa unitrac do Storage
   const { data: unitracBlob, error: unitracErr } = await svc.storage.from('unitrac-raw').download(unitracBucketPath)
   if (unitracErr || !unitracBlob)

@@ -116,10 +116,25 @@ async function main() {
   const arquivosEscala = (await readdir(pastaEscalas)).filter(f =>
     f.toLowerCase().endsWith('.xlsx') && !f.startsWith('~')
   )
-  const arquivosKpi = (await readdir(pastaKpis)).filter(f =>
-    f.includes(dataAlvo) && f.endsWith('.xlsx') &&
-    !f.includes('(1)') && !f.includes('(2)') && !f.startsWith('~')
+  // Para cada rede, pegar o arquivo com o maior número de download (ou sem número)
+  const todosKpi = (await readdir(pastaKpis)).filter(f =>
+    f.includes(dataAlvo) && f.endsWith('.xlsx') && !f.startsWith('~')
   )
+  // Extrai número de download do nome (ex: "(3)" → 3, sem número → 0)
+  function downloadNum(f) {
+    const m = f.match(/\((\d+)\)\.xlsx$/)
+    return m ? parseInt(m[1]) : 0
+  }
+  // Agrupa por rede e seleciona o de maior número
+  const porRede = new Map()
+  for (const f of todosKpi) {
+    const m = f.match(/KPI-([A-Z_]+)-/)
+    if (!m) continue
+    const rede = m[1]
+    const atual = porRede.get(rede)
+    if (!atual || downloadNum(f) > downloadNum(atual)) porRede.set(rede, f)
+  }
+  const arquivosKpi = [...porRede.values()]
 
   // Lê todas as escalas
   const escalaLinhas = []

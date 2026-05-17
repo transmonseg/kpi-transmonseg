@@ -1,7 +1,21 @@
 import ExcelJS from 'exceljs'
-import { normalizaPlaca } from '@/lib/utils/placa'
+import { normalizaPlaca, placaValida } from '@/lib/utils/placa'
 import { formataDataISO } from '@/lib/utils/data-brasileira'
 import type { LinhaEscala } from '@/lib/types/escala'
+
+// Códigos válidos são apenas numéricos. Texto não é código.
+function asCodigoNumerico(v: unknown): string | null {
+  if (v === null || v === undefined) return null
+  const s = String(v).trim()
+  if (s === '' || !/^\d+$/.test(s)) return null
+  return s
+}
+
+// Sanitiza placa: se não bate com formato real, devolve string vazia
+function placaSanitizada(p: string | null): string {
+  if (!p) return ''
+  return placaValida(p) ? normalizaPlaca(p) : ''
+}
 
 const ABAS_SKIP = new Set(['2° ENTREGA ', 'ARMAZÉM ', 'MOTORISTAS', 'MATRIZ'])
 
@@ -179,16 +193,18 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
           : modoForaEscala ? redeFromLoja2
           : redeFromLoja2 !== 'DESCONHECIDO' ? redeFromLoja2 : redeAtual
 
+        const placa1San = placaSanitizada(placaRaw1)
+        const codigo1San = asCodigoNumerico(v7)
         const carro1: LinhaEscala = {
           data: dataISO,
           data_entrega: dataISO,
           rede_id: redeId,
           loja_nome_raw: ultimaLoja.nome,
           loja_codigo_raw: ultimaLoja.codigo,
-          placa_norm: normalizaPlaca(placaRaw1),
-          placa_raw: placaRaw1,
+          placa_norm: placa1San,
+          placa_raw: placa1San ? placaRaw1 : null,
           motorista_nome: asStr(v6),
-          motorista_codigo: asStr(v7) !== null ? String(asStr(v7)) : null,
+          motorista_codigo: codigo1San,
           tipo_carro: asStr(v5),
           carro_ordem: 1,
           turno: turnoAtual,
@@ -202,12 +218,13 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
         linhas.push(carro1)
 
         const motor2 = asStr(v10)
-        const placa2Norm = normalizaPlaca(placaRaw2)
-        const codigo2 = asStr(v11) !== null ? String(asStr(v11)) : null
-        if (motor2 !== null && (placa2Norm !== null || codigo2 !== null)) {
+        const placa2San = placaSanitizada(placaRaw2)
+        const codigo2 = asCodigoNumerico(v11)
+        // Carro 2 real exige PLACA — sem placa, texto na col 10 é restrição
+        if (motor2 !== null && placa2San !== '') {
           const carro2: LinhaEscala = {
             ...carro1,
-            placa_norm: placa2Norm,
+            placa_norm: placa2San,
             placa_raw: placaRaw2,
             motorista_nome: motor2,
             motorista_codigo: codigo2,
@@ -217,7 +234,7 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
           }
           linhas.push(carro2)
         } else {
-          // Sem placa/código para o 2º carro → texto em v9/v10 é restrição do 1º
+          // Sem placa real → texto em v9/v10 é restrição do 1º carro
           const restricao = [asStr(v9), motor2].filter(Boolean).join(' ') || null
           if (restricao) linhas[linhas.length - 1] = { ...carro1, restricao }
         }
@@ -296,16 +313,18 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
       return null
     })()
 
+    const placa1San = placaSanitizada(placaRaw1)
+    const codigo1San = asCodigoNumerico(v7)
     const carro1: LinhaEscala = {
       data: dataISO,
       data_entrega: dataISO,
       rede_id: redeId,
       loja_nome_raw: nomeLoja,
       loja_codigo_raw: codigo,
-      placa_norm: normalizaPlaca(placaRaw1),
-      placa_raw: placaRaw1,
+      placa_norm: placa1San,
+      placa_raw: placa1San ? placaRaw1 : null,
       motorista_nome: asStr(v6),
-      motorista_codigo: asStr(v7) !== null ? String(asStr(v7)) : null,
+      motorista_codigo: codigo1San,
       tipo_carro: asStr(v5),
       carro_ordem: 1,
       turno: turnoAtual,
@@ -319,12 +338,13 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
     linhas.push(carro1)
 
     const motor2 = asStr(v10)
-    const placa2Norm = normalizaPlaca(placaRaw2)
-    const codigo2 = asStr(v11) !== null ? String(asStr(v11)) : null
-    if (motor2 !== null && (placa2Norm !== null || codigo2 !== null)) {
+    const placa2San = placaSanitizada(placaRaw2)
+    const codigo2 = asCodigoNumerico(v11)
+    // Carro 2 real exige PLACA — sem placa, texto na col 10 é restrição (ex: "CARGA COMPARTILHADA")
+    if (motor2 !== null && placa2San !== '') {
       const carro2: LinhaEscala = {
         ...carro1,
-        placa_norm: placa2Norm,
+        placa_norm: placa2San,
         placa_raw: placaRaw2,
         motorista_nome: motor2,
         motorista_codigo: codigo2,
@@ -334,7 +354,7 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
       }
       linhas.push(carro2)
     } else if (motor2 !== null || asStr(v9) !== null) {
-      // Sem placa/código → texto é restrição do 1º carro
+      // Sem placa → texto da col 9/10 é restrição/observação do 1º carro
       const restricao = [asStr(v9), motor2].filter(Boolean).join(' ') || null
       if (restricao) linhas[linhas.length - 1] = { ...carro1, restricao }
     }
