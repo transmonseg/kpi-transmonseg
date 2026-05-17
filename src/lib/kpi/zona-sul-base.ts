@@ -56,6 +56,7 @@ export const FILIAIS_ZONA_SUL: Array<{ numero: number | string; nome: string }> 
   { numero: 'MEGA BOX 1', nome: 'MEGA BOX 01 - Olaria' },
   { numero: 'MEGA BOX 02', nome: 'MEGA BOX 02 - Olaria' },
   { numero: 'MEGA BOX 2', nome: 'MEGA BOX 2 - Recreio' },
+  { numero: 'EXTRA', nome: 'Zona Sul - Entrega Extra' },
 ]
 
 export function gerarAbaBaseZonaSul(wb: ExcelJS.Workbook): void {
