@@ -86,59 +86,67 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
   if (!body) return new NextResponse('Body JSON inválido.', { status: 400 })
 
-  const { escalaBucketPath, unitracBucketPath, data, alteracoes = [] } = body as {
-    escalaBucketPath: string
+  const { escalaBucketPath, escalaBucketPaths, unitracBucketPath, data, alteracoes = [] } = body as {
+    escalaBucketPath?: string
+    escalaBucketPaths?: string[]
     unitracBucketPath: string
     data: string
     alteracoes?: AltConfirmada[]
   }
 
-  if (!escalaBucketPath) return new NextResponse('"escalaBucketPath" obrigatório.', { status: 400 })
+  // Normalize to array
+  const escalaPaths: string[] = escalaBucketPaths ?? (escalaBucketPath ? [escalaBucketPath] : [])
+  if (escalaPaths.length === 0) return new NextResponse('"escalaBucketPath" ou "escalaBucketPaths" obrigatório.', { status: 400 })
   if (!unitracBucketPath) return new NextResponse('"unitracBucketPath" obrigatório.', { status: 400 })
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return new NextResponse('Data inválida. Use YYYY-MM-DD.', { status: 400 })
 
   const svc = createServiceClient()
 
-  // Baixa escala do Storage
-  const { data: escalaBlob, error: escalaErr } = await svc.storage.from('escalas-raw').download(escalaBucketPath)
-  if (escalaErr || !escalaBlob)
-    return new NextResponse(`Erro ao baixar escala: ${escalaErr?.message ?? 'não encontrado'}`, { status: 500 })
-  const escalaBuffer = await escalaBlob.arrayBuffer()
+  // Baixa e parseia cada escala, acumulando todas as linhas
+  let escalaLinhas: LinhaEscala[] = []
+  const MIN = 3
+
+  for (const escalaBucketPath of escalaPaths) {
+    const { data: escalaBlob, error: escalaErr } = await svc.storage.from('escalas-raw').download(escalaBucketPath)
+    if (escalaErr || !escalaBlob) {
+      return new NextResponse(`Erro ao baixar escala: ${escalaErr?.message ?? 'não encontrado'}`, { status: 500 })
+    }
+    const escalaBuffer = await escalaBlob.arrayBuffer()
+
+    let linhasDoArquivo: LinhaEscala[] = []
+    try {
+      if (escalaBucketPath.endsWith('.pdf')) {
+        const { parseEscalaGuanabaraPdf } = await import('@/lib/parsers/escala-guanabara-pdf')
+        linhasDoArquivo = await parseEscalaGuanabaraPdf(Buffer.from(escalaBuffer), data)
+      } else {
+        const tentativas: Array<() => Promise<LinhaEscala[]>> = [
+          () => parseEscalaZonaSul(escalaBuffer, data),
+          () => parseEscalaArmazemGrao(escalaBuffer, data),
+          () => parseEscalaPax(escalaBuffer, data),
+          () => parseEscalaGeral(escalaBuffer, data),
+        ]
+        for (const fn of tentativas) {
+          try {
+            const r = await fn()
+            if (r.length >= MIN) { linhasDoArquivo = r; break }
+          } catch { /* próximo */ }
+        }
+      }
+    } catch (e) {
+      return new NextResponse(e instanceof Error ? e.message : 'Erro ao ler escala.', { status: 400 })
+    }
+
+    escalaLinhas.push(...linhasDoArquivo)
+  }
+
+  if (escalaLinhas.length === 0)
+    return new NextResponse('Não foi possível detectar o tipo da escala. Verifique se os arquivos são escalas suportadas.', { status: 400 })
 
   // Baixa unitrac do Storage
   const { data: unitracBlob, error: unitracErr } = await svc.storage.from('unitrac-raw').download(unitracBucketPath)
   if (unitracErr || !unitracBlob)
     return new NextResponse(`Erro ao baixar unitrac: ${unitracErr?.message ?? 'não encontrado'}`, { status: 500 })
   const unitracBuffer = await unitracBlob.arrayBuffer()
-
-  // Parse escala — AUTO detect
-  let escalaLinhas: LinhaEscala[] = []
-  const MIN = 3
-
-  try {
-    if (escalaBucketPath.endsWith('.pdf')) {
-      const { parseEscalaGuanabaraPdf } = await import('@/lib/parsers/escala-guanabara-pdf')
-      escalaLinhas = await parseEscalaGuanabaraPdf(Buffer.from(escalaBuffer), data)
-    } else {
-      const tentativas: Array<() => Promise<LinhaEscala[]>> = [
-        () => parseEscalaZonaSul(escalaBuffer, data),
-        () => parseEscalaArmazemGrao(escalaBuffer, data),
-        () => parseEscalaPax(escalaBuffer, data),
-        () => parseEscalaGeral(escalaBuffer, data),
-      ]
-      for (const fn of tentativas) {
-        try {
-          const r = await fn()
-          if (r.length >= MIN) { escalaLinhas = r; break }
-        } catch { /* próximo */ }
-      }
-    }
-  } catch (e) {
-    return new NextResponse(e instanceof Error ? e.message : 'Erro ao ler escala.', { status: 400 })
-  }
-
-  if (escalaLinhas.length === 0)
-    return new NextResponse('Não foi possível detectar o tipo da escala. Verifique se o arquivo é uma escala suportada.', { status: 400 })
 
   // Aplica alterações confirmadas in-memory
   if (alteracoes.length > 0) {

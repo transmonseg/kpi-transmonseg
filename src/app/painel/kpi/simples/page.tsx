@@ -278,7 +278,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove }: AlteracoesCardProp
 // ─── Page ───────────────────────────────────────────────────────────────────
 
 export default function KpiSimplesPage() {
-  const [escala, setEscala] = useState<File | null>(null)
+  const [escalas, setEscalas] = useState<File[]>([])
   const [unitrac, setUnitrac] = useState<File | null>(null)
   const [data, setData] = useState<string>(hoje)
   const [alteracoes, setAlteracoes] = useState<AlteracaoParsed[]>([])
@@ -314,7 +314,7 @@ export default function KpiSimplesPage() {
   }
 
   async function processar() {
-    if (!escala) { setErro('Selecione a escala.'); return }
+    if (escalas.length === 0) { setErro('Selecione ao menos uma escala.'); return }
     if (!unitrac) { setErro('Selecione o Unitrac.'); return }
     if (!data) { setErro('Selecione a data.'); return }
 
@@ -323,15 +323,15 @@ export default function KpiSimplesPage() {
 
     startTransition(async () => {
       try {
-        const [escalaBucketPath, unitracBucketPath] = await Promise.all([
-          uploadComPresign(escala, false),
+        const [escalaBucketPaths, unitracBucketPath] = await Promise.all([
+          Promise.all(escalas.map(f => uploadComPresign(f, false))),
           uploadComPresign(unitrac, true),
         ])
 
         const res = await fetch('/api/kpi/simples', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ escalaBucketPath, unitracBucketPath, data, alteracoes }),
+          body: JSON.stringify({ escalaBucketPaths, unitracBucketPath, data, alteracoes }),
         })
         if (!res.ok) throw new Error((await res.text()) || 'Erro ao processar.')
         const json = await res.json() as { redes: RedeResult[] }
@@ -357,9 +357,37 @@ export default function KpiSimplesPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="escala">Escala (XLSX ou PDF)</Label>
-            <Input id="escala" type="file" accept=".xlsx,.pdf" onChange={e => setEscala(e.target.files?.[0] ?? null)} />
-            {escala && <p className="text-xs text-[var(--color-fg-muted)]">{escala.name}</p>}
+            <Label htmlFor="escala">Escala(s) (XLSX ou PDF)</Label>
+            <Input
+              id="escala"
+              type="file"
+              accept=".xlsx,.pdf"
+              multiple
+              onChange={e => {
+                const files = Array.from(e.target.files ?? [])
+                if (files.length > 0) setEscalas(prev => {
+                  const names = new Set(prev.map(f => f.name))
+                  return [...prev, ...files.filter(f => !names.has(f.name))]
+                })
+                e.target.value = ''
+              }}
+            />
+            {escalas.length > 0 && (
+              <ul className="space-y-1">
+                {escalas.map((f, i) => (
+                  <li key={f.name} className="flex items-center justify-between gap-2 text-xs text-[var(--color-fg-muted)] bg-[var(--color-bg-subtle)] rounded px-2 py-1">
+                    <span className="truncate">{f.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setEscalas(prev => prev.filter((_, j) => j !== i))}
+                      className="shrink-0 hover:text-[var(--color-danger)] transition-colors"
+                    >
+                      ✕
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -385,8 +413,10 @@ export default function KpiSimplesPage() {
 
       {erro && <p className="text-sm text-[var(--color-danger)]">{erro}</p>}
 
-      <Button onClick={processar} disabled={pending || !escala || !unitrac || !data} className="w-full">
-        {pending ? 'Processando...' : `Gerar KPIs${alteracoes.length > 0 ? ` (${alteracoes.length} alt.)` : ''}`}
+      <Button onClick={processar} disabled={pending || escalas.length === 0 || !unitrac || !data} className="w-full">
+        {pending
+          ? 'Processando...'
+          : `Gerar KPIs${escalas.length > 1 ? ` (${escalas.length} escalas)` : ''}${alteracoes.length > 0 ? ` · ${alteracoes.length} alt.` : ''}`}
       </Button>
 
       {redes && redes.length === 0 && (
