@@ -11,7 +11,8 @@ export const Card = forwardRef<HTMLDivElement, DivProps>(function Card(
     <div
       ref={ref}
       className={cn(
-        'rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-[0_1px_0_0_rgba(0,0,0,0.02)] dark:shadow-none',
+        // radius card (1.5rem) + border 1px sutil + shadow-soft tinted (skill section 9)
+        'rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-soft',
         className,
       )}
       {...props}
@@ -25,7 +26,7 @@ export const CardHeader = forwardRef<HTMLDivElement, DivProps>(
       <div
         ref={ref}
         className={cn(
-          'flex flex-col gap-1 border-b border-[var(--color-border)] px-5 py-4',
+          'flex flex-col gap-1.5 border-b border-[var(--color-border)] px-6 py-5',
           className,
         )}
         {...props}
@@ -42,7 +43,7 @@ export const CardTitle = forwardRef<
     <h3
       ref={ref}
       className={cn(
-        'text-sm font-semibold tracking-tight text-[var(--color-fg)]',
+        'text-[15px] font-semibold tracking-tight text-[var(--color-fg)]',
         className,
       )}
       {...props}
@@ -57,7 +58,7 @@ export const CardDescription = forwardRef<
   return (
     <p
       ref={ref}
-      className={cn('text-xs text-[var(--color-fg-muted)]', className)}
+      className={cn('text-[13px] leading-relaxed text-[var(--color-fg-muted)]', className)}
       {...props}
     />
   )
@@ -65,7 +66,7 @@ export const CardDescription = forwardRef<
 
 export const CardContent = forwardRef<HTMLDivElement, DivProps>(
   function CardContent({ className, ...props }, ref) {
-    return <div ref={ref} className={cn('px-5 py-4', className)} {...props} />
+    return <div ref={ref} className={cn('px-6 py-5', className)} {...props} />
   },
 )
 
@@ -75,7 +76,7 @@ export const CardFooter = forwardRef<HTMLDivElement, DivProps>(
       <div
         ref={ref}
         className={cn(
-          'flex items-center justify-end gap-2 border-t border-[var(--color-border)] px-5 py-3',
+          'flex items-center justify-end gap-2 border-t border-[var(--color-border)] px-6 py-4',
           className,
         )}
         {...props}
@@ -83,3 +84,23 @@ export const CardFooter = forwardRef<HTMLDivElement, DivProps>(
     )
   },
 )
+
+/** Eyebrow editorial — uppercase tracking 0.18em, padrão do redesign */
+export function Eyebrow({
+  children,
+  className,
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <span
+      className={cn(
+        'text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]',
+        className,
+      )}
+    >
+      {children}
+    </span>
+  )
+}

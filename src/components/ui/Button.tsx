@@ -1,7 +1,7 @@
 import { forwardRef } from 'react'
 import { cn } from './cn'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'invert'
 type Size = 'sm' | 'md' | 'lg'
 
 export interface ButtonProps
@@ -12,34 +12,41 @@ export interface ButtonProps
 }
 
 const BASE =
-  'inline-flex items-center justify-center gap-1.5 rounded-md font-medium ' +
-  'transition-colors disabled:cursor-not-allowed disabled:opacity-50 ' +
+  'inline-flex items-center justify-center gap-1.5 rounded-lg font-medium ' +
+  'transition-all duration-150 active:scale-[0.97] ' +
+  'disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 ' +
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 ' +
   'select-none whitespace-nowrap'
 
 const VARIANTS: Record<Variant, string> = {
+  // Brand acento — usar com parcimônia (skill: 1 accent só)
   primary:
     'bg-[var(--color-accent)] text-[var(--color-accent-fg)] ' +
     'hover:bg-[var(--color-accent-hover)] ' +
     'focus-visible:ring-[var(--color-accent)]',
+  // CTA padrão neutro — bg-fg / text-bg (anti-Lila Ban)
+  invert:
+    'bg-[var(--color-fg)] text-[var(--color-bg)] ' +
+    'hover:bg-[var(--color-fg-muted)] ' +
+    'focus-visible:ring-[var(--color-fg)]',
   secondary:
     'border border-[var(--color-border-strong)] bg-[var(--color-bg-elevated)] ' +
     'text-[var(--color-fg)] ' +
-    'hover:bg-[var(--color-bg-hover)] ' +
-    'focus-visible:ring-[var(--color-accent)]',
+    'hover:border-[var(--color-fg-muted)] hover:bg-[var(--color-bg-elevated)] ' +
+    'focus-visible:ring-[var(--color-fg)]',
   ghost:
     'bg-transparent text-[var(--color-fg-muted)] ' +
     'hover:bg-[var(--color-bg-subtle)] hover:text-[var(--color-fg)] ' +
-    'focus-visible:ring-[var(--color-accent)]',
+    'focus-visible:ring-[var(--color-fg)]',
   danger:
     'bg-[var(--color-danger)] text-white ' +
     'hover:opacity-90 focus-visible:ring-[var(--color-danger)]',
 }
 
 const SIZES: Record<Size, string> = {
-  sm: 'h-7 px-2.5 text-[12px]',
-  md: 'h-8 px-3 text-[13px]',
-  lg: 'h-10 px-4 text-sm',
+  sm: 'h-8 px-3 text-[12px]',
+  md: 'h-9 px-4 text-[13px]',
+  lg: 'h-11 px-5 text-[14px]',
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(

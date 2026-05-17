@@ -7,6 +7,7 @@ export {
   CardFooter,
   CardHeader,
   CardTitle,
+  Eyebrow,
 } from './Card'
 export { Input, Label, Textarea, type InputProps, type TextareaProps } from './Input'
 export { cn } from './cn'
