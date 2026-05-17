@@ -106,16 +106,16 @@ export async function POST(req: NextRequest) {
   let escalaLinhas: LinhaEscala[] = []
   const MIN = 3
 
-  for (const escalaBucketPath of escalaPaths) {
-    const { data: escalaBlob, error: escalaErr } = await svc.storage.from('escalas-raw').download(escalaBucketPath)
+  for (const escalaPath of escalaPaths) {
+    const { data: escalaBlob, error: escalaErr } = await svc.storage.from('escalas-raw').download(escalaPath)
     if (escalaErr || !escalaBlob) {
-      return new NextResponse(`Erro ao baixar escala: ${escalaErr?.message ?? 'não encontrado'}`, { status: 500 })
+      return new NextResponse(`Erro ao baixar escala: ${escalaErr?.message ?? 'não encontrado'}`, { status: 400 })
     }
     const escalaBuffer = await escalaBlob.arrayBuffer()
 
     let linhasDoArquivo: LinhaEscala[] = []
     try {
-      if (escalaBucketPath.endsWith('.pdf')) {
+      if (escalaPath.endsWith('.pdf')) {
         const { parseEscalaGuanabaraPdf } = await import('@/lib/parsers/escala-guanabara-pdf')
         linhasDoArquivo = await parseEscalaGuanabaraPdf(Buffer.from(escalaBuffer), data)
       } else {
@@ -132,8 +132,8 @@ export async function POST(req: NextRequest) {
           } catch { /* próximo */ }
         }
       }
-    } catch (e) {
-      return new NextResponse(e instanceof Error ? e.message : 'Erro ao ler escala.', { status: 400 })
+    } catch {
+      // arquivo não reconhecido — continua com o próximo
     }
 
     escalaLinhas.push(...linhasDoArquivo)
