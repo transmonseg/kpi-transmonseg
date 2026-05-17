@@ -6,6 +6,7 @@ import {
   FilePdf,
   FileXls,
   X,
+  CaretDown,
   FileArrowDown,
   ChartBarHorizontal,
   WarningCircle,
@@ -154,12 +155,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove }: AlteracoesCardProp
             </span>
           )}
         </div>
-        <svg
-          className={cn('h-4 w-4 text-[var(--color-fg-muted)] transition-transform', expanded && 'rotate-180')}
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+        <CaretDown size={16} weight="bold" className={cn('text-[var(--color-fg-muted)] transition-transform duration-200', expanded && 'rotate-180')} />
       </button>
 
       {expanded && (
@@ -179,9 +175,9 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove }: AlteracoesCardProp
                   <button
                     type="button"
                     onClick={() => onRemove(i)}
-                    className="ml-2 shrink-0 text-[var(--color-fg-subtle)] hover:text-[var(--color-danger)] transition-colors"
+                    className="ml-2 shrink-0 inline-flex items-center justify-center h-5 w-5 rounded text-[var(--color-fg-subtle)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors"
                   >
-                    ✕
+                    <X size={12} weight="bold" />
                   </button>
                 </div>
               ))}
@@ -415,7 +411,7 @@ export default function KpiSimplesPage() {
               type="date"
               value={data}
               onChange={e => setData(e.target.value)}
-              className="mt-1 w-full bg-transparent text-[24px] font-medium tracking-tight text-[var(--color-fg)] outline-none [color-scheme:dark] dark:[color-scheme:dark]"
+              className="mt-1 w-full bg-transparent text-[24px] font-medium tracking-tight text-[var(--color-fg)] outline-none [color-scheme:light] dark:[color-scheme:dark]"
               style={{ fontFamily: 'var(--font-mono)' }}
             />
           </div>
@@ -443,8 +439,8 @@ export default function KpiSimplesPage() {
         className={cn(
           'group mt-8 flex w-full items-center justify-between gap-4 rounded-[var(--radius-card)] px-7 py-5 text-left transition-all duration-200 active:scale-[0.997]',
           pronto && !pending
-            ? 'bg-[var(--color-fg)] text-[var(--color-bg)] hover:bg-[var(--color-fg-muted)]'
-            : 'cursor-not-allowed bg-[var(--color-bg-subtle)] text-[var(--color-fg-subtle)]'
+            ? 'bg-[var(--color-navy-700)] text-white hover:opacity-90'
+            : 'cursor-not-allowed bg-[var(--color-bg-subtle)] border border-[var(--color-border)] text-[var(--color-fg-muted)]'
         )}
       >
         <div className="flex flex-col gap-1">
@@ -452,7 +448,7 @@ export default function KpiSimplesPage() {
             className={cn(
               'text-[11px] font-medium uppercase tracking-[0.18em]',
               pronto && !pending
-                ? 'text-[var(--color-bg)] opacity-70'
+                ? 'text-white/60'
                 : 'text-[var(--color-fg-muted)]'
             )}
           >
