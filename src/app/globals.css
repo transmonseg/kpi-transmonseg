@@ -241,6 +241,16 @@ h1 {
   box-shadow: var(--shadow-soft);
 }
 
+/* ─── Entrance animations ────────────────────────────────────────────────── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@utility animate-fade-up {
+  animation: fade-up 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* Subtle focus ring tied to accent token. */
 *:focus-visible {
   outline: 2px solid var(--color-accent);

@@ -125,7 +125,7 @@ function SidebarBrand({ onCloseHint }: { onCloseHint?: () => void }) {
         className="group flex items-center gap-3 outline-none"
         onClick={onCloseHint}
       >
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/15 text-[13px] font-semibold tracking-tight text-[#84b1d6] transition group-hover:bg-[var(--color-accent)]/25">
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#1F3864] text-[12px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_1px_3px_rgba(0,0,0,0.5)] transition group-hover:bg-[#2a4773]">
           T
         </span>
         <span className="flex flex-col leading-none">

@@ -664,6 +664,19 @@ function RedeResultCard({ rede, data }: { rede: RedeResult; data: string }) {
         </span>
       </div>
 
+      {/* Barra de cobertura GPS */}
+      <div className="h-[3px] overflow-hidden rounded-full bg-[var(--color-bg-subtle)]">
+        <div
+          className={cn(
+            'h-full rounded-full transition-all duration-700',
+            tomCobertura === 'success' && 'bg-[var(--color-success)]',
+            tomCobertura === 'warning' && 'bg-[var(--color-warning)]',
+            tomCobertura === 'danger' && 'bg-[var(--color-danger)]',
+          )}
+          style={{ width: `${cobertura}%` }}
+        />
+      </div>
+
       <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-3">
         <span className="text-[11px] text-[var(--color-fg-muted)]">
           GPS{' '}
