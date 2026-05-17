@@ -59,7 +59,7 @@ export default async function HomePage() {
         <ThemeToggle />
         <Link
           href="/login"
-          className="group ml-1 inline-flex items-center gap-2 rounded-full bg-[var(--color-fg)] py-1.5 pl-4 pr-1.5 text-[13px] font-medium text-[var(--color-bg)] transition-all duration-[700ms] ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[var(--color-navy-700)] active:scale-[0.97]"
+          className="group ml-1 inline-flex items-center gap-2 rounded-full bg-[var(--color-navy-700)] py-1.5 pl-4 pr-1.5 text-[13px] font-medium text-white transition-all duration-[700ms] ease-[cubic-bezier(0.32,0.72,0,1)] hover:opacity-90 active:scale-[0.97]"
         >
           Entrar
           <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/15 transition-transform duration-[700ms] ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:-translate-y-px group-hover:translate-x-px">
@@ -95,7 +95,7 @@ export default async function HomePage() {
             <div className="mt-10 flex flex-wrap items-center gap-3">
               <Link
                 href="/login"
-                className="group inline-flex items-center gap-2 rounded-full bg-[var(--color-fg)] py-3 pl-6 pr-2 text-[14px] font-medium text-[var(--color-bg)] transition-all duration-[700ms] ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[var(--color-navy-700)] active:scale-[0.97]"
+                className="group inline-flex items-center gap-2 rounded-full bg-[var(--color-navy-700)] py-3 pl-6 pr-2 text-[14px] font-medium text-white transition-all duration-[700ms] ease-[cubic-bezier(0.32,0.72,0,1)] hover:opacity-90 active:scale-[0.97]"
               >
                 Entrar no painel
                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/15 transition-transform duration-[700ms] ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:-translate-y-0.5 group-hover:translate-x-0.5">
@@ -182,7 +182,7 @@ export default async function HomePage() {
             </div>
             <Link
               href="/login"
-              className="group inline-flex items-center gap-2 rounded-full bg-[var(--color-fg)] py-3 pl-6 pr-2 text-[14px] font-medium text-[var(--color-bg)] transition-all duration-[700ms] ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[var(--color-navy-700)] active:scale-[0.97]"
+              className="group inline-flex items-center gap-2 rounded-full bg-[var(--color-navy-700)] py-3 pl-6 pr-2 text-[14px] font-medium text-white transition-all duration-[700ms] ease-[cubic-bezier(0.32,0.72,0,1)] hover:opacity-90 active:scale-[0.97]"
             >
               Entrar
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/15 transition-transform duration-[700ms] ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:-translate-y-0.5 group-hover:translate-x-0.5">

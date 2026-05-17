@@ -131,7 +131,7 @@ export default async function RevisaoPage({
           </div>
           <button
             type="submit"
-            className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-fg)] px-5 text-[13px] font-medium text-[var(--color-bg)] transition-all duration-150 active:scale-[0.97] hover:bg-[var(--color-fg-muted)]"
+            className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-navy-700)] px-5 text-[13px] font-medium text-white transition-all duration-150 active:scale-[0.97] hover:opacity-90"
           >
             Ver
           </button>
@@ -188,7 +188,7 @@ function FilterPills({
               className={cn(
                 'inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] font-medium capitalize transition-all duration-150 active:scale-[0.97]',
                 active
-                  ? 'border-[var(--color-fg)] bg-[var(--color-fg)] text-[var(--color-bg)]'
+                  ? 'border-[var(--color-navy-700)] bg-[var(--color-navy-700)] text-white'
                   : 'border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-fg-muted)] hover:border-[var(--color-fg-muted)] hover:text-[var(--color-fg)]',
               )}
             >

@@ -24,11 +24,11 @@ const VARIANTS: Record<Variant, string> = {
     'bg-[var(--color-accent)] text-[var(--color-accent-fg)] ' +
     'hover:bg-[var(--color-accent-hover)] ' +
     'focus-visible:ring-[var(--color-accent)]',
-  // CTA padrão neutro — bg-fg / text-bg (anti-Lila Ban)
+  // CTA escuro invariante — navy funciona em light e dark
   invert:
-    'bg-[var(--color-fg)] text-[var(--color-bg)] ' +
-    'hover:bg-[var(--color-fg-muted)] ' +
-    'focus-visible:ring-[var(--color-fg)]',
+    'bg-[var(--color-navy-700)] text-white ' +
+    'hover:opacity-90 ' +
+    'focus-visible:ring-[var(--color-navy-700)]',
   secondary:
     'border border-[var(--color-border-strong)] bg-[var(--color-bg-elevated)] ' +
     'text-[var(--color-fg)] ' +

@@ -98,7 +98,7 @@ export default async function LoginPage({
 
               <button
                 type="submit"
-                className="group mt-2 inline-flex h-12 items-center justify-between rounded-full bg-[var(--color-fg)] pl-6 pr-2 text-[14px] font-medium text-[var(--color-bg)] transition-all duration-[700ms] ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[var(--color-navy-700)] active:scale-[0.98]"
+                className="group mt-2 inline-flex h-12 items-center justify-between rounded-full bg-[var(--color-navy-700)] pl-6 pr-2 text-[14px] font-medium text-white transition-all duration-[700ms] ease-[cubic-bezier(0.32,0.72,0,1)] hover:opacity-90 active:scale-[0.98]"
               >
                 Entrar
                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/15 transition-transform duration-[700ms] ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:-translate-y-0.5 group-hover:translate-x-0.5">

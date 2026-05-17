@@ -212,7 +212,7 @@ export default async function HistoricoPage({
         </div>
         <button
           type="submit"
-          className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-fg)] px-5 text-[13px] font-medium text-[var(--color-bg)] transition-all duration-150 active:scale-[0.97] hover:bg-[var(--color-fg-muted)]"
+          className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-navy-700)] px-5 text-[13px] font-medium text-white transition-all duration-150 active:scale-[0.97] hover:opacity-90"
         >
           <FunnelSimple size={14} weight="bold" />
           Filtrar
