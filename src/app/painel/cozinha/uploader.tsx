@@ -585,7 +585,7 @@ function FiltroChips({
             )}
           >
             {o.label}{' '}
-            <span className="opacity-60">({o.count})</span>
+            <span className="text-[var(--color-fg-subtle)]">({o.count})</span>
           </button>
         )
       })}
@@ -624,7 +624,7 @@ function FiltroExportControl({
             )}
           >
             {o.label}{' '}
-            <span className="opacity-60">({o.count})</span>
+            <span className="text-[var(--color-fg-subtle)]">({o.count})</span>
           </button>
         )
       })}

@@ -27,17 +27,31 @@
     0 4px 12px -2px rgba(15, 23, 42, 0.04);
   --shadow-inner-edge: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 
-  /* Brand (Transmonseg blue) — preserved palette for accents. */
-  --color-brand-50: #f0f6fb;
-  --color-brand-100: #d9e7f3;
-  --color-brand-200: #b3cfe7;
-  --color-brand-300: #84b1d6;
-  --color-brand-400: #5392c2;
-  --color-brand-500: #2e75b6;
-  --color-brand-600: #1f4e78;
-  --color-brand-700: #1a426a;
-  --color-brand-800: #143355;
-  --color-brand-900: #0e2542;
+  /* Brand — NAVY KPI (#1F3864 = mesma cor dos cabeçalhos das planilhas geradas).
+     Cor de identidade visual: UI casa visualmente com o output que o usuário vê.
+     Mantemos os tokens legacy brand-* respondendo à mesma paleta. */
+  --color-navy-50: #f1f5f9;
+  --color-navy-100: #e2eaf3;
+  --color-navy-200: #c5d2e3;
+  --color-navy-300: #9fb3ce;
+  --color-navy-400: #6585a8;
+  --color-navy-500: #3d5d87;
+  --color-navy-600: #2a4773;
+  --color-navy-700: #1F3864;  /* ← NAVY EXATO das planilhas KPIs (ARGB FF1F3864) */
+  --color-navy-800: #16294a;
+  --color-navy-900: #0e1c33;
+
+  /* Legacy brand-* aliases ainda apontando pra navy palette (compatibilidade). */
+  --color-brand-50: var(--color-navy-50);
+  --color-brand-100: var(--color-navy-100);
+  --color-brand-200: var(--color-navy-200);
+  --color-brand-300: var(--color-navy-300);
+  --color-brand-400: var(--color-navy-400);
+  --color-brand-500: var(--color-navy-500);
+  --color-brand-600: var(--color-navy-700);
+  --color-brand-700: var(--color-navy-800);
+  --color-brand-800: var(--color-navy-800);
+  --color-brand-900: var(--color-navy-900);
 
   /* Semantic surface/foreground tokens (LIGHT defaults).
      Off-white de fundo, off-black (zinc-950) de texto — pure black/white banidos. */
@@ -46,18 +60,20 @@
   --color-bg-subtle: #f4f4f3;
   --color-bg-hover: #ececea;
 
-  --color-border: #e7e5e4;
-  --color-border-strong: #d6d3d1;
+  /* Bordas levemente mais marcadas no light pra dar definição. */
+  --color-border: #e1ddd9;       /* stone-200/300 ajustado, contrasta com bg #fafaf9 */
+  --color-border-strong: #c8c2bc; /* mais sólida pra Card destacar */
 
   --color-fg: #0a0a0a;
-  --color-fg-muted: #44403c;   /* stone-700 — 9.5:1 em bg light, sólido pra body */
-  --color-fg-subtle: #78716c;  /* stone-500 — 4.6:1 em bg light, AA pra small text */
+  --color-fg-muted: #3f3e3a;   /* stone-700+ — 10.5:1 em bg light, sólido pra body */
+  --color-fg-subtle: #6b6660;  /* stone-500+ — 5.4:1 em bg light, AA solid pra small text */
 
-  --color-accent: #1f4e78;
+  /* Acento = navy KPI #1F3864 (alinha UI com cor do XLSX gerado). */
+  --color-accent: var(--color-navy-700);
   --color-accent-fg: #ffffff;
-  --color-accent-hover: #1a426a;
-  --color-accent-soft: #eaf1f7;
-  --color-accent-soft-fg: #1a426a;
+  --color-accent-hover: var(--color-navy-800);
+  --color-accent-soft: var(--color-navy-50);
+  --color-accent-soft-fg: var(--color-navy-800);
 
   --color-success: #16a34a;
   --color-success-soft: #dcfce7;
@@ -116,11 +132,12 @@
     0 4px 12px -2px rgba(0, 0, 0, 0.3);
   --shadow-inner-edge: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 
-  --color-accent: #5392c2;
-  --color-accent-fg: #ffffff;
-  --color-accent-hover: #84b1d6;
-  --color-accent-soft: #143355;
-  --color-accent-soft-fg: #b3cfe7;
+  /* Acento dark: navy invertido (mais claro pra contrastar com bg dark). */
+  --color-accent: var(--color-navy-300);
+  --color-accent-fg: var(--color-navy-900);
+  --color-accent-hover: var(--color-navy-200);
+  --color-accent-soft: var(--color-navy-800);
+  --color-accent-soft-fg: var(--color-navy-200);
 
   --color-success: #22c55e;
   --color-success-soft: #052e16;

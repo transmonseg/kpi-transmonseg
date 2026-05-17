@@ -599,7 +599,7 @@ function PainelRevisao({
                   : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]',
               )}
             >
-              {c.label} <span className="opacity-60">({c.count})</span>
+              {c.label} <span className="text-[var(--color-fg-subtle)]">({c.count})</span>
             </button>
           ))}
         </div>

@@ -448,7 +448,14 @@ export default function KpiSimplesPage() {
         )}
       >
         <div className="flex flex-col gap-1">
-          <span className="text-[11px] font-medium uppercase tracking-[0.18em] opacity-60">
+          <span
+            className={cn(
+              'text-[11px] font-medium uppercase tracking-[0.18em]',
+              pronto && !pending
+                ? 'text-[var(--color-bg)] opacity-70'
+                : 'text-[var(--color-fg-muted)]'
+            )}
+          >
             {pending ? 'Processando' : 'Gerar KPIs'}
           </span>
           <span className="text-[18px] font-semibold tracking-tight">

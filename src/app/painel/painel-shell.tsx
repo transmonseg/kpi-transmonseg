@@ -47,7 +47,7 @@ export function PainelShell({ userEmail, sairAction, children }: Props) {
     <div className="flex min-h-[100dvh] bg-[var(--color-bg)] text-[var(--color-fg)]">
       {/* Desktop sidebar — always dark, regardless of app theme. */}
       <aside
-        className="sticky top-0 hidden h-screen w-[196px] shrink-0 flex-col border-r border-white/[0.06] bg-[#0a0a0a] md:flex"
+        className="sticky top-0 hidden h-[100dvh] w-[196px] shrink-0 flex-col border-r border-white/[0.06] bg-[#0a0a0a] md:flex"
         style={{ colorScheme: 'dark' }}
       >
         <SidebarBrand />

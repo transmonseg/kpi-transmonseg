@@ -209,7 +209,7 @@ export function EscalaItem(props: Props) {
   return (
     <Row bar={bar} tone="default">
       <div className="flex items-center gap-2 min-w-0">
-        <Badge variant="default" className="shrink-0 opacity-70">
+        <Badge variant="outline" className="shrink-0">
           {label}
         </Badge>
         <span className="text-[12px] text-[var(--color-fg-subtle)]">não enviada</span>
