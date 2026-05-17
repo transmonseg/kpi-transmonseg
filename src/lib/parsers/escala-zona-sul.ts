@@ -2,6 +2,11 @@ import ExcelJS from 'exceljs'
 import type { LinhaEscala } from '@/lib/types/escala'
 import { normalizaPlaca } from '@/lib/utils/placa'
 import { formataDataISO, proximoDiaUtil } from '@/lib/utils/data-brasileira'
+import { FILIAIS_ZONA_SUL } from '@/lib/kpi/zona-sul-base'
+
+const FILIAL_NOME: Map<string, string> = new Map(
+  FILIAIS_ZONA_SUL.map(f => [String(f.numero).trim(), f.nome])
+)
 
 const FILIAIS_D1_FIXAS = new Set(['33', '21', '30', '27', '15', '04', '18', '06', '07', '48', '13'])
 
@@ -176,11 +181,13 @@ export async function parseEscalaZonaSul(
     for (const { loja, kilos } of lojas) {
       const dataEntrega = resolveDataEntrega(dataCarga, loja, hora)
 
+      const nomeCompleto = FILIAL_NOME.get(loja.trim()) ?? loja
+
       const linha: LinhaEscala = {
         data: dataISO,
         data_entrega: dataEntrega,
         rede_id: 'ZONA_SUL',
-        loja_nome_raw: loja,
+        loja_nome_raw: nomeCompleto,
         loja_codigo_raw: loja,
         placa_norm: placaNorm,
         placa_raw: placaRaw,

@@ -51,10 +51,16 @@ function maxLojas(linhas: KpiLinha[]): number {
 }
 
 function buildColWidths(nLojas: number): number[] {
+  const maxW = PAGE_W - 2 * MARGIN_X
   const fixed = [120, 100, 52, 50]
   const lojaBlock = Array.from({ length: nLojas }, () => [55, 55, 48]).flat()
   const obs = [70]
-  return [...fixed, ...lojaBlock, ...obs]
+  const raw = [...fixed, ...lojaBlock, ...obs]
+  const total = raw.reduce((a, b) => a + b, 0)
+  if (total <= maxW) return raw
+  // Escala proporcional para caber na página
+  const scale = maxW / total
+  return raw.map(w => Math.floor(w * scale))
 }
 
 function buildHeaders(nLojas: number): string[] {
