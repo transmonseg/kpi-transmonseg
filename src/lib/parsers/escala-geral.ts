@@ -200,23 +200,24 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
         linhas.push(carro1)
 
         const motor2 = asStr(v10)
-        if (motor2 !== null) {
+        const placa2Norm = normalizaPlaca(placaRaw2)
+        const codigo2 = asStr(v11) !== null ? String(asStr(v11)) : null
+        if (motor2 !== null && (placa2Norm !== null || codigo2 !== null)) {
           const carro2: LinhaEscala = {
             ...carro1,
-            placa_norm: normalizaPlaca(placaRaw2),
+            placa_norm: placa2Norm,
             placa_raw: placaRaw2,
             motorista_nome: motor2,
-            motorista_codigo: asStr(v11) !== null ? String(asStr(v11)) : null,
+            motorista_codigo: codigo2,
             tipo_carro: asStr(v9),
             carro_ordem: 2,
             restricao: null,
           }
           linhas.push(carro2)
         } else {
-          const possibleRestriction = asStr(v9)
-          if (possibleRestriction !== null) {
-            linhas[linhas.length - 1] = { ...carro1, restricao: possibleRestriction }
-          }
+          // Sem placa/código para o 2º carro → texto em v9/v10 é restrição do 1º
+          const restricao = [asStr(v9), motor2].filter(Boolean).join(' ') || null
+          if (restricao) linhas[linhas.length - 1] = { ...carro1, restricao }
         }
         return
       }
@@ -316,18 +317,24 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
     linhas.push(carro1)
 
     const motor2 = asStr(v10)
-    if (motor2 !== null) {
+    const placa2Norm = normalizaPlaca(placaRaw2)
+    const codigo2 = asStr(v11) !== null ? String(asStr(v11)) : null
+    if (motor2 !== null && (placa2Norm !== null || codigo2 !== null)) {
       const carro2: LinhaEscala = {
         ...carro1,
-        placa_norm: normalizaPlaca(placaRaw2),
+        placa_norm: placa2Norm,
         placa_raw: placaRaw2,
         motorista_nome: motor2,
-        motorista_codigo: asStr(v11) !== null ? String(asStr(v11)) : null,
+        motorista_codigo: codigo2,
         tipo_carro: asStr(v9),
         carro_ordem: 2,
         restricao: null,
       }
       linhas.push(carro2)
+    } else if (motor2 !== null || asStr(v9) !== null) {
+      // Sem placa/código → texto é restrição do 1º carro
+      const restricao = [asStr(v9), motor2].filter(Boolean).join(' ') || null
+      if (restricao) linhas[linhas.length - 1] = { ...carro1, restricao }
     }
   })
 

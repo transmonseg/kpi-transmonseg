@@ -27,8 +27,8 @@ function toExcelTime(d: Date | null | undefined): number | null {
 
 function totalTempoMin(l: LinhaParaKpi | null): number | null {
   if (!l) return null
-  const t = (l.tempo_loja_1_min ?? 0) + (l.tempo_loja_2_min ?? 0) + (l.tempo_loja_3_min ?? 0)
-  return t > 0 ? t : null
+  const t = l.tempo_loja_1_min
+  return t !== null && t > 0 ? t : null
 }
 
 export async function gerarKpi(input: GerarKpiInput): Promise<Buffer> {
