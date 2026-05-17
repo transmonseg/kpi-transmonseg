@@ -27,8 +27,7 @@ function rotaToLinha(rota: RotaKpi, escala: LinhaEscala, ordem: number): LinhaPa
   const p2 = rota.paradas[1] ?? null
   const p3 = rota.paradas[2] ?? null
 
-  let motorista = escala.motorista_nome ?? null
-  if (escala.carro_ordem === 2 && motorista) motorista = `(2º CARRO) ${motorista}`
+  const motorista = escala.motorista_nome ?? null
 
   return {
     kpi_id: 'simples',

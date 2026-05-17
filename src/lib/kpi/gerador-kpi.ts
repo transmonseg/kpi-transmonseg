@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs'
 import type { KpiLinha } from '@/lib/types/kpi'
-import { KPI_COLORS, REDE_NOMES_CANONICOS } from './kpi-styles'
+import { KPI_COLORS, REDE_NOMES_CANONICOS, formataDataPtBr } from './kpi-styles'
 import { getLogoBuffer, carregarOuCriarWorkbook, nomeAbaDoDia } from './template-loader'
 import { getMatrizLojas } from '@/lib/lojas/catalogo-matriz'
 import { temAnomaliaHigh } from './anomalia-obs'
@@ -118,6 +118,13 @@ async function preencherAba(
     ws.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' }
   }
 
+  // Data no canto direito da row 1
+  const dataCell = ws.getCell(1, nCols)
+  dataCell.value = formataDataPtBr(data)
+  dataCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }
+  dataCell.alignment = { horizontal: 'right', vertical: 'bottom' }
+  dataCell.fill = FILL_NAVY
+
   // Row 2 — cabeçalho de grupo
   ws.getRow(2).height = 23.25
   for (let c = 1; c <= nCols; c++) ws.getCell(2, c).fill = FILL_NAVY
@@ -172,6 +179,25 @@ async function preencherAba(
     escreverLinha(ws, rowIdx, ag, duplo, nCols)
     rowIdx++
   }
+
+  // Linha de totais
+  const comGps = agrupadas.filter(a => a.carro1?.saida_cd || a.carro1?.chd_loja_1).length
+  const comTempo = agrupadas.filter(a => {
+    const t1 = a.carro1?.tempo_loja_1_min
+    const t2 = a.carro2?.tempo_loja_1_min
+    return (t1 !== null && t1 !== undefined && t1 > 0) || (t2 !== null && t2 !== undefined && t2 > 0)
+  }).length
+  const totalLojas = ordemLojas.length
+
+  ws.mergeCells(rowIdx, 1, rowIdx, nCols)
+  const totalRow = ws.getRow(rowIdx)
+  totalRow.height = 20
+  const totalCell = ws.getCell(rowIdx, 1)
+  totalCell.value = `TOTAL: ${totalLojas} lojas  |  GPS: ${comGps}  |  TEMPO: ${comTempo}`
+  totalCell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF1F3864' } }
+  totalCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8F0FE' } }
+  totalCell.alignment = { horizontal: 'center', vertical: 'middle' }
+  totalCell.border = { top: { style: 'thin', color: { argb: 'FFB0C4DE' } } }
 }
 
 function escreverLinha(
@@ -243,5 +269,10 @@ function escreverLinha(
     cell.font = FONT_BODY
     cell.alignment = { horizontal: colNum === 1 ? 'left' : 'center', vertical: 'middle' }
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } }
+    cell.border = {
+      bottom: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+      left:   { style: 'thin', color: { argb: 'FFD0D0D0' } },
+      right:  { style: 'thin', color: { argb: 'FFD0D0D0' } },
+    }
   })
 }

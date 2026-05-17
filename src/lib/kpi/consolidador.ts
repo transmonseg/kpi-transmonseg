@@ -67,10 +67,7 @@ export async function consolidaKpi(params: {
       const escala = rota.escala_linhas
       const paradas = (rota.paradas_json ?? []) as ParadaJson[]
       const carroOrdem = (escala?.carro_ordem ?? 1) as 1 | 2
-      let motorista = escala?.motorista_nome ?? null
-      if (carroOrdem === 2 && motorista) {
-        motorista = `(2º CARRO) ${motorista}`
-      }
+      const motorista = escala?.motorista_nome ?? null
 
       const p1 = paradas[0] ?? null
       const p2 = paradas[1] ?? null
