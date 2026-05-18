@@ -6,6 +6,7 @@ import {
   HouseSimple,
   ForkKnife,
   TableIcon,
+  UsersThree,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 
@@ -14,6 +15,7 @@ type Item = { href: string; label: string; Icon: PhosphorIcon }
 const NAV_ITEMS: Item[] = [
   { href: '/painel', label: 'Início', Icon: HouseSimple },
   { href: '/painel/cozinha', label: 'Cozinha', Icon: ForkKnife },
+  { href: '/painel/cozinha/clientes', label: 'Clientes', Icon: UsersThree },
   { href: '/painel/kpi/simples', label: 'KPI', Icon: TableIcon },
 ]
 
