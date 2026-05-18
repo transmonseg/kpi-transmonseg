@@ -141,6 +141,7 @@ export function DiaPage({
     linhas_problematicas: Array<{ linha: number; motivo: string; conteudo: string }>
   } | null>(null)
   const [previewLoading] = useState(false)
+  const [avisoUpload, setAvisoUpload] = useState<string | null>(null)
 
   async function navegarPara(novaData: string) {
     setData(novaData)
@@ -175,6 +176,7 @@ export function DiaPage({
       return e
     })
     setPreviewData(null)
+    setAvisoUpload(null)
 
     setUploadingTipos((prev) => new Set([...prev, key]))
     try {
@@ -230,6 +232,8 @@ export function DiaPage({
 
       if (!parseRes.ok) throw new Error(await parseRes.text())
 
+      const parseJson = await parseRes.json() as { aviso?: string }
+      setAvisoUpload(parseJson.aviso ?? null)
       setPreviewData(null)
       await recarregarEscalas()
     } catch (e) {
@@ -409,6 +413,13 @@ export function DiaPage({
             <p className="text-[12px] text-[var(--color-success-soft-fg)]">
               Arquivo válido: {previewData.total_linhas} linha(s) detectada(s) — {previewData.tipo_detectado}
             </p>
+          )}
+
+          {avisoUpload && (
+            <div className="mx-1 mb-1 flex items-start gap-2 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-700 dark:bg-yellow-950 dark:text-yellow-300">
+              <span className="mt-0.5 shrink-0">⚠</span>
+              <span>{avisoUpload}</span>
+            </div>
           )}
 
           <div className="flex flex-col gap-1.5">

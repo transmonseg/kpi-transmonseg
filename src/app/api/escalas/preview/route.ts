@@ -6,18 +6,19 @@ import { parseEscalaGeral } from '@/lib/parsers/escala-geral'
 import { parseEscalaZonaSul } from '@/lib/parsers/escala-zona-sul'
 import { parseEscalaPax } from '@/lib/parsers/escala-pax'
 import { parseEscalaArmazemGrao } from '@/lib/parsers/escala-armazem-grao'
+import { parseEscalaUniversal } from '@/lib/parsers/escala-universal'
 import type { LinhaEscala } from '@/lib/types/escala'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
-type TipoEscala = 'GERAL' | 'ZONA_SUL' | 'PAX' | 'ARMAZEM_GRAO' | 'GUANABARA' | 'AUTO'
+type TipoEscala = 'GERAL' | 'ZONA_SUL' | 'PAX' | 'ARMAZEM_GRAO' | 'GUANABARA' | 'AUTO' | 'DESCONHECIDO'
 type Formato = 'xlsx' | 'pdf'
 
 const TIPOS_VALIDOS: TipoEscala[] = ['GERAL', 'ZONA_SUL', 'PAX', 'ARMAZEM_GRAO', 'GUANABARA', 'AUTO']
 const MIN_LINHAS_DETECCAO = 3
 
-const FORMATO_ESPERADO: Record<Exclude<TipoEscala, 'AUTO'>, Formato> = {
+const FORMATO_ESPERADO: Record<Exclude<TipoEscala, 'AUTO' | 'DESCONHECIDO'>, Formato> = {
   GERAL: 'xlsx',
   ZONA_SUL: 'xlsx',
   PAX: 'xlsx',
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     )
 
-  if (tipo !== 'AUTO') {
+  if (tipo !== 'AUTO' && tipo !== 'DESCONHECIDO') {
     const formatoEsperado = FORMATO_ESPERADO[tipo]
     if (formato !== formatoEsperado)
       return new NextResponse(
@@ -104,6 +105,7 @@ export async function POST(req: NextRequest) {
   const arrayBuffer = await fileBlob.arrayBuffer()
   let linhas: LinhaEscala[] = []
   let tipoDetectado: TipoEscala = tipo
+  let aviso: string | undefined
 
   try {
     if (tipo === 'AUTO') {
@@ -131,6 +133,20 @@ export async function POST(req: NextRequest) {
           }
         } catch {
           // Parser não reconheceu — tentar próximo
+        }
+      }
+
+      if (linhas.length === 0) {
+        try {
+          const resultado = await parseEscalaUniversal(arrayBuffer, data, formato)
+          if (resultado.length > 0) {
+            linhas = resultado
+            tipoDetectado = 'DESCONHECIDO'
+            aviso =
+              'Formato não reconhecido. Dados extraídos por heurística — verifique se as informações estão corretas antes de processar o KPI.'
+          }
+        } catch {
+          // fallback também falhou
         }
       }
 
@@ -190,5 +206,6 @@ export async function POST(req: NextRequest) {
     total_linhas: linhas.length,
     linhas_validas: linhasValidas,
     linhas_problematicas: linhasProblematicas,
+    ...(aviso ? { aviso } : {}),
   })
 }
