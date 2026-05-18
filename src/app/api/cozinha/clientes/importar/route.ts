@@ -33,11 +33,16 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     )
 
+  // Deduplica por código — mantém última ocorrência
+  const dedup = new Map<string, typeof clientes[number]>()
+  for (const c of clientes) dedup.set(c.codigo, c)
+  const unicos = Array.from(dedup.values())
+
   const svc = createServiceClient()
 
   const BATCH = 500
-  for (let i = 0; i < clientes.length; i += BATCH) {
-    const lote = clientes.slice(i, i + BATCH)
+  for (let i = 0; i < unicos.length; i += BATCH) {
+    const lote = unicos.slice(i, i + BATCH)
     const { error } = await svc
       .from('clientes_cozinha')
       .upsert(lote, { onConflict: 'codigo', ignoreDuplicates: false })
@@ -48,5 +53,5 @@ export async function POST(req: NextRequest) {
       )
   }
 
-  return NextResponse.json({ ok: true, total: clientes.length })
+  return NextResponse.json({ ok: true, total: unicos.length })
 }
