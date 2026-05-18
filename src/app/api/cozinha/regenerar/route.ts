@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
       veiculo: r.veiculo ?? SEM_VALOR,
       duplicada: r.duplicada ?? false,
       status: classificaStatus(motorista, placa),
+      clientes: r.clientes ?? [],
     }
   })
 

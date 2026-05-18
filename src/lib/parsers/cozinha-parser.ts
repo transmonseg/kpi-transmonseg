@@ -1,6 +1,15 @@
 import ExcelJS from 'exceljs'
+import type { ClienteMatriz } from './cozinha-matriz'
 
 export type StatusRota = 'completa' | 'sem-placa' | 'sem-motorista' | 'vazia'
+
+export type ClienteRomaneio = {
+  nome: string
+  notaFiscal: string
+  peso: number | null
+  endereco: string | null
+  cep: string | null
+}
 
 export type RotaCozinha = {
   rota: string
@@ -9,6 +18,7 @@ export type RotaCozinha = {
   veiculo: string
   status: StatusRota
   duplicada: boolean
+  clientes: ClienteRomaneio[]
 }
 
 export type EstatisticasCozinha = {
@@ -97,13 +107,58 @@ function cellValue(cell: ExcelJS.Cell | undefined): unknown {
   return v
 }
 
+function normalizaNomeCliente(nome: string): string {
+  return nome
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^A-Z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function formatEnderecoCliente(c: ClienteMatriz): string {
+  return [c.endereco, c.numero, c.complemento].filter(Boolean).join(', ')
+}
+
+function matchCliente(
+  nomeEscala: string,
+  matriz: ClienteMatriz[]
+): { endereco: string; cep: string } | null {
+  const key = normalizaNomeCliente(nomeEscala)
+  if (!key || key.length < 2) return null
+
+  for (const c of matriz) {
+    if (normalizaNomeCliente(c.fantasia) === key)
+      return { endereco: formatEnderecoCliente(c), cep: c.cep }
+  }
+
+  for (const c of matriz) {
+    const fant = normalizaNomeCliente(c.fantasia)
+    if (fant.includes(key) || key.includes(fant))
+      return { endereco: formatEnderecoCliente(c), cep: c.cep }
+  }
+
+  const words = key.split(' ').filter(w => w.length >= 3)
+  if (words.length > 0) {
+    for (const c of matriz) {
+      const fant = normalizaNomeCliente(c.fantasia)
+      if (words.every(w => fant.includes(w)))
+        return { endereco: formatEnderecoCliente(c), cep: c.cep }
+    }
+  }
+
+  return null
+}
+
 export type ResultadoCozinha = {
   rotas: RotaCozinha[]
   declaradas: number
 }
 
 export async function parseCozinha(
-  buffer: ArrayBuffer | Buffer
+  buffer: ArrayBuffer | Buffer,
+  matriz?: ClienteMatriz[]
 ): Promise<ResultadoCozinha> {
   const workbook = new ExcelJS.Workbook()
   const buf =
@@ -171,6 +226,27 @@ export async function parseCozinha(
       // permite múltiplas linhas vazias da mesma rota (caso COPACABANA 02)
     }
 
+    // Extrai clientes desta rota (coluna do nome da rota = col)
+    const clientes: ClienteRomaneio[] = []
+    for (let cOff = 2; cOff <= 25; cOff++) {
+      const cr = ws.getRow(row + cOff)
+      const nomeRaw = cellValue(cr.getCell(col))
+      if (!nomeRaw) continue
+      const nomeCliente = String(nomeRaw).trim().toUpperCase()
+      if (!nomeCliente || nomeCliente === 'CLIENTE' || nomeCliente.length < 2) continue
+      const notaFiscalRaw = cellValue(cr.getCell(col - 1))
+      const pesoRaw = cellValue(cr.getCell(col + 1))
+      const peso = typeof pesoRaw === 'number' ? pesoRaw : null
+      const match = matriz ? matchCliente(nomeCliente, matriz) : null
+      clientes.push({
+        nome: nomeCliente,
+        notaFiscal: notaFiscalRaw ? String(notaFiscalRaw).trim() : '',
+        peso,
+        endereco: match?.endereco ?? null,
+        cep: match?.cep ?? null,
+      })
+    }
+
     contagem.set(rotaNome, (contagem.get(rotaNome) ?? 0) + 1)
 
     rotas.push({
@@ -180,6 +256,7 @@ export async function parseCozinha(
       veiculo: normalizaVeiculo(veiculoRaw),
       status: classificaStatus(motorista, placa),
       duplicada: false,
+      clientes,
     })
   }
 
