@@ -60,9 +60,13 @@ export async function gerarRomaneioXlsx(
     })
   })
 
-  // Uma aba por rota
+  // Uma aba por rota — desambigua nomes duplicados
+  const sheetCount = new Map<string, number>()
   for (const r of rotas) {
-    const sheetName = r.rota.slice(0, 31).replace(/[*?:/\\[\]]/g, '-')
+    const base = r.rota.slice(0, 28).replace(/[*?:/\\[\]]/g, '-')
+    const count = (sheetCount.get(base) ?? 0) + 1
+    sheetCount.set(base, count)
+    const sheetName = count === 1 ? base : `${base.slice(0, 25)} (${count})`
     const ws = wb.addWorksheet(sheetName)
     ws.columns = [
       { key: 'nf', width: 18 },
