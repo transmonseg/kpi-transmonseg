@@ -47,6 +47,9 @@ export async function parseMatrizClientes(
     if (rowNum === 1) return // pula cabeçalho
     const codigo = cellStr(row.getCell(1))
     if (!codigo || isNaN(Number(codigo))) return
+    const cep = cellStr(row.getCell(7))
+    const endereco = cellStr(row.getCell(8))
+    if (!cep && !endereco) return // ignora entradas sem dados de endereço (ex: "A VISTA")
     clientes.push({
       codigo,
       filial: cellStr(row.getCell(2)),
