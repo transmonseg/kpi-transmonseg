@@ -226,7 +226,7 @@ export function GestorClientes() {
                 <Input
                   value={q}
                   onChange={e => setQ(e.target.value)}
-                  placeholder="Buscar fantasia, nome, código..."
+                  placeholder="Buscar empresa, nome, código..."
                   className="h-8 w-60 pl-7 text-[13px]"
                 />
               </div>
@@ -267,7 +267,7 @@ export function GestorClientes() {
               <table className="w-full text-[13px]">
                 <thead>
                   <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] text-left">
-                    {['Fantasia', 'Código', 'CEP', 'Endereço', 'Nº', 'Comp.', ''].map(h => (
+                    {['Nome da Empresa', 'Código', 'CEP', 'Endereço', 'Nº', 'Comp.', ''].map(h => (
                       <th key={h} className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">{h}</th>
                     ))}
                   </tr>
@@ -276,7 +276,7 @@ export function GestorClientes() {
                   {novo && (
                     <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
                       <td className="px-2 py-1">
-                        <Input value={novo.fantasia} onChange={e => setNovo(p => p ? { ...p, fantasia: e.target.value } : p)} className="h-7 w-36 text-[12px]" placeholder="Fantasia *" autoFocus />
+                        <Input value={novo.fantasia} onChange={e => setNovo(p => p ? { ...p, fantasia: e.target.value } : p)} className="h-7 w-36 text-[12px]" placeholder="Nome da Empresa *" autoFocus />
                       </td>
                       <td className="px-2 py-1">
                         <Input value={novo.codigo} onChange={e => setNovo(p => p ? { ...p, codigo: e.target.value } : p)} className="h-7 w-20 text-[12px]" placeholder="Código *" />
@@ -323,7 +323,7 @@ export function GestorClientes() {
                               : 'hover:bg-[var(--color-bg-subtle)]',
                         )}
                       >
-                        <td className="max-w-[200px] truncate px-4 py-1.5 font-medium text-[var(--color-fg)]">{c.fantasia}</td>
+                        <td className="max-w-[200px] truncate px-4 py-1.5 font-medium text-[var(--color-fg)]">{c.fantasia || c.nome}</td>
                         <td className="px-4 py-1.5 font-mono text-[12px] text-[var(--color-fg-muted)]">{c.codigo}</td>
                         {editing ? (
                           <>
