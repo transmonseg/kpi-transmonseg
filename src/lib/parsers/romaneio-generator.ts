@@ -84,14 +84,22 @@ export async function gerarRomaneioXlsx(
     t.alignment = { horizontal: 'center', vertical: 'middle' }
     ws.getRow(1).height = 28
 
-    ws.mergeCells('A2:E2')
-    const info = ws.getCell('A2')
-    info.value = `Motorista: ${r.motorista}   |   Placa: ${r.placa}   |   Veículo: ${r.veiculo}` +
+    // Linha 2: PLACA em destaque
+    ws.mergeCells('A2:B2')
+    const plcCell = ws.getCell('A2')
+    plcCell.value = `🚛 PLACA: ${r.placa}`
+    plcCell.font = { bold: true, size: 13, color: { argb: COR_BRAND_600.replace('FF', '') } }
+    plcCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_BRAND_50 } }
+    plcCell.alignment = { horizontal: 'center', vertical: 'middle' }
+    ws.getRow(2).height = 26
+
+    ws.mergeCells('C2:E2')
+    const infoCell = ws.getCell('C2')
+    infoCell.value = `Motorista: ${r.motorista}   |   Veículo: ${r.veiculo}` +
       (dataReferencia ? `   |   ${dataReferencia}` : '')
-    info.font = { size: 10, color: { argb: 'FF475569' } }
-    info.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_BRAND_50 } }
-    info.alignment = { horizontal: 'center', vertical: 'middle' }
-    ws.getRow(2).height = 20
+    infoCell.font = { size: 10, color: { argb: 'FF475569' } }
+    infoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_BRAND_50 } }
+    infoCell.alignment = { horizontal: 'center', vertical: 'middle' }
 
     ws.getRow(3).height = 8
 
@@ -246,15 +254,23 @@ function drawRotaHeader(
   })
   y -= 30
 
-  page.drawRectangle({ x: MARGIN_X, y: y - 22, width: TABLE_W, height: 22, color: C_BRAND_50 })
-  const infoText = `${rota.motorista}  ·  ${rota.placa}  ·  ${rota.veiculo}` +
-    (dataRef ? `  ·  ${dataRef}` : '')
+  // Linha placa em destaque
+  const PLACA_H = 24
+  page.drawRectangle({ x: MARGIN_X, y: y - PLACA_H, width: TABLE_W * 0.38, height: PLACA_H, color: C_BRAND_600 })
+  const placaLabel = `PLACA: ${rota.placa}`
+  const placaW = fontBold.widthOfTextAtSize(placaLabel, 11)
+  page.drawText(placaLabel, {
+    x: MARGIN_X + (TABLE_W * 0.38 - placaW) / 2, y: y - PLACA_H + 8,
+    size: 11, font: fontBold, color: C_WHITE,
+  })
+  page.drawRectangle({ x: MARGIN_X + TABLE_W * 0.38, y: y - PLACA_H, width: TABLE_W * 0.62, height: PLACA_H, color: C_BRAND_50 })
+  const infoText = `Motorista: ${rota.motorista}  ·  ${rota.veiculo}` + (dataRef ? `  ·  ${dataRef}` : '')
   const infoW = font.widthOfTextAtSize(infoText, 9)
   page.drawText(infoText, {
-    x: MARGIN_X + (TABLE_W - infoW) / 2, y: y - 14,
+    x: MARGIN_X + TABLE_W * 0.38 + (TABLE_W * 0.62 - infoW) / 2, y: y - PLACA_H + 8,
     size: 9, font, color: C_BRAND_600,
   })
-  y -= 22
+  y -= PLACA_H
 
   y -= 8
   return y
