@@ -69,12 +69,20 @@ export async function POST(req: NextRequest) {
   const estatisticas = calcularEstatisticas(rotas)
   const dataFormatada = formatarData(dataRef)
 
-  const [xlsxBuffer, pdfBuffer, romaneioXlsxBuffer, romaneioPdfBuffer] = await Promise.all([
-    gerarXlsx(rotas, estatisticas, dataFormatada),
-    gerarPdf(rotas, estatisticas, dataFormatada),
-    gerarRomaneioXlsx(rotas, dataFormatada),
-    gerarRomaneioPdf(rotas, dataFormatada),
-  ])
+  let xlsxBuffer: Buffer, pdfBuffer: Buffer, romaneioXlsxBuffer: Buffer, romaneioPdfBuffer: Buffer
+  try {
+    ;[xlsxBuffer, pdfBuffer, romaneioXlsxBuffer, romaneioPdfBuffer] = await Promise.all([
+      gerarXlsx(rotas, estatisticas, dataFormatada),
+      gerarPdf(rotas, estatisticas, dataFormatada),
+      gerarRomaneioXlsx(rotas, dataFormatada),
+      gerarRomaneioPdf(rotas, dataFormatada),
+    ])
+  } catch (e) {
+    return new NextResponse(
+      `Erro ao gerar arquivos: ${e instanceof Error ? e.message : String(e)}`,
+      { status: 500 }
+    )
+  }
 
   const nomeBase = nome.replace(/\.xlsx$/i, '')
 
