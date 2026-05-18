@@ -34,15 +34,15 @@ export async function POST(req: NextRequest) {
 
   const arrayBuffer = await arquivo.arrayBuffer()
 
-  // Carrega matriz de clientes do storage (opcional — não bloqueia se ausente)
+  // Carrega matriz de clientes do banco (opcional — não bloqueia se ausente)
   let matriz: ClienteMatriz[] | undefined
   try {
     const svc = createServiceClient()
-    const { data: matrizBlob } = await svc.storage.from('cozinha-matriz').download('clientes.json')
-    if (matrizBlob) {
-      const text = await matrizBlob.text()
-      matriz = JSON.parse(text) as ClienteMatriz[]
-    }
+    const { data: rows } = await svc
+      .from('clientes_cozinha')
+      .select('codigo,filial,nome,fantasia,cnpj,cep,endereco,numero,complemento')
+      .order('codigo', { ascending: true })
+    if (rows && rows.length > 0) matriz = rows as ClienteMatriz[]
   } catch {
     // matriz ausente — gera sem endereços
   }
