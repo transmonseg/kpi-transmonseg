@@ -86,6 +86,10 @@ export async function POST(req: NextRequest) {
 
   const nomeBase = nome.replace(/\.xlsx$/i, '')
 
+  const clientesComEndereco = rotas.reduce(
+    (s, r) => s + r.clientes.filter(c => c.endereco).length, 0)
+  const totalClientes = rotas.reduce((s, r) => s + r.clientes.length, 0)
+
   return NextResponse.json({
     rotas,
     estatisticas,
@@ -96,6 +100,8 @@ export async function POST(req: NextRequest) {
     romaneioPdfBase64: romaneioPdfBuffer.toString('base64'),
     temMatriz: !!matriz,
     totalClientesNaMatriz: matriz?.length ?? 0,
+    clientesComEndereco,
+    totalClientes,
     nomeBase,
   })
 }

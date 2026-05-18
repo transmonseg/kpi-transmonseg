@@ -51,6 +51,9 @@ type Resultado = {
   romaneioXlsxBase64?: string
   romaneioPdfBase64?: string
   temMatriz?: boolean
+  totalClientesNaMatriz?: number
+  clientesComEndereco?: number
+  totalClientes?: number
   nomeBase: string
 }
 
@@ -326,6 +329,13 @@ export function CozinhaUploader() {
             rotas={rotasEditadas}
           />
 
+          <MatrizIndicador
+            temMatriz={resultado.temMatriz ?? false}
+            clientesComEndereco={resultado.clientesComEndereco ?? 0}
+            totalClientes={resultado.totalClientes ?? 0}
+            totalNaMatriz={resultado.totalClientesNaMatriz ?? 0}
+          />
+
           <Card>
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] px-5 py-3">
               <div className="flex items-center gap-3">
@@ -521,6 +531,59 @@ export function CozinhaUploader() {
               </table>
             </div>
           </Card>
+        </>
+      )}
+    </div>
+  )
+}
+
+function MatrizIndicador({
+  temMatriz,
+  clientesComEndereco,
+  totalClientes,
+  totalNaMatriz,
+}: {
+  temMatriz: boolean
+  clientesComEndereco: number
+  totalClientes: number
+  totalNaMatriz: number
+}) {
+  if (!temMatriz) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-transparent bg-[var(--color-warning-soft)] px-4 py-2.5 text-[12px] text-[var(--color-warning-soft-fg)]">
+        <span className="font-semibold">Matriz de clientes não encontrada.</span>
+        <span>Importe a planilha de clientes para que o romaneio inclua endereços.</span>
+        <Link href="/painel/cozinha/clientes" className="ml-auto flex items-center gap-1 font-semibold underline-offset-2 hover:underline">
+          Gerenciar clientes <ArrowRight size={12} weight="bold" />
+        </Link>
+      </div>
+    )
+  }
+  const semEndereco = totalClientes - clientesComEndereco
+  const pct = totalClientes > 0 ? Math.round((clientesComEndereco / totalClientes) * 100) : 0
+  const ok = semEndereco === 0
+
+  return (
+    <div className={cn(
+      'flex flex-wrap items-center gap-3 rounded-lg border px-4 py-2.5 text-[12px]',
+      ok
+        ? 'border-transparent bg-[var(--color-success-soft)] text-[var(--color-success-soft-fg)]'
+        : 'border-transparent bg-[var(--color-warning-soft)] text-[var(--color-warning-soft-fg)]',
+    )}>
+      <span>
+        Matriz: <strong>{totalNaMatriz}</strong> clientes cadastrados
+      </span>
+      <span className="opacity-40">·</span>
+      <span>
+        Romaneio: <strong>{clientesComEndereco}/{totalClientes}</strong> entregas com endereço ({pct}%)
+      </span>
+      {!ok && (
+        <>
+          <span className="opacity-40">·</span>
+          <span className="font-semibold">{semEndereco} sem endereço</span>
+          <Link href="/painel/cozinha/clientes" className="ml-auto flex items-center gap-1 font-semibold underline-offset-2 hover:underline">
+            Completar cadastro <ArrowRight size={12} weight="bold" />
+          </Link>
         </>
       )}
     </div>

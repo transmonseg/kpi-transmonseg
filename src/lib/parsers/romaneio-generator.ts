@@ -114,7 +114,7 @@ export async function gerarRomaneioXlsx(
 
     r.clientes.forEach((c, idx) => {
       const row = ws.getRow(5 + idx)
-      row.values = [c.notaFiscal, c.nome, c.peso ?? '', c.endereco ?? '—', c.cep ?? '—']
+      row.values = [c.notaFiscal, c.nome, c.peso ?? '', c.endereco ?? '—', formatCep(c.cep)]
       row.height = 18
       const bg = idx % 2 === 1 ? COR_BG_ALT : null
       const semEndereco = !c.endereco
@@ -130,12 +130,42 @@ export async function gerarRomaneioXlsx(
       })
     })
 
+    const totalPesoXlsx = r.clientes.reduce((s, c) => s + (c.peso ?? 0), 0)
+    const nextRow = 5 + r.clientes.length
+
     if (r.clientes.length === 0) {
       ws.mergeCells(`A5:E5`)
       const empty = ws.getCell('A5')
       empty.value = 'Nenhum cliente encontrado nesta rota'
       empty.font = { italic: true, color: { argb: COR_MUTED }, size: 10 }
       empty.alignment = { horizontal: 'center' }
+    } else if (totalPesoXlsx > 0) {
+      const totalRow = ws.getRow(nextRow)
+      totalRow.height = 18
+      for (let ci = 1; ci <= 5; ci++) {
+        const cell = totalRow.getCell(ci)
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_BRAND_500 } }
+        cell.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' } }
+        cell.border = { bottom: { style: 'thin', color: { argb: COR_BORDER } } }
+        cell.alignment = { vertical: 'middle', horizontal: ci === 2 ? 'right' : 'center' }
+      }
+      totalRow.getCell(2).value = 'TOTAL'
+      totalRow.getCell(3).value = totalPesoXlsx
+    }
+
+    const emptyStart = nextRow + (totalPesoXlsx > 0 ? 1 : 0)
+    for (let e = 0; e < 5; e++) {
+      const er = ws.getRow(emptyStart + e)
+      er.height = 18
+      for (let ci = 1; ci <= 5; ci++) {
+        const cell = er.getCell(ci)
+        cell.value = null
+        cell.border = {
+          bottom: { style: 'thin', color: { argb: COR_BORDER } },
+          right: { style: 'thin', color: { argb: COR_BORDER } },
+        }
+        cell.font = { size: 10 }
+      }
     }
   }
 
@@ -159,6 +189,13 @@ const C_ALT = rgb(0.973, 0.98, 0.988)
 
 const COL_W = [80, 148, 40, 210, 65]
 const TABLE_W = COL_W.reduce((a, b) => a + b, 0)
+
+function formatCep(cep: string | null): string {
+  if (!cep) return '—'
+  const d = cep.replace(/\D/g, '')
+  if (d.length === 8) return `${d.slice(0, 5)}-${d.slice(5)}`
+  return cep || '—'
+}
 
 export async function gerarRomaneioPdf(
   rotas: RotaCozinha[],
@@ -196,7 +233,7 @@ export async function gerarRomaneioPdf(
           color: bg,
         })
       }
-      const cols = [c.notaFiscal, c.nome, c.peso != null ? String(c.peso) : '', c.endereco ?? '—', c.cep ?? '—']
+      const cols = [c.notaFiscal, c.nome, c.peso != null ? String(c.peso) : '', c.endereco ?? '—', formatCep(c.cep)]
       let cx = MARGIN_X
       cols.forEach((txt, ci) => {
         const w = COL_W[ci]
@@ -224,6 +261,30 @@ export async function gerarRomaneioPdf(
         size: 9, font, color: C_MUTED,
       })
       y -= ROW_H
+    } else {
+      const totalPesoPdf = rota.clientes.reduce((s, c) => s + (c.peso ?? 0), 0)
+      if (totalPesoPdf > 0) {
+        if (y - ROW_H < MARGIN_BOTTOM + 10) {
+          drawBordersV(page, tableTop, y)
+          drawPageFooter(page, font, rota.rota)
+          page = pdf.addPage([PAGE_W, PAGE_H])
+          y = drawRotaContinuacao(page, fontBold, rota)
+          y = drawClienteHeader(page, fontBold, y)
+          tableTop = y
+        }
+        page.drawRectangle({ x: MARGIN_X, y: y - ROW_H, width: TABLE_W, height: ROW_H, color: C_BRAND_500 })
+        const lbl = 'TOTAL'
+        const lblW = fontBold.widthOfTextAtSize(lbl, 8.5)
+        page.drawText(lbl, {
+          x: MARGIN_X + COL_W[0] + COL_W[1] - lblW - 6, y: y - ROW_H + 7,
+          size: 8.5, font: fontBold, color: C_WHITE,
+        })
+        page.drawText(String(totalPesoPdf) + ' kg', {
+          x: MARGIN_X + COL_W[0] + COL_W[1] + 4, y: y - ROW_H + 7,
+          size: 8.5, font: fontBold, color: C_WHITE,
+        })
+        y -= ROW_H
+      }
     }
 
     drawBordersV(page, tableTop, y)
@@ -279,7 +340,7 @@ function drawRotaHeader(
 function drawRotaContinuacao(page: PDFPage, fontBold: PDFFont, rota: RotaCozinha): number {
   const y = PAGE_H - MARGIN_TOP
   page.drawRectangle({ x: 0, y: y - 4, width: PAGE_W, height: 4, color: C_BRAND_600 })
-  const txt = `${rota.rota} (continuacao)`
+  const txt = `${rota.rota} (continuação)`
   const tw = fontBold.widthOfTextAtSize(txt, 11)
   page.drawText(txt, {
     x: (PAGE_W - tw) / 2, y: y - 22,
@@ -291,7 +352,7 @@ function drawRotaContinuacao(page: PDFPage, fontBold: PDFFont, rota: RotaCozinha
 function drawClienteHeader(page: PDFPage, fontBold: PDFFont, y: number): number {
   const H = 22
   page.drawRectangle({ x: MARGIN_X, y: y - H, width: TABLE_W, height: H, color: C_BRAND_500 })
-  const labels = ['NOTA FISCAL', 'CLIENTE', 'KG', 'ENDERECO', 'CEP']
+  const labels = ['NOTA FISCAL', 'CLIENTE', 'KG', 'ENDEREÇO', 'CEP']
   let cx = MARGIN_X
   labels.forEach((lbl, i) => {
     const w = COL_W[i]

@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   const { codigo, fantasia, filial = '', nome = '', cnpj = '', cep = '', endereco = '', numero = '', complemento = '' } = body
 
   if (!codigo?.trim()) return new NextResponse('Código obrigatório.', { status: 400 })
-  if (!fantasia?.trim()) return new NextResponse('Fantasia obrigatória.', { status: 400 })
+  if (!fantasia?.trim()) return new NextResponse('Nome da Empresa obrigatório.', { status: 400 })
 
   const svc = createServiceClient()
   const { data, error } = await svc
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
   const { count: semEndereco } = await svc
     .from('clientes_cozinha')
     .select('id', { count: 'exact', head: true })
-    .eq('endereco', '')
+    .or('endereco.is.null,endereco.eq.')
 
   let query = svc.from('clientes_cozinha').select('*', { count: 'exact' })
 
