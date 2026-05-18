@@ -16,6 +16,25 @@ import type { LinhaEscala } from '@/lib/types/escala'
 export const runtime = 'nodejs'
 export const maxDuration = 120
 
+type PreviewLinha = {
+  ordem: number
+  loja_nome: string
+  placa: string | null
+  motorista: string | null
+  turno: string
+  tem_gps: boolean
+  saida_cd_fmt: string | null
+  chegada_loja_fmt: string | null
+  tempo_loja_min: number | null
+}
+
+function fmtHoraBRT(d: Date | null | undefined): string | null {
+  if (!d) return null
+  const h = (d.getUTCHours() - 3 + 24) % 24
+  const m = d.getUTCMinutes()
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
 type AltConfirmada = {
   tipo: string
   entra: { motorista_nome: string | null; motorista_codigo: number | null; placa_raw: string | null; placa_norm: string | null } | null
@@ -241,6 +260,18 @@ export async function POST(req: NextRequest) {
       const rede_nome = REDE_NOMES_CANONICOS[rede_id] ?? rede_id
       const qtd_sem_gps = linhas.filter(l => !l.saida_cd && !l.chd_loja_1).length
 
+      const preview: PreviewLinha[] = sorted.map(({ rota, esc }, idx) => ({
+        ordem: idx + 1,
+        loja_nome: esc.loja_nome_raw,
+        placa: rota.placa_norm,
+        motorista: esc.motorista_nome,
+        turno: esc.turno,
+        tem_gps: !!(rota.saida_cd || rota.paradas.length > 0),
+        saida_cd_fmt: fmtHoraBRT(rota.saida_cd),
+        chegada_loja_fmt: fmtHoraBRT(rota.paradas[0]?.chegada),
+        tempo_loja_min: rota.paradas[0]?.duracao_min ?? null,
+      }))
+
       const [xlsxBuffer, pdfBuffer] = await Promise.all([
         gerarKpi({ rede_id, data, linhas }),
         gerarKpiPdf({ rede_id, rede_nome, data, linhas: linhas as KpiLinha[] }),
@@ -253,6 +284,7 @@ export async function POST(req: NextRequest) {
         qtd_sem_gps,
         xlsxBase64: xlsxBuffer.toString('base64'),
         pdfBase64: pdfBuffer.toString('base64'),
+        preview,
       }
     })
   )

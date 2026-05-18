@@ -6,29 +6,15 @@ import {
   HouseSimple,
   ForkKnife,
   TableIcon,
-  CalendarBlank,
-  ClockCounterClockwise,
-  FilePlus,
-  MagnifyingGlass,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 
 type Item = { href: string; label: string; Icon: PhosphorIcon }
 
-const PRINCIPAL: Item[] = [
+const NAV_ITEMS: Item[] = [
   { href: '/painel', label: 'Início', Icon: HouseSimple },
   { href: '/painel/cozinha', label: 'Cozinha', Icon: ForkKnife },
-]
-
-const KPI_BENASSI: Item[] = [
-  { href: '/painel/kpi/simples', label: 'Simples', Icon: TableIcon },
-  { href: '/painel/kpi/dia', label: 'Dia', Icon: CalendarBlank },
-  { href: '/painel/historico', label: 'Histórico', Icon: ClockCounterClockwise },
-]
-
-const OUTROS: Item[] = [
-  { href: '/painel/alteracoes/nova', label: 'Alteração de Escala', Icon: FilePlus },
-  { href: '/painel/revisao', label: 'Revisar Anomalias', Icon: MagnifyingGlass },
+  { href: '/painel/kpi/simples', label: 'KPI', Icon: TableIcon },
 ]
 
 function isActive(pathname: string, href: string) {
@@ -64,39 +50,18 @@ function NavLink({ item, active }: { item: Item; active: boolean }) {
   )
 }
 
-function Section({
-  title,
-  items,
-  pathname,
-}: {
-  title: string
-  items: Item[]
-  pathname: string
-}) {
+export function PainelNav() {
+  const pathname = usePathname()
+
   return (
-    <div className="flex flex-col gap-px">
-      <div className="px-2.5 pb-2 pt-5 text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-600">
-        {title}
-      </div>
-      {items.map(item => (
+    <nav className="flex flex-1 flex-col gap-px px-3 pt-4 pb-3">
+      {NAV_ITEMS.map(item => (
         <NavLink
           key={item.href}
           item={item}
           active={isActive(pathname, item.href)}
         />
       ))}
-    </div>
-  )
-}
-
-export function PainelNav() {
-  const pathname = usePathname()
-
-  return (
-    <nav className="flex flex-1 flex-col gap-1 px-3 pt-1 pb-3">
-      <Section title="Principal" items={PRINCIPAL} pathname={pathname} />
-      <Section title="KPI Benassi" items={KPI_BENASSI} pathname={pathname} />
-      <Section title="Outros" items={OUTROS} pathname={pathname} />
     </nav>
   )
 }

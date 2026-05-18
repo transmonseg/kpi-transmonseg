@@ -13,8 +13,10 @@ import {
   CheckCircle,
   ArrowRight,
   CalendarBlank,
+  WifiSlash,
+  WifiHigh,
 } from '@phosphor-icons/react/dist/ssr'
-import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label, cn } from '@/components/ui'
+import { Button, Card, CardContent, Input, cn } from '@/components/ui'
 
 type VeiculoSlot = {
   motorista_nome: string | null
@@ -34,6 +36,18 @@ type AlteracaoParsed = {
   confianca: 'alta' | 'media' | 'baixa'
 }
 
+type PreviewLinha = {
+  ordem: number
+  loja_nome: string
+  placa: string | null
+  motorista: string | null
+  turno: string
+  tem_gps: boolean
+  saida_cd_fmt: string | null
+  chegada_loja_fmt: string | null
+  tempo_loja_min: number | null
+}
+
 type RedeResult = {
   rede_id: string
   rede_nome: string
@@ -41,6 +55,7 @@ type RedeResult = {
   qtd_sem_gps: number
   xlsxBase64: string
   pdfBase64: string
+  preview: PreviewLinha[]
 }
 
 function downloadBase64(base64: string, filename: string, mime: string) {
@@ -484,13 +499,13 @@ export default function KpiSimplesPage() {
         </div>
       )}
 
-      {/* Resultado — bento de cards de rede */}
+      {/* Resultado — preview completo por rede */}
       {redes && redes.length > 0 && (
-        <section className="mt-12">
-          <div className="mb-6 flex items-baseline justify-between">
+        <section className="mt-12 space-y-8">
+          <div className="flex items-baseline justify-between">
             <div className="flex flex-col gap-1">
               <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
-                Resultado
+                Pré-visualização KPI
               </span>
               <h2 className="text-[20px] font-semibold tracking-tight text-[var(--color-fg)]">
                 {redes.length} rede{redes.length === 1 ? '' : 's'} processada{redes.length === 1 ? '' : 's'}
@@ -501,11 +516,9 @@ export default function KpiSimplesPage() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {redes.map(r => (
-              <RedeResultCard key={r.rede_id} rede={r} data={data} />
-            ))}
-          </div>
+          {redes.map(r => (
+            <RedePreviewSection key={r.rede_id} rede={r} data={data} />
+          ))}
         </section>
       )}
     </div>
@@ -624,9 +637,9 @@ function FileDropzone({ className, eyebrow, label, hint, accept, multiple, files
   )
 }
 
-// ─── Rede result card ───────────────────────────────────────────────────────
+// ─── Rede preview section ────────────────────────────────────────────────────
 
-function RedeResultCard({ rede, data }: { rede: RedeResult; data: string }) {
+function RedePreviewSection({ rede, data }: { rede: RedeResult; data: string }) {
   const cobertura = rede.qtd_rotas > 0
     ? Math.round(((rede.qtd_rotas - rede.qtd_sem_gps) / rede.qtd_rotas) * 100)
     : 0
@@ -634,41 +647,61 @@ function RedeResultCard({ rede, data }: { rede: RedeResult; data: string }) {
     cobertura >= 80 ? 'success' : cobertura >= 50 ? 'warning' : 'danger'
 
   return (
-    <div className="group flex flex-col gap-4 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5 transition-colors duration-200 hover:border-[var(--color-border-strong)]">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate text-[15px] font-semibold tracking-tight text-[var(--color-fg)]">
-            {rede.rede_nome}
-          </h3>
-          <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--color-fg-subtle)]">
-            {rede.rede_id.replace(/_/g, ' ')}
-          </p>
+    <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
+      {/* Header da rede */}
+      <div className="flex items-center justify-between gap-4 border-b border-[var(--color-border)] px-5 py-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="min-w-0">
+            <h3 className="truncate text-[15px] font-semibold tracking-tight text-[var(--color-fg)]">
+              {rede.rede_nome}
+            </h3>
+            <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--color-fg-subtle)]">
+              {rede.qtd_rotas} rota{rede.qtd_rotas !== 1 ? 's' : ''} · GPS{' '}
+              <span
+                className={cn(
+                  'text-numeric',
+                  tomCobertura === 'success' && 'text-[var(--color-success)]',
+                  tomCobertura === 'warning' && 'text-[var(--color-warning)]',
+                  tomCobertura === 'danger' && 'text-[var(--color-danger)]',
+                )}
+              >
+                {cobertura}%
+              </span>
+              {rede.qtd_sem_gps > 0 && (
+                <span className="text-[var(--color-fg-subtle)]"> · {rede.qtd_sem_gps} sem dado</span>
+              )}
+            </p>
+          </div>
         </div>
-        {tomCobertura === 'success' && (
-          <CheckCircle size={18} weight="fill" className="shrink-0 text-[var(--color-success)]" />
-        )}
-        {tomCobertura === 'warning' && (
-          <WarningCircle size={18} weight="fill" className="shrink-0 text-[var(--color-warning)]" />
-        )}
-        {tomCobertura === 'danger' && (
-          <WarningCircle size={18} weight="fill" className="shrink-0 text-[var(--color-danger)]" />
-        )}
+        <div className="flex shrink-0 items-center gap-1.5">
+          {tomCobertura === 'success' && <CheckCircle size={16} weight="fill" className="text-[var(--color-success)]" />}
+          {tomCobertura !== 'success' && <WarningCircle size={16} weight="fill" className={tomCobertura === 'warning' ? 'text-[var(--color-warning)]' : 'text-[var(--color-danger)]'} />}
+          <button
+            type="button"
+            onClick={() => downloadBase64(rede.xlsxBase64, `KPI-${rede.rede_id}-${data}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+            className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--color-fg)] transition-all duration-150 active:scale-[0.96] hover:border-[var(--color-navy-700)] hover:bg-[var(--color-navy-700)] hover:text-white"
+          >
+            <FileArrowDown size={12} weight="bold" />
+            <FileXls size={12} weight="bold" />
+            XLSX
+          </button>
+          <button
+            type="button"
+            onClick={() => downloadBase64(rede.pdfBase64, `KPI-${rede.rede_id}-${data}.pdf`, 'application/pdf')}
+            className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--color-fg)] transition-all duration-150 active:scale-[0.96] hover:border-[var(--color-navy-700)] hover:bg-[var(--color-navy-700)] hover:text-white"
+          >
+            <FileArrowDown size={12} weight="bold" />
+            <FilePdf size={12} weight="bold" />
+            PDF
+          </button>
+        </div>
       </div>
 
-      <div className="flex items-baseline gap-3">
-        <span className="text-display text-[44px] text-[var(--color-fg)]">
-          {rede.qtd_rotas}
-        </span>
-        <span className="text-[12px] text-[var(--color-fg-muted)]">
-          rota{rede.qtd_rotas === 1 ? '' : 's'}
-        </span>
-      </div>
-
-      {/* Barra de cobertura GPS */}
-      <div className="h-[3px] overflow-hidden rounded-full bg-[var(--color-bg-subtle)]">
+      {/* Barra de cobertura */}
+      <div className="h-[2px] bg-[var(--color-bg-subtle)]">
         <div
           className={cn(
-            'h-full rounded-full transition-all duration-700',
+            'h-full transition-all duration-700',
             tomCobertura === 'success' && 'bg-[var(--color-success)]',
             tomCobertura === 'warning' && 'bg-[var(--color-warning)]',
             tomCobertura === 'danger' && 'bg-[var(--color-danger)]',
@@ -677,50 +710,74 @@ function RedeResultCard({ rede, data }: { rede: RedeResult; data: string }) {
         />
       </div>
 
-      <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-3">
-        <span className="text-[11px] text-[var(--color-fg-muted)]">
-          GPS{' '}
-          <span
-            className={cn(
-              'text-numeric font-semibold',
-              tomCobertura === 'success' && 'text-[var(--color-success)]',
-              tomCobertura === 'warning' && 'text-[var(--color-warning)]',
-              tomCobertura === 'danger' && 'text-[var(--color-danger)]',
-            )}
-          >
-            {cobertura}%
-          </span>
-          {rede.qtd_sem_gps > 0 && (
-            <span className="text-[var(--color-fg-subtle)]"> · {rede.qtd_sem_gps} sem dado</span>
-          )}
-        </span>
-        <div className="flex gap-1.5">
-          <DownloadChip
-            onClick={() => downloadBase64(rede.xlsxBase64, `KPI-${rede.rede_id}-${data}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
-            label="XLSX"
-            icon={<FileXls size={12} weight="bold" />}
-          />
-          <DownloadChip
-            onClick={() => downloadBase64(rede.pdfBase64, `KPI-${rede.rede_id}-${data}.pdf`, 'application/pdf')}
-            label="PDF"
-            icon={<FilePdf size={12} weight="bold" />}
-          />
-        </div>
+      {/* Tabela de preview */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-[12.5px]">
+          <thead>
+            <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)]">
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] w-8">#</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)]">Loja</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)]">Placa</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden sm:table-cell">Motorista</th>
+              <th className="px-4 py-2.5 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] w-14">GPS</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Saída CD</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Ch. Loja</th>
+              <th className="px-4 py-2.5 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden lg:table-cell">Tempo</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--color-border)]">
+            {rede.preview.map(linha => (
+              <PreviewRow key={linha.ordem} linha={linha} />
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )
 }
 
-function DownloadChip({ onClick, label, icon }: { onClick: () => void; label: string; icon: React.ReactNode }) {
+function PreviewRow({ linha }: { linha: PreviewLinha }) {
+  const semGps = !linha.tem_gps
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--color-fg)] transition-all duration-150 active:scale-[0.96] hover:border-[var(--color-navy-700)] hover:bg-[var(--color-navy-700)] hover:text-white"
+    <tr
+      className={cn(
+        'transition-colors duration-100',
+        semGps
+          ? 'bg-[var(--color-danger-soft)] hover:bg-[var(--color-danger-soft)]'
+          : 'hover:bg-[var(--color-bg-hover)]',
+      )}
     >
-      <FileArrowDown size={12} weight="bold" />
-      {icon}
-      {label}
-    </button>
+      <td className="px-4 py-2.5 text-numeric text-[var(--color-fg-subtle)]">
+        {linha.ordem}
+      </td>
+      <td className="px-4 py-2.5 font-medium text-[var(--color-fg)] max-w-[200px]">
+        <span className="block truncate">{linha.loja_nome}</span>
+      </td>
+      <td className="px-4 py-2.5 text-numeric text-[var(--color-fg)]">
+        {linha.placa
+          ? `${linha.placa.slice(0, 3)}-${linha.placa.slice(3)}`
+          : <span className="text-[var(--color-fg-subtle)]">—</span>}
+      </td>
+      <td className="px-4 py-2.5 text-[var(--color-fg-muted)] hidden sm:table-cell max-w-[140px]">
+        <span className="block truncate">{linha.motorista ?? '—'}</span>
+      </td>
+      <td className="px-4 py-2.5 text-center">
+        {linha.tem_gps
+          ? <WifiHigh size={14} weight="bold" className="mx-auto text-[var(--color-success)]" />
+          : <WifiSlash size={14} weight="bold" className="mx-auto text-[var(--color-danger)]" />}
+      </td>
+      <td className="px-4 py-2.5 text-numeric text-[var(--color-fg-muted)] hidden md:table-cell">
+        {linha.saida_cd_fmt ?? <span className="text-[var(--color-fg-subtle)]">—</span>}
+      </td>
+      <td className="px-4 py-2.5 text-numeric text-[var(--color-fg-muted)] hidden md:table-cell">
+        {linha.chegada_loja_fmt ?? <span className="text-[var(--color-fg-subtle)]">—</span>}
+      </td>
+      <td className="px-4 py-2.5 text-numeric text-right text-[var(--color-fg-muted)] hidden lg:table-cell">
+        {linha.tempo_loja_min != null
+          ? `${linha.tempo_loja_min} min`
+          : <span className="text-[var(--color-fg-subtle)]">—</span>}
+      </td>
+    </tr>
   )
 }
