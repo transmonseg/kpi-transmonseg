@@ -10,6 +10,7 @@ import {
   CircleNotch,
   CaretLeft,
   CaretRight,
+  Plus,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Button,
@@ -51,6 +52,16 @@ type EdicaoInline = {
   complemento: string
 }
 
+type NovoCliente = {
+  codigo: string
+  fantasia: string
+  nome: string
+  cep: string
+  endereco: string
+  numero: string
+  complemento: string
+}
+
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value)
   useEffect(() => {
@@ -69,6 +80,9 @@ export function GestorClientes() {
   const [edicao, setEdicao] = useState<EdicaoInline | null>(null)
   const [savingId, setSavingId] = useState<string | null>(null)
   const [erroSave, setErroSave] = useState<string | null>(null)
+  const [novo, setNovo] = useState<NovoCliente | null>(null)
+  const [salvandoNovo, setSalvandoNovo] = useState(false)
+  const [erroNovo, setErroNovo] = useState<string | null>(null)
   const [importando, startImport] = useTransition()
   const [erroImport, setErroImport] = useState<string | null>(null)
   const [sucessoImport, setSucessoImport] = useState<string | null>(null)
@@ -97,6 +111,37 @@ export function GestorClientes() {
     buscar(page, debouncedQ)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page])
+
+  function abrirNovo() {
+    setNovo({ codigo: '', fantasia: '', nome: '', cep: '', endereco: '', numero: '', complemento: '' })
+    setErroNovo(null)
+    setEdicao(null)
+  }
+
+  async function salvarNovo() {
+    if (!novo) return
+    if (!novo.codigo.trim() || !novo.fantasia.trim()) {
+      setErroNovo('Código e Fantasia são obrigatórios.')
+      return
+    }
+    setSalvandoNovo(true)
+    setErroNovo(null)
+    try {
+      const res = await fetch('/api/cozinha/clientes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(novo),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      setNovo(null)
+      buscar(1, debouncedQ)
+      setPage(1)
+    } catch (e) {
+      setErroNovo(e instanceof Error ? e.message : 'Erro ao salvar.')
+    } finally {
+      setSalvandoNovo(false)
+    }
+  }
 
   function iniciarEdicao(c: Cliente) {
     setEdicao({ id: c.id, cep: c.cep, endereco: c.endereco, numero: c.numero, complemento: c.complemento })
@@ -185,6 +230,10 @@ export function GestorClientes() {
                   className="h-8 w-60 pl-7 text-[13px]"
                 />
               </div>
+              <Button size="sm" variant="secondary" onClick={abrirNovo} disabled={!!novo}>
+                <Plus size={13} weight="bold" />
+                Novo Cliente
+              </Button>
               <Button size="sm" variant="secondary" onClick={() => fileRef.current?.click()} disabled={importando}>
                 {importando
                   ? <CircleNotch size={13} weight="bold" className="animate-spin" />
@@ -224,6 +273,40 @@ export function GestorClientes() {
                   </tr>
                 </thead>
                 <tbody>
+                  {novo && (
+                    <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
+                      <td className="px-2 py-1">
+                        <Input value={novo.fantasia} onChange={e => setNovo(p => p ? { ...p, fantasia: e.target.value } : p)} className="h-7 w-36 text-[12px]" placeholder="Fantasia *" autoFocus />
+                      </td>
+                      <td className="px-2 py-1">
+                        <Input value={novo.codigo} onChange={e => setNovo(p => p ? { ...p, codigo: e.target.value } : p)} className="h-7 w-20 text-[12px]" placeholder="Código *" />
+                      </td>
+                      <td className="px-2 py-1">
+                        <Input value={novo.cep} onChange={e => setNovo(p => p ? { ...p, cep: e.target.value } : p)} className="h-7 w-24 text-[12px]" placeholder="CEP" />
+                      </td>
+                      <td className="px-2 py-1">
+                        <Input value={novo.endereco} onChange={e => setNovo(p => p ? { ...p, endereco: e.target.value } : p)} className="h-7 w-48 text-[12px]" placeholder="Endereço" />
+                      </td>
+                      <td className="px-2 py-1">
+                        <Input value={novo.numero} onChange={e => setNovo(p => p ? { ...p, numero: e.target.value } : p)} className="h-7 w-16 text-[12px]" placeholder="Nº" />
+                      </td>
+                      <td className="px-2 py-1">
+                        <Input value={novo.complemento} onChange={e => setNovo(p => p ? { ...p, complemento: e.target.value } : p)} className="h-7 w-28 text-[12px]" placeholder="Comp." />
+                      </td>
+                      <td className="px-2 py-1">
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" onClick={salvarNovo} disabled={salvandoNovo} className="h-6 px-2 text-[11px]">
+                            {salvandoNovo ? <CircleNotch size={11} weight="bold" className="animate-spin" /> : <FloppyDisk size={11} weight="bold" />}
+                            Salvar
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setNovo(null)} disabled={salvandoNovo} className="h-6 px-2 text-[11px]">
+                            <X size={11} weight="bold" />
+                          </Button>
+                        </div>
+                        {erroNovo && <div className="mt-1 text-[11px] text-[var(--color-danger-soft-fg)]">{erroNovo}</div>}
+                      </td>
+                    </tr>
+                  )}
                   {lista?.clientes.map(c => {
                     const editing = edicao?.id === c.id
                     const saving = savingId === c.id

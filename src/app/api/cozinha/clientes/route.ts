@@ -6,6 +6,28 @@ export const runtime = 'nodejs'
 
 const PAGE_SIZE = 50
 
+export async function POST(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return new NextResponse('Não autenticado', { status: 401 })
+
+  const body = await req.json()
+  const { codigo, fantasia, filial = '', nome = '', cnpj = '', cep = '', endereco = '', numero = '', complemento = '' } = body
+
+  if (!codigo?.trim()) return new NextResponse('Código obrigatório.', { status: 400 })
+  if (!fantasia?.trim()) return new NextResponse('Fantasia obrigatória.', { status: 400 })
+
+  const svc = createServiceClient()
+  const { data, error } = await svc
+    .from('clientes_cozinha')
+    .insert({ codigo: codigo.trim(), fantasia: fantasia.trim(), filial, nome, cnpj, cep, endereco, numero, complemento })
+    .select()
+    .single()
+
+  if (error) return new NextResponse(error.message, { status: 400 })
+  return NextResponse.json(data, { status: 201 })
+}
+
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
