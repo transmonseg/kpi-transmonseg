@@ -27,7 +27,14 @@ function cellVal(cell: ExcelJS.Cell | undefined): unknown {
 }
 
 function extraiHora(v: unknown): { hh: number; mm: number } | null {
-  if (v instanceof Date) return { hh: v.getHours(), mm: v.getMinutes() }
+  if (v instanceof Date) {
+    // Excel pure-time serials are represented as UTC dates near 1900-01-01.
+    // Use UTC methods to avoid local timezone skewing the extracted hour.
+    const isExcelSerial = v.getUTCFullYear() <= 1900
+    return isExcelSerial
+      ? { hh: v.getUTCHours(), mm: v.getUTCMinutes() }
+      : { hh: v.getHours(), mm: v.getMinutes() }
+  }
   if (typeof v === 'string') {
     const m = v.match(/^(\d+):(\d+)/)
     if (m) return { hh: Number(m[1]), mm: Number(m[2]) }
@@ -101,6 +108,101 @@ function isDataRow(r: (unknown)[]): boolean {
   return true
 }
 
+// ─── Formato compacto (Plan1 / pares de linhas) ──────────────────────────────
+
+function isDataRowCompacto(r: unknown[]): boolean {
+  const c8 = r[7]
+  if (c8 === null || c8 === undefined) return false
+  if (typeof c8 === 'number') return true
+  if (typeof c8 === 'string') return c8.trim().length <= 12
+  return false
+}
+
+function detectaFormatoCompacto(ws: ExcelJS.Worksheet): boolean {
+  if (ws.rowCount < 1) return false
+  const row1 = ws.getRow(1)
+  const c1 = cellVal(row1.getCell(1))
+  const c2 = cellVal(row1.getCell(2))
+  const c3 = cellVal(row1.getCell(3))
+  const c10 = cellVal(row1.getCell(10))
+  return (
+    c1 instanceof Date &&
+    (c2 === null || c2 === undefined) &&
+    typeof c3 === 'number' &&
+    typeof c10 === 'string' && c10.length >= 6
+  )
+}
+
+function filialKey(num: number): { nomeKey: string; d1Key: string } {
+  const nomeKey = String(num)
+  const d1Key = num < 10 ? `0${num}` : String(num)
+  return { nomeKey, d1Key }
+}
+
+function parseFormatoCompacto(ws: ExcelJS.Worksheet, dataAlvo?: string): LinhaEscala[] {
+  const results: LinhaEscala[] = []
+
+  const [year, month, day] = (dataAlvo ?? '').split('-').map(Number)
+  const dataCargaDate =
+    year && month && day ? new Date(year, month - 1, day) : new Date()
+  const dataISO = formataDataISO(dataCargaDate)
+
+  ws.eachRow((row, rowNumber) => {
+    const r: unknown[] = []
+    for (let c = 1; c <= 15; c++) r.push(cellVal(row.getCell(c)))
+
+    if (!isDataRowCompacto(r)) return
+
+    const filialNum = r[2]
+    if (typeof filialNum !== 'number') return
+    const { nomeKey, d1Key } = filialKey(Math.round(filialNum))
+
+    const horaVal = r[0]
+    const pesoKg = toNum(r[3])
+    const tipoCarroRaw = r[7]
+    const paletes = toNum(r[8])
+    const placaRaw = toStr(r[9])
+    const motoristaRaw = toStr(r[13])
+    const motoristaCod = toStr(r[14])
+
+    const hora = extraiHora(horaVal)
+    const placaNorm = normalizaPlaca(placaRaw)
+    const turno = infereTurno(hora)
+
+    let tipoCarro: string | null = null
+    if (typeof tipoCarroRaw === 'string') tipoCarro = tipoCarroRaw.trim() || null
+    else if (typeof tipoCarroRaw === 'number') tipoCarro = String(tipoCarroRaw)
+
+    const nomeCompleto = FILIAL_NOME.get(nomeKey) ?? `Filial ${d1Key}`
+    const dataEntrega = resolveDataEntrega(dataCargaDate, d1Key, hora)
+
+    results.push({
+      data: dataISO,
+      data_entrega: dataEntrega,
+      rede_id: 'ZONA_SUL',
+      loja_nome_raw: nomeCompleto,
+      loja_codigo_raw: d1Key,
+      placa_norm: placaNorm,
+      placa_raw: placaRaw,
+      motorista_nome: ultimoNome(motoristaRaw),
+      motorista_codigo: motoristaCod,
+      tipo_carro: tipoCarro,
+      carro_ordem: 1,
+      turno,
+      tipo_emissao: 'NORMAL',
+      obs: null,
+      restricao: null,
+      peso_kg: pesoKg,
+      paletes,
+      raw_row_num: rowNumber,
+    })
+  })
+
+  return results
+}
+
+// ─── Parser principal ─────────────────────────────────────────────────────────
+
 export async function parseEscalaZonaSul(
   buffer: ArrayBuffer | Buffer,
   dataAlvo?: string
@@ -111,7 +213,14 @@ export async function parseEscalaZonaSul(
   await wb.xlsx.load(buf as any)
 
   const ws = wb.getWorksheet('MATRIZ')
-  if (!ws) throw new Error('Aba MATRIZ não encontrada')
+  if (!ws) {
+    // Tenta formato compacto (Plan1 / pares de linhas sem cabeçalho MATRIZ)
+    const firstWs = wb.worksheets[0]
+    if (firstWs && detectaFormatoCompacto(firstWs)) {
+      return parseFormatoCompacto(firstWs, dataAlvo)
+    }
+    throw new Error('Aba MATRIZ não encontrada')
+  }
 
   const results: LinhaEscala[] = []
   let currentDate: Date | null = null
