@@ -1,11 +1,14 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useMemo, useState, useTransition, useEffect } from 'react'
 import {
   UploadSimple,
   DownloadSimple,
   FloppyDisk,
   CircleNotch,
+  UsersThree,
+  CheckCircle,
+  Warning,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Badge,
@@ -39,12 +42,21 @@ type Estatisticas = {
   duplicadas: number
 }
 
+type MatrizStatus = {
+  exists: boolean
+  totalClientes: number
+  updatedAt: string | null
+}
+
 type Resultado = {
   rotas: Rota[]
   estatisticas: Estatisticas
   declaradas: number
   xlsxBase64: string
   pdfBase64: string
+  romaneioXlsxBase64?: string
+  romaneioPdfBase64?: string
+  temMatriz?: boolean
   nomeBase: string
 }
 
@@ -66,6 +78,17 @@ export function CozinhaUploader() {
   const [filtro, setFiltro] = useState<FiltroLista>('todas')
   const [filtroExport, setFiltroExport] = useState<FiltroExport>('todos')
   const [pendingDownload, startDownload] = useTransition()
+  const [matriz, setMatriz] = useState<MatrizStatus | null>(null)
+  const [arquivoMatriz, setArquivoMatriz] = useState<File | null>(null)
+  const [pendingMatriz, startMatriz] = useTransition()
+  const [erroMatriz, setErroMatriz] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/cozinha/matriz')
+      .then(r => r.json())
+      .then((d: MatrizStatus) => setMatriz(d))
+      .catch(() => {})
+  }, [])
 
   async function processar() {
     if (!arquivo) {
@@ -196,6 +219,24 @@ export function CozinhaUploader() {
     })
   }
 
+  async function uploadMatriz() {
+    if (!arquivoMatriz) return
+    setErroMatriz(null)
+    const fd = new FormData()
+    fd.append('arquivo', arquivoMatriz)
+    startMatriz(async () => {
+      try {
+        const res = await fetch('/api/cozinha/matriz', { method: 'POST', body: fd })
+        if (!res.ok) throw new Error((await res.text()) || 'Erro ao enviar.')
+        const data = (await res.json()) as { ok: boolean; totalClientes: number }
+        setMatriz({ exists: true, totalClientes: data.totalClientes, updatedAt: new Date().toISOString() })
+        setArquivoMatriz(null)
+      } catch (e) {
+        setErroMatriz(e instanceof Error ? e.message : String(e))
+      }
+    })
+  }
+
   const editou = useMemo(() => {
     if (!rotasEditadas || !resultado) return false
     return rotasEditadas.some(
@@ -291,6 +332,84 @@ export function CozinhaUploader() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UsersThree size={16} weight="fill" className="text-[var(--color-accent)]" />
+            Matriz de Clientes
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3">
+            {matriz?.exists ? (
+              <div className="flex items-center gap-2 rounded-md border border-transparent bg-[var(--color-success-soft)] px-3 py-2 text-[13px] text-[var(--color-success-soft-fg)]">
+                <CheckCircle size={15} weight="fill" />
+                <span>
+                  <span className="font-semibold">{matriz.totalClientes}</span> clientes carregados
+                  {matriz.updatedAt && (
+                    <span className="ml-2 opacity-70">
+                      · atualizado {new Date(matriz.updatedAt).toLocaleDateString('pt-BR')}
+                    </span>
+                  )}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 rounded-md border border-transparent bg-[var(--color-warning-soft)] px-3 py-2 text-[13px] text-[var(--color-warning-soft-fg)]">
+                <Warning size={15} weight="fill" />
+                <span>Nenhuma matriz carregada — romaneio será gerado sem endereços</span>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="cozinha-matriz">Atualizar matriz (XLSX dos clientes)</Label>
+              <label
+                htmlFor="cozinha-matriz"
+                className={cn(
+                  'flex h-24 w-full cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed px-4 text-center transition-colors',
+                  'border-[var(--color-border-strong)] bg-[var(--color-bg-subtle)]',
+                  'hover:border-[var(--color-accent)] hover:bg-[var(--color-bg-hover)]',
+                )}
+              >
+                <UploadSimple size={20} weight="bold" className="mb-1 text-[var(--color-fg-subtle)]" />
+                <span className="text-[13px] font-medium text-[var(--color-fg)]">
+                  {arquivoMatriz ? arquivoMatriz.name : 'Clique para selecionar'}
+                </span>
+                <input
+                  id="cozinha-matriz"
+                  type="file"
+                  accept=".xlsx"
+                  onChange={(e) => setArquivoMatriz(e.target.files?.[0] ?? null)}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            <div className="flex flex-col justify-end gap-2">
+              {erroMatriz && (
+                <div className="rounded-md border border-transparent bg-[var(--color-danger-soft)] px-3 py-2 text-[12px] text-[var(--color-danger-soft-fg)]">
+                  {erroMatriz}
+                </div>
+              )}
+              <Button
+                onClick={uploadMatriz}
+                disabled={pendingMatriz || !arquivoMatriz}
+                size="md"
+              >
+                {pendingMatriz ? (
+                  <>
+                    <CircleNotch size={14} weight="bold" className="animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  'Salvar matriz'
+                )}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {resultado && rotasEditadas && (
         <>
           <AlertasResumo
@@ -362,6 +481,42 @@ export function CozinhaUploader() {
                   {pendingDownload ? <Spinner /> : <IconDownload />}
                   PDF
                 </Button>
+                {resultado.romaneioXlsxBase64 && (
+                  <>
+                    <div className="mx-1 h-4 w-px bg-[var(--color-border)]" />
+                    <span className="text-[11px] font-medium text-[var(--color-fg-muted)]">
+                      Romaneio:
+                    </span>
+                    <Button
+                      onClick={() =>
+                        baixar(
+                          resultado.romaneioXlsxBase64!,
+                          `${resultado.nomeBase}_ROMANEIO.xlsx`,
+                          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        )
+                      }
+                      size="sm"
+                      variant="primary"
+                    >
+                      <DownloadSimple size={14} weight="bold" />
+                      XLSX
+                    </Button>
+                    <Button
+                      onClick={() =>
+                        baixar(
+                          resultado.romaneioPdfBase64!,
+                          `${resultado.nomeBase}_ROMANEIO.pdf`,
+                          'application/pdf',
+                        )
+                      }
+                      size="sm"
+                      variant="secondary"
+                    >
+                      <DownloadSimple size={14} weight="bold" />
+                      PDF
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
 
