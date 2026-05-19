@@ -448,7 +448,7 @@ export function GerarSection({
               <DropZone
                 onFiles={handleUnitracDrop}
                 variant="unitrac"
-                hint=".pdf preferido · .xlsx aceito · não fica salvo no sistema"
+                hint=".xlsx recomendado (extração mais precisa) · .pdf aceito · não fica salvo no sistema"
               />
             )}
           </div>

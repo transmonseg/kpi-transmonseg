@@ -40,7 +40,7 @@ export function DropZone({
       ? `Enviando ${uploadingCount} arquivos…`
       : 'Enviando…'
 
-  const subtitle = hint ?? '.xlsx · .pdf — detecta o tipo automaticamente'
+  const subtitle = hint ?? '.xlsx ou .pdf — detecta o tipo automaticamente'
 
   const stateClass = dragging
     ? 'border-solid border-[var(--color-accent)] bg-[var(--color-accent-soft)]/40 ring-2 ring-[var(--color-accent)]/30'
