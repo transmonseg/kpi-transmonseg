@@ -1,26 +1,35 @@
-import fs from 'fs'
-import { parseEscalaGuanabaraPdf } from '../src/lib/parsers/escala-guanabara-pdf.ts'
+import pdfParse from '../node_modules/pdf-parse/index.js'
+import { readFileSync } from 'fs'
 
-const paths = [
-  'C:/Users/media/OneDrive/Desktop/EMPRESA TRIFORCE AUTO/clientes/tia-erica/CONVERSAS COM ERICA/escalas/escala 15.005.pdf',
-  'C:/Users/media/OneDrive/Desktop/EMPRESA TRIFORCE AUTO/clientes/tia-erica/CONVERSAS COM ERICA/escalas/ESCALA 14.05.pdf',
+const PLACA_INLINE_RE = String.raw`[A-Z]{3}[\s-]?\d[A-Z0-9]\d{2}|[A-Z]{3}[\s-]?\d{4}`
+const TIPO_INLINE_RE = String.raw`TRUCK|TOCO\s*REFRIGERADO|TOCO|VUC|3\/4|KIA|CARRETA`
+
+// ANTES do fix (sem \s?)
+const PLACA_TIPO_ANTES = new RegExp(`(${PLACA_INLINE_RE})(${TIPO_INLINE_RE})\b`, 'g')
+// DEPOIS do fix (com \s?)
+const PLACA_TIPO_DEPOIS = new RegExp(`(${PLACA_INLINE_RE})\s?(${TIPO_INLINE_RE})\b`, 'g')
+
+const testes = [
+  '12RONALDO35KSG 5412TRUCKJOSE NILDON (DOCA) 753KVG 7A00TRUCK',
+  '22P.CESAR210LFK-2C56TRUCKP.CESAR210LFK-2C56TRUCK',
+  '31RAFAEL184497KNI-8988TRUCK',
+  '71MOISES294GBC 6E12TRUCKANDERSON244KST-0246TRUCK',
 ]
 
-for (const p of paths) {
-  console.log('\n====================')
-  console.log('FILE:', p)
-  console.log('====================')
+console.log('=== ANTES ===')
+for (const t of testes) {
+  PLACA_TIPO_ANTES.lastIndex = 0
+  const hits = []
+  let m
+  while ((m = PLACA_TIPO_ANTES.exec(t)) !== null) hits.push(m[1] + ' | ' + m[2])
+  console.log(t.substring(0,60), '->', hits)
+}
 
-  const buf = fs.readFileSync(p)
-  const linhas = await parseEscalaGuanabaraPdf(buf)
-
-  console.log(`\nExtraídas ${linhas.length} linhas:\n`)
-  for (const l of linhas) {
-    console.log(
-      `  [${l.data_entrega}] Rota ${(l.loja_codigo_raw ?? '?').padStart(2, '0')} (c${l.carro_ordem}) | ${(l.motorista_nome ?? '').padEnd(28)} | cod ${(l.motorista_codigo ?? '').padEnd(6)} | ${(l.placa_raw ?? '').padEnd(12)} → ${l.placa_norm} | ${l.tipo_carro} | ${l.turno}`,
-    )
-  }
-
-  const rotas = new Set(linhas.map((l) => l.loja_codigo_raw))
-  console.log(`\nRotas distintas: ${rotas.size} → [${[...rotas].sort((a, b) => Number(a) - Number(b)).join(', ')}]`)
+console.log('\n=== DEPOIS ===')
+for (const t of testes) {
+  PLACA_TIPO_DEPOIS.lastIndex = 0
+  const hits = []
+  let m
+  while ((m = PLACA_TIPO_DEPOIS.exec(t)) !== null) hits.push(m[1] + ' | ' + m[2])
+  console.log(t.substring(0,60), '->', hits)
 }
