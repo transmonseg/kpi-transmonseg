@@ -52,22 +52,6 @@ export async function POST(req: NextRequest) {
   if (!escalaLinhas || escalaLinhas.length === 0)
     return new NextResponse('Nenhuma linha de escala encontrada para esta data.', { status: 404 })
 
-  const placas = [...new Set(escalaLinhas.filter((l) => l.placa_norm).map((l) => l.placa_norm as string))]
-
-  // Fetch unitrac_paradas via join on unitrac_uploads.data_relatorio
-  const { data: paradaRows, error: paradaErr } = await svc
-    .from('unitrac_paradas')
-    .select(`
-      id, placa_norm, chegada, saida, duracao_seg, distancia_km,
-      endereco, lat, lng, local_parada, codigo_loja, nome_loja,
-      classificacao, loja_id, ordem,
-      unitrac_uploads!inner(data_relatorio)
-    `)
-    .eq('unitrac_uploads.data_relatorio', dataParam)
-    .in('placa_norm', placas.length > 0 ? placas : ['__nenhuma__'])
-
-  if (paradaErr) return new NextResponse(`Erro ao buscar paradas: ${paradaErr.message}`, { status: 500 })
-
   // Fetch lojas (only active)
   const { data: lojas, error: lojasErr } = await svc
     .from('lojas')
@@ -113,8 +97,20 @@ export async function POST(req: NextRequest) {
 
   for (const rid of distinctRedeIds) {
     const linhasRede = escalaLinhas.filter((l) => l.rede_id === rid)
-    const placasRede = new Set(linhasRede.filter((l) => l.placa_norm).map((l) => l.placa_norm as string))
-    const paradasRede = (paradaRows ?? []).filter((p) => placasRede.has(p.placa_norm))
+    const placasRede = [...new Set(linhasRede.filter((l) => l.placa_norm).map((l) => l.placa_norm as string))]
+
+    // Fetch paradas por rede (evita limite de 1000 linhas do Supabase quando há muitas redes)
+    const { data: paradasRede, error: paradaErr } = await svc
+      .from('unitrac_paradas')
+      .select(`
+        id, placa_norm, chegada, saida, duracao_seg, distancia_km,
+        endereco, lat, lng, local_parada, codigo_loja, nome_loja,
+        classificacao, loja_id, ordem,
+        unitrac_uploads!inner(data_relatorio)
+      `)
+      .eq('unitrac_uploads.data_relatorio', dataParam)
+      .in('placa_norm', placasRede.length > 0 ? placasRede : ['__nenhuma__'])
+    if (paradaErr) return new NextResponse(`Erro ao buscar paradas: ${paradaErr.message}`, { status: 500 })
 
     const rotas = await cruzaEscalaUnitrac(
       linhasRede,

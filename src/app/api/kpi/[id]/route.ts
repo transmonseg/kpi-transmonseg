@@ -37,17 +37,23 @@ export async function GET(
   // Buscar rotas pertencentes a este KPI (kpi_rotas se relaciona a kpi via data+rede_id).
   const { data: rotasDoKpi } = await svc
     .from('kpi_rotas')
-    .select('id, escala_linha_id, placa_norm, saida_cd, paradas_json, anomalias_codigos, escala_linhas(motorista_nome, loja_nome_raw, carro_ordem)')
+    .select('id, status, escala_linha_id, placa_norm, saida_cd, paradas_json, anomalias_codigos, escala_linhas(motorista_nome, loja_nome_raw, carro_ordem)')
     .eq('data', kpi.data)
     .eq('rede_id', kpi.rede_id)
   const rotaIds = (rotasDoKpi ?? []).map((r) => r.id as string)
 
-  // Map de escala_linha_id → anomalias_codigos vindos de kpi_rotas
+  // Maps de escala_linha_id → campos de kpi_rotas
   const codigosMap = new Map<string, string[]>(
     (rotasDoKpi ?? []).map((r) => [
       r.escala_linha_id as string,
       (r.anomalias_codigos as string[] | null) ?? [],
     ])
+  )
+  const rotaIdMap = new Map<string, string>(
+    (rotasDoKpi ?? []).map((r) => [r.escala_linha_id as string, r.id as string])
+  )
+  const rotaStatusMap = new Map<string, string>(
+    (rotasDoKpi ?? []).map((r) => [r.escala_linha_id as string, (r.status as string) ?? 'pendente'])
   )
 
   const { data: linhasRaw } = await svc
@@ -80,6 +86,8 @@ export async function GET(
       tempo_loja_3_min: r.tempo_loja_3_min,
       observacao: r.observacao,
       anomalias_codigos: codigosMap.get(r.escala_linha_id as string) ?? [],
+      kpi_rota_id: rotaIdMap.get(r.escala_linha_id as string) ?? null,
+      rota_status: rotaStatusMap.get(r.escala_linha_id as string) ?? null,
     }))
   } else {
     // Fallback: monta linhas direto de kpi_rotas (antes do gerar)
@@ -123,6 +131,8 @@ export async function GET(
           tempo_loja_3_min: p3?.duracao_min ?? null,
           observacao: joinObsTexts(codigos) || null,
           anomalias_codigos: (rota.anomalias_codigos as string[] | null) ?? [],
+          kpi_rota_id: rota.id as string,
+          rota_status: (rota.status as string) ?? 'pendente',
         } satisfies KpiLinha
       })
   }

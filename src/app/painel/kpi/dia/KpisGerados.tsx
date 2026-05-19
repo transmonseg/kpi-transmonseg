@@ -49,6 +49,8 @@ type KpiLinha = {
   tempo_loja_3_min: number | null
   observacao: string | null
   anomalias_codigos: string[]
+  kpi_rota_id?: string | null
+  rota_status?: string | null
 }
 
 type AnomaliaItem = {
@@ -91,6 +93,45 @@ function fmtHora(iso: string | null): string {
 const HIGH_CODES = new Set(['ANOM-01', 'ANOM-04', 'ANOM-06', 'ANOM-07'])
 const MEDIUM_CODES = new Set(['ANOM-03', 'ANOM-05', 'ANOM-08', 'ANOM-10', 'ANOM-11'])
 
+const CODIGO_LABELS: Record<string, string> = {
+  'ANOM-01': 'SEM RASTREADOR',
+  'ANOM-02': 'GPS S/ ESCALA',
+  'ANOM-03': 'PARADA SUSPEITA',
+  'ANOM-04': 'GPS INVÁLIDO',
+  'ANOM-05': 'PARADAS ERRADAS',
+  'ANOM-06': 'SEM SAÍDA CD',
+  'ANOM-07': 'ORDEM GPS',
+  'ANOM-08': 'TEMPO EXCEDIDO',
+  'ANOM-10': 'LOJA AUSENTE',
+  'ANOM-11': 'FORA JANELA',
+}
+
+type SituacaoVariant = 'danger' | 'warning' | 'success' | 'muted'
+
+function situacaoInfo(l: KpiLinha): { label: string; variant: SituacaoVariant } {
+  if (l.rota_status === 'sem_entrega') return { label: 'SEM ENTREGA', variant: 'muted' }
+  const codes = l.anomalias_codigos
+  for (const code of ['ANOM-01', 'ANOM-04', 'ANOM-06', 'ANOM-07']) {
+    if (codes.includes(code)) return { label: CODIGO_LABELS[code] ?? code, variant: 'danger' }
+  }
+  for (const code of ['ANOM-08', 'ANOM-05', 'ANOM-03']) {
+    if (codes.includes(code)) return { label: CODIGO_LABELS[code] ?? code, variant: 'warning' }
+  }
+  for (const code of ['ANOM-11', 'ANOM-10', 'ANOM-02']) {
+    if (codes.includes(code)) return { label: CODIGO_LABELS[code] ?? code, variant: 'muted' }
+  }
+  if (codes.length > 0) return { label: codes[0], variant: 'muted' }
+  return { label: 'OK', variant: 'success' }
+}
+
+function buildTooltip(l: KpiLinha): string {
+  if (l.rota_status === 'sem_entrega') return 'Marcado como sem entrega'
+  if (l.anomalias_codigos.length === 0) return 'Rota sem anomalias detectadas'
+  return l.anomalias_codigos
+    .map((c) => `${c}: ${CODIGO_LABELS[c] ?? c}`)
+    .join('\n')
+}
+
 function severidadeDaCodigos(codigos: string[]): 'HIGH' | 'MEDIUM' | 'LOW' | null {
   if (codigos.length === 0) return null
   if (codigos.some((c) => HIGH_CODES.has(c))) return 'HIGH'
@@ -123,6 +164,7 @@ export function KpisGerados({
   >({})
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
   const [resolvendo, setResolvendo] = useState<string | null>(null)
+  const [marcandoSemEntrega, setMarcandoSemEntrega] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -285,6 +327,26 @@ export function KpisGerados({
     }
   }
 
+  async function marcarSemEntrega(kpiId: string, rotaId: string) {
+    setMarcandoSemEntrega(rotaId)
+    try {
+      const res = await fetch(`/api/kpi/rotas/${rotaId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'sem_entrega' }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      setDetalhe((prev) => { const e = { ...prev }; delete e[kpiId]; return e })
+      await carregarDetalhe(kpiId)
+      const diasRes = await fetch(`/api/kpi/dia?data=${data}`)
+      if (diasRes.ok) setKpis(await diasRes.json())
+    } catch (e) {
+      console.error('Erro ao marcar sem entrega', e)
+    } finally {
+      setMarcandoSemEntrega(null)
+    }
+  }
+
   async function baixar(kpiId: string, tipo: 'xlsx' | 'pdf') {
     setDownloadingId(`${kpiId}:${tipo}`)
     try {
@@ -425,6 +487,8 @@ export function KpisGerados({
                       onBaixar={(tipo) => baixar(k.kpi_id, tipo)}
                       onResolver={(anomId, acao) => resolverAnomalia(k.kpi_id, anomId, acao)}
                       resolvendo={resolvendo}
+                      marcandoSemEntrega={marcandoSemEntrega}
+                      onMarcarSemEntrega={(rotaId) => marcarSemEntrega(k.kpi_id, rotaId)}
                     />
                   )}
                 </div>
@@ -450,6 +514,8 @@ function PainelRevisao({
   onBaixar,
   onResolver,
   resolvendo,
+  marcandoSemEntrega,
+  onMarcarSemEntrega,
 }: {
   kpi: KpiDoDia
   det: KpiDetalhe
@@ -463,6 +529,8 @@ function PainelRevisao({
   onBaixar: (tipo: 'xlsx' | 'pdf') => void
   onResolver: (anomId: string, acao: 'ignorar' | 'aceitar') => void
   resolvendo: string | null
+  marcandoSemEntrega: string | null
+  onMarcarSemEntrega: (rotaId: string) => void
 }) {
   const stats = useMemo(() => {
     const total = det.linhas.length
@@ -624,6 +692,7 @@ function PainelRevisao({
           <thead className="bg-[var(--color-bg-subtle)] text-[var(--color-fg-muted)]">
             <tr>
               <Th>#</Th>
+              <Th>Situação</Th>
               <Th align="left">Loja</Th>
               <Th align="left">Motorista</Th>
               <Th>Placa</Th>
@@ -657,21 +726,13 @@ function PainelRevisao({
                   )}
                 >
                   <Td>
-                    <span className="flex items-center gap-1">
-                      {l.ordem}
-                      {l.anomalias_codigos.length > 0 && (
-                        <span
-                          title={l.anomalias_codigos.join(', ')}
-                          className={cn(
-                            'inline-block w-1.5 h-1.5 rounded-full',
-                            sev === 'HIGH' ? 'bg-[var(--color-danger)]' :
-                            sev === 'MEDIUM' ? 'bg-[var(--color-warning)]' :
-                            'bg-[var(--color-fg-subtle)]',
-                          )}
-                        />
-                      )}
-                    </span>
+                    <span className="text-[var(--color-fg-subtle)]">{l.ordem}</span>
                   </Td>
+                  <SituacaoCell
+                    linha={l}
+                    marcandoSemEntrega={marcandoSemEntrega}
+                    onMarcarSemEntrega={onMarcarSemEntrega}
+                  />
                   <Td
                     align="left"
                     className="font-medium text-[var(--color-fg)] max-w-[180px] truncate"
@@ -732,7 +793,7 @@ function PainelRevisao({
             {linhasFiltradas.length === 0 && (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={10}
                   className="px-3 py-5 text-center text-[12px] text-[var(--color-fg-subtle)]"
                 >
                   Nenhuma linha nesse filtro.
@@ -825,6 +886,50 @@ function AnomaliasMediasLowPanel({
         </div>
       )}
     </div>
+  )
+}
+
+function SituacaoCell({
+  linha,
+  marcandoSemEntrega,
+  onMarcarSemEntrega,
+}: {
+  linha: KpiLinha
+  marcandoSemEntrega: string | null
+  onMarcarSemEntrega: (rotaId: string) => void
+}) {
+  const sit = situacaoInfo(linha)
+  const tooltip = buildTooltip(linha)
+  const podeMarcar = !!linha.kpi_rota_id && linha.rota_status !== 'sem_entrega'
+  const isBusy = marcandoSemEntrega === linha.kpi_rota_id
+
+  return (
+    <Td>
+      <div className="flex flex-col items-center gap-0.5">
+        <span
+          title={tooltip}
+          className={cn(
+            'inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide cursor-help whitespace-nowrap',
+            sit.variant === 'danger' && 'bg-[var(--color-danger-soft)] text-[var(--color-danger-soft-fg)]',
+            sit.variant === 'warning' && 'bg-[var(--color-warning-soft)] text-[var(--color-warning-soft-fg)]',
+            sit.variant === 'success' && 'bg-[var(--color-success-soft,#dcfce7)] text-[var(--color-success-soft-fg,#166534)]',
+            sit.variant === 'muted' && 'bg-[var(--color-bg-subtle)] text-[var(--color-fg-muted)]',
+          )}
+        >
+          {sit.label}
+        </span>
+        {podeMarcar && (
+          <button
+            onClick={() => onMarcarSemEntrega(linha.kpi_rota_id!)}
+            disabled={isBusy}
+            title="Marcar que o caminhão não fez esta entrega"
+            className="text-[8.5px] text-[var(--color-fg-subtle)] hover:text-[var(--color-danger)] underline cursor-pointer disabled:opacity-50 transition-colors leading-tight"
+          >
+            {isBusy ? '…' : 'sem entrega'}
+          </button>
+        )}
+      </div>
+    </Td>
   )
 }
 
