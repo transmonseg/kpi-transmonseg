@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { cruzaEscalaUnitrac, type GeoStore } from '@/lib/kpi/matcher'
 import { detectaAnomalias } from '@/lib/kpi/anomalia'
+import { normalizeForScore } from '@/lib/utils/score'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -280,6 +281,36 @@ export async function POST(req: NextRequest) {
           .update({ anomalias_codigos: codigos })
           .eq('id', rotaId)
       }
+    }
+
+    // Insert unmatched routes into review_queue for manual resolution
+    const reviewInserts = rotas
+      .filter(r => r._matchMeta?.confidence === 'UNMATCHED' || r._matchMeta?.requiresReview === true)
+      .filter(r => r.escala_linha_id)
+      .map(r => {
+        const nomeLoja = linhasRede.find(l => l.id === r.escala_linha_id)?.loja_nome_raw
+          ?? r.paradas[0]?.nome
+          ?? 'desconhecido'
+        return {
+          escala_linha_id: r.escala_linha_id as string,
+          data: r.data,
+          rede_id: r.rede_id,
+          raw_name: nomeLoja,
+          raw_name_norm: normalizeForScore(nomeLoja),
+          matched_name: r._matchMeta?.score && r._matchMeta.score > 0
+            ? (r.paradas[0]?.nome ?? null)
+            : null,
+          match_score: r._matchMeta?.score ?? null,
+          algorithm: r._matchMeta?.algorithm ?? 'none',
+          status: 'pending' as const,
+        }
+      })
+
+    if (reviewInserts.length > 0) {
+      const { error: qErr } = await svc
+        .from('review_queue')
+        .insert(reviewInserts)
+      if (qErr) console.error('[review_queue] insert error:', qErr.message)
     }
 
     totalAnomalias.HIGH += anomalias.filter((a) => a.severidade === 'HIGH').length
