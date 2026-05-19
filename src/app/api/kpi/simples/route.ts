@@ -274,8 +274,8 @@ export async function POST(req: NextRequest) {
       }))
 
       const iaResult = await analisaKpiComIA(rede_id, redeRotas, [])
-        .then(txt => ({ texto: txt, erro: false }))
-        .catch(() => ({ texto: null, erro: true }))
+        .then(txt => ({ texto: txt, erro: null }))
+        .catch((e: unknown) => ({ texto: null, erro: e instanceof Error ? e.message : String(e) }))
 
       const [xlsxBuffer, pdfBuffer] = await Promise.all([
         gerarKpi({ rede_id, data, linhas }),
@@ -291,7 +291,7 @@ export async function POST(req: NextRequest) {
         pdfBase64: pdfBuffer.toString('base64'),
         preview,
         analise_ia: iaResult.texto,
-        analise_ia_erro: iaResult.erro,
+        analise_ia_erro: iaResult.erro,  // string com mensagem ou null se ok
       }
     })
   )

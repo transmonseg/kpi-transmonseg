@@ -58,7 +58,7 @@ type RedeResult = {
   pdfBase64: string
   preview: PreviewLinha[]
   analise_ia: string | null
-  analise_ia_erro: boolean
+  analise_ia_erro: string | null
 }
 
 function downloadBase64(base64: string, filename: string, mime: string) {
@@ -642,7 +642,7 @@ function FileDropzone({ className, eyebrow, label, hint, accept, multiple, files
 
 // ─── Rede preview section ────────────────────────────────────────────────────
 
-function ParecerIAInline({ texto, erro }: { texto: string | null; erro: boolean }) {
+function ParecerIAInline({ texto, erro }: { texto: string | null; erro: string | null }) {
   const [open, setOpen] = useState(false)
   const temConteudo = !!texto
 
@@ -657,16 +657,16 @@ function ParecerIAInline({ texto, erro }: { texto: string | null; erro: boolean 
           temConteudo ? 'hover:bg-[var(--color-bg-hover)] cursor-pointer text-[var(--color-fg-muted)]' : 'cursor-default text-[var(--color-fg-subtle)]',
         )}
       >
-        <span className="flex items-center gap-1.5">
-          <Robot size={13} weight="bold" className={erro ? 'text-[var(--color-danger)]' : 'text-[var(--color-accent)]'} />
-          Parecer IA
-          {erro && <span className="text-[10px] text-[var(--color-danger)]">· variável OPENROUTER_API_KEY não configurada no Vercel</span>}
+        <span className="flex items-center gap-1.5 min-w-0">
+          <Robot size={13} weight="bold" className={erro ? 'text-[var(--color-danger)] shrink-0' : 'text-[var(--color-accent)] shrink-0'} />
+          <span className="shrink-0">Parecer IA</span>
+          {erro && <span className="text-[10px] text-[var(--color-danger)] truncate">· {erro}</span>}
         </span>
         {temConteudo && (
           <CaretDown
             size={12}
             weight="bold"
-            className={cn('transition-transform duration-200', open && 'rotate-180')}
+            className={cn('transition-transform duration-200 shrink-0', open && 'rotate-180')}
           />
         )}
       </button>
