@@ -444,11 +444,29 @@ export async function cruzaEscalaUnitrac(
 
     const placaUnitrac = placaResolvida.get(linha.id) ?? linha.placa_norm
     const todasParadas = paradaByPlaca.get(placaUnitrac) ?? []
-    // Saída CD: última saída da BASE BENASSI antes da primeira parada real (LOJA/FORA_BASE).
-    // Inclui stops FAKE_EXIT na base (caminhões que saíram rapidamente, <15 min parados).
-    const firstRealStop = todasParadas.find(
-      p => p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE'
-    )
+    // Saída CD: última saída da BASE BENASSI antes da primeira parada operacional.
+    // "Operacional" = primeira LOJA, ou primeira FORA_BASE DEPOIS de ter visitado a BASE.
+    // FORA_BASE de madrugada (antes de ir pra base) é ignorada — o caminhão pode ter
+    // começado o tracking longe do CD sem isso indicar início das entregas.
+    let viuBase = false
+    let firstRealStop: UnitracParadaRow | undefined = undefined
+    for (const p of todasParadas) {
+      const isBaseLike =
+        p.classificacao === 'BASE' ||
+        (p.classificacao === 'FAKE_EXIT' && p.local_parada.startsWith('BASE BENASSI'))
+      if (isBaseLike) {
+        viuBase = true
+        continue
+      }
+      if (p.classificacao === 'LOJA') {
+        firstRealStop = p
+        break
+      }
+      if (viuBase && p.classificacao === 'FORA_BASE') {
+        firstRealStop = p
+        break
+      }
+    }
     const firstRealTime = firstRealStop
       ? new Date(firstRealStop.chegada).getTime()
       : Infinity

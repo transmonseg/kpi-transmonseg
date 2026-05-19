@@ -90,21 +90,30 @@ function cellValue(row: ExcelJS.Row, col: number): unknown {
 const BASE_LOCAL = 'BASE BENASSI - BASE BENASSI'
 const FORA_LOCAL = 'FORA DE BASE E LOCAL DE SERVIÇO'
 
+// Unitrac retorna múltiplas geofences sobrepostas separadas por vírgula
+// (ex: "BASE BENASSI - BASE BENASSI,25140000 - EMANUEL- REDE ECONOMIA...").
+// A primeira é a "primária" (mais específica/relevante).
+function primaryLocal(local: string): string {
+  return (local ?? '').split(',')[0].trim()
+}
+
 function classificaParada(local: string, duracaoSeg: number): ParadaUnitrac['classificacao'] {
-  if (local === BASE_LOCAL) {
+  const primaria = primaryLocal(local)
+  if (primaria === BASE_LOCAL) {
     return duracaoSeg > 900 ? 'BASE' : 'FAKE_EXIT'
   }
-  if (local === FORA_LOCAL) {
+  if (primaria === FORA_LOCAL) {
     return duracaoSeg < 600 ? 'FAKE_EXIT' : 'FORA_BASE'
   }
   return 'LOJA'
 }
 
 function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: string | null } {
-  const idx = local.indexOf(' - ')
+  const primaria = primaryLocal(local)
+  const idx = primaria.indexOf(' - ')
   if (idx === -1) return { codigo_loja: null, nome_loja: null }
-  const codigo = local.slice(0, idx).trim()
-  const nome = local.slice(idx + 3).trim() || null
+  const codigo = primaria.slice(0, idx).trim()
+  const nome = primaria.slice(idx + 3).trim() || null
   return { codigo_loja: codigo || null, nome_loja: nome }
 }
 
