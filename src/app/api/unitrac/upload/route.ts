@@ -160,10 +160,92 @@ export async function POST(req: NextRequest) {
       return new NextResponse(`Erro ao inserir paradas: ${insertErr.message}`, { status: 500 })
   }
 
+  // Auto-cadastro de lojas novas em canonical_loja
+  // Agrega paradas LOJA por nome+código, calcula lat/lng médio das observações
+  type AggLoja = { name: string; codigo: string | null; lats: number[]; lngs: number[] }
+  const agregadas = new Map<string, AggLoja>()
+  for (const p of todasParadas) {
+    if (p.classificacao !== 'LOJA') continue
+    if (!p.nome_loja || p.lat == null || p.lng == null) continue
+    const key = (p.codigo_loja ?? p.nome_loja).trim()
+    const cur = agregadas.get(key) ?? { name: p.nome_loja.trim(), codigo: p.codigo_loja, lats: [], lngs: [] }
+    cur.lats.push(p.lat)
+    cur.lngs.push(p.lng)
+    agregadas.set(key, cur)
+  }
+
+  let autoCadastradas = 0
+  if (agregadas.size > 0) {
+    const nomesNorm = [...agregadas.values()].map((a) => normalizaNomeCanonico(a.name))
+    const codigos = [...agregadas.values()].map((a) => a.codigo).filter((c): c is string => !!c)
+
+    const [{ data: canonExist }, { data: lojasExist }] = await Promise.all([
+      svc.from('canonical_loja').select('nome_norm').in('nome_norm', nomesNorm),
+      codigos.length > 0
+        ? svc.from('lojas').select('codigo_unitrac').in('codigo_unitrac', codigos)
+        : Promise.resolve({ data: [] as { codigo_unitrac: string | null }[] }),
+    ])
+    const jaCanon = new Set((canonExist ?? []).map((r) => r.nome_norm as string))
+    const jaLoja = new Set((lojasExist ?? []).map((r) => r.codigo_unitrac as string).filter(Boolean))
+
+    const novas = [...agregadas.values()]
+      .filter((a) => {
+        if (jaCanon.has(normalizaNomeCanonico(a.name))) return false
+        if (a.codigo && jaLoja.has(a.codigo)) return false
+        return true
+      })
+      .map((a) => ({
+        name: a.name,
+        nome_norm: normalizaNomeCanonico(a.name),
+        lat: media(a.lats),
+        lng: media(a.lngs),
+        raio_metros: 300,
+        rede_id: inferirRede(a.name),
+      }))
+
+    if (novas.length > 0) {
+      const { error: canonErr } = await svc.from('canonical_loja').insert(novas)
+      if (!canonErr) autoCadastradas = novas.length
+      else console.error('[canonical_loja] auto-cadastro falhou:', canonErr.message)
+    }
+  }
+
   return NextResponse.json({
     upload_id: uploadId,
     qtd_abas: veiculos.length,
     qtd_paradas: qtdParadas,
     substituiu: !!existente,
+    lojas_auto_cadastradas: autoCadastradas,
   })
+}
+
+// Normalização compatível com nome_norm de canonical_loja (lowercase + sem acentos, mantém espaços/hífens)
+function normalizaNomeCanonico(s: string): string {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim().replace(/\s+/g, ' ')
+}
+
+function media(arr: number[]): number {
+  return arr.reduce((a, b) => a + b, 0) / arr.length
+}
+
+// Heurística simples: detecta prefixo do nome para inferir rede_id
+function inferirRede(nome: string): string | null {
+  const upper = nome.toUpperCase()
+  if (upper.startsWith('SENDAS')) return 'SENDAS'
+  if (upper.startsWith('ASSAI') || upper.startsWith('ASSAÍ')) return 'ASSAI'
+  if (upper.startsWith('PRINCESA')) return 'PRINCESA'
+  if (upper.startsWith('CARREFOUR')) return 'CARREFOUR'
+  if (upper.startsWith('PREZUNIC')) return 'PREZUNIC'
+  if (upper.startsWith('ATACADAO') || upper.startsWith('ATACADÃO')) return 'ATACADAO'
+  if (upper.startsWith('ZONA SUL')) return 'ZONA_SUL'
+  if (upper.startsWith('SUPER PRIX') || upper.startsWith('SUPERPRIX')) return 'SUPERPRIX'
+  if (upper.startsWith('SAM') && upper.includes('CLUB')) return 'SAMS_CLUB'
+  if (upper.startsWith('VIANENSE')) return 'VIANENSE'
+  if (upper.startsWith('GUANABARA')) return 'GUANABARA'
+  if (upper.startsWith('MUNDIAL')) return 'MUNDIAL'
+  if (upper.includes('EMANUEL')) return 'EMANUEL'
+  if (upper.startsWith('FEIRA NOVA')) return 'FEIRA_NOVA'
+  if (upper.includes('SUPER PAX') || upper.includes('PAX ')) return 'SUPER_PAX'
+  if (upper.includes('ARMAZEM') && upper.includes('GRAO')) return 'ARMAZEM_GRAO'
+  return null
 }
