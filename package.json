@@ -21,6 +21,7 @@
     "next": "16.2.6",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "1.1.1",
+    "pdfjs-serverless": "^1.2.3",
     "react": "19.2.4",
     "react-data-grid": "^7.0.0-beta.59",
     "react-dom": "19.2.4",
