@@ -1,0 +1,882 @@
+[
+  {
+    "name": "Zona Sul Filial 33",
+    "nome_norm": "zona sul filial 33",
+    "lat": null,
+    "lng": null,
+    "raio_metros": 200,
+    "rede_id": "ZONA_SUL"
+  },
+  {
+    "name": "Zona Sul Filial 21",
+    "nome_norm": "zona sul filial 21",
+    "lat": null,
+    "lng": null,
+    "raio_metros": 200,
+    "rede_id": "ZONA_SUL"
+  },
+  {
+    "name": "Zona Sul Filial 30",
+    "nome_norm": "zona sul filial 30",
+    "lat": null,
+    "lng": null,
+    "raio_metros": 200,
+    "rede_id": "ZONA_SUL"
+  },
+  {
+    "name": "Zona Sul Filial 04",
+    "nome_norm": "zona sul filial 04",
+    "lat": null,
+    "lng": null,
+    "raio_metros": 200,
+    "rede_id": "ZONA_SUL"
+  },
+  {
+    "name": "Zona Sul Filial 18",
+    "nome_norm": "zona sul filial 18",
+    "lat": null,
+    "lng": null,
+    "raio_metros": 200,
+    "rede_id": "ZONA_SUL"
+  },
+  {
+    "name": "Zona Sul Filial 06",
+    "nome_norm": "zona sul filial 06",
+    "lat": null,
+    "lng": null,
+    "raio_metros": 200,
+    "rede_id": "ZONA_SUL"
+  },
+  {
+    "name": "Zona Sul Filial 07",
+    "nome_norm": "zona sul filial 07",
+    "lat": null,
+    "lng": null,
+    "raio_metros": 200,
+    "rede_id": "ZONA_SUL"
+  },
+  {
+    "name": "Zona Sul Filial 48",
+    "nome_norm": "zona sul filial 48",
+    "lat": null,
+    "lng": null,
+    "raio_metros": 200,
+    "rede_id": "ZONA_SUL"
+  },
+  {
+    "name": "Zona Sul Filial 13",
+    "nome_norm": "zona sul filial 13",
+    "lat": null,
+    "lng": null,
+    "raio_metros": 200,
+    "rede_id": "ZONA_SUL"
+  },
+  {
+    "name": "PAX VILA DA PENHA",
+    "nome_norm": "pax vila da penha",
+    "lat": -22.84064,
+    "lng": -43.31634,
+    "raio_metros": 150,
+    "rede_id": "SUPER_PAX"
+  },
+  {
+    "name": "SUPERPRIX LJ 04 - GRAJAÚ VERDUN",
+    "nome_norm": "superprix lj 04 - grajau verdun",
+    "lat": -22.92313,
+    "lng": -43.25687,
+    "raio_metros": 150,
+    "rede_id": "SUPERPRIX"
+  },
+  {
+    "name": "SUPERPRIX LJ 08 - GRAJAÚ",
+    "nome_norm": "superprix lj 08 - grajau",
+    "lat": -22.92278,
+    "lng": -43.26414,
+    "raio_metros": 150,
+    "rede_id": "SUPERPRIX"
+  },
+  {
+    "name": "SUPERPRIX LJ 201 - IPANEMA",
+    "nome_norm": "superprix lj 201 - ipanema",
+    "lat": -22.98388,
+    "lng": -43.20324,
+    "raio_metros": 150,
+    "rede_id": "SUPERPRIX"
+  },
+  {
+    "name": "SENDAS CABO FRIO - LOJA 82",
+    "nome_norm": "sendas cabo frio - loja 82",
+    "lat": -22.88786,
+    "lng": -42.05253,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "SENDAS FREGUESIA - LOJA 28",
+    "nome_norm": "sendas freguesia - loja 28",
+    "lat": -22.941525,
+    "lng": -43.34387,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "SENDAS ALCÂNTARA I - LOJA 35",
+    "nome_norm": "sendas alcantara i - loja 35",
+    "lat": -22.81833,
+    "lng": -43.0047,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "SENDAS PILARES - LJ 128",
+    "nome_norm": "sendas pilares - lj 128",
+    "lat": -22.8832,
+    "lng": -43.289515,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "SENDAS MEIER",
+    "nome_norm": "sendas meier",
+    "lat": -22.90543,
+    "lng": -43.28647,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "SENDAS CAMPOS - LJ 36",
+    "nome_norm": "sendas campos - lj 36",
+    "lat": -21.76769,
+    "lng": -41.343855,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "SENDAS SANTA CRUZ - LJ 37",
+    "nome_norm": "sendas santa cruz - lj 37",
+    "lat": -22.8904,
+    "lng": -43.67709,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "SENDAS CESÁRIO DE MELO - LJ 202",
+    "nome_norm": "sendas cesario de melo - lj 202",
+    "lat": -22.90624,
+    "lng": -43.56553,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "SENDAS TIJUCA II - LJ 43",
+    "nome_norm": "sendas tijuca ii - lj 43",
+    "lat": -22.9175075,
+    "lng": -43.222245,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "SENDAS SÃO GONÇALO CENTRO",
+    "nome_norm": "sendas sao goncalo centro",
+    "lat": -22.82072,
+    "lng": -43.045735,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "SENDAS CARIOCA SHOPPING",
+    "nome_norm": "sendas carioca shopping",
+    "lat": -22.84958,
+    "lng": -43.31229,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "SENDAS GALEÃO - LJ 302",
+    "nome_norm": "sendas galeao - lj 302",
+    "lat": -22.803385,
+    "lng": -43.20686,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "SENDAS NITERÓI PONTE",
+    "nome_norm": "sendas niteroi ponte",
+    "lat": -22.88358,
+    "lng": -43.11353,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "PREZUNIC FREGUESIA",
+    "nome_norm": "prezunic freguesia",
+    "lat": -22.94643,
+    "lng": -43.34077,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PREZUNIC CAMPO GRANDE",
+    "nome_norm": "prezunic campo grande",
+    "lat": -22.91409,
+    "lng": -43.54423,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PREZUNIC OLARIA",
+    "nome_norm": "prezunic olaria",
+    "lat": -22.85145,
+    "lng": -43.26634,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PREZUNIC CIDADE DE DEUS",
+    "nome_norm": "prezunic cidade de deus",
+    "lat": -22.94296,
+    "lng": -43.36777,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PREZUNIC CAMPINHO",
+    "nome_norm": "prezunic campinho",
+    "lat": -22.88311,
+    "lng": -43.34396,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PREZUNIC FONSECA",
+    "nome_norm": "prezunic fonseca",
+    "lat": -22.88147,
+    "lng": -43.08468,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PREZUNIC VILAR DOS TELES",
+    "nome_norm": "prezunic vilar dos teles",
+    "lat": -22.77719,
+    "lng": -43.36161,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PREZUNIC ILHA",
+    "nome_norm": "prezunic ilha",
+    "lat": -22.80545,
+    "lng": -43.20066,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PREZUNIC MEIER",
+    "nome_norm": "prezunic meier",
+    "lat": -22.90591,
+    "lng": -43.2914,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PREZUNIC VILA ISABEL",
+    "nome_norm": "prezunic vila isabel",
+    "lat": -22.91479,
+    "lng": -43.24137,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "CAB - PETROPOLIS",
+    "nome_norm": "cab - petropolis",
+    "lat": -22.68627,
+    "lng": -43.2914733333333,
+    "raio_metros": 150,
+    "rede_id": "CAB_PETROPOLIS"
+  },
+  {
+    "name": "GB 05 - BANGU",
+    "nome_norm": "gb 05 - bangu",
+    "lat": -22.87412,
+    "lng": -43.46375,
+    "raio_metros": 150,
+    "rede_id": "GUANABARA"
+  },
+  {
+    "name": "GB 08 - NITEROI",
+    "nome_norm": "gb 08 - niteroi",
+    "lat": -22.889685,
+    "lng": -43.115705,
+    "raio_metros": 150,
+    "rede_id": "GUANABARA"
+  },
+  {
+    "name": "GB 16 - NOVA IGUAÇU",
+    "nome_norm": "gb 16 - nova iguacu",
+    "lat": -22.761135,
+    "lng": -43.4456,
+    "raio_metros": 150,
+    "rede_id": "GUANABARA"
+  },
+  {
+    "name": "GB 23 - DEL CASTILHO",
+    "nome_norm": "gb 23 - del castilho",
+    "lat": -22.863395,
+    "lng": -43.293725,
+    "raio_metros": 150,
+    "rede_id": "GUANABARA"
+  },
+  {
+    "name": "GB 07 - BARRA",
+    "nome_norm": "gb 07 - barra",
+    "lat": -23.00188,
+    "lng": -43.3383925,
+    "raio_metros": 150,
+    "rede_id": "GUANABARA"
+  },
+  {
+    "name": "GB 17 - MADUREIRA",
+    "nome_norm": "gb 17 - madureira",
+    "lat": -22.88082,
+    "lng": -43.33885,
+    "raio_metros": 150,
+    "rede_id": "GUANABARA"
+  },
+  {
+    "name": "GB 26 - CAMPO GRANDE",
+    "nome_norm": "gb 26 - campo grande",
+    "lat": -22.89613,
+    "lng": -43.56412,
+    "raio_metros": 150,
+    "rede_id": "GUANABARA"
+  },
+  {
+    "name": "GB 19 - TANQUE",
+    "nome_norm": "gb 19 - tanque",
+    "lat": -22.914,
+    "lng": -43.36236,
+    "raio_metros": 150,
+    "rede_id": "GUANABARA"
+  },
+  {
+    "name": "GB 27 - RECREIO DOS BANDEIRANTES",
+    "nome_norm": "gb 27 - recreio dos bandeirantes",
+    "lat": -23.014745,
+    "lng": -43.4751,
+    "raio_metros": 150,
+    "rede_id": "GUANABARA"
+  },
+  {
+    "name": "PRINCESA COSME VELHO",
+    "nome_norm": "princesa cosme velho",
+    "lat": -22.93867,
+    "lng": -43.19212,
+    "raio_metros": 150,
+    "rede_id": "PRINCESA"
+  },
+  {
+    "name": "PRINCESA ICARAÍ",
+    "nome_norm": "princesa icarai",
+    "lat": -22.9086,
+    "lng": -43.10883,
+    "raio_metros": 150,
+    "rede_id": "PRINCESA"
+  },
+  {
+    "name": "PRINCESA LEME",
+    "nome_norm": "princesa leme",
+    "lat": -22.96357,
+    "lng": -43.17406,
+    "raio_metros": 150,
+    "rede_id": "PRINCESA"
+  },
+  {
+    "name": "PRINCESA FLAMENGO",
+    "nome_norm": "princesa flamengo",
+    "lat": -22.93805,
+    "lng": -43.17637,
+    "raio_metros": 150,
+    "rede_id": "PRINCESA"
+  },
+  {
+    "name": "PRINCESA LARANJEIRAS",
+    "nome_norm": "princesa laranjeiras",
+    "lat": -22.93392,
+    "lng": -43.18625,
+    "raio_metros": 150,
+    "rede_id": "PRINCESA"
+  },
+  {
+    "name": "PRINCESA INGÁ",
+    "nome_norm": "princesa inga",
+    "lat": -22.90379,
+    "lng": -43.12239,
+    "raio_metros": 150,
+    "rede_id": "PRINCESA"
+  },
+  {
+    "name": "PRINCESA - BARRA DE SÃO JOÃO",
+    "nome_norm": "princesa - barra de sao joao",
+    "lat": -22.5866,
+    "lng": -41.9922,
+    "raio_metros": 150,
+    "rede_id": "PRINCESA"
+  },
+  {
+    "name": "PRINCESA - CABO FRIO 1",
+    "nome_norm": "princesa - cabo frio 1",
+    "lat": -22.88518,
+    "lng": -42.02666,
+    "raio_metros": 150,
+    "rede_id": "PRINCESA"
+  },
+  {
+    "name": "PRINCESA - CABO FRIO 2",
+    "nome_norm": "princesa - cabo frio 2",
+    "lat": -22.87871,
+    "lng": -42.04741,
+    "raio_metros": 150,
+    "rede_id": "PRINCESA"
+  },
+  {
+    "name": "PRINCESA - CABO FRIO 3",
+    "nome_norm": "princesa - cabo frio 3",
+    "lat": -22.88149,
+    "lng": -42.02096,
+    "raio_metros": 150,
+    "rede_id": "PRINCESA"
+  },
+  {
+    "name": "PRINCESA - RIO DAS OSTRAS",
+    "nome_norm": "princesa - rio das ostras",
+    "lat": -22.5247,
+    "lng": -41.93945,
+    "raio_metros": 150,
+    "rede_id": "PRINCESA"
+  },
+  {
+    "name": "CARREFOUR BARRA",
+    "nome_norm": "carrefour barra",
+    "lat": -22.996545,
+    "lng": -43.36294,
+    "raio_metros": 150,
+    "rede_id": "CARREFOUR"
+  },
+  {
+    "name": "CARREFOUR WASHINGTON LUIS",
+    "nome_norm": "carrefour washington luis",
+    "lat": -22.76721,
+    "lng": -43.28986,
+    "raio_metros": 150,
+    "rede_id": "CARREFOUR"
+  },
+  {
+    "name": "CARREFOUR BRIGADEIRO",
+    "nome_norm": "carrefour brigadeiro",
+    "lat": -22.79376,
+    "lng": -43.30029,
+    "raio_metros": 150,
+    "rede_id": "CARREFOUR"
+  },
+  {
+    "name": "CARREFOUR CAMPO GRANDE",
+    "nome_norm": "carrefour campo grande",
+    "lat": -22.89362,
+    "lng": -43.5596,
+    "raio_metros": 150,
+    "rede_id": "CARREFOUR"
+  },
+  {
+    "name": "CARREFOUR CAMPOS",
+    "nome_norm": "carrefour campos",
+    "lat": -21.76612,
+    "lng": -41.34256,
+    "raio_metros": 150,
+    "rede_id": "CARREFOUR"
+  },
+  {
+    "name": "CARREFOUR MACAE",
+    "nome_norm": "carrefour macae",
+    "lat": -22.39334,
+    "lng": -41.80818,
+    "raio_metros": 150,
+    "rede_id": "CARREFOUR"
+  },
+  {
+    "name": "Zona Sul Filial 27",
+    "nome_norm": "zona sul filial 27",
+    "lat": -22.98359,
+    "lng": -43.21198,
+    "raio_metros": 200,
+    "rede_id": "ZONA_SUL"
+  },
+  {
+    "name": "Zona Sul Filial 15",
+    "nome_norm": "zona sul filial 15",
+    "lat": -22.98479,
+    "lng": -43.22592,
+    "raio_metros": 200,
+    "rede_id": "ZONA_SUL"
+  },
+  {
+    "name": "PREZUNIC NILÓPOLIS",
+    "nome_norm": "prezunic nilopolis",
+    "lat": -22.80727,
+    "lng": -43.41634,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PREZUNIC CAXIAS CENTRO",
+    "nome_norm": "prezunic caxias centro",
+    "lat": -22.79183,
+    "lng": -43.3128,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PREZUNIC BENFICA",
+    "nome_norm": "prezunic benfica",
+    "lat": -22.8927433333333,
+    "lng": -43.2407633333333,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "CARREFOUR ALCANTARA",
+    "nome_norm": "carrefour alcantara",
+    "lat": -22.81957,
+    "lng": -43.00708,
+    "raio_metros": 150,
+    "rede_id": "CARREFOUR"
+  },
+  {
+    "name": "CARREFOUR JUIZ DE FORA",
+    "nome_norm": "carrefour juiz de fora",
+    "lat": -21.7856,
+    "lng": -43.33717,
+    "raio_metros": 150,
+    "rede_id": "CARREFOUR"
+  },
+  {
+    "name": "PRINCESA - IGUABA GRANDE",
+    "nome_norm": "princesa - iguaba grande",
+    "lat": -22.84059,
+    "lng": -42.22351,
+    "raio_metros": 150,
+    "rede_id": "PRINCESA"
+  },
+  {
+    "name": "ATACADÃO - MANILHA",
+    "nome_norm": "atacadao - manilha",
+    "lat": -22.85498,
+    "lng": -43.10032,
+    "raio_metros": 150,
+    "rede_id": "ATACADAO"
+  },
+  {
+    "name": "PREZUNIC CATUMBI",
+    "nome_norm": "prezunic catumbi",
+    "lat": -22.92184,
+    "lng": -43.19715,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "SUPERPRIX LJ 14 - TIJUCA",
+    "nome_norm": "superprix lj 14 - tijuca",
+    "lat": -22.93471,
+    "lng": -43.24409,
+    "raio_metros": 150,
+    "rede_id": "SUPERPRIX"
+  },
+  {
+    "name": "PRINCESA PECHINCHA",
+    "nome_norm": "princesa pechincha",
+    "lat": -22.92833,
+    "lng": -43.35342,
+    "raio_metros": 150,
+    "rede_id": "PRINCESA"
+  },
+  {
+    "name": "PREZUNIC SENADOR CAMARÁ",
+    "nome_norm": "prezunic senador camara",
+    "lat": -22.88257,
+    "lng": -43.4878,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PREZUNIC REALENGO",
+    "nome_norm": "prezunic realengo",
+    "lat": -22.87715,
+    "lng": -43.41644,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PREZUNIC PECHINCHA",
+    "nome_norm": "prezunic pechincha",
+    "lat": -22.92833,
+    "lng": -43.36047,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "SENDAS CORDOVIL",
+    "nome_norm": "sendas cordovil",
+    "lat": -22.82012,
+    "lng": -43.28738,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "PRINCESA FONSECA",
+    "nome_norm": "princesa fonseca",
+    "lat": -22.88019,
+    "lng": -43.09615,
+    "raio_metros": 150,
+    "rede_id": "PRINCESA"
+  },
+  {
+    "name": "GB 02 - PENHA",
+    "nome_norm": "gb 02 - penha",
+    "lat": -22.84159,
+    "lng": -43.281675,
+    "raio_metros": 150,
+    "rede_id": "GUANABARA"
+  },
+  {
+    "name": "PREZUNIC BARRA",
+    "nome_norm": "prezunic barra",
+    "lat": -23.00604,
+    "lng": -43.43892,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "SENDAS PETRÓPOLIS - LJ 38",
+    "nome_norm": "sendas petropolis - lj 38",
+    "lat": -22.467795,
+    "lng": -43.148655,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "PREZUNIC JAURU",
+    "nome_norm": "prezunic jauru",
+    "lat": -22.91567,
+    "lng": -43.37886,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "SENDAS CAMPINHO - LOJA 37",
+    "nome_norm": "sendas campinho - loja 37",
+    "lat": -22.88147,
+    "lng": -43.34271,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "SENDAS BARRA I - LJ 32",
+    "nome_norm": "sendas barra i - lj 32",
+    "lat": -22.95902,
+    "lng": -43.35485,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "PREZUNIC CAXIAS CENTENÁRIO",
+    "nome_norm": "prezunic caxias centenario",
+    "lat": -22.78037,
+    "lng": -43.30954,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PRINCESA CATETE",
+    "nome_norm": "princesa catete",
+    "lat": -22.92493,
+    "lng": -43.17674,
+    "raio_metros": 150,
+    "rede_id": "PRINCESA"
+  },
+  {
+    "name": "GB 04 - REALENGO",
+    "nome_norm": "gb 04 - realengo",
+    "lat": -22.879755,
+    "lng": -43.428625,
+    "raio_metros": 150,
+    "rede_id": "GUANABARA"
+  },
+  {
+    "name": "PREZUNIC ANIL (SHOPPING JACAREPAGUA)",
+    "nome_norm": "prezunic anil (shopping jacarepagua)",
+    "lat": -22.95722,
+    "lng": -43.33905,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PREZUNIC SANTA CRUZ",
+    "nome_norm": "prezunic santa cruz",
+    "lat": -22.91481,
+    "lng": -43.68199,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "SENDAS ILHA - LOJA 29",
+    "nome_norm": "sendas ilha - loja 29",
+    "lat": -22.80232,
+    "lng": -43.20217,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "PRINCESA ITABORAÍ",
+    "nome_norm": "princesa itaborai",
+    "lat": -22.74533,
+    "lng": -42.852665,
+    "raio_metros": 150,
+    "rede_id": "PRINCESA"
+  },
+  {
+    "name": "ATACADÃO - BELFORD ROXO",
+    "nome_norm": "atacadao - belford roxo",
+    "lat": -22.77431,
+    "lng": -43.397135,
+    "raio_metros": 150,
+    "rede_id": "ATACADAO"
+  },
+  {
+    "name": "PRINCESA - ARRAIAL DO CABO 1",
+    "nome_norm": "princesa - arraial do cabo 1",
+    "lat": -22.9678,
+    "lng": -42.0281,
+    "raio_metros": 150,
+    "rede_id": "PRINCESA"
+  },
+  {
+    "name": "SENDAS NITERÓI - LOJA 41",
+    "nome_norm": "sendas niteroi - loja 41",
+    "lat": -22.87745,
+    "lng": -43.11017,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "PREZUNIC ENGENHO NOVO",
+    "nome_norm": "prezunic engenho novo",
+    "lat": -22.8998166666667,
+    "lng": -43.26753,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PREZUNIC RECREIO",
+    "nome_norm": "prezunic recreio",
+    "lat": -23.01347,
+    "lng": -43.46903,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PRINCESA - ARRAIAL DO CABO 3",
+    "nome_norm": "princesa - arraial do cabo 3",
+    "lat": -22.97262,
+    "lng": -42.02849,
+    "raio_metros": 150,
+    "rede_id": "PRINCESA"
+  },
+  {
+    "name": "SENDAS CAXIAS - LOJA 131",
+    "nome_norm": "sendas caxias - loja 131",
+    "lat": -22.77678,
+    "lng": -43.30897,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "SENDAS MENDANHA - LOJA 65",
+    "nome_norm": "sendas mendanha - loja 65",
+    "lat": -22.86219,
+    "lng": -43.54981,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "SENDAS MACAÉ - LOJA 232",
+    "nome_norm": "sendas macae - loja 232",
+    "lat": -22.35962,
+    "lng": -41.802085,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  },
+  {
+    "name": "PREZUNIC TIJUCA",
+    "nome_norm": "prezunic tijuca",
+    "lat": -22.93068,
+    "lng": -43.24244,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PRINCESA - ARRAIAL DO CABO 2",
+    "nome_norm": "princesa - arraial do cabo 2",
+    "lat": -22.967605,
+    "lng": -42.02415,
+    "raio_metros": 150,
+    "rede_id": "PRINCESA"
+  },
+  {
+    "name": "PREZUNIC BOTAFOGO (VOLUNTÁRIOS DA PÁTRIA)",
+    "nome_norm": "prezunic botafogo (voluntarios da patria)",
+    "lat": -22.952595,
+    "lng": -43.18994,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PREZUNIC MARICÁ",
+    "nome_norm": "prezunic marica",
+    "lat": -22.91579,
+    "lng": -42.81923,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "PREZUNIC ITAOCA",
+    "nome_norm": "prezunic itaoca",
+    "lat": -22.86969,
+    "lng": -43.26888,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "SUPERPRIX LJ 13 - TIJUQUINHA",
+    "nome_norm": "superprix lj 13 - tijuquinha",
+    "lat": -22.9291,
+    "lng": -43.23689,
+    "raio_metros": 150,
+    "rede_id": "SUPERPRIX"
+  },
+  {
+    "name": "PREZUNIC VISTA ALEGRE",
+    "nome_norm": "prezunic vista alegre",
+    "lat": -22.83498,
+    "lng": -43.31841,
+    "raio_metros": 150,
+    "rede_id": "PREZUNIC"
+  },
+  {
+    "name": "SENDAS JACAREPAGUA - LOJA 340 (TAQUARA)",
+    "nome_norm": "sendas jacarepagua - loja 340 (taquara)",
+    "lat": -22.93449,
+    "lng": -43.37249,
+    "raio_metros": 150,
+    "rede_id": "SENDAS"
+  }
+]

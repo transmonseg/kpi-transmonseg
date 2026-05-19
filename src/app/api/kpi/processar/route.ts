@@ -4,7 +4,6 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { cruzaEscalaUnitrac, type GeoStore } from '@/lib/kpi/matcher'
 import { detectaAnomalias } from '@/lib/kpi/anomalia'
 import { normalizeForScore } from '@/lib/utils/score'
-import { analisaKpiComIA } from '@/lib/kpi/analisador-ia'
 import type { RotaKpi, AnomaliaDetectada } from '@/lib/types/kpi'
 
 export const runtime = 'nodejs'
@@ -96,7 +95,6 @@ export async function POST(req: NextRequest) {
 
   const allKpiIds: string[] = []
   let totalAnomalias = { HIGH: 0, MEDIUM: 0, LOW: 0 }
-  const kpiParaIA: Array<{ kpiId: string; rotas: RotaKpi[]; anomalias: AnomaliaDetectada[] }> = []
 
   // Fetch canonical_loja with coordinates for FORA_BASE geo fallback (Category B)
   const { data: geoStoresRaw } = await svc
@@ -327,17 +325,6 @@ export async function POST(req: NextRequest) {
     totalAnomalias.MEDIUM += anomalias.filter((a) => a.severidade === 'MEDIUM').length
     totalAnomalias.LOW += anomalias.filter((a) => a.severidade === 'LOW').length
 
-    kpiParaIA.push({ kpiId, rotas, anomalias })
-  }
-
-  // Análise IA: roda após todo o DB estar salvo; erros não afetam o processamento
-  for (const { kpiId, rotas, anomalias } of kpiParaIA) {
-    try {
-      const analise = await analisaKpiComIA(kpiId, rotas, anomalias)
-      await svc.from('kpis').update({ analise_ia: analise }).eq('id', kpiId)
-    } catch (err) {
-      console.error(`[analisador-ia] kpi_id=${kpiId}:`, err)
-    }
   }
 
   return NextResponse.json({
