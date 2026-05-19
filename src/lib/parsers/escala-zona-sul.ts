@@ -105,6 +105,12 @@ function isDataRow(r: (unknown)[]): boolean {
   if (SKIP_COL4.has(col4Str)) return false
   if (col4Str === 'CARREGAMENTO DIÁRIO') return false
 
+  // Rows de aviso em sábados: o XLSX intercala linhas com texto "Atenção, Filial: X..."
+  // repetido nas colunas 13-20. Mesma hora/loja/peso da viagem real anterior, mas
+  // sem placa/motorista válidos. Detecta pelo texto na coluna 13 (tipo_carro).
+  const col13 = r[12]
+  if (typeof col13 === 'string' && /aten[cç]/i.test(col13)) return false
+
   return true
 }
 
