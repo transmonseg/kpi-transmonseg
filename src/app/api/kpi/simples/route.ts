@@ -232,7 +232,7 @@ export async function POST(req: NextRequest) {
     }))
   )
 
-  const rotas = cruzaEscalaUnitrac(escalaRows, paradaRows, [])
+  const rotas = await cruzaEscalaUnitrac(escalaRows, paradaRows, [])
 
   const redeMap = new Map<string, { rotas: RotaKpi[]; escala: LinhaEscala[] }>()
   for (const rota of rotas) {

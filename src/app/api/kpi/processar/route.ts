@@ -99,10 +99,11 @@ export async function POST(req: NextRequest) {
     const placasRede = new Set(linhasRede.filter((l) => l.placa_norm).map((l) => l.placa_norm as string))
     const paradasRede = (paradaRows ?? []).filter((p) => placasRede.has(p.placa_norm))
 
-    const rotas = cruzaEscalaUnitrac(
+    const rotas = await cruzaEscalaUnitrac(
       linhasRede,
       paradasRede,
       (lojas ?? []).filter((l) => l.rede_id === rid),
+      svc,
     )
 
     // Build paradasIndex for anomalia detection

@@ -444,7 +444,7 @@ server.registerTool(
         const placasRede = new Set(linhasRede.filter(l => l.placa_norm).map(l => l.placa_norm as string))
         const paradasRede = (paradaRows ?? []).filter(p => placasRede.has(p.placa_norm as string))
 
-        const rotas = cruzaEscalaUnitrac(
+        const rotas = await cruzaEscalaUnitrac(
           linhasRede as any,
           paradasRede as any,
           (lojas ?? []).filter(l => l.rede_id === rid) as any,

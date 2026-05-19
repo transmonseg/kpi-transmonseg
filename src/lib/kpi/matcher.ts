@@ -1,6 +1,10 @@
 import { levenshtein, normalizaNome } from '@/lib/utils/texto'
 import { haversine } from '@/lib/utils/geo'
 import type { RotaKpi, ParadaKpi } from '@/lib/types/kpi'
+import { normalizeForScore } from '@/lib/utils/score'
+import type { MatchMeta, MatchAlgorithm, MatchConfidence } from '@/lib/types/kpi'
+import { batchTrgmLookup, type TrgmResult } from './trgm-lookup'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Tokeniza nome de loja pra match fuzzy: remove acentos, parênteses (1ª Entrega), redes,
 // stopwords (DO, DE, DA, SAO), retorna set de tokens significativos.
@@ -202,11 +206,21 @@ function variantesOcr(placa: string): string[] {
   return [...variantes]
 }
 
-export function cruzaEscalaUnitrac(
+export async function cruzaEscalaUnitrac(
   escalaLinhas: EscalaLinhaRow[],
   paradaRows: UnitracParadaRow[],
   lojas: LojaRow[],
-): RotaKpi[] {
+  supabase?: SupabaseClient,
+): Promise<RotaKpi[]> {
+  // Pre-fetch batch trgm para todos os nomes de loja desta execucao
+  let trgmResults: Record<string, TrgmResult> = {}
+  if (supabase) {
+    const allNames = [...new Set(
+      escalaLinhas.map(e => e.loja_nome_raw).filter(Boolean)
+    )] as string[]
+    trgmResults = await batchTrgmLookup(supabase, allNames)
+  }
+
   const paradaByPlaca = new Map<string, UnitracParadaRow[]>()
   for (const p of paradaRows) {
     const list = paradaByPlaca.get(p.placa_norm) ?? []
@@ -314,6 +328,7 @@ export function cruzaEscalaUnitrac(
         paradas: [],
         anomalias_codigos: [],
         status: 'sem_entrega',
+        _matchMeta: { score: 0, confidence: 'UNMATCHED', requiresReview: false, algorithm: 'none' },
       })
       continue
     }
@@ -360,8 +375,56 @@ export function cruzaEscalaUnitrac(
       paradas,
       anomalias_codigos: [],
       status: 'pendente',
+      _matchMeta: matched
+        ? { score: 1.0, confidence: 'HIGH', requiresReview: false, algorithm: 'hybrid' }
+        : { score: 0, confidence: 'UNMATCHED', requiresReview: true, algorithm: 'none' },
     })
   }
 
   return rotas
+}
+
+export interface ResolveContext {
+  aliases: Record<string, { canonical_nm: string; canonical_id: string; score: number }>
+  trgmResults: Record<string, TrgmResult>
+}
+
+/**
+ * Pure 3-path algorithm — no side effects.
+ * Path 1: exact alias (HIGH if score >= 0.85, LOW if < 0.85)
+ * Path 2: trgm fuzzy >= 0.6 (HIGH if score >= 0.85, LOW otherwise)
+ * Path 3: no match → UNMATCHED + requiresReview=true
+ */
+export function resolveStoreName3Path(rawName: string, ctx: ResolveContext): MatchMeta {
+  const norm = normalizeForScore(rawName)
+
+  // Path 1: exact alias
+  const alias = ctx.aliases[norm]
+  if (alias) {
+    return {
+      score: alias.score,
+      confidence: alias.score >= 0.85 ? 'HIGH' : 'LOW',
+      requiresReview: alias.score < 0.6,
+      algorithm: 'alias',
+    }
+  }
+
+  // Path 2: trgm fuzzy
+  const trgm = ctx.trgmResults[rawName] ?? ctx.trgmResults[norm]
+  if (trgm && trgm.trgm_score >= 0.6) {
+    return {
+      score: trgm.trgm_score,
+      confidence: trgm.trgm_score >= 0.85 ? 'HIGH' : 'LOW',
+      requiresReview: trgm.trgm_score < 0.75,
+      algorithm: 'trgm',
+    }
+  }
+
+  // Path 3: no match
+  return {
+    score: trgm?.trgm_score ?? 0,
+    confidence: 'UNMATCHED',
+    requiresReview: true,
+    algorithm: 'none',
+  }
 }
