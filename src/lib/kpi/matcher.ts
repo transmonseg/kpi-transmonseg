@@ -184,6 +184,21 @@ function resolveLojaId(
   return null
 }
 
+// Pares de chars que o parser PDF do Unitrac confunde por causa do tipo Mercosul:
+// 1↔B (idx 4 da Mercosul), 9↔J, 4↔E. Cada par é equivalente em uma posição.
+const OCR_PARES: Record<string, string> = { '1':'B', 'B':'1', '9':'J', 'J':'9', '4':'E', 'E':'4' }
+
+// Gera variantes da placa com 1 substituição OCR (até 1 char diferente).
+// Limita à posição 4 (zero-indexed) que é onde Mercosul muda de dígito pra letra.
+function variantesOcr(placa: string): string[] {
+  if (placa.length !== 7) return [placa]
+  const variantes = new Set([placa])
+  const ch = placa[4]
+  const sub = OCR_PARES[ch]
+  if (sub) variantes.add(placa.slice(0, 4) + sub + placa.slice(5))
+  return [...variantes]
+}
+
 export function cruzaEscalaUnitrac(
   escalaLinhas: EscalaLinhaRow[],
   paradaRows: UnitracParadaRow[],
@@ -202,13 +217,32 @@ export function cruzaEscalaUnitrac(
     )
   }
 
-  // Agrupa escala_linhas por placa pra fazer matching parada↔linha em lote
-  const escalaByPlaca = new Map<string, EscalaLinhaRow[]>()
+  // Resolve a placa real no Unitrac considerando OCR alternativo (Mercosul pos 4).
+  // SÓ aceita variante OCR se for ÚNICA no Unitrac (sem ambiguidade).
+  function resolvePlacaUnitrac(placaEscala: string): string | null {
+    if (paradaByPlaca.has(placaEscala)) return placaEscala
+    const variantes = variantesOcr(placaEscala).filter(v => v !== placaEscala)
+    const presentes = variantes.filter(v => paradaByPlaca.has(v))
+    if (presentes.length === 1) return presentes[0]
+    return null
+  }
+
+  // Mapa: escala_linha_id -> placa do Unitrac (resolvendo OCR-confusable)
+  const placaResolvida = new Map<string, string>()
   for (const l of escalaLinhas) {
     if (!l.placa_norm) continue
-    const list = escalaByPlaca.get(l.placa_norm) ?? []
+    const resolved = resolvePlacaUnitrac(l.placa_norm)
+    if (resolved) placaResolvida.set(l.id, resolved)
+  }
+
+  // Agrupa escala_linhas pela placa RESOLVIDA pra fazer matching parada↔linha
+  const escalaByPlaca = new Map<string, EscalaLinhaRow[]>()
+  for (const l of escalaLinhas) {
+    const placa = placaResolvida.get(l.id)
+    if (!placa) continue
+    const list = escalaByPlaca.get(placa) ?? []
     list.push(l)
-    escalaByPlaca.set(l.placa_norm, list)
+    escalaByPlaca.set(placa, list)
   }
 
   // Pra cada placa, atribui paradas LOJA às escala_linhas correspondentes (greedy por melhor match)
@@ -236,6 +270,23 @@ export function cruzaEscalaUnitrac(
       matchByEscalaId.set(c.lineId, c.parada)
       usados.add(c.parada.id)
     }
+
+    // Fallback temporal: se sobrarem linhas sem match E paradas LOJA não usadas,
+    // atribui por ordem cronológica. Útil quando Unitrac dá várias paradas com mesmo
+    // cod (Regina/Armazém Grão) e o fuzzy match não consegue separar.
+    const linhasSemMatch = linhas.filter(l => !matchByEscalaId.has(l.id))
+    const paradasLivres = lojasParadas.filter(p => !usados.has(p.id))
+    if (linhasSemMatch.length > 0 && paradasLivres.length > 0) {
+      // Ordena linhas por raw_row_num (ordem de aparição na escala) — proxy de ordem
+      const linhasOrdenadas = [...linhasSemMatch]
+      const paradasOrdenadas = [...paradasLivres].sort(
+        (a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime()
+      )
+      for (let i = 0; i < Math.min(linhasOrdenadas.length, paradasOrdenadas.length); i++) {
+        matchByEscalaId.set(linhasOrdenadas[i].id, paradasOrdenadas[i])
+        usados.add(paradasOrdenadas[i].id)
+      }
+    }
   }
 
   const rotas: RotaKpi[] = []
@@ -255,7 +306,8 @@ export function cruzaEscalaUnitrac(
       continue
     }
 
-    const todasParadas = paradaByPlaca.get(linha.placa_norm) ?? []
+    const placaUnitrac = placaResolvida.get(linha.id) ?? linha.placa_norm
+    const todasParadas = paradaByPlaca.get(placaUnitrac) ?? []
     const semFake = todasParadas.filter((p) => p.classificacao !== 'FAKE_EXIT')
 
     const firstNonBase = semFake.find((p) => p.classificacao !== 'BASE')

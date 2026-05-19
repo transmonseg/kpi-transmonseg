@@ -51,12 +51,21 @@ function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: str
   if (local.startsWith(BASE_LOCAL_SHORT) || local.startsWith(FORA_LOCAL_SHORT)) {
     return { codigo_loja: null, nome_loja: null }
   }
-  const idx = local.indexOf(' - ')
+  // Limpa sufixo |VEHICLE_HEADER|<placa próx veículo> que vaza no last parada
+  let cleaned = local.replace(/\s*\|VEHICLE_HEADER\|.*$/, '').trim()
+  // Unitrac concatena várias classificações por vírgula quando o ponto cai
+  // em raio de múltiplas lojas. Pega só a 1ª (a real) quando tem padrão "código - nome".
+  const commaIdx = cleaned.indexOf(',')
+  if (commaIdx > 0) {
+    const primary = cleaned.slice(0, commaIdx).trim()
+    if (/^\d+\s*-\s/.test(primary)) cleaned = primary
+  }
+  const idx = cleaned.indexOf(' - ')
   if (idx === -1) return { codigo_loja: null, nome_loja: null }
-  const codigo = local.slice(0, idx).trim()
+  const codigo = cleaned.slice(0, idx).trim()
   // Codigo de loja real é numérico. Se vier texto (ex: "BASE BENASSI"), ignora.
   if (!/^\d+$/.test(codigo)) return { codigo_loja: null, nome_loja: null }
-  const nome = local.slice(idx + 3).trim() || null
+  const nome = cleaned.slice(idx + 3).trim() || null
   return { codigo_loja: codigo, nome_loja: nome }
 }
 
