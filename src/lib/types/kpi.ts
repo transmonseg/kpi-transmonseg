@@ -50,6 +50,7 @@ export type KpiLinha = {
   anomalias_codigos: string[]
   kpi_rota_id?: string | null
   rota_status?: string | null
+  kpi_linha_id?: string | null
 }
 
 export type AnomaliaDetectada = {

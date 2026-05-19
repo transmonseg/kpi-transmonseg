@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
 
-  const { kpi_id } = await req.json()
+  const { kpi_id, skip_consolida } = await req.json() as { kpi_id: string; skip_consolida?: boolean }
   if (!kpi_id) return new NextResponse('kpi_id obrigatório', { status: 400 })
 
   const svc = createServiceClient()
@@ -28,14 +28,46 @@ export async function POST(req: NextRequest) {
   if (kpiErr || !kpi) return new NextResponse('KPI não encontrado', { status: 404 })
 
   // Consolida kpi_linhas a partir de kpi_rotas (idempotente — recria sempre)
+  // skip_consolida=true: lê kpi_linhas existentes sem re-consolidar (preserva edições manuais de horários)
   let linhasBase: KpiLinha[]
-  try {
-    linhasBase = await consolidaKpi({ kpi_id, data: kpi.data, rede_id: kpi.rede_id, svc })
-  } catch (e) {
-    return new NextResponse(
-      e instanceof Error ? e.message : 'Erro ao consolidar KPI.',
-      { status: 500 },
-    )
+  if (skip_consolida) {
+    const { data: linhasRaw, error: linhasErr } = await svc
+      .from('kpi_linhas')
+      .select('*')
+      .eq('kpi_id', kpi_id)
+      .order('ordem')
+    if (linhasErr || !linhasRaw?.length)
+      return new NextResponse('Nenhuma linha encontrada. Execute gerar normal primeiro.', { status: 404 })
+    linhasBase = linhasRaw.map((r) => ({
+      kpi_id: r.kpi_id,
+      escala_linha_id: r.escala_linha_id,
+      ordem: r.ordem,
+      loja_nome: r.loja_nome,
+      motorista: r.motorista,
+      placa: r.placa,
+      carro_ordem: r.carro_ordem as 1 | 2,
+      saida_cd: r.saida_cd ? new Date(r.saida_cd as string) : null,
+      chd_loja_1: r.chd_loja_1 ? new Date(r.chd_loja_1 as string) : null,
+      saida_loja_1: r.saida_loja_1 ? new Date(r.saida_loja_1 as string) : null,
+      tempo_loja_1_min: r.tempo_loja_1_min as number | null,
+      chd_loja_2: r.chd_loja_2 ? new Date(r.chd_loja_2 as string) : null,
+      saida_loja_2: r.saida_loja_2 ? new Date(r.saida_loja_2 as string) : null,
+      tempo_loja_2_min: r.tempo_loja_2_min as number | null,
+      chd_loja_3: r.chd_loja_3 ? new Date(r.chd_loja_3 as string) : null,
+      saida_loja_3: r.saida_loja_3 ? new Date(r.saida_loja_3 as string) : null,
+      tempo_loja_3_min: r.tempo_loja_3_min as number | null,
+      observacao: r.observacao as string | null,
+      anomalias_codigos: [],
+    }))
+  } else {
+    try {
+      linhasBase = await consolidaKpi({ kpi_id, data: kpi.data, rede_id: kpi.rede_id, svc })
+    } catch (e) {
+      return new NextResponse(
+        e instanceof Error ? e.message : 'Erro ao consolidar KPI.',
+        { status: 500 },
+      )
+    }
   }
 
   if (linhasBase.length === 0)

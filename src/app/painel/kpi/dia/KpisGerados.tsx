@@ -51,7 +51,17 @@ type KpiLinha = {
   anomalias_codigos: string[]
   kpi_rota_id?: string | null
   rota_status?: string | null
+  kpi_linha_id?: string | null
 }
+
+type HoraEdits = {
+  saida_cd?: string
+  chd_loja_1?: string; saida_loja_1?: string
+  chd_loja_2?: string; saida_loja_2?: string
+  chd_loja_3?: string; saida_loja_3?: string
+}
+
+type HoraMap = Record<string, Record<string, HoraEdits>>
 
 type AnomaliaItem = {
   id: string
@@ -88,6 +98,17 @@ function fmtHora(iso: string | null): string {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+// Retorna HH:MM usando horas UTC (os timestamps são armazenados com BRT como UTC)
+function isoParaHHMM(iso: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`
+}
+
+function hhmmParaIso(hhmm: string, date: string): string {
+  return `${date}T${hhmm}:00.000Z`
 }
 
 const HIGH_CODES = new Set(['ANOM-01', 'ANOM-04', 'ANOM-06', 'ANOM-07'])
@@ -165,6 +186,7 @@ export function KpisGerados({
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
   const [resolvendo, setResolvendo] = useState<string | null>(null)
   const [marcandoSemEntrega, setMarcandoSemEntrega] = useState<string | null>(null)
+  const [editMapHora, setEditMapHora] = useState<HoraMap>({})
 
   useEffect(() => {
     let active = true
@@ -181,6 +203,7 @@ export function KpisGerados({
         setDetalhe({})
         setSignedUrls({})
         setEditMap({})
+        setEditMapHora({})
         setErroSalvar({})
       })
       .catch(() => {
@@ -239,59 +262,152 @@ export function KpisGerados({
     }))
   }
 
+  function editarHora(
+    kpiId: string,
+    escalaLinhaId: string,
+    campo: keyof HoraEdits,
+    valor: string,
+  ) {
+    setEditMapHora((prev) => ({
+      ...prev,
+      [kpiId]: {
+        ...(prev[kpiId] ?? {}),
+        [escalaLinhaId]: {
+          ...(prev[kpiId]?.[escalaLinhaId] ?? {}),
+          [campo]: valor,
+        },
+      },
+    }))
+  }
+
   function hasEdits(kpiId: string): boolean {
     const edits = editMap[kpiId]
     return !!edits && Object.keys(edits).length > 0
   }
 
+  function hasHoraEdits(kpiId: string): boolean {
+    const edits = editMapHora[kpiId]
+    return !!edits && Object.keys(edits).length > 0
+  }
+
   async function salvarEReGerar(kpi: KpiDoDia) {
-    const edits = editMap[kpi.kpi_id]
-    if (!edits) return
+    const escalaEdits = editMap[kpi.kpi_id]
+    const horaEditsKpi = editMapHora[kpi.kpi_id]
+    const temEscalaEdits = !!escalaEdits && Object.keys(escalaEdits).length > 0
+    const temHoraEdits = !!horaEditsKpi && Object.keys(horaEditsKpi).length > 0
+    if (!temEscalaEdits && !temHoraEdits) return
+
     setSalvando(kpi.kpi_id)
     setErroSalvar((prev) => { const e = { ...prev }; delete e[kpi.kpi_id]; return e })
 
     try {
-      await Promise.all(
-        Object.entries(edits).map(([linhaId, campos]) =>
-          fetch('/api/escalas/linha', {
-            method: 'PATCH',
+      let targetId = kpi.kpi_id
+      let linhasAtuais = detalhe[kpi.kpi_id]?.linhas ?? []
+
+      // 1. Escala edits (motorista/placa) → processar + gerar normal
+      if (temEscalaEdits) {
+        await Promise.all(
+          Object.entries(escalaEdits).map(([linhaId, campos]) =>
+            fetch('/api/escalas/linha', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: linhaId,
+                ...(campos.motorista !== undefined && { motorista_nome: campos.motorista }),
+                ...(campos.placa !== undefined && { placa_raw: campos.placa }),
+              }),
+            }).then((r) => { if (!r.ok) throw new Error(`Falha ao atualizar linha ${linhaId}`) }),
+          ),
+        )
+
+        const processarRes = await fetch('/api/kpi/processar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data, rede_id: kpi.rede_id }),
+        })
+        if (!processarRes.ok) throw new Error(await processarRes.text())
+        const { kpi_ids } = (await processarRes.json()) as { kpi_ids: string[] }
+        targetId = kpi_ids.includes(kpi.kpi_id) ? kpi.kpi_id : (kpi_ids[0] ?? kpi.kpi_id)
+
+        const gerarRes = await fetch('/api/kpi/gerar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kpi_id: targetId }),
+        })
+        if (!gerarRes.ok) {
+          const txt = await gerarRes.text()
+          if (gerarRes.status !== 422) throw new Error(txt)
+        }
+
+        // Re-fetch linhas para ter os novos kpi_linha_ids após consolidaKpi
+        const freshRes = await fetch(`/api/kpi/${targetId}`)
+        if (freshRes.ok) {
+          const fresh = (await freshRes.json()) as { linhas: KpiLinha[] }
+          linhasAtuais = fresh.linhas
+        }
+      }
+
+      // 2. Hora edits → PATCH kpi_linhas diretamente, depois gerar sem re-consolidar
+      if (temHoraEdits) {
+        // Se kpi_linhas ainda não existem (gerar nunca foi chamado e não há escala edits)
+        const temLinhaId = linhasAtuais.some((l) => l.kpi_linha_id)
+        if (!temLinhaId) {
+          const gerarRes = await fetch('/api/kpi/gerar', {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              id: linhaId,
-              ...(campos.motorista !== undefined && { motorista_nome: campos.motorista }),
-              ...(campos.placa !== undefined && { placa_raw: campos.placa }),
-            }),
-          }).then((r) => {
-            if (!r.ok) throw new Error(`Falha ao atualizar linha ${linhaId}`)
+            body: JSON.stringify({ kpi_id: targetId }),
+          })
+          if (!gerarRes.ok) throw new Error(await gerarRes.text())
+          const freshRes = await fetch(`/api/kpi/${targetId}`)
+          if (freshRes.ok) {
+            const fresh = (await freshRes.json()) as { linhas: KpiLinha[] }
+            linhasAtuais = fresh.linhas
+          }
+        }
+
+        await Promise.all(
+          Object.entries(horaEditsKpi).map(async ([escalaLinhaId, horaEdits]) => {
+            const linha = linhasAtuais.find((l) => l.escala_linha_id === escalaLinhaId)
+            if (!linha?.kpi_linha_id) return
+            const payload: Record<string, string | null> = {}
+            const campos: Array<keyof HoraEdits> = [
+              'saida_cd', 'chd_loja_1', 'saida_loja_1',
+              'chd_loja_2', 'saida_loja_2', 'chd_loja_3', 'saida_loja_3',
+            ]
+            for (const campo of campos) {
+              const val = horaEdits[campo]
+              if (val !== undefined) {
+                payload[campo] = val ? hhmmParaIso(val, data) : null
+              }
+              // Se não foi editado, envia o valor original para recalcular tempo corretamente
+              else {
+                const original = linha[campo as keyof KpiLinha] as string | null
+                if (original !== undefined) payload[campo] = original
+              }
+            }
+            const r = await fetch(`/api/kpi/linhas/${linha.kpi_linha_id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            })
+            if (!r.ok) throw new Error(`Erro ao salvar horário: ${await r.text()}`)
           }),
-        ),
-      )
+        )
 
-      const processarRes = await fetch('/api/kpi/processar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data, rede_id: kpi.rede_id }),
-      })
-      if (!processarRes.ok)
-        throw new Error(await processarRes.text())
-
-      const { kpi_ids } = (await processarRes.json()) as { kpi_ids: string[] }
-
-      const targetId = kpi_ids.includes(kpi.kpi_id) ? kpi.kpi_id : (kpi_ids[0] ?? kpi.kpi_id)
-      const gerarRes = await fetch('/api/kpi/gerar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kpi_id: targetId }),
-      })
-      if (!gerarRes.ok) {
-        const txt = await gerarRes.text()
-        if (gerarRes.status !== 422) throw new Error(txt)
+        // Re-gerar Excel a partir das kpi_linhas editadas (sem re-consolidar)
+        const gerarRes2 = await fetch('/api/kpi/gerar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kpi_id: targetId, skip_consolida: true }),
+        })
+        if (!gerarRes2.ok) throw new Error(await gerarRes2.text())
       }
 
       setEditMap((prev) => { const e = { ...prev }; delete e[kpi.kpi_id]; return e })
+      setEditMapHora((prev) => { const e = { ...prev }; delete e[kpi.kpi_id]; return e })
       setSignedUrls((prev) => { const e = { ...prev }; delete e[kpi.kpi_id]; return e })
       setDetalhe((prev) => { const e = { ...prev }; delete e[kpi.kpi_id]; return e })
-      await carregarDetalhe(targetId !== kpi.kpi_id ? targetId : kpi.kpi_id)
+      await carregarDetalhe(targetId)
 
       const diasRes = await fetch(`/api/kpi/dia?data=${data}`)
       if (diasRes.ok) setKpis(await diasRes.json())
@@ -397,7 +513,7 @@ export function KpisGerados({
           const isExpanded = expanded === k.kpi_id
           const det = detalhe[k.kpi_id]
           const filtro = filtros[k.kpi_id] ?? 'todas'
-          const temEdits = hasEdits(k.kpi_id)
+          const temEdits = hasEdits(k.kpi_id) || hasHoraEdits(k.kpi_id)
           const isSalvando = salvando === k.kpi_id
           const erroK = erroSalvar[k.kpi_id]
           const temAnomaliasBloqueando = k.qtd_anomalias_high > 0
@@ -481,6 +597,11 @@ export function KpisGerados({
                       onEditarCelula={(linhaId, campo, valor) =>
                         editarCelula(k.kpi_id, linhaId, campo, valor)
                       }
+                      editMapHora={editMapHora[k.kpi_id] ?? {}}
+                      onEditarHora={(escalaLinhaId, campo, valor) =>
+                        editarHora(k.kpi_id, escalaLinhaId, campo, valor)
+                      }
+                      dataKpi={data}
                       temEdits={temEdits}
                       salvando={isSalvando}
                       onSalvar={() => salvarEReGerar(k)}
@@ -516,6 +637,9 @@ function PainelRevisao({
   resolvendo,
   marcandoSemEntrega,
   onMarcarSemEntrega,
+  editMapHora,
+  onEditarHora,
+  dataKpi,
 }: {
   kpi: KpiDoDia
   det: KpiDetalhe
@@ -531,6 +655,9 @@ function PainelRevisao({
   resolvendo: string | null
   marcandoSemEntrega: string | null
   onMarcarSemEntrega: (rotaId: string) => void
+  editMapHora: Record<string, HoraEdits>
+  onEditarHora: (escalaLinhaId: string, campo: keyof HoraEdits, valor: string) => void
+  dataKpi: string
 }) {
   const stats = useMemo(() => {
     const total = det.linhas.length
@@ -764,21 +891,31 @@ function PainelRevisao({
                       <span className="font-mono text-[10.5px] px-2">{l.placa ?? '—'}</span>
                     )}
                   </Td>
-                  <Td>{fmtHora(l.saida_cd)}</Td>
-                  <ParadaCell
-                    chegada={l.chd_loja_1}
-                    saida={l.saida_loja_1}
-                    min={l.tempo_loja_1_min}
+                  <CelulaHoraTd
+                    iso={l.saida_cd}
+                    editVal={l.escala_linha_id ? (editMapHora[l.escala_linha_id]?.saida_cd) : undefined}
+                    onChange={l.escala_linha_id ? (v) => onEditarHora(l.escala_linha_id!, 'saida_cd', v) : undefined}
                   />
-                  <ParadaCell
-                    chegada={l.chd_loja_2}
-                    saida={l.saida_loja_2}
-                    min={l.tempo_loja_2_min}
+                  <ParadaCellEditavel
+                    chegada={l.chd_loja_1} saida={l.saida_loja_1} min={l.tempo_loja_1_min}
+                    editChd={l.escala_linha_id ? editMapHora[l.escala_linha_id]?.chd_loja_1 : undefined}
+                    editSai={l.escala_linha_id ? editMapHora[l.escala_linha_id]?.saida_loja_1 : undefined}
+                    onChangeChd={l.escala_linha_id ? (v) => onEditarHora(l.escala_linha_id!, 'chd_loja_1', v) : undefined}
+                    onChangeSai={l.escala_linha_id ? (v) => onEditarHora(l.escala_linha_id!, 'saida_loja_1', v) : undefined}
                   />
-                  <ParadaCell
-                    chegada={l.chd_loja_3}
-                    saida={l.saida_loja_3}
-                    min={l.tempo_loja_3_min}
+                  <ParadaCellEditavel
+                    chegada={l.chd_loja_2} saida={l.saida_loja_2} min={l.tempo_loja_2_min}
+                    editChd={l.escala_linha_id ? editMapHora[l.escala_linha_id]?.chd_loja_2 : undefined}
+                    editSai={l.escala_linha_id ? editMapHora[l.escala_linha_id]?.saida_loja_2 : undefined}
+                    onChangeChd={l.escala_linha_id ? (v) => onEditarHora(l.escala_linha_id!, 'chd_loja_2', v) : undefined}
+                    onChangeSai={l.escala_linha_id ? (v) => onEditarHora(l.escala_linha_id!, 'saida_loja_2', v) : undefined}
+                  />
+                  <ParadaCellEditavel
+                    chegada={l.chd_loja_3} saida={l.saida_loja_3} min={l.tempo_loja_3_min}
+                    editChd={l.escala_linha_id ? editMapHora[l.escala_linha_id]?.chd_loja_3 : undefined}
+                    editSai={l.escala_linha_id ? editMapHora[l.escala_linha_id]?.saida_loja_3 : undefined}
+                    onChangeChd={l.escala_linha_id ? (v) => onEditarHora(l.escala_linha_id!, 'chd_loja_3', v) : undefined}
+                    onChangeSai={l.escala_linha_id ? (v) => onEditarHora(l.escala_linha_id!, 'saida_loja_3', v) : undefined}
                   />
                   <Td
                     align="left"
@@ -946,17 +1083,123 @@ function CelulaEditavel({
   return (
     <input
       value={vazio ? '' : valor}
-      placeholder={SEM_VALOR}
+      placeholder="—"
       onChange={(e) => onChange(e.target.value)}
       className={cn(
-        'w-full rounded-md border border-transparent bg-transparent px-2 py-1 text-[11px] transition-colors',
-        'placeholder:text-[var(--color-fg-subtle)]',
-        'hover:border-[var(--color-border)] hover:bg-[var(--color-bg-subtle)]',
+        'w-full rounded border px-2 py-1 text-[11px] transition-colors',
+        'border-[var(--color-border)] bg-[var(--color-bg-subtle)]',
+        'hover:border-[var(--color-accent)]/50 hover:bg-[var(--color-bg)]',
         'focus:border-[var(--color-accent)] focus:bg-[var(--color-bg-elevated)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30',
-        monospace && 'font-mono text-[10.5px]',
+        monospace && 'font-mono text-[10.5px] uppercase tracking-wider',
         vazio ? 'italic text-[var(--color-fg-subtle)]' : 'text-[var(--color-fg)]',
       )}
     />
+  )
+}
+
+function CelulaHoraTd({
+  iso,
+  editVal,
+  onChange,
+}: {
+  iso: string | null
+  editVal: string | undefined
+  onChange: ((v: string) => void) | undefined
+}) {
+  const displayVal = editVal !== undefined ? editVal : isoParaHHMM(iso)
+  const editado = editVal !== undefined && editVal !== isoParaHHMM(iso)
+  return (
+    <Td className="px-1 py-0.5 w-20">
+      {onChange ? (
+        <input
+          type="time"
+          value={displayVal}
+          onChange={(e) => onChange(e.target.value)}
+          className={cn(
+            'w-full rounded border px-1.5 py-1 text-[11px] font-mono transition-colors',
+            editado
+              ? 'border-[var(--color-warning)] bg-[var(--color-warning-soft)]/30 text-[var(--color-fg)]'
+              : 'border-[var(--color-border)] bg-[var(--color-bg-subtle)] text-[var(--color-fg)]',
+            'hover:border-[var(--color-accent)]/50 focus:border-[var(--color-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]/30',
+          )}
+        />
+      ) : (
+        <span className="tabular-nums">{fmtHora(iso)}</span>
+      )}
+    </Td>
+  )
+}
+
+function ParadaCellEditavel({
+  chegada, saida, min,
+  editChd, editSai,
+  onChangeChd, onChangeSai,
+}: {
+  chegada: string | null; saida: string | null; min: number | null
+  editChd: string | undefined; editSai: string | undefined
+  onChangeChd: ((v: string) => void) | undefined
+  onChangeSai: ((v: string) => void) | undefined
+}) {
+  const hasData = chegada || saida || editChd !== undefined || editSai !== undefined
+  if (!hasData) return <Td className="text-[var(--color-fg-subtle)]">—</Td>
+
+  const chdVal = editChd !== undefined ? editChd : isoParaHHMM(chegada)
+  const saiVal = editSai !== undefined ? editSai : isoParaHHMM(saida)
+  const editadoChd = editChd !== undefined && editChd !== isoParaHHMM(chegada)
+  const editadoSai = editSai !== undefined && editSai !== isoParaHHMM(saida)
+
+  // Calcular tempo em minutos on-the-fly quando editado
+  let tempoMin = min
+  if (editadoChd || editadoSai) {
+    const [ch, cm] = (chdVal || '00:00').split(':').map(Number)
+    const [sh, sm] = (saiVal || '00:00').split(':').map(Number)
+    const diff = (sh * 60 + sm) - (ch * 60 + cm)
+    tempoMin = diff > 0 ? diff : null
+  }
+
+  return (
+    <Td className="px-1 py-0.5 min-w-[90px]">
+      <div className="flex flex-col gap-0.5">
+        {onChangeChd ? (
+          <input
+            type="time"
+            value={chdVal}
+            onChange={(e) => onChangeChd(e.target.value)}
+            className={cn(
+              'w-full rounded border px-1 py-0.5 text-[10px] font-mono transition-colors',
+              editadoChd
+                ? 'border-[var(--color-warning)] bg-[var(--color-warning-soft)]/30'
+                : 'border-[var(--color-border)] bg-[var(--color-bg-subtle)]',
+              'focus:border-[var(--color-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]/30',
+            )}
+          />
+        ) : (
+          <span className="text-[10px] font-mono">{fmtHora(chegada)}</span>
+        )}
+        {onChangeSai ? (
+          <input
+            type="time"
+            value={saiVal}
+            onChange={(e) => onChangeSai(e.target.value)}
+            className={cn(
+              'w-full rounded border px-1 py-0.5 text-[10px] font-mono transition-colors',
+              editadoSai
+                ? 'border-[var(--color-warning)] bg-[var(--color-warning-soft)]/30'
+                : 'border-[var(--color-border)] bg-[var(--color-bg-subtle)]',
+              'focus:border-[var(--color-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]/30',
+            )}
+          />
+        ) : (
+          <span className="text-[10px] font-mono">{fmtHora(saida)}</span>
+        )}
+        {tempoMin != null && tempoMin > 0 && (
+          <span className={cn(
+            'text-[9px]',
+            editadoChd || editadoSai ? 'text-[var(--color-warning)]' : 'text-[var(--color-fg-muted)]',
+          )}>{tempoMin}min</span>
+        )}
+      </div>
+    </Td>
   )
 }
 
@@ -1005,32 +1248,6 @@ function Td({
   )
 }
 
-function ParadaCell({
-  chegada,
-  saida,
-  min,
-}: {
-  chegada: string | null
-  saida: string | null
-  min: number | null
-}) {
-  if (!chegada && !saida && min == null)
-    return <Td className="text-[var(--color-fg-subtle)]">—</Td>
-  return (
-    <Td>
-      <span className="inline-flex flex-col leading-tight">
-        <span>
-          {fmtHora(chegada)}
-          <span className="text-[var(--color-fg-subtle)] mx-0.5">→</span>
-          {fmtHora(saida)}
-        </span>
-        {min != null && (
-          <span className="text-[9.5px] text-[var(--color-fg-muted)]">{min}min</span>
-        )}
-      </span>
-    </Td>
-  )
-}
 
 function Spinner({ className = '' }: { className?: string }) {
   return <CircleNotch size={14} weight="bold" className={cn('animate-spin', className)} />

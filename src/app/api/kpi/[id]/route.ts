@@ -88,6 +88,7 @@ export async function GET(
       anomalias_codigos: codigosMap.get(r.escala_linha_id as string) ?? [],
       kpi_rota_id: rotaIdMap.get(r.escala_linha_id as string) ?? null,
       rota_status: rotaStatusMap.get(r.escala_linha_id as string) ?? null,
+      kpi_linha_id: r.id as string,
     }))
   } else {
     // Fallback: monta linhas direto de kpi_rotas (antes do gerar)
@@ -133,6 +134,7 @@ export async function GET(
           anomalias_codigos: (rota.anomalias_codigos as string[] | null) ?? [],
           kpi_rota_id: rota.id as string,
           rota_status: (rota.status as string) ?? 'pendente',
+          kpi_linha_id: null,
         } satisfies KpiLinha
       })
   }
