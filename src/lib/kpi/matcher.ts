@@ -211,6 +211,7 @@ export async function cruzaEscalaUnitrac(
   paradaRows: UnitracParadaRow[],
   lojas: LojaRow[],
   supabase?: SupabaseClient,
+  geoStores?: GeoStore[],
 ): Promise<RotaKpi[]> {
   // Pre-fetch batch trgm para todos os nomes de loja desta execucao
   let trgmResults: Record<string, TrgmResult> = {}
@@ -263,6 +264,7 @@ export async function cruzaEscalaUnitrac(
   }
 
   // Pra cada placa, atribui paradas LOJA às escala_linhas correspondentes (greedy por melhor match)
+  const geoMatchedLineIds = new Set<string>()
   const matchByEscalaId = new Map<string, UnitracParadaRow>()
   for (const [placa, linhas] of escalaByPlaca) {
     const todas = paradaByPlaca.get(placa) ?? []
@@ -311,6 +313,30 @@ export async function cruzaEscalaUnitrac(
       for (let i = 0; i < Math.min(linhasOrdenadas.length, paradasOrdenadas.length); i++) {
         matchByEscalaId.set(linhasOrdenadas[i].id, paradasOrdenadas[i])
         usados.add(paradasOrdenadas[i].id)
+      }
+    }
+
+    // Geo fallback for Category B: FORA_BASE stops near canonical_loja coordinates
+    if (geoStores && geoStores.length > 0) {
+      const linhasAindaSemMatch = linhas.filter(l => !matchByEscalaId.has(l.id))
+      if (linhasAindaSemMatch.length > 0) {
+        const paradasForaBase = todas
+          .filter(p =>
+            p.classificacao === 'FORA_BASE' &&
+            p.lat != null && p.lng != null &&
+            !usados.has(p.id)
+          )
+          .sort((a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
+
+        const paradasGeoResolved = paradasForaBase.filter(p =>
+          resolveForaBaseGeo(p.lat!, p.lng!, geoStores) !== null
+        )
+
+        for (let i = 0; i < Math.min(linhasAindaSemMatch.length, paradasGeoResolved.length); i++) {
+          matchByEscalaId.set(linhasAindaSemMatch[i].id, paradasGeoResolved[i])
+          usados.add(paradasGeoResolved[i].id)
+          geoMatchedLineIds.add(linhasAindaSemMatch[i].id)
+        }
       }
     }
   }
@@ -362,7 +388,7 @@ export async function cruzaEscalaUnitrac(
           chegada: new Date(matched.chegada),
           saida: matched.saida ? new Date(matched.saida) : new Date(matched.chegada),
           duracao_min: Math.round((matched.duracao_seg ?? 0) / 60),
-          classificacao: 'LOJA',
+          classificacao: geoMatchedLineIds.has(linha.id) ? 'FORA_BASE' : 'LOJA',
         }]
       : []
 
@@ -376,7 +402,9 @@ export async function cruzaEscalaUnitrac(
       anomalias_codigos: [],
       status: 'pendente',
       _matchMeta: matched
-        ? { score: 1.0, confidence: 'HIGH', requiresReview: false, algorithm: 'hybrid' }
+        ? geoMatchedLineIds.has(linha.id)
+          ? { score: 0.8, confidence: 'LOW', requiresReview: false, algorithm: 'geo' }
+          : { score: 1.0, confidence: 'HIGH', requiresReview: false, algorithm: 'hybrid' }
         : { score: 0, confidence: 'UNMATCHED', requiresReview: true, algorithm: 'none' },
     })
   }
@@ -427,4 +455,32 @@ export function resolveStoreName3Path(rawName: string, ctx: ResolveContext): Mat
     requiresReview: true,
     algorithm: 'none',
   }
+}
+
+export interface GeoStore {
+  id: string
+  name: string
+  lat: number | null
+  lng: number | null
+  raio_metros: number
+}
+
+/**
+ * For a FORA_BASE stop with coordinates, finds the nearest canonical_loja
+ * within its raio_metros. Returns the store or null.
+ * haversine() returns meters.
+ */
+export function resolveForaBaseGeo(lat: number, lng: number, stores: GeoStore[]): GeoStore | null {
+  let best: GeoStore | null = null
+  let bestDist = Infinity
+
+  for (const store of stores) {
+    if (store.lat == null || store.lng == null) continue
+    const distM = haversine(lat, lng, store.lat, store.lng)
+    if (distM <= store.raio_metros && distM < bestDist) {
+      best = store
+      bestDist = distM
+    }
+  }
+  return best
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveStoreName3Path, type ResolveContext } from './matcher'
+import { resolveStoreName3Path, type ResolveContext, resolveForaBaseGeo, type GeoStore } from './matcher'
 
 describe('resolveStoreName3Path', () => {
   const ctx: ResolveContext = {
@@ -29,5 +29,29 @@ describe('resolveStoreName3Path', () => {
     expect(r.confidence).toBe('UNMATCHED')
     expect(r.requiresReview).toBe(true)
     expect(r.algorithm).toBe('none')
+  })
+})
+
+describe('resolveForaBaseGeo', () => {
+  const stores: GeoStore[] = [
+    { id: 'a1', name: 'Assai Jacarepagua', lat: -22.9503, lng: -43.3650, raio_metros: 300 }
+  ]
+
+  it('retorna match para parada dentro do raio', () => {
+    // ~50m from store
+    const r = resolveForaBaseGeo(-22.9500, -43.3648, stores)
+    expect(r).not.toBeNull()
+    expect(r!.name).toBe('Assai Jacarepagua')
+  })
+
+  it('retorna null para parada fora do raio', () => {
+    // ~5km from store
+    const r = resolveForaBaseGeo(-22.9900, -43.4000, stores)
+    expect(r).toBeNull()
+  })
+
+  it('retorna null quando lojas nao tem lat/lng', () => {
+    const noGeo: GeoStore[] = [{ id: 'x', name: 'X', lat: null, lng: null, raio_metros: 300 }]
+    expect(resolveForaBaseGeo(-22.9500, -43.3648, noGeo)).toBeNull()
   })
 })

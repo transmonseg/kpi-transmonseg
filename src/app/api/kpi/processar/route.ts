@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { cruzaEscalaUnitrac } from '@/lib/kpi/matcher'
+import { cruzaEscalaUnitrac, type GeoStore } from '@/lib/kpi/matcher'
 import { detectaAnomalias } from '@/lib/kpi/anomalia'
 
 export const runtime = 'nodejs'
@@ -94,6 +94,21 @@ export async function POST(req: NextRequest) {
   const allKpiIds: string[] = []
   let totalAnomalias = { HIGH: 0, MEDIUM: 0, LOW: 0 }
 
+  // Fetch canonical_loja with coordinates for FORA_BASE geo fallback (Category B)
+  const { data: geoStoresRaw } = await svc
+    .from('canonical_loja')
+    .select('id, name, lat, lng, raio_metros')
+    .not('lat', 'is', null)
+    .not('lng', 'is', null)
+
+  const geoStores: GeoStore[] = (geoStoresRaw ?? []).map((g: any) => ({
+    id: g.id as string,
+    name: g.name as string,
+    lat: g.lat as number,
+    lng: g.lng as number,
+    raio_metros: (g.raio_metros as number) ?? 300,
+  }))
+
   for (const rid of distinctRedeIds) {
     const linhasRede = escalaLinhas.filter((l) => l.rede_id === rid)
     const placasRede = new Set(linhasRede.filter((l) => l.placa_norm).map((l) => l.placa_norm as string))
@@ -104,6 +119,7 @@ export async function POST(req: NextRequest) {
       paradasRede,
       (lojas ?? []).filter((l) => l.rede_id === rid),
       svc,
+      geoStores,
     )
 
     // Build paradasIndex for anomalia detection
