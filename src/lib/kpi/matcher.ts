@@ -13,7 +13,11 @@ const STOPWORDS = new Set(['DO','DE','DA','DOS','DAS','SAO','SÃO','LOJA','REDE'
 
 function tokensCore(s: string | null | undefined): Set<string> {
   if (!s) return new Set()
-  const norm = String(s).toUpperCase()
+  // Unitrac às vezes concatena várias paradas separadas por vírgula
+  // (ex: "PRINCESA MARICÁ 1,5353012 - REGINA BARRA..."). Pega só a primeira
+  // parada (antes da primeira vírgula) pra evitar match cross-loja.
+  const primeiraParada = String(s).split(',')[0]
+  const norm = primeiraParada.toUpperCase()
     .normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/\([^)]*\)/g, ' ')
     .replace(/\d+\s*[ªº°AO]?\s*ENTREGA/gi, ' ')

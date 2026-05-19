@@ -189,6 +189,9 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
         const placaRaw1 = asStr(v8)
         const placaRaw2 = asStr(v12)
 
+        // Pula placeholders sem motorista/placa de carro 1 (redes em arquivo separado)
+        if (!placaRaw1 && !asStr(v6)) return
+
         // Usa nome da própria linha se for diferente do ultimaLoja, senão herda
         const nomeLojaLinha = limpaLoja(s1)
         const usaNomeProprio = !ultimaLoja || nomeLojaLinha !== ultimaLoja.nome
@@ -310,6 +313,11 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
 
     const placaRaw1 = asStr(v8)
     const placaRaw2 = asStr(v12)
+
+    // Pula linhas placeholder: redes cuja escala de veículos vem em arquivo separado
+    // (FEIRA_NOVA, EMANUEL, SUPER_PAX) aparecem no GERAL só com nome da loja e peso.
+    // Sem motorista E sem placa de carro 1, não há o que cruzar com Unitrac.
+    if (!placaRaw1 && !asStr(v6)) return
 
     const tipoEmissao = modoBenassi ? 'BENASSI' : modoForaEscala ? 'FORA_ESCALA' : 'NORMAL'
     const redeFromLoja = inferRedeFromLoja(nomeLoja)
