@@ -307,6 +307,13 @@ export async function POST(req: NextRequest) {
       })
 
     if (reviewInserts.length > 0) {
+      // Delete existing pending rows for these escala_linha_ids before re-inserting
+      // (idempotent: re-processing the same day replaces stale queue entries)
+      const escalaLinhaIds = reviewInserts.map(r => r.escala_linha_id)
+      await svc.from('review_queue').delete()
+        .in('escala_linha_id', escalaLinhaIds)
+        .eq('status', 'pending')
+
       const { error: qErr } = await svc
         .from('review_queue')
         .insert(reviewInserts)

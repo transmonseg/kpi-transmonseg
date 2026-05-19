@@ -380,17 +380,43 @@ export async function cruzaEscalaUnitrac(
 
     // Em vez de todas as paradas não-base, emite SÓ a parada matched por nome
     const matched = matchByEscalaId.get(linha.id)
+    const isGeo = geoMatchedLineIds.has(linha.id)
+
+    let lojaId: string | null = null
+    let nomeResolvido: string = ''
+    let metaAlgorithm: MatchAlgorithm = 'hybrid'
+
+    if (matched) {
+      const nomeRaw = matched.nome_loja ?? matched.local_parada ?? ''
+      lojaId = resolveLojaId(matched, lojas, linha.rede_id)
+      nomeResolvido = nomeRaw
+
+      if (isGeo) {
+        metaAlgorithm = 'geo'
+      } else if (!lojaId && trgmResults[linha.loja_nome_raw]) {
+        // trgm fallback: enriquece loja_id quando resolveLojaId retornou null
+        const trgm = trgmResults[linha.loja_nome_raw]
+        lojaId = trgm.canonical_id
+        nomeResolvido = trgm.canonical_nm
+        metaAlgorithm = 'trgm'
+      }
+    }
+
     const paradas: ParadaKpi[] = matched
       ? [{
           parada_id: matched.id,
-          loja_id: resolveLojaId(matched, lojas, linha.rede_id),
-          nome: matched.nome_loja ?? matched.local_parada,
+          loja_id: lojaId,
+          nome: nomeResolvido,
           chegada: new Date(matched.chegada),
           saida: matched.saida ? new Date(matched.saida) : new Date(matched.chegada),
           duracao_min: Math.round((matched.duracao_seg ?? 0) / 60),
-          classificacao: geoMatchedLineIds.has(linha.id) ? 'FORA_BASE' : 'LOJA',
+          classificacao: isGeo ? 'FORA_BASE' : 'LOJA',
         }]
       : []
+
+    const metaScore = isGeo ? 0.8 : metaAlgorithm === 'trgm'
+      ? (trgmResults[linha.loja_nome_raw]?.trgm_score ?? 0.7)
+      : 1.0
 
     rotas.push({
       escala_linha_id: linha.id,
@@ -402,9 +428,7 @@ export async function cruzaEscalaUnitrac(
       anomalias_codigos: [],
       status: 'pendente',
       _matchMeta: matched
-        ? geoMatchedLineIds.has(linha.id)
-          ? { score: 0.8, confidence: 'LOW', requiresReview: false, algorithm: 'geo' }
-          : { score: 1.0, confidence: 'HIGH', requiresReview: false, algorithm: 'hybrid' }
+        ? { score: metaScore, confidence: isGeo ? 'LOW' : 'HIGH', requiresReview: false, algorithm: metaAlgorithm }
         : { score: 0, confidence: 'UNMATCHED', requiresReview: true, algorithm: 'none' },
     })
   }
