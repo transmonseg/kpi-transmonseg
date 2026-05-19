@@ -2,6 +2,53 @@ import { levenshtein, normalizaNome } from '@/lib/utils/texto'
 import { haversine } from '@/lib/utils/geo'
 import type { RotaKpi, ParadaKpi } from '@/lib/types/kpi'
 
+// Tokeniza nome de loja pra match fuzzy: remove acentos, parênteses (1ª Entrega), redes,
+// stopwords (DO, DE, DA, SAO), retorna set de tokens significativos.
+const REDES_TOKEN = new Set([
+  'PRINCESA','PREZUNIC','ASSAI','ASSAÍ','CARREFOUR','SUPERPRIX','SUPER','PRIX','PAX',
+  'SENDAS','GUANABARA','MUNDIAL','VIANENSE','EMANUEL','SAMS','ATACADAO','FEIRA','NOVA',
+  'CAB','PETROPOLIS','ARMAZEM','GRAO','ZONA','SUL','MERCADO','SUPERMERCADO',
+])
+const STOPWORDS = new Set(['DO','DE','DA','DOS','DAS','SAO','SÃO','LOJA','REDE'])
+
+function tokensCore(s: string | null | undefined): Set<string> {
+  if (!s) return new Set()
+  const norm = String(s).toUpperCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\d+\s*[ªº°AO]?\s*ENTREGA/gi, ' ')
+  const out = new Set<string>()
+  for (const t of norm.split(/[^A-Z0-9]+/)) {
+    if (t.length < 1) continue
+    if (REDES_TOKEN.has(t) || STOPWORDS.has(t)) continue
+    out.add(t)
+  }
+  return out
+}
+
+function extraiNumero(tokens: Set<string>): string | null {
+  for (const t of tokens) if (/^\d+$/.test(t)) return t
+  return null
+}
+
+// Score: Infinity = no match, lower = better. Considera obrigatório bater número de loja.
+function matchScore(escalaNome: string, paradaNome: string): number {
+  const tl = tokensCore(escalaNome)
+  const tp = tokensCore(paradaNome)
+  if (tl.size === 0 || tp.size === 0) return Infinity
+
+  const nL = extraiNumero(tl)
+  const nP = extraiNumero(tp)
+  if (nL !== null && nP !== null && nL !== nP) return Infinity
+
+  let common = 0
+  for (const t of tl) if (tp.has(t)) common++
+  if (common === 0) return Infinity
+
+  // Penaliza diferença entre conjuntos
+  return Math.max(tl.size, tp.size) - common
+}
+
 type EscalaLinhaRow = {
   id: string
   rede_id: string
@@ -128,6 +175,42 @@ export function cruzaEscalaUnitrac(
     )
   }
 
+  // Agrupa escala_linhas por placa pra fazer matching parada↔linha em lote
+  const escalaByPlaca = new Map<string, EscalaLinhaRow[]>()
+  for (const l of escalaLinhas) {
+    if (!l.placa_norm) continue
+    const list = escalaByPlaca.get(l.placa_norm) ?? []
+    list.push(l)
+    escalaByPlaca.set(l.placa_norm, list)
+  }
+
+  // Pra cada placa, atribui paradas LOJA às escala_linhas correspondentes (greedy por melhor match)
+  const matchByEscalaId = new Map<string, UnitracParadaRow>()
+  for (const [placa, linhas] of escalaByPlaca) {
+    const todas = paradaByPlaca.get(placa) ?? []
+    const lojasParadasRaw = todas.filter((p) => p.classificacao === 'LOJA')
+    const lojasParadas = consolidarParadasMesmoCliente(lojasParadasRaw)
+    const usados = new Set<string>()
+
+    // Coleta todos os pares (linha, parada, score) e ordena por score crescente
+    const candidatos: Array<{ lineId: string; parada: UnitracParadaRow; score: number }> = []
+    for (const line of linhas) {
+      for (const p of lojasParadas) {
+        const score = matchScore(line.loja_nome_raw, p.nome_loja || p.local_parada || '')
+        if (score < Infinity) candidatos.push({ lineId: line.id, parada: p, score })
+      }
+    }
+    candidatos.sort((a, b) => a.score - b.score)
+
+    // Atribui greedily: linha pega primeira parada disponível com melhor score
+    for (const c of candidatos) {
+      if (matchByEscalaId.has(c.lineId)) continue
+      if (usados.has(c.parada.id)) continue
+      matchByEscalaId.set(c.lineId, c.parada)
+      usados.add(c.parada.id)
+    }
+  }
+
   const rotas: RotaKpi[] = []
 
   for (const linha of escalaLinhas) {
@@ -163,25 +246,19 @@ export function cruzaEscalaUnitrac(
       }
     }
 
-    const nonBaseParadasRaw = semFake.filter((p) => p.classificacao !== 'BASE')
-    const nonBaseParadas = consolidarParadasMesmoCliente(nonBaseParadasRaw).slice(0, 10)
-
-    const paradas: ParadaKpi[] = nonBaseParadas.map((p) => {
-      const chegada = new Date(p.chegada)
-      const saida = p.saida ? new Date(p.saida) : chegada
-      const duracao_min = Math.round((p.duracao_seg ?? 0) / 60)
-      const loja_id = resolveLojaId(p, lojas, linha.rede_id)
-
-      return {
-        parada_id: p.id,
-        loja_id,
-        nome: p.nome_loja ?? p.local_parada,
-        chegada,
-        saida,
-        duracao_min,
-        classificacao: p.classificacao === 'LOJA' ? 'LOJA' : 'FORA_BASE',
-      }
-    })
+    // Em vez de todas as paradas não-base, emite SÓ a parada matched por nome
+    const matched = matchByEscalaId.get(linha.id)
+    const paradas: ParadaKpi[] = matched
+      ? [{
+          parada_id: matched.id,
+          loja_id: resolveLojaId(matched, lojas, linha.rede_id),
+          nome: matched.nome_loja ?? matched.local_parada,
+          chegada: new Date(matched.chegada),
+          saida: matched.saida ? new Date(matched.saida) : new Date(matched.chegada),
+          duracao_min: Math.round((matched.duracao_seg ?? 0) / 60),
+          classificacao: 'LOJA',
+        }]
+      : []
 
     rotas.push({
       escala_linha_id: linha.id,

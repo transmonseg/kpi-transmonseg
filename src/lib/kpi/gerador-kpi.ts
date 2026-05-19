@@ -220,10 +220,12 @@ function escreverLinha(ws: ExcelJS.Worksheet, row: number, ag: LinhaAgrupada) {
     if (typeof cell.value === 'number') cell.numFmt = NUMFMT_TIME
   }
 
-  // Fórmulas TEMPO EM LOJA — sempre, mesmo em linhas vazias (igual manual)
-  ws.getCell(row, 14).value = { formula: `MOD(G${row}-F${row},1)` }
+  // Fórmulas TEMPO EM LOJA com result pré-calculado (ExcelJS não calcula sozinho)
+  const tempo1 = chd1 !== null && sai1 !== null ? ((sai1 - chd1) + 1) % 1 : 0
+  const tempo2 = chd2 !== null && sai2 !== null ? ((sai2 - chd2) + 1) % 1 : 0
+  ws.getCell(row, 14).value = { formula: `MOD(G${row}-F${row},1)`, result: tempo1 }
   ws.getCell(row, 14).numFmt = NUMFMT_TIME
-  ws.getCell(row, 15).value = { formula: `MOD(M${row}-L${row},1)` }
+  ws.getCell(row, 15).value = { formula: `MOD(M${row}-L${row},1)`, result: tempo2 }
   ws.getCell(row, 15).numFmt = NUMFMT_TIME
 
   const codigos = [...(c1?.anomalias_codigos ?? []), ...(c2?.anomalias_codigos ?? [])]
