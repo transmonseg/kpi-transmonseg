@@ -273,10 +273,13 @@ export async function POST(req: NextRequest) {
         tempo_loja_min: rota.paradas[0]?.duracao_min ?? null,
       }))
 
-      const [xlsxBuffer, pdfBuffer, analise_ia] = await Promise.all([
+      const iaResult = await analisaKpiComIA(rede_id, redeRotas, [])
+        .then(txt => ({ texto: txt, erro: false }))
+        .catch(() => ({ texto: null, erro: true }))
+
+      const [xlsxBuffer, pdfBuffer] = await Promise.all([
         gerarKpi({ rede_id, data, linhas }),
         gerarKpiPdf({ rede_id, rede_nome, data, linhas: linhas as KpiLinha[] }),
-        analisaKpiComIA(rede_id, redeRotas, []).catch(() => null),
       ])
 
       return {
@@ -287,7 +290,8 @@ export async function POST(req: NextRequest) {
         xlsxBase64: xlsxBuffer.toString('base64'),
         pdfBase64: pdfBuffer.toString('base64'),
         preview,
-        analise_ia,
+        analise_ia: iaResult.texto,
+        analise_ia_erro: iaResult.erro,
       }
     })
   )

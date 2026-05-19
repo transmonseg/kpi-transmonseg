@@ -58,6 +58,7 @@ type RedeResult = {
   pdfBase64: string
   preview: PreviewLinha[]
   analise_ia: string | null
+  analise_ia_erro: boolean
 }
 
 function downloadBase64(base64: string, filename: string, mime: string) {
@@ -641,26 +642,35 @@ function FileDropzone({ className, eyebrow, label, hint, accept, multiple, files
 
 // ─── Rede preview section ────────────────────────────────────────────────────
 
-function ParecerIAInline({ texto }: { texto: string }) {
+function ParecerIAInline({ texto, erro }: { texto: string | null; erro: boolean }) {
   const [open, setOpen] = useState(false)
+  const temConteudo = !!texto
+
   return (
     <div className="border-b border-[var(--color-border)]">
       <button
         type="button"
-        onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-5 py-2.5 text-[11px] font-medium text-[var(--color-fg-muted)] hover:bg-[var(--color-bg-hover)] transition-colors cursor-pointer"
+        onClick={() => { if (temConteudo) setOpen(v => !v) }}
+        disabled={!temConteudo}
+        className={cn(
+          'w-full flex items-center justify-between px-5 py-2.5 text-[11px] font-medium transition-colors',
+          temConteudo ? 'hover:bg-[var(--color-bg-hover)] cursor-pointer text-[var(--color-fg-muted)]' : 'cursor-default text-[var(--color-fg-subtle)]',
+        )}
       >
         <span className="flex items-center gap-1.5">
-          <Robot size={13} weight="bold" className="text-[var(--color-accent)]" />
+          <Robot size={13} weight="bold" className={erro ? 'text-[var(--color-danger)]' : 'text-[var(--color-accent)]'} />
           Parecer IA
+          {erro && <span className="text-[10px] text-[var(--color-danger)]">· variável OPENROUTER_API_KEY não configurada no Vercel</span>}
         </span>
-        <CaretDown
-          size={12}
-          weight="bold"
-          className={cn('transition-transform duration-200', open && 'rotate-180')}
-        />
+        {temConteudo && (
+          <CaretDown
+            size={12}
+            weight="bold"
+            className={cn('transition-transform duration-200', open && 'rotate-180')}
+          />
+        )}
       </button>
-      {open && (
+      {open && texto && (
         <div className="px-5 py-3 text-[12px] text-[var(--color-fg)] leading-relaxed whitespace-pre-wrap bg-[var(--color-bg-subtle)] border-t border-[var(--color-border)]">
           {texto}
         </div>
@@ -740,8 +750,8 @@ function RedePreviewSection({ rede, data }: { rede: RedeResult; data: string }) 
         />
       </div>
 
-      {/* Parecer IA */}
-      {rede.analise_ia && <ParecerIAInline texto={rede.analise_ia} />}
+      {/* Parecer IA — sempre visível; erro quando API key ausente */}
+      <ParecerIAInline texto={rede.analise_ia} erro={rede.analise_ia_erro} />
 
       {/* Tabela de preview */}
       <div className="overflow-x-auto">
