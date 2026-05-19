@@ -155,6 +155,27 @@ function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracPara
   return out
 }
 
+/**
+ * Quando o caminhão passa brevemente pela loja antes da entrega real (ex: motorista
+ * verifica se a loja está aberta, gera parada de 5-9 min com o mesmo codigo_loja),
+ * o Unitrac gera duas paradas LOJA com mesmo código. Fica com a de MAIOR duração
+ * (a entrega real), que é a que Tia Érica anota no KPI manual.
+ */
+function deduplicarPorCodigo(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
+  const byCode = new Map<string, UnitracParadaRow>()
+  const semCodigo: UnitracParadaRow[] = []
+  for (const p of paradas) {
+    if (!p.codigo_loja) { semCodigo.push(p); continue }
+    const existing = byCode.get(p.codigo_loja)
+    if (!existing || (p.duracao_seg ?? 0) > (existing.duracao_seg ?? 0)) {
+      byCode.set(p.codigo_loja, p)
+    }
+  }
+  return [...byCode.values(), ...semCodigo].sort(
+    (a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime()
+  )
+}
+
 function resolveLojaId(
   parada: UnitracParadaRow,
   lojas: LojaRow[],
@@ -349,7 +370,9 @@ export async function cruzaEscalaUnitrac(
   for (const [placa, linhas] of escalaByPlaca) {
     const todas = paradaByPlaca.get(placa) ?? []
     const lojasParadasRaw = todas.filter((p) => p.classificacao === 'LOJA')
-    const lojasParadas = consolidarParadasMesmoCliente(lojasParadasRaw)
+    const lojasConsolidadas = consolidarParadasMesmoCliente(lojasParadasRaw)
+    // Remove paradas curtas duplicadas do mesmo codigo_loja: mantém só a de maior duração
+    const lojasParadas = deduplicarPorCodigo(lojasConsolidadas)
     const usados = new Set<string>()
 
     // Optimal assignment: para n≤5 linhas usa brute-force (minimiza total score);
