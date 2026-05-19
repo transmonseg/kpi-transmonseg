@@ -19,7 +19,7 @@ function tokensCore(s: string | null | undefined): Set<string> {
     .replace(/\d+\s*[ªº°AO]?\s*ENTREGA/gi, ' ')
   const out = new Set<string>()
   for (const t of norm.split(/[^A-Z0-9]+/)) {
-    if (t.length < 1) continue
+    if (t.length < 2) continue // ignora caracteres soltos ("S" de "LARANJEIRA S")
     if (REDES_TOKEN.has(t) || STOPWORDS.has(t)) continue
     out.add(t)
   }
@@ -29,6 +29,16 @@ function tokensCore(s: string | null | undefined): Set<string> {
 function extraiNumero(tokens: Set<string>): string | null {
   for (const t of tokens) if (/^\d+$/.test(t)) return t
   return null
+}
+
+// Token mais longo (loja core), excluindo numeros
+function tokenPrincipal(tokens: Set<string>): string {
+  let best = ''
+  for (const t of tokens) {
+    if (/^\d+$/.test(t)) continue
+    if (t.length > best.length) best = t
+  }
+  return best
 }
 
 // Score: Infinity = no match, lower = better. Considera obrigatório bater número de loja.
@@ -43,9 +53,20 @@ function matchScore(escalaNome: string, paradaNome: string): number {
 
   let common = 0
   for (const t of tl) if (tp.has(t)) common++
-  if (common === 0) return Infinity
 
-  // Penaliza diferença entre conjuntos
+  if (common === 0) {
+    // Fallback fuzzy: parser do Unitrac as vezes corta letras (LARANJEIRAS -> LARANJEIRA,
+    // COPACABANA -> COPACABAN). Tenta Levenshtein no token principal.
+    const coreL = tokenPrincipal(tl)
+    const coreP = tokenPrincipal(tp)
+    if (coreL.length >= 5 && coreP.length >= 5) {
+      const dist = levenshtein(coreL, coreP)
+      // Aceita ate 2 letras de diferenca em palavras de 5+ chars (plural, truncamento)
+      if (dist <= 2) return Math.max(tl.size, tp.size) + dist
+    }
+    return Infinity
+  }
+
   return Math.max(tl.size, tp.size) - common
 }
 
