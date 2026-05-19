@@ -19,7 +19,9 @@ function tokensCore(s: string | null | undefined): Set<string> {
     .replace(/\d+\s*[ªº°AO]?\s*ENTREGA/gi, ' ')
   const out = new Set<string>()
   for (const t of norm.split(/[^A-Z0-9]+/)) {
-    if (t.length < 2) continue // ignora caracteres soltos ("S" de "LARANJEIRA S")
+    if (!t) continue
+    // Filtra letras soltas (S de "LARANJEIRA S") mas MANTÉM dígitos isolados (números de loja)
+    if (t.length === 1 && /^[A-Z]$/.test(t)) continue
     if (REDES_TOKEN.has(t) || STOPWORDS.has(t)) continue
     out.add(t)
   }
