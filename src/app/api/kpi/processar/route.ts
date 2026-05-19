@@ -112,12 +112,28 @@ export async function POST(req: NextRequest) {
       .in('placa_norm', placasRede.length > 0 ? placasRede : ['__nenhuma__'])
     if (paradaErr) return new NextResponse(`Erro ao buscar paradas: ${paradaErr.message}`, { status: 500 })
 
+    // Combina canonical_loja (global) com lojas da rede (que também têm lat/lng)
+    // para o fallback geo cobrir lojas sem geofence cadastrada no Unitrac.
+    const lojasRede = (lojas ?? []).filter((l) => l.rede_id === rid)
+    const geoStoresCombined: GeoStore[] = [
+      ...geoStores,
+      ...lojasRede
+        .filter((l) => l.lat != null && l.lng != null)
+        .map((l) => ({
+          id: l.id as string,
+          name: l.nome as string,
+          lat: l.lat as number,
+          lng: l.lng as number,
+          raio_metros: (l.raio_metros as number) ?? 300,
+        })),
+    ]
+
     const rotas = await cruzaEscalaUnitrac(
       linhasRede,
       paradasRede,
-      (lojas ?? []).filter((l) => l.rede_id === rid),
+      lojasRede,
       svc,
-      geoStores,
+      geoStoresCombined,
     )
 
     // Build paradasIndex for anomalia detection
