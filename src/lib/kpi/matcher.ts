@@ -206,6 +206,86 @@ function variantesOcr(placa: string): string[] {
   return [...variantes]
 }
 
+/**
+ * Score between one escala line and one Unitrac parada.
+ * Returns 0 for exact code match, finite for name match, Infinity for no match.
+ */
+function scorePair(line: EscalaLinhaRow, p: UnitracParadaRow): number {
+  let s = matchScore(line.loja_nome_raw, p.nome_loja || p.local_parada || '')
+  if (line.loja_codigo_raw && p.codigo_loja) {
+    const codL = line.loja_codigo_raw
+    const codP = p.codigo_loja
+    if (codL === codP || codP.endsWith(codL) || codL.endsWith(codP)) s = 0
+  }
+  return s
+}
+
+/**
+ * Optimal bijection: escala linhas → Unitrac LOJA paradas. Minimizes total score.
+ * For nL ≤ 5: brute-force (max ~15K iterations). For nL > 5: greedy.
+ * Tie-breaking: linhas sorted alphabetically, paradas sorted chronologically —
+ * ensures deterministic results for equal-score pairs (e.g. Caxias Centro vs Centenário).
+ * Only assigns pairs with finite score; Infinity pairs left unmatched.
+ */
+function assignOptimal(
+  linhas: EscalaLinhaRow[],
+  paradas: UnitracParadaRow[],
+): Map<string, UnitracParadaRow> {
+  const result = new Map<string, UnitracParadaRow>()
+  if (!linhas.length || !paradas.length) return result
+
+  const ls = [...linhas].sort((a, b) => a.loja_nome_raw.localeCompare(b.loja_nome_raw))
+  const ps = [...paradas].sort((a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
+  const nL = ls.length
+  const nP = ps.length
+  const INF = 1e9
+
+  if (nL <= 5) {
+    const mat = ls.map(l => ps.map(p => { const s = scorePair(l, p); return s === Infinity ? INF : s }))
+    const n = Math.min(nL, nP)
+    let bestTotal = Infinity
+    let bestAssign: number[] = []
+
+    const dfs = (li: number, usedP: Set<number>, cur: number[]) => {
+      if (li === n) {
+        const total = cur.reduce((sum, pi, i) => sum + mat[i][pi], 0)
+        if (total < bestTotal) { bestTotal = total; bestAssign = [...cur] }
+        return
+      }
+      for (let pi = 0; pi < nP; pi++) {
+        if (!usedP.has(pi)) {
+          usedP.add(pi); cur.push(pi)
+          dfs(li + 1, usedP, cur)
+          cur.pop(); usedP.delete(pi)
+        }
+      }
+    }
+    dfs(0, new Set(), [])
+
+    for (let i = 0; i < bestAssign.length; i++) {
+      const pi = bestAssign[i]
+      if (mat[i][pi] < INF) result.set(ls[i].id, ps[pi])
+    }
+  } else {
+    // Greedy for nL > 5 (trucks doing 6+ deliveries in one day)
+    const cands: Array<{li: number; pi: number; s: number}> = []
+    for (let li = 0; li < nL; li++)
+      for (let pi = 0; pi < nP; pi++) {
+        const s = scorePair(ls[li], ps[pi])
+        if (s < Infinity) cands.push({li, pi, s})
+      }
+    cands.sort((a, b) => a.s - b.s)
+    const dL = new Set<number>(), dP = new Set<number>()
+    for (const c of cands) {
+      if (!dL.has(c.li) && !dP.has(c.pi)) {
+        result.set(ls[c.li].id, ps[c.pi])
+        dL.add(c.li); dP.add(c.pi)
+      }
+    }
+  }
+  return result
+}
+
 export async function cruzaEscalaUnitrac(
   escalaLinhas: EscalaLinhaRow[],
   paradaRows: UnitracParadaRow[],
@@ -272,41 +352,21 @@ export async function cruzaEscalaUnitrac(
     const lojasParadas = consolidarParadasMesmoCliente(lojasParadasRaw)
     const usados = new Set<string>()
 
-    // Coleta todos os pares (linha, parada, score) e ordena por score crescente
-    const candidatos: Array<{ lineId: string; parada: UnitracParadaRow; score: number }> = []
-    for (const line of linhas) {
-      for (const p of lojasParadas) {
-        let score = matchScore(line.loja_nome_raw, p.nome_loja || p.local_parada || '')
-        // Boost cod match: escala "Loja 18" cod="18" ↔ Unitrac cod_loja="9039018"
-        // (codigo Unitrac com prefixo de rede + número de loja sufixo)
-        if (line.loja_codigo_raw && p.codigo_loja) {
-          const codL = line.loja_codigo_raw
-          const codP = p.codigo_loja
-          if (codL === codP || codP.endsWith(codL) || codL.endsWith(codP)) {
-            score = 0 // override pra sinal forte de mesma loja
-          }
-        }
-        if (score < Infinity) candidatos.push({ lineId: line.id, parada: p, score })
-      }
-    }
-    candidatos.sort((a, b) => a.score - b.score)
-
-    // Atribui greedily: linha pega primeira parada disponível com melhor score
-    for (const c of candidatos) {
-      if (matchByEscalaId.has(c.lineId)) continue
-      if (usados.has(c.parada.id)) continue
-      matchByEscalaId.set(c.lineId, c.parada)
-      usados.add(c.parada.id)
+    // Optimal assignment: para n≤5 linhas usa brute-force (minimiza total score);
+    // para n>5 greedy. Linhas ordenadas por nome, paradas por chegada —
+    // desempate determinístico para nomes ambíguos (ex: Caxias Centro vs Centenário).
+    const assigned = assignOptimal(linhas, lojasParadas)
+    for (const [lineId, parada] of assigned) {
+      matchByEscalaId.set(lineId, parada)
+      usados.add(parada.id)
     }
 
-    // Fallback temporal: se sobrarem linhas sem match E paradas LOJA não usadas,
-    // atribui por ordem cronológica. Útil quando Unitrac dá várias paradas com mesmo
-    // cod (Regina/Armazém Grão) e o fuzzy match não consegue separar.
+    // Temporal fallback: linhas ainda sem match (score=Infinity) recebem paradas
+    // restantes em ordem cronológica. Ordenação alfabética de linhas é determinística.
     const linhasSemMatch = linhas.filter(l => !matchByEscalaId.has(l.id))
     const paradasLivres = lojasParadas.filter(p => !usados.has(p.id))
     if (linhasSemMatch.length > 0 && paradasLivres.length > 0) {
-      // Ordena linhas por raw_row_num (ordem de aparição na escala) — proxy de ordem
-      const linhasOrdenadas = [...linhasSemMatch]
+      const linhasOrdenadas = [...linhasSemMatch].sort((a, b) => a.loja_nome_raw.localeCompare(b.loja_nome_raw))
       const paradasOrdenadas = [...paradasLivres].sort(
         (a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime()
       )
@@ -361,16 +421,23 @@ export async function cruzaEscalaUnitrac(
 
     const placaUnitrac = placaResolvida.get(linha.id) ?? linha.placa_norm
     const todasParadas = paradaByPlaca.get(placaUnitrac) ?? []
-    const semFake = todasParadas.filter((p) => p.classificacao !== 'FAKE_EXIT')
-
-    const firstNonBase = semFake.find((p) => p.classificacao !== 'BASE')
-    const firstNonBaseTime = firstNonBase ? new Date(firstNonBase.chegada).getTime() : Infinity
+    // Saída CD: última saída da BASE BENASSI antes da primeira parada real (LOJA/FORA_BASE).
+    // Inclui stops FAKE_EXIT na base (caminhões que saíram rapidamente, <15 min parados).
+    const firstRealStop = todasParadas.find(
+      p => p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE'
+    )
+    const firstRealTime = firstRealStop
+      ? new Date(firstRealStop.chegada).getTime()
+      : Infinity
 
     let saida_cd: Date | null = null
-    for (const p of semFake) {
-      if (p.classificacao === 'BASE' && p.saida) {
+    for (const p of todasParadas) {
+      const isBase =
+        p.classificacao === 'BASE' ||
+        (p.classificacao === 'FAKE_EXIT' && p.local_parada.startsWith('BASE BENASSI'))
+      if (isBase && p.saida) {
         const saidaDate = new Date(p.saida)
-        if (saidaDate.getTime() < firstNonBaseTime) {
+        if (saidaDate.getTime() < firstRealTime) {
           if (!saida_cd || saidaDate.getTime() > saida_cd.getTime()) {
             saida_cd = saidaDate
           }

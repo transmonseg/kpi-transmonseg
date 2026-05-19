@@ -72,12 +72,15 @@ function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: str
 function computeSaidaCd(paradas: ParadaUnitrac[]): Date | null {
   let lastBaseSaida: Date | null = null
   for (const p of paradas) {
-    if (p.classificacao === 'FAKE_EXIT') continue
-    if (p.classificacao === 'BASE') {
+    const isBase =
+      p.classificacao === 'BASE' ||
+      (p.classificacao === 'FAKE_EXIT' && p.local_parada.startsWith(BASE_LOCAL_SHORT))
+    if (isBase) {
       lastBaseSaida = p.saida
-    } else {
-      return lastBaseSaida
+      continue
     }
+    if (p.classificacao === 'FAKE_EXIT') continue
+    return lastBaseSaida
   }
   return null
 }
