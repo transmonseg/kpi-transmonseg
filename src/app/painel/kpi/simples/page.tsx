@@ -15,6 +15,7 @@ import {
   CalendarBlank,
   WifiSlash,
   WifiHigh,
+  Robot,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button, Card, CardContent, Input, cn } from '@/components/ui'
 
@@ -56,6 +57,7 @@ type RedeResult = {
   xlsxBase64: string
   pdfBase64: string
   preview: PreviewLinha[]
+  analise_ia: string | null
 }
 
 function downloadBase64(base64: string, filename: string, mime: string) {
@@ -639,6 +641,34 @@ function FileDropzone({ className, eyebrow, label, hint, accept, multiple, files
 
 // ─── Rede preview section ────────────────────────────────────────────────────
 
+function ParecerIAInline({ texto }: { texto: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="border-b border-[var(--color-border)]">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center justify-between px-5 py-2.5 text-[11px] font-medium text-[var(--color-fg-muted)] hover:bg-[var(--color-bg-hover)] transition-colors cursor-pointer"
+      >
+        <span className="flex items-center gap-1.5">
+          <Robot size={13} weight="bold" className="text-[var(--color-accent)]" />
+          Parecer IA
+        </span>
+        <CaretDown
+          size={12}
+          weight="bold"
+          className={cn('transition-transform duration-200', open && 'rotate-180')}
+        />
+      </button>
+      {open && (
+        <div className="px-5 py-3 text-[12px] text-[var(--color-fg)] leading-relaxed whitespace-pre-wrap bg-[var(--color-bg-subtle)] border-t border-[var(--color-border)]">
+          {texto}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function RedePreviewSection({ rede, data }: { rede: RedeResult; data: string }) {
   const cobertura = rede.qtd_rotas > 0
     ? Math.round(((rede.qtd_rotas - rede.qtd_sem_gps) / rede.qtd_rotas) * 100)
@@ -709,6 +739,9 @@ function RedePreviewSection({ rede, data }: { rede: RedeResult; data: string }) 
           style={{ width: `${cobertura}%` }}
         />
       </div>
+
+      {/* Parecer IA */}
+      {rede.analise_ia && <ParecerIAInline texto={rede.analise_ia} />}
 
       {/* Tabela de preview */}
       <div className="overflow-x-auto">

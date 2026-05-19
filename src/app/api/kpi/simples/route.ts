@@ -10,6 +10,7 @@ import { cruzaEscalaUnitrac } from '@/lib/kpi/matcher'
 import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
 import { REDE_NOMES_CANONICOS } from '@/lib/kpi/kpi-styles'
+import { analisaKpiComIA } from '@/lib/kpi/analisador-ia'
 import type { KpiLinha, RotaKpi } from '@/lib/types/kpi'
 import type { LinhaEscala } from '@/lib/types/escala'
 
@@ -272,9 +273,10 @@ export async function POST(req: NextRequest) {
         tempo_loja_min: rota.paradas[0]?.duracao_min ?? null,
       }))
 
-      const [xlsxBuffer, pdfBuffer] = await Promise.all([
+      const [xlsxBuffer, pdfBuffer, analise_ia] = await Promise.all([
         gerarKpi({ rede_id, data, linhas }),
         gerarKpiPdf({ rede_id, rede_nome, data, linhas: linhas as KpiLinha[] }),
+        analisaKpiComIA(rede_id, redeRotas, []).catch(() => null),
       ])
 
       return {
@@ -285,6 +287,7 @@ export async function POST(req: NextRequest) {
         xlsxBase64: xlsxBuffer.toString('base64'),
         pdfBase64: pdfBuffer.toString('base64'),
         preview,
+        analise_ia,
       }
     })
   )
