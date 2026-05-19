@@ -20,8 +20,15 @@ export interface GerarKpiInput {
 
 function toExcelTime(d: Date | null | undefined): number | null {
   if (!d) return null
-  const brt = new Date(d.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
-  return (brt.getHours() * 3600 + brt.getMinutes() * 60 + brt.getSeconds()) / 86400
+  // Parsers armazenam BRT como Date.UTC(...) — usar getUTCHours direto sem reconverter
+  return (d.getUTCHours() * 3600 + d.getUTCMinutes() * 60 + d.getUTCSeconds()) / 86400
+}
+
+function formatarPlacaDisplay(placa: string | null | undefined): string {
+  if (!placa) return ''
+  const norm = placa.replace(/[^A-Z0-9]/gi, '').toUpperCase()
+  if (norm.length !== 7) return placa
+  return `${norm.slice(0, 3)}-${norm.slice(3)}`
 }
 
 export async function gerarKpi(input: GerarKpiInput): Promise<Buffer> {
@@ -197,11 +204,11 @@ function escreverLinha(ws: ExcelJS.Worksheet, row: number, ag: LinhaAgrupada) {
 
   r.values = [
     ag.loja_nome,
-    c1?.motorista ?? '', c1?.motorista_codigo ?? '', c1?.placa ?? '',
+    c1?.motorista ?? '', c1?.motorista_codigo ?? '', formatarPlacaDisplay(c1?.placa),
     textoSlot1 ?? (saida1 ?? ''),
     textoSlot1 ?? (chd1 ?? ''),
     textoSlot1 ?? (sai1 ?? ''),
-    nome2, c2?.motorista_codigo ?? '', c2?.placa ?? '',
+    nome2, c2?.motorista_codigo ?? '', formatarPlacaDisplay(c2?.placa),
     textoSlot2 ?? (saida2 ?? ''),
     textoSlot2 ?? (chd2 ?? ''),
     textoSlot2 ?? (sai2 ?? ''),

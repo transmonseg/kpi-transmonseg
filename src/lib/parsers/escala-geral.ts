@@ -170,11 +170,13 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
     const isSeparator = isMergedHeader || v4 === null || v4 === undefined || v4str === null
 
     if (isSeparator) {
-      // Secondary delivery row: col4 is genuinely null AND col2 is a numeric weight.
-      // (Merged-cell headers are excluded — their col2 carries the same text as col1, not a number.)
+      // Linha com col4 vazia mas com peso e motorista: é uma loja própria
+      // (multi-entrega: mesmo veículo serve várias lojas, só 1ª linha tem qty em col4).
+      // Usa nomeLoja vindo da própria linha (s1), NÃO de ultimaLoja.
       const hasWeight = !isMergedHeader && asNum(v2) !== null
-      if (hasWeight && ultimaLoja !== null) {
-        // This is an additional delivery row for the previous loja
+      const v6check = asStr(cellVal(row.getCell(6)))
+      const temMotorista = v6check !== null
+      if (hasWeight && (temMotorista || ultimaLoja !== null)) {
         const v5 = cellVal(row.getCell(5))
         const v6 = cellVal(row.getCell(6))
         const v7 = cellVal(row.getCell(7))
@@ -187,8 +189,14 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
         const placaRaw1 = asStr(v8)
         const placaRaw2 = asStr(v12)
 
+        // Usa nome da própria linha se for diferente do ultimaLoja, senão herda
+        const nomeLojaLinha = limpaLoja(s1)
+        const usaNomeProprio = !ultimaLoja || nomeLojaLinha !== ultimaLoja.nome
+        const nomeLojaFinal = usaNomeProprio ? nomeLojaLinha : ultimaLoja!.nome
+        const codigoLojaFinal = usaNomeProprio ? extractLojaCodigo(nomeLojaLinha) : ultimaLoja!.codigo
+
         const tipoEmissao = modoBenassi ? 'BENASSI' : modoForaEscala ? 'FORA_ESCALA' : 'NORMAL'
-        const redeFromLoja2 = inferRedeFromLoja(ultimaLoja.nome)
+        const redeFromLoja2 = inferRedeFromLoja(nomeLojaFinal)
         const redeId = modoBenassi ? 'SENDAS'
           : modoForaEscala ? redeFromLoja2
           : redeFromLoja2 !== 'DESCONHECIDO' ? redeFromLoja2 : redeAtual
@@ -199,8 +207,8 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
           data: dataISO,
           data_entrega: dataISO,
           rede_id: redeId,
-          loja_nome_raw: ultimaLoja.nome,
-          loja_codigo_raw: ultimaLoja.codigo,
+          loja_nome_raw: nomeLojaFinal,
+          loja_codigo_raw: codigoLojaFinal,
           placa_norm: placa1San,
           placa_raw: placa1San ? placaRaw1 : null,
           motorista_nome: asStr(v6),
@@ -216,6 +224,10 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
           raw_row_num: rowNum,
         }
         linhas.push(carro1)
+        // Atualiza ultimaLoja pra próxima iteração
+        if (usaNomeProprio) {
+          ultimaLoja = { nome: nomeLojaFinal, codigo: codigoLojaFinal, peso: asNum(v2), paletes: asNum(v3), rowNum }
+        }
 
         const motor2 = asStr(v10)
         const placa2San = placaSanitizada(placaRaw2)
