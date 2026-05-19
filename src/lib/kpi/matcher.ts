@@ -33,7 +33,10 @@ function tokensCore(s: string | null | undefined): Set<string> {
 }
 
 function extraiNumero(tokens: Set<string>): string | null {
-  for (const t of tokens) if (/^\d+$/.test(t)) return t
+  // Pega só números curtos (1-3 dígitos) que são identificadores de loja
+  // (Buzios 1, Loja 18, etc). Códigos longos do Unitrac (9039018, 8590563)
+  // são internos e não devem ser tratados como "número da loja" no match.
+  for (const t of tokens) if (/^\d{1,3}$/.test(t)) return t
   return null
 }
 
@@ -257,7 +260,16 @@ export function cruzaEscalaUnitrac(
     const candidatos: Array<{ lineId: string; parada: UnitracParadaRow; score: number }> = []
     for (const line of linhas) {
       for (const p of lojasParadas) {
-        const score = matchScore(line.loja_nome_raw, p.nome_loja || p.local_parada || '')
+        let score = matchScore(line.loja_nome_raw, p.nome_loja || p.local_parada || '')
+        // Boost cod match: escala "Loja 18" cod="18" ↔ Unitrac cod_loja="9039018"
+        // (codigo Unitrac com prefixo de rede + número de loja sufixo)
+        if (line.loja_codigo_raw && p.codigo_loja) {
+          const codL = line.loja_codigo_raw
+          const codP = p.codigo_loja
+          if (codL === codP || codP.endsWith(codL) || codL.endsWith(codP)) {
+            score = 0 // override pra sinal forte de mesma loja
+          }
+        }
         if (score < Infinity) candidatos.push({ lineId: line.id, parada: p, score })
       }
     }
