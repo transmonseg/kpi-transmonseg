@@ -16,6 +16,7 @@ export type KpiDoDia = {
   xlsx_path: string | null
   pdf_path: string | null
   gerada_em: string | null
+  analise_ia: string | null
 }
 
 export async function GET(req: NextRequest) {
@@ -36,7 +37,7 @@ export async function GET(req: NextRequest) {
     .select(`
       id, rede_id, status,
       qtd_linhas, qtd_anomalias_high, qtd_anomalias_medium, qtd_anomalias_low,
-      xlsx_path, pdf_path, gerada_em,
+      xlsx_path, pdf_path, gerada_em, analise_ia,
       redes ( nome )
     `)
     .eq('data', data)
@@ -60,6 +61,7 @@ export async function GET(req: NextRequest) {
       xlsx_path: r.xlsx_path as string | null,
       pdf_path: r.pdf_path as string | null,
       gerada_em: r.gerada_em as string | null,
+      analise_ia: r.analise_ia as string | null,
     }
   })
 

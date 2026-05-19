@@ -1,6 +1,10 @@
 import { levenshtein, normalizaNome } from '@/lib/utils/texto'
 import { haversine } from '@/lib/utils/geo'
 import type { RotaKpi, ParadaKpi } from '@/lib/types/kpi'
+import { normalizeForScore } from '@/lib/utils/score'
+import type { MatchMeta, MatchAlgorithm, MatchConfidence } from '@/lib/types/kpi'
+import { batchTrgmLookup, type TrgmResult } from './trgm-lookup'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Tokeniza nome de loja pra match fuzzy: remove acentos, parênteses (1ª Entrega), redes,
 // stopwords (DO, DE, DA, SAO), retorna set de tokens significativos.
@@ -151,6 +155,27 @@ function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracPara
   return out
 }
 
+/**
+ * Quando o caminhão passa brevemente pela loja antes da entrega real (ex: motorista
+ * verifica se a loja está aberta, gera parada de 5-9 min com o mesmo codigo_loja),
+ * o Unitrac gera duas paradas LOJA com mesmo código. Fica com a de MAIOR duração
+ * (a entrega real), que é a que Tia Érica anota no KPI manual.
+ */
+function deduplicarPorCodigo(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
+  const byCode = new Map<string, UnitracParadaRow>()
+  const semCodigo: UnitracParadaRow[] = []
+  for (const p of paradas) {
+    if (!p.codigo_loja) { semCodigo.push(p); continue }
+    const existing = byCode.get(p.codigo_loja)
+    if (!existing || (p.duracao_seg ?? 0) > (existing.duracao_seg ?? 0)) {
+      byCode.set(p.codigo_loja, p)
+    }
+  }
+  return [...byCode.values(), ...semCodigo].sort(
+    (a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime()
+  )
+}
+
 function resolveLojaId(
   parada: UnitracParadaRow,
   lojas: LojaRow[],
@@ -202,11 +227,102 @@ function variantesOcr(placa: string): string[] {
   return [...variantes]
 }
 
-export function cruzaEscalaUnitrac(
+/**
+ * Score between one escala line and one Unitrac parada.
+ * Returns 0 for exact code match, finite for name match, Infinity for no match.
+ */
+function scorePair(line: EscalaLinhaRow, p: UnitracParadaRow): number {
+  let s = matchScore(line.loja_nome_raw, p.nome_loja || p.local_parada || '')
+  if (line.loja_codigo_raw && p.codigo_loja) {
+    const codL = line.loja_codigo_raw
+    const codP = p.codigo_loja
+    if (codL === codP || codP.endsWith(codL) || codL.endsWith(codP)) s = 0
+  }
+  return s
+}
+
+/**
+ * Optimal bijection: escala linhas → Unitrac LOJA paradas. Minimizes total score.
+ * For nL ≤ 5: brute-force (max ~15K iterations). For nL > 5: greedy.
+ * Tie-breaking: linhas sorted alphabetically, paradas sorted chronologically —
+ * ensures deterministic results for equal-score pairs (e.g. Caxias Centro vs Centenário).
+ * Only assigns pairs with finite score; Infinity pairs left unmatched.
+ */
+function assignOptimal(
+  linhas: EscalaLinhaRow[],
+  paradas: UnitracParadaRow[],
+): Map<string, UnitracParadaRow> {
+  const result = new Map<string, UnitracParadaRow>()
+  if (!linhas.length || !paradas.length) return result
+
+  const ls = [...linhas].sort((a, b) => a.loja_nome_raw.localeCompare(b.loja_nome_raw))
+  const ps = [...paradas].sort((a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
+  const nL = ls.length
+  const nP = ps.length
+  const INF = 1e9
+
+  if (nL <= 5) {
+    const mat = ls.map(l => ps.map(p => { const s = scorePair(l, p); return s === Infinity ? INF : s }))
+    const n = Math.min(nL, nP)
+    let bestTotal = Infinity
+    let bestAssign: number[] = []
+
+    const dfs = (li: number, usedP: Set<number>, cur: number[]) => {
+      if (li === n) {
+        const total = cur.reduce((sum, pi, i) => sum + mat[i][pi], 0)
+        if (total < bestTotal) { bestTotal = total; bestAssign = [...cur] }
+        return
+      }
+      for (let pi = 0; pi < nP; pi++) {
+        if (!usedP.has(pi)) {
+          usedP.add(pi); cur.push(pi)
+          dfs(li + 1, usedP, cur)
+          cur.pop(); usedP.delete(pi)
+        }
+      }
+    }
+    dfs(0, new Set(), [])
+
+    for (let i = 0; i < bestAssign.length; i++) {
+      const pi = bestAssign[i]
+      if (mat[i][pi] < INF) result.set(ls[i].id, ps[pi])
+    }
+  } else {
+    // Greedy for nL > 5 (trucks doing 6+ deliveries in one day)
+    const cands: Array<{li: number; pi: number; s: number}> = []
+    for (let li = 0; li < nL; li++)
+      for (let pi = 0; pi < nP; pi++) {
+        const s = scorePair(ls[li], ps[pi])
+        if (s < Infinity) cands.push({li, pi, s})
+      }
+    cands.sort((a, b) => a.s - b.s)
+    const dL = new Set<number>(), dP = new Set<number>()
+    for (const c of cands) {
+      if (!dL.has(c.li) && !dP.has(c.pi)) {
+        result.set(ls[c.li].id, ps[c.pi])
+        dL.add(c.li); dP.add(c.pi)
+      }
+    }
+  }
+  return result
+}
+
+export async function cruzaEscalaUnitrac(
   escalaLinhas: EscalaLinhaRow[],
   paradaRows: UnitracParadaRow[],
   lojas: LojaRow[],
-): RotaKpi[] {
+  supabase?: SupabaseClient,
+  geoStores?: GeoStore[],
+): Promise<RotaKpi[]> {
+  // Pre-fetch batch trgm para todos os nomes de loja desta execucao
+  let trgmResults: Record<string, TrgmResult> = {}
+  if (supabase) {
+    const allNames = [...new Set(
+      escalaLinhas.map(e => e.loja_nome_raw).filter(Boolean)
+    )] as string[]
+    trgmResults = await batchTrgmLookup(supabase, allNames)
+  }
+
   const paradaByPlaca = new Map<string, UnitracParadaRow[]>()
   for (const p of paradaRows) {
     const list = paradaByPlaca.get(p.placa_norm) ?? []
@@ -249,54 +365,61 @@ export function cruzaEscalaUnitrac(
   }
 
   // Pra cada placa, atribui paradas LOJA às escala_linhas correspondentes (greedy por melhor match)
+  const geoMatchedLineIds = new Set<string>()
   const matchByEscalaId = new Map<string, UnitracParadaRow>()
   for (const [placa, linhas] of escalaByPlaca) {
     const todas = paradaByPlaca.get(placa) ?? []
     const lojasParadasRaw = todas.filter((p) => p.classificacao === 'LOJA')
-    const lojasParadas = consolidarParadasMesmoCliente(lojasParadasRaw)
+    const lojasConsolidadas = consolidarParadasMesmoCliente(lojasParadasRaw)
+    // Remove paradas curtas duplicadas do mesmo codigo_loja: mantém só a de maior duração
+    const lojasParadas = deduplicarPorCodigo(lojasConsolidadas)
     const usados = new Set<string>()
 
-    // Coleta todos os pares (linha, parada, score) e ordena por score crescente
-    const candidatos: Array<{ lineId: string; parada: UnitracParadaRow; score: number }> = []
-    for (const line of linhas) {
-      for (const p of lojasParadas) {
-        let score = matchScore(line.loja_nome_raw, p.nome_loja || p.local_parada || '')
-        // Boost cod match: escala "Loja 18" cod="18" ↔ Unitrac cod_loja="9039018"
-        // (codigo Unitrac com prefixo de rede + número de loja sufixo)
-        if (line.loja_codigo_raw && p.codigo_loja) {
-          const codL = line.loja_codigo_raw
-          const codP = p.codigo_loja
-          if (codL === codP || codP.endsWith(codL) || codL.endsWith(codP)) {
-            score = 0 // override pra sinal forte de mesma loja
-          }
-        }
-        if (score < Infinity) candidatos.push({ lineId: line.id, parada: p, score })
-      }
-    }
-    candidatos.sort((a, b) => a.score - b.score)
-
-    // Atribui greedily: linha pega primeira parada disponível com melhor score
-    for (const c of candidatos) {
-      if (matchByEscalaId.has(c.lineId)) continue
-      if (usados.has(c.parada.id)) continue
-      matchByEscalaId.set(c.lineId, c.parada)
-      usados.add(c.parada.id)
+    // Optimal assignment: para n≤5 linhas usa brute-force (minimiza total score);
+    // para n>5 greedy. Linhas ordenadas por nome, paradas por chegada —
+    // desempate determinístico para nomes ambíguos (ex: Caxias Centro vs Centenário).
+    const assigned = assignOptimal(linhas, lojasParadas)
+    for (const [lineId, parada] of assigned) {
+      matchByEscalaId.set(lineId, parada)
+      usados.add(parada.id)
     }
 
-    // Fallback temporal: se sobrarem linhas sem match E paradas LOJA não usadas,
-    // atribui por ordem cronológica. Útil quando Unitrac dá várias paradas com mesmo
-    // cod (Regina/Armazém Grão) e o fuzzy match não consegue separar.
+    // Temporal fallback: linhas ainda sem match (score=Infinity) recebem paradas
+    // restantes em ordem cronológica. Ordenação alfabética de linhas é determinística.
     const linhasSemMatch = linhas.filter(l => !matchByEscalaId.has(l.id))
     const paradasLivres = lojasParadas.filter(p => !usados.has(p.id))
     if (linhasSemMatch.length > 0 && paradasLivres.length > 0) {
-      // Ordena linhas por raw_row_num (ordem de aparição na escala) — proxy de ordem
-      const linhasOrdenadas = [...linhasSemMatch]
+      const linhasOrdenadas = [...linhasSemMatch].sort((a, b) => a.loja_nome_raw.localeCompare(b.loja_nome_raw))
       const paradasOrdenadas = [...paradasLivres].sort(
         (a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime()
       )
       for (let i = 0; i < Math.min(linhasOrdenadas.length, paradasOrdenadas.length); i++) {
         matchByEscalaId.set(linhasOrdenadas[i].id, paradasOrdenadas[i])
         usados.add(paradasOrdenadas[i].id)
+      }
+    }
+
+    // Geo fallback for Category B: FORA_BASE stops near canonical_loja coordinates
+    if (geoStores && geoStores.length > 0) {
+      const linhasAindaSemMatch = linhas.filter(l => !matchByEscalaId.has(l.id))
+      if (linhasAindaSemMatch.length > 0) {
+        const paradasForaBase = todas
+          .filter(p =>
+            p.classificacao === 'FORA_BASE' &&
+            p.lat != null && p.lng != null &&
+            !usados.has(p.id)
+          )
+          .sort((a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
+
+        const paradasGeoResolved = paradasForaBase.filter(p =>
+          resolveForaBaseGeo(p.lat!, p.lng!, geoStores) !== null
+        )
+
+        for (let i = 0; i < Math.min(linhasAindaSemMatch.length, paradasGeoResolved.length); i++) {
+          matchByEscalaId.set(linhasAindaSemMatch[i].id, paradasGeoResolved[i])
+          usados.add(paradasGeoResolved[i].id)
+          geoMatchedLineIds.add(linhasAindaSemMatch[i].id)
+        }
       }
     }
   }
@@ -314,22 +437,30 @@ export function cruzaEscalaUnitrac(
         paradas: [],
         anomalias_codigos: [],
         status: 'sem_entrega',
+        _matchMeta: { score: 0, confidence: 'UNMATCHED', requiresReview: false, algorithm: 'none' },
       })
       continue
     }
 
     const placaUnitrac = placaResolvida.get(linha.id) ?? linha.placa_norm
     const todasParadas = paradaByPlaca.get(placaUnitrac) ?? []
-    const semFake = todasParadas.filter((p) => p.classificacao !== 'FAKE_EXIT')
-
-    const firstNonBase = semFake.find((p) => p.classificacao !== 'BASE')
-    const firstNonBaseTime = firstNonBase ? new Date(firstNonBase.chegada).getTime() : Infinity
+    // Saída CD: última saída da BASE BENASSI antes da primeira parada real (LOJA/FORA_BASE).
+    // Inclui stops FAKE_EXIT na base (caminhões que saíram rapidamente, <15 min parados).
+    const firstRealStop = todasParadas.find(
+      p => p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE'
+    )
+    const firstRealTime = firstRealStop
+      ? new Date(firstRealStop.chegada).getTime()
+      : Infinity
 
     let saida_cd: Date | null = null
-    for (const p of semFake) {
-      if (p.classificacao === 'BASE' && p.saida) {
+    for (const p of todasParadas) {
+      const isBase =
+        p.classificacao === 'BASE' ||
+        (p.classificacao === 'FAKE_EXIT' && p.local_parada.startsWith('BASE BENASSI'))
+      if (isBase && p.saida) {
         const saidaDate = new Date(p.saida)
-        if (saidaDate.getTime() < firstNonBaseTime) {
+        if (saidaDate.getTime() < firstRealTime) {
           if (!saida_cd || saidaDate.getTime() > saida_cd.getTime()) {
             saida_cd = saidaDate
           }
@@ -339,17 +470,43 @@ export function cruzaEscalaUnitrac(
 
     // Em vez de todas as paradas não-base, emite SÓ a parada matched por nome
     const matched = matchByEscalaId.get(linha.id)
+    const isGeo = geoMatchedLineIds.has(linha.id)
+
+    let lojaId: string | null = null
+    let nomeResolvido: string = ''
+    let metaAlgorithm: MatchAlgorithm = 'hybrid'
+
+    if (matched) {
+      const nomeRaw = matched.nome_loja ?? matched.local_parada ?? ''
+      lojaId = resolveLojaId(matched, lojas, linha.rede_id)
+      nomeResolvido = nomeRaw
+
+      if (isGeo) {
+        metaAlgorithm = 'geo'
+      } else if (!lojaId && trgmResults[linha.loja_nome_raw]) {
+        // trgm fallback: enriquece loja_id quando resolveLojaId retornou null
+        const trgm = trgmResults[linha.loja_nome_raw]
+        lojaId = trgm.canonical_id
+        nomeResolvido = trgm.canonical_nm
+        metaAlgorithm = 'trgm'
+      }
+    }
+
     const paradas: ParadaKpi[] = matched
       ? [{
           parada_id: matched.id,
-          loja_id: resolveLojaId(matched, lojas, linha.rede_id),
-          nome: matched.nome_loja ?? matched.local_parada,
+          loja_id: lojaId,
+          nome: nomeResolvido,
           chegada: new Date(matched.chegada),
           saida: matched.saida ? new Date(matched.saida) : new Date(matched.chegada),
           duracao_min: Math.round((matched.duracao_seg ?? 0) / 60),
-          classificacao: 'LOJA',
+          classificacao: isGeo ? 'FORA_BASE' : 'LOJA',
         }]
       : []
+
+    const metaScore = isGeo ? 0.8 : metaAlgorithm === 'trgm'
+      ? (trgmResults[linha.loja_nome_raw]?.trgm_score ?? 0.7)
+      : 1.0
 
     rotas.push({
       escala_linha_id: linha.id,
@@ -360,8 +517,84 @@ export function cruzaEscalaUnitrac(
       paradas,
       anomalias_codigos: [],
       status: 'pendente',
+      _matchMeta: matched
+        ? { score: metaScore, confidence: isGeo ? 'LOW' : 'HIGH', requiresReview: false, algorithm: metaAlgorithm }
+        : { score: 0, confidence: 'UNMATCHED', requiresReview: true, algorithm: 'none' },
     })
   }
 
   return rotas
+}
+
+export interface ResolveContext {
+  aliases: Record<string, { canonical_nm: string; canonical_id: string; score: number }>
+  trgmResults: Record<string, TrgmResult>
+}
+
+/**
+ * Pure 3-path algorithm — no side effects.
+ * Path 1: exact alias (HIGH if score >= 0.85, LOW if < 0.85)
+ * Path 2: trgm fuzzy >= 0.6 (HIGH if score >= 0.85, LOW otherwise)
+ * Path 3: no match → UNMATCHED + requiresReview=true
+ */
+export function resolveStoreName3Path(rawName: string, ctx: ResolveContext): MatchMeta {
+  const norm = normalizeForScore(rawName)
+
+  // Path 1: exact alias
+  const alias = ctx.aliases[norm]
+  if (alias) {
+    return {
+      score: alias.score,
+      confidence: alias.score >= 0.85 ? 'HIGH' : 'LOW',
+      requiresReview: alias.score < 0.6,
+      algorithm: 'alias',
+    }
+  }
+
+  // Path 2: trgm fuzzy
+  const trgm = ctx.trgmResults[rawName] ?? ctx.trgmResults[norm]
+  if (trgm && trgm.trgm_score >= 0.6) {
+    return {
+      score: trgm.trgm_score,
+      confidence: trgm.trgm_score >= 0.85 ? 'HIGH' : 'LOW',
+      requiresReview: trgm.trgm_score < 0.75,
+      algorithm: 'trgm',
+    }
+  }
+
+  // Path 3: no match
+  return {
+    score: trgm?.trgm_score ?? 0,
+    confidence: 'UNMATCHED',
+    requiresReview: true,
+    algorithm: 'none',
+  }
+}
+
+export interface GeoStore {
+  id: string
+  name: string
+  lat: number | null
+  lng: number | null
+  raio_metros: number
+}
+
+/**
+ * For a FORA_BASE stop with coordinates, finds the nearest canonical_loja
+ * within its raio_metros. Returns the store or null.
+ * haversine() returns meters.
+ */
+export function resolveForaBaseGeo(lat: number, lng: number, stores: GeoStore[]): GeoStore | null {
+  let best: GeoStore | null = null
+  let bestDist = Infinity
+
+  for (const store of stores) {
+    if (store.lat == null || store.lng == null) continue
+    const distM = haversine(lat, lng, store.lat, store.lng)
+    if (distM <= store.raio_metros && distM < bestDist) {
+      best = store
+      bestDist = distM
+    }
+  }
+  return best
 }

@@ -6,6 +6,7 @@ import {
   FloppyDisk,
   CircleNotch,
   CaretDown,
+  Robot,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Badge,
@@ -27,6 +28,7 @@ type KpiDoDia = {
   xlsx_path: string | null
   pdf_path: string | null
   gerada_em: string | null
+  analise_ia: string | null
 }
 
 type KpiLinha = {
@@ -425,6 +427,7 @@ export function KpisGerados({
                       onBaixar={(tipo) => baixar(k.kpi_id, tipo)}
                       onResolver={(anomId, acao) => resolverAnomalia(k.kpi_id, anomId, acao)}
                       resolvendo={resolvendo}
+                      analise_ia={k.analise_ia}
                     />
                   )}
                 </div>
@@ -450,6 +453,7 @@ function PainelRevisao({
   onBaixar,
   onResolver,
   resolvendo,
+  analise_ia,
 }: {
   kpi: KpiDoDia
   det: KpiDetalhe
@@ -463,6 +467,7 @@ function PainelRevisao({
   onBaixar: (tipo: 'xlsx' | 'pdf') => void
   onResolver: (anomId: string, acao: 'ignorar' | 'aceitar') => void
   resolvendo: string | null
+  analise_ia: string | null
 }) {
   const stats = useMemo(() => {
     const total = det.linhas.length
@@ -594,6 +599,9 @@ function PainelRevisao({
       {anomaliasOutras.length > 0 && (
         <AnomaliasMediasLowPanel anomalias={anomaliasOutras} onResolver={onResolver} resolvendo={resolvendo} />
       )}
+
+      {/* Parecer IA */}
+      {analise_ia && <ParecerIAPanel texto={analise_ia} />}
 
       {/* Barra de filtro + dica */}
       <div className="flex items-center gap-2 px-3 py-2 bg-[var(--color-bg-subtle)] border-b border-[var(--color-border)]">
@@ -747,6 +755,33 @@ function PainelRevisao({
         {linhasFiltradas.length} de {stats.total} linha
         {stats.total === 1 ? '' : 's'} · KPI {kpi.kpi_id.slice(0, 8)}
       </div>
+    </div>
+  )
+}
+
+function ParecerIAPanel({ texto }: { texto: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="border-b border-[var(--color-border)]">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-medium text-[var(--color-fg-muted)] hover:bg-[var(--color-bg-hover)] transition-colors cursor-pointer"
+      >
+        <span className="flex items-center gap-1.5">
+          <Robot size={13} weight="bold" className="text-[var(--color-accent)]" />
+          Parecer IA
+        </span>
+        <CaretDown
+          size={13}
+          weight="bold"
+          className={cn('transition-transform duration-200', open && 'rotate-180')}
+        />
+      </button>
+      {open && (
+        <div className="px-4 py-3 text-[11px] text-[var(--color-fg)] leading-relaxed whitespace-pre-wrap border-t border-[var(--color-border)] bg-[var(--color-bg-subtle)]">
+          {texto}
+        </div>
+      )}
     </div>
   )
 }

@@ -12,6 +12,16 @@ export type ParadaKpi = {
   classificacao: 'LOJA' | 'FORA_BASE'
 }
 
+export type MatchAlgorithm = 'exact' | 'alias' | 'trgm' | 'hybrid' | 'geo' | 'none'
+export type MatchConfidence = 'HIGH' | 'LOW' | 'UNMATCHED'
+
+export interface MatchMeta {
+  score: number
+  confidence: MatchConfidence
+  requiresReview: boolean
+  algorithm: MatchAlgorithm
+}
+
 export type RotaKpi = {
   escala_linha_id: string
   data: string
@@ -21,6 +31,7 @@ export type RotaKpi = {
   paradas: ParadaKpi[]
   anomalias_codigos: string[]
   status: RotaStatus
+  _matchMeta?: MatchMeta
 }
 
 export type KpiLinha = {

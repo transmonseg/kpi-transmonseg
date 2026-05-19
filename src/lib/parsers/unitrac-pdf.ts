@@ -72,12 +72,15 @@ function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: str
 function computeSaidaCd(paradas: ParadaUnitrac[]): Date | null {
   let lastBaseSaida: Date | null = null
   for (const p of paradas) {
-    if (p.classificacao === 'FAKE_EXIT') continue
-    if (p.classificacao === 'BASE') {
+    const isBase =
+      p.classificacao === 'BASE' ||
+      (p.classificacao === 'FAKE_EXIT' && p.local_parada.startsWith(BASE_LOCAL_SHORT))
+    if (isBase) {
       lastBaseSaida = p.saida
-    } else {
-      return lastBaseSaida
+      continue
     }
+    if (p.classificacao === 'FAKE_EXIT') continue
+    return lastBaseSaida
   }
   return null
 }
@@ -241,14 +244,8 @@ function extractParadas(rawText: string, placaNorm: string): ParadaUnitrac[] {
   return paradas
 }
 
-export async function parseUnitracPdf(
-  buffer: ArrayBuffer | Buffer,
-): Promise<ResumoVeiculo[]> {
-  const buf = buffer instanceof ArrayBuffer ? Buffer.from(buffer) : buffer
-  const result = await pdfParse(buf)
-  const fullText = result.text
-
-  const cleaned = preprocess(fullText)
+export function parseTextToResumos(rawText: string): ResumoVeiculo[] {
+  const cleaned = preprocess(rawText)
   const rawVeiculos = splitByVeiculo(cleaned)
 
   const out: ResumoVeiculo[] = []
@@ -269,6 +266,31 @@ export async function parseUnitracPdf(
       paradas,
     } as ResumoVeiculo)
   }
-
   return out
+}
+
+export async function parseUnitracPdf(
+  buffer: ArrayBuffer | Buffer,
+): Promise<ResumoVeiculo[]> {
+  const USE_PDFJS = process.env.PDF_PARSER_BACKEND === 'pdfjs-serverless'
+  const buf = buffer instanceof ArrayBuffer ? Buffer.from(buffer) : buffer
+
+  if (USE_PDFJS) {
+    const { parseUnitracPdfJs } = await import('./unitrac-pdf-pdfjs')
+    return parseUnitracPdfJs(buf)
+  }
+
+  const result = await pdfParse(buf)
+
+  if (process.env.PDF_SHADOW_MODE === 'true') {
+    import('./unitrac-pdf-pdfjs').then(({ parseUnitracPdfJs }) =>
+      parseUnitracPdfJs(buf).then(shadow => {
+        const original = parseTextToResumos(result.text)
+        if (original.length !== shadow.length)
+          console.log(`[pdf-shadow] mismatch: orig=${original.length} pdfjs=${shadow.length}`)
+      }).catch(() => {})
+    )
+  }
+
+  return parseTextToResumos(result.text)
 }

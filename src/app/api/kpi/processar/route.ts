@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { cruzaEscalaUnitrac } from '@/lib/kpi/matcher'
+import { cruzaEscalaUnitrac, type GeoStore } from '@/lib/kpi/matcher'
 import { detectaAnomalias } from '@/lib/kpi/anomalia'
+import { normalizeForScore } from '@/lib/utils/score'
+import { analisaKpiComIA } from '@/lib/kpi/analisador-ia'
+import type { RotaKpi, AnomaliaDetectada } from '@/lib/types/kpi'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -93,16 +96,34 @@ export async function POST(req: NextRequest) {
 
   const allKpiIds: string[] = []
   let totalAnomalias = { HIGH: 0, MEDIUM: 0, LOW: 0 }
+  const kpiParaIA: Array<{ kpiId: string; rotas: RotaKpi[]; anomalias: AnomaliaDetectada[] }> = []
+
+  // Fetch canonical_loja with coordinates for FORA_BASE geo fallback (Category B)
+  const { data: geoStoresRaw } = await svc
+    .from('canonical_loja')
+    .select('id, name, lat, lng, raio_metros')
+    .not('lat', 'is', null)
+    .not('lng', 'is', null)
+
+  const geoStores: GeoStore[] = (geoStoresRaw ?? []).map((g: any) => ({
+    id: g.id as string,
+    name: g.name as string,
+    lat: g.lat as number,
+    lng: g.lng as number,
+    raio_metros: (g.raio_metros as number) ?? 300,
+  }))
 
   for (const rid of distinctRedeIds) {
     const linhasRede = escalaLinhas.filter((l) => l.rede_id === rid)
     const placasRede = new Set(linhasRede.filter((l) => l.placa_norm).map((l) => l.placa_norm as string))
     const paradasRede = (paradaRows ?? []).filter((p) => placasRede.has(p.placa_norm))
 
-    const rotas = cruzaEscalaUnitrac(
+    const rotas = await cruzaEscalaUnitrac(
       linhasRede,
       paradasRede,
       (lojas ?? []).filter((l) => l.rede_id === rid),
+      svc,
+      geoStores,
     )
 
     // Build paradasIndex for anomalia detection
@@ -265,9 +286,58 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Insert unmatched routes into review_queue for manual resolution
+    const reviewInserts = rotas
+      .filter(r => r._matchMeta?.confidence === 'UNMATCHED' || r._matchMeta?.requiresReview === true)
+      .filter(r => r.escala_linha_id)
+      .map(r => {
+        const nomeLoja = linhasRede.find(l => l.id === r.escala_linha_id)?.loja_nome_raw
+          ?? r.paradas[0]?.nome
+          ?? 'desconhecido'
+        return {
+          escala_linha_id: r.escala_linha_id as string,
+          data: r.data,
+          rede_id: r.rede_id,
+          raw_name: nomeLoja,
+          raw_name_norm: normalizeForScore(nomeLoja),
+          matched_name: r._matchMeta?.score && r._matchMeta.score > 0
+            ? (r.paradas[0]?.nome ?? null)
+            : null,
+          match_score: r._matchMeta?.score ?? null,
+          algorithm: r._matchMeta?.algorithm ?? 'none',
+          status: 'pending' as const,
+        }
+      })
+
+    if (reviewInserts.length > 0) {
+      // Delete existing pending rows for these escala_linha_ids before re-inserting
+      // (idempotent: re-processing the same day replaces stale queue entries)
+      const escalaLinhaIds = reviewInserts.map(r => r.escala_linha_id)
+      await svc.from('review_queue').delete()
+        .in('escala_linha_id', escalaLinhaIds)
+        .eq('status', 'pending')
+
+      const { error: qErr } = await svc
+        .from('review_queue')
+        .insert(reviewInserts)
+      if (qErr) console.error('[review_queue] insert error:', qErr.message)
+    }
+
     totalAnomalias.HIGH += anomalias.filter((a) => a.severidade === 'HIGH').length
     totalAnomalias.MEDIUM += anomalias.filter((a) => a.severidade === 'MEDIUM').length
     totalAnomalias.LOW += anomalias.filter((a) => a.severidade === 'LOW').length
+
+    kpiParaIA.push({ kpiId, rotas, anomalias })
+  }
+
+  // Análise IA: roda após todo o DB estar salvo; erros não afetam o processamento
+  for (const { kpiId, rotas, anomalias } of kpiParaIA) {
+    try {
+      const analise = await analisaKpiComIA(kpiId, rotas, anomalias)
+      await svc.from('kpis').update({ analise_ia: analise }).eq('id', kpiId)
+    } catch (err) {
+      console.error(`[analisador-ia] kpi_id=${kpiId}:`, err)
+    }
   }
 
   return NextResponse.json({

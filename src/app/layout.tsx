@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { ThemeProvider, THEME_INIT_SCRIPT } from '@/lib/theme/ThemeProvider'
+import 'react-data-grid/lib/styles.css'
 import './globals.css'
 
 const geistSans = Geist({
