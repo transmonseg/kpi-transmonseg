@@ -8,7 +8,7 @@ export async function analisaKpiComIA(
   const apiKey = process.env.OPENROUTER_API_KEY
   if (!apiKey) throw new Error('OPENROUTER_API_KEY não configurada')
 
-  const model = process.env.OPENROUTER_MODEL ?? 'google/gemma-4-31b-it:free'
+  const model = process.env.OPENROUTER_MODEL ?? 'deepseek/deepseek-v4-flash:free'
 
   const totalRotas = rotas.length
   const comGps = rotas.filter(r => r.paradas.length > 0).length
