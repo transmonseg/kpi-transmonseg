@@ -4,11 +4,13 @@
  * NÃO vai pra produção. NÃO faz parte do build do Next.
  *
  * Tools:
- *  - parse_escala_geral(file)        → roda parser GERAL num XLSX local
- *  - parse_escala_zona_sul(file)     → roda parser ZONA SUL
- *  - parse_escala_pax(file)          → roda parser PAX
- *  - parse_unitrac(file)             → roda parser Unitrac
- *  - load_files(data, files)         → sobe arquivos no DB de uma data
+ *  - parse_escala_geral(file)           → roda parser GERAL num XLSX local
+ *  - parse_escala_zona_sul(file)        → roda parser ZONA SUL
+ *  - parse_escala_pax(file)             → roda parser PAX
+ *  - parse_escala_armazem_grao(file)    → roda parser Armazém do Grão
+ *  - parse_escala_guanabara_pdf(file)   → roda parser Guanabara (PDF)
+ *  - parse_unitrac(file)                → roda parser Unitrac
+ *  - load_files(data, files)            → sobe arquivos no DB de uma data
  *  - processar_kpi(data, rede_id?)   → roda matcher + anomalias (mesma lógica do endpoint)
  *  - query_kpi(data)                 → retorna KPIs + anomalias da data
  *  - clear_data(data?)               → limpa banco (escala/unitrac/kpis)
@@ -26,6 +28,8 @@ import { createClient } from '@supabase/supabase-js'
 import { parseEscalaGeral } from '../src/lib/parsers/escala-geral.js'
 import { parseEscalaZonaSul } from '../src/lib/parsers/escala-zona-sul.js'
 import { parseEscalaPax } from '../src/lib/parsers/escala-pax.js'
+import { parseEscalaArmazemGrao } from '../src/lib/parsers/escala-armazem-grao.js'
+import { parseEscalaGuanabaraPdf } from '../src/lib/parsers/escala-guanabara-pdf.js'
 import { parseUnitrac } from '../src/lib/parsers/unitrac.js'
 import { parseUnitracPdf } from '../src/lib/parsers/unitrac-pdf.js'
 import { cruzaEscalaUnitrac } from '../src/lib/kpi/matcher.js'
@@ -140,6 +144,60 @@ server.registerTool(
   },
 )
 
+// ─── parse_escala_armazem_grao ───────────────────────────────
+server.registerTool(
+  'parse_escala_armazem_grao',
+  {
+    title: 'Parsear escala Armazém do Grão',
+    description: 'Parser Armazém do Grão. Abas com nome = número do dia (14, 15, 18…); linha 1 = "ARMAZÉM DO GRÃO | DD/MM/YYYY". 5 colunas: loja | tipo_carro | motorista | codigo | placa. rede_id=ARMAZEM_GRAO, turno=TARDE.',
+    inputSchema: {
+      file: z.string().describe('Caminho absoluto do XLSX'),
+      data_alvo: z.string().optional(),
+    },
+  },
+  async ({ file, data_alvo }) => {
+    try {
+      const buf = await loadFileBuffer(file)
+      const linhas = await parseEscalaArmazemGrao(buf, data_alvo)
+      return ok({
+        total_linhas: linhas.length,
+        datas_distintas: [...new Set(linhas.map((l: any) => l.data))].sort(),
+        redes_distintas: [...new Set(linhas.map((l: any) => l.rede_id))].sort(),
+        sample: linhas.slice(0, 5),
+      })
+    } catch (e: any) {
+      return err(e.message)
+    }
+  },
+)
+
+// ─── parse_escala_guanabara_pdf ──────────────────────────────
+server.registerTool(
+  'parse_escala_guanabara_pdf',
+  {
+    title: 'Parsear escala Guanabara (PDF)',
+    description: 'Parser Guanabara PDF. Cabeçalho "HLOG ESCALA GUANABARA DD/MM/YYYY". Regex-based parsing de linhas comprimidas. rede_id=GUANABARA, turno=MANHA.',
+    inputSchema: {
+      file: z.string().describe('Caminho absoluto do PDF'),
+      data_alvo: z.string().optional(),
+    },
+  },
+  async ({ file, data_alvo }) => {
+    try {
+      const buf = await loadFileBuffer(file)
+      const linhas = await parseEscalaGuanabaraPdf(buf, data_alvo)
+      return ok({
+        total_linhas: linhas.length,
+        datas_distintas: [...new Set(linhas.map((l: any) => l.data))].sort(),
+        redes_distintas: [...new Set(linhas.map((l: any) => l.rede_id))].sort(),
+        sample: linhas.slice(0, 5),
+      })
+    } catch (e: any) {
+      return err(e.message)
+    }
+  },
+)
+
 // ─── parse_unitrac ───────────────────────────────────────────
 server.registerTool(
   'parse_unitrac',
@@ -205,17 +263,19 @@ server.registerTool(
   'load_files',
   {
     title: 'Carregar arquivos no banco',
-    description: 'Lê 1+ arquivos (escala GERAL/ZONA_SUL/PAX + Unitrac), parseia e INSERE no banco como se fosse um upload via UI. Para uma data específica. Não pula validações.',
+    description: 'Lê 1+ arquivos (escala GERAL/ZONA_SUL/PAX/ARMAZEM_GRAO/GUANABARA + Unitrac), parseia e INSERE no banco como se fosse um upload via UI. Para uma data específica. Não pula validações.',
     inputSchema: {
       data: z.string().describe('Data YYYY-MM-DD da escala/relatório'),
       escala_geral_file: z.string().optional(),
       escala_zona_sul_file: z.string().optional(),
       escala_pax_file: z.string().optional(),
+      escala_armazem_file: z.string().optional().describe('XLSX Armazém do Grão'),
+      escala_guanabara_pdf_file: z.string().optional().describe('PDF Guanabara'),
       unitrac_file: z.string().optional().describe('XLSX do Unitrac'),
       unitrac_pdf_file: z.string().optional().describe('PDF do Unitrac (formato analítico). Se especificado, é usado em vez do XLSX.'),
     },
   },
-  async ({ data, escala_geral_file, escala_zona_sul_file, escala_pax_file, unitrac_file, unitrac_pdf_file }) => {
+  async ({ data, escala_geral_file, escala_zona_sul_file, escala_pax_file, escala_armazem_file, escala_guanabara_pdf_file, unitrac_file, unitrac_pdf_file }) => {
     try {
       const supabase = sb()
       const userId = process.env.MCP_DEV_USER_ID || null
@@ -223,10 +283,12 @@ server.registerTool(
       const results: any = { data, inserted: {} }
 
       // Escalas
-      const escalas: Array<{ tipo: 'GERAL' | 'ZONA_SUL' | 'PAX'; file?: string; parser: any }> = [
+      const escalas: Array<{ tipo: 'GERAL' | 'ZONA_SUL' | 'PAX' | 'ARMAZEM_GRAO' | 'GUANABARA'; file?: string; parser: any }> = [
         { tipo: 'GERAL', file: escala_geral_file, parser: parseEscalaGeral },
         { tipo: 'ZONA_SUL', file: escala_zona_sul_file, parser: parseEscalaZonaSul },
         { tipo: 'PAX', file: escala_pax_file, parser: parseEscalaPax },
+        { tipo: 'ARMAZEM_GRAO', file: escala_armazem_file, parser: parseEscalaArmazemGrao },
+        { tipo: 'GUANABARA', file: escala_guanabara_pdf_file, parser: parseEscalaGuanabaraPdf },
       ]
 
       for (const e of escalas) {

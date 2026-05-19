@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs'
 import type { KpiLinha } from '@/lib/types/kpi'
-import { KPI_COLORS, REDE_NOMES_CANONICOS, formataDataPtBr } from './kpi-styles'
-import { getLogoBuffer, carregarOuCriarWorkbook, nomeAbaDoDia } from './template-loader'
+import { KPI_COLORS, REDE_NOMES_CANONICOS } from './kpi-styles'
+import { carregarOuCriarWorkbook, nomeAbaDoDia } from './template-loader'
 import { getMatrizLojas, resolverNomeCanonico } from '@/lib/lojas/catalogo-matriz'
 import { temAnomaliaHigh } from './anomalia-obs'
 import { agruparPorLoja, type LinhaAgrupada } from './agrupar-por-loja'
@@ -13,9 +13,8 @@ export interface LinhaParaKpi extends KpiLinha {
 
 export interface GerarKpiInput {
   rede_id: string
-  data: string // YYYY-MM-DD
+  data: string
   linhas: LinhaParaKpi[]
-  /** XLSX do mês carregado do Storage; se null cria novo */
   arquivoExistente?: Buffer | null
 }
 
@@ -25,26 +24,18 @@ function toExcelTime(d: Date | null | undefined): number | null {
   return (brt.getHours() * 3600 + brt.getMinutes() * 60 + brt.getSeconds()) / 86400
 }
 
-function totalTempoMin(l: LinhaParaKpi | null): number | null {
-  if (!l) return null
-  const t = l.tempo_loja_1_min
-  return t !== null && t > 0 ? t : null
-}
-
 export async function gerarKpi(input: GerarKpiInput): Promise<Buffer> {
   const { rede_id, data, linhas, arquivoExistente } = input
   const wb = await carregarOuCriarWorkbook(arquivoExistente ?? null)
   const nomeAba = nomeAbaDoDia(data)
   const redeNome = REDE_NOMES_CANONICOS[rede_id] ?? rede_id
 
-  // Remove aba do dia se já existir
   const abaExistente = wb.getWorksheet(nomeAba)
   if (abaExistente) wb.removeWorksheet(abaExistente.id)
 
   const ws = wb.addWorksheet(nomeAba, { views: [{ state: 'frozen', ySplit: 4 }] })
-  await preencherAba(ws, wb, { rede_id, redeNome, data, linhas })
+  preencherAba(ws, { rede_id, redeNome, linhas })
 
-  // Garantir aba BASE se Zona Sul
   if (rede_id === 'ZONA_SUL') {
     const { gerarAbaBaseZonaSul } = await import('./zona-sul-base')
     gerarAbaBaseZonaSul(wb)
@@ -54,125 +45,115 @@ export async function gerarKpi(input: GerarKpiInput): Promise<Buffer> {
   return Buffer.from(await wb.xlsx.writeBuffer() as any) as any
 }
 
-const NAVY      = 'FF1F3864'
-const ROW_BG     = 'FFFFFFCC'
-const ROW_BG_ALT = 'FFFFFFFF'
+const NAVY        = 'FF1F3864'
+const ROW_BG      = 'FFFFFFCC'
+const ROW_BG_ALT  = 'FFFFFFFF'
+const SPACER_BG   = 'FFFFFFCC'
 
-const FONT_HEADER = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FFFFFFFF' } }
-const FONT_BODY   = { name: 'Calibri', size: 12, color: { argb: 'FF000000' } }
-const FILL_NAVY   = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: NAVY } }
+const FONT_TITLE     = { name: 'Arial',        size: 48, bold: true, color: { argb: 'FFFFFFFF' } }
+const FONT_GROUP     = { name: 'Arial',        size: 16, bold: true, color: { argb: 'FFFFFFFF' } }
+const FONT_HEADER    = { name: 'Arial Narrow', size: 16, bold: true, color: { argb: 'FFFFFFFF' } }
+const FONT_BODY      = { name: 'Arial',        size: 12, color: { argb: 'FF000000' } }
+const FILL_NAVY      = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: NAVY } }
+const FILL_SPACER    = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: SPACER_BG } }
+const NUMFMT_TIME    = 'h:mm;@'
+const NUMFMT_HEADER  = '[$-F400]h:mm:ss AM/PM'
 
-const COLS_DUPLO = [
-  { width: 44.5 }, // A: REDES/FILIAIS
-  { width: 23.8 }, // B: MOTORISTA 1
-  { width: 13.5 }, // C: COD 1
-  { width: 16.7 }, // D: PLACA 1
-  { width: 20.1 }, // E: SAIDA CD 1
-  { width: 21   }, // F: CHD LOJA 1
-  { width: 23.5 }, // G: SAIDA LOJA 1
-  { width: 23.8 }, // H: MOTORISTA 2
-  { width: 13.5 }, // I: COD 2
-  { width: 16.7 }, // J: PLACA 2
-  { width: 20.1 }, // K: SAIDA CD 2
-  { width: 21   }, // L: CHD LOJA 2
-  { width: 23.5 }, // M: SAIDA LOJA 2
-  { width: 31.5 }, // N: TEMPO 1º CARRO
-  { width: 31.5 }, // O: TEMPO 2º CARRO
+const COLS_15 = [
+  { width: 44.5703125 },  // A: REDES/FILIAIS
+  { width: 23.85546875 }, // B: MOTORISTA 1
+  { width: 13.5703125 },  // C: COD 1
+  { width: 16.7109375 },  // D: PLACA 1
+  { width: 20.140625 },   // E: SAIDA CD 1
+  { width: 21 },          // F: CHD LOJA 1
+  { width: 23.5 },        // G: SAIDA LOJA 1
+  { width: 23.85546875 }, // H: MOTORISTA 2
+  { width: 13.5703125 },  // I: COD 2
+  { width: 16.7109375 },  // J: PLACA 2
+  { width: 20.140625 },   // K: SAIDA CD 2
+  { width: 21 },          // L: CHD LOJA 2
+  { width: 23.5 },        // M: SAIDA LOJA 2
+  { width: 31.5 },        // N: TEMPO EM LOJA 1
+  { width: 31.5 },        // O: TEMPO EM LOJA 2
 ]
 
-const COLS_SIMPLES = [
-  { width: 44.5 }, // A: REDES/FILIAIS
-  { width: 23.8 }, // B: MOTORISTA
-  { width: 13.5 }, // C: COD
-  { width: 16.7 }, // D: PLACA
-  { width: 20.1 }, // E: SAIDA CD
-  { width: 21   }, // F: CHD LOJA
-  { width: 23.5 }, // G: SAIDA LOJA
-  { width: 31.5 }, // H: TEMPO EM LOJA
-]
+const N_COLS = 15
 
-async function preencherAba(
+function preencherAba(
   ws: ExcelJS.Worksheet,
-  wb: ExcelJS.Workbook,
-  ctx: { rede_id: string; redeNome: string; data: string; linhas: LinhaParaKpi[] },
+  ctx: { rede_id: string; redeNome: string; linhas: LinhaParaKpi[] },
 ) {
-  const { rede_id, redeNome, data, linhas: linhasRaw } = ctx
+  const { rede_id, redeNome, linhas: linhasRaw } = ctx
 
-  // Renomeia lojas da escala para nome canônico do catálogo (resolve variações de acento/sufixo)
+  // Renomeia lojas da escala para nome canônico do catálogo
   const linhas = linhasRaw.map(l => {
     const canon = resolverNomeCanonico(rede_id, l.loja_nome)
     return canon ? { ...l, loja_nome: canon } : l
   })
 
   const agrupadas = agruparPorLoja(linhas)
-  const duplo = agrupadas.some(a => a.carro2 !== null)
-  const nCols = duplo ? 15 : 8
+  ws.columns = COLS_15
 
-  ws.columns = duplo ? COLS_DUPLO : COLS_SIMPLES
-
-  // Row 1 — logo + fundo navy
-  ws.getRow(1).height = 86.25
-  for (let c = 1; c <= nCols; c++) ws.getCell(1, c).fill = FILL_NAVY
-  try {
-    const logoBuf = await getLogoBuffer()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const logoId = wb.addImage({ buffer: logoBuf as any, extension: 'png' })
-    ws.addImage(logoId, { tl: { col: 0, row: 0 }, ext: { width: 220, height: 80 }, editAs: 'oneCell' })
-  } catch {
-    ws.getCell('A1').value = redeNome
-    ws.getCell('A1').font = { name: 'Calibri', size: 36, bold: true, color: { argb: 'FFFFFFFF' } }
-    ws.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' }
-  }
-
-  // Data no canto direito da row 1
-  const dataCell = ws.getCell(1, nCols)
-  dataCell.value = formataDataPtBr(data)
-  dataCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }
-  dataCell.alignment = { horizontal: 'right', vertical: 'bottom' }
-  dataCell.fill = FILL_NAVY
+  // Row 1 — título textual
+  ws.getRow(1).height = 110
+  ws.mergeCells('A1:O1')
+  const titleCell = ws.getCell('A1')
+  titleCell.value = `RELATÓRIO KPI - ${redeNome.toUpperCase()}\nBENASSI`
+  titleCell.font = FONT_TITLE
+  titleCell.fill = FILL_NAVY
+  titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
 
   // Row 2 — cabeçalho de grupo
   ws.getRow(2).height = 23.25
-  for (let c = 1; c <= nCols; c++) ws.getCell(2, c).fill = FILL_NAVY
+  for (let c = 1; c <= N_COLS; c++) ws.getCell(2, c).fill = FILL_NAVY
+  ws.mergeCells('B2:G2')
+  const b2 = ws.getCell('B2')
+  b2.value = `${redeNome.toUpperCase()} 1º CARRO`
+  b2.font = FONT_GROUP
+  b2.fill = FILL_NAVY
+  b2.alignment = { horizontal: 'center', vertical: 'middle' }
 
-  if (duplo) {
-    ws.mergeCells('B2:G2')
-    const b2 = ws.getCell('B2')
-    b2.value = `${redeNome} 1º CARRO`
-    b2.font = FONT_HEADER; b2.fill = FILL_NAVY; b2.alignment = { horizontal: 'center', vertical: 'middle' }
-
-    ws.mergeCells('H2:M2')
-    const h2 = ws.getCell('H2')
-    h2.value = `${redeNome} 2º CARRO`
-    h2.font = FONT_HEADER; h2.fill = FILL_NAVY; h2.alignment = { horizontal: 'center', vertical: 'middle' }
-  } else {
-    ws.mergeCells('B2:H2')
-    const b2 = ws.getCell('B2')
-    b2.value = redeNome
-    b2.font = FONT_HEADER; b2.fill = FILL_NAVY; b2.alignment = { horizontal: 'center', vertical: 'middle' }
-  }
+  ws.mergeCells('H2:M2')
+  const h2 = ws.getCell('H2')
+  h2.value = `${redeNome.toUpperCase()} 2º CARRO`
+  h2.font = FONT_GROUP
+  h2.fill = FILL_NAVY
+  h2.alignment = { horizontal: 'center', vertical: 'middle' }
 
   // Row 3 — headers das colunas
   const headerRow = ws.getRow(3)
   headerRow.height = 23.25
-  headerRow.values = duplo
-    ? [
-        'REDES / FILIAIS',
-        'MOTORISTA', 'COD', 'PLACA', 'SAIDA CD', 'CHD LOJA', 'SAIDA LOJA',
-        'MOTORISTA', 'COD', 'PLACA', 'SAIDA CD', 'CHD LOJA', 'SAIDA LOJA',
-        'TEMPO 1º CARRO', 'TEMPO 2º CARRO',
-      ]
-    : ['REDES / FILIAIS', 'MOTORISTA', 'COD', 'PLACA', 'SAIDA CD', 'CHD LOJA', 'SAIDA LOJA', 'TEMPO EM LOJA']
-
-  headerRow.eachCell({ includeEmpty: true }, (cell) => {
+  headerRow.values = [
+    'REDES / FILIAIS',
+    'MOTORISTA', 'COD', 'PLACA', 'SAIDA CD', 'CHD LOJA', 'SAIDA LOJA',
+    'MOTORISTA', 'COD', 'PLACA', 'SAIDA CD', 'CHD LOJA', 'SAIDA LOJA',
+    'TEMPO EM LOJA 1', 'TEMPO EM LOJA 2',
+  ]
+  headerRow.eachCell({ includeEmpty: true }, (cell, colNum) => {
+    if (colNum > N_COLS) return
     cell.font = FONT_HEADER
     cell.fill = FILL_NAVY
     cell.alignment = { horizontal: 'center', vertical: 'middle' }
     cell.border = { left: { style: 'thin' }, right: { style: 'thin' }, bottom: { style: 'thin' } }
+    cell.numFmt = NUMFMT_HEADER
   })
 
-  // Row 4 — espaçador
-  ws.getRow(4).height = 23.25
+  // Row 4 — espaçador estilizado
+  const spacerRow = ws.getRow(4)
+  spacerRow.height = 23.25
+  for (let c = 1; c <= N_COLS; c++) {
+    const cell = ws.getCell(4, c)
+    cell.fill = FILL_SPACER
+    cell.font = { name: 'Arial', size: 12 }
+    cell.numFmt = NUMFMT_TIME
+    cell.border = {
+      top:    { style: 'thin', color: { argb: 'FFB0B0B0' } },
+      bottom: { style: 'thin', color: { argb: 'FFB0B0B0' } },
+      left:   { style: 'thin', color: { argb: 'FFB0B0B0' } },
+      right:  { style: 'thin', color: { argb: 'FFB0B0B0' } },
+    }
+    cell.alignment = { horizontal: 'center', vertical: 'middle' }
+  }
 
   // Dados a partir da linha 5
   const lojasNoDia = [...new Set(linhas.map(l => l.loja_nome).filter(Boolean))]
@@ -182,96 +163,68 @@ async function preencherAba(
   let rowIdx = 5
   for (const loja of ordemLojas) {
     const ag = agrupadasMap.get(loja) ?? { loja_nome: loja, carro1: null, carro2: null }
-    escreverLinha(ws, rowIdx, ag, duplo, nCols)
+    escreverLinha(ws, rowIdx, ag)
     rowIdx++
   }
-
-  // Linha de totais
-  const comGps = agrupadas.filter(a => a.carro1?.saida_cd || a.carro1?.chd_loja_1).length
-  const comTempo = agrupadas.filter(a => {
-    const t1 = a.carro1?.tempo_loja_1_min
-    const t2 = a.carro2?.tempo_loja_1_min
-    return (t1 !== null && t1 !== undefined && t1 > 0) || (t2 !== null && t2 !== undefined && t2 > 0)
-  }).length
-  const totalLojas = ordemLojas.length
-
-  ws.mergeCells(rowIdx, 1, rowIdx, nCols)
-  const totalRow = ws.getRow(rowIdx)
-  totalRow.height = 20
-  const totalCell = ws.getCell(rowIdx, 1)
-  totalCell.value = `TOTAL: ${totalLojas} lojas  |  GPS: ${comGps}  |  TEMPO: ${comTempo}`
-  totalCell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF1F3864' } }
-  totalCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8F0FE' } }
-  totalCell.alignment = { horizontal: 'center', vertical: 'middle' }
-  totalCell.border = { top: { style: 'thin', color: { argb: 'FFB0C4DE' } } }
 }
 
-function escreverLinha(
-  ws: ExcelJS.Worksheet,
-  row: number,
-  ag: LinhaAgrupada,
-  duplo: boolean,
-  nCols: number,
-) {
+function escreverLinha(ws: ExcelJS.Worksheet, row: number, ag: LinhaAgrupada) {
   const r = ws.getRow(row)
   r.height = 23.25
 
   const c1 = ag.carro1
   const c2 = ag.carro2
 
+  // Veículo existe na escala mas sem nenhuma parada GPS registrada
+  const semGps1 = c1 !== null && c1.saida_cd === null && c1.chd_loja_1 === null && c1.saida_loja_1 === null
+  const semGps2 = c2 !== null && c2.saida_cd === null && c2.chd_loja_1 === null && c2.saida_loja_1 === null
+  // Tem GPS (saiu do CD) mas não foi a esta loja específica
+  const naoFoi1 = c1 !== null && !semGps1 && c1.chd_loja_1 === null
+  const naoFoi2 = c2 !== null && !semGps2 && c2.chd_loja_1 === null
+
   const saida1 = toExcelTime(c1?.saida_cd)
   const chd1   = toExcelTime(c1?.chd_loja_1)
   const sai1   = toExcelTime(c1?.saida_loja_1)
+  const saida2 = toExcelTime(c2?.saida_cd)
+  const chd2   = toExcelTime(c2?.chd_loja_1)
+  const sai2   = toExcelTime(c2?.saida_loja_1)
+
+  const textoSlot1 = naoFoi1 ? 'NÃO FOI AO CLIENTE' : semGps1 ? 'SEM RASTREADOR' : null
+  const textoSlot2 = naoFoi2 ? 'NÃO FOI AO CLIENTE' : semGps2 ? 'SEM RASTREADOR' : null
 
   // Strip "(2º CARRO)" prefix — redundante na coluna dedicada ao 2º carro
   const nome2 = c2?.motorista?.replace(/^\(2[oº°]\s*CARRO\)\s*/i, '') ?? ''
 
-  if (duplo) {
-    const saida2 = toExcelTime(c2?.saida_cd)
-    const chd2   = toExcelTime(c2?.chd_loja_1)
-    const sai2   = toExcelTime(c2?.saida_loja_1)
+  r.values = [
+    ag.loja_nome,
+    c1?.motorista ?? '', c1?.motorista_codigo ?? '', c1?.placa ?? '',
+    textoSlot1 ?? (saida1 ?? ''),
+    textoSlot1 ?? (chd1 ?? ''),
+    textoSlot1 ?? (sai1 ?? ''),
+    nome2, c2?.motorista_codigo ?? '', c2?.placa ?? '',
+    textoSlot2 ?? (saida2 ?? ''),
+    textoSlot2 ?? (chd2 ?? ''),
+    textoSlot2 ?? (sai2 ?? ''),
+    '', '',
+  ]
 
-    r.values = [
-      ag.loja_nome,
-      c1?.motorista ?? '', c1?.motorista_codigo ?? '', c1?.placa ?? '',
-      saida1 ?? '', chd1 ?? '', sai1 ?? '',
-      nome2, c2?.motorista_codigo ?? '', c2?.placa ?? '',
-      saida2 ?? '', chd2 ?? '', sai2 ?? '',
-      '', '',
-    ]
-
-    for (const col of [5, 6, 7, 11, 12, 13]) {
-      const cell = ws.getCell(row, col)
-      if (cell.value !== '') cell.numFmt = 'HH:MM'
-    }
-
-    const t1 = totalTempoMin(c1)
-    if (t1 !== null) { ws.getCell(row, 14).value = t1 / 1440; ws.getCell(row, 14).numFmt = 'HH:MM' }
-    const t2 = totalTempoMin(c2)
-    if (t2 !== null) { ws.getCell(row, 15).value = t2 / 1440; ws.getCell(row, 15).numFmt = 'HH:MM' }
-  } else {
-    r.values = [
-      ag.loja_nome,
-      c1?.motorista ?? '', c1?.motorista_codigo ?? '', c1?.placa ?? '',
-      saida1 ?? '', chd1 ?? '', sai1 ?? '',
-      '',
-    ]
-
-    for (const col of [5, 6, 7]) {
-      const cell = ws.getCell(row, col)
-      if (cell.value !== '') cell.numFmt = 'HH:MM'
-    }
-
-    const t1 = totalTempoMin(c1)
-    if (t1 !== null) { ws.getCell(row, 8).value = t1 / 1440; ws.getCell(row, 8).numFmt = 'HH:MM' }
+  for (const col of [5, 6, 7, 11, 12, 13]) {
+    const cell = ws.getCell(row, col)
+    if (typeof cell.value === 'number') cell.numFmt = NUMFMT_TIME
   }
+
+  // Fórmulas TEMPO EM LOJA — sempre, mesmo em linhas vazias (igual manual)
+  ws.getCell(row, 14).value = { formula: `MOD(G${row}-F${row},1)` }
+  ws.getCell(row, 14).numFmt = NUMFMT_TIME
+  ws.getCell(row, 15).value = { formula: `MOD(M${row}-L${row},1)` }
+  ws.getCell(row, 15).numFmt = NUMFMT_TIME
 
   const codigos = [...(c1?.anomalias_codigos ?? []), ...(c2?.anomalias_codigos ?? [])]
   const isAlt = (row - 5) % 2 === 1
   const bgColor = temAnomaliaHigh(codigos) ? KPI_COLORS.ANOMALIA_HIGH_BG : isAlt ? ROW_BG_ALT : ROW_BG
 
   r.eachCell({ includeEmpty: true }, (cell, colNum) => {
-    if (colNum > nCols) return
+    if (colNum > N_COLS) return
     cell.font = FONT_BODY
     cell.alignment = { horizontal: colNum === 1 ? 'left' : 'center', vertical: 'middle' }
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } }

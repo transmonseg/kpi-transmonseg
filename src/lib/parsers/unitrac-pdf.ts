@@ -16,7 +16,9 @@ import { normalizaPlaca } from '@/lib/utils/placa'
 const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
 
 const BASE_LOCAL = 'BASE BENASSI - BASE BENASSI'
+const BASE_LOCAL_SHORT = 'BASE BENASSI'
 const FORA_LOCAL = 'FORA DE BASE E LOCAL DE SERVIÇO'
+const FORA_LOCAL_SHORT = 'FORA DE BASE'
 
 function parseDataBR(s: string, hora: string): Date | null {
   // s = DD/MM/AAAA, hora = HH:MM
@@ -37,15 +39,16 @@ function parseDuracaoStr(s: string): number {
 }
 
 function classificaParada(local: string, duracaoSeg: number): ParadaUnitrac['classificacao'] {
-  if (local === BASE_LOCAL) return duracaoSeg > 900 ? 'BASE' : 'FAKE_EXIT'
-  if (local === FORA_LOCAL) return duracaoSeg < 600 ? 'FAKE_EXIT' : 'FORA_BASE'
+  // Unitrac às vezes concatena múltiplos locais e às vezes trunca; usa prefixo curto
+  if (local.startsWith(BASE_LOCAL_SHORT)) return duracaoSeg > 900 ? 'BASE' : 'FAKE_EXIT'
+  if (local.startsWith(FORA_LOCAL_SHORT)) return duracaoSeg < 600 ? 'FAKE_EXIT' : 'FORA_BASE'
   return 'LOJA'
 }
 
 function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: string | null } {
   // codigo_loja/nome_loja só fazem sentido pra LOJA real (formato "12345 - NOME")
   // BASE BENASSI e FORA DE BASE não tem código numérico
-  if (local === BASE_LOCAL || local === FORA_LOCAL) {
+  if (local.startsWith(BASE_LOCAL_SHORT) || local.startsWith(FORA_LOCAL_SHORT)) {
     return { codigo_loja: null, nome_loja: null }
   }
   const idx = local.indexOf(' - ')
@@ -83,16 +86,26 @@ function normalizeSpaces(raw: string): string {
     .replace(/([A-Z]{3}-?\d[A-Z0-9]\d{2})(\d)/g, '$1 $2')
     // Ano YYYY seguido de hora HH: (ex: 15/05/202604:38)
     .replace(/(\d{4})(\d{2}:\d{2})/g, '$1 $2')
+    // Ano YYYY seguido de outra data DD/MM/YYYY (ex: 18/05/202618/05/2026)
+    .replace(/(\d{4})(\d{2}\/\d{2}\/\d{4})/g, '$1 $2')
+    // Ano YYYY seguido de duração "0D HH:MM:SS" (ex: 18/05/20260D 01:25:49)
+    .replace(/(\d{4})(\d+D \d{2}:\d{2}:\d{2})/g, '$1 $2')
     // Hora HH:MM seguida de data DD/MM (ex: 04:3815/05/2026)
     .replace(/(\d{2}:\d{2})(\d{2}\/\d{2}\/\d{4})/g, '$1 $2')
     // Hora HH:MM seguida de número (ex: 14:30956 = "14:30" + "9" + "56")
     .replace(/(\d{2}:\d{2})(\d)/g, '$1 $2')
     // Duração 0D HH:MM:SS seguida de dígito
     .replace(/(\d+D \d{2}:\d{2}:\d{2})(\d)/g, '$1 $2')
+    // Duração 0D HH:MM:SS seguida de letra (ex: "00:50:47Estr")
+    .replace(/(\d+D \d{2}:\d{2}:\d{2})([A-ZÀ-Ýa-zà-ý])/g, '$1 $2')
     // Latitude seguida de longitude (-22.123-43.456)
     .replace(/(-?\d+\.\d+)(-\d+\.\d+)/g, '$1 $2')
     // Coordenada seguida de letra (ex: -43.341840BASE)
     .replace(/(-?\d+\.\d+)([A-ZÀ-Ý])/g, '$1 $2')
+    // Letra seguida de coordenada negativa (ex: RJ-22.892950)
+    .replace(/([A-ZÀ-Ý])(-\d+\.\d+)/g, '$1 $2')
+    // Lat/lng (exatamente 6 decimais) seguida de código numérico (ex: -43.5593609006154 = "-43.559360" + "9006154")
+    .replace(/(-?\d+\.\d{6})(\d)/g, '$1 $2')
     // Número decimal seguido de "0D" (duração) — ex: "56,20D" = "56,2" + "0D"
     .replace(/(\d+,\d+)(0D )/g, '$1 $2')
 }
@@ -100,15 +113,31 @@ function normalizeSpaces(raw: string): string {
 // Limpa quebras de linha pra texto contínuo (mas preserva delimitadores chave)
 function preprocess(raw: string): string {
   const normalized = normalizeSpaces(raw)
-  return normalized
+  let out = normalized
     // Remove "Página X de Y" e marcadores
     .replace(/Página \d+ de \d+/g, '')
     .replace(/-- \d+ of \d+ --/g, '')
     // Remove cabeçalhos repetidos de tabela
     .replace(/Condutor\s*Data parada\s*Data Saída[\s\S]*?Local da\s*Parada/g, '')
-    .replace(/Relatório Parada e Serviço\s+Data Inicio:.*?\s+Data Fim:.*?(?=\s)/g, '')
+    // Remove cabeçalho do relatório CONSUMINDO a data/hora completa (pra não vazar "19/05/2026 00:00")
+    .replace(/Relatório Parada e Serviço[\s\S]*?Data Fim:\s+\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}/g, '')
     // Cabeçalho do bloco veículo (com ou sem espaços já inseridos)
     .replace(/Veículo\s+Início Viagem\s+Fim Viagem\s+Qtd\.\s*Paradas[\s\S]*?Cada Parada \(h\)/g, '|VEHICLE_HEADER|')
+
+  // Repara paradas cortadas por quebra de página: PDF coloca dates sem HH:MM antes
+  // da quebra, e os horários "HH:MM HH:MM" + parte do local_parada DEPOIS.
+  // Reconstrói a sequência original: insere as horas entre as datas e concatena o
+  // prefixo + sufixo do local_parada.
+  // Padrão genérico: <date1> <date2> <campos até lat/lng> <prefix_local?> HH:MM HH:MM <suffix_local>
+  const REPAIR = /(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})\s+(0D \d{2}:\d{2}:\d{2}\s+\d+(?:[,.]\d+)?\s+0D \d{2}:\d{2}:\d{2}\s+[\s\S]+?-\d{1,2}\.\d{4,6}\s+-\d{1,3}\.\d{4,6})([\s\S]*?)\s+(\d{2}:\d{2})\s+(\d{2}:\d{2})\s+([\s\S]*?)(?=\s*\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}|\|VEHICLE_HEADER\||$)/g
+  out = out.replace(REPAIR, (_match, d1, d2, midFields, prefixLocal, h1, h2, suffixLocal) => {
+    const prefix = String(prefixLocal).replace(/\s+/g, ' ').trim().replace(/\s*-\s*$/, '').trim()
+    const suffix = String(suffixLocal).replace(/\s+/g, ' ').trim()
+    const local = [prefix, suffix].filter(Boolean).join(' ').trim()
+    return `${d1} ${h1} ${d2} ${h2} ${midFields} ${local} `
+  })
+
+  return out
 }
 
 type RawVeiculo = {
