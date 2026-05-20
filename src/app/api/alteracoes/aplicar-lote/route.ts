@@ -106,8 +106,11 @@ export async function POST(req: NextRequest) {
       }
 
       if (linhaIds.length > 0) {
-        const updatePayload: { placa_norm?: string; motorista_nome?: string } = {}
-        if (placaEntraNorm) updatePayload.placa_norm = placaEntraNorm
+        const updatePayload: { placa_norm?: string; placa_raw?: string; motorista_nome?: string } = {}
+        if (placaEntraNorm) {
+          updatePayload.placa_norm = placaEntraNorm
+          updatePayload.placa_raw = placaEntraNorm
+        }
         if (motoristaEntraNome) updatePayload.motorista_nome = motoristaEntraNome
 
         if (Object.keys(updatePayload).length > 0) {

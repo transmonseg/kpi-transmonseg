@@ -173,12 +173,10 @@ function SlotRow({
       <div className="relative">
         <Input
           value={s.placa_norm ?? ''}
-          onChange={(e) =>
-            onChange({
-              placa_norm: e.target.value.toUpperCase() || null,
-              fonte_placa: 'mensagem',
-            })
-          }
+          onChange={(e) => {
+            const v = e.target.value.toUpperCase() || null
+            onChange({ placa_norm: v, placa_raw: v, fonte_placa: 'mensagem' })
+          }}
           placeholder="Placa"
           className={cn('text-[12px] font-mono pr-5')}
         />
