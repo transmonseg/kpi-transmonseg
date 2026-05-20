@@ -136,3 +136,34 @@ export function extraiTokens(trecho: string): TokensExtraidos {
     textoSemTokens: textoSem.replace(/\s+/g, ' ').trim(),
   }
 }
+
+export interface SentidoExtraido {
+  sai: string | null
+  entra: string | null
+}
+
+export function detectaSentido(blocoNormalizado: string): SentidoExtraido {
+  if (!blocoNormalizado) return { sai: null, entra: null }
+
+  const linhas = blocoNormalizado.split('\n').map((l) => l.trim())
+  let sai: string | null = null
+  let entra: string | null = null
+
+  for (const linha of linhas) {
+    if (/^sai[uo]?\s*:/i.test(linha) && !sai) {
+      sai = linha.replace(/^sai[uo]?\s*:\s*/i, '').trim()
+    } else if (/^entr[ao]u?\s*:/i.test(linha) && !entra) {
+      entra = linha.replace(/^entr[ao]u?\s*:\s*/i, '').trim()
+    }
+  }
+
+  if (!sai || !entra) {
+    const inline = blocoNormalizado.replace(/\n/g, ' ')
+    const mSai = /\bsai[uo]?\s+(.+?)(?=\b(?:entr|motivo|obs)\b|$)/i.exec(inline)
+    const mEntra = /\bentr[ao]u?\s+(.+?)(?=\b(?:sai|motivo|obs)\b|$)/i.exec(inline)
+    if (!sai && mSai) sai = mSai[1].trim()
+    if (!entra && mEntra) entra = mEntra[1].trim()
+  }
+
+  return { sai, entra }
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizaNomeMotorista, normalizaTexto, segmentaBlocos, extraiTokens } from './alteracoes-v2'
+import { normalizaNomeMotorista, normalizaTexto, segmentaBlocos, extraiTokens, detectaSentido } from './alteracoes-v2'
 
 describe('normalizaNomeMotorista', () => {
   it('upper + remove acentos + colapsa espaços', () => {
@@ -102,5 +102,36 @@ describe('extraiTokens', () => {
   it('extrai placa quando vem com hífen ou espaço', () => {
     expect(extraiTokens('UBO 5E05').placas).toEqual(['UBO5E05'])
     expect(extraiTokens('UBO-5E05').placas).toEqual(['UBO5E05'])
+  })
+})
+
+describe('detectaSentido', () => {
+  it('detecta âncoras explícitas Sai:/Entra:', () => {
+    const bloco = `Sai: Anderson LCE4337
+Entra: Sidnei LQE5401`
+    const r = detectaSentido(bloco)
+    expect(r.sai).toContain('Anderson')
+    expect(r.entra).toContain('Sidnei')
+  })
+
+  it('detecta âncoras com espaço extra: "Sai :" / "Entra :"', () => {
+    const bloco = `Sai : A LCE4337
+Entra : B LQE5401`
+    const r = detectaSentido(bloco)
+    expect(r.sai).toContain('LCE4337')
+    expect(r.entra).toContain('LQE5401')
+  })
+
+  it('detecta inline "sai X placa P entra Y placa Q"', () => {
+    const bloco = 'sai kanu placa kqr2j11 entra Rafael placa eyl8b91'
+    const r = detectaSentido(bloco)
+    expect(r.sai).toContain('kanu')
+    expect(r.entra).toContain('Rafael')
+  })
+
+  it('retorna null quando nenhuma âncora é encontrada', () => {
+    const r = detectaSentido('Só placa LQE5401 sem contexto')
+    expect(r.sai).toBeNull()
+    expect(r.entra).toBeNull()
   })
 })
