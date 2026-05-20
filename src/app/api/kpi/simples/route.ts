@@ -263,7 +263,8 @@ export async function POST(req: NextRequest) {
   // Carrega lojas operacionais (resolveLojaId) e canonical_loja com geo
   // (geo fallback para paradas FORA_BASE sem geofence — Categoria B do plano-90%).
   // Em paralelo: trgm-lookup usa o supabase client para enriquecer matches fuzzy.
-  const [lojasRes, canonicalRes] = await Promise.all([
+  // Também carrega janelas operacionais das redes pra ativar ANOM-11.
+  const [lojasRes, canonicalRes, redesRes] = await Promise.all([
     svc
       .from('lojas')
       .select('id, rede_id, nome, nome_normalizado, codigo_escala, codigo_unitrac, nome_unitrac, lat, lng, raio_metros')
@@ -273,6 +274,10 @@ export async function POST(req: NextRequest) {
       .select('id, name, lat, lng, raio_metros')
       .not('lat', 'is', null)
       .not('lng', 'is', null),
+    svc
+      .from('redes')
+      .select('id, janela_inicio, janela_fim')
+      .eq('ativo', true),
   ])
 
   const lojasParaMatcher = (lojasRes.data ?? []).map(l => ({
@@ -322,7 +327,14 @@ export async function POST(req: NextRequest) {
       data_entrega: e.data_entrega, loja_nome_raw: e.loja_nome_raw,
     })),
     paradasIndex,
-    janelasRede: new Map(),  // janelas operacionais não usadas no fluxo simples
+    janelasRede: new Map(
+      (redesRes.data ?? [])
+        .filter(r => r.janela_inicio && r.janela_fim)
+        .map(r => [r.id as string, {
+          janela_inicio: String(r.janela_inicio).slice(0, 5),
+          janela_fim: String(r.janela_fim).slice(0, 5),
+        }])
+    ),
     data,
   })
   // Indexa anomalias por rota_id pra anexar nos códigos

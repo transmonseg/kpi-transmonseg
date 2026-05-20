@@ -189,7 +189,16 @@ function resolveLojaId(
     if (byCode) return byCode.id
   }
 
-  // Priority 2: levenshtein on normalized name ≤ 2
+  // Priority 2: exact nome_unitrac match (cadastrado igualzinho ao Unitrac)
+  if (parada.nome_loja) {
+    const nomeRaw = parada.nome_loja.trim()
+    const byUnitracName = redeLojas.find(
+      (l) => l.nome_unitrac && l.nome_unitrac.trim() === nomeRaw,
+    )
+    if (byUnitracName) return byUnitracName.id
+  }
+
+  // Priority 3: levenshtein on normalized name ≤ 2
   if (parada.nome_loja) {
     const normParada = normalizaNome(parada.nome_loja)
     const byName = redeLojas.find(
@@ -198,7 +207,7 @@ function resolveLojaId(
     if (byName) return byName.id
   }
 
-  // Priority 3: geo proximity
+  // Priority 4: geo proximity
   if (parada.lat != null && parada.lng != null) {
     const byGeo = redeLojas.find(
       (l) =>
