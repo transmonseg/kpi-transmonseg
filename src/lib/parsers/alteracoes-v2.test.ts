@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizaNomeMotorista, normalizaTexto } from './alteracoes-v2'
+import { normalizaNomeMotorista, normalizaTexto, segmentaBlocos } from './alteracoes-v2'
 
 describe('normalizaNomeMotorista', () => {
   it('upper + remove acentos + colapsa espaços', () => {
@@ -31,5 +31,53 @@ describe('normalizaTexto', () => {
 
   it('colapsa espaços múltiplos preservando quebras', () => {
     expect(normalizaTexto('a   b\n   c    d')).toBe('a b\nc d')
+  })
+})
+
+describe('segmentaBlocos', () => {
+  it('retorna 1 bloco quando há 1 alteração simples', () => {
+    const texto = `ALTERAÇÃO
+Prezunic Caxias
+Entra: Sidnei 674 LQE5401
+Sai: Anderson 811 LCE4337`
+    const blocos = segmentaBlocos(texto)
+    expect(blocos).toHaveLength(1)
+    expect(blocos[0]).toContain('Sidnei')
+    expect(blocos[0]).toContain('Anderson')
+  })
+
+  it('separa 2 blocos quando há 2 "Filial N"', () => {
+    const texto = `Zona Sul
+Filial 43
+Sai: Douglas LTE0A64
+Entra: Eduardo LQA5883
+Filial 23
+Sai: Eduardo LQA5883
+Entra: Douglas LTE0A64`
+    const blocos = segmentaBlocos(texto)
+    expect(blocos).toHaveLength(2)
+    expect(blocos[0]).toContain('Filial 43')
+    expect(blocos[1]).toContain('Filial 23')
+  })
+
+  it('separa blocos em linha em branco quando não há marcador explícito', () => {
+    const texto = `Princesa Catete
+Entra: A 100 AAA1B23
+
+Princesa Leme
+Entra: B 200 BBB2C34`
+    const blocos = segmentaBlocos(texto)
+    expect(blocos).toHaveLength(2)
+  })
+
+  it('expande "Filial 45/47" em 2 blocos com mesmo conteúdo', () => {
+    const texto = `Zona Sul
+Filial 45/47
+Sai: Francisco RJL7D33
+Entra: Eduardo KRK3D12`
+    const blocos = segmentaBlocos(texto)
+    expect(blocos).toHaveLength(2)
+    expect(blocos[0]).toContain('Filial 45')
+    expect(blocos[1]).toContain('Filial 47')
   })
 })
