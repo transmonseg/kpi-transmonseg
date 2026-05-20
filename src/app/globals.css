@@ -251,6 +251,53 @@ h1 {
   animation: fade-up 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Shimmer — pulsing gradient across skeleton/progress bars (indeterminate). */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0;  }
+}
+
+@utility animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-bg-hover) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Slide-in bottom-right — toast entrance. */
+@keyframes slide-in-br {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1);       }
+}
+
+@utility animate-slide-in-br {
+  animation: slide-in-br 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Indeterminate progress sweep — high-contrast loading band. */
+@keyframes progress-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%);  }
+}
+
+@utility animate-progress-sweep {
+  animation: progress-sweep 1.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+/* Pulse dot — for "edição pendente" e status ativos. */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1;   transform: scale(1);   }
+  50%      { opacity: 0.4; transform: scale(0.85); }
+}
+
+@utility animate-pulse-dot {
+  animation: pulse-dot 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 /* Subtle focus ring tied to accent token. */
 *:focus-visible {
   outline: 2px solid var(--color-accent);

@@ -139,6 +139,15 @@ export default async function HistoricoPage({
         >
           Filtrar
         </button>
+        {(dataInicio || dataFim) && (
+          <Link
+            href="/painel/historico"
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-4 text-[12px] font-medium text-[var(--color-fg-muted)] transition-all duration-150 hover:border-[var(--color-fg-muted)] hover:text-[var(--color-fg)] active:scale-[0.97]"
+          >
+            <span aria-hidden className="text-[14px] leading-none">×</span>
+            Limpar
+          </Link>
+        )}
       </form>
 
       {geracoes.length === 0 ? (

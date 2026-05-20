@@ -329,6 +329,15 @@ export default function KpiSimplesPage() {
   function addAlteracao(a: AlteracaoParsed) { setAlteracoes(prev => [...prev, a]) }
   function removeAlteracao(idx: number) { setAlteracoes(prev => prev.filter((_, i) => i !== idx)) }
 
+  // Toast de sucesso — auto-dismiss após 4s
+  const [showToast, setShowToast] = useState(false)
+  useEffect(() => {
+    if (!geracaoId) return
+    setShowToast(true)
+    const t = setTimeout(() => setShowToast(false), 4200)
+    return () => clearTimeout(t)
+  }, [geracaoId])
+
   // Reabrir geração salva via ?geracao=ID
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -521,23 +530,33 @@ export default function KpiSimplesPage() {
         </div>
       )}
 
-      {/* CTA hero — botão grande tactile */}
+      {/* CTA hero — botão grande tactile com progress sweep durante pending */}
       <button
         type="button"
         onClick={processar}
         disabled={pending || !pronto}
         className={cn(
-          'group mt-8 flex w-full items-center justify-between gap-4 rounded-[var(--radius-card)] px-7 py-5 text-left transition-all duration-200 active:scale-[0.997]',
+          'group relative mt-8 flex w-full items-center justify-between gap-4 overflow-hidden rounded-[var(--radius-card)] px-7 py-5 text-left transition-all duration-200 active:scale-[0.997]',
           pronto && !pending
             ? 'bg-[var(--color-navy-700)] text-white hover:opacity-90'
-            : 'cursor-not-allowed bg-[var(--color-bg-subtle)] border border-[var(--color-border)] text-[var(--color-fg-muted)]'
+            : pending
+              ? 'bg-[var(--color-navy-700)] text-white'
+              : 'cursor-not-allowed bg-[var(--color-bg-subtle)] border border-[var(--color-border)] text-[var(--color-fg-muted)]'
         )}
       >
+        {/* Progress sweep band — só durante pending */}
+        {pending && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute bottom-0 left-0 h-[3px] w-1/4 bg-white/80 animate-progress-sweep"
+            style={{ filter: 'blur(0.3px)' }}
+          />
+        )}
         <div className="flex flex-col gap-1">
           <span
             className={cn(
               'text-[11px] font-medium uppercase tracking-[0.18em]',
-              pronto && !pending
+              pronto || pending
                 ? 'text-white/60'
                 : 'text-[var(--color-fg-muted)]'
             )}
@@ -546,7 +565,7 @@ export default function KpiSimplesPage() {
           </span>
           <span className="text-[18px] font-semibold tracking-tight">
             {pending
-              ? 'Processando arquivos…'
+              ? 'Cruzando escala com Unitrac…'
               : pronto
                 ? `Gerar agora${escalas.length > 1 ? ` · ${escalas.length} escalas` : ''}${alteracoes.length > 0 ? ` · ${alteracoes.length} alt.` : ''}`
                 : 'Aguardando arquivos'}
@@ -560,9 +579,40 @@ export default function KpiSimplesPage() {
           />
         )}
         {pending && (
-          <div className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent" aria-hidden />
+          <span className="flex items-center gap-1.5" aria-hidden>
+            <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse-dot" style={{ animationDelay: '0ms' }} />
+            <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse-dot" style={{ animationDelay: '180ms' }} />
+            <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse-dot" style={{ animationDelay: '360ms' }} />
+          </span>
         )}
       </button>
+
+      {/* Skeleton state — durante pending, mostra placeholder das redes */}
+      {pending && (
+        <div className="mt-12 space-y-4 animate-fade-up">
+          {[0, 1, 2].map(i => (
+            <div
+              key={i}
+              className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5"
+              style={{ animationDelay: `${i * 120}ms` }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-2">
+                  <div className="h-3 w-24 rounded animate-shimmer" />
+                  <div className="h-2 w-40 rounded animate-shimmer" />
+                </div>
+                <div className="h-7 w-20 rounded-md animate-shimmer" />
+              </div>
+              <div className="mt-4 h-px bg-[var(--color-border)]" />
+              <div className="mt-3 space-y-2">
+                {[0, 1, 2].map(j => (
+                  <div key={j} className="h-7 rounded animate-shimmer" style={{ animationDelay: `${j * 60}ms` }} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Empty result */}
       {redes && redes.length === 0 && (
@@ -593,31 +643,64 @@ export default function KpiSimplesPage() {
                   type="button"
                   onClick={regenerar}
                   disabled={pending}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-[var(--color-navy-700)] px-3.5 py-2 text-[12px] font-semibold text-white transition-opacity duration-150 hover:opacity-90 disabled:opacity-50 active:scale-[0.97]"
+                  className="group relative inline-flex items-center gap-2 rounded-md bg-[var(--color-navy-700)] px-3.5 py-2 text-[12px] font-semibold text-white transition-all duration-200 hover:opacity-90 disabled:opacity-50 active:scale-[0.97]"
                 >
-                  <ArrowClockwise size={13} weight="bold" />
+                  <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden>
+                    <span className="absolute inset-0 rounded-full bg-white animate-pulse-dot" />
+                    <span className="relative h-1.5 w-1.5 rounded-full bg-white" />
+                  </span>
+                  <ArrowClockwise size={13} weight="bold" className="transition-transform duration-300 group-hover:rotate-90" />
                   Re-gerar · {Object.keys(lineEdits).length} edit{Object.keys(lineEdits).length !== 1 ? 's' : ''}
                 </button>
               )}
             </div>
           </div>
 
-          {geracaoId && (
-            <p className="text-[11px] text-[var(--color-success)]">
-              Salvo no histórico (#{geracaoId.slice(0, 8)})
-            </p>
-          )}
-
-          {redes.map(r => (
-            <RedePreviewSection
+          {redes.map((r, idx) => (
+            <div
               key={r.rede_id}
-              rede={r}
-              data={data}
-              lineEdits={lineEdits}
-              onLineEdit={handleLineEdit}
-            />
+              className="animate-fade-up"
+              style={{ animationDelay: `${idx * 80}ms` }}
+            >
+              <RedePreviewSection
+                rede={r}
+                data={data}
+                lineEdits={lineEdits}
+                onLineEdit={handleLineEdit}
+              />
+            </div>
           ))}
         </section>
+      )}
+
+      {/* Toast de sucesso — slide-in bottom-right, auto-dismiss 4s */}
+      {showToast && geracaoId && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--color-success)]/30 bg-[var(--color-bg-elevated)] px-4 py-3 shadow-diffusion animate-slide-in-br max-w-[360px]"
+        >
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="absolute inset-0 rounded-full bg-[var(--color-success)] animate-pulse-dot" />
+            <span className="relative h-2 w-2 rounded-full bg-[var(--color-success)]" />
+          </span>
+          <div className="flex flex-col">
+            <span className="text-[12px] font-semibold text-[var(--color-fg)]">
+              Geração salva no histórico
+            </span>
+            <span className="text-numeric text-[10.5px] text-[var(--color-fg-subtle)]">
+              #{geracaoId.slice(0, 8)} · {redes?.length ?? 0} rede{redes?.length === 1 ? '' : 's'}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowToast(false)}
+            aria-label="Fechar"
+            className="ml-2 text-[var(--color-fg-subtle)] transition-colors hover:text-[var(--color-fg)]"
+          >
+            <X size={12} weight="bold" />
+          </button>
+        </div>
       )}
     </div>
   )
@@ -892,16 +975,19 @@ function PreviewRow({
       title={linha.anomalias.length > 0 ? `Anomalias: ${linha.anomalias.join(', ')}` : undefined}
     >
       <td className="px-4 py-2 text-numeric text-[var(--color-fg-subtle)] relative">
-        {linha.ordem}
-        {linha.confianca !== 'HIGH' && (
+        <span className="flex items-center gap-1.5">
           <span
             aria-hidden
+            title={linha.confianca === 'HIGH' ? `Match alta confiança via ${linha.algoritmo}` : linha.confianca === 'LOW' ? `Match baixa confiança via ${linha.algoritmo}` : 'Sem match GPS'}
             className={cn(
-              'absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[2px] rounded-r',
-              linha.confianca === 'LOW' ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-danger)]',
+              'h-1.5 w-1.5 shrink-0 rounded-full',
+              linha.confianca === 'HIGH' && 'bg-[var(--color-success)]',
+              linha.confianca === 'LOW' && 'bg-[var(--color-warning)]',
+              linha.confianca === 'UNMATCHED' && 'bg-[var(--color-danger)] animate-pulse-dot',
             )}
           />
-        )}
+          {linha.ordem}
+        </span>
       </td>
       <td className="px-4 py-2 font-medium text-[var(--color-fg)] max-w-[220px]">
         <input
