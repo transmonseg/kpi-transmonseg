@@ -46,8 +46,14 @@ function parseTitulo(s: string): { ano: number; mes: number; dia: number } | nul
 }
 
 function isHeaderRow(s: string): boolean {
-  const n = s.toUpperCase()
-  return n.includes('ARMAZ') && (n.includes('GRAO') || n.includes('GRÃO')) && /\d{1,2}\/\d{1,2}\/\d{4}/.test(s)
+  const n = s.toUpperCase().trim()
+  // Linha do título "ARMAZÉM DO GRÃO 19/05/2026"
+  if (n.includes('ARMAZ') && (n.includes('GRAO') || n.includes('GRÃO')) && /\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) return true
+  // Linha do cabeçalho de colunas "REDES - FILIAS" (variações com acento e traço)
+  if (/^REDES\s*[-–—]?\s*FILI/i.test(n)) return true
+  // Outras palavras de header que aparecem na col 1
+  if (n === 'TOTAL' || n === 'MOTORISTA' || n === 'PLACA' || n === 'COD' || n === 'CARRO') return true
+  return false
 }
 
 export async function parseEscalaArmazemGrao(
