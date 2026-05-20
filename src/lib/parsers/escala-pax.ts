@@ -170,11 +170,13 @@ export async function parseEscalaPax(
 
     const tabDate = tabToDate(ws.name, ano, mes)
     if (!tabDate) continue
-    if (dataAlvo && tabDate !== dataAlvo) continue
 
     let currentRede: RedeId | null = null
     let currentDataEntrega: string = tabDate
     let currentDataTab: string = tabDate
+    // Filial-format files have the real date in the section header (col7).
+    // Day-format files have no date in col7 and use the tab name as the day.
+    let skipSection = false
 
     ws.eachRow((row, rowNumber) => {
       const col4 = row.getCell(4)
@@ -185,18 +187,22 @@ export async function parseEscalaPax(
       // Section header detection
       if (SECTION_HEADERS.has(raw4)) {
         currentRede = HEADER_TO_REDE[raw4]
-        if (raw4 === 'FEIRA NOVA') {
-          const dateCell = row.getCell(7)
-          const d = dateVal(dateCell)
-          currentDataEntrega = d ? formataDataISO(d) : tabDate
+        const dateCell = row.getCell(7)
+        const d = dateVal(dateCell)
+        if (d && d.getFullYear() >= 2020) {
+          // Filial-format: date is in the section header row
+          currentDataEntrega = formataDataISO(d)
           currentDataTab = currentDataEntrega
         } else {
+          // Day-format: derive date from tab name
           currentDataEntrega = tabDate
           currentDataTab = tabDate
         }
+        skipSection = dataAlvo != null && currentDataTab !== dataAlvo
         return
       }
 
+      if (skipSection) return
       if (!currentRede) return
       if (SKIP_VALUES.has(raw4)) return
 
