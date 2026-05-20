@@ -1,3 +1,5 @@
+import type { ParseContext } from './alteracoes-v2.types'
+
 export function normalizaNomeMotorista(s: string | null | undefined): string {
   if (!s) return ''
   return s
@@ -166,4 +168,87 @@ export function detectaSentido(blocoNormalizado: string): SentidoExtraido {
   }
 
   return { sai, entra }
+}
+
+const REDE_MAP: Array<{ pat: string; id: string }> = [
+  { pat: 'prezunic', id: 'PREZUNIC' },
+  { pat: 'princesa', id: 'PRINCESA' },
+  { pat: 'carrefour', id: 'CARREFOUR' },
+  { pat: 'assa', id: 'ASSAI' },
+  { pat: 'atacad', id: 'ATACADAO' },
+  { pat: 'super prix', id: 'SUPERPRIX' },
+  { pat: 'superprix', id: 'SUPERPRIX' },
+  { pat: "sam's", id: 'SAMS_CLUB' },
+  { pat: 'sams club', id: 'SAMS_CLUB' },
+  { pat: 'vianen', id: 'VIANENSE' },
+  { pat: 'sendas', id: 'SENDAS' },
+  { pat: 'guanabara', id: 'GUANABARA' },
+  { pat: 'super pax', id: 'SUPER_PAX' },
+  { pat: 'superpax', id: 'SUPER_PAX' },
+  { pat: 'feira nova', id: 'FEIRA_NOVA' },
+  { pat: 'emanuel', id: 'EMANUEL' },
+  { pat: 'armaz', id: 'ARMAZEM_GRAO' },
+  { pat: 'zona sul', id: 'ZONA_SUL' },
+  { pat: 'mega box', id: 'ZONA_SUL' },
+]
+
+const FILIAL_NUM_RE = /Filial\s+(\d+)/i
+const MOTIVO_LABEL_RE = /^\s*(?:motivo|obs)\s*\.?\s*[:]?\s*(.+)$/i
+const QUEBROU_RE = /(carro\s+quebrou|pneu\s+furou|caminh[aã]o\s+quebrou|bateria\s+ruim|teclado\s+apagou|troca\s+de\s+carro|acidente|passou\s+mal|folga|falta)/i
+
+export interface ContextoExtraido {
+  rede_id: string | null
+  loja_nome_raw: string | null
+  filial: number | null
+  motivo: string | null
+}
+
+export function detectaContexto(
+  blocoNormalizado: string,
+  lojas: ParseContext['lojas'],
+): ContextoExtraido {
+  const linhas = blocoNormalizado.split('\n').map((l) => l.trim()).filter(Boolean)
+
+  let rede_id: string | null = null
+  const blocoLower = blocoNormalizado.toLowerCase()
+  for (const { pat, id } of REDE_MAP) {
+    if (blocoLower.includes(pat)) { rede_id = id; break }
+  }
+
+  let filial: number | null = null
+  const mFilial = FILIAL_NUM_RE.exec(blocoNormalizado)
+  if (mFilial) filial = parseInt(mFilial[1], 10)
+
+  let loja_nome_raw: string | null = null
+  for (const linha of linhas) {
+    if (/^sai[uo]?\s*:/i.test(linha)) continue
+    if (/^entr[ao]u?\s*:/i.test(linha)) continue
+    if (MOTIVO_LABEL_RE.test(linha)) continue
+    if (FILIAL_NUM_RE.test(linha) && !linha.match(/sai|entra/i)) {
+      loja_nome_raw = linha
+      continue
+    }
+    const lower = linha.toLowerCase()
+    if (rede_id) {
+      const matches = REDE_MAP.find((r) => r.id === rede_id && lower.includes(r.pat))
+      if (matches) { loja_nome_raw = linha; break }
+    } else {
+      const matches = REDE_MAP.find((r) => lower.includes(r.pat))
+      if (matches) { loja_nome_raw = linha; break }
+    }
+  }
+  // silenciar lojas: argumento exigido pela assinatura, uso futuro em lookupSlot
+  void lojas
+
+  let motivo: string | null = null
+  for (const linha of linhas) {
+    const m = MOTIVO_LABEL_RE.exec(linha)
+    if (m) { motivo = m[1].replace(/^[.:\-\s]+/, '').trim(); break }
+  }
+  if (!motivo) {
+    const mQ = QUEBROU_RE.exec(blocoNormalizado)
+    if (mQ) motivo = mQ[1]
+  }
+
+  return { rede_id, loja_nome_raw, filial, motivo }
 }

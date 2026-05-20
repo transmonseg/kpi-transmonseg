@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizaNomeMotorista, normalizaTexto, segmentaBlocos, extraiTokens, detectaSentido } from './alteracoes-v2'
+import { normalizaNomeMotorista, normalizaTexto, segmentaBlocos, extraiTokens, detectaSentido, detectaContexto } from './alteracoes-v2'
 
 describe('normalizaNomeMotorista', () => {
   it('upper + remove acentos + colapsa espaços', () => {
@@ -133,5 +133,44 @@ Entra : B LQE5401`
     const r = detectaSentido('Só placa LQE5401 sem contexto')
     expect(r.sai).toBeNull()
     expect(r.entra).toBeNull()
+  })
+})
+
+const lojasCtx = [
+  { rede_id: 'ZONA_SUL', nome: 'Zona Sul Loja 43', nome_norm: 'ZONA SUL LOJA 43', codigo_escala: '43' },
+  { rede_id: 'ASSAI', nome: 'ASSAI - CAXIAS I - LOJA 131', nome_norm: 'ASSAI CAXIAS I LOJA 131', codigo_escala: '131' },
+]
+
+describe('detectaContexto', () => {
+  it('detecta rede por substring', () => {
+    const r = detectaContexto('Assai Caxias troca de carro', lojasCtx)
+    expect(r.rede_id).toBe('ASSAI')
+  })
+
+  it('detecta filial por número', () => {
+    const r = detectaContexto('Zona Sul\nFilial 43\nSai: X', lojasCtx)
+    expect(r.filial).toBe(43)
+    expect(r.rede_id).toBe('ZONA_SUL')
+  })
+
+  it('detecta loja por match com cadastro', () => {
+    const r = detectaContexto('Assai - Caxias I - Loja 131\nSai: X', lojasCtx)
+    expect(r.rede_id).toBe('ASSAI')
+    expect(r.loja_nome_raw).toContain('Caxias')
+  })
+
+  it('extrai motivo de linha "Motivo:"', () => {
+    const r = detectaContexto('Assai\nMotivo: pneu furou', lojasCtx)
+    expect(r.motivo).toBe('pneu furou')
+  })
+
+  it('extrai motivo de linha "Obs:"', () => {
+    const r = detectaContexto('Assai\nObs: troca de carro', lojasCtx)
+    expect(r.motivo).toBe('troca de carro')
+  })
+
+  it('extrai motivo no fim da mensagem (sem label)', () => {
+    const r = detectaContexto('Assai sai X entra Y carro quebrou', lojasCtx)
+    expect(r.motivo).toContain('carro quebrou')
   })
 })
