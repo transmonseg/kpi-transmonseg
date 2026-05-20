@@ -2,6 +2,23 @@
   "name": "kpi-transmonseg",
   "version": "0.1.0",
   "private": true,
+  "description": "Sistema de geração e gestão de KPI de entregas da TRANSMONSEG: parsers de escala (5 redes), matcher com relatório Unitrac, geração de XLSX/PDF, alterações de motorista/placa e histórico auditável.",
+  "author": "Joaquim Salles",
+  "homepage": "https://kpi-transmonseg.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/transmonseg/kpi-transmonseg.git"
+  },
+  "keywords": [
+    "kpi",
+    "logistica",
+    "transmonseg",
+    "escala",
+    "unitrac",
+    "nextjs",
+    "supabase",
+    "typescript"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
