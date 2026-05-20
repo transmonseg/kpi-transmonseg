@@ -156,6 +156,20 @@ export async function POST(req: NextRequest) {
     })
     .eq('id', kpi_id)
 
+  await svc.from('kpi_geracoes').insert({
+    kpi_id: kpi_id,
+    evento: 'gerar',
+    gerada_por: user.id,
+    xlsx_path: xlsxPath,
+    pdf_path: pdfPath,
+    status: 'finalizada',
+    payload_json: {
+      rede_id: kpi.rede_id,
+      data: kpi.data,
+      skip_consolida: skip_consolida ?? false,
+    },
+  })
+
   return NextResponse.json({
     xlsx_url: xlsxSigned.data?.signedUrl ?? null,
     pdf_url: pdfSigned.data?.signedUrl ?? null,

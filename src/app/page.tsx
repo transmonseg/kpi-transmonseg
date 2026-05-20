@@ -7,6 +7,7 @@ import {
   ShieldCheck,
   WaveTriangle,
   CheckCircle,
+  PencilSimpleLine,
 } from '@phosphor-icons/react/dist/ssr'
 import { createClient } from '@/lib/supabase/server'
 import { ThemeToggle } from '@/lib/theme/ThemeToggle'
@@ -157,6 +158,13 @@ export default async function HomePage() {
             title="XLSX + PDF por rede."
             description="Cabeçalho navy oficial, fonte Calibri, layout pronto pra cliente. Já formatado."
           />
+          <FeatureCard
+            className="md:col-span-12"
+            eyebrow="04 · Edição & Histórico"
+            icon={<PencilSimpleLine weight="duotone" size={24} />}
+            title="Revisar, editar e reprocessar — sem perder histórico."
+            description="Edite motorista, placa, horários diretamente na tabela de revisão. Marque rotas como sem entrega. Aplique alterações coladas de WhatsApp. Cada geração fica salva no histórico — baixe versões anteriores quando quiser."
+          />
         </div>
       </section>
 
@@ -220,9 +228,9 @@ export default async function HomePage() {
 
 function ProofBento() {
   const stats = [
-    { value: '17', label: 'redes suportadas', hint: 'Assaí, Carrefour, Sendas, Princesa, Guanabara, +12' },
-    { value: '< 30s', label: 'pra gerar', hint: 'da escala ao XLSX pronto' },
-    { value: '3 sev', label: 'de anomalia', hint: 'HIGH, MEDIUM, LOW' },
+    { value: '15+', label: 'redes suportadas', hint: 'Assaí, Carrefour, Sendas, Princesa, Guanabara, Zona Sul, +9' },
+    { value: '< 30s', label: 'pra gerar', hint: 'da escala ao XLSX/PDF pronto, com anomalias detectadas' },
+    { value: '11', label: 'tipos de anomalia', hint: 'sem rastreador, GPS inválido, fora janela, tempo excessivo, +7' },
   ]
 
   return (

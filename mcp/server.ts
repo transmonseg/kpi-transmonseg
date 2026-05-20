@@ -348,7 +348,6 @@ server.registerTool(
         const { data: up, error: upErr } = await supabase.from('unitrac_uploads').insert({
           data_relatorio: data,
           arquivo_path: unitracPath,
-          nome_arquivo: unitracPath.split(/[\/\\]/).pop(),
           qtd_abas: veiculos.length,
           qtd_paradas: totalParadas,
           status: 'processado',

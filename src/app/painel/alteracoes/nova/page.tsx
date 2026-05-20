@@ -1,4 +1,4 @@
-import { AlteracaoForm } from './form'
+import { AlteracoesV2Form } from './AlteracoesV2Form'
 
 export const metadata = { title: 'Nova alteração — Transmonseg' }
 
@@ -15,7 +15,7 @@ export default function NovaAlteracaoPage() {
         </p>
       </header>
 
-      <AlteracaoForm />
+      <AlteracoesV2Form />
     </div>
   )
 }

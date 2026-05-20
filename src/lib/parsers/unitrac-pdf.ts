@@ -70,19 +70,28 @@ function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: str
 }
 
 function computeSaidaCd(paradas: ParadaUnitrac[]): Date | null {
+  // Localiza a primeira LOJA (destino real de entrega)
+  const primeiraLojaIdx = paradas.findIndex(p => p.classificacao === 'LOJA')
+  if (primeiraLojaIdx === -1) return null
+
+  // Procura o último BASE antes da primeira LOJA.
+  // O padrão antigo (retornar no 1º FORA_BASE) quebrava trucks com sequência
+  // FORA_BASE → BASE → LOJA, que é comum quando o GPS já estava ligado antes
+  // do caminhão entrar no pátio do CD.
   let lastBaseSaida: Date | null = null
-  for (const p of paradas) {
+  for (let i = 0; i < primeiraLojaIdx; i++) {
+    const p = paradas[i]
     const isBase =
       p.classificacao === 'BASE' ||
       (p.classificacao === 'FAKE_EXIT' && p.local_parada.startsWith(BASE_LOCAL_SHORT))
-    if (isBase) {
-      lastBaseSaida = p.saida
-      continue
-    }
-    if (p.classificacao === 'FAKE_EXIT') continue
-    return lastBaseSaida
+    if (isBase) lastBaseSaida = p.saida
   }
-  return null
+
+  // Se não passou pelo CD neste período (já estava na rua desde a meia-noite),
+  // usa a chegada na primeira loja como proxy do horário de saída do CD.
+  if (!lastBaseSaida) return paradas[primeiraLojaIdx].chegada
+
+  return lastBaseSaida
 }
 
 // pdf-parse v1 (pdfjs-dist v2) extrai texto SEM espaços entre fragmentos adjacentes
