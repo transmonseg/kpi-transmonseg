@@ -92,3 +92,47 @@ export function segmentaBlocos(textoNormalizado: string): string[] {
     )
   })
 }
+
+const PLACA_RE_GLOBAL = /\b([A-Z]{3})[\s-]?(\d[A-Z0-9]\d{2}|\d{4})\b/gi
+const CODIGO_RE_GLOBAL = /(?<![A-Z0-9])(\d{3,6})(?![A-Z0-9])/g
+
+export interface TokensExtraidos {
+  placas: string[]
+  codigos: number[]
+  textoSemTokens: string
+}
+
+export function extraiTokens(trecho: string): TokensExtraidos {
+  if (!trecho) return { placas: [], codigos: [], textoSemTokens: '' }
+
+  const placas: string[] = []
+  const placasFound: string[] = []
+
+  let textoSem = trecho
+  let m: RegExpExecArray | null
+  const placaRe = new RegExp(PLACA_RE_GLOBAL.source, 'gi')
+  while ((m = placaRe.exec(trecho)) !== null) {
+    const placaNorm = (m[1] + m[2]).toUpperCase()
+    if (!placas.includes(placaNorm)) placas.push(placaNorm)
+    placasFound.push(m[0])
+  }
+  for (const p of placasFound) {
+    textoSem = textoSem.replace(p, ' ')
+  }
+
+  const codigos: number[] = []
+  const codRe = new RegExp(CODIGO_RE_GLOBAL.source, 'g')
+  while ((m = codRe.exec(textoSem)) !== null) {
+    const n = parseInt(m[1], 10)
+    if (!isNaN(n) && !codigos.includes(n)) codigos.push(n)
+  }
+  for (const n of codigos) {
+    textoSem = textoSem.replace(new RegExp(`\\b${n}\\b`, 'g'), ' ')
+  }
+
+  return {
+    placas,
+    codigos,
+    textoSemTokens: textoSem.replace(/\s+/g, ' ').trim(),
+  }
+}

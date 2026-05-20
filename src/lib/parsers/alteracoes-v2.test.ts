@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizaNomeMotorista, normalizaTexto, segmentaBlocos } from './alteracoes-v2'
+import { normalizaNomeMotorista, normalizaTexto, segmentaBlocos, extraiTokens } from './alteracoes-v2'
 
 describe('normalizaNomeMotorista', () => {
   it('upper + remove acentos + colapsa espaços', () => {
@@ -79,5 +79,28 @@ Entra: Eduardo KRK3D12`
     expect(blocos).toHaveLength(2)
     expect(blocos[0]).toContain('Filial 45')
     expect(blocos[1]).toContain('Filial 47')
+  })
+})
+
+describe('extraiTokens', () => {
+  it('extrai placa formato antigo e Mercosul', () => {
+    expect(extraiTokens('Sidnei 674 LQE5401').placas).toEqual(['LQE5401'])
+    expect(extraiTokens('Anderson LCE4337').placas).toEqual(['LCE4337'])
+    expect(extraiTokens('placa KQR2J11').placas).toEqual(['KQR2J11'])
+    expect(extraiTokens('eyl 8b91').placas).toEqual(['EYL8B91'])
+  })
+
+  it('extrai códigos sem confundir com placas', () => {
+    const r = extraiTokens('Sidnei 674 LQE5401')
+    expect(r.codigos).toEqual([674])
+  })
+
+  it('ignora códigos de 1-2 dígitos', () => {
+    expect(extraiTokens('cod 5').codigos).toEqual([])
+  })
+
+  it('extrai placa quando vem com hífen ou espaço', () => {
+    expect(extraiTokens('UBO 5E05').placas).toEqual(['UBO5E05'])
+    expect(extraiTokens('UBO-5E05').placas).toEqual(['UBO5E05'])
   })
 })
