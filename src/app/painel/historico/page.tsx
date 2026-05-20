@@ -18,6 +18,9 @@ type RedeResumo = {
   rede_nome: string
   qtd_rotas: number
   qtd_sem_gps: number
+  qtd_anomalias_high?: number
+  qtd_anomalias_medium?: number
+  qtd_anomalias_low?: number
 }
 
 type GeracaoRow = {
@@ -173,6 +176,7 @@ export default async function HistoricoPage({
                 <Th>Redes</Th>
                 <Th align="right">Rotas</Th>
                 <Th align="right">Sem GPS</Th>
+                <Th align="right">Anomalias</Th>
                 <Th>Gerado</Th>
                 <Th align="right">Ação</Th>
               </tr>
@@ -213,6 +217,34 @@ export default async function HistoricoPage({
                     <span className={cn('text-numeric text-[13px]', g.total_sem_gps > 0 ? 'text-[var(--color-warning)]' : 'text-[var(--color-fg-subtle)]')}>
                       {g.total_sem_gps}
                     </span>
+                  </Td>
+                  <Td align="right">
+                    {(() => {
+                      const high = g.redes.reduce((s, r) => s + (r.qtd_anomalias_high ?? 0), 0)
+                      const med = g.redes.reduce((s, r) => s + (r.qtd_anomalias_medium ?? 0), 0)
+                      const low = g.redes.reduce((s, r) => s + (r.qtd_anomalias_low ?? 0), 0)
+                      const total = high + med + low
+                      if (total === 0) return <span className="text-[12px] text-[var(--color-fg-subtle)]">limpo</span>
+                      return (
+                        <span className="inline-flex items-center gap-1">
+                          {high > 0 && (
+                            <span className="inline-flex h-5 items-center gap-1 rounded border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-1.5 text-[10px] font-semibold text-[var(--color-danger-soft-fg)]">
+                              <span className="text-numeric">{high}</span>H
+                            </span>
+                          )}
+                          {med > 0 && (
+                            <span className="inline-flex h-5 items-center gap-1 rounded border border-[var(--color-warning)]/30 bg-[var(--color-warning-soft)] px-1.5 text-[10px] font-semibold text-[var(--color-warning-soft-fg)]">
+                              <span className="text-numeric">{med}</span>M
+                            </span>
+                          )}
+                          {low > 0 && (
+                            <span className="inline-flex h-5 items-center gap-1 rounded border border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-1.5 text-[10px] font-medium text-[var(--color-fg-muted)]">
+                              <span className="text-numeric">{low}</span>L
+                            </span>
+                          )}
+                        </span>
+                      )
+                    })()}
                   </Td>
                   <Td>
                     <span className="text-numeric text-[12px] text-[var(--color-fg-muted)]">

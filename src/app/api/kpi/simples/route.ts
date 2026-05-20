@@ -339,11 +339,21 @@ export async function POST(req: NextRequest) {
   })
   // Indexa anomalias por rota_id pra anexar nos códigos
   const anomaliasPorRota = new Map<string, string[]>()
+  // Agrega contagem por rede e severidade pra persistir no summary
+  const anomaliasPorRede: Record<string, { high: number; medium: number; low: number }> = {}
   for (const a of anomalias) {
-    if (!a.kpi_rota_id) continue
-    const cur = anomaliasPorRota.get(a.kpi_rota_id) ?? []
-    cur.push(a.codigo)
-    anomaliasPorRota.set(a.kpi_rota_id, cur)
+    if (a.kpi_rota_id) {
+      const cur = anomaliasPorRota.get(a.kpi_rota_id) ?? []
+      cur.push(a.codigo)
+      anomaliasPorRota.set(a.kpi_rota_id, cur)
+    }
+    // Localiza rede via escala_linha_id (que é o kpi_rota_id no fluxo simples)
+    const rota = a.kpi_rota_id ? rotas.find(r => r.escala_linha_id === a.kpi_rota_id) : null
+    const redeKey = rota?.rede_id ?? '_extra'
+    if (!anomaliasPorRede[redeKey]) anomaliasPorRede[redeKey] = { high: 0, medium: 0, low: 0 }
+    if (a.severidade === 'HIGH') anomaliasPorRede[redeKey].high++
+    else if (a.severidade === 'MEDIUM') anomaliasPorRede[redeKey].medium++
+    else anomaliasPorRede[redeKey].low++
   }
   for (const rota of rotas) {
     const codigos = anomaliasPorRota.get(rota.escala_linha_id)
@@ -445,11 +455,16 @@ export async function POST(req: NextRequest) {
         gerarKpiPdf({ rede_id, rede_nome, data, linhas: linhas as KpiLinha[] }),
       ])
 
+      const anomCounts = anomaliasPorRede[rede_id] ?? { high: 0, medium: 0, low: 0 }
+
       return {
         rede_id,
         rede_nome,
         qtd_rotas: linhas.length,
         qtd_sem_gps,
+        qtd_anomalias_high: anomCounts.high,
+        qtd_anomalias_medium: anomCounts.medium,
+        qtd_anomalias_low: anomCounts.low,
         xlsxBase64: xlsxBuffer.toString('base64'),
         pdfBase64: pdfBuffer.toString('base64'),
         preview,
@@ -465,6 +480,9 @@ export async function POST(req: NextRequest) {
       rede_nome: r.rede_nome,
       qtd_rotas: r.qtd_rotas,
       qtd_sem_gps: r.qtd_sem_gps,
+      qtd_anomalias_high: r.qtd_anomalias_high,
+      qtd_anomalias_medium: r.qtd_anomalias_medium,
+      qtd_anomalias_low: r.qtd_anomalias_low,
     }))
     const total_rotas = results.reduce((s, r) => s + r.qtd_rotas, 0)
     const total_sem_gps = results.reduce((s, r) => s + r.qtd_sem_gps, 0)
