@@ -9,7 +9,8 @@ import { AlteracaoCard } from './AlteracaoCard'
 interface AplicarResult {
   aplicados: number
   erros: Array<{ idx: number; msg: string }>
-  redes_reprocessadas: string[]
+  redes_afetadas: string[]
+  blocos_aplicados_em_escala: number
 }
 
 const PLACEHOLDER = `Cole aqui a mensagem do WhatsApp:
@@ -142,10 +143,17 @@ export function AlteracoesV2Form() {
             <div className="rounded-md bg-[var(--color-success-soft)] text-[var(--color-success-soft-fg)] px-3 py-2 text-[12px] flex items-center gap-2">
               <Check size={14} weight="bold" />
               <span>
-                {resultado.aplicados} aplicada(s){' '}
-                {resultado.redes_reprocessadas.length > 0 && (
-                  <>· KPI reprocessado: {resultado.redes_reprocessadas.join(', ')}</>
+                {resultado.aplicados} alteração(ões) salva(s){' '}
+                {resultado.blocos_aplicados_em_escala > 0 && (
+                  <>· {resultado.blocos_aplicados_em_escala} linha(s) de escala atualizada(s)</>
                 )}
+                {resultado.redes_afetadas?.length > 0 && (
+                  <>· Redes: {resultado.redes_afetadas.join(', ')}</>
+                )}
+                <br />
+                <span className="text-[11px] opacity-80">
+                  Agora gere o KPI em /painel/kpi/simples na data {data} — as alterações serão aplicadas automaticamente.
+                </span>
               </span>
             </div>
           ) : (

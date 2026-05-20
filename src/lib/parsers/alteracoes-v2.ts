@@ -32,7 +32,22 @@ export function normalizaTexto(texto: string): string {
 
 const FILIAL_RANGE_RE = /Filial\s+(\d+)\s*\/\s*(\d+)/i
 const FILIAL_RE = /^\s*Filial\s+\d+\s*$/i
-const ALTERACAO_RE = /^\s*(?:ALTERA[ÇC][AÃ]O|COMUNICADO)\s*[:\-]?/i
+const ALTERACAO_RE = /^\s*(?:ALTERA[ÇC][AÃ]O|COMUNICADO|SUBSTITUI[ÇC][AÃ]O)\s*[:\-]?/i
+
+// Linhas que indicam INÍCIO de uma nova alteração (não devem continuar bloco anterior)
+const INICIO_BLOCO_RE = new RegExp(
+  '^(?:' +
+  '\\s*🚨|' +  // emoji bandeira
+  '\\s*(?:ALTERA[ÇC][AÃ]O|COMUNICADO|SUBSTITUI[ÇC][AÃ]O)\\b|' +
+  '\\s*Filial\\s+\\d|' +
+  // Nome de rede (potencial título de loja)
+  '\\s*(?:ASSA[IÍ]|PREZUNIC|CARREFOUR|SUPERPRIX|SENDAS|ZONA\\s*SUL|ARMAZ[EÉ]M|PRINCESA|GUANABARA|SUPER\\s*PAX|EMANUEL|FEIRA\\s*NOVA|ATACAD[AÃ]O|VIANENSE|SAM\\\'?S|MUNDIAL|CAB\\b)' +
+  ')',
+  'i',
+)
+
+// Linhas que CONTINUAM o bloco anterior (entra/sai/etc)
+const CONTINUACAO_RE = /^\s*(?:sai|entra|saiu|entrou|cod|c[óo]digo|placa|motivo|obs|observa[çc][aã]o|carro|motorista|troca\s+de\s+carro)\s*[:\-]?/i
 
 function expandeFilialRange(bloco: string): string[] {
   const linhas = bloco.split('\n')
@@ -56,9 +71,21 @@ export function segmentaBlocos(textoNormalizado: string): string[] {
 
   const linhas = textoNormalizado.split('\n')
 
-  // Segmenta em blocos por marcadores (Filial N, ALTERAÇÃO/COMUNICADO, linha em branco)
+  // Segmenta em blocos por marcadores de INÍCIO (Filial N, ALTERAÇÃO, nome
+  // de rede). Linhas em branco SÓ quebram bloco se a próxima linha não-vazia
+  // for outro início — caso contrário são separadores internos (entre Entra
+  // e Sai por exemplo).
   const blocos: string[] = []
   let buffer: string[] = []
+
+  // Encontra próxima linha não-vazia a partir de um índice
+  const proximaNaoVazia = (idx: number): string | null => {
+    for (let j = idx + 1; j < linhas.length; j++) {
+      const t = linhas[j].trim()
+      if (t) return t
+    }
+    return null
+  }
 
   for (let i = 0; i < linhas.length; i++) {
     const linha = linhas[i]
@@ -66,16 +93,27 @@ export function segmentaBlocos(textoNormalizado: string): string[] {
 
     const ehFilial = FILIAL_RE.test(linha)
     const ehAlteracao = ALTERACAO_RE.test(linha)
+    const ehInicioRede = INICIO_BLOCO_RE.test(linha) && !CONTINUACAO_RE.test(linha)
     const ehVazia = trimmed === ''
 
-    if ((ehFilial || ehAlteracao || ehVazia) && buffer.length > 0) {
+    // Linha vazia: só quebra se a próxima linha não-vazia for início de novo bloco
+    if (ehVazia && buffer.length > 0) {
+      const prox = proximaNaoVazia(i)
+      if (prox && INICIO_BLOCO_RE.test(prox) && !CONTINUACAO_RE.test(prox)) {
+        blocos.push(buffer.join('\n').trim())
+        buffer = []
+      }
+      // senão: é separador interno (entre Entra/Sai) — ignora a linha vazia
+      continue
+    }
+
+    // Marcador explícito de novo bloco quebra
+    if ((ehFilial || ehAlteracao || ehInicioRede) && buffer.length > 0) {
       blocos.push(buffer.join('\n').trim())
       buffer = []
     }
 
-    if (!ehVazia) {
-      buffer.push(linha)
-    }
+    buffer.push(linha)
   }
   if (buffer.length > 0) {
     blocos.push(buffer.join('\n').trim())
