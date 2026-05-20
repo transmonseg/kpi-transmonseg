@@ -8,6 +8,7 @@ import {
   CaretDown,
   PencilSimpleLine,
   DotsThreeVertical,
+  ClockClockwise,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Badge,
@@ -89,6 +90,23 @@ type KpiDetalhe = {
 }
 
 type FiltroLinhas = 'todas' | 'com_anomalia' | 'sem_anomalia'
+
+type GeracaoHistorico = {
+  id: string
+  evento: 'processar' | 'gerar' | 'editar' | 'reupar_unitrac' | 'reupar_escala'
+  gerada_em: string
+  gerada_por: string | null
+  qtd_linhas: number | null
+  qtd_anomalias_high: number | null
+  qtd_anomalias_medium: number | null
+  qtd_anomalias_low: number | null
+  xlsx_path: string | null
+  pdf_path: string | null
+  xlsx_url?: string | null
+  pdf_url?: string | null
+  status: string | null
+  payload_json: Record<string, unknown> | null
+}
 
 type EditMap = Record<string, Record<string, { motorista?: string; placa?: string }>>
 
@@ -198,6 +216,32 @@ export function KpisGerados({
   const [editMapHora, setEditMapHora] = useState<HoraMap>({})
   const [bulkMenuOpen, setBulkMenuOpen] = useState<string | null>(null)
   const [marcandoBulk, setMarcandoBulk] = useState<string | null>(null)
+  const [historicoAberto, setHistoricoAberto] = useState<string | null>(null)
+  const [historico, setHistorico] = useState<Record<string, GeracaoHistorico[]>>({})
+  const [loadingHist, setLoadingHist] = useState<string | null>(null)
+
+  async function carregarHistorico(kpiId: string) {
+    if (historico[kpiId]) return
+    setLoadingHist(kpiId)
+    try {
+      const res = await fetch(`/api/kpi/${kpiId}/historico`)
+      if (res.ok) {
+        const { historico: h } = (await res.json()) as { historico: GeracaoHistorico[] }
+        setHistorico((prev) => ({ ...prev, [kpiId]: h }))
+      }
+    } finally {
+      setLoadingHist(null)
+    }
+  }
+
+  function toggleHistorico(kpiId: string) {
+    if (historicoAberto === kpiId) {
+      setHistoricoAberto(null)
+    } else {
+      setHistoricoAberto(kpiId)
+      void carregarHistorico(kpiId)
+    }
+  }
 
   useEffect(() => {
     let active = true
@@ -706,6 +750,10 @@ export function KpisGerados({
                       resolvendo={resolvendo}
                       marcandoSemEntrega={marcandoSemEntrega}
                       onMarcarSemEntrega={(rotaId) => marcarSemEntrega(k.kpi_id, rotaId)}
+                      historicoAberto={historicoAberto === k.kpi_id}
+                      onToggleHistorico={() => toggleHistorico(k.kpi_id)}
+                      historicoItens={historico[k.kpi_id]}
+                      loadingHistorico={loadingHist === k.kpi_id}
                     />
                   )}
                 </div>
@@ -736,6 +784,10 @@ function PainelRevisao({
   editMapHora,
   onEditarHora,
   dataKpi,
+  historicoAberto,
+  onToggleHistorico,
+  historicoItens,
+  loadingHistorico,
 }: {
   kpi: KpiDoDia
   det: KpiDetalhe
@@ -754,6 +806,10 @@ function PainelRevisao({
   editMapHora: Record<string, HoraEdits>
   onEditarHora: (escalaLinhaId: string, campo: keyof HoraEdits, valor: string) => void
   dataKpi: string
+  historicoAberto: boolean
+  onToggleHistorico: () => void
+  historicoItens: GeracaoHistorico[] | undefined
+  loadingHistorico: boolean
 }) {
   const stats = useMemo(() => {
     const total = det.linhas.length
@@ -825,6 +881,10 @@ function PainelRevisao({
           </div>
         ))}
         <div className="flex-1" />
+        <Button variant="ghost" size="sm" onClick={onToggleHistorico}>
+          <ClockClockwise size={13} weight="bold" />
+          Histórico
+        </Button>
         <Button variant="secondary" size="sm" onClick={() => onBaixar('xlsx')}>
           <IconDownload />XLSX
         </Button>
@@ -832,6 +892,10 @@ function PainelRevisao({
           <IconDownload />PDF
         </Button>
       </div>
+
+      {historicoAberto && (
+        <HistoricoGeracoes itens={historicoItens} loading={loadingHistorico} />
+      )}
 
       {/* Resumo por situação */}
       {situacaoStats.length > 0 && (
@@ -1114,6 +1178,116 @@ function PainelRevisao({
   )
 }
 
+
+function HistoricoGeracoes({
+  itens,
+  loading,
+}: {
+  itens: GeracaoHistorico[] | undefined
+  loading: boolean
+}) {
+  if (loading) {
+    return (
+      <div className="px-3 py-4 text-[11px] text-[var(--color-fg-muted)] animate-pulse flex items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)]">
+        <CircleNotch size={13} weight="bold" className="animate-spin" />
+        Carregando histórico...
+      </div>
+    )
+  }
+  if (!itens || itens.length === 0) {
+    return (
+      <div className="px-3 py-4 text-[11px] text-[var(--color-fg-subtle)] text-center border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)]">
+        Sem histórico ainda.
+      </div>
+    )
+  }
+
+  const ICONE: Record<GeracaoHistorico['evento'], string> = {
+    processar: '⚙️',
+    gerar: '📄',
+    editar: '✏️',
+    reupar_unitrac: '📥',
+    reupar_escala: '📥',
+  }
+  const LABEL: Record<GeracaoHistorico['evento'], string> = {
+    processar: 'Processou',
+    gerar: 'Gerou Excel/PDF',
+    editar: 'Editou',
+    reupar_unitrac: 'Reupou Unitrac',
+    reupar_escala: 'Reupou Escala',
+  }
+
+  return (
+    <div className="px-3 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)]">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)] mb-2">
+        Histórico de gerações
+      </p>
+      <ol className="relative border-l-2 border-[var(--color-border)] ml-2 space-y-2">
+        {itens.map((h) => {
+          const d = new Date(h.gerada_em)
+          const tStr = d.toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+          const podeBaixar = h.evento === 'gerar' && (h.xlsx_url || h.pdf_url)
+          return (
+            <li key={h.id} className="pl-3 relative">
+              <span className="absolute -left-[7px] top-1 w-3 h-3 rounded-full bg-[var(--color-accent)] ring-2 ring-[var(--color-bg-subtle)]" />
+              <div className="text-[11px] text-[var(--color-fg)] flex items-center gap-1.5 flex-wrap">
+                <span>{ICONE[h.evento]}</span>
+                <span className="font-medium">{LABEL[h.evento]}</span>
+                {h.gerada_por && (
+                  <>
+                    <span className="text-[var(--color-fg-muted)]">por</span>
+                    <span className="text-[var(--color-fg-muted)]">{h.gerada_por}</span>
+                  </>
+                )}
+                <span className="text-[var(--color-fg-muted)]">·</span>
+                <span className="text-[var(--color-fg-muted)]">{tStr}</span>
+              </div>
+              {h.qtd_linhas != null && (
+                <div className="text-[10px] text-[var(--color-fg-subtle)] mt-0.5">
+                  {h.qtd_linhas} linhas
+                  {h.qtd_anomalias_high ? ` · ${h.qtd_anomalias_high} alta` : ''}
+                  {h.qtd_anomalias_medium ? ` · ${h.qtd_anomalias_medium} média` : ''}
+                  {h.qtd_anomalias_low ? ` · ${h.qtd_anomalias_low} baixa` : ''}
+                </div>
+              )}
+              {podeBaixar && (
+                <div className="mt-1 flex items-center gap-2 text-[10px]">
+                  {h.xlsx_url && (
+                    <a
+                      href={h.xlsx_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[var(--color-accent)] hover:underline"
+                    >
+                      <DownloadSimple size={11} weight="bold" />
+                      XLSX desta versão
+                    </a>
+                  )}
+                  {h.pdf_url && (
+                    <a
+                      href={h.pdf_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[var(--color-accent)] hover:underline"
+                    >
+                      <DownloadSimple size={11} weight="bold" />
+                      PDF
+                    </a>
+                  )}
+                </div>
+              )}
+            </li>
+          )
+        })}
+      </ol>
+    </div>
+  )
+}
 
 function AnomaliasMediasLowPanel({
   anomalias,

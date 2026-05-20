@@ -21,5 +21,33 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   if (error) return new NextResponse(error.message, { status: 500 })
 
-  return NextResponse.json({ historico: data ?? [] })
+  const itens = data ?? []
+
+  // Coleta paths únicos pra assinar em batch
+  const paths = new Set<string>()
+  for (const it of itens) {
+    if (it.xlsx_path) paths.add(it.xlsx_path)
+    if (it.pdf_path) paths.add(it.pdf_path)
+  }
+
+  const urlByPath: Record<string, string> = {}
+  if (paths.size > 0) {
+    const signed = await Promise.all(
+      Array.from(paths).map(async (p) => {
+        const r = await svc.storage.from('kpis-gerados').createSignedUrl(p, 604800)
+        return { p, url: r.data?.signedUrl ?? null }
+      }),
+    )
+    for (const s of signed) {
+      if (s.url) urlByPath[s.p] = s.url
+    }
+  }
+
+  const historico = itens.map((it) => ({
+    ...it,
+    xlsx_url: it.xlsx_path ? urlByPath[it.xlsx_path] ?? null : null,
+    pdf_url: it.pdf_path ? urlByPath[it.pdf_path] ?? null : null,
+  }))
+
+  return NextResponse.json({ historico })
 }
