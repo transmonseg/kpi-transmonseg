@@ -142,11 +142,18 @@ function situacaoInfo(l: KpiLinha): { label: string; variant: SituacaoVariant } 
     if (codes.includes(code)) return { label: CODIGO_LABELS[code] ?? code, variant: 'muted' }
   }
   if (codes.length > 0) return { label: codes[0], variant: 'muted' }
+  // Sem passou pela BASE mas fez entrega
+  if (!l.saida_cd && l.chd_loja_1 && l.anomalias_codigos.length === 0) {
+    return { label: 'SAÍDA DIRETA', variant: 'muted' }
+  }
   return { label: 'OK', variant: 'success' }
 }
 
 function buildTooltip(l: KpiLinha): string {
   if (l.rota_status === 'sem_entrega') return 'Marcado como sem entrega'
+  if (!l.saida_cd && l.chd_loja_1 && l.anomalias_codigos.length === 0) {
+    return 'Caminhão saiu direto sem passar pela BASE (rotina noturna ou primeira entrega cedo)'
+  }
   if (l.anomalias_codigos.length === 0) return 'Rota sem anomalias detectadas'
   return l.anomalias_codigos
     .map((c) => `${c}: ${CODIGO_LABELS[c] ?? c}`)
