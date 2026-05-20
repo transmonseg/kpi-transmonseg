@@ -80,32 +80,32 @@ export async function POST(req: NextRequest) {
     if (b.rede_id) redesAfetadas.add(b.rede_id)
 
     // Tenta aplicar em escala_linhas se confiança ok e tipo aplicável
+    // FIX: aplicar em TODAS as escala_linhas que casam (caminhão pode ter
+    // múltiplas entregas no mesmo dia — todas precisam ser atualizadas)
     if (b.confianca !== 'baixa' && tiposAplicaveis.includes(tipo)) {
-      let linhaId: string | null = null
+      let linhaIds: string[] = []
 
+      // Filtro adicional: se temos filial (codigo_escala), priorizar match por loja+placa
       if (placaSaiNorm) {
         const { data: porPlaca } = await svc
           .from('escala_linhas')
-          .select('id')
+          .select('id, loja_codigo_raw')
           .eq('data_entrega', body.data)
           .eq('placa_norm', placaSaiNorm)
-          .limit(1)
-          .maybeSingle()
-        if (porPlaca) linhaId = porPlaca.id
+        linhaIds = (porPlaca ?? []).map((r) => r.id as string)
       }
 
-      if (!linhaId && motoristaSaiNome) {
+      // Fallback: por nome motorista (só se nada achou por placa)
+      if (linhaIds.length === 0 && motoristaSaiNome) {
         const { data: porNome } = await svc
           .from('escala_linhas')
           .select('id')
           .eq('data_entrega', body.data)
           .ilike('motorista_nome', `%${motoristaSaiNome}%`)
-          .limit(1)
-          .maybeSingle()
-        if (porNome) linhaId = porNome.id
+        linhaIds = (porNome ?? []).map((r) => r.id as string)
       }
 
-      if (linhaId) {
+      if (linhaIds.length > 0) {
         const updatePayload: { placa_norm?: string; motorista_nome?: string } = {}
         if (placaEntraNorm) updatePayload.placa_norm = placaEntraNorm
         if (motoristaEntraNome) updatePayload.motorista_nome = motoristaEntraNome
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
           const { error: updErr } = await svc
             .from('escala_linhas')
             .update(updatePayload)
-            .eq('id', linhaId)
+            .in('id', linhaIds)
 
           if (!updErr) {
             await svc
@@ -123,11 +123,11 @@ export async function POST(req: NextRequest) {
                 status: 'aplicada',
                 aplicada_em: new Date().toISOString(),
                 aplicada_por: user.id,
-                escala_linha_id: linhaId,
+                escala_linha_id: linhaIds[0], // primeira como representativa
               })
               .eq('id', inserted.id)
 
-            blocosAplicadosEmEscala += 1
+            blocosAplicadosEmEscala += linhaIds.length
           }
         }
       }
