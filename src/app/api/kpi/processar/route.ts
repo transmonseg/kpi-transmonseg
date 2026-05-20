@@ -201,6 +201,21 @@ export async function POST(req: NextRequest) {
     }
     allKpiIds.push(kpiId)
 
+    await svc.from('kpi_geracoes').insert({
+      kpi_id: kpiId,
+      evento: 'processar',
+      gerada_por: user.id,
+      qtd_linhas: rotas.length,
+      qtd_anomalias_high: anomalias.filter((a) => a.severidade === 'HIGH').length,
+      qtd_anomalias_medium: anomalias.filter((a) => a.severidade === 'MEDIUM').length,
+      qtd_anomalias_low: anomalias.filter((a) => a.severidade === 'LOW').length,
+      status: 'rascunho',
+      payload_json: {
+        rede_id: rid,
+        data: dataParam,
+      },
+    })
+
     // kpi_rotas: apaga registros anteriores para estas linhas e re-insere (idempotente)
     const rotaRows = rotas.map((r) => ({
       escala_linha_id: r.escala_linha_id,
