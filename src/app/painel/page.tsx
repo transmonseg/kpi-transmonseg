@@ -6,6 +6,8 @@ import {
   ForkKnife,
   TableIcon,
   CheckCircle,
+  PencilSimpleLine,
+  Storefront,
 } from '@phosphor-icons/react/dist/ssr'
 import { createServiceClient } from '@/lib/supabase/service'
 
@@ -23,13 +25,27 @@ type HomeStatus = {
     redeId: string
     geradaEm: string | null
   } | null
+  lojasCadastradas: number
+  alteracoesPendentesHoje: number
+  placasDoDia: number
+  motoristasDoDia: number
 }
 
 async function fetchHomeStatus(): Promise<HomeStatus> {
   const hoje = new Date().toISOString().slice(0, 10)
   const svc = createServiceClient()
 
-  const [escalas, unitrac, kpis, anomalias, ultima] = await Promise.all([
+  const [
+    escalas,
+    unitrac,
+    kpis,
+    anomalias,
+    ultima,
+    lojas,
+    alteracoesPendentes,
+    placasDoDiaRes,
+    motoristasDoDiaRes,
+  ] = await Promise.all([
     svc.from('escala_uploads').select('id', { count: 'exact', head: true }).eq('data_escala', hoje),
     svc.from('unitrac_uploads').select('id', { count: 'exact', head: true }).eq('data_relatorio', hoje),
     svc.from('kpis').select('id,status,rede_id').eq('data', hoje),
@@ -46,7 +62,22 @@ async function fetchHomeStatus(): Promise<HomeStatus> {
       .order('gerada_em', { ascending: false })
       .limit(1)
       .maybeSingle(),
+    svc.from('lojas').select('id', { count: 'exact', head: true }).eq('ativo', true),
+    svc
+      .from('alteracoes')
+      .select('id', { count: 'exact', head: true })
+      .eq('data_alteracao', hoje)
+      .eq('status', 'pendente'),
+    svc.from('escala_linhas').select('placa_norm').eq('data_entrega', hoje),
+    svc.from('escala_linhas').select('motorista_nome').eq('data_entrega', hoje),
   ])
+
+  const placasUnicas = new Set(
+    (placasDoDiaRes.data ?? []).map(r => r.placa_norm).filter(Boolean)
+  ).size
+  const motoristasUnicos = new Set(
+    (motoristasDoDiaRes.data ?? []).map(r => r.motorista_nome).filter(Boolean)
+  ).size
 
   const rows = kpis.data ?? []
   const kpiStatus: KpiStatus = (() => {
@@ -66,6 +97,10 @@ async function fetchHomeStatus(): Promise<HomeStatus> {
     ultimaGeracao: ultima.data
       ? { data: ultima.data.data, redeId: ultima.data.rede_id, geradaEm: ultima.data.gerada_em }
       : null,
+    lojasCadastradas: lojas.count ?? 0,
+    alteracoesPendentesHoje: alteracoesPendentes.count ?? 0,
+    placasDoDia: placasUnicas,
+    motoristasDoDia: motoristasUnicos,
   }
 }
 
@@ -335,25 +370,55 @@ export default async function PainelHome() {
             hint={hasAnomalias ? 'revisar antes de finalizar' : 'nenhuma pendência'}
             tone={hasAnomalias ? 'danger' : 'muted'}
           />
+          <StatusRow
+            label="Placas escaladas hoje"
+            value={status.placasDoDia}
+            hint={`${status.motoristasDoDia} motorista(s) único(s)`}
+            tone={status.placasDoDia > 0 ? 'info' : 'muted'}
+          />
+          <StatusRow
+            label="Alterações pendentes hoje"
+            value={status.alteracoesPendentesHoje}
+            hint={status.alteracoesPendentesHoje > 0 ? 'aplicar antes de gerar KPI' : 'nenhuma pendente'}
+            tone={status.alteracoesPendentesHoje > 0 ? 'info' : 'muted'}
+          />
+          <StatusRow
+            label="Lojas cadastradas"
+            value={status.lojasCadastradas}
+            hint="base de geofences"
+            tone="muted"
+          />
         </div>
       </section>
 
       {/* Acessos secundários */}
       <section
-        className="mt-14 grid grid-cols-1 gap-4 md:grid-cols-2 animate-fade-up"
+        className="mt-14 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-up"
         style={{ animationDelay: '300ms' }}
       >
         <SecondaryLink
           href="/painel/cozinha"
           icon={<ForkKnife size={18} weight="bold" />}
           title="Cozinha Industrial"
-          description="Upload da escala da Cozinha. Gera XLSX e PDF com rota, motorista e placa."
+          description="Upload da escala da Cozinha."
+        />
+        <SecondaryLink
+          href="/painel/alteracoes/nova"
+          icon={<PencilSimpleLine size={18} weight="bold" />}
+          title="Alterações"
+          description="Cole mensagem de WhatsApp e aplique trocas de motorista/placa."
+        />
+        <SecondaryLink
+          href="/painel/lojas"
+          icon={<Storefront size={18} weight="bold" />}
+          title="Lojas"
+          description="Cadastre lat/lng e geofences."
         />
         <SecondaryLink
           href="/painel/historico"
           icon={<ClockCounterClockwise size={18} weight="bold" />}
-          title="Histórico de gerações"
-          description="Consulte rodadas anteriores. Baixe XLSX e PDF de qualquer dia."
+          title="Histórico"
+          description="Rodadas anteriores. Baixe XLSX/PDF."
         />
       </section>
     </div>
