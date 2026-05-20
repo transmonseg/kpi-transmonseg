@@ -490,26 +490,45 @@ export async function cruzaEscalaUnitrac(
       }
     }
 
-    // Geo fallback for Category B: FORA_BASE stops near canonical_loja coordinates
-    if (geoStores && geoStores.length > 0) {
-      const linhasAindaSemMatch = linhas.filter(l => !matchByEscalaId.has(l.id))
-      if (linhasAindaSemMatch.length > 0) {
-        const paradasForaBase = todas
-          .filter(p =>
-            p.classificacao === 'FORA_BASE' &&
-            p.lat != null && p.lng != null &&
-            !usados.has(p.id)
-          )
-          .sort((a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
-
-        const paradasGeoResolved = paradasForaBase.filter(p =>
-          resolveForaBaseGeo(p.lat!, p.lng!, geoStores) !== null
+    // Geo fallback for Category B: FORA_BASE stops near loja coordinates.
+    // Usa tanto as lojas operacionais (filtradas pela rede da escala) quanto
+    // as canonical_loja como pool de matching geográfico.
+    const linhasAindaSemMatch = linhas.filter(l => !matchByEscalaId.has(l.id))
+    if (linhasAindaSemMatch.length > 0) {
+      const paradasForaBase = todas
+        .filter(p =>
+          p.classificacao === 'FORA_BASE' &&
+          p.lat != null && p.lng != null &&
+          !usados.has(p.id)
         )
+        .sort((a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
 
-        for (let i = 0; i < Math.min(linhasAindaSemMatch.length, paradasGeoResolved.length); i++) {
-          matchByEscalaId.set(linhasAindaSemMatch[i].id, paradasGeoResolved[i])
-          usados.add(paradasGeoResolved[i].id)
-          geoMatchedLineIds.add(linhasAindaSemMatch[i].id)
+      const usadosGeo = new Set<number>()
+      for (const linha of linhasAindaSemMatch) {
+        // Pra cada linha sem match, procura parada FORA_BASE próxima de loja
+        // cadastrada da MESMA REDE (operacional ou canonical).
+        const lojasDaRede: GeoStore[] = lojas
+          .filter(l => l.rede_id === linha.rede_id && l.lat != null && l.lng != null)
+          .map(l => ({ id: l.id, name: l.nome, lat: l.lat as number, lng: l.lng as number, raio_metros: l.raio_metros }))
+        // Canonical_loja não tem rede_id no GeoStore — entra como pool geral
+        // mas só será usado se nenhuma loja operacional da rede bater.
+        let melhorIdx = -1
+        for (let j = 0; j < paradasForaBase.length; j++) {
+          if (usadosGeo.has(j)) continue
+          const p = paradasForaBase[j]
+          const bateRedeEspecifica = resolveForaBaseGeo(p.lat!, p.lng!, lojasDaRede) !== null
+          const bateCanonical = !bateRedeEspecifica && (geoStores ?? []).length > 0
+            && resolveForaBaseGeo(p.lat!, p.lng!, geoStores!) !== null
+          if (bateRedeEspecifica || bateCanonical) {
+            melhorIdx = j
+            break
+          }
+        }
+        if (melhorIdx >= 0) {
+          matchByEscalaId.set(linha.id, paradasForaBase[melhorIdx])
+          usados.add(paradasForaBase[melhorIdx].id)
+          usadosGeo.add(melhorIdx)
+          geoMatchedLineIds.add(linha.id)
         }
       }
     }
