@@ -532,6 +532,38 @@ export async function cruzaEscalaUnitrac(
         }
       }
     }
+
+    // Fallback "parada compartilhada": pra placas onde MÚLTIPLAS lojas escala
+    // compartilham UMA parada agregada do Unitrac (caso típico Armazém Grão:
+    // 4 Reginas escala + 1 codigo_loja consolidado). Se ao menos UMA linha
+    // dessa placa casou, atribui a MESMA parada (reuso, sem usar 'usados') a
+    // todas as linhas restantes que pertencem à mesma rede da parada.
+    const linhasRestantes = linhas.filter(l => !matchByEscalaId.has(l.id))
+    if (linhasRestantes.length > 0) {
+      // Paradas LOJA já atribuídas a alguma linha dessa placa (qualquer rede)
+      const paradasUsadasNaPlaca: UnitracParadaRow[] = []
+      for (const l of linhas) {
+        const m = matchByEscalaId.get(l.id)
+        if (m && m.classificacao === 'LOJA') paradasUsadasNaPlaca.push(m)
+      }
+      for (const linha of linhasRestantes) {
+        // Procura parada compartilhável: bate com rede da escala via cadastro
+        const compartilhada = paradasUsadasNaPlaca.find(p => {
+          if (!p.codigo_loja && !p.nome_loja) return false
+          const lojasDaRede = lojas.filter(l => l.rede_id === linha.rede_id)
+          if (p.codigo_loja && lojasDaRede.some(l => l.codigo_unitrac === p.codigo_loja)) return true
+          if (p.nome_loja) {
+            const np = p.nome_loja.trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+            if (lojasDaRede.some(l => l.nome_unitrac?.trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '') === np)) return true
+          }
+          return false
+        })
+        if (compartilhada) {
+          matchByEscalaId.set(linha.id, compartilhada)
+          // NÃO marca em usados — outras linhas podem compartilhar também
+        }
+      }
+    }
   }
 
   const rotas: RotaKpi[] = []
