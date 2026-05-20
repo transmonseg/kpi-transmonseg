@@ -391,8 +391,18 @@ export async function cruzaEscalaUnitrac(
       usados.add(parada.id)
     }
 
-    // Temporal fallback: linhas ainda sem match (score=Infinity) recebem paradas
-    // restantes em ordem cronológica. Ordenação alfabética de linhas é determinística.
+    // Temporal fallback: linhas ainda sem match recebem paradas restantes em
+    // ordem cronológica, MAS SÓ se a parada pertencer plausivelmente à rede da
+    // escala (resolveLojaId bate com loja da rede, ou nome tem tokens em comum).
+    //
+    // ANTES: atribuía qualquer parada restante por ordem cronológica → caminhão
+    // que faz cross-docking (Armazém Grão entregando em PREZUNIC TIJUCA, GB
+    // MADUREIRA) gerava match errado pra linhas da própria escala. Resultado:
+    // KPI mostrava horários de loja totalmente diferente da escala.
+    //
+    // AGORA: só atribui se (a) scorePair < Infinity (tokens compartilham
+    // palavra core) OU (b) resolveLojaId casa a parada com alguma loja
+    // cadastrada da rede daquela escala. Caso contrário, deixa UNMATCHED.
     const linhasSemMatch = linhas.filter(l => !matchByEscalaId.has(l.id))
     const paradasLivres = lojasParadas.filter(p => !usados.has(p.id))
     if (linhasSemMatch.length > 0 && paradasLivres.length > 0) {
@@ -400,9 +410,52 @@ export async function cruzaEscalaUnitrac(
       const paradasOrdenadas = [...paradasLivres].sort(
         (a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime()
       )
-      for (let i = 0; i < Math.min(linhasOrdenadas.length, paradasOrdenadas.length); i++) {
-        matchByEscalaId.set(linhasOrdenadas[i].id, paradasOrdenadas[i])
-        usados.add(paradasOrdenadas[i].id)
+      // Pré-computa "rede provável" de cada parada via resolveLojaId em todas as
+      // redes. Uma parada de PREZUNIC TIJUCA volta com rede_id = PREZUNIC e fica
+      // bloqueada pra escalas da ARMAZEM_GRAO.
+      const redesPresentes = [...new Set(lojas.map(l => l.rede_id))]
+      const paradaRede = new Map<string, string | null>()
+      for (const p of paradasOrdenadas) {
+        let achou: string | null = null
+        for (const r of redesPresentes) {
+          if (resolveLojaId(p, lojas, r)) { achou = r; break }
+        }
+        paradaRede.set(p.id, achou)
+      }
+
+      const usadosFallback = new Set<number>()
+      for (let i = 0; i < linhasOrdenadas.length; i++) {
+        const linha = linhasOrdenadas[i]
+        let melhorIdx = -1
+        for (let j = 0; j < paradasOrdenadas.length; j++) {
+          if (usadosFallback.has(j)) continue
+          const parada = paradasOrdenadas[j]
+          const redeDaParada = paradaRede.get(parada.id)
+          // Bloqueia se a parada pertence CLARAMENTE a outra rede
+          if (redeDaParada && redeDaParada !== linha.rede_id) continue
+          // (a) tokens compartilhados no nome
+          if (scorePair(linha, parada) < Infinity) {
+            melhorIdx = j
+            break
+          }
+          // (b) parada bate com loja da rede da escala
+          if (redeDaParada === linha.rede_id) {
+            melhorIdx = j
+            break
+          }
+          // (c) parada não bate com nenhuma rede conhecida — aceita (era o
+          // comportamento antigo, só agora bloqueado pelas regras acima quando
+          // a parada é claramente de outra rede)
+          if (redeDaParada === null) {
+            melhorIdx = j
+            break
+          }
+        }
+        if (melhorIdx >= 0) {
+          matchByEscalaId.set(linha.id, paradasOrdenadas[melhorIdx])
+          usados.add(paradasOrdenadas[melhorIdx].id)
+          usadosFallback.add(melhorIdx)
+        }
       }
     }
 
