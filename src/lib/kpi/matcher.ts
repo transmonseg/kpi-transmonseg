@@ -410,17 +410,18 @@ export async function cruzaEscalaUnitrac(
       const paradasOrdenadas = [...paradasLivres].sort(
         (a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime()
       )
-      // Pré-computa "rede provável" de cada parada via resolveLojaId em todas as
-      // redes. Uma parada de PREZUNIC TIJUCA volta com rede_id = PREZUNIC e fica
-      // bloqueada pra escalas da ARMAZEM_GRAO.
+      // Pré-computa "redes possíveis" de cada parada via resolveLojaId em todas
+      // as redes. Uma parada de PREZUNIC TIJUCA volta com {PREZUNIC} e fica
+      // bloqueada pra escalas da ARMAZEM_GRAO. Uma parada SENDAS X - LJ Y que
+      // foi convertida em Assaí ganha {SENDAS, ASSAI} e desbloqueia ambas.
       const redesPresentes = [...new Set(lojas.map(l => l.rede_id))]
-      const paradaRede = new Map<string, string | null>()
+      const paradaRedes = new Map<string, Set<string>>()
       for (const p of paradasOrdenadas) {
-        let achou: string | null = null
+        const redes = new Set<string>()
         for (const r of redesPresentes) {
-          if (resolveLojaId(p, lojas, r)) { achou = r; break }
+          if (resolveLojaId(p, lojas, r)) redes.add(r)
         }
-        paradaRede.set(p.id, achou)
+        paradaRedes.set(p.id, redes)
       }
 
       const usadosFallback = new Set<number>()
@@ -430,23 +431,22 @@ export async function cruzaEscalaUnitrac(
         for (let j = 0; j < paradasOrdenadas.length; j++) {
           if (usadosFallback.has(j)) continue
           const parada = paradasOrdenadas[j]
-          const redeDaParada = paradaRede.get(parada.id)
-          // Bloqueia se a parada pertence CLARAMENTE a outra rede
-          if (redeDaParada && redeDaParada !== linha.rede_id) continue
+          const redes = paradaRedes.get(parada.id) ?? new Set<string>()
+          // Bloqueia se a parada bate com outras redes mas NÃO com a da escala
+          if (redes.size > 0 && !redes.has(linha.rede_id)) continue
           // (a) tokens compartilhados no nome
           if (scorePair(linha, parada) < Infinity) {
             melhorIdx = j
             break
           }
           // (b) parada bate com loja da rede da escala
-          if (redeDaParada === linha.rede_id) {
+          if (redes.has(linha.rede_id)) {
             melhorIdx = j
             break
           }
-          // (c) parada não bate com nenhuma rede conhecida — aceita (era o
-          // comportamento antigo, só agora bloqueado pelas regras acima quando
-          // a parada é claramente de outra rede)
-          if (redeDaParada === null) {
+          // (c) parada não bate com nenhuma rede — aceita (caso ainda não
+          // cadastrada, fallback temporal seguro)
+          if (redes.size === 0) {
             melhorIdx = j
             break
           }
