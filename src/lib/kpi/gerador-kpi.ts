@@ -24,6 +24,27 @@ function toExcelTime(d: Date | null | undefined): number | null {
   return (d.getUTCHours() * 3600 + d.getUTCMinutes() * 60 + d.getUTCSeconds()) / 86400
 }
 
+/**
+ * Calcula tempo em loja como fração do dia (formato Excel).
+ *
+ * Prioridade:
+ *   1. `tempoMin` vindo do Unitrac — já considera cruzamento de meia-noite e é
+ *      computado em segundos absolutos, é o valor canônico
+ *   2. Diff Excel `(saida - chegada + 1) % 1` — fallback quando o Unitrac não
+ *      forneceu duracao_seg. O `+1) % 1` é necessário pra entregas noturnas
+ *      (chegada 23:40, saída 01:15 → diff seria -22h25m, corrigido pra +1h35m)
+ *   3. Zero quando faltam dados
+ */
+function computeTempoLoja(
+  tempoMin: number | null | undefined,
+  chd: number | null,
+  sai: number | null,
+): number {
+  if (typeof tempoMin === 'number' && tempoMin > 0) return tempoMin / 1440  // min/24h
+  if (chd !== null && sai !== null) return ((sai - chd) + 1) % 1
+  return 0
+}
+
 function formatarPlacaDisplay(placa: string | null | undefined): string {
   if (!placa) return ''
   const norm = placa.replace(/[^A-Z0-9]/gi, '').toUpperCase()
@@ -220,9 +241,12 @@ function escreverLinha(ws: ExcelJS.Worksheet, row: number, ag: LinhaAgrupada) {
     if (typeof cell.value === 'number') cell.numFmt = NUMFMT_TIME
   }
 
-  // Fórmulas TEMPO EM LOJA com result pré-calculado (ExcelJS não calcula sozinho)
-  const tempo1 = chd1 !== null && sai1 !== null ? ((sai1 - chd1) + 1) % 1 : 0
-  const tempo2 = chd2 !== null && sai2 !== null ? ((sai2 - chd2) + 1) % 1 : 0
+  // Fórmulas TEMPO EM LOJA com result pré-calculado (ExcelJS não calcula sozinho).
+  // Usa duracao_min vinda do Unitrac quando disponível — ela já trata cruzamento
+  // de meia-noite. Só cai no diff Excel quando duracao_min é null/0 e os horários
+  // existem (legacy). MOD(saida - chegada, 1) cobre cruzamento porque hora é fração.
+  const tempo1 = computeTempoLoja(c1?.tempo_loja_1_min, chd1, sai1)
+  const tempo2 = computeTempoLoja(c2?.tempo_loja_1_min, chd2, sai2)
   ws.getCell(row, 14).value = { formula: `MOD(G${row}-F${row},1)`, result: tempo1 }
   ws.getCell(row, 14).numFmt = NUMFMT_TIME
   ws.getCell(row, 15).value = { formula: `MOD(M${row}-L${row},1)`, result: tempo2 }

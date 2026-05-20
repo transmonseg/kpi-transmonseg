@@ -47,6 +47,9 @@ type PreviewLinha = {
   saida_cd_fmt: string | null
   chegada_loja_fmt: string | null
   tempo_loja_min: number | null
+  confianca: 'HIGH' | 'LOW' | 'UNMATCHED'
+  algoritmo: string
+  anomalias: string[]
 }
 
 type LineEditPatch = {
@@ -751,6 +754,9 @@ function RedePreviewSection({
     : 0
   const tomCobertura =
     cobertura >= 80 ? 'success' : cobertura >= 50 ? 'warning' : 'danger'
+  const qtdHigh = rede.preview.filter(l => l.confianca === 'HIGH').length
+  const qtdLow = rede.preview.filter(l => l.confianca === 'LOW').length
+  const qtdUnmatched = rede.preview.filter(l => l.confianca === 'UNMATCHED').length
 
   return (
     <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
@@ -775,6 +781,14 @@ function RedePreviewSection({
               </span>
               {rede.qtd_sem_gps > 0 && (
                 <span className="text-[var(--color-fg-subtle)]"> · {rede.qtd_sem_gps} sem dado</span>
+              )}
+              {(qtdLow > 0 || qtdUnmatched > 0) && (
+                <>
+                  <span className="text-[var(--color-fg-subtle)]"> · </span>
+                  <span className="text-[var(--color-success)] text-numeric">{qtdHigh}H</span>
+                  {qtdLow > 0 && <span className="text-[var(--color-warning)] text-numeric ml-1">{qtdLow}L</span>}
+                  {qtdUnmatched > 0 && <span className="text-[var(--color-danger)] text-numeric ml-1">{qtdUnmatched}?</span>}
+                </>
               )}
             </p>
           </div>
@@ -858,6 +872,7 @@ function PreviewRow({
   onEdit: (patch: LineEditPatch) => void
 }) {
   const semGps = !linha.tem_gps
+  const temAnomaliaHigh = linha.anomalias.some(c => ['ANOM-01','ANOM-04','ANOM-06','ANOM-07'].includes(c))
   const placaDisplay = linha.placa ? `${linha.placa.slice(0, 3)}-${linha.placa.slice(3)}` : ''
 
   const cellInput =
@@ -868,13 +883,25 @@ function PreviewRow({
     <tr
       className={cn(
         'transition-colors duration-100',
-        semGps
-          ? 'bg-[var(--color-danger-soft)] hover:bg-[var(--color-danger-soft)]'
+        temAnomaliaHigh
+          ? 'bg-[var(--color-danger-soft)]/60 hover:bg-[var(--color-danger-soft)]'
+          : semGps
+          ? 'bg-[var(--color-warning-soft)]/40 hover:bg-[var(--color-warning-soft)]/60'
           : 'hover:bg-[var(--color-bg-hover)]',
       )}
+      title={linha.anomalias.length > 0 ? `Anomalias: ${linha.anomalias.join(', ')}` : undefined}
     >
-      <td className="px-4 py-2 text-numeric text-[var(--color-fg-subtle)]">
+      <td className="px-4 py-2 text-numeric text-[var(--color-fg-subtle)] relative">
         {linha.ordem}
+        {linha.confianca !== 'HIGH' && (
+          <span
+            aria-hidden
+            className={cn(
+              'absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[2px] rounded-r',
+              linha.confianca === 'LOW' ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-danger)]',
+            )}
+          />
+        )}
       </td>
       <td className="px-4 py-2 font-medium text-[var(--color-fg)] max-w-[220px]">
         <input

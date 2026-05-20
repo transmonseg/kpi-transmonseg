@@ -26,6 +26,9 @@ type PreviewLinha = {
   saida_cd_fmt: string | null
   chegada_loja_fmt: string | null
   tempo_loja_min: number | null
+  confianca: 'HIGH' | 'LOW' | 'UNMATCHED'
+  algoritmo: string
+  anomalias: string[]
 }
 
 function fmtHoraBRT(d: Date | null | undefined): string | null {
@@ -257,7 +260,83 @@ export async function POST(req: NextRequest) {
     }))
   )
 
-  const rotas = await cruzaEscalaUnitrac(escalaRows, paradaRows, [])
+  // Carrega lojas operacionais (resolveLojaId) e canonical_loja com geo
+  // (geo fallback para paradas FORA_BASE sem geofence — Categoria B do plano-90%).
+  // Em paralelo: trgm-lookup usa o supabase client para enriquecer matches fuzzy.
+  const [lojasRes, canonicalRes] = await Promise.all([
+    svc
+      .from('lojas')
+      .select('id, rede_id, nome, nome_normalizado, codigo_escala, codigo_unitrac, nome_unitrac, lat, lng, raio_metros')
+      .eq('ativo', true),
+    svc
+      .from('canonical_loja')
+      .select('id, name, lat, lng, raio_metros')
+      .not('lat', 'is', null)
+      .not('lng', 'is', null),
+  ])
+
+  const lojasParaMatcher = (lojasRes.data ?? []).map(l => ({
+    id: l.id as string,
+    rede_id: l.rede_id as string,
+    nome: (l.nome as string) ?? '',
+    nome_normalizado: (l.nome_normalizado as string) ?? '',
+    codigo_escala: l.codigo_escala as string | null,
+    codigo_unitrac: l.codigo_unitrac as string | null,
+    nome_unitrac: l.nome_unitrac as string | null,
+    lat: l.lat as number | null,
+    lng: l.lng as number | null,
+    raio_metros: (l.raio_metros as number | null) ?? 150,
+  }))
+
+  const geoStores = (canonicalRes.data ?? []).map(c => ({
+    id: c.id as string,
+    name: c.name as string,
+    lat: c.lat as number,
+    lng: c.lng as number,
+    raio_metros: (c.raio_metros as number | null) ?? 150,
+  }))
+
+  const rotas = await cruzaEscalaUnitrac(escalaRows, paradaRows, lojasParaMatcher, svc, geoStores)
+
+  // Detecção de anomalias — gera codigos por escala_linha_id pra exibir/cor no preview.
+  // Constrói paradasIndex direto dos paradaRows (em memória, sem ida ao DB).
+  const { detectaAnomalias } = await import('@/lib/kpi/anomalia')
+  const paradasIndex = new Map<string, Array<{ id: string; classificacao: string; chegada: Date; saida: Date | null; duracao_seg: number | null; lat: number | null; lng: number | null }>>()
+  for (const p of paradaRows) {
+    const list = paradasIndex.get(p.placa_norm) ?? []
+    list.push({
+      id: p.id,
+      classificacao: p.classificacao,
+      chegada: new Date(p.chegada),
+      saida: p.saida ? new Date(p.saida) : null,
+      duracao_seg: p.duracao_seg,
+      lat: p.lat,
+      lng: p.lng,
+    })
+    paradasIndex.set(p.placa_norm, list)
+  }
+  const anomalias = detectaAnomalias({
+    rotas,
+    escalaLinhas: escalaRows.map(e => ({
+      id: e.id, placa_norm: e.placa_norm, rede_id: e.rede_id,
+      data_entrega: e.data_entrega, loja_nome_raw: e.loja_nome_raw,
+    })),
+    paradasIndex,
+    janelasRede: new Map(),  // janelas operacionais não usadas no fluxo simples
+    data,
+  })
+  // Indexa anomalias por rota_id pra anexar nos códigos
+  const anomaliasPorRota = new Map<string, string[]>()
+  for (const a of anomalias) {
+    if (!a.kpi_rota_id) continue
+    const cur = anomaliasPorRota.get(a.kpi_rota_id) ?? []
+    cur.push(a.codigo)
+    anomaliasPorRota.set(a.kpi_rota_id, cur)
+  }
+  for (const rota of rotas) {
+    const codigos = anomaliasPorRota.get(rota.escala_linha_id)
+    if (codigos) rota.anomalias_codigos = codigos
+  }
 
   const redeMap = new Map<string, { rotas: RotaKpi[]; escala: LinhaEscala[] }>()
   for (const rota of rotas) {
@@ -344,6 +423,9 @@ export async function POST(req: NextRequest) {
         saida_cd_fmt: fmtHoraBRT(rota.saida_cd),
         chegada_loja_fmt: fmtHoraBRT(rota.paradas[0]?.chegada),
         tempo_loja_min: rota.paradas[0]?.duracao_min ?? null,
+        confianca: rota._matchMeta?.confidence ?? 'UNMATCHED',
+        algoritmo: rota._matchMeta?.algorithm ?? 'none',
+        anomalias: rota.anomalias_codigos,
       }))
 
       const [xlsxBuffer, pdfBuffer] = await Promise.all([
