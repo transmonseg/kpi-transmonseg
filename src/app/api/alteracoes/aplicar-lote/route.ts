@@ -137,25 +137,10 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const reprocessUrl = new URL('/api/kpi/processar', req.url).toString()
-  const reprocessResults = await Promise.allSettled(
-    [...redesAfetadas].map((rede_id) =>
-      fetch(reprocessUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          cookie: req.headers.get('cookie') ?? '',
-        },
-        body: JSON.stringify({ data: body.data, rede_id }),
-      }),
-    ),
-  )
-
   return NextResponse.json({
     aplicados: body.blocos.length - erros.length,
     erros,
     blocos_aplicados_em_escala: blocosAplicadosEmEscala,
-    redes_reprocessadas: [...redesAfetadas],
-    reprocessar_status: reprocessResults.map((r) => r.status),
+    redes_afetadas: [...redesAfetadas],
   })
 }

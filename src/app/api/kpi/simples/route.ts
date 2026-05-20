@@ -35,6 +35,29 @@ function fmtHoraBRT(d: Date | null | undefined): string | null {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
 
+// HH:MM (BRT) → Date UTC ancorado em `dataIso` (YYYY-MM-DD)
+function brtHHMMtoDate(dataIso: string, hhmm: string): Date | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm.trim())
+  if (!m) return null
+  const h = Number(m[1]), mn = Number(m[2])
+  if (h < 0 || h > 23 || mn < 0 || mn > 59) return null
+  const d = new Date(`${dataIso}T00:00:00.000Z`)
+  d.setUTCHours(h + 3, mn, 0, 0)
+  return d
+}
+
+type LineEdit = {
+  rede_id: string
+  ordem: number
+  placa?: string
+  motorista?: string
+  loja?: string
+  turno?: string
+  saida_cd?: string         // HH:MM
+  chegada_loja?: string     // HH:MM
+  tempo_loja_min?: number | null
+}
+
 type AltConfirmada = {
   tipo: string
   entra: { motorista_nome: string | null; motorista_codigo: number | null; placa_raw: string | null; placa_norm: string | null } | null
@@ -105,13 +128,14 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
   if (!body) return new NextResponse('Body JSON inválido.', { status: 400 })
 
-  const { escalaBucketPath, escalaBucketPaths, unitracBucketPath, data, alteracoes = [], lineEdits = [] } = body as {
+  const { escalaBucketPath, escalaBucketPaths, unitracBucketPath, data, alteracoes = [], lineEdits = [], skipSave = false } = body as {
     escalaBucketPath?: string
     escalaBucketPaths?: string[]
     unitracBucketPath: string
     data: string
     alteracoes?: AltConfirmada[]
-    lineEdits?: Array<{ rede_id: string; ordem: number; placa?: string; motorista?: string }>
+    lineEdits?: LineEdit[]
+    skipSave?: boolean
   }
 
   // Normalize to array
@@ -259,10 +283,48 @@ export async function POST(req: NextRequest) {
         if (edit.rede_id !== rede_id) continue
         const i = edit.ordem - 1
         if (i < 0 || i >= sorted.length) continue
-        if (edit.placa !== undefined)
-          sorted[i] = { ...sorted[i], rota: { ...sorted[i].rota, placa_norm: edit.placa || null } }
-        if (edit.motorista !== undefined)
-          sorted[i] = { ...sorted[i], esc: { ...sorted[i].esc, motorista_nome: edit.motorista || null } }
+        const cur = sorted[i]
+        const nextRota = { ...cur.rota }
+        const nextEsc = { ...cur.esc }
+        if (edit.placa !== undefined) nextRota.placa_norm = edit.placa || null
+        if (edit.motorista !== undefined) nextEsc.motorista_nome = edit.motorista || null
+        if (edit.loja !== undefined) nextEsc.loja_nome_raw = edit.loja || ''
+        if (edit.turno !== undefined) {
+          const t = edit.turno.toUpperCase().trim()
+          if (t === 'MANHA' || t === 'MANHÃ') nextEsc.turno = 'MANHA'
+          else if (t === 'TARDE') nextEsc.turno = 'TARDE'
+        }
+        if (edit.saida_cd !== undefined)
+          nextRota.saida_cd = edit.saida_cd ? brtHHMMtoDate(data, edit.saida_cd) : null
+        if (edit.chegada_loja !== undefined || edit.tempo_loja_min !== undefined) {
+          const paradas = [...nextRota.paradas]
+          const p0 = paradas[0] ?? null
+          const novaChegada =
+            edit.chegada_loja !== undefined
+              ? (edit.chegada_loja ? brtHHMMtoDate(data, edit.chegada_loja) : null)
+              : (p0?.chegada ?? null)
+          const novoTempo =
+            edit.tempo_loja_min !== undefined
+              ? edit.tempo_loja_min
+              : (p0?.duracao_min ?? null)
+          if (novaChegada) {
+            const duracao = novoTempo ?? 0
+            const saida = p0?.saida ?? new Date(novaChegada.getTime() + duracao * 60000)
+            paradas[0] = {
+              parada_id: p0?.parada_id ?? null,
+              loja_id: p0?.loja_id ?? null,
+              nome: p0?.nome ?? nextEsc.loja_nome_raw,
+              chegada: novaChegada,
+              saida,
+              duracao_min: novoTempo ?? 0,
+              classificacao: p0?.classificacao ?? 'LOJA',
+            }
+          } else if (edit.chegada_loja === '') {
+            paradas.shift()
+          }
+          nextRota.paradas = paradas
+        }
+        sorted[i] = { rota: nextRota, esc: nextEsc }
       }
 
       const linhas: LinhaParaKpi[] = sorted.map(({ rota, esc }, idx) =>
@@ -301,5 +363,59 @@ export async function POST(req: NextRequest) {
     })
   )
 
-  return NextResponse.json({ redes: results })
+  // Persistência: registra a geração (apenas metadados leves, sem base64)
+  let geracaoId: string | null = null
+  if (!skipSave && results.length > 0) {
+    const summary = results.map(r => ({
+      rede_id: r.rede_id,
+      rede_nome: r.rede_nome,
+      qtd_rotas: r.qtd_rotas,
+      qtd_sem_gps: r.qtd_sem_gps,
+    }))
+    const total_rotas = results.reduce((s, r) => s + r.qtd_rotas, 0)
+    const total_sem_gps = results.reduce((s, r) => s + r.qtd_sem_gps, 0)
+
+    const { data: inserted } = await svc
+      .from('kpi_simples')
+      .insert({
+        data,
+        gerado_por: user.id,
+        escala_paths: escalaPaths,
+        unitrac_path: unitracBucketPath,
+        alteracoes,
+        line_edits: lineEdits,
+        redes: summary,
+        total_rotas,
+        total_sem_gps,
+      })
+      .select('id')
+      .single()
+    geracaoId = (inserted?.id as string) ?? null
+  }
+
+  return NextResponse.json({ redes: results, geracao_id: geracaoId })
+}
+
+// GET /api/kpi/simples?data=YYYY-MM-DD → lista histórico de gerações
+export async function GET(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return new NextResponse('Não autenticado', { status: 401 })
+
+  const url = new URL(req.url)
+  const dataParam = url.searchParams.get('data')
+  const svc = createServiceClient()
+
+  let q = svc
+    .from('kpi_simples')
+    .select('id, data, gerado_por, gerado_em, redes, total_rotas, total_sem_gps')
+    .order('gerado_em', { ascending: false })
+    .limit(50)
+
+  if (dataParam && /^\d{4}-\d{2}-\d{2}$/.test(dataParam)) q = q.eq('data', dataParam)
+
+  const { data: rows, error } = await q
+  if (error) return new NextResponse(error.message, { status: 500 })
+
+  return NextResponse.json({ geracoes: rows ?? [] })
 }

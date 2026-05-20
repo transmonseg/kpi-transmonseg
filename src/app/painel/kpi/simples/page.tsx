@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useRef, useCallback } from 'react'
+import { useState, useTransition, useRef, useCallback, useEffect } from 'react'
 import {
   UploadSimple,
   FilePdf,
@@ -47,6 +47,16 @@ type PreviewLinha = {
   saida_cd_fmt: string | null
   chegada_loja_fmt: string | null
   tempo_loja_min: number | null
+}
+
+type LineEditPatch = {
+  placa?: string
+  motorista?: string
+  loja?: string
+  turno?: string
+  saida_cd?: string
+  chegada_loja?: string
+  tempo_loja_min?: number | null
 }
 
 type RedeResult = {
@@ -310,10 +320,36 @@ export default function KpiSimplesPage() {
   const [erro, setErro] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [bucketPaths, setBucketPaths] = useState<{ escalaBucketPaths: string[]; unitracBucketPath: string } | null>(null)
-  const [lineEdits, setLineEdits] = useState<Record<string, { placa?: string; motorista?: string }>>({})
+  const [lineEdits, setLineEdits] = useState<Record<string, LineEditPatch>>({})
+  const [geracaoId, setGeracaoId] = useState<string | null>(null)
 
   function addAlteracao(a: AlteracaoParsed) { setAlteracoes(prev => [...prev, a]) }
   function removeAlteracao(idx: number) { setAlteracoes(prev => prev.filter((_, i) => i !== idx)) }
+
+  // Reabrir geração salva via ?geracao=ID
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const id = params.get('geracao')
+    if (!id) return
+    setErro(null)
+    setRedes(null)
+    startTransition(async () => {
+      try {
+        const res = await fetch('/api/kpi/simples/regerar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        })
+        if (!res.ok) throw new Error((await res.text()) || 'Erro ao reabrir geração.')
+        const json = await res.json() as { redes: RedeResult[] }
+        setRedes(json.redes)
+        setGeracaoId(id)
+      } catch (e) {
+        setErro(e instanceof Error ? e.message : 'Erro ao reabrir geração.')
+      }
+    })
+  }, [])
 
   function addEscalas(files: File[]) {
     if (files.length === 0) return
@@ -371,8 +407,9 @@ export default function KpiSimplesPage() {
           body: JSON.stringify({ escalaBucketPaths, unitracBucketPath, data, alteracoes }),
         })
         if (!res.ok) throw new Error((await res.text()) || 'Erro ao processar.')
-        const json = await res.json() as { redes: RedeResult[] }
+        const json = await res.json() as { redes: RedeResult[]; geracao_id?: string }
         setRedes(json.redes)
+        if (json.geracao_id) setGeracaoId(json.geracao_id)
       } catch (e) {
         setErro(e instanceof Error ? e.message : 'Erro inesperado.')
       }
@@ -381,9 +418,9 @@ export default function KpiSimplesPage() {
 
   const pronto = escalas.length > 0 && unitrac !== null && !!data
 
-  function handleLineEdit(redeId: string, ordem: number, field: 'placa' | 'motorista', value: string) {
+  function handleLineEdit(redeId: string, ordem: number, patch: LineEditPatch) {
     const key = `${redeId}:::${ordem}`
-    setLineEdits(prev => ({ ...prev, [key]: { ...prev[key], [field]: value } }))
+    setLineEdits(prev => ({ ...prev, [key]: { ...prev[key], ...patch } }))
   }
 
   async function regenerar() {
@@ -401,8 +438,9 @@ export default function KpiSimplesPage() {
           body: JSON.stringify({ ...bucketPaths, data, alteracoes, lineEdits: editsArr }),
         })
         if (!res.ok) throw new Error((await res.text()) || 'Erro ao processar.')
-        const json = await res.json() as { redes: RedeResult[] }
+        const json = await res.json() as { redes: RedeResult[]; geracao_id?: string }
         setRedes(json.redes)
+        if (json.geracao_id) setGeracaoId(json.geracao_id)
       } catch (e) {
         setErro(e instanceof Error ? e.message : 'Erro inesperado.')
       }
@@ -561,6 +599,12 @@ export default function KpiSimplesPage() {
             </div>
           </div>
 
+          {geracaoId && (
+            <p className="text-[11px] text-[var(--color-success)]">
+              Salvo no histórico (#{geracaoId.slice(0, 8)})
+            </p>
+          )}
+
           {redes.map(r => (
             <RedePreviewSection
               key={r.rede_id}
@@ -699,8 +743,8 @@ function RedePreviewSection({
 }: {
   rede: RedeResult
   data: string
-  lineEdits: Record<string, { placa?: string; motorista?: string }>
-  onLineEdit: (redeId: string, ordem: number, field: 'placa' | 'motorista', value: string) => void
+  lineEdits: Record<string, LineEditPatch>
+  onLineEdit: (redeId: string, ordem: number, patch: LineEditPatch) => void
 }) {
   const cobertura = rede.qtd_rotas > 0
     ? Math.round(((rede.qtd_rotas - rede.qtd_sem_gps) / rede.qtd_rotas) * 100)
@@ -781,10 +825,11 @@ function RedePreviewSection({
               <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)]">Loja</th>
               <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)]">Placa</th>
               <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden sm:table-cell">Motorista</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden lg:table-cell w-20">Turno</th>
               <th className="px-4 py-2.5 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] w-14">GPS</th>
               <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Saída CD</th>
               <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Ch. Loja</th>
-              <th className="px-4 py-2.5 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden lg:table-cell">Tempo</th>
+              <th className="px-4 py-2.5 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden lg:table-cell w-20">Tempo</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border)]">
@@ -792,9 +837,8 @@ function RedePreviewSection({
               <PreviewRow
                 key={linha.ordem}
                 linha={linha}
-                redeId={rede.rede_id}
                 editValues={lineEdits[`${rede.rede_id}:::${linha.ordem}`] ?? {}}
-                onEdit={(field, value) => onLineEdit(rede.rede_id, linha.ordem, field, value)}
+                onEdit={(patch) => onLineEdit(rede.rede_id, linha.ordem, patch)}
               />
             ))}
           </tbody>
@@ -806,17 +850,19 @@ function RedePreviewSection({
 
 function PreviewRow({
   linha,
-  redeId,
   editValues,
   onEdit,
 }: {
   linha: PreviewLinha
-  redeId: string
-  editValues: { placa?: string; motorista?: string }
-  onEdit: (field: 'placa' | 'motorista', value: string) => void
+  editValues: LineEditPatch
+  onEdit: (patch: LineEditPatch) => void
 }) {
   const semGps = !linha.tem_gps
   const placaDisplay = linha.placa ? `${linha.placa.slice(0, 3)}-${linha.placa.slice(3)}` : ''
+
+  const cellInput =
+    'w-full bg-transparent text-[12px] outline-none border-b border-transparent hover:border-[var(--color-border)] focus:border-[var(--color-navy-700)] transition-colors duration-100 rounded-none placeholder:text-[var(--color-fg-subtle)]'
+  const monoCell = cellInput + ' text-numeric tracking-wider'
 
   return (
     <tr
@@ -827,46 +873,88 @@ function PreviewRow({
           : 'hover:bg-[var(--color-bg-hover)]',
       )}
     >
-      <td className="px-4 py-2.5 text-numeric text-[var(--color-fg-subtle)]">
+      <td className="px-4 py-2 text-numeric text-[var(--color-fg-subtle)]">
         {linha.ordem}
       </td>
-      <td className="px-4 py-2.5 font-medium text-[var(--color-fg)] max-w-[200px]">
-        <span className="block truncate">{linha.loja_nome}</span>
+      <td className="px-4 py-2 font-medium text-[var(--color-fg)] max-w-[220px]">
+        <input
+          type="text"
+          value={editValues.loja ?? linha.loja_nome}
+          onChange={e => onEdit({ loja: e.target.value })}
+          placeholder="Loja"
+          className={cn(cellInput, 'font-medium text-[var(--color-fg)] truncate')}
+        />
       </td>
-      <td className="px-4 py-2 text-numeric text-[var(--color-fg)]">
+      <td className="px-4 py-2">
         <input
           type="text"
           value={editValues.placa ?? placaDisplay}
-          onChange={e => onEdit('placa', e.target.value.toUpperCase())}
+          onChange={e => onEdit({ placa: e.target.value.toUpperCase() })}
           placeholder="—"
           spellCheck={false}
-          className="w-[88px] bg-transparent font-mono text-[12px] tracking-wider outline-none border-b border-transparent hover:border-[var(--color-border)] focus:border-[var(--color-navy-700)] transition-colors duration-100 rounded-none placeholder:text-[var(--color-fg-subtle)]"
+          maxLength={8}
+          className={cn(monoCell, 'w-[88px] font-mono')}
         />
       </td>
       <td className="px-4 py-2 text-[var(--color-fg-muted)] hidden sm:table-cell max-w-[160px]">
         <input
           type="text"
           value={editValues.motorista ?? (linha.motorista ?? '')}
-          onChange={e => onEdit('motorista', e.target.value)}
-          placeholder="—"
-          className="w-full max-w-[140px] bg-transparent text-[12px] outline-none border-b border-transparent hover:border-[var(--color-border)] focus:border-[var(--color-navy-700)] transition-colors duration-100 rounded-none truncate placeholder:text-[var(--color-fg-subtle)]"
+          onChange={e => onEdit({ motorista: e.target.value })}
+          placeholder="Motorista"
+          className={cn(cellInput, 'max-w-[140px] truncate')}
         />
       </td>
-      <td className="px-4 py-2.5 text-center">
+      <td className="px-4 py-2 hidden lg:table-cell">
+        <input
+          type="text"
+          value={editValues.turno ?? linha.turno}
+          onChange={e => onEdit({ turno: e.target.value })}
+          placeholder="—"
+          className={cn(cellInput, 'w-[72px] text-[var(--color-fg-muted)] uppercase tracking-wider')}
+        />
+      </td>
+      <td className="px-4 py-2 text-center">
         {linha.tem_gps
           ? <WifiHigh size={14} weight="bold" className="mx-auto text-[var(--color-success)]" />
           : <WifiSlash size={14} weight="bold" className="mx-auto text-[var(--color-danger)]" />}
       </td>
-      <td className="px-4 py-2.5 text-numeric text-[var(--color-fg-muted)] hidden md:table-cell">
-        {linha.saida_cd_fmt ?? <span className="text-[var(--color-fg-subtle)]">—</span>}
+      <td className="px-4 py-2 hidden md:table-cell">
+        <input
+          type="text"
+          value={editValues.saida_cd ?? (linha.saida_cd_fmt ?? '')}
+          onChange={e => onEdit({ saida_cd: e.target.value })}
+          placeholder="HH:MM"
+          inputMode="numeric"
+          pattern="\d{1,2}:\d{2}"
+          className={cn(monoCell, 'w-[64px] text-[var(--color-fg-muted)]')}
+        />
       </td>
-      <td className="px-4 py-2.5 text-numeric text-[var(--color-fg-muted)] hidden md:table-cell">
-        {linha.chegada_loja_fmt ?? <span className="text-[var(--color-fg-subtle)]">—</span>}
+      <td className="px-4 py-2 hidden md:table-cell">
+        <input
+          type="text"
+          value={editValues.chegada_loja ?? (linha.chegada_loja_fmt ?? '')}
+          onChange={e => onEdit({ chegada_loja: e.target.value })}
+          placeholder="HH:MM"
+          inputMode="numeric"
+          pattern="\d{1,2}:\d{2}"
+          className={cn(monoCell, 'w-[64px] text-[var(--color-fg-muted)]')}
+        />
       </td>
-      <td className="px-4 py-2.5 text-numeric text-right text-[var(--color-fg-muted)] hidden lg:table-cell">
-        {linha.tempo_loja_min != null
-          ? `${linha.tempo_loja_min} min`
-          : <span className="text-[var(--color-fg-subtle)]">—</span>}
+      <td className="px-4 py-2 hidden lg:table-cell text-right">
+        <input
+          type="text"
+          inputMode="numeric"
+          value={editValues.tempo_loja_min !== undefined
+            ? (editValues.tempo_loja_min ?? '')
+            : (linha.tempo_loja_min ?? '')}
+          onChange={e => {
+            const raw = e.target.value.replace(/[^\d]/g, '')
+            onEdit({ tempo_loja_min: raw === '' ? null : Number(raw) })
+          }}
+          placeholder="—"
+          className={cn(monoCell, 'w-[56px] text-right text-[var(--color-fg-muted)]')}
+        />
       </td>
     </tr>
   )

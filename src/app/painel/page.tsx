@@ -3,65 +3,58 @@ import {
   ArrowUpRight,
   WarningCircle,
   ClockCounterClockwise,
-  ForkKnife,
-  TableIcon,
-  CheckCircle,
   PencilSimpleLine,
   Storefront,
+  TableIcon,
+  CheckCircle,
+  Sparkle,
 } from '@phosphor-icons/react/dist/ssr'
 import { createServiceClient } from '@/lib/supabase/service'
 
-type KpiStatus = 'rascunho' | 'gerada' | 'revisada' | 'finalizada' | null
+type GeracaoResumo = {
+  rede_id: string
+  rede_nome: string
+  qtd_rotas: number
+  qtd_sem_gps: number
+}
 
-type HomeStatus = {
+type HomeData = {
   hojeIso: string
-  escalasHoje: number
-  unitracHoje: number
-  kpiStatus: KpiStatus
-  redesGeradasHoje: number
+  geracoesHoje: number
+  ultimaGeracao: { id: string; data: string; geradoEm: string | null; totalRotas: number; redes: GeracaoResumo[] } | null
   anomaliasHighPendentes: number
-  ultimaGeracao: {
-    data: string
-    redeId: string
-    geradaEm: string | null
-  } | null
   lojasCadastradas: number
   alteracoesPendentesHoje: number
   placasDoDia: number
   motoristasDoDia: number
 }
 
-async function fetchHomeStatus(): Promise<HomeStatus> {
+async function fetchHomeData(): Promise<HomeData> {
   const hoje = new Date().toISOString().slice(0, 10)
   const svc = createServiceClient()
 
   const [
-    escalas,
-    unitrac,
-    kpis,
+    geracoesHojeRes,
+    ultimaRes,
     anomalias,
-    ultima,
     lojas,
     alteracoesPendentes,
     placasDoDiaRes,
     motoristasDoDiaRes,
   ] = await Promise.all([
-    svc.from('escala_uploads').select('id', { count: 'exact', head: true }).eq('data_escala', hoje),
-    svc.from('unitrac_uploads').select('id', { count: 'exact', head: true }).eq('data_relatorio', hoje),
-    svc.from('kpis').select('id,status,rede_id').eq('data', hoje),
+    svc.from('kpi_simples').select('id', { count: 'exact', head: true }).eq('data', hoje),
+    svc
+      .from('kpi_simples')
+      .select('id, data, gerado_em, total_rotas, redes')
+      .order('gerado_em', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
     svc
       .from('anomalias')
       .select('id', { count: 'exact', head: true })
       .eq('data', hoje)
       .eq('severidade', 'HIGH')
       .eq('status', 'pendente'),
-    svc
-      .from('kpis')
-      .select('data, rede_id, gerada_em')
-      .not('gerada_em', 'is', null)
-      .order('gerada_em', { ascending: false })
-      .limit(1)
-      .maybeSingle(),
     svc.from('lojas').select('id', { count: 'exact', head: true }).eq('ativo', true),
     svc
       .from('alteracoes')
@@ -79,24 +72,19 @@ async function fetchHomeStatus(): Promise<HomeStatus> {
     (motoristasDoDiaRes.data ?? []).map(r => r.motorista_nome).filter(Boolean)
   ).size
 
-  const rows = kpis.data ?? []
-  const kpiStatus: KpiStatus = (() => {
-    if (rows.length === 0) return null
-    if (rows.every(r => r.status === 'finalizada')) return 'finalizada'
-    if (rows.some(r => r.status === 'gerada' || r.status === 'revisada')) return 'gerada'
-    return 'rascunho'
-  })()
-
   return {
     hojeIso: hoje,
-    escalasHoje: escalas.count ?? 0,
-    unitracHoje: unitrac.count ?? 0,
-    kpiStatus,
-    redesGeradasHoje: rows.length,
-    anomaliasHighPendentes: anomalias.count ?? 0,
-    ultimaGeracao: ultima.data
-      ? { data: ultima.data.data, redeId: ultima.data.rede_id, geradaEm: ultima.data.gerada_em }
+    geracoesHoje: geracoesHojeRes.count ?? 0,
+    ultimaGeracao: ultimaRes.data
+      ? {
+          id: ultimaRes.data.id as string,
+          data: ultimaRes.data.data as string,
+          geradoEm: ultimaRes.data.gerado_em as string | null,
+          totalRotas: (ultimaRes.data.total_rotas as number | null) ?? 0,
+          redes: (ultimaRes.data.redes as GeracaoResumo[]) ?? [],
+        }
       : null,
+    anomaliasHighPendentes: anomalias.count ?? 0,
     lojasCadastradas: lojas.count ?? 0,
     alteracoesPendentesHoje: alteracoesPendentes.count ?? 0,
     placasDoDia: placasUnicas,
@@ -114,16 +102,10 @@ function formatHoje(iso: string): string {
   })
 }
 
-function formatDataCurta(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number)
-  if (!y || !m || !d) return iso
-  return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}`
-}
-
 function formatRelativo(isoTs: string | null): string {
-  if (!isoTs) return '—'
+  if (!isoTs) return 'sem registro'
   const dt = new Date(isoTs)
-  if (Number.isNaN(dt.getTime())) return '—'
+  if (Number.isNaN(dt.getTime())) return 'sem registro'
   const diff = Date.now() - dt.getTime()
   const min = Math.floor(diff / 60_000)
   if (min < 1) return 'agora há pouco'
@@ -135,84 +117,58 @@ function formatRelativo(isoTs: string | null): string {
   return dt.toLocaleDateString('pt-BR')
 }
 
-function kpiHeroValue(status: KpiStatus, qtd: number): { headline: string; aside: string } {
-  if (!status) return { headline: 'Sem KPI', aside: 'subir escalas pra começar' }
-  if (status === 'finalizada') return { headline: 'Finalizada', aside: `${qtd} redes prontas` }
-  if (status === 'revisada') return { headline: 'Revisada', aside: `${qtd} redes geradas` }
-  if (status === 'gerada') return { headline: 'Gerada', aside: `${qtd} redes geradas` }
-  return { headline: 'Rascunho', aside: 'em andamento' }
-}
-
 export default async function PainelHome() {
-  const status = await fetchHomeStatus()
-  const kpi = kpiHeroValue(status.kpiStatus, status.redesGeradasHoje)
-  const hasAnomalias = status.anomaliasHighPendentes > 0
-
-  // Semântica de cor para o número KPI principal
-  const kpiNumberClass =
-    status.kpiStatus === 'finalizada'
-      ? 'text-[var(--color-success)]'
-      : status.kpiStatus === null
-        ? 'text-[var(--color-fg-subtle)]'
-        : 'text-[var(--color-fg)]'
-
-  // Linha de acento inferior — codifica o status visualmente
-  const kpiBottomColor =
-    status.kpiStatus === 'finalizada'
-      ? 'var(--color-success)'
-      : status.kpiStatus === 'gerada' || status.kpiStatus === 'revisada'
-        ? 'var(--color-accent)'
-        : status.kpiStatus === 'rascunho'
-          ? 'var(--color-warning)'
-          : 'transparent'
+  const data = await fetchHomeData()
+  const hasAnomalias = data.anomaliasHighPendentes > 0
+  const temGeracaoHoje = data.geracoesHoje > 0
 
   return (
     <div className="mx-auto w-full max-w-[1200px]">
-      {/* Headline editorial — data do dia como statement tipográfico */}
+      {/* Headline editorial */}
       <header className="mb-12 flex flex-col gap-2 animate-fade-up">
         <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--color-fg-subtle)]">
-          KPI Transmonseg
+          KPI Transmonseg · Painel
         </span>
-        <h1 className="text-display text-[44px] capitalize text-[var(--color-fg)] md:text-[58px] lg:text-[68px]">
-          {formatHoje(status.hojeIso)}
+        <h1 className="text-display text-[44px] capitalize leading-[1.02] tracking-[-0.025em] text-[var(--color-fg)] md:text-[58px] lg:text-[64px]">
+          {formatHoje(data.hojeIso)}
         </h1>
       </header>
 
-      {/* Bento assimétrico: hero 8/12 + lateral 4/12 */}
+      {/* Hero: KPI do dia + lateral */}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        {/* HERO — KPI do dia */}
+        {/* HERO KPI — leva pro /simples */}
         <Link
-          href={`/painel/kpi/dia?data=${status.hojeIso}`}
+          href="/painel/kpi/simples"
           style={{ animationDelay: '60ms' }}
-          className="animate-fade-up group relative col-span-1 flex flex-col justify-between overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-8 transition-all duration-200 hover:border-[var(--color-border-strong)] active:scale-[0.997] md:p-10 lg:col-span-8 lg:min-h-[340px]"
+          className="animate-fade-up group relative col-span-1 flex flex-col justify-between overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-8 transition-all duration-300 hover:border-[var(--color-border-strong)] active:scale-[0.997] md:p-10 lg:col-span-8 lg:min-h-[340px]"
         >
-          {/* Dot grid — fade toward bottom-right, dá profundidade sem poluição */}
+          {/* Dot grid de profundidade */}
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 rounded-[var(--radius-card)]"
             style={{
               backgroundImage: 'radial-gradient(circle, var(--color-border) 1px, transparent 1px)',
               backgroundSize: '28px 28px',
-              opacity: 0.9,
+              opacity: 0.85,
               maskImage: 'radial-gradient(ellipse 80% 80% at 88% 55%, black 10%, transparent 75%)',
               WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 88% 55%, black 10%, transparent 75%)',
             }}
           />
-          {/* Accent ambient glow — sutil, radius largo */}
+          {/* Accent glow */}
           <div
             aria-hidden
-            className="pointer-events-none absolute -top-32 -right-32 h-[420px] w-[420px] rounded-full opacity-[0.08]"
-            style={{ background: 'radial-gradient(closest-side, var(--color-accent), transparent)' }}
+            className="pointer-events-none absolute -top-32 -right-32 h-[420px] w-[420px] rounded-full opacity-[0.10]"
+            style={{ background: 'radial-gradient(closest-side, var(--color-navy-700), transparent)' }}
           />
 
           <div className="relative flex items-start justify-between gap-6">
             <div>
               <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
-                <TableIcon size={12} weight="bold" />
-                Operação do dia
+                <Sparkle size={12} weight="fill" />
+                Gerar KPI
               </div>
               <h2 className="mt-3 text-[15px] font-medium tracking-tight text-[var(--color-fg-muted)]">
-                KPI Benassi
+                Suba escalas e Unitrac — receba XLSX e PDF por rede
               </h2>
             </div>
             <ArrowUpRight
@@ -223,43 +179,55 @@ export default async function PainelHome() {
           </div>
 
           <div className="relative mt-10 flex flex-col gap-3">
-            <span className={`text-display text-[68px] transition-colors duration-300 md:text-[88px] ${kpiNumberClass}`}>
-              {kpi.headline}
-            </span>
-            <span className="text-[14px] text-[var(--color-fg-muted)]">
-              {kpi.aside}
-              {status.escalasHoje + status.unitracHoje > 0 && (
-                <>
-                  <span className="mx-2.5 text-[var(--color-fg-subtle)]">·</span>
-                  <span className="text-numeric text-[var(--color-fg)]">
-                    {status.escalasHoje + status.unitracHoje}
-                  </span>{' '}
-                  upload{status.escalasHoje + status.unitracHoje === 1 ? '' : 's'} hoje
-                </>
-              )}
-            </span>
+            {temGeracaoHoje ? (
+              <>
+                <span className="text-display text-[68px] tracking-[-0.045em] leading-[0.92] text-[var(--color-fg)] md:text-[88px]">
+                  {data.geracoesHoje}
+                </span>
+                <span className="text-[14px] text-[var(--color-fg-muted)]">
+                  geraç{data.geracoesHoje === 1 ? 'ão' : 'ões'} hoje
+                  {data.ultimaGeracao && (
+                    <>
+                      <span className="mx-2.5 text-[var(--color-fg-subtle)]">·</span>
+                      <span className="text-numeric text-[var(--color-fg)]">{data.ultimaGeracao.totalRotas}</span> rotas
+                      <span className="mx-2.5 text-[var(--color-fg-subtle)]">·</span>
+                      <span>{formatRelativo(data.ultimaGeracao.geradoEm)}</span>
+                    </>
+                  )}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-display text-[64px] tracking-[-0.045em] leading-[0.92] text-[var(--color-fg-subtle)] md:text-[80px]">
+                  Pronto
+                </span>
+                <span className="text-[14px] text-[var(--color-fg-muted)]">
+                  nenhuma geração hoje — clique para começar
+                </span>
+              </>
+            )}
           </div>
 
-          {/* Linha de acento de status — lê o estado de uma relance */}
+          {/* Linha de acento — verde se gerou */}
           <div
             aria-hidden
             className="absolute bottom-0 left-0 right-0 h-[3px] rounded-b-[var(--radius-card)]"
-            style={{ background: kpiBottomColor }}
+            style={{ background: temGeracaoHoje ? 'var(--color-success)' : 'var(--color-border)' }}
           />
         </Link>
 
-        {/* Coluna lateral — 2 cards empilhados */}
+        {/* Coluna lateral */}
         <div className="col-span-1 grid grid-cols-1 gap-4 lg:col-span-4">
           {/* Anomalias HIGH */}
           <Link
             href="/painel/revisao"
             style={{ animationDelay: '120ms' }}
-            className="animate-fade-up group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-6 transition-all duration-200 hover:border-[var(--color-border-strong)] active:scale-[0.997]"
+            className="animate-fade-up group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-6 transition-all duration-300 hover:border-[var(--color-border-strong)] active:scale-[0.997]"
           >
             {hasAnomalias && (
               <div
                 aria-hidden
-                className="pointer-events-none absolute -top-24 -right-24 h-[220px] w-[220px] rounded-full opacity-[0.07]"
+                className="pointer-events-none absolute -top-24 -right-24 h-[220px] w-[220px] rounded-full opacity-[0.09]"
                 style={{ background: 'radial-gradient(closest-side, var(--color-danger), transparent)' }}
               />
             )}
@@ -280,11 +248,11 @@ export default async function PainelHome() {
             </div>
             <div className="relative mt-4 flex items-baseline gap-2.5">
               <span
-                className={`text-display text-[52px] ${
+                className={`text-display text-[52px] tracking-[-0.04em] leading-none ${
                   hasAnomalias ? 'text-[var(--color-danger)]' : 'text-[var(--color-fg-muted)]'
                 }`}
               >
-                {status.anomaliasHighPendentes}
+                {data.anomaliasHighPendentes}
               </span>
               <span className="text-[12px] text-[var(--color-fg-muted)]">
                 {hasAnomalias ? 'pendente(s)' : 'tudo limpo'}
@@ -294,9 +262,9 @@ export default async function PainelHome() {
 
           {/* Última geração */}
           <Link
-            href="/painel/historico"
+            href={data.ultimaGeracao ? '/painel/historico' : '/painel/kpi/simples'}
             style={{ animationDelay: '180ms' }}
-            className="animate-fade-up group flex flex-col rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-6 transition-all duration-200 hover:border-[var(--color-border-strong)] active:scale-[0.997]"
+            className="animate-fade-up group flex flex-col rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-6 transition-all duration-300 hover:border-[var(--color-border-strong)] active:scale-[0.997]"
           >
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
@@ -310,18 +278,18 @@ export default async function PainelHome() {
               />
             </div>
             <div className="mt-4">
-              {status.ultimaGeracao ? (
+              {data.ultimaGeracao ? (
                 <>
                   <div className="flex items-baseline gap-2.5">
-                    <span className="text-numeric text-[32px] font-semibold tracking-tight text-[var(--color-fg)]">
-                      {formatDataCurta(status.ultimaGeracao.data)}
+                    <span className="text-numeric text-[28px] font-semibold tracking-tight text-[var(--color-fg)]">
+                      {data.ultimaGeracao.totalRotas}
                     </span>
                     <span className="text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--color-fg-muted)]">
-                      {status.ultimaGeracao.redeId.replace(/_/g, ' ')}
+                      rotas · {data.ultimaGeracao.redes.length} rede{data.ultimaGeracao.redes.length === 1 ? '' : 's'}
                     </span>
                   </div>
                   <p className="mt-1 text-[12px] text-[var(--color-fg-subtle)]">
-                    {formatRelativo(status.ultimaGeracao.geradaEm)}
+                    {formatRelativo(data.ultimaGeracao.geradoEm)}
                   </p>
                 </>
               ) : (
@@ -332,59 +300,41 @@ export default async function PainelHome() {
         </div>
       </section>
 
-      {/* Status operacional — anti-card via divide-y (minimalist-ui Rule 4) */}
+      {/* Operação do dia — anti-card via divide-y */}
       <section
         className="mt-14 animate-fade-up"
         style={{ animationDelay: '240ms' }}
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-fg-subtle)]">
-            Status operacional
+            Operação do dia
           </h2>
           <span className="text-numeric text-[11px] text-[var(--color-fg-subtle)]">
-            {status.hojeIso}
+            {data.hojeIso}
           </span>
         </div>
         <div className="divide-y divide-[var(--color-border)] border-y border-[var(--color-border)]">
           <StatusRow
-            label="Escalas carregadas"
-            value={status.escalasHoje}
-            hint={`upload${status.escalasHoje === 1 ? '' : 's'} processado${status.escalasHoje === 1 ? '' : 's'}`}
-            tone={status.escalasHoje > 0 ? 'success' : 'muted'}
+            label="Placas escaladas"
+            value={data.placasDoDia}
+            hint={`${data.motoristasDoDia} motorista(s) único(s)`}
+            tone={data.placasDoDia > 0 ? 'info' : 'muted'}
           />
           <StatusRow
-            label="Relatório Unitrac"
-            value={status.unitracHoje}
-            hint={`PDF/XLSX importado${status.unitracHoje === 1 ? '' : 's'}`}
-            tone={status.unitracHoje > 0 ? 'success' : 'muted'}
-          />
-          <StatusRow
-            label="KPI gerada"
-            value={status.redesGeradasHoje}
-            hint={status.kpiStatus ?? 'aguardando uploads'}
-            tone={status.kpiStatus === 'finalizada' ? 'success' : status.kpiStatus ? 'info' : 'muted'}
+            label="Alterações pendentes"
+            value={data.alteracoesPendentesHoje}
+            hint={data.alteracoesPendentesHoje > 0 ? 'aplicar antes de gerar KPI' : 'nenhuma pendente'}
+            tone={data.alteracoesPendentesHoje > 0 ? 'warning' : 'muted'}
           />
           <StatusRow
             label="Anomalias HIGH pendentes"
-            value={status.anomaliasHighPendentes}
+            value={data.anomaliasHighPendentes}
             hint={hasAnomalias ? 'revisar antes de finalizar' : 'nenhuma pendência'}
             tone={hasAnomalias ? 'danger' : 'muted'}
           />
           <StatusRow
-            label="Placas escaladas hoje"
-            value={status.placasDoDia}
-            hint={`${status.motoristasDoDia} motorista(s) único(s)`}
-            tone={status.placasDoDia > 0 ? 'info' : 'muted'}
-          />
-          <StatusRow
-            label="Alterações pendentes hoje"
-            value={status.alteracoesPendentesHoje}
-            hint={status.alteracoesPendentesHoje > 0 ? 'aplicar antes de gerar KPI' : 'nenhuma pendente'}
-            tone={status.alteracoesPendentesHoje > 0 ? 'info' : 'muted'}
-          />
-          <StatusRow
             label="Lojas cadastradas"
-            value={status.lojasCadastradas}
+            value={data.lojasCadastradas}
             hint="base de geofences"
             tone="muted"
           />
@@ -393,32 +343,26 @@ export default async function PainelHome() {
 
       {/* Acessos secundários */}
       <section
-        className="mt-14 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-up"
+        className="mt-14 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 animate-fade-up"
         style={{ animationDelay: '300ms' }}
       >
-        <SecondaryLink
-          href="/painel/cozinha"
-          icon={<ForkKnife size={18} weight="bold" />}
-          title="Cozinha Industrial"
-          description="Upload da escala da Cozinha."
-        />
         <SecondaryLink
           href="/painel/alteracoes/nova"
           icon={<PencilSimpleLine size={18} weight="bold" />}
           title="Alterações"
-          description="Cole mensagem de WhatsApp e aplique trocas de motorista/placa."
+          description="Cole mensagem de WhatsApp e aplique trocas de motorista/placa em lote."
         />
         <SecondaryLink
           href="/painel/lojas"
           icon={<Storefront size={18} weight="bold" />}
           title="Lojas"
-          description="Cadastre lat/lng e geofences."
+          description="Cadastro canônico de lojas, lat/lng e geofences."
         />
         <SecondaryLink
           href="/painel/historico"
-          icon={<ClockCounterClockwise size={18} weight="bold" />}
+          icon={<TableIcon size={18} weight="bold" />}
           title="Histórico"
-          description="Rodadas anteriores. Baixe XLSX/PDF."
+          description="Todas as gerações salvas. Reabra e baixe XLSX/PDF."
         />
       </section>
     </div>
@@ -434,25 +378,23 @@ function StatusRow({
   label: string
   value: number | string
   hint: string
-  tone: 'success' | 'danger' | 'info' | 'muted'
+  tone: 'success' | 'danger' | 'info' | 'warning' | 'muted'
 }) {
-  const dotColor =
-    tone === 'success'
-      ? 'bg-[var(--color-success)]'
-      : tone === 'danger'
-        ? 'bg-[var(--color-danger)]'
-        : tone === 'info'
-          ? 'bg-[var(--color-accent)]'
-          : 'bg-[var(--color-border-strong)]'
+  const dotColor = {
+    success: 'bg-[var(--color-success)]',
+    danger: 'bg-[var(--color-danger)]',
+    info: 'bg-[var(--color-accent)]',
+    warning: 'bg-[var(--color-warning)]',
+    muted: 'bg-[var(--color-border-strong)]',
+  }[tone]
 
-  const valueColor =
-    tone === 'success'
-      ? 'text-[var(--color-success)]'
-      : tone === 'danger'
-        ? 'text-[var(--color-danger)]'
-        : tone === 'info'
-          ? 'text-[var(--color-accent)]'
-          : 'text-[var(--color-fg-subtle)]'
+  const valueColor = {
+    success: 'text-[var(--color-success)]',
+    danger: 'text-[var(--color-danger)]',
+    info: 'text-[var(--color-fg)]',
+    warning: 'text-[var(--color-warning)]',
+    muted: 'text-[var(--color-fg-subtle)]',
+  }[tone]
 
   return (
     <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-4 py-4 md:gap-6">
@@ -480,15 +422,14 @@ function SecondaryLink({
   return (
     <Link
       href={href}
-      className="group relative flex flex-col gap-3 overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-6 transition-all duration-200 hover:border-[var(--color-border-strong)] active:scale-[0.997]"
+      className="group relative flex flex-col gap-3 overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-6 transition-all duration-300 hover:border-[var(--color-border-strong)] active:scale-[0.997]"
     >
-      {/* Acento lateral — aparece no hover, sinaliza interatividade */}
       <div
         aria-hidden
-        className="absolute left-0 top-5 bottom-5 w-[3px] rounded-r-full bg-[var(--color-accent)] opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+        className="absolute left-0 top-5 bottom-5 w-[3px] rounded-r-full bg-[var(--color-navy-700)] opacity-0 transition-opacity duration-200 group-hover:opacity-100"
       />
       <div className="flex items-center justify-between">
-        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-fg-muted)] transition-all duration-200 group-hover:border-[var(--color-accent)]/25 group-hover:bg-[var(--color-accent)]/8 group-hover:text-[var(--color-accent)]">
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-fg-muted)] transition-all duration-200 group-hover:border-[var(--color-navy-700)]/30 group-hover:text-[var(--color-navy-700)]">
           {icon}
         </span>
         <ArrowUpRight
