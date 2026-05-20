@@ -4,6 +4,7 @@ import type { RotaKpi, ParadaKpi } from '@/lib/types/kpi'
 import { normalizeForScore } from '@/lib/utils/score'
 import type { MatchMeta, MatchAlgorithm, MatchConfidence } from '@/lib/types/kpi'
 import { batchTrgmLookup, type TrgmResult } from './trgm-lookup'
+import { hungarianMin } from '@/lib/utils/hungarian'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Tokeniza nome de loja pra match fuzzy: remove acentos, parênteses (1ª Entrega), redes,
@@ -297,19 +298,16 @@ function assignOptimal(
       if (mat[i][pi] < INF) result.set(ls[i].id, ps[pi])
     }
   } else {
-    // Greedy for nL > 5 (trucks doing 6+ deliveries in one day)
-    const cands: Array<{li: number; pi: number; s: number}> = []
-    for (let li = 0; li < nL; li++)
-      for (let pi = 0; pi < nP; pi++) {
-        const s = scorePair(ls[li], ps[pi])
-        if (s < Infinity) cands.push({li, pi, s})
-      }
-    cands.sort((a, b) => a.s - b.s)
-    const dL = new Set<number>(), dP = new Set<number>()
-    for (const c of cands) {
-      if (!dL.has(c.li) && !dP.has(c.pi)) {
-        result.set(ls[c.li].id, ps[c.pi])
-        dL.add(c.li); dP.add(c.pi)
+    // Hungarian (Jonker-Volgenant) para nL > 5 — O(n³) optimal assignment.
+    // Greedy podia errar em ambiguidades (ex: caminhão Princesa fazendo 8
+    // entregas onde duas lojas têm nomes parecidos). Hungarian garante
+    // minimização global da soma de scores.
+    const mat = ls.map(l => ps.map(p => scorePair(l, p)))
+    const assignment = hungarianMin(mat)
+    for (let li = 0; li < nL; li++) {
+      const pi = assignment[li]
+      if (pi >= 0 && Number.isFinite(mat[li][pi])) {
+        result.set(ls[li].id, ps[pi])
       }
     }
   }
