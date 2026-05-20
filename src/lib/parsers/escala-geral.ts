@@ -319,6 +319,16 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
     // Sem motorista E sem placa de carro 1, não há o que cruzar com Unitrac.
     if (!placaRaw1 && !asStr(v6)) return
 
+    // Filtra linhas com motorista "SEM PEDIDO" / "CARRO ESCALADO" (placeholder
+    // de loja sem entrega no dia). Auditoria do dia 19/05 mostrou 4 linhas
+    // CARREFOUR + 1 Assaí Cordovil que infavam contagem.
+    const motoristaUpper = asStr(v6)?.toUpperCase() ?? ''
+    if (
+      motoristaUpper.includes('SEM PEDIDO') ||
+      motoristaUpper.includes('CARRO ESCALADO') ||
+      placaRaw1?.toUpperCase().includes('SEM PEDIDO')
+    ) return
+
     const tipoEmissao = modoBenassi ? 'BENASSI' : modoForaEscala ? 'FORA_ESCALA' : 'NORMAL'
     const redeFromLoja = inferRedeFromLoja(nomeLoja)
     const redeId = modoBenassi ? 'SENDAS'

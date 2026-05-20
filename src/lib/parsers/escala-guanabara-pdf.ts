@@ -100,11 +100,14 @@ type Row = {
 
 // Pattern interno pra placa (ABC1234, ABC-1234, ABC 1234, ABC1D23, ABC-1D23, ABC 1D23)
 const PLACA_INLINE_RE = String.raw`[A-Z]{3}[\s-]?\d[A-Z0-9]\d{2}|[A-Z]{3}[\s-]?\d{4}`
-// Pattern interno pra tipo
-const TIPO_INLINE_RE = String.raw`TRUCK|TOCO\s*REFRIGERADO|TOCO|VUC|3\/4|KIA|CARRETA`
+// Pattern interno pra tipo — inclui TRCK (typo conhecido) e TRUCKR
+const TIPO_INLINE_RE = String.raw`TRUCKR|TRUCK|TRCK|TOCO\s*REFRIGERADO|TOCO|VUC|3\/4|KIA|CARRETA`
 // Combinado pra placa+tipo — sem \b no final: "TRUCKJOSE" é válido (tipo no meio da linha).
 // \s? aceita espaço opcional entre placa e tipo.
 const PLACA_TIPO_RE = new RegExp(`(${PLACA_INLINE_RE})\\s?(${TIPO_INLINE_RE})`, 'g')
+// Fallback: placa sem TIPO no final (rota 11 Arthur, rota 30 Daniel — PDF
+// omitiu o tipo). Match até fim da linha ou próxima sequência grande de números.
+const PLACA_SO_RE = new RegExp(`(${PLACA_INLINE_RE})(?=\\s*$|\\s*\\d)`, 'g')
 
 function parseRow(line: string): Row | null {
   const cleaned = line.replace(/\s*,\s*/g, ' ').replace(/\s+/g, ' ').trim()
@@ -145,6 +148,27 @@ function parseRow(line: string): Row | null {
 
     if (motorista) carros.push({ motorista, codigo, placa, tipo })
     cursor = m.index + m[0].length
+  }
+
+  // Fallback: se PLACA_TIPO_RE não pegou nada, tenta placa sozinha (sem tipo).
+  // Cobre PDFs onde o tipo foi omitido (rota 11, 30 do dia 19/05).
+  if (carros.length === 0) {
+    PLACA_SO_RE.lastIndex = 0
+    let m2: RegExpExecArray | null
+    let cursor2 = 0
+    while ((m2 = PLACA_SO_RE.exec(rest)) !== null) {
+      const before = rest.slice(cursor2, m2.index)
+      const placa = m2[1].trim()
+      let motorista = before.trim()
+      let codigo: string | null = null
+      const codMatch = before.match(/^([\s\S]+?)(\d{1,7})$/)
+      if (codMatch) {
+        motorista = codMatch[1].trim()
+        codigo = codMatch[2]
+      }
+      if (motorista) carros.push({ motorista, codigo, placa, tipo: null })
+      cursor2 = m2.index + m2[0].length
+    }
   }
 
   if (carros.length === 0) return null
