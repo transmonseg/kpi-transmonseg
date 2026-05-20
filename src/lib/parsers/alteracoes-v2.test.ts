@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { normalizaNomeMotorista, normalizaTexto, segmentaBlocos, extraiTokens, detectaSentido, detectaContexto } from './alteracoes-v2'
+import { normalizaNomeMotorista, normalizaTexto, segmentaBlocos, extraiTokens, detectaSentido, detectaContexto, parseAlteracoesV2 } from './alteracoes-v2'
+import type { ParseContext } from './alteracoes-v2.types'
 
 describe('normalizaNomeMotorista', () => {
   it('upper + remove acentos + colapsa espaços', () => {
@@ -172,5 +173,107 @@ describe('detectaContexto', () => {
   it('extrai motivo no fim da mensagem (sem label)', () => {
     const r = detectaContexto('Assai sai X entra Y carro quebrou', lojasCtx)
     expect(r.motivo).toContain('carro quebrou')
+  })
+})
+
+const ctxReal: ParseContext = {
+  associacoes: [
+    { motorista_nome: 'Fabrício', motorista_nome_norm: 'FABRICIO', motorista_codigo: null, placa_norm: 'QSW3B65', placa_raw: 'QSW-3B65', data_entrega: '2026-05-18', rede_id: 'ZONA_SUL' },
+    { motorista_nome: 'Jairo', motorista_nome_norm: 'JAIRO', motorista_codigo: null, placa_norm: 'TJQ6J26', placa_raw: 'TJQ-6J26', data_entrega: '2026-05-17', rede_id: 'ZONA_SUL' },
+    { motorista_nome: 'Allan', motorista_nome_norm: 'ALLAN', motorista_codigo: null, placa_norm: 'EZU9J51', placa_raw: 'EZU-9J51', data_entrega: '2026-05-18', rede_id: 'ASSAI' },
+    { motorista_nome: 'Jairo', motorista_nome_norm: 'JAIRO', motorista_codigo: null, placa_norm: 'UBO5E05', placa_raw: 'UBO-5E05', data_entrega: '2026-05-18', rede_id: 'ARMAZEM_GRAO' },
+    { motorista_nome: 'Agenor', motorista_nome_norm: 'AGENOR', motorista_codigo: 61, placa_norm: 'KPN4F36', placa_raw: 'KPN-4F36', data_entrega: '2026-05-18', rede_id: 'CARREFOUR' },
+    { motorista_nome: 'Vanor', motorista_nome_norm: 'VANOR', motorista_codigo: 61, placa_norm: 'KZJ0E14', placa_raw: 'KZJ-0E14', data_entrega: '2026-05-17', rede_id: 'CARREFOUR' },
+    { motorista_nome: 'Kanu', motorista_nome_norm: 'KANU', motorista_codigo: 738, placa_norm: 'KQR2J11', placa_raw: 'KQR-2J11', data_entrega: '2026-05-18', rede_id: 'PRINCESA' },
+    { motorista_nome: 'Rafael', motorista_nome_norm: 'RAFAEL', motorista_codigo: 184502, placa_norm: 'EYL8B91', placa_raw: 'EYL-8B91', data_entrega: '2026-05-17', rede_id: 'PRINCESA' },
+    { motorista_nome: 'Douglas', motorista_nome_norm: 'DOUGLAS', motorista_codigo: null, placa_norm: 'LTE0A64', placa_raw: 'LTE-0A64', data_entrega: '2026-05-18', rede_id: 'ZONA_SUL' },
+    { motorista_nome: 'Eduardo', motorista_nome_norm: 'EDUARDO', motorista_codigo: null, placa_norm: 'LQA5883', placa_raw: 'LQA-5883', data_entrega: '2026-05-18', rede_id: 'ZONA_SUL' },
+  ],
+  lojas: [],
+}
+
+describe('parseAlteracoesV2 - alterações reais do dia 18', () => {
+  it('1. ZS Mega Box', () => {
+    const texto = `Alteração zona sul
+Mega box
+Sai: Fabrício qsw3b65
+Entra: Jairo tjq6j26`
+    const blocos = parseAlteracoesV2(texto, ctxReal)
+    expect(blocos).toHaveLength(1)
+    expect(blocos[0].rede_id).toBe('ZONA_SUL')
+    expect(blocos[0].sai?.placa_norm).toBe('QSW3B65')
+    expect(blocos[0].entra?.placa_norm).toBe('TJQ6J26')
+  })
+
+  it('2. Assai Caxias troca de carro', () => {
+    const texto = `🚨Alteração 🚨
+Assai caxias
+Troca de carro
+Entra : UBO 5E05
+Sai : EZU 9J51
+Carro com bateria ruim.
+Motorista continua o mesmo.`
+    const blocos = parseAlteracoesV2(texto, ctxReal)
+    expect(blocos).toHaveLength(1)
+    expect(blocos[0].rede_id).toBe('ASSAI')
+    expect(blocos[0].sai?.placa_norm).toBe('EZU9J51')
+    expect(blocos[0].entra?.placa_norm).toBe('UBO5E05')
+    expect(blocos[0].motivo).toMatch(/bateria|troca de carro/i)
+  })
+
+  it('3. Carrefour Campos/Macaé com códigos', () => {
+    const texto = `🚨ALTERAÇÃO 🚨
+Carrefour Campos, é Macaé
+Entra: vanor 61 KZJ0E14
+Sai : AGENOR     61    KPN-4F36
+Motivo: caminhão quebrou`
+    const blocos = parseAlteracoesV2(texto, ctxReal)
+    expect(blocos).toHaveLength(1)
+    expect(blocos[0].rede_id).toBe('CARREFOUR')
+    expect(blocos[0].sai?.placa_norm).toBe('KPN4F36')
+    expect(blocos[0].entra?.placa_norm).toBe('KZJ0E14')
+    expect(blocos[0].motivo).toMatch(/quebrou/i)
+  })
+
+  it('4. Princesa Flamengo inline', () => {
+    const texto = 'alteração princesa flamengo sai kanu placa kqr2j11 cod 738 entra Rafael placa eyl 8b91 cod 184502 motivo carro quebrou'
+    const blocos = parseAlteracoesV2(texto, ctxReal)
+    expect(blocos).toHaveLength(1)
+    expect(blocos[0].rede_id).toBe('PRINCESA')
+    expect(blocos[0].sai?.placa_norm).toBe('KQR2J11')
+    expect(blocos[0].entra?.placa_norm).toBe('EYL8B91')
+  })
+
+  it('5. ZS Filial 43 + 23 (2 blocos)', () => {
+    const texto = `Alteração zona sul
+Filial 43
+Obs:. Troca de carro
+Sai: Douglas lte0a64
+Entra: Eduardo lqa5883
+
+Filial 23
+Sai: Eduardo lqa5883
+Entra: Douglas lte0a64`
+    const blocos = parseAlteracoesV2(texto, ctxReal)
+    expect(blocos).toHaveLength(2)
+    expect(blocos[0].filial).toBe(43)
+    expect(blocos[0].sai?.placa_norm).toBe('LTE0A64')
+    expect(blocos[0].entra?.placa_norm).toBe('LQA5883')
+    expect(blocos[1].filial).toBe(23)
+    expect(blocos[1].sai?.placa_norm).toBe('LQA5883')
+    expect(blocos[1].entra?.placa_norm).toBe('LTE0A64')
+  })
+
+  it('6. ZS Filial 45/47 (range vira 2 blocos)', () => {
+    const texto = `Alteração zona sul
+Filial 45/47
+Sai: Francisco Rjl7d33
+Entra: Eduardo krk3d12`
+    const blocos = parseAlteracoesV2(texto, ctxReal)
+    expect(blocos).toHaveLength(2)
+    expect(blocos[0].filial).toBe(45)
+    expect(blocos[1].filial).toBe(47)
+    expect(blocos[0].sai?.placa_norm).toBe('RJL7D33')
+    expect(blocos[1].sai?.placa_norm).toBe('RJL7D33')
   })
 })

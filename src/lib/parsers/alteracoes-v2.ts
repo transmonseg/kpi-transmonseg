@@ -1,4 +1,5 @@
-import type { ParseContext } from './alteracoes-v2.types'
+import type { AlteracaoBloco, ParseContext } from './alteracoes-v2.types'
+import { lookupSlot } from './lookup-canonical'
 
 export function normalizaNomeMotorista(s: string | null | undefined): string {
   if (!s) return ''
@@ -251,4 +252,51 @@ export function detectaContexto(
   }
 
   return { rede_id, loja_nome_raw, filial, motivo }
+}
+
+export function parseAlteracoesV2(texto: string, ctx: ParseContext): AlteracaoBloco[] {
+  const norm = normalizaTexto(texto)
+  const blocosTextuais = segmentaBlocos(norm)
+  return blocosTextuais.map((bt) => parseBloco(bt, ctx))
+}
+
+function parseBloco(blocoTexto: string, ctx: ParseContext): AlteracaoBloco {
+  const sentido = detectaSentido(blocoTexto)
+  const contexto = detectaContexto(blocoTexto, ctx.lojas)
+
+  const saiSlot = sentido.sai ? slotFromTrecho(sentido.sai, ctx) : null
+  const entraSlot = sentido.entra ? slotFromTrecho(sentido.entra, ctx) : null
+
+  const warnings: string[] = []
+  if (!sentido.sai) warnings.push('Sai não identificado')
+  if (!sentido.entra) warnings.push('Entra não identificado')
+  if (saiSlot && !saiSlot.motorista_nome) warnings.push('Sai: motorista não encontrado no banco')
+  if (entraSlot && !entraSlot.motorista_nome) warnings.push('Entra: motorista não encontrado no banco')
+  if (!contexto.rede_id) warnings.push('Rede não identificada')
+
+  let confianca: 'alta' | 'media' | 'baixa' = 'baixa'
+  const slotsOk = (saiSlot?.placa_norm ? 1 : 0) + (entraSlot?.placa_norm ? 1 : 0)
+  if (contexto.rede_id && slotsOk === 2) confianca = 'alta'
+  else if (contexto.rede_id && slotsOk >= 1) confianca = 'media'
+
+  return {
+    rede_id: contexto.rede_id,
+    loja_nome_raw: contexto.loja_nome_raw,
+    filial: contexto.filial,
+    sai: saiSlot,
+    entra: entraSlot,
+    motivo: contexto.motivo,
+    confianca,
+    warnings,
+    raw: blocoTexto,
+  }
+}
+
+function slotFromTrecho(trecho: string, ctx: ParseContext) {
+  const tokens = extraiTokens(trecho)
+  const nomeHint = normalizaNomeMotorista(tokens.textoSemTokens)
+  return lookupSlot(
+    { placas: tokens.placas, codigos: tokens.codigos, nomeHint },
+    ctx,
+  )
 }
