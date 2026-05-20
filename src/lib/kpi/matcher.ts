@@ -455,6 +455,16 @@ export async function cruzaEscalaUnitrac(
         paradaRedes.set(p.id, redes)
       }
 
+      // Fallback temporal AGORA RESTRITO: aceita só pares com tokens em comum.
+      // Antes (a)+(b)+(c) — (b)/(c) atribuíam paradas só por rede ou por
+      // ausência de rede, gerando matches "rede certa, loja errada" como
+      // KUL1425 (escala Pechincha, Unitrac Vila Isabel). Ambos PREZUNIC,
+      // mas lojas físicas DIFERENTES. Resultado: KPI mostrava horários da
+      // loja errada — pior que UNMATCHED.
+      //
+      // Agora: scorePair < Infinity OBRIGATÓRIO. Se nenhuma parada tem token
+      // em comum com a loja escalada, deixa UNMATCHED — o operador resolve
+      // ou aceita "NÃO FOI AO CLIENTE".
       const usadosFallback = new Set<number>()
       for (let i = 0; i < linhasOrdenadas.length; i++) {
         const linha = linhasOrdenadas[i]
@@ -463,21 +473,11 @@ export async function cruzaEscalaUnitrac(
           if (usadosFallback.has(j)) continue
           const parada = paradasOrdenadas[j]
           const redes = paradaRedes.get(parada.id) ?? new Set<string>()
-          // Bloqueia se a parada bate com outras redes mas NÃO com a da escala
+          // Bloqueia se a parada bate claramente com outra rede
           if (redes.size > 0 && !redes.has(linha.rede_id)) continue
-          // (a) tokens compartilhados no nome
+          // Único critério aceito: scorePair finito (tokens compartilhados
+          // ou levenshtein <= 2). Sem isso → UNMATCHED honesto.
           if (scorePair(linha, parada) < Infinity) {
-            melhorIdx = j
-            break
-          }
-          // (b) parada bate com loja da rede da escala
-          if (redes.has(linha.rede_id)) {
-            melhorIdx = j
-            break
-          }
-          // (c) parada não bate com nenhuma rede — aceita (caso ainda não
-          // cadastrada, fallback temporal seguro)
-          if (redes.size === 0) {
             melhorIdx = j
             break
           }
