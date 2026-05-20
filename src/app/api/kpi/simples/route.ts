@@ -105,12 +105,13 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
   if (!body) return new NextResponse('Body JSON inválido.', { status: 400 })
 
-  const { escalaBucketPath, escalaBucketPaths, unitracBucketPath, data, alteracoes = [] } = body as {
+  const { escalaBucketPath, escalaBucketPaths, unitracBucketPath, data, alteracoes = [], lineEdits = [] } = body as {
     escalaBucketPath?: string
     escalaBucketPaths?: string[]
     unitracBucketPath: string
     data: string
     alteracoes?: AltConfirmada[]
+    lineEdits?: Array<{ rede_id: string; ordem: number; placa?: string; motorista?: string }>
   }
 
   // Normalize to array
@@ -252,6 +253,17 @@ export async function POST(req: NextRequest) {
           const cmp = a.esc.loja_nome_raw.localeCompare(b.esc.loja_nome_raw)
           return cmp !== 0 ? cmp : a.esc.carro_ordem - b.esc.carro_ordem
         })
+
+      // Apply per-line overrides from frontend edits
+      for (const edit of lineEdits) {
+        if (edit.rede_id !== rede_id) continue
+        const i = edit.ordem - 1
+        if (i < 0 || i >= sorted.length) continue
+        if (edit.placa !== undefined)
+          sorted[i] = { ...sorted[i], rota: { ...sorted[i].rota, placa_norm: edit.placa || null } }
+        if (edit.motorista !== undefined)
+          sorted[i] = { ...sorted[i], esc: { ...sorted[i].esc, motorista_nome: edit.motorista || null } }
+      }
 
       const linhas: LinhaParaKpi[] = sorted.map(({ rota, esc }, idx) =>
         rotaToLinha(rota, esc, idx + 1)

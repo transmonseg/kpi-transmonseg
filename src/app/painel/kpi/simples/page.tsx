@@ -15,6 +15,7 @@ import {
   CalendarBlank,
   WifiSlash,
   WifiHigh,
+  ArrowClockwise,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button, Card, CardContent, Input, cn } from '@/components/ui'
 
@@ -308,6 +309,8 @@ export default function KpiSimplesPage() {
   const [redes, setRedes] = useState<RedeResult[] | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const [bucketPaths, setBucketPaths] = useState<{ escalaBucketPaths: string[]; unitracBucketPath: string } | null>(null)
+  const [lineEdits, setLineEdits] = useState<Record<string, { placa?: string; motorista?: string }>>({})
 
   function addAlteracao(a: AlteracaoParsed) { setAlteracoes(prev => [...prev, a]) }
   function removeAlteracao(idx: number) { setAlteracoes(prev => prev.filter((_, i) => i !== idx)) }
@@ -351,6 +354,7 @@ export default function KpiSimplesPage() {
 
     setErro(null)
     setRedes(null)
+    setLineEdits({})
 
     startTransition(async () => {
       try {
@@ -358,6 +362,8 @@ export default function KpiSimplesPage() {
           Promise.all(escalas.map(f => uploadComPresign(f, false))),
           uploadComPresign(unitrac, true),
         ])
+
+        setBucketPaths({ escalaBucketPaths, unitracBucketPath })
 
         const res = await fetch('/api/kpi/simples', {
           method: 'POST',
@@ -374,6 +380,34 @@ export default function KpiSimplesPage() {
   }
 
   const pronto = escalas.length > 0 && unitrac !== null && !!data
+
+  function handleLineEdit(redeId: string, ordem: number, field: 'placa' | 'motorista', value: string) {
+    const key = `${redeId}:::${ordem}`
+    setLineEdits(prev => ({ ...prev, [key]: { ...prev[key], [field]: value } }))
+  }
+
+  async function regenerar() {
+    if (!bucketPaths) return
+    setErro(null)
+    startTransition(async () => {
+      try {
+        const editsArr = Object.entries(lineEdits).map(([key, vals]) => {
+          const sep = key.indexOf(':::')
+          return { rede_id: key.slice(0, sep), ordem: parseInt(key.slice(sep + 3), 10), ...vals }
+        })
+        const res = await fetch('/api/kpi/simples', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...bucketPaths, data, alteracoes, lineEdits: editsArr }),
+        })
+        if (!res.ok) throw new Error((await res.text()) || 'Erro ao processar.')
+        const json = await res.json() as { redes: RedeResult[] }
+        setRedes(json.redes)
+      } catch (e) {
+        setErro(e instanceof Error ? e.message : 'Erro inesperado.')
+      }
+    })
+  }
 
   return (
     <div className="mx-auto w-full max-w-[1200px]">
@@ -502,7 +536,7 @@ export default function KpiSimplesPage() {
       {/* Resultado — preview completo por rede */}
       {redes && redes.length > 0 && (
         <section className="mt-12 space-y-8">
-          <div className="flex items-baseline justify-between">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex flex-col gap-1">
               <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
                 Pré-visualização KPI
@@ -511,13 +545,30 @@ export default function KpiSimplesPage() {
                 {redes.length} rede{redes.length === 1 ? '' : 's'} processada{redes.length === 1 ? '' : 's'}
               </h2>
             </div>
-            <span className="text-numeric text-[11px] text-[var(--color-fg-subtle)]">
-              {data}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-numeric text-[11px] text-[var(--color-fg-subtle)]">{data}</span>
+              {bucketPaths && Object.keys(lineEdits).length > 0 && (
+                <button
+                  type="button"
+                  onClick={regenerar}
+                  disabled={pending}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-[var(--color-navy-700)] px-3.5 py-2 text-[12px] font-semibold text-white transition-opacity duration-150 hover:opacity-90 disabled:opacity-50 active:scale-[0.97]"
+                >
+                  <ArrowClockwise size={13} weight="bold" />
+                  Re-gerar · {Object.keys(lineEdits).length} edit{Object.keys(lineEdits).length !== 1 ? 's' : ''}
+                </button>
+              )}
+            </div>
           </div>
 
           {redes.map(r => (
-            <RedePreviewSection key={r.rede_id} rede={r} data={data} />
+            <RedePreviewSection
+              key={r.rede_id}
+              rede={r}
+              data={data}
+              lineEdits={lineEdits}
+              onLineEdit={handleLineEdit}
+            />
           ))}
         </section>
       )}
@@ -640,7 +691,17 @@ function FileDropzone({ className, eyebrow, label, hint, accept, multiple, files
 // ─── Rede preview section ────────────────────────────────────────────────────
 
 
-function RedePreviewSection({ rede, data }: { rede: RedeResult; data: string }) {
+function RedePreviewSection({
+  rede,
+  data,
+  lineEdits,
+  onLineEdit,
+}: {
+  rede: RedeResult
+  data: string
+  lineEdits: Record<string, { placa?: string; motorista?: string }>
+  onLineEdit: (redeId: string, ordem: number, field: 'placa' | 'motorista', value: string) => void
+}) {
   const cobertura = rede.qtd_rotas > 0
     ? Math.round(((rede.qtd_rotas - rede.qtd_sem_gps) / rede.qtd_rotas) * 100)
     : 0
@@ -728,7 +789,13 @@ function RedePreviewSection({ rede, data }: { rede: RedeResult; data: string }) 
           </thead>
           <tbody className="divide-y divide-[var(--color-border)]">
             {rede.preview.map(linha => (
-              <PreviewRow key={linha.ordem} linha={linha} />
+              <PreviewRow
+                key={linha.ordem}
+                linha={linha}
+                redeId={rede.rede_id}
+                editValues={lineEdits[`${rede.rede_id}:::${linha.ordem}`] ?? {}}
+                onEdit={(field, value) => onLineEdit(rede.rede_id, linha.ordem, field, value)}
+              />
             ))}
           </tbody>
         </table>
@@ -737,8 +804,19 @@ function RedePreviewSection({ rede, data }: { rede: RedeResult; data: string }) 
   )
 }
 
-function PreviewRow({ linha }: { linha: PreviewLinha }) {
+function PreviewRow({
+  linha,
+  redeId,
+  editValues,
+  onEdit,
+}: {
+  linha: PreviewLinha
+  redeId: string
+  editValues: { placa?: string; motorista?: string }
+  onEdit: (field: 'placa' | 'motorista', value: string) => void
+}) {
   const semGps = !linha.tem_gps
+  const placaDisplay = linha.placa ? `${linha.placa.slice(0, 3)}-${linha.placa.slice(3)}` : ''
 
   return (
     <tr
@@ -755,13 +833,24 @@ function PreviewRow({ linha }: { linha: PreviewLinha }) {
       <td className="px-4 py-2.5 font-medium text-[var(--color-fg)] max-w-[200px]">
         <span className="block truncate">{linha.loja_nome}</span>
       </td>
-      <td className="px-4 py-2.5 text-numeric text-[var(--color-fg)]">
-        {linha.placa
-          ? `${linha.placa.slice(0, 3)}-${linha.placa.slice(3)}`
-          : <span className="text-[var(--color-fg-subtle)]">—</span>}
+      <td className="px-4 py-2 text-numeric text-[var(--color-fg)]">
+        <input
+          type="text"
+          value={editValues.placa ?? placaDisplay}
+          onChange={e => onEdit('placa', e.target.value.toUpperCase())}
+          placeholder="—"
+          spellCheck={false}
+          className="w-[88px] bg-transparent font-mono text-[12px] tracking-wider outline-none border-b border-transparent hover:border-[var(--color-border)] focus:border-[var(--color-navy-700)] transition-colors duration-100 rounded-none placeholder:text-[var(--color-fg-subtle)]"
+        />
       </td>
-      <td className="px-4 py-2.5 text-[var(--color-fg-muted)] hidden sm:table-cell max-w-[140px]">
-        <span className="block truncate">{linha.motorista ?? '—'}</span>
+      <td className="px-4 py-2 text-[var(--color-fg-muted)] hidden sm:table-cell max-w-[160px]">
+        <input
+          type="text"
+          value={editValues.motorista ?? (linha.motorista ?? '')}
+          onChange={e => onEdit('motorista', e.target.value)}
+          placeholder="—"
+          className="w-full max-w-[140px] bg-transparent text-[12px] outline-none border-b border-transparent hover:border-[var(--color-border)] focus:border-[var(--color-navy-700)] transition-colors duration-100 rounded-none truncate placeholder:text-[var(--color-fg-subtle)]"
+        />
       </td>
       <td className="px-4 py-2.5 text-center">
         {linha.tem_gps
