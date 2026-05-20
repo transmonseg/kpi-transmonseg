@@ -14,7 +14,10 @@ const REDES_TOKEN = new Set([
   'SENDAS','GUANABARA','MUNDIAL','VIANENSE','EMANUEL','SAMS','ATACADAO','FEIRA','NOVA',
   'CAB','PETROPOLIS','ARMAZEM','GRAO','ZONA','SUL','MERCADO','SUPERMERCADO',
 ])
-const STOPWORDS = new Set(['DO','DE','DA','DOS','DAS','SAO','SÃO','LOJA','REDE'])
+// IMPORTANTE: "SAO/SÃO" foi removida das stopwords. Filtrava "São Gonçalo"
+// virando só {GONCALO} e batia falso-positivo com qualquer outra rota "GONCALO".
+// "Sao Joao de Meriti" idem. Bairros RJ usam "SAO X" extensivamente.
+const STOPWORDS = new Set(['DO','DE','DA','DOS','DAS','LOJA','REDE'])
 
 function tokensCore(s: string | null | undefined): Set<string> {
   if (!s) return new Set()
@@ -37,12 +40,17 @@ function tokensCore(s: string | null | undefined): Set<string> {
   return out
 }
 
-function extraiNumero(tokens: Set<string>): string | null {
-  // Pega só números curtos (1-3 dígitos) que são identificadores de loja
+function extraiNumeros(tokens: Set<string>): Set<string> {
+  // Retorna TODOS os números curtos (1-3 dígitos) — identificadores de loja
   // (Buzios 1, Loja 18, etc). Códigos longos do Unitrac (9039018, 8590563)
   // são internos e não devem ser tratados como "número da loja" no match.
-  for (const t of tokens) if (/^\d{1,3}$/.test(t)) return t
-  return null
+  //
+  // ANTES retornava o primeiro encontrado (Set não tem ordem garantida em
+  // todos os engines) — fazia matchScore comparar números diferentes e dar
+  // Infinity em pares que deveriam casar.
+  const out = new Set<string>()
+  for (const t of tokens) if (/^\d{1,3}$/.test(t)) out.add(t)
+  return out
 }
 
 // Token mais longo (loja core), excluindo numeros
@@ -61,9 +69,15 @@ function matchScore(escalaNome: string, paradaNome: string): number {
   const tp = tokensCore(paradaNome)
   if (tl.size === 0 || tp.size === 0) return Infinity
 
-  const nL = extraiNumero(tl)
-  const nP = extraiNumero(tp)
-  if (nL !== null && nP !== null && nL !== nP) return Infinity
+  // Se AMBOS têm número de loja e os conjuntos não têm nenhum em comum,
+  // rejeita. (Buzios 1 vs Buzios 2 → Infinity. Cabo Frio 3 vs Cabo Frio 3 → ok.)
+  const numsL = extraiNumeros(tl)
+  const numsP = extraiNumeros(tp)
+  if (numsL.size > 0 && numsP.size > 0) {
+    let temComum = false
+    for (const n of numsL) if (numsP.has(n)) { temComum = true; break }
+    if (!temComum) return Infinity
+  }
 
   let common = 0
   for (const t of tl) if (tp.has(t)) common++
@@ -144,11 +158,18 @@ function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracPara
       last.codigo_loja &&
       p.codigo_loja &&
       last.codigo_loja === p.codigo_loja
-    if (mesmaLoja && last.saida && p.saida && last.chegada) {
-      last.saida = p.saida
-      last.duracao_seg = Math.round(
-        (new Date(p.saida).getTime() - new Date(last.chegada).getTime()) / 1000,
-      )
+    if (mesmaLoja) {
+      // Antes: exigia ambos saida e chegada não-null. Quando p.saida era null
+      // (caminhão ainda parado, última parada do dia), caía no else e empurrava
+      // parada repetida — depois `deduplicarPorCodigo` descartava uma e podia
+      // sumir a que tinha chegada válida. Agora consolida sempre que mesmaLoja.
+      const novaSaida = p.saida ?? last.saida
+      last.saida = novaSaida
+      if (last.chegada && novaSaida) {
+        last.duracao_seg = Math.round(
+          (new Date(novaSaida).getTime() - new Date(last.chegada).getTime()) / 1000,
+        )
+      }
     } else {
       out.push({ ...p })
     }
@@ -190,12 +211,17 @@ function resolveLojaId(
     if (byCode) return byCode.id
   }
 
-  // Priority 2: exact nome_unitrac match (cadastrado igualzinho ao Unitrac)
+  // Priority 2: nome_unitrac match (normalizado: trim + upper + sem acento)
   if (parada.nome_loja) {
-    const nomeRaw = parada.nome_loja.trim()
-    const byUnitracName = redeLojas.find(
-      (l) => l.nome_unitrac && l.nome_unitrac.trim() === nomeRaw,
-    )
+    const normPar = parada.nome_loja
+      .trim().toUpperCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    const byUnitracName = redeLojas.find((l) => {
+      if (!l.nome_unitrac) return false
+      const normLoja = l.nome_unitrac.trim().toUpperCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      return normLoja === normPar
+    })
     if (byUnitracName) return byUnitracName.id
   }
 
@@ -246,7 +272,12 @@ function scorePair(line: EscalaLinhaRow, p: UnitracParadaRow): number {
   if (line.loja_codigo_raw && p.codigo_loja) {
     const codL = line.loja_codigo_raw
     const codP = p.codigo_loja
-    if (codL === codP || codP.endsWith(codL) || codL.endsWith(codP)) s = 0
+    // Suffix-match exige length >= 3 — códigos curtos (1-9) viravam falso positivo
+    // com qualquer cod Unitrac terminado naquele dígito (ex: codL="1" casava com
+    // codP="9039021"). Guanabara/Zona Sul têm códigos curtos e quebravam.
+    if (codL === codP) s = 0
+    else if (codL.length >= 3 && codP.endsWith(codL)) s = 0
+    else if (codP.length >= 3 && codL.endsWith(codP)) s = 0
   }
   return s
 }
@@ -518,11 +549,11 @@ export async function cruzaEscalaUnitrac(
         viuBase = true
         continue
       }
-      if (p.classificacao === 'LOJA') {
-        firstRealStop = p
-        break
-      }
-      if (viuBase && p.classificacao === 'FORA_BASE') {
+      // LOJA ou FORA_BASE só contam como "primeira parada operacional" DEPOIS de
+      // ter passado pela BASE. Antes, LOJA-cedo-demais (caminhão fez entrega
+      // madrugada antes de voltar à base) abortava o loop e saida_cd virava null.
+      if (!viuBase) continue
+      if (p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE') {
         firstRealStop = p
         break
       }

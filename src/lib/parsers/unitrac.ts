@@ -90,15 +90,38 @@ function cellValue(row: ExcelJS.Row, col: number): unknown {
 const BASE_LOCAL = 'BASE BENASSI - BASE BENASSI'
 const FORA_LOCAL = 'FORA DE BASE E LOCAL DE SERVIÇO'
 
+// Detecta geofence LOJA: "CÓDIGO - NOME" onde código tem 4+ dígitos.
+// Filtra "ROTA X" / "BASE BENASSI" / "FORA DE BASE" como NÃO-LOJA.
+const LOJA_GF_RE = /^\d{4,}\s*-\s*\S/
+
 // Unitrac retorna múltiplas geofences sobrepostas separadas por vírgula
 // (ex: "BASE BENASSI - BASE BENASSI,25140000 - EMANUEL- REDE ECONOMIA...").
-// A primeira é a "primária" (mais específica/relevante).
+// A primeira costuma ser a "primária" mas quando o caminhão chega num cliente
+// que tem geofence sobreposta com a BASE/ROTA, o Unitrac mistura — precisa
+// escolher a geofence LOJA específica em vez de pegar só a primeira.
 function primaryLocal(local: string): string {
   return (local ?? '').split(',')[0].trim()
 }
 
+// Procura entre TODAS as geofences a primeira que tem formato de loja
+// (CODIGO_LONGO - NOME). Retorna null se nenhuma bate.
+function findLojaGeofence(local: string): string | null {
+  const parts = (local ?? '').split(',').map(p => p.trim())
+  for (const p of parts) {
+    if (LOJA_GF_RE.test(p) && !p.startsWith('BASE BENASSI') && !p.startsWith('FORA DE BASE')) {
+      // Filtra também "ROTA X" (geofence genérica de rota, não loja física)
+      if (!/^\d+\s*-\s*ROTA\s/i.test(p)) return p
+    }
+  }
+  return null
+}
+
 function classificaParada(local: string, duracaoSeg: number): ParadaUnitrac['classificacao'] {
   const primaria = primaryLocal(local)
+  // Se há geofence LOJA específica entre as sobrepostas, sempre é LOJA mesmo
+  // que a primária seja BASE ou FORA. Fix do bug: caminhão parado em raio
+  // sobreposto BASE+LOJA virava BASE indevidamente.
+  if (findLojaGeofence(local)) return 'LOJA'
   if (primaria === BASE_LOCAL) {
     return duracaoSeg > 900 ? 'BASE' : 'FAKE_EXIT'
   }
@@ -109,11 +132,13 @@ function classificaParada(local: string, duracaoSeg: number): ParadaUnitrac['cla
 }
 
 function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: string | null } {
-  const primaria = primaryLocal(local)
-  const idx = primaria.indexOf(' - ')
+  // Prefere a geofence LOJA específica (se houver) sobre a primária.
+  // Antes só usava primaryLocal — perdia paradas onde BASE/ROTA estava antes.
+  const target = findLojaGeofence(local) ?? primaryLocal(local)
+  const idx = target.indexOf(' - ')
   if (idx === -1) return { codigo_loja: null, nome_loja: null }
-  const codigo = primaria.slice(0, idx).trim()
-  const nome = primaria.slice(idx + 3).trim() || null
+  const codigo = target.slice(0, idx).trim()
+  const nome = target.slice(idx + 3).trim() || null
   return { codigo_loja: codigo || null, nome_loja: nome }
 }
 
