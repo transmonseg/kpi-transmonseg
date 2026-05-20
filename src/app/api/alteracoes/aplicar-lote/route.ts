@@ -12,7 +12,9 @@ interface ReqBody {
   data: string // YYYY-MM-DD
 }
 
-function inferirTipo(b: AlteracaoBloco): 'SUBSTITUICAO' | 'INCLUSAO' | 'COMUNICADO' {
+type TipoAlteracao = 'SUBSTITUICAO' | 'INCLUSAO' | 'COMUNICADO'
+
+function inferirTipo(b: AlteracaoBloco): TipoAlteracao {
   if (b.sai && b.entra) return 'SUBSTITUICAO'
   if (!b.sai && b.entra) return 'INCLUSAO'
   return 'COMUNICADO'
@@ -35,32 +37,100 @@ export async function POST(req: NextRequest) {
   const svc = createServiceClient()
   const erros: Array<{ idx: number; msg: string }> = []
   const redesAfetadas = new Set<string>()
+  const tiposAplicaveis: TipoAlteracao[] = ['SUBSTITUICAO', 'INCLUSAO']
+  let blocosAplicadosEmEscala = 0
 
   for (let i = 0; i < body.blocos.length; i++) {
     const b = body.blocos[i]
+    const tipo = inferirTipo(b)
+    const placaEntraNorm = b.entra?.placa_norm ?? null
+    const placaSaiNorm = b.sai?.placa_norm ?? null
+    const motoristaEntraNome = b.entra?.motorista_nome ?? null
+    const motoristaSaiNome = b.sai?.motorista_nome ?? null
+
     const payload = {
       data_alteracao: body.data,
       rede_id: b.rede_id,
       loja_raw: b.loja_nome_raw,
-      tipo: inferirTipo(b),
-      motorista_entra: b.entra?.motorista_nome ?? null,
+      tipo,
+      motorista_entra: motoristaEntraNome,
       motorista_entra_codigo:
         b.entra?.motorista_codigo != null ? String(b.entra.motorista_codigo) : null,
-      placa_entra_norm: b.entra?.placa_norm ?? null,
-      motorista_sai: b.sai?.motorista_nome ?? null,
+      placa_entra_norm: placaEntraNorm,
+      motorista_sai: motoristaSaiNome,
       motorista_sai_codigo:
         b.sai?.motorista_codigo != null ? String(b.sai.motorista_codigo) : null,
-      placa_sai_norm: b.sai?.placa_norm ?? null,
+      placa_sai_norm: placaSaiNorm,
       motivo: b.motivo,
       texto_original: b.raw,
       confianca: b.confianca,
       status: 'pendente',
     }
-    const { error } = await svc.from('alteracoes').insert(payload)
-    if (error) {
-      erros.push({ idx: i, msg: error.message })
-    } else if (b.rede_id) {
-      redesAfetadas.add(b.rede_id)
+    const { data: inserted, error } = await svc
+      .from('alteracoes')
+      .insert(payload)
+      .select('id')
+      .single()
+
+    if (error || !inserted) {
+      erros.push({ idx: i, msg: error?.message ?? 'falha ao inserir alteracao' })
+      continue
+    }
+
+    if (b.rede_id) redesAfetadas.add(b.rede_id)
+
+    // Tenta aplicar em escala_linhas se confiança ok e tipo aplicável
+    if (b.confianca !== 'baixa' && tiposAplicaveis.includes(tipo)) {
+      let linhaId: string | null = null
+
+      if (placaSaiNorm) {
+        const { data: porPlaca } = await svc
+          .from('escala_linhas')
+          .select('id')
+          .eq('data_entrega', body.data)
+          .eq('placa_norm', placaSaiNorm)
+          .limit(1)
+          .maybeSingle()
+        if (porPlaca) linhaId = porPlaca.id
+      }
+
+      if (!linhaId && motoristaSaiNome) {
+        const { data: porNome } = await svc
+          .from('escala_linhas')
+          .select('id')
+          .eq('data_entrega', body.data)
+          .ilike('motorista_nome', `%${motoristaSaiNome}%`)
+          .limit(1)
+          .maybeSingle()
+        if (porNome) linhaId = porNome.id
+      }
+
+      if (linhaId) {
+        const updatePayload: { placa_norm?: string; motorista_nome?: string } = {}
+        if (placaEntraNorm) updatePayload.placa_norm = placaEntraNorm
+        if (motoristaEntraNome) updatePayload.motorista_nome = motoristaEntraNome
+
+        if (Object.keys(updatePayload).length > 0) {
+          const { error: updErr } = await svc
+            .from('escala_linhas')
+            .update(updatePayload)
+            .eq('id', linhaId)
+
+          if (!updErr) {
+            await svc
+              .from('alteracoes')
+              .update({
+                status: 'aplicada',
+                aplicada_em: new Date().toISOString(),
+                aplicada_por: user.id,
+                escala_linha_id: linhaId,
+              })
+              .eq('id', inserted.id)
+
+            blocosAplicadosEmEscala += 1
+          }
+        }
+      }
     }
   }
 
@@ -81,6 +151,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     aplicados: body.blocos.length - erros.length,
     erros,
+    blocos_aplicados_em_escala: blocosAplicadosEmEscala,
     redes_reprocessadas: [...redesAfetadas],
     reprocessar_status: reprocessResults.map((r) => r.status),
   })
