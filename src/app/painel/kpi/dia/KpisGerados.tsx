@@ -6,6 +6,8 @@ import {
   FloppyDisk,
   CircleNotch,
   CaretDown,
+  PencilSimpleLine,
+  DotsThreeVertical,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Badge,
@@ -194,6 +196,8 @@ export function KpisGerados({
   const [resolvendo, setResolvendo] = useState<string | null>(null)
   const [marcandoSemEntrega, setMarcandoSemEntrega] = useState<string | null>(null)
   const [editMapHora, setEditMapHora] = useState<HoraMap>({})
+  const [bulkMenuOpen, setBulkMenuOpen] = useState<string | null>(null)
+  const [marcandoBulk, setMarcandoBulk] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -470,6 +474,46 @@ export function KpisGerados({
     }
   }
 
+  async function marcarTodasSemRastreadorComoSemEntrega(kpiId: string) {
+    const det = detalhe[kpiId]
+    if (!det) return
+    const alvos = det.linhas.filter(
+      (l) => l.anomalias_codigos.includes('ANOM-01') && l.kpi_rota_id && l.rota_status !== 'sem_entrega',
+    )
+    if (alvos.length === 0) {
+      alert('Nenhuma linha SEM RASTREADOR encontrada nesta rede.')
+      return
+    }
+    const ok = window.confirm(
+      `Marcar ${alvos.length} linha${alvos.length === 1 ? '' : 's'} SEM RASTREADOR como "sem entrega"?\n\nEsta ação não pode ser desfeita em massa.`,
+    )
+    if (!ok) return
+
+    setMarcandoBulk(kpiId)
+    try {
+      const rotaIdsUnicos = Array.from(new Set(alvos.map((l) => l.kpi_rota_id!).filter(Boolean)))
+      await Promise.all(
+        rotaIdsUnicos.map((rotaId) =>
+          fetch(`/api/kpi/rotas/${rotaId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'sem_entrega' }),
+          }).then((r) => { if (!r.ok) throw new Error(`Falha ao marcar rota ${rotaId}`) }),
+        ),
+      )
+      setDetalhe((prev) => { const e = { ...prev }; delete e[kpiId]; return e })
+      await carregarDetalhe(kpiId)
+      const diasRes = await fetch(`/api/kpi/dia?data=${data}`)
+      if (diasRes.ok) setKpis(await diasRes.json())
+    } catch (e) {
+      console.error('Erro ao marcar em massa', e)
+      alert('Erro ao marcar em massa. Verifique o console.')
+    } finally {
+      setMarcandoBulk(null)
+      setBulkMenuOpen(null)
+    }
+  }
+
   async function baixar(kpiId: string, tipo: 'xlsx' | 'pdf') {
     setDownloadingId(`${kpiId}:${tipo}`)
     try {
@@ -577,6 +621,51 @@ export function KpisGerados({
                       ? <CircleNotch size={13} weight="bold" className="animate-spin" />
                       : <><DownloadSimple size={13} weight="bold" />PDF</>}
                   </Button>
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setBulkMenuOpen(bulkMenuOpen === k.kpi_id ? null : k.kpi_id)}
+                      aria-label="Mais ações"
+                      title="Mais ações"
+                    >
+                      <DotsThreeVertical size={15} weight="bold" />
+                    </Button>
+                    {bulkMenuOpen === k.kpi_id && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setBulkMenuOpen(null)}
+                          aria-hidden
+                        />
+                        <div className="absolute right-0 top-full mt-1 z-20 min-w-[240px] rounded-md border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-lg py-1 text-[11px]">
+                          <button
+                            onClick={() => marcarTodasSemRastreadorComoSemEntrega(k.kpi_id)}
+                            disabled={marcandoBulk === k.kpi_id || !detalhe[k.kpi_id]}
+                            className="w-full text-left px-3 py-1.5 hover:bg-[var(--color-bg-hover)] text-[var(--color-fg)] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                            title={!detalhe[k.kpi_id] ? 'Abra o painel de revisão primeiro' : ''}
+                          >
+                            {marcandoBulk === k.kpi_id
+                              ? 'Marcando…'
+                              : 'Marcar todas SEM RASTREADOR como sem entrega'}
+                          </button>
+                          <div className="border-t border-[var(--color-border)] my-1" />
+                          <button
+                            onClick={() => { setBulkMenuOpen(null); baixar(k.kpi_id, 'xlsx') }}
+                            className="w-full text-left px-3 py-1.5 hover:bg-[var(--color-bg-hover)] text-[var(--color-fg)] cursor-pointer"
+                          >
+                            Exportar XLSX
+                          </button>
+                          <button
+                            onClick={() => { setBulkMenuOpen(null); baixar(k.kpi_id, 'pdf') }}
+                            className="w-full text-left px-3 py-1.5 hover:bg-[var(--color-bg-hover)] text-[var(--color-fg)] cursor-pointer"
+                          >
+                            Exportar PDF
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -676,6 +765,33 @@ function PainelRevisao({
     return { total, altas, medias, baixas, semAnomalia, comAnom }
   }, [det.linhas])
 
+  // Contagem por situação (label exato do badge)
+  const situacaoStats = useMemo(() => {
+    const counts: Record<string, { count: number; variant: SituacaoVariant }> = {}
+    for (const l of det.linhas) {
+      const s = situacaoInfo(l)
+      if (!counts[s.label]) counts[s.label] = { count: 0, variant: s.variant }
+      counts[s.label].count += 1
+    }
+    // Ordenar: danger > warning > muted > success (mas OK no fim com bg verde)
+    const ordemVariant: Record<SituacaoVariant, number> = { danger: 0, warning: 1, muted: 2, success: 3 }
+    return Object.entries(counts)
+      .map(([label, info]) => ({ label, ...info }))
+      .sort((a, b) => ordemVariant[a.variant] - ordemVariant[b.variant] || b.count - a.count)
+  }, [det.linhas])
+
+  // Conta edições pendentes (motorista/placa + horários)
+  const totalEdits = useMemo(() => {
+    let n = 0
+    for (const linhaId of Object.keys(editMap)) {
+      n += Object.keys(editMap[linhaId] ?? {}).length
+    }
+    for (const linhaId of Object.keys(editMapHora)) {
+      n += Object.keys(editMapHora[linhaId] ?? {}).length
+    }
+    return n
+  }, [editMap, editMapHora])
+
   const linhasFiltradas = useMemo(() => {
     if (filtro === 'com_anomalia') return det.linhas.filter(linhaTemAnomalia)
     if (filtro === 'sem_anomalia') return det.linhas.filter((l) => !linhaTemAnomalia(l))
@@ -693,7 +809,7 @@ function PainelRevisao({
   ]
 
   return (
-    <div>
+    <div className="relative">
       {/* Barra de stats simples */}
       <div className="flex items-center gap-4 px-3 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)]">
         {([
@@ -709,17 +825,6 @@ function PainelRevisao({
           </div>
         ))}
         <div className="flex-1" />
-        {/* Ações */}
-        {temEdits && (
-          <Button
-            size="sm"
-            onClick={onSalvar}
-            disabled={salvando}
-            className="bg-[var(--color-warning)] text-white hover:opacity-90"
-          >
-            {salvando ? <><Spinner />Salvando…</> : <><IconSave />Salvar e Re-gerar</>}
-          </Button>
-        )}
         <Button variant="secondary" size="sm" onClick={() => onBaixar('xlsx')}>
           <IconDownload />XLSX
         </Button>
@@ -727,6 +832,28 @@ function PainelRevisao({
           <IconDownload />PDF
         </Button>
       </div>
+
+      {/* Resumo por situação */}
+      {situacaoStats.length > 0 && (
+        <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-[var(--color-border)] bg-[var(--color-bg)] flex-wrap">
+          <span className="text-[10px] uppercase tracking-wider text-[var(--color-fg-subtle)] mr-1">Situação:</span>
+          {situacaoStats.map((s) => (
+            <span
+              key={s.label}
+              className={cn(
+                'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap',
+                s.variant === 'danger' && 'bg-[var(--color-danger-soft)] text-[var(--color-danger-soft-fg)]',
+                s.variant === 'warning' && 'bg-[var(--color-warning-soft)] text-[var(--color-warning-soft-fg)]',
+                s.variant === 'success' && 'bg-[var(--color-success-soft,#dcfce7)] text-[var(--color-success-soft-fg,#166534)]',
+                s.variant === 'muted' && 'bg-[var(--color-bg-subtle)] text-[var(--color-fg-muted)]',
+              )}
+            >
+              <span className="uppercase tracking-wide">{s.label}</span>
+              <span className="tabular-nums opacity-80">{s.count}</span>
+            </span>
+          ))}
+        </div>
+      )}
 
       {temEdits && (
         <div className="border-b border-[var(--color-border)] bg-[var(--color-warning-soft)]/40 px-4 py-1.5 text-[11px] text-[var(--color-warning-soft-fg)] font-medium">
@@ -821,9 +948,9 @@ function PainelRevisao({
       </div>
 
       {/* Tabela */}
-      <div className="overflow-x-auto">
+      <div className="overflow-auto max-h-[70vh]">
         <table className="w-full text-[11px] tabular-nums">
-          <thead className="bg-[var(--color-bg-subtle)] text-[var(--color-fg-muted)]">
+          <thead className="sticky top-0 z-10 bg-[var(--color-bg-subtle)] text-[var(--color-fg-muted)] shadow-[0_1px_0_var(--color-border)]">
             <tr>
               <Th>#</Th>
               <Th>Situação</Th>
@@ -854,9 +981,9 @@ function PainelRevisao({
                 <tr
                   key={`${l.kpi_id}-${l.ordem}-${l.carro_ordem}`}
                   className={cn(
-                    'border-t border-[var(--color-border)]',
+                    'border-t border-[var(--color-border)] transition-[filter,background-color] duration-100',
                     rowBg,
-                    !rowBg && 'hover:bg-[var(--color-bg-hover)]',
+                    rowBg ? 'hover:brightness-[0.96]' : 'hover:bg-[var(--color-bg-hover)]',
                   )}
                 >
                   <Td>
@@ -952,6 +1079,37 @@ function PainelRevisao({
         {linhasFiltradas.length} de {stats.total} linha
         {stats.total === 1 ? '' : 's'} · KPI {kpi.kpi_id.slice(0, 8)}
       </div>
+
+      {/* FAB de Salvar e Re-gerar — aparece flutuante quando há edits pendentes */}
+      {temEdits && (
+        <div className="sticky bottom-3 z-20 flex justify-end px-3 pb-3 pointer-events-none">
+          <button
+            type="button"
+            onClick={onSalvar}
+            disabled={salvando}
+            className={cn(
+              'pointer-events-auto inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[12px] font-semibold shadow-lg ring-1 ring-black/5',
+              'bg-[var(--color-warning)] text-white hover:opacity-90 active:scale-[0.98] transition-all',
+              'disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer',
+            )}
+            title="Salvar alterações e re-gerar planilha/PDF"
+          >
+            {salvando ? (
+              <>
+                <Spinner /> Salvando…
+              </>
+            ) : (
+              <>
+                <IconSave />
+                Salvar e Re-gerar
+                <span className="ml-1 inline-flex items-center justify-center rounded-full bg-white/25 px-1.5 py-0.5 text-[10px] tabular-nums leading-none min-w-[18px]">
+                  {totalEdits}
+                </span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -1088,19 +1246,27 @@ function CelulaEditavel({
 }) {
   const vazio = !valor || valor === SEM_VALOR
   return (
-    <input
-      value={vazio ? '' : valor}
-      placeholder="—"
-      onChange={(e) => onChange(e.target.value)}
-      className={cn(
-        'w-full rounded border px-2 py-1 text-[11px] transition-colors',
-        'border-[var(--color-border)] bg-[var(--color-bg-subtle)]',
-        'hover:border-[var(--color-accent)]/50 hover:bg-[var(--color-bg)]',
-        'focus:border-[var(--color-accent)] focus:bg-[var(--color-bg-elevated)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30',
-        monospace && 'font-mono text-[10.5px] uppercase tracking-wider',
-        vazio ? 'italic text-[var(--color-fg-subtle)]' : 'text-[var(--color-fg)]',
-      )}
-    />
+    <div className="group relative">
+      <input
+        value={vazio ? '' : valor}
+        placeholder="—"
+        onChange={(e) => onChange(e.target.value)}
+        className={cn(
+          'w-full rounded border pl-2 pr-6 py-1 text-[11px] transition-colors',
+          'border-[var(--color-border)] bg-[var(--color-bg-subtle)]',
+          'hover:border-[var(--color-accent)]/50 hover:bg-[var(--color-bg)]',
+          'focus:border-[var(--color-accent)] focus:bg-[var(--color-bg-elevated)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30',
+          monospace && 'font-mono text-[10.5px] uppercase tracking-wider',
+          vazio ? 'italic text-[var(--color-fg-subtle)]' : 'text-[var(--color-fg)]',
+        )}
+      />
+      <PencilSimpleLine
+        size={10}
+        weight="bold"
+        aria-hidden
+        className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[var(--color-fg-subtle)] opacity-0 transition-opacity group-hover:opacity-70 group-focus-within:opacity-0"
+      />
+    </div>
   )
 }
 
@@ -1116,7 +1282,7 @@ function CelulaHoraTd({
   const displayVal = editVal !== undefined ? editVal : isoParaHHMM(iso)
   const editado = editVal !== undefined && editVal !== isoParaHHMM(iso)
   return (
-    <Td className="px-1 py-0.5 w-20">
+    <Td className={cn('px-1 py-0.5 w-20', editado && 'bg-[var(--color-warning-soft)]/40')}>
       {onChange ? (
         <input
           type="time"
@@ -1125,7 +1291,7 @@ function CelulaHoraTd({
           className={cn(
             'w-full rounded border px-1.5 py-1 text-[11px] font-mono transition-colors',
             editado
-              ? 'border-[var(--color-warning)] bg-[var(--color-warning-soft)]/30 text-[var(--color-fg)]'
+              ? 'border-[var(--color-warning)] bg-[var(--color-warning-soft)]/60 text-[var(--color-fg)] ring-1 ring-[var(--color-warning)]/30'
               : 'border-[var(--color-border)] bg-[var(--color-bg-subtle)] text-[var(--color-fg)]',
             'hover:border-[var(--color-accent)]/50 focus:border-[var(--color-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]/30',
           )}
@@ -1164,8 +1330,9 @@ function ParadaCellEditavel({
     tempoMin = diff > 0 ? diff : null
   }
 
+  const algumEditado = editadoChd || editadoSai
   return (
-    <Td className="px-1 py-0.5 min-w-[90px]">
+    <Td className={cn('px-1 py-0.5 min-w-[90px]', algumEditado && 'bg-[var(--color-warning-soft)]/40')}>
       <div className="flex flex-col gap-0.5">
         {onChangeChd ? (
           <input
@@ -1175,7 +1342,7 @@ function ParadaCellEditavel({
             className={cn(
               'w-full rounded border px-1 py-0.5 text-[10px] font-mono transition-colors',
               editadoChd
-                ? 'border-[var(--color-warning)] bg-[var(--color-warning-soft)]/30'
+                ? 'border-[var(--color-warning)] bg-[var(--color-warning-soft)]/60 ring-1 ring-[var(--color-warning)]/30'
                 : 'border-[var(--color-border)] bg-[var(--color-bg-subtle)]',
               'focus:border-[var(--color-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]/30',
             )}
@@ -1191,7 +1358,7 @@ function ParadaCellEditavel({
             className={cn(
               'w-full rounded border px-1 py-0.5 text-[10px] font-mono transition-colors',
               editadoSai
-                ? 'border-[var(--color-warning)] bg-[var(--color-warning-soft)]/30'
+                ? 'border-[var(--color-warning)] bg-[var(--color-warning-soft)]/60 ring-1 ring-[var(--color-warning)]/30'
                 : 'border-[var(--color-border)] bg-[var(--color-bg-subtle)]',
               'focus:border-[var(--color-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]/30',
             )}
@@ -1202,7 +1369,7 @@ function ParadaCellEditavel({
         {tempoMin != null && tempoMin > 0 && (
           <span className={cn(
             'text-[9px]',
-            editadoChd || editadoSai ? 'text-[var(--color-warning)]' : 'text-[var(--color-fg-muted)]',
+            algumEditado ? 'text-[var(--color-warning)]' : 'text-[var(--color-fg-muted)]',
           )}>{tempoMin}min</span>
         )}
       </div>
