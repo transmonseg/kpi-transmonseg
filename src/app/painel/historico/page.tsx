@@ -5,6 +5,7 @@ import {
   CaretRight,
   FileMagnifyingGlass,
   ClockCounterClockwise,
+  ArrowClockwise,
 } from '@phosphor-icons/react/dist/ssr'
 import { createServiceClient } from '@/lib/supabase/service'
 import { cn } from '@/components/ui'
@@ -182,92 +183,99 @@ export default async function HistoricoPage({
               </tr>
             </thead>
             <tbody>
-              {geracoes.map(g => (
-                <tr
-                  key={g.id}
-                  className="border-t border-[var(--color-border)] transition-colors hover:bg-[var(--color-bg-subtle)]"
-                >
-                  <Td>
-                    <div className="flex flex-col">
-                      <span className="font-medium text-[var(--color-fg)]">{formatarData(g.data)}</span>
-                      <span className="text-numeric text-[11px] text-[var(--color-fg-subtle)]">{g.data}</span>
-                    </div>
-                  </Td>
-                  <Td>
-                    <div className="flex flex-wrap gap-1.5">
-                      {g.redes.map(r => (
-                        <span
-                          key={r.rede_id}
-                          className="inline-flex items-center gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[var(--color-fg-muted)]"
-                        >
-                          {r.rede_nome}
-                          <span className="text-numeric text-[var(--color-fg-subtle)]">
-                            {r.qtd_rotas}
+              {geracoes.map(g => {
+                const hrefRegerar = `/painel/kpi/simples?geracao=${g.id}`
+                return (
+                  <tr
+                    key={g.id}
+                    className="group border-t border-[var(--color-border)] transition-colors hover:bg-[var(--color-bg-subtle)] cursor-pointer"
+                  >
+                    <Td>
+                      <Link href={hrefRegerar} className="flex flex-col">
+                        <span className="font-medium text-[var(--color-fg)] group-hover:text-[var(--color-navy-700)]">{formatarData(g.data)}</span>
+                        <span className="text-numeric text-[11px] text-[var(--color-fg-subtle)]">{g.data}</span>
+                      </Link>
+                    </Td>
+                    <Td>
+                      <Link href={hrefRegerar} className="flex flex-wrap gap-1.5">
+                        {g.redes.map(r => (
+                          <span
+                            key={r.rede_id}
+                            className="inline-flex items-center gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[var(--color-fg-muted)]"
+                          >
+                            {r.rede_nome}
+                            <span className="text-numeric text-[var(--color-fg-subtle)]">
+                              {r.qtd_rotas}
+                            </span>
                           </span>
+                        ))}
+                      </Link>
+                    </Td>
+                    <Td align="right">
+                      <Link href={hrefRegerar}>
+                        <span className="text-numeric text-[14px] font-medium text-[var(--color-fg)]">
+                          {g.total_rotas}
                         </span>
-                      ))}
-                    </div>
-                  </Td>
-                  <Td align="right">
-                    <span className="text-numeric text-[14px] font-medium text-[var(--color-fg)]">
-                      {g.total_rotas}
-                    </span>
-                  </Td>
-                  <Td align="right">
-                    <span className={cn('text-numeric text-[13px]', g.total_sem_gps > 0 ? 'text-[var(--color-warning)]' : 'text-[var(--color-fg-subtle)]')}>
-                      {g.total_sem_gps}
-                    </span>
-                  </Td>
-                  <Td align="right">
-                    {(() => {
-                      const high = g.redes.reduce((s, r) => s + (r.qtd_anomalias_high ?? 0), 0)
-                      const med = g.redes.reduce((s, r) => s + (r.qtd_anomalias_medium ?? 0), 0)
-                      const low = g.redes.reduce((s, r) => s + (r.qtd_anomalias_low ?? 0), 0)
-                      const total = high + med + low
-                      if (total === 0) return <span className="text-[12px] text-[var(--color-fg-subtle)]">limpo</span>
-                      return (
-                        <span className="inline-flex items-center gap-1">
-                          {high > 0 && (
-                            <span className="inline-flex h-5 items-center gap-1 rounded border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-1.5 text-[10px] font-semibold text-[var(--color-danger-soft-fg)]">
-                              <span className="text-numeric">{high}</span>H
-                            </span>
-                          )}
-                          {med > 0 && (
-                            <span className="inline-flex h-5 items-center gap-1 rounded border border-[var(--color-warning)]/30 bg-[var(--color-warning-soft)] px-1.5 text-[10px] font-semibold text-[var(--color-warning-soft-fg)]">
-                              <span className="text-numeric">{med}</span>M
-                            </span>
-                          )}
-                          {low > 0 && (
-                            <span className="inline-flex h-5 items-center gap-1 rounded border border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-1.5 text-[10px] font-medium text-[var(--color-fg-muted)]">
-                              <span className="text-numeric">{low}</span>L
-                            </span>
-                          )}
+                      </Link>
+                    </Td>
+                    <Td align="right">
+                      <Link href={hrefRegerar}>
+                        <span className={cn('text-numeric text-[13px]', g.total_sem_gps > 0 ? 'text-[var(--color-warning)]' : 'text-[var(--color-fg-subtle)]')}>
+                          {g.total_sem_gps}
                         </span>
-                      )
-                    })()}
-                  </Td>
-                  <Td>
-                    <span className="text-numeric text-[12px] text-[var(--color-fg-muted)]">
-                      {g.gerado_em
-                        ? new Date(g.gerado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
-                        : '—'}
-                    </span>
-                  </Td>
-                  <Td align="right">
-                    <Link
-                      href={`/painel/kpi/simples?geracao=${g.id}`}
-                      className="group inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-fg)] hover:text-[var(--color-navy-700)]"
-                    >
-                      Reabrir
-                      <ArrowUpRight
-                        size={12}
-                        weight="bold"
-                        className="transition-transform duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                      />
-                    </Link>
-                  </Td>
-                </tr>
-              ))}
+                      </Link>
+                    </Td>
+                    <Td align="right">
+                      <Link href={hrefRegerar}>
+                        {(() => {
+                          const high = g.redes.reduce((s, r) => s + (r.qtd_anomalias_high ?? 0), 0)
+                          const med = g.redes.reduce((s, r) => s + (r.qtd_anomalias_medium ?? 0), 0)
+                          const low = g.redes.reduce((s, r) => s + (r.qtd_anomalias_low ?? 0), 0)
+                          const total = high + med + low
+                          if (total === 0) return <span className="text-[12px] text-[var(--color-fg-subtle)]">limpo</span>
+                          return (
+                            <span className="inline-flex items-center gap-1">
+                              {high > 0 && (
+                                <span className="inline-flex h-5 items-center gap-1 rounded border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-1.5 text-[10px] font-semibold text-[var(--color-danger-soft-fg)]">
+                                  <span className="text-numeric">{high}</span>H
+                                </span>
+                              )}
+                              {med > 0 && (
+                                <span className="inline-flex h-5 items-center gap-1 rounded border border-[var(--color-warning)]/30 bg-[var(--color-warning-soft)] px-1.5 text-[10px] font-semibold text-[var(--color-warning-soft-fg)]">
+                                  <span className="text-numeric">{med}</span>M
+                                </span>
+                              )}
+                              {low > 0 && (
+                                <span className="inline-flex h-5 items-center gap-1 rounded border border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-1.5 text-[10px] font-medium text-[var(--color-fg-muted)]">
+                                  <span className="text-numeric">{low}</span>L
+                                </span>
+                              )}
+                            </span>
+                          )
+                        })()}
+                      </Link>
+                    </Td>
+                    <Td>
+                      <Link href={hrefRegerar}>
+                        <span className="text-numeric text-[12px] text-[var(--color-fg-muted)]">
+                          {g.gerado_em
+                            ? new Date(g.gerado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+                            : '—'}
+                        </span>
+                      </Link>
+                    </Td>
+                    <Td align="right">
+                      <Link
+                        href={hrefRegerar}
+                        className="inline-flex items-center gap-1.5 rounded-md bg-[var(--color-navy-700)] px-2.5 py-1 text-[11px] font-semibold text-white transition-all duration-150 hover:opacity-90 active:scale-[0.96] group-hover:shadow-sm"
+                      >
+                        <ArrowClockwise size={11} weight="bold" className="transition-transform duration-300 group-hover:rotate-90" />
+                        Regerar
+                      </Link>
+                    </Td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

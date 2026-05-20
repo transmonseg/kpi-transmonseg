@@ -325,6 +325,7 @@ export default function KpiSimplesPage() {
   const [bucketPaths, setBucketPaths] = useState<{ escalaBucketPaths: string[]; unitracBucketPath: string } | null>(null)
   const [lineEdits, setLineEdits] = useState<Record<string, LineEditPatch>>({})
   const [geracaoId, setGeracaoId] = useState<string | null>(null)
+  const [reabrindoGeracaoId, setReabrindoGeracaoId] = useState<string | null>(null)
 
   function addAlteracao(a: AlteracaoParsed) { setAlteracoes(prev => [...prev, a]) }
   function removeAlteracao(idx: number) { setAlteracoes(prev => prev.filter((_, i) => i !== idx)) }
@@ -346,6 +347,7 @@ export default function KpiSimplesPage() {
     if (!id) return
     setErro(null)
     setRedes(null)
+    setReabrindoGeracaoId(id)
     startTransition(async () => {
       try {
         const res = await fetch('/api/kpi/simples/regerar', {
@@ -359,6 +361,8 @@ export default function KpiSimplesPage() {
         setGeracaoId(id)
       } catch (e) {
         setErro(e instanceof Error ? e.message : 'Erro ao reabrir geração.')
+      } finally {
+        setReabrindoGeracaoId(null)
       }
     })
   }, [])
@@ -474,6 +478,24 @@ export default function KpiSimplesPage() {
           Em alguns segundos você recebe um XLSX e PDF por rede.
         </p>
       </header>
+
+      {/* Banner — quando reabrindo geração salva via ?geracao=ID */}
+      {reabrindoGeracaoId && (
+        <div className="mb-6 flex items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-navy-700)]/30 bg-[var(--color-navy-700)]/5 px-5 py-4 animate-fade-up">
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="absolute inset-0 rounded-full bg-[var(--color-navy-700)] animate-pulse-dot" />
+            <span className="relative h-2 w-2 rounded-full bg-[var(--color-navy-700)]" />
+          </span>
+          <div className="flex flex-col">
+            <span className="text-[13px] font-semibold text-[var(--color-fg)]">
+              Regerando geração <span className="text-numeric text-[var(--color-navy-700)]">#{reabrindoGeracaoId.slice(0, 8)}</span>…
+            </span>
+            <span className="text-[11px] text-[var(--color-fg-subtle)]">
+              Recarregando escalas e Unitrac do Storage. Alterações pendentes do dia são aplicadas automaticamente.
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Upload grid asymmetric — escalas 7/12 (mais peso) + Unitrac+data 5/12 */}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
