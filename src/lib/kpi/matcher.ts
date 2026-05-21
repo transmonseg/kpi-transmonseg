@@ -380,6 +380,7 @@ export function scorePair(line: EscalaLinhaRow, p: UnitracParadaRow): number {
 function assignOptimal(
   linhas: EscalaLinhaRow[],
   paradas: UnitracParadaRow[],
+  paradaRedes?: Map<string, Set<string>>,
 ): Map<string, UnitracParadaRow> {
   const result = new Map<string, UnitracParadaRow>()
   if (!linhas.length || !paradas.length) return result
@@ -390,8 +391,28 @@ function assignOptimal(
   const nP = ps.length
   const INF = 1e9
 
+  // T11: score com penalty rede-aware. Quando paradaRedes informa que a parada
+  // pertence a uma rede DIFERENTE (e não-aliased) da linha, adiciona +5. Esse
+  // valor está ACIMA do range típico de Levenshtein fallback (max ~3-4), então
+  // realmente reordena empates e quase-empates. Sem dispatch pra Infinity —
+  // mantém o par como "última opção" caso não haja alternativa.
+  const REDE_PENALTY = 5
+  const scoreComRede = (l: EscalaLinhaRow, p: UnitracParadaRow): number => {
+    const base = scorePair(l, p)
+    if (base === Infinity) return Infinity
+    if (!paradaRedes) return base
+    const redes = paradaRedes.get(p.id)
+    if (!redes || redes.size === 0) return base
+    // Bug do plano original era usar `Set.has(...spread)` que é inválido
+    // (Set.has aceita só 1 argumento). Loop manual com aliases.
+    const fung = redesFungiveis(l.rede_id)
+    let casa = false
+    for (const r of redes) { if (fung.has(r)) { casa = true; break } }
+    return casa ? base : base + REDE_PENALTY
+  }
+
   if (nL <= 5) {
-    const mat = ls.map(l => ps.map(p => { const s = scorePair(l, p); return s === Infinity ? INF : s }))
+    const mat = ls.map(l => ps.map(p => { const s = scoreComRede(l, p); return s === Infinity ? INF : s }))
     // n = how many assignments we make: bounded by both nL and nP.
     // When nL <= nP every line can get a parada; when nL > nP only nP of nL lines get assigned.
     const n = Math.min(nL, nP)
@@ -449,7 +470,7 @@ function assignOptimal(
     // minimização global da soma de scores.
     // Mantém scores originais separados do capped: o filter usa original (Infinity = inválido)
     // enquanto hungarianMin recebe capped (Infinity → INF) igual ao path brute-force acima.
-    const rawScores = ls.map(l => ps.map(p => scorePair(l, p)))
+    const rawScores = ls.map(l => ps.map(p => scoreComRede(l, p)))
     const mat = rawScores.map(row => row.map(s => (s === Infinity ? INF : s)))
     const assignment = hungarianMin(mat)
     for (let li = 0; li < nL; li++) {
@@ -530,10 +551,26 @@ export async function cruzaEscalaUnitrac(
     const lojasParadas = deduplicarPorCodigo(lojasConsolidadas)
     const usados = new Set<string>()
 
+    // T11: pré-computa paradaRedes ANTES do assignOptimal para rede-aware scoring.
+    // Antes era calculado só dentro do fallback temporal — agora compartilhado.
+    // Inclui aliases (T10): parada SENDAS conta também como ASSAI etc.
+    const redesPresentes = [...new Set(lojas.map(l => l.rede_id))]
+    const paradaRedes = new Map<string, Set<string>>()
+    for (const p of lojasParadas) {
+      const redes = new Set<string>()
+      for (const r of redesPresentes) {
+        if (resolveLojaId(p, lojas, r)) redes.add(r)
+      }
+      const expanded = new Set<string>()
+      for (const r of redes) {
+        for (const alias of redesFungiveis(r)) expanded.add(alias)
+      }
+      paradaRedes.set(p.id, expanded)
+    }
+
     // Optimal assignment: para n≤5 linhas usa brute-force (minimiza total score);
-    // para n>5 greedy. Linhas ordenadas por nome, paradas por chegada —
-    // desempate determinístico para nomes ambíguos (ex: Caxias Centro vs Centenário).
-    const assigned = assignOptimal(linhas, lojasParadas)
+    // para n>5 Hungarian. Score recebe paradaRedes pra penalty +5 quando cross-rede.
+    const assigned = assignOptimal(linhas, lojasParadas, paradaRedes)
     for (const [lineId, parada] of assigned) {
       matchByEscalaId.set(lineId, parada)
       usados.add(parada.id)
@@ -558,27 +595,10 @@ export async function cruzaEscalaUnitrac(
       const paradasOrdenadas = [...paradasLivres].sort(
         (a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime()
       )
-      // Pré-computa "redes possíveis" de cada parada via resolveLojaId em todas
-      // as redes. Uma parada de PREZUNIC TIJUCA volta com {PREZUNIC} e fica
-      // bloqueada pra escalas da ARMAZEM_GRAO. Uma parada SENDAS X - LJ Y que
-      // foi convertida em Assaí ganha {SENDAS, ASSAI} e desbloqueia ambas.
-      const redesPresentes = [...new Set(lojas.map(l => l.rede_id))]
-      const paradaRedes = new Map<string, Set<string>>()
-      for (const p of paradasOrdenadas) {
-        const redes = new Set<string>()
-        for (const r of redesPresentes) {
-          if (resolveLojaId(p, lojas, r)) redes.add(r)
-        }
-        // T10: expande aliases. Parada cadastrada como SENDAS conta também
-        // como ASSAI (e vice-versa); PAX ↔ SUPER_PAX idem. Desbloqueia o
-        // fallback temporal pra escalas ASSAI que apontam pra lojas Sendas
-        // pós-rebrand 2024.
-        const expanded = new Set<string>()
-        for (const r of redes) {
-          for (const alias of redesFungiveis(r)) expanded.add(alias)
-        }
-        paradaRedes.set(p.id, expanded)
-      }
+      // paradaRedes já foi pré-computado acima (T11). Reutiliza.
+      // Comentário histórico: parada de PREZUNIC TIJUCA volta com {PREZUNIC} e
+      // fica bloqueada pra escalas da ARMAZEM_GRAO. Uma parada SENDAS X - LJ Y
+      // ganha {SENDAS, ASSAI} via T10 e desbloqueia ambas.
 
       // Fallback temporal AGORA RESTRITO: aceita só pares com tokens em comum.
       // Antes (a)+(b)+(c) — (b)/(c) atribuíam paradas só por rede ou por
@@ -714,7 +734,7 @@ export async function cruzaEscalaUnitrac(
     if (linhasFinalSem.length > 0 && paradasLojaLivres.length > 0) {
       // Infere rede de cada parada via cadastro `lojas`. Paradas não identificadas
       // (redeInf=null) viram coringas atribuíveis a qualquer rede da escala.
-      const redesPresentes = [...new Set(lojas.map(l => l.rede_id))]
+      // Reutiliza `redesPresentes` declarado acima (T11) — evita shadowing.
       const paradaRedeInfer = new Map<string, string | null>()
       for (const p of paradasLojaLivres) {
         let redeInf: string | null = null

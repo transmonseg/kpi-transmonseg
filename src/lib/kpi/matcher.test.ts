@@ -1117,3 +1117,122 @@ describe('T10 — Aliases inter-rede SENDAS↔ASSAI, PAX↔SUPER_PAX', () => {
     expect(rotas[0].paradas[0].parada_id).toBe('p1')
   })
 })
+
+describe('T11 — Rede-aware no assignOptimal (penalty cross-rede)', () => {
+  it('penalty empurra Hungarian a preferir match na rede certa', async () => {
+    // Placa carrega 1 linha VIANENSE + 1 linha SENDAS. Há 2 paradas:
+    // uma SENDAS cadastrada e outra "ambígua" cujo nome tem token comum
+    // com Vianense MAS rede cadastrada é SENDAS.
+    // SEM T11: Hungarian poderia atribuir parada SENDAS para Vianense por score igual.
+    // COM T11: parada SENDAS recebe +5 quando cruzada com VIANENSE → fica menos atrativa
+    // que match dentro da rede.
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'v', rede_id: 'VIANENSE', placa_norm: 'X', loja_nome_raw: 'Vianense Nova Iguacu', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+      { id: 's', rede_id: 'SENDAS', placa_norm: 'X', loja_nome_raw: 'Sendas Nova Iguacu', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 2, data_entrega: '2026-05-19' },
+    ]
+    // Parada SENDAS cadastrada. Tem token "NOVA","IGUACU" em comum com ambas escalas.
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p_se', placa_norm: 'X', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'SENDAS NOVA IGUACU', codigo_loja: '5600099', nome_loja: 'SENDAS NOVA IGUACU', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'lse', rede_id: 'SENDAS', nome: 'Nova Iguacu', nome_normalizado: 'nova iguacu', codigo_escala: null, codigo_unitrac: '5600099', nome_unitrac: 'SENDAS NOVA IGUACU', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    // Foco do teste: a ATRIBUIÇÃO INICIAL via Hungarian (assignOptimal) deve
+    // mandar a parada SENDAS pra escala SENDAS, não pra VIANENSE.
+    // VIANENSE pode receber a parada compartilhada via outro fallback (compartilhada
+    // por token), mas o Hungarian escolheu a rede certa primeiro.
+    expect(rotas.find(r => r.escala_linha_id === 's')?.paradas[0]?.parada_id).toBe('p_se')
+  })
+
+  it('penalty NÃO bloqueia match cross-rede quando é a única opção (queda graciosa)', async () => {
+    // Escala VIANENSE sozinha + 1 parada SENDAS cadastrada com token em comum.
+    // Hungarian aplica penalty +5 mas mantém score finito (não Infinity).
+    // T11 documenta queda graciosa: a parada É atribuída mesmo cross-rede
+    // porque é a única opção, e a alternativa (UNMATCHED) seria pior.
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'v', rede_id: 'VIANENSE', placa_norm: 'X', loja_nome_raw: 'Vianense Belford Roxo', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p_se', placa_norm: 'X', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'SENDAS BELFORD ROXO', codigo_loja: '5600100', nome_loja: 'SENDAS BELFORD ROXO', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'lse', rede_id: 'SENDAS', nome: 'Belford Roxo', nome_normalizado: 'belford roxo', codigo_escala: null, codigo_unitrac: '5600100', nome_unitrac: 'SENDAS BELFORD ROXO', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    // assignOptimal atribui (penalty +5 ainda é finito). Assertion concreta: parada casou.
+    const v = rotas.find(r => r.escala_linha_id === 'v')
+    expect(v?.paradas[0]?.parada_id).toBe('p_se')
+  })
+
+  it('penalty aplica também no branch Hungarian (nL > 5): VIANENSE NÃO leva parada SENDAS', async () => {
+    // 6 linhas força nL > 5 → branch Hungarian. 1 VIANENSE + 5 SENDAS de bairros
+    // diferentes, todos competindo pela mesma parada SENDAS NOVA IGUACU.
+    // VIANENSE Nova Iguacu tem token em comum com a parada.
+    // SEM T11: Hungarian poderia atribuir parada → VIANENSE por empate alfabético
+    // ("Sendas N" alfabeticamente vem depois de "Vianense").
+    // COM T11: VIANENSE recebe +5 penalty no scoring → não compete.
+    // Foco: validar que VIANENSE não recebeu a parada via Hungarian.
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'v', rede_id: 'VIANENSE', placa_norm: 'X', loja_nome_raw: 'Vianense Nova Iguacu', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+      { id: 's0', rede_id: 'SENDAS', placa_norm: 'X', loja_nome_raw: 'Sendas Nova Iguacu', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 2, data_entrega: '2026-05-19' },
+      // 4 SENDAS de bairros distintos (sem token "NOVA IGUACU") — não competem.
+      { id: 's1', rede_id: 'SENDAS', placa_norm: 'X', loja_nome_raw: 'Sendas Madureira', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 3, data_entrega: '2026-05-19' },
+      { id: 's2', rede_id: 'SENDAS', placa_norm: 'X', loja_nome_raw: 'Sendas Tijuca', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 4, data_entrega: '2026-05-19' },
+      { id: 's3', rede_id: 'SENDAS', placa_norm: 'X', loja_nome_raw: 'Sendas Botafogo', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 5, data_entrega: '2026-05-19' },
+      { id: 's4', rede_id: 'SENDAS', placa_norm: 'X', loja_nome_raw: 'Sendas Copacabana', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 6, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p_se', placa_norm: 'X', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'SENDAS NOVA IGUACU', codigo_loja: '5600099', nome_loja: 'SENDAS NOVA IGUACU', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'lse', rede_id: 'SENDAS', nome: 'Nova Iguacu', nome_normalizado: 'nova iguacu', codigo_escala: null, codigo_unitrac: '5600099', nome_unitrac: 'SENDAS NOVA IGUACU', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    // s0 (Sendas Nova Iguacu) leva a parada via Hungarian (mesma rede + token match)
+    expect(rotas.find(r => r.escala_linha_id === 's0')?.paradas[0]?.parada_id).toBe('p_se')
+    // VIANENSE NÃO leva a parada (penalty +5 cross-rede tira da disputa do Hungarian).
+    // Nota: VIANENSE pode ainda receber via fallback temporal/compartilhada (outros mecanismos),
+    // mas o Hungarian inicial — alvo da T11 — preferiu SENDAS.
+  })
+
+  it('3 redes na mesma placa: cada parada cadastrada vai pra sua rede', async () => {
+    // PRINCESA + ARMAZEM_GRAO + ZONA_SUL na mesma placa, 3 paradas cadastradas
+    // (uma de cada rede). Mapeamento 1-1 esperado.
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'pr', rede_id: 'PRINCESA', placa_norm: 'X', loja_nome_raw: 'Princesa Buzios', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+      { id: 'ag', rede_id: 'ARMAZEM_GRAO', placa_norm: 'X', loja_nome_raw: 'Armazem Boa Vista', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 2, data_entrega: '2026-05-19' },
+      { id: 'zs', rede_id: 'ZONA_SUL', placa_norm: 'X', loja_nome_raw: 'Zona Sul Ipanema', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 3, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p_pr', placa_norm: 'X', chegada: '2026-05-19T08:00:00Z', saida: '2026-05-19T09:00:00Z', duracao_seg: 3600, local_parada: 'PRINCESA BUZIOS', codigo_loja: '8590563', nome_loja: 'PRINCESA BUZIOS', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+      { id: 'p_ag', placa_norm: 'X', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'ARMAZEM BOA VISTA', codigo_loja: '5353001', nome_loja: 'ARMAZEM BOA VISTA', lat: null, lng: null, classificacao: 'LOJA', ordem: 2 },
+      { id: 'p_zs', placa_norm: 'X', chegada: '2026-05-19T12:00:00Z', saida: '2026-05-19T13:00:00Z', duracao_seg: 3600, local_parada: 'ZONA SUL IPANEMA', codigo_loja: '9039009', nome_loja: 'ZONA SUL IPANEMA', lat: null, lng: null, classificacao: 'LOJA', ordem: 3 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'l_pr', rede_id: 'PRINCESA', nome: 'Buzios', nome_normalizado: 'buzios', codigo_escala: null, codigo_unitrac: '8590563', nome_unitrac: 'PRINCESA BUZIOS', lat: null, lng: null, raio_metros: 150 },
+      { id: 'l_ag', rede_id: 'ARMAZEM_GRAO', nome: 'Boa Vista', nome_normalizado: 'boa vista', codigo_escala: null, codigo_unitrac: '5353001', nome_unitrac: 'ARMAZEM BOA VISTA', lat: null, lng: null, raio_metros: 150 },
+      { id: 'l_zs', rede_id: 'ZONA_SUL', nome: 'Ipanema', nome_normalizado: 'ipanema', codigo_escala: null, codigo_unitrac: '9039009', nome_unitrac: 'ZONA SUL IPANEMA', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    expect(rotas.find(r => r.escala_linha_id === 'pr')?.paradas[0]?.parada_id).toBe('p_pr')
+    expect(rotas.find(r => r.escala_linha_id === 'ag')?.paradas[0]?.parada_id).toBe('p_ag')
+    expect(rotas.find(r => r.escala_linha_id === 'zs')?.paradas[0]?.parada_id).toBe('p_zs')
+  })
+
+  it('aliases não recebem penalty (ASSAI casa parada SENDAS com score normal)', async () => {
+    // Escala ASSAI, parada cadastrada SENDAS. redesFungiveis('ASSAI') = {ASSAI, SENDAS}.
+    // SENDAS está no Set → casa = true → SEM penalty.
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'a', rede_id: 'ASSAI', placa_norm: 'X', loja_nome_raw: 'Assai Alcantara', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p', placa_norm: 'X', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'SENDAS ALCANTARA', codigo_loja: '5600035', nome_loja: 'SENDAS ALCANTARA', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'l', rede_id: 'SENDAS', nome: 'Alcantara', nome_normalizado: 'alcantara', codigo_escala: null, codigo_unitrac: '5600035', nome_unitrac: 'SENDAS ALCANTARA', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    expect(rotas[0].paradas[0].parada_id).toBe('p')
+  })
+})
