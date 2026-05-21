@@ -21,6 +21,21 @@ const REDES_TOKEN = new Set([
 // "Sao Joao de Meriti" idem. Bairros RJ usam "SAO X" extensivamente.
 const STOPWORDS = new Set(['DO','DE','DA','DOS','DAS','LOJA','REDE'])
 
+// Redes que compartilham infraestrutura/identidade (mesmo grupo GPA).
+// Match cross-rede entre essas é aceito sem penalty — lojas Sendas que
+// viraram Assaí no rebrand 2024 mantêm `codigo_unitrac` antigo prefixo `5600`
+// mas a escala já usa "ASSAI". Tratar como conjunto fungível.
+const REDE_ALIASES: Record<string, string[]> = {
+  ASSAI: ['SENDAS'],
+  SENDAS: ['ASSAI'],
+  SUPER_PAX: ['PAX'],
+  PAX: ['SUPER_PAX'],
+}
+
+function redesFungiveis(rede: string): Set<string> {
+  return new Set([rede, ...(REDE_ALIASES[rede] ?? [])])
+}
+
 // Prefixos numéricos conhecidos dos códigos do Unitrac (`codigo_loja`) por rede.
 // Quando o codigo_loja começa com um destes, o suffix-match aceita codigo_escala
 // de length>=2 (com padStart 3) — destrava match Zona Sul "21" → 9039021,
@@ -554,7 +569,15 @@ export async function cruzaEscalaUnitrac(
         for (const r of redesPresentes) {
           if (resolveLojaId(p, lojas, r)) redes.add(r)
         }
-        paradaRedes.set(p.id, redes)
+        // T10: expande aliases. Parada cadastrada como SENDAS conta também
+        // como ASSAI (e vice-versa); PAX ↔ SUPER_PAX idem. Desbloqueia o
+        // fallback temporal pra escalas ASSAI que apontam pra lojas Sendas
+        // pós-rebrand 2024.
+        const expanded = new Set<string>()
+        for (const r of redes) {
+          for (const alias of redesFungiveis(r)) expanded.add(alias)
+        }
+        paradaRedes.set(p.id, expanded)
       }
 
       // Fallback temporal AGORA RESTRITO: aceita só pares com tokens em comum.
@@ -661,7 +684,9 @@ export async function cruzaEscalaUnitrac(
         // cadastradas com rede_id diferente (ASSAI, PREZUNIC…) e o filtro por rede_id falharia.
         const compartilhada = paradasUsadasNaPlaca.find(p => {
           if (!p.codigo_loja && !p.nome_loja) return false
-          const lojasDaRede = lojas.filter(l => l.rede_id === linha.rede_id)
+          // T10: aceita lojas da rede própria E das redes aliased (ASSAI↔SENDAS, PAX↔SUPER_PAX)
+          const redesAceitas = redesFungiveis(linha.rede_id)
+          const lojasDaRede = lojas.filter(l => redesAceitas.has(l.rede_id))
           if (p.codigo_loja && lojasDaRede.some(l => l.codigo_unitrac === p.codigo_loja)) return true
           if (p.nome_loja) {
             const np = p.nome_loja.trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -702,10 +727,12 @@ export async function cruzaEscalaUnitrac(
       const redesNasLinhasSem = [...new Set(linhasFinalSem.map(l => l.rede_id))]
       for (const rede of redesNasLinhasSem) {
         const linhasDaRede = linhasFinalSem.filter(l => l.rede_id === rede)
+        // T10: aceita paradas das redes aliased (ASSAI ↔ SENDAS, PAX ↔ SUPER_PAX)
+        const redesAceitas = redesFungiveis(rede)
         const paradasDaRede = paradasLojaLivres.filter(p => {
           if (usados.has(p.id)) return false
           const redeInf = paradaRedeInfer.get(p.id) ?? null
-          return redeInf === rede || redeInf === null
+          return redeInf === null || redesAceitas.has(redeInf)
         })
         // Só atua quando o número bate exatamente — sem ambiguidade.
         if (linhasDaRede.length === paradasDaRede.length && linhasDaRede.length > 0) {

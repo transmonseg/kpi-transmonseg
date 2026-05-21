@@ -1019,3 +1019,101 @@ describe('T13 — split local_parada sem prefixo numérico', () => {
     expect(score).toBe(0)
   })
 })
+
+describe('T10 — Aliases inter-rede SENDAS↔ASSAI, PAX↔SUPER_PAX', () => {
+  it('escala ASSAI casa parada SENDAS via paradaRedes expandido (sem código, depende de alias)', async () => {
+    // Cenário rebrand GPA: escala diz ASSAI mas catálogo `lojas` ainda tem rede_id=SENDAS.
+    // Forçamos o caminho do ALIAS removendo loja_codigo_raw e usando nome divergente
+    // (sem token comum entre "Loja XYZ" e "SENDAS ALCANTARA"). Sem T10, paradaRedes
+    // pra essa parada teria só {SENDAS}, bloqueando a escala ASSAI no fallback temporal.
+    // Com T10, paradaRedes vira {SENDAS, ASSAI} via redesFungiveis → escala ASSAI passa.
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'a1', rede_id: 'ASSAI', placa_norm: 'X', loja_nome_raw: 'Loja XYZ', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p1', placa_norm: 'X', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'SENDAS ALCANTARA', codigo_loja: '5600035', nome_loja: 'SENDAS ALCANTARA', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'l1', rede_id: 'SENDAS', nome: 'Alcantara', nome_normalizado: 'alcantara', codigo_escala: '35', codigo_unitrac: '5600035', nome_unitrac: 'SENDAS ALCANTARA', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    // T10 desbloqueia: parada cadastrada SENDAS aceita escala ASSAI (fallback temporal length=1)
+    expect(rotas[0].paradas).toHaveLength(1)
+    expect(rotas[0].paradas[0].parada_id).toBe('p1')
+  })
+
+  it('direção inversa: escala SENDAS casa parada ASSAI cadastrada (alias bidirecional)', async () => {
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 's1', rede_id: 'SENDAS', placa_norm: 'X', loja_nome_raw: 'Loja XYZ', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p1', placa_norm: 'X', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'ASSAI BARRA', codigo_loja: '9006001', nome_loja: 'ASSAI BARRA', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'l1', rede_id: 'ASSAI', nome: 'Barra', nome_normalizado: 'barra', codigo_escala: '1', codigo_unitrac: '9006001', nome_unitrac: 'ASSAI BARRA', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    expect(rotas[0].paradas).toHaveLength(1)
+    expect(rotas[0].paradas[0].parada_id).toBe('p1')
+  })
+
+  it('T8 aceita parada SENDAS sem cadastro pra escala ASSAI quando contagem bate', async () => {
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'a1', rede_id: 'ASSAI', placa_norm: 'Y', loja_nome_raw: 'Loja Indefinida', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    // Parada com nome SENDAS mas SEM cadastro em lojas → redeInf=null (coringa)
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p1', placa_norm: 'Y', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'SENDAS NOVO', codigo_loja: '5601111', nome_loja: 'SENDAS NOVO', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    // Sem cadastro → coringa → T8 atua 1:1
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, [])
+    expect(rotas[0].paradas).toHaveLength(1)
+    expect(rotas[0].paradas[0].parada_id).toBe('p1')
+  })
+
+  it('aliases NÃO afetam redes não aliased (PREZUNIC continua bloqueando ARMAZEM)', async () => {
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'a1', rede_id: 'ARMAZEM_GRAO', placa_norm: 'Z', loja_nome_raw: 'Boa Vista', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p1', placa_norm: 'Z', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'PREZUNIC FONSECA', codigo_loja: '7000999', nome_loja: 'PREZUNIC FONSECA', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'lp', rede_id: 'PREZUNIC', nome: 'Fonseca', nome_normalizado: 'fonseca', codigo_escala: null, codigo_unitrac: '7000999', nome_unitrac: 'PREZUNIC FONSECA', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    // PREZUNIC e ARMAZEM_GRAO NÃO são aliases → ARMAZEM bloqueado
+    expect(rotas[0].paradas).toHaveLength(0)
+  })
+
+  it('SUPER_PAX casa parada cadastrada como PAX (alias)', async () => {
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'sp1', rede_id: 'SUPER_PAX', placa_norm: 'P', loja_nome_raw: 'Sepetiba', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p1', placa_norm: 'P', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'PAX SEPETIBA', codigo_loja: '202012', nome_loja: 'PAX SEPETIBA', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'lp', rede_id: 'PAX', nome: 'Sepetiba', nome_normalizado: 'sepetiba', codigo_escala: null, codigo_unitrac: '202012', nome_unitrac: 'PAX SEPETIBA', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    // SUPER_PAX↔PAX são aliases → casa
+    expect(rotas[0].paradas).toHaveLength(1)
+    expect(rotas[0].paradas[0].parada_id).toBe('p1')
+  })
+
+  it('direção inversa: PAX casa parada cadastrada como SUPER_PAX (alias bidirecional)', async () => {
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'px1', rede_id: 'PAX', placa_norm: 'P', loja_nome_raw: 'Sepetiba', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p1', placa_norm: 'P', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'SUPER PAX SEPETIBA', codigo_loja: '202012', nome_loja: 'SUPER PAX SEPETIBA', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'lp', rede_id: 'SUPER_PAX', nome: 'Sepetiba', nome_normalizado: 'sepetiba', codigo_escala: null, codigo_unitrac: '202012', nome_unitrac: 'SUPER PAX SEPETIBA', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    expect(rotas[0].paradas).toHaveLength(1)
+    expect(rotas[0].paradas[0].parada_id).toBe('p1')
+  })
+})
