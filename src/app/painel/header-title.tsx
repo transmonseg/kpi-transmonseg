@@ -7,7 +7,6 @@ const TITLES: Record<string, string> = {
   '/painel/cozinha': 'Cozinha',
   '/painel/kpi/simples': 'KPI',
   '/painel/historico': 'Histórico',
-  '/painel/alteracoes/nova': 'Nova alteração de escala',
   '/painel/revisao': 'Revisar Anomalias',
   '/painel/lojas': 'Lojas',
 }

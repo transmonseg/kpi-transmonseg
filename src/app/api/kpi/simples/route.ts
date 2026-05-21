@@ -10,7 +10,6 @@ import { cruzaEscalaUnitrac, variantesOcr } from '@/lib/kpi/matcher'
 import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
 import { REDE_NOMES_CANONICOS } from '@/lib/kpi/kpi-styles'
-import { mergeAlteracoes } from '@/lib/kpi/merge-alteracoes'
 import type { KpiLinha, RotaKpi } from '@/lib/types/kpi'
 import type { LinhaEscala } from '@/lib/types/escala'
 
@@ -250,37 +249,12 @@ export async function POST(req: NextRequest) {
   // Baixa e parseia todos os arquivos Unitrac, mergeando os veículos
   // (suporta XLSX + PDF simultâneos para cobrir formatos diferentes do mesmo dia)
 
-  // Carrega alterações persistidas no banco pra essa data (qualquer status
-  // não-cancelada). Mergea com as alterações in-memory do request (UI atual),
-  // priorizando as in-memory em caso de duplicata.
-  const { data: altsDb } = await svc
-    .from('alteracoes')
-    .select('tipo, rede_id, loja_raw, motorista_entra, motorista_entra_codigo, placa_entra_norm, motorista_sai, placa_sai_norm')
-    .eq('data_alteracao', data)
-    .neq('status', 'cancelada')
-  const altsFromDb: AltConfirmada[] = (altsDb ?? []).map(r => ({
-    tipo: r.tipo as string,
-    rede_id: (r.rede_id as string | null) ?? null,
-    loja_raw: (r.loja_raw as string | null) ?? null,
-    entra: r.placa_entra_norm || r.motorista_entra ? {
-      motorista_nome: r.motorista_entra as string | null,
-      motorista_codigo: r.motorista_entra_codigo ? parseInt(r.motorista_entra_codigo as string, 10) : null,
-      placa_raw: r.placa_entra_norm as string | null,
-      placa_norm: r.placa_entra_norm as string | null,
-    } : null,
-    sai: r.placa_sai_norm || r.motorista_sai ? {
-      motorista_nome: r.motorista_sai as string | null,
-      placa_norm: r.placa_sai_norm as string | null,
-    } : null,
-  }))
-
-  // Mergea inline + banco deduplicando por placa (ou motorista+rede como fallback).
-  // Lógica extraída para src/lib/kpi/merge-alteracoes.ts (testada em isolamento).
-  const altsFinal = mergeAlteracoes(alteracoes, altsFromDb)
-
-  if (altsFinal.length > 0) {
-    escalaLinhas = aplicaAlteracoes([...escalaLinhas], altsFinal)
-    console.log(`[/api/kpi/simples] Aplicando ${altsFinal.length} alterações (${alteracoes.length} inline, ${altsFromDb.length} do banco)`)
+  // T1: Alterações são puramente INLINE (estado da UI no body do request).
+  // Sem busca no banco — cada geração de KPI carrega o que o operador adicionou
+  // naquele momento. Tabela `alteracoes` deixou de ser usada pra esse fluxo.
+  if (alteracoes.length > 0) {
+    escalaLinhas = aplicaAlteracoes([...escalaLinhas], alteracoes)
+    console.log(`[/api/kpi/simples] Aplicando ${alteracoes.length} alterações inline`)
   }
 
   // Parse unitrac — baixa e parseia cada arquivo, mergeia por placa

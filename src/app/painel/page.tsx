@@ -3,7 +3,6 @@ import {
   ArrowUpRight,
   WarningCircle,
   ClockCounterClockwise,
-  PencilSimpleLine,
   Storefront,
   TableIcon,
   CheckCircle,
@@ -31,7 +30,6 @@ type HomeData = {
   ultimaGeracao: { id: string; data: string; geradoEm: string | null; totalRotas: number; redes: GeracaoResumo[] } | null
   anomaliasHighPendentes: number
   lojasCadastradas: number
-  alteracoesPendentesHoje: number
   placasDoDia: number
   motoristasDoDia: number
   serie14d: SerieDiaria[]
@@ -50,7 +48,6 @@ async function fetchHomeData(): Promise<HomeData> {
     ultimaRes,
     anomalias,
     lojas,
-    alteracoesPendentes,
     placasDoDiaRes,
     motoristasDoDiaRes,
     serie14dRes,
@@ -69,11 +66,6 @@ async function fetchHomeData(): Promise<HomeData> {
       .eq('severidade', 'HIGH')
       .eq('status', 'pendente'),
     svc.from('lojas').select('id', { count: 'exact', head: true }).eq('ativo', true),
-    svc
-      .from('alteracoes')
-      .select('id', { count: 'exact', head: true })
-      .eq('data_alteracao', hoje)
-      .eq('status', 'pendente'),
     svc.from('escala_linhas').select('placa_norm').eq('data_entrega', hoje),
     svc.from('escala_linhas').select('motorista_nome').eq('data_entrega', hoje),
     svc
@@ -130,7 +122,6 @@ async function fetchHomeData(): Promise<HomeData> {
       : null,
     anomaliasHighPendentes: anomalias.count ?? 0,
     lojasCadastradas: lojas.count ?? 0,
-    alteracoesPendentesHoje: alteracoesPendentes.count ?? 0,
     placasDoDia: placasUnicas,
     motoristasDoDia: motoristasUnicos,
     serie14d,
@@ -366,12 +357,6 @@ export default async function PainelHome() {
             tone={data.placasDoDia > 0 ? 'info' : 'muted'}
           />
           <StatusRow
-            label="Alterações pendentes"
-            value={data.alteracoesPendentesHoje}
-            hint={data.alteracoesPendentesHoje > 0 ? 'aplicar antes de gerar KPI' : 'nenhuma pendente'}
-            tone={data.alteracoesPendentesHoje > 0 ? 'warning' : 'muted'}
-          />
-          <StatusRow
             label="Anomalias HIGH pendentes"
             value={data.anomaliasHighPendentes}
             hint={hasAnomalias ? 'revisar antes de finalizar' : 'nenhuma pendência'}
@@ -394,12 +379,6 @@ export default async function PainelHome() {
         className="mt-14 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 animate-fade-up"
         style={{ animationDelay: '300ms' }}
       >
-        <SecondaryLink
-          href="/painel/alteracoes/nova"
-          icon={<PencilSimpleLine size={18} weight="bold" />}
-          title="Alterações"
-          description="Cole mensagem de WhatsApp e aplique trocas de motorista/placa em lote."
-        />
         <SecondaryLink
           href="/painel/lojas"
           icon={<Storefront size={18} weight="bold" />}
