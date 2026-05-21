@@ -670,6 +670,49 @@ export async function cruzaEscalaUnitrac(
         }
       }
     }
+
+    // T8 — Fallback N:N por placa+rede. Quando o nº de linhas sem match de uma rede
+    // === nº de paradas LOJA livres atribuíveis àquela rede, atribuir 1:1 por ordem
+    // (carro_ordem da escala × ordem temporal da parada). Cobre PAX/Armazém sem código
+    // onde os nomes divergem mas a estrutura (mesma quantidade de paradas) bate.
+    //
+    // Restrito por rede pra evitar cross-rede (Armazém pegando parada Princesa).
+    const linhasFinalSem = linhas.filter(l => !matchByEscalaId.has(l.id))
+    const paradasLojaLivres = lojasParadas.filter(p => !usados.has(p.id))
+    if (linhasFinalSem.length > 0 && paradasLojaLivres.length > 0) {
+      // Infere rede de cada parada via cadastro `lojas`. Paradas não identificadas
+      // (redeInf=null) viram coringas atribuíveis a qualquer rede da escala.
+      const redesPresentes = [...new Set(lojas.map(l => l.rede_id))]
+      const paradaRedeInfer = new Map<string, string | null>()
+      for (const p of paradasLojaLivres) {
+        let redeInf: string | null = null
+        for (const r of redesPresentes) {
+          if (resolveLojaId(p, lojas, r)) { redeInf = r; break }
+        }
+        paradaRedeInfer.set(p.id, redeInf)
+      }
+
+      const redesNasLinhasSem = [...new Set(linhasFinalSem.map(l => l.rede_id))]
+      for (const rede of redesNasLinhasSem) {
+        const linhasDaRede = linhasFinalSem.filter(l => l.rede_id === rede)
+        const paradasDaRede = paradasLojaLivres.filter(p => {
+          if (usados.has(p.id)) return false
+          const redeInf = paradaRedeInfer.get(p.id) ?? null
+          return redeInf === rede || redeInf === null
+        })
+        // Só atua quando o número bate exatamente — sem ambiguidade.
+        if (linhasDaRede.length === paradasDaRede.length && linhasDaRede.length > 0) {
+          const linhasOrd = [...linhasDaRede].sort((a, b) => a.carro_ordem - b.carro_ordem)
+          const paradasOrd = [...paradasDaRede].sort(
+            (a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime()
+          )
+          for (let i = 0; i < linhasOrd.length; i++) {
+            matchByEscalaId.set(linhasOrd[i].id, paradasOrd[i])
+            usados.add(paradasOrd[i].id)
+          }
+        }
+      }
+    }
   }
 
   const rotas: RotaKpi[] = []
