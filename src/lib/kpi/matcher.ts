@@ -542,6 +542,7 @@ export async function cruzaEscalaUnitrac(
 
   // Pra cada placa, atribui paradas LOJA às escala_linhas correspondentes (greedy por melhor match)
   const geoMatchedLineIds = new Set<string>()
+  const crossDockLineIds = new Set<string>()
   const matchByEscalaId = new Map<string, UnitracParadaRow>()
   for (const [placa, linhas] of escalaByPlaca) {
     const todas = paradaByPlaca.get(placa) ?? []
@@ -770,6 +771,59 @@ export async function cruzaEscalaUnitrac(
         }
       }
     }
+
+    // T9 — Cross-docking detection (último recurso, depois de T8). Quando a placa
+    // carrega 2+ redes e UMA delas é uma rede de "carona" (cross-dock conhecido:
+    // ARMAZEM_GRAO, FEIRA_NOVA — caminhões pequenos que pegam carona em rotas
+    // maiores tipo Princesa/Prezunic) com 0 matches, distribui as paradas das
+    // redes primárias (já matched) para as linhas órfãs por carro_ordem.
+    // Linhas atribuídas via T9 são marcadas em `crossDockLineIds` pra receber
+    // confidence=LOW e requiresReview=true (R1 ressalva: cross-dock é heurística,
+    // não match certeiro).
+    //
+    // Restrito a redes de carona conhecidas pra evitar falso positivo cross-rede
+    // genérico (ex: VIANENSE pegando parada SENDAS por estar na mesma placa).
+    // NÃO marca em usados — herança via cross-dock é reuso de parada, não consumo.
+    const REDES_CROSSDOCK = new Set(['ARMAZEM_GRAO', 'FEIRA_NOVA'])
+    const redesNaPlaca = new Set(linhas.map(l => l.rede_id))
+    if (redesNaPlaca.size >= 2) {
+      // Paradas LOJA já atribuídas a alguma linha dessa placa (recoletadas após T8)
+      const paradasUsadasFinal: UnitracParadaRow[] = []
+      const setParadasUsadas = new Set<string>()
+      for (const l of linhas) {
+        const m = matchByEscalaId.get(l.id)
+        if (m && m.classificacao === 'LOJA' && !setParadasUsadas.has(m.id)) {
+          paradasUsadasFinal.push(m)
+          setParadasUsadas.add(m.id)
+        }
+      }
+      // Linhas órfãs em rede de carona
+      const linhasOrfas = linhas.filter(l =>
+        !matchByEscalaId.has(l.id) && REDES_CROSSDOCK.has(l.rede_id)
+      )
+      if (linhasOrfas.length > 0 && paradasUsadasFinal.length > 0) {
+        const orfasPorRede = new Map<string, EscalaLinhaRow[]>()
+        for (const l of linhasOrfas) {
+          const arr = orfasPorRede.get(l.rede_id) ?? []
+          arr.push(l)
+          orfasPorRede.set(l.rede_id, arr)
+        }
+        const paradasOrd = [...paradasUsadasFinal].sort(
+          (a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime()
+        )
+        for (const linhasDaRedeOrfa of orfasPorRede.values()) {
+          const linhasOrd = [...linhasDaRedeOrfa].sort((a, b) => a.carro_ordem - b.carro_ordem)
+          for (let i = 0; i < linhasOrd.length; i++) {
+            // Reusa paradas — se há mais linhas que paradas, a última é repetida.
+            const parada = paradasOrd[Math.min(i, paradasOrd.length - 1)]
+            if (parada) {
+              matchByEscalaId.set(linhasOrd[i].id, parada)
+              crossDockLineIds.add(linhasOrd[i].id)
+            }
+          }
+        }
+      }
+    }
   }
 
   const rotas: RotaKpi[] = []
@@ -850,6 +904,7 @@ export async function cruzaEscalaUnitrac(
     // Em vez de todas as paradas não-base, emite SÓ a parada matched por nome
     const matched = matchByEscalaId.get(linha.id)
     const isGeo = geoMatchedLineIds.has(linha.id)
+    const isCrossDock = crossDockLineIds.has(linha.id)
 
     let lojaId: string | null = null
     let nomeResolvido: string = ''
@@ -860,7 +915,10 @@ export async function cruzaEscalaUnitrac(
       lojaId = resolveLojaId(matched, lojas, linha.rede_id)
       nomeResolvido = nomeRaw
 
-      if (isGeo) {
+      if (isCrossDock) {
+        // T9 — cross-dock é heurística; sinaliza pra operador revisar.
+        metaAlgorithm = 'crossdock'
+      } else if (isGeo) {
         metaAlgorithm = 'geo'
       } else if (!lojaId && trgmResults[linha.loja_nome_raw]) {
         // trgm fallback: enriquece loja_id quando resolveLojaId retornou null
@@ -883,7 +941,10 @@ export async function cruzaEscalaUnitrac(
         }]
       : []
 
-    const metaScore = isGeo ? 0.8 : metaAlgorithm === 'trgm'
+    // Score: crossdock=0.7 (LOW + requiresReview), geo=0.8, trgm=score real, demais=1.0
+    const metaScore = isCrossDock
+      ? 0.7
+      : isGeo ? 0.8 : metaAlgorithm === 'trgm'
       ? (trgmResults[linha.loja_nome_raw]?.trgm_score ?? 0.7)
       : 1.0
 

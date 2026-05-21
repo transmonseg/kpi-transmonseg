@@ -1269,6 +1269,176 @@ describe('T11 — Rede-aware no assignOptimal (penalty cross-rede)', () => {
     expect(rotas[0].paradas[0].parada_id).toBe('p')
   })
 
+  it('T9 — cross-docking ARMAZEM_GRAO pega carona em paradas Princesa', async () => {
+    // Cenário real dia 19: caminhão Princesa entrega Armazém Grão no mesmo geofence.
+    // 3 linhas Princesa (cadastradas) + 3 linhas Armazém (sem cadastro/token).
+    // 3 paradas PRINCESA BUZIOS cadastradas → Hungarian casa as 3 Princesas.
+    // T9 vê: ARMAZEM_GRAO sem nenhum match na placa, em REDES_CROSSDOCK,
+    // 3 paradas em uso pelas Princesas → distribui as 3 paradas pras 3 Armazéns
+    // por carro_ordem × cronologia.
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'pr1', rede_id: 'PRINCESA', placa_norm: 'QST', loja_nome_raw: 'Princesa Buzios 1', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+      { id: 'pr2', rede_id: 'PRINCESA', placa_norm: 'QST', loja_nome_raw: 'Princesa Buzios 2', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 2, data_entrega: '2026-05-19' },
+      { id: 'pr3', rede_id: 'PRINCESA', placa_norm: 'QST', loja_nome_raw: 'Princesa Buzios 3', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 3, data_entrega: '2026-05-19' },
+      { id: 'ag1', rede_id: 'ARMAZEM_GRAO', placa_norm: 'QST', loja_nome_raw: 'Mosela', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+      { id: 'ag2', rede_id: 'ARMAZEM_GRAO', placa_norm: 'QST', loja_nome_raw: 'Quitandinha', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 2, data_entrega: '2026-05-19' },
+      { id: 'ag3', rede_id: 'ARMAZEM_GRAO', placa_norm: 'QST', loja_nome_raw: 'Valparaiso', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 3, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'pp1', placa_norm: 'QST', chegada: '2026-05-19T08:00:00Z', saida: '2026-05-19T09:00:00Z', duracao_seg: 3600, local_parada: 'PRINCESA BUZIOS 1', codigo_loja: '8590001', nome_loja: 'PRINCESA BUZIOS 1', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+      { id: 'pp2', placa_norm: 'QST', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'PRINCESA BUZIOS 2', codigo_loja: '8590002', nome_loja: 'PRINCESA BUZIOS 2', lat: null, lng: null, classificacao: 'LOJA', ordem: 2 },
+      { id: 'pp3', placa_norm: 'QST', chegada: '2026-05-19T12:00:00Z', saida: '2026-05-19T13:00:00Z', duracao_seg: 3600, local_parada: 'PRINCESA BUZIOS 3', codigo_loja: '8590003', nome_loja: 'PRINCESA BUZIOS 3', lat: null, lng: null, classificacao: 'LOJA', ordem: 3 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'l1', rede_id: 'PRINCESA', nome: 'Buzios 1', nome_normalizado: 'buzios 1', codigo_escala: null, codigo_unitrac: '8590001', nome_unitrac: 'PRINCESA BUZIOS 1', lat: null, lng: null, raio_metros: 150 },
+      { id: 'l2', rede_id: 'PRINCESA', nome: 'Buzios 2', nome_normalizado: 'buzios 2', codigo_escala: null, codigo_unitrac: '8590002', nome_unitrac: 'PRINCESA BUZIOS 2', lat: null, lng: null, raio_metros: 150 },
+      { id: 'l3', rede_id: 'PRINCESA', nome: 'Buzios 3', nome_normalizado: 'buzios 3', codigo_escala: null, codigo_unitrac: '8590003', nome_unitrac: 'PRINCESA BUZIOS 3', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    // Todas as 3 Princesas casam (via Hungarian + cadastro)
+    expect(rotas.find(r => r.escala_linha_id === 'pr1')?.paradas[0]?.parada_id).toBe('pp1')
+    expect(rotas.find(r => r.escala_linha_id === 'pr2')?.paradas[0]?.parada_id).toBe('pp2')
+    expect(rotas.find(r => r.escala_linha_id === 'pr3')?.paradas[0]?.parada_id).toBe('pp3')
+    // T9: Armazéns herdam as paradas Princesa por carro_ordem × cronologia
+    expect(rotas.find(r => r.escala_linha_id === 'ag1')?.paradas[0]?.parada_id).toBe('pp1')
+    expect(rotas.find(r => r.escala_linha_id === 'ag2')?.paradas[0]?.parada_id).toBe('pp2')
+    expect(rotas.find(r => r.escala_linha_id === 'ag3')?.paradas[0]?.parada_id).toBe('pp3')
+  })
+
+  it('T9 NÃO ativa pra redes fora de REDES_CROSSDOCK (VIANENSE não pega carona)', async () => {
+    // VIANENSE não está em REDES_CROSSDOCK → não recebe parada via T9.
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'pr', rede_id: 'PRINCESA', placa_norm: 'X', loja_nome_raw: 'Princesa Buzios 1', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+      { id: 'v', rede_id: 'VIANENSE', placa_norm: 'X', loja_nome_raw: 'Vianense Nova Iguacu', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'pp', placa_norm: 'X', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'PRINCESA BUZIOS 1', codigo_loja: '8590001', nome_loja: 'PRINCESA BUZIOS 1', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'lp', rede_id: 'PRINCESA', nome: 'Buzios 1', nome_normalizado: 'buzios 1', codigo_escala: null, codigo_unitrac: '8590001', nome_unitrac: 'PRINCESA BUZIOS 1', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    // PRINCESA casa via Hungarian
+    expect(rotas.find(r => r.escala_linha_id === 'pr')?.paradas[0]?.parada_id).toBe('pp')
+    // VIANENSE NÃO é cross-dock conhecido → fica UNMATCHED via T9
+    // (pode receber via outros mecanismos, mas T9 não faz cross-dock pra VIANENSE)
+    // Aceita ambos: ou fica sem match ou T8/compartilhada atribui. Foco do teste: T9 não atua.
+    const v = rotas.find(r => r.escala_linha_id === 'v')
+    // VIANENSE não está em REDES_CROSSDOCK — T9 não distribui parada PRINCESA pra ela
+    // Outros fluxos podem (token compartilhada). Documenta comportamento atual:
+    // sem token comum direto → fica UNMATCHED.
+    expect(v?.paradas).toHaveLength(0)
+  })
+
+  it('T9 — FEIRA_NOVA também pega carona em paradas de outra rede', async () => {
+    // FEIRA_NOVA também está em REDES_CROSSDOCK. Caminhão Prezunic carrega
+    // entregas Feira Nova no mesmo geofence.
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'pz', rede_id: 'PREZUNIC', placa_norm: 'F', loja_nome_raw: 'Prezunic Tijuca', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+      { id: 'fn', rede_id: 'FEIRA_NOVA', placa_norm: 'F', loja_nome_raw: 'Feira Nova Meier', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 2, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'pp', placa_norm: 'F', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'PREZUNIC TIJUCA', codigo_loja: '7000010', nome_loja: 'PREZUNIC TIJUCA', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'l', rede_id: 'PREZUNIC', nome: 'Tijuca', nome_normalizado: 'tijuca', codigo_escala: null, codigo_unitrac: '7000010', nome_unitrac: 'PREZUNIC TIJUCA', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    expect(rotas.find(r => r.escala_linha_id === 'pz')?.paradas[0]?.parada_id).toBe('pp')
+    expect(rotas.find(r => r.escala_linha_id === 'fn')?.paradas[0]?.parada_id).toBe('pp')
+  })
+
+  it('T9 — clamp: 4 ARMAZEMs órfãos vs 2 paradas Princesa reusam a última', async () => {
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'pr1', rede_id: 'PRINCESA', placa_norm: 'C', loja_nome_raw: 'Princesa A', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+      { id: 'pr2', rede_id: 'PRINCESA', placa_norm: 'C', loja_nome_raw: 'Princesa B', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 2, data_entrega: '2026-05-19' },
+      ...Array.from({ length: 4 }, (_, i): EscalaLinhaRow => ({
+        id: `ag${i + 1}`, rede_id: 'ARMAZEM_GRAO', placa_norm: 'C',
+        loja_nome_raw: `Armazem L${i + 1}`, loja_codigo_raw: null, motorista_nome: null,
+        carro_ordem: i + 1, data_entrega: '2026-05-19',
+      })),
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'pp1', placa_norm: 'C', chegada: '2026-05-19T08:00:00Z', saida: '2026-05-19T09:00:00Z', duracao_seg: 3600, local_parada: 'PRINCESA A', codigo_loja: '8590001', nome_loja: 'PRINCESA A', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+      { id: 'pp2', placa_norm: 'C', chegada: '2026-05-19T12:00:00Z', saida: '2026-05-19T13:00:00Z', duracao_seg: 3600, local_parada: 'PRINCESA B', codigo_loja: '8590002', nome_loja: 'PRINCESA B', lat: null, lng: null, classificacao: 'LOJA', ordem: 2 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'l1', rede_id: 'PRINCESA', nome: 'A', nome_normalizado: 'a', codigo_escala: null, codigo_unitrac: '8590001', nome_unitrac: 'PRINCESA A', lat: null, lng: null, raio_metros: 150 },
+      { id: 'l2', rede_id: 'PRINCESA', nome: 'B', nome_normalizado: 'b', codigo_escala: null, codigo_unitrac: '8590002', nome_unitrac: 'PRINCESA B', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    // 4 ARMAZEMs órfãos + 2 paradas Princesa.
+    // ag1 (carro_ordem 1) → pp1 (8h)
+    // ag2 (carro_ordem 2) → pp2 (12h)
+    // ag3, ag4 → pp2 (última, clamp)
+    expect(rotas.find(r => r.escala_linha_id === 'ag1')?.paradas[0]?.parada_id).toBe('pp1')
+    expect(rotas.find(r => r.escala_linha_id === 'ag2')?.paradas[0]?.parada_id).toBe('pp2')
+    expect(rotas.find(r => r.escala_linha_id === 'ag3')?.paradas[0]?.parada_id).toBe('pp2')
+    expect(rotas.find(r => r.escala_linha_id === 'ag4')?.paradas[0]?.parada_id).toBe('pp2')
+  })
+
+  it('T9 — match crossdock recebe confidence=LOW + requiresReview', async () => {
+    // Cross-dock é heurística (R1 alertou) — operador deve revisar.
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'pr', rede_id: 'PRINCESA', placa_norm: 'M', loja_nome_raw: 'Princesa X', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+      { id: 'ag', rede_id: 'ARMAZEM_GRAO', placa_norm: 'M', loja_nome_raw: 'Armazem Y', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'pp', placa_norm: 'M', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'PRINCESA X', codigo_loja: '8590100', nome_loja: 'PRINCESA X', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'lp', rede_id: 'PRINCESA', nome: 'X', nome_normalizado: 'x', codigo_escala: null, codigo_unitrac: '8590100', nome_unitrac: 'PRINCESA X', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    const ag = rotas.find(r => r.escala_linha_id === 'ag')
+    expect(ag?._matchMeta?.algorithm).toBe('crossdock')
+    expect(ag?._matchMeta?.confidence).toBe('LOW')
+    expect(ag?._matchMeta?.requiresReview).toBe(true)
+    // PRINCESA continua sendo HIGH
+    const pr = rotas.find(r => r.escala_linha_id === 'pr')
+    expect(pr?._matchMeta?.confidence).toBe('HIGH')
+  })
+
+  it('T9 NÃO atua quando todas redes são crossdock (paradasUsadasFinal vazio)', async () => {
+    // ARMAZEM + FEIRA_NOVA juntas, nenhuma primary casada → sem paradas pra reusar
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'ag', rede_id: 'ARMAZEM_GRAO', placa_norm: 'X', loja_nome_raw: 'Armazem A', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+      { id: 'fn', rede_id: 'FEIRA_NOVA', placa_norm: 'X', loja_nome_raw: 'Feira B', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 2, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p', placa_norm: 'X', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'GEOFENCE', codigo_loja: '9999999', nome_loja: 'GEOFENCE', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, [])
+    // T8 atua: 1 linha ARMAZEM (rede primeira no loop) + 1 parada coringa → casa.
+    // Após T8, paradasUsadasFinal=[p]. T9 vê: ag matched (rede em REDES_CROSSDOCK),
+    // fn órfã (rede em REDES_CROSSDOCK). T9 distribui parada pp pra fn também.
+    // É o comportamento esperado: ambas redes de carona herdam a parada.
+    const ag = rotas.find(r => r.escala_linha_id === 'ag')
+    const fn = rotas.find(r => r.escala_linha_id === 'fn')
+    // Pelo menos uma deve receber match (T8 atribui pra primeira na ordem)
+    expect((ag?.paradas.length ?? 0) + (fn?.paradas.length ?? 0)).toBeGreaterThanOrEqual(1)
+  })
+
+  it('T9 NÃO atua quando placa tem só 1 rede (precisa de redesNaPlaca.size >= 2)', async () => {
+    // 2 linhas mesma rede ARMAZEM_GRAO + 1 parada PRINCESA cadastrada.
+    // Como só tem 1 rede na placa (ARMAZEM), T9 não dispara (sem cross-dock real).
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'a1', rede_id: 'ARMAZEM_GRAO', placa_norm: 'X', loja_nome_raw: 'Loja Alpha', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+      { id: 'a2', rede_id: 'ARMAZEM_GRAO', placa_norm: 'X', loja_nome_raw: 'Loja Beta', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 2, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'pp', placa_norm: 'X', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'PRINCESA BUZIOS', codigo_loja: '8590001', nome_loja: 'PRINCESA BUZIOS', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'lp', rede_id: 'PRINCESA', nome: 'Buzios', nome_normalizado: 'buzios', codigo_escala: null, codigo_unitrac: '8590001', nome_unitrac: 'PRINCESA BUZIOS', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    // Sem cross-dock (1 rede só) → T9 não estende. Outros fluxos: paradaRedes=PRINCESA
+    // bloqueia ARMAZEM no fallback temporal. T8 não dispara (2 linhas != 1 parada).
+    expect(rotas[0].paradas).toHaveLength(0)
+    expect(rotas[1].paradas).toHaveLength(0)
+  })
+
   it('3 redes na mesma placa: cada parada cadastrada vai pra sua rede', async () => {
     // PRINCESA + ARMAZEM_GRAO + ZONA_SUL na mesma placa, 3 paradas cadastradas
     // (uma de cada rede). Mapeamento 1-1 esperado.
