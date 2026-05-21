@@ -166,7 +166,9 @@ export function detectaAnomalias(params: DetectaParams): AnomaliaDetectada[] {
       const lojaStr = escalaLinha.loja_nome_raw ?? ''
       const isMultiLoja = /\s*[/\\]\s*|\s+E\s+/i.test(lojaStr)
       if (!isMultiLoja) {
-        const qtdLojaParadas = rota.paradas.filter((p) => p.classificacao === 'LOJA').length
+        // Conta qualquer parada matched (LOJA ou FORA_BASE via geo) como visita a loja.
+        // Antes contava só 'LOJA', disparando ANOM-05 para entregas resolvidas via geo.
+        const qtdLojaParadas = rota.paradas.length
         if (qtdLojaParadas !== 1 && rota.paradas.length > 0) {
           anomalias.push({
             kpi_rota_id: rotaId,

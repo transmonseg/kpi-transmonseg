@@ -337,6 +337,50 @@ describe('ANOM-11: saída do CD fora da janela', () => {
 })
 
 // ---------------------------------------------------------------------------
+// ANOM-05: divergência de qtd de paradas na escala
+// ---------------------------------------------------------------------------
+
+describe('ANOM-05: qtd paradas divergente da escala', () => {
+  it('NÃO dispara quando parada matched é FORA_BASE (geo-match) em rota single-loja', () => {
+    // Regressão: antes contava só 'LOJA', então FORA_BASE geo-match disparava ANOM-05 falso.
+    const parada = makeParada({ classificacao: 'FORA_BASE', loja_id: 'geo-1' })
+    const rota = makeRota({ paradas: [parada] })
+    const result = detectaAnomalias({
+      rotas: [rota],
+      escalaLinhas: [makeEscalaLinha({ loja_nome_raw: 'Zona Sul Barra' })],
+      paradasIndex: new Map([['ABC1234', []]]),
+      janelasRede: new Map(),
+      data: '2026-05-18',
+    })
+    expect(result.filter((a) => a.codigo === 'ANOM-05')).toHaveLength(0)
+  })
+
+  it('NÃO dispara quando parada matched é LOJA em rota single-loja', () => {
+    const rota = makeRota({ paradas: [makeParada({ classificacao: 'LOJA' })] })
+    const result = detectaAnomalias({
+      rotas: [rota],
+      escalaLinhas: [makeEscalaLinha({ loja_nome_raw: 'Zona Sul Barra' })],
+      paradasIndex: new Map([['ABC1234', []]]),
+      janelasRede: new Map(),
+      data: '2026-05-18',
+    })
+    expect(result.filter((a) => a.codigo === 'ANOM-05')).toHaveLength(0)
+  })
+
+  it('NÃO dispara para rota multi-loja (separador / ou E)', () => {
+    const rota = makeRota({ paradas: [] })
+    const result = detectaAnomalias({
+      rotas: [rota],
+      escalaLinhas: [makeEscalaLinha({ loja_nome_raw: 'Loja A / Loja B' })],
+      paradasIndex: new Map([['ABC1234', []]]),
+      janelasRede: new Map(),
+      data: '2026-05-18',
+    })
+    expect(result.filter((a) => a.codigo === 'ANOM-05')).toHaveLength(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
 // ANOM-04 (HIGH) e ANOM-12 (MEDIUM): parada com tempo inválido ou duração zero
 // ---------------------------------------------------------------------------
 
