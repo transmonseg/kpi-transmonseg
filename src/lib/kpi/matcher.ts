@@ -256,8 +256,15 @@ function resolveLojaId(
 }
 
 // Pares de chars que o parser PDF do Unitrac confunde por causa do tipo Mercosul:
-// 1↔B (idx 4 da Mercosul), 9↔J, 4↔E. Cada par é equivalente em uma posição.
-const OCR_PARES: Record<string, string> = { '1':'B', 'B':'1', '9':'J', 'J':'9', '4':'E', 'E':'4' }
+// 1↔B, 9↔J, 4↔E, 6↔G, 7↔H, 8↔I. Cada par é equivalente na posição 4 (Mercosul).
+const OCR_PARES: Record<string, string> = {
+  '1':'B', 'B':'1',
+  '4':'E', 'E':'4',
+  '6':'G', 'G':'6',
+  '7':'H', 'H':'7',
+  '8':'I', 'I':'8',
+  '9':'J', 'J':'9',
+}
 
 // Gera variantes da placa com 1 substituição OCR (até 1 char diferente).
 // Limita à posição 4 (zero-indexed) que é onde Mercosul muda de dígito pra letra.
