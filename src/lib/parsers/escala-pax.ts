@@ -111,7 +111,7 @@ function dateVal(cell: ExcelJS.Cell | undefined): Date | null {
   return null
 }
 
-function tabToDate(tabName: string, ano = 2026, mes = 5): string {
+export function tabToDate(tabName: string, ano: number, mes: number): string {
   const dia = parseInt(tabName.trim(), 10)
   if (isNaN(dia)) return ''
   return `${ano}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
@@ -134,8 +134,10 @@ function isTabDay(name: string): boolean {
 }
 
 function detectYearMonth(wb: ExcelJS.Workbook): { ano: number; mes: number } {
-  let ano = 2026
-  let mes = 5
+  // Default to current date so files processed in any month work correctly
+  const now = new Date()
+  let ano = now.getFullYear()
+  let mes = now.getMonth() + 1
   for (const ws of wb.worksheets) {
     if (!isTabDay(ws.name)) continue
     ws.eachRow((row) => {
