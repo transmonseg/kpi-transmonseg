@@ -331,18 +331,25 @@ export function scorePair(line: EscalaLinhaRow, p: UnitracParadaRow): number {
   // Exemplo: Escala ALHAMBRA (21469000) vs Unitrac "17659001 - O BOM CAMPO
   // GRANDE,21469000 - EMANUEL ALHAMBRA".
   if (s > 0 && p.local_parada) {
-    const partes = p.local_parada.split(',').map(t => t.trim())
+    const partes = p.local_parada.split(',').map(t => t.trim()).filter(Boolean)
     for (const parte of partes) {
       const m = parte.match(/^(\d{4,})\s*-\s*(.+)/)
-      if (!m) continue
-      const codP2 = m[1]
-      const nomePart = m[2].trim()
-      if (line.loja_codigo_raw && codCasa(line.loja_codigo_raw, codP2)) {
-        s = 0
-        break
+      if (m) {
+        // Parte com prefixo "XXXX - NOME"
+        const codP2 = m[1]
+        const nomePart = m[2].trim()
+        if (line.loja_codigo_raw && codCasa(line.loja_codigo_raw, codP2)) {
+          s = 0
+          break
+        }
+        const nomeScore = matchScore(line.loja_nome_raw, nomePart)
+        if (nomeScore < s) s = nomeScore
+      } else {
+        // T13: Parte sem prefixo numérico (ex: "REGINA 1 DE MAIO" quando Unitrac
+        // concatena duas paradas REGINA na mesma linha) — match direto por nome.
+        const nomeScore = matchScore(line.loja_nome_raw, parte)
+        if (nomeScore < s) s = nomeScore
       }
-      const nomeScore = matchScore(line.loja_nome_raw, nomePart)
-      if (nomeScore < s) s = nomeScore
     }
   }
   return s

@@ -942,3 +942,80 @@ describe('T8 — Fallback N:N por placa+rede', () => {
     expect(rotas.find(r => r.escala_linha_id === 'e2')?.paradas[0].parada_id).toBe('pz38')
   })
 })
+
+describe('T13 — split local_parada sem prefixo numérico', () => {
+  const makeT13Line = (loja: string, codigo: string | null = null): EscalaLinhaRow => ({
+    id: 'e', rede_id: 'ARMAZEM_GRAO', placa_norm: 'AAA0000', loja_nome_raw: loja,
+    loja_codigo_raw: codigo, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19',
+  })
+  const makeT13Parada = (local: string, codigo = '5353012'): UnitracParadaRow => ({
+    id: 'p', placa_norm: 'AAA0000', chegada: '2026-05-19T10:00:00Z', saida: null,
+    duracao_seg: null, local_parada: local, codigo_loja: codigo, nome_loja: local.split(',')[0].trim(),
+    lat: null, lng: null, classificacao: 'LOJA', ordem: 1,
+  })
+
+  it('parte secundária do local_parada sem prefixo numérico bate por nome (REGINA 1 DE MAIO) — score 0', () => {
+    // Escala "REGINA 1 DE MAIO"; Unitrac concatena "REGINA BARRA DO IMBUY, REGINA 1 DE MAIO"
+    // codigo_loja da parada principal não bate, primeira parte nome diverge,
+    // mas a SEGUNDA parte (sem prefixo numérico) é exatamente o nome da escala.
+    // Tokens da escala {REGINA, 1, MAIO} ⊆ tokens da parte 2 → score 0
+    const score = scorePair(
+      makeT13Line('REGINA 1 DE MAIO'),
+      makeT13Parada('REGINA BARRA DO IMBUY, REGINA 1 DE MAIO'),
+    )
+    expect(score).toBe(0)
+  })
+
+  it('parte com prefixo continua funcionando (EMANUEL ALHAMBRA via 21469000)', () => {
+    // Regressão: garante que o caso clássico (parte 2 com prefixo numérico) continua casando
+    const score = scorePair(
+      makeT13Line('Emanuel - Alhambra', '21469000'),
+      makeT13Parada('17659001 - O BOM CAMPO GRANDE,21469000 - EMANUEL ALHAMBRA'),
+    )
+    expect(score).toBe(0)
+  })
+
+  it('mistura: parte 1 com prefixo + parte 2 sem prefixo — pega o melhor match (score 0)', () => {
+    const score = scorePair(
+      makeT13Line('Pao de Acucar Botafogo'),
+      makeT13Parada('5353012 - REGINA BARRA DO IMBUY, PAO DE ACUCAR BOTAFOGO'),
+    )
+    expect(score).toBe(0)
+  })
+
+  it('todas as partes sem prefixo + nenhuma bate o nome → Infinity', () => {
+    const score = scorePair(
+      makeT13Line('LOJA DE NICHE INEXISTENTE'),
+      makeT13Parada('PADARIA SAO JORGE, MERCADO DA ESQUINA'),
+    )
+    expect(score).toBe(Infinity)
+  })
+
+  it('partes vazias por vírgulas duplas são ignoradas (filter(Boolean)) — score 0', () => {
+    const score = scorePair(
+      makeT13Line('REGINA 1 DE MAIO'),
+      makeT13Parada('REGINA BARRA DO IMBUY,, REGINA 1 DE MAIO,'),
+    )
+    expect(score).toBe(0)
+  })
+
+  it('single-part sem vírgula nem prefixo (caso modal): casa por nome direto', () => {
+    // local_parada com 1 elemento só, sem vírgulas. Fluxo mais comum no Unitrac.
+    // Não passa pelo loop de partes (split retorna array de 1), mas o matchScore
+    // da linha 324 (nome_loja) deve casar antes desse fluxo. Testa caminho feliz.
+    const score = scorePair(
+      makeT13Line('REGINA BARRA DO IMBUY'),
+      makeT13Parada('REGINA BARRA DO IMBUY'),
+    )
+    expect(score).toBe(0)
+  })
+
+  it('whitespace agressivo entre vírgulas é tolerado', () => {
+    // Espaços antes/depois da vírgula → trim() em cada parte garante match.
+    const score = scorePair(
+      makeT13Line('REGINA 1 DE MAIO'),
+      makeT13Parada('REGINA BARRA DO IMBUY   ,   REGINA 1 DE MAIO'),
+    )
+    expect(score).toBe(0)
+  })
+})
