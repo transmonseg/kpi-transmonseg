@@ -24,5 +24,6 @@ export async function carregarOuCriarWorkbook(buffer: Uint8Array | Buffer | null
 }
 
 export function nomeAbaDoDia(dataISO: string): string {
-  return dataISO.split('-')[2] // '2026-05-15' → '15'
+  const [, m, d] = dataISO.split('-') // '2026-05-15' → m='05', d='15'
+  return `${d}/${m}` // '15/05' — inclui mês para evitar colisão entre meses no mesmo workbook
 }

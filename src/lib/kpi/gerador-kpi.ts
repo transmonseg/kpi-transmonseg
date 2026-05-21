@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs'
 import type { KpiLinha } from '@/lib/types/kpi'
-import { KPI_COLORS, REDE_NOMES_CANONICOS } from './kpi-styles'
+import { KPI_COLORS, REDE_NOMES_CANONICOS, formataDataPtBr } from './kpi-styles'
 import { carregarOuCriarWorkbook, nomeAbaDoDia } from './template-loader'
 import { getMatrizLojas, resolverNomeCanonico } from '@/lib/lojas/catalogo-matriz'
 import { temAnomaliaHigh } from './anomalia-obs'
@@ -62,7 +62,7 @@ export async function gerarKpi(input: GerarKpiInput): Promise<Buffer> {
   if (abaExistente) wb.removeWorksheet(abaExistente.id)
 
   const ws = wb.addWorksheet(nomeAba, { views: [{ state: 'frozen', ySplit: 4 }] })
-  preencherAba(ws, { rede_id, redeNome, linhas })
+  preencherAba(ws, { rede_id, redeNome, data, linhas })
 
   if (rede_id === 'ZONA_SUL') {
     const { gerarAbaBaseZonaSul } = await import('./zona-sul-base')
@@ -109,9 +109,9 @@ const N_COLS = 15
 
 function preencherAba(
   ws: ExcelJS.Worksheet,
-  ctx: { rede_id: string; redeNome: string; linhas: LinhaParaKpi[] },
+  ctx: { rede_id: string; redeNome: string; data: string; linhas: LinhaParaKpi[] },
 ) {
-  const { rede_id, redeNome, linhas: linhasRaw } = ctx
+  const { rede_id, redeNome, data, linhas: linhasRaw } = ctx
 
   // Renomeia lojas da escala para nome canônico do catálogo
   const linhas = linhasRaw.map(l => {
@@ -126,7 +126,7 @@ function preencherAba(
   ws.getRow(1).height = 110
   ws.mergeCells('A1:O1')
   const titleCell = ws.getCell('A1')
-  titleCell.value = `RELATÓRIO KPI - ${redeNome.toUpperCase()}\nBENASSI`
+  titleCell.value = `RELATÓRIO KPI - ${redeNome.toUpperCase()}\n${formataDataPtBr(data)}`
   titleCell.font = FONT_TITLE
   titleCell.fill = FILL_NAVY
   titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
