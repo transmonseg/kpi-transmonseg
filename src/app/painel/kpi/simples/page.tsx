@@ -117,13 +117,118 @@ interface AlteracoesCardProps {
   onRemove: (idx: number) => void
 }
 
+const REDES_OPCOES: Array<{ value: string; label: string }> = [
+  { value: 'ASSAI',           label: 'Assaí' },
+  { value: 'ATACADAO',        label: 'Atacadão' },
+  { value: 'CARREFOUR',       label: 'Carrefour' },
+  { value: 'MUNDIAL',         label: 'Mundial' },
+  { value: 'PREZUNIC',        label: 'Prezunic' },
+  { value: 'PRINCESA',        label: 'Princesa' },
+  { value: 'SAMS_CLUB',       label: "Sam's Club" },
+  { value: 'SENDAS',          label: 'Sendas' },
+  { value: 'SUPERPRIX',       label: 'Super Prix' },
+  { value: 'VIANENSE',        label: 'Vianense' },
+  { value: 'CAB_PETROPOLIS',  label: 'CAB Petrópolis' },
+  { value: 'ZONA_SUL',        label: 'Zona Sul' },
+  { value: 'SUPER_PAX',       label: 'Super Pax' },
+  { value: 'FEIRA_NOVA',      label: 'Feira Nova' },
+  { value: 'EMANUEL',         label: 'Emanuel' },
+  { value: 'ARMAZEM_GRAO',    label: 'Armazém do Grão' },
+  { value: 'GUANABARA',       label: 'Guanabara' },
+]
+
+function normalizaPlaca(p: string): string {
+  return p.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7)
+}
+
+// T4 helper: lê arquivo .txt com fallback de encoding (UTF-8 → UTF-16 BOM).
+// WhatsApp Desktop Windows exporta como UTF-16 LE com BOM — file.text() assume UTF-8.
+async function readTxtWithEncodingFallback(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer()
+  const bytes = new Uint8Array(buffer)
+  // Detecta UTF-16 LE BOM (FF FE) ou UTF-16 BE BOM (FE FF)
+  if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
+    return new TextDecoder('utf-16le').decode(buffer)
+  }
+  if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
+    return new TextDecoder('utf-16be').decode(buffer)
+  }
+  // Default UTF-8 (sem BOM ou com BOM EF BB BF — TextDecoder UTF-8 já trata)
+  return new TextDecoder('utf-8').decode(buffer)
+}
+
 function AlteracoesCard({ confirmadas, onConfirm, onRemove }: AlteracoesCardProps) {
   const [expanded, setExpanded] = useState(false)
-  const [modo, setModo] = useState<'texto' | 'pdf'>('texto')
+  const [modo, setModo] = useState<'texto' | 'pdf' | 'manual' | 'txt'>('texto')
   const [texto, setTexto] = useState('')
   const [previews, setPreviews] = useState<AlteracaoParsed[]>([])
   const [analisando, startAnalisar] = useTransition()
   const [err, setErr] = useState<string | null>(null)
+
+  // T3 — estado do formulário manual
+  const [manualTipo, setManualTipo] = useState<AlteracaoParsed['tipo']>('SUBSTITUICAO')
+  const [manualRede, setManualRede] = useState<string>('')
+  const [manualLoja, setManualLoja] = useState<string>('')
+  const [manualSaiPlaca, setManualSaiPlaca] = useState<string>('')
+  const [manualSaiMotorista, setManualSaiMotorista] = useState<string>('')
+  const [manualEntraPlaca, setManualEntraPlaca] = useState<string>('')
+  const [manualEntraMotorista, setManualEntraMotorista] = useState<string>('')
+  const [manualEntraCodigo, setManualEntraCodigo] = useState<string>('')
+  const [manualMotivo, setManualMotivo] = useState<string>('')
+  const [sucessoManual, setSucessoManual] = useState(false)
+
+  function resetManual() {
+    setManualRede(''); setManualLoja(''); setManualSaiPlaca(''); setManualSaiMotorista('')
+    setManualEntraPlaca(''); setManualEntraMotorista(''); setManualEntraCodigo(''); setManualMotivo('')
+  }
+
+  function adicionarManual() {
+    const placaSaiNorm = manualSaiPlaca ? normalizaPlaca(manualSaiPlaca) : null
+    const placaEntraNorm = manualEntraPlaca ? normalizaPlaca(manualEntraPlaca) : null
+    const motoristaSai = manualSaiMotorista.trim() || null
+    const motoristaEntra = manualEntraMotorista.trim() || null
+    const codigoEntra = manualEntraCodigo.trim() ? Number(manualEntraCodigo.trim()) : null
+
+    if (!placaEntraNorm && !motoristaEntra) {
+      setErr('Preencha ao menos placa OU motorista no campo "Entra".')
+      return
+    }
+
+    // R1: rebaixa tipo de forma coerente com o conteúdo dos slots.
+    // Se usuário escolheu SUBSTITUICAO/SWAP mas não preencheu Sai, vira INCLUSAO.
+    const temSai = !!(placaSaiNorm || motoristaSai)
+    let tipoFinal: AlteracaoParsed['tipo'] = manualTipo
+    if ((manualTipo === 'SUBSTITUICAO' || manualTipo === 'SWAP') && !temSai) {
+      tipoFinal = 'INCLUSAO'
+    }
+
+    const alt: AlteracaoParsed = {
+      tipo: tipoFinal,
+      rede_id: manualRede || null,
+      loja_nome_raw: manualLoja.trim() || null,
+      entra: (placaEntraNorm || motoristaEntra) ? {
+        motorista_nome: motoristaEntra,
+        motorista_codigo: codigoEntra && !isNaN(codigoEntra) ? codigoEntra : null,
+        placa_raw: placaEntraNorm,
+        placa_norm: placaEntraNorm,
+      } : null,
+      sai: temSai ? {
+        motorista_nome: motoristaSai,
+        motorista_codigo: null,
+        placa_raw: placaSaiNorm,
+        placa_norm: placaSaiNorm,
+      } : null,
+      motivo: manualMotivo.trim() || null,
+      texto_original: `[MANUAL] ${tipoFinal} ${manualRede || ''} ${manualLoja || ''}`.trim(),
+      confianca: 'alta',
+    }
+    onConfirm(alt)
+    resetManual()
+    setErr(null)
+    // R2 P0: feedback visual de sucesso (timeout 2s)
+    setSucessoManual(true)
+    setTimeout(() => setSucessoManual(false), 2000)
+  }
 
   function resetPreviews() { setPreviews([]); setErr(null) }
 
@@ -156,6 +261,26 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove }: AlteracoesCardProp
         setPreviews(await res.json() as AlteracaoParsed[])
       } catch (e) {
         setErr(e instanceof Error ? e.message : 'Erro ao analisar.')
+      }
+    })
+  }
+
+  // T4: lê arquivo .txt (com fallback UTF-16 BOM pra WhatsApp Desktop Windows)
+  // e envia o conteúdo como texto pro mesmo endpoint do modo "texto".
+  function analisarTxt(file: File) {
+    resetPreviews()
+    startAnalisar(async () => {
+      try {
+        const conteudo = await readTxtWithEncodingFallback(file)
+        const res = await fetch('/api/kpi/simples/analisar-alt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ texto: conteudo }),
+        })
+        if (!res.ok) throw new Error(await res.text())
+        setPreviews(await res.json() as AlteracaoParsed[])
+      } catch (e) {
+        setErr(e instanceof Error ? e.message : 'Erro ao ler .txt.')
       }
     })
   }
@@ -214,8 +339,8 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove }: AlteracoesCardProp
           )}
 
           {/* Seletor de modo */}
-          <div className="flex gap-1.5 pt-1">
-            {(['texto', 'pdf'] as const).map(m => (
+          <div className="flex gap-1.5 pt-1 flex-wrap">
+            {(['texto', 'txt', 'pdf', 'manual'] as const).map(m => (
               <button
                 key={m}
                 type="button"
@@ -227,7 +352,10 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove }: AlteracoesCardProp
                     : 'border-[var(--color-border)] text-[var(--color-fg-muted)] hover:border-[var(--color-border-strong)]',
                 )}
               >
-                {m === 'texto' ? 'Mensagem de texto' : 'PDF'}
+                {m === 'texto' ? 'Mensagem de texto'
+                  : m === 'txt' ? 'Arquivo .txt'
+                  : m === 'pdf' ? 'PDF'
+                  : 'Manual (campos)'}
               </button>
             ))}
           </div>
@@ -265,6 +393,131 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove }: AlteracoesCardProp
                 }}
               />
               {analisando && <p className="text-xs text-[var(--color-fg-muted)]">Lendo PDF…</p>}
+            </div>
+          )}
+
+          {/* T4 — Input arquivo .txt */}
+          {modo === 'txt' && (
+            <div className="space-y-2">
+              <Input
+                type="file"
+                accept=".txt"
+                onChange={e => {
+                  const f = e.target.files?.[0]
+                  if (f) analisarTxt(f)
+                }}
+              />
+              <p className="text-[10px] text-[var(--color-fg-muted)]">
+                Mesma estrutura da mensagem de WhatsApp. Suporta UTF-8 e UTF-16 (export Windows).
+              </p>
+              {analisando && <p className="text-xs text-[var(--color-fg-muted)]">Lendo arquivo…</p>}
+            </div>
+          )}
+
+          {/* T3 — Formulário manual por campos */}
+          {modo === 'manual' && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1">
+                  <span className="text-[10px] uppercase font-semibold text-[var(--color-fg-subtle)]">Tipo</span>
+                  <select
+                    value={manualTipo}
+                    onChange={e => setManualTipo(e.target.value as AlteracaoParsed['tipo'])}
+                    className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-xs text-[var(--color-fg)]"
+                  >
+                    <option value="SUBSTITUICAO">Substituição (sai + entra)</option>
+                    <option value="INCLUSAO">Inclusão (só entra)</option>
+                    <option value="SWAP">Swap (troca de placa)</option>
+                    <option value="COMUNICADO">Comunicado</option>
+                    <option value="INFORMATIVO">Informativo</option>
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-[10px] uppercase font-semibold text-[var(--color-fg-subtle)]">Rede</span>
+                  <select
+                    value={manualRede}
+                    onChange={e => setManualRede(e.target.value)}
+                    className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-xs text-[var(--color-fg)]"
+                  >
+                    <option value="">(sem rede)</option>
+                    {REDES_OPCOES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                  </select>
+                </label>
+              </div>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-[10px] uppercase font-semibold text-[var(--color-fg-subtle)]">Loja / Filial (opcional)</span>
+                <Input
+                  value={manualLoja}
+                  onChange={e => setManualLoja(e.target.value)}
+                  placeholder="Ex: Assaí Bangu I Loja 55, Filial 23, Sepetiba"
+                  className="text-xs"
+                />
+              </label>
+
+              <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-danger-soft)]/30 p-2 space-y-2">
+                <span className="text-[10px] uppercase font-semibold text-[var(--color-danger)]">Sai (opcional)</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    value={manualSaiPlaca}
+                    onChange={e => setManualSaiPlaca(e.target.value.toUpperCase())}
+                    placeholder="Placa que sai"
+                    className="text-xs font-mono"
+                    maxLength={7}
+                  />
+                  <Input
+                    value={manualSaiMotorista}
+                    onChange={e => setManualSaiMotorista(e.target.value)}
+                    placeholder="Motorista que sai"
+                    className="text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-success-soft)]/30 p-2 space-y-2">
+                <span className="text-[10px] uppercase font-semibold text-[var(--color-success)]">Entra (pelo menos placa OU motorista)</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    value={manualEntraPlaca}
+                    onChange={e => setManualEntraPlaca(e.target.value.toUpperCase())}
+                    placeholder="Placa que entra"
+                    className="text-xs font-mono"
+                    maxLength={7}
+                  />
+                  <Input
+                    value={manualEntraMotorista}
+                    onChange={e => setManualEntraMotorista(e.target.value)}
+                    placeholder="Motorista que entra"
+                    className="text-xs"
+                  />
+                </div>
+                <Input
+                  value={manualEntraCodigo}
+                  onChange={e => setManualEntraCodigo(e.target.value.replace(/[^\d]/g, ''))}
+                  placeholder="Código do motorista (opcional)"
+                  className="text-xs"
+                  inputMode="numeric"
+                />
+              </div>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-[10px] uppercase font-semibold text-[var(--color-fg-subtle)]">Motivo (opcional)</span>
+                <Input
+                  value={manualMotivo}
+                  onChange={e => setManualMotivo(e.target.value)}
+                  placeholder="Ex: carro sem chave, motorista faltou"
+                  className="text-xs"
+                />
+              </label>
+
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={adicionarManual}>Adicionar alteração</Button>
+                {sucessoManual && (
+                  <span className="text-[11px] text-[var(--color-success)] animate-fade-up">
+                    ✓ Adicionada — veja em "Confirmadas" acima
+                  </span>
+                )}
+              </div>
             </div>
           )}
 
