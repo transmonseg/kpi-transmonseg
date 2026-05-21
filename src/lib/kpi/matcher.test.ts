@@ -518,3 +518,104 @@ describe('cruzaEscalaUnitrac — compartilhada token fallback para ARMAZEM_GRAO'
     expect(rotas[1].paradas[0].parada_id).toBe('ag-p1')
   })
 })
+
+describe('T5 — tokensCore preserva discriminador dentro de parênteses', () => {
+  // Helpers locais pra reduzir boilerplate dos testes T5
+  const makeT5Line = (loja: string, rede = 'ARMAZEM_GRAO'): EscalaLinhaRow => ({
+    id: 'e', rede_id: rede, placa_norm: 'AAA0000', loja_nome_raw: loja,
+    loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19',
+  })
+  const makeT5Parada = (local: string, codigo = '5353003'): UnitracParadaRow => ({
+    id: 'p', placa_norm: 'AAA0000', chegada: '2026-05-19T10:00:00Z', saida: null,
+    duracao_seg: null, local_parada: local, codigo_loja: codigo, nome_loja: local,
+    lat: null, lng: null, classificacao: 'LOJA', ordem: 1,
+  })
+
+  it('ARMAZÉM DO GRÃO (ITAIPAVA) casa com ARMAZEM DO GRAO (ITAIPAVA) — score 0', () => {
+    const score = scorePair(
+      makeT5Line('ARMAZÉM DO GRÃO (ITAIPAVA)'),
+      makeT5Parada('ARMAZEM DO GRAO (ITAIPAVA)'),
+    )
+    expect(score).toBe(0)
+  })
+
+  it('continua removendo (1ª Entrega) — score 0', () => {
+    const score = scorePair(
+      makeT5Line('Princesa Buzios (1ª Entrega)', 'PRINCESA'),
+      makeT5Parada('PRINCESA BUZIOS', '8590563'),
+    )
+    expect(score).toBe(0)
+  })
+
+  it('continua removendo (2° °ENTREGA) com ordinais duplos', () => {
+    // Caso com `°` duplicado cai fora da regex específica e do regex pós-parênteses
+    // (que exige dígito imediatamente antes de ENTREGA). Token "ENTREGA" sobra,
+    // mas o match ainda é finito porque TIJUCA está em ambos.
+    const score = scorePair(
+      makeT5Line('Super Prix Tijuca (2° °ENTREGA)', 'SUPERPRIX'),
+      makeT5Parada('SUPERPRIX TIJUCA', '3030014'),
+    )
+    expect(score).toBeLessThan(Infinity)
+  })
+
+  it('continua removendo (1ª Entregas) plural — score 0', () => {
+    const score = scorePair(
+      makeT5Line('Princesa Cabo Frio (1ª Entregas)', 'PRINCESA'),
+      makeT5Parada('PRINCESA CABO FRIO', '8590100'),
+    )
+    expect(score).toBe(0)
+  })
+
+  it('continua removendo (Entrega Extra) — score 0', () => {
+    const score = scorePair(
+      makeT5Line('Princesa Buzios (Entrega Extra)', 'PRINCESA'),
+      makeT5Parada('PRINCESA BUZIOS', '8590563'),
+    )
+    expect(score).toBe(0)
+  })
+
+  it('discriminador sem parênteses: REGINA BARRA DO IMBUY casa — score 0', () => {
+    const score = scorePair(
+      makeT5Line('REGINA BARRA DO IMBUY'),
+      makeT5Parada('REGINA BARRA DO IMBUY', '5353012'),
+    )
+    expect(score).toBe(0)
+  })
+
+  // === Casos adicionais sugeridos pelo Reviewer 2 ===
+
+  it('preserva discriminador com acento: (SÃO GONÇALO) — score 0', () => {
+    const score = scorePair(
+      makeT5Line('LOJA (SÃO GONÇALO)', 'PREZUNIC'),
+      makeT5Parada('LOJA SAO GONCALO', '1'),
+    )
+    expect(score).toBe(0)
+  })
+
+  it('discriminador + marcador combinados: ITAIPAVA preservado, 1ª Entrega removido — score 0', () => {
+    const score = scorePair(
+      makeT5Line('ARMAZÉM DO GRÃO (ITAIPAVA) (1ª Entrega)'),
+      makeT5Parada('ARMAZEM DO GRAO (ITAIPAVA)'),
+    )
+    expect(score).toBe(0)
+  })
+
+  it('Unitrac concatenada por vírgula: primeira parada com discriminador entre parênteses — score 0', () => {
+    // tokensCore faz split(',')[0] — deve processar só "ARMAZEM DO GRAO (ITAIPAVA)"
+    const score = scorePair(
+      makeT5Line('ARMAZÉM DO GRÃO (ITAIPAVA)'),
+      makeT5Parada('ARMAZEM DO GRAO (ITAIPAVA),OUTRA LOJA'),
+    )
+    expect(score).toBe(0)
+  })
+
+  it('parênteses não fechados: (ITAIPAVA continua sendo discriminador útil', () => {
+    // Defensivo: regex específico não bate (falta `)`), [()]/g remove só o `(`,
+    // ITAIPAVA permanece como token útil.
+    const score = scorePair(
+      makeT5Line('ARMAZÉM DO GRÃO (ITAIPAVA'),
+      makeT5Parada('ARMAZEM DO GRAO ITAIPAVA'),
+    )
+    expect(score).toBe(0)
+  })
+})

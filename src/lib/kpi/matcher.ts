@@ -29,7 +29,13 @@ function tokensCore(s: string | null | undefined): Set<string> {
   const primeiraParada = String(s).split(',')[0]
   const norm = primeiraParada.toUpperCase()
     .normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/\([^)]*\)/g, ' ')
+    // Remove só parênteses com marcador de entrega — "(1ª Entrega)", "(2° Entrega)", "(Entrega Extra)".
+    // ANTES: `\([^)]*\)` apagava TUDO entre parênteses, incluindo discriminadores de loja
+    // ("ARMAZÉM DO GRÃO (ITAIPAVA)" virava "ARMAZÉM DO GRÃO" → token vazio).
+    .replace(/\(\s*\d+\s*[ªº°AO]?\s*ENTREGAS?\s*\)/gi, ' ')
+    .replace(/\(\s*ENTREGAS?\s+EXTRA\s*\)/gi, ' ')
+    // Pra demais parênteses, manter o conteúdo (é discriminador) — só remove os símbolos
+    .replace(/[()]/g, ' ')
     .replace(/\d+\s*[ªº°AO]?\s*ENTREGA/gi, ' ')
   const out = new Set<string>()
   for (const t of norm.split(/[^A-Z0-9]+/)) {
