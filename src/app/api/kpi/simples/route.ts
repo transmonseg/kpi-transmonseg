@@ -10,6 +10,7 @@ import { cruzaEscalaUnitrac } from '@/lib/kpi/matcher'
 import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
 import { REDE_NOMES_CANONICOS } from '@/lib/kpi/kpi-styles'
+import { mergeAlteracoes } from '@/lib/kpi/merge-alteracoes'
 import type { KpiLinha, RotaKpi } from '@/lib/types/kpi'
 import type { LinhaEscala } from '@/lib/types/escala'
 
@@ -63,6 +64,8 @@ type LineEdit = {
 
 type AltConfirmada = {
   tipo: string
+  rede_id: string | null
+  loja_raw: string | null
   entra: { motorista_nome: string | null; motorista_codigo: number | null; placa_raw: string | null; placa_norm: string | null } | null
   sai: { motorista_nome: string | null; placa_norm: string | null } | null
 }
@@ -99,25 +102,56 @@ function rotaToLinha(rota: RotaKpi, escala: LinhaEscala, ordem: number): LinhaPa
 }
 
 function aplicaAlteracoes(linhas: LinhaEscala[], alts: AltConfirmada[]): LinhaEscala[] {
+  // Snapshot das placas originais antes de qualquer mutação: impede que uma
+  // alteração anterior altere os critérios de match de uma posterior (cascata).
+  // Necessário para SWAP mútuo: Filial 23 LQA5883↔LTE0A64 + Filial 43 LTE0A64↔LQA5883
+  // sem snapshot, a 2ª alt encontraria a placa já substituída pela 1ª.
+  const placasOriginais: (string | null)[] = linhas.map(l => l.placa_norm || null)
+  const motoristasOriginais: (string | null)[] = linhas.map(l => l.motorista_nome || null)
+
   for (const alt of alts) {
-    if (alt.tipo !== 'SUBSTITUICAO' && alt.tipo !== 'INCLUSAO') continue
+    const tipoOk = alt.tipo === 'SUBSTITUICAO' || alt.tipo === 'INCLUSAO' || alt.tipo === 'SWAP'
+    if (!tipoOk) continue
     if (!alt.entra) continue
-    const idx = linhas.findIndex(l => {
-      if (alt.sai?.placa_norm && l.placa_norm === alt.sai.placa_norm) return true
+
+    // Predicado de match: usa snapshot original, não o valor atual (anti-cascata)
+    const matches = (l: LinhaEscala, i: number): boolean => {
+      // Filtra por rede quando disponível — impede contaminação cross-rede
+      if (alt.rede_id && l.rede_id !== alt.rede_id) return false
+      if (alt.sai?.placa_norm && placasOriginais[i] === alt.sai.placa_norm) return true
       if (alt.sai?.motorista_nome) {
         const needle = alt.sai.motorista_nome.toLowerCase().split(' ')[0]
-        if (needle.length >= 3 && l.motorista_nome?.toLowerCase().includes(needle)) return true
+        if (needle.length >= 3 && motoristasOriginais[i]?.toLowerCase().includes(needle)) return true
       }
       return false
-    })
-    if (idx >= 0) {
-      const l = { ...linhas[idx] }
-      if (alt.entra.placa_norm) l.placa_norm = alt.entra.placa_norm
-      if (alt.entra.placa_raw) l.placa_raw = alt.entra.placa_raw
-      if (alt.entra.motorista_nome) l.motorista_nome = alt.entra.motorista_nome
-      if (alt.entra.motorista_codigo !== null && alt.entra.motorista_codigo !== undefined)
-        l.motorista_codigo = String(alt.entra.motorista_codigo)
-      linhas[idx] = l
+    }
+
+    if (alt.tipo === 'SWAP') {
+      // SWAP: troca APENAS a placa entre dois slots, mantém motoristas intactos.
+      // entra.placa_norm = nova placa que entra na linha que tinha sai.placa_norm.
+      // Só modifica placa_norm/placa_raw — motorista permanece.
+      for (let i = 0; i < linhas.length; i++) {
+        if (!matches(linhas[i], i)) continue
+        const l = { ...linhas[i] }
+        if (alt.entra.placa_norm) l.placa_norm = alt.entra.placa_norm
+        if (alt.entra.placa_raw) l.placa_raw = alt.entra.placa_raw
+        linhas[i] = l
+        // SWAP afeta apenas a linha da placa que sai — não continua pro loop inteiro
+        break
+      }
+    } else {
+      // SUBSTITUICAO / INCLUSAO: atualiza TODAS as linhas que casam com a placa/motorista
+      // (uma placa pode servir múltiplas lojas na mesma rede — ex: Zona Sul filial 23 e 45).
+      for (let i = 0; i < linhas.length; i++) {
+        if (!matches(linhas[i], i)) continue
+        const l = { ...linhas[i] }
+        if (alt.entra.placa_norm) l.placa_norm = alt.entra.placa_norm
+        if (alt.entra.placa_raw) l.placa_raw = alt.entra.placa_raw
+        if (alt.entra.motorista_nome) l.motorista_nome = alt.entra.motorista_nome
+        if (alt.entra.motorista_codigo !== null && alt.entra.motorista_codigo !== undefined)
+          l.motorista_codigo = String(alt.entra.motorista_codigo)
+        linhas[i] = l
+      }
     }
   }
   return linhas
@@ -211,11 +245,13 @@ export async function POST(req: NextRequest) {
   // priorizando as in-memory em caso de duplicata.
   const { data: altsDb } = await svc
     .from('alteracoes')
-    .select('tipo, motorista_entra, motorista_entra_codigo, placa_entra_norm, motorista_sai, placa_sai_norm')
+    .select('tipo, rede_id, loja_raw, motorista_entra, motorista_entra_codigo, placa_entra_norm, motorista_sai, placa_sai_norm')
     .eq('data_alteracao', data)
     .neq('status', 'cancelada')
   const altsFromDb: AltConfirmada[] = (altsDb ?? []).map(r => ({
     tipo: r.tipo as string,
+    rede_id: (r.rede_id as string | null) ?? null,
+    loja_raw: (r.loja_raw as string | null) ?? null,
     entra: r.placa_entra_norm || r.motorista_entra ? {
       motorista_nome: r.motorista_entra as string | null,
       motorista_codigo: r.motorista_entra_codigo ? parseInt(r.motorista_entra_codigo as string, 10) : null,
@@ -228,15 +264,9 @@ export async function POST(req: NextRequest) {
     } : null,
   }))
 
-  // Mergea: se há mesma combinação sai/entra em ambas, deduplicada
-  const altsFinal = [...alteracoes]
-  for (const dbAlt of altsFromDb) {
-    const dup = altsFinal.some(a =>
-      a.entra?.placa_norm === dbAlt.entra?.placa_norm &&
-      a.sai?.placa_norm === dbAlt.sai?.placa_norm,
-    )
-    if (!dup) altsFinal.push(dbAlt)
-  }
+  // Mergea inline + banco deduplicando por placa (ou motorista+rede como fallback).
+  // Lógica extraída para src/lib/kpi/merge-alteracoes.ts (testada em isolamento).
+  const altsFinal = mergeAlteracoes(alteracoes, altsFromDb)
 
   if (altsFinal.length > 0) {
     escalaLinhas = aplicaAlteracoes([...escalaLinhas], altsFinal)
@@ -407,7 +437,7 @@ export async function POST(req: NextRequest) {
       const sorted = redeRotas
         .map((r, i) => ({ rota: r, esc: redeEscala[i] }))
         .sort((a, b) => {
-          const cmp = a.esc.loja_nome_raw.localeCompare(b.esc.loja_nome_raw)
+          const cmp = a.esc.loja_nome_raw.localeCompare(b.esc.loja_nome_raw, 'pt-BR')
           return cmp !== 0 ? cmp : a.esc.carro_ordem - b.esc.carro_ordem
         })
 
