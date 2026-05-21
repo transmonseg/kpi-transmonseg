@@ -335,3 +335,48 @@ describe('ANOM-11: saída do CD fora da janela', () => {
     expect(result.filter((a) => a.codigo === 'ANOM-11')).toHaveLength(0)
   })
 })
+
+// ---------------------------------------------------------------------------
+// ANOM-04: parada com duração zero (saida === chegada)
+// ---------------------------------------------------------------------------
+
+describe('ANOM-04: parada com duração zero', () => {
+  it('dispara ANOM-04 (MEDIUM) quando saida === chegada e duracao_min === 0', () => {
+    const chegada = new Date('2026-05-18T10:00:00.000Z')
+    const parada = makeParada({
+      chegada,
+      saida: chegada, // mesmo timestamp
+      duracao_min: 0,
+    })
+    const rota = makeRota({ paradas: [parada] })
+    const result = detectaAnomalias({
+      rotas: [rota],
+      escalaLinhas: [makeEscalaLinha()],
+      paradasIndex: new Map([['ABC1234', []]]),
+      janelasRede: new Map(),
+      data: '2026-05-18',
+    })
+    const anom = result.filter((a) => a.codigo === 'ANOM-04')
+    expect(anom).toHaveLength(1)
+    expect(anom[0].severidade).toBe('MEDIUM')
+  })
+
+  it('NÃO dispara ANOM-04 quando saida > chegada (duração normal)', () => {
+    const chegada = new Date('2026-05-18T10:00:00.000Z')
+    const saida = new Date('2026-05-18T10:30:00.000Z')
+    const parada = makeParada({
+      chegada,
+      saida,
+      duracao_min: 30,
+    })
+    const rota = makeRota({ paradas: [parada] })
+    const result = detectaAnomalias({
+      rotas: [rota],
+      escalaLinhas: [makeEscalaLinha()],
+      paradasIndex: new Map([['ABC1234', []]]),
+      janelasRede: new Map(),
+      data: '2026-05-18',
+    })
+    expect(result.filter((a) => a.codigo === 'ANOM-04')).toHaveLength(0)
+  })
+})
