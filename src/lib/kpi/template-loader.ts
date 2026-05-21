@@ -25,5 +25,5 @@ export async function carregarOuCriarWorkbook(buffer: Uint8Array | Buffer | null
 
 export function nomeAbaDoDia(dataISO: string): string {
   const [, m, d] = dataISO.split('-') // '2026-05-15' → m='05', d='15'
-  return `${d}/${m}` // '15/05' — inclui mês para evitar colisão entre meses no mesmo workbook
+  return `${d}.${m}` // '15.05' — barra é inválida em nomes de aba do Excel
 }
