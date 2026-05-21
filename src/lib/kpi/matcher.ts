@@ -98,7 +98,7 @@ function matchScore(escalaNome: string, paradaNome: string): number {
   return Math.max(tl.size, tp.size) - common
 }
 
-type EscalaLinhaRow = {
+export type EscalaLinhaRow = {
   id: string
   rede_id: string
   placa_norm: string | null
@@ -109,7 +109,7 @@ type EscalaLinhaRow = {
   data_entrega: string
 }
 
-type UnitracParadaRow = {
+export type UnitracParadaRow = {
   id: string
   placa_norm: string
   chegada: string
@@ -124,7 +124,7 @@ type UnitracParadaRow = {
   ordem: number
 }
 
-type LojaRow = {
+export type LojaRow = {
   id: string
   rede_id: string
   nome: string
@@ -189,7 +189,12 @@ function deduplicarPorCodigo(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
   for (const p of paradas) {
     if (!p.codigo_loja) { semCodigo.push(p); continue }
     const existing = byCode.get(p.codigo_loja)
-    if (!existing || (p.duracao_seg ?? 0) > (existing.duracao_seg ?? 0)) {
+    // Parada com saida=null significa parada em aberto (veículo ainda no local ou
+    // dado ainda não fechado). Tratamos como duração máxima (Infinity) para que uma
+    // parada em aberto nunca seja descartada em favor de uma parada já encerrada.
+    const duracaoP = p.saida === null ? Infinity : (p.duracao_seg ?? 0)
+    const duracaoExisting = existing && existing.saida === null ? Infinity : (existing?.duracao_seg ?? 0)
+    if (!existing || duracaoP > duracaoExisting) {
       byCode.set(p.codigo_loja, p)
     }
   }
@@ -266,8 +271,11 @@ function variantesOcr(placa: string): string[] {
 /**
  * Score between one escala line and one Unitrac parada.
  * Returns 0 for exact code match, finite for name match, Infinity for no match.
+ *
+ * Exported para teste — também reexportado abaixo via `__scorePairForTests`
+ * (não usar fora de testes).
  */
-function scorePair(line: EscalaLinhaRow, p: UnitracParadaRow): number {
+export function scorePair(line: EscalaLinhaRow, p: UnitracParadaRow): number {
   let s = matchScore(line.loja_nome_raw, p.nome_loja || p.local_parada || '')
   if (line.loja_codigo_raw && p.codigo_loja) {
     const codL = line.loja_codigo_raw
@@ -278,6 +286,29 @@ function scorePair(line: EscalaLinhaRow, p: UnitracParadaRow): number {
     if (codL === codP) s = 0
     else if (codL.length >= 3 && codP.endsWith(codL)) s = 0
     else if (codP.length >= 3 && codL.endsWith(codP)) s = 0
+  }
+  // Tenta geofences adicionais (Unitrac concatena múltiplas separadas por vírgula).
+  // O parser só salva codigo_loja/nome_loja da PRIMEIRA geofence LOJA; quando a
+  // relevante é a 2ª/3ª, sem isso o pair recebe Infinity e perde o match.
+  // Exemplo: Escala ALHAMBRA (21469000) vs Unitrac "17659001 - O BOM CAMPO
+  // GRANDE,21469000 - EMANUEL ALHAMBRA".
+  if (s > 0 && p.local_parada) {
+    const partes = p.local_parada.split(',').map(t => t.trim())
+    for (const parte of partes) {
+      const m = parte.match(/^(\d{4,})\s*-\s*(.+)/)
+      if (!m) continue
+      const codP2 = m[1]
+      const nomePart = m[2].trim()
+      if (line.loja_codigo_raw) {
+        const codL = line.loja_codigo_raw
+        if (codL === codP2 || (codL.length >= 3 && codP2.endsWith(codL)) || (codP2.length >= 3 && codL.endsWith(codP2))) {
+          s = 0
+          break
+        }
+      }
+      const nomeScore = matchScore(line.loja_nome_raw, nomePart)
+      if (nomeScore < s) s = nomeScore
+    }
   }
   return s
 }
@@ -304,29 +335,55 @@ function assignOptimal(
 
   if (nL <= 5) {
     const mat = ls.map(l => ps.map(p => { const s = scorePair(l, p); return s === Infinity ? INF : s }))
+    // n = how many assignments we make: bounded by both nL and nP.
+    // When nL <= nP every line can get a parada; when nL > nP only nP of nL lines get assigned.
     const n = Math.min(nL, nP)
     let bestTotal = Infinity
-    let bestAssign: number[] = []
+    let bestAssign: number[] = []  // li → pi mapping (length n)
+    let bestLineOrder: number[] = [] // which nL-indices were chosen (length n)
 
-    const dfs = (li: number, usedP: Set<number>, cur: number[]) => {
-      if (li === n) {
-        const total = cur.reduce((sum, pi, i) => sum + mat[i][pi], 0)
-        if (total < bestTotal) { bestTotal = total; bestAssign = [...cur] }
+    // DFS over permutations of paradas assigned to a chosen subset of lines.
+    // lineOrder: the nL-indices actually assigned; cur: their parada assignments.
+    const dfsAssign = (step: number, usedP: Set<number>, cur: number[], lineOrder: number[]) => {
+      if (step === n) {
+        const total = cur.reduce((sum, pi, k) => sum + mat[lineOrder[k]][pi], 0)
+        if (total < bestTotal) { bestTotal = total; bestAssign = [...cur]; bestLineOrder = [...lineOrder] }
         return
       }
       for (let pi = 0; pi < nP; pi++) {
         if (!usedP.has(pi)) {
           usedP.add(pi); cur.push(pi)
-          dfs(li + 1, usedP, cur)
+          dfsAssign(step + 1, usedP, cur, lineOrder)
           cur.pop(); usedP.delete(pi)
         }
       }
     }
-    dfs(0, new Set(), [])
 
-    for (let i = 0; i < bestAssign.length; i++) {
-      const pi = bestAssign[i]
-      if (mat[i][pi] < INF) result.set(ls[i].id, ps[pi])
+    if (nL <= nP) {
+      // All lines get a parada: use all nL indices in order.
+      const lineOrder = Array.from({ length: nL }, (_, i) => i)
+      dfsAssign(0, new Set(), [], lineOrder)
+    } else {
+      // More lines than paradas: enumerate all C(nL, n) subsets of lines.
+      // nL <= 5 and n = nP <= 5, so at most C(5,2)*2! = 20 iterations worst case.
+      const chooseLines = (start: number, chosen: number[]) => {
+        if (chosen.length === n) {
+          dfsAssign(0, new Set(), [], [...chosen])
+          return
+        }
+        for (let li = start; li < nL; li++) {
+          chosen.push(li)
+          chooseLines(li + 1, chosen)
+          chosen.pop()
+        }
+      }
+      chooseLines(0, [])
+    }
+
+    for (let k = 0; k < bestAssign.length; k++) {
+      const li = bestLineOrder[k]
+      const pi = bestAssign[k]
+      if (mat[li][pi] < INF) result.set(ls[li].id, ps[pi])
     }
   } else {
     // Hungarian (Jonker-Volgenant) para nL > 5 — O(n³) optimal assignment.
@@ -628,6 +685,16 @@ export async function cruzaEscalaUnitrac(
       }
     }
 
+    // Fallback: veículo tem GPS mas nunca passou pela BASE BENASSI.
+    // Usa chegada na 1ª parada operacional como proxy de saída CD.
+    // (mesmo comportamento de computeSaidaCd em unitrac.ts linha 176)
+    if (!saida_cd && todasParadas.length > 0) {
+      const firstOp = todasParadas.find(
+        p => p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE'
+      )
+      if (firstOp) saida_cd = new Date(firstOp.chegada)
+    }
+
     // Em vez de todas as paradas não-base, emite SÓ a parada matched por nome
     const matched = matchByEscalaId.get(linha.id)
     const isGeo = geoMatchedLineIds.has(linha.id)
@@ -668,6 +735,14 @@ export async function cruzaEscalaUnitrac(
       ? (trgmResults[linha.loja_nome_raw]?.trgm_score ?? 0.7)
       : 1.0
 
+    // Confidence e requiresReview derivados do score real, não do algoritmo.
+    // Antes: isGeo ? 'LOW' : 'HIGH' — trgm com score 0.62 recebia HIGH indevidamente.
+    // Agora: HIGH se score >= 0.85, LOW se >= 0.6, UNMATCHED se < 0.6 (mas com parada).
+    const metaConfidence: MatchConfidence = isGeo || metaScore < 0.85
+      ? (metaScore >= 0.6 ? 'LOW' : 'UNMATCHED')
+      : 'HIGH'
+    const metaRequiresReview = metaScore < 0.75
+
     rotas.push({
       escala_linha_id: linha.id,
       data: linha.data_entrega,
@@ -678,7 +753,7 @@ export async function cruzaEscalaUnitrac(
       anomalias_codigos: [],
       status: 'pendente',
       _matchMeta: matched
-        ? { score: metaScore, confidence: isGeo ? 'LOW' : 'HIGH', requiresReview: false, algorithm: metaAlgorithm }
+        ? { score: metaScore, confidence: metaConfidence, requiresReview: metaRequiresReview, algorithm: metaAlgorithm }
         : { score: 0, confidence: 'UNMATCHED', requiresReview: true, algorithm: 'none' },
     })
   }
