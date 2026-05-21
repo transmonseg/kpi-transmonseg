@@ -6,7 +6,7 @@ import { parseEscalaZonaSul } from '@/lib/parsers/escala-zona-sul'
 import { parseEscalaPax } from '@/lib/parsers/escala-pax'
 import { parseEscalaArmazemGrao } from '@/lib/parsers/escala-armazem-grao'
 import { parseUnitrac } from '@/lib/parsers/unitrac'
-import { cruzaEscalaUnitrac } from '@/lib/kpi/matcher'
+import { cruzaEscalaUnitrac, variantesOcr } from '@/lib/kpi/matcher'
 import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
 import { REDE_NOMES_CANONICOS } from '@/lib/kpi/kpi-styles'
@@ -392,6 +392,17 @@ export async function POST(req: NextRequest) {
       lng: p.lng,
     })
     paradasIndex.set(p.placa_norm, list)
+  }
+  // Para placas Mercosul com OCR ambíguo (1↔B, 9↔J, 4↔E na posição 4), o
+  // Unitrac pode gravar a variante diferente da escala. Sem este passo,
+  // paradasIndex.has(escalaPlaca) = false → ANOM-01 HIGH falso.
+  // Adicionamos apenas se a variante não estiver já no índice (evita clobber).
+  for (const [placa, list] of [...paradasIndex]) {
+    for (const variante of variantesOcr(placa)) {
+      if (variante !== placa && !paradasIndex.has(variante)) {
+        paradasIndex.set(variante, list)
+      }
+    }
   }
   const anomalias = detectaAnomalias({
     rotas,

@@ -261,7 +261,7 @@ const OCR_PARES: Record<string, string> = { '1':'B', 'B':'1', '9':'J', 'J':'9', 
 
 // Gera variantes da placa com 1 substituição OCR (até 1 char diferente).
 // Limita à posição 4 (zero-indexed) que é onde Mercosul muda de dígito pra letra.
-function variantesOcr(placa: string): string[] {
+export function variantesOcr(placa: string): string[] {
   if (placa.length !== 7) return [placa]
   const variantes = new Set([placa])
   const ch = placa[4]
