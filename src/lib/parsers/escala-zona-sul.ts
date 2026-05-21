@@ -14,6 +14,12 @@ const SKIP_COL4 = new Set([
   'FILIAL', 'RESUMO:', 'TIPO', 'LEGENDA:', 'QTD.', 'INÍCIO DA OPERAÇÃO DE CARGA',
 ])
 
+export function normalizaFilialCod(cod: string): string {
+  // zero-pad para 2 dígitos se for 1 dígito numérico
+  const trimmed = cod.trim()
+  return /^\d$/.test(trimmed) ? `0${trimmed}` : trimmed
+}
+
 function cellVal(cell: ExcelJS.Cell | undefined): unknown {
   if (!cell) return null
   const v = cell.value
@@ -72,7 +78,10 @@ function resolveDataEntrega(
   if (isMegaBox) return formataDataISO(dataCarga)
 
   const cod = filialStr.trim()
-  if (FILIAIS_D1_FIXAS.has(cod)) {
+  // Normaliza para 2 dígitos pra casar com os códigos no Set mesmo quando
+  // o Excel armazena o número sem zero à esquerda (ex: "4" deve casar com "04").
+  const codNorm = /^\d$/.test(cod) ? `0${cod}` : cod
+  if (FILIAIS_D1_FIXAS.has(cod) || FILIAIS_D1_FIXAS.has(codNorm)) {
     return formataDataISO(proximoDiaUtil(dataCarga))
   }
 
@@ -296,14 +305,17 @@ export async function parseEscalaZonaSul(
     for (const { loja, kilos } of lojas) {
       const dataEntrega = resolveDataEntrega(dataCarga, loja, hora)
 
-      const nomeCompleto = FILIAL_NOME.get(loja.trim()) ?? loja
+      const lojaNum = parseInt(loja.trim(), 10)
+      const lojaKey = !isNaN(lojaNum) ? String(lojaNum) : loja.trim()
+      const lojaCodNorm = normalizaFilialCod(lojaKey)
+      const nomeCompleto = FILIAL_NOME.get(lojaKey) ?? loja
 
       const linha: LinhaEscala = {
         data: dataISO,
         data_entrega: dataEntrega,
         rede_id: 'ZONA_SUL',
         loja_nome_raw: nomeCompleto,
-        loja_codigo_raw: loja,
+        loja_codigo_raw: lojaCodNorm,
         placa_norm: placaNorm,
         placa_raw: placaRaw,
         motorista_nome: motoristaRaw,
