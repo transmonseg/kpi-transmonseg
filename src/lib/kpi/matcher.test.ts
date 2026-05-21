@@ -619,3 +619,189 @@ describe('T5 — tokensCore preserva discriminador dentro de parênteses', () =>
     expect(score).toBe(0)
   })
 })
+
+describe('T7 — suffix-match com prefixo de rede conhecido', () => {
+  const makeT7Line = (cod: string | null, loja: string, rede: string): EscalaLinhaRow => ({
+    id: 'e', rede_id: rede, placa_norm: 'AAA0000', loja_nome_raw: loja,
+    loja_codigo_raw: cod, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19',
+  })
+  const makeT7Parada = (cod: string, nome: string): UnitracParadaRow => ({
+    id: 'p', placa_norm: 'AAA0000', chegada: '2026-05-19T10:00:00Z', saida: null,
+    duracao_seg: null, local_parada: nome, codigo_loja: cod, nome_loja: nome,
+    lat: null, lng: null, classificacao: 'LOJA', ordem: 1,
+  })
+
+  it('Zona Sul Loja "21" casa com 9039021', () => {
+    const score = scorePair(
+      makeT7Line('21', 'Zona Sul Flamengo', 'ZONA_SUL'),
+      makeT7Parada('9039021', '21 - ZONA SUL - FLAMENGO'),
+    )
+    expect(score).toBe(0)
+  })
+
+  it('Zona Sul Loja "09" casa com 9039009 via padStart', () => {
+    const score = scorePair(
+      makeT7Line('09', 'Zona Sul Ipanema', 'ZONA_SUL'),
+      makeT7Parada('9039009', '09 - ZONA SUL - IPANEMA'),
+    )
+    expect(score).toBe(0)
+  })
+
+  it('Superprix Loja "14" casa com 3030014', () => {
+    const score = scorePair(
+      makeT7Line('14', 'Super Prix Tijuca', 'SUPERPRIX'),
+      makeT7Parada('3030014', 'SUPERPRIX LJ 14 - TIJUCA'),
+    )
+    expect(score).toBe(0)
+  })
+
+  it('Carrefour Loja "12" casa com 9006012 (prefixo 9006 adicionado)', () => {
+    const score = scorePair(
+      makeT7Line('12', 'Carrefour Alcantara', 'CARREFOUR'),
+      makeT7Parada('9006012', 'CARREFOUR ALCANTARA'),
+    )
+    expect(score).toBe(0)
+  })
+
+  it('Guanabara Rota "1" (length=1) NÃO ativa suffix por código (length<2)', () => {
+    // codL="1" length=1 — guard length≥2 bloqueia o suffix-match.
+    // Match real da Guanabara Rota 1 acontece via outro fluxo (rede fallback +
+    // nome tokens). Aqui validamos que código sozinho NÃO causa match indevido.
+    // Nomes desviados de propósito pra isolar o teste a códigos.
+    const score = scorePair(
+      makeT7Line('1', 'Rota 01 Distribuidor', 'GUANABARA'),
+      makeT7Parada('7100001', 'Atacado Manaus Norte'),
+    )
+    expect(score).toBe(Infinity)
+  })
+
+  it('Guanabara Rota "01" (length=2) JÁ casa com 7100001 via padStart', () => {
+    // Quando a escala traz "01" em vez de "1", padStart 3 vira "001" e bate 7100001
+    const score = scorePair(
+      makeT7Line('01', 'Guanabara Rota 01', 'GUANABARA'),
+      makeT7Parada('7100001', 'GUANABARA ROTA 01'),
+    )
+    expect(score).toBe(0)
+  })
+
+  it('CAB-Petrópolis "10" casa com 7012010', () => {
+    const score = scorePair(
+      makeT7Line('10', 'CAB Petropolis', 'CAB_PETROPOLIS'),
+      makeT7Parada('7012010', 'CAB - PETROPOLIS'),
+    )
+    expect(score).toBe(0)
+  })
+
+  it('Feira Nova Loja "15" casa com 5790015 (prefixo 5790 adicionado)', () => {
+    const score = scorePair(
+      makeT7Line('15', 'Feira Nova Tijuca', 'FEIRA_NOVA'),
+      makeT7Parada('5790015', 'FEIRA NOVA TIJUCA'),
+    )
+    expect(score).toBe(0)
+  })
+
+  it('NÃO casa quando prefixo desconhecido (99000021)', () => {
+    // Prefixo "99" não está em REDE_PREFIX_RE — não pode disparar suffix length>=2
+    const score = scorePair(
+      makeT7Line('21', 'Loja Random', 'OUTRA'),
+      makeT7Parada('99000021', 'OUTRA LOJA'),
+    )
+    expect(score).toBe(Infinity)
+  })
+
+  it('NÃO confunde length=2 sem prefixo de rede (códigos puros)', () => {
+    // codP="9021" sem prefixo em REDE_PREFIX_RE. codL="21" length=2 — não dispara suffix.
+    // Nomes totalmente disjuntos garantem que apenas a regra de código contava.
+    const score = scorePair(
+      makeT7Line('21', 'Cabo Frio Distribuidor', 'OUTRA'),
+      makeT7Parada('9021', 'Manaus Atacarejo'),
+    )
+    expect(score).toBe(Infinity)
+  })
+
+  it('padStart NÃO confunde 21 com 9039121 (mesmo prefixo, sufixo divergente)', () => {
+    // Critério crítico: padStart "21" → "021". "9039121" termina em "121", não "021".
+    // Nomes disjuntos garantem que só o suffix-match poderia salvar — e não deve.
+    const score = scorePair(
+      makeT7Line('21', 'Cabo Frio Distribuidor', 'ZONA_SUL'),
+      makeT7Parada('9039121', 'Manaus Atacarejo'),
+    )
+    expect(score).toBe(Infinity)
+  })
+
+  // Smoke tests pros 8 prefixos sem teste dedicado (regressão se alguém remover do regex)
+  it('smoke prefixo 7000 (PREZUNIC): "14" casa com 7000014', () => {
+    expect(scorePair(
+      makeT7Line('14', 'Cabo Frio Distribuidor', 'PREZUNIC'),
+      makeT7Parada('7000014', 'Manaus Atacarejo'),
+    )).toBe(0)
+  })
+
+  it('smoke prefixo 8590 (PRINCESA): "14" casa com 8590014 via padStart', () => {
+    // Códigos reais do Unitrac Princesa são prefixo + 3 dígitos (ex: 8590563).
+    // Aqui usamos sintético 8590014 pra validar SÓ o regex; codL="14"→"014".
+    expect(scorePair(
+      makeT7Line('14', 'Cabo Frio Distribuidor', 'PRINCESA'),
+      makeT7Parada('8590014', 'Manaus Atacarejo'),
+    )).toBe(0)
+  })
+
+  it('smoke prefixo 5353 (ARMAZEM_GRAO): "12" casa com 5353012', () => {
+    expect(scorePair(
+      makeT7Line('12', 'Cabo Frio Distribuidor', 'ARMAZEM_GRAO'),
+      makeT7Parada('5353012', 'Manaus Atacarejo'),
+    )).toBe(0)
+  })
+
+  it('smoke prefixo 5600 (SENDAS): "22" casa com 5600022', () => {
+    expect(scorePair(
+      makeT7Line('22', 'Cabo Frio Distribuidor', 'SENDAS'),
+      makeT7Parada('5600022', 'Manaus Atacarejo'),
+    )).toBe(0)
+  })
+
+  it('smoke prefixo 11623 (VIANENSE): "32" casa com 11623032', () => {
+    expect(scorePair(
+      makeT7Line('32', 'Cabo Frio Distribuidor', 'VIANENSE'),
+      makeT7Parada('11623032', 'Manaus Atacarejo'),
+    )).toBe(0)
+  })
+
+  it('smoke prefixo 17659 (EMANUEL): "01" casa com 17659001', () => {
+    expect(scorePair(
+      makeT7Line('01', 'Cabo Frio Distribuidor', 'EMANUEL'),
+      makeT7Parada('17659001', 'Manaus Atacarejo'),
+    )).toBe(0)
+  })
+
+  it('smoke prefixo 2384 (ATACADAO): "12" casa com 2384012', () => {
+    expect(scorePair(
+      makeT7Line('12', 'Cabo Frio Distribuidor', 'ATACADAO'),
+      makeT7Parada('2384012', 'Manaus Atacarejo'),
+    )).toBe(0)
+  })
+
+  it('smoke prefixo 202 (SUPER_PAX): "12" casa com 202012', () => {
+    expect(scorePair(
+      makeT7Line('12', 'Cabo Frio Distribuidor', 'SUPER_PAX'),
+      makeT7Parada('202012', 'Manaus Atacarejo'),
+    )).toBe(0)
+  })
+
+  it('endurecimento: prefixo 710[0-3] NÃO captura 7104xxx (futuro)', () => {
+    // 7104 não está na família atual (7100-7103). Se aparecer no futuro,
+    // teste vai falhar e força revisão.
+    expect(scorePair(
+      makeT7Line('01', 'Cabo Frio Distribuidor', 'OUTRA'),
+      makeT7Parada('7104001', 'Manaus Atacarejo'),
+    )).toBe(Infinity)
+  })
+
+  it('endurecimento: prefixo 5600 NÃO captura 5601xxx', () => {
+    // 5601 não está em REDE_PREFIX_RE (só 5600 cobre SENDAS atual)
+    expect(scorePair(
+      makeT7Line('22', 'Cabo Frio Distribuidor', 'OUTRA'),
+      makeT7Parada('5601022', 'Manaus Atacarejo'),
+    )).toBe(Infinity)
+  })
+})

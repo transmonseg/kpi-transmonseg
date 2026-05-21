@@ -21,6 +21,36 @@ const REDES_TOKEN = new Set([
 // "Sao Joao de Meriti" idem. Bairros RJ usam "SAO X" extensivamente.
 const STOPWORDS = new Set(['DO','DE','DA','DOS','DAS','LOJA','REDE'])
 
+// Prefixos numéricos conhecidos dos códigos do Unitrac (`codigo_loja`) por rede.
+// Quando o codigo_loja começa com um destes, o suffix-match aceita codigo_escala
+// de length>=2 (com padStart 3) — destrava match Zona Sul "21" → 9039021,
+// Superprix "14" → 3030014, Carrefour "12" → 9006012 etc.
+// Validado contra `lojas.codigo_unitrac` no DB Supabase em 21/05/2026.
+// Família 710[0-3] cobre Guanabara (7100/7101/7102/7103); 5600 cobre SENDAS.
+// Prefixos rigorosos (4+ chars onde possível) pra minimizar falso positivo.
+const REDE_PREFIX_RE = /^(9039|3030|7000|8590|5353|5790|9006|710[0-3]|5600|11623|17659|2384|7012|202)/
+
+// Suffix-match entre `codigo_escala` da escala e `codigo_loja` do Unitrac.
+// Regras:
+//   1. igualdade exata
+//   2. suffix de codigo_escala length>=3 dentro de codigo_loja
+//   3. suffix inverso (codigo_loja contém o sufixo codigo_escala)
+//   4-5. quando codigo_loja tem prefixo de rede conhecido, aceitar length>=2
+//        (com padStart(3,'0') pra cobrir "09" → "009" → 9039009)
+// Encapsulada pra DRY entre scorePair (geofence principal) e o fallback
+// de partes em local_parada separadas por vírgula.
+function codCasa(codL: string, codP: string): boolean {
+  if (codL === codP) return true
+  if (codL.length >= 3 && codP.endsWith(codL)) return true
+  if (codP.length >= 3 && codL.endsWith(codP)) return true
+  // Quando codP tem prefixo de rede conhecido E codL tem length=2,
+  // aceitar SÓ via padStart(3,'0') — todos os codigos_unitrac cadastrados são
+  // `prefixo + 3 dígitos`, então "21" → "021" é a única forma correta.
+  // Aceitar codP.endsWith(codL) sem padStart faria 9039121 casar com codL="21".
+  if (codL.length >= 2 && REDE_PREFIX_RE.test(codP) && codP.endsWith(codL.padStart(3, '0'))) return true
+  return false
+}
+
 function tokensCore(s: string | null | undefined): Set<string> {
   if (!s) return new Set()
   // Unitrac às vezes concatena várias paradas separadas por vírgula
@@ -293,14 +323,7 @@ export function variantesOcr(placa: string): string[] {
 export function scorePair(line: EscalaLinhaRow, p: UnitracParadaRow): number {
   let s = matchScore(line.loja_nome_raw, p.nome_loja || p.local_parada || '')
   if (line.loja_codigo_raw && p.codigo_loja) {
-    const codL = line.loja_codigo_raw
-    const codP = p.codigo_loja
-    // Suffix-match exige length >= 3 — códigos curtos (1-9) viravam falso positivo
-    // com qualquer cod Unitrac terminado naquele dígito (ex: codL="1" casava com
-    // codP="9039021"). Guanabara/Zona Sul têm códigos curtos e quebravam.
-    if (codL === codP) s = 0
-    else if (codL.length >= 3 && codP.endsWith(codL)) s = 0
-    else if (codP.length >= 3 && codL.endsWith(codP)) s = 0
+    if (codCasa(line.loja_codigo_raw, p.codigo_loja)) s = 0
   }
   // Tenta geofences adicionais (Unitrac concatena múltiplas separadas por vírgula).
   // O parser só salva codigo_loja/nome_loja da PRIMEIRA geofence LOJA; quando a
@@ -314,12 +337,9 @@ export function scorePair(line: EscalaLinhaRow, p: UnitracParadaRow): number {
       if (!m) continue
       const codP2 = m[1]
       const nomePart = m[2].trim()
-      if (line.loja_codigo_raw) {
-        const codL = line.loja_codigo_raw
-        if (codL === codP2 || (codL.length >= 3 && codP2.endsWith(codL)) || (codP2.length >= 3 && codL.endsWith(codP2))) {
-          s = 0
-          break
-        }
+      if (line.loja_codigo_raw && codCasa(line.loja_codigo_raw, codP2)) {
+        s = 0
+        break
       }
       const nomeScore = matchScore(line.loja_nome_raw, nomePart)
       if (nomeScore < s) s = nomeScore
