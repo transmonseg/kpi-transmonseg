@@ -613,7 +613,9 @@ export async function cruzaEscalaUnitrac(
         if (m && m.classificacao === 'LOJA') paradasUsadasNaPlaca.push(m)
       }
       for (const linha of linhasRestantes) {
-        // Procura parada compartilhável: bate com rede da escala via cadastro
+        // Procura parada compartilhável: bate com rede da escala via cadastro OU via tokens.
+        // Token fallback cobre redes cross-docking (ARMAZEM_GRAO) onde as lojas estão
+        // cadastradas com rede_id diferente (ASSAI, PREZUNIC…) e o filtro por rede_id falharia.
         const compartilhada = paradasUsadasNaPlaca.find(p => {
           if (!p.codigo_loja && !p.nome_loja) return false
           const lojasDaRede = lojas.filter(l => l.rede_id === linha.rede_id)
@@ -622,6 +624,8 @@ export async function cruzaEscalaUnitrac(
             const np = p.nome_loja.trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
             if (lojasDaRede.some(l => l.nome_unitrac?.trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '') === np)) return true
           }
+          // Token fallback: parada não está no catálogo da rede mas tem tokens em comum
+          if (scorePair(linha, p) < Infinity) return true
           return false
         })
         if (compartilhada) {

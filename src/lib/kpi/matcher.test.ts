@@ -439,3 +439,58 @@ describe('variantesOcr', () => {
     expect(v).toHaveLength(1)
   })
 })
+
+// --- compartilhada token fallback (ARMAZEM_GRAO rede_id divergente) ---
+//
+// Escala ARMAZEM_GRAO com 2 linhas para "ASSAI TIJUCA 1ª ENTREGA" e "ASSAI TIJUCA 2ª ENTREGA"
+// no mesmo caminhão. O Unitrac tem 1 parada ASSAI TIJUCA. assignOptimal casa a 1ª linha;
+// a 2ª fica UNMATCHED. O compartilhada fallback via rede_id falha porque lojas.rede_id = 'ASSAI'
+// ≠ 'ARMAZEM_GRAO'. Token fallback: scorePair < Infinity → compartilhada funciona.
+describe('cruzaEscalaUnitrac — compartilhada token fallback para ARMAZEM_GRAO', () => {
+  const linhas: EscalaLinhaRow[] = [
+    {
+      id: 'ag-l1',
+      rede_id: 'ARMAZEM_GRAO',
+      placa_norm: 'KPS4J07',
+      loja_nome_raw: 'ASSAI TIJUCA 1ª ENTREGA',
+      loja_codigo_raw: null,
+      motorista_nome: 'Motorista A',
+      carro_ordem: 1,
+      data_entrega: '2026-05-20',
+    },
+    {
+      id: 'ag-l2',
+      rede_id: 'ARMAZEM_GRAO',
+      placa_norm: 'KPS4J07',
+      loja_nome_raw: 'ASSAI TIJUCA 2ª ENTREGA',
+      loja_codigo_raw: null,
+      motorista_nome: 'Motorista A',
+      carro_ordem: 1,
+      data_entrega: '2026-05-20',
+    },
+  ]
+  const paradas: UnitracParadaRow[] = [
+    {
+      id: 'ag-p1',
+      placa_norm: 'KPS4J07',
+      chegada: '2026-05-20T14:00:00.000Z',
+      saida: '2026-05-20T15:00:00.000Z',
+      duracao_seg: 3600,
+      local_parada: '9039050 - ASSAI TIJUCA',
+      codigo_loja: '9039050',
+      nome_loja: 'ASSAI TIJUCA',
+      lat: null, lng: null,
+      classificacao: 'LOJA',
+      ordem: 1,
+    },
+  ]
+
+  it('ambas as linhas recebem a mesma parada ASSAI TIJUCA via compartilhada token', async () => {
+    const rotas = await cruzaEscalaUnitrac(linhas, paradas, [])
+    expect(rotas).toHaveLength(2)
+    expect(rotas[0].paradas).toHaveLength(1)
+    expect(rotas[1].paradas).toHaveLength(1)
+    expect(rotas[0].paradas[0].parada_id).toBe('ag-p1')
+    expect(rotas[1].paradas[0].parada_id).toBe('ag-p1')
+  })
+})
