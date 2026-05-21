@@ -80,12 +80,26 @@ export function detectaAnomalias(params: DetectaParams): AnomaliaDetectada[] {
           sugestao: 'Verificar se o rastreador estava ativo ou se a placa está correta na escala.',
           payload: { placa: rota.placa_norm, escala_linha_id: rota.escala_linha_id },
         })
+      } else {
+        // GPS existe mas nenhuma parada casou com a escala (UNMATCHED com GPS disponível).
+        // ANOM-01 não dispara (placa tem GPS), ANOM-06 não dispara (sem paradas matched).
+        // Sem esta branch, a rota ficaria silenciosa — zero anomalias para um problema real.
+        anomalias.push({
+          kpi_rota_id: rotaId,
+          parada_id: null,
+          data,
+          codigo: 'ANOM-01',
+          severidade: 'HIGH',
+          descricao: `Placa ${rota.placa_norm} possui dados GPS no Unitrac mas nenhuma parada pôde ser associada à escala para ${data}.`,
+          sugestao: 'Verificar nomes de lojas na escala vs. Unitrac — possível divergência de nome ou código.',
+          payload: { placa: rota.placa_norm, escala_linha_id: rota.escala_linha_id, tem_gps: true },
+        })
       }
     }
 
     // ANOM-03: FORA_BASE com duração >= 10min e sem loja_id
     for (const parada of rota.paradas) {
-      if (parada.classificacao === 'FORA_BASE' && parada.duracao_min * 60 >= 600 && !parada.loja_id) {
+      if (parada.classificacao === 'FORA_BASE' && parada.duracao_min >= 10 && !parada.loja_id) {
         anomalias.push({
           kpi_rota_id: rotaId,
           parada_id: parada.parada_id,
@@ -104,7 +118,7 @@ export function detectaAnomalias(params: DetectaParams): AnomaliaDetectada[] {
       }
     }
 
-    // ANOM-04: tempo negativo (saida < chegada)
+    // ANOM-04: tempo negativo (saida < chegada) ou duração zero (saida nula no Unitrac → saida=chegada)
     for (const parada of rota.paradas) {
       if (parada.saida < parada.chegada) {
         anomalias.push({
@@ -120,6 +134,25 @@ export function detectaAnomalias(params: DetectaParams): AnomaliaDetectada[] {
             nome_parada: parada.nome,
             chegada: parada.chegada.toISOString(),
             saida: parada.saida.toISOString(),
+          },
+        })
+      } else if (parada.duracao_min === 0 && parada.saida.getTime() === parada.chegada.getTime()) {
+        // saida era null no Unitrac — route.ts definiu saida=chegada, duracao_min=0.
+        // Dado incompleto: parada sem tempo registrado, mas sem erro de sequência.
+        anomalias.push({
+          kpi_rota_id: rotaId,
+          parada_id: parada.parada_id,
+          data,
+          codigo: 'ANOM-04',
+          severidade: 'MEDIUM',
+          descricao: `Parada em "${parada.nome}" (placa ${rota.placa_norm}) sem saída registrada no Unitrac — duração zero.`,
+          sugestao: 'Verificar se o rastreador fechou a parada corretamente ou se o veículo ainda estava no local.',
+          payload: {
+            placa: rota.placa_norm,
+            nome_parada: parada.nome,
+            chegada: parada.chegada.toISOString(),
+            saida: parada.saida.toISOString(),
+            duracao_min: 0,
           },
         })
       }
@@ -234,10 +267,13 @@ export function detectaAnomalias(params: DetectaParams): AnomaliaDetectada[] {
         const inicioMin = timeToMinutes(janela.janela_inicio)
         const fimMin = timeToMinutes(janela.janela_fim)
         const saidaMin = dateToMinutesOfDay(rota.saida_cd)
+        // Janela normal (ex: 06:00-18:00): foraJanela se saída antes do início OU depois do fim.
+        // Janela que vira meia-noite (ex: 22:00-06:00): está DENTRO se >= inicio OU <= fim.
+        // foraJanela = NOT dentro = saidaMin < inicioMin AND saidaMin > fimMin.
         const foraJanela =
           fimMin > inicioMin
             ? saidaMin < inicioMin || saidaMin > fimMin
-            : saidaMin > inicioMin || saidaMin < fimMin
+            : saidaMin < inicioMin && saidaMin > fimMin
         if (foraJanela) {
           anomalias.push({
             kpi_rota_id: rotaId,

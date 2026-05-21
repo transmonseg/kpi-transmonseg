@@ -1,0 +1,337 @@
+import { describe, it, expect } from 'vitest'
+import { detectaAnomalias } from './anomalia'
+import type { RotaKpi, ParadaKpi } from '@/lib/types/kpi'
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function makeParada(overrides: Partial<ParadaKpi> = {}): ParadaKpi {
+  const chegada = new Date('2026-05-18T09:00:00.000Z')
+  const saida = new Date('2026-05-18T09:30:00.000Z')
+  return {
+    parada_id: 'p1',
+    loja_id: 'loja-1',
+    nome: 'Loja Teste',
+    chegada,
+    saida,
+    duracao_min: 30,
+    classificacao: 'LOJA',
+    ...overrides,
+  }
+}
+
+function makeRota(overrides: Partial<RotaKpi> = {}): RotaKpi {
+  return {
+    escala_linha_id: 'escala-1',
+    data: '2026-05-18',
+    rede_id: 'ZONA_SUL',
+    placa_norm: 'ABC1234',
+    saida_cd: new Date('2026-05-18T09:00:00.000Z'),
+    paradas: [makeParada()],
+    anomalias_codigos: [],
+    status: 'ok',
+    ...overrides,
+  }
+}
+
+function makeEscalaLinha(overrides: Partial<{
+  id: string
+  placa_norm: string | null
+  rede_id: string
+  data_entrega: string
+  loja_nome_raw: string
+}> = {}) {
+  return {
+    id: 'escala-1',
+    placa_norm: 'ABC1234',
+    rede_id: 'ZONA_SUL',
+    data_entrega: '2026-05-18',
+    loja_nome_raw: 'Zona Sul Barra',
+    ...overrides,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ANOM-01: placa na escala mas sem GPS
+// ---------------------------------------------------------------------------
+
+describe('ANOM-01: placa na escala sem dados GPS', () => {
+  it('dispara quando placa tem escala mas paradasIndex não tem a placa e paradas está vazio e status != sem_entrega', () => {
+    const rota = makeRota({ paradas: [], status: 'ok' })
+    const result = detectaAnomalias({
+      rotas: [rota],
+      escalaLinhas: [makeEscalaLinha()],
+      paradasIndex: new Map(), // placa ausente do GPS
+      janelasRede: new Map(),
+      data: '2026-05-18',
+    })
+    const anom = result.filter((a) => a.codigo === 'ANOM-01')
+    expect(anom).toHaveLength(1)
+    expect(anom[0].severidade).toBe('HIGH')
+    expect(anom[0].payload).toMatchObject({ placa: 'ABC1234' })
+  })
+
+  it('dispara com tem_gps:true quando placa tem GPS mas paradas=[] (UNMATCHED)', () => {
+    const rota = makeRota({ paradas: [], status: 'ok' })
+    // paradasIndex TEM a placa (GPS existe) mas rota.paradas está vazio (matcher falhou)
+    const paradasIndex = new Map<string, []>([['ABC1234', []]])
+    const result = detectaAnomalias({
+      rotas: [rota],
+      escalaLinhas: [makeEscalaLinha()],
+      paradasIndex,
+      janelasRede: new Map(),
+      data: '2026-05-18',
+    })
+    const anom = result.filter((a) => a.codigo === 'ANOM-01')
+    expect(anom).toHaveLength(1)
+    expect(anom[0].severidade).toBe('HIGH')
+    expect(anom[0].payload).toMatchObject({ tem_gps: true })
+  })
+
+  it('NÃO dispara quando rota tem status sem_entrega', () => {
+    const rota = makeRota({ paradas: [], status: 'sem_entrega' })
+    const result = detectaAnomalias({
+      rotas: [rota],
+      escalaLinhas: [makeEscalaLinha()],
+      paradasIndex: new Map(),
+      janelasRede: new Map(),
+      data: '2026-05-18',
+    })
+    expect(result.filter((a) => a.codigo === 'ANOM-01')).toHaveLength(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// ANOM-02: placa no GPS mas sem escala
+// ---------------------------------------------------------------------------
+
+describe('ANOM-02: placa no GPS sem linha de escala', () => {
+  it('dispara quando paradasIndex tem placa que não está em escalaLinhas', () => {
+    const paradasIndex = new Map([
+      ['XYZ9999', []],
+    ])
+    const result = detectaAnomalias({
+      rotas: [],
+      escalaLinhas: [], // escala vazia
+      paradasIndex,
+      janelasRede: new Map(),
+      data: '2026-05-18',
+    })
+    const anom = result.filter((a) => a.codigo === 'ANOM-02')
+    expect(anom).toHaveLength(1)
+    expect(anom[0].severidade).toBe('LOW')
+    expect(anom[0].payload).toMatchObject({ placa: 'XYZ9999' })
+  })
+
+  it('NÃO dispara quando placa do GPS está na escala', () => {
+    const paradasIndex = new Map([['ABC1234', []]])
+    const result = detectaAnomalias({
+      rotas: [],
+      escalaLinhas: [makeEscalaLinha({ placa_norm: 'ABC1234' })],
+      paradasIndex,
+      janelasRede: new Map(),
+      data: '2026-05-18',
+    })
+    expect(result.filter((a) => a.codigo === 'ANOM-02')).toHaveLength(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// ANOM-03: FORA_BASE com duração >= 10min e sem loja_id
+// ---------------------------------------------------------------------------
+
+describe('ANOM-03: parada FORA_BASE longa sem loja', () => {
+  it('dispara para parada FORA_BASE com 10 min e sem loja_id', () => {
+    const parada = makeParada({ classificacao: 'FORA_BASE', duracao_min: 10, loja_id: null })
+    const rota = makeRota({ paradas: [parada] })
+    const result = detectaAnomalias({
+      rotas: [rota],
+      escalaLinhas: [makeEscalaLinha()],
+      paradasIndex: new Map([['ABC1234', []]]),
+      janelasRede: new Map(),
+      data: '2026-05-18',
+    })
+    const anom = result.filter((a) => a.codigo === 'ANOM-03')
+    expect(anom).toHaveLength(1)
+    expect(anom[0].severidade).toBe('MEDIUM')
+  })
+
+  it('NÃO dispara para FORA_BASE com 9 min', () => {
+    const parada = makeParada({ classificacao: 'FORA_BASE', duracao_min: 9, loja_id: null })
+    const rota = makeRota({ paradas: [parada] })
+    const result = detectaAnomalias({
+      rotas: [rota],
+      escalaLinhas: [makeEscalaLinha()],
+      paradasIndex: new Map([['ABC1234', []]]),
+      janelasRede: new Map(),
+      data: '2026-05-18',
+    })
+    expect(result.filter((a) => a.codigo === 'ANOM-03')).toHaveLength(0)
+  })
+
+  it('NÃO dispara para FORA_BASE com loja_id preenchido', () => {
+    const parada = makeParada({ classificacao: 'FORA_BASE', duracao_min: 15, loja_id: 'loja-x' })
+    const rota = makeRota({ paradas: [parada] })
+    const result = detectaAnomalias({
+      rotas: [rota],
+      escalaLinhas: [makeEscalaLinha()],
+      paradasIndex: new Map([['ABC1234', []]]),
+      janelasRede: new Map(),
+      data: '2026-05-18',
+    })
+    expect(result.filter((a) => a.codigo === 'ANOM-03')).toHaveLength(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// ANOM-06: saida_cd ausente mas paradas existem
+// ---------------------------------------------------------------------------
+
+describe('ANOM-06: saida_cd ausente com paradas registradas', () => {
+  it('dispara quando saida_cd é null mas há paradas', () => {
+    const rota = makeRota({ saida_cd: null, paradas: [makeParada()] })
+    const result = detectaAnomalias({
+      rotas: [rota],
+      escalaLinhas: [makeEscalaLinha()],
+      paradasIndex: new Map([['ABC1234', []]]),
+      janelasRede: new Map(),
+      data: '2026-05-18',
+    })
+    const anom = result.filter((a) => a.codigo === 'ANOM-06')
+    expect(anom).toHaveLength(1)
+    expect(anom[0].severidade).toBe('HIGH')
+  })
+
+  it('NÃO dispara quando saida_cd está preenchida', () => {
+    const rota = makeRota({ saida_cd: new Date('2026-05-18T06:00:00.000Z'), paradas: [makeParada()] })
+    const result = detectaAnomalias({
+      rotas: [rota],
+      escalaLinhas: [makeEscalaLinha()],
+      paradasIndex: new Map([['ABC1234', []]]),
+      janelasRede: new Map(),
+      data: '2026-05-18',
+    })
+    expect(result.filter((a) => a.codigo === 'ANOM-06')).toHaveLength(0)
+  })
+
+  it('NÃO dispara quando não há paradas (mesmo com saida_cd null)', () => {
+    const rota = makeRota({ saida_cd: null, paradas: [] })
+    const result = detectaAnomalias({
+      rotas: [rota],
+      escalaLinhas: [makeEscalaLinha()],
+      paradasIndex: new Map(),
+      janelasRede: new Map(),
+      data: '2026-05-18',
+    })
+    expect(result.filter((a) => a.codigo === 'ANOM-06')).toHaveLength(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// ANOM-11: saída do CD fora da janela operacional da rede
+// ---------------------------------------------------------------------------
+
+describe('ANOM-11: saída do CD fora da janela', () => {
+  // Janela normal 06:00–18:00 (BRT = UTC-3)
+  // Para simular BRT 06:00 via UTC: UTC 09:00 → BRT 06:00
+  // Para simular BRT 04:00 via UTC: UTC 07:00 → BRT 04:00
+
+  const janelaNormal = new Map([
+    ['ZONA_SUL', { janela_inicio: '06:00', janela_fim: '18:00' }],
+  ])
+
+  it('dispara quando saída BRT 04:00 está FORA da janela 06:00-18:00', () => {
+    // BRT 04:00 = UTC 07:00
+    const rota = makeRota({
+      rede_id: 'ZONA_SUL',
+      saida_cd: new Date('2026-05-18T07:00:00.000Z'),
+    })
+    const result = detectaAnomalias({
+      rotas: [rota],
+      escalaLinhas: [makeEscalaLinha()],
+      paradasIndex: new Map([['ABC1234', []]]),
+      janelasRede: janelaNormal,
+      data: '2026-05-18',
+    })
+    const anom = result.filter((a) => a.codigo === 'ANOM-11')
+    expect(anom).toHaveLength(1)
+    expect(anom[0].severidade).toBe('LOW')
+  })
+
+  it('NÃO dispara quando saída BRT 10:00 está DENTRO da janela 06:00-18:00', () => {
+    // BRT 10:00 = UTC 13:00
+    const rota = makeRota({
+      rede_id: 'ZONA_SUL',
+      saida_cd: new Date('2026-05-18T13:00:00.000Z'),
+    })
+    const result = detectaAnomalias({
+      rotas: [rota],
+      escalaLinhas: [makeEscalaLinha()],
+      paradasIndex: new Map([['ABC1234', []]]),
+      janelasRede: janelaNormal,
+      data: '2026-05-18',
+    })
+    expect(result.filter((a) => a.codigo === 'ANOM-11')).toHaveLength(0)
+  })
+
+  // Janela wrap-around 22:00–06:00 (vira meia-noite)
+  // BRT 23:00 = UTC 02:00 no dia seguinte (ou UTC 26:00 → represento como mesmo dia +2h)
+  // Para evitar ambiguidade de data, uso UTC que mapeiam corretamente:
+  // BRT 23:00 = UTC 02:00 (próximo dia, mas para fins de minutos do dia é o mesmo)
+  // BRT 10:00 = UTC 13:00
+
+  const janelaWrap = new Map([
+    ['ATACADAO', { janela_inicio: '22:00', janela_fim: '06:00' }],
+  ])
+
+  it('janela wrap-around: BRT 23:00 está DENTRO da janela 22:00-06:00 → não dispara', () => {
+    // BRT 23:00 = UTC 02:00
+    const rota = makeRota({
+      rede_id: 'ATACADAO',
+      saida_cd: new Date('2026-05-18T02:00:00.000Z'),
+      paradas: [makeParada()],
+    })
+    const result = detectaAnomalias({
+      rotas: [rota],
+      escalaLinhas: [makeEscalaLinha({ rede_id: 'ATACADAO' })],
+      paradasIndex: new Map([['ABC1234', []]]),
+      janelasRede: janelaWrap,
+      data: '2026-05-18',
+    })
+    expect(result.filter((a) => a.codigo === 'ANOM-11')).toHaveLength(0)
+  })
+
+  it('janela wrap-around: BRT 10:00 está FORA da janela 22:00-06:00 → dispara', () => {
+    // BRT 10:00 = UTC 13:00
+    const rota = makeRota({
+      rede_id: 'ATACADAO',
+      saida_cd: new Date('2026-05-18T13:00:00.000Z'),
+      paradas: [makeParada()],
+    })
+    const result = detectaAnomalias({
+      rotas: [rota],
+      escalaLinhas: [makeEscalaLinha({ rede_id: 'ATACADAO' })],
+      paradasIndex: new Map([['ABC1234', []]]),
+      janelasRede: janelaWrap,
+      data: '2026-05-18',
+    })
+    const anom = result.filter((a) => a.codigo === 'ANOM-11')
+    expect(anom).toHaveLength(1)
+  })
+
+  it('NÃO dispara quando rede não tem janela cadastrada', () => {
+    const rota = makeRota({
+      rede_id: 'GUANABARA',
+      saida_cd: new Date('2026-05-18T03:00:00.000Z'), // BRT 00:00 - possivelmente fora de qualquer janela
+    })
+    const result = detectaAnomalias({
+      rotas: [rota],
+      escalaLinhas: [makeEscalaLinha({ rede_id: 'GUANABARA' })],
+      paradasIndex: new Map([['ABC1234', []]]),
+      janelasRede: new Map(), // sem janela para GUANABARA
+      data: '2026-05-18',
+    })
+    expect(result.filter((a) => a.codigo === 'ANOM-11')).toHaveLength(0)
+  })
+})
