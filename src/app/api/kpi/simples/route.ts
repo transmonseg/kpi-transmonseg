@@ -96,7 +96,7 @@ function rotaToLinha(rota: RotaKpi, escala: LinhaEscala, ordem: number): LinhaPa
     saida_loja_3: p3?.saida ?? null,
     tempo_loja_3_min: p3?.duracao_min ?? null,
     observacao: null,
-    anomalias_codigos: [],
+    anomalias_codigos: rota.anomalias_codigos,
     motorista_codigo: escala.motorista_codigo,
   }
 }
