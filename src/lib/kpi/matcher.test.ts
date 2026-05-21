@@ -240,3 +240,57 @@ describe('cruzaEscalaUnitrac — saida_cd fallback sem BASE (Bug B)', () => {
     expect(rotas[0].saida_cd!.toISOString()).toBe('2026-05-20T07:00:00.000Z')
   })
 })
+
+// --- PETROPOLIS como token discriminante (não deve estar em REDES_TOKEN) ---
+//
+// "CAB PETROPOLIS" e "CAB - PETROPOLIS" têm tokens = {PETROPOLIS} quando CAB
+// está em REDES_TOKEN mas PETROPOLIS não. Antes PETROPOLIS estava em REDES_TOKEN,
+// fazendo tokensCore("CAB - PETROPOLIS") = {} → matchScore Infinity sempre.
+describe('scorePair — PETROPOLIS como token discriminante', () => {
+  const linhaCAB: EscalaLinhaRow = {
+    id: 'l-cab',
+    rede_id: 'CAB_PETROPOLIS',
+    placa_norm: 'UBF5G36',
+    loja_nome_raw: 'CAB PETROPOLIS',
+    loja_codigo_raw: null,
+    motorista_nome: 'Motorista X',
+    carro_ordem: 1,
+    data_entrega: '2026-05-18',
+  }
+
+  it('CAB escala bate com parada "CAB - PETROPOLIS" -> score 0', () => {
+    const parada: UnitracParadaRow = {
+      id: 'p-cab',
+      placa_norm: 'UBF5G36',
+      chegada: '2026-05-18T10:00:00.000Z',
+      saida: '2026-05-18T11:30:00.000Z',
+      duracao_seg: 5400,
+      local_parada: 'BASE BENASSI - BASE BENASSI,7012010 - CAB - PETROPOLIS',
+      codigo_loja: '7012010',
+      nome_loja: 'CAB - PETROPOLIS',
+      lat: null,
+      lng: null,
+      classificacao: 'LOJA',
+      ordem: 2,
+    }
+    expect(scorePair(linhaCAB, parada)).toBe(0)
+  })
+
+  it('CAB PETROPOLIS NAO bate com parada de rede diferente sem token comum', () => {
+    const parada: UnitracParadaRow = {
+      id: 'p-other',
+      placa_norm: 'UBF5G36',
+      chegada: '2026-05-18T10:00:00.000Z',
+      saida: '2026-05-18T11:00:00.000Z',
+      duracao_seg: 3600,
+      local_parada: '8888 - LOJA ALFA BARRA',
+      codigo_loja: '8888',
+      nome_loja: 'LOJA ALFA BARRA',
+      lat: null,
+      lng: null,
+      classificacao: 'LOJA',
+      ordem: 1,
+    }
+    expect(scorePair(linhaCAB, parada)).toBe(Infinity)
+  })
+})

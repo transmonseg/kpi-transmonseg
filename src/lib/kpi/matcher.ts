@@ -12,7 +12,9 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 const REDES_TOKEN = new Set([
   'PRINCESA','PREZUNIC','ASSAI','ASSAÍ','CARREFOUR','SUPERPRIX','SUPER','PRIX','PAX',
   'SENDAS','GUANABARA','MUNDIAL','VIANENSE','EMANUEL','SAMS','ATACADAO','FEIRA','NOVA',
-  'CAB','PETROPOLIS','ARMAZEM','GRAO','ZONA','SUL','MERCADO','SUPERMERCADO',
+  'CAB','ARMAZEM','GRAO','ZONA','SUL','MERCADO','SUPERMERCADO',
+  // PETROPOLIS removido: é nome de cidade (Petrópolis RJ), não de rede — filtrar impede
+  // que "CAB PETROPOLIS" bata com "7012010 - CAB - PETROPOLIS" via token "PETROPOLIS".
 ])
 // IMPORTANTE: "SAO/SÃO" foi removida das stopwords. Filtrava "São Gonçalo"
 // virando só {GONCALO} e batia falso-positivo com qualquer outra rota "GONCALO".
