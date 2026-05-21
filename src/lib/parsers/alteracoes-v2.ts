@@ -229,6 +229,9 @@ const REDE_MAP: Array<{ pat: string; id: string }> = [
   { pat: 'armaz', id: 'ARMAZEM_GRAO' },
   { pat: 'zona sul', id: 'ZONA_SUL' },
   { pat: 'mega box', id: 'ZONA_SUL' },
+  { pat: 'mundial', id: 'MUNDIAL' },
+  { pat: 'cab petropolis', id: 'CAB_PETROPOLIS' },
+  { pat: 'cab_petropolis', id: 'CAB_PETROPOLIS' },
 ]
 
 const FILIAL_NUM_RE = /Filial\s+(\d+)/i
@@ -257,6 +260,9 @@ export function detectaContexto(
   let filial: number | null = null
   const mFilial = FILIAL_NUM_RE.exec(blocoNormalizado)
   if (mFilial) filial = parseInt(mFilial[1], 10)
+
+  // Fallback: texto com "Filial N" mas sem rede identificada → ZONA_SUL
+  if (!rede_id && filial !== null) rede_id = 'ZONA_SUL'
 
   let loja_nome_raw: string | null = null
   for (const linha of linhas) {

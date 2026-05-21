@@ -8,10 +8,44 @@ export const runtime = 'nodejs'
 const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
 
 function splitAlteracoes(texto: string): string[] {
-  // Divide por linhas que iniciam com "ALTERAÇÃO" (com ou sem emoji), mantendo o header em cada parte
-  const parts = texto.split(/(?=(?:[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\s]*)?altera[çc][aã]o)/iu)
-  const clean = parts.map(s => s.trim()).filter(Boolean)
-  return clean.length > 1 ? clean : [texto.trim()]
+  const linhas = texto.split(/\r?\n/)
+  const blocos: string[] = []
+  let buffer: string[] = []
+  let redeCtx = '' // carries rede header (e.g. "Alteração zona sul") into each filial block
+
+  const isInicioBloco = (l: string) =>
+    /(?:[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\s]*)?altera[çc][aã]o/iu.test(l) ||
+    /^\s*filial\s+\d+\s*$/i.test(l.trim())
+
+  const isRedeHeader = (l: string) =>
+    /(?:[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\s]*)?altera[çc][aã]o/iu.test(l) &&
+    !/^\s*filial\s+\d+\s*$/i.test(l.trim())
+
+  for (const linha of linhas) {
+    const trim = linha.trim()
+    if (!trim && buffer.length === 0) continue
+
+    if (isInicioBloco(trim)) {
+      if (buffer.length > 0) {
+        blocos.push(buffer.join('\n').trim())
+        buffer = []
+      }
+      if (isRedeHeader(trim)) {
+        redeCtx = trim
+        buffer.push(linha)
+      } else {
+        // Filial block: prepend rede context so parser can detect rede
+        if (redeCtx) buffer.push(redeCtx)
+        buffer.push(linha)
+      }
+    } else {
+      buffer.push(linha)
+    }
+  }
+  if (buffer.length > 0) blocos.push(buffer.join('\n').trim())
+
+  const clean = blocos.map(s => s.trim()).filter(Boolean)
+  return clean.length > 0 ? clean : [texto.trim()]
 }
 
 export async function POST(req: NextRequest) {
@@ -44,7 +78,7 @@ export async function POST(req: NextRequest) {
   const partes = splitAlteracoes(texto)
   const results = partes
     .map(p => parseAlteracaoText(p))
-    .filter(r => r.rede_id || r.entra || r.sai)
+    .filter(r => r.entra || r.sai)
 
   return NextResponse.json(results.length > 0 ? results : [parseAlteracaoText(texto)])
 }
