@@ -625,11 +625,14 @@ export async function cruzaEscalaUnitrac(
             melhorIdx = j
             break
           }
-          // Rede fallback (restrito a 1 linha sem match): cobre formatos "Rota NN"
-          // (ex: Guanabara) onde a escala não tem nome geográfico compatível com o
-          // Unitrac. Com só 1 slot livre e a parada não identificada como outra rede,
-          // não há risco de misturar lojas ("rede certa, loja errada").
-          if (linhasOrdenadas.length === 1 && (redes.has(linha.rede_id) || redes.size === 0)) {
+          // T12: Rede fallback agora SÓ aceita paradas SEM rede identificada (coringa).
+          // Antes aceitava também parada com rede igual à da escala (redes.has(linha.rede_id)),
+          // o que produzia falso positivo "rede certa, loja errada". Ex KUL1425:
+          // escala PREZUNIC PECHINCHA, parada cadastrada PREZUNIC VILA ISABEL (loja
+          // física DIFERENTE, sem tokens em comum). Sem T12, o `redes.has(PREZUNIC)`
+          // aceitava e o KPI saía com horários da loja errada — pior que UNMATCHED.
+          // Agora: só parada não-identificada (redes.size === 0) entra como coringa.
+          if (linhasOrdenadas.length === 1 && redes.size === 0) {
             melhorIdx = j
             break
           }

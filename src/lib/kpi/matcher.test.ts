@@ -1196,6 +1196,79 @@ describe('T11 — Rede-aware no assignOptimal (penalty cross-rede)', () => {
     // mas o Hungarian inicial — alvo da T11 — preferiu SENDAS.
   })
 
+  it('T12 — cross-rede bloqueado no fallback (parada ZONA_SUL não vai pra escala ARMAZEM)', async () => {
+    // Combinação T11 (penalty no assignOptimal) + guard cross-rede l.622 +
+    // T12 (coringa restrito) garante: escala de rede X com 1 parada cadastrada
+    // como rede Y nunca produz match. UNMATCHED é o resultado correto.
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'a', rede_id: 'ARMAZEM_GRAO', placa_norm: 'X', loja_nome_raw: 'Armazem Barra', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p', placa_norm: 'X', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'ZONA SUL LARANJEIRAS', codigo_loja: '9039030', nome_loja: '30 - ZONA SUL - LARANJEIRAS', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'lzs', rede_id: 'ZONA_SUL', nome: 'Laranjeiras', nome_normalizado: 'laranjeiras', codigo_escala: '30', codigo_unitrac: '9039030', nome_unitrac: '30 - ZONA SUL - LARANJEIRAS', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    expect(rotas).toHaveLength(1)
+    expect(rotas[0].paradas).toHaveLength(0)
+  })
+
+  it('T12 — mesma rede sem tokens em comum: redundância removida (UNMATCHED esperado)', async () => {
+    // KUL1425-style: escala PREZUNIC PECHINCHA + 2 paradas PREZUNIC sem token comum.
+    // 1 linha + 2 paradas = T8 não dispara (qtd != 1). assignOptimal tem score
+    // Infinity (tokens disjuntos). Fallback temporal: ANTES T12, `redes.has(PREZUNIC)`
+    // aceitava e KPI saía com horários da loja errada. AGORA: UNMATCHED correto.
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'pe', rede_id: 'PREZUNIC', placa_norm: 'X', loja_nome_raw: 'Prezunic Pechincha', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p_vi', placa_norm: 'X', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'PREZUNIC VILA ISABEL', codigo_loja: '7000999', nome_loja: 'PREZUNIC VILA ISABEL', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+      { id: 'p_bo', placa_norm: 'X', chegada: '2026-05-19T14:00:00Z', saida: '2026-05-19T15:00:00Z', duracao_seg: 3600, local_parada: 'PREZUNIC BOTAFOGO', codigo_loja: '7000888', nome_loja: 'PREZUNIC BOTAFOGO', lat: null, lng: null, classificacao: 'LOJA', ordem: 2 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'lvi', rede_id: 'PREZUNIC', nome: 'Vila Isabel', nome_normalizado: 'vila isabel', codigo_escala: null, codigo_unitrac: '7000999', nome_unitrac: 'PREZUNIC VILA ISABEL', lat: null, lng: null, raio_metros: 150 },
+      { id: 'lbo', rede_id: 'PREZUNIC', nome: 'Botafogo', nome_normalizado: 'botafogo', codigo_escala: null, codigo_unitrac: '7000888', nome_unitrac: 'PREZUNIC BOTAFOGO', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    // Mesma rede mas tokens disjuntos → não casa por nome.
+    // ANTES T12: o `redes.has(PREZUNIC)` aceitava primeira parada por ordem cronológica.
+    // AGORA: UNMATCHED — operador decide qual loja foi visitada (ou nenhuma).
+    expect(rotas[0].paradas).toHaveLength(0)
+  })
+
+  it('T12 — branch coringa NÃO dispara com 2+ linhas (length !== 1)', async () => {
+    // 2 linhas ARMAZEM sozinhas + 1 parada SEM cadastro (coringa).
+    // O branch `length === 1 && size === 0` da T12 não dispara → fica UNMATCHED.
+    // (T8 também não atua: 2 linhas != 1 parada.)
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'a1', rede_id: 'ARMAZEM_GRAO', placa_norm: 'X', loja_nome_raw: 'Loja Alpha', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+      { id: 'a2', rede_id: 'ARMAZEM_GRAO', placa_norm: 'X', loja_nome_raw: 'Loja Beta', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 2, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p', placa_norm: 'X', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: 'GEOFENCE COMPLETAMENTE DESCONHECIDO', codigo_loja: '9999999', nome_loja: 'GEOFENCE COMPLETAMENTE DESCONHECIDO', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, [])
+    // 2 linhas vs 1 parada coringa → nenhuma deve casar (ambíguo).
+    const totalParadas = rotas.reduce((s, r) => s + r.paradas.length, 0)
+    expect(totalParadas).toBe(0)
+  })
+
+  it('T12 preserva — fallback "1 linha sozinha" ainda aceita parada SEM rede cadastrada', async () => {
+    // Caso Guanabara Rota 01 (do test antigo "Bug C — Rota 01 sozinha"):
+    // 1 linha sem código + 1 parada sem cadastro de loja → redes.size === 0 → aceita.
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'g', rede_id: 'GUANABARA', placa_norm: 'X', loja_nome_raw: 'Guanabara - Rota 01', loja_codigo_raw: '1', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p', placa_norm: 'X', chegada: '2026-05-19T10:00:00Z', saida: '2026-05-19T11:00:00Z', duracao_seg: 3600, local_parada: '4519090 - GUANABARA MADUREIRA', codigo_loja: '4519090', nome_loja: 'GUANABARA MADUREIRA', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    // lojas=[] → parada não tem rede cadastrada → coringa entra
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, [])
+    expect(rotas[0].paradas).toHaveLength(1)
+    expect(rotas[0].paradas[0].parada_id).toBe('p')
+  })
+
   it('3 redes na mesma placa: cada parada cadastrada vai pra sua rede', async () => {
     // PRINCESA + ARMAZEM_GRAO + ZONA_SUL na mesma placa, 3 paradas cadastradas
     // (uma de cada rede). Mapeamento 1-1 esperado.
