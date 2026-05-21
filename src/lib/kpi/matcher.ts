@@ -399,11 +399,14 @@ function assignOptimal(
     // Greedy podia errar em ambiguidades (ex: caminhão Princesa fazendo 8
     // entregas onde duas lojas têm nomes parecidos). Hungarian garante
     // minimização global da soma de scores.
-    const mat = ls.map(l => ps.map(p => scorePair(l, p)))
+    // Mantém scores originais separados do capped: o filter usa original (Infinity = inválido)
+    // enquanto hungarianMin recebe capped (Infinity → INF) igual ao path brute-force acima.
+    const rawScores = ls.map(l => ps.map(p => scorePair(l, p)))
+    const mat = rawScores.map(row => row.map(s => (s === Infinity ? INF : s)))
     const assignment = hungarianMin(mat)
     for (let li = 0; li < nL; li++) {
       const pi = assignment[li]
-      if (pi >= 0 && Number.isFinite(mat[li][pi])) {
+      if (pi >= 0 && rawScores[li][pi] < Infinity) {
         result.set(ls[li].id, ps[pi])
       }
     }
@@ -667,6 +670,9 @@ export async function cruzaEscalaUnitrac(
     // "Operacional" = primeira LOJA, ou primeira FORA_BASE DEPOIS de ter visitado a BASE.
     // FORA_BASE de madrugada (antes de ir pra base) é ignorada — o caminhão pode ter
     // começado o tracking longe do CD sem isso indicar início das entregas.
+    // ATENÇÃO: existe uma segunda implementação em unitrac.ts:computeSaidaCd (parser).
+    // Aquela versão grava no DB mas é ignorada aqui — esta recomputa do zero.
+    // Qualquer mudança de semântica deve ser replicada nas duas.
     let viuBase = false
     let firstRealStop: UnitracParadaRow | undefined = undefined
     for (const p of todasParadas) {

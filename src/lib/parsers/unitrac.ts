@@ -100,7 +100,8 @@ const BASE_LOCAL = 'BASE BENASSI - BASE BENASSI'
 const FORA_LOCAL = 'FORA DE BASE E LOCAL DE SERVIÇO'
 
 // Detecta geofence LOJA: "CÓDIGO - NOME" onde código tem 4+ dígitos.
-// Filtra "ROTA X" / "BASE BENASSI" / "FORA DE BASE" como NÃO-LOJA.
+// 4+ dígitos exclui códigos de "ROTA X" (1-3 dígitos) e geofences genéricas.
+// Todos os clientes cadastrados no Unitrac têm códigos de 5+ dígitos.
 const LOJA_GF_RE = /^\d{4,}\s*-\s*\S/
 
 // Unitrac retorna múltiplas geofences sobrepostas separadas por vírgula
@@ -125,6 +126,12 @@ function findLojaGeofence(local: string): string | null {
   return null
 }
 
+// Paradas muito curtas na BASE são GPS bounce (caminhão saiu e voltou em segundos).
+// Paradas muito curtas FORA são GPS drift longe do raio — não representam entrega real.
+// Valores calibrados empiricamente: 900 s (15 min) para BASE, 600 s (10 min) para FORA.
+const MIN_DURACAO_BASE_SEG = 900
+const MIN_DURACAO_FORA_SEG = 600
+
 function classificaParada(local: string, duracaoSeg: number): ParadaUnitrac['classificacao'] {
   const primaria = primaryLocal(local)
   // Se há geofence LOJA específica entre as sobrepostas, sempre é LOJA mesmo
@@ -132,10 +139,10 @@ function classificaParada(local: string, duracaoSeg: number): ParadaUnitrac['cla
   // sobreposto BASE+LOJA virava BASE indevidamente.
   if (findLojaGeofence(local)) return 'LOJA'
   if (primaria === BASE_LOCAL) {
-    return duracaoSeg > 900 ? 'BASE' : 'FAKE_EXIT'
+    return duracaoSeg > MIN_DURACAO_BASE_SEG ? 'BASE' : 'FAKE_EXIT'
   }
   if (primaria === FORA_LOCAL) {
-    return duracaoSeg < 600 ? 'FAKE_EXIT' : 'FORA_BASE'
+    return duracaoSeg < MIN_DURACAO_FORA_SEG ? 'FAKE_EXIT' : 'FORA_BASE'
   }
   return 'LOJA'
 }
@@ -151,6 +158,11 @@ function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: str
   return { codigo_loja: codigo || null, nome_loja: nome }
 }
 
+// ATENÇÃO: existe uma segunda implementação de saida_cd em matcher.ts:cruzaEscalaUnitrac.
+// Esta versão (parser) grava no DB durante o parse do Unitrac.
+// A versão do matcher recomputa do zero na geração de KPI (ignora o valor do DB).
+// As duas devem permanecer semanticamente equivalentes — qualquer mudança aqui deve
+// ser replicada em matcher.ts e vice-versa.
 function computeSaidaCd(paradas: ParadaUnitrac[]): Date | null {
   // Localiza a primeira LOJA (destino real de entrega).
   const primeiraLojaIdx = paradas.findIndex(p => p.classificacao === 'LOJA')

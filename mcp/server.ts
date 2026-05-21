@@ -32,7 +32,7 @@ import { parseEscalaArmazemGrao } from '../src/lib/parsers/escala-armazem-grao.j
 import { parseEscalaGuanabaraPdf } from '../src/lib/parsers/escala-guanabara-pdf.js'
 import { parseUnitrac } from '../src/lib/parsers/unitrac.js'
 import { parseUnitracPdf } from '../src/lib/parsers/unitrac-pdf.js'
-import { cruzaEscalaUnitrac } from '../src/lib/kpi/matcher.js'
+import { cruzaEscalaUnitrac, variantesOcr } from '../src/lib/kpi/matcher.js'
 import { detectaAnomalias } from '../src/lib/kpi/anomalia.js'
 
 // Carrega .env.local também (Next.js convention)
@@ -451,6 +451,8 @@ server.registerTool(
 
         // Fallback saida_cd: veículo tem paradas mas nunca passou pela BASE BENASSI.
         // Garante compatibilidade quando o matcher rodou sem este fallback no código.
+        // NOTA: r.placa_norm é a placa da escala; Unitrac pode ter variante OCR diferente.
+        // Por isso, o lookup tenta a placa exata primeiro e depois os variantes OCR.
         const paradaByPlacaMcp = new Map<string, any[]>()
         for (const p of paradasRede) {
           const list = paradaByPlacaMcp.get(p.placa_norm as string) ?? []
@@ -459,9 +461,14 @@ server.registerTool(
         }
         for (const r of rotas) {
           if (!r.saida_cd && r.placa_norm && r.paradas.length > 0) {
-            const ps = (paradaByPlacaMcp.get(r.placa_norm) ?? [])
-              .sort((a: any, b: any) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
-            const firstOp = ps.find((p: any) => p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE')
+            let candidatas = paradaByPlacaMcp.get(r.placa_norm)
+            if (!candidatas || candidatas.length === 0) {
+              const variante = variantesOcr(r.placa_norm).find(v => v !== r.placa_norm && paradaByPlacaMcp.has(v))
+              if (variante) candidatas = paradaByPlacaMcp.get(variante)
+            }
+            if (!candidatas || candidatas.length === 0) continue
+            const sorted = [...candidatas].sort((a: any, b: any) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
+            const firstOp = sorted.find((p: any) => p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE')
             if (firstOp) r.saida_cd = new Date(firstOp.chegada as string)
           }
         }
