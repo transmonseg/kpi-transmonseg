@@ -534,9 +534,16 @@ export async function cruzaEscalaUnitrac(
           const redes = paradaRedes.get(parada.id) ?? new Set<string>()
           // Bloqueia se a parada bate claramente com outra rede
           if (redes.size > 0 && !redes.has(linha.rede_id)) continue
-          // Único critério aceito: scorePair finito (tokens compartilhados
-          // ou levenshtein <= 2). Sem isso → UNMATCHED honesto.
+          // Critério primário: scorePair finito (tokens compartilhados ou levenshtein <= 2).
           if (scorePair(linha, parada) < Infinity) {
+            melhorIdx = j
+            break
+          }
+          // Rede fallback (restrito a 1 linha sem match): cobre formatos "Rota NN"
+          // (ex: Guanabara) onde a escala não tem nome geográfico compatível com o
+          // Unitrac. Com só 1 slot livre e a parada não identificada como outra rede,
+          // não há risco de misturar lojas ("rede certa, loja errada").
+          if (linhasOrdenadas.length === 1 && (redes.has(linha.rede_id) || redes.size === 0)) {
             melhorIdx = j
             break
           }

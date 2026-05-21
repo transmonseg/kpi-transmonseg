@@ -153,6 +153,104 @@ describe('scorePair — geofences sobrepostas (Bug A)', () => {
   })
 })
 
+// --- Bug C: formato "Rota NN" (Guanabara) — score sempre Infinity vs nome geográfico Unitrac ---
+//
+// Escala: loja_nome_raw = "Guanabara - Rota 01" → tokens = {ROTA, 01}
+// Unitrac: nome_loja = "GUANABARA MADUREIRA" → tokens = {MADUREIRA}
+// Score = Infinity → assignOptimal não atribui.
+// Rede fallback (linhasSemMatch.length === 1): deve atribuir mesmo sem token em comum.
+describe('cruzaEscalaUnitrac — formato Rota NN sem tokens em comum (Bug C)', () => {
+  it('Guanabara Rota 01 recebe parada GUANABARA MADUREIRA quando é única linha sem match', async () => {
+    const linhas: EscalaLinhaRow[] = [{
+      id: 'l-gb1',
+      rede_id: 'GUANABARA',
+      placa_norm: 'KSG5412',
+      loja_nome_raw: 'Guanabara - Rota 01',
+      loja_codigo_raw: '1',
+      motorista_nome: 'Motorista A',
+      carro_ordem: 1,
+      data_entrega: '2026-05-20',
+    }]
+    const paradas: UnitracParadaRow[] = [{
+      id: 'p-gb1',
+      placa_norm: 'KSG5412',
+      chegada: '2026-05-20T10:00:00.000Z',
+      saida: '2026-05-20T11:00:00.000Z',
+      duracao_seg: 3600,
+      local_parada: '4519090 - GUANABARA MADUREIRA',
+      codigo_loja: '4519090',
+      nome_loja: 'GUANABARA MADUREIRA',
+      lat: null,
+      lng: null,
+      classificacao: 'LOJA',
+      ordem: 1,
+    }]
+    const rotas = await cruzaEscalaUnitrac(linhas, paradas, [])
+    expect(rotas).toHaveLength(1)
+    expect(rotas[0].paradas).toHaveLength(1)
+    expect(rotas[0].paradas[0].nome).toBe('GUANABARA MADUREIRA')
+  })
+
+  it('com 2 linhas sem match (ambas Infinity), nenhuma recebe parada pelo rede fallback', async () => {
+    const linhas: EscalaLinhaRow[] = [
+      {
+        id: 'l-gb2a',
+        rede_id: 'GUANABARA',
+        placa_norm: 'KSG5412',
+        loja_nome_raw: 'Guanabara - Rota 01',
+        loja_codigo_raw: '1',
+        motorista_nome: 'Motorista A',
+        carro_ordem: 1,
+        data_entrega: '2026-05-20',
+      },
+      {
+        id: 'l-gb2b',
+        rede_id: 'GUANABARA',
+        placa_norm: 'KSG5412',
+        loja_nome_raw: 'Guanabara - Rota 02',
+        loja_codigo_raw: '2',
+        motorista_nome: 'Motorista A',
+        carro_ordem: 2,
+        data_entrega: '2026-05-20',
+      },
+    ]
+    const paradas: UnitracParadaRow[] = [
+      {
+        id: 'p-gb2a',
+        placa_norm: 'KSG5412',
+        chegada: '2026-05-20T10:00:00.000Z',
+        saida: '2026-05-20T11:00:00.000Z',
+        duracao_seg: 3600,
+        local_parada: '4519090 - GUANABARA MADUREIRA',
+        codigo_loja: '4519090',
+        nome_loja: 'GUANABARA MADUREIRA',
+        lat: null, lng: null,
+        classificacao: 'LOJA',
+        ordem: 1,
+      },
+      {
+        id: 'p-gb2b',
+        placa_norm: 'KSG5412',
+        chegada: '2026-05-20T12:00:00.000Z',
+        saida: '2026-05-20T13:00:00.000Z',
+        duracao_seg: 3600,
+        local_parada: '4519091 - GUANABARA MEIER',
+        codigo_loja: '4519091',
+        nome_loja: 'GUANABARA MEIER',
+        lat: null, lng: null,
+        classificacao: 'LOJA',
+        ordem: 2,
+      },
+    ]
+    // 2 linhas para a mesma placa → linhasOrdenadas.length = 2 → rede fallback não dispara
+    const rotas = await cruzaEscalaUnitrac(linhas, paradas, [])
+    expect(rotas).toHaveLength(2)
+    // Nenhuma linha deve receber parada por rede fallback quando há ambiguidade
+    const totalParadas = rotas.reduce((s, r) => s + r.paradas.length, 0)
+    expect(totalParadas).toBe(0)
+  })
+})
+
 // --- Bug B: saida_cd fallback quando veiculo nunca passou pela BASE BENASSI ---
 describe('cruzaEscalaUnitrac — saida_cd fallback sem BASE (Bug B)', () => {
   const lojas: LojaRow[] = [
