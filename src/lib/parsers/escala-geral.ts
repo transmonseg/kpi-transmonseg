@@ -23,6 +23,11 @@ const RE_DIA_ABA = /^\d{1,2}\s*$/
 
 function cellVal(cell: ExcelJS.Cell | undefined): unknown {
   if (!cell) return null
+  // ExcelJS exposes a top-level `.result` property that already resolves shared
+  // formulas (both master and slave cells). Use it whenever it has a meaningful
+  // value so that sharedFormula slave cells don't fall through to the raw object.
+  const result = (cell as unknown as { result?: unknown }).result
+  if (result !== undefined && result !== null) return result
   const v = cell.value
   if (v === null || v === undefined) return null
   if (typeof v === 'object' && v !== null) {
@@ -30,6 +35,8 @@ function cellVal(cell: ExcelJS.Cell | undefined): unknown {
     if ('result' in v) return (v as { result: unknown }).result
     if ('richText' in v)
       return (v as { richText: { text: string }[] }).richText.map(r => r.text).join('')
+    // sharedFormula slave with no result — return null instead of the raw object
+    if ('sharedFormula' in v) return null
   }
   return v
 }
@@ -170,13 +177,18 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
     const isSeparator = isMergedHeader || v4 === null || v4 === undefined || v4str === null
 
     if (isSeparator) {
-      // Linha com col4 vazia mas com peso e motorista: é uma loja própria
+      // Linha com col4 vazia mas com motorista: é uma loja própria
       // (multi-entrega: mesmo veículo serve várias lojas, só 1ª linha tem qty em col4).
       // Usa nomeLoja vindo da própria linha (s1), NÃO de ultimaLoja.
+      // hasWeight NÃO é mais requisito: linhas com motorista+placa são preservadas
+      // mesmo quando peso vem de sharedFormula escrava e resolva null.
       const hasWeight = !isMergedHeader && asNum(v2) !== null
       const v6check = asStr(cellVal(row.getCell(6)))
       const temMotorista = v6check !== null
-      if (hasWeight && (temMotorista || ultimaLoja !== null)) {
+      const v8check = asStr(cellVal(row.getCell(8)))
+      const temPlaca = v8check !== null
+      // Aceita a linha se tem peso OU se tem motorista+placa (cobre sharedFormula)
+      if ((hasWeight || (temMotorista && temPlaca)) && (temMotorista || ultimaLoja !== null)) {
         const v5 = cellVal(row.getCell(5))
         const v6 = cellVal(row.getCell(6))
         const v7 = cellVal(row.getCell(7))

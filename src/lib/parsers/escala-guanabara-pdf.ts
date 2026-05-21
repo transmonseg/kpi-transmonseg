@@ -171,6 +171,37 @@ function parseRow(line: string): Row | null {
     }
   }
 
+  // Fallback: placa incompleta — apenas 3 letras seguidas de tipo de veículo.
+  // Ex: "VAGNER 294 FSE TRUCK" — placa corrompida no PDF sem a parte numérica.
+  // Preserva motorista e tipo; marca placa como incompleta.
+  if (carros.length === 0) {
+    const PLACA_PARCIAL_RE = /\b([A-Z]{3})\s+(TRUCKR|TRUCK|TRCK|TOCO\s*REFRIGERADO|TOCO|VUC|3\/4|KIA|CARRETA|BAAU|BAÚ|FURG)\b/g
+    PLACA_PARCIAL_RE.lastIndex = 0
+    let m3: RegExpExecArray | null
+    let cursor3 = 0
+    while ((m3 = PLACA_PARCIAL_RE.exec(rest)) !== null) {
+      const before = rest.slice(cursor3, m3.index)
+      const placaLetras = m3[1].trim()
+      const tipo = m3[2].toUpperCase().replace(/\s+/g, ' ')
+      let motorista = before.trim()
+      let codigo: string | null = null
+      const codMatch = before.match(/^([\s\S]+?)(\d{1,7})$/)
+      if (codMatch) {
+        motorista = codMatch[1].trim()
+        codigo = codMatch[2]
+      }
+      if (motorista) {
+        carros.push({
+          motorista,
+          codigo,
+          placa: `${placaLetras} (incompleta)`,
+          tipo,
+        })
+      }
+      cursor3 = m3.index + m3[0].length
+    }
+  }
+
   if (carros.length === 0) return null
 
   return { rota, qtd, carro1: carros[0] ?? null, carro2: carros[1] ?? null }
@@ -315,7 +346,7 @@ export async function parseEscalaGuanabaraPdf(
       rede_id: 'GUANABARA',
       loja_nome_raw: lojaNome,
       loja_codigo_raw: lojaCodigo,
-      placa_norm: normalizaPlaca(row.carro1.placa),
+      placa_norm: row.carro1.placa.includes('(incompleta)') ? '' : normalizaPlaca(row.carro1.placa),
       placa_raw: row.carro1.placa,
       motorista_nome: row.carro1.motorista,
       motorista_codigo: row.carro1.codigo,
@@ -334,7 +365,7 @@ export async function parseEscalaGuanabaraPdf(
     if (row.carro2) {
       const linha2: LinhaEscala = {
         ...linha1,
-        placa_norm: normalizaPlaca(row.carro2.placa),
+        placa_norm: row.carro2.placa.includes('(incompleta)') ? '' : normalizaPlaca(row.carro2.placa),
         placa_raw: row.carro2.placa,
         motorista_nome: row.carro2.motorista,
         motorista_codigo: row.carro2.codigo,

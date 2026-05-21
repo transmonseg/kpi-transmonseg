@@ -427,6 +427,30 @@ describe('variantesOcr', () => {
     expect(v).toContain('XYZD456')
   })
 
+  it('G↔6: placa com "G" na pos 4 gera variante com "6"', () => {
+    // "LMN2G45": pos 4 = 'G' → OCR pode ler como '6' → "LMN2645"
+    const v = variantesOcr('LMN2G45')
+    expect(v).toContain('LMN2G45')
+    expect(v).toContain('LMN2645')
+    expect(v).toHaveLength(2)
+  })
+
+  it('H↔7: placa com "H" na pos 4 gera variante com "7"', () => {
+    // "LMN2H45": pos 4 = 'H' → OCR pode ler como '7' → "LMN2745"
+    const v = variantesOcr('LMN2H45')
+    expect(v).toContain('LMN2H45')
+    expect(v).toContain('LMN2745')
+    expect(v).toHaveLength(2)
+  })
+
+  it('I↔8: placa com "I" na pos 4 gera variante com "8"', () => {
+    // "LMN2I45": pos 4 = 'I' → OCR pode ler como '8' → "LMN2845"
+    const v = variantesOcr('LMN2I45')
+    expect(v).toContain('LMN2I45')
+    expect(v).toContain('LMN2845')
+    expect(v).toHaveLength(2)
+  })
+
   it('char nao-OCR na pos 4 retorna apenas a placa original', () => {
     // "ABCAD12": pos 4 = 'A' — nao e par OCR
     const v = variantesOcr('ABCAD12')

@@ -454,7 +454,10 @@ export async function POST(req: NextRequest) {
     redeMap.get(rede_id)!.escala.push(escala)
   }
 
-  const results = await Promise.all(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let results: any[]
+  try {
+    results = await Promise.all(
     Array.from(redeMap.entries()).map(async ([rede_id, { rotas: redeRotas, escala: redeEscala }]) => {
       const sorted = redeRotas
         .map((r, i) => ({ rota: r, esc: redeEscala[i] }))
@@ -555,6 +558,11 @@ export async function POST(req: NextRequest) {
       }
     })
   )
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erro interno ao gerar KPI.'
+    console.error('[/api/kpi/simples] Erro ao gerar resultados:', e)
+    return new NextResponse(msg, { status: 500 })
+  }
 
   // Persistência: registra a geração (apenas metadados leves, sem base64)
   let geracaoId: string | null = null

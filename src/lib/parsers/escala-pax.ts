@@ -130,7 +130,7 @@ function extractCarroOrdem(nome: string): { ordem: 1 | 2; nomeClean: string } {
 }
 
 function isTabDay(name: string): boolean {
-  return /^\d{1,2}\s*$/.test(name.trim())
+  return /^\d{1,3}\s*$/.test(name.trim())
 }
 
 function detectYearMonth(wb: ExcelJS.Workbook): { ano: number; mes: number } {

@@ -60,7 +60,7 @@ function buildColWidths(nLojas: number): number[] {
   if (total <= maxW) return raw
   // Escala proporcional para caber na página
   const scale = maxW / total
-  return raw.map(w => Math.floor(w * scale))
+  return raw.map(w => Math.max(Math.floor(w * scale), 1))
 }
 
 function buildHeaders(nLojas: number): string[] {
@@ -209,7 +209,7 @@ function drawCabecalho(
 
 function drawContinuation(page: PDFPage, fontBold: PDFFont, redeNome: string): number {
   page.drawRectangle({ x: 0, y: PAGE_H - 5, width: PAGE_W, height: 5, color: C_BRAND_600 })
-  const t = `KPI - ${redeNome} (continuação)`
+  const t = `KPI - ${safeText(redeNome)} (continuacao)`
   const tSize = 11
   const tW = fontBold.widthOfTextAtSize(t, tSize)
   page.drawText(t, {
