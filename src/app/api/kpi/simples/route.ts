@@ -123,6 +123,17 @@ function aplicaAlteracoes(linhas: LinhaEscala[], alts: AltConfirmada[]): LinhaEs
         const needle = alt.sai.motorista_nome.toLowerCase().split(' ')[0]
         if (needle.length >= 3 && motoristasOriginais[i]?.toLowerCase().includes(needle)) return true
       }
+      // Match por loja/filial: quando não há info em sai, mas o operador informou
+      // loja_raw (ex: "Filial 23"), casa a linha pelo número da filial dentro da rede.
+      // Permite alteração de placa sem precisar saber quem estava escalado originalmente.
+      if (!alt.sai?.placa_norm && !alt.sai?.motorista_nome && alt.loja_raw) {
+        const filialM = alt.loja_raw.match(/\b(\d{1,3})\b/)
+        if (filialM) {
+          const filialInt = parseInt(filialM[1], 10)
+          const codInt = parseInt(l.loja_codigo_raw ?? '', 10)
+          if (!isNaN(filialInt) && !isNaN(codInt) && filialInt === codInt) return true
+        }
+      }
       return false
     }
 
