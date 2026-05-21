@@ -6,6 +6,7 @@ import {
   type GeoStore,
   scorePair,
   cruzaEscalaUnitrac,
+  variantesOcr,
   type EscalaLinhaRow,
   type UnitracParadaRow,
   type LojaRow,
@@ -292,5 +293,51 @@ describe('scorePair — PETROPOLIS como token discriminante', () => {
       ordem: 1,
     }
     expect(scorePair(linhaCAB, parada)).toBe(Infinity)
+  })
+})
+
+// --- variantesOcr: geração de variantes OCR de placa Mercosul ---
+// Posição 4 (0-indexed) é onde o Mercosul muda de dígito pra letra/dígito OCR.
+// Exemplo: "LGX1J41" → pos 4 = 'J'; OCR pode ler como '9' → "LGX1941".
+describe('variantesOcr', () => {
+  it('J↔9: placa com "J" na pos 4 gera variante com "9"', () => {
+    // "LGX1J41": pos 4 = 'J'
+    const v = variantesOcr('LGX1J41')
+    expect(v).toContain('LGX1J41')
+    expect(v).toContain('LGX1941')
+    expect(v).toHaveLength(2)
+  })
+
+  it('J↔9: placa com "9" na pos 4 gera variante com "J"', () => {
+    // "LGX1941": pos 4 = '9' (escala digitou o char lido pelo OCR)
+    const v = variantesOcr('LGX1941')
+    expect(v).toContain('LGX1941')
+    expect(v).toContain('LGX1J41')
+  })
+
+  it('B↔1: placa com "B" na pos 4 gera variante com "1"', () => {
+    // "ABCBB12": pos 4 = 'B' → slice(0,4)="ABCB" + "1" + slice(5)="12" = "ABCB112"
+    const v = variantesOcr('ABCBB12')
+    expect(v).toContain('ABCBB12')
+    expect(v).toContain('ABCB112')
+  })
+
+  it('E↔4: placa com "E" na pos 4 gera variante com "4"', () => {
+    // "XYZDE56": pos 4 = 'E'
+    const v = variantesOcr('XYZDE56')
+    expect(v).toContain('XYZDE56')
+    expect(v).toContain('XYZD456')
+  })
+
+  it('char nao-OCR na pos 4 retorna apenas a placa original', () => {
+    // "ABCAD12": pos 4 = 'A' — nao e par OCR
+    const v = variantesOcr('ABCAD12')
+    expect(v).toHaveLength(1)
+    expect(v[0]).toBe('ABCAD12')
+  })
+
+  it('placa com 8 chars (nao Mercosul) nao gera variante', () => {
+    const v = variantesOcr('ABC12345')
+    expect(v).toHaveLength(1)
   })
 })
