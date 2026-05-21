@@ -138,12 +138,13 @@ export function detectaAnomalias(params: DetectaParams): AnomaliaDetectada[] {
         })
       } else if (parada.duracao_min === 0 && parada.saida.getTime() === parada.chegada.getTime()) {
         // saida era null no Unitrac — route.ts definiu saida=chegada, duracao_min=0.
-        // Dado incompleto: parada sem tempo registrado, mas sem erro de sequência.
+        // Usa ANOM-12 (não está em ANOMALIAS_HIGH) para não pintar a linha de vermelho
+        // só porque o rastreador não fechou a parada.
         anomalias.push({
           kpi_rota_id: rotaId,
           parada_id: parada.parada_id,
           data,
-          codigo: 'ANOM-04',
+          codigo: 'ANOM-12',
           severidade: 'MEDIUM',
           descricao: `Parada em "${parada.nome}" (placa ${rota.placa_norm}) sem saída registrada no Unitrac — duração zero.`,
           sugestao: 'Verificar se o rastreador fechou a parada corretamente ou se o veículo ainda estava no local.',

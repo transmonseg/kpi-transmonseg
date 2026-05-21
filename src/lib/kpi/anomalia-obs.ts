@@ -9,6 +9,7 @@ const OBS_MAP: Record<string, string> = {
   'ANOM-08': '⚠ tempo loja >4h',
   'ANOM-10': '⚠ loja não cadastrada',
   'ANOM-11': '⚠ fora janela operacional',
+  'ANOM-12': '⚠ parada sem saída registrada',
 }
 
 export const ANOMALIAS_HIGH = new Set(['ANOM-01', 'ANOM-04', 'ANOM-06', 'ANOM-07'])
