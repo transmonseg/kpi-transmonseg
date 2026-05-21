@@ -47,10 +47,19 @@ async function normalizeXlsxNamespaces(buf: Buffer): Promise<Buffer> {
 
 function parseDuracao(s: string): number {
   if (!s) return 0
-  const m = s.match(/(\d+)D\s+(\d+):(\d+):(\d+)/)
-  if (!m) return 0
-  const [, d, h, mi, ss] = m.map(Number)
-  return d * 86400 + h * 3600 + mi * 60 + ss
+  // Formato com dias: "1D 02:30:00" ou "0D 00:15:00"
+  const mDays = s.match(/(\d+)D\s+(\d+):(\d+):(\d+)/)
+  if (mDays) {
+    const [, d, h, mi, ss] = mDays.map(Number)
+    return d * 86400 + h * 3600 + mi * 60 + ss
+  }
+  // Formato sem dias: "02:30:00" (HH:MM:SS)
+  const mTime = s.match(/^(\d+):(\d+):(\d+)$/)
+  if (mTime) {
+    const [, h, mi, ss] = mTime.map(Number)
+    return h * 3600 + mi * 60 + ss
+  }
+  return 0
 }
 
 function toDate(val: unknown): Date | null {
@@ -143,16 +152,30 @@ function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: str
 }
 
 function computeSaidaCd(paradas: ParadaUnitrac[]): Date | null {
+  // Localiza a primeira LOJA (destino real de entrega).
+  const primeiraLojaIdx = paradas.findIndex(p => p.classificacao === 'LOJA')
+  if (primeiraLojaIdx === -1) return null
+
+  // Varre todas as paradas ANTES da primeira LOJA e rastreia a saída do último BASE.
+  // Usar apenas o trecho pré-LOJA garante que sequências como
+  // BASE -> FORA_BASE -> BASE -> LOJA retornem a saída do segundo BASE
+  // (a saída real do CD), e não do primeiro.
+  // FAKE_EXIT dentro da base (local_parada = BASE_LOCAL) também conta como permanência
+  // no CD — o caminhão estava lá, só saiu e voltou rapidamente.
   let lastBaseSaida: Date | null = null
-  for (const p of paradas) {
-    if (p.classificacao === 'FAKE_EXIT') continue
-    if (p.classificacao === 'BASE') {
-      lastBaseSaida = p.saida
-    } else {
-      return lastBaseSaida
-    }
+  for (let i = 0; i < primeiraLojaIdx; i++) {
+    const p = paradas[i]
+    const isBase =
+      p.classificacao === 'BASE' ||
+      (p.classificacao === 'FAKE_EXIT' && p.local_parada.startsWith('BASE BENASSI'))
+    if (isBase) lastBaseSaida = p.saida
   }
-  return null
+
+  // Se o caminhão não passou pelo CD neste período (já estava na rua desde meia-noite),
+  // usa a chegada na primeira loja como proxy.
+  if (!lastBaseSaida) return paradas[primeiraLojaIdx].chegada
+
+  return lastBaseSaida
 }
 
 export async function parseUnitrac(
