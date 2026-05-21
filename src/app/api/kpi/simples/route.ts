@@ -176,10 +176,11 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
   if (!body) return new NextResponse('Body JSON inválido.', { status: 400 })
 
-  const { escalaBucketPath, escalaBucketPaths, unitracBucketPath, data, alteracoes = [], lineEdits = [], skipSave = false } = body as {
+  const { escalaBucketPath, escalaBucketPaths, unitracBucketPath, unitracBucketPaths, data, alteracoes = [], lineEdits = [], skipSave = false } = body as {
     escalaBucketPath?: string
     escalaBucketPaths?: string[]
-    unitracBucketPath: string
+    unitracBucketPath?: string
+    unitracBucketPaths?: string[]
     data: string
     alteracoes?: AltConfirmada[]
     lineEdits?: LineEdit[]
@@ -189,7 +190,8 @@ export async function POST(req: NextRequest) {
   // Normalize to array
   const escalaPaths: string[] = escalaBucketPaths ?? (escalaBucketPath ? [escalaBucketPath] : [])
   if (escalaPaths.length === 0) return new NextResponse('"escalaBucketPath" ou "escalaBucketPaths" obrigatório.', { status: 400 })
-  if (!unitracBucketPath) return new NextResponse('"unitracBucketPath" obrigatório.', { status: 400 })
+  const unitracPaths: string[] = unitracBucketPaths ?? (unitracBucketPath ? [unitracBucketPath] : [])
+  if (unitracPaths.length === 0) return new NextResponse('"unitracBucketPath" ou "unitracBucketPaths" obrigatório.', { status: 400 })
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return new NextResponse('Data inválida. Use YYYY-MM-DD.', { status: 400 })
 
   const svc = createServiceClient()
@@ -245,11 +247,8 @@ export async function POST(req: NextRequest) {
     l.obs === 'SEM PEDIDO'
   )
 
-  // Baixa unitrac do Storage
-  const { data: unitracBlob, error: unitracErr } = await svc.storage.from('unitrac-raw').download(unitracBucketPath)
-  if (unitracErr || !unitracBlob)
-    return new NextResponse(`Erro ao baixar unitrac: ${unitracErr?.message ?? 'não encontrado'}`, { status: 500 })
-  const unitracBuffer = await unitracBlob.arrayBuffer()
+  // Baixa e parseia todos os arquivos Unitrac, mergeando os veículos
+  // (suporta XLSX + PDF simultâneos para cobrir formatos diferentes do mesmo dia)
 
   // Carrega alterações persistidas no banco pra essa data (qualquer status
   // não-cancelada). Mergea com as alterações in-memory do request (UI atual),
@@ -284,18 +283,35 @@ export async function POST(req: NextRequest) {
     console.log(`[/api/kpi/simples] Aplicando ${altsFinal.length} alterações (${alteracoes.length} inline, ${altsFromDb.length} do banco)`)
   }
 
-  // Parse unitrac
-  let veiculos
-  try {
-    if (unitracBucketPath.endsWith('.pdf')) {
-      const { parseUnitracPdf } = await import('@/lib/parsers/unitrac-pdf')
-      veiculos = await parseUnitracPdf(Buffer.from(unitracBuffer))
-    } else {
-      veiculos = await parseUnitrac(unitracBuffer)
+  // Parse unitrac — baixa e parseia cada arquivo, mergeia por placa
+  const veiculosMap = new Map<string, import('@/lib/types/unitrac').ResumoVeiculo>()
+  for (const unitracPath of unitracPaths) {
+    const { data: unitracBlob, error: unitracErr } = await svc.storage.from('unitrac-raw').download(unitracPath)
+    if (unitracErr || !unitracBlob)
+      return new NextResponse(`Erro ao baixar unitrac: ${unitracErr?.message ?? 'não encontrado'}`, { status: 500 })
+    const unitracBuffer = await unitracBlob.arrayBuffer()
+    try {
+      let parsed
+      if (unitracPath.endsWith('.pdf')) {
+        const { parseUnitracPdf } = await import('@/lib/parsers/unitrac-pdf')
+        parsed = await parseUnitracPdf(Buffer.from(unitracBuffer))
+      } else {
+        parsed = await parseUnitrac(unitracBuffer)
+      }
+      for (const v of parsed) {
+        if (!veiculosMap.has(v.placa_norm)) {
+          veiculosMap.set(v.placa_norm, v)
+        } else {
+          // Mesma placa em dois arquivos: concatena as paradas
+          const existing = veiculosMap.get(v.placa_norm)!
+          veiculosMap.set(v.placa_norm, { ...existing, paradas: [...existing.paradas, ...v.paradas] })
+        }
+      }
+    } catch (e) {
+      return new NextResponse(e instanceof Error ? e.message : 'Erro ao ler Unitrac.', { status: 400 })
     }
-  } catch (e) {
-    return new NextResponse(e instanceof Error ? e.message : 'Erro ao ler Unitrac.', { status: 400 })
   }
+  const veiculos = Array.from(veiculosMap.values())
   if (veiculos.length === 0)
     return new NextResponse('Nenhum veículo encontrado no Unitrac.', { status: 400 })
 
@@ -585,7 +601,7 @@ export async function POST(req: NextRequest) {
         data,
         gerado_por: user.id,
         escala_paths: escalaPaths,
-        unitrac_path: unitracBucketPath,
+        unitrac_path: unitracPaths[0] ?? null,
         alteracoes,
         line_edits: lineEdits,
         redes: summary,

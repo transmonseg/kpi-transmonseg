@@ -316,13 +316,13 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove }: AlteracoesCardProp
 
 export default function KpiSimplesPage() {
   const [escalas, setEscalas] = useState<File[]>([])
-  const [unitrac, setUnitrac] = useState<File | null>(null)
+  const [unitracFiles, setUnitracFiles] = useState<File[]>([])
   const [data, setData] = useState<string>(hoje)
   const [alteracoes, setAlteracoes] = useState<AlteracaoParsed[]>([])
   const [redes, setRedes] = useState<RedeResult[] | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
-  const [bucketPaths, setBucketPaths] = useState<{ escalaBucketPaths: string[]; unitracBucketPath: string } | null>(null)
+  const [bucketPaths, setBucketPaths] = useState<{ escalaBucketPaths: string[]; unitracBucketPaths: string[] } | null>(null)
   const [lineEdits, setLineEdits] = useState<Record<string, LineEditPatch>>({})
   const [geracaoId, setGeracaoId] = useState<string | null>(null)
   const [reabrindoGeracaoId, setReabrindoGeracaoId] = useState<string | null>(null)
@@ -401,7 +401,7 @@ export default function KpiSimplesPage() {
 
   async function processar() {
     if (escalas.length === 0) { setErro('Selecione ao menos uma escala.'); return }
-    if (!unitrac) { setErro('Selecione o Unitrac.'); return }
+    if (unitracFiles.length === 0) { setErro('Selecione o Unitrac.'); return }
     if (!data) { setErro('Selecione a data.'); return }
 
     setErro(null)
@@ -410,17 +410,17 @@ export default function KpiSimplesPage() {
 
     startTransition(async () => {
       try {
-        const [escalaBucketPaths, unitracBucketPath] = await Promise.all([
+        const [escalaBucketPaths, unitracBucketPaths] = await Promise.all([
           Promise.all(escalas.map(f => uploadComPresign(f, false))),
-          uploadComPresign(unitrac, true),
+          Promise.all(unitracFiles.map(f => uploadComPresign(f, true))),
         ])
 
-        setBucketPaths({ escalaBucketPaths, unitracBucketPath })
+        setBucketPaths({ escalaBucketPaths, unitracBucketPaths })
 
         const res = await fetch('/api/kpi/simples', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ escalaBucketPaths, unitracBucketPath, data, alteracoes }),
+          body: JSON.stringify({ escalaBucketPaths, unitracBucketPaths, data, alteracoes }),
         })
         if (!res.ok) throw new Error((await res.text()) || 'Erro ao processar.')
         const json = await res.json() as { redes: RedeResult[]; geracao_id?: string }
@@ -432,7 +432,7 @@ export default function KpiSimplesPage() {
     })
   }
 
-  const pronto = escalas.length > 0 && unitrac !== null && !!data
+  const pronto = escalas.length > 0 && unitracFiles.length > 0 && !!data
 
   function handleLineEdit(redeId: string, ordem: number, patch: LineEditPatch) {
     const key = `${redeId}:::${ordem}`
@@ -515,11 +515,11 @@ export default function KpiSimplesPage() {
           <FileDropzone
             eyebrow="Passo 2"
             label="Relatório Unitrac"
-            hint="XLSX ou PDF · um arquivo"
+            hint="XLSX e/ou PDF · múltiplos permitidos"
             accept=".xlsx,.pdf"
-            files={unitrac ? [unitrac] : []}
-            onAdd={files => setUnitrac(files[0] ?? null)}
-            onRemove={() => setUnitrac(null)}
+            files={unitracFiles}
+            onAdd={files => setUnitracFiles(prev => [...prev, ...files])}
+            onRemove={idx => setUnitracFiles(prev => prev.filter((_, i) => i !== idx))}
           />
 
           <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
