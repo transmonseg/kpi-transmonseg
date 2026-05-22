@@ -414,16 +414,21 @@ function resolveLojaId(
   return null
 }
 
-// Pares de chars que o parser PDF do Unitrac confunde por causa do tipo Mercosul:
-// 1↔B, 9↔J, 4↔E, 6↔G, 7↔H, 8↔I. Cada par é equivalente na posição 4 (Mercosul).
-const OCR_PARES: Record<string, string> = {
-  '1':'B', 'B':'1',
-  '4':'E', 'E':'4',
-  '6':'G', 'G':'6',
-  '7':'H', 'H':'7',
-  '8':'I', 'I':'8',
-  '1':'I', 'I':'1',
-  '9':'J', 'J':'9',
+// Pares de chars que o parser PDF do Unitrac confunde por causa do tipo Mercosul.
+// Cada char mapeia para TODAS as alternativas possíveis (suporta múltiplas).
+const OCR_PARES: Record<string, string[]> = {
+  '1': ['B', 'I'],
+  'B': ['1'],
+  '4': ['E'],
+  'E': ['4'],
+  '6': ['G'],
+  'G': ['6'],
+  '7': ['H'],
+  'H': ['7'],
+  '8': ['I'],
+  'I': ['8', '1'],
+  '9': ['J'],
+  'J': ['9'],
 }
 
 // Gera variantes da placa com 1 substituição OCR (até 1 char diferente).
@@ -432,8 +437,8 @@ export function variantesOcr(placa: string): string[] {
   if (placa.length !== 7) return [placa]
   const variantes = new Set([placa])
   const ch = placa[4]
-  const sub = OCR_PARES[ch]
-  if (sub) variantes.add(placa.slice(0, 4) + sub + placa.slice(5))
+  const subs = OCR_PARES[ch]
+  if (subs) for (const sub of subs) variantes.add(placa.slice(0, 4) + sub + placa.slice(5))
   return [...variantes]
 }
 
