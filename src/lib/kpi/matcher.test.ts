@@ -1502,6 +1502,41 @@ describe('T11 — Rede-aware no assignOptimal (penalty cross-rede)', () => {
     expect(rotas.find(r => r.escala_linha_id === 'c')?.saida_cd?.toISOString()).toBe('2026-05-20T18:30:00.000Z')
   })
 
+  it('T16 — FAKE_EXIT com prefixo BASE BENASSI conta como anchor', async () => {
+    // GPS bounce na base gera FAKE_EXIT (duracao <= 15min) em vez de BASE.
+    // Predicado deve aceitar ambos.
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'l1', rede_id: 'PRINCESA', placa_norm: 'FFF', loja_nome_raw: 'L1', loja_codigo_raw: '1', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-20' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'fe', placa_norm: 'FFF', chegada: '2026-05-20T03:00:00Z', saida: '2026-05-20T03:20:00Z', duracao_seg: 1200, local_parada: 'BASE BENASSI - SAIDA', codigo_loja: null, nome_loja: null, lat: null, lng: null, classificacao: 'FAKE_EXIT', ordem: 1 },
+      { id: 'pp', placa_norm: 'FFF', chegada: '2026-05-20T05:00:00Z', saida: '2026-05-20T06:00:00Z', duracao_seg: 3600, local_parada: 'PRINCESA L1', codigo_loja: '8590001', nome_loja: 'PRINCESA L1', lat: null, lng: null, classificacao: 'LOJA', ordem: 2 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'l1c', rede_id: 'PRINCESA', nome: 'L1', nome_normalizado: 'l1', codigo_escala: '1', codigo_unitrac: '8590001', nome_unitrac: 'PRINCESA L1', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    expect(rotas.find(r => r.escala_linha_id === 'l1')?.saida_cd?.toISOString()).toBe('2026-05-20T03:20:00.000Z')
+  })
+
+  it('T16 — BASE com saida=null é IGNORADA (cai no fallback)', async () => {
+    // Predicado exige `p.saida` truthy. BASE com saída null é parada em aberto
+    // (caminhão ainda parado), não conta como anchor.
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'l1', rede_id: 'PRINCESA', placa_norm: 'NNN', loja_nome_raw: 'L1', loja_codigo_raw: '1', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-20' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'b', placa_norm: 'NNN', chegada: '2026-05-20T03:00:00Z', saida: null, duracao_seg: null, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: null, lng: null, classificacao: 'BASE', ordem: 1 },
+      { id: 'pp', placa_norm: 'NNN', chegada: '2026-05-20T05:00:00Z', saida: '2026-05-20T06:00:00Z', duracao_seg: 3600, local_parada: 'PRINCESA L1', codigo_loja: '8590001', nome_loja: 'PRINCESA L1', lat: null, lng: null, classificacao: 'LOJA', ordem: 2 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'l1c', rede_id: 'PRINCESA', nome: 'L1', nome_normalizado: 'l1', codigo_escala: '1', codigo_unitrac: '8590001', nome_unitrac: 'PRINCESA L1', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    // BASE sem saída → ignorada → fallback = chegada da parada-alvo (05:00Z)
+    expect(rotas.find(r => r.escala_linha_id === 'l1')?.saida_cd?.toISOString()).toBe('2026-05-20T05:00:00.000Z')
+  })
+
   it('T9 NÃO atua quando placa tem só 1 rede (precisa de redesNaPlaca.size >= 2)', async () => {
     // 2 linhas mesma rede ARMAZEM_GRAO + 1 parada PRINCESA cadastrada.
     // Como só tem 1 rede na placa (ARMAZEM), T9 não dispara (sem cross-dock real).
