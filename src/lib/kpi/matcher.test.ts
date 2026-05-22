@@ -1596,4 +1596,58 @@ describe('T11 — Rede-aware no assignOptimal (penalty cross-rede)', () => {
     const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
     expect(rotas[0].paradas[0].parada_id).toBe('p')
   })
+
+  it('T17 — geofences sobrepostas cross-rede: linhas ARMAZEM não recebem parada PRINCESA', async () => {
+    // Cenário real QSZ9A20 dia 20/05: paradas PRINCESA têm códigos ARMAZEM como
+    // geofences secundárias (polígonos grandes sobrepostos no Unitrac).
+    // SEM T17: scorePair=0 via código secundário + penalty=5 (finito) → optimizer
+    //          casava ARMAZEM→PRINCESA erroneamente.
+    // COM T17: hasCompatible=true (pag cadastrada como ARMAZEM_GRAO) → Infinity
+    //          (hard block) → optimizer mantém ARMAZEM→ARMAZEM.
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'ag_reg', rede_id: 'ARMAZEM_GRAO', placa_norm: 'QSZ9A20', loja_nome_raw: 'Regina Barra Imbuy', loja_codigo_raw: '5353012', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-20' },
+      { id: 'ag_abs', rede_id: 'ARMAZEM_GRAO', placa_norm: 'QSZ9A20', loja_nome_raw: 'Abastecedora Grao Serra', loja_codigo_raw: '5353017', motorista_nome: null, carro_ordem: 2, data_entrega: '2026-05-20' },
+    ]
+    // Paradas PRINCESA: código primário PRINCESA + códigos ARMAZEM como secundários
+    // (geofences sobrepostas — QSZ9A20 realmente entrou na geofence ARMAZEM ao visitar PRINCESA).
+    const paradaRows: UnitracParadaRow[] = [
+      {
+        id: 'pp1', placa_norm: 'QSZ9A20',
+        chegada: '2026-05-21T07:45:00Z', saida: '2026-05-21T08:30:00Z', duracao_seg: 2700,
+        local_parada: '8590002 - PRINCESA MARICA 1,5353012 - REGINA BARRA IMBUY,5353017 - ABASTECEDORA GRAO SERRA',
+        codigo_loja: '8590002', nome_loja: 'PRINCESA MARICA 1',
+        lat: null, lng: null, classificacao: 'LOJA', ordem: 1,
+      },
+      {
+        id: 'pp2', placa_norm: 'QSZ9A20',
+        chegada: '2026-05-21T09:35:00Z', saida: '2026-05-21T10:20:00Z', duracao_seg: 2700,
+        local_parada: '8590003 - PRINCESA MARICA 2,5353012 - REGINA BARRA IMBUY,5353017 - ABASTECEDORA GRAO SERRA',
+        codigo_loja: '8590003', nome_loja: 'PRINCESA MARICA 2',
+        lat: null, lng: null, classificacao: 'LOJA', ordem: 2,
+      },
+      // Parada ARMAZEM pura (sem sobreposição PRINCESA)
+      {
+        id: 'pag', placa_norm: 'QSZ9A20',
+        chegada: '2026-05-21T12:19:00Z', saida: '2026-05-21T13:00:00Z', duracao_seg: 2460,
+        local_parada: '5353012 - REGINA BARRA IMBUY',
+        codigo_loja: '5353012', nome_loja: 'REGINA BARRA IMBUY',
+        lat: null, lng: null, classificacao: 'LOJA', ordem: 3,
+      },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'l_pp1', rede_id: 'PRINCESA', nome: 'Marica 1', nome_normalizado: 'marica 1', codigo_escala: null, codigo_unitrac: '8590002', nome_unitrac: 'PRINCESA MARICA 1', lat: null, lng: null, raio_metros: 150 },
+      { id: 'l_pp2', rede_id: 'PRINCESA', nome: 'Marica 2', nome_normalizado: 'marica 2', codigo_escala: null, codigo_unitrac: '8590003', nome_unitrac: 'PRINCESA MARICA 2', lat: null, lng: null, raio_metros: 150 },
+      { id: 'l_pag', rede_id: 'ARMAZEM_GRAO', nome: 'Regina Barra Imbuy', nome_normalizado: 'regina barra imbuy', codigo_escala: null, codigo_unitrac: '5353012', nome_unitrac: 'REGINA BARRA IMBUY', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    // ag_reg (código 5353012) deve ir para pag (ARMAZEM), não pp1/pp2 (PRINCESA).
+    const reg = rotas.find(r => r.escala_linha_id === 'ag_reg')
+    expect(reg?.paradas[0]?.parada_id).toBe('pag')
+    // ag_abs (código 5353017) não tem parada ARMAZEM com esse código; pode receber
+    // pag via compartilhada (mesma rede) — mas nunca deve receber parada PRINCESA.
+    const abs = rotas.find(r => r.escala_linha_id === 'ag_abs')
+    const absParadaId = abs?.paradas[0]?.parada_id
+    expect(absParadaId).not.toBe('pp1')
+    expect(absParadaId).not.toBe('pp2')
+  })
 })

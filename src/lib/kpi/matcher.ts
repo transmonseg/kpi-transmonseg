@@ -427,11 +427,12 @@ function assignOptimal(
   const nP = ps.length
   const INF = 1e9
 
-  // T11: score com penalty rede-aware. Quando paradaRedes informa que a parada
-  // pertence a uma rede DIFERENTE (e não-aliased) da linha, adiciona +5. Esse
-  // valor está ACIMA do range típico de Levenshtein fallback (max ~3-4), então
-  // realmente reordena empates e quase-empates. Sem dispatch pra Infinity —
-  // mantém o par como "última opção" caso não haja alternativa.
+  // T11/T17: score com penalty rede-aware.
+  // - Parada na rede certa (ou alias): retorna base sem penalty.
+  // - Parada cross-rede E existe parada compatível em ps: Infinity (hard block).
+  //   Impede que geofences secundárias sobrepostas (T17) causem match errado.
+  // - Parada cross-rede E SEM parada compatível disponível: base + REDE_PENALTY
+  //   (queda graciosa T11: VIANENSE com única parada SENDAS ainda é atribuído).
   const REDE_PENALTY = 5
   const scoreComRede = (l: EscalaLinhaRow, p: UnitracParadaRow): number => {
     const base = scorePair(l, p)
@@ -439,12 +440,20 @@ function assignOptimal(
     if (!paradaRedes) return base
     const redes = paradaRedes.get(p.id)
     if (!redes || redes.size === 0) return base
-    // Bug do plano original era usar `Set.has(...spread)` que é inválido
-    // (Set.has aceita só 1 argumento). Loop manual com aliases.
     const fung = redesFungiveis(l.rede_id)
     let casa = false
     for (const r of redes) { if (fung.has(r)) { casa = true; break } }
-    return casa ? base : base + REDE_PENALTY
+    if (casa) return base
+    // T17: cross-rede. Verifica se existe alguma parada compatível com a rede
+    // da linha em ps. Se sim, bloqueia com Infinity — não vale forçar match
+    // errado quando a rede certa tem parada disponível.
+    const hasCompatible = ps.some(p2 => {
+      const r2 = paradaRedes!.get(p2.id)
+      if (!r2 || r2.size === 0) return false
+      for (const r of r2) { if (fung.has(r)) return true }
+      return false
+    })
+    return hasCompatible ? Infinity : base + REDE_PENALTY
   }
 
   if (nL <= 5) {
