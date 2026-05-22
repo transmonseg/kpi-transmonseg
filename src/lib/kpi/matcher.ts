@@ -129,7 +129,19 @@ function matchScore(escalaNome: string, paradaNome: string): number {
   if (numsL.size > 0 && numsP.size > 0) {
     let temComum = false
     for (const n of numsL) if (numsP.has(n)) { temComum = true; break }
-    if (!temComum) return Infinity
+    if (!temComum) {
+      // Números divergem — pode ser numeração diferente (ex: Assaí novo vs Sendas antigo:
+      // "Barra I Loja 133" na escala vs "SENDAS BARRA I - LJ 32" no Unitrac).
+      // Verifica se os tokens não-numéricos têm sobreposição suficiente e aceita com penalidade.
+      const tlCore = new Set([...tl].filter(t => !/^\d+$/.test(t)))
+      const tpCore = new Set([...tp].filter(t => !/^\d+$/.test(t)))
+      if (tlCore.size === 0 || tpCore.size === 0) return Infinity
+      let coreCommon = 0
+      for (const t of tlCore) if (tpCore.has(t)) coreCommon++
+      if (coreCommon === 0) return Infinity
+      // Penalidade +3 pra desincentivar vs match com número exato.
+      return Math.max(tlCore.size, tpCore.size) - coreCommon + 3
+    }
   }
 
   let common = 0
