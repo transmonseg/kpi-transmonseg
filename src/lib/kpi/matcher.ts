@@ -762,7 +762,12 @@ export async function cruzaEscalaUnitrac(
             const np = p.nome_loja.trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
             if (lojasDaRede.some(l => l.nome_unitrac?.trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '') === np)) return true
           }
-          // Token fallback: parada não está no catálogo da rede mas tem tokens em comum
+          // Token fallback: parada não está no catálogo da rede mas tem tokens em comum.
+          // Bloqueia se a parada pertence CLARAMENTE a outra rede — evita cross-rede
+          // via token de bairro compartilhado (ex: COPACABANA casa ZONA_SUL com
+          // parada PREZUNIC manhã quando o mesmo caminhão faz rotas diferentes).
+          const redesParada = paradaRedes.get(p.id) ?? new Set<string>()
+          if (redesParada.size > 0 && [...redesParada].every(r => !redesAceitas.has(r))) return false
           if (scorePair(linha, p) < Infinity) return true
           return false
         })
@@ -830,7 +835,10 @@ export async function cruzaEscalaUnitrac(
     // Restrito a redes de carona conhecidas pra evitar falso positivo cross-rede
     // genérico (ex: VIANENSE pegando parada SENDAS por estar na mesma placa).
     // NÃO marca em usados — herança via cross-dock é reuso de parada, não consumo.
-    const REDES_CROSSDOCK = new Set(['ARMAZEM_GRAO', 'FEIRA_NOVA'])
+    // ARMAZEM_GRAO removido: entrega à tarde em rota própria (Petrópolis/Itaipava),
+    // não é cross-dock real com Prezunic/Princesa. T9 estava atribuindo paradas
+    // da manhã de outra rede às linhas ARMAZEM_GRAO, produzindo horários errados.
+    const REDES_CROSSDOCK = new Set(['FEIRA_NOVA'])
     const redesNaPlaca = new Set(linhas.map(l => l.rede_id))
     if (redesNaPlaca.size >= 2) {
       // Paradas LOJA já atribuídas a alguma linha dessa placa (recoletadas após T8)

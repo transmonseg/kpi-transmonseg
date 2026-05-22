@@ -37,6 +37,8 @@ function norm(s) {
 function serialParaHora(v) {
   if (typeof v === 'string' && v.includes(':')) return v
   if (!v && v !== 0) return ''
+  // Strings como 'SEM RASTREADOR' / 'NÃO FOI AO CLIENTE' → sem dado de tempo
+  if (typeof v === 'string') return ''
   const totalMin = Math.round(v * 24 * 60)
   const h = Math.floor(totalMin / 60) % 24
   const m = totalMin % 60
@@ -70,7 +72,11 @@ function lerLinhasDeAba(filePath, abaName, colMap = COL_MAP_DEFAULT) {
     // pula linhas de cabeçalho ou seção
     if (norm(col0) === norm('REDES / FILIAIS') || norm(col0) === norm('REDES/FILIAIS') ||
         col0.toUpperCase().includes('RELATÓRIO') || col0.toUpperCase().includes('RELATORIO') ||
-        norm(col0) === 'REDESFILIAIS') continue
+        norm(col0) === 'REDESFILIAIS' ||
+        // Cabeçalhos de seção do tipo "REDE 1º CARRO" que aparecem dentro de KPIs de outra rede
+        /\d[ºoa°]\s*CARRO/i.test(col0) ||
+        // Título da aba KPI (ex: "RELATÓRIO KPI - Prezunic\nBENASSI")
+        norm(col0).startsWith('RELATORIOKPI')) continue
 
     const placa1 = norm(String(row[colMap.placa] ?? ''))
     // Rejeita "placas" que são números puros (seriais de horário Excel)
