@@ -165,17 +165,20 @@ function inferRedeFromSeparator(sep: string): string | null {
 }
 
 function extractDateFromWorksheet(ws: ExcelJS.Worksheet): Date | null {
-  const row1 = ws.getRow(1)
-  const v = cellVal(row1.getCell(13))
-  if (v instanceof Date) {
-    // ExcelJS creates UTC midnight dates; normalize to local midnight to avoid off-by-one in UTC-3
-    return new Date(v.getUTCFullYear(), v.getUTCMonth(), v.getUTCDate())
-  }
-  if (typeof v === 'string') {
-    const m = v.match(/(\d{2})\/(\d{2})\/(\d{4})/)
-    if (m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]))
-    const m2 = v.match(/(\d{4})-(\d{2})-(\d{2})/)
-    if (m2) return new Date(Number(m2[1]), Number(m2[2]) - 1, Number(m2[3]))
+  for (let rowNum = 1; rowNum <= 5; rowNum++) {
+    const row = ws.getRow(rowNum)
+    for (let col = 1; col <= 20; col++) {
+      const v = cellVal(row.getCell(col))
+      if (v instanceof Date) {
+        return new Date(v.getUTCFullYear(), v.getUTCMonth(), v.getUTCDate())
+      }
+      if (typeof v === 'string') {
+        const m = v.match(/(\d{2})\/(\d{2})\/(\d{4})/)
+        if (m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]))
+        const m2 = v.match(/(\d{4})-(\d{2})-(\d{2})/)
+        if (m2) return new Date(Number(m2[1]), Number(m2[2]) - 1, Number(m2[3]))
+      }
+    }
   }
   return null
 }
@@ -476,6 +479,17 @@ export async function parseEscalaGeral(
 
   const resultado: LinhaEscala[] = []
 
+  // Pré-parse de dataAlvo para derivar data direto do nome da aba (dia = número da aba)
+  let alvoAno: number | null = null
+  let alvoMes: number | null = null
+  if (dataAlvo) {
+    const parts = dataAlvo.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+    if (parts) {
+      alvoAno = Number(parts[1])
+      alvoMes = Number(parts[2])
+    }
+  }
+
   wb.eachSheet(ws => {
     const name = ws.name
 
@@ -484,14 +498,22 @@ export async function parseEscalaGeral(
     const trimmed = name.trim()
     if (!RE_DIA_ABA.test(trimmed)) return
 
-    const dateFromSheet = extractDateFromWorksheet(ws)
-    if (!dateFromSheet) {
-      console.warn(`[escala-geral] Aba "${trimmed}": data não encontrada, aba ignorada.`)
-      return
-    }
-    const dataISO = formataDataISO(dateFromSheet)
+    let dataISO: string
 
-    if (dataAlvo && dataISO !== dataAlvo) return
+    if (alvoAno !== null && alvoMes !== null) {
+      // Quando dataAlvo está disponível, a data da aba = ano/mês de dataAlvo + dia do nome da aba.
+      // Isso evita depender de qualquer célula dentro da planilha para determinar a data.
+      const dia = Number(trimmed)
+      dataISO = `${alvoAno}-${String(alvoMes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
+      if (dataISO !== dataAlvo) return
+    } else {
+      const dateFromSheet = extractDateFromWorksheet(ws)
+      if (!dateFromSheet) {
+        console.warn(`[escala-geral] Aba "${trimmed}": data não encontrada, aba ignorada.`)
+        return
+      }
+      dataISO = formataDataISO(dateFromSheet)
+    }
 
     const linhas = parseDayTab(ws, dataISO)
     resultado.push(...linhas)

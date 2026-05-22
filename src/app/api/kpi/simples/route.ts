@@ -189,8 +189,17 @@ export async function POST(req: NextRequest) {
   // Normalize to array
   const escalaPaths: string[] = escalaBucketPaths ?? (escalaBucketPath ? [escalaBucketPath] : [])
   if (escalaPaths.length === 0) return new NextResponse('"escalaBucketPath" ou "escalaBucketPaths" obrigatório.', { status: 400 })
-  const unitracPaths: string[] = unitracBucketPaths ?? (unitracBucketPath ? [unitracBucketPath] : [])
-  if (unitracPaths.length === 0) return new NextResponse('"unitracBucketPath" ou "unitracBucketPaths" obrigatório.', { status: 400 })
+  const rawUnitracPaths: string[] = unitracBucketPaths ?? (unitracBucketPath ? [unitracBucketPath] : [])
+  if (rawUnitracPaths.length === 0) return new NextResponse('"unitracBucketPath" ou "unitracBucketPaths" obrigatório.', { status: 400 })
+  // Auto-expande: para cada caminho fornecido, inclui automaticamente o arquivo
+  // complementar (PDF ↔ XLSX). O bucket sempre tem ambos com dados distintos.
+  const unitracPathSet = new Set(rawUnitracPaths)
+  for (const p of rawUnitracPaths) {
+    const dir = p.includes('/') ? p.substring(0, p.lastIndexOf('/') + 1) : ''
+    if (p.endsWith('.pdf')) unitracPathSet.add(`${dir}unitrac.xlsx`)
+    else if (p.endsWith('.xlsx')) unitracPathSet.add(`${dir}unitrac.pdf`)
+  }
+  const unitracPaths = Array.from(unitracPathSet)
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return new NextResponse('Data inválida. Use YYYY-MM-DD.', { status: 400 })
 
   const svc = createServiceClient()
@@ -278,8 +287,10 @@ export async function POST(req: NextRequest) {
   const veiculosMap = new Map<string, import('@/lib/types/unitrac').ResumoVeiculo>()
   for (const unitracPath of unitracPaths) {
     const { data: unitracBlob, error: unitracErr } = await svc.storage.from('unitrac-raw').download(unitracPath)
-    if (unitracErr || !unitracBlob)
-      return new NextResponse(`Erro ao baixar unitrac: ${unitracErr?.message ?? 'não encontrado'}`, { status: 500 })
+    if (unitracErr || !unitracBlob) {
+      console.warn(`[/api/kpi/simples] Unitrac ${unitracPath} não encontrado, pulando.`)
+      continue
+    }
     const unitracBuffer = await unitracBlob.arrayBuffer()
     try {
       let parsed
