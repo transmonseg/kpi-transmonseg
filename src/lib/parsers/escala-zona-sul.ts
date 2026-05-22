@@ -17,7 +17,24 @@ const SKIP_COL4 = new Set([
 export function normalizaFilialCod(cod: string): string {
   // zero-pad para 2 dígitos se for 1 dígito numérico
   const trimmed = cod.trim()
-  return /^\d$/.test(trimmed) ? `0${trimmed}` : trimmed
+  if (/^\d$/.test(trimmed)) return `0${trimmed}`
+  // Normaliza "MEGA BOX 01" → "MEGA BOX 1", "MEGA BOX 02" → "MEGA BOX 2"
+  // para evitar dupla contagem (cadastro Zona Sul aceita ambos os formatos).
+  // Aceita sufixo opcional de bairro após o número, com hífen/en-dash/em-dash:
+  //   "MEGA BOX 01 - Olaria" → "MEGA BOX 1 - Olaria"
+  //   "MEGA BOX 01 — Olaria" → "MEGA BOX 1 — Olaria"
+  const megaBoxMatch = trimmed.match(/^MEGA\s+BOX\s+0*(\d+)(\s*[-–—]\s*.*)?$/i)
+  if (megaBoxMatch) {
+    const num = megaBoxMatch[1]
+    const sufixo = megaBoxMatch[2] ?? ''
+    return `MEGA BOX ${num}${sufixo}`
+  }
+  return trimmed
+}
+
+export function isMegaBoxLoja(lojaNomeRaw: string | null | undefined): boolean {
+  if (!lojaNomeRaw) return false
+  return /MEGA\s+BOX/i.test(lojaNomeRaw)
 }
 
 function cellVal(cell: ExcelJS.Cell | undefined): unknown {
@@ -195,6 +212,7 @@ function parseFormatoCompacto(ws: ExcelJS.Worksheet, dataAlvo?: string): LinhaEs
       data: dataISO,
       data_entrega: dataEntrega,
       rede_id: 'ZONA_SUL',
+      sub_rede: isMegaBoxLoja(nomeCompleto) ? 'MEGA_BOX' : null,
       loja_nome_raw: nomeCompleto,
       loja_codigo_raw: d1Key,
       placa_norm: placaNorm,
@@ -314,6 +332,7 @@ export async function parseEscalaZonaSul(
         data: dataISO,
         data_entrega: dataEntrega,
         rede_id: 'ZONA_SUL',
+        sub_rede: isMegaBoxLoja(loja) || isMegaBoxLoja(nomeCompleto) ? 'MEGA_BOX' : null,
         loja_nome_raw: nomeCompleto,
         loja_codigo_raw: lojaCodNorm,
         placa_norm: placaNorm,

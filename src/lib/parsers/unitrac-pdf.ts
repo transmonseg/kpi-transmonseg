@@ -8,7 +8,7 @@
 // usando regex multilinha ancorado em lat/lng (estável).
 
 import type { ParadaUnitrac, ResumoVeiculo } from '@/lib/types/unitrac'
-import { normalizaPlaca } from '@/lib/utils/placa'
+import { normalizaPlaca, corrigeOcrPlaca } from '@/lib/utils/placa'
 
 // pdf-parse v1.1.1 — default export é função (buf) => Promise<{text}>.
 // v1 funciona em Node serverless sem depender de @napi-rs/canvas.
@@ -253,13 +253,27 @@ function extractParadas(rawText: string, placaNorm: string): ParadaUnitrac[] {
   return paradas
 }
 
-export function parseTextToResumos(rawText: string): ResumoVeiculo[] {
+/**
+ * `cadastroPlacas`: conjunto opcional de placas-norm conhecidas (fonte limpa, ex:
+ * histórico de `unitrac_paradas` do banco, alimentado por uploads XLSX que não
+ * sofrem OCR). Quando passado, a placa parseada do PDF é validada contra ele:
+ * se a forma OCR-confusada (pos-4 ∈ {B,E,G,H,I,J,O,S,Z}) NÃO existe no cadastro
+ * mas a variante antiga existe, usa a antiga. Evita over-correction sem cadastro.
+ *
+ * Bug HLOG (2026-05-20): PDFs do HLOG retornam pos-4 letra OCR-confusa onde a
+ * placa real é antiga (ex: LCO-0978 vira LCO-0J78). Sem cadastro o parser não
+ * tem como saber qual interpretação é correta, então mantemos o que veio.
+ */
+export function parseTextToResumos(
+  rawText: string,
+  cadastroPlacas?: ReadonlySet<string> | null,
+): ResumoVeiculo[] {
   const cleaned = preprocess(rawText)
   const rawVeiculos = splitByVeiculo(cleaned)
 
   const out: ResumoVeiculo[] = []
   for (const rv of rawVeiculos) {
-    const placaNorm = normalizaPlaca(rv.placa)
+    const placaNorm = corrigeOcrPlaca(rv.placa, cadastroPlacas)
     if (!placaNorm) continue
     const paradas = extractParadas(rv.rawText, placaNorm)
     if (paradas.length === 0) continue
@@ -280,26 +294,27 @@ export function parseTextToResumos(rawText: string): ResumoVeiculo[] {
 
 export async function parseUnitracPdf(
   buffer: ArrayBuffer | Buffer,
+  cadastroPlacas?: ReadonlySet<string> | null,
 ): Promise<ResumoVeiculo[]> {
   const USE_PDFJS = process.env.PDF_PARSER_BACKEND === 'pdfjs-serverless'
   const buf = buffer instanceof ArrayBuffer ? Buffer.from(buffer) : buffer
 
   if (USE_PDFJS) {
     const { parseUnitracPdfJs } = await import('./unitrac-pdf-pdfjs')
-    return parseUnitracPdfJs(buf)
+    return parseUnitracPdfJs(buf, cadastroPlacas)
   }
 
   const result = await pdfParse(buf)
 
   if (process.env.PDF_SHADOW_MODE === 'true') {
     import('./unitrac-pdf-pdfjs').then(({ parseUnitracPdfJs }) =>
-      parseUnitracPdfJs(buf).then(shadow => {
-        const original = parseTextToResumos(result.text)
+      parseUnitracPdfJs(buf, cadastroPlacas).then(shadow => {
+        const original = parseTextToResumos(result.text, cadastroPlacas)
         if (original.length !== shadow.length)
           console.log(`[pdf-shadow] mismatch: orig=${original.length} pdfjs=${shadow.length}`)
       }).catch(() => {})
     )
   }
 
-  return parseTextToResumos(result.text)
+  return parseTextToResumos(result.text, cadastroPlacas)
 }

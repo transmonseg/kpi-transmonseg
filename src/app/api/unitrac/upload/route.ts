@@ -72,10 +72,25 @@ export async function POST(req: NextRequest) {
   const arrayBuffer = await fileBlob.arrayBuffer()
   let veiculos
 
+  // Cadastro de placas conhecidas: usado pelo parser PDF para corrigir confusão
+  // OCR na pos-4 (LCO-0978 vs LCO-0J78). Fonte: `unitrac_paradas` (alimentada
+  // por XLSX, que não sofre OCR). Só carregamos pra formato pdf; xlsx é texto
+  // estruturado e o nome de aba já vem limpo.
+  let cadastroPlacas: Set<string> | null = null
+  if (formato === 'pdf') {
+    const { data: placasDb } = await svc
+      .from('unitrac_paradas')
+      .select('placa_norm')
+      .not('placa_norm', 'is', null)
+    if (placasDb) {
+      cadastroPlacas = new Set(placasDb.map(r => String(r.placa_norm)).filter(Boolean))
+    }
+  }
+
   try {
     if (formato === 'pdf') {
       const { parseUnitracPdf } = await import('@/lib/parsers/unitrac-pdf')
-      veiculos = await parseUnitracPdf(Buffer.from(arrayBuffer))
+      veiculos = await parseUnitracPdf(Buffer.from(arrayBuffer), cadastroPlacas)
     } else {
       veiculos = await parseUnitrac(arrayBuffer)
     }

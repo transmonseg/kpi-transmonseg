@@ -17,6 +17,51 @@ function placaSanitizada(p: string | null): string {
   return placaValida(p) ? normalizaPlaca(p) : ''
 }
 
+// Tokens de cabeçalho que NUNCA são placa real. Quando aparecem na coluna de
+// placa, a linha inteira é cabeçalho de sub-seção vazado como dado.
+const PLACA_HEADER_TOKENS = new Set(['PLACA', 'PLACAS', 'FORNECEDOR', 'FORNECEDORES'])
+
+// Tokens de cabeçalho que NUNCA são nome de loja. Variações com espaço entre
+// "REDES" e "FILIAIS" também batem (ver normalizaCabecalhoLoja).
+const LOJA_HEADER_TOKENS = new Set([
+  'REDES/FILIAIS',
+  'REDES / FILIAIS',
+  'REDES/ FILIAIS',
+  'REDES /FILIAIS',
+])
+
+// Normaliza string de loja pra detectar cabeçalho "REDES/FILIAIS" com variações
+// de espaço, acento e caixa. O(1) por linha (regex, sem alocação extra).
+function normalizaCabecalhoLoja(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toUpperCase()
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// Filtro O(1) por linha: detecta linhas-cabeçalho vazadas como dado.
+// Rejeita se placa ∈ tokens reservados, loja ∈ tokens reservados, OU placa
+// não-vazia que não bate com regex de placa válida (brasileira antiga ou Mercosul).
+// Exportado pra teste.
+export function isHeaderLikeRow(
+  placaRaw: string | null,
+  lojaNomeRaw: string | null
+): boolean {
+  if (placaRaw) {
+    const pUp = placaRaw.toUpperCase().trim()
+    if (PLACA_HEADER_TOKENS.has(pUp)) return true
+  }
+  if (lojaNomeRaw) {
+    const lUp = normalizaCabecalhoLoja(lojaNomeRaw)
+    if (LOJA_HEADER_TOKENS.has(lUp)) return true
+    // Variação sem barra: "REDES FILIAIS"
+    if (lUp === 'REDES FILIAIS') return true
+  }
+  return false
+}
+
 const ABAS_SKIP = new Set(['2° ENTREGA ', 'ARMAZÉM ', 'MOTORISTAS', 'MATRIZ'])
 
 const RE_DIA_ABA = /^\d{1,2}\s*$/
@@ -204,6 +249,11 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
         // Pula placeholders sem motorista/placa de carro 1 (redes em arquivo separado)
         if (!placaRaw1 && !asStr(v6)) return
 
+        // Bug #3: rejeita linhas-cabeçalho vazadas mesmo no path "separator com peso"
+        // (caso a planilha venha sem linha em branco entre seções de redes).
+        if (isHeaderLikeRow(placaRaw1, limpaLoja(s1))) return
+        if (placaRaw1 && !placaValida(placaRaw1)) return
+
         // Usa nome da própria linha se for diferente do ultimaLoja, senão herda
         const nomeLojaLinha = limpaLoja(s1)
         const usaNomeProprio = !ultimaLoja || nomeLojaLinha !== ultimaLoja.nome
@@ -330,6 +380,14 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
     // (FEIRA_NOVA, EMANUEL, SUPER_PAX) aparecem no GERAL só com nome da loja e peso.
     // Sem motorista E sem placa de carro 1, não há o que cruzar com Unitrac.
     if (!placaRaw1 && !asStr(v6)) return
+
+    // Bug #3: rejeita linhas-cabeçalho vazadas como dado (placa="PLACAS"/"FORNECEDOR",
+    // loja="REDES/ FILIAIS"). Sem este filtro, eram classificadas como VIANENSE.
+    if (isHeaderLikeRow(placaRaw1, nomeLoja)) return
+    // Placa não-vazia que não bate com formato real (3 letras + 4 dígitos antigo,
+    // ou Mercosul 3L+1D+1L+2D) também é cabeçalho/lixo. Sem placa válida, não há
+    // o que cruzar com Unitrac.
+    if (placaRaw1 && !placaValida(placaRaw1)) return
 
     // Filtra linhas com motorista "SEM PEDIDO" / "CARRO ESCALADO" (placeholder
     // de loja sem entrega no dia). Auditoria do dia 19/05 mostrou 4 linhas

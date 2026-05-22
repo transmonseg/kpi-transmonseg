@@ -257,6 +257,23 @@ export async function POST(req: NextRequest) {
     console.log(`[/api/kpi/simples] Aplicando ${alteracoes.length} alterações inline`)
   }
 
+  // Cadastro de placas conhecidas (alimenta o parser PDF p/ corrigir OCR na pos-4):
+  // - Placas das linhas da escala (fonte XLSX, sem OCR) — fonte primária.
+  // - Histórico de `unitrac_paradas` no banco — reforço.
+  const cadastroPlacas = new Set<string>()
+  for (const l of escalaLinhas) {
+    if (l.placa_norm) cadastroPlacas.add(l.placa_norm)
+  }
+  const { data: placasHist } = await svc
+    .from('unitrac_paradas')
+    .select('placa_norm')
+    .not('placa_norm', 'is', null)
+  if (placasHist) {
+    for (const r of placasHist) {
+      if (r.placa_norm) cadastroPlacas.add(String(r.placa_norm))
+    }
+  }
+
   // Parse unitrac — baixa e parseia cada arquivo, mergeia por placa
   const veiculosMap = new Map<string, import('@/lib/types/unitrac').ResumoVeiculo>()
   for (const unitracPath of unitracPaths) {
@@ -268,7 +285,7 @@ export async function POST(req: NextRequest) {
       let parsed
       if (unitracPath.endsWith('.pdf')) {
         const { parseUnitracPdf } = await import('@/lib/parsers/unitrac-pdf')
-        parsed = await parseUnitracPdf(Buffer.from(unitracBuffer))
+        parsed = await parseUnitracPdf(Buffer.from(unitracBuffer), cadastroPlacas)
       } else {
         parsed = await parseUnitrac(unitracBuffer)
       }

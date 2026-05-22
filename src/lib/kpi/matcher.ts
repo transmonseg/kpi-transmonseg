@@ -160,6 +160,7 @@ export type EscalaLinhaRow = {
   motorista_nome: string | null
   carro_ordem: number
   data_entrega: string
+  sub_rede?: string | null
 }
 
 export type UnitracParadaRow = {

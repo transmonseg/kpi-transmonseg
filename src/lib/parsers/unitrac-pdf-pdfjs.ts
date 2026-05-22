@@ -10,7 +10,10 @@ import { parseTextToResumos } from './unitrac-pdf'
  * Activated via PDF_PARSER_BACKEND=pdfjs-serverless env var.
  * Run in shadow mode via PDF_SHADOW_MODE=true (logs diffs, no output change).
  */
-export async function parseUnitracPdfJs(buffer: Buffer): Promise<ResumoVeiculo[]> {
+export async function parseUnitracPdfJs(
+  buffer: Buffer,
+  cadastroPlacas?: ReadonlySet<string> | null,
+): Promise<ResumoVeiculo[]> {
   if (buffer.length === 0) return []
 
   try {
@@ -26,7 +29,7 @@ export async function parseUnitracPdfJs(buffer: Buffer): Promise<ResumoVeiculo[]
       pages.push(pageText)
     }
     const fullText = pages.join('\n')
-    return parseTextToResumos(fullText)
+    return parseTextToResumos(fullText, cadastroPlacas)
   } catch (err) {
     console.error('[pdfjs-serverless] extraction error:', err)
     return []

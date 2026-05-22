@@ -244,6 +244,7 @@ export async function POST(req: NextRequest) {
       paletes: l.paletes,
       data_entrega: l.data_entrega,
       raw_row_num: l.raw_row_num,
+      sub_rede: l.sub_rede ?? null,
       raw_json: clean(l),
     }))
 

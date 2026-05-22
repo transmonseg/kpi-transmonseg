@@ -2,6 +2,7 @@ export type LinhaEscala = {
   data: string            // YYYY-MM-DD (data da aba/bloco)
   data_entrega: string    // YYYY-MM-DD (pode ser D+1 para ZS)
   rede_id: string         // 'ASSAI', 'ZONA_SUL', 'SUPER_PAX', etc.
+  sub_rede?: string | null  // 'MEGA_BOX' (sub-rede da Zona Sul), opcional para retrocompat
   loja_nome_raw: string   // texto exato como veio do arquivo
   loja_codigo_raw: string | null  // número (escala geral) ou alias (ZS filial)
   placa_norm: string      // normalizada sem hífen

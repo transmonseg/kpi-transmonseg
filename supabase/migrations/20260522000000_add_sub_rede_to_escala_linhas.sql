@@ -1,0 +1,1 @@
+ALTER TABLE escala_linhas ADD COLUMN IF NOT EXISTS sub_rede TEXT NULL;

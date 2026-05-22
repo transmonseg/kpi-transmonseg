@@ -49,6 +49,39 @@ async function loadFileBuffer(filePath: string): Promise<Buffer> {
   return await readFile(filePath)
 }
 
+/**
+ * Carrega cadastro de placas conhecidas (usado pelo parser PDF Unitrac p/
+ * corrigir confusão OCR — ex.: "LCO-0J78" → "LCO-0978"). Fonte:
+ *  - `unitrac_paradas` (XLSX histórico, sem OCR) — fonte primária estável.
+ *  - `escala_linhas` (placa_norm da escala XLSX) — cobre cold start onde
+ *    `unitrac_paradas` está vazio (FASE 1, primeira carga).
+ * Usa limit(50000) p/ ultrapassar o default 1000 do Supabase.
+ */
+async function carregaCadastroPlacas(
+  supabase: ReturnType<typeof sb>,
+): Promise<Set<string>> {
+  const cadastro = new Set<string>()
+  const [paradasRes, escalaRes] = await Promise.all([
+    supabase
+      .from('unitrac_paradas')
+      .select('placa_norm')
+      .not('placa_norm', 'is', null)
+      .limit(50000),
+    supabase
+      .from('escala_linhas')
+      .select('placa_norm')
+      .not('placa_norm', 'is', null)
+      .limit(50000),
+  ])
+  for (const r of paradasRes.data ?? []) {
+    if (r.placa_norm) cadastro.add(String(r.placa_norm))
+  }
+  for (const r of escalaRes.data ?? []) {
+    if (r.placa_norm) cadastro.add(String(r.placa_norm))
+  }
+  return cadastro
+}
+
 function ok(content: unknown) {
   const text = typeof content === 'string' ? content : JSON.stringify(content, null, 2)
   return { content: [{ type: 'text' as const, text }] }
@@ -241,11 +274,13 @@ server.registerTool(
   async ({ file }) => {
     try {
       const buf = await loadFileBuffer(file)
-      const veiculos = await parseUnitracPdf(buf)
+      const cadastroPlacas = await carregaCadastroPlacas(sb())
+      const veiculos = await parseUnitracPdf(buf, cadastroPlacas)
       const total = veiculos.reduce((s, v) => s + v.paradas.length, 0)
       return ok({
         total_veiculos: veiculos.length,
         total_paradas: total,
+        cadastro_placas_size: cadastroPlacas.size,
         classificacoes: veiculos.flatMap(v => v.paradas).reduce((acc, p) => {
           acc[p.classificacao] = (acc[p.classificacao] ?? 0) + 1
           return acc
@@ -343,7 +378,12 @@ server.registerTool(
       const isUnitracPdf = !!unitrac_pdf_file
       if (unitracPath) {
         const buf = await loadFileBuffer(unitracPath)
-        const veiculos = isUnitracPdf ? await parseUnitracPdf(buf) : await parseUnitrac(buf)
+        // Cadastro de placas é usado apenas pelo PDF (corrige OCR pos-4). Inclui
+        // escala_linhas pra cobrir cold start (unitrac_paradas vazio na 1ª carga).
+        const cadastroPlacas = isUnitracPdf ? await carregaCadastroPlacas(supabase) : null
+        const veiculos = isUnitracPdf
+          ? await parseUnitracPdf(buf, cadastroPlacas)
+          : await parseUnitrac(buf)
         const totalParadas = veiculos.reduce((s, v) => s + v.paradas.length, 0)
         const { data: up, error: upErr } = await supabase.from('unitrac_uploads').insert({
           data_relatorio: data,
