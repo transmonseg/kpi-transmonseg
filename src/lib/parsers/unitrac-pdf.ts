@@ -45,6 +45,12 @@ function classificaParada(local: string, duracaoSeg: number): ParadaUnitrac['cla
   return 'LOJA'
 }
 
+// Prefixos numéricos de códigos de loja conhecidos (mesmos do matcher.ts).
+// Quando o Unitrac concatena múltiplas zonas/lojas num único local_parada,
+// usamos esse padrão para preferir a entrada que é uma loja real vs uma
+// "ROTA ZONA NORTE" ou similar (ex: "2018023 - ROTA ZONA NORTE, 3030113 - SUPERPRIX LJ 13").
+const REDE_CODIGO_PREFIX_RE = /^(9039|3030|7000|8590|5353|5790|9006|710[0-3]|5600|11623|17659|2384|7012|202)/
+
 function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: string | null } {
   // codigo_loja/nome_loja só fazem sentido pra LOJA real (formato "12345 - NOME")
   // BASE BENASSI e FORA DE BASE não tem código numérico
@@ -52,21 +58,26 @@ function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: str
     return { codigo_loja: null, nome_loja: null }
   }
   // Limpa sufixo |VEHICLE_HEADER|<placa próx veículo> que vaza no last parada
-  let cleaned = local.replace(/\s*\|VEHICLE_HEADER\|.*$/, '').trim()
-  // Unitrac concatena várias classificações por vírgula quando o ponto cai
-  // em raio de múltiplas lojas. Pega só a 1ª (a real) quando tem padrão "código - nome".
-  const commaIdx = cleaned.indexOf(',')
-  if (commaIdx > 0) {
-    const primary = cleaned.slice(0, commaIdx).trim()
-    if (/^\d+\s*-\s/.test(primary)) cleaned = primary
+  const cleaned = local.replace(/\s*\|VEHICLE_HEADER\|.*$/, '').trim()
+
+  // Unitrac concatena várias lojas/zonas por vírgula quando o GPS cai no raio
+  // de múltiplos locais. Extrai TODOS os pares "código - nome" e prefere o que
+  // tem código com prefixo de rede conhecido (ex: 3030=SuperPrix, 5353=Prezunic).
+  // Sem preferência clara, usa o primeiro par válido.
+  const partes = cleaned.split(',').map(s => s.trim())
+  let fallback: { codigo_loja: string; nome_loja: string | null } | null = null
+
+  for (const parte of partes) {
+    const idx = parte.indexOf(' - ')
+    if (idx === -1) continue
+    const codigo = parte.slice(0, idx).trim()
+    if (!/^\d+$/.test(codigo)) continue
+    const nome = parte.slice(idx + 3).trim() || null
+    if (REDE_CODIGO_PREFIX_RE.test(codigo)) return { codigo_loja: codigo, nome_loja: nome }
+    if (!fallback) fallback = { codigo_loja: codigo, nome_loja: nome }
   }
-  const idx = cleaned.indexOf(' - ')
-  if (idx === -1) return { codigo_loja: null, nome_loja: null }
-  const codigo = cleaned.slice(0, idx).trim()
-  // Codigo de loja real é numérico. Se vier texto (ex: "BASE BENASSI"), ignora.
-  if (!/^\d+$/.test(codigo)) return { codigo_loja: null, nome_loja: null }
-  const nome = cleaned.slice(idx + 3).trim() || null
-  return { codigo_loja: codigo, nome_loja: nome }
+
+  return fallback ?? { codigo_loja: null, nome_loja: null }
 }
 
 function computeSaidaCd(paradas: ParadaUnitrac[]): Date | null {
