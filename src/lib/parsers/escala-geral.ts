@@ -119,7 +119,7 @@ function limpaLoja(nome: string): string {
 
 function inferRedeFromLoja(nome: string): string {
   const n = normText(nome)
-  if (n.includes('ASSAI') || n.includes('ASSAÍ') || n === 'GPA') return 'ASSAI'
+  if (n.includes('ASSAI') || n.includes('ASSAÍ')) return 'ASSAI'
   if (n.includes('ATACADAO') || n.includes('ATACADÃO')) return 'ATACADAO'
   if (n.includes('CARREFOUR')) return 'CARREFOUR'
   if (n.includes('PREZUNIC')) return 'PREZUNIC'
