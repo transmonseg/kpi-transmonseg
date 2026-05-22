@@ -119,7 +119,7 @@ function limpaLoja(nome: string): string {
 
 function inferRedeFromLoja(nome: string): string {
   const n = normText(nome)
-  if (n.includes('ASSAI') || n.includes('ASSAÍ')) return 'ASSAI'
+  if (n.includes('ASSAI') || n.includes('ASSAÍ') || n === 'GPA') return 'ASSAI'
   if (n.includes('ATACADAO') || n.includes('ATACADÃO')) return 'ATACADAO'
   if (n.includes('CARREFOUR')) return 'CARREFOUR'
   if (n.includes('PREZUNIC')) return 'PREZUNIC'
@@ -133,6 +133,7 @@ function inferRedeFromLoja(nome: string): string {
   if (n.includes('EMANUEL')) return 'EMANUEL'
   if (n.includes('ARMAZEM') && n.includes('GRAO')) return 'ARMAZEM_GRAO'
   if (n.includes('SUPER PAX') || n.includes('SUPERPAX')) return 'SUPER_PAX'
+  if (n.includes('SUPERCOMPRAS')) return 'SUPERCOMPRAS'
   if (n.includes('SUPER PRIX') || n.includes('SUPERPRIX')) return 'SUPERPRIX'
   if (n.includes('MUNDIAL')) return 'MUNDIAL'
   return 'DESCONHECIDO'
@@ -262,7 +263,8 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
 
         const tipoEmissao = modoBenassi ? 'BENASSI' : modoForaEscala ? 'FORA_ESCALA' : 'NORMAL'
         const redeFromLoja2 = inferRedeFromLoja(nomeLojaFinal)
-        const redeId = modoBenassi ? 'SENDAS'
+        const redeId = modoBenassi
+          ? (redeFromLoja2 !== 'DESCONHECIDO' ? redeFromLoja2 : 'SENDAS')
           : modoForaEscala ? redeFromLoja2
           : redeFromLoja2 !== 'DESCONHECIDO' ? redeFromLoja2 : redeAtual
 
