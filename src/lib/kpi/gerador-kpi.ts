@@ -2,7 +2,7 @@ import ExcelJS from 'exceljs'
 import type { KpiLinha } from '@/lib/types/kpi'
 import { KPI_COLORS, REDE_NOMES_CANONICOS, formataDataPtBr } from './kpi-styles'
 import { carregarOuCriarWorkbook, nomeAbaDoDia } from './template-loader'
-import { getMatrizLojas, resolverNomeCanonico } from '@/lib/lojas/catalogo-matriz'
+import { getMatrizLojas, resolverNomeCanonico, MATRIZ_LOJAS } from '@/lib/lojas/catalogo-matriz'
 import { temAnomaliaHigh } from './anomalia-obs'
 import { agruparPorLoja, type LinhaAgrupada } from './agrupar-por-loja'
 
@@ -188,9 +188,24 @@ function preencherAba(
   const ordemLojas = getMatrizLojas(rede_id, lojasNoDia)
   const agrupadasMap = new Map(agrupadas.map(a => [a.loja_nome, a]))
 
+  // Redes com catálogo fixo (MATRIZ_LOJAS) devem incluir TODAS as lojas do catálogo,
+  // mesmo que não tenham dados no dia (SEM PEDIDO na escala). Isso alinha o gerado
+  // com o manual que sempre mostra todas as lojas da rede com linhas vazias quando
+  // não há entrega. Redes sem catálogo fixo (descobertas no dia) mantêm o comportamento
+  // anterior: só inclui lojas que aparecem na escala.
+  const temCatalogoFixo = Boolean(MATRIZ_LOJAS[rede_id])
+
   let rowIdx = 5
   for (const loja of ordemLojas) {
-    const ag = agrupadasMap.get(loja) ?? { loja_nome: loja, carro1: null, carro2: null }
+    const ag = agrupadasMap.get(loja)
+    if (!ag) {
+      // Loja do catálogo fixo sem dados no dia → linha vazia (apenas nome)
+      if (temCatalogoFixo) {
+        escreverLinha(ws, rowIdx, { loja_nome: loja, carro1: null, carro2: null })
+        rowIdx++
+      }
+      continue
+    }
     escreverLinha(ws, rowIdx, ag)
     rowIdx++
   }

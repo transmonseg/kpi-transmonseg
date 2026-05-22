@@ -233,7 +233,7 @@ function parseDayTab(ws: ExcelJS.Worksheet, dataISO: string): LinhaEscala[] {
       const v8check = asStr(cellVal(row.getCell(8)))
       const temPlaca = v8check !== null
       // Aceita a linha se tem peso OU se tem motorista+placa (cobre sharedFormula)
-      if ((hasWeight || (temMotorista && temPlaca)) && (temMotorista || ultimaLoja !== null)) {
+      if (!isMergedHeader && (hasWeight || (temMotorista && temPlaca)) && (temMotorista || ultimaLoja !== null)) {
         const v5 = cellVal(row.getCell(5))
         const v6 = cellVal(row.getCell(6))
         const v7 = cellVal(row.getCell(7))

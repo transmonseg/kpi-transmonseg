@@ -3,6 +3,19 @@
 // Lojas novas detectadas no dia são adicionadas ao final.
 
 export const MATRIZ_LOJAS: Record<string, string[]> = {
+  CARREFOUR: [
+    'Carrefour - Alcântara',
+    'Carrefour - Barra da Tijuca',
+    'Carrefour - Brigadeiro (Caxias)',
+    'Carrefour - Campo Grande',
+    'Carrefour - Norte Shopping',
+    'Carrefour - Sulacap',
+    'Carrefour - Washington Luiz',
+    'Carrefour - Campos dos Goytacazes',
+    'Carrefour - Macaé',
+    'Carrefour - Juiz de Fora',
+    'Carrefour - Espírito Santo',
+  ],
   PRINCESA: [
     'Princesa - Catete', 'Princesa - Flamengo', 'Princesa - Cosme Velho',
     'Princesa - Laranjeiras', 'Princesa - Copacabana', 'Princesa - Leme',
@@ -15,24 +28,62 @@ export const MATRIZ_LOJAS: Record<string, string[]> = {
     'Princesa - Buzios 1 (2ª Entrega)', 'Princesa - Buzios 2 (3ª Entrega)', 'Princesa - Buzios 3 (1ª Entrega)',
     'Princesa - Cabo Frio 1 (1ª Entrega)', 'Princesa - Cabo Frio 2 (3ª Entrega)',
   ],
+  // Ordem baseada na escala GERAL maio 2026 (aba "19", R71-R129).
+  // Nomes são os nomes RAW da escala que o parser extrai — sem nomes do Unitrac.
+  // Lojas "fantasmas" do catálogo antigo (Taquara, Tanque, Cascadura, Madureira,
+  // Méier, Engenho de Dentro, Maracanã etc.) foram removidas — não existem na escala.
+  // SPID sem motorista real (col4=null sharedFormula) também não entram na escala;
+  // apenas SPID com col4=1 (Tijuca, Jacarepagua, Sta Rosa, Freguesia, Glória, Botafogo).
   PREZUNIC: [
-    'Prezunic - Barra da Tijuca', 'Prezunic - Jardim Oceanico', 'Prezunic - Barra Marapendi',
-    'Prezunic - Botafogo/Serra Azul', 'Prezunic - Botafogo Voluntários',
-    'Prezunic - Ilha do Governador', 'Prezunic - Pechincha', 'Prezunic - Freguesia',
-    'Prezunic - Anil (Jacarepaguá)', 'Prezunic - Taquara', 'Prezunic - Tanque',
-    'Prezunic - Campinho', 'Prezunic - Cascadura', 'Prezunic - Madureira',
-    'Prezunic - Méier', 'Prezunic - Engenho de Dentro', 'Prezunic - Cachambi',
-    'Prezunic - Vila Isabel', 'Prezunic - Tijuca', 'Prezunic - Maracanã',
-    'Prezunic - Praça da Bandeira', 'Prezunic - Cidade Nova', 'Prezunic - Centro',
-    'Prezunic - Lapa', 'Prezunic - Catete', 'Prezunic - Flamengo',
-    'Prezunic - Botafogo Praia', 'Prezunic - Humaitá', 'Prezunic - Leblon',
-    'Prezunic - Ipanema', 'Prezunic - Copacabana', 'Prezunic - Leme',
-    'Prezunic - Penha', 'Prezunic - Olaria', 'Prezunic - Bonsucesso',
-    'Prezunic - Vista Alegre', 'Prezunic - Depósito Central',
-    'Prezunic SPID - Tijuca', 'Prezunic SPID - Vila Isabel', 'Prezunic SPID - Méier',
-    'Prezunic SPID - Madureira', 'Prezunic SPID - Cascadura', 'Prezunic SPID - Pechincha',
-    'Prezunic SPID - Freguesia', 'Prezunic SPID - Taquara', 'Prezunic SPID - Botafogo',
-    'Prezunic SPID - Copacabana', 'Prezunic SPID - Leblon', 'Prezunic SPID - Ipanema',
+    // --- Lojas normais (R71-R110) ---
+    'Prezunic - Barra da Tijuca',
+    'Prezunic - Jardim Oceanico',
+    'Prezunic - Barra Marapendi',
+    'Prezunic - Botafogo / Serra Azul',
+    'Prezunic - Botafogo (Voluntários)',
+    'Prezunic - Ilha do Governador',
+    'Prezunic - Pechincha',
+    'Prezunic - Freguesia',
+    'Prezunic - Anil (Jacarepaguá)',
+    'Prezunic - Jauru / Serra Azul',
+    'Prezunic - Taquara / Serra Azul',
+    'Prezunic - Icaraí',
+    'Prezunic - Fonseca',
+    'Prezunic - Recreio dos Bandeirantes',
+    'Prezunic - Caxias Centro / Serra Azul',
+    'Prezunic - Caxias Centenário',
+    'Prezunic - Campo Grande (TINGUI)',
+    'Prezunic - Campo Grande / Serra Azul',
+    'Prezunic - Santa Cruz / Serra Azul',
+    'Prezunic - Nilópolis',
+    'Prezunic - Vilar dos Teles',
+    'Prezunic - Méier / Serra Azul',
+    'Prezunic - Cachambi',
+    'Prezunic - Maricá',
+    'Prezunic - Catumbi / Serra Azul',
+    'Prezunic - Senador Camará',
+    'Prezunic - Realengo/ Serra Azul',
+    'Prezunic - Tijuca',
+    'Prezunic - Vila Isabel',
+    'Prezunic - Laranjeiras',
+    'Prezunic - Padre Miguel',
+    'Prezunic - Penha',
+    'Prezunic - Olaria',
+    'Prezunic - Engenho Novo',
+    'Prezunic - Benfica',
+    'Prezunic - Campinho',
+    'Prezunic - Cidade de Deus',
+    'Prezunic - Itaoca',
+    'Prezunic - Vista Alegre',
+    'Prezunic - Depósito Central',
+    // --- SPID BENASSI (col4=1): Tijuca e Jacarepagua ---
+    'Prezunic SPID - Tijuca',
+    'Prezunic SPID - Jacarepagua',
+    // --- SPID NORMAL (col4=1): Santa Rosa, Freguesia, Glória, Botafogo ---
+    'Prezunic SPID - Santa Rosa (Niterói)',
+    'Prezunic SPID - Freguesia',
+    'Prezunic SPID - Glória',
+    'Prezunic SPID - Botafogo',
   ],
 }
 
@@ -51,6 +102,13 @@ const LOJA_ALIASES_BRUTOS: Record<string, Record<string, string>> = {
     'princesa - buzios 2': 'Princesa - Buzios 2 (3ª Entrega)',
     'princesa - buzios 3': 'Princesa - Buzios 3 (1ª Entrega)',
     'princesa - niterói barcas': 'Princesa - Niteroí Barcas',
+  },
+  PREZUNIC: {
+    // Nomes antigos do catálogo → nomes reais da escala maio 2026
+    'prezunic - botafogo/serra azul': 'Prezunic - Botafogo / Serra Azul',
+    'prezunic - botafogo voluntarios': 'Prezunic - Botafogo (Voluntários)',
+    'prezunic - spid - tijuca': 'Prezunic SPID - Tijuca',
+    'prezunic - spid - freguesia': 'Prezunic SPID - Freguesia',
   },
 }
 

@@ -15,6 +15,37 @@
 import type { LinhaEscala } from '@/lib/types/escala'
 import { normalizaPlaca } from '@/lib/utils/placa'
 
+const GUANABARA_FILIAIS: Record<number, string> = {
+  1: 'GB ENG DE DENTRO FILIAL 1',
+  2: 'GB PENHA FILIAL 2',
+  3: 'GB PIEDADE FILIAL 3',
+  4: 'GB REALENGO FILIAL 4',
+  5: 'GB BANGU FILIAL 5',
+  6: 'GB ITAGUAI FILIAL 6',
+  7: 'GB BARRA FILIAL 7',
+  8: 'GB NITEROI FILIAL 8',
+  9: 'GB IRAJA FILIAL 9',
+  10: 'GB VILA ISABEL FILIAL 10',
+  11: 'GB CAMPO GRANDE FILIAL 11',
+  12: 'GB SAO GONCALO FILIAL 12',
+  13: 'GB RIO DA PRATA FILIAL 13',
+  14: 'GB PADRE MIGUEL FILIAL 14',
+  15: 'GB BENTO RIBEIRO FILIAL 15',
+  16: 'GB NOVA IGUACU FILIAL 16',
+  17: 'GB CAMPINHO FILIAL 17',
+  18: 'GB CAXIAS FILIAL 18',
+  19: 'GB TANQUE FILIAL 19',
+  20: 'GB PACIENCIA FILIAL 20',
+  23: 'GB DEL CASTILHO FILIAL 23',
+  25: 'GB TIJUCA FILIAL 25',
+  26: 'GB CAMPO GRANDE FILIAL 26',
+  27: 'GB RECREIO FILIAL 27',
+  28: 'GB SANTA CRUZ FILIAL 28',
+  29: 'GB SAO JOAO FILIAL 29',
+  30: 'GB BONSUCESSO FILIAL 30',
+  31: 'GB CATONHO FILIAL 31',
+}
+
 // pdf-parse v1.1.1 — default export é função (buf) => Promise<{text}>.
 // v1 funciona em Node serverless sem depender de @napi-rs/canvas.
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
@@ -337,7 +368,7 @@ export async function parseEscalaGuanabaraPdf(
     if (!row) continue
     if (!row.carro1) continue
 
-    const lojaNome = `Guanabara - Rota ${String(row.rota).padStart(2, '0')}`
+    const lojaNome = GUANABARA_FILIAIS[row.rota] ?? `Guanabara - Rota ${String(row.rota).padStart(2, '0')}`
     const lojaCodigo = String(row.rota)
 
     const linha1: LinhaEscala = {

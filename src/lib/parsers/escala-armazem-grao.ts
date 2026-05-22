@@ -67,6 +67,31 @@ export async function parseEscalaArmazemGrao(
 
   const linhas: LinhaEscala[] = []
 
+  // When dataAlvo is specified and no tab has an exact date match, fall back to
+  // the latest available tab date that is <= dataAlvo (e.g. Friday's scale used
+  // for Saturday/Monday KPI).
+  let efectivaDataAlvo: string | undefined = dataAlvo
+  if (dataAlvo) {
+    const tabDates: string[] = []
+    for (const ws of wb.worksheets) {
+      if (!RE_DIA_ABA.test(ws.name.trim())) continue
+      const row1 = ws.getRow(1)
+      const titulo = asStr(cellVal(row1.getCell(1)))
+      if (!titulo) continue
+      const d = parseTitulo(titulo)
+      if (!d) continue
+      const iso = `${d.ano}-${String(d.mes).padStart(2, '0')}-${String(d.dia).padStart(2, '0')}`
+      tabDates.push(iso)
+    }
+    const hasExact = tabDates.includes(dataAlvo)
+    if (!hasExact && tabDates.length > 0) {
+      const candidates = tabDates.filter(d => d <= dataAlvo).sort()
+      if (candidates.length > 0) {
+        efectivaDataAlvo = candidates[candidates.length - 1]
+      }
+    }
+  }
+
   for (const ws of wb.worksheets) {
     if (!RE_DIA_ABA.test(ws.name.trim())) continue
 
@@ -84,7 +109,7 @@ export async function parseEscalaArmazemGrao(
     const dia = String(datas.dia).padStart(2, '0')
     const dataISO = `${ano}-${mes}-${dia}`
 
-    if (dataAlvo && dataISO !== dataAlvo) continue
+    if (efectivaDataAlvo && dataISO !== efectivaDataAlvo) continue
 
     // Linhas 2+: dados
     ws.eachRow((row, rowNum) => {
@@ -112,9 +137,13 @@ export async function parseEscalaArmazemGrao(
       // TOTAL / linhas-resumo
       if (/^TOTAL/i.test(lojaRaw)) return
 
+      // If a proxy date was used (file had no exact match for dataAlvo),
+      // report data_entrega as the requested target date so DB queries find it.
+      const dataFinal = dataAlvo && efectivaDataAlvo !== dataAlvo ? dataAlvo : dataISO
+
       const linha: LinhaEscala = {
-        data: dataISO,
-        data_entrega: dataISO,
+        data: dataFinal,
+        data_entrega: dataFinal,
         rede_id: 'ARMAZEM_GRAO',
         loja_nome_raw: lojaRaw,
         loja_codigo_raw: null,

@@ -240,8 +240,11 @@ function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracPara
  * Predicado canônico de BASE: classificacao === 'BASE' OU FAKE_EXIT em
  * local_parada começando com 'BASE BENASSI' (GPS bounce na base).
  *
- * Fallback: se nenhuma BASE anterior, retorna `paradaAlvo.chegada` (mantém a
- * semântica antiga de "veículo nunca passou pela base" mas adaptada por parada).
+ * Fallback T16-B: se nenhuma BASE anterior, usa a saída da última parada
+ * não-LOJA imediatamente anterior ao alvo (ex: FORA_BASE de onde o motorista
+ * saiu direto pra entrega — mais preciso que usar chegada da LOJA como proxy).
+ * Fallback final: chegada do alvo — garante que saida_cd nunca é null quando
+ * há um match (evita confundir "SEM GPS" com "entregou mas sem saída de CD").
  */
 function computeSaidaCdParaParada(
   paradaAlvo: UnitracParadaRow,
@@ -249,11 +252,12 @@ function computeSaidaCdParaParada(
 ): Date | null {
   const alvoTs = new Date(paradaAlvo.chegada).getTime()
   let lastBaseSaida: Date | null = null
+  let lastNonLojaSaida: Date | null = null
   for (const p of todasParadas) {
     if (new Date(p.chegada).getTime() >= alvoTs) break
     const isBase =
       p.classificacao === 'BASE' ||
-      (p.classificacao === 'FAKE_EXIT' && p.local_parada.startsWith('BASE BENASSI'))
+      (p.classificacao === 'FAKE_EXIT' && (p.local_parada ?? '').startsWith('BASE BENASSI'))
     if (isBase && p.saida) {
       const s = new Date(p.saida)
       if (s.getTime() < alvoTs) {
@@ -262,9 +266,18 @@ function computeSaidaCdParaParada(
         }
       }
     }
+    // Rastreia saída de qualquer parada não-LOJA como proxy de fallback (T16-B)
+    if (p.classificacao !== 'LOJA' && p.saida) {
+      const s = new Date(p.saida)
+      if (s.getTime() < alvoTs) {
+        if (!lastNonLojaSaida || s.getTime() > lastNonLojaSaida.getTime()) {
+          lastNonLojaSaida = s
+        }
+      }
+    }
   }
-  // Fallback: nunca passou pela BASE antes desta parada → chegada da parada
-  return lastBaseSaida ?? new Date(paradaAlvo.chegada)
+  // Prioridade: BASE exit → última saída não-LOJA → chegada do alvo (fallback garantido)
+  return lastBaseSaida ?? lastNonLojaSaida ?? new Date(paradaAlvo.chegada)
 }
 
 /**
@@ -280,7 +293,7 @@ function computeSaidaCdParaParada(
 function deduplicarPorCodigo(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
   // 03:00 UTC = 03:00 BRT (sistema armazena BRT como UTC)
   const NOITE_H = 3
-  const NOITE_DUR_SEG = 4 * 3600 // 4 horas
+  const NOITE_DUR_SEG = 2 * 3600 // 2 horas — cobre paradas de 93-94min às 01-02h
   function isEstacionamentoNoturno(p: UnitracParadaRow): boolean {
     const h = new Date(p.chegada).getUTCHours()
     const dur = p.saida === null ? Infinity : (p.duracao_seg ?? 0)
@@ -312,6 +325,33 @@ function deduplicarPorCodigo(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
   return [...byCode.values(), ...semCodigo].sort(
     (a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime()
   )
+}
+
+/**
+ * Remove paradas que, após deduplicação, ficaram como única opção para um código
+ * de loja e são estacionamento noturno (veículo dormiu perto da loja).
+ * Prefere SEM GPS a mostrar 00:01 ou 01:07 como horário de chegada.
+ */
+function filtrarParadaNocturnaSolitaria(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
+  const NOITE_H = 3
+  const NOITE_DUR_SEG = 2 * 3600
+  function isEstNocturno(p: UnitracParadaRow): boolean {
+    const h = new Date(p.chegada).getUTCHours()
+    const dur = p.saida === null ? Infinity : (p.duracao_seg ?? 0)
+    return h < NOITE_H && dur > NOITE_DUR_SEG
+  }
+  // Conta paradas por codigo_loja
+  const contagem = new Map<string, number>()
+  for (const p of paradas) {
+    if (!p.codigo_loja) continue
+    contagem.set(p.codigo_loja, (contagem.get(p.codigo_loja) ?? 0) + 1)
+  }
+  // Exclui parada noturna solitária (única com esse codigo_loja)
+  return paradas.filter((p) => {
+    if (!p.codigo_loja) return true
+    if ((contagem.get(p.codigo_loja) ?? 0) > 1) return true
+    return !isEstNocturno(p)
+  })
 }
 
 function resolveLojaId(
@@ -616,7 +656,8 @@ export async function cruzaEscalaUnitrac(
     const lojasParadasRaw = todas.filter((p) => p.classificacao === 'LOJA')
     const lojasConsolidadas = consolidarParadasMesmoCliente(lojasParadasRaw)
     // Remove paradas curtas duplicadas do mesmo codigo_loja: mantém só a de maior duração
-    const lojasParadas = deduplicarPorCodigo(lojasConsolidadas)
+    // Depois remove paradas noturnas solitárias (00:01, 01:07 → SEM GPS)
+    const lojasParadas = filtrarParadaNocturnaSolitaria(deduplicarPorCodigo(lojasConsolidadas))
     const usados = new Set<string>()
 
     // T11: pré-computa paradaRedes ANTES do assignOptimal para rede-aware scoring.

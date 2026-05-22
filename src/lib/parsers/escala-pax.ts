@@ -167,6 +167,29 @@ export async function parseEscalaPax(
   const { ano, mes } = detectYearMonth(wb)
   const result: LinhaEscala[] = []
 
+  // When dataAlvo is specified and no tab has an exact date match, fall back to
+  // the latest available tab date that is <= dataAlvo (e.g. Friday's scale used
+  // for Saturday/Monday KPI). Collect all tab dates first.
+  let efectivaDataAlvo: string | undefined = dataAlvo
+  if (dataAlvo) {
+    // Phase 1: find dates present in the file
+    const tabDates: string[] = []
+    for (const ws of wb.worksheets) {
+      if (!isTabDay(ws.name)) continue
+      const td = tabToDate(ws.name, ano, mes)
+      if (td) tabDates.push(td)
+    }
+    const hasExact = tabDates.includes(dataAlvo)
+    if (!hasExact && tabDates.length > 0) {
+      // Use the latest date that is <= dataAlvo as proxy
+      const candidates = tabDates.filter(d => d <= dataAlvo).sort()
+      if (candidates.length > 0) {
+        efectivaDataAlvo = candidates[candidates.length - 1]
+      }
+      // If all tab dates are > dataAlvo keep efectivaDataAlvo = dataAlvo (no match → 0 lines)
+    }
+  }
+
   for (const ws of wb.worksheets) {
     if (!isTabDay(ws.name)) continue
 
@@ -200,7 +223,10 @@ export async function parseEscalaPax(
           currentDataEntrega = tabDate
           currentDataTab = tabDate
         }
-        skipSection = dataAlvo != null && currentDataTab !== dataAlvo
+        // Skip sections that don't match the effective target date.
+        // When efectivaDataAlvo is a proxy (latest ≤ dataAlvo), rows are still
+        // included but data_entrega is overridden to dataAlvo below.
+        skipSection = efectivaDataAlvo != null && currentDataTab !== efectivaDataAlvo
         return
       }
 
@@ -240,9 +266,16 @@ export async function parseEscalaPax(
 
       const placaNorm = isSemPedido ? '' : normalizaPlaca(placaRaw)
 
+      // If a proxy date was used (file had no exact match for dataAlvo),
+      // report data_entrega as the requested target date so DB queries find it.
+      const dataEntregaFinal =
+        dataAlvo && efectivaDataAlvo !== dataAlvo ? dataAlvo : currentDataEntrega
+      const dataTabFinal =
+        dataAlvo && efectivaDataAlvo !== dataAlvo ? dataAlvo : currentDataTab
+
       const linha: LinhaEscala = {
-        data: currentDataTab,
-        data_entrega: currentDataEntrega,
+        data: dataTabFinal,
+        data_entrega: dataEntregaFinal,
         rede_id: currentRede,
         loja_nome_raw: lojaNomeNorm,
         loja_codigo_raw: null,
