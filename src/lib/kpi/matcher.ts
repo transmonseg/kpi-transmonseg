@@ -238,7 +238,11 @@ function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracPara
  * (do Trip 1), zerando lojas do Trip 2.
  *
  * Predicado canônico de BASE: classificacao === 'BASE' OU FAKE_EXIT em
- * local_parada começando com 'BASE BENASSI' (GPS bounce na base).
+ * local_parada começando com 'BASE BENASSI' (GPS bounce na base) OU qualquer
+ * parada cujo local_parada contenha 'BASE BENASSI' — cobre o bug do parser
+ * onde overlaps geofence BASE+LOJA são classificados como LOJA (o Unitrac
+ * concatena todas as geofences sobrepostas com vírgula, e findLojaGeofence
+ * prioriza LOJA mesmo quando BASE BENASSI está no prefixo).
  *
  * Fallback T16-B: se nenhuma BASE anterior, usa a saída da última parada
  * não-LOJA imediatamente anterior ao alvo (ex: FORA_BASE de onde o motorista
@@ -255,9 +259,14 @@ function computeSaidaCdParaParada(
   let lastNonLojaSaida: Date | null = null
   for (const p of todasParadas) {
     if (new Date(p.chegada).getTime() >= alvoTs) break
+    // T16-C: Base detection robusta. Além de classificacao===BASE/FAKE_EXIT,
+    // aceita paradas onde local_parada contém 'BASE BENASSI' em qualquer posição —
+    // isso cobre overlaps geofence onde o parser classifica erroneamente como LOJA.
+    const localStr = p.local_parada ?? ''
     const isBase =
       p.classificacao === 'BASE' ||
-      (p.classificacao === 'FAKE_EXIT' && (p.local_parada ?? '').startsWith('BASE BENASSI'))
+      (p.classificacao === 'FAKE_EXIT' && localStr.startsWith('BASE BENASSI')) ||
+      localStr.includes('BASE BENASSI')
     if (isBase && p.saida) {
       const s = new Date(p.saida)
       if (s.getTime() < alvoTs) {
@@ -266,8 +275,9 @@ function computeSaidaCdParaParada(
         }
       }
     }
-    // Rastreia saída de qualquer parada não-LOJA como proxy de fallback (T16-B)
-    if (p.classificacao !== 'LOJA' && p.saida) {
+    // Rastreia saída de qualquer parada não-BASE como proxy de fallback (T16-B).
+    // Usa isBase para excluir paradas de BASE misclassificadas como LOJA.
+    if (!isBase && p.classificacao !== 'LOJA' && p.saida) {
       const s = new Date(p.saida)
       if (s.getTime() < alvoTs) {
         if (!lastNonLojaSaida || s.getTime() > lastNonLojaSaida.getTime()) {
