@@ -1419,6 +1419,89 @@ describe('T11 — Rede-aware no assignOptimal (penalty cross-rede)', () => {
     expect((ag?.paradas.length ?? 0) + (fn?.paradas.length ?? 0)).toBeGreaterThanOrEqual(1)
   })
 
+  it('T16 — multi-trip: cada parada recebe saída-CD da sua BASE anterior', async () => {
+    // QSZ-9A20 style: caminhão sai 00:18, entrega 2 lojas Princesa, volta à BASE,
+    // sai de novo 12:35 e entrega 1 loja Armazém Grão.
+    // ANTES T16: as 3 lojas tinham saida_cd=00:18 (BASE Trip 1).
+    // DEPOIS T16: Princesa lojas têm saida_cd=00:18, Armazém tem saida_cd=12:35.
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'pr1', rede_id: 'PRINCESA', placa_norm: 'QSZ', loja_nome_raw: 'Princesa Maricá 1', loja_codigo_raw: '1', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-20' },
+      { id: 'pr2', rede_id: 'PRINCESA', placa_norm: 'QSZ', loja_nome_raw: 'Princesa Maricá 2', loja_codigo_raw: '2', motorista_nome: null, carro_ordem: 2, data_entrega: '2026-05-20' },
+      { id: 'ag', rede_id: 'ARMAZEM_GRAO', placa_norm: 'QSZ', loja_nome_raw: 'Armazem Boa Vista', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-20' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      // BASE Trip 1: chegou 23:30 do dia anterior, saiu 00:18
+      { id: 'b1', placa_norm: 'QSZ', chegada: '2026-05-20T03:00:00Z', saida: '2026-05-20T03:18:00Z', duracao_seg: 1080, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: null, lng: null, classificacao: 'BASE', ordem: 1 },
+      // Princesa Maricá 1 e 2
+      { id: 'pp1', placa_norm: 'QSZ', chegada: '2026-05-20T05:00:00Z', saida: '2026-05-20T06:00:00Z', duracao_seg: 3600, local_parada: 'PRINCESA MARICÁ 1', codigo_loja: '8590001', nome_loja: 'PRINCESA MARICÁ 1', lat: null, lng: null, classificacao: 'LOJA', ordem: 2 },
+      { id: 'pp2', placa_norm: 'QSZ', chegada: '2026-05-20T06:30:00Z', saida: '2026-05-20T07:30:00Z', duracao_seg: 3600, local_parada: 'PRINCESA MARICÁ 2', codigo_loja: '8590002', nome_loja: 'PRINCESA MARICÁ 2', lat: null, lng: null, classificacao: 'LOJA', ordem: 3 },
+      // Volta à BASE Trip 2: chegou 11:45, saiu 12:35
+      { id: 'b2', placa_norm: 'QSZ', chegada: '2026-05-20T14:45:00Z', saida: '2026-05-20T15:35:00Z', duracao_seg: 3000, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: null, lng: null, classificacao: 'BASE', ordem: 4 },
+      // Armazém Boa Vista — Trip 2
+      { id: 'agp', placa_norm: 'QSZ', chegada: '2026-05-20T16:00:00Z', saida: '2026-05-20T17:00:00Z', duracao_seg: 3600, local_parada: 'ARMAZEM BOA VISTA', codigo_loja: '5353010', nome_loja: 'ARMAZEM BOA VISTA', lat: null, lng: null, classificacao: 'LOJA', ordem: 5 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'lp1', rede_id: 'PRINCESA', nome: 'Maricá 1', nome_normalizado: 'marica 1', codigo_escala: '1', codigo_unitrac: '8590001', nome_unitrac: 'PRINCESA MARICÁ 1', lat: null, lng: null, raio_metros: 150 },
+      { id: 'lp2', rede_id: 'PRINCESA', nome: 'Maricá 2', nome_normalizado: 'marica 2', codigo_escala: '2', codigo_unitrac: '8590002', nome_unitrac: 'PRINCESA MARICÁ 2', lat: null, lng: null, raio_metros: 150 },
+      { id: 'lag', rede_id: 'ARMAZEM_GRAO', nome: 'Boa Vista', nome_normalizado: 'boa vista', codigo_escala: null, codigo_unitrac: '5353010', nome_unitrac: 'ARMAZEM BOA VISTA', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    // Princesa Trip 1 → saida_cd = saída da BASE 1 (03:18Z = 00:18 BRT)
+    expect(rotas.find(r => r.escala_linha_id === 'pr1')?.saida_cd?.toISOString()).toBe('2026-05-20T03:18:00.000Z')
+    expect(rotas.find(r => r.escala_linha_id === 'pr2')?.saida_cd?.toISOString()).toBe('2026-05-20T03:18:00.000Z')
+    // Armazém Trip 2 → saida_cd = saída da BASE 2 (15:35Z = 12:35 BRT), NÃO da BASE 1
+    expect(rotas.find(r => r.escala_linha_id === 'ag')?.saida_cd?.toISOString()).toBe('2026-05-20T15:35:00.000Z')
+  })
+
+  it('T16 — 1 trip único: comportamento idêntico ao antigo (regressão)', async () => {
+    // Cenário canônico: 1 BASE de manhã + 2 lojas. Antes e depois T16 dão a mesma saída-CD.
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'l1', rede_id: 'PRINCESA', placa_norm: 'AAA', loja_nome_raw: 'Princesa Loja 1', loja_codigo_raw: '1', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-20' },
+      { id: 'l2', rede_id: 'PRINCESA', placa_norm: 'AAA', loja_nome_raw: 'Princesa Loja 2', loja_codigo_raw: '2', motorista_nome: null, carro_ordem: 2, data_entrega: '2026-05-20' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'b', placa_norm: 'AAA', chegada: '2026-05-20T03:00:00Z', saida: '2026-05-20T03:30:00Z', duracao_seg: 1800, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: null, lng: null, classificacao: 'BASE', ordem: 1 },
+      { id: 'pp1', placa_norm: 'AAA', chegada: '2026-05-20T05:00:00Z', saida: '2026-05-20T06:00:00Z', duracao_seg: 3600, local_parada: 'PRINCESA L1', codigo_loja: '8590001', nome_loja: 'PRINCESA L1', lat: null, lng: null, classificacao: 'LOJA', ordem: 2 },
+      { id: 'pp2', placa_norm: 'AAA', chegada: '2026-05-20T07:00:00Z', saida: '2026-05-20T08:00:00Z', duracao_seg: 3600, local_parada: 'PRINCESA L2', codigo_loja: '8590002', nome_loja: 'PRINCESA L2', lat: null, lng: null, classificacao: 'LOJA', ordem: 3 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'l1c', rede_id: 'PRINCESA', nome: 'L1', nome_normalizado: 'l1', codigo_escala: '1', codigo_unitrac: '8590001', nome_unitrac: 'PRINCESA L1', lat: null, lng: null, raio_metros: 150 },
+      { id: 'l2c', rede_id: 'PRINCESA', nome: 'L2', nome_normalizado: 'l2', codigo_escala: '2', codigo_unitrac: '8590002', nome_unitrac: 'PRINCESA L2', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    // Ambas lojas têm saída-CD = saída da BASE única
+    expect(rotas.find(r => r.escala_linha_id === 'l1')?.saida_cd?.toISOString()).toBe('2026-05-20T03:30:00.000Z')
+    expect(rotas.find(r => r.escala_linha_id === 'l2')?.saida_cd?.toISOString()).toBe('2026-05-20T03:30:00.000Z')
+  })
+
+  it('T16 — 3 trips: cada parada herda saída-CD da BASE imediatamente anterior', async () => {
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'a', rede_id: 'PRINCESA', placa_norm: 'TTT', loja_nome_raw: 'Loja A', loja_codigo_raw: '1', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-20' },
+      { id: 'b', rede_id: 'PRINCESA', placa_norm: 'TTT', loja_nome_raw: 'Loja B', loja_codigo_raw: '2', motorista_nome: null, carro_ordem: 2, data_entrega: '2026-05-20' },
+      { id: 'c', rede_id: 'PRINCESA', placa_norm: 'TTT', loja_nome_raw: 'Loja C', loja_codigo_raw: '3', motorista_nome: null, carro_ordem: 3, data_entrega: '2026-05-20' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      // BASE Trip 1
+      { id: 'bz1', placa_norm: 'TTT', chegada: '2026-05-20T03:00:00Z', saida: '2026-05-20T03:30:00Z', duracao_seg: 1800, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: null, lng: null, classificacao: 'BASE', ordem: 1 },
+      { id: 'la', placa_norm: 'TTT', chegada: '2026-05-20T05:00:00Z', saida: '2026-05-20T06:00:00Z', duracao_seg: 3600, local_parada: 'PRINCESA A', codigo_loja: '8590001', nome_loja: 'PRINCESA A', lat: null, lng: null, classificacao: 'LOJA', ordem: 2 },
+      // BASE Trip 2
+      { id: 'bz2', placa_norm: 'TTT', chegada: '2026-05-20T11:00:00Z', saida: '2026-05-20T12:30:00Z', duracao_seg: 5400, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: null, lng: null, classificacao: 'BASE', ordem: 3 },
+      { id: 'lb', placa_norm: 'TTT', chegada: '2026-05-20T13:30:00Z', saida: '2026-05-20T14:30:00Z', duracao_seg: 3600, local_parada: 'PRINCESA B', codigo_loja: '8590002', nome_loja: 'PRINCESA B', lat: null, lng: null, classificacao: 'LOJA', ordem: 4 },
+      // BASE Trip 3
+      { id: 'bz3', placa_norm: 'TTT', chegada: '2026-05-20T17:00:00Z', saida: '2026-05-20T18:30:00Z', duracao_seg: 5400, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: null, lng: null, classificacao: 'BASE', ordem: 5 },
+      { id: 'lc', placa_norm: 'TTT', chegada: '2026-05-20T20:00:00Z', saida: '2026-05-20T21:00:00Z', duracao_seg: 3600, local_parada: 'PRINCESA C', codigo_loja: '8590003', nome_loja: 'PRINCESA C', lat: null, lng: null, classificacao: 'LOJA', ordem: 6 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'lA', rede_id: 'PRINCESA', nome: 'A', nome_normalizado: 'a', codigo_escala: '1', codigo_unitrac: '8590001', nome_unitrac: 'PRINCESA A', lat: null, lng: null, raio_metros: 150 },
+      { id: 'lB', rede_id: 'PRINCESA', nome: 'B', nome_normalizado: 'b', codigo_escala: '2', codigo_unitrac: '8590002', nome_unitrac: 'PRINCESA B', lat: null, lng: null, raio_metros: 150 },
+      { id: 'lC', rede_id: 'PRINCESA', nome: 'C', nome_normalizado: 'c', codigo_escala: '3', codigo_unitrac: '8590003', nome_unitrac: 'PRINCESA C', lat: null, lng: null, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    expect(rotas.find(r => r.escala_linha_id === 'a')?.saida_cd?.toISOString()).toBe('2026-05-20T03:30:00.000Z')
+    expect(rotas.find(r => r.escala_linha_id === 'b')?.saida_cd?.toISOString()).toBe('2026-05-20T12:30:00.000Z')
+    expect(rotas.find(r => r.escala_linha_id === 'c')?.saida_cd?.toISOString()).toBe('2026-05-20T18:30:00.000Z')
+  })
+
   it('T9 NÃO atua quando placa tem só 1 rede (precisa de redesNaPlaca.size >= 2)', async () => {
     // 2 linhas mesma rede ARMAZEM_GRAO + 1 parada PRINCESA cadastrada.
     // Como só tem 1 rede na placa (ARMAZEM), T9 não dispara (sem cross-dock real).

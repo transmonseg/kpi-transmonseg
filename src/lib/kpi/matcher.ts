@@ -231,6 +231,42 @@ function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracPara
 }
 
 /**
+ * T16: Saída CD per-parada (multi-trip). Para uma parada operacional alvo,
+ * retorna a ÚLTIMA saída de BASE BENASSI estritamente ANTES da chegada do alvo.
+ * Sem isso, placas com 2+ turnos no dia ficavam todas com a mesma saida_cd
+ * (do Trip 1), zerando lojas do Trip 2.
+ *
+ * Predicado canônico de BASE: classificacao === 'BASE' OU FAKE_EXIT em
+ * local_parada começando com 'BASE BENASSI' (GPS bounce na base).
+ *
+ * Fallback: se nenhuma BASE anterior, retorna `paradaAlvo.chegada` (mantém a
+ * semântica antiga de "veículo nunca passou pela base" mas adaptada por parada).
+ */
+function computeSaidaCdParaParada(
+  paradaAlvo: UnitracParadaRow,
+  todasParadas: UnitracParadaRow[],
+): Date | null {
+  const alvoTs = new Date(paradaAlvo.chegada).getTime()
+  let lastBaseSaida: Date | null = null
+  for (const p of todasParadas) {
+    if (new Date(p.chegada).getTime() >= alvoTs) break
+    const isBase =
+      p.classificacao === 'BASE' ||
+      (p.classificacao === 'FAKE_EXIT' && p.local_parada.startsWith('BASE BENASSI'))
+    if (isBase && p.saida) {
+      const s = new Date(p.saida)
+      if (s.getTime() < alvoTs) {
+        if (!lastBaseSaida || s.getTime() > lastBaseSaida.getTime()) {
+          lastBaseSaida = s
+        }
+      }
+    }
+  }
+  // Fallback: nunca passou pela BASE antes desta parada → chegada da parada
+  return lastBaseSaida ?? new Date(paradaAlvo.chegada)
+}
+
+/**
  * Quando o caminhão passa brevemente pela loja antes da entrega real (ex: motorista
  * verifica se a loja está aberta, gera parada de 5-9 min com o mesmo codigo_loja),
  * o Unitrac gera duas paradas LOJA com mesmo código. Fica com a de MAIOR duração
@@ -852,59 +888,26 @@ export async function cruzaEscalaUnitrac(
     // começado o tracking longe do CD sem isso indicar início das entregas.
     // ATENÇÃO: existe uma segunda implementação em unitrac.ts:computeSaidaCd (parser).
     // Aquela versão grava no DB mas é ignorada aqui — esta recomputa do zero.
-    // Qualquer mudança de semântica deve ser replicada nas duas.
-    let viuBase = false
-    let firstRealStop: UnitracParadaRow | undefined = undefined
-    for (const p of todasParadas) {
-      const isBaseLike =
-        p.classificacao === 'BASE' ||
-        (p.classificacao === 'FAKE_EXIT' && p.local_parada.startsWith('BASE BENASSI'))
-      if (isBaseLike) {
-        viuBase = true
-        continue
-      }
-      // LOJA ou FORA_BASE só contam como "primeira parada operacional" DEPOIS de
-      // ter passado pela BASE. Antes, LOJA-cedo-demais (caminhão fez entrega
-      // madrugada antes de voltar à base) abortava o loop e saida_cd virava null.
-      if (!viuBase) continue
-      if (p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE') {
-        firstRealStop = p
-        break
-      }
-    }
-    const firstRealTime = firstRealStop
-      ? new Date(firstRealStop.chegada).getTime()
-      : Infinity
-
-    let saida_cd: Date | null = null
-    for (const p of todasParadas) {
-      const isBase =
-        p.classificacao === 'BASE' ||
-        (p.classificacao === 'FAKE_EXIT' && p.local_parada.startsWith('BASE BENASSI'))
-      if (isBase && p.saida) {
-        const saidaDate = new Date(p.saida)
-        if (saidaDate.getTime() < firstRealTime) {
-          if (!saida_cd || saidaDate.getTime() > saida_cd.getTime()) {
-            saida_cd = saidaDate
-          }
-        }
-      }
-    }
-
-    // Fallback: veículo tem GPS mas nunca passou pela BASE BENASSI.
-    // Usa chegada na 1ª parada operacional como proxy de saída CD.
-    // (mesmo comportamento de computeSaidaCd em unitrac.ts linha 176)
-    if (!saida_cd && todasParadas.length > 0) {
-      const firstOp = todasParadas.find(
-        p => p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE'
-      )
-      if (firstOp) saida_cd = new Date(firstOp.chegada)
-    }
-
-    // Em vez de todas as paradas não-base, emite SÓ a parada matched por nome
+    // T16: saída CD agora é por-parada (vê computeSaidaCdParaParada).
+    // Calcula depois de resolver `matched` — cada linha tem sua própria saída.
     const matched = matchByEscalaId.get(linha.id)
     const isGeo = geoMatchedLineIds.has(linha.id)
     const isCrossDock = crossDockLineIds.has(linha.id)
+
+    let saida_cd: Date | null = null
+    if (matched) {
+      // Usa a parada matched como alvo: a saída-CD é a última saída de BASE
+      // estritamente antes da chegada dessa parada. Cobre multi-trip:
+      // Trip 1 e Trip 2 pegam saídas diferentes (cada uma da sua BASE anterior).
+      saida_cd = computeSaidaCdParaParada(matched, todasParadas)
+    } else if (todasParadas.length > 0) {
+      // Sem match: fallback global como antes (saída-CD da placa, semântica histórica).
+      // Usa primeira parada operacional como alvo.
+      const firstOp = todasParadas.find(
+        p => p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE'
+      )
+      if (firstOp) saida_cd = computeSaidaCdParaParada(firstOp, todasParadas)
+    }
 
     let lojaId: string | null = null
     let nomeResolvido: string = ''
