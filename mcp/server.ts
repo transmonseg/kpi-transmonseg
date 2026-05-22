@@ -87,6 +87,18 @@ function ok(content: unknown) {
   return { content: [{ type: 'text' as const, text }] }
 }
 
+// Remove caracteres que PostgreSQL/PostgREST rejeita via JSON:
+// null bytes, control chars (0x01-0x1F), lone surrogates
+function sanitizeStr(s: unknown): string | null {
+  if (s === null || s === undefined) return null
+  const r = String(s)
+    .replace(/\0/g, '')
+    .replace(/[\x01-\x1F\x7F]/g, ' ')
+    .replace(/[\uD800-\uDFFF]/g, '')
+    .trim()
+  return r || null
+}
+
 function err(message: string) {
   return { content: [{ type: 'text' as const, text: `ERRO: ${message}` }], isError: true }
 }
@@ -351,17 +363,17 @@ server.registerTool(
           escala_upload_id: up.id,
           rede_id: l.rede_id,
           loja_id: null,
-          loja_nome_raw: l.loja_nome_raw,
-          loja_codigo_raw: l.loja_codigo_raw,
-          placa_norm: l.placa_norm || null,
-          placa_raw: l.placa_raw,
-          motorista_nome: l.motorista_nome,
+          loja_nome_raw: sanitizeStr(l.loja_nome_raw),
+          loja_codigo_raw: sanitizeStr(l.loja_codigo_raw),
+          placa_norm: sanitizeStr(l.placa_norm) || null,
+          placa_raw: sanitizeStr(l.placa_raw),
+          motorista_nome: sanitizeStr(l.motorista_nome),
           motorista_codigo: l.motorista_codigo,
-          tipo_carro: l.tipo_carro,
-          turno: l.turno,
+          tipo_carro: sanitizeStr(l.tipo_carro),
+          turno: sanitizeStr(l.turno),
           carro_ordem: l.carro_ordem,
-          obs: l.obs,
-          restricao: l.restricao,
+          obs: sanitizeStr(l.obs),
+          restricao: sanitizeStr(l.restricao),
           peso_kg: l.peso_kg,
           paletes: l.paletes,
           data_entrega: l.data_entrega,
@@ -402,17 +414,17 @@ server.registerTool(
           for (const p of v.paradas) {
             paradaRows.push({
               unitrac_upload_id: up.id,
-              placa_norm: v.placa_norm,
+              placa_norm: sanitizeStr(v.placa_norm),
               chegada: p.chegada.toISOString(),
               saida: p.saida?.toISOString() ?? null,
               duracao_seg: p.duracao_seg,
               distancia_km: p.distancia_km,
-              endereco: p.endereco,
+              endereco: sanitizeStr(p.endereco),
               lat: p.lat,
               lng: p.lng,
-              local_parada: p.local_parada,
-              codigo_loja: p.codigo_loja,
-              nome_loja: p.nome_loja,
+              local_parada: sanitizeStr(p.local_parada),
+              codigo_loja: sanitizeStr(p.codigo_loja),
+              nome_loja: sanitizeStr(p.nome_loja),
               classificacao: p.classificacao,
               ordem: p.ordem,
             })
