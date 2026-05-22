@@ -498,7 +498,12 @@ server.registerTool(
         const rotas = await cruzaEscalaUnitrac(
           linhasRede as any,
           paradasRede as any,
-          (lojas ?? []).filter(l => l.rede_id === rid) as any,
+          // Passa TODOS os lojas (não só da rede atual) para que paradaRedes identifique
+          // corretamente a rede de cada parada. Isso impede que o T8 atribua paradas
+          // de outras redes (PREZUNIC, PRINCESA) a linhas ZONA_SUL/ARMAZEM_GRAO apenas
+          // porque aparecem como redeInf=null quando só os lojas da rede são passados.
+          // resolveLojaId() já filtra internamente por rede_id — seguro passar tudo.
+          (lojas ?? []) as any,
         )
 
         // Fallback saida_cd: veículo tem paradas mas nunca passou pela BASE BENASSI.

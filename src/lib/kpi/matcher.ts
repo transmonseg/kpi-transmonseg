@@ -272,20 +272,41 @@ function computeSaidaCdParaParada(
  * verifica se a loja está aberta, gera parada de 5-9 min com o mesmo codigo_loja),
  * o Unitrac gera duas paradas LOJA com mesmo código. Fica com a de MAIOR duração
  * (a entrega real), que é a que Tia Érica anota no KPI manual.
+ *
+ * Exceção: parada que começa antes das 03:00 BRT com duração > 4h é estacionamento
+ * noturno (veículo dormiu perto da loja). Nesse caso, preferir qualquer outra parada
+ * no mesmo código que começou depois das 03:00, mesmo que seja mais curta.
  */
 function deduplicarPorCodigo(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
+  // 03:00 UTC = 03:00 BRT (sistema armazena BRT como UTC)
+  const NOITE_H = 3
+  const NOITE_DUR_SEG = 4 * 3600 // 4 horas
+  function isEstacionamentoNoturno(p: UnitracParadaRow): boolean {
+    const h = new Date(p.chegada).getUTCHours()
+    const dur = p.saida === null ? Infinity : (p.duracao_seg ?? 0)
+    return h < NOITE_H && dur > NOITE_DUR_SEG
+  }
+
   const byCode = new Map<string, UnitracParadaRow>()
   const semCodigo: UnitracParadaRow[] = []
   for (const p of paradas) {
     if (!p.codigo_loja) { semCodigo.push(p); continue }
     const existing = byCode.get(p.codigo_loja)
-    // Parada com saida=null significa parada em aberto (veículo ainda no local ou
-    // dado ainda não fechado). Tratamos como duração máxima (Infinity) para que uma
-    // parada em aberto nunca seja descartada em favor de uma parada já encerrada.
-    const duracaoP = p.saida === null ? Infinity : (p.duracao_seg ?? 0)
-    const duracaoExisting = existing && existing.saida === null ? Infinity : (existing?.duracao_seg ?? 0)
-    if (!existing || duracaoP > duracaoExisting) {
+    if (!existing) { byCode.set(p.codigo_loja, p); continue }
+
+    const pNoite = isEstacionamentoNoturno(p)
+    const exNoite = isEstacionamentoNoturno(existing)
+
+    if (exNoite && !pNoite) {
+      // existing é estacionamento noturno, p é entrega diurna → preferir p
       byCode.set(p.codigo_loja, p)
+    } else if (!exNoite && pNoite) {
+      // p é estacionamento noturno, existing é entrega diurna → manter existing
+    } else {
+      // Mesmo contexto temporal: preferir maior duração (entrega real vs check-in)
+      const duracaoP = p.saida === null ? Infinity : (p.duracao_seg ?? 0)
+      const duracaoExisting = existing.saida === null ? Infinity : (existing.duracao_seg ?? 0)
+      if (duracaoP > duracaoExisting) byCode.set(p.codigo_loja, p)
     }
   }
   return [...byCode.values(), ...semCodigo].sort(
@@ -918,14 +939,10 @@ export async function cruzaEscalaUnitrac(
       // estritamente antes da chegada dessa parada. Cobre multi-trip:
       // Trip 1 e Trip 2 pegam saídas diferentes (cada uma da sua BASE anterior).
       saida_cd = computeSaidaCdParaParada(matched, todasParadas)
-    } else if (todasParadas.length > 0) {
-      // Sem match: fallback global como antes (saída-CD da placa, semântica histórica).
-      // Usa primeira parada operacional como alvo.
-      const firstOp = todasParadas.find(
-        p => p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE'
-      )
-      if (firstOp) saida_cd = computeSaidaCdParaParada(firstOp, todasParadas)
     }
+    // Sem match: saida_cd fica null. Não usar fallback com primeira parada da placa —
+    // para veículos multi-trip (PREZUNIC manhã + ZONA_SUL noite), isso produzia a
+    // saída da manhã para linhas da noite, que é pior que deixar em branco.
 
     let lojaId: string | null = null
     let nomeResolvido: string = ''
