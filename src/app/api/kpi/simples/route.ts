@@ -23,6 +23,7 @@ type PreviewLinha = {
   motorista: string | null
   turno: string
   tem_gps: boolean
+  ficou_na_base: boolean
   saida_cd_fmt: string | null
   chegada_loja_fmt: string | null
   tempo_loja_min: number | null
@@ -97,6 +98,7 @@ function rotaToLinha(rota: RotaKpi, escala: LinhaEscala, ordem: number): LinhaPa
     observacao: null,
     anomalias_codigos: rota.anomalias_codigos,
     motorista_codigo: escala.motorista_codigo,
+    rota_status: rota.status,
   }
 }
 
@@ -547,6 +549,7 @@ export async function POST(req: NextRequest) {
         motorista: esc.motorista_nome,
         turno: esc.turno,
         tem_gps: !!(rota.saida_cd || rota.paradas.length > 0),
+        ficou_na_base: rota.status === 'sem_entrega' && !!esc.placa_norm,
         saida_cd_fmt: fmtHoraBRT(rota.saida_cd),
         chegada_loja_fmt: fmtHoraBRT(rota.paradas[0]?.chegada),
         tempo_loja_min: rota.paradas[0]?.duracao_min ?? null,

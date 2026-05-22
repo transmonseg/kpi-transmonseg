@@ -1059,7 +1059,10 @@ export async function cruzaEscalaUnitrac(
       saida_cd,
       paradas,
       anomalias_codigos: [],
-      status: 'pendente',
+      // 'sem_entrega' quando a placa aparece no unitrac mas não há parada operacional
+      // correspondente — o veículo foi rastreado mas ficou na base ou não fez entrega
+      // para esta loja. Distinto de 'pendente' (placa ausente do unitrac = sem GPS real).
+      status: (!matched && todasParadas.length > 0) ? 'sem_entrega' : 'pendente',
       _matchMeta: matched
         ? { score: metaScore, confidence: metaConfidence, requiresReview: metaRequiresReview, algorithm: metaAlgorithm }
         : { score: 0, confidence: 'UNMATCHED', requiresReview: true, algorithm: 'none' },

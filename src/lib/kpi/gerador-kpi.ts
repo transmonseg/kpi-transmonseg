@@ -224,6 +224,9 @@ function escreverLinha(ws: ExcelJS.Worksheet, row: number, ag: LinhaAgrupada) {
   // Tem GPS (saiu do CD) mas não foi a esta loja específica
   const naoFoi1 = c1 !== null && !semGps1 && c1.chd_loja_1 === null
   const naoFoi2 = c2 !== null && !semGps2 && c2.chd_loja_1 === null
+  // Veículo rastreado mas ficou na base / não fez entrega (sem_entrega) — não é erro de GPS
+  const ficouNaBase1 = semGps1 && c1?.rota_status === 'sem_entrega'
+  const ficouNaBase2 = semGps2 && c2?.rota_status === 'sem_entrega'
 
   const saida1 = toExcelTime(c1?.saida_cd)
   const chd1   = toExcelTime(c1?.chd_loja_1)
@@ -232,8 +235,8 @@ function escreverLinha(ws: ExcelJS.Worksheet, row: number, ag: LinhaAgrupada) {
   const chd2   = toExcelTime(c2?.chd_loja_1)
   const sai2   = toExcelTime(c2?.saida_loja_1)
 
-  const textoSlot1 = naoFoi1 ? 'NÃO FOI AO CLIENTE' : semGps1 ? 'SEM RASTREADOR' : null
-  const textoSlot2 = naoFoi2 ? 'NÃO FOI AO CLIENTE' : semGps2 ? 'SEM RASTREADOR' : null
+  const textoSlot1 = naoFoi1 ? 'NÃO FOI AO CLIENTE' : ficouNaBase1 ? null : semGps1 ? 'SEM RASTREADOR' : null
+  const textoSlot2 = naoFoi2 ? 'NÃO FOI AO CLIENTE' : ficouNaBase2 ? null : semGps2 ? 'SEM RASTREADOR' : null
 
   // Strip "(2º CARRO)" prefix — redundante na coluna dedicada ao 2º carro
   const nome2 = c2?.motorista?.replace(/^\(2[oº°]\s*CARRO\)\s*/i, '') ?? ''
