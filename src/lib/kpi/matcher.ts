@@ -15,6 +15,10 @@ const REDES_TOKEN = new Set([
   'CAB','ARMAZEM','GRAO','ZONA','SUL','MERCADO','SUPERMERCADO',
   // PETROPOLIS removido: é nome de cidade (Petrópolis RJ), não de rede — filtrar impede
   // que "CAB PETROPOLIS" bata com "7012010 - CAB - PETROPOLIS" via token "PETROPOLIS".
+  // GB: abreviação compartilhada por TODAS as lojas Guanabara ("GB 07 - BARRA", "GB 18 - CAXIAS"…)
+  // — se não filtrar, scorePair entre lojas distintas ainda acumula overlap via 'GB' e
+  //   produz score finito, causando false matches no T18.
+  'GB',
 ])
 // IMPORTANTE: "SAO/SÃO" foi removida das stopwords. Filtrava "São Gonçalo"
 // virando só {GONCALO} e batia falso-positivo com qualquer outra rota "GONCALO".
@@ -999,6 +1003,19 @@ export async function cruzaEscalaUnitrac(
       }
 
       const usedIds = new Set<string>([...matchByEscalaId.values()].map(p => p.id))
+
+      // Expande usedIds: consolidarParadasMesmoCliente pode ter fundido N paradas raw numa
+      // só (ID = primeira raw). As paradas raw "irmãs" (mesma placa + codigo_loja) ficam
+      // com IDs distintos e não são bloqueadas, abrindo falso slot para T18. Bloqueia todas.
+      for (const matched of matchByEscalaId.values()) {
+        if (!matched.codigo_loja || !matched.placa_norm) continue
+        for (const p of todasLojaParadas) {
+          if (p.placa_norm === matched.placa_norm && p.codigo_loja === matched.codigo_loja) {
+            usedIds.add(p.id)
+          }
+        }
+      }
+
       for (const linha of semGpsLines) {
         // Tenta encontrar a loja no cadastro para usar GPS como fallback
         const lojaEscala = lojas.find(l => {
