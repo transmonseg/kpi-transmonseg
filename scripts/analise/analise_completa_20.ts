@@ -146,7 +146,7 @@ async function main() {
   // KPIs
   const [kpiM, kpiG] = await Promise.all([
     lerKpi('C:/Users/media/Downloads/KPI-ZONA_SUL-2026-05-20.xlsx'),
-    lerKpi('C:/Users/media/Downloads/KPI ZONA_SUL.xlsx'),
+    lerKpi('C:/Users/media/Downloads/KPI-ZONA_SUL-2026-05-20 (8).xlsx'),
   ])
 
   // Agrupar escala por loja

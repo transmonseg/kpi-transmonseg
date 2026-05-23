@@ -1694,27 +1694,8 @@ describe('T18 — T18-N guard 07:00 BRT', () => {
   })
 })
 
-// --- deduplicarPorCodigo multi-trip ---
-//
-// Veículos que fazem dois turnos (manhã + tarde) visitam a mesma loja duas vezes.
-// O dedup original descartava uma das paradas. Fix: gap > 2h = trips separadas.
-describe('cruzaEscalaUnitrac — deduplicarPorCodigo preserva dois trips', () => {
-  it('dois trips para a mesma loja (gap 6h) → ambas escala linhas casam', async () => {
-    const linhas: EscalaLinhaRow[] = [
-      { id: 'c1', rede_id: 'ZONA_SUL', placa_norm: 'LQU1234', loja_nome_raw: 'ZONA SUL LOJA 30', loja_codigo_raw: '30', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-20' },
-      { id: 'c2', rede_id: 'ZONA_SUL', placa_norm: 'LQU1234', loja_nome_raw: 'ZONA SUL LOJA 30', loja_codigo_raw: '30', motorista_nome: null, carro_ordem: 2, data_entrega: '2026-05-20' },
-    ]
-    const paradas: UnitracParadaRow[] = [
-      { id: 'trip1', placa_norm: 'LQU1234', chegada: '2026-05-20T08:00:00.000Z', saida: '2026-05-20T09:30:00.000Z', duracao_seg: 5400, local_parada: '9039030 - ZONA SUL LOJA 30', codigo_loja: '9039030', nome_loja: 'ZONA SUL LOJA 30', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
-      { id: 'trip2', placa_norm: 'LQU1234', chegada: '2026-05-20T14:00:00.000Z', saida: '2026-05-20T15:30:00.000Z', duracao_seg: 5400, local_parada: '9039030 - ZONA SUL LOJA 30', codigo_loja: '9039030', nome_loja: 'ZONA SUL LOJA 30', lat: null, lng: null, classificacao: 'LOJA', ordem: 2 },
-    ]
-    const rotas = await cruzaEscalaUnitrac(linhas, paradas, [])
-    expect(rotas.find(r => r.escala_linha_id === 'c1')?.paradas).toHaveLength(1)
-    expect(rotas.find(r => r.escala_linha_id === 'c2')?.paradas).toHaveLength(1)
-    expect(rotas.find(r => r.escala_linha_id === 'c1')?.paradas[0].parada_id).toBe('trip1')
-    expect(rotas.find(r => r.escala_linha_id === 'c2')?.paradas[0].parada_id).toBe('trip2')
-  })
-
+// --- deduplicarPorCodigo check-in curto ---
+describe('cruzaEscalaUnitrac — deduplicarPorCodigo check-in curto', () => {
   it('check-in curto + entrega real (gap 15min) → dedup preserva apenas a maior duração', async () => {
     const linhas: EscalaLinhaRow[] = [
       { id: 'd1', rede_id: 'ZONA_SUL', placa_norm: 'XYZ4321', loja_nome_raw: 'ZONA SUL LOJA 21', loja_codigo_raw: '21', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-20' },

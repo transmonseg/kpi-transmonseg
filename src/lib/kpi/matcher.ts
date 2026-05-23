@@ -217,24 +217,17 @@ export type LojaRow = {
  *
  * Mantém ordem temporal, só junta paradas LOJA com codigo_loja não-nulo iguais.
  */
-// Gap mínimo entre paradas do mesmo codigo_loja para serem tratadas como trips separadas.
-// Abaixo = check-in curto + entrega real → consolidar/deduplicar. Acima = turnos independentes.
-const MULTI_TRIP_GAP_MS = 2 * 3600 * 1000  // 2 horas
-
 function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
   const out: UnitracParadaRow[] = []
   for (const p of paradas) {
     const last = out[out.length - 1]
-    const prevSaidaTs = last ? new Date(last.saida ?? last.chegada).getTime() : 0
-    const gapMs = last ? new Date(p.chegada).getTime() - prevSaidaTs : 0
     const mesmaLoja =
       last &&
       last.classificacao === 'LOJA' &&
       p.classificacao === 'LOJA' &&
       last.codigo_loja &&
       p.codigo_loja &&
-      last.codigo_loja === p.codigo_loja &&
-      gapMs <= MULTI_TRIP_GAP_MS
+      last.codigo_loja === p.codigo_loja
     if (mesmaLoja) {
       // Antes: exigia ambos saida e chegada não-null. Quando p.saida era null
       // (caminhão ainda parado, última parada do dia), caía no else e empurrava
@@ -342,47 +335,28 @@ function deduplicarPorCodigo(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
     return h < NOITE_H && dur > NOITE_DUR_SEG
   }
 
-  function melhor(a: UnitracParadaRow, b: UnitracParadaRow): UnitracParadaRow {
-    const aN = isEstacionamentoNoturno(a), bN = isEstacionamentoNoturno(b)
-    if (aN && !bN) return b
-    if (!aN && bN) return a
-    const durA = a.saida === null ? Infinity : (a.duracao_seg ?? 0)
-    const durB = b.saida === null ? Infinity : (b.duracao_seg ?? 0)
-    return durA >= durB ? a : b
-  }
-
-  // Agrupa por codigo_loja
-  const byCode = new Map<string, UnitracParadaRow[]>()
+  const byCode = new Map<string, UnitracParadaRow>()
   const semCodigo: UnitracParadaRow[] = []
   for (const p of paradas) {
     if (!p.codigo_loja) { semCodigo.push(p); continue }
-    const arr = byCode.get(p.codigo_loja) ?? []
-    arr.push(p)
-    byCode.set(p.codigo_loja, arr)
-  }
+    const existing = byCode.get(p.codigo_loja)
+    if (!existing) { byCode.set(p.codigo_loja, p); continue }
 
-  const result: UnitracParadaRow[] = []
-  for (const [, grupo] of byCode) {
-    const sorted = grupo.slice().sort((a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
-    // Cria "trips": sequências onde cada nova parada começa > 2h depois da saída da anterior.
-    const trips: UnitracParadaRow[][] = [[sorted[0]]]
-    for (let i = 1; i < sorted.length; i++) {
-      const prev = trips[trips.length - 1].at(-1)!
-      const prevSaida = prev.saida ?? prev.chegada
-      const gapMs = new Date(sorted[i].chegada).getTime() - new Date(prevSaida).getTime()
-      if (gapMs > MULTI_TRIP_GAP_MS) {
-        trips.push([sorted[i]])
-      } else {
-        trips[trips.length - 1].push(sorted[i])
-      }
-    }
-    // Para cada trip, mantém a melhor parada (max duração, não-noturna preferida)
-    for (const trip of trips) {
-      result.push(trip.reduce(melhor))
+    const pNoite = isEstacionamentoNoturno(p)
+    const exNoite = isEstacionamentoNoturno(existing)
+
+    if (exNoite && !pNoite) {
+      byCode.set(p.codigo_loja, p)
+    } else if (!exNoite && pNoite) {
+      // mantém existing
+    } else {
+      const duracaoP = p.saida === null ? Infinity : (p.duracao_seg ?? 0)
+      const duracaoExisting = existing.saida === null ? Infinity : (existing.duracao_seg ?? 0)
+      if (duracaoP > duracaoExisting) byCode.set(p.codigo_loja, p)
     }
   }
 
-  return [...result, ...semCodigo].sort(
+  return [...byCode.values(), ...semCodigo].sort(
     (a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime()
   )
 }
@@ -1038,6 +1012,31 @@ export async function cruzaEscalaUnitrac(
         }
       }
 
+      // T18-F (fully-matched guard): placas que têm escala e já estão 100% resolvidas
+      // não devem fornecer paradas extras para T18. Um veículo já completamente matched
+      // que passou perto de outra loja (parada "incidental") causaria T18 FP para
+      // veículos GPS:NAO que não têm rastreador. Só veículos SEM escala (puro GPS)
+      // são candidatos legítimos de plate-swap.
+      {
+        const escalaLinesByPlaca = new Map<string, number>()
+        const matchedLinesByPlaca = new Map<string, number>()
+        for (const l of escalaLinhas) {
+          if (!l.placa_norm) continue
+          escalaLinesByPlaca.set(l.placa_norm, (escalaLinesByPlaca.get(l.placa_norm) ?? 0) + 1)
+          if (matchByEscalaId.has(l.id))
+            matchedLinesByPlaca.set(l.placa_norm, (matchedLinesByPlaca.get(l.placa_norm) ?? 0) + 1)
+        }
+        for (const [placa, total] of escalaLinesByPlaca) {
+          const matched = matchedLinesByPlaca.get(placa) ?? 0
+          if (matched >= total) {
+            // Placa 100% matched: bloquear todas as paradas dela para T18
+            for (const p of todasLojaParadas) {
+              if (p.placa_norm === placa) usedIds.add(p.id)
+            }
+          }
+        }
+      }
+
       for (const linha of semGpsLines) {
         // Tenta encontrar a loja no cadastro para usar GPS como fallback
         const lojaEscala = lojas.find(l => {
@@ -1057,13 +1056,13 @@ export async function cruzaEscalaUnitrac(
           if (redesDaParada.size > 0) {
             // Rede identificada: só aceita se compatível com a rede da escala
             if ([...redesDaParada].every(r => !redesFungT18.has(r))) return false
-            return scorePair(linha, p) < Infinity
+            // Exige match próximo (≤ 2 tokens de diferença) — evita FP por tokens genéricos
+            // como "BARRA" ou "LOJA" que aparecem em múltiplas lojas diferentes.
+            return scorePair(linha, p) <= 2
           }
-          // Coringa (sem rede): exige score ≤ 2 (código/nome bem próximo) OU GPS no raio
-          if (scorePair(linha, p) <= 2) return true
-          if (lojaEscala?.lat != null && lojaEscala?.lng != null && p.lat != null && p.lng != null)
-            return haversine(p.lat, p.lng, lojaEscala.lat, lojaEscala.lng) <= lojaEscala.raio_metros
-          return false
+          // Coringa (sem rede): exige score ≤ 2 — geo fallback removido para evitar FP
+          // de paradas de outras cadeias geograficamente próximas (ex: Guanabara Barra).
+          return scorePair(linha, p) <= 2
         })
         if (!candidatas.length) continue
         candidatas.sort((a, b) => {
