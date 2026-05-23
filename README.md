@@ -10,7 +10,7 @@
 [![Tailwind](https://img.shields.io/badge/Tailwind-4-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
 [![Vercel](https://img.shields.io/badge/Deploy-Vercel-000?style=flat-square&logo=vercel&logoColor=white)](https://kpi-transmonseg.vercel.app)
-[![Tests](https://img.shields.io/badge/Tests-66%2F66-success?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev)
+[![Tests](https://img.shields.io/badge/Tests-262%2F262-success?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev)
 
 **[Acessar produção](https://kpi-transmonseg.vercel.app)** • **[GitHub](https://github.com/transmonseg/kpi-transmonseg)**
 
@@ -209,7 +209,7 @@ npm run dev          # dev server (turbopack)
 npm run build        # build produção
 npm start            # rodar produção
 npm run lint         # eslint
-npm test             # vitest run (66 testes)
+npm test             # vitest run (262 testes)
 npm run test:watch   # vitest watch
 npm run test:coverage # cobertura
 ```
@@ -282,7 +282,7 @@ kpi-transmonseg/
 | Parsers em `src/lib/parsers/` | **20** |
 | Módulos KPI em `src/lib/kpi/` | **13** |
 | Migrations Supabase | **13** |
-| Testes Vitest | **66** verdes |
+| Testes Vitest | **262** verdes |
 
 ---
 
@@ -546,7 +546,7 @@ Anomalias `HIGH` viram `bg-danger-soft` na pré-visualização e bloqueiam final
 <tr>
 <td valign="top">
 
-#### **Joaquim Salles**
+#### **[Joaquim Salles](https://github.com/JovemSalles)**
 
 Idealizador, arquiteto e mantenedor do sistema. Desenhou todo o pipeline de matching, definiu o catálogo de redes e parsers, e mantém o sistema em produção para a operação real da TRANSMONSEG.
 
