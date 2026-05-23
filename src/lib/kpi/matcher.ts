@@ -678,6 +678,8 @@ export async function cruzaEscalaUnitrac(
   // Pra cada placa, atribui paradas LOJA às escala_linhas correspondentes (greedy por melhor match)
   const geoMatchedLineIds = new Set<string>()
   const crossDockLineIds = new Set<string>()
+  const plateTrocaLineIds = new Set<string>()
+  const placaSubstituta = new Map<string, string>() // lineId → placa da parada encontrada (T18)
   const matchByEscalaId = new Map<string, UnitracParadaRow>()
   for (const [placa, linhas] of escalaByPlaca) {
     const todas = paradaByPlaca.get(placa) ?? []
@@ -970,6 +972,48 @@ export async function cruzaEscalaUnitrac(
     }
   }
 
+  // T18 — Plate-swap fallback.
+  // Escala lines cuja placa não tem dados no Unitrac ("SEM RASTREADOR"): busca parada
+  // LOJA de qualquer outra placa que corresponda à loja esperada por código, nome ou
+  // GPS (troca de veículo não registrada na escala).
+  {
+    const semGpsLines = escalaLinhas.filter(l =>
+      l.placa_norm && !matchByEscalaId.has(l.id) && !resolvePlacaUnitrac(l.placa_norm)
+    )
+    if (semGpsLines.length > 0) {
+      const todasLojaParadas = paradaRows.filter(p => p.classificacao === 'LOJA')
+      const usedIds = new Set<string>([...matchByEscalaId.values()].map(p => p.id))
+      for (const linha of semGpsLines) {
+        // Tenta encontrar a loja no cadastro para usar GPS como fallback
+        const lojaEscala = lojas.find(l => {
+          if (l.rede_id !== linha.rede_id) return false
+          if (linha.loja_codigo_raw && l.codigo_escala === linha.loja_codigo_raw) return true
+          return matchScore(linha.loja_nome_raw, l.nome) <= 1
+        })
+        const candidatas = todasLojaParadas.filter(p => {
+          if (usedIds.has(p.id)) return false
+          // Match por código/nome via scorePair
+          if (scorePair(linha, p) < Infinity) return true
+          // Fallback GPS: parada dentro do raio da loja cadastrada
+          if (lojaEscala?.lat != null && lojaEscala?.lng != null && p.lat != null && p.lng != null)
+            return haversine(p.lat, p.lng, lojaEscala.lat, lojaEscala.lng) <= lojaEscala.raio_metros
+          return false
+        })
+        if (!candidatas.length) continue
+        candidatas.sort((a, b) => {
+          const sa = scorePair(linha, a), sb = scorePair(linha, b)
+          if (sa !== sb) return sa - sb
+          return new Date(a.chegada).getTime() - new Date(b.chegada).getTime()
+        })
+        const best = candidatas[0]
+        matchByEscalaId.set(linha.id, best)
+        usedIds.add(best.id)
+        plateTrocaLineIds.add(linha.id)
+        placaSubstituta.set(linha.id, best.placa_norm)
+      }
+    }
+  }
+
   const rotas: RotaKpi[] = []
 
   for (const linha of escalaLinhas) {
@@ -988,7 +1032,7 @@ export async function cruzaEscalaUnitrac(
       continue
     }
 
-    const placaUnitrac = placaResolvida.get(linha.id) ?? linha.placa_norm
+    const placaUnitrac = placaResolvida.get(linha.id) ?? placaSubstituta.get(linha.id) ?? linha.placa_norm
     const todasParadas = paradaByPlaca.get(placaUnitrac) ?? []
     // Saída CD: última saída da BASE BENASSI antes da primeira parada operacional.
     // "Operacional" = primeira LOJA, ou primeira FORA_BASE DEPOIS de ter visitado a BASE.
@@ -1001,6 +1045,7 @@ export async function cruzaEscalaUnitrac(
     const matched = matchByEscalaId.get(linha.id)
     const isGeo = geoMatchedLineIds.has(linha.id)
     const isCrossDock = crossDockLineIds.has(linha.id)
+    const isPlateTroca = plateTrocaLineIds.has(linha.id)
 
     let saida_cd: Date | null = null
     if (matched) {
@@ -1025,7 +1070,7 @@ export async function cruzaEscalaUnitrac(
       if (isCrossDock) {
         // T9 — cross-dock é heurística; sinaliza pra operador revisar.
         metaAlgorithm = 'crossdock'
-      } else if (isGeo) {
+      } else if (isPlateTroca || isGeo) {
         metaAlgorithm = 'geo'
       } else if (!lojaId && trgmResults[linha.loja_nome_raw]) {
         // trgm fallback: enriquece loja_id quando resolveLojaId retornou null
@@ -1048,20 +1093,20 @@ export async function cruzaEscalaUnitrac(
         }]
       : []
 
-    // Score: crossdock=0.7 (LOW + requiresReview), geo=0.8, trgm=score real, demais=1.0
+    // Score: crossdock=0.7 (LOW + requiresReview), geo/plateTroca=0.8, trgm=score real, demais=1.0
     const metaScore = isCrossDock
       ? 0.7
-      : isGeo ? 0.8 : metaAlgorithm === 'trgm'
+      : (isGeo || isPlateTroca) ? 0.8 : metaAlgorithm === 'trgm'
       ? (trgmResults[linha.loja_nome_raw]?.trgm_score ?? 0.7)
       : 1.0
 
     // Confidence e requiresReview derivados do score real, não do algoritmo.
     // Antes: isGeo ? 'LOW' : 'HIGH' — trgm com score 0.62 recebia HIGH indevidamente.
     // Agora: HIGH se score >= 0.85, LOW se >= 0.6, UNMATCHED se < 0.6 (mas com parada).
-    const metaConfidence: MatchConfidence = isGeo || metaScore < 0.85
+    const metaConfidence: MatchConfidence = isGeo || isPlateTroca || metaScore < 0.85
       ? (metaScore >= 0.6 ? 'LOW' : 'UNMATCHED')
       : 'HIGH'
-    const metaRequiresReview = metaScore < 0.75
+    const metaRequiresReview = metaScore < 0.75 || isPlateTroca
 
     rotas.push({
       escala_linha_id: linha.id,
