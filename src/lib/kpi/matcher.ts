@@ -982,6 +982,22 @@ export async function cruzaEscalaUnitrac(
     )
     if (semGpsLines.length > 0) {
       const todasLojaParadas = paradaRows.filter(p => p.classificacao === 'LOJA')
+
+      // T18-R: precomputa redes de cada parada para guard de rede.
+      // Paradas com rede identificada só casam com linhas da mesma rede (ou alias).
+      // Paradas sem rede cadastrada (coringas) só casam se scorePair <= 2 ou GPS bater —
+      // impede que token genérico como "BARRA" faça "ROTA BARRA" bater com "GB BARRA 7",
+      // ou que "CAXIAS" faça "SENDAS CAXIAS LJ 131" bater com "GB CAXIAS 18".
+      const redesPresentesT18 = [...new Set(lojas.map(l => l.rede_id))]
+      const paradaRedesT18 = new Map<string, Set<string>>()
+      for (const p of todasLojaParadas) {
+        const redes = new Set<string>()
+        for (const r of redesPresentesT18) {
+          if (resolveLojaId(p, lojas, r)) redes.add(r)
+        }
+        paradaRedesT18.set(p.id, redes)
+      }
+
       const usedIds = new Set<string>([...matchByEscalaId.values()].map(p => p.id))
       for (const linha of semGpsLines) {
         // Tenta encontrar a loja no cadastro para usar GPS como fallback
@@ -990,11 +1006,20 @@ export async function cruzaEscalaUnitrac(
           if (linha.loja_codigo_raw && l.codigo_escala === linha.loja_codigo_raw) return true
           return matchScore(linha.loja_nome_raw, l.nome) <= 1
         })
+        const redesFungT18 = redesFungiveis(linha.rede_id)
         const candidatas = todasLojaParadas.filter(p => {
           if (usedIds.has(p.id)) return false
-          // Match por código/nome via scorePair
-          if (scorePair(linha, p) < Infinity) return true
-          // Fallback GPS: parada dentro do raio da loja cadastrada
+          // T18-N: rejeita paradas antes das 03:00 UTC — estacionamento noturno, não entrega.
+          if (new Date(p.chegada).getUTCHours() < 3) return false
+          // T18-R: guard de rede
+          const redesDaParada = paradaRedesT18.get(p.id) ?? new Set<string>()
+          if (redesDaParada.size > 0) {
+            // Rede identificada: só aceita se compatível com a rede da escala
+            if ([...redesDaParada].every(r => !redesFungT18.has(r))) return false
+            return scorePair(linha, p) < Infinity
+          }
+          // Coringa (sem rede): exige score ≤ 2 (código/nome bem próximo) OU GPS no raio
+          if (scorePair(linha, p) <= 2) return true
           if (lojaEscala?.lat != null && lojaEscala?.lng != null && p.lat != null && p.lng != null)
             return haversine(p.lat, p.lng, lojaEscala.lat, lojaEscala.lng) <= lojaEscala.raio_metros
           return false
