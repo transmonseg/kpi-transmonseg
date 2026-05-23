@@ -287,7 +287,9 @@ describe('cruzaEscalaUnitrac — saida_cd fallback sem BASE (Bug B)', () => {
     data_entrega: '2026-05-20',
   }
 
-  it('rota com GPS mas SEM parada BASE -> saida_cd = chegada da 1a loja', async () => {
+  it('rota com GPS mas SEM parada BASE -> saida_cd = null', async () => {
+    // Bug 2 fix: sem BASE, saida_cd retorna null em vez de fallback para chegada do alvo.
+    // Blank no Excel é preferível a timestamp impossível (saida_cd = CHD = 0 min viagem).
     const paradas: UnitracParadaRow[] = [
       {
         id: 'pa',
@@ -306,8 +308,8 @@ describe('cruzaEscalaUnitrac — saida_cd fallback sem BASE (Bug B)', () => {
     ]
     const rotas = await cruzaEscalaUnitrac([linha], paradas, lojas)
     expect(rotas).toHaveLength(1)
-    expect(rotas[0].saida_cd).not.toBeNull()
-    expect(rotas[0].saida_cd!.toISOString()).toBe('2026-05-20T08:30:00.000Z')
+    // Sem parada BASE antes da LOJA → saida_cd = null (não usa chegada como fallback)
+    expect(rotas[0].saida_cd).toBeNull()
   })
 
   it('rota com GPS E parada BASE -> saida_cd = saida da BASE (comportamento preservado)', async () => {
@@ -451,12 +453,14 @@ describe('variantesOcr', () => {
     expect(v).toHaveLength(2)
   })
 
-  it('I↔8: placa com "I" na pos 4 gera variante com "8"', () => {
-    // "LMN2I45": pos 4 = 'I' → OCR pode ler como '8' → "LMN2845"
+  it('I↔8 e I↔1: placa com "I" na pos 4 gera variantes com "8" e "1"', () => {
+    // "LMN2I45": pos 4 = 'I' → OCR confunde com '8' e com '1'
+    // OCR_PARES: 'I': ['8', '1']
     const v = variantesOcr('LMN2I45')
     expect(v).toContain('LMN2I45')
     expect(v).toContain('LMN2845')
-    expect(v).toHaveLength(2)
+    expect(v).toContain('LMN2145')
+    expect(v).toHaveLength(3)
   })
 
   it('char nao-OCR na pos 4 retorna apenas a placa original', () => {
@@ -1295,14 +1299,15 @@ describe('T11 — Rede-aware no assignOptimal (penalty cross-rede)', () => {
       { id: 'l3', rede_id: 'PRINCESA', nome: 'Buzios 3', nome_normalizado: 'buzios 3', codigo_escala: null, codigo_unitrac: '8590003', nome_unitrac: 'PRINCESA BUZIOS 3', lat: null, lng: null, raio_metros: 150 },
     ]
     const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
-    // Todas as 3 Princesas casam (via Hungarian + cadastro)
+    // Princesas continuam casando (Hungarian + cadastro)
     expect(rotas.find(r => r.escala_linha_id === 'pr1')?.paradas[0]?.parada_id).toBe('pp1')
     expect(rotas.find(r => r.escala_linha_id === 'pr2')?.paradas[0]?.parada_id).toBe('pp2')
     expect(rotas.find(r => r.escala_linha_id === 'pr3')?.paradas[0]?.parada_id).toBe('pp3')
-    // T9: Armazéns herdam as paradas Princesa por carro_ordem × cronologia
-    expect(rotas.find(r => r.escala_linha_id === 'ag1')?.paradas[0]?.parada_id).toBe('pp1')
-    expect(rotas.find(r => r.escala_linha_id === 'ag2')?.paradas[0]?.parada_id).toBe('pp2')
-    expect(rotas.find(r => r.escala_linha_id === 'ag3')?.paradas[0]?.parada_id).toBe('pp3')
+    // ARMAZEM_GRAO removido de REDES_CROSSDOCK (entrega própria em Petrópolis/Itaipava,
+    // não pega carona). T9 não atua → ficam UNMATCHED (sem parada atribuída).
+    expect(rotas.find(r => r.escala_linha_id === 'ag1')?.paradas).toHaveLength(0)
+    expect(rotas.find(r => r.escala_linha_id === 'ag2')?.paradas).toHaveLength(0)
+    expect(rotas.find(r => r.escala_linha_id === 'ag3')?.paradas).toHaveLength(0)
   })
 
   it('T9 NÃO ativa pra redes fora de REDES_CROSSDOCK (VIANENSE não pega carona)', async () => {
@@ -1367,14 +1372,14 @@ describe('T11 — Rede-aware no assignOptimal (penalty cross-rede)', () => {
       { id: 'l2', rede_id: 'PRINCESA', nome: 'B', nome_normalizado: 'b', codigo_escala: null, codigo_unitrac: '8590002', nome_unitrac: 'PRINCESA B', lat: null, lng: null, raio_metros: 150 },
     ]
     const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
-    // 4 ARMAZEMs órfãos + 2 paradas Princesa.
-    // ag1 (carro_ordem 1) → pp1 (8h)
-    // ag2 (carro_ordem 2) → pp2 (12h)
-    // ag3, ag4 → pp2 (última, clamp)
-    expect(rotas.find(r => r.escala_linha_id === 'ag1')?.paradas[0]?.parada_id).toBe('pp1')
-    expect(rotas.find(r => r.escala_linha_id === 'ag2')?.paradas[0]?.parada_id).toBe('pp2')
-    expect(rotas.find(r => r.escala_linha_id === 'ag3')?.paradas[0]?.parada_id).toBe('pp2')
-    expect(rotas.find(r => r.escala_linha_id === 'ag4')?.paradas[0]?.parada_id).toBe('pp2')
+    // Princesas casam
+    expect(rotas.find(r => r.escala_linha_id === 'pr1')?.paradas[0]?.parada_id).toBe('pp1')
+    expect(rotas.find(r => r.escala_linha_id === 'pr2')?.paradas[0]?.parada_id).toBe('pp2')
+    // ARMAZEM_GRAO não está em REDES_CROSSDOCK → todos ficam UNMATCHED
+    expect(rotas.find(r => r.escala_linha_id === 'ag1')?.paradas).toHaveLength(0)
+    expect(rotas.find(r => r.escala_linha_id === 'ag2')?.paradas).toHaveLength(0)
+    expect(rotas.find(r => r.escala_linha_id === 'ag3')?.paradas).toHaveLength(0)
+    expect(rotas.find(r => r.escala_linha_id === 'ag4')?.paradas).toHaveLength(0)
   })
 
   it('T9 — match crossdock recebe confidence=LOW + requiresReview', async () => {
@@ -1390,13 +1395,13 @@ describe('T11 — Rede-aware no assignOptimal (penalty cross-rede)', () => {
       { id: 'lp', rede_id: 'PRINCESA', nome: 'X', nome_normalizado: 'x', codigo_escala: null, codigo_unitrac: '8590100', nome_unitrac: 'PRINCESA X', lat: null, lng: null, raio_metros: 150 },
     ]
     const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
-    const ag = rotas.find(r => r.escala_linha_id === 'ag')
-    expect(ag?._matchMeta?.algorithm).toBe('crossdock')
-    expect(ag?._matchMeta?.confidence).toBe('LOW')
-    expect(ag?._matchMeta?.requiresReview).toBe(true)
-    // PRINCESA continua sendo HIGH
+    // PRINCESA continua HIGH via Hungarian
     const pr = rotas.find(r => r.escala_linha_id === 'pr')
     expect(pr?._matchMeta?.confidence).toBe('HIGH')
+    // ARMAZEM_GRAO não está em REDES_CROSSDOCK → UNMATCHED (algorithm='none')
+    const ag = rotas.find(r => r.escala_linha_id === 'ag')
+    expect(ag?.paradas).toHaveLength(0)
+    expect(ag?._matchMeta?.algorithm).toBe('none')
   })
 
   it('T9 NÃO atua quando todas redes são crossdock (paradasUsadasFinal vazio)', async () => {
@@ -1519,9 +1524,10 @@ describe('T11 — Rede-aware no assignOptimal (penalty cross-rede)', () => {
     expect(rotas.find(r => r.escala_linha_id === 'l1')?.saida_cd?.toISOString()).toBe('2026-05-20T03:20:00.000Z')
   })
 
-  it('T16 — BASE com saida=null é IGNORADA (cai no fallback)', async () => {
+  it('T16 — BASE com saida=null é IGNORADA → saida_cd fica null', async () => {
     // Predicado exige `p.saida` truthy. BASE com saída null é parada em aberto
     // (caminhão ainda parado), não conta como anchor.
+    // Bug 2 fix: sem BASE válida, saida_cd = null (não usa chegada como fallback).
     const escalaLinhas: EscalaLinhaRow[] = [
       { id: 'l1', rede_id: 'PRINCESA', placa_norm: 'NNN', loja_nome_raw: 'L1', loja_codigo_raw: '1', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-20' },
     ]
@@ -1533,8 +1539,8 @@ describe('T11 — Rede-aware no assignOptimal (penalty cross-rede)', () => {
       { id: 'l1c', rede_id: 'PRINCESA', nome: 'L1', nome_normalizado: 'l1', codigo_escala: '1', codigo_unitrac: '8590001', nome_unitrac: 'PRINCESA L1', lat: null, lng: null, raio_metros: 150 },
     ]
     const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
-    // BASE sem saída → ignorada → fallback = chegada da parada-alvo (05:00Z)
-    expect(rotas.find(r => r.escala_linha_id === 'l1')?.saida_cd?.toISOString()).toBe('2026-05-20T05:00:00.000Z')
+    // BASE sem saída → ignorada. Sem outra âncora → saida_cd = null
+    expect(rotas.find(r => r.escala_linha_id === 'l1')?.saida_cd).toBeNull()
   })
 
   it('T9 NÃO atua quando placa tem só 1 rede (precisa de redesNaPlaca.size >= 2)', async () => {
