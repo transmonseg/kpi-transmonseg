@@ -805,7 +805,12 @@ export async function cruzaEscalaUnitrac(
         .filter(p =>
           p.classificacao === 'FORA_BASE' &&
           p.lat != null && p.lng != null &&
-          !usados.has(p.id)
+          !usados.has(p.id) &&
+          // Exclui paradas antes das 03:00 BRT — veículo estacionado perto da loja
+          // durante a madrugada não é entrega. T18-N usa 07:00; geo usa 03:00 (mesma
+          // lógica do filtrarParadaNocturnaSolitaria) pois algumas entregas reais
+          // começam às 04:00-05:00.
+          new Date(p.chegada).getUTCHours() >= 3
         )
         .sort((a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
 
@@ -981,7 +986,18 @@ export async function cruzaEscalaUnitrac(
       l.placa_norm && !matchByEscalaId.has(l.id)
     )
     if (semGpsLines.length > 0) {
-      const todasLojaParadas = paradaRows.filter(p => p.classificacao === 'LOJA')
+      // T18-E: paradas candidatas para plate-swap devem vir de veículos que NÃO
+      // aparecem na escala. Veículos da escala já foram processados em T1-T9; suas
+      // paradas "livres" são incidentais (passagem perto da loja, estacionamento)
+      // e causam FP quando atribuídas a linhas GPS:NAO onde o manual diz SEM.
+      // Veículos genuinamente externos à escala (troca de placa real) não têm
+      // placa na escala e por isso continuam disponíveis para T18.
+      const escalaPlacas = new Set(
+        escalaLinhas.map(l => l.placa_norm).filter((p): p is string => !!p)
+      )
+      const todasLojaParadas = paradaRows.filter(p =>
+        p.classificacao === 'LOJA' && !escalaPlacas.has(p.placa_norm)
+      )
 
       // T18-R: precomputa redes de cada parada para guard de rede.
       // Paradas com rede identificada só casam com linhas da mesma rede (ou alias).
