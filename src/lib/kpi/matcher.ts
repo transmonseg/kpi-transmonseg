@@ -356,7 +356,7 @@ function deduplicarPorCodigo(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
  */
 function filtrarParadaNocturnaSolitaria(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
   const NOITE_H = 3
-  const NOITE_DUR_SEG = 2 * 3600
+  const NOITE_DUR_SEG = 4 * 3600 // 4h — alinhado ao critério de deduplicarPorCodigo; entregas Madrugada reais (2-3h) não são filtradas
   function isEstNocturno(p: UnitracParadaRow): boolean {
     const h = new Date(p.chegada).getUTCHours()
     const dur = p.saida === null ? Infinity : (p.duracao_seg ?? 0)
