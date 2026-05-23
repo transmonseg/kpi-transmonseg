@@ -966,12 +966,12 @@ export async function cruzaEscalaUnitrac(
   }
 
   // T18 — Plate-swap fallback.
-  // Escala lines cuja placa não tem dados no Unitrac ("SEM RASTREADOR"): busca parada
-  // LOJA de qualquer outra placa que corresponda à loja esperada por código, nome ou
-  // GPS (troca de veículo não registrada na escala).
+  // Escala lines sem match: busca parada LOJA de qualquer outra placa que corresponda
+  // à loja esperada por código, nome ou GPS (troca de veículo não registrada na escala,
+  // ou veículo com GPS mas sem parada na loja correta).
   {
     const semGpsLines = escalaLinhas.filter(l =>
-      l.placa_norm && !matchByEscalaId.has(l.id) && !resolvePlacaUnitrac(l.placa_norm)
+      l.placa_norm && !matchByEscalaId.has(l.id)
     )
     if (semGpsLines.length > 0) {
       const todasLojaParadas = paradaRows.filter(p => p.classificacao === 'LOJA')
