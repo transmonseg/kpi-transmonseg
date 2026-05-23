@@ -318,9 +318,10 @@ function computeSaidaCdParaParada(
  * no mesmo código que começou depois das 03:00, mesmo que seja mais curta.
  */
 function deduplicarPorCodigo(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
-  // 03:00 UTC = 03:00 BRT (sistema armazena BRT como UTC)
-  const NOITE_H = 3
-  const NOITE_DUR_SEG = 2 * 3600 // 2 horas — cobre paradas de 93-94min às 01-02h
+  // ExcelJS parseia serials do xlsx como UTC → BRT fica armazenado no campo UTC.
+  // getUTCHours() devolve a hora BRT diretamente (sem ajuste de fuso).
+  const NOITE_H = 3  // 03:00 BRT
+  const NOITE_DUR_SEG = 2 * 3600 // 2 horas — cobre paradas de 93-94min às 01-02h BRT
   function isEstacionamentoNoturno(p: UnitracParadaRow): boolean {
     const h = new Date(p.chegada).getUTCHours()
     const dur = p.saida === null ? Infinity : (p.duracao_seg ?? 0)
@@ -360,8 +361,8 @@ function deduplicarPorCodigo(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
  * Prefere SEM GPS a mostrar 00:01 ou 01:07 como horário de chegada.
  */
 function filtrarParadaNocturnaSolitaria(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
-  const NOITE_H = 3
-  const NOITE_DUR_SEG = 3 * 3600 // 3h — captura veículos que dormem perto da loja (ex: KOP-4978 às 00:03 com 3h51); entregas reais de madrugada raramente ficam >3h parados
+  const NOITE_H = 3  // 03:00 BRT (getUTCHours = hora BRT, xlsx BRT armazenado como UTC)
+  const NOITE_DUR_SEG = 3 * 3600 // 3h — captura veículos que dormem perto da loja (ex: KOP-4978 às 00:03 BRT com 3h51); entregas reais de madrugada raramente ficam >3h parados
   function isEstNocturno(p: UnitracParadaRow): boolean {
     const h = new Date(p.chegada).getUTCHours()
     const dur = p.saida === null ? Infinity : (p.duracao_seg ?? 0)
@@ -1015,7 +1016,7 @@ export async function cruzaEscalaUnitrac(
         const redesFungT18 = redesFungiveis(linha.rede_id)
         const candidatas = todasLojaParadas.filter(p => {
           if (usedIds.has(p.id)) return false
-          // T18-N: rejeita paradas antes das 03:00 UTC — estacionamento noturno, não entrega.
+          // T18-N: rejeita paradas antes das 03:00 BRT — estacionamento noturno, não entrega.
           if (new Date(p.chegada).getUTCHours() < 3) return false
           // T18-R: guard de rede
           const redesDaParada = paradaRedesT18.get(p.id) ?? new Set<string>()
