@@ -473,6 +473,7 @@ server.registerTool(
         .select('id, placa_norm, chegada, saida, duracao_seg, distancia_km, endereco, lat, lng, local_parada, codigo_loja, nome_loja, classificacao, loja_id, ordem, unitrac_uploads!inner(data_relatorio)')
         .eq('unitrac_uploads.data_relatorio', data)
         .in('placa_norm', placas.length ? placas : ['__nenhuma__'])
+        .limit(50000)
       if (paradaErr) throw new Error(`buscar paradas: ${paradaErr.message}`)
 
       const { data: lojas } = await supabase
