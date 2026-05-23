@@ -1016,8 +1016,10 @@ export async function cruzaEscalaUnitrac(
         const redesFungT18 = redesFungiveis(linha.rede_id)
         const candidatas = todasLojaParadas.filter(p => {
           if (usedIds.has(p.id)) return false
-          // T18-N: rejeita paradas antes das 03:00 BRT — estacionamento noturno, não entrega.
-          if (new Date(p.chegada).getUTCHours() < 3) return false
+          // T18-N: rejeita paradas antes das 07:00 BRT no plate-swap — veículos de outras
+          // redes estacionados perto de lojas Zona Sul na madrugada não são entregas ZS.
+          // (Match direto por placa não passa por aqui; este guard só afeta T18.)
+          if (new Date(p.chegada).getUTCHours() < 7) return false
           // T18-R: guard de rede
           const redesDaParada = paradaRedesT18.get(p.id) ?? new Set<string>()
           if (redesDaParada.size > 0) {
