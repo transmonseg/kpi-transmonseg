@@ -510,29 +510,10 @@ server.registerTool(
           (lojas ?? []) as any,
         )
 
-        // Fallback saida_cd: veículo tem paradas mas nunca passou pela BASE BENASSI.
-        // Garante compatibilidade quando o matcher rodou sem este fallback no código.
-        // NOTA: r.placa_norm é a placa da escala; Unitrac pode ter variante OCR diferente.
-        // Por isso, o lookup tenta a placa exata primeiro e depois os variantes OCR.
-        const paradaByPlacaMcp = new Map<string, any[]>()
-        for (const p of paradasRede) {
-          const list = paradaByPlacaMcp.get(p.placa_norm as string) ?? []
-          list.push(p)
-          paradaByPlacaMcp.set(p.placa_norm as string, list)
-        }
-        for (const r of rotas) {
-          if (!r.saida_cd && r.placa_norm && r.paradas.length > 0) {
-            let candidatas = paradaByPlacaMcp.get(r.placa_norm)
-            if (!candidatas || candidatas.length === 0) {
-              const variante = variantesOcr(r.placa_norm).find(v => v !== r.placa_norm && paradaByPlacaMcp.has(v))
-              if (variante) candidatas = paradaByPlacaMcp.get(variante)
-            }
-            if (!candidatas || candidatas.length === 0) continue
-            const sorted = [...candidatas].sort((a: any, b: any) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
-            const firstOp = sorted.find((p: any) => p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE')
-            if (firstOp) r.saida_cd = new Date(firstOp.chegada as string)
-          }
-        }
+        // Fallback saida_cd removido: usava chegada da primeira parada operacional quando
+        // nenhuma BASE BENASSI era encontrada, produzindo saida_cd = CHD (0 min de viagem,
+        // fisicamente impossível). computeSaidaCdParaParada agora retorna null nesses casos —
+        // null no Excel é melhor do que timestamp errado.
 
         const paradasIndex = new Map<string, any[]>()
         for (const p of paradasRede) {

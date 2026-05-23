@@ -302,8 +302,9 @@ function computeSaidaCdParaParada(
       }
     }
   }
-  // Prioridade: BASE exit → última saída não-LOJA → chegada do alvo (fallback garantido)
-  return lastBaseSaida ?? lastNonLojaSaida ?? new Date(paradaAlvo.chegada)
+  // Prioridade: BASE exit → última saída não-LOJA → null (sem BASE = não sabemos quando saiu do CD)
+  // Antes: fallback para chegada do alvo gerava saída_cd = CHD (0 min de viagem, impossível).
+  return lastBaseSaida ?? lastNonLojaSaida ?? null
 }
 
 /**
@@ -360,7 +361,7 @@ function deduplicarPorCodigo(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
  */
 function filtrarParadaNocturnaSolitaria(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
   const NOITE_H = 3
-  const NOITE_DUR_SEG = 4 * 3600 // 4h — alinhado ao critério de deduplicarPorCodigo; entregas Madrugada reais (2-3h) não são filtradas
+  const NOITE_DUR_SEG = 3 * 3600 // 3h — captura veículos que dormem perto da loja (ex: KOP-4978 às 00:03 com 3h51); entregas reais de madrugada raramente ficam >3h parados
   function isEstNocturno(p: UnitracParadaRow): boolean {
     const h = new Date(p.chegada).getUTCHours()
     const dur = p.saida === null ? Infinity : (p.duracao_seg ?? 0)
@@ -858,13 +859,13 @@ export async function cruzaEscalaUnitrac(
             const np = p.nome_loja.trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
             if (lojasDaRede.some(l => l.nome_unitrac?.trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '') === np)) return true
           }
-          // Token fallback: parada não está no catálogo da rede mas tem tokens em comum.
-          // Bloqueia se a parada pertence CLARAMENTE a outra rede — evita cross-rede
-          // via token de bairro compartilhado (ex: COPACABANA casa ZONA_SUL com
-          // parada PREZUNIC manhã quando o mesmo caminhão faz rotas diferentes).
-          const redesParada = paradaRedes.get(p.id) ?? new Set<string>()
-          if (redesParada.size > 0 && [...redesParada].every(r => !redesAceitas.has(r))) return false
-          if (scorePair(linha, p) < Infinity) return true
+          // Exige match EXATO de código (codCasa) para compartilhar a parada.
+          // Antes aceitava scorePair < Infinity (qualquer token em comum), o que
+          // distribuía o mesmo GPS para lojas em bairros completamente diferentes
+          // do mesmo veículo (ex: LQE-5401 às 04:11 clonado para MB01, Loja 06,
+          // Loja 21 e Loja 30 simultaneamente — fisicamente impossível).
+          // Armazém do Grão (caso legítimo de compartilhamento) usa código exato.
+          if (scorePair(linha, p) === 0) return true
           return false
         })
         if (compartilhada) {
