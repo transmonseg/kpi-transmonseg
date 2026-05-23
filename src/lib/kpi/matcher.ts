@@ -218,21 +218,34 @@ export type LojaRow = {
  * Mantém ordem temporal, só junta paradas LOJA com codigo_loja não-nulo iguais.
  */
 function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
+  // Gap > 2h entre paradas consecutivas da mesma loja = trips independentes.
+  // Não consolidar — cada trip deve sobreviver para o matching multi-turno.
+  const MULTI_TRIP_GAP_MS = 2 * 3600 * 1000
   const out: UnitracParadaRow[] = []
   for (const p of paradas) {
     const last = out[out.length - 1]
+    const prevSaidaTs = last ? new Date(last.saida ?? last.chegada).getTime() : 0
+    const gapMs = last ? new Date(p.chegada).getTime() - prevSaidaTs : 0
     const mesmaLoja =
       last &&
       last.classificacao === 'LOJA' &&
       p.classificacao === 'LOJA' &&
       last.codigo_loja &&
       p.codigo_loja &&
-      last.codigo_loja === p.codigo_loja
+      last.codigo_loja === p.codigo_loja &&
+      gapMs <= MULTI_TRIP_GAP_MS
     if (mesmaLoja) {
       // Antes: exigia ambos saida e chegada não-null. Quando p.saida era null
       // (caminhão ainda parado, última parada do dia), caía no else e empurrava
       // parada repetida — depois `deduplicarPorCodigo` descartava uma e podia
       // sumir a que tinha chegada válida. Agora consolida sempre que mesmaLoja.
+      // Preserva o id da parada com maior duração original — garante que o
+      // check-in curto (7min) não "sobrescreva" a entrega real (90min) no id.
+      // Importante para rastreabilidade: o id resultante identifica a parada
+      // dominante do par, não necessariamente a primeira cronologicamente.
+      const durLastOrig = last.saida === null ? Infinity : (last.duracao_seg ?? 0)
+      const durPOrig = p.saida === null ? Infinity : (p.duracao_seg ?? 0)
+      if (durPOrig > durLastOrig) last.id = p.id
       const novaSaida = p.saida ?? last.saida
       last.saida = novaSaida
       if (last.chegada && novaSaida) {
@@ -322,35 +335,57 @@ function deduplicarPorCodigo(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
   // getUTCHours() devolve a hora BRT diretamente (sem ajuste de fuso).
   const NOITE_H = 3  // 03:00 BRT
   const NOITE_DUR_SEG = 2 * 3600 // 2 horas — cobre paradas de 93-94min às 01-02h BRT
+  // Gap > 2h entre paradas do mesmo codigo_loja = trips independentes → preservar ambas.
+  // Gap ≤ 2h = check-in curto antes da entrega real → manter só a maior duração.
+  const MULTI_TRIP_GAP_MS = 2 * 3600 * 1000
+
   function isEstacionamentoNoturno(p: UnitracParadaRow): boolean {
     const h = new Date(p.chegada).getUTCHours()
     const dur = p.saida === null ? Infinity : (p.duracao_seg ?? 0)
     return h < NOITE_H && dur > NOITE_DUR_SEG
   }
 
-  const byCode = new Map<string, UnitracParadaRow>()
+  function melhor(a: UnitracParadaRow, b: UnitracParadaRow): UnitracParadaRow {
+    const aN = isEstacionamentoNoturno(a), bN = isEstacionamentoNoturno(b)
+    if (aN && !bN) return b
+    if (!aN && bN) return a
+    const durA = a.saida === null ? Infinity : (a.duracao_seg ?? 0)
+    const durB = b.saida === null ? Infinity : (b.duracao_seg ?? 0)
+    return durA >= durB ? a : b
+  }
+
+  // Agrupa por codigo_loja
+  const byCode = new Map<string, UnitracParadaRow[]>()
   const semCodigo: UnitracParadaRow[] = []
   for (const p of paradas) {
     if (!p.codigo_loja) { semCodigo.push(p); continue }
-    const existing = byCode.get(p.codigo_loja)
-    if (!existing) { byCode.set(p.codigo_loja, p); continue }
+    const arr = byCode.get(p.codigo_loja) ?? []
+    arr.push(p)
+    byCode.set(p.codigo_loja, arr)
+  }
 
-    const pNoite = isEstacionamentoNoturno(p)
-    const exNoite = isEstacionamentoNoturno(existing)
-
-    if (exNoite && !pNoite) {
-      // existing é estacionamento noturno, p é entrega diurna → preferir p
-      byCode.set(p.codigo_loja, p)
-    } else if (!exNoite && pNoite) {
-      // p é estacionamento noturno, existing é entrega diurna → manter existing
-    } else {
-      // Mesmo contexto temporal: preferir maior duração (entrega real vs check-in)
-      const duracaoP = p.saida === null ? Infinity : (p.duracao_seg ?? 0)
-      const duracaoExisting = existing.saida === null ? Infinity : (existing.duracao_seg ?? 0)
-      if (duracaoP > duracaoExisting) byCode.set(p.codigo_loja, p)
+  const result: UnitracParadaRow[] = []
+  for (const [, grupo] of byCode) {
+    const sorted = grupo.slice().sort((a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
+    // Cria "trips": sequências onde cada nova parada começa > 2h depois da saída da anterior.
+    const trips: UnitracParadaRow[][] = [[sorted[0]]]
+    for (let i = 1; i < sorted.length; i++) {
+      const prev = trips[trips.length - 1].at(-1)!
+      const prevSaida = prev.saida ?? prev.chegada
+      const gapMs = new Date(sorted[i].chegada).getTime() - new Date(prevSaida).getTime()
+      if (gapMs > MULTI_TRIP_GAP_MS) {
+        trips.push([sorted[i]])
+      } else {
+        trips[trips.length - 1].push(sorted[i])
+      }
+    }
+    // Para cada trip, mantém a melhor parada (max duração, não-noturna preferida)
+    for (const trip of trips) {
+      result.push(trip.reduce(melhor))
     }
   }
-  return [...byCode.values(), ...semCodigo].sort(
+
+  return [...result, ...semCodigo].sort(
     (a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime()
   )
 }
