@@ -217,10 +217,11 @@ export type LojaRow = {
  *
  * Mantém ordem temporal, só junta paradas LOJA com codigo_loja não-nulo iguais.
  */
+// Gap mínimo entre paradas do mesmo codigo_loja para serem tratadas como trips separadas.
+// Abaixo = check-in curto + entrega real → consolidar/deduplicar. Acima = turnos independentes.
+const MULTI_TRIP_GAP_MS = 2 * 3600 * 1000  // 2 horas
+
 function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
-  // Gap > 2h entre paradas consecutivas da mesma loja = trips independentes.
-  // Não consolidar — cada trip deve sobreviver para o matching multi-turno.
-  const MULTI_TRIP_GAP_MS = 2 * 3600 * 1000
   const out: UnitracParadaRow[] = []
   for (const p of paradas) {
     const last = out[out.length - 1]
@@ -335,10 +336,6 @@ function deduplicarPorCodigo(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
   // getUTCHours() devolve a hora BRT diretamente (sem ajuste de fuso).
   const NOITE_H = 3  // 03:00 BRT
   const NOITE_DUR_SEG = 2 * 3600 // 2 horas — cobre paradas de 93-94min às 01-02h BRT
-  // Gap > 2h entre paradas do mesmo codigo_loja = trips independentes → preservar ambas.
-  // Gap ≤ 2h = check-in curto antes da entrega real → manter só a maior duração.
-  const MULTI_TRIP_GAP_MS = 2 * 3600 * 1000
-
   function isEstacionamentoNoturno(p: UnitracParadaRow): boolean {
     const h = new Date(p.chegada).getUTCHours()
     const dur = p.saida === null ? Infinity : (p.duracao_seg ?? 0)
