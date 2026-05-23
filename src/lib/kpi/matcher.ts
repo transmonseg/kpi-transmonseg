@@ -982,22 +982,16 @@ export async function cruzaEscalaUnitrac(
   // à loja esperada por código, nome ou GPS (troca de veículo não registrada na escala,
   // ou veículo com GPS mas sem parada na loja correta).
   {
+    // T18-G: exclui linhas GPS:NAO (placa não existe no Unitrac) do plate-swap.
+    // Veículo sem rastreador → manual registra SEM; T18 buscaria um veículo passando
+    // perto da loja e produziria FP. Apenas veículos que TÊM dados no Unitrac mas cuja
+    // parada não foi identificada (ex: classificada FORA_BASE) são candidatos reais de
+    // troca de placa.
     const semGpsLines = escalaLinhas.filter(l =>
-      l.placa_norm && !matchByEscalaId.has(l.id)
+      l.placa_norm && !matchByEscalaId.has(l.id) && !!resolvePlacaUnitrac(l.placa_norm)
     )
     if (semGpsLines.length > 0) {
-      // T18-E: paradas candidatas para plate-swap devem vir de veículos que NÃO
-      // aparecem na escala. Veículos da escala já foram processados em T1-T9; suas
-      // paradas "livres" são incidentais (passagem perto da loja, estacionamento)
-      // e causam FP quando atribuídas a linhas GPS:NAO onde o manual diz SEM.
-      // Veículos genuinamente externos à escala (troca de placa real) não têm
-      // placa na escala e por isso continuam disponíveis para T18.
-      const escalaPlacas = new Set(
-        escalaLinhas.map(l => l.placa_norm).filter((p): p is string => !!p)
-      )
-      const todasLojaParadas = paradaRows.filter(p =>
-        p.classificacao === 'LOJA' && !escalaPlacas.has(p.placa_norm)
-      )
+      const todasLojaParadas = paradaRows.filter(p => p.classificacao === 'LOJA')
 
       // T18-R: precomputa redes de cada parada para guard de rede.
       // Paradas com rede identificada só casam com linhas da mesma rede (ou alias).

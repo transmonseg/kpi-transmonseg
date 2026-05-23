@@ -216,6 +216,19 @@ async function main() {
   process.stdout.write(`=== ANÁLISE ${REDE_ID} — 19/05/2026 ===\n`)
   process.stdout.write('SC=SaídaCD  CHD=ChegadaLoja  SL=SaídaLoja\n\n')
 
+  function noData(v: string): boolean { return v === '---' || v.startsWith('SEM') }
+  function arrEq(a: string[], b: string[]): boolean {
+    return a.every((v, i) => (noData(v) && noData(b[i])) || v === b[i])
+  }
+  function resolveSlot(placa: string | null, k: KpiLinha | undefined): 1 | 2 | 0 {
+    if (!k || !placa) return 0
+    const norm = (s: string) => s.toUpperCase().replace(/[\s-]/g, '')
+    const p = norm(placa)
+    if (k.placa1 && p === norm(k.placa1)) return 1
+    if (k.placa2 && p === norm(k.placa2)) return 2
+    return 0
+  }
+
   let nOk = 0, nDiff = 0, nMatchOk = 0, nMatchDiff = 0
 
   for (const [loja, slots] of lojaMap) {
@@ -235,17 +248,20 @@ async function main() {
       const matchSl  = rota?.paradas[0] ? toHHMM(rota.paradas[0].saida)   : '---'
       const matchArr = [matchSc, matchChd, matchSl]
 
-      const mArr = slot === 1
+      // Resolve slot por placa (mais confiável), fallback para carro_ordem
+      const ks = resolveSlot(l.placa_norm, km) || (slot === 1 ? 1 : 2)
+      const ksG = resolveSlot(l.placa_norm, kg) || (slot === 1 ? 1 : 2)
+      const mArr = ks === 1
         ? [km?.sc1 ?? '---', km?.chd1 ?? '---', km?.sl1 ?? '---']
         : [km?.sc2 ?? '---', km?.chd2 ?? '---', km?.sl2 ?? '---']
-      const gArr = slot === 1
+      const gArr = ksG === 1
         ? [kg?.sc1 ?? '---', kg?.chd1 ?? '---', kg?.sl1 ?? '---']
         : [kg?.sc2 ?? '---', kg?.chd2 ?? '---', kg?.sl2 ?? '---']
 
-      const diff = mArr.join('/') !== gArr.join('/')
+      const diff = !arrEq(mArr, gArr)
       if (diff) nDiff++; else nOk++
 
-      const matchDiff = matchArr.join('/') !== mArr.join('/')
+      const matchDiff = !arrEq(matchArr, mArr)
       if (matchDiff) nMatchDiff++; else nMatchOk++
 
       const tag = matchDiff ? '[DIFF]' : '[OK]  '

@@ -1662,35 +1662,49 @@ describe('T11 — Rede-aware no assignOptimal (penalty cross-rede)', () => {
 //
 // T18 (plate-swap) não deve usar paradas de madrugada (04–06h BRT) de outros veículos.
 // Zona Sul não tem entregas antes das 07:00. Guard atual < 3 deixava passar 04-06h.
-describe('T18 — T18-N guard 07:00 BRT', () => {
-  it('T18 REJEITA parada de outra placa chegando às 05:00 BRT (abaixo do guard)', async () => {
-    // Escala: placa ABC não tem GPS. Outra placa XYZ tem parada LOJA às 05:00 BRT.
-    // T18-N guard < 7 deve rejeitar 05:00 → linha ABC fica UNMATCHED.
+describe('T18 — T18-N guard 07:00 BRT + T18-G GPS:NAO exclusion', () => {
+  it('T18 REJEITA parada às 05:00 BRT (T18-N guard)', async () => {
+    // Placa ABC tem GPS (BASE parada presente). XYZ tem LOJA às 05:00 BRT.
+    // T18-N guard < 7 rejeita 05:00 → ABC fica UNMATCHED.
     const linhas: EscalaLinhaRow[] = [
       { id: 'l1', rede_id: 'ZONA_SUL', placa_norm: 'ABC1234', loja_nome_raw: 'ZONA SUL LOJA 30', loja_codigo_raw: '30', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-20' },
     ]
     const paradas: UnitracParadaRow[] = [
-      // placa ABC sem parada nenhuma
-      // placa XYZ com parada ZONA SUL LOJA 30 às 05:00 BRT
+      { id: 'pbase', placa_norm: 'ABC1234', chegada: '2026-05-20T03:00:00.000Z', saida: '2026-05-20T04:30:00.000Z', duracao_seg: 5400, local_parada: 'BASE', codigo_loja: null, nome_loja: null, lat: null, lng: null, classificacao: 'BASE', ordem: 0 },
       { id: 'px', placa_norm: 'XYZ9999', chegada: '2026-05-20T05:00:00.000Z', saida: '2026-05-20T06:30:00.000Z', duracao_seg: 5400, local_parada: '9039030 - ZONA SUL LOJA 30', codigo_loja: '9039030', nome_loja: 'ZONA SUL LOJA 30', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
     ]
     const rotas = await cruzaEscalaUnitrac(linhas, paradas, [])
-    // T18-N guard < 7 rejeita 05:00 → l1 fica sem parada
     expect(rotas.find(r => r.escala_linha_id === 'l1')?.paradas).toHaveLength(0)
   })
 
-  it('T18 ACEITA parada de outra placa chegando às 07:00 BRT (acima do guard)', async () => {
-    // Mesma configuração mas parada às 07:00 BRT — deve ser aceita.
+  it('T18 ACEITA parada de outra placa às 07:00 BRT quando veículo TEM GPS (T18-G passa)', async () => {
+    // ABC tem GPS (BASE parada). XYZ tem LOJA às 07:00 BRT (T18-N passa).
+    // T18-G: ABC está no Unitrac → T18 roda → match encontrado.
     const linhas: EscalaLinhaRow[] = [
       { id: 'l2', rede_id: 'ZONA_SUL', placa_norm: 'ABC1234', loja_nome_raw: 'ZONA SUL LOJA 30', loja_codigo_raw: '30', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-20' },
     ]
     const paradas: UnitracParadaRow[] = [
+      { id: 'pbase2', placa_norm: 'ABC1234', chegada: '2026-05-20T03:00:00.000Z', saida: '2026-05-20T06:00:00.000Z', duracao_seg: 10800, local_parada: 'BASE', codigo_loja: null, nome_loja: null, lat: null, lng: null, classificacao: 'BASE', ordem: 0 },
       { id: 'py', placa_norm: 'XYZ9999', chegada: '2026-05-20T07:00:00.000Z', saida: '2026-05-20T08:30:00.000Z', duracao_seg: 5400, local_parada: '9039030 - ZONA SUL LOJA 30', codigo_loja: '9039030', nome_loja: 'ZONA SUL LOJA 30', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
     ]
     const rotas = await cruzaEscalaUnitrac(linhas, paradas, [])
-    // 07:00 >= 7 → passa o guard → l2 recebe parada via T18
     expect(rotas.find(r => r.escala_linha_id === 'l2')?.paradas).toHaveLength(1)
     expect(rotas.find(r => r.escala_linha_id === 'l2')?.paradas[0].parada_id).toBe('py')
+  })
+
+  it('T18 NÃO roda para veículo GPS:NAO (T18-G: sem dados no Unitrac)', async () => {
+    // ABC não tem NENHUMA parada no Unitrac (GPS:NAO).
+    // T18-G: ABC ausente no Unitrac → T18 não roda → fica UNMATCHED.
+    // manual diria SEM; sem FP.
+    const linhas: EscalaLinhaRow[] = [
+      { id: 'l3', rede_id: 'ZONA_SUL', placa_norm: 'ABC1234', loja_nome_raw: 'ZONA SUL LOJA 30', loja_codigo_raw: '30', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-20' },
+    ]
+    const paradas: UnitracParadaRow[] = [
+      // Apenas XYZ presente — ABC está completamente fora do Unitrac
+      { id: 'pz', placa_norm: 'XYZ9999', chegada: '2026-05-20T07:00:00.000Z', saida: '2026-05-20T08:30:00.000Z', duracao_seg: 5400, local_parada: '9039030 - ZONA SUL LOJA 30', codigo_loja: '9039030', nome_loja: 'ZONA SUL LOJA 30', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(linhas, paradas, [])
+    expect(rotas.find(r => r.escala_linha_id === 'l3')?.paradas).toHaveLength(0)
   })
 })
 
