@@ -546,7 +546,7 @@ Anomalias `HIGH` viram `bg-danger-soft` na pré-visualização e bloqueiam final
 <tr>
 <td valign="top">
 
-#### **[Joaquim Salles](https://github.com/JovemSalles)**
+#### **[Joaquim Salles](https://github.com/Joaquim-Salles)**
 
 Idealizador, arquiteto e mantenedor do sistema. Desenhou todo o pipeline de matching, definiu o catálogo de redes e parsers, e mantém o sistema em produção para a operação real da TRANSMONSEG.
 
