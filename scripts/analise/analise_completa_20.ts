@@ -1,12 +1,15 @@
 /**
  * Análise placa a placa — ZONA SUL 20/05/2026
- * Usa os parsers reais do projeto (sem DB, sem rede).
+ * Usa os parsers reais + lojas do DB (para T17 rede-aware funcionar corretamente).
  */
 import { readFileSync } from 'fs'
+import { config } from 'dotenv'
+config({ path: '.env.local' })
 import ExcelJS from 'exceljs'
+import { createClient } from '@supabase/supabase-js'
 import { parseEscalaZonaSul } from '@/lib/parsers/escala-zona-sul'
 import { parseUnitrac } from '@/lib/parsers/unitrac'
-import { cruzaEscalaUnitrac, type EscalaLinhaRow, type UnitracParadaRow } from '@/lib/kpi/matcher'
+import { cruzaEscalaUnitrac, type EscalaLinhaRow, type UnitracParadaRow, type LojaRow } from '@/lib/kpi/matcher'
 import type { LinhaEscala } from '@/lib/types/escala'
 import type { ParadaUnitrac } from '@/lib/types/unitrac'
 
@@ -111,8 +114,22 @@ async function main() {
   const paradas = paradasRaw.map(toParadaRow)
   process.stdout.write(`  ${veiculos.length} veículos, ${paradas.length} paradas\n`)
 
+  process.stdout.write('Carregando lojas do DB...\n')
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  )
+  const { data: lojasRaw, error: lojasErr } = await supabase
+    .from('lojas')
+    .select('id, rede_id, nome, nome_normalizado, codigo_escala, codigo_unitrac, nome_unitrac, lat, lng, raio_metros')
+    .eq('ativo', true)
+  if (lojasErr) throw new Error(`lojas: ${lojasErr.message}`)
+  const lojas: LojaRow[] = (lojasRaw ?? []) as LojaRow[]
+  process.stdout.write(`  ${lojas.length} lojas\n`)
+
   process.stdout.write('Cruzando...\n')
-  const rotas = await cruzaEscalaUnitrac(escala, paradas, [])
+  const rotas = await cruzaEscalaUnitrac(escala, paradas, lojas)
   process.stdout.write(`  ${rotas.length} rotas geradas\n\n`)
 
   // Indexar rotas por escala_linha_id
@@ -129,7 +146,7 @@ async function main() {
   // KPIs
   const [kpiM, kpiG] = await Promise.all([
     lerKpi('C:/Users/media/Downloads/KPI-ZONA_SUL-2026-05-20.xlsx'),
-    lerKpi('C:/Users/media/Downloads/KPI-ZONA_SUL-2026-05-20 (5).xlsx'),
+    lerKpi('C:/Users/media/Downloads/KPI ZONA_SUL.xlsx'),
   ])
 
   // Agrupar escala por loja
@@ -143,7 +160,7 @@ async function main() {
   process.stdout.write('=== ANÁLISE PLACA A PLACA — ZONA SUL 20/05/2026 ===\n')
   process.stdout.write('SC=SaídaCD  CHD=ChegadaLoja  SL=SaídaLoja\n\n')
 
-  let nOk = 0, nDiff = 0
+  let nOk = 0, nDiff = 0, nMatchOk = 0, nMatchDiff = 0
 
   for (const [loja, slots] of lojaMap) {
     const km = kpiM.get(loja)
@@ -161,6 +178,7 @@ async function main() {
       const matchSc  = rota?.saida_cd ? toHHMM(rota.saida_cd) : '---'
       const matchChd = rota?.paradas[0] ? toHHMM(rota.paradas[0].chegada) : '---'
       const matchSl  = rota?.paradas[0] ? toHHMM(rota.paradas[0].saida)   : '---'
+      const matchArr = [matchSc, matchChd, matchSl]
 
       const mArr = slot === 1
         ? [km?.sc1 ?? '---', km?.chd1 ?? '---', km?.sl1 ?? '---']
@@ -172,7 +190,10 @@ async function main() {
       const diff = mArr.join('/') !== gArr.join('/')
       if (diff) nDiff++; else nOk++
 
-      const tag = diff ? '[DIFF]' : '[OK]  '
+      const matchDiff = matchArr.join('/') !== mArr.join('/')
+      if (matchDiff) nMatchDiff++; else nMatchOk++
+
+      const tag = matchDiff ? '[DIFF]' : '[OK]  '
       const algo = rota?._matchMeta?.algorithm ?? 'none'
       const score = rota?._matchMeta?.score ?? '?'
       const gpsTag = !l.placa_norm ? 'GPS:NAO-PLACA'
@@ -207,23 +228,26 @@ async function main() {
       process.stdout.write(`       MANUAL : ${mArr.join(' / ')}\n`)
       process.stdout.write(`       GERADO : ${gArr.join(' / ')}\n`)
 
-      if (diff) {
+      if (matchDiff) {
         const mH = parseInt(mArr[1]?.split(':')[0] ?? '99')
-        const gH = parseInt(gArr[1]?.split(':')[0] ?? '99')
-        if (mArr[0] === 'SEM' && gArr[0] !== '---' && gArr[0] !== 'SEM')
-          process.stdout.write(`       >> MANUAL=SEM_RASTREADOR mas gerado tem GPS — T18 falso positivo?\n`)
-        else if (gArr[0] === '---' && mArr[0] !== '---' && mArr[0] !== 'SEM')
-          process.stdout.write(`       >> Gerado vazio, manual tem dado — GPS não encontrou esta loja\n`)
-        else if (!isNaN(mH) && !isNaN(gH) && mH >= 10 && gH < 8 && gH >= 0)
-          process.stdout.write(`       >> Gerado=madrugada(CHD ${gArr[1]}), manual=tarde(CHD ${mArr[1]}) — 2 turnos\n`)
-        else if (diff)
-          process.stdout.write(`       >> SC: ${mArr[0]}≠${gArr[0]}  CHD: ${mArr[1]}≠${gArr[1]}  SL: ${mArr[2]}≠${gArr[2]}\n`)
+        const cH = parseInt(matchArr[1]?.split(':')[0] ?? '99')
+        if (mArr[0] === 'SEM' && matchArr[0] !== '---' && matchArr[0] !== 'SEM')
+          process.stdout.write(`       >> MANUAL=SEM_RASTREADOR mas matcher tem GPS — T18 falso positivo?\n`)
+        else if (matchArr[0] === '---' && mArr[0] !== '---' && mArr[0] !== 'SEM')
+          process.stdout.write(`       >> Matcher vazio, manual tem dado — GPS não encontrou esta loja\n`)
+        else if (!isNaN(mH) && !isNaN(cH) && mH >= 10 && cH < 8 && cH >= 0)
+          process.stdout.write(`       >> Matcher=madrugada(CHD ${matchArr[1]}), manual=tarde(CHD ${mArr[1]}) — 2 turnos\n`)
+        else
+          process.stdout.write(`       >> SC: ${matchArr[0]}≠${mArr[0]}  CHD: ${matchArr[1]}≠${mArr[1]}  SL: ${matchArr[2]}≠${mArr[2]}\n`)
       }
+      if (diff && !matchDiff)
+        process.stdout.write(`       !! MATCHER=OK mas GERADO≠MANUAL (Excel desatualizado?)\n`)
     }
   }
 
   process.stdout.write('\n══════════════════════════════════════════\n')
-  process.stdout.write(`RESUMO: OK=${nOk}  DIFF=${nDiff}\n`)
+  process.stdout.write(`RESUMO GERADO×MANUAL:  OK=${nOk}  DIFF=${nDiff}\n`)
+  process.stdout.write(`RESUMO MATCHER×MANUAL: OK=${nMatchOk}  DIFF=${nMatchDiff}  ← código atual\n`)
   process.stdout.write('══════════════════════════════════════════\n')
 }
 
