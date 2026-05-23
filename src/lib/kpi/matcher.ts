@@ -846,27 +846,15 @@ export async function cruzaEscalaUnitrac(
         if (m && m.classificacao === 'LOJA') paradasUsadasNaPlaca.push(m)
       }
       for (const linha of linhasRestantes) {
-        // Procura parada compartilhável: bate com rede da escala via cadastro OU via tokens.
-        // Token fallback cobre redes cross-docking (ARMAZEM_GRAO) onde as lojas estão
-        // cadastradas com rede_id diferente (ASSAI, PREZUNIC…) e o filtro por rede_id falharia.
+        // Compartilha parada APENAS quando scorePair === 0 (match exato de código via codCasa).
+        // Caso legítimo: Armazém do Grão — 4 lojas REGINA + 1 parada com mesmo codigo_loja.
+        //
+        // Antes, as verificações por catálogo (lojasDaRede.some(l => l.codigo_unitrac === p.codigo_loja))
+        // retornavam true para QUALQUER parada da rede — ex: parada de Loja 30 (codigo "30")
+        // satisfazia a condição para Lojas 06, 21 e MB01 porque "30" existe na tabela de lojas.
+        // Resultado: mesmo GPS distribuído a N lojas simultâneas (fisicamente impossível).
         const compartilhada = paradasUsadasNaPlaca.find(p => {
-          if (!p.codigo_loja && !p.nome_loja) return false
-          // T10: aceita lojas da rede própria E das redes aliased (ASSAI↔SENDAS, PAX↔SUPER_PAX)
-          const redesAceitas = redesFungiveis(linha.rede_id)
-          const lojasDaRede = lojas.filter(l => redesAceitas.has(l.rede_id))
-          if (p.codigo_loja && lojasDaRede.some(l => l.codigo_unitrac === p.codigo_loja)) return true
-          if (p.nome_loja) {
-            const np = p.nome_loja.trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-            if (lojasDaRede.some(l => l.nome_unitrac?.trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '') === np)) return true
-          }
-          // Exige match EXATO de código (codCasa) para compartilhar a parada.
-          // Antes aceitava scorePair < Infinity (qualquer token em comum), o que
-          // distribuía o mesmo GPS para lojas em bairros completamente diferentes
-          // do mesmo veículo (ex: LQE-5401 às 04:11 clonado para MB01, Loja 06,
-          // Loja 21 e Loja 30 simultaneamente — fisicamente impossível).
-          // Armazém do Grão (caso legítimo de compartilhamento) usa código exato.
-          if (scorePair(linha, p) === 0) return true
-          return false
+          return scorePair(linha, p) === 0
         })
         if (compartilhada) {
           matchByEscalaId.set(linha.id, compartilhada)
