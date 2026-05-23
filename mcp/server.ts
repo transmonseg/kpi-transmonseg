@@ -467,7 +467,10 @@ server.registerTool(
       if (escalaErr) throw new Error(`buscar escala: ${escalaErr.message}`)
       if (!escalaLinhas?.length) return ok({ msg: 'Nenhuma escala encontrada pra esta data', data })
 
-      const placas = [...new Set(escalaLinhas.filter(l => l.placa_norm).map(l => l.placa_norm as string))]
+      const placasEscala = [...new Set(escalaLinhas.filter(l => l.placa_norm).map(l => l.placa_norm as string))]
+      // Inclui variantes OCR (ex: LIA7683 → LIA7G83) para capturar paradas onde o
+      // parser Unitrac confundiu dígito/letra na posição 4 do padrão Mercosul.
+      const placas = [...new Set(placasEscala.flatMap(p => variantesOcr(p)))]
       const { data: paradaRows, error: paradaErr } = await supabase
         .from('unitrac_paradas')
         .select('id, placa_norm, chegada, saida, duracao_seg, distancia_km, endereco, lat, lng, local_parada, codigo_loja, nome_loja, classificacao, loja_id, ordem, unitrac_uploads!inner(data_relatorio)')
