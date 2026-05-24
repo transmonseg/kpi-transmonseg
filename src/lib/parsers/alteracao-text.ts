@@ -205,6 +205,20 @@ export function parseAlteracaoText(texto: string): AlteracaoParsed {
     }
   }
 
+  // Extração implícita: se nenhum slot foi preenchido por labels, varre as linhas em
+  // busca de placas "soltas" (formato WhatsApp/bullet/curto sem "entra:" explícito).
+  // Trata cada placa como ENTRA (sem contexto não dá pra saber se é entra ou sai).
+  if (!entra && !sai) {
+    for (const linha of linhas) {
+      if (/altera[çc][aã]o/i.test(linha)) continue // pula cabeçalhos
+      const slot = parseSlot(linha)
+      if (slot?.placa_norm) {
+        entra = slot
+        break
+      }
+    }
+  }
+
   // Tipo detection
   let tipo: AlteracaoParsed['tipo']
   const isTrocaCarro = /troca\s+de\s+carro|motorista\s+(?:continua|mesmo|permanece)/i.test(norm)
