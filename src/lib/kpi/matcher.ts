@@ -274,9 +274,18 @@ function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracPara
 function computeSaidaCdParaParada(
   paradaAlvo: UnitracParadaRow,
   todasParadas: UnitracParadaRow[],
+  ctx?: { redeId?: string; data?: string },
 ): Date | null {
   const alvoTs = new Date(paradaAlvo.chegada).getTime()
+  // SC-CONVENTION-ANTIGA: ZONA_SUL até 2026-05-18 usou "primeira saída de BASE do dia"
+  // no manual KPI. A partir de 2026-05-19, convenção mudou para T16 (última antes da
+  // entrega). Aqui detectamos o regime antigo e devolvemos a primeira BASE.
+  const usaPrimeira =
+    ctx?.redeId === 'ZONA_SUL' &&
+    typeof ctx?.data === 'string' &&
+    ctx.data <= '2026-05-18'
   let lastBaseSaida: Date | null = null
+  let firstBaseSaida: Date | null = null
   for (const p of todasParadas) {
     if (new Date(p.chegada).getTime() >= alvoTs) break
     // T16-C: Base detection robusta. Além de classificacao===BASE/FAKE_EXIT,
@@ -293,11 +302,14 @@ function computeSaidaCdParaParada(
         if (!lastBaseSaida || s.getTime() > lastBaseSaida.getTime()) {
           lastBaseSaida = s
         }
+        if (!firstBaseSaida || s.getTime() < firstBaseSaida.getTime()) {
+          firstBaseSaida = s
+        }
       }
     }
   }
   // Sem BASE exit = não sabemos quando saiu do CD → null (melhor que FAKE_EXIT/FORA_BASE como proxy)
-  return lastBaseSaida ?? null
+  return (usaPrimeira ? firstBaseSaida : lastBaseSaida) ?? null
 }
 
 /**
@@ -1136,7 +1148,7 @@ export async function cruzaEscalaUnitrac(
       // Usa a parada matched como alvo: a saída-CD é a última saída de BASE
       // estritamente antes da chegada dessa parada. Cobre multi-trip:
       // Trip 1 e Trip 2 pegam saídas diferentes (cada uma da sua BASE anterior).
-      saida_cd = computeSaidaCdParaParada(matched, todasParadas)
+      saida_cd = computeSaidaCdParaParada(matched, todasParadas, { redeId: linha.rede_id, data: linha.data_entrega })
     }
     // Sem match: saida_cd fica null. Não usar fallback com primeira parada da placa —
     // para veículos multi-trip (PREZUNIC manhã + ZONA_SUL noite), isso produzia a

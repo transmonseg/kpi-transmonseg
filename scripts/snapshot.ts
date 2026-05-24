@@ -36,9 +36,10 @@ interface Job {
 const REDES_18 = ['SUPER_PAX','FEIRA_NOVA','MUNDIAL','SENDAS','CARREFOUR','ATACADAO','ASSAI','PREZUNIC','VIANENSE','PRINCESA','SUPERPRIX','SAMS_CLUB','ARMAZEM_GRAO']
 const REDES_19 = ['SUPER_PAX','FEIRA_NOVA','MUNDIAL','SENDAS','CARREFOUR','ATACADAO','ASSAI','PREZUNIC','VIANENSE','PRINCESA','SUPERPRIX','SUPERCOMPRAS','SAMS_CLUB','CAB_PETROPOLIS','ARMAZEM_GRAO','GUANABARA']
 
+const ZONA_SUL_DIAS = ['2026-05-18', '2026-05-19', '2026-05-20', '2026-05-21']
+
 const JOBS: Job[] = [
-  { rede: 'ZONA_SUL', dia: '2026-05-20', script: 'scripts/analise/analise_completa_20.ts', args: [] },
-  { rede: 'ZONA_SUL', dia: '2026-05-21', script: 'scripts/analise/analise_completa_21.ts', args: [] },
+  ...ZONA_SUL_DIAS.map(dia => ({ rede: 'ZONA_SUL', dia, script: 'scripts/analise/analise_zonasul.ts', args: [dia] })),
   ...REDES_18.map(rede => ({ rede, dia: '2026-05-18', script: 'scripts/analise/analise_18_geral.ts', args: [rede] })),
   ...REDES_19.map(rede => ({ rede, dia: '2026-05-19', script: 'scripts/analise/analise_19_geral.ts', args: [rede] })),
 ]
