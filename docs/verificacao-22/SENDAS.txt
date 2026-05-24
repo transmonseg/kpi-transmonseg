@@ -1,0 +1,150 @@
+
+=== VERIFICAÇÃO SENDAS — 2026-05-22 ===
+
+Escala: 9 linha(s) (filtrada de 144)
+Alterações para SENDAS: 0
+
+Carregando Unitrac...
+  212 veículos / 2148 paradas
+
+KPI gerado: KPI-SENDAS-2026-05-22 (1).xlsx
+  9 loja(s) no Excel
+
+=== ANÁLISE POR LOJA ===
+
+--- Americanas ---
+  1º carro: JOSÉ CARLOS | LKV5067
+     KPI GER:  SC=--- CHD=--- SL=--- (mot=JOSÉ CARLOS placa=LKV-5067)
+     GPS: 15p (0B 15L 0F)
+        LOJA  00:00-05:36  cod:17659002  EMANUEL CACHAMORRA
+        LOJA  05:44-06:02  cod:17659002  EMANUEL CACHAMORRA
+        LOJA  06:15-07:00  cod:560040  SENDAS SÃO JOÃO DE MERITI
+        LOJA  07:01-10:35  cod:560040  SENDAS SÃO JOÃO DE MERITI
+        LOJA  10:51-12:28  cod:17659002  EMANUEL CACHAMORRA
+        LOJA  12:29-13:03  cod:17659002  EMANUEL CACHAMORRA
+        LOJA  13:05-13:11  cod:17659002  EMANUEL CACHAMORRA
+        LOJA  13:45-13:49  cod:17659002  EMANUEL CACHAMORRA
+        LOJA  14:09-14:41  cod:17659002  EMANUEL CACHAMORRA
+        LOJA  15:22-15:36  cod:17659002  EMANUEL CACHAMORRA
+        LOJA  15:39-15:50  cod:17659002  EMANUEL CACHAMORRA
+        LOJA  15:51-19:53  cod:17659002  EMANUEL CACHAMORRA
+        LOJA  19:55-20:18  cod:17659002  EMANUEL CACHAMORRA
+        LOJA  20:35-21:33  cod:17659002  EMANUEL CACHAMORRA
+        LOJA  21:50-23:51  cod:17659002  EMANUEL CACHAMORRA
+        meta: hybrid(1)
+     MATCHER:  SC=06:02 CHD=06:15 SL=10:35
+     KPI GER:  SC=--- CHD=--- SL=--- (placa=LKV-5067) ⚠
+
+--- Sendas Central 1º Carro ---
+  1º carro: NELSON | KRB2J76
+     KPI GER:  SC=--- CHD=--- SL=--- (mot=NELSON placa=KRB-2J76)
+     GPS: 8p (0B 8L 0F)
+        LOJA  00:08-07:04  cod:13156084  MATRIZ CD DUQUE
+        LOJA  07:08-07:35  cod:13156084  MATRIZ CD DUQUE
+        LOJA  07:44-08:48  cod:13156084  MATRIZ CD DUQUE
+        LOJA  08:54-09:54  cod:13156084  MATRIZ CD DUQUE
+        LOJA  11:09-11:12  cod:13156084  MATRIZ CD DUQUE
+        LOJA  11:14-12:18  cod:13156084  MATRIZ CD DUQUE
+        LOJA  12:19-12:57  cod:13156084  MATRIZ CD DUQUE
+        LOJA  13:38-14:01  cod:13156084  MATRIZ CD DUQUE
+        meta: hybrid(1)
+     MATCHER:  SC=--- CHD=00:08 SL=14:01
+     KPI GER:  SC=--- CHD=--- SL=--- (placa=KRB-2J76) ⚠
+
+--- Atlantico Sul (Barra da Tijuca) ---
+  1º carro: MÁRCIO | LTH4J15
+     KPI GER:  SC=--- CHD=--- SL=--- (mot=MÁRCIO placa=LTH-4J15)
+     GPS: 19p (6B 6L 2F)
+        BASE  07:59 → 10:29
+        BASE  15:16 → 15:31
+        BASE  15:36 → 18:27
+        LOJA  05:13-05:50  cod:22980000  EMPORIO BARRA TOWER
+        LOJA  06:03-06:27  cod:22144000  PETIT MARCHE BARRAMARES
+        LOJA  11:17-11:34  cod:11623028  VIANENSE NOVA IGUAÇU
+        LOJA  11:48-12:13  cod:11623032  VIANENSE JARDIM ALVORADA
+        LOJA  20:17-20:23  cod:9039006  06 - ZONA SUL - GAVEA
+        LOJA  20:39-20:57  cod:9039105  31 - ZONA SUL - JD BOTANICO
+        meta: none(0)
+     MATCHER:  sem match
+
+--- Barramares (Barra da Tijuca) ---
+  1º carro: MÁRCIO | LTH4J15
+     KPI GER:  SC=04:24 CHD=06:03 SL=06:27 (mot=MÁRCIO placa=LTH-4J15)
+     GPS: 19p (6B 6L 2F)
+        BASE  07:59 → 10:29
+        BASE  15:16 → 15:31
+        BASE  15:36 → 18:27
+        LOJA  05:13-05:50  cod:22980000  EMPORIO BARRA TOWER
+        LOJA  06:03-06:27  cod:22144000  PETIT MARCHE BARRAMARES
+        LOJA  11:17-11:34  cod:11623028  VIANENSE NOVA IGUAÇU
+        LOJA  11:48-12:13  cod:11623032  VIANENSE JARDIM ALVORADA
+        LOJA  20:17-20:23  cod:9039006  06 - ZONA SUL - GAVEA
+        LOJA  20:39-20:57  cod:9039105  31 - ZONA SUL - JD BOTANICO
+        meta: hybrid(1)
+     MATCHER:  SC=04:24 CHD=06:03 SL=06:27
+     KPI GER:  SC=04:24 CHD=06:03 SL=06:27 (placa=LTH-4J15) ✓
+
+--- Barra Tower ---
+  1º carro: MÁRCIO | LTH4J15
+     KPI GER:  SC=04:24 CHD=05:13 SL=05:50 (mot=MÁRCIO placa=LTH-4J15)
+     GPS: 19p (6B 6L 2F)
+        BASE  07:59 → 10:29
+        BASE  15:16 → 15:31
+        BASE  15:36 → 18:27
+        LOJA  05:13-05:50  cod:22980000  EMPORIO BARRA TOWER
+        LOJA  06:03-06:27  cod:22144000  PETIT MARCHE BARRAMARES
+        LOJA  11:17-11:34  cod:11623028  VIANENSE NOVA IGUAÇU
+        LOJA  11:48-12:13  cod:11623032  VIANENSE JARDIM ALVORADA
+        LOJA  20:17-20:23  cod:9039006  06 - ZONA SUL - GAVEA
+        LOJA  20:39-20:57  cod:9039105  31 - ZONA SUL - JD BOTANICO
+        meta: hybrid(1)
+     MATCHER:  SC=04:24 CHD=05:13 SL=05:50
+     KPI GER:  SC=04:24 CHD=05:13 SL=05:50 (placa=LTH-4J15) ✓
+
+--- Santo Agostinho ---
+  1º carro: FLÁVIO | NSM6D98
+     KPI GER:  SC=--- CHD=--- SL=--- (mot=FLÁVIO placa=NSM-6D98)
+     GPS: 11p (3B 1L 4F)
+        BASE  04:11 → 04:31
+        BASE  07:43 → 08:56
+        BASE  08:57 → 09:27
+        LOJA  05:51-06:14  cod:9006012  CARREFOUR ALCANTARA
+        meta: none(0)
+     MATCHER:  sem match
+
+--- Armazem do grão - Central ---
+  1º carro: EDUARDO | KPH8C41
+     KPI GER:  SC=SEM CHD=SEM SL=SEM (mot=EDUARDO placa=KPH-8C41)
+     [GPS NÃO ENCONTRADO pra placa KPH8C41]
+
+--- Mercado de Santa ---
+  1º carro: LUIZ CESAR | LMF2049
+     KPI GER:  SC=13:30 CHD=16:25 SL=16:41 (mot=LUIZ CESAR placa=LMF-2049)
+     GPS: 13p (5B 0L 4F)
+        BASE  08:02 → 12:54
+        BASE  12:55 → 13:30
+        BASE  17:49 → 23:52
+        FORA  06:00-06:19  FORA DE BASE E LOCAL DE SERVIÇO
+        FORA  14:47-15:23  FORA DE BASE E LOCAL DE SERVIÇO
+        FORA  16:25-16:41  FORA DE BASE E LOCAL DE SERVIÇO
+        FORA  16:43-16:57  FORA DE BASE E LOCAL DE SERVIÇO
+        meta: geo(0.8)
+     MATCHER:  SC=13:30 CHD=16:25 SL=16:41
+     KPI GER:  SC=13:30 CHD=16:25 SL=16:41 (placa=LMF-2049) ✓
+
+--- Mercearia Sachinho (Vargem Grande) ---
+  1º carro: SANDRO | KXA5966
+     KPI GER:  SC=10:47 CHD=11:50 SL=12:33 (mot=SANDRO placa=KXA-5966)
+     GPS: 10p (3B 2L 4F)
+        BASE  09:43 → 10:11
+        BASE  10:16 → 10:47
+        BASE  14:22 → 15:41
+        LOJA  09:23-09:37  cod:202006  PAX MADUREIRA
+        LOJA  11:50-12:33  cod:15247000  MERCEARIA SACHINHO
+        meta: hybrid(1)
+     MATCHER:  SC=10:47 CHD=11:50 SL=12:33
+     KPI GER:  SC=10:47 CHD=11:50 SL=12:33 (placa=KXA-5966) ✓
+
+=== RESUMO ===
+  ✓ Matcher === KPI gerado: 4
+  ⚠ Issues (sem GPS, sem match ou divergência): 5

@@ -1,0 +1,22 @@
+
+=== VERIFICAÇÃO MUNDIAL — 2026-05-22 ===
+
+Escala: 1 linha(s) (filtrada de 144)
+Alterações para MUNDIAL: 0
+
+Carregando Unitrac...
+  212 veículos / 2148 paradas
+
+KPI gerado: KPI-MUNDIAL-2026-05-22 (1).xlsx
+  1 loja(s) no Excel
+
+=== ANÁLISE POR LOJA ===
+
+--- MUNDIAL ---
+  1º carro: CLUDIOMIR | CDL8E52
+     KPI GER:  SC=SEM CHD=SEM SL=SEM (mot=CLUDIOMIR placa=CDL-8E52)
+     [GPS NÃO ENCONTRADO pra placa CDL8E52]
+
+=== RESUMO ===
+  ✓ Matcher === KPI gerado: 0
+  ⚠ Issues (sem GPS, sem match ou divergência): 1

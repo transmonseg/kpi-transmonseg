@@ -1,0 +1,67 @@
+
+=== VERIFICAÇÃO VIANENSE — 2026-05-22 ===
+
+Escala: 4 linha(s) (filtrada de 144)
+Alterações para VIANENSE: 0
+
+Carregando Unitrac...
+  212 veículos / 2148 paradas
+
+KPI gerado: KPI-VIANENSE-2026-05-22 (1).xlsx
+  4 loja(s) no Excel
+
+=== ANÁLISE POR LOJA ===
+
+--- Vianense - Recreio 1º entrega ---
+  1º carro: JOSE ROBERTO | TML6D96
+     KPI GER:  SC=--- CHD=--- SL=--- (mot=JOSE ROBERTO placa=TML-6D96)
+     GPS: 11p (0B 1L 9F)
+        LOJA  06:38-07:06  cod:7000747  PREZUNIC TIJUCA
+        meta: none(0)
+     MATCHER:  sem match
+
+--- Vianense - Freguesia 2º entrega ---
+  1º carro: JOSE ROBERTO | TML6D96
+     KPI GER:  SC=--- CHD=--- SL=--- (mot=JOSE ROBERTO placa=TML-6D96)
+     GPS: 11p (0B 1L 9F)
+        LOJA  06:38-07:06  cod:7000747  PREZUNIC TIJUCA
+        meta: none(0)
+     MATCHER:  sem match
+
+--- Vianense - Nova Iguaçu 1º entrega ---
+  1º carro: MÁRCIO | LTH4J15
+     KPI GER:  SC=10:29 CHD=11:17 SL=11:34 (mot=MÁRCIO placa=LTH-4J15)
+     GPS: 19p (6B 6L 2F)
+        BASE  07:59 → 10:29
+        BASE  15:16 → 15:31
+        BASE  15:36 → 18:27
+        LOJA  05:13-05:50  cod:22980000  EMPORIO BARRA TOWER
+        LOJA  06:03-06:27  cod:22144000  PETIT MARCHE BARRAMARES
+        LOJA  11:17-11:34  cod:11623028  VIANENSE NOVA IGUAÇU
+        LOJA  11:48-12:13  cod:11623032  VIANENSE JARDIM ALVORADA
+        LOJA  20:17-20:23  cod:9039006  06 - ZONA SUL - GAVEA
+        LOJA  20:39-20:57  cod:9039105  31 - ZONA SUL - JD BOTANICO
+        meta: hybrid(1)
+     MATCHER:  SC=10:29 CHD=11:17 SL=11:34
+     KPI GER:  SC=10:29 CHD=11:17 SL=11:34 (placa=LTH-4J15) ✓
+
+--- Vianense - Jardim Alvorada 2º entrega ---
+  1º carro: MÁRCIO | LTH4J15
+     KPI GER:  SC=10:29 CHD=11:48 SL=12:13 (mot=MÁRCIO placa=LTH-4J15)
+     GPS: 19p (6B 6L 2F)
+        BASE  07:59 → 10:29
+        BASE  15:16 → 15:31
+        BASE  15:36 → 18:27
+        LOJA  05:13-05:50  cod:22980000  EMPORIO BARRA TOWER
+        LOJA  06:03-06:27  cod:22144000  PETIT MARCHE BARRAMARES
+        LOJA  11:17-11:34  cod:11623028  VIANENSE NOVA IGUAÇU
+        LOJA  11:48-12:13  cod:11623032  VIANENSE JARDIM ALVORADA
+        LOJA  20:17-20:23  cod:9039006  06 - ZONA SUL - GAVEA
+        LOJA  20:39-20:57  cod:9039105  31 - ZONA SUL - JD BOTANICO
+        meta: hybrid(1)
+     MATCHER:  SC=10:29 CHD=11:48 SL=12:13
+     KPI GER:  SC=10:29 CHD=11:48 SL=12:13 (placa=LTH-4J15) ✓
+
+=== RESUMO ===
+  ✓ Matcher === KPI gerado: 2
+  ⚠ Issues (sem GPS, sem match ou divergência): 2

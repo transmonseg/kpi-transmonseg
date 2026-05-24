@@ -1,0 +1,56 @@
+
+=== VERIFICAÇÃO SAMS_CLUB — 2026-05-22 ===
+
+Escala: 3 linha(s) (filtrada de 144)
+Alterações para SAMS_CLUB: 0
+
+Carregando Unitrac...
+  212 veículos / 2148 paradas
+
+KPI gerado: KPI-SAMS_CLUB-2026-05-22 (1).xlsx
+  3 loja(s) no Excel
+
+=== ANÁLISE POR LOJA ===
+
+--- Sam's - Linha Amarela ---
+  1º carro: FÁBIO BORGES | LAF0697
+     KPI GER:  SC=09:45 CHD=10:14 SL=11:44 (mot=FÁBIO BORGES placa=LAF-0697)
+     GPS: 10p (3B 2L 2F)
+        BASE  05:01 → 05:23
+        BASE  07:04 → 09:14
+        BASE  09:22 → 09:40
+        LOJA  06:05-06:24  cod:7000721  PREZUNIC NILÓPOLIS
+        LOJA  10:14-11:44  cod:4568002  SAMS LINHA AMARELA
+        meta: hybrid(1)
+     MATCHER:  SC=09:45 CHD=10:14 SL=11:44
+     KPI GER:  SC=09:45 CHD=10:14 SL=11:44 (placa=LAF-0697) ✓
+
+--- Sam's - Niterói ---
+  1º carro: JOSE ROBERTO | KPB5I95
+     KPI GER:  SC=09:43 CHD=10:33 SL=11:17 (mot=JOSE ROBERTO placa=KPB-5I95)
+     GPS: 14p (4B 4L 2F)
+        BASE  05:27 → 05:52
+        BASE  09:19 → 09:43
+        BASE  12:14 → 13:07
+        LOJA  06:48-07:58  cod:7000707  PREZUNIC FREGUESIA
+        LOJA  08:03-08:16  cod:579012  FEIRA NOVA  FREGUESIA
+        LOJA  10:33-11:17  cod:4568001  SAMS NITEROI
+        LOJA  13:57-14:39  cod:579012  FEIRA NOVA  FREGUESIA
+        meta: hybrid(1)
+     MATCHER:  SC=09:43 CHD=10:33 SL=11:17
+     KPI GER:  SC=09:43 CHD=10:33 SL=11:17 (placa=KPB-5I95) ✓
+
+--- Sam's - Barra (Ayrton Senna) ---
+  1º carro: FLÁVIO | NSM6D98
+     KPI GER:  SC=--- CHD=--- SL=--- (mot=FLÁVIO placa=NSM-6D98)
+     GPS: 11p (3B 1L 4F)
+        BASE  04:11 → 04:31
+        BASE  07:43 → 08:56
+        BASE  08:57 → 09:27
+        LOJA  05:51-06:14  cod:9006012  CARREFOUR ALCANTARA
+        meta: none(0)
+     MATCHER:  sem match
+
+=== RESUMO ===
+  ✓ Matcher === KPI gerado: 2
+  ⚠ Issues (sem GPS, sem match ou divergência): 1

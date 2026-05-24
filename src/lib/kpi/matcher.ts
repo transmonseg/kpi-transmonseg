@@ -325,12 +325,22 @@ function computeSaidaCdParaParada(
 function deduplicarPorCodigo(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
   // ExcelJS parseia serials do xlsx como UTC → BRT fica armazenado no campo UTC.
   // getUTCHours() devolve a hora BRT diretamente (sem ajuste de fuso).
-  const NOITE_H = 3  // 03:00 BRT
+  const NOITE_H = 3  // 03:00 BRT (chegada antes disso = noturna)
+  const SAIDA_MANHA_H = 6  // 06:00 BRT (saída até aqui = ainda madrugada)
   const NOITE_DUR_SEG = 2 * 3600 // 2 horas — cobre paradas de 93-94min às 01-02h BRT
+  // Estacionamento noturno = motorista dormiu perto da loja. Critério:
+  //   chegada de madrugada (< 03:00) E saída AINDA de madrugada (< 06:00) E duração > 2h.
+  // Critério antigo (só chegada+duração) marcava como noturno operações que começavam
+  // 00:00 mas iam até 13:14 — operação real, não estacionamento.
   function isEstacionamentoNoturno(p: UnitracParadaRow): boolean {
     const h = new Date(p.chegada).getUTCHours()
+    if (h >= NOITE_H) return false
     const dur = p.saida === null ? Infinity : (p.duracao_seg ?? 0)
-    return h < NOITE_H && dur > NOITE_DUR_SEG
+    if (dur <= NOITE_DUR_SEG) return false
+    // Parada ainda aberta (saida=null) com chegada noturna: trata como estacionamento (não saiu)
+    if (!p.saida) return true
+    const hSaida = new Date(p.saida).getUTCHours()
+    return hSaida < SAIDA_MANHA_H
   }
 
   const byCode = new Map<string, UnitracParadaRow>()
@@ -365,12 +375,19 @@ function deduplicarPorCodigo(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
  * Prefere SEM GPS a mostrar 00:01 ou 01:07 como horário de chegada.
  */
 function filtrarParadaNocturnaSolitaria(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
-  const NOITE_H = 3  // 03:00 BRT (getUTCHours = hora BRT, xlsx BRT armazenado como UTC)
+  const NOITE_H = 3  // 03:00 BRT (chegada antes disso = noturna)
+  const SAIDA_MANHA_H = 6 // 06:00 BRT (saída antes disso = ainda madrugada)
   const NOITE_DUR_SEG = 3 * 3600 // 3h — captura veículos que dormem perto da loja (ex: KOP-4978 às 00:03 BRT com 3h51); entregas reais de madrugada raramente ficam >3h parados
+  // Mesma lógica de deduplicarPorCodigo: estacionamento noturno legítimo exige
+  // chegada de madrugada E saída ainda de madrugada. Saída no meio do dia = operação real.
   function isEstNocturno(p: UnitracParadaRow): boolean {
     const h = new Date(p.chegada).getUTCHours()
+    if (h >= NOITE_H) return false
     const dur = p.saida === null ? Infinity : (p.duracao_seg ?? 0)
-    return h < NOITE_H && dur > NOITE_DUR_SEG
+    if (dur <= NOITE_DUR_SEG) return false
+    if (!p.saida) return true
+    const hSaida = new Date(p.saida).getUTCHours()
+    return hSaida < SAIDA_MANHA_H
   }
   // Conta paradas por codigo_loja
   const contagem = new Map<string, number>()

@@ -1,0 +1,39 @@
+
+=== VERIFICAÇÃO CAB_PETROPOLIS — 2026-05-22 ===
+
+Escala: 1 linha(s) (filtrada de 144)
+Alterações para CAB_PETROPOLIS: 0
+
+Carregando Unitrac...
+  212 veículos / 2148 paradas
+
+KPI gerado: KPI-CAB_PETROPOLIS-2026-05-22 (1).xlsx
+  1 loja(s) no Excel
+
+=== ANÁLISE POR LOJA ===
+
+--- CAB - PETRÓPOLIS ---
+  1º carro: ZOZIMO | KNS8D26
+     KPI GER:  SC=13:14 CHD=14:49 SL=23:57 (mot=ZOZIMO placa=KNS-8D26)
+     GPS: 14p (0B 14L 0F)
+        LOJA  00:00-03:45  cod:7012010  CAB - PETROPOLIS
+        LOJA  04:41-05:03  cod:7012010  CAB - PETROPOLIS
+        LOJA  05:09-05:18  cod:7012010  CAB - PETROPOLIS
+        LOJA  07:07-07:15  cod:7012010  CAB - PETROPOLIS
+        LOJA  07:15-07:55  cod:7012010  CAB - PETROPOLIS
+        LOJA  09:29-10:09  cod:7012010  CAB - PETROPOLIS
+        LOJA  10:15-10:20  cod:7012010  CAB - PETROPOLIS
+        LOJA  10:40-10:55  cod:7012010  CAB - PETROPOLIS
+        LOJA  10:59-11:25  cod:7012010  CAB - PETROPOLIS
+        LOJA  11:26-12:12  cod:7012010  CAB - PETROPOLIS
+        LOJA  12:13-13:14  cod:7012010  CAB - PETROPOLIS
+        LOJA  14:15-14:42  cod:579011  FEIRA NOVA BOA DICA (PIABETÁ)
+        LOJA  14:49-14:55  cod:7012010  CAB - PETROPOLIS
+        LOJA  15:45-23:57  cod:7012010  CAB - PETROPOLIS
+        meta: hybrid(1)
+     MATCHER:  SC=--- CHD=00:00 SL=13:14
+     KPI GER:  SC=13:14 CHD=14:49 SL=23:57 (placa=KNS-8D26) ⚠
+
+=== RESUMO ===
+  ✓ Matcher === KPI gerado: 0
+  ⚠ Issues (sem GPS, sem match ou divergência): 1
