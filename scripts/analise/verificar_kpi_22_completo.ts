@@ -15,7 +15,7 @@
  *   4. Todas as colunas do KPI Excel
  *   5. Lat/lng das paradas (distância vs raio)
  *   6. Ambos slots da linha (placa1 + placa2)
- *   7. Anomalias (placeholder — Supabase)
+ *   7. SC/CHD/SL: matcher (rodado agora) vs KPI gerado
  *
  * Saída: docs/verificacao-22/<REDE>.md (markdown estruturado).
  *
@@ -490,12 +490,35 @@ async function main() {
   }
   append('')
 
-  // ====================================
-  // CHECK 7 — ANOMALIAS (PLACEHOLDER)
-  // ====================================
-  append('## Check 7 — Anomalias do sistema')
+  // ===========================================
+  // CHECK 7 — SC/CHD/SL: matcher vs KPI gerado
+  // ===========================================
+  append('## Check 7 — SC/CHD/SL: matcher (rodado agora) vs KPI gerado')
   append('')
-  append('_Pendente: requer acesso à tabela `kpis` no Supabase com `qtd_anomalias_high/medium/low`._')
+  const timeIssues: string[] = []
+  for (const l of escala) {
+    const k = kpiByLoja.get(l.loja_nome_raw)
+    if (!k) continue
+    const slotK = l.carro_ordem === 1 ? k.slot1 : k.slot2
+    const rota = rotaById.get(l.id)
+    const mSc = rota?.saida_cd ? toHHMM(rota.saida_cd) : '---'
+    const mChd = rota?.paradas[0] ? toHHMM(rota.paradas[0].chegada) : '---'
+    const mSl = rota?.paradas[0] ? toHHMM(rota.paradas[0].saida) : '---'
+    // Normaliza pra comparar (--- e SEM são "sem dado")
+    const noData = (v: string) => v === '---' || v.startsWith('SEM') || v.startsWith('NAO')
+    const eq = (a: string, b: string) => (noData(a) && noData(b)) || a === b
+    if (!eq(mSc, slotK.sc) || !eq(mChd, slotK.chd) || !eq(mSl, slotK.sl)) {
+      timeIssues.push(`- **${l.loja_nome_raw}** (c${l.carro_ordem}): matcher=${mSc}/${mChd}/${mSl} | KPI=${slotK.sc}/${slotK.chd}/${slotK.sl}`)
+    }
+  }
+  if (timeIssues.length === 0) append('✓ Todos timestamps batem.')
+  else {
+    append(`⚠ **${timeIssues.length} divergência(s) entre matcher local e KPI gerado:**`)
+    timeIssues.forEach(s => append(s))
+    append('')
+    append('_Pode indicar que o KPI foi gerado com versão antiga do código. Regerar deve corrigir._')
+    problemas.push(`Check 7: ${timeIssues.length} timestamps divergentes (matcher vs KPI)`)
+  }
   append('')
 
   // =====================

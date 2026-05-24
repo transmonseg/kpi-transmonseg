@@ -1,15 +1,15 @@
-# Análise MUNDIAL — Dia 22/05/2026
+# Análise ATACADAO — Dia 22/05/2026
 
 > Análise completa com 7 checks (ver `CHECKLIST.md`)
 
 ## Sumário
 
 - **Data:** 2026-05-22
-- **Rede:** MUNDIAL
+- **Rede:** ATACADAO
 - **Escala:** 1 linha(s)
 - **Alterações:** 0
 - **Unitrac:** 212 veículos, 2148 paradas
-- **KPI gerado:** KPI-MUNDIAL-2026-05-22 (1).xlsx (1 linhas)
+- **KPI gerado:** KPI-ATACADAO-2026-05-22 (1).xlsx (1 linhas)
 
 ## Check 1 — Motorista (escala vs KPI)
 
@@ -30,7 +30,7 @@ Sem alterações para esta rede.
 Cabeçalhos detectados: [1] REDES / FILIAIS | [2] MOTORISTA | [3] COD | [4] PLACA | [5] SAIDA CD | [6] CHD LOJA | [7] SAIDA LOJA | [8] MOTORISTA | [9] COD | [10] PLACA | [11] SAIDA CD | [12] CHD LOJA | [13] SAIDA LOJA | [14] TEMPO EM LOJA 1 | [15] TEMPO EM LOJA 2
 
 1 loja(s) com dados em colunas extras:
-  - **MUNDIAL**: TEMPO EM LOJA 1=00:00, TEMPO EM LOJA 2=00:00
+  - **Atacadão - Manilha**: TEMPO EM LOJA 1=01:20, TEMPO EM LOJA 2=00:00
 
 ## Check 5 — Lat/lng das paradas (vs cadastro)
 
@@ -46,11 +46,11 @@ Cabeçalhos detectados: [1] REDES / FILIAIS | [2] MOTORISTA | [3] COD | [4] PLAC
 
 ## Detalhe — Loja por loja
 
-### MUNDIAL
-- **c1**: CLUDIOMIR | CDL8E52
-  - Escala: motorista=CLUDIOMIR placa=CDL8E52
-  - KPI: motorista=CLUDIOMIR placa=CDL-8E52 | SC=SEM CHD=SEM SL=SEM
-  - GPS: placa não encontrada no Unitrac
+### Atacadão - Manilha
+- **c1**: LUCIANO MATIAS | QSS1E48
+  - Escala: motorista=LUCIANO MATIAS placa=QSS1E48
+  - KPI: motorista=LUCIANO MATIAS placa=QSS-1E48 | SC=04:27 CHD=05:59 SL=07:19
+  - Matcher: SC=04:27 CHD=05:59 SL=07:19
 
 ## Problemas identificados
 

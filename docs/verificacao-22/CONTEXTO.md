@@ -40,15 +40,16 @@ Verificar UMA POR UMA todas as 17 KPIs geradas pelo sistema no dia 22/05/2026, c
 
 Roda matcher fresh e compara com KPI gerado. Salva relatório em `docs/verificacao-22/<REDE>.md`.
 
-## Os 7 Checks (Fase 1 — em implementação)
+## Os 6 Checks (Fase 1 — implementada)
 
 1. **Motorista** — comparar nome do motorista da escala vs nome no KPI
 2. **Contagem global** — escala (N) vs KPI (N) — flag lojas faltantes/extras
 3. **Alterações aplicadas** — KPI reflete trocas de placa/motorista do PDF de alterações?
-4. **Todas colunas KPI** — ler obs/status/anomalia além de mot/placa/SC/CHD/SL
+4. **Todas colunas KPI** — ler colunas extras (TEMPO EM LOJA etc) além de mot/placa/SC/CHD/SL
 5. **Lat/lng paradas** — distância das paradas GPS ao centro da loja (>raio = flag)
 6. **2 slots na linha** — validar placa1 E placa2 da linha do KPI
-7. **Anomalias sistema** — comparar com `qtd_anomalias_high/medium/low` do banco
+
+**Removido:** antigo Check 7 (Anomalias) era de versão antiga do KPI já descontinuada.
 
 ## Lista das 17 KPIs
 

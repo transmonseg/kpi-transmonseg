@@ -1,6 +1,8 @@
-# Checklist dos 7 Checks por KPI
+# Checklist dos 6 Checks por KPI
 
 > Cada análise de KPI deve passar por TODOS estes checks. Saída em `<REDE>.md`.
+
+**Observação:** o antigo "Check 7 — Anomalias do sistema" foi REMOVIDO. Era de uma versão antiga do KPI que já foi descontinuada. O fluxo atual não usa anomalias.
 
 ## Check 1 — Motorista (escala vs KPI)
 
@@ -58,12 +60,6 @@ Se divergente → flag "alteração não aplicada".
 **Cada loja no KPI Excel** tem 2 colunas de carro: 1º carro (cols 2-7) e 2º carro (cols 8-13).
 
 **Validação:** validar SC/CHD/SL de AMBOS, não só do slot da linha de escala. Se 2º carro tem dados mas não tem escala correspondente → flag.
-
-## Check 7 — Anomalias do sistema
-
-**Fonte:** tabela `kpis` no Supabase tem `qtd_anomalias_high/medium/low` por rota.
-
-**Validação:** se rota tem anomalia HIGH e KPI gerado mostrou tudo OK → flag. (Não temos acesso ao Supabase aqui — pode ficar como TODO ou implementar buscando do banco.)
 
 ## Formato do relatório `<REDE>.md`
 
