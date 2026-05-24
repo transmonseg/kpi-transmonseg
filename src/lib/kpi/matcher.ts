@@ -267,11 +267,9 @@ function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracPara
  * concatena todas as geofences sobrepostas com vírgula, e findLojaGeofence
  * prioriza LOJA mesmo quando BASE BENASSI está no prefixo).
  *
- * Fallback T16-B: se nenhuma BASE anterior, usa a saída da última parada
- * não-LOJA imediatamente anterior ao alvo (ex: FORA_BASE de onde o motorista
- * saiu direto pra entrega — mais preciso que usar chegada da LOJA como proxy).
- * Fallback final: chegada do alvo — garante que saida_cd nunca é null quando
- * há um match (evita confundir "SEM GPS" com "entregou mas sem saída de CD").
+ * Sem BASE anterior: retorna null. Melhor que usar FORA_BASE/FAKE_EXIT como
+ * proxy (T16-B foi removido) — null no Excel é mais honesto do que timestamp
+ * de uma parada não-BASE que pode estar em qualquer lugar.
  */
 function computeSaidaCdParaParada(
   paradaAlvo: UnitracParadaRow,
@@ -279,7 +277,6 @@ function computeSaidaCdParaParada(
 ): Date | null {
   const alvoTs = new Date(paradaAlvo.chegada).getTime()
   let lastBaseSaida: Date | null = null
-  let lastNonLojaSaida: Date | null = null
   for (const p of todasParadas) {
     if (new Date(p.chegada).getTime() >= alvoTs) break
     // T16-C: Base detection robusta. Além de classificacao===BASE/FAKE_EXIT,
@@ -298,20 +295,9 @@ function computeSaidaCdParaParada(
         }
       }
     }
-    // Rastreia saída de qualquer parada não-BASE como proxy de fallback (T16-B).
-    // Usa isBase para excluir paradas de BASE misclassificadas como LOJA.
-    if (!isBase && p.classificacao !== 'LOJA' && p.saida) {
-      const s = new Date(p.saida)
-      if (s.getTime() < alvoTs) {
-        if (!lastNonLojaSaida || s.getTime() > lastNonLojaSaida.getTime()) {
-          lastNonLojaSaida = s
-        }
-      }
-    }
   }
-  // Prioridade: BASE exit → última saída não-LOJA → null (sem BASE = não sabemos quando saiu do CD)
-  // Antes: fallback para chegada do alvo gerava saída_cd = CHD (0 min de viagem, impossível).
-  return lastBaseSaida ?? lastNonLojaSaida ?? null
+  // Sem BASE exit = não sabemos quando saiu do CD → null (melhor que FAKE_EXIT/FORA_BASE como proxy)
+  return lastBaseSaida ?? null
 }
 
 /**
@@ -1002,12 +988,13 @@ export async function cruzaEscalaUnitrac(
     // escala_linha (parada "órfã"). Indica que o veículo entregou em outra rede mas
     // não nas lojas desta escala; T18 buscaria parada de outro veículo perto da loja
     // e produziria FP (caso TML3B11: LOJA=PREZUNIC TIJUCA, escala=VIANENSE).
+    // Nota: manter any-orphan (não só cross-rede) �� veículos com múltiplas LOJA
+    // paradas da mesma rede criam FPs se T18 fica desbloqueado para suas linhas restantes.
     const matchedParadaIds = new Set([...matchByEscalaId.values()].map(p => p.id))
     const semGpsLines = escalaLinhas.filter(l => {
       if (!l.placa_norm || matchByEscalaId.has(l.id)) return false
       const placaRes = resolvePlacaUnitrac(l.placa_norm)
       if (!placaRes) return false
-      // T18-Orphan: pula se veículo tem LOJA órfã
       const paradaDoVeiculo = paradaByPlaca.get(placaRes) ?? []
       if (paradaDoVeiculo.some(p => p.classificacao === 'LOJA' && !matchedParadaIds.has(p.id))) return false
       return true
