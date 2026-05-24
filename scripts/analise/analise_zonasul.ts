@@ -180,7 +180,7 @@ async function main() {
 
   process.stdout.write(`=== ANÁLISE ZONA_SUL — ${data} ===\nSC=SaídaCD  CHD=ChegadaLoja  SL=SaídaLoja\n\n`)
 
-  function noData(v: string): boolean { return v === '---' || v.startsWith('SEM') }
+  function noData(v: string): boolean { return v === '---' || v.startsWith('SEM') || v.startsWith('NAO') }
   function arrEq(a: string[], b: string[]): boolean {
     return a.every((v, i) => (noData(v) && noData(b[i])) || v === b[i])
   }

@@ -69,7 +69,8 @@ function runJob(job: Job): Promise<ScoreEntry> {
 }
 
 async function main() {
-  process.stderr.write(`Snapshot started, ${JOBS.length} jobs, concurrency=4\n`)
+  const CONCURRENCY = 2
+  process.stderr.write(`Snapshot started, ${JOBS.length} jobs, concurrency=${CONCURRENCY}\n`)
   const startTime = Date.now()
 
   const snapshot: Snapshot = {
@@ -78,9 +79,11 @@ async function main() {
     redes: {},
   }
 
-  for (let i = 0; i < JOBS.length; i += 4) {
-    const batch = JOBS.slice(i, i + 4)
-    process.stderr.write(`  batch ${i / 4 + 1}/${Math.ceil(JOBS.length / 4)}: ${batch.map(j => `${j.rede}/${j.dia}`).join(', ')}\n`)
+  for (let i = 0; i < JOBS.length; i += CONCURRENCY) {
+    const batch = JOBS.slice(i, i + CONCURRENCY)
+    const batchNum = Math.floor(i / CONCURRENCY) + 1
+    const totalBatches = Math.ceil(JOBS.length / CONCURRENCY)
+    process.stderr.write(`  batch ${batchNum}/${totalBatches}: ${batch.map(j => `${j.rede}/${j.dia}`).join(', ')}\n`)
     const results = await Promise.all(batch.map(job => runJob(job).then(score => ({ job, score }))))
     for (const { job, score } of results) {
       if (!snapshot.redes[job.rede]) snapshot.redes[job.rede] = {}
