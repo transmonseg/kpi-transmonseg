@@ -1,0 +1,615 @@
+{
+  "geradoEm": "2026-05-24T23:38:34.060Z",
+  "total": 87,
+  "lojas": [
+    {
+      "id": "d8072be8-78ed-4f35-be77-7d836137ee33",
+      "rede_id": "PREZUNIC",
+      "nome": "PREZUNIC - LARANJEIRAS",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "b6aa6ff9-af24-4007-9142-c118379d8ef1",
+      "rede_id": "ASSAI",
+      "nome": "ASSAI - ALCANTARA II - LOJA 293",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "2d4350d2-7d3b-428b-8c14-650aa45fffbc",
+      "rede_id": "SUPERPRIX",
+      "nome": "SUPER PRIX - BARRA - LOJA 202",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "566f4a53-8209-402c-8134-c44344bac2f8",
+      "rede_id": "ZONA_SUL",
+      "nome": "ZONA SUL LOJA 13 - ANGRA",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "4e8dda98-79b9-47fd-b435-3d50f3e3f02e",
+      "rede_id": "ZONA_SUL",
+      "nome": "ZONA SUL LOJA 25 - JARDIM BOTANICO",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "c907d214-a459-48f0-81ca-7c1289d50a34",
+      "rede_id": "ZONA_SUL",
+      "nome": "ZONA SUL LOJA 31 - JARDIM BOTANICO",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "8fb5939a-b68c-45ea-b480-49c27a0cde6e",
+      "rede_id": "ARMAZEM_GRAO",
+      "nome": "ARMAZEM DO GRAO (BARRA DA TIJUCA)",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "17da9799-1bd7-4f97-a102-4115087d5af8",
+      "rede_id": "CARREFOUR",
+      "nome": "CARREFOUR ESPIRITO SANTO",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "66975a12-b2b5-4d1c-a241-655e656fadcc",
+      "rede_id": "CARREFOUR",
+      "nome": "CARREFOUR SULACAP",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "f2367c9e-5ec6-47b4-b715-0677edb801aa",
+      "rede_id": "EMANUEL",
+      "nome": "EMANUEL COMERCIO PEDRA DE GUARATIBA",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "b7c4848d-c14a-4f48-8226-96c481ab31c9",
+      "rede_id": "EMANUEL",
+      "nome": "O BOM ATACADISTA",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "2d8467c0-3eb6-497d-8f40-0badc3d5f081",
+      "rede_id": "EMANUEL",
+      "nome": "O BOM CAMPO GRANDE",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "d3739d8e-2fe3-4dd7-adae-476332f6879b",
+      "rede_id": "EMANUEL",
+      "nome": "EMANUEL CACHAMORRA",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "15a43cbb-2eb6-42d5-b838-545399a57cac",
+      "rede_id": "EMANUEL",
+      "nome": "EMANUEL VARGEM GRANDE",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "04d651a1-8056-46ab-bec3-a63115789b03",
+      "rede_id": "EMANUEL",
+      "nome": "EMANUEL ALHAMBRA",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "664c5360-c41d-4175-98ec-c2a5673b6b7d",
+      "rede_id": "EMANUEL",
+      "nome": "EMANUEL REDE ECONOMIA SANTA MARIA",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "a8a36811-d95b-4b65-b1e4-3b8de19bc193",
+      "rede_id": "FEIRA_NOVA",
+      "nome": "FEIRA NOVA OLINDA",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "bf012ac3-13c1-4efd-897a-a0535691d6a1",
+      "rede_id": "FEIRA_NOVA",
+      "nome": "FEIRA NOVA ANCHIETA",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "4e73769b-cfd0-4b9f-9290-cf7cccce02a7",
+      "rede_id": "FEIRA_NOVA",
+      "nome": "FEIRA NOVA IRAJA",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "3f8f28b6-4e2f-4a26-b619-ffd5468075f3",
+      "rede_id": "FEIRA_NOVA",
+      "nome": "FEIRA NOVA CERAMICA",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "632eff69-df9b-4d32-ac19-4b05fa892ad6",
+      "rede_id": "FEIRA_NOVA",
+      "nome": "FEIRA NOVA QUEIMADOS",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "bcdd0844-fa8b-4768-bf1c-7e485ef35611",
+      "rede_id": "FEIRA_NOVA",
+      "nome": "FEIRA NOVA CACHAMBI",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "11ea634c-11f9-4f2d-842c-699c68bdb895",
+      "rede_id": "FEIRA_NOVA",
+      "nome": "FEIRA NOVA FREGUESIA",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "27ead962-77a1-4117-9495-3217b44898c7",
+      "rede_id": "PREZUNIC",
+      "nome": "PREZUNIC PENHA",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "77d7039b-d1b3-40a4-9ce7-06fad96cb108",
+      "rede_id": "PREZUNIC",
+      "nome": "PREZUNIC CACHAMBI",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "5b6caef8-4a4c-4ef6-89d7-411422cfbdbb",
+      "rede_id": "PREZUNIC",
+      "nome": "PREZUNIC ICARAI",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "6e8bdfa7-a5ad-48e7-9572-7d61c4020f48",
+      "rede_id": "SUPER_PAX",
+      "nome": "PAX REALENGO",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "09cdf72b-7720-47ea-a49f-2079e59ba761",
+      "rede_id": "SUPER_PAX",
+      "nome": "PAX INHAUMA",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "6633457e-483b-43dd-8287-4b558a8024da",
+      "rede_id": "SUPER_PAX",
+      "nome": "PAX GUADALUPE",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "ea963466-dddd-4239-837a-6e210a2ed97a",
+      "rede_id": "SUPER_PAX",
+      "nome": "PAX MADUREIRA",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "f5ed8b53-2989-4f02-b56b-57505d9d37d4",
+      "rede_id": "SUPER_PAX",
+      "nome": "PAX PILARES",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "7cb52d6c-1e6e-4dde-b40a-fe74ac2b6179",
+      "rede_id": "SUPER_PAX",
+      "nome": "PAX TAQUARA",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "dba0761d-337d-4f7a-8595-1c2793924121",
+      "rede_id": "SUPER_PAX",
+      "nome": "PAX SEPETIBA",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "f8b36405-fb75-4e95-b9e6-308ad5f11410",
+      "rede_id": "SUPER_PAX",
+      "nome": "PAX LINS",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "3cb51a81-7ea2-4161-be41-2b4ca4def61d",
+      "rede_id": "VIANENSE",
+      "nome": "VIANENSE FREGUESIA",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "33bd5959-0fc0-4203-b025-3c34979d8db1",
+      "rede_id": "SENDAS",
+      "nome": "MERCADO ITAGIBA DE COSMOS LTDA",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "b0f346f7-0459-4232-917f-204883aef5ca",
+      "rede_id": "SENDAS",
+      "nome": "ESG MERCADO COMERCIO (JACAREPAGUA)",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "2c910254-d052-4f98-8a3c-32591d0d79a9",
+      "rede_id": "SENDAS",
+      "nome": "SENDAS NOVA IGUACU - LOJA 30",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "02779cfc-8217-49a2-998d-ed21143b54fc",
+      "rede_id": "SENDAS",
+      "nome": "SENDAS NILOPOLIS - LOJA 36",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "3d623f48-0fc7-4185-8258-0773785e2e65",
+      "rede_id": "SENDAS",
+      "nome": "SENDAS BANGU - LOJA 55",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "dd27e52d-5143-4580-82a7-3647ab1c1129",
+      "rede_id": "SENDAS",
+      "nome": "SENDAS MESQUITA - LJ 35",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "440f3ca0-6523-4e6e-a932-ca7fb2e6b0d0",
+      "rede_id": "SENDAS",
+      "nome": "SENDAS BARRA II - LJ 245",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "532c14a9-89c5-4b34-8579-4943b752a773",
+      "rede_id": "SENDAS",
+      "nome": "SENDAS ARARUAMA - LJ 221",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "dec0826d-4863-41d2-845f-fd35ce38a150",
+      "rede_id": "SENDAS",
+      "nome": "SENDAS NOVA IGUACU II",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "f2f12545-a5b6-46d5-8979-ae37c1d792db",
+      "rede_id": "SENDAS",
+      "nome": "SENDAS BOULEVARD",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "dce5e487-f4ad-482e-87f8-8ebc2290efaa",
+      "rede_id": "SENDAS",
+      "nome": "SENDAS CAXIAS II (PARQUE FLUMINENSE)",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "cd4833c0-bf32-4dd2-ba92-795b86c26187",
+      "rede_id": "SUPERPRIX",
+      "nome": "SUPERPRIX LJ 07 - RIACHUELO",
+      "tem_codigo_unitrac": true,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "18e9e8a0-874c-48e9-a173-5d8e9ccbfece",
+      "rede_id": "PRINCESA",
+      "nome": "Princesa - Marica 1 (2 Entrega)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "d4ecbb7e-353c-4d96-82a7-e429f45b3078",
+      "rede_id": "PRINCESA",
+      "nome": "Princesa - Marica 2 (1 Entrega)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "96f3a2b0-d44d-44c7-aa2f-b1b8ebdc0542",
+      "rede_id": "ARMAZEM_GRAO",
+      "nome": "ARMAZEM DO GRAO (BOA VISTA)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "ef0572fb-d9f8-43e0-8bb6-b87747f5c20c",
+      "rede_id": "ARMAZEM_GRAO",
+      "nome": "ARMAZEM DO GRAO MATRIZ (POSSE)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "79df48e7-14c4-4558-9a5b-e784b5cd7ac4",
+      "rede_id": "PRINCESA",
+      "nome": "Princesa - Buzios 1 (2 Entrega)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "2cac8d64-3559-4d94-b06f-7d42731ca90e",
+      "rede_id": "PRINCESA",
+      "nome": "Princesa - Buzios 2 (3 Entrega)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "67000e8b-d6ab-46f8-a9b2-b108db199271",
+      "rede_id": "PRINCESA",
+      "nome": "Princesa - Buzios 3 (1 Entrega)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "804995bb-0674-4a62-83ca-56ea3607d3ba",
+      "rede_id": "ASSAI",
+      "nome": "Assai - Araruama - Loja 221",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "52d8084d-da55-4905-a9c4-947feb1dc293",
+      "rede_id": "ASSAI",
+      "nome": "Assai - Cabo Frio - Loja 82",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "5562bbed-3fdc-4c6f-ab89-6f08fac1034f",
+      "rede_id": "ASSAI",
+      "nome": "Assai - Campinho - Loja 37",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "2e51c09f-7350-4f45-84bf-7dd4037bdeb1",
+      "rede_id": "ASSAI",
+      "nome": "Assai - Campos dos Goytacazes - Loja 188",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "0f782b51-00a1-43a2-9c38-a22c230d0584",
+      "rede_id": "ASSAI",
+      "nome": "Assai - Cesario de Melo - Loja 202",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "6b5f37d8-af31-4fa1-bb10-6ce1094a9ecd",
+      "rede_id": "ASSAI",
+      "nome": "Assai - Macae - Loja 232",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "7a51da84-a7ed-492d-8764-f43683145202",
+      "rede_id": "ASSAI",
+      "nome": "Assai - Maracana - Loja 286",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "4a5ea95f-5124-4ee6-9690-c3b6e21525b7",
+      "rede_id": "ASSAI",
+      "nome": "Assai - Nilopolis - Loja 36",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "61fe036d-e0e2-4cf0-b456-db7f8864ba74",
+      "rede_id": "ASSAI",
+      "nome": "Assai - Niteroi - Loja 41",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "207a3e4e-211c-4be8-a552-642802c08233",
+      "rede_id": "ASSAI",
+      "nome": "Assai - Nova Iguacu - Loja 30",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "0c4d34fd-df9e-413c-bc69-3b5dd65d6bdd",
+      "rede_id": "EMANUEL",
+      "nome": "PEDRA GUARATIBA",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "4d50f886-bfbd-48e8-bbf2-debe701c89be",
+      "rede_id": "ASSAI",
+      "nome": "Assai - Tribobo - Loja 248",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "bb00c1c3-cb19-4c1d-83a0-50e4d0113483",
+      "rede_id": "CARREFOUR",
+      "nome": "Carrefour - Washington Luiz",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "2c3697f0-ebca-49e5-b368-c24d47436691",
+      "rede_id": "EMANUEL",
+      "nome": "JARDIM MARAVILHA",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "056258e0-9b7a-42c6-9efb-28282a488ac7",
+      "rede_id": "EMANUEL",
+      "nome": "SANTA MARIA",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "a60c3157-7b35-463b-9041-5a569c9961ae",
+      "rede_id": "EMANUEL",
+      "nome": "VARGEM GRANDE",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "d93026b4-83fe-42c6-8351-593712ccd457",
+      "rede_id": "VIANENSE",
+      "nome": "Vianense - Freguesia 2 entrega",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "1f0592f7-3f9d-4cf6-9bbb-5835a522df0a",
+      "rede_id": "PREZUNIC",
+      "nome": "Prezunic - Anil (Jacarepagua)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "68fae793-6da8-43be-b7d7-bd8bd8c7b940",
+      "rede_id": "PRINCESA",
+      "nome": "Princesa - Arraial 1 (1 Entrega)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "06c8cffe-39c6-4389-baf8-cd103ecee1c4",
+      "rede_id": "PRINCESA",
+      "nome": "Princesa - Arraial 2 (2 Entrega)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "b55257f3-9675-4ce9-99eb-dbb7e4ae0f3f",
+      "rede_id": "PRINCESA",
+      "nome": "Princesa - Arraial 3 (3 Entrega)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "cac2a138-b51a-401d-b183-ea3068f39728",
+      "rede_id": "PRINCESA",
+      "nome": "Princesa - Barra de Sao Joao (1 Entrega)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "24964f68-ccb9-4068-8f36-d22bd73a7013",
+      "rede_id": "PRINCESA",
+      "nome": "Princesa - Rio das Ostras (2 Entrega)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "452ba7c6-167c-447a-8efe-addb903047e5",
+      "rede_id": "PRINCESA",
+      "nome": "Princesa - Cabo Frio 1 (1 Entrega)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "f474bb59-86b3-46ce-9a64-50cf2f21c145",
+      "rede_id": "PRINCESA",
+      "nome": "Princesa - Cabo Frio 2 (3 Entrega)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "2a8a8fa1-87ad-4fc3-9975-cc43a8b122e7",
+      "rede_id": "PRINCESA",
+      "nome": "Princesa - Cabo Frio 3 (2 Entrega)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "1c2f4f5a-287e-4444-8c2a-66bf37d748db",
+      "rede_id": "VIANENSE",
+      "nome": "Vianense - Jardim Alvorada 2 entrega",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "2cd76d7c-3a84-470c-b1d9-1a0581aac44f",
+      "rede_id": "SENDAS",
+      "nome": "Sendas Central 1 Carro",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "a1e9077b-d02b-41af-8922-df9c2e5c4231",
+      "rede_id": "SUPERPRIX",
+      "nome": "Super Prix - Icarai - Loja 10 (2 ENTREGA)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "e9bf0b93-7f8a-409d-9a86-515c89ac1238",
+      "rede_id": "SUPERPRIX",
+      "nome": "Super Prix - Niteroi - Loja 13 (1 ENTREGA)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "ef2a342e-82ca-472b-a09c-c6069a251af2",
+      "rede_id": "SUPERPRIX",
+      "nome": "Super Prix - Grajau VERDUN Loja 04 (2 ENTREGA)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "841f1058-08f2-4311-9c4e-4b020d5a3f73",
+      "rede_id": "SUPERPRIX",
+      "nome": "Super Prix - Grajau - Loja 08 (1 ENTREGA)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "48edeab8-b3fe-4434-b848-d318f3ad93b7",
+      "rede_id": "SUPERPRIX",
+      "nome": "SUPERCOMPRAS - COSMOS",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    }
+  ]
+}

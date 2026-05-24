@@ -4,20 +4,20 @@
 
 ## Estado global
 
-- **Fase atual:** Aguardando aprovação do plano
-- **Próximo passo:** Aprovação do dono pra começar Fase 0
+- **Fase atual:** Fase 0 em andamento (autorização recebida)
+- **Modelo de validação final:** MANUAL — dono entra no sistema, gera KPIs, envia pra comparação
 - **Última atualização:** sessão atual
 
 ## Status por fase
 
 | Fase | Status | Início | Fim | Notas |
 |------|--------|--------|-----|-------|
-| 0 — Sanitização cadastro | ⏳ Pendente | - | - | Aguardando autorização |
-| 1 — Pipeline alterações | ⏳ Pendente | - | - | - |
+| 0 — Sanitização cadastro | 🚧 Em andamento | 2026-05-24 | - | Autorizado pelo dono |
+| 1 — Pipeline alterações | ⏳ Pendente | - | - | Bloqueada por Fase 0 |
 | 2 — Matcher v2 | ⏳ Pendente | - | - | - |
 | 3 — Validação rede a rede | ⏳ Pendente | - | - | - |
 | 4 — Casos especiais | ⏳ Pendente | - | - | - |
-| 5 — Validação final | ⏳ Pendente | - | - | - |
+| 5 — Validação final | ⏳ Pendente | - | - | Manual pelo dono |
 
 ## Baseline (antes de qualquer correção)
 

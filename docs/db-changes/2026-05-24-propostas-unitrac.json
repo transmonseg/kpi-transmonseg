@@ -1,0 +1,1094 @@
+{
+  "geradoEm": "2026-05-24T23:38:34.057Z",
+  "totalPropostas": 83,
+  "porCampo": {
+    "codigo_unitrac": 30,
+    "nome_unitrac": 53
+  },
+  "porConfianca": {
+    "alta": 61,
+    "media": 0,
+    "baixa": 22
+  },
+  "propostas": [
+    {
+      "loja_id": "bac51e51-a957-459d-becc-5dd11ac961bb",
+      "loja_nome": "ZONA SUL LOJA 04 - COPACABANA II",
+      "rede_id": "ZONA_SUL",
+      "campo": "nome_unitrac",
+      "valor_proposto": "04 - ZONA SUL - COPACABANA II",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 4,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"04 - ZONA SUL - COPACABANA II\" compartilha token significativo (COPACABANA) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "fd2858b1-1148-42a4-b831-042f297fd587",
+      "loja_nome": "ZONA SUL LOJA 07 - LEBLON",
+      "rede_id": "ZONA_SUL",
+      "campo": "nome_unitrac",
+      "valor_proposto": "07 - ZONA SUL - LEBLON",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 9,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"07 - ZONA SUL - LEBLON\" compartilha token significativo (LEBLON) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "4f07ec5c-9db6-4b98-a6a1-619ad1bd757b",
+      "loja_nome": "ZONA SUL LOJA 18 - COPACABANA",
+      "rede_id": "ZONA_SUL",
+      "campo": "nome_unitrac",
+      "valor_proposto": "18 - ZONA SUL - COPACABANA",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 14,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"18 - ZONA SUL - COPACABANA\" compartilha token significativo (COPACABANA) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "0877d61f-0ae3-4a1a-b3bf-ccefc3cdb87a",
+      "loja_nome": "ZONA SUL LOJA 11 - LEBLON",
+      "rede_id": "ZONA_SUL",
+      "campo": "nome_unitrac",
+      "valor_proposto": "11 - ZONA SUL - LEBLON",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 9,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"11 - ZONA SUL - LEBLON\" compartilha token significativo (LEBLON) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "275404ec-23be-4723-9cf5-5649c70f5521",
+      "loja_nome": "ZONA SUL LOJA 32 - LARANJEIRAS",
+      "rede_id": "ZONA_SUL",
+      "campo": "nome_unitrac",
+      "valor_proposto": "32 - ZONA SUL - LARANJEIRAS",
+      "confianca": 0.5,
+      "evidencia": {
+        "placas_que_serviram_loja": 3,
+        "placas_com_parada_no_codigo": 1,
+        "detalhes": "Nome \"32 - ZONA SUL - LARANJEIRAS\" compartilha token significativo (LARANJEIRAS) e aparece em 1/2 dias"
+      }
+    },
+    {
+      "loja_id": "91908d75-5874-4331-b5cd-28f75b90a6a9",
+      "loja_nome": "ZONA SUL LOJA 35 - BARRA",
+      "rede_id": "ZONA_SUL",
+      "campo": "nome_unitrac",
+      "valor_proposto": "35 - ZONA SUL - BARRA DA TIJUCA",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 10,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"35 - ZONA SUL - BARRA DA TIJUCA\" compartilha token significativo (BARRA) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "d71c1a91-4509-48a1-90e2-88fd27c7b6e4",
+      "loja_nome": "ZONA SUL LOJA 45 - FLAMENGO",
+      "rede_id": "ZONA_SUL",
+      "campo": "nome_unitrac",
+      "valor_proposto": "45 - ZONA SUL - FLAMENGO",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 7,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"45 - ZONA SUL - FLAMENGO\" compartilha token significativo (FLAMENGO) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "15385737-77b0-4e18-87f9-cc17602aa092",
+      "loja_nome": "REGINA BARRA DO IMBUY",
+      "rede_id": "ARMAZEM_GRAO",
+      "campo": "nome_unitrac",
+      "valor_proposto": "REGINA BARRA DO IMBUY",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 4,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"REGINA BARRA DO IMBUY\" compartilha token significativo (REGINA,BARRA,IMBUY) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "e9611e77-6803-4060-9cde-a994a5ebf9ad",
+      "loja_nome": "REGINA 1 DE MAIO",
+      "rede_id": "ARMAZEM_GRAO",
+      "campo": "nome_unitrac",
+      "valor_proposto": "REGINA BARRA DO IMBUY",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 4,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"REGINA BARRA DO IMBUY\" compartilha token significativo (REGINA,MAIO) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "feab8590-0de9-45e0-a1e3-c6566a322957",
+      "loja_nome": "REGINA LUCIO MEIRA",
+      "rede_id": "ARMAZEM_GRAO",
+      "campo": "nome_unitrac",
+      "valor_proposto": "REGINA BARRA DO IMBUY",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 4,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"REGINA BARRA DO IMBUY\" compartilha token significativo (REGINA,LUCIO,MEIRA) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "fb267c8a-c470-4677-b64c-247a4d0a7ea1",
+      "loja_nome": "FEIRA NOVA SANTA CRUZ DA SERRA",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "nome_unitrac",
+      "valor_proposto": "FEIRA NOVA SANTA CRUZ DA SERRA",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"FEIRA NOVA SANTA CRUZ DA SERRA\" compartilha token significativo (SANTA,CRUZ,SERRA) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "8fa3f9ee-0dc3-4aa1-82be-5ec8e41609aa",
+      "loja_nome": "FEIRA NOVA COELHO DA ROCHA",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "nome_unitrac",
+      "valor_proposto": "FEIRA NOVA COELHO DA ROCHA",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"FEIRA NOVA COELHO DA ROCHA\" compartilha token significativo (COELHO,ROCHA) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "337b7e7d-d242-44d9-ab6d-54da36127570",
+      "loja_nome": "FEIRA NOVA BOA DICA (PIABETA)",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "nome_unitrac",
+      "valor_proposto": "FEIRA NOVA BOA DICA (PIABETA)",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"FEIRA NOVA BOA DICA (PIABETA)\" compartilha token significativo (BOA,DICA,PIABETA) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "ef4c3b5f-ccd8-4eab-a365-44035695a408",
+      "loja_nome": "FEIRA NOVA TODOS OS SANTOS",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "nome_unitrac",
+      "valor_proposto": "FEIRA NOVA TODOS OS SANTOS",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"FEIRA NOVA TODOS OS SANTOS\" compartilha token significativo (TODOS,SANTOS) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "ed256c93-0b77-478f-bcaa-c64e9784c1d5",
+      "loja_nome": "PREZUNIC CAMPO GRANDE (TINGUI)",
+      "rede_id": "PREZUNIC",
+      "campo": "nome_unitrac",
+      "valor_proposto": "PREZUNIC CAMPO GRANDE (TINGUI)",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"PREZUNIC CAMPO GRANDE (TINGUI)\" compartilha token significativo (CAMPO,GRANDE,TINGUI) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "c0cf2d78-b4ae-4553-b822-31520c20d6b6",
+      "loja_nome": "PAX OSWALDO CRUZ",
+      "rede_id": "SUPER_PAX",
+      "campo": "nome_unitrac",
+      "valor_proposto": "PAX OSWALDO CRUZ",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"PAX OSWALDO CRUZ\" compartilha token significativo (OSWALDO,CRUZ) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "9a859270-f71d-46c6-9ddc-cfd6f4d7894a",
+      "loja_nome": "PAX ENGENHO DE DENTRO",
+      "rede_id": "SUPER_PAX",
+      "campo": "nome_unitrac",
+      "valor_proposto": "PAX ENGENHO DE DENTRO",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"PAX ENGENHO DE DENTRO\" compartilha token significativo (ENGENHO,DENTRO) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "8043a9af-cb66-464b-831c-2579557f9a69",
+      "loja_nome": "VIANENSE NOVA IGUACU",
+      "rede_id": "VIANENSE",
+      "campo": "nome_unitrac",
+      "valor_proposto": "VIANENSE NOVA IGUACU",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"VIANENSE NOVA IGUACU\" compartilha token significativo (IGUACU) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "32519f9f-69f1-4427-98b7-1beeda80709e",
+      "loja_nome": "VIANENSE JARDIM ALVORADA",
+      "rede_id": "VIANENSE",
+      "campo": "nome_unitrac",
+      "valor_proposto": "VIANENSE JARDIM ALVORADA",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"VIANENSE JARDIM ALVORADA\" compartilha token significativo (JARDIM,ALVORADA) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "d465ee4d-4549-42c9-b063-86425ac3384a",
+      "loja_nome": "MERCEARIA SACHINHO",
+      "rede_id": "SENDAS",
+      "campo": "nome_unitrac",
+      "valor_proposto": "MERCEARIA SACHINHO",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"MERCEARIA SACHINHO\" compartilha token significativo (MERCEARIA,SACHINHO) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "d8dd43f8-22d5-4da0-a7ae-217746b53f05",
+      "loja_nome": "MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA",
+      "rede_id": "SENDAS",
+      "campo": "nome_unitrac",
+      "valor_proposto": "EMPORIO BARRA TOWER",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"EMPORIO BARRA TOWER\" compartilha token significativo (MERCADO,SANTO,AGOSTINHO,BARRA,TIJUCA) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "f18ee595-3701-413c-9695-96900437df7e",
+      "loja_nome": "SUPERPRIX LJ 10 - ICARAI",
+      "rede_id": "SUPERPRIX",
+      "campo": "nome_unitrac",
+      "valor_proposto": "SUPERPRIX LJ 10 - ICARAI",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"SUPERPRIX LJ 10 - ICARAI\" compartilha token significativo (ICARAI) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "99e3ce01-c0f9-49fb-b2f4-c2e7466c9735",
+      "loja_nome": "SUPERPRIX LJ 13 - NITEROI",
+      "rede_id": "SUPERPRIX",
+      "campo": "nome_unitrac",
+      "valor_proposto": "SUPERPRIX LJ 13 - NITEROI",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"SUPERPRIX LJ 13 - NITEROI\" compartilha token significativo (NITEROI) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "1e0a070a-4dd4-44b9-a45a-5a31ad28ea76",
+      "loja_nome": "ARMAZEM DO GRAO A BARRA DA TIJUCA",
+      "rede_id": "ARMAZEM_GRAO",
+      "campo": "nome_unitrac",
+      "valor_proposto": "ARMAZEM DO GRAO (BARRA DA TIJUCA)",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"ARMAZEM DO GRAO (BARRA DA TIJUCA)\" compartilha token significativo (BARRA,TIJUCA) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "1e0a070a-4dd4-44b9-a45a-5a31ad28ea76",
+      "loja_nome": "ARMAZEM DO GRAO A BARRA DA TIJUCA",
+      "rede_id": "ARMAZEM_GRAO",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "5353011",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Cod 5353011 aparece em paradas cujo nome_loja é \"ARMAZEM DO GRAO (BARRA DA TIJUCA)\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "53ea87a7-8cc0-4761-b050-2f0d55189365",
+      "loja_nome": "Assai - Caxias II (Parque Fluminense) - Loja 219",
+      "rede_id": "ASSAI",
+      "campo": "nome_unitrac",
+      "valor_proposto": "SENDAS CAXIAS II (PARQUE FLUMINENSE)",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 3,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"SENDAS CAXIAS II (PARQUE FLUMINENSE)\" compartilha token significativo (CAXIAS,PARQUE,FLUMINENSE) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "53ea87a7-8cc0-4761-b050-2f0d55189365",
+      "loja_nome": "Assai - Caxias II (Parque Fluminense) - Loja 219",
+      "rede_id": "ASSAI",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "560057",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 3,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Cod 560057 aparece em paradas cujo nome_loja é \"SENDAS CAXIAS II (PARQUE FLUMINENSE)\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "e5770090-b1f2-4065-b62d-a86b58059bb2",
+      "loja_nome": "Super Prix - Tijuquinha (1 ENTREGA) Loja 13",
+      "rede_id": "SUPERPRIX",
+      "campo": "nome_unitrac",
+      "valor_proposto": "SUPERPRIX LJ 13 - NITEROI",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"SUPERPRIX LJ 13 - NITEROI\" compartilha token significativo (PRIX,TIJUQUINHA) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "e5770090-b1f2-4065-b62d-a86b58059bb2",
+      "loja_nome": "Super Prix - Tijuquinha (1 ENTREGA) Loja 13",
+      "rede_id": "SUPERPRIX",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "3030113",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Cod 3030113 aparece em paradas cujo nome_loja é \"SUPERPRIX LJ 13 - NITEROI\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "9dbdadf4-bcf1-470c-a742-84dbbad0b991",
+      "loja_nome": "Assai - Mesquita (Dutra) - Loja 142",
+      "rede_id": "ASSAI",
+      "campo": "nome_unitrac",
+      "valor_proposto": "SENDAS MESQUITA - LJ 35",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 3,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"SENDAS MESQUITA - LJ 35\" compartilha token significativo (MESQUITA,DUTRA) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "9dbdadf4-bcf1-470c-a742-84dbbad0b991",
+      "loja_nome": "Assai - Mesquita (Dutra) - Loja 142",
+      "rede_id": "ASSAI",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "560035",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 3,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Cod 560035 aparece em paradas cujo nome_loja é \"SENDAS MESQUITA - LJ 35\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "d57a582a-b24f-4307-a50c-4518029011fc",
+      "loja_nome": "Engenho de Dentro",
+      "rede_id": "SUPER_PAX",
+      "campo": "nome_unitrac",
+      "valor_proposto": "PAX ENGENHO DE DENTRO",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"PAX ENGENHO DE DENTRO\" compartilha token significativo (ENGENHO,DENTRO) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "d57a582a-b24f-4307-a50c-4518029011fc",
+      "loja_nome": "Engenho de Dentro",
+      "rede_id": "SUPER_PAX",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "202001",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Cod 202001 aparece em paradas cujo nome_loja é \"PAX ENGENHO DE DENTRO\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "9313e0c0-c2c2-42eb-8b07-90c849bf0853",
+      "loja_nome": "Inhauma",
+      "rede_id": "SUPER_PAX",
+      "campo": "nome_unitrac",
+      "valor_proposto": "PAX INHAUMA",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 3,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"PAX INHAUMA\" compartilha token significativo (INHAUMA) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "9313e0c0-c2c2-42eb-8b07-90c849bf0853",
+      "loja_nome": "Inhauma",
+      "rede_id": "SUPER_PAX",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "202003",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 3,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Cod 202003 aparece em paradas cujo nome_loja é \"PAX INHAUMA\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "80471d88-dcd5-4080-a783-9ed2b775d7c6",
+      "loja_nome": "Assai - Nova Iguacu 2 - Loja 291",
+      "rede_id": "ASSAI",
+      "campo": "nome_unitrac",
+      "valor_proposto": "SENDAS NOVA IGUACU II",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 3,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"SENDAS NOVA IGUACU II\" compartilha token significativo (IGUACU) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "80471d88-dcd5-4080-a783-9ed2b775d7c6",
+      "loja_nome": "Assai - Nova Iguacu 2 - Loja 291",
+      "rede_id": "ASSAI",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "560054",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 3,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Cod 560054 aparece em paradas cujo nome_loja é \"SENDAS NOVA IGUACU II\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "ec9690db-8221-499f-9022-26d2742986f9",
+      "loja_nome": "Realengo",
+      "rede_id": "SUPER_PAX",
+      "campo": "nome_unitrac",
+      "valor_proposto": "PAX REALENGO",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"PAX REALENGO\" compartilha token significativo (REALENGO) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "ec9690db-8221-499f-9022-26d2742986f9",
+      "loja_nome": "Realengo",
+      "rede_id": "SUPER_PAX",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "202002",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Cod 202002 aparece em paradas cujo nome_loja é \"PAX REALENGO\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "e6490706-0efc-4703-b9b3-1a29ae18e255",
+      "loja_nome": "CACHAMORRA",
+      "rede_id": "EMANUEL",
+      "campo": "nome_unitrac",
+      "valor_proposto": "EMANUEL CACHAMORRA",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"EMANUEL CACHAMORRA\" compartilha token significativo (CACHAMORRA) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "e6490706-0efc-4703-b9b3-1a29ae18e255",
+      "loja_nome": "CACHAMORRA",
+      "rede_id": "EMANUEL",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "17659002",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Cod 17659002 aparece em paradas cujo nome_loja é \"EMANUEL CACHAMORRA\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "e0088d31-b2bf-4255-b786-237368a446cc",
+      "loja_nome": "1- Nilopolis (Olinda)",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "nome_unitrac",
+      "valor_proposto": "FEIRA NOVA OLINDA",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 3,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"FEIRA NOVA OLINDA\" compartilha token significativo (NILOPOLIS,OLINDA) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "e0088d31-b2bf-4255-b786-237368a446cc",
+      "loja_nome": "1- Nilopolis (Olinda)",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "579001",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 3,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Cod 579001 aparece em paradas cujo nome_loja é \"FEIRA NOVA OLINDA\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "1786e86c-a559-4795-9948-c1dd2a27132d",
+      "loja_nome": "10- Cachambi",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "nome_unitrac",
+      "valor_proposto": "FEIRA NOVA CACHAMBI",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"FEIRA NOVA CACHAMBI\" compartilha token significativo (CACHAMBI) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "1786e86c-a559-4795-9948-c1dd2a27132d",
+      "loja_nome": "10- Cachambi",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "579010",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Cod 579010 aparece em paradas cujo nome_loja é \"FEIRA NOVA CACHAMBI\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "6aee9ef7-48d4-45f7-b5c5-6237b4a2eebe",
+      "loja_nome": "12- Freguesia",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "nome_unitrac",
+      "valor_proposto": "FEIRA NOVA FREGUESIA",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"FEIRA NOVA FREGUESIA\" compartilha token significativo (FREGUESIA) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "6aee9ef7-48d4-45f7-b5c5-6237b4a2eebe",
+      "loja_nome": "12- Freguesia",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "579012",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Cod 579012 aparece em paradas cujo nome_loja é \"FEIRA NOVA FREGUESIA\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "9b9b54df-cca3-4bb8-949d-7ea3a0a1e399",
+      "loja_nome": "13- Todos os Santos",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "nome_unitrac",
+      "valor_proposto": "FEIRA NOVA TODOS OS SANTOS",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"FEIRA NOVA TODOS OS SANTOS\" compartilha token significativo (TODOS,SANTOS) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "9b9b54df-cca3-4bb8-949d-7ea3a0a1e399",
+      "loja_nome": "13- Todos os Santos",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "579013",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Cod 579013 aparece em paradas cujo nome_loja é \"FEIRA NOVA TODOS OS SANTOS\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "a3e7fd6f-efda-4f49-a7f3-20e145ad835b",
+      "loja_nome": "3- Anchieta",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "nome_unitrac",
+      "valor_proposto": "FEIRA NOVA ANCHIETA",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"FEIRA NOVA ANCHIETA\" compartilha token significativo (ANCHIETA) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "a3e7fd6f-efda-4f49-a7f3-20e145ad835b",
+      "loja_nome": "3- Anchieta",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "579003",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Cod 579003 aparece em paradas cujo nome_loja é \"FEIRA NOVA ANCHIETA\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "7751ba3c-8b80-4514-8805-b780def508aa",
+      "loja_nome": "6- Santa Cruz da Serra",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "nome_unitrac",
+      "valor_proposto": "FEIRA NOVA SANTA CRUZ DA SERRA",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"FEIRA NOVA SANTA CRUZ DA SERRA\" compartilha token significativo (SANTA,CRUZ,SERRA) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "7751ba3c-8b80-4514-8805-b780def508aa",
+      "loja_nome": "6- Santa Cruz da Serra",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "579006",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Cod 579006 aparece em paradas cujo nome_loja é \"FEIRA NOVA SANTA CRUZ DA SERRA\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "290983bc-f067-4dff-b328-f3ecf47ec82e",
+      "loja_nome": "7- Coelho da Rocha",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "nome_unitrac",
+      "valor_proposto": "FEIRA NOVA COELHO DA ROCHA",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"FEIRA NOVA COELHO DA ROCHA\" compartilha token significativo (COELHO,ROCHA) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "290983bc-f067-4dff-b328-f3ecf47ec82e",
+      "loja_nome": "7- Coelho da Rocha",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "579007",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Cod 579007 aparece em paradas cujo nome_loja é \"FEIRA NOVA COELHO DA ROCHA\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "ff433cd8-a988-47c4-a343-949db23f25a7",
+      "loja_nome": "8- Ceramica",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "nome_unitrac",
+      "valor_proposto": "FEIRA NOVA CERAMICA",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"FEIRA NOVA CERAMICA\" compartilha token significativo (CERAMICA) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "ff433cd8-a988-47c4-a343-949db23f25a7",
+      "loja_nome": "8- Ceramica",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "579008",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Cod 579008 aparece em paradas cujo nome_loja é \"FEIRA NOVA CERAMICA\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "c191cf66-0ad8-4874-a4ee-dc1e10463423",
+      "loja_nome": "9- Queimados",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "nome_unitrac",
+      "valor_proposto": "FEIRA NOVA QUEIMADOS",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 3,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"FEIRA NOVA QUEIMADOS\" compartilha token significativo (QUEIMADOS) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "c191cf66-0ad8-4874-a4ee-dc1e10463423",
+      "loja_nome": "9- Queimados",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "579009",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 3,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Cod 579009 aparece em paradas cujo nome_loja é \"FEIRA NOVA QUEIMADOS\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "196806c6-8a22-4720-bd7c-05315bafbae2",
+      "loja_nome": "Mercado Santo Agostinho (Barra)",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "nome_unitrac",
+      "valor_proposto": "MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA\" compartilha token significativo (MERCADO,SANTO,AGOSTINHO,BARRA) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "196806c6-8a22-4720-bd7c-05315bafbae2",
+      "loja_nome": "Mercado Santo Agostinho (Barra)",
+      "rede_id": "FEIRA_NOVA",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "23080000",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Cod 23080000 aparece em paradas cujo nome_loja é \"MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "2a949792-99f2-4d4b-9281-c91b3df2fc14",
+      "loja_nome": "Sam's - Linha Amarela",
+      "rede_id": "SAMS_CLUB",
+      "campo": "nome_unitrac",
+      "valor_proposto": "SAMS LINHA AMARELA",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"SAMS LINHA AMARELA\" compartilha token significativo (SAM,LINHA,AMARELA) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "2a949792-99f2-4d4b-9281-c91b3df2fc14",
+      "loja_nome": "Sam's - Linha Amarela",
+      "rede_id": "SAMS_CLUB",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "4568002",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Cod 4568002 aparece em paradas cujo nome_loja é \"SAMS LINHA AMARELA\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "31912079-b6b2-4eb2-ae48-8ee68330b823",
+      "loja_nome": "Sam's - Niteroi",
+      "rede_id": "SAMS_CLUB",
+      "campo": "nome_unitrac",
+      "valor_proposto": "SAMS NITEROI",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"SAMS NITEROI\" compartilha token significativo (SAM,NITEROI) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "31912079-b6b2-4eb2-ae48-8ee68330b823",
+      "loja_nome": "Sam's - Niteroi",
+      "rede_id": "SAMS_CLUB",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "4568001",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Cod 4568001 aparece em paradas cujo nome_loja é \"SAMS NITEROI\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "ce19e6c5-28e2-46bd-9bb0-1407c9cb2f2c",
+      "loja_nome": "Atlantico Sul (Barra da Tijuca)",
+      "rede_id": "SENDAS",
+      "campo": "nome_unitrac",
+      "valor_proposto": "EMPORIO BARRA TOWER",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"EMPORIO BARRA TOWER\" compartilha token significativo (ATLANTICO,BARRA,TIJUCA) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "ce19e6c5-28e2-46bd-9bb0-1407c9cb2f2c",
+      "loja_nome": "Atlantico Sul (Barra da Tijuca)",
+      "rede_id": "SENDAS",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "22980000",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Cod 22980000 aparece em paradas cujo nome_loja é \"EMPORIO BARRA TOWER\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "c4f87d80-1906-4be9-9cce-4eee28cb0895",
+      "loja_nome": "Barra Tower",
+      "rede_id": "SENDAS",
+      "campo": "nome_unitrac",
+      "valor_proposto": "EMPORIO BARRA TOWER",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"EMPORIO BARRA TOWER\" compartilha token significativo (BARRA,TOWER) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "c4f87d80-1906-4be9-9cce-4eee28cb0895",
+      "loja_nome": "Barra Tower",
+      "rede_id": "SENDAS",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "22980000",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Cod 22980000 aparece em paradas cujo nome_loja é \"EMPORIO BARRA TOWER\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "4d0981f3-a51b-47b6-96e1-848e741fe446",
+      "loja_nome": "Barramares (Barra da Tijuca)",
+      "rede_id": "SENDAS",
+      "campo": "nome_unitrac",
+      "valor_proposto": "EMPORIO BARRA TOWER",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"EMPORIO BARRA TOWER\" compartilha token significativo (BARRAMARES,BARRA,TIJUCA) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "4d0981f3-a51b-47b6-96e1-848e741fe446",
+      "loja_nome": "Barramares (Barra da Tijuca)",
+      "rede_id": "SENDAS",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "22980000",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Cod 22980000 aparece em paradas cujo nome_loja é \"EMPORIO BARRA TOWER\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "6e286b44-da0f-4313-a451-03752b29cfde",
+      "loja_nome": "Mercearia Sachinho (Vargem Grande)",
+      "rede_id": "SENDAS",
+      "campo": "nome_unitrac",
+      "valor_proposto": "MERCEARIA SACHINHO",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"MERCEARIA SACHINHO\" compartilha token significativo (MERCEARIA,SACHINHO,VARGEM,GRANDE) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "6e286b44-da0f-4313-a451-03752b29cfde",
+      "loja_nome": "Mercearia Sachinho (Vargem Grande)",
+      "rede_id": "SENDAS",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "15247000",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Cod 15247000 aparece em paradas cujo nome_loja é \"MERCEARIA SACHINHO\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "4eb167f3-9b4a-4100-8bbc-7e5634e9e681",
+      "loja_nome": "Pilares",
+      "rede_id": "SUPER_PAX",
+      "campo": "nome_unitrac",
+      "valor_proposto": "PAX PILARES",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"PAX PILARES\" compartilha token significativo (PILARES) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "4eb167f3-9b4a-4100-8bbc-7e5634e9e681",
+      "loja_nome": "Pilares",
+      "rede_id": "SUPER_PAX",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "202009",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Cod 202009 aparece em paradas cujo nome_loja é \"PAX PILARES\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "e10ae230-daff-43cb-b351-7c716625da5f",
+      "loja_nome": "Madureira",
+      "rede_id": "SUPER_PAX",
+      "campo": "nome_unitrac",
+      "valor_proposto": "PAX MADUREIRA",
+      "confianca": 0.6666666666666666,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Nome \"PAX MADUREIRA\" compartilha token significativo (MADUREIRA) e aparece em 2/3 dias"
+      }
+    },
+    {
+      "loja_id": "e10ae230-daff-43cb-b351-7c716625da5f",
+      "loja_nome": "Madureira",
+      "rede_id": "SUPER_PAX",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "202006",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 2,
+        "detalhes": "Cod 202006 aparece em paradas cujo nome_loja é \"PAX MADUREIRA\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "3247db8c-5489-4799-aa42-9aae6991e750",
+      "loja_nome": "Oswaldo Cruz",
+      "rede_id": "SUPER_PAX",
+      "campo": "nome_unitrac",
+      "valor_proposto": "PAX OSWALDO CRUZ",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"PAX OSWALDO CRUZ\" compartilha token significativo (OSWALDO,CRUZ) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "3247db8c-5489-4799-aa42-9aae6991e750",
+      "loja_nome": "Oswaldo Cruz",
+      "rede_id": "SUPER_PAX",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "202000",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 2,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Cod 202000 aparece em paradas cujo nome_loja é \"PAX OSWALDO CRUZ\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "f78a3c47-48ce-42c7-861d-ec49eada9771",
+      "loja_nome": "Taquara",
+      "rede_id": "SUPER_PAX",
+      "campo": "nome_unitrac",
+      "valor_proposto": "PAX TAQUARA",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 3,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"PAX TAQUARA\" compartilha token significativo (TAQUARA) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "f78a3c47-48ce-42c7-861d-ec49eada9771",
+      "loja_nome": "Taquara",
+      "rede_id": "SUPER_PAX",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "202011",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 3,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Cod 202011 aparece em paradas cujo nome_loja é \"PAX TAQUARA\" (confirmado via nome)"
+      }
+    },
+    {
+      "loja_id": "7def853e-ead2-40f0-90b9-6649d8d14031",
+      "loja_nome": "Super Prix - Riachuelo Loja 07",
+      "rede_id": "SUPERPRIX",
+      "campo": "nome_unitrac",
+      "valor_proposto": "SUPERPRIX LJ 07 - RIACHUELO",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Nome \"SUPERPRIX LJ 07 - RIACHUELO\" compartilha token significativo (PRIX,RIACHUELO) e aparece em 3/3 dias"
+      }
+    },
+    {
+      "loja_id": "7def853e-ead2-40f0-90b9-6649d8d14031",
+      "loja_nome": "Super Prix - Riachuelo Loja 07",
+      "rede_id": "SUPERPRIX",
+      "campo": "codigo_unitrac",
+      "valor_proposto": "3030007",
+      "confianca": 1,
+      "evidencia": {
+        "placas_que_serviram_loja": 1,
+        "placas_com_parada_no_codigo": 3,
+        "detalhes": "Cod 3030007 aparece em paradas cujo nome_loja é \"SUPERPRIX LJ 07 - RIACHUELO\" (confirmado via nome)"
+      }
+    }
+  ]
+}
