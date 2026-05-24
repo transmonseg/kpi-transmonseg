@@ -1,0 +1,426 @@
+
+=== VERIFICAÇÃO PRINCESA — 2026-05-22 ===
+
+Escala: 26 linha(s) (filtrada de 144)
+Alterações para PRINCESA: 0
+
+Carregando Unitrac...
+  212 veículos / 2148 paradas
+
+KPI gerado: KPI-PRINCESA-2026-05-22 (2).xlsx
+  26 loja(s) no Excel
+
+=== ANÁLISE POR LOJA ===
+
+--- Princesa - Catete ---
+  1º carro: RAFAEL | KVT5427
+     KPI GER:  SC=04:11 CHD=04:51 SL=06:35 (mot=RAFAEL placa=KVT-5427)
+     GPS: 15p (0B 15L 0F)
+        LOJA  00:09-03:23  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+        LOJA  04:00-04:11  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+        LOJA  04:29-04:35  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+        LOJA  04:51-06:35  cod:8590120  PRINCESA CATETE
+        LOJA  07:01-07:05  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+        LOJA  07:06-07:09  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+        LOJA  07:29-07:37  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+        LOJA  07:41-10:33  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+        LOJA  10:34-12:42  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+        LOJA  12:43-13:01  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+        LOJA  13:06-13:15  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+        LOJA  13:17-13:21  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+        LOJA  13:23-13:36  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+        LOJA  14:18-15:15  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+        LOJA  15:45-23:52  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+        meta: hybrid(1)
+     MATCHER:  SC=04:11 CHD=04:51 SL=06:35
+     KPI GER:  SC=04:11 CHD=04:51 SL=06:35 (placa=KVT-5427) ✓
+
+--- Princesa - Flamengo ---
+  1º carro: KANU | KQR2J11
+     KPI GER:  SC=04:48 CHD=05:31 SL=07:46 (mot=KANU placa=KQR-2J11)
+     GPS: 13p (2B 2L 3F)
+        BASE  11:30 → 11:53
+        BASE  11:57 → 13:05
+        LOJA  05:31-07:46  cod:8590165  PRINCESA FLAMENGO
+        LOJA  13:59-14:56  cod:9039007  07 - ZONA SUL - LEBLON
+        meta: hybrid(1)
+     MATCHER:  SC=04:48 CHD=05:31 SL=07:46
+     KPI GER:  SC=04:48 CHD=05:31 SL=07:46 (placa=KQR-2J11) ✓
+
+--- Princesa - Cosme Velho ---
+  1º carro: ERIVELTON | KRH5H67
+     KPI GER:  SC=04:14 CHD=05:18 SL=09:37 (mot=ERIVELTON placa=KRH-5H67)
+     GPS: 12p (2B 3L 1F)
+        BASE  07:13 → 07:34
+        BASE  10:32 → 11:17
+        LOJA  05:18-06:02  cod:8590000  PRINCESA COSME VELHO
+        LOJA  09:15-09:37  cod:8590000  PRINCESA COSME VELHO
+        LOJA  12:30-14:21  cod:9039011  11 - ZONA SUL - LEBLON
+        meta: hybrid(1)
+     MATCHER:  SC=04:14 CHD=05:18 SL=09:37
+     KPI GER:  SC=04:14 CHD=05:18 SL=09:37 (placa=KRH-5H67) ✓
+
+--- Princesa - Laranjeiras ---
+  1º carro: ELVIS | KPS4J07
+     KPI GER:  SC=04:47 CHD=05:22 SL=05:33 (mot=ELVIS placa=KPS-4J07)
+     GPS: 12p (3B 3L 2F)
+        BASE  06:11 → 06:28
+        BASE  06:57 → 10:09
+        BASE  10:14 → 10:35
+        LOJA  05:22-05:33  cod:8590218  PRINCESA LARANJEIRAS
+        LOJA  10:46-16:50  cod:560046  SENDAS CORDOVIL
+        LOJA  16:51-17:01  cod:560046  SENDAS CORDOVIL
+        meta: hybrid(1)
+     MATCHER:  SC=04:47 CHD=05:22 SL=05:33
+     KPI GER:  SC=04:47 CHD=05:22 SL=05:33 (placa=KPS-4J07) ✓
+
+--- Princesa - Copacabana ---
+  1º carro: WANDERSON | KWH2J02
+     KPI GER:  SC=04:43 CHD=05:43 SL=06:41 (mot=WANDERSON placa=KWH-2J02)
+     GPS: 11p (0B 11L 0F)
+        LOJA  00:02-03:32  cod:17659004  REDE ECONOMIA SANTA MARIA
+        LOJA  04:10-04:34  cod:17659004  REDE ECONOMIA SANTA MARIA
+        LOJA  04:35-04:43  cod:17659004  REDE ECONOMIA SANTA MARIA
+        LOJA  05:21-05:24  cod:8590134  PRINCESA LEME
+        LOJA  05:28-05:35  cod:8590134  PRINCESA LEME
+        LOJA  05:43-06:41  cod:8590034  PRINCESA COPACABANA
+        LOJA  07:41-07:57  cod:17659004  REDE ECONOMIA SANTA MARIA
+        LOJA  08:01-11:10  cod:17659004  REDE ECONOMIA SANTA MARIA
+        LOJA  12:19-12:41  cod:17659004  REDE ECONOMIA SANTA MARIA
+        LOJA  12:43-13:02  cod:17659004  REDE ECONOMIA SANTA MARIA
+        LOJA  13:58-14:59  cod:17659004  REDE ECONOMIA SANTA MARIA
+        meta: hybrid(1)
+     MATCHER:  SC=04:43 CHD=05:43 SL=06:41
+     KPI GER:  SC=04:43 CHD=05:43 SL=06:41 (placa=KWH-2J02) ✓
+
+--- Princesa - Leme ---
+  1º carro: WANDERSON | KWH2J02
+     KPI GER:  SC=04:43 CHD=05:21 SL=05:35 (mot=WANDERSON placa=KWH-2J02)
+     GPS: 11p (0B 11L 0F)
+        LOJA  00:02-03:32  cod:17659004  REDE ECONOMIA SANTA MARIA
+        LOJA  04:10-04:34  cod:17659004  REDE ECONOMIA SANTA MARIA
+        LOJA  04:35-04:43  cod:17659004  REDE ECONOMIA SANTA MARIA
+        LOJA  05:21-05:24  cod:8590134  PRINCESA LEME
+        LOJA  05:28-05:35  cod:8590134  PRINCESA LEME
+        LOJA  05:43-06:41  cod:8590034  PRINCESA COPACABANA
+        LOJA  07:41-07:57  cod:17659004  REDE ECONOMIA SANTA MARIA
+        LOJA  08:01-11:10  cod:17659004  REDE ECONOMIA SANTA MARIA
+        LOJA  12:19-12:41  cod:17659004  REDE ECONOMIA SANTA MARIA
+        LOJA  12:43-13:02  cod:17659004  REDE ECONOMIA SANTA MARIA
+        LOJA  13:58-14:59  cod:17659004  REDE ECONOMIA SANTA MARIA
+        meta: hybrid(1)
+     MATCHER:  SC=04:43 CHD=05:21 SL=05:35
+     KPI GER:  SC=04:43 CHD=05:21 SL=05:35 (placa=KWH-2J02) ✓
+
+--- Princesa - Pechincha ---
+  1º carro: ALISSON | MSK3752
+     KPI GER:  SC=--- CHD=03:50 SL=06:00 (mot=ALISSON placa=MSK-3752)
+     GPS: 11p (0B 3L 3F)
+        LOJA  04:31-06:00  cod:8590031  PRINCESA PECHINCHA
+        LOJA  08:23-08:44  cod:7000731  PREZUNIC BOTAFOGO
+        LOJA  08:45-08:55  cod:7000731  PREZUNIC BOTAFOGO
+        meta: hybrid(1)
+     MATCHER:  SC=04:00 CHD=04:31 SL=06:00
+     KPI GER:  SC=--- CHD=03:50 SL=06:00 (placa=MSK-3752) ⚠
+
+--- Princesa - Niteroí Barcas ---
+  1º carro: LUIZ CESAR | LMF2049
+     KPI GER:  SC=05:12 CHD=06:00 SL=06:19 (mot=LUIZ CESAR placa=LMF-2049)
+     GPS: 13p (5B 0L 4F)
+        BASE  08:02 → 12:54
+        BASE  12:55 → 13:30
+        BASE  17:49 → 23:52
+        FORA  06:00-06:19  FORA DE BASE E LOCAL DE SERVIÇO
+        FORA  14:47-15:23  FORA DE BASE E LOCAL DE SERVIÇO
+        FORA  16:25-16:41  FORA DE BASE E LOCAL DE SERVIÇO
+        FORA  16:43-16:57  FORA DE BASE E LOCAL DE SERVIÇO
+        meta: geo(0.8)
+     MATCHER:  SC=05:12 CHD=06:00 SL=06:19
+     KPI GER:  SC=05:12 CHD=06:00 SL=06:19 (placa=LMF-2049) ✓
+
+--- Princesa - Inga ---
+  1º carro: LUIZ CESAR | LMF2049
+     KPI GER:  SC=05:12 CHD=06:00 SL=06:19 (mot=LUIZ CESAR placa=LMF-2049)
+     GPS: 13p (5B 0L 4F)
+        BASE  08:02 → 12:54
+        BASE  12:55 → 13:30
+        BASE  17:49 → 23:52
+        FORA  06:00-06:19  FORA DE BASE E LOCAL DE SERVIÇO
+        FORA  14:47-15:23  FORA DE BASE E LOCAL DE SERVIÇO
+        FORA  16:25-16:41  FORA DE BASE E LOCAL DE SERVIÇO
+        FORA  16:43-16:57  FORA DE BASE E LOCAL DE SERVIÇO
+        meta: none(0)
+     MATCHER:  sem match
+
+--- Princesa - Fonseca ---
+  1º carro: JULIO PEREIRA | RJN9F68
+     KPI GER:  SC=04:52 CHD=05:35 SL=07:22 (mot=JULIO PEREIRA placa=RJN-9F68)
+     GPS: 13p (2B 2L 2F)
+        BASE  08:25 → 11:43
+        BASE  14:29 → 14:47
+        LOJA  05:35-07:22  cod:8590555  PRINCESA FONSECA
+        LOJA  12:27-13:18  cod:560019  SENDAS FREGUESIA - LOJA 28
+        meta: hybrid(1)
+     MATCHER:  SC=04:52 CHD=05:35 SL=07:22
+     KPI GER:  SC=04:52 CHD=05:35 SL=07:22 (placa=RJN-9F68) ✓
+
+--- Princesa - Icaraí ---
+  1º carro: JOHN | KVI9088
+     KPI GER:  SC=04:28 CHD=05:05 SL=06:04 (mot=JOHN placa=KVI-9088)
+     GPS: 13p (3B 2L 3F)
+        BASE  03:55 → 04:18
+        BASE  09:36 → 09:52
+        BASE  10:02 → 10:58
+        LOJA  05:05-06:04  cod:8590004  PRINCESA ICARAÍ
+        LOJA  07:33-08:20  cod:9006154  CARREFOUR CAMPO GRANDE
+        meta: hybrid(1)
+     MATCHER:  SC=04:28 CHD=05:05 SL=06:04
+     KPI GER:  SC=04:28 CHD=05:05 SL=06:04 (placa=KVI-9088) ✓
+
+--- Princesa - Iguaba (1º Entrega) ---
+  ⚠ Não encontrado no KPI gerado
+  1º carro: DIEGO | LRA9C41
+     GPS: 15p (5B 0L 7F)
+        BASE  12:03 → 12:20
+        BASE  12:25 → 12:52
+        BASE  12:54 → 14:27
+        FORA  04:54-06:16  FORA DE BASE E LOCAL DE SERVIÇO
+        FORA  07:21-08:01  FORA DE BASE E LOCAL DE SERVIÇO
+        FORA  08:08-08:57  FORA DE BASE E LOCAL DE SERVIÇO
+        FORA  09:00-09:12  FORA DE BASE E LOCAL DE SERVIÇO
+        FORA  10:23-10:47  FORA DE BASE E LOCAL DE SERVIÇO
+        FORA  15:44-16:12  FORA DE BASE E LOCAL DE SERVIÇO
+        meta: geo(0.8)
+     MATCHER:  SC=04:02 CHD=04:54 SL=06:16
+
+--- Princesa - Itaboraí (2ª Entrega) ---
+  1º carro: DIEGO | LRA9C41
+     KPI GER:  SC=04:02 CHD=07:21 SL=08:01 (mot=DIEGO placa=LRA-9C41)
+     GPS: 15p (5B 0L 7F)
+        BASE  12:03 → 12:20
+        BASE  12:25 → 12:52
+        BASE  12:54 → 14:27
+        FORA  04:54-06:16  FORA DE BASE E LOCAL DE SERVIÇO
+        FORA  07:21-08:01  FORA DE BASE E LOCAL DE SERVIÇO
+        FORA  08:08-08:57  FORA DE BASE E LOCAL DE SERVIÇO
+        FORA  09:00-09:12  FORA DE BASE E LOCAL DE SERVIÇO
+        FORA  10:23-10:47  FORA DE BASE E LOCAL DE SERVIÇO
+        FORA  15:44-16:12  FORA DE BASE E LOCAL DE SERVIÇO
+        meta: geo(0.8)
+     MATCHER:  SC=04:02 CHD=07:21 SL=08:01
+     KPI GER:  SC=04:02 CHD=07:21 SL=08:01 (placa=LRA-9C41) ✓
+
+--- Princesa - Maricá 1 (2ª Entrega) ---
+  1º carro: DANIEL CAVALCANTE | QSZ9A20
+     KPI GER:  SC=03:26 CHD=04:52 SL=06:36 (mot=DANIEL CAVALCANTE placa=QSZ-9A20)
+     GPS: 19p (4B 3L 5F)
+        BASE  11:29 → 13:05
+        BASE  19:26 → 19:49
+        BASE  19:50 → 23:10
+        LOJA  05:16-06:36  cod:8590002  PRINCESA MARICÁ 1
+        LOJA  06:39-07:54  cod:8590003  PRINCESA MARICÁ 2
+        LOJA  08:00-09:06  cod:8590002  PRINCESA MARICÁ 1
+        meta: hybrid(1)
+     MATCHER:  SC=03:26 CHD=05:16 SL=06:36
+     KPI GER:  SC=03:26 CHD=04:52 SL=06:36 (placa=QSZ-9A20) ⚠
+
+--- Princesa - Maricá 2 (1ª Entrega) ---
+  1º carro: DANIEL CAVALCANTE | QSZ9A20
+     KPI GER:  SC=03:26 CHD=06:39 SL=07:54 (mot=DANIEL CAVALCANTE placa=QSZ-9A20)
+     GPS: 19p (4B 3L 5F)
+        BASE  11:29 → 13:05
+        BASE  19:26 → 19:49
+        BASE  19:50 → 23:10
+        LOJA  05:16-06:36  cod:8590002  PRINCESA MARICÁ 1
+        LOJA  06:39-07:54  cod:8590003  PRINCESA MARICÁ 2
+        LOJA  08:00-09:06  cod:8590002  PRINCESA MARICÁ 1
+        meta: hybrid(1)
+     MATCHER:  SC=03:26 CHD=06:39 SL=07:54
+     KPI GER:  SC=03:26 CHD=06:39 SL=07:54 (placa=QSZ-9A20) ✓
+
+--- Princesa - Barra de São João (1ª Entrega) ---
+  1º carro: RENATO | JAJ6B36
+     KPI GER:  SC=02:24 CHD=08:55 SL=11:22 (mot=RENATO placa=JAJ-6B36)
+     GPS: 14p (3B 4L 2F)
+        BASE  00:06 → 02:12
+        BASE  15:48 → 17:58
+        BASE  21:17 → 23:58
+        LOJA  05:06-08:30  cod:8590568  PRINCESA - RIO DAS OSTRAS
+        LOJA  08:55-11:22  cod:8590562  PRINCESA - BARRA DE SÃO JOÃO
+        LOJA  19:26-19:58  cod:9039102  20 - ZONA SUL - BOTAFOGO
+        LOJA  20:16-20:30  cod:9039005  05 - ZONA SUL - COPACABANA III
+        meta: hybrid(1)
+     MATCHER:  SC=02:24 CHD=08:55 SL=11:22
+     KPI GER:  SC=02:24 CHD=08:55 SL=11:22 (placa=JAJ-6B36) ✓
+
+--- Princesa - Rio das Ostras (2ª Entrega) ---
+  1º carro: RENATO | JAJ6B36
+     KPI GER:  SC=02:24 CHD=05:06 SL=08:30 (mot=RENATO placa=JAJ-6B36)
+     GPS: 14p (3B 4L 2F)
+        BASE  00:06 → 02:12
+        BASE  15:48 → 17:58
+        BASE  21:17 → 23:58
+        LOJA  05:06-08:30  cod:8590568  PRINCESA - RIO DAS OSTRAS
+        LOJA  08:55-11:22  cod:8590562  PRINCESA - BARRA DE SÃO JOÃO
+        LOJA  19:26-19:58  cod:9039102  20 - ZONA SUL - BOTAFOGO
+        LOJA  20:16-20:30  cod:9039005  05 - ZONA SUL - COPACABANA III
+        meta: hybrid(1)
+     MATCHER:  SC=02:24 CHD=05:06 SL=08:30
+     KPI GER:  SC=02:24 CHD=05:06 SL=08:30 (placa=JAJ-6B36) ✓
+
+--- Princesa - Arraial 1 (1ª Entrega) ---
+  1º carro: ANTÔNIO | MES7F27
+     KPI GER:  SC=03:28 CHD=08:04 SL=10:43 (mot=ANTÔNIO placa=MES-7F27)
+     GPS: 12p (3B 8L 1F)
+        BASE  00:08 → 03:28
+        BASE  16:45 → 17:08
+        BASE  17:12 → 23:55
+        LOJA  06:02-06:35  cod:8590559  PRINCESA - ARRAIAL DO CABO 1
+        LOJA  06:36-07:14  cod:8590569  PRINCESA - ARRAIAL DO CABO 3
+        LOJA  07:19-07:51  cod:8590560  PRINCESA - ARRAIAL DO CABO 2
+        LOJA  08:04-10:43  cod:8590559  PRINCESA - ARRAIAL DO CABO 1
+        LOJA  10:47-10:53  cod:8590569  PRINCESA - ARRAIAL DO CABO 3
+        LOJA  11:00-11:10  cod:8590560  PRINCESA - ARRAIAL DO CABO 2
+        LOJA  11:16-13:05  cod:8590559  PRINCESA - ARRAIAL DO CABO 1
+        LOJA  13:12-13:20  cod:8590560  PRINCESA - ARRAIAL DO CABO 2
+        meta: hybrid(1)
+     MATCHER:  SC=03:28 CHD=08:04 SL=10:43
+     KPI GER:  SC=03:28 CHD=08:04 SL=10:43 (placa=MES-7F27) ✓
+
+--- Princesa - Arraial 2 (2ª Entrega) ---
+  1º carro: ANTÔNIO | MES7F27
+     KPI GER:  SC=03:28 CHD=07:19 SL=07:51 (mot=ANTÔNIO placa=MES-7F27)
+     GPS: 12p (3B 8L 1F)
+        BASE  00:08 → 03:28
+        BASE  16:45 → 17:08
+        BASE  17:12 → 23:55
+        LOJA  06:02-06:35  cod:8590559  PRINCESA - ARRAIAL DO CABO 1
+        LOJA  06:36-07:14  cod:8590569  PRINCESA - ARRAIAL DO CABO 3
+        LOJA  07:19-07:51  cod:8590560  PRINCESA - ARRAIAL DO CABO 2
+        LOJA  08:04-10:43  cod:8590559  PRINCESA - ARRAIAL DO CABO 1
+        LOJA  10:47-10:53  cod:8590569  PRINCESA - ARRAIAL DO CABO 3
+        LOJA  11:00-11:10  cod:8590560  PRINCESA - ARRAIAL DO CABO 2
+        LOJA  11:16-13:05  cod:8590559  PRINCESA - ARRAIAL DO CABO 1
+        LOJA  13:12-13:20  cod:8590560  PRINCESA - ARRAIAL DO CABO 2
+        meta: hybrid(1)
+     MATCHER:  SC=03:28 CHD=07:19 SL=07:51
+     KPI GER:  SC=03:28 CHD=07:19 SL=07:51 (placa=MES-7F27) ✓
+
+--- Princesa - Arraial 3 (3ª Entrega) ---
+  1º carro: ANTÔNIO | MES7F27
+     KPI GER:  SC=03:28 CHD=06:36 SL=07:14 (mot=ANTÔNIO placa=MES-7F27)
+     GPS: 12p (3B 8L 1F)
+        BASE  00:08 → 03:28
+        BASE  16:45 → 17:08
+        BASE  17:12 → 23:55
+        LOJA  06:02-06:35  cod:8590559  PRINCESA - ARRAIAL DO CABO 1
+        LOJA  06:36-07:14  cod:8590569  PRINCESA - ARRAIAL DO CABO 3
+        LOJA  07:19-07:51  cod:8590560  PRINCESA - ARRAIAL DO CABO 2
+        LOJA  08:04-10:43  cod:8590559  PRINCESA - ARRAIAL DO CABO 1
+        LOJA  10:47-10:53  cod:8590569  PRINCESA - ARRAIAL DO CABO 3
+        LOJA  11:00-11:10  cod:8590560  PRINCESA - ARRAIAL DO CABO 2
+        LOJA  11:16-13:05  cod:8590559  PRINCESA - ARRAIAL DO CABO 1
+        LOJA  13:12-13:20  cod:8590560  PRINCESA - ARRAIAL DO CABO 2
+        meta: hybrid(1)
+     MATCHER:  SC=03:28 CHD=06:36 SL=07:14
+     KPI GER:  SC=03:28 CHD=06:36 SL=07:14 (placa=MES-7F27) ✓
+
+--- Princesa - Buzios 1 (2ª Entrega) ---
+  1º carro: LEONARDO | QST4C52
+     KPI GER:  SC=02:35 CHD=06:14 SL=06:25 (mot=LEONARDO placa=QST-4C52)
+     GPS: 19p (4B 7L 3F)
+        BASE  12:05 → 13:26
+        BASE  19:07 → 19:58
+        BASE  20:08 → 23:51
+        LOJA  05:48-06:11  cod:8590571  PRINCESA - BUZIOS 3
+        LOJA  06:14-06:25  cod:8590563  PRINCESA - BUZIOS 1
+        LOJA  06:25-06:59  cod:8590564  PRINCESA - BUZIOS 2
+        LOJA  07:01-09:11  cod:8590571  PRINCESA - BUZIOS 3
+        LOJA  14:37-15:01  cod:5353008  ARMAZEM DO GRÃO (QUITANDINHA)
+        LOJA  15:14-15:37  cod:5353004  ARMAZEM DO GRÃO (VALPARAÍSO)
+        LOJA  15:52-16:42  cod:5353007  ARMAZEM DO GRÃO  (MOSELA)
+        meta: hybrid(1)
+     MATCHER:  SC=02:35 CHD=06:14 SL=06:25
+     KPI GER:  SC=02:35 CHD=06:14 SL=06:25 (placa=QST-4C52) ✓
+
+--- Princesa - Buzios 2 (3ª Entrega) ---
+  1º carro: LEONARDO | QST4C52
+     KPI GER:  SC=02:35 CHD=06:25 SL=06:59 (mot=LEONARDO placa=QST-4C52)
+     GPS: 19p (4B 7L 3F)
+        BASE  12:05 → 13:26
+        BASE  19:07 → 19:58
+        BASE  20:08 → 23:51
+        LOJA  05:48-06:11  cod:8590571  PRINCESA - BUZIOS 3
+        LOJA  06:14-06:25  cod:8590563  PRINCESA - BUZIOS 1
+        LOJA  06:25-06:59  cod:8590564  PRINCESA - BUZIOS 2
+        LOJA  07:01-09:11  cod:8590571  PRINCESA - BUZIOS 3
+        LOJA  14:37-15:01  cod:5353008  ARMAZEM DO GRÃO (QUITANDINHA)
+        LOJA  15:14-15:37  cod:5353004  ARMAZEM DO GRÃO (VALPARAÍSO)
+        LOJA  15:52-16:42  cod:5353007  ARMAZEM DO GRÃO  (MOSELA)
+        meta: hybrid(1)
+     MATCHER:  SC=02:35 CHD=06:25 SL=06:59
+     KPI GER:  SC=02:35 CHD=06:25 SL=06:59 (placa=QST-4C52) ✓
+
+--- Princesa - Buzios 3 (1ª Entrega) ---
+  1º carro: LEONARDO | QST4C52
+     KPI GER:  SC=02:35 CHD=07:01 SL=09:11 (mot=LEONARDO placa=QST-4C52)
+     GPS: 19p (4B 7L 3F)
+        BASE  12:05 → 13:26
+        BASE  19:07 → 19:58
+        BASE  20:08 → 23:51
+        LOJA  05:48-06:11  cod:8590571  PRINCESA - BUZIOS 3
+        LOJA  06:14-06:25  cod:8590563  PRINCESA - BUZIOS 1
+        LOJA  06:25-06:59  cod:8590564  PRINCESA - BUZIOS 2
+        LOJA  07:01-09:11  cod:8590571  PRINCESA - BUZIOS 3
+        LOJA  14:37-15:01  cod:5353008  ARMAZEM DO GRÃO (QUITANDINHA)
+        LOJA  15:14-15:37  cod:5353004  ARMAZEM DO GRÃO (VALPARAÍSO)
+        LOJA  15:52-16:42  cod:5353007  ARMAZEM DO GRÃO  (MOSELA)
+        meta: hybrid(1)
+     MATCHER:  SC=02:35 CHD=07:01 SL=09:11
+     KPI GER:  SC=02:35 CHD=07:01 SL=09:11 (placa=QST-4C52) ✓
+
+--- Princesa - Cabo Frio 1 (1ª Entrega) ---
+  1º carro: CLAUDIO | UEH9I93
+     KPI GER:  SC=02:34 CHD=04:39 SL=06:54 (mot=CLAUDIO placa=UEH-9I93)
+     GPS: 23p (5B 3L 3F)
+        BASE  12:32 → 14:12
+        BASE  18:51 → 19:06
+        BASE  19:10 → 23:53
+        LOJA  05:22-06:54  cod:8590565  PRINCESA - CABO FRIO 1
+        LOJA  06:56-07:46  cod:8590567  PRINCESA - CABO FRIO 3
+        LOJA  08:06-08:34  cod:8590566  PRINCESA - CABO FRIO 2
+        meta: hybrid(1)
+     MATCHER:  SC=02:34 CHD=05:22 SL=06:54
+     KPI GER:  SC=02:34 CHD=04:39 SL=06:54 (placa=UEH-9I93) ⚠
+
+--- Princesa - Cabo Frio 2 (3ª Entrega) ---
+  1º carro: CLAUDIO | UEH9I93
+     KPI GER:  SC=02:34 CHD=08:06 SL=08:34 (mot=CLAUDIO placa=UEH-9I93)
+     GPS: 23p (5B 3L 3F)
+        BASE  12:32 → 14:12
+        BASE  18:51 → 19:06
+        BASE  19:10 → 23:53
+        LOJA  05:22-06:54  cod:8590565  PRINCESA - CABO FRIO 1
+        LOJA  06:56-07:46  cod:8590567  PRINCESA - CABO FRIO 3
+        LOJA  08:06-08:34  cod:8590566  PRINCESA - CABO FRIO 2
+        meta: hybrid(1)
+     MATCHER:  SC=02:34 CHD=08:06 SL=08:34
+     KPI GER:  SC=02:34 CHD=08:06 SL=08:34 (placa=UEH-9I93) ✓
+
+--- Princesa - Cabo Frio 3 (2ª Entrega) ---
+  1º carro: CLAUDIO | UEH9I93
+     KPI GER:  SC=02:34 CHD=06:56 SL=07:46 (mot=CLAUDIO placa=UEH-9I93)
+     GPS: 23p (5B 3L 3F)
+        BASE  12:32 → 14:12
+        BASE  18:51 → 19:06
+        BASE  19:10 → 23:53
+        LOJA  05:22-06:54  cod:8590565  PRINCESA - CABO FRIO 1
+        LOJA  06:56-07:46  cod:8590567  PRINCESA - CABO FRIO 3
+        LOJA  08:06-08:34  cod:8590566  PRINCESA - CABO FRIO 2
+        meta: hybrid(1)
+     MATCHER:  SC=02:34 CHD=06:56 SL=07:46
+     KPI GER:  SC=02:34 CHD=06:56 SL=07:46 (placa=UEH-9I93) ✓
+
+=== RESUMO ===
+  ✓ Matcher === KPI gerado: 21
+  ⚠ Issues (sem GPS, sem match ou divergência): 4
