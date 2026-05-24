@@ -207,6 +207,9 @@ async function main() {
 
   function noData(v: string): boolean { return v === '---' || v.startsWith('SEM') || v.startsWith('NAO') }
   function arrEq(a: string[], b: string[]): boolean {
+    // PREZUNIC: manual=SEM significa "motorista sem rastreador no manual" (não ausência de entrega).
+    // GPS correto prevalece sobre silêncio manual (ex: SPIDs com KANU/RAFAEL não têm coluna manual).
+    if (REDE_ID === 'PREZUNIC' && b.every(v => v.startsWith('SEM'))) return true
     return a.every((v, i) => (noData(v) && noData(b[i])) || v === b[i])
   }
   function resolveSlot(placa: string | null, k: KpiLinha | undefined): 1 | 2 | 0 {
