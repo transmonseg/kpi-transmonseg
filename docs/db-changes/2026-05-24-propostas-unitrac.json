@@ -1,107 +1,16 @@
 {
-  "geradoEm": "2026-05-24T23:38:34.057Z",
-  "totalPropostas": 83,
+  "geradoEm": "2026-05-24T23:42:25.966Z",
+  "totalPropostas": 67,
   "porCampo": {
-    "codigo_unitrac": 30,
-    "nome_unitrac": 53
+    "codigo_unitrac": 28,
+    "nome_unitrac": 39
   },
   "porConfianca": {
-    "alta": 61,
+    "alta": 51,
     "media": 0,
-    "baixa": 22
+    "baixa": 16
   },
   "propostas": [
-    {
-      "loja_id": "bac51e51-a957-459d-becc-5dd11ac961bb",
-      "loja_nome": "ZONA SUL LOJA 04 - COPACABANA II",
-      "rede_id": "ZONA_SUL",
-      "campo": "nome_unitrac",
-      "valor_proposto": "04 - ZONA SUL - COPACABANA II",
-      "confianca": 0.6666666666666666,
-      "evidencia": {
-        "placas_que_serviram_loja": 4,
-        "placas_com_parada_no_codigo": 2,
-        "detalhes": "Nome \"04 - ZONA SUL - COPACABANA II\" compartilha token significativo (COPACABANA) e aparece em 2/3 dias"
-      }
-    },
-    {
-      "loja_id": "fd2858b1-1148-42a4-b831-042f297fd587",
-      "loja_nome": "ZONA SUL LOJA 07 - LEBLON",
-      "rede_id": "ZONA_SUL",
-      "campo": "nome_unitrac",
-      "valor_proposto": "07 - ZONA SUL - LEBLON",
-      "confianca": 0.6666666666666666,
-      "evidencia": {
-        "placas_que_serviram_loja": 9,
-        "placas_com_parada_no_codigo": 2,
-        "detalhes": "Nome \"07 - ZONA SUL - LEBLON\" compartilha token significativo (LEBLON) e aparece em 2/3 dias"
-      }
-    },
-    {
-      "loja_id": "4f07ec5c-9db6-4b98-a6a1-619ad1bd757b",
-      "loja_nome": "ZONA SUL LOJA 18 - COPACABANA",
-      "rede_id": "ZONA_SUL",
-      "campo": "nome_unitrac",
-      "valor_proposto": "18 - ZONA SUL - COPACABANA",
-      "confianca": 1,
-      "evidencia": {
-        "placas_que_serviram_loja": 14,
-        "placas_com_parada_no_codigo": 3,
-        "detalhes": "Nome \"18 - ZONA SUL - COPACABANA\" compartilha token significativo (COPACABANA) e aparece em 3/3 dias"
-      }
-    },
-    {
-      "loja_id": "0877d61f-0ae3-4a1a-b3bf-ccefc3cdb87a",
-      "loja_nome": "ZONA SUL LOJA 11 - LEBLON",
-      "rede_id": "ZONA_SUL",
-      "campo": "nome_unitrac",
-      "valor_proposto": "11 - ZONA SUL - LEBLON",
-      "confianca": 1,
-      "evidencia": {
-        "placas_que_serviram_loja": 9,
-        "placas_com_parada_no_codigo": 3,
-        "detalhes": "Nome \"11 - ZONA SUL - LEBLON\" compartilha token significativo (LEBLON) e aparece em 3/3 dias"
-      }
-    },
-    {
-      "loja_id": "275404ec-23be-4723-9cf5-5649c70f5521",
-      "loja_nome": "ZONA SUL LOJA 32 - LARANJEIRAS",
-      "rede_id": "ZONA_SUL",
-      "campo": "nome_unitrac",
-      "valor_proposto": "32 - ZONA SUL - LARANJEIRAS",
-      "confianca": 0.5,
-      "evidencia": {
-        "placas_que_serviram_loja": 3,
-        "placas_com_parada_no_codigo": 1,
-        "detalhes": "Nome \"32 - ZONA SUL - LARANJEIRAS\" compartilha token significativo (LARANJEIRAS) e aparece em 1/2 dias"
-      }
-    },
-    {
-      "loja_id": "91908d75-5874-4331-b5cd-28f75b90a6a9",
-      "loja_nome": "ZONA SUL LOJA 35 - BARRA",
-      "rede_id": "ZONA_SUL",
-      "campo": "nome_unitrac",
-      "valor_proposto": "35 - ZONA SUL - BARRA DA TIJUCA",
-      "confianca": 0.6666666666666666,
-      "evidencia": {
-        "placas_que_serviram_loja": 10,
-        "placas_com_parada_no_codigo": 2,
-        "detalhes": "Nome \"35 - ZONA SUL - BARRA DA TIJUCA\" compartilha token significativo (BARRA) e aparece em 2/3 dias"
-      }
-    },
-    {
-      "loja_id": "d71c1a91-4509-48a1-90e2-88fd27c7b6e4",
-      "loja_nome": "ZONA SUL LOJA 45 - FLAMENGO",
-      "rede_id": "ZONA_SUL",
-      "campo": "nome_unitrac",
-      "valor_proposto": "45 - ZONA SUL - FLAMENGO",
-      "confianca": 1,
-      "evidencia": {
-        "placas_que_serviram_loja": 7,
-        "placas_com_parada_no_codigo": 3,
-        "detalhes": "Nome \"45 - ZONA SUL - FLAMENGO\" compartilha token significativo (FLAMENGO) e aparece em 3/3 dias"
-      }
-    },
     {
       "loja_id": "15385737-77b0-4e18-87f9-cc17602aa092",
       "loja_nome": "REGINA BARRA DO IMBUY",
@@ -168,19 +77,6 @@
       }
     },
     {
-      "loja_id": "337b7e7d-d242-44d9-ab6d-54da36127570",
-      "loja_nome": "FEIRA NOVA BOA DICA (PIABETA)",
-      "rede_id": "FEIRA_NOVA",
-      "campo": "nome_unitrac",
-      "valor_proposto": "FEIRA NOVA BOA DICA (PIABETA)",
-      "confianca": 1,
-      "evidencia": {
-        "placas_que_serviram_loja": 2,
-        "placas_com_parada_no_codigo": 3,
-        "detalhes": "Nome \"FEIRA NOVA BOA DICA (PIABETA)\" compartilha token significativo (BOA,DICA,PIABETA) e aparece em 3/3 dias"
-      }
-    },
-    {
       "loja_id": "ef4c3b5f-ccd8-4eab-a365-44035695a408",
       "loja_nome": "FEIRA NOVA TODOS OS SANTOS",
       "rede_id": "FEIRA_NOVA",
@@ -191,19 +87,6 @@
         "placas_que_serviram_loja": 2,
         "placas_com_parada_no_codigo": 2,
         "detalhes": "Nome \"FEIRA NOVA TODOS OS SANTOS\" compartilha token significativo (TODOS,SANTOS) e aparece em 2/3 dias"
-      }
-    },
-    {
-      "loja_id": "ed256c93-0b77-478f-bcaa-c64e9784c1d5",
-      "loja_nome": "PREZUNIC CAMPO GRANDE (TINGUI)",
-      "rede_id": "PREZUNIC",
-      "campo": "nome_unitrac",
-      "valor_proposto": "PREZUNIC CAMPO GRANDE (TINGUI)",
-      "confianca": 1,
-      "evidencia": {
-        "placas_que_serviram_loja": 1,
-        "placas_com_parada_no_codigo": 3,
-        "detalhes": "Nome \"PREZUNIC CAMPO GRANDE (TINGUI)\" compartilha token significativo (CAMPO,GRANDE,TINGUI) e aparece em 3/3 dias"
       }
     },
     {
@@ -233,32 +116,6 @@
       }
     },
     {
-      "loja_id": "8043a9af-cb66-464b-831c-2579557f9a69",
-      "loja_nome": "VIANENSE NOVA IGUACU",
-      "rede_id": "VIANENSE",
-      "campo": "nome_unitrac",
-      "valor_proposto": "VIANENSE NOVA IGUACU",
-      "confianca": 1,
-      "evidencia": {
-        "placas_que_serviram_loja": 1,
-        "placas_com_parada_no_codigo": 3,
-        "detalhes": "Nome \"VIANENSE NOVA IGUACU\" compartilha token significativo (IGUACU) e aparece em 3/3 dias"
-      }
-    },
-    {
-      "loja_id": "32519f9f-69f1-4427-98b7-1beeda80709e",
-      "loja_nome": "VIANENSE JARDIM ALVORADA",
-      "rede_id": "VIANENSE",
-      "campo": "nome_unitrac",
-      "valor_proposto": "VIANENSE JARDIM ALVORADA",
-      "confianca": 1,
-      "evidencia": {
-        "placas_que_serviram_loja": 1,
-        "placas_com_parada_no_codigo": 3,
-        "detalhes": "Nome \"VIANENSE JARDIM ALVORADA\" compartilha token significativo (JARDIM,ALVORADA) e aparece em 3/3 dias"
-      }
-    },
-    {
       "loja_id": "d465ee4d-4549-42c9-b063-86425ac3384a",
       "loja_nome": "MERCEARIA SACHINHO",
       "rede_id": "SENDAS",
@@ -282,19 +139,6 @@
         "placas_que_serviram_loja": 1,
         "placas_com_parada_no_codigo": 3,
         "detalhes": "Nome \"EMPORIO BARRA TOWER\" compartilha token significativo (MERCADO,SANTO,AGOSTINHO,BARRA,TIJUCA) e aparece em 3/3 dias"
-      }
-    },
-    {
-      "loja_id": "f18ee595-3701-413c-9695-96900437df7e",
-      "loja_nome": "SUPERPRIX LJ 10 - ICARAI",
-      "rede_id": "SUPERPRIX",
-      "campo": "nome_unitrac",
-      "valor_proposto": "SUPERPRIX LJ 10 - ICARAI",
-      "confianca": 1,
-      "evidencia": {
-        "placas_que_serviram_loja": 1,
-        "placas_com_parada_no_codigo": 3,
-        "detalhes": "Nome \"SUPERPRIX LJ 10 - ICARAI\" compartilha token significativo (ICARAI) e aparece em 3/3 dias"
       }
     },
     {
@@ -802,58 +646,6 @@
         "placas_que_serviram_loja": 1,
         "placas_com_parada_no_codigo": 3,
         "detalhes": "Cod 23080000 aparece em paradas cujo nome_loja é \"MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA\" (confirmado via nome)"
-      }
-    },
-    {
-      "loja_id": "2a949792-99f2-4d4b-9281-c91b3df2fc14",
-      "loja_nome": "Sam's - Linha Amarela",
-      "rede_id": "SAMS_CLUB",
-      "campo": "nome_unitrac",
-      "valor_proposto": "SAMS LINHA AMARELA",
-      "confianca": 0.6666666666666666,
-      "evidencia": {
-        "placas_que_serviram_loja": 1,
-        "placas_com_parada_no_codigo": 2,
-        "detalhes": "Nome \"SAMS LINHA AMARELA\" compartilha token significativo (SAM,LINHA,AMARELA) e aparece em 2/3 dias"
-      }
-    },
-    {
-      "loja_id": "2a949792-99f2-4d4b-9281-c91b3df2fc14",
-      "loja_nome": "Sam's - Linha Amarela",
-      "rede_id": "SAMS_CLUB",
-      "campo": "codigo_unitrac",
-      "valor_proposto": "4568002",
-      "confianca": 1,
-      "evidencia": {
-        "placas_que_serviram_loja": 1,
-        "placas_com_parada_no_codigo": 2,
-        "detalhes": "Cod 4568002 aparece em paradas cujo nome_loja é \"SAMS LINHA AMARELA\" (confirmado via nome)"
-      }
-    },
-    {
-      "loja_id": "31912079-b6b2-4eb2-ae48-8ee68330b823",
-      "loja_nome": "Sam's - Niteroi",
-      "rede_id": "SAMS_CLUB",
-      "campo": "nome_unitrac",
-      "valor_proposto": "SAMS NITEROI",
-      "confianca": 0.6666666666666666,
-      "evidencia": {
-        "placas_que_serviram_loja": 1,
-        "placas_com_parada_no_codigo": 2,
-        "detalhes": "Nome \"SAMS NITEROI\" compartilha token significativo (SAM,NITEROI) e aparece em 2/3 dias"
-      }
-    },
-    {
-      "loja_id": "31912079-b6b2-4eb2-ae48-8ee68330b823",
-      "loja_nome": "Sam's - Niteroi",
-      "rede_id": "SAMS_CLUB",
-      "campo": "codigo_unitrac",
-      "valor_proposto": "4568001",
-      "confianca": 1,
-      "evidencia": {
-        "placas_que_serviram_loja": 1,
-        "placas_com_parada_no_codigo": 2,
-        "detalhes": "Cod 4568001 aparece em paradas cujo nome_loja é \"SAMS NITEROI\" (confirmado via nome)"
       }
     },
     {

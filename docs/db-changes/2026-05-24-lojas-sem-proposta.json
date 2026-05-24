@@ -1,6 +1,6 @@
 {
-  "geradoEm": "2026-05-24T23:38:34.060Z",
-  "total": 87,
+  "geradoEm": "2026-05-24T23:42:25.992Z",
+  "total": 88,
   "lojas": [
     {
       "id": "d8072be8-78ed-4f35-be77-7d836137ee33",
@@ -587,6 +587,13 @@
       "id": "e9bf0b93-7f8a-409d-9a86-515c89ac1238",
       "rede_id": "SUPERPRIX",
       "nome": "Super Prix - Niteroi - Loja 13 (1 ENTREGA)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "b7e994ae-b919-4370-a404-eb3550b4a8bb",
+      "rede_id": "SUPERPRIX",
+      "nome": "Super Prix - Ipanema - Loja 201",
       "tem_codigo_unitrac": false,
       "tem_nome_unitrac": false
     },

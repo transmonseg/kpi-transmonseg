@@ -199,12 +199,13 @@ async function main() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { persistSession: false } }
   )
+  // Buscar TODAS as lojas (ativas + inativas) pra check de unique constraint em codigo_unitrac
   const { data: lojasRaw, error } = await supabase
     .from('lojas')
-    .select('id, rede_id, nome, nome_normalizado, codigo_escala, codigo_unitrac, nome_unitrac, lat, lng, raio_metros')
-    .eq('ativo', true)
+    .select('id, rede_id, nome, nome_normalizado, codigo_escala, codigo_unitrac, nome_unitrac, lat, lng, raio_metros, ativo')
   if (error) throw error
-  const lojas = (lojasRaw ?? []) as Loja[]
+  const todasLojas = (lojasRaw ?? []) as (Loja & { ativo: boolean })[]
+  const lojas = todasLojas.filter(l => l.ativo)
   console.log(`Lojas ativas: ${lojas.length}`)
   console.log(`  Sem codigo_unitrac: ${lojas.filter(l => !l.codigo_unitrac).length}`)
   console.log(`  Sem nome_unitrac:   ${lojas.filter(l => !l.nome_unitrac).length}`)
@@ -223,12 +224,15 @@ async function main() {
 
   // 3a. Construir índices reversos: codigo_unitrac/nome_unitrac já cadastrados em OUTRAS lojas
   // Esses são "ocupados" — não podem ser sugeridos pra lojas vazias.
+  // IMPORTANTE: considerar TODAS as lojas (ativas + inativas) por causa do UNIQUE constraint no banco.
   const codigosOcupados = new Map<string, string>()  // codigo → loja_id que já usa
   const nomesOcupados = new Map<string, string>()
-  for (const l of lojas) {
+  for (const l of todasLojas) {
     if (l.codigo_unitrac) codigosOcupados.set(l.codigo_unitrac, l.id)
     if (l.nome_unitrac) nomesOcupados.set(normalizar(l.nome_unitrac), l.id)
   }
+  console.log(`  Códigos já cadastrados (todas lojas): ${codigosOcupados.size}`)
+  console.log(`  Nomes já cadastrados (todas lojas): ${nomesOcupados.size}`)
 
   // 3b. Pra cada loja, encontrar paradas associadas via cross-ref
   console.log('\nProcessando cross-reference por loja...\n')

@@ -1,0 +1,102 @@
+[
+  {
+    "loja_id": "1e0a070a-4dd4-44b9-a45a-5a31ad28ea76",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "53ea87a7-8cc0-4761-b050-2f0d55189365",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "e5770090-b1f2-4065-b62d-a86b58059bb2",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "9dbdadf4-bcf1-470c-a742-84dbbad0b991",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "d57a582a-b24f-4307-a50c-4518029011fc",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "9313e0c0-c2c2-42eb-8b07-90c849bf0853",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "80471d88-dcd5-4080-a783-9ed2b775d7c6",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "ec9690db-8221-499f-9022-26d2742986f9",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "e6490706-0efc-4703-b9b3-1a29ae18e255",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "e0088d31-b2bf-4255-b786-237368a446cc",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "1786e86c-a559-4795-9948-c1dd2a27132d",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "6aee9ef7-48d4-45f7-b5c5-6237b4a2eebe",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "9b9b54df-cca3-4bb8-949d-7ea3a0a1e399",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "a3e7fd6f-efda-4f49-a7f3-20e145ad835b",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "7751ba3c-8b80-4514-8805-b780def508aa",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "290983bc-f067-4dff-b328-f3ecf47ec82e",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "ff433cd8-a988-47c4-a343-949db23f25a7",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "c191cf66-0ad8-4874-a4ee-dc1e10463423",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "196806c6-8a22-4720-bd7c-05315bafbae2",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "6e286b44-da0f-4313-a451-03752b29cfde",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "4eb167f3-9b4a-4100-8bbc-7e5634e9e681",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "e10ae230-daff-43cb-b351-7c716625da5f",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "3247db8c-5489-4799-aa42-9aae6991e750",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "f78a3c47-48ce-42c7-861d-ec49eada9771",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "7def853e-ead2-40f0-90b9-6649d8d14031",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  }
+]

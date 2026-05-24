@@ -1,0 +1,373 @@
+[
+  {
+    "id": "bac51e51-a957-459d-becc-5dd11ac961bb",
+    "rede_id": "ZONA_SUL",
+    "nome": "ZONA SUL LOJA 04 - COPACABANA II",
+    "codigo_unitrac": "9039004",
+    "nome_unitrac": null
+  },
+  {
+    "id": "fd2858b1-1148-42a4-b831-042f297fd587",
+    "rede_id": "ZONA_SUL",
+    "nome": "ZONA SUL LOJA 07 - LEBLON",
+    "codigo_unitrac": "9039007",
+    "nome_unitrac": null
+  },
+  {
+    "id": "4f07ec5c-9db6-4b98-a6a1-619ad1bd757b",
+    "rede_id": "ZONA_SUL",
+    "nome": "ZONA SUL LOJA 18 - COPACABANA",
+    "codigo_unitrac": "9039018",
+    "nome_unitrac": null
+  },
+  {
+    "id": "0877d61f-0ae3-4a1a-b3bf-ccefc3cdb87a",
+    "rede_id": "ZONA_SUL",
+    "nome": "ZONA SUL LOJA 11 - LEBLON",
+    "codigo_unitrac": "9039011",
+    "nome_unitrac": null
+  },
+  {
+    "id": "275404ec-23be-4723-9cf5-5649c70f5521",
+    "rede_id": "ZONA_SUL",
+    "nome": "ZONA SUL LOJA 32 - LARANJEIRAS",
+    "codigo_unitrac": "9039106",
+    "nome_unitrac": null
+  },
+  {
+    "id": "91908d75-5874-4331-b5cd-28f75b90a6a9",
+    "rede_id": "ZONA_SUL",
+    "nome": "ZONA SUL LOJA 35 - BARRA",
+    "codigo_unitrac": "9039107",
+    "nome_unitrac": null
+  },
+  {
+    "id": "d71c1a91-4509-48a1-90e2-88fd27c7b6e4",
+    "rede_id": "ZONA_SUL",
+    "nome": "ZONA SUL LOJA 45 - FLAMENGO",
+    "codigo_unitrac": "9039120",
+    "nome_unitrac": null
+  },
+  {
+    "id": "15385737-77b0-4e18-87f9-cc17602aa092",
+    "rede_id": "ARMAZEM_GRAO",
+    "nome": "REGINA BARRA DO IMBUY",
+    "codigo_unitrac": "5353012",
+    "nome_unitrac": null
+  },
+  {
+    "id": "e9611e77-6803-4060-9cde-a994a5ebf9ad",
+    "rede_id": "ARMAZEM_GRAO",
+    "nome": "REGINA 1 DE MAIO",
+    "codigo_unitrac": "5353014",
+    "nome_unitrac": null
+  },
+  {
+    "id": "feab8590-0de9-45e0-a1e3-c6566a322957",
+    "rede_id": "ARMAZEM_GRAO",
+    "nome": "REGINA LUCIO MEIRA",
+    "codigo_unitrac": "5353016",
+    "nome_unitrac": null
+  },
+  {
+    "id": "fb267c8a-c470-4677-b64c-247a4d0a7ea1",
+    "rede_id": "FEIRA_NOVA",
+    "nome": "FEIRA NOVA SANTA CRUZ DA SERRA",
+    "codigo_unitrac": "579006",
+    "nome_unitrac": null
+  },
+  {
+    "id": "8fa3f9ee-0dc3-4aa1-82be-5ec8e41609aa",
+    "rede_id": "FEIRA_NOVA",
+    "nome": "FEIRA NOVA COELHO DA ROCHA",
+    "codigo_unitrac": "579007",
+    "nome_unitrac": null
+  },
+  {
+    "id": "337b7e7d-d242-44d9-ab6d-54da36127570",
+    "rede_id": "FEIRA_NOVA",
+    "nome": "FEIRA NOVA BOA DICA (PIABETA)",
+    "codigo_unitrac": "579011",
+    "nome_unitrac": null
+  },
+  {
+    "id": "ef4c3b5f-ccd8-4eab-a365-44035695a408",
+    "rede_id": "FEIRA_NOVA",
+    "nome": "FEIRA NOVA TODOS OS SANTOS",
+    "codigo_unitrac": "579013",
+    "nome_unitrac": null
+  },
+  {
+    "id": "ed256c93-0b77-478f-bcaa-c64e9784c1d5",
+    "rede_id": "PREZUNIC",
+    "nome": "PREZUNIC CAMPO GRANDE (TINGUI)",
+    "codigo_unitrac": "7000766",
+    "nome_unitrac": null
+  },
+  {
+    "id": "c0cf2d78-b4ae-4553-b822-31520c20d6b6",
+    "rede_id": "SUPER_PAX",
+    "nome": "PAX OSWALDO CRUZ",
+    "codigo_unitrac": "202000",
+    "nome_unitrac": null
+  },
+  {
+    "id": "9a859270-f71d-46c6-9ddc-cfd6f4d7894a",
+    "rede_id": "SUPER_PAX",
+    "nome": "PAX ENGENHO DE DENTRO",
+    "codigo_unitrac": "202001",
+    "nome_unitrac": null
+  },
+  {
+    "id": "8043a9af-cb66-464b-831c-2579557f9a69",
+    "rede_id": "VIANENSE",
+    "nome": "VIANENSE NOVA IGUACU",
+    "codigo_unitrac": "11623028",
+    "nome_unitrac": null
+  },
+  {
+    "id": "32519f9f-69f1-4427-98b7-1beeda80709e",
+    "rede_id": "VIANENSE",
+    "nome": "VIANENSE JARDIM ALVORADA",
+    "codigo_unitrac": "11623032",
+    "nome_unitrac": null
+  },
+  {
+    "id": "d465ee4d-4549-42c9-b063-86425ac3384a",
+    "rede_id": "SENDAS",
+    "nome": "MERCEARIA SACHINHO",
+    "codigo_unitrac": "15247000",
+    "nome_unitrac": null
+  },
+  {
+    "id": "d8dd43f8-22d5-4da0-a7ae-217746b53f05",
+    "rede_id": "SENDAS",
+    "nome": "MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA",
+    "codigo_unitrac": "23080000",
+    "nome_unitrac": null
+  },
+  {
+    "id": "f18ee595-3701-413c-9695-96900437df7e",
+    "rede_id": "SUPERPRIX",
+    "nome": "SUPERPRIX LJ 10 - ICARAI",
+    "codigo_unitrac": "3030011",
+    "nome_unitrac": null
+  },
+  {
+    "id": "99e3ce01-c0f9-49fb-b2f4-c2e7466c9735",
+    "rede_id": "SUPERPRIX",
+    "nome": "SUPERPRIX LJ 13 - NITEROI",
+    "codigo_unitrac": "3030113",
+    "nome_unitrac": null
+  },
+  {
+    "id": "1e0a070a-4dd4-44b9-a45a-5a31ad28ea76",
+    "rede_id": "ARMAZEM_GRAO",
+    "nome": "ARMAZEM DO GRAO A BARRA DA TIJUCA",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "53ea87a7-8cc0-4761-b050-2f0d55189365",
+    "rede_id": "ASSAI",
+    "nome": "Assai - Caxias II (Parque Fluminense) - Loja 219",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "e5770090-b1f2-4065-b62d-a86b58059bb2",
+    "rede_id": "SUPERPRIX",
+    "nome": "Super Prix - Tijuquinha (1 ENTREGA) Loja 13",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "9dbdadf4-bcf1-470c-a742-84dbbad0b991",
+    "rede_id": "ASSAI",
+    "nome": "Assai - Mesquita (Dutra) - Loja 142",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "d57a582a-b24f-4307-a50c-4518029011fc",
+    "rede_id": "SUPER_PAX",
+    "nome": "Engenho de Dentro",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "9313e0c0-c2c2-42eb-8b07-90c849bf0853",
+    "rede_id": "SUPER_PAX",
+    "nome": "Inhauma",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "80471d88-dcd5-4080-a783-9ed2b775d7c6",
+    "rede_id": "ASSAI",
+    "nome": "Assai - Nova Iguacu 2 - Loja 291",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "ec9690db-8221-499f-9022-26d2742986f9",
+    "rede_id": "SUPER_PAX",
+    "nome": "Realengo",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "e6490706-0efc-4703-b9b3-1a29ae18e255",
+    "rede_id": "EMANUEL",
+    "nome": "CACHAMORRA",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "e0088d31-b2bf-4255-b786-237368a446cc",
+    "rede_id": "FEIRA_NOVA",
+    "nome": "1- Nilopolis (Olinda)",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "1786e86c-a559-4795-9948-c1dd2a27132d",
+    "rede_id": "FEIRA_NOVA",
+    "nome": "10- Cachambi",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "6aee9ef7-48d4-45f7-b5c5-6237b4a2eebe",
+    "rede_id": "FEIRA_NOVA",
+    "nome": "12- Freguesia",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "9b9b54df-cca3-4bb8-949d-7ea3a0a1e399",
+    "rede_id": "FEIRA_NOVA",
+    "nome": "13- Todos os Santos",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "a3e7fd6f-efda-4f49-a7f3-20e145ad835b",
+    "rede_id": "FEIRA_NOVA",
+    "nome": "3- Anchieta",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "7751ba3c-8b80-4514-8805-b780def508aa",
+    "rede_id": "FEIRA_NOVA",
+    "nome": "6- Santa Cruz da Serra",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "290983bc-f067-4dff-b328-f3ecf47ec82e",
+    "rede_id": "FEIRA_NOVA",
+    "nome": "7- Coelho da Rocha",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "ff433cd8-a988-47c4-a343-949db23f25a7",
+    "rede_id": "FEIRA_NOVA",
+    "nome": "8- Ceramica",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "c191cf66-0ad8-4874-a4ee-dc1e10463423",
+    "rede_id": "FEIRA_NOVA",
+    "nome": "9- Queimados",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "196806c6-8a22-4720-bd7c-05315bafbae2",
+    "rede_id": "FEIRA_NOVA",
+    "nome": "Mercado Santo Agostinho (Barra)",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "2a949792-99f2-4d4b-9281-c91b3df2fc14",
+    "rede_id": "SAMS_CLUB",
+    "nome": "Sam's - Linha Amarela",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "31912079-b6b2-4eb2-ae48-8ee68330b823",
+    "rede_id": "SAMS_CLUB",
+    "nome": "Sam's - Niteroi",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "ce19e6c5-28e2-46bd-9bb0-1407c9cb2f2c",
+    "rede_id": "SENDAS",
+    "nome": "Atlantico Sul (Barra da Tijuca)",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "c4f87d80-1906-4be9-9cce-4eee28cb0895",
+    "rede_id": "SENDAS",
+    "nome": "Barra Tower",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "4d0981f3-a51b-47b6-96e1-848e741fe446",
+    "rede_id": "SENDAS",
+    "nome": "Barramares (Barra da Tijuca)",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "6e286b44-da0f-4313-a451-03752b29cfde",
+    "rede_id": "SENDAS",
+    "nome": "Mercearia Sachinho (Vargem Grande)",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "4eb167f3-9b4a-4100-8bbc-7e5634e9e681",
+    "rede_id": "SUPER_PAX",
+    "nome": "Pilares",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "e10ae230-daff-43cb-b351-7c716625da5f",
+    "rede_id": "SUPER_PAX",
+    "nome": "Madureira",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "3247db8c-5489-4799-aa42-9aae6991e750",
+    "rede_id": "SUPER_PAX",
+    "nome": "Oswaldo Cruz",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "f78a3c47-48ce-42c7-861d-ec49eada9771",
+    "rede_id": "SUPER_PAX",
+    "nome": "Taquara",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "7def853e-ead2-40f0-90b9-6649d8d14031",
+    "rede_id": "SUPERPRIX",
+    "nome": "Super Prix - Riachuelo Loja 07",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  }
+]
