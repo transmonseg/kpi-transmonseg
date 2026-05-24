@@ -218,11 +218,11 @@ async function main() {
 
   function noData(v: string): boolean { return v === '---' || v.startsWith('SEM') || v.startsWith('NAO') }
   function arrEq(a: string[], b: string[]): boolean {
-    // PREZUNIC/FEIRA_NOVA: manual=SEM indica motorista sem rastreador — GPS prevalece.
-    if ((REDE_ID === 'PREZUNIC' || REDE_ID === 'FEIRA_NOVA') && b.every(v => v.startsWith('SEM'))) return true
-    // FEIRA_NOVA: SC (índice 0) vem de sistema não-GPS (saída CD anotada manualmente).
-    // Comparar apenas CHD (1) e SL (2) para evitar falsos DIFFs de convenção.
-    if (REDE_ID === 'FEIRA_NOVA') {
+    // PREZUNIC/FEIRA_NOVA/ASSAI: manual=SEM indica motorista sem rastreador — GPS prevalece.
+    if ((REDE_ID === 'PREZUNIC' || REDE_ID === 'FEIRA_NOVA' || REDE_ID === 'ASSAI') && b.every(v => v.startsWith('SEM'))) return true
+    // FEIRA_NOVA/ASSAI: SC (índice 0) vem de sistema não-GPS (saída CD anotada manualmente).
+    // Comparar apenas CHD (1) e SL (2) para evitar falsos DIFFs de convenção de SC.
+    if (REDE_ID === 'FEIRA_NOVA' || REDE_ID === 'ASSAI') {
       return [1, 2].every(i => (noData(a[i]) && noData(b[i])) || a[i] === b[i])
     }
     return a.every((v, i) => (noData(v) && noData(b[i])) || v === b[i])
