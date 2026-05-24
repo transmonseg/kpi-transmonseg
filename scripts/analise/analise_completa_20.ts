@@ -160,6 +160,11 @@ async function main() {
   process.stdout.write('=== ANÁLISE PLACA A PLACA — ZONA SUL 20/05/2026 ===\n')
   process.stdout.write('SC=SaídaCD  CHD=ChegadaLoja  SL=SaídaLoja\n\n')
 
+  function noData(v: string): boolean { return v === '---' || v.startsWith('SEM') }
+  function arrEq(a: string[], b: string[]): boolean {
+    return a.every((v, i) => (noData(v) && noData(b[i])) || v === b[i])
+  }
+
   let nOk = 0, nDiff = 0, nMatchOk = 0, nMatchDiff = 0
 
   for (const [loja, slots] of lojaMap) {
@@ -187,10 +192,10 @@ async function main() {
         ? [kg?.sc1 ?? '---', kg?.chd1 ?? '---', kg?.sl1 ?? '---']
         : [kg?.sc2 ?? '---', kg?.chd2 ?? '---', kg?.sl2 ?? '---']
 
-      const diff = mArr.join('/') !== gArr.join('/')
+      const diff = !arrEq(mArr, gArr)
       if (diff) nDiff++; else nOk++
 
-      const matchDiff = matchArr.join('/') !== mArr.join('/')
+      const matchDiff = !arrEq(matchArr, mArr)
       if (matchDiff) nMatchDiff++; else nMatchOk++
 
       const tag = matchDiff ? '[DIFF]' : '[OK]  '
