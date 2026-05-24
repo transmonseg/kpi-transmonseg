@@ -814,8 +814,18 @@ export async function cruzaEscalaUnitrac(
         )
         .sort((a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
 
+      // Geo-R guard: se o veículo tem paradas LOJA não atribuídas a nenhuma linha
+      // (órfãs), é sinal de que ele entregou em outra rede. Usar FORA_BASE dele para
+      // geo-match seria FP cross-rede.
+      // Caso TML3B11: LOJA parada = PREZUNIC TIJUCA (não bate código VIANENSE) →
+      // parada órfã → pula geo fallback para linhas VIANENSE.
+      const temLojaOrfa = todas.some(p => p.classificacao === 'LOJA' && !usados.has(p.id))
+
       const usadosGeo = new Set<number>()
       for (const linha of linhasAindaSemMatch) {
+        // Geo-R: pula se veículo tem LOJA órfã (entregou em outra rede → FP)
+        if (temLojaOrfa) continue
+
         // Pra cada linha sem match, procura parada FORA_BASE próxima de loja
         // cadastrada da MESMA REDE (operacional ou canonical).
         const lojasDaRede: GeoStore[] = lojas
@@ -987,9 +997,21 @@ export async function cruzaEscalaUnitrac(
     // perto da loja e produziria FP. Apenas veículos que TÊM dados no Unitrac mas cuja
     // parada não foi identificada (ex: classificada FORA_BASE) são candidatos reais de
     // troca de placa.
-    const semGpsLines = escalaLinhas.filter(l =>
-      l.placa_norm && !matchByEscalaId.has(l.id) && !!resolvePlacaUnitrac(l.placa_norm)
-    )
+    //
+    // T18-Orphan: exclui linhas cujo veículo tem parada LOJA não atribuída a nenhuma
+    // escala_linha (parada "órfã"). Indica que o veículo entregou em outra rede mas
+    // não nas lojas desta escala; T18 buscaria parada de outro veículo perto da loja
+    // e produziria FP (caso TML3B11: LOJA=PREZUNIC TIJUCA, escala=VIANENSE).
+    const matchedParadaIds = new Set([...matchByEscalaId.values()].map(p => p.id))
+    const semGpsLines = escalaLinhas.filter(l => {
+      if (!l.placa_norm || matchByEscalaId.has(l.id)) return false
+      const placaRes = resolvePlacaUnitrac(l.placa_norm)
+      if (!placaRes) return false
+      // T18-Orphan: pula se veículo tem LOJA órfã
+      const paradaDoVeiculo = paradaByPlaca.get(placaRes) ?? []
+      if (paradaDoVeiculo.some(p => p.classificacao === 'LOJA' && !matchedParadaIds.has(p.id))) return false
+      return true
+    })
     if (semGpsLines.length > 0) {
       const todasLojaParadas = paradaRows.filter(p => p.classificacao === 'LOJA')
 
