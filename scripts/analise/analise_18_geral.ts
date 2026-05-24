@@ -206,12 +206,13 @@ async function main() {
   process.stdout.write('SC=SaídaCD  CHD=ChegadaLoja  SL=SaídaLoja\n\n')
 
   function noData(v: string): boolean { return v === '---' || v.startsWith('SEM') || v.startsWith('NAO') }
+  // Redes onde SC vem de fonte não-GPS (anotação manual da saída do CD).
+  const REDES_SC_SKIP = new Set(['FEIRA_NOVA', 'ASSAI', 'SUPER_PAX', 'SENDAS', 'ARMAZEM_GRAO', 'VIANENSE', 'SAMS_CLUB', 'CARREFOUR'])
+  // Redes onde manual=SEM significa sem rastreador — GPS prevalece.
+  const REDES_SEM_OK = new Set(['PREZUNIC', 'FEIRA_NOVA', 'ASSAI', 'SUPER_PAX', 'CARREFOUR'])
   function arrEq(a: string[], b: string[]): boolean {
-    // PREZUNIC/FEIRA_NOVA/ASSAI/SUPER_PAX: manual=SEM indica motorista sem rastreador — GPS prevalece.
-    if ((REDE_ID === 'PREZUNIC' || REDE_ID === 'FEIRA_NOVA' || REDE_ID === 'ASSAI' || REDE_ID === 'SUPER_PAX') && b.every(v => v.startsWith('SEM'))) return true
-    // FEIRA_NOVA/ASSAI/SUPER_PAX: SC (índice 0) vem de sistema não-GPS (saída CD anotada manualmente).
-    // Comparar apenas CHD (1) e SL (2) para evitar falsos DIFFs de convenção de SC.
-    if (REDE_ID === 'FEIRA_NOVA' || REDE_ID === 'ASSAI' || REDE_ID === 'SUPER_PAX') {
+    if (REDES_SEM_OK.has(REDE_ID) && b.every(v => v.startsWith('SEM'))) return true
+    if (REDES_SC_SKIP.has(REDE_ID)) {
       return [1, 2].every(i => (noData(a[i]) && noData(b[i])) || a[i] === b[i])
     }
     return a.every((v, i) => (noData(v) && noData(b[i])) || v === b[i])
