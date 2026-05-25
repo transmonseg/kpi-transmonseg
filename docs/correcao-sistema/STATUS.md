@@ -13,7 +13,8 @@
 | Fase | Status | Início | Fim | Notas |
 |------|--------|--------|-----|-------|
 | 0 — Sanitização cadastro | ✓ Concluída | 2026-05-24 | 2026-05-24 | 52 duplicatas mescladas + auto-preencher aplicado + aliases salvos. 347→295 ativas. |
-| 1 — Pipeline alterações | 🚧 Próxima | - | - | - |
+| 1 — Pipeline alterações | ✓ Concluída | 2026-05-24 | 2026-05-24 | aplicarAlteracoes extraída como módulo + 10 testes vitest. /api/kpi/simples agora usa o módulo. |
+| 2 — Matcher v2 | 🚧 Próxima | - | - | - |
 | 2 — Matcher v2 | ⏳ Pendente | - | - | - |
 | 3 — Validação rede a rede | ⏳ Pendente | - | - | - |
 | 4 — Casos especiais | ⏳ Pendente | - | - | - |

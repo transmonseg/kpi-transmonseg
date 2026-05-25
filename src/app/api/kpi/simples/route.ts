@@ -7,6 +7,7 @@ import { parseEscalaPax } from '@/lib/parsers/escala-pax'
 import { parseEscalaArmazemGrao } from '@/lib/parsers/escala-armazem-grao'
 import { parseUnitrac } from '@/lib/parsers/unitrac'
 import { cruzaEscalaUnitrac, variantesOcr } from '@/lib/kpi/matcher'
+import { aplicarAlteracoes } from '@/lib/kpi/aplicar-alteracoes'
 import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
 import { REDE_NOMES_CANONICOS } from '@/lib/kpi/kpi-styles'
@@ -102,71 +103,10 @@ function rotaToLinha(rota: RotaKpi, escala: LinhaEscala, ordem: number): LinhaPa
   }
 }
 
+// Wrapper para a função canônica (em src/lib/kpi/aplicar-alteracoes.ts)
+// Mantém assinatura local pra evitar churn nos call sites deste arquivo.
 function aplicaAlteracoes(linhas: LinhaEscala[], alts: AltConfirmada[]): LinhaEscala[] {
-  // Snapshot das placas originais antes de qualquer mutação: impede que uma
-  // alteração anterior altere os critérios de match de uma posterior (cascata).
-  // Necessário para SWAP mútuo: Filial 23 LQA5883↔LTE0A64 + Filial 43 LTE0A64↔LQA5883
-  // sem snapshot, a 2ª alt encontraria a placa já substituída pela 1ª.
-  const placasOriginais: (string | null)[] = linhas.map(l => l.placa_norm || null)
-  const motoristasOriginais: (string | null)[] = linhas.map(l => l.motorista_nome || null)
-
-  for (const alt of alts) {
-    const tipoOk = alt.tipo === 'SUBSTITUICAO' || alt.tipo === 'INCLUSAO' || alt.tipo === 'SWAP'
-    if (!tipoOk) continue
-    if (!alt.entra) continue
-
-    // Predicado de match: usa snapshot original, não o valor atual (anti-cascata)
-    const matches = (l: LinhaEscala, i: number): boolean => {
-      // Filtra por rede quando disponível — impede contaminação cross-rede
-      if (alt.rede_id && l.rede_id !== alt.rede_id) return false
-      if (alt.sai?.placa_norm && placasOriginais[i] === alt.sai.placa_norm) return true
-      if (alt.sai?.motorista_nome) {
-        const needle = alt.sai.motorista_nome.toLowerCase().split(' ')[0]
-        if (needle.length >= 3 && motoristasOriginais[i]?.toLowerCase().includes(needle)) return true
-      }
-      // Match por loja/filial: quando não há info em sai, mas o operador informou
-      // loja_raw (ex: "Filial 23"), casa a linha pelo número da filial dentro da rede.
-      // Permite alteração de placa sem precisar saber quem estava escalado originalmente.
-      if (!alt.sai?.placa_norm && !alt.sai?.motorista_nome && alt.loja_raw) {
-        const filialM = alt.loja_raw.match(/\b(\d{1,3})\b/)
-        if (filialM) {
-          const filialInt = parseInt(filialM[1], 10)
-          const codInt = parseInt(l.loja_codigo_raw ?? '', 10)
-          if (!isNaN(filialInt) && !isNaN(codInt) && filialInt === codInt) return true
-        }
-      }
-      return false
-    }
-
-    if (alt.tipo === 'SWAP') {
-      // SWAP: troca APENAS a placa entre dois slots, mantém motoristas intactos.
-      // entra.placa_norm = nova placa que entra na linha que tinha sai.placa_norm.
-      // Só modifica placa_norm/placa_raw — motorista permanece.
-      for (let i = 0; i < linhas.length; i++) {
-        if (!matches(linhas[i], i)) continue
-        const l = { ...linhas[i] }
-        if (alt.entra.placa_norm) l.placa_norm = alt.entra.placa_norm
-        if (alt.entra.placa_raw) l.placa_raw = alt.entra.placa_raw
-        linhas[i] = l
-        // SWAP afeta apenas a linha da placa que sai — não continua pro loop inteiro
-        break
-      }
-    } else {
-      // SUBSTITUICAO / INCLUSAO: atualiza TODAS as linhas que casam com a placa/motorista
-      // (uma placa pode servir múltiplas lojas na mesma rede — ex: Zona Sul filial 23 e 45).
-      for (let i = 0; i < linhas.length; i++) {
-        if (!matches(linhas[i], i)) continue
-        const l = { ...linhas[i] }
-        if (alt.entra.placa_norm) l.placa_norm = alt.entra.placa_norm
-        if (alt.entra.placa_raw) l.placa_raw = alt.entra.placa_raw
-        if (alt.entra.motorista_nome) l.motorista_nome = alt.entra.motorista_nome
-        if (alt.entra.motorista_codigo !== null && alt.entra.motorista_codigo !== undefined)
-          l.motorista_codigo = String(alt.entra.motorista_codigo)
-        linhas[i] = l
-      }
-    }
-  }
-  return linhas
+  return aplicarAlteracoes(linhas, alts)
 }
 
 export async function POST(req: NextRequest) {
