@@ -173,6 +173,9 @@ function normalizeSpaces(raw: string): string {
     // Inclui minúsculas — palavras como "Sebastião", "Brasão", "Coração" terminam
     // em minúscula e ficam grudadas em coordenadas no PDF, devorando a próxima parada.
     .replace(/([A-Za-zÀ-Ýà-ý])(-\d+\.\d+)/g, '$1 $2')
+    // Vírgula ou dígito (final de CEP) grudados em coordenada negativa
+    // (ex: "COPACABANA,-22.983080", "22080010-22.983080")
+    .replace(/([,.\d])(-\d{1,2}\.\d{4,6})/g, '$1 $2')
     // Lat/lng (exatamente 6 decimais) seguida de código numérico (ex: -43.5593609006154 = "-43.559360" + "9006154")
     .replace(/(-?\d+\.\d{6})(\d)/g, '$1 $2')
     // Número decimal seguido de "0D" (duração) — ex: "56,20D" = "56,2" + "0D"
