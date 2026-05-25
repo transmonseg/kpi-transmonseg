@@ -241,21 +241,37 @@ function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracPara
   for (const p of paradas) {
     const last = out[out.length - 1]
 
+    // GAP_CONSOLIDACAO_MAX: 30min entre saída de uma parada e chegada da próxima.
+    // Acima disso, mesmo sendo "mesma loja", são entregas SEPARADAS (não consolidar).
+    // Caso REGINA Armazém Grão dia 19: caminhão TML6D96 faz 14 paradas em REGINA
+    // BARRA DO IMBUY entre 00:03 e 23:56 — cada uma uma entrega diferente.
+    // Sem esse limite, consolidação juntava tudo em 1 parada de 24h.
+    // 30min cobre o caso "rua lateral" do vídeo Tia Érica (gap ~7min) sem juntar
+    // entregas distintas separadas por mais tempo.
+    const GAP_CONSOLIDACAO_MAX_SEG = 30 * 60
+
     let mesmaLoja = false
     if (last && last.classificacao === 'LOJA' && p.classificacao === 'LOJA') {
-      // 1. Mesmo código (caso ideal)
-      if (last.codigo_loja && p.codigo_loja && last.codigo_loja === p.codigo_loja) {
-        mesmaLoja = true
-      } else {
-        // 2. Mesmo nome_loja normalizado (Unitrac sem código mas com nome)
-        const nomeLast = nomeLojaNorm(last.nome_loja)
-        const nomeP = nomeLojaNorm(p.nome_loja)
-        if (nomeLast && nomeP && nomeLast === nomeP) mesmaLoja = true
-        else {
-          // 3. Fallback: local_parada raw normalizado
-          const localLast = nomeLojaNorm(last.local_parada)
-          const localP = nomeLojaNorm(p.local_parada)
-          if (localLast && localP && localLast === localP) mesmaLoja = true
+      // Checa gap temporal primeiro — sem gap aceitável, nem tenta consolidar
+      const lastSaida = last.saida ? new Date(last.saida).getTime() : new Date(last.chegada).getTime()
+      const pChegada = new Date(p.chegada).getTime()
+      const gapSeg = (pChegada - lastSaida) / 1000
+
+      if (gapSeg < GAP_CONSOLIDACAO_MAX_SEG) {
+        // 1. Mesmo código (caso ideal)
+        if (last.codigo_loja && p.codigo_loja && last.codigo_loja === p.codigo_loja) {
+          mesmaLoja = true
+        } else {
+          // 2. Mesmo nome_loja normalizado (Unitrac sem código mas com nome)
+          const nomeLast = nomeLojaNorm(last.nome_loja)
+          const nomeP = nomeLojaNorm(p.nome_loja)
+          if (nomeLast && nomeP && nomeLast === nomeP) mesmaLoja = true
+          else {
+            // 3. Fallback: local_parada raw normalizado
+            const localLast = nomeLojaNorm(last.local_parada)
+            const localP = nomeLojaNorm(p.local_parada)
+            if (localLast && localP && localLast === localP) mesmaLoja = true
+          }
         }
       }
     }
