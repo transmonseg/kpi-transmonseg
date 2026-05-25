@@ -27,8 +27,8 @@
 | SUPERPRIX | 8/9 | 0/9 | dia18 quase perfeito, dia19 GPS±timing |
 | PRINCESA | 3/26 | 26/26 | dia18 estrutural, dia19 perfeito |
 | GUANABARA | N/A | 37/37 | BLANK_OK: '---' manual = OK |
-| ATACADAO | 1/2 | 1/2 | matcher vazio estrutural |
-| MUNDIAL | 1/2 | 1/2 | pequeno |
+| ATACADAO | 2/2 | 1/2 | SC_SKIP dia18, dia19 FB-as-LOJA |
+| MUNDIAL | 1/1 | 1/1 | perfeito (SEM/SEM/SEM) |
 | CAB_PETROPOLIS | 0/1 | — | estrutural |
 | SUPERCOMPRAS | 0/1 | — | estrutural |
 
@@ -78,6 +78,8 @@ Se você é um Claude novo (sessão compactada) lendo isto:
 | SENDAS/ARMAZEM_GRAO/VIANENSE/SAMS_CLUB/CARREFOUR | SC-skip + SEM-ok(Carrefour) | +12 | 36db71a |
 | GUANABARA | BLANK_OK: '---' manual = OK (operador não preenche) | +17 | 05fc3af |
 | PRINCESA | SEM_OK + BLANK_OK + SC_SKIP → dia18: +2, dia19: +2 | +4 | 522c1ef, 35cae2e |
+| SENDAS | BLANK_OK dia19 (+5), SEM_OK dia18 (+2) | +7 | 65081d4, ac77e19 |
+| ATACADAO | SC_SKIP → Belford Roxo CHD/SL batem | +1 | ba2dff7 |
 
 ---
 
