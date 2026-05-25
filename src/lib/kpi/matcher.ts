@@ -212,26 +212,53 @@ export type LojaRow = {
 }
 
 /**
- * Consolida paradas LOJA consecutivas com mesmo codigo_loja em UMA só parada.
+ * Consolida paradas LOJA consecutivas no MESMO cliente em UMA só parada.
  *
  * Cenário (confirmado pela Tia Érica nos vídeos): quando o caminhão entrega
  * num cliente, ele pode "pular pra rua lateral" e voltar, gerando 2-3
  * registros consecutivos com o mesmo Local da Parada no Unitrac. A
  * interpretação correta é UMA parada: chegada = primeira, saída = última.
  *
- * Mantém ordem temporal, só junta paradas LOJA com codigo_loja não-nulo iguais.
+ * Reconhece "mesmo cliente" por (em ordem de preferência):
+ *  1. codigo_loja igual nas duas paradas (caso ideal)
+ *  2. nome_loja normalizado igual (Unitrac retorna nome mesmo sem código)
+ *  3. local_parada raw normalizado igual (fallback final)
+ *
+ * Antes só consolidava por código — caso típico ZONA_SUL (que usa só número
+ * de filial, sem nome) ou Unitrac que retorna paradas com codigo_loja null
+ * mas nome igual ficavam SEM consolidação, gerando KPI fragmentado.
  */
+function nomeLojaNorm(s: string | null | undefined): string {
+  if (!s) return ''
+  return s.toUpperCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
   const out: UnitracParadaRow[] = []
   for (const p of paradas) {
     const last = out[out.length - 1]
-    const mesmaLoja =
-      last &&
-      last.classificacao === 'LOJA' &&
-      p.classificacao === 'LOJA' &&
-      last.codigo_loja &&
-      p.codigo_loja &&
-      last.codigo_loja === p.codigo_loja
+
+    let mesmaLoja = false
+    if (last && last.classificacao === 'LOJA' && p.classificacao === 'LOJA') {
+      // 1. Mesmo código (caso ideal)
+      if (last.codigo_loja && p.codigo_loja && last.codigo_loja === p.codigo_loja) {
+        mesmaLoja = true
+      } else {
+        // 2. Mesmo nome_loja normalizado (Unitrac sem código mas com nome)
+        const nomeLast = nomeLojaNorm(last.nome_loja)
+        const nomeP = nomeLojaNorm(p.nome_loja)
+        if (nomeLast && nomeP && nomeLast === nomeP) mesmaLoja = true
+        else {
+          // 3. Fallback: local_parada raw normalizado
+          const localLast = nomeLojaNorm(last.local_parada)
+          const localP = nomeLojaNorm(p.local_parada)
+          if (localLast && localP && localLast === localP) mesmaLoja = true
+        }
+      }
+    }
     if (mesmaLoja) {
       // Antes: exigia ambos saida e chegada não-null. Quando p.saida era null
       // (caminhão ainda parado, última parada do dia), caía no else e empurrava

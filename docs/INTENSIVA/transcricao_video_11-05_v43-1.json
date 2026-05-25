@@ -1,0 +1,169 @@
+{
+  "model": "voxtral-mini-latest",
+  "language": null,
+  "text": "Entendendo agora sobre a escala que eles mandam, tá? Essa aqui é a escala geral, que é mandada todo dia. Antes de eu produzir a KPI, a gente faz uma limpeza. Eu costumo vir aqui e excluir essas separações para poder unificar todas as lojas e ficar mais fácil. Então eu venho tirando aqui, clico com o botão direito e excluir somente essas linhas que estão em azul. Que elas vão separar cada empresa. Isso aqui dificulta um pouco na hora de fazer a cópia para dentro da KPI. Então eu deleto todos eles. Aqui eu também tiro para poder juntar e fazer a escala geral de forma unificada, onde vai ficar mais fácil para você poder visualizar os caminhões. Tirei essa parte. Aqui ainda tem muitas informações que a gente não precisa. Eu costumo tirar sempre. Peso. Quantidade de paletes, quantidade e tipo de carro. Eu excluo todas essas colunas. Elas não se fazem necessárias. O que a gente precisa é o nome da rede ou filial, o motorista, o código e a placa. Aqui do lado tem o segundo carro. Eu costumo tirar essa coluna aqui também, porque facilita para ficar apenas o nome do motorista, o código e qual é o veículo que vai...vai no cliente em específico. Por exemplo, aqui, açaí carioca shopping. Vou dar um zoom para a gente poder entender melhor. Açaí Carioca Shopping. O primeiro carro é o motorista Cristiano, com a placa EOF 4951. E o segundo carro é o motorista Estelita, com o carro Gage 6H51. Então, dessa forma a gente consegue visualizar e entender para onde vai cada caminhão. À esquerda nós temos os clientes e à direita temos o motorista e a placa do motorista.",
+  "segments": [
+    {
+      "speaker": 0,
+      "text": "Entendendo agora sobre a escala que eles mandam, tá?",
+      "start": 1.8,
+      "end": 6.1
+    },
+    {
+      "speaker": 0,
+      "text": "Essa aqui é a escala geral, que é mandada todo dia.",
+      "start": 6.5,
+      "end": 9.3
+    },
+    {
+      "speaker": 0,
+      "text": "Antes de eu produzir a KPI, a gente faz uma limpeza.",
+      "start": 11.8,
+      "end": 14.7
+    },
+    {
+      "speaker": 0,
+      "text": "Eu costumo vir aqui e excluir essas separações para poder unificar todas as lojas e ficar mais fácil.",
+      "start": 16.0,
+      "end": 22.7
+    },
+    {
+      "speaker": 0,
+      "text": "Então eu venho tirando aqui, clico com o botão direito e excluir somente essas linhas que estão em azul.",
+      "start": 23.8,
+      "end": 29.9
+    },
+    {
+      "speaker": 0,
+      "text": "Que elas vão separar cada empresa.",
+      "start": 30.6,
+      "end": 33.0
+    },
+    {
+      "speaker": 0,
+      "text": "Isso aqui dificulta um pouco na hora de fazer a cópia para dentro da KPI.",
+      "start": 33.1,
+      "end": 38.8
+    },
+    {
+      "speaker": 0,
+      "text": "Então eu deleto todos eles.",
+      "start": 39.9,
+      "end": 41.3
+    },
+    {
+      "speaker": 0,
+      "text": "Aqui eu também tiro para poder juntar e fazer a escala geral de forma unificada, onde vai ficar mais fácil para você poder visualizar os caminhões.",
+      "start": 42.5,
+      "end": 52.4
+    },
+    {
+      "speaker": 0,
+      "text": "Tirei essa parte.",
+      "start": 53.3,
+      "end": 54.5
+    },
+    {
+      "speaker": 0,
+      "text": "Aqui ainda tem muitas informações que a gente não precisa.",
+      "start": 55.3,
+      "end": 57.9
+    },
+    {
+      "speaker": 0,
+      "text": "Eu costumo tirar sempre.",
+      "start": 58.5,
+      "end": 59.9
+    },
+    {
+      "speaker": 0,
+      "text": "Peso.",
+      "start": 60.4,
+      "end": 60.8
+    },
+    {
+      "speaker": 0,
+      "text": "Quantidade de paletes, quantidade e tipo de carro.",
+      "start": 61.8,
+      "end": 65.4
+    },
+    {
+      "speaker": 0,
+      "text": "Eu excluo todas essas colunas.",
+      "start": 66.2,
+      "end": 68.0
+    },
+    {
+      "speaker": 0,
+      "text": "Elas não se fazem necessárias.",
+      "start": 68.1,
+      "end": 69.7
+    },
+    {
+      "speaker": 0,
+      "text": "O que a gente precisa é o nome da rede ou filial, o motorista, o código e a placa.",
+      "start": 70.2,
+      "end": 76.5
+    },
+    {
+      "speaker": 0,
+      "text": "Aqui do lado tem o segundo carro.",
+      "start": 77.6,
+      "end": 79.8
+    },
+    {
+      "speaker": 0,
+      "text": "Eu costumo tirar essa coluna aqui também, porque facilita para ficar apenas o nome do motorista, o código e qual é o veículo que vai...",
+      "start": 80.5,
+      "end": 90.0
+    },
+    {
+      "speaker": 0,
+      "text": "vai no cliente em específico.",
+      "start": 90.0,
+      "end": 92.8
+    },
+    {
+      "speaker": 0,
+      "text": "Por exemplo, aqui, açaí carioca shopping.",
+      "start": 93.1,
+      "end": 95.7
+    },
+    {
+      "speaker": 0,
+      "text": "Vou dar um zoom para a gente poder entender melhor.",
+      "start": 95.8,
+      "end": 98.2
+    },
+    {
+      "speaker": 0,
+      "text": "Açaí Carioca Shopping.",
+      "start": 99.7,
+      "end": 100.8
+    },
+    {
+      "speaker": 0,
+      "text": "O primeiro carro é o motorista Cristiano, com a placa EOF 4951.",
+      "start": 101.1,
+      "end": 106.1
+    },
+    {
+      "speaker": 0,
+      "text": "E o segundo carro é o motorista Estelita, com o carro Gage 6H51.",
+      "start": 106.6,
+      "end": 111.9
+    },
+    {
+      "speaker": 0,
+      "text": "Então, dessa forma a gente consegue visualizar e entender para onde vai cada caminhão.",
+      "start": 112.6,
+      "end": 119.4
+    },
+    {
+      "speaker": 0,
+      "text": "À esquerda nós temos os clientes e à direita temos o motorista e a placa do motorista.",
+      "start": 119.8,
+      "end": 125.4
+    }
+  ]
+}

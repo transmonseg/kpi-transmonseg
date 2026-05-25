@@ -1,0 +1,241 @@
+{
+  "model": "voxtral-mini-latest",
+  "language": null,
+  "text": "Vamos falar agora sobre a escala do Zona Sul. No Zona Sul, a escala dele é diferente da escala geral. E precisamos tomar alguns cuidados. A Zona Sul sai durante todo o dia e ela tem um horário específico de início de carregamento. Você reparar aqui à esquerda, a gente tem início de operação. E os horários, tá? O horário integral durante o dia, das 10 da manhã até as 14 horas, Todos os caminhões que estiverem dentro desse horário, eles vão sair no mesmo dia. Todo carregamento que é feito de 10 até as 14 horas, os caminhões vão sair no mesmo dia. Normalmente os caminhões das 10 saem por volta de meio-dia. Os caminhões de meio-dia normalmente começam a sair às 15 horas. E os caminhões que começam o carregamento às 14, normalmente saem a partir das 16 horas. Normalmente funciona assim. Os caminhões que são carregados às 17 horas, eles são caminhões que vão ser carregados e que sairão no primeiro horário do dia seguinte. Então, sempre tomar esse cuidado de que todo carregamento que é feito às 17 horas, ele é para o dia seguinte. Então, aqui, por exemplo, no dia 7... Que foi na quinta-feira, esses caminhões aqui saíram dentro do horário, no mesmo dia, porém,Esses aqui, eles saíram no horário, primeiro horário do dia seguinte, ou seja, no dia 8. A KPI do Zona Sul, eu fiz ela de um modo diferente, por quê? O Zona Sul, ele não nos dá o nome da loja e apenas a numeração. 28, 29, 7, 11, 11. Isso são os números das lojas. Aqui dentro da escala, a gente tem a matriz, os endereços das filiais. Eu peguei esses endereços aqui e na KPI eu fiz algo diferente que eu vou mostrar já já. Então, não esquecer de que... A escala do Zona Sul. O que tiver aqui é para o mesmo dia, até as 14 horas. E o que estiver das 17 para baixo é para o dia seguinte. Lembrando sempre que aqui são as filiais. 36, 33, 30, 21, 4, 18, 27, 15, 7, 48, 13. Então, aqui, por exemplo, filial 27 e filial 15. Foi o AOP 3C73 e o motorista é o Mobrice. Então, sempre observar assim, da esquerda para a direita. Às vezes, um caminhão vai fazer duas filiais, como aqui. Filial 3 e filial 5. Foi o CYB3B90. O motorista foi o Everton. Aqui, 32 e 20, a KZ 25, 90.O motorista foi o Newton Rodrigues.",
+  "segments": [
+    {
+      "speaker": 0,
+      "text": "Vamos falar agora sobre a escala do Zona Sul.",
+      "start": 2.1,
+      "end": 4.1
+    },
+    {
+      "speaker": 0,
+      "text": "No Zona Sul, a escala dele é diferente da escala geral.",
+      "start": 5.6,
+      "end": 8.7
+    },
+    {
+      "speaker": 0,
+      "text": "E precisamos tomar alguns cuidados.",
+      "start": 9.3,
+      "end": 10.9
+    },
+    {
+      "speaker": 0,
+      "text": "A Zona Sul sai durante todo o dia e ela tem um horário específico de início de carregamento.",
+      "start": 12.1,
+      "end": 17.7
+    },
+    {
+      "speaker": 0,
+      "text": "Você reparar aqui à esquerda, a gente tem início de operação.",
+      "start": 18.4,
+      "end": 21.3
+    },
+    {
+      "speaker": 0,
+      "text": "E os horários, tá?",
+      "start": 21.8,
+      "end": 22.9
+    },
+    {
+      "speaker": 0,
+      "text": "O horário integral durante o dia, das 10 da manhã até as 14 horas,",
+      "start": 24.0,
+      "end": 30.2
+    },
+    {
+      "speaker": 0,
+      "text": "Todos os caminhões que estiverem dentro desse horário, eles vão sair no mesmo dia.",
+      "start": 30.7,
+      "end": 35.8
+    },
+    {
+      "speaker": 0,
+      "text": "Todo carregamento que é feito de 10 até as 14 horas, os caminhões vão sair no mesmo dia.",
+      "start": 36.7,
+      "end": 42.0
+    },
+    {
+      "speaker": 0,
+      "text": "Normalmente os caminhões das 10 saem por volta de meio-dia.",
+      "start": 42.6,
+      "end": 46.3
+    },
+    {
+      "speaker": 0,
+      "text": "Os caminhões de meio-dia normalmente começam a sair às 15 horas.",
+      "start": 46.9,
+      "end": 51.8
+    },
+    {
+      "speaker": 0,
+      "text": "E os caminhões que começam o carregamento às 14, normalmente saem a partir das 16 horas.",
+      "start": 52.5,
+      "end": 58.8
+    },
+    {
+      "speaker": 0,
+      "text": "Normalmente funciona assim.",
+      "start": 59.7,
+      "end": 61.1
+    },
+    {
+      "speaker": 0,
+      "text": "Os caminhões que são carregados às 17 horas, eles são caminhões que vão ser carregados e que sairão no primeiro horário do dia seguinte.",
+      "start": 62.0,
+      "end": 70.5
+    },
+    {
+      "speaker": 0,
+      "text": "Então, sempre tomar esse cuidado de que todo carregamento que é feito às 17 horas, ele é para o dia seguinte.",
+      "start": 71.0,
+      "end": 78.7
+    },
+    {
+      "speaker": 0,
+      "text": "Então, aqui, por exemplo, no dia 7...",
+      "start": 79.4,
+      "end": 81.5
+    },
+    {
+      "speaker": 0,
+      "text": "Que foi na quinta-feira, esses caminhões aqui saíram dentro do horário, no mesmo dia, porém,",
+      "start": 81.9,
+      "end": 90.0
+    },
+    {
+      "speaker": 0,
+      "text": "Esses aqui, eles saíram no horário, primeiro horário do dia seguinte, ou seja, no dia 8.",
+      "start": 90.9,
+      "end": 97.1
+    },
+    {
+      "speaker": 0,
+      "text": "A KPI do Zona Sul, eu fiz ela de um modo diferente, por quê?",
+      "start": 98.2,
+      "end": 102.1
+    },
+    {
+      "speaker": 0,
+      "text": "O Zona Sul, ele não nos dá o nome da loja e apenas a numeração.",
+      "start": 102.8,
+      "end": 107.3
+    },
+    {
+      "speaker": 0,
+      "text": "28, 29, 7, 11, 11.",
+      "start": 108.3,
+      "end": 110.5
+    },
+    {
+      "speaker": 0,
+      "text": "Isso são os números das lojas.",
+      "start": 110.9,
+      "end": 112.2
+    },
+    {
+      "speaker": 0,
+      "text": "Aqui dentro da escala, a gente tem a matriz, os endereços das filiais.",
+      "start": 113.8,
+      "end": 121.6
+    },
+    {
+      "speaker": 0,
+      "text": "Eu peguei esses endereços aqui e na KPI eu fiz algo diferente que eu vou mostrar já já.",
+      "start": 122.1,
+      "end": 127.4
+    },
+    {
+      "speaker": 0,
+      "text": "Então, não esquecer de que...",
+      "start": 128.4,
+      "end": 130.6
+    },
+    {
+      "speaker": 0,
+      "text": "A escala do Zona Sul.",
+      "start": 131.5,
+      "end": 132.8
+    },
+    {
+      "speaker": 0,
+      "text": "O que tiver aqui é para o mesmo dia, até as 14 horas.",
+      "start": 132.9,
+      "end": 137.6
+    },
+    {
+      "speaker": 0,
+      "text": "E o que estiver das 17 para baixo é para o dia seguinte.",
+      "start": 138.1,
+      "end": 141.2
+    },
+    {
+      "speaker": 0,
+      "text": "Lembrando sempre que aqui são as filiais.",
+      "start": 141.8,
+      "end": 143.9
+    },
+    {
+      "speaker": 0,
+      "text": "36, 33, 30, 21, 4, 18, 27, 15, 7, 48, 13.",
+      "start": 144.5,
+      "end": 151.8
+    },
+    {
+      "speaker": 0,
+      "text": "Então, aqui, por exemplo, filial 27 e filial 15.",
+      "start": 152.5,
+      "end": 156.1
+    },
+    {
+      "speaker": 0,
+      "text": "Foi o AOP 3C73 e o motorista é o Mobrice.",
+      "start": 156.4,
+      "end": 160.8
+    },
+    {
+      "speaker": 0,
+      "text": "Então, sempre observar assim, da esquerda para a direita.",
+      "start": 161.8,
+      "end": 164.9
+    },
+    {
+      "speaker": 0,
+      "text": "Às vezes, um caminhão vai fazer duas filiais, como aqui.",
+      "start": 165.2,
+      "end": 169.0
+    },
+    {
+      "speaker": 0,
+      "text": "Filial 3 e filial 5.",
+      "start": 169.5,
+      "end": 171.2
+    },
+    {
+      "speaker": 0,
+      "text": "Foi o CYB3B90.",
+      "start": 171.6,
+      "end": 173.7
+    },
+    {
+      "speaker": 0,
+      "text": "O motorista foi o Everton.",
+      "start": 174.1,
+      "end": 175.5
+    },
+    {
+      "speaker": 0,
+      "text": "Aqui, 32 e 20, a KZ 25, 90.",
+      "start": 176.1,
+      "end": 179.9
+    },
+    {
+      "speaker": 0,
+      "text": "O motorista foi o Newton Rodrigues.",
+      "start": 180.5,
+      "end": 182.7
+    }
+  ]
+}
