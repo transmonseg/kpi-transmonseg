@@ -2,36 +2,46 @@
 
 Verificação manual: para cada placa única, comparou-se a escala (todas as redes — Geral, PAX, Armazém, Zona Sul, Guanabara) com as paradas LOJA do Unitrac.
 
-Critério de match (igual ao matcher V2.1, sem cross-rede sobreposto):
-1. `codigo_escala` exato com `codigo_loja` (ou suffix-match)
+## Regra de negócio (do fundador)
+
+1. **Escala TEM + Unitrac TEM paradas LOJA** → matcher tenta casar:
+   - `OK_FULL` (tudo bate) / `OK_PARCIAL` (parcial) / `FALHA_MATCH` (paradas existem mas nada bate)
+2. **Escala TEM + Unitrac NÃO TEM paradas LOJA** (placa só BASE ou ausente do Unitrac) → `SEM_RASTREADOR`
+   - Linha vai pro KPI, mas sem horários do GPS (preenchimento manual ou em branco)
+3. **Escala NÃO TEM + Unitrac TEM** → `IGNORAR`
+   - Não vai pro KPI. Sem escala, não tem rota esperada pra preencher.
+
+## Critério de match (igual ao matcher V2.1)
+
+1. `codigo_escala` exato com `codigo_loja` (ou suffix-match com prefixo de rede)
 2. Se não, tokens de nome em comum (ignorando palavras genéricas: LOJA, SUL, ASSAI, etc)
 3. Códigos em ROTAS_GIGANTES descartados do match exato (raio ≥ 5km, ver `rotas-gigantes.ts`)
 
 ## Sumário consolidado dos 5 dias
 
-| Diagnóstico | Dia 18 | Dia 19 | Dia 20 | Dia 21 | Dia 22 | **Total** | % |
-|-------------|--------|--------|--------|--------|--------|-----------|---|
-| **OK_FULL** (todas rotas batem) | 68 | 56 | 71 | 61 | 74 | **330** | 38% |
-| **OK_PARCIAL** (parte das rotas) | 16 | 24 | 14 | 19 | 15 | **88** | 10% |
-| **FALHA_MATCH** (paradas ≠ escala) | 4 | 4 | 6 | 6 | 3 | **23** | 3% |
-| **PLACA_AUSENTE** (escala sim, Unitrac não) | 35 | 41 | 36 | 35 | 29 | **176** | 20% |
-| **INATIVA** (CD-only crônica) | 11 | 11 | 11 | 9 | 8 | **50** | 6% |
-| **FORA_ESCALA** (Unitrac sim, escala não) | 39 | 28 | 38 | 31 | 39 | **175** | 20% |
-| **Total placas únicas** | 173 | 164 | 176 | 161 | 168 | **842** | |
+| Diagnóstico | Dia 18 | Dia 19 | Dia 20 | Dia 21 | Dia 22 | **Total** | % | Vai pro KPI? |
+|-------------|--------|--------|--------|--------|--------|-----------|---|---|
+| **OK_FULL** (todas rotas batem) | 68 | 56 | 71 | 61 | 74 | **330** | 39% | ✓ sim com horários |
+| **OK_PARCIAL** (parte das rotas) | 16 | 24 | 14 | 19 | 15 | **88** | 10% | ✓ sim, parcial |
+| **FALHA_MATCH** (paradas ≠ escala) | 4 | 4 | 6 | 6 | 3 | **23** | 3% | ✓ sim sem horários |
+| **SEM_RASTREADOR** (escala sim, Unitrac sem LOJA) | 46 | 52 | 47 | 44 | 37 | **226** | 27% | ✓ sim sem horários |
+| **IGNORAR** (Unitrac sim, escala não) | 39 | 28 | 38 | 31 | 39 | **175** | 21% | ✗ não vai |
+| **Total placas únicas** | 173 | 164 | 176 | 161 | 168 | **842** | | |
+
+### Detalhe SEM_RASTREADOR
+- 176 placas: escala diz que rodaria mas a placa nem está no Unitrac
+- 50 placas: placa está no Unitrac mas só com paradas BASE BENASSI (CD-only)
+
+Ambas significam: a Tia Érica precisa preencher horários manualmente OU deixar em branco no KPI.
 
 ## Interpretação
 
-- **OK_FULL (38%)**: o sistema casa direito. Esses são os 100% certos.
-- **OK_PARCIAL (10%)**: o sistema casa ALGUMAS rotas da placa, mas não todas. **Esses são os casos onde o usuário vê "placa casou mas 1 rota faltou"**. Total 88 casos nos 5 dias — atacar primeiro.
-- **FALHA_MATCH (3%)**: paradas LOJA existem no Unitrac mas nenhuma bate com escala. Geralmente:
-  - Lojas Armazém do Grão (BOA VISTA/POSSE/16 DE MARÇO/MATRIZ) que aparecem só como geofence rota gigante REGINA no Unitrac
-  - Lojas SAMS Barra Ayrton Senna, Prezunic SPID Jacarepagua que não têm geofence Unitrac próprio
-- **PLACA_AUSENTE (20%)**: a escala previa entrega mas o veículo nem rodou no Unitrac. Não é bug do matcher — é dado da escala que não se realizou.
-- **INATIVA (6%)**: as 31 placas CD-only crônicas (lista negra V2.1). Correto não casarem.
-- **FORA_ESCALA (20%)**: veículo rodou no Unitrac mas não estava na escala. Pode ser:
-  - Substituição não anotada (placa A trocou por B no dia)
-  - Veículo de apoio do CD que saiu por algum motivo
-  - Escala diferente que não foi importada
+- **OK_FULL (39%)** + **OK_PARCIAL (10%)** + **FALHA_MATCH (3%)** = 441 placas (52%) onde o veículo rodou de verdade. Dessas, 330 (75% dos rodados) têm match 100%. O matcher V2.1 acerta 75% dos casos onde tem dado.
+- **SEM_RASTREADOR (27%)**: o KPI gerado precisa mostrar essas linhas SEM horários do GPS — tia Érica preenche manual. Hoje o sistema vai jogar essas linhas como "unmatched" no KPI — precisa marcar como "SEM RASTREADOR" pra ela não confundir com erro de match.
+- **IGNORAR (21%)**: placas Unitrac sem escala. Hoje o sistema não gera linha pra elas (correto). Pode ser:
+  - Substituição não anotada nas alterações
+  - Veículo de apoio do CD que saiu
+  - Escala de outra rede não importada
 
 ## Arquivos por dia
 
@@ -43,17 +53,21 @@ Critério de match (igual ao matcher V2.1, sem cross-rede sobreposto):
 
 ## Ações priorizadas
 
-1. **88 OK_PARCIAL** — examinar quais rotas faltaram casar e por quê. Padrões esperados:
-   - Loja com nome muito diferente no Unitrac (escala "Mercado de Santa" vs Unitrac "9966101 SUPERMARKET COELHO NETO")
-   - Rota gigante bloqueando match exato (escala "Princesa Inga" cod=— vs parada Unitrac 8590556 PRINCESA INGÁ — esse SIM deveria casar)
-   - Lojas faltando codigo_unitrac no cadastro
+### Prioridade 1 — Atacar OK_PARCIAL (88 casos)
+Placa rodou, Unitrac tem paradas LOJA, mas o matcher só casou parte das rotas escaladas.
 
-2. **23 FALHA_MATCH** — investigar onde a parada real está no Unitrac:
-   - Armazém do Grão BOA VISTA/POSSE/16 DE MARÇO: paradas reais aparecem como REGINA (5353012/14/16) — geofence rota gigante engloba todas essas lojas
-   - Solução: cadastrar codigo_unitrac das lojas físicas → quando aparece "REGINA" no Unitrac, casa pela primeira loja da escala que tenha o código
+Padrões esperados:
+- Loja com nome divergente entre Escala e Unitrac (ex: "Mercado de Santa" vs "9966101 SUPERMARKET COELHO NETO")
+- Rota gigante bloqueando match exato (ex: parada `5353012 REGINA` cobre 4 lojas da escala)
+- Lojas com codigo_unitrac faltando no cadastro
 
-3. **176 PLACA_AUSENTE** — sem fix possível no matcher. Pode ser:
-   - Erro de digitação na escala (sem dado pra confirmar)
-   - Veículo quebrou / motorista folgou — escala estava errada
+### Prioridade 2 — FALHA_MATCH (23 casos)
+Paradas LOJA existem no Unitrac mas nenhuma casa com escala. Quase tudo é Armazém do Grão BOA VISTA/POSSE/16 DE MARÇO/MATRIZ — paradas reais aparecem como REGINA (rota gigante 5353012/14/16) no Unitrac.
 
-4. **175 FORA_ESCALA** — investigar substituições não anotadas (alterações de plataforma).
+Solução: cadastrar codigo_unitrac REGINA nas lojas Armazém físicas que dividem o mesmo geofence.
+
+### Prioridade 3 — Garantir SEM_RASTREADOR no KPI (226 casos)
+O matcher hoje deixa essas linhas como UNMATCHED. Verificar se o gerador de KPI marca explicitamente como "SEM RASTREADOR" em vez de só pular ou mostrar branco.
+
+### Prioridade 4 — Reduzir IGNORAR via alterações (175 casos)
+Investigar substituições não anotadas. Pode ser que escala diz placa X mas no dia mudou pra placa Y do mesmo motorista — alteração não foi importada.
