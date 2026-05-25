@@ -1142,7 +1142,23 @@ export async function cruzaEscalaUnitrac(
       const placaRes = resolvePlacaUnitrac(l.placa_norm)
       if (!placaRes) return false
       const paradaDoVeiculo = paradaByPlaca.get(placaRes) ?? []
-      if (paradaDoVeiculo.some(p => p.classificacao === 'LOJA' && !matchedParadaIds.has(p.id))) return false
+      // T18 plate-swap: ativa apenas quando placa está "inativa" no Unitrac:
+      // - placa totalmente ausente (rastreador off), OU
+      // - placa só com paradas BASE (motorista ficou no CD), OU
+      // - placa com LOJA órfã (entregou em outra rede — possível plate-swap).
+      //
+      // Se a placa tem FORA_BASE (motorista circulou fora da BASE) sem nenhuma
+      // LOJA, ele rodou mas não entregou → manual diria NAO_FOI. T18 não deve
+      // atribuir paradas LOJA de outras placas. Caso ARMAZEM dia 21 QSU6I54:
+      // GILSON tinha BASE + FORA_BASE, T18 antigo pegava paradas de OUTRAS placas
+      // para as 4 linhas REGINA dele.
+      if (paradaDoVeiculo.length > 0) {
+        const temLojaOrfa = paradaDoVeiculo.some(
+          p => p.classificacao === 'LOJA' && !matchedParadaIds.has(p.id),
+        )
+        const soBase = paradaDoVeiculo.every(p => p.classificacao === 'BASE')
+        if (!temLojaOrfa && !soBase) return false
+      }
       return true
     })
     if (semGpsLines.length > 0) {
