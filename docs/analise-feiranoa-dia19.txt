@@ -1,0 +1,160 @@
+◇ injected env (4) from .env.local // tip: ◈ encrypted .env [www.dotenvx.com]
+Carregando escala FEIRA_NOVA...
+  13 linhas (filtrado de 26 totais) data_entrega 2026-05-19
+Carregando Unitrac...
+  206 veículos, 1717 paradas
+Carregando lojas do DB...
+  347 lojas
+Cruzando...
+  13 rotas geradas
+
+=== ANÁLISE FEIRA_NOVA — 19/05/2026 ===
+SC=SaídaCD  CHD=ChegadaLoja  SL=SaídaLoja
+
+
+[DIFF] [c1] 1- Nilopolis (Olinda)
+       SIDNEY | KUL1425 | GPS:SIM [9p | 0B 2L 6F] | match=hybrid(1)
+       LOJA  7:10-9:52  162min  cod:7000709  PREZUNIC PECHINCHA
+       LOJA  14:28-15:01  33min  cod:579001  FEIRA NOVA OLINDA ◄MATCHED
+       MATCHER: --- / 14:28 / 15:01
+       MANUAL : 0:06 / 0:06 / 2:15
+       GERADO : 13:41 / 14:28 / 15:01
+       >> Matcher vazio, manual tem dado — GPS não encontrou esta loja
+
+[DIFF] [c1] 3- Anchieta
+       JOSUE | BBH1C94 | GPS:SIM [8p | 3B 1L 2F] | match=hybrid(1)
+       BASE  chg:10:02 → sai:12:14  132min
+       BASE  chg:14:13 → sai:16:17  123min
+       LOJA  5:29-7:51  142min  cod:9039104  33 - ZONA SUL - HUMAITA ◄MATCHED
+       MATCHER: 4:49 / 5:29 / 7:51
+       MANUAL : 12:37 / 13:06 / 14:17
+       GERADO : 12:14 / 12:43 / 13:52
+       >> Matcher=madrugada(CHD 5:29), manual=tarde(CHD 13:06) — 2 turnos
+
+[DIFF] [c1] ANCHIETA - 2º CARRO
+       MARCELO | KNC1834 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : 12:42 / 13:31 / 14:14
+       GERADO : 12:46 / 12:47 / 13:42
+       >> Matcher vazio, manual tem dado — GPS não encontrou esta loja
+
+[DIFF] [c1] 4- Irajá
+       WILLIAM | EFU5704 | GPS:NAO | match=geo(0.8)
+       MATCHER: 13:43 / 13:52 / 14:26
+       MANUAL : 12:37 / 12:42 / 13:38
+       GERADO : 13:43 / 13:52 / 14:26
+       >> SC: 13:43≠12:37  CHD: 13:52≠12:42  SL: 14:26≠13:38
+
+[DIFF] [c1] 12- Freguesia
+       JOSE | KPB5I95 | GPS:SIM [12p | 4B 2L 2F] | match=hybrid(1)
+       BASE  chg:9:27 → sai:12:50  202min
+       BASE  chg:12:51 → sai:13:47  56min
+       LOJA  6:25-7:50  85min  cod:7000707  PREZUNIC FREGUESIA
+       LOJA  14:30-15:24  53min  cod:579012  FEIRA NOVA  FREGUESIA ◄MATCHED
+       MATCHER: 13:47 / 14:30 / 15:24
+       MANUAL : 0:01 / 0:01 / 4:49
+       GERADO : 13:47 / 14:30 / 15:24
+       >> SC: 13:47≠0:01  CHD: 14:30≠0:01  SL: 15:24≠4:49
+
+[DIFF] [c1] 10- Cachambi
+       MARCIO | KVH9J42 | GPS:SIM [10p | 5B 3L 0F] | match=hybrid(1)
+       BASE  chg:15:28 → sai:15:53  25min
+       BASE  chg:16:00 → sai:16:22  22min
+       LOJA  5:52-8:36  164min  cod:9039004  04 - ZONA SUL - COPACABANA II
+       LOJA  8:40-9:38  58min  cod:9039004  04 - ZONA SUL - COPACABANA II
+       LOJA  14:07-14:54  47min  cod:579010  FEIRA NOVA  CACHAMBI ◄MATCHED
+       MATCHER: 13:43 / 14:07 / 14:54
+       MANUAL : 12:37 / 13:45 / 14:25
+       GERADO : 13:43 / 14:07 / 14:54
+       >> SC: 13:43≠12:37  CHD: 14:07≠13:45  SL: 14:54≠14:25
+
+[DIFF] [c1] 13- Todos os Santos
+       DANIEL | LKV5067 | GPS:SIM [8p | 3B 2L 1F] | match=none(0)
+       BASE  chg:7:27 → sai:7:51  25min
+       BASE  chg:9:35 → sai:12:24  169min
+       LOJA  5:37-6:18  40min  cod:7000714  PREZUNIC OLARIA
+       LOJA  6:25-7:09  45min  cod:7000723  PREZUNIC PENHA
+       MATCHER: --- / --- / ---
+       MANUAL : 11:53 / 11:56 / 14:53
+       GERADO : 13:43 / 14:11 / 15:08
+       >> Matcher vazio, manual tem dado — GPS não encontrou esta loja
+
+[DIFF] [c1] 8- Cerâmica
+       MARCIO | QSU6I54 | GPS:SIM [11p | 4B 2L 0F] | match=hybrid(1)
+       BASE  chg:1:25 → sai:4:34  189min
+       BASE  chg:8:02 → sai:13:46  344min
+       LOJA  4:55-7:14  139min  cod:9006144  CARREFOUR BRIGADEIRO
+       LOJA  14:57-15:50  53min  cod:579008  FEIRA NOVA  CERAMICA ◄MATCHED
+       MATCHER: 13:46 / 14:57 / 15:50
+       MANUAL : SEM / SEM / SEM
+       GERADO : 13:46 / 14:57 / 15:50
+       >> MANUAL=SEM_RASTREADOR mas matcher tem GPS — T18 falso positivo?
+
+[DIFF] [c1] 7- C.ROCHA
+       JOSE HUMBERTO | KOA6A27 | GPS:SIM [8p | 1B 1L 3F] | match=none(0)
+       BASE  chg:4:52 → sai:5:28  36min
+       LOJA  5:43-6:28  45min  cod:7000725  PREZUNIC VILAR DOS TELES
+       MATCHER: --- / --- / ---
+       MANUAL : 12:55 / 14:41 / 16:09
+       GERADO : 13:40 / 13:59 / 14:26
+       >> Matcher vazio, manual tem dado — GPS não encontrou esta loja
+
+[DIFF] [c1] 9- Queimados
+       ADRIANO BORGES | TML5I70 | GPS:SIM [6p | 3B 3L 0F] | match=hybrid(1)
+       BASE  chg:4:14 → sai:5:18  64min
+       BASE  chg:9:18 → sai:13:33  255min
+       LOJA  5:49-7:12  82min  cod:7000708  PREZUNIC ENGENHO NOVO
+       LOJA  7:30-8:34  64min  cod:7000706  PREZUNIC BENFICA
+       LOJA  14:41-15:36  55min  cod:579009  FEIRA NOVA QUEIMADOS ◄MATCHED
+       MATCHER: 13:33 / 14:41 / 15:36
+       MANUAL : SEM / SEM / SEM
+       GERADO : 13:33 / 14:41 / 15:36
+       >> MANUAL=SEM_RASTREADOR mas matcher tem GPS — T18 falso positivo?
+
+[DIFF] [c1] 11- Boa Dica (Piabetá)
+       ZOZIMO | KNS8D26 | GPS:SIM [10p | 0B 10L 0F] | match=hybrid(1)
+       LOJA  0:01-3:40  219min  cod:7012010  CAB - PETROPOLIS
+       LOJA  4:39-5:11  32min  cod:7012010  CAB - PETROPOLIS
+       LOJA  5:21-5:32  11min  cod:7012010  CAB - PETROPOLIS
+       LOJA  5:37-5:47  10min  cod:7012010  CAB - PETROPOLIS
+       LOJA  6:38-6:44  6min  cod:7012010  CAB - PETROPOLIS
+       LOJA  7:39-8:19  40min  cod:7012010  CAB - PETROPOLIS
+       LOJA  8:45-8:49  3min  cod:7012010  CAB - PETROPOLIS
+       LOJA  10:04-12:45  161min  cod:7012010  CAB - PETROPOLIS
+       LOJA  12:46-13:41  55min  cod:7012010  CAB - PETROPOLIS
+       LOJA  14:42-15:20  38min  cod:579011  FEIRA NOVA BOA DICA (PIABETÁ) ◄MATCHED
+       MATCHER: 13:41 / 14:42 / 15:20
+       MANUAL : 12:37 / 13:32 / 14:15
+       GERADO : 12:45 / 12:46 / 13:41
+       >> SC: 13:41≠12:37  CHD: 14:42≠13:32  SL: 15:20≠14:15
+
+[DIFF] [c1] SANTA CRUZ
+       ANDRE | LSX7C72 | GPS:SIM [8p | 4B 1L 1F] | match=none(0)
+       BASE  chg:10:35 → sai:11:18  43min
+       BASE  chg:11:24 → sai:12:24  60min
+       LOJA  5:20-9:13  233min  cod:7000766  PREZUNIC CAMPO GRANDE (TINGUI)
+       MATCHER: --- / --- / ---
+       MANUAL : 16:06 / 16:13 / 17:20
+       GERADO : 13:45 / 14:18 / 15:22
+       >> Matcher vazio, manual tem dado — GPS não encontrou esta loja
+
+[DIFF] [c1] Mercado Santo Agostinho (Barra)
+       RAFAEL | EYL8B91 | GPS:SIM [9p | 0B 9L 0F] | match=none(0)
+       LOJA  0:06-4:32  266min  cod:23080000  MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA
+       LOJA  4:38-5:00  22min  cod:23080000  MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA
+       LOJA  5:08-5:16  8min  cod:23080000  MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA
+       LOJA  5:26-5:31  4min  cod:23080000  MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA
+       LOJA  6:00-6:57  57min  cod:23080000  MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA
+       LOJA  8:05-8:32  27min  cod:23080000  MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA
+       LOJA  8:35-8:40  5min  cod:23080000  MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA
+       LOJA  8:57-10:12  75min  cod:23080000  MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA
+       LOJA  10:36-12:17  101min  cod:23080000  MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA
+       MATCHER: --- / --- / ---
+       MANUAL : 5:54 / 6:04 / 7:51
+       GERADO : 13:52 / 14:34 / 14:51
+       >> Matcher vazio, manual tem dado — GPS não encontrou esta loja
+
+══════════════════════════════════════════
+RESUMO GERADO×MANUAL:  OK=0  DIFF=13
+RESUMO MATCHER×MANUAL: OK=0  DIFF=13  ← código atual
+══════════════════════════════════════════

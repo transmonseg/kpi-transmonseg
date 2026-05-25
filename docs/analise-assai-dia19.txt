@@ -1,0 +1,461 @@
+◇ injected env (4) from .env.local // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Carregando escala ASSAI...
+  40 linhas (filtrado de 162 totais) data_entrega 2026-05-19
+Carregando Unitrac...
+  206 veículos, 1717 paradas
+Carregando lojas do DB...
+  347 lojas
+Cruzando...
+  40 rotas geradas
+
+=== ANÁLISE ASSAI — 19/05/2026 ===
+SC=SaídaCD  CHD=ChegadaLoja  SL=SaídaLoja
+
+
+[OK]   [c1] Assaí - Alcântara I - Loja 35
+       SIMÃO | LSN6I72 | GPS:SIM [9p | 2B 0L 5F] | match=none(0)
+       BASE  chg:4:48 → sai:5:09  21min
+       BASE  chg:7:57 → sai:9:23  86min
+       !! SEM LOJA — 5xFB 2xB
+       FB    0:04-4:13  FORA DE BASE E LOCAL DE SERVIÇO
+       FB    6:06-6:43  FORA DE BASE E LOCAL DE SERVIÇO
+       FB    9:48-9:58  FORA DE BASE E LOCAL DE SERVIÇO
+       MATCHER: --- / --- / ---
+       MANUAL : SEM / SEM / SEM
+       GERADO : 5:21 / 6:06 / 6:43
+       !! MATCHER=OK mas GERADO≠MANUAL (Excel desatualizado?)
+
+[DIFF] [c1] Assaí - Alcântara II - Loja 293
+       LUIZ CARLOS | FQN6J72 | GPS:SIM [7p | 4B 0L 2F] | match=geo(0.8)
+       BASE  chg:13:14 → sai:15:52  158min
+       BASE  chg:15:58 → sai:16:21  23min
+       !! SEM LOJA — 2xFB 4xB
+       FB    6:46-8:34  FORA DE BASE E LOCAL DE SERVIÇO
+       FB    8:37-10:27  FORA DE BASE E LOCAL DE SERVIÇO
+       MATCHER: 5:33 / 6:46 / 8:34
+       MANUAL : 5:31 / 6:46 / 8:34
+       GERADO : 5:33 / 6:46 / 8:34
+       >> SC: 5:33≠5:31  CHD: 6:46≠6:46  SL: 8:34≠8:34
+
+[DIFF] [c1] Assaí - Araruama - Loja 221
+       ADILSON | KZU4C37 | GPS:SIM [6p | 2B 1L 2F] | match=hybrid(1)
+       BASE  chg:0:02 → sai:3:46  224min
+       BASE  chg:11:52 → sai:12:19  27min
+       LOJA  6:01-9:42  221min  cod:560049  SENDAS ARARUAMA - LJ 221 ◄MATCHED
+       MATCHER: 3:46 / 6:01 / 9:42
+       MANUAL : 3:46 / 6:07 / 11:54
+       GERADO : 3:46 / 6:01 / 9:42
+       >> SC: 3:46≠3:46  CHD: 6:01≠6:07  SL: 9:42≠11:54
+
+[DIFF] [c1] Assaí - Bangu I - Loja 55
+       JEFERSON BATALHA | UBO5E01 | GPS:SIM [16p | 0B 16L 0F] | match=hybrid(1)
+       LOJA  0:02-4:07  246min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  4:21-4:40  19min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  4:41-4:56  15min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  5:01-5:11  9min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  5:43-8:31  167min  cod:560028  SENDAS BANGU - LOJA 55 ◄MATCHED
+       LOJA  9:30-9:51  21min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  9:59-10:39  40min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  10:42-10:59  17min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  11:30-11:44  14min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  12:42-12:47  5min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  12:49-13:26  37min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  13:49-14:04  15min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  14:06-14:36  30min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  14:37-14:45  8min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  14:50-14:53  3min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  16:12-16:20  8min  cod:5353016  REGINA  LUCIO MEIRA
+       MATCHER: 4:56 / 5:43 / 8:31
+       MANUAL : 4:38 / 4:50 / 13:46
+       GERADO : 4:56 / 5:43 / 8:31
+       >> SC: 4:56≠4:38  CHD: 5:43≠4:50  SL: 8:31≠13:46
+
+[OK]   [c1] Assaí - Bangu II - Loja 332
+       LUIZ CESAR | LMF2049 | GPS:SIM [11p | 5B 0L 2F] | match=none(0)
+       BASE  chg:12:05 → sai:13:41  96min
+       BASE  chg:13:48 → sai:14:05  17min
+       !! SEM LOJA — 2xFB 5xB
+       FB    5:58-6:36  FORA DE BASE E LOCAL DE SERVIÇO
+       FB    15:27-16:21  FORA DE BASE E LOCAL DE SERVIÇO
+       MATCHER: --- / --- / ---
+       MANUAL : SEM / SEM / SEM
+       GERADO : --- / --- / ---
+
+[DIFF] [c1] Assaí - Barra I (Senna) - Loja 133
+       FELIPE DIEGO | UGA1D55 | GPS:SIM [1p | 1B 0L 0F] | match=geo(0.8)
+       BASE  chg:0:01 → sai:16:14  973min
+       !! SEM LOJA — 0xFB 1xB
+       MATCHER: --- / 7:16 / 8:02
+       MANUAL : 0:01 / 0:01 / 10:44
+       GERADO : --- / 7:16 / 8:02
+       >> Matcher vazio, manual tem dado — GPS não encontrou esta loja
+
+[DIFF] [c1] Assaí - Barra II  - Loja 245
+       CELSO | SFG2F72 | GPS:SIM [8p | 5B 1L 2F] | match=hybrid(1)
+       BASE  chg:12:00 → sai:12:45  45min
+       BASE  chg:12:47 → sai:16:21  214min
+       LOJA  9:51-9:56  5min  cod:560042  SENDAS BARRA II - LJ 245 ◄MATCHED
+       MATCHER: 4:56 / 9:51 / 9:56
+       MANUAL : SEM / SEM / SEM
+       GERADO : 4:56 / 9:51 / 9:56
+       >> MANUAL=SEM_RASTREADOR mas matcher tem GPS — T18 falso positivo?
+
+[DIFF] [c1] Assaí - Boulevard (Vila Isabel) - Loja 294
+       LUCIANO MARINHO | TML7D21 | GPS:SIM [11p | 4B 1L 0F] | match=hybrid(1)
+       BASE  chg:14:33 → sai:14:49  16min
+       BASE  chg:14:49 → sai:16:19  90min
+       LOJA  6:58-12:42  344min  cod:560056  SENDAS BOULEVARD ◄MATCHED
+       MATCHER: 5:44 / 6:58 / 12:42
+       MANUAL : 5:24 / 6:05 / 12:05
+       GERADO : 5:44 / 6:58 / 12:42
+       >> SC: 5:44≠5:24  CHD: 6:58≠6:05  SL: 12:42≠12:05
+
+[DIFF] [c1] Assaí - Cabo Frio - Loja 82
+       JOSE | AWA6B40 | GPS:SIM [10p | 1B 4L 4F] | match=hybrid(1)
+       BASE  chg:0:04 → sai:2:46  162min
+       LOJA  5:48-6:01  13min  cod:560017  SENDAS CABO FRIO - LOJA 82
+       LOJA  6:04-6:30  25min  cod:560017  SENDAS CABO FRIO - LOJA 82 ◄MATCHED
+       LOJA  6:35-6:58  24min  cod:560017  SENDAS CABO FRIO - LOJA 82
+       LOJA  11:01-11:35  35min  cod:560017  SENDAS CABO FRIO - LOJA 82
+       MATCHER: 2:46 / 5:48 / 11:35
+       MANUAL : 2:48 / 5:33 / 6:44
+       GERADO : 2:46 / 5:48 / 11:35
+       >> SC: 2:46≠2:48  CHD: 5:48≠5:33  SL: 11:35≠6:44
+
+[DIFF] [c1] Assaí - Campinho - Loja 37
+       RICARDO | KXB6E57 | GPS:SIM [9p | 3B 0L 3F] | match=geo(0.8)
+       BASE  chg:9:28 → sai:10:02  34min
+       BASE  chg:10:03 → sai:10:44  42min
+       !! SEM LOJA — 3xFB 3xB
+       FB    0:00-5:22  FORA DE BASE E LOCAL DE SERVIÇO
+       FB    6:23-8:23  FORA DE BASE E LOCAL DE SERVIÇO
+       FB    10:52-12:24  FORA DE BASE E LOCAL DE SERVIÇO
+       MATCHER: 5:59 / 6:23 / 8:23
+       MANUAL : SEM / SEM / SEM
+       GERADO : 5:59 / 6:23 / 8:23
+       >> MANUAL=SEM_RASTREADOR mas matcher tem GPS — T18 falso positivo?
+
+[DIFF] [c1] Assaí - Campos dos Goytacazes- Loja 188
+       JUCA | CZZ8H82 | GPS:SIM [6p | 1B 1L 3F] | match=hybrid(1)
+       BASE  chg:0:15 → sai:0:55  41min
+       LOJA  6:45-8:38  113min  cod:560036  SENDAS CAMPOS - LJ 36 ◄MATCHED
+       MATCHER: 0:55 / 6:45 / 8:38
+       MANUAL : 0:44 / 8:28 / 17:17
+       GERADO : 0:55 / 6:45 / 16:12
+       >> SC: 0:55≠0:44  CHD: 6:45≠8:28  SL: 8:38≠17:17
+
+[DIFF] [c1] Assaí - Carioca Shopping - Loja 316
+       MARCUS VINICIUS | QSW3B65 | GPS:SIM [10p | 0B 10L 0F] | match=hybrid(1)
+       LOJA  0:03-2:22  138min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  2:22-4:58  156min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  5:08-5:16  8min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  5:37-7:13  97min  cod:560048  SENDAS CARIOCA SHOPPING
+       LOJA  7:17-9:41  144min  cod:560048  SENDAS CARIOCA SHOPPING ◄MATCHED
+       LOJA  10:01-10:41  40min  cod:560048  SENDAS CARIOCA SHOPPING
+       LOJA  11:11-12:26  75min  cod:560048  SENDAS CARIOCA SHOPPING
+       LOJA  12:32-14:22  110min  cod:560048  SENDAS CARIOCA SHOPPING
+       LOJA  14:56-15:40  44min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  15:46-16:23  37min  cod:17659002  EMANUEL CACHAMORRA
+       MATCHER: 5:16 / 5:37 / 14:22
+       MANUAL : SEM / SEM / SEM
+       GERADO : 5:16 / 5:37 / 14:22
+       >> MANUAL=SEM_RASTREADOR mas matcher tem GPS — T18 falso positivo?
+
+[DIFF] [c1] Assaí - Caxias I - Loja 131
+       ALLAN | EZU9J51 | GPS:SIM [7p | 3B 3L 0F] | match=hybrid(1)
+       BASE  chg:12:56 → sai:13:25  29min
+       BASE  chg:13:31 → sai:14:41  70min
+       LOJA  5:05-6:05  60min  cod:560018  SENDAS CAXIAS - LOJA 131
+       LOJA  6:06-12:31  386min  cod:560018  SENDAS CAXIAS - LOJA 131 ◄MATCHED
+       LOJA  15:30-16:06  36min  cod:202011  PAX TAQUARA
+       MATCHER: 4:44 / 5:05 / 12:31
+       MANUAL : SEM / SEM / SEM
+       GERADO : 4:44 / 5:05 / 12:31
+       >> MANUAL=SEM_RASTREADOR mas matcher tem GPS — T18 falso positivo?
+
+[DIFF] [c1] Assaí - Caxias II (Parque Fluminense) - Loja 219
+       YAGO / RODRIGO | UBF5G36 | GPS:SIM [17p | 6B 2L 2F] | match=hybrid(1)
+       BASE  chg:14:47 → sai:15:11  24min
+       BASE  chg:15:29 → sai:16:23  54min
+       LOJA  5:04-8:47  223min  cod:7000750  PREZUNIC BOTAFOGO (VOLUNTÁRIOS DA PÁTRIA)
+       LOJA  11:56-13:32  96min  cod:560057  SENDAS CAXIAS II (PARQUE FLUMINENSE) ◄MATCHED
+       MATCHER: 11:25 / 11:56 / 13:32
+       MANUAL : 14:22 / 15:00 / 15:19
+       GERADO : 11:25 / 11:56 / 13:32
+       >> SC: 11:25≠14:22  CHD: 11:56≠15:00  SL: 13:32≠15:19
+
+[DIFF] [c1] Assaí - Ceasa - Loja 42
+       ANTONIO CARLOS | EZU9325 | GPS:SIM [14p | 10B 0L 1F] | match=none(0)
+       BASE  chg:14:15 → sai:14:37  23min
+       BASE  chg:14:38 → sai:16:17  99min
+       !! SEM LOJA — 1xFB 10xB
+       FB    11:45-12:47  FORA DE BASE E LOCAL DE SERVIÇO
+       MATCHER: --- / --- / ---
+       MANUAL : 13:21 / 13:32 / 13:58
+       GERADO : --- / --- / ---
+       >> Matcher vazio, manual tem dado — GPS não encontrou esta loja
+
+[DIFF] [c1] Assaí - Cesário de Melo - Loja 202
+       FÁBIO ALVES | GSK0G53 | GPS:SIM [9p | 2B 1L 2F] | match=hybrid(1)
+       BASE  chg:11:09 → sai:11:41  32min
+       BASE  chg:11:48 → sai:12:14  26min
+       LOJA  5:11-10:11  299min  cod:560039  SENDAS CESÁRIO DE MELO - LJ 202 ◄MATCHED
+       MATCHER: 4:27 / 5:11 / 10:11
+       MANUAL : 4:00 / 4:06 / 11:02
+       GERADO : 4:03 / 4:09 / 10:11
+       >> SC: 4:27≠4:00  CHD: 5:11≠4:06  SL: 10:11≠11:02
+
+[DIFF] [c1] Assaí - Freguesia - Loja 28
+       NILTON | AKZ2594 | GPS:SIM [6p | 4B 2L 0F] | match=hybrid(1)
+       BASE  chg:9:34 → sai:10:06  32min
+       BASE  chg:10:09 → sai:16:13  364min
+       LOJA  4:40-5:30  50min  cod:560019  SENDAS FREGUESIA - LOJA 28
+       LOJA  5:31-8:12  161min  cod:560019  SENDAS FREGUESIA - LOJA 28 ◄MATCHED
+       MATCHER: 3:54 / 4:40 / 8:12
+       MANUAL : 4:15 / 5:35 / 8:17
+       GERADO : 3:54 / 4:40 / 8:12
+       >> SC: 3:54≠4:15  CHD: 4:40≠5:35  SL: 8:12≠8:17
+
+[DIFF] [c1] Assaí - Galeão - Loja 302
+       EDMARIO | CUC6J83 | GPS:SIM [7p | 3B 2L 1F] | match=hybrid(1)
+       BASE  chg:12:39 → sai:13:12  33min
+       BASE  chg:13:23 → sai:16:20  177min
+       LOJA  5:43-6:17  34min  cod:560051  SENDAS GALEÃO - LJ 302
+       LOJA  6:17-11:37  319min  cod:560051  SENDAS GALEÃO - LJ 302 ◄MATCHED
+       MATCHER: 5:12 / 5:43 / 11:37
+       MANUAL : 0:00 / 0:00 / 8:57
+       GERADO : 5:12 / 5:43 / 11:37
+       >> SC: 5:12≠0:00  CHD: 5:43≠0:00  SL: 11:37≠8:57
+
+[DIFF] [c1] AssaÍ - Ilha do Governador - Loja 29
+       JOSE M | UBF5G32 | GPS:SIM [3p | 2B 1L 0F] | match=hybrid(1)
+       BASE  chg:0:28 → sai:4:45  257min
+       BASE  chg:4:53 → sai:5:13  20min
+       LOJA  5:48-12:24  396min  cod:560020  SENDAS ILHA - LOJA 29 ◄MATCHED
+       MATCHER: 5:13 / 5:48 / 12:24
+       MANUAL : 5:54 / 7:11 / 7:22
+       GERADO : --- / --- / ---
+       >> SC: 5:13≠5:54  CHD: 5:48≠7:11  SL: 12:24≠7:22
+
+[DIFF] [c1] Assaí - Macaé - Loja 232
+       RODRIGO | KZJ0E14 | GPS:SIM [7p | 1B 2L 2F] | match=hybrid(1)
+       BASE  chg:0:15 → sai:0:55  41min
+       LOJA  4:07-6:21  134min  cod:560041  SENDAS MACAÉ - LOJA 232 ◄MATCHED
+       LOJA  8:44-10:29  105min  cod:560041  SENDAS MACAÉ - LOJA 232
+       MATCHER: 0:55 / 4:07 / 10:29
+       MANUAL : 0:42 / 5:28 / 6:35
+       GERADO : 0:55 / 4:07 / 10:29
+       >> SC: 0:55≠0:42  CHD: 4:07≠5:28  SL: 10:29≠6:35
+
+[OK]   [c1] Assaí - Maracanã - Loja 286
+       CRISTIANO | GAR0802 | GPS:SIM [7p | 4B 0L 1F] | match=none(0)
+       BASE  chg:13:26 → sai:14:07  41min
+       BASE  chg:14:13 → sai:16:13  120min
+       !! SEM LOJA — 1xFB 4xB
+       FB    6:02-12:41  FORA DE BASE E LOCAL DE SERVIÇO
+       MATCHER: --- / --- / ---
+       MANUAL : SEM / SEM / SEM
+       GERADO : --- / --- / ---
+
+[DIFF] [c1] Assaí - Méier - Loja 160
+       LUIZ JR. | AKZ2745 | GPS:SIM [8p | 3B 2L 1F] | match=hybrid(1)
+       BASE  chg:7:30 → sai:9:30  120min
+       BASE  chg:9:36 → sai:14:05  269min
+       LOJA  5:35-6:42  67min  cod:560031  SENDAS MEIER ◄MATCHED
+       LOJA  15:03-15:20  17min  cod:202005  PAX GUADALUPE
+       MATCHER: 5:02 / 5:35 / 6:42
+       MANUAL : 5:45 / 6:20 / 6:51
+       GERADO : 5:02 / 5:35 / 6:42
+       >> SC: 5:02≠5:45  CHD: 5:35≠6:20  SL: 6:42≠6:51
+
+[DIFF] [c1] Assaí - Mendanha (Campo Grande) - Loja 65
+       ANTÔNIO | LFJ8442 | GPS:SIM [17p | 3B 10L 2F] | match=hybrid(1)
+       BASE  chg:4:16 → sai:4:33  17min
+       BASE  chg:11:52 → sai:16:22  270min
+       LOJA  5:27-6:42  75min  cod:560016  SENDAS MENDANHA - LOJA 65 ◄MATCHED
+       LOJA  6:44-6:50  6min  cod:560016  SENDAS MENDANHA - LOJA 65
+       LOJA  6:55-7:03  8min  cod:560016  SENDAS MENDANHA - LOJA 65
+       LOJA  7:08-7:14  6min  cod:560016  SENDAS MENDANHA - LOJA 65
+       LOJA  7:48-7:58  10min  cod:560016  SENDAS MENDANHA - LOJA 65
+       LOJA  7:59-8:09  10min  cod:560016  SENDAS MENDANHA - LOJA 65
+       LOJA  8:18-8:22  4min  cod:560016  SENDAS MENDANHA - LOJA 65
+       LOJA  8:23-8:29  6min  cod:560016  SENDAS MENDANHA - LOJA 65
+       LOJA  8:58-9:06  8min  cod:560016  SENDAS MENDANHA - LOJA 65
+       LOJA  9:08-11:21  132min  cod:560016  SENDAS MENDANHA - LOJA 65
+       MATCHER: 4:33 / 5:27 / 11:21
+       MANUAL : 4:32 / 4:56 / 12:34
+       GERADO : 4:33 / 8:58 / 11:21
+       >> SC: 4:33≠4:32  CHD: 5:27≠4:56  SL: 11:21≠12:34
+
+[DIFF] [c1] Assaí - Mesquita (Dutra) - Loja 142
+       FLAVIANO | SFG2F73 | GPS:SIM [6p | 3B 2L 0F] | match=hybrid(1)
+       BASE  chg:10:50 → sai:11:43  53min
+       BASE  chg:11:46 → sai:16:15  269min
+       LOJA  4:54-6:08  73min  cod:560035  SENDAS MESQUITA - LJ 35
+       LOJA  6:09-10:30  262min  cod:560035  SENDAS MESQUITA - LJ 35 ◄MATCHED
+       MATCHER: 4:25 / 4:54 / 10:30
+       MANUAL : 4:26 / 6:09 / 10:20
+       GERADO : 4:25 / 4:54 / 10:30
+       >> SC: 4:25≠4:26  CHD: 4:54≠6:09  SL: 10:30≠10:20
+
+[DIFF] [c1] Assaí - Nilópolis - Loja 36
+       JOAO CARLOS | LOT2962 | GPS:SIM [8p | 3B 1L 2F] | match=hybrid(1)
+       BASE  chg:10:24 → sai:11:00  35min
+       BASE  chg:11:01 → sai:11:31  31min
+       LOJA  5:42-9:36  234min  cod:560023  SENDAS NILÓPOLIS - LOJA 36 ◄MATCHED
+       MATCHER: 5:19 / 5:42 / 9:36
+       MANUAL : 5:09 / 6:09 / 13:53
+       GERADO : 5:19 / 5:42 / 9:36
+       >> SC: 5:19≠5:09  CHD: 5:42≠6:09  SL: 9:36≠13:53
+
+[DIFF] [c1] Assaí - Niterói - Loja 41
+       BRUNO | UBF5G33 | GPS:SIM [11p | 4B 1L 3F] | match=hybrid(1)
+       BASE  chg:10:52 → sai:11:37  45min
+       BASE  chg:11:39 → sai:12:36  57min
+       LOJA  5:35-10:02  267min  cod:560025  SENDAS NITERÓI - LOJA 41 ◄MATCHED
+       MATCHER: 4:52 / 5:35 / 10:02
+       MANUAL : 12:24 / 13:30 / 15:05
+       GERADO : 12:49 / 13:20 / 13:32
+       >> Matcher=madrugada(CHD 5:35), manual=tarde(CHD 13:30) — 2 turnos
+
+[OK]   [c1] Assaí - Niterói Ponte - Loja 292
+       MESSIAS | AMW3424 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : SEM / SEM / SEM
+       GERADO : 2:33 / 8:57 / 9:22
+       !! MATCHER=OK mas GERADO≠MANUAL (Excel desatualizado?)
+
+[DIFF] [c1] Assaí - Nova Iguaçu - Loja 30
+       ROBERTO | LSL9670 | GPS:SIM [12p | 2B 3L 1F] | match=hybrid(1)
+       BASE  chg:3:36 → sai:4:00  25min
+       BASE  chg:10:43 → sai:12:39  116min
+       LOJA  4:57-6:34  98min  cod:560021  SENDAS NOVA IGUAÇU - LOJA 30 ◄MATCHED
+       LOJA  14:09-14:18  10min  cod:5353003  ARMAZEM DO GRÃO (ITAIPAVA)
+       LOJA  14:28-14:47  19min  cod:5353006  ARMAZEM DO GRAO (CORREAS)
+       MATCHER: 4:16 / 4:57 / 6:34
+       MANUAL : SEM / SEM / SEM
+       GERADO : 4:16 / 4:57 / 6:34
+       >> MANUAL=SEM_RASTREADOR mas matcher tem GPS — T18 falso positivo?
+
+[DIFF] [c1] Assaí - Nova Iguaçu 2 - Loja 291
+       WANDERLEY | AFY7J99 | GPS:SIM [10p | 4B 5L 0F] | match=hybrid(1)
+       BASE  chg:12:19 → sai:12:49  30min
+       BASE  chg:12:53 → sai:15:05  132min
+       LOJA  6:05-8:46  161min  cod:560054  SENDAS NOVA IGUAÇU II ◄MATCHED
+       LOJA  8:51-9:21  31min  cod:560054  SENDAS NOVA IGUAÇU II
+       LOJA  9:23-10:04  40min  cod:560054  SENDAS NOVA IGUAÇU II
+       LOJA  10:16-11:45  89min  cod:560054  SENDAS NOVA IGUAÇU II
+       LOJA  16:09-16:20  11min  cod:9039115  43 - ZONA SUL - BARRA PENINSULA
+       MATCHER: 5:37 / 6:05 / 11:45
+       MANUAL : 4:42 / 4:44 / 7:04
+       GERADO : 5:37 / 6:05 / 11:45
+       >> SC: 5:37≠4:42  CHD: 6:05≠4:44  SL: 11:45≠7:04
+
+[DIFF] [c1] Assaí - Petrópolis- Loja 181
+       CARLINHOS | KMZ7057 | GPS:SIM [8p | 2B 1L 2F] | match=hybrid(1)
+       BASE  chg:2:24 → sai:2:39  15min
+       BASE  chg:8:12 → sai:8:35  24min
+       LOJA  4:27-5:59  92min  cod:560038  SENDAS PETRÓPOLIS - LJ 38 ◄MATCHED
+       MATCHER: 2:47 / 4:27 / 5:59
+       MANUAL : 4:28 / 5:04 / 12:50
+       GERADO : 2:47 / 4:27 / 5:59
+       >> SC: 2:47≠4:28  CHD: 4:27≠5:04  SL: 5:59≠12:50
+
+[DIFF] [c1] Assaí - Pilares - Loja 128
+       ADRIANO | CEJ3426 | GPS:SIM [6p | 0B 0L 6F] | match=geo(0.8)
+       !! SEM LOJA — 6xFB 0xB
+       FB    0:04-4:12  FORA DE BASE E LOCAL DE SERVIÇO
+       FB    4:13-4:27  FORA DE BASE E LOCAL DE SERVIÇO
+       FB    4:36-4:52  FORA DE BASE E LOCAL DE SERVIÇO
+       MATCHER: --- / 4:13 / 4:27
+       MANUAL : 2:19 / 2:19 / 3:53
+       GERADO : --- / 0:04 / 4:12
+       >> Matcher vazio, manual tem dado — GPS não encontrou esta loja
+
+[OK]   [c1] Assaí - Sabão Rio (Benfica) - Loja 136
+       EDVALDO | LKA3935 | GPS:SIM [1p | 1B 0L 0F] | match=none(0)
+       BASE  chg:0:07 → sai:16:17  970min
+       !! SEM LOJA — 0xFB 1xB
+       MATCHER: --- / --- / ---
+       MANUAL : SEM / SEM / SEM
+       GERADO : --- / --- / ---
+
+[OK]   [c1] Assaí - Santa Cruz - Loja 201
+       FERNANDO | KGO5E65 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : SEM / SEM / SEM
+       GERADO : SEM / SEM / SEM
+
+[DIFF] [c1] Assaí - Santa Cruz 2 - Loja 338
+       ANTÔNIO FREITAS | LNG7110 | GPS:SIM [11p | 3B 1L 1F] | match=hybrid(1)
+       BASE  chg:8:40 → sai:10:15  96min
+       BASE  chg:10:34 → sai:11:02  28min
+       LOJA  6:02-7:15  73min  cod:7000733  PREZUNIC SANTA CRUZ ◄MATCHED
+       MATCHER: 5:04 / 6:02 / 7:15
+       MANUAL : SEM / SEM / SEM
+       GERADO : 11:14 / 12:33 / 15:19
+       >> MANUAL=SEM_RASTREADOR mas matcher tem GPS — T18 falso positivo?
+
+[OK]   [c1] Assaí - São Gonçalo Camil - Loja 211
+       LUIS FERREIRA | LAU1I64 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : SEM / SEM / SEM
+       GERADO : SEM / SEM / SEM
+
+[DIFF] [c1] Assaí - São Gonçalo Centro - Loja 266
+       JOSÉLIO | KRK3D12 | GPS:SIM [6p | 3B 1L 0F] | match=hybrid(1)
+       BASE  chg:13:49 → sai:14:07  18min
+       BASE  chg:14:12 → sai:16:14  122min
+       LOJA  6:54-12:39  346min  cod:560047  SENDAS SÃO GONÇALO CENTRO ◄MATCHED
+       MATCHER: 5:32 / 6:54 / 12:39
+       MANUAL : 5:10 / 6:21 / 11:21
+       GERADO : 5:32 / 6:54 / 12:39
+       >> SC: 5:32≠5:10  CHD: 6:54≠6:21  SL: 12:39≠11:21
+
+[DIFF] [c1] Assaí - São João do Meriti  - Loja 217
+       MILTON | EAC4D65 | GPS:SIM [13p | 2B 5L 3F] | match=hybrid(1)
+       BASE  chg:3:46 → sai:4:01  15min
+       BASE  chg:12:09 → sai:12:52  44min
+       LOJA  5:52-6:07  15min  cod:560040  SENDAS SÃO JOÃO DE MERITI
+       LOJA  6:08-8:31  143min  cod:560040  SENDAS SÃO JOÃO DE MERITI ◄MATCHED
+       LOJA  8:55-10:17  82min  cod:560040  SENDAS SÃO JOÃO DE MERITI
+       LOJA  10:21-10:47  26min  cod:560040  SENDAS SÃO JOÃO DE MERITI
+       LOJA  10:50-11:54  64min  cod:560040  SENDAS SÃO JOÃO DE MERITI
+       MATCHER: 4:35 / 5:52 / 11:54
+       MANUAL : SEM / SEM / SEM
+       GERADO : 4:35 / 5:52 / 11:54
+       >> MANUAL=SEM_RASTREADOR mas matcher tem GPS — T18 falso positivo?
+
+[DIFF] [c1] Assaí - Taquara   - Loja 340
+       WALTER REGIS | UBO0B68 | GPS:SIM [8p | 4B 1L 0F] | match=hybrid(1)
+       BASE  chg:2:31 → sai:6:26  235min
+       BASE  chg:13:53 → sai:14:26  33min
+       LOJA  7:31-12:57  326min  cod:560062  SENDAS JACAREPAGUA - LOJA 340 (TAQUARA) ◄MATCHED
+       MATCHER: 6:40 / 7:31 / 12:57
+       MANUAL : SEM / SEM / SEM
+       GERADO : 6:40 / 7:31 / 11:59
+       >> MANUAL=SEM_RASTREADOR mas matcher tem GPS — T18 falso positivo?
+
+[DIFF] [c1] Assaí - Tijuca II  - Loja 150
+       VALDIR | DDI6J90 | GPS:SIM [5p | 1B 2L 0F] | match=hybrid(1)
+       BASE  chg:0:09 → sai:3:58  229min
+       LOJA  5:03-6:02  58min  cod:560043  SENDAS TIJUCA II - LJ 43
+       LOJA  6:02-12:20  377min  cod:560043  SENDAS TIJUCA II - LJ 43 ◄MATCHED
+       MATCHER: 4:30 / 5:03 / 12:20
+       MANUAL : 4:44 / 5:27 / 12:34
+       GERADO : 4:30 / 5:03 / 12:20
+       >> SC: 4:30≠4:44  CHD: 5:03≠5:27  SL: 12:20≠12:34
+
+[DIFF] [c1] Assaí - Tribobó - Loja 248
+       FÁBIO DEUSETI | LON7G98 | GPS:SIM [1p | 0B 0L 1F] | match=none(0)
+       !! SEM LOJA — 1xFB 0xB
+       FB    0:04-16:21  FORA DE BASE E LOCAL DE SERVIÇO
+       MATCHER: --- / --- / ---
+       MANUAL : 1:07 / 1:07 / 2:40
+       GERADO : --- / --- / ---
+       >> Matcher vazio, manual tem dado — GPS não encontrou esta loja
+
+══════════════════════════════════════════
+RESUMO GERADO×MANUAL:  OK=5  DIFF=35
+RESUMO MATCHER×MANUAL: OK=7  DIFF=33  ← código atual
+══════════════════════════════════════════

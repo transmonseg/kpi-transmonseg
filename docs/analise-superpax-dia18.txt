@@ -1,0 +1,144 @@
+◇ injected env (4) from .env.local // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+Carregando escala SUPER_PAX...
+  12 linhas (filtrado de 30 totais) data_entrega 2026-05-18
+Carregando Unitrac...
+  207 veículos, 2326 paradas
+Carregando lojas do DB...
+  347 lojas
+Cruzando...
+  12 rotas geradas
+
+=== ANÁLISE SUPER_PAX — 18/05/2026 ===
+SC=SaídaCD  CHD=ChegadaLoja  SL=SaídaLoja
+
+
+[OK]   [c1] Sepetiba
+       DENIS BEZERRA | TML6D96 | GPS:SIM [10p | 0B 1L 7F] | match=hybrid(1)
+       LOJA  16:17-17:59  102min  cod:202012  PAX SEPETIBA ◄MATCHED
+       MATCHER: --- / 16:17 / 17:59
+       MANUAL : --- / 16:17 / 17:59
+       GERADO : --- / 16:17 / 17:59
+
+[OK]   [c1] Lins
+       CARLOS | LUP1F13 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : SEM / SEM / SEM
+       GERADO : SEM / SEM / SEM
+
+[DIFF] [c1] Realengo
+       LUIZ ANTONIO | KMY5561 | GPS:SIM [15p | 10B 3L 1F] | match=hybrid(1)
+       BASE  chg:19:43 → sai:19:59  16min
+       BASE  chg:23:03 → sai:23:59  56min
+       LOJA  6:08-6:35  27min  cod:9006001  CARREFOUR BARRA
+       LOJA  6:36-7:39  63min  cod:9006001  CARREFOUR BARRA
+       LOJA  14:42-15:48  66min  cod:202002  PAX REALENGO ◄MATCHED
+       MATCHER: 14:04 / 14:42 / 15:48
+       MANUAL : 5:11 / 14:42 / 15:48
+       GERADO : 5:11 / 14:42 / 15:48
+       >> SC: 14:04≠5:11  CHD: 14:42≠14:42  SL: 15:48≠15:48
+
+[DIFF] [c1] Inhauma
+       JEFERSON BATALHA | UBO5E01 | GPS:SIM [11p | 0B 11L 0F] | match=hybrid(1)
+       LOJA  0:01-3:24  203min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  3:41-3:54  13min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  3:57-4:04  7min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  4:40-8:28  227min  cod:560052  SENDAS NITERÓI PONTE
+       LOJA  8:30-10:00  90min  cod:560052  SENDAS NITERÓI PONTE
+       LOJA  10:44-14:14  210min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  15:01-16:33  92min  cod:202001  PAX ENGENHO DE DENTRO
+       LOJA  16:57-17:45  49min  cod:202003  PAX INHAUMA ◄MATCHED
+       LOJA  18:02-18:06  4min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  18:15-18:49  34min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  18:53-23:56  304min  cod:5353016  REGINA  LUCIO MEIRA
+       MATCHER: 14:14 / 16:57 / 17:45
+       MANUAL : --- / 16:57 / 17:45
+       GERADO : --- / 16:57 / 17:45
+       >> SC: 14:14≠---  CHD: 16:57≠16:57  SL: 17:45≠17:45
+
+[DIFF] [c1] Engenho de Dentro
+       JEFERSON BATALHA | UBO5E01 | GPS:SIM [11p | 0B 11L 0F] | match=hybrid(1)
+       LOJA  0:01-3:24  203min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  3:41-3:54  13min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  3:57-4:04  7min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  4:40-8:28  227min  cod:560052  SENDAS NITERÓI PONTE
+       LOJA  8:30-10:00  90min  cod:560052  SENDAS NITERÓI PONTE
+       LOJA  10:44-14:14  210min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  15:01-16:33  92min  cod:202001  PAX ENGENHO DE DENTRO ◄MATCHED
+       LOJA  16:57-17:45  49min  cod:202003  PAX INHAUMA
+       LOJA  18:02-18:06  4min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  18:15-18:49  34min  cod:5353016  REGINA  LUCIO MEIRA
+       LOJA  18:53-23:56  304min  cod:5353016  REGINA  LUCIO MEIRA
+       MATCHER: 14:14 / 15:01 / 16:33
+       MANUAL : --- / 15:01 / 16:33
+       GERADO : --- / 15:01 / 16:33
+       >> SC: 14:14≠---  CHD: 15:01≠15:01  SL: 16:33≠16:33
+
+[DIFF] [c1] Madureira
+       DOVAL | KQV1D80 | GPS:SIM [13p | 7B 3L 0F] | match=hybrid(1)
+       BASE  chg:16:22 → sai:16:54  32min
+       BASE  chg:17:07 → sai:23:57  410min
+       LOJA  5:53-9:47  234min  cod:7000722  PREZUNIC FONSECA
+       LOJA  14:28-15:22  54min  cod:202000  PAX OSWALDO CRUZ
+       LOJA  15:34-16:09  36min  cod:202006  PAX MADUREIRA ◄MATCHED
+       MATCHER: 14:10 / 15:34 / 16:09
+       MANUAL : 5:01 / 15:34 / 16:09
+       GERADO : 5:01 / 15:34 / 16:09
+       >> SC: 14:10≠5:01  CHD: 15:34≠15:34  SL: 16:09≠16:09
+
+[DIFF] [c1] Oswaldo Cruz
+       DOVAL | KQV1D80 | GPS:SIM [13p | 7B 3L 0F] | match=hybrid(1)
+       BASE  chg:16:22 → sai:16:54  32min
+       BASE  chg:17:07 → sai:23:57  410min
+       LOJA  5:53-9:47  234min  cod:7000722  PREZUNIC FONSECA
+       LOJA  14:28-15:22  54min  cod:202000  PAX OSWALDO CRUZ ◄MATCHED
+       LOJA  15:34-16:09  36min  cod:202006  PAX MADUREIRA
+       MATCHER: 14:10 / 14:28 / 15:22
+       MANUAL : 5:01 / 14:28 / 15:22
+       GERADO : 5:01 / 14:28 / 15:22
+       >> SC: 14:10≠5:01  CHD: 14:28≠14:28  SL: 15:22≠15:22
+
+[DIFF] [c1] Vila da Penha
+       WILLIAM FERES | EFU5704 | GPS:NAO | match=geo(0.8)
+       MATCHER: 15:08 / 15:30 / 16:01
+       MANUAL : SEM / SEM / SEM
+       GERADO : SEM / SEM / SEM
+       >> MANUAL=SEM_RASTREADOR mas matcher tem GPS — T18 falso positivo?
+
+[OK]   [c1] Pilares
+       MARCIO | KXR7527 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : SEM / SEM / SEM
+       GERADO : SEM / SEM / SEM
+
+[OK]   [c1] Del Castilho
+       MARCIO | KXR7527 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : SEM / SEM / SEM
+       GERADO : SEM / SEM / SEM
+
+[DIFF] [c1] Guadalupe
+       LUIZ | AKZ2745 | GPS:SIM [12p | 8B 2L 0F] | match=hybrid(1)
+       BASE  chg:15:14 → sai:17:43  150min
+       BASE  chg:17:45 → sai:23:53  368min
+       LOJA  6:01-6:42  41min  cod:560031  SENDAS MEIER
+       LOJA  14:42-14:59  16min  cod:202005  PAX GUADALUPE ◄MATCHED
+       MATCHER: 14:04 / 14:42 / 14:59
+       MANUAL : 5:27 / 14:42 / 14:59
+       GERADO : 5:27 / 14:42 / 14:59
+       >> SC: 14:04≠5:27  CHD: 14:42≠14:42  SL: 14:59≠14:59
+
+[DIFF] [c1] Taquara
+       JOHN | KVI9088 | GPS:SIM [17p | 4B 2L 4F] | match=hybrid(1)
+       BASE  chg:12:26 → sai:12:44  18min
+       BASE  chg:12:45 → sai:13:58  73min
+       LOJA  4:54-7:39  165min  cod:8590004  PRINCESA ICARAÍ
+       LOJA  14:52-15:36  44min  cod:202011  PAX TAQUARA ◄MATCHED
+       MATCHER: 13:58 / 14:52 / 15:36
+       MANUAL : 4:10 / 14:52 / 15:36
+       GERADO : 4:10 / 14:52 / 15:36
+       >> SC: 13:58≠4:10  CHD: 14:52≠14:52  SL: 15:36≠15:36
+
+══════════════════════════════════════════
+RESUMO GERADO×MANUAL:  OK=12  DIFF=0
+RESUMO MATCHER×MANUAL: OK=4  DIFF=8  ← código atual
+══════════════════════════════════════════

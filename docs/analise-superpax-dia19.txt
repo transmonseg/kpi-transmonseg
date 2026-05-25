@@ -1,0 +1,155 @@
+◇ injected env (4) from .env.local // tip: ◈ encrypted .env [www.dotenvx.com]
+Carregando escala SUPER_PAX...
+  13 linhas (filtrado de 26 totais) data_entrega 2026-05-19
+Carregando Unitrac...
+  206 veículos, 1717 paradas
+Carregando lojas do DB...
+  347 lojas
+Cruzando...
+  13 rotas geradas
+
+=== ANÁLISE SUPER_PAX — 19/05/2026 ===
+SC=SaídaCD  CHD=ChegadaLoja  SL=SaídaLoja
+
+
+[OK]   [c1] Sepetiba
+       DENNIS AUGUSTO | TML7D21 | GPS:SIM [11p | 4B 1L 0F] | match=none(0)
+       BASE  chg:14:33 → sai:14:49  16min
+       BASE  chg:14:49 → sai:16:19  90min
+       LOJA  6:58-12:42  344min  cod:560056  SENDAS BOULEVARD
+       MATCHER: --- / --- / ---
+       MANUAL : SEM / SEM / SEM
+       GERADO : 14:49 / 15:51 / 17:19
+       !! MATCHER=OK mas GERADO≠MANUAL (Excel desatualizado?)
+
+[OK]   [c1] Lins
+       CARLOS | LUP1F13 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : SEM / SEM / SEM
+       GERADO : SEM / SEM / SEM
+
+[DIFF] [c1] LINS 2º CARRO
+       DENIS BEZERRA | QSY2H32 | GPS:SIM [12p | 4B 2L 2F] | match=hybrid(1)
+       BASE  chg:12:54 → sai:13:54  60min
+       BASE  chg:14:03 → sai:14:20  17min
+       LOJA  14:46-15:04  18min  cod:579010  FEIRA NOVA  CACHAMBI
+       LOJA  15:31-16:22  51min  cod:202013  PAX LINS ◄MATCHED
+       MATCHER: 14:20 / 15:31 / 16:22
+       MANUAL : 9:43 / 10:34 / 10:45
+       GERADO : 14:20 / 15:31 / 16:22
+       >> SC: 14:20≠9:43  CHD: 15:31≠10:34  SL: 16:22≠10:45
+
+[DIFF] [c1] Realengo
+       LUIZ | KMY5561 | GPS:SIM [9p | 3B 3L 1F] | match=hybrid(1)
+       BASE  chg:11:28 → sai:14:13  165min
+       BASE  chg:16:02 → sai:16:21  19min
+       LOJA  5:50-6:01  11min  cod:9006001  CARREFOUR BARRA
+       LOJA  6:02-7:19  77min  cod:9006001  CARREFOUR BARRA
+       LOJA  15:10-15:33  23min  cod:202002  PAX REALENGO ◄MATCHED
+       MATCHER: 14:13 / 15:10 / 15:33
+       MANUAL : 13:22 / 13:57 / 14:30
+       GERADO : 14:13 / 15:10 / 15:33
+       >> SC: 14:13≠13:22  CHD: 15:10≠13:57  SL: 15:33≠14:30
+
+[DIFF] [c1] Engenho de Dentro
+       SERGIO | LOU9928 | GPS:SIM [12p | 5B 2L 1F] | match=hybrid(1)
+       BASE  chg:8:59 → sai:9:55  55min
+       BASE  chg:9:57 → sai:14:22  265min
+       LOJA  7:33-8:04  31min  cod:7000724  PREZUNIC CACHAMBI
+       LOJA  14:57-15:50  53min  cod:202001  PAX ENGENHO DE DENTRO ◄MATCHED
+       MATCHER: 14:22 / 14:57 / 15:50
+       MANUAL : 13:23 / 13:57 / 14:18
+       GERADO : 14:22 / 14:57 / 15:50
+       >> SC: 14:22≠13:23  CHD: 14:57≠13:57  SL: 15:50≠14:18
+
+[OK]   [c1] INHAUMA
+       SILVIO | UBF7F79 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : SEM / SEM / SEM
+       GERADO : SEM / SEM / SEM
+
+[DIFF] [c1] Madureira
+       ESTELITA | GAJ6H51 | GPS:SIM [9p | 5B 2L 2F] | match=hybrid(1)
+       BASE  chg:11:37 → sai:13:56  139min
+       BASE  chg:13:59 → sai:14:32  33min
+       LOJA  8:17-9:09  52min  cod:7000730  PREZUNIC ICARAÍ ◄MATCHED
+       LOJA  15:01-16:21  80min  cod:202000  PAX OSWALDO CRUZ
+       MATCHER: 5:10 / 8:17 / 9:09
+       MANUAL : 5:11 / 8:57 / 10:12
+       GERADO : 14:32 / 16:48 / 17:13
+       >> SC: 5:10≠5:11  CHD: 8:17≠8:57  SL: 9:09≠10:12
+
+[DIFF] [c1] Oswaldo Cruz
+       ESTELITA | GAJ6H51 | GPS:SIM [9p | 5B 2L 2F] | match=hybrid(1)
+       BASE  chg:11:37 → sai:13:56  139min
+       BASE  chg:13:59 → sai:14:32  33min
+       LOJA  8:17-9:09  52min  cod:7000730  PREZUNIC ICARAÍ
+       LOJA  15:01-16:21  80min  cod:202000  PAX OSWALDO CRUZ ◄MATCHED
+       MATCHER: 14:32 / 15:01 / 16:21
+       MANUAL : 5:11 / 8:57 / 10:12
+       GERADO : 14:32 / 15:01 / 16:21
+       >> SC: 14:32≠5:11  CHD: 15:01≠8:57  SL: 16:21≠10:12
+
+[DIFF] [c1] Vila da Penha
+       FELIPE | LNU7H38 | GPS:SIM [8p | 2B 2L 2F] | match=hybrid(1)
+       BASE  chg:12:55 → sai:14:21  86min
+       BASE  chg:15:49 → sai:16:07  18min
+       LOJA  14:49-14:53  4min  cod:202010  PAX VILA DA PENHA
+       LOJA  14:54-15:38  43min  cod:202010  PAX VILA DA PENHA ◄MATCHED
+       MATCHER: 14:21 / 14:49 / 15:38
+       MANUAL : SEM / SEM / SEM
+       GERADO : 14:21 / 14:49 / 15:38
+       >> MANUAL=SEM_RASTREADOR mas matcher tem GPS — T18 falso positivo?
+
+[DIFF] [c1] Pilares
+       MARCIO | KXR7F27 | GPS:SIM [15p | 7B 4L 1F] | match=hybrid(1)
+       BASE  chg:9:42 → sai:11:17  95min
+       BASE  chg:11:21 → sai:14:25  184min
+       LOJA  5:00-5:45  45min  cod:7000720  PREZUNIC ITAOCA
+       LOJA  5:46-6:05  19min  cod:7000720  PREZUNIC ITAOCA
+       LOJA  6:24-7:01  37min  cod:7000715  PREZUNIC VISTA ALEGRE
+       LOJA  15:00-15:27  27min  cod:202009  PAX  PILARES ◄MATCHED
+       MATCHER: 14:42 / 15:00 / 15:27
+       MANUAL : 13:22 / 13:41 / 14:07
+       GERADO : 14:42 / 15:00 / 15:27
+       >> SC: 14:42≠13:22  CHD: 15:00≠13:41  SL: 15:27≠14:07
+
+[DIFF] [c1] Del Castilho
+       DANIEL | QSZ9A20 | GPS:SIM [10p | 5B 3L 1F] | match=hybrid(1)
+       BASE  chg:12:48 → sai:13:56  68min
+       BASE  chg:13:57 → sai:14:22  25min
+       LOJA  4:49-6:47  117min  cod:8590002  PRINCESA MARICÁ 1
+       LOJA  6:51-7:22  30min  cod:8590003  PRINCESA MARICÁ 2
+       LOJA  15:13-15:58  45min  cod:202004  PAX DEL CASTILHO ◄MATCHED
+       MATCHER: 14:22 / 15:13 / 15:58
+       MANUAL : SEM / SEM / SEM
+       GERADO : 14:22 / 15:13 / 15:58
+       >> MANUAL=SEM_RASTREADOR mas matcher tem GPS — T18 falso positivo?
+
+[DIFF] [c1] Guadalupe
+       LUIZ | AKZ2745 | GPS:SIM [8p | 3B 2L 1F] | match=hybrid(1)
+       BASE  chg:7:30 → sai:9:30  120min
+       BASE  chg:9:36 → sai:14:05  269min
+       LOJA  5:35-6:42  67min  cod:560031  SENDAS MEIER
+       LOJA  15:03-15:20  17min  cod:202005  PAX GUADALUPE ◄MATCHED
+       MATCHER: 14:20 / 15:03 / 15:20
+       MANUAL : SEM / SEM / SEM
+       GERADO : 14:20 / 15:03 / 15:20
+       >> MANUAL=SEM_RASTREADOR mas matcher tem GPS — T18 falso positivo?
+
+[DIFF] [c1] Taquara
+       ALLAN | EZU9J51 | GPS:SIM [7p | 3B 3L 0F] | match=hybrid(1)
+       BASE  chg:12:56 → sai:13:25  29min
+       BASE  chg:13:31 → sai:14:41  70min
+       LOJA  5:05-6:05  60min  cod:560018  SENDAS CAXIAS - LOJA 131
+       LOJA  6:06-12:31  386min  cod:560018  SENDAS CAXIAS - LOJA 131
+       LOJA  15:30-16:06  36min  cod:202011  PAX TAQUARA ◄MATCHED
+       MATCHER: 14:41 / 15:30 / 16:06
+       MANUAL : SEM / SEM / SEM
+       GERADO : 14:41 / 15:30 / 16:06
+       >> MANUAL=SEM_RASTREADOR mas matcher tem GPS — T18 falso positivo?
+
+══════════════════════════════════════════
+RESUMO GERADO×MANUAL:  OK=2  DIFF=11
+RESUMO MATCHER×MANUAL: OK=3  DIFF=10  ← código atual
+══════════════════════════════════════════

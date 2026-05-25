@@ -1,0 +1,338 @@
+◇ injected env (4) from .env.local // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+Carregando escala GUANABARA...
+Warning: TT: undefined function: 21
+Warning: TT: invalid function id: 136
+  37 linhas (filtrado de 37 totais) data_entrega 2026-05-19
+Carregando Unitrac...
+  206 veículos, 1717 paradas
+Carregando lojas do DB...
+  347 lojas
+Cruzando...
+  37 rotas geradas
+
+=== ANÁLISE GUANABARA — 19/05/2026 ===
+SC=SaídaCD  CHD=ChegadaLoja  SL=SaídaLoja
+
+
+[OK]   [c1] GB ENG DE DENTRO FILIAL 1
+       RONALDO | KSG5412 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : SEM / SEM / SEM
+
+[OK]   [c2] GB ENG DE DENTRO FILIAL 1
+       JOSE NILDON (DOCA) | KVG7A00 | GPS:SIM [3p | 2B 0L 1F] | match=none(0)
+       BASE  chg:0:02 → sai:5:15  312min
+       BASE  chg:5:17 → sai:9:51  274min
+       !! SEM LOJA — 1xFB 2xB
+       FB    10:02-10:16  FORA DE BASE E LOCAL DE SERVIÇO
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : 9:51 / 10:54 / 12:35
+       !! MATCHER=OK mas GERADO≠MANUAL (Excel desatualizado?)
+
+[DIFF] [c1] GB PENHA FILIAL 2
+       P.CESAR | LFK2C56 | GPS:SIM [11p | 5B 2L 1F] | match=hybrid(1)
+       BASE  chg:8:51 → sai:9:40  49min
+       BASE  chg:13:56 → sai:16:17  141min
+       LOJA  7:40-8:45  64min  cod:71002  GB 02 - PENHA ◄MATCHED
+       LOJA  11:47-11:50  4min  cod:71002  GB 02 - PENHA
+       MATCHER: 7:04 / 7:40 / 11:50
+       MANUAL : --- / --- / ---
+       GERADO : 7:04 / 7:40 / 11:50
+       >> SC: 7:04≠---  CHD: 7:40≠---  SL: 11:50≠---
+
+[OK]   [c2] GB PENHA FILIAL 2
+       P.CESAR | LFK2C56 | GPS:SIM [11p | 5B 2L 1F] | match=none(0)
+       BASE  chg:8:51 → sai:9:40  49min
+       BASE  chg:13:56 → sai:16:17  141min
+       LOJA  7:40-8:45  64min  cod:71002  GB 02 - PENHA
+       LOJA  11:47-11:50  4min  cod:71002  GB 02 - PENHA
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : 7:04 / 7:40 / 11:50
+       !! MATCHER=OK mas GERADO≠MANUAL (Excel desatualizado?)
+
+[OK]   [c1] GB PIEDADE FILIAL 3
+       RAFAEL | KNI8988 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : SEM / SEM / SEM
+
+[DIFF] [c1] GB REALENGO FILIAL 4
+       MARCOS | LBL5907 | GPS:SIM [6p | 5B 1L 0F] | match=hybrid(1)
+       BASE  chg:9:37 → sai:10:11  34min
+       BASE  chg:12:59 → sai:16:18  199min
+       LOJA  11:01-12:39  99min  cod:71004  GB 04 - REALENGO ◄MATCHED
+       MATCHER: 10:11 / 11:01 / 12:39
+       MANUAL : --- / --- / ---
+       GERADO : 10:11 / 11:01 / 12:39
+       >> SC: 10:11≠---  CHD: 11:01≠---  SL: 12:39≠---
+
+[DIFF] [c1] GB BANGU FILIAL 5
+       MARCOS | KSP8814 | GPS:SIM [8p | 5B 1L 1F] | match=hybrid(1)
+       BASE  chg:9:43 → sai:10:01  17min
+       BASE  chg:12:45 → sai:16:15  210min
+       LOJA  10:42-11:59  77min  cod:71005  GB 05 - BANGU ◄MATCHED
+       MATCHER: 10:01 / 10:42 / 11:59
+       MANUAL : --- / --- / ---
+       GERADO : 10:01 / 10:42 / 11:59
+       >> SC: 10:01≠---  CHD: 10:42≠---  SL: 11:59≠---
+
+[OK]   [c1] GB ITAGUAI FILIAL 6
+       CLAUDECI/TICO | LGX1J41 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : SEM / SEM / SEM
+
+[DIFF] [c1] GB BARRA FILIAL 7
+       MOISES | GBC6E12 | GPS:SIM [8p | 6B 2L 0F] | match=hybrid(1)
+       BASE  chg:12:30 → sai:12:47  18min
+       BASE  chg:12:51 → sai:16:11  200min
+       LOJA  8:20-9:16  56min  cod:71032  GB 07 - BARRA
+       LOJA  9:18-10:41  82min  cod:71032  GB 07 - BARRA ◄MATCHED
+       MATCHER: 7:07 / 8:20 / 10:41
+       MANUAL : --- / --- / ---
+       GERADO : 4:58 / 5:04 / 10:41
+       >> SC: 7:07≠---  CHD: 8:20≠---  SL: 10:41≠---
+
+[DIFF] [c2] GB BARRA FILIAL 7
+       ANDERSON | KST0246 | GPS:SIM [6p | 3B 1L 0F] | match=hybrid(1)
+       BASE  chg:5:27 → sai:8:05  157min
+       BASE  chg:11:51 → sai:16:14  263min
+       LOJA  9:50-10:58  68min  cod:71032  GB 07 - BARRA ◄MATCHED
+       MATCHER: 8:05 / 9:50 / 10:58
+       MANUAL : --- / --- / ---
+       GERADO : 8:05 / 9:50 / 10:58
+       >> SC: 8:05≠---  CHD: 9:50≠---  SL: 10:58≠---
+
+[DIFF] [c1] GB NITEROI FILIAL 8
+       CELSO | KTR0546 | GPS:SIM [8p | 0B 1L 5F] | match=hybrid(1)
+       LOJA  9:20-10:07  47min  cod:71008  GB 08 - NITEROI ◄MATCHED
+       MATCHER: --- / 9:20 / 10:07
+       MANUAL : --- / --- / ---
+       GERADO : 7:14 / 9:20 / 10:07
+       >> SC: ---≠---  CHD: 9:20≠---  SL: 10:07≠---
+
+[DIFF] [c2] GB NITEROI FILIAL 8
+       JONAS/BETO | LKF7A79 | GPS:SIM [4p | 2B 1L 0F] | match=hybrid(1)
+       BASE  chg:0:02 → sai:6:19  377min
+       BASE  chg:6:31 → sai:9:55  204min
+       LOJA  11:23-12:44  81min  cod:71008  GB 08 - NITEROI ◄MATCHED
+       MATCHER: 10:11 / 11:23 / 12:44
+       MANUAL : --- / --- / ---
+       GERADO : 10:11 / 11:23 / 12:44
+       >> SC: 10:11≠---  CHD: 11:23≠---  SL: 12:44≠---
+
+[OK]   [c1] GB IRAJA FILIAL 9
+       JULIO CESAR | LIF3965 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : SEM / SEM / SEM
+
+[OK]   [c2] GB IRAJA FILIAL 9
+       JULIO CESAR | LIF3965 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : SEM / SEM / SEM
+
+[OK]   [c1] GB VILA ISABEL FILIAL 10
+       MARCIO/OLIMPO | GUE0D63 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : SEM / SEM / SEM
+
+[OK]   [c1] GB CAMPO GRANDE FILIAL 11
+       ART | HUR1841 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : 4:08 / 7:17 / 7:21
+       !! MATCHER=OK mas GERADO≠MANUAL (Excel desatualizado?)
+
+[OK]   [c2] GB CAMPO GRANDE FILIAL 11
+       2 | KNI8942 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : 4:33 / 8:06 / 8:09
+       !! MATCHER=OK mas GERADO≠MANUAL (Excel desatualizado?)
+
+[DIFF] [c1] GB RIO DA PRATA FILIAL 13
+       CLEBER | KRA1083 | GPS:SIM [6p | 4B 1L 0F] | match=hybrid(1)
+       BASE  chg:9:37 → sai:10:01  24min
+       BASE  chg:12:39 → sai:16:18  219min
+       LOJA  10:51-12:01  69min  cod:71013  GB 13 - BANGU - RIO DA PRATA ◄MATCHED
+       MATCHER: 10:06 / 10:51 / 12:01
+       MANUAL : --- / --- / ---
+       GERADO : 10:06 / 10:51 / 12:01
+       >> SC: 10:06≠---  CHD: 10:51≠---  SL: 12:01≠---
+
+[OK]   [c1] GB PADRE MIGUEL FILIAL 14
+       ALOISIO/RAFAEL | LFA4744 | GPS:SIM [2p | 1B 0L 0F] | match=none(0)
+       BASE  chg:7:37 → sai:7:57  20min
+       !! SEM LOJA — 0xFB 1xB
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : --- / --- / ---
+
+[DIFF] [c1] GB BENTO RIBEIRO FILIAL 15
+       WILLIAM/JUNIOR | LBB5205 | GPS:SIM [11p | 6B 0L 3F] | match=geo(0.8)
+       BASE  chg:13:25 → sai:13:52  28min
+       BASE  chg:13:58 → sai:16:18  140min
+       !! SEM LOJA — 3xFB 6xB
+       FB    10:38-10:57  FORA DE BASE E LOCAL DE SERVIÇO
+       FB    11:13-12:48  FORA DE BASE E LOCAL DE SERVIÇO
+       FB    12:57-13:11  FORA DE BASE E LOCAL DE SERVIÇO
+       MATCHER: 10:03 / 10:38 / 10:57
+       MANUAL : --- / --- / ---
+       GERADO : 10:03 / 10:38 / 10:57
+       >> SC: 10:03≠---  CHD: 10:38≠---  SL: 10:57≠---
+
+[DIFF] [c1] GB NOVA IGUACU FILIAL 16
+       HENRIQUE | KNB0752 | GPS:SIM [5p | 4B 1L 0F] | match=hybrid(1)
+       BASE  chg:8:09 → sai:8:37  28min
+       BASE  chg:10:46 → sai:12:16  90min
+       LOJA  9:13-10:14  61min  cod:71016  GB 16 - NOVA IGUAÇU ◄MATCHED
+       MATCHER: 8:37 / 9:13 / 10:14
+       MANUAL : --- / --- / ---
+       GERADO : 8:37 / 9:13 / 10:14
+       >> SC: 8:37≠---  CHD: 9:13≠---  SL: 10:14≠---
+
+[OK]   [c2] GB NOVA IGUACU FILIAL 16
+       ICARDO /JUNIOR | LGT1200 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : 5:39 / 7:02 / 7:42
+       !! MATCHER=OK mas GERADO≠MANUAL (Excel desatualizado?)
+
+[OK]   [c1] GB CAMPINHO FILIAL 17
+       LUCIANO | DBB9084 | GPS:SIM [3p | 0B 0L 2F] | match=none(0)
+       !! SEM LOJA — 2xFB 0xB
+       FB    0:10-15:47  FORA DE BASE E LOCAL DE SERVIÇO
+       FB    15:54-16:08  FORA DE BASE E LOCAL DE SERVIÇO
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : --- / --- / ---
+
+[OK]   [c2] GB CAMPINHO FILIAL 17
+       LUCIANO | DBB9084 | GPS:SIM [3p | 0B 0L 2F] | match=none(0)
+       !! SEM LOJA — 2xFB 0xB
+       FB    0:10-15:47  FORA DE BASE E LOCAL DE SERVIÇO
+       FB    15:54-16:08  FORA DE BASE E LOCAL DE SERVIÇO
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : --- / --- / ---
+
+[OK]   [c1] GB CAXIAS FILIAL 18
+       ELSON | GVH1397 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : --- / 7:12 / 7:31
+       !! MATCHER=OK mas GERADO≠MANUAL (Excel desatualizado?)
+
+[DIFF] [c1] GB TANQUE FILIAL 19
+       LIRA | LIA7683 | GPS:NAO | match=hybrid(1)
+       MATCHER: 9:56 / 10:50 / 12:14
+       MANUAL : --- / --- / ---
+       GERADO : 9:56 / 10:50 / 12:14
+       >> SC: 9:56≠---  CHD: 10:50≠---  SL: 12:14≠---
+
+[OK]   [c1] GB PACIENCIA FILIAL 20
+       LUAN | LHE3473 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : SEM / SEM / SEM
+
+[DIFF] [c1] GB DEL CASTILHO FILIAL 23
+       ANTONIO | KTP4F70 | GPS:SIM [9p | 6B 1L 0F] | match=hybrid(1)
+       BASE  chg:11:55 → sai:15:36  221min
+       BASE  chg:15:46 → sai:16:16  30min
+       LOJA  10:29-11:29  60min  cod:71023  GB 23 - DEL CASTILHO ◄MATCHED
+       MATCHER: 10:03 / 10:29 / 11:29
+       MANUAL : --- / --- / ---
+       GERADO : 10:03 / 10:29 / 11:29
+       >> SC: 10:03≠---  CHD: 10:29≠---  SL: 11:29≠---
+
+[OK]   [c1] GB TIJUCA FILIAL 25
+       GUTEMBERG | CBR9452 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : SEM / SEM / SEM
+
+[DIFF] [c1] GB CAMPO GRANDE FILIAL 26
+       MAURICIO | CDM8645 | GPS:SIM [5p | 0B 1L 2F] | match=hybrid(1)
+       LOJA  8:55-10:14  79min  cod:71035  GB 26 - CAMPO GRANDE ◄MATCHED
+       MATCHER: 6:34 / 8:55 / 10:14
+       MANUAL : --- / --- / ---
+       GERADO : 6:34 / 8:55 / 10:14
+       >> SC: 6:34≠---  CHD: 8:55≠---  SL: 10:14≠---
+
+[DIFF] [c2] GB CAMPO GRANDE FILIAL 26
+       JONESON | EBG2D13 | GPS:SIM [5p | 2B 0L 2F] | match=geo(0.8)
+       BASE  chg:6:17 → sai:9:53  216min
+       BASE  chg:12:43 → sai:16:18  215min
+       !! SEM LOJA — 2xFB 2xB
+       FB    0:01-5:54  FORA DE BASE E LOCAL DE SERVIÇO
+       FB    11:09-12:04  FORA DE BASE E LOCAL DE SERVIÇO
+       MATCHER: 9:53 / 11:09 / 12:04
+       MANUAL : --- / --- / ---
+       GERADO : 9:53 / 11:09 / 12:04
+       >> SC: 9:53≠---  CHD: 11:09≠---  SL: 12:04≠---
+
+[DIFF] [c1] GB RECREIO FILIAL 27
+       DANIEL QUIRINO | GEB9H31 | GPS:SIM [7p | 5B 1L 0F] | match=hybrid(1)
+       BASE  chg:13:32 → sai:14:13  41min
+       BASE  chg:14:14 → sai:16:19  124min
+       LOJA  8:29-10:11  102min  cod:71039  GB 27 - RECREIO DOS BANDEIRANTES ◄MATCHED
+       MATCHER: 7:08 / 8:29 / 10:11
+       MANUAL : --- / --- / ---
+       GERADO : 7:08 / 8:29 / 10:11
+       >> SC: 7:08≠---  CHD: 8:29≠---  SL: 10:11≠---
+
+[DIFF] [c2] GB RECREIO FILIAL 27
+       JHONATAN | KPE3776 | GPS:SIM [1p | 1B 0L 0F] | match=geo(0.8)
+       BASE  chg:0:06 → sai:16:12  966min
+       !! SEM LOJA — 0xFB 1xB
+       MATCHER: --- / 11:13 / 11:43
+       MANUAL : --- / --- / ---
+       GERADO : --- / --- / ---
+       >> SC: ---≠---  CHD: 11:13≠---  SL: 11:43≠---
+
+[OK]   [c1] GB SANTA CRUZ FILIAL 28
+       ERIBERTO | KTR6724 | GPS:SIM [1p | 1B 0L 0F] | match=none(0)
+       BASE  chg:14:25 → sai:16:15  111min
+       !! SEM LOJA — 0xFB 1xB
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : --- / --- / ---
+
+[DIFF] [c1] GB SAO JOAO FILIAL 29
+       HENRIQUE /SONIA | KTZ2055 | GPS:SIM [4p | 4B 0L 0F] | match=geo(0.8)
+       BASE  chg:13:03 → sai:14:02  60min
+       BASE  chg:14:33 → sai:16:12  100min
+       !! SEM LOJA — 0xFB 4xB
+       MATCHER: 6:00 / 8:55 / 10:17
+       MANUAL : --- / --- / ---
+       GERADO : --- / --- / ---
+       >> SC: 6:00≠---  CHD: 8:55≠---  SL: 10:17≠---
+
+[DIFF] [c1] GB BONSUCESSO FILIAL 30
+       DANIEL | GVH0163 | GPS:SIM [11p | 7B 0L 1F] | match=geo(0.8)
+       BASE  chg:7:59 → sai:9:06  67min
+       BASE  chg:9:20 → sai:10:02  42min
+       !! SEM LOJA — 1xFB 7xB
+       FB    10:52-11:54  FORA DE BASE E LOCAL DE SERVIÇO
+       MATCHER: 10:02 / 10:52 / 11:54
+       MANUAL : --- / --- / ---
+       GERADO : 10:02 / 10:52 / 11:54
+       >> SC: 10:02≠---  CHD: 10:52≠---  SL: 11:54≠---
+
+[OK]   [c1] GB CATONHO FILIAL 31
+       ADILSON/SONIA | LFI1467 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : SEM / SEM / SEM
+
+══════════════════════════════════════════
+RESUMO GERADO×MANUAL:  OK=15  DIFF=22
+RESUMO MATCHER×MANUAL: OK=19  DIFF=18  ← código atual
+══════════════════════════════════════════

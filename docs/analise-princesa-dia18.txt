@@ -1,0 +1,380 @@
+◇ injected env (4) from .env.local // tip: ⌘ suppress logs { quiet: true }
+Carregando escala PRINCESA...
+  26 linhas (filtrado de 146 totais) data_entrega 2026-05-18
+Carregando Unitrac...
+  207 veículos, 2326 paradas
+Carregando lojas do DB...
+  347 lojas
+Cruzando...
+  26 rotas geradas
+
+=== ANÁLISE PRINCESA — 18/05/2026 ===
+SC=SaídaCD  CHD=ChegadaLoja  SL=SaídaLoja
+
+
+[DIFF] [c1] Princesa - Catete
+       RAFAEL | KVT5427 | GPS:SIM [11p | 0B 11L 0F] | match=hybrid(1)
+       LOJA  0:06-4:04  238min  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+       LOJA  4:05-4:22  17min  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+       LOJA  4:54-6:28  93min  cod:8590120  PRINCESA CATETE ◄MATCHED
+       LOJA  7:01-8:32  91min  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+       LOJA  8:58-9:11  14min  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+       LOJA  9:38-10:27  49min  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+       LOJA  10:31-11:18  47min  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+       LOJA  11:20-12:16  56min  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+       LOJA  12:59-13:17  18min  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+       LOJA  13:21-14:41  81min  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+       LOJA  15:03-23:57  534min  cod:25140000  EMANUEL- REDE ECONOMIA SANTA MARIA
+       MATCHER: 4:22 / 4:54 / 6:28
+       MANUAL : --- / 5:11 / 6:38
+       GERADO : --- / 4:54 / 6:28
+       >> SC: 4:22≠---  CHD: 4:54≠5:11  SL: 6:28≠6:38
+
+[OK]   [c1] Princesa - Flamengo
+       KANU | KQR2J11 | GPS:SIM [1p | 0B 0L 1F] | match=none(0)
+       !! SEM LOJA — 1xFB 0xB
+       FB    0:08-23:55  FORA DE BASE E LOCAL DE SERVIÇO
+       MATCHER: --- / --- / ---
+       MANUAL : --- / --- / ---
+       GERADO : SEM / SEM / SEM
+
+[DIFF] [c1] Princesa - Cosme Velho
+       ERIVELTON | KRH5H67 | GPS:SIM [24p | 2B 2L 8F] | match=hybrid(1)
+       BASE  chg:9:11 → sai:9:28  17min
+       BASE  chg:9:46 → sai:12:23  157min
+       LOJA  5:41-6:16  35min  cod:8590000  PRINCESA COSME VELHO ◄MATCHED
+       LOJA  13:54-14:04  10min  cod:9039011  11 - ZONA SUL - LEBLON
+       MATCHER: 4:56 / 5:41 / 6:16
+       MANUAL : 4:25 / 4:59 / 5:35
+       GERADO : 4:56 / 5:41 / 6:16
+       >> SC: 4:56≠4:25  CHD: 5:41≠4:59  SL: 6:16≠5:35
+
+[DIFF] [c1] Princesa - Laranjeiras
+       ELVIS | KPS4J07 | GPS:SIM [12p | 0B 1L 5F] | match=hybrid(1)
+       LOJA  6:02-6:24  22min  cod:8590218  PRINCESA LARANJEIRAS ◄MATCHED
+       MATCHER: --- / 6:02 / 6:24
+       MANUAL : --- / 5:31 / 6:22
+       GERADO : --- / 6:02 / 6:24
+       >> SC: ---≠---  CHD: 6:02≠5:31  SL: 6:24≠6:22
+
+[DIFF] [c1] Princesa - Copacabana
+       WANDERSON | KWH2J02 | GPS:SIM [14p | 0B 14L 0F] | match=hybrid(1)
+       LOJA  0:08-4:10  243min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  4:12-4:33  22min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  5:21-5:34  13min  cod:8590134  PRINCESA LEME
+       LOJA  5:40-6:49  69min  cod:8590034  PRINCESA COPACABANA ◄MATCHED
+       LOJA  7:26-10:16  170min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  10:25-10:39  14min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  11:19-11:55  35min  cod:11623026  VIANENSE FREGUESIA
+       LOJA  12:27-12:34  7min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  12:35-12:59  24min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  13:00-13:28  28min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  14:14-14:38  24min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  15:08-18:13  185min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  18:34-19:08  34min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  19:23-23:56  273min  cod:17659002  EMANUEL CACHAMORRA
+       MATCHER: 4:33 / 5:40 / 6:49
+       MANUAL : --- / 5:11 / 6:40
+       GERADO : --- / 5:40 / 6:49
+       >> SC: 4:33≠---  CHD: 5:40≠5:11  SL: 6:49≠6:40
+
+[DIFF] [c1] Princesa - Leme
+       WANDERSON | KWH2J02 | GPS:SIM [14p | 0B 14L 0F] | match=hybrid(1)
+       LOJA  0:08-4:10  243min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  4:12-4:33  22min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  5:21-5:34  13min  cod:8590134  PRINCESA LEME ◄MATCHED
+       LOJA  5:40-6:49  69min  cod:8590034  PRINCESA COPACABANA
+       LOJA  7:26-10:16  170min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  10:25-10:39  14min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  11:19-11:55  35min  cod:11623026  VIANENSE FREGUESIA
+       LOJA  12:27-12:34  7min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  12:35-12:59  24min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  13:00-13:28  28min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  14:14-14:38  24min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  15:08-18:13  185min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  18:34-19:08  34min  cod:17659002  EMANUEL CACHAMORRA
+       LOJA  19:23-23:56  273min  cod:17659002  EMANUEL CACHAMORRA
+       MATCHER: 4:33 / 5:21 / 5:34
+       MANUAL : --- / 0:06 / 3:28
+       GERADO : --- / 5:21 / 5:34
+       >> SC: 4:33≠---  CHD: 5:21≠0:06  SL: 5:34≠3:28
+
+[DIFF] [c1] Princesa - Pechincha
+       ALISSON | MSK3752 | GPS:SIM [8p | 2B 2L 1F] | match=hybrid(1)
+       BASE  chg:6:19 → sai:9:14  174min
+       BASE  chg:9:30 → sai:10:08  38min
+       LOJA  4:23-5:48  85min  cod:8590031  PRINCESA PECHINCHA ◄MATCHED
+       LOJA  11:07-11:42  35min  cod:71028  GB 28 - SANTA CRUZ
+       MATCHER: 3:54 / 4:23 / 5:48
+       MANUAL : --- / 3:54 / 4:08
+       GERADO : 3:54 / 4:23 / 5:48
+       >> SC: 3:54≠---  CHD: 4:23≠3:54  SL: 5:48≠4:08
+
+[DIFF] [c1] Princesa - Niteroí Barcas
+       LUIZ CESAR | LMF2049 | GPS:SIM [14p | 6B 0L 3F] | match=geo(0.8)
+       BASE  chg:18:25 → sai:19:09  44min
+       BASE  chg:19:15 → sai:23:53  278min
+       !! SEM LOJA — 3xFB 6xB
+       FB    5:40-6:17  FORA DE BASE E LOCAL DE SERVIÇO
+       FB    14:50-16:21  FORA DE BASE E LOCAL DE SERVIÇO
+       FB    17:28-17:59  FORA DE BASE E LOCAL DE SERVIÇO
+       MATCHER: 4:59 / 5:40 / 6:17
+       MANUAL : NAO_FOI / NAO_FOI / NAO_FOI
+       GERADO : 4:59 / 5:40 / 6:17
+       >> SC: 4:59≠NAO_FOI  CHD: 5:40≠NAO_FOI  SL: 6:17≠NAO_FOI
+
+[DIFF] [c1] Princesa - Inga
+       WALLACE | ETI5F79 | GPS:SIM [17p | 3B 4L 4F] | match=hybrid(1)
+       BASE  chg:7:22 → sai:9:24  123min
+       BASE  chg:9:27 → sai:9:50  23min
+       LOJA  5:12-6:21  69min  cod:8590556  PRINCESA INGÁ ◄MATCHED
+       LOJA  10:46-11:03  17min  cod:71039  GB 27 - RECREIO DOS BANDEIRANTES
+       LOJA  15:19-15:36  17min  cod:560043  SENDAS TIJUCA II - LJ 43
+       LOJA  15:36-15:44  8min  cod:560043  SENDAS TIJUCA II - LJ 43
+       MATCHER: 4:26 / 5:12 / 6:21
+       MANUAL : --- / 5:24 / 6:24
+       GERADO : 4:26 / 5:12 / 6:21
+       >> SC: 4:26≠---  CHD: 5:12≠5:24  SL: 6:21≠6:24
+
+[DIFF] [c1] Princesa - Fonseca
+       JULIO PEREIRA | RJN9F68 | GPS:SIM [12p | 2B 2L 2F] | match=hybrid(1)
+       BASE  chg:7:57 → sai:10:18  141min
+       BASE  chg:10:22 → sai:10:49  27min
+       LOJA  5:43-6:54  71min  cod:8590555  PRINCESA FONSECA ◄MATCHED
+       LOJA  11:43-12:15  32min  cod:7000766  PREZUNIC CAMPO GRANDE (TINGUI)
+       MATCHER: 4:57 / 5:43 / 6:54
+       MANUAL : --- / 5:58 / 7:18
+       GERADO : 4:57 / 5:43 / 6:54
+       >> SC: 4:57≠---  CHD: 5:43≠5:58  SL: 6:54≠7:18
+
+[DIFF] [c1] Princesa - Icaraí
+       JOHN | KVI9088 | GPS:SIM [17p | 4B 2L 4F] | match=hybrid(1)
+       BASE  chg:12:26 → sai:12:44  18min
+       BASE  chg:12:45 → sai:13:58  73min
+       LOJA  4:54-7:39  165min  cod:8590004  PRINCESA ICARAÍ ◄MATCHED
+       LOJA  14:52-15:36  44min  cod:202011  PAX TAQUARA
+       MATCHER: 4:10 / 4:54 / 7:39
+       MANUAL : --- / 4:56 / 6:13
+       GERADO : 4:10 / 4:54 / 7:39
+       >> SC: 4:10≠---  CHD: 4:54≠4:56  SL: 7:39≠6:13
+
+[DIFF] [c1] Princesa - Iguaba (1º Entrega)
+       DIEGO | TML2D79 | GPS:SIM [17p | 2B 3L 4F] | match=hybrid(1)
+       BASE  chg:0:02 → sai:3:37  215min
+       BASE  chg:15:42 → sai:23:52  491min
+       LOJA  4:39-6:19  100min  cod:8590573  PRINCESA ITABORAÍ
+       LOJA  7:23-8:08  44min  cod:8590570  PRINCESA - IGUABA GRANDE ◄MATCHED
+       LOJA  12:39-12:54  15min  cod:8590573  PRINCESA ITABORAÍ
+       MATCHER: 3:47 / 7:23 / 8:08
+       MANUAL : --- / --- / ---
+       GERADO : --- / --- / ---
+       >> SC: 3:47≠---  CHD: 7:23≠---  SL: 8:08≠---
+
+[DIFF] [c1] Princesa - Itaboraí (2ª Entrega)
+       DIEGO | TML2D79 | GPS:SIM [17p | 2B 3L 4F] | match=hybrid(1)
+       BASE  chg:0:02 → sai:3:37  215min
+       BASE  chg:15:42 → sai:23:52  491min
+       LOJA  4:39-6:19  100min  cod:8590573  PRINCESA ITABORAÍ ◄MATCHED
+       LOJA  7:23-8:08  44min  cod:8590570  PRINCESA - IGUABA GRANDE
+       LOJA  12:39-12:54  15min  cod:8590573  PRINCESA ITABORAÍ
+       MATCHER: 3:47 / 4:39 / 6:19
+       MANUAL : SEM / SEM / SEM
+       GERADO : 3:47 / 4:39 / 6:19
+       >> MANUAL=SEM_RASTREADOR mas matcher tem GPS — T18 falso positivo?
+
+[DIFF] [c1] Princesa - Maricá 1 (2ª Entrega)
+       DANIEL CAVALCANTE | QSZ9A20 | GPS:SIM [19p | 0B 19L 0F] | match=hybrid(1)
+       LOJA  0:00-1:34  94min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  1:40-3:14  94min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  3:16-3:20  4min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  4:45-6:32  107min  cod:8590002  PRINCESA MARICÁ 1 ◄MATCHED
+       LOJA  6:34-7:21  47min  cod:8590003  PRINCESA MARICÁ 2
+       LOJA  7:22-7:46  24min  cod:8590003  PRINCESA MARICÁ 2
+       LOJA  7:59-9:55  116min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  11:28-13:33  125min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  15:27-15:44  17min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  15:51-15:59  8min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  16:01-16:07  5min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  16:20-16:53  33min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  18:25-18:28  3min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  19:09-19:12  3min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  19:13-19:17  4min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  19:19-19:24  5min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  20:11-20:24  13min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  20:25-23:07  162min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  23:13-23:59  45min  cod:5353012  REGINA  BARRA DO IMBUY
+       MATCHER: 3:20 / 4:45 / 6:32
+       MANUAL : 3:21 / 4:49 / 6:47
+       GERADO : --- / 4:45 / 6:32
+       >> SC: 3:20≠3:21  CHD: 4:45≠4:49  SL: 6:32≠6:47
+
+[DIFF] [c1] Princesa - Maricá 2 (1ª Entrega)
+       DANIEL CAVALCANTE | QSZ9A20 | GPS:SIM [19p | 0B 19L 0F] | match=hybrid(1)
+       LOJA  0:00-1:34  94min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  1:40-3:14  94min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  3:16-3:20  4min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  4:45-6:32  107min  cod:8590002  PRINCESA MARICÁ 1
+       LOJA  6:34-7:21  47min  cod:8590003  PRINCESA MARICÁ 2 ◄MATCHED
+       LOJA  7:22-7:46  24min  cod:8590003  PRINCESA MARICÁ 2
+       LOJA  7:59-9:55  116min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  11:28-13:33  125min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  15:27-15:44  17min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  15:51-15:59  8min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  16:01-16:07  5min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  16:20-16:53  33min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  18:25-18:28  3min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  19:09-19:12  3min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  19:13-19:17  4min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  19:19-19:24  5min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  20:11-20:24  13min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  20:25-23:07  162min  cod:5353012  REGINA  BARRA DO IMBUY
+       LOJA  23:13-23:59  45min  cod:5353012  REGINA  BARRA DO IMBUY
+       MATCHER: 3:20 / 6:34 / 7:46
+       MANUAL : 3:21 / 15:13 / 15:58
+       GERADO : --- / 6:34 / 7:46
+       >> Matcher=madrugada(CHD 6:34), manual=tarde(CHD 15:13) — 2 turnos
+
+[DIFF] [c1] Princesa - Barra de São João (1ª Entrega)
+       RENATO | JAJ6B36 | GPS:SIM [17p | 3B 4L 3F] | match=hybrid(1)
+       BASE  chg:2:09 → sai:2:26  17min
+       BASE  chg:16:26 → sai:18:38  132min
+       LOJA  4:56-7:41  165min  cod:8590568  PRINCESA - RIO DAS OSTRAS
+       LOJA  8:09-9:48  99min  cod:8590562  PRINCESA - BARRA DE SÃO JOÃO ◄MATCHED
+       LOJA  19:25-19:34  9min  cod:9039122  46 - ZONA SUL - BOTAFOGO
+       LOJA  19:35-19:54  19min  cod:9039122  46 - ZONA SUL - BOTAFOGO
+       MATCHER: 2:26 / 8:09 / 9:48
+       MANUAL : --- / 9:46 / 11:56
+       GERADO : 2:26 / 8:09 / 9:48
+       >> SC: 2:26≠---  CHD: 8:09≠9:46  SL: 9:48≠11:56
+
+[DIFF] [c1] Princesa - Rio das Ostras (2ª Entrega)
+       RENATO | JAJ6B36 | GPS:SIM [17p | 3B 4L 3F] | match=hybrid(1)
+       BASE  chg:2:09 → sai:2:26  17min
+       BASE  chg:16:26 → sai:18:38  132min
+       LOJA  4:56-7:41  165min  cod:8590568  PRINCESA - RIO DAS OSTRAS ◄MATCHED
+       LOJA  8:09-9:48  99min  cod:8590562  PRINCESA - BARRA DE SÃO JOÃO
+       LOJA  19:25-19:34  9min  cod:9039122  46 - ZONA SUL - BOTAFOGO
+       LOJA  19:35-19:54  19min  cod:9039122  46 - ZONA SUL - BOTAFOGO
+       MATCHER: 2:26 / 4:56 / 7:41
+       MANUAL : --- / 8:49 / 9:18
+       GERADO : 2:26 / 4:56 / 7:41
+       >> SC: 2:26≠---  CHD: 4:56≠8:49  SL: 7:41≠9:18
+
+[DIFF] [c1] Princesa - Arraial 1 (1ª Entrega)
+       ANTÔNIO | MES7F27 | GPS:SIM [11p | 3B 3L 2F] | match=hybrid(1)
+       BASE  chg:18:48 → sai:19:10  22min
+       BASE  chg:19:14 → sai:23:58  284min
+       LOJA  5:53-6:37  44min  cod:8590559  PRINCESA - ARRAIAL DO CABO 1 ◄MATCHED
+       LOJA  6:38-7:27  48min  cod:8590569  PRINCESA - ARRAIAL DO CABO 3
+       LOJA  7:30-8:17  46min  cod:8590560  PRINCESA - ARRAIAL DO CABO 2
+       MATCHER: 3:13 / 5:53 / 6:37
+       MANUAL : 3:16 / 11:15 / 12:15
+       GERADO : 3:13 / 5:53 / 6:37
+       >> Matcher=madrugada(CHD 5:53), manual=tarde(CHD 11:15) — 2 turnos
+
+[DIFF] [c1] Princesa - Arraial 2 (2ª Entrega)
+       ANTÔNIO | MES7F27 | GPS:SIM [11p | 3B 3L 2F] | match=hybrid(1)
+       BASE  chg:18:48 → sai:19:10  22min
+       BASE  chg:19:14 → sai:23:58  284min
+       LOJA  5:53-6:37  44min  cod:8590559  PRINCESA - ARRAIAL DO CABO 1
+       LOJA  6:38-7:27  48min  cod:8590569  PRINCESA - ARRAIAL DO CABO 3
+       LOJA  7:30-8:17  46min  cod:8590560  PRINCESA - ARRAIAL DO CABO 2 ◄MATCHED
+       MATCHER: 3:13 / 7:30 / 8:17
+       MANUAL : 3:16 / 7:19 / 11:12
+       GERADO : 3:13 / 7:30 / 8:17
+       >> SC: 3:13≠3:16  CHD: 7:30≠7:19  SL: 8:17≠11:12
+
+[DIFF] [c1] Princesa - Arraial 3 (3ª Entrega)
+       ANTÔNIO | MES7F27 | GPS:SIM [11p | 3B 3L 2F] | match=hybrid(1)
+       BASE  chg:18:48 → sai:19:10  22min
+       BASE  chg:19:14 → sai:23:58  284min
+       LOJA  5:53-6:37  44min  cod:8590559  PRINCESA - ARRAIAL DO CABO 1
+       LOJA  6:38-7:27  48min  cod:8590569  PRINCESA - ARRAIAL DO CABO 3 ◄MATCHED
+       LOJA  7:30-8:17  46min  cod:8590560  PRINCESA - ARRAIAL DO CABO 2
+       MATCHER: 3:13 / 6:38 / 7:27
+       MANUAL : 3:16 / 6:32 / 7:15
+       GERADO : 3:13 / 6:38 / 7:27
+       >> SC: 3:13≠3:16  CHD: 6:38≠6:32  SL: 7:27≠7:15
+
+[DIFF] [c1] Princesa - Buzios 1 (2ª Entrega)
+       LEONARDO | QST4C52 | GPS:SIM [21p | 7B 4L 5F] | match=hybrid(1)
+       BASE  chg:20:09 → sai:21:37  87min
+       BASE  chg:21:45 → sai:23:59  134min
+       LOJA  5:45-6:14  29min  cod:8590571  PRINCESA - BUZIOS 3
+       LOJA  6:19-6:28  9min  cod:8590563  PRINCESA - BUZIOS 1 ◄MATCHED
+       LOJA  6:29-8:59  150min  cod:8590564  PRINCESA - BUZIOS 2
+       LOJA  9:00-9:12  12min  cod:8590571  PRINCESA - BUZIOS 3
+       MATCHER: 2:33 / 6:19 / 6:28
+       MANUAL : 2:49 / 6:14 / 6:32
+       GERADO : 2:33 / 6:19 / 6:28
+       >> SC: 2:33≠2:49  CHD: 6:19≠6:14  SL: 6:28≠6:32
+
+[DIFF] [c1] Princesa - Buzios 2 (3ª Entrega)
+       LEONARDO | QST4C52 | GPS:SIM [21p | 7B 4L 5F] | match=hybrid(1)
+       BASE  chg:20:09 → sai:21:37  87min
+       BASE  chg:21:45 → sai:23:59  134min
+       LOJA  5:45-6:14  29min  cod:8590571  PRINCESA - BUZIOS 3
+       LOJA  6:19-6:28  9min  cod:8590563  PRINCESA - BUZIOS 1
+       LOJA  6:29-8:59  150min  cod:8590564  PRINCESA - BUZIOS 2 ◄MATCHED
+       LOJA  9:00-9:12  12min  cod:8590571  PRINCESA - BUZIOS 3
+       MATCHER: 2:33 / 6:29 / 8:59
+       MANUAL : 2:49 / 6:33 / 7:36
+       GERADO : 2:33 / 6:29 / 8:59
+       >> SC: 2:33≠2:49  CHD: 6:29≠6:33  SL: 8:59≠7:36
+
+[DIFF] [c1] Princesa - Buzios 3 (1ª Entrega)
+       LEONARDO | QST4C52 | GPS:SIM [21p | 7B 4L 5F] | match=hybrid(1)
+       BASE  chg:20:09 → sai:21:37  87min
+       BASE  chg:21:45 → sai:23:59  134min
+       LOJA  5:45-6:14  29min  cod:8590571  PRINCESA - BUZIOS 3 ◄MATCHED
+       LOJA  6:19-6:28  9min  cod:8590563  PRINCESA - BUZIOS 1
+       LOJA  6:29-8:59  150min  cod:8590564  PRINCESA - BUZIOS 2
+       LOJA  9:00-9:12  12min  cod:8590571  PRINCESA - BUZIOS 3
+       MATCHER: 2:33 / 5:45 / 6:14
+       MANUAL : 2:49 / 7:38 / 10:36
+       GERADO : 2:33 / 5:45 / 6:14
+       >> SC: 2:33≠2:49  CHD: 5:45≠7:38  SL: 6:14≠10:36
+
+[DIFF] [c1] Princesa - Cabo Frio 1 (1ª Entrega)
+       CLAUDIO | UDC6I03 | GPS:SIM [16p | 7B 4L 0F] | match=hybrid(1)
+       BASE  chg:18:02 → sai:18:19  16min
+       BASE  chg:19:04 → sai:23:55  290min
+       LOJA  5:32-6:55  82min  cod:8590565  PRINCESA - CABO FRIO 1 ◄MATCHED
+       LOJA  6:57-7:40  44min  cod:8590567  PRINCESA - CABO FRIO 3
+       LOJA  7:53-8:24  31min  cod:8590566  PRINCESA - CABO FRIO 2
+       LOJA  16:05-17:03  58min  cod:9039107  35 - ZONA SUL - BARRA DA TIJUCA
+       MATCHER: 2:41 / 5:32 / 6:55
+       MANUAL : 2:20 / 4:41 / 4:49
+       GERADO : 2:41 / 5:32 / 6:55
+       >> SC: 2:41≠2:20  CHD: 5:32≠4:41  SL: 6:55≠4:49
+
+[DIFF] [c1] Princesa - Cabo Frio 2 (3ª Entrega)
+       CLAUDIO | UDC6I03 | GPS:SIM [16p | 7B 4L 0F] | match=hybrid(1)
+       BASE  chg:18:02 → sai:18:19  16min
+       BASE  chg:19:04 → sai:23:55  290min
+       LOJA  5:32-6:55  82min  cod:8590565  PRINCESA - CABO FRIO 1
+       LOJA  6:57-7:40  44min  cod:8590567  PRINCESA - CABO FRIO 3
+       LOJA  7:53-8:24  31min  cod:8590566  PRINCESA - CABO FRIO 2 ◄MATCHED
+       LOJA  16:05-17:03  58min  cod:9039107  35 - ZONA SUL - BARRA DA TIJUCA
+       MATCHER: 2:41 / 7:53 / 8:24
+       MANUAL : 2:20 / 8:24 / 8:48
+       GERADO : 2:41 / 7:53 / 8:24
+       >> SC: 2:41≠2:20  CHD: 7:53≠8:24  SL: 8:24≠8:48
+
+[DIFF] [c1] Princesa - Cabo Frio 3 (2ª Entrega)
+       CLAUDIO | UDC6I03 | GPS:SIM [16p | 7B 4L 0F] | match=hybrid(1)
+       BASE  chg:18:02 → sai:18:19  16min
+       BASE  chg:19:04 → sai:23:55  290min
+       LOJA  5:32-6:55  82min  cod:8590565  PRINCESA - CABO FRIO 1
+       LOJA  6:57-7:40  44min  cod:8590567  PRINCESA - CABO FRIO 3 ◄MATCHED
+       LOJA  7:53-8:24  31min  cod:8590566  PRINCESA - CABO FRIO 2
+       LOJA  16:05-17:03  58min  cod:9039107  35 - ZONA SUL - BARRA DA TIJUCA
+       MATCHER: 2:41 / 6:57 / 7:40
+       MANUAL : 2:20 / 7:06 / 8:02
+       GERADO : 2:41 / 6:57 / 7:40
+       >> SC: 2:41≠2:20  CHD: 6:57≠7:06  SL: 7:40≠8:02
+
+══════════════════════════════════════════
+RESUMO GERADO×MANUAL:  OK=2  DIFF=24
+RESUMO MATCHER×MANUAL: OK=1  DIFF=25  ← código atual
+══════════════════════════════════════════

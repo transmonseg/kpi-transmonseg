@@ -1,0 +1,152 @@
+◇ injected env (4) from .env.local // tip: ⌁ auth for agents [www.vestauth.com]
+Carregando escala FEIRA_NOVA...
+  12 linhas (filtrado de 30 totais) data_entrega 2026-05-18
+Carregando Unitrac...
+  207 veículos, 2326 paradas
+Carregando lojas do DB...
+  347 lojas
+Cruzando...
+  12 rotas geradas
+
+=== ANÁLISE FEIRA_NOVA — 18/05/2026 ===
+SC=SaídaCD  CHD=ChegadaLoja  SL=SaídaLoja
+
+
+[DIFF] [c1] 1- Nilopolis (Olinda)
+       JOSE ROBERTO | TML3B11 | GPS:SIM [14p | 5B 2L 1F] | match=hybrid(1)
+       BASE  chg:16:04 → sai:17:53  110min
+       BASE  chg:17:55 → sai:20:59  185min
+       LOJA  5:38-6:26  48min  cod:7000721  PREZUNIC NILÓPOLIS
+       LOJA  14:10-15:20  70min  cod:579001  FEIRA NOVA OLINDA ◄MATCHED
+       MATCHER: 13:37 / 14:10 / 15:20
+       MANUAL : 5:05 / 7:47 / 7:59
+       GERADO : 5:05 / 7:47 / 7:59
+       >> SC: 13:37≠5:05  CHD: 14:10≠7:47  SL: 15:20≠7:59
+
+[DIFF] [c1] 3- Anchieta
+       JOSUÉ | BBH1C94 | GPS:SIM [15p | 6B 4L 1F] | match=hybrid(1)
+       BASE  chg:17:14 → sai:19:14  120min
+       BASE  chg:21:38 → sai:23:51  133min
+       LOJA  6:00-6:38  38min  cod:9039027  27 - ZONA SUL - IPANEMA
+       LOJA  6:49-7:18  29min  cod:9039015  15 - ZONA SUL - LEBLON
+       LOJA  14:15-15:04  49min  cod:579003  FEIRA NOVA  ANCHIETA ◄MATCHED
+       LOJA  20:06-20:39  33min  cod:9039005  05 - ZONA SUL - COPACABANA III
+       MATCHER: 13:38 / 14:15 / 15:04
+       MANUAL : 4:46 / 14:15 / 15:04
+       GERADO : 4:46 / 14:15 / 15:04
+       >> SC: 13:38≠4:46  CHD: 14:15≠14:15  SL: 15:04≠15:04
+
+[DIFF] [c1] 4- Irajá
+       WILLIAM FERES | EFU5704 | GPS:NAO | match=geo(0.8)
+       MATCHER: 13:32 / 13:42 / 14:06
+       MANUAL : SEM / SEM / SEM
+       GERADO : SEM / SEM / SEM
+       >> MANUAL=SEM_RASTREADOR mas matcher tem GPS — T18 falso positivo?
+
+[DIFF] [c1] 12- Freguesia
+       ANDRE | LSX7C72 | GPS:SIM [15p | 7B 2L 1F] | match=hybrid(1)
+       BASE  chg:15:59 → sai:16:39  39min
+       BASE  chg:16:56 → sai:17:12  16min
+       LOJA  5:53-8:45  172min  cod:7000766  PREZUNIC CAMPO GRANDE (TINGUI)
+       LOJA  14:16-15:10  55min  cod:579012  FEIRA NOVA  FREGUESIA ◄MATCHED
+       MATCHER: 13:36 / 14:16 / 15:10
+       MANUAL : 5:15 / 14:16 / 15:10
+       GERADO : 5:15 / 14:16 / 15:10
+       >> SC: 13:36≠5:15  CHD: 14:16≠14:16  SL: 15:10≠15:10
+
+[DIFF] [c1] 10- Cachambi
+       MARCIO | KVH9J42 | GPS:SIM [19p | 7B 3L 3F] | match=hybrid(1)
+       BASE  chg:15:56 → sai:18:46  170min
+       BASE  chg:21:08 → sai:23:59  171min
+       LOJA  7:36-8:14  38min  cod:7000728  PREZUNIC ILHA
+       LOJA  14:14-14:53  39min  cod:579010  FEIRA NOVA  CACHAMBI ◄MATCHED
+       LOJA  19:26-20:21  55min  cod:9039106  32 - ZONA SUL - LARANJEIRAS
+       MATCHER: 13:31 / 14:14 / 14:53
+       MANUAL : 6:26 / 14:14 / 14:53
+       GERADO : 6:26 / 14:14 / 14:53
+       >> SC: 13:31≠6:26  CHD: 14:14≠14:14  SL: 14:53≠14:53
+
+[DIFF] [c1] 13- Todos os Santos
+       DANIEL | LKV5067 | GPS:SIM [16p | 7B 3L 2F] | match=hybrid(1)
+       BASE  chg:15:31 → sai:18:21  171min
+       BASE  chg:20:56 → sai:23:57  180min
+       LOJA  5:47-6:51  65min  cod:7000714  PREZUNIC OLARIA
+       LOJA  6:59-8:00  60min  cod:7000723  PREZUNIC PENHA
+       LOJA  13:53-14:47  54min  cod:579013  FEIRA NOVA TODOS OS SANTOS ◄MATCHED
+       MATCHER: 13:26 / 13:53 / 14:47
+       MANUAL : 5:23 / 13:53 / 14:47
+       GERADO : 5:23 / 13:53 / 14:47
+       >> SC: 13:26≠5:23  CHD: 13:53≠13:53  SL: 14:47≠14:47
+
+[DIFF] [c1] 7- Coelho da Rocha
+       HUMBERTO | KOA6A27 | GPS:SIM [13p | 4B 3L 2F] | match=hybrid(1)
+       BASE  chg:10:37 → sai:12:03  86min
+       BASE  chg:12:07 → sai:13:31  84min
+       LOJA  5:36-6:16  40min  cod:7000725  PREZUNIC VILAR DOS TELES
+       LOJA  13:49-15:27  98min  cod:579007  FEIRA NOVA COELHO DA ROCHA ◄MATCHED
+       LOJA  15:50-16:20  30min  cod:579008  FEIRA NOVA  CERAMICA
+       MATCHER: 13:31 / 13:49 / 15:27
+       MANUAL : 5:21 / 13:49 / 15:27
+       GERADO : 5:21 / 13:49 / 15:27
+       >> SC: 13:31≠5:21  CHD: 13:49≠13:49  SL: 15:27≠15:27
+
+[DIFF] [c1] 8- Cerâmica
+       HUMBERTO | KOA6A27 | GPS:SIM [13p | 4B 3L 2F] | match=hybrid(1)
+       BASE  chg:10:37 → sai:12:03  86min
+       BASE  chg:12:07 → sai:13:31  84min
+       LOJA  5:36-6:16  40min  cod:7000725  PREZUNIC VILAR DOS TELES
+       LOJA  13:49-15:27  98min  cod:579007  FEIRA NOVA COELHO DA ROCHA
+       LOJA  15:50-16:20  30min  cod:579008  FEIRA NOVA  CERAMICA ◄MATCHED
+       MATCHER: 13:31 / 15:50 / 16:20
+       MANUAL : 5:21 / 15:50 / 16:20
+       GERADO : 5:21 / 15:50 / 16:20
+       >> SC: 13:31≠5:21  CHD: 15:50≠15:50  SL: 16:20≠16:20
+
+[OK]   [c1] 9- Queimados
+       FELIPE | KUL1425 | GPS:SIM [20p | 0B 4L 10F] | match=hybrid(1)
+       LOJA  7:22-7:53  31min  cod:7000748  PREZUNIC VILA ISABEL
+       LOJA  7:55-8:37  42min  cod:7000748  PREZUNIC VILA ISABEL
+       LOJA  14:31-15:26  54min  cod:579009  FEIRA NOVA QUEIMADOS ◄MATCHED
+       LOJA  20:23-20:46  23min  cod:9039006  06 - ZONA SUL - GAVEA
+       MATCHER: --- / 14:31 / 15:26
+       MANUAL : --- / 14:31 / 15:26
+       GERADO : --- / 14:31 / 15:26
+
+[DIFF] [c1] 6- Santa Cruz da Serra
+       ESTELITA | GAJ6H51 | GPS:SIM [14p | 7B 2L 2F] | match=hybrid(1)
+       BASE  chg:16:33 → sai:16:48  16min
+       BASE  chg:16:49 → sai:23:57  428min
+       LOJA  7:12-9:53  160min  cod:7000730  PREZUNIC ICARAÍ
+       LOJA  14:17-15:12  56min  cod:579006  FEIRA NOVA  SANTA CRUZ DA SERRA ◄MATCHED
+       MATCHER: 13:31 / 14:17 / 15:12
+       MANUAL : 5:00 / 14:17 / 15:12
+       GERADO : 5:00 / 14:17 / 15:12
+       >> SC: 13:31≠5:00  CHD: 14:17≠14:17  SL: 15:12≠15:12
+
+[OK]   [c1] 11- Boa Dica (Piabetá)
+       ZOZIMO | KNS8D16 | GPS:NAO | match=none(0)
+       MATCHER: --- / --- / ---
+       MANUAL : SEM / SEM / SEM
+       GERADO : SEM / SEM / SEM
+
+[DIFF] [c1] Mercado Santo Agostinho (Barra)
+       RAFAEL | EYL8B91 | GPS:SIM [10p | 0B 10L 0F] | match=none(0)
+       LOJA  0:00-4:22  262min  cod:23080000  MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA
+       LOJA  4:30-4:51  21min  cod:23080000  MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA
+       LOJA  4:52-5:02  10min  cod:23080000  MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA
+       LOJA  5:40-6:40  60min  cod:23080000  MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA
+       LOJA  7:15-8:36  81min  cod:23080000  MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA
+       LOJA  8:44-12:32  228min  cod:23080000  MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA
+       LOJA  13:22-14:33  71min  cod:23080000  MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA
+       LOJA  15:32-15:57  25min  cod:23080000  MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA
+       LOJA  16:15-16:35  20min  cod:23080000  MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA
+       LOJA  16:52-23:56  424min  cod:23080000  MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA
+       MATCHER: --- / --- / ---
+       MANUAL : --- / 0:00 / 23:56
+       GERADO : --- / 0:00 / 23:56
+       >> SC: ---≠---  CHD: ---≠0:00  SL: ---≠23:56
+
+══════════════════════════════════════════
+RESUMO GERADO×MANUAL:  OK=12  DIFF=0
+RESUMO MATCHER×MANUAL: OK=2  DIFF=10  ← código atual
+══════════════════════════════════════════
