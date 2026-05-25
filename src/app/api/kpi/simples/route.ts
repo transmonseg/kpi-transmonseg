@@ -136,15 +136,25 @@ export async function POST(req: NextRequest) {
   if (escalaPaths.length === 0) return new NextResponse('"escalaBucketPath" ou "escalaBucketPaths" obrigatório.', { status: 400 })
   const rawUnitracPaths: string[] = unitracBucketPaths ?? (unitracBucketPath ? [unitracBucketPath] : [])
   if (rawUnitracPaths.length === 0) return new NextResponse('"unitracBucketPath" ou "unitracBucketPaths" obrigatório.', { status: 400 })
-  // Auto-expande: para cada caminho fornecido, inclui automaticamente o arquivo
-  // complementar (PDF ↔ XLSX). O bucket sempre tem ambos com dados distintos.
-  const unitracPathSet = new Set(rawUnitracPaths)
-  for (const p of rawUnitracPaths) {
-    const dir = p.includes('/') ? p.substring(0, p.lastIndexOf('/') + 1) : ''
-    if (p.endsWith('.pdf')) unitracPathSet.add(`${dir}unitrac.xlsx`)
-    else if (p.endsWith('.xlsx')) unitracPathSet.add(`${dir}unitrac.pdf`)
+
+  // OBRIGATÓRIO: ambos formatos do Unitrac (XLSX + PDF).
+  // Motivo: XLSX e PDF do mesmo dia podem ter dados ligeiramente diferentes
+  // (timing do export). XLSX = parsing mais limpo; PDF = paradas tardias quando
+  // o XLSX foi exportado mais cedo. Combinar os dois maximiza completude.
+  const temXlsx = rawUnitracPaths.some(p => p.toLowerCase().endsWith('.xlsx'))
+  const temPdf = rawUnitracPaths.some(p => p.toLowerCase().endsWith('.pdf'))
+  if (!temXlsx || !temPdf) {
+    const faltando = []
+    if (!temXlsx) faltando.push('XLSX')
+    if (!temPdf) faltando.push('PDF')
+    return new NextResponse(
+      `Suba o relatório Unitrac em AMBOS os formatos. Faltando: ${faltando.join(' e ')}. ` +
+      `Os dois exports podem ter dados diferentes (timing) — o sistema combina para máxima precisão.`,
+      { status: 400 },
+    )
   }
-  const unitracPaths = Array.from(unitracPathSet)
+
+  const unitracPaths = Array.from(new Set(rawUnitracPaths))
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return new NextResponse('Data inválida. Use YYYY-MM-DD.', { status: 400 })
 
   const svc = createServiceClient()
