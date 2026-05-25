@@ -1,0 +1,18 @@
+# Escala ARMAZÉM DO GRÃO — dia 19/05/2026
+
+Total de linhas: 14
+
+
+## ARMAZEM_GRAO (14 linhas)
+
+Placas únicas: 6
+
+| Placa | Motorista | Carro | Lojas (cod • nome) |
+|---|---|---|---|
+| LQE5E01 | SIDNEI | 1 | [?] ARMAZEM DO GRAO A. BARRA DA TIJUCA |
+| LSL9670 | ROBERTO | 1 | [?] ARMAZEM DO GRÃO (ITAIPAVA) · [?] ARMAZEM DO GRAO (CORREAS) |
+| QST4C52 | JEFERSON | 1 | [?] ARMAZEM DO GRÃO (VALPARAÍSO) · [?] ARMAZEM DO GRÃO  (MOSELA) · [?] ARMAZEM DO GRÃO (QUITANDINHA) |
+| TML6D96 | GILSON | 1 | [?] REGINA  BARRA DO IMBUY · [?] REGINA  1 DE MAIO · [?] REGINA  LUCIO MEIRA · [?] ABASTECEDORA GRÃO DA SERRA (ALTO) |
+| TML9I75 | ANTUNES | 1 | [?] ARMAZÉM DO GRÃO ( BOA VISTA) · [?] ARMAZÉM DO GRÃO MATRIZ ( POSSE) |
+| UDC6I03 | JAIRO | 1 | [?] ARMAZEM DO GRÃO (CAPELA) · [?] ARMAZEM DO GRAO (16 DE MARÇO) |
+

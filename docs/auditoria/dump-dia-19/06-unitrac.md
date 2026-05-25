@@ -1,0 +1,3173 @@
+# Unitrac — dia 19/05/2026
+
+Veículos únicos: 207 (206 XLSX, 205 PDF)
+
+## AFY7J99 (XLSX)
+
+10 paradas total · 4 BASE · 5 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:02-04:22 | 260min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:23-04:33 | 10min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:41-05:37 | 56min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 06:05-08:46 | 161min | 560054 | SENDAS NOVA IGUAÇU II |
+| LOJA | 08:51-09:21 | 31min | 560054 | SENDAS NOVA IGUAÇU II |
+| LOJA | 09:23-10:04 | 40min | 560054 | SENDAS NOVA IGUAÇU II |
+| LOJA | 10:16-11:45 | 89min | 560054 | SENDAS NOVA IGUAÇU II |
+| BASE | 12:19-12:49 | 30min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:53-15:05 | 132min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 16:09-16:20 | 11min | 9039115 | 43 - ZONA SUL - BARRA PENINSULA |
+
+## AKZ2594 (XLSX)
+
+6 paradas total · 4 BASE · 2 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:03-03:54 | 231min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 04:40-05:30 | 50min | 560019 | SENDAS FREGUESIA - LOJA 28 |
+| LOJA | 05:31-08:12 | 161min | 560019 | SENDAS FREGUESIA - LOJA 28 |
+| BASE | 09:14-09:31 | 16min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:34-10:06 | 32min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:09-16:13 | 364min | - | BASE BENASSI - BASE BENASSI |
+
+## AKZ2745 (XLSX)
+
+8 paradas total · 3 BASE · 2 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:03-04:49 | 286min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:56-05:02 | 6min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:35-06:42 | 67min | 560031 | SENDAS MEIER |
+| FORA_BASE | 07:00-07:16 | 17min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 07:30-09:30 | 120min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:36-14:05 | 269min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 14:15-14:20 | 5min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 15:03-15:20 | 17min | 202005 | PAX GUADALUPE |
+
+## ALS4H33 (XLSX)
+
+11 paradas total · 10 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:00-01:56 | 116min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 02:04-05:53 | 228min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:58-06:52 | 54min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 06:58-07:38 | 39min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 07:43-08:26 | 42min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:31-10:42 | 131min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:49-11:16 | 26min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:22-12:00 | 38min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:04-14:30 | 147min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 14:35-16:07 | 92min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 16:11-16:20 | 9min | - | BASE BENASSI - BASE BENASSI |
+
+## AMF0319 (XLSX)
+
+3 paradas total · 0 BASE · 0 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:06-03:35 | 209min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 04:45-05:05 | 20min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:44-16:11 | 567min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## AMF0325 (XLSX)
+
+4 paradas total · 0 BASE · 1 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:09-05:15 | 306min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 05:36-08:08 | 152min | 9006010 | CARREFOUR WASHINGTON LUIS |
+| FORA_BASE | 08:29-09:25 | 56min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:50-16:17 | 388min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## AMI1562 (XLSX)
+
+9 paradas total · 8 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:00-06:47 | 408min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 06:48-10:59 | 250min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:01-11:24 | 23min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:25-13:32 | 127min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 13:33-14:08 | 34min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 14:09-14:39 | 31min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 14:41-15:38 | 57min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 15:39-15:43 | 4min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 15:44-16:20 | 36min | - | BASE BENASSI - BASE BENASSI |
+
+## AMR9986 (XLSX)
+
+8 paradas total · 7 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:00-06:38 | 398min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 06:49-07:54 | 65min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 08:00-08:05 | 5min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:07-08:23 | 16min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:31-09:05 | 33min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:11-10:08 | 58min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:17-11:11 | 54min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:19-16:20 | 301min | - | BASE BENASSI - BASE BENASSI |
+
+## AMW4D50 (XLSX)
+
+11 paradas total · 5 BASE · 0 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FAKE_EXIT | 00:00-00:07 | 7min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 00:10-00:16 | 6min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 00:21-06:17 | 356min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 06:22-07:01 | 39min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 07:30-08:03 | 33min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 08:24-09:01 | 37min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 09:10-09:26 | 16min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 09:32-09:36 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:41-11:30 | 109min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 11:49-12:41 | 52min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:48-16:20 | 212min | - | BASE BENASSI - BASE BENASSI |
+
+## AOP3C73 (XLSX)
+
+8 paradas total · 3 BASE · 2 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:04-05:31 | 327min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:32-09:43 | 250min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:51-10:01 | 9min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 10:14-10:28 | 14min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 11:13-11:43 | 30min | 71039 | GB 27 - RECREIO DOS BANDEIRANTES |
+| BASE | 12:34-14:40 | 126min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 15:14-15:30 | 16min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 16:03-16:19 | 17min | 9039120 | 45 - ZONA SUL - FLAMENGO |
+
+## AWA6B40 (XLSX)
+
+10 paradas total · 1 BASE · 4 LOJA · 4 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:04-02:46 | 162min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:49-04:55 | 6min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 05:48-06:01 | 13min | 560017 | SENDAS CABO FRIO - LOJA 82 |
+| LOJA | 06:04-06:30 | 25min | 560017 | SENDAS CABO FRIO - LOJA 82 |
+| LOJA | 06:35-06:58 | 24min | 560017 | SENDAS CABO FRIO - LOJA 82 |
+| FORA_BASE | 06:59-07:13 | 13min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 07:14-11:00 | 226min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 11:01-11:35 | 35min | 560017 | SENDAS CABO FRIO - LOJA 82 |
+| FORA_BASE | 13:03-13:17 | 14min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 13:20-15:03 | 103min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## BBH1C94 (XLSX)
+
+8 paradas total · 3 BASE · 1 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:01-04:49 | 288min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:29-07:51 | 142min | 9039104 | 33 - ZONA SUL - HUMAITA |
+| FAKE_EXIT | 08:14-08:17 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 08:52-08:55 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:13-09:53 | 40min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 10:02-12:14 | 132min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 12:43-13:52 | 69min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 14:13-16:17 | 123min | - | BASE BENASSI - BASE BENASSI |
+
+## CDM8645 (XLSX)
+
+5 paradas total · 0 BASE · 1 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FAKE_EXIT | 06:24-06:34 | 10min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 08:01-08:33 | 31min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 08:34-08:39 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:40-08:53 | 13min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 08:55-10:14 | 79min | 71035 | GB 26 - CAMPO GRANDE |
+
+## CEJ3426 (XLSX)
+
+6 paradas total · 0 BASE · 0 LOJA · 6 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:04-04:12 | 248min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 04:13-04:27 | 15min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 04:36-04:52 | 17min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 05:05-05:25 | 21min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:07-13:22 | 434min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 13:49-14:11 | 22min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## CPI4C84 (XLSX)
+
+1 paradas total · 1 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:04-16:17 | 973min | - | BASE BENASSI - BASE BENASSI |
+
+## CUC6J83 (XLSX)
+
+7 paradas total · 3 BASE · 2 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:02-05:12 | 311min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:43-06:17 | 34min | 560051 | SENDAS GALEÃO - LJ 302 |
+| LOJA | 06:17-11:37 | 319min | 560051 | SENDAS GALEÃO - LJ 302 |
+| FORA_BASE | 12:00-12:26 | 26min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 12:39-13:12 | 33min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 13:15-13:22 | 7min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 13:23-16:20 | 177min | - | BASE BENASSI - BASE BENASSI |
+
+## CXA7B36 (XLSX)
+
+6 paradas total · 4 BASE · 2 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:07-04:21 | 254min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:22-05:12 | 50min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:57-07:29 | 93min | 3030008 | SUPERPRIX LJ 08 - GRAJAÚ |
+| LOJA | 07:35-10:09 | 155min | 3030004 | SUPERPRIX LJ 04 - GRAJAÚ VERDUN |
+| BASE | 11:06-11:27 | 20min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:37-16:15 | 278min | - | BASE BENASSI - BASE BENASSI |
+
+## CYB3B90 (XLSX)
+
+5 paradas total · 1 BASE · 0 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:12-10:07 | 595min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 10:27-11:03 | 36min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:19-11:31 | 12min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:42-12:07 | 25min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 12:09-12:19 | 10min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## CZZ8H82 (XLSX)
+
+6 paradas total · 1 BASE · 1 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FAKE_EXIT | 00:00-00:08 | 8min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 00:15-00:55 | 41min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 03:00-04:42 | 101min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 06:45-08:38 | 113min | 560036 | SENDAS CAMPOS - LJ 36 |
+| FORA_BASE | 09:16-10:49 | 92min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 10:52-12:22 | 90min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## DBB8D19 (XLSX)
+
+7 paradas total · 2 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:01-04:58 | 297min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:00-05:11 | 11min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 06:36-09:13 | 156min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 09:55-10:00 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 10:49-11:02 | 13min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:07-12:43 | 96min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 12:44-12:55 | 11min | - | BASE BENASSI - BASE BENASSI |
+
+## DBB9084 (XLSX)
+
+3 paradas total · 0 BASE · 0 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:10-15:47 | 937min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 15:54-16:08 | 15min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 16:12-16:20 | 8min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## DBB9A78 (XLSX)
+
+8 paradas total · 4 BASE · 0 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:09-04:42 | 273min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:43-07:11 | 147min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 07:43-08:03 | 20min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 08:21-08:24 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 08:32-09:27 | 55min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 09:37-10:03 | 26min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 10:29-11:34 | 66min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 12:04-16:20 | 256min | - | BASE BENASSI - BASE BENASSI |
+
+## DCU1B12 (XLSX)
+
+1 paradas total · 0 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:02-13:25 | 802min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## DDI6J90 (XLSX)
+
+5 paradas total · 1 BASE · 2 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:09-03:58 | 229min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:00-04:07 | 8min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:21-04:30 | 9min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:03-06:02 | 58min | 560043 | SENDAS TIJUCA II - LJ 43 |
+| LOJA | 06:02-12:20 | 377min | 560043 | SENDAS TIJUCA II - LJ 43 |
+
+## DIP5557 (XLSX)
+
+17 paradas total · 1 BASE · 0 LOJA · 9 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:07-02:32 | 145min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 02:48-05:02 | 134min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:22-05:31 | 9min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 05:52-05:58 | 6min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:05-06:19 | 14min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:26-06:36 | 10min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 06:48-06:56 | 8min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 07:08-07:16 | 8min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 07:20-07:30 | 10min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 07:31-07:41 | 9min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 07:43-07:59 | 17min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:16-08:31 | 16min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 08:32-08:39 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 08:44-08:53 | 10min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:18-09:36 | 18min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 10:44-11:14 | 30min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:34-16:12 | 278min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## DJB6D42 (XLSX)
+
+12 paradas total · 7 BASE · 0 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:06-00:59 | 54min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 01:00-01:38 | 38min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 01:45-01:48 | 3min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 01:49-02:42 | 53min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 03:06-04:48 | 102min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:51-05:03 | 12min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:51-05:54 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 05:54-11:43 | 349min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:47-12:11 | 24min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 12:59-13:58 | 59min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 13:59-14:58 | 60min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 15:10-16:20 | 70min | - | BASE BENASSI - BASE BENASSI |
+
+## DZX3H55 (XLSX)
+
+19 paradas total · 2 BASE · 17 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 00:02-02:14 | 133min | 2018002 | ROTA BOTAFOGO |
+| BASE | 02:36-04:33 | 117min | - | BASE BENASSI - BASE BENASSI,2018002 - ROTA BOTAFOGO |
+| LOJA | 05:08-05:33 | 26min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 05:39-05:46 | 8min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 05:51-07:32 | 101min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 07:39-07:54 | 15min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 08:06-08:09 | 3min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 08:10-08:54 | 44min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 09:07-10:27 | 80min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 10:43-10:47 | 4min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 10:53-11:06 | 13min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 11:16-11:21 | 6min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 11:37-11:48 | 11min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 11:49-11:52 | 3min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 12:10-12:31 | 21min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 12:34-12:39 | 5min | 2018002 | ROTA BOTAFOGO |
+| BASE | 13:01-13:35 | 34min | - | BASE BENASSI - BASE BENASSI,2018002 - ROTA BOTAFOGO |
+| LOJA | 14:04-14:09 | 5min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 14:10-16:20 | 131min | 2018002 | ROTA BOTAFOGO |
+
+## EAC4D65 (XLSX)
+
+13 paradas total · 2 BASE · 5 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:15-03:07 | 172min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 03:33-03:44 | 11min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 03:46-04:01 | 15min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:11-04:22 | 11min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:23-04:35 | 12min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 04:38-05:40 | 61min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 05:52-06:07 | 15min | 560040 | SENDAS SÃO JOÃO DE MERITI |
+| LOJA | 06:08-08:31 | 143min | 560040 | SENDAS SÃO JOÃO DE MERITI |
+| LOJA | 08:55-10:17 | 82min | 560040 | SENDAS SÃO JOÃO DE MERITI |
+| LOJA | 10:21-10:47 | 26min | 560040 | SENDAS SÃO JOÃO DE MERITI |
+| LOJA | 10:50-11:54 | 64min | 560040 | SENDAS SÃO JOÃO DE MERITI |
+| BASE | 12:09-12:52 | 44min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 13:22-16:13 | 170min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## EAK6G02 (XLSX)
+
+20 paradas total · 1 BASE · 18 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 00:09-00:13 | 4min | 2018038 | ROTA NITEROI / MARICA |
+| BASE | 00:46-02:16 | 91min | - | BASE BENASSI - BASE BENASSI,2018038 - ROTA NITEROI / MARICA |
+| FAKE_EXIT | 02:22-02:33 | 10min | - | BASE BENASSI - BASE BENASSI,2018038 - ROTA NITEROI / MARICA |
+| LOJA | 03:04-04:04 | 61min | 2018038 | ROTA NITEROI / MARICA |
+| LOJA | 04:27-04:30 | 4min | 2018038 | ROTA NITEROI / MARICA |
+| LOJA | 04:33-05:05 | 32min | 2018038 | ROTA NITEROI / MARICA |
+| LOJA | 05:15-05:36 | 21min | 2018038 | ROTA NITEROI / MARICA |
+| LOJA | 05:38-08:27 | 168min | 2018038 | ROTA NITEROI / MARICA |
+| LOJA | 08:40-08:48 | 8min | 2018038 | ROTA NITEROI / MARICA |
+| LOJA | 08:57-09:22 | 25min | 2018038 | ROTA NITEROI / MARICA |
+| LOJA | 09:24-09:28 | 3min | 2018038 | ROTA NITEROI / MARICA |
+| LOJA | 09:31-09:38 | 8min | 2018038 | ROTA NITEROI / MARICA |
+| LOJA | 09:46-09:55 | 9min | 2018038 | ROTA NITEROI / MARICA |
+| LOJA | 10:10-10:18 | 9min | 2018038 | ROTA NITEROI / MARICA |
+| LOJA | 10:35-10:43 | 8min | 2018038 | ROTA NITEROI / MARICA |
+| LOJA | 11:15-11:18 | 4min | 2018038 | ROTA NITEROI / MARICA |
+| LOJA | 11:32-11:35 | 3min | 2018038 | ROTA NITEROI / MARICA |
+| LOJA | 11:36-11:43 | 7min | 2018038 | ROTA NITEROI / MARICA |
+| LOJA | 11:51-12:08 | 17min | 2018038 | ROTA NITEROI / MARICA |
+| LOJA | 12:15-16:20 | 245min | 2018038 | ROTA NITEROI / MARICA |
+
+## EBG2D13 (XLSX)
+
+5 paradas total · 2 BASE · 0 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:01-05:54 | 353min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 06:17-09:53 | 216min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 11:02-11:06 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:09-12:04 | 54min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 12:43-16:18 | 215min | - | BASE BENASSI - BASE BENASSI |
+
+## ECT2I70 (XLSX)
+
+23 paradas total · 1 BASE · 0 LOJA · 17 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:06-03:26 | 201min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 03:35-05:10 | 95min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 05:20-05:42 | 22min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:27-06:41 | 14min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 06:47-06:56 | 9min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 07:06-07:16 | 11min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 07:30-07:55 | 25min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:09-08:24 | 15min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:24-09:06 | 41min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:12-09:24 | 12min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:35-09:50 | 15min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:56-10:30 | 34min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 10:36-10:47 | 11min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 10:50-10:58 | 8min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 11:12-11:21 | 9min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:28-11:39 | 11min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 11:42-11:51 | 9min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 12:04-12:10 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 12:23-13:01 | 38min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 13:31-13:43 | 11min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 14:05-14:27 | 23min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 14:48-15:55 | 67min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 16:08-16:21 | 13min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## EFU5H04 (XLSX)
+
+9 paradas total · 5 BASE · 0 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:00-04:26 | 266min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:28-04:39 | 12min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:45-05:09 | 23min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 05:47-08:43 | 176min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 09:16-09:37 | 21min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:45-09:49 | 4min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:51-12:43 | 172min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:44-13:43 | 59min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 13:52-14:26 | 35min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## EOF4331 (XLSX)
+
+5 paradas total · 5 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:03-07:32 | 449min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 07:36-07:53 | 17min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 07:55-10:11 | 137min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:12-12:33 | 141min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:40-13:53 | 72min | - | BASE BENASSI - BASE BENASSI |
+
+## EOF4951 (XLSX)
+
+8 paradas total · 6 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:07-06:09 | 362min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 06:15-07:27 | 72min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 07:39-07:58 | 19min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:06-08:35 | 29min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 08:35-08:43 | 8min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:51-10:03 | 72min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 10:17-10:24 | 7min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:26-16:13 | 346min | - | BASE BENASSI - BASE BENASSI |
+
+## ETI5F79 (XLSX)
+
+13 paradas total · 3 BASE · 2 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:06-04:08 | 242min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 04:16-04:39 | 23min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:46-04:49 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 05:24-06:24 | 61min | 8590556 | PRINCESA INGÁ |
+| LOJA | 06:32-07:27 | 55min | 7000759 | PREZUNIC SPID SANTA ROSA |
+| FAKE_EXIT | 07:28-07:32 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 07:41-07:45 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 08:25-08:29 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 08:32-08:36 | 4min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:36-10:57 | 141min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 11:08-11:38 | 30min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 11:39-11:43 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 11:51-12:24 | 33min | - | BASE BENASSI - BASE BENASSI |
+
+## EVU7F71 (XLSX)
+
+2 paradas total · 1 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:01-10:59 | 658min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 11:30-16:19 | 289min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## EYL8B91 (XLSX)
+
+9 paradas total · 0 BASE · 9 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 00:06-04:32 | 266min | 23080000 | MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA |
+| LOJA | 04:38-05:00 | 22min | 23080000 | MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA |
+| LOJA | 05:08-05:16 | 8min | 23080000 | MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA |
+| LOJA | 05:26-05:31 | 4min | 23080000 | MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA |
+| LOJA | 06:00-06:57 | 57min | 23080000 | MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA |
+| LOJA | 08:05-08:32 | 27min | 23080000 | MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA |
+| LOJA | 08:35-08:40 | 5min | 23080000 | MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA |
+| LOJA | 08:57-10:12 | 75min | 23080000 | MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA |
+| LOJA | 10:36-12:17 | 101min | 23080000 | MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA |
+
+## EZU9325 (XLSX)
+
+14 paradas total · 10 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:03-04:31 | 268min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:43-04:50 | 7min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:55-05:52 | 57min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:53-07:29 | 96min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 07:31-08:20 | 48min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:30-08:54 | 23min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:01-09:42 | 41min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:57-11:07 | 70min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 11:17-11:27 | 10min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:45-12:47 | 62min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 13:13-13:51 | 39min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 13:57-14:06 | 9min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 14:15-14:37 | 23min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 14:38-16:17 | 99min | - | BASE BENASSI - BASE BENASSI |
+
+## EZU9D26 (XLSX)
+
+10 paradas total · 10 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:01-02:09 | 127min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 02:21-09:06 | 404min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:12-10:02 | 50min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:15-11:29 | 74min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:36-12:30 | 54min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:35-13:15 | 40min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 13:23-14:14 | 51min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 14:19-15:17 | 58min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 15:21-15:46 | 26min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 15:53-16:20 | 27min | - | BASE BENASSI - BASE BENASSI |
+
+## EZU9D27 (XLSX)
+
+14 paradas total · 12 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:00-01:24 | 83min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 01:37-06:14 | 277min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 06:22-06:48 | 26min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 06:51-06:55 | 4min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 06:59-07:05 | 6min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 07:09-08:57 | 108min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:06-10:20 | 74min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:26-11:27 | 62min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:33-11:56 | 23min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:08-14:08 | 120min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 14:15-14:40 | 25min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 14:44-15:00 | 15min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 15:06-15:29 | 23min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 15:36-16:21 | 44min | - | BASE BENASSI - BASE BENASSI |
+
+## EZU9I42 (XLSX)
+
+7 paradas total · 3 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:00-07:58 | 478min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:05-08:33 | 28min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:16-09:24 | 8min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 09:40-09:47 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:58-13:32 | 214min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 13:33-13:37 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 14:09-16:12 | 123min | - | BASE BENASSI - BASE BENASSI |
+
+## EZU9J51 (XLSX)
+
+7 paradas total · 3 BASE · 3 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:00-04:26 | 266min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:31-04:44 | 13min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:05-06:05 | 60min | 560018 | SENDAS CAXIAS - LOJA 131 |
+| LOJA | 06:06-12:31 | 386min | 560018 | SENDAS CAXIAS - LOJA 131 |
+| BASE | 12:56-13:25 | 29min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 13:31-14:41 | 70min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 15:30-16:06 | 36min | 202011 | PAX TAQUARA |
+
+## FHO5F88 (XLSX)
+
+9 paradas total · 2 BASE · 1 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:06-04:33 | 267min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 04:38-05:00 | 22min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:04-05:11 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 05:55-06:45 | 50min | 3030201 | SUPERPRIX LJ 201 - IPANEMA |
+| FAKE_EXIT | 07:22-07:32 | 10min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 07:44-08:45 | 61min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 08:49-09:00 | 10min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:03-09:18 | 15min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 09:34-12:24 | 170min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## FKY8H51 (XLSX)
+
+2 paradas total · 2 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:04-06:31 | 387min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 06:33-12:21 | 348min | - | BASE BENASSI - BASE BENASSI |
+
+## FQN6J72 (XLSX)
+
+7 paradas total · 4 BASE · 0 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:07-05:33 | 326min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 06:46-08:34 | 108min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:37-10:27 | 110min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 11:27-11:34 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 11:50-13:06 | 76min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 13:14-15:52 | 158min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 15:58-16:21 | 23min | - | BASE BENASSI - BASE BENASSI |
+
+## FSE2J12 (XLSX)
+
+9 paradas total · 6 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:09-04:34 | 265min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:41-05:46 | 64min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:48-06:05 | 18min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 06:10-09:27 | 196min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:37-09:58 | 21min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 11:24-11:27 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:28-12:46 | 78min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 14:00-14:08 | 7min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 14:13-16:12 | 119min | - | BASE BENASSI - BASE BENASSI |
+
+## FTV6F42 (XLSX)
+
+10 paradas total · 5 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:05-05:27 | 322min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:29-09:19 | 230min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:21-09:25 | 3min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:29-10:02 | 34min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 10:07-10:10 | 3min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 10:36-10:39 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:12-11:37 | 25min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 12:19-12:28 | 10min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:34-15:48 | 194min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 15:56-16:21 | 25min | - | BASE BENASSI - BASE BENASSI |
+
+## FUM8748 (XLSX)
+
+1 paradas total · 1 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:04-16:20 | 976min | - | BASE BENASSI - BASE BENASSI |
+
+## GAJ6H51 (XLSX)
+
+9 paradas total · 5 BASE · 2 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:07-02:46 | 159min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 03:01-05:10 | 129min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 05:58-08:15 | 137min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 08:17-09:09 | 52min | 7000730 | PREZUNIC ICARAÍ |
+| FORA_BASE | 09:28-10:04 | 35min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 10:41-11:29 | 48min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:37-13:56 | 139min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 13:59-14:32 | 33min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 15:01-16:21 | 80min | 202000 | PAX OSWALDO CRUZ |
+
+## GAR0802 (XLSX)
+
+7 paradas total · 4 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:00-01:31 | 91min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 01:32-05:05 | 213min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:11-05:17 | 6min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 06:02-12:41 | 400min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 12:46-12:49 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 13:26-14:07 | 41min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 14:13-16:13 | 120min | - | BASE BENASSI - BASE BENASSI |
+
+## GBC6E12 (XLSX)
+
+8 paradas total · 6 BASE · 2 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:08-00:46 | 38min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 00:59-04:58 | 239min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:04-07:07 | 123min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 08:20-09:16 | 56min | 71032 | GB 07 - BARRA |
+| LOJA | 09:18-10:41 | 82min | 71032 | GB 07 - BARRA |
+| BASE | 11:35-12:17 | 43min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:30-12:47 | 18min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:51-16:11 | 200min | - | BASE BENASSI - BASE BENASSI |
+
+## GBG5C11 (XLSX)
+
+5 paradas total · 2 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:04-05:45 | 341min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:50-06:17 | 27min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 06:53-06:58 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 08:35-08:39 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:43-16:17 | 454min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## GEB9H31 (XLSX)
+
+7 paradas total · 5 BASE · 1 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:05-07:08 | 423min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 08:29-10:11 | 102min | 71039 | GB 27 - RECREIO DOS BANDEIRANTES |
+| FAKE_EXIT | 10:29-10:32 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 11:14-12:07 | 52min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:15-13:30 | 76min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 13:32-14:13 | 41min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 14:14-16:19 | 124min | - | BASE BENASSI - BASE BENASSI |
+
+## GGX3F42 (XLSX)
+
+4 paradas total · 0 BASE · 0 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:00-09:51 | 591min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:59-13:18 | 199min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 13:24-13:28 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 13:34-16:13 | 159min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## GSK0G53 (XLSX)
+
+9 paradas total · 2 BASE · 1 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:01-03:26 | 205min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 03:52-04:03 | 11min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:09-04:21 | 12min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:23-04:27 | 4min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:11-10:11 | 299min | 560039 | SENDAS CESÁRIO DE MELO - LJ 202 |
+| FAKE_EXIT | 10:24-10:34 | 10min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 11:09-11:41 | 32min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:48-12:14 | 26min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 12:52-16:21 | 208min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## GVH0163 (XLSX)
+
+11 paradas total · 7 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:08-00:48 | 40min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 00:58-02:28 | 90min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 02:38-05:16 | 158min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:20-06:02 | 42min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 06:08-07:09 | 61min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 07:19-07:29 | 10min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 07:59-09:06 | 67min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:20-10:02 | 42min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 10:45-10:50 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 10:52-11:54 | 62min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 11:58-12:02 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## HNG2B61 (XLSX)
+
+9 paradas total · 3 BASE · 2 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:04-04:29 | 265min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:30-04:45 | 15min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:52-04:58 | 6min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 05:32-05:55 | 23min | 8590134 | PRINCESA LEME |
+| BASE | 06:25-06:42 | 17min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 06:45-09:31 | 166min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:34-09:46 | 12min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 10:41-12:15 | 93min | 11623033 | VIANENSE RECREIO |
+| FORA_BASE | 12:47-13:11 | 23min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## HOE4B58 (XLSX)
+
+8 paradas total · 2 BASE · 6 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 00:07-03:20 | 192min | 2018013 | ROTA GAVEA |
+| LOJA | 03:25-03:32 | 7min | 2018013 | ROTA GAVEA |
+| BASE | 03:49-04:16 | 27min | - | BASE BENASSI - BASE BENASSI,2018013 - ROTA GAVEA,2018014 - R |
+| LOJA | 04:41-06:31 | 110min | 2018013 | ROTA GAVEA |
+| LOJA | 06:33-07:59 | 86min | 2018013 | ROTA GAVEA |
+| LOJA | 08:23-08:29 | 6min | 2018013 | ROTA GAVEA |
+| BASE | 08:38-11:43 | 186min | - | BASE BENASSI - BASE BENASSI,2018013 - ROTA GAVEA,2018014 - R |
+| LOJA | 11:46-12:24 | 38min | 2018013 | ROTA GAVEA |
+
+## INW8A51 (XLSX)
+
+20 paradas total · 4 BASE · 3 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:03-04:11 | 248min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 04:29-04:49 | 20min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:16-06:10 | 54min | 3030007 | SUPERPRIX LJ 07 - RIACHUELO |
+| FAKE_EXIT | 06:17-06:20 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 06:43-06:58 | 15min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 06:59-07:14 | 15min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 07:15-07:22 | 7min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 07:49-07:52 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 07:54-08:00 | 6min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:01-08:12 | 11min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 08:46-10:34 | 108min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:35-11:16 | 41min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 12:02-12:14 | 11min | 71039 | GB 27 - RECREIO DOS BANDEIRANTES |
+| FAKE_EXIT | 12:18-12:21 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 12:23-12:30 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 13:09-13:14 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 13:16-13:59 | 43min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 14:00-14:10 | 10min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 14:13-14:17 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 15:12-16:21 | 69min | 9039011 | 11 - ZONA SUL - LEBLON |
+
+## JAJ6B36 (XLSX)
+
+15 paradas total · 1 BASE · 2 LOJA · 7 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:00-00:12 | 13min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 00:47-02:48 | 121min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 02:50-02:55 | 5min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 04:23-06:07 | 105min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:25-07:02 | 37min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 07:13-07:20 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 07:54-08:03 | 9min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:25-08:47 | 23min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 08:49-09:18 | 29min | 8590568 | PRINCESA - RIO DAS OSTRAS |
+| LOJA | 09:46-11:56 | 130min | 8590562 | PRINCESA - BARRA DE SÃO JOÃO |
+| FAKE_EXIT | 11:58-12:05 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 12:53-13:09 | 16min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 13:51-14:14 | 23min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 14:30-14:58 | 28min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 16:09-16:15 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KMY5561 (XLSX)
+
+9 paradas total · 3 BASE · 3 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:00-04:57 | 297min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:50-06:01 | 11min | 9006001 | CARREFOUR BARRA |
+| LOJA | 06:02-07:19 | 77min | 9006001 | CARREFOUR BARRA |
+| FAKE_EXIT | 07:55-07:58 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:34-10:53 | 139min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 11:28-14:13 | 165min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 14:29-14:33 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 15:10-15:33 | 23min | 202002 | PAX REALENGO |
+| BASE | 16:02-16:21 | 19min | - | BASE BENASSI - BASE BENASSI |
+
+## KMZ7057 (XLSX)
+
+8 paradas total · 2 BASE · 1 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:02-02:01 | 119min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 02:24-02:39 | 15min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 02:41-02:47 | 6min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 03:56-04:00 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 04:27-05:59 | 92min | 560038 | SENDAS PETRÓPOLIS - LJ 38 |
+| FAKE_EXIT | 07:33-07:37 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 08:12-08:35 | 24min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 09:01-16:19 | 439min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KNB0752 (XLSX)
+
+5 paradas total · 4 BASE · 1 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:07-07:28 | 441min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 07:33-08:04 | 31min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:09-08:37 | 28min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 09:13-10:14 | 61min | 71016 | GB 16 - NOVA IGUAÇU |
+| BASE | 10:46-12:16 | 90min | - | BASE BENASSI - BASE BENASSI |
+
+## KNC1I34 (XLSX)
+
+9 paradas total · 5 BASE · 0 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:08-03:53 | 225min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 04:17-04:39 | 22min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:44-05:16 | 31min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 05:54-06:16 | 22min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:29-07:16 | 47min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 07:48-07:53 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 08:21-08:47 | 26min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:49-11:38 | 169min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:42-12:24 | 43min | - | BASE BENASSI - BASE BENASSI |
+
+## KNC5J75 (XLSX)
+
+5 paradas total · 0 BASE · 5 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 00:05-03:02 | 177min | 11139000 | EMANUEL COMÉRCIO PEDRA DE GUARATIBA |
+| LOJA | 03:08-03:13 | 5min | 11139000 | EMANUEL COMÉRCIO PEDRA DE GUARATIBA |
+| LOJA | 05:38-06:05 | 27min | 11139000 | EMANUEL COMÉRCIO PEDRA DE GUARATIBA |
+| LOJA | 06:06-07:23 | 77min | 11139000 | EMANUEL COMÉRCIO PEDRA DE GUARATIBA |
+| LOJA | 10:03-12:25 | 141min | 11139000 | EMANUEL COMÉRCIO PEDRA DE GUARATIBA |
+
+## KNS8D26 (XLSX)
+
+10 paradas total · 0 BASE · 10 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 00:01-03:40 | 219min | 7012010 | CAB - PETROPOLIS |
+| LOJA | 04:39-05:11 | 32min | 7012010 | CAB - PETROPOLIS |
+| LOJA | 05:21-05:32 | 11min | 7012010 | CAB - PETROPOLIS |
+| LOJA | 05:37-05:47 | 10min | 7012010 | CAB - PETROPOLIS |
+| LOJA | 06:38-06:44 | 6min | 7012010 | CAB - PETROPOLIS |
+| LOJA | 07:39-08:19 | 40min | 7012010 | CAB - PETROPOLIS |
+| LOJA | 08:45-08:49 | 3min | 7012010 | CAB - PETROPOLIS |
+| LOJA | 10:04-12:45 | 161min | 7012010 | CAB - PETROPOLIS |
+| LOJA | 12:46-13:41 | 55min | 7012010 | CAB - PETROPOLIS |
+| LOJA | 14:42-15:20 | 38min | 579011 | FEIRA NOVA BOA DICA (PIABETÁ) |
+
+## KNZ3I45 (XLSX)
+
+1 paradas total · 1 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:07-16:12 | 965min | - | BASE BENASSI - BASE BENASSI |
+
+## KNZ5B07 (XLSX)
+
+8 paradas total · 2 BASE · 6 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 04:46-05:39 | 53min | - | BASE BENASSI - BASE BENASSI,2018019 - ROTA NOVA IGUACU |
+| LOJA | 05:54-07:01 | 66min | 2018019 | ROTA NOVA IGUACU |
+| LOJA | 07:02-07:42 | 40min | 2018019 | ROTA NOVA IGUACU |
+| LOJA | 08:04-08:14 | 10min | 2018019 | ROTA NOVA IGUACU |
+| LOJA | 08:50-09:39 | 49min | 2018019 | ROTA NOVA IGUACU |
+| LOJA | 09:46-09:58 | 12min | 2018019 | ROTA NOVA IGUACU |
+| LOJA | 10:10-10:20 | 10min | 2018019 | ROTA NOVA IGUACU |
+| BASE | 11:21-12:53 | 92min | - | BASE BENASSI - BASE BENASSI,2018019 - ROTA NOVA IGUACU |
+
+## KOA6A27 (XLSX)
+
+8 paradas total · 1 BASE · 1 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:08-04:23 | 256min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 04:39-04:48 | 9min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:52-05:28 | 36min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:43-06:28 | 45min | 7000725 | PREZUNIC VILAR DOS TELES |
+| FAKE_EXIT | 06:31-06:36 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:40-09:01 | 141min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:21-09:46 | 25min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 10:15-10:25 | 10min | - | BASE BENASSI - BASE BENASSI |
+
+## KOH0H77 (XLSX)
+
+16 paradas total · 2 BASE · 14 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 00:03-03:03 | 180min | 2018006 | ROTA CAMPO GRANDE |
+| BASE | 03:43-05:06 | 83min | - | BASE BENASSI - BASE BENASSI,2018006 - ROTA CAMPO GRANDE |
+| BASE | 05:14-06:00 | 46min | - | BASE BENASSI - BASE BENASSI,2018006 - ROTA CAMPO GRANDE |
+| LOJA | 06:31-08:06 | 95min | 2018006 | ROTA CAMPO GRANDE |
+| LOJA | 08:09-09:11 | 62min | 2018006 | ROTA CAMPO GRANDE |
+| LOJA | 09:22-10:24 | 62min | 2018006 | ROTA CAMPO GRANDE |
+| LOJA | 10:44-10:48 | 4min | 2018006 | ROTA CAMPO GRANDE |
+| LOJA | 10:49-12:05 | 76min | 2018006 | ROTA CAMPO GRANDE |
+| LOJA | 12:11-12:18 | 7min | 2018006 | ROTA CAMPO GRANDE |
+| LOJA | 12:22-12:50 | 28min | 2018006 | ROTA CAMPO GRANDE |
+| LOJA | 12:51-13:15 | 24min | 2018006 | ROTA CAMPO GRANDE |
+| LOJA | 13:32-13:45 | 13min | 2018006 | ROTA CAMPO GRANDE |
+| LOJA | 13:51-13:59 | 9min | 2018006 | ROTA CAMPO GRANDE |
+| LOJA | 14:05-14:17 | 12min | 2018006 | ROTA CAMPO GRANDE |
+| LOJA | 14:21-15:11 | 50min | 2018006 | ROTA CAMPO GRANDE |
+| LOJA | 15:22-16:21 | 59min | 2018006 | ROTA CAMPO GRANDE |
+
+## KON6I33 (XLSX)
+
+16 paradas total · 2 BASE · 0 LOJA · 12 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:02-02:39 | 158min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 03:05-03:44 | 40min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:05-04:09 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 04:37-05:34 | 57min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 05:39-05:52 | 13min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 05:53-06:40 | 48min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:52-07:41 | 49min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 07:44-08:11 | 27min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:12-08:40 | 27min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 09:25-11:43 | 139min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 12:04-12:19 | 15min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 12:54-13:29 | 35min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 13:59-14:13 | 15min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 14:40-15:20 | 40min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 15:24-15:39 | 15min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 16:17-16:21 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KOP4978 (XLSX)
+
+13 paradas total · 4 BASE · 2 LOJA · 5 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:08-03:54 | 226min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 04:20-04:31 | 11min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:50-04:56 | 6min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:16-06:26 | 71min | 7000718 | PREZUNIC CAMPINHO |
+| FORA_BASE | 06:59-07:51 | 52min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 08:41-09:08 | 27min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:12-09:57 | 46min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:07-12:31 | 144min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:36-13:23 | 47min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 13:39-13:53 | 14min | 6018000 | MEGA BOX (OLARIA) |
+| FORA_BASE | 13:56-14:12 | 16min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 14:15-14:34 | 19min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 14:39-15:46 | 67min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KPB5I95 (XLSX)
+
+12 paradas total · 4 BASE · 2 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:03-04:49 | 286min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 04:51-05:02 | 12min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:09-05:43 | 34min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 06:25-07:50 | 85min | 7000707 | PREZUNIC FREGUESIA |
+| BASE | 08:46-09:17 | 30min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:19-09:24 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 09:27-12:50 | 202min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:51-13:47 | 56min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 14:08-14:12 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 14:30-15:24 | 53min | 579012 | FEIRA NOVA  FREGUESIA |
+| FAKE_EXIT | 15:38-15:45 | 8min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 15:48-16:04 | 16min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KPE3776 (XLSX)
+
+1 paradas total · 1 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:06-16:12 | 966min | - | BASE BENASSI - BASE BENASSI |
+
+## KPE4133 (XLSX)
+
+13 paradas total · 3 BASE · 3 LOJA · 6 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:00-02:33 | 154min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 02:51-03:08 | 17min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 03:17-03:35 | 18min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 03:53-04:10 | 17min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 04:38-05:16 | 38min | 7000728 | PREZUNIC ILHA |
+| LOJA | 05:29-05:34 | 4min | 7000728 | PREZUNIC ILHA |
+| FORA_BASE | 05:35-05:50 | 16min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 05:52-06:58 | 66min | 7000728 | PREZUNIC ILHA |
+| FAKE_EXIT | 06:59-07:03 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:02-09:29 | 87min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:59-10:49 | 50min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:39-15:47 | 249min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 15:57-16:17 | 20min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KPN4F36 (XLSX)
+
+2 paradas total · 1 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:01-09:41 | 580min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 09:53-12:24 | 151min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KPR9E13 (XLSX)
+
+10 paradas total · 0 BASE · 0 LOJA · 6 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:15-01:24 | 70min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 02:14-03:24 | 70min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 03:34-05:03 | 90min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:23-07:23 | 60min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 08:42-08:52 | 10min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:00-10:02 | 62min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 10:04-10:11 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 10:22-10:27 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 10:28-10:38 | 10min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 10:45-12:24 | 100min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KPS4J07 (XLSX)
+
+8 paradas total · 0 BASE · 1 LOJA · 6 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:01-04:17 | 256min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 04:29-04:54 | 26min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 05:31-06:22 | 51min | 8590218 | PRINCESA LARANJEIRAS |
+| FAKE_EXIT | 06:55-07:01 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 07:05-08:55 | 110min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:56-09:25 | 29min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 10:11-10:23 | 12min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 10:44-16:15 | 331min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KPT5B20 (XLSX)
+
+1 paradas total · 1 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:03-16:17 | 974min | - | BASE BENASSI - BASE BENASSI |
+
+## KQB3F31 (XLSX)
+
+1 paradas total · 0 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:07-12:24 | 737min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KQR2J11 (XLSX)
+
+13 paradas total · 3 BASE · 6 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:05-03:22 | 197min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 04:06-04:59 | 53min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:01-05:07 | 6min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:53-07:01 | 68min | 8590165 | PRINCESA FLAMENGO |
+| LOJA | 07:23-07:46 | 23min | 7000758 | PREZUNIC SPID IPANEMA V. PIRAJA |
+| LOJA | 07:49-07:58 | 9min | 7000745 | PREZUNIC SPID FARME DE AMOEDO |
+| LOJA | 08:11-08:39 | 28min | 7000756 | PREZUNIC SPID COPACABANA |
+| LOJA | 09:00-09:19 | 20min | 7000738 | PREZUNIC SPID BOTAFOGO |
+| FORA_BASE | 09:52-12:04 | 132min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 12:50-13:22 | 32min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 13:26-13:58 | 32min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 13:59-14:09 | 11min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 14:58-16:11 | 73min | 9039007 | 07 - ZONA SUL - LEBLON |
+
+## KQT4G45 (XLSX)
+
+1 paradas total · 1 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:05-16:13 | 968min | - | BASE BENASSI - BASE BENASSI |
+
+## KQV1D80 (XLSX)
+
+7 paradas total · 2 BASE · 1 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:07-04:06 | 239min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:08-04:17 | 9min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:23-04:33 | 10min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:05-05:59 | 54min | 7000722 | PREZUNIC FONSECA |
+| FORA_BASE | 06:01-09:33 | 212min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:47-10:01 | 14min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 10:44-16:13 | 329min | - | BASE BENASSI - BASE BENASSI |
+
+## KQX9G38 (XLSX)
+
+1 paradas total · 1 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:08-16:12 | 965min | - | BASE BENASSI - BASE BENASSI |
+
+## KQY9E24 (XLSX)
+
+2 paradas total · 2 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:02-10:12 | 611min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:14-16:22 | 368min | - | BASE BENASSI - BASE BENASSI |
+
+## KRA1083 (XLSX)
+
+6 paradas total · 4 BASE · 1 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:06-06:22 | 376min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 06:29-09:26 | 178min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:37-10:01 | 24min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 10:02-10:06 | 4min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 10:51-12:01 | 69min | 71013 | GB 13 - BANGU - RIO DA PRATA |
+| BASE | 12:39-16:18 | 219min | - | BASE BENASSI - BASE BENASSI |
+
+## KRB2J76 (XLSX)
+
+10 paradas total · 0 BASE · 10 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 00:04-07:11 | 427min | 13156084 | MATRIZ CD DUQUE |
+| LOJA | 07:22-09:37 | 135min | 13156084 | MATRIZ CD DUQUE |
+| LOJA | 09:48-09:55 | 7min | 13156084 | MATRIZ CD DUQUE |
+| LOJA | 10:03-10:25 | 23min | 13156084 | MATRIZ CD DUQUE |
+| LOJA | 11:06-11:10 | 4min | 13156084 | MATRIZ CD DUQUE |
+| LOJA | 11:19-12:47 | 89min | 13156084 | MATRIZ CD DUQUE |
+| LOJA | 12:48-13:09 | 21min | 13156084 | MATRIZ CD DUQUE |
+| LOJA | 13:13-13:17 | 4min | 13156084 | MATRIZ CD DUQUE |
+| LOJA | 13:45-13:54 | 9min | 13156084 | MATRIZ CD DUQUE |
+| LOJA | 14:00-16:21 | 141min | 13156084 | MATRIZ CD DUQUE |
+
+## KRH5H67 (XLSX)
+
+8 paradas total · 1 BASE · 2 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FAKE_EXIT | 03:35-03:41 | 6min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 04:01-04:25 | 24min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 04:59-05:35 | 35min | 8590000 | PRINCESA COSME VELHO |
+| LOJA | 05:44-05:57 | 14min | 8590000 | PRINCESA COSME VELHO |
+| FORA_BASE | 06:43-08:30 | 107min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 08:34-08:39 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 08:40-08:45 | 6min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:47-10:15 | 88min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KRK3D12 (XLSX)
+
+6 paradas total · 3 BASE · 1 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:02-05:21 | 319min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:26-05:32 | 6min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 06:54-12:39 | 346min | 560047 | SENDAS SÃO GONÇALO CENTRO |
+| FAKE_EXIT | 12:52-12:58 | 6min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 13:49-14:07 | 18min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 14:12-16:14 | 122min | - | BASE BENASSI - BASE BENASSI |
+
+## KRW8E86 (XLSX)
+
+18 paradas total · 4 BASE · 2 LOJA · 4 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:01-05:09 | 308min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 05:16-05:32 | 16min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:35-05:38 | 3min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:41-05:49 | 8min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 06:23-07:05 | 42min | 9006154 | CARREFOUR CAMPO GRANDE |
+| FAKE_EXIT | 07:35-07:39 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 08:18-08:40 | 22min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 08:52-09:08 | 16min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 09:33-09:37 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:39-10:26 | 48min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 10:56-11:27 | 31min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 11:29-11:36 | 7min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 11:37-11:48 | 12min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:49-12:11 | 22min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 12:14-12:22 | 8min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 13:01-13:07 | 6min | 71035 | GB 26 - CAMPO GRANDE |
+| FAKE_EXIT | 13:17-13:20 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 13:50-16:19 | 149min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KSJ1479 (XLSX)
+
+5 paradas total · 1 BASE · 0 LOJA · 4 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:31-07:59 | 448min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:29-10:06 | 97min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 10:46-14:22 | 216min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 14:29-15:13 | 44min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 15:32-16:22 | 50min | - | BASE BENASSI - BASE BENASSI |
+
+## KSP8814 (XLSX)
+
+8 paradas total · 5 BASE · 1 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:00-06:41 | 401min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 06:42-07:20 | 38min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 07:22-07:36 | 14min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 07:43-09:37 | 114min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:43-10:01 | 17min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 10:42-11:59 | 77min | 71005 | GB 05 - BANGU |
+| FORA_BASE | 12:01-12:22 | 21min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 12:45-16:15 | 210min | - | BASE BENASSI - BASE BENASSI |
+
+## KST0246 (XLSX)
+
+6 paradas total · 3 BASE · 1 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:06-05:21 | 315min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:27-08:05 | 157min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 08:13-08:16 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 09:40-09:47 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 09:50-10:58 | 68min | 71032 | GB 07 - BARRA |
+| BASE | 11:51-16:14 | 263min | - | BASE BENASSI - BASE BENASSI |
+
+## KTP4F70 (XLSX)
+
+9 paradas total · 6 BASE · 1 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:09-05:09 | 300min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:13-06:47 | 93min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 06:56-07:23 | 27min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 07:29-09:47 | 138min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:53-10:03 | 10min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 10:29-11:29 | 60min | 71023 | GB 23 - DEL CASTILHO |
+| FAKE_EXIT | 11:37-11:41 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 11:55-15:36 | 221min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 15:46-16:16 | 30min | - | BASE BENASSI - BASE BENASSI |
+
+## KTR0546 (XLSX)
+
+8 paradas total · 0 BASE · 1 LOJA · 5 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 01:36-04:52 | 196min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 05:22-05:38 | 16min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:22-07:14 | 52min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 09:20-10:07 | 47min | 71008 | GB 08 - NITEROI |
+| FAKE_EXIT | 10:48-10:53 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 11:04-11:07 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:14-11:32 | 18min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:37-12:24 | 48min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KTR6724 (XLSX)
+
+1 paradas total · 1 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 14:25-16:15 | 111min | - | BASE BENASSI - BASE BENASSI |
+
+## KTZ2055 (XLSX)
+
+4 paradas total · 4 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:01-06:00 | 359min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 06:10-12:51 | 400min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 13:03-14:02 | 60min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 14:33-16:12 | 100min | - | BASE BENASSI - BASE BENASSI |
+
+## KUL1425 (XLSX)
+
+9 paradas total · 0 BASE · 2 LOJA · 6 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:11-05:15 | 304min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 05:22-05:31 | 9min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 05:51-06:06 | 14min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:28-06:39 | 10min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 07:10-09:52 | 162min | 7000709 | PREZUNIC PECHINCHA |
+| FORA_BASE | 10:36-10:47 | 11min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 10:59-12:47 | 108min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 12:51-13:41 | 50min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 14:28-15:01 | 33min | 579001 | FEIRA NOVA OLINDA |
+
+## KUM9J05 (XLSX)
+
+12 paradas total · 3 BASE · 0 LOJA · 4 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:29-01:39 | 70min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 03:09-05:38 | 149min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 06:04-06:11 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 06:49-07:50 | 61min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 07:53-08:08 | 15min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:09-08:34 | 25min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:54-09:24 | 30min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:43-09:52 | 9min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 11:17-11:21 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:31-11:55 | 24min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 11:56-12:03 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 12:04-12:25 | 21min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KVG7A00 (XLSX)
+
+3 paradas total · 2 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:02-05:15 | 312min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:17-09:51 | 274min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 10:02-10:16 | 13min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KVH9J42 (XLSX)
+
+10 paradas total · 5 BASE · 3 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:09-04:54 | 286min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:56-05:00 | 4min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:02-05:06 | 4min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:52-08:36 | 164min | 9039004 | 04 - ZONA SUL - COPACABANA II |
+| LOJA | 08:40-09:38 | 58min | 9039004 | 04 - ZONA SUL - COPACABANA II |
+| BASE | 10:37-12:56 | 139min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:57-13:43 | 46min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 14:07-14:54 | 47min | 579010 | FEIRA NOVA  CACHAMBI |
+| BASE | 15:28-15:53 | 25min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 16:00-16:22 | 22min | - | BASE BENASSI - BASE BENASSI |
+
+## KVI9088 (XLSX)
+
+13 paradas total · 6 BASE · 2 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:03-03:42 | 218min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 03:52-04:16 | 24min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 04:56-06:13 | 77min | 8590004 | PRINCESA ICARAÍ |
+| FAKE_EXIT | 07:05-07:11 | 6min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 07:15-08:33 | 78min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:34-10:15 | 101min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:16-10:46 | 30min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:53-11:09 | 16min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:15-11:37 | 22min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 11:41-11:44 | 4min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 12:08-12:42 | 33min | 560048 | SENDAS CARIOCA SHOPPING |
+| FAKE_EXIT | 12:48-12:54 | 6min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 13:24-14:12 | 49min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KVT5427 (XLSX)
+
+14 paradas total · 0 BASE · 14 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 00:07-03:23 | 196min | 25140000 | EMANUEL- REDE ECONOMIA SANTA MARIA |
+| LOJA | 04:00-04:31 | 31min | 25140000 | EMANUEL- REDE ECONOMIA SANTA MARIA |
+| LOJA | 04:50-04:54 | 4min | 25140000 | EMANUEL- REDE ECONOMIA SANTA MARIA |
+| LOJA | 05:11-06:38 | 87min | 8590120 | PRINCESA CATETE |
+| LOJA | 06:45-07:22 | 37min | 7000744 | PREZUNIC SPID ESTAÇÃO CARIOCA (METRÔ) |
+| LOJA | 07:34-07:39 | 6min | 7000755 | PREZUNIC SPID CENTRO |
+| LOJA | 07:46-08:18 | 32min | 7000754 | PREZUNIC SPID GLÓRIA |
+| LOJA | 09:02-09:22 | 19min | 25140000 | EMANUEL- REDE ECONOMIA SANTA MARIA |
+| LOJA | 09:42-09:54 | 12min | 25140000 | EMANUEL- REDE ECONOMIA SANTA MARIA |
+| LOJA | 09:59-13:41 | 222min | 25140000 | EMANUEL- REDE ECONOMIA SANTA MARIA |
+| LOJA | 13:43-13:57 | 14min | 25140000 | EMANUEL- REDE ECONOMIA SANTA MARIA |
+| LOJA | 14:43-14:52 | 8min | 25140000 | EMANUEL- REDE ECONOMIA SANTA MARIA |
+| LOJA | 14:55-15:30 | 35min | 25140000 | EMANUEL- REDE ECONOMIA SANTA MARIA |
+| LOJA | 15:46-16:22 | 36min | 25140000 | EMANUEL- REDE ECONOMIA SANTA MARIA |
+
+## KWH2J02 (XLSX)
+
+11 paradas total · 0 BASE · 11 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 00:06-03:28 | 202min | 17659004 | REDE ECONOMIA SANTA MARIA |
+| LOJA | 04:04-04:29 | 25min | 17659004 | REDE ECONOMIA SANTA MARIA |
+| LOJA | 05:11-06:40 | 89min | 8590034 | PRINCESA COPACABANA |
+| LOJA | 07:19-08:11 | 52min | 17659004 | REDE ECONOMIA SANTA MARIA |
+| LOJA | 08:15-08:49 | 34min | 17659004 | REDE ECONOMIA SANTA MARIA |
+| LOJA | 09:01-09:26 | 26min | 17659004 | REDE ECONOMIA SANTA MARIA |
+| LOJA | 09:27-09:47 | 19min | 17659004 | REDE ECONOMIA SANTA MARIA |
+| LOJA | 10:26-10:55 | 29min | 11623026 | VIANENSE FREGUESIA |
+| LOJA | 11:30-11:43 | 14min | 17659004 | REDE ECONOMIA SANTA MARIA |
+| LOJA | 11:47-13:42 | 115min | 17659004 | REDE ECONOMIA SANTA MARIA |
+| LOJA | 13:43-13:57 | 14min | 17659004 | REDE ECONOMIA SANTA MARIA |
+
+## KWI3461 (XLSX)
+
+9 paradas total · 3 BASE · 1 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:09-04:57 | 287min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 05:06-05:18 | 12min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:26-05:43 | 18min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 06:34-08:47 | 133min | 7000735 | PREZUNIC ANIL (SHOPPING JACAREPAGUA) |
+| FAKE_EXIT | 08:56-09:00 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 09:01-09:07 | 6min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 09:57-10:22 | 26min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:24-11:51 | 87min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 11:56-12:24 | 28min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KWK4593 (XLSX)
+
+7 paradas total · 1 BASE · 2 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FAKE_EXIT | 00:01-00:06 | 6min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 00:09-05:23 | 314min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 06:15-07:53 | 98min | 9039103 | 21 - ZONA SUL - FLAMENGO |
+| FAKE_EXIT | 08:02-08:06 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 08:11-08:17 | 7min | 9039103 | 21 - ZONA SUL - FLAMENGO |
+| FORA_BASE | 08:47-09:02 | 15min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 09:18-09:32 | 14min | - | BASE BENASSI - BASE BENASSI |
+
+## KWV7E89 (XLSX)
+
+10 paradas total · 4 BASE · 1 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:09-05:15 | 306min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 05:25-05:50 | 25min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 06:34-07:39 | 65min | 7000710 | PREZUNIC CAMPO GRANDE |
+| BASE | 08:58-11:10 | 132min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:21-11:49 | 29min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 11:50-12:01 | 11min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:07-12:30 | 24min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 12:49-12:53 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 13:16-13:48 | 31min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 14:28-16:18 | 110min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KXA5966 (XLSX)
+
+8 paradas total · 1 BASE · 1 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:09-09:59 | 590min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 10:05-10:17 | 12min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:17-10:52 | 35min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 11:42-12:25 | 43min | 15247000 | MERCEARIA SACHINHO |
+| FAKE_EXIT | 12:35-12:45 | 10min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 12:54-14:00 | 66min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 14:15-15:46 | 91min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 16:06-16:15 | 9min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KXA7C24 (XLSX)
+
+11 paradas total · 4 BASE · 2 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:07-03:54 | 227min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 04:01-04:16 | 16min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:24-04:41 | 17min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:10-06:21 | 71min | 7000726 | PREZUNIC PADRE MIGUEL |
+| FAKE_EXIT | 06:56-07:07 | 11min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 07:18-09:02 | 103min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:09-10:00 | 51min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 10:01-10:04 | 3min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 10:05-10:11 | 6min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 10:42-11:11 | 28min | 71005 | GB 05 - BANGU |
+| FORA_BASE | 11:57-16:15 | 259min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KXB6E57 (XLSX)
+
+9 paradas total · 3 BASE · 0 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:00-05:22 | 322min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 05:32-05:45 | 13min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:50-05:59 | 9min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 06:23-08:23 | 119min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 08:49-09:10 | 21min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:11-09:23 | 13min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:28-10:02 | 34min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:03-10:44 | 42min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 10:52-12:24 | 93min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KXN5G22 (XLSX)
+
+1 paradas total · 0 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:08-12:16 | 729min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KXR7F27 (XLSX)
+
+15 paradas total · 7 BASE · 4 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:01-03:37 | 216min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 03:39-04:01 | 22min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:12-04:29 | 17min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:31-04:44 | 13min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:00-05:45 | 45min | 7000720 | PREZUNIC ITAOCA |
+| LOJA | 05:46-06:05 | 19min | 7000720 | PREZUNIC ITAOCA |
+| LOJA | 06:24-07:01 | 37min | 7000715 | PREZUNIC VISTA ALEGRE |
+| BASE | 07:13-08:21 | 69min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:27-09:42 | 75min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:42-11:17 | 95min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:21-14:25 | 184min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 14:29-14:42 | 13min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 15:00-15:27 | 27min | 202009 | PAX  PILARES |
+| FORA_BASE | 15:54-16:08 | 14min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 16:10-16:19 | 9min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KYK8G07 (XLSX)
+
+19 paradas total · 1 BASE · 0 LOJA · 12 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:06-03:06 | 180min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 03:35-04:56 | 81min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 05:19-05:30 | 12min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 05:53-06:40 | 47min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:40-07:07 | 26min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 07:13-07:32 | 19min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 07:39-07:49 | 11min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:10-08:21 | 12min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:25-10:00 | 95min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 10:07-10:21 | 13min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 10:24-10:40 | 15min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 10:43-10:55 | 12min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 10:57-11:05 | 8min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 11:09-11:14 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 11:17-11:23 | 6min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 11:38-11:42 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 12:31-12:35 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 13:20-13:23 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 13:30-16:21 | 171min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KZC4D39 (XLSX)
+
+13 paradas total · 5 BASE · 2 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:07-04:06 | 240min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:07-05:01 | 53min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 05:17-05:30 | 13min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 05:57-06:35 | 38min | 3030113 | SUPERPRIX LJ 13 - NITEROI |
+| LOJA | 06:37-07:42 | 65min | 3030011 | SUPERPRIX LJ 10 - ICARAÍ |
+| FAKE_EXIT | 07:45-07:49 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 07:50-07:56 | 6min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:16-10:03 | 107min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 10:44-11:08 | 24min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:19-13:18 | 119min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 13:19-13:30 | 11min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 13:45-15:11 | 86min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 15:26-16:22 | 56min | - | BASE BENASSI - BASE BENASSI |
+
+## KZH6F33 (XLSX)
+
+15 paradas total · 1 BASE · 13 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 00:03-04:31 | 268min | 2018023 | ROTA ZONA NORTE |
+| LOJA | 04:39-04:48 | 9min | 2018023 | ROTA ZONA NORTE |
+| BASE | 04:48-05:24 | 36min | - | BASE BENASSI - BASE BENASSI,2018023 - ROTA ZONA NORTE |
+| LOJA | 05:43-07:00 | 77min | 2018023 | ROTA ZONA NORTE |
+| LOJA | 07:02-07:25 | 23min | 2018023 | ROTA ZONA NORTE |
+| LOJA | 07:35-09:05 | 89min | 2018023 | ROTA ZONA NORTE |
+| LOJA | 09:15-09:25 | 10min | 2018023 | ROTA ZONA NORTE |
+| LOJA | 09:37-10:01 | 23min | 2018023 | ROTA ZONA NORTE |
+| LOJA | 10:11-10:25 | 14min | 2018023 | ROTA ZONA NORTE |
+| LOJA | 10:25-11:26 | 61min | 2018023 | ROTA ZONA NORTE |
+| LOJA | 11:32-11:44 | 12min | 2018023 | ROTA ZONA NORTE |
+| LOJA | 11:55-12:19 | 23min | 2018023 | ROTA ZONA NORTE |
+| FAKE_EXIT | 12:36-12:46 | 10min | - | BASE BENASSI - BASE BENASSI,2018023 - ROTA ZONA NORTE |
+| LOJA | 12:56-13:06 | 10min | 2018023 | ROTA ZONA NORTE |
+| LOJA | 13:16-16:15 | 179min | 2018023 | ROTA ZONA NORTE |
+
+## KZJ0E14 (XLSX)
+
+7 paradas total · 1 BASE · 2 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FAKE_EXIT | 00:01-00:08 | 7min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 00:15-00:55 | 41min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 02:06-02:20 | 14min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 04:07-06:21 | 134min | 560041 | SENDAS MACAÉ - LOJA 232 |
+| LOJA | 08:44-10:29 | 105min | 560041 | SENDAS MACAÉ - LOJA 232 |
+| FAKE_EXIT | 11:05-11:08 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:11-16:18 | 307min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## KZU4C37 (XLSX)
+
+6 paradas total · 2 BASE · 1 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:02-03:46 | 224min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 04:45-04:59 | 14min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 05:50-05:59 | 9min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 06:01-09:42 | 221min | 560049 | SENDAS ARARUAMA - LJ 221 |
+| FORA_BASE | 11:19-11:38 | 19min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 11:52-12:19 | 27min | - | BASE BENASSI - BASE BENASSI |
+
+## KZZ4F25 (XLSX)
+
+14 paradas total · 2 BASE · 10 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 00:03-03:55 | 232min | 2018001 | ROTA BARRA |
+| BASE | 04:09-04:47 | 38min | - | BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA,2018023 - R |
+| LOJA | 05:10-05:44 | 34min | 2018001 | ROTA BARRA |
+| LOJA | 06:00-06:41 | 41min | 2018001 | ROTA BARRA |
+| LOJA | 06:42-07:32 | 50min | 2018001 | ROTA BARRA |
+| FAKE_EXIT | 08:00-08:08 | 8min | - | BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA,2018023 - R |
+| BASE | 08:09-11:52 | 223min | - | BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA,2018023 - R |
+| FAKE_EXIT | 12:01-12:06 | 5min | - | BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA,2018023 - R |
+| LOJA | 12:57-13:08 | 11min | 2018001 | ROTA BARRA |
+| LOJA | 13:23-13:35 | 12min | 2018001 | ROTA BARRA |
+| LOJA | 13:56-14:10 | 15min | 2018001 | ROTA BARRA |
+| LOJA | 14:25-14:33 | 8min | 2018001 | ROTA BARRA |
+| LOJA | 14:46-14:52 | 6min | 2018001 | ROTA BARRA |
+| LOJA | 15:04-15:11 | 7min | 2018001 | ROTA BARRA |
+
+## LAF0697 (XLSX)
+
+5 paradas total · 2 BASE · 1 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:04-04:08 | 245min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 04:19-04:48 | 30min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:55-06:06 | 71min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 06:37-07:18 | 41min | 7000721 | PREZUNIC NILÓPOLIS |
+| FAKE_EXIT | 08:05-08:13 | 8min | - | BASE BENASSI - BASE BENASSI |
+
+## LAS0711 (XLSX)
+
+5 paradas total · 0 BASE · 5 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 00:05-00:25 | 20min | 2018008 | ROTA CAXIAS |
+| LOJA | 04:47-06:27 | 100min | 2018008 | ROTA CAXIAS |
+| LOJA | 06:56-07:00 | 4min | 2018008 | ROTA CAXIAS |
+| LOJA | 07:12-07:31 | 19min | 2018008 | ROTA CAXIAS |
+| LOJA | 11:48-16:18 | 270min | 2018008 | ROTA CAXIAS |
+
+## LBB5205 (XLSX)
+
+11 paradas total · 6 BASE · 0 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:09-04:05 | 236min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:10-04:59 | 50min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:06-05:38 | 33min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:43-09:38 | 236min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:50-10:03 | 13min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 10:32-10:36 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 10:38-10:57 | 19min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:13-12:48 | 95min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 12:57-13:11 | 14min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 13:25-13:52 | 28min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 13:58-16:18 | 140min | - | BASE BENASSI - BASE BENASSI |
+
+## LBL5907 (XLSX)
+
+6 paradas total · 5 BASE · 1 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:07-06:24 | 377min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 06:26-06:56 | 30min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 07:01-09:29 | 148min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:37-10:11 | 34min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 11:01-12:39 | 99min | 71004 | GB 04 - REALENGO |
+| BASE | 12:59-16:18 | 199min | - | BASE BENASSI - BASE BENASSI |
+
+## LCC1E63 (XLSX)
+
+13 paradas total · 2 BASE · 11 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 01:17-04:16 | 179min | 2018009 | ROTA CENTRO |
+| BASE | 04:35-05:04 | 29min | - | BASE BENASSI - BASE BENASSI,2018009 - ROTA CENTRO |
+| LOJA | 05:31-05:41 | 10min | 2018009 | ROTA CENTRO |
+| LOJA | 05:51-06:15 | 23min | 2018009 | ROTA CENTRO |
+| LOJA | 06:21-06:39 | 17min | 2018009 | ROTA CENTRO |
+| LOJA | 06:40-08:04 | 85min | 2018009 | ROTA CENTRO |
+| LOJA | 08:14-08:19 | 5min | 2018009 | ROTA CENTRO |
+| LOJA | 08:21-08:32 | 11min | 2018009 | ROTA CENTRO |
+| LOJA | 08:51-09:02 | 11min | 2018009 | ROTA CENTRO |
+| BASE | 09:36-10:02 | 26min | - | BASE BENASSI - BASE BENASSI,2018009 - ROTA CENTRO |
+| LOJA | 10:21-12:53 | 152min | 2018009 | ROTA CENTRO |
+| LOJA | 12:59-13:04 | 5min | 2018009 | ROTA CENTRO |
+| LOJA | 13:09-16:17 | 189min | 2018009 | ROTA CENTRO |
+
+## LCE4337 (XLSX)
+
+9 paradas total · 2 BASE · 2 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:06-04:37 | 271min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 04:57-05:14 | 17min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:22-05:43 | 21min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 06:02-06:17 | 15min | 7000717 | PREZUNIC CAXIAS CENTRO |
+| FAKE_EXIT | 06:24-06:28 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 06:29-06:57 | 27min | 7000713 | PREZUNIC CAXIAS CENTENÁRIO |
+| FORA_BASE | 07:00-07:45 | 45min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 08:04-08:12 | 8min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:33-12:23 | 230min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## LCO0J78 (XLSX)
+
+5 paradas total · 3 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:09-00:48 | 39min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 00:49-05:25 | 276min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 06:22-06:26 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:27-11:18 | 291min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 12:23-14:42 | 140min | - | BASE BENASSI - BASE BENASSI |
+
+## LFA4744 (XLSX)
+
+2 paradas total · 1 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 07:37-07:57 | 20min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 12:06-12:11 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## LFG0737 (XLSX)
+
+12 paradas total · 9 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 01:16-02:51 | 95min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 03:46-04:40 | 55min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:05-05:15 | 10min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 05:50-06:30 | 40min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 06:35-06:40 | 5min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 07:00-07:30 | 30min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 07:40-07:50 | 10min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:34-10:04 | 90min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:19-10:54 | 35min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:19-12:43 | 85min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:53-13:33 | 40min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 14:13-14:43 | 30min | - | BASE BENASSI - BASE BENASSI |
+
+## LFJ8442 (XLSX)
+
+17 paradas total · 3 BASE · 10 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:03-04:11 | 248min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:16-04:33 | 17min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:01-05:08 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 05:27-06:42 | 75min | 560016 | SENDAS MENDANHA - LOJA 65 |
+| LOJA | 06:44-06:50 | 6min | 560016 | SENDAS MENDANHA - LOJA 65 |
+| LOJA | 06:55-07:03 | 8min | 560016 | SENDAS MENDANHA - LOJA 65 |
+| LOJA | 07:08-07:14 | 6min | 560016 | SENDAS MENDANHA - LOJA 65 |
+| FORA_BASE | 07:21-07:41 | 20min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 07:43-07:47 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 07:48-07:58 | 10min | 560016 | SENDAS MENDANHA - LOJA 65 |
+| LOJA | 07:59-08:09 | 10min | 560016 | SENDAS MENDANHA - LOJA 65 |
+| LOJA | 08:18-08:22 | 4min | 560016 | SENDAS MENDANHA - LOJA 65 |
+| LOJA | 08:23-08:29 | 6min | 560016 | SENDAS MENDANHA - LOJA 65 |
+| FORA_BASE | 08:45-08:57 | 13min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 08:58-09:06 | 8min | 560016 | SENDAS MENDANHA - LOJA 65 |
+| LOJA | 09:08-11:21 | 132min | 560016 | SENDAS MENDANHA - LOJA 65 |
+| BASE | 11:52-16:22 | 270min | - | BASE BENASSI - BASE BENASSI |
+
+## LFK2C56 (XLSX)
+
+11 paradas total · 5 BASE · 2 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 01:37-02:46 | 70min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 03:16-04:42 | 86min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:50-07:04 | 134min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 07:40-08:45 | 64min | 71002 | GB 02 - PENHA |
+| BASE | 08:51-09:40 | 49min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 10:10-10:13 | 4min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 11:47-11:50 | 4min | 71002 | GB 02 - PENHA |
+| FAKE_EXIT | 12:00-12:04 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 12:06-13:10 | 64min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 13:31-13:43 | 12min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 13:56-16:17 | 141min | - | BASE BENASSI - BASE BENASSI |
+
+## LIA7G83 (XLSX)
+
+7 paradas total · 3 BASE · 1 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:00-05:30 | 330min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:31-05:34 | 3min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:43-05:55 | 12min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 06:08-08:33 | 145min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:12-09:42 | 30min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:49-09:56 | 7min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 10:50-12:14 | 84min | 71038 | GB 19 - TANQUE |
+
+## LJE4J63 (XLSX)
+
+18 paradas total · 12 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:03-04:41 | 279min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:11-07:51 | 160min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 07:56-08:04 | 8min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:05-08:25 | 20min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:29-08:58 | 28min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:04-09:14 | 11min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:21-09:47 | 27min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:59-10:03 | 4min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:10-10:25 | 15min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:33-11:35 | 61min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:41-12:06 | 25min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 12:09-12:16 | 6min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:17-13:00 | 43min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 13:12-13:17 | 5min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 13:20-13:30 | 10min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 13:38-13:54 | 15min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 14:02-14:17 | 15min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 14:25-16:14 | 109min | - | BASE BENASSI - BASE BENASSI |
+
+## LJS2B72 (XLSX)
+
+9 paradas total · 5 BASE · 0 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:00-00:32 | 32min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 00:33-04:44 | 251min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:46-05:29 | 43min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 05:56-06:37 | 41min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 06:40-06:49 | 9min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 07:12-07:26 | 14min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 07:31-09:03 | 92min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 09:31-10:24 | 53min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 10:55-15:25 | 270min | - | BASE BENASSI - BASE BENASSI |
+
+## LKA3935 (XLSX)
+
+1 paradas total · 1 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:07-16:17 | 970min | - | BASE BENASSI - BASE BENASSI |
+
+## LKF7A79 (XLSX)
+
+4 paradas total · 2 BASE · 1 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:02-06:19 | 377min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 06:31-09:55 | 204min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 10:07-10:11 | 4min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 11:23-12:44 | 81min | 71008 | GB 08 - NITEROI |
+
+## LKR5990 (XLSX)
+
+10 paradas total · 6 BASE · 1 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:09-02:48 | 159min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 03:38-05:35 | 117min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:45-05:57 | 12min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 07:08-08:21 | 72min | 7000748 | PREZUNIC VILA ISABEL |
+| FAKE_EXIT | 09:04-09:19 | 15min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:25-10:19 | 55min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:22-11:13 | 51min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:15-12:38 | 83min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 12:41-12:52 | 11min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:55-15:50 | 176min | - | BASE BENASSI - BASE BENASSI |
+
+## LKV5067 (XLSX)
+
+8 paradas total · 3 BASE · 2 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:07-04:56 | 290min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:05-05:16 | 11min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:37-06:18 | 40min | 7000714 | PREZUNIC OLARIA |
+| LOJA | 06:25-07:09 | 45min | 7000723 | PREZUNIC PENHA |
+| BASE | 07:27-07:51 | 25min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 07:53-08:04 | 11min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 08:11-09:31 | 80min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 09:35-12:24 | 169min | - | BASE BENASSI - BASE BENASSI |
+
+## LKW2B80 (XLSX)
+
+6 paradas total · 3 BASE · 2 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:09-04:28 | 260min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:12-06:39 | 87min | 9039018 | 18 - ZONA SUL - COPACABANA |
+| BASE | 07:27-09:43 | 136min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:51-09:56 | 5min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:59-13:54 | 236min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 15:04-15:43 | 39min | 9039107 | 35 - ZONA SUL - BARRA DA TIJUCA |
+
+## LLJ9C64 (XLSX)
+
+12 paradas total · 2 BASE · 3 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:08-04:25 | 257min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 04:32-04:41 | 9min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:46-05:06 | 21min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:57-06:26 | 29min | 7000734 | PREZUNIC BARRA |
+| LOJA | 06:47-08:21 | 94min | 7000740 | PREZUNIC SPID ALPHA MALL |
+| FAKE_EXIT | 08:28-08:32 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 08:47-09:16 | 30min | 7000752 | PREZUNIC SPID RECREIO |
+| FORA_BASE | 09:54-10:17 | 23min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 10:46-11:07 | 21min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 11:07-11:13 | 5min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 11:15-11:28 | 13min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 11:40-16:21 | 282min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## LMF2049 (XLSX)
+
+11 paradas total · 5 BASE · 0 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:03-05:09 | 306min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:10-05:14 | 3min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 05:58-06:36 | 38min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 06:41-06:45 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 07:22-07:40 | 18min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 07:43-12:03 | 260min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:05-13:41 | 96min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 13:42-13:47 | 5min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 13:48-14:05 | 17min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 14:19-14:23 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 15:27-16:21 | 55min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## LNG7110 (XLSX)
+
+11 paradas total · 3 BASE · 1 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:15-03:39 | 204min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 04:01-04:11 | 9min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:17-04:21 | 4min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:23-05:04 | 41min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 06:02-07:15 | 73min | 7000733 | PREZUNIC SANTA CRUZ |
+| FAKE_EXIT | 07:16-07:20 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 08:40-10:15 | 96min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 10:25-10:33 | 8min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:34-11:02 | 28min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 11:08-11:14 | 6min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 11:48-11:54 | 6min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## LNU7H38 (XLSX)
+
+8 paradas total · 2 BASE · 2 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:09-11:28 | 679min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:34-12:35 | 61min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 12:55-14:21 | 86min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 14:29-14:32 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 14:49-14:53 | 4min | 202010 | PAX VILA DA PENHA |
+| LOJA | 14:54-15:38 | 43min | 202010 | PAX VILA DA PENHA |
+| BASE | 15:49-16:07 | 18min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 16:10-16:22 | 12min | - | BASE BENASSI - BASE BENASSI |
+
+## LNW4899 (XLSX)
+
+16 paradas total · 1 BASE · 0 LOJA · 7 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:06-02:22 | 136min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 02:28-02:31 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 02:42-04:08 | 86min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:31-04:39 | 8min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 04:58-06:21 | 83min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:29-07:05 | 36min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 07:17-07:21 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 07:29-07:46 | 17min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 07:50-08:17 | 27min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 08:33-08:37 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 08:37-08:46 | 9min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 08:59-09:06 | 8min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 09:11-09:20 | 9min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 09:22-09:28 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:29-09:56 | 27min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 10:52-16:19 | 327min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## LOF4C66 (XLSX)
+
+1 paradas total · 1 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:00-16:10 | 970min | - | BASE BENASSI - BASE BENASSI |
+
+## LON7G98 (XLSX)
+
+1 paradas total · 0 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:04-16:21 | 977min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## LOT2962 (XLSX)
+
+8 paradas total · 3 BASE · 1 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:08-04:42 | 274min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 04:57-05:03 | 6min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:09-05:19 | 10min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:42-09:36 | 234min | 560023 | SENDAS NILÓPOLIS - LOJA 36 |
+| BASE | 10:02-10:23 | 21min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:24-11:00 | 35min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:01-11:31 | 31min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 12:04-16:13 | 249min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## LOU9928 (XLSX)
+
+12 paradas total · 5 BASE · 2 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:02-03:43 | 221min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 03:47-04:03 | 17min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:04-04:12 | 8min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:33-04:36 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 04:43-07:32 | 169min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 07:33-08:04 | 31min | 7000724 | PREZUNIC CACHAMBI |
+| FAKE_EXIT | 08:20-08:27 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 08:35-08:53 | 18min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:59-09:55 | 55min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:57-14:22 | 265min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 14:57-15:50 | 53min | 202001 | PAX ENGENHO DE DENTRO |
+| FAKE_EXIT | 16:15-16:22 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## LPI1E68 (XLSX)
+
+19 paradas total · 1 BASE · 18 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 00:01-02:45 | 164min | 2018002 | ROTA BOTAFOGO |
+| BASE | 02:57-04:12 | 75min | - | BASE BENASSI - BASE BENASSI,2018002 - ROTA BOTAFOGO |
+| LOJA | 04:46-07:41 | 175min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 07:41-08:06 | 25min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 08:07-08:11 | 3min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 08:18-08:24 | 6min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 08:28-08:45 | 17min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 08:46-08:52 | 6min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 09:03-09:06 | 3min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 09:09-09:12 | 3min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 09:42-09:48 | 6min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 09:56-10:15 | 20min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 10:24-10:28 | 5min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 10:39-10:44 | 5min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 10:49-10:52 | 3min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 10:58-11:13 | 16min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 11:22-11:30 | 8min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 11:43-11:47 | 4min | 2018002 | ROTA BOTAFOGO |
+| LOJA | 12:53-16:21 | 208min | 2018002 | ROTA BOTAFOGO |
+
+## LQA4I25 (XLSX)
+
+1 paradas total · 0 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:05-16:18 | 974min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## LQE5E01 (XLSX)
+
+11 paradas total · 3 BASE · 2 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:01-04:15 | 254min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 04:47-05:27 | 40min | 9039030 | 30 - ZONA SUL - LARANJEIRAS |
+| BASE | 06:00-08:36 | 156min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:38-09:51 | 73min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:58-10:04 | 6min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 10:59-11:03 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:09-12:25 | 76min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 13:05-13:15 | 10min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 14:08-14:39 | 31min | 5353011 | ARMAZEM DO GRAO (BARRA DA TIJUCA) |
+| FORA_BASE | 14:55-15:36 | 42min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 16:12-16:22 | 11min | - | BASE BENASSI - BASE BENASSI |
+
+## LQH3F19 (XLSX)
+
+10 paradas total · 2 BASE · 2 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:05-05:44 | 339min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 05:52-06:07 | 15min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 06:51-07:12 | 22min | 7000729 | PREZUNIC MEIER |
+| FORA_BASE | 07:13-07:27 | 13min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 08:12-08:42 | 30min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 08:57-09:23 | 26min | 9966101 | SUPERMARKET COELHO NETO |
+| FAKE_EXIT | 09:33-09:45 | 11min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:47-10:36 | 48min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 10:39-10:44 | 5min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 10:54-16:23 | 329min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## LQU5546 (XLSX)
+
+12 paradas total · 3 BASE · 4 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:02-02:35 | 154min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 02:47-03:20 | 32min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 03:21-03:26 | 6min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 03:53-04:24 | 31min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 04:45-05:03 | 18min | 9039027 | 27 - ZONA SUL - IPANEMA |
+| LOJA | 05:04-05:20 | 16min | 9039027 | 27 - ZONA SUL - IPANEMA |
+| FAKE_EXIT | 05:22-05:25 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 05:32-06:40 | 68min | 9039015 | 15 - ZONA SUL - LEBLON |
+| FORA_BASE | 07:43-09:08 | 86min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 09:19-09:55 | 36min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:00-14:57 | 297min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 15:57-16:16 | 19min | 9039028 | 28 - ZONA SUL - URCA |
+
+## LRA9C40 (XLSX)
+
+1 paradas total · 1 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:08-16:15 | 968min | - | BASE BENASSI - BASE BENASSI |
+
+## LRA9C41 (XLSX)
+
+10 paradas total · 5 BASE · 0 LOJA · 4 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:18-00:55 | 37min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 00:56-02:20 | 84min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 02:20-03:50 | 89min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 03:53-03:58 | 5min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 04:50-06:18 | 88min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 07:20-08:17 | 57min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:18-08:32 | 14min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:42-10:24 | 41min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 11:35-11:51 | 16min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:57-16:16 | 259min | - | BASE BENASSI - BASE BENASSI |
+
+## LRB0G46 (XLSX)
+
+3 paradas total · 3 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:07-07:36 | 449min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 07:45-08:32 | 48min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:42-15:14 | 393min | - | BASE BENASSI - BASE BENASSI |
+
+## LRD7J00 (XLSX)
+
+6 paradas total · 1 BASE · 0 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:02-01:59 | 117min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 03:24-03:34 | 10min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:15-05:47 | 32min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 07:02-08:19 | 77min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 09:08-09:13 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:17-16:16 | 419min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## LSE1D35 (XLSX)
+
+8 paradas total · 3 BASE · 1 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:06-04:21 | 256min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 04:38-05:05 | 27min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:10-05:29 | 18min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 06:08-06:15 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 06:59-07:45 | 47min | 9006012 | CARREFOUR ALCANTARA |
+| FORA_BASE | 07:51-09:47 | 116min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 10:56-11:13 | 18min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 11:42-12:24 | 42min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## LSL9670 (XLSX)
+
+12 paradas total · 2 BASE · 3 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FAKE_EXIT | 03:23-03:27 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 03:36-04:00 | 25min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:06-04:16 | 10min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:23-04:27 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 04:51-04:56 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 04:57-06:34 | 98min | 560021 | SENDAS NOVA IGUAÇU - LOJA 30 |
+| FAKE_EXIT | 07:02-07:07 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 07:11-07:15 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 07:29-10:32 | 183min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 10:43-12:39 | 116min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 14:09-14:18 | 10min | 5353003 | ARMAZEM DO GRÃO (ITAIPAVA) |
+| LOJA | 14:28-14:47 | 19min | 5353006 | ARMAZEM DO GRAO (CORREAS) |
+
+## LSN6I72 (XLSX)
+
+9 paradas total · 2 BASE · 0 LOJA · 5 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:04-04:13 | 248min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 04:48-05:09 | 21min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:10-05:21 | 11min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 06:06-06:43 | 37min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 07:51-07:56 | 5min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 07:57-09:23 | 86min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 09:48-09:58 | 10min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 10:00-10:43 | 42min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 10:53-12:22 | 90min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## LSX7C72 (XLSX)
+
+8 paradas total · 4 BASE · 1 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:03-03:35 | 211min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 04:00-04:14 | 14min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:19-04:37 | 17min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:20-09:13 | 233min | 7000766 | PREZUNIC CAMPO GRANDE (TINGUI) |
+| BASE | 10:14-10:30 | 16min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:35-11:18 | 43min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 11:19-11:23 | 4min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:24-12:24 | 60min | - | BASE BENASSI - BASE BENASSI |
+
+## LTC8F97 (XLSX)
+
+6 paradas total · 3 BASE · 1 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:05-04:56 | 291min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 05:07-05:30 | 23min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:36-05:58 | 22min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 06:03-06:07 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 07:16-09:12 | 116min | 7000704 | PREZUNIC CATUMBI |
+| BASE | 09:43-12:22 | 159min | - | BASE BENASSI - BASE BENASSI |
+
+## LTH4J15 (XLSX)
+
+12 paradas total · 3 BASE · 5 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:06-04:25 | 259min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:10-05:47 | 37min | 22980000 | EMPORIO BARRA TOWER |
+| LOJA | 05:58-06:23 | 25min | 22144002 | PETIT ATLANTICO SUL |
+| LOJA | 06:28-07:01 | 33min | 22144000 | PETIT MARCHE BARRAMARES |
+| FORA_BASE | 08:02-08:43 | 41min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 08:49-09:08 | 19min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:11-09:52 | 40min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:59-10:03 | 4min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 10:28-10:59 | 31min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 11:14-11:32 | 18min | 11623028 | VIANENSE NOVA IGUAÇU |
+| LOJA | 11:43-12:00 | 17min | 11623032 | VIANENSE JARDIM ALVORADA |
+| FAKE_EXIT | 12:18-12:24 | 6min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## LTQ0783 (XLSX)
+
+6 paradas total · 3 BASE · 0 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:02-02:54 | 172min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 03:22-03:45 | 23min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 04:51-07:18 | 147min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 07:46-07:54 | 8min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 09:42-10:02 | 19min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:03-15:54 | 351min | - | BASE BENASSI - BASE BENASSI |
+
+## LUZ2479 (XLSX)
+
+20 paradas total · 3 BASE · 17 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:06-02:05 | 118min | - | BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA |
+| BASE | 02:08-04:24 | 136min | - | BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA |
+| LOJA | 04:53-05:05 | 12min | 2018001 | ROTA BARRA |
+| LOJA | 05:10-06:13 | 63min | 2018001 | ROTA BARRA |
+| LOJA | 06:24-06:33 | 9min | 2018001 | ROTA BARRA |
+| LOJA | 06:53-07:07 | 14min | 2018001 | ROTA BARRA |
+| LOJA | 07:16-08:02 | 45min | 2018001 | ROTA BARRA |
+| LOJA | 08:08-08:24 | 16min | 2018001 | ROTA BARRA |
+| LOJA | 08:27-08:53 | 26min | 2018001 | ROTA BARRA |
+| LOJA | 09:05-09:17 | 12min | 2018001 | ROTA BARRA |
+| LOJA | 09:30-09:42 | 11min | 2018001 | ROTA BARRA |
+| LOJA | 09:45-09:55 | 10min | 2018001 | ROTA BARRA |
+| LOJA | 10:12-10:22 | 11min | 2018001 | ROTA BARRA |
+| LOJA | 10:31-10:38 | 8min | 2018001 | ROTA BARRA |
+| LOJA | 10:43-10:50 | 7min | 2018001 | ROTA BARRA |
+| LOJA | 11:03-11:09 | 7min | 2018001 | ROTA BARRA |
+| LOJA | 11:22-11:39 | 18min | 2018001 | ROTA BARRA |
+| LOJA | 11:47-11:53 | 6min | 2018001 | ROTA BARRA |
+| LOJA | 11:58-12:18 | 20min | 2018001 | ROTA BARRA |
+| BASE | 12:53-16:13 | 200min | - | BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA |
+
+## LVA2689 (XLSX)
+
+5 paradas total · 0 BASE · 5 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 00:07-14:52 | 885min | 2018001 | ROTA BARRA |
+| LOJA | 14:59-15:17 | 18min | 2018001 | ROTA BARRA |
+| LOJA | 15:21-15:30 | 9min | 2018001 | ROTA BARRA |
+| LOJA | 15:30-16:12 | 42min | 2018001 | ROTA BARRA |
+| LOJA | 16:16-16:23 | 7min | 2018001 | ROTA BARRA |
+
+## LVE0688 (XLSX)
+
+1 paradas total · 1 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:05-12:23 | 738min | - | BASE BENASSI - BASE BENASSI |
+
+## MES7F27 (XLSX)
+
+7 paradas total · 1 BASE · 5 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:08-03:16 | 188min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:16-04:25 | 9min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 05:56-06:30 | 34min | 8590559 | PRINCESA - ARRAIAL DO CABO 1 |
+| LOJA | 06:32-07:15 | 43min | 8590569 | PRINCESA - ARRAIAL DO CABO 3 |
+| LOJA | 07:19-11:12 | 233min | 8590560 | PRINCESA - ARRAIAL DO CABO 2 |
+| LOJA | 11:15-12:15 | 60min | 8590559 | PRINCESA - ARRAIAL DO CABO 1 |
+| LOJA | 12:17-12:24 | 8min | 8590569 | PRINCESA - ARRAIAL DO CABO 3 |
+
+## MSK3752 (XLSX)
+
+10 paradas total · 1 BASE · 1 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 02:00-03:37 | 97min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 03:54-04:08 | 14min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 04:38-06:46 | 127min | 8590031 | PRINCESA PECHINCHA |
+| FAKE_EXIT | 06:48-06:51 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 07:07-07:15 | 8min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 07:20-07:44 | 25min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 08:08-08:15 | 6min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 08:36-08:50 | 14min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:53-11:47 | 174min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 12:40-13:54 | 73min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## NSM6D98 (XLSX)
+
+11 paradas total · 4 BASE · 2 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:07-04:21 | 254min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 04:40-04:44 | 4min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:45-05:10 | 25min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:11-05:14 | 3min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 05:18-05:45 | 26min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 06:20-06:54 | 35min | 7000729 | PREZUNIC MEIER |
+| LOJA | 06:55-07:29 | 34min | 7000729 | PREZUNIC MEIER |
+| BASE | 08:04-09:02 | 58min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:05-09:20 | 15min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:26-09:38 | 12min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 10:31-11:49 | 78min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## NTT4858 (XLSX)
+
+17 paradas total · 2 BASE · 2 LOJA · 4 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FAKE_EXIT | 04:04-04:13 | 9min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:17-04:33 | 17min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:40-05:08 | 28min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 06:02-06:22 | 20min | 7000702 | PREZUNIC RECREIO |
+| LOJA | 06:23-07:49 | 86min | 7000702 | PREZUNIC RECREIO |
+| FAKE_EXIT | 08:05-08:12 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 09:35-09:45 | 9min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 09:50-09:55 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:57-10:47 | 50min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 10:49-10:55 | 6min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 11:10-11:16 | 6min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 11:29-11:32 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 11:43-11:46 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:48-11:58 | 10min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 12:51-13:55 | 64min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 14:51-14:55 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 14:56-16:18 | 82min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## PVA1H61 (XLSX)
+
+6 paradas total · 4 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:06-06:21 | 375min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 06:22-08:05 | 103min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:17-08:41 | 24min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:45-09:11 | 26min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:13-09:16 | 3min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:19-09:22 | 3min | - | BASE BENASSI - BASE BENASSI |
+
+## QSO8D04 (XLSX)
+
+2 paradas total · 2 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:05-02:07 | 122min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 02:11-12:25 | 614min | - | BASE BENASSI - BASE BENASSI |
+
+## QSS1E48 (XLSX)
+
+10 paradas total · 2 BASE · 0 LOJA · 5 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:07-04:41 | 274min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:42-04:47 | 5min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 05:29-05:54 | 25min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 05:56-06:19 | 23min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:21-08:07 | 106min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 08:08-10:17 | 129min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 10:18-10:22 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 11:14-11:23 | 9min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:24-14:06 | 162min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 15:49-16:22 | 34min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## QST4C52 (XLSX)
+
+12 paradas total · 3 BASE · 4 LOJA · 4 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:09-02:26 | 137min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 02:27-02:49 | 21min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 04:20-04:36 | 16min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 05:44-06:11 | 28min | 8590571 | PRINCESA - BUZIOS 3 |
+| LOJA | 06:14-06:32 | 18min | 8590563 | PRINCESA - BUZIOS 1 |
+| LOJA | 06:33-07:36 | 63min | 8590564 | PRINCESA - BUZIOS 2 |
+| LOJA | 07:38-10:36 | 178min | 8590571 | PRINCESA - BUZIOS 3 |
+| FAKE_EXIT | 11:42-11:48 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 13:27-13:50 | 23min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 14:59-15:18 | 19min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 15:25-15:44 | 19min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 15:58-16:23 | 25min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## QSU6I54 (XLSX)
+
+11 paradas total · 4 BASE · 2 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:18-00:38 | 20min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 00:48-01:24 | 36min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 01:25-04:34 | 189min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 04:55-07:14 | 139min | 9006144 | CARREFOUR BRIGADEIRO |
+| FAKE_EXIT | 07:41-07:55 | 14min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:02-13:46 | 344min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 14:23-14:27 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 14:28-14:32 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 14:33-14:38 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 14:50-14:54 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 14:57-15:50 | 53min | 579008 | FEIRA NOVA  CERAMICA |
+
+## QSW3B65 (XLSX)
+
+10 paradas total · 0 BASE · 10 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 00:03-02:22 | 138min | 17659002 | EMANUEL CACHAMORRA |
+| LOJA | 02:22-04:58 | 156min | 17659002 | EMANUEL CACHAMORRA |
+| LOJA | 05:08-05:16 | 8min | 17659002 | EMANUEL CACHAMORRA |
+| LOJA | 05:37-07:13 | 97min | 560048 | SENDAS CARIOCA SHOPPING |
+| LOJA | 07:17-09:41 | 144min | 560048 | SENDAS CARIOCA SHOPPING |
+| LOJA | 10:01-10:41 | 40min | 560048 | SENDAS CARIOCA SHOPPING |
+| LOJA | 11:11-12:26 | 75min | 560048 | SENDAS CARIOCA SHOPPING |
+| LOJA | 12:32-14:22 | 110min | 560048 | SENDAS CARIOCA SHOPPING |
+| LOJA | 14:56-15:40 | 44min | 17659002 | EMANUEL CACHAMORRA |
+| LOJA | 15:46-16:23 | 37min | 17659002 | EMANUEL CACHAMORRA |
+
+## QSY2H32 (XLSX)
+
+12 paradas total · 4 BASE · 2 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:08-09:10 | 543min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:14-09:17 | 3min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 09:45-10:12 | 26min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 10:30-11:47 | 77min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 11:56-12:11 | 15min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 12:27-12:33 | 7min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 12:40-12:48 | 8min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:54-13:54 | 60min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 13:55-14:02 | 8min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 14:03-14:20 | 17min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 14:46-15:04 | 18min | 579010 | FEIRA NOVA  CACHAMBI |
+| LOJA | 15:31-16:22 | 51min | 202013 | PAX LINS |
+
+## QSZ9A20 (XLSX)
+
+10 paradas total · 5 BASE · 3 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:00-03:21 | 201min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 04:49-06:47 | 117min | 8590002 | PRINCESA MARICÁ 1 |
+| LOJA | 06:51-07:22 | 30min | 8590003 | PRINCESA MARICÁ 2 |
+| FORA_BASE | 07:38-09:24 | 107min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 11:09-11:50 | 41min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:56-12:47 | 51min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:48-13:56 | 68min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 13:57-14:22 | 25min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 14:29-14:32 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 15:13-15:58 | 45min | 202004 | PAX DEL CASTILHO |
+
+## RJL7D33 (XLSX)
+
+1 paradas total · 0 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:05-16:23 | 978min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## RJN9F68 (XLSX)
+
+9 paradas total · 3 BASE · 4 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:01-04:34 | 273min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 04:43-05:11 | 28min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:58-07:18 | 79min | 8590555 | PRINCESA FONSECA |
+| LOJA | 08:03-08:28 | 25min | 7000760 | PREZUNIC SPID TIJUCA |
+| LOJA | 08:45-09:03 | 19min | 7000761 | PREZUNIC SPID VILA ISABEL |
+| LOJA | 09:27-10:01 | 34min | 7000737 | PREZUNIC SPID MÉIER |
+| BASE | 10:33-10:57 | 24min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:01-11:26 | 25min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 11:55-12:25 | 30min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## SFG2F72 (XLSX)
+
+8 paradas total · 5 BASE · 1 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:00-01:19 | 79min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 01:24-04:56 | 212min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 05:50-09:50 | 240min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 09:51-09:56 | 5min | 560042 | SENDAS BARRA II - LJ 245 |
+| BASE | 10:44-11:13 | 29min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 11:21-11:47 | 26min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 12:00-12:45 | 45min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:47-16:21 | 214min | - | BASE BENASSI - BASE BENASSI |
+
+## SFG2F73 (XLSX)
+
+6 paradas total · 3 BASE · 2 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:08-04:25 | 257min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:48-04:53 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 04:54-06:08 | 73min | 560035 | SENDAS MESQUITA - LJ 35 |
+| LOJA | 06:09-10:30 | 262min | 560035 | SENDAS MESQUITA - LJ 35 |
+| BASE | 10:50-11:43 | 53min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:46-16:15 | 269min | - | BASE BENASSI - BASE BENASSI |
+
+## SRD0J02 (XLSX)
+
+10 paradas total · 1 BASE · 9 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 00:07-03:03 | 175min | 2018001 | ROTA BARRA |
+| BASE | 03:32-04:46 | 74min | - | BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA |
+| LOJA | 05:26-07:44 | 138min | 2018001 | ROTA BARRA |
+| LOJA | 08:05-08:36 | 30min | 2018001 | ROTA BARRA |
+| LOJA | 08:49-09:05 | 16min | 2018001 | ROTA BARRA |
+| LOJA | 09:08-09:24 | 16min | 2018001 | ROTA BARRA |
+| LOJA | 09:36-10:00 | 24min | 2018001 | ROTA BARRA |
+| LOJA | 10:14-15:39 | 325min | 2018001 | ROTA BARRA |
+| LOJA | 15:56-15:59 | 4min | 2018001 | ROTA BARRA |
+| LOJA | 16:00-16:23 | 23min | 2018001 | ROTA BARRA |
+
+## SRQ9F05 (XLSX)
+
+2 paradas total · 0 BASE · 0 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:04-07:06 | 423min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 07:08-16:15 | 547min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## SVB1F74 (XLSX)
+
+7 paradas total · 0 BASE · 0 LOJA · 6 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:39-01:19 | 40min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 01:29-07:27 | 359min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 07:57-09:06 | 68min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:09-09:22 | 12min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:23-11:24 | 121min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 11:25-11:30 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:37-12:15 | 38min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## TJQ6J26 (XLSX)
+
+13 paradas total · 4 BASE · 0 LOJA · 4 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:00-05:47 | 347min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:48-05:55 | 7min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 06:18-06:32 | 15min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:33-06:59 | 25min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 07:00-07:16 | 16min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 07:45-08:04 | 19min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:14-09:06 | 52min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 09:08-09:14 | 6min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 09:25-09:37 | 12min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 09:49-10:01 | 12min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 10:06-14:04 | 238min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 14:18-14:23 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 14:26-14:30 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## TJX6F34 (XLSX)
+
+1 paradas total · 0 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 10:42-12:24 | 103min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## TML1D82 (PDF)
+
+3 paradas total · 0 BASE · 0 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 16:38-17:04 | 27min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 17:05-17:28 | 22min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 17:28-23:50 | 382min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## TML2D79 (XLSX)
+
+1 paradas total · 1 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:02-09:18 | 556min | - | BASE BENASSI - BASE BENASSI |
+
+## TML3B11 (XLSX)
+
+5 paradas total · 3 BASE · 1 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 02:47-03:36 | 48min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 03:55-04:39 | 43min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:09-06:58 | 109min | 7000747 | PREZUNIC TIJUCA |
+| BASE | 07:46-09:18 | 91min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 09:37-13:26 | 229min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## TML5I70 (XLSX)
+
+6 paradas total · 3 BASE · 3 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:04-03:42 | 218min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:14-05:18 | 64min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:49-07:12 | 82min | 7000708 | PREZUNIC ENGENHO NOVO |
+| LOJA | 07:30-08:34 | 64min | 7000706 | PREZUNIC BENFICA |
+| BASE | 09:18-13:33 | 255min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 14:41-15:36 | 55min | 579009 | FEIRA NOVA QUEIMADOS |
+
+## TML6D96 (XLSX)
+
+9 paradas total · 0 BASE · 0 LOJA · 8 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 00:03-06:01 | 357min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:08-06:36 | 28min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:41-07:17 | 36min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 07:30-11:06 | 216min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:17-11:34 | 17min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 11:47-12:42 | 55min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 14:20-14:27 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 14:37-14:56 | 19min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 15:05-15:27 | 22min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## TML7D21 (XLSX)
+
+11 paradas total · 4 BASE · 1 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:08-02:29 | 141min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 02:31-05:20 | 169min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:22-05:31 | 9min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 05:33-05:44 | 11min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 06:19-06:24 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 06:58-12:42 | 344min | 560056 | SENDAS BOULEVARD |
+| FAKE_EXIT | 13:28-13:32 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 13:33-13:40 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 14:20-14:23 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 14:33-14:49 | 16min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 14:49-16:19 | 90min | - | BASE BENASSI - BASE BENASSI |
+
+## TML7D61 (XLSX)
+
+7 paradas total · 4 BASE · 2 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:07-01:52 | 104min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 01:59-02:09 | 10min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 02:25-05:12 | 168min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 06:01-07:01 | 60min | 3030013 | SUPERPRIX LJ 13 - TIJUQUINHA |
+| LOJA | 07:08-08:16 | 68min | 3030014 | SUPERPRIX LJ 14 - TIJUCA |
+| BASE | 09:05-09:47 | 43min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 09:55-12:25 | 149min | - | BASE BENASSI - BASE BENASSI |
+
+## TML9I75 (XLSX)
+
+9 paradas total · 4 BASE · 1 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:05-03:02 | 178min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 03:15-03:36 | 21min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 03:41-03:51 | 10min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 03:53-04:02 | 9min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:12-09:43 | 271min | 7000749 | PREZUNIC MARICÁ |
+| FORA_BASE | 11:24-12:05 | 41min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 12:21-12:39 | 18min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:44-13:56 | 72min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 14:02-14:15 | 13min | - | BASE BENASSI - BASE BENASSI |
+
+## UBF5G32 (XLSX)
+
+3 paradas total · 2 BASE · 1 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:28-04:45 | 257min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 04:53-05:13 | 20min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:48-12:24 | 396min | 560020 | SENDAS ILHA - LOJA 29 |
+
+## UBF5G33 (XLSX)
+
+11 paradas total · 4 BASE · 1 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:06-01:02 | 57min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 01:03-04:52 | 229min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:35-10:02 | 267min | 560025 | SENDAS NITERÓI - LOJA 41 |
+| BASE | 10:52-11:37 | 45min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:39-12:36 | 57min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 12:43-12:49 | 6min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 13:20-13:32 | 12min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 14:00-14:23 | 24min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 14:44-15:01 | 17min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 15:48-15:57 | 9min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 16:12-16:17 | 5min | - | BASE BENASSI - BASE BENASSI |
+
+## UBF5G36 (XLSX)
+
+17 paradas total · 6 BASE · 2 LOJA · 2 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:19-01:21 | 62min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 01:23-03:32 | 129min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 03:35-03:39 | 4min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 03:53-04:31 | 38min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 05:04-08:47 | 223min | 7000750 | PREZUNIC BOTAFOGO (VOLUNTÁRIOS DA PÁTRIA) |
+| FAKE_EXIT | 08:51-08:57 | 6min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 08:59-09:06 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 09:07-09:12 | 5min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 09:50-10:08 | 18min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 10:18-11:00 | 42min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 11:06-11:12 | 6min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 11:13-11:16 | 3min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 11:22-11:25 | 4min | - | BASE BENASSI - BASE BENASSI |
+| LOJA | 11:56-13:32 | 96min | 560057 | SENDAS CAXIAS II (PARQUE FLUMINENSE) |
+| FORA_BASE | 13:33-14:16 | 42min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 14:47-15:11 | 24min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 15:29-16:23 | 54min | - | BASE BENASSI - BASE BENASSI |
+
+## UBF5G37 (XLSX)
+
+1 paradas total · 0 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| FORA_BASE | 14:23-16:24 | 120min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## UBG7F79 (XLSX)
+
+8 paradas total · 6 BASE · 0 LOJA · 1 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:09-05:12 | 302min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 05:45-07:29 | 103min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 08:08-08:31 | 22min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 08:34-11:07 | 153min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:10-11:53 | 42min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:55-12:48 | 53min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:49-14:20 | 91min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 14:23-14:27 | 4min | - | BASE BENASSI - BASE BENASSI |
+
+## UBO0B68 (XLSX)
+
+8 paradas total · 4 BASE · 1 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:06-01:02 | 56min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 01:05-02:30 | 85min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 02:31-06:26 | 235min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 06:32-06:40 | 8min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 07:17-07:20 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 07:21-07:25 | 4min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 07:31-12:57 | 326min | 560062 | SENDAS JACAREPAGUA - LOJA 340 (TAQUARA) |
+| BASE | 13:53-14:26 | 33min | - | BASE BENASSI - BASE BENASSI |
+
+## UBO5E01 (XLSX)
+
+16 paradas total · 0 BASE · 16 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 00:02-04:07 | 246min | 5353016 | REGINA  LUCIO MEIRA |
+| LOJA | 04:21-04:40 | 19min | 5353016 | REGINA  LUCIO MEIRA |
+| LOJA | 04:41-04:56 | 15min | 5353016 | REGINA  LUCIO MEIRA |
+| LOJA | 05:01-05:11 | 9min | 5353016 | REGINA  LUCIO MEIRA |
+| LOJA | 05:43-08:31 | 167min | 560028 | SENDAS BANGU - LOJA 55 |
+| LOJA | 09:30-09:51 | 21min | 5353016 | REGINA  LUCIO MEIRA |
+| LOJA | 09:59-10:39 | 40min | 5353016 | REGINA  LUCIO MEIRA |
+| LOJA | 10:42-10:59 | 17min | 5353016 | REGINA  LUCIO MEIRA |
+| LOJA | 11:30-11:44 | 14min | 5353016 | REGINA  LUCIO MEIRA |
+| LOJA | 12:42-12:47 | 5min | 5353016 | REGINA  LUCIO MEIRA |
+| LOJA | 12:49-13:26 | 37min | 5353016 | REGINA  LUCIO MEIRA |
+| LOJA | 13:49-14:04 | 15min | 5353016 | REGINA  LUCIO MEIRA |
+| LOJA | 14:06-14:36 | 30min | 5353016 | REGINA  LUCIO MEIRA |
+| LOJA | 14:37-14:45 | 8min | 5353016 | REGINA  LUCIO MEIRA |
+| LOJA | 14:50-14:53 | 3min | 5353016 | REGINA  LUCIO MEIRA |
+| LOJA | 16:12-16:20 | 8min | 5353016 | REGINA  LUCIO MEIRA |
+
+## UBO5E05 (XLSX)
+
+9 paradas total · 4 BASE · 0 LOJA · 3 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:05-04:03 | 239min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 04:48-05:43 | 55min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 05:44-06:04 | 20min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 06:06-09:34 | 207min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 09:36-09:39 | 3min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 10:37-10:46 | 9min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 10:59-11:30 | 31min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 11:36-11:59 | 23min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 12:01-12:24 | 23min | - | BASE BENASSI - BASE BENASSI |
+
+## UDC6I03 (XLSX)
+
+12 paradas total · 3 BASE · 3 LOJA · 4 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:05-02:20 | 135min | - | BASE BENASSI - BASE BENASSI |
+| BASE | 02:23-02:50 | 27min | - | BASE BENASSI - BASE BENASSI |
+| FAKE_EXIT | 04:21-04:27 | 6min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FAKE_EXIT | 04:41-04:49 | 7min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| LOJA | 05:27-07:04 | 97min | 8590565 | PRINCESA - CABO FRIO 1 |
+| LOJA | 07:06-08:02 | 57min | 8590567 | PRINCESA - CABO FRIO 3 |
+| LOJA | 08:24-08:48 | 24min | 8590566 | PRINCESA - CABO FRIO 2 |
+| FORA_BASE | 11:19-11:34 | 14min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| BASE | 11:54-13:09 | 75min | - | BASE BENASSI - BASE BENASSI |
+| FORA_BASE | 13:16-13:49 | 33min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 15:28-15:58 | 29min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+| FORA_BASE | 16:00-16:20 | 20min | - | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## UEH9I93 (XLSX)
+
+1 paradas total · 1 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:04-12:23 | 739min | - | BASE BENASSI - BASE BENASSI |
+
+## UFL5C85 (XLSX)
+
+1 paradas total · 1 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:05-16:18 | 974min | - | BASE BENASSI - BASE BENASSI |
+
+## UFW0H63 (XLSX)
+
+9 paradas total · 0 BASE · 9 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| LOJA | 00:04-02:57 | 173min | 17659000 | O BOM ATACADISTA |
+| LOJA | 03:09-05:19 | 130min | 17659000 | O BOM ATACADISTA |
+| LOJA | 05:46-06:27 | 41min | 7000712 | PREZUNIC REALENGO |
+| LOJA | 06:41-08:13 | 91min | 7000705 | PREZUNIC SENADOR CAMARÁ |
+| LOJA | 08:14-09:47 | 93min | 7000705 | PREZUNIC SENADOR CAMARÁ |
+| LOJA | 10:42-11:19 | 37min | 17659000 | O BOM ATACADISTA |
+| LOJA | 11:21-11:26 | 6min | 17659000 | O BOM ATACADISTA |
+| LOJA | 11:29-14:03 | 154min | 17659000 | O BOM ATACADISTA |
+| LOJA | 15:39-16:24 | 45min | 17659000 | O BOM ATACADISTA |
+
+## UGA1D55 (XLSX)
+
+1 paradas total · 1 BASE · 0 LOJA · 0 FORA_BASE
+
+| Tipo | Chegada-Saída | Duração | cod_loja | Nome/Local |
+|---|---|---|---|---|
+| BASE | 00:01-16:14 | 973min | - | BASE BENASSI - BASE BENASSI |
+
