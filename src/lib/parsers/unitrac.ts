@@ -132,6 +132,20 @@ function findLojaGeofence(local: string): string | null {
 const MIN_DURACAO_BASE_SEG = 900
 const MIN_DURACAO_FORA_SEG = 600
 
+// Detecta se local é APENAS uma geofence ROTA genérica (sem loja real).
+// ROTAs (códigos 2018xxx tipo "2018002 - ROTA BOTAFOGO") são geofences de
+// bairro/região, não lojas físicas — devem virar FORA_BASE/FAKE_EXIT pela
+// regra de duração.
+function ehSoROTA(local: string): boolean {
+  const partes = (local ?? '').split(',').map(s => s.trim()).filter(Boolean)
+  if (partes.length === 0) return false
+  return partes.every(p =>
+    p === BASE_LOCAL || p === FORA_LOCAL ||
+    p.startsWith('BASE BENASSI') || p.startsWith('FORA DE BASE') ||
+    /^\d+\s*-\s*ROTA\s/i.test(p),
+  )
+}
+
 function classificaParada(local: string, duracaoSeg: number): ParadaUnitrac['classificacao'] {
   const primaria = primaryLocal(local)
   // Se há geofence LOJA específica entre as sobrepostas, sempre é LOJA mesmo
@@ -144,6 +158,10 @@ function classificaParada(local: string, duracaoSeg: number): ParadaUnitrac['cla
   if (primaria === FORA_LOCAL) {
     return duracaoSeg < MIN_DURACAO_FORA_SEG ? 'FAKE_EXIT' : 'FORA_BASE'
   }
+  // ROTA genérica (sem loja real) — não é entrega
+  if (ehSoROTA(local)) {
+    return duracaoSeg < MIN_DURACAO_FORA_SEG ? 'FAKE_EXIT' : 'FORA_BASE'
+  }
   return 'LOJA'
 }
 
@@ -151,6 +169,9 @@ function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: str
   // Prefere a geofence LOJA específica (se houver) sobre a primária.
   // Antes só usava primaryLocal — perdia paradas onde BASE/ROTA estava antes.
   const target = findLojaGeofence(local) ?? primaryLocal(local)
+  // Se a "target" é uma ROTA genérica, não tem loja real — retorna null
+  // (caso típico: "2018002 - ROTA BOTAFOGO" como única geofence).
+  if (/^\d+\s*-\s*ROTA\s/i.test(target)) return { codigo_loja: null, nome_loja: null }
   const idx = target.indexOf(' - ')
   if (idx === -1) return { codigo_loja: null, nome_loja: null }
   const codigo = target.slice(0, idx).trim()

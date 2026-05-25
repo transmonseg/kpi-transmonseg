@@ -10,8 +10,10 @@ export function parseDuracaoUnitrac(s: string): number {
 }
 
 export function formataHora(d: Date): string {
-  const hh = String(d.getHours()).padStart(2, '0')
-  const mm = String(d.getMinutes()).padStart(2, '0')
+  // Parsers armazenam BRT como Date.UTC(...) — getUTCHours retorna BR direto.
+  // getHours() retornaria horário local do servidor (UTC em prod), descolando 3h.
+  const hh = String(d.getUTCHours()).padStart(2, '0')
+  const mm = String(d.getUTCMinutes()).padStart(2, '0')
   return `${hh}:${mm}`
 }
 

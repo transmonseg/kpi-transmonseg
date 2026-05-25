@@ -38,10 +38,32 @@ function parseDuracaoStr(s: string): number {
   return +m[1] * 86400 + +m[2] * 3600 + +m[3] * 60 + +m[4]
 }
 
+// Verifica se há uma parte LOJA real (com código numérico, fora ROTA/BASE/FORA)
+// no local concatenado. Se houver, a parada é LOJA mesmo se a parte primária
+// for BASE BENASSI (caminhão parou em raio sobreposto BASE+LOJA).
+// Mesma semântica de findLojaGeofence no parser XLSX (unitrac.ts:120).
+function temLojaConcatenada(local: string): boolean {
+  const partes = local.split(',').map(s => s.trim())
+  for (const p of partes) {
+    if (p.startsWith(BASE_LOCAL_SHORT) || p.startsWith(FORA_LOCAL_SHORT)) continue
+    if (ROTA_GENERICA_RE.test(p)) continue
+    // Tem que ter formato "código - nome" com código numérico
+    const m = p.match(/^(\d+)\s*-\s*\S/)
+    if (m) return true
+  }
+  return false
+}
+
 function classificaParada(local: string, duracaoSeg: number): ParadaUnitrac['classificacao'] {
-  // Unitrac às vezes concatena múltiplos locais e às vezes trunca; usa prefixo curto
+  // Caminhão parado em raio sobreposto BASE/FORA + LOJA: sempre LOJA.
+  // Antes, paradas com "BASE BENASSI, 23080000 - MERCADO X" viravam BASE
+  // indevidamente (XLSX já tinha essa lógica via findLojaGeofence).
+  if (temLojaConcatenada(local)) return 'LOJA'
   if (local.startsWith(BASE_LOCAL_SHORT)) return duracaoSeg > 900 ? 'BASE' : 'FAKE_EXIT'
   if (local.startsWith(FORA_LOCAL_SHORT)) return duracaoSeg < 600 ? 'FAKE_EXIT' : 'FORA_BASE'
+  if (ehSoROTA(local)) {
+    return duracaoSeg < 600 ? 'FAKE_EXIT' : 'FORA_BASE'
+  }
   return 'LOJA'
 }
 
@@ -51,23 +73,27 @@ function classificaParada(local: string, duracaoSeg: number): ParadaUnitrac['cla
 // "ROTA ZONA NORTE" ou similar (ex: "2018023 - ROTA ZONA NORTE, 3030113 - SUPERPRIX LJ 13").
 const REDE_CODIGO_PREFIX_RE = /^(9039|3030|7000|8590|5353|5790|9006|710[0-3]|5600|11623|17659|2384|7012|202)/
 
+// "12345 - ROTA ..." é geofence genérico de bairro/região (não loja física).
+// Mesma regra do parser XLSX (unitrac.ts:123).
+const ROTA_GENERICA_RE = /^\d+\s*-\s*ROTA\s/i
+
 function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: string | null } {
-  // codigo_loja/nome_loja só fazem sentido pra LOJA real (formato "12345 - NOME")
-  // BASE BENASSI e FORA DE BASE não tem código numérico
-  if (local.startsWith(BASE_LOCAL_SHORT) || local.startsWith(FORA_LOCAL_SHORT)) {
-    return { codigo_loja: null, nome_loja: null }
-  }
   // Limpa sufixo |VEHICLE_HEADER|<placa próx veículo> que vaza no last parada
   const cleaned = local.replace(/\s*\|VEHICLE_HEADER\|.*$/, '').trim()
 
   // Unitrac concatena várias lojas/zonas por vírgula quando o GPS cai no raio
   // de múltiplos locais. Extrai TODOS os pares "código - nome" e prefere o que
   // tem código com prefixo de rede conhecido (ex: 3030=SuperPrix, 5353=Prezunic).
-  // Sem preferência clara, usa o primeiro par válido.
+  // Sem preferência clara, usa o primeiro par válido. ROTAS/BASE/FORA ignoradas.
+  // Importante: NÃO descartamos cedo só porque começa com BASE — pode ter loja
+  // real concatenada (ex: "BASE BENASSI, 23080000 - MERCADO X").
   const partes = cleaned.split(',').map(s => s.trim())
   let fallback: { codigo_loja: string; nome_loja: string | null } | null = null
 
   for (const parte of partes) {
+    // Pula bases, foras e ROTAs genéricas
+    if (parte.startsWith(BASE_LOCAL_SHORT) || parte.startsWith(FORA_LOCAL_SHORT)) continue
+    if (ROTA_GENERICA_RE.test(parte)) continue
     const idx = parte.indexOf(' - ')
     if (idx === -1) continue
     const codigo = parte.slice(0, idx).trim()
@@ -78,6 +104,15 @@ function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: str
   }
 
   return fallback ?? { codigo_loja: null, nome_loja: null }
+}
+
+// Verifica se o `local_parada` é puramente uma geofence ROTA (sem loja real).
+// Quando é só ROTA, a parada deve ser tratada como FORA_BASE (não LOJA).
+function ehSoROTA(local: string): boolean {
+  if (local.startsWith(BASE_LOCAL_SHORT) || local.startsWith(FORA_LOCAL_SHORT)) return false
+  const partes = local.split(',').map(s => s.trim())
+  // Se TODAS as partes são ROTAs ou vazias, é só ROTA
+  return partes.length > 0 && partes.every(p => !p || ROTA_GENERICA_RE.test(p))
 }
 
 function computeSaidaCd(paradas: ParadaUnitrac[]): Date | null {

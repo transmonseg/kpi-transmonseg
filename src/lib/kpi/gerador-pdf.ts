@@ -30,11 +30,13 @@ function safeText(s: string): string {
 
 function fmt(date: Date | null): string {
   if (!date) return '—'
-  return date.toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'America/Sao_Paulo',
-  })
+  // Parsers armazenam BRT como Date.UTC(...) — ler getUTCHours direto
+  // (mesma convenção do gerador-kpi.ts:23). Antes usava toLocaleTimeString
+  // com timeZone Sao_Paulo, que aplicava -3h sobre valores já em BR,
+  // produzindo PDF do KPI 3h atrás do correto.
+  const h = String(date.getUTCHours()).padStart(2, '0')
+  const m = String(date.getUTCMinutes()).padStart(2, '0')
+  return `${h}:${m}`
 }
 
 function fmtData(iso: string): string {
