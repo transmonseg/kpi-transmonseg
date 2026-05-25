@@ -374,29 +374,63 @@ function deduplicarPorCodigo(paradas: UnitracParadaRow[]): UnitracParadaRow[] {
     return hSaida < SAIDA_MANHA_H
   }
 
-  const byCode = new Map<string, UnitracParadaRow>()
+  // Agrupa paradas por código de loja (em ordem cronológica)
+  const ordenadas = [...paradas].sort(
+    (a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime(),
+  )
   const semCodigo: UnitracParadaRow[] = []
-  for (const p of paradas) {
+  const grupos = new Map<string, UnitracParadaRow[]>()
+  for (const p of ordenadas) {
     if (!p.codigo_loja) { semCodigo.push(p); continue }
-    const existing = byCode.get(p.codigo_loja)
-    if (!existing) { byCode.set(p.codigo_loja, p); continue }
+    const arr = grupos.get(p.codigo_loja) ?? []
+    arr.push(p)
+    grupos.set(p.codigo_loja, arr)
+  }
 
-    const pNoite = isEstacionamentoNoturno(p)
-    const exNoite = isEstacionamentoNoturno(existing)
+  // GAP_VISITA_SEPARADA: 60min entre saída de uma parada e chegada da próxima
+  // (mesmo código) → consideradas visitas SEPARADAS (motorista voltou de novo).
+  // Caso típico PRINCESA dia 19: Arraial 1 às 05:56-06:30 + 11:15-12:15 (5h gap)
+  // = duas entregas reais (manhã e tarde), ambas devem aparecer no KPI.
+  // Antes: dedup pegava só a de maior duração (12:15 60min > 06:30 34min),
+  // sumindo a entrega da manhã que era a "1ª Entrega" da escala.
+  const GAP_VISITA_SEPARADA_SEG = 60 * 60
 
-    if (exNoite && !pNoite) {
-      byCode.set(p.codigo_loja, p)
-    } else if (!exNoite && pNoite) {
-      // mantém existing
-    } else {
-      const duracaoP = p.saida === null ? Infinity : (p.duracao_seg ?? 0)
-      const duracaoExisting = existing.saida === null ? Infinity : (existing.duracao_seg ?? 0)
-      if (duracaoP > duracaoExisting) byCode.set(p.codigo_loja, p)
+  const mantidas: UnitracParadaRow[] = []
+  for (const arr of grupos.values()) {
+    if (arr.length === 1) { mantidas.push(arr[0]); continue }
+    // Separar em "clusters" por gap > GAP_VISITA_SEPARADA_SEG entre saída→chegada
+    const clusters: UnitracParadaRow[][] = [[arr[0]]]
+    for (let i = 1; i < arr.length; i++) {
+      const prev = arr[i - 1]
+      const cur = arr[i]
+      const prevSaida = prev.saida ? new Date(prev.saida).getTime() : new Date(prev.chegada).getTime()
+      const curChegada = new Date(cur.chegada).getTime()
+      const gap = (curChegada - prevSaida) / 1000
+      if (gap >= GAP_VISITA_SEPARADA_SEG) clusters.push([cur])
+      else clusters[clusters.length - 1].push(cur)
+    }
+    // Para cada cluster, manter a parada "principal" (não-noturna, maior duração).
+    // Clusters separados = visitas distintas, todas mantidas.
+    for (const cluster of clusters) {
+      let melhor: UnitracParadaRow | null = null
+      for (const p of cluster) {
+        if (!melhor) { melhor = p; continue }
+        const pNoite = isEstacionamentoNoturno(p)
+        const exNoite = isEstacionamentoNoturno(melhor)
+        if (exNoite && !pNoite) melhor = p
+        else if (!exNoite && pNoite) { /* mantém */ }
+        else {
+          const dP = p.saida === null ? Infinity : (p.duracao_seg ?? 0)
+          const dE = melhor.saida === null ? Infinity : (melhor.duracao_seg ?? 0)
+          if (dP > dE) melhor = p
+        }
+      }
+      if (melhor) mantidas.push(melhor)
     }
   }
 
-  return [...byCode.values(), ...semCodigo].sort(
-    (a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime()
+  return [...mantidas, ...semCodigo].sort(
+    (a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime(),
   )
 }
 
