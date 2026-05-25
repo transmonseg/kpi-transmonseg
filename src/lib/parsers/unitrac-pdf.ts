@@ -133,9 +133,11 @@ function normalizeSpaces(raw: string): string {
     // Latitude seguida de longitude (-22.123-43.456)
     .replace(/(-?\d+\.\d+)(-\d+\.\d+)/g, '$1 $2')
     // Coordenada seguida de letra (ex: -43.341840BASE)
-    .replace(/(-?\d+\.\d+)([A-ZÀ-Ý])/g, '$1 $2')
-    // Letra seguida de coordenada negativa (ex: RJ-22.892950)
-    .replace(/([A-ZÀ-Ý])(-\d+\.\d+)/g, '$1 $2')
+    .replace(/(-?\d+\.\d+)([A-Za-zÀ-Ýà-ý])/g, '$1 $2')
+    // Letra seguida de coordenada negativa (ex: RJ-22.892950, "ão-22.910290")
+    // Inclui minúsculas — palavras como "Sebastião", "Brasão", "Coração" terminam
+    // em minúscula e ficam grudadas em coordenadas no PDF, devorando a próxima parada.
+    .replace(/([A-Za-zÀ-Ýà-ý])(-\d+\.\d+)/g, '$1 $2')
     // Lat/lng (exatamente 6 decimais) seguida de código numérico (ex: -43.5593609006154 = "-43.559360" + "9006154")
     .replace(/(-?\d+\.\d{6})(\d)/g, '$1 $2')
     // Número decimal seguido de "0D" (duração) — ex: "56,20D" = "56,2" + "0D"
