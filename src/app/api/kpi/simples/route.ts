@@ -33,21 +33,24 @@ type PreviewLinha = {
   anomalias: string[]
 }
 
+// Parsers do Unitrac armazenam BRT como Date.UTC(...) — ler getUTCHours direto.
+// Esta convenção é a verdade do sistema (ver gerador-kpi.ts:23). Subtrair 3h aqui
+// produzia duplo deslocamento que aparecia como 06:27 → 03:27 na tela de revisão.
 function fmtHoraBRT(d: Date | null | undefined): string | null {
   if (!d) return null
-  const h = (d.getUTCHours() - 3 + 24) % 24
+  const h = d.getUTCHours()
   const m = d.getUTCMinutes()
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
 
-// HH:MM (BRT) → Date UTC ancorado em `dataIso` (YYYY-MM-DD)
+// HH:MM (BRT) → Date com BRT mascarado como UTC (mesma convenção dos parsers)
 function brtHHMMtoDate(dataIso: string, hhmm: string): Date | null {
   const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm.trim())
   if (!m) return null
   const h = Number(m[1]), mn = Number(m[2])
   if (h < 0 || h > 23 || mn < 0 || mn > 59) return null
   const d = new Date(`${dataIso}T00:00:00.000Z`)
-  d.setUTCHours(h + 3, mn, 0, 0)
+  d.setUTCHours(h, mn, 0, 0)
   return d
 }
 

@@ -29,13 +29,12 @@ function timeToMinutes(hhmm: string): number {
   return h * 60 + m
 }
 
-// Converte timestamp pra minutos do dia em BRT (UTC-3).
-// Necessário porque o servidor (Vercel) roda em UTC, mas as janelas operacionais
-// (janela_inicio/janela_fim das redes) estão armazenadas em horário de Brasília.
-// Usar getHours() (hora local do servidor) gerava ANOM-11 falsa em produção.
+// Converte timestamp pra minutos do dia em BRT.
+// Parsers do Unitrac já armazenam BRT como Date.UTC(...) — usar getUTCHours
+// direto (ver gerador-kpi.ts:23). Subtrair 3h aqui causava deslocamento duplo
+// que gerava ANOM-11 falsa e timestamps errados na tela de revisão.
 function dateToMinutesOfDay(d: Date): number {
-  const brtHours = (d.getUTCHours() - 3 + 24) % 24
-  return brtHours * 60 + d.getUTCMinutes()
+  return d.getUTCHours() * 60 + d.getUTCMinutes()
 }
 
 export function detectaAnomalias(params: DetectaParams): AnomaliaDetectada[] {

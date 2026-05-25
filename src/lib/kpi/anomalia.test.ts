@@ -233,19 +233,18 @@ describe('ANOM-06: saida_cd ausente com paradas registradas', () => {
 // ---------------------------------------------------------------------------
 
 describe('ANOM-11: saída do CD fora da janela', () => {
-  // Janela normal 06:00–18:00 (BRT = UTC-3)
-  // Para simular BRT 06:00 via UTC: UTC 09:00 → BRT 06:00
-  // Para simular BRT 04:00 via UTC: UTC 07:00 → BRT 04:00
+  // Parsers do Unitrac armazenam BRT como Date.UTC(...) — ver gerador-kpi.ts:23.
+  // BRT 04:00 → new Date('2026-05-18T04:00:00.000Z')  (getUTCHours()=4)
+  // BRT 10:00 → new Date('2026-05-18T10:00:00.000Z')  (getUTCHours()=10)
 
   const janelaNormal = new Map([
     ['ZONA_SUL', { janela_inicio: '06:00', janela_fim: '18:00' }],
   ])
 
   it('dispara quando saída BRT 04:00 está FORA da janela 06:00-18:00', () => {
-    // BRT 04:00 = UTC 07:00
     const rota = makeRota({
       rede_id: 'ZONA_SUL',
-      saida_cd: new Date('2026-05-18T07:00:00.000Z'),
+      saida_cd: new Date('2026-05-18T04:00:00.000Z'),
     })
     const result = detectaAnomalias({
       rotas: [rota],
@@ -260,10 +259,9 @@ describe('ANOM-11: saída do CD fora da janela', () => {
   })
 
   it('NÃO dispara quando saída BRT 10:00 está DENTRO da janela 06:00-18:00', () => {
-    // BRT 10:00 = UTC 13:00
     const rota = makeRota({
       rede_id: 'ZONA_SUL',
-      saida_cd: new Date('2026-05-18T13:00:00.000Z'),
+      saida_cd: new Date('2026-05-18T10:00:00.000Z'),
     })
     const result = detectaAnomalias({
       rotas: [rota],
@@ -276,20 +274,16 @@ describe('ANOM-11: saída do CD fora da janela', () => {
   })
 
   // Janela wrap-around 22:00–06:00 (vira meia-noite)
-  // BRT 23:00 = UTC 02:00 no dia seguinte (ou UTC 26:00 → represento como mesmo dia +2h)
-  // Para evitar ambiguidade de data, uso UTC que mapeiam corretamente:
-  // BRT 23:00 = UTC 02:00 (próximo dia, mas para fins de minutos do dia é o mesmo)
-  // BRT 10:00 = UTC 13:00
+  // BRT mascarado como UTC: 23:00 → Date.UTC(...,23,0); 10:00 → Date.UTC(...,10,0)
 
   const janelaWrap = new Map([
     ['ATACADAO', { janela_inicio: '22:00', janela_fim: '06:00' }],
   ])
 
   it('janela wrap-around: BRT 23:00 está DENTRO da janela 22:00-06:00 → não dispara', () => {
-    // BRT 23:00 = UTC 02:00
     const rota = makeRota({
       rede_id: 'ATACADAO',
-      saida_cd: new Date('2026-05-18T02:00:00.000Z'),
+      saida_cd: new Date('2026-05-18T23:00:00.000Z'),
       paradas: [makeParada()],
     })
     const result = detectaAnomalias({
@@ -303,10 +297,9 @@ describe('ANOM-11: saída do CD fora da janela', () => {
   })
 
   it('janela wrap-around: BRT 10:00 está FORA da janela 22:00-06:00 → dispara', () => {
-    // BRT 10:00 = UTC 13:00
     const rota = makeRota({
       rede_id: 'ATACADAO',
-      saida_cd: new Date('2026-05-18T13:00:00.000Z'),
+      saida_cd: new Date('2026-05-18T10:00:00.000Z'),
       paradas: [makeParada()],
     })
     const result = detectaAnomalias({
