@@ -1,0 +1,1066 @@
+[
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "PRINCESA",
+    "a": {
+      "id": "ae38b034-8b18-4360-a448-8206673f93ad",
+      "nome": "PRINCESA - BARRA DE SÃO JOÃO",
+      "codigo_unitrac": "8590562",
+      "nome_unitrac": "PRINCESA - BARRA DE SÃO JOÃO",
+      "ativo": true
+    },
+    "b": {
+      "id": "cac2a138-b51a-401d-b183-ea3068f39728",
+      "nome": "Princesa - Barra de Sao Joao (1 Entrega)",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "PRINCESA",
+    "a": {
+      "id": "c3517a59-d0bd-40b3-830b-7c4709a641bf",
+      "nome": "PRINCESA - CABO FRIO 1",
+      "codigo_unitrac": "8590565",
+      "nome_unitrac": "PRINCESA - CABO FRIO 1",
+      "ativo": true
+    },
+    "b": {
+      "id": "452ba7c6-167c-447a-8efe-addb903047e5",
+      "nome": "Princesa - Cabo Frio 1 (1 Entrega)",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "PRINCESA",
+    "a": {
+      "id": "1f329d1d-783f-4cdf-85e8-79e5559e9a13",
+      "nome": "PRINCESA - CABO FRIO 2",
+      "codigo_unitrac": "8590566",
+      "nome_unitrac": "PRINCESA - CABO FRIO 2",
+      "ativo": true
+    },
+    "b": {
+      "id": "f474bb59-86b3-46ce-9a64-50cf2f21c145",
+      "nome": "Princesa - Cabo Frio 2 (3 Entrega)",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "PRINCESA",
+    "a": {
+      "id": "05d77aa4-ebdc-4a28-ba51-6ccb2b786273",
+      "nome": "PRINCESA - CABO FRIO 3",
+      "codigo_unitrac": "8590567",
+      "nome_unitrac": "PRINCESA - CABO FRIO 3",
+      "ativo": true
+    },
+    "b": {
+      "id": "2a8a8fa1-87ad-4fc3-9975-cc43a8b122e7",
+      "nome": "Princesa - Cabo Frio 3 (2 Entrega)",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "PRINCESA",
+    "a": {
+      "id": "305c5ab8-83b0-4dbd-a783-51e37829f540",
+      "nome": "PRINCESA - RIO DAS OSTRAS",
+      "codigo_unitrac": "8590568",
+      "nome_unitrac": "PRINCESA - RIO DAS OSTRAS",
+      "ativo": true
+    },
+    "b": {
+      "id": "24964f68-ccb9-4068-8f36-d22bd73a7013",
+      "nome": "Princesa - Rio das Ostras (2 Entrega)",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "CARREFOUR",
+    "a": {
+      "id": "0fc33056-e505-43aa-8e7d-aaae64e84aa3",
+      "nome": "CARREFOUR JUIZ DE FORA",
+      "codigo_unitrac": "9006156",
+      "nome_unitrac": "CARREFOUR JUIZ DE FORA",
+      "ativo": true
+    },
+    "b": {
+      "id": "d0c16c1b-3ccb-4a27-a2c1-6940e8d6abf0",
+      "nome": "CARREFOUR - JUIZ DE FORA",
+      "codigo_unitrac": "9006161",
+      "nome_unitrac": "CARREFOUR JUIZ DE FORA (ALT)",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "PRINCESA",
+    "a": {
+      "id": "ac02b46a-6d82-4423-819a-85a7193c571d",
+      "nome": "PRINCESA ITABORAÍ",
+      "codigo_unitrac": "8590573",
+      "nome_unitrac": "PRINCESA ITABORAÍ",
+      "ativo": true
+    },
+    "b": {
+      "id": "20bbae08-2de6-439f-b39d-4516fdf63fef",
+      "nome": "Princesa - Itaborai (2 Entrega)",
+      "codigo_unitrac": "8590576",
+      "nome_unitrac": "PRINCESA ITABORAI (ALT)",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "ZONA_SUL",
+    "a": {
+      "id": "7d709538-a25d-4c7c-993d-72ee0caa2f0b",
+      "nome": "ZONA SUL LOJA 21 - FLAMENGO",
+      "codigo_unitrac": "9039021",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "8979ef2f-19b2-4aa1-b9de-870a56469f10",
+      "nome": "21 - ZONA SUL - FLAMENGO 2",
+      "codigo_unitrac": "9039103",
+      "nome_unitrac": "21 - ZONA SUL - FLAMENGO 2",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "ARMAZEM_GRAO",
+    "a": {
+      "id": "8fb5939a-b68c-45ea-b480-49c27a0cde6e",
+      "nome": "ARMAZEM DO GRAO (BARRA DA TIJUCA)",
+      "codigo_unitrac": "5353011",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "1e0a070a-4dd4-44b9-a45a-5a31ad28ea76",
+      "nome": "ARMAZEM DO GRAO A BARRA DA TIJUCA",
+      "codigo_unitrac": null,
+      "nome_unitrac": "ARMAZEM DO GRAO (BARRA DA TIJUCA)",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "EMANUEL",
+    "a": {
+      "id": "d3739d8e-2fe3-4dd7-adae-476332f6879b",
+      "nome": "EMANUEL CACHAMORRA",
+      "codigo_unitrac": "17659002",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "e6490706-0efc-4703-b9b3-1a29ae18e255",
+      "nome": "CACHAMORRA",
+      "codigo_unitrac": null,
+      "nome_unitrac": "EMANUEL CACHAMORRA",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "EMANUEL",
+    "a": {
+      "id": "15a43cbb-2eb6-42d5-b838-545399a57cac",
+      "nome": "EMANUEL VARGEM GRANDE",
+      "codigo_unitrac": "17659003",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "a60c3157-7b35-463b-9041-5a569c9961ae",
+      "nome": "VARGEM GRANDE",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "EMANUEL",
+    "a": {
+      "id": "04d651a1-8056-46ab-bec3-a63115789b03",
+      "nome": "EMANUEL ALHAMBRA",
+      "codigo_unitrac": "21469000",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "19f61c03-599b-46d2-ad3f-b6b9d734d403",
+      "nome": "ALHAMBRA",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "FEIRA_NOVA",
+    "a": {
+      "id": "bf012ac3-13c1-4efd-897a-a0535691d6a1",
+      "nome": "FEIRA NOVA ANCHIETA",
+      "codigo_unitrac": "579003",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "a3e7fd6f-efda-4f49-a7f3-20e145ad835b",
+      "nome": "3- Anchieta",
+      "codigo_unitrac": null,
+      "nome_unitrac": "FEIRA NOVA ANCHIETA",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "FEIRA_NOVA",
+    "a": {
+      "id": "fb267c8a-c470-4677-b64c-247a4d0a7ea1",
+      "nome": "FEIRA NOVA SANTA CRUZ DA SERRA",
+      "codigo_unitrac": "579006",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "7751ba3c-8b80-4514-8805-b780def508aa",
+      "nome": "6- Santa Cruz da Serra",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "FEIRA_NOVA",
+    "a": {
+      "id": "8fa3f9ee-0dc3-4aa1-82be-5ec8e41609aa",
+      "nome": "FEIRA NOVA COELHO DA ROCHA",
+      "codigo_unitrac": "579007",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "290983bc-f067-4dff-b328-f3ecf47ec82e",
+      "nome": "7- Coelho da Rocha",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "FEIRA_NOVA",
+    "a": {
+      "id": "3f8f28b6-4e2f-4a26-b619-ffd5468075f3",
+      "nome": "FEIRA NOVA CERAMICA",
+      "codigo_unitrac": "579008",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "ff433cd8-a988-47c4-a343-949db23f25a7",
+      "nome": "8- Ceramica",
+      "codigo_unitrac": null,
+      "nome_unitrac": "FEIRA NOVA CERAMICA",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "FEIRA_NOVA",
+    "a": {
+      "id": "632eff69-df9b-4d32-ac19-4b05fa892ad6",
+      "nome": "FEIRA NOVA QUEIMADOS",
+      "codigo_unitrac": "579009",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "c191cf66-0ad8-4874-a4ee-dc1e10463423",
+      "nome": "9- Queimados",
+      "codigo_unitrac": null,
+      "nome_unitrac": "FEIRA NOVA QUEIMADOS",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "FEIRA_NOVA",
+    "a": {
+      "id": "bcdd0844-fa8b-4768-bf1c-7e485ef35611",
+      "nome": "FEIRA NOVA CACHAMBI",
+      "codigo_unitrac": "579010",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "1786e86c-a559-4795-9948-c1dd2a27132d",
+      "nome": "10- Cachambi",
+      "codigo_unitrac": null,
+      "nome_unitrac": "FEIRA NOVA CACHAMBI",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "FEIRA_NOVA",
+    "a": {
+      "id": "11ea634c-11f9-4f2d-842c-699c68bdb895",
+      "nome": "FEIRA NOVA FREGUESIA",
+      "codigo_unitrac": "579012",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "6aee9ef7-48d4-45f7-b5c5-6237b4a2eebe",
+      "nome": "12- Freguesia",
+      "codigo_unitrac": null,
+      "nome_unitrac": "FEIRA NOVA FREGUESIA",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "FEIRA_NOVA",
+    "a": {
+      "id": "ef4c3b5f-ccd8-4eab-a365-44035695a408",
+      "nome": "FEIRA NOVA TODOS OS SANTOS",
+      "codigo_unitrac": "579013",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "9b9b54df-cca3-4bb8-949d-7ea3a0a1e399",
+      "nome": "13- Todos os Santos",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "SUPER_PAX",
+    "a": {
+      "id": "c0cf2d78-b4ae-4553-b822-31520c20d6b6",
+      "nome": "PAX OSWALDO CRUZ",
+      "codigo_unitrac": "202000",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "3247db8c-5489-4799-aa42-9aae6991e750",
+      "nome": "Oswaldo Cruz",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "SUPER_PAX",
+    "a": {
+      "id": "9a859270-f71d-46c6-9ddc-cfd6f4d7894a",
+      "nome": "PAX ENGENHO DE DENTRO",
+      "codigo_unitrac": "202001",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "d57a582a-b24f-4307-a50c-4518029011fc",
+      "nome": "Engenho de Dentro",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "SUPER_PAX",
+    "a": {
+      "id": "6e8bdfa7-a5ad-48e7-9572-7d61c4020f48",
+      "nome": "PAX REALENGO",
+      "codigo_unitrac": "202002",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "ec9690db-8221-499f-9022-26d2742986f9",
+      "nome": "Realengo",
+      "codigo_unitrac": null,
+      "nome_unitrac": "PAX REALENGO",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "SUPER_PAX",
+    "a": {
+      "id": "09cdf72b-7720-47ea-a49f-2079e59ba761",
+      "nome": "PAX INHAUMA",
+      "codigo_unitrac": "202003",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "9313e0c0-c2c2-42eb-8b07-90c849bf0853",
+      "nome": "Inhauma",
+      "codigo_unitrac": null,
+      "nome_unitrac": "PAX INHAUMA",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "SUPER_PAX",
+    "a": {
+      "id": "ad55cfff-84f2-4e1d-a74e-c2506520a990",
+      "nome": "PAX DEL CASTILHO",
+      "codigo_unitrac": "202004",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "7e8a2e74-162a-49b6-9458-b9350cf1ac20",
+      "nome": "Del Castilho",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "SUPER_PAX",
+    "a": {
+      "id": "ea963466-dddd-4239-837a-6e210a2ed97a",
+      "nome": "PAX MADUREIRA",
+      "codigo_unitrac": "202006",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "e10ae230-daff-43cb-b351-7c716625da5f",
+      "nome": "Madureira",
+      "codigo_unitrac": null,
+      "nome_unitrac": "PAX MADUREIRA",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "SUPER_PAX",
+    "a": {
+      "id": "f5ed8b53-2989-4f02-b56b-57505d9d37d4",
+      "nome": "PAX PILARES",
+      "codigo_unitrac": "202009",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "4eb167f3-9b4a-4100-8bbc-7e5634e9e681",
+      "nome": "Pilares",
+      "codigo_unitrac": null,
+      "nome_unitrac": "PAX PILARES",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "SUPER_PAX",
+    "a": {
+      "id": "7cb52d6c-1e6e-4dde-b40a-fe74ac2b6179",
+      "nome": "PAX TAQUARA",
+      "codigo_unitrac": "202011",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "f78a3c47-48ce-42c7-861d-ec49eada9771",
+      "nome": "Taquara",
+      "codigo_unitrac": null,
+      "nome_unitrac": "PAX TAQUARA",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "SUPER_PAX",
+    "a": {
+      "id": "dba0761d-337d-4f7a-8595-1c2793924121",
+      "nome": "PAX SEPETIBA",
+      "codigo_unitrac": "202012",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "ff5b9d53-2019-4552-a105-eaa8ce004ffd",
+      "nome": "Sepetiba",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "VIANENSE",
+    "a": {
+      "id": "3cb51a81-7ea2-4161-be41-2b4ca4def61d",
+      "nome": "VIANENSE FREGUESIA",
+      "codigo_unitrac": "11623026",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "d93026b4-83fe-42c6-8351-593712ccd457",
+      "nome": "Vianense - Freguesia 2 entrega",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "SENDAS",
+    "a": {
+      "id": "2c910254-d052-4f98-8a3c-32591d0d79a9",
+      "nome": "SENDAS NOVA IGUACU - LOJA 30",
+      "codigo_unitrac": "560021",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "dec0826d-4863-41d2-845f-fd35ce38a150",
+      "nome": "SENDAS NOVA IGUACU II",
+      "codigo_unitrac": "560054",
+      "nome_unitrac": null,
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "SENDAS",
+    "a": {
+      "id": "3d623f48-0fc7-4185-8258-0773785e2e65",
+      "nome": "SENDAS BANGU - LOJA 55",
+      "codigo_unitrac": "560028",
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "fb582c40-7345-452a-9f4f-4c53beae5b8c",
+      "nome": "SENDAS BANGU II",
+      "codigo_unitrac": "560058",
+      "nome_unitrac": "SENDAS BANGU II",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "PRINCESA",
+    "a": {
+      "id": "18e9e8a0-874c-48e9-a173-5d8e9ccbfece",
+      "nome": "Princesa - Marica 1 (2 Entrega)",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "9ee6526f-5351-4375-8357-4c053e9e3f2a",
+      "nome": "PRINCESA MARICÁ 1",
+      "codigo_unitrac": "8590002",
+      "nome_unitrac": "PRINCESA MARICÁ 1",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "PRINCESA",
+    "a": {
+      "id": "18e9e8a0-874c-48e9-a173-5d8e9ccbfece",
+      "nome": "Princesa - Marica 1 (2 Entrega)",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "e37c4bce-f13c-497f-9cdd-427a7be25808",
+      "nome": "PRINCESA MARICÁ 2",
+      "codigo_unitrac": "8590003",
+      "nome_unitrac": "PRINCESA MARICÁ 2",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "PRINCESA",
+    "a": {
+      "id": "d4ecbb7e-353c-4d96-82a7-e429f45b3078",
+      "nome": "Princesa - Marica 2 (1 Entrega)",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "9ee6526f-5351-4375-8357-4c053e9e3f2a",
+      "nome": "PRINCESA MARICÁ 1",
+      "codigo_unitrac": "8590002",
+      "nome_unitrac": "PRINCESA MARICÁ 1",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "PRINCESA",
+    "a": {
+      "id": "d4ecbb7e-353c-4d96-82a7-e429f45b3078",
+      "nome": "Princesa - Marica 2 (1 Entrega)",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "e37c4bce-f13c-497f-9cdd-427a7be25808",
+      "nome": "PRINCESA MARICÁ 2",
+      "codigo_unitrac": "8590003",
+      "nome_unitrac": "PRINCESA MARICÁ 2",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "PRINCESA",
+    "a": {
+      "id": "79df48e7-14c4-4558-9a5b-e784b5cd7ac4",
+      "nome": "Princesa - Buzios 1 (2 Entrega)",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "53c8f273-50db-4c60-b6b2-91d2bc005491",
+      "nome": "PRINCESA - BUZIOS 1",
+      "codigo_unitrac": "8590563",
+      "nome_unitrac": "PRINCESA - BUZIOS 1",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "PRINCESA",
+    "a": {
+      "id": "2cac8d64-3559-4d94-b06f-7d42731ca90e",
+      "nome": "Princesa - Buzios 2 (3 Entrega)",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "707eceaf-2544-4064-8796-3bef2e102e5b",
+      "nome": "PRINCESA - BUZIOS 2",
+      "codigo_unitrac": "8590564",
+      "nome_unitrac": "PRINCESA - BUZIOS 2",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "PRINCESA",
+    "a": {
+      "id": "67000e8b-d6ab-46f8-a9b2-b108db199271",
+      "nome": "Princesa - Buzios 3 (1 Entrega)",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "5fa5b6ff-6b6a-4c40-ba3a-3c06c8f1a293",
+      "nome": "PRINCESA - BUZIOS 3",
+      "codigo_unitrac": "8590571",
+      "nome_unitrac": "PRINCESA - BUZIOS 3",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "ASSAI",
+    "a": {
+      "id": "58b137e6-7354-4c42-8b73-27ff60a46939",
+      "nome": "Assai - Alcantara I - Loja 35",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "6d644ce3-066f-4250-86a7-d736f5e1c742",
+      "nome": "Assaí - Alcântara I - Loja 35",
+      "codigo_unitrac": null,
+      "nome_unitrac": "SENDAS ALCÂNTARA I - LOJA 35",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "ASSAI",
+    "a": {
+      "id": "804995bb-0674-4a62-83ca-56ea3607d3ba",
+      "nome": "Assai - Araruama - Loja 221",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "d50f2fcf-28a4-47c4-8930-376c5dfcda21",
+      "nome": "Assaí - Araruama - Loja 221",
+      "codigo_unitrac": null,
+      "nome_unitrac": "SENDAS ARARUAMA - LJ 221",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "ASSAI",
+    "a": {
+      "id": "4bbe9bc1-0cc9-4509-a04e-791a76234e72",
+      "nome": "Assai - Bangu I - Loja 55",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "d740bb8c-a545-4ee5-8b4b-58c730bef2db",
+      "nome": "Assaí - Bangu I - Loja 55",
+      "codigo_unitrac": null,
+      "nome_unitrac": "SENDAS BANGU - LOJA 55",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "ASSAI",
+    "a": {
+      "id": "52d8084d-da55-4905-a9c4-947feb1dc293",
+      "nome": "Assai - Cabo Frio - Loja 82",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "6150aa40-b28b-4529-8519-dc8a1bc18ac4",
+      "nome": "Assaí - Cabo Frio - Loja 82",
+      "codigo_unitrac": null,
+      "nome_unitrac": "SENDAS CABO FRIO - LOJA 82",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "ASSAI",
+    "a": {
+      "id": "5562bbed-3fdc-4c6f-ab89-6f08fac1034f",
+      "nome": "Assai - Campinho - Loja 37",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "0b2a2a86-9b2e-4355-b87d-1d327daef7a1",
+      "nome": "Assaí - Campinho - Loja 37",
+      "codigo_unitrac": null,
+      "nome_unitrac": "SENDAS CAMPINHO - LOJA 37",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "ASSAI",
+    "a": {
+      "id": "0f782b51-00a1-43a2-9c38-a22c230d0584",
+      "nome": "Assai - Cesario de Melo - Loja 202",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "a838ca7a-7bcc-4cba-8602-dd95e556655e",
+      "nome": "Assaí - Cesário de Melo - Loja 202",
+      "codigo_unitrac": null,
+      "nome_unitrac": "SENDAS CESÁRIO DE MELO - LJ 202",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "ASSAI",
+    "a": {
+      "id": "17cb7d99-00fd-4253-b6ee-609184ecddff",
+      "nome": "Assai - Freguesia - Loja 28",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "5c42eafb-20ec-478a-b4c6-447aaad49ad1",
+      "nome": "Assaí - Freguesia - Loja 28",
+      "codigo_unitrac": null,
+      "nome_unitrac": "SENDAS FREGUESIA - LOJA 28",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "ASSAI",
+    "a": {
+      "id": "d3fd179a-adb3-406f-abf4-fffe8ec07690",
+      "nome": "Assai - Ilha do Governador - Loja 29",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "8139ccb6-2cd0-4d7a-b6e3-e209b908d2db",
+      "nome": "Assaí - Ilha do Governador - Loja 29",
+      "codigo_unitrac": null,
+      "nome_unitrac": "SENDAS ILHA - LOJA 29",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "ASSAI",
+    "a": {
+      "id": "6b5f37d8-af31-4fa1-bb10-6ce1094a9ecd",
+      "nome": "Assai - Macae - Loja 232",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "25fa6b77-9225-4899-b57c-c9df294972d1",
+      "nome": "Assaí - Macaé - Loja 232",
+      "codigo_unitrac": null,
+      "nome_unitrac": "SENDAS MACAÉ - LOJA 232",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "VIANENSE",
+    "a": {
+      "id": "32519f9f-69f1-4427-98b7-1beeda80709e",
+      "nome": "VIANENSE JARDIM ALVORADA",
+      "codigo_unitrac": "11623032",
+      "nome_unitrac": "VIANENSE JARDIM ALVORADA",
+      "ativo": true
+    },
+    "b": {
+      "id": "1c2f4f5a-287e-4444-8c2a-66bf37d748db",
+      "nome": "Vianense - Jardim Alvorada 2 entrega",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "ASSAI",
+    "a": {
+      "id": "4a5ea95f-5124-4ee6-9690-c3b6e21525b7",
+      "nome": "Assai - Nilopolis - Loja 36",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "6d5573bc-9945-42e0-a1a3-d1f017adbf78",
+      "nome": "Assaí - Nilópolis - Loja 36",
+      "codigo_unitrac": null,
+      "nome_unitrac": "SENDAS NILÓPOLIS - LOJA 36",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "ASSAI",
+    "a": {
+      "id": "61fe036d-e0e2-4cf0-b456-db7f8864ba74",
+      "nome": "Assai - Niteroi - Loja 41",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "9ef06fda-e3e9-44c9-9e10-6f0b8473c431",
+      "nome": "Assaí - Niterói - Loja 41",
+      "codigo_unitrac": null,
+      "nome_unitrac": "SENDAS NITERÓI - LOJA 41",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "ASSAI",
+    "a": {
+      "id": "207a3e4e-211c-4be8-a552-642802c08233",
+      "nome": "Assai - Nova Iguacu - Loja 30",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "dfbbefec-e438-4c0a-a5ae-65694bb8b36e",
+      "nome": "Assaí - Nova Iguaçu - Loja 30",
+      "codigo_unitrac": null,
+      "nome_unitrac": "SENDAS NOVA IGUAÇU - LOJA 30",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "ASSAI",
+    "a": {
+      "id": "e06e9d68-7652-4d37-8cd8-f4088a4f3c04",
+      "nome": "Assai - Pilares - Loja 128",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "10313d0b-e646-459e-8842-353c87d89119",
+      "nome": "Assaí - Pilares - Loja 128",
+      "codigo_unitrac": null,
+      "nome_unitrac": "SENDAS PILARES - LJ 128",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "ZONA_SUL",
+    "a": {
+      "id": "4bf3894e-18e2-41ef-a6be-5e8599043d2d",
+      "nome": "Zona Sul Loja 28 - Urca",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "188c7527-00ac-44bf-addd-eb48ce2472c1",
+      "nome": "28 - ZONA SUL - URCA",
+      "codigo_unitrac": "9039028",
+      "nome_unitrac": "28 - ZONA SUL - URCA",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "ZONA_SUL",
+    "a": {
+      "id": "40db47f0-1d0c-4e81-8e47-26387d6474c6",
+      "nome": "Zona Sul Loja 29 - Flamengo",
+      "codigo_unitrac": null,
+      "nome_unitrac": null,
+      "ativo": true
+    },
+    "b": {
+      "id": "60f9b60f-9990-4268-aac8-22235765eb46",
+      "nome": "29 - ZONA SUL - FLAMENGO",
+      "codigo_unitrac": "9039029",
+      "nome_unitrac": "29 - ZONA SUL - FLAMENGO",
+      "ativo": true
+    }
+  },
+  {
+    "sim": 1,
+    "motivo": "100% tokens idênticos",
+    "rede_id": "PRINCESA",
+    "a": {
+      "id": "9ee6526f-5351-4375-8357-4c053e9e3f2a",
+      "nome": "PRINCESA MARICÁ 1",
+      "codigo_unitrac": "8590002",
+      "nome_unitrac": "PRINCESA MARICÁ 1",
+      "ativo": true
+    },
+    "b": {
+      "id": "e37c4bce-f13c-497f-9cdd-427a7be25808",
+      "nome": "PRINCESA MARICÁ 2",
+      "codigo_unitrac": "8590003",
+      "nome_unitrac": "PRINCESA MARICÁ 2",
+      "ativo": true
+    }
+  }
+]

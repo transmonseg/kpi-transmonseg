@@ -1,0 +1,16 @@
+[
+  {
+    "loja_id": "e5770090-b1f2-4065-b62d-a86b58059bb2",
+    "loja_nome": "Super Prix - Tijuquinha (1 ENTREGA) Loja 13",
+    "campo": "codigo_unitrac",
+    "valor": "3030113",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "loja_id": "6e286b44-da0f-4313-a451-03752b29cfde",
+    "loja_nome": "Mercearia Sachinho (Vargem Grande)",
+    "campo": "codigo_unitrac",
+    "valor": "15247000",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  }
+]

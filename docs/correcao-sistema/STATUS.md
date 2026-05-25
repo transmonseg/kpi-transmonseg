@@ -12,37 +12,38 @@
 
 | Fase | Status | Início | Fim | Notas |
 |------|--------|--------|-----|-------|
-| 0 — Sanitização cadastro | 🟡 Parcial (aguarda dono) | 2026-05-24 | - | Auto-preench feito (32 nomes preenchidos). 56 duplicatas detectadas pra revisar manualmente. |
-| 1 — Pipeline alterações | ⏳ Pendente | - | - | Bloqueada por Fase 0 |
+| 0 — Sanitização cadastro | ✓ Concluída | 2026-05-24 | 2026-05-24 | 52 duplicatas mescladas + auto-preencher aplicado + aliases salvos. 347→295 ativas. |
+| 1 — Pipeline alterações | 🚧 Próxima | - | - | - |
 | 2 — Matcher v2 | ⏳ Pendente | - | - | - |
 | 3 — Validação rede a rede | ⏳ Pendente | - | - | - |
 | 4 — Casos especiais | ⏳ Pendente | - | - | - |
 | 5 — Validação final | ⏳ Pendente | - | - | Manual pelo dono |
 
-## Resultado parcial Fase 0
+## Resultado Fase 0
 
 **Aplicado no banco:**
-- ✓ 18 UPDATEs `nome_unitrac` aplicados (caiu de 200 → 168 sem nome_unitrac)
-- ✗ 25 UPDATEs `codigo_unitrac` BLOQUEADOS por UNIQUE constraint (códigos já em uso por **duplicatas no cadastro**)
+- ✓ 18 UPDATEs `nome_unitrac` (1ª rodada, pré-merge)
+- ✓ 52 duplicatas mescladas (ID com mais dados mantido, outro desativado)
+- ✓ 5 UPDATEs adicionais pós-merge (codigo/nome_unitrac)
+- ✓ 52 aliases salvos em `docs/db-changes/loja-aliases.json`
 
-**Estado atual:**
-- Total lojas: 347
-- Sem codigo_unitrac: 127 (37%) — não mudou
-- Sem nome_unitrac: 168 (48%) — caiu de 58%
+**Estado FINAL Fase 0:**
+- Total lojas ATIVAS: 295 (era 347 — 52 desativadas como duplicata)
+- Sem codigo_unitrac: 79 (27%) — caiu de 37%
+- Sem nome_unitrac: 125 (42%) — caiu de 58%
 
-**Descoberta crítica:**
-56 duplicatas de cadastro detectadas. Relatório em `docs/db-changes/2026-05-24-duplicatas-detectadas.md`.
+**Validação com dia 22 — sem regressão:**
 
-Padrões de duplicata:
-- PRINCESA: "PRINCESA X" (com código) vs "Princesa - X (N Entrega)" (sem código)
-- ASSAI: "Assai X" vs "Assaí X" (acento)
-- SUPER_PAX: "PAX X" vs "X" (prefixo)
-- FEIRA_NOVA: "FEIRA NOVA X" vs "N- X"
-- EMANUEL: "EMANUEL X" vs "X"
-- VIANENSE: "VIANENSE X" vs "Vianense - X 2 entrega"
-- CARREFOUR: "CARREFOUR JUIZ DE FORA" vs "CARREFOUR - JUIZ DE FORA"
+| Rede | Baseline | Pós-Fase 0 |
+|------|---------|------------|
+| MUNDIAL/VIANENSE/SAMS_CLUB/SUPER_PAX/ATACADAO | 0 | 0 ✓ |
+| SENDAS/CAB/EMANUEL/FEIRA_NOVA/ARMAZEM/ZONA_SUL | 1-2 | igual ✓ |
+| PREZUNIC/CARREFOUR | 4/2 | 4/2 ✓ |
+| PRINCESA/ASSAI/SUPERPRIX | 4/4/0 | 5/5/1 (matcher melhorou, KPI antigo precisa regerar) |
 
-**Decisão pendente do dono:** quais duplicatas MESCLAR (e qual versão manter).
+Sem regressão real. Novas divergências são casos onde matcher local agora identifica match correto, mas KPI gerado antigo ainda mostra SEM.
+
+**Próximo passo:** Fase 1 (parser de alterações), depois Fase 2 (matcher v2).
 
 ## Baseline (antes de qualquer correção)
 

@@ -39,71 +39,6 @@
     }
   },
   {
-    "loja_id": "fb267c8a-c470-4677-b64c-247a4d0a7ea1",
-    "loja_nome": "FEIRA NOVA SANTA CRUZ DA SERRA",
-    "rede_id": "FEIRA_NOVA",
-    "campo": "nome_unitrac",
-    "valor_proposto": "FEIRA NOVA SANTA CRUZ DA SERRA",
-    "confianca": 0.6666666666666666,
-    "evidencia": {
-      "placas_que_serviram_loja": 2,
-      "placas_com_parada_no_codigo": 2,
-      "detalhes": "Nome \"FEIRA NOVA SANTA CRUZ DA SERRA\" compartilha token significativo (SANTA,CRUZ,SERRA) e aparece em 2/3 dias"
-    }
-  },
-  {
-    "loja_id": "8fa3f9ee-0dc3-4aa1-82be-5ec8e41609aa",
-    "loja_nome": "FEIRA NOVA COELHO DA ROCHA",
-    "rede_id": "FEIRA_NOVA",
-    "campo": "nome_unitrac",
-    "valor_proposto": "FEIRA NOVA COELHO DA ROCHA",
-    "confianca": 0.6666666666666666,
-    "evidencia": {
-      "placas_que_serviram_loja": 1,
-      "placas_com_parada_no_codigo": 2,
-      "detalhes": "Nome \"FEIRA NOVA COELHO DA ROCHA\" compartilha token significativo (COELHO,ROCHA) e aparece em 2/3 dias"
-    }
-  },
-  {
-    "loja_id": "ef4c3b5f-ccd8-4eab-a365-44035695a408",
-    "loja_nome": "FEIRA NOVA TODOS OS SANTOS",
-    "rede_id": "FEIRA_NOVA",
-    "campo": "nome_unitrac",
-    "valor_proposto": "FEIRA NOVA TODOS OS SANTOS",
-    "confianca": 0.6666666666666666,
-    "evidencia": {
-      "placas_que_serviram_loja": 2,
-      "placas_com_parada_no_codigo": 2,
-      "detalhes": "Nome \"FEIRA NOVA TODOS OS SANTOS\" compartilha token significativo (TODOS,SANTOS) e aparece em 2/3 dias"
-    }
-  },
-  {
-    "loja_id": "c0cf2d78-b4ae-4553-b822-31520c20d6b6",
-    "loja_nome": "PAX OSWALDO CRUZ",
-    "rede_id": "SUPER_PAX",
-    "campo": "nome_unitrac",
-    "valor_proposto": "PAX OSWALDO CRUZ",
-    "confianca": 1,
-    "evidencia": {
-      "placas_que_serviram_loja": 2,
-      "placas_com_parada_no_codigo": 3,
-      "detalhes": "Nome \"PAX OSWALDO CRUZ\" compartilha token significativo (OSWALDO,CRUZ) e aparece em 3/3 dias"
-    }
-  },
-  {
-    "loja_id": "9a859270-f71d-46c6-9ddc-cfd6f4d7894a",
-    "loja_nome": "PAX ENGENHO DE DENTRO",
-    "rede_id": "SUPER_PAX",
-    "campo": "nome_unitrac",
-    "valor_proposto": "PAX ENGENHO DE DENTRO",
-    "confianca": 1,
-    "evidencia": {
-      "placas_que_serviram_loja": 2,
-      "placas_com_parada_no_codigo": 3,
-      "detalhes": "Nome \"PAX ENGENHO DE DENTRO\" compartilha token significativo (ENGENHO,DENTRO) e aparece em 3/3 dias"
-    }
-  },
-  {
     "loja_id": "d465ee4d-4549-42c9-b063-86425ac3384a",
     "loja_nome": "MERCEARIA SACHINHO",
     "rede_id": "SENDAS",
@@ -153,58 +88,6 @@
       "placas_que_serviram_loja": 2,
       "placas_com_parada_no_codigo": 3,
       "detalhes": "Nome \"SUPERPRIX LJ 13 - NITEROI\" compartilha token significativo (PRIX,TIJUQUINHA) e aparece em 3/3 dias"
-    }
-  },
-  {
-    "loja_id": "d57a582a-b24f-4307-a50c-4518029011fc",
-    "loja_nome": "Engenho de Dentro",
-    "rede_id": "SUPER_PAX",
-    "campo": "nome_unitrac",
-    "valor_proposto": "PAX ENGENHO DE DENTRO",
-    "confianca": 1,
-    "evidencia": {
-      "placas_que_serviram_loja": 2,
-      "placas_com_parada_no_codigo": 3,
-      "detalhes": "Nome \"PAX ENGENHO DE DENTRO\" compartilha token significativo (ENGENHO,DENTRO) e aparece em 3/3 dias"
-    }
-  },
-  {
-    "loja_id": "9b9b54df-cca3-4bb8-949d-7ea3a0a1e399",
-    "loja_nome": "13- Todos os Santos",
-    "rede_id": "FEIRA_NOVA",
-    "campo": "nome_unitrac",
-    "valor_proposto": "FEIRA NOVA TODOS OS SANTOS",
-    "confianca": 0.6666666666666666,
-    "evidencia": {
-      "placas_que_serviram_loja": 2,
-      "placas_com_parada_no_codigo": 2,
-      "detalhes": "Nome \"FEIRA NOVA TODOS OS SANTOS\" compartilha token significativo (TODOS,SANTOS) e aparece em 2/3 dias"
-    }
-  },
-  {
-    "loja_id": "7751ba3c-8b80-4514-8805-b780def508aa",
-    "loja_nome": "6- Santa Cruz da Serra",
-    "rede_id": "FEIRA_NOVA",
-    "campo": "nome_unitrac",
-    "valor_proposto": "FEIRA NOVA SANTA CRUZ DA SERRA",
-    "confianca": 0.6666666666666666,
-    "evidencia": {
-      "placas_que_serviram_loja": 2,
-      "placas_com_parada_no_codigo": 2,
-      "detalhes": "Nome \"FEIRA NOVA SANTA CRUZ DA SERRA\" compartilha token significativo (SANTA,CRUZ,SERRA) e aparece em 2/3 dias"
-    }
-  },
-  {
-    "loja_id": "290983bc-f067-4dff-b328-f3ecf47ec82e",
-    "loja_nome": "7- Coelho da Rocha",
-    "rede_id": "FEIRA_NOVA",
-    "campo": "nome_unitrac",
-    "valor_proposto": "FEIRA NOVA COELHO DA ROCHA",
-    "confianca": 0.6666666666666666,
-    "evidencia": {
-      "placas_que_serviram_loja": 1,
-      "placas_com_parada_no_codigo": 2,
-      "detalhes": "Nome \"FEIRA NOVA COELHO DA ROCHA\" compartilha token significativo (COELHO,ROCHA) e aparece em 2/3 dias"
     }
   },
   {
@@ -296,19 +179,6 @@
       "placas_que_serviram_loja": 1,
       "placas_com_parada_no_codigo": 3,
       "detalhes": "Nome \"MERCEARIA SACHINHO\" compartilha token significativo (MERCEARIA,SACHINHO,VARGEM,GRANDE) e aparece em 3/3 dias"
-    }
-  },
-  {
-    "loja_id": "3247db8c-5489-4799-aa42-9aae6991e750",
-    "loja_nome": "Oswaldo Cruz",
-    "rede_id": "SUPER_PAX",
-    "campo": "nome_unitrac",
-    "valor_proposto": "PAX OSWALDO CRUZ",
-    "confianca": 1,
-    "evidencia": {
-      "placas_que_serviram_loja": 2,
-      "placas_com_parada_no_codigo": 3,
-      "detalhes": "Nome \"PAX OSWALDO CRUZ\" compartilha token significativo (OSWALDO,CRUZ) e aparece em 3/3 dias"
     }
   }
 ]

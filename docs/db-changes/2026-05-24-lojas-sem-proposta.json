@@ -1,6 +1,6 @@
 {
-  "geradoEm": "2026-05-24T23:42:25.992Z",
-  "total": 88,
+  "geradoEm": "2026-05-25T00:11:09.427Z",
+  "total": 70,
   "lojas": [
     {
       "id": "d8072be8-78ed-4f35-be77-7d836137ee33",
@@ -276,13 +276,6 @@
       "tem_nome_unitrac": false
     },
     {
-      "id": "3d623f48-0fc7-4185-8258-0773785e2e65",
-      "rede_id": "SENDAS",
-      "nome": "SENDAS BANGU - LOJA 55",
-      "tem_codigo_unitrac": true,
-      "tem_nome_unitrac": false
-    },
-    {
       "id": "dd27e52d-5143-4580-82a7-3647ab1c1129",
       "rede_id": "SENDAS",
       "nome": "SENDAS MESQUITA - LJ 35",
@@ -300,13 +293,6 @@
       "id": "532c14a9-89c5-4b34-8579-4943b752a773",
       "rede_id": "SENDAS",
       "nome": "SENDAS ARARUAMA - LJ 221",
-      "tem_codigo_unitrac": true,
-      "tem_nome_unitrac": false
-    },
-    {
-      "id": "dec0826d-4863-41d2-845f-fd35ce38a150",
-      "rede_id": "SENDAS",
-      "nome": "SENDAS NOVA IGUACU II",
       "tem_codigo_unitrac": true,
       "tem_nome_unitrac": false
     },
@@ -332,20 +318,6 @@
       "tem_nome_unitrac": false
     },
     {
-      "id": "18e9e8a0-874c-48e9-a173-5d8e9ccbfece",
-      "rede_id": "PRINCESA",
-      "nome": "Princesa - Marica 1 (2 Entrega)",
-      "tem_codigo_unitrac": false,
-      "tem_nome_unitrac": false
-    },
-    {
-      "id": "d4ecbb7e-353c-4d96-82a7-e429f45b3078",
-      "rede_id": "PRINCESA",
-      "nome": "Princesa - Marica 2 (1 Entrega)",
-      "tem_codigo_unitrac": false,
-      "tem_nome_unitrac": false
-    },
-    {
       "id": "96f3a2b0-d44d-44c7-aa2f-b1b8ebdc0542",
       "rede_id": "ARMAZEM_GRAO",
       "nome": "ARMAZEM DO GRAO (BOA VISTA)",
@@ -360,44 +332,23 @@
       "tem_nome_unitrac": false
     },
     {
-      "id": "79df48e7-14c4-4558-9a5b-e784b5cd7ac4",
-      "rede_id": "PRINCESA",
-      "nome": "Princesa - Buzios 1 (2 Entrega)",
-      "tem_codigo_unitrac": false,
-      "tem_nome_unitrac": false
-    },
-    {
-      "id": "2cac8d64-3559-4d94-b06f-7d42731ca90e",
-      "rede_id": "PRINCESA",
-      "nome": "Princesa - Buzios 2 (3 Entrega)",
-      "tem_codigo_unitrac": false,
-      "tem_nome_unitrac": false
-    },
-    {
-      "id": "67000e8b-d6ab-46f8-a9b2-b108db199271",
-      "rede_id": "PRINCESA",
-      "nome": "Princesa - Buzios 3 (1 Entrega)",
-      "tem_codigo_unitrac": false,
-      "tem_nome_unitrac": false
-    },
-    {
-      "id": "804995bb-0674-4a62-83ca-56ea3607d3ba",
+      "id": "d890a10e-c0b7-4c99-ab8f-b6f4170bf1a3",
       "rede_id": "ASSAI",
-      "nome": "Assai - Araruama - Loja 221",
+      "nome": "Assai - Carioca Shopping - Loja 316",
       "tem_codigo_unitrac": false,
       "tem_nome_unitrac": false
     },
     {
-      "id": "52d8084d-da55-4905-a9c4-947feb1dc293",
-      "rede_id": "ASSAI",
-      "nome": "Assai - Cabo Frio - Loja 82",
+      "id": "e28a8c41-926b-40cc-b049-84298bd975ef",
+      "rede_id": "ARMAZEM_GRAO",
+      "nome": "ARMAZEM DO GRAO (16 DE MARCO)",
       "tem_codigo_unitrac": false,
       "tem_nome_unitrac": false
     },
     {
-      "id": "5562bbed-3fdc-4c6f-ab89-6f08fac1034f",
-      "rede_id": "ASSAI",
-      "nome": "Assai - Campinho - Loja 37",
+      "id": "5c1e998f-1af4-423f-9e7e-29cea288022a",
+      "rede_id": "ARMAZEM_GRAO",
+      "nome": "ARMAZEM DO GRAO (CAPELA)",
       "tem_codigo_unitrac": false,
       "tem_nome_unitrac": false
     },
@@ -409,44 +360,9 @@
       "tem_nome_unitrac": false
     },
     {
-      "id": "0f782b51-00a1-43a2-9c38-a22c230d0584",
-      "rede_id": "ASSAI",
-      "nome": "Assai - Cesario de Melo - Loja 202",
-      "tem_codigo_unitrac": false,
-      "tem_nome_unitrac": false
-    },
-    {
-      "id": "6b5f37d8-af31-4fa1-bb10-6ce1094a9ecd",
-      "rede_id": "ASSAI",
-      "nome": "Assai - Macae - Loja 232",
-      "tem_codigo_unitrac": false,
-      "tem_nome_unitrac": false
-    },
-    {
       "id": "7a51da84-a7ed-492d-8764-f43683145202",
       "rede_id": "ASSAI",
       "nome": "Assai - Maracana - Loja 286",
-      "tem_codigo_unitrac": false,
-      "tem_nome_unitrac": false
-    },
-    {
-      "id": "4a5ea95f-5124-4ee6-9690-c3b6e21525b7",
-      "rede_id": "ASSAI",
-      "nome": "Assai - Nilopolis - Loja 36",
-      "tem_codigo_unitrac": false,
-      "tem_nome_unitrac": false
-    },
-    {
-      "id": "61fe036d-e0e2-4cf0-b456-db7f8864ba74",
-      "rede_id": "ASSAI",
-      "nome": "Assai - Niteroi - Loja 41",
-      "tem_codigo_unitrac": false,
-      "tem_nome_unitrac": false
-    },
-    {
-      "id": "207a3e4e-211c-4be8-a552-642802c08233",
-      "rede_id": "ASSAI",
-      "nome": "Assai - Nova Iguacu - Loja 30",
       "tem_codigo_unitrac": false,
       "tem_nome_unitrac": false
     },
@@ -461,6 +377,13 @@
       "id": "4d50f886-bfbd-48e8-bbf2-debe701c89be",
       "rede_id": "ASSAI",
       "nome": "Assai - Tribobo - Loja 248",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "6d5d42fa-b7cf-4dce-8f5d-c77edf333547",
+      "rede_id": "CARREFOUR",
+      "nome": "Carrefour - Barra da Tijuca",
       "tem_codigo_unitrac": false,
       "tem_nome_unitrac": false
     },
@@ -486,23 +409,16 @@
       "tem_nome_unitrac": false
     },
     {
-      "id": "a60c3157-7b35-463b-9041-5a569c9961ae",
-      "rede_id": "EMANUEL",
-      "nome": "VARGEM GRANDE",
-      "tem_codigo_unitrac": false,
-      "tem_nome_unitrac": false
-    },
-    {
-      "id": "d93026b4-83fe-42c6-8351-593712ccd457",
-      "rede_id": "VIANENSE",
-      "nome": "Vianense - Freguesia 2 entrega",
-      "tem_codigo_unitrac": false,
-      "tem_nome_unitrac": false
-    },
-    {
       "id": "1f0592f7-3f9d-4cf6-9bbb-5835a522df0a",
       "rede_id": "PREZUNIC",
       "nome": "Prezunic - Anil (Jacarepagua)",
+      "tem_codigo_unitrac": false,
+      "tem_nome_unitrac": false
+    },
+    {
+      "id": "ef95747e-e681-4463-b601-11c20c38671c",
+      "rede_id": "PREZUNIC",
+      "nome": "Prezunic - Recreio dos Bandeirantes",
       "tem_codigo_unitrac": false,
       "tem_nome_unitrac": false
     },
@@ -524,48 +440,6 @@
       "id": "b55257f3-9675-4ce9-99eb-dbb7e4ae0f3f",
       "rede_id": "PRINCESA",
       "nome": "Princesa - Arraial 3 (3 Entrega)",
-      "tem_codigo_unitrac": false,
-      "tem_nome_unitrac": false
-    },
-    {
-      "id": "cac2a138-b51a-401d-b183-ea3068f39728",
-      "rede_id": "PRINCESA",
-      "nome": "Princesa - Barra de Sao Joao (1 Entrega)",
-      "tem_codigo_unitrac": false,
-      "tem_nome_unitrac": false
-    },
-    {
-      "id": "24964f68-ccb9-4068-8f36-d22bd73a7013",
-      "rede_id": "PRINCESA",
-      "nome": "Princesa - Rio das Ostras (2 Entrega)",
-      "tem_codigo_unitrac": false,
-      "tem_nome_unitrac": false
-    },
-    {
-      "id": "452ba7c6-167c-447a-8efe-addb903047e5",
-      "rede_id": "PRINCESA",
-      "nome": "Princesa - Cabo Frio 1 (1 Entrega)",
-      "tem_codigo_unitrac": false,
-      "tem_nome_unitrac": false
-    },
-    {
-      "id": "f474bb59-86b3-46ce-9a64-50cf2f21c145",
-      "rede_id": "PRINCESA",
-      "nome": "Princesa - Cabo Frio 2 (3 Entrega)",
-      "tem_codigo_unitrac": false,
-      "tem_nome_unitrac": false
-    },
-    {
-      "id": "2a8a8fa1-87ad-4fc3-9975-cc43a8b122e7",
-      "rede_id": "PRINCESA",
-      "nome": "Princesa - Cabo Frio 3 (2 Entrega)",
-      "tem_codigo_unitrac": false,
-      "tem_nome_unitrac": false
-    },
-    {
-      "id": "1c2f4f5a-287e-4444-8c2a-66bf37d748db",
-      "rede_id": "VIANENSE",
-      "nome": "Vianense - Jardim Alvorada 2 entrega",
       "tem_codigo_unitrac": false,
       "tem_nome_unitrac": false
     },

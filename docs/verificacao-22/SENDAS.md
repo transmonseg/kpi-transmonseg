@@ -50,9 +50,10 @@ Cabeçalhos detectados: [1] REDES / FILIAIS | [2] MOTORISTA | [3] COD | [4] PLAC
 
 ## Check 7 — SC/CHD/SL: matcher (rodado agora) vs KPI gerado
 
-⚠ **2 divergência(s) entre matcher local e KPI gerado:**
+⚠ **3 divergência(s) entre matcher local e KPI gerado:**
 - **Americanas** (c1): matcher=06:02/06:15/10:35 | KPI=---/---/---
 - **Sendas Central 1º Carro** (c1): matcher=---/00:08/14:01 | KPI=---/---/---
+- **Mercado de Santa** (c1): matcher=05:12/07:41/10:33 | KPI=13:30/16:25/16:41
 
 _Pode indicar que o KPI foi gerado com versão antiga do código. Regerar deve corrigir._
 
@@ -110,7 +111,7 @@ _Pode indicar que o KPI foi gerado com versão antiga do código. Regerar deve c
 - **c1**: LUIZ CESAR | LMF2049
   - Escala: motorista=LUIZ CESAR placa=LMF2049
   - KPI: motorista=LUIZ CESAR placa=LMF-2049 | SC=13:30 CHD=16:25 SL=16:41
-  - Matcher: SC=13:30 CHD=16:25 SL=16:41
+  - Matcher: SC=05:12 CHD=07:41 SL=10:33
 
 ### Mercearia Sachinho (Vargem Grande)
 - **c1**: SANDRO | KXA5966
@@ -121,4 +122,4 @@ _Pode indicar que o KPI foi gerado com versão antiga do código. Regerar deve c
 
 ## Problemas identificados
 
-- Check 7: 2 timestamps divergentes (matcher vs KPI)
+- Check 7: 3 timestamps divergentes (matcher vs KPI)

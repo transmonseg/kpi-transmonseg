@@ -1,6 +1,6 @@
 # Duplicatas Detectadas no Cadastro de Lojas
 
-Gerado em: 2026-05-24T23:47:43.988Z
+Gerado em: 2026-05-25T00:06:43.470Z
 Total lojas analisadas: 347
 
 ## Critério

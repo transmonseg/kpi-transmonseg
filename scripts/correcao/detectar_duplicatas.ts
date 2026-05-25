@@ -152,7 +152,33 @@ async function main() {
 
   const outPath = 'docs/db-changes/2026-05-24-duplicatas-detectadas.md'
   writeFileSync(outPath, md.join('\n'), 'utf8')
-  console.log(`Detectadas ${pares.length} pares suspeitos. Relatório: ${outPath}`)
+
+  // Também salva como JSON estruturado pro próximo passo (mesclar)
+  const json = pares.map(({ a, b, sim, motivo }) => ({
+    sim,
+    motivo,
+    rede_id: a.rede_id,
+    a: {
+      id: a.id,
+      nome: a.nome,
+      codigo_unitrac: a.codigo_unitrac,
+      nome_unitrac: a.nome_unitrac,
+      ativo: a.ativo,
+    },
+    b: {
+      id: b.id,
+      nome: b.nome,
+      codigo_unitrac: b.codigo_unitrac,
+      nome_unitrac: b.nome_unitrac,
+      ativo: b.ativo,
+    },
+  }))
+  const jsonPath = 'docs/db-changes/2026-05-24-duplicatas.json'
+  writeFileSync(jsonPath, JSON.stringify(json, null, 2), 'utf8')
+
+  console.log(`Detectadas ${pares.length} pares suspeitos.`)
+  console.log(`  Relatório MD: ${outPath}`)
+  console.log(`  JSON estruturado: ${jsonPath}`)
 }
 
 main().catch(e => { console.error(e); process.exit(1) })

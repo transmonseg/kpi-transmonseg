@@ -1,0 +1,51 @@
+[
+  {
+    "id": "fb267c8a-c470-4677-b64c-247a4d0a7ea1",
+    "rede_id": "FEIRA_NOVA",
+    "nome": "FEIRA NOVA SANTA CRUZ DA SERRA",
+    "codigo_unitrac": "579006",
+    "nome_unitrac": null
+  },
+  {
+    "id": "8fa3f9ee-0dc3-4aa1-82be-5ec8e41609aa",
+    "rede_id": "FEIRA_NOVA",
+    "nome": "FEIRA NOVA COELHO DA ROCHA",
+    "codigo_unitrac": "579007",
+    "nome_unitrac": null
+  },
+  {
+    "id": "ef4c3b5f-ccd8-4eab-a365-44035695a408",
+    "rede_id": "FEIRA_NOVA",
+    "nome": "FEIRA NOVA TODOS OS SANTOS",
+    "codigo_unitrac": "579013",
+    "nome_unitrac": null
+  },
+  {
+    "id": "c0cf2d78-b4ae-4553-b822-31520c20d6b6",
+    "rede_id": "SUPER_PAX",
+    "nome": "PAX OSWALDO CRUZ",
+    "codigo_unitrac": "202000",
+    "nome_unitrac": null
+  },
+  {
+    "id": "9a859270-f71d-46c6-9ddc-cfd6f4d7894a",
+    "rede_id": "SUPER_PAX",
+    "nome": "PAX ENGENHO DE DENTRO",
+    "codigo_unitrac": "202001",
+    "nome_unitrac": null
+  },
+  {
+    "id": "e5770090-b1f2-4065-b62d-a86b58059bb2",
+    "rede_id": "SUPERPRIX",
+    "nome": "Super Prix - Tijuquinha (1 ENTREGA) Loja 13",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  },
+  {
+    "id": "6e286b44-da0f-4313-a451-03752b29cfde",
+    "rede_id": "SENDAS",
+    "nome": "Mercearia Sachinho (Vargem Grande)",
+    "codigo_unitrac": null,
+    "nome_unitrac": null
+  }
+]

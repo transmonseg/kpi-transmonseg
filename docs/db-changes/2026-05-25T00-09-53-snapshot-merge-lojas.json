@@ -1,0 +1,626 @@
+[
+  {
+    "id": "ae38b034-8b18-4360-a448-8206673f93ad",
+    "nome": "PRINCESA - BARRA DE SÃO JOÃO",
+    "nome_normalizado": "PRINCESA - BARRA DE SAO JOAO",
+    "ativo": true
+  },
+  {
+    "id": "c3517a59-d0bd-40b3-830b-7c4709a641bf",
+    "nome": "PRINCESA - CABO FRIO 1",
+    "nome_normalizado": "PRINCESA - CABO FRIO 1",
+    "ativo": true
+  },
+  {
+    "id": "1f329d1d-783f-4cdf-85e8-79e5559e9a13",
+    "nome": "PRINCESA - CABO FRIO 2",
+    "nome_normalizado": "PRINCESA - CABO FRIO 2",
+    "ativo": true
+  },
+  {
+    "id": "05d77aa4-ebdc-4a28-ba51-6ccb2b786273",
+    "nome": "PRINCESA - CABO FRIO 3",
+    "nome_normalizado": "PRINCESA - CABO FRIO 3",
+    "ativo": true
+  },
+  {
+    "id": "305c5ab8-83b0-4dbd-a783-51e37829f540",
+    "nome": "PRINCESA - RIO DAS OSTRAS",
+    "nome_normalizado": "PRINCESA - RIO DAS OSTRAS",
+    "ativo": true
+  },
+  {
+    "id": "0fc33056-e505-43aa-8e7d-aaae64e84aa3",
+    "nome": "CARREFOUR JUIZ DE FORA",
+    "nome_normalizado": "CARREFOUR JUIZ DE FORA",
+    "ativo": true
+  },
+  {
+    "id": "ac02b46a-6d82-4423-819a-85a7193c571d",
+    "nome": "PRINCESA ITABORAÍ",
+    "nome_normalizado": "PRINCESA ITABORAI",
+    "ativo": true
+  },
+  {
+    "id": "8fb5939a-b68c-45ea-b480-49c27a0cde6e",
+    "nome": "ARMAZEM DO GRAO (BARRA DA TIJUCA)",
+    "nome_normalizado": "ARMAZEM DO GRAO (BARRA DA TIJUCA)",
+    "ativo": true
+  },
+  {
+    "id": "d3739d8e-2fe3-4dd7-adae-476332f6879b",
+    "nome": "EMANUEL CACHAMORRA",
+    "nome_normalizado": "EMANUEL CACHAMORRA",
+    "ativo": true
+  },
+  {
+    "id": "15a43cbb-2eb6-42d5-b838-545399a57cac",
+    "nome": "EMANUEL VARGEM GRANDE",
+    "nome_normalizado": "EMANUEL VARGEM GRANDE",
+    "ativo": true
+  },
+  {
+    "id": "04d651a1-8056-46ab-bec3-a63115789b03",
+    "nome": "EMANUEL ALHAMBRA",
+    "nome_normalizado": "EMANUEL ALHAMBRA",
+    "ativo": true
+  },
+  {
+    "id": "bf012ac3-13c1-4efd-897a-a0535691d6a1",
+    "nome": "FEIRA NOVA ANCHIETA",
+    "nome_normalizado": "FEIRA NOVA ANCHIETA",
+    "ativo": true
+  },
+  {
+    "id": "fb267c8a-c470-4677-b64c-247a4d0a7ea1",
+    "nome": "FEIRA NOVA SANTA CRUZ DA SERRA",
+    "nome_normalizado": "FEIRA NOVA SANTA CRUZ DA SERRA",
+    "ativo": true
+  },
+  {
+    "id": "8fa3f9ee-0dc3-4aa1-82be-5ec8e41609aa",
+    "nome": "FEIRA NOVA COELHO DA ROCHA",
+    "nome_normalizado": "FEIRA NOVA COELHO DA ROCHA",
+    "ativo": true
+  },
+  {
+    "id": "3f8f28b6-4e2f-4a26-b619-ffd5468075f3",
+    "nome": "FEIRA NOVA CERAMICA",
+    "nome_normalizado": "FEIRA NOVA CERAMICA",
+    "ativo": true
+  },
+  {
+    "id": "632eff69-df9b-4d32-ac19-4b05fa892ad6",
+    "nome": "FEIRA NOVA QUEIMADOS",
+    "nome_normalizado": "FEIRA NOVA QUEIMADOS",
+    "ativo": true
+  },
+  {
+    "id": "bcdd0844-fa8b-4768-bf1c-7e485ef35611",
+    "nome": "FEIRA NOVA CACHAMBI",
+    "nome_normalizado": "FEIRA NOVA CACHAMBI",
+    "ativo": true
+  },
+  {
+    "id": "11ea634c-11f9-4f2d-842c-699c68bdb895",
+    "nome": "FEIRA NOVA FREGUESIA",
+    "nome_normalizado": "FEIRA NOVA FREGUESIA",
+    "ativo": true
+  },
+  {
+    "id": "ef4c3b5f-ccd8-4eab-a365-44035695a408",
+    "nome": "FEIRA NOVA TODOS OS SANTOS",
+    "nome_normalizado": "FEIRA NOVA TODOS OS SANTOS",
+    "ativo": true
+  },
+  {
+    "id": "c0cf2d78-b4ae-4553-b822-31520c20d6b6",
+    "nome": "PAX OSWALDO CRUZ",
+    "nome_normalizado": "PAX OSWALDO CRUZ",
+    "ativo": true
+  },
+  {
+    "id": "9a859270-f71d-46c6-9ddc-cfd6f4d7894a",
+    "nome": "PAX ENGENHO DE DENTRO",
+    "nome_normalizado": "PAX ENGENHO DE DENTRO",
+    "ativo": true
+  },
+  {
+    "id": "6e8bdfa7-a5ad-48e7-9572-7d61c4020f48",
+    "nome": "PAX REALENGO",
+    "nome_normalizado": "PAX REALENGO",
+    "ativo": true
+  },
+  {
+    "id": "09cdf72b-7720-47ea-a49f-2079e59ba761",
+    "nome": "PAX INHAUMA",
+    "nome_normalizado": "PAX INHAUMA",
+    "ativo": true
+  },
+  {
+    "id": "ad55cfff-84f2-4e1d-a74e-c2506520a990",
+    "nome": "PAX DEL CASTILHO",
+    "nome_normalizado": "PAX DEL CASTILHO",
+    "ativo": true
+  },
+  {
+    "id": "ea963466-dddd-4239-837a-6e210a2ed97a",
+    "nome": "PAX MADUREIRA",
+    "nome_normalizado": "PAX MADUREIRA",
+    "ativo": true
+  },
+  {
+    "id": "f5ed8b53-2989-4f02-b56b-57505d9d37d4",
+    "nome": "PAX PILARES",
+    "nome_normalizado": "PAX PILARES",
+    "ativo": true
+  },
+  {
+    "id": "7cb52d6c-1e6e-4dde-b40a-fe74ac2b6179",
+    "nome": "PAX TAQUARA",
+    "nome_normalizado": "PAX TAQUARA",
+    "ativo": true
+  },
+  {
+    "id": "dba0761d-337d-4f7a-8595-1c2793924121",
+    "nome": "PAX SEPETIBA",
+    "nome_normalizado": "PAX SEPETIBA",
+    "ativo": true
+  },
+  {
+    "id": "3cb51a81-7ea2-4161-be41-2b4ca4def61d",
+    "nome": "VIANENSE FREGUESIA",
+    "nome_normalizado": "VIANENSE FREGUESIA",
+    "ativo": true
+  },
+  {
+    "id": "2c910254-d052-4f98-8a3c-32591d0d79a9",
+    "nome": "SENDAS NOVA IGUACU - LOJA 30",
+    "nome_normalizado": "SENDAS NOVA IGUACU - LOJA 30",
+    "ativo": true
+  },
+  {
+    "id": "1e0a070a-4dd4-44b9-a45a-5a31ad28ea76",
+    "nome": "ARMAZEM DO GRAO A BARRA DA TIJUCA",
+    "nome_normalizado": "ARMAZEM DO GRAO A BARRA DA TIJUCA",
+    "ativo": false
+  },
+  {
+    "id": "dec0826d-4863-41d2-845f-fd35ce38a150",
+    "nome": "SENDAS NOVA IGUACU II",
+    "nome_normalizado": "SENDAS NOVA IGUACU II",
+    "ativo": false
+  },
+  {
+    "id": "3d623f48-0fc7-4185-8258-0773785e2e65",
+    "nome": "SENDAS BANGU - LOJA 55",
+    "nome_normalizado": "SENDAS BANGU - LOJA 55",
+    "ativo": false
+  },
+  {
+    "id": "32519f9f-69f1-4427-98b7-1beeda80709e",
+    "nome": "VIANENSE JARDIM ALVORADA",
+    "nome_normalizado": "VIANENSE JARDIM ALVORADA",
+    "ativo": true
+  },
+  {
+    "id": "18e9e8a0-874c-48e9-a173-5d8e9ccbfece",
+    "nome": "Princesa - Marica 1 (2 Entrega)",
+    "nome_normalizado": "PRINCESA - MARICA 1 (2 ENTREGA)",
+    "ativo": false
+  },
+  {
+    "id": "d4ecbb7e-353c-4d96-82a7-e429f45b3078",
+    "nome": "Princesa - Marica 2 (1 Entrega)",
+    "nome_normalizado": "PRINCESA - MARICA 2 (1 ENTREGA)",
+    "ativo": false
+  },
+  {
+    "id": "79df48e7-14c4-4558-9a5b-e784b5cd7ac4",
+    "nome": "Princesa - Buzios 1 (2 Entrega)",
+    "nome_normalizado": "PRINCESA - BUZIOS 1 (2 ENTREGA)",
+    "ativo": false
+  },
+  {
+    "id": "2cac8d64-3559-4d94-b06f-7d42731ca90e",
+    "nome": "Princesa - Buzios 2 (3 Entrega)",
+    "nome_normalizado": "PRINCESA - BUZIOS 2 (3 ENTREGA)",
+    "ativo": false
+  },
+  {
+    "id": "67000e8b-d6ab-46f8-a9b2-b108db199271",
+    "nome": "Princesa - Buzios 3 (1 Entrega)",
+    "nome_normalizado": "PRINCESA - BUZIOS 3 (1 ENTREGA)",
+    "ativo": false
+  },
+  {
+    "id": "58b137e6-7354-4c42-8b73-27ff60a46939",
+    "nome": "Assai - Alcantara I - Loja 35",
+    "nome_normalizado": "ASSAI - ALCANTARA I - LOJA 35",
+    "ativo": false
+  },
+  {
+    "id": "804995bb-0674-4a62-83ca-56ea3607d3ba",
+    "nome": "Assai - Araruama - Loja 221",
+    "nome_normalizado": "ASSAI - ARARUAMA - LOJA 221",
+    "ativo": false
+  },
+  {
+    "id": "4bbe9bc1-0cc9-4509-a04e-791a76234e72",
+    "nome": "Assai - Bangu I - Loja 55",
+    "nome_normalizado": "ASSAI - BANGU I - LOJA 55",
+    "ativo": false
+  },
+  {
+    "id": "52d8084d-da55-4905-a9c4-947feb1dc293",
+    "nome": "Assai - Cabo Frio - Loja 82",
+    "nome_normalizado": "ASSAI - CABO FRIO - LOJA 82",
+    "ativo": false
+  },
+  {
+    "id": "5562bbed-3fdc-4c6f-ab89-6f08fac1034f",
+    "nome": "Assai - Campinho - Loja 37",
+    "nome_normalizado": "ASSAI - CAMPINHO - LOJA 37",
+    "ativo": false
+  },
+  {
+    "id": "0f782b51-00a1-43a2-9c38-a22c230d0584",
+    "nome": "Assai - Cesario de Melo - Loja 202",
+    "nome_normalizado": "ASSAI - CESARIO DE MELO - LOJA 202",
+    "ativo": false
+  },
+  {
+    "id": "17cb7d99-00fd-4253-b6ee-609184ecddff",
+    "nome": "Assai - Freguesia - Loja 28",
+    "nome_normalizado": "ASSAI - FREGUESIA - LOJA 28",
+    "ativo": false
+  },
+  {
+    "id": "d3fd179a-adb3-406f-abf4-fffe8ec07690",
+    "nome": "Assai - Ilha do Governador - Loja 29",
+    "nome_normalizado": "ASSAI - ILHA DO GOVERNADOR - LOJA 29",
+    "ativo": false
+  },
+  {
+    "id": "6b5f37d8-af31-4fa1-bb10-6ce1094a9ecd",
+    "nome": "Assai - Macae - Loja 232",
+    "nome_normalizado": "ASSAI - MACAE - LOJA 232",
+    "ativo": false
+  },
+  {
+    "id": "e6490706-0efc-4703-b9b3-1a29ae18e255",
+    "nome": "CACHAMORRA",
+    "nome_normalizado": "CACHAMORRA",
+    "ativo": false
+  },
+  {
+    "id": "a60c3157-7b35-463b-9041-5a569c9961ae",
+    "nome": "VARGEM GRANDE",
+    "nome_normalizado": "VARGEM GRANDE",
+    "ativo": false
+  },
+  {
+    "id": "19f61c03-599b-46d2-ad3f-b6b9d734d403",
+    "nome": "ALHAMBRA",
+    "nome_normalizado": "ALHAMBRA",
+    "ativo": false
+  },
+  {
+    "id": "a3e7fd6f-efda-4f49-a7f3-20e145ad835b",
+    "nome": "3- Anchieta",
+    "nome_normalizado": "3- ANCHIETA",
+    "ativo": false
+  },
+  {
+    "id": "7751ba3c-8b80-4514-8805-b780def508aa",
+    "nome": "6- Santa Cruz da Serra",
+    "nome_normalizado": "6- SANTA CRUZ DA SERRA",
+    "ativo": false
+  },
+  {
+    "id": "290983bc-f067-4dff-b328-f3ecf47ec82e",
+    "nome": "7- Coelho da Rocha",
+    "nome_normalizado": "7- COELHO DA ROCHA",
+    "ativo": false
+  },
+  {
+    "id": "ff433cd8-a988-47c4-a343-949db23f25a7",
+    "nome": "8- Ceramica",
+    "nome_normalizado": "8- CERAMICA",
+    "ativo": false
+  },
+  {
+    "id": "c191cf66-0ad8-4874-a4ee-dc1e10463423",
+    "nome": "9- Queimados",
+    "nome_normalizado": "9- QUEIMADOS",
+    "ativo": false
+  },
+  {
+    "id": "1786e86c-a559-4795-9948-c1dd2a27132d",
+    "nome": "10- Cachambi",
+    "nome_normalizado": "10- CACHAMBI",
+    "ativo": false
+  },
+  {
+    "id": "9b9b54df-cca3-4bb8-949d-7ea3a0a1e399",
+    "nome": "13- Todos os Santos",
+    "nome_normalizado": "13- TODOS OS SANTOS",
+    "ativo": false
+  },
+  {
+    "id": "d57a582a-b24f-4307-a50c-4518029011fc",
+    "nome": "Engenho de Dentro",
+    "nome_normalizado": "ENGENHO DE DENTRO",
+    "ativo": false
+  },
+  {
+    "id": "ec9690db-8221-499f-9022-26d2742986f9",
+    "nome": "Realengo",
+    "nome_normalizado": "REALENGO",
+    "ativo": false
+  },
+  {
+    "id": "9313e0c0-c2c2-42eb-8b07-90c849bf0853",
+    "nome": "Inhauma",
+    "nome_normalizado": "INHAUMA",
+    "ativo": false
+  },
+  {
+    "id": "d93026b4-83fe-42c6-8351-593712ccd457",
+    "nome": "Vianense - Freguesia 2 entrega",
+    "nome_normalizado": "VIANENSE - FREGUESIA 2 ENTREGA",
+    "ativo": false
+  },
+  {
+    "id": "4a5ea95f-5124-4ee6-9690-c3b6e21525b7",
+    "nome": "Assai - Nilopolis - Loja 36",
+    "nome_normalizado": "ASSAI - NILOPOLIS - LOJA 36",
+    "ativo": false
+  },
+  {
+    "id": "61fe036d-e0e2-4cf0-b456-db7f8864ba74",
+    "nome": "Assai - Niteroi - Loja 41",
+    "nome_normalizado": "ASSAI - NITEROI - LOJA 41",
+    "ativo": false
+  },
+  {
+    "id": "207a3e4e-211c-4be8-a552-642802c08233",
+    "nome": "Assai - Nova Iguacu - Loja 30",
+    "nome_normalizado": "ASSAI - NOVA IGUACU - LOJA 30",
+    "ativo": false
+  },
+  {
+    "id": "e06e9d68-7652-4d37-8cd8-f4088a4f3c04",
+    "nome": "Assai - Pilares - Loja 128",
+    "nome_normalizado": "ASSAI - PILARES - LOJA 128",
+    "ativo": false
+  },
+  {
+    "id": "4bf3894e-18e2-41ef-a6be-5e8599043d2d",
+    "nome": "Zona Sul Loja 28 - Urca",
+    "nome_normalizado": "ZONA SUL LOJA 28 - URCA",
+    "ativo": false
+  },
+  {
+    "id": "40db47f0-1d0c-4e81-8e47-26387d6474c6",
+    "nome": "Zona Sul Loja 29 - Flamengo",
+    "nome_normalizado": "ZONA SUL LOJA 29 - FLAMENGO",
+    "ativo": false
+  },
+  {
+    "id": "cac2a138-b51a-401d-b183-ea3068f39728",
+    "nome": "Princesa - Barra de Sao Joao (1 Entrega)",
+    "nome_normalizado": "PRINCESA - BARRA DE SAO JOAO (1 ENTREGA)",
+    "ativo": false
+  },
+  {
+    "id": "452ba7c6-167c-447a-8efe-addb903047e5",
+    "nome": "Princesa - Cabo Frio 1 (1 Entrega)",
+    "nome_normalizado": "PRINCESA - CABO FRIO 1 (1 ENTREGA)",
+    "ativo": false
+  },
+  {
+    "id": "f474bb59-86b3-46ce-9a64-50cf2f21c145",
+    "nome": "Princesa - Cabo Frio 2 (3 Entrega)",
+    "nome_normalizado": "PRINCESA - CABO FRIO 2 (3 ENTREGA)",
+    "ativo": false
+  },
+  {
+    "id": "2a8a8fa1-87ad-4fc3-9975-cc43a8b122e7",
+    "nome": "Princesa - Cabo Frio 3 (2 Entrega)",
+    "nome_normalizado": "PRINCESA - CABO FRIO 3 (2 ENTREGA)",
+    "ativo": false
+  },
+  {
+    "id": "24964f68-ccb9-4068-8f36-d22bd73a7013",
+    "nome": "Princesa - Rio das Ostras (2 Entrega)",
+    "nome_normalizado": "PRINCESA - RIO DAS OSTRAS (2 ENTREGA)",
+    "ativo": false
+  },
+  {
+    "id": "5fa5b6ff-6b6a-4c40-ba3a-3c06c8f1a293",
+    "nome": "PRINCESA - BUZIOS 3",
+    "nome_normalizado": "PRINCESA - BUZIOS 3",
+    "ativo": true
+  },
+  {
+    "id": "53c8f273-50db-4c60-b6b2-91d2bc005491",
+    "nome": "PRINCESA - BUZIOS 1",
+    "nome_normalizado": "PRINCESA - BUZIOS 1",
+    "ativo": true
+  },
+  {
+    "id": "707eceaf-2544-4064-8796-3bef2e102e5b",
+    "nome": "PRINCESA - BUZIOS 2",
+    "nome_normalizado": "PRINCESA - BUZIOS 2",
+    "ativo": true
+  },
+  {
+    "id": "9ee6526f-5351-4375-8357-4c053e9e3f2a",
+    "nome": "PRINCESA MARICÁ 1",
+    "nome_normalizado": "PRINCESA MARICA 1",
+    "ativo": true
+  },
+  {
+    "id": "e37c4bce-f13c-497f-9cdd-427a7be25808",
+    "nome": "PRINCESA MARICÁ 2",
+    "nome_normalizado": "PRINCESA MARICA 2",
+    "ativo": true
+  },
+  {
+    "id": "fb582c40-7345-452a-9f4f-4c53beae5b8c",
+    "nome": "SENDAS BANGU II",
+    "nome_normalizado": "SENDAS BANGU II",
+    "ativo": true
+  },
+  {
+    "id": "188c7527-00ac-44bf-addd-eb48ce2472c1",
+    "nome": "28 - ZONA SUL - URCA",
+    "nome_normalizado": "28 - ZONA SUL - URCA",
+    "ativo": true
+  },
+  {
+    "id": "60f9b60f-9990-4268-aac8-22235765eb46",
+    "nome": "29 - ZONA SUL - FLAMENGO",
+    "nome_normalizado": "29 - ZONA SUL - FLAMENGO",
+    "ativo": true
+  },
+  {
+    "id": "3247db8c-5489-4799-aa42-9aae6991e750",
+    "nome": "Oswaldo Cruz",
+    "nome_normalizado": "OSWALDO CRUZ",
+    "ativo": false
+  },
+  {
+    "id": "7e8a2e74-162a-49b6-9458-b9350cf1ac20",
+    "nome": "Del Castilho",
+    "nome_normalizado": "DEL CASTILHO",
+    "ativo": false
+  },
+  {
+    "id": "e10ae230-daff-43cb-b351-7c716625da5f",
+    "nome": "Madureira",
+    "nome_normalizado": "MADUREIRA",
+    "ativo": false
+  },
+  {
+    "id": "4eb167f3-9b4a-4100-8bbc-7e5634e9e681",
+    "nome": "Pilares",
+    "nome_normalizado": "PILARES",
+    "ativo": false
+  },
+  {
+    "id": "f78a3c47-48ce-42c7-861d-ec49eada9771",
+    "nome": "Taquara",
+    "nome_normalizado": "TAQUARA",
+    "ativo": false
+  },
+  {
+    "id": "ff5b9d53-2019-4552-a105-eaa8ce004ffd",
+    "nome": "Sepetiba",
+    "nome_normalizado": "SEPETIBA",
+    "ativo": false
+  },
+  {
+    "id": "1c2f4f5a-287e-4444-8c2a-66bf37d748db",
+    "nome": "Vianense - Jardim Alvorada 2 entrega",
+    "nome_normalizado": "VIANENSE - JARDIM ALVORADA 2 ENTREGA",
+    "ativo": false
+  },
+  {
+    "id": "d0c16c1b-3ccb-4a27-a2c1-6940e8d6abf0",
+    "nome": "CARREFOUR - JUIZ DE FORA",
+    "nome_normalizado": "CARREFOUR - JUIZ DE FORA",
+    "ativo": false
+  },
+  {
+    "id": "5c42eafb-20ec-478a-b4c6-447aaad49ad1",
+    "nome": "Assaí - Freguesia - Loja 28",
+    "nome_normalizado": "ASSAI - FREGUESIA - LOJA 28",
+    "ativo": true
+  },
+  {
+    "id": "dfbbefec-e438-4c0a-a5ae-65694bb8b36e",
+    "nome": "Assaí - Nova Iguaçu - Loja 30",
+    "nome_normalizado": "ASSAI - NOVA IGUACU - LOJA 30",
+    "ativo": true
+  },
+  {
+    "id": "6150aa40-b28b-4529-8519-dc8a1bc18ac4",
+    "nome": "Assaí - Cabo Frio - Loja 82",
+    "nome_normalizado": "ASSAI - CABO FRIO - LOJA 82",
+    "ativo": true
+  },
+  {
+    "id": "a838ca7a-7bcc-4cba-8602-dd95e556655e",
+    "nome": "Assaí - Cesário de Melo - Loja 202",
+    "nome_normalizado": "ASSAI - CESARIO DE MELO - LOJA 202",
+    "ativo": true
+  },
+  {
+    "id": "9ef06fda-e3e9-44c9-9e10-6f0b8473c431",
+    "nome": "Assaí - Niterói - Loja 41",
+    "nome_normalizado": "ASSAI - NITEROI - LOJA 41",
+    "ativo": true
+  },
+  {
+    "id": "6d644ce3-066f-4250-86a7-d736f5e1c742",
+    "nome": "Assaí - Alcântara I - Loja 35",
+    "nome_normalizado": "ASSAI - ALCANTARA I - LOJA 35",
+    "ativo": true
+  },
+  {
+    "id": "10313d0b-e646-459e-8842-353c87d89119",
+    "nome": "Assaí - Pilares - Loja 128",
+    "nome_normalizado": "ASSAI - PILARES - LOJA 128",
+    "ativo": true
+  },
+  {
+    "id": "d50f2fcf-28a4-47c4-8930-376c5dfcda21",
+    "nome": "Assaí - Araruama - Loja 221",
+    "nome_normalizado": "ASSAI - ARARUAMA - LOJA 221",
+    "ativo": true
+  },
+  {
+    "id": "6d5573bc-9945-42e0-a1a3-d1f017adbf78",
+    "nome": "Assaí - Nilópolis - Loja 36",
+    "nome_normalizado": "ASSAI - NILOPOLIS - LOJA 36",
+    "ativo": true
+  },
+  {
+    "id": "0b2a2a86-9b2e-4355-b87d-1d327daef7a1",
+    "nome": "Assaí - Campinho - Loja 37",
+    "nome_normalizado": "ASSAI - CAMPINHO - LOJA 37",
+    "ativo": true
+  },
+  {
+    "id": "25fa6b77-9225-4899-b57c-c9df294972d1",
+    "nome": "Assaí - Macaé - Loja 232",
+    "nome_normalizado": "ASSAI - MACAE - LOJA 232",
+    "ativo": true
+  },
+  {
+    "id": "d740bb8c-a545-4ee5-8b4b-58c730bef2db",
+    "nome": "Assaí - Bangu I - Loja 55",
+    "nome_normalizado": "ASSAI - BANGU I - LOJA 55",
+    "ativo": true
+  },
+  {
+    "id": "8139ccb6-2cd0-4d7a-b6e3-e209b908d2db",
+    "nome": "Assaí - Ilha do Governador - Loja 29",
+    "nome_normalizado": "ASSAI - ILHA DO GOVERNADOR - LOJA 29",
+    "ativo": true
+  },
+  {
+    "id": "20bbae08-2de6-439f-b39d-4516fdf63fef",
+    "nome": "Princesa - Itaborai (2 Entrega)",
+    "nome_normalizado": "PRINCESA - ITABORAI (2 ENTREGA)",
+    "ativo": false
+  },
+  {
+    "id": "6aee9ef7-48d4-45f7-b5c5-6237b4a2eebe",
+    "nome": "12- Freguesia",
+    "nome_normalizado": "12- FREGUESIA",
+    "ativo": false
+  }
+]

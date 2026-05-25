@@ -1,0 +1,262 @@
+{
+  "PRINCESA BARRA DE SAO JOAO 1 ENTREGA": {
+    "loja_id": "ae38b034-8b18-4360-a448-8206673f93ad",
+    "nome": "PRINCESA - BARRA DE SÃO JOÃO",
+    "rede_id": "PRINCESA"
+  },
+  "PRINCESA CABO FRIO 1 1 ENTREGA": {
+    "loja_id": "c3517a59-d0bd-40b3-830b-7c4709a641bf",
+    "nome": "PRINCESA - CABO FRIO 1",
+    "rede_id": "PRINCESA"
+  },
+  "PRINCESA CABO FRIO 2 3 ENTREGA": {
+    "loja_id": "1f329d1d-783f-4cdf-85e8-79e5559e9a13",
+    "nome": "PRINCESA - CABO FRIO 2",
+    "rede_id": "PRINCESA"
+  },
+  "PRINCESA CABO FRIO 3 2 ENTREGA": {
+    "loja_id": "05d77aa4-ebdc-4a28-ba51-6ccb2b786273",
+    "nome": "PRINCESA - CABO FRIO 3",
+    "rede_id": "PRINCESA"
+  },
+  "PRINCESA RIO DAS OSTRAS 2 ENTREGA": {
+    "loja_id": "305c5ab8-83b0-4dbd-a783-51e37829f540",
+    "nome": "PRINCESA - RIO DAS OSTRAS",
+    "rede_id": "PRINCESA"
+  },
+  "CARREFOUR JUIZ DE FORA": {
+    "loja_id": "0fc33056-e505-43aa-8e7d-aaae64e84aa3",
+    "nome": "CARREFOUR JUIZ DE FORA",
+    "rede_id": "CARREFOUR"
+  },
+  "PRINCESA ITABORAI 2 ENTREGA": {
+    "loja_id": "ac02b46a-6d82-4423-819a-85a7193c571d",
+    "nome": "PRINCESA ITABORAÍ",
+    "rede_id": "PRINCESA"
+  },
+  "ARMAZEM DO GRAO A BARRA DA TIJUCA": {
+    "loja_id": "8fb5939a-b68c-45ea-b480-49c27a0cde6e",
+    "nome": "ARMAZEM DO GRAO (BARRA DA TIJUCA)",
+    "rede_id": "ARMAZEM_GRAO"
+  },
+  "CACHAMORRA": {
+    "loja_id": "d3739d8e-2fe3-4dd7-adae-476332f6879b",
+    "nome": "EMANUEL CACHAMORRA",
+    "rede_id": "EMANUEL"
+  },
+  "VARGEM GRANDE": {
+    "loja_id": "15a43cbb-2eb6-42d5-b838-545399a57cac",
+    "nome": "EMANUEL VARGEM GRANDE",
+    "rede_id": "EMANUEL"
+  },
+  "ALHAMBRA": {
+    "loja_id": "04d651a1-8056-46ab-bec3-a63115789b03",
+    "nome": "EMANUEL ALHAMBRA",
+    "rede_id": "EMANUEL"
+  },
+  "3 ANCHIETA": {
+    "loja_id": "bf012ac3-13c1-4efd-897a-a0535691d6a1",
+    "nome": "FEIRA NOVA ANCHIETA",
+    "rede_id": "FEIRA_NOVA"
+  },
+  "6 SANTA CRUZ DA SERRA": {
+    "loja_id": "fb267c8a-c470-4677-b64c-247a4d0a7ea1",
+    "nome": "FEIRA NOVA SANTA CRUZ DA SERRA",
+    "rede_id": "FEIRA_NOVA"
+  },
+  "7 COELHO DA ROCHA": {
+    "loja_id": "8fa3f9ee-0dc3-4aa1-82be-5ec8e41609aa",
+    "nome": "FEIRA NOVA COELHO DA ROCHA",
+    "rede_id": "FEIRA_NOVA"
+  },
+  "8 CERAMICA": {
+    "loja_id": "3f8f28b6-4e2f-4a26-b619-ffd5468075f3",
+    "nome": "FEIRA NOVA CERAMICA",
+    "rede_id": "FEIRA_NOVA"
+  },
+  "9 QUEIMADOS": {
+    "loja_id": "632eff69-df9b-4d32-ac19-4b05fa892ad6",
+    "nome": "FEIRA NOVA QUEIMADOS",
+    "rede_id": "FEIRA_NOVA"
+  },
+  "10 CACHAMBI": {
+    "loja_id": "bcdd0844-fa8b-4768-bf1c-7e485ef35611",
+    "nome": "FEIRA NOVA CACHAMBI",
+    "rede_id": "FEIRA_NOVA"
+  },
+  "12 FREGUESIA": {
+    "loja_id": "11ea634c-11f9-4f2d-842c-699c68bdb895",
+    "nome": "FEIRA NOVA FREGUESIA",
+    "rede_id": "FEIRA_NOVA"
+  },
+  "13 TODOS OS SANTOS": {
+    "loja_id": "ef4c3b5f-ccd8-4eab-a365-44035695a408",
+    "nome": "FEIRA NOVA TODOS OS SANTOS",
+    "rede_id": "FEIRA_NOVA"
+  },
+  "OSWALDO CRUZ": {
+    "loja_id": "c0cf2d78-b4ae-4553-b822-31520c20d6b6",
+    "nome": "PAX OSWALDO CRUZ",
+    "rede_id": "SUPER_PAX"
+  },
+  "ENGENHO DE DENTRO": {
+    "loja_id": "9a859270-f71d-46c6-9ddc-cfd6f4d7894a",
+    "nome": "PAX ENGENHO DE DENTRO",
+    "rede_id": "SUPER_PAX"
+  },
+  "REALENGO": {
+    "loja_id": "6e8bdfa7-a5ad-48e7-9572-7d61c4020f48",
+    "nome": "PAX REALENGO",
+    "rede_id": "SUPER_PAX"
+  },
+  "INHAUMA": {
+    "loja_id": "09cdf72b-7720-47ea-a49f-2079e59ba761",
+    "nome": "PAX INHAUMA",
+    "rede_id": "SUPER_PAX"
+  },
+  "DEL CASTILHO": {
+    "loja_id": "ad55cfff-84f2-4e1d-a74e-c2506520a990",
+    "nome": "PAX DEL CASTILHO",
+    "rede_id": "SUPER_PAX"
+  },
+  "MADUREIRA": {
+    "loja_id": "ea963466-dddd-4239-837a-6e210a2ed97a",
+    "nome": "PAX MADUREIRA",
+    "rede_id": "SUPER_PAX"
+  },
+  "PILARES": {
+    "loja_id": "f5ed8b53-2989-4f02-b56b-57505d9d37d4",
+    "nome": "PAX PILARES",
+    "rede_id": "SUPER_PAX"
+  },
+  "TAQUARA": {
+    "loja_id": "7cb52d6c-1e6e-4dde-b40a-fe74ac2b6179",
+    "nome": "PAX TAQUARA",
+    "rede_id": "SUPER_PAX"
+  },
+  "SEPETIBA": {
+    "loja_id": "dba0761d-337d-4f7a-8595-1c2793924121",
+    "nome": "PAX SEPETIBA",
+    "rede_id": "SUPER_PAX"
+  },
+  "VIANENSE FREGUESIA 2 ENTREGA": {
+    "loja_id": "3cb51a81-7ea2-4161-be41-2b4ca4def61d",
+    "nome": "VIANENSE FREGUESIA",
+    "rede_id": "VIANENSE"
+  },
+  "SENDAS NOVA IGUACU II": {
+    "loja_id": "2c910254-d052-4f98-8a3c-32591d0d79a9",
+    "nome": "SENDAS NOVA IGUACU - LOJA 30",
+    "rede_id": "SENDAS"
+  },
+  "SENDAS BANGU LOJA 55": {
+    "loja_id": "fb582c40-7345-452a-9f4f-4c53beae5b8c",
+    "nome": "SENDAS BANGU II",
+    "rede_id": "SENDAS"
+  },
+  "PRINCESA MARICA 1 2 ENTREGA": {
+    "loja_id": "9ee6526f-5351-4375-8357-4c053e9e3f2a",
+    "nome": "PRINCESA MARICÁ 1",
+    "rede_id": "PRINCESA"
+  },
+  "PRINCESA MARICA 2 1 ENTREGA": {
+    "loja_id": "e37c4bce-f13c-497f-9cdd-427a7be25808",
+    "nome": "PRINCESA MARICÁ 2",
+    "rede_id": "PRINCESA"
+  },
+  "PRINCESA BUZIOS 1 2 ENTREGA": {
+    "loja_id": "53c8f273-50db-4c60-b6b2-91d2bc005491",
+    "nome": "PRINCESA - BUZIOS 1",
+    "rede_id": "PRINCESA"
+  },
+  "PRINCESA BUZIOS 2 3 ENTREGA": {
+    "loja_id": "707eceaf-2544-4064-8796-3bef2e102e5b",
+    "nome": "PRINCESA - BUZIOS 2",
+    "rede_id": "PRINCESA"
+  },
+  "PRINCESA BUZIOS 3 1 ENTREGA": {
+    "loja_id": "5fa5b6ff-6b6a-4c40-ba3a-3c06c8f1a293",
+    "nome": "PRINCESA - BUZIOS 3",
+    "rede_id": "PRINCESA"
+  },
+  "ASSAI ALCANTARA I LOJA 35": {
+    "loja_id": "6d644ce3-066f-4250-86a7-d736f5e1c742",
+    "nome": "Assaí - Alcântara I - Loja 35",
+    "rede_id": "ASSAI"
+  },
+  "ASSAI ARARUAMA LOJA 221": {
+    "loja_id": "d50f2fcf-28a4-47c4-8930-376c5dfcda21",
+    "nome": "Assaí - Araruama - Loja 221",
+    "rede_id": "ASSAI"
+  },
+  "ASSAI BANGU I LOJA 55": {
+    "loja_id": "d740bb8c-a545-4ee5-8b4b-58c730bef2db",
+    "nome": "Assaí - Bangu I - Loja 55",
+    "rede_id": "ASSAI"
+  },
+  "ASSAI CABO FRIO LOJA 82": {
+    "loja_id": "6150aa40-b28b-4529-8519-dc8a1bc18ac4",
+    "nome": "Assaí - Cabo Frio - Loja 82",
+    "rede_id": "ASSAI"
+  },
+  "ASSAI CAMPINHO LOJA 37": {
+    "loja_id": "0b2a2a86-9b2e-4355-b87d-1d327daef7a1",
+    "nome": "Assaí - Campinho - Loja 37",
+    "rede_id": "ASSAI"
+  },
+  "ASSAI CESARIO DE MELO LOJA 202": {
+    "loja_id": "a838ca7a-7bcc-4cba-8602-dd95e556655e",
+    "nome": "Assaí - Cesário de Melo - Loja 202",
+    "rede_id": "ASSAI"
+  },
+  "ASSAI FREGUESIA LOJA 28": {
+    "loja_id": "5c42eafb-20ec-478a-b4c6-447aaad49ad1",
+    "nome": "Assaí - Freguesia - Loja 28",
+    "rede_id": "ASSAI"
+  },
+  "ASSAI ILHA DO GOVERNADOR LOJA 29": {
+    "loja_id": "8139ccb6-2cd0-4d7a-b6e3-e209b908d2db",
+    "nome": "Assaí - Ilha do Governador - Loja 29",
+    "rede_id": "ASSAI"
+  },
+  "ASSAI MACAE LOJA 232": {
+    "loja_id": "25fa6b77-9225-4899-b57c-c9df294972d1",
+    "nome": "Assaí - Macaé - Loja 232",
+    "rede_id": "ASSAI"
+  },
+  "VIANENSE JARDIM ALVORADA 2 ENTREGA": {
+    "loja_id": "32519f9f-69f1-4427-98b7-1beeda80709e",
+    "nome": "VIANENSE JARDIM ALVORADA",
+    "rede_id": "VIANENSE"
+  },
+  "ASSAI NILOPOLIS LOJA 36": {
+    "loja_id": "6d5573bc-9945-42e0-a1a3-d1f017adbf78",
+    "nome": "Assaí - Nilópolis - Loja 36",
+    "rede_id": "ASSAI"
+  },
+  "ASSAI NITEROI LOJA 41": {
+    "loja_id": "9ef06fda-e3e9-44c9-9e10-6f0b8473c431",
+    "nome": "Assaí - Niterói - Loja 41",
+    "rede_id": "ASSAI"
+  },
+  "ASSAI NOVA IGUACU LOJA 30": {
+    "loja_id": "dfbbefec-e438-4c0a-a5ae-65694bb8b36e",
+    "nome": "Assaí - Nova Iguaçu - Loja 30",
+    "rede_id": "ASSAI"
+  },
+  "ASSAI PILARES LOJA 128": {
+    "loja_id": "10313d0b-e646-459e-8842-353c87d89119",
+    "nome": "Assaí - Pilares - Loja 128",
+    "rede_id": "ASSAI"
+  },
+  "ZONA SUL LOJA 28 URCA": {
+    "loja_id": "188c7527-00ac-44bf-addd-eb48ce2472c1",
+    "nome": "28 - ZONA SUL - URCA",
+    "rede_id": "ZONA_SUL"
+  },
+  "ZONA SUL LOJA 29 FLAMENGO": {
+    "loja_id": "60f9b60f-9990-4268-aac8-22235765eb46",
+    "nome": "29 - ZONA SUL - FLAMENGO",
+    "rede_id": "ZONA_SUL"
+  }
+}
