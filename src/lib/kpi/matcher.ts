@@ -943,35 +943,72 @@ export async function cruzaEscalaUnitrac(
       // parada órfã → pula geo fallback para linhas VIANENSE.
       const temLojaOrfa = todas.some(p => p.classificacao === 'LOJA' && !usados.has(p.id))
 
-      const usadosGeo = new Set<number>()
-      for (const linha of linhasAindaSemMatch) {
-        // Geo-R: pula se veículo tem LOJA órfã (entregou em outra rede → FP)
-        if (temLojaOrfa) continue
-
-        // Pra cada linha sem match, procura parada FORA_BASE próxima de loja
-        // cadastrada da MESMA REDE (operacional ou canonical).
-        const lojasDaRede: GeoStore[] = lojas
-          .filter(l => l.rede_id === linha.rede_id && l.lat != null && l.lng != null)
-          .map(l => ({ id: l.id, name: l.nome, lat: l.lat as number, lng: l.lng as number, raio_metros: l.raio_metros }))
-        // Canonical_loja não tem rede_id no GeoStore — entra como pool geral
-        // mas só será usado se nenhuma loja operacional da rede bater.
-        let melhorIdx = -1
+      // Geo-R: pula se veículo tem LOJA órfã (entregou em outra rede → FP)
+      if (!temLojaOrfa) {
+        const usadosGeo = new Set<number>()
+        // Inverte loop: pra cada parada, acha loja mais próxima na rede e atribui
+        // à LINHA correspondente (não à primeira linha iterada). Antes, BARRA DO IMBUY
+        // recebia parada que estava perto da 1 DE MAIO porque só checava "bate alguma
+        // loja da rede" sem amarrar à linha certa.
         for (let j = 0; j < paradasForaBase.length; j++) {
           if (usadosGeo.has(j)) continue
           const p = paradasForaBase[j]
-          const bateRedeEspecifica = resolveForaBaseGeo(p.lat!, p.lng!, lojasDaRede) !== null
-          const bateCanonical = !bateRedeEspecifica && (geoStores ?? []).length > 0
-            && resolveForaBaseGeo(p.lat!, p.lng!, geoStores!) !== null
-          if (bateRedeEspecifica || bateCanonical) {
-            melhorIdx = j
-            break
+
+          // Acha melhor loja da rede para esta parada (entre as linhas SEM match)
+          const redesNasLinhas = new Set(linhasAindaSemMatch.map(l => l.rede_id))
+          const lojasCandidatas: { loja: typeof lojas[0]; dist: number }[] = []
+          for (const ll of lojas) {
+            if (!redesNasLinhas.has(ll.rede_id)) continue
+            if (ll.lat == null || ll.lng == null) continue
+            const d = haversine(p.lat!, p.lng!, ll.lat, ll.lng)
+            if (d <= ll.raio_metros) lojasCandidatas.push({ loja: ll, dist: d })
           }
-        }
-        if (melhorIdx >= 0) {
-          matchByEscalaId.set(linha.id, paradasForaBase[melhorIdx])
-          usados.add(paradasForaBase[melhorIdx].id)
-          usadosGeo.add(melhorIdx)
-          geoMatchedLineIds.add(linha.id)
+          lojasCandidatas.sort((a, b) => a.dist - b.dist)
+
+          // Tenta cada loja candidata (mais próxima primeiro) buscando linha com MELHOR
+          // matchScore (não primeiro find). Linhas da mesma rede compartilham token
+          // comum (ex: 4 REGINA têm "REGINA") — sem ordenar por score, find pega a
+          // primeira por carro_ordem e atribui parada ao errado.
+          let atribuido = false
+          for (const { loja: cand } of lojasCandidatas) {
+            let bestLinha: typeof linhasAindaSemMatch[0] | null = null
+            let bestScore = Infinity
+            for (const l of linhasAindaSemMatch) {
+              if (matchByEscalaId.has(l.id)) continue
+              if (l.rede_id !== cand.rede_id) continue
+              let s: number
+              if (l.loja_codigo_raw && cand.codigo_escala === l.loja_codigo_raw) s = 0
+              else s = matchScore(l.loja_nome_raw, cand.nome)
+              if (s <= 2 && s < bestScore) {
+                bestScore = s
+                bestLinha = l
+              }
+            }
+            if (bestLinha) {
+              matchByEscalaId.set(bestLinha.id, p)
+              usados.add(p.id)
+              usadosGeo.add(j)
+              geoMatchedLineIds.add(bestLinha.id)
+              atribuido = true
+              break
+            }
+          }
+
+          // Fallback canonical_loja se nenhuma loja da rede bateu por geo+nome
+          if (!atribuido && (geoStores ?? []).length > 0) {
+            const bateCanonical = resolveForaBaseGeo(p.lat!, p.lng!, geoStores!)
+            if (bateCanonical) {
+              // sem amarração de loja específica: atribui à primeira linha sem match
+              // (comportamento legacy preservado pra canonical, onde rede pode não existir)
+              const linhaAlvo = linhasAindaSemMatch.find(l => !matchByEscalaId.has(l.id))
+              if (linhaAlvo) {
+                matchByEscalaId.set(linhaAlvo.id, p)
+                usados.add(p.id)
+                usadosGeo.add(j)
+                geoMatchedLineIds.add(linhaAlvo.id)
+              }
+            }
+          }
         }
       }
     }
