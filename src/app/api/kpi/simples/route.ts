@@ -259,9 +259,30 @@ export async function POST(req: NextRequest) {
         if (!veiculosMap.has(v.placa_norm)) {
           veiculosMap.set(v.placa_norm, v)
         } else {
-          // Mesma placa em dois arquivos: concatena as paradas
+          // Mesma placa em dois arquivos (XLSX + PDF): deduplica por chegada+saída
+          // e prefere a versão MAIS INFORMATIVA (com codigo_loja, ou classificação
+          // LOJA vs FORA_BASE). XLSX e PDF do mesmo dia podem ter dados ligeiramente
+          // diferentes — escolher o melhor de cada parada maximiza completude.
           const existing = veiculosMap.get(v.placa_norm)!
-          veiculosMap.set(v.placa_norm, { ...existing, paradas: [...existing.paradas, ...v.paradas] })
+          const byKey = new Map<string, typeof existing.paradas[number]>()
+          const toKey = (p: typeof existing.paradas[number]) => {
+            const cheg = p.chegada instanceof Date ? p.chegada.toISOString() : String(p.chegada)
+            const sai = p.saida instanceof Date ? p.saida.toISOString() : String(p.saida ?? '')
+            return `${cheg}|${sai}`
+          }
+          const informatividade = (p: typeof existing.paradas[number]) => {
+            // LOJA com código > LOJA sem código > FORA_BASE > BASE > FAKE_EXIT
+            const tier = p.classificacao === 'LOJA' ? (p.codigo_loja ? 4 : 3) :
+                         p.classificacao === 'FORA_BASE' ? 2 :
+                         p.classificacao === 'BASE' ? 1 : 0
+            return tier
+          }
+          for (const p of [...existing.paradas, ...v.paradas]) {
+            const k = toKey(p)
+            const prev = byKey.get(k)
+            if (!prev || informatividade(p) > informatividade(prev)) byKey.set(k, p)
+          }
+          veiculosMap.set(v.placa_norm, { ...existing, paradas: Array.from(byKey.values()) })
         }
       }
     } catch (e) {
