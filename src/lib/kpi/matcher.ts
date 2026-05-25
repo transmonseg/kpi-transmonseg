@@ -1269,6 +1269,14 @@ export async function cruzaEscalaUnitrac(
           // redes estacionados perto de lojas Zona Sul na madrugada não são entregas ZS.
           // (Match direto por placa não passa por aqui; este guard só afeta T18.)
           if (new Date(p.chegada).getUTCHours() < 7) return false
+          // T18-D: guard de distância. Se a linha da escala tem loja com lat/lng
+          // cadastrado, a parada candidata DEVE estar a no máximo 5km da loja.
+          // Caso ARMAZEM dia 19 MATRIZ POSSE: parada KRB2J76 "MATRIZ CD DUQUE" tem
+          // token "MATRIZ" comum mas fica 47km longe da POSSE em Petrópolis.
+          if (lojaEscala?.lat != null && lojaEscala?.lng != null && p.lat != null && p.lng != null) {
+            const distM = haversine(lojaEscala.lat, lojaEscala.lng, p.lat, p.lng)
+            if (distM > 5000) return false
+          }
           // T18-R: guard de rede
           const redesDaParada = paradaRedesT18.get(p.id) ?? new Set<string>()
           if (redesDaParada.size > 0) {
