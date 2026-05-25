@@ -80,13 +80,15 @@ function tokensCore(s: string | null | undefined): Set<string> {
   const primeiraParada = String(s).split(',')[0]
   const norm = primeiraParada.toUpperCase()
     .normalize('NFD').replace(/[̀-ͯ]/g, '')
-    // Remove só parênteses com marcador de entrega — "(1ª Entrega)", "(2° Entrega)", "(Entrega Extra)".
+    // Remove só parênteses com marcador de entrega — "(1ª Entrega)", "(1° Entrega)", "(1º Entrega)",
+    // "(2° Entrega)", "(Entrega Extra)". Aceita ª, º, °, A, O (escala digita inconsistente).
     // ANTES: `\([^)]*\)` apagava TUDO entre parênteses, incluindo discriminadores de loja
     // ("ARMAZÉM DO GRÃO (ITAIPAVA)" virava "ARMAZÉM DO GRÃO" → token vazio).
     .replace(/\(\s*\d+\s*[ªº°AO]?\s*ENTREGAS?\s*\)/gi, ' ')
     .replace(/\(\s*ENTREGAS?\s+EXTRA\s*\)/gi, ' ')
     // Pra demais parênteses, manter o conteúdo (é discriminador) — só remove os símbolos
     .replace(/[()]/g, ' ')
+    // Mesmo padrão FORA de parênteses ("Vianense - Recreio 1º entrega")
     .replace(/\d+\s*[ªº°AO]?\s*ENTREGA/gi, ' ')
   const out = new Set<string>()
   for (const t of norm.split(/[^A-Z0-9]+/)) {
@@ -665,6 +667,22 @@ export async function cruzaEscalaUnitrac(
   supabase?: SupabaseClient,
   geoStores?: GeoStore[],
 ): Promise<RotaKpi[]> {
+  // V2.1 fix — tradução codigo_escala → codigo_unitrac.
+  // Quando uma loja tem codigo_escala='338' e codigo_unitrac='560060', uma linha de
+  // escala ASSAI com loja_codigo_raw='338' precisa casar com a parada Unitrac
+  // 560060 SENDAS SANTA CRUZ II. Sem essa tradução, codCasa('338','560060') falha.
+  // Funciona com redes aliased (ASSAI ↔ SENDAS) via redesFungiveis.
+  const escalaTraduzida = escalaLinhas.map(l => {
+    if (!l.loja_codigo_raw) return l
+    const fung = redesFungiveis(l.rede_id)
+    const lojaCad = lojas.find(x => x.codigo_escala === l.loja_codigo_raw && fung.has(x.rede_id) && x.codigo_unitrac)
+    if (lojaCad && lojaCad.codigo_unitrac && lojaCad.codigo_unitrac !== l.loja_codigo_raw) {
+      return { ...l, loja_codigo_raw: lojaCad.codigo_unitrac }
+    }
+    return l
+  })
+  escalaLinhas = escalaTraduzida
+
   // Pre-fetch batch trgm para todos os nomes de loja desta execucao
   let trgmResults: Record<string, TrgmResult> = {}
   if (supabase) {

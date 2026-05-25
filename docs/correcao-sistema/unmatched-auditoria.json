@@ -1,0 +1,2567 @@
+[
+  {
+    "dia": "2026-05-18",
+    "rede": "ASSAI",
+    "placa": "QSS1E48",
+    "loja_nome": "Assaí - Bangu II - Loja 332",
+    "loja_codigo": "332",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "16 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ASSAI",
+    "placa": "KNS8D16",
+    "loja_nome": "Assaí - Boulevard (Vila Isabel) - Loja 294",
+    "loja_codigo": "294",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KNS8D16\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ASSAI",
+    "placa": "EZU9325",
+    "loja_nome": "Assaí - Ceasa - Loja 42",
+    "loja_codigo": "42",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "14 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ASSAI",
+    "placa": "MQV9D14",
+    "loja_nome": "Assaí - Galeão - Loja 302",
+    "loja_codigo": "302",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"MQV9D14\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ASSAI",
+    "placa": "MQI6C04",
+    "loja_nome": "Assaí - Sabão Rio (Benfica) - Loja 136",
+    "loja_codigo": "136",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"MQI6C04\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ASSAI",
+    "placa": "KGO5E65",
+    "loja_nome": "Assaí - Santa Cruz - Loja 201",
+    "loja_codigo": "201",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KGO5E65\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ASSAI",
+    "placa": "LAU1I64",
+    "loja_nome": "Assaí - São Gonçalo Camil - Loja 211",
+    "loja_codigo": "211",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LAU1I64\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ASSAI",
+    "placa": "MQV9D15",
+    "loja_nome": "Assaí - São João do Meriti  - Loja 217",
+    "loja_codigo": "217",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"MQV9D15\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ASSAI",
+    "placa": "DDI6J90",
+    "loja_nome": "Assaí - Tijuca II  - Loja 150",
+    "loja_codigo": "150",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "5 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "CARREFOUR",
+    "placa": "KPN4F36",
+    "loja_nome": "Carrefour - Campos dos Goytacazes",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "1 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "PREZUNIC",
+    "placa": "KWB6998",
+    "loja_nome": "Prezunic - Botafogo / Serra Azul",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KWB6998\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "PREZUNIC",
+    "placa": "UBF5G34",
+    "loja_nome": "Prezunic - Botafogo (Voluntários)",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"UBF5G34\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "PREZUNIC",
+    "placa": "LUP1F13",
+    "loja_nome": "Prezunic - Jauru / Serra Azul",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LUP1F13\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "PREZUNIC",
+    "placa": "LUP1F13",
+    "loja_nome": "Prezunic - Taquara / Serra Azul",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LUP1F13\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "PREZUNIC",
+    "placa": "UBF5G34",
+    "loja_nome": "Prezunic - Padre Miguel",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"UBF5G34\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "PRINCESA",
+    "placa": "KQR2J11",
+    "loja_nome": "Princesa - Flamengo",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "1 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "SAMS_CLUB",
+    "placa": "NSM6D98",
+    "loja_nome": "Sam's - Barra (Ayrton Senna)",
+    "loja_codigo": null,
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Sam's - Barra (Ayrton Senna)\" não bate cadastro da rede SAMS_CLUB"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "VIANENSE",
+    "placa": "TML3B11",
+    "loja_nome": "Vianense - Recreio 1º entrega",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "VIANENSE",
+    "placa": "TML3B11",
+    "loja_nome": "Vianense - Freguesia 2º entrega",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "SENDAS",
+    "placa": "LKV5067",
+    "loja_nome": "Americanas",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "3 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "SENDAS",
+    "placa": "NSM6D98",
+    "loja_nome": "Santo Agostinho",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "1 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "SENDAS",
+    "placa": "KPH8C41",
+    "loja_nome": "Armazem do grão - Central",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KPH8C41\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "MUNDIAL",
+    "placa": "CDL8E52",
+    "loja_nome": "MUNDIAL",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"CDL8E52\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "SUPER_PAX",
+    "placa": "LUP1F13",
+    "loja_nome": "Lins",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LUP1F13\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "SUPER_PAX",
+    "placa": "KXR7527",
+    "loja_nome": "Pilares",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KXR7527\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "SUPER_PAX",
+    "placa": "KXR7527",
+    "loja_nome": "Del Castilho",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KXR7527\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "FEIRA_NOVA",
+    "placa": "KNS8D16",
+    "loja_nome": "11- Boa Dica (Piabetá)",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KNS8D16\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "EMANUEL",
+    "placa": "LMF2A49",
+    "loja_nome": "JARDIM_MARAVILHA",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LMF2A49\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "EMANUEL",
+    "placa": "UBF5G36",
+    "loja_nome": "VARGEM_GRANDE",
+    "loja_codigo": null,
+    "categoria": "ROTA_GIGANTE_SEM_CITACAO",
+    "detalhe": "paradas só em 1 rota(s) gigante(s): 7012010"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "QSW3B65",
+    "loja_nome": "ARMAZÉM DO GRÃO ( BOA VISTA)",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "19 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "QSW3B65",
+    "loja_nome": "ARMAZÉM DO GRÃO MATRIZ ( POSSE)",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "19 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "QST4C52",
+    "loja_nome": "ARMAZEM DO GRÃO (VALPARAÍSO)",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "4 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "QST4C52",
+    "loja_nome": "ARMAZEM DO GRÃO  (MOSELA)",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "4 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "QST4C52",
+    "loja_nome": "ARMAZEM DO GRÃO (QUITANDINHA)",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "4 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ZONA_SUL",
+    "placa": "LJS2172",
+    "loja_nome": "MEGA BOX 01 - Olaria",
+    "loja_codigo": "MEGA BOX 1",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LJS2172\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ZONA_SUL",
+    "placa": "UBF5G34",
+    "loja_nome": "Zona Sul Loja 28 - Urca",
+    "loja_codigo": "28",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"UBF5G34\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ZONA_SUL",
+    "placa": "KOP4978",
+    "loja_nome": "Zona Sul Loja 29 - Flamengo",
+    "loja_codigo": "29",
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Zona Sul Loja 29 - Flamengo\" não bate cadastro da rede ZONA_SUL"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ZONA_SUL",
+    "placa": "KOP4978",
+    "loja_nome": "Zona Sul Loja 28 - Urca",
+    "loja_codigo": "28",
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Zona Sul Loja 28 - Urca\" não bate cadastro da rede ZONA_SUL"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ZONA_SUL",
+    "placa": "KYM2I62",
+    "loja_nome": "Zona Sul Loja 08 - Ipanema",
+    "loja_codigo": "08",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KYM2I62\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ZONA_SUL",
+    "placa": "LNU9595",
+    "loja_nome": "Zona Sul Loja 01 - Ipanema",
+    "loja_codigo": "01",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LNU9595\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ZONA_SUL",
+    "placa": "LTE0A64",
+    "loja_nome": "Zona Sul Loja 43 - Barra (Península)",
+    "loja_codigo": "43",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LTE0A64\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ZONA_SUL",
+    "placa": "RJL7D33",
+    "loja_nome": "Zona Sul Loja 45 - Flamengo",
+    "loja_codigo": "45",
+    "categoria": "ROTA_GIGANTE_SEM_CITACAO",
+    "detalhe": "paradas só em 1 rota(s) gigante(s): 9039124"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ZONA_SUL",
+    "placa": "MDV3746",
+    "loja_nome": "Zona Sul Loja 20 - Botafogo",
+    "loja_codigo": "20",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"MDV3746\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ZONA_SUL",
+    "placa": "QAH2H50",
+    "loja_nome": "Zona Sul Loja 25 - Jd. Botânico",
+    "loja_codigo": "25",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"QAH2H50\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ZONA_SUL",
+    "placa": "QAH2H50",
+    "loja_nome": "Zona Sul Loja 22 - S. Conrado",
+    "loja_codigo": "22",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"QAH2H50\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ZONA_SUL",
+    "placa": "LQA5883",
+    "loja_nome": "Zona Sul Loja 23 - Barra",
+    "loja_codigo": "23",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LQA5883\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ZONA_SUL",
+    "placa": "LAF0697",
+    "loja_nome": "Zona Sul Loja 44 - Barra",
+    "loja_codigo": "44",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "3 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ZONA_SUL",
+    "placa": "CYB3B90",
+    "loja_nome": "Zona Sul Loja 10 - Recreio",
+    "loja_codigo": "10",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "13 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ZONA_SUL",
+    "placa": "KYM2I62",
+    "loja_nome": "MEGA BOX 01 - Olaria",
+    "loja_codigo": "MEGA BOX 1",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KYM2I62\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ZONA_SUL",
+    "placa": "KYM2I62",
+    "loja_nome": "Zona Sul Loja 1129 - Olaria",
+    "loja_codigo": "1129",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KYM2I62\" sem paradas"
+  },
+  {
+    "dia": "2026-05-18",
+    "rede": "ZONA_SUL",
+    "placa": "LKW2B80",
+    "loja_nome": "MEGA BOX 01 - Olaria",
+    "loja_codigo": "MEGA BOX 1",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "3 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ASSAI",
+    "placa": "LSN6I72",
+    "loja_nome": "Assaí - Alcântara I - Loja 35",
+    "loja_codigo": "35",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "9 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ASSAI",
+    "placa": "LMF2049",
+    "loja_nome": "Assaí - Bangu II - Loja 332",
+    "loja_codigo": "332",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "11 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ASSAI",
+    "placa": "EZU9325",
+    "loja_nome": "Assaí - Ceasa - Loja 42",
+    "loja_codigo": "42",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "14 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ASSAI",
+    "placa": "GAR0802",
+    "loja_nome": "Assaí - Maracanã - Loja 286",
+    "loja_codigo": "286",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "7 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ASSAI",
+    "placa": "AMW3424",
+    "loja_nome": "Assaí - Niterói Ponte - Loja 292",
+    "loja_codigo": "292",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"AMW3424\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ASSAI",
+    "placa": "LKA3935",
+    "loja_nome": "Assaí - Sabão Rio (Benfica) - Loja 136",
+    "loja_codigo": "136",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "1 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ASSAI",
+    "placa": "KGO5E65",
+    "loja_nome": "Assaí - Santa Cruz - Loja 201",
+    "loja_codigo": "201",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KGO5E65\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ASSAI",
+    "placa": "LNG7110",
+    "loja_nome": "Assaí - Santa Cruz 2 - Loja 338",
+    "loja_codigo": "338",
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Assaí - Santa Cruz 2 - Loja 338\" não bate cadastro da rede ASSAI"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ASSAI",
+    "placa": "LAU1I64",
+    "loja_nome": "Assaí - São Gonçalo Camil - Loja 211",
+    "loja_codigo": "211",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LAU1I64\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ASSAI",
+    "placa": "LON7G98",
+    "loja_nome": "Assaí - Tribobó - Loja 248",
+    "loja_codigo": "248",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "1 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ATACADAO",
+    "placa": "UBF5G34",
+    "loja_nome": "Atacadão - Belford Roxo",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"UBF5G34\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "CARREFOUR",
+    "placa": "KVI9088",
+    "loja_nome": "Carrefour - Campo Grande",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "SUPERCOMPRAS",
+    "placa": "EYL8B91",
+    "loja_nome": "SUPERCOMPRAS - COSMOS",
+    "loja_codigo": null,
+    "categoria": "ROTA_GIGANTE_SEM_CITACAO",
+    "detalhe": "paradas só em 1 rota(s) gigante(s): 23080000"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "PREZUNIC",
+    "placa": "KWB6998",
+    "loja_nome": "Prezunic - Botafogo / Serra Azul",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KWB6998\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "PREZUNIC",
+    "placa": "HNG2B61",
+    "loja_nome": "Prezunic - Botafogo / Serra Azul",
+    "loja_codigo": null,
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Prezunic - Botafogo / Serra Azul\" não bate cadastro da rede PREZUNIC"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "PREZUNIC",
+    "placa": "LUP1F13",
+    "loja_nome": "Prezunic - Jauru / Serra Azul",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LUP1F13\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "PREZUNIC",
+    "placa": "LUP1F13",
+    "loja_nome": "Prezunic - Taquara / Serra Azul",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LUP1F13\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "PREZUNIC",
+    "placa": "UBF5G34",
+    "loja_nome": "Prezunic - Depósito Central",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"UBF5G34\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "PREZUNIC",
+    "placa": "LLJ9C64",
+    "loja_nome": "Prezunic SPID - Jacarepagua",
+    "loja_codigo": null,
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Prezunic SPID - Jacarepagua\" não bate cadastro da rede PREZUNIC"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "PREZUNIC",
+    "placa": "LLJ9C64",
+    "loja_nome": "Prezunic SPID - Parque das Rosas",
+    "loja_codigo": null,
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Prezunic SPID - Parque das Rosas\" não bate cadastro da rede PREZUNIC"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "PREZUNIC",
+    "placa": "MSK3752",
+    "loja_nome": "Prezunic SPID - Freguesia",
+    "loja_codigo": null,
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Prezunic SPID - Freguesia\" não bate cadastro da rede PREZUNIC"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "SAMS_CLUB",
+    "placa": "LAF0697",
+    "loja_nome": "Sam's - Linha Amarela",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "1 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "SAMS_CLUB",
+    "placa": "NSM6D98",
+    "loja_nome": "Sam's - Barra (Ayrton Senna)",
+    "loja_codigo": null,
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Sam's - Barra (Ayrton Senna)\" não bate cadastro da rede SAMS_CLUB"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "VIANENSE",
+    "placa": "TML3B11",
+    "loja_nome": "Vianense - Freguesia 2º entrega",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "1 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "SENDAS",
+    "placa": "LKV5067",
+    "loja_nome": "Americanas",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "SENDAS",
+    "placa": "NSM6D98",
+    "loja_nome": "Santo Agostinho",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "SENDAS",
+    "placa": "KPH8C41",
+    "loja_nome": "Armazem do grão - Central",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KPH8C41\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "SENDAS",
+    "placa": "LMF2049",
+    "loja_nome": "Mercado de Santa",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "11 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "MUNDIAL",
+    "placa": "CDL8E52",
+    "loja_nome": "MUNDIAL",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"CDL8E52\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "SUPER_PAX",
+    "placa": "TML7D21",
+    "loja_nome": "Sepetiba",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "1 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "SUPER_PAX",
+    "placa": "LUP1F13",
+    "loja_nome": "Lins",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LUP1F13\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "SUPER_PAX",
+    "placa": "UBF7F79",
+    "loja_nome": "INHAUMA",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"UBF7F79\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "SUPER_PAX",
+    "placa": "GAJ6H51",
+    "loja_nome": "Madureira",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "FEIRA_NOVA",
+    "placa": "BBH1C94",
+    "loja_nome": "3- Anchieta",
+    "loja_codigo": null,
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"3- Anchieta\" não bate cadastro da rede FEIRA_NOVA"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "FEIRA_NOVA",
+    "placa": "KNC1834",
+    "loja_nome": "ANCHIETA - 2º CARRO",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KNC1834\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "TML6D96",
+    "loja_nome": "REGINA  1 DE MAIO",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "9 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "TML6D96",
+    "loja_nome": "REGINA  LUCIO MEIRA",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "9 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "TML6D96",
+    "loja_nome": "ABASTECEDORA GRÃO DA SERRA (ALTO)",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "9 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "TML9I75",
+    "loja_nome": "ARMAZÉM DO GRÃO ( BOA VISTA)",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "1 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "TML9I75",
+    "loja_nome": "ARMAZÉM DO GRÃO MATRIZ ( POSSE)",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "1 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "QST4C52",
+    "loja_nome": "ARMAZEM DO GRÃO (VALPARAÍSO)",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "4 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "QST4C52",
+    "loja_nome": "ARMAZEM DO GRÃO  (MOSELA)",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "4 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "QST4C52",
+    "loja_nome": "ARMAZEM DO GRÃO (QUITANDINHA)",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "4 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "UDC6I03",
+    "loja_nome": "ARMAZEM DO GRAO (16 DE MARÇO)",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "3 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "LQU5546",
+    "loja_nome": "Zona Sul Loja 29 - Flamengo",
+    "loja_codigo": "29",
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Zona Sul Loja 29 - Flamengo\" não bate cadastro da rede ZONA_SUL"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "KOP4978",
+    "loja_nome": "MEGA BOX 02 - Olaria",
+    "loja_codigo": "MEGA BOX 2",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "KOP4978",
+    "loja_nome": "Zona Sul - Entrega Extra",
+    "loja_codigo": "EXTRA",
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Zona Sul - Entrega Extra\" não bate cadastro da rede ZONA_SUL"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "DBB8D19",
+    "loja_nome": "Zona Sul Loja 31 - Jd. Botânico",
+    "loja_codigo": "31",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "7 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "DBB8D19",
+    "loja_nome": "Zona Sul Loja 11 - Leblon",
+    "loja_codigo": "11",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "7 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "DBB8D19",
+    "loja_nome": "EXTRA F.31",
+    "loja_codigo": "EXTRA F.31",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "7 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "UBO5E05",
+    "loja_nome": "Zona Sul Loja 14 - Leblon",
+    "loja_codigo": "14",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "9 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "LJS2172",
+    "loja_nome": "Zona Sul Loja 01 - Ipanema",
+    "loja_codigo": "01",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LJS2172\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "LJS2172",
+    "loja_nome": "Zona Sul Loja 09 - Ipanema",
+    "loja_codigo": "09",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LJS2172\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "LNU9595",
+    "loja_nome": "Zona Sul Loja 34 - Barra",
+    "loja_codigo": "34",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LNU9595\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "LQA5883",
+    "loja_nome": "Zona Sul Loja 40 - Ipanema",
+    "loja_codigo": "40",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LQA5883\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "LVE0688",
+    "loja_nome": "Zona Sul Loja 05 - Copacabana III",
+    "loja_codigo": "05",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "1 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "EBG2D13",
+    "loja_nome": "Zona Sul Loja 25 - Jd. Botânico",
+    "loja_codigo": "25",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "5 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "EBG2D13",
+    "loja_nome": "Zona Sul Loja 22 - S. Conrado",
+    "loja_codigo": "22",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "5 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "LTE0A64",
+    "loja_nome": "Zona Sul Loja 31 - Jd. Botânico",
+    "loja_codigo": "31",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LTE0A64\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "LNU7733",
+    "loja_nome": "MEGA BOX 02 - Olaria",
+    "loja_codigo": "MEGA BOX 2",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LNU7733\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "AKZ2594",
+    "loja_nome": "Zona Sul Loja 10 - Recreio",
+    "loja_codigo": "10",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "AKZ2594",
+    "loja_nome": "MEGA BOX 02 - Olaria",
+    "loja_codigo": "MEGA BOX 2",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "KMY5561",
+    "loja_nome": "Zona Sul Loja 19 - Copacabana",
+    "loja_codigo": "19",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "3 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "BBH1C94",
+    "loja_nome": "Zona Sul Loja 03 - Copacabana I",
+    "loja_codigo": "03",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "1 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "BBH1C94",
+    "loja_nome": "Zona Sul Loja 19 - Copacabana",
+    "loja_codigo": "19",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "1 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "LTH4J15",
+    "loja_nome": "Zona Sul Loja 26 - Copacabana",
+    "loja_codigo": "26",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "5 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "QAH2H50",
+    "loja_nome": "Zona Sul Loja 32 - Laranjeiras",
+    "loja_codigo": "32",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"QAH2H50\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "QAH2H50",
+    "loja_nome": "Zona Sul Loja 42 - Botafogo",
+    "loja_codigo": "42",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"QAH2H50\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "KYM2I62",
+    "loja_nome": "Zona Sul Loja 1129 - Olaria",
+    "loja_codigo": "1129",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KYM2I62\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "MDV3746",
+    "loja_nome": "MEGA BOX 01 - Olaria",
+    "loja_codigo": "MEGA BOX 1",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"MDV3746\" sem paradas"
+  },
+  {
+    "dia": "2026-05-19",
+    "rede": "ZONA_SUL",
+    "placa": "MDV3746",
+    "loja_nome": "Zona Sul Loja 1129 - Olaria",
+    "loja_codigo": "1129",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"MDV3746\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ASSAI",
+    "placa": "MQV9D14",
+    "loja_nome": "Assaí - Barra II  - Loja 245",
+    "loja_codigo": "245",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"MQV9D14\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ASSAI",
+    "placa": "UBF5G34",
+    "loja_nome": "Assaí - Cordovil - Loja 231",
+    "loja_codigo": "231",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"UBF5G34\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ASSAI",
+    "placa": "JXA4I92",
+    "loja_nome": "Assaí - Galeão - Loja 302",
+    "loja_codigo": "302",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"JXA4I92\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ASSAI",
+    "placa": "GAR0802",
+    "loja_nome": "Assaí - Maracanã - Loja 286",
+    "loja_codigo": "286",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "8 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ASSAI",
+    "placa": "KGO5E65",
+    "loja_nome": "Assaí - Mendanha (Campo Grande) - Loja 65",
+    "loja_codigo": "65",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KGO5E65\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ASSAI",
+    "placa": "AMW3424",
+    "loja_nome": "Assaí - Niterói Ponte - Loja 292",
+    "loja_codigo": "292",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"AMW3424\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ASSAI",
+    "placa": "JKR0E08",
+    "loja_nome": "Assaí - Nova Iguaçu 2 - Loja 291",
+    "loja_codigo": "291",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"JKR0E08\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ASSAI",
+    "placa": "MQV9D15",
+    "loja_nome": "Assaí - Sabão Rio (Benfica) - Loja 136",
+    "loja_codigo": "136",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"MQV9D15\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ASSAI",
+    "placa": "KWV7E89",
+    "loja_nome": "Assaí - Santa Cruz 2 - Loja 338",
+    "loja_codigo": "338",
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Assaí - Santa Cruz 2 - Loja 338\" não bate cadastro da rede ASSAI"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ASSAI",
+    "placa": "LAU1I64",
+    "loja_nome": "Assaí - São Gonçalo Camil - Loja 211",
+    "loja_codigo": "211",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LAU1I64\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ASSAI",
+    "placa": "LQK0F07",
+    "loja_nome": "Assaí - São João do Meriti  - Loja 217",
+    "loja_codigo": "217",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LQK0F07\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ASSAI",
+    "placa": "UBO0B68",
+    "loja_nome": "Assaí - Taquara   - Loja 340",
+    "loja_codigo": "340",
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Assaí - Taquara   - Loja 340\" não bate cadastro da rede ASSAI"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "CARREFOUR",
+    "placa": "KNC5J75",
+    "loja_nome": "Carrefour - Alcântara",
+    "loja_codigo": null,
+    "categoria": "ROTA_GIGANTE_SEM_CITACAO",
+    "detalhe": "paradas só em 1 rota(s) gigante(s): 11139000"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "SUPERCOMPRAS",
+    "placa": "TJQ6J26",
+    "loja_nome": "SUPERCOMPRAS - COSMOS",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "5 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "PREZUNIC",
+    "placa": "KWB6998",
+    "loja_nome": "Prezunic - Botafogo / Serra Azul",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KWB6998\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "PREZUNIC",
+    "placa": "LUP1F13",
+    "loja_nome": "Prezunic - Jauru / Serra Azul",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LUP1F13\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "PREZUNIC",
+    "placa": "LUP1F13",
+    "loja_nome": "Prezunic - Taquara / Serra Azul",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LUP1F13\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "PREZUNIC",
+    "placa": "UBF5G34",
+    "loja_nome": "Prezunic - Méier / Serra Azul",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"UBF5G34\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "PRINCESA",
+    "placa": "KXB6E57",
+    "loja_nome": "Princesa - Cosme Velho",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "9 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "PRINCESA",
+    "placa": "KXB6E57",
+    "loja_nome": "Princesa - Laranjeiras",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "9 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "SAMS_CLUB",
+    "placa": "LAF0697",
+    "loja_nome": "Sam's - Linha Amarela",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "1 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "SAMS_CLUB",
+    "placa": "NSM6D98",
+    "loja_nome": "Sam's - Barra (Ayrton Senna)",
+    "loja_codigo": null,
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Sam's - Barra (Ayrton Senna)\" não bate cadastro da rede SAMS_CLUB"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "VIANENSE",
+    "placa": "TML6D96",
+    "loja_nome": "Vianense - Recreio 1º entrega",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "14 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "VIANENSE",
+    "placa": "TML6D96",
+    "loja_nome": "Vianense - Freguesia 2º entrega",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "14 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "SENDAS",
+    "placa": "LKV5067",
+    "loja_nome": "Americanas",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "3 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "SENDAS",
+    "placa": "NSM6D98",
+    "loja_nome": "Santo Agostinho",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "1 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "SENDAS",
+    "placa": "KPH8C41",
+    "loja_nome": "Armazem do grão - Central",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KPH8C41\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "MUNDIAL",
+    "placa": "CDL8E52",
+    "loja_nome": "MUNDIAL",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"CDL8E52\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "DESCONHECIDO",
+    "placa": "TML5I70",
+    "loja_nome": "GPA",
+    "loja_codigo": null,
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"GPA\" não bate cadastro da rede DESCONHECIDO"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "SUPER_PAX",
+    "placa": "LUP1F13",
+    "loja_nome": "Lins",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LUP1F13\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "SUPER_PAX",
+    "placa": "KXR7527",
+    "loja_nome": "Pilares",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KXR7527\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "SUPER_PAX",
+    "placa": "KXR7527",
+    "loja_nome": "Del Castilho",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KXR7527\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "SUPER_PAX",
+    "placa": "AKZ2745",
+    "loja_nome": "Guadalupe",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "1 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "FEIRA_NOVA",
+    "placa": null,
+    "loja_nome": "12- Freguesia",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "sem placa"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "FEIRA_NOVA",
+    "placa": "KNS8D16",
+    "loja_nome": "11- Boa Dica (Piabetá)",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KNS8D16\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "EMANUEL",
+    "placa": "LNU7733",
+    "loja_nome": "Alhambra / Cachamorra",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LNU7733\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "EMANUEL",
+    "placa": "LMF2A49",
+    "loja_nome": "JARDIM_MARAVILHA",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LMF2A49\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "EMANUEL",
+    "placa": null,
+    "loja_nome": "VILA_NOVA",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "sem placa"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "EMANUEL",
+    "placa": null,
+    "loja_nome": "AGULHAS_NEGRAS",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "sem placa"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ZONA_SUL",
+    "placa": "LNU9595",
+    "loja_nome": "Zona Sul Loja 35 - Barra",
+    "loja_codigo": "35",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LNU9595\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ZONA_SUL",
+    "placa": "LNU9595",
+    "loja_nome": "Zona Sul Loja 43 - Barra (Península)",
+    "loja_codigo": "43",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LNU9595\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ZONA_SUL",
+    "placa": "MDV3746",
+    "loja_nome": "Zona Sul Loja 23 - Barra",
+    "loja_codigo": "23",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"MDV3746\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ZONA_SUL",
+    "placa": "MDV3746",
+    "loja_nome": "Zona Sul Loja 44 - Barra",
+    "loja_codigo": "44",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"MDV3746\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ZONA_SUL",
+    "placa": "LNU7733",
+    "loja_nome": "MEGA BOX 02 - Olaria",
+    "loja_codigo": "MEGA BOX 2",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LNU7733\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ZONA_SUL",
+    "placa": "LQA5883",
+    "loja_nome": "Zona Sul Loja 19 - Copacabana",
+    "loja_codigo": "19",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LQA5883\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ZONA_SUL",
+    "placa": "EFU5704",
+    "loja_nome": "Zona Sul Loja 26 - Copacabana",
+    "loja_codigo": "26",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"EFU5704\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ZONA_SUL",
+    "placa": "QAH2H50",
+    "loja_nome": "Zona Sul Loja 32 - Laranjeiras",
+    "loja_codigo": "32",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"QAH2H50\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ZONA_SUL",
+    "placa": "QAH2H50",
+    "loja_nome": "Zona Sul Loja 42 - Botafogo",
+    "loja_codigo": "42",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"QAH2H50\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ZONA_SUL",
+    "placa": "KYM2I62",
+    "loja_nome": "Zona Sul Loja 1129 - Olaria",
+    "loja_codigo": "1129",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KYM2I62\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ZONA_SUL",
+    "placa": "KYM2I62",
+    "loja_nome": "MEGA BOX 01 - Olaria",
+    "loja_codigo": "MEGA BOX 1",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KYM2I62\" sem paradas"
+  },
+  {
+    "dia": "2026-05-20",
+    "rede": "ZONA_SUL",
+    "placa": "LQE5401",
+    "loja_nome": "MEGA BOX 01 - Olaria",
+    "loja_codigo": "MEGA BOX 1",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LQE5401\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ASSAI",
+    "placa": "INW8A51",
+    "loja_nome": "Assaí - Caxias II (Parque Fluminense) - Loja 219",
+    "loja_codigo": "219",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ASSAI",
+    "placa": "EZU9325",
+    "loja_nome": "Assaí - Ceasa - Loja 42",
+    "loja_codigo": "42",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "17 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ASSAI",
+    "placa": "GAR0802",
+    "loja_nome": "Assaí - Maracanã - Loja 286",
+    "loja_codigo": "286",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "6 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ASSAI",
+    "placa": "LUP1F13",
+    "loja_nome": "Assaí - Mendanha (Campo Grande) - Loja 65",
+    "loja_codigo": "65",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LUP1F13\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ASSAI",
+    "placa": "AMW3424",
+    "loja_nome": "Assaí - Niterói Ponte - Loja 292",
+    "loja_codigo": "292",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"AMW3424\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ASSAI",
+    "placa": "KPN4F36",
+    "loja_nome": "Assaí - Petrópolis- Loja 181",
+    "loja_codigo": "181",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "8 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ASSAI",
+    "placa": "KPT5B20",
+    "loja_nome": "Assaí - Sabão Rio (Benfica) - Loja 136",
+    "loja_codigo": "136",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "9 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ASSAI",
+    "placa": "LAU1I64",
+    "loja_nome": "Assaí - São Gonçalo Camil - Loja 211",
+    "loja_codigo": "211",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LAU1I64\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ASSAI",
+    "placa": "LON7G98",
+    "loja_nome": "Assaí - Tribobó - Loja 248",
+    "loja_codigo": "248",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "1 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "SUPERCOMPRAS",
+    "placa": "EYL8B91",
+    "loja_nome": "SUPERCOMPRAS - COSMOS",
+    "loja_codigo": null,
+    "categoria": "ROTA_GIGANTE_SEM_CITACAO",
+    "detalhe": "paradas só em 1 rota(s) gigante(s): 23080000"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "PREZUNIC",
+    "placa": "KWB6998",
+    "loja_nome": "Prezunic - Botafogo / Serra Azul",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KWB6998\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "PREZUNIC",
+    "placa": "TML6D96",
+    "loja_nome": "Prezunic - Freguesia",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "PREZUNIC",
+    "placa": "KOP4978",
+    "loja_nome": "Prezunic - Campinho",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "PREZUNIC",
+    "placa": "RJN9F68",
+    "loja_nome": "Prezunic SPID - Tijuca",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "3 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "PREZUNIC",
+    "placa": "RJN9F68",
+    "loja_nome": "Prezunic SPID - Vila Isabel",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "3 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "PREZUNIC",
+    "placa": "RJN9F68",
+    "loja_nome": "Prezunic SPID - Meier",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "3 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "PREZUNIC",
+    "placa": "LLJ9C64",
+    "loja_nome": "Prezunic SPID - Parque das Rosas",
+    "loja_codigo": null,
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Prezunic SPID - Parque das Rosas\" não bate cadastro da rede PREZUNIC"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "PREZUNIC",
+    "placa": "MSK3752",
+    "loja_nome": "Prezunic SPID - Freguesia",
+    "loja_codigo": null,
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Prezunic SPID - Freguesia\" não bate cadastro da rede PREZUNIC"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "SAMS_CLUB",
+    "placa": "LAF0697",
+    "loja_nome": "Sam's - Linha Amarela",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "1 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "SAMS_CLUB",
+    "placa": "NSM6D98",
+    "loja_nome": "Sam's - Barra (Ayrton Senna)",
+    "loja_codigo": null,
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Sam's - Barra (Ayrton Senna)\" não bate cadastro da rede SAMS_CLUB"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "VIANENSE",
+    "placa": "TML6D96",
+    "loja_nome": "Vianense - Recreio 1º entrega",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "VIANENSE",
+    "placa": "TML6D96",
+    "loja_nome": "Vianense - Freguesia 2º entrega",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "VIANENSE",
+    "placa": "LTH4J15",
+    "loja_nome": "Vianense - Nova Iguaçu 1º entrega",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "10 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "VIANENSE",
+    "placa": "LTH4J15",
+    "loja_nome": "Vianense - Jardim Alvorada 2º entrega",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "10 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "SENDAS",
+    "placa": "LKV5067",
+    "loja_nome": "Americanas",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "3 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "SENDAS",
+    "placa": "NSM6D98",
+    "loja_nome": "Santo Agostinho",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "SENDAS",
+    "placa": "KPH8C41",
+    "loja_nome": "Armazem do grão - Central",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KPH8C41\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "SENDAS",
+    "placa": "LMF2049",
+    "loja_nome": "Mercado de Santa",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "13 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "MUNDIAL",
+    "placa": "CDL8E52",
+    "loja_nome": "MUNDIAL",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"CDL8E52\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "SUPER_PAX",
+    "placa": null,
+    "loja_nome": "Sepetiba",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "sem placa"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "SUPER_PAX",
+    "placa": "LUP1F13",
+    "loja_nome": "Lins",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LUP1F13\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "SUPER_PAX",
+    "placa": "TML7D61",
+    "loja_nome": "Madureira",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "SUPER_PAX",
+    "placa": "TML7D61",
+    "loja_nome": "Oswaldo Cruz",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "SUPER_PAX",
+    "placa": "LNU7733",
+    "loja_nome": "Vila da Penha",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LNU7733\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "SUPER_PAX",
+    "placa": "KXR7527",
+    "loja_nome": "Pilares",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KXR7527\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "SUPER_PAX",
+    "placa": "KXR7527",
+    "loja_nome": "Del Castilho",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KXR7527\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "FEIRA_NOVA",
+    "placa": null,
+    "loja_nome": "1- Nilopolis (Olinda)",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "sem placa"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "FEIRA_NOVA",
+    "placa": null,
+    "loja_nome": "9- Queimados",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "sem placa"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "FEIRA_NOVA",
+    "placa": "KNS8D16",
+    "loja_nome": "11- Boa Dica (Piabetá)",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KNS8D16\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "EMANUEL",
+    "placa": "KVT5427",
+    "loja_nome": "SANTA_MARIA",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "4 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "EMANUEL",
+    "placa": null,
+    "loja_nome": "VILA_NOVA",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "sem placa"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "EMANUEL",
+    "placa": null,
+    "loja_nome": "ALHAMBRA",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "sem placa"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "EMANUEL",
+    "placa": "LMF2A49",
+    "loja_nome": "VARGEM_GRANDE",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LMF2A49\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "QSU6I54",
+    "loja_nome": "REGINA  1 DE MAIO",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "10 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "QSU6I54",
+    "loja_nome": "REGINA  LUCIO MEIRA",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "10 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "QSU6I54",
+    "loja_nome": "ABASTECEDORA GRÃO DA SERRA (ALTO)",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "10 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "UBO0B68",
+    "loja_nome": "ARMAZÉM DO GRÃO ( BOA VISTA)",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "UBO0B68",
+    "loja_nome": "ARMAZÉM DO GRÃO MATRIZ ( POSSE)",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "QST4C52",
+    "loja_nome": "ARMAZEM DO GRÃO (VALPARAÍSO)",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "4 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "QST4C52",
+    "loja_nome": "ARMAZEM DO GRÃO  (MOSELA)",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "4 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "QST4C52",
+    "loja_nome": "ARMAZEM DO GRÃO (QUITANDINHA)",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "4 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ZONA_SUL",
+    "placa": "ETI5F79",
+    "loja_nome": "Zona Sul - Entrega Extra",
+    "loja_codigo": "EXTRA",
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Zona Sul - Entrega Extra\" não bate cadastro da rede ZONA_SUL"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ZONA_SUL",
+    "placa": "LQA5883",
+    "loja_nome": "Zona Sul Loja 34 - Barra",
+    "loja_codigo": "34",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LQA5883\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ZONA_SUL",
+    "placa": "KWK4593",
+    "loja_nome": "Zona Sul Loja 05 - Copacabana III",
+    "loja_codigo": "05",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "2 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ZONA_SUL",
+    "placa": "LVE0688",
+    "loja_nome": "Zona Sul Loja 25 - Jd. Botânico",
+    "loja_codigo": "25",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "2 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ZONA_SUL",
+    "placa": "LVE0688",
+    "loja_nome": "Zona Sul Loja 22 - S. Conrado",
+    "loja_codigo": "22",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "2 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ZONA_SUL",
+    "placa": "LTE0A64",
+    "loja_nome": "Zona Sul Loja 31 - Jd. Botânico",
+    "loja_codigo": "31",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LTE0A64\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ZONA_SUL",
+    "placa": "AKZ2594",
+    "loja_nome": "Zona Sul Loja 10 - Recreio",
+    "loja_codigo": "10",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "1 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ZONA_SUL",
+    "placa": "MDV3746",
+    "loja_nome": "MEGA BOX 02 - Olaria",
+    "loja_codigo": "MEGA BOX 2",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"MDV3746\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ZONA_SUL",
+    "placa": "LNU9595",
+    "loja_nome": "Zona Sul Loja 19 - Copacabana",
+    "loja_codigo": "19",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LNU9595\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ZONA_SUL",
+    "placa": "KOP4978",
+    "loja_nome": "Zona Sul Loja 26 - Copacabana",
+    "loja_codigo": "26",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ZONA_SUL",
+    "placa": "KOP4978",
+    "loja_nome": "Zona Sul Loja 19 - Copacabana",
+    "loja_codigo": "19",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ZONA_SUL",
+    "placa": "QAH2H50",
+    "loja_nome": "Zona Sul Loja 32 - Laranjeiras",
+    "loja_codigo": "32",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"QAH2H50\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ZONA_SUL",
+    "placa": "QAH2H50",
+    "loja_nome": "Zona Sul Loja 42 - Botafogo",
+    "loja_codigo": "42",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"QAH2H50\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ZONA_SUL",
+    "placa": "KQY9E24",
+    "loja_nome": "Zona Sul Loja 46 - Botafogo",
+    "loja_codigo": "46",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ZONA_SUL",
+    "placa": "KYM2I62",
+    "loja_nome": "MEGA BOX 01 - Olaria",
+    "loja_codigo": "MEGA BOX 1",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KYM2I62\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ZONA_SUL",
+    "placa": "KYM2I62",
+    "loja_nome": "Zona Sul Loja 1129 - Olaria",
+    "loja_codigo": "1129",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KYM2I62\" sem paradas"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ZONA_SUL",
+    "placa": "LKR5990",
+    "loja_nome": "MEGA BOX 01 - Olaria",
+    "loja_codigo": "MEGA BOX 1",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "3 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-21",
+    "rede": "ZONA_SUL",
+    "placa": "LKR5990",
+    "loja_nome": "Zona Sul Loja 03 - Copacabana I",
+    "loja_codigo": "03",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "3 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ASSAI",
+    "placa": "EZU9325",
+    "loja_nome": "Assaí - Ceasa - Loja 42",
+    "loja_codigo": "42",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "20 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ASSAI",
+    "placa": "AMW3424",
+    "loja_nome": "Assaí - Niterói Ponte - Loja 292",
+    "loja_codigo": "292",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"AMW3424\" sem paradas"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ASSAI",
+    "placa": "UGA1D55",
+    "loja_nome": "Assaí - Sabão Rio (Benfica) - Loja 136",
+    "loja_codigo": "136",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "9 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ASSAI",
+    "placa": "LAU1I64",
+    "loja_nome": "Assaí - São Gonçalo Camil - Loja 211",
+    "loja_codigo": "211",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LAU1I64\" sem paradas"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ASSAI",
+    "placa": "LON7G98",
+    "loja_nome": "Assaí - Tribobó - Loja 248",
+    "loja_codigo": "248",
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "16 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "SUPERCOMPRAS",
+    "placa": "EYL8B91",
+    "loja_nome": "SUPERCOMPRAS - COSMOS",
+    "loja_codigo": null,
+    "categoria": "ROTA_GIGANTE_SEM_CITACAO",
+    "detalhe": "paradas só em 1 rota(s) gigante(s): 23080000"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "PREZUNIC",
+    "placa": "KWB6998",
+    "loja_nome": "Prezunic - Botafogo / Serra Azul",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KWB6998\" sem paradas"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "PREZUNIC",
+    "placa": "LUP1F13",
+    "loja_nome": "Prezunic - Recreio dos Bandeirantes",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LUP1F13\" sem paradas"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "PREZUNIC",
+    "placa": "LCE4337",
+    "loja_nome": "Prezunic - Caxias Centro / Serra Azul",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "1 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "PRINCESA",
+    "placa": "LMF2049",
+    "loja_nome": "Princesa - Inga",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "13 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "SAMS_CLUB",
+    "placa": "NSM6D98",
+    "loja_nome": "Sam's - Barra (Ayrton Senna)",
+    "loja_codigo": null,
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Sam's - Barra (Ayrton Senna)\" não bate cadastro da rede SAMS_CLUB"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "SENDAS",
+    "placa": "LKV5067",
+    "loja_nome": "Americanas",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "15 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "SENDAS",
+    "placa": "LTH4J15",
+    "loja_nome": "Atlantico Sul (Barra da Tijuca)",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "6 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "SENDAS",
+    "placa": "NSM6D98",
+    "loja_nome": "Santo Agostinho",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "1 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "SENDAS",
+    "placa": "KPH8C41",
+    "loja_nome": "Armazem do grão - Central",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KPH8C41\" sem paradas"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "MUNDIAL",
+    "placa": "CDL8E52",
+    "loja_nome": "MUNDIAL",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"CDL8E52\" sem paradas"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "SUPER_PAX",
+    "placa": "UGA1D55",
+    "loja_nome": "Sepetiba",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "9 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "SUPER_PAX",
+    "placa": "LUP1F13",
+    "loja_nome": "Lins",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LUP1F13\" sem paradas"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "SUPER_PAX",
+    "placa": "KMY5561",
+    "loja_nome": "Realengo",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "1 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "SUPER_PAX",
+    "placa": "LNU7733",
+    "loja_nome": "Vila da Penha",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LNU7733\" sem paradas"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "SUPER_PAX",
+    "placa": "KXR7527",
+    "loja_nome": "Pilares",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KXR7527\" sem paradas"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "SUPER_PAX",
+    "placa": "KXR7527",
+    "loja_nome": "Del Castilho",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KXR7527\" sem paradas"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "FEIRA_NOVA",
+    "placa": "KNS8D16",
+    "loja_nome": "11- Boa Dica (Piabetá)",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KNS8D16\" sem paradas"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "EMANUEL",
+    "placa": "LMF2A49",
+    "loja_nome": "JARDIM_MARAVILHA",
+    "loja_codigo": null,
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LMF2A49\" sem paradas"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "EMANUEL",
+    "placa": "KWH2J02",
+    "loja_nome": "VILA_NOVA",
+    "loja_codigo": null,
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"VILA_NOVA\" não bate cadastro da rede EMANUEL"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "EMANUEL",
+    "placa": "LRA9C41",
+    "loja_nome": "ALHAMBRA",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "15 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "EMANUEL",
+    "placa": "LSN6I72",
+    "loja_nome": "AGULHAS_NEGRAS",
+    "loja_codigo": null,
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"AGULHAS_NEGRAS\" não bate cadastro da rede EMANUEL"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "UBO5E05",
+    "loja_nome": "REGINA  1 DE MAIO",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "13 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "UBO5E05",
+    "loja_nome": "REGINA  LUCIO MEIRA",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "13 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "UBO5E05",
+    "loja_nome": "ABASTECEDORA GRÃO DA SERRA (ALTO)",
+    "loja_codigo": null,
+    "categoria": "PLACA_SO_BASE",
+    "detalhe": "13 paradas, 0 LOJA"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "QSZ9A20",
+    "loja_nome": "ARMAZÉM DO GRÃO ( BOA VISTA)",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "3 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ARMAZEM_GRAO",
+    "placa": "QSZ9A20",
+    "loja_nome": "ARMAZÉM DO GRÃO MATRIZ ( POSSE)",
+    "loja_codigo": null,
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "3 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ZONA_SUL",
+    "placa": "LQU5546",
+    "loja_nome": "Zona Sul - Entrega Extra",
+    "loja_codigo": "EXTRA",
+    "categoria": "LOJA_NAO_CADASTRADA",
+    "detalhe": "loja \"Zona Sul - Entrega Extra\" não bate cadastro da rede ZONA_SUL"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ZONA_SUL",
+    "placa": "KRH5H67",
+    "loja_nome": "Zona Sul Loja 46 - Botafogo",
+    "loja_codigo": "46",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "3 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ZONA_SUL",
+    "placa": "QAH2H50",
+    "loja_nome": "Zona Sul Loja 12 - Leme",
+    "loja_codigo": "12",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"QAH2H50\" sem paradas"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ZONA_SUL",
+    "placa": "QAH2H50",
+    "loja_nome": "Zona Sul Loja 38 - Copacabana",
+    "loja_codigo": "38",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"QAH2H50\" sem paradas"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ZONA_SUL",
+    "placa": "LNU9595",
+    "loja_nome": "Zona Sul Loja 34 - Barra",
+    "loja_codigo": "34",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"LNU9595\" sem paradas"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ZONA_SUL",
+    "placa": "CYB3B90",
+    "loja_nome": "Zona Sul Loja 03 - Copacabana I",
+    "loja_codigo": "03",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ZONA_SUL",
+    "placa": "CYB3B90",
+    "loja_nome": "Zona Sul Loja 26 - Copacabana",
+    "loja_codigo": "26",
+    "categoria": "CODIGO_AMBIGUO",
+    "detalhe": "2 paradas LOJA disponíveis, nenhuma casou; loja cadastrada"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ZONA_SUL",
+    "placa": "MDV3746",
+    "loja_nome": "Zona Sul Loja 47",
+    "loja_codigo": "47",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"MDV3746\" sem paradas"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ZONA_SUL",
+    "placa": "MDV3746",
+    "loja_nome": "Zona Sul Loja 46 - Botafogo",
+    "loja_codigo": "46",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"MDV3746\" sem paradas"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ZONA_SUL",
+    "placa": "KYM2I62",
+    "loja_nome": "MEGA BOX 01 - Olaria",
+    "loja_codigo": "MEGA BOX 1",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KYM2I62\" sem paradas"
+  },
+  {
+    "dia": "2026-05-22",
+    "rede": "ZONA_SUL",
+    "placa": "KYM2I62",
+    "loja_nome": "Zona Sul Loja 1129 - Olaria",
+    "loja_codigo": "1129",
+    "categoria": "PLACA_AUSENTE_UNITRAC",
+    "detalhe": "placa \"KYM2I62\" sem paradas"
+  }
+]
