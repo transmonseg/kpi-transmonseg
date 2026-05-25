@@ -71,7 +71,11 @@ function classificaParada(local: string, duracaoSeg: number): ParadaUnitrac['cla
   if (ehSoROTA(local)) {
     return duracaoSeg < 600 ? 'FAKE_EXIT' : 'FORA_BASE'
   }
-  return 'LOJA'
+  // Default: se não tem código de loja real (temLojaConcatenada=false) nem
+  // marcadores BASE/FORA/ROTA, é FORA_BASE conservador. Antes retornava LOJA
+  // por default, mas quebras de página produzem locais como "FORA DE DE JANEIRO"
+  // (FORA DE BASE truncado) que viravam LOJA falsamente.
+  return duracaoSeg < 600 ? 'FAKE_EXIT' : 'FORA_BASE'
 }
 
 // Prefixos numéricos de códigos de loja conhecidos (mesmos do matcher.ts).
