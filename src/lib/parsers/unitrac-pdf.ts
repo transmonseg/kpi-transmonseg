@@ -101,15 +101,23 @@ function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: str
   const partes = cleaned.split(',').map(s => s.trim())
   let fallback: { codigo_loja: string; nome_loja: string | null } | null = null
 
+  // Regex: "código - nome" começando com dígitos seguidos de " - " e nome com letra.
+  // Antes usávamos indexOf(' - '), que pegava o PRIMEIRO " - " mesmo no meio da
+  // string. Caso real (UFW0H63 dia 21): texto "7000705 8967 101 de CLIENTES
+  // ESPECIAIS - HERMES PREZUNIC SENADOR CAMARÁ" — primeiro " - " está depois
+  // de "ESPECIAIS", capturando "7000705 8967 101 de CLIENTES ESPECIAIS" como
+  // código (não numérico, era descartado). Solução: ancorar a regex no início,
+  // exigindo que código seja apenas dígitos antes de " - ".
+  const PAR_LOJA = /^(\d+)\s+-\s+(.+)$/
+
   for (const parte of partes) {
     // Pula bases, foras e ROTAs genéricas
     if (parte.startsWith(BASE_LOCAL_SHORT) || parte.startsWith(FORA_LOCAL_SHORT)) continue
     if (ROTA_GENERICA_RE.test(parte)) continue
-    const idx = parte.indexOf(' - ')
-    if (idx === -1) continue
-    const codigo = parte.slice(0, idx).trim()
-    if (!/^\d+$/.test(codigo)) continue
-    const nome = parte.slice(idx + 3).trim() || null
+    const m = parte.match(PAR_LOJA)
+    if (!m) continue
+    const codigo = m[1]
+    const nome = m[2].trim() || null
     if (REDE_CODIGO_PREFIX_RE.test(codigo)) return { codigo_loja: codigo, nome_loja: nome }
     if (!fallback) fallback = { codigo_loja: codigo, nome_loja: nome }
   }
