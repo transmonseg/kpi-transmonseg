@@ -1,0 +1,253 @@
+{
+  "model": "voxtral-mini-latest",
+  "language": null,
+  "text": "Dado isso, o que eu fiz na KPI do Zona Sul para que pudesse aparecer assim? Zona Sul, loja, o número e o cliente. Eu vou deixar uma planilha dessa em cópia para vocês, onde vai ter essa aba de matriz, que é a matriz da KPI, e a base. Essa aba que está escrito base, eu fiz um trabalho de formulação com PROC C e PROC V e tabela C, com a fórmula C, que vai ser usada lá na frente. Como é que vai funcionar? Por exemplo, eu vou fazer como se fosse de conta se fosse para o dia 10. Como é que eu começo e inicio a KPI? Clico com o botão direito em cima da aba matriz e vou em mover ou copiar, criar uma cópia e dou um ok. Ela criou uma outra aba aqui. Mudo essa aba para o número do dia 10, que seria o próximo dia. Deixa eu só fazer um negócio aqui.Perfeito. Aqui vai estar sem nada, desse jeito. Essa coluna aqui e essa coluna aqui não pode ser mexida, tá? De jeito nenhum ela pode ser mexida, porque senão ela vai dar errado na fórmula do PROC-V que tem aqui e na fórmula do C que tem aqui. Então, a coluna C e a coluna D, ela não deve ser mexida, tá? Repetindo, não mexam nessas colunas, senão a... O que foi feito aqui de trabalho relacionado a fórmulas vai ser... Vai dar errado, tá? Como é que vai funcionar, William? Eu já deixei destacado a coluna E, que é a coluna loja, que é onde você vai colocar a numeração da loja que está lá na escala. Por exemplo, loja 28, você vai botar aqui só 28. Loja 29, você vai botar aqui loja 29. Você vai ver que aqui do lado apareceu já 28, Urca, 29, Flamengo. Depois que você botar todas as lojas aqui, você vai vir aqui no canto, vai dar um CTRL C nessa fórmula que está aqui. Vai vir no dia 10, ou o dia seguinte, e você vai vir clicar com o botão direito, opções de colagem, fórmula. Que ele já vai colar a fórmula que está aqui, sem...Trocar nada da configuração. Da planilha KPI. Então, você pode ver que já veio aqui. Se eu puxar para baixo, ele já vai começar a me dar 28, 29. Como eu não tenho mais nada para baixo aqui na base, ele não me deu nada. Mas se eu começar a preencher aqui, 1, 22, 18, 45, 32, 30, 13, só estou dando alguns exemplos. Você vai ver que eles vão começar a aparecer aqui. Porque está diretamente ligado a essa aba da base. É assim que a planilha KPI Zona Sul funciona. As outras é apenas copia e cola. Essa aqui só tem esse trabalho a mais porque... Na escala do Zona Sul, não vem descrita assim, Zona Sul, loja e qual é o endereço da loja. Vem só 28, 29, só os números. Por isso eu fiz essa KPI desse jeito, para poder facilitar a visualização.",
+  "segments": [
+    {
+      "speaker": 0,
+      "text": "Dado isso, o que eu fiz na KPI do Zona Sul para que pudesse aparecer assim?",
+      "start": 2.0,
+      "end": 7.7
+    },
+    {
+      "speaker": 0,
+      "text": "Zona Sul, loja, o número e o cliente.",
+      "start": 8.3,
+      "end": 11.9
+    },
+    {
+      "speaker": 0,
+      "text": "Eu vou deixar uma planilha dessa em cópia para vocês, onde vai ter essa aba de matriz, que é a matriz da KPI, e a base.",
+      "start": 12.4,
+      "end": 20.8
+    },
+    {
+      "speaker": 0,
+      "text": "Essa aba que está escrito base, eu fiz um trabalho de formulação com PROC C e PROC V e tabela C, com a fórmula C, que vai ser usada lá na frente.",
+      "start": 22.6,
+      "end": 36.4
+    },
+    {
+      "speaker": 0,
+      "text": "Como é que vai funcionar?",
+      "start": 37.4,
+      "end": 38.5
+    },
+    {
+      "speaker": 0,
+      "text": "Por exemplo, eu vou fazer como se fosse de conta se fosse para o dia 10.",
+      "start": 38.9,
+      "end": 41.9
+    },
+    {
+      "speaker": 0,
+      "text": "Como é que eu começo e inicio a KPI?",
+      "start": 42.5,
+      "end": 44.5
+    },
+    {
+      "speaker": 0,
+      "text": "Clico com o botão direito em cima da aba matriz e vou em mover ou copiar, criar uma cópia e dou um ok.",
+      "start": 45.2,
+      "end": 53.6
+    },
+    {
+      "speaker": 0,
+      "text": "Ela criou uma outra aba aqui.",
+      "start": 53.8,
+      "end": 55.4
+    },
+    {
+      "speaker": 0,
+      "text": "Mudo essa aba para o número do dia 10, que seria o próximo dia.",
+      "start": 56.1,
+      "end": 59.5
+    },
+    {
+      "speaker": 0,
+      "text": "Deixa eu só fazer um negócio aqui.",
+      "start": 60.5,
+      "end": 61.9
+    },
+    {
+      "speaker": 0,
+      "text": "Perfeito.",
+      "start": 67.128,
+      "end": 67.828
+    },
+    {
+      "speaker": 0,
+      "text": "Aqui vai estar sem nada, desse jeito.",
+      "start": 68.728,
+      "end": 71.628
+    },
+    {
+      "speaker": 0,
+      "text": "Essa coluna aqui e essa coluna aqui não pode ser mexida, tá?",
+      "start": 75.928,
+      "end": 80.628
+    },
+    {
+      "speaker": 0,
+      "text": "De jeito nenhum ela pode ser mexida, porque senão ela vai dar errado na fórmula do PROC-V que tem aqui e na fórmula do C que tem aqui.",
+      "start": 81.328,
+      "end": 90.628
+    },
+    {
+      "speaker": 0,
+      "text": "Então, a coluna C e a coluna D, ela não deve ser mexida, tá?",
+      "start": 91.228,
+      "end": 95.328
+    },
+    {
+      "speaker": 0,
+      "text": "Repetindo, não mexam nessas colunas, senão a...",
+      "start": 95.728,
+      "end": 99.828
+    },
+    {
+      "speaker": 0,
+      "text": "O que foi feito aqui de trabalho relacionado a fórmulas vai ser...",
+      "start": 100.228,
+      "end": 104.028
+    },
+    {
+      "speaker": 0,
+      "text": "Vai dar errado, tá?",
+      "start": 105.028,
+      "end": 106.028
+    },
+    {
+      "speaker": 0,
+      "text": "Como é que vai funcionar, William?",
+      "start": 106.728,
+      "end": 107.928
+    },
+    {
+      "speaker": 0,
+      "text": "Eu já deixei destacado a coluna E, que é a coluna loja, que é onde você vai colocar a numeração da loja que está lá na escala.",
+      "start": 108.428,
+      "end": 117.528
+    },
+    {
+      "speaker": 0,
+      "text": "Por exemplo, loja 28, você vai botar aqui só 28.",
+      "start": 117.628,
+      "end": 121.028
+    },
+    {
+      "speaker": 0,
+      "text": "Loja 29, você vai botar aqui loja 29.",
+      "start": 121.828,
+      "end": 123.828
+    },
+    {
+      "speaker": 0,
+      "text": "Você vai ver que aqui do lado apareceu já 28, Urca, 29, Flamengo.",
+      "start": 124.228,
+      "end": 129.428
+    },
+    {
+      "speaker": 0,
+      "text": "Depois que você botar todas as lojas aqui, você vai vir aqui no canto, vai dar um CTRL C nessa fórmula que está aqui.",
+      "start": 130.028,
+      "end": 138.428
+    },
+    {
+      "speaker": 0,
+      "text": "Vai vir no dia 10, ou o dia seguinte, e você vai vir clicar com o botão direito, opções de colagem, fórmula.",
+      "start": 138.928,
+      "end": 147.328
+    },
+    {
+      "speaker": 0,
+      "text": "Que ele já vai colar a fórmula que está aqui, sem...",
+      "start": 148.028,
+      "end": 152.328
+    },
+    {
+      "speaker": 0,
+      "text": "Trocar nada da configuração.",
+      "start": 153.628,
+      "end": 155.228
+    },
+    {
+      "speaker": 0,
+      "text": "Da planilha KPI.",
+      "start": 157.528,
+      "end": 159.628
+    },
+    {
+      "speaker": 0,
+      "text": "Então, você pode ver que já veio aqui.",
+      "start": 160.528,
+      "end": 163.128
+    },
+    {
+      "speaker": 0,
+      "text": "Se eu puxar para baixo, ele já vai começar a me dar 28, 29.",
+      "start": 163.628,
+      "end": 168.028
+    },
+    {
+      "speaker": 0,
+      "text": "Como eu não tenho mais nada para baixo aqui na base, ele não me deu nada.",
+      "start": 168.328,
+      "end": 172.128
+    },
+    {
+      "speaker": 0,
+      "text": "Mas se eu começar a preencher aqui, 1, 22, 18, 45, 32, 30, 13, só estou dando alguns exemplos.",
+      "start": 172.128,
+      "end": 182.028
+    },
+    {
+      "speaker": 0,
+      "text": "Você vai ver que eles vão começar a aparecer aqui.",
+      "start": 182.928,
+      "end": 184.528
+    },
+    {
+      "speaker": 0,
+      "text": "Porque está diretamente ligado a essa aba da base.",
+      "start": 185.528,
+      "end": 189.928
+    },
+    {
+      "speaker": 0,
+      "text": "É assim que a planilha KPI Zona Sul funciona.",
+      "start": 190.428,
+      "end": 194.828
+    },
+    {
+      "speaker": 0,
+      "text": "As outras é apenas copia e cola.",
+      "start": 195.528,
+      "end": 197.128
+    },
+    {
+      "speaker": 0,
+      "text": "Essa aqui só tem esse trabalho a mais porque...",
+      "start": 197.628,
+      "end": 200.128
+    },
+    {
+      "speaker": 0,
+      "text": "Na escala do Zona Sul, não vem descrita assim, Zona Sul, loja e qual é o endereço da loja.",
+      "start": 200.728,
+      "end": 206.628
+    },
+    {
+      "speaker": 0,
+      "text": "Vem só 28, 29, só os números.",
+      "start": 206.728,
+      "end": 209.428
+    },
+    {
+      "speaker": 0,
+      "text": "Por isso eu fiz essa KPI desse jeito, para poder facilitar a visualização.",
+      "start": 209.728,
+      "end": 214.428
+    }
+  ]
+}

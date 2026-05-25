@@ -1,0 +1,49 @@
+{
+  "model": "voxtral-mini-latest",
+  "language": null,
+  "text": "Vamos lá dar a primeira parte aqui para a gente poder gerar o relatório, tá? Relatórios, operacional, parada versus serviços. Aqui a gente coloca o grupo Benassi. Se estiver dentro do dia, não precisa mexer aqui na parte de cima, onde tem início e fim. Na parte do filtro, tipo de análise de parada, vai manter por deslocamento. E tipo de exportação PDF, tipo de relatório analítico mesmo, tipo de filtro veículos, botar todos os veículos que estão disponíveis para dentro e gerar o relatório. Após isso, a gente vem em consulta de solicitação de relatório e precisamos aguardar para finalizar e poder baixar o relatório de parada desses serviços.",
+  "segments": [
+    {
+      "speaker": 0,
+      "text": "Vamos lá dar a primeira parte aqui para a gente poder gerar o relatório, tá?",
+      "start": 2.6,
+      "end": 5.8
+    },
+    {
+      "speaker": 0,
+      "text": "Relatórios, operacional, parada versus serviços.",
+      "start": 7.8,
+      "end": 12.2
+    },
+    {
+      "speaker": 0,
+      "text": "Aqui a gente coloca o grupo Benassi.",
+      "start": 13.8,
+      "end": 15.7
+    },
+    {
+      "speaker": 0,
+      "text": "Se estiver dentro do dia, não precisa mexer aqui na parte de cima, onde tem início e fim.",
+      "start": 16.4,
+      "end": 22.0
+    },
+    {
+      "speaker": 0,
+      "text": "Na parte do filtro, tipo de análise de parada, vai manter por deslocamento.",
+      "start": 23.9,
+      "end": 28.8
+    },
+    {
+      "speaker": 0,
+      "text": "E tipo de exportação PDF, tipo de relatório analítico mesmo, tipo de filtro veículos, botar todos os veículos que estão disponíveis para dentro e gerar o relatório.",
+      "start": 29.4,
+      "end": 41.2
+    },
+    {
+      "speaker": 0,
+      "text": "Após isso, a gente vem em consulta de solicitação de relatório e precisamos aguardar para finalizar e poder baixar o relatório de parada desses serviços.",
+      "start": 42.9,
+      "end": 53.7
+    }
+  ]
+}

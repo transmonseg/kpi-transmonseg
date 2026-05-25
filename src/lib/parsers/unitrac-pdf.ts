@@ -249,11 +249,19 @@ function splitByVeiculo(text: string): RawVeiculo[] {
     // Header de veículo: PLACA DATA HH:MM DATA HH:MM Qtd_paradas Distancia ...
     // Ex: AKZ-2745 14/05/2026 04:47 14/05/2026 17:29 10 59,4 0D 02:11:28 ...
     // Placa pode ter formato ABC-1234 ou ABC1234 (Mercosul)
+    // qtd_paradas é seguido pela distância (formato "12 96,2") — ancorar com
+    // lookahead de espaço+vírgula-numérica pra impedir captura grudada como
+    // "12 96,2" → "1296,2" → qtd=1296. PDF cru às vezes gruda os dígitos.
     const headerMatch = chunk.match(
-      /([A-Z]{3}-?\d[A-Z0-9]\d{2})\s+(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2})\s+(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2})\s+(\d+)/,
+      /([A-Z]{3}-?\d[A-Z0-9]\d{2})\s+(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2})\s+(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2})\s+(\d{1,4})(?=\d{0,3}[,.]?\d|\s+\d)/,
     )
     if (!headerMatch) continue
-    const [, placaRaw, dInicio, hInicio, dFim, hFim, qtdStr] = headerMatch
+    const [, placaRaw, dInicio, hInicio, dFim, hFim, qtdRaw] = headerMatch
+    // Heurística: qtd_paradas raramente passa de 60. Se vier > 60, está grudado
+    // com a distância (em km). Pega só os primeiros dígitos até qtd plausível.
+    // PDF cru: "DD/MM/AAAA HH:MM N km,d 0D ..." — o N e km podem vir grudados.
+    let qtdStr = qtdRaw
+    while (qtdStr.length > 1 && parseInt(qtdStr, 10) > 60) qtdStr = qtdStr.slice(0, -1)
     out.push({
       placa: placaRaw,
       inicio_viagem: parseDataBR(dInicio, hInicio),
