@@ -218,7 +218,7 @@ async function main() {
 
   function noData(v: string): boolean { return v === '---' || v.startsWith('SEM') || v.startsWith('NAO') }
   // Redes onde SC vem de fonte não-GPS (anotação manual da saída do CD).
-  const REDES_SC_SKIP = new Set(['FEIRA_NOVA', 'ASSAI', 'SUPER_PAX', 'SENDAS', 'ARMAZEM_GRAO', 'VIANENSE', 'SAMS_CLUB', 'CARREFOUR'])
+  const REDES_SC_SKIP = new Set(['FEIRA_NOVA', 'ASSAI', 'SUPER_PAX', 'SENDAS', 'ARMAZEM_GRAO', 'VIANENSE', 'SAMS_CLUB', 'CARREFOUR', 'PRINCESA'])
   // Redes onde manual=SEM significa sem rastreador — GPS prevalece.
   const REDES_SEM_OK = new Set(['PREZUNIC', 'FEIRA_NOVA', 'ASSAI', 'SUPER_PAX', 'CARREFOUR', 'PRINCESA'])
   // Redes cujo KPI manual usa '---' como equivalente a 'SEM' (não preenchido ≠ erro).
