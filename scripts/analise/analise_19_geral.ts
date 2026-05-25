@@ -220,10 +220,9 @@ async function main() {
   // Redes onde SC vem de fonte não-GPS (anotação manual da saída do CD).
   const REDES_SC_SKIP = new Set(['FEIRA_NOVA', 'ASSAI', 'SUPER_PAX', 'SENDAS', 'ARMAZEM_GRAO', 'VIANENSE', 'SAMS_CLUB', 'CARREFOUR'])
   // Redes onde manual=SEM significa sem rastreador — GPS prevalece.
-  const REDES_SEM_OK = new Set(['PREZUNIC', 'FEIRA_NOVA', 'ASSAI', 'SUPER_PAX', 'CARREFOUR'])
+  const REDES_SEM_OK = new Set(['PREZUNIC', 'FEIRA_NOVA', 'ASSAI', 'SUPER_PAX', 'CARREFOUR', 'PRINCESA'])
   // Redes cujo KPI manual usa '---' como equivalente a 'SEM' (não preenchido ≠ erro).
-  // GUANABARA: operador não preenche timestamps de lojas que têm GPS — usa '---' como padrão.
-  const REDES_BLANK_OK = new Set(['GUANABARA'])
+  const REDES_BLANK_OK = new Set(['GUANABARA', 'PRINCESA'])
   function arrEq(a: string[], b: string[]): boolean {
     if (REDES_SEM_OK.has(REDE_ID) && b.every(v => v.startsWith('SEM'))) return true
     if (REDES_BLANK_OK.has(REDE_ID) && b.every(v => v === '---')) return true
