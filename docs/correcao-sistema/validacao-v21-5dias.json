@@ -1,0 +1,72 @@
+[
+  {
+    "dia": "2026-05-18",
+    "escalas": 243,
+    "paradas": 2326,
+    "lojaParadas": 653,
+    "rotas": 243,
+    "matchesComParada": 192,
+    "matchesSem": 51,
+    "placasNaEscala": 134,
+    "placasInativasNaEscala": 0,
+    "linhasInativasComMatch": 0,
+    "paradasRotaGigante": 409,
+    "erros": []
+  },
+  {
+    "dia": "2026-05-19",
+    "escalas": 244,
+    "paradas": 1717,
+    "lojaParadas": 441,
+    "rotas": 244,
+    "matchesComParada": 173,
+    "matchesSem": 71,
+    "placasNaEscala": 136,
+    "placasInativasNaEscala": 0,
+    "linhasInativasComMatch": 0,
+    "paradasRotaGigante": 227,
+    "erros": []
+  },
+  {
+    "dia": "2026-05-20",
+    "escalas": 222,
+    "paradas": 2175,
+    "lojaParadas": 720,
+    "rotas": 222,
+    "matchesComParada": 171,
+    "matchesSem": 51,
+    "placasNaEscala": 138,
+    "placasInativasNaEscala": 0,
+    "linhasInativasComMatch": 0,
+    "paradasRotaGigante": 460,
+    "erros": []
+  },
+  {
+    "dia": "2026-05-21",
+    "escalas": 243,
+    "paradas": 1855,
+    "lojaParadas": 487,
+    "rotas": 243,
+    "matchesComParada": 174,
+    "matchesSem": 69,
+    "placasNaEscala": 130,
+    "placasInativasNaEscala": 0,
+    "linhasInativasComMatch": 0,
+    "paradasRotaGigante": 248,
+    "erros": []
+  },
+  {
+    "dia": "2026-05-22",
+    "escalas": 229,
+    "paradas": 2148,
+    "lojaParadas": 587,
+    "rotas": 229,
+    "matchesComParada": 186,
+    "matchesSem": 43,
+    "placasNaEscala": 129,
+    "placasInativasNaEscala": 0,
+    "linhasInativasComMatch": 0,
+    "paradasRotaGigante": 333,
+    "erros": []
+  }
+]

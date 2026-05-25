@@ -758,10 +758,12 @@ describe('T7 — suffix-match com prefixo de rede conhecido', () => {
     )).toBe(0)
   })
 
-  it('smoke prefixo 5353 (ARMAZEM_GRAO): "12" casa com 5353012', () => {
+  it('smoke prefixo 5353 (ARMAZEM_GRAO): "99" casa com 5353099', () => {
+    // V2.1: 5353012/14/16/17 estão em ROTAS_GIGANTES (raio 50km cobre múltiplas lojas).
+    // Suffix match com código sintético 5353099 valida só a regra de prefixo.
     expect(scorePair(
-      makeT7Line('12', 'Cabo Frio Distribuidor', 'ARMAZEM_GRAO'),
-      makeT7Parada('5353012', 'Manaus Atacarejo'),
+      makeT7Line('99', 'Cabo Frio Distribuidor', 'ARMAZEM_GRAO'),
+      makeT7Parada('5353099', 'Manaus Atacarejo'),
     )).toBe(0)
   })
 
@@ -779,10 +781,11 @@ describe('T7 — suffix-match com prefixo de rede conhecido', () => {
     )).toBe(0)
   })
 
-  it('smoke prefixo 17659 (EMANUEL): "01" casa com 17659001', () => {
+  it('smoke prefixo 17659 (EMANUEL): "99" casa com 17659099', () => {
+    // V2.1: 17659000/001/002/003/004 estão em ROTAS_GIGANTES. Usa código sintético.
     expect(scorePair(
-      makeT7Line('01', 'Cabo Frio Distribuidor', 'EMANUEL'),
-      makeT7Parada('17659001', 'Manaus Atacarejo'),
+      makeT7Line('99', 'Cabo Frio Distribuidor', 'EMANUEL'),
+      makeT7Parada('17659099', 'Manaus Atacarejo'),
     )).toBe(0)
   })
 

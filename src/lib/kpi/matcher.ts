@@ -6,6 +6,8 @@ import type { MatchMeta, MatchAlgorithm, MatchConfidence } from '@/lib/types/kpi
 import { batchTrgmLookup, type TrgmResult } from './trgm-lookup'
 import { hungarianMin } from '@/lib/utils/hungarian'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isRotaGigante } from './rotas-gigantes'
+import { isVeiculoInativo } from './veiculos-inativos'
 
 // Tokeniza nome de loja pra match fuzzy: remove acentos, parênteses (1ª Entrega), redes,
 // stopwords (DO, DE, DA, SAO), retorna set de tokens significativos.
@@ -490,8 +492,15 @@ export function variantesOcr(placa: string): string[] {
  */
 export function scorePair(line: EscalaLinhaRow, p: UnitracParadaRow): number {
   let s = matchScore(line.loja_nome_raw, p.nome_loja || p.local_parada || '')
+  // V2.1 Reforço 5: rotas gigantes (raio ≥ 5km) NÃO podem casar via código exato
+  // a menos que a escala explicitamente cite o código da rota. Caso contrário,
+  // múltiplas lojas reais ficariam casadas pela mesma rota.
+  const lineCitaRota = line.loja_codigo_raw ? isRotaGigante(line.loja_codigo_raw) : false
   if (line.loja_codigo_raw && p.codigo_loja) {
-    if (codCasa(line.loja_codigo_raw, p.codigo_loja)) s = 0
+    const paradaEhRota = isRotaGigante(p.codigo_loja)
+    if (!paradaEhRota || lineCitaRota) {
+      if (codCasa(line.loja_codigo_raw, p.codigo_loja)) s = 0
+    }
   }
   // Tenta geofences adicionais (Unitrac concatena múltiplas separadas por vírgula).
   // O parser só salva codigo_loja/nome_loja da PRIMEIRA geofence LOJA; quando a
@@ -506,7 +515,11 @@ export function scorePair(line: EscalaLinhaRow, p: UnitracParadaRow): number {
         // Parte com prefixo "XXXX - NOME"
         const codP2 = m[1]
         const nomePart = m[2].trim()
-        if (line.loja_codigo_raw && codCasa(line.loja_codigo_raw, codP2)) {
+        // V2.1 Reforço 5: rota gigante só casa via código exato quando a linha
+        // explicitamente cita o código da rota. Sem isso, multiplas lojas reais
+        // casariam pela mesma rota → GPS clonado. O match por nome continua livre.
+        const codBloqueado = isRotaGigante(codP2) && !lineCitaRota
+        if (!codBloqueado && line.loja_codigo_raw && codCasa(line.loja_codigo_raw, codP2)) {
           s = 0
           break
         }
@@ -711,6 +724,11 @@ export async function cruzaEscalaUnitrac(
   for (const [placa, linhas] of escalaByPlaca) {
     const todas = paradaByPlaca.get(placa) ?? []
     const lojasParadasRaw = todas.filter((p) => p.classificacao === 'LOJA')
+    // V2.1 Reforço 7: placas CD-only crônicas (lista negra) que de fato não saíram
+    // do CD nesse dia (zero paradas LOJA) — pula o matching e deixa linhas como
+    // UNMATCHED. Evita que o matcher distribua paradas FORA_BASE ou madrugada
+    // pra essas placas de apoio.
+    if (isVeiculoInativo(placa) && lojasParadasRaw.length === 0) continue
     const lojasConsolidadas = consolidarParadasMesmoCliente(lojasParadasRaw)
     // Remove paradas curtas duplicadas do mesmo codigo_loja: mantém só a de maior duração
     // Depois remove paradas noturnas solitárias (00:01, 01:07 → SEM GPS)

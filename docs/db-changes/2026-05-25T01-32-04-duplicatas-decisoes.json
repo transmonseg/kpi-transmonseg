@@ -1,0 +1,87 @@
+[
+  {
+    "duplicata_num": 4,
+    "acao": "PADRONIZAR_NOME",
+    "alvo_codigo": "3030013",
+    "alvo_id": "a8adc9f9-42c2-4977-88c3-162b540c0228",
+    "alvo_nome": "SUPERPRIX LJ 13 - TIJUQUINHA",
+    "novo_nome": "SUPERPRIX TIJUQUINHA LJ 13",
+    "motivo": "Padronizar nome de SUPERPRIX 3030013 pra evitar ambiguidade \"LJ 13\""
+  },
+  {
+    "duplicata_num": 4,
+    "acao": "PADRONIZAR_NOME",
+    "alvo_codigo": "3030113",
+    "alvo_id": "99e3ce01-c0f9-49fb-b2f4-c2e7466c9735",
+    "alvo_nome": "SUPERPRIX LJ 13 - NITEROI",
+    "novo_nome": "SUPERPRIX NITEROI LJ 13",
+    "motivo": "Padronizar nome de SUPERPRIX 3030113 pra evitar ambiguidade \"LJ 13\""
+  },
+  {
+    "duplicata_num": 11,
+    "acao": "REDUZIR_RAIO",
+    "alvo_codigo": "560026",
+    "alvo_id": "1e9d1a98-b81a-4a24-be84-0834b8038505",
+    "alvo_nome": "SENDAS CEASA - LOJA 42",
+    "novo_raio": 50,
+    "motivo": "560026 SENDAS CEASA fica dentro do raio do CD BENASSI (lat -22.8288). Reduzir raio pra 50m pra evitar colisão"
+  },
+  {
+    "duplicata_num": 3,
+    "acao": "REDUZIR_RAIO",
+    "alvo_codigo": "2019003",
+    "alvo_id": "06840662-6b34-44df-99e8-5ff077bffdf8",
+    "alvo_nome": "DISPOSICAO - JANAUBA",
+    "novo_raio": 30,
+    "motivo": "DISPOSIÇÃO 2019003 lat/lng cai no CD BENASSI. Reduzir raio pra 30m"
+  },
+  {
+    "duplicata_num": 3,
+    "acao": "REDUZIR_RAIO",
+    "alvo_codigo": "2019007",
+    "alvo_id": "73a27c2a-ba83-4e78-aba6-52191f611fd4",
+    "alvo_nome": "DISPOSIÇÃO MUNDIAL",
+    "novo_raio": 30,
+    "motivo": "DISPOSIÇÃO 2019007 lat/lng cai no CD BENASSI. Reduzir raio pra 30m"
+  },
+  {
+    "duplicata_num": 1,
+    "acao": "FLAGAR",
+    "motivo": "REGINA 5353012/14/16/17 + ABASTECEDORA — já marcadas como ROTAS_GIGANTES, nada a fazer aqui"
+  },
+  {
+    "duplicata_num": 2,
+    "acao": "FLAGAR",
+    "motivo": "O BOM / EMANUEL grupo (17659xxx, 25140000, 11139000) — aguardar Fecchio confirmar quais são lojas físicas"
+  },
+  {
+    "duplicata_num": 5,
+    "acao": "FLAGAR",
+    "motivo": "PRINCESA Arraial 1/2/3 — 3 cadastros distintos OK"
+  },
+  {
+    "duplicata_num": 6,
+    "acao": "FLAGAR",
+    "motivo": "PRINCESA Buzios 1/2/3 — 3 cadastros distintos OK"
+  },
+  {
+    "duplicata_num": 7,
+    "acao": "FLAGAR",
+    "motivo": "PRINCESA Cabo Frio 1/2/3 + SENDAS Cabo Frio LJ 82 — 4 cadastros distintos OK"
+  },
+  {
+    "duplicata_num": 8,
+    "acao": "FLAGAR",
+    "motivo": "PRINCESA Maricá 1/2 + PREZUNIC Maricá — 3 cadastros distintos OK"
+  },
+  {
+    "duplicata_num": 9,
+    "acao": "FLAGAR",
+    "motivo": "ZS Copacabana cluster (9039003/4/5/18/19/27/110) — 7 lojas próximas, manter"
+  },
+  {
+    "duplicata_num": 10,
+    "acao": "FLAGAR",
+    "motivo": "MERCADO SANTO AGOSTINHO + ITAGIBA COSMOS — ROTAS_GIGANTES, nada a fazer aqui"
+  }
+]

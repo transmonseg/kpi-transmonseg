@@ -2,9 +2,11 @@
 
 > **Para retomar a sessão após compactação:** leia este arquivo PRIMEIRO. Tudo aqui aponta para a verdade.
 
-**Última atualização:** 2026-05-24
+**Última atualização:** 2026-05-25
 **Spec mestre:** `docs/superpowers/specs/2026-05-24-kpi-perfeicao-rede-por-rede-design.md`
-**Status global:** Todas as redes com padrões fixáveis foram corrigidas. Baseline 218 → ~287 OK (+69).
+**V2.1 plano:** `docs/correcao-sistema/PLANO-CADASTRO-E-V21.md`
+**V2.1 validação:** `docs/correcao-sistema/validacao-pos-v21.md`
+**Status global:** V2.1 rollout. Cadastro 295→330 ativas. Bugs 1-4 fixados. Reforços 5-7 aplicados. 896/1181 matches (76%) ao longo de 5 dias. Zero GPS clonado em placas inativas. 282 testes vitest.
 
 ---
 

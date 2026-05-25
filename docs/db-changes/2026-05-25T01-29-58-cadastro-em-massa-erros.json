@@ -1,0 +1,14 @@
+[
+  {
+    "acao": "CRIAR",
+    "codigo": "560054",
+    "nome": "SENDAS NOVA IGUAÇU II",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  },
+  {
+    "acao": "CRIAR",
+    "codigo": "560028",
+    "nome": "SENDAS BANGU - LOJA 55",
+    "erro": "duplicate key value violates unique constraint \"lojas_codigo_unitrac_key\""
+  }
+]
