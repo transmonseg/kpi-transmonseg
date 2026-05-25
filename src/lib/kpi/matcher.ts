@@ -936,15 +936,25 @@ export async function cruzaEscalaUnitrac(
         )
         .sort((a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
 
-      // Geo-R guard: se o veículo tem paradas LOJA não atribuídas a nenhuma linha
-      // (órfãs), é sinal de que ele entregou em outra rede. Usar FORA_BASE dele para
-      // geo-match seria FP cross-rede.
-      // Caso TML3B11: LOJA parada = PREZUNIC TIJUCA (não bate código VIANENSE) →
-      // parada órfã → pula geo fallback para linhas VIANENSE.
-      const temLojaOrfa = todas.some(p => p.classificacao === 'LOJA' && !usados.has(p.id))
+      // Geo-R guard refinado: bloqueia somente se a LOJA órfã pertence à MESMA rede
+      // das linhas sem match. Caso multi-cliente (QST4C52 dia 19: fez PRINCESA BUZIOS
+      // depois ARMAZEM Petrópolis), a LOJA órfã PRINCESA não deve bloquear geo-match
+      // de FORA_BASE para linhas ARMAZEM. Antes bloqueava qualquer órfã, gerando FN.
+      // Caso original TML3B11 ainda protegido: LOJA órfã PREZUNIC vs escala VIANENSE
+      // — se VIANENSE está nas redes da órfã (alias), bloqueia.
+      const redesSemMatch = new Set(linhasAindaSemMatch.map(l => l.rede_id))
+      const temLojaOrfaMesmaRede = todas.some(p => {
+        if (p.classificacao !== 'LOJA' || usados.has(p.id)) return false
+        // Infere rede da parada órfã
+        for (const r of redesSemMatch) {
+          if (resolveLojaId(p, lojas, r)) return true
+        }
+        return false
+      })
 
-      // Geo-R: pula se veículo tem LOJA órfã (entregou em outra rede → FP)
-      if (!temLojaOrfa) {
+      // Geo-R: pula se LOJA órfã é da mesma rede da linha (FP cross-rede); permite
+      // se órfã é de outra rede (motorista fez multi-cliente).
+      if (!temLojaOrfaMesmaRede) {
         const usadosGeo = new Set<number>()
         // Inverte loop: pra cada parada, acha loja mais próxima na rede e atribui
         // à LINHA correspondente (não à primeira linha iterada). Antes, BARRA DO IMBUY
