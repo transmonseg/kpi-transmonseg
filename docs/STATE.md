@@ -6,7 +6,7 @@
 **Spec mestre:** `docs/superpowers/specs/2026-05-24-kpi-perfeicao-rede-por-rede-design.md`
 **V2.1 plano:** `docs/correcao-sistema/PLANO-CADASTRO-E-V21.md`
 **V2.1 validação:** `docs/correcao-sistema/validacao-pos-v21.md`
-**Status global:** V2.1 rollout. Cadastro 295→330 ativas. Bugs 1-4 fixados. Reforços 5-7 aplicados. ~916/1181 matches (78%) ao longo de 5 dias. Zero GPS clonado em placas inativas. 282 testes vitest. GUANABARA 37/37, PRINCESA dia19 26/26.
+**Status global:** V2.1 rollout. Cadastro 295→330 ativas. Bugs 1-4 fixados. Reforços 5-7 aplicados. 282 testes vitest. Dia18: 108/127=85%, Dia19: 152/218=70% (excl. ZONA_SUL). GUANABARA 37/37, PRINCESA dia19 26/26, SENDAS 8/9.
 
 ---
 
@@ -15,21 +15,20 @@
 | Rede | dia18 OK | dia19 OK | Obs |
 |------|---------|---------|-----|
 | ZONA_SUL | 24/70 | 19/55 | iter2 concluído, restante estrutural |
-| PREZUNIC | 5/40 | 30/58 | iter1 SEM-fix +22 dia19 |
-| ASSAI | 35/40 | 16/40 | iter1 SC-skip+SEM +13 |
-| FEIRA_NOVA | 10/12 | 2/13 | iter1 SC-skip+SEM +10 |
-| SUPER_PAX | 12/12 | 7/13 | iter1 SC-skip+SEM +12 |
-| SENDAS | 9/10 | 3/9 | iter1 SC-skip +2 |
-| ARMAZEM_GRAO | 8/14 | 7/14 | iter1 SC-skip +2 |
-| VIANENSE | 4/4 | 2/4 | iter1 SC-skip +2 |
-| SAMS_CLUB | 3/3 | 3/3 | iter1 SC-skip +2 |
-| CARREFOUR | 8/10 | 4/8 | iter1 SC-skip+SEM +4 |
-| SUPERPRIX | 8/9 | 0/9 | 1 NAO_FOI dia18, dia19 estrutural |
-| PRINCESA | 3/26 | 26/26 | dia18 estrutural, dia19 perfeito |
-| GUANABARA | N/A | 37/37 | BLANK_OK fix: '---' manual = OK |
-| ATACADAO | 1/2 | 1/2 | "matcher vazio" estrutural |
-| MUNDIAL | 1/2 | 1/2 | pequeno |
+| PREZUNIC | 5/40 | 30/58 | 2 turnos estrutural em dia18 |
+| ASSAI | 35/40 | 16/40 | SC-skip+SEM — restante estrutural |
+| FEIRA_NOVA | 11/12 | 2/13 | dia18 quase perfeito, dia19 estrutural |
+| SUPER_PAX | 12/12 | 7/13 | dia18 perfeito, dia19 2 turnos |
+| SENDAS | 9/10 | 8/9 | SEM_OK(dia18)+BLANK_OK(dia19) |
+| ARMAZEM_GRAO | 8/14 | 7/14 | REGINA 4 linhas/1 parada estrutural |
+| VIANENSE | 4/4 | 2/4 | dia18 perfeito, dia19 offset 16min |
 | SAMS_CLUB | 3/3 | 3/3 | perfeito |
+| CARREFOUR | 8/10 | 4/8 | restante structural |
+| SUPERPRIX | 8/9 | 0/9 | dia18 quase perfeito, dia19 GPS±timing |
+| PRINCESA | 3/26 | 26/26 | dia18 estrutural, dia19 perfeito |
+| GUANABARA | N/A | 37/37 | BLANK_OK: '---' manual = OK |
+| ATACADAO | 1/2 | 1/2 | matcher vazio estrutural |
+| MUNDIAL | 1/2 | 1/2 | pequeno |
 | CAB_PETROPOLIS | 0/1 | — | estrutural |
 | SUPERCOMPRAS | 0/1 | — | estrutural |
 
