@@ -6,7 +6,7 @@
 **Spec mestre:** `docs/superpowers/specs/2026-05-24-kpi-perfeicao-rede-por-rede-design.md`
 **V2.1 plano:** `docs/correcao-sistema/PLANO-CADASTRO-E-V21.md`
 **V2.1 validação:** `docs/correcao-sistema/validacao-pos-v21.md`
-**Status global:** V2.1 rollout. Cadastro 295→330 ativas. Bugs 1-4 fixados. Reforços 5-7 aplicados. 913/1181 matches (77%) ao longo de 5 dias. Zero GPS clonado em placas inativas. 282 testes vitest. GUANABARA 37/37 (BLANK_OK).
+**Status global:** V2.1 rollout. Cadastro 295→330 ativas. Bugs 1-4 fixados. Reforços 5-7 aplicados. ~916/1181 matches (78%) ao longo de 5 dias. Zero GPS clonado em placas inativas. 282 testes vitest. GUANABARA 37/37, PRINCESA dia19 26/26.
 
 ---
 
@@ -25,7 +25,7 @@
 | SAMS_CLUB | 3/3 | 3/3 | iter1 SC-skip +2 |
 | CARREFOUR | 8/10 | 4/8 | iter1 SC-skip+SEM +4 |
 | SUPERPRIX | 8/9 | 0/9 | 1 NAO_FOI dia18, dia19 estrutural |
-| PRINCESA | 1/26 | 24/26 | dia18 estrutural (2 turnos) |
+| PRINCESA | 3/26 | 26/26 | dia18 estrutural, dia19 perfeito |
 | GUANABARA | N/A | 37/37 | BLANK_OK fix: '---' manual = OK |
 | ATACADAO | 1/2 | 1/2 | "matcher vazio" estrutural |
 | MUNDIAL | 1/2 | 1/2 | pequeno |
@@ -39,7 +39,7 @@
 
 | Rede | Padrão | Ganho estimado | Complexidade |
 |------|--------|----------------|--------------|
-| PRINCESA dia18 | GERADO=2/26, GPS acha entrega errada (manhã vs tarde) | ~1 (só SEM) | alta/estrutural |
+| PRINCESA dia18 | 3/26. CHD/SL diferem 10-40 min (GPS exato vs manual arredondado) | 0 | estrutural |
 | SUPERPRIX dia19 | GERADO=0/9, CHD/SL todos errados | 0 | estrutural |
 | GUANABARA dia19 | MANUAL=--- para todos → BLANK_OK fix | +17 | done ✓ |
 | ASSAI dia19 | CHD/SL todos diferentes | 0 | estrutural |
@@ -78,6 +78,7 @@ Se você é um Claude novo (sessão compactada) lendo isto:
 | SUPER_PAX | SC-skip + SEM-ok | +12 | e438544 |
 | SENDAS/ARMAZEM_GRAO/VIANENSE/SAMS_CLUB/CARREFOUR | SC-skip + SEM-ok(Carrefour) | +12 | 36db71a |
 | GUANABARA | BLANK_OK: '---' manual = OK (operador não preenche) | +17 | 05fc3af |
+| PRINCESA | SEM_OK + BLANK_OK + SC_SKIP → dia18: +2, dia19: +2 | +4 | 522c1ef, 35cae2e |
 
 ---
 
