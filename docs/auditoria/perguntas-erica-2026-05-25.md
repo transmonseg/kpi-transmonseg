@@ -1,112 +1,113 @@
-# Perguntas para Erica — Semana Intensiva 2026-05-25
+# Perguntas para Erica — 2026-05-25
 
-Foco: padrões operacionais e casos específicos. Sem perguntas óbvias.
-
----
-
-## 1. CAMINHÕES QUE FAZEM 2 TURNOS NO MESMO DIA
-
-**O que vemos**: PRINCESA dia 18 — várias lojas com manual marcando manhã (~04-06h) e GPS marcando tarde (~14-15h). Não é erro, é padrão.
-
-1. Quando uma loja recebe 2 entregas no dia (manhã + tarde), **as duas vão no KPI ou só uma?**
-
-2. Se vão as duas, **como identificar qual é qual?** O manual mostra só um horário por linha.
-
-3. **O segundo turno é o mesmo caminhão recarregando, ou é outro caminhão?**
-   - Se é o mesmo: o GPS vai mostrar o caminhão voltando pra base entre as entregas
-   - Se é outro: a escala tem que ter as 2 placas listadas
-
-4. **Existe algum dia da semana fixo onde TODA loja recebe 2 entregas?** Tipo "segunda e quinta dobra".
-
-5. Casos específicos do dia 18 que vimos como "2 turnos":
-   - Princesa Maricá 2, Rio das Ostras, Arraial 1, Buzios 3, Cabo Frio 1
-   - **A escala diz só 1 placa pra essas lojas. Quem fez a outra entrega?**
+Baseado em LEITURA MANUAL do `relatorio_9572.pdf` dia 19/05.
 
 ---
 
-## 2. CAMINHÕES QUE APARECEM EM ROTA DIFERENTE DA ESCALA
+## A causa raiz que descobri lendo o relatório
 
-**O que vemos no dia 19 (ZONA SUL)**, casos onde GPS prova que a placa fez OUTRA rota:
+O Unitrac usa DOIS tipos de "lugares" cadastrados:
 
-| Placa | Motorista | Escala diz | GPS prova |
-|---|---|---|---|
-| BBH1C94 | JOSUE | Lojas 03/19/48 | Loja 33 Humaitá (5h em 1 loja) |
-| JAJ6B36 | RENATO | Loja 46 Botafogo | PRINCESA Rio das Ostras + Barra de São João |
-| KMY5561 | LUIZ ANTONIO | Loja 19 Copa | CARREFOUR Barra + PAX Realengo |
-| KRK3D12 | JOSENILDO | Loja 23 Barra | SENDAS São Gonçalo Centro (5h46min!) |
-| KWK4593 | RODRIGO | Lojas 38/07 | Loja 21 Flamengo |
-| LKR5990 | AGNALDO | Loja 44 Barra | PREZUNIC Vila Isabel |
-| LTH4J15 | MARCIO | Loja 26 Copa | SENDAS/PETIT/VIANENSE |
-| LTH4J15 | MARCIO | Loja 26 Copa | EMPORIO BARRA TOWER + 4 outras |
+**1. Lojas individuais** (código específico, raio pequeno):
+- `3030008 - SUPERPRIX LJ 08 GRAJAÚ`
+- `7000713 - PREZUNIC CAXIAS CENTENÁRIO`
+- `9039015 - 15 - ZONA SUL - LEBLON`
+- etc.
 
-6. **Esses 7 casos: foram trocas de caminhão de última hora?** Quem ficou sabendo? Se não tem registro, o sistema não tem como detectar.
+**2. "ROTAS" gigantes** (códigos `2018xxx`, geofences que cobrem bairros INTEIROS):
+- `2018001 - ROTA BARRA`
+- `2018002 - ROTA BOTAFOGO`
+- `2018006 - ROTA CAMPO GRANDE`
+- `2018009 - ROTA CENTRO`
+- `2018038 - ROTA NITERÓI / MARICÁ`
+- `2018007/008/013/014/018/019/022/023` — outras ROTAS
 
-7. **Existe um padrão de "motoristas curinga" que cobrem mais de uma rota?** Tipo JOSUE que pode fazer ZS ou PRINCESA dependendo do dia?
+**Problema**: quando o caminhão vai a uma loja que NÃO tem cadastro individual no Unitrac, ele recebe SÓ o código da ROTA do bairro. Resultado: o sistema fica sem saber QUAL loja foi visitada.
 
-8. **Quando uma placa quebra/falta no dia, o cobrindo entra com QUAL placa?** A do veículo dele original, ou pega a do veículo quebrado?
-
-9. Caminhões EZU9325, CEJ3426 e outros que aparecem com **0 LOJA paradas** (só BASE/FORA_BASE no GPS):
-   - **Eles realmente FIZERAM as entregas mas o GPS não pegou** OU
-   - **Eles ficaram parados o dia todo e nem foram?**
+**Exemplo real (dia 19)**: o caminhão EAK-6G02 fez 20 paradas em NITERÓI inteiro (Largo do Barradas, Centro, Icaraí, Santa Rosa, São Francisco). Todas marcadas como `2018038 - ROTA NITERÓI/MARICÁ`. O sistema não tem como dizer qual PRINCESA visitou (Icaraí? Inga? Fonseca?).
 
 ---
 
-## 3. CRUZAMENTO DE REDES (ASSAÍ ↔ SENDAS ↔ outras)
+## 1. SOBRE CADASTRO DE LOJAS NO UNITRAC
 
-**O que vemos**: várias placas escaladas pra ASSAÍ aparecem no GPS em SENDAS (e vice-versa). Sabemos que ASSAÍ comprou SENDAS, mas precisa confirmar:
+1. **Vocês conseguem pedir pro Unitrac cadastrar geofences ESPECÍFICAS de cada loja?** Hoje várias lojas não têm cadastro individual — caem na "ROTA" do bairro.
 
-10. **Quando o sistema vê uma placa escalada pra "ASSAÍ Ilha Loja 29" e o GPS marca "SENDAS ILHA - LOJA 29": é a mesma loja física com cadastro velho, ou são 2 lojas diferentes?**
+2. **Lista das lojas que VI que NÃO estão cadastradas individualmente** (caem em ROTA):
+   - PRINCESA Niterói (todas: Icaraí, Inga, Fonseca, Centro, Barcas, Santa Rosa)
+   - PRINCESA Catete, Laranjeiras, Flamengo, Glória — caem em `2018002 - ROTA BOTAFOGO`
+   - Várias ZONA SUL — caem em `2018002 ROTA BOTAFOGO` ou `2018001 ROTA BARRA`
+   
+   **Pode pedir pro pessoal do Unitrac criar cadastro individual de cada uma?**
 
-11. **Tem lista de lojas que FORAM SENDAS e VIRARAM ASSAÍ?** Pra eu mapear automaticamente "SENDAS X = ASSAÍ Y" no Unitrac.
+3. **Quem cadastra geofences no Unitrac — Transmonsel internamente ou é a empresa do Unitrac?**
 
-12. **No Unitrac, o nome "SENDAS X" ainda aparece mesmo depois do rebrand pra ASSAÍ?** Quem atualiza isso?
-
-13. **Quais outras redes têm "mesma loja com nome diferente"?** Ex: PETIT MARCHE BARRAMARES (SENDAS Petit?), EMPORIO BARRA TOWER (SENDAS Empório?).
-
----
-
-## 4. CASOS ESPECÍFICOS QUE NÃO ENTENDO (preciso do contexto)
-
-14. **MEGA BOX 01 vs MEGA BOX 02 (Olaria) — são lojas FÍSICAS diferentes ou só "docas" da mesma loja?**
-    - Se são docas: o caminhão atende as duas com 1 só parada GPS (atual)
-    - Se são lojas: precisa de coordenadas separadas
-
-15. **EXTRA F.31 / EXTRA / Zona Sul Loja 1129 — esses 3 nomes diferentes na escala são a MESMA loja física ou diferentes?**
-
-16. **REGINA (Armazém do Grão) — Barra do Imbuy / 1 de Maio / Lucio Meira / Abastecedora Grão da Serra: 4 entregas mas o GPS marca 1 só parada agregada?** Isso é cross-docking esperado, ou cada uma deveria ter sua parada?
-
-17. **GUANABARA: o KPI manual aparece com timestamp em '---' para quase TODAS as lojas.** Mesmo quando tem GPS. **É padrão da Guanabara não preencher horário?** Por quê?
+4. **Tem como vocês me passarem a lista atual de geofences cadastrados?** Aí eu cruzo com a escala e mostro EXATAMENTE quais lojas faltam cadastro.
 
 ---
 
-## 5. PERGUNTAS TÉCNICAS QUE SÓ ELA SABE
+## 2. SOBRE O FORMATO "ROTAS" do Unitrac
 
-18. **A "saída do CD" no manual é a hora que o motorista carrega ou a hora que ele sai do portão?** Hoje o sistema computa pela última parada BASE do GPS. Pode estar entendendo diferente.
+5. **As ROTAS (`2018xxx`) servem pra alguma coisa operacional?** Tipo, é como Trans Monsel divide a operação?
 
-19. **Existem caminhões que recarregam DUAS vezes no dia (vai na base, entrega, volta na base, entrega de novo)?** Se sim, qual é a "saída do CD" — a primeira ou a segunda?
+6. **Por que algumas paradas têm DOIS ou TRÊS códigos no mesmo local?** Exemplo: `2018002 - ROTA BOTAFOGO, 2018006 - ROTA CAMPO GRANDE, BASE BENASSI`. Os geofences se sobrepõem.
 
-20. **Quando um caminhão entra na base por menos de 15 min (FAKE_EXIT no sistema), é "passou só pra trocar nota" ou conta como recarga real?**
-
-21. **Caminhão SAMS_CLUB, CAB_PETROPOLIS, SUPERCOMPRAS — esses 3 são da mesma operação ou são clientes "extras" que vocês cobrem esporadicamente?** Pergunto porque o KPI desses 3 redes é pequeno (1-3 lojas).
-
-22. **CARROS DA SUBCONTRATAÇÃO — agregados / freteiros do dia: vão pra escala? Pra Unitrac?**
+7. **O ideal é que cada parada tivesse SÓ o código da loja específica.** Concorda? Posso priorizar isso na conversa com Unitrac.
 
 ---
 
-## 6. PERGUNTAS SOBRE PROCESSO
+## 3. CASOS QUE PRECISO ENTENDER OPERACIONALMENTE
 
-23. **A escala que eu recebo (XLSX) e a alteração (TXT/PDF/WhatsApp) — quem PRODUZ esses arquivos? Quanto tempo demora pra ficar fechado?**
+8. **Veículo DIP-5557 dia 19**: 17 paradas, ZERO LOJA. Mas passou em Leblon (Ataulfo de Paiva, Humberto de Campos, Carlos Góis), Gávea, Lagoa, São Conrado, Jardim Botânico. **Esse caminhão fez entrega ZS ou estava só dando voltas?**
 
-24. **Quem fecha o KPI manual no Excel — quanto tempo essa pessoa gasta por dia hoje?** Isso me ajuda a medir o impacto da automação.
+9. **Caminhões que FAZEM 2 turnos no mesmo dia**: caso típico PRINCESA dia 18 — manual marca manhã, GPS marca tarde. **A escala tem 1 linha por loja ou 2?** Se 1 linha, qual entrega o sistema deveria pegar?
 
-25. **Se o sistema desse o KPI 100% pronto AUTOMATICAMENTE, quanto tempo isso economizaria por mês na operação?**
+10. **Veículo CXA-7B36 dia 19** (PERFEITO): BASE-BASE-SUPERPRIX08-SUPERPRIX04-BASE-BASE. Fez recarga entre lojas? Por que tem 2 BASE BENASSI seguidas no começo (00:07-04:21 e 04:22-05:12)?
+
+11. **REGINA (Armazém do Grão)**: 4 lojas REGINA na escala (Barra do Imbuy, 1 de Maio, Lúcio Meira, Abastecedora Grão da Serra). No Unitrac aparece UMA parada GPS só. **É 1 caminhão entregando em 4 lojas físicas próximas, ou 1 loja só com cadastro consolidado?**
 
 ---
 
-## TOP 5 CRÍTICAS (se ela só responder isso já ajuda muito)
+## 4. ALTERAÇÕES NÃO REGISTRADAS
 
-1. **2 turnos**: lojas que recebem 2 entregas, a escala tem 2 linhas ou só 1? Quem faz a segunda?
-2. **7 casos de placa fazendo outra rota dia 19**: troca não registrada ou padrão "motorista curinga"?
-3. **MEGA BOX 01 vs 02**: 1 loja com 2 docas ou 2 lojas físicas?
-4. **GUANABARA todos '---' no manual**: padrão? Por quê?
-5. **SENDAS↔ASSAÍ**: lista de lojas que mudaram de nome pós-rebrand?
+12. **Caso BBH1C94 JOSUE dia 19**: escala diz Lojas 03/19/48 mas GPS prova que ele fez Loja 33 Humaitá (escalada para outro motorista que não tem GPS). **Houve troca? Quem ficou sabendo? Por onde a informação passa?**
+
+13. **Mesmo dia 19, caso KWK4593 RODRIGO**: escala Lojas 38/07, GPS prova Loja 21 Flamengo. **Troca?**
+
+14. **Tem como você me MOSTRAR o canal onde as alterações chegam?** WhatsApp, áudio, ligação? Posso construir uma forma de capturar tudo automaticamente.
+
+---
+
+## 5. PADRÕES DE PREENCHIMENTO DO KPI MANUAL
+
+15. **GUANABARA dia 19**: 37 lojas no KPI manual, TODAS com timestamp '---/---/---'. **Por que ninguém preenche horário pra Guanabara?** O sistema atual considera '---' = OK pra Guanabara, mas quero confirmar que tá certo.
+
+16. **Quando o operador preenche o KPI manual SEM ter GPS confirmando**: ele usa o horário que o caminhão deveria ter chegado, ou anota '---'?
+
+17. **"SEM" no manual significa**:
+    - (a) Veículo sem rastreador no dia
+    - (b) Entrega não fez
+    - (c) Outro?
+
+18. **"NAO_FOI" significa "entrega não aconteceu" mas placa TEM GPS de outras lojas. Confirma?**
+
+---
+
+## 6. SOBRE OS DOIS RELATÓRIOS (XLSX e PDF)
+
+19. **Por que vocês exportam às vezes em XLSX (relatorio_9391) e às vezes em PDF (relatorio_9572)?** São relatórios diferentes ou iguais?
+
+20. **No PDF de hoje (dia 25, relatorio_9612), o nome de loja vem TRUNCADO** (ex: "CAXIAS CENTENÁRI O" com espaço). **Tem como exportar sempre em XLSX?** É mais limpo.
+
+---
+
+## TOP 5 PRIORITÁRIAS
+
+1. **A maioria das diferenças vem porque o cadastro de geofences do Unitrac é fraco** — várias lojas não têm cadastro individual e caem em "ROTAS" gigantes. **Quem pode resolver isso?**
+
+2. **Os 7 casos do dia 19 onde GPS contradiz a escala (placa fazendo outra rota)**: são trocas não registradas? Por onde as trocas chegam até vocês?
+
+3. **GUANABARA com tudo '---' no manual**: padrão consciente ou ninguém faz?
+
+4. **Lojas PRINCESA Niterói**: por que TODAS aparecem como `2018038 - ROTA NITERÓI/MARICÁ` no Unitrac? Sem cadastro individual?
+
+5. **REGINA do Armazém Grão**: 4 lojas escala, 1 parada GPS. **É correto agrupar ou são lojas físicas distintas?**
