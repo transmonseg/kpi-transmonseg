@@ -1,0 +1,7807 @@
+# Dia 18/05/2026 — todas as 207 placas
+
+## AKZ-2745
+- Total paradas: 12 | Distância: 51.85 km | Tempo dirigido: 0D 02:07:53
+- 12 paradas detalhadas:
+  - **46160.0007523148 → 46160.1954050926** (0D 04:40:18) | -22.82725,-43.33823
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1972453704 → 46160.2046180556** (0D 00:10:37) | -22.82805,-43.33842
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2067476852 → 46160.2277430556** (0D 00:30:14) | -22.82886,-43.34194
+    - Endereço: Avenida Brasil, Coelho Neto, , Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2332986111 → 46160.235462963** (0D 00:03:07) | -22.84668,-43.32456
+    - Endereço: Av Mns Felix, Rio de Janeiro, RJ a 2443 38 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2512037037 → 46160.2796527778** (0D 00:40:58) | -22.90538,-43.28646
+    - Endereço: R Carolina Santos, Rio de Janeiro, RJ a 1141 70 de LTU-RJ AGF JARDIM DO MEIER
+    - Local: `560031 - SENDAS MEIER`
+  - **46160.2986342593 → 46160.326875** (0D 00:40:40) | -22.82894,-43.34122
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.330775463 → 46160.4117013889** (0D 01:56:32) | -22.82838,-43.3365
+    - Endereço: Praça Conego Monteiro, CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imedia
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4129976852 → 46160.4252777778** (0D 00:17:41) | -22.82726,-43.33813
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4259606482 → 46160.5862615741** (0D 03:50:50) | -22.82749,-43.33747
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6130555556 → 46160.6244444444** (0D 00:16:24) | -22.84151,-43.37049
+    - Endereço: Avenida Brasil, Guadalupe, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21515-090
+    - Local: `202005 - PAX GUADALUPE`
+  - **46160.6349421296 → 46160.7388078704** (0D 02:29:34) | -22.82836,-43.3371
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2603 46 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7401967593 → 46160.9956481481** (0D 06:07:51) | -22.82684,-43.33812
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## AKZ-2594
+- Total paradas: 22 | Distância: 115.18 km | Tempo dirigido: 0D 03:47:05
+- 22 paradas detalhadas:
+  - **46160.001400463 → 46160.1636805556** (0D 03:53:41) | -22.82738,-43.33822
+    - Endereço: AV BRASIL, 19001-19101, COELHO NETO, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 215
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1727777778 → 46160.1783101852** (0D 00:07:58) | -22.8289,-43.34169
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.197349537 → 46160.2301157407** (0D 00:47:11) | -22.94101,-43.34341
+    - Endereço: Estrada do Gabinal Freguesia (Jacarepaguá), Rio de Janeiro, Rio de Janeiro, Bras
+    - Local: `560019 - SENDAS FREGUESIA - LOJA 28`
+  - **46160.2302662037 → 46160.3595949074** (0D 03:06:14) | -22.94195,-43.3442
+    - Endereço: EST DO GABINAL, 145-223, FREGUESIA JACAREPAGUA, RIO DE JANEIRO, RJ, BRASIL, 50, 
+    - Local: `560019 - SENDAS FREGUESIA - LOJA 28`
+  - **46160.3609837963 → 46160.3649884259** (0D 00:05:46) | -22.94102,-43.34339
+    - Endereço: Estrada do Gabinal Freguesia (Jacarepaguá), Rio de Janeiro, Rio de Janeiro, Bras
+    - Local: `560019 - SENDAS FREGUESIA - LOJA 28`
+  - **46160.3881481482 → 46160.4177314815** (0D 00:42:36) | -22.82898,-43.34128
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4209606481 → 46160.4236342593** (0D 00:03:51) | -22.82786,-43.33834
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4243287037 → 46160.4550925926** (0D 00:44:18) | -22.82712,-43.33801
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4956365741 → 46160.5181134259** (0D 00:32:22) | -22.97572,-43.18993
+    - Endereço: AV NOSSA SENHORA DE COPACABANA, 893-921, COPACABANA, RIO DE JANEIRO, RJ, BRASIL,
+    - Local: `9039019 - 19 - ZONA SUL - COPACABANA`
+  - **46160.5188078704 → 46160.5669675926** (0D 01:09:21) | -22.97582,-43.19048
+    - Endereço: R BOLIVAR, 60-102, COPACABANA, RIO DE JANEIRO, RJ, BRASIL, 40, 40, CEP 22061020
+    - Local: `9039019 - 19 - ZONA SUL - COPACABANA`
+  - **46160.6054976852 → 46160.608275463** (0D 00:04:00) | -22.81525,-43.30007
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6089699074 → 46160.6138194444** (0D 00:06:59) | -22.81556,-43.30139
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6172685185 → 46160.6200347222** (0D 00:03:59) | -22.81616,-43.304
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6207291667 → 46160.6248842593** (0D 00:05:59) | -22.81668,-43.30559
+    - Endereço: AV BRASIL, 0-0, PENHA, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21241051
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6255671296 → 46160.6302777778** (0D 00:06:47) | -22.8172,-43.30674
+    - Endereço: AV BRASIL, 0-0, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 2124105
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6323611111 → 46160.6454976852** (0D 00:18:55) | -22.8189,-43.30964
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6461921296 → 46160.6524421296** (0D 00:09:00) | -22.81934,-43.31049
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6531365741 → 46160.6586921296** (0D 00:08:00) | -22.81973,-43.31169
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6593865741 → 46160.6628587963** (0D 00:05:00) | -22.81985,-43.31287
+    - Endereço: AV BRASIL, 0-0, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 2124105
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6642476852 → 46160.6663310185** (0D 00:03:00) | -22.81977,-43.31485
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6716435185 → 46160.6737268519** (0D 00:03:00) | -22.81895,-43.34759
+    - Endereço: Estr Rio D Ouro, Rio de Janeiro, RJ a 2994 75 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6785069444 → 46160.9954976852** (0D 07:36:28) | -22.82798,-43.33833
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## AFY7J99
+- Total paradas: 14 | Distância: 163.84 km | Tempo dirigido: 0D 05:55:48
+- 14 paradas detalhadas:
+  - **46160.0036226852 → 46160.1712268519** (0D 04:01:21) | -22.82861,-43.33628
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2569 45 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1738078704 → 46160.1846180556** (0D 00:15:34) | -22.82718,-43.3381
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1853935185 → 46160.1887615741** (0D 00:04:51) | -22.82675,-43.33728
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2198842593 → 46160.2794791667** (0D 01:25:49) | -22.89295,-43.55936
+    - Endereço: Estr das Capoeiras - Rio de Janeiro - RJ
+    - Local: `9006154 - CARREFOUR CAMPO GRANDE`
+  - **46160.3199074074 → 46160.3326157407** (0D 00:18:18) | -22.84315,-43.37523
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 945 134 de AGF ESTACAO RAMOS - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3408564815 → 46160.4166782407** (0D 01:49:11) | -22.82849,-43.33672
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2592 45 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4189351852 → 46160.459525463** (0D 00:58:27) | -22.82689,-43.33808
+    - Endereço: Avenida Brasil, Coelho Neto, , Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5047569444 → 46160.5890277778** (0D 02:01:21) | -22.98402,-43.21019
+    - Endereço: Em 1319 IPANEMA 8 - RJ
+    - Local: `9039008 - 08 - ZONA SUL - IPANEMA`
+  - **46160.6271875 → 46160.6299652778** (0D 00:04:00) | -22.84297,-43.33141
+    - Endereço: AV PASTOR MARTIN LUTHER KING JR, 8182-8202, VICENTE DE CARVALHO, RIO DE JANEIRO,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6395023148 → 46160.7869907407** (0D 03:32:23) | -22.82707,-43.33807
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8008564815 → 46160.8029398148** (0D 00:03:00) | -22.85492,-43.2479
+    - Endereço: AV BRASIL, 6513-6739, BONSUCESSO, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 210403
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8203703704 → 46160.8375115741** (0D 00:24:41) | -22.94915,-43.18584
+    - Endereço: R BAMBINA, 148-180, BOTAFOGO, RIO DE JANEIRO, RJ, BRASIL, 50, 40, CEP 22251050
+    - Local: `9039116 - 42 - ZONA SUL - BOTAFOGO - SÃO CLEMENTE`
+  - **46160.8473958333 → 46160.8627199074** (0D 00:22:04) | -22.9551,-43.18302
+    - Endereço: Rua Arnaldo Quintela - Botafogo - Rio de Janeiro - RJ
+    - Local: `9039108 - 36 - ZONA SUL - BOTAFOGO`
+  - **46160.8902893519 → 46160.9951851852** (0D 02:31:03) | -22.82837,-43.33664
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2577 46 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## ALS-4H33
+- Total paradas: 13 | Distância: 14.16 km | Tempo dirigido: 0D 01:21:22
+- 13 paradas detalhadas:
+  - **46160.0017476852 → 46160.0379282407** (0D 00:52:06) | -22.82874,-43.34177
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0425578704 → 46160.258275463** (0D 05:10:38) | -22.82772,-43.33754
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.261400463 → 46160.3260763889** (0D 01:33:08) | -22.83137,-43.33628
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2642 85 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3303819444 → 46160.3908796296** (0D 01:27:07) | -22.82779,-43.33751
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3959375 → 46160.4452430556** (0D 01:11:00) | -22.83146,-43.3363
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2647 84 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4503240741 → 46160.5087962963** (0D 01:24:12) | -22.82744,-43.33724
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5119212963 → 46160.5823611111** (0D 01:41:26) | -22.83143,-43.33631
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2642 85 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5859027778 → 46160.5919444444** (0D 00:08:42) | -22.8266,-43.33752
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5926273148 → 46160.6582407407** (0D 01:34:29) | -22.82762,-43.33748
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6618171296 → 46160.6831597222** (0D 00:30:44) | -22.82895,-43.34128
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6895601852 → 46160.7792013889** (0D 02:09:05) | -22.83537,-43.33676
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2775 76 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7838657407 → 46160.9774652778** (0D 04:38:47) | -22.82731,-43.3373
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.9897800926 → 46160.9998611111** (0D 00:14:31) | -22.82901,-43.34141
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## AMF-0319
+- Total paradas: 3 | Distância: 0.03 km | Tempo dirigido: 0D 00:31:08
+- 3 paradas detalhadas:
+  - **46160.015462963 → 46160.2298032407** (0D 05:08:39) | -22.80922,-43.30731
+    - Endereço: Rua Correa Dias Vigário Geral, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21240
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2505555556 → 46160.4186342593** (0D 04:02:02) | -22.80895,-43.30662
+    - Endereço: Rua Valentim Magalhães Vigário Geral, Rio de Janeiro, Rio de Janeiro, Brasil, CE
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4195023148 → 46160.7620486111** (0D 08:13:16) | -22.81008,-43.30676
+    - Endereço: Rua Fernandes da Cunha Vigário Geral, Rio de Janeiro, Rio de Janeiro, Brasil, CE
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## AMI-1562
+- Total paradas: 14 | Distância: 0.29 km | Tempo dirigido: 0D 00:21:24
+- 14 paradas detalhadas:
+  - **46160.0060763889 → 46160.1224884259** (0D 02:47:38) | -22.82776,-43.33751
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1234490741 → 46160.2780671296** (0D 03:42:39) | -22.82652,-43.33764
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.27875 → 46160.3589467593** (0D 01:55:29) | -22.82768,-43.33745
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3603356481 → 46160.374849537** (0D 00:20:54) | -22.82664,-43.33738
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3761574074 → 46160.4332291667** (0D 01:22:11) | -22.82783,-43.33747
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4346180556 → 46160.4499768519** (0D 00:22:07) | -22.8266,-43.33727
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4511342593 → 46160.5207986111** (0D 01:40:19) | -22.82776,-43.33758
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5214930556 → 46160.5839814815** (0D 01:29:59) | -22.82694,-43.33734
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5853703704 → 46160.6221643519** (0D 00:52:59) | -22.82771,-43.33758
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6236805556 → 46160.642962963** (0D 00:27:46) | -22.82666,-43.33729
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6436574074 → 46160.6713310185** (0D 00:39:51) | -22.8278,-43.33745
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6729398148 → 46160.8483333333** (0D 04:12:34) | -22.82697,-43.33731
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8490277778 → 46160.9901041667** (0D 03:23:09) | -22.82777,-43.33734
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.9914814815 → 46161** (0D 00:12:16) | -22.82668,-43.33738
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## AMR-9986
+- Total paradas: 11 | Distância: 18.75 km | Tempo dirigido: 0D 01:24:46
+- 11 paradas detalhadas:
+  - **46160.0039467593 → 46160.2642013889** (0D 06:14:46) | -22.83127,-43.33699
+    - Endereço: Rua Bacanga - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2719791667 → 46160.3448148148** (0D 01:44:53) | -22.82893,-43.34113
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3528240741 → 46160.3690625** (0D 00:23:23) | -22.83105,-43.33703
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2714 86 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3717592593 → 46160.4014699074** (0D 00:42:47) | -22.83421,-43.33665
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2728 79 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4082407407 → 46160.440787037** (0D 00:46:52) | -22.8306,-43.3311
+    - Endereço: Estr do Portinho, Rio de Janeiro, RJ a 2097 86 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4534953704 → 46160.4569444444** (0D 00:04:58) | -22.82705,-43.33742
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4592592593 → 46160.5286458333** (0D 01:39:55) | -22.82741,-43.33747
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5329166667 → 46160.6066435185** (0D 01:46:10) | -22.82893,-43.34105
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6119907407 → 46160.6323958333** (0D 00:29:23) | -22.82759,-43.33751
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6360185185 → 46160.8983796296** (0D 06:17:48) | -22.82899,-43.3411
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.9037268519 → 46160.9937731481** (0D 02:09:40) | -22.83127,-43.33694
+    - Endereço: Estrada Pedro Borges de Freitas, CEASA-RJ, Irajá, Rio de Janeiro, Região Geográf
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## AMF0325
+- Total paradas: 6 | Distância: 28.82 km | Tempo dirigido: 0D 01:10:13
+- 6 paradas detalhadas:
+  - **46160.0055671296 → 46160.2067361111** (0D 04:49:41) | -22.82676,-43.33739
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2215625 → 46160.3473726852** (0D 03:01:10) | -22.76719,-43.2899
+    - Endereço: Av Exp Jose Amaro, Duque de Caxias, RJ a 2702 169 de GARAGEM MERCOPAMPA - LGH - 
+    - Local: `9006010 - CARREFOUR WASHINGTON LUIS`
+  - **46160.3540046296 → 46160.3567708333** (0D 00:03:59) | -22.78939,-43.28566
+    - Endereço: Rod Washington Luiz - Duque de Caxias - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3750231481 → 46160.3884606482** (0D 00:19:21) | -22.82894,-43.34147
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3938773148 → 46160.7428819444** (0D 08:22:34) | -22.83523,-43.33675
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2771 77 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7465162037 → 46160.9995023148** (0D 06:04:18) | -22.8266,-43.33736
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## AMW-4D50
+- Total paradas: 10 | Distância: 33.38 km | Tempo dirigido: 0D 01:37:42
+- 10 paradas detalhadas:
+  - **46160.000787037 → 46160.2820833333** (0D 06:45:04) | -22.83524,-43.33677
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2771 77 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2848611111 → 46160.28875** (0D 00:05:36) | -22.83132,-43.33704
+    - Endereço: Rua Bacanga - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2905902778 → 46160.2940509259** (0D 00:04:59) | -22.83224,-43.33561
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2583 83 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2959953704 → 46160.3218865741** (0D 00:37:17) | -22.8315,-43.33701
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2719 85 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3410069444 → 46160.3659722222** (0D 00:35:57) | -22.82008,-43.27776
+    - Endereço: R do Arroz - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3790277778 → 46160.4059606481** (0D 00:38:47) | -22.82894,-43.3414
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4154398148 → 46160.4181597222** (0D 00:03:55) | -22.81597,-43.34181
+    - Endereço: R EMBAU, 1925-2013, PARQUE COLUMBIA, RIO DE JANEIRO, RJ, BRASIL, 50, 40, CEP 215
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4197453704 → 46160.5104398148** (0D 02:10:36) | -22.8142,-43.34556
+    - Endereço: Parque Colúmbia, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21535-000
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5231944444 → 46160.9610648148** (0D 10:30:32) | -22.82906,-43.34171
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.9663541667 → 46160.9996643519** (0D 00:47:58) | -22.82762,-43.3374
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## ATP-9F21
+- Total paradas: 7 | Distância: 197.18 km | Tempo dirigido: 0D 03:55:12
+- 7 paradas detalhadas:
+  - **46160.0133101852 → 46160.0185648148** (0D 00:07:34) | -22.74474,-43.4388
+    - Endereço: Estrada Deputado Darcílio Ayres Raunheitti Rancho Novo, Nova Iguaçu, Rio de Jane
+    - Local: `2018040 - ROTA NOVA FRIBURGO / PETRÓPOLIS`
+  - **46160.0364583333 → 46160.0616666667** (0D 00:36:18) | -22.82862,-43.34234
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,2018040 - ROTA NOVA FRIBURGO / PETRÓPOLIS`
+  - **46160.1000925926 → 46160.1083564815** (0D 00:11:54) | -22.51335,-43.22161
+    - Endereço: R DR PAULO HERVE, 1032-1172, BINGEN, PETROPOLIS, RJ, BRASIL, 70, 60, CEP 2566551
+    - Local: `2018040 - ROTA NOVA FRIBURGO / PETRÓPOLIS`
+  - **46160.1434490741 → 46160.2027083333** (0D 01:25:20) | -22.22389,-43.12626
+    - Endereço: Rodovia Presidente Juscelino Kubitschek Areal, Rio de Janeiro, Brasil, CEP 25845
+    - Local: `2018040 - ROTA NOVA FRIBURGO / PETRÓPOLIS`
+  - **46160.2510416667 → 46160.2603703704** (0D 00:13:26) | -22.63159,-43.28568
+    - Endereço: Rod Washington Luiz, Duque de Caxias, RJ a 1155 168 de AC e CDD- SANTA CRUZ DA S
+    - Local: `2018040 - ROTA NOVA FRIBURGO / PETRÓPOLIS`
+  - **46160.2774074074 → 46160.2821990741** (0D 00:06:54) | -22.65188,-43.07708
+    - Endereço: Rod Santos Dumont, Mage, RJ a 3947 94 de CDD - MAGE - LTU
+    - Local: `2018040 - ROTA NOVA FRIBURGO / PETRÓPOLIS`
+  - **46160.28875 → 46160.2969791667** (0D 00:11:51) | -22.60179,-43.03403
+    - Endereço: Estrada Adam Blumer, 4244, Jardim Esmeralda, Magé - Rio de Janeiro
+    - Local: `2018040 - ROTA NOVA FRIBURGO / PETRÓPOLIS`
+
+## AOP-3C73
+- Total paradas: 10 | Distância: 132.45 km | Tempo dirigido: 0D 04:01:51
+- 10 paradas detalhadas:
+  - **46160.0044560185 → 46160.2374884259** (0D 05:35:34) | -22.8281,-43.33767
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2381828704 → 46160.4050694444** (0D 04:00:19) | -22.82693,-43.33808
+    - Endereço: Avenida Brasil, Coelho Neto, , Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4101273148 → 46160.4210300926** (0D 00:15:42) | -22.83466,-43.33599
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2671 77 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4456597222 → 46160.4556944444** (0D 00:14:27) | -22.86439,-43.43337
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4817939815 → 46160.4931134259** (0D 00:16:18) | -23.01477,-43.47494
+    - Endereço: Rua Doutor Walter Guimaraes de Moraes, Rio de Janeiro, RJ a 6323 76 de AGF INTER
+    - Local: `71039 - GB 27 - RECREIO DOS BANDEIRANTES`
+  - **46160.5272453704 → 46160.5662037037** (0D 00:56:06) | -22.82692,-43.33803
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6006944444 → 46160.6064583333** (0D 00:08:18) | -22.93042,-43.17669
+    - Endereço: Indefinida
+    - Local: `9039120 - 45 - ZONA SUL - FLAMENGO`
+  - **46160.6071527778 → 46160.6334837963** (0D 00:37:55) | -22.93122,-43.17672
+    - Endereço: Rua Machado de Assis, 6 Flamengo, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22
+    - Local: `9039120 - 45 - ZONA SUL - FLAMENGO`
+  - **46160.6674074074 → 46160.6708564815** (0D 00:04:58) | -22.84312,-43.33129
+    - Endereço: Avenida Pastor Martin Luther King Junior, Irajá, Rio de Janeiro, Rio de Janeiro,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6790856481 → 46160.9964351852** (0D 07:36:59) | -22.82799,-43.33834
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## BBH-1C94
+- Total paradas: 15 | Distância: 151.63 km | Tempo dirigido: 0D 06:09:08
+- 15 paradas detalhadas:
+  - **46160.0025 → 46160.1990046296** (0D 04:42:58) | -22.82697,-43.33816
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2204976852 → 46160.2253587963** (0D 00:07:00) | -22.86476,-43.24817
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.250162037 → 46160.2765972222** (0D 00:38:04) | -22.98373,-43.21241
+    - Endereço: Em 1007 IPANEMA 1 - RJ
+    - Local: `9039027 - 27 - ZONA SUL - IPANEMA`
+  - **46160.284212963 → 46160.3042013889** (0D 00:28:47) | -22.98449,-43.22587
+    - Endereço: Rua General Artigas - Leblon - Rio de Janeiro
+    - Local: `9039015 - 15 - ZONA SUL - LEBLON`
+  - **46160.3619907407 → 46160.4132060185** (0D 01:13:45) | -22.81707,-43.3843
+    - Endereço: Rua Irmã Gabriela Pavuna, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21655-510
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.429375 → 46160.4528935185** (0D 00:33:52) | -22.82776,-43.33826
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.453587963 → 46160.5577314815** (0D 02:29:58) | -22.82691,-43.33804
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5584143518 → 46160.5683333333** (0D 00:14:17) | -22.82739,-43.33728
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5941087963 → 46160.6278703704** (0D 00:48:37) | -22.82404,-43.40545
+    - Endereço: R CARDOSO DE CASTRO, 1-111, ANCHIETA, RIO DE JANEIRO, RJ, BRASIL, 50, 40, CEP 21
+    - Local: `579003 - FEIRA NOVA ANCHIETA`
+  - **46160.6337962963 → 46160.6365740741** (0D 00:04:00) | -22.85327,-43.39349
+    - Endereço: Avenida Brasil - Vila Militar - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6372569444 → 46160.6393402778** (0D 00:03:00) | -22.85275,-43.39161
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 4251 128 de LTU-RJ AGF VILA VALQUEIRE
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.649837963 → 46160.7111458333** (0D 01:28:17) | -22.82764,-43.33751
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7180555556 → 46160.8015393519** (0D 02:00:13) | -22.82724,-43.33821
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8380324074 → 46160.8609259259** (0D 00:32:58) | -22.98513,-43.19009
+    - Endereço: Avenida Nossa Senhora de Copacabana - Copacabana - Rio de Janeiro - RJ
+    - Local: `9039005 - 05 - ZONA SUL - COPACABANA III`
+  - **46160.9017361111 → 46160.9943171296** (0D 02:13:19) | -22.82688,-43.33806
+    - Endereço: Avenida Brasil, Coelho Neto, , Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## AWA-6B40
+- Total paradas: 31 | Distância: 350.17 km | Tempo dirigido: 0D 08:01:19
+- 31 paradas detalhadas:
+  - **46160.0000231481 → 46160.0235416667** (0D 00:33:52) | -22.75642,-43.37196
+    - Endereço: Avenida Cilo Costa Bom Pastor, Belford Roxo, Rio de Janeiro, Brasil, CEP 26115-1
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.0484490741 → 46160.0738194444** (0D 00:36:32) | -22.82755,-43.33747
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0759606482 → 46160.0839236111** (0D 00:11:28) | -22.83247,-43.33767
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2796 83 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1319328704 → 46160.1468171296** (0D 00:21:26) | -22.74753,-42.81211
+    - Endereço: RODOVIA GOV MARIO COVAS/BR 101, 0-0, PICOS, ITABORAI, RJ, BRASIL, 90, 70, CEP 24
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1907175926 → 46160.1974189815** (0D 00:09:39) | -22.81853,-42.29002
+    - Endereço: VIA LAGOS/RJ 124, 41562-41596, , ARARUAMA, RJ, BRASIL, 90, 70, CEP 28970000
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2201388889 → 46160.2519097222** (0D 00:45:45) | -22.8883,-42.0519
+    - Endereço: R Salinas Ponta Costa, Cabo Frio, RJ a 83416 141 de CDD - RESENDE - LTU
+    - Local: `560017 - SENDAS CABO FRIO - LOJA 82`
+  - **46160.2529976852 → 46160.2787037037** (0D 00:37:01) | -22.88756,-42.05255
+    - Endereço: R Salinas Ponta Costa, Cabo Frio, RJ a 5296 157 de CDD SAO PEDRO DA ALDEIA - RJ
+    - Local: `560017 - SENDAS CABO FRIO - LOJA 82`
+  - **46160.2793287037 → 46160.3918171296** (0D 02:41:59) | -22.88684,-42.0519
+    - Endereço: Rodovia Deputado Marcio Correa, Cabo Frio, RJ a 5233 156 de CDD SAO PEDRO DA ALD
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3945833333 → 46160.4693518519** (0D 01:47:40) | -22.88786,-42.05254
+    - Endereço: R Salinas Ponta Costa, Cabo Frio, RJ a 5327 157 de CDD SAO PEDRO DA ALDEIA - RJ
+    - Local: `560017 - SENDAS CABO FRIO - LOJA 82`
+  - **46160.470150463 → 46160.4756481481** (0D 00:07:55) | -22.88856,-42.05071
+    - Endereço: R Salinas Ponta Costa, Cabo Frio, RJ a 83514 141 de CDD - RESENDE - LTU
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5306365741 → 46160.5458680556** (0D 00:21:56) | -22.79967,-42.48191
+    - Endereço: Via Lagos, , Rio Bonito, Rio de Janeiro, Brasil
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5743865741 → 46160.5975** (0D 00:33:17) | -22.73374,-42.80788
+    - Endereço: Avenida Teles Itaville, Itaboraí, Rio de Janeiro, Brasil, CEP 24802-420
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5990277778 → 46160.6018055556** (0D 00:04:00) | -22.7477,-42.81353
+    - Endereço: Rod BR-101 - Itaborai - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6479398148 → 46160.6555555556** (0D 00:10:58) | -22.82071,-43.2823
+    - Endereço: AV BRASIL, 0-0, PENHA, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21012351
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.65625 → 46160.661087963** (0D 00:06:58) | -22.81973,-43.28351
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6638541667 → 46160.6725347222** (0D 00:12:30) | -22.81755,-43.28643
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6732291667 → 46160.6858101852** (0D 00:18:07) | -22.81698,-43.28717
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6865046296 → 46160.6901041667** (0D 00:05:11) | -22.81624,-43.28815
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6910763889 → 46160.7125462963** (0D 00:30:55) | -22.81571,-43.28902
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7132407407 → 46160.7222337963** (0D 00:12:57) | -22.81525,-43.29038
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7232638889 → 46160.7257175926** (0D 00:03:32) | -22.81494,-43.29217
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.726400463 → 46160.7296643518** (0D 00:04:42) | -22.8144,-43.29384
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7331365741 → 46160.7476041667** (0D 00:20:50) | -22.81435,-43.29597
+    - Endereço: AV BRASIL, 0-0, PENHA, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21012350
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7496875 → 46160.7531597222** (0D 00:05:00) | -22.81454,-43.29698
+    - Endereço: AV BRASIL, 14336-14366, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7538541667 → 46160.7622800926** (0D 00:12:08) | -22.81484,-43.29825
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.762974537 → 46160.7761574074** (0D 00:18:59) | -22.81516,-43.29995
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7789236111 → 46160.7865509259** (0D 00:10:59) | -22.81578,-43.30319
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 1486 27 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7983680556 → 46160.8004513889** (0D 00:03:00) | -22.82732,-43.31757
+    - Endereço: Estrada da Água Grande Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21230-
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8182986111 → 46160.8403472222** (0D 00:31:45) | -22.82909,-43.34115
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8456365741 → 46160.8578009259** (0D 00:17:31) | -22.83767,-43.33649
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2820 72 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8610300926 → 46160.9961689815** (0D 03:14:36) | -22.82687,-43.33732
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## CPI-4C84
+- Total paradas: 5 | Distância: 8.93 km | Tempo dirigido: 0D 00:46:18
+- 5 paradas detalhadas:
+  - **46160.0067013889 → 46160.2290046296** (0D 05:20:07) | -22.82906,-43.34175
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3012 52 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2324189815 → 46160.3053587963** (0D 01:45:02) | -22.82743,-43.33739
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.310775463 → 46160.3651041667** (0D 01:18:14) | -22.83486,-43.33593
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3755439815 → 46160.3936226852** (0D 00:26:02) | -22.81715,-43.32228
+    - Endereço: Rodovia Presidente Dutra - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4065162037 → 46160.9965046296** (0D 14:09:35) | -22.82949,-43.34275
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3120 53 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## CEJ-3426
+- Total paradas: 8 | Distância: 34.72 km | Tempo dirigido: 0D 01:10:13
+- 8 paradas detalhadas:
+  - **46160.0012268519 → 46160.1900925926** (0D 04:31:58) | -22.82837,-43.33679
+    - Endereço: Praça Conego Monteiro, CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imedia
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1909722222 → 46160.1986805556** (0D 00:11:06) | -22.8274,-43.33803
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2064351852 → 46160.2224537037** (0D 00:23:04) | -22.82874,-43.34169
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.238275463 → 46160.5515625** (0D 07:31:08) | -22.77023,-43.41184
+    - Endereço: Rua Barros Peixoto, Jacutinga, Mesquita, Rio de Janeiro, Brasil, CEP 26564-040
+    - Local: `560035 - SENDAS MESQUITA - LJ 35`
+  - **46160.5658449074 → 46160.5756944444** (0D 00:14:11) | -22.82903,-43.34155
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5790856481 → 46160.6085300926** (0D 00:42:24) | -22.82732,-43.3375
+    - Endereço: Rua Charles Gounod
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6116435185 → 46160.631724537** (0D 00:28:55) | -22.82896,-43.34136
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6352546296 → 46160.9960185185** (0D 08:39:30) | -22.82839,-43.33669
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2579 46 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## CDM-8645
+- Total paradas: 6 | Distância: 49.73 km | Tempo dirigido: 0D 06:09:05
+- 6 paradas detalhadas:
+  - **46160.0967824074 → 46160.1720601852** (0D 01:48:24) | -22.89023,-43.66709
+    - Endereço: Rua dos Bandeirantes, 49 Santa Cruz, Rio de Janeiro, Rio de Janeiro, Brasil, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2191435185 → 46160.2392476852** (0D 00:28:57) | -22.8277,-43.33477
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3640740741 → 46160.3772453704** (0D 00:18:58) | -22.89361,-43.56209
+    - Endereço: Rua Mirassol Campo Grande, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 23080-300
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4406712963 → 46160.4508101852** (0D 00:14:36) | -22.83011,-43.34079
+    - Endereço: Estrada Pedro Borges de Freitas, 726, Irajá, Rio De Janeiro - Rio de Janeiro
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4545023148 → 46160.4628125** (0D 00:11:58) | -22.82921,-43.33778
+    - Endereço: Praça Conego Monteiro Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4801041667 → 46160.5646296296** (0D 02:01:43) | -22.83001,-43.33882
+    - Endereço: Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## CUC-6J83
+- Total paradas: 8 | Distância: 55.83 km | Tempo dirigido: 0D 02:33:54
+- 8 paradas detalhadas:
+  - **46160.0014351852 → 46160.0182291667** (0D 00:24:11) | -22.82764,-43.33764
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0286921296 → 46160.2116203704** (0D 04:23:25) | -22.82909,-43.34114
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2384143519 → 46160.3153819444** (0D 01:50:50) | -22.86195,-43.5499
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 2389 87 de CLIENTES ESPECIAIS - HERMES
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3236921296 → 46160.375474537** (0D 01:14:34) | -22.86249,-43.54984
+    - Endereço: R S Guido, Rio de Janeiro, RJ a 2396 89 de CLIENTES ESPECIAIS - HERMES
+    - Local: `560016 - SENDAS MENDANHA - LOJA 65`
+  - **46160.3801041667 → 46160.3859143518** (0D 00:08:22) | -22.8598,-43.50757
+    - Endereço: Bangu, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 23095-700
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3965277778 → 46160.4036458333** (0D 00:10:15) | -22.88168,-43.63654
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4163541667 → 46160.553125** (0D 03:16:57) | -22.87946,-43.6383
+    - Endereço: Estrada dos Palmares Paciência, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 2306
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5864814815 → 46160.9946180556** (0D 09:47:43) | -22.82736,-43.33736
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## CXA-7B36
+- Total paradas: 12 | Distância: 61.26 km | Tempo dirigido: 0D 03:11:46
+- 12 paradas detalhadas:
+  - **46160.0054282407 → 46160.1933217593** (0D 04:30:34) | -22.8306,-43.34347
+    - Endereço: , Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21531-010
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1947685185 → 46160.2165972222** (0D 00:31:26) | -22.82879,-43.34169
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2172800926 → 46160.2231712963** (0D 00:08:29) | -22.82852,-43.34293
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3054 54 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2809143519 → 46160.3068287037** (0D 00:37:19) | -22.92265,-43.26411
+    - Endereço: Praça Edmundo Rego, 8 Grajaú, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 20561-
+    - Local: `3030008 - SUPERPRIX LJ 08 - GRAJAÚ`
+  - **46160.3121875 → 46160.3686226852** (0D 01:21:16) | -22.92311,-43.25685
+    - Endereço: R JOSE VICENTE, 1-35, GRAJAU, RIO DE JANEIRO, RJ, BRASIL, 40, 40, CEP 20540330
+    - Local: `3030004 - SUPERPRIX LJ 04 - GRAJAÚ VERDUN`
+  - **46160.3953240741 → 46160.4050810185** (0D 00:14:03) | -22.83013,-43.34333
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3199 52 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.405775463 → 46160.503912037** (0D 02:21:19) | -22.82955,-43.34252
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3101 52 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5262268518 → 46160.6267824074** (0D 02:24:48) | -22.87108,-43.27912
+    - Endereço: Rua Carmem Cinira Inhaúma, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21061-310
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6375694444 → 46160.641712963** (0D 00:05:58) | -22.84393,-43.33059
+    - Endereço: Av Pst Martin Luther king Junior, Rio de Janeiro, RJ a 2640 53 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6424074074 → 46160.6458564815** (0D 00:04:58) | -22.8431,-43.33151
+    - Endereço: Avenida Pastor Martin Luther King Junior, Irajá, Rio de Janeiro, Rio de Janeiro,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6519328704 → 46160.6786689815** (0D 00:38:30) | -22.82951,-43.34242
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3087 52 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6793518519 → 46160.9983564815** (0D 07:39:22) | -22.83001,-43.34323
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3186 52 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## CYB-3B90
+- Total paradas: 13 | Distância: 114.68 km | Tempo dirigido: 0D 04:59:33
+- 13 paradas detalhadas:
+  - **46160.0015162037 → 46160.1903240741** (0D 04:31:53) | -22.82734,-43.33694
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,9039124 - 47- ZONA SUL`
+  - **46160.1912615741 → 46160.2024768519** (0D 00:16:09) | -22.82787,-43.33822
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,9039124 - 47- ZONA SUL`
+  - **46160.2090509259 → 46160.2275347222** (0D 00:26:37) | -22.82889,-43.34201
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,9039124 - 47- ZONA SUL`
+  - **46160.2459953704 → 46160.2588310185** (0D 00:18:29) | -22.8831,-43.3437
+    - Endereço: Estrada Intendente Magalhães Madureira, Rio de Janeiro, Rio de Janeiro, Brasil, 
+    - Local: `7000718 - PREZUNIC CAMPINHO,9039124 - 47- ZONA SUL`
+  - **46160.2771527778 → 46160.3193402778** (0D 01:00:45) | -22.94287,-43.36788
+    - Endereço: R Gustavo Etiene, Rio de Janeiro, RJ a 1564 160 de LTU-RJ CDD TAQUARA
+    - Local: `7000716 - PREZUNIC CIDADE DE DEUS,9039124 - 47- ZONA SUL`
+  - **46160.354224537 → 46160.4137037037** (0D 01:25:39) | -22.82777,-43.3353
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2430 44 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI,9039124 - 47- ZONA SUL`
+  - **46160.4149884259 → 46160.4624421296** (0D 01:08:20) | -22.82698,-43.33803
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,9039124 - 47- ZONA SUL`
+  - **46160.5157291667 → 46160.5234722222** (0D 00:11:09) | -22.92759,-43.17741
+    - Endereço: Rua Corrêa Dutra, 99 Catete, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22210-0
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.5327083333 → 46160.5349884259** (0D 00:03:17) | -22.94848,-43.18428
+    - Endereço: Rua Muniz Barreto - Botafogo - Rio de Janeiro - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.5474768519 → 46160.5695601852** (0D 00:31:48) | -22.96052,-43.20569
+    - Endereço: R JARDIM BOTANICO, 1-129, JARDIM BOTANICO, RIO DE JANEIRO, RJ, BRASIL, 50, 40, C
+    - Local: `9039105 - 31 - ZONA SUL - JD BOTANICO,9039124 - 47- ZONA SUL`
+  - **46160.6113888889 → 46160.6144328704** (0D 00:04:23) | -22.84307,-43.33144
+    - Endereço: AV PASTOR MARTIN LUTHER KING JR, 8136-8180, VICENTE DE CARVALHO, RIO DE JANEIRO,
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.6231944444 → 46160.7289814815** (0D 02:32:20) | -22.82723,-43.33822
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI,9039124 - 47- ZONA SUL`
+  - **46160.7309375 → 46160.9945023148** (0D 06:19:32) | -22.82806,-43.33786
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2638 48 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI,9039124 - 47- ZONA SUL`
+
+## CZZ-8H82
+- Total paradas: 20 | Distância: 608.41 km | Tempo dirigido: 0D 11:27:58
+- 20 paradas detalhadas:
+  - **46160.0001041667 → 46160.0032638889** (0D 00:04:33) | -22.82775,-43.33752
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1753935185 → 46160.2541898148** (0D 01:53:28) | -21.76811,-41.3449
+    - Endereço: Avenida Doutor Nilo Pecanha, Campos dos Goytacazes, RJ a 1521 26 de CDD LEOPOLDI
+    - Local: `560036 - SENDAS CAMPOS - LJ 36`
+  - **46160.2551157407 → 46160.3682523148** (0D 02:42:55) | -21.76769,-41.34362
+    - Endereço: Campos dos Goytacazes, RJ a 1433 22 de CDD LEOPOLDINA - RJ
+    - Local: `560036 - SENDAS CAMPOS - LJ 36`
+  - **46160.3913310185 → 46160.6383333333** (0D 05:55:41) | -21.75456,-41.18728
+    - Endereço: Campos dos Goytacazes, Rio de Janeiro, Brasil, CEP 28220-000
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6600115741 → 46160.6620949074** (0D 00:03:00) | -21.76813,-41.34485
+    - Endereço: Avenida Doutor Nilo Pecanha, Campos dos Goytacazes, RJ a 1521 26 de CDD LEOPOLDI
+    - Local: `560036 - SENDAS CAMPOS - LJ 36`
+  - **46160.6627777778 → 46160.6770949074** (0D 00:20:37) | -21.76799,-41.34383
+    - Endereço: Avenida Doutor Arthur Bernardes, Campos dos Goytacazes, RJ a 1468 22 de CDD LEOP
+    - Local: `560036 - SENDAS CAMPOS - LJ 36`
+  - **46160.7591666667 → 46160.7685300926** (0D 00:13:29) | -22.48281,-42.14295
+    - Endereço: Rodovia Governador Mário Covas, , , Rio de Janeiro, Brasil, CEP 28860-000
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7687615741 → 46160.7756365741** (0D 00:09:54) | -22.48213,-42.14426
+    - Endereço: Rodovia Governador Mário Covas - Três Morros - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8770833333 → 46160.8798611111** (0D 00:04:00) | -22.84382,-43.25004
+    - Endereço: AV BRASIL, 0-0, RAMOS, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21012351
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8957638889 → 46160.8985416667** (0D 00:04:00) | -22.83172,-43.26752
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9020023148 → 46160.9047685185** (0D 00:03:59) | -22.82865,-43.27209
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9192592593 → 46160.9226851852** (0D 00:04:56) | -22.82006,-43.28312
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9240740741 → 46160.9275347222** (0D 00:04:59) | -22.81877,-43.28478
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9328125 → 46160.9348958333** (0D 00:03:00) | -22.81526,-43.29027
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9396180556 → 46160.9430787037** (0D 00:04:59) | -22.81434,-43.29609
+    - Endereço: AV BRASIL, 0-0, PENHA, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21012351
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9437731481 → 46160.9465277778** (0D 00:03:58) | -22.81473,-43.29782
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9486111111 → 46160.9513657407** (0D 00:03:58) | -22.81532,-43.3004
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9525694444 → 46160.9553356481** (0D 00:03:59) | -22.81576,-43.30221
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9560185185 → 46160.9601736111** (0D 00:05:59) | -22.81601,-43.30323
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.985775463 → 46160.9998842593** (0D 00:20:19) | -22.82897,-43.34139
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## DBB-9084
+- Total paradas: 1 | Distância: 0 km | Tempo dirigido: 0D 00:00:00
+- 1 paradas detalhadas:
+  - **46160.0049074074 → 46160.3298148148** (0D 07:47:52) | -22.8713,-43.66957
+    - Endereço: Rua Projetada C, Rio de Janeiro, RJ a 1969 88 de HERMES - CAMPO GRANDE RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## DBB-8D19
+- Total paradas: 26 | Distância: 105.94 km | Tempo dirigido: 0D 06:24:39
+- 26 paradas detalhadas:
+  - **46160.0045949074 → 46160.2219560185** (0D 05:13:00) | -22.8274,-43.33658
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2495 47 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2240046296 → 46160.2322106482** (0D 00:11:49) | -22.82755,-43.33815
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2334375 → 46160.2566550926** (0D 00:33:26) | -22.82736,-43.33743
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2580324074 → 46160.2621759259** (0D 00:05:58) | -22.82653,-43.3377
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2628703704 → 46160.2666898148** (0D 00:05:30) | -22.82761,-43.3374
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2733912037 → 46160.2761574074** (0D 00:03:59) | -22.84698,-43.32617
+    - Endereço: Avenida Pastor Martin Luther King Junior, Irajá, Rio de Janeiro, Rio de Janeiro,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2986574074 → 46160.3013078704** (0D 00:03:49) | -22.88538,-43.26542
+    - Endereço: Tv Mendes da Silva, Rio de Janeiro, RJ a 935 72 de LTU-RJ AGF PREMIUM
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3286689815 → 46160.3388425926** (0D 00:14:39) | -22.91713,-43.22269
+    - Endereço: Rua Mariz e Barros, 1050 Maracanã, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 2
+    - Local: `560043 - SENDAS TIJUCA II - LJ 43`
+  - **46160.3423032407 → 46160.3478356482** (0D 00:07:58) | -22.91789,-43.2225
+    - Endereço: Rua Mariz e Barros Tijuca, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 20270-001
+    - Local: `560043 - SENDAS TIJUCA II - LJ 43`
+  - **46160.349224537 → 46160.3575** (0D 00:11:55) | -22.9176,-43.22237
+    - Endereço: Avenida Heitor Beltrão Tijuca, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 20270
+    - Local: `560043 - SENDAS TIJUCA II - LJ 43`
+  - **46160.4036226852 → 46160.4182407407** (0D 00:21:03) | -22.82885,-43.34143
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4223032407 → 46160.5336226852** (0D 02:40:18) | -22.82774,-43.3382
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5344907407 → 46160.542349537** (0D 00:11:19) | -22.82752,-43.33743
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5894097222 → 46160.6584490741** (0D 01:39:25) | -22.98345,-43.21991
+    - Endereço: R Carlos Gois, Rio de Janeiro, RJ a 339 90 de LTU-RJ CDD LEBLON - IPANEMA
+    - Local: `9039011 - 11 - ZONA SUL - LEBLON`
+  - **46160.7086226852 → 46160.7134722222** (0D 00:06:59) | -22.86723,-43.24739
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.721087963 → 46160.7258449074** (0D 00:06:51) | -22.85513,-43.24753
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7265393519 → 46160.729224537** (0D 00:03:52) | -22.85345,-43.2475
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7395486111 → 46160.745775463** (0D 00:08:58) | -22.84351,-43.25033
+    - Endereço: AV BRASIL, 0-0, RAMOS, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21030001
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7513078704 → 46160.7533912037** (0D 00:03:00) | -22.83666,-43.25845
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7540856482 → 46160.7582407407** (0D 00:05:59) | -22.83559,-43.26035
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7589351852 → 46160.7651851852** (0D 00:09:00) | -22.83501,-43.26149
+    - Endereço: AV BRASIL, 0-0, PENHA, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21012350
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7679398148 → 46160.7736458333** (0D 00:08:13) | -22.8325,-43.26611
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7743402778 → 46160.7770138889** (0D 00:03:51) | -22.83204,-43.26698
+    - Endereço: AV BRASIL, 0-0, PENHA, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21012351
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7784027778 → 46160.7830555556** (0D 00:06:42) | -22.83085,-43.26903
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7851273148 → 46160.7878935185** (0D 00:03:59) | -22.829,-43.27157
+    - Endereço: AV BRASIL, 0-0, PENHA, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 21012350
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8075 → 46160.9940162037** (0D 04:28:35) | -22.82732,-43.33657
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2490 47 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## DBB-9A78
+- Total paradas: 9 | Distância: 36.48 km | Tempo dirigido: 0D 01:45:41
+- 9 paradas detalhadas:
+  - **46160.0036805556 → 46160.2022569444** (0D 04:45:57) | -22.82853,-43.33677
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2597 46 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2029513889 → 46160.2818518519** (0D 01:53:37) | -22.82739,-43.33809
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3037152778 → 46160.3138541667** (0D 00:14:36) | -22.88084,-43.3389
+    - Endereço: R Maria Lopes, Rio de Janeiro, RJ a 1106 171 de LTU-RJ AGF MADUREIRA SHOPPING
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3232407407 → 46160.3259375** (0D 00:03:53) | -22.8433,-43.336
+    - Endereço: EST DO BARRO VERMELHO, 1823-1901, COLEGIO, RIO DE JANEIRO, RJ, BRASIL, 50, 40, C
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3306365741 → 46160.39875** (0D 01:38:05) | -22.82724,-43.33814
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4016203704 → 46160.4219328704** (0D 00:29:15) | -22.83687,-43.33621
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2768 73 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4378240741 → 46160.543599537** (0D 02:32:19) | -22.88074,-43.33891
+    - Endereço: R Maria Lopes, Rio de Janeiro, RJ a 1098 171 de LTU-RJ AGF MADUREIRA SHOPPING
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5585300926 → 46160.5932291667** (0D 00:49:58) | -22.82892,-43.34129
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5962847222 → 46160.9996180556** (0D 09:40:48) | -22.82836,-43.33693
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2590 46 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## DCU-1B12
+- Total paradas: 4 | Distância: 6.23 km | Tempo dirigido: 0D 00:45:03
+- 4 paradas detalhadas:
+  - **46160.531875 → 46160.5519097222** (0D 00:28:51) | -22.8268,-43.33713
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5526041667 → 46160.5573958333** (0D 00:06:54) | -22.82753,-43.33746
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5660069444 → 46160.5981018519** (0D 00:46:13) | -22.82732,-43.34123
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6200810185 → 46160.9950115741** (0D 08:59:54) | -22.85949,-43.50679
+    - Endereço: Avenida Brasil Bangu, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 23095-700
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## DDI-6J90
+- Total paradas: 5 | Distância: 0.05 km | Tempo dirigido: 0D 00:10:04
+- 5 paradas detalhadas:
+  - **46160.0034606481 → 46160.2342013889** (0D 05:32:16) | -22.82812,-43.33698
+    - Endereço: , Colégio, , Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2364467593 → 46160.2597685185** (0D 00:33:35) | -22.82744,-43.33819
+    - Endereço: AV BRASIL, 19001-19101, COELHO NETO, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 215
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.260462963 → 46160.3478240741** (0D 02:05:48) | -22.82649,-43.33753
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3478819444 → 46160.4192939815** (0D 01:42:50) | -22.82721,-43.33722
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4232986111 → 46160.9994097222** (0D 13:49:36) | -22.8302,-43.33892
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## DJB-6D42
+- Total paradas: 1 | Distância: 0 km | Tempo dirigido: 0D 00:00:00
+- 1 paradas detalhadas:
+  - **46160.0042939815 → 46160.997337963** (0D 23:49:59) | -22.82903,-43.34203
+    - Endereço: Avenida Brasil - Coelho Neto - Rio de Janeiro
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## DIP-5557
+- Total paradas: 14 | Distância: 68.69 km | Tempo dirigido: 0D 05:05:31
+- 14 paradas detalhadas:
+  - **46160.0008101852 → 46160.1221412037** (0D 02:54:43) | -22.78761,-43.40326
+    - Endereço: Rua Eurico Guimarnes Neves, Vila Norma, São João de Meriti, Rio de Janeiro, Bras
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1334722222 → 46160.2319328704** (0D 02:21:47) | -22.82878,-43.34207
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3053009259 → 46160.3095601852** (0D 00:06:08) | -22.97366,-43.22703
+    - Endereço: R ORSINA DA FONSECA, 1-81, GAVEA, RIO DE JANEIRO, RJ, BRASIL, 40, 40, CEP 224700
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3176851852 → 46160.3324189815** (0D 00:21:13) | -22.9754,-43.23545
+    - Endereço: R JOAO BORGES, 305-311, GAVEA, RIO DE JANEIRO, RJ, BRASIL, 40, 40, CEP 22451100
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3380555556 → 46160.3845138889** (0D 01:06:54) | -22.98311,-43.23897
+    - Endereço: Rua Mary Pessoa - Gávea - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3889351852 → 46160.3947685185** (0D 00:08:24) | -22.97974,-43.23231
+    - Endereço: Rua Marquês de São Vicente, 225 Gávea, Rio de Janeiro, Rio de Janeiro, Brasil, C
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3988425926 → 46160.4087731481** (0D 00:14:18) | -22.98222,-43.22254
+    - Endereço: Rua João Lira - Leblon - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4178819444 → 46160.4215740741** (0D 00:05:19) | -22.99344,-43.25493
+    - Endereço: Estrada da Gávea - São Conrado - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.427025463 → 46160.437025463** (0D 00:14:24) | -22.99174,-43.23341
+    - Endereço: AV NIEMEYER, 228-250, VIDIGAL, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 22450220
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4646180556 → 46160.4677199074** (0D 00:04:28) | -22.94916,-43.18381
+    - Endereço: Rua São Clemente, 38 Botafogo, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22260
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4684143519 → 46160.4720486111** (0D 00:05:14) | -22.95083,-43.1842
+    - Endereço: Rua Nelson Mandela, Botafogo, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22251-
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4764699074 → 46160.4817824074** (0D 00:07:39) | -22.94498,-43.18249
+    - Endereço: Praia de Botafogo, 316 Botafogo, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 222
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4858564815 → 46160.4995949074** (0D 00:19:47) | -22.94998,-43.18056
+    - Endereço: Praia de Botafogo, 501 Botafogo, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 222
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5534606481 → 46160.9984953704** (0D 10:40:51) | -22.78726,-43.40333
+    - Endereço: Rua Dinamerico Gonzaga Vila Norma, Coelho da Rocha, Rio de Janeiro, Brasil, CEP 
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## DZX-3H55
+- Total paradas: 5 | Distância: 12.04 km | Tempo dirigido: 0D 00:25:34
+- 5 paradas detalhadas:
+  - **46160.0056944444 → 46160.4617824074** (0D 10:56:46) | -22.83459,-43.27909
+    - Endereço: R Santiago, Rio de Janeiro, RJ a 341 74 de CEE PENHA - RJ
+    - Local: `2018002 - ROTA BOTAFOGO`
+  - **46160.4631597222 → 46160.5786805556** (0D 02:46:21) | -22.83193,-43.27451
+    - Endereço: R Belisario Pena - Rio de Janeiro - RJ
+    - Local: `2018002 - ROTA BOTAFOGO`
+  - **46160.5836574074 → 46160.6297685185** (0D 01:06:24) | -22.83165,-43.27438
+    - Endereço: R Belisario Pena, Rio de Janeiro, RJ a 75 17 de LTU-RJ CEE PENHA
+    - Local: `2018002 - ROTA BOTAFOGO`
+  - **46160.6372337963 → 46160.651087963** (0D 00:19:57) | -22.88882,-43.23496
+    - Endereço: Rua Ébano - Benfica - Rio de Janeiro - RJ
+    - Local: `2018002 - ROTA BOTAFOGO`
+  - **46160.6550231481 → 46160.9946643518** (0D 08:09:05) | -22.89531,-43.23665
+    - Endereço: R Cap Felix - Rio de Janeiro - RJ
+    - Local: `2018002 - ROTA BOTAFOGO`
+
+## EAK-6G02
+- Total paradas: 8 | Distância: 73.62 km | Tempo dirigido: 0D 01:54:01
+- 8 paradas detalhadas:
+  - **46160.0057175926 → 46160.018900463** (0D 00:18:59) | -22.75003,-43.3446
+    - Endereço: Santa Teresa, Belford Roxo, Rio de Janeiro, Brasil, CEP 25571-162
+    - Local: `2018038 - ROTA NITEROI / MARICA`
+  - **46160.0359259259 → 46160.0913657407** (0D 01:19:50) | -22.82881,-43.34166
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI,2018038 - ROTA NITEROI / MARICA`
+  - **46160.111087963 → 46160.1148148148** (0D 00:05:22) | -22.92733,-43.17684
+    - Endereço: Rua do Catete - Catete - Rio de Janeiro - RJ
+    - Local: `2018038 - ROTA NITEROI / MARICA`
+  - **46160.1162037037 → 46160.1592708333** (0D 01:02:01) | -22.9269,-43.17618
+    - Endereço: Rua Ferreira Viana - Flamengo - Rio de Janeiro - RJ
+    - Local: `2018038 - ROTA NITEROI / MARICA`
+  - **46160.1821759259 → 46160.2156481482** (0D 00:48:12) | -22.86809,-43.11934
+    - Endereço: Travessa Doutor Holmann Ilha da Conceição, Niterói, Rio de Janeiro, Brasil, CEP 
+    - Local: `2018038 - ROTA NITEROI / MARICA`
+  - **46160.2223842593 → 46160.227662037** (0D 00:07:36) | -22.86599,-43.10762
+    - Endereço: R Mns Raeder, Niteroi, RJ a 3345 167 de CEE - NITEROI
+    - Local: `2018038 - ROTA NITEROI / MARICA`
+  - **46160.2328356481 → 46160.2486689815** (0D 00:22:48) | -22.86538,-43.10936
+    - Endereço: Travessa Porfírio Joaquim de Andrade Barreto, Niterói, Rio de Janeiro, Brasil, C
+    - Local: `2018038 - ROTA NITEROI / MARICA`
+  - **46160.2548958333 → 46160.9996296296** (0D 17:52:25) | -22.8661,-43.10781
+    - Endereço: Rua Monsenhor Raeder - Largo do Barradas - Niterói - RJ
+    - Local: `2018038 - ROTA NITEROI / MARICA`
+
+## EAC-4D65
+- Total paradas: 9 | Distância: 73.5 km | Tempo dirigido: 0D 02:44:10
+- 9 paradas detalhadas:
+  - **46160.0052662037 → 46160.1282986111** (0D 02:57:10) | -22.7812,-43.42102
+    - Endereço: R Ciriaco, Mesquita, RJ a 1656 132 de CTC - NOVA IGUACU - LTU
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.146087963 → 46160.1559143519** (0D 00:14:09) | -22.82709,-43.33831
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1566087963 → 46160.2105787037** (0D 01:17:43) | -22.82776,-43.33753
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2348842593 → 46160.2881597222** (0D 01:16:43) | -22.79363,-43.30008
+    - Endereço: Rua Major Correia de Melo, Jardim 25 de Agosto, Duque de Caxias, Rio de Janeiro,
+    - Local: `9006144 - CARREFOUR BRIGADEIRO`
+  - **46160.3051388889 → 46160.3261805556** (0D 00:30:18) | -22.82892,-43.34121
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3291203704 → 46160.3595601852** (0D 00:43:50) | -22.82819,-43.33582
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2504 44 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3749305556 → 46160.3790972222** (0D 00:06:00) | -22.738,-43.48066
+    - Endereço: Rodovia Presidente Dutra - NOVA IGUAÇU - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3890277778 → 46160.3917708333** (0D 00:03:57) | -22.74076,-43.45923
+    - Endereço: R PROF HELENO FRAGOSO, 205-243, JARDIM IGUACU, NOVA IGUACU, RJ, BRASIL, 50, 40, 
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4177662037 → 46160.4230208333** (0D 00:07:34) | -22.7782,-43.42565
+    - Endereço: Rua Zeferino Cruzeiro do Sul, Mesquita, Rio de Janeiro, Brasil, CEP 26551-240
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## ECT-2I70
+- Total paradas: 13 | Distância: 71.73 km | Tempo dirigido: 0D 02:48:01
+- 13 paradas detalhadas:
+  - **46160.0043518519 → 46160.1615625** (0D 03:46:23) | -22.81835,-43.35779
+    - Endereço: Av Pst Martin Luther king Junior, Rio de Janeiro, RJ a 3990 80 de AGF JARDIM AME
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1676736111 → 46160.2059375** (0D 00:55:06) | -22.82882,-43.34171
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2076388889 → 46160.2128356481** (0D 00:07:29) | -22.82576,-43.33531
+    - Endereço: Avenida Brasil, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2391087963 → 46160.280775463** (0D 01:00:00) | -22.98906,-43.36071
+    - Endereço: Avenida José Silva de Azevedo Neto, Barra da Tijuca, Rio de Janeiro, Rio de Jane
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2853472222 → 46160.2915972222** (0D 00:09:00) | -23.00141,-43.3434
+    - Endereço: Avenida Celso Kelly, Zona Oeste do Rio de Janeiro, Rio de Janeiro, Rio de Janeir
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2973842593 → 46160.3059953704** (0D 00:12:24) | -23.00584,-43.31315
+    - Endereço: Rua Helios Seelinger, Barra da Tijuca, Rio de Janeiro, Rio de Janeiro, Brasil, C
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3084143518 → 46160.380775463** (0D 01:44:12) | -23.01095,-43.32208
+    - Endereço: R MARTINHO DE MESQUITA, 1-169, BARRA DA TIJUCA, RIO DE JANEIRO, RJ, BRASIL, 40, 
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3833217593 → 46160.3854050926** (0D 00:03:00) | -23.00519,-43.32654
+    - Endereço: Avenida Senador Afonso Arinos de Melo Franco - Barra da Tijuca - Rio de Janeiro 
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3952893519 → 46160.4001388889** (0D 00:06:59) | -23.00123,-43.3532
+    - Endereço: Av Gen Felicissimo Cardoso - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4090509259 → 46160.4181365741** (0D 00:13:05) | -22.94063,-43.34293
+    - Endereço: Em BWU EST JACAREPAGU - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4201388889 → 46160.4268402778** (0D 00:09:39) | -22.93667,-43.33316
+    - Endereço: Estrada do Bananal, Freguesia (Jacarepaguá), Rio de Janeiro, Rio de Janeiro, Bra
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4662847222 → 46160.4684606481** (0D 00:03:08) | -22.82806,-43.3384
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4754861111 → 46160.9974189815** (0D 12:31:35) | -22.81826,-43.35773
+    - Endereço: Av Pst Martin Luther king Junior, Rio de Janeiro, RJ a 3983 80 de AGF JARDIM AME
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## EBG-2D13
+- Total paradas: 5 | Distância: 42.33 km | Tempo dirigido: 0D 02:23:55
+- 5 paradas detalhadas:
+  - **46160.0023726852 → 46160.5515393519** (0D 13:10:48) | -22.83151,-43.40033
+    - Endereço: Rua Campos, Rio de Janeiro, RJ a 2769 144 de CDD NILPOLIS
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5646296296 → 46160.757349537** (0D 04:37:31) | -22.8273,-43.33821
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.767337963 → 46160.7780902778** (0D 00:15:29) | -22.82765,-43.27399
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8055902778 → 46160.8539814815** (0D 01:09:41) | -22.97568,-43.19043
+    - Endereço: Rua Bolívar - Copacabana - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9033449074 → 46160.9938194444** (0D 02:10:17) | -22.83143,-43.40029
+    - Endereço: Rua Campos, Rio de Janeiro, RJ a 960 176 de CDD REALENGO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## EFU-5H04
+- Total paradas: 23 | Distância: 117.23 km | Tempo dirigido: 0D 04:44:03
+- 23 paradas detalhadas:
+  - **46160.0054282407 → 46160.1831481481** (0D 04:15:55) | -22.82739,-43.33648
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2482 47 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1849421296 → 46160.1908796296** (0D 00:08:33) | -22.82713,-43.33805
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1926388889 → 46160.2009259259** (0D 00:11:56) | -22.832,-43.34116
+    - Endereço: Avenida Pastor Martin Luther King Junior - Coelho Neto - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2023263889 → 46160.2125925926** (0D 00:14:47) | -22.82882,-43.3418
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2468518519 → 46160.3293518519** (0D 01:58:48) | -22.93313,-43.18328
+    - Endereço: Rua Ipiranga - Laranjeiras - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3484837963 → 46160.36** (0D 00:16:35) | -22.85354,-43.31303
+    - Endereço: Rua Angaí Vila Kosmos, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21210-000
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3678009259 → 46160.3766666667** (0D 00:12:46) | -22.82891,-43.34126
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3781828704 → 46160.4002314815** (0D 00:31:45) | -22.82633,-43.33571
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2343 48 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4010185185 → 46160.4031481482** (0D 00:03:04) | -22.82805,-43.33784
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4037731482 → 46160.5319560185** (0D 03:04:35) | -22.82726,-43.33809
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.532650463 → 46160.5640162037** (0D 00:45:10) | -22.8274,-43.33745
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5678009259 → 46160.5706828704** (0D 00:04:09) | -22.82449,-43.32546
+    - Endereço: Rua Hanibal Porto - Irajá - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5711689815 → 46160.5880208333** (0D 00:24:16) | -22.8236,-43.3257
+    - Endereço: Rua Charles Gounod
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6076157407 → 46160.6312384259** (0D 00:34:01) | -22.82756,-43.33757
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6382060185 → 46160.6416435185** (0D 00:04:57) | -22.8266,-43.31979
+    - Endereço: R Itapera - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6463078704 → 46160.6676851852** (0D 00:30:47) | -22.84058,-43.31601
+    - Endereço: Avenida Padre Roser
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6714583333 → 46160.6749074074** (0D 00:04:58) | -22.84305,-43.33135
+    - Endereço: AV PASTOR MARTIN LUTHER KING JR, 8136-8180, VICENTE DE CARVALHO, RIO DE JANEIRO,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6815277778 → 46160.6929050926** (0D 00:16:23) | -22.82889,-43.3412
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6962037037 → 46160.7799652778** (0D 02:00:37) | -22.82753,-43.33815
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7931481482 → 46160.7959259259** (0D 00:04:00) | -22.85647,-43.24789
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.800775463 → 46160.8042361111** (0D 00:04:59) | -22.86263,-43.2481
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8308333333 → 46160.8491319444** (0D 00:26:21) | -23.01225,-43.30511
+    - Endereço: Avenida Olegário Maciel, Barra da Tijuca, Rio de Janeiro, Rio de Janeiro, Brasil
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8828009259 → 46160.9936111111** (0D 02:39:34) | -22.82727,-43.33646
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2480 47 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## EOF-4331
+- Total paradas: 11 | Distância: 10.61 km | Tempo dirigido: 0D 01:00:03
+- 11 paradas detalhadas:
+  - **46160.0029976852 → 46160.3129861111** (0D 07:26:23) | -22.83126,-43.3363
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2639 85 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3161574074 → 46160.3268634259** (0D 00:15:25) | -22.82732,-43.33802
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3279861111 → 46160.3703356481** (0D 01:00:59) | -22.82646,-43.33724
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3737962963 → 46160.449375** (0D 01:48:50) | -22.82711,-43.3371
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4603703704 → 46160.4886689815** (0D 00:40:45) | -22.83226,-43.33171
+    - Endereço: Estrada Pedro Borges de Freitas Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, C
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4893518519 → 46160.5112962963** (0D 00:31:36) | -22.83292,-43.33222
+    - Endereço: Estrada Pedro Borges de Freitas Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, C
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5268402778 → 46160.565775463** (0D 00:56:04) | -22.82744,-43.33743
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5666782407 → 46160.628275463** (0D 01:28:42) | -22.82691,-43.33739
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6296875 → 46160.8453472222** (0D 05:10:33) | -22.82777,-43.33745
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8463888889 → 46160.8802430556** (0D 00:48:45) | -22.8269,-43.33729
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8836111111 → 46160.9954861111** (0D 02:41:06) | -22.83145,-43.33601
+    - Endereço: Estrada Pedro Borges de Freitas Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, C
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## EOF-4951
+- Total paradas: 11 | Distância: 9.73 km | Tempo dirigido: 0D 00:48:24
+- 11 paradas detalhadas:
+  - **46160.0034606481 → 46160.2558912037** (0D 06:03:30) | -22.83527,-43.33678
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2774 77 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2597800926 → 46160.2925115741** (0D 00:47:08) | -22.82675,-43.33812
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3022569444 → 46160.3306134259** (0D 00:40:50) | -22.83535,-43.3367
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2767 76 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3332407407 → 46160.3353819444** (0D 00:03:05) | -22.82797,-43.33818
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3363541667 → 46160.3946990741** (0D 01:24:01) | -22.82656,-43.33734
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3988541667 → 46160.4061574074** (0D 00:10:31) | -22.83579,-43.33604
+    - Endereço: CEASA-RJ, Colégio, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro,
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4070023148 → 46160.4587731482** (0D 01:14:33) | -22.83533,-43.33675
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2774 77 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4621527778 → 46160.7193402778** (0D 06:10:21) | -22.83478,-43.33668
+    - Endereço: Estrada Pedro Borges de Freitas, CEASA-RJ, Colégio, Rio de Janeiro, Região Geogr
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7238541667 → 46160.853275463** (0D 03:06:22) | -22.82761,-43.33739
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8556481482 → 46160.85875** (0D 00:04:28) | -22.83338,-43.33574
+    - Endereço: EST PEDRO BORGES DE FREITAS, 609-675, IRAJA, RIO DE JANEIRO, RJ, BRASIL, 40, 40,
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8598611111 → 46160.998125** (0D 03:19:06) | -22.83538,-43.33674
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2767 76 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## ETI-5F79
+- Total paradas: 17 | Distância: 194.34 km | Tempo dirigido: 0D 05:12:30
+- 17 paradas detalhadas:
+  - **46160.0012037037 → 46160.1710416667** (0D 04:04:34) | -22.82136,-43.3341
+    - Endereço: Rua Canudos, 430 Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21230-085
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1746643518 → 46160.1853240741** (0D 00:15:21) | -22.82794,-43.33823
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1888657407 → 46160.1928703704** (0D 00:05:46) | -22.82578,-43.33538
+    - Endereço: Avenida Brasil, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2166782407 → 46160.2648958333** (0D 01:09:26) | -22.90381,-43.12243
+    - Endereço: Rua Doutor Paulo Alves - Ingá - Niterói - RJ
+    - Local: `8590556 - PRINCESA INGÁ`
+  - **46160.2972685185 → 46160.3027314815** (0D 00:07:52) | -22.82887,-43.34132
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3069560185 → 46160.3922106481** (0D 02:02:46) | -22.82798,-43.3394
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2748 50 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3942708333 → 46160.4100347222** (0D 00:22:42) | -22.82754,-43.33818
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4105787037 → 46160.4130902778** (0D 00:03:37) | -22.82777,-43.3375
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.44875 → 46160.4607407407** (0D 00:17:16) | -23.01465,-43.47497
+    - Endereço: Rua Doutor Walter Guimaraes de Moraes, Rio de Janeiro, RJ a 6329 76 de AGF INTER
+    - Local: `71039 - GB 27 - RECREIO DOS BANDEIRANTES`
+  - **46160.4881828704 → 46160.4956134259** (0D 00:10:42) | -22.82796,-43.33709
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4965509259 → 46160.5039930556** (0D 00:10:43) | -22.82578,-43.33534
+    - Endereço: Avenida Brasil, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5084953704 → 46160.6056365741** (0D 02:19:53) | -22.82137,-43.33412
+    - Endereço: Rua Canudos, 430 Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21230-085
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6065856482 → 46160.6113425926** (0D 00:06:51) | -22.82,-43.33221
+    - Endereço: R Joao Dalton, Rio de Janeiro, RJ a 1612 56 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6383912037 → 46160.6505324074** (0D 00:17:29) | -22.9173,-43.22282
+    - Endereço: R Mariz e Barros, Rio de Janeiro, RJ a 397 104 de LTU-RJ AGF PRACA AFONSO PENA
+    - Local: `560043 - SENDAS TIJUCA II - LJ 43`
+  - **46160.6506134259 → 46160.6559490741** (0D 00:07:41) | -22.91783,-43.22208
+    - Endereço: R Mariz e Barros, Rio de Janeiro, RJ a 323 97 de LTU-RJ AGF PRACA AFONSO PENA
+    - Local: `560043 - SENDAS TIJUCA II - LJ 43`
+  - **46160.6932060185 → 46160.7008449074** (0D 00:11:00) | -22.82898,-43.34114
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7138078704 → 46160.9976157407** (0D 06:48:41) | -22.82167,-43.33416
+    - Endereço: Rua Canudos Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21230-085
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## EVU-7F71
+- Total paradas: 1 | Distância: 0 km | Tempo dirigido: 0D 00:00:00
+- 1 paradas detalhadas:
+  - **46160.0009837963 → 46160.9940277778** (0D 23:49:59) | -22.82711,-43.3372
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## EYL8B91
+- Total paradas: 10 | Distância: 137.51 km | Tempo dirigido: 0D 03:55:04
+- 10 paradas detalhadas:
+  - **46160.0005208333 → 46160.1821759259** (0D 04:21:35) | -22.8182,-43.33311
+    - Endereço: R Bellini, Rio de Janeiro, RJ a 1583 64 de AGF JARDIM AMERICA
+    - Local: `23080000 - MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA,15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+  - **46160.1880555556 → 46160.2025578704** (0D 00:20:53) | -22.8273,-43.33814
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,23080000 - MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA,15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+  - **46160.2032523148 → 46160.2099421296** (0D 00:09:38) | -22.82718,-43.33738
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,23080000 - MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA,15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+  - **46160.2367592593 → 46160.2782638889** (0D 00:59:46) | -22.93784,-43.17644
+    - Endereço: Rua Senador Vergueiro - Flamengo - Rio de Janeiro - RJ
+    - Local: `23080000 - MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA,15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+  - **46160.3022106482 → 46160.3584027778** (0D 01:20:55) | -22.82335,-43.33503
+    - Endereço: Rua Principal Acari, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21230-120
+    - Local: `23080000 - MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA,15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+  - **46160.3640162037 → 46160.5224305556** (0D 03:48:07) | -22.82677,-43.33814
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,23080000 - MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA,15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+  - **46160.5571643518 → 46160.6065509259** (0D 01:11:07) | -23.00087,-43.38311
+    - Endereço: Avenida das Américas, 7607 Barra da Tijuca, Rio de Janeiro, Rio de Janeiro, Bras
+    - Local: `23080000 - MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA,15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+  - **46160.6477199074 → 46160.6648611111** (0D 00:24:41) | -22.7998,-43.35743
+    - Endereço: Rua Goiás, Jardim José Bonifácio, São João de Meriti, Rio de Janeiro, Brasil, CE
+    - Local: `23080000 - MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA,15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+  - **46160.6775694444 → 46160.6916087963** (0D 00:20:13) | -22.82891,-43.34136
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,23080000 - MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA,15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+  - **46160.703287037 → 46160.9974537037** (0D 07:03:36) | -22.81814,-43.33314
+    - Endereço: R Ten Rebelo, Rio de Janeiro, RJ a 1580 64 de AGF JARDIM AMERICA
+    - Local: `23080000 - MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA,15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+
+## EZU-9325
+- Total paradas: 14 | Distância: 18.31 km | Tempo dirigido: 0D 01:14:33
+- 14 paradas detalhadas:
+  - **46160.0044328704 → 46160.1883101852** (0D 04:24:47) | -22.82766,-43.3375
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1959606481 → 46160.2028703704** (0D 00:09:57) | -22.82886,-43.3415
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2053587963 → 46160.3024074074** (0D 02:19:45) | -22.82785,-43.33833
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3037037037 → 46160.3721759259** (0D 01:38:36) | -22.82733,-43.3375
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3774652778 → 46160.4033449074** (0D 00:37:16) | -22.82892,-43.34151
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4083564815 → 46160.4597106481** (0D 01:13:57) | -22.82764,-43.33749
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4650462963 → 46160.4673611111** (0D 00:03:20) | -22.83083,-43.33557
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2561 86 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4687384259 → 46160.488599537** (0D 00:28:36) | -22.83136,-43.33639
+    - Endereço: Rua Bacanga - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4928935185 → 46160.5372222222** (0D 01:03:50) | -22.82756,-43.33748
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5406481481 → 46160.5798726852** (0D 00:56:29) | -22.82887,-43.34161
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5847222222 → 46160.5896643518** (0D 00:07:07) | -22.82661,-43.33744
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5903587963 → 46160.6659490741** (0D 01:48:51) | -22.82759,-43.33752
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6702893519 → 46160.8663888889** (0D 04:42:23) | -22.82888,-43.34139
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8721064815 → 46160.995775463** (0D 02:58:05) | -22.82771,-43.33744
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## EZU-9D27
+- Total paradas: 22 | Distância: 42.12 km | Tempo dirigido: 0D 02:47:43
+- 22 paradas detalhadas:
+  - **46160.0062847222 → 46160.0756018519** (0D 01:39:49) | -22.82772,-43.33754
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0850462963 → 46160.2528472222** (0D 04:01:38) | -22.8289,-43.34154
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2577314815 → 46160.2619791667** (0D 00:06:07) | -22.8266,-43.33755
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2626736111 → 46160.266724537** (0D 00:05:50) | -22.82756,-43.33737
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2697106482 → 46160.2889351852** (0D 00:27:41) | -22.83078,-43.33691
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2695 86 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2975231481 → 46160.314525463** (0D 00:24:29) | -22.83261,-43.33885
+    - Endereço: Colégio, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.32125 → 46160.3280671296** (0D 00:09:49) | -22.82565,-43.335
+    - Endereço: Pca Con Monteiro, Rio de Janeiro, RJ a 2249 48 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3350810185 → 46160.3499074074** (0D 00:21:21) | -22.8158,-43.32409
+    - Endereço: Rua Richard Strauss
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3580324074 → 46160.3813078704** (0D 00:33:31) | -22.82889,-43.34153
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3873263889 → 46160.3896875** (0D 00:03:24) | -22.83381,-43.33815
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2869 80 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3903819444 → 46160.4139236111** (0D 00:33:54) | -22.83246,-43.33883
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2910 83 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4184490741 → 46160.4520833333** (0D 00:48:26) | -22.82903,-43.34138
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4563888889 → 46160.4899305556** (0D 00:48:18) | -22.82743,-43.33735
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4941898148 → 46160.5103356481** (0D 00:23:15) | -22.82992,-43.33692
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2693 88 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5194097222 → 46160.5325462963** (0D 00:18:55) | -22.83579,-43.33687
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2795 76 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5434259259 → 46160.5683333333** (0D 00:35:52) | -22.82885,-43.34173
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5736342593 → 46160.6037847222** (0D 00:43:25) | -22.8324,-43.33886
+    - Endereço: Avenida Pastor Martin Luther King Junior - Coelho Neto - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6072569444 → 46160.6458680556** (0D 00:55:36) | -22.82896,-43.34136
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6506365741 → 46160.7304513889** (0D 01:54:56) | -22.82759,-43.33751
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7341087963 → 46160.7362962963** (0D 00:03:09) | -22.8353,-43.3368
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2774 77 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7406134259 → 46160.7646296296** (0D 00:34:35) | -22.82896,-43.34147
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7713657407 → 46160.9998958333** (0D 05:29:05) | -22.82754,-43.33747
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## EZU-9D26
+- Total paradas: 11 | Distância: 12.71 km | Tempo dirigido: 0D 00:54:55
+- 11 paradas detalhadas:
+  - **46160.0027199074 → 46160.373912037** (0D 08:54:31) | -22.82902,-43.34192
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.377025463 → 46160.4162037037** (0D 00:56:25) | -22.82737,-43.33737
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4203472222 → 46160.5056828704** (0D 02:02:53) | -22.82887,-43.34168
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5101273148 → 46160.5128819444** (0D 00:03:58) | -22.82669,-43.33739
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5135763889 → 46160.5432060185** (0D 00:42:40) | -22.82773,-43.33756
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5467824074 → 46160.5625462963** (0D 00:22:42) | -22.83535,-43.33687
+    - Endereço: Estrada Pedro Borges de Freitas, CEASA-RJ, Colégio, Rio de Janeiro, Região Geogr
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5678472222 → 46160.5918287037** (0D 00:34:32) | -22.82883,-43.34178
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.596724537 → 46160.6497569444** (0D 01:16:22) | -22.82774,-43.33747
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6518055556 → 46160.6542476852** (0D 00:03:31) | -22.83524,-43.33678
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2771 77 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6586111111 → 46160.8395486111** (0D 04:20:33) | -22.82885,-43.34176
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8451157407 → 46160.9942939815** (0D 03:34:49) | -22.82775,-43.33751
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## EZU-9J51
+- Total paradas: 5 | Distância: 9.11 km | Tempo dirigido: 0D 00:48:11
+- 5 paradas detalhadas:
+  - **46160.0046875 → 46160.5247337963** (0D 12:28:52) | -22.82728,-43.3373
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5301967593 → 46160.6353935185** (0D 02:31:29) | -22.83532,-43.33681
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2774 77 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6401273148 → 46160.7976736111** (0D 03:46:52) | -22.82766,-43.3375
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8135069444 → 46160.9616898148** (0D 03:33:23) | -22.82891,-43.34147
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.9691203704 → 46160.9996643519** (0D 00:43:59) | -22.82772,-43.3375
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## EZU-9I42
+- Total paradas: 26 | Distância: 892.13 km | Tempo dirigido: 0D 16:41:24
+- 26 paradas detalhadas:
+  - **46160.0001041667 → 46160.0083796296** (0D 00:11:55) | -22.47613,-42.19652
+    - Endereço: Rod BR-101 - Casimiro de Abreu - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.134375 → 46160.1415509259** (0D 00:10:20) | -21.22129,-41.30753
+    - Endereço: RODOVIA GOV MARIO COVAS/BR 101, 2825-2851, , MIMOSO DO SUL, ES, BRASIL, 80, 60, 
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2590046296 → 46160.3986574074** (0D 03:21:06) | -20.35039,-40.29772
+    - Endereço: Em NATUREZA EMBALA-ES - ES
+    - Local: `9006000 - CARREFOUR ESPIRITO SANTO`
+  - **46160.3993518519 → 46160.4138773148** (0D 00:20:55) | -20.35042,-40.29893
+    - Endereço: Vila Velha, Espírito Santo, Brasil, CEP 29100-022
+    - Local: `9006000 - CARREFOUR ESPIRITO SANTO`
+  - **46160.4566203704 → 46160.4621643519** (0D 00:07:59) | -20.62991,-40.52346
+    - Endereço: Rodovia Jones dos Santos Neves - Tartaruga - Guarapari - ES
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5415856481 → 46160.5724421296** (0D 00:44:26) | -21.17341,-41.29421
+    - Endereço: Rod Jones dos Santos Neves - Mimoso do Sul - ES
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6065856482 → 46160.6123148148** (0D 00:08:15) | -21.5863,-41.31802
+    - Endereço: RODOVIA GOV MARIO COVAS/BR 101, 0-0, , CAMPOS DOS GOYTACAZES, RJ, BRASIL, 90, 70
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6628356481 → 46160.6675578704** (0D 00:06:48) | -21.95565,-41.64469
+    - Endereço: Rod BR-101 - Campos dos Goytacazes - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6944328704 → 46160.6999652778** (0D 00:07:58) | -22.26638,-41.85778
+    - Endereço: Rod BR-101 - Macae - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7266666667 → 46160.737025463** (0D 00:14:55) | -22.47594,-42.19647
+    - Endereço: Rod BR-101 - Casimiro de Abreu - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7834837963 → 46160.7908217593** (0D 00:10:34) | -22.74623,-42.81176
+    - Endereço: Rod BR-101 - Itaborai - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8225462963 → 46160.8246296296** (0D 00:03:00) | -22.88886,-43.22135
+    - Endereço: Rua Monsenhor Manuel Gomes
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.832037037 → 46160.8348032407** (0D 00:03:59) | -22.88706,-43.23162
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.841712963 → 46160.8444907407** (0D 00:04:00) | -22.88116,-43.23876
+    - Endereço: Avenida Brasil
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8520949074 → 46160.8555439815** (0D 00:04:58) | -22.86835,-43.24724
+    - Endereço: AV BRASIL, 0-0, BONSUCESSO, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21040360
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8687037037 → 46160.8714814815** (0D 00:04:00) | -22.83867,-43.25485
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8749421296 → 46160.8790972222** (0D 00:05:59) | -22.8373,-43.25707
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8811689815 → 46160.8832523148** (0D 00:03:00) | -22.83533,-43.26078
+    - Endereço: AV BRASIL, 0-0, PENHA, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21012351
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8839351852 → 46160.8873958333** (0D 00:04:59) | -22.83436,-43.26252
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9157638889 → 46160.9199305556** (0D 00:06:00) | -22.81819,-43.28547
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9226851852 → 46160.9247685185** (0D 00:03:00) | -22.81642,-43.28774
+    - Endereço: AV BRASIL, 13450-13504, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9261458333 → 46160.9282291667** (0D 00:03:00) | -22.81553,-43.2893
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9323842593 → 46160.9344675926** (0D 00:03:00) | -22.81476,-43.29215
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9358449074 → 46160.9386111111** (0D 00:03:59) | -22.81429,-43.29419
+    - Endereço: AV BRASIL, 13714-13760, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9392939815 → 46160.9420601852** (0D 00:03:59) | -22.81436,-43.29608
+    - Endereço: BRT Transbrasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9747337963 → 46160.9996643519** (0D 00:35:54) | -22.82702,-43.33733
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## FKY-8H51
+- Total paradas: 11 | Distância: 70.48 km | Tempo dirigido: 0D 03:13:57
+- 11 paradas detalhadas:
+  - **46160.0006018519 → 46160.2725810185** (0D 06:31:39) | -22.82708,-43.33703
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2746643519 → 46160.3202430556** (0D 01:05:38) | -22.82649,-43.33752
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3210300926 → 46160.3496064815** (0D 00:41:09) | -22.82779,-43.33759
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3561226852 → 46160.3588773148** (0D 00:03:58) | -22.8234,-43.32999
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3799884259 → 46160.3828240741** (0D 00:04:05) | -22.89663,-43.3994
+    - Endereço: TransOlímpica, Jardim Sulacap, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21741
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4066782407 → 46160.4108217593** (0D 00:05:58) | -22.99872,-43.40837
+    - Endereço: Avenida Cândido Portinari Barra da Tijuca, Rio de Janeiro, Rio de Janeiro, Brasi
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4115046296 → 46160.7363773148** (0D 07:47:49) | -22.99756,-43.40914
+    - Endereço: Rua Engenheiro César Grilo
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7496527778 → 46160.7574768519** (0D 00:11:16) | -23.00275,-43.38432
+    - Endereço: Rua Paulo Moreno, 111 Barra da Tijuca, Rio de Janeiro, Rio de Janeiro, Brasil, C
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7872916667 → 46160.7994444444** (0D 00:17:30) | -22.87079,-43.24577
+    - Endereço: Vd de Manguinhos - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8001388889 → 46160.8086226852** (0D 00:12:13) | -22.87159,-43.24515
+    - Endereço: Avenida Brasil, Manguinhos, , Rio de Janeiro, Brasil, CEP 21040-361
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8444907407 → 46160.9963657407** (0D 03:38:42) | -22.82782,-43.33761
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## FHO-5F88
+- Total paradas: 11 | Distância: 104.62 km | Tempo dirigido: 0D 03:50:42
+- 11 paradas detalhadas:
+  - **46160.0049421296 → 46160.1873958333** (0D 04:22:44) | -22.82155,-43.33478
+    - Endereço: R Bellini, Rio de Janeiro, RJ a 1930 57 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1910763889 → 46160.2039467593** (0D 00:18:32) | -22.82875,-43.34173
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.239375 → 46160.2740277778** (0D 00:49:54) | -22.98427,-43.20305
+    - Endereço: Rua Visconde de Pirajá, 270-274 Ipanema, Rio de Janeiro, Rio de Janeiro, Brasil,
+    - Local: `3030201 - SUPERPRIX LJ 201 - IPANEMA`
+  - **46160.276099537 → 46160.2925578704** (0D 00:23:42) | -22.98401,-43.2023
+    - Endereço: Rua Visconde de Pirajá Ipanema, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 2241
+    - Local: `3030201 - SUPERPRIX LJ 201 - IPANEMA`
+  - **46160.3215393519 → 46160.3305787037** (0D 00:13:01) | -22.82892,-43.34125
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3327893519 → 46160.427349537** (0D 02:16:10) | -22.82699,-43.33896
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 2644 52 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.429212963 → 46160.4502777778** (0D 00:30:20) | -22.82768,-43.33814
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4509606482 → 46160.5008680556** (0D 01:11:52) | -22.8268,-43.33806
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5015856481 → 46160.5059606481** (0D 00:06:18) | -22.82761,-43.33735
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5510300926 → 46160.5750462963** (0D 00:34:35) | -22.98373,-43.22696
+    - Endereço: Rua Dias Ferreira - Leblon - Rio de Janeiro - RJ
+    - Local: `9039007 - 07 - ZONA SUL - LEBLON`
+  - **46160.6145486111 → 46160.9975694444** (0D 09:11:33) | -22.82161,-43.33478
+    - Endereço: R Bellini, Rio de Janeiro, RJ a 1930 57 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## FSE-2J12
+- Total paradas: 11 | Distância: 105.47 km | Tempo dirigido: 0D 03:06:52
+- 11 paradas detalhadas:
+  - **46160.0000578704 → 46160.1831481481** (0D 04:23:39) | -22.8274,-43.33736
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1912615741 → 46160.2106018519** (0D 00:27:51) | -22.82897,-43.3413
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2162962963 → 46160.2428240741** (0D 00:38:12) | -22.83003,-43.34246
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3131 51 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2438310185 → 46160.2493634259** (0D 00:07:58) | -22.82886,-43.34166
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2523148148 → 46160.3955439815** (0D 03:26:15) | -22.82721,-43.33814
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3964699074 → 46160.3988425926** (0D 00:03:25) | -22.82696,-43.3373
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4019675926 → 46160.4123032407** (0D 00:14:53) | -22.83554,-43.33541
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4681365741 → 46160.4753703704** (0D 00:10:25) | -22.8262,-43.01435
+    - Endereço: Av Marica, Sao Goncalo, RJ a 1342 154 de CTE - SAO CONCALO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4760648148 → 46160.5079398148** (0D 00:45:54) | -22.82522,-43.0154
+    - Endereço: Em GUANABARA COM. - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5561805556 → 46160.5630324074** (0D 00:09:52) | -22.8329,-43.3365
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2681 81 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5662152778 → 46160.9994328704** (0D 10:23:50) | -22.82752,-43.33748
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## FTV-6F42
+- Total paradas: 6 | Distância: 3.16 km | Tempo dirigido: 0D 00:16:57
+- 6 paradas detalhadas:
+  - **46160.0032638889 → 46160.0464930556** (0D 01:02:15) | -22.82758,-43.33751
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0480324074 → 46160.2230555556** (0D 04:12:02) | -22.82694,-43.33721
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2249421296 → 46160.4470023148** (0D 05:19:46) | -22.82694,-43.33808
+    - Endereço: Avenida Brasil, Coelho Neto, , Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4508333333 → 46160.5475694444** (0D 02:19:18) | -22.82886,-43.34163
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.550775463 → 46160.5546643519** (0D 00:05:36) | -22.82755,-43.33811
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5559837963 → 46160.9966782407** (0D 10:34:36) | -22.82733,-43.33741
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## FQN-6J72
+- Total paradas: 10 | Distância: 93.14 km | Tempo dirigido: 0D 03:30:42
+- 10 paradas detalhadas:
+  - **46160.0003587963 → 46160.2355208333** (0D 05:38:38) | -22.82742,-43.3383
+    - Endereço: Indefinida
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2368402778 → 46160.2418055556** (0D 00:07:09) | -22.8276,-43.33743
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3129282407 → 46160.4216550926** (0D 02:36:34) | -22.82124,-42.99936
+    - Endereço: Estrada Raul Veiga - Alcântara - São Gonçalo - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4400231481 → 46160.4427777778** (0D 00:03:58) | -22.82096,-42.99918
+    - Endereço: Estrada Raul Veiga, 243 Vila Três, São Gonçalo, Rio de Janeiro, Brasil, CEP 2471
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4456481481 → 46160.4501157407** (0D 00:06:26) | -22.82131,-42.99938
+    - Endereço: Estrada Raul Veiga, 243 Vila Três, São Gonçalo, Rio de Janeiro, Brasil, CEP 2471
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4514930556 → 46160.4627893519** (0D 00:16:16) | -22.82166,-42.99934
+    - Endereço: Rua Antônio Sodré Vila Três, Monjolos, Rio de Janeiro, Brasil, CEP 24710-480
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4653125 → 46160.4673958333** (0D 00:03:00) | -22.83354,-43.0057
+    - Endereço: Rod RJ-104 - Sao Goncalo - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.478275463 → 46160.481724537** (0D 00:04:58) | -22.88135,-43.08206
+    - Endereço: AL S Boaventura - Niteroi - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5134027778 → 46160.7168634259** (0D 04:52:59) | -22.82894,-43.34133
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7230555556 → 46160.9986226852** (0D 06:36:49) | -22.82764,-43.33746
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## GAR-0802
+- Total paradas: 15 | Distância: 61.52 km | Tempo dirigido: 0D 03:33:28
+- 15 paradas detalhadas:
+  - **46160.0048958333 → 46160.2549421296** (0D 06:00:04) | -22.82763,-43.33751
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2578125 → 46160.2674537037** (0D 00:13:53) | -22.82882,-43.34164
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2999537037 → 46160.302037037** (0D 00:03:00) | -22.84433,-43.2499
+    - Endereço: AV BRASIL, 0-0, RAMOS, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21012351
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3130902778 → 46160.3151736111** (0D 00:03:00) | -22.86251,-43.24803
+    - Endereço: AV BRASIL, 0-0, BONSUCESSO, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21040361
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3373032407 → 46160.6017824074** (0D 06:20:51) | -22.92676,-43.23968
+    - Endereço: R Jose Higino, Rio de Janeiro, RJ a 657 5 de LTU-RJ CDD TIJUCA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6294560185 → 46160.6322222222** (0D 00:03:59) | -22.81586,-43.28886
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.633599537 → 46160.6363773148** (0D 00:04:00) | -22.81524,-43.29032
+    - Endereço: AV BRASIL, 13594-13650, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6391435185 → 46160.6439930556** (0D 00:06:59) | -22.81454,-43.29306
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6446875 → 46160.6538657407** (0D 00:13:13) | -22.81434,-43.29402
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6559375 → 46160.6586111111** (0D 00:03:51) | -22.81426,-43.29555
+    - Endereço: AV BRASIL, 0-0, PENHA, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21012351
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6592939815 → 46160.6620486111** (0D 00:03:58) | -22.81464,-43.2976
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6862731481 → 46160.7277314815** (0D 00:59:42) | -22.82891,-43.34141
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7310648148 → 46160.9446296296** (0D 05:07:32) | -22.82692,-43.33734
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.9536921296 → 46160.9880555556** (0D 00:49:29) | -22.829,-43.34124
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.9958680556 → 46160.9998032407** (0D 00:05:40) | -22.82705,-43.33811
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## FUM-8748
+- Total paradas: 6 | Distância: 14.29 km | Tempo dirigido: 0D 00:46:11
+- 6 paradas detalhadas:
+  - **46160.0000231481 → 46160.4075347222** (0D 09:46:49) | -22.82995,-43.34336
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3200 52 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4087384259 → 46160.4950231481** (0D 02:04:15) | -22.8289,-43.34154
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5080555556 → 46160.5940509259** (0D 02:03:50) | -22.81667,-43.34486
+    - Endereço: R Embau, Rio de Janeiro, RJ a 2657 79 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6080787037 → 46160.6175115741** (0D 00:13:35) | -22.83328,-43.35639
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 4307 158 de LTU-RJ AGF MADUREIRA SHOPPING
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6182060185 → 46160.6209722222** (0D 00:03:59) | -22.8326,-43.35437
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6240856481 → 46160.9964351852** (0D 08:56:11) | -22.83027,-43.34329
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3218 52 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## GAJ-6H51
+- Total paradas: 14 | Distância: 139.3 km | Tempo dirigido: 0D 03:49:13
+- 14 paradas detalhadas:
+  - **46160.0010763889 → 46160.0947337963** (0D 02:14:52) | -22.827,-43.33814
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1034953704 → 46160.2089814815** (0D 02:31:54) | -22.8289,-43.34151
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2457986111 → 46160.2997337963** (0D 01:17:40) | -22.91045,-43.10584
+    - Endereço: AL Joao Batista, Niteroi, RJ a 1675 19 de CEE - NITEROI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3004282407 → 46160.4118171296** (0D 02:40:24) | -22.91042,-43.10727
+    - Endereço: R Cel Moreira Cezar, Niteroi, RJ a 1719 24 de CEE - NITEROI
+    - Local: `7000730 - PREZUNIC ICARAÍ`
+  - **46160.4479282407 → 46160.4747569444** (0D 00:38:38) | -22.82903,-43.34134
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4786458333 → 46160.499837963** (0D 00:30:31) | -22.82756,-43.33747
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5005324074 → 46160.5576967593** (0D 01:22:19) | -22.827,-43.33819
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5583912037 → 46160.5634490741** (0D 00:07:17) | -22.82777,-43.33752
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5841550926 → 46160.5931134259** (0D 00:12:54) | -22.65075,-43.28345
+    - Endereço: Rod BR-040 - Pista Lateral - Duque de Caxias - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5951388889 → 46160.6339699074** (0D 00:55:55) | -22.64307,-43.28229
+    - Endereço: AV AUTOMOVEL CLUBE, 44-102, VILA SANTA CRUZ, DUQUE DE CAXIAS, RJ, BRASIL, 50, 40
+    - Local: `579006 - FEIRA NOVA SANTA CRUZ DA SERRA`
+  - **46160.6517592593 → 46160.6547916667** (0D 00:04:22) | -22.81175,-43.28838
+    - Endereço: Rodovia Washington Luiz - Auxiliar, Parada de Lucas, Rio de Janeiro, Rio de Jane
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6777777778 → 46160.6818518518** (0D 00:05:52) | -22.84305,-43.33142
+    - Endereço: AV PASTOR MARTIN LUTHER KING JR, 8136-8180, VICENTE DE CARVALHO, RIO DE JANEIRO,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6897337963 → 46160.7006828704** (0D 00:15:46) | -22.8277,-43.33746
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7008217593 → 46160.9982523148** (0D 07:08:18) | -22.82694,-43.33806
+    - Endereço: Avenida Brasil, Coelho Neto, , Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## GEB-9H31
+- Total paradas: 9 | Distância: 75.11 km | Tempo dirigido: 0D 02:16:50
+- 9 paradas detalhadas:
+  - **46160.0001157407 → 46160.2172106481** (0D 05:12:37) | -22.82727,-43.33714
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2178356481 → 46160.2800462963** (0D 01:29:35) | -22.82727,-43.33815
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2809837963 → 46160.2835416667** (0D 00:03:41) | -22.8278,-43.33751
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3229861111 → 46160.3759259259** (0D 01:16:14) | -23.01481,-43.47493
+    - Endereço: Rua Doutor Walter Guimaraes de Moraes, Rio de Janeiro, RJ a 6323 76 de AGF INTER
+    - Local: `71039 - GB 27 - RECREIO DOS BANDEIRANTES`
+  - **46160.3928356481 → 46160.3960069444** (0D 00:04:34) | -23.00558,-43.43132
+    - Endereço: AV DAS AMERICAS, 11891-12139, BARRA DA TIJUCA, RIO DE JANEIRO, RJ, BRASIL, 50, 4
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.420162037 → 46160.4646527778** (0D 01:04:04) | -22.82897,-43.3413
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4712615741 → 46160.5346875** (0D 01:31:20) | -22.82768,-43.33752
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5381018519 → 46160.5593981482** (0D 00:30:40) | -22.82895,-43.34146
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5623263889 → 46160.9972106482** (0D 10:26:14) | -22.82675,-43.33815
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## GBC-6E12
+- Total paradas: 9 | Distância: 67.3 km | Tempo dirigido: 0D 02:30:53
+- 9 paradas detalhadas:
+  - **46160.0017824074 → 46160.2425231481** (0D 05:46:40) | -22.82734,-43.33749
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2432638889 → 46160.276099537** (0D 00:47:17) | -22.82765,-43.33824
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3330555556 → 46160.3911689815** (0D 01:23:41) | -23.00187,-43.33864
+    - Endereço: R Dalcidio Jurandir, Rio de Janeiro, RJ a 6056 135 de UNITRAC - TESTE
+    - Local: `71032 - GB 07 - BARRA`
+  - **46160.3928125 → 46160.4475347222** (0D 01:18:48) | -23.00201,-43.33789
+    - Endereço: Em HAWAI/L J GUANABARA - RJ
+    - Local: `71032 - GB 07 - BARRA`
+  - **46160.4683449074 → 46160.4711226852** (0D 00:04:00) | -22.8766,-43.27562
+    - Endereço: Linha Amarela - Del Castilho - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4836458333 → 46160.5051273148** (0D 00:30:56) | -22.82905,-43.34125
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5127199074 → 46160.5205671296** (0D 00:11:18) | -22.8304,-43.33704
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 0 0 de
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5243981481 → 46160.6256481481** (0D 02:25:48) | -22.82688,-43.33726
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6263310185 → 46160.998900463** (0D 08:56:30) | -22.8276,-43.3374
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## GBG-5C11
+- Total paradas: 14 | Distância: 85.24 km | Tempo dirigido: 0D 03:18:26
+- 14 paradas detalhadas:
+  - **46160.0019097222 → 46160.0049305556** (0D 00:04:21) | -22.83142,-43.33699
+    - Endereço: Em CEASA IRAJA - RJ
+    - Local: `BASE BENASSI - BASE BENASSI,28023000 - ESG MERCADO COMERCIO (JACAREPAGUA)`
+  - **46160.0085185185 → 46160.2442592593** (0D 05:39:28) | -22.82759,-43.33743
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,28023000 - ESG MERCADO COMERCIO (JACAREPAGUA)`
+  - **46160.2651041667 → 46160.2673842593** (0D 00:03:17) | -22.88442,-43.40541
+    - Endereço: AV MAL FONTENELLE, 3626-3642, VILA MILITAR, RIO DE JANEIRO, RJ, BRASIL, 70, 60, 
+    - Local: `28023000 - ESG MERCADO COMERCIO (JACAREPAGUA)`
+  - **46160.2687962963 → 46160.2716666667** (0D 00:04:08) | -22.88622,-43.40571
+    - Endereço: Avenida Marechal Fontenelle - Magalhães Bastos - Rio de Janeiro - RJ
+    - Local: `9006007 - CARREFOUR SULACAP,28023000 - ESG MERCADO COMERCIO (JACAREPAGUA)`
+  - **46160.2725810185 → 46160.31** (0D 00:53:53) | -22.88659,-43.40388
+    - Endereço: Avenida Marechal Fontenelle Jardim Sulacap, Rio de Janeiro, Rio de Janeiro, Bras
+    - Local: `28023000 - ESG MERCADO COMERCIO (JACAREPAGUA)`
+  - **46160.3106944444 → 46160.3354050926** (0D 00:35:35) | -22.88631,-43.40563
+    - Endereço: Avenida Marechal Fontenelle Jardim Sulacap, Rio de Janeiro, Rio de Janeiro, Bras
+    - Local: `9006007 - CARREFOUR SULACAP,28023000 - ESG MERCADO COMERCIO (JACAREPAGUA)`
+  - **46160.3694097222 → 46160.5081365741** (0D 03:19:46) | -22.82892,-43.3414
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,28023000 - ESG MERCADO COMERCIO (JACAREPAGUA)`
+  - **46160.5523726852 → 46160.6067824074** (0D 01:18:21) | -22.94748,-43.39014
+    - Endereço: Rua André Rocha Jacarepaguá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22710-3
+    - Local: `28023000 - ESG MERCADO COMERCIO (JACAREPAGUA)`
+  - **46160.6236921296 → 46160.6264583333** (0D 00:03:59) | -22.85188,-43.38752
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `28023000 - ESG MERCADO COMERCIO (JACAREPAGUA)`
+  - **46160.6271527778 → 46160.6312847222** (0D 00:05:57) | -22.85128,-43.3861
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `28023000 - ESG MERCADO COMERCIO (JACAREPAGUA)`
+  - **46160.6319675926 → 46160.6340509259** (0D 00:03:00) | -22.85061,-43.38504
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `28023000 - ESG MERCADO COMERCIO (JACAREPAGUA)`
+  - **46160.6347337963 → 46160.6368171296** (0D 00:03:00) | -22.8497,-43.38397
+    - Endereço: AV BRASIL, 24305-24373, DEODORO, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 2161533
+    - Local: `28023000 - ESG MERCADO COMERCIO (JACAREPAGUA)`
+  - **46160.6453472222 → 46160.6525578704** (0D 00:10:23) | -22.82887,-43.34181
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI,28023000 - ESG MERCADO COMERCIO (JACAREPAGUA)`
+  - **46160.6571759259 → 46160.9961342593** (0D 08:08:06) | -22.82736,-43.33738
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,28023000 - ESG MERCADO COMERCIO (JACAREPAGUA)`
+
+## GGX-3F42
+- Total paradas: 3 | Distância: 5.49 km | Tempo dirigido: 0D 00:28:44
+- 3 paradas detalhadas:
+  - **46160.0000925926 → 46160.819837963** (0D 19:40:26) | -22.82869,-43.34241
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8321527778 → 46160.8342361111** (0D 00:03:00) | -22.83869,-43.33322
+    - Endereço: Estrada do Colégio - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.841875 → 46160.9935532407** (0D 03:38:25) | -22.84283,-43.35433
+    - Endereço: Rua Inácio Tosta Honório Gurgel, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 215
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## GSK-0G53
+- Total paradas: 14 | Distância: 100.77 km | Tempo dirigido: 0D 03:09:59
+- 14 paradas detalhadas:
+  - **46160.0009953704 → 46160.1430208333** (0D 03:24:31) | -22.74325,-43.35092
+    - Endereço: Rua Arnaldo de Sa Mota, Belford Roxo, RJ a 8165 155 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.160162037 → 46160.1704398148** (0D 00:14:48) | -22.82894,-43.34136
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1744444444 → 46160.1806365741** (0D 00:08:55) | -22.82742,-43.33818
+    - Endereço: AV BRASIL, 19001-19101, COELHO NETO, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 215
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2131365741 → 46160.435462963** (0D 05:20:09) | -22.90623,-43.56543
+    - Endereço: Avenida Cesário de Melo, 3470 Campo Grande, Rio de Janeiro, Rio de Janeiro, Bras
+    - Local: `560039 - SENDAS CESÁRIO DE MELO - LJ 202`
+  - **46160.4423726852 → 46160.5725231481** (0D 03:07:25) | -22.90592,-43.56536
+    - Endereço: Av Maria Teresa, Rio de Janeiro, RJ a 4668 169 de CLIENTES ESPECIAIS - HERMES
+    - Local: `560039 - SENDAS CESÁRIO DE MELO - LJ 202`
+  - **46160.5961574074 → 46160.6009953704** (0D 00:06:58) | -22.8417,-43.37142
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6079166667 → 46160.6175578704** (0D 00:13:53) | -22.83354,-43.35686
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 4306 157 de LTU-RJ AGF MADUREIRA SHOPPING
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6182407407 → 46160.6209027778** (0D 00:03:50) | -22.83271,-43.35466
+    - Endereço: Avenida Brasil
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6243055556 → 46160.6445717593** (0D 00:29:11) | -22.82902,-43.3412
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6470486111 → 46160.6625578704** (0D 00:22:20) | -22.82802,-43.33792
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6671990741 → 46160.6703356481** (0D 00:04:31) | -22.83695,-43.33623
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2769 73 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6926736111 → 46160.7354282407** (0D 01:01:34) | -22.7594,-43.38165
+    - Endereço: R S Marcos, Belford Roxo, RJ a 5291 80 de CTC - NOVA IGUACU - LTU
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.742025463 → 46160.7446990741** (0D 00:03:51) | -22.74248,-43.3521
+    - Endereço: Avenida Automóvel Clube - Redentor - Belford Roxo - Rio de Janeiro
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7453935185 → 46160.9941782407** (0D 05:58:15) | -22.74313,-43.35092
+    - Endereço: Rua Arnaldo de Sa Mota, Belford Roxo, RJ a 8185 155 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## GVH-0163
+- Total paradas: 10 | Distância: 24.36 km | Tempo dirigido: 0D 01:17:44
+- 10 paradas detalhadas:
+  - **46160.138912037 → 46160.2212384259** (0D 01:58:33) | -22.82862,-43.33656
+    - Endereço: Praça Conego Monteiro, CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imedia
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2248032407 → 46160.2453472222** (0D 00:29:35) | -22.82993,-43.34246
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3119 52 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2487615741 → 46160.2550231482** (0D 00:09:01) | -22.82689,-43.33787
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2557175926 → 46160.2702662037** (0D 00:20:57) | -22.82685,-43.33846
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2709606482 → 46160.3748148148** (0D 02:29:33) | -22.82682,-43.33754
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3846990741 → 46160.4117476852** (0D 00:38:57) | -22.83481,-43.33538
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2615 77 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4141782407 → 46160.4252314815** (0D 00:15:55) | -22.82539,-43.3347
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 2195 48 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4482407407 → 46160.4964930556** (0D 01:09:29) | -22.861,-43.25278
+    - Endereço: R Julio Ribeiro, Rio de Janeiro, RJ a 352 8 de CDD BONSUCESSO - RJ
+    - Local: `71030 - GB 30 - BONSUCESSO`
+  - **46160.5046990741 → 46160.5457291667** (0D 00:59:05) | -22.82831,-43.33674
+    - Endereço: Praça Conego Monteiro, CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imedia
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5478125 → 46160.9990162037** (0D 10:49:44) | -22.82861,-43.33626
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2569 45 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## HNG-2B61
+- Total paradas: 11 | Distância: 141.17 km | Tempo dirigido: 0D 03:45:38
+- 11 paradas detalhadas:
+  - **46160.0009143519 → 46160.1900810185** (0D 04:32:24) | -22.82855,-43.33717
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2627 46 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI,15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+  - **46160.1914583333 → 46160.2008333333** (0D 00:13:30) | -22.83202,-43.34123
+    - Endereço: Avenida Pastor Martin Luther King Junior - Coelho Neto - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI,15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+  - **46160.2022685185 → 46160.2100231481** (0D 00:11:10) | -22.82883,-43.34172
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI,15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+  - **46160.2305902778 → 46160.2330555556** (0D 00:03:33) | -22.86207,-43.54301
+    - Endereço: Estrada do Mendanha, Campo Grande, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 2
+    - Local: `15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+  - **46160.2455439815 → 46160.2868055556** (0D 00:59:25) | -22.90805,-43.61117
+    - Endereço: R ITAJIBA, 521-601, COSMOS, RIO DE JANEIRO, RJ, BRASIL, 40, 40, CEP 23060450
+    - Local: `15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+  - **46160.3256365741 → 46160.4109259259** (0D 02:02:49) | -22.82801,-43.33833
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI,15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+  - **46160.4495023148 → 46160.4579398148** (0D 00:12:09) | -23.00189,-43.33856
+    - Endereço: R Dalcidio Jurandir, Rio de Janeiro, RJ a 6056 135 de UNITRAC - TESTE
+    - Local: `71032 - GB 07 - BARRA,15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+  - **46160.4713541667 → 46160.503125** (0D 00:45:45) | -22.94207,-43.3442
+    - Endereço: Via Marajó, Freguesia (Jacarepaguá), Rio de Janeiro, Rio de Janeiro, Brasil, CEP
+    - Local: `560019 - SENDAS FREGUESIA - LOJA 28,15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+  - **46160.5254861111 → 46160.5804282407** (0D 01:19:07) | -22.83508,-43.34078
+    - Endereço: Rua Aratangi Colégio, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI,15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+  - **46160.5848611111 → 46160.5928125** (0D 00:11:27) | -22.82899,-43.34101
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+  - **46160.5960185185 → 46160.9964583333** (0D 09:36:38) | -22.82856,-43.33713
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2624 46 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI,15755000 - MERCADO ITAGIBA DE COSMOS LTDA`
+
+## HOE-4B58
+- Total paradas: 26 | Distância: 179.68 km | Tempo dirigido: 0D 06:49:31
+- 26 paradas detalhadas:
+  - **46160.0012037037 → 46160.1472106481** (0D 03:30:15) | -22.76705,-43.36113
+    - Endereço: R Maringa, Sao Joao de Meriti, RJ a 6468 136 de AGF JARDIM AMERICA
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.149837963 → 46160.1528125** (0D 00:04:17) | -22.7712,-43.36854
+    - Endereço: Vila São João, Coelho da Rocha, Rio de Janeiro, Brasil, CEP 25560-472
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.1640972222 → 46160.2495601852** (0D 02:03:04) | -22.82879,-43.34173
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI,2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.2802199074 → 46160.2823032407** (0D 00:03:00) | -22.84634,-43.24809
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.2982407407 → 46160.3149421296** (0D 00:24:03) | -22.86805,-43.25385
+    - Endereço: Rua Aguiar Moreira Bonsucesso, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21050
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.3229976852 → 46160.351400463** (0D 00:40:54) | -22.8704,-43.28613
+    - Endereço: Rua Guarapuava Inhaúma, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21061-310
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.365162037 → 46160.3799305556** (0D 00:21:16) | -22.84956,-43.27137
+    - Endereço: Rua Delfim Carlos Olaria, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21073-185
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.3896527778 → 46160.4253703704** (0D 00:51:26) | -22.83734,-43.27652
+    - Endereço: R Quito, Rio de Janeiro, RJ a 401 9 de LTU-RJ CEE PENHA
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.4336574074 → 46160.4401273148** (0D 00:09:19) | -22.81546,-43.30993
+    - Endereço: Rua Isidro Rocha Vigário Geral, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 2124
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.4491435185 → 46160.4603819444** (0D 00:16:11) | -22.85093,-43.31048
+    - Endereço: AV VICENTE DE CARVALHO, 861-909, VILA KOSMOS, RIO DE JANEIRO, RJ, BRASIL, 50, 40
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.475150463 → 46160.4777199074** (0D 00:03:42) | -22.8743,-43.33832
+    - Endereço: Rua Dagmar da Fonseca - Madureira - Rio de Janeiro - RJ
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.4817361111 → 46160.4940740741** (0D 00:17:46) | -22.87279,-43.33984
+    - Endereço: R Dagmar da Fonseca, Rio de Janeiro, RJ a 217 162 de LTU-RJ AGF MADUREIRA SHOPPI
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.4947569444 → 46160.5019212963** (0D 00:10:19) | -22.87171,-43.34062
+    - Endereço: Estrada do Portela, Madureira, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21350
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.5137847222 → 46160.5277777778** (0D 00:20:09) | -22.82891,-43.34207
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI,2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.5708912037 → 46160.5833333333** (0D 00:17:55) | -23.00885,-43.29852
+    - Endereço: Rua Einstein Barra da Tijuca, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22611-
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.5930208333 → 46160.6084953704** (0D 00:22:17) | -22.99687,-43.35082
+    - Endereço: AV JORN TIM LOPES, 731-783, BARRA DA TIJUCA, RIO DE JANEIRO, RJ, BRASIL, 40, 30,
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.6164814815 → 46160.6265972222** (0D 00:14:34) | -22.97123,-43.38589
+    - Endereço: R AMILCAR DE CASTRO, 0-148, JACAREPAGUA, RIO DE JANEIRO, RJ, BRASIL, 40, 40, CEP
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.6276967593 → 46160.63125** (0D 00:05:07) | -22.97288,-43.38637
+    - Endereço: Avenida Embaixador Abelardo Bueno, 2300 Barra da Tijuca, Rio de Janeiro, Rio de 
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.6415162037 → 46160.6461805556** (0D 00:06:43) | -22.9908,-43.44396
+    - Endereço: Estr dos Bandeirantes, Rio de Janeiro, RJ a 3062 105 de AGF INTERLAGOS
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.6468634259 → 46160.6518402778** (0D 00:07:10) | -22.9903,-43.44317
+    - Endereço: Estr dos Bandeirantes, Rio de Janeiro, RJ a 3010 107 de AGF INTERLAGOS
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.655787037 → 46160.6579398148** (0D 00:03:06) | -22.9946,-43.42328
+    - Endereço: Avenida Salvador Allende, Recreio dos Bandeirantes, Rio de Janeiro, Rio de Janei
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.67875 → 46160.6873263889** (0D 00:12:21) | -22.87061,-43.25835
+    - Endereço: Av dos Democraticos - Rio de Janeiro - RJ
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.6992361111 → 46160.7029282407** (0D 00:05:19) | -22.83753,-43.27681
+    - Endereço: R Quito - Rio de Janeiro - RJ
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.7326967593 → 46160.7362037037** (0D 00:05:03) | -22.76972,-43.36885
+    - Endereço: Rua Lima Vila São João, Coelho da Rocha, Rio de Janeiro, Brasil, CEP 25561-161
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.7396527778 → 46160.7419444444** (0D 00:03:18) | -22.77127,-43.36151
+    - Endereço: Avenida Nilo Peçanha, Vilar dos Teles, São João de Meriti, Rio de Janeiro, Brasi
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+  - **46160.7429282407 → 46160.9984722222** (0D 06:07:59) | -22.76705,-43.36111
+    - Endereço: R Maringa, Sao Joao de Meriti, RJ a 6468 136 de AGF JARDIM AMERICA
+    - Local: `2018023 - ROTA ZONA NORTE,2018013 - ROTA GAVEA,2018014 - ROTA ILHA`
+
+## INW-8A51
+- Total paradas: 16 | Distância: 157.97 km | Tempo dirigido: 0D 05:27:38
+- 16 paradas detalhadas:
+  - **46160.0014814815 → 46160.17625** (0D 04:11:40) | -22.88905,-43.24609
+    - Endereço: Rua Ararua Benfica, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 20911-973
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1883449074 → 46160.2012268519** (0D 00:18:33) | -22.82881,-43.34172
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2027083333 → 46160.2067592593** (0D 00:05:50) | -22.82574,-43.33531
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2232291667 → 46160.2502777778** (0D 00:38:57) | -22.90215,-43.25589
+    - Endereço: R VINTE E QUATRO DE MAIO, 406-450, RIACHUELO, RIO DE JANEIRO, RJ, BRASIL, 50, 40
+    - Local: `3030007 - SUPERPRIX LJ 07 - RIACHUELO`
+  - **46160.2558912037 → 46160.2601736111** (0D 00:06:10) | -22.88907,-43.24611
+    - Endereço: Rua Ararua Benfica, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 20911-973
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2775462963 → 46160.3421064815** (0D 01:32:58) | -22.82744,-43.33733
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3432986111 → 46160.387337963** (0D 01:03:25) | -22.82759,-43.33814
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3934606481 → 46160.3981944444** (0D 00:06:49) | -22.83504,-43.33676
+    - Endereço: Estrada Pedro Borges de Freitas, CEASA-RJ, Colégio, Rio de Janeiro, Região Geogr
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4376967593 → 46160.4495949074** (0D 00:17:08) | -23.00177,-43.33866
+    - Endereço: R Dalcidio Jurandir, Rio de Janeiro, RJ a 6043 135 de UNITRAC - TESTE
+    - Local: `71032 - GB 07 - BARRA`
+  - **46160.4812615741 → 46160.5556597222** (0D 01:47:08) | -22.82695,-43.33813
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5563541667 → 46160.5647916667** (0D 00:12:09) | -22.82765,-43.3375
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5857407407 → 46160.5909490741** (0D 00:07:30) | -22.88909,-43.24612
+    - Endereço: Rua Ararua Benfica, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 20911-973
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6219212963 → 46160.6703009259** (0D 01:09:40) | -22.98414,-43.21984
+    - Endereço: Rua Carlos Gois, 234 Leblon, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22440-0
+    - Local: `9039011 - 11 - ZONA SUL - LEBLON`
+  - **46160.7015509259 → 46160.7036342593** (0D 00:03:00) | -22.89453,-43.23955
+    - Endereço: R PREF OLIMPIO DE MELO, 1892-2002, BENFICA, RIO DE JANEIRO, RJ, BRASIL, 50, 40, 
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7062615741 → 46160.7237037037** (0D 00:25:07) | -22.88908,-43.24603
+    - Endereço: Rua Ararua Benfica, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 20911-973
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7332175926 → 46160.9953472222** (0D 06:17:28) | -22.88909,-43.24606
+    - Endereço: Rua Ararua Benfica, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 20911-973
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## JAJ6B36
+- Total paradas: 17 | Distância: 410.03 km | Tempo dirigido: 0D 08:24:16
+- 17 paradas detalhadas:
+  - **46160.004849537 → 46160.0887731481** (0D 02:00:51) | -22.82746,-43.33827
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0899537037 → 46160.1017592593** (0D 00:17:00) | -22.8275,-43.33737
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2061921296 → 46160.3206018519** (0D 02:44:45) | -22.52468,-41.93948
+    - Endereço: Rua Paulo Viana Bosque Beira Rio, Rio das Ostras, Rio de Janeiro, Brasil, CEP 28
+    - Local: `8590568 - PRINCESA - RIO DAS OSTRAS`
+  - **46160.3397222222 → 46160.4086921296** (0D 01:39:19) | -22.58663,-41.99219
+    - Endereço: Rua Bernardo Gomes, 338 Vila do Arroz, Barra de São João, Rio de Janeiro, Brasil
+    - Local: `8590562 - PRINCESA - BARRA DE SÃO JOÃO`
+  - **46160.4349305556 → 46160.5024421296** (0D 01:37:13) | -22.48292,-42.14355
+    - Endereço: Rodovia Governador Mário Covas Professor Souza, Rio de Janeiro, Brasil, CEP 2886
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5440509259 → 46160.5921759259** (0D 01:09:18) | -22.73932,-42.75126
+    - Endereço: RODOVIA GOV MARIO COVAS/BR 101, 0-0, , TANGUA, RJ, BRASIL, 90, 70, CEP 24890000
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6420833333 → 46160.6455439815** (0D 00:04:59) | -22.81454,-43.29295
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6490046296 → 46160.6517708333** (0D 00:03:59) | -22.81541,-43.30097
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6552199074 → 46160.6579976852** (0D 00:04:00) | -22.81629,-43.30478
+    - Endereço: AV BRASIL, 14602-14672, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6586921296 → 46160.6628587963** (0D 00:06:00) | -22.81679,-43.30622
+    - Endereço: AV BRASIL, 14732-14828, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6712731481 → 46160.6753819444** (0D 00:05:55) | -22.8168,-43.3442
+    - Endereço: R Embau, Rio de Janeiro, RJ a 2594 78 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6848148148 → 46160.7765740741** (0D 02:12:08) | -22.82764,-43.33815
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7788310185 → 46160.7817939815** (0D 00:04:16) | -22.82876,-43.33791
+    - Endereço: Praça Conego Monteiro, CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imedia
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7925925926 → 46160.7946759259** (0D 00:03:00) | -22.85784,-43.24785
+    - Endereço: AV BRASIL, 6261-6285, BONSUCESSO, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 210403
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8096527778 → 46160.8156597222** (0D 00:08:39) | -22.95237,-43.18873
+    - Endereço: Rua Dona Mariana, 82 Botafogo, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22280
+    - Local: `9039122 - 46 - ZONA SUL - BOTAFOGO`
+  - **46160.8163541667 → 46160.8294907407** (0D 00:18:55) | -22.9529,-43.18791
+    - Endereço: R Voluntarios da Patria, Rio de Janeiro, RJ a 1446 65 de LTU-RJ CDD HUMAITA
+    - Local: `9039122 - 46 - ZONA SUL - BOTAFOGO`
+  - **46160.8830092593 → 46160.9932638889** (0D 02:38:46) | -22.75042,-43.3907
+    - Endereço: Estrada Parque Varzea do Carmo Boa Esperança, Belford Roxo, Rio de Janeiro, Bras
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KMY-5561
+- Total paradas: 15 | Distância: 110.34 km | Tempo dirigido: 0D 04:29:53
+- 15 paradas detalhadas:
+  - **46160.0002314815 → 46160.1955324074** (0D 04:41:14) | -22.82674,-43.33733
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1998263889 → 46160.2161226852** (0D 00:23:28) | -22.83626,-43.33604
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2729 74 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2558796296 → 46160.2746064815** (0D 00:26:58) | -22.99651,-43.36246
+    - Endereço: Av Luis Carlos Prestes, Rio de Janeiro, RJ a 4203 155 de UNITRAC - TESTE
+    - Local: `9006001 - CARREFOUR BARRA`
+  - **46160.2751157407 → 46160.3190972222** (0D 01:03:20) | -22.99652,-43.36356
+    - Endereço: Av Luis Carlos Prestes, Rio de Janeiro, RJ a 4163 156 de UNITRAC - TESTE
+    - Local: `9006001 - CARREFOUR BARRA`
+  - **46160.3576736111 → 46160.3808912037** (0D 00:33:26) | -22.829,-43.34128
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3836111111 → 46160.3949189815** (0D 00:16:17) | -22.82766,-43.33532
+    - Endereço: Praça Conego Monteiro, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3970023148 → 46160.5651157407** (0D 04:02:05) | -22.828,-43.33816
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5667592593 → 46160.5864351852** (0D 00:28:20) | -22.82778,-43.33755
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6126967593 → 46160.6587731481** (0D 01:06:21) | -22.88741,-43.43545
+    - Endereço: R LIMITES, 1296-1364, REALENGO, RIO DE JANEIRO, RJ, BRASIL, 50, 40, CEP 21715150
+    - Local: `202002 - PAX REALENGO`
+  - **46160.6640393519 → 46160.6661226852** (0D 00:03:00) | -22.87822,-43.43193
+    - Endereço: Av de Santa Cruz - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6837268519 → 46160.7022106481** (0D 00:26:37) | -22.82894,-43.34123
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7068402778 → 46160.8212847222** (0D 02:44:48) | -22.82676,-43.33738
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8219791667 → 46160.8331712963** (0D 00:16:07) | -22.82767,-43.33751
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8512847222 → 46160.9352083333** (0D 02:00:51) | -22.81651,-43.34469
+    - Endereço: Rua Embaú - Parque Colúmbia - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.960474537 → 46160.9996643519** (0D 00:56:26) | -22.82664,-43.33731
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KMZ7057
+- Total paradas: 11 | Distância: 104.77 km | Tempo dirigido: 0D 02:32:07
+- 11 paradas detalhadas:
+  - **46160.0001967593 → 46160.1294328704** (0D 03:06:06) | -22.75763,-43.37064
+    - Endereço: Av Antonio Simoes da Costa, Belford Roxo, RJ a 6444 81 de CTC - NOVA IGUACU - LT
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1479166667 → 46160.1642361111** (0D 00:23:30) | -22.82782,-43.33825
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1648958333 → 46160.1809143519** (0D 00:23:04) | -22.82773,-43.33751
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2077546296 → 46160.2713888889** (0D 01:31:38) | -22.85668,-43.09926
+    - Endereço: R Oliveira Botelho, Sao Goncalo, RJ a 4304 2 de CEE - NITEROI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2719791667 → 46160.2909259259** (0D 00:27:17) | -22.85452,-43.10055
+    - Endereço: Rua Oliveira Botelho, 349 Neves I, São Gonçalo, Rio de Janeiro, Brasil, CEP 2411
+    - Local: `23843000 - ATACADÃO - MANILHA`
+  - **46160.2914236111 → 46160.3189236111** (0D 00:39:36) | -22.85636,-43.09951
+    - Endereço: R Oliveira Botelho, Sao Goncalo, RJ a 4203 38 de CDD NITEROI - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.320462963 → 46160.4190740741** (0D 02:22:00) | -22.85684,-43.10067
+    - Endereço: Rua Oliveira Botelho, 349 Neves I, São Gonçalo, Rio de Janeiro, Brasil, CEP 2411
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4481944444 → 46160.4695486111** (0D 00:30:45) | -22.82887,-43.34117
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4801736111 → 46160.4939699074** (0D 00:19:52) | -22.81691,-43.34435
+    - Endereço: R Pedro de Albuquerque, Rio de Janeiro, RJ a 2614 78 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5036111111 → 46160.5165625** (0D 00:18:39) | -22.77397,-43.39821
+    - Endereço: Avenida Doutor Carvalhães Centro, Belford Roxo, Rio de Janeiro, Brasil, CEP 2613
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5242013889 → 46160.9946759259** (0D 11:17:29) | -22.75763,-43.37071
+    - Endereço: Av Antonio Simoes da Costa, Belford Roxo, RJ a 6438 81 de CTC - NOVA IGUACU - LT
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KNB-0752
+- Total paradas: 9 | Distância: 24.54 km | Tempo dirigido: 0D 01:31:45
+- 9 paradas detalhadas:
+  - **46160.0057638889 → 46160.3127893519** (0D 07:22:07) | -22.8286,-43.3361
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2553 44 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3163888889 → 46160.3318518518** (0D 00:22:16) | -22.83012,-43.34239
+    - Endereço: Avenida Pastor Martin Luther King Junior - Coelho Neto - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3358449074 → 46160.3997916667** (0D 01:32:05) | -22.82692,-43.33813
+    - Endereço: Avenida Brasil, Coelho Neto, , Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4044560185 → 46160.4210185185** (0D 00:23:51) | -22.83553,-43.33679
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2781 76 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4239814815 → 46160.4283796296** (0D 00:06:20) | -22.83035,-43.33462
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2462 87 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.447962963 → 46160.450474537** (0D 00:03:37) | -22.76111,-43.44531
+    - Endereço: Av Gov Portela, Nova Iguacu, RJ a 749 44 de CTC - NOVA IGUACU - RJ
+    - Local: `71016 - GB 16 - NOVA IGUAÇU`
+  - **46160.4525462963 → 46160.4990162037** (0D 01:06:55) | -22.76168,-43.44371
+    - Endereço: Rua Capitão Chaves - Centro - Nova Iguaçu - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5012847222 → 46160.5381944444** (0D 00:53:09) | -22.76121,-43.44535
+    - Endereço: Rua Governador Portela, Centro, , Rio de Janeiro, Brasil, CEP 26221-030
+    - Local: `71016 - GB 16 - NOVA IGUAÇU`
+  - **46160.5627777778 → 46160.9981481481** (0D 10:26:56) | -22.82832,-43.33612
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2526 45 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KNC-1I34
+- Total paradas: 13 | Distância: 118.31 km | Tempo dirigido: 0D 02:52:01
+- 13 paradas detalhadas:
+  - **46160.0032523148 → 46160.1600231481** (0D 03:45:45) | -22.74295,-43.47038
+    - Endereço: R Anselmo Barbosa, Nova Iguacu, RJ a 3309 110 de CTC - NOVA IGUACU - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.176099537 → 46160.1913078704** (0D 00:21:54) | -22.82886,-43.34133
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1954166667 → 46160.2219328704** (0D 00:38:11) | -22.82688,-43.33803
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2375115741 → 46160.2402893519** (0D 00:04:00) | -22.8957,-43.39946
+    - Endereço: R Vinte e Um, Rio de Janeiro, RJ a 4082 135 de CDD TANQUE
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2518981481 → 46160.2790277778** (0D 00:39:04) | -23.00598,-43.43884
+    - Endereço: Avenida das Américas - Recreio dos Bandeirantes - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2856944444 → 46160.2978935185** (0D 00:17:34) | -23.01489,-43.47547
+    - Endereço: Avenida Miguel Antonio Fernandes, Rio de Janeiro, RJ a 6376 76 de AGF INTERLAGOS
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3142824074 → 46160.3170138889** (0D 00:03:56) | -22.99447,-43.42316
+    - Endereço: Avenida Salvador Allende Recreio dos Bandeirantes, Rio de Janeiro, Rio de Janeir
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3413888889 → 46160.3583912037** (0D 00:24:29) | -22.8289,-43.34126
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3597222222 → 46160.3921875** (0D 00:46:45) | -22.82801,-43.33937
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2748 50 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4109259259 → 46160.4137037037** (0D 00:04:00) | -22.74083,-43.45756
+    - Endereço: R Prf Heleno Claudio Fragoso, Nova Iguacu, RJ a 2301 128 de CTC - NOVA IGUACU - 
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4142592593 → 46160.4855208333** (0D 01:42:37) | -22.74068,-43.46172
+    - Endereço: Rua Minas Gerais Jardim Iguaçu, Nova Iguaçu, Rio de Janeiro, Brasil, CEP 26020-7
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4870023148 → 46160.4917013889** (0D 00:06:46) | -22.74157,-43.46746
+    - Endereço: Rua Pequiri Jardim Iguaçu, Nova Iguaçu, Rio de Janeiro, Brasil, CEP 26280-000
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4942592593 → 46160.9987384259** (0D 12:06:27) | -22.74299,-43.47048
+    - Endereço: R Anselmo Barbosa, Nova Iguacu, RJ a 3320 110 de CTC - NOVA IGUACU - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KNC-5J75
+- Total paradas: 13 | Distância: 225.14 km | Tempo dirigido: 0D 07:32:22
+- 13 paradas detalhadas:
+  - **46160.0063194444 → 46160.1507060185** (0D 03:27:55) | -22.82725,-43.33821
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI,11139000 - EMANUEL COMÉRCIO PEDRA DE GUARATIBA,17659000 - O BOM ATACADISTA`
+  - **46160.2171180556 → 46160.2257986111** (0D 00:12:30) | -22.46748,-43.14838
+    - Endereço: Rua Luiz Pereira Ramos, Petropolis, RJ a 1752 12 de CDD ITAIPAVA - RJ
+    - Local: `560038 - SENDAS PETRÓPOLIS - LJ 38,11139000 - EMANUEL COMÉRCIO PEDRA DE GUARATIBA,17659000 - O BOM ATACADISTA`
+  - **46160.328599537 → 46160.3573032407** (0D 00:41:20) | -22.75501,-43.28918
+    - Endereço: R Piratininga, Duque de Caxias, RJ a 4039 173 de GARAGEM MERCOPAMPA - LGH - DUQU
+    - Local: `11139000 - EMANUEL COMÉRCIO PEDRA DE GUARATIBA,17659000 - O BOM ATACADISTA`
+  - **46160.3595949074 → 46160.3630555556** (0D 00:04:59) | -22.76735,-43.28684
+    - Endereço: Rod BR-040 - Pista Lateral - Duque de Caxias - RJ
+    - Local: `11139000 - EMANUEL COMÉRCIO PEDRA DE GUARATIBA,17659000 - O BOM ATACADISTA`
+  - **46160.3862731481 → 46160.4020601852** (0D 00:22:44) | -22.82898,-43.34115
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,11139000 - EMANUEL COMÉRCIO PEDRA DE GUARATIBA,17659000 - O BOM ATACADISTA`
+  - **46160.4054398148 → 46160.5175347222** (0D 02:41:25) | -22.82741,-43.33818
+    - Endereço: AV BRASIL, 19001-19101, COELHO NETO, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 215
+    - Local: `BASE BENASSI - BASE BENASSI,11139000 - EMANUEL COMÉRCIO PEDRA DE GUARATIBA,17659000 - O BOM ATACADISTA`
+  - **46160.5719907407 → 46160.5990393519** (0D 00:38:57) | -22.99229,-43.59498
+    - Endereço: Rua Mário Machado Guaratiba, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 23025-0
+    - Local: `11139000 - EMANUEL COMÉRCIO PEDRA DE GUARATIBA,17659000 - O BOM ATACADISTA`
+  - **46160.6066898148 → 46160.6276273148** (0D 00:30:09) | -23.00103,-43.63519
+    - Endereço: Travessa Mota Ferreira Pedra de Guaratiba, Rio de Janeiro, Rio de Janeiro, Brasi
+    - Local: `11139000 - EMANUEL COMÉRCIO PEDRA DE GUARATIBA,17659000 - O BOM ATACADISTA`
+  - **46160.6741435185 → 46160.6783101852** (0D 00:06:00) | -22.82891,-43.34115
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,11139000 - EMANUEL COMÉRCIO PEDRA DE GUARATIBA,17659000 - O BOM ATACADISTA`
+  - **46160.6811689815 → 46160.6907638889** (0D 00:13:49) | -22.82731,-43.33811
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,11139000 - EMANUEL COMÉRCIO PEDRA DE GUARATIBA,17659000 - O BOM ATACADISTA`
+  - **46160.6921412037 → 46160.6986226852** (0D 00:09:20) | -22.8278,-43.3375
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI,11139000 - EMANUEL COMÉRCIO PEDRA DE GUARATIBA,17659000 - O BOM ATACADISTA`
+  - **46160.6990277778 → 46160.7364699074** (0D 00:53:55) | -22.82681,-43.33803
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,11139000 - EMANUEL COMÉRCIO PEDRA DE GUARATIBA,17659000 - O BOM ATACADISTA`
+  - **46160.7392476852 → 46160.9967939815** (0D 06:10:52) | -22.82703,-43.33799
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,11139000 - EMANUEL COMÉRCIO PEDRA DE GUARATIBA,17659000 - O BOM ATACADISTA`
+
+## KNS-8D26
+- Total paradas: 13 | Distância: 160.58 km | Tempo dirigido: 0D 04:25:03
+- 13 paradas detalhadas:
+  - **46160.0039814815 → 46160.1548726852** (0D 03:37:17) | -22.58495,-43.34855
+    - Endereço: Chapeu do Sol, Xerém, Rio de Janeiro, Brasil, CEP 25265-970
+    - Local: `7012010 - CAB - PETROPOLIS`
+  - **46160.1908217593 → 46160.195787037** (0D 00:07:09) | -22.82572,-43.33541
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `7012010 - CAB - PETROPOLIS`
+  - **46160.1991087963 → 46160.2020717593** (0D 00:04:16) | -22.82747,-43.33752
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,7012010 - CAB - PETROPOLIS`
+  - **46160.2046412037 → 46160.2205671296** (0D 00:22:56) | -22.8288,-43.34189
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI,7012010 - CAB - PETROPOLIS`
+  - **46160.2232986111 → 46160.2270949074** (0D 00:05:28) | -22.828,-43.33739
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,7012010 - CAB - PETROPOLIS`
+  - **46160.2526388889 → 46160.3289236111** (0D 01:49:51) | -22.92113,-43.24567
+    - Endereço: R Amaral, Rio de Janeiro, RJ a 471 37 de LTU-RJ CDD VILA ISABEL
+    - Local: `560056 - SENDAS BOULEVARD,7012010 - CAB - PETROPOLIS`
+  - **46160.3540277778 → 46160.4240740741** (0D 01:40:52) | -22.82805,-43.3377
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,7012010 - CAB - PETROPOLIS`
+  - **46160.4244675926 → 46160.5452893519** (0D 02:53:59) | -22.82676,-43.33806
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,7012010 - CAB - PETROPOLIS`
+  - **46160.5459837963 → 46160.5630787037** (0D 00:24:37) | -22.82743,-43.33728
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,7012010 - CAB - PETROPOLIS`
+  - **46160.6153125 → 46160.6287847222** (0D 00:19:24) | -22.61015,-43.17819
+    - Endereço: Rua Eduardina Miranda Telles - Piabetá - Magé - RJ
+    - Local: `579011 - FEIRA NOVA BOA DICA (PIABETÁ),7012010 - CAB - PETROPOLIS`
+  - **46160.6552662037 → 46160.6631944444** (0D 00:11:25) | -22.5713,-43.31243
+    - Endereço: Estrada de Xerém - Xerém - Duque de Caxias - RJ
+    - Local: `7012010 - CAB - PETROPOLIS`
+  - **46160.6636342593 → 46160.6670023148** (0D 00:04:51) | -22.57095,-43.31416
+    - Endereço: Rua Carlos Mateus Xerém, Xerém, Rio de Janeiro, Brasil, CEP 25250-000
+    - Local: `7012010 - CAB - PETROPOLIS`
+  - **46160.6756018518 → 46160.9941319444** (0D 07:38:41) | -22.58482,-43.34887
+    - Endereço: Chapeu do Sol, Duque de Caxias, Rio de Janeiro, Brasil, CEP 25265-970
+    - Local: `7012010 - CAB - PETROPOLIS`
+
+## KNZ-3I45
+- Total paradas: 3 | Distância: 0.51 km | Tempo dirigido: 0D 00:09:51
+- 3 paradas detalhadas:
+  - **46160.0012037037 → 46160.1969907407** (0D 04:41:56) | -22.82774,-43.34297
+    - Endereço: Acari, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21531-010
+    - Local: `BASE BENASSI - BASE BENASSI,2018014 - ROTA ILHA`
+  - **46160.1988541667 → 46160.2116666667** (0D 00:18:27) | -22.82869,-43.34223
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,2018014 - ROTA ILHA`
+  - **46160.2166435185 → 46160.9982638889** (0D 18:45:32) | -22.82778,-43.34308
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI,2018014 - ROTA ILHA`
+
+## KNZ-5B07
+- Total paradas: 24 | Distância: 130.02 km | Tempo dirigido: 0D 04:32:37
+- 24 paradas detalhadas:
+  - **46160.1878240741 → 46160.2009259259** (0D 00:18:52) | -22.82917,-43.34157
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,2018019 - ROTA NOVA IGUACU`
+  - **46160.2016203704 → 46160.2194328704** (0D 00:25:39) | -22.82787,-43.34163
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 2908 54 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI,2018019 - ROTA NOVA IGUACU`
+  - **46160.2222916667 → 46160.2317708333** (0D 00:13:39) | -22.82717,-43.34198
+    - Endereço: Avenida Brasil, Acari, Rio de Janeiro, Região Geográfica Imediata do Rio de Jane
+    - Local: `BASE BENASSI - BASE BENASSI,2018019 - ROTA NOVA IGUACU`
+  - **46160.2324652778 → 46160.2425** (0D 00:14:27) | -22.82804,-43.3421
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 2955 54 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI,2018019 - ROTA NOVA IGUACU`
+  - **46160.243900463 → 46160.2881481481** (0D 01:03:43) | -22.82893,-43.34179
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI,2018019 - ROTA NOVA IGUACU`
+  - **46160.2947685185 → 46160.2977314815** (0D 00:04:16) | -22.82092,-43.3222
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `2018019 - ROTA NOVA IGUACU`
+  - **46160.3031712963 → 46160.3126388889** (0D 00:13:38) | -22.80637,-43.3389
+    - Endereço: Avenida Coronel Phidias Távora
+    - Local: `2018019 - ROTA NOVA IGUACU`
+  - **46160.3135069444 → 46160.332037037** (0D 00:26:41) | -22.80664,-43.3379
+    - Endereço: Avenida Coronel Phidias Távora - Pavuna - Rio de Janeiro - RJ
+    - Local: `2018019 - ROTA NOVA IGUACU`
+  - **46160.3329166667 → 46160.3412847222** (0D 00:12:03) | -22.80515,-43.33568
+    - Endereço: Em NEXANS BRASIL SA - RJ
+    - Local: `2018019 - ROTA NOVA IGUACU`
+  - **46160.3443981481 → 46160.3661111111** (0D 00:31:16) | -22.80634,-43.33433
+    - Endereço: Avenida Coronel Phidias Távora Pavuna, Rio de Janeiro, Rio de Janeiro, Brasil, C
+    - Local: `2018019 - ROTA NOVA IGUACU`
+  - **46160.3684722222 → 46160.3722453704** (0D 00:05:26) | -22.80558,-43.33581
+    - Endereço: Avenida Coronel Phidias Távora Pavuna, Rio de Janeiro, Rio de Janeiro, Brasil, C
+    - Local: `2018019 - ROTA NOVA IGUACU`
+  - **46160.374849537 → 46160.3821875** (0D 00:10:34) | -22.81548,-43.34141
+    - Endereço: R Embau - Rio de Janeiro - RJ
+    - Local: `2018019 - ROTA NOVA IGUACU`
+  - **46160.3869212963 → 46160.4015625** (0D 00:21:05) | -22.81377,-43.3441
+    - Endereço: Rua da Fé Parque Colúmbia, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21535-000
+    - Local: `2018019 - ROTA NOVA IGUACU`
+  - **46160.4246412037 → 46160.4352083333** (0D 00:15:13) | -22.79565,-43.42047
+    - Endereço: Rua Placido, Mesquita, RJ a 0 0 de
+    - Local: `2018019 - ROTA NOVA IGUACU`
+  - **46160.4496296296 → 46160.4572916667** (0D 00:11:02) | -22.75321,-43.45314
+    - Endereço: Avenida Governador Roberto Silveira - Chacrinha - Nova Iguaçu - RJ
+    - Local: `2018019 - ROTA NOVA IGUACU`
+  - **46160.4654513889 → 46160.4679861111** (0D 00:03:39) | -22.76005,-43.4797
+    - Endereço: R MIN LAFAIETE DE ANDRADE, 1798-1882, COMENDADOR SOARES, NOVA IGUACU, RJ, BRASIL
+    - Local: `2018019 - ROTA NOVA IGUACU`
+  - **46160.4708217593 → 46160.4744791667** (0D 00:05:16) | -22.76269,-43.47816
+    - Endereço: R Maria - Nova Iguacu - RJ
+    - Local: `2018019 - ROTA NOVA IGUACU`
+  - **46160.476724537 → 46160.4885532407** (0D 00:17:02) | -22.76403,-43.47976
+    - Endereço: Rua Katia Jardim Alvorada, Nova Iguaçu, Rio de Janeiro, Brasil, CEP 26260-050
+    - Local: `2018019 - ROTA NOVA IGUACU`
+  - **46160.4905439815 → 46160.4934375** (0D 00:04:10) | -22.76119,-43.47837
+    - Endereço: Rua Luiz Vargas Fernandes Jardim Alvorada, Nova Iguaçu, Rio de Janeiro, Brasil, 
+    - Local: `2018019 - ROTA NOVA IGUACU`
+  - **46160.5213194444 → 46160.5467476852** (0D 00:36:37) | -22.69609,-43.70026
+    - Endereço: Rodovia Ary Schiavo São Miguel, Seropédica, Rio de Janeiro, Brasil, CEP 23893-79
+    - Local: `2018019 - ROTA NOVA IGUACU`
+  - **46160.5663078704 → 46160.5778240741** (0D 00:16:35) | -22.73814,-43.55415
+    - Endereço: Rua Lafayete Parque Santiago, Queimados, Rio de Janeiro, Brasil, CEP 26377-375
+    - Local: `2018019 - ROTA NOVA IGUACU`
+  - **46160.6116550926 → 46160.6184722222** (0D 00:09:49) | -22.75087,-43.32412
+    - Endereço: Jardim Leal - Duque de Caxias - RJ
+    - Local: `2018019 - ROTA NOVA IGUACU`
+  - **46160.6376041667 → 46160.6396875** (0D 00:03:00) | -22.82603,-43.34791
+    - Endereço: Avenida Pastor Martin Luther King Junior - Coelho Neto - Rio de Janeiro - RJ
+    - Local: `2018019 - ROTA NOVA IGUACU`
+  - **46160.6436111111 → 46160.6762615741** (0D 00:47:01) | -22.8288,-43.34197
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI,2018019 - ROTA NOVA IGUACU`
+
+## KON-6I33
+- Total paradas: 12 | Distância: 81.22 km | Tempo dirigido: 0D 03:34:54
+- 12 paradas detalhadas:
+  - **46160.0001851852 → 46160.2613310185** (0D 06:16:03) | -22.776,-43.37208
+    - Endereço: Rua Otávio Mangabeira Jardim Meriti, Coelho da Rocha, Rio de Janeiro, Brasil, CE
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2649652778 → 46160.2687731481** (0D 00:05:29) | -22.77991,-43.37635
+    - Endereço: Jardim Meriti, Coelho da Rocha, Rio de Janeiro, Brasil, CEP 25555-360
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2887962963 → 46160.3056944444** (0D 00:24:20) | -22.82884,-43.34161
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3402546296 → 46160.342337963** (0D 00:03:00) | -22.84638,-43.24011
+    - Endereço: Av Brg Trompowski - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3520486111 → 46160.3712962963** (0D 00:27:43) | -22.80594,-43.26066
+    - Endereço: Avenida Vinte de Janeiro, s/n Galeão, Rio de Janeiro, Rio de Janeiro, Brasil, CE
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3734027778 → 46160.398599537** (0D 00:36:17) | -22.80766,-43.26139
+    - Endereço: Rua Grão de Areia - Jardim Guanabara - Rio de Janeiro
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4185532407 → 46160.4362037037** (0D 00:25:25) | -22.82873,-43.17083
+    - Endereço: Rua Pires da Mota - Ribeira - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4371296296 → 46160.4747685185** (0D 00:54:12) | -22.82846,-43.16941
+    - Endereço: Praia Intendente Bitencourt Ribeira, Rio de Janeiro, Rio de Janeiro, Brasil, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4760416667 → 46160.4785763889** (0D 00:03:39) | -22.829,-43.1707
+    - Endereço: Praia Intendente Bitencourt Ribeira, Rio de Janeiro, Rio de Janeiro, Brasil, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5046527778 → 46160.5185532407** (0D 00:20:01) | -22.86588,-43.21762
+    - Endereço: Cidade Universitária, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21941-907
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5368981482 → 46160.5469791667** (0D 00:14:31) | -22.82873,-43.34207
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5596064815 → 46160.9945601852** (0D 10:26:20) | -22.77598,-43.37215
+    - Endereço: Rua Otávio Mangabeira Jardim Meriti, Coelho da Rocha, Rio de Janeiro, Brasil, CE
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KOA-6A27
+- Total paradas: 13 | Distância: 78.23 km | Tempo dirigido: 0D 02:18:42
+- 13 paradas detalhadas:
+  - **46160.0058564815 → 46160.1837037037** (0D 04:16:06) | -22.77166,-43.36314
+    - Endereço: Avenida Nilo Peçanha, Vila São João, São João de Meriti, Rio de Janeiro, Brasil,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1952083333 → 46160.2026388889** (0D 00:10:42) | -22.82895,-43.34127
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2054282407 → 46160.2188310185** (0D 00:19:18) | -22.82712,-43.33818
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2202199074 → 46160.2231597222** (0D 00:04:14) | -22.82735,-43.33725
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.233912037 → 46160.2613425926** (0D 00:39:30) | -22.7771,-43.36177
+    - Endereço: R Claudionor Peri, Sao Joao de Meriti, RJ a 5726 128 de AGF JARDIM AMERICA
+    - Local: `7000725 - PREZUNIC VILAR DOS TELES`
+  - **46160.2632407407 → 46160.2657407407** (0D 00:03:36) | -22.77657,-43.35663
+    - Endereço: Rua Cléber Santos de Carvalho Vilar dos Teles, São João de Meriti, Rio de Janeir
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2658333333 → 46160.4134143519** (0D 03:32:31) | -22.77707,-43.35562
+    - Endereço: Rua Cléber Santos de Carvalho Vilar dos Teles, São João de Meriti, Rio de Janeir
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4284259259 → 46160.4404861111** (0D 00:17:22) | -22.82883,-43.34107
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4429976852 → 46160.5027314815** (0D 01:26:01) | -22.82761,-43.33823
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5051967593 → 46160.5637384259** (0D 01:24:18) | -22.82733,-43.3372
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5757060185 → 46160.64375** (0D 01:37:59) | -22.77876,-43.38642
+    - Endereço: R Belkiss - Sao Joao de Meriti - RJ
+    - Local: `579007 - FEIRA NOVA COELHO DA ROCHA`
+  - **46160.6598611111 → 46160.6807407407** (0D 00:30:04) | -22.73256,-43.47484
+    - Endereço: Rua Dona Cesaria, Cerâmica, Nova Iguaçu, Rio de Janeiro, Brasil, CEP 26030-650
+    - Local: `579008 - FEIRA NOVA CERAMICA`
+  - **46160.7005671296 → 46160.7073263889** (0D 00:09:44) | -22.77231,-43.36479
+    - Endereço: Avenida Nilo Peçanha, 246, Vila São João, São João De Meriti - Rio de Janeiro
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KOH-0H77
+- Total paradas: 21 | Distância: 191.28 km | Tempo dirigido: 0D 05:09:55
+- 21 paradas detalhadas:
+  - **46160.0062384259 → 46160.1459606482** (0D 03:21:12) | -22.9032,-43.70271
+    - Endereço: Rua José Vidal da Costa Santa Cruz, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.1733680556 → 46160.2616435185** (0D 02:07:07) | -22.8288,-43.34186
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI,2018006 - ROTA CAMPO GRANDE`
+  - **46160.2673032407 → 46160.2694444444** (0D 00:03:05) | -22.82061,-43.32013
+    - Endereço: AV BRASIL, 16441-16531, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.2978356481 → 46160.3309259259** (0D 00:47:39) | -22.88173,-43.4625
+    - Endereço: Rua 12 de Fevereiro Bangu, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21810-011
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.3606134259 → 46160.391087963** (0D 00:43:53) | -22.86824,-43.65127
+    - Endereço: Estrada da Lama Preta Paciência, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 235
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.3921759259 → 46160.3944675926** (0D 00:03:18) | -22.86771,-43.65102
+    - Endereço: Estrada da Lama Preta Paciência, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 235
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.4071296296 → 46160.4462731481** (0D 00:56:22) | -22.88778,-43.60845
+    - Endereço: Rua Botucarai Cosmos, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 23060-000
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.4469675926 → 46160.4499537037** (0D 00:04:18) | -22.88669,-43.60826
+    - Endereço: Rua Catuípe Cosmos, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 23060-000
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.4639351852 → 46160.4735416667** (0D 00:13:50) | -22.88347,-43.73044
+    - Endereço: Rua Echaporã, Santa Cruz, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 23565-150
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.4746643519 → 46160.4965972222** (0D 00:31:35) | -22.88439,-43.73301
+    - Endereço: Rua Echaporã, 328 Santa Cruz, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 23565-
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.4984259259 → 46160.5403240741** (0D 01:00:20) | -22.88497,-43.73042
+    - Endereço: Rua Echaporã, 328 Santa Cruz, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 23565-
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.5478009259 → 46160.5548842593** (0D 00:10:12) | -22.87654,-43.76928
+    - Endereço: AV AYRTON SENNA DA SILVA, 577-789, MONTE SERRAT, ITAGUAI, RJ, BRASIL, 50, 40, CE
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.558900463 → 46160.5929861111** (0D 00:49:05) | -22.86538,-43.7775
+    - Endereço: R GAL BOCAIUVA, 388-540, CENTRO, ITAGUAI, RJ, BRASIL, 50, 40, CEP 23815310
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.6076273148 → 46160.6099652778** (0D 00:03:22) | -22.90807,-43.82121
+    - Endereço: Estrada do Porto Itaguaí, Rio de Janeiro, Brasil, CEP 23815-541
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.6109143519 → 46160.6918981482** (0D 01:56:37) | -22.91597,-43.81784
+    - Endereço: Estrada do Porto Itaguaí, Rio de Janeiro, Brasil
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.697025463 → 46160.6992361111** (0D 00:03:11) | -22.90823,-43.82204
+    - Endereço: Estrada do Porto Itaguaí, Rio de Janeiro, Brasil, CEP 23815-541
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.7277199074 → 46160.7430439815** (0D 00:22:04) | -22.93788,-43.68656
+    - Endereço: R Eng Gastao Rangel - Rio de Janeiro - RJ
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.7584606481 → 46160.7667939815** (0D 00:12:00) | -22.88605,-43.64098
+    - Endereço: Rua Soldado Elias de Sousa Paciência, Rio de Janeiro, Rio de Janeiro, Brasil, CE
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.774224537 → 46160.8217476852** (0D 01:08:26) | -22.89097,-43.67579
+    - Endereço: Rua Leonidio Alves da Rocha Santa Cruz, Rio de Janeiro, Rio de Janeiro, Brasil, 
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.8296875 → 46160.8422337963** (0D 00:18:04) | -22.90373,-43.7028
+    - Endereço: Rua José Vidal da Costa Santa Cruz, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.8434490741 → 46160.9991319444** (0D 03:44:11) | -22.90319,-43.70267
+    - Endereço: Rua José Vidal da Costa Santa Cruz, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+
+## KOP4978
+- Total paradas: 12 | Distância: 129.1 km | Tempo dirigido: 0D 05:56:44
+- 12 paradas detalhadas:
+  - **46160.0041319444 → 46160.1147337963** (0D 02:39:16) | -22.8677,-43.24036
+    - Endereço: Av Canal Margem Direita, Rio de Janeiro, RJ a 1355 103 de CDD BONSUCESSO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1563773148 → 46160.2223958333** (0D 01:35:04) | -22.8676,-43.24032
+    - Endereço: Av Canal Margem Direita, Rio de Janeiro, RJ a 1994 17 de LTU-RJ CTE BENFICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2390162037 → 46160.2599305556** (0D 00:30:07) | -22.82899,-43.34144
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3031828704 → 46160.3205092593** (0D 00:24:57) | -22.91425,-43.54449
+    - Endereço: Estrada do Cabuçu Campo Grande, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 2301
+    - Local: `7000710 - PREZUNIC CAMPO GRANDE`
+  - **46160.3230787037 → 46160.334525463** (0D 00:16:29) | -22.91425,-43.5442
+    - Endereço: R Olinto da Gama Botelho, Rio de Janeiro, RJ a 6277 149 de CLIENTES ESPECIAIS - 
+    - Local: `7000710 - PREZUNIC CAMPO GRANDE`
+  - **46160.3450810185 → 46160.3476157407** (0D 00:03:39) | -22.8766,-43.52535
+    - Endereço: Estrada do Lameirão, Santíssimo, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 230
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3693055556 → 46160.4161689815** (0D 01:07:29) | -22.82821,-43.33591
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.417037037 → 46160.6103240741** (0D 04:38:20) | -22.8269,-43.33799
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6117013889 → 46160.6141087963** (0D 00:03:28) | -22.82792,-43.33755
+    - Endereço: Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6493171296 → 46160.6559259259** (0D 00:09:31) | -22.94827,-43.16413
+    - Endereço: Rua Marechal Cantuária, Urca, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22291-
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7022337963 → 46160.8538657407** (0D 03:38:21) | -22.86747,-43.24006
+    - Endereço: Avenida Canal do Pinheiro, Maré, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 210
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8815046296 → 46160.9990046296** (0D 02:49:12) | -22.8675,-43.23991
+    - Endereço: Avenida Canal do Pinheiro, Conjunto Pinheiros, Maré, Rio de Janeiro, Região Geog
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KPB5I95
+- Total paradas: 12 | Distância: 114.97 km | Tempo dirigido: 0D 03:52:41
+- 12 paradas detalhadas:
+  - **46160.0038194444 → 46160.2000578704** (0D 04:42:35) | -22.82588,-43.33496
+    - Endereço: Pca Con Monteiro, Rio de Janeiro, RJ a 2259 47 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2026273148 → 46160.2120486111** (0D 00:13:34) | -22.82725,-43.33839
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2197453704 → 46160.2425** (0D 00:32:46) | -22.82884,-43.34128
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2750810185 → 46160.3213888889** (0D 01:06:41) | -22.94641,-43.34075
+    - Endereço: Estrada de Jacarepaguá - Freguesia (Jacarepaguá) - Rio de Janeiro - RJ
+    - Local: `7000707 - PREZUNIC FREGUESIA`
+  - **46160.3266435185 → 46160.338125** (0D 00:16:32) | -22.94526,-43.34626
+    - Endereço: Estrada do Gabinal - Freguesia (Jacarepaguá) - Rio de Janeiro - RJ
+    - Local: `579012 - FEIRA NOVA FREGUESIA`
+  - **46160.3668171296 → 46160.4063310185** (0D 00:56:54) | -22.82875,-43.34183
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4087152778 → 46160.5022106481** (0D 02:14:38) | -22.82794,-43.33819
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5027777778 → 46160.5196527778** (0D 00:24:18) | -22.82739,-43.33753
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5464583333 → 46160.6358449074** (0D 02:08:43) | -22.85687,-43.1026
+    - Endereço: Rua Padre Marcelino
+    - Local: `4568001 - SAMS NITEROI`
+  - **46160.662337963 → 46160.6644212963** (0D 00:03:00) | -22.82842,-43.27251
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6871180556 → 46160.6895138889** (0D 00:03:27) | -22.84321,-43.33106
+    - Endereço: Av Pst Martin Luther king Junior, Rio de Janeiro, RJ a 2638 55 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6953587963 → 46160.9952546296** (0D 07:11:51) | -22.82581,-43.33517
+    - Endereço: Avenida Brasil, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KPE-4133
+- Total paradas: 6 | Distância: 9.12 km | Tempo dirigido: 0D 03:45:43
+- 6 paradas detalhadas:
+  - **46160.0018518519 → 46160.1956018519** (0D 04:39:00) | -22.86427,-43.42546
+    - Endereço: Rua Vicente Ferreira Mariano Realengo, Rio de Janeiro, Rio de Janeiro, Brasil, C
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2025115741 → 46160.3671527778** (0D 03:57:05) | -22.86347,-43.42508
+    - Endereço: Rua Elza Gomes Realengo, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21735-011
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.375775463 → 46160.7067708333** (0D 07:56:38) | -22.86199,-43.45983
+    - Endereço: R EURICO SALES, 1-29, BANGU, RIO DE JANEIRO, RJ, BRASIL, 40, 40, CEP 21860430
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8134837963 → 46160.8688194444** (0D 01:19:41) | -22.86369,-43.42506
+    - Endereço: R Elza Gomes, Rio de Janeiro, RJ a 3604 48 de CDD DEODORO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.896412037 → 46160.9033101852** (0D 00:09:56) | -22.86471,-43.4255
+    - Endereço: Realengo, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21735-011
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9102314815 → 46160.993125** (0D 01:59:22) | -22.86388,-43.42502
+    - Endereço: Rua Vicente Ferreira Mariano Realengo, Rio de Janeiro, Rio de Janeiro, Brasil, C
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KPE3776
+- Total paradas: 2 | Distância: 0 km | Tempo dirigido: 0D 00:00:59
+- 2 paradas detalhadas:
+  - **46160.6554050926 → 46160.6800462963** (0D 00:35:29) | -22.82652,-43.33744
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6807291667 → 46160.9976851852** (0D 07:36:25) | -22.82844,-43.33727
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2617 47 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KPN4F36
+- Total paradas: 1 | Distância: 0 km | Tempo dirigido: 0D 00:00:00
+- 1 paradas detalhadas:
+  - **46160.002974537 → 46160.9943171296** (0D 23:47:32) | -22.82917,-43.34103
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KPR-9E13
+- Total paradas: 5 | Distância: 17.27 km | Tempo dirigido: 0D 02:53:08
+- 5 paradas detalhadas:
+  - **46160.009837963 → 46160.37875** (0D 08:51:14) | -22.82449,-43.33755
+    - Endereço: R Interna, Rio de Janeiro, RJ a 2348 54 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4027662037 → 46160.7345601852** (0D 07:57:47) | -22.88044,-43.47514
+    - Endereço: R da Feira, Rio de Janeiro, RJ a 9823 41 de CDD NILPOLIS
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7962847222 → 46160.8170486111** (0D 00:29:54) | -22.88029,-43.47548
+    - Endereço: Rua da Feira, Bangu, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21830-006
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8446412037 → 46160.8653819444** (0D 00:29:52) | -22.88126,-43.47518
+    - Endereço: Rua Amanajó Bangu, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21825-060
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8722800926 → 46160.8929976852** (0D 00:29:50) | -22.88044,-43.47485
+    - Endereço: R da Feira, Rio de Janeiro, RJ a 9816 41 de CDD NILPOLIS
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KPS-4J07
+- Total paradas: 12 | Distância: 65.5 km | Tempo dirigido: 0D 02:06:07
+- 12 paradas detalhadas:
+  - **46160.0012615741 → 46160.1832291667** (0D 04:22:02) | -22.83361,-43.31449
+    - Endereço: Rua Uaca Brás de Pina, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21235-604
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1920023148 → 46160.2029166667** (0D 00:15:43) | -22.82755,-43.3382
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2044097222 → 46160.2064930556** (0D 00:03:00) | -22.82687,-43.33738
+    - Endereço: Rua Charles Gounod
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2205439815 → 46160.2226273148** (0D 00:03:00) | -22.80749,-43.27744
+    - Endereço: Linha Vermelha - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2316203704 → 46160.2350810185** (0D 00:04:59) | -22.81164,-43.27075
+    - Endereço: Linha Vermelha - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2514930556 → 46160.266712963** (0D 00:21:55) | -22.93376,-43.18629
+    - Endereço: R DAS LARANJEIRAS, 213-225, LARANJEIRAS, RIO DE JANEIRO, RJ, BRASIL, 50, 40, CEP
+    - Local: `8590218 - PRINCESA LARANJEIRAS`
+  - **46160.2866782407 → 46160.2936111111** (0D 00:09:59) | -22.82889,-43.34119
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2982638889 → 46160.3065046296** (0D 00:11:52) | -22.82764,-43.33745
+    - Endereço: Rua Charles Gounod
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3071990741 → 46160.3551388889** (0D 01:09:02) | -22.82803,-43.33935
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2748 50 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3599537037 → 46160.362037037** (0D 00:03:00) | -22.82445,-43.32
+    - Endereço: Rua Itapera - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3647916667 → 46160.366875** (0D 00:03:00) | -22.82617,-43.31975
+    - Endereço: R ITAPERA, 1-183, IRAJA, RIO DE JANEIRO, RJ, BRASIL, 50, 40, CEP 21230500
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3718518519 → 46160.9940393519** (0D 14:55:57) | -22.83359,-43.31445
+    - Endereço: Rua Uaca Brás de Pina, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21235-604
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KPT-5B20
+- Total paradas: 12 | Distância: 899.49 km | Tempo dirigido: 0D 13:47:57
+- 12 paradas detalhadas:
+  - **46160.0002777778 → 46160.0114583333** (0D 00:16:06) | -22.829,-43.34177
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1303587963 → 46160.1476273148** (0D 00:24:52) | -22.55976,-44.85935
+    - Endereço: Rod Pres Dutra - Lavrinhas - SP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.305787037 → 46160.4317939815** (0D 03:01:27) | -23.70013,-46.61694
+    - Endereço: Rua Tamoios Conceição, Diadema, São Paulo, Brasil, CEP 09990-300
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.432662037 → 46160.4603587963** (0D 00:39:53) | -23.69982,-46.61724
+    - Endereço: Rua Tamoios Conceição, Diadema, São Paulo, Brasil, CEP 09990-300
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5283217593 → 46160.5353009259** (0D 00:10:03) | -23.2769,-45.84408
+    - Endereço: Rodovia Governador Carvalho Pinto Parque Interlagos, São José dos Campos, São Pa
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5873263889 → 46160.6171064815** (0D 00:42:53) | -22.71288,-45.05147
+    - Endereço: Rodovia Presidente Dutra Centro, Canas, São Paulo, Brasil, CEP 12615-000
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7704050926 → 46160.7745486111** (0D 00:05:58) | -22.82049,-43.32228
+    - Endereço: Trevo das Margaridas, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21240-0
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7766087963 → 46160.7807523148** (0D 00:05:58) | -22.82172,-43.32533
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 1289 29 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7814467593 → 46160.7848842593** (0D 00:04:57) | -22.82216,-43.32658
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 1407 34 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7881828704 → 46160.7930092593** (0D 00:06:57) | -22.82291,-43.32905
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 1611 40 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7996296296 → 46160.8021180556** (0D 00:03:35) | -22.82456,-43.33403
+    - Endereço: Avenida Brasil, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21230-085
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8131944444 → 46160.9954166667** (0D 04:22:24) | -22.82866,-43.3424
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KQR-2J11
+- Total paradas: 1 | Distância: 0 km | Tempo dirigido: 0D 00:00:00
+- 1 paradas detalhadas:
+  - **46160.0058680556 → 46160.9965972222** (0D 23:46:39) | -22.87168,-43.66825
+    - Endereço: Rua João Paulo de Medeiros Santa Cruz, Rio de Janeiro, Rio de Janeiro, Brasil, C
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KQT-4G45
+- Total paradas: 11 | Distância: 71.41 km | Tempo dirigido: 0D 02:37:18
+- 11 paradas detalhadas:
+  - **46160.0018981481 → 46160.2042476852** (0D 04:51:23) | -22.83055,-43.3434
+    - Endereço: Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21531-010
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2060300926 → 46160.2452314815** (0D 00:56:27) | -22.82879,-43.34186
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2669791667 → 46160.2725115741** (0D 00:07:58) | -22.89594,-43.39953
+    - Endereço: R Vinte e Um - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2992476852 → 46160.3432638889** (0D 01:03:23) | -22.99642,-43.36192
+    - Endereço: Av Luis Carlos Prestes, Rio de Janeiro, RJ a 4219 154 de UNITRAC - TESTE
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3438194444 → 46160.3692592593** (0D 00:36:38) | -22.99651,-43.36368
+    - Endereço: Avenida Ayrton Senna, 5150 Barra da Tijuca, Rio de Janeiro, Rio de Janeiro, Bras
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3837615741 → 46160.3872222222** (0D 00:04:59) | -22.90733,-43.3095
+    - Endereço: AV GOV CARLOS LACERDA/LINHA AMARELA, 8099-8155, , RIO DE JANEIRO, RJ, BRASIL, 90
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3998611111 → 46160.4072222222** (0D 00:10:36) | -22.88659,-43.28399
+    - Endereço: Rua Gandavo, Engenho de Dentro, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 2077
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4089583333 → 46160.4308333333** (0D 00:31:30) | -22.88617,-43.28573
+    - Endereço: R Gandavo - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.431087963 → 46160.4522569444** (0D 00:30:29) | -22.88514,-43.2858
+    - Endereço: Carga e Descarga Carrefour Cachambi, Rio de Janeiro, Rio de Janeiro, Brasil, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4677199074 → 46160.4727314815** (0D 00:07:13) | -22.82408,-43.27565
+    - Endereço: R Q, Rio de Janeiro, RJ a 722 174 de BASE REAL CARNES
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4865625 → 46160.9972222222** (0D 12:15:21) | -22.83001,-43.34326
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3194 52 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KQB-3F31
+- Total paradas: 21 | Distância: 127.07 km | Tempo dirigido: 0D 05:05:52
+- 21 paradas detalhadas:
+  - **46160.006875 → 46160.2318402778** (0D 05:23:57) | -22.829,-43.33878
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2785 48 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2336805556 → 46160.2412268519** (0D 00:10:52) | -22.82785,-43.33828
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2419212963 → 46160.2472800926** (0D 00:07:43) | -22.82694,-43.33808
+    - Endereço: Avenida Brasil, Coelho Neto, , Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2522569444 → 46160.2698611111** (0D 00:25:21) | -22.82889,-43.34146
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2844097222 → 46160.3065277778** (0D 00:31:51) | -22.84316,-43.3754
+    - Endereço: R Marcos de Macedo, Rio de Janeiro, RJ a 937 135 de AGF ESTACAO RAMOS - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3299537037 → 46160.3487384259** (0D 00:27:03) | -22.87815,-43.46502
+    - Endereço: Av Con Vasconcelos, Rio de Janeiro, RJ a 7836 61 de CDD DEODORO - RJ
+    - Local: `560028 - SENDAS BANGU - LOJA 55`
+  - **46160.3770717593 → 46160.397662037** (0D 00:29:39) | -22.82889,-43.3414
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4036574074 → 46160.4858796296** (0D 01:58:24) | -22.82708,-43.33813
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4879282407 → 46160.4910532407** (0D 00:04:30) | -22.83041,-43.33878
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2883 87 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5273148148 → 46160.5761342593** (0D 01:10:18) | -23.00666,-43.44388
+    - Endereço: R Prfa Luisa Nogueira Goncalves, Rio de Janeiro, RJ a 3022 77 de AGF INTERLAGOS
+    - Local: `6018001 - MEGA BOX 2 (RECREIO)`
+  - **46160.5984143519 → 46160.603275463** (0D 00:07:00) | -22.84344,-43.37429
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6039699074 → 46160.6060532407** (0D 00:03:00) | -22.84239,-43.37255
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6102199074 → 46160.6203472222** (0D 00:14:35) | -22.83583,-43.36196
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6264583333 → 46160.634525463** (0D 00:11:37) | -22.82705,-43.33939
+    - Endereço: Avenida Brasil, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6392592593 → 46160.6671759259** (0D 00:40:12) | -22.81486,-43.29373
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 2165 51 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6708449074 → 46160.7017939815** (0D 00:44:34) | -22.82505,-43.279
+    - Endereço: PC ESPLANADA, 0-84, PENHA CIRCULAR, RIO DE JANEIRO, RJ, BRASIL, 40, 40, CEP 2101
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.703125 → 46160.705775463** (0D 00:03:49) | -22.82805,-43.27849
+    - Endereço: AV LUSITANIA, 311-331, PENHA CIRCULAR, RIO DE JANEIRO, RJ, BRASIL, 50, 40, CEP 2
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7297800926 → 46160.891087963** (0D 03:52:17) | -22.84307,-43.33126
+    - Endereço: Avenida Pastor Martin Luther King Junior, Irajá, Rio de Janeiro, Rio de Janeiro,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8967476852 → 46160.9047106481** (0D 00:11:28) | -22.8271,-43.33819
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.9054050926 → 46160.9149421296** (0D 00:13:44) | -22.82783,-43.33739
+    - Endereço: Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.9358796296 → 46160.9983449074** (0D 01:29:57) | -22.67125,-43.26465
+    - Endereço: Avenida Santa Tereza Saracuruna, Campos Elyseos, Rio de Janeiro, Brasil, CEP 252
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KQX-9G38
+- Total paradas: 1 | Distância: 0 km | Tempo dirigido: 0D 00:00:00
+- 1 paradas detalhadas:
+  - **46160.0046412037 → 46160.9986921296** (0D 23:51:26) | -22.82869,-43.34201
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KQY9E24
+- Total paradas: 21 | Distância: 15.18 km | Tempo dirigido: 0D 01:43:28
+- 21 paradas detalhadas:
+  - **46160.0025810185 → 46160.3335416667** (0D 07:56:35) | -22.8281,-43.33786
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2638 48 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3429861111 → 46160.3569907407** (0D 00:20:10) | -22.80808,-43.3445
+    - Endereço: Av Cel Fidias Tavora - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3667013889 → 46160.7399537037** (0D 08:57:29) | -22.81516,-43.29523
+    - Endereço: R Iracu - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7418518519 → 46160.7483217593** (0D 00:09:19) | -22.81613,-43.28758
+    - Endereço: Trevo das Missões Cordovil, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21010-29
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7490046296 → 46160.7649421296** (0D 00:22:57) | -22.81558,-43.28915
+    - Endereço: AV BRASIL, 13552-13592, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.767025463 → 46160.7691087963** (0D 00:03:00) | -22.81515,-43.29044
+    - Endereço: AV BRASIL, 13594-13650, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7704976852 → 46160.7809143519** (0D 00:15:00) | -22.81464,-43.2925
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7836921296 → 46160.7899421296** (0D 00:09:00) | -22.81429,-43.29626
+    - Endereço: AV BRASIL, 14318-14334, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7906365741 → 46160.7975810185** (0D 00:10:00) | -22.8146,-43.29754
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.798275463 → 46160.8010532407** (0D 00:04:00) | -22.8149,-43.29877
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8031365741 → 46160.8066087963** (0D 00:05:00) | -22.8154,-43.301
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8073032407 → 46160.8114699074** (0D 00:06:00) | -22.8158,-43.30262
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8121643519 → 46160.8191087963** (0D 00:10:00) | -22.8162,-43.30456
+    - Endereço: R alvaro de Macedo - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8225810185 → 46160.8253587963** (0D 00:04:00) | -22.81836,-43.30881
+    - Endereço: AV BRASIL, 0-0, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 2124105
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8260532407 → 46160.8281365741** (0D 00:03:00) | -22.81906,-43.31014
+    - Endereço: AV BRASIL, 15620-15752, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8302199074 → 46160.8326851852** (0D 00:03:33) | -22.81973,-43.31243
+    - Endereço: AV BRASIL, 15952-15962, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.838912037 → 46160.8430439815** (0D 00:05:57) | -22.81969,-43.31671
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8444212963 → 46160.8471875** (0D 00:03:59) | -22.81978,-43.31908
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8506365741 → 46160.8596064815** (0D 00:12:55) | -22.82012,-43.32068
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8603009259 → 46160.8630671296** (0D 00:03:59) | -22.82051,-43.32169
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8840740741 → 46160.994537037** (0D 02:39:04) | -22.82733,-43.33621
+    - Endereço: Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KQV1D80
+- Total paradas: 13 | Distância: 88.45 km | Tempo dirigido: 0D 02:43:18
+- 13 paradas detalhadas:
+  - **46160.0040856482 → 46160.1702893519** (0D 03:59:20) | -22.82832,-43.33633
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2541 45 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1728356481 → 46160.1815856481** (0D 00:12:36) | -22.82731,-43.33806
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1847800926 → 46160.2009953704** (0D 00:23:21) | -22.832,-43.34154
+    - Endereço: Estr Pedro Borges de Freitas, Rio de Janeiro, RJ a 3175 85 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2023611111 → 46160.2096643519** (0D 00:10:31) | -22.82883,-43.34156
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2454050926 → 46160.4080902778** (0D 03:54:16) | -22.88268,-43.08478
+    - Endereço: TV DR FARIA JR, 97-161, FONSECA, NITEROI, RJ, BRASIL, 50, 40, CEP 24120305
+    - Local: `7000722 - PREZUNIC FONSECA`
+  - **46160.4401273148 → 46160.4569097222** (0D 00:24:10) | -22.82892,-43.3412
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4607986111 → 46160.5660416667** (0D 02:31:33) | -22.82734,-43.33822
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5669444444 → 46160.5903703704** (0D 00:33:44) | -22.82732,-43.33746
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6033217593 → 46160.6406944444** (0D 00:53:49) | -22.86937,-43.34936
+    - Endereço: Rua Carolina Machado Osvaldo Cruz, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 2
+    - Local: `202000 - PAX OSWALDO CRUZ`
+  - **46160.6486111111 → 46160.6733680556** (0D 00:35:39) | -22.87046,-43.34236
+    - Endereço: EST DO PORTELA, 275-277, MADUREIRA, RIO DE JANEIRO, RJ, BRASIL, 50, 40, CEP 2135
+    - Local: `202006 - PAX MADUREIRA`
+  - **46160.6821527778 → 46160.7042476852** (0D 00:31:49) | -22.82896,-43.34105
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.708275463 → 46160.7134606481** (0D 00:07:28) | -22.82769,-43.33757
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7135069444 → 46160.9984490741** (0D 06:50:19) | -22.82839,-43.33647
+    - Endereço: Praça Conego Monteiro, CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imedia
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KRA-1083
+- Total paradas: 7 | Distância: 22.52 km | Tempo dirigido: 0D 01:38:09
+- 7 paradas detalhadas:
+  - **46160.0065972222 → 46160.2576736111** (0D 06:01:33) | -22.83336,-43.3359
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2631 80 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2610185185 → 46160.2661921296** (0D 00:07:27) | -22.83035,-43.33465
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2470 87 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2674537037 → 46160.3814930556** (0D 02:44:13) | -22.82722,-43.33799
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3843171296 → 46160.4221643519** (0D 00:54:30) | -22.83622,-43.33727
+    - Endereço: Colégio, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21235-280
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4529513889 → 46160.4628356481** (0D 00:14:14) | -22.88427,-43.47628
+    - Endereço: Rua João de Lacerda Bangu, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21825-060
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4650810185 → 46160.4848726852** (0D 00:28:30) | -22.88563,-43.4761
+    - Endereço: R dos Limadores, Rio de Janeiro, RJ a 9233 60 de CDD DEODORO - RJ
+    - Local: `71013 - GB 13 - BANGU - RIO DA PRATA`
+  - **46160.5125810185 → 46160.9975694444** (0D 11:38:23) | -22.83333,-43.33577
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2619 80 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KRH-5H67
+- Total paradas: 24 | Distância: 127.81 km | Tempo dirigido: 0D 05:17:42
+- 24 paradas detalhadas:
+  - **46160.0181365741 → 46160.1895138889** (0D 04:06:47) | -22.82312,-43.33375
+    - Endereço: R Ten Rebelo, Rio de Janeiro, RJ a 1956 51 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1934027778 → 46160.2029861111** (0D 00:13:48) | -22.82757,-43.33809
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2032291667 → 46160.205787037** (0D 00:03:41) | -22.8269,-43.33758
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2373842593 → 46160.2615625** (0D 00:34:49) | -22.93847,-43.19239
+    - Endereço: Rua das Laranjeiras - Laranjeiras - Rio de Janeiro - RJ
+    - Local: `8590000 - PRINCESA COSME VELHO`
+  - **46160.2757060185 → 46160.3160185185** (0D 00:58:03) | -22.84395,-43.24931
+    - Endereço: R Jubal Lima, Rio de Janeiro, RJ a 1458 29 de TECA GIG - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3173958333 → 46160.3451388889** (0D 00:39:57) | -22.84382,-43.24884
+    - Endereço: R OURICURI, 32-42, RAMOS, RIO DE JANEIRO, RJ, BRASIL, 40, 40, CEP 21030010
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3465277778 → 46160.3634259259** (0D 00:24:20) | -22.84368,-43.24872
+    - Endereço: Rua Ouricuri, Maré, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21044-022
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3665046296 → 46160.3701273148** (0D 00:05:13) | -22.8204,-43.2808
+    - Endereço: R DA FARINHA, 1-51, PENHA CIRCULAR, RIO DE JANEIRO, RJ, BRASIL, 50, 40, CEP 2101
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3832175926 → 46160.3949768519** (0D 00:16:56) | -22.82881,-43.34101
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4074537037 → 46160.5162847222** (0D 02:36:43) | -22.82746,-43.33828
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5181828704 → 46160.5215509259** (0D 00:04:51) | -22.82763,-43.33743
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5796412037 → 46160.5865740741** (0D 00:09:59) | -22.98325,-43.21981
+    - Endereço: Rua Carlos Gois, Leblon, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22440-040
+    - Local: `9039011 - 11 - ZONA SUL - LEBLON`
+  - **46160.590775463 → 46160.6014467593** (0D 00:15:22) | -22.98151,-43.2229
+    - Endereço: Rua João Lira - Leblon - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.65625 → 46160.6606365741** (0D 00:06:19) | -22.81128,-43.28835
+    - Endereço: RODOVIA WASHINGTON LUIZ, 0-0, , RIO DE JANEIRO, RJ, BRASIL, 100, 80, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6613310185 → 46160.6688541667** (0D 00:10:50) | -22.81276,-43.28817
+    - Endereço: Rodovia Washington Luiz - Auxiliar, Cordovil, , Rio de Janeiro, Brasil, CEP 2101
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6695486111 → 46160.6731134259** (0D 00:05:08) | -22.81366,-43.28794
+    - Endereço: TREVO DAS MISSOES, 0-0, , RIO DE JANEIRO, RJ, BRASIL, 40, 40, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6745023148 → 46160.677662037** (0D 00:04:33) | -22.81472,-43.28914
+    - Endereço: Rod BR-040 - Pista Lateral, Rio de Janeiro, RJ a 1316 270 de BASE REAL CARNES
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6797453704 → 46160.6833796296** (0D 00:05:14) | -22.8151,-43.29051
+    - Endereço: AV BRASIL, 13594-13650, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6871759259 → 46160.7000462963** (0D 00:18:32) | -22.81447,-43.29313
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7052662037 → 46160.7140856481** (0D 00:12:42) | -22.81559,-43.30185
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7147800926 → 46160.7172222222** (0D 00:03:31) | -22.81571,-43.30262
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 1523 30 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.718599537 → 46160.7214583333** (0D 00:04:07) | -22.81649,-43.30538
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7221412037 → 46160.7277546296** (0D 00:08:05) | -22.81717,-43.30693
+    - Endereço: AV BRASIL, 14830-14912, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7314699074 → 46160.7340162037** (0D 00:03:40) | -22.81964,-43.31363
+    - Endereço: R Otranto - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KRB-2J76
+- Total paradas: 10 | Distância: 37.44 km | Tempo dirigido: 0D 01:56:27
+- 10 paradas detalhadas:
+  - **46160.0027314815 → 46160.3131018519** (0D 07:26:56) | -22.82854,-43.3371
+    - Endereço: Praça Conego Monteiro, CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imedia
+    - Local: `13156084 - MATRIZ CD DUQUE`
+  - **46160.3174652778 → 46160.3836921296** (0D 01:35:22) | -22.82736,-43.33829
+    - Endereço: Indefinida
+    - Local: `13156084 - MATRIZ CD DUQUE`
+  - **46160.3911574074 → 46160.4204861111** (0D 00:42:14) | -22.82892,-43.34136
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `13156084 - MATRIZ CD DUQUE`
+  - **46160.4354050926 → 46160.4414467593** (0D 00:08:42) | -22.75919,-43.28668
+    - Endereço: Rodovia Washington Luiz - Auxiliar Jardim Gramacho, Duque de Caxias, Rio de Jane
+    - Local: `13156084 - MATRIZ CD DUQUE`
+  - **46160.4421296296 → 46160.4449768519** (0D 00:04:06) | -22.75814,-43.28667
+    - Endereço: RODOVIA WASHINGTON LUIZ/BR 040, 5060-5272, VILA SAO LUIS, DUQUE DE CAXIAS, RJ, B
+    - Local: `13156084 - MATRIZ CD DUQUE`
+  - **46160.4687847222 → 46160.5043981482** (0D 00:51:17) | -22.61559,-43.29286
+    - Endereço: Duque de Caxias, RJ a 3074 160 de AC e CDD- SANTA CRUZ DA SERRA - LTU
+    - Local: `13156084 - MATRIZ CD DUQUE`
+  - **46160.5064699074 → 46160.5232291667** (0D 00:24:08) | -22.61588,-43.29154
+    - Endereço: Santo Antônio da Serra, Duque de Caxias, Rio de Janeiro, Brasil, CEP 25250-050
+    - Local: `13156084 - MATRIZ CD DUQUE`
+  - **46160.5249074074 → 46160.5356365741** (0D 00:15:27) | -22.61749,-43.29578
+    - Endereço: Santo Antônio da Serra, Xerém, Rio de Janeiro, Brasil, CEP 25250-050
+    - Local: `13156084 - MATRIZ CD DUQUE`
+  - **46160.5375231481 → 46160.5405555556** (0D 00:04:22) | -22.6214,-43.28898
+    - Endereço: Santo Antônio da Serra, Xerém, Rio de Janeiro, Brasil, CEP 25255-315
+    - Local: `13156084 - MATRIZ CD DUQUE`
+  - **46160.5645486111 → 46160.9961921296** (0D 10:21:34) | -22.82828,-43.33705
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2597 47 de AGF JARDIM AMERICA
+    - Local: `13156084 - MATRIZ CD DUQUE`
+
+## KRK-3D12
+- Total paradas: 13 | Distância: 127.62 km | Tempo dirigido: 0D 04:48:17
+- 13 paradas detalhadas:
+  - **46160.0060532407 → 46160.2160532407** (0D 05:02:24) | -22.82706,-43.33832
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2164351852 → 46160.2211805556** (0D 00:06:50) | -22.827,-43.33736
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2690046296 → 46160.4354282407** (0D 03:59:39) | -22.87741,-43.11016
+    - Endereço: Av do Contorno, Niteroi, RJ a 1729 54 de CDD NITEROI - RJ
+    - Local: `560025 - SENDAS NITERÓI - LOJA 41`
+  - **46160.4633796296 → 46160.4745138889** (0D 00:16:02) | -22.82888,-43.3413
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4778240741 → 46160.7675** (0D 06:57:08) | -22.8269,-43.33812
+    - Endereço: Avenida Brasil, Coelho Neto, , Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7932291667 → 46160.7953819444** (0D 00:03:06) | -22.9328,-43.18506
+    - Endereço: Espaço Pela Paz Laranjeiras, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22240-0
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8014467593 → 46160.8219907407** (0D 00:29:35) | -22.93101,-43.1767
+    - Endereço: Praia do Flamengo
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8238078704 → 46160.8389930556** (0D 00:21:52) | -22.92738,-43.17738
+    - Endereço: Travessa Carlos de Sá
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8721643519 → 46160.8756134259** (0D 00:04:58) | -22.8428,-43.25085
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8859837963 → 46160.8901273148** (0D 00:05:58) | -22.83721,-43.25719
+    - Endereço: AV BRASIL, 0-0, PENHA, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21012351
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9032638889 → 46160.9060416667** (0D 00:04:00) | -22.82969,-43.27078
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9351157407 → 46160.9375** (0D 00:03:26) | -22.82734,-43.33489
+    - Endereço: Praça Conego Monteiro, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.9388773148 → 46160.9945138889** (0D 01:20:07) | -22.82698,-43.33807
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KRW8E86
+- Total paradas: 12 | Distância: 106.49 km | Tempo dirigido: 0D 03:01:41
+- 12 paradas detalhadas:
+  - **46160.001099537 → 46160.1940972222** (0D 04:37:55) | -22.83464,-43.32924
+    - Endereço: R Barros Saiao, Rio de Janeiro, RJ a 2001 73 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1967013889 → 46160.200775463** (0D 00:05:52) | -22.82886,-43.34155
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2041898148 → 46160.2113425926** (0D 00:10:18) | -22.82753,-43.33814
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2125810185 → 46160.2153935185** (0D 00:04:03) | -22.82717,-43.33742
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2199189815 → 46160.2336458333** (0D 00:19:46) | -22.82547,-43.3351
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2487384259 → 46160.2723611111** (0D 00:34:01) | -22.76245,-43.44529
+    - Endereço: Av Mal Floriano Peixoto, Nova Iguacu, RJ a 871 37 de CTC - NOVA IGUACU - RJ
+    - Local: `560021 - SENDAS NOVA IGUAÇU - LOJA 30`
+  - **46160.2942708333 → 46160.2977314815** (0D 00:04:59) | -22.8289,-43.34129
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3020138889 → 46160.4032986111** (0D 02:25:51) | -22.82744,-43.3373
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4432175926 → 46160.4701273148** (0D 00:38:45) | -22.90615,-43.56556
+    - Endereço: Av Maria Teresa - Rio de Janeiro - RJ
+    - Local: `560039 - SENDAS CESÁRIO DE MELO - LJ 202`
+  - **46160.4961574074 → 46160.5272222222** (0D 00:44:44) | -22.82557,-43.33537
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 2272 49 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5311458333 → 46160.5771875** (0D 01:06:18) | -22.83792,-43.32954
+    - Endereço: R Sebastiao de Souza Gouveia, Rio de Janeiro, RJ a 2178 65 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5804166667 → 46160.994212963** (0D 09:55:52) | -22.83461,-43.32924
+    - Endereço: R Barros Saiao, Rio de Janeiro, RJ a 2001 73 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KSP-8814
+- Total paradas: 8 | Distância: 21.53 km | Tempo dirigido: 0D 01:23:29
+- 8 paradas detalhadas:
+  - **46160.0015856481 → 46160.2665393519** (0D 06:21:32) | -22.82938,-43.34234
+    - Endereço: Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, Regiã
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2671527778 → 46160.2881828704** (0D 00:30:17) | -22.83026,-43.34234
+    - Endereço: Avenida Pastor Martin Luther King Junior - Coelho Neto - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2894328704 → 46160.2988194444** (0D 00:13:31) | -22.82893,-43.34138
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3024652778 → 46160.3071990741** (0D 00:06:49) | -22.8257,-43.33503
+    - Endereço: Pca Con Monteiro, Rio de Janeiro, RJ a 2249 48 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3106828704 → 46160.4018634259** (0D 02:11:18) | -22.8271,-43.33831
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4072800926 → 46160.4215740741** (0D 00:20:35) | -22.8349,-43.33673
+    - Endereço: Estrada Pedro Borges de Freitas, CEASA-RJ, Colégio, Rio de Janeiro, Região Geogr
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.449849537 → 46160.5069791667** (0D 01:22:16) | -22.87423,-43.46369
+    - Endereço: R da Chita - Rio de Janeiro - RJ
+    - Local: `71005 - GB 05 - BANGU`
+  - **46160.5222685185 → 46160.9934722222** (0D 11:18:32) | -22.82952,-43.34262
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3100 52 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KSJ-1479
+- Total paradas: 12 | Distância: 52.88 km | Tempo dirigido: 0D 02:26:38
+- 12 paradas detalhadas:
+  - **46160.0210069444 → 46160.2101851852** (0D 04:32:25) | -22.82707,-43.33834
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2120601852 → 46160.2198842593** (0D 00:11:16) | -22.82698,-43.33787
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2255092593 → 46160.2441087963** (0D 00:26:47) | -22.82865,-43.34152
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.269375 → 46160.3658333333** (0D 02:18:54) | -22.88293,-43.28945
+    - Endereço: R Jose dos Reis, Rio de Janeiro, RJ a 605 115 de LTU-RJ AGF NORTE SHOPPING
+    - Local: `560030 - SENDAS PILARES - LJ 128`
+  - **46160.3666319444 → 46160.4532291667** (0D 02:04:42) | -22.88306,-43.2892
+    - Endereço: Rua José dos Reis Engenho de Dentro, Rio de Janeiro, Rio de Janeiro, Brasil, CEP
+    - Local: `560030 - SENDAS PILARES - LJ 128`
+  - **46160.4565740741 → 46160.4590856481** (0D 00:03:37) | -22.87708,-43.27542
+    - Endereço: Rua Ministro Mavignier - Del Castilho - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4822569444 → 46160.4866898148** (0D 00:06:23) | -22.86273,-43.43338
+    - Endereço: R Itaporanga, Rio de Janeiro, RJ a 4182 57 de CDD DEODORO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5014236111 → 46160.5071180556** (0D 00:08:12) | -22.82821,-43.34081
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5098842593 → 46160.54625** (0D 00:52:22) | -22.82886,-43.34104
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5513310185 → 46160.5580555556** (0D 00:09:41) | -22.82706,-43.33684
+    - Endereço: Avenida Brasil, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Jane
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5703009259 → 46160.7411921296** (0D 04:06:05) | -22.82251,-43.31111
+    - Endereço: Rua Coronel Garcia Pacheco Parada de Lucas, Rio de Janeiro, Rio de Janeiro, Bras
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7481134259 → 46160.7515740741** (0D 00:04:59) | -22.82299,-43.31094
+    - Endereço: Rua Rio Apa Parada de Lucas, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21250-5
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KTP-4F70
+- Total paradas: 8 | Distância: 12.67 km | Tempo dirigido: 0D 01:18:41
+- 8 paradas detalhadas:
+  - **46160.011724537 → 46160.2111574074** (0D 04:47:11) | -22.83323,-43.33582
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2619 81 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2138888889 → 46160.2174189815** (0D 00:05:05) | -22.82942,-43.33652
+    - Endereço: Praça Conego Monteiro Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2233564815 → 46160.2256018519** (0D 00:03:14) | -22.83002,-43.3353
+    - Endereço: R BACANGA, 149-237, IRAJA, RIO DE JANEIRO, RJ, BRASIL, 40, 40, CEP 21235380
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2298958333 → 46160.2860648148** (0D 01:20:53) | -22.83339,-43.33581
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2620 80 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2929976852 → 46160.3720601852** (0D 01:53:51) | -22.82758,-43.33746
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3795023148 → 46160.4215277778** (0D 01:00:31) | -22.83518,-43.33668
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2758 77 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4354282407 → 46160.4946759259** (0D 01:25:19) | -22.86333,-43.2936
+    - Endereço: R Cherente, Rio de Janeiro, RJ a 2638 157 de LTU-RJ AGF NORTE SHOPPING
+    - Local: `71023 - GB 23 - DEL CASTILHO`
+  - **46160.5080787037 → 46160.9996412037** (0D 11:47:51) | -22.83328,-43.33584
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2619 80 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KST-0246
+- Total paradas: 4 | Distância: 30.34 km | Tempo dirigido: 0D 02:19:28
+- 4 paradas detalhadas:
+  - **46160.0013541667 → 46160.2212037037** (0D 05:16:35) | -22.82828,-43.33697
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2587 46 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2226736111 → 46160.3113888889** (0D 02:07:45) | -22.82719,-43.33822
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.371724537 → 46160.4157986111** (0D 01:03:28) | -23.00248,-43.33832
+    - Endereço: Rua Dalcídio Jurandir Barra da Tijuca, Rio de Janeiro, Rio de Janeiro, Brasil, C
+    - Local: `71032 - GB 07 - BARRA`
+  - **46160.4508449074 → 46160.9975578704** (0D 13:07:16) | -22.82833,-43.33696
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2587 46 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KTR-0546
+- Total paradas: 11 | Distância: 69.08 km | Tempo dirigido: 0D 03:13:21
+- 11 paradas detalhadas:
+  - **46160.0129976852 → 46160.2009606482** (0D 04:30:40) | -22.82861,-43.33696
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2617 46 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2038425926 → 46160.2083912037** (0D 00:06:33) | -22.83021,-43.34192
+    - Endereço: Avenida Pastor Martin Luther King Junior Coelho Neto, Rio de Janeiro, Rio de Jan
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2114814815 → 46160.2354050926** (0D 00:34:27) | -22.83043,-43.3422
+    - Endereço: Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21531-010
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2443634259 → 46160.2747569444** (0D 00:43:46) | -22.82763,-43.33739
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2761342593 → 46160.2901041667** (0D 00:20:07) | -22.82733,-43.33851
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3605787037 → 46160.3792592593** (0D 00:26:54) | -22.88966,-43.11558
+    - Endereço: Avenida Marquês do Paraná, 100 Centro, Niterói, Rio de Janeiro, Brasil, CEP 2403
+    - Local: `71008 - GB 08 - NITEROI`
+  - **46160.3917013889 → 46160.4042592593** (0D 00:18:05) | -22.89127,-43.11467
+    - Endereço: Rua São João Centro, Niterói, Rio de Janeiro, Brasil, CEP 24030-060
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4049421296 → 46160.4270833333** (0D 00:31:53) | -22.88945,-43.11559
+    - Endereço: Avenida Marquês do Paraná, 100 Centro, Niterói, Rio de Janeiro, Brasil, CEP 2403
+    - Local: `71008 - GB 08 - NITEROI`
+  - **46160.4469791667 → 46160.4519560185** (0D 00:07:10) | -22.82253,-43.27821
+    - Endereço: Rua do Alpiste Penha Circular, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21020
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.461724537 → 46160.4793981481** (0D 00:25:27) | -22.82946,-43.34087
+    - Endereço: Avenida Brasil Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21531-01
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4841087963 → 46160.6586574074** (0D 04:11:21) | -22.82846,-43.33678
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2597 46 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KUL-1425
+- Total paradas: 20 | Distância: 195.49 km | Tempo dirigido: 0D 06:41:49
+- 20 paradas detalhadas:
+  - **46160.0006597222 → 46160.217037037** (0D 05:11:35) | -22.82801,-43.33824
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2204976852 → 46160.2277893519** (0D 00:10:30) | -22.82661,-43.33537
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2340 47 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2326388889 → 46160.2391435185** (0D 00:09:22) | -22.82754,-43.33697
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2437384259 → 46160.2498263889** (0D 00:08:46) | -22.82894,-43.34138
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.25625 → 46160.2584953704** (0D 00:03:14) | -22.82104,-43.32175
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2799074074 → 46160.2823263889** (0D 00:03:29) | -22.84634,-43.24791
+    - Endereço: AV BRASIL, 0-0, RAMOS, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21030001
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3074305556 → 46160.328912037** (0D 00:30:56) | -22.91457,-43.24144
+    - Endereço: Boulevard 28 de Setembro - Vila Isabel - Rio de Janeiro - RJ
+    - Local: `7000748 - PREZUNIC VILA ISABEL`
+  - **46160.3303356481 → 46160.3595717593** (0D 00:42:06) | -22.9149,-43.24148
+    - Endereço: Boulevard 28 de Setembro, Vila Isabel, Rio de Janeiro, Rio de Janeiro, Brasil, C
+    - Local: `7000748 - PREZUNIC VILA ISABEL`
+  - **46160.390474537 → 46160.4051157407** (0D 00:21:05) | -22.82899,-43.34147
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4098958333 → 46160.4269791667** (0D 00:24:36) | -22.82766,-43.33813
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4284375 → 46160.562349537** (0D 03:12:50) | -22.82737,-43.3379
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5753703704 → 46160.5825115741** (0D 00:10:17) | -22.77993,-43.39356
+    - Endereço: Rod Pres Dutra - Sao Joao de Meriti - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6054398148 → 46160.6432060185** (0D 00:54:23) | -22.71283,-43.55396
+    - Endereço: Rua Flora
+    - Local: `579009 - FEIRA NOVA QUEIMADOS`
+  - **46160.6670601852 → 46160.7297337963** (0D 01:30:15) | -22.78731,-43.38167
+    - Endereço: Avenida Eronildes Martins dos Santos Agostinho Porto, Coelho da Rocha, Rio de Ja
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7589351852 → 46160.7640740741** (0D 00:07:24) | -22.82837,-43.34083
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7670601852 → 46160.8087962963** (0D 01:00:06) | -22.8279,-43.33799
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.849849537 → 46160.8657060185** (0D 00:22:50) | -22.97551,-43.22665
+    - Endereço: Avenida Rodrigo Otávio Gávea, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22450-
+    - Local: `9039006 - 06 - ZONA SUL - GAVEA`
+  - **46160.9024537037 → 46160.9303703704** (0D 00:40:12) | -22.82749,-43.33811
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9310648148 → 46160.9359027778** (0D 00:06:58) | -22.82807,-43.33719
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2593 47 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9400462963 → 46160.9941087963** (0D 01:17:51) | -22.82773,-43.33829
+    - Endereço: AV BRASIL, 19001-19101, COELHO NETO, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 215
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KTZ-2055
+- Total paradas: 2 | Distância: 0 km | Tempo dirigido: 0D 00:17:42
+- 2 paradas detalhadas:
+  - **46160.006875 → 46160.5571412037** (0D 13:12:23) | -22.83377,-43.33895
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2953 81 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5694444444 → 46160.9942939815** (0D 10:11:47) | -22.82828,-43.3361
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2526 45 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KUM-9J05
+- Total paradas: 7 | Distância: 55.84 km | Tempo dirigido: 0D 03:56:50
+- 7 paradas detalhadas:
+  - **46160.0105555556 → 46160.2114814815** (0D 04:49:20) | -22.85328,-43.48608
+    - Endereço: Vila Kennedy, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21852-050
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2184027778 → 46160.2312384259** (0D 00:18:29) | -22.85301,-43.48598
+    - Endereço: Estrada do Quafa - Bangu - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2722337963 → 46160.3207986111** (0D 01:09:56) | -22.82657,-43.3381
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3277083333 → 46160.3623263889** (0D 00:49:51) | -22.82726,-43.33731
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4175 → 46160.4223842593** (0D 00:07:02) | -22.83517,-43.33636
+    - Endereço: Estrada Pedro Borges de Freitas, CEASA-RJ, Colégio, Rio de Janeiro, Região Geogr
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4651736111 → 46160.4862615741** (0D 00:30:22) | -22.8956,-43.56418
+    - Endereço: Estrada do Rio do A, 1415 Campo Grande, Rio de Janeiro, Rio de Janeiro, Brasil, 
+    - Local: `71035 - GB 26 - CAMPO GRANDE`
+  - **46160.4979398148 → 46160.5303819444** (0D 00:46:43) | -22.86071,-43.51628
+    - Endereço: Avenida Brasil Santíssimo, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 23098-030
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KVH-9J42
+- Total paradas: 19 | Distância: 104.24 km | Tempo dirigido: 0D 04:36:50
+- 19 paradas detalhadas:
+  - **46160.0051851852 → 46160.2150694444** (0D 05:02:14) | -22.81203,-43.3405
+    - Endereço: R Madagascar, Rio de Janeiro, RJ a 2147 89 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2251273148 → 46160.2514930556** (0D 00:37:58) | -22.82708,-43.33809
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2538078704 → 46160.2565740741** (0D 00:03:59) | -22.83013,-43.33853
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2848 46 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2620949074 → 46160.2681944444** (0D 00:08:47) | -22.82886,-43.34136
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2921990741 → 46160.2942824074** (0D 00:03:00) | -22.83619,-43.25962
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3118287037 → 46160.3154398148** (0D 00:05:12) | -22.80534,-43.20853
+    - Endereço: Rua República Árabe da Síria, Portuguesa, Rio de Janeiro, Rio de Janeiro, Brasil
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3168981482 → 46160.3434259259** (0D 00:38:12) | -22.80544,-43.20066
+    - Endereço: Estrada do Galeão - Jardim Carioca - Rio de Janeiro - RJ
+    - Local: `7000728 - PREZUNIC ILHA`
+  - **46160.3629976852 → 46160.3958796296** (0D 00:47:21) | -22.83799,-43.3323
+    - Endereço: Estrada do Colégio, 520 Colégio, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 212
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.399375 → 46160.4177430556** (0D 00:26:27) | -22.82899,-43.34122
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4210763889 → 46160.5392708333** (0D 02:50:12) | -22.82761,-43.33817
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5399421296 → 46160.5634722222** (0D 00:33:53) | -22.8273,-43.33745
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5797222222 → 46160.5868865741** (0D 00:10:19) | -22.89115,-43.28296
+    - Endereço: R Jose Bonifacio - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5935300926 → 46160.6207638889** (0D 00:39:13) | -22.88783,-43.27468
+    - Endereço: Rua São Gabriel, 83 Cachambi, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 20785-
+    - Local: `579010 - FEIRA NOVA CACHAMBI`
+  - **46160.6320138889 → 46160.6361689815** (0D 00:05:59) | -22.84385,-43.33063
+    - Endereço: Av Pst Martin Luther king Junior, Rio de Janeiro, RJ a 2640 53 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6368634259 → 46160.6396180556** (0D 00:03:58) | -22.843,-43.33171
+    - Endereço: AV PASTOR MARTIN LUTHER KING JR, 8204-8232, VICENTE DE CARVALHO, RIO DE JANEIRO,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.645474537 → 46160.6611574074** (0D 00:22:35) | -22.82893,-43.34108
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6640046296 → 46160.7821296296** (0D 02:50:06) | -22.82756,-43.3382
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.810150463 → 46160.8483101852** (0D 00:54:57) | -22.93344,-43.18604
+    - Endereço: Rua das Laranjeiras, 210 Laranjeiras, Rio de Janeiro, Rio de Janeiro, Brasil, CE
+    - Local: `9039106 - 32 - ZONA SUL - LARANJEIRAS`
+  - **46160.8810300926 → 46160.9995717593** (0D 02:50:42) | -22.82709,-43.33805
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KVI9088
+- Total paradas: 17 | Distância: 139.06 km | Tempo dirigido: 0D 04:59:05
+- 17 paradas detalhadas:
+  - **46160.0041319444 → 46160.1555324074** (0D 03:38:01) | -22.82191,-43.33882
+    - Endereço: R Interna, Rio de Janeiro, RJ a 2293 62 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1619328704 → 46160.1736226852** (0D 00:16:50) | -22.82753,-43.33812
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1853125 → 46160.1887731481** (0D 00:04:59) | -22.85522,-43.24801
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2046180556 → 46160.3193171296** (0D 02:45:10) | -22.90865,-43.10886
+    - Endereço: Rua Oswaldo Cruz, 55 Icaraí, Niterói, Rio de Janeiro, Brasil, CEP 24230-210
+    - Local: `8590004 - PRINCESA ICARAÍ`
+  - **46160.3259953704 → 46160.3287962963** (0D 00:04:02) | -22.89928,-43.10561
+    - Endereço: R Pres Joao Pessoa, Niteroi, RJ a 589 55 de CEE - NITEROI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3321759259 → 46160.3354861111** (0D 00:04:46) | -22.90073,-43.1089
+    - Endereço: Rua General Pereira da Silva, Icaraí, Niterói, Rio de Janeiro, Brasil, CEP 24230
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3750694444 → 46160.3808564815** (0D 00:08:20) | -22.82897,-43.34113
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3831134259 → 46160.3855902778** (0D 00:03:34) | -22.82798,-43.33826
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3871296296 → 46160.4096180556** (0D 00:32:23) | -22.83201,-43.34076
+    - Endereço: Avenida Pastor Martin Luther King Junior - Coelho Neto - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4408333333 → 46160.4531712963** (0D 00:17:46) | -22.79708,-43.18399
+    - Endereço: Av Paranapua, Rio de Janeiro, RJ a 6918 60 de TECA GIG - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4764699074 → 46160.5114236111** (0D 00:50:20) | -22.82186,-43.33887
+    - Endereço: R Interna, Rio de Janeiro, RJ a 2295 62 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5187268518 → 46160.5310069444** (0D 00:17:41) | -22.82755,-43.3382
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5316550926 → 46160.5821527778** (0D 01:12:43) | -22.8274,-43.33745
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5891550926 → 46160.5921180556** (0D 00:04:16) | -22.85237,-43.34681
+    - Endereço: Estr do Otaviano, Rio de Janeiro, RJ a 1980 163 de LTU-RJ AGF MADUREIRA SHOPPING
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5964930556 → 46160.6006481481** (0D 00:05:59) | -22.87015,-43.3384
+    - Endereço: Rua Conselheiro Galvão, Madureira, , Rio de Janeiro, Brasil, CEP 21350-302
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.619525463 → 46160.6503703704** (0D 00:44:25) | -22.92933,-43.36252
+    - Endereço: Taquara - Rio de Janeiro
+    - Local: `202011 - PAX TAQUARA`
+  - **46160.677974537 → 46160.9956018518** (0D 07:37:23) | -22.82188,-43.3388
+    - Endereço: R Interna, Rio de Janeiro, RJ a 2293 62 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KVG7A00
+- Total paradas: 8 | Distância: 33.2 km | Tempo dirigido: 0D 01:32:40
+- 8 paradas detalhadas:
+  - **46160.0051273148 → 46160.2375115741** (0D 05:34:38) | -22.8284,-43.33652
+    - Endereço: Praça Conego Monteiro, CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imedia
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2391550926 → 46160.3827662037** (0D 03:26:48) | -22.82681,-43.33811
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3874652778 → 46160.4235185185** (0D 00:51:55) | -22.83646,-43.33649
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2779 74 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4481944444 → 46160.4502777778** (0D 00:03:00) | -22.89886,-43.29557
+    - Endereço: Rua Adolfo Bergamini - Engenho de Dentro - Rio de Janeiro - RJ
+    - Local: `71001 - GB 01 - ENG. DE DENTRO`
+  - **46160.4509606482 → 46160.5341203704** (0D 01:59:45) | -22.89858,-43.29447
+    - Endereço: Rua Adolfo Bergamini - Engenho de Dentro - Rio de Janeiro - RJ
+    - Local: `71001 - GB 01 - ENG. DE DENTRO`
+  - **46160.5629976852 → 46160.5737152778** (0D 00:15:26) | -22.83605,-43.33611
+    - Endereço: Avenida Pastor Martin Luther King Junior - Coelho Neto - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5744097222 → 46160.5773842593** (0D 00:04:17) | -22.83502,-43.33602
+    - Endereço: , Colégio, , Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.580462963 → 46160.9949305556** (0D 09:56:50) | -22.82841,-43.33661
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2577 46 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KVT-5427
+- Total paradas: 11 | Distância: 112.29 km | Tempo dirigido: 0D 03:13:06
+- 11 paradas detalhadas:
+  - **46160.004375 → 46160.1695601852** (0D 03:57:52) | -22.82723,-43.33693
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,25140000 - EMANUEL- REDE ECONOMIA SANTA MARIA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.1703587963 → 46160.182037037** (0D 00:16:49) | -22.82768,-43.33819
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,25140000 - EMANUEL- REDE ECONOMIA SANTA MARIA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.2047800926 → 46160.2695949074** (0D 01:33:20) | -22.92491,-43.17683
+    - Endereço: Rua do Catete, Catete, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22220-000
+    - Local: `8590120 - PRINCESA CATETE,25140000 - EMANUEL- REDE ECONOMIA SANTA MARIA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.2925462963 → 46160.3558449074** (0D 01:31:09) | -22.82853,-43.33932
+    - Endereço: Avenida Brasil, 19067, Coelho Neto, Rio De Janeiro - Rio de Janeiro
+    - Local: `BASE BENASSI - BASE BENASSI,25140000 - EMANUEL- REDE ECONOMIA SANTA MARIA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.3736111111 → 46160.3832060185** (0D 00:13:49) | -22.82031,-43.2785
+    - Endereço: Rua da Batata Penha Circular, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21020-
+    - Local: `25140000 - EMANUEL- REDE ECONOMIA SANTA MARIA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.4015740741 → 46160.4357291667** (0D 00:49:11) | -22.8281,-43.33877
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2705 49 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI,25140000 - EMANUEL- REDE ECONOMIA SANTA MARIA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.4386689815 → 46160.4713657407** (0D 00:47:05) | -22.82774,-43.33816
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,25140000 - EMANUEL- REDE ECONOMIA SANTA MARIA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.4727546296 → 46160.5113888889** (0D 00:55:38) | -22.82759,-43.33743
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,25140000 - EMANUEL- REDE ECONOMIA SANTA MARIA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.541087963 → 46160.5538194444** (0D 00:18:20) | -22.87843,-43.58173
+    - Endereço: , Campo Grande, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 23076-460
+    - Local: `25140000 - EMANUEL- REDE ECONOMIA SANTA MARIA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.5562847222 → 46160.6122453704** (0D 01:20:35) | -22.88494,-43.57953
+    - Endereço: EST SANTA MARIA, 1335-1363, CAMPO GRANDE, RIO DE JANEIRO, RJ, BRASIL, 50, 40, CE
+    - Local: `25140000 - EMANUEL- REDE ECONOMIA SANTA MARIA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.6272222222 → 46160.998125** (0D 08:54:06) | -22.88544,-43.6658
+    - Endereço: Estr Aterrado do Leme, Rio de Janeiro, RJ a 2309 46 de HERMES - CAMPO GRANDE RJ
+    - Local: `25140000 - EMANUEL- REDE ECONOMIA SANTA MARIA,17659004 - REDE ECONOMIA SANTA MARIA`
+
+## KWI3461
+- Total paradas: 6 | Distância: 49.51 km | Tempo dirigido: 0D 02:14:13
+- 6 paradas detalhadas:
+  - **46160.003900463 → 46160.2049768519** (0D 04:49:33) | -22.82667,-43.32578
+    - Endereço: R Hannibal Porto, Rio de Janeiro, RJ a 1552 94 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2120023148 → 46160.2210416667** (0D 00:13:01) | -22.82713,-43.33814
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2265393519 → 46160.2546180556** (0D 00:40:26) | -22.82894,-43.34131
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2946875 → 46160.3620486111** (0D 01:37:00) | -22.95723,-43.33899
+    - Endereço: Estrada de Jacarepaguá, 6069 Anil, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 2
+    - Local: `7000735 - PREZUNIC ANIL (SHOPPING JACAREPAGUA)`
+  - **46160.3983449074 → 46160.4283680556** (0D 00:43:14) | -22.82901,-43.34113
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4326967593 → 46160.9997106481** (0D 13:36:30) | -22.82661,-43.3257
+    - Endereço: R Hannibal Porto, Rio de Janeiro, RJ a 1551 94 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KWK-4593
+- Total paradas: 34 | Distância: 140.16 km | Tempo dirigido: 0D 06:27:10
+- 34 paradas detalhadas:
+  - **46160.0012152778 → 46160.3227893518** (0D 07:43:04) | -22.82797,-43.33531
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2449 44 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3260763889 → 46160.4151157407** (0D 02:08:13) | -22.82822,-43.33868
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2709 49 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4184953704 → 46160.4598958333** (0D 00:59:37) | -22.82749,-43.33808
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4709953704 → 46160.4755208333** (0D 00:06:31) | -22.83624,-43.26041
+    - Endereço: Rua Nair, Olaria, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21030-001
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4999768519 → 46160.5256365741** (0D 00:36:57) | -23.0019,-43.34985
+    - Endereço: AV MAL HENRIQUE LOTT, 165-175, BARRA DA TIJUCA, RIO DE JANEIRO, RJ, BRASIL, 50, 
+    - Local: `9039017 - 17 - ZONA SUL - BARRA DA TIJUCA`
+  - **46160.5501157407 → 46160.5828935185** (0D 00:47:12) | -23.01423,-43.46225
+    - Endereço: Avenida das Américas, 16237 Recreio dos Bandeirantes, Rio de Janeiro, Rio de Jan
+    - Local: `9039010 - 10 - ZONA SUL - RECREIO DOS BANDEIRANTES`
+  - **46160.6042476852 → 46160.6070138889** (0D 00:03:59) | -22.8496,-43.38398
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6076967593 → 46160.610462963** (0D 00:03:59) | -22.84893,-43.38317
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6152893519 → 46160.6180439815** (0D 00:03:58) | -22.8416,-43.37143
+    - Endereço: AV BRASIL, 0-0, GUADALUPE, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21670000
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6187384259 → 46160.6311689815** (0D 00:17:54) | -22.84103,-43.37048
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6376851852 → 46160.6712384259** (0D 00:48:19) | -22.82755,-43.33815
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.711724537 → 46160.7375694444** (0D 00:37:13) | -22.96348,-43.17146
+    - Endereço: Rua Gustavo Sampaio, Leme, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22010-010
+    - Local: `9039012 - 12 - ZONA SUL - LEME`
+  - **46160.764849537 → 46160.7693055556** (0D 00:06:25) | -22.88887,-43.21906
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7732175926 → 46160.7753009259** (0D 00:03:00) | -22.88549,-43.22886
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7780787037 → 46160.780162037** (0D 00:03:00) | -22.88707,-43.23168
+    - Endereço: Av Brasil - Pista Central, Rio de Janeiro, RJ a 1364 90 de TECA BENFICA - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.785 → 46160.7919097222** (0D 00:09:57) | -22.88498,-43.23529
+    - Endereço: Avenida Brasil, Manguinhos, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 20930-04
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7988310185 → 46160.8029861111** (0D 00:05:59) | -22.879,-43.24021
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8036805556 → 46160.8119675926** (0D 00:11:56) | -22.87716,-43.24144
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.812662037 → 46160.8154282407** (0D 00:03:59) | -22.87562,-43.24258
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8161111111 → 46160.8195833333** (0D 00:05:00) | -22.87474,-43.2433
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8230324074 → 46160.8278819444** (0D 00:06:59) | -22.86931,-43.24695
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8347685185 → 46160.8382291667** (0D 00:04:59) | -22.86549,-43.24765
+    - Endereço: Avenida Brasil - Bonsucesso - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8617592593 → 46160.8651967593** (0D 00:04:57) | -22.81853,-43.28511
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8700347222 → 46160.8721180556** (0D 00:03:00) | -22.81529,-43.2902
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8728009259 → 46160.8783101852** (0D 00:07:56) | -22.81492,-43.29184
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8796875 → 46160.8817708333** (0D 00:03:00) | -22.81424,-43.29513
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8879861111 → 46160.8928240741** (0D 00:06:58) | -22.81538,-43.30062
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8955902778 → 46160.8990625** (0D 00:05:00) | -22.81605,-43.30358
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9045949074 → 46160.9073611111** (0D 00:03:59) | -22.8175,-43.30743
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9080555556 → 46160.9121990741** (0D 00:05:58) | -22.81825,-43.30865
+    - Endereço: AV BRASIL, 0-0, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 2124105
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9128819444 → 46160.9163425926** (0D 00:04:59) | -22.81887,-43.30966
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9184259259 → 46160.9205092593** (0D 00:03:00) | -22.81968,-43.31574
+    - Endereço: AV BRASIL, 16100-16156, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9211921296 → 46160.923275463** (0D 00:03:00) | -22.81966,-43.31794
+    - Endereço: Rod Pres Dutra - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9436689815 → 46160.9978703704** (0D 01:18:03) | -22.8275,-43.33825
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KWH2J02
+- Total paradas: 14 | Distância: 169.62 km | Tempo dirigido: 0D 04:48:35
+- 14 paradas detalhadas:
+  - **46160.0055902778 → 46160.174224537** (0D 04:02:50) | -22.82735,-43.33677
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2512 48 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI,17659002 - EMANUEL CACHAMORRA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.1751967593 → 46160.1901273148** (0D 00:21:30) | -22.82756,-43.33818
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI,17659002 - EMANUEL CACHAMORRA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.2232986111 → 46160.2324768519** (0D 00:13:13) | -22.96339,-43.17443
+    - Endereço: Avenida Princesa Isabel - Copacabana - Rio de Janeiro - RJ
+    - Local: `8590134 - PRINCESA LEME,17659002 - EMANUEL CACHAMORRA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.2365277778 → 46160.2841550926** (0D 01:08:35) | -22.97581,-43.18934
+    - Endereço: Rua Bolívar, Copacabana, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22061-020
+    - Local: `8590034 - PRINCESA COPACABANA,17659002 - EMANUEL CACHAMORRA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.3102430556 → 46160.4281365741** (0D 02:49:46) | -22.82791,-43.3381
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI,17659002 - EMANUEL CACHAMORRA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.434525463 → 46160.4444328704** (0D 00:14:16) | -22.82887,-43.34143
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,17659002 - EMANUEL CACHAMORRA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.4719907407 → 46160.4965509259** (0D 00:35:22) | -22.93784,-43.3337
+    - Endereço: Estrada do Bananal, 400 Jacarepaguá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP
+    - Local: `11623026 - VIANENSE FREGUESIA,17659002 - EMANUEL CACHAMORRA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.5193402778 → 46160.5239351852** (0D 00:06:37) | -22.82579,-43.33533
+    - Endereço: Avenida Brasil, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `17659002 - EMANUEL CACHAMORRA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.5247800926 → 46160.5413888889** (0D 00:23:55) | -22.82754,-43.3382
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,17659002 - EMANUEL CACHAMORRA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.5418518518 → 46160.5614351852** (0D 00:28:12) | -22.82763,-43.33752
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,17659002 - EMANUEL CACHAMORRA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.5936458333 → 46160.6103356481** (0D 00:24:02) | -22.91594,-43.5508
+    - Endereço: Estrada da Cachamorra Campo Grande, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 
+    - Local: `17659002 - EMANUEL CACHAMORRA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.6307638889 → 46160.7591666667** (0D 03:04:54) | -22.89234,-43.61236
+    - Endereço: R Perico, Rio de Janeiro, RJ a 4290 122 de HERMES - CAMPO GRANDE RJ
+    - Local: `17659002 - EMANUEL CACHAMORRA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.7736342593 → 46160.7972453704** (0D 00:34:00) | -22.9056,-43.67434
+    - Endereço: Rua nelson Xavier, Rio de Janeiro, RJ a 4627 35 de HERMES - CAMPO GRANDE RJ
+    - Local: `17659002 - EMANUEL CACHAMORRA,17659004 - REDE ECONOMIA SANTA MARIA`
+  - **46160.8082175926 → 46160.9974884259** (0D 04:32:33) | -22.89249,-43.61231
+    - Endereço: R Perico, Rio de Janeiro, RJ a 4310 122 de HERMES - CAMPO GRANDE RJ
+    - Local: `17659002 - EMANUEL CACHAMORRA,17659004 - REDE ECONOMIA SANTA MARIA`
+
+## KWV-7E89
+- Total paradas: 8 | Distância: 41.04 km | Tempo dirigido: 0D 02:35:00
+- 8 paradas detalhadas:
+  - **46160.0104282407 → 46160.2221643518** (0D 05:04:54) | -22.82341,-43.33371
+    - Endereço: R Ten Rebelo, Rio de Janeiro, RJ a 1970 50 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2625231482 → 46160.2770833333** (0D 00:20:58) | -22.77441,-43.39685
+    - Endereço: Av Dr Carvalhaes, Belford Roxo, RJ a 3669 96 de CTC - NOVA IGUACU - LTU
+    - Local: `23843003 - ATACADÃO - BELFORD ROXO`
+  - **46160.2915277778 → 46160.2937384259** (0D 00:03:11) | -22.78909,-43.37335
+    - Endereço: Rua Antenor Martins - SÃO JOÃO DE MERITI - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3173032407 → 46160.3369328704** (0D 00:28:16) | -22.81439,-43.33208
+    - Endereço: Avenida Professor Tenente Rebelo, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3449768519 → 46160.4528935185** (0D 02:35:24) | -22.82768,-43.33746
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4535763889 → 46160.578275463** (0D 02:59:34) | -22.82795,-43.33837
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5916666667 → 46160.6013310185** (0D 00:13:55) | -22.84907,-43.31236
+    - Endereço: R Galvani, Rio de Janeiro, RJ a 2257 5 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6084837963 → 46160.6109490741** (0D 00:03:33) | -22.84273,-43.33246
+    - Endereço: Av Pst Martin Luther king Junior, Rio de Janeiro, RJ a 2716 58 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KXA-5966
+- Total paradas: 13 | Distância: 0 km | Tempo dirigido: 0D 02:05:24
+- 13 paradas detalhadas:
+  - **46160.00375 → 46160.2643402778** (0D 06:15:15) | -22.82583,-43.32701
+    - Endereço: R Joao Adil de Oliveira, Rio de Janeiro, RJ a 1685 97 de AGF MERITI
+    - Local: `20577000 - INDUSTRIAS DE BEBIDAS JOAQUIM THOMAS DE AQUINO FILHO SA`
+  - **46160.2658564815 → 46160.2806597222** (0D 00:21:19) | -22.82874,-43.34177
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI,20577000 - INDUSTRIAS DE BEBIDAS JOAQUIM THOMAS DE AQUINO FILHO SA`
+  - **46160.2808217593 → 46160.2927083333** (0D 00:17:07) | -22.82737,-43.33593
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2445 46 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI,20577000 - INDUSTRIAS DE BEBIDAS JOAQUIM THOMAS DE AQUINO FILHO SA`
+  - **46160.2928703704 → 46160.3174189815** (0D 00:35:21) | -22.82752,-43.33813
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,20577000 - INDUSTRIAS DE BEBIDAS JOAQUIM THOMAS DE AQUINO FILHO SA`
+  - **46160.3174652778 → 46160.3270717593** (0D 00:13:50) | -22.83516,-43.33676
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2771 77 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI,20577000 - INDUSTRIAS DE BEBIDAS JOAQUIM THOMAS DE AQUINO FILHO SA`
+  - **46160.3408680556 → 46160.3477662037** (0D 00:09:56) | -22.85023,-43.3848
+    - Endereço: AV BRASIL, 24166-24202, DEODORO, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 2161533
+    - Local: `20577000 - INDUSTRIAS DE BEBIDAS JOAQUIM THOMAS DE AQUINO FILHO SA`
+  - **46160.3753472222 → 46160.4218287037** (0D 01:06:56) | -22.98215,-43.463
+    - Endereço: EST DA BOCA DO MATO, 1-73, VARGEM PEQUENA, RIO DE JANEIRO, RJ, BRASIL, 40, 40, C
+    - Local: `15247000 - MERCEARIA SACHINHO,20577000 - INDUSTRIAS DE BEBIDAS JOAQUIM THOMAS DE AQUINO FILHO SA`
+  - **46160.4375231481 → 46160.4601736111** (0D 00:32:37) | -22.98927,-43.36075
+    - Endereço: Avenida João Cabral de Melo Neto - Barra da Tijuca - Rio de Janeiro - RJ
+    - Local: `20577000 - INDUSTRIAS DE BEBIDAS JOAQUIM THOMAS DE AQUINO FILHO SA`
+  - **46160.4808564815 → 46160.5107291667** (0D 00:43:01) | -22.82776,-43.33754
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI,20577000 - INDUSTRIAS DE BEBIDAS JOAQUIM THOMAS DE AQUINO FILHO SA`
+  - **46160.5124652778 → 46160.5549305556** (0D 01:01:09) | -22.83205,-43.32681
+    - Endereço: Pca Ns Apresentacao, Rio de Janeiro, RJ a 1689 79 de AGF MERITI
+    - Local: `20577000 - INDUSTRIAS DE BEBIDAS JOAQUIM THOMAS DE AQUINO FILHO SA`
+  - **46160.5571180556 → 46160.5927893519** (0D 00:51:22) | -22.82759,-43.33822
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI,20577000 - INDUSTRIAS DE BEBIDAS JOAQUIM THOMAS DE AQUINO FILHO SA`
+  - **46160.5962152778 → 46160.6277083333** (0D 00:45:21) | -22.82362,-43.32566
+    - Endereço: Rua Charles Gounod
+    - Local: `579004 - FEIRA NOVA IRAJÁ,20577000 - INDUSTRIAS DE BEBIDAS JOAQUIM THOMAS DE AQUINO FILHO SA`
+  - **46160.6278009259 → 46160.9999884259** (0D 08:55:57) | -22.82577,-43.327
+    - Endereço: R Joao Adil de Oliveira, Rio de Janeiro, RJ a 1685 97 de AGF MERITI
+    - Local: `20577000 - INDUSTRIAS DE BEBIDAS JOAQUIM THOMAS DE AQUINO FILHO SA`
+
+## KXB6E57
+- Total paradas: 7 | Distância: 65.04 km | Tempo dirigido: 0D 02:08:08
+- 7 paradas detalhadas:
+  - **46160.0002893519 → 46160.6855787037** (0D 16:26:49) | -22.82688,-43.32694
+    - Endereço: R Jose Sombra, Rio de Janeiro, RJ a 1666 93 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7246180556 → 46160.7344212963** (0D 00:14:07) | -23.00168,-43.32273
+    - Endereço: Avenida das Américas, 900 Barra da Tijuca, Rio de Janeiro, Rio de Janeiro, Brasi
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7727777778 → 46160.7748611111** (0D 00:03:00) | -22.84794,-43.32313
+    - Endereço: Av Pst Martin Luther king Junior, Rio de Janeiro, RJ a 2470 34 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7768287037 → 46160.7795949074** (0D 00:03:59) | -22.84368,-43.33078
+    - Endereço: Av Pst Martin Luther king Junior, Rio de Janeiro, RJ a 2642 54 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7802893519 → 46160.7830671296** (0D 00:04:00) | -22.8429,-43.33184
+    - Endereço: AV PASTOR MARTIN LUTHER KING JR, 8204-8232, VICENTE DE CARVALHO, RIO DE JANEIRO,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7879513889 → 46160.7973726852** (0D 00:13:34) | -22.82896,-43.34105
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.801412037 → 46160.9999884259** (0D 04:45:57) | -22.82749,-43.32665
+    - Endereço: Rua José Sombra Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21230-354
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KXA-7C24
+- Total paradas: 19 | Distância: 11.28 km | Tempo dirigido: 0D 01:17:57
+- 19 paradas detalhadas:
+  - **46160.3723032407 → 46160.4703587963** (0D 02:21:12) | -22.82656,-43.33745
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4734143519 → 46160.4868865741** (0D 00:19:24) | -22.82804,-43.33927
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2739 50 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4948263889 → 46160.5391319444** (0D 01:03:48) | -22.82007,-43.33228
+    - Endereço: R Joao Dalton, Rio de Janeiro, RJ a 1619 56 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5398263889 → 46160.5433101852** (0D 00:05:01) | -22.82657,-43.33766
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5435069444 → 46160.5502083333** (0D 00:09:39) | -22.82656,-43.33765
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5506712963 → 46160.5570949074** (0D 00:09:15) | -22.82651,-43.33767
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5572800926 → 46160.655474537** (0D 02:21:24) | -22.82004,-43.33225
+    - Endereço: Rua João Dalton Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21230-085
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6604861111 → 46160.6652662037** (0D 00:06:53) | -22.82311,-43.33683
+    - Endereço: R do Carmo, Rio de Janeiro, RJ a 2195 56 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6675694444 → 46160.6763773148** (0D 00:12:41) | -22.82484,-43.33868
+    - Endereço: Acari, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6774768519 → 46160.7063425926** (0D 00:41:34) | -22.82331,-43.33736
+    - Endereço: Rua Enora Acari, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21230-085
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7124189815 → 46160.7404398148** (0D 00:40:21) | -22.82284,-43.3325
+    - Endereço: Rua João Dalton - Irajá - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7468287037 → 46160.7605208333** (0D 00:19:43) | -22.82329,-43.33718
+    - Endereço: Rua Enora Acari, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21230-085
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7646064815 → 46160.7774074074** (0D 00:18:26) | -22.82283,-43.3325
+    - Endereço: Rua João Dalton - Irajá - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7808217593 → 46160.7856134259** (0D 00:06:54) | -22.82298,-43.33541
+    - Endereço: R Bellini, Rio de Janeiro, RJ a 2068 54 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7875925926 → 46160.7953125** (0D 00:11:07) | -22.82485,-43.33862
+    - Endereço: Acari, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7994444444 → 46160.8034953704** (0D 00:05:50) | -22.8231,-43.33503
+    - Endereço: R Bellini, Rio de Janeiro, RJ a 2047 53 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8055671296 → 46160.8259375** (0D 00:29:20) | -22.82,-43.33225
+    - Endereço: Rua João Dalton Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21230-085
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8301041667 → 46160.8381481481** (0D 00:11:35) | -22.82369,-43.33251
+    - Endereço: Rua João Dalton - Irajá - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8390162037 → 46160.9980787037** (0D 03:49:03) | -22.82003,-43.33217
+    - Endereço: R Joao Dalton, Rio de Janeiro, RJ a 1612 56 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KXR-7F27
+- Total paradas: 13 | Distância: 59.5 km | Tempo dirigido: 0D 02:03:26
+- 13 paradas detalhadas:
+  - **46160.0018055556 → 46160.1509722222** (0D 03:34:48) | -22.82845,-43.33734
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2627 47 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1521296296 → 46160.1644791667** (0D 00:17:47) | -22.82726,-43.33817
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1741782407 → 46160.1878472222** (0D 00:19:41) | -22.82883,-43.34161
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2006828704 → 46160.2478009259** (0D 01:07:51) | -22.86975,-43.26845
+    - Endereço: R Sta Mariana, Rio de Janeiro, RJ a 2130 17 de LTU-RJ AGF PREMIUM
+    - Local: `7000720 - PREZUNIC ITAOCA`
+  - **46160.2591203704 → 46160.288599537** (0D 00:42:27) | -22.83501,-43.31842
+    - Endereço: Av Bras de Pina, Rio de Janeiro, RJ a 1051 52 de AGF MERITI
+    - Local: `7000715 - PREZUNIC VISTA ALEGRE`
+  - **46160.297650463 → 46160.3120486111** (0D 00:20:44) | -22.8289,-43.34119
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3145601852 → 46160.3835763889** (0D 01:39:23) | -22.82672,-43.33836
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 2572 51 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3855787037 → 46160.4490972222** (0D 01:31:28) | -22.82838,-43.33722
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2613 47 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4508101852 → 46160.5869675926** (0D 03:16:04) | -22.82762,-43.33753
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.599837963 → 46160.6155324074** (0D 00:22:36) | -22.87909,-43.29077
+    - Endereço: Rua Álvaro de Miranda, Pilares, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 2077
+    - Local: `202009 - PAX PILARES`
+  - **46160.62 → 46160.6403472222** (0D 00:29:18) | -22.87693,-43.26903
+    - Endereço: R PRINCIPE DA BEIRA, 0-50, DEL CASTILHO, RIO DE JANEIRO, RJ, BRASIL, 40, 40, CEP
+    - Local: `202004 - PAX DEL CASTILHO`
+  - **46160.6507060185 → 46160.6527893519** (0D 00:03:00) | -22.84302,-43.33136
+    - Endereço: AV PASTOR MARTIN LUTHER KING JR, 8182-8202, VICENTE DE CARVALHO, RIO DE JANEIRO,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6605208333 → 46160.9938310185** (0D 07:59:58) | -22.82838,-43.33726
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2617 47 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KXN-5G22
+- Total paradas: 1 | Distância: 0 km | Tempo dirigido: 0D 00:00:00
+- 1 paradas detalhadas:
+  - **46160.0059606481 → 46160.9988310185** (0D 23:49:44) | -22.76665,-43.41732
+    - Endereço: Indefinida
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KZH-6F33
+- Total paradas: 1 | Distância: 0 km | Tempo dirigido: 0D 00:00:00
+- 1 paradas detalhadas:
+  - **46160.0030555556 → 46160.9958564815** (0D 23:49:38) | -22.78591,-43.38208
+    - Endereço: Rua Waldemar Tozzi Agostinho Porto, Coelho da Rocha, Rio de Janeiro, Brasil, CEP
+    - Local: `2018023 - ROTA ZONA NORTE`
+
+## KZC-4D39
+- Total paradas: 12 | Distância: 68.95 km | Tempo dirigido: 0D 01:55:04
+- 12 paradas detalhadas:
+  - **46160.0019791667 → 46160.1827083333** (0D 04:20:15) | -22.83006,-43.34323
+    - Endereço: Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21531-010
+    - Local: `BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA,2018006 - ROTA CAMPO GRANDE`
+  - **46160.1833217593 → 46160.2197106481** (0D 00:52:24) | -22.8288,-43.34178
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA,2018006 - ROTA CAMPO GRANDE`
+  - **46160.2396527778 → 46160.2475925926** (0D 00:11:26) | -22.86491,-43.24817
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `2018001 - ROTA BARRA,2018006 - ROTA CAMPO GRANDE`
+  - **46160.2630902778 → 46160.2772222222** (0D 00:20:21) | -22.90327,-43.11062
+    - Endereço: R GAVIAO PEIXOTO, 103-147, ICARAI, NITEROI, RJ, BRASIL, 40, 40, CEP 24230091
+    - Local: `2018001 - ROTA BARRA,2018006 - ROTA CAMPO GRANDE,3030113 - SUPERPRIX LJ 13 - NITEROI`
+  - **46160.2795717593 → 46160.3146412037** (0D 00:50:30) | -22.90721,-43.10374
+    - Endereço: Rua Sete de Setembro - Icaraí - Niterói - RJ
+    - Local: `2018001 - ROTA BARRA,2018006 - ROTA CAMPO GRANDE,3030011 - SUPERPRIX LJ 10 - ICARAÍ`
+  - **46160.3190393519 → 46160.3225115741** (0D 00:05:00) | -22.9013,-43.10866
+    - Endereço: Avenida Roberto Silveira, 123 Icaraí, Niterói, Rio de Janeiro, Brasil, CEP 24110
+    - Local: `2018001 - ROTA BARRA,2018006 - ROTA CAMPO GRANDE`
+  - **46160.3238888889 → 46160.3266666667** (0D 00:04:00) | -22.89981,-43.11041
+    - Endereço: Avenida Roberto Silveira, 22 Icaraí, Niterói, Rio de Janeiro, Brasil, CEP 24230-
+    - Local: `2018001 - ROTA BARRA,2018006 - ROTA CAMPO GRANDE`
+  - **46160.3301388889 → 46160.3329166667** (0D 00:04:00) | -22.89274,-43.11362
+    - Endereço: Avenida Marquês do Paraná, Centro, Niterói, Rio de Janeiro, Brasil, CEP 24030-21
+    - Local: `2018001 - ROTA BARRA,2018006 - ROTA CAMPO GRANDE`
+  - **46160.3364930556 → 46160.417650463** (0D 01:56:52) | -22.8779,-43.11098
+    - Endereço: Avenida do Contorno
+    - Local: `2018001 - ROTA BARRA,2018006 - ROTA CAMPO GRANDE`
+  - **46160.4419097222 → 46160.4674652778** (0D 00:36:48) | -22.82888,-43.34119
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA,2018006 - ROTA CAMPO GRANDE`
+  - **46160.4710185185 → 46160.4733101852** (0D 00:03:18) | -22.82987,-43.34236
+    - Endereço: Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, Regiã
+    - Local: `BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA,2018006 - ROTA CAMPO GRANDE`
+  - **46160.4741782407 → 46160.998125** (0D 12:34:29) | -22.82994,-43.34322
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3182 52 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA,2018006 - ROTA CAMPO GRANDE`
+
+## KYK-8G07
+- Total paradas: 17 | Distância: 81.31 km | Tempo dirigido: 0D 05:38:18
+- 17 paradas detalhadas:
+  - **46160.000162037 → 46160.1374884259** (0D 03:17:45) | -22.71734,-43.35098
+    - Endereço: Rua Olavo Bilac Wona, Belford Roxo, Rio de Janeiro, Brasil, CEP 26112-055
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1703240741 → 46160.174537037** (0D 00:06:04) | -22.82952,-43.33546
+    - Endereço: Estrada da Pedreira Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21235-280
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1863078704 → 46160.2780439815** (0D 02:12:06) | -22.82883,-43.34202
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2811689815 → 46160.2842824074** (0D 00:04:29) | -22.83306,-43.338
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2844 82 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2899652778 → 46160.2927430556** (0D 00:04:00) | -22.84679,-43.32651
+    - Endereço: Avenida Pastor Martin Luther King Junior, Irajá, Rio de Janeiro, Rio de Janeiro,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2955208333 → 46160.2976041667** (0D 00:03:00) | -22.84972,-43.32084
+    - Endereço: Av Pst Martin Luther king Junior, Rio de Janeiro, RJ a 2538 26 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3350462963 → 46160.3411226852** (0D 00:08:45) | -22.89444,-43.23895
+    - Endereço: R SAO LUIZ GONZAGA, 2047-2151, BENFICA, RIO DE JANEIRO, RJ, BRASIL, 50, 40, CEP 
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3572569444 → 46160.3612268519** (0D 00:05:43) | -22.89644,-43.21358
+    - Endereço: Túnel Prefeito Marcello Alencar
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3620833333 → 46160.3801388889** (0D 00:26:00) | -22.89547,-43.21369
+    - Endereço: Avenida Rio de Janeiro - Caju - Rio de Janeiro
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3915972222 → 46160.4152083333** (0D 00:34:00) | -22.89598,-43.18161
+    - Endereço: Avenida Rodrigues Alves, 20 Saúde, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 2
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4169675926 → 46160.4197685185** (0D 00:04:02) | -22.89921,-43.17971
+    - Endereço: Avenida Rio Branco, Centro, , Rio de Janeiro, Brasil, CEP 20090-020
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4340972222 → 46160.452962963** (0D 00:27:10) | -22.90428,-43.17654
+    - Endereço: R Sete de Setembro - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4662962963 → 46160.4699537037** (0D 00:05:16) | -22.91013,-43.18424
+    - Endereço: AV GOMES FREIRE, 288-418, CENTRO, RIO DE JANEIRO, RJ, BRASIL, 50, 40, CEP 202310
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4811689815 → 46160.5104050926** (0D 00:42:06) | -22.9073,-43.17497
+    - Endereço: Av Graca Aranha - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5313310185 → 46160.5351157407** (0D 00:05:27) | -22.91505,-43.18829
+    - Endereço: Indefinida
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5515509259 → 46160.5546064815** (0D 00:04:24) | -22.89434,-43.239
+    - Endereço: R S Luis Gonzaga - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5894560185 → 46160.9973958333** (0D 09:47:26) | -22.71727,-43.35118
+    - Endereço: Rua Olavo Bilac Wona, Belford Roxo, Rio de Janeiro, Brasil, CEP 26112-055
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KZJ-0E14
+- Total paradas: 27 | Distância: 521.16 km | Tempo dirigido: 0D 11:18:41
+- 27 paradas detalhadas:
+  - **46160.0052662037 → 46160.0091319444** (0D 00:05:34) | -22.74748,-42.81196
+    - Endereço: RODOVIA GOV MARIO COVAS/BR 101, 0-0, PICOS, ITABORAI, RJ, BRASIL, 90, 70, CEP 24
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.0155671296 → 46160.0278009259** (0D 00:17:37) | -22.73819,-42.73667
+    - Endereço: Tanguá, Rio de Janeiro, Brasil, CEP 24890-000
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1171064815 → 46160.1198611111** (0D 00:03:58) | -22.04865,-41.6853
+    - Endereço: Rod BR-101 - Campos dos Goytacazes - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1604166667 → 46160.2880671296** (0D 03:03:49) | -21.76578,-41.34245
+    - Endereço: Rua Interna do Wallmart Parque Rodoviário, Campos dos Goytacazes, Rio de Janeiro
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3670486111 → 46160.4123611111** (0D 01:05:15) | -22.39322,-41.80807
+    - Endereço: Avenida Aluízio da Silva Gomes - Novo Horizonte - Macaé - RJ
+    - Local: `9006159 - CARREFOUR MACAE`
+  - **46160.4356134259 → 46160.6954050926** (0D 06:14:06) | -22.48763,-41.91613
+    - Endereço: Rua das Orquídeas Village Rio das Ostras, Rio das Ostras, Rio de Janeiro, Brasil
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7205439815 → 46160.7227430556** (0D 00:03:10) | -22.48047,-42.14691
+    - Endereço: Em PT PAIeFILHO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.825625 → 46160.8289236111** (0D 00:04:45) | -22.88548,-43.22884
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8303125 → 46160.8330902778** (0D 00:04:00) | -22.88655,-43.23366
+    - Endereço: AV BRASIL, 0-0, BENFICA, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 20930040
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8400231482 → 46160.8427893519** (0D 00:03:59) | -22.87916,-43.24009
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.851099537 → 46160.8545601852** (0D 00:04:59) | -22.86708,-43.24743
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8723958333 → 46160.8744791667** (0D 00:03:00) | -22.83477,-43.26188
+    - Endereço: AV BRASIL, 0-0, PENHA, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21012350
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8793287037 → 46160.881412037** (0D 00:03:00) | -22.83132,-43.26834
+    - Endereço: AV BRASIL, 0-0, PENHA, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21012350
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8821064815 → 46160.8855671296** (0D 00:04:59) | -22.83008,-43.27028
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8924768519 → 46160.8945601852** (0D 00:03:00) | -22.82594,-43.2756
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8980092593 → 46160.9014699074** (0D 00:04:59) | -22.82289,-43.27951
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9069907407 → 46160.9097685185** (0D 00:04:00) | -22.82031,-43.28292
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9166898148 → 46160.9194444444** (0D 00:03:58) | -22.81656,-43.28765
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9201388889 → 46160.923599537** (0D 00:04:59) | -22.81588,-43.28875
+    - Endereço: AV BRASIL, 0-0, PENHA, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21012350
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9249768518 → 46160.9270601852** (0D 00:03:00) | -22.81525,-43.29028
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9360416667 → 46160.9415740741** (0D 00:07:58) | -22.81543,-43.30085
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9470949074 → 46160.949849537** (0D 00:03:58) | -22.81672,-43.30577
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9505324074 → 46160.9560763889** (0D 00:07:59) | -22.81741,-43.3072
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9567708333 → 46160.959525463** (0D 00:03:58) | -22.81801,-43.30823
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9609143519 → 46160.9643634259** (0D 00:04:58) | -22.81915,-43.31018
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9650578704 → 46160.9685185185** (0D 00:04:59) | -22.81963,-43.31147
+    - Endereço: AV BRASIL, 15882-15912, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9904282407 → 46160.9997685185** (0D 00:13:27) | -22.82898,-43.34154
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## KZU4C37
+- Total paradas: 13 | Distância: 268.63 km | Tempo dirigido: 0D 05:56:12
+- 13 paradas detalhadas:
+  - **46160.0013773148 → 46160.1556944444** (0D 03:42:13) | -22.82746,-43.33745
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1969444444 → 46160.2017824074** (0D 00:06:58) | -22.74743,-42.81196
+    - Endereço: Rod BR-101 - Itaborai - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.237337963 → 46160.2562731481** (0D 00:27:16) | -22.85886,-42.32787
+    - Endereço: Av Getulio Vargas, Araruama, RJ a 1734 39 de CDD ARARUAMA - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2568981481 → 46160.4615740741** (0D 04:54:44) | -22.85817,-42.32963
+    - Endereço: Indefinida
+    - Local: `560049 - SENDAS ARARUAMA - LJ 221`
+  - **46160.5031018518 → 46160.5089236111** (0D 00:08:23) | -22.85833,-42.32954
+    - Endereço: Indefinida
+    - Local: `560049 - SENDAS ARARUAMA - LJ 221`
+  - **46160.5857060185 → 46160.619375** (0D 00:48:29) | -22.83888,-43.25395
+    - Endereço: Maré, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21031-170
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6259953704 → 46160.6311574074** (0D 00:07:26) | -22.81873,-43.27525
+    - Endereço: R do Alpiste - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.642650463 → 46160.6454166667** (0D 00:03:59) | -22.8144,-43.2937
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6488657407 → 46160.6536921296** (0D 00:06:57) | -22.81544,-43.30131
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6730092593 → 46160.6795601852** (0D 00:09:26) | -22.8244,-43.33388
+    - Endereço: Avenida Tenente Rebelo, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21230
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6859143519 → 46160.7010416667** (0D 00:21:47) | -22.82898,-43.34123
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.70375 → 46160.7504166667** (0D 01:07:12) | -22.82839,-43.33603
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2535 45 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7521064815 → 46160.9996643519** (0D 05:56:29) | -22.82747,-43.33748
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LAF-0697
+- Total paradas: 16 | Distância: 96.79 km | Tempo dirigido: 0D 03:33:58
+- 16 paradas detalhadas:
+  - **46160.0033449074 → 46160.1599537037** (0D 03:45:31) | -22.82721,-43.33677
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1613310185 → 46160.1725925926** (0D 00:16:13) | -22.82713,-43.33803
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1820949074 → 46160.1929282407** (0D 00:15:36) | -22.82885,-43.3415
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2173842593 → 46160.2451388889** (0D 00:39:58) | -22.93059,-43.24253
+    - Endereço: Avenida Maracanã - Tijuca - Rio de Janeiro - RJ
+    - Local: `7000747 - PREZUNIC TIJUCA`
+  - **46160.2499768519 → 46160.2759027778** (0D 00:37:20) | -22.93048,-43.24239
+    - Endereço: Avenida Maracanã
+    - Local: `7000747 - PREZUNIC TIJUCA`
+  - **46160.3019560185 → 46160.3654050926** (0D 01:31:22) | -22.82159,-43.33478
+    - Endereço: R Bellini, Rio de Janeiro, RJ a 1930 57 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3707523148 → 46160.4076041667** (0D 00:53:04) | -22.82871,-43.34188
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4113078704 → 46160.4514351852** (0D 00:57:47) | -22.8274,-43.33809
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4521296296 → 46160.4948726852** (0D 01:01:33) | -22.82683,-43.33742
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5102314815 → 46160.5131365741** (0D 00:04:11) | -22.8273,-43.33811
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5138194444 → 46160.5208449074** (0D 00:10:07) | -22.82768,-43.3375
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5422916667 → 46160.5809490741** (0D 00:55:40) | -22.88314,-43.27989
+    - Endereço: Rua Degas
+    - Local: `4568002 - SAMS LINHA AMARELA`
+  - **46160.6000810185 → 46160.6021643519** (0D 00:03:00) | -22.81777,-43.30794
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6035416667 → 46160.605625** (0D 00:03:00) | -22.81927,-43.31056
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6063194444 → 46160.6085532407** (0D 00:03:13) | -22.81963,-43.31192
+    - Endereço: R GUADALUPE, 219-347, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 40, 40, CEP 2
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6224884259 → 46160.9959259259** (0D 08:57:45) | -22.82151,-43.3348
+    - Endereço: R Bellini, Rio de Janeiro, RJ a 1924 57 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## KZZ-4F25
+- Total paradas: 9 | Distância: 132.66 km | Tempo dirigido: 0D 03:51:51
+- 9 paradas detalhadas:
+  - **46160.0007523148 → 46160.160787037** (0D 03:50:27) | -22.7715,-43.36318
+    - Endereço: Rua Itacare, Sao Joao de Meriti, RJ a 6257 132 de AGF JARDIM AMERICA
+    - Local: `2018001 - ROTA BARRA,2018023 - ROTA ZONA NORTE`
+  - **46160.1720717593 → 46160.2135185185** (0D 00:59:41) | -22.82872,-43.34216
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA,2018023 - ROTA ZONA NORTE`
+  - **46160.2394791667 → 46160.2571064815** (0D 00:25:23) | -22.8796,-43.28975
+    - Endereço: Caminho do Mateus Pilares, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 20760-230
+    - Local: `2018001 - ROTA BARRA,2018023 - ROTA ZONA NORTE`
+  - **46160.2722800926 → 46160.3152662037** (0D 01:01:54) | -22.88969,-43.25916
+    - Endereço: Avenida Guanabara Jacarezinho, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 20973
+    - Local: `2018001 - ROTA BARRA,2018023 - ROTA ZONA NORTE`
+  - **46160.3321296296 → 46160.3662962963** (0D 00:49:12) | -22.88708,-43.3227
+    - Endereço: R. Cupertino, 55 - Quintino Bocaiúva, Rio de Janeiro - RJ, 21380-150, Brazil
+    - Local: `2018001 - ROTA BARRA,2018023 - ROTA ZONA NORTE`
+  - **46160.3838425926 → 46160.444224537** (0D 01:26:57) | -22.82896,-43.34154
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA,2018023 - ROTA ZONA NORTE`
+  - **46160.4794328704 → 46160.5068287037** (0D 00:39:27) | -23.01848,-43.45263
+    - Endereço: Rua Professor Taciel Cylleno, 743 Recreio dos Bandeirantes, Rio de Janeiro, Rio 
+    - Local: `2018001 - ROTA BARRA,2018023 - ROTA ZONA NORTE`
+  - **46160.5440740741 → 46160.8000925926** (0D 06:08:40) | -22.77148,-43.36361
+    - Endereço: R ITACARE, 486-652, VILA SAO JOAO, SAO JOAO DE MERITI, RJ, BRASIL, 40, 40, CEP 2
+    - Local: `2018001 - ROTA BARRA,2018023 - ROTA ZONA NORTE`
+  - **46160.8018171296 → 46160.9954166667** (0D 04:38:47) | -22.77151,-43.36322
+    - Endereço: Rua Itacare, Sao Joao de Meriti, RJ a 6257 132 de AGF JARDIM AMERICA
+    - Local: `2018001 - ROTA BARRA,2018023 - ROTA ZONA NORTE`
+
+## LAS-0711
+- Total paradas: 16 | Distância: 132.33 km | Tempo dirigido: 0D 06:49:51
+- 16 paradas detalhadas:
+  - **46160.0068287037 → 46160.1710532407** (0D 03:56:29) | -22.77224,-43.3786
+    - Endereço: Rua Bernadino Tilia Coelho da Rocha, Coelho da Rocha, Rio de Janeiro, Brasil, CE
+    - Local: `2018001 - ROTA BARRA,2018008 - ROTA CAXIAS`
+  - **46160.1717476852 → 46160.2009259259** (0D 00:42:01) | -22.82837,-43.34204
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA,2018008 - ROTA CAXIAS`
+  - **46160.2110532407 → 46160.224525463** (0D 00:19:24) | -22.79116,-43.28099
+    - Endereço: Rua Mahatma Gandhi Parque Sarapuí, Duque de Caxias, Rio de Janeiro, Brasil, CEP 
+    - Local: `2018001 - ROTA BARRA,2018008 - ROTA CAXIAS`
+  - **46160.2441435185 → 46160.2478935185** (0D 00:05:24) | -22.6193,-43.29307
+    - Endereço: Santo Antônio da Serra, Xerém, Rio de Janeiro, Brasil, CEP 25255-315
+    - Local: `2018001 - ROTA BARRA,2018008 - ROTA CAXIAS`
+  - **46160.2485763889 → 46160.258287037** (0D 00:13:59) | -22.61849,-43.29257
+    - Endereço: Santo Antônio da Serra, Xerém, Rio de Janeiro, Brasil, CEP 25255-315
+    - Local: `2018001 - ROTA BARRA,2018008 - ROTA CAXIAS`
+  - **46160.2751388889 → 46160.2814351852** (0D 00:09:04) | -22.70846,-43.28313
+    - Endereço: Avenida Fabor Pilar, Campos Elyseos, Rio de Janeiro, Brasil, CEP 25265-008
+    - Local: `2018001 - ROTA BARRA,2018008 - ROTA CAXIAS`
+  - **46160.2841319444 → 46160.2900115741** (0D 00:08:28) | -22.71011,-43.28436
+    - Endereço: Rua Luiz de Camões - Pilar - Duque de Caxias - RJ
+    - Local: `2018001 - ROTA BARRA,2018008 - ROTA CAXIAS`
+  - **46160.308287037 → 46160.3279398148** (0D 00:28:18) | -22.7144,-43.24326
+    - Endereço: Rua Monte Carmelo Campos Elíseos, Campos Elyseos, Rio de Janeiro, Brasil, CEP 25
+    - Local: `2018001 - ROTA BARRA,2018008 - ROTA CAXIAS`
+  - **46160.3326388889 → 46160.3365972222** (0D 00:05:42) | -22.71809,-43.25191
+    - Endereço: , Campos Elíseos, Duque de Caxias, Rio de Janeiro, Brasil, CEP 25221133
+    - Local: `2018001 - ROTA BARRA,2018008 - ROTA CAXIAS`
+  - **46160.3484722222 → 46160.3512962963** (0D 00:04:04) | -22.71806,-43.24918
+    - Endereço: Campos Elíseos, Campos Elyseos, Rio de Janeiro, Brasil, CEP 25265-008
+    - Local: `2018001 - ROTA BARRA,2018008 - ROTA CAXIAS`
+  - **46160.3603587963 → 46160.3674768519** (0D 00:10:15) | -22.7127,-43.27493
+    - Endereço: Em NACIONAL GAS - RJ
+    - Local: `2018001 - ROTA BARRA,2018008 - ROTA CAXIAS`
+  - **46160.4172916667 → 46160.4228472222** (0D 00:08:00) | -22.82909,-43.34217
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA,2018008 - ROTA CAXIAS`
+  - **46160.4235416667 → 46160.4396180556** (0D 00:23:09) | -22.82821,-43.34254
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA,2018008 - ROTA CAXIAS`
+  - **46160.4428240741 → 46160.4452777778** (0D 00:03:32) | -22.82911,-43.3401
+    - Endereço: Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA,2018008 - ROTA CAXIAS`
+  - **46160.4690277778 → 46160.483275463** (0D 00:20:31) | -22.82863,-43.34238
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA,2018008 - ROTA CAXIAS`
+  - **46160.5958449074 → 46160.6638194444** (0D 01:37:53) | -22.77216,-43.37879
+    - Endereço: Rua Bernadino Tilia Coelho da Rocha, Coelho da Rocha, Rio de Janeiro, Brasil, CE
+    - Local: `2018001 - ROTA BARRA,2018008 - ROTA CAXIAS`
+
+## LBL-5907
+- Total paradas: 5 | Distância: 17.88 km | Tempo dirigido: 0D 00:56:38
+- 5 paradas detalhadas:
+  - **46160.0011342593 → 46160.2518518519** (0D 06:01:02) | -22.8287,-43.33674
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2605 45 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2552083333 → 46160.2865046296** (0D 00:45:04) | -22.83038,-43.337
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 0 0 de
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2894212963 → 46160.3969675926** (0D 02:34:52) | -22.82738,-43.3381
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4048032407 → 46160.4231481481** (0D 00:26:25) | -22.83672,-43.3362
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2758 73 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4483680556 → 46160.4985648148** (0D 01:12:17) | -22.87991,-43.42873
+    - Endereço: Rua Marechal Soares DAndréia, Realengo, Rio de Janeiro, Rio de Janeiro, Brasil, 
+    - Local: `71004 - GB 04 - REALENGO`
+
+## LBB-5205
+- Total paradas: 11 | Distância: 28.4 km | Tempo dirigido: 0D 01:23:25
+- 11 paradas detalhadas:
+  - **46160.0025925926 → 46160.1821875** (0D 04:18:37) | -22.82821,-43.33704
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2585 46 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1856944444 → 46160.2009027778** (0D 00:21:54) | -22.83197,-43.34173
+    - Endereço: Estrada Pedro Borges de Freitas, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, 
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2025810185 → 46160.2304282407** (0D 00:40:06) | -22.83025,-43.34243
+    - Endereço: Avenida Pastor Martin Luther King Junior - Coelho Neto - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2341550926 → 46160.3934375** (0D 03:49:22) | -22.82675,-43.33807
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3984953704 → 46160.4216435185** (0D 00:33:20) | -22.83503,-43.33674
+    - Endereço: Estrada Pedro Borges de Freitas, CEASA-RJ, Colégio, Rio de Janeiro, Região Geogr
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.440162037 → 46160.4430092593** (0D 00:04:06) | -22.87631,-43.37251
+    - Endereço: R Xavier Curado - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4441087963 → 46160.4730208333** (0D 00:41:38) | -22.87578,-43.37094
+    - Endereço: R Nabuco de Araujo, Rio de Janeiro, RJ a 1103 101 de LTU-RJ AGF VILA VALQUEIRE
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4743981482 → 46160.506875** (0D 00:46:46) | -22.87558,-43.37081
+    - Endereço: Rua Comandaí Marechal Hermes, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21331-
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5160532407 → 46160.5214583333** (0D 00:07:47) | -22.85239,-43.39203
+    - Endereço: Avenida Brasil - Deodoro - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5310069444 → 46160.5801967593** (0D 01:10:50) | -22.82892,-43.3413
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5844444444 → 46160.9994444444** (0D 09:57:36) | -22.82819,-43.33712
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2591 47 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LCC-1E63
+- Total paradas: 10 | Distância: 46.35 km | Tempo dirigido: 0D 01:40:23
+- 10 paradas detalhadas:
+  - **46160.0136689815 → 46160.2173263889** (0D 04:53:16) | -22.79275,-43.38692
+    - Endereço: Rua Dona Alice São Mateus, São Mateus, Rio de Janeiro, Brasil, CEP 25525-660
+    - Local: `2018009 - ROTA CENTRO`
+  - **46160.2322685185 → 46160.2357291667** (0D 00:04:59) | -22.79922,-43.31409
+    - Endereço: Linha Vermelha - DUQUE DE CAXIAS - RJ
+    - Local: `2018009 - ROTA CENTRO`
+  - **46160.2391782407 → 46160.2433217593** (0D 00:05:58) | -22.79873,-43.3116
+    - Endereço: Rampa - Duque de Caxias - RJ
+    - Local: `2018009 - ROTA CENTRO`
+  - **46160.2440162037 → 46160.246099537** (0D 00:03:00) | -22.79858,-43.31064
+    - Endereço: Linha Vermelha - DUQUE DE CAXIAS - RJ
+    - Local: `2018009 - ROTA CENTRO`
+  - **46160.2592361111 → 46160.2613194444** (0D 00:03:00) | -22.80428,-43.2966
+    - Endereço: Via Pres Joao Goulart - Duque de Caxias - RJ
+    - Local: `2018009 - ROTA CENTRO`
+  - **46160.2626967593 → 46160.2647800926** (0D 00:03:00) | -22.80541,-43.29492
+    - Endereço: VIA EXPRESSA PRES JOAO GOULART/LINHA VERMELHA, 4028-4216, , DUQUE DE CAXIAS, RJ,
+    - Local: `2018009 - ROTA CENTRO`
+  - **46160.2790972222 → 46160.3972569444** (0D 02:50:09) | -22.81548,-43.22488
+    - Endereço: Rua Cinquenta e Dois Galeão, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21941-0
+    - Local: `2018009 - ROTA CENTRO`
+  - **46160.411412037 → 46160.4163541667** (0D 00:07:07) | -22.77976,-43.39293
+    - Endereço: Em POSTO FM DA DUTRA - RJ
+    - Local: `2018009 - ROTA CENTRO`
+  - **46160.4234027778 → 46160.5401273148** (0D 02:48:05) | -22.79273,-43.38684
+    - Endereço: Rua Dona Alice São Mateus, São Mateus, Rio de Janeiro, Brasil, CEP 25525-660
+    - Local: `2018009 - ROTA CENTRO`
+  - **46160.5407291667 → 46160.5443634259** (0D 00:05:14) | -22.79171,-43.3867
+    - Endereço: Rua Eucalipto Agostinho Porto, Coelho da Rocha, Rio de Janeiro, Brasil, CEP 2552
+    - Local: `2018009 - ROTA CENTRO`
+
+## LCE4337
+- Total paradas: 8 | Distância: 26.12 km | Tempo dirigido: 0D 01:37:01
+- 8 paradas detalhadas:
+  - **46160.0017013889 → 46160.1984375** (0D 04:43:18) | -22.7911,-43.32797
+    - Endereço: Rua Luis de Jesus Bar dos Cavaleiros, Duque de Caxias, Rio de Janeiro, Brasil, C
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.214224537 → 46160.2461574074** (0D 00:45:59) | -22.82715,-43.33812
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2509027778 → 46160.2683101852** (0D 00:25:04) | -22.82891,-43.34141
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2875347222 → 46160.325474537** (0D 00:54:38) | -22.79174,-43.31273
+    - Endereço: Rua Tabelião Silmar Silva - Centro - Duque de Caxias - RJ
+    - Local: `7000717 - PREZUNIC CAXIAS CENTRO`
+  - **46160.3296180556 → 46160.331724537** (0D 00:03:02) | -22.79178,-43.31284
+    - Endereço: Rua Tabelião Silmar Silva
+    - Local: `7000717 - PREZUNIC CAXIAS CENTRO`
+  - **46160.3429166667 → 46160.3460069444** (0D 00:04:27) | -22.7793,-43.31351
+    - Endereço: R Dr Manoel Reis, Duque de Caxias, RJ a 3178 112 de GARAGEM MERCOPAMPA - LGH - D
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3495486111 → 46160.366724537** (0D 00:24:44) | -22.7803,-43.30957
+    - Endereço: R Pedro Correia, Duque de Caxias, RJ a 2764 114 de GARAGEM MERCOPAMPA - LGH - DU
+    - Local: `7000713 - PREZUNIC CAXIAS CENTENÁRIO`
+  - **46160.375462963 → 46160.9977083333** (0D 14:56:02) | -22.79081,-43.3281
+    - Endereço: R Luiz de Jesus, Duque de Caxias, RJ a 2397 156 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## LCO-0J78
+- Total paradas: 7 | Distância: 124.23 km | Tempo dirigido: 0D 06:44:44
+- 7 paradas detalhadas:
+  - **46160.0065856481 → 46160.2252430556** (0D 05:14:52) | -22.82706,-43.33797
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2871296296 → 46160.4762037037** (0D 04:32:16) | -22.9828,-43.22594
+    - Endereço: Rua Dias Ferreira, 420 Leblon, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22431
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4987962963 → 46160.6386226852** (0D 03:21:21) | -22.8268,-43.33807
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7981712963 → 46160.8002546296** (0D 00:03:00) | -22.87841,-43.24041
+    - Endereço: Rua Manoel Ribeiro Vasconcelos Maré, Rio de Janeiro, Rio de Janeiro, Brasil, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8190277778 → 46160.8229976852** (0D 00:05:43) | -22.84274,-43.33207
+    - Endereço: AV PASTOR MARTIN LUTHER KING JR, 8262-8282, VICENTE DE CARVALHO, RIO DE JANEIRO,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8274074074 → 46160.9307523148** (0D 02:28:49) | -22.82656,-43.33914
+    - Endereço: AV BRASIL, 0-0, IRAJA, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21230042
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.9446064815 → 46160.9999652778** (0D 01:19:43) | -22.82723,-43.33815
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LFG-0737
+- Total paradas: 8 | Distância: 36.41 km | Tempo dirigido: 0D 11:40:35
+- 8 paradas detalhadas:
+  - **46160.2246064815 → 46160.2519097222** (0D 00:39:19) | -22.82583,-43.34663
+    - Endereço: Rua Piracambi, Acari, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21531-010
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4065856481 → 46160.4243171296** (0D 00:25:32) | -22.83611,-43.33629
+    - Endereço: Colégio, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21235-280
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4434722222 → 46160.4469444444** (0D 00:05:00) | -22.88594,-43.26498
+    - Endereço: Travessa Mendes da Silva, Maria da Graça, Rio de Janeiro, Rio de Janeiro, Brasil
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4840740741 → 46160.512974537** (0D 00:41:37) | -22.91972,-43.22719
+    - Endereço: R Dulce, Rio de Janeiro, RJ a 632 127 de AGF DINAMICA
+    - Local: `71033 - GB 33 - TIJUCA`
+  - **46160.5562615741 → 46160.5722106481** (0D 00:22:58) | -22.82807,-43.33619
+    - Endereço: Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5853819444 → 46160.6576736111** (0D 01:44:06) | -22.82826,-43.33644
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2556 45 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6710069444 → 46160.6848726852** (0D 00:19:58) | -22.83148,-43.33391
+    - Endereço: Estrada da Pedreira Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21235-280
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8906481481 → 46160.9736574074** (0D 01:59:32) | -22.82811,-43.33627
+    - Endereço: PC CONEGO MONTEIRO, 223-245, IRAJA, RIO DE JANEIRO, RJ, BRASIL, 40, 40, CEP 2123
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LFA-4744
+- Total paradas: 5 | Distância: 0 km | Tempo dirigido: 0D 00:32:09
+- 5 paradas detalhadas:
+  - **46160.2083680556 → 46160.3296990741** (0D 02:54:43) | -22.83303,-43.33549
+    - Endereço: Estrada Pedro Borges de Freitas Colégio, Rio de Janeiro, Rio de Janeiro, Brasil,
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3338541667 → 46160.3387037037** (0D 00:06:59) | -22.82741,-43.3381
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3400925926 → 46160.3553472222** (0D 00:21:58) | -22.82767,-43.33719
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3714351852 → 46160.4046412037** (0D 00:47:49) | -22.82854,-43.33809
+    - Endereço: Praça Conego Monteiro Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4053356481 → 46160.525474537** (0D 02:53:00) | -22.83617,-43.3368
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2804 75 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LFJ-8442
+- Total paradas: 11 | Distância: 10.98 km | Tempo dirigido: 0D 01:07:53
+- 11 paradas detalhadas:
+  - **46160.0038310185 → 46160.1674652778** (0D 03:55:38) | -22.8291,-43.34214
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1678819444 → 46160.1744097222** (0D 00:09:24) | -22.82856,-43.34128
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1786805556 → 46160.1857175926** (0D 00:10:08) | -22.82738,-43.3381
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1890972222 → 46160.1949074074** (0D 00:08:22) | -22.83987,-43.33702
+    - Endereço: , Colégio, , Rio de Janeiro, Brasil, CEP 21540-501
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2073263889 → 46160.2972106481** (0D 02:09:26) | -22.88141,-43.34276
+    - Endereço: Em SENDAS- MADUREIRA - SP
+    - Local: `560024 - SENDAS CAMPINHO - LOJA 37`
+  - **46160.2979050926 → 46160.2999884259** (0D 00:03:00) | -22.88239,-43.34369
+    - Endereço: Madureira, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21341-331
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3006828704 → 46160.3041550926** (0D 00:05:00) | -22.88163,-43.34258
+    - Endereço: Rua Domingos Lopes Madureira, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21130-
+    - Local: `560024 - SENDAS CAMPINHO - LOJA 37`
+  - **46160.3055324074 → 46160.3076157407** (0D 00:03:00) | -22.8822,-43.34377
+    - Endereço: Madureira, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21341-331
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3277199074 → 46160.3340740741** (0D 00:09:09) | -22.8821,-43.34333
+    - Endereço: Rua Dinis Barreto Madureira, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21341-3
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3371643519 → 46160.3421412037** (0D 00:07:10) | -22.88119,-43.34101
+    - Endereço: Rua Domingos Lopes Madureira, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21130-
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3428356481 → 46160.3786342593** (0D 00:51:33) | -22.8811,-43.34282
+    - Endereço: Em SENDAS- MADUREIRA - SP
+    - Local: `560024 - SENDAS CAMPINHO - LOJA 37`
+
+## LFK-2C56
+- Total paradas: 18 | Distância: 30.82 km | Tempo dirigido: 0D 04:49:11
+- 18 paradas detalhadas:
+  - **46160.0470949074 → 46160.0747337963** (0D 00:39:48) | -22.82867,-43.33597
+    - Endereço: Praça Conego Monteiro Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0954861111 → 46160.150775463** (0D 01:19:37) | -22.8289,-43.33648
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1577893519 → 46160.1955787037** (0D 00:54:25) | -22.82874,-43.33613
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2565 44 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1962731481 → 46160.1994212963** (0D 00:04:32) | -22.82803,-43.33808
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2001157407 → 46160.207025463** (0D 00:09:57) | -22.82776,-43.33758
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2084143519 → 46160.2146296296** (0D 00:08:57) | -22.82713,-43.33851
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2194675926 → 46160.2236111111** (0D 00:05:58) | -22.82745,-43.33811
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2277662037 → 46160.2381365741** (0D 00:14:56) | -22.82761,-43.3366
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2746990741 → 46160.2771412037** (0D 00:03:31) | -22.82735,-43.33764
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3089583333 → 46160.3552546296** (0D 01:06:40) | -22.84163,-43.28099
+    - Endereço: Indefinida
+    - Local: `71002 - GB 02 - PENHA`
+  - **46160.3566319444 → 46160.3993518519** (0D 01:01:31) | -22.82728,-43.33812
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4052199074 → 46160.4215509259** (0D 00:23:31) | -22.83603,-43.33685
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2800 75 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4395601852 → 46160.4818634259** (0D 01:00:55) | -22.84201,-43.28148
+    - Endereço: Rua Engenheiro Francisco Passos Penha, Rio de Janeiro, Rio de Janeiro, Brasil, C
+    - Local: `71002 - GB 02 - PENHA`
+  - **46160.5103935185 → 46160.523587963** (0D 00:19:00) | -22.82902,-43.34153
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5280902778 → 46160.7908333333** (0D 06:18:21) | -22.82884,-43.33637
+    - Endereço: Praça Cônego Monteiro, 223, Irajá, Rio De Janeiro - Rio de Janeiro
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7977546296 → 46160.8116203704** (0D 00:19:58) | -22.82756,-43.3358
+    - Endereço: Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8254398148 → 46160.9153356481** (0D 02:09:27) | -22.82868,-43.33583
+    - Endereço: Praça Conego Monteiro Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.929212963 → 46160.9776273148** (0D 01:09:43) | -22.82801,-43.33607
+    - Endereço: Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LIA7G83
+- Total paradas: 7 | Distância: 27.04 km | Tempo dirigido: 0D 05:47:25
+- 7 paradas detalhadas:
+  - **46160.0653356481 → 46160.0722453704** (0D 00:09:57) | -22.82828,-43.33718
+    - Endereço: Praça Conego Monteiro, CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imedia
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2038657407 → 46160.2334953704** (0D 00:42:40) | -22.82822,-43.33727
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2605 47 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2641203704 → 46160.2840162037** (0D 00:28:39) | -22.82705,-43.33804
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2937037037 → 46160.2958680556** (0D 00:03:07) | -22.8274,-43.33731
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3389583333 → 46160.376712963** (0D 00:54:22) | -22.91413,-43.36216
+    - Endereço: Travessa da Chácara Tanque, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22733-00
+    - Local: `71038 - GB 19 - TANQUE`
+  - **46160.3989236111 → 46160.4489930556** (0D 01:12:06) | -22.82884,-43.34121
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4530208333 → 46160.993287037** (0D 12:57:59) | -22.82854,-43.33724
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2625 46 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LJE4J63
+- Total paradas: 14 | Distância: 14.8 km | Tempo dirigido: 0D 02:09:23
+- 14 paradas detalhadas:
+  - **46160.0282291667 → 46160.3342592593** (0D 07:20:41) | -22.83157,-43.33595
+    - Endereço: Estrada Pedro Borges de Freitas Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, C
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3392361111 → 46160.3419328704** (0D 00:03:53) | -22.83126,-43.33658
+    - Endereço: Estrada Pedro Borges de Freitas Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, C
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3686226852 → 46160.3733680556** (0D 00:06:50) | -22.83607,-43.33625
+    - Endereço: Colégio, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21235-280
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3785648148 → 46160.4063194444** (0D 00:39:58) | -22.82783,-43.33735
+    - Endereço: Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4131712963 → 46160.4276388889** (0D 00:20:50) | -22.82902,-43.34159
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4372106481 → 46160.4640972222** (0D 00:38:43) | -22.83507,-43.33605
+    - Endereço: Estrada Pedro Borges de Freitas, CEASA-RJ, Colégio, Rio de Janeiro, Região Geogr
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4774884259 → 46160.4944212963** (0D 00:24:23) | -22.82773,-43.33745
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4975810185 → 46160.513599537** (0D 00:23:04) | -22.83495,-43.33601
+    - Endereço: , Colégio, , Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5156828704 → 46160.525625** (0D 00:14:19) | -22.83146,-43.33636
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5265625 → 46160.5289467593** (0D 00:03:26) | -22.83096,-43.33556
+    - Endereço: Estrada Pedro Borges de Freitas Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, C
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5345949074 → 46160.5434490741** (0D 00:12:45) | -22.82885,-43.34165
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5472222222 → 46160.5601041667** (0D 00:18:33) | -22.82761,-43.33827
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5651041667 → 46160.5841319444** (0D 00:27:24) | -22.83511,-43.33598
+    - Endereço: CEASA-RJ, Colégio, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro,
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.586712963 → 46160.9952199074** (0D 09:48:15) | -22.83158,-43.33646
+    - Endereço: Estrada Pedro Borges de Freitas, CEASA-RJ, Irajá, Rio de Janeiro, Região Geográf
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LJS-2B72
+- Total paradas: 14 | Distância: 115.31 km | Tempo dirigido: 0D 04:07:44
+- 14 paradas detalhadas:
+  - **46160.0006828704 → 46160.2196759259** (0D 05:15:21) | -22.82656,-43.33733
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2236921296 → 46160.2300810185** (0D 00:09:12) | -22.83626,-43.33924
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2483680556 → 46160.3060300926** (0D 01:23:02) | -22.88581,-43.28589
+    - Endereço: R GANDAVO, 99-121, ENGENHO DE DENTRO, RIO DE JANEIRO, RJ, BRASIL, 50, 40, CEP 20
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3162847222 → 46160.332650463** (0D 00:23:34) | -22.85359,-43.31305
+    - Endereço: Av Pst Martin Luther king Junior, Rio de Janeiro, RJ a 2766 6 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3426273148 → 46160.3606018519** (0D 00:25:53) | -22.82887,-43.3413
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3627314815 → 46160.3958217593** (0D 00:47:39) | -22.82627,-43.33606
+    - Endereço: Praça Conego Monteiro, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3991782407 → 46160.4165972222** (0D 00:25:05) | -22.82819,-43.33597
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4176041667 → 46160.4827893519** (0D 01:33:52) | -22.827,-43.3381
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4990046296 → 46160.5110185185** (0D 00:17:18) | -22.83506,-43.26285
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 1205 96 de CEE PENHA - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.511712963 → 46160.5485185185** (0D 00:53:00) | -22.83665,-43.26466
+    - Endereço: Rua Comandante Vergueiro da Cruz, Penha, Zona Norte do Rio de Janeiro, Rio de Ja
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5684837963 → 46160.7866319444** (0D 05:14:08) | -22.82725,-43.33811
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8356944444 → 46160.8597337963** (0D 00:34:37) | -23.00194,-43.34962
+    - Endereço: Av Mal Henrique Lott, Rio de Janeiro, RJ a 5362 144 de UNITRAC - TESTE
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8959490741 → 46160.8981134259** (0D 00:03:07) | -22.82651,-43.33772
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8989699074 → 46160.9996643519** (0D 02:25:00) | -22.82742,-43.33813
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LKA-3935
+- Total paradas: 1 | Distância: 0 km | Tempo dirigido: 0D 00:00:00
+- 1 paradas detalhadas:
+  - **46160.0012152778 → 46160.9984953704** (0D 23:56:05) | -22.82856,-43.33575
+    - Endereço: Praça Conego Monteiro Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LKR-5990
+- Total paradas: 11 | Distância: 78.49 km | Tempo dirigido: 0D 03:27:40
+- 11 paradas detalhadas:
+  - **46160.1218171296 → 46160.2158217593** (0D 02:15:22) | -22.82798,-43.33864
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2685 49 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI,2018006 - ROTA CAMPO GRANDE`
+  - **46160.2235185185 → 46160.2311226852** (0D 00:10:57) | -22.82736,-43.33568
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2434 46 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI,2018006 - ROTA CAMPO GRANDE`
+  - **46160.241875 → 46160.2756018518** (0D 00:48:34) | -22.82882,-43.34144
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,2018006 - ROTA CAMPO GRANDE`
+  - **46160.3040393519 → 46160.3161458333** (0D 00:17:26) | -22.88015,-43.28596
+    - Endereço: Rua José dos Reis Inhaúma, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 20760-230
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.327650463 → 46160.3388657407** (0D 00:16:09) | -22.90605,-43.29125
+    - Endereço: R Fabio Luz, Rio de Janeiro, RJ a 1072 158 de LTU-RJ CDD ENGENHO DE DENTRO
+    - Local: `7000729 - PREZUNIC MEIER,2018006 - ROTA CAMPO GRANDE`
+  - **46160.3526967593 → 46160.3879282407** (0D 00:50:44) | -22.90652,-43.29106
+    - Endereço: Méier, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 20720-320
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.4078009259 → 46160.4555092593** (0D 01:08:42) | -22.82905,-43.3414
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,2018006 - ROTA CAMPO GRANDE`
+  - **46160.4601041667 → 46160.6153819444** (0D 03:43:36) | -22.82732,-43.33772
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,2018006 - ROTA CAMPO GRANDE`
+  - **46160.6160763889 → 46160.7972916667** (0D 04:20:57) | -22.82784,-43.33855
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,2018006 - ROTA CAMPO GRANDE`
+  - **46160.8134259259 → 46160.8199421296** (0D 00:09:23) | -22.86428,-43.24822
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `2018006 - ROTA CAMPO GRANDE`
+  - **46160.8506365741 → 46160.88** (0D 00:42:17) | -23.0066,-43.44376
+    - Endereço: Via Serviente 6 - Recreio dos Bandeirantes - Rio de Janeiro
+    - Local: `6018001 - MEGA BOX 2 (RECREIO),2018006 - ROTA CAMPO GRANDE`
+
+## LKF-7A79
+- Total paradas: 7 | Distância: 57.43 km | Tempo dirigido: 0D 02:12:05
+- 7 paradas detalhadas:
+  - **46160.0024421296 → 46160.2545023148** (0D 06:02:58) | -22.82818,-43.3359
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2612384259 → 46160.4055787037** (0D 03:27:51) | -22.82736,-43.33804
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4129166667 → 46160.4221643519** (0D 00:13:19) | -22.83485,-43.33525
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4635763889 → 46160.4969212963** (0D 00:48:01) | -22.89047,-43.11573
+    - Endereço: Avenida Marquês do Paraná, 100 Centro, Niterói, Rio de Janeiro, Brasil, CEP 2403
+    - Local: `71008 - GB 08 - NITEROI`
+  - **46160.4976041667 → 46160.5053703704** (0D 00:11:11) | -22.88943,-43.11605
+    - Endereço: Rua Marechal Deodoro Centro, Niterói, Rio de Janeiro, Brasil, CEP 24030-060
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5257638889 → 46160.5304282407** (0D 00:06:43) | -22.82243,-43.27883
+    - Endereço: Rua do Alpiste Penha Circular, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21020
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5455902778 → 46160.9948726852** (0D 10:46:58) | -22.8283,-43.33581
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LKV-5067
+- Total paradas: 16 | Distância: 96.69 km | Tempo dirigido: 0D 03:56:15
+- 16 paradas detalhadas:
+  - **46160.0071990741 → 46160.2080787037** (0D 04:49:16) | -22.82766,-43.33826
+    - Endereço: AV BRASIL, 19001-19101, COELHO NETO, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 215
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2142013889 → 46160.2248726852** (0D 00:15:22) | -22.82887,-43.34171
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2410648148 → 46160.2860532407** (0D 01:04:47) | -22.85136,-43.26643
+    - Endereço: R Ligia, Rio de Janeiro, RJ a 2137 154 de LTU-RJ CEE PENHA
+    - Local: `7000714 - PREZUNIC OLARIA`
+  - **46160.2915856481 → 46160.3333796296** (0D 01:00:11) | -22.83544,-43.2888
+    - Endereço: R Rosario Fusco, Rio de Janeiro, RJ a 1325 83 de LTU-RJ CEE PENHA
+    - Local: `7000723 - PREZUNIC PENHA`
+  - **46160.3403356482 → 46160.3590046296** (0D 00:26:53) | -22.81588,-43.32434
+    - Endereço: R JORN GERALDO ROCHA, 10-16, JARDIM AMERICA, RIO DE JANEIRO, RJ, BRASIL, 50, 40,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3693634259 → 46160.3938657407** (0D 00:35:17) | -22.82902,-43.34116
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3965509259 → 46160.5470833333** (0D 03:36:46) | -22.82802,-43.33799
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5482638889 → 46160.559849537** (0D 00:16:41) | -22.82757,-43.33749
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5788888889 → 46160.6166203704** (0D 00:54:20) | -22.8914,-43.28225
+    - Endereço: Rua Honório, Cachambi, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 20771-330
+    - Local: `579013 - FEIRA NOVA TODOS OS SANTOS`
+  - **46160.6216203704 → 46160.6264699074** (0D 00:06:59) | -22.87564,-43.27769
+    - Endereço: Av Pst Martin Luther king Junior - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6360532407 → 46160.6388310185** (0D 00:04:00) | -22.84277,-43.33199
+    - Endereço: AV PASTOR MARTIN LUTHER KING JR, 8234-8260, VICENTE DE CARVALHO, RIO DE JANEIRO,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6466319444 → 46160.7651273148** (0D 02:50:38) | -22.8269,-43.33809
+    - Endereço: Avenida Brasil, Coelho Neto, , Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7719791667 → 46160.7754513889** (0D 00:05:00) | -22.83029,-43.34965
+    - Endereço: Rua Taiaçu, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-060
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8151157407 → 46160.8432407407** (0D 00:40:30) | -23.01405,-43.46223
+    - Endereço: Avenida das Américas, Recreio dos Bandeirantes, Rio de Janeiro, Rio de Janeiro, 
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8526273148 → 46160.8550810185** (0D 00:03:32) | -22.97332,-43.39919
+    - Endereço: Autodromo da Cidade do Rj, Rio de Janeiro, RJ a 1851 49 de UNITRAC - TESTE
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8727893519 → 46160.9980439815** (0D 03:00:22) | -22.82759,-43.33817
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LKW-2B80
+- Total paradas: 7 | Distância: 100.87 km | Tempo dirigido: 0D 04:33:27
+- 7 paradas detalhadas:
+  - **46160.0035185185 → 46160.4013888889** (0D 09:32:56) | -22.8299,-43.34325
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3186 52 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.404849537 → 46160.4714467593** (0D 01:35:54) | -22.82716,-43.33816
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5191435185 → 46160.5313310185** (0D 00:17:33) | -22.98581,-43.19263
+    - Endereço: Rua Bulhões de Carvalho
+    - Local: `9039004 - 04 - ZONA SUL - COPACABANA II`
+  - **46160.5362384259 → 46160.5761111111** (0D 00:57:25) | -22.98138,-43.19094
+    - Endereço: Rua Souza Lima - Copacabana - Rio de Janeiro - RJ
+    - Local: `9039018 - 18 - ZONA SUL - COPACABANA`
+  - **46160.621099537 → 46160.7573958333** (0D 03:16:16) | -22.82734,-43.33818
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8003935185 → 46160.8176388889** (0D 00:24:50) | -22.98308,-43.1915
+    - Endereço: R FRANCISCO SA, 22-48, COPACABANA, RIO DE JANEIRO, RJ, BRASIL, 50, 40, CEP 22080
+    - Local: `9039003 - 03 - ZONA SUL - COPACABANA`
+  - **46160.8634953704 → 46160.999537037** (0D 03:15:54) | -22.82691,-43.33806
+    - Endereço: Avenida Brasil, Coelho Neto, , Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LNG-7110
+- Total paradas: 7 | Distância: 72.29 km | Tempo dirigido: 0D 02:47:09
+- 7 paradas detalhadas:
+  - **46160.0017592593 → 46160.1753703704** (0D 04:10:00) | -22.89432,-43.4506
+    - Endereço: R Cidade de Braga, Rio de Janeiro, RJ a 7880 44 de CDD DEODORO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1932523148 → 46160.2005555556** (0D 00:10:31) | -22.82721,-43.33827
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2065856481 → 46160.2648842593** (0D 01:23:57) | -22.82895,-43.34124
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2902199074 → 46160.2940509259** (0D 00:05:31) | -22.86014,-43.51614
+    - Endereço: Avenida Brasil Campo Grande, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 23098-0
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3213078704 → 46160.3433680556** (0D 00:31:46) | -22.9148,-43.68194
+    - Endereço: Rua Álvaro Alberto, Santa Cruz, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 2351
+    - Local: `7000733 - PREZUNIC SANTA CRUZ`
+  - **46160.3528587963 → 46160.356875** (0D 00:05:47) | -22.88311,-43.63897
+    - Endereço: Avenida Brasil, 51101, Campo Grande, Rio De Janeiro - Rio de Janeiro
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3869560185 → 46160.9968981482** (0D 14:38:19) | -22.89437,-43.45059
+    - Endereço: R Cidade de Braga, Rio de Janeiro, RJ a 7888 44 de CDD DEODORO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## LLJ-9C64
+- Total paradas: 15 | Distância: 95.7 km | Tempo dirigido: 0D 04:00:31
+- 15 paradas detalhadas:
+  - **46160.0050462963 → 46160.1707060185** (0D 03:58:33) | -22.82211,-43.33901
+    - Endereço: R Interna, Rio de Janeiro, RJ a 2320 61 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1762962963 → 46160.1825347222** (0D 00:08:59) | -22.82889,-43.3413
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1863541667 → 46160.2021875** (0D 00:22:48) | -22.82707,-43.33806
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2053356481 → 46160.2134375** (0D 00:11:40) | -22.82769,-43.33815
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2149768519 → 46160.2171064815** (0D 00:03:04) | -22.82754,-43.33745
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2622685185 → 46160.2643865741** (0D 00:03:03) | -23.00045,-43.35764
+    - Endereço: Av das Americas, Rio de Janeiro, RJ a 4819 151 de UNITRAC - TESTE
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2646412037 → 46160.2754861111** (0D 00:15:37) | -23.00038,-43.35671
+    - Endereço: Av das Americas - Rio de Janeiro - RJ
+    - Local: `7000765 - PREZUNIC BARRA MARAPENDI`
+  - **46160.2796990741 → 46160.284375** (0D 00:06:44) | -23.0019,-43.33858
+    - Endereço: R Dalcidio Jurandir, Rio de Janeiro, RJ a 6056 135 de UNITRAC - TESTE
+    - Local: `71032 - GB 07 - BARRA`
+  - **46160.2905671296 → 46160.3133449074** (0D 00:32:48) | -23.00821,-43.31665
+    - Endereço: Avenida Rodolfo Amoedo - Zona Oeste do Rio de Janeiro - Rio de Janeiro
+    - Local: `7000753 - PREZUNIC JARDIM OCEÂNICO`
+  - **46160.3582523148 → 46160.3665393519** (0D 00:11:56) | -22.82894,-43.34134
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3694212963 → 46160.40875** (0D 00:56:38) | -22.82799,-43.33932
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2739 50 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4200810185 → 46160.4232523148** (0D 00:04:34) | -22.83517,-43.33671
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2758 77 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4330787037 → 46160.676099537** (0D 05:49:57) | -22.82218,-43.33893
+    - Endereço: R Interna, Rio de Janeiro, RJ a 2318 61 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6900694444 → 46160.7537847222** (0D 01:31:45) | -22.8049,-43.37191
+    - Endereço: R Valerio Vilas Boas, Sao Joao de Meriti, RJ a 4480 84 de CDD NILPOLIS
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.767974537 → 46160.9991319444** (0D 05:32:52) | -22.8221,-43.33899
+    - Endereço: R Interna, Rio de Janeiro, RJ a 2320 61 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## LMF-2049
+- Total paradas: 14 | Distância: 152.43 km | Tempo dirigido: 0D 04:14:20
+- 14 paradas detalhadas:
+  - **46160.0056597222 → 46160.1994675926** (0D 04:39:05) | -22.82733,-43.33674
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2001157407 → 46160.2079282407** (0D 00:11:15) | -22.8276,-43.33815
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2361574074 → 46160.2619444444** (0D 00:37:08) | -22.8884,-43.12391
+    - Endereço: R Mq de Caxias, Niteroi, RJ a 2468 107 de CEE - NITEROI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2909027778 → 46160.2989467593** (0D 00:11:35) | -22.82884,-43.34121
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3018865741 → 46160.3067939815** (0D 00:07:04) | -22.82804,-43.33753
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3074189815 → 46160.4991319444** (0D 04:36:04) | -22.82795,-43.33938
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2748 50 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5037037037 → 46160.5301157407** (0D 00:38:02) | -22.82743,-43.3382
+    - Endereço: AV BRASIL, 19001-19101, COELHO NETO, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 215
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5305324074 → 46160.5720717593** (0D 00:59:49) | -22.82763,-43.3374
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6181597222 → 46160.6816435185** (0D 01:31:25) | -22.9559,-43.60746
+    - Endereço: R Pedro Osorio, Rio de Janeiro, RJ a 10333 155 de HERMES - CAMPO GRANDE RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.717337963 → 46160.7194212963** (0D 00:03:00) | -22.86798,-43.46677
+    - Endereço: R Ceres, Rio de Janeiro, RJ a 8218 42 de CDD NILPOLIS
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7280439815 → 46160.7493171296** (0D 00:30:38) | -22.87821,-43.46488
+    - Endereço: Rua Fonseca Bangu, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21810-011
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7675810185 → 46160.7980902778** (0D 00:43:56) | -22.82886,-43.34136
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7990625 → 46160.8016319444** (0D 00:03:42) | -22.82575,-43.3352
+    - Endereço: Avenida Brasil, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8022222222 → 46160.9953240741** (0D 04:38:04) | -22.82797,-43.33781
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LNW-4899
+- Total paradas: 5 | Distância: 43.42 km | Tempo dirigido: 0D 01:15:39
+- 5 paradas detalhadas:
+  - **46160.0086921296 → 46160.3543518518** (0D 08:17:45) | -22.77955,-43.3842
+    - Endereço: Rua Floriana Coelho da Rocha, Coelho da Rocha, Rio de Janeiro, Brasil, CEP 25550
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.36125 → 46160.3962615741** (0D 00:50:25) | -22.77986,-43.384
+    - Endereço: Rua da Liberdade Coelho da Rocha, Coelho da Rocha, Rio de Janeiro, Brasil, CEP 2
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.4078587963 → 46160.4893287037** (0D 01:57:19) | -22.82893,-43.34177
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA`
+  - **46160.5220486111 → 46160.5278587963** (0D 00:08:22) | -22.98724,-43.19595
+    - Endereço: R JOAQUIM NABUCO, 266-276, IPANEMA, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 2208
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.5291782407 → 46160.5330902778** (0D 00:05:38) | -22.98422,-43.20285
+    - Endereço: Rua Vinícius de Moraes
+    - Local: `2018001 - ROTA BARRA`
+
+## LNU-7H38
+- Total paradas: 1 | Distância: 0 km | Tempo dirigido: 0D 00:00:00
+- 1 paradas detalhadas:
+  - **46160.0044675926 → 46160.9998958333** (0D 23:53:25) | -22.77227,-43.39295
+    - Endereço: Avenida Benjamin Pinto Dias Centro, Belford Roxo, Rio de Janeiro, Brasil, CEP 26
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## LON-7G98
+- Total paradas: 14 | Distância: 364.46 km | Tempo dirigido: 0D 06:58:07
+- 14 paradas detalhadas:
+  - **46160.0008449074 → 46160.0100925926** (0D 00:13:19) | -22.589,-43.41469
+    - Endereço: Tinguá, Nova Iguaçu, Rio de Janeiro, Brasil, CEP 26250-010
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.0477199074 → 46160.1044791667** (0D 01:21:44) | -22.82883,-43.34182
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1729861111 → 46160.2067476852** (0D 00:48:37) | -22.55476,-44.13009
+    - Endereço: Rua João Batista Reis dos Santos Boa Vista I, Barra Mansa, Rio de Janeiro, Brasi
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2280324074 → 46160.2405671296** (0D 00:18:03) | -22.4241,-44.31368
+    - Endereço: Via Guardian, , Porto Real, Rio de Janeiro, Brasil, CEP 27570-000
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2509027778 → 46160.2560300926** (0D 00:07:23) | -22.4208,-44.34863
+    - Endereço: Avenida Renato Monteiro, , Porto Real, Rio de Janeiro, Brasil
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2594560185 → 46160.2846990741** (0D 00:36:21) | -22.42072,-44.34502
+    - Endereço: Porto Real, Rio de Janeiro, Brasil, CEP 27570-000
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2970601852 → 46160.3101388889** (0D 00:18:50) | -22.43089,-44.38849
+    - Endereço: Agulhas Negras, Rio de Janeiro, Brasil, CEP 27356-000
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3225231481 → 46160.3263194444** (0D 00:05:28) | -22.46293,-44.44791
+    - Endereço: Rua Alfredo Whately - Resende - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3324652778 → 46160.3546180556** (0D 00:31:54) | -22.46714,-44.47009
+    - Endereço: Avenida Basileia Nova Liberdade, Resende, Rio de Janeiro, Brasil, CEP 27510-080
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3621643518 → 46160.367337963** (0D 00:07:27) | -22.46622,-44.45236
+    - Endereço: Rua Abel Rodrigues Pontes, 67 Nova Liberdade, Resende, Rio de Janeiro, Brasil, C
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3811689815 → 46160.3885300926** (0D 00:10:36) | -22.46376,-44.28766
+    - Endereço: Rod Pres Dutra, Barra Mansa, RJ a 20530 101 de CDD - VOLTA REDONDA - LTU
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4646180556 → 46160.4698842593** (0D 00:07:35) | -22.68238,-43.44051
+    - Endereço: Estrada São Bernardino
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4877546296 → 46160.4908796296** (0D 00:04:30) | -22.59185,-43.41579
+    - Endereço: Rua Nossa Senhora da Conceição, 6 Tinguá, Nova Iguaçu, Rio de Janeiro, Brasil, C
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4938310185 → 46160.9971643519** (0D 12:04:48) | -22.5891,-43.41463
+    - Endereço: Tinguá, Nova Iguaçu, Rio de Janeiro, Brasil, CEP 26250-010
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## LOF-4C66
+- Total paradas: 1 | Distância: 0 km | Tempo dirigido: 0D 00:00:00
+- 1 paradas detalhadas:
+  - **46160.6184837963 → 46160.9933101852** (0D 08:59:45) | -22.82797,-43.34294
+    - Endereço: AV BRASIL, 0-0, COELHO NETO, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21530000
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LOU-9928
+- Total paradas: 8 | Distância: 45.12 km | Tempo dirigido: 0D 01:36:18
+- 8 paradas detalhadas:
+  - **46160.1650115741 → 46160.1677083333** (0D 00:03:53) | -22.82823,-43.33551
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1688425926 → 46160.1744560185** (0D 00:08:05) | -22.82763,-43.33817
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1779861111 → 46160.2006944444** (0D 00:32:42) | -22.83204,-43.34193
+    - Endereço: Estrada Pedro Borges de Freitas, Zona Norte do Rio de Janeiro, Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2022222222 → 46160.2112268519** (0D 00:12:58) | -22.82888,-43.34133
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2315740741 → 46160.2680092593** (0D 00:52:28) | -22.75361,-43.46357
+    - Endereço: R Mario Jose de Fraga, Nova Iguacu, RJ a 2371 91 de CTC - NOVA IGUACU - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2687037037 → 46160.4752893519** (0D 04:57:29) | -22.75447,-43.4639
+    - Endereço: Avenida Presidente Tancredo Neves, 3424 Centro, Nova Iguaçu, Rio de Janeiro, Bra
+    - Local: `560054 - SENDAS NOVA IGUAÇU II`
+  - **46160.5080324074 → 46160.8362268519** (0D 07:52:36) | -22.82899,-43.34106
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.843125 → 46160.9948032407** (0D 03:38:25) | -22.82907,-43.34248
+    - Endereço: Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, Regiã
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LOT-2962
+- Total paradas: 9 | Distância: 42.29 km | Tempo dirigido: 0D 02:00:21
+- 9 paradas detalhadas:
+  - **46160.0043981482 → 46160.2022569444** (0D 04:44:55) | -22.86522,-43.36813
+    - Endereço: Rua Salomão Filho Marechal Hermes, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 2
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2128587963 → 46160.2164814815** (0D 00:05:13) | -22.82749,-43.33823
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.217349537 → 46160.2215509259** (0D 00:06:03) | -22.82682,-43.33732
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2248726852 → 46160.2422337963** (0D 00:25:00) | -22.82884,-43.3416
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2606134259 → 46160.2877430556** (0D 00:39:04) | -22.8053,-43.41882
+    - Endereço: R MARIO DE ARAUJO, 0-104, CENTRO, NILOPOLIS, RJ, BRASIL, 50, 40, CEP 26525132
+    - Local: `560023 - SENDAS NILÓPOLIS - LOJA 36`
+  - **46160.2960416667 → 46160.4438657407** (0D 03:32:52) | -22.80529,-43.41883
+    - Endereço: R MARIO DE ARAUJO, 0-104, CENTRO, NILOPOLIS, RJ, BRASIL, 50, 40, CEP 26525132
+    - Local: `560023 - SENDAS NILÓPOLIS - LOJA 36`
+  - **46160.4452430556 → 46160.5193171296** (0D 01:46:40) | -22.80551,-43.4185
+    - Endereço: R Mario de Araujo, Nilopolis, RJ a 213 106 de AGF CARMELA DUTRA
+    - Local: `560023 - SENDAS NILÓPOLIS - LOJA 36`
+  - **46160.5365972222 → 46160.6016782407** (0D 01:33:43) | -22.82894,-43.34135
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6251273148 → 46160.9990740741** (0D 08:58:29) | -22.86543,-43.36822
+    - Endereço: Praca Ailton Henrique da Costa, Rio de Janeiro, RJ a 1613 148 de LTU-RJ AGF VILA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## LPI-1E68
+- Total paradas: 17 | Distância: 131.86 km | Tempo dirigido: 0D 04:02:07
+- 17 paradas detalhadas:
+  - **46160.0034259259 → 46160.118125** (0D 02:45:10) | -22.79773,-43.37215
+    - Endereço: R Maria Emilia, Sao Joao de Meriti, RJ a 4555 80 de AGF CARMELA DUTRA
+    - Local: `2018002 - ROTA BOTAFOGO,2018006 - ROTA CAMPO GRANDE`
+  - **46160.1259143519 → 46160.1341782407** (0D 00:11:54) | -22.82889,-43.34204
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,2018002 - ROTA BOTAFOGO,2018006 - ROTA CAMPO GRANDE`
+  - **46160.1422453704 → 46160.1446180556** (0D 00:03:25) | -22.79785,-43.37208
+    - Endereço: R Maria Emilia, Sao Joao de Meriti, RJ a 4561 80 de AGF CARMELA DUTRA
+    - Local: `2018002 - ROTA BOTAFOGO,2018006 - ROTA CAMPO GRANDE`
+  - **46160.1516782407 → 46160.2006828704** (0D 01:10:34) | -22.82894,-43.34207
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI,2018002 - ROTA BOTAFOGO,2018006 - ROTA CAMPO GRANDE`
+  - **46160.2296412037 → 46160.2537615741** (0D 00:34:44) | -22.8622,-43.60761
+    - Endereço: Ambev - Fábrica Campo Grande, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 26262-
+    - Local: `2018002 - ROTA BOTAFOGO,2018006 - ROTA CAMPO GRANDE`
+  - **46160.2614814815 → 46160.2909259259** (0D 00:42:24) | -22.86817,-43.60641
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `2018002 - ROTA BOTAFOGO,2018006 - ROTA CAMPO GRANDE`
+  - **46160.308587963 → 46160.3617592593** (0D 01:16:34) | -22.90341,-43.56059
+    - Endereço: R AUGUSTO DE VASCONCELOS, 54-144, CAMPO GRANDE, RIO DE JANEIRO, RJ, BRASIL, 40, 
+    - Local: `2018002 - ROTA BOTAFOGO,2018006 - ROTA CAMPO GRANDE`
+  - **46160.3659837963 → 46160.3802662037** (0D 00:20:34) | -22.90415,-43.55777
+    - Endereço: R Dr Caetano de Faria Castro, Rio de Janeiro, RJ a 4679 158 de CLIENTES ESPECIAI
+    - Local: `2018002 - ROTA BOTAFOGO,2018006 - ROTA CAMPO GRANDE`
+  - **46160.3991666667 → 46160.4049884259** (0D 00:08:23) | -22.94797,-43.6039
+    - Endereço: Estrada do Canhangá Guaratiba, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 23035
+    - Local: `2018002 - ROTA BOTAFOGO,2018006 - ROTA CAMPO GRANDE`
+  - **46160.4163078704 → 46160.4255671296** (0D 00:13:20) | -22.92726,-43.5741
+    - Endereço: Estrada do Monteiro, 1200 Campo Grande, Rio de Janeiro, Rio de Janeiro, Brasil, 
+    - Local: `2018002 - ROTA BOTAFOGO,2018006 - ROTA CAMPO GRANDE`
+  - **46160.4332523148 → 46160.4360185185** (0D 00:03:59) | -22.91377,-43.56353
+    - Endereço: Rua Conservatoria - Campo Grande - Rio de Janeiro - RJ
+    - Local: `2018002 - ROTA BOTAFOGO,2018006 - ROTA CAMPO GRANDE`
+  - **46160.4677083333 → 46160.469849537** (0D 00:03:05) | -22.83208,-43.34062
+    - Endereço: Estrada Pedro Borges de Freitas, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, 
+    - Local: `BASE BENASSI - BASE BENASSI,2018002 - ROTA BOTAFOGO,2018006 - ROTA CAMPO GRANDE`
+  - **46160.4770138889 → 46160.5558101852** (0D 01:53:28) | -22.80472,-43.36659
+    - Endereço: Rua Professor Lindolfo Gomes, Pavuna, Rio de Janeiro, Rio de Janeiro, Brasil, CE
+    - Local: `2018002 - ROTA BOTAFOGO,2018006 - ROTA CAMPO GRANDE`
+  - **46160.5599421296 → 46160.7577662037** (0D 04:44:52) | -22.79771,-43.37214
+    - Endereço: Rua Ari Parreiras
+    - Local: `2018002 - ROTA BOTAFOGO,2018006 - ROTA CAMPO GRANDE`
+  - **46160.7584606481 → 46160.7638425926** (0D 00:07:45) | -22.79705,-43.36775
+    - Endereço: Rua Antônio Alexandre de Oliveira Centro, São João de Meriti, Rio de Janeiro, Br
+    - Local: `2018002 - ROTA BOTAFOGO,2018006 - ROTA CAMPO GRANDE`
+  - **46160.7678009259 → 46160.83375** (0D 01:34:58) | -22.79769,-43.37347
+    - Endereço: R JOSE ALVES DA COSTA, 118-142, CENTRO, SAO JOAO DE MERITI, RJ, BRASIL, 40, 40, 
+    - Local: `2018002 - ROTA BOTAFOGO,2018006 - ROTA CAMPO GRANDE`
+  - **46160.8348726852 → 46160.9944212963** (0D 03:49:45) | -22.79817,-43.37168
+    - Endereço: Rua Santa Tereza Centro, São João de Meriti, Rio de Janeiro, Brasil, CEP 25525-0
+    - Local: `2018002 - ROTA BOTAFOGO,2018006 - ROTA CAMPO GRANDE`
+
+## LQD-9H59
+- Total paradas: 7 | Distância: 11.12 km | Tempo dirigido: 0D 02:08:49
+- 7 paradas detalhadas:
+  - **46160.2528356481 → 46160.2705324074** (0D 00:25:29) | -22.83067,-43.33681
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2683 86 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2756018518 → 46160.3209259259** (0D 01:05:16) | -22.82767,-43.33744
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3238773148 → 46160.5104861111** (0D 04:28:43) | -22.82868,-43.34222
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5126273148 → 46160.5530787037** (0D 00:58:15) | -22.8277,-43.33742
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6108912037 → 46160.6130324074** (0D 00:03:05) | -22.82895,-43.34122
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6293518519 → 46160.6319212963** (0D 00:03:42) | -22.84911,-43.34442
+    - Endereço: R Dr Luiz Bicalho, Rio de Janeiro, RJ a 2300 172 de LTU-RJ AGF MADUREIRA SHOPPIN
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6370833333 → 46160.6405439815** (0D 00:04:59) | -22.84402,-43.33675
+    - Endereço: Estr do Barro Vermelho, Rio de Janeiro, RJ a 2867 9 de LTU-RJ AGF MADUREIRA SHOP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## LQE-5E01
+- Total paradas: 21 | Distância: 179.14 km | Tempo dirigido: 0D 06:39:27
+- 21 paradas detalhadas:
+  - **46160.0056597222 → 46160.2347685185** (0D 05:29:55) | -22.82821,-43.33601
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.235462963 → 46160.2511458333** (0D 00:22:35) | -22.82742,-43.33819
+    - Endereço: AV BRASIL, 19001-19101, COELHO NETO, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 215
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2580439815 → 46160.2700578704** (0D 00:17:18) | -22.82885,-43.34158
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2918055556 → 46160.294212963** (0D 00:03:28) | -22.88436,-43.40569
+    - Endereço: AV MAL FONTENELLE, 3587-3623, VILA MILITAR, RIO DE JANEIRO, RJ, BRASIL, 70, 60, 
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3101967593 → 46160.4013773148** (0D 02:11:18) | -22.92833,-43.36049
+    - Endereço: R Prf Henrique Costa, Rio de Janeiro, RJ a 1245 90 de LTU-RJ CDD TAQUARA
+    - Local: `7000709 - PREZUNIC PECHINCHA`
+  - **46160.4319212963 → 46160.5517708333** (0D 02:52:35) | -22.82902,-43.34113
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5623611111 → 46160.5711574074** (0D 00:12:40) | -22.82889,-43.34157
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5764930556 → 46160.5785763889** (0D 00:03:00) | -22.82177,-43.32529
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5799652778 → 46160.5834259259** (0D 00:04:59) | -22.82227,-43.32679
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5841203704 → 46160.588275463** (0D 00:05:59) | -22.82262,-43.32787
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5896643518 → 46160.5945023148** (0D 00:06:58) | -22.82316,-43.32953
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.597962963 → 46160.6021064815** (0D 00:05:58) | -22.82409,-43.3324
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.607650463 → 46160.6118055556** (0D 00:05:59) | -22.82535,-43.33599
+    - Endereço: Rua Charles Gounod
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6159375 → 46160.6214583333** (0D 00:07:57) | -22.82634,-43.33888
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6221527778 → 46160.6249074074** (0D 00:03:58) | -22.82669,-43.33982
+    - Endereço: AV BRASIL, 18942-19050, COELHO NETO, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 215
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6614814815 → 46160.68375** (0D 00:32:04) | -23.00596,-43.43179
+    - Endereço: R Sylvio da Rocha Polls, Rio de Janeiro, RJ a 1822 70 de AGF INTERLAGOS
+    - Local: `5353011 - ARMAZEM DO GRAO (BARRA DA TIJUCA)`
+  - **46160.7102662037 → 46160.7228819444** (0D 00:18:10) | -22.82888,-43.34125
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7255324074 → 46160.7737731481** (0D 01:09:28) | -22.8271,-43.33823
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.812037037 → 46160.8394444444** (0D 00:39:28) | -22.96972,-43.1852
+    - Endereço: Em 1044 COPACABANA 5 - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8836921296 → 46160.8878587963** (0D 00:06:00) | -22.8352,-43.26069
+    - Endereço: Avenida Brasil - Maré - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9079166667 → 46160.9938888889** (0D 02:03:48) | -22.82795,-43.3382
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LQA-4I25
+- Total paradas: 5 | Distância: 197.58 km | Tempo dirigido: 0D 05:00:48
+- 5 paradas detalhadas:
+  - **46160.0003587963 → 46160.0032291667** (0D 00:04:08) | -22.82757,-43.33741
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0512152778 → 46160.0635185185** (0D 00:17:43) | -22.73823,-42.73662
+    - Endereço: , , Tanguá, Rio de Janeiro, Brasil, CEP 24890-000
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1343981481 → 46160.2698032407** (0D 03:14:59) | -22.35987,-41.80253
+    - Endereço: Rodovia Christino Jose da Silva Junior, Macae, RJ a 37670 36 de AC UD TAMOIOS - 
+    - Local: `560041 - SENDAS MACAÉ - LOJA 232`
+  - **46160.2718865741 → 46160.4646064815** (0D 04:37:31) | -22.35949,-41.8019
+    - Endereço: RJ-168, Macae, RJ a 37739 36 de AC UD TAMOIOS - RJ
+    - Local: `560041 - SENDAS MACAÉ - LOJA 232`
+  - **46160.5525462963 → 46160.9968518519** (0D 10:39:48) | -22.76266,-42.91246
+    - Endereço: Rua 47 Vila Gabriela, Manilha, Rio de Janeiro, Brasil, CEP 24813-135
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## LRA-9C40
+- Total paradas: 3 | Distância: 1.41 km | Tempo dirigido: 0D 00:11:13
+- 3 paradas detalhadas:
+  - **46160.0066319444 → 46160.499375** (0D 11:49:33) | -22.82731,-43.3373
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5033564815 → 46160.5864351852** (0D 01:59:38) | -22.82916,-43.34109
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5902430556 → 46160.9986574074** (0D 09:48:07) | -22.82721,-43.33746
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LQU-5546
+- Total paradas: 13 | Distância: 65.71 km | Tempo dirigido: 0D 03:09:12
+- 13 paradas detalhadas:
+  - **46160.0061574074 → 46160.2874768519** (0D 06:45:06) | -22.83842,-43.37752
+    - Endereço: Rua Francisco Bacuri, Gogó da Ema, Guadalupe, Rio de Janeiro, Região Geográfica 
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2941550926 → 46160.3495138889** (0D 01:19:43) | -22.83838,-43.37748
+    - Endereço: Rua Francisco Bacuri, Gogó da Ema, Guadalupe, Rio de Janeiro, Região Geográfica 
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3614351852 → 46160.3920949074** (0D 00:44:09) | -22.82621,-43.336
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2359 49 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3932060185 → 46160.4131597222** (0D 00:28:44) | -22.82801,-43.33826
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4138425926 → 46160.4650347222** (0D 01:13:43) | -22.82711,-43.33827
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4654398148 → 46160.4677777778** (0D 00:03:22) | -22.8274,-43.33741
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5073263889 → 46160.5382175926** (0D 00:44:29) | -22.95218,-43.18896
+    - Endereço: Rua Dona Mariana, 82 Botafogo, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22280
+    - Local: `9039122 - 46 - ZONA SUL - BOTAFOGO`
+  - **46160.5410532407 → 46160.5548958333** (0D 00:19:56) | -22.95533,-43.18331
+    - Endereço: Rua Arnaldo Quintela, 70 Botafogo, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 2
+    - Local: `9039108 - 36 - ZONA SUL - BOTAFOGO`
+  - **46160.5570717593 → 46160.5591898148** (0D 00:03:03) | -22.95292,-43.17902
+    - Endereço: AL Emb Sanchez Gavito - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5924189815 → 46160.5951851852** (0D 00:03:59) | -22.81606,-43.30346
+    - Endereço: AV BRASIL, 0-0, PENHA, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21012350
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.601400463 → 46160.6041782407** (0D 00:04:00) | -22.81923,-43.31033
+    - Endereço: AV BRASIL, 0-0, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 2124105
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6048726852 → 46160.6083333333** (0D 00:04:59) | -22.81968,-43.31171
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6342361111 → 46160.9946990741** (0D 08:39:04) | -22.83839,-43.37744
+    - Endereço: Rua Francisco Bacuri, Gogó da Ema, Guadalupe, Rio de Janeiro, Região Geográfica 
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## LQH3F19
+- Total paradas: 7 | Distância: 20.08 km | Tempo dirigido: 0D 00:58:04
+- 7 paradas detalhadas:
+  - **46160.0037268518 → 46160.3078819444** (0D 07:17:59) | -22.82096,-43.35288
+    - Endereço: Rua Porto Batista Pavuna, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-014
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.31125 → 46160.3139583333** (0D 00:03:54) | -22.83523,-43.36157
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3239814815 → 46160.3835185185** (0D 01:25:44) | -22.83143,-43.337
+    - Endereço: Em CEASA IRAJA - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3948032407 → 46160.4248726852** (0D 00:43:18) | -22.82738,-43.35816
+    - Endereço: Avenida Prefeito Sá Lessa, Barros Filho, Rio de Janeiro, Rio de Janeiro, Brasil,
+    - Local: `9966101 - SUPERMARKET COELHO NETO`
+  - **46160.4328356481 → 46160.4790972222** (0D 01:06:37) | -22.82797,-43.33706
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4856018519 → 46160.5083101852** (0D 00:32:42) | -22.81825,-43.35774
+    - Endereço: Av Pst Martin Luther king Junior, Rio de Janeiro, RJ a 3983 80 de AGF JARDIM AME
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5094907407 → 46160.9968518519** (0D 11:41:48) | -22.82054,-43.35303
+    - Endereço: R Acoriana, Rio de Janeiro, RJ a 3412 61 de AGF ESTACAO RAMOS - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## LRA-9C41
+- Total paradas: 4 | Distância: 3.04 km | Tempo dirigido: 0D 00:21:06
+- 4 paradas detalhadas:
+  - **46160.0092708333 → 46160.4789467593** (0D 11:16:20) | -22.82783,-43.33751
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4820949074 → 46160.5360416667** (0D 01:17:41) | -22.82893,-43.3413
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5406481481 → 46160.7501851852** (0D 05:01:44) | -22.82757,-43.33751
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7570833333 → 46160.9989814815** (0D 05:48:20) | -22.82682,-43.33711
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LRB-0G46
+- Total paradas: 12 | Distância: 95.3 km | Tempo dirigido: 0D 02:05:45
+- 12 paradas detalhadas:
+  - **46160.049837963 → 46160.0530671296** (0D 00:04:39) | -22.82934,-43.34308
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3132 53 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0537615741 → 46160.0651388889** (0D 00:16:23) | -22.82897,-43.34141
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0677199074 → 46160.094525463** (0D 00:38:36) | -22.82794,-43.33745
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1026851852 → 46160.2074537037** (0D 02:30:52) | -22.82894,-43.34105
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2081365741 → 46160.2121527778** (0D 00:05:47) | -22.82916,-43.34196
+    - Endereço: Avenida Brasil Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21531-01
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2469097222 → 46160.2520949074** (0D 00:07:28) | -22.89081,-43.67535
+    - Endereço: Avenida Padre Guilherme Decaminada Santa Cruz, Rio de Janeiro, Rio de Janeiro, B
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2528703704 → 46160.5058449074** (0D 06:04:17) | -22.89033,-43.67708
+    - Endereço: R Nelson Pedro Alves Filho, Rio de Janeiro, RJ a 3530 54 de HERMES - CAMPO GRAND
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5328587963 → 46160.5603009259** (0D 00:39:31) | -22.82903,-43.34095
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5609953704 → 46160.6151736111** (0D 01:18:01) | -22.82908,-43.34223
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6199421296 → 46160.6828125** (0D 01:30:32) | -22.83533,-43.3368
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2774 77 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6893287037 → 46160.6934143519** (0D 00:05:53) | -22.82802,-43.33744
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6941087963 → 46160.9984143519** (0D 07:18:12) | -22.82707,-43.33719
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LRD-7J00
+- Total paradas: 13 | Distância: 108.38 km | Tempo dirigido: 0D 03:13:12
+- 13 paradas detalhadas:
+  - **46160.0012268519 → 46160.0839930556** (0D 01:59:11) | -22.76864,-43.38324
+    - Endereço: Rua Antimônio Coelho da Rocha, Coelho da Rocha, Rio de Janeiro, Brasil, CEP 2555
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.0997106481 → 46160.1560763889** (0D 01:21:10) | -22.82876,-43.34164
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1805902778 → 46160.2538541667** (0D 01:45:30) | -22.98235,-43.18993
+    - Endereço: Avenida Atlântica, Copacabana, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22081
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2578587963 → 46160.288912037** (0D 00:44:43) | -22.96414,-43.17329
+    - Endereço: Rua Gustavo Sampaio, 854 Leme, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22021
+    - Local: `2018010 - ROTA COPACABANA`
+  - **46160.3009375 → 46160.337650463** (0D 00:52:52) | -22.98715,-43.19599
+    - Endereço: R JOAQUIM NABUCO, 266-276, IPANEMA, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 2208
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3399884259 → 46160.3502662037** (0D 00:14:48) | -22.98638,-43.19699
+    - Endereço: R Gomes Carneiro, Rio de Janeiro, RJ a 87 105 de AC GENERAL OSORIO
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.381099537 → 46160.3909143519** (0D 00:14:08) | -22.97247,-43.18572
+    - Endereço: AV ATLANTICA, 2468-2652, COPACABANA, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 220
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4185416667 → 46160.4280324074** (0D 00:13:40) | -22.82896,-43.34104
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4287268519 → 46160.4317824074** (0D 00:04:24) | -22.82885,-43.34206
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4390393519 → 46160.4441087963** (0D 00:07:18) | -22.78426,-43.38103
+    - Endereço: Rua Ex-Combatente - SÃO JOÃO DE MERITI - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4475115741 → 46160.452650463** (0D 00:07:24) | -22.77109,-43.37414
+    - Endereço: Rua Anchieta Vila São João, Coelho da Rocha, Rio de Janeiro, Brasil, CEP 25561-1
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4557175926 → 46160.5644328704** (0D 02:36:33) | -22.7697,-43.38068
+    - Endereço: Rua Tântalo Coelho da Rocha, Coelho da Rocha, Rio de Janeiro, Brasil, CEP 25561-
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5671296296 → 46160.9947916667** (0D 10:15:50) | -22.76854,-43.38314
+    - Endereço: Rua Antimônio Coelho da Rocha, Coelho da Rocha, Rio de Janeiro, Brasil, CEP 2555
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## LSE-1D35
+- Total paradas: 1 | Distância: 0 km | Tempo dirigido: 0D 00:00:00
+- 1 paradas detalhadas:
+  - **46160.0002430556 → 46160.9972916667** (0D 23:55:45) | -22.81932,-43.40121
+    - Endereço: Rua Manitoba, Rio de Janeiro, RJ a 1727 121 de CDD NILPOLIS
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## LSX-7C72
+- Total paradas: 15 | Distância: 151.17 km | Tempo dirigido: 0D 04:16:16
+- 15 paradas detalhadas:
+  - **46160.0012847222 → 46160.150150463** (0D 03:34:22) | -22.74624,-43.34786
+    - Endereço: Rua Quatro, Belford Roxo, RJ a 7749 156 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1742708333 → 46160.1815162037** (0D 00:10:26) | -22.82713,-43.33828
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.184224537 → 46160.2009837963** (0D 00:24:08) | -22.83195,-43.34151
+    - Endereço: Estr Pedro Borges de Freitas, Rio de Janeiro, RJ a 3175 85 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2023958333 → 46160.2187962963** (0D 00:23:37) | -22.8288,-43.34158
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2458101852 → 46160.3649421296** (0D 02:51:33) | -22.88426,-43.5753
+    - Endereço: R Pedro Geraldo de Almeida, Rio de Janeiro, RJ a 2196 3 de CLIENTES ESPECIAIS - 
+    - Local: `7000766 - PREZUNIC CAMPO GRANDE (TINGUI)`
+  - **46160.3946180556 → 46160.4131481481** (0D 00:26:41) | -22.82891,-43.34137
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4171990741 → 46160.5486921296** (0D 03:09:21) | -22.82778,-43.33848
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5492476852 → 46160.5671527778** (0D 00:25:47) | -22.827,-43.33755
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5945486111 → 46160.6324768519** (0D 00:54:37) | -22.9453,-43.34635
+    - Endereço: Estrada do Gabinal - Freguesia (Jacarepaguá) - Rio de Janeiro - RJ
+    - Local: `579012 - FEIRA NOVA FREGUESIA`
+  - **46160.6526041667 → 46160.655787037** (0D 00:04:35) | -22.84363,-43.33074
+    - Endereço: Av Pst Martin Luther king Junior, Rio de Janeiro, RJ a 2634 54 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6564814815 → 46160.6602430556** (0D 00:05:25) | -22.84297,-43.33169
+    - Endereço: AV PASTOR MARTIN LUTHER KING JR, 8204-8232, VICENTE DE CARVALHO, RIO DE JANEIRO,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6664814815 → 46160.6937962963** (0D 00:39:20) | -22.8292,-43.34109
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7002893519 → 46160.7047569444** (0D 00:06:26) | -22.83689,-43.33618
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2768 73 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7061458333 → 46160.7169328704** (0D 00:15:32) | -22.83459,-43.33514
+    - Endereço: Colégio, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7430208333 → 46160.7458680556** (0D 00:04:06) | -22.74268,-43.35234
+    - Endereço: Avenida Automóvel Clube Vila Pauline, Belford Roxo, Rio de Janeiro, Brasil, CEP 
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## LSL-9670
+- Total paradas: 3 | Distância: 18.59 km | Tempo dirigido: 0D 00:52:27
+- 3 paradas detalhadas:
+  - **46160.2730092593 → 46160.2751273148** (0D 00:03:03) | -22.85052,-43.37019
+    - Endereço: R Det Perminio Goncalves, Rio de Janeiro, RJ a 1900 140 de AGF ESTACAO RAMOS - R
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2941319444 → 46160.7354513889** (0D 10:35:30) | -22.86028,-43.53911
+    - Endereço: Estrada Sete Riachos, 3892, Campo Grande, Rio De Janeiro - Rio de Janeiro
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7528703704 → 46160.9627314815** (0D 05:02:12) | -22.85055,-43.37027
+    - Endereço: R Det Perminio Goncalves, Rio de Janeiro, RJ a 1904 140 de AGF ESTACAO RAMOS - R
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## LSN-6I72
+- Total paradas: 14 | Distância: 123.74 km | Tempo dirigido: 0D 05:27:33
+- 14 paradas detalhadas:
+  - **46160.0049652778 → 46160.190775463** (0D 04:27:34) | -22.75001,-43.41772
+    - Endereço: Rua Mouraria Andrade Araújo, Belford Roxo, Rio de Janeiro, Brasil, CEP 26123-360
+    - Local: `17659001 - O BOM CAMPO GRANDE,21469000 - EMANUEL ALHAMBRA`
+  - **46160.2067708333 → 46160.2142361111** (0D 00:10:45) | -22.82802,-43.33806
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI,17659001 - O BOM CAMPO GRANDE,21469000 - EMANUEL ALHAMBRA`
+  - **46160.2211574074 → 46160.225** (0D 00:05:32) | -22.82721,-43.33848
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,17659001 - O BOM CAMPO GRANDE,21469000 - EMANUEL ALHAMBRA`
+  - **46160.2294097222 → 46160.2431481481** (0D 00:19:47) | -22.82883,-43.34156
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,17659001 - O BOM CAMPO GRANDE,21469000 - EMANUEL ALHAMBRA`
+  - **46160.268587963 → 46160.3252199074** (0D 01:21:33) | -22.8921,-43.26876
+    - Endereço: R Miguel angelo, Rio de Janeiro, RJ a 605 115 de LTU-RJ AGF PREMIUM
+    - Local: `7000724 - PREZUNIC CACHAMBI,17659001 - O BOM CAMPO GRANDE,21469000 - EMANUEL ALHAMBRA`
+  - **46160.3472916667 → 46160.4383912037** (0D 02:11:11) | -22.82772,-43.33701
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,17659001 - O BOM CAMPO GRANDE,21469000 - EMANUEL ALHAMBRA`
+  - **46160.4396064815 → 46160.442662037** (0D 00:04:24) | -22.83026,-43.33854
+    - Endereço: Estrada Pedro Borges de Freitas
+    - Local: `BASE BENASSI - BASE BENASSI,17659001 - O BOM CAMPO GRANDE,21469000 - EMANUEL ALHAMBRA`
+  - **46160.4649652778 → 46160.4693865741** (0D 00:06:22) | -22.77935,-43.42922
+    - Endereço: Rua Capitão Teles Cruzeiro do Sul, Mesquita, Rio de Janeiro, Brasil, CEP 26553-0
+    - Local: `17659001 - O BOM CAMPO GRANDE,21469000 - EMANUEL ALHAMBRA`
+  - **46160.4911458333 → 46160.5220717593** (0D 00:44:32) | -22.82678,-43.33805
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,17659001 - O BOM CAMPO GRANDE,21469000 - EMANUEL ALHAMBRA`
+  - **46160.5227662037 → 46160.5250462963** (0D 00:03:17) | -22.82779,-43.33745
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI,17659001 - O BOM CAMPO GRANDE,21469000 - EMANUEL ALHAMBRA`
+  - **46160.5721412037 → 46160.6123263889** (0D 00:57:52) | -22.92647,-43.55948
+    - Endereço: Avenida Guarabu da Serra, Campo Grande, Rio de Janeiro, Rio de Janeiro, Brasil, 
+    - Local: `17659001 - O BOM CAMPO GRANDE,21469000 - EMANUEL ALHAMBRA`
+  - **46160.6160300926 → 46160.635162037** (0D 00:27:33) | -22.92889,-43.56735
+    - Endereço: Av Alhambra, Rio de Janeiro, RJ a 7177 174 de CLIENTES ESPECIAIS - HERMES
+    - Local: `17659001 - O BOM CAMPO GRANDE,21469000 - EMANUEL ALHAMBRA`
+  - **46160.6421064815 → 46160.7176157407** (0D 01:48:44) | -22.92229,-43.5572
+    - Endereço: Rua O Campo Grande, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 23042-080
+    - Local: `17659001 - O BOM CAMPO GRANDE,21469000 - EMANUEL ALHAMBRA`
+  - **46160.7665277778 → 46160.9963888889** (0D 05:31:00) | -22.75011,-43.41792
+    - Endereço: Rua Mouraria Andrade Araújo, Belford Roxo, Rio de Janeiro, Brasil, CEP 26123-360
+    - Local: `17659001 - O BOM CAMPO GRANDE,21469000 - EMANUEL ALHAMBRA`
+
+## LTH4J15
+- Total paradas: 21 | Distância: 179.4 km | Tempo dirigido: 0D 06:52:22
+- 21 paradas detalhadas:
+  - **46160.0030208333 → 46160.1563888889** (0D 03:40:51) | -22.82359,-43.3341
+    - Endereço: R Ten Rebelo, Rio de Janeiro, RJ a 2010 50 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1599652778 → 46160.164849537** (0D 00:07:02) | -22.82875,-43.34163
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1680787037 → 46160.1787847222** (0D 00:15:25) | -22.82751,-43.33813
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2121527778 → 46160.2292013889** (0D 00:24:33) | -23.00118,-43.39344
+    - Endereço: Avenida das Américas - Barra da Tijuca - Rio de Janeiro - RJ
+    - Local: `22980000 - EMPORIO BARRA TOWER`
+  - **46160.2377777778 → 46160.2507060185** (0D 00:18:37) | -23.01056,-43.3315
+    - Endereço: Avenida Lúcio Costa Barra da Tijuca, Rio de Janeiro, Rio de Janeiro, Brasil, CEP
+    - Local: `22144002 - PETIT ATLANTICO SUL`
+  - **46160.2545601852 → 46160.2711921296** (0D 00:23:57) | -23.00961,-43.3278
+    - Endereço: Rua Deputado José da Rocha Ribas, 111 Barra da Tijuca, Rio de Janeiro, Rio de Ja
+    - Local: `22144000 - PETIT MARCHE BARRAMARES`
+  - **46160.2778703704 → 46160.2867013889** (0D 00:12:43) | -22.99006,-43.3652
+    - Endereço: Av Ayrton Senna, Rio de Janeiro, RJ a 3444 155 de UNITRAC - TESTE
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3175115741 → 46160.3595023148** (0D 01:00:28) | -22.82354,-43.33406
+    - Endereço: R Ten Rebelo, Rio de Janeiro, RJ a 2010 51 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3631365741 → 46160.378125** (0D 00:21:35) | -22.82888,-43.34153
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3813310185 → 46160.4319560185** (0D 01:12:54) | -22.82763,-43.33821
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4374768519 → 46160.4413078704** (0D 00:05:31) | -22.82873,-43.33786
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2692 47 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.447962963 → 46160.4505902778** (0D 00:03:47) | -22.8277,-43.33752
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4758333333 → 46160.487037037** (0D 00:16:08) | -22.7601,-43.45471
+    - Endereço: Av Dr Mario Guimaraes, Nova Iguacu, RJ a 1529 75 de CTC - NOVA IGUACU - RJ
+    - Local: `11623028 - VIANENSE NOVA IGUAÇU`
+  - **46160.4944444444 → 46160.5212847222** (0D 00:38:39) | -22.76132,-43.48318
+    - Endereço: R keler, Nova Iguacu, RJ a 4416 83 de CTC - NOVA IGUACU - RJ
+    - Local: `11623032 - VIANENSE JARDIM ALVORADA`
+  - **46160.5500347222 → 46160.5708101852** (0D 00:29:55) | -22.82897,-43.34103
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5735648148 → 46160.7286458333** (0D 03:43:19) | -22.82758,-43.33824
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.730462963 → 46160.7327083333** (0D 00:03:14) | -22.82785,-43.33753
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7829166667 → 46160.785** (0D 00:03:00) | -22.97476,-43.19192
+    - Endereço: Rua Constante Ramos
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.794212963 → 46160.8115162037** (0D 00:24:55) | -22.98341,-43.20223
+    - Endereço: Rua Barão da Torre, 240 Ipanema, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 224
+    - Local: `9039118 - 40 - ZONA SUL- IPANEMA`
+  - **46160.8207523148 → 46160.8235300926** (0D 00:04:00) | -22.97953,-43.22443
+    - Endereço: Avenida Bartolomeu Mitre - Leblon - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8661689815 → 46160.9974652778** (0D 03:09:04) | -22.82768,-43.33812
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## LTQ-0783
+- Total paradas: 12 | Distância: 111.46 km | Tempo dirigido: 0D 05:23:33
+- 12 paradas detalhadas:
+  - **46160.0063194444 → 46160.2872800926** (0D 06:44:35) | -22.76309,-43.34509
+    - Endereço: R Marica, Sao Joao de Meriti, RJ a 5918 151 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.327349537 → 46160.3483333333** (0D 00:30:13) | -22.68967,-43.28601
+    - Endereço: R Raul Novaes, Duque de Caxias, RJ a 5168 3 de AC e CDD- SANTA CRUZ DA SERRA - L
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.387349537 → 46160.4509837963** (0D 01:31:38) | -22.82787,-43.33826
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.451875 → 46160.4555439815** (0D 00:05:17) | -22.8268,-43.3374
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.505 → 46160.5243865741** (0D 00:27:55) | -22.96634,-43.21972
+    - Endereço: Pacheco Leão/General Garzon, Jardim Botânico, Rio de Janeiro, Rio de Janeiro, Br
+    - Local: `9039099 - 25 - ZONA SUL - JD. BOTANICO`
+  - **46160.5259490741 → 46160.5280324074** (0D 00:03:00) | -22.97811,-43.22649
+    - Endereço: R Arthur Araripe, Rio de Janeiro, RJ a 630 160 de LTU-RJ CDD LEBLON - IPANEMA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5311226852 → 46160.5454513889** (0D 00:20:38) | -22.98462,-43.22607
+    - Endereço: Rua General Artigas - Leblon - Rio de Janeiro
+    - Local: `9039015 - 15 - ZONA SUL - LEBLON`
+  - **46160.5579050926 → 46160.58125** (0D 00:33:37) | -22.9612,-43.2118
+    - Endereço: Rua Jardim Botânico, Lagoa, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22461-00
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6323263889 → 46160.6350810185** (0D 00:03:58) | -22.81689,-43.30636
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6371643519 → 46160.6406365741** (0D 00:05:00) | -22.81806,-43.30842
+    - Endereço: AV BRASIL, 0-0, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 2124105
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6468865741 → 46160.6503587963** (0D 00:05:00) | -22.81978,-43.31318
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6690972222 → 46160.9952546296** (0D 07:49:40) | -22.76261,-43.34493
+    - Endereço: Rua Laura Matos de Carvalho Jardim Alegria, São João de Meriti, Rio de Janeiro, 
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## LTC-8F97
+- Total paradas: 12 | Distância: 85.09 km | Tempo dirigido: 0D 03:07:19
+- 12 paradas detalhadas:
+  - **46160.0016319444 → 46160.2054282407** (0D 04:53:28) | -22.83455,-43.32917
+    - Endereço: R Barros Saiao, Rio de Janeiro, RJ a 2001 73 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2090162037 → 46160.2143287037** (0D 00:07:39) | -22.82573,-43.33542
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2163310185 → 46160.2290046296** (0D 00:18:15) | -22.82708,-43.33806
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2337731481 → 46160.2408449074** (0D 00:10:11) | -22.82903,-43.34081
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2462268519 → 46160.2484722222** (0D 00:03:14) | -22.84659,-43.32458
+    - Endereço: Rua Marquês de Aracati, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21235
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2769212963 → 46160.3803240741** (0D 02:28:54) | -22.92171,-43.19729
+    - Endereço: R Itapiru, Rio de Janeiro, RJ a 1325 154 de CTCE - CIDADE NOVA - RJ
+    - Local: `7000704 - PREZUNIC CATUMBI`
+  - **46160.4038310185 → 46160.4207407407** (0D 00:24:21) | -22.82897,-43.34095
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4229861111 → 46160.5788657407** (0D 03:44:28) | -22.82697,-43.33864
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6025462963 → 46160.6534375** (0D 01:13:17) | -22.90565,-43.28646
+    - Endereço: Rua dos Carijós - Méier - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6600810185 → 46160.6621643519** (0D 00:03:00) | -22.89789,-43.28299
+    - Endereço: Avenida Amaro Cavalcanti - Todos os Santos - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6879513889 → 46160.6961226852** (0D 00:11:46) | -22.82894,-43.34107
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.700150463 → 46160.9972222222** (0D 07:07:47) | -22.83461,-43.32924
+    - Endereço: R Barros Saiao, Rio de Janeiro, RJ a 2001 73 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## LVA-2689
+- Total paradas: 16 | Distância: 111.29 km | Tempo dirigido: 0D 03:19:34
+- 16 paradas detalhadas:
+  - **46160.0010300926 → 46160.104849537** (0D 02:29:30) | -22.79833,-43.38287
+    - Endereço: Rua da Penha São Mateus, São Mateus, Rio de Janeiro, Brasil, CEP 25525-660
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.1169444444 → 46160.1885300926** (0D 01:43:05) | -22.82884,-43.34176
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA`
+  - **46160.2128819444 → 46160.2185416667** (0D 00:08:09) | -22.93104,-43.35331
+    - Endereço: Avenida Geremário Dantas Pechincha, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.2248958333 → 46160.2297222222** (0D 00:06:57) | -22.99975,-43.3875
+    - Endereço: R ENG CARLOS EULER, 144-176, BARRA DA TIJUCA, RIO DE JANEIRO, RJ, BRASIL, 40, 40
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.2372337963 → 46160.2444328704** (0D 00:10:22) | -23.00085,-43.38426
+    - Endereço: Avenida das Américas - Zona Oeste do Rio de Janeiro - Rio de Janeiro
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.2451157407 → 46160.2494560185** (0D 00:06:15) | -23.0008,-43.38331
+    - Endereço: AV DAS AMERICAS, 6867-7397, BARRA DA TIJUCA, RIO DE JANEIRO, RJ, BRASIL, 50, 40,
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.2518981481 → 46160.2609722222** (0D 00:13:04) | -23.00047,-43.36597
+    - Endereço: AV DAS AMERICAS, 5375-5523, BARRA DA TIJUCA, RIO DE JANEIRO, RJ, BRASIL, 70, 60,
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.2864930556 → 46160.302349537** (0D 00:22:50) | -22.9983,-43.35204
+    - Endereço: Rua Doutor João Uchôa Cavalcanti Netto, Barra da Tijuca, Rio de Janeiro, Rio de 
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.3083333333 → 46160.3184027778** (0D 00:14:30) | -23.00121,-43.38505
+    - Endereço: R INTERNA SHOPPING RIO DESING BARRA, 0-0, , RIO DE JANEIRO, RJ, BRASIL, 40, 30, 
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.324212963 → 46160.3298842593** (0D 00:08:10) | -22.97316,-43.3657
+    - Endereço: Avenida Embaixador Abelardo Bueno, Jacarepaguá, Rio de Janeiro, Rio de Janeiro, 
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.3330324074 → 46160.3394328704** (0D 00:09:13) | -22.96966,-43.36655
+    - Endereço: Av Emb Abelardo Bueno - Pista Lateral, Rio de Janeiro, RJ a 1502 124 de UNITRAC 
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.3475810185 → 46160.395162037** (0D 01:08:31) | -22.9599,-43.39227
+    - Endereço: TransOlímpica Curicica, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22775-114
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.4129513889 → 46160.416712963** (0D 00:05:25) | -22.82908,-43.34326
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA`
+  - **46160.4282175926 → 46160.4316435185** (0D 00:04:56) | -22.80013,-43.35205
+    - Endereço: Em PT PETROBRAS - RJ - RJ
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.4371296296 → 46160.6376736111** (0D 04:48:47) | -22.79376,-43.38429
+    - Endereço: Rua Madalena São Mateus, São Mateus, Rio de Janeiro, Brasil, CEP 25525-660
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.6394328704 → 46160.9980671296** (0D 08:36:26) | -22.79836,-43.38284
+    - Endereço: Rua da Penha São Mateus, São Mateus, Rio de Janeiro, Brasil, CEP 25525-660
+    - Local: `2018001 - ROTA BARRA`
+
+## LUZ-2479
+- Total paradas: 13 | Distância: 53.04 km | Tempo dirigido: 0D 02:40:27
+- 13 paradas detalhadas:
+  - **46160.0018865741 → 46160.0886805556** (0D 02:04:59) | -22.82636,-43.33948
+    - Endereço: Rua J, Acari, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA`
+  - **46160.0907986111 → 46160.1553240741** (0D 01:32:55) | -22.82879,-43.34174
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA`
+  - **46160.1744328704 → 46160.194537037** (0D 00:28:57) | -22.9368,-43.38129
+    - Endereço: Rua André Rocha Taquara, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22710-483
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.1982291667 → 46160.2269328704** (0D 00:41:20) | -22.94568,-43.3718
+    - Endereço: Estrada dos Bandeirantes Taquara, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.2275578704 → 46160.2606481481** (0D 00:47:39) | -22.94503,-43.37263
+    - Endereço: Estrada dos Bandeirantes - Taquara - Rio de Janeiro - RJ
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.2610069444 → 46160.2664467593** (0D 00:07:50) | -22.94787,-43.37261
+    - Endereço: Estrada dos Bandeirantes Jacarepaguá, Rio de Janeiro, Rio de Janeiro, Brasil, CE
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.2726736111 → 46160.2808101852** (0D 00:11:43) | -22.97142,-43.38598
+    - Endereço: R BRUNO GIORGI, 0-48, JACAREPAGUA, RIO DE JANEIRO, RJ, BRASIL, 40, 40, CEP 22775
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.2897106481 → 46160.3066319444** (0D 00:24:22) | -23.00951,-43.44238
+    - Endereço: AV DAS AMERICAS, 13155-13317, RECREIO DOS BANDEIRANTES, RIO DE JANEIRO, RJ, BRAS
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.3073263889 → 46160.3103472222** (0D 00:04:21) | -23.0096,-43.44356
+    - Endereço: R Antonio Maroun, Rio de Janeiro, RJ a 3088 71 de AGF INTERLAGOS
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.3156481481 → 46160.3207986111** (0D 00:07:25) | -23.00355,-43.42891
+    - Endereço: Rua César Lattes Barra da Tijuca, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.326712963 → 46160.3446064815** (0D 00:25:46) | -23.01678,-43.46035
+    - Endereço: Av Glaucio Gil - Rio de Janeiro - RJ
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.3743171296 → 46160.3822222222** (0D 00:11:23) | -22.97148,-43.38599
+    - Endereço: R BRUNO GIORGI, 0-48, JACAREPAGUA, RIO DE JANEIRO, RJ, BRASIL, 40, 40, CEP 22775
+    - Local: `2018001 - ROTA BARRA`
+  - **46160.4109953704 → 46160.9979398148** (0D 14:05:12) | -22.82628,-43.33946
+    - Endereço: Rua J, Acari, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA`
+
+## LVE-0688
+- Total paradas: 4 | Distância: 34.42 km | Tempo dirigido: 0D 02:55:27
+- 4 paradas detalhadas:
+  - **46160.0036921296 → 46160.5117361111** (0D 12:11:35) | -22.82849,-43.33713
+    - Endereço: Praça Conego Monteiro, CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imedia
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5126851852 → 46160.6552083333** (0D 03:25:14) | -22.827,-43.33809
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7004166667 → 46160.7613773148** (0D 01:27:47) | -22.98333,-43.20214
+    - Endereço: Rua Barão da Torre, 240 Ipanema, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 224
+    - Local: `9039118 - 40 - ZONA SUL- IPANEMA`
+  - **46160.8370601852 → 46160.9969675926** (0D 03:50:16) | -22.82848,-43.33713
+    - Endereço: Praça Conego Monteiro, CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imedia
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## MES-7F27
+- Total paradas: 11 | Distância: 358.5 km | Tempo dirigido: 0D 06:23:19
+- 11 paradas detalhadas:
+  - **46160.0027777778 → 46160.1341319444** (0D 03:09:09) | -22.82734,-43.33813
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1791666667 → 46160.1819791667** (0D 00:04:03) | -22.74744,-42.81142
+    - Endereço: Rodovia Governador Mário Covas, km 284, s/n Picos, Itaboraí, Rio de Janeiro, Bra
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2456944444 → 46160.2761574074** (0D 00:43:52) | -22.96779,-42.02807
+    - Endereço: Av Getulio Vargas, Arraial do Cabo, RJ a 92034 143 de CDD - RESENDE - LTU
+    - Local: `8590559 - PRINCESA - ARRAIAL DO CABO 1`
+  - **46160.2768518518 → 46160.3104513889** (0D 00:48:23) | -22.97252,-42.02847
+    - Endereço: Avenida Getúlio Vargas, , Arraial do Cabo, Rio de Janeiro, Brasil, CEP 28930-000
+    - Local: `8590569 - PRINCESA - ARRAIAL DO CABO 3`
+  - **46160.3130902778 → 46160.3452777778** (0D 00:46:21) | -22.96765,-42.02393
+    - Endereço: Pca Castelo Branco, Arraial do Cabo, RJ a 92269 143 de CDD - RESENDE - LTU
+    - Local: `8590560 - PRINCESA - ARRAIAL DO CABO 2`
+  - **46160.4671296296 → 46160.7311342593** (0D 06:20:10) | -22.80911,-43.32048
+    - Endereço: Rua Georges Bizet Jardim América, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7360416667 → 46160.7401851852** (0D 00:05:58) | -22.81972,-43.31475
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7447337963 → 46160.7502777778** (0D 00:07:59) | -22.81965,-43.31772
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7521643518 → 46160.7655208333** (0D 00:19:14) | -22.81991,-43.3197
+    - Endereço: AV BRASIL, 16352-16594, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7834953704 → 46160.798900463** (0D 00:22:11) | -22.82893,-43.34125
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8018402778 → 46160.9988541667** (0D 04:43:42) | -22.82727,-43.33811
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## MSK-3752
+- Total paradas: 8 | Distância: 103.67 km | Tempo dirigido: 0D 02:18:00
+- 8 paradas detalhadas:
+  - **46160.0130092593 → 46160.1437037037** (0D 03:08:12) | -22.79141,-43.3973
+    - Endereço: R Ananias Antero da Costa, Sao Joao de Meriti, RJ a 2488 52 de AGF CARMELA DUTRA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1562731481 → 46160.1626041667** (0D 00:09:07) | -22.82751,-43.33817
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1828472222 → 46160.2419675926** (0D 01:25:08) | -22.9283,-43.35332
+    - Endereço: R Gen Jose Neves, Rio de Janeiro, RJ a 1981 90 de LTU-RJ CDD TAQUARA
+    - Local: `8590031 - PRINCESA PECHINCHA`
+  - **46160.2561574074 → 46160.2617939815** (0D 00:08:07) | -22.82892,-43.34138
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2638773148 → 46160.3849189815** (0D 02:54:18) | -22.82794,-43.33794
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3853125 → 46160.3906944444** (0D 00:07:45) | -22.82774,-43.33748
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3960648148 → 46160.4224537037** (0D 00:38:00) | -22.83511,-43.33675
+    - Endereço: Estrada Pedro Borges de Freitas, CEASA-RJ, Colégio, Rio de Janeiro, Região Geogr
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4634375 → 46160.4876041667** (0D 00:34:48) | -22.92887,-43.67877
+    - Endereço: R Aloysio de Oliveira Barbosa, Rio de Janeiro, RJ a 7139 26 de HERMES - CAMPO GR
+    - Local: `71028 - GB 28 - SANTA CRUZ`
+
+## PVA-1H61
+- Total paradas: 2 | Distância: 0 km | Tempo dirigido: 0D 00:03:17
+- 2 paradas detalhadas:
+  - **46160.0009722222 → 46160.6675578704** (0D 15:59:53) | -22.82843,-43.34267
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3039 54 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.669837963 → 46160.997650463** (0D 07:52:03) | -22.82655,-43.33733
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## NTT4858
+- Total paradas: 9 | Distância: 65.32 km | Tempo dirigido: 0D 02:34:51
+- 9 paradas detalhadas:
+  - **46160.1796296296 → 46160.1833564815** (0D 00:05:22) | -22.83479,-43.33544
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2615 77 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1882175926 → 46160.1998611111** (0D 00:16:46) | -22.82721,-43.33779
+    - Endereço: Av. Brasil, 18281 - Irajá, Rio de Janeiro - RJ, 21530-000, Brasil
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2031597222 → 46160.2148032407** (0D 00:16:46) | -22.8288,-43.34181
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2528819444 → 46160.3745138889** (0D 02:55:09) | -23.01367,-43.46909
+    - Endereço: Avenida Das Américas
+    - Local: `7000702 - PREZUNIC RECREIO`
+  - **46160.3832523148 → 46160.387037037** (0D 00:05:27) | -23.00846,-43.44161
+    - Endereço: AV DAS AMERICAS, 12863-13031, RECREIO DOS BANDEIRANTES, RIO DE JANEIRO, RJ, BRAS
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4253356481 → 46160.4335648148** (0D 00:11:51) | -22.85316,-43.34837
+    - Endereço: Avenida dos Italianos - Rocha Miranda - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4401967593 → 46160.4729976852** (0D 00:47:14) | -22.82897,-43.34137
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4763310185 → 46160.4819675926** (0D 00:08:07) | -22.82585,-43.33529
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 2279 48 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4862615741 → 46160.7144328704** (0D 05:28:34) | -22.8348,-43.33548
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2626 77 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## NSM6D98
+- Total paradas: 12 | Distância: 163.53 km | Tempo dirigido: 0D 04:47:53
+- 12 paradas detalhadas:
+  - **46160.0035416667 → 46160.166400463** (0D 03:54:31) | -22.79146,-43.33756
+    - Endereço: R Moacir Araujo Pereira, Sao Joao de Meriti, RJ a 2832 136 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1802199074 → 46160.1977430556** (0D 00:25:14) | -22.8279,-43.33823
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2434837963 → 46160.2720833333** (0D 00:41:11) | -22.81967,-43.00699
+    - Endereço: Estr Menezes, Sao Goncalo, RJ a 1928 4 de CEE - SAO GONCALO - RJ
+    - Local: `9006012 - CARREFOUR ALCANTARA`
+  - **46160.335 → 46160.3662615741** (0D 00:45:01) | -22.82889,-43.34122
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3688657407 → 46160.4363078704** (0D 01:37:07) | -22.82758,-43.33823
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4374421296 → 46160.4439814815** (0D 00:09:25) | -22.82763,-43.3375
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4453703704 → 46160.4474537037** (0D 00:03:00) | -22.83283,-43.33936
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4713078704 → 46160.5215625** (0D 01:12:22) | -22.99027,-43.36256
+    - Endereço: Av Joao Cabral de Mello Neto, Rio de Janeiro, RJ a 3580 151 de UNITRAC - TESTE
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5473726852 → 46160.5641203704** (0D 00:24:07) | -22.82895,-43.34108
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5658564815 → 46160.5743981482** (0D 00:12:18) | -22.82804,-43.33938
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2748 50 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.580150463 → 46160.596712963** (0D 00:23:51) | -22.83348,-43.33591
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2634 80 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.611875 → 46160.9983564815** (0D 09:16:32) | -22.79143,-43.33766
+    - Endereço: R Moacir Araujo Pereira, Sao Joao de Meriti, RJ a 2852 137 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## QSO-8D04
+- Total paradas: 4 | Distância: 1.66 km | Tempo dirigido: 0D 00:12:06
+- 4 paradas detalhadas:
+  - **46160.0005092593 → 46160.1363541667** (0D 03:15:37) | -22.82915,-43.34113
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1400925926 → 46160.3236458333** (0D 04:24:19) | -22.82655,-43.33749
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3243402778 → 46160.7084606482** (0D 09:13:08) | -22.82784,-43.33742
+    - Endereço: Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7124305556 → 46160.9969212963** (0D 06:49:40) | -22.8284,-43.34249
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## QST-4C52
+- Total paradas: 21 | Distância: 488.61 km | Tempo dirigido: 0D 09:29:06
+- 21 paradas detalhadas:
+  - **46160.0007523148 → 46160.0363194444** (0D 00:51:13) | -22.82861,-43.34267
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3048 54 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0392476852 → 46160.0643171296** (0D 00:36:06) | -22.82757,-43.33811
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.06625 → 46160.106875** (0D 00:58:30) | -22.82788,-43.33751
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1721180556 → 46160.1921412037** (0D 00:28:50) | -22.79716,-42.4543
+    - Endereço: Graal Oasis, km 22.6 Palmital (Rio Bonito), Rio Bonito, Rio de Janeiro, Brasil, 
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.239849537 → 46160.2601388889** (0D 00:29:13) | -22.77418,-41.91468
+    - Endereço: Av Jose Bento Ribeiro Dantas, Armacao dos Buzios, RJ a 83676 128 de CDD - RESEND
+    - Local: `8590571 - PRINCESA - BUZIOS 3`
+  - **46160.2633449074 → 46160.2695138889** (0D 00:08:53) | -22.77359,-41.91331
+    - Endereço: R Videiras, Armacao dos Buzios, RJ a 16978 145 de AC UD TAMOIOS - RJ
+    - Local: `8590563 - PRINCESA - BUZIOS 1`
+  - **46160.2701967593 → 46160.3744560185** (0D 02:30:08) | -22.77161,-41.91244
+    - Endereço: Av Jose Bento Ribeiro Dantas, Armacao dos Buzios, RJ a 16842 144 de AC UD TAMOIO
+    - Local: `8590564 - PRINCESA - BUZIOS 2`
+  - **46160.375474537 → 46160.3835300926** (0D 00:11:36) | -22.7739,-41.91461
+    - Endereço: Avenida Jose Bento Ribeiro Dantas, Armacao dos Buzios, RJ a 16932 145 de AC UD T
+    - Local: `8590571 - PRINCESA - BUZIOS 3`
+  - **46160.4991435185 → 46160.5855439815** (0D 02:04:25) | -22.82896,-43.3411
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6259722222 → 46160.6284606481** (0D 00:03:35) | -22.55232,-43.22537
+    - Endereço: Rod Washington Luiz - Petropolis - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6355208333 → 46160.6489699074** (0D 00:19:22) | -22.53256,-43.20507
+    - Endereço: Rua General Rondon, 550 Quitandinha, Petrópolis, Rio de Janeiro, Brasil, CEP 256
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6540162037 → 46160.6684606482** (0D 00:20:48) | -22.52001,-43.19043
+    - Endereço: R Goncalves Dias, Petropolis, RJ a 16513 38 de AC e CDD- SANTA CRUZ DA SERRA - L
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6778819444 → 46160.6988425926** (0D 00:30:11) | -22.49996,-43.19912
+    - Endereço: Rua Mosela, 983 Mosela, Petrópolis, Rio de Janeiro, Brasil, CEP 25675-016
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7618402778 → 46160.7646180556** (0D 00:04:00) | -22.80641,-43.2895
+    - Endereço: RODOVIA WASHINGTON LUIZ/BR 040, 124200-124276, PARQUE DUQUE, DUQUE DE CAXIAS, RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7756597222 → 46160.7837384259** (0D 00:11:38) | -22.81581,-43.3242
+    - Endereço: R JORN GERALDO ROCHA, 10-16, JARDIM AMERICA, RIO DE JANEIRO, RJ, BRASIL, 50, 40,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7868518519 → 46160.7919444444** (0D 00:07:20) | -22.81937,-43.31524
+    - Endereço: AV MERITI, 4604-4806, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 50, 40, CEP 2
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7926388889 → 46160.7970486111** (0D 00:06:21) | -22.81964,-43.31626
+    - Endereço: AV BRASIL, 16100-16156, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7977430556 → 46160.8001851852** (0D 00:03:31) | -22.81966,-43.31725
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8102199074 → 46160.8396527778** (0D 00:42:23) | -22.82893,-43.3411
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8402662037 → 46160.9007523148** (0D 01:27:06) | -22.82857,-43.34273
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3048 54 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.9064814815 → 46160.9997685185** (0D 02:14:20) | -22.82789,-43.33824
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## QSU-6I54
+- Total paradas: 19 | Distância: 93.2 km | Tempo dirigido: 0D 03:45:47
+- 19 paradas detalhadas:
+  - **46160.0068171296 → 46160.0617708333** (0D 01:19:08) | -22.82846,-43.34262
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0630555556 → 46160.0651388889** (0D 00:03:00) | -22.82794,-43.33822
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0653703704 → 46160.2018981481** (0D 03:16:36) | -22.82697,-43.33799
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2453356481 → 46160.2477546296** (0D 00:03:29) | -22.82022,-43.0453
+    - Endereço: R Floriano Lima, Sao Goncalo, RJ a 2078 70 de CDD - ANTONINA
+    - Local: `560047 - SENDAS SÃO GONÇALO CENTRO`
+  - **46160.2556134259 → 46160.2843518518** (0D 00:41:23) | -22.82036,-43.04534
+    - Endereço: R Floriano Lima, Sao Goncalo, RJ a 2086 69 de CDD - ANTONINA
+    - Local: `560047 - SENDAS SÃO GONÇALO CENTRO`
+  - **46160.2899074074 → 46160.3553009259** (0D 01:34:10) | -22.82088,-43.04595
+    - Endereço: Tv Anibal Muniz, Sao Goncalo, RJ a 2169 69 de CDD - ANTONINA
+    - Local: `560047 - SENDAS SÃO GONÇALO CENTRO`
+  - **46160.3553935185 → 46160.3651041667** (0D 00:13:59) | -22.82026,-43.04665
+    - Endereço: Avenida Presidente Kennedy Zé Garoto, São Gonçalo, Rio de Janeiro, Brasil, CEP 2
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4076041667 → 46160.5397685185** (0D 03:10:19) | -22.82086,-43.0462
+    - Endereço: Tv Anibal Muniz, Sao Goncalo, RJ a 2182 69 de CDD - ANTONINA
+    - Local: `560047 - SENDAS SÃO GONÇALO CENTRO`
+  - **46160.5751736111 → 46160.5844791667** (0D 00:13:24) | -22.82095,-43.32257
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5851736111 → 46160.5910185185** (0D 00:08:25) | -22.82129,-43.32345
+    - Endereço: AV BRASIL, 16924-17102, IRAJA, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21230042
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5931018519 → 46160.6198611111** (0D 00:38:32) | -22.82159,-43.32452
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.621712963 → 46160.6389930556** (0D 00:24:53) | -22.82206,-43.32589
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6396875 → 46160.6473726852** (0D 00:11:04) | -22.82245,-43.32681
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.648275463 → 46160.6542939815** (0D 00:08:40) | -22.82259,-43.32776
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6556828704 → 46160.6584490741** (0D 00:03:59) | -22.82311,-43.32923
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6591435185 → 46160.6619097222** (0D 00:03:59) | -22.82347,-43.33046
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6640393519 → 46160.6797685185** (0D 00:22:39) | -22.82414,-43.33249
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6860532407 → 46160.7048611111** (0D 00:27:05) | -22.82896,-43.34123
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7085648148 → 46160.9993402778** (0D 06:58:43) | -22.8274,-43.33748
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## QSS-1E48
+- Total paradas: 16 | Distância: 155.2 km | Tempo dirigido: 0D 04:06:35
+- 16 paradas detalhadas:
+  - **46160.0023611111 → 46160.0203356482** (0D 00:25:53) | -22.82782,-43.33746
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0282175926 → 46160.2292824074** (0D 04:49:32) | -22.82894,-43.34159
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2477777778 → 46160.4011111111** (0D 03:40:48) | -22.85659,-43.47867
+    - Endereço: Avenida Brasil Bangu, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21852-050
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4020601852 → 46160.4678587963** (0D 01:34:45) | -22.85748,-43.47849
+    - Endereço: R Joaquim Camara Ferreira, Rio de Janeiro, RJ a 8236 78 de CDD DEODORO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4830092593 → 46160.4989467593** (0D 00:22:57) | -22.8289,-43.34141
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5041550926 → 46160.5152314815** (0D 00:15:57) | -22.8266,-43.33762
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5200231482 → 46160.5752199074** (0D 01:19:29) | -22.82894,-43.34114
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6198958333 → 46160.6325231481** (0D 00:18:11) | -22.51318,-43.22079
+    - Endereço: R Dr Paulo Herve - Petropolis - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6343865741 → 46160.6655902778** (0D 00:44:56) | -22.51362,-43.21557
+    - Endereço: R Alice Herve, Petropolis, RJ a 410 56 de AGF POLO BINGEN - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6889930556 → 46160.6910763889** (0D 00:03:00) | -22.67049,-43.28576
+    - Endereço: Rod Washington Luiz, Duque de Caxias, RJ a 3043 5 de AC e CDD- SANTA CRUZ DA SER
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7271759259 → 46160.7299537037** (0D 00:04:00) | -22.84287,-43.33175
+    - Endereço: AV PASTOR MARTIN LUTHER KING JR, 8204-8232, VICENTE DE CARVALHO, RIO DE JANEIRO,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7364467593 → 46160.7646875** (0D 00:40:40) | -22.82894,-43.34108
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7677199074 → 46160.7701157407** (0D 00:03:27) | -22.82801,-43.33795
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7708101852 → 46160.78** (0D 00:13:14) | -22.82661,-43.33734
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7809490741 → 46160.8922800926** (0D 02:40:19) | -22.82755,-43.33821
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8938310185 → 46160.9983449074** (0D 02:30:30) | -22.82676,-43.33738
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## QSW-3B65
+- Total paradas: 19 | Distância: 222.58 km | Tempo dirigido: 0D 06:40:10
+- 19 paradas detalhadas:
+  - **46160.0045023148 → 46160.2047106481** (0D 04:48:18) | -22.82772,-43.33836
+    - Endereço: AV BRASIL, 19001-19101, COELHO NETO, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 215
+    - Local: `BASE BENASSI - BASE BENASSI,17659002 - EMANUEL CACHAMORRA`
+  - **46160.2063194444 → 46160.2093518519** (0D 00:04:22) | -22.82721,-43.33736
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,17659002 - EMANUEL CACHAMORRA`
+  - **46160.2167824074 → 46160.2342592593** (0D 00:25:10) | -22.82887,-43.34137
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,17659002 - EMANUEL CACHAMORRA`
+  - **46160.2449074074 → 46160.3724074074** (0D 03:03:36) | -22.84946,-43.31228
+    - Endereço: Avenida Vicente de Carvalho, 909 Vicente de Carvalho, Rio de Janeiro, Rio de Jan
+    - Local: `560048 - SENDAS CARIOCA SHOPPING,17659002 - EMANUEL CACHAMORRA`
+  - **46160.3850115741 → 46160.3967939815** (0D 00:16:58) | -22.84932,-43.31225
+    - Endereço: R Galvani, Rio de Janeiro, RJ a 2285 5 de AGF MERITI
+    - Local: `560048 - SENDAS CARIOCA SHOPPING,17659002 - EMANUEL CACHAMORRA`
+  - **46160.4065046296 → 46160.4092592593** (0D 00:03:58) | -22.84885,-43.3115
+    - Endereço: Avenida Vicente de Carvalho, 909 Vicente de Carvalho, Rio de Janeiro, Rio de Jan
+    - Local: `17659002 - EMANUEL CACHAMORRA`
+  - **46160.4113310185 → 46160.5126967593** (0D 02:25:58) | -22.84976,-43.3127
+    - Endereço: Rua Belarmino de Matos Vicente de Carvalho, Rio de Janeiro, Rio de Janeiro, Bras
+    - Local: `560048 - SENDAS CARIOCA SHOPPING,17659002 - EMANUEL CACHAMORRA`
+  - **46160.5148263889 → 46160.5177314815** (0D 00:04:11) | -22.8495,-43.31254
+    - Endereço: Em 1609 CARIOCA SHOPPIN - RJ
+    - Local: `560048 - SENDAS CARIOCA SHOPPING,17659002 - EMANUEL CACHAMORRA`
+  - **46160.5285648148 → 46160.5756365741** (0D 01:07:47) | -22.82888,-43.3413
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,17659002 - EMANUEL CACHAMORRA`
+  - **46160.581400463 → 46160.610462963** (0D 00:41:51) | -22.82751,-43.33758
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,17659002 - EMANUEL CACHAMORRA`
+  - **46160.6139930556 → 46160.6196643518** (0D 00:08:10) | -22.82896,-43.34133
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,17659002 - EMANUEL CACHAMORRA`
+  - **46160.6249074074 → 46160.6309259259** (0D 00:08:40) | -22.81592,-43.32419
+    - Endereço: R JORN GERALDO ROCHA, 0-8, JARDIM AMERICA, RIO DE JANEIRO, RJ, BRASIL, 50, 40, C
+    - Local: `17659002 - EMANUEL CACHAMORRA`
+  - **46160.654375 → 46160.6625810185** (0D 00:11:49) | -22.78781,-43.28507
+    - Endereço: Rodovia Washington Luís - DUQUE DE CAXIAS - RJ
+    - Local: `17659002 - EMANUEL CACHAMORRA`
+  - **46160.7264351852 → 46160.740775463** (0D 00:20:39) | -22.38416,-43.13391
+    - Endereço: Estr Uniao e Industria, Petropolis, RJ a 21864 130 de AC - GUAPIMIRIM LTU
+    - Local: `17659002 - EMANUEL CACHAMORRA`
+  - **46160.761412037 → 46160.7856944444** (0D 00:34:58) | -22.2532,-43.07399
+    - Endereço: Estr Uniao e Industria, Petropolis, RJ a 20501 135 de CDD - TRES RIOS - LTU
+    - Local: `17659002 - EMANUEL CACHAMORRA`
+  - **46160.8146875 → 46160.8264583333** (0D 00:16:57) | -22.43701,-43.17717
+    - Endereço: Rod Washington Luiz, Petropolis, RJ a 3610 113 de CDD ITAIPAVA - RJ
+    - Local: `17659002 - EMANUEL CACHAMORRA`
+  - **46160.8679050926 → 46160.8699884259** (0D 00:03:00) | -22.79223,-43.28676
+    - Endereço: Rod BR-040 - Pista Lateral - Duque de Caxias - RJ
+    - Local: `17659002 - EMANUEL CACHAMORRA`
+  - **46160.8968865741 → 46160.9114467593** (0D 00:20:58) | -22.82903,-43.34108
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,17659002 - EMANUEL CACHAMORRA`
+  - **46160.9125 → 46160.9969791667** (0D 02:01:39) | -22.82862,-43.34266
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3048 54 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI,17659002 - EMANUEL CACHAMORRA`
+
+## QSY-2H32
+- Total paradas: 19 | Distância: 120.88 km | Tempo dirigido: 0D 04:04:27
+- 19 paradas detalhadas:
+  - **46160.0003935185 → 46160.1147569444** (0D 02:44:41) | -22.82886,-43.3422
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI,25414000 - NATURCONGELADOS`
+  - **46160.1188310185 → 46160.2489467593** (0D 03:07:22) | -22.82766,-43.33747
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI,25414000 - NATURCONGELADOS`
+  - **46160.2506944444 → 46160.2584606481** (0D 00:11:11) | -22.83217,-43.34195
+    - Endereço: Av Pst Martin Luther king Junior, Rio de Janeiro, RJ a 3232 84 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI,25414000 - NATURCONGELADOS`
+  - **46160.2628009259 → 46160.4899768519** (0D 05:27:08) | -22.82709,-43.33738
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,25414000 - NATURCONGELADOS`
+  - **46160.5189814815 → 46160.5257175926** (0D 00:09:42) | -22.95692,-43.38325
+    - Endereço: Rua João Bruno Lobo, 93, Curicica, Rio De Janeiro - Rio de Janeiro
+    - Local: `25414000 - NATURCONGELADOS`
+  - **46160.5272337963 → 46160.543599537** (0D 00:23:34) | -22.95713,-43.38327
+    - Endereço: Rua João Bruno Lobo, 67, Curicica, Rio De Janeiro - Rio de Janeiro
+    - Local: `25414000 - NATURCONGELADOS`
+  - **46160.5647106481 → 46160.607962963** (0D 01:02:17) | -22.82745,-43.3375
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,25414000 - NATURCONGELADOS`
+  - **46160.6090625 → 46160.6224421296** (0D 00:19:16) | -22.8298,-43.33924
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI,25414000 - NATURCONGELADOS`
+  - **46160.6225694444 → 46160.6325462963** (0D 00:14:22) | -22.82976,-43.34045
+    - Endereço: Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI,25414000 - NATURCONGELADOS`
+  - **46160.637349537 → 46160.6567013889** (0D 00:27:52) | -22.82662,-43.33737
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,25414000 - NATURCONGELADOS`
+  - **46160.6571643519 → 46160.6619212963** (0D 00:06:51) | -22.8278,-43.33753
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI,25414000 - NATURCONGELADOS`
+  - **46160.6698726852 → 46160.6762962963** (0D 00:09:15) | -22.83538,-43.33677
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2775 76 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI,25414000 - NATURCONGELADOS`
+  - **46160.7065162037 → 46160.7172222222** (0D 00:15:25) | -23.00088,-43.38299
+    - Endereço: Avenida das Américas - Barra da Tijuca - Rio de Janeiro - RJ
+    - Local: `25414000 - NATURCONGELADOS`
+  - **46160.7677199074 → 46160.7703587963** (0D 00:03:48) | -22.82804,-43.33807
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI,25414000 - NATURCONGELADOS`
+  - **46160.7755092593 → 46160.848275463** (0D 01:44:47) | -22.82656,-43.33734
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,25414000 - NATURCONGELADOS`
+  - **46160.8489699074 → 46160.8551273148** (0D 00:08:52) | -22.82768,-43.33743
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,25414000 - NATURCONGELADOS`
+  - **46160.8574768519 → 46160.8597685185** (0D 00:03:18) | -22.83352,-43.33576
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2627 80 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI,25414000 - NATURCONGELADOS`
+  - **46160.8612962963 → 46160.8637615741** (0D 00:03:33) | -22.83559,-43.33677
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2781 76 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI,25414000 - NATURCONGELADOS`
+  - **46160.8668518519 → 46160.9986458333** (0D 03:09:47) | -22.82665,-43.33797
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,25414000 - NATURCONGELADOS`
+
+## QSZ-9A20
+- Total paradas: 19 | Distância: 323.94 km | Tempo dirigido: 0D 08:48:33
+- 19 paradas detalhadas:
+  - **46160.0000925926 → 46160.0655671296** (0D 01:34:17) | -22.829,-43.34116
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,5353012 - REGINA BARRA DO IMBUY,5353014 - REGINA 1 DE MAIO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO)`
+  - **46160.0698032407 → 46160.1353009259** (0D 01:34:19) | -22.82754,-43.3384
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,5353012 - REGINA BARRA DO IMBUY,5353014 - REGINA 1 DE MAIO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO)`
+  - **46160.1365625 → 46160.1393055556** (0D 00:03:57) | -22.82775,-43.33754
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI,5353012 - REGINA BARRA DO IMBUY,5353014 - REGINA 1 DE MAIO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO)`
+  - **46160.197974537 → 46160.2724305556** (0D 01:47:13) | -22.91495,-42.81949
+    - Endereço: Av Ver Francisco Sabino da Costa - Marica - RJ
+    - Local: `8590002 - PRINCESA MARICÁ 1,5353012 - REGINA BARRA DO IMBUY,5353014 - REGINA 1 DE MAIO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO)`
+  - **46160.2740625 → 46160.3066898148** (0D 00:46:59) | -22.9169,-42.8175
+    - Endereço: R Ribeiro de Almeida, Marica, RJ a 21424 112 de CTE - SAO CONCALO - RJ
+    - Local: `8590003 - PRINCESA MARICÁ 2,5353012 - REGINA BARRA DO IMBUY,5353014 - REGINA 1 DE MAIO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO)`
+  - **46160.3073842593 → 46160.3242476852** (0D 00:24:17) | -22.91599,-42.81748
+    - Endereço: Rua Abreu Sodré Centro, Maricá, Rio de Janeiro, Brasil, CEP 24901-000
+    - Local: `8590003 - PRINCESA MARICÁ 2,5353012 - REGINA BARRA DO IMBUY,5353014 - REGINA 1 DE MAIO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO)`
+  - **46160.3332638889 → 46160.4136111111** (0D 01:55:42) | -22.90722,-42.8218
+    - Endereço: Rodovia Amaral Peixoto - Itapeba - Maricá - Rio de Janeiro
+    - Local: `5353012 - REGINA BARRA DO IMBUY,5353014 - REGINA 1 DE MAIO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO)`
+  - **46160.4780671296 → 46160.5648148148** (0D 02:04:55) | -22.82898,-43.34099
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,5353012 - REGINA BARRA DO IMBUY,5353014 - REGINA 1 DE MAIO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO)`
+  - **46160.6443055556 → 46160.6560763889** (0D 00:16:57) | -22.43864,-42.97965
+    - Endereço: Avenida Oliveira Botelho, 256 , Teresópolis, Rio de Janeiro, Brasil, CEP 25960-6
+    - Local: `5353012 - REGINA BARRA DO IMBUY,5353014 - REGINA 1 DE MAIO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO)`
+  - **46160.6606712963 → 46160.6662962963** (0D 00:08:06) | -22.41666,-42.96989
+    - Endereço: R DR WALDIR BARBOSA MOREIRA, 147-283, VARZEA, TERESOPOLIS, RJ, BRASIL, 50, 40, C
+    - Local: `5353012 - REGINA BARRA DO IMBUY,5353014 - REGINA 1 DE MAIO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO)`
+  - **46160.6679282407 → 46160.6717013889** (0D 00:05:26) | -22.41683,-42.96996
+    - Endereço: R DR WALDIR BARBOSA MOREIRA, 147-283, VARZEA, TERESOPOLIS, RJ, BRASIL, 50, 40, C
+    - Local: `5353012 - REGINA BARRA DO IMBUY,5353014 - REGINA 1 DE MAIO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO)`
+  - **46160.6806134259 → 46160.7036111111** (0D 00:33:07) | -22.40042,-42.97888
+    - Endereço: R Santiago Jose Delgado - Teresopolis - RJ
+    - Local: `5353012 - REGINA BARRA DO IMBUY,5353014 - REGINA 1 DE MAIO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO)`
+  - **46160.7679861111 → 46160.7700694444** (0D 00:03:00) | -22.76263,-43.28683
+    - Endereço: Rod Washington Luiz - Duque de Caxias - RJ
+    - Local: `5353012 - REGINA BARRA DO IMBUY,5353014 - REGINA 1 DE MAIO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO)`
+  - **46160.7984837963 → 46160.8005671296** (0D 00:03:00) | -22.78892,-43.28551
+    - Endereço: Rod Washington Luiz - Duque de Caxias - RJ
+    - Local: `5353012 - REGINA BARRA DO IMBUY,5353014 - REGINA 1 DE MAIO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO)`
+  - **46160.8012615741 → 46160.8040277778** (0D 00:03:59) | -22.79018,-43.28586
+    - Endereço: RODOVIA WASHINGTON LUIZ/BR 040, 122320-122386, PARQUE DUQUE, DUQUE DE CAXIAS, RJ
+    - Local: `5353012 - REGINA BARRA DO IMBUY,5353014 - REGINA 1 DE MAIO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO)`
+  - **46160.8054166667 → 46160.8088773148** (0D 00:04:59) | -22.79211,-43.28672
+    - Endereço: Rod Washington Luiz - Duque de Caxias - RJ
+    - Local: `5353012 - REGINA BARRA DO IMBUY,5353014 - REGINA 1 DE MAIO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO)`
+  - **46160.8410763889 → 46160.8502430556** (0D 00:13:12) | -22.82886,-43.34112
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,5353012 - REGINA BARRA DO IMBUY,5353014 - REGINA 1 DE MAIO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO)`
+  - **46160.8513657407 → 46160.9636921296** (0D 02:41:45) | -22.82845,-43.3426
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,5353012 - REGINA BARRA DO IMBUY,5353014 - REGINA 1 DE MAIO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO)`
+  - **46160.9679513889 → 46160.9994444444** (0D 00:45:21) | -22.82745,-43.33815
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,5353012 - REGINA BARRA DO IMBUY,5353014 - REGINA 1 DE MAIO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO)`
+
+## SFG-2F72
+- Total paradas: 7 | Distância: 78 km | Tempo dirigido: 0D 02:14:45
+- 7 paradas detalhadas:
+  - **46160.0006712963 → 46160.0423148148** (0D 00:59:58) | -22.82902,-43.34138
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0459259259 → 46160.1982523148** (0D 03:39:21) | -22.82776,-43.3375
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2364583333 → 46160.4416666667** (0D 04:55:30) | -23.00184,-43.32254
+    - Endereço: R Jeronimo Mesquita, Rio de Janeiro, RJ a 7261 125 de UNITRAC - TESTE
+    - Local: `560042 - SENDAS BARRA II - LJ 245`
+  - **46160.4423611111 → 46160.4445949074** (0D 00:03:13) | -23.00266,-43.32341
+    - Endereço: Av das Americas - Rio de Janeiro - RJ
+    - Local: `560042 - SENDAS BARRA II - LJ 245`
+  - **46160.4773842593 → 46160.5121064815** (0D 00:50:00) | -22.82903,-43.34101
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5185763889 → 46160.9574768519** (0D 10:32:01) | -22.82659,-43.33735
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.9692824074 → 46160.9998842593** (0D 00:44:04) | -22.82908,-43.34107
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## RJL-7D33
+- Total paradas: 27 | Distância: 24.89 km | Tempo dirigido: 0D 02:15:13
+- 27 paradas detalhadas:
+  - **46160.006875 → 46160.2601851852** (0D 06:04:46) | -22.84367,-43.4026
+    - Endereço: R Jose da Mota, Rio de Janeiro, RJ a 398 39 de CDD DEODORO - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.2771759259 → 46160.2792592593** (0D 00:03:00) | -22.82174,-43.32421
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.2946643519 → 46160.6684722222** (0D 08:58:17) | -22.81834,-43.2813
+    - Endereço: R da Soja - Rio de Janeiro - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.6691666667 → 46160.6731365741** (0D 00:05:43) | -22.81928,-43.28322
+    - Endereço: AV BRASIL, 12640-12950, PENHA, RIO DE JANEIRO, RJ, BRASIL, 50, 40, CEP 21012350
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.6758912037 → 46160.6786574074** (0D 00:03:59) | -22.81787,-43.28587
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.6793518519 → 46160.6841666667** (0D 00:06:56) | -22.81695,-43.28696
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.6869444444 → 46160.6993634259** (0D 00:17:53) | -22.81567,-43.289
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.7078125 → 46160.7188541667** (0D 00:15:54) | -22.81458,-43.29737
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.7223032407 → 46160.7257638889** (0D 00:04:59) | -22.81582,-43.30271
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.7271527778 → 46160.7437268519** (0D 00:23:52) | -22.81654,-43.3054
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.7444212963 → 46160.752037037** (0D 00:10:58) | -22.81722,-43.30673
+    - Endereço: AV BRASIL, 0-0, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 2124105
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.7527314815 → 46160.7575578704** (0D 00:06:57) | -22.81776,-43.30778
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.7582523148 → 46160.7741319444** (0D 00:22:52) | -22.81831,-43.30868
+    - Endereço: AV BRASIL, 0-0, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 2124105
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.7748263889 → 46160.7907175926** (0D 00:22:53) | -22.81881,-43.30958
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.7920949074 → 46160.8114699074** (0D 00:27:54) | -22.81928,-43.31048
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.8121643519 → 46160.817025463** (0D 00:07:00) | -22.81965,-43.31186
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.8184143519 → 46160.8211921296** (0D 00:04:00) | -22.81995,-43.31876
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.8218865741 → 46160.8281365741** (0D 00:09:00) | -22.82012,-43.31975
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.8288310185 → 46160.8364699074** (0D 00:11:00) | -22.82049,-43.32101
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.8378587963 → 46160.848275463** (0D 00:15:00) | -22.82092,-43.32243
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.8489699074 → 46160.8579976852** (0D 00:13:00) | -22.82127,-43.32339
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 1164 21 de AGF JARDIM AMERICA
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.8586921296 → 46160.8628587963** (0D 00:06:00) | -22.82164,-43.3245
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.8635532407 → 46160.8663310185** (0D 00:04:00) | -22.82218,-43.32627
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.867025463 → 46160.873275463** (0D 00:09:00) | -22.82254,-43.32744
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.8746643519 → 46160.8774421296** (0D 00:04:00) | -22.8229,-43.32873
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.9010069444 → 46160.9077430556** (0D 00:09:42) | -22.84314,-43.37522
+    - Endereço: Avenida Brasil, Guadalupe, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21660-020
+    - Local: `9039124 - 47- ZONA SUL`
+  - **46160.9122916667 → 46160.9965972222** (0D 02:01:24) | -22.84358,-43.40259
+    - Endereço: R Jose da Mota, Rio de Janeiro, RJ a 393 40 de CDD DEODORO - RJ
+    - Local: `9039124 - 47- ZONA SUL`
+
+## RJN-9F68
+- Total paradas: 12 | Distância: 134.93 km | Tempo dirigido: 0D 03:31:27
+- 12 paradas detalhadas:
+  - **46160.0057986111 → 46160.1883680556** (0D 04:22:54) | -22.82296,-43.34032
+    - Endereço: R Interna, Rio de Janeiro, RJ a 2487 61 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.1942708333 → 46160.2035416667** (0D 00:13:21) | -22.82797,-43.33817
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2044444444 → 46160.2068171296** (0D 00:03:25) | -22.82664,-43.33735
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.238599537 → 46160.2876388889** (0D 01:10:37) | -22.88021,-43.09609
+    - Endereço: R Antonio Silva, Niteroi, RJ a 1753 16 de CEE - NITEROI
+    - Local: `8590555 - PRINCESA FONSECA`
+  - **46160.3225347222 → 46160.3286805556** (0D 00:08:51) | -22.82901,-43.34107
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3315625 → 46160.4292824074** (0D 02:20:43) | -22.82732,-43.33702
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4319791667 → 46160.4510185185** (0D 00:27:25) | -22.83524,-43.33678
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2771 77 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4597222222 → 46160.4650231482** (0D 00:07:38) | -22.84311,-43.37532
+    - Endereço: R Marcos de Macedo, Rio de Janeiro, RJ a 940 134 de AGF ESTACAO RAMOS - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4887731482 → 46160.5110763889** (0D 00:32:07) | -22.88424,-43.57542
+    - Endereço: R Pedro Geraldo de Almeida, Rio de Janeiro, RJ a 2187 3 de CLIENTES ESPECIAIS - 
+    - Local: `7000766 - PREZUNIC CAMPO GRANDE (TINGUI)`
+  - **46160.5383912037 → 46160.5463773148** (0D 00:11:30) | -22.83532,-43.33681
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2774 77 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.54875 → 46160.558599537** (0D 00:14:11) | -22.82799,-43.33791
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5642361111 → 46160.9941550926** (0D 10:19:05) | -22.82278,-43.34027
+    - Endereço: R Interna, Rio de Janeiro, RJ a 2473 62 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## SFG-2F73
+- Total paradas: 5 | Distância: 68.62 km | Tempo dirigido: 0D 01:33:35
+- 5 paradas detalhadas:
+  - **46160.0000925926 → 46160.0979282407** (0D 02:20:53) | -22.82904,-43.34129
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1007175926 → 46160.1941087963** (0D 02:14:29) | -22.82804,-43.3374
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2233564815 → 46160.4394560185** (0D 05:11:11) | -22.95907,-43.35487
+    - Endereço: Rua Peroba, Rio de Janeiro, RJ a 2406 90 de UNITRAC - TESTE
+    - Local: `560032 - SENDAS BARRA I - LJ 32`
+  - **46160.4680324074 → 46160.5118634259** (0D 01:03:07) | -22.82913,-43.34138
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5162384259 → 46160.9989236111** (0D 11:35:04) | -22.82666,-43.33734
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## SRD-0J02
+- Total paradas: 10 | Distância: 145.83 km | Tempo dirigido: 0D 04:00:26
+- 10 paradas detalhadas:
+  - **46160.0046296296 → 46160.1171527778** (0D 02:42:02) | -23.02569,-43.46455
+    - Endereço: Rua Demóstenes Madureira de Pinho, 480 Recreio dos Bandeirantes, Rio de Janeiro,
+    - Local: `2018001 - ROTA BARRA,2018038 - ROTA NITEROI / MARICA`
+  - **46160.1367592593 → 46160.197962963** (0D 01:28:08) | -22.8288,-43.34175
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,2018001 - ROTA BARRA,2018038 - ROTA NITEROI / MARICA`
+  - **46160.212337963 → 46160.2276388889** (0D 00:22:02) | -22.88769,-43.22508
+    - Endereço: R Ricardo Machado - Rio de Janeiro - RJ
+    - Local: `2018001 - ROTA BARRA,2018038 - ROTA NITEROI / MARICA`
+  - **46160.2472800926 → 46160.2535416667** (0D 00:09:01) | -22.86188,-43.00912
+    - Endereço: Av Dr Eugenio Borges, Sao Goncalo, RJ a 2642 179 de CTE - SAO CONCALO - RJ
+    - Local: `2018001 - ROTA BARRA,2018038 - ROTA NITEROI / MARICA`
+  - **46160.2542361111 → 46160.3006365741** (0D 01:06:49) | -22.8621,-43.01004
+    - Endereço: Rua Murilo Mendes Arsenal, Ipiiba, Rio de Janeiro, Brasil, CEP 24755-110
+    - Local: `2018001 - ROTA BARRA,2018038 - ROTA NITEROI / MARICA`
+  - **46160.3150925926 → 46160.3441666667** (0D 00:41:52) | -22.77939,-42.9777
+    - Endereço: Estrada UHOS, Guaxindiba, , Rio de Janeiro, Brasil, CEP 24725-270
+    - Local: `2018001 - ROTA BARRA,2018038 - ROTA NITEROI / MARICA`
+  - **46160.3590393519 → 46160.3712962963** (0D 00:17:39) | -22.73665,-42.8073
+    - Endereço: Rodovia Governador Mário Covas Itaville, Itaboraí, Rio de Janeiro, Brasil, CEP 2
+    - Local: `2018001 - ROTA BARRA,2018038 - ROTA NITEROI / MARICA`
+  - **46160.3952893519 → 46160.4056944444** (0D 00:14:59) | -22.82607,-43.01402
+    - Endereço: Av Marica, Sao Goncalo, RJ a 1342 156 de CTE - SAO CONCALO - RJ
+    - Local: `2018001 - ROTA BARRA,2018038 - ROTA NITEROI / MARICA`
+  - **46160.4186805556 → 46160.4419328704** (0D 00:33:29) | -22.82099,-43.04668
+    - Endereço: R SIMEAO CUSTODIO, 1-145, CENTRO, SAO GONCALO, RJ, BRASIL, 40, 40, CEP 24445020
+    - Local: `2018001 - ROTA BARRA,2018038 - ROTA NITEROI / MARICA`
+  - **46160.488275463 → 46160.9983912037** (0D 12:14:34) | -23.02576,-43.46452
+    - Endereço: Rua Demóstenes Madureira de Pinho, 480 Recreio dos Bandeirantes, Rio de Janeiro,
+    - Local: `2018001 - ROTA BARRA,2018038 - ROTA NITEROI / MARICA`
+
+## SRQ-9F05
+- Total paradas: 14 | Distância: 404.19 km | Tempo dirigido: 0D 08:03:27
+- 14 paradas detalhadas:
+  - **46160.0547685185 → 46160.0577893518** (0D 00:04:21) | -22.51928,-42.70065
+    - Endereço: Rodovia Engenheiro Fernando Mac Dowell Setenta, Cachoeiras de Macacu, Rio de Jan
+    - Local: `2018007 - ROTA CANTAGALO`
+  - **46160.058275463 → 46160.0732638889** (0D 00:21:35) | -22.52006,-42.70211
+    - Endereço: Rodovia Engenheiro Fernando Mac Dowell Setenta, Cachoeiras de Macacu, Rio de Jan
+    - Local: `2018007 - ROTA CANTAGALO`
+  - **46160.1156481481 → 46160.180162037** (0D 01:32:54) | -22.28489,-42.54013
+    - Endereço: Rua Teresópolis Nova Friburgo, Rio de Janeiro, Brasil, CEP 28625-530
+    - Local: `2018007 - ROTA CANTAGALO`
+  - **46160.183125 → 46160.1975231481** (0D 00:20:44) | -22.28503,-42.54105
+    - Endereço: Rua Hormindo Silva Olaria, Nova Friburgo, Rio de Janeiro, Brasil, CEP 28625-530
+    - Local: `2018007 - ROTA CANTAGALO`
+  - **46160.2451157407 → 46160.2640740741** (0D 00:27:18) | -21.9406,-42.27343
+    - Endereço: RJ-166 Euclidelândia, Rio de Janeiro, Brasil
+    - Local: `2018007 - ROTA CANTAGALO`
+  - **46160.2764236111 → 46160.3280555556** (0D 01:14:21) | -21.91201,-42.2613
+    - Endereço: Euclidelândia, Rio de Janeiro, Brasil, CEP 28550-000
+    - Local: `2018007 - ROTA CANTAGALO`
+  - **46160.3316087963 → 46160.3363888889** (0D 00:06:53) | -21.90453,-42.2666
+    - Endereço: RJ-152 Euclidelândia, Rio de Janeiro, Brasil
+    - Local: `2018007 - ROTA CANTAGALO`
+  - **46160.4010300926 → 46160.472337963** (0D 01:42:41) | -21.65382,-42.34571
+    - Endereço: Rua Antônio Ribeiro da Costa Junior Pirapetinga, Minas Gerais, Brasil
+    - Local: `2018007 - ROTA CANTAGALO`
+  - **46160.4821064815 → 46160.4913888889** (0D 00:13:22) | -21.67838,-42.39405
+    - Endereço: Rod BR-393 - Pirapetinga - MG
+    - Local: `2018007 - ROTA CANTAGALO`
+  - **46160.5106712963 → 46160.5130787037** (0D 00:03:28) | -21.8179,-42.60022
+    - Endereço: Rod BR-393 - Volta Grande - MG
+    - Local: `2018007 - ROTA CANTAGALO`
+  - **46160.523599537 → 46160.5264930556** (0D 00:04:10) | -21.87738,-42.67153
+    - Endereço: RODOVIA BR 393/BR 116, 0-0, , SAPUCAIA, RJ, BRASIL, 90, 70, CEP 25880000
+    - Local: `2018007 - ROTA CANTAGALO`
+  - **46160.5813425926 → 46160.5841087963** (0D 00:03:59) | -22.40581,-42.95159
+    - Endereço: Rod Santos Dumont - Teresopolis - RJ
+    - Local: `2018007 - ROTA CANTAGALO`
+  - **46160.6500115741 → 46160.6565277778** (0D 00:09:23) | -22.78183,-43.30212
+    - Endereço: Rua Paraná Jardim 25 de Agosto, Duque de Caxias, Rio de Janeiro, Brasil, CEP 250
+    - Local: `2018007 - ROTA CANTAGALO`
+  - **46160.657962963 → 46160.9959143518** (0D 08:06:39) | -22.78162,-43.30391
+    - Endereço: Avenida Duque de Caxias Jardim 25 de Agosto, Duque de Caxias, Rio de Janeiro, Br
+    - Local: `2018007 - ROTA CANTAGALO`
+
+## SVB-1F74
+- Total paradas: 4 | Distância: 0.03 km | Tempo dirigido: 0D 00:28:23
+- 4 paradas detalhadas:
+  - **46160.005150463 → 46160.74** (0D 17:38:11) | -22.77552,-43.28467
+    - Endereço: Rodovia Washington Luiz - Auxiliar Jardim Gramacho, Duque de Caxias, Rio de Jane
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7413888889 → 46160.7477893519** (0D 00:09:13) | -22.77633,-43.28494
+    - Endereço: Rodovia Washington Luiz - Auxiliar Jardim Gramacho, Duque de Caxias, Rio de Jane
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7647337963 → 46160.7889467593** (0D 00:34:52) | -22.77531,-43.28496
+    - Endereço: Rod BR-040 - Pista Lateral - Duque de Caxias - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7903240741 → 46160.861099537** (0D 01:41:55) | -22.77608,-43.28518
+    - Endereço: Rodovia Washington Luiz - Auxiliar Jardim Gramacho, Duque de Caxias, Rio de Jane
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## TJQ-6J26
+- Total paradas: 19 | Distância: 42.69 km | Tempo dirigido: 0D 01:44:31
+- 19 paradas detalhadas:
+  - **46160.0030439815 → 46160.1499537037** (0D 03:31:33) | -22.8271,-43.3383
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1518402778 → 46160.1962962963** (0D 01:04:01) | -22.82775,-43.33751
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1976736111 → 46160.2010648148** (0D 00:04:53) | -22.83203,-43.34103
+    - Endereço: Estrada Pedro Borges de Freitas, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, 
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.203287037 → 46160.2149768519** (0D 00:16:50) | -22.8288,-43.34171
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2432986111 → 46160.5683217593** (0D 07:48:02) | -22.80242,-43.20207
+    - Endereço: Pca Fernando Pessoa, Rio de Janeiro, RJ a 5059 55 de TECA GIG - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5834027778 → 46160.5912615741** (0D 00:11:19) | -22.81978,-43.31429
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5942476852 → 46160.5971527778** (0D 00:04:11) | -22.81978,-43.31725
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5978472222 → 46160.6057060185** (0D 00:11:19) | -22.81995,-43.31875
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6066898148 → 46160.6223726852** (0D 00:22:35) | -22.82014,-43.32013
+    - Endereço: Trevo das Margaridas - Irajá - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6230555556 → 46160.6390162037** (0D 00:22:59) | -22.82058,-43.32152
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6397106481 → 46160.6624768519** (0D 00:32:47) | -22.82096,-43.32245
+    - Endereço: AV BRASIL, 0-0, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 2124105
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6631712963 → 46160.6909722222** (0D 00:40:02) | -22.82124,-43.32342
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6916666667 → 46160.7040740741** (0D 00:17:52) | -22.82162,-43.32449
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7047685185 → 46160.7095949074** (0D 00:06:57) | -22.82193,-43.32552
+    - Endereço: AV BRASIL, 0-0, IRAJA, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 21230043
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7102893519 → 46160.7145138889** (0D 00:06:05) | -22.82238,-43.32685
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7152083333 → 46160.7184953704** (0D 00:04:44) | -22.82266,-43.3278
+    - Endereço: AV BRASIL, 0-0, IRAJA, RIO DE JANEIRO, RJ, BRASIL, 90, 70, CEP 21230042
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7288773148 → 46160.7440856481** (0D 00:21:54) | -22.82897,-43.34126
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7471990741 → 46160.8913541667** (0D 03:27:35) | -22.82681,-43.33805
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.892037037 → 46160.9935763889** (0D 02:26:13) | -22.82639,-43.33681
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 2426 49 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## TJX-6F34
+- Total paradas: 1 | Distância: 0 km | Tempo dirigido: 0D 00:00:00
+- 1 paradas detalhadas:
+  - **46160.0031597222 → 46160.2454976852** (0D 05:48:58) | -22.80762,-43.34434
+    - Endereço: Estrada Rio DOuro Pavuna, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21240-002
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## TML-2D79
+- Total paradas: 17 | Distância: 285.61 km | Tempo dirigido: 0D 05:00:46
+- 17 paradas detalhadas:
+  - **46160.0018171296 → 46160.1510069444** (0D 03:34:50) | -22.8276,-43.33817
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1545833333 → 46160.1580092593** (0D 00:04:56) | -22.83,-43.33852
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2842 46 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1938657407 → 46160.2632638889** (0D 01:39:56) | -22.74533,-42.85264
+    - Endereço: Rua Presidente Castelo Branco Nova Cidade, Itaboraí, Rio de Janeiro, Brasil, CEP
+    - Local: `8590573 - PRINCESA ITABORAÍ`
+  - **46160.308287037 → 46160.3389467593** (0D 00:44:09) | -22.84063,-42.2235
+    - Endereço: Rodovia Amaral Peixoto, Centro, Iguaba Grande, Rio de Janeiro, Brasil, CEP 28960
+    - Local: `8590570 - PRINCESA - IGUABA GRANDE`
+  - **46160.3403240741 → 46160.4364814815** (0D 02:18:28) | -22.8451,-42.22782
+    - Endereço: Rod Amaral Peixoto, Iguaba Grande, RJ a 69861 151 de CDD - RESENDE - LTU
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4396412037 → 46160.4612268519** (0D 00:31:05) | -22.83857,-42.21717
+    - Endereço: Rua Vital Marins da Fonseca Estação, Iguaba Grande, Rio de Janeiro, Brasil, CEP 
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4805208333 → 46160.4981018519** (0D 00:25:19) | -22.79961,-42.48206
+    - Endereço: Via Lagos, Rio Bonito, RJ a 14997 5 de CDD TAMOIOS - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.527337963 → 46160.5376967593** (0D 00:14:55) | -22.74528,-42.85271
+    - Endereço: AV AMERICO DA COSTA CARDOSO, 26-40, NOVA CIDADE, ITABORAI, RJ, BRASIL, 50, 40, C
+    - Local: `8590573 - PRINCESA ITABORAÍ`
+  - **46160.5801967593 → 46160.5843402778** (0D 00:05:58) | -22.82162,-43.32495
+    - Endereço: Avenida Brasil, Irajá, , Rio de Janeiro, Brasil, CEP 21230175
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5850231481 → 46160.5905439815** (0D 00:07:57) | -22.82192,-43.32591
+    - Endereço: Avenida Brasil - Acari - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5912384259 → 46160.5953703704** (0D 00:05:57) | -22.82225,-43.32697
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6009027778 → 46160.6051388889** (0D 00:06:06) | -22.8237,-43.33123
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6065277778 → 46160.6106597222** (0D 00:05:57) | -22.82417,-43.33275
+    - Endereço: Avenida Brasil - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6134259259 → 46160.6189467593** (0D 00:07:57) | -22.82485,-43.33495
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6196296296 → 46160.6275** (0D 00:11:20) | -22.82522,-43.33592
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 2276 50 de AGF JARDIM AMERICA
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6398611111 → 46160.6494791667** (0D 00:13:51) | -22.82898,-43.34112
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.654212963 → 46160.9948958333** (0D 08:10:35) | -22.82732,-43.33737
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## TML-5I70
+- Total paradas: 16 | Distância: 113.78 km | Tempo dirigido: 0D 05:01:01
+- 16 paradas detalhadas:
+  - **46160.0003819444 → 46160.1104976852** (0D 02:38:34) | -22.82743,-43.33822
+    - Endereço: AV BRASIL, 19001-19101, COELHO NETO, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 215
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1137962963 → 46160.1207291667** (0D 00:09:59) | -22.83008,-43.33852
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2848 46 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1275347222 → 46160.2184606481** (0D 02:10:56) | -22.829,-43.34146
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.241400463 → 46160.3047453704** (0D 01:31:13) | -22.90004,-43.26773
+    - Endereço: R Souza Barros, Rio de Janeiro, RJ a 731 89 de LTU-RJ AGF JARDIM DO MEIER
+    - Local: `7000708 - PREZUNIC ENGENHO NOVO`
+  - **46160.3195023148 → 46160.3456481481** (0D 00:37:39) | -22.89318,-43.24087
+    - Endereço: R Francisco Manuel, Rio de Janeiro, RJ a 792 145 de TECA BENFICA - RJ
+    - Local: `7000706 - PREZUNIC BENFICA`
+  - **46160.3683912037 → 46160.3843634259** (0D 00:23:00) | -22.82892,-43.3415
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3877430556 → 46160.6313425926** (0D 05:50:47) | -22.82722,-43.33826
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6736111111 → 46160.7126273148** (0D 00:56:11) | -22.98643,-43.1974
+    - Endereço: Rua Gomes Carneiro, Ipanema, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22420-0
+    - Local: `9039009 - 09 - ZONA SUL - IPANEMA`
+  - **46160.7422685185 → 46160.7443518518** (0D 00:03:00) | -22.89676,-43.20326
+    - Endereço: Avenida Oscar Niemeyer Santo Cristo, Rio de Janeiro, Rio de Janeiro, Brasil, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7538541667 → 46160.7559375** (0D 00:03:00) | -22.89461,-43.21354
+    - Endereço: Avenida Rio de Janeiro - Caju - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7573263889 → 46160.7594097222** (0D 00:03:00) | -22.89291,-43.21438
+    - Endereço: Av Rio de Janeiro - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7643171296 → 46160.7677777778** (0D 00:04:59) | -22.88877,-43.21899
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7776967593 → 46160.7870833333** (0D 00:13:31) | -22.87703,-43.24138
+    - Endereço: Avenida Brasil - Manguinhos - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8052083333 → 46160.807974537** (0D 00:03:59) | -22.84324,-43.33124
+    - Endereço: Av Pst Martin Luther king Junior, Rio de Janeiro, RJ a 2640 55 de AGF MERITI
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8190509259 → 46160.8228356481** (0D 00:05:27) | -22.81568,-43.32424
+    - Endereço: R Jorn Geraldo Rocha - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8311342593 → 46160.9960416667** (0D 03:57:28) | -22.82726,-43.33819
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## TML-3B11
+- Total paradas: 14 | Distância: 77.97 km | Tempo dirigido: 0D 05:11:31
+- 14 paradas detalhadas:
+  - **46160.1303240741 → 46160.1558333333** (0D 00:36:44) | -22.82897,-43.34148
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2059027778 → 46160.2087847222** (0D 00:04:09) | -22.82894,-43.34316
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3109 54 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2095949074 → 46160.2123263889** (0D 00:03:56) | -22.82918,-43.34165
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2351388889 → 46160.268599537** (0D 00:48:11) | -22.80746,-43.41695
+    - Endereço: R Prf Alfredo G Filgueiras, Nilopolis, RJ a 93 34 de AGF CARMELA DUTRA
+    - Local: `7000721 - PREZUNIC NILÓPOLIS`
+  - **46160.2865509259 → 46160.2893171296** (0D 00:03:59) | -22.78547,-43.37983
+    - Endereço: Rodovia Presidente Dutra, Jardim Meriti, São João de Meriti, Rio de Janeiro, Bra
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.324537037 → 46160.3330555556** (0D 00:12:16) | -22.81575,-43.32431
+    - Endereço: R JORN GERALDO ROCHA, 18-24, JARDIM AMERICA, RIO DE JANEIRO, RJ, BRASIL, 50, 40,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3487152778 → 46160.3555439815** (0D 00:09:50) | -22.8275,-43.33807
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3563541667 → 46160.3955555556** (0D 00:56:27) | -22.82748,-43.33744
+    - Endereço: , Irajá, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3973842593 → 46160.5384953704** (0D 03:23:12) | -22.82741,-43.33842
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5651388889 → 46160.5678819444** (0D 00:03:57) | -22.83216,-43.34186
+    - Endereço: Estr Pedro Borges de Freitas, Rio de Janeiro, RJ a 3225 84 de AGF MERITI
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.590787037 → 46160.6394560185** (0D 01:10:05) | -22.81773,-43.41133
+    - Endereço: Avenida Getúlio Vargas
+    - Local: `579001 - FEIRA NOVA OLINDA`
+  - **46160.6561805556 → 46160.6658101852** (0D 00:13:52) | -22.82894,-43.34129
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6696759259 → 46160.745787037** (0D 01:49:36) | -22.82772,-43.33753
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7468287037 → 46160.8749537037** (0D 03:04:30) | -22.82726,-43.33736
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## TML-6D96
+- Total paradas: 10 | Distância: 133.53 km | Tempo dirigido: 0D 04:03:37
+- 10 paradas detalhadas:
+  - **46160.0026967593 → 46160.4088657407** (0D 09:44:53) | -22.82669,-43.3381
+    - Endereço: Avenida Brasil - Acari - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4130671296 → 46160.4178356481** (0D 00:06:52) | -22.82845,-43.34259
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4230902778 → 46160.453900463** (0D 00:44:22) | -22.82671,-43.33799
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4545949074 → 46160.5595717593** (0D 02:31:10) | -22.82754,-43.33752
+    - Endereço: Rua Charles Gounod
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5612384259 → 46160.5904976852** (0D 00:42:08) | -22.82764,-43.33757
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6785648148 → 46160.749525463** (0D 01:42:11) | -22.97037,-43.68937
+    - Endereço: EST DO PIAI, 4662-4670, SEPETIBA, RIO DE JANEIRO, RJ, BRASIL, 50, 40, CEP 235306
+    - Local: `202012 - PAX SEPETIBA`
+  - **46160.8144212963 → 46160.8378935185** (0D 00:33:48) | -22.82894,-43.34118
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8386111111 → 46160.8432986111** (0D 00:06:45) | -22.82888,-43.34216
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8459606481 → 46160.941400463** (0D 02:17:26) | -22.82744,-43.33812
+    - Endereço: Rua Charles Gounod
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9424305556 → 46160.9957291667** (0D 01:16:45) | -22.8268,-43.33732
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+
+## TML-7D61
+- Total paradas: 17 | Distância: 90.73 km | Tempo dirigido: 0D 04:45:34
+- 17 paradas detalhadas:
+  - **46160.0028125 → 46160.0056018519** (0D 00:04:01) | -22.82766,-43.33746
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0175694444 → 46160.2240625** (0D 04:57:21) | -22.82894,-43.3416
+    - Endereço: Avenida Brasil - Irajá - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2782986111 → 46160.2937384259** (0D 00:22:14) | -22.92895,-43.23685
+    - Endereço: Rua da Cascata
+    - Local: `3030013 - SUPERPRIX LJ 13 - TIJUQUINHA`
+  - **46160.3001967593 → 46160.3568402778** (0D 01:21:34) | -22.93471,-43.24407
+    - Endereço: AV MARACANA, 1537-1549, TIJUCA, RIO DE JANEIRO, RJ, BRASIL, 40, 40, CEP 20511001
+    - Local: `3030014 - SUPERPRIX LJ 14 - TIJUCA`
+  - **46160.3866666667 → 46160.4196527778** (0D 00:47:30) | -22.82903,-43.34107
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4268402778 → 46160.4418402778** (0D 00:21:36) | -22.82716,-43.33742
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4733564815 → 46160.5759375** (0D 02:27:43) | -22.72589,-43.31433
+    - Endereço: Rua Magalhães Lima Parque Fluminense, Campos Elyseos, Rio de Janeiro, Brasil, CE
+    - Local: `560057 - SENDAS CAXIAS II (PARQUE FLUMINENSE)`
+  - **46160.5766319444 → 46160.6130439815** (0D 00:52:26) | -22.72581,-43.3154
+    - Endereço: Rua Laerte Pereira da Costa Almeida Parque Fluminense, Campos Elyseos, Rio de Ja
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6151157407 → 46160.643599537** (0D 00:41:01) | -22.72628,-43.31538
+    - Endereço: Rua Laerte Pereira da Costa, Duque de Caxias, RJ a 7850 155 de GARAGEM MERCOPAMP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6442824074 → 46160.6464699074** (0D 00:03:09) | -22.72599,-43.31356
+    - Endereço: Avenida Governador Leonel de Moura Brizola São Bento, Campos Elyseos, Rio de Jan
+    - Local: `560057 - SENDAS CAXIAS II (PARQUE FLUMINENSE)`
+  - **46160.6614351852 → 46160.6647337963** (0D 00:04:45) | -22.81507,-43.30467
+    - Endereço: R Tinhare - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6667824074 → 46160.6709375** (0D 00:05:59) | -22.81635,-43.30529
+    - Endereço: AV BRASIL, 14674-14714, PARADA DE LUCAS, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6716319444 → 46160.6754398148** (0D 00:05:29) | -22.81703,-43.30671
+    - Endereço: Indefinida
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6818634259 → 46160.6882638889** (0D 00:09:13) | -22.81582,-43.3242
+    - Endereço: R JORN GERALDO ROCHA, 10-16, JARDIM AMERICA, RIO DE JANEIRO, RJ, BRASIL, 50, 40,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6993055556 → 46160.72875** (0D 00:42:24) | -22.82896,-43.3411
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7336689815 → 46160.881412037** (0D 03:32:45) | -22.82758,-43.33746
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.895 → 46160.9984606481** (0D 02:28:59) | -22.82903,-43.34179
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## TML-7D21
+- Total paradas: 4 | Distância: 20.19 km | Tempo dirigido: 0D 02:12:26
+- 4 paradas detalhadas:
+  - **46160.0069328704 → 46160.269849537** (0D 06:18:36) | -22.8267,-43.33805
+    - Endereço: Avenida Brasil - Acari - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2741319444 → 46160.288287037** (0D 00:20:23) | -22.829,-43.34128
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3438194444 → 46160.5900578704** (0D 05:54:35) | -22.92093,-43.24588
+    - Endereço: R Maxwell, Rio de Janeiro, RJ a 463 40 de LTU-RJ CDD VILA ISABEL
+    - Local: `560056 - SENDAS BOULEVARD`
+  - **46160.6222106482 → 46160.9989814815** (0D 09:02:33) | -22.82748,-43.33811
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## TML-9I75
+- Total paradas: 12 | Distância: 218.19 km | Tempo dirigido: 0D 05:23:15
+- 12 paradas detalhadas:
+  - **46160.0005902778 → 46160.1300694444** (0D 03:06:27) | -22.82756,-43.33818
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1406018519 → 46160.1590625** (0D 00:26:35) | -22.82902,-43.34136
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1616782407 → 46160.1668171296** (0D 00:07:24) | -22.82796,-43.33804
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.215775463 → 46160.3908680556** (0D 04:12:08) | -22.91594,-42.81916
+    - Endereço: Avenida Vereador Francisco Sabino da Silva Costa, Centro, Maricá, Rio de Janeiro
+    - Local: `7000749 - PREZUNIC MARICÁ`
+  - **46160.3940972222 → 46160.4132638889** (0D 00:27:36) | -22.90735,-42.82198
+    - Endereço: Rod Amaral Peixoto, Marica, RJ a 20589 110 de CTE - SAO CONCALO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4773148148 → 46160.5115509259** (0D 00:49:18) | -22.82892,-43.34204
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5160763889 → 46160.5214351852** (0D 00:07:43) | -22.8273,-43.33743
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5224768519 → 46160.6511805556** (0D 03:05:20) | -22.82718,-43.33817
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6686226852 → 46160.6717476852** (0D 00:04:30) | -22.85052,-43.39813
+    - Endereço: Travessa Lourival Chaves, Vila Militar, Rio de Janeiro, Rio de Janeiro, Brasil, 
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7010300926 → 46160.7292013889** (0D 00:40:34) | -22.99973,-43.39924
+    - Endereço: Avenida das Américas, 9300 Barra da Tijuca, Rio de Janeiro, Rio de Janeiro, Bras
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7624074074 → 46160.7760069444** (0D 00:19:35) | -22.85017,-43.39783
+    - Endereço: Rua Tenente Serafim Vila Militar, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7856018519 → 46160.9965393519** (0D 05:03:45) | -22.82679,-43.33731
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## UBF-5G33
+- Total paradas: 14 | Distância: 107.24 km | Tempo dirigido: 0D 04:05:36
+- 14 paradas detalhadas:
+  - **46160.0023842593 → 46160.051412037** (0D 01:10:36) | -22.8277,-43.33737
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0599884259 → 46160.0656597222** (0D 00:08:10) | -22.8292,-43.34139
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0687037037 → 46160.0967476852** (0D 00:40:23) | -22.82767,-43.33819
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0988773148 → 46160.1036458333** (0D 00:06:52) | -22.83015,-43.3384
+    - Endereço: Ceasa, Rio de Janeiro, RJ a 2845 46 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1111226852 → 46160.2597800926** (0D 03:34:04) | -22.82889,-43.34172
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2805439815 → 46160.2839930556** (0D 00:04:58) | -22.80786,-43.28514
+    - Endereço: Rampa - Duque de Caxias - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3199652778 → 46160.3705902778** (0D 01:12:54) | -22.95272,-43.18997
+    - Endereço: Rua Sorocaba - Botafogo - Rio de Janeiro - RJ
+    - Local: `7000750 - PREZUNIC BOTAFOGO (VOLUNTÁRIOS DA PÁTRIA)`
+  - **46160.3868402778 → 46160.3949189815** (0D 00:11:38) | -22.89652,-43.22139
+    - Endereço: Campo de São Cristóvão, São Cristóvão, Rio de Janeiro, Rio de Janeiro, Brasil, C
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4139351852 → 46160.4515740741** (0D 00:54:12) | -22.82895,-43.34147
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4554166667 → 46160.5148032407** (0D 01:25:31) | -22.82745,-43.33816
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5154976852 → 46160.5572453704** (0D 01:00:07) | -22.827,-43.3373
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5660416667 → 46160.597962963** (0D 00:45:58) | -22.82728,-43.34117
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.620474537 → 46160.6377893519** (0D 00:24:56) | -22.85976,-43.50679
+    - Endereço: Avenida Brasil, 37140, Bangú, Rio De Janeiro - Rio de Janeiro
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.6592824074 → 46160.9975** (0D 08:07:02) | -22.82687,-43.3373
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## UBF-5G32
+- Total paradas: 21 | Distância: 157.28 km | Tempo dirigido: 0D 05:59:47
+- 21 paradas detalhadas:
+  - **46160.0064699074 → 46160.0670138889** (0D 01:27:11) | -22.82774,-43.33753
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.0685763889 → 46160.1292013889** (0D 01:27:18) | -22.82727,-43.33811
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1301041667 → 46160.1944791667** (0D 01:32:42) | -22.82781,-43.33762
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2178819444 → 46160.2217939815** (0D 00:05:38) | -22.87761,-43.11597
+    - Endereço: Ponte Rio-Niterói, Ilha da Conceição, Niterói, Rio de Janeiro, Brasil, CEP 24030
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2436226852 → 46160.333900463** (0D 02:10:00) | -22.81819,-43.00476
+    - Endereço: R Francisco Muniz, Sao Goncalo, RJ a 2118 10 de CEE - SAO GONCALO - RJ
+    - Local: `560022 - SENDAS ALCÂNTARA I - LOJA 35`
+  - **46160.3373611111 → 46160.3404976852** (0D 00:04:31) | -22.81853,-43.00176
+    - Endereço: Rua Sílvio Romero, 94 Alcântara, São Gonçalo, Rio de Janeiro, Brasil, CEP 24710-
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.405787037 → 46160.4517824074** (0D 01:06:14) | -22.82887,-43.3419
+    - Endereço: Avenida Brasil, Coelho Neto, , Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4561574074 → 46160.5108564815** (0D 01:18:46) | -22.82737,-43.33825
+    - Endereço: Indefinida
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5115393518 → 46160.5839351852** (0D 01:44:15) | -22.82693,-43.33734
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6138657407 → 46160.7770486111** (0D 03:54:59) | -22.91019,-43.2758
+    - Endereço: R CABUCU, 122-128, LINS DE VASCONCELOS, RIO DE JANEIRO, RJ, BRASIL, 50, 40, CEP 
+    - Local: `202013 - PAX LINS`
+  - **46160.8021527778 → 46160.8049305556** (0D 00:04:00) | -22.84687,-43.24398
+    - Endereço: Av Brg Trompowski - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.805625 → 46160.8083217593** (0D 00:03:53) | -22.84695,-43.2454
+    - Endereço: Avenida Brigadeiro Trompowski - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8152314815 → 46160.8193981481** (0D 00:06:00) | -22.84447,-43.24917
+    - Endereço: R Sto Adalardo - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8214699074 → 46160.8270023148** (0D 00:07:58) | -22.84296,-43.25059
+    - Endereço: Rua Gérson Ferreira - RIO DE JANEIRO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8306712963 → 46160.8334375** (0D 00:03:59) | -22.83547,-43.26044
+    - Endereço: Av Brasil - Pista Central - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8348263889 → 46160.8389699074** (0D 00:05:58) | -22.83449,-43.26233
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8486458333 → 46160.8507291667** (0D 00:03:00) | -22.82139,-43.2814
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8514236111 → 46160.8555787037** (0D 00:05:59) | -22.82044,-43.2825
+    - Endereço: Av Brasil - Rio de Janeiro - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8660763889 → 46160.8681597222** (0D 00:03:00) | -22.79359,-43.30772
+    - Endereço: Av Pres kennedy - Duque de Caxias - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8851851852 → 46160.8872685185** (0D 00:03:00) | -22.81957,-43.32197
+    - Endereço: RODOVIA PRES DUTRA, 0-0, JARDIM AMERICA, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.9079513889 → 46160.9979050926** (0D 02:09:32) | -22.82715,-43.33735
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## UBF-5G36
+- Total paradas: 18 | Distância: 228.95 km | Tempo dirigido: 0D 06:32:39
+- 18 paradas detalhadas:
+  - **46160.0017013889 → 46160.1534606482** (0D 03:38:32) | -22.8275,-43.33827
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,7012010 - CAB - PETROPOLIS`
+  - **46160.1542592593 → 46160.1840046296** (0D 00:42:50) | -22.82725,-43.33741
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,7012010 - CAB - PETROPOLIS`
+  - **46160.1914814815 → 46160.2090393519** (0D 00:25:17) | -22.82895,-43.34116
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,7012010 - CAB - PETROPOLIS`
+  - **46160.2137384259 → 46160.2177546296** (0D 00:05:47) | -22.82725,-43.33738
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,7012010 - CAB - PETROPOLIS`
+  - **46160.2811574074 → 46160.2919560185** (0D 00:15:33) | -22.48941,-43.15364
+    - Endereço: Rua Quissamã - Quissamã - Petrópolis - Rio de Janeiro
+    - Local: `7012010 - CAB - PETROPOLIS`
+  - **46160.2944560185 → 46160.3122337963** (0D 00:25:36) | -22.48936,-43.15481
+    - Endereço: Servidão Raul Pereira Nunes, Itamarati, Petrópolis, Rio de Janeiro, Brasil, CEP 
+    - Local: `7012010 - CAB - PETROPOLIS`
+  - **46160.3630324074 → 46160.3651157407** (0D 00:03:00) | -22.7789,-43.28591
+    - Endereço: Rod Washington Luiz - Duque de Caxias - RJ
+    - Local: `7012010 - CAB - PETROPOLIS`
+  - **46160.3902546296 → 46160.4167592593** (0D 00:38:10) | -22.82909,-43.34123
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,7012010 - CAB - PETROPOLIS`
+  - **46160.4211342593 → 46160.4253240741** (0D 00:06:02) | -22.82778,-43.33757
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,7012010 - CAB - PETROPOLIS`
+  - **46160.427337963 → 46160.5572569444** (0D 03:07:05) | -22.82728,-43.3375
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,7012010 - CAB - PETROPOLIS`
+  - **46160.5607060185 → 46160.5667013889** (0D 00:08:38) | -22.82867,-43.34215
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,7012010 - CAB - PETROPOLIS`
+  - **46160.5683564815 → 46160.5785069444** (0D 00:14:37) | -22.82744,-43.33819
+    - Endereço: AV BRASIL, 19001-19101, COELHO NETO, RIO DE JANEIRO, RJ, BRASIL, 70, 60, CEP 215
+    - Local: `BASE BENASSI - BASE BENASSI,7012010 - CAB - PETROPOLIS`
+  - **46160.5795023148 → 46160.5839467593** (0D 00:06:24) | -22.82749,-43.33757
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,7012010 - CAB - PETROPOLIS`
+  - **46160.6003009259 → 46160.6023842593** (0D 00:03:00) | -22.89671,-43.39942
+    - Endereço: CORREDOR PRES TANCREDO NEVES, 0-0, , RIO DE JANEIRO, RJ, BRASIL, 80, 70, CEP
+    - Local: `7012010 - CAB - PETROPOLIS`
+  - **46160.6296643519 → 46160.6730902778** (0D 01:02:32) | -22.97953,-43.49246
+    - Endereço: Rua Luíz Felipe Serpa Vargem Grande, Rio de Janeiro, Rio de Janeiro, Brasil, CEP
+    - Local: `7012010 - CAB - PETROPOLIS`
+  - **46160.7158101852 → 46160.7325578704** (0D 00:24:07) | -22.86231,-43.54986
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 2393 88 de CLIENTES ESPECIAIS - HERMES
+    - Local: `7012010 - CAB - PETROPOLIS`
+  - **46160.7481828704 → 46160.7593634259** (0D 00:16:06) | -22.82903,-43.34114
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,7012010 - CAB - PETROPOLIS`
+  - **46160.7627546296 → 46160.9999189815** (0D 05:41:31) | -22.82757,-43.33746
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI,7012010 - CAB - PETROPOLIS`
+
+## UBG-7F79
+- Total paradas: 9 | Distância: 122.18 km | Tempo dirigido: 0D 03:36:11
+- 9 paradas detalhadas:
+  - **46160.0130439815 → 46160.2042361111** (0D 04:35:19) | -22.82882,-43.34165
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2290740741 → 46160.3017361111** (0D 01:44:38) | -22.97124,-43.38586
+    - Endereço: R AMILCAR DE CASTRO, 0-148, JACAREPAGUA, RIO DE JANEIRO, RJ, BRASIL, 40, 40, CEP
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3440509259 → 46160.3507175926** (0D 00:09:36) | -22.81574,-43.32435
+    - Endereço: Rua Jornalista Geraldo Rocha, Jardim América, , Rio de Janeiro, Brasil, CEP 2124
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3584837963 → 46160.3648842593** (0D 00:09:13) | -22.829,-43.34123
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.3675694444 → 46160.4596064815** (0D 02:12:32) | -22.82715,-43.33814
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4959953704 → 46160.5184143518** (0D 00:32:17) | -22.99945,-43.39986
+    - Endereço: Avenida Jardins Santa Monica, Barra da Tijuca, Rio de Janeiro, Rio de Janeiro, B
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5437962963 → 46160.9420717593** (0D 09:33:31) | -22.82735,-43.33813
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.9441898148 → 46160.9482638889** (0D 00:05:52) | -22.82767,-43.33751
+    - Endereço: Colégio - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.9568981481 → 46160.9996643519** (0D 01:01:35) | -22.82892,-43.34152
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## UBO0B68
+- Total paradas: 6 | Distância: 32.27 km | Tempo dirigido: 0D 01:43:30
+- 6 paradas detalhadas:
+  - **46160.0046296296 → 46160.2457291667** (0D 05:47:11) | -22.8269,-43.33809
+    - Endereço: Avenida Brasil, Coelho Neto, , Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2496875 → 46160.258275463** (0D 00:12:22) | -22.8289,-43.34148
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2895023148 → 46160.2921759259** (0D 00:03:51) | -22.93392,-43.37269
+    - Endereço: Estr dos Bandeirantes - Rio de Janeiro - RJ
+    - Local: `560062 - SENDAS JACAREPAGUA - LOJA 340 (TAQUARA)`
+  - **46160.2931597222 → 46160.5459375** (0D 06:04:00) | -22.93487,-43.37313
+    - Endereço: Estr dos Bandeirantes, Rio de Janeiro, RJ a 588 180 de LTU-RJ CDD TAQUARA
+    - Local: `560062 - SENDAS JACAREPAGUA - LOJA 340 (TAQUARA)`
+  - **46160.5786574074 → 46160.6074189815** (0D 00:41:25) | -22.82905,-43.34114
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6104050926 → 46160.9975347222** (0D 09:17:28) | -22.82692,-43.33734
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## UBO-5E05
+- Total paradas: 16 | Distância: 203.56 km | Tempo dirigido: 0D 06:26:21
+- 16 paradas detalhadas:
+  - **46160 → 46160.1835648148** (0D 04:24:20) | -22.8268,-43.33807
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.186875 → 46160.2006828704** (0D 00:19:53) | -22.83199,-43.34137
+    - Endereço: Avenida Pastor Martin Luther King Junior - Coelho Neto - Rio de Janeiro - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2028125 → 46160.2112268519** (0D 00:12:07) | -22.82882,-43.34168
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.231724537 → 46160.2605208333** (0D 00:41:28) | -22.77666,-43.30798
+    - Endereço: , Centenário, Duque de Caxias, Rio de Janeiro, Brasil, CEP 25070-050
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2623958333 → 46160.2831481481** (0D 00:29:53) | -22.77713,-43.30904
+    - Endereço: Rua Francisca Thome Centenário, Duque de Caxias, Rio de Janeiro, Brasil, CEP 250
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2857407407 → 46160.5456481481** (0D 06:14:16) | -22.77661,-43.30877
+    - Endereço: R Francisca Tome, Duque de Caxias, RJ a 2908 121 de GARAGEM MERCOPAMPA - LGH - D
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.5604398148 → 46160.5897569444** (0D 00:42:13) | -22.82889,-43.34175
+    - Endereço: Rua São Benedito
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6587152778 → 46160.6956597222** (0D 00:53:12) | -22.44169,-43.13823
+    - Endereço: Rua Castro Alves, 153 Corrêas, Cascatinha, Rio de Janeiro, Brasil, CEP 25730-730
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.705787037 → 46160.7123032407** (0D 00:09:23) | -22.41516,-43.14011
+    - Endereço: Rua Domingos José Martins Benfica, Cascatinha, Rio de Janeiro, Brasil, CEP 25745
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7869097222 → 46160.7889930556** (0D 00:03:00) | -22.76437,-43.28674
+    - Endereço: RODOVIA WASHINGTON LUIZ/BR 040, 119454-119612, VILA SAO LUIS, DUQUE DE CAXIAS, R
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7924421296 → 46160.7959143519** (0D 00:05:00) | -22.76997,-43.28639
+    - Endereço: Rod Washington Luiz - Duque de Caxias - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8028240741 → 46160.8049074074** (0D 00:03:00) | -22.77602,-43.28601
+    - Endereço: RODOVIA WASHINGTON LUIZ/BR 040, 120749-120897, JARDIM GRAMACHO, DUQUE DE CAXIAS,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8104398148 → 46160.8131944444** (0D 00:03:58) | -22.78025,-43.28572
+    - Endereço: RODOVIA WASHINGTON LUIZ/BR 040, 120899-121311, JARDIM GRAMACHO, DUQUE DE CAXIAS,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8318518518 → 46160.8360185185** (0D 00:06:00) | -22.79587,-43.28857
+    - Endereço: Rod Washington Luiz - Duque de Caxias - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.8678935185 → 46160.8761111111** (0D 00:11:50) | -22.82899,-43.34112
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.8791087963 → 46160.9966782407** (0D 02:49:18) | -22.82731,-43.33815
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## UBO-5E01
+- Total paradas: 11 | Distância: 112.49 km | Tempo dirigido: 0D 03:22:59
+- 11 paradas detalhadas:
+  - **46160.0011921296 → 46160.1419560185** (0D 03:22:42) | -22.8276,-43.3382
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO),17659003 - EMANUEL VARGEM GRANDE`
+  - **46160.1534837963 → 46160.1625925926** (0D 00:13:07) | -22.82894,-43.34132
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO),17659003 - EMANUEL VARGEM GRANDE`
+  - **46160.165150463 → 46160.1696990741** (0D 00:06:33) | -22.82803,-43.33737
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO),17659003 - EMANUEL VARGEM GRANDE`
+  - **46160.1949884259 → 46160.3527777778** (0D 03:47:13) | -22.88362,-43.1134
+    - Endereço: Rua Presidente Castelo Branco - São Lourenço - Niterói - RJ
+    - Local: `560052 - SENDAS NITERÓI PONTE,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO),17659003 - EMANUEL VARGEM GRANDE`
+  - **46160.3545601852 → 46160.4172337963** (0D 01:30:15) | -22.88327,-43.11376
+    - Endereço: Travessa Santo Antônio - São Lourenço - Niterói - RJ
+    - Local: `560052 - SENDAS NITERÓI PONTE,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO),17659003 - EMANUEL VARGEM GRANDE`
+  - **46160.4478819444 → 46160.5934027778** (0D 03:29:33) | -22.82761,-43.33757
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO),17659003 - EMANUEL VARGEM GRANDE`
+  - **46160.6258796296 → 46160.689837963** (0D 01:32:06) | -22.8939,-43.30049
+    - Endereço: R BENTO GONCALVES, 442-520, ENGENHO DE DENTRO, RIO DE JANEIRO, RJ, BRASIL, 50, 4
+    - Local: `202001 - PAX ENGENHO DE DENTRO,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO),17659003 - EMANUEL VARGEM GRANDE`
+  - **46160.706400463 → 46160.7400925926** (0D 00:48:31) | -22.86502,-43.30013
+    - Endereço: Rua São Tiago de Pádua - Engenho da Rainha - Rio de Janeiro
+    - Local: `202003 - PAX INHAUMA,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO),17659003 - EMANUEL VARGEM GRANDE`
+  - **46160.7517476852 → 46160.7546064815** (0D 00:04:07) | -22.84316,-43.33137
+    - Endereço: Avenida Pastor Martin Luther King Junior, Irajá, Rio de Janeiro, Rio de Janeiro,
+    - Local: `5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO),17659003 - EMANUEL VARGEM GRANDE`
+  - **46160.7604166667 → 46160.7843287037** (0D 00:34:26) | -22.82886,-43.3412
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO),17659003 - EMANUEL VARGEM GRANDE`
+  - **46160.7869791667 → 46160.9977430556** (0D 05:03:30) | -22.82833,-43.34274
+    - Endereço: Av Brasil, Rio de Janeiro, RJ a 3026 54 de AGF JARDIM AMERICA
+    - Local: `BASE BENASSI - BASE BENASSI,5353016 - REGINA LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA (ALTO),17659003 - EMANUEL VARGEM GRANDE`
+
+## UDC-6I03
+- Total paradas: 16 | Distância: 424.3 km | Tempo dirigido: 0D 08:28:29
+- 16 paradas detalhadas:
+  - **46160.0032638889 → 46160.1124537037** (0D 02:37:14) | -22.8273,-43.33841
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1925578704 → 46160.1994097222** (0D 00:09:52) | -22.81848,-42.29019
+    - Endereço: VIA LAGOS/RJ 124, 41562-41596, , ARARUAMA, RJ, BRASIL, 90, 70, CEP 28970000
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.21375 → 46160.2201273148** (0D 00:09:11) | -22.83475,-42.10135
+    - Endereço: Rodovia Márcio Corrêa, , São Pedro da Aldeia, Rio de Janeiro, Brasil, CEP 28941-
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.2312384259 → 46160.2884375** (0D 01:22:22) | -22.88514,-42.02686
+    - Endereço: Avenida Teixeira e Souza, 1025 Centro, Cabo Frio, Rio de Janeiro, Brasil, CEP 28
+    - Local: `8590565 - PRINCESA - CABO FRIO 1`
+  - **46160.2896064815 → 46160.3198148148** (0D 00:43:30) | -22.88146,-42.02095
+    - Endereço: R Raul Veiga, Cabo Frio, RJ a 84732 139 de CDD - RESENDE - LTU
+    - Local: `8590567 - PRINCESA - CABO FRIO 3`
+  - **46160.328599537 → 46160.3501041667** (0D 00:30:58) | -22.87878,-42.04735
+    - Endereço: R Olinda, Cabo Frio, RJ a 4637 146 de CDD SAO PEDRO DA ALDEIA - RJ
+    - Local: `8590566 - PRINCESA - CABO FRIO 2`
+  - **46160.3860416667 → 46160.3893402778** (0D 00:04:45) | -22.79974,-42.48002
+    - Endereço: Rodovia Via Lagos Vertentes, Rio Bonito, Rio de Janeiro, Brasil
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4208449074 → 46160.4239236111** (0D 00:04:26) | -22.75508,-42.89156
+    - Endereço: R Jose Leandro, Itaborai, RJ a 15056 55 de CTE - SAO CONCALO - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4720833333 → 46160.4858796296** (0D 00:19:52) | -22.82891,-43.34114
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4916782407 → 46160.5070023148** (0D 00:22:04) | -22.82688,-43.33812
+    - Endereço: Avenida Brasil, Coelho Neto, , Rio de Janeiro, Brasil, CEP 21530-900
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5074421296 → 46160.5646527778** (0D 01:22:23) | -22.82741,-43.33737
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.5656018518 → 46160.6234722222** (0D 01:23:20) | -22.82754,-43.33822
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.6703009259 → 46160.7108912037** (0D 00:58:27) | -23.00932,-43.34534
+    - Endereço: Avenida Peregrino Junior, Barra da Tijuca, Rio de Janeiro, Rio de Janeiro, Brasi
+    - Local: `9039107 - 35 - ZONA SUL - BARRA DA TIJUCA`
+  - **46160.7520023148 → 46160.763287037** (0D 00:16:15) | -22.82747,-43.33818
+    - Endereço: Rua Charles Gounod
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.7707986111 → 46160.7755208333** (0D 00:06:48) | -22.81582,-43.32429
+    - Endereço: R JORN GERALDO ROCHA, 18-24, JARDIM AMERICA, RIO DE JANEIRO, RJ, BRASIL, 50, 40,
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.7948842593 → 46160.9965972222** (0D 04:50:28) | -22.82757,-43.33816
+    - Endereço: Em ROSAVES COD.004526 - RJ
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## UEH-0I93
+- Total paradas: 1 | Distância: 0 km | Tempo dirigido: 0D 00:00:00
+- 1 paradas detalhadas:
+  - **46160.5525115741 → 46160.5607523148** (0D 00:11:52) | -22.82651,-43.33767
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## UFW-0H63
+- Total paradas: 9 | Distância: 118.66 km | Tempo dirigido: 0D 04:11:45
+- 9 paradas detalhadas:
+  - **46160.0019212963 → 46160.1196875** (0D 02:49:35) | -22.82685,-43.33823
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,17659000 - O BOM ATACADISTA`
+  - **46160.1304282407 → 46160.2277083333** (0D 02:20:05) | -22.82891,-43.34147
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,17659000 - O BOM ATACADISTA`
+  - **46160.2453472222 → 46160.2859953704** (0D 00:58:32) | -22.87719,-43.41637
+    - Endereço: R Ten Pereira, Rio de Janeiro, RJ a 4379 24 de CDD DEODORO - RJ
+    - Local: `7000712 - PREZUNIC REALENGO,17659000 - O BOM ATACADISTA`
+  - **46160.2979050926 → 46160.4020138889** (0D 02:29:55) | -22.88192,-43.488
+    - Endereço: Av de Santa Cruz, Rio de Janeiro, RJ a 8938 101 de CLIENTES ESPECIAIS - HERMES
+    - Local: `7000705 - PREZUNIC SENADOR CAMARÁ,17659000 - O BOM ATACADISTA`
+  - **46160.429224537 → 46160.4556481481** (0D 00:38:03) | -22.82898,-43.34127
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI,17659000 - O BOM ATACADISTA`
+  - **46160.4598611111 → 46160.6243402778** (0D 03:56:51) | -22.82709,-43.33817
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 21530-9
+    - Local: `BASE BENASSI - BASE BENASSI,17659000 - O BOM ATACADISTA`
+  - **46160.6624884259 → 46160.6852314815** (0D 00:32:45) | -22.97275,-43.18886
+    - Endereço: Rua Dias da Rocha - Copacabana - Rio de Janeiro
+    - Local: `9039110 - 38 - ZONA SUL - COPACABANA DIAS DA ROCHA,17659000 - O BOM ATACADISTA`
+  - **46160.6990740741 → 46160.7011574074** (0D 00:03:00) | -22.94271,-43.18174
+    - Endereço: Praia de Botafogo Botafogo, Rio de Janeiro, Rio de Janeiro, Brasil, CEP 22250-04
+    - Local: `17659000 - O BOM ATACADISTA`
+  - **46160.7522800926 → 46160.7543634259** (0D 00:03:00) | -22.84316,-43.33124
+    - Endereço: Av Pst Martin Luther king Junior, Rio de Janeiro, RJ a 2640 55 de AGF MERITI
+    - Local: `17659000 - O BOM ATACADISTA`
+
+## UEH9I93
+- Total paradas: 1 | Distância: 0 km | Tempo dirigido: 0D 00:00:00
+- 1 paradas detalhadas:
+  - **46160.5223148148 → 46160.9960185185** (0D 11:22:08) | -22.82648,-43.33754
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## UFL-5C85
+- Total paradas: 1 | Distância: 0 km | Tempo dirigido: 0D 00:00:00
+- 1 paradas detalhadas:
+  - **46160.0020601852 → 46160.9965972222** (0D 23:52:08) | -22.82653,-43.33746
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+
+## UGA-1D55
+- Total paradas: 8 | Distância: 336.59 km | Tempo dirigido: 0D 05:39:21
+- 8 paradas detalhadas:
+  - **46160.0003587963 → 46160.0993981482** (0D 02:22:37) | -22.82667,-43.33729
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.1000810185 → 46160.1034259259** (0D 00:04:49) | -22.82766,-43.33735
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.2157060185 → 46160.3151041667** (0D 02:23:08) | -21.78558,-43.33711
+    - Endereço: Rua Edson José de Paula Graminha, Juiz de Fora, Minas Gerais, Brasil, CEP 36030-
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.3474074074 → 46160.3499652778** (0D 00:03:41) | -22.02749,-43.23085
+    - Endereço: Rodovia Presidente Juscelino Kubitschek/BR-040, 0, Comendador Levy Gasparian - R
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4255902778 → 46160.4318981481** (0D 00:09:05) | -22.789,-43.28622
+    - Endereço: Rod BR-040 - Pista Lateral - Duque de Caxias - RJ
+    - Local: `FORA DE BASE E LOCAL DE SERVIÇO`
+  - **46160.4412731481 → 46160.4531712963** (0D 00:17:08) | -22.82895,-43.34148
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.4569675926 → 46160.5226273148** (0D 01:34:33) | -22.82715,-43.33733
+    - Endereço: CEASA-RJ, Irajá, Rio de Janeiro, Região Geográfica Imediata do Rio de Janeiro, R
+    - Local: `BASE BENASSI - BASE BENASSI`
+  - **46160.524224537 → 46160.9943171296** (0D 11:16:56) | -22.82723,-43.33735
+    - Endereço: Avenida Brasil, Coelho Neto, Rio de Janeiro, Região Geográfica Imediata do Rio d
+    - Local: `BASE BENASSI - BASE BENASSI`
