@@ -925,7 +925,12 @@ export async function cruzaEscalaUnitrac(
     if (linhasAindaSemMatch.length > 0) {
       const paradasForaBase = todas
         .filter(p =>
-          p.classificacao === 'FORA_BASE' &&
+          // Inclui FAKE_EXIT também: lojas com geofence ausente no Unitrac ficam como
+          // FAKE_EXIT quando duração curta. Caso REGINA 1 DE MAIO dia 19: parada 14:20
+          // (7min) é entrega rápida em -22.4133, mas Unitrac classifica FAKE_EXIT
+          // porque cadastro Unitrac não tem geofence REGINA. Geo fallback aqui usa
+          // coord da loja CADASTRADA pra fazer match independente do parser Unitrac.
+          (p.classificacao === 'FORA_BASE' || p.classificacao === 'FAKE_EXIT') &&
           p.lat != null && p.lng != null &&
           !usados.has(p.id) &&
           // Exclui paradas antes das 03:00 BRT — veículo estacionado perto da loja
