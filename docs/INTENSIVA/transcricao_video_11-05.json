@@ -1,0 +1,481 @@
+{
+  "model": "voxtral-mini-latest",
+  "language": null,
+  "text": "Por fim, como que eu extraio a informação do caminhão em relação à parada do cliente? Se vocês observarem aqui, nós temos todas as informações que precisamos dentro do relatório que foi gerado. O relatório já estava disponível aqui. Eu clico aqui, ele vai fazer o download do relatório. E eu já abri aqui. Vamos pegar o exemplo do veículo AKZ 2745. Se você reparar, nós temos aqui data de parada, data de saída, duração da parada. É o que vai importar para a gente junto com local de parada. Então, data parada, data saída, local da parada. Veículo 2745, AKZ. Ele saiu da base Benassi às 5h03 da manhã do dia 9. Então, aqui eu já colocaria lá na escala, a KPI da escala lá, às 5h03, o horário que esse veículo saiu. Agora nós temos que procurar aqui...se ele foi para algum cliente ou se ele só deu uma volta na base. Como podemos ver aqui, ele marcou como saiu aqui, mas ele deu uma volta, provavelmente ele deu uma volta no portão para entrar no pavilhão 200. E agora sim, aqui às 5h59, ele saiu da base Benassi, conforme podemos ver aqui. Data da saída, 5h59, base Benassi. Então, ele saiu, na verdade, da base para ir para o cliente às 6h da manhã, 5h59. Então, esse horário eu colocaria lá na KPI referente ao KZ2745, que ele saiu do CD às 5h59. Se você olhar mais abaixo aqui, local de parada. Já temos aqui o cliente, ele identificou certinho o cliente. Então, ele chegou no cliente, data da parada, 6h28. Ele chegou no cliente sendo às meia, às 6h28. Se você reparar, às 7h13 ele se movimentou, ele saiu. Porém, ele não saiu do cliente. Possivelmente ele estava na rua lateral, conforme está aqui, a rua Carolina Santos. E ele foi para o outro lado para poder fazer a entrega, ou esperar o canhoto, ou algo assim. Então ele parou às seis e meia, porém ele saiu, na verdade, às sete e dezessete.Nem 7h17, às 7h45. Então, isso é importante sempre de estar observando. Ele entrou no cliente 6h30 e saiu às 7h45. É sempre assim que a gente vai fazer a questão da análise de qual horário que ele chegou no cliente e qual horário que ele saiu do cliente. Qualquer caminhão, qualquer cliente que for, vai ser assim. O que a gente vai ter de problema em alguns lugares é que o cliente não vai aparecer. Aqui nós temos o 2594 que saiu da base às 5h10, chegou no cliente sendo a esfreguesia 5h43, porém ele só saiu às 7h35, não pode confundir. 5H43, data da saída 5h50, mas ele não saiu do cliente 5h50. Ele apenas foi para a rua lateral ou para a área de entrega e ele saiu mesmo às 7h34. Então, isso tem que estar bastante atento. Sendo as pilares, eu quero ver se eu acho algum aqui que não tenha o nome do cliente. Para a gente poder entender. Carrefour, a Shopping.Esse aqui não fez escala hoje. Esse aqui também não fez escala hoje. Zona Sul, Botafogo. Então é bem simples, tá? Sempre assim, ó. BBH em C94. Ele saiu da base 4h35, chegou no cliente 5h10, saiu do cliente às 7h16, tá entendendo? Sempre assim, retornou à base 755, mas aí já não é importante essa parte aqui. Apenas quando ele sai da base e vai em direção a algum cliente. Sendo a Zararuama.Sendo as barras... Já sei, vou pegar um veículo aqui em específico, que ele não vai ter a marcação, que é o LMF. Que ele faz o Princesa Niterói. Vamos pegar aqui o exemplo do LMF. Isso aqui é um exemplo para veículos que às vezes não delimitam o local de parada. Aí a gente tem que procurar. No visual, no mapa, e ver o endereço. Temos o LMF 2049. Ele saiu da base, base Benassi, às 5h15, 5h14, normalmente eu boto 5h15. Temos aqui de novo base Benazir, 5,20. Então, ele saiu a 5,20. Possivelmente ele saiu, parou ali na frente para poder abastecer e saiu a 5,20. Ele chegou no cliente 5,55. Como é que eu sei? Pelo endereço. Esse endereço aqui é o endereço do cliente. Se você não souber o endereço do cliente, você vai ter que pegar aqui. Entrar lá no sistema de rastreamento, ir lá no acompanhamento, jogar a plaquinha do veículo e ver se essa parada, o horário de parada aqui, está batendo com o cliente lá, o endereço do cliente. Eu já sei pelo endereço que ele parou no cliente nesse horário, 5h55 às 6h23. É assim que a gente verifica se o veículo foi ao cliente ou não. Se ele tiver o local...De parada. Beleza, é mais fácil, que aí vai ter um nome aqui, por exemplo, preso Nick barra Marapendi. Esse veículo é o 9C64. Ele saiu às 5h59 da base, chegou na barra Marapendi 6h40, saiu 7h15, chegou no preso Nick Speed Alpha 7h30, saiu 8h. Então, a gente tem esses detalhes. Quando não tiver o nome do cliente no lado direito, a gente precisa ver a parada, identificar a parada, ver o endereço, ir lá no acompanhamento e ver no mapa visualmente se ele parou ou não no cliente.",
+  "segments": [
+    {
+      "speaker": 0,
+      "text": "Por fim, como que eu extraio a informação do caminhão em relação à parada do cliente?",
+      "start": 1.8,
+      "end": 7.9
+    },
+    {
+      "speaker": 0,
+      "text": "Se vocês observarem aqui, nós temos todas as informações que precisamos dentro do relatório que foi gerado.",
+      "start": 8.5,
+      "end": 15.7
+    },
+    {
+      "speaker": 0,
+      "text": "O relatório já estava disponível aqui.",
+      "start": 15.8,
+      "end": 17.4
+    },
+    {
+      "speaker": 0,
+      "text": "Eu clico aqui, ele vai fazer o download do relatório.",
+      "start": 18.0,
+      "end": 20.6
+    },
+    {
+      "speaker": 0,
+      "text": "E eu já abri aqui.",
+      "start": 21.0,
+      "end": 21.9
+    },
+    {
+      "speaker": 0,
+      "text": "Vamos pegar o exemplo do veículo AKZ 2745.",
+      "start": 22.9,
+      "end": 26.7
+    },
+    {
+      "speaker": 0,
+      "text": "Se você reparar, nós temos aqui data de parada, data de saída, duração da parada.",
+      "start": 28.1,
+      "end": 33.3
+    },
+    {
+      "speaker": 0,
+      "text": "É o que vai importar para a gente junto com local de parada.",
+      "start": 34.4,
+      "end": 37.4
+    },
+    {
+      "speaker": 0,
+      "text": "Então, data parada, data saída, local da parada.",
+      "start": 37.9,
+      "end": 41.9
+    },
+    {
+      "speaker": 0,
+      "text": "Veículo 2745, AKZ.",
+      "start": 43.1,
+      "end": 45.7
+    },
+    {
+      "speaker": 0,
+      "text": "Ele saiu da base Benassi às 5h03 da manhã do dia 9.",
+      "start": 46.7,
+      "end": 51.5
+    },
+    {
+      "speaker": 0,
+      "text": "Então, aqui eu já colocaria lá na escala, a KPI da escala lá, às 5h03, o horário que esse veículo saiu.",
+      "start": 52.0,
+      "end": 60.3
+    },
+    {
+      "speaker": 0,
+      "text": "Agora nós temos que procurar aqui...",
+      "start": 61.0,
+      "end": 63.2
+    },
+    {
+      "speaker": 0,
+      "text": "se ele foi para algum cliente ou se ele só deu uma volta na base.",
+      "start": 65.744,
+      "end": 71.044
+    },
+    {
+      "speaker": 0,
+      "text": "Como podemos ver aqui, ele marcou como saiu aqui, mas ele deu uma volta, provavelmente ele deu uma volta no portão para entrar no pavilhão 200.",
+      "start": 71.144,
+      "end": 78.744
+    },
+    {
+      "speaker": 0,
+      "text": "E agora sim, aqui às 5h59, ele saiu da base Benassi, conforme podemos ver aqui.",
+      "start": 80.244,
+      "end": 86.744
+    },
+    {
+      "speaker": 0,
+      "text": "Data da saída, 5h59, base Benassi.",
+      "start": 87.644,
+      "end": 92.544
+    },
+    {
+      "speaker": 0,
+      "text": "Então, ele saiu, na verdade, da base para ir para o cliente às 6h da manhã, 5h59.",
+      "start": 92.644,
+      "end": 99.744
+    },
+    {
+      "speaker": 0,
+      "text": "Então, esse horário eu colocaria lá na KPI referente ao KZ2745, que ele saiu do CD às 5h59.",
+      "start": 100.044,
+      "end": 110.044
+    },
+    {
+      "speaker": 0,
+      "text": "Se você olhar mais abaixo aqui, local de parada.",
+      "start": 111.044,
+      "end": 113.244
+    },
+    {
+      "speaker": 0,
+      "text": "Já temos aqui o cliente, ele identificou certinho o cliente.",
+      "start": 114.044,
+      "end": 117.344
+    },
+    {
+      "speaker": 0,
+      "text": "Então, ele chegou no cliente, data da parada, 6h28.",
+      "start": 117.844,
+      "end": 123.144
+    },
+    {
+      "speaker": 0,
+      "text": "Ele chegou no cliente sendo às meia, às 6h28.",
+      "start": 124.544,
+      "end": 127.944
+    },
+    {
+      "speaker": 0,
+      "text": "Se você reparar, às 7h13 ele se movimentou, ele saiu.",
+      "start": 128.444,
+      "end": 131.644
+    },
+    {
+      "speaker": 0,
+      "text": "Porém, ele não saiu do cliente.",
+      "start": 132.044,
+      "end": 134.044
+    },
+    {
+      "speaker": 0,
+      "text": "Possivelmente ele estava na rua lateral, conforme está aqui, a rua Carolina Santos.",
+      "start": 134.544,
+      "end": 138.844
+    },
+    {
+      "speaker": 0,
+      "text": "E ele foi para o outro lado para poder fazer a entrega, ou esperar o canhoto, ou algo assim.",
+      "start": 139.744,
+      "end": 144.944
+    },
+    {
+      "speaker": 0,
+      "text": "Então ele parou às seis e meia, porém ele saiu, na verdade, às sete e dezessete.",
+      "start": 145.544,
+      "end": 150.944
+    },
+    {
+      "speaker": 0,
+      "text": "Nem 7h17, às 7h45.",
+      "start": 153.444,
+      "end": 156.544
+    },
+    {
+      "speaker": 0,
+      "text": "Então, isso é importante sempre de estar observando.",
+      "start": 157.944,
+      "end": 160.144
+    },
+    {
+      "speaker": 0,
+      "text": "Ele entrou no cliente 6h30 e saiu às 7h45.",
+      "start": 160.544,
+      "end": 164.644
+    },
+    {
+      "speaker": 0,
+      "text": "É sempre assim que a gente vai fazer a questão da análise de qual horário que ele chegou no cliente e qual horário que ele saiu do cliente.",
+      "start": 165.044,
+      "end": 173.244
+    },
+    {
+      "speaker": 0,
+      "text": "Qualquer caminhão, qualquer cliente que for, vai ser assim.",
+      "start": 173.944,
+      "end": 177.444
+    },
+    {
+      "speaker": 0,
+      "text": "O que a gente vai ter de problema em alguns lugares é que o cliente não vai aparecer.",
+      "start": 177.944,
+      "end": 183.444
+    },
+    {
+      "speaker": 0,
+      "text": "Aqui nós temos o 2594 que saiu da base às 5h10, chegou no cliente sendo a esfreguesia 5h43, porém ele só saiu às 7h35, não pode confundir.",
+      "start": 184.444,
+      "end": 198.244
+    },
+    {
+      "speaker": 0,
+      "text": "5H43, data da saída 5h50, mas ele não saiu do cliente 5h50.",
+      "start": 199.144,
+      "end": 203.044
+    },
+    {
+      "speaker": 0,
+      "text": "Ele apenas foi para a rua lateral ou para a área de entrega e ele saiu mesmo às 7h34.",
+      "start": 203.444,
+      "end": 209.744
+    },
+    {
+      "speaker": 0,
+      "text": "Então, isso tem que estar bastante atento.",
+      "start": 211.144,
+      "end": 213.044
+    },
+    {
+      "speaker": 0,
+      "text": "Sendo as pilares, eu quero ver se eu acho algum aqui que não tenha o nome do cliente.",
+      "start": 213.844,
+      "end": 220.444
+    },
+    {
+      "speaker": 0,
+      "text": "Para a gente poder entender.",
+      "start": 221.944,
+      "end": 224.244
+    },
+    {
+      "speaker": 0,
+      "text": "Carrefour, a Shopping.",
+      "start": 224.744,
+      "end": 226.444
+    },
+    {
+      "speaker": 0,
+      "text": "Esse aqui não fez escala hoje.",
+      "start": 229.496,
+      "end": 231.296
+    },
+    {
+      "speaker": 0,
+      "text": "Esse aqui também não fez escala hoje.",
+      "start": 231.396,
+      "end": 233.296
+    },
+    {
+      "speaker": 0,
+      "text": "Zona Sul, Botafogo.",
+      "start": 235.096,
+      "end": 236.596
+    },
+    {
+      "speaker": 0,
+      "text": "Então é bem simples, tá?",
+      "start": 237.696,
+      "end": 238.896
+    },
+    {
+      "speaker": 0,
+      "text": "Sempre assim, ó.",
+      "start": 239.596,
+      "end": 240.196
+    },
+    {
+      "speaker": 0,
+      "text": "BBH em C94.",
+      "start": 240.396,
+      "end": 242.596
+    },
+    {
+      "speaker": 0,
+      "text": "Ele saiu da base 4h35, chegou no cliente 5h10, saiu do cliente às 7h16, tá entendendo?",
+      "start": 243.296,
+      "end": 250.396
+    },
+    {
+      "speaker": 0,
+      "text": "Sempre assim, retornou à base 755, mas aí já não é importante essa parte aqui.",
+      "start": 250.996,
+      "end": 255.596
+    },
+    {
+      "speaker": 0,
+      "text": "Apenas quando ele sai da base e vai em direção a algum cliente.",
+      "start": 255.996,
+      "end": 259.496
+    },
+    {
+      "speaker": 0,
+      "text": "Sendo a Zararuama.",
+      "start": 261.896,
+      "end": 263.196
+    },
+    {
+      "speaker": 0,
+      "text": "Sendo as barras...",
+      "start": 265.396,
+      "end": 266.396
+    },
+    {
+      "speaker": 0,
+      "text": "Já sei, vou pegar um veículo aqui em específico, que ele não vai ter a marcação, que é o LMF.",
+      "start": 266.796,
+      "end": 271.596
+    },
+    {
+      "speaker": 0,
+      "text": "Que ele faz o Princesa Niterói.",
+      "start": 272.096,
+      "end": 275.996
+    },
+    {
+      "speaker": 0,
+      "text": "Vamos pegar aqui o exemplo do LMF.",
+      "start": 278.296,
+      "end": 280.396
+    },
+    {
+      "speaker": 0,
+      "text": "Isso aqui é um exemplo para veículos que às vezes não delimitam o local de parada.",
+      "start": 280.496,
+      "end": 286.596
+    },
+    {
+      "speaker": 0,
+      "text": "Aí a gente tem que procurar.",
+      "start": 287.296,
+      "end": 288.396
+    },
+    {
+      "speaker": 0,
+      "text": "No visual, no mapa, e ver o endereço.",
+      "start": 290.396,
+      "end": 292.796
+    },
+    {
+      "speaker": 0,
+      "text": "Temos o LMF 2049.",
+      "start": 293.396,
+      "end": 295.396
+    },
+    {
+      "speaker": 0,
+      "text": "Ele saiu da base, base Benassi, às 5h15, 5h14, normalmente eu boto 5h15.",
+      "start": 296.296,
+      "end": 304.896
+    },
+    {
+      "speaker": 0,
+      "text": "Temos aqui de novo base Benazir, 5,20.",
+      "start": 307.596,
+      "end": 310.096
+    },
+    {
+      "speaker": 0,
+      "text": "Então, ele saiu a 5,20.",
+      "start": 310.196,
+      "end": 311.696
+    },
+    {
+      "speaker": 0,
+      "text": "Possivelmente ele saiu, parou ali na frente para poder abastecer e saiu a 5,20.",
+      "start": 312.096,
+      "end": 316.796
+    },
+    {
+      "speaker": 0,
+      "text": "Ele chegou no cliente 5,55.",
+      "start": 317.996,
+      "end": 320.696
+    },
+    {
+      "speaker": 0,
+      "text": "Como é que eu sei?",
+      "start": 321.196,
+      "end": 321.996
+    },
+    {
+      "speaker": 0,
+      "text": "Pelo endereço.",
+      "start": 322.296,
+      "end": 323.196
+    },
+    {
+      "speaker": 0,
+      "text": "Esse endereço aqui é o endereço do cliente.",
+      "start": 324.196,
+      "end": 325.996
+    },
+    {
+      "speaker": 0,
+      "text": "Se você não souber o endereço do cliente, você vai ter que pegar aqui.",
+      "start": 326.396,
+      "end": 329.196
+    },
+    {
+      "speaker": 0,
+      "text": "Entrar lá no sistema de rastreamento, ir lá no acompanhamento, jogar a plaquinha do veículo e ver se essa parada, o horário de parada aqui, está batendo com o cliente lá, o endereço do cliente.",
+      "start": 329.696,
+      "end": 341.396
+    },
+    {
+      "speaker": 0,
+      "text": "Eu já sei pelo endereço que ele parou no cliente nesse horário, 5h55 às 6h23.",
+      "start": 342.296,
+      "end": 348.496
+    },
+    {
+      "speaker": 0,
+      "text": "É assim que a gente verifica se o veículo foi ao cliente ou não.",
+      "start": 349.196,
+      "end": 352.196
+    },
+    {
+      "speaker": 0,
+      "text": "Se ele tiver o local...",
+      "start": 352.696,
+      "end": 353.696
+    },
+    {
+      "speaker": 0,
+      "text": "De parada.",
+      "start": 353.696,
+      "end": 354.296
+    },
+    {
+      "speaker": 0,
+      "text": "Beleza, é mais fácil, que aí vai ter um nome aqui, por exemplo, preso Nick barra Marapendi.",
+      "start": 354.996,
+      "end": 359.096
+    },
+    {
+      "speaker": 0,
+      "text": "Esse veículo é o 9C64.",
+      "start": 359.796,
+      "end": 362.296
+    },
+    {
+      "speaker": 0,
+      "text": "Ele saiu às 5h59 da base, chegou na barra Marapendi 6h40, saiu 7h15, chegou no preso Nick Speed Alpha 7h30, saiu 8h.",
+      "start": 363.096,
+      "end": 374.496
+    },
+    {
+      "speaker": 0,
+      "text": "Então, a gente tem esses detalhes.",
+      "start": 375.896,
+      "end": 377.596
+    },
+    {
+      "speaker": 0,
+      "text": "Quando não tiver o nome do cliente no lado direito, a gente precisa ver a parada, identificar a parada, ver o endereço, ir lá",
+      "start": 377.896,
+      "end": 387.396
+    },
+    {
+      "speaker": 0,
+      "text": "no acompanhamento e ver no mapa visualmente se ele parou ou não no cliente.",
+      "start": 388.296,
+      "end": 393.396
+    }
+  ]
+}
