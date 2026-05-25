@@ -14,7 +14,23 @@
 |------|--------|--------|-----|-------|
 | 0 — Sanitização cadastro | ✓ Concluída | 2026-05-24 | 2026-05-24 | 52 duplicatas mescladas + auto-preencher aplicado + aliases salvos. 347→295 ativas. |
 | 1 — Pipeline alterações | ✓ Concluída | 2026-05-24 | 2026-05-24 | aplicarAlteracoes extraída como módulo + 10 testes vitest. /api/kpi/simples agora usa o módulo. |
-| 2 — Matcher v2 | 🚧 Próxima | - | - | - |
+| 2 — Matcher v2 | ⏸️ EM ESPERA | 2026-05-24 | - | v2 implementado + 12 testes em branch `feat/matcher-v2-simplificado`. **NÃO mergeado** — perde 391 matches legítimos vs v1 (cobertura cai de 78% → 20%) por causa de cadastro ainda incompleto (27% sem código + 42% sem nome). Aguarda mais escalas pra completar cadastro. |
+
+## Decisão Fase 2: NÃO mergear v2 ainda
+
+**Comparativo nos dias 18, 19, 22 (669 linhas total):**
+| Métrica | v1 | v2 |
+|---------|----|----|
+| Com GPS encontrado | 524 (78%) | 133 (20%) |
+| Diferenças | - | 428 |
+| v1 acha mais | - | 391 (v2 muito conservador) |
+| v2 acha mais | - | 0 |
+
+**Causa raiz:** v2 sem fallback geo/fuzzy depende 100% de cadastro completo. Hoje 79 lojas sem `codigo_unitrac` + 125 sem `nome_unitrac`.
+
+**Pré-requisito pro merge v2:** cadastro com <10% sem código e <20% sem nome.
+
+**Caminho:** dono vai mandando escalas, sistema vai aprendendo. Quando cobertura passar de 90%, re-rodar comparativo e mergear.
 | 2 — Matcher v2 | ⏳ Pendente | - | - | - |
 | 3 — Validação rede a rede | ⏳ Pendente | - | - | - |
 | 4 — Casos especiais | ⏳ Pendente | - | - | - |
