@@ -137,19 +137,14 @@ export async function POST(req: NextRequest) {
   const rawUnitracPaths: string[] = unitracBucketPaths ?? (unitracBucketPath ? [unitracBucketPath] : [])
   if (rawUnitracPaths.length === 0) return new NextResponse('"unitracBucketPath" ou "unitracBucketPaths" obrigatório.', { status: 400 })
 
-  // OBRIGATÓRIO: ambos formatos do Unitrac (XLSX + PDF).
-  // Motivo: XLSX e PDF do mesmo dia podem ter dados ligeiramente diferentes
-  // (timing do export). XLSX = parsing mais limpo; PDF = paradas tardias quando
-  // o XLSX foi exportado mais cedo. Combinar os dois maximiza completude.
-  const temXlsx = rawUnitracPaths.some(p => p.toLowerCase().endsWith('.xlsx'))
+  // PDF é OBRIGATÓRIO (fonte primária — Tia Érica usa só PDF, é mais completo).
+  // XLSX é OPCIONAL (fallback que pode ter parsing mais limpo em alguns casos).
+  // Antes exigíamos os dois, mas Tia Érica trabalha só com PDF, então o sistema
+  // deve refletir esse fluxo.
   const temPdf = rawUnitracPaths.some(p => p.toLowerCase().endsWith('.pdf'))
-  if (!temXlsx || !temPdf) {
-    const faltando = []
-    if (!temXlsx) faltando.push('XLSX')
-    if (!temPdf) faltando.push('PDF')
+  if (!temPdf) {
     return new NextResponse(
-      `Suba o relatório Unitrac em AMBOS os formatos. Faltando: ${faltando.join(' e ')}. ` +
-      `Os dois exports podem ter dados diferentes (timing) — o sistema combina para máxima precisão.`,
+      'Suba o relatório Unitrac em PDF (formato principal). XLSX é opcional como fallback.',
       { status: 400 },
     )
   }

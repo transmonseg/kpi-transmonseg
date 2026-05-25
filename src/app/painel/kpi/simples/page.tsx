@@ -654,16 +654,12 @@ export default function KpiSimplesPage() {
 
   async function processar() {
     if (escalas.length === 0) { setErro('Selecione ao menos uma escala.'); return }
-    if (unitracFiles.length === 0) { setErro('Selecione o Unitrac (XLSX e PDF).'); return }
-    // OBRIGATÓRIO: ambos formatos do Unitrac. XLSX e PDF do mesmo dia podem ter
-    // dados diferentes (timing do export). O sistema combina os dois pra máxima precisão.
-    const temXlsx = unitracFiles.some(f => f.name.toLowerCase().endsWith('.xlsx'))
+    if (unitracFiles.length === 0) { setErro('Selecione o Unitrac (PDF).'); return }
+    // PDF é OBRIGATÓRIO (formato principal usado pela Erica).
+    // XLSX é opcional como fallback.
     const temPdf = unitracFiles.some(f => f.name.toLowerCase().endsWith('.pdf'))
-    if (!temXlsx || !temPdf) {
-      const faltando: string[] = []
-      if (!temXlsx) faltando.push('XLSX')
-      if (!temPdf) faltando.push('PDF')
-      setErro(`Suba o Unitrac em AMBOS os formatos. Faltando: ${faltando.join(' e ')}.`)
+    if (!temPdf) {
+      setErro('Suba o Unitrac em PDF (formato principal). XLSX é opcional.')
       return
     }
     if (!data) { setErro('Selecione a data.'); return }
@@ -696,10 +692,10 @@ export default function KpiSimplesPage() {
     })
   }
 
-  // Habilita o botão só quando temos: pelo menos 1 escala + Unitrac XLSX + Unitrac PDF + data.
-  const temUnitracXlsx = unitracFiles.some(f => f.name.toLowerCase().endsWith('.xlsx'))
+  // Habilita o botão quando temos: pelo menos 1 escala + Unitrac PDF + data.
+  // XLSX é opcional (fallback).
   const temUnitracPdf = unitracFiles.some(f => f.name.toLowerCase().endsWith('.pdf'))
-  const pronto = escalas.length > 0 && temUnitracXlsx && temUnitracPdf && !!data
+  const pronto = escalas.length > 0 && temUnitracPdf && !!data
 
   function handleLineEdit(redeId: string, ordem: number, patch: LineEditPatch) {
     const key = `${redeId}:::${ordem}`
