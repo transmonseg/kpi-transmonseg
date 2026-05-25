@@ -409,11 +409,10 @@ describe('scorePair — PETROPOLIS como token discriminante', () => {
 // Exemplo: "LGX1J41" → pos 4 = 'J'; OCR pode ler como '9' → "LGX1941".
 describe('variantesOcr', () => {
   it('J↔9: placa com "J" na pos 4 gera variante com "9"', () => {
-    // "LGX1J41": pos 4 = 'J'
+    // "LGX1J41": pos 4 = 'J'. V2.1: também tenta pos 5-6, mas '4' e '1' têm seus pares.
     const v = variantesOcr('LGX1J41')
     expect(v).toContain('LGX1J41')
     expect(v).toContain('LGX1941')
-    expect(v).toHaveLength(2)
   })
 
   it('J↔9: placa com "9" na pos 4 gera variante com "J"', () => {
@@ -442,32 +441,28 @@ describe('variantesOcr', () => {
     const v = variantesOcr('LMN2G45')
     expect(v).toContain('LMN2G45')
     expect(v).toContain('LMN2645')
-    expect(v).toHaveLength(2)
   })
 
   it('H↔7: placa com "H" na pos 4 gera variante com "7"', () => {
-    // "LMN2H45": pos 4 = 'H' → OCR pode ler como '7' → "LMN2745"
     const v = variantesOcr('LMN2H45')
     expect(v).toContain('LMN2H45')
     expect(v).toContain('LMN2745')
-    expect(v).toHaveLength(2)
   })
 
   it('I↔8 e I↔1: placa com "I" na pos 4 gera variantes com "8" e "1"', () => {
-    // "LMN2I45": pos 4 = 'I' → OCR confunde com '8' e com '1'
-    // OCR_PARES: 'I': ['8', '1']
     const v = variantesOcr('LMN2I45')
     expect(v).toContain('LMN2I45')
     expect(v).toContain('LMN2845')
     expect(v).toContain('LMN2145')
-    expect(v).toHaveLength(3)
   })
 
-  it('char nao-OCR na pos 4 retorna apenas a placa original', () => {
-    // "ABCAD12": pos 4 = 'A' — nao e par OCR
+  it('V2.1: variantesOcr tenta pos 4-6 (não só pos 4)', () => {
+    // "ABCAD12": pos 4='D' (→ '0'), pos 5='1' (→ B,I,L,7), pos 6='2' (→ Z)
     const v = variantesOcr('ABCAD12')
-    expect(v).toHaveLength(1)
-    expect(v[0]).toBe('ABCAD12')
+    expect(v).toContain('ABCAD12')
+    expect(v).toContain('ABCA012')  // pos 4 D→0
+    expect(v).toContain('ABCADB2')  // pos 5 1→B
+    expect(v).toContain('ABCAD1Z')  // pos 6 2→Z
   })
 
   it('placa com 8 chars (nao Mercosul) nao gera variante', () => {

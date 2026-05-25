@@ -459,30 +459,83 @@ function resolveLojaId(
 
 // Pares de chars que o parser PDF do Unitrac confunde por causa do tipo Mercosul.
 // Cada char mapeia para TODAS as alternativas possíveis (suporta múltiplas).
+// Inclui confusão Mercosul↔antigo (0↔O, 1↔I, 2↔Z, 5↔S, 8↔B) além das clássicas OCR.
 const OCR_PARES: Record<string, string[]> = {
-  '1': ['B', 'I'],
-  'B': ['1'],
-  '4': ['E'],
-  'E': ['4'],
+  '0': ['O', 'Q', 'D', 'A'],
+  '1': ['B', 'I', 'L', '7'],
+  '2': ['Z'],
+  '3': ['8'],
+  '4': ['E', 'A'],
+  '5': ['S'],
   '6': ['G'],
-  'G': ['6'],
-  '7': ['H'],
-  'H': ['7'],
-  '8': ['I'],
-  'I': ['8', '1'],
+  '7': ['H', '1'],
+  '8': ['I', 'B', '3'],
   '9': ['J'],
+  'A': ['4', '0'],
+  'B': ['1', '8'],
+  'D': ['0'],
+  'E': ['4'],
+  'G': ['6'],
+  'H': ['7'],
+  'I': ['8', '1', 'L'],
   'J': ['9'],
+  'L': ['1', 'I'],
+  'O': ['0', 'Q', 'D'],
+  'Q': ['0', 'O'],
+  'S': ['5'],
+  'Z': ['2'],
 }
 
-// Gera variantes da placa com 1 substituição OCR (até 1 char diferente).
-// Limita à posição 4 (zero-indexed) que é onde Mercosul muda de dígito pra letra.
+/**
+ * Gera variantes da placa com 1 substituição de char nas posições 4-6 (dígitos finais)
+ * que são as mais confundidas entre formato Mercosul (3 letras + 1 dígito + 1 letra +
+ * 2 dígitos) e formato antigo (3 letras + 4 dígitos).
+ *
+ * Exemplos cobertos:
+ *   - KNS8D16 ↔ KNS8D26 (pos 5: '1' ≈ ??? — typo humano, não OCR; capturado se adicionar pares
+ *     dígito↔dígito adjacente como '1'↔'2'). Hoje cobre só confusões visuais.
+ *   - UBF5G33 ↔ UBF5G34 (pos 6: '3'↔'4'? — não no mapa atual, typo humano)
+ *   - LMF2A49 ↔ LMF2049 (pos 4: 'A'↔'0' — Mercosul vs antiga, capturado via 'A'↔'4'? não
+ *     — adicionar A↔0)
+ *   - KNC1834 ↔ KNC1I34 (pos 3 ou 4: '8'↔'I' — capturado via OCR_PARES)
+ *
+ * IMPORTANTE: resolvePlacaUnitrac só aceita variante se for ÚNICA no Unitrac
+ * (sem ambiguidade), portanto a geração liberal aqui não causa falso positivo.
+ */
 export function variantesOcr(placa: string): string[] {
   if (placa.length !== 7) return [placa]
   const variantes = new Set([placa])
-  const ch = placa[4]
-  const subs = OCR_PARES[ch]
-  if (subs) for (const sub of subs) variantes.add(placa.slice(0, 4) + sub + placa.slice(5))
+  // Pos 4-6 (caracteres finais — onde Mercosul vs antiga divergem mais)
+  for (const pos of [4, 5, 6]) {
+    const ch = placa[pos]
+    const subs = OCR_PARES[ch]
+    if (!subs) continue
+    for (const sub of subs) variantes.add(placa.slice(0, pos) + sub + placa.slice(pos + 1))
+  }
   return [...variantes]
+}
+
+/**
+ * Variantes mais agressivas pra fallback final — substitui 1 dígito por qualquer
+ * outro dígito (typos humanos como KNS8D16 ↔ KNS8D26 onde '1'↔'2').
+ *
+ * SÓ chamada após variantesOcr falhar. Gera ~30 variantes (3 pos × 10 dígitos).
+ * resolvePlacaUnitrac só aceita variante presente UNICAMENTE no Unitrac — protege
+ * contra falso positivo quando múltiplas placas similares existem.
+ */
+export function variantesTypoDigito(placa: string): string[] {
+  if (placa.length !== 7) return []
+  const variantes: string[] = []
+  for (const pos of [4, 5, 6]) {
+    const ch = placa[pos]
+    if (!/[0-9]/.test(ch)) continue
+    for (let d = 0; d <= 9; d++) {
+      const sub = String(d)
+      if (sub === ch) continue
+      variantes.push(placa.slice(0, pos) + sub + placa.slice(pos + 1))
+    }
+  }
+  return variantes
 }
 
 /**
@@ -705,13 +758,21 @@ export async function cruzaEscalaUnitrac(
     )
   }
 
-  // Resolve a placa real no Unitrac considerando OCR alternativo (Mercosul pos 4).
-  // SÓ aceita variante OCR se for ÚNICA no Unitrac (sem ambiguidade).
+  // Resolve a placa real no Unitrac considerando OCR alternativo (pos 4-6, formato
+  // Mercosul vs antigo). Cascata:
+  //   1. match exato
+  //   2. variantesOcr (substituições de chars confundíveis visualmente, 4↔E, 8↔I, etc)
+  //   3. variantesTypoDigito (substituição livre de dígitos em pos 4-6 — typos humanos)
+  // SÓ aceita variante se for ÚNICA no Unitrac (sem ambiguidade entre múltiplas placas).
   function resolvePlacaUnitrac(placaEscala: string): string | null {
     if (paradaByPlaca.has(placaEscala)) return placaEscala
     const variantes = variantesOcr(placaEscala).filter(v => v !== placaEscala)
     const presentes = variantes.filter(v => paradaByPlaca.has(v))
     if (presentes.length === 1) return presentes[0]
+    if (presentes.length > 1) return null  // ambíguo, não escolhe
+    // Fallback: typos de dígito puros (KNS8D16 ↔ KNS8D26)
+    const tipoVar = variantesTypoDigito(placaEscala).filter(v => paradaByPlaca.has(v))
+    if (tipoVar.length === 1) return tipoVar[0]
     return null
   }
 

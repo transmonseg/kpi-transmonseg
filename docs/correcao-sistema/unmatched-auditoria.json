@@ -11,15 +11,6 @@
   {
     "dia": "2026-05-18",
     "rede": "ASSAI",
-    "placa": "KNS8D16",
-    "loja_nome": "Assaí - Boulevard (Vila Isabel) - Loja 294",
-    "loja_codigo": "294",
-    "categoria": "PLACA_AUSENTE_UNITRAC",
-    "detalhe": "placa \"KNS8D16\" sem paradas"
-  },
-  {
-    "dia": "2026-05-18",
-    "rede": "ASSAI",
     "placa": "EZU9325",
     "loja_nome": "Assaí - Ceasa - Loja 42",
     "loja_codigo": "42",
@@ -232,15 +223,6 @@
     "loja_codigo": null,
     "categoria": "PLACA_AUSENTE_UNITRAC",
     "detalhe": "placa \"KXR7527\" sem paradas"
-  },
-  {
-    "dia": "2026-05-18",
-    "rede": "FEIRA_NOVA",
-    "placa": "KNS8D16",
-    "loja_nome": "11- Boa Dica (Piabetá)",
-    "loja_codigo": null,
-    "categoria": "PLACA_AUSENTE_UNITRAC",
-    "detalhe": "placa \"KNS8D16\" sem paradas"
   },
   {
     "dia": "2026-05-18",
@@ -1405,30 +1387,12 @@
   },
   {
     "dia": "2026-05-20",
-    "rede": "FEIRA_NOVA",
-    "placa": "KNS8D16",
-    "loja_nome": "11- Boa Dica (Piabetá)",
-    "loja_codigo": null,
-    "categoria": "PLACA_AUSENTE_UNITRAC",
-    "detalhe": "placa \"KNS8D16\" sem paradas"
-  },
-  {
-    "dia": "2026-05-20",
     "rede": "EMANUEL",
     "placa": "LNU7733",
     "loja_nome": "Alhambra / Cachamorra",
     "loja_codigo": null,
     "categoria": "PLACA_AUSENTE_UNITRAC",
     "detalhe": "placa \"LNU7733\" sem paradas"
-  },
-  {
-    "dia": "2026-05-20",
-    "rede": "EMANUEL",
-    "placa": "LMF2A49",
-    "loja_nome": "JARDIM_MARAVILHA",
-    "loja_codigo": null,
-    "categoria": "PLACA_AUSENTE_UNITRAC",
-    "detalhe": "placa \"LMF2A49\" sem paradas"
   },
   {
     "dia": "2026-05-20",
@@ -1900,15 +1864,6 @@
   },
   {
     "dia": "2026-05-21",
-    "rede": "FEIRA_NOVA",
-    "placa": "KNS8D16",
-    "loja_nome": "11- Boa Dica (Piabetá)",
-    "loja_codigo": null,
-    "categoria": "PLACA_AUSENTE_UNITRAC",
-    "detalhe": "placa \"KNS8D16\" sem paradas"
-  },
-  {
-    "dia": "2026-05-21",
     "rede": "EMANUEL",
     "placa": "KVT5427",
     "loja_nome": "SANTA_MARIA",
@@ -1933,15 +1888,6 @@
     "loja_codigo": null,
     "categoria": "PLACA_AUSENTE_UNITRAC",
     "detalhe": "sem placa"
-  },
-  {
-    "dia": "2026-05-21",
-    "rede": "EMANUEL",
-    "placa": "LMF2A49",
-    "loja_nome": "VARGEM_GRANDE",
-    "loja_codigo": null,
-    "categoria": "PLACA_AUSENTE_UNITRAC",
-    "detalhe": "placa \"LMF2A49\" sem paradas"
   },
   {
     "dia": "2026-05-21",
@@ -2374,24 +2320,6 @@
     "loja_codigo": null,
     "categoria": "PLACA_AUSENTE_UNITRAC",
     "detalhe": "placa \"KXR7527\" sem paradas"
-  },
-  {
-    "dia": "2026-05-22",
-    "rede": "FEIRA_NOVA",
-    "placa": "KNS8D16",
-    "loja_nome": "11- Boa Dica (Piabetá)",
-    "loja_codigo": null,
-    "categoria": "PLACA_AUSENTE_UNITRAC",
-    "detalhe": "placa \"KNS8D16\" sem paradas"
-  },
-  {
-    "dia": "2026-05-22",
-    "rede": "EMANUEL",
-    "placa": "LMF2A49",
-    "loja_nome": "JARDIM_MARAVILHA",
-    "loja_codigo": null,
-    "categoria": "PLACA_AUSENTE_UNITRAC",
-    "detalhe": "placa \"LMF2A49\" sem paradas"
   },
   {
     "dia": "2026-05-22",
