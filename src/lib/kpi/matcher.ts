@@ -958,6 +958,11 @@ export async function cruzaEscalaUnitrac(
       }
 
       const redesNasLinhasSem = [...new Set(linhasFinalSem.map(l => l.rede_id))]
+      // Redes onde a Unitrac usa geofences rota gigante que englobam várias lojas
+      // da mesma rede física (caso típico: ARMAZEM_GRAO — paradas REGINA cobrem
+      // BOA VISTA/POSSE/16 DE MARÇO/MATRIZ). Pra essas, aceita match cronológico
+      // quando há paradas SUFICIENTES (linhas ≤ paradas), sem exigir igualdade.
+      const REDES_GEOFENCE_AGREGADO = new Set(['ARMAZEM_GRAO'])
       for (const rede of redesNasLinhasSem) {
         const linhasDaRede = linhasFinalSem.filter(l => l.rede_id === rede)
         // T10: aceita paradas das redes aliased (ASSAI ↔ SENDAS, PAX ↔ SUPER_PAX)
@@ -967,13 +972,18 @@ export async function cruzaEscalaUnitrac(
           const redeInf = paradaRedeInfer.get(p.id) ?? null
           return redeInf === null || redesAceitas.has(redeInf)
         })
-        // Só atua quando o número bate exatamente — sem ambiguidade.
-        if (linhasDaRede.length === paradasDaRede.length && linhasDaRede.length > 0) {
+        const numIguais = linhasDaRede.length === paradasDaRede.length
+        const redeAgregada = REDES_GEOFENCE_AGREGADO.has(rede)
+        const aceitaParcial = redeAgregada && paradasDaRede.length >= linhasDaRede.length && linhasDaRede.length > 0
+        if ((numIguais || aceitaParcial) && linhasDaRede.length > 0) {
           const linhasOrd = [...linhasDaRede].sort((a, b) => a.carro_ordem - b.carro_ordem)
           const paradasOrd = [...paradasDaRede].sort(
             (a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime()
           )
-          for (let i = 0; i < linhasOrd.length; i++) {
+          // Atribui min(linhas, paradas). No caso aceitaParcial pega as N primeiras
+          // paradas cronológicas — convenção: 1ª chegada = 1ª linha da escala.
+          const n = Math.min(linhasOrd.length, paradasOrd.length)
+          for (let i = 0; i < n; i++) {
             matchByEscalaId.set(linhasOrd[i].id, paradasOrd[i])
             usados.add(paradasOrd[i].id)
           }
