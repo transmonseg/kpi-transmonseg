@@ -211,7 +211,7 @@ async function main() {
   // Redes onde manual=SEM significa sem rastreador — GPS prevalece.
   const REDES_SEM_OK = new Set(['PREZUNIC', 'FEIRA_NOVA', 'ASSAI', 'SUPER_PAX', 'CARREFOUR', 'PRINCESA'])
   // Redes cujo KPI manual usa '---' como equivalente a 'SEM' (não preenchido ≠ erro).
-  const REDES_BLANK_OK = new Set(['GUANABARA', 'PRINCESA'])
+  const REDES_BLANK_OK = new Set(['GUANABARA', 'PRINCESA', 'SENDAS'])
   function arrEq(a: string[], b: string[]): boolean {
     if (REDES_SEM_OK.has(REDE_ID) && b.every(v => v.startsWith('SEM'))) return true
     if (REDES_BLANK_OK.has(REDE_ID) && b.every(v => v === '---')) return true
