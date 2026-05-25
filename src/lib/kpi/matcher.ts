@@ -308,20 +308,17 @@ function computeSaidaCdParaParada(
   ctx?: { redeId?: string; data?: string },
 ): Date | null {
   const alvoTs = new Date(paradaAlvo.chegada).getTime()
-  // SC-CONVENTION-ANTIGA: ZONA_SUL até 2026-05-18 usou "primeira saída de BASE do dia"
-  // no manual KPI. A partir de 2026-05-19, convenção mudou para T16 (última antes da
-  // entrega). Aqui detectamos o regime antigo e devolvemos a primeira BASE.
-  const usaPrimeira =
-    ctx?.redeId === 'ZONA_SUL' &&
-    typeof ctx?.data === 'string' &&
-    ctx.data <= '2026-05-18'
+  // REGRA UNIVERSAL (confirmada pela Tia Érica no vídeo 11/05/2026):
+  // Saída do CD = SAÍDA DA ÚLTIMA BASE BENASSI antes da primeira LOJA.
+  // Exemplo do vídeo: AKZ-2745 saiu 5:03 (deu volta no portão), voltou,
+  // saiu 5:30, voltou, saiu 5:59 → SC = 5:59 (última antes da loja).
+  // Antes havia um hack para ZONA_SUL <= 18/05 que usava a PRIMEIRA — removido.
   let lastBaseSaida: Date | null = null
-  let firstBaseSaida: Date | null = null
   for (const p of todasParadas) {
     if (new Date(p.chegada).getTime() >= alvoTs) break
-    // T16-C: Base detection robusta. Além de classificacao===BASE/FAKE_EXIT,
-    // aceita paradas onde local_parada contém 'BASE BENASSI' em qualquer posição —
-    // isso cobre overlaps geofence onde o parser classifica erroneamente como LOJA.
+    // Base detection robusta: classificacao===BASE/FAKE_EXIT em BASE BENASSI,
+    // ou qualquer parada cujo local_parada contenha 'BASE BENASSI' (cobre
+    // overlaps geofence onde parser classifica erroneamente como LOJA).
     const localStr = p.local_parada ?? ''
     const isBase =
       p.classificacao === 'BASE' ||
@@ -333,14 +330,11 @@ function computeSaidaCdParaParada(
         if (!lastBaseSaida || s.getTime() > lastBaseSaida.getTime()) {
           lastBaseSaida = s
         }
-        if (!firstBaseSaida || s.getTime() < firstBaseSaida.getTime()) {
-          firstBaseSaida = s
-        }
       }
     }
   }
   // Sem BASE exit = não sabemos quando saiu do CD → null (melhor que FAKE_EXIT/FORA_BASE como proxy)
-  return (usaPrimeira ? firstBaseSaida : lastBaseSaida) ?? null
+  return lastBaseSaida
 }
 
 /**
