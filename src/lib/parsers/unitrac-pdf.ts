@@ -47,9 +47,13 @@ function temLojaConcatenada(local: string): boolean {
   for (const p of partes) {
     if (p.startsWith(BASE_LOCAL_SHORT) || p.startsWith(FORA_LOCAL_SHORT)) continue
     if (ROTA_GENERICA_RE.test(p)) continue
-    // Tem que ter formato "código - nome" com código numérico
-    const m = p.match(/^(\d+)\s*-\s*\S/)
-    if (m) return true
+    // Loja: "código - texto" com pelo menos UMA letra na parte (nome real).
+    // CEP brasileiro tem formato "\d{5}-\d{3}" (só dígitos), iria casar
+    // se exigíssemos só `\d+ - \S`. Caso real: "9039124 - 47- ZONA SUL"
+    // tem letra (ZONA), CEP "21530-900" não tem letra.
+    if (!/^\d+\s*-\s*\S/.test(p)) continue
+    if (!/[A-Za-zÀ-Ýà-ý]/.test(p)) continue
+    return true
   }
   return false
 }
@@ -59,8 +63,11 @@ function classificaParada(local: string, duracaoSeg: number): ParadaUnitrac['cla
   // Antes, paradas com "BASE BENASSI, 23080000 - MERCADO X" viravam BASE
   // indevidamente (XLSX já tinha essa lógica via findLojaGeofence).
   if (temLojaConcatenada(local)) return 'LOJA'
-  if (local.startsWith(BASE_LOCAL_SHORT)) return duracaoSeg > 900 ? 'BASE' : 'FAKE_EXIT'
-  if (local.startsWith(FORA_LOCAL_SHORT)) return duracaoSeg < 600 ? 'FAKE_EXIT' : 'FORA_BASE'
+  // BASE BENASSI / FORA DE BASE podem aparecer em QUALQUER ponto do local
+  // (não só no início) quando há quebra de página no PDF que insere texto
+  // do endereço entre os fragmentos. Procurar como substring é robusto.
+  if (local.includes(BASE_LOCAL_SHORT)) return duracaoSeg > 900 ? 'BASE' : 'FAKE_EXIT'
+  if (local.includes(FORA_LOCAL_SHORT)) return duracaoSeg < 600 ? 'FAKE_EXIT' : 'FORA_BASE'
   if (ehSoROTA(local)) {
     return duracaoSeg < 600 ? 'FAKE_EXIT' : 'FORA_BASE'
   }
