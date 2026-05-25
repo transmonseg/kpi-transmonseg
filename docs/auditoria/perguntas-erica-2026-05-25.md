@@ -1,171 +1,112 @@
 # Perguntas para Erica — Semana Intensiva 2026-05-25
 
-Lista de questões necessárias para acabar com os gaps do sistema KPI.
-Baseado nas auditorias do dia 18 e 19/05 + caso LCE-4337 do dia 25.
+Foco: padrões operacionais e casos específicos. Sem perguntas óbvias.
 
 ---
 
-## 1. SOBRE O RELATÓRIO UNITRAC (prioridade máxima)
+## 1. CAMINHÕES QUE FAZEM 2 TURNOS NO MESMO DIA
 
-**Contexto**: 33% das placas da escala ZONA SUL dia 19 simplesmente NÃO existem no relatório Unitrac que vocês exportam. Sem GPS dessas placas, o sistema não tem como confirmar nada.
+**O que vemos**: PRINCESA dia 18 — várias lojas com manual marcando manhã (~04-06h) e GPS marcando tarde (~14-15h). Não é erro, é padrão.
 
-1. **O relatório Unitrac que vocês exportam inclui TODOS os caminhões da operação?** Ou existe alguma frota/conta separada que fica de fora? (Mega Box, Extra, terceirizados, etc.)
+1. Quando uma loja recebe 2 entregas no dia (manhã + tarde), **as duas vão no KPI ou só uma?**
 
-2. **Algumas placas têm que ser exportadas separadamente?** Por exemplo: Mega Box, Extra, Sams Club, Cab Petrópolis vêm em um relatório específico?
+2. Se vão as duas, **como identificar qual é qual?** O manual mostra só um horário por linha.
 
-3. **Existem placas terceirizadas/agregadas que não passam pelo Unitrac?** Quem rastreia esses caminhões? Tem como integrar?
+3. **O segundo turno é o mesmo caminhão recarregando, ou é outro caminhão?**
+   - Se é o mesmo: o GPS vai mostrar o caminhão voltando pra base entre as entregas
+   - Se é outro: a escala tem que ter as 2 placas listadas
 
-4. **Com que frequência o Unitrac é exportado?** Diariamente? Quem faz? Em que horário?
+4. **Existe algum dia da semana fixo onde TODA loja recebe 2 entregas?** Tipo "segunda e quinta dobra".
 
-5. **Existe API do Unitrac pra puxar dados diretamente?** Se sim, vocês têm o acesso? Eliminaria erro de "esqueci de exportar" e PDFs incompletos.
-
-6. **Por que vocês geram XLSX em alguns dias e PDF em outros?** O XLSX é melhor (parsing mais confiável). O PDF de hoje (dia 25) tem nomes de loja truncados (ex: "CAXIAS CENTENÁRI O" com espaço).
-
-7. **Lista de placas que sumiram do relatório dia 19 (ZONA SUL):**
-   - CZB9J19, KYM2I62, LCO0978, LJS2172, LNU7733, LNU9595, LQA5883, LQE5401, LTE0A64, MDV3746, QAH2H50
-   - **Pergunta: Essas placas existiam? Foram desativadas? Estão em outra conta Unitrac?**
+5. Casos específicos do dia 18 que vimos como "2 turnos":
+   - Princesa Maricá 2, Rio das Ostras, Arraial 1, Buzios 3, Cabo Frio 1
+   - **A escala diz só 1 placa pra essas lojas. Quem fez a outra entrega?**
 
 ---
 
-## 2. SOBRE AS BASES / CDs
+## 2. CAMINHÕES QUE APARECEM EM ROTA DIFERENTE DA ESCALA
 
-**Contexto**: No áudio que você enviou hoje (LCE-4337 ANDERSON Caxias), você mencionou que existem 2 bases — BASE BENASSI e uma "do lado do Ciaza, que é o 200". Também apareceu "PARADA VERSO SERVIÇOS" como possível base.
+**O que vemos no dia 19 (ZONA SUL)**, casos onde GPS prova que a placa fez OUTRA rota:
 
-8. **Quantos CDs/bases existem na operação?**
-   - BASE BENASSI (já cadastrada)
-   - "200" (Base do lado do Ciaza) — está cadastrada?
-   - PARADA VERSO SERVIÇOS — é base de recarga?
-   - Algum outro?
+| Placa | Motorista | Escala diz | GPS prova |
+|---|---|---|---|
+| BBH1C94 | JOSUE | Lojas 03/19/48 | Loja 33 Humaitá (5h em 1 loja) |
+| JAJ6B36 | RENATO | Loja 46 Botafogo | PRINCESA Rio das Ostras + Barra de São João |
+| KMY5561 | LUIZ ANTONIO | Loja 19 Copa | CARREFOUR Barra + PAX Realengo |
+| KRK3D12 | JOSENILDO | Loja 23 Barra | SENDAS São Gonçalo Centro (5h46min!) |
+| KWK4593 | RODRIGO | Lojas 38/07 | Loja 21 Flamengo |
+| LKR5990 | AGNALDO | Loja 44 Barra | PREZUNIC Vila Isabel |
+| LTH4J15 | MARCIO | Loja 26 Copa | SENDAS/PETIT/VIANENSE |
+| LTH4J15 | MARCIO | Loja 26 Copa | EMPORIO BARRA TOWER + 4 outras |
 
-9. **Os caminhões podem sair de uma base e ir em outra recarregar antes de entregar?** Hoje o sistema só reconhece BENASSI como base. Se um caminhão pega carga adicional no "200", isso aparece como FORA_BASE ou LOJA errada.
+6. **Esses 7 casos: foram trocas de caminhão de última hora?** Quem ficou sabendo? Se não tem registro, o sistema não tem como detectar.
 
-10. **Tem coordenadas (lat/lng) de cada base?** Pra cadastrar como BASE no sistema.
+7. **Existe um padrão de "motoristas curinga" que cobrem mais de uma rota?** Tipo JOSUE que pode fazer ZS ou PRINCESA dependendo do dia?
 
-11. **Tem nome exato (do jeito que aparece no Unitrac) de cada base?** Hoje só reconheço "BASE BENASSI" pelo texto literal. Outras bases viram FORA_BASE.
+8. **Quando uma placa quebra/falta no dia, o cobrindo entra com QUAL placa?** A do veículo dele original, ou pega a do veículo quebrado?
 
----
-
-## 3. SOBRE ALTERAÇÕES DE ESCALA
-
-**Contexto**: No dia 19, o arquivo `alteracoes_19.05.txt` só tinha 5 trocas (ASSAÍ e CARREFOUR). Mas o GPS prova que houve PELO MENOS 7 trocas em ZONA SUL que ninguém registrou. Resultado: KPI cheio de DIFFs falsos.
-
-12. **Como as alterações de escala chegam até o sistema?** Hoje é só pelo arquivo `.txt` na pasta ALTERACOES?
-
-13. **Existem alterações que rolam por WhatsApp/telefone e não chegam ao arquivo?** Provavelmente sim, com base no que vemos.
-
-14. **Quem registra as alterações no arquivo?** Em que horário do dia?
-
-15. **Caminhões "quebrados" ou trocados de última hora — como são tratados?** Exemplo: BBH1C94 JOSUE no dia 19 tava na escala 03/19/48 mas o GPS prova que ele fez Loja 33. Houve uma troca não registrada.
-
-16. **Posso construir uma tela no sistema pra você registrar alterações em tempo real?** Em vez de TXT, seria um formulário rápido (placa que entra, placa que sai, motorista, loja). Evitaria 100% das alterações perdidas.
+9. Caminhões EZU9325, CEJ3426 e outros que aparecem com **0 LOJA paradas** (só BASE/FORA_BASE no GPS):
+   - **Eles realmente FIZERAM as entregas mas o GPS não pegou** OU
+   - **Eles ficaram parados o dia todo e nem foram?**
 
 ---
 
-## 4. SOBRE CADASTRO DE LOJAS
+## 3. CRUZAMENTO DE REDES (ASSAÍ ↔ SENDAS ↔ outras)
 
-**Contexto**: O cadastro de lojas tem alguns vazios que confundem o matcher.
+**O que vemos**: várias placas escaladas pra ASSAÍ aparecem no GPS em SENDAS (e vice-versa). Sabemos que ASSAÍ comprou SENDAS, mas precisa confirmar:
 
-17. **MEGA BOX 01 vs MEGA BOX 02 (Olaria) — são lojas físicas DIFERENTES?** Se sim, têm coordenadas separadas? Hoje o cadastro tem só "MEGA BOX (OLARIA)" genérico, então o sistema não consegue distinguir entre as duas.
+10. **Quando o sistema vê uma placa escalada pra "ASSAÍ Ilha Loja 29" e o GPS marca "SENDAS ILHA - LOJA 29": é a mesma loja física com cadastro velho, ou são 2 lojas diferentes?**
 
-18. **Loja 1129 (Zona Sul) — onde fica?** Não tenho coordenadas dela. Aparece na escala mas não no Unitrac (provavelmente bate junto com MEGA BOX 01).
+11. **Tem lista de lojas que FORAM SENDAS e VIRARAM ASSAÍ?** Pra eu mapear automaticamente "SENDAS X = ASSAÍ Y" no Unitrac.
 
-19. **EXTRA F.31 / Zona Sul EXTRA — é a mesma loja física ou são distintas?**
+12. **No Unitrac, o nome "SENDAS X" ainda aparece mesmo depois do rebrand pra ASSAÍ?** Quem atualiza isso?
 
-20. **Quando duas lojas ficam VIZINHAS (mesmo prédio, mesmo estacionamento), como saber qual o caminhão foi de fato?**
-    - Exemplo dia 19: JOSE M placa UBF5G32 estava escalado para ASSAÍ Ilha do Governador Loja 29, mas o GPS marcou SENDAS ILHA - LOJA 29 (mesmo prédio?). O matcher devolve "matcher vazio" honestamente. Como resolver?
-
-21. **Tem coordenadas (lat/lng) EXATAS das lojas críticas?** Lojas onde geofence sobrepõe vizinhas precisam ter raio menor.
-
-22. **Existem lojas que mudam de endereço durante o mês?** Reforma, troca de filial, etc.
+13. **Quais outras redes têm "mesma loja com nome diferente"?** Ex: PETIT MARCHE BARRAMARES (SENDAS Petit?), EMPORIO BARRA TOWER (SENDAS Empório?).
 
 ---
 
-## 5. SOBRE O KPI MANUAL (Excel da Erica)
+## 4. CASOS ESPECÍFICOS QUE NÃO ENTENDO (preciso do contexto)
 
-**Contexto**: O KPI manual é o que vocês usam pra comparar. Mas em vários casos o manual está ERRADO (anota horários que o GPS prova não terem acontecido).
+14. **MEGA BOX 01 vs MEGA BOX 02 (Olaria) — são lojas FÍSICAS diferentes ou só "docas" da mesma loja?**
+    - Se são docas: o caminhão atende as duas com 1 só parada GPS (atual)
+    - Se são lojas: precisa de coordenadas separadas
 
-23. **Em que base o operador preenche o KPI manual?**
-    - Olhando o Unitrac?
-    - Recebendo informação por rádio/WhatsApp?
-    - Estimando por horário esperado?
+15. **EXTRA F.31 / EXTRA / Zona Sul Loja 1129 — esses 3 nomes diferentes na escala são a MESMA loja física ou diferentes?**
 
-24. **Quando uma placa não tem GPS (sumiu do Unitrac), o operador ainda preenche timestamps "esperados"?** Hoje vejo casos com timestamps no manual mas a placa não tem GPS. Pode ser que a pessoa esteja "chutando".
+16. **REGINA (Armazém do Grão) — Barra do Imbuy / 1 de Maio / Lucio Meira / Abastecedora Grão da Serra: 4 entregas mas o GPS marca 1 só parada agregada?** Isso é cross-docking esperado, ou cada uma deveria ter sua parada?
 
-25. **No KPI manual, "SEM" significa o quê exatamente?**
-    - Veículo sem rastreador?
-    - Veículo não fez a entrega?
-    - Não conseguiu confirmar?
-    - Cada um pode ser tratado diferente pelo sistema.
-
-26. **'---/---/---' (todos vazios) no manual significa o quê?**
-    - Não preencheu / esqueceu?
-    - Veículo sem GPS?
-    - Diferente de "SEM"?
-
-27. **No GUANABARA todos os timestamps estão '---' mesmo quando o caminhão foi.** É padrão da operação? (Operador não preenche timestamp pra Guanabara?)
-
-28. **No PRINCESA dia 18, várias entregas têm o manual marcando "manhã" enquanto GPS marca "tarde".** São 2 turnos? Caminhões diferentes pela manhã e à tarde?
+17. **GUANABARA: o KPI manual aparece com timestamp em '---' para quase TODAS as lojas.** Mesmo quando tem GPS. **É padrão da Guanabara não preencher horário?** Por quê?
 
 ---
 
-## 6. SOBRE PADRÕES DE OPERAÇÃO
+## 5. PERGUNTAS TÉCNICAS QUE SÓ ELA SABE
 
-29. **Caminhões fazendo 2 viagens por dia (manhã + tarde): qual é o padrão?**
-    - PRINCESA dia 18 teve vários casos: GPS achou ~14h, manual diz ~6h
-    - É um segundo caminhão fazendo a mesma loja à tarde?
-    - Como diferenciar no KPI?
+18. **A "saída do CD" no manual é a hora que o motorista carrega ou a hora que ele sai do portão?** Hoje o sistema computa pela última parada BASE do GPS. Pode estar entendendo diferente.
 
-30. **Existem lojas que recebem 2 entregas por dia da mesma rede?** Ex: REGINA da Armazém do Grão, onde 4 lojas REGINA aparecem com 1 parada GPS só.
+19. **Existem caminhões que recarregam DUAS vezes no dia (vai na base, entrega, volta na base, entrega de novo)?** Se sim, qual é a "saída do CD" — a primeira ou a segunda?
 
-31. **Quando uma placa atende 2 redes diferentes no mesmo dia (cross-docking), qual a regra?**
-    - O motorista carrega Armazém na BENASSI e depois pega carona com Princesa no caminho?
-    - Existe um padrão claro de quais redes podem se misturar?
+20. **Quando um caminhão entra na base por menos de 15 min (FAKE_EXIT no sistema), é "passou só pra trocar nota" ou conta como recarga real?**
 
-32. **Domingos e feriados — operação normal ou reduzida?** Pra saber se devo aceitar dias de "baixa atividade" ou marcar como anomalia.
+21. **Caminhão SAMS_CLUB, CAB_PETROPOLIS, SUPERCOMPRAS — esses 3 são da mesma operação ou são clientes "extras" que vocês cobrem esporadicamente?** Pergunto porque o KPI desses 3 redes é pequeno (1-3 lojas).
+
+22. **CARROS DA SUBCONTRATAÇÃO — agregados / freteiros do dia: vão pra escala? Pra Unitrac?**
 
 ---
 
-## 7. SOBRE TIMINGS
+## 6. PERGUNTAS SOBRE PROCESSO
 
-**Contexto**: 82 casos de "DIFF timing" no dia 19 (GPS preciso vs manual arredondado).
+23. **A escala que eu recebo (XLSX) e a alteração (TXT/PDF/WhatsApp) — quem PRODUZ esses arquivos? Quanto tempo demora pra ficar fechado?**
 
-33. **O manual é preenchido com base em horários EXATOS do GPS ou em horário "aproximado"?** Hoje vejo CHD 5:32 no GPS vs 5:29 no manual (diferença 3 min). É arredondamento manual?
+24. **Quem fecha o KPI manual no Excel — quanto tempo essa pessoa gasta por dia hoje?** Isso me ajuda a medir o impacto da automação.
 
-34. **Aceita uma tolerância de ±10 min como "match"?** Pra entender se devo classificar diferenças pequenas como OK ou DIFF.
-
-35. **A "Saída do CD" no manual — vem de onde?**
-    - Hora que o motorista bate ponto?
-    - Hora que o caminhão sai do portão?
-    - Hora estimada?
+25. **Se o sistema desse o KPI 100% pronto AUTOMATICAMENTE, quanto tempo isso economizaria por mês na operação?**
 
 ---
 
-## 8. SOBRE INTEGRAÇÃO COM AIRTABLE / OUTRAS FERRAMENTAS
+## TOP 5 CRÍTICAS (se ela só responder isso já ajuda muito)
 
-36. **Vocês usam alguma outra ferramenta pra controlar a operação?** Airtable, planilhas, sistemas próprios?
-
-37. **Os 5 motoristas com placa "errada" no GPS (LCO0978, LJS2172, etc.) — eles existem na base de motoristas?** Pode ser que sejam terceirizados não cadastrados.
-
----
-
-## 9. SOBRE OS CHECKS FINAIS
-
-38. **Vou conseguir um dia 100% LIMPO se vocês:**
-    - Mandarem TODAS as placas no Unitrac (sem filtro)
-    - Registrarem TODAS as alterações de placa
-    - Confirmarem o "SEM/---/NÃO FOI" no manual
-    - Cadastrarem todas as bases (Benassi, 200, Parada Verso, etc.)
-    
-    **Pergunta**: vocês conseguem essas 4 coisas pra UM DIA específico (escolha: amanhã ou outro)? Aí eu provo que o sistema fica 100%.
-
-39. **Qual a meta da semana?** Sistema com 95% match? Sem nenhuma alucinação? Tempo total da equipe gastando em KPI manual cair em X%?
-
----
-
-## RESUMO DAS PERGUNTAS MAIS CRÍTICAS (se ela só puder responder 5)
-
-1. **Por que essas 11 placas da ZONA SUL não estão no Unitrac dia 19?** (Lista no item 7)
-2. **Quantas bases/CDs existem além do BENASSI?** (item 8)
-3. **Quem registra alterações de placa em tempo real? Como?** (item 13)
-4. **MEGA BOX 01 vs 02 são lojas diferentes?** (item 17)
-5. **No KPI manual, "SEM" e "---" significam a mesma coisa?** (itens 25-26)
+1. **2 turnos**: lojas que recebem 2 entregas, a escala tem 2 linhas ou só 1? Quem faz a segunda?
+2. **7 casos de placa fazendo outra rota dia 19**: troca não registrada ou padrão "motorista curinga"?
+3. **MEGA BOX 01 vs 02**: 1 loja com 2 docas ou 2 lojas físicas?
+4. **GUANABARA todos '---' no manual**: padrão? Por quê?
+5. **SENDAS↔ASSAÍ**: lista de lojas que mudaram de nome pós-rebrand?
