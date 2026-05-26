@@ -1247,7 +1247,12 @@ export async function cruzaEscalaUnitrac(
     const semGpsLines = escalaLinhas.filter(l => {
       if (!l.placa_norm || matchByEscalaId.has(l.id)) return false
       const placaRes = resolvePlacaUnitrac(l.placa_norm)
-      if (!placaRes) return false
+      // T18 ativa pra placas ausentes do Unitrac também (caso ZS dia 19 Loja 33:
+      // escala diz LCO0978 mas operação foi com BBH1C94 — Tia Érica trocou placa).
+      // Antes T18-G excluía placas ausentes pra evitar FP "veículo passando perto",
+      // mas guards de DISTÂNCIA (T18-D ≤5km do cadastro), CÓDIGO/NOME (scorePair ≤2)
+      // e RAIO (cadastro com lat/lng) já dão proteção suficiente.
+      if (!placaRes) return true // placa ausente: candidato pra plate-swap
       const paradaDoVeiculo = paradaByPlaca.get(placaRes) ?? []
       // T18 plate-swap: ativa apenas quando placa está "inativa" no Unitrac:
       // - placa totalmente ausente (rastreador off), OU
@@ -1335,10 +1340,10 @@ export async function cruzaEscalaUnitrac(
         const redesFungT18 = redesFungiveis(linha.rede_id)
         const candidatas = todasLojaParadas.filter(p => {
           if (usedIds.has(p.id)) return false
-          // T18-N: rejeita paradas antes das 07:00 BRT no plate-swap — veículos de outras
-          // redes estacionados perto de lojas Zona Sul na madrugada não são entregas ZS.
-          // (Match direto por placa não passa por aqui; este guard só afeta T18.)
-          if (new Date(p.chegada).getUTCHours() < 7) return false
+          // T18-N removido: ZS faz entregas de madrugada legitimamente (caminhão carregado
+          // 17h dia anterior sai dia seguinte 04-06h). Vídeo v43-2 Tia Érica confirma.
+          // Guard de DISTÂNCIA (T18-D abaixo) e RAIO da loja (≤5km do cadastro) já evita FP
+          // de veículos estacionados aleatoriamente perto.
           // T18-D: guard de distância. Se a linha da escala tem loja com lat/lng
           // cadastrado, a parada candidata DEVE estar a no máximo 5km da loja.
           // Caso ARMAZEM dia 19 MATRIZ POSSE: parada KRB2J76 "MATRIZ CD DUQUE" tem

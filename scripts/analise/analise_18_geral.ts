@@ -257,7 +257,7 @@ async function main() {
         ? [kg?.sc1 ?? '---', kg?.chd1 ?? '---', kg?.sl1 ?? '---']
         : [kg?.sc2 ?? '---', kg?.chd2 ?? '---', kg?.sl2 ?? '---']
 
-      const diff = !arrEq(mArr, gArr)
+      const diff = !arrEq(gArr, mArr)
       if (diff) nDiff++; else nOk++
 
       const matchDiff = !arrEq(matchArr, mArr)

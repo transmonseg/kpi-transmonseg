@@ -1663,12 +1663,13 @@ describe('T11 — Rede-aware no assignOptimal (penalty cross-rede)', () => {
 
 // --- T18-N: guard noturno no fallback T18 ---
 //
-// T18 (plate-swap) não deve usar paradas de madrugada (04–06h BRT) de outros veículos.
-// Zona Sul não tem entregas antes das 07:00. Guard atual < 3 deixava passar 04-06h.
-describe('T18 — T18-N guard 07:00 BRT + T18-G GPS:NAO exclusion', () => {
-  it('T18 REJEITA parada às 05:00 BRT (T18-N guard)', async () => {
+// T18 (plate-swap) aceita paradas de madrugada porque ZS tem entregas legítimas
+// 04-06h (caminhão carregado 17h dia anterior sai dia seguinte madrugada).
+// Vídeo v43-2 Tia Érica confirma. T18-N foi removido.
+describe('T18 — plate-swap aceita madrugada + GPS:NAO', () => {
+  it('T18 ACEITA parada às 05:00 BRT (madrugada legítima ZS cross-day)', async () => {
     // Placa ABC tem GPS (BASE parada presente). XYZ tem LOJA às 05:00 BRT.
-    // T18-N guard < 7 rejeita 05:00 → ABC fica UNMATCHED.
+    // T18 agora aceita → ABC matched com a parada XYZ via plate-swap.
     const linhas: EscalaLinhaRow[] = [
       { id: 'l1', rede_id: 'ZONA_SUL', placa_norm: 'ABC1234', loja_nome_raw: 'ZONA SUL LOJA 30', loja_codigo_raw: '30', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-20' },
     ]
@@ -1677,7 +1678,8 @@ describe('T18 — T18-N guard 07:00 BRT + T18-G GPS:NAO exclusion', () => {
       { id: 'px', placa_norm: 'XYZ9999', chegada: '2026-05-20T05:00:00.000Z', saida: '2026-05-20T06:30:00.000Z', duracao_seg: 5400, local_parada: '9039030 - ZONA SUL LOJA 30', codigo_loja: '9039030', nome_loja: 'ZONA SUL LOJA 30', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
     ]
     const rotas = await cruzaEscalaUnitrac(linhas, paradas, [])
-    expect(rotas.find(r => r.escala_linha_id === 'l1')?.paradas).toHaveLength(0)
+    expect(rotas.find(r => r.escala_linha_id === 'l1')?.paradas).toHaveLength(1)
+    expect(rotas.find(r => r.escala_linha_id === 'l1')?.paradas[0].parada_id).toBe('px')
   })
 
   it('T18 ACEITA parada de outra placa às 07:00 BRT quando veículo TEM GPS (T18-G passa)', async () => {
@@ -1695,10 +1697,11 @@ describe('T18 — T18-N guard 07:00 BRT + T18-G GPS:NAO exclusion', () => {
     expect(rotas.find(r => r.escala_linha_id === 'l2')?.paradas[0].parada_id).toBe('py')
   })
 
-  it('T18 NÃO roda para veículo GPS:NAO (T18-G: sem dados no Unitrac)', async () => {
-    // ABC não tem NENHUMA parada no Unitrac (GPS:NAO).
-    // T18-G: ABC ausente no Unitrac → T18 não roda → fica UNMATCHED.
-    // manual diria SEM; sem FP.
+  it('T18 RODA para veículo GPS:NAO (placa ausente — caso plate-swap real)', async () => {
+    // ABC não tem NENHUMA parada no Unitrac (GPS:NAO). Outra placa (XYZ) tem LOJA
+    // que bate código/nome da loja escalada.
+    // Caso ZS dia 19 Loja 33: escala LCO0978 (ausente Unitrac), manual BBH1C94 (que tem LOJA).
+    // T18 agora ATIVA → atribui parada XYZ pra linha ABC via plate-swap.
     const linhas: EscalaLinhaRow[] = [
       { id: 'l3', rede_id: 'ZONA_SUL', placa_norm: 'ABC1234', loja_nome_raw: 'ZONA SUL LOJA 30', loja_codigo_raw: '30', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-20' },
     ]
@@ -1707,7 +1710,8 @@ describe('T18 — T18-N guard 07:00 BRT + T18-G GPS:NAO exclusion', () => {
       { id: 'pz', placa_norm: 'XYZ9999', chegada: '2026-05-20T07:00:00.000Z', saida: '2026-05-20T08:30:00.000Z', duracao_seg: 5400, local_parada: '9039030 - ZONA SUL LOJA 30', codigo_loja: '9039030', nome_loja: 'ZONA SUL LOJA 30', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
     ]
     const rotas = await cruzaEscalaUnitrac(linhas, paradas, [])
-    expect(rotas.find(r => r.escala_linha_id === 'l3')?.paradas).toHaveLength(0)
+    expect(rotas.find(r => r.escala_linha_id === 'l3')?.paradas).toHaveLength(1)
+    expect(rotas.find(r => r.escala_linha_id === 'l3')?.paradas[0].parada_id).toBe('pz')
   })
 })
 

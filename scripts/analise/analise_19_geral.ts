@@ -28,24 +28,24 @@ if (!REDE_ID) {
   process.exit(1)
 }
 
-// Mapa: rede_id → arquivo KPI gerado mais recente
+// Mapa: rede_id → arquivo KPI gerado mais recente (regenerado 2026-05-25 pós-fixes)
 const KPI_GERADO: Record<string, string> = {
-  SUPER_PAX:     'KPI-SUPER_PAX-2026-05-19 (1).xlsx',
-  FEIRA_NOVA:    'KPI-FEIRA_NOVA-2026-05-19 (1).xlsx',
-  MUNDIAL:       'KPI-MUNDIAL-2026-05-19 (2).xlsx',
-  SENDAS:        'KPI-SENDAS-2026-05-19 (3).xlsx',
-  CARREFOUR:     'KPI-CARREFOUR-2026-05-19 (1).xlsx',
-  ATACADAO:      'KPI-ATACADAO-2026-05-19 (2).xlsx',
-  ASSAI:         'KPI-ASSAI-2026-05-19 (1).xlsx',
-  PREZUNIC:      'KPI-PREZUNIC-2026-05-19 (1).xlsx',
-  VIANENSE:      'KPI-VIANENSE-2026-05-19 (1).xlsx',
-  PRINCESA:      'KPI-PRINCESA-2026-05-19 (6).xlsx',
-  SUPERPRIX:     'KPI-SUPERPRIX-2026-05-19 (1).xlsx',
-  SUPERCOMPRAS:  'KPI-SUPERCOMPRAS-2026-05-19.xlsx',
-  SAMS_CLUB:     'KPI-SAMS_CLUB-2026-05-19 (1).xlsx',
-  CAB_PETROPOLIS:'KPI-CAB_PETROPOLIS-2026-05-19 (1).xlsx',
-  ARMAZEM_GRAO:  'KPI-ARMAZEM_GRAO-2026-05-19 (1).xlsx',
-  GUANABARA:     'KPI-GUANABARA-2026-05-19 (4).xlsx',
+  SUPER_PAX:     'KPI-SUPER_PAX-2026-05-19 (2).xlsx',
+  FEIRA_NOVA:    'KPI-FEIRA_NOVA-2026-05-19 (2).xlsx',
+  MUNDIAL:       'KPI-MUNDIAL-2026-05-19 (3).xlsx',
+  SENDAS:        'KPI-SENDAS-2026-05-19 (4).xlsx',
+  CARREFOUR:     'KPI-CARREFOUR-2026-05-19 (2).xlsx',
+  ATACADAO:      'KPI-ATACADAO-2026-05-19 (3).xlsx',
+  ASSAI:         'KPI-ASSAI-2026-05-19 (2).xlsx',
+  PREZUNIC:      'KPI-PREZUNIC-2026-05-19 (2).xlsx',
+  VIANENSE:      'KPI-VIANENSE-2026-05-19 (2).xlsx',
+  PRINCESA:      'KPI-PRINCESA-2026-05-19 (7).xlsx',
+  SUPERPRIX:     'KPI-SUPERPRIX-2026-05-19 (2).xlsx',
+  SUPERCOMPRAS:  'KPI-SUPERCOMPRAS-2026-05-19 (1).xlsx',
+  SAMS_CLUB:     'KPI-SAMS_CLUB-2026-05-19 (2).xlsx',
+  CAB_PETROPOLIS:'KPI-CAB_PETROPOLIS-2026-05-19 (2).xlsx',
+  ARMAZEM_GRAO:  'KPI-ARMAZEM_GRAO-2026-05-19 (2).xlsx',
+  GUANABARA:     'KPI-GUANABARA-2026-05-19 (5).xlsx',
 }
 
 if (!KPI_GERADO[REDE_ID]) {
@@ -269,7 +269,7 @@ async function main() {
         ? [kg?.sc1 ?? '---', kg?.chd1 ?? '---', kg?.sl1 ?? '---']
         : [kg?.sc2 ?? '---', kg?.chd2 ?? '---', kg?.sl2 ?? '---']
 
-      const diff = !arrEq(mArr, gArr)
+      const diff = !arrEq(gArr, mArr)
       if (diff) nDiff++; else nOk++
 
       const matchDiff = !arrEq(matchArr, mArr)
