@@ -800,19 +800,33 @@ export async function cruzaEscalaUnitrac(
 
   // Resolve a placa real no Unitrac considerando OCR alternativo (Mercosul pos 4).
   // SÓ aceita variante OCR se for ÚNICA no Unitrac (sem ambiguidade).
-  function resolvePlacaUnitrac(placaEscala: string): string | null {
+  // Quando linha é passada, valida que a variante TEM parada batendo a loja escalada
+  // (por código ou nome). Caso ZS dia 19 Loja 33: escala LCO0978, Unitrac LCO0J78 com
+  // 5 paradas que NÃO batem Loja 33 — OCR-equate sem validação confundia, agora rejeita.
+  function resolvePlacaUnitrac(placaEscala: string, linha?: EscalaLinhaRow): string | null {
     if (paradaByPlaca.has(placaEscala)) return placaEscala
     const variantes = variantesOcr(placaEscala).filter(v => v !== placaEscala)
     const presentes = variantes.filter(v => paradaByPlaca.has(v))
-    if (presentes.length === 1) return presentes[0]
-    return null
+    if (presentes.length !== 1) return null
+    const candidata = presentes[0]
+    if (linha) {
+      const paradas = paradaByPlaca.get(candidata) ?? []
+      const bate = paradas.some(p => {
+        if (p.classificacao !== 'LOJA') return false
+        if (linha.loja_codigo_raw && p.codigo_loja && codCasa(linha.loja_codigo_raw, p.codigo_loja)) return true
+        if (matchScore(linha.loja_nome_raw, p.nome_loja || p.local_parada || '') <= 1) return true
+        return false
+      })
+      if (!bate) return null
+    }
+    return candidata
   }
 
   // Mapa: escala_linha_id -> placa do Unitrac (resolvendo OCR-confusable)
   const placaResolvida = new Map<string, string>()
   for (const l of escalaLinhas) {
     if (!l.placa_norm) continue
-    const resolved = resolvePlacaUnitrac(l.placa_norm)
+    const resolved = resolvePlacaUnitrac(l.placa_norm, l)
     if (resolved) placaResolvida.set(l.id, resolved)
   }
 
@@ -1246,7 +1260,7 @@ export async function cruzaEscalaUnitrac(
     const matchedParadaIds = new Set([...matchByEscalaId.values()].map(p => p.id))
     const semGpsLines = escalaLinhas.filter(l => {
       if (!l.placa_norm || matchByEscalaId.has(l.id)) return false
-      const placaRes = resolvePlacaUnitrac(l.placa_norm)
+      const placaRes = resolvePlacaUnitrac(l.placa_norm, l)
       // T18 ativa pra placas ausentes do Unitrac também (caso ZS dia 19 Loja 33:
       // escala diz LCO0978 mas operação foi com BBH1C94 — Tia Érica trocou placa).
       // Antes T18-G excluía placas ausentes pra evitar FP "veículo passando perto",
