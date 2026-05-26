@@ -57,25 +57,65 @@ export function fmtKpiCell(v: unknown): string {
   return '---'
 }
 
+interface ColMap {
+  loja: number; mot: number; placa: number
+  sc: number; chd: number; sl: number; tempo: number
+  // 2º carro (opcional, manuais ARMAZEM mensais têm)
+  mot2?: number; placa2?: number
+  sc2?: number; chd2?: number; sl2?: number; tempo2?: number
+}
+
 /**
- * Detecta a linha do cabeçalho ("REDES / FILIAIS") e retorna o índice da
- * primeira linha de dados (depois da linha de cabeçalho + linha em branco).
- * Retorna null se não achar (formato desconhecido).
+ * Detecta linha do cabeçalho + posições das colunas por nome.
+ * Diferentes manuais têm layouts distintos:
+ *  - ARMAZEM mensal: REDES | MOTORISTA | COD | PLACA | SC | CHD | SL
+ *  - ZONA SUL: REDES | MOTORISTA | PLACA | SC | CHD | SL (sem COD)
+ *  - Gerado pelo sistema: REDES | MOTORISTA | COD | PLACA | SC | CHD | SL
  */
-function detectarPrimeiraLinha(ws: ExcelJS.Worksheet): number | null {
+function detectarLayout(ws: ExcelJS.Worksheet): { primeiraLinha: number; cols: ColMap } | null {
   for (let r = 1; r <= Math.min(20, ws.rowCount); r++) {
-    const c1 = cvCell(ws.getRow(r).getCell(1)).toUpperCase()
-    if (c1.includes('REDES') && c1.includes('FILIAIS')) {
-      // próximo r com texto na col 1 é o primeiro registro real
-      for (let r2 = r + 1; r2 <= Math.min(r + 5, ws.rowCount); r2++) {
-        const c = cvCell(ws.getRow(r2).getCell(1))
-        if (c && !c.includes('REDES')) return r2
+    const row = ws.getRow(r)
+    const c1 = cvCell(row.getCell(1)).toUpperCase()
+    if (!(c1.includes('REDES') && c1.includes('FILIAIS'))) continue
+    // Mapeia colunas por nome
+    const cols: Partial<ColMap> = { loja: 1 }
+    let segundoCarro = false
+    for (let c = 2; c <= 25; c++) {
+      const h = cvCell(row.getCell(c)).toUpperCase().trim()
+      if (!h) continue
+      const target = segundoCarro ? '2' : '1'
+      if (h === 'MOTORISTA') {
+        if (cols.mot && !segundoCarro) { segundoCarro = true; (cols as any)[`mot2`] = c }
+        else if (segundoCarro) (cols as any)[`mot2`] = c
+        else cols.mot = c
+      } else if (h === 'PLACA') {
+        if (segundoCarro) (cols as any)[`placa2`] = c
+        else cols.placa = c
+      } else if (h.includes('SAIDA CD') || h === 'SAIDA') {
+        if (segundoCarro) (cols as any)[`sc2`] = c
+        else cols.sc = c
+      } else if (h.includes('CHD LOJA') || h === 'CHD') {
+        if (segundoCarro) (cols as any)[`chd2`] = c
+        else cols.chd = c
+      } else if (h.includes('SAIDA LOJA') || h === 'SAIDA LOJA 1' || h === 'SAIDA LOJA 2') {
+        if (segundoCarro) (cols as any)[`sl2`] = c
+        else cols.sl = c
+      } else if (h.includes('TEMPO')) {
+        if (segundoCarro) (cols as any)[`tempo2`] = c
+        else cols.tempo = c
       }
-      return r + 1
+    }
+    // Próximo r não-vazio é primeira linha
+    let primeiraLinha = r + 1
+    for (let r2 = r + 1; r2 <= Math.min(r + 5, ws.rowCount); r2++) {
+      const c = cvCell(ws.getRow(r2).getCell(1))
+      if (c && !c.includes('REDES')) { primeiraLinha = r2; break }
+    }
+    if (cols.sc && cols.chd && cols.sl) {
+      return { primeiraLinha, cols: cols as ColMap }
     }
   }
-  // Fallback: convenção legada (r=5 era o padrão antigo)
-  return 5
+  return null
 }
 
 /**
@@ -88,31 +128,32 @@ export async function lerKpi(path: string, sheetName?: string): Promise<KpiLinha
   const ws = sheetName ? wb.getWorksheet(sheetName) : wb.worksheets[0]
   if (!ws) return []
 
-  const start = detectarPrimeiraLinha(ws) ?? 5
+  const layout = detectarLayout(ws)
+  if (!layout) return []
+  const { primeiraLinha: start, cols } = layout
   const out: KpiLinha[] = []
 
   for (let r = start; r <= Math.min(start + 200, ws.rowCount); r++) {
     const row = ws.getRow(r)
-    const loja = cvCell(row.getCell(1))
+    const loja = cvCell(row.getCell(cols.loja))
     if (!loja) continue
-    // Pula linhas que sejam claramente continuação de cabeçalho ou rodapé
     if (loja.toUpperCase().startsWith('RELATÓRIO') || loja.toUpperCase().startsWith('RELATORIO')) continue
     if (loja.toUpperCase().includes('REDES') && loja.toUpperCase().includes('FILIAIS')) continue
 
     out.push({
       loja,
-      mot1: cvCell(row.getCell(2)),
-      placa1: cvCell(row.getCell(4)),
-      sc1: fmtKpiCell(row.getCell(5).value),
-      chd1: fmtKpiCell(row.getCell(6).value),
-      sl1: fmtKpiCell(row.getCell(7).value),
-      tempo1: fmtKpiCell(row.getCell(14).value),
-      mot2: cvCell(row.getCell(8)),
-      placa2: cvCell(row.getCell(10)),
-      sc2: fmtKpiCell(row.getCell(11).value),
-      chd2: fmtKpiCell(row.getCell(12).value),
-      sl2: fmtKpiCell(row.getCell(13).value),
-      tempo2: fmtKpiCell(row.getCell(15).value),
+      mot1: cvCell(row.getCell(cols.mot)),
+      placa1: cvCell(row.getCell(cols.placa)),
+      sc1: fmtKpiCell(row.getCell(cols.sc).value),
+      chd1: fmtKpiCell(row.getCell(cols.chd).value),
+      sl1: fmtKpiCell(row.getCell(cols.sl).value),
+      tempo1: cols.tempo ? fmtKpiCell(row.getCell(cols.tempo).value) : '',
+      mot2: cols.mot2 ? cvCell(row.getCell(cols.mot2)) : '',
+      placa2: cols.placa2 ? cvCell(row.getCell(cols.placa2)) : '',
+      sc2: cols.sc2 ? fmtKpiCell(row.getCell(cols.sc2).value) : '',
+      chd2: cols.chd2 ? fmtKpiCell(row.getCell(cols.chd2).value) : '',
+      sl2: cols.sl2 ? fmtKpiCell(row.getCell(cols.sl2).value) : '',
+      tempo2: cols.tempo2 ? fmtKpiCell(row.getCell(cols.tempo2).value) : '',
     })
   }
   return out
