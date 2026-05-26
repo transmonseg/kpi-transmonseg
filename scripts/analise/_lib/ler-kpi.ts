@@ -27,6 +27,8 @@ export function cvCell(cell: ExcelJS.Cell | undefined): string {
   if (v == null) return ''
   if (typeof v === 'object' && v !== null && 'richText' in v) return (v as any).richText.map((r: any) => r.text).join('').trim()
   if (typeof v === 'object' && v !== null && 'text' in v) return String((v as any).text).trim()
+  if (typeof v === 'object' && v !== null && 'result' in v) return cvCell({ value: (v as any).result } as any)
+  if (v instanceof Date) return ''
   return String(v).trim()
 }
 

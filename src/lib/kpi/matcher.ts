@@ -324,6 +324,50 @@ function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracPara
 }
 
 /**
+ * Estende saída da parada LOJA quando o Unitrac classificou a entrega como
+ * LOJA curta (≤15min) + FORA_BASE longo (≥30min) na mesma área (≤300m).
+ *
+ * Padrão observado em PREZUNIC FONSECA dia 20 (placa KQV1D80):
+ *   05:27→05:31 LOJA  dur=4min   dist=12m  (geofence loja)
+ *   05:33→09:28 FORA_BASE dur=236min dist=149m (mesmo estacionamento)
+ * Manual Tia Érica: SL=09:30 (≈ fim do FORA_BASE).
+ * Sistema antigo usava saida da LOJA (05:31), gerando Δ239min vs manual.
+ *
+ * Critérios conservadores pra não estender entregas legítimas seguidas de
+ * outras paradas (Recreio: LOJA 245min seguida de outras LOJAs — não aplica
+ * pois LOJA é longa; Vilar dos Teles: FORA_BASE a 660m — não aplica pois fora).
+ */
+function estendeSaidaPorForaBase(
+  matched: UnitracParadaRow,
+  todasParadas: UnitracParadaRow[],
+): Date | null {
+  if (matched.classificacao !== 'LOJA') return null
+  if (!matched.saida) return null
+  const matchedSaidaTs = new Date(matched.saida).getTime()
+  const matchedDurSeg = matched.duracao_seg ?? 0
+  if (matchedDurSeg > 15 * 60) return null
+  if (matched.lat == null || matched.lng == null) return null
+
+  let saidaEstendida: Date | null = null
+  for (const p of todasParadas) {
+    const pChegada = new Date(p.chegada).getTime()
+    if (pChegada < matchedSaidaTs) continue
+    if (p.classificacao !== 'FORA_BASE') break
+    const gapSeg = (pChegada - matchedSaidaTs) / 1000
+    if (gapSeg > 10 * 60) break
+    if (!p.saida) break
+    const pDurSeg = p.duracao_seg ?? 0
+    if (pDurSeg < 30 * 60) break
+    if (p.lat == null || p.lng == null) break
+    const dist = haversine(matched.lat, matched.lng, p.lat, p.lng)
+    if (dist > 300) break
+    saidaEstendida = new Date(p.saida)
+    break
+  }
+  return saidaEstendida
+}
+
+/**
  * T16: Saída CD per-parada (multi-trip). Para uma parada operacional alvo,
  * retorna a ÚLTIMA saída de BASE BENASSI estritamente ANTES da chegada do alvo.
  * Sem isso, placas com 2+ turnos no dia ficavam todas com a mesma saida_cd
@@ -800,9 +844,11 @@ export async function cruzaEscalaUnitrac(
 
   // Resolve a placa real no Unitrac considerando OCR alternativo (Mercosul pos 4).
   // SÓ aceita variante OCR se for ÚNICA no Unitrac (sem ambiguidade).
-  // Quando linha é passada, valida que a variante TEM parada batendo a loja escalada
-  // (por código ou nome). Caso ZS dia 19 Loja 33: escala LCO0978, Unitrac LCO0J78 com
-  // 5 paradas que NÃO batem Loja 33 — OCR-equate sem validação confundia, agora rejeita.
+  // Quando linha é passada, valida que a variante TEM parada batendo a loja escalada:
+  //   1) parada LOJA com codigo/nome batendo, OU
+  //   2) parada LOJA/FORA_BASE geograficamente dentro do raio da loja escalada
+  //      (caso ZS dia 20 LCO0978→LCO0J78: paradas só FORA_BASE mas dentro do raio
+  //      das lojas 33/36/01 — antes rejeitava por falta de classificação LOJA).
   function resolvePlacaUnitrac(placaEscala: string, linha?: EscalaLinhaRow): string | null {
     if (paradaByPlaca.has(placaEscala)) return placaEscala
     const variantes = variantesOcr(placaEscala).filter(v => v !== placaEscala)
@@ -811,10 +857,27 @@ export async function cruzaEscalaUnitrac(
     const candidata = presentes[0]
     if (linha) {
       const paradas = paradaByPlaca.get(candidata) ?? []
+      // Acha loja escalada no cadastro (por código ou nome) pra validar via geo
+      const fung = redesFungiveis(linha.rede_id)
+      const lojaEscalada = lojas.find(l => {
+        if (!fung.has(l.rede_id)) return false
+        if (linha.loja_codigo_raw && ((l.codigo_escala && codCasa(linha.loja_codigo_raw, l.codigo_escala)) || (l.codigo_unitrac && codCasa(linha.loja_codigo_raw, l.codigo_unitrac)))) return true
+        if (linha.loja_nome_raw && matchScore(linha.loja_nome_raw, l.nome) <= 1) return true
+        if (linha.loja_nome_raw && l.nome_unitrac && matchScore(linha.loja_nome_raw, l.nome_unitrac) <= 1) return true
+        return false
+      })
       const bate = paradas.some(p => {
-        if (p.classificacao !== 'LOJA') return false
-        if (linha.loja_codigo_raw && p.codigo_loja && codCasa(linha.loja_codigo_raw, p.codigo_loja)) return true
-        if (matchScore(linha.loja_nome_raw, p.nome_loja || p.local_parada || '') <= 1) return true
+        if (p.classificacao === 'LOJA') {
+          if (linha.loja_codigo_raw && p.codigo_loja && codCasa(linha.loja_codigo_raw, p.codigo_loja)) return true
+          if (matchScore(linha.loja_nome_raw, p.nome_loja || p.local_parada || '') <= 1) return true
+        }
+        // Geo fallback: parada LOJA/FORA_BASE dentro do raio da loja escalada
+        if (lojaEscalada && lojaEscalada.lat != null && lojaEscalada.lng != null && p.lat != null && p.lng != null) {
+          if (p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE') {
+            const dist = haversine(p.lat, p.lng, lojaEscalada.lat, lojaEscalada.lng)
+            if (dist <= lojaEscalada.raio_metros) return true
+          }
+        }
         return false
       })
       if (!bate) return null
@@ -1371,6 +1434,22 @@ export async function cruzaEscalaUnitrac(
           if (redesDaParada.size > 0) {
             // Rede identificada: só aceita se compatível com a rede da escala
             if ([...redesDaParada].every(r => !redesFungT18.has(r))) return false
+            // T18-X: se a parada resolve para uma loja CADASTRADA diferente da escalada,
+            // rejeitar. Caso ZS Loja 1129 (não cadastrada): T18 atribuía parada MEGA BOX
+            // OLARIA (cadastrada) pelo token comum "OLARIA". Sem este guard, lojas com
+            // tokens geográficos em comum casavam por engano.
+            const lojaIdParada = resolveLojaId(p, lojas, linha.rede_id)
+            if (lojaIdParada) {
+              const lojaPar = lojas.find(l => l.id === lojaIdParada)
+              if (lojaPar) {
+                const codigoBate = !!(linha.loja_codigo_raw && (
+                  (lojaPar.codigo_escala && codCasa(linha.loja_codigo_raw, lojaPar.codigo_escala)) ||
+                  (lojaPar.codigo_unitrac && codCasa(linha.loja_codigo_raw, lojaPar.codigo_unitrac))
+                ))
+                const nomeBate = matchScore(linha.loja_nome_raw, lojaPar.nome) <= 1
+                if (!codigoBate && !nomeBate) return false
+              }
+            }
             // Exige match próximo (≤ 2 tokens de diferença) — evita FP por tokens genéricos
             // como "BARRA" ou "LOJA" que aparecem em múltiplas lojas diferentes.
             return scorePair(linha, p) <= 2
@@ -1461,14 +1540,17 @@ export async function cruzaEscalaUnitrac(
       }
     }
 
+    const saidaEstendida = matched && !isGeo ? estendeSaidaPorForaBase(matched, todasParadas) : null
     const paradas: ParadaKpi[] = matched
       ? [{
           parada_id: matched.id,
           loja_id: lojaId,
           nome: nomeResolvido,
           chegada: new Date(matched.chegada),
-          saida: matched.saida ? new Date(matched.saida) : new Date(matched.chegada),
-          duracao_min: Math.round((matched.duracao_seg ?? 0) / 60),
+          saida: saidaEstendida ?? (matched.saida ? new Date(matched.saida) : new Date(matched.chegada)),
+          duracao_min: saidaEstendida
+            ? Math.round((saidaEstendida.getTime() - new Date(matched.chegada).getTime()) / 60000)
+            : Math.round((matched.duracao_seg ?? 0) / 60),
           classificacao: isGeo ? 'FORA_BASE' : 'LOJA',
         }]
       : []
