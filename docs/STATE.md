@@ -2,8 +2,37 @@
 
 > **Para retomar a sessão após compactação:** leia este arquivo PRIMEIRO. Tudo aqui aponta para a verdade.
 
-**Última atualização:** 2026-05-25
+**Última atualização:** 2026-05-25 (sessão noturna ZS sweep)
 **Spec mestre:** `docs/superpowers/specs/2026-05-24-kpi-perfeicao-rede-por-rede-design.md`
+**Spec ZS:** `docs/superpowers/specs/2026-05-25-conserto-zona-sul.md`
+
+## Sessão noturna 25/05 — resumo do que foi feito
+
+**ARMAZEM (resolvido para dias 19, 20):**
+- T18 plate-swap não ativa quando placa circulou
+- T18-D guard de distância (≤5km da loja)
+- Geo fallback atribui parada à linha pelo melhor matchScore
+- T20: descarta paradas LOJA spurious (geofence Unitrac sobreposto >10km)
+- Cadastro REGINA: triangulação GPS dia 20 (não Nominatim) — 4 lojas corretas
+- Cadastro 16 DE MARÇO: GPS real (drift 3.8km vs Nominatim)
+- Dia 19: 12/14 batem (1-3min off)
+- Dia 20: 14/14 batem (1-2min off) ✓
+
+**ZONA SUL (parcial):**
+- lerKpi detecta layout dinamicamente (ZS sem coluna COD)
+- T18 ativa pra placas ausentes do Unitrac (caso plate-swap real)
+- T18-N removido (ZS faz entregas legítimas de madrugada)
+- OCR-equate inteligente (só aceita se variante bate loja escalada)
+- Loja 47 ZS coord corrigida (drift 19km)
+- Sweep ZS dia 18: 17/34 (50%), dia 19: 13/37 (35%), dia 20: 20/36 (56%), dia 21: 3/10 (30%)
+- 39 SEM_MATCH restantes — padrões: placas ausentes Unitrac (LJS2172, LCO0978), placa-manual ≠ placa-escala (Tia Érica troca), múltiplas lojas/placa, cross-day
+
+**Pendências ZS:**
+- Vídeo v43-2 documenta: caminhões 17h saem dia seguinte → matcher precisa usar data_entrega
+- Múltiplas lojas/placa: BBH1C94 fez Loja 33+03+19, sistema só pega Loja 33 (parada LOJA)
+- Lojas 02, 16, 24, 37, 39, 41 não aparecem em manual → provavelmente inativas
+- Conflitos manual vs GPS (NÃO_FOI manual + GPS confirma FOI) precisam ser confirmados com Tia Érica
+
 **V2.1 plano:** `docs/correcao-sistema/PLANO-CADASTRO-E-V21.md`
 **V2.1 validação:** `docs/correcao-sistema/validacao-pos-v21.md`
 **Status global:** V2.1 rollout. Cadastro 295→330 ativas. Bugs 1-4 fixados. Reforços 5-7 aplicados. 282 testes vitest. Dia18: 108/127=85%, Dia19: 152/218=70% (excl. ZONA_SUL). GUANABARA 37/37, PRINCESA dia19 26/26, SENDAS 8/9.
