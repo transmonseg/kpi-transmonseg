@@ -258,19 +258,41 @@ function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracPara
       const gapSeg = (pChegada - lastSaida) / 1000
 
       if (gapSeg < GAP_CONSOLIDACAO_MAX_SEG) {
-        // 1. Mesmo código (caso ideal)
+        // 1. Mesmo código (caso ideal). Mas verificar geo: se coords das duas paradas
+        // estão muito distantes (>500m), são lojas DIFERENTES com mesmo geofence
+        // sobreposto no Unitrac. Caso ARMAZEM dia 20: 4 lojas REGINA têm geofence
+        // unificado cod 5353012, paradas reais distam 2-3km entre si.
         if (last.codigo_loja && p.codigo_loja && last.codigo_loja === p.codigo_loja) {
-          mesmaLoja = true
-        } else {
-          // 2. Mesmo nome_loja normalizado (Unitrac sem código mas com nome)
-          const nomeLast = nomeLojaNorm(last.nome_loja)
-          const nomeP = nomeLojaNorm(p.nome_loja)
-          if (nomeLast && nomeP && nomeLast === nomeP) mesmaLoja = true
-          else {
-            // 3. Fallback: local_parada raw normalizado
-            const localLast = nomeLojaNorm(last.local_parada)
-            const localP = nomeLojaNorm(p.local_parada)
-            if (localLast && localP && localLast === localP) mesmaLoja = true
+          const lastLat = last.lat; const lastLng = last.lng
+          const pLat = p.lat; const pLng = p.lng
+          if (lastLat != null && lastLng != null && pLat != null && pLng != null) {
+            const distEntre = haversine(lastLat, lastLng, pLat, pLng)
+            if (distEntre <= 500) mesmaLoja = true
+          } else {
+            mesmaLoja = true
+          }
+        }
+        if (!mesmaLoja) {
+          // Guard de distância também aqui: se coords disponíveis e ≤500m, OK consolidar
+          // por nome/local_parada. Caso ARMAZEM: 4 lojas REGINA têm mesmo local_parada
+          // raw "BASE BENASSI, 5353012 REGINA BARRA IMBUY..." mas estão fisicamente
+          // separadas por 2-3km cada — não devem consolidar.
+          let geoBate = true
+          if (last.lat != null && last.lng != null && p.lat != null && p.lng != null) {
+            const distEntre = haversine(last.lat, last.lng, p.lat, p.lng)
+            geoBate = distEntre <= 500
+          }
+          if (geoBate) {
+            // 2. Mesmo nome_loja normalizado (Unitrac sem código mas com nome)
+            const nomeLast = nomeLojaNorm(last.nome_loja)
+            const nomeP = nomeLojaNorm(p.nome_loja)
+            if (nomeLast && nomeP && nomeLast === nomeP) mesmaLoja = true
+            else {
+              // 3. Fallback: local_parada raw normalizado
+              const localLast = nomeLojaNorm(last.local_parada)
+              const localP = nomeLojaNorm(p.local_parada)
+              if (localLast && localP && localLast === localP) mesmaLoja = true
+            }
           }
         }
       }
@@ -812,7 +834,27 @@ export async function cruzaEscalaUnitrac(
   const matchByEscalaId = new Map<string, UnitracParadaRow>()
   for (const [placa, linhas] of escalaByPlaca) {
     const todas = paradaByPlaca.get(placa) ?? []
-    const lojasParadasRaw = todas.filter((p) => p.classificacao === 'LOJA')
+    // T20: paradas LOJA com codigo_loja apontando pra cadastro distante do GPS real
+    // (geofence Unitrac sobreposta — caso ARMAZEM dia 20 QSZ9A20: cod 5353012 REGINA
+    // BARRA IMBUY englobava BASE BENASSI a 60km e Maricá a 90km da loja real).
+    // - Se MUITO longe (>10km): RECLASSIFICA como FORA_BASE (não LOJA spurious)
+    // - Se moderadamente longe (>500m mas ≤10km): RECLASSIFICA como FORA_BASE e LIMPA
+    //   codigo_loja. Cai no geo fallback que atribui à loja mais próxima geograficamente.
+    //   Resolve caso 4 lojas REGINA com mesmo cod errado: cada parada GPS perto da
+    //   loja real diferente é atribuída corretamente.
+    // - Se ≤500m: mantém LOJA com código (caso ideal).
+    const todasAjustadas: typeof todas = todas.map(p => {
+      if (p.classificacao !== 'LOJA') return p
+      if (!p.codigo_loja || p.lat == null || p.lng == null) return p
+      const lojaCad = lojas.find(l => l.codigo_unitrac === p.codigo_loja)
+      if (!lojaCad?.lat || !lojaCad?.lng) return p
+      const d = haversine(p.lat, p.lng, lojaCad.lat, lojaCad.lng)
+      if (d > 500) {
+        return { ...p, classificacao: 'FORA_BASE' as const, codigo_loja: null, nome_loja: null }
+      }
+      return p
+    })
+    const lojasParadasRaw = todasAjustadas.filter((p) => p.classificacao === 'LOJA')
     // V2.1 Reforço 7: placas CD-only crônicas (lista negra) que de fato não saíram
     // do CD nesse dia (zero paradas LOJA) — pula o matching e deixa linhas como
     // UNMATCHED. Evita que o matcher distribua paradas FORA_BASE ou madrugada
@@ -923,7 +965,7 @@ export async function cruzaEscalaUnitrac(
     // as canonical_loja como pool de matching geográfico.
     const linhasAindaSemMatch = linhas.filter(l => !matchByEscalaId.has(l.id))
     if (linhasAindaSemMatch.length > 0) {
-      const paradasForaBase = todas
+      const paradasForaBase = todasAjustadas
         .filter(p =>
           // Inclui FAKE_EXIT também: lojas com geofence ausente no Unitrac ficam como
           // FAKE_EXIT quando duração curta. Caso REGINA 1 DE MAIO dia 19: parada 14:20
@@ -948,7 +990,11 @@ export async function cruzaEscalaUnitrac(
       // Caso original TML3B11 ainda protegido: LOJA órfã PREZUNIC vs escala VIANENSE
       // — se VIANENSE está nas redes da órfã (alias), bloqueia.
       const redesSemMatch = new Set(linhasAindaSemMatch.map(l => l.rede_id))
-      const temLojaOrfaMesmaRede = todas.some(p => {
+      // Usa todasAjustadas (não todas) — paradas reclassificadas como FORA_BASE pelo T20
+      // não devem contar como LOJA órfã. Caso ARMAZEM dia 20: paradas LOJA cod 5353012
+      // erroneamente classificadas em BASE/Maricá vão pra FORA_BASE e ficam livres
+      // pra geo fallback, sem bloquear o resto.
+      const temLojaOrfaMesmaRede = todasAjustadas.some(p => {
         if (p.classificacao !== 'LOJA' || usados.has(p.id)) return false
         // Infere rede da parada órfã
         for (const r of redesSemMatch) {
@@ -1042,15 +1088,24 @@ export async function cruzaEscalaUnitrac(
         if (m && m.classificacao === 'LOJA') paradasUsadasNaPlaca.push(m)
       }
       for (const linha of linhasRestantes) {
-        // Compartilha parada APENAS quando scorePair === 0 (match exato de código via codCasa).
-        // Caso legítimo: Armazém do Grão — 4 lojas REGINA + 1 parada com mesmo codigo_loja.
-        //
-        // Antes, as verificações por catálogo (lojasDaRede.some(l => l.codigo_unitrac === p.codigo_loja))
-        // retornavam true para QUALQUER parada da rede — ex: parada de Loja 30 (codigo "30")
-        // satisfazia a condição para Lojas 06, 21 e MB01 porque "30" existe na tabela de lojas.
-        // Resultado: mesmo GPS distribuído a N lojas simultâneas (fisicamente impossível).
+        // Compartilha parada APENAS quando scorePair === 0 (match exato).
+        // Guard de distância: se a linha tem loja cadastrada com lat/lng E a parada
+        // candidata tem lat/lng, exige distância ≤ 500m. Sem isso, scorePair retorna
+        // 0 quando local_parada cita N lojas (ARMAZEM dia 20: parada BARRA IMBUY tem
+        // local "5353012 IMBUY, 5353014 MAIO, 5353016 LUCIO, 5353017 ABASTECEDORA")
+        // e clona pra todas. Geograficamente é apenas BARRA IMBUY.
+        const lojaCad = lojas.find(l => {
+          if (l.rede_id !== linha.rede_id) return false
+          if (linha.loja_codigo_raw && l.codigo_escala === linha.loja_codigo_raw) return true
+          return matchScore(linha.loja_nome_raw, l.nome) <= 1
+        })
         const compartilhada = paradasUsadasNaPlaca.find(p => {
-          return scorePair(linha, p) === 0
+          if (scorePair(linha, p) !== 0) return false
+          if (lojaCad?.lat != null && lojaCad?.lng != null && p.lat != null && p.lng != null) {
+            const d = haversine(lojaCad.lat, lojaCad.lng, p.lat, p.lng)
+            return d <= 500
+          }
+          return true
         })
         if (compartilhada) {
           matchByEscalaId.set(linha.id, compartilhada)
