@@ -2,7 +2,39 @@
 
 > **Para retomar a sessão após compactação:** leia este arquivo PRIMEIRO. Tudo aqui aponta para a verdade.
 
-**Última atualização:** 2026-05-25 (sessão noturna ZS sweep)
+**Última atualização:** 2026-05-26 (sessão dias 19/20/21 — escalas faltantes + 3 fixes matcher)
+
+## Sessão 26/05 — escalas faltantes + 3 fixes matcher
+
+**Causa raiz descoberta:** 13 escalas faltavam no banco. KPIs gerados pelo user no Vercel estavam usando dados parciais. Subi via `scripts/analise/subir_escalas_faltantes.ts`.
+
+**Fixes aplicados em `src/lib/kpi/matcher.ts`:**
+1. `estendeSaidaPorForaBase` (linha 328): SL estendida quando LOJA curta (≤15min) seguida de FORA_BASE longo (≥30min, ≤300m, gap ≤10min). Caso PREZUNIC Fonseca: 05:31→09:28.
+2. `resolvePlacaUnitrac` valida via geo (linha 870): aceita variante OCR mesmo com paradas só FORA_BASE quando geograficamente dentro do raio. Resolve 6 lojas ZS (LCO0978→LCO0J78 33/36/01, LJS2172→LJS2B72 34, EFU5704→EFU5H04 03/26).
+3. T18-X (linha 1438): rejeita plate-swap quando parada candidata resolve loja CADASTRADA diferente da escalada. Resolve falsos positivos como ZS Loja 1129 não-cadastrada (matcher atribuía MEGA BOX OLARIA por token comum).
+
+**Antes/Depois (% aceitável = ✅+⚠️ com BLANK_OK):**
+| Dia | Antes | Depois |
+|-----|-------|--------|
+| 19  | 71%   | 74%    |
+| 20  | 75%   | 79%    |
+| 21  | 73%   | 75%    |
+| ZS 20 | 17❌ → 5❌ |
+| ZS 19 | 16❌ → 8❌ |
+| ZS 21 | — → 100% (11/11) |
+
+**Para user testar:** REGERAR KPIs no sistema web (Vercel) — o banco agora tem todas escalas + matcher corrigido.
+
+**Pendências (❌ restantes principais):**
+- ZS multi-trip assignment: 2 linhas mesma loja (Loja 07/11 dia 19, 20) pegam mesma parada
+- ZS lojas não cadastradas com coord ok: Loja 14, 31 falsos positivos (parecido com 1129 — cadastro precisa atualizar)
+- ZS Loja 03 Copacabana sem lat/lng — Loja 26 com coord 6km off (cadastro incompleto)
+- ARMAZEM dia 21: GPS classifica paradas como cross-rede (PREZUNIC MARICÁ), matcher rejeita
+- PRINCESA/PREZUNIC: muitos ⚠️ Δ≤3min são arredondamento manual (Tia Érica em múltiplos de 5min) — não-bug
+
+---
+
+**Última atualização anterior:** 2026-05-25 (sessão noturna ZS sweep)
 **Spec mestre:** `docs/superpowers/specs/2026-05-24-kpi-perfeicao-rede-por-rede-design.md`
 **Spec ZS:** `docs/superpowers/specs/2026-05-25-conserto-zona-sul.md`
 
