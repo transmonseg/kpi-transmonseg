@@ -26,7 +26,7 @@ const MANUAL: Record<string, { file: string; sheet?: Record<number, string> }> =
   PRINCESA:     { file: 'KPI-PRINCESA-MANUAL.xlsx' },
   SUPERPRIX:    { file: 'KPI-SUPERPRIX-MANUAL.xlsx' },
   ZONA_SUL:     { file: 'KPI ZONA SUL-MANUAL.xlsx' },
-  ARMAZEM_GRAO: { file: 'KPI-ARMAZEM_GRAO-MANUAL.xlsx', sheet: { 21: '21.05' } },
+  ARMAZEM_GRAO: { file: 'KPI-ARMAZEM_GRAO-MANUAL.xlsx' },
 }
 
 function fmtT(d: Date | string | null): string {

@@ -53,7 +53,9 @@ export function aplicarAlteracoes(
         const needle = alt.sai.motorista_nome.toLowerCase().split(' ')[0]
         if (needle.length >= 3 && motoristasOriginais[i]?.toLowerCase().includes(needle)) return true
       }
-      // Match por loja_raw quando não tem "sai" (ex: "Filial 23")
+      // Match por loja_raw quando não tem "sai":
+      //   a) via número de filial (ex: "Filial 23", "Loja 35", "Loja 211")
+      //   b) via tokens fortes no nome (ex: "Carrefour Campo Grande", "Assai Camil")
       if (!alt.sai?.placa_norm && !alt.sai?.motorista_nome && alt.loja_raw) {
         const filialM = alt.loja_raw.match(/\b(\d{1,3})\b/)
         if (filialM) {
@@ -61,6 +63,23 @@ export function aplicarAlteracoes(
           const codInt = parseInt(l.loja_codigo_raw ?? '', 10)
           if (!isNaN(filialInt) && !isNaN(codInt) && filialInt === codInt) return true
         }
+        // Fallback nome: bate tokens significativos (≥4 chars, não-rede, não-genérico)
+        // do loja_raw da alteração contra l.loja_nome_raw da escala.
+        // Caso "Carrefour Campo Grande" / "Assai Sao Goncalo Camil" sem número de loja.
+        const norm = (s: string) =>
+          s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
+            .replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim()
+        const STOP = new Set([
+          'LOJA', 'FILIAL', 'CARRO', 'REDE', 'CARREFOUR', 'ASSAI', 'PREZUNIC',
+          'PRINCESA', 'SUPERPRIX', 'SENDAS', 'GUANABARA', 'ATACADAO', 'VIANENSE',
+          'MUNDIAL', 'EMANUEL', 'MEGA', 'BOX', 'ZONA', 'SUL', 'ARMAZEM',
+          'PAX', 'FEIRA', 'NOVA', 'SAMS', 'CLUB', 'CAB', 'PETROPOLIS', 'SUPER',
+        ])
+        const tokensFortes = (s: string) =>
+          norm(s).split(' ').filter(t => t.length >= 4 && !STOP.has(t))
+        const altTok = tokensFortes(alt.loja_raw)
+        const linTok = new Set(tokensFortes(l.loja_nome_raw ?? ''))
+        if (altTok.length >= 1 && altTok.every(t => linTok.has(t))) return true
       }
       return false
     }
