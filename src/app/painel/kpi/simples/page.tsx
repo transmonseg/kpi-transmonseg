@@ -115,6 +115,8 @@ interface AlteracoesCardProps {
   confirmadas: AlteracaoParsed[]
   onConfirm: (a: AlteracaoParsed) => void
   onRemove: (idx: number) => void
+  /** Data da escala (YYYY-MM-DD) — usada pra inferir `Sai` quando alteração não traz */
+  data?: string
 }
 
 const REDES_OPCOES: Array<{ value: string; label: string }> = [
@@ -157,7 +159,7 @@ async function readTxtWithEncodingFallback(file: File): Promise<string> {
   return new TextDecoder('utf-8').decode(buffer)
 }
 
-function AlteracoesCard({ confirmadas, onConfirm, onRemove }: AlteracoesCardProps) {
+function AlteracoesCard({ confirmadas, onConfirm, onRemove, data }: AlteracoesCardProps) {
   const [expanded, setExpanded] = useState(false)
   const [modo, setModo] = useState<'texto' | 'pdf' | 'manual' | 'txt'>('texto')
   const [texto, setTexto] = useState('')
@@ -240,7 +242,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove }: AlteracoesCardProp
         const res = await fetch('/api/kpi/simples/analisar-alt', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ texto }),
+          body: JSON.stringify({ texto, data }),
         })
         if (!res.ok) throw new Error(await res.text())
         setPreviews(await res.json() as AlteracaoParsed[])
@@ -256,6 +258,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove }: AlteracoesCardProp
       try {
         const fd = new FormData()
         fd.append('pdf', file)
+        if (data) fd.append('data', data)
         const res = await fetch('/api/kpi/simples/analisar-alt', { method: 'POST', body: fd })
         if (!res.ok) throw new Error(await res.text())
         setPreviews(await res.json() as AlteracaoParsed[])
@@ -275,7 +278,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove }: AlteracoesCardProp
         const res = await fetch('/api/kpi/simples/analisar-alt', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ texto: conteudo }),
+          body: JSON.stringify({ texto: conteudo, data }),
         })
         if (!res.ok) throw new Error(await res.text())
         setPreviews(await res.json() as AlteracaoParsed[])
@@ -804,7 +807,7 @@ export default function KpiSimplesPage() {
 
       {/* Alterações (componente preservado) */}
       <div className="mt-6">
-        <AlteracoesCard confirmadas={alteracoes} onConfirm={addAlteracao} onRemove={removeAlteracao} />
+        <AlteracoesCard confirmadas={alteracoes} onConfirm={addAlteracao} onRemove={removeAlteracao} data={data} />
       </div>
 
       {/* Error inline */}
