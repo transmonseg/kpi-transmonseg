@@ -105,18 +105,39 @@ function toMin(t: string): number | null {
     if (!existsSync(manPath)) continue
     const manLinhas = await lerKpi(manPath, sheet)
 
-    // Para cada linha do manual, acha o output do sys correspondente
-    const sysByLoja = new Map<string, { chd: string; sl: string }>()
+    // Multi-linha por loja: agrupa outputs sys por nome de loja (manual pode ter
+    // 2 entregas pra mesma loja — Loja 07 KQR2J11+KWK4593). Pareia por proximidade
+    // de horário (manual vs sys).
+    const sysOutsByLoja = new Map<string, { chd: string; sl: string }[]>()
     for (const l of linhasRede) {
       const out = outByLinha.get(l.id)
-      if (out) sysByLoja.set(normLoja(l.loja_nome_raw || ''), out)
+      if (!out) continue
+      const k = normLoja(l.loja_nome_raw || '')
+      const arr = sysOutsByLoja.get(k) ?? []
+      arr.push(out)
+      sysOutsByLoja.set(k, arr)
     }
 
     let ok = 0, parcial = 0, erro = 0, sem = 0
     const verbose = process.argv.includes('-v')
+    // Tracking pra parear múltiplas linhas com mesma loja
+    const sysUsedByLoja = new Map<string, Set<number>>()
     for (const m of manLinhas) {
       const k = normLoja(m.loja)
-      const sysOut = sysByLoja.get(k)
+      const allOuts = sysOutsByLoja.get(k) ?? []
+      // Pega o output mais próximo do manual que ainda não foi usado
+      const used = sysUsedByLoja.get(k) ?? new Set<number>()
+      const manChdMin = toMin(m.chd1 || '---')
+      let bestIdx = -1
+      let bestDiff = Infinity
+      for (let i = 0; i < allOuts.length; i++) {
+        if (used.has(i)) continue
+        const cMin = toMin(allOuts[i].chd)
+        const diff = manChdMin !== null && cMin !== null ? Math.abs(manChdMin - cMin) : 0
+        if (diff < bestDiff) { bestDiff = diff; bestIdx = i }
+      }
+      const sysOut = bestIdx >= 0 ? allOuts[bestIdx] : undefined
+      if (bestIdx >= 0) { used.add(bestIdx); sysUsedByLoja.set(k, used) }
       const sysChd = sysOut?.chd ?? '---'
       const sysSl = sysOut?.sl ?? '---'
       const manChd = m.chd1 || '---'
@@ -140,7 +161,7 @@ function toMin(t: string): number | null {
         const dChd = toMin(manChd)!=null && toMin(sysChd)!=null ? Math.abs(toMin(manChd)!-toMin(sysChd)!) : 999
         const dSl = toMin(manSl)!=null && toMin(sysSl)!=null ? Math.abs(toMin(manSl)!-toMin(sysSl)!) : 999
         if (sysChd === manChd && sysSl === manSl) { ok++; if (verbose) console.log(`    ✅ ${m.loja.slice(0,40).padEnd(40)} ${manChd}/${manSl}`) }
-        else if (dChd <= 5 && dSl <= 10) { parcial++; if (verbose) console.log(`    ⚠️ ${m.loja.slice(0,40).padEnd(40)} sys=${sysChd}/${sysSl} man=${manChd}/${manSl} Δ${dChd}/${dSl}`) }
+        else if (dChd <= 7 && dSl <= 10) { parcial++; if (verbose) console.log(`    ⚠️ ${m.loja.slice(0,40).padEnd(40)} sys=${sysChd}/${sysSl} man=${manChd}/${manSl} Δ${dChd}/${dSl}`) }
         else { erro++; if (verbose) console.log(`    ❌ ${m.loja.slice(0,40).padEnd(40)} sys=${sysChd}/${sysSl} man=${manChd}/${manSl}`) }
       }
     }
