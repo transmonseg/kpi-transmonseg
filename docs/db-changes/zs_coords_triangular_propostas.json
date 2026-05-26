@@ -1,0 +1,186 @@
+[
+  {
+    "numLoja": "36",
+    "nomeCad": "ZONA SUL LOJA 36 - BOTAFOGO",
+    "latNova": -22.9551,
+    "lngNova": -43.18302,
+    "nDias": 2,
+    "driftM": 20
+  },
+  {
+    "numLoja": "21",
+    "nomeCad": "21 - ZONA SUL - FLAMENGO 2",
+    "latNova": -22.93447,
+    "lngNova": -43.17551,
+    "nDias": 2,
+    "driftM": 1
+  },
+  {
+    "numLoja": "04",
+    "nomeCad": "ZONA SUL LOJA 04 - COPACABANA II",
+    "latNova": -22.98592,
+    "lngNova": -43.19263,
+    "nDias": 3,
+    "driftM": 12
+  },
+  {
+    "numLoja": "18",
+    "nomeCad": "ZONA SUL LOJA 18 - COPACABANA",
+    "latNova": -22.98124,
+    "lngNova": -43.19111,
+    "nDias": 3,
+    "driftM": 23
+  },
+  {
+    "numLoja": "07",
+    "nomeCad": "ZONA SUL LOJA 07 - LEBLON",
+    "latNova": -22.98373,
+    "lngNova": -43.22684,
+    "nDias": 4,
+    "driftM": 12
+  },
+  {
+    "numLoja": "28",
+    "nomeCad": "28 - ZONA SUL - URCA",
+    "latNova": -22.94827,
+    "lngNova": -43.16418,
+    "nDias": 3,
+    "driftM": 6
+  },
+  {
+    "numLoja": "08",
+    "nomeCad": "ZONA SUL LOJA 08 - LEBLON",
+    "latNova": -22.98402,
+    "lngNova": -43.21002,
+    "nDias": 2,
+    "driftM": 17
+  },
+  {
+    "numLoja": "09",
+    "nomeCad": "ZONA SUL LOJA 09 - IPANEMA",
+    "latNova": -22.98643,
+    "lngNova": -43.19727,
+    "nDias": 2,
+    "driftM": 13
+  },
+  {
+    "numLoja": "12",
+    "nomeCad": "ZONA SUL LOJA 12 - LEME",
+    "latNova": -22.96334,
+    "lngNova": -43.17146,
+    "nDias": 2,
+    "driftM": 16
+  },
+  {
+    "numLoja": "40",
+    "nomeCad": "ZONA SUL LOJA 40 - IPANEMA",
+    "latNova": -22.98333,
+    "lngNova": -43.20214,
+    "nDias": 2,
+    "driftM": 7
+  },
+  {
+    "numLoja": "35",
+    "nomeCad": "ZONA SUL LOJA 35 - BARRA",
+    "latNova": -23.00932,
+    "lngNova": -43.34534,
+    "nDias": 2,
+    "driftM": 0
+  },
+  {
+    "numLoja": "47",
+    "nomeCad": "ZONA SUL LOJA 47",
+    "latNova": -22.92738,
+    "lngNova": -43.17741,
+    "nDias": 2,
+    "driftM": 18886
+  },
+  {
+    "numLoja": "45",
+    "nomeCad": "ZONA SUL LOJA 45 - FLAMENGO",
+    "latNova": -22.93068,
+    "lngNova": -43.1767,
+    "nDias": 4,
+    "driftM": 16
+  },
+  {
+    "numLoja": "19",
+    "nomeCad": "ZONA SUL LOJA 19 - COPACABANA",
+    "latNova": -22.97568,
+    "lngNova": -43.18993,
+    "nDias": 2,
+    "driftM": 29
+  },
+  {
+    "numLoja": "25",
+    "nomeCad": "ZONA SUL LOJA 25 - JARDIM BOTANICO",
+    "latNova": -22.96622,
+    "lngNova": -43.21972,
+    "nDias": 2,
+    "driftM": 13
+  },
+  {
+    "numLoja": "31",
+    "nomeCad": "ZONA SUL LOJA 31 - JARDIM BOTANICO",
+    "latNova": -22.96027,
+    "lngNova": -43.20515,
+    "nDias": 2,
+    "driftM": 62
+  },
+  {
+    "numLoja": "17",
+    "nomeCad": "ZONA SUL LOJA 17 - BARRA",
+    "latNova": -23.0019,
+    "lngNova": -43.34985,
+    "nDias": 2,
+    "driftM": 0
+  },
+  {
+    "numLoja": "10",
+    "nomeCad": "ZONA SUL LOJA 10 - RECREIO",
+    "latNova": -23.01423,
+    "lngNova": -43.46223,
+    "nDias": 3,
+    "driftM": 2
+  },
+  {
+    "numLoja": "46",
+    "nomeCad": "ZONA SUL LOJA 46 - BOTAFOGO",
+    "latNova": -22.95237,
+    "lngNova": -43.18888,
+    "nDias": 3,
+    "driftM": 15
+  },
+  {
+    "numLoja": "11",
+    "nomeCad": "ZONA SUL LOJA 11 - LEBLON",
+    "latNova": -22.98407,
+    "lngNova": -43.21984,
+    "nDias": 6,
+    "driftM": 69
+  },
+  {
+    "numLoja": "38",
+    "nomeCad": "ZONA SUL LOJA 38 - COPACABANA",
+    "latNova": -22.97265,
+    "lngNova": -43.18886,
+    "nDias": 2,
+    "driftM": 11
+  },
+  {
+    "numLoja": "27",
+    "nomeCad": "Zona Sul Filial 27",
+    "latNova": -22.98378,
+    "lngNova": -43.21284,
+    "nDias": 2,
+    "driftM": 91
+  },
+  {
+    "numLoja": "15",
+    "nomeCad": "Zona Sul Filial 15",
+    "latNova": -22.9847,
+    "lngNova": -43.22597,
+    "nDias": 3,
+    "driftM": 11
+  }
+]
