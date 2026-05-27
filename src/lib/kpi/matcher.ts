@@ -269,7 +269,17 @@ function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracPara
             const distEntre = haversine(lastLat, lastLng, pLat, pLng)
             if (distEntre <= 500) mesmaLoja = true
           } else {
-            mesmaLoja = true
+            // Bug M1 (matcher audit dia 19): antes consolidava CEGAMENTE quando
+            // faltava geo. Caso EZU9J51 ASSAI Loja 131 dia 19: 2 paradas LOJA
+            // cod 560018 sem lat/lng com gap 1min consolidavam em 05:05-12:31
+            // (7h26 na loja). Manual diz saida 06:05 (entrega real 60min).
+            // Fix: sem geo, só consolida se duração combinada ≤ 90min — entregas
+            // legítimas sequenciais cabem (≤90min), agrupamento abusivo de 2
+            // entregas distintas (uma com 60min + outra com 6h26) NÃO cabe.
+            const durLast = last.saida ? (new Date(last.saida).getTime() - new Date(last.chegada).getTime()) / 1000 : 0
+            const durP = p.saida ? (new Date(p.saida).getTime() - new Date(p.chegada).getTime()) / 1000 : 0
+            const durTotalMin = (durLast + durP + gapSeg) / 60
+            if (durTotalMin <= 90) mesmaLoja = true
           }
         }
         if (!mesmaLoja) {
@@ -1390,8 +1400,12 @@ export async function cruzaEscalaUnitrac(
         for (const linhasDaRedeOrfa of orfasPorRede.values()) {
           const linhasOrd = [...linhasDaRedeOrfa].sort((a, b) => a.carro_ordem - b.carro_ordem)
           for (let i = 0; i < linhasOrd.length; i++) {
-            // Reusa paradas — se há mais linhas que paradas, a última é repetida.
-            const parada = paradasOrd[Math.min(i, paradasOrd.length - 1)]
+            // Bug M4 (matcher audit dia 19): antes clonava a ULTIMA parada pra
+            // todas as linhas órfãs extras (3 linhas + 1 parada → 3 timestamps
+            // identicos, GPS clonado entre lojas). Fix: se i >= paradasOrd.length,
+            // deixa unmatched (continue) em vez de clonar.
+            if (i >= paradasOrd.length) continue
+            const parada = paradasOrd[i]
             if (parada) {
               matchByEscalaId.set(linhasOrd[i].id, parada)
               crossDockLineIds.add(linhasOrd[i].id)
