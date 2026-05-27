@@ -47,7 +47,11 @@ export function inferirSaiDaEscalaLista(
     if (p.sai && (p.sai.placa_norm || p.sai.motorista_nome)) return p
     if (!p.loja_nome_raw) return p
 
-    const filialM = p.loja_nome_raw.match(/\b(\d{1,3})\b/)
+    // Bug D dia 25 (auditoria 2026-05-27): regex precisa exigir "Loja N" ou
+    // "Filial N" explicito. Antes pegava o primeiro \b\d{1,3}\b e em
+    // "Nova Iguaçu 2 - Loja 291" pegava "2", caia no fallback de tokens e
+    // casava qualquer "Nova" do banco com sai errado.
+    const filialM = p.loja_nome_raw.match(/\b(?:Loja|Filial)\s+(\d{1,3})\b/i)
     const altTok = tokensFortes(p.loja_nome_raw)
 
     let linhaMatch: EscalaLinha | null = null

@@ -46,36 +46,39 @@ export function aplicarAlteracoes(
     const matches = (l: LinhaEscala, i: number): boolean => {
       // Filtra cross-rede
       if (alt.rede_id && l.rede_id !== alt.rede_id) return false
-      // Match por placa do "sai" (snapshot original)
+
+      // PRIORIDADE 1: match por numero de loja EXPLICITO na loja_raw da alteracao.
+      //
+      // Bug D dia 25 (auditoria 2026-05-27): quando a alteracao vem com "Loja N"
+      // explicito (do PDF tabular), esse numero E fonte de verdade direto do
+      // documento. Inferencias de sai (motorista/placa via banco) podem dar
+      // resultado errado e jogar a alteracao em loja diferente. Priorizar
+      // numero explicito da alteracao previne contaminacao.
+      if (alt.loja_raw) {
+        const filialExplicito = alt.loja_raw.match(/\b(?:Loja|Filial)\s+(\d{1,3})\b/i)
+        const codInt = parseInt(l.loja_codigo_raw ?? '', 10)
+        if (filialExplicito && !isNaN(codInt)) {
+          const filialInt = parseInt(filialExplicito[1], 10)
+          // Match estrito: aceita SOMENTE a linha com o mesmo numero. Nao cai
+          // em outros matches por placa do sai.
+          return filialInt === codInt
+        }
+      }
+
+      // PRIORIDADE 2: match por placa do "sai" (snapshot original)
+      // Usado quando alteracao nao tem "Loja N" explicito (texto WhatsApp curto)
       if (alt.sai?.placa_norm && placasOriginais[i] === alt.sai.placa_norm) return true
-      // Match por motorista do "sai"
+
+      // PRIORIDADE 3: match por motorista do "sai"
       if (alt.sai?.motorista_nome) {
         const needle = alt.sai.motorista_nome.toLowerCase().split(' ')[0]
         if (needle.length >= 3 && motoristasOriginais[i]?.toLowerCase().includes(needle)) return true
       }
-      // Match por loja_raw quando não tem "sai":
-      //   a) via número de filial (ex: "Filial 23", "Loja 35", "Loja 211")
-      //   b) via tokens fortes no nome (ex: "Carrefour Campo Grande", "Assai Camil")
-      //
-      // Bug dia 19 fix: quando AMBOS (alt e linha) trazem número de filial, exigir
-      // que casem. Caso contrário, NÃO cair no fallback de nome — senão "Alcântara I
-      // - Loja 35" matcha "Alcântara II - Loja 293" porque "I"/"II" são descartados
-      // como tokens curtos e só "ALCANTARA" sobra. Tokens vazios também não casam
-      // (evita vacuous truth do `.every`).
+
+      // PRIORIDADE 4: match por loja_raw via tokens fortes do nome (quando
+      // nao ha "Loja N" explicito nem info de "sai").
+      // Caso "Carrefour Campo Grande" / "Assai Sao Goncalo Camil" sem numero.
       if (!alt.sai?.placa_norm && !alt.sai?.motorista_nome && alt.loja_raw) {
-        const filialM = alt.loja_raw.match(/\b(\d{1,3})\b/)
-        const codInt = parseInt(l.loja_codigo_raw ?? '', 10)
-        if (filialM) {
-          const filialInt = parseInt(filialM[1], 10)
-          if (!isNaN(filialInt) && !isNaN(codInt)) {
-            // Ambos têm número: match estrito por número, NÃO cair no fallback.
-            return filialInt === codInt
-          }
-          // Se a linha não tem código numérico, segue pro fallback de nome.
-        }
-        // Fallback nome: bate tokens significativos (≥4 chars, não-rede, não-genérico)
-        // do loja_raw da alteração contra l.loja_nome_raw da escala.
-        // Caso "Carrefour Campo Grande" / "Assai Sao Goncalo Camil" sem número de loja.
         const norm = (s: string) =>
           s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
             .replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim()
@@ -88,7 +91,6 @@ export function aplicarAlteracoes(
         const tokensFortes = (s: string) =>
           norm(s).split(' ').filter(t => t.length >= 4 && !STOP.has(t))
         const altTok = tokensFortes(alt.loja_raw)
-        // Defesa contra vacuous truth: se não temos tokens fortes, não há base pra match.
         if (altTok.length === 0) return false
         const linTok = new Set(tokensFortes(l.loja_nome_raw ?? ''))
         if (altTok.every(t => linTok.has(t))) return true
