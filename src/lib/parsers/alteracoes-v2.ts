@@ -342,5 +342,6 @@ function slotFromTrecho(trecho: string, ctx: ParseContext) {
   return lookupSlot(
     { placas: tokens.placas, codigos: tokens.codigos, nomeHint },
     ctx,
+    { preferNome: true },
   )
 }
