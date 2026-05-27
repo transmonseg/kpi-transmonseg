@@ -52,12 +52,34 @@ export interface LookupInput {
   nomeHint: string
 }
 
-export function lookupSlot(input: LookupInput, ctx: ParseContext): SlotVeiculo {
+export interface LookupOptions {
+  /**
+   * Bug U3 da auditoria externa 2026-05-27: quando mensagem WhatsApp menciona
+   * NOME + PLACA e a placa estava recentemente associada a OUTRO motorista no
+   * banco, lookupSlot retornava o motorista do banco ignorando o nome da
+   * mensagem. Com preferNome=true, nomeHint vence sobre match por placa.
+   */
+  preferNome?: boolean
+}
+
+export function lookupSlot(
+  input: LookupInput,
+  ctx: ParseContext,
+  options: LookupOptions = {},
+): SlotVeiculo {
   const { placas, codigos, nomeHint } = input
+  const { preferNome = false } = options
 
   let match: Associacao | null = null
 
-  if (placas.length > 0) {
+  if (preferNome && nomeHint) {
+    const sorted = ctx.associacoes
+      .filter((a) => nomesParecidos(a.motorista_nome_norm, nomeHint))
+      .sort((a, b) => b.data_entrega.localeCompare(a.data_entrega))
+    if (sorted.length > 0) match = sorted[0]
+  }
+
+  if (!match && placas.length > 0) {
     const sorted = ctx.associacoes
       .filter((a) => placas.includes(a.placa_norm ?? ''))
       .sort((a, b) => b.data_entrega.localeCompare(a.data_entrega))

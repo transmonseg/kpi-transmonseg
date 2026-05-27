@@ -61,6 +61,55 @@ describe('lookupSlot', () => {
   })
 })
 
+describe('U3 — lookupSlot preferNome (auditoria 2026-05-27)', () => {
+  // Caso real: placa TML-7D61 historicamente associada a ERALDO, mas WhatsApp
+  // diz BRUNO + TML-7D61. preferNome=true deve usar BRUNO (nomeHint vence).
+  const ctxConflito: ParseContext = {
+    associacoes: [
+      { motorista_nome: 'Eraldo', motorista_nome_norm: 'ERALDO', motorista_codigo: 100, placa_norm: 'TML7D61', placa_raw: 'TML-7D61', data_entrega: '2026-05-20', rede_id: 'SUPERPRIX' },
+      { motorista_nome: 'Bruno', motorista_nome_norm: 'BRUNO', motorista_codigo: 200, placa_norm: 'XYZ9999', placa_raw: 'XYZ-9999', data_entrega: '2026-05-19', rede_id: 'SUPERPRIX' },
+    ],
+    lojas: [],
+  }
+
+  it('preferNome=true: nomeHint BRUNO vence placa associada a ERALDO', () => {
+    const slot = lookupSlot(
+      { placas: ['TML7D61'], codigos: [], nomeHint: 'BRUNO' },
+      ctxConflito,
+      { preferNome: true },
+    )
+    expect(slot.motorista_nome).toMatch(/Bruno/i)
+    expect(slot.placa_norm).toBe('TML7D61')
+    expect(slot.fonte_placa).toBe('mensagem')
+  })
+
+  it('preferNome=false (default): comportamento atual mantido (placa vence)', () => {
+    const slot = lookupSlot(
+      { placas: ['TML7D61'], codigos: [], nomeHint: 'BRUNO' },
+      ctxConflito,
+    )
+    expect(slot.motorista_nome).toMatch(/Eraldo/i)
+  })
+
+  it('preferNome=true sem nomeHint: cai pra match por placa', () => {
+    const slot = lookupSlot(
+      { placas: ['TML7D61'], codigos: [], nomeHint: '' },
+      ctxConflito,
+      { preferNome: true },
+    )
+    expect(slot.motorista_nome).toMatch(/Eraldo/i)
+  })
+
+  it('preferNome=true com nomeHint sem match no banco: cai pra placa', () => {
+    const slot = lookupSlot(
+      { placas: ['TML7D61'], codigos: [], nomeHint: 'JOAO INEXISTENTE' },
+      ctxConflito,
+      { preferNome: true },
+    )
+    expect(slot.motorista_nome).toMatch(/Eraldo/i)
+  })
+})
+
 function mockSupabase(tables: Record<string, unknown[]>) {
   return {
     from(tableName: string) {
