@@ -1,0 +1,27 @@
+# Bug 6 diagnose — CARREFOUR SULACAP (dia 2026-05-19)
+
+Placa: TJQ6J26
+Loja cadastro: CARREFOUR SULACAP  lat=-22.886265 lng=-43.40567  raio=200m
+Manual SL: 07:15
+
+## Todas as paradas dia (placa)
+
+| # | classif | chegada | saida | dur | dist→loja | codigo | local |
+|---|---------|---------|-------|-----|-----------|--------|-------|
+| 0 | BASE | 00:00 | 05:47 | 347min | 9645m | --- | BASE BENASSI - BASE BENASSI |
+| 1 | FAKE_EXIT | 05:48 | 05:55 | 7min | 9599m | --- | BASE BENASSI - BASE BENASSI |
+| 2 | FORA_BASE | 06:18 | 06:32 | 15min | 10m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 3 | FORA_BASE | 06:33 | 06:59 | 25min | 179m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 4 | FORA_BASE | 07:00 | 07:16 | 16min | 7m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 5 | BASE | 07:45 | 08:04 | 19min | 9178m | --- | BASE BENASSI - BASE BENASSI |
+| 6 | BASE | 08:14 | 09:06 | 52min | 9599m | --- | BASE BENASSI - BASE BENASSI |
+| 7 | FAKE_EXIT | 09:08 | 09:14 | 6min | 9280m | --- | BASE BENASSI - BASE BENASSI |
+| 8 | FORA_BASE | 09:25 | 09:37 | 12min | 11442m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 9 | FAKE_EXIT | 09:49 | 10:01 | 12min | 9112m | --- | BASE BENASSI - BASE BENASSI |
+| 10 | BASE | 10:06 | 14:04 | 238min | 9513m | --- | BASE BENASSI - BASE BENASSI |
+| 11 | FAKE_EXIT | 14:18 | 14:23 | 5min | 8493m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 12 | FAKE_EXIT | 14:26 | 14:30 | 4min | 8114m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## Parada LOJA candidata (mesma loja)
+
+Nenhuma parada LOJA matched.

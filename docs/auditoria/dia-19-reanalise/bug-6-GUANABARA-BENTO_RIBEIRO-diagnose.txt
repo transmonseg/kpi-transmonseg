@@ -1,0 +1,25 @@
+# Bug 6 diagnose — GUANABARA BENTO RIBEIRO (dia 2026-05-19)
+
+Placa: LBB5205
+Loja cadastro: GB 15 - Bento Ribeiro  lat=-22.87543 lng=-43.37109  raio=300m
+Manual SL: 12:50
+
+## Todas as paradas dia (placa)
+
+| # | classif | chegada | saida | dur | dist→loja | codigo | local |
+|---|---------|---------|-------|-----|-----------|--------|-------|
+| 0 | BASE | 00:09 | 04:05 | 236min | 6286m | --- | BASE BENASSI - BASE BENASSI |
+| 1 | BASE | 04:10 | 04:59 | 50min | 6261m | --- | BASE BENASSI - BASE BENASSI |
+| 2 | BASE | 05:06 | 05:38 | 33min | 5841m | --- | BASE BENASSI - BASE BENASSI |
+| 3 | BASE | 05:43 | 09:38 | 236min | 6385m | --- | BASE BENASSI - BASE BENASSI |
+| 4 | FAKE_EXIT | 09:50 | 10:03 | 13min | 5704m | --- | BASE BENASSI - BASE BENASSI |
+| 5 | FAKE_EXIT | 10:32 | 10:36 | 3min | 180m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 6 | FORA_BASE | 10:38 | 10:57 | 19min | 56m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 7 | FORA_BASE | 11:13 | 12:48 | 95min | 0m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 8 | FORA_BASE | 12:57 | 13:11 | 14min | 3346m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 9 | BASE | 13:25 | 13:52 | 28min | 5999m | --- | BASE BENASSI - BASE BENASSI |
+| 10 | BASE | 13:58 | 16:18 | 140min | 6280m | --- | BASE BENASSI - BASE BENASSI |
+
+## Parada LOJA candidata (mesma loja)
+
+Nenhuma parada LOJA matched.

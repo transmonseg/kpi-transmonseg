@@ -1,0 +1,29 @@
+# Bug 6 diagnose — PREZUNIC FONSECA (dia 2026-05-20)
+
+Placa: KQV1D80
+Loja cadastro: PREZUNIC FONSECA  lat=-22.88147 lng=-43.08468  raio=150m
+Manual SL: 09:30
+
+## Todas as paradas dia (placa)
+
+| # | classif | chegada | saida | dur | dist→loja | codigo | local |
+|---|---------|---------|-------|-----|-----------|--------|-------|
+| 0 | BASE | 00:01 | 04:05 | 244min | 26466m | --- | BASE BENASSI - BASE BENASSI |
+| 1 | FAKE_EXIT | 04:08 | 04:17 | 9min | 26657m | --- | BASE BENASSI - BASE BENASSI |
+| 2 | BASE | 04:23 | 04:42 | 19min | 26928m | --- | BASE BENASSI - BASE BENASSI |
+| 3 | FAKE_EXIT | 04:43 | 04:52 | 9min | 26961m | --- | BASE BENASSI - BASE BENASSI |
+| 4 | LOJA | 05:27 | 05:31 | 4min | 12m | 7000722 | 7000722 - PREZUNIC FONSECA |
+| 5 | FORA_BASE | 05:33 | 09:28 | 236min | 149m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 6 | FORA_BASE | 09:42 | 09:57 | 15min | 2668m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 7 | BASE | 10:40 | 11:01 | 22min | 26654m | --- | BASE BENASSI - BASE BENASSI |
+| 8 | BASE | 11:03 | 13:26 | 143min | 26601m | --- | BASE BENASSI - BASE BENASSI |
+| 9 | LOJA | 13:42 | 14:25 | 43min | 26431m | 202006 | 202006 - PAX MADUREIRA |
+| 10 | LOJA | 14:26 | 15:00 | 34min | 27091m | 202000 | 202000 - PAX OSWALDO CRUZ |
+| 11 | BASE | 15:14 | 16:06 | 52min | 26965m | --- | BASE BENASSI - BASE BENASSI |
+| 12 | BASE | 16:10 | 23:50 | 461min | 26467m | --- | BASE BENASSI - BASE BENASSI |
+
+## Parada LOJA candidata (mesma loja)
+
+- 05:27→05:31 dur=4min dist=12m
+  Vizinhos depois (gap, classif, dur, dist→loja):
+    +1min  FORA_BASE  05:33→09:28  dur=236min  dist=149m  FORA DE BASE E LOCAL DE SERVIÇO

@@ -1,0 +1,23 @@
+# Bug 6 diagnose — ZONA_SUL Loja 45 (dia 2026-05-19)
+
+Placa: AOP3C73
+Loja cadastro: ZONA SUL LOJA 45 - FLAMENGO  lat=-22.93082 lng=-43.1767  raio=200m
+Manual SL: 18:00
+
+## Todas as paradas dia (placa)
+
+| # | classif | chegada | saida | dur | dist→loja | codigo | local |
+|---|---------|---------|-------|-----|-----------|--------|-------|
+| 0 | BASE | 00:04 | 05:31 | 327min | 20127m | --- | BASE BENASSI - BASE BENASSI |
+| 1 | BASE | 05:32 | 09:43 | 250min | 20162m | --- | BASE BENASSI - BASE BENASSI |
+| 2 | FAKE_EXIT | 09:51 | 10:01 | 9min | 19554m | --- | BASE BENASSI - BASE BENASSI |
+| 3 | FORA_BASE | 10:14 | 10:28 | 14min | 21237m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 4 | LOJA | 11:13 | 11:43 | 30min | 31976m | 71039 | 71039 - GB 27 - RECREIO DOS BANDEIRANTES |
+| 5 | BASE | 12:34 | 14:40 | 126min | 20157m | --- | BASE BENASSI - BASE BENASSI |
+| 6 | FORA_BASE | 15:14 | 15:30 | 16min | 15215m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 7 | LOJA | 16:03 | 16:19 | 17min | 16m | 9039120 | 9039120 - 45 - ZONA SUL - FLAMENGO |
+
+## Parada LOJA candidata (mesma loja)
+
+- 16:03→16:19 dur=17min dist=16m
+  Vizinhos depois (gap, classif, dur, dist→loja):

@@ -1,0 +1,28 @@
+# Bug 6 diagnose — PREZUNIC CAXIAS CENTRO (dia 2026-05-19)
+
+Placa: LCE4337
+Loja cadastro: PREZUNIC CAXIAS CENTRO  lat=-22.79183 lng=-43.3128  raio=150m
+Manual SL: 06:30
+
+## Todas as paradas dia (placa)
+
+| # | classif | chegada | saida | dur | dist→loja | codigo | local |
+|---|---------|---------|-------|-----|-----------|--------|-------|
+| 0 | FORA_BASE | 00:06 | 04:37 | 271min | 1560m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 1 | BASE | 04:57 | 05:14 | 17min | 4781m | --- | BASE BENASSI - BASE BENASSI |
+| 2 | BASE | 05:22 | 05:43 | 21min | 5051m | --- | BASE BENASSI - BASE BENASSI |
+| 3 | LOJA | 06:02 | 06:17 | 15min | 13m | 7000717 | 7000717 - PREZUNIC CAXIAS CENTRO |
+| 4 | FAKE_EXIT | 06:24 | 06:28 | 3min | 1293m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 5 | LOJA | 06:29 | 06:57 | 27min | 1277m | 7000713 | 7000713 - PREZUNIC CAXIAS CENTENÁRIO |
+| 6 | FORA_BASE | 07:00 | 07:45 | 45min | 1200m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 7 | FAKE_EXIT | 08:04 | 08:12 | 8min | 2931m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 8 | FORA_BASE | 08:33 | 12:23 | 230min | 1570m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## Parada LOJA candidata (mesma loja)
+
+- 06:02→06:17 dur=15min dist=13m
+  Vizinhos depois (gap, classif, dur, dist→loja):
+    +8min  FAKE_EXIT  06:24→06:28  dur=3min  dist=1293m  FORA DE BASE E LOCAL DE SERVIÇO
+    +13min  LOJA  06:29→06:57  dur=27min  dist=1277m  7000713 - PREZUNIC CAXIAS CENTENÁRIO
+    +44min  FORA_BASE  07:00→07:45  dur=45min  dist=1200m  FORA DE BASE E LOCAL DE SERVIÇO
+    +107min  FAKE_EXIT  08:04→08:12  dur=8min  dist=2931m  FORA DE BASE E LOCAL DE SERVIÇO

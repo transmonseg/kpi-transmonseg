@@ -1,0 +1,25 @@
+# Bug 6 diagnose — GUANABARA BONSUCESSO (dia 2026-05-19)
+
+Placa: GVH0163
+Loja cadastro: GB 30 - Bonsucesso  lat=-22.86122 lng=-43.25164  raio=300m
+Manual SL: 11:55
+
+## Todas as paradas dia (placa)
+
+| # | classif | chegada | saida | dur | dist→loja | codigo | local |
+|---|---------|---------|-------|-----|-----------|--------|-------|
+| 0 | BASE | 00:08 | 00:48 | 40min | 9398m | --- | BASE BENASSI - BASE BENASSI |
+| 1 | BASE | 00:58 | 02:28 | 90min | 9385m | --- | BASE BENASSI - BASE BENASSI |
+| 2 | BASE | 02:38 | 05:16 | 158min | 9397m | --- | BASE BENASSI - BASE BENASSI |
+| 3 | BASE | 05:20 | 06:02 | 42min | 9928m | --- | BASE BENASSI - BASE BENASSI |
+| 4 | BASE | 06:08 | 07:09 | 61min | 9643m | --- | BASE BENASSI - BASE BENASSI |
+| 5 | FAKE_EXIT | 07:19 | 07:29 | 10min | 9501m | --- | BASE BENASSI - BASE BENASSI |
+| 6 | BASE | 07:59 | 09:06 | 67min | 9647m | --- | BASE BENASSI - BASE BENASSI |
+| 7 | BASE | 09:20 | 10:02 | 42min | 9068m | --- | BASE BENASSI - BASE BENASSI |
+| 8 | FAKE_EXIT | 10:45 | 10:50 | 5min | 144m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 9 | FORA_BASE | 10:52 | 11:54 | 62min | 0m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 10 | FAKE_EXIT | 11:58 | 12:02 | 4min | 8220m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## Parada LOJA candidata (mesma loja)
+
+Nenhuma parada LOJA matched.
