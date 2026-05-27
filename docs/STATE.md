@@ -6,7 +6,41 @@
 
 > **Para retomar a sessão após compactação:** leia este arquivo PRIMEIRO. Tudo aqui aponta para a verdade.
 
-**Última atualização:** 2026-05-26 (sessão dias 19/20/21 — escalas faltantes + 3 fixes matcher)
+**Última atualização:** 2026-05-27 (sessão FASE 4 — 7 bugs do dia 19 atacados via subagent-driven)
+
+## Sessão 27/05 — FASE 4 completa
+
+7 bugs identificados na auditoria do dia 19 atacados sequencialmente via subagent-driven development. Cada bug em worktree isolada, com TDD rigoroso (test failing → fix → test passing), code review (quando subagent disponível) e merge atômico na main.
+
+**Commits da sessão:**
+- `97420ae` Bug 1: aplicar-alteracoes — match estrito por filial (4 ASSAI)
+- `e243f7b` Bug 2B: parser GUANABARA lookbehind regex (ARTHUR)
+- `577a61c` Bug 2A: paradaRedeInfer 2-pass code/geo (ZS Loja 07 + SUPERPRIX 201)
+- `130ade5` Bug 3: temLojaOrfa usa pós-consolidação (ZS Loja 47 + 2 bônus)
+- `5b10eb5` Bug 4 NO-OP: 0/13 eram bugs reais, 2 testes regressão
+- `f342b57` Bug 5: agrupar-por-loja resiliente a carro_ordem dup (ZS Loja 31, MEGA BOX 02)
+- `2c0ca11` Bug 6: estendeSaidaPorForaBase aceita FORA_BASE + multi-step (4/10)
+- `4f6ac48` Bug 7: T18-X2 ambiguidade lookup lojaEscala (4/7)
+
+**Resultados:**
+| Dia | ❌ Antes | ❌ Depois | Δ |
+|-----|---------|----------|---|
+| 19 | 36 | 32 | -4 |
+| 20 | 33 | 26 | -7 |
+| 21 | 31 | **14** | **-17** |
+
+- 301/301 testes vitest (eram 282 — +19 novos)
+- Typecheck zero erros
+- ZS dia 21: 100% mantido
+- Spec mestre: `docs/superpowers/specs/2026-05-26-kpi-fix-dia19/`
+- Plano: `docs/superpowers/plans/2026-05-26-kpi-fix-dia19-plan.md`
+- Fluxo ativo: `docs/auditoria/dia-19-reanalise/FLUXO-ATIVO.md`
+
+**Próximo:** user regerar KPIs no Vercel + comparar manual + FASE 5 (rollout).
+
+---
+
+**Última atualização anterior:** 2026-05-26 (sessão dias 19/20/21 — escalas faltantes + 3 fixes matcher)
 
 ## Sessão 26/05 — escalas faltantes + 3 fixes matcher
 
