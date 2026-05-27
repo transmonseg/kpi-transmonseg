@@ -4,6 +4,8 @@ export type LinhaAgrupada = {
   loja_nome: string
   carro1: LinhaParaKpi | null
   carro2: LinhaParaKpi | null
+  /** Bug I4: 3ª+ linha por loja era descartada silenciosamente. Agora preservada. */
+  descartadas: LinhaParaKpi[]
 }
 
 /**
@@ -21,16 +23,19 @@ export type LinhaAgrupada = {
 export function agruparPorLoja(linhas: LinhaParaKpi[]): LinhaAgrupada[] {
   const map = new Map<string, LinhaAgrupada>()
   for (const l of linhas) {
-    const entry = map.get(l.loja_nome) ?? { loja_nome: l.loja_nome, carro1: null, carro2: null }
+    const entry = map.get(l.loja_nome) ?? { loja_nome: l.loja_nome, carro1: null, carro2: null, descartadas: [] }
     const preferred = l.carro_ordem === 1 ? 'carro1' : 'carro2'
     const fallback = preferred === 'carro1' ? 'carro2' : 'carro1'
     if (entry[preferred] === null) {
       entry[preferred] = l
     } else if (entry[fallback] === null) {
       entry[fallback] = l
+    } else {
+      // Bug I4 (auditoria 2026-05-27): antes descartava silenciosamente. Agora
+      // preserva em `descartadas` pra warning no preview/PDF. KPI core continua
+      // com 2 carros, mas a 3ª linha nao some do sistema.
+      entry.descartadas.push(l)
     }
-    // Else: ambos slots ocupados — descarta (KPI só tem 2 carros). Cenário raro:
-    // 3+ linhas mesma loja mesmo dia. Primeira-2 são as preservadas.
     map.set(l.loja_nome, entry)
   }
   return [...map.values()]

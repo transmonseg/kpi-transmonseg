@@ -100,7 +100,6 @@ describe('agruparPorLoja', () => {
   })
 
   it('2 linhas mesma loja AMBAS carro_ordem=2: preserva ambas (carro1+carro2)', () => {
-    // Cenário simétrico — improvável mas a regra é simétrica
     const linhas = [
       stub({ loja_nome: 'L', motorista: 'A', carro_ordem: 2 }),
       stub({ loja_nome: 'L', motorista: 'B', carro_ordem: 2 }),
@@ -108,5 +107,28 @@ describe('agruparPorLoja', () => {
     const out = agruparPorLoja(linhas)
     const motoristas = [out[0].carro1?.motorista, out[0].carro2?.motorista].filter(Boolean)
     expect(motoristas).toHaveLength(2)
+  })
+
+  it('Bug I4: 3a+ linha vai pra descartadas (era silenciosa antes)', () => {
+    const linhas = [
+      stub({ loja_nome: 'L', motorista: 'A', carro_ordem: 1 }),
+      stub({ loja_nome: 'L', motorista: 'B', carro_ordem: 2 }),
+      stub({ loja_nome: 'L', motorista: 'C', carro_ordem: 1 }),
+      stub({ loja_nome: 'L', motorista: 'D', carro_ordem: 1 }),
+    ]
+    const out = agruparPorLoja(linhas)
+    expect(out).toHaveLength(1)
+    expect(out[0].carro1?.motorista).toBe('A')
+    expect(out[0].carro2?.motorista).toBe('B')
+    expect(out[0].descartadas.map(d => d.motorista)).toEqual(['C', 'D'])
+  })
+
+  it('padrao 2 carros: descartadas vazio', () => {
+    const linhas = [
+      stub({ loja_nome: 'L', motorista: 'A', carro_ordem: 1 }),
+      stub({ loja_nome: 'L', motorista: 'B', carro_ordem: 2 }),
+    ]
+    const out = agruparPorLoja(linhas)
+    expect(out[0].descartadas).toEqual([])
   })
 })
