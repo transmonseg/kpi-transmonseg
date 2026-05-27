@@ -50,6 +50,17 @@ export interface LookupInput {
   placas: string[]
   codigos: number[]
   nomeHint: string
+  /**
+   * Rede da alteração/escala onde o lookup acontece. Quando presente, filtra
+   * ctx.associacoes pra ignorar matches de outras redes.
+   *
+   * Bug B (auditoria dia 25 2026-05-27): alteração "Loja 131 ASSAI entra
+   * UBO-5E05" buscava placa UBO-5E05 no banco inteiro e achava MARCOS FERNANDO
+   * (ZONA SUL Leblon dia 19) — cross-rede contamination. Placa pode existir em
+   * múltiplas redes em dias diferentes; sem filtro de rede o histórico
+   * mais recente em QUALQUER rede vence.
+   */
+  redeId?: string | null
 }
 
 export interface LookupOptions {
@@ -67,34 +78,40 @@ export function lookupSlot(
   ctx: ParseContext,
   options: LookupOptions = {},
 ): SlotVeiculo {
-  const { placas, codigos, nomeHint } = input
+  const { placas, codigos, nomeHint, redeId } = input
   const { preferNome = false } = options
+
+  // Quando redeId está presente, filtra ANTES de qualquer match — proíbe
+  // cross-rede em todas as 4 estratégias de busca.
+  const candidatos = redeId
+    ? ctx.associacoes.filter((a) => a.rede_id === redeId)
+    : ctx.associacoes
 
   let match: Associacao | null = null
 
   if (preferNome && nomeHint) {
-    const sorted = ctx.associacoes
+    const sorted = candidatos
       .filter((a) => nomesParecidos(a.motorista_nome_norm, nomeHint))
       .sort((a, b) => b.data_entrega.localeCompare(a.data_entrega))
     if (sorted.length > 0) match = sorted[0]
   }
 
   if (!match && placas.length > 0) {
-    const sorted = ctx.associacoes
+    const sorted = candidatos
       .filter((a) => placas.includes(a.placa_norm ?? ''))
       .sort((a, b) => b.data_entrega.localeCompare(a.data_entrega))
     if (sorted.length > 0) match = sorted[0]
   }
 
   if (!match && codigos.length > 0) {
-    const sorted = ctx.associacoes
+    const sorted = candidatos
       .filter((a) => a.motorista_codigo !== null && codigos.includes(a.motorista_codigo))
       .sort((a, b) => b.data_entrega.localeCompare(a.data_entrega))
     if (sorted.length > 0) match = sorted[0]
   }
 
   if (!match && nomeHint) {
-    const sorted = ctx.associacoes
+    const sorted = candidatos
       .filter((a) => nomesParecidos(a.motorista_nome_norm, nomeHint))
       .sort((a, b) => b.data_entrega.localeCompare(a.data_entrega))
     if (sorted.length > 0) match = sorted[0]

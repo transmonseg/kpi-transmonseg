@@ -308,8 +308,8 @@ function parseBloco(blocoTexto: string, ctx: ParseContext): AlteracaoBloco {
   const sentido = detectaSentido(blocoTexto)
   const contexto = detectaContexto(blocoTexto, ctx.lojas)
 
-  const saiSlot = sentido.sai ? slotFromTrecho(sentido.sai, ctx) : null
-  const entraSlot = sentido.entra ? slotFromTrecho(sentido.entra, ctx) : null
+  const saiSlot = sentido.sai ? slotFromTrecho(sentido.sai, ctx, contexto.rede_id) : null
+  const entraSlot = sentido.entra ? slotFromTrecho(sentido.entra, ctx, contexto.rede_id) : null
 
   const warnings: string[] = []
   if (!sentido.sai) warnings.push('Sai não identificado')
@@ -336,11 +336,11 @@ function parseBloco(blocoTexto: string, ctx: ParseContext): AlteracaoBloco {
   }
 }
 
-function slotFromTrecho(trecho: string, ctx: ParseContext) {
+function slotFromTrecho(trecho: string, ctx: ParseContext, redeId: string | null) {
   const tokens = extraiTokens(trecho)
   const nomeHint = normalizaNomeMotorista(tokens.textoSemTokens)
   return lookupSlot(
-    { placas: tokens.placas, codigos: tokens.codigos, nomeHint },
+    { placas: tokens.placas, codigos: tokens.codigos, nomeHint, redeId },
     ctx,
     { preferNome: true },
   )
