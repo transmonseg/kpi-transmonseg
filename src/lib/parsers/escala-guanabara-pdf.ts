@@ -52,7 +52,9 @@ const GUANABARA_FILIAIS: Record<number, string> = {
 const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
 
 // Regex pra placa (aceita formato antigo ABC1234 / ABC-1234 / ABC 1234 e Mercosul ABC1D23 / ABC-1D23 / ABC 1D23)
-const PLACA_RE = /\b([A-Z]{3}[\s-]?\d[A-Z0-9]\d{2}|[A-Z]{3}[\s-]?\d{4})\b/
+// Lookbehind (?<![A-Z]) impede que 3 letras NO MEIO de um nome sejam tratadas
+// como início de placa (ex: "ARTHUR" → "HUR" + "1841" virava placa falsa).
+const PLACA_RE = /(?<![A-Z])\b([A-Z]{3}[\s-]?\d[A-Z0-9]\d{2}|[A-Z]{3}[\s-]?\d{4})\b/
 
 // Tipos de carro aceitos
 const TIPO_RE = /^(TRUCK|TOCO|VUC|3\/4|KIA|CARRETA|TOCO\s+REFRIGERADO)$/i
@@ -130,15 +132,20 @@ type Row = {
 }
 
 // Pattern interno pra placa (ABC1234, ABC-1234, ABC 1234, ABC1D23, ABC-1D23, ABC 1D23)
+// Lookbehind aplicado nas regex compostas abaixo (PLACA_TIPO_RE, PLACA_SO_RE)
+// para evitar matches dentro de nomes (ex: "HUR" em "ARTHUR").
 const PLACA_INLINE_RE = String.raw`[A-Z]{3}[\s-]?\d[A-Z0-9]\d{2}|[A-Z]{3}[\s-]?\d{4}`
 // Pattern interno pra tipo — inclui TRCK (typo conhecido) e TRUCKR
 const TIPO_INLINE_RE = String.raw`TRUCKR|TRUCK|TRCK|TOCO\s*REFRIGERADO|TOCO|VUC|3\/4|KIA|CARRETA`
 // Combinado pra placa+tipo — sem \b no final: "TRUCKJOSE" é válido (tipo no meio da linha).
 // \s? aceita espaço opcional entre placa e tipo.
-const PLACA_TIPO_RE = new RegExp(`(${PLACA_INLINE_RE})\\s?(${TIPO_INLINE_RE})`, 'g')
+// (?<![A-Z]) impede match dentro de nomes (ex: "HUR1841TRUCK" dentro de "ARTHUR1841...").
+const PLACA_TIPO_RE = new RegExp(`(?<![A-Z])(${PLACA_INLINE_RE})\\s?(${TIPO_INLINE_RE})`, 'g')
 // Fallback: placa sem TIPO no final (rota 11 Arthur, rota 30 Daniel — PDF
 // omitiu o tipo). Match até fim da linha ou próxima sequência grande de números.
-const PLACA_SO_RE = new RegExp(`(${PLACA_INLINE_RE})(?=\\s*$|\\s*\\d)`, 'g')
+// (?<![A-Z]) crítico aqui: rota 11 "111ARTHUR184129KNI-8942" caía nesse caminho
+// e capturava "HUR1841" dentro de "ARTHUR184129" como falsa placa.
+const PLACA_SO_RE = new RegExp(`(?<![A-Z])(${PLACA_INLINE_RE})(?=\\s*$|\\s*\\d)`, 'g')
 
 function parseRow(line: string): Row | null {
   const cleaned = line.replace(/\s*,\s*/g, ' ').replace(/\s+/g, ' ').trim()
