@@ -1,0 +1,48 @@
+◇ injected env (4) from .env.local // tip: ◈ encrypted .env [www.dotenvx.com]
+=== STEP 1: Escala CARREFOUR Campo Grande dia 19 ===
+escala_linhas CARREFOUR Campo Grande: 2 linhas
+  id=4af75cf5 placa=KRW8E86 motorista=RENAN loja="Carrefour - Campo Grande" cod=null carro_ordem=1
+  id=342f02f6 placa=KVI9088 motorista=JOHN 2° ENTREGA OVO loja="Carrefour - Campo Grande" cod=null carro_ordem=2
+
+=== STEP 2: Todas escala_linhas CARREFOUR dia 19 ===
+  LSE1D35  JOSE CARLOS        loja="Carrefour - Alcântara" cod=--- ordem=1
+  KMY5561  LUÍZ ANTÔNIO       loja="Carrefour - Barra da Tijuca" cod=--- ordem=1
+  QSU6I54  VALDEMIRIO         loja="Carrefour - Brigadeiro (Caxias)" cod=--- ordem=1
+  KRW8E86  RENAN              loja="Carrefour - Campo Grande" cod=--- ordem=1
+  KVI9088  JOHN 2° ENTREGA OVO loja="Carrefour - Campo Grande" cod=--- ordem=2
+  LJS2B72  SÉRGIO             loja="Carrefour - Norte Shopping" cod=--- ordem=1
+  TJQ6J26  VICTOR LUIZ        loja="Carrefour - Sulacap" cod=--- ordem=1
+  AMF0325  GORDO              loja="Carrefour - Washington Luiz" cod=--- ordem=1
+
+=== STEP 3: kpi_rotas dia 19 CARREFOUR Campo Grande ===
+kpi_rotas CARREFOUR Campo Grande: 2
+  escala_id=342f02f6 placa=KVI9088 motorista=JOHN 2° ENTREGA OVO loja="Carrefour - Campo Grande" ordem=2
+  escala_id=4af75cf5 placa=KRW8E86 motorista=RENAN loja="Carrefour - Campo Grande" ordem=1
+    parada 06:23-07:05 nome=CARREFOUR CAMPO GRANDE cls=LOJA
+
+=== STEP 4: kpi_linhas dia 19 CARREFOUR (output final) ===
+kpi_linhas CARREFOUR Campo Grande: 0
+
+=== STEP 5: Reproduzir agruparPorLoja com escala_linhas Campo Grande ===
+  linha1 loja_nome_raw="Carrefour - Campo Grande" carro_ordem=1
+  linha2 loja_nome_raw="Carrefour - Campo Grande" carro_ordem=2
+  → loja_nome IDÊNTICO + carro_ordem DISTINTO → agrupador deve emitir carro1+carro2 OK
+
+=== STEP 6: Outras lojas afetadas ===
+
+  --- ZONA_SUL %Loja 31% (2 linhas) ---
+    DBB8D19  PAULO HENRIQUE       loja="Zona Sul Loja 31 - Jd. Botânico" cod=31 ordem=1
+    LTE0A64  DOUGLAS              loja="Zona Sul Loja 31 - Jd. Botânico" cod=31 ordem=1
+
+  --- ZONA_SUL %MEGA BOX% (5 linhas) ---
+    KOP4978  MILTON               loja="MEGA BOX 01 - Olaria" cod=MEGA BOX 1 ordem=1
+    KOP4978  MILTON               loja="MEGA BOX 02 - Olaria" cod=MEGA BOX 2 ordem=1
+    LNU7733  PAULO CESAR          loja="MEGA BOX 02 - Olaria" cod=MEGA BOX 2 ordem=1
+    AKZ2594  NILTON RODRIGUES     loja="MEGA BOX 02 - Olaria" cod=MEGA BOX 2 ordem=1
+    MDV3746  PAULO ROBERTO        loja="MEGA BOX 01 - Olaria" cod=MEGA BOX 1 ordem=1
+
+  --- GUANABARA %Vila Isabel% (1 linhas) ---
+    GUE0D63  MARCIO/OLIMPO        loja="GB VILA ISABEL FILIAL 10" cod=10 ordem=1
+
+  --- GUANABARA %Tijuca% (1 linhas) ---
+    CBR9452  GUTEMBERG            loja="GB TIJUCA FILIAL 25" cod=25 ordem=1
