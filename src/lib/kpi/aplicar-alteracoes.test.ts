@@ -161,6 +161,66 @@ describe('aplicarAlteracoes', () => {
     expect(out[0].placa_norm).toBe('AAA1234')  // não alterado
   })
 
+  it('INCLUSAO com loja especifica nao espalha pra outras lojas mesma rede (bug dia 19)', () => {
+    // Bug dia 19 ASSAI: INCLUSAO em "Alcântara I - Loja 35" vazava pra "Alcântara II - Loja 293"
+    // porque o fallback de tokens batia em "ALCANTARA" (I/II viram tokens curtos descartados).
+    // Quando loja_raw da alteração tem número de filial e a linha também tem codigo, e eles
+    // divergem, NÃO devemos cair no fallback de nome.
+    const stub: any = {
+      data: '2026-05-19',
+      data_entrega: '2026-05-19',
+      rede_id: 'ASSAI',
+      motorista_codigo: null,
+      tipo_carro: null,
+      carro_ordem: 1,
+      sub_rede: null,
+    }
+    const linhas: any[] = [
+      { ...stub, loja_nome_raw: 'Assaí - Alcântara I - Loja 35',           loja_codigo_raw: '35',  placa_norm: 'OLDALC1', placa_raw: 'OLD-ALC1', motorista_nome: 'OLD ALC1'    },
+      { ...stub, loja_nome_raw: 'Assaí - Alcântara II - Loja 293',         loja_codigo_raw: '293', placa_norm: 'FQN6J72', placa_raw: 'FQN-6J72', motorista_nome: 'LUIZ CARLOS' },
+      { ...stub, loja_nome_raw: 'Assaí - Bangu II - Loja 332',             loja_codigo_raw: '332', placa_norm: 'LMF2049', placa_raw: 'LMF-2049', motorista_nome: 'LUIZ CESAR'  },
+      { ...stub, loja_nome_raw: 'Assaí - Barra I (Senna) - Loja 133',      loja_codigo_raw: '133', placa_norm: 'OLDBAR1', placa_raw: 'OLD-BAR1', motorista_nome: 'OLD BAR1'    },
+      { ...stub, loja_nome_raw: 'Assaí - Méier - Loja 160',                loja_codigo_raw: '160', placa_norm: 'AKZ2745', placa_raw: 'AKZ-2745', motorista_nome: 'LUIZ JR.'    },
+      { ...stub, loja_nome_raw: 'Assaí - São Gonçalo Camil - Loja 211',    loja_codigo_raw: '211', placa_norm: 'OLD1234', placa_raw: 'OLD-1234', motorista_nome: 'OLD MOT'     },
+    ]
+    const alts: AltConfirmada[] = [
+      {
+        tipo: 'INCLUSAO',
+        rede_id: 'ASSAI',
+        loja_raw: 'Assaí - Alcântara I - Loja 35',
+        sai: null,
+        entra: { motorista_nome: 'PAULO HENRIQUE', motorista_codigo: 807, placa_raw: 'DBB-8D19', placa_norm: 'DBB8D19' },
+      },
+      {
+        tipo: 'INCLUSAO',
+        rede_id: 'ASSAI',
+        loja_raw: 'Assaí - Barra I (Senna) - Loja 133',
+        sai: null,
+        entra: { motorista_nome: 'FELIPE DIEGO', motorista_codigo: 353, placa_raw: 'UBO-5E01', placa_norm: 'UBO5E01' },
+      },
+      {
+        tipo: 'INCLUSAO',
+        rede_id: 'ASSAI',
+        loja_raw: 'Assaí - São Gonçalo Camil - Loja 211',
+        sai: null,
+        entra: { motorista_nome: 'MESSIAS', motorista_codigo: 141, placa_raw: 'AMW-3424', placa_norm: 'AMW3424' },
+      },
+    ]
+    const out = aplicarAlteracoes(linhas, alts)
+    // Loja 35 → DBB-8D19 (única loja que deveria receber esta placa)
+    expect(out[0].placa_norm).toBe('DBB8D19')
+    // Loja 293 (Alcântara II) NÃO deve receber DBB-8D19 — mantém FQN6J72
+    expect(out[1].placa_norm).toBe('FQN6J72')
+    // Loja 332 (Bangu II) mantém placa original
+    expect(out[2].placa_norm).toBe('LMF2049')
+    // Loja 133 (Barra I) recebe UBO-5E01
+    expect(out[3].placa_norm).toBe('UBO5E01')
+    // Loja 160 (Méier) mantém placa original
+    expect(out[4].placa_norm).toBe('AKZ2745')
+    // Loja 211 (Camil) recebe AMW-3424
+    expect(out[5].placa_norm).toBe('AMW3424')
+  })
+
   it('parsedToConfirmada converte AlteracaoParsed corretamente', () => {
     const parsed = {
       tipo: 'SUBSTITUICAO',

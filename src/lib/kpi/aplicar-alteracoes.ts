@@ -56,12 +56,22 @@ export function aplicarAlteracoes(
       // Match por loja_raw quando não tem "sai":
       //   a) via número de filial (ex: "Filial 23", "Loja 35", "Loja 211")
       //   b) via tokens fortes no nome (ex: "Carrefour Campo Grande", "Assai Camil")
+      //
+      // Bug dia 19 fix: quando AMBOS (alt e linha) trazem número de filial, exigir
+      // que casem. Caso contrário, NÃO cair no fallback de nome — senão "Alcântara I
+      // - Loja 35" matcha "Alcântara II - Loja 293" porque "I"/"II" são descartados
+      // como tokens curtos e só "ALCANTARA" sobra. Tokens vazios também não casam
+      // (evita vacuous truth do `.every`).
       if (!alt.sai?.placa_norm && !alt.sai?.motorista_nome && alt.loja_raw) {
         const filialM = alt.loja_raw.match(/\b(\d{1,3})\b/)
+        const codInt = parseInt(l.loja_codigo_raw ?? '', 10)
         if (filialM) {
           const filialInt = parseInt(filialM[1], 10)
-          const codInt = parseInt(l.loja_codigo_raw ?? '', 10)
-          if (!isNaN(filialInt) && !isNaN(codInt) && filialInt === codInt) return true
+          if (!isNaN(filialInt) && !isNaN(codInt)) {
+            // Ambos têm número: match estrito por número, NÃO cair no fallback.
+            return filialInt === codInt
+          }
+          // Se a linha não tem código numérico, segue pro fallback de nome.
         }
         // Fallback nome: bate tokens significativos (≥4 chars, não-rede, não-genérico)
         // do loja_raw da alteração contra l.loja_nome_raw da escala.
@@ -78,8 +88,10 @@ export function aplicarAlteracoes(
         const tokensFortes = (s: string) =>
           norm(s).split(' ').filter(t => t.length >= 4 && !STOP.has(t))
         const altTok = tokensFortes(alt.loja_raw)
+        // Defesa contra vacuous truth: se não temos tokens fortes, não há base pra match.
+        if (altTok.length === 0) return false
         const linTok = new Set(tokensFortes(l.loja_nome_raw ?? ''))
-        if (altTok.length >= 1 && altTok.every(t => linTok.has(t))) return true
+        if (altTok.every(t => linTok.has(t))) return true
       }
       return false
     }
