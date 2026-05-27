@@ -1067,12 +1067,21 @@ export async function cruzaEscalaUnitrac(
       // Caso original TML3B11 ainda protegido: LOJA órfã PREZUNIC vs escala VIANENSE
       // — se VIANENSE está nas redes da órfã (alias), bloqueia.
       const redesSemMatch = new Set(linhasAindaSemMatch.map(l => l.rede_id))
-      // Usa todasAjustadas (não todas) — paradas reclassificadas como FORA_BASE pelo T20
-      // não devem contar como LOJA órfã. Caso ARMAZEM dia 20: paradas LOJA cod 5353012
-      // erroneamente classificadas em BASE/Maricá vão pra FORA_BASE e ficam livres
-      // pra geo fallback, sem bloquear o resto.
-      const temLojaOrfaMesmaRede = todasAjustadas.some(p => {
-        if (p.classificacao !== 'LOJA' || usados.has(p.id)) return false
+      // Geo-R guard: usa lojasParadas (pós-consolidação) — NÃO todasAjustadas — pra
+      // detectar LOJA órfãs legítimas. Bug 3 dia 19 LQE5401 mostrou que a mesma loja
+      // pode aparecer 2x em todasAjustadas (parser XLSX + parser PDF emitem 2 paradas
+      // com ids diferentes mas chegadas que diferem em 2 segundos). consolidarParadasMesmoCliente
+      // funde as duas em lojasParadas (1 entrada com id da maior duração), mas a parada
+      // original "perdida" continua em todasAjustadas. assignOptimal usa só lojasParadas
+      // → marca em `usados` o id consolidado → a outra duplicata em todasAjustadas
+      // fica "órfã da mesma rede" e BLOQUEIA o geo-fallback FORA_BASE. Resultado: lojas
+      // que dependem do geo-fallback (Loja 47 Catete via FORA_BASE 19:40 a 15m) ficavam
+      // UNMATCHED.
+      //
+      // T20 ainda protegido: lojasParadasRaw = todasAjustadas.filter(LOJA), então as
+      // paradas reclassificadas (LOJA spurious → FORA_BASE) JÁ ficam fora de lojasParadas.
+      const temLojaOrfaMesmaRede = lojasParadas.some(p => {
+        if (usados.has(p.id)) return false
         // Infere rede da parada órfã
         for (const r of redesSemMatch) {
           if (resolveLojaId(p, lojas, r)) return true

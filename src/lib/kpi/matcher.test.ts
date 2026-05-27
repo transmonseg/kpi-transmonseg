@@ -1802,3 +1802,49 @@ describe('cruzaEscalaUnitrac — deduplicarPorCodigo check-in curto', () => {
     expect(rotas.find(r => r.escala_linha_id === 'd1')?.paradas[0].parada_id).toBe('entrega')
   })
 })
+
+// --- Bug 3 — Multi-trip: parada LOJA duplicada bloqueia geo-fallback FORA_BASE ---
+//
+// Caso real ZS dia 19 placa LQE5401:
+//   - Escala: 2 linhas ZS (Loja 30 manhã + Loja 47 noite).
+//   - GPS: 2 paradas LOJA cod=9039030 (mesma loja, 2s de diferença — uma do parser
+//     XLSX, outra do parser PDF), 1 parada FORA_BASE 19:40 a 15m da Loja 47.
+//   - Expected: Loja 30 casa com a parada 04:47 (LOJA cod=9039030),
+//               Loja 47 casa com 19:40 (FORA_BASE via geo-fallback dentro do raio).
+//   - Bug observado: Loja 47 fica UNMATCHED. Causa: a parada LOJA cod=9039030
+//     "duplicada" não-consumida fica órfã da MESMA REDE (ZONA_SUL), ativando o
+//     guard `temLojaOrfaMesmaRede` que bloqueia o geo-fallback FORA_BASE.
+//
+// Hipótese: o guard deve ignorar paradas órfãs cujo codigo_loja já está
+// representado em outra parada JÁ MATCHED (= duplicata real, não candidata legítima).
+describe('Bug 3 — parada LOJA duplicada não deve bloquear geo-fallback FORA_BASE', () => {
+  it('2 paradas LOJA cod=9039030 (duplicata) + Loja 47 noite via FORA_BASE geo → Loja 47 casa via geo', async () => {
+    const linhas: EscalaLinhaRow[] = [
+      // Linha 1: Loja 30 (entrega manhã) — codigo 30, vai casar via assignOptimal com a parada LOJA 04:47
+      { id: 'l30', rede_id: 'ZONA_SUL', placa_norm: 'LQE5401', loja_nome_raw: 'Zona Sul Loja 30 - Laranjeiras', loja_codigo_raw: '30', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+      // Linha 2: Loja 47 (entrega noite) — codigo 47, sem parada LOJA cod=9039124 no GPS, depende de geo-fallback FORA_BASE pra 19:40
+      { id: 'l47', rede_id: 'ZONA_SUL', placa_norm: 'LQE5401', loja_nome_raw: 'Zona Sul Loja 47 - Catete', loja_codigo_raw: '47', motorista_nome: null, carro_ordem: 2, data_entrega: '2026-05-19' },
+    ]
+    const paradas: UnitracParadaRow[] = [
+      // Parada LOJA 04:47 (do parser XLSX)
+      { id: 'pXlsx', placa_norm: 'LQE5401', chegada: '2026-05-19T04:47:02.000Z', saida: '2026-05-19T05:27:05.000Z', duracao_seg: 2403, local_parada: '30 - ZONA SUL - LARANJEIRAS', codigo_loja: '9039030', nome_loja: '30 - ZONA SUL - LARANJEIRAS', lat: -22.93379, lng: -43.18067, classificacao: 'LOJA', ordem: 1 },
+      // Parada LOJA 04:47 (do parser PDF — quase identica, 2s antes)
+      { id: 'pPdf', placa_norm: 'LQE5401', chegada: '2026-05-19T04:47:00.000Z', saida: '2026-05-19T05:27:00.000Z', duracao_seg: 2400, local_parada: '30 - ZONA SUL - LARANJEIRA S', codigo_loja: '9039030', nome_loja: '30 - ZONA SUL - LARANJEIRAS', lat: -22.93379, lng: -43.18067, classificacao: 'LOJA', ordem: 2 },
+      // Parada FORA_BASE 19:40, a 15m da Loja 47 (Catete) — chave do geo-fallback
+      { id: 'pNoite', placa_norm: 'LQE5401', chegada: '2026-05-19T19:40:00.000Z', saida: '2026-05-19T20:22:00.000Z', duracao_seg: 2520, local_parada: 'FORA DE BASE E LOCAL DE SERVIÇO', codigo_loja: null, nome_loja: null, lat: -22.92740, lng: -43.17742, classificacao: 'FORA_BASE', ordem: 3 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'l30-zs', rede_id: 'ZONA_SUL', nome: 'ZONA SUL LOJA 30 - LARANJEIRAS', nome_normalizado: 'zona sul loja 30 laranjeiras', codigo_escala: '30', codigo_unitrac: '9039030', nome_unitrac: '30 - ZONA SUL - LARANJEIRAS', lat: -22.93379, lng: -43.18067, raio_metros: 200 },
+      { id: 'l47-zs', rede_id: 'ZONA_SUL', nome: 'ZONA SUL LOJA 47', nome_normalizado: 'zona sul loja 47', codigo_escala: '47', codigo_unitrac: '9039124', nome_unitrac: '47 - ZONA SUL - CATETE', lat: -22.92738, lng: -43.17741, raio_metros: 200 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(linhas, paradas, lojas)
+    const r30 = rotas.find(r => r.escala_linha_id === 'l30')
+    const r47 = rotas.find(r => r.escala_linha_id === 'l47')
+    // Loja 30 casa com a parada matinal (LOJA cod=9039030)
+    expect(r30?.paradas).toHaveLength(1)
+    expect(r30?.paradas[0].chegada).toEqual(new Date('2026-05-19T04:47:00.000Z'))
+    // Loja 47 deve casar via geo-fallback com a parada FORA_BASE 19:40 (15m do cadastro)
+    expect(r47?.paradas).toHaveLength(1)
+    expect(r47?.paradas[0].parada_id).toBe('pNoite')
+  })
+})

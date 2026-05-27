@@ -1,0 +1,36 @@
+=== ZONA_SUL ===
+  ZONA_SUL        13/53 ( 25%)  13✅ 23⚠️ 7❌ 10❓
+
+  TOTAL DIA 19: 13/53 (25%) ✅  23⚠️  7❌  10❓
+=== ASSAI ===
+  ASSAI            8/41 ( 20%)  8✅ 12⚠️ 17❌ 4❓
+
+  TOTAL DIA 19: 8/41 (20%) ✅  12⚠️  17❌  4❓
+=== ATACADAO ===
+  ATACADAO         1/2 ( 50%)  1✅ 0⚠️ 1❌ 0❓
+
+  TOTAL DIA 19: 1/2 (50%) ✅  0⚠️  1❌  0❓
+=== CARREFOUR ===
+  CARREFOUR        4/10 ( 40%)  4✅ 4⚠️ 1❌ 1❓
+
+  TOTAL DIA 19: 4/10 (40%) ✅  4⚠️  1❌  1❓
+=== PREZUNIC ===
+  PREZUNIC         8/57 ( 14%)  8✅ 45⚠️ 2❌ 2❓
+
+  TOTAL DIA 19: 8/57 (14%) ✅  45⚠️  2❌  2❓
+=== PRINCESA ===
+  PRINCESA         0/26 (  0%)  0✅ 23⚠️ 3❌ 0❓
+
+  TOTAL DIA 19: 0/26 (0%) ✅  23⚠️  3❌  0❓
+=== GUANABARA ===
+  GUANABARA       13/28 ( 46%)  13✅ 6⚠️ 4❌ 5❓
+
+  TOTAL DIA 19: 13/28 (46%) ✅  6⚠️  4❌  5❓
+=== ARMAZEM_GRAO ===
+  ARMAZEM_GRAO    14/14 (100%)  14✅ 0⚠️ 0❌ 0❓
+
+  TOTAL DIA 19: 14/14 (100%) ✅  0⚠️  0❌  0❓
+=== SUPERPRIX ===
+  SUPERPRIX        1/10 ( 10%)  1✅ 8⚠️ 0❌ 1❓
+
+  TOTAL DIA 19: 1/10 (10%) ✅  8⚠️  0❌  1❓
