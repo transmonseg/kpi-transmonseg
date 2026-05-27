@@ -1,18 +1,13 @@
 # Analise PREZUNIC — dia 19/05/2026 (tol 10min)
 
 **Total lojas:** 57
-- Acerto completo: 44
-- Chegada certa, saida >10min: 1
+- Acerto completo: 45
+- Chegada certa, saida >10min: 0
 - SEM-RASTRE valido: 4
 - Sem timestamp: 4
 - **LOJA ERRADA (bug):** 0
 - **INVENTADO (bug):** 4
 - SEM-RASTRE errado: 0
-
-## Saidas erradas (chd OK, saida diverge >10min)
-| Loja | Placa | Sai sistema | Sai Unitrac |
-|---|---|---|---|
-| Prezunic - Ilha do Governador | KPE4133 | 06:58 | 05:34 |
 
 ## INVENTADO (sistema deu timestamp sem GPS perto)
 | Loja | Placa | Motivo |

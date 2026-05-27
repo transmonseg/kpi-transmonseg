@@ -1,8 +1,8 @@
 # Analise ASSAI — dia 19/05/2026 (tol 10min)
 
 **Total lojas:** 41
-- Acerto completo: 23
-- Chegada certa, saida >10min: 3
+- Acerto completo: 25
+- Chegada certa, saida >10min: 1
 - SEM-RASTRE valido: 3
 - Sem timestamp: 6
 - **LOJA ERRADA (bug):** 1
@@ -12,9 +12,7 @@
 ## Saidas erradas (chd OK, saida diverge >10min)
 | Loja | Placa | Sai sistema | Sai Unitrac |
 |---|---|---|---|
-| Assaí - Carioca Shopping - Loja 316 | QSW3B65 | 10:41 | 09:41 |
-| Assaí - Mendanha (Campo Grande) - L | LFJ8442 | 11:21 | 08:29 |
-| Assaí - São João do Meriti  - Loja  | EAC4D65 | 11:54 | 08:31 |
+| Assaí - Carioca Shopping - Loja 316 | QSW3B65 | 10:41 | 14:22 |
 
 ## Loja ERRADA (timestamp bate mas loja outra)
 | Loja sistema | Placa | Horario | Loja real (Unitrac) |

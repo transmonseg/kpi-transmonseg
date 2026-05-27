@@ -4,300 +4,89 @@
 > `docs/auditoria/dia-19-reanalise/FLUXO-ATIVO.md`
 > Depois volte aqui pra contexto histórico.
 
-> **Para retomar a sessão após compactação:** leia este arquivo PRIMEIRO. Tudo aqui aponta para a verdade.
+**Última atualização:** 2026-05-27 madrugada (FASE 5c — 14 bugs mergeados nesta sessão)
 
-**Última atualização:** 2026-05-27 madrugada (FASE 5b — 10 bugs do dia 25 atacados)
+## Sessão 27/05 madrugada — FASE 5c (sweep completo bugs)
 
-## Sessão 27/05 madrugada — FASE 5b (comparacao manual vs sistema dia 25 Tia Erica)
+### Bugs atacados nesta sessão (14 fixes mergeados)
 
-Apos U1-U4, user gerou KPIs no Vercel dia 25 e enviou 6 KPIs MANUAIS
-(gabarito Tia Erica) pra comparacao. Diff revelou 18 divergencias, atacadas
-sequencialmente.
+| Bug | Categoria | Hash merge | Descrição |
+|-----|-----------|------------|-----------|
+| **U1** | Auditoria URGENTE | 35397ce | Parser v2 em /analisar-alt |
+| **U2** | Auditoria URGENTE | be5fa04 | VEICULOS_INATIVOS normalizado |
+| **U3** | Auditoria URGENTE | ac7d536 | lookupSlot preferNome |
+| **U4** | Auditoria URGENTE | 8532352 | Promise.allSettled isolamento |
+| **U5** | Descoberta | 117b53c | inferirSaiDaEscala fallback 14d |
+| **B** | Dia 25 | 81f196a | lookupSlot redeId filter (cross-rede) |
+| **C** | Dia 25 | 47e40e6 | Parser PDF tabular não gruda tipo_carro |
+| **D** | Dia 25 | bab554f | aplicarAlteracoes prioriza Loja N |
+| **E** | Dia 25 | 0918a31 | Catálogo +11 SPID Prezunic |
+| **A** | Dia 25 | 8452b70 | Persistir escala_linhas no /simples |
+| **I3** | Auditoria IMPORTANTE | f96883c | /analisar-alt usa service client (RLS) |
+| **I4** | Auditoria IMPORTANTE | 1c6dec8 | 3ª linha agrupador vai pra descartadas |
+| **I1** | Auditoria IMPORTANTE | 96e21c0 | unitrac.ts computeSaidaCd retorna null |
+| **N10** | Auditoria BAIXO | bd48065 | Remove código morto alteracao.ts |
 
-**Comparacao manual vs sistema (dia 25 antes dos fixes 5b):**
+### Bugs auditoria pendentes (não atacados)
 
-| Rede       | Manual | Sistema | Diffs |
-|------------|--------|---------|-------|
-| ASSAI      | 41     | 41      | 4     |
-| ATACADAO   | 2      | 2       | 0 ✅  |
-| CARREFOUR  | 11     | 11      | 0 ✅  |
-| PREZUNIC   | 57     | 46      | 11    |
-| PRINCESA   | 26     | 26      | 1 (FP)|
-| SUPERPRIX  | 9      | 9       | 2 (FP)|
+- **I2** — Warning alteracoes vazias (UX, requer contexto frontend)
+- **N1** — parsedToConfirmada loja_nome_raw→loja_raw (cosmético)
+- **N3** — ZS data_entrega D+1 + cross-day alteracoes (complexo)
+- **N5** — unitrac-pdf REPAIR regex (plausível mas não reproduzido)
+- **N7** — variantesOcr só posição 4 (trade-off conhecido)
+- **N8** — lineEdits indexado por ordem (plausível)
+- **N9** — PARADA_REGEX endereço não-greedy (plausível)
+- **N11** — lineEdits sorted por loja_nome_raw (plausível)
 
-**Bugs atacados:**
+### Análise dia 19/05 (sessão paralela)
 
-- **U5** inferir-sai.ts: fallback 14 dias anteriores quando dia atual nao tem escala
-- **B** lookup-canonical.ts: redeId opcional filtra cross-rede contamination
-- **C** alteracao-pdf-tabular.ts: motorista_nome nao gruda tipo_carro no inicio
-- **D** aplicar-alteracoes.ts + inferir-sai.ts: regex "Loja N" explicito + prioridade
-- **E** catalogo-matriz.ts: +11 SPID Prezunic (Meier, Vila Isabel, Recreio, Barra,
-       Alpha Mall, Parque das Rosas, Carioca, Centro, Farme de Amoedo,
-       Visconde Pirajá, Copacabana)
-- **A** /api/kpi/simples persiste escala_linhas com estado pos-alteracoes
+Comparação contra PDF Unitrac (`relatorio_9572.pdf`, 207 veículos, 2135 paradas)
+para 17 redes:
 
-**Falsos positivos identificados:**
-- F PRINCESA Catete: escala dia 25 tem RAFAEL (sistema correto, manual desatualizado)
-- G SUPERPRIX Loja 13: existem 2 lojas "Loja 13" (Tijuquinha + Niteroi), ambas corretas
-- H SUPERCOMPRAS: gerado em arquivo separado (rede distinta, manual juntou)
+| Métrica | Valor |
+|---------|------:|
+| Lojas totais | 279 |
+| Acerto motorista+placa+timestamp (tol 10min) | 196 |
+| SEM-RASTRE válido (placa sem GPS) | 30 |
+| Sem timestamp gerado | 40 |
+| **Taxa de acerto** | **70%** |
+| Saída inflada (após consolidação) | 2 |
+| Loja errada (cross-rede) | 4 |
+| "Inventado" (GPS em FORA_BASE → LOJA) | 37 |
 
-**Commits:**
-- 8ad0a21 fix(B): lookupSlot filtra rede
-- d3687d7 fix(C): parser tabular nao gruda tipo_carro
-- d7bb05c fix(D): aplicarAlteracoes prioriza Loja N
-- 68be31d fix(E): catalogo +11 SPID Prezunic
-- a7eb771 fix(A): persistir escala_linhas no /simples
-- bf531c0 fix(U5): inferir-sai 14 dias (sessao anterior)
+A categoria "inventado" pode ser geofence do projeto resolvendo corretamente
+(FORA_BASE no Unitrac mas a loja é reconhecida via cadastro local). Requer
+investigação caso-a-caso.
 
-**Evidencia local Bug D (smoke pipeline ASSAI dia 25):**
-- Loja 131: ALLAN/294/UBO5E05 ✅ (era MARCOS FERNANDO)
-- Loja 142: ROBERTO ALMEIDA/294/EZU9I42 ✅ (era CARRETA EDSON)
-- Loja 291: EDSON/184041/CPI4C81 ✅ (era JXA4I92 antiga)
-- Loja 292: VICTOR LUIZ/353/TJQ6J26 ✅ (era TRUCK C/RAMPA E R)
+### Métricas técnicas
 
-**Vitest:** 324 → 342 (+18 testes novos)
-**Typecheck:** zero
+- **Vitest:** 301 → **344** testes passando (+43)
+- **Typecheck:** zero erros
+- **Total commits:** 27 (incluindo merges no-ff)
+- **Branch main hash:** `bd48065`
+- **Sincronizado com origin/main:** ✅
 
-Pro user testar no Vercel: regerar KPI dia 25 e validar lojas criticas.
+### Arquivos da sessão
 
----
-
-## Sessão 27/05 noite — FASE 5 (U1-U4) completa
-
-Todos os 4 bugs URGENTES da auditoria externa Claude.ai mergeados na main em
-sequência via worktrees isoladas, TDD e merges atômicos no-ff.
-
-**Commits da sessão:**
-- `b332c15` chore(baseline): snapshot KPIs dias 19/21/25 antes dos fixes
-- `c6bb0b1` fix(U1): conecta parser v2 em /analisar-alt
-- `5069893` docs(conversas-tia-erica): dia 25/05 escalas + alteracoes + unitrac
-- `35397ce` Merge fix/parser-v2-em-producao
-- `6a069d6` fix(U2): normaliza VEICULOS_INATIVOS sem hifen
-- `be5fa04` Merge fix/veiculos-inativos-norm
-- `7845022` fix(U3): lookupSlot aceita preferNome=true
-- `ac7d536` Merge fix/lookupslot-prefere-nome
-- `a42f8fb` fix(U4): Promise.allSettled isolamento por rede
-- `8532352` Merge fix/promise-allsettled
-
-**Resultado:**
-- Vitest: 301 → 324 (+23 testes novos)
-- Typecheck: zero erros
-- Não-regressao dia 21 ZS: 11/11 (100%) mantido ✅
-- Vercel deploy automatico pos cada push pra main
-
-**Evidência U1 (texto real WhatsApp tia Erica dia 25/05):**
-- v1: 1 de 3 alteracoes capturadas (so placas, sem motorista)
-- v2: 2 de 3 (uma completa com motorista DOUGLAS via lookup do banco)
-
-**Próximos passos:**
-- User testa no Vercel com dia 25 (subir escalas antes via painel)
-- Apos validação dia 25, atacar bugs I1-I4 (IMPORTANTES) e N1-N12 (LOW)
+```
+docs/conversas-tia-erica/
+├── dia-19/
+│   ├── RELATORIO-FINAL.md        ← consolidado
+│   ├── resumo-geral.md
+│   ├── unitrac-pdf.md/.json      ← 207 veículos, 2135 paradas
+│   ├── analise-{REDE}.md × 17    ← detalhe por rede
+│   └── kpis-sistema/             ← 17 XLSX gerados
+└── dia-25/
+    ├── escalas/                  ← XLSX + PDF da escala
+    ├── alteracoes/               ← PDF + whatsapp-25.md
+    ├── unitrac/                  ← relatorio_9652.pdf
+    ├── kpis-gerados/             ← 18 XLSX sistema
+    ├── kpis-manuais/             ← 6 XLSX manuais Tia Érica
+    └── comparacao-manual-vs-sistema.txt
+```
 
 ---
 
-## Sessão 27/05 tarde — Auditoria externa recebida
+## Sessão 27/05 noite (anterior) — FASE 5 (U1-U4) completa
 
-Após FASE 4 (7 bugs corrigidos no matcher), o usuário rodou auditoria externa via Claude.ai sobre o repositório. Resultado: **22 bugs identificados**, 4 URGENTES.
-
-**Veredito (em `docs/auditoria/auditoria-27-05/00-veredito.md`):**
-- CONCORDO com a auditoria. Todos os 4 bugs URGENTES verificados no main `29d7644`.
-- Nossos 7 fixes da FASE 4 atacaram efeitos secundários. A CAUSA RAIZ está no parser v1 de alterações (`alteracao-text.ts`) e em `lookupSlot`, que NÃO foram tocados.
-- Projeção da auditoria: U1 sozinho leva Super Prix de 8,6% → 95%.
-
-**Próximos passos hoje:**
-1. U1 — Conectar parser v2 (`alteracoes-v2.ts` → `analisar-alt/route.ts`)
-2. U2 — Normalizar VEICULOS_INATIVOS (remover hífen)
-3. U3 — lookupSlot priorizar nome quando presente
-4. U4 — Promise.allSettled (isolamento por rede)
-
-**Organização repo (27/05):**
-- 58 scripts `_tmp_*` e `_dump_*` arquivados em `scripts/_archive/`
-- 8 branches remotas mergeadas deletadas
-- Worktrees órfãs limpas
-- FLUXO-ATIVO.md atualizado
-
----
-
-**Última atualização anterior:** 2026-05-27 manhã (FASE 4 — 7 bugs do dia 19 atacados via subagent-driven)
-
-## Sessão 27/05 — FASE 4 completa
-
-7 bugs identificados na auditoria do dia 19 atacados sequencialmente via subagent-driven development. Cada bug em worktree isolada, com TDD rigoroso (test failing → fix → test passing), code review (quando subagent disponível) e merge atômico na main.
-
-**Commits da sessão:**
-- `97420ae` Bug 1: aplicar-alteracoes — match estrito por filial (4 ASSAI)
-- `e243f7b` Bug 2B: parser GUANABARA lookbehind regex (ARTHUR)
-- `577a61c` Bug 2A: paradaRedeInfer 2-pass code/geo (ZS Loja 07 + SUPERPRIX 201)
-- `130ade5` Bug 3: temLojaOrfa usa pós-consolidação (ZS Loja 47 + 2 bônus)
-- `5b10eb5` Bug 4 NO-OP: 0/13 eram bugs reais, 2 testes regressão
-- `f342b57` Bug 5: agrupar-por-loja resiliente a carro_ordem dup (ZS Loja 31, MEGA BOX 02)
-- `2c0ca11` Bug 6: estendeSaidaPorForaBase aceita FORA_BASE + multi-step (4/10)
-- `4f6ac48` Bug 7: T18-X2 ambiguidade lookup lojaEscala (4/7)
-
-**Resultados:**
-| Dia | ❌ Antes | ❌ Depois | Δ |
-|-----|---------|----------|---|
-| 19 | 36 | 32 | -4 |
-| 20 | 33 | 26 | -7 |
-| 21 | 31 | **14** | **-17** |
-
-- 301/301 testes vitest (eram 282 — +19 novos)
-- Typecheck zero erros
-- ZS dia 21: 100% mantido
-- Spec mestre: `docs/superpowers/specs/2026-05-26-kpi-fix-dia19/`
-- Plano: `docs/superpowers/plans/2026-05-26-kpi-fix-dia19-plan.md`
-- Fluxo ativo: `docs/auditoria/dia-19-reanalise/FLUXO-ATIVO.md`
-
-**Próximo:** user regerar KPIs no Vercel + comparar manual + FASE 5 (rollout).
-
----
-
-**Última atualização anterior:** 2026-05-26 (sessão dias 19/20/21 — escalas faltantes + 3 fixes matcher)
-
-## Sessão 26/05 — escalas faltantes + 3 fixes matcher
-
-**Causa raiz descoberta:** 13 escalas faltavam no banco. KPIs gerados pelo user no Vercel estavam usando dados parciais. Subi via `scripts/analise/subir_escalas_faltantes.ts`.
-
-**Fixes aplicados em `src/lib/kpi/matcher.ts`:**
-1. `estendeSaidaPorForaBase` (linha 328): SL estendida quando LOJA curta (≤15min) seguida de FORA_BASE longo (≥30min, ≤300m, gap ≤10min). Caso PREZUNIC Fonseca: 05:31→09:28.
-2. `resolvePlacaUnitrac` valida via geo (linha 870): aceita variante OCR mesmo com paradas só FORA_BASE quando geograficamente dentro do raio. Resolve 6 lojas ZS (LCO0978→LCO0J78 33/36/01, LJS2172→LJS2B72 34, EFU5704→EFU5H04 03/26).
-3. T18-X (linha 1438): rejeita plate-swap quando parada candidata resolve loja CADASTRADA diferente da escalada. Resolve falsos positivos como ZS Loja 1129 não-cadastrada (matcher atribuía MEGA BOX OLARIA por token comum).
-
-**Antes/Depois (% aceitável = ✅+⚠️ com BLANK_OK):**
-| Dia | Antes | Depois |
-|-----|-------|--------|
-| 19  | 71%   | 74%    |
-| 20  | 75%   | 79%    |
-| 21  | 73%   | 75%    |
-| ZS 20 | 17❌ → 5❌ |
-| ZS 19 | 16❌ → 8❌ |
-| ZS 21 | — → 100% (11/11) |
-
-**Para user testar:** REGERAR KPIs no sistema web (Vercel) — o banco agora tem todas escalas + matcher corrigido.
-
-**Pendências (❌ restantes principais):**
-- ZS multi-trip assignment: 2 linhas mesma loja (Loja 07/11 dia 19, 20) pegam mesma parada
-- ZS lojas não cadastradas com coord ok: Loja 14, 31 falsos positivos (parecido com 1129 — cadastro precisa atualizar)
-- ZS Loja 03 Copacabana sem lat/lng — Loja 26 com coord 6km off (cadastro incompleto)
-- ARMAZEM dia 21: GPS classifica paradas como cross-rede (PREZUNIC MARICÁ), matcher rejeita
-- PRINCESA/PREZUNIC: muitos ⚠️ Δ≤3min são arredondamento manual (Tia Érica em múltiplos de 5min) — não-bug
-
----
-
-**Última atualização anterior:** 2026-05-25 (sessão noturna ZS sweep)
-**Spec mestre:** `docs/superpowers/specs/2026-05-24-kpi-perfeicao-rede-por-rede-design.md`
-**Spec ZS:** `docs/superpowers/specs/2026-05-25-conserto-zona-sul.md`
-
-## Sessão noturna 25/05 — resumo do que foi feito
-
-**ARMAZEM (resolvido para dias 19, 20):**
-- T18 plate-swap não ativa quando placa circulou
-- T18-D guard de distância (≤5km da loja)
-- Geo fallback atribui parada à linha pelo melhor matchScore
-- T20: descarta paradas LOJA spurious (geofence Unitrac sobreposto >10km)
-- Cadastro REGINA: triangulação GPS dia 20 (não Nominatim) — 4 lojas corretas
-- Cadastro 16 DE MARÇO: GPS real (drift 3.8km vs Nominatim)
-- Dia 19: 12/14 batem (1-3min off)
-- Dia 20: 14/14 batem (1-2min off) ✓
-
-**ZONA SUL (parcial):**
-- lerKpi detecta layout dinamicamente (ZS sem coluna COD)
-- T18 ativa pra placas ausentes do Unitrac (caso plate-swap real)
-- T18-N removido (ZS faz entregas legítimas de madrugada)
-- OCR-equate inteligente (só aceita se variante bate loja escalada)
-- Loja 47 ZS coord corrigida (drift 19km)
-- Sweep ZS dia 18: 17/34 (50%), dia 19: 13/37 (35%), dia 20: 20/36 (56%), dia 21: 3/10 (30%)
-- 39 SEM_MATCH restantes — padrões: placas ausentes Unitrac (LJS2172, LCO0978), placa-manual ≠ placa-escala (Tia Érica troca), múltiplas lojas/placa, cross-day
-
-**Pendências ZS:**
-- Vídeo v43-2 documenta: caminhões 17h saem dia seguinte → matcher precisa usar data_entrega
-- Múltiplas lojas/placa: BBH1C94 fez Loja 33+03+19, sistema só pega Loja 33 (parada LOJA)
-- Lojas 02, 16, 24, 37, 39, 41 não aparecem em manual → provavelmente inativas
-- Conflitos manual vs GPS (NÃO_FOI manual + GPS confirma FOI) precisam ser confirmados com Tia Érica
-
-**V2.1 plano:** `docs/correcao-sistema/PLANO-CADASTRO-E-V21.md`
-**V2.1 validação:** `docs/correcao-sistema/validacao-pos-v21.md`
-**Status global:** V2.1 rollout. Cadastro 295→330 ativas. Bugs 1-4 fixados. Reforços 5-7 aplicados. 282 testes vitest. Dia18: 108/127=85%, Dia19: 152/218=70% (excl. ZONA_SUL). GUANABARA 37/37, PRINCESA dia19 26/26, SENDAS 8/9.
-
----
-
-## Estado atual por rede (dias 18 e 19)
-
-| Rede | dia18 OK | dia19 OK | Obs |
-|------|---------|---------|-----|
-| ZONA_SUL | 24/70 | 19/55 | iter2 concluído, restante estrutural |
-| PREZUNIC | 5/40 | 30/58 | 2 turnos estrutural em dia18 |
-| ASSAI | 35/40 | 16/40 | SC-skip+SEM — restante estrutural |
-| FEIRA_NOVA | 11/12 | 2/13 | dia18 quase perfeito, dia19 estrutural |
-| SUPER_PAX | 12/12 | 7/13 | dia18 perfeito, dia19 2 turnos |
-| SENDAS | 9/10 | 8/9 | SEM_OK(dia18)+BLANK_OK(dia19) |
-| ARMAZEM_GRAO | 8/14 | 7/14 | REGINA 4 linhas/1 parada estrutural |
-| VIANENSE | 4/4 | 2/4 | dia18 perfeito, dia19 offset 16min |
-| SAMS_CLUB | 3/3 | 3/3 | perfeito |
-| CARREFOUR | 8/10 | 4/8 | restante structural |
-| SUPERPRIX | 8/9 | 0/9 | dia18 quase perfeito, dia19 GPS±timing |
-| PRINCESA | 3/26 | 26/26 | dia18 estrutural, dia19 perfeito |
-| GUANABARA | N/A | 37/37 | BLANK_OK: '---' manual = OK |
-| ATACADAO | 2/2 | 1/2 | SC_SKIP dia18, dia19 FB-as-LOJA |
-| MUNDIAL | 1/1 | 1/1 | perfeito (SEM/SEM/SEM) |
-| CAB_PETROPOLIS | 0/1 | — | estrutural |
-| SUPERCOMPRAS | 0/1 | — | estrutural |
-
----
-
-## Redes com potencial residual
-
-| Rede | Padrão | Ganho estimado | Complexidade |
-|------|--------|----------------|--------------|
-| PRINCESA dia18 | 3/26. CHD/SL diferem 10-40 min (GPS exato vs manual arredondado) | 0 | estrutural |
-| SUPERPRIX dia19 | GERADO=0/9, CHD/SL todos errados | 0 | estrutural |
-| GUANABARA dia19 | MANUAL=--- para todos → BLANK_OK fix | +17 | done ✓ |
-| ASSAI dia19 | CHD/SL todos diferentes | 0 | estrutural |
-
----
-
-## Invariantes (NUNCA quebrar)
-
-- 263+ testes vitest passando.
-- TypeScript zero erros (`npx tsc --noEmit`).
-- ZONA_SUL nunca regride (canário do projeto).
-- Cada fix vira commit atômico.
-- Cada UPDATE no Supabase tem log em `docs/db-changes/` + script de rollback em `scripts/db-changes/`.
-
----
-
-## Como retomar
-
-Se você é um Claude novo (sessão compactada) lendo isto:
-
-1. **Veja commits recentes:** `git log --oneline -15`
-2. **O script de análise genérico é:** `npx tsx scripts/analise/analise_18_geral.ts <REDE>` e `analise_19_geral.ts`
-3. **ZONA_SUL usa:** `npx tsx scripts/analise/analise_zonasul.ts <data>`
-4. **Padrão de fix aplicado:** `arrEq` em analise_18/19_geral.ts usa `REDES_SC_SKIP` e `REDES_SEM_OK` para redes cujo SC não vem do GPS
-
----
-
-## Histórico de redes processadas
-
-| Rede | Fix | Ganho | Commit |
-|------|-----|-------|--------|
-| ZONA_SUL | matcher.ts SC-firstBase + noData NAO_FOI | +9 | a2e80d9, 94eb5c1 |
-| PREZUNIC | SEM-ok | +22 | ce4d948 |
-| FEIRA_NOVA | SC-skip + SEM-ok | +10 | 030418e |
-| ASSAI | SC-skip + SEM-ok | +13 | ab19ac3 |
-| SUPER_PAX | SC-skip + SEM-ok | +12 | e438544 |
-| SENDAS/ARMAZEM_GRAO/VIANENSE/SAMS_CLUB/CARREFOUR | SC-skip + SEM-ok(Carrefour) | +12 | 36db71a |
-| GUANABARA | BLANK_OK: '---' manual = OK (operador não preenche) | +17 | 05fc3af |
-| PRINCESA | SEM_OK + BLANK_OK + SC_SKIP → dia18: +2, dia19: +2 | +4 | 522c1ef, 35cae2e |
-| SENDAS | BLANK_OK dia19 (+5), SEM_OK dia18 (+2) | +7 | 65081d4, ac77e19 |
-| ATACADAO | SC_SKIP → Belford Roxo CHD/SL batem | +1 | ba2dff7 |
-
----
-
-## Snapshots gerados
-
-| Timestamp | Descrição | Arquivo |
-|-----------|-----------|---------|
-| 2026-05-24T07:29Z | Baseline pré-rede-1 (17 redes, 218 OK / 526 total) | `docs/snapshots/2026-05-24-baseline.json` |
-| 2026-05-24 | ZONA_SUL iter2-post (114/229=50%) | `docs/snapshots/2026-05-24-zona_sul-iter2-post.json` |
-| 2026-05-24 | FEIRA_NOVA iter1-post | `docs/snapshots/2026-05-24-feiranoa-iter1-post.json` |
+[conteúdo histórico mantido em commits anteriores]
