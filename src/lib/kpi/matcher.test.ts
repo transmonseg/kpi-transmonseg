@@ -1848,3 +1848,70 @@ describe('Bug 3 — parada LOJA duplicada não deve bloquear geo-fallback FORA_B
     expect(r47?.paradas[0].parada_id).toBe('pNoite')
   })
 })
+
+describe('Bug 4 — multi-row mesma rede: distribuição correta entre N linhas e M paradas', () => {
+  // Cenário LLJ9C64-style dia 19: 1 placa com 6 linhas PREZUNIC SPID + GPS com
+  // 3 paradas LOJA reais distintas (BARRA, ALPHA MALL, SPID RECREIO).
+  // Garante que cada parada LOJA é atribuída à linha ESCALADA correta (por código/nome),
+  // não consolidando todas em 1 linha nem distribuindo na sequência errada.
+  it('LLJ9C64-style: 6 linhas PREZUNIC + 3 paradas LOJA com código distribuem por código', async () => {
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'lBarra',   rede_id: 'PREZUNIC', placa_norm: 'LLJ9C64', loja_nome_raw: 'Prezunic - Barra da Tijuca',         loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+      { id: 'lJacare',  rede_id: 'PREZUNIC', placa_norm: 'LLJ9C64', loja_nome_raw: 'Prezunic SPID - Jacarepagua',        loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+      { id: 'lRecreio', rede_id: 'PREZUNIC', placa_norm: 'LLJ9C64', loja_nome_raw: 'Prezunic SPID - Recreio',            loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+      { id: 'lSpBarra', rede_id: 'PREZUNIC', placa_norm: 'LLJ9C64', loja_nome_raw: 'Prezunic SPID - Barra',              loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+      { id: 'lAlpha',   rede_id: 'PREZUNIC', placa_norm: 'LLJ9C64', loja_nome_raw: 'Prezunic SPID - Alpha Mall',         loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+      { id: 'lPRosas',  rede_id: 'PREZUNIC', placa_norm: 'LLJ9C64', loja_nome_raw: 'Prezunic SPID - Parque das Rosas',   loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'pBarra', placa_norm: 'LLJ9C64', chegada: '2026-05-19T05:57:00Z', saida: '2026-05-19T06:26:00Z', duracao_seg: 1740, local_parada: '7000734 - PREZUNIC BARRA',           codigo_loja: '7000734', nome_loja: 'PREZUNIC BARRA',           lat: -23.0, lng: -43.36, classificacao: 'LOJA', ordem: 1 },
+      { id: 'pAlpha', placa_norm: 'LLJ9C64', chegada: '2026-05-19T06:47:00Z', saida: '2026-05-19T08:21:00Z', duracao_seg: 5640, local_parada: '7000740 - PREZUNIC SPID ALPHA MALL', codigo_loja: '7000740', nome_loja: 'PREZUNIC SPID ALPHA MALL', lat: -23.0, lng: -43.36, classificacao: 'LOJA', ordem: 2 },
+      { id: 'pRecreio', placa_norm: 'LLJ9C64', chegada: '2026-05-19T08:47:00Z', saida: '2026-05-19T09:16:00Z', duracao_seg: 1740, local_parada: '7000752 - PREZUNIC SPID RECREIO',  codigo_loja: '7000752', nome_loja: 'PREZUNIC SPID RECREIO',    lat: -23.0, lng: -43.36, classificacao: 'LOJA', ordem: 3 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'cad-barra',   rede_id: 'PREZUNIC', nome: 'Prezunic - Barra da Tijuca',       nome_normalizado: 'prezunic barra da tijuca',       codigo_escala: null, codigo_unitrac: '7000734', nome_unitrac: 'PREZUNIC BARRA',          lat: null, lng: null, raio_metros: 200 },
+      { id: 'cad-alpha',   rede_id: 'PREZUNIC', nome: 'Prezunic SPID - Alpha Mall',       nome_normalizado: 'prezunic spid alpha mall',       codigo_escala: null, codigo_unitrac: '7000740', nome_unitrac: 'PREZUNIC SPID ALPHA MALL',lat: null, lng: null, raio_metros: 200 },
+      { id: 'cad-recreio', rede_id: 'PREZUNIC', nome: 'Prezunic SPID - Recreio',          nome_normalizado: 'prezunic spid recreio',          codigo_escala: null, codigo_unitrac: '7000752', nome_unitrac: 'PREZUNIC SPID RECREIO',   lat: null, lng: null, raio_metros: 200 },
+      { id: 'cad-jacare',  rede_id: 'PREZUNIC', nome: 'Prezunic SPID - Jacarepagua',      nome_normalizado: 'prezunic spid jacarepagua',      codigo_escala: null, codigo_unitrac: null,      nome_unitrac: null,                       lat: null, lng: null, raio_metros: 200 },
+      { id: 'cad-spbarra', rede_id: 'PREZUNIC', nome: 'Prezunic SPID - Barra',            nome_normalizado: 'prezunic spid barra',            codigo_escala: null, codigo_unitrac: null,      nome_unitrac: null,                       lat: null, lng: null, raio_metros: 200 },
+      { id: 'cad-prosas',  rede_id: 'PREZUNIC', nome: 'Prezunic SPID - Parque das Rosas', nome_normalizado: 'prezunic spid parque das rosas', codigo_escala: null, codigo_unitrac: null,      nome_unitrac: null,                       lat: null, lng: null, raio_metros: 200 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    // Cada parada LOJA com cod_unitrac deve casar com a linha correspondente
+    const rBarra   = rotas.find(r => r.escala_linha_id === 'lBarra')
+    const rAlpha   = rotas.find(r => r.escala_linha_id === 'lAlpha')
+    const rRecreio = rotas.find(r => r.escala_linha_id === 'lRecreio')
+    expect(rBarra?.paradas?.[0]?.parada_id).toBe('pBarra')
+    expect(rAlpha?.paradas?.[0]?.parada_id).toBe('pAlpha')
+    expect(rRecreio?.paradas?.[0]?.parada_id).toBe('pRecreio')
+    // Linhas sem GPS LOJA (Jacarepagua, SPID Barra, Parque das Rosas) ficam sem parada (SEM)
+    const rJacare  = rotas.find(r => r.escala_linha_id === 'lJacare')
+    const rSpBarra = rotas.find(r => r.escala_linha_id === 'lSpBarra')
+    const rPRosas  = rotas.find(r => r.escala_linha_id === 'lPRosas')
+    expect(rJacare?.paradas ?? []).toHaveLength(0)
+    expect(rSpBarra?.paradas ?? []).toHaveLength(0)
+    expect(rPRosas?.paradas ?? []).toHaveLength(0)
+  })
+
+  // Cenário 4A: placa rastreada mas sem parada LOJA real (só BASE/FORA_BASE).
+  // Ex GAR0802 ASSAI Maracanã dia 19. Esperado: linha fica SEM, sem inventar
+  // falso positivo via FORA_BASE distante.
+  it('placa sem parada LOJA real (só BASE/FORA_BASE longe) deixa linha SEM, não inventa falso positivo', async () => {
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'lMar', rede_id: 'ASSAI', placa_norm: 'GAR0802', loja_nome_raw: 'Assai - Maracana - Loja 286', loja_codigo_raw: '286', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    // GPS só BASE + FORA_BASE longe de Maracanã (-22.91, -43.23)
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'pBase1', placa_norm: 'GAR0802', chegada: '2026-05-19T00:00:00Z', saida: '2026-05-19T01:31:00Z', duracao_seg: 5460, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: -22.8270, lng: -43.3380, classificacao: 'BASE', ordem: 1 },
+      { id: 'pFB',    placa_norm: 'GAR0802', chegada: '2026-05-19T06:02:00Z', saida: '2026-05-19T12:41:00Z', duracao_seg: 24000, local_parada: 'FORA DE BASE', codigo_loja: null, nome_loja: null, lat: -22.8260, lng: -43.3350, classificacao: 'FORA_BASE', ordem: 2 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'cad-mar', rede_id: 'ASSAI', nome: 'Maracana', nome_normalizado: 'maracana', codigo_escala: '286', codigo_unitrac: '560042', nome_unitrac: 'SENDAS MARACANA', lat: -22.91, lng: -43.23, raio_metros: 200 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    const rMar = rotas.find(r => r.escala_linha_id === 'lMar')
+    // FORA_BASE está a ~14km de Maracanã (-22.83 vs -22.91) — geo-fallback
+    // NÃO deve aceitar
+    expect(rMar?.paradas ?? []).toHaveLength(0)
+  })
+})
