@@ -271,15 +271,18 @@ function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracPara
           } else {
             // Bug M1 (matcher audit dia 19): antes consolidava CEGAMENTE quando
             // faltava geo. Caso EZU9J51 ASSAI Loja 131 dia 19: 2 paradas LOJA
-            // cod 560018 sem lat/lng com gap 1min consolidavam em 05:05-12:31
-            // (7h26 na loja). Manual diz saida 06:05 (entrega real 60min).
-            // Fix: sem geo, só consolida se duração combinada ≤ 90min — entregas
-            // legítimas sequenciais cabem (≤90min), agrupamento abusivo de 2
-            // entregas distintas (uma com 60min + outra com 6h26) NÃO cabe.
-            const durLast = last.saida ? (new Date(last.saida).getTime() - new Date(last.chegada).getTime()) / 1000 : 0
-            const durP = p.saida ? (new Date(p.saida).getTime() - new Date(p.chegada).getTime()) / 1000 : 0
-            const durTotalMin = (durLast + durP + gapSeg) / 60
-            if (durTotalMin <= 90) mesmaLoja = true
+            // sem lat/lng com gap 1min consolidavam em 05:05-12:31 (7h26).
+            //
+            // Fix v2 (revisao code review 27/05): exige AMBAS saidas != null.
+            // Se alguma e null (parada em curso, duracao indefinida), NAO
+            // consolida sem geo — ambiguidade demais. Antes (fix v1) zerava
+            // duracao e durTotalMin caia em gapSeg, sempre <90min: bypass.
+            if (last.saida !== null && p.saida !== null) {
+              const durLast = (new Date(last.saida).getTime() - new Date(last.chegada).getTime()) / 1000
+              const durP = (new Date(p.saida).getTime() - new Date(p.chegada).getTime()) / 1000
+              const durTotalMin = (durLast + durP + gapSeg) / 60
+              if (durTotalMin <= 90) mesmaLoja = true
+            }
           }
         }
         if (!mesmaLoja) {
