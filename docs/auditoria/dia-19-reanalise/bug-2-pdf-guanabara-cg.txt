@@ -1,0 +1,47 @@
+Bug 2B — GUANABARA dia 19/05/2026
+Extração do PDF via pdfplumber:
+
+=== PDF: ESCALA 19.05.pdf (página 0) ===
+(HLOG) ESCALA GUANABARA 19/05/2026 (TERÇA-FEIRA)
+, QTD.CARROS 1° CARRO CÓDIGO PLACA CARRO 2° CARRO CÓDIGO PLACA CARRO
+ 1 2 RONALDO 35 KSG 5412 TRUCK JOSE NILDON (DOCA) 753 KVG 7A00 TRUCK
+ 2 2 P.CESAR 210 LFK-2C56 TRUCK P.CESAR 210 LFK-2C56 TRUCK
+ 3 1 RAFAEL 184497 KNI-8988 TRUCK
+ 4 1 MARCOS 315 LBL-5907 TOCO
+ 5 1 MARCOS 180 KSP-8814 TOCO
+ 6 1 CLAUDECI/TICO 813 LGX-1J41 TRUCK
+ 7 2 MOISES 294 GBC 6E12 TRUCK ANDERSON 364 KST 0246 TRUCK
+ 8 2 CELSO 553 KTR 0546 TOCO JONAS/BETO 677 LKF 7A79 TOCO
+ 9 2 JULIO CESAR 184610 LIF-3965 TRUCK JULIO CESAR 184610 LIF-3965 TRUCK
+10 2 MARCIO/OLIMPO 684 GUE 0D63 TRUCK THIAGO 801 KUM 9J05 TRUCK
+11 1 ARTHUR 184129 KNI-8942                  <- ROTA 11 CAMPO GRANDE FILIAL 11 (sem TIPO no PDF)
+12 1 VAGNER 294 FSE TRUCK
+...
+26 2 MAURICIO 35 CDM-8645 TRUCK JONESON 184461 EBG 2D13 TOCO  <- F.26 (outra Campo Grande)
+
+=== Verdade pra rota 11 (Campo Grande F.11) ===
+  Loja:       GB CAMPO GRANDE FILIAL 11
+  Motorista:  ARTHUR
+  Código:     184129
+  Placa:      KNI-8942
+  Tipo:       (omitido no PDF — sem TRUCK/TOCO/etc.)
+
+=== Bug observado antes do fix ===
+Após joinContinuationLines pdf-parse retorna:
+  linha "111"
+  linha "ARTHUR184129KNI-8942"
+→ junção: "111ARTHUR184129KNI-8942"
+
+Como não há TIPO, cai no fallback PLACA_SO_RE = /([A-Z]{3}[\s-]?\d{4}|...)(?=\s*$|\s*\d)/g
+A regex casa DUAS placas:
+  1) "HUR1841" no meio de "ARTHUR184129" (após "HUR" vem dígitos → passa lookahead)
+  2) "KNI-8942" no fim
+Resultado anterior:
+  carro_ordem=1: motorista="ART",   placa="HUR1841"
+  carro_ordem=2: motorista="2",     placa="KNI-8942"
+
+=== Fix aplicado ===
+Lookbehind (?<![A-Z]) em PLACA_RE, PLACA_TIPO_RE e PLACA_SO_RE.
+Impede que 3 letras NO MEIO de um nome iniciem match de placa.
+Resultado após fix:
+  carro_ordem=1: motorista="ARTHUR", placa="KNI-8942"

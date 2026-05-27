@@ -13,7 +13,7 @@ import { describe, it, expect } from 'vitest'
 
 const PLACA_INLINE_RE = String.raw`[A-Z]{3}[\s-]?\d[A-Z0-9]\d{2}|[A-Z]{3}[\s-]?\d{4}`
 const TIPO_INLINE_RE = String.raw`TRUCK|TOCO\s*REFRIGERADO|TOCO|VUC|3\/4|KIA|CARRETA`
-const PLACA_TIPO_RE = new RegExp(`(${PLACA_INLINE_RE})\\s?(${TIPO_INLINE_RE})`, 'g')
+const PLACA_TIPO_RE = new RegExp(`(?<![A-Z])(${PLACA_INLINE_RE})\\s?(${TIPO_INLINE_RE})`, 'g')
 
 function parseRowQuick(cleaned: string): { rota: number; carros: Array<{ motorista: string; codigo: string | null; placa: string; tipo: string }> } | null {
   const startMatch = cleaned.match(/^(\d{1,2})([12])(?=[A-ZÀ-Ý])/)
@@ -80,5 +80,64 @@ describe('Guanabara PDF parser — bug de 2 carros (relatório 15/05)', () => {
     const r = parseRowQuick('252DANIEL QUIRINO294GEB 9H31TRUCKWILSON180HBB-1234TRUCK')
     expect(r?.carros[0].motorista).toBe('DANIEL QUIRINO')
     expect(r?.carros[0].codigo).toBe('294')
+  })
+})
+
+// --- Bug 2B (dia 19/05): nome do motorista contém "HUR" que combina com
+// regex de placa antiga [A-Z]{3}\d{4}. PDF emite "111" e "ARTHUR184129KNI-8942"
+// em linhas separadas; joinContinuationLines junta para "111ARTHUR184129KNI-8942".
+// Como não tem TIPO no fim, cai no fallback PLACA_SO_RE, que sem âncora de
+// fronteira de palavra captura "HUR1841" dentro de "ARTHUR184129".
+//
+// Replicamos aqui o caminho PLACA_SO_RE para testar.
+
+// Replica exata da PLACA_SO_RE de produção (com lookbehind anti-substring de nome)
+const PLACA_SO_RE = new RegExp(`(?<![A-Z])(${PLACA_INLINE_RE})(?=\\s*$|\\s*\\d)`, 'g')
+
+function parseRowFallbackPlacaSo(cleaned: string): { rota: number; carros: Array<{ motorista: string; codigo: string | null; placa: string }> } | null {
+  const startMatch = cleaned.match(/^(\d{1,2})([12])(?=[A-ZÀ-Ý])/)
+  if (!startMatch) return null
+  const rota = parseInt(startMatch[1], 10)
+  const rest = cleaned.slice(startMatch[0].length)
+  const carros: Array<{ motorista: string; codigo: string | null; placa: string }> = []
+  PLACA_SO_RE.lastIndex = 0
+  let m2: RegExpExecArray | null
+  let cursor2 = 0
+  while ((m2 = PLACA_SO_RE.exec(rest)) !== null) {
+    const before = rest.slice(cursor2, m2.index)
+    const placa = m2[1].trim()
+    let motorista = before.trim()
+    let codigo: string | null = null
+    const codMatch = before.match(/^([\s\S]+?)(\d{1,7})$/)
+    if (codMatch) {
+      motorista = codMatch[1].trim()
+      codigo = codMatch[2]
+    }
+    if (motorista) carros.push({ motorista, codigo, placa })
+    cursor2 = m2.index + m2[0].length
+  }
+  return { rota, carros }
+}
+
+describe('Guanabara PDF parser — bug 2B nome contém "HUR" (dia 19)', () => {
+  it('Rota 11 ARTHUR: nome não vira ART+HUR1841 (PLACA_SO_RE fallback)', () => {
+    // Input real após joinContinuationLines do PDF 19/05/2026:
+    //   linha "111" + linha "ARTHUR184129KNI-8942" → grudadas
+    const r = parseRowFallbackPlacaSo('111ARTHUR184129KNI-8942')
+    expect(r?.rota).toBe(11)
+    expect(r?.carros.length).toBe(1)
+    expect(r?.carros[0].motorista).toBe('ARTHUR')
+    expect(r?.carros[0].codigo).toBe('184129')
+    expect(r?.carros[0].placa).toBe('KNI-8942')
+  })
+
+  it('Rota 30 DANIEL: nome curto, placa única no fim (regressão)', () => {
+    // "301" + "DANIEL677GVH-0163" → "301DANIEL677GVH-0163"
+    const r = parseRowFallbackPlacaSo('301DANIEL677GVH-0163')
+    expect(r?.rota).toBe(30)
+    expect(r?.carros.length).toBe(1)
+    expect(r?.carros[0].motorista).toBe('DANIEL')
+    expect(r?.carros[0].codigo).toBe('677')
+    expect(r?.carros[0].placa).toBe('GVH-0163')
   })
 })
