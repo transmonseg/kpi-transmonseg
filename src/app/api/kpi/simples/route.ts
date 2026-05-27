@@ -11,6 +11,7 @@ import { aplicarAlteracoes } from '@/lib/kpi/aplicar-alteracoes'
 import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
 import { REDE_NOMES_CANONICOS } from '@/lib/kpi/kpi-styles'
+import { partitionSettled } from '@/lib/utils/partition-settled'
 import type { KpiLinha, RotaKpi } from '@/lib/types/kpi'
 import type { LinhaEscala } from '@/lib/types/escala'
 
@@ -444,10 +445,12 @@ export async function POST(req: NextRequest) {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let results: any[]
+  let results: any[] = []
+  let redes_com_erro: { rede_id: string; erro_mensagem: string }[] = []
   try {
-    results = await Promise.all(
-    Array.from(redeMap.entries()).map(async ([rede_id, { rotas: redeRotas, escala: redeEscala }]) => {
+    const redesEntries = Array.from(redeMap.entries())
+    const settled = await Promise.allSettled(
+    redesEntries.map(async ([rede_id, { rotas: redeRotas, escala: redeEscala }]) => {
       const sorted = redeRotas
         .map((r, i) => ({ rota: r, esc: redeEscala[i] }))
         .sort((a, b) => {
@@ -547,10 +550,18 @@ export async function POST(req: NextRequest) {
         preview,
       }
     })
-  )
+    )
+
+    const redeIds = redesEntries.map(([id]) => id)
+    const { ok, falhas } = partitionSettled(settled, redeIds)
+    results = ok
+    redes_com_erro = falhas.map(f => ({ rede_id: f.key, erro_mensagem: f.erro_mensagem }))
+    for (const f of falhas) {
+      console.error(`[/api/kpi/simples] Rede ${f.key} falhou:`, f.erro_mensagem)
+    }
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Erro interno ao gerar KPI.'
-    console.error('[/api/kpi/simples] Erro ao gerar resultados:', e)
+    console.error('[/api/kpi/simples] Erro fatal:', e)
     return new NextResponse(msg, { status: 500 })
   }
 
@@ -587,7 +598,7 @@ export async function POST(req: NextRequest) {
     geracaoId = (inserted?.id as string) ?? null
   }
 
-  return NextResponse.json({ redes: results, geracao_id: geracaoId })
+  return NextResponse.json({ redes: results, redes_com_erro, geracao_id: geracaoId })
 }
 
 // GET /api/kpi/simples?data=YYYY-MM-DD → lista histórico de gerações
