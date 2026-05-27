@@ -1,0 +1,14 @@
+◇ injected env (4) from .env.local // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+--- 3 paradas LOJA da placa LQE5401 ---
+  04:47 cod=9039030 nome="30 - ZONA SUL - LARANJEIRAS"
+     resolveLojaId ZS = 30 "ZONA SUL LOJA 30 - LARANJEIRAS"
+  14:08 cod=5353011 nome="ARMAZEM DO GRAO (BARRA DA TIJUCA)"
+  04:47 cod=9039030 nome="30 - ZONA SUL - LARANJEIRA S"
+     resolveLojaId ZS = 30 "ZONA SUL LOJA 30 - LARANJEIRAS"
+
+VERDICT:
+  - 2 paradas LOJA 04:47 cod 9039030 sao DUPLICATAS (mesma chegada/saida).
+  - assignOptimal atribui UMA dessas paradas a L30 (escala). A OUTRA fica orfa.
+  - Geo-R guard 'temLojaOrfaMesmaRede' detecta orfa de ZONA_SUL (mesma rede de L21/L47).
+  - GUARD BLOQUEIA geo-fallback FORA_BASE -> parada 19:40 a 15m da L47 NUNCA atribuida.
+  - L47 fica UNMATCHED, posteriormente fallback temporal pega FORA_BASE 11:09 (que casa fungivel ZS).

@@ -1,0 +1,37 @@
+◇ injected env (4) from .env.local // tip: ◈ secrets for agents [www.dotenvx.com]
+--- CADASTRO LOJA 47 ---
+  {"id":"506cd235-e8ea-4bc2-9926-4af3c8b7e641","rede_id":"ZONA_SUL","nome":"ZONA SUL LOJA 47","codigo_escala":"47","codigo_unitrac":"9039124","lat":-22.92738,"lng":-43.17741,"raio_metros":200}
+
+--- CADASTRO L30 e L21 ---
+  cod_e=30 cod_u=9039030 nome="ZONA SUL LOJA 30 - LARANJEIRAS" lat=-22.93379 lng=-43.18067 r=200
+  cod_e=21 cod_u=9039103 nome="21 - ZONA SUL - FLAMENGO 2" lat=-22.93448 lng=-43.17551 r=200
+
+--- DISTANCIAS de cada parada (com lat/lng) p/ Loja 47, Loja 30, Loja 21 ---
+  Loja 47: -22.92738,-43.17741 raio=200
+  Loja 30: -22.93379,-43.18067 raio=200
+  Loja 21: -22.93448,-43.17551 raio=200
+  00:01 class=BASE       L47= 19866m L30= 20002m L21= 20476m
+  00:01 class=BASE       L47= 19866m L30= 20002m L21= 20476m
+  04:47 class=LOJA       L47=   790m L30=    18m L21=   517m
+  04:47 class=LOJA       L47=   790m L30=    18m L21=   517m
+  06:00 class=BASE       L47= 19626m L30= 19769m L21= 20240m
+  06:00 class=BASE       L47= 19626m L30= 19769m L21= 20240m
+  08:38 class=BASE       L47= 19888m L30= 20026m L21= 20499m
+  08:38 class=BASE       L47= 19888m L30= 20026m L21= 20499m
+  09:58 class=FAKE_EXIT  L47= 19275m L30= 19388m L21= 19868m
+  09:58 class=FAKE_EXIT  L47= 19275m L30= 19388m L21= 19868m
+  10:59 class=FAKE_EXIT  L47= 19813m L30= 19228m L21= 19691m
+  10:59 class=FAKE_EXIT  L47= 19813m L30= 19228m L21= 19691m
+  11:09 class=FORA_BASE  L47= 18486m L30= 17874m L21= 18323m
+  11:09 class=FORA_BASE  L47= 18486m L30= 17874m L21= 18323m
+  13:05 class=FAKE_EXIT  L47= 20061m L30= 20185m L21= 20662m
+  13:05 class=FAKE_EXIT  L47= 20061m L30= 20185m L21= 20662m
+  14:08 class=LOJA       L47= 27476m L30= 26938m L21= 27420m
+  14:14 class=FORA_BASE  L47= 27345m L30= 26844m L21= 27339m
+  14:55 class=FORA_BASE  L47= 27345m L30= 26844m L21= 27339m
+  16:12 class=FAKE_EXIT  L47= 20030m L30= 20155m L21= 20632m
+  16:12 class=FAKE_EXIT  L47= 20030m L30= 20155m L21= 20632m
+  16:29 class=BASE       L47= 19861m L30= 19997m L21= 20471m
+  19:40 class=FORA_BASE  L47=    15m L30=   784m L21=   820m
+  21:07 class=FAKE_EXIT  L47= 19603m L30= 19748m L21= 20218m
+  21:11 class=BASE       L47= 19864m L30= 20001m L21= 20474m

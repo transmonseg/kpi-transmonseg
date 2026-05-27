@@ -1,0 +1,65 @@
+◇ injected env (4) from .env.local // tip: ◈ encrypted .env [www.dotenvx.com]
+================================================================================
+DIAGNOSTIC — Bug 3 Multi-trip — ZS Loja 47, placa LQE5401, dia 19
+================================================================================
+
+--- ESCALA da placa LQE5401 (4 linhas) ---
+  ordem= 1 rede=ZONA_SUL       cod=30         loja="Zona Sul Loja 30 - Laranjeiras"
+  ordem= 1 rede=ZONA_SUL       cod=21         loja="Zona Sul Loja 21 - Flamengo"
+  ordem= 1 rede=ARMAZEM_GRAO   cod=-          loja="ARMAZEM DO GRAO A. BARRA DA TIJUCA"
+  ordem= 1 rede=ZONA_SUL       cod=47         loja="Zona Sul Loja 47"
+
+--- GPS — TODAS paradas de LQE5401 (25) ---
+  00:01-04:15 class=BASE       cod=-          nome="BASE BENASSI - BASE BENASSI"
+  00:01-04:15 class=BASE       cod=-          nome="BASE BENASSI - BASE BENASSI"
+  04:47-05:27 class=LOJA       cod=9039030    nome="30 - ZONA SUL - LARANJEIRA S"
+  04:47-05:27 class=LOJA       cod=9039030    nome="30 - ZONA SUL - LARANJEIRAS"
+  06:00-08:36 class=BASE       cod=-          nome="BASE BENASSI - BASE BENASSI"
+  06:00-08:36 class=BASE       cod=-          nome="BASE BENASSI - BASE BENASSI"
+  08:38-09:51 class=BASE       cod=-          nome="BASE BENASSI - BASE BENASSI"
+  08:38-09:51 class=BASE       cod=-          nome="BASE BENASSI - BASE BENASSI"
+  09:58-10:04 class=FAKE_EXIT  cod=-          nome="BASE BENASSI - BASE BENASSI"
+  09:58-10:04 class=FAKE_EXIT  cod=-          nome="BASE BENASSI - BASE BENASSI"
+  10:59-11:03 class=FAKE_EXIT  cod=-          nome="FORA DE BASE E LOCAL DE SERVIÇO"
+  10:59-11:03 class=FAKE_EXIT  cod=-          nome="FORA DE BASE E LOCAL DE SERVIÇO"
+  11:09-12:25 class=FORA_BASE  cod=-          nome="FORA DE BASE E LOCAL DE SERVIÇO"
+  11:09-12:25 class=FORA_BASE  cod=-          nome="FORA DE BASE E LOCAL DE SERVIÇO"
+  13:05-13:15 class=FAKE_EXIT  cod=-          nome="BASE BENASSI - BASE BENASSI"
+  13:05-13:15 class=FAKE_EXIT  cod=-          nome="BASE BENASSI - BASE BENASSI"
+  14:08-14:39 class=LOJA       cod=5353011    nome="ARMAZEM DO GRAO (BARRA DA TIJUCA)"
+  14:14-14:36 class=FORA_BASE  cod=-          nome="FORA DE BASE E LOCAL DE SERVIÇO"
+  14:55-15:36 class=FORA_BASE  cod=-          nome="FORA DE BASE E LOCAL DE SERVIÇO"
+  16:12-16:25 class=FAKE_EXIT  cod=-          nome="BASE BENASSI - BASE BENASSI"
+  16:12-16:22 class=FAKE_EXIT  cod=-          nome="BASE BENASSI - BASE BENASSI"
+  16:29-18:28 class=BASE       cod=-          nome="BASE BENASSI - BASE BENASSI"
+  19:40-20:22 class=FORA_BASE  cod=-          nome="FORA DE BASE E LOCAL DE SERVIÇO"
+  21:07-21:10 class=FAKE_EXIT  cod=-          nome="BASE BENASSI - BASE BENASSI"
+  21:11-23:57 class=BASE       cod=-          nome="BASE BENASSI - BASE BENASSI"
+
+  → 3 paradas LOJA
+
+--- SCORE MATRIX (escala × paradas LOJA, com scoreComRede preliminar) ---
+  Linhas ordenadas alphabeticamente, paradas cronologicamente
+
+              04:47   04:47   14:08
+  ARMAZEM_GR    INF    INF    0.00
+  ZONA_SUL/2    INF    INF    INF
+  ZONA_SUL/3    0.00    0.00    INF
+  ZONA_SUL/4    INF    INF    INF
+
+--- RESULTADO DO MATCHER para placa LQE5401 ---
+  ordem=1 rede=ZONA_SUL cod=30 loja="Zona Sul Loja 30 - Laranjeiras"
+     → match: chegada=04:47 saida=05:27 cod_parada=- nome=""
+  ordem=1 rede=ZONA_SUL cod=21 loja="Zona Sul Loja 21 - Flamengo"
+     → UNMATCHED
+  ordem=1 rede=ARMAZEM_GRAO cod=- loja="ARMAZEM DO GRAO A. BARRA DA TIJUCA"
+     → UNMATCHED
+  ordem=1 rede=ZONA_SUL cod=47 loja="Zona Sul Loja 47"
+     → UNMATCHED
+
+--- COMPARACAO CHAVE ---
+  Manual diz: Loja 47 Catete CHD = 19:40 (entrega NOITE)
+  Sys diz   : Loja 47 Catete CHD = ver acima
+
+  Esperado: matcher entender que LQE5401 fez Loja XX manha + Loja 47 noite,
+            e atribuir parada da noite a Loja 47, NÃO a parada da manha.
