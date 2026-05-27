@@ -84,6 +84,21 @@ export const MATRIZ_LOJAS: Record<string, string[]> = {
     'Prezunic SPID - Freguesia',
     'Prezunic SPID - Glória',
     'Prezunic SPID - Botafogo',
+    // --- SPID adicionais (Bug E auditoria dia 25 2026-05-27): aparecem na
+    // escala (R111-R129 do XLSX geral) e no KPI manual da Tia Erica, mesmo
+    // quando os campos motorista/cod/placa estao vazios. Antes o catalogo
+    // descartava e o KPI saia com 46 lojas em vez de 57.
+    'Prezunic SPID - Meier',
+    'Prezunic SPID - Vila Isabel',
+    'Prezunic SPID - Recreio',
+    'Prezunic SPID - Barra',
+    'Prezunic SPID - Alpha Mall',
+    'Prezunic SPID - Parque das Rosas',
+    'Prezunic SPID - Carioca',
+    'Prezunic SPID - Centro',
+    'Prezunic SPID - Farme de Amoedo',
+    'Prezunic SPID - Visconde de Pirajá (Ipanema)',
+    'Prezunic SPID - Copacabana',
   ],
   // Catálogo construído a partir das escalas de 18-21/05/2026 (41 lojas observadas).
   ASSAI: [
