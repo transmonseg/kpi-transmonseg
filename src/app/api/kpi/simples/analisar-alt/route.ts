@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { type AlteracaoParsed } from '@/lib/parsers/alteracao-text'
 import { parseAlteracoesV2 } from '@/lib/parsers/alteracoes-v2'
 import { blocoToParsed } from '@/lib/parsers/alteracoes-v2-adapter'
@@ -36,11 +37,17 @@ async function extrairAlteracoesPdf(
 
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  // createClient (com cookies) so pra autenticacao
+  const supabaseAuth = await createClient()
+  const { data: { user } } = await supabaseAuth.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
 
-  const ctx = await buildLookupContext(supabase)
+  // Bug I3 (auditoria 2026-05-27): buildLookupContext e inferirSaiDaEscala leem
+  // escala_linhas/lojas. Se RLS esconder dados do user autenticado, retornam
+  // vazio e inferencia falha. Service client ignora RLS — leitura sempre
+  // completa. Usar APOS auth check.
+  const svc = createServiceClient()
+  const ctx = await buildLookupContext(svc)
   const ct = req.headers.get('content-type') ?? ''
 
   if (!ct.includes('application/json')) {
@@ -51,13 +58,13 @@ export async function POST(req: NextRequest) {
     if (pdfFile instanceof File) {
       const buf = Buffer.from(await pdfFile.arrayBuffer())
       const { alteracoes } = await extrairAlteracoesPdf(buf, ctx)
-      const inferidas = await inferirSaiDaEscala(alteracoes, data, supabase)
+      const inferidas = await inferirSaiDaEscala(alteracoes, data, svc)
       return NextResponse.json(inferidas)
     }
     const textoField = fd.get('texto')
     if (typeof textoField === 'string') {
       const alteracoes = parseTextoV2(textoField, ctx)
-      const inferidas = await inferirSaiDaEscala(alteracoes, data, supabase)
+      const inferidas = await inferirSaiDaEscala(alteracoes, data, svc)
       return NextResponse.json(inferidas)
     }
     return new NextResponse('Envie "texto" ou "pdf".', { status: 400 })
@@ -68,6 +75,6 @@ export async function POST(req: NextRequest) {
   const texto = String(body.texto)
   const data = typeof body.data === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.data) ? body.data : ''
   const alteracoes = parseTextoV2(texto, ctx)
-  const inferidas = await inferirSaiDaEscala(alteracoes, data, supabase)
+  const inferidas = await inferirSaiDaEscala(alteracoes, data, svc)
   return NextResponse.json(inferidas)
 }
