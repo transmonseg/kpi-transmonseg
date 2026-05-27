@@ -217,6 +217,77 @@ export async function POST(req: NextRequest) {
     console.log(`[/api/kpi/simples] Aplicando ${alteracoes.length} alterações inline`)
   }
 
+  // Bug A (auditoria dia 25 2026-05-27): persiste escala_linhas com estado
+  // EFETIVO do dia (pos-alteracoes). Sem isso, inferirSaiDaEscala (U5) so
+  // achava historico antigo e o KPI saia com motoristas errados. Agora
+  // dia 25 vira fonte de verdade pras alteracoes futuras do dia, e
+  // regerar_local/dashboards veem o dia atual.
+  //
+  // Idempotente: deleta upload-fluxo-KPI anterior do mesmo dia antes (se houver).
+  // Nao toca em uploads do fluxo /escalas/upload (tipos GERAL/ZONA_SUL/PAX/etc).
+  try {
+    const TIPO_FLUXO = 'KPI_SIMPLES'
+    const { data: prev } = await svc
+      .from('escala_uploads')
+      .select('id')
+      .eq('data_escala', data)
+      .eq('tipo', TIPO_FLUXO)
+      .maybeSingle()
+    if (prev) await svc.from('escala_uploads').delete().eq('id', prev.id)
+
+    const { data: upload, error: uplErr } = await svc
+      .from('escala_uploads')
+      .insert({
+        data_escala: data,
+        tipo: TIPO_FLUXO,
+        arquivo_path: escalaPaths[0] ?? '/simples',
+        nome_arquivo: `/api/kpi/simples ${data}`,
+        qtd_linhas: escalaLinhas.length,
+        status: 'processado',
+        uploaded_by: user.id,
+      })
+      .select('id')
+      .single()
+
+    if (!uplErr && upload?.id) {
+      const BATCH = 200
+      for (let i = 0; i < escalaLinhas.length; i += BATCH) {
+        const slice = escalaLinhas.slice(i, i + BATCH)
+        const rows = slice.map(l => ({
+          escala_upload_id: upload.id,
+          rede_id: l.rede_id,
+          loja_id: null,
+          loja_nome_raw: l.loja_nome_raw,
+          loja_codigo_raw: l.loja_codigo_raw,
+          placa_norm: l.placa_norm || null,
+          placa_raw: l.placa_raw,
+          motorista_nome: l.motorista_nome,
+          motorista_codigo: l.motorista_codigo,
+          tipo_carro: l.tipo_carro,
+          turno: l.turno,
+          carro_ordem: l.carro_ordem,
+          obs: l.obs,
+          restricao: l.restricao,
+          peso_kg: l.peso_kg,
+          paletes: l.paletes,
+          data_entrega: l.data_entrega ?? data,
+          raw_row_num: l.raw_row_num,
+          sub_rede: l.sub_rede ?? null,
+          raw_json: l,
+        }))
+        const { error: insErr } = await svc.from('escala_linhas').insert(rows)
+        if (insErr) {
+          console.warn('[/api/kpi/simples] INSERT escala_linhas falhou:', insErr.message)
+          break
+        }
+      }
+    } else {
+      console.warn('[/api/kpi/simples] INSERT escala_uploads falhou:', uplErr?.message)
+    }
+  } catch (e) {
+    console.warn('[/api/kpi/simples] Persistencia escala_linhas erro:', e instanceof Error ? e.message : e)
+  }
+
   // Cadastro de placas conhecidas (alimenta o parser PDF p/ corrigir OCR na pos-4):
   // - Placas das linhas da escala (fonte XLSX, sem OCR) — fonte primária.
   // - Histórico de `unitrac_paradas` no banco — reforço.
