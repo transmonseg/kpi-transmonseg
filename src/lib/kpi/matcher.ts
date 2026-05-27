@@ -910,6 +910,18 @@ export async function cruzaEscalaUnitrac(
           if (linha.loja_codigo_raw && p.codigo_loja && codCasa(linha.loja_codigo_raw, p.codigo_loja)) return true
           if (matchScore(linha.loja_nome_raw, p.nome_loja || p.local_parada || '') <= 1) return true
         }
+        // Bug dia 19 (auditoria 2026-05-27): parada com codigo_loja Unitrac
+        // pertencente a OUTRA REDE no cadastro NAO deve casar via geo fallback.
+        // Caso KMZ-7057 dia 19: parada cod 560038 SENDAS Petropolis Lj 38
+        // estava sendo atribuida a Assai Petropolis Loja 181 via geo (mesma
+        // cidade, raio 150m capturava ambas). Bloqueio cross-rede previne.
+        if (p.codigo_loja) {
+          const lojaCodUnitrac = lojas.find(l => l.codigo_unitrac === p.codigo_loja)
+          if (lojaCodUnitrac && !redesFungiveis(linha.rede_id).has(lojaCodUnitrac.rede_id)) {
+            // parada pertence a rede diferente — NAO deixa geo fallback salvar
+            return false
+          }
+        }
         // Geo fallback: parada LOJA/FORA_BASE dentro do raio da loja escalada
         if (lojaEscalada && lojaEscalada.lat != null && lojaEscalada.lng != null && p.lat != null && p.lng != null) {
           if (p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE') {
