@@ -146,11 +146,17 @@ function montaSlot(tipoCarro: string, motoristaCel: string, codCel: string, plac
   const placa = extraiPlaca(placaCel) ?? extraiPlaca(motoristaCel) ?? extraiPlaca(codCel)
   const { motorista, codigo } = extraiCodigoMotorista(motoristaCel, codCel)
   if (!placa && !motorista && codigo === null) return null
-  // Preserva tipo do carro no início do nome do motorista (ex: "KIA RENAN") se houver
-  let nomeFinal = motorista
+
+  // Bug C dia 25 (auditoria 2026-05-27): tipo do carro NAO deve grudar no nome
+  // do motorista. Antes virava "TRUCK C/ RAMPA E REFRI ALLAN" e o sistema usava
+  // a string inteira como motorista_nome em escala_linhas e nos KPIs.
+  // Decisao: motorista vence sempre que existir; tipoCarro so vira nome quando
+  // a coluna MOTORISTA esta vazia (caso raro).
   const tipoLimpo = tipoCarro.trim()
-  if (tipoLimpo && motorista) nomeFinal = `${tipoLimpo} ${motorista}`.trim()
-  else if (tipoLimpo && !motorista) nomeFinal = tipoLimpo
+  const nomeFinal: string | null = motorista
+    ? motorista
+    : (tipoLimpo || null)
+
   return {
     motorista_nome: nomeFinal,
     motorista_codigo: codigo,
