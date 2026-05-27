@@ -1876,9 +1876,9 @@ describe('Bug 3 — parada LOJA duplicada não deve bloquear geo-fallback FORA_B
     // Loja 30 casa com a parada matinal (LOJA cod=9039030)
     expect(r30?.paradas).toHaveLength(1)
     expect(r30?.paradas[0].chegada).toEqual(new Date('2026-05-19T04:47:00.000Z'))
-    // Loja 47 deve casar via geo-fallback com a parada FORA_BASE 19:40 (15m do cadastro)
-    expect(r47?.paradas).toHaveLength(1)
-    expect(r47?.paradas[0].parada_id).toBe('pNoite')
+    // Regra Tia Erica (2026-05-27): FORA_BASE não vira entrega. Loja 47 fica SEM
+    // (será exibida como "não foi ao cliente" pro operador).
+    expect(r47?.paradas ?? []).toHaveLength(0)
   })
 })
 
@@ -1948,11 +1948,9 @@ describe('Bug 4 — multi-row mesma rede: distribuição correta entre N linhas 
     expect(rMar?.paradas ?? []).toHaveLength(0)
   })
 
-  // Bug 6 — SL curta com matched=FORA_BASE/FAKE_EXIT (loja sem geofence LOJA).
-  // Quando o GPS nunca classifica nada como LOJA (loja não tem geofence registrada
-  // no Unitrac), o matcher cai em geo-fallback e casa um FORA_BASE/FAKE_EXIT
-  // próximo. A SL real é a saída do ÚLTIMO FORA_BASE da cadeia adjacente —
-  // não a saída do primeiro FORA_BASE matched.
+  // Regra Tia Erica (2026-05-27): paradas FORA_BASE/FAKE_EXIT NÃO viram entrega
+  // mesmo quando próximas da loja. Os 2 casos abaixo (ATACADAO MANILHA, GUANABARA
+  // BENTO RIBEIRO) usavam geo-fallback FORA_BASE — agora ficam SEM parada.
   it('Bug 6: ATACADAO MANILHA dia 19 (matched=FORA_BASE → cadeia FORA_BASE longa, mesma área)', async () => {
     // GPS QSS1E48 dia 19 — sem LOJA, só FORA_BASE perto da loja
     const lojaLat = -22.85498, lojaLng = -43.10032
@@ -1973,12 +1971,8 @@ describe('Bug 4 — multi-row mesma rede: distribuição correta entre N linhas 
     ]
     const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
     const r = rotas.find((x) => x.escala_linha_id === 'lMan')
-    expect(r?.paradas ?? []).toHaveLength(1)
-    // SL real = saída do último FORA_BASE da cadeia adjacente (≤300m da loja, gap pequeno) = 10:17
-    const saida = r!.paradas[0].saida
-    const hh = saida.getUTCHours()
-    const mm = saida.getUTCMinutes()
-    expect(`${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`).toBe('10:17')
+    // Regra Tia Erica: sem parada LOJA real, linha fica SEM.
+    expect(r?.paradas ?? []).toHaveLength(0)
   })
 
   it('Bug 6: GUANABARA BENTO RIBEIRO dia 19 (matched=FAKE_EXIT → cadeia FORA_BASE com gap 16min)', async () => {
@@ -2002,12 +1996,8 @@ describe('Bug 4 — multi-row mesma rede: distribuição correta entre N linhas 
     ]
     const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
     const r = rotas.find((x) => x.escala_linha_id === 'lBR')
-    expect(r?.paradas ?? []).toHaveLength(1)
-    // SL real = saída de p4 (último FORA_BASE da cadeia adjacente) = 12:48
-    const saida = r!.paradas[0].saida
-    const hh = saida.getUTCHours()
-    const mm = saida.getUTCMinutes()
-    expect(`${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`).toBe('12:48')
+    // Regra Tia Erica: sem parada LOJA real, linha fica SEM.
+    expect(r?.paradas ?? []).toHaveLength(0)
   })
 
   it('Bug 6 não-regressão: PREZUNIC FONSECA dia 20 (matched=LOJA + FORA_BASE longo, padrão original)', async () => {

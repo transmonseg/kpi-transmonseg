@@ -747,6 +747,7 @@ function assignOptimal(
   linhas: EscalaLinhaRow[],
   paradas: UnitracParadaRow[],
   paradaRedes?: Map<string, Set<string>>,
+  lojas?: LojaRow[],
 ): Map<string, UnitracParadaRow> {
   const result = new Map<string, UnitracParadaRow>()
   if (!linhas.length || !paradas.length) return result
@@ -764,9 +765,59 @@ function assignOptimal(
   // - Parada cross-rede E SEM parada compatível disponível: base + REDE_PENALTY
   //   (queda graciosa T11: VIANENSE com única parada SENDAS ainda é atribuído).
   const REDE_PENALTY = 5
+  // Guard cod_loja dono: parada cuja codigo_loja casa exatamente com loja
+  // cadastrada A não pode ser atribuída a linha cuja loja cadastrada é B≠A.
+  // Caso REGINA dia 19: 14 paradas cod=5353012 (BARRA IMBUY) ficavam distribuídas
+  // por Hungarian entre 4 linhas REGINA porque todas compartilham token "REGINA"
+  // → scorePair finito → Hungarian aceitava. Agora bloqueia explicitamente.
+  const lojaDaLinha = new Map<string, LojaRow | undefined>()
+  if (lojas) {
+    for (const l of linhas) {
+      const fungL = redesFungiveis(l.rede_id)
+      const candidatas = lojas.filter(c => {
+        if (!fungL.has(c.rede_id)) return false
+        if (l.loja_codigo_raw && c.codigo_escala === l.loja_codigo_raw) return true
+        if (l.loja_codigo_raw && c.codigo_unitrac === l.loja_codigo_raw) return true
+        if (matchScore(l.loja_nome_raw, c.nome) === 0) return true
+        if (l.loja_codigo_raw && c.codigo_unitrac && codCasa(l.loja_codigo_raw, c.codigo_unitrac)) return true
+        return false
+      })
+      // Cadastros duplicados (versão escala sem cod_unitrac + versão Unitrac com cod):
+      // prefere o com cod_unitrac, que é a fonte de verdade pra match com paradas.
+      const dona = candidatas.find(c => c.codigo_unitrac) ?? candidatas[0]
+      lojaDaLinha.set(l.id, dona)
+    }
+  }
   const scoreComRede = (l: EscalaLinhaRow, p: UnitracParadaRow): number => {
     const base = scorePair(l, p)
     if (base === Infinity) return Infinity
+    if (lojas && p.codigo_loja) {
+      // Parada cod_loja casa com loja cadastrada (em qualquer rede) → dona explícita.
+      // Bloqueia atribuição quando:
+      //   (a) linha tem lojaCad COM cod_unitrac próprio e dona ≠ lojaCad (REGINA 1 DE MAIO)
+      //   (b) linha sem lojaCad E dona é de rede não-fungível com nome ≠ (CAB→FEIRA_NOVA)
+      // Permite:
+      //   - lojaCad sem cod_unitrac (duplicata da escala) + dona em rede fungível: é a mesma loja
+      //   - queda graciosa T11: lojaCad ausente + dona em rede fungível ou nome bate
+      const dona = lojas.find(c => c.codigo_unitrac === p.codigo_loja)
+      if (dona) {
+        const lojaL = lojaDaLinha.get(l.id)
+        const fungL2 = redesFungiveis(l.rede_id)
+        if (lojaL && dona.id !== lojaL.id) {
+          // Duplicata: lojaL é cadastro da escala sem cod (versão "escala-side"),
+          // dona é cadastro Unitrac com cod. Se rede fungível, são o mesmo lugar físico.
+          if (!lojaL.codigo_unitrac && fungL2.has(dona.rede_id)) {
+            // permite — duplicata
+          } else {
+            return Infinity
+          }
+        }
+        if (!lojaL) {
+          const nomeBate = matchScore(l.loja_nome_raw, dona.nome) <= 1
+          if (!fungL2.has(dona.rede_id) && !nomeBate) return Infinity
+        }
+      }
+    }
     if (!paradaRedes) return base
     const redes = paradaRedes.get(p.id)
     if (!redes || redes.size === 0) return base
@@ -1035,7 +1086,7 @@ export async function cruzaEscalaUnitrac(
 
     // Optimal assignment: para n≤5 linhas usa brute-force (minimiza total score);
     // para n>5 Hungarian. Score recebe paradaRedes pra penalty +5 quando cross-rede.
-    const assigned = assignOptimal(linhas, lojasParadas, paradaRedes)
+    const assigned = assignOptimal(linhas, lojasParadas, paradaRedes, lojas)
     for (const [lineId, parada] of assigned) {
       matchByEscalaId.set(lineId, parada)
       usados.add(parada.id)
@@ -1079,12 +1130,42 @@ export async function cruzaEscalaUnitrac(
       for (let i = 0; i < linhasOrdenadas.length; i++) {
         const linha = linhasOrdenadas[i]
         let melhorIdx = -1
+        // Bug ARMAZEM dia 19 REGINA 1 DE MAIO: TML6D96 fez 14 paradas todas em
+        // BARRA IMBUY (cod=5353012). Linha 1 DE MAIO (cod_escala diferente, sem
+        // codigo_unitrac cadastrado) compartilha token "REGINA" → scorePair finito.
+        // Fallback temporal atribuía uma das paradas cod=5353012 a 1 DE MAIO.
+        // Guard: se parada.codigo_loja casa EXATAMENTE com uma loja cadastrada
+        // da rede, essa parada só pode ser atribuída à dona dessa loja.
+        const fungLin = redesFungiveis(linha.rede_id)
+        const candidatasL = lojas.filter(l => {
+          if (!fungLin.has(l.rede_id)) return false
+          if (linha.loja_codigo_raw && l.codigo_escala === linha.loja_codigo_raw) return true
+          if (linha.loja_codigo_raw && l.codigo_unitrac === linha.loja_codigo_raw) return true
+          if (matchScore(linha.loja_nome_raw, l.nome) === 0) return true
+          if (linha.loja_codigo_raw && l.codigo_unitrac && codCasa(linha.loja_codigo_raw, l.codigo_unitrac)) return true
+          return false
+        })
+        const lojaDaLinha = candidatasL.find(c => c.codigo_unitrac) ?? candidatasL[0]
         for (let j = 0; j < paradasOrdenadas.length; j++) {
           if (usadosFallback.has(j)) continue
           const parada = paradasOrdenadas[j]
           const redes = paradaRedes.get(parada.id) ?? new Set<string>()
           // Bloqueia se a parada bate claramente com outra rede
           if (redes.size > 0 && !redes.has(linha.rede_id)) continue
+          // Guard cod_loja dono: parada com codigo_loja que pertence a OUTRA loja
+          // cadastrada (qualquer rede) não pode ser atribuída a esta linha.
+          if (parada.codigo_loja) {
+            const donaCadastrada = lojas.find(l => l.codigo_unitrac === parada.codigo_loja)
+            const fung = redesFungiveis(linha.rede_id)
+            if (donaCadastrada && lojaDaLinha && donaCadastrada.id !== lojaDaLinha.id) {
+              // Duplicata: lojaDaLinha sem cod_unitrac + dona em rede fungível = mesma loja
+              if (!(lojaDaLinha.codigo_unitrac == null && fung.has(donaCadastrada.rede_id))) continue
+            }
+            if (donaCadastrada && !lojaDaLinha) {
+              const nomeBate = matchScore(linha.loja_nome_raw, donaCadastrada.nome) <= 1
+              if (!fung.has(donaCadastrada.rede_id) && !nomeBate) continue
+            }
+          }
           // Critério primário: scorePair finito (tokens compartilhados ou levenshtein <= 2).
           if (scorePair(linha, parada) < Infinity) {
             melhorIdx = j
@@ -1115,20 +1196,18 @@ export async function cruzaEscalaUnitrac(
     // as canonical_loja como pool de matching geográfico.
     const linhasAindaSemMatch = linhas.filter(l => !matchByEscalaId.has(l.id))
     if (linhasAindaSemMatch.length > 0) {
+      // Regra Tia Erica (2026-05-27): paradas FORA_BASE/FAKE_EXIT NUNCA são entrega.
+      // "Base vai estar escrito base, cliente vai estar escrito a LOJA. Fora de base
+      // não foi nem ao cliente nem à base". Geo fallback agora restrito a paradas
+      // já classificadas LOJA pelo parser Unitrac mas não casadas via Priority 1-3
+      // do resolveLojaId (cod/nome). Aceitar FORA_BASE/FAKE_EXIT gerava falsos
+      // positivos massivos (Princesa Niterói Barcas, ZS Loja 01/09/22/25/30/47,
+      // Prezunic Jardim Oceanico, etc).
       const paradasForaBase = todasAjustadas
         .filter(p =>
-          // Inclui FAKE_EXIT também: lojas com geofence ausente no Unitrac ficam como
-          // FAKE_EXIT quando duração curta. Caso REGINA 1 DE MAIO dia 19: parada 14:20
-          // (7min) é entrega rápida em -22.4133, mas Unitrac classifica FAKE_EXIT
-          // porque cadastro Unitrac não tem geofence REGINA. Geo fallback aqui usa
-          // coord da loja CADASTRADA pra fazer match independente do parser Unitrac.
-          (p.classificacao === 'FORA_BASE' || p.classificacao === 'FAKE_EXIT') &&
+          p.classificacao === 'LOJA' &&
           p.lat != null && p.lng != null &&
           !usados.has(p.id) &&
-          // Exclui paradas antes das 03:00 BRT — veículo estacionado perto da loja
-          // durante a madrugada não é entrega. T18-N usa 07:00; geo usa 03:00 (mesma
-          // lógica do filtrarParadaNocturnaSolitaria) pois algumas entregas reais
-          // começam às 04:00-05:00.
           new Date(p.chegada).getUTCHours() >= 3
         )
         .sort((a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
@@ -1253,13 +1332,29 @@ export async function cruzaEscalaUnitrac(
         // 0 quando local_parada cita N lojas (ARMAZEM dia 20: parada BARRA IMBUY tem
         // local "5353012 IMBUY, 5353014 MAIO, 5353016 LUCIO, 5353017 ABASTECEDORA")
         // e clona pra todas. Geograficamente é apenas BARRA IMBUY.
-        const lojaCad = lojas.find(l => {
-          if (l.rede_id !== linha.rede_id) return false
+        const fungLinComp = redesFungiveis(linha.rede_id)
+        const candidatasComp = lojas.filter(l => {
+          if (!fungLinComp.has(l.rede_id)) return false
           if (linha.loja_codigo_raw && l.codigo_escala === linha.loja_codigo_raw) return true
-          return matchScore(linha.loja_nome_raw, l.nome) <= 1
+          if (linha.loja_codigo_raw && l.codigo_unitrac === linha.loja_codigo_raw) return true
+          if (matchScore(linha.loja_nome_raw, l.nome) === 0) return true
+          if (linha.loja_codigo_raw && l.codigo_unitrac && codCasa(linha.loja_codigo_raw, l.codigo_unitrac)) return true
+          return false
         })
+        const lojaCad = candidatasComp.find(c => c.codigo_unitrac) ?? candidatasComp[0]
         const compartilhada = paradasUsadasNaPlaca.find(p => {
           if (scorePair(linha, p) !== 0) return false
+          // Guard cod_loja dono: se a parada tem codigo_loja casando com OUTRA
+          // loja cadastrada da rede, não compartilha. Caso REGINA dia 19: parada
+          // cod=5353012 (BARRA IMBUY) não pode virar entrega da 1 DE MAIO mesmo
+          // que share token REGINA e estejam <500m.
+          if (p.codigo_loja) {
+            const dona = lojas.find(l => l.codigo_unitrac === p.codigo_loja)
+            if (dona && lojaCad && dona.id !== lojaCad.id) {
+              if (!(lojaCad.codigo_unitrac == null && fungLinComp.has(dona.rede_id))) return false
+            }
+            if (dona && !lojaCad) return false
+          }
           if (lojaCad?.lat != null && lojaCad?.lng != null && p.lat != null && p.lng != null) {
             const d = haversine(lojaCad.lat, lojaCad.lng, p.lat, p.lng)
             return d <= 500
@@ -1351,8 +1446,34 @@ export async function cruzaEscalaUnitrac(
           // paradas cronológicas — convenção: 1ª chegada = 1ª linha da escala.
           const n = Math.min(linhasOrd.length, paradasOrd.length)
           for (let i = 0; i < n; i++) {
-            matchByEscalaId.set(linhasOrd[i].id, paradasOrd[i])
-            usados.add(paradasOrd[i].id)
+            const linha = linhasOrd[i]
+            const parada = paradasOrd[i]
+            // Guard cod_loja dono (mesmo do scoreComRede e fallback temporal):
+            // se parada tem cod_loja casando com loja cadastrada ≠ loja da linha,
+            // pula. Caso ZS L07 RODRIGO/KWK4593 dia 19: T8 N:N atribuía parada
+            // cod=9039103 (Loja 21) à linha Loja 07 cronologicamente.
+            if (parada.codigo_loja) {
+              const dona = lojas.find(l => l.codigo_unitrac === parada.codigo_loja)
+              const fungL = redesFungiveis(linha.rede_id)
+              const candidatasT8 = lojas.filter(c => {
+                if (!fungL.has(c.rede_id)) return false
+                if (linha.loja_codigo_raw && c.codigo_escala === linha.loja_codigo_raw) return true
+                if (linha.loja_codigo_raw && c.codigo_unitrac === linha.loja_codigo_raw) return true
+                if (matchScore(linha.loja_nome_raw, c.nome) === 0) return true
+                if (linha.loja_codigo_raw && c.codigo_unitrac && codCasa(linha.loja_codigo_raw, c.codigo_unitrac)) return true
+                return false
+              })
+              const lojaL = candidatasT8.find(c => c.codigo_unitrac) ?? candidatasT8[0]
+              if (dona && lojaL && dona.id !== lojaL.id) {
+                if (!(lojaL.codigo_unitrac == null && fungL.has(dona.rede_id))) continue
+              }
+              if (dona && !lojaL) {
+                const nomeBate = matchScore(linha.loja_nome_raw, dona.nome) <= 1
+                if (!fungL.has(dona.rede_id) && !nomeBate) continue
+              }
+            }
+            matchByEscalaId.set(linha.id, parada)
+            usados.add(parada.id)
           }
         }
       }
