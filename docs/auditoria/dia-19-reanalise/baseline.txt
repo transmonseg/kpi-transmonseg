@@ -1,0 +1,12 @@
+◇ injected env (4) from .env.local // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+  ARMAZEM_GRAO    14/14 (100%)  14✅ 0⚠️ 0❌ 0❓
+  ASSAI            8/41 ( 20%)  8✅ 12⚠️ 18❌ 3❓
+  ATACADAO         1/2 ( 50%)  1✅ 0⚠️ 1❌ 0❓
+  CARREFOUR        4/10 ( 40%)  4✅ 4⚠️ 1❌ 1❓
+  GUANABARA       13/28 ( 46%)  13✅ 6⚠️ 4❌ 5❓
+  PREZUNIC         8/57 ( 14%)  8✅ 44⚠️ 2❌ 3❓
+  PRINCESA         0/26 (  0%)  0✅ 23⚠️ 3❌ 0❓
+  SUPERPRIX        1/10 ( 10%)  1✅ 8⚠️ 0❌ 1❓
+  ZONA_SUL        13/53 ( 25%)  13✅ 24⚠️ 7❌ 9❓
+
+  TOTAL DIA 19: 62/241 (26%) ✅  121⚠️  36❌  22❓
