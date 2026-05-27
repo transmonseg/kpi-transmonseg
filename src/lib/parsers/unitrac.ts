@@ -204,9 +204,13 @@ function computeSaidaCd(paradas: ParadaUnitrac[]): Date | null {
     if (isBase) lastBaseSaida = p.saida
   }
 
-  // Se o caminhão não passou pelo CD neste período (já estava na rua desde meia-noite),
-  // usa a chegada na primeira loja como proxy.
-  if (!lastBaseSaida) return paradas[primeiraLojaIdx].chegada
+  // Bug I1 (auditoria externa Claude.ai 2026-05-27): divergencia com matcher.ts.
+  // Antes: usava chegada na primeira loja como proxy quando nao havia BASE antes.
+  // Isso gerava saida_cd inflado (saida_cd = chegada_loja → 0 min de viagem,
+  // impossivel fisicamente). matcher.ts ja retorna null nesse caso ("em branco
+  // honesto > timestamp errado" — decisao da Tia Erica no video 11/05).
+  // Agora unitrac.ts alinhado: null quando nao acha BASE anterior.
+  if (!lastBaseSaida) return null
 
   return lastBaseSaida
 }
