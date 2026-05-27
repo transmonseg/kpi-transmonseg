@@ -58,6 +58,19 @@ function brtHHMMtoDate(dataIso: string, hhmm: string): Date | null {
 type LineEdit = {
   rede_id: string
   ordem: number
+  /**
+   * Bugs N8+N11 (auditoria 2026-05-27): match por `ordem` é frágil — se a
+   * geração tem alteração nova entre o preview e o re-gerar, o sort interno
+   * pode mudar e o índice referencia linha errada.
+   *
+   * Frontend pode (opcionalmente) enviar `match_loja_nome_raw` +
+   * `match_placa_norm` + `match_carro_ordem` pra fazer match estável por
+   * (rede + loja + placa + carro_ordem). Se presentes, têm prioridade
+   * sobre o índice numérico.
+   */
+  match_loja_nome_raw?: string
+  match_placa_norm?: string | null
+  match_carro_ordem?: 1 | 2
   placa?: string
   motorista?: string
   loja?: string
@@ -532,7 +545,22 @@ export async function POST(req: NextRequest) {
       // Apply per-line overrides from frontend edits
       for (const edit of lineEdits) {
         if (edit.rede_id !== rede_id) continue
-        const i = edit.ordem - 1
+
+        // Bugs N8+N11: prefere match por chave estavel (loja+placa+carro)
+        // sobre indice numerico. Se frontend mandou match_*, usa eles.
+        let i = -1
+        if (edit.match_loja_nome_raw !== undefined) {
+          i = sorted.findIndex(s => {
+            if (edit.match_loja_nome_raw !== s.esc.loja_nome_raw) return false
+            if (edit.match_carro_ordem !== undefined && edit.match_carro_ordem !== s.esc.carro_ordem) return false
+            if (edit.match_placa_norm !== undefined && edit.match_placa_norm !== (s.rota.placa_norm ?? null)) return false
+            return true
+          })
+        }
+        if (i < 0) {
+          // Fallback retrocompat: indice numerico
+          i = edit.ordem - 1
+        }
         if (i < 0 || i >= sorted.length) continue
         const cur = sorted[i]
         const nextRota = { ...cur.rota }
