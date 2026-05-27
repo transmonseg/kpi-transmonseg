@@ -1203,11 +1203,41 @@ export async function cruzaEscalaUnitrac(
       // Infere rede de cada parada via cadastro `lojas`. Paradas não identificadas
       // (redeInf=null) viram coringas atribuíveis a qualquer rede da escala.
       // Reutiliza `redesPresentes` declarado acima (T11) — evita shadowing.
+      //
+      // T8-X (bug 2A dia 19): se a parada tem codigo_loja/nome_unitrac que casa
+      // EXATAMENTE com cadastro de QUALQUER rede, essa rede é a verdadeira da
+      // parada — bloqueia atribuição a outra rede mesmo que GEO fallback case.
+      // Caso ZS Loja 07 dia 19: FHO5F88 fez SUPERPRIX 3030201 (cod cadastrado em
+      // SUPERPRIX), mas GEO da parada caía dentro do raio da Loja 40 ZS Ipanema
+      // (116m). Sem T8-X, T8 N:N atribuía parada SUPERPRIX como entrega ZS Loja 07.
       const paradaRedeInfer = new Map<string, string | null>()
       for (const p of paradasLojaLivres) {
         let redeInf: string | null = null
-        for (const r of redesPresentes) {
-          if (resolveLojaId(p, lojas, r)) { redeInf = r; break }
+        // Pass 1: codigo/nome exato (priorities 1-2 do resolveLojaId — SEM GEO).
+        // Garante que parada com cod cadastrado em uma rede NÃO migre pra outra
+        // rede só porque GEO overlapping captura loja vizinha cadastrada.
+        if (p.codigo_loja || p.nome_loja) {
+          for (const r of redesPresentes) {
+            const redeLojas = lojas.filter(l => l.rede_id === r)
+            let bate = false
+            if (p.codigo_loja) {
+              bate = redeLojas.some(l => l.codigo_unitrac === p.codigo_loja)
+            }
+            if (!bate && p.nome_loja) {
+              const normPar = p.nome_loja.trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+              bate = redeLojas.some(l => {
+                if (!l.nome_unitrac) return false
+                return l.nome_unitrac.trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '') === normPar
+              })
+            }
+            if (bate) { redeInf = r; break }
+          }
+        }
+        // Pass 2: fallback completo (inclui GEO) — só se nada bateu em codigo/nome.
+        if (!redeInf) {
+          for (const r of redesPresentes) {
+            if (resolveLojaId(p, lojas, r)) { redeInf = r; break }
+          }
         }
         paradaRedeInfer.set(p.id, redeInf)
       }

@@ -1715,6 +1715,78 @@ describe('T18 — plate-swap aceita madrugada + GPS:NAO', () => {
   })
 })
 
+// --- T8-X: bug 2A dia 19 ZS Loja 07 — guard de codigo cross-rede ---
+//
+// Caso: FHO5F88 (placa escalada para Loja 07 ZS) fez parada cod=3030201
+// (SUPERPRIX LJ 201 - IPANEMA, fora-de-rede). T8 N:N aceitava porque
+// paradaRedeInfer usa resolveLojaId que cai em GEO fallback: parada SUPERPRIX
+// fica a 116m da Loja 40 ZS Ipanema (dentro do raio 200), então `redeInf`
+// vira 'ZONA_SUL' por engano. Logo, T8 atribui a parada SUPERPRIX como sendo
+// uma entrega ZS — gerando KPI errado (sys=05:55/06:45 quando a placa NÃO
+// foi pra Loja 07).
+//
+// Fix: T8-X paradaRedeInfer prioriza codigo exato (priority 1 do resolveLojaId).
+// Se codigo_loja da parada bate cadastro em qualquer rede, essa rede é a
+// verdadeira — não usar GEO de outra rede como fallback.
+describe('T8 N:N — guard de codigo cross-rede (bug 2A)', () => {
+  it('parada com codigo_loja cadastrado em outra rede NAO entra como rede da escala via geo overlap', async () => {
+    // FHO5F88 escalada para Loja 07 ZS (Leblon). Única parada LOJA é SUPERPRIX
+    // 3030201 — coord (-22.98418, -43.2029), 116m da Loja 40 ZS Ipanema (raio 200).
+    // scorePair retorna Infinity (SUPERPRIX != LEBLON). T8 não deve casar.
+    const linhas: EscalaLinhaRow[] = [
+      { id: 'l07', rede_id: 'ZONA_SUL', placa_norm: 'FHO5F88', loja_nome_raw: 'Zona Sul Loja 07 - Leblon', loja_codigo_raw: '07', motorista_nome: 'CLEYTON', carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    const paradas: UnitracParadaRow[] = [
+      {
+        id: 'p_sp201', placa_norm: 'FHO5F88',
+        chegada: '2026-05-19T05:55:00.000Z', saida: '2026-05-19T06:45:00.000Z',
+        duracao_seg: 3015,
+        local_parada: '3030201 - SUPERPRIX LJ 201 - IPANEMA',
+        codigo_loja: '3030201', nome_loja: 'SUPERPRIX LJ 201 - IPANEMA',
+        lat: -22.98418, lng: -43.2029,
+        classificacao: 'LOJA', ordem: 1,
+      },
+    ]
+    const lojas: LojaRow[] = [
+      // Loja 07 ZS Leblon (escalada — coord diferente)
+      { id: 'l07-zs', rede_id: 'ZONA_SUL', nome: 'ZONA SUL LOJA 07 - LEBLON', nome_normalizado: 'zona sul loja 07 leblon', codigo_escala: '07', codigo_unitrac: '9039007', nome_unitrac: '07 - ZONA SUL - LEBLON', lat: -22.98373, lng: -43.22696, raio_metros: 200 },
+      // Loja 40 ZS Ipanema (perto da SUPERPRIX — gera GEO match acidental)
+      { id: 'l40-zs', rede_id: 'ZONA_SUL', nome: 'ZONA SUL LOJA 40 - IPANEMA', nome_normalizado: 'zona sul loja 40 ipanema', codigo_escala: '40', codigo_unitrac: '9039040', nome_unitrac: '40 - ZONA SUL - IPANEMA', lat: -22.98314, lng: -43.20406, raio_metros: 200 },
+      // SUPERPRIX 201 (rede CORRETA da parada — codigo bate)
+      { id: 'sp201', rede_id: 'SUPERPRIX', nome: 'SUPERPRIX LJ 201 - IPANEMA', nome_normalizado: 'superprix lj 201 ipanema', codigo_escala: '201', codigo_unitrac: '3030201', nome_unitrac: 'SUPERPRIX LJ 201 - IPANEMA', lat: -22.98388, lng: -43.20324, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(linhas, paradas, lojas)
+    const r07 = rotas.find(r => r.escala_linha_id === 'l07')
+    // Esperado: linha NÃO recebe a parada SUPERPRIX (cross-rede via cod identificado)
+    expect(r07?.paradas).toHaveLength(0)
+    expect(r07?.status).toBe('sem_entrega')
+  })
+
+  it('caso saudável: T8 N:N continua atribuindo paradas SEM codigo identificado (coringa)', async () => {
+    // Parada SEM codigo_loja e SEM cadastro identificável: T8 continua atribuindo
+    // por proximidade temporal/N:N (caso ARMAZEM REGINA cadastro pobre). Não regride.
+    const linhas: EscalaLinhaRow[] = [
+      { id: 'la1', rede_id: 'ARMAZEM_GRAO', placa_norm: 'XYZ1234', loja_nome_raw: 'REGINA 1 DE MAIO', loja_codigo_raw: '99', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    const paradas: UnitracParadaRow[] = [
+      {
+        id: 'p_coringa', placa_norm: 'XYZ1234',
+        chegada: '2026-05-19T10:00:00.000Z', saida: '2026-05-19T10:30:00.000Z',
+        duracao_seg: 1800,
+        local_parada: 'PARADA SEM CODIGO',
+        codigo_loja: null, nome_loja: null,
+        lat: null, lng: null,
+        classificacao: 'LOJA', ordem: 1,
+      },
+    ]
+    const lojas: LojaRow[] = []
+    const rotas = await cruzaEscalaUnitrac(linhas, paradas, lojas)
+    const r = rotas.find(r => r.escala_linha_id === 'la1')
+    expect(r?.paradas).toHaveLength(1)
+    expect(r?.paradas[0]?.parada_id).toBe('p_coringa')
+  })
+})
+
 // --- deduplicarPorCodigo check-in curto ---
 describe('cruzaEscalaUnitrac — deduplicarPorCodigo check-in curto', () => {
   it('check-in curto + entrega real (gap 15min) → dedup preserva apenas a maior duração', async () => {
