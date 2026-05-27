@@ -201,7 +201,7 @@ function preencherAba(
     if (!ag) {
       // Loja do catálogo fixo sem dados no dia → linha vazia (apenas nome)
       if (temCatalogoFixo) {
-        escreverLinha(ws, rowIdx, { loja_nome: loja, carro1: null, carro2: null })
+        escreverLinha(ws, rowIdx, { loja_nome: loja, carro1: null, carro2: null, descartadas: [] })
         rowIdx++
       }
       continue
