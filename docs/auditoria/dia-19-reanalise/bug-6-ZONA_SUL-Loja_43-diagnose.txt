@@ -1,0 +1,24 @@
+# Bug 6 diagnose — ZONA_SUL Loja 43 (dia 2026-05-19)
+
+Placa: AFY7J99
+Loja cadastro: (nao encontrada)  lat=null lng=null  raio=---m
+Manual SL: 16:55
+
+## Todas as paradas dia (placa)
+
+| # | classif | chegada | saida | dur | dist→loja | codigo | local |
+|---|---------|---------|-------|-----|-----------|--------|-------|
+| 0 | BASE | 00:02 | 04:22 | 260min | --- | --- | BASE BENASSI - BASE BENASSI |
+| 1 | FAKE_EXIT | 04:23 | 04:33 | 10min | --- | --- | BASE BENASSI - BASE BENASSI |
+| 2 | BASE | 04:41 | 05:37 | 56min | --- | --- | BASE BENASSI - BASE BENASSI |
+| 3 | LOJA | 06:05 | 08:46 | 161min | --- | 560054 | 560054 - SENDAS NOVA IGUAÇU II |
+| 4 | LOJA | 08:51 | 09:21 | 31min | --- | 560054 | 560054 - SENDAS NOVA IGUAÇU II |
+| 5 | LOJA | 09:23 | 10:04 | 40min | --- | 560054 | 560054 - SENDAS NOVA IGUAÇU II |
+| 6 | LOJA | 10:16 | 11:45 | 89min | --- | 560054 | 560054 - SENDAS NOVA IGUAÇU II |
+| 7 | BASE | 12:19 | 12:49 | 30min | --- | --- | BASE BENASSI - BASE BENASSI |
+| 8 | BASE | 12:53 | 15:05 | 132min | --- | --- | BASE BENASSI - BASE BENASSI |
+| 9 | LOJA | 16:09 | 16:20 | 11min | --- | 9039115 | 9039115 - 43 - ZONA SUL - BARRA PENINSULA |
+
+## Parada LOJA candidata (mesma loja)
+
+Nenhuma parada LOJA matched.

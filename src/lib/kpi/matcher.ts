@@ -324,45 +324,84 @@ function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracPara
 }
 
 /**
- * Estende saída da parada LOJA quando o Unitrac classificou a entrega como
- * LOJA curta (≤15min) + FORA_BASE longo (≥30min) na mesma área (≤300m).
+ * Estende saída da entrega seguindo cadeia adjacente de paradas FORA_BASE.
  *
- * Padrão observado em PREZUNIC FONSECA dia 20 (placa KQV1D80):
- *   05:27→05:31 LOJA  dur=4min   dist=12m  (geofence loja)
- *   05:33→09:28 FORA_BASE dur=236min dist=149m (mesmo estacionamento)
- * Manual Tia Érica: SL=09:30 (≈ fim do FORA_BASE).
- * Sistema antigo usava saida da LOJA (05:31), gerando Δ239min vs manual.
+ * Aplica-se em DOIS padrões:
  *
- * Critérios conservadores pra não estender entregas legítimas seguidas de
- * outras paradas (Recreio: LOJA 245min seguida de outras LOJAs — não aplica
- * pois LOJA é longa; Vilar dos Teles: FORA_BASE a 660m — não aplica pois fora).
+ *  A) **matched=LOJA curta + FORA_BASE longo na mesma área** (caso original).
+ *     PREZUNIC FONSECA dia 20 (placa KQV1D80):
+ *       05:27→05:31 LOJA  dur=4min   dist=12m
+ *       05:33→09:28 FORA_BASE dur=236min dist=149m
+ *     Manual: SL=09:30. Sistema antigo: 05:31 (Δ239min).
+ *
+ *  B) **matched=FORA_BASE/FAKE_EXIT (loja sem geofence LOJA)** + cadeia
+ *     adjacente FORA_BASE perto da loja. Bug 6 dia 19:
+ *       ATACADAO MANILHA (QSS1E48): FORA_BASE 25→23→106→129min, gaps 1-2min
+ *         → SL real = 10:17 (último FB da cadeia)
+ *       GUANABARA BENTO RIBEIRO (LBB5205): FAKE_EXIT 3min + FORA_BASE 19min
+ *         (gap 2min) + FORA_BASE 95min (gap 16min) → SL real = 12:48
+ *       CARREFOUR SULACAP, GUANABARA BONSUCESSO: padrão idêntico
+ *     Sem extensão, sistema usa saída do PRIMEIRO FORA_BASE matched (cedo demais).
+ *
+ * Critérios:
+ *   - matched.classificacao ∈ {LOJA (dur≤15min), FORA_BASE, FAKE_EXIT}
+ *   - matched.lat/lng disponíveis (georreferenciada)
+ *   - próxima parada deve ser FORA_BASE (FAKE_EXIT NÃO conta como step da cadeia
+ *     pra evitar regressões; apenas como ponto de matched)
+ *   - gap base ≤10min com FORA_BASE dur ≥15min, OU gap ≤20min com FORA_BASE
+ *     dur ≥30min (cadeia "promissora" tolera gap maior, ex: BENTO RIBEIRO 16min)
+ *   - cada FORA_BASE adjacente ≤300m do matched original
+ *   - segue cadeia (multi-step) acumulando o último saida válido
+ *
+ * Não aplica:
+ *   - LOJA longa (≥15min) seguida de outras LOJAs (Recreio: entregas legítimas)
+ *   - FORA_BASE >300m do matched (Vilar dos Teles: FORA_BASE a 660m)
+ *   - sem FORA_BASE seguinte (Loja 43/45 ZS: fim-de-rota — não fixável aqui)
  */
 function estendeSaidaPorForaBase(
   matched: UnitracParadaRow,
   todasParadas: UnitracParadaRow[],
 ): Date | null {
-  if (matched.classificacao !== 'LOJA') return null
   if (!matched.saida) return null
   const matchedSaidaTs = new Date(matched.saida).getTime()
   const matchedDurSeg = matched.duracao_seg ?? 0
-  if (matchedDurSeg > 15 * 60) return null
+  const cls = matched.classificacao
+  // LOJA: só estende se for curta (≤15min). FORA_BASE/FAKE_EXIT: estende sem
+  // restrição de duração (matched pode ser longo, ex: MANILHA 106min).
+  if (cls === 'LOJA') {
+    if (matchedDurSeg > 15 * 60) return null
+  } else if (cls !== 'FORA_BASE' && cls !== 'FAKE_EXIT') {
+    return null
+  }
   if (matched.lat == null || matched.lng == null) return null
 
   let saidaEstendida: Date | null = null
+  let prevSaidaTs = matchedSaidaTs
   for (const p of todasParadas) {
     const pChegada = new Date(p.chegada).getTime()
-    if (pChegada < matchedSaidaTs) continue
+    if (pChegada <= prevSaidaTs - 1) continue
+    if (pChegada < prevSaidaTs) continue
+    // Só FORA_BASE como step da cadeia. FAKE_EXIT pode ser matched mas não
+    // é step (pra não pular base-bounce indevidamente).
     if (p.classificacao !== 'FORA_BASE') break
-    const gapSeg = (pChegada - matchedSaidaTs) / 1000
-    if (gapSeg > 10 * 60) break
     if (!p.saida) break
-    const pDurSeg = p.duracao_seg ?? 0
-    if (pDurSeg < 30 * 60) break
     if (p.lat == null || p.lng == null) break
+
+    const gapSeg = (pChegada - prevSaidaTs) / 1000
+    const pDurSeg = p.duracao_seg ?? 0
+    // Gradiente: gap≤10min permite FORA_BASE ≥15min. gap≤20min só pra FORA_BASE
+    // longo (≥30min, cadeia "promissora").
+    const aceitaPorGapCurto = gapSeg <= 10 * 60 && pDurSeg >= 15 * 60
+    const aceitaPorGapMedio = gapSeg <= 20 * 60 && pDurSeg >= 30 * 60
+    if (!aceitaPorGapCurto && !aceitaPorGapMedio) break
+
+    // Dist sempre do matched original (não acumula deriva entre FORA_BASE).
     const dist = haversine(matched.lat, matched.lng, p.lat, p.lng)
     if (dist > 300) break
+
     saidaEstendida = new Date(p.saida)
-    break
+    prevSaidaTs = new Date(p.saida).getTime()
+    // Continua iterando — multi-step. Acumula a última saída.
   }
   return saidaEstendida
 }
@@ -1579,7 +1618,11 @@ export async function cruzaEscalaUnitrac(
       }
     }
 
-    const saidaEstendida = matched && !isGeo ? estendeSaidaPorForaBase(matched, todasParadas) : null
+    // Bug 6: chama estendeSaidaPorForaBase mesmo em isGeo. Quando matched=FORA_BASE/
+    // FAKE_EXIT (geo-fallback p/ loja sem geofence LOJA), a SL real é a saída do
+    // último FORA_BASE da cadeia adjacente (não do primeiro matched). A própria
+    // função decide se estende baseado em classificação + critérios geo/duração.
+    const saidaEstendida = matched ? estendeSaidaPorForaBase(matched, todasParadas) : null
     const paradas: ParadaKpi[] = matched
       ? [{
           parada_id: matched.id,

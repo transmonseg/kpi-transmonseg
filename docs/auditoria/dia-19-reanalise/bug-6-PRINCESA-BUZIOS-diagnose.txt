@@ -1,0 +1,40 @@
+# Bug 6 diagnose — PRINCESA BUZIOS (dia 2026-05-19)
+
+Placa: QST4C52
+Loja cadastro: PRINCESA - BUZIOS 3  lat=-22.7738 lng=-41.91476  raio=200m
+Manual SL: 17:30
+
+## Todas as paradas dia (placa)
+
+| # | classif | chegada | saida | dur | dist→loja | codigo | local |
+|---|---------|---------|-------|-----|-----------|--------|-------|
+| 0 | BASE | 00:09 | 02:26 | 137min | 146029m | --- | BASE BENASSI - BASE BENASSI |
+| 1 | BASE | 02:27 | 02:49 | 21min | 145954m | --- | BASE BENASSI - BASE BENASSI |
+| 2 | FORA_BASE | 04:20 | 04:36 | 16min | 55383m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 3 | LOJA | 05:44 | 06:11 | 28min | 5m | 8590571 | 8590571 - PRINCESA - BUZIOS 3 |
+| 4 | LOJA | 06:14 | 06:32 | 18min | 154m | 8590563 | 8590563 - PRINCESA - BUZIOS 1 |
+| 5 | LOJA | 06:33 | 07:36 | 63min | 342m | 8590564 | 8590564 - PRINCESA - BUZIOS 2 |
+| 6 | LOJA | 07:38 | 10:36 | 178min | 31m | 8590571 | 8590571 - PRINCESA - BUZIOS 3 |
+| 7 | FAKE_EXIT | 11:42 | 11:48 | 5min | 55450m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 8 | BASE | 13:27 | 13:50 | 23min | 146364m | --- | BASE BENASSI - BASE BENASSI |
+| 9 | FORA_BASE | 14:59 | 15:18 | 19min | 135087m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 10 | FORA_BASE | 15:25 | 15:44 | 19min | 133915m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 11 | FORA_BASE | 15:58 | 16:23 | 25min | 135272m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## Parada LOJA candidata (mesma loja)
+
+- 05:44→06:11 dur=28min dist=5m
+  Vizinhos depois (gap, classif, dur, dist→loja):
+    +3min  LOJA  06:14→06:32  dur=18min  dist=154m  8590563 - PRINCESA - BUZIOS 1
+    +21min  LOJA  06:33→07:36  dur=63min  dist=342m  8590564 - PRINCESA - BUZIOS 2
+    +87min  LOJA  07:38→10:36  dur=178min  dist=31m  8590571 - PRINCESA - BUZIOS 3
+- 06:14→06:32 dur=18min dist=154m
+  Vizinhos depois (gap, classif, dur, dist→loja):
+    +1min  LOJA  06:33→07:36  dur=63min  dist=342m  8590564 - PRINCESA - BUZIOS 2
+    +66min  LOJA  07:38→10:36  dur=178min  dist=31m  8590571 - PRINCESA - BUZIOS 3
+- 06:33→07:36 dur=63min dist=342m
+  Vizinhos depois (gap, classif, dur, dist→loja):
+    +2min  LOJA  07:38→10:36  dur=178min  dist=31m  8590571 - PRINCESA - BUZIOS 3
+- 07:38→10:36 dur=178min dist=31m
+  Vizinhos depois (gap, classif, dur, dist→loja):
+    +67min  FAKE_EXIT  11:42→11:48  dur=5min  dist=55450m  FORA DE BASE E LOCAL DE SERVIÇO

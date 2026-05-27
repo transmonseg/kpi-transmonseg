@@ -1,0 +1,24 @@
+# Bug 6 diagnose — ATACADAO MANILHA (dia 2026-05-19)
+
+Placa: QSS1E48
+Loja cadastro: ATACADÃO - MANILHA  lat=-22.85498 lng=-43.10032  raio=150m
+Manual SL: 10:20
+
+## Todas as paradas dia (placa)
+
+| # | classif | chegada | saida | dur | dist→loja | codigo | local |
+|---|---------|---------|-------|-----|-----------|--------|-------|
+| 0 | BASE | 00:07 | 04:41 | 274min | 24476m | --- | BASE BENASSI - BASE BENASSI |
+| 1 | FAKE_EXIT | 04:42 | 04:47 | 5min | 24488m | --- | BASE BENASSI - BASE BENASSI |
+| 2 | FORA_BASE | 05:29 | 05:54 | 25min | 171m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 3 | FORA_BASE | 05:56 | 06:19 | 23min | 206m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 4 | FORA_BASE | 06:21 | 08:07 | 106min | 60m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 5 | FORA_BASE | 08:08 | 10:17 | 129min | 44m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 6 | FAKE_EXIT | 10:18 | 10:22 | 4min | 165m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 7 | FAKE_EXIT | 11:14 | 11:23 | 9min | 24485m | --- | BASE BENASSI - BASE BENASSI |
+| 8 | BASE | 11:24 | 14:06 | 162min | 24561m | --- | BASE BENASSI - BASE BENASSI |
+| 9 | FORA_BASE | 15:49 | 16:22 | 34min | 46637m | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+
+## Parada LOJA candidata (mesma loja)
+
+Nenhuma parada LOJA matched.

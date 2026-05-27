@@ -1914,4 +1914,91 @@ describe('Bug 4 — multi-row mesma rede: distribuição correta entre N linhas 
     // NÃO deve aceitar
     expect(rMar?.paradas ?? []).toHaveLength(0)
   })
+
+  // Bug 6 — SL curta com matched=FORA_BASE/FAKE_EXIT (loja sem geofence LOJA).
+  // Quando o GPS nunca classifica nada como LOJA (loja não tem geofence registrada
+  // no Unitrac), o matcher cai em geo-fallback e casa um FORA_BASE/FAKE_EXIT
+  // próximo. A SL real é a saída do ÚLTIMO FORA_BASE da cadeia adjacente —
+  // não a saída do primeiro FORA_BASE matched.
+  it('Bug 6: ATACADAO MANILHA dia 19 (matched=FORA_BASE → cadeia FORA_BASE longa, mesma área)', async () => {
+    // GPS QSS1E48 dia 19 — sem LOJA, só FORA_BASE perto da loja
+    const lojaLat = -22.85498, lojaLng = -43.10032
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'lMan', rede_id: 'ATACADAO', placa_norm: 'QSS1E48', loja_nome_raw: 'Atacadão - Manilha', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p0', placa_norm: 'QSS1E48', chegada: '2026-05-19T00:07:00Z', saida: '2026-05-19T04:41:00Z', duracao_seg: 16440, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: -22.83, lng: -43.32, classificacao: 'BASE', ordem: 1 },
+      { id: 'p1', placa_norm: 'QSS1E48', chegada: '2026-05-19T05:29:00Z', saida: '2026-05-19T05:54:00Z', duracao_seg: 1500, local_parada: 'FORA DE BASE E LOCAL DE SERVIÇO', codigo_loja: null, nome_loja: null, lat: -22.8565, lng: -43.10166, classificacao: 'FORA_BASE', ordem: 2 },
+      { id: 'p2', placa_norm: 'QSS1E48', chegada: '2026-05-19T05:56:00Z', saida: '2026-05-19T06:19:00Z', duracao_seg: 1380, local_parada: 'FORA DE BASE E LOCAL DE SERVIÇO', codigo_loja: null, nome_loja: null, lat: -22.857, lng: -43.102, classificacao: 'FORA_BASE', ordem: 3 },
+      { id: 'p3', placa_norm: 'QSS1E48', chegada: '2026-05-19T06:21:00Z', saida: '2026-05-19T08:07:00Z', duracao_seg: 6360, local_parada: 'FORA DE BASE E LOCAL DE SERVIÇO', codigo_loja: null, nome_loja: null, lat: -22.85545, lng: -43.10052, classificacao: 'FORA_BASE', ordem: 4 },
+      { id: 'p4', placa_norm: 'QSS1E48', chegada: '2026-05-19T08:08:00Z', saida: '2026-05-19T10:17:00Z', duracao_seg: 7740, local_parada: 'FORA DE BASE E LOCAL DE SERVIÇO', codigo_loja: null, nome_loja: null, lat: -22.85535, lng: -43.10063, classificacao: 'FORA_BASE', ordem: 5 },
+      { id: 'p5', placa_norm: 'QSS1E48', chegada: '2026-05-19T10:18:00Z', saida: '2026-05-19T10:22:00Z', duracao_seg: 240, local_parada: 'FORA DE BASE E LOCAL DE SERVIÇO', codigo_loja: null, nome_loja: null, lat: -22.8559, lng: -43.10135, classificacao: 'FAKE_EXIT', ordem: 6 },
+      { id: 'p6', placa_norm: 'QSS1E48', chegada: '2026-05-19T11:24:00Z', saida: '2026-05-19T14:06:00Z', duracao_seg: 9720, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: -22.83, lng: -43.32, classificacao: 'BASE', ordem: 7 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'cad-man', rede_id: 'ATACADAO', nome: 'Atacadão - Manilha', nome_normalizado: 'manilha', codigo_escala: null, codigo_unitrac: null, nome_unitrac: null, lat: lojaLat, lng: lojaLng, raio_metros: 250 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    const r = rotas.find((x) => x.escala_linha_id === 'lMan')
+    expect(r?.paradas ?? []).toHaveLength(1)
+    // SL real = saída do último FORA_BASE da cadeia adjacente (≤300m da loja, gap pequeno) = 10:17
+    const saida = r!.paradas[0].saida
+    const hh = saida.getUTCHours()
+    const mm = saida.getUTCMinutes()
+    expect(`${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`).toBe('10:17')
+  })
+
+  it('Bug 6: GUANABARA BENTO RIBEIRO dia 19 (matched=FAKE_EXIT → cadeia FORA_BASE com gap 16min)', async () => {
+    // GPS LBB5205 dia 19 — FAKE_EXIT seguido de cadeia FORA_BASE (gap 16min entre FB curto e FB longo)
+    const lojaLat = -22.87543, lojaLng = -43.37109
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'lBR', rede_id: 'GUANABARA', placa_norm: 'LBB5205', loja_nome_raw: 'Gb Bento Ribeiro - Filial 15', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p0', placa_norm: 'LBB5205', chegada: '2026-05-19T05:43:00Z', saida: '2026-05-19T09:38:00Z', duracao_seg: 14160, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: -22.83, lng: -43.32, classificacao: 'BASE', ordem: 1 },
+      { id: 'p1', placa_norm: 'LBB5205', chegada: '2026-05-19T09:50:00Z', saida: '2026-05-19T10:03:00Z', duracao_seg: 780, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: -22.83, lng: -43.32, classificacao: 'FAKE_EXIT', ordem: 2 },
+      { id: 'p2', placa_norm: 'LBB5205', chegada: '2026-05-19T10:32:00Z', saida: '2026-05-19T10:36:00Z', duracao_seg: 240, local_parada: 'FORA DE BASE E LOCAL DE SERVIÇO', codigo_loja: null, nome_loja: null, lat: -22.87405, lng: -43.37182, classificacao: 'FAKE_EXIT', ordem: 3 },
+      { id: 'p3', placa_norm: 'LBB5205', chegada: '2026-05-19T10:38:00Z', saida: '2026-05-19T10:57:00Z', duracao_seg: 1140, local_parada: 'FORA DE BASE E LOCAL DE SERVIÇO', codigo_loja: null, nome_loja: null, lat: -22.87555, lng: -43.37061, classificacao: 'FORA_BASE', ordem: 4 },
+      // Gap 16min entre #3 e #4 — precisamos aceitar gap até 20min para FORA_BASE longo (≥30min)
+      { id: 'p4', placa_norm: 'LBB5205', chegada: '2026-05-19T11:13:00Z', saida: '2026-05-19T12:48:00Z', duracao_seg: 5700, local_parada: 'FORA DE BASE E LOCAL DE SERVIÇO', codigo_loja: null, nome_loja: null, lat: -22.87543, lng: -43.37109, classificacao: 'FORA_BASE', ordem: 5 },
+      { id: 'p5', placa_norm: 'LBB5205', chegada: '2026-05-19T12:57:00Z', saida: '2026-05-19T13:11:00Z', duracao_seg: 840, local_parada: 'FORA DE BASE E LOCAL DE SERVIÇO', codigo_loja: null, nome_loja: null, lat: -22.9, lng: -43.34, classificacao: 'FORA_BASE', ordem: 6 },
+      { id: 'p6', placa_norm: 'LBB5205', chegada: '2026-05-19T13:25:00Z', saida: '2026-05-19T13:52:00Z', duracao_seg: 1620, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: -22.83, lng: -43.32, classificacao: 'BASE', ordem: 7 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'cad-br', rede_id: 'GUANABARA', nome: 'GB 15 - Bento Ribeiro', nome_normalizado: 'bento ribeiro', codigo_escala: null, codigo_unitrac: null, nome_unitrac: null, lat: lojaLat, lng: lojaLng, raio_metros: 300 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    const r = rotas.find((x) => x.escala_linha_id === 'lBR')
+    expect(r?.paradas ?? []).toHaveLength(1)
+    // SL real = saída de p4 (último FORA_BASE da cadeia adjacente) = 12:48
+    const saida = r!.paradas[0].saida
+    const hh = saida.getUTCHours()
+    const mm = saida.getUTCMinutes()
+    expect(`${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`).toBe('12:48')
+  })
+
+  it('Bug 6 não-regressão: PREZUNIC FONSECA dia 20 (matched=LOJA + FORA_BASE longo, padrão original)', async () => {
+    // Caso original que motivou estendeSaidaPorForaBase. Continua resolvido.
+    const lojaLat = -22.88147, lojaLng = -43.08468
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'lFon', rede_id: 'PREZUNIC', placa_norm: 'KQV1D80', loja_nome_raw: 'Prezunic - Fonseca', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-20' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p0', placa_norm: 'KQV1D80', chegada: '2026-05-20T04:23:00Z', saida: '2026-05-20T04:42:00Z', duracao_seg: 1140, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: -22.83, lng: -43.32, classificacao: 'BASE', ordem: 1 },
+      { id: 'p1', placa_norm: 'KQV1D80', chegada: '2026-05-20T05:27:00Z', saida: '2026-05-20T05:31:00Z', duracao_seg: 240, local_parada: '7000722 - PREZUNIC FONSECA', codigo_loja: '7000722', nome_loja: 'PREZUNIC FONSECA', lat: -22.88145, lng: -43.08469, classificacao: 'LOJA', ordem: 2 },
+      { id: 'p2', placa_norm: 'KQV1D80', chegada: '2026-05-20T05:33:00Z', saida: '2026-05-20T09:28:00Z', duracao_seg: 14100, local_parada: 'FORA DE BASE E LOCAL DE SERVIÇO', codigo_loja: null, nome_loja: null, lat: -22.881, lng: -43.0835, classificacao: 'FORA_BASE', ordem: 3 },
+      { id: 'p3', placa_norm: 'KQV1D80', chegada: '2026-05-20T10:40:00Z', saida: '2026-05-20T11:01:00Z', duracao_seg: 1260, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: -22.83, lng: -43.32, classificacao: 'BASE', ordem: 4 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'cad-fon', rede_id: 'PREZUNIC', nome: 'PREZUNIC FONSECA', nome_normalizado: 'fonseca', codigo_escala: null, codigo_unitrac: '7000722', nome_unitrac: 'PREZUNIC FONSECA', lat: lojaLat, lng: lojaLng, raio_metros: 150 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    const r = rotas.find((x) => x.escala_linha_id === 'lFon')
+    expect(r?.paradas ?? []).toHaveLength(1)
+    expect(r!.paradas[0].parada_id).toBe('p1')
+    const saida = r!.paradas[0].saida
+    const hh = saida.getUTCHours()
+    const mm = saida.getUTCMinutes()
+    expect(`${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`).toBe('09:28')
+  })
 })
