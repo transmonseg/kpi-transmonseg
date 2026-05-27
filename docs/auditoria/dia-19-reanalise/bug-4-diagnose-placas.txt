@@ -1,0 +1,170 @@
+◇ injected env (4) from .env.local // tip: ⌘ suppress logs { quiet: true }
+
+========== DBB8D19  (variantes: DBB8D19) ==========
+ESCALA (3 linhas):
+  ZONA_SUL Zona Sul Loja 31 - Jd. Botânico  cod=31  ordem=1
+  ZONA_SUL Zona Sul Loja 11 - Leblon  cod=11  ordem=1
+  ZONA_SUL EXTRA F.31  cod=EXTRA F.31  ordem=1
+GPS (7 paradas):
+  [DBB8D19] 00:01-04:58 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [DBB8D19] 05:00-05:11 cls=FAKE_EXIT  cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [DBB8D19] 06:36-09:13 cls=FORA_BASE  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [DBB8D19] 09:55-10:00 cls=FAKE_EXIT  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [DBB8D19] 10:49-11:02 cls=FAKE_EXIT  cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [DBB8D19] 11:07-12:43 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [DBB8D19] 12:44-12:55 cls=FAKE_EXIT  cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+
+========== LCO0978  (variantes: LCO0978, LCO0J78) ==========
+ESCALA (2 linhas):
+  ZONA_SUL Zona Sul Loja 07 - Leblon  cod=07  ordem=1
+  ZONA_SUL Zona Sul Loja 08 - Ipanema  cod=08  ordem=1
+GPS (5 paradas):
+  [LCO0J78] 00:09-00:48 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [LCO0J78] 00:49-05:25 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [LCO0J78] 06:22-06:26 cls=FAKE_EXIT  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [LCO0J78] 06:27-11:18 cls=FORA_BASE  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [LCO0J78] 12:23-14:42 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+
+========== KQR2J11  (variantes: KQR2J11, KQR2911) ==========
+ESCALA (5 linhas):
+  PREZUNIC Prezunic SPID - Botafogo  cod=null  ordem=1
+  PREZUNIC Prezunic SPID - Farme de Amoedo  cod=null  ordem=1
+  PREZUNIC Prezunic SPID - Visconde de Pirajá (Ipanema)  cod=null  ordem=1
+  PREZUNIC Prezunic SPID - Copacabana  cod=null  ordem=1
+  PRINCESA Princesa - Flamengo  cod=null  ordem=1
+GPS (13 paradas):
+  [KQR2J11] 00:05-03:22 cls=FORA_BASE  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [KQR2J11] 04:06-04:59 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [KQR2J11] 05:01-05:07 cls=FAKE_EXIT  cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [KQR2J11] 05:53-07:01 cls=LOJA       cod=8590165  nome=PRINCESA FLAMENGO              local=8590165 - PRINCESA FLAMEN
+  [KQR2J11] 07:23-07:46 cls=LOJA       cod=7000758  nome=PREZUNIC SPID IPANEMA V. PIRAJ local=7000758 - PREZUNIC SPID I
+  [KQR2J11] 07:49-07:58 cls=LOJA       cod=7000745  nome=PREZUNIC SPID FARME DE AMOEDO  local=7000745 - PREZUNIC SPID F
+  [KQR2J11] 08:11-08:39 cls=LOJA       cod=7000756  nome=PREZUNIC SPID COPACABANA       local=7000756 - PREZUNIC SPID C
+  [KQR2J11] 09:00-09:19 cls=LOJA       cod=7000738  nome=PREZUNIC SPID BOTAFOGO         local=7000738 - PREZUNIC SPID B
+  [KQR2J11] 09:52-12:04 cls=FORA_BASE  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [KQR2J11] 12:50-13:22 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [KQR2J11] 13:26-13:58 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [KQR2J11] 13:59-14:09 cls=FAKE_EXIT  cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [KQR2J11] 14:58-16:11 cls=LOJA       cod=9039007  nome=07 - ZONA SUL - LEBLON         local=9039007 - 07 - ZONA SUL -
+
+========== GAR0802  (variantes: GAR0802, GAR0I02) ==========
+ESCALA (1 linhas):
+  ASSAI Assaí - Maracanã - Loja 286  cod=286  ordem=1
+GPS (7 paradas):
+  [GAR0802] 00:00-01:31 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [GAR0802] 01:32-05:05 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [GAR0802] 05:11-05:17 cls=FAKE_EXIT  cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [GAR0802] 06:02-12:41 cls=FORA_BASE  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [GAR0802] 12:46-12:49 cls=FAKE_EXIT  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [GAR0802] 13:26-14:07 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [GAR0802] 14:13-16:13 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+
+========== LNU7733  (variantes: LNU7733, LNU7H33) ==========
+ESCALA (1 linhas):
+  ZONA_SUL MEGA BOX 02 - Olaria  cod=MEGA BOX 2  ordem=1
+GPS (0 paradas):
+
+========== AKZ2594  (variantes: AKZ2594) ==========
+ESCALA (3 linhas):
+  ASSAI Assaí - Freguesia - Loja 28  cod=28  ordem=1
+  ZONA_SUL Zona Sul Loja 10 - Recreio  cod=10  ordem=1
+  ZONA_SUL MEGA BOX 02 - Olaria  cod=MEGA BOX 2  ordem=1
+GPS (6 paradas):
+  [AKZ2594] 00:03-03:54 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [AKZ2594] 04:40-05:30 cls=LOJA       cod=560019   nome=SENDAS FREGUESIA - LOJA 28     local=560019 - SENDAS FREGUESIA
+  [AKZ2594] 05:31-08:12 cls=LOJA       cod=560019   nome=SENDAS FREGUESIA - LOJA 28     local=560019 - SENDAS FREGUESIA
+  [AKZ2594] 09:14-09:31 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [AKZ2594] 09:34-10:06 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [AKZ2594] 10:09-16:13 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+
+========== EZU9325  (variantes: EZU9325) ==========
+ESCALA (1 linhas):
+  ASSAI Assaí - Ceasa - Loja 42  cod=42  ordem=1
+GPS (14 paradas):
+  [EZU9325] 00:03-04:31 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [EZU9325] 04:43-04:50 cls=FAKE_EXIT  cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [EZU9325] 04:55-05:52 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [EZU9325] 05:53-07:29 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [EZU9325] 07:31-08:20 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [EZU9325] 08:30-08:54 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [EZU9325] 09:01-09:42 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [EZU9325] 09:57-11:07 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [EZU9325] 11:17-11:27 cls=FAKE_EXIT  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [EZU9325] 11:45-12:47 cls=FORA_BASE  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [EZU9325] 13:13-13:51 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [EZU9325] 13:57-14:06 cls=FAKE_EXIT  cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [EZU9325] 14:15-14:37 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [EZU9325] 14:38-16:17 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+
+========== GVH1397  (variantes: GVH1397) ==========
+ESCALA (1 linhas):
+  GUANABARA GB CAXIAS FILIAL 18  cod=18  ordem=1
+GPS (0 paradas):
+
+========== KTR6724  (variantes: KTR6724, KTR6H24) ==========
+ESCALA (1 linhas):
+  GUANABARA GB SANTA CRUZ FILIAL 28  cod=28  ordem=1
+GPS (1 paradas):
+  [KTR6724] 14:25-16:15 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+
+========== KOP4978  (variantes: KOP4978, KOP4J78) ==========
+ESCALA (5 linhas):
+  PREZUNIC Prezunic - Campinho  cod=null  ordem=1
+  PREZUNIC Prezunic - Cidade de Deus  cod=null  ordem=1
+  ZONA_SUL MEGA BOX 01 - Olaria  cod=MEGA BOX 1  ordem=1
+  ZONA_SUL MEGA BOX 02 - Olaria  cod=MEGA BOX 2  ordem=1
+  ZONA_SUL Zona Sul - Entrega Extra  cod=EXTRA  ordem=1
+GPS (13 paradas):
+  [KOP4978] 00:08-03:54 cls=FORA_BASE  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [KOP4978] 04:20-04:31 cls=FAKE_EXIT  cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [KOP4978] 04:50-04:56 cls=FAKE_EXIT  cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [KOP4978] 05:16-06:26 cls=LOJA       cod=7000718  nome=PREZUNIC CAMPINHO              local=7000718 - PREZUNIC CAMPIN
+  [KOP4978] 06:59-07:51 cls=FORA_BASE  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [KOP4978] 08:41-09:08 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [KOP4978] 09:12-09:57 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [KOP4978] 10:07-12:31 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [KOP4978] 12:36-13:23 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [KOP4978] 13:39-13:53 cls=LOJA       cod=6018000  nome=MEGA BOX (OLARIA)              local=6018000 - MEGA BOX (OLARI
+  [KOP4978] 13:56-14:12 cls=FORA_BASE  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [KOP4978] 14:15-14:34 cls=FORA_BASE  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [KOP4978] 14:39-15:46 cls=FORA_BASE  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+
+========== LLJ9C64  (variantes: LLJ9C64) ==========
+ESCALA (6 linhas):
+  PREZUNIC Prezunic - Barra da Tijuca  cod=null  ordem=1
+  PREZUNIC Prezunic SPID - Jacarepagua  cod=null  ordem=1
+  PREZUNIC Prezunic SPID - Recreio  cod=null  ordem=1
+  PREZUNIC Prezunic SPID - Barra  cod=null  ordem=1
+  PREZUNIC Prezunic SPID - Alpha Mall  cod=null  ordem=1
+  PREZUNIC Prezunic SPID - Parque das Rosas  cod=null  ordem=1
+GPS (12 paradas):
+  [LLJ9C64] 00:08-04:25 cls=FORA_BASE  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [LLJ9C64] 04:32-04:41 cls=FAKE_EXIT  cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [LLJ9C64] 04:46-05:06 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [LLJ9C64] 05:57-06:26 cls=LOJA       cod=7000734  nome=PREZUNIC BARRA                 local=7000734 - PREZUNIC BARRA
+  [LLJ9C64] 06:47-08:21 cls=LOJA       cod=7000740  nome=PREZUNIC SPID ALPHA MALL       local=7000740 - PREZUNIC SPID A
+  [LLJ9C64] 08:28-08:32 cls=FAKE_EXIT  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [LLJ9C64] 08:47-09:16 cls=LOJA       cod=7000752  nome=PREZUNIC SPID RECREIO          local=7000752 - PREZUNIC SPID R
+  [LLJ9C64] 09:54-10:17 cls=FORA_BASE  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [LLJ9C64] 10:46-11:07 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [LLJ9C64] 11:07-11:13 cls=FAKE_EXIT  cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [LLJ9C64] 11:15-11:28 cls=FAKE_EXIT  cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [LLJ9C64] 11:40-16:21 cls=FORA_BASE  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+
+========== LQE5401  (variantes: LQE5401, LQE5E01) ==========
+ESCALA (3 linhas):
+  ZONA_SUL Zona Sul Loja 30 - Laranjeiras  cod=30  ordem=1
+  ZONA_SUL Zona Sul Loja 21 - Flamengo  cod=21  ordem=1
+  ZONA_SUL Zona Sul Loja 47  cod=47  ordem=1
+GPS (11 paradas):
+  [LQE5E01] 00:01-04:15 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [LQE5E01] 04:47-05:27 cls=LOJA       cod=9039030  nome=30 - ZONA SUL - LARANJEIRAS    local=9039030 - 30 - ZONA SUL -
+  [LQE5E01] 06:00-08:36 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [LQE5E01] 08:38-09:51 cls=BASE       cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [LQE5E01] 09:58-10:04 cls=FAKE_EXIT  cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [LQE5E01] 10:59-11:03 cls=FAKE_EXIT  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [LQE5E01] 11:09-12:25 cls=FORA_BASE  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [LQE5E01] 13:05-13:15 cls=FAKE_EXIT  cod=---      nome=                               local=BASE BENASSI - BASE BENAS
+  [LQE5E01] 14:08-14:39 cls=LOJA       cod=5353011  nome=ARMAZEM DO GRAO (BARRA DA TIJU local=5353011 - ARMAZEM DO GRAO
+  [LQE5E01] 14:55-15:36 cls=FORA_BASE  cod=---      nome=                               local=FORA DE BASE E LOCAL DE S
+  [LQE5E01] 16:12-16:22 cls=FAKE_EXIT  cod=---      nome=                               local=BASE BENASSI - BASE BENAS
