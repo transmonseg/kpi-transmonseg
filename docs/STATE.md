@@ -1,5 +1,9 @@
 # KPI Perfeição — Estado Atual
 
+> **⚠️ FLUXO ATIVO:** se está retomando sessão, leia primeiro:
+> `docs/auditoria/dia-19-reanalise/FLUXO-ATIVO.md`
+> Depois volte aqui pra contexto histórico.
+
 > **Para retomar a sessão após compactação:** leia este arquivo PRIMEIRO. Tudo aqui aponta para a verdade.
 
 **Última atualização:** 2026-05-26 (sessão dias 19/20/21 — escalas faltantes + 3 fixes matcher)
