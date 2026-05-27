@@ -61,6 +61,66 @@ describe('lookupSlot', () => {
   })
 })
 
+describe('Bug B — lookupSlot filtra por rede (auditoria dia 25 2026-05-27)', () => {
+  const ctxCross: ParseContext = {
+    associacoes: [
+      { motorista_nome: 'MARCOS FERNANDO', motorista_nome_norm: 'MARCOS FERNANDO', motorista_codigo: 353, placa_norm: 'UBO5E05', placa_raw: 'UBO-5E05', data_entrega: '2026-05-19', rede_id: 'ZONA_SUL' },
+      { motorista_nome: 'ALLAN', motorista_nome_norm: 'ALLAN', motorista_codigo: 294, placa_norm: 'EZU9J51', placa_raw: 'EZU-9J51', data_entrega: '2026-05-24', rede_id: 'ASSAI' },
+    ],
+    lojas: [],
+  }
+
+  it('com redeId=ASSAI, NAO retorna MARCOS FERNANDO (ZONA_SUL) ao buscar UBO5E05', () => {
+    const slot = lookupSlot(
+      { placas: ['UBO5E05'], codigos: [], nomeHint: '', redeId: 'ASSAI' },
+      ctxCross,
+    )
+    expect(slot.motorista_nome).toBe(null)
+    expect(slot.placa_norm).toBe('UBO5E05')
+  })
+
+  it('sem redeId, comportamento anterior preserva (cross-rede leak)', () => {
+    const slot = lookupSlot(
+      { placas: ['UBO5E05'], codigos: [], nomeHint: '' },
+      ctxCross,
+    )
+    expect(slot.motorista_nome).toBe('MARCOS FERNANDO')
+  })
+
+  it('com redeId=ASSAI, acha ALLAN quando placa EZU9J51 (ASSAI)', () => {
+    const slot = lookupSlot(
+      { placas: ['EZU9J51'], codigos: [], nomeHint: '', redeId: 'ASSAI' },
+      ctxCross,
+    )
+    expect(slot.motorista_nome).toBe('ALLAN')
+  })
+
+  it('com redeId=ZONA_SUL, acha MARCOS FERNANDO (proprio escopo)', () => {
+    const slot = lookupSlot(
+      { placas: ['UBO5E05'], codigos: [], nomeHint: '', redeId: 'ZONA_SUL' },
+      ctxCross,
+    )
+    expect(slot.motorista_nome).toBe('MARCOS FERNANDO')
+  })
+
+  it('redeId tambem filtra busca por codigo', () => {
+    const slot = lookupSlot(
+      { placas: [], codigos: [353], nomeHint: '', redeId: 'ASSAI' },
+      ctxCross,
+    )
+    expect(slot.motorista_nome).toBe(null)
+  })
+
+  it('redeId tambem filtra busca por nome (preferNome)', () => {
+    const slot = lookupSlot(
+      { placas: [], codigos: [], nomeHint: 'MARCOS FERNANDO', redeId: 'ASSAI' },
+      ctxCross,
+      { preferNome: true },
+    )
+    expect(slot.motorista_nome).toBe(null)
+  })
+})
+
 describe('U3 — lookupSlot preferNome (auditoria 2026-05-27)', () => {
   // Caso real: placa TML-7D61 historicamente associada a ERALDO, mas WhatsApp
   // diz BRUNO + TML-7D61. preferNome=true deve usar BRUNO (nomeHint vence).
