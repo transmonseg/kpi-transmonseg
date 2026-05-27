@@ -6,7 +6,61 @@
 
 > **Para retomar a sessão após compactação:** leia este arquivo PRIMEIRO. Tudo aqui aponta para a verdade.
 
-**Última atualização:** 2026-05-27 (FASE 5 — 4 URGENTES da auditoria externa MERGEADOS)
+**Última atualização:** 2026-05-27 madrugada (FASE 5b — 10 bugs do dia 25 atacados)
+
+## Sessão 27/05 madrugada — FASE 5b (comparacao manual vs sistema dia 25 Tia Erica)
+
+Apos U1-U4, user gerou KPIs no Vercel dia 25 e enviou 6 KPIs MANUAIS
+(gabarito Tia Erica) pra comparacao. Diff revelou 18 divergencias, atacadas
+sequencialmente.
+
+**Comparacao manual vs sistema (dia 25 antes dos fixes 5b):**
+
+| Rede       | Manual | Sistema | Diffs |
+|------------|--------|---------|-------|
+| ASSAI      | 41     | 41      | 4     |
+| ATACADAO   | 2      | 2       | 0 ✅  |
+| CARREFOUR  | 11     | 11      | 0 ✅  |
+| PREZUNIC   | 57     | 46      | 11    |
+| PRINCESA   | 26     | 26      | 1 (FP)|
+| SUPERPRIX  | 9      | 9       | 2 (FP)|
+
+**Bugs atacados:**
+
+- **U5** inferir-sai.ts: fallback 14 dias anteriores quando dia atual nao tem escala
+- **B** lookup-canonical.ts: redeId opcional filtra cross-rede contamination
+- **C** alteracao-pdf-tabular.ts: motorista_nome nao gruda tipo_carro no inicio
+- **D** aplicar-alteracoes.ts + inferir-sai.ts: regex "Loja N" explicito + prioridade
+- **E** catalogo-matriz.ts: +11 SPID Prezunic (Meier, Vila Isabel, Recreio, Barra,
+       Alpha Mall, Parque das Rosas, Carioca, Centro, Farme de Amoedo,
+       Visconde Pirajá, Copacabana)
+- **A** /api/kpi/simples persiste escala_linhas com estado pos-alteracoes
+
+**Falsos positivos identificados:**
+- F PRINCESA Catete: escala dia 25 tem RAFAEL (sistema correto, manual desatualizado)
+- G SUPERPRIX Loja 13: existem 2 lojas "Loja 13" (Tijuquinha + Niteroi), ambas corretas
+- H SUPERCOMPRAS: gerado em arquivo separado (rede distinta, manual juntou)
+
+**Commits:**
+- 8ad0a21 fix(B): lookupSlot filtra rede
+- d3687d7 fix(C): parser tabular nao gruda tipo_carro
+- d7bb05c fix(D): aplicarAlteracoes prioriza Loja N
+- 68be31d fix(E): catalogo +11 SPID Prezunic
+- a7eb771 fix(A): persistir escala_linhas no /simples
+- bf531c0 fix(U5): inferir-sai 14 dias (sessao anterior)
+
+**Evidencia local Bug D (smoke pipeline ASSAI dia 25):**
+- Loja 131: ALLAN/294/UBO5E05 ✅ (era MARCOS FERNANDO)
+- Loja 142: ROBERTO ALMEIDA/294/EZU9I42 ✅ (era CARRETA EDSON)
+- Loja 291: EDSON/184041/CPI4C81 ✅ (era JXA4I92 antiga)
+- Loja 292: VICTOR LUIZ/353/TJQ6J26 ✅ (era TRUCK C/RAMPA E R)
+
+**Vitest:** 324 → 342 (+18 testes novos)
+**Typecheck:** zero
+
+Pro user testar no Vercel: regerar KPI dia 25 e validar lojas criticas.
+
+---
 
 ## Sessão 27/05 noite — FASE 5 (U1-U4) completa
 

@@ -1,0 +1,54 @@
+Rede         | M aba    | S aba    | M     | S     | Diff 
+----------------------------------------------------------------------
+ASSAI        | 25       | 25.05    | 41    | 41    | 4    
+ATACADAO     | 25       | 25.05    | 2     | 2     | 0    
+CARREFOUR    | 25       | 25.05    | 11    | 11    | 0    
+PREZUNIC     | 25       | 25.05    | 57    | 46    | 11   
+PRINCESA     | 25       | 25.05    | 26    | 26    | 1    
+SUPERPRIX    | 25       | 25.05    | 9     | 9     | 2    
+
+
+========================================================================================================================
+  ASSAI  (4 divergencias)
+========================================================================================================================
+Key                    Tipo           Manual mot/cod/placa                     Sistema mot/cod/placa                   
+------------------------------------------------------------------------------------------------------------------------
+#131                   NOME           ALLAN/294/UBO5E05                        MARCOS FERNANDO/353/UBO5E05
+#142                   NOME+PLACA     ROBERTO ALMEIDA/294/EZU9I42              CARRETA EDSON/184041/CPI4C81
+#291                   PLACA          EDSON/184041/CPI4C81                     EDSON/184041/JXA4I92
+#292                   NOME+PLACA     VICTOR LUIZ/353/TJQ6J26                  TRUCK C/ RAMPA E R/294/UBO5E05
+
+
+========================================================================================================================
+  PREZUNIC  (11 divergencias)
+========================================================================================================================
+Key                    Tipo           Manual mot/cod/placa                     Sistema mot/cod/placa                   
+------------------------------------------------------------------------------------------------------------------------
+N:SPID                 FALTA_SIS      //                                       (loja 'Prezunic SPID - Barra' FALTA NO SISTEMA)
+N:SPID-ALPHA-MALL      FALTA_SIS      //                                       (loja 'Prezunic SPID - Alpha Mall' FALTA NO SISTEMA)
+N:SPID-CARIOCA         FALTA_SIS      //                                       (loja 'Prezunic SPID - Carioca' FALTA NO SISTEMA)
+N:SPID-CENTRO          FALTA_SIS      //                                       (loja 'Prezunic SPID - Centro' FALTA NO SISTEMA)
+N:SPID-COPACABANA      FALTA_SIS      //                                       (loja 'Prezunic SPID - Copacabana' FALTA NO SISTEMA)
+N:SPID-FARME-AMOEDO    FALTA_SIS      //                                       (loja 'Prezunic SPID - Farme de Amoedo' FALTA NO SISTEMA)
+N:SPID-MEIER           FALTA_SIS      //                                       (loja 'Prezunic SPID - Meier' FALTA NO SISTEMA)
+N:SPID-PARQUE-DAS      FALTA_SIS      //                                       (loja 'Prezunic SPID - Parque das Rosas' FALTA NO SISTEMA)
+N:SPID-RECREIO         FALTA_SIS      //                                       (loja 'Prezunic SPID - Recreio' FALTA NO SISTEMA)
+N:SPID-VILA-ISABEL     FALTA_SIS      //                                       (loja 'Prezunic SPID - Vila Isabel' FALTA NO SISTEMA)
+N:SPID-VISCONDE-PIRAJA FALTA_SIS      //                                       (loja 'Prezunic SPID - Visconde de Pirajá (Ipan' FALTA NO SISTEMA)
+
+
+========================================================================================================================
+  PRINCESA  (1 divergencias)
+========================================================================================================================
+Key                    Tipo           Manual mot/cod/placa                     Sistema mot/cod/placa                   
+------------------------------------------------------------------------------------------------------------------------
+N:CATETE               NOME+PLACA     KANU/738/KQR2J11                         RAFAEL/801/KVT5427
+
+
+========================================================================================================================
+  SUPERPRIX  (2 divergencias)
+========================================================================================================================
+Key                    Tipo           Manual mot/cod/placa                     Sistema mot/cod/placa                   
+------------------------------------------------------------------------------------------------------------------------
+#13                    NOME+PLACA     RODRIGO/351/KZC4D39                      ERALDO/353/TML7D61
+N:SUPERCOMPRAS-COSMOS  FALTA_SIS      RAFAEL SOARES/184502/EYL8B91             (loja 'SUPERCOMPRAS - COSMOS' FALTA NO SISTEMA)
