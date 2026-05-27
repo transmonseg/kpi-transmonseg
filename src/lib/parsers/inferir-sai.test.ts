@@ -51,16 +51,27 @@ describe('U5 — inferirSaiDaEscalaLista (fallback dias anteriores)', () => {
     expect(r.sai?.placa_norm).toBe('PQR1234')
   })
 
-  it('NAO preenche sai se entra eh o mesmo motorista (segunda viagem)', () => {
-    const alt = mkParsed('Assaí - Caxias I - Loja 131', 'ASSAI', 'JOAO', 'OUTRA9999')
+  it('NAO preenche sai se entra eh redundante (mesmo motorista E mesma placa)', () => {
+    const alt = mkParsed('Assaí - Caxias I - Loja 131', 'ASSAI', 'JOAO', 'LSL9670')
     const [r] = inferirSaiDaEscalaLista([alt], escalaTitulares)
     expect(r.sai).toBe(null)
   })
 
-  it('NAO preenche sai se entra usa mesma placa (carro continua)', () => {
+  it('PREENCHE sai quando mesmo motorista trocou de carro (ASSAI Loja 133 dia 19)', () => {
+    // Caso real: FELIPE DIEGO (placa UGA-1D55 antiga) trocou pra UBO-5E01.
+    // Antes (U5 grosseiro): bloqueava. Agora preenche sai = motorista anterior + placa antiga.
+    const alt = mkParsed('Assaí - Caxias I - Loja 131', 'ASSAI', 'JOAO', 'OUTRA9999')
+    const [r] = inferirSaiDaEscalaLista([alt], escalaTitulares)
+    expect(r.sai?.motorista_nome).toBe('JOAO')
+    expect(r.sai?.placa_norm).toBe('LSL9670')
+  })
+
+  it('PREENCHE sai quando motorista diferente usa mesma placa (carro continua)', () => {
     const alt = mkParsed('Assaí - Caxias I - Loja 131', 'ASSAI', 'NOVO', 'LSL9670')
     const [r] = inferirSaiDaEscalaLista([alt], escalaTitulares)
-    expect(r.sai).toBe(null)
+    // Caso: NOVO assumiu o carro que era do JOAO. Sai = JOAO/LSL9670 (titular anterior).
+    expect(r.sai?.motorista_nome).toBe('JOAO')
+    expect(r.sai?.placa_norm).toBe('LSL9670')
   })
 
   it('preserva sai quando ja tem motorista/placa preenchido', () => {

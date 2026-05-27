@@ -83,14 +83,19 @@ export function inferirSaiDaEscalaLista(
 
     if (!linhaMatch) return p
 
-    // Anti-falso-positivo: mesmo motorista/placa = segunda viagem, não troca
+    // Anti-falso-positivo: SO ignora se motorista E placa iguais (alteracao
+    // redundante). Casos validos que ANTES eram bloqueados:
+    //   - mesmo motorista, placa diferente → "troca de carro" (sai = motorista+placa antiga)
+    //   - motorista diferente, mesma placa → "troca de motorista, mesmo carro" (sai = motorista anterior)
+    // Bug descoberto dia 19: ASSAI Loja 133 (FELIPE DIEGO/UGA-1D55 → FELIPE DIEGO/UBO-5E01).
+    // Antes: mesmoMotorista=true → bloqueava. Agora: precisa mesmoMotorista E mesmaPlaca pra bloquear.
     const entraNomeNorm = (p.entra?.motorista_nome ?? '').toUpperCase().trim()
     const linhaNomeNorm = (linhaMatch.motorista_nome ?? '').toUpperCase().trim()
     const entraPlaca = p.entra?.placa_norm ?? null
     const linhaPlaca = linhaMatch.placa_norm ?? null
     const mesmoMotorista = entraNomeNorm && linhaNomeNorm && entraNomeNorm === linhaNomeNorm
     const mesmaPlaca = entraPlaca && linhaPlaca && entraPlaca === linhaPlaca
-    if (mesmoMotorista || mesmaPlaca) return p
+    if (mesmoMotorista && mesmaPlaca) return p
 
     return {
       ...p,
