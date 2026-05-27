@@ -6,7 +6,40 @@
 
 > **Para retomar a sessão após compactação:** leia este arquivo PRIMEIRO. Tudo aqui aponta para a verdade.
 
-**Última atualização:** 2026-05-27 (auditoria externa Claude.ai + FASE 5 começando)
+**Última atualização:** 2026-05-27 (FASE 5 — 4 URGENTES da auditoria externa MERGEADOS)
+
+## Sessão 27/05 noite — FASE 5 (U1-U4) completa
+
+Todos os 4 bugs URGENTES da auditoria externa Claude.ai mergeados na main em
+sequência via worktrees isoladas, TDD e merges atômicos no-ff.
+
+**Commits da sessão:**
+- `b332c15` chore(baseline): snapshot KPIs dias 19/21/25 antes dos fixes
+- `c6bb0b1` fix(U1): conecta parser v2 em /analisar-alt
+- `5069893` docs(conversas-tia-erica): dia 25/05 escalas + alteracoes + unitrac
+- `35397ce` Merge fix/parser-v2-em-producao
+- `6a069d6` fix(U2): normaliza VEICULOS_INATIVOS sem hifen
+- `be5fa04` Merge fix/veiculos-inativos-norm
+- `7845022` fix(U3): lookupSlot aceita preferNome=true
+- `ac7d536` Merge fix/lookupslot-prefere-nome
+- `a42f8fb` fix(U4): Promise.allSettled isolamento por rede
+- `8532352` Merge fix/promise-allsettled
+
+**Resultado:**
+- Vitest: 301 → 324 (+23 testes novos)
+- Typecheck: zero erros
+- Não-regressao dia 21 ZS: 11/11 (100%) mantido ✅
+- Vercel deploy automatico pos cada push pra main
+
+**Evidência U1 (texto real WhatsApp tia Erica dia 25/05):**
+- v1: 1 de 3 alteracoes capturadas (so placas, sem motorista)
+- v2: 2 de 3 (uma completa com motorista DOUGLAS via lookup do banco)
+
+**Próximos passos:**
+- User testa no Vercel com dia 25 (subir escalas antes via painel)
+- Apos validação dia 25, atacar bugs I1-I4 (IMPORTANTES) e N1-N12 (LOW)
+
+---
 
 ## Sessão 27/05 tarde — Auditoria externa recebida
 
