@@ -1762,6 +1762,45 @@ describe('T8 N:N — guard de codigo cross-rede (bug 2A)', () => {
     expect(r07?.status).toBe('sem_entrega')
   })
 
+  it('Bug 7 — T18-X2 rejeita atribuição quando cadastro ambíguo por token qualificador', async () => {
+    // Caso PREZUNIC dia 19: escala "Prezunic - Jauru / Serra Azul" — placa LUP1F13
+    // ausente do Unitrac. T18 tenta plate-swap com paradas de outras placas.
+    // Lojas Prezunic Serra Azul (Catumbi, Meier, Realengo...) batem matchScore=1
+    // com a escala via tokens SERRA+AZUL. ANTES: `find` retornava primeira (Catumbi)
+    // como lojaEscala, T18-D usava lat de Catumbi como referência, e parada UBO5E01
+    // (Sendas Bangu) perto de Catumbi (a 274m) era aceita — FALSO POSITIVO.
+    // AGORA: lookup detecta empate (Catumbi/Meier/Realengo todas score=1), marca
+    // lojaEscalaAmbigua=true, T18-X2 bloqueia atribuição. Linha fica sem_entrega.
+    const linhas: EscalaLinhaRow[] = [
+      { id: 'l_jauru', rede_id: 'PREZUNIC', placa_norm: 'LUP1F13', loja_nome_raw: 'Prezunic - Jauru / Serra Azul', loja_codigo_raw: null, motorista_nome: 'CARLOS', carro_ordem: 1, data_entrega: '2026-05-19' },
+    ]
+    const paradas: UnitracParadaRow[] = [
+      // LUP1F13 ausente do Unitrac (GPS:NAO).
+      // UBO5E01 (Sendas Bangu) tem parada perto de Catumbi (geo match Prezunic Catumbi Serra Azul).
+      {
+        id: 'p_ubo', placa_norm: 'UBO5E01',
+        chegada: '2026-05-19T14:37:00.000Z', saida: '2026-05-19T14:45:00.000Z',
+        duracao_seg: 480,
+        local_parada: 'BASE BENASSI - BASE BENASSI,5353016 - REGINA  LUCIO MEIRA,5353017 - ABASTECEDORA GRÃO DA SERRA',
+        codigo_loja: '5353016', nome_loja: 'REGINA  LUCIO MEIRA',
+        lat: -22.82573, lng: -43.30,
+        classificacao: 'LOJA', ordem: 13,
+      },
+    ]
+    const lojas: LojaRow[] = [
+      // PREZUNIC JAURU (cadastro correto da escala — score=2 com escala)
+      { id: 'jauru', rede_id: 'PREZUNIC', nome: 'PREZUNIC JAURU', nome_normalizado: 'prezunic jauru', codigo_escala: null, codigo_unitrac: '7000711', nome_unitrac: 'PREZUNIC JAURU', lat: -22.91567, lng: -43.37886, raio_metros: 150 },
+      // Cadastros "Serra Azul" — empatam score=1 com escala via SERRA+AZUL
+      { id: 'catumbi-sa', rede_id: 'PREZUNIC', nome: 'Prezunic - Catumbi Serra Azul', nome_normalizado: 'prezunic catumbi serra azul', codigo_escala: null, codigo_unitrac: null, nome_unitrac: null, lat: -22.82573, lng: -43.33542, raio_metros: 300 },
+      { id: 'meier-sa', rede_id: 'PREZUNIC', nome: 'Prezunic - Meier Serra Azul', nome_normalizado: 'prezunic meier serra azul', codigo_escala: null, codigo_unitrac: null, nome_unitrac: null, lat: -22.88015, lng: -43.28596, raio_metros: 300 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(linhas, paradas, lojas)
+    const r = rotas.find(r => r.escala_linha_id === 'l_jauru')
+    // Esperado: nenhuma parada atribuída — lojaEscala ambígua (Catumbi vs Meier empate
+    // score=1) e parada resolve cadastro PREZUNIC diferente do escalado.
+    expect(r?.paradas).toHaveLength(0)
+  })
+
   it('caso saudável: T8 N:N continua atribuindo paradas SEM codigo identificado (coringa)', async () => {
     // Parada SEM codigo_loja e SEM cadastro identificável: T8 continua atribuindo
     // por proximidade temporal/N:N (caso ARMAZEM REGINA cadastro pobre). Não regride.

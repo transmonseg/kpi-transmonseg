@@ -1,0 +1,19 @@
+# Bug 7 diagnose v3 — PREZUNIC Botafogo Serra Azul
+
+Spec: manual=SEM, gerado=10:42/10:59, placa=KWB6998
+
+Escala atual: placa=KWB6998, loja_raw="Prezunic - Botafogo / Serra Azul", motorista=DELSON, carro=1
+Cadastro: PREZUNIC BOTAFOGO (VOLUNTÁRIOS DA PÁTRIA), lat=-22.952595, raio=150m
+
+## Classificacao: 7A_resolved
+Acao: Matcher ATUAL nao gera CL/SL — falso positivo ja resolvido
+Detalhe: Rota=OK, paradas=0. O fix do mestre ja eliminou o falso positivo.
+
+## Rota gerada (matcher atual)
+- placa=KWB6998, status=pendente, anomalias=[]
+- meta: {"score":0,"confidence":"UNMATCHED","requiresReview":true,"algorithm":"none"}
+- 0 paradas:
+
+## Todas paradas dia 19 da placa KWB6998 (0)
+| # | classif | chegada | saida | dur | dist→cadastro | codigo | local |
+|---|---------|---------|-------|-----|---------------|--------|-------|

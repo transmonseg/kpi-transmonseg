@@ -1486,12 +1486,36 @@ export async function cruzaEscalaUnitrac(
       }
 
       for (const linha of semGpsLines) {
-        // Tenta encontrar a loja no cadastro para usar GPS como fallback
-        const lojaEscala = lojas.find(l => {
-          if (l.rede_id !== linha.rede_id) return false
-          if (linha.loja_codigo_raw && l.codigo_escala === linha.loja_codigo_raw) return true
-          return matchScore(linha.loja_nome_raw, l.nome) <= 1
-        })
+        // Tenta encontrar a loja no cadastro para usar GPS como fallback.
+        // Bug 7 fix: quando MÚLTIPLAS lojas da rede dão matchScore ≤ 1 (token
+        // qualificador comum tipo "Serra Azul"), `find` retornava a PRIMEIRA, que pode
+        // ser cadastro diferente do escalado. Caso PREZUNIC dia 19: escala "Prezunic -
+        // Jauru / Serra Azul" — `find` retornava "Prezunic - Catumbi Serra Azul"
+        // (score=1) em vez de PREZUNIC JAURU (score=2). T18 usava lat/lng de Catumbi
+        // como referência de T18-D (≤5km), aceitando paradas longe de Jauru.
+        // Fix: prioridade — (1) código exato, (2) menor matchScore, com fallback
+        // a busca ampla. lojaEscalaAmbigua=true quando múltiplas lojas empatam no
+        // menor score (token discriminador não único) — sinaliza pra T18-X bloquear
+        // qualquer match cross-loja.
+        let lojaEscala: typeof lojas[0] | undefined
+        let lojaEscalaAmbigua = false
+        if (linha.loja_codigo_raw) {
+          lojaEscala = lojas.find(l => l.rede_id === linha.rede_id && l.codigo_escala === linha.loja_codigo_raw)
+        }
+        if (!lojaEscala) {
+          const candidatas = lojas
+            .filter(l => l.rede_id === linha.rede_id)
+            .map(l => ({ l, s: matchScore(linha.loja_nome_raw, l.nome) }))
+            .filter(x => x.s <= 2)
+            .sort((a, b) => a.s - b.s)
+          if (candidatas.length > 0) {
+            lojaEscala = candidatas[0].l
+            // Múltiplos com mesmo menor score → ambíguo (caso Prezunic "Serra Azul")
+            if (candidatas.length > 1 && candidatas[0].s === candidatas[1].s) {
+              lojaEscalaAmbigua = true
+            }
+          }
+        }
         const redesFungT18 = redesFungiveis(linha.rede_id)
         const candidatas = todasLojaParadas.filter(p => {
           if (usedIds.has(p.id)) return false
@@ -1526,6 +1550,16 @@ export async function cruzaEscalaUnitrac(
                 ))
                 const nomeBate = matchScore(linha.loja_nome_raw, lojaPar.nome) <= 1
                 if (!codigoBate && !nomeBate) return false
+                // T18-X2 (Bug 7): mesmo com nomeBate, exige que o cadastro identificado
+                // seja IGUAL ao cadastro da loja escalada. Caso PREZUNIC dia 19:
+                // escala "Prezunic - Jauru / Serra Azul" → cadastro PREZUNIC JAURU,
+                // mas parada UBO5E01 (Sendas Bangu) tem geo→Catumbi Serra Azul (matchScore
+                // 1 via SERRA+AZUL). Sem este guard, T18-X aceitava (nomeBate=true). Agora:
+                // se ambos lojaEscala e lojaPar foram identificados e são diferentes, rejeita.
+                // Também rejeita quando lojaEscalaAmbigua (múltiplos cadastros empatam no
+                // matchScore — token discriminador da escala não é único, alto risco de FP).
+                if (lojaEscalaAmbigua) return false
+                if (lojaEscala && lojaPar.id !== lojaEscala.id) return false
               }
             }
             // Exige match próximo (≤ 2 tokens de diferença) — evita FP por tokens genéricos
@@ -1534,6 +1568,10 @@ export async function cruzaEscalaUnitrac(
           }
           // Coringa (sem rede): exige score ≤ 2 — geo fallback removido para evitar FP
           // de paradas de outras cadeias geograficamente próximas (ex: Guanabara Barra).
+          // T18-X2-Coringa (Bug 7): quando lojaEscala é ambígua (cadastro tem token
+          // qualificador comum como "Serra Azul"), exige score=0 (match perfeito) para
+          // evitar FP por tokens genéricos do cadastro.
+          if (lojaEscalaAmbigua) return scorePair(linha, p) === 0
           return scorePair(linha, p) <= 2
         })
         if (!candidatas.length) continue
