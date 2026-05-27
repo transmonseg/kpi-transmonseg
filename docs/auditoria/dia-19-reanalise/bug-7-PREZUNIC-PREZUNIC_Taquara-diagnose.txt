@@ -1,0 +1,19 @@
+# Bug 7 diagnose v3 — PREZUNIC Taquara
+
+Spec: manual=SEM, gerado=14:50/14:53, placa=LUP1F13
+
+Escala atual: placa=LUP1F13, loja_raw="Prezunic - Taquara / Serra Azul", motorista=CARLOS DO SANTOS, carro=1
+Cadastro: PREZUNIC TAQUARA, lat=-22.92438, raio=150m
+
+## Classificacao: 7A_resolved
+Acao: Matcher ATUAL nao gera CL/SL — falso positivo ja resolvido
+Detalhe: Rota=OK, paradas=0. O fix do mestre ja eliminou o falso positivo.
+
+## Rota gerada (matcher atual)
+- placa=LUP1F13, status=pendente, anomalias=[]
+- meta: {"score":0,"confidence":"UNMATCHED","requiresReview":true,"algorithm":"none"}
+- 0 paradas:
+
+## Todas paradas dia 19 da placa LUP1F13 (0)
+| # | classif | chegada | saida | dur | dist→cadastro | codigo | local |
+|---|---------|---------|-------|-----|---------------|--------|-------|

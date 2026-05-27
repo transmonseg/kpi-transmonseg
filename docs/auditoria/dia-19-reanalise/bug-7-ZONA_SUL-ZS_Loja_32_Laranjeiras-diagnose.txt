@@ -1,0 +1,20 @@
+# Bug 7 diagnose v3 — ZS Loja 32 Laranjeiras
+
+Spec: manual=SEM, gerado=04:54/05:31, placa=QAH2H50
+
+Escala atual: placa=QAH2H50, loja_raw="Zona Sul Loja 32 - Laranjeiras", motorista=EDUARDO, carro=1
+Cadastro: ZONA SUL LOJA 32 - LARANJEIRAS, lat=-22.93344, raio=200m
+
+## Classificacao: 7A
+Acao: Aceitar — manual errado (GPS comprova entrega)
+Detalhe: Parada 05:31→06:22 a 39m de ZONA SUL LOJA 32 - LARANJEIRAS (raio 200m), classif=LOJA
+
+## Rota gerada (matcher atual)
+- placa=QAH2H50, status=pendente, anomalias=[]
+- meta: {"score":0.8,"confidence":"LOW","requiresReview":true,"algorithm":"geo"}
+- 1 paradas:
+  - LOJA 05:31→06:22 dur=51min loja_id=275404ec-23be-4723-9cf5-5649c70f5521 nome="PRINCESA LARANJEIRAS" dist→loja=39m parada_id=p-661
+
+## Todas paradas dia 19 da placa QAH2H50 (0)
+| # | classif | chegada | saida | dur | dist→cadastro | codigo | local |
+|---|---------|---------|-------|-----|---------------|--------|-------|

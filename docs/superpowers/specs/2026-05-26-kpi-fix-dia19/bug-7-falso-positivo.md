@@ -50,4 +50,42 @@ Pra cada caso 7B identificado, criar teste que confirma sys retorna SEM agora.
 
 ## Status
 
-🔍 Aguardando investigação
+RESOLVIDO (2026-05-27)
+
+### Resultados
+
+Classificação dos 7 casos:
+- **7A_resolved**: 4 (falsos positivos eliminados pelo fix T18-X2 no matcher)
+- **7A**: 1 (manual errado — ZS Loja 32 Laranjeiras, GPS a 39m do cadastro)
+- **7B**: 1 (ASSAI Bangu II — borderline 288m vs raio 200m — cadastro precisa ajuste)
+- **???**: 1 (ASSAI Barra I — cadastro inexistente no banco)
+
+### Causa raiz
+
+T18 (plate-swap) atribuía paradas de UBO5E01 (placa ASSAI Bangu) a linhas PREZUNIC
+"Serra Azul" porque:
+1. `find(matchScore <= 1)` retornava `Catumbi Serra Azul` (score=1 via tokens SERRA+AZUL)
+   em vez de `PREZUNIC JAURU` (score=2) — token discriminador JAURU é único mas pesa menos.
+2. Múltiplos cadastros "Serra Azul" empatavam em score=1, ambiguidade não detectada.
+3. T18-D (5km guard) usava lat/lng de Catumbi como referência, aceitando paradas
+   geograficamente próximas a Catumbi (mas longe da loja escalada Jauru).
+
+### Fix aplicado
+
+`src/lib/kpi/matcher.ts`:
+1. Lookup de `lojaEscala` agora ordena candidatos por menor score e detecta
+   ambiguidade (top 2 com mesmo score) via flag `lojaEscalaAmbigua`.
+2. T18-X2: rejeita atribuição quando `lojaPar.id !== lojaEscala.id` OU quando
+   `lojaEscalaAmbigua === true` (token qualificador não único).
+3. T18-X2-Coringa: quando ambíguo e parada sem rede resolvida, exige scorePair=0.
+
+### Diagnose detalhado
+
+- Consolidado: `docs/auditoria/dia-19-reanalise/bug-7-classificacao.md`
+- Por caso: `docs/auditoria/dia-19-reanalise/bug-7-<rede>-<loja>-diagnose.txt`
+- Discrepâncias manual: `docs/auditoria/manual-discrepancias-dia19.md`
+
+### Teste
+
+`src/lib/kpi/matcher.test.ts` → "Bug 7 — T18-X2 rejeita atribuição quando cadastro
+ambíguo por token qualificador" (301/301 passing).

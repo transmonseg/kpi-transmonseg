@@ -1,0 +1,28 @@
+# Bug 7 diagnose v3 — ZS Loja 14 Leblon
+
+Spec: manual=NAO_FOI, gerado=15:53/16:41, placa=UBO5E05
+
+Escala atual: placa=UBO5E05, loja_raw="Zona Sul Loja 14 - Leblon", motorista=MARCOS FERNANDO, carro=1
+Cadastro: (nao encontrado), lat=---, raio=200m
+
+## Classificacao: 7A_resolved
+Acao: Matcher ATUAL nao gera CL/SL — falso positivo ja resolvido
+Detalhe: Rota=OK, paradas=0. O fix do mestre ja eliminou o falso positivo.
+
+## Rota gerada (matcher atual)
+- placa=UBO5E05, status=sem_entrega, anomalias=[]
+- meta: {"score":0,"confidence":"UNMATCHED","requiresReview":true,"algorithm":"none"}
+- 0 paradas:
+
+## Todas paradas dia 19 da placa UBO5E05 (9)
+| # | classif | chegada | saida | dur | dist→cadastro | codigo | local |
+|---|---------|---------|-------|-----|---------------|--------|-------|
+| 0 | BASE | 00:05 | 04:03 | 239min | --- | --- | BASE BENASSI - BASE BENASSI |
+| 1 | FORA_BASE | 04:48 | 05:43 | 55min | --- | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 2 | FORA_BASE | 05:44 | 06:04 | 20min | --- | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 3 | FORA_BASE | 06:06 | 09:34 | 207min | --- | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 4 | FAKE_EXIT | 09:36 | 09:39 | 3min | --- | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 5 | FAKE_EXIT | 10:37 | 10:46 | 9min | --- | --- | FORA DE BASE E LOCAL DE SERVIÇO |
+| 6 | BASE | 10:59 | 11:30 | 31min | --- | --- | BASE BENASSI - BASE BENASSI |
+| 7 | BASE | 11:36 | 11:59 | 23min | --- | --- | BASE BENASSI - BASE BENASSI |
+| 8 | BASE | 12:01 | 12:24 | 23min | --- | --- | BASE BENASSI - BASE BENASSI |

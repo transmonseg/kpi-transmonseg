@@ -1,0 +1,36 @@
+# Bug 7 diagnose v3 — ASSAI Bangu II
+
+Spec: manual=NAO_FOI, gerado=09:33/09:37, placa=AMW3424
+
+Escala atual: placa=UBO5E01, loja_raw="Assaí - Bangu I - Loja 55", motorista=JEFERSON BATALHA, carro=1
+Cadastro: Assaí - Bangu I - Loja 55, lat=-22.876, raio=200m
+
+## Classificacao: 7B
+Acao: Matcher atribuiu parada fora do raio — bug
+Detalhe: Parada 05:43→08:31 a 288m de Assaí - Bangu I - Loja 55 (raio 200m), classif=LOJA, local="560028 - SENDAS BANGU - LOJA 55,5353016 - REGINA  LUCIO MEIRA,5353017 - ABASTECE"
+
+## Rota gerada (matcher atual)
+- placa=UBO5E01, status=pendente, anomalias=[]
+- meta: {"score":1,"confidence":"HIGH","requiresReview":false,"algorithm":"hybrid"}
+- 1 paradas:
+  - LOJA 05:43→08:31 dur=167min loja_id=d740bb8c-a545-4ee5-8b4b-58c730bef2db nome="SENDAS BANGU - LOJA 55" dist→loja=288m parada_id=p-1681
+
+## Todas paradas dia 19 da placa UBO5E01 (16)
+| # | classif | chegada | saida | dur | dist→cadastro | codigo | local |
+|---|---------|---------|-------|-----|---------------|--------|-------|
+| 0 | LOJA | 00:02 | 04:07 | 246min | 14163m | 5353016 | BASE BENASSI - BASE BENASSI,5353016 - REGINA  LUCI |
+| 1 | LOJA | 04:21 | 04:40 | 19min | 13803m | 5353016 | BASE BENASSI - BASE BENASSI,5353016 - REGINA  LUCI |
+| 2 | LOJA | 04:41 | 04:56 | 15min | 13710m | 5353016 | BASE BENASSI - BASE BENASSI,5353016 - REGINA  LUCI |
+| 3 | LOJA | 05:01 | 05:11 | 9min | 16014m | 5353016 | 5353016 - REGINA  LUCIO MEIRA,5353017 - ABASTECEDO |
+| 4 | LOJA | 05:43 | 08:31 | 167min | 288m | 560028 | 560028 - SENDAS BANGU - LOJA 55,5353016 - REGINA   ← atribuida |
+| 5 | LOJA | 09:30 | 09:51 | 21min | 13820m | 5353016 | BASE BENASSI - BASE BENASSI,5353016 - REGINA  LUCI |
+| 6 | LOJA | 09:59 | 10:39 | 40min | 14152m | 5353016 | BASE BENASSI - BASE BENASSI,5353016 - REGINA  LUCI |
+| 7 | LOJA | 10:42 | 10:59 | 17min | 14244m | 5353016 | BASE BENASSI - BASE BENASSI,5353016 - REGINA  LUCI |
+| 8 | LOJA | 11:30 | 11:44 | 14min | 4571m | 5353016 | 5353016 - REGINA  LUCIO MEIRA,5353017 - ABASTECEDO |
+| 9 | LOJA | 12:42 | 12:47 | 5min | 19084m | 5353016 | 5353016 - REGINA  LUCIO MEIRA,5353017 - ABASTECEDO |
+| 10 | LOJA | 12:49 | 13:26 | 37min | 19582m | 5353016 | 5353016 - REGINA  LUCIO MEIRA,5353017 - ABASTECEDO |
+| 11 | LOJA | 13:49 | 14:04 | 15min | 14251m | 5353016 | BASE BENASSI - BASE BENASSI,5353016 - REGINA  LUCI |
+| 12 | LOJA | 14:06 | 14:36 | 30min | 14163m | 5353016 | BASE BENASSI - BASE BENASSI,5353016 - REGINA  LUCI |
+| 13 | LOJA | 14:37 | 14:45 | 8min | 14225m | 5353016 | BASE BENASSI - BASE BENASSI,5353016 - REGINA  LUCI |
+| 14 | LOJA | 14:50 | 14:53 | 3min | 14603m | 5353016 | 5353016 - REGINA  LUCIO MEIRA,5353017 - ABASTECEDO |
+| 15 | LOJA | 16:12 | 16:20 | 8min | 11836m | 5353016 | 5353016 - REGINA  LUCIO MEIRA,5353017 - ABASTECEDO |

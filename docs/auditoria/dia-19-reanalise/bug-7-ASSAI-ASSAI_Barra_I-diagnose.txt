@@ -1,0 +1,21 @@
+# Bug 7 diagnose v3 — ASSAI Barra I
+
+Spec: manual=NAO_FOI, gerado=06:08/06:36, placa=UBO5E01
+
+Escala atual: placa=UGA1D55, loja_raw="Assaí - Barra I (Senna) - Loja 133", motorista=FELIPE DIEGO, carro=1
+Cadastro: (nao encontrado), lat=---, raio=200m
+
+## Classificacao: ???
+Acao: Cadastro nao encontrado
+Detalhe: ASSAI Barra I sem cadastro identificavel
+
+## Rota gerada (matcher atual)
+- placa=UGA1D55, status=pendente, anomalias=[]
+- meta: {"score":0.8,"confidence":"LOW","requiresReview":true,"algorithm":"geo"}
+- 1 paradas:
+  - LOJA 05:10→05:47 dur=37min loja_id=null nome="EMPORIO BARRA TOWER" dist→loja=--- parada_id=p-1348
+
+## Todas paradas dia 19 da placa UGA1D55 (1)
+| # | classif | chegada | saida | dur | dist→cadastro | codigo | local |
+|---|---------|---------|-------|-----|---------------|--------|-------|
+| 0 | BASE | 00:01 | 16:14 | 973min | --- | --- | BASE BENASSI - BASE BENASSI |
