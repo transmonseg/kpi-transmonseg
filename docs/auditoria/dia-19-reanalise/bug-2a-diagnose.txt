@@ -1,0 +1,73 @@
+## Bug 2A — Diagnose dia 19 ZS — 26/05/2026
+
+### Estado atual após fixes anteriores (T18-X, T18-Orphan, OCR-equate via geo)
+
+```
+regerar_local 19 ZONA_SUL:
+✅ Loja 33 Humaitá       sys=05:29/07:51 man=05:30/07:50 Δ1/1   (BBH1C94 — corrigido)
+✅ Loja 21 Flamengo 1ª   sys=06:15/08:17 man=06:15/08:15 Δ0/2   (KWK4593 — corrigido)
+✅ Loja 21 Flamengo 2ª   ambos sem
+✅ Loja 48 Recreio       ambos sem
+⚠️ Loja 07 Leblon 1ª    sys=06:27/11:18 man=06:20/11:20 Δ7/2  (LCO0J78 via OCR-equate)
+❌ Loja 07 Leblon 2ª    sys=05:55/06:45 man=15:00/16:10        (BUG REAL)
+❓ Loja 31 Jd.Botânico   sys=---       man=14:00/14:10        (DBB8D19 ausente)
+❌ Loja 31 Jd.Botânico (2ª)  sys=13:58/14:11 man=NAO          (FP)
+❓ Mega Box 2 Recreio    sys=---       man=16:40/17:00
+```
+
+### Caso Loja 07 — duas escalas mesma loja
+
+ESCALA banco (rede=ZONA_SUL, data=2026-05-19):
+- baf6cba0 FHO5F88 c1 CLEYTON
+- 7be8acf9 LCO0978 c1 LUIZ ALVES
+
+MANUAL Tia Érica:
+- 1ª: LCO0978 LUIZ ALVES 06:20/11:20
+- 2ª: KQR2J11 (não escalado pra L07) 15:00/16:10 (multi-trip plate-swap real)
+
+GPS:
+- LCO0978: AUSENTE
+- LCO0J78 (variante OCR aceita): só FORA_BASE 06:27-11:18
+- KQR2J11: VÁRIAS paradas, incluindo LOJA 14:58-16:11 cod=9039007 (Loja 07!)
+- FHO5F88: não checado
+
+### Caso Loja 31 — DBB8D19 não foi
+
+ESCALA banco:
+- DBB8D19 PAULO HENRIQUE c1
+- LTE0A64 DOUGLAS c1
+
+MANUAL:
+- DBB8D19 14:00/14:10 (1ª)
+- LTE0A64 NÃO FOI (sem)
+
+GPS:
+- DBB8D19: só FORA_BASE 06:36-09:13. Não passou na Loja 31.
+- LTE0A64: ausente.
+
+NENHUMA placa passou perto da Loja 31 (-22.96052, -43.20569) dia 19.
+
+A entrada sys=13:58/14:11 do gerado pra Loja 31 (2ª) — FALSO POSITIVO. Vou descobrir qual placa.
+
+### Caso Loja 47 Catete — manual 19:40/20:20 sys=---
+
+GPS perto da Loja 47 Catete:
+- KVT5427 [LOJA] 05:11-06:38 cod=8590120 (PRINCESA Catete!) — diferente loja, mesma região
+
+Manual diz 19:40/20:20 mas NINGUÉM passou lá nesse horário (verificado: apenas KVT5427 matutino que é PRINCESA, não ZS).
+
+CONCLUSÃO: Loja 47 19:40/20:20 — manual ERRADO ou GPS off naquele veículo.
+
+### Síntese
+
+Bug 2A (plate-swap T18 atribuindo placa errada) — em grande parte JÁ RESOLVIDO pelos fixes anteriores.
+Os 6 casos da spec hoje se reduzem a:
+1. Loja 33: ✅ corrigido (sys agora bate)
+2. Loja 21 1ª: ✅ corrigido
+3. Loja 07 1ª: ✅ aceitável Δ7/2
+4. Loja 07 2ª: ❌ multi-trip + plate-swap real — KQR2J11 não escalado
+5. Loja 48: ✅ ambos sem
+6. Loja 31 1ª: ❓ DBB8D19 não foi — manual provavelmente errado OU placa swap não-rastreável
+7. Loja 31 2ª: ❌ FP — alguma placa pega no T18 por engano (precisa identificar)
+
+Bug residual real: Loja 31 2ª FP (sys=13:58/14:11 pra DBB8D19 ou LTE0A64 quando nenhuma foi lá).
