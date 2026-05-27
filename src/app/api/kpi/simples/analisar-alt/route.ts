@@ -5,8 +5,8 @@ import { parseAlteracoesV2 } from '@/lib/parsers/alteracoes-v2'
 import { blocoToParsed } from '@/lib/parsers/alteracoes-v2-adapter'
 import { buildLookupContext } from '@/lib/parsers/lookup-canonical'
 import { parseAlteracaoPdfTabular } from '@/lib/parsers/alteracao-pdf-tabular'
+import { inferirSaiDaEscala } from '@/lib/parsers/inferir-sai'
 import type { ParseContext } from '@/lib/parsers/alteracoes-v2.types'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 
@@ -34,86 +34,6 @@ async function extrairAlteracoesPdf(
   return { alteracoes: parseTextoV2(text, ctx), fonte: 'pdf-texto' }
 }
 
-const STOP_TOKENS = new Set([
-  'LOJA', 'FILIAL', 'CARRO', 'REDE', 'CARREFOUR', 'ASSAI', 'PREZUNIC',
-  'PRINCESA', 'SUPERPRIX', 'SENDAS', 'GUANABARA', 'ATACADAO', 'VIANENSE',
-  'MUNDIAL', 'EMANUEL', 'MEGA', 'BOX', 'ZONA', 'SUL', 'ARMAZEM',
-  'PAX', 'FEIRA', 'NOVA', 'SAMS', 'CLUB', 'CAB', 'PETROPOLIS', 'SUPER',
-])
-
-function normTexto(s: string): string {
-  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
-    .replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim()
-}
-
-function tokensFortes(s: string): string[] {
-  return normTexto(s).split(' ').filter(t => t.length >= 4 && !STOP_TOKENS.has(t))
-}
-
-/**
- * Preenche `sai` (motorista/placa) inferindo da escala original do dia.
- * Match por rede + (número de filial OU tokens fortes do nome).
- *
- * Caso típico: alteração tipo "Carrefour Campo Grande / Entra: Simão LSN-6I72"
- * (sem `Sai:` explícito). Sistema busca escala dia=data, acha a linha CARREFOUR
- * com "Campo Grande" no nome, copia motorista_nome/placa pra `sai`.
- */
-async function inferirSaiDaEscala(
-  parsed: AlteracaoParsed[],
-  data: string,
-  supabase: SupabaseClient,
-): Promise<AlteracaoParsed[]> {
-  if (!data) return parsed
-
-  const { data: escala } = await supabase
-    .from('escala_linhas')
-    .select('rede_id, loja_nome_raw, loja_codigo_raw, motorista_nome, motorista_codigo, placa_norm, placa_raw, carro_ordem')
-    .eq('data_entrega', data)
-
-  if (!escala?.length) return parsed
-
-  return parsed.map(p => {
-    if (p.sai && (p.sai.placa_norm || p.sai.motorista_nome)) return p
-    if (!p.loja_nome_raw) return p
-
-    let linhaMatch: typeof escala[number] | null = null
-
-    // 1) Match por número de filial (ex: "Loja 35", "Filial 23")
-    const filialM = p.loja_nome_raw.match(/\b(\d{1,3})\b/)
-    if (filialM) {
-      const filialInt = parseInt(filialM[1], 10)
-      linhaMatch = escala.find(l => {
-        if (p.rede_id && l.rede_id !== p.rede_id) return false
-        const codInt = parseInt(l.loja_codigo_raw ?? '', 10)
-        return !isNaN(codInt) && codInt === filialInt
-      }) ?? null
-    }
-
-    // 2) Match por tokens fortes (ex: "Carrefour Campo Grande", "Assai Sao Goncalo Camil")
-    if (!linhaMatch) {
-      const altTok = tokensFortes(p.loja_nome_raw)
-      if (altTok.length >= 1) {
-        linhaMatch = escala.find(l => {
-          if (p.rede_id && l.rede_id !== p.rede_id) return false
-          const linTok = new Set(tokensFortes(l.loja_nome_raw ?? ''))
-          return altTok.every(t => linTok.has(t))
-        }) ?? null
-      }
-    }
-
-    if (!linhaMatch) return p
-
-    return {
-      ...p,
-      sai: {
-        motorista_nome: linhaMatch.motorista_nome ?? null,
-        motorista_codigo: linhaMatch.motorista_codigo ? parseInt(String(linhaMatch.motorista_codigo), 10) : null,
-        placa_raw: linhaMatch.placa_raw ?? null,
-        placa_norm: linhaMatch.placa_norm ?? null,
-      },
-    }
-  })
-}
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
