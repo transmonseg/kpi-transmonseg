@@ -6,7 +6,32 @@
 
 > **Para retomar a sessão após compactação:** leia este arquivo PRIMEIRO. Tudo aqui aponta para a verdade.
 
-**Última atualização:** 2026-05-27 (sessão FASE 4 — 7 bugs do dia 19 atacados via subagent-driven)
+**Última atualização:** 2026-05-27 (auditoria externa Claude.ai + FASE 5 começando)
+
+## Sessão 27/05 tarde — Auditoria externa recebida
+
+Após FASE 4 (7 bugs corrigidos no matcher), o usuário rodou auditoria externa via Claude.ai sobre o repositório. Resultado: **22 bugs identificados**, 4 URGENTES.
+
+**Veredito (em `docs/auditoria/auditoria-27-05/00-veredito.md`):**
+- CONCORDO com a auditoria. Todos os 4 bugs URGENTES verificados no main `29d7644`.
+- Nossos 7 fixes da FASE 4 atacaram efeitos secundários. A CAUSA RAIZ está no parser v1 de alterações (`alteracao-text.ts`) e em `lookupSlot`, que NÃO foram tocados.
+- Projeção da auditoria: U1 sozinho leva Super Prix de 8,6% → 95%.
+
+**Próximos passos hoje:**
+1. U1 — Conectar parser v2 (`alteracoes-v2.ts` → `analisar-alt/route.ts`)
+2. U2 — Normalizar VEICULOS_INATIVOS (remover hífen)
+3. U3 — lookupSlot priorizar nome quando presente
+4. U4 — Promise.allSettled (isolamento por rede)
+
+**Organização repo (27/05):**
+- 58 scripts `_tmp_*` e `_dump_*` arquivados em `scripts/_archive/`
+- 8 branches remotas mergeadas deletadas
+- Worktrees órfãs limpas
+- FLUXO-ATIVO.md atualizado
+
+---
+
+**Última atualização anterior:** 2026-05-27 manhã (FASE 4 — 7 bugs do dia 19 atacados via subagent-driven)
 
 ## Sessão 27/05 — FASE 4 completa
 

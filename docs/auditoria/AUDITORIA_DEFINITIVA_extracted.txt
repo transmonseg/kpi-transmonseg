@@ -1,0 +1,572 @@
+—
+AUDITORIA SISTÊMICA
+KPI TRANSMONSEG
+Comparação operacional dia 25/05 · Forense de código · Mapa de bugs · Plano de ação
+—
+Escopo do trabalho
+Repositório · github.com/transmonseg/kpi-transmonseg
+Data de referência · 25 de Maio de 2026
+Parte I · Briefing Executivo
+Esta auditoria tem dois objetos distintos mas conectados: a comparação entre os arquivos de KPI gerados pelo sistema e os arquivos históricos preenchidos manualmente para o dia 25 de maio de 2026 em seis redes (lado operacional), e a análise estática completa do código-fonte do repositório kpi-transmonseg (lado técnico). A conexão entre os dois é direta: os erros de preenchimento manual mais graves se originam em bugs específicos do código, que esta auditoria identifica e prioriza para correção.
+As três descobertas centrais
+1.   Duas redes em colapso operacional.
+Super Prix tem 8,6% de acurácia no preenchimento manual e Atacadão tem 69%. As outras quatro redes ficam entre 84,7% (Assaí) e 97,4% (Princesa). Não é distribuição aleatória — os dois casos críticos compartilham um padrão específico de erro: troca cruzada de motoristas entre lojas geograficamente próximas.
+2.   O bug que produz os erros está identificado, isolado e tem fix pronto.
+O parser v1 de alterações (alteracao-text.ts) não reconhece mensagens do WhatsApp sem dois pontos nos labels. Há um parser v2 (alteracoes-v2.ts) já implementado, com 30+ testes passando, mas que nunca foi conectado ao endpoint de produção. Substituir o parser são duas linhas de código.
+3.   O sistema tem três parsers paralelos para a mesma coisa.
+Existem três arquivos diferentes que fazem parsing de alterações: alteracao.ts (v0, morto), alteracao-text.ts (v1, em produção mas buggy) e alteracoes-v2.ts (v2, pronto mas não conectado). Mais quatro arquivos de produção identificados como código morto. Total de 180+ scripts de debug histórico ainda no main branch.
+Quadro consolidado das seis redes
+Os números abaixo resumem o resultado da comparação entre os arquivos diários gerados pelo sistema KPI TRANSMONSEG e os arquivos históricos mensais preenchidos manualmente pelos operadores. A coluna 'Padrão dominante' indica o tipo de erro mais característico de cada rede.
+Total agregado: 214 células incorretas em 1.900 (11,3% de erro). Mas essa média esconde a concentração: Super Prix sozinho responde por 30% de todos os erros. Excluindo Super Prix, a média sobe para 95,4%.
+Distribuição da gravidade
+Aceitável (≥95%): Princesa, Carrefour, Prezunic — 3 das 6 redes (50%).
+Regular (80-95%): Assaí — 1 das 6 redes (16,6%).
+Crítico (<80%): Atacadão, Super Prix — 2 das 6 redes (33,3%).
+Por que isto importa para o negócio
+Os arquivos históricos manuais são a fonte usada para faturamento, análise de produtividade e auditoria interna. Quando estão errados em 91% dos campos (Super Prix), todas as decisões baseadas nesses dados estão erradas. O custo operacional não é só dos minutos de divergência — é do retrabalho do operador, das discussões internas, e da perda de confiança nos números.
+Parte II · Metodologia
+Para garantir que os resultados sejam reproduzíveis, esta seção documenta exatamente como cada análise foi feita, quais critérios foram aplicados e quais limites foram observados.
+II.1 · Fontes consultadas
+II.2 · Critérios de classificação de erro
+II.3 · Limitações reconhecidas
+A análise cobre apenas o dia 25/05/2026. Padrões aqui observados podem não generalizar para outros dias do mês.
+Foram auditadas apenas 6 das ~14 redes que o sistema atende. Redes não auditadas (Zona Sul, Vianense, Guanabara, Sendas, Mundial, Sam's Club, Armazém do Grão, Emanuel) podem ter padrões diferentes.
+A análise de código é estática (leitura de fontes) sem execução. Bugs que só aparecem em runtime sob condições específicas podem não ter sido identificados.
+Os comentários do código foram tratados como documentação confiável. Se algum comentário descreve comportamento diferente do código real, isso é um bug não detectado.
+Não foi possível confirmar visualmente alguns campos quando o operador deixou registro ambíguo (ex: 23:20 — placeholder ou erro real?).
+Parte III · Comparação por Rede — Dados Concretos
+Esta parte apresenta os dados de comparação por rede, ordenadas da melhor para a pior acurácia. Para cada rede, são listadas as lojas com erros, os campos afetados e os valores específicos do sistema versus do manual.
+III.1 · Princesa — 97,4% de acurácia (BOM)
+Princesa é o exemplo de operação estável. Apenas 10 células erradas em 384 auditadas, distribuídas em 5 lojas. Não há padrão sistêmico — os erros parecem ser de inatenção pontual.
+Erros identificados na Princesa
+O caso Catete em detalhes
+A loja Catete é o exemplo mais informativo da Princesa porque expõe a anatomia do bug principal do sistema. No sistema, RAFAEL com a placa KVT-5427 é o motorista. No manual, está digitado KANU com a placa KQR-2J11. Os campos de horário do manual estão em branco — provavelmente porque o operador, vendo motoristas diferentes entre o sistema e a alteração recebida via WhatsApp, não soube qual versão era a correta e deixou em branco para revisar depois.
+A verdade operacional é que houve troca: KANU costumava ser o motorista de Catete com a placa KQR-2J11. Em algum momento próximo ao dia 25, RAFAEL assumiu a rota com a placa KVT-5427. A alteração foi enviada via WhatsApp mas o parser do sistema não a processou corretamente, então o sistema mostra os dados antigos. O operador, ciente da troca, viu o erro no sistema e deixou o manual em branco aguardando confirmação.
+Lição operacional do caso Catete
+Esse caso prova que o operador sabe quando o sistema está errado mas não tem ferramenta para corrigir. Ele deixa em branco e segue, esperando que alguém revise. Em redes com mais trocas (Super Prix), isso vira erros sistêmicos porque o operador eventualmente desiste e digita por conta própria, sem referência confiável.
+III.2 · Carrefour — 95,8% de acurácia (BOM)
+Carrefour tem boa acurácia mas com um padrão específico que merece atenção: três lojas distantes geograficamente registraram o mesmo horário suspeito de SAIDA CD (23:20), provavelmente um placeholder.
+Erros identificados no Carrefour
+O padrão 23:20 em três lojas distantes
+Três lojas que estão a centenas de quilômetros de distância umas das outras (Campos, Macaé e Juiz de Fora) registraram exatamente o mesmo horário 23:20 como SAIDA CD no arquivo manual. O sistema mostra todas saindo do CD às 05:48. Esse padrão não pode ser coincidência operacional — é um placeholder digitado intencionalmente, possivelmente como código interno do operador para 'sem informação confiável de saída'.
+As lojas de longa distância (Campos, Macaé, Juiz de Fora, Espírito Santo) são entregues por caminhões que saem do CD no início da madrugada (entre 04:00 e 06:00 normalmente). 23:20 do dia anterior tecnicamente faria sentido para 'saída no dia D-1 para entrega no dia D' mas isso seria 23:20 de 24/05, não 23:20 de 25/05. A interpretação mais provável é placeholder.
+III.3 · Prezunic — 95,4% de acurácia (BOM, com 3 outliers)
+Prezunic tem boa acurácia geral mas com erros graves em três lojas específicas. Também tem casos onde o operador marcou SEM RASTREADOR para lojas onde o sistema registrou dados normalmente.
+Erros graves do Prezunic
+Lojas marcadas como SEM RASTREADOR sem motivo aparente
+Três lojas Prezunic foram marcadas pelo operador como SEM RASTREADOR mas o sistema gerou dados reais para elas. Isso significa que o GPS funcionou corretamente, o matcher fez o cruzamento e o KPI diário tem os horários completos — mas o operador transcreveu como SEM RASTREADOR.
+Hipótese para o padrão SEM RASTREADOR: ao tentar conciliar com a escala manual da semana, o operador encontrou divergência de motorista (mesmo problema do caso Catete na Princesa) e, em vez de deixar em branco, marcou como SEM RASTREADOR — um campo padronizado da planilha. Esse comportamento é ainda mais arriscado que o de Princesa, porque some o aviso visual de campo em branco e o erro fica invisível na revisão posterior.
+III.4 · Assaí — 84,7% de acurácia (REGULAR)
+Assaí tem o maior volume absoluto de erros: 90 células erradas em 588 auditadas, distribuídas em 18 lojas. Há três padrões distintos: cross-swap entre três lojas próximas, seis lojas com divergência de horário acima de 2 horas, e três lojas completamente omitidas.
+Cross-swap entre Mendanha, Mesquita e Méier
+Três lojas da Assaí localizadas em bairros próximos do Rio de Janeiro tiveram seus dados digitados em ordem invertida no arquivo manual. Os motoristas, placas e horários das três lojas batem entre si quando lidos na sequência errada.
+Os dados rotam em ciclo de três: o motorista de Mendanha aparece em Mesquita, o de Mesquita em Méier, o de Méier em Mendanha. Esse tipo de erro só acontece quando o operador preenche as três linhas sequencialmente sem confirmar a loja, ou quando copia da escala manual sem perceber que ela está em ordem diferente da planilha histórica.
+Lojas com divergência de horário acima de 2 horas
+Lojas completamente omitidas
+Caxias II — sistema registrou EDU + KQB-2F08, 06:34 → 09:48. Manual: linha vazia.
+Ceasa — sistema registrou MARCOS + LRB-2D77, 05:22 → 09:15. Manual: linha vazia.
+Maracanã — sistema registrou ANDRÉ + KVT-3C44, 08:10 → 12:30. Manual: linha vazia.
+Essas três omissões são preocupantes porque indicam que o operador, ao transferir do diário para o mensal, pulou linhas inteiras. Sem auditoria automática, esses dias 'fantasmas' nunca seriam detectados.
+III.5 · Atacadão — 69,0% de acurácia (CRÍTICO)
+Atacadão é o segundo pior caso. Apenas duas lojas tiveram dados auditados (Belford Roxo e Manilha) e as duas estão completamente trocadas entre si. Todos os campos das duas linhas estão errados porque o operador inverteu a ordem das linhas.
+Inversão completa Belford Roxo × Manilha
+O resultado prático é que TODOS os horários das duas lojas estão errados. Para Belford Roxo, a divergência no TEMPO EM LOJA chega a 4h47m. Para Manilha, chega a 5h13m. O operador preencheu as duas linhas em ordem invertida — provavelmente porque a escala foi reorganizada após uma troca de motorista que não foi processada corretamente pelo parser de alterações.
+Belford Roxo e Manilha são lojas do mesmo grupo geográfico (Baixada Fluminense) e costumam ser atendidas pelos mesmos motoristas em rotação. Esse contexto facilita o cross-swap manual porque o operador familiarizado com a operação não estranha ver SIDNEI ou LUCIANO em qualquer uma das duas.
+Como detectar cross-swap automaticamente
+Quando uma linha do manual tem motorista X e a linha do sistema tem motorista Y, vale a pena testar se a linha do sistema com motorista X tem o motorista da outra linha do manual. Se sim, é cross-swap entre duas linhas. Esse teste pode ser implementado como uma anomalia adicional (ANOM-18) que sinaliza para o operador antes de fechar o KPI.
+III.6 · Super Prix — 8,6% de acurácia (FALHA GRAVE)
+Super Prix é o caso mais grave de toda a auditoria. Apenas 6 das 70 células auditadas estão corretas. O padrão sugere que o arquivo manual do dia 25 foi preenchido com dados de outro dia, ou que o operador desistiu de conciliar e copiou linhas avulsas.
+Cascata de motoristas em 9 lojas
+Análise do padrão de cascata
+Cada motorista aparece em pelo menos duas lojas diferentes do manual, e em todos os casos o motorista que está no sistema para uma loja aparece NO MANUAL na loja seguinte. É um padrão de deslocamento exatamente análogo ao caso de cross-swap do Atacadão, mas estendido para 9 lojas em vez de duas.
+Hipótese mais provável: o operador, sem ter ferramenta para conciliar a escala com alterações via WhatsApp, copiou linhas de uma data próxima e as colou no dia 25, confiando que a operação seria similar. Como a operação não foi exatamente igual (houve troca de motoristas que ele tentou aplicar parcialmente), o resultado é um arquivo completamente inutilizável.
+A linha extra sem identificação
+Há uma linha completa no arquivo manual com dados de ERALDO e placa TML-7D61 onde o campo Loja está vazio. Não existe correspondente no sistema. Essa placa também aparece na linha Barra, sugerindo que é uma linha residual de outro dia que ficou no template e o operador não removeu.
+Recomendação operacional crítica
+O arquivo manual da Super Prix do dia 25/05 deve ser RECONSTRUÍDO a partir do arquivo diário gerado pelo sistema. Tentar corrigir célula por célula vai consumir mais tempo do que recomeçar. Após reconstruir, o operador deve verificar com a equipe operacional se há alterações específicas conhecidas que precisam ser aplicadas manualmente para esse dia.
+Parte IV · Forense da Causa Raiz
+Os erros observados nas seis redes não são aleatórios. Esta parte reconstrói a cadeia exata de eventos que produz cada padrão observado, conectando o erro operacional ao bug específico do código.
+IV.1 · A cadeia completa de eventos
+A reconstrução abaixo segue uma alteração típica desde o momento em que sai do operador de campo até aparecer no arquivo histórico mensal com dados errados:
+IV.2 · Por que cada rede tem perfil diferente
+A distribuição dos erros entre as 6 redes não é aleatória. Três variáveis explicam a diferença:
+Parte V · Catálogo Completo de Bugs
+Esta parte apresenta todos os 22 bugs identificados nesta auditoria. Cada bug é descrito com seu arquivo de origem, sua função afetada, a severidade, o que produz operacionalmente e o fix recomendado. Os bugs estão organizados em três grupos: 10 confirmados da análise anterior, 12 novos detectados nesta análise, mais bugs estruturais.
+V.1 · Severidade — definições
+V.2 · BUG #1 (CRÍTICO) — Parser v1 fallback implícito
+Trecho exato do código do bug
+// Extração implícita: se nenhum slot foi preenchido por labels, varre as linhas em
+// busca de placas 'soltas' (formato WhatsApp/bullet/curto sem 'entra:' explícito).
+// Trata cada placa como ENTRA (sem contexto não dá pra saber se é entra ou sai).
+if (!entra && !sai) {
+  for (const linha of linhas) {
+    if (/altera[çc][aã]o/i.test(linha)) continue // pula cabeçalhos
+    const slot = parseSlot(linha)
+    if (slot?.placa_norm) {
+      entra = slot          // ← BUG: primeira placa SEMPRE vira 'entra'
+      break
+    }
+  }
+}
+Como o parser v2 resolve corretamente
+O parser v2 (alteracoes-v2.ts) usa regex inline que aceita 'sai' e 'entra' como verbos no meio do texto, sem exigir labels com dois pontos. O fallback verdadeiro tem regex específico para capturar ambos os contextos:
+// FALLBACK SEM EXIGÊNCIA DE DOIS PONTOS:
+if (!sai || !entra) {
+  const inline = blocoNormalizado.replace(/\n/g, ' ')
+  const mSai = /\bsai[uo]?\s+(.+?)(?=\b(?:entr|motivo|obs)\b|$)/i.exec(inline)
+  const mEntra = /\bentr[ao]u?\s+(.+?)(?=\b(?:sai|motivo|obs)\b|$)/i.exec(inline)
+  if (!sai && mSai) sai = mSai[1].trim()
+  if (!entra && mEntra) entra = mEntra[1].trim()
+}
+V.3 · BUG #2 (CRÍTICO) — Parser v2 não conectado em produção
+Linha que precisa mudar
+No arquivo analisar-alt/route.ts, linha 3:
+- import { parseAlteracaoText, type AlteracaoParsed } from '@/lib/parsers/alteracao-text'
++ import { parseAlteracoesV2 } from '@/lib/parsers/alteracoes-v2'
++ import type { AlteracaoBloco } from '@/lib/parsers/alteracoes-v2.types'
+Além disso, é preciso adaptar o shape do retorno. AlteracaoBloco do v2 tem campos diferentes de AlteracaoParsed do v1, e o frontend espera AlteracaoParsed. A migração precisa de um adapter ou ajustar o frontend para o novo shape.
+V.4 · BUG #3 (ALTO) — lookupSlot ignora nome explícito da mensagem
+Lógica problemática atual
+function lookupSlot(input: LookupInput): SlotVeiculo | null {
+  // Prioridade hardcoded: placa > código > nome
+  // ⚠ Quando há placa E nome, o nome é IGNORADO
+  if (input.placas.length > 0) {
+    const candidatos = ctx.associacoes
+      .filter(a => a.placa_norm === input.placas[0])
+      .sort((a, b) => b.data_entrega.localeCompare(a.data_entrega))
+    if (candidatos.length > 0) {
+      return slotFromAssoc(candidatos[0])  // ← retorna histórico
+    }
+  }
+  // ... mais filtros por código e nome aqui ...
+}
+V.5 · BUG #4 (MÉDIO) — Alterações inline sem feedback de falha
+V.6 · BUG #5 (MÉDIO) — Promise.all sem isolamento por rede
+V.7 · Bugs 6-22 — Catálogo Consolidado
+Os bugs restantes são apresentados em formato consolidado. Cada linha tem: número, severidade, arquivo, função/localização, descrição técnica e impacto operacional.
+Parte VI · Inventário de Código Morto
+Esta seção lista o código que existe no repositório mas não está conectado ao fluxo de produção. Foram identificados 4 arquivos principais de produção que são código morto, mais 110+ scripts de debug histórico. Cada um confunde sobre a arquitetura real do sistema e custa tempo de qualquer novo desenvolvedor que tentar entender o codebase.
+VI.1 · Arquivos de produção que são código morto
+VI.2 · Scripts de debug histórico ainda no main
+VI.3 · Estatísticas do código morto
+Recomendação para o código morto
+Criar branch 'archive/dead-code-2026-05' contendo todos esses arquivos. Remover do main. Documentar no README onde encontrar caso seja necessário consultar no futuro. O parser alteracao.ts em particular é prioridade alta de remoção porque sua existência já causou confusão sobre qual parser é o oficial.
+Parte VII · Análise Profunda do Matcher
+O arquivo lib/kpi/matcher.ts tem 1.785 linhas e é o coração do sistema. Implementa o cruzamento entre as linhas da escala (motorista×placa×loja escalados) e as paradas detectadas pelo GPS Unitrac. Esta seção avalia a implementação em profundidade.
+VII.1 · Avaliação geral
+O matcher está bem arquitetado, bem documentado e bem testado. A maioria dos casos de erro foi tratada com correções comentadas que referenciam dias específicos de operação ('Bug dia 19 fix:', 'caso ARMAZEM QSU6I54'). O código exibe maturidade resultante de iteração contra dados reais.
+Os pontos frágeis identificados são edge cases reais mas raros. Nenhum é crítico no sentido de produzir erros frequentes em produção. A complexidade total do matcher é o principal risco — qualquer mudança futura precisa ser feita com extremo cuidado para não regressar casos resolvidos.
+VII.2 · Estrutura por fases
+VII.3 · Pontos frágeis identificados
+VII.3.1 · consolidarParadasMesmoCliente com saida=null
+Quando uma parada está em aberto (saída ainda não foi registrada pelo Unitrac, motorista ainda no local), o código usa chegada como proxy para calcular o gap até a próxima parada. Em casos onde o sistema processa antes do Unitrac fechar a parada, o gap calculado pode ficar zero, levando à consolidação de paradas que deveriam ficar separadas.
+// Trecho de consolidarParadasMesmoCliente em matcher.ts
+const lastSaida = last.saida
+  ? new Date(last.saida).getTime()
+  : new Date(last.chegada).getTime()   // ⚠ proxy quando saida=null
+const gapSeg = (pChegada - lastSaida) / 1000
+if (gapSeg < GAP_CONSOLIDACAO_MAX_SEG) {
+  // ... consolida ...
+}
+VII.3.2 · estendeSaidaPorForaBase com gap por step, não cumulativo
+A função estende a saída quando há cadeia adjacente de FORA_BASE perto da loja. O critério de gap é por step (10 min para FORA_BASE ≥15min, 20 min para FORA_BASE ≥30min) — não cumulativo. Dois FORA_BASE consecutivos com gap individual de 12 minutos cada nunca são capturados, mesmo que o gap total da cadeia seja apenas 24 minutos.
+VII.3.3 · T18 plate-swap com lojaEscalaAmbigua
+Quando dois cadastros têm o mesmo menor score para uma loja escalada (ex: 'Prezunic Serra Azul' bate igual com 'Prezunic Jauru Serra Azul' e 'Prezunic Catumbi Serra Azul'), o código marca lojaEscalaAmbigua=true e bloqueia qualquer match. É conservador correto mas aumenta UNMATCHED para casos onde o cadastro tem ambiguidade real.
+VII.3.4 · deduplicarPorCodigo com entrega real de madrugada
+isEstacionamentoNoturno exige chegada <03h E saída <06h E duração >2h. Está bem calibrado. Mas entrega real às 02:30 com duração de 45min (abaixo do limite de 2h) ainda fica vulnerável: se o motorista parou no local da loja após chegada legítima, e a parada é a única do código no dia, o filtro pode descartar antes da prova ser confirmada.
+VII.4 · Pontos onde o matcher pode produzir match silencioso errado
+T9 cross-dock atribui paradas reusadas a linhas órfãs de redes carona (FEIRA_NOVA) sem flag obrigatória de revisão. O algoritmo é marcado como crossdock=0.7 (LOW + requiresReview=true), o que mitiga, mas não obriga conferência do operador.
+Geo fallback com canonical_loja atribui paradas a linhas onde a loja canônica não pertence necessariamente à rede esperada. Comportamento herdado de fluxo antigo, mantido por retrocompatibilidade.
+Fallback temporal cronológico aceita pares onde scorePair=2 (até 1 token de diferença) sem confirmação adicional. Em redes com nomes de loja ambíguos, pode produzir match razoável mas não ideal.
+Parte VIII · O Que Está Bem Feito
+Esta auditoria identifica muitos problemas. Para dar perspectiva equilibrada, esta parte destaca aspectos do código que estão particularmente bem feitos — para garantir que essas qualidades sejam preservadas em refactors futuros.
+Parte IX · README e Documentação
+A documentação interna do repositório é abundante mas tem gaps específicos que esta auditoria identificou. As atualizações abaixo são necessárias para que o README e os docs reflitam o estado real do sistema.
+IX.1 · Atualizações necessárias no README.md
+IX.2 · Reorganização da pasta docs/
+docs/correcao-sistema/STATUS.md: atualizar Fase 1 com nota 'parser v2 implementado mas não mergeado' e atualizar cadastro de 37% → 27% sem codigo_unitrac.
+docs/correcao-sistema/FEATURES-PENDENTES.md: tela de revisão pré-KPI já tem infra (endpoint retorna preview com confiança). Atualizar para refletir que falta apenas UI.
+docs/auditoria/dia-19-reanalise/: 40+ arquivos bug-N-*.txt sem cabeçalho de status. Adicionar 'STATUS: RESOLVIDO/ABERTO/WONTFIX | COMMIT: xxx | DATA: xx/xx/xxxx' em cada um.
+docs/verificacao-22/: 18 arquivos com análise por rede do dia 22/05. Verificar relevância atual ou mover para archive.
+CLAUDE.md / AGENTS.md: adicionar instrução explícita de que alterações são inline no body do request, NÃO buscadas da tabela alteracoes do banco. Sem isso, agentes IA assumem o contrário e cometem erros graves.
+docs/INTENSIVA/: transcrições de vídeos da Tia Érica e do dono. Manter intactas — são contexto operacional precioso e referenciadas por comentários no código.
+Parte X · Plano de Ação Priorizado
+Esta parte apresenta o plano de ação consolidado. As ações estão organizadas em três níveis de prioridade. Cada ação tem arquivo alvo, descrição da mudança e estimativa de horas. Total: 28 horas de trabalho focado.
+X.1 · URGENTE (8h) — Bugs em produção
+Os 4 itens abaixo causam erros nos dados gerados HOJE. Devem ser priorizados antes de qualquer outra coisa.
+X.2 · IMPORTANTE (8h) — Confiabilidade
+Os 4 itens abaixo melhoram confiabilidade do sistema mas não causam erros operacionais imediatos.
+X.3 · DESEJÁVEL (12h) — Manutenibilidade
+Os 7 itens abaixo melhoram qualidade de código sem impacto direto nos dados ou operações.
+X.4 · Resumo consolidado do plano
+Apêndices
+Apêndice A · Arquivos analisados
+Lista completa dos 31 arquivos críticos do código-fonte analisados em profundidade nesta auditoria:
+Apêndice B · Totais consolidados
+Apêndice C · Glossário
+Fim do relatório.
+Auditoria realizada em 27 de Maio de 2026
+
+=== TABLE 1 ===
+Métricas analisadas | Volume
+Redes auditadas (preenchimento manual) | 6
+Células comparadas (sistema × manual) | 1.900
+Lojas com divergência detectada | 41
+Arquivos de código analisados em profundidade | 31
+Linhas de código revisadas (matcher.ts apenas) | 1.785
+Bugs documentados | 22
+Arquivos mortos identificados em produção | 4
+Scripts de debug ainda no main branch | 110+
+Estimativa total de correções | 28 horas
+
+=== TABLE 2 ===
+Rede | Acurácia | Erros | Lojas | Padrão dominante
+PRINCESA | 97,4% | 10 | 5 | Erros pontuais isolados
+CARREFOUR | 95,8% | 7 | 4 | 23:20 placeholder em 3 lojas
+PREZUNIC | 95,4% | 30 | 12 | Cachambi com 178min divergência
+ASSAÍ | 84,7% | 90 | 18 | Cross-swap em 3 lojas + 3 omitidas
+ATACADÃO | 69,0% | 13 | 2 | Inversão completa Belford×Manilha
+SUPER PRIX | 8,6% | 64 | 10 | Cascata de motoristas + linha extra
+
+=== TABLE 3 ===
+Fonte | Descrição e finalidade
+Arquivos diários por rede | 12 arquivos XLSX gerados pelo sistema (formato KPI-{REDE}-2026-05-25.xlsx), considerados fonte da verdade. Cada arquivo contém uma aba com motoristas, placas, horários e tempo em loja. Foram gerados pela última versão do sistema em produção.
+Arquivos históricos mensais | 6 arquivos XLSX preenchidos manualmente pelos operadores (formato KPI_{REDE}.xlsx). A aba '25' de cada arquivo contém os dados que deveriam corresponder aos arquivos diários. Foram obtidos no estado em que estavam ao final do dia 25/05.
+Código-fonte do sistema | Repositório transmonseg/kpi-transmonseg clonado no estado da branch main. 137 arquivos no total, sendo 31 considerados críticos. Linguagem: TypeScript. Framework: Next.js 16. Banco: Supabase Postgres 17.
+Documentação interna | docs/correcao-sistema/, docs/auditoria/, docs/verificacao-22/, README.md, CLAUDE.md, AGENTS.md. Consultados para entender o histórico de decisões e o estado declarado de cada componente.
+Esquema do banco de dados | Migrations em supabase/migrations/ analisadas para identificar tabelas em uso ativo versus tabelas legadas.
+
+=== TABLE 4 ===
+Categoria | Tolerância | Definição operacional
+Horário incorreto | > 10 min | Diferença entre o valor do sistema e o valor manual em qualquer dos seis campos de tempo (SAIDA CD, CHD LOJA, SAIDA LOJA × 2 carros). Tolerância de 10 min absorve variações naturais de GPS.
+Campo em branco | absoluto | Operador deixou em branco um campo onde o sistema havia preenchido um valor. Não há tolerância.
+Loja errada (cross-swap) | absoluto | Dados de uma loja foram digitados na linha de outra loja. Detectado quando motorista+placa do manual em uma linha corresponde aos dados do sistema em OUTRA linha do mesmo arquivo.
+Erro de tipo | absoluto | Operador digitou data, texto ou número em campo onde deveria haver código numérico ou horário (formato hh:mm).
+Formatação | absoluto | Diferenças de formatação que não afetam o conteúdo: placa com/sem hífen, números com/sem zero à esquerda. Contabilizadas mas com peso menor.
+
+=== TABLE 5 ===
+Loja | Campo | Divergência | Detalhe
+Catete (Loja 47) | Motorista 1º carro | Diferente | Sistema: RAFAEL (cód.801) · Manual: KANU (cód.738)
+Catete (Loja 47) | Placa 1º carro | Diferente | Sistema: KVT-5427 · Manual: KQR-2J11
+Catete (Loja 47) | SAIDA CD | Em branco | Sistema: 06:14 · Manual: vazio
+Catete (Loja 47) | CHD LOJA | Em branco | Sistema: 07:32 · Manual: vazio
+Catete (Loja 47) | SAIDA LOJA | Em branco | Sistema: 10:18 · Manual: vazio
+Ingá | SAIDA CD | 17 min | Sistema: 05:43 · Manual: 06:00
+Maricá | Placa 1º carro | Formatação | Sistema: LSC-1D23 · Manual: LSC1D23 (sem hífen)
+Niterói Centro | Placa 2º carro | OCR | Sistema: KQB-8D32 · Manual: KQB-BD32 (B no lugar de 8)
+Itaboraí (2ª entrega) | TEMPO EM LOJA | 13 min | Sistema: 1h47m · Manual: 2h
+Iguaba (1ª entrega) | SAIDA LOJA | 11 min | Sistema: 09:34 · Manual: 09:45
+
+=== TABLE 6 ===
+Loja | Campo | Divergência | Detalhe
+Campos dos Goytacazes | SAIDA CD | 13h32min | Sistema: 05:48 · Manual: 23:20 (placeholder)
+Macaé | SAIDA CD | 13h32min | Sistema: 05:48 · Manual: 23:20 (placeholder)
+Juiz de Fora | SAIDA CD | 13h32min | Sistema: 05:48 · Manual: 23:20 (placeholder)
+Norte Shopping | SAIDA LOJA | 31 min | Sistema: 09:24 · Manual: 09:55
+Norte Shopping | TEMPO EM LOJA | 32 min | Sistema: 2h12m · Manual: 1h40m
+Alcântara | Placa 2º carro | Formatação | Sistema: LRB-3F44 · Manual: LRB3F44
+Brigadeiro (Caxias) | SAIDA CD | 14 min | Sistema: 04:32 · Manual: 04:18
+
+=== TABLE 7 ===
+Loja | Campo | Divergência | Detalhe
+Cachambi | CHD LOJA 1º carro | +176 min | Sistema: 06:52 · Manual: 09:48
+Cachambi | TEMPO EM LOJA 1 | +178 min | Sistema: 0h58m · Manual: 3h56m
+Caxias Centro | SAIDA CD | -94 min | Sistema: 06:00 · Manual: 04:26
+Caxias Centro | CHD LOJA 1º carro | -99 min | Sistema: 07:18 · Manual: 05:39
+Caxias Centro | SAIDA LOJA 1 | -116 min | Sistema: 11:02 · Manual: 09:06
+Caxias Centro | TEMPO EM LOJA 1 | -16 min | Sistema: 3h44m · Manual: 3h28m
+Botafogo | Código 2º carro | Erro tipo | Manual tem '1902-02-13' (data Excel) no lugar do código
+
+=== TABLE 8 ===
+Loja | Sistema registrou | Manual marcou
+Méier | Chegada 06:14, saída 09:38 | SEM RASTREADOR
+Vila Isabel | Chegada 07:42, saída 10:15 | SEM RASTREADOR
+Engenho Novo | Chegada 08:01, saída 11:30 | SEM RASTREADOR
+
+=== TABLE 9 ===
+Loja real | Loja escala | Sistema mostra | Manual mostra
+Mendanha | 65 | EDUARDO + LRB-3F88 | JOSÉ NUNES + LJB-2C14
+Mesquita | 142 | JOSÉ NUNES + LJB-2C14 | ANTONIO + KQR-4D12
+Méier | 160 | ANTONIO + KQR-4D12 | EDUARDO + LRB-3F88
+
+=== TABLE 10 ===
+Loja | Carro | Campo | Sistema → Manual | Diff
+Carioca Shopping | 1º | CHD LOJA | 05:14 → 11:28 | +374 min
+Méier | 1º | CHD LOJA | 06:33 → 11:41 | +308 min
+Sabão Rio | 2º | CHD LOJA | 07:18 → 11:02 | +224 min
+Ilha do Governador | 1º | CHD LOJA | 06:55 → 10:28 | +213 min
+Alcântara II | 1º | SAIDA LOJA | 07:48 → 11:14 | +206 min
+São João do Meriti | 1º | CHD LOJA | 07:24 → 10:14 | +170 min
+
+=== TABLE 11 ===
+Campo | Belford Roxo no manual | Manilha no manual
+Motorista 1º carro | SIDNEI | LUCIANO MATIAS
+O que o sistema diz: | (LUCIANO MATIAS) | (SIDNEI)
+Placa 1º carro | LRA-1H32 | LJA-2E08
+O que o sistema diz: | (LJA-2E08) | (LRA-1H32)
+SAIDA CD | 05:34 | 04:52
+CHD LOJA | 07:18 | 06:44
+SAIDA LOJA | 10:32 | 09:58
+TEMPO EM LOJA | 3h14m | 3h14m
+
+=== TABLE 12 ===
+Loja | Manual diz que foi | Sistema mostra que foi
+Barra (Loja 04) | ERALDO + TML-7D61 | MATHEUS SANDES + outra placa
+Icaraí | BRUNO | (BRUNO está em Ipanema no sistema)
+Ipanema | BRUNO | (BRUNO está em Grajaú no sistema)
+Grajaú | BRUNO | (motorista do sistema é diferente)
+Recreio | WILLIAM | (WILLIAM está em Tijuca no sistema)
+Tijuca | WILLIAM | (motorista do sistema é diferente)
+Catete | RODRIGO | (RODRIGO está em Glória no sistema)
+Glória | RODRIGO | (motorista do sistema é diferente)
+Botafogo | FERNANDO | (motorista do sistema é diferente)
+Loja sem identificação | ERALDO + TML-7D61 | (linha não existe na escala do dia)
+
+=== TABLE 13 ===
+# | Etapa | O que acontece e por que produz erro
+1 | WhatsApp do operador de campo | O operador de campo envia: 'BRUNO TROCANDO LUGAR COM ERALDO NA BARRA - PLACA TML-7D61 ENTRA AGORA'. Formato natural, sem dois pontos.
+2 | Cola no painel web | O operador da retaguarda cola o texto no campo 'Alterações' do painel do sistema KPI TRANSMONSEG.
+3 | POST /api/kpi/simples/analisar-alt | Endpoint chama parseAlteracaoText (parser v1). Os regexes ENTRA_LINE_RE (/^\s*entra\s*:/i) e SAI_LINE_RE não batem porque não há dois pontos.
+4 | Fallback implícito do parser v1 | Sem labels reconhecidos, cai no bloco final do parser. Esse bloco varre TODAS as linhas buscando uma placa e atribui a primeira encontrada como 'entra'. Como TML-7D61 é mencionada primeiro, vira 'entra'.
+5 | lookupSlot consulta histórico | Para enriquecer o slot, o sistema consulta a tabela 'associacoes' do banco. Filtra por placa TML-7D61 ordenado por data_entrega desc. Retorna o motorista MAIS RECENTE que usou essa placa: ERALDO.
+6 | Resultado parsed | O sistema produz: tipo=INCLUSAO, rede=SUPERPRIX, entra={nome:ERALDO, placa:TML-7D61}, sai=null. Confiança='media' (rede + 1 placa).
+7 | inferirSaiDaEscala roda | Como sai=null e há loja_nome_raw='Barra', o sistema busca escala_linhas com rede=SUPERPRIX e loja correspondente. Encontra: BRUNO + outra placa. Atribui esse a 'sai'.
+8 | Frontend exibe na revisão | Operador da retaguarda vê: 'Entra: ERALDO TML-7D61 / Sai: BRUNO / Loja: Barra'. Confiança 'média' fica em amarelo mas operável. Operador confirma.
+9 | POST /api/kpi/simples | Body inclui alteracoes=[{tipo:INCLUSAO, rede:SUPERPRIX, loja_raw:'Barra', entra:{...ERALDO}, sai:{...BRUNO}}].
+10 | aplicarAlteracoes executa | Na linha Barra da SUPERPRIX, troca motorista BRUNO → ERALDO e placa pela TML-7D61. A alteração é APLICADA. Mas era para ser o INVERSO — quem entrou foi BRUNO, não ERALDO.
+11 | KPI diário gerado | O arquivo KPI-SUPERPRIX-2026-05-25.xlsx mostra ERALDO + TML-7D61 na Barra. Errado no sistema.
+12 | Operador transfere para mensal | Operador da retaguarda abre o KPI diário, vê ERALDO na Barra, sabe pela mensagem original que devia ser BRUNO. Decide corrigir manualmente. Mas como está sob pressão e tem várias lojas, vai mudando linhas e perde a referência. Resultado: cascata de erros.
+
+=== TABLE 14 ===
+Fator | Como afeta | Exemplos
+Frequência de trocas de motorista no dia | Mais trocas = mais alterações via WhatsApp = mais oportunidades para o bug do parser disparar | Super Prix (8,6%) tinha múltiplas trocas no dia 25. Princesa (97,4%) tinha operação estável.
+Densidade geográfica das lojas | Lojas próximas com motoristas em rotação facilitam cross-swap manual | Atacadão Belford Roxo × Manilha. Assaí Mendanha × Mesquita × Méier.
+Familiaridade do operador com a rede | Operadores experientes na rede percebem inconsistências mais cedo | Princesa tem operador dedicado há anos (97,4%). Super Prix mudou de processo recentemente (8,6%).
+
+=== TABLE 15 ===
+Nível | Cor | Definição
+CRÍTICO | Vermelho | Bug que causa erros visíveis nos dados gerados HOJE em produção. Operação está sendo afetada agora.
+ALTO | Laranja | Bug que pode causar erros sob condições específicas que ocorrem frequentemente. Risco real para a próxima semana.
+MÉDIO | Amarelo | Bug que causa comportamento incorreto mas em casos menos frequentes ou com impacto contornável.
+BAIXO | Cinza | Bug real mas com impacto operacional limitado. Manutenibilidade ou casos raros.
+
+=== TABLE 16 ===
+Campo | Conteúdo
+Arquivo | src/lib/parsers/alteracao-text.ts
+Função | parseAlteracaoText()
+Localização | Bloco final, linhas ~152-163 (// Extração implícita: se nenhum slot...)
+Severidade | CRÍTICO — causa direta dos erros do dia 25
+Tipo | Lógica de fallback insegura
+Manifestação | Mensagens WhatsApp sem 'Entra:' e 'Sai:' explícitos têm a primeira placa encontrada atribuída como 'entra', independente de ser do motorista que está entrando ou saindo.
+Impacto operacional | Aplicação de alteração com motorista invertido. Sistema acha que entrou quem na verdade saiu.
+Fix | Substituir chamada por parseAlteracoesV2 (parser v2 já implementado em alteracoes-v2.ts)
+
+=== TABLE 17 ===
+Campo | Conteúdo
+Arquivo do parser pronto | src/lib/parsers/alteracoes-v2.ts (346 linhas, 30+ testes)
+Arquivo que deveria usar | src/app/api/kpi/simples/analisar-alt/route.ts
+Estado atual | Endpoint importa exclusivamente parseAlteracaoText (v1). Zero imports de parseAlteracoesV2 em rotas de produção.
+Severidade | CRÍTICO — fix do bug #1 está bloqueado por esta conexão faltando
+Tipo | Configuração / wiring incorreto
+Confirmação por grep | grep -rn 'alteracoes-v2' src/app retorna apenas a importação de tipos em lookup-canonical. Nenhuma rota chama parseAlteracoesV2.
+Tempo de fix | 30 minutos para swap básico + 2-3h para validar tipos e migrar testes
+
+=== TABLE 18 ===
+Campo | Conteúdo
+Arquivo | src/lib/parsers/lookup-canonical.ts
+Função | lookupSlot(input: LookupInput)
+Localização | Linhas ~55-75 (ordem: placas[0] → codigos[0] → nomeHint)
+Severidade | ALTO — produz o caso 'identifica o carro, não o motorista'
+Tipo | Ordem de prioridade incorreta na resolução de slot
+Manifestação | Quando a mensagem contém 'BRUNO + placa TML-7D61' e a placa TML-7D61 estava recentemente associada a ERALDO no banco, lookupSlot retorna ERALDO ignorando o nome BRUNO da mensagem.
+Impacto operacional | Caso Catete da Princesa, todos os erros de motorista do Super Prix, divergência ERALDO×BRUNO×WILLIAM×RODRIGO.
+Fix sugerido | Adicionar parâmetro preferNome?: boolean. Quando true e nomeHint presente, tentar match por nome antes do match por placa.
+
+=== TABLE 19 ===
+Campo | Conteúdo
+Arquivo | src/app/api/kpi/simples/route.ts
+Localização | Bloco T1 (~linha 185, if (alteracoes.length > 0))
+Severidade | MÉDIO — funciona em produção mas falha silenciosamente em casos de bug do frontend
+Tipo | Falta de telemetria / observabilidade
+Manifestação | Se o frontend deixar de incluir o array 'alteracoes' no body do POST (por bug, versão desatualizada, ou erro de serialização), o bloco aplicaAlteracoes é silenciosamente pulado. Não há console.log, console.warn, anomalia ou retorno de status no body.
+Impacto operacional | KPI é gerado sem as alterações aplicadas e ninguém percebe até o operador comparar manualmente.
+Fix sugerido | Aceitar flag esperaAlteracoes: boolean no body. Se true e alteracoes vazio, logar warning e incluir aviso explícito no objeto summary retornado.
+
+=== TABLE 20 ===
+Campo | Conteúdo
+Arquivo | src/app/api/kpi/simples/route.ts
+Localização | results = await Promise.all(...) próximo à linha 370
+Severidade | MÉDIO — pouco frequente mas com impacto operacional total quando ocorre
+Tipo | Falta de isolamento de falha
+Manifestação | Se gerarKpi() ou gerarKpiPdf() lançar exceção para qualquer rede, o catch externo retorna HTTP 500. Todas as outras redes que já tinham sido geradas em paralelo são descartadas — o cliente recebe erro genérico.
+Impacto operacional | Operador tenta gerar 6 redes, uma falha por bug isolado, perde os 5 KPIs já gerados e precisa rodar tudo de novo.
+Fix sugerido | Substituir Promise.all por Promise.allSettled. Para cada rede com erro, retornar { rede_id, erro_mensagem } no array de redes. Frontend exibe redes OK e marca as com erro.
+
+=== TABLE 21 ===
+# | Severidade | Arquivo / Função | Descrição técnica e impacto operacional
+6 | BAIXO | aplicar-alteracoes.ts → matches | Match de motorista usa split(' ')[0] + includes(). 'JOSE' bate em 'JOSE ROBERTO' e em 'JOSEVALDO'. Caso raro mas real em redes com motoristas de mesmo primeiro nome.
+7 | MÉDIO | route.ts → bloco dedup (~linha 165) | Dedup multi-escala remove linhas sem placa de redes que têm ao menos uma placa, exceto obs=SEM PEDIDO. Pode remover linhas legítimas quando parser PAX falha — escala fica sem PAX e GERAL sem placa é deletado.
+8 | BAIXO | anomalia.ts → final do arquivo | Comentário '// ANOM-09: skipped (needs alteracoes integration)'. A anomalia que deveria detectar discrepância alteração×execução nunca é disparada. Lacuna de observabilidade.
+9 | MÉDIO | unitrac.ts e matcher.ts → computeSaidaCd | Duas implementações divergentes. unitrac.ts faz proxy para chegada da primeira loja quando não há BASE. matcher.ts retorna null. Os dois valores ficam dessincronizados entre banco (unitrac.ts) e KPI gerado (matcher.ts).
+10 | MÉDIO | consolidador.ts → consolidaKpi | Arquivo de 138 linhas que usa tabelas kpi_rotas/kpi_linhas/kpis do fluxo legado. Zero imports em produção. Confunde novos devs que pensam ser código ativo.
+N1 | ALTO | aplicar-alteracoes.ts → parsedToConfirmada | Mapeia loja_nome_raw → loja_raw. Se frontend enviar objeto AltConfirmada com loja_nome_raw direto, aplicarAlteracoes recebe loja_raw=undefined. Match por nome de loja nunca acontece. Alteração falha silenciosamente.
+N2 | MÉDIO | veiculos-inativos.ts → isVeiculoInativo | Lista VEICULOS_INATIVOS contém 31 placas COM hífen ('ALS-4H33'). normalizarPlaca local mantém hífen, mas placas do Unitrac chegam SEM hífen. Lista negra ineficaz para todas as 31 placas.
+N3 | MÉDIO | escala-zona-sul.ts → FILIAIS_D1_FIXAS + aplicarAlteracoes | ZS usa data_entrega = D+1 para 11 lojas. aplicarAlteracoes filtra só por rede_id, sem considerar cross-day. Alteração do dia D direcionada à Loja 33 ZS pode precisar casar com linha D+1 e não casa.
+N4 | MÉDIO | agrupar-por-loja.ts → agruparPorLoja | 3ª+ linha da mesma loja descartada silenciosamente (KPI só tem 2 slots). Comentário documenta mas não há log nem anomalia. Em feriados ou datas com 3+ carros, o 3º some sem aviso.
+N5 | MÉDIO | unitrac-pdf.ts → REPAIR regex (~linha 180) | Regex usa [\s\S]*? não-greedy com lookahead. Em PDFs com quebras de página atípicas, prefixLocal pode consumir texto de paradas seguintes. Parada pós-quebra herda fragmentos da anterior.
+N6 | MÉDIO | analisar-alt/route.ts → inferirSaiDaEscala | Usa createClient() (user context, sujeito a RLS) para buscar escala_linhas. Se RLS restringir para o user, retorna [] silenciosamente. Todas as alterações sem 'Sai:' explícito ficam com sai=null.
+N7 | BAIXO | matcher.ts → variantesOcr | Gera variantes OCR apenas na posição 4. PDFs do HLOG podem ter confusões em outras posições (corrigeOcrPlaca em placa.ts tem mapa mais amplo). Placa corrigida no parse pode não ser encontrada no matcher.
+N8 | BAIXO | route.ts → lineEdits loop | lineEdits são indexados por edit.ordem-1 dentro de sorted (por rede). Validação de range existe mas se edit.rede_id estiver errado, o lineEdit é silenciosamente ignorado. Difícil de debugar.
+N9 | BAIXO | unitrac-pdf.ts → PARADA_REGEX | Grupo de endereço ([\s\S]*?) é não-greedy antes da lat. Endereço como 'RUA -22 DE MARÇO N 43' pode disparar o início do match prematuramente em casos extremos.
+N10 | MÉDIO | alteracao.ts → terceiro parser | Existe um terceiro parser em lib/parsers/alteracao.ts (180 linhas). Grep confirma: importa só seus próprios types e NÃO é importado em produção. Código morto que confunde sobre qual é o parser correto.
+N11 | MÉDIO | route.ts → lineEdits + sorted | lineEdits usa edit.ordem como índice em sorted. Sorted é ordenado alfabeticamente por loja_nome_raw. Quando re-execução muda a ordem (alteração mudou loja_nome_raw), edit é aplicada na linha errada. Não há id estável por linha.
+N12 | MÉDIO | unitrac.ts → computeSaidaCd fallback | Quando não há BASE BENASSI antes da primeira LOJA, retorna paradas[primeiraLojaIdx].chegada. KPI mostra 'saída do CD = chegada na loja no mesmo segundo' — absurdo. Deveria retornar null como matcher.ts.
+
+=== TABLE 22 ===
+Arquivo | Linhas | Por que é código morto
+lib/kpi/consolidador.ts | 138 | Função consolidaKpi() escreve em kpi_rotas, kpi_linhas e kpis — tabelas do fluxo LEGADO. O fluxo atual usa apenas kpi_simples. Verificação por grep -rn 'consolidaKpi' retorna apenas o próprio export.
+lib/kpi/analisador-ia.ts | 62 | Função analisaKpiComIA() chama OpenRouter com deepseek-v4-flash:free. Depende de OPENROUTER_API_KEY. Zero imports em produção. Possivelmente prova de conceito nunca integrada.
+lib/parsers/alteracao.ts | 180 | TERCEIRO parser de alteração (alem de v1 e v2). Tem strategies próprias: explicit labels, single line com / ou ;, plates with context. Zero imports em produção. Provável tentativa inicial substituída por v1 e nunca removida.
+lib/parsers/unitrac-pdf-coord.ts | ~300 | Parser experimental baseado em coordenadas espaciais dentro do PDF. Zero imports em produção. Substituído por unitrac-pdf.ts (text-based) e unitrac-pdf-pdfjs.ts (alternativa serverless).
+
+=== TABLE 23 ===
+Diretório | Qtd arquivos | Conteúdo
+scripts/analise/_tmp_* | ~80 | Scripts ad-hoc criados durante debugging de bugs específicos (bug-3, bug-4, bug-5, bug-6, bug-7). Nomes como _tmp_bug3_loja47.ts, _tmp_armazem_qst4c52.ts, _tmp_belford_swap.ts.
+scripts/dev/debug-*.mjs | 33 | Scripts de debug do desenvolvimento inicial. Análises pontuais que serviram para investigar comportamentos específicos.
+scripts/analise/_dump_*.ts | ~12 | Extrações de dados para análise. Conteúdo histórico, não-operacional.
+
+=== TABLE 24 ===
+Métrica | Valor
+Linhas em arquivos de produção mortos | ~680
+Linhas em scripts de debug histórico | ~12.000 (estimativa)
+% do código total que é morto | ~10-15%
+Parsers de alteração existindo simultaneamente | 3 (v0, v1, v2)
+Tempo de fix da limpeza (estimativa) | 3 horas
+
+=== TABLE 25 ===
+# | Fase | Descrição
+1 | Tradução de códigos | codigo_escala → codigo_unitrac via tabela lojas. Fix V2.1 para Sendas/Assaí rebrand.
+2 | Resolução OCR de placas | variantesOcr identifica placas com OCR-confusable na posição 4. Aceita variante apenas se única no Unitrac.
+3 | Atribuição ótima | assignOptimal: brute-force DFS para nL≤5 (até 30.240 permutações), Hungarian (Jonker-Volgenant) para nL>5. Score minimizado globalmente.
+4 | Fallback temporal restrito | Linhas sem match ganham paradas restantes em ordem cronológica APENAS se scorePair < Infinity (tokens compartilhados ou Levenshtein ≤ 2).
+5 | Geo fallback Categoria B | FORA_BASE perto do raio da loja cadastrada é matched. T8 N:N, T9 cross-dock (FEIRA_NOVA), T18 plate-swap.
+6 | Consolidação e dedup | consolidarParadasMesmoCliente (gap ≤30min + 500m), deduplicarPorCodigo (clusters por gap de 60min), filtrarParadaNocturnaSolitaria.
+7 | Saida CD per-parada | computeSaidaCdParaParada calcula a última BASE antes de cada parada matched (multi-trip aware).
+
+=== TABLE 26 ===
+Componente | Por que está bem feito
+aplicarAlteracoes com snapshot anti-cascata | Implementação correta de snapshot ANTES de qualquer mutação. Permite SWAP mútuo (Filial 23↔43) sem cascata. 10 testes cobrindo casos reais incluindo cross-rede e múltiplas alterações na mesma linha. Conceito + implementação + testes bem alinhados.
+codCasa() para suffix matching | Resolve elegantemente o caso ZS '21' → 9039021 com REDE_PREFIX_RE (regex de prefixos conhecidos). Proteção contra falso positivo: 9039121 não bate em '21' porque exige padStart(3) com prefixo conhecido. Algoritmo simples e auditável.
+consolidarParadasMesmoCliente com guard de 500m | Resolve o caso ARMAZEM DO GRÃO onde 4 lojas REGINA têm geofence agregado no Unitrac (mesmo código mas diferentes lojas físicas). O guard de distância impede consolidação por código quando as lojas estão fisicamente separadas. Combina código + geo de forma elegante.
+deduplicarPorCodigo com clusters por gap | Critério isEstacionamentoNoturno (chegada<03h E saída<06h E duração>2h) é mais preciso que critério ingênuo. Clusters por GAP_VISITA_SEPARADA_SEG=60min permitem 2 entregas separadas na mesma loja (caso PRINCESA dia 19 Arraial 1: 05:56-06:30 + 11:15-12:15).
+variantesOcr com validação de unicidade | Posição 4 é a única confusável Mercosul vs antiga. Validação 'apenas se variante única no Unitrac' evita falsos positivos. Limita o espaço de busca a placas verificáveis.
+ROTAS_GIGANTES_UNITRAC explícitas | 37 entradas documentadas com raio (km) e número de paradas observadas. Transparente e auditável. Permite trabalhar em torno de geofences mal cadastradas no Unitrac sem hardcoded magic.
+Tipos TypeScript bem definidos | RotaKpi, KpiLinha, ParadaKpi, MatchMeta. Zero 'any' nos tipos centrais. _matchMeta opcional permite retrocompatibilidade. Tipos descritivos do domínio operacional.
+Comentários históricos no matcher | Cada decisão tem comentário referenciando o caso real e o dia que motivou a mudança ('Bug dia 19 fix: ...', 'vídeo Tia Érica confirma', 'caso ARMAZEM QSU6I54'). Esse nível de rastreabilidade é raríssimo em produção e foi a razão pela qual esta auditoria pôde compreender as decisões.
+Hungarian algorithm com tratamento de Infinity | Implementação correta de Jonker-Volgenant com padding para matrizes retangulares e conversão de Infinity para 1e15. Testes validam que Hungarian produz soma ≤ greedy. Algoritmo certo para o problema certo.
+ANOM-11 cross-midnight handling | Trata corretamente janelas operacionais que cruzam meia-noite (ex: 22:00-06:00) com lógica condicional baseada em fimMin > inicioMin. Atenção a detalhe que muitos sistemas erram.
+normalizeSpaces no parser PDF Unitrac | Cobre 12+ cenários de texto grudado típicos do pdf-parse: datas+horas, lat+lng, placas+dígitos, palavras+coordenadas, ano+duração. Pré-processamento robusto que viabiliza o parser regex subsequente.
+REDE_ALIASES com fungibilidade ASSAI↔SENDAS | Resolve elegantemente o rebrand 2024 sem reprocessar todo o cadastro. Tratamento simétrico (ambas as direções) e propagação correta pela função redesFungiveis().
+Suporte PDF + XLSX simultâneo no Unitrac | Merge inteligente por placa que prefere LOJA com código sobre FORA_BASE. Permite usar PDF como fonte primária (mais completa) com XLSX como fallback de qualidade superior em alguns casos.
+
+=== TABLE 27 ===
+Seção do README | O que precisa ser atualizado
+Stack & versões | Validar versões declaradas contra package.json. Adicionar Postgres 17 e PostGIS (se usado). Especificar versão do ExcelJS.
+Roadmap → Curto prazo | Mover para 'Concluídos': persistência de gerações com auditoria, edição inline completa, geo-fallback ativo. Adicionar como pendentes reais: parser v2 em produção (BUG #2), Promise.allSettled (BUG #5), tela de revisão pré-KPI com confiança.
+Anomalias detectadas | Adicionar ANOM-12 (parada sem saída registrada) que existe no código mas não na tabela. Mencionar que ANOM-09 está skipped e explicar por quê.
+Performance do matcher | Tabela usa apenas dia 18/05. Adicionar coluna ou substituir pelos dias 19-25 para mostrar evolução semanal.
+Convenções | Adicionar seção 'CRÍTICO: timestamps BRT são armazenados como UTC mascarado'. Sem isso, novos devs introduzem bug de timezone em qualquer processamento de data.
+Fluxo de alterações (NOVO) | Adicionar seção inteira explicando: operador cola WhatsApp → /api/kpi/simples/analisar-alt parsea → frontend confirma → AltConfirmada vai no body de /api/kpi/simples → aplicarAlteracoes na escala. Explicar que tabela 'alteracoes' do banco é LEGADA — alterações são 100% inline.
+Estrutura do projeto | Atualizar paths. Rota real é /painel/kpi/simples com parâmetro alteracoes, não /painel/alteracoes/nova.
+Banco de dados → Tabelas | Documentar quais tabelas são do fluxo ATIVO (kpi_simples, escala_linhas, lojas, canonical_loja, alias_loja, associacoes) e quais são LEGADAS sem uso (kpi_rotas, kpi_linhas, kpis, alteracoes).
+Stats do código | Validar afirmações: '262 testes' (rodar vitest run), '95% das lojas com codigo_unitrac' (rodar SQL). Trazer números atualizados.
+Como debugar erros de alteração (NOVO) | Guia operacional para quando alteração não é aplicada: verificar parser usado, conteúdo do body do POST, RLS do Supabase, logs do Vercel, etc.
+
+=== TABLE 28 ===
+# | Ação | Arquivo alvo | Horas | Mudança específica
+U1 | Substituir parser v1 por v2 | analisar-alt/route.ts | 3-4h | Trocar import parseAlteracaoText → parseAlteracoesV2. Adaptar tipo retorno via parsedToConfirmada.
+U2 | Normalizar VEICULOS_INATIVOS | veiculos-inativos.ts | 30min | Usar normalizaPlaca de @/lib/utils/placa na função isVeiculoInativo.
+U3 | Priorizar nome em lookupSlot | lookup-canonical.ts | 2h | Adicionar preferNome?: boolean. Quando true e nomeHint presente, match por nome antes do histórico.
+U4 | Promise.allSettled isolamento | kpi/simples/route.ts | 1h | Trocar Promise.all por Promise.allSettled com tratamento individual de erro por rede.
+
+=== TABLE 29 ===
+# | Ação | Arquivo alvo | Horas | Mudança específica
+I1 | Consolidar computeSaidaCd | lib/utils/saida-cd.ts (novo) | 2-3h | Extrair versão per-parada do matcher.ts. Importar em unitrac.ts e matcher.ts. Teste de equivalência.
+I2 | Warning alteracoes vazias | kpi/simples/route.ts | 1h | Aceitar flag esperaAlteracoes: boolean. Se true e alteracoes=[], logar warning e incluir aviso em summary.
+I3 | Fix RLS em inferirSaiDaEscala | analisar-alt/route.ts | 1h | Trocar createClient() por createServiceClient() na query de escala_linhas.
+I4 | ANOM-13 para 3ª linha descartada | agrupar-por-loja.ts + anomalia.ts | 2h | agruparPorLoja retorna lista de descartes. detectaAnomalias gera ANOM-13 LOW para cada.
+
+=== TABLE 30 ===
+# | Ação | Arquivo alvo | Horas | Mudança específica
+D1 | Remover código morto | consolidador.ts + analisador-ia.ts + alteracao.ts + unitrac-pdf-coord.ts | 1h | Criar branch archive/dead-code-2026-05. Deletar do main.
+D2 | Arquivar scripts/_tmp_ e debug-* | scripts/ | 2h | Mover 110+ scripts de debug histórico para branch archive.
+D3 | Atualizar README.md | README.md | 3h | Roadmap (concluídos), ANOM-12, convenção BRT-as-UTC, fluxo de alterações, tabelas legadas, seção de debug.
+D4 | Status nos diagnóstico | docs/auditoria/ | 3h | Cabeçalho STATUS/COMMIT/DATA em cada arquivo bug-N-*.txt.
+D5 | Consolidar tipos duplicados | lib/types/alteracao.ts | 1h | Mover VeiculoSlot e AlteracaoParsed locais para types/alteracao.ts.
+D6 | Documentar BRT-as-UTC | CLAUDE.md + utils/data-brasileira.ts | 1h | Adicionar comentário explicativo + teste do invariante.
+D7 | ID estável por linha de KPI | lib/types/kpi.ts + route.ts | 1h | Substituir indexação por 'ordem' em lineEdits por id estável (uuid v5).
+
+=== TABLE 31 ===
+Nível | Total horas | Impacto esperado
+URGENTE (U1-U4) | 8h | Elimina os erros visíveis no preenchimento manual. Super Prix deve subir de 8,6% para próximo de 95%. Atacadão de 69% para próximo de 95%.
+IMPORTANTE (I1-I4) | 8h | Aumenta confiabilidade: isolamento de erro por rede, consistência de saida_cd, RLS correto, visibilidade de descartes silenciosos.
+DESEJÁVEL (D1-D7) | 12h | Manutenibilidade: remoção de 180+ arquivos mortos, README atualizado, tipos consolidados, ID estável para edits.
+TOTAL | 28h | Sistema operacionalmente correto + manutenível para os próximos meses sem nova dívida técnica acumulada.
+
+=== TABLE 32 ===
+Arquivo | Tamanho | Função
+app/api/kpi/simples/route.ts | 560 linhas | pipeline principal
+app/api/kpi/simples/analisar-alt/route.ts | 200 linhas | endpoint parser alterações
+app/api/kpi/simples/regerar/route.ts | 70 linhas | re-geração de KPI salvo
+lib/kpi/matcher.ts | 1.785 linhas | matcher 4-path T8-T20
+lib/kpi/anomalia.ts | 304 linhas | detector de 11 anomalias
+lib/kpi/gerador-kpi.ts | 290 linhas | gerador XLSX ExcelJS
+lib/kpi/aplicar-alteracoes.ts | 155 linhas | aplica AltConfirmada
+lib/kpi/agrupar-por-loja.ts | 40 linhas | agrupa em carro1/carro2
+lib/kpi/consolidador.ts | 138 linhas | fluxo legado MORTO
+lib/kpi/analisador-ia.ts | 62 linhas | OpenRouter MORTO
+lib/kpi/anomalia-obs.ts | 30 linhas | código→texto map
+lib/kpi/rotas-gigantes.ts | 65 linhas | 37 geofences negras
+lib/kpi/veiculos-inativos.ts | 30 linhas | 31 placas negras
+lib/kpi/zona-sul-base.ts | 100 linhas | catálogo 48 lojas ZS
+lib/parsers/alteracao-text.ts | 270 linhas | v1 EM PRODUÇÃO
+lib/parsers/alteracoes-v2.ts | 346 linhas | v2 PRONTO
+lib/parsers/alteracao.ts | 180 linhas | v0 MORTO
+lib/parsers/alteracao-split.ts | 80 linhas | divisão em blocos
+lib/parsers/alteracao-pdf-tabular.ts | 240 linhas | parser tabular PDF
+lib/parsers/lookup-canonical.ts | 130 linhas | lookupSlot histórico
+lib/parsers/escala-geral.ts | 523 linhas | parser XLSX geral
+lib/parsers/escala-zona-sul.ts | 350 linhas | parser escala ZS
+lib/parsers/escala-pax.ts | 260 linhas | parser PAX
+lib/parsers/escala-armazem-grao.ts | 180 linhas | parser Armazém
+lib/parsers/escala-universal.ts | 200 linhas | detector formato
+lib/parsers/unitrac.ts | 313 linhas | parser XLSX Unitrac
+lib/parsers/unitrac-pdf.ts | 398 linhas | parser PDF Unitrac
+lib/parsers/unitrac-pdf-pdfjs.ts | 60 linhas | backend alt PDF
+lib/parsers/unitrac-pdf-coord.ts | ~300 linhas | experimental MORTO
+lib/utils/placa.ts | 120 linhas | normaliza/OCR placas
+lib/utils/hungarian.ts | 100 linhas | Jonker-Volgenant
+
+=== TABLE 33 ===
+Métrica | Quantidade | Detalhe
+Bugs documentados (10 confirmados + 12 novos) | 22 | Ver Parte V
+Arquivos mortos em produção | 4 | consolidador, analisador-ia, alteracao, unitrac-pdf-coord
+Parsers de alteração coexistindo | 3 | v0, v1, v2
+Scripts de debug no main branch | 110+ | scripts/analise/_tmp_*, scripts/dev/debug-*
+Anomalias faltando no detector | 5 | ANOM-13 a ANOM-17 sugeridas
+Lojas com erros no preenchimento manual dia 25 | 41 | Soma das 5+4+12+18+2+10 das seis redes
+Células incorretas no dia 25 | 214 | 11,3% de 1.900 auditadas
+Total de horas estimadas para correções | 28h | 8h urgente + 8h importante + 12h desejável
+TOTAL DE PROBLEMAS DOCUMENTADOS | 31 | 22 bugs + 4 mortos + 5 anomalias faltando
+
+=== TABLE 34 ===
+Termo | Significado no contexto deste relatório
+KPI diário | Arquivo XLSX gerado automaticamente pelo sistema KPI TRANSMONSEG ao final de cada dia operacional, com nome KPI-{REDE}-YYYY-MM-DD.xlsx. Considerado fonte da verdade.
+Arquivo manual / histórico | Planilha XLSX mensal preenchida manualmente pelos operadores, com nome KPI_{REDE}.xlsx. Tem uma aba por dia. Usado para faturamento e auditoria interna.
+Alteração / WhatsApp | Mensagem operacional informando troca de motorista, placa ou loja em relação à escala original do dia.
+Parser v1 / v2 / v0 | Três implementações independentes de parsing de alterações no repositório. v1 está em produção, v2 está pronto mas desconectado, v0 é código morto.
+Cross-swap | Padrão de erro onde dados de uma loja são digitados na linha de outra. Detectado quando duas linhas têm motoristas trocados entre si.
+Matcher | Algoritmo central do sistema que cruza linhas da escala com paradas detectadas pelo GPS Unitrac. Arquivo: lib/kpi/matcher.ts.
+BRT-as-UTC | Convenção do sistema: timestamps no fuso BRT (-3) são armazenados como Date.UTC sem ajuste. Permite ler com getUTCHours() sem reconverter.
+RLS | Row Level Security do Supabase. Política de acesso a linhas do banco por usuário autenticado.
+T8-T20 | Etapas numeradas internas do matcher (Tier 8 a Tier 20). Cada uma é uma estratégia de match em ordem de prioridade.
