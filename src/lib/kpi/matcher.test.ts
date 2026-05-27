@@ -404,70 +404,64 @@ describe('scorePair — PETROPOLIS como token discriminante', () => {
   })
 })
 
-// --- variantesOcr: geração de variantes OCR de placa Mercosul ---
-// Posição 4 (0-indexed) é onde o Mercosul muda de dígito pra letra/dígito OCR.
-// Exemplo: "LGX1J41" → pos 4 = 'J'; OCR pode ler como '9' → "LGX1941".
+// --- variantesOcr: gera variantes OCR de placa em TODAS posicoes (N7) ---
+//
+// Bug N7 (auditoria 2026-05-27): antes limitava a pos 4. Agora todas posicoes.
+// Cada teste verifica que a variante critica esta presente (toContain), nao
+// fixa length total (que varia conforme chars OCR-confusable na placa).
 describe('variantesOcr', () => {
-  it('J↔9: placa com "J" na pos 4 gera variante com "9"', () => {
-    // "LGX1J41": pos 4 = 'J'
+  it('J↔9: placa "LGX1J41" gera variante com "9" na pos 4', () => {
     const v = variantesOcr('LGX1J41')
     expect(v).toContain('LGX1J41')
     expect(v).toContain('LGX1941')
-    expect(v).toHaveLength(2)
   })
 
-  it('J↔9: placa com "9" na pos 4 gera variante com "J"', () => {
-    // "LGX1941": pos 4 = '9' (escala digitou o char lido pelo OCR)
+  it('J↔9 inverso: "LGX1941" gera variante com "J"', () => {
     const v = variantesOcr('LGX1941')
     expect(v).toContain('LGX1941')
     expect(v).toContain('LGX1J41')
   })
 
-  it('B↔1: placa com "B" na pos 4 gera variante com "1"', () => {
-    // "ABCBB12": pos 4 = 'B' → slice(0,4)="ABCB" + "1" + slice(5)="12" = "ABCB112"
+  it('B↔1: "ABCBB12" gera variante com "1" na pos 4', () => {
     const v = variantesOcr('ABCBB12')
     expect(v).toContain('ABCBB12')
     expect(v).toContain('ABCB112')
   })
 
-  it('E↔4: placa com "E" na pos 4 gera variante com "4"', () => {
-    // "XYZDE56": pos 4 = 'E'
+  it('E↔4: "XYZDE56" gera variante com "4"', () => {
     const v = variantesOcr('XYZDE56')
     expect(v).toContain('XYZDE56')
     expect(v).toContain('XYZD456')
   })
 
-  it('G↔6: placa com "G" na pos 4 gera variante com "6"', () => {
-    // "LMN2G45": pos 4 = 'G' → OCR pode ler como '6' → "LMN2645"
+  it('G↔6: "LMN2G45" gera variante com "6" na pos 4', () => {
     const v = variantesOcr('LMN2G45')
     expect(v).toContain('LMN2G45')
     expect(v).toContain('LMN2645')
-    expect(v).toHaveLength(2)
   })
 
-  it('H↔7: placa com "H" na pos 4 gera variante com "7"', () => {
-    // "LMN2H45": pos 4 = 'H' → OCR pode ler como '7' → "LMN2745"
+  it('H↔7: "LMN2H45" gera variante com "7" na pos 4', () => {
     const v = variantesOcr('LMN2H45')
     expect(v).toContain('LMN2H45')
     expect(v).toContain('LMN2745')
-    expect(v).toHaveLength(2)
   })
 
-  it('I↔8 e I↔1: placa com "I" na pos 4 gera variantes com "8" e "1"', () => {
-    // "LMN2I45": pos 4 = 'I' → OCR confunde com '8' e com '1'
-    // OCR_PARES: 'I': ['8', '1']
+  it('I↔8 e I↔1: "LMN2I45" gera variantes 8 e 1 na pos 4', () => {
     const v = variantesOcr('LMN2I45')
     expect(v).toContain('LMN2I45')
     expect(v).toContain('LMN2845')
     expect(v).toContain('LMN2145')
-    expect(v).toHaveLength(3)
   })
 
-  it('char nao-OCR na pos 4 retorna apenas a placa original', () => {
-    // "ABCAD12": pos 4 = 'A' — nao e par OCR
+  it('N7 (todas posicoes): placa "ABCAD12" gera variantes em pos com OCR_PARES', () => {
+    // pos 0='A' (sem OCR), pos 1='B' (OCR), pos 2='C' (sem), pos 3='A' (sem),
+    // pos 4='D' (sem), pos 5='1' (OCR), pos 6='2' (sem)
+    // Esperadas: ABCAD12 (original) + A1CAD12 (B→1 pos 1) + ABCADB2 (1→B pos 5) + ABCADI2 (1→I pos 5)
     const v = variantesOcr('ABCAD12')
-    expect(v).toHaveLength(1)
-    expect(v[0]).toBe('ABCAD12')
+    expect(v).toContain('ABCAD12')
+    expect(v).toContain('A1CAD12')
+    expect(v).toContain('ABCADB2')
+    expect(v).toContain('ABCADI2')
   })
 
   it('placa com 8 chars (nao Mercosul) nao gera variante', () => {
