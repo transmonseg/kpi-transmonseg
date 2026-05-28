@@ -1,0 +1,34 @@
+# docs/conversas-tia-erica/dia-19/kpis-sistema-pos-fixes/KPI-ARMAZEM_GRAO-2026-05-19 (9).xlsx
+Aba: 19.05  rows: 18
+r01: RELATÓRIO KPI - ARMAZÉM DO GRÃO
+Ter|RELATÓRIO KPI - ARMAZÉM DO GRÃO
+Ter|RELATÓRIO KPI - ARMAZÉM DO GRÃO
+Ter|RELATÓRIO KPI - ARMAZÉM DO GRÃO
+Ter|RELATÓRIO KPI - ARMAZÉM DO GRÃO
+Ter|RELATÓRIO KPI - ARMAZÉM DO GRÃO
+Ter|RELATÓRIO KPI - ARMAZÉM DO GRÃO
+Ter|RELATÓRIO KPI - ARMAZÉM DO GRÃO
+Ter|RELATÓRIO KPI - ARMAZÉM DO GRÃO
+Ter|RELATÓRIO KPI - ARMAZÉM DO GRÃO
+Ter|RELATÓRIO KPI - ARMAZÉM DO GRÃO
+Ter|RELATÓRIO KPI - ARMAZÉM DO GRÃO
+Ter|RELATÓRIO KPI - ARMAZÉM DO GRÃO
+Ter|RELATÓRIO KPI - ARMAZÉM DO GRÃO
+Ter
+r02:                                    |ARMAZÉM DO GRÃO 1º CARRO           |ARMAZÉM DO GRÃO 1º CARRO           |ARMAZÉM DO GRÃO 1º CARRO           |ARMAZÉM DO GRÃO 1º CARRO|ARMAZÉM DO GRÃO 1º CARRO|ARMAZÉM DO GRÃO 1º CARRO|ARMAZÉM DO GRÃO 2º CARRO|ARMAZÉM DO GRÃO 2º CARRO|ARMAZÉM DO GRÃO 2º CARRO|ARMAZÉM DO GRÃO 2º CARRO|ARMAZÉM DO GRÃO 2º CARRO|ARMAZÉM DO GRÃO 2º CARRO|        
+r03: REDES / FILIAIS                    |MOTORISTA                          |COD                                |PLACA                              |SAIDA CD|CHD LOJA|SAIDA LOJA|MOTORISTA|COD     |PLACA   |SAIDA CD|CHD LOJA|SAIDA LOJA|TEMPO EM LOJA 1
+r04:                                    |                                   |                                   |                                   |        |        |        |        |        |        |        |        |        |        
+r05: ABASTECEDORA GRÃO DA SERRA (ALTO)  |GILSON                             |353                                |TML-6D96                           |        |14:37   |14:56   |        |        |        |        |        |        |[object Object]
+r06: ARMAZEM DO GRAO (16 DE MARÇO)      |JAIRO                              |35399                              |UDC-6I03                           |13:09   |16:00   |16:20   |        |        |        |        |        |        |[object Object]
+r07: ARMAZEM DO GRAO (CORREAS)          |ROBERTO                            |51699                              |LSL-9670                           |12:39   |14:28   |14:47   |        |        |        |        |        |        |[object Object]
+r08: ARMAZEM DO GRAO A. BARRA DA TIJUCA |SIDNEI                             |67499                              |LQE-5E01                           |10:04   |11:09   |12:25   |        |        |        |        |        |        |[object Object]
+r09: ARMAZEM DO GRÃO  (MOSELA)          |JEFERSON                           |35399                              |QST-4C52                           |13:50   |15:58   |16:28   |        |        |        |        |        |        |[object Object]
+r10: ARMAZEM DO GRÃO (CAPELA)           |JAIRO                              |35399                              |UDC-6I03                           |13:09   |15:28   |15:58   |        |        |        |        |        |        |[object Object]
+r11: ARMAZEM DO GRÃO (ITAIPAVA)         |ROBERTO                            |51699                              |LSL-9670                           |12:39   |14:09   |14:18   |        |        |        |        |        |        |[object Object]
+r12: ARMAZEM DO GRÃO (QUITANDINHA)      |JEFERSON                           |35399                              |QST-4C52                           |13:50   |14:59   |15:18   |        |        |        |        |        |        |[object Object]
+r13: ARMAZEM DO GRÃO (VALPARAÍSO)       |JEFERSON                           |35399                              |QST-4C52                           |13:50   |15:25   |15:44   |        |        |        |        |        |        |[object Object]
+r14: ARMAZÉM DO GRÃO ( BOA VISTA)       |ANTUNES                            |35399                              |TML-9I75                           |        |        |        |        |        |        |        |        |        |[object Object]
+r15: ARMAZÉM DO GRÃO MATRIZ ( POSSE)    |ANTUNES                            |35399                              |TML-9I75                           |14:15   |17:19   |17:57   |        |        |        |        |        |        |[object Object]
+r16: REGINA  1 DE MAIO                  |GILSON                             |353                                |TML-6D96                           |        |15:38   |16:26   |        |        |        |        |        |        |[object Object]
+r17: REGINA  BARRA DO IMBUY             |GILSON                             |353                                |TML-6D96                           |        |15:05   |15:27   |        |        |        |        |        |        |[object Object]
+r18: REGINA  LUCIO MEIRA                |GILSON                             |353                                |TML-6D96                           |        |14:20   |14:27   |        |        |        |        |        |        |[object Object]

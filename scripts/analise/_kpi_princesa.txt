@@ -1,0 +1,46 @@
+# docs/conversas-tia-erica/dia-19/kpis-sistema-pos-fixes/KPI-PRINCESA-2026-05-19 (11).xlsx
+Aba: 19.05  rows: 30
+r01: RELATÓRIO KPI - PRINCESA
+Terça-feir|RELATÓRIO KPI - PRINCESA
+Terça-feir|RELATÓRIO KPI - PRINCESA
+Terça-feir|RELATÓRIO KPI - PRINCESA
+Terça-feir|RELATÓRIO KPI - PRINCESA
+Terça-feir|RELATÓRIO KPI - PRINCESA
+Terça-feir|RELATÓRIO KPI - PRINCESA
+Terça-feir|RELATÓRIO KPI - PRINCESA
+Terça-feir|RELATÓRIO KPI - PRINCESA
+Terça-feir|RELATÓRIO KPI - PRINCESA
+Terça-feir|RELATÓRIO KPI - PRINCESA
+Terça-feir|RELATÓRIO KPI - PRINCESA
+Terça-feir|RELATÓRIO KPI - PRINCESA
+Terça-feir|RELATÓRIO KPI - PRINCESA
+Terça-feir
+r02:                                    |PRINCESA 1º CARRO                  |PRINCESA 1º CARRO                  |PRINCESA 1º CARRO                  |PRINCESA 1º CARRO|PRINCESA 1º CARRO|PRINCESA 1º CARRO|PRINCESA 2º CARRO|PRINCESA 2º CARRO|PRINCESA 2º CARRO|PRINCESA 2º CARRO|PRINCESA 2º CARRO|PRINCESA 2º CARRO|        
+r03: REDES / FILIAIS                    |MOTORISTA                          |COD                                |PLACA                              |SAIDA CD|CHD LOJA|SAIDA LOJA|MOTORISTA|COD     |PLACA   |SAIDA CD|CHD LOJA|SAIDA LOJA|TEMPO EM LOJA 1
+r04:                                    |                                   |                                   |                                   |        |        |        |        |        |        |        |        |        |        
+r05: Princesa - Catete                  |RAFAEL                             |801                                |KVT-5427                           |04:31   |05:11   |06:38   |        |        |        |        |        |        |[object Object]
+r06: Princesa - Flamengo                |KANU                               |738                                |KQR-2J11                           |05:07   |05:53   |07:01   |        |        |        |        |        |        |[object Object]
+r07: Princesa - Cosme Velho             |ERIVELTON                          |456                                |KRH-5H67                           |04:25   |04:59   |05:57   |        |        |        |        |        |        |[object Object]
+r08: Princesa - Laranjeiras             |ELVIS                              |184334                             |KPS-4J07                           |04:54   |05:31   |06:22   |        |        |        |        |        |        |[object Object]
+r09: Princesa - Copacabana              |WANDERSON                          |618                                |KWH-2J02                           |04:29   |05:11   |06:40   |        |        |        |        |        |        |[object Object]
+r10: Princesa - Leme                    |MANOEL PAULINO                     |184494                             |HNG-2B61                           |04:45   |05:32   |05:55   |        |        |        |        |        |        |[object Object]
+r11: Princesa - Pechincha               |ALISSON                            |570                                |MSK-3752                           |04:08   |04:38   |06:46   |        |        |        |        |        |        |[object Object]
+r12: Princesa - Niteroí Barcas          |LUIZ CESAR                         |184621                             |LMF-2049                           |05:14   |05:58   |06:36   |        |        |        |        |        |        |[object Object]
+r13: Princesa - Inga                    |WALLACE                            |184812                             |ETI-5F79                           |04:39   |05:24   |06:24   |        |        |        |        |        |        |[object Object]
+r14: Princesa - Fonseca                 |JULIO PEREIRA                      |184458                             |RJN-9F68                           |05:11   |05:58   |07:18   |        |        |        |        |        |        |[object Object]
+r15: Princesa - Icaraí                  |JOHN                               |772                                |KVI-9088                           |04:16   |04:56   |06:13   |        |        |        |        |        |        |[object Object]
+r16: Princesa - Iguaba (1ª Entrega)     |DIEGO                              |353                                |LRA-9C41                           |        |        |        |        |        |        |        |        |        |[object Object]
+r17: Princesa - Itaboraí (2ª Entrega)   |DIEGO                              |353                                |LRA-9C41                           |        |        |        |        |        |        |        |        |        |[object Object]
+r18: Princesa - Maricá 1 (2ª Entrega)   |DANIEL CAVALCANTE                  |353                                |QSZ-9A20                           |03:21   |04:49   |06:47   |        |        |        |        |        |        |[object Object]
+r19: Princesa - Maricá 2 (1ª Entrega)   |DANIEL CAVALCANTE                  |353                                |QSZ-9A20                           |03:21   |06:51   |07:22   |        |        |        |        |        |        |[object Object]
+r20: Princesa - Barra de São João (1ª En|RENATO                             |184090                             |JAJ-6B36                           |02:55   |09:46   |11:56   |        |        |        |        |        |        |[object Object]
+r21: Princesa - Rio das Ostras (2ª Entre|RENATO                             |184090                             |JAJ-6B36                           |02:55   |08:49   |09:18   |        |        |        |        |        |        |[object Object]
+r22: Princesa - Arraial 1 (1ª Entrega)  |ANTÔNIO                            |804                                |MES-7F27                           |03:16   |05:56   |06:30   |        |        |        |        |        |        |[object Object]
+r23: Princesa - Arraial 2 (2ª Entrega)  |ANTÔNIO                            |804                                |MES-7F27                           |03:16   |07:19   |11:12   |        |        |        |        |        |        |[object Object]
+r24: Princesa - Arraial 3 (3ª Entrega)  |ANTÔNIO                            |804                                |MES-7F27                           |03:16   |06:32   |07:15   |        |        |        |        |        |        |[object Object]
+r25: Princesa - Buzios 1 (2ª Entrega)   |LEONARDO                           |353                                |QST-4C52                           |02:49   |06:14   |06:32   |        |        |        |        |        |        |[object Object]
+r26: Princesa - Buzios 2 (3ª Entrega)   |LEONARDO                           |353                                |QST-4C52                           |02:49   |06:33   |07:36   |        |        |        |        |        |        |[object Object]
+r27: Princesa - Buzios 3 (1ª Entrega)   |LEONARDO                           |353                                |QST-4C52                           |02:49   |07:38   |10:36   |        |        |        |        |        |        |[object Object]
+r28: Princesa - Cabo Frio 1 (1ª Entrega)|CLAUDIO                            |353                                |UDC-6I03                           |02:20   |05:27   |07:04   |        |        |        |        |        |        |[object Object]
+r29: Princesa - Cabo Frio 2 (3ª Entrega)|CLAUDIO                            |353                                |UDC-6I03                           |02:20   |08:24   |08:48   |        |        |        |        |        |        |[object Object]
+r30: Princesa - Cabo Frio 3 (2ª Entrega)|CLAUDIO                            |353                                |UDC-6I03                           |02:20   |07:06   |08:02   |        |        |        |        |        |        |[object Object]

@@ -1,0 +1,93 @@
+========== LQU5546 ==========
+  04:45 → 05:03 ( 18min) [LOJA    ] 9039027    27 - ZONA SUL - IPANEMA
+  05:04 → 05:20 ( 16min) [LOJA    ] 9039027    27 - ZONA SUL - IPANEMA
+  05:32 → 06:40 ( 68min) [LOJA    ] 9039015    15 - ZONA SUL - LEBLON
+  15:57 → 16:16 ( 19min) [LOJA    ] 9039028    28 - ZONA SUL - URCA
+  16:29 → 16:48 ( 19min) [LOJA    ] 9039029    29 - ZONA SUL - FLAMENGO
+========== KOP4978 ==========
+  05:16 → 06:26 ( 71min) [LOJA    ] 7000718    PREZUNIC CAMPINHO
+  13:39 → 13:53 ( 14min) [LOJA    ] 6018000    MEGA BOX (OLARIA)
+  16:42 → 16:53 ( 10min) [LOJA    ] 6018001    MEGA BOX 2 (RECREIO)
+========== DBB8D19 ==========
+  13:58 → 14:11 ( 13min) [LOJA    ] 9039105    31 - ZONA SUL - JD BOTANICO
+  14:37 → 15:37 ( 60min) [LOJA    ] 9039011    11 - ZONA SUL - LEBLON
+  15:38 → 17:05 ( 88min) [LOJA    ] 9039011    11 - ZONA SUL - LEBLON
+========== LCO0978 ==========
+========== UBO5E05 ==========
+========== LJS2172 ==========
+========== LTQ0783 ==========
+  16:56 → 17:39 ( 43min) [LOJA    ] 9039012    12 - ZONA SUL - LEME
+========== KWK4593 ==========
+  06:15 → 07:53 ( 98min) [LOJA    ] 9039103    21 - ZONA SUL - FLAMENGO
+  08:11 → 08:17 (  7min) [LOJA    ] 9039103    21 - ZONA SUL - FLAMENGO
+  17:24 → 17:51 ( 27min) [LOJA    ] 9039110    38 - ZONA SUL - COPACABAN A DIAS DA ROCHA
+========== LNU9595 ==========
+========== AFY7J99 ==========
+  06:05 → 08:46 (161min) [LOJA    ] 560054     SENDAS NOVA IGUAÇU II
+  08:51 → 09:21 ( 31min) [LOJA    ] 560054     SENDAS NOVA IGUAÇU II
+  09:23 → 10:04 ( 40min) [LOJA    ] 560054     SENDAS NOVA IGUAÇU II
+  10:16 → 11:45 ( 89min) [LOJA    ] 560054     SENDAS NOVA IGUAÇU II
+  16:09 → 16:54 ( 45min) [LOJA    ] 9039115    43 - ZONA SUL - BARRA PENINSULA
+========== LKW2B80 ==========
+  05:12 → 06:39 ( 87min) [LOJA    ] 9039018    18 - ZONA SUL - COPACABAN A
+  15:04 → 15:43 ( 39min) [LOJA    ] 9039107    35 - ZONA SUL - BARRA DA TIJUCA
+========== AOP3C73 ==========
+  11:13 → 11:43 ( 30min) [LOJA    ] 71039      GB 27 - RECREIO DOS BANDEI RANTES
+  16:03 → 17:29 ( 87min) [LOJA    ] 9039120    45 - ZONA SUL - FLAMENGO
+  17:54 → 18:02 (  9min) [LOJA    ] 9039120    45 - ZONA SUL - FLAMENGO
+========== LQA5883 ==========
+========== LVE0688 ==========
+  19:40 → 20:26 ( 46min) [LOJA    ] 9039102    20 - ZONA SUL - BOTAFOGO
+  20:43 → 21:00 ( 17min) [LOJA    ] 9039005    05 - ZONA SUL - COPACABAN A III
+========== EBG2D13 ==========
+========== LTE0A64 ==========
+========== LQE5401 ==========
+========== KQY9E24 ==========
+  18:50 → 19:09 ( 19min) [LOJA    ] 9039017    17 - ZONA SUL - BARRA DA TIJUCA
+  19:10 → 19:31 ( 20min) [LOJA    ] 9039017    17 - ZONA SUL - BARRA DA TIJUCA
+========== LKR5990 ==========
+  07:08 → 08:21 ( 72min) [LOJA    ] 7000748    PREZUNIC VILA ISABEL
+  20:04 → 20:10 (  6min) [LOJA    ] 9039117    44 - ZONA SUL - BARRA OLEGARIO
+========== KRK3D12 ==========
+  06:54 → 12:39 (346min) [LOJA    ] 560047     SENDAS SÃO GONÇALO CENTRO
+  19:41 → 20:40 ( 59min) [LOJA    ] 9039023    23 - ZONA SUL - BARRA DA TIJUCA
+========== LNU7733 ==========
+========== AKZ2594 ==========
+  04:40 → 05:30 ( 50min) [LOJA    ] 560019     SENDAS FREGUESIA - LOJA 28
+  05:31 → 08:12 (161min) [LOJA    ] 560019     SENDAS FREGUESIA - LOJA 28
+  19:45 → 20:21 ( 36min) [LOJA    ] 9039010    10 - ZONA SUL - RECREIO DOS BANDEI RANTES
+========== KMY5561 ==========
+  05:50 → 06:01 ( 11min) [LOJA    ] 9006001    CARREFOUR BARRA
+  06:02 → 07:19 ( 77min) [LOJA    ] 9006001    CARREFOUR BARRA
+  15:10 → 15:33 ( 23min) [LOJA    ] 202002     PAX REALENGO
+========== BBH1C94 ==========
+  00:01 → 04:49 (288min) [LOJA    ] 9039124    47- ZONA SUL
+  05:29 → 07:51 (142min) [LOJA    ] 9039104    33 - ZONA SUL - HUMAITA
+  08:14 → 08:17 (  3min) [LOJA    ] 9039124    47- ZONA SUL
+  08:52 → 08:55 (  3min) [LOJA    ] 9039124    47- ZONA SUL
+  09:13 → 09:53 ( 40min) [LOJA    ] 9039124    47- ZONA SUL
+  10:02 → 12:14 (132min) [LOJA    ] 9039124    47- ZONA SUL
+  12:43 → 13:52 ( 69min) [LOJA    ] 579003     FEIRA NOVA ANCHIETA
+  14:13 → 19:32 (319min) [LOJA    ] 9039124    47- ZONA SUL
+  20:20 → 20:39 ( 19min) [LOJA    ] 9039003    03 - ZONA SUL - COPACABAN A
+  20:42 → 20:52 ( 10min) [LOJA    ] 9039019    19 - ZONA SUL - COPACABAN A
+  21:41 → 23:51 (129min) [LOJA    ] 9039124    47- ZONA SUL
+========== LTH4J15 ==========
+  05:10 → 05:47 ( 37min) [LOJA    ] 22980000   EMPORIO BARRA TOWER
+  05:58 → 06:23 ( 25min) [LOJA    ] 22144002   PETIT ATLANTICO SUL
+  06:28 → 07:01 ( 33min) [LOJA    ] 22144000   PETIT MARCHE BARRAMARE S
+  11:14 → 11:32 ( 18min) [LOJA    ] 11623028   VIANENSE NOVA IGUAÇU
+  11:43 → 12:00 ( 17min) [LOJA    ] 11623032   VIANENSE JARDIM ALVORADA
+  19:51 → 20:15 ( 24min) [LOJA    ] 9039026    26 - ZONA SUL - COPACABAN A
+========== QAH2H50 ==========
+========== JAJ6B36 ==========
+  08:49 → 09:18 ( 29min) [LOJA    ] 8590568    PRINCESA - RIO DAS OSTRAS
+  09:46 → 11:56 (130min) [LOJA    ] 8590562    PRINCESA - BARRA DE SÃO JOÃO
+  19:16 → 19:51 ( 35min) [LOJA    ] 9039122    46 - ZONA SUL - BOTAFOGO
+========== KYM2I62 ==========
+========== MDV3746 ==========
+========== CZB9J19 ==========
+========== KVH9J42 ==========
+  05:52 → 08:36 (164min) [LOJA    ] 9039004    04 - ZONA SUL - COPACABAN A II
+  08:40 → 09:38 ( 58min) [LOJA    ] 9039004    04 - ZONA SUL - COPACABAN A II
+  14:07 → 14:54 ( 47min) [LOJA    ] 579010     FEIRA NOVA CACHAMBI

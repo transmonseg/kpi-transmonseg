@@ -1,0 +1,31 @@
+# docs/conversas-tia-erica/dia-19/kpis-sistema-pos-fixes/KPI-CARREFOUR-2026-05-19 (4).xlsx
+Aba: 19.05  rows: 15
+r01: RELATÓRIO KPI - CARREFOUR
+Terça-fei|RELATÓRIO KPI - CARREFOUR
+Terça-fei|RELATÓRIO KPI - CARREFOUR
+Terça-fei|RELATÓRIO KPI - CARREFOUR
+Terça-fei|RELATÓRIO KPI - CARREFOUR
+Terça-fei|RELATÓRIO KPI - CARREFOUR
+Terça-fei|RELATÓRIO KPI - CARREFOUR
+Terça-fei|RELATÓRIO KPI - CARREFOUR
+Terça-fei|RELATÓRIO KPI - CARREFOUR
+Terça-fei|RELATÓRIO KPI - CARREFOUR
+Terça-fei|RELATÓRIO KPI - CARREFOUR
+Terça-fei|RELATÓRIO KPI - CARREFOUR
+Terça-fei|RELATÓRIO KPI - CARREFOUR
+Terça-fei|RELATÓRIO KPI - CARREFOUR
+Terça-fei
+r02:                                    |CARREFOUR 1º CARRO                 |CARREFOUR 1º CARRO                 |CARREFOUR 1º CARRO                 |CARREFOUR 1º CARRO|CARREFOUR 1º CARRO|CARREFOUR 1º CARRO|CARREFOUR 2º CARRO|CARREFOUR 2º CARRO|CARREFOUR 2º CARRO|CARREFOUR 2º CARRO|CARREFOUR 2º CARRO|CARREFOUR 2º CARRO|        
+r03: REDES / FILIAIS                    |MOTORISTA                          |COD                                |PLACA                              |SAIDA CD|CHD LOJA|SAIDA LOJA|MOTORISTA|COD     |PLACA   |SAIDA CD|CHD LOJA|SAIDA LOJA|TEMPO EM LOJA 1
+r04:                                    |                                   |                                   |                                   |        |        |        |        |        |        |        |        |        |        
+r05: Carrefour - Alcântara              |JOSE CARLOS                        |573                                |LSE-1D35                           |05:29   |06:59   |07:45   |        |        |        |        |        |        |[object Object]
+r06: Carrefour - Barra da Tijuca        |LUÍZ ANTÔNIO                       |184446                             |KMY-5561                           |04:57   |05:50   |07:19   |        |        |        |        |        |        |[object Object]
+r07: Carrefour - Brigadeiro (Caxias)    |VALDEMIRIO                         |353                                |QSU-6I54                           |04:34   |04:55   |07:14   |        |        |        |        |        |        |[object Object]
+r08: Carrefour - Campo Grande           |SIMÃO                              |184846                             |LSN-6I72                           |        |04:48   |05:21   |RENAN   |184357  |KRW-8E86|05:38   |06:23   |07:05   |[object Object]
+r09: Carrefour - Norte Shopping         |SÉRGIO                             |598                                |LJS-2B72                           |05:29   |05:56   |06:37   |        |        |        |        |        |        |[object Object]
+r10: Carrefour - Sulacap                |VICTOR LUIZ                        |353                                |TJQ-6J26                           |05:55   |06:18   |07:16   |        |        |        |        |        |        |[object Object]
+r11: Carrefour - Washington Luiz        |GORDO                              |274                                |AMF-0325                           |05:15   |05:36   |08:08   |        |        |        |        |        |        |[object Object]
+r12: Carrefour - Campos dos Goytacazes  |                                   |                                   |                                   |        |        |        |        |        |        |        |        |        |[object Object]
+r13: Carrefour - Macaé                  |                                   |                                   |                                   |        |        |        |        |        |        |        |        |        |[object Object]
+r14: Carrefour - Juiz de Fora           |                                   |                                   |                                   |        |        |        |        |        |        |        |        |        |[object Object]
+r15: Carrefour - Espírito Santo         |                                   |                                   |                                   |        |        |        |        |        |        |        |        |        |[object Object]

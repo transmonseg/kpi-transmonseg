@@ -1,0 +1,22 @@
+# docs/conversas-tia-erica/dia-19/kpis-sistema-pos-fixes/KPI-ATACADAO-2026-05-19 (5).xlsx
+Aba: 19.05  rows: 6
+r01: RELATÓRIO KPI - ATACADÃO
+Terça-feir|RELATÓRIO KPI - ATACADÃO
+Terça-feir|RELATÓRIO KPI - ATACADÃO
+Terça-feir|RELATÓRIO KPI - ATACADÃO
+Terça-feir|RELATÓRIO KPI - ATACADÃO
+Terça-feir|RELATÓRIO KPI - ATACADÃO
+Terça-feir|RELATÓRIO KPI - ATACADÃO
+Terça-feir|RELATÓRIO KPI - ATACADÃO
+Terça-feir|RELATÓRIO KPI - ATACADÃO
+Terça-feir|RELATÓRIO KPI - ATACADÃO
+Terça-feir|RELATÓRIO KPI - ATACADÃO
+Terça-feir|RELATÓRIO KPI - ATACADÃO
+Terça-feir|RELATÓRIO KPI - ATACADÃO
+Terça-feir|RELATÓRIO KPI - ATACADÃO
+Terça-feir
+r02:                                    |ATACADÃO 1º CARRO                  |ATACADÃO 1º CARRO                  |ATACADÃO 1º CARRO                  |ATACADÃO 1º CARRO|ATACADÃO 1º CARRO|ATACADÃO 1º CARRO|ATACADÃO 2º CARRO|ATACADÃO 2º CARRO|ATACADÃO 2º CARRO|ATACADÃO 2º CARRO|ATACADÃO 2º CARRO|ATACADÃO 2º CARRO|        
+r03: REDES / FILIAIS                    |MOTORISTA                          |COD                                |PLACA                              |SAIDA CD|CHD LOJA|SAIDA LOJA|MOTORISTA|COD     |PLACA   |SAIDA CD|CHD LOJA|SAIDA LOJA|TEMPO EM LOJA 1
+r04:                                    |                                   |                                   |                                   |        |        |        |        |        |        |        |        |        |        
+r05: Atacadão - Belford Roxo            |RODRIGO                            |353                                |UBF-5G34                           |SEM RASTREADOR|SEM RASTREADOR|SEM RASTREADOR|        |        |        |        |        |        |[object Object]
+r06: Atacadão - Manilha                 |LUCIANO MATIAS                     |353                                |QSS-1E48                           |04:47   |06:21   |10:17   |        |        |        |        |        |        |[object Object]

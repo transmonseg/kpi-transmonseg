@@ -1,0 +1,67 @@
+# docs/conversas-tia-erica/dia-19/kpis-sistema-pos-fixes/KPI-ZONA_SUL-2026-05-19 (9).xlsx
+Aba: 19.05  rows: 51
+r01: RELATÓRIO KPI - ZONA SUL
+Terça-feir|RELATÓRIO KPI - ZONA SUL
+Terça-feir|RELATÓRIO KPI - ZONA SUL
+Terça-feir|RELATÓRIO KPI - ZONA SUL
+Terça-feir|RELATÓRIO KPI - ZONA SUL
+Terça-feir|RELATÓRIO KPI - ZONA SUL
+Terça-feir|RELATÓRIO KPI - ZONA SUL
+Terça-feir|RELATÓRIO KPI - ZONA SUL
+Terça-feir|RELATÓRIO KPI - ZONA SUL
+Terça-feir|RELATÓRIO KPI - ZONA SUL
+Terça-feir|RELATÓRIO KPI - ZONA SUL
+Terça-feir|RELATÓRIO KPI - ZONA SUL
+Terça-feir|RELATÓRIO KPI - ZONA SUL
+Terça-feir|RELATÓRIO KPI - ZONA SUL
+Terça-feir
+r02:                                    |ZONA SUL 1º CARRO                  |ZONA SUL 1º CARRO                  |ZONA SUL 1º CARRO                  |ZONA SUL 1º CARRO|ZONA SUL 1º CARRO|ZONA SUL 1º CARRO|ZONA SUL 2º CARRO|ZONA SUL 2º CARRO|ZONA SUL 2º CARRO|ZONA SUL 2º CARRO|ZONA SUL 2º CARRO|ZONA SUL 2º CARRO|        
+r03: REDES / FILIAIS                    |MOTORISTA                          |COD                                |PLACA                              |SAIDA CD|CHD LOJA|SAIDA LOJA|MOTORISTA|COD     |PLACA   |SAIDA CD|CHD LOJA|SAIDA LOJA|TEMPO EM LOJA 1
+r04:                                    |                                   |                                   |                                   |        |        |        |        |        |        |        |        |        |        
+r05: EXTRA F.31                         |PAULO HENRIQUE                     |807                                |DBB-8D19                           |05:11   |09:55   |10:00   |        |        |        |        |        |        |[object Object]
+r06: MEGA BOX 01 - Olaria               |MILTON                             |809                                |KOP-4978                           |        |        |        |PAULO ROBERTO|664     |MDV-3746|SEM RASTREADOR|SEM RASTREADOR|SEM RASTREADOR|[object Object]
+r07: MEGA BOX 02 - Olaria               |MILTON                             |809                                |KOP-4978                           |        |        |        |PAULO CESAR|642     |LNU-7733|SEM RASTREADOR|SEM RASTREADOR|SEM RASTREADOR|[object Object]
+r08: Zona Sul - Entrega Extra           |MILTON                             |809                                |KOP-4978                           |        |        |        |        |        |        |        |        |        |[object Object]
+r09: Zona Sul Loja 01 - Ipanema         |SÉRGIO JOSE DA SILVA               |598                                |LJS-2172                           |15:25   |17:07   |17:42   |        |        |        |        |        |        |[object Object]
+r10: Zona Sul Loja 03 - Copacabana I    |JOSUE DOS SANTOS                   |714                                |BBH-1C94                           |19:32   |20:20   |20:39   |        |        |        |        |        |        |[object Object]
+r11: Zona Sul Loja 04 - Copacabana II   |MARCIO                             |576                                |KVH-9J42                           |05:06   |05:52   |09:38   |        |        |        |        |        |        |[object Object]
+r12: Zona Sul Loja 05 - Copacabana III  |ANDERSON                           |633                                |LVE-0688                           |18:37   |20:43   |21:00   |        |        |        |        |        |        |[object Object]
+r13: Zona Sul Loja 06 - Gávea           |DOUGLAS                            |184422                             |LTE-0A64                           |SEM RASTREADOR|SEM RASTREADOR|SEM RASTREADOR|        |        |        |        |        |        |[object Object]
+r14: Zona Sul Loja 07 - Leblon          |ALESSIO                            |738                                |KQR-2J11                           |14:09   |14:58   |16:11   |RODRIGO |606     |KWK-4593|05:23   |06:15   |08:17   |[object Object]
+r15: Zona Sul Loja 08 - Ipanema         |LUIZ ALVES                         |612                                |LCO-0978                           |        |        |        |        |        |        |        |        |        |[object Object]
+r16: Zona Sul Loja 09 - Ipanema         |SÉRGIO JOSE DA SILVA               |598                                |LJS-2172                           |15:25   |16:26   |17:42   |        |        |        |        |        |        |[object Object]
+r17: Zona Sul Loja 10 - Recreio         |NILTON RODRIGUES                   |91                                 |AKZ-2594                           |18:32   |19:45   |20:21   |        |        |        |        |        |        |[object Object]
+r18: Zona Sul Loja 11 - Leblon          |PAULO HENRIQUE                     |807                                |DBB-8D19                           |12:55   |14:37   |17:05   |WILLIAM |496     |INW-8A51|14:10   |15:12   |16:30   |[object Object]
+r19: Zona Sul Loja 1129 - Olaria        |JHONATA FREIRE DA SILVA            |184708                             |KYM-2I62                           |SEM RASTREADOR|SEM RASTREADOR|SEM RASTREADOR|PAULO ROBERTO|664     |MDV-3746|SEM RASTREADOR|SEM RASTREADOR|SEM RASTREADOR|[object Object]
+r20: Zona Sul Loja 12 - Leme            |EDMILSON JOSÉ                      |605                                |LTQ-0783                           |15:54   |16:56   |17:39   |        |        |        |        |        |        |[object Object]
+r21: Zona Sul Loja 13 - Angra           |JULIO                              |808                                |CZB-9J19                           |SEM RASTREADOR|SEM RASTREADOR|SEM RASTREADOR|        |        |        |        |        |        |[object Object]
+r22: Zona Sul Loja 14 - Leblon          |MARCOS FERNANDO                    |353                                |UBO-5E05                           |04:03   |06:06   |09:34   |        |        |        |        |        |        |[object Object]
+r23: Zona Sul Loja 15 - Leblon          |INACIO ARAUJO                      |48                                 |LQU-5546                           |03:26   |05:32   |06:40   |        |        |        |        |        |        |[object Object]
+r24: Zona Sul Loja 17 - Barra           |VLADIMIR                           |606                                |KQY-9E24                           |17:49   |18:50   |19:31   |        |        |        |        |        |        |[object Object]
+r25: Zona Sul Loja 18 - Copacabana      |ALEX                               |663                                |LKW-2B80                           |04:28   |05:12   |06:39   |        |        |        |        |        |        |[object Object]
+r26: Zona Sul Loja 19 - Copacabana      |LUIZ ANTONIO ALVES                 |184446                             |KMY-5561                           |        |        |        |JOSUE DOS SANTOS|714     |BBH-1C94|19:32   |20:42   |20:52   |[object Object]
+r27: Zona Sul Loja 20 - Botafogo        |ANDERSON                           |633                                |LVE-0688                           |18:37   |19:40   |20:26   |        |        |        |        |        |        |[object Object]
+r28: Zona Sul Loja 21 - Flamengo        |EDMILSON JOSÉ DE MELO              |605                                |LTQ-0783                           |        |        |        |        |        |        |        |        |        |[object Object]
+r29: Zona Sul Loja 22 - S. Conrado      |JONESON                            |184461                             |EBG-2D13                           |18:58   |21:08   |21:33   |        |        |        |        |        |        |[object Object]
+r30: Zona Sul Loja 23 - Barra           |JOSENILDO ANISIO                   |479                                |KRK-3D12                           |18:38   |19:41   |20:40   |        |        |        |        |        |        |[object Object]
+r31: Zona Sul Loja 25 - Jd. Botânico    |JONESON                            |184461                             |EBG-2D13                           |18:58   |20:15   |20:58   |        |        |        |        |        |        |[object Object]
+r32: Zona Sul Loja 26 - Copacabana      |MARCIO                             |456                                |LTH-4J15                           |18:32   |19:51   |20:15   |        |        |        |        |        |        |[object Object]
+r33: Zona Sul Loja 27 - Ipanema         |INACIO ARAUJO                      |48                                 |LQU-5546                           |03:26   |04:45   |05:20   |        |        |        |        |        |        |[object Object]
+r34: Zona Sul Loja 28 - Urca            |INACIO ARAUJO                      |48                                 |LQU-5546                           |14:57   |15:57   |16:16   |        |        |        |        |        |        |[object Object]
+r35: Zona Sul Loja 29 - Flamengo        |INACIO ARAUJO                      |48                                 |LQU-5546                           |14:57   |16:29   |16:48   |        |        |        |        |        |        |[object Object]
+r36: Zona Sul Loja 30 - Laranjeiras     |SIDNEI ANTONIO MENDES              |674                                |LQE-5401                           |04:15   |04:47   |05:27   |        |        |        |        |        |        |[object Object]
+r37: Zona Sul Loja 31 - Jd. Botânico    |PAULO HENRIQUE                     |807                                |DBB-8D19                           |12:55   |13:58   |14:11   |DOUGLAS |184422  |LTE-0A64|SEM RASTREADOR|SEM RASTREADOR|SEM RASTREADOR|[object Object]
+r38: Zona Sul Loja 32 - Laranjeiras     |EDUARDO                            |184422                             |QAH-2H50                           |SEM RASTREADOR|SEM RASTREADOR|SEM RASTREADOR|        |        |        |        |        |        |[object Object]
+r39: Zona Sul Loja 33 - Humaitá         |LUIZ ALVES                         |612                                |LCO-0978                           |        |        |        |        |        |        |        |        |        |[object Object]
+r40: Zona Sul Loja 34 - Barra           |CARLOS GONÇALVES                   |590                                |LNU-9595                           |SEM RASTREADOR|SEM RASTREADOR|SEM RASTREADOR|        |        |        |        |        |        |[object Object]
+r41: Zona Sul Loja 35 - Barra           |ALEX                               |663                                |LKW-2B80                           |13:54   |15:04   |15:43   |        |        |        |        |        |        |[object Object]
+r42: Zona Sul Loja 36 - Botafogo        |LUIZ ALVES                         |612                                |LCO-0978                           |        |        |        |        |        |        |        |        |        |[object Object]
+r43: Zona Sul Loja 38 - Copacabana      |RODRIGO                            |606                                |KWK-4593                           |16:22   |17:24   |17:51   |        |        |        |        |        |        |[object Object]
+r44: Zona Sul Loja 40 - Ipanema         |EDUARDO                            |184422                             |LQA-5883                           |SEM RASTREADOR|SEM RASTREADOR|SEM RASTREADOR|        |        |        |        |        |        |[object Object]
+r45: Zona Sul Loja 42 - Botafogo        |EDUARDO                            |184422                             |QAH-2H50                           |SEM RASTREADOR|SEM RASTREADOR|SEM RASTREADOR|        |        |        |        |        |        |[object Object]
+r46: Zona Sul Loja 43 - Barra (Península|WANDERLEY                          |782                                |AFY-7J99                           |15:05   |16:09   |16:54   |        |        |        |        |        |        |[object Object]
+r47: Zona Sul Loja 44 - Barra           |AGNALDO                            |674                                |LKR-5990                           |18:43   |20:04   |20:10   |        |        |        |        |        |        |[object Object]
+r48: Zona Sul Loja 45 - Flamengo        |MOBRICI                            |740                                |AOP-3C73                           |14:40   |16:03   |18:02   |        |        |        |        |        |        |[object Object]
+r49: Zona Sul Loja 46 - Botafogo        |RENATO                             |184090                             |JAJ-6B36                           |18:06   |19:16   |19:51   |        |        |        |        |        |        |[object Object]
+r50: Zona Sul Loja 47                   |SIDNEI ANTONIO                     |674                                |LQE-5401                           |18:28   |19:40   |20:22   |        |        |        |        |        |        |[object Object]
+r51: Zona Sul Loja 48 - Recreio         |JOSUE DOS SANTOS                   |714                                |BBH-1C94                           |04:49   |05:29   |07:51   |        |        |        |        |        |        |[object Object]

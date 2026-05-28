@@ -1,0 +1,23 @@
+# docs/conversas-tia-erica/dia-19/kpis-sistema-pos-fixes/KPI-SAMS_CLUB-2026-05-19 (3).xlsx
+Aba: 19.05  rows: 7
+r01: RELATÓRIO KPI - SAM'S CLUB
+Terça-fe|RELATÓRIO KPI - SAM'S CLUB
+Terça-fe|RELATÓRIO KPI - SAM'S CLUB
+Terça-fe|RELATÓRIO KPI - SAM'S CLUB
+Terça-fe|RELATÓRIO KPI - SAM'S CLUB
+Terça-fe|RELATÓRIO KPI - SAM'S CLUB
+Terça-fe|RELATÓRIO KPI - SAM'S CLUB
+Terça-fe|RELATÓRIO KPI - SAM'S CLUB
+Terça-fe|RELATÓRIO KPI - SAM'S CLUB
+Terça-fe|RELATÓRIO KPI - SAM'S CLUB
+Terça-fe|RELATÓRIO KPI - SAM'S CLUB
+Terça-fe|RELATÓRIO KPI - SAM'S CLUB
+Terça-fe|RELATÓRIO KPI - SAM'S CLUB
+Terça-fe|RELATÓRIO KPI - SAM'S CLUB
+Terça-fe
+r02:                                    |SAM'S CLUB 1º CARRO                |SAM'S CLUB 1º CARRO                |SAM'S CLUB 1º CARRO                |SAM'S CLUB 1º CARRO|SAM'S CLUB 1º CARRO|SAM'S CLUB 1º CARRO|SAM'S CLUB 2º CARRO|SAM'S CLUB 2º CARRO|SAM'S CLUB 2º CARRO|SAM'S CLUB 2º CARRO|SAM'S CLUB 2º CARRO|SAM'S CLUB 2º CARRO|        
+r03: REDES / FILIAIS                    |MOTORISTA                          |COD                                |PLACA                              |SAIDA CD|CHD LOJA|SAIDA LOJA|MOTORISTA|COD     |PLACA   |SAIDA CD|CHD LOJA|SAIDA LOJA|TEMPO EM LOJA 1
+r04:                                    |                                   |                                   |                                   |        |        |        |        |        |        |        |        |        |        
+r05: Sam's - Barra (Ayrton Senna)       |FLÁVIO                             |822                                |NSM-6D98                           |        |        |        |        |        |        |        |        |        |[object Object]
+r06: Sam's - Linha Amarela              |FÁBIO BORGES                       |333                                |LAF-0697                           |        |        |        |        |        |        |        |        |        |[object Object]
+r07: Sam's - Niterói                    |JOSE ROBERTO                       |816                                |KPB-5I95                           |        |        |        |        |        |        |        |        |        |[object Object]

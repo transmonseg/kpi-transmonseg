@@ -1,0 +1,469 @@
+﻿◇ injected env (4) from .env.local // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+
+========== LLJ9C64 ==========
+  17 paradas
+  00:08 → 04:25 (257min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  04:32 → 04:41 (  9min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  04:46 → 05:06 ( 21min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  05:57 → 06:26 ( 29min) [LOJA    ] 7000734    PREZUNIC BARRA
+  06:47 → 08:21 ( 94min) [LOJA    ] 7000740    PREZUNIC SPID ALPHA MALL
+  08:28 → 08:32 (  4min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  08:47 → 09:16 ( 30min) [LOJA    ] 7000752    PREZUNIC SPID RECREIO
+  09:54 → 10:17 ( 23min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  10:46 → 11:07 ( 21min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  11:07 → 11:13 (  5min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  11:15 → 11:28 ( 13min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  11:40 → 18:11 (392min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  18:13 → 19:18 ( 65min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  19:28 → 20:10 ( 42min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  20:18 → 20:50 ( 32min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  20:59 → 21:32 ( 33min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  21:39 → 23:51 (132min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+
+========== KNC1I34 ==========
+  12 paradas
+  00:08 → 03:53 (225min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  04:17 → 04:39 ( 22min) [BASE    ]            BASE BENASSI - BASE de Janeiro, Região Geográfica Intermediá
+  04:44 → 05:16 ( 31min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  05:54 → 06:16 ( 22min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  06:29 → 07:16 ( 47min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  07:48 → 07:53 (  5min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  08:21 → 08:47 ( 26min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  08:49 → 11:38 (169min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  11:42 → 12:46 ( 64min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  12:47 → 13:42 ( 56min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  14:15 → 14:49 ( 33min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  15:27 → 23:56 (509min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+
+========== HNG2B61 ==========
+  11 paradas
+  00:04 → 04:29 (265min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  04:30 → 04:45 ( 15min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  04:52 → 04:58 (  6min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  05:32 → 05:55 ( 23min) [LOJA    ] 8590134    PRINCESA LEME
+  06:25 → 06:42 ( 17min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  06:45 → 09:31 (166min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  09:34 → 09:46 ( 12min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  10:41 → 12:15 ( 93min) [LOJA    ] 11623033   VIANENSE RECREIO
+  12:47 → 13:11 ( 23min) [LOJA    ] 560019     SENDAS FREGUESIA - LOJA 28
+  13:47 → 14:07 ( 20min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  14:12 → 23:58 (586min) [BASE    ]            BASE BENASSI - BASE BENASSI
+
+========== UBF5G36 ==========
+  17 paradas
+  00:19 → 01:21 ( 62min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  01:23 → 03:32 (129min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  03:35 → 03:39 (  4min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  03:53 → 04:31 ( 38min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  05:04 → 08:47 (223min) [LOJA    ] 7000750    PREZUNIC BOTAFOGO (VOLUNTÁRI OS DA PÁTRIA)
+  08:51 → 08:57 (  6min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  08:59 → 09:06 (  7min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  09:07 → 09:12 (  5min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  09:50 → 10:08 ( 18min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  10:18 → 11:00 ( 42min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  11:06 → 11:12 (  6min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  11:13 → 11:16 (  3min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  11:22 → 11:25 (  4min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  11:56 → 13:32 ( 96min) [LOJA    ] 560057     SENDAS CAXIAS II (PARQUE FL UMINENSE)
+  13:33 → 14:16 ( 42min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  14:47 → 15:11 ( 24min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  15:29 → 23:52 (502min) [BASE    ]            BASE BENASSI - BASE BENASSI
+
+========== KPE4133 ==========
+  15 paradas
+  00:00 → 02:33 (154min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  02:51 → 03:08 ( 17min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  03:17 → 03:35 ( 18min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  03:53 → 04:10 ( 17min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  04:38 → 05:16 ( 38min) [LOJA    ] 7000728    PREZUNIC ILHA
+  05:29 → 05:34 (  4min) [LOJA    ] 7000728    PREZUNIC ILHA
+  05:35 → 05:50 ( 16min) [FORA_BASE]            FORA DE de Janeiro, Rio de Janeiro, Brasil, CEP 21931-290 BA
+  05:52 → 06:58 ( 66min) [LOJA    ] 7000728    PREZUNIC ILHA
+  06:59 → 07:03 (  3min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  08:02 → 09:29 ( 87min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  09:59 → 10:49 ( 50min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  11:39 → 15:47 (249min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  15:57 → 16:27 ( 30min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  16:37 → 21:17 (279min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  22:16 → 23:56 ( 99min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+
+========== KUL1425 ==========
+  14 paradas
+  00:11 → 05:15 (304min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  05:22 → 05:31 (  9min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  05:51 → 06:06 ( 14min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  06:28 → 06:39 ( 10min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  07:10 → 09:52 (162min) [LOJA    ] 7000709    PREZUNIC PECHINCHA
+  10:36 → 10:47 ( 11min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  10:59 → 12:47 (108min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  12:51 → 13:41 ( 50min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  14:28 → 15:01 ( 33min) [LOJA    ] 579001     FEIRA NOVA OLINDA
+  15:23 → 19:37 (254min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  20:07 → 20:37 ( 30min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  20:47 → 22:06 ( 80min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  22:46 → 23:26 ( 40min) [BASE    ]            BASE BENASSI - BASE BENASSI 21530-900, Brasil
+  23:26 → 23:36 ( 10min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+
+========== KPB5I95 ==========
+  13 paradas
+  00:03 → 04:49 (286min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  04:51 → 05:02 ( 12min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  05:09 → 05:43 ( 34min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  06:25 → 07:50 ( 85min) [LOJA    ] 7000707    PREZUNIC FREGUESIA
+  08:46 → 09:17 ( 30min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  09:19 → 09:24 (  5min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  09:27 → 12:50 (202min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  12:51 → 13:47 ( 56min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  14:08 → 14:12 (  4min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  14:30 → 15:24 ( 53min) [LOJA    ] 579012     FEIRA NOVA FREGUESIA
+  15:38 → 15:45 (  8min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  15:48 → 16:04 ( 16min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  16:27 → 23:51 (444min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+
+========== KWI3461 ==========
+  9 paradas
+  00:09 → 04:57 (287min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  05:06 → 05:18 ( 12min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  05:26 → 05:43 ( 18min) [BASE    ]            BASE BENASSI - BASE BENASSI Brasil
+  06:34 → 08:47 (133min) [LOJA    ] 7000735    PREZUNIC ANIL (SHOPPING JACAREPAG UA)
+  08:56 → 09:00 (  4min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  09:01 → 09:07 (  6min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  09:57 → 10:22 ( 26min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  10:24 → 11:51 ( 87min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  11:56 → 23:53 (717min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+
+========== LUP1F13 ==========
+  (NÃO ENCONTRADA NO UNITRAC)
+
+========== GAJ6H51 ==========
+  15 paradas
+  00:07 → 02:46 (159min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  03:01 → 05:10 (129min) [BASE    ]            BASE BENASSI - BASE BENASSI Intermediária do Rio de Janeiro,
+  05:58 → 08:15 (137min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  08:17 → 09:09 ( 52min) [LOJA    ] 7000730    PREZUNIC ICARAÍ
+  09:28 → 10:04 ( 35min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  10:41 → 11:29 ( 48min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  11:37 → 13:56 (139min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  13:59 → 14:32 ( 33min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  15:01 → 16:42 (101min) [LOJA    ] 202000     PAX OSWALDO CRUZ
+  16:48 → 17:13 ( 25min) [LOJA    ] 202006     PAX MADUREIRA
+  17:20 → 17:26 (  6min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  17:33 → 17:42 (  9min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  17:46 → 17:52 (  6min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  17:55 → 17:59 (  5min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  18:00 → 23:55 (355min) [BASE    ]            BASE BENASSI - BASE BENASSI
+
+========== KQV1D80 ==========
+  7 paradas
+  00:07 → 04:06 (239min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  04:08 → 04:17 (  9min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  04:23 → 04:33 ( 10min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  05:05 → 05:59 ( 54min) [LOJA    ] 7000722    PREZUNIC FONSECA
+  06:01 → 09:33 (212min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  09:47 → 10:01 ( 14min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  10:44 → 23:51 (787min) [BASE    ]            BASE BENASSI - BASE BENASSI Intermediária do Rio de Janeiro,
+
+========== NTT4858 ==========
+  21 paradas
+  04:04 → 04:13 (  9min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  04:17 → 04:33 ( 17min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  04:40 → 05:08 ( 28min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  06:02 → 06:22 ( 20min) [LOJA    ] 7000702    PREZUNIC RECREIO
+  06:23 → 07:49 ( 86min) [LOJA    ] 7000702    PREZUNIC RECREIO
+  08:05 → 08:12 (  7min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  09:35 → 09:45 (  9min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  09:50 → 09:55 (  5min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  09:57 → 10:47 ( 50min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  10:49 → 10:55 (  6min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  11:10 → 11:16 (  6min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  11:29 → 11:32 (  3min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  11:43 → 11:46 (  3min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  11:48 → 11:58 ( 10min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  12:51 → 13:55 ( 64min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  14:51 → 14:55 (  4min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  14:56 → 17:50 (174min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  18:18 → 18:26 (  8min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  18:33 → 18:37 (  4min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  18:38 → 19:53 ( 75min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  20:09 → 23:59 (230min) [BASE    ]            BASE BENASSI - BASE BENASSI
+
+========== LCE4337 ==========
+  9 paradas
+  00:06 → 04:37 (271min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  04:57 → 05:14 ( 17min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  05:22 → 05:43 ( 21min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  06:02 → 06:17 ( 15min) [LOJA    ] 7000717    PREZUNIC CAXIAS CENTRO
+  06:24 → 06:28 (  3min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  06:29 → 06:57 ( 27min) [LOJA    ] 7000713    PREZUNIC CAXIAS CENTENÁRI O
+  07:00 → 07:45 ( 45min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  08:04 → 08:12 (  8min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  08:33 → 23:59 (926min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+
+========== LSX7C72 ==========
+  13 paradas
+  00:03 → 03:35 (211min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  04:00 → 04:14 ( 14min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  04:19 → 04:37 ( 17min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  05:20 → 09:13 (233min) [LOJA    ] 7000766    PREZUNIC CAMPO GRANDE (TINGUI)
+  10:14 → 10:30 ( 16min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  10:35 → 11:18 ( 43min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  11:19 → 11:23 (  4min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  11:24 → 12:45 ( 81min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  12:47 → 13:45 ( 58min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  14:18 → 15:22 ( 65min) [LOJA    ] 579006     FEIRA NOVA SANTA CRUZ DA SERRA
+  15:25 → 15:28 (  3min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  15:29 → 15:32 (  3min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  16:03 → 23:52 (469min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+
+========== KWV7E89 ==========
+  10 paradas
+  00:09 → 05:15 (306min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  05:25 → 05:50 ( 25min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  06:34 → 07:39 ( 65min) [LOJA    ] 7000710    PREZUNIC CAMPO GRANDE
+  08:58 → 11:10 (132min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  11:21 → 11:49 ( 29min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  11:50 → 12:01 ( 11min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  12:07 → 12:30 ( 24min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  12:49 → 12:53 (  4min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  13:16 → 13:48 ( 31min) [LOJA    ] 560032     SENDAS BARRA I - LJ 32
+  10:19 → 10:54 (569min) [FORA_BASE]            FORA DE 14:28 23:57CEP 21230-085 BASE E LOCAL DE SERVIÇO
+
+========== LNG7110 ==========
+  15 paradas
+  00:15 → 03:39 (204min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  04:01 → 04:11 (  9min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  04:17 → 04:21 (  4min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  04:23 → 05:04 ( 41min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  06:02 → 07:15 ( 73min) [LOJA    ] 7000733    PREZUNIC SANTA CRUZ
+  07:16 → 07:20 (  4min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  08:40 → 10:15 ( 96min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  10:25 → 10:33 (  8min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  10:34 → 11:02 ( 28min) [BASE    ]            BASE BENASSI - BASE BENASSI Brasil
+  11:08 → 11:14 (  6min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  11:48 → 11:54 (  6min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  12:33 → 12:43 ( 10min) [LOJA    ] 560060     SENDAS SANTA CRUZ II - LOJA 338
+  12:44 → 14:00 ( 76min) [LOJA    ] 560060     SENDAS SANTA CRUZ II - LOJA 338
+  14:13 → 15:19 ( 67min) [LOJA    ] 560060     SENDAS SANTA CRUZ II - LOJA 338
+  16:30 → 23:50 (439min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+
+========== LAF0697 ==========
+  6 paradas
+  00:04 → 04:08 (245min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  04:19 → 04:48 ( 30min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  04:55 → 06:06 ( 71min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  06:37 → 07:18 ( 41min) [LOJA    ] 7000721    PREZUNIC NILÓPOLIS
+  08:05 → 08:13 (  8min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  08:16 → 23:55 (939min) [BASE    ]            BASE BENASSI - BASE BENASSI
+
+========== KOA6A27 ==========
+  17 paradas
+  00:08 → 04:23 (256min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  04:39 → 04:48 (  9min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  04:52 → 05:28 ( 36min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  05:43 → 06:28 ( 45min) [LOJA    ] 7000725    PREZUNIC VILAR DOS TELES
+  06:31 → 06:36 (  5min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  06:40 → 09:01 (141min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  09:21 → 09:46 ( 25min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  10:15 → 10:25 ( 10min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  10:29 → 12:59 (151min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  13:00 → 13:40 ( 39min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  13:59 → 14:26 ( 27min) [LOJA    ] 579007     FEIRA NOVA COELHO DA ROCHA
+  14:35 → 14:39 (  4min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  14:48 → 17:44 (176min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  19:04 → 19:27 ( 23min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  19:38 → 22:20 (163min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  22:32 → 22:40 (  8min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  23:26 → 23:59 ( 33min) [FORA_BASE]            FORA DE BASE E 25576-210 LOCAL DE SERVIÇO
+
+========== NSM6D98 ==========
+  15 paradas
+  00:07 → 04:21 (254min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  04:40 → 04:44 (  4min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  04:45 → 05:10 ( 25min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  05:11 → 05:14 (  3min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  05:18 → 05:45 ( 26min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  06:20 → 06:54 ( 35min) [LOJA    ] 7000729    PREZUNIC MEIER
+  06:55 → 07:29 ( 34min) [LOJA    ] 7000729    PREZUNIC MEIER
+  08:04 → 09:02 ( 58min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  09:05 → 09:20 ( 15min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  09:26 → 09:38 ( 12min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  10:31 → 11:49 ( 78min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  12:27 → 12:41 ( 13min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  12:42 → 12:47 (  5min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  12:53 → 13:01 (  8min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  13:09 → 23:55 (646min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+
+========== LOU9928 ==========
+  14 paradas
+  00:02 → 03:43 (221min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  03:47 → 04:03 ( 17min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  04:04 → 04:12 (  8min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  04:33 → 04:36 (  3min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  04:43 → 07:32 (169min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  07:33 → 08:04 ( 31min) [LOJA    ] 7000724    PREZUNIC CACHAMBI
+  08:20 → 08:27 (  7min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  08:35 → 08:53 ( 18min) [BASE    ]            BASE BENASSI - BASE BENASSI Intermediária do Rio de Janeiro,
+  08:59 → 09:55 ( 55min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  09:57 → 14:22 (265min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  14:57 → 15:50 ( 53min) [LOJA    ] 202001     PAX ENGENHO DE DENTRO
+  16:15 → 16:37 ( 22min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  16:43 → 17:23 ( 40min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  17:30 → 23:59 (389min) [BASE    ]            BASE BENASSI - BASE BENASSI
+
+========== LTC8F97 ==========
+  9 paradas
+  00:05 → 04:56 (291min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  05:07 → 05:30 ( 23min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  05:36 → 05:58 ( 22min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  06:03 → 06:07 (  4min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  07:16 → 09:12 (116min) [LOJA    ] 7000704    PREZUNIC CATUMBI
+  09:43 → 13:40 (237min) [BASE    ]            BASE BENASSI - BASE BENASSI 19/05/2026 19/05/2026 0D 00:21:2
+  14:49 → 14:53 (  4min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  15:22 → 15:42 ( 20min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  15:49 → 23:56 (487min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+
+========== UFW0H63 ==========
+  11 paradas
+  00:04 → 02:57 (173min) [LOJA    ] 17659000   O BOM ATACADISTA
+  03:09 → 05:19 (130min) [LOJA    ] 17659000   O BOM ATACADISTA
+  05:46 → 06:27 ( 41min) [LOJA    ] 7000712    PREZUNIC REALENGO
+  06:41 → 08:13 ( 91min) [LOJA    ] 7000705    PREZUNIC SENADOR CAMARÁ
+  08:14 → 09:47 ( 93min) [LOJA    ] 7000705    PREZUNIC SENADOR CAMARÁ
+  10:42 → 11:19 ( 37min) [LOJA    ] 17659000   O BOM ATACADISTA
+  11:21 → 11:26 (  6min) [LOJA    ] 17659000   O BOM ATACADISTA
+  11:29 → 14:03 (154min) [LOJA    ] 17659000   O BOM ATACADISTA
+  15:39 → 16:34 ( 55min) [LOJA    ] 17659000   O BOM ATACADISTA
+  18:01 → 22:24 (263min) [LOJA    ] 17659000   O BOM ATACADISTA
+  22:25 → 23:56 ( 91min) [LOJA    ] 17659000   O BOM ATACADISTA
+
+========== TML3B11 ==========
+  5 paradas
+  02:47 → 03:36 ( 48min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  03:55 → 04:39 ( 43min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  05:09 → 06:58 (109min) [LOJA    ] 7000747    PREZUNIC TIJUCA
+  07:46 → 09:18 ( 91min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  09:37 → 13:26 (229min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+
+========== LKR5990 ==========
+  14 paradas
+  00:09 → 02:48 (159min) [BASE    ]            BASE BENASSI - BASE BENASSI, 2018006 - ROTA CAMPO GRANDE
+  03:38 → 05:35 (117min) [BASE    ]            BASE BENASSI - BASE BENASSI, 2018006 - ROTA CAMPO GRANDE
+  05:45 → 05:57 ( 12min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI, 2018006 - ROTA CAMPO GRANDE
+  07:08 → 08:21 ( 72min) [LOJA    ] 7000748    PREZUNIC VILA ISABEL
+  09:04 → 09:19 ( 15min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI, 2018006 - ROTA CAMPO GRANDE
+  09:25 → 10:19 ( 55min) [BASE    ]            BASE BENASSI - BASE BENASSI, 2018006 - ROTA CAMPO GRANDE
+  10:22 → 11:13 ( 51min) [BASE    ]            BASE BENASSI - BASE BENASSI, Intermediária do Rio de Janeiro
+  11:15 → 12:38 ( 83min) [BASE    ]            BASE BENASSI - BASE BENASSI, 2018006 - ROTA CAMPO GRANDE
+  12:41 → 12:52 ( 11min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI, 2018006 - ROTA CAMPO GRANDE
+  12:55 → 15:50 (176min) [BASE    ]            BASE BENASSI - BASE BENASSI, 2018006 - ROTA CAMPO GRANDE
+  16:40 → 18:43 (123min) [BASE    ]            BASE BENASSI - BASE BENASSI, 2018006 - ROTA CAMPO GRANDE
+  20:04 → 20:10 (  6min) [LOJA    ] 9039117    44 - ZONA SUL - BARRA OLEGARIO
+  21:05 → 21:43 ( 38min) [BASE    ]            BASE BENASSI - BASE BENASSI, 2018006 - ROTA CAMPO GRANDE
+  21:48 → 21:54 (  6min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI, 2018006 - ROTA CAMPO GRANDE
+
+========== EFU5H04 ==========
+  12 paradas
+  00:00 → 04:26 (266min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  04:28 → 04:39 ( 12min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  04:45 → 05:09 ( 23min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  05:47 → 08:43 (176min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  09:16 → 09:37 ( 21min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  09:45 → 09:49 (  4min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  09:51 → 12:43 (172min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  12:44 → 13:43 ( 59min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  13:52 → 15:15 ( 83min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  15:34 → 16:04 ( 31min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  16:10 → 16:17 (  7min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  16:18 → 23:51 (453min) [BASE    ]            BASE BENASSI - BASE BENASSI
+
+========== KXA7C24 ==========
+  10 paradas
+  00:07 → 03:54 (227min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  04:01 → 04:16 ( 16min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  04:24 → 04:41 ( 17min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  05:10 → 06:21 ( 71min) [LOJA    ] 7000726    PREZUNIC PADRE MIGUEL
+  06:56 → 07:07 ( 11min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  07:18 → 09:02 (103min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  09:09 → 10:00 ( 51min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  10:01 → 10:04 (  3min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI 19/05/2026 19/05/2026 0D 00:06:0
+  10:42 → 11:11 ( 28min) [LOJA    ] 71005      GB 05 - BANGU
+  11:57 → 23:53 (716min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+
+========== LKV5067 ==========
+  16 paradas
+  00:07 → 04:56 (290min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  05:05 → 05:16 ( 11min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  05:37 → 06:18 ( 40min) [LOJA    ] 7000714    PREZUNIC OLARIA
+  06:25 → 07:09 ( 45min) [LOJA    ] 7000723    PREZUNIC PENHA
+  07:27 → 07:51 ( 25min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  07:53 → 08:04 ( 11min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  08:11 → 09:31 ( 80min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  09:35 → 12:43 (188min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  12:44 → 13:07 ( 23min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  13:08 → 13:35 ( 27min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  13:36 → 13:43 (  7min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  14:11 → 15:08 ( 57min) [LOJA    ] 579013     FEIRA NOVA TODOS OS SANTOS
+  15:38 → 19:52 (254min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  19:55 → 20:09 ( 14min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  20:29 → 21:14 ( 45min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  21:27 → 23:50 (143min) [BASE    ]            BASE BENASSI - BASE BENASSI
+
+========== TML5I70 ==========
+  11 paradas
+  00:04 → 03:42 (218min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  04:14 → 05:18 ( 64min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  05:49 → 07:12 ( 82min) [LOJA    ] 7000708    PREZUNIC ENGENHO NOVO
+  07:30 → 08:34 ( 64min) [LOJA    ] 7000706    PREZUNIC BENFICA
+  09:18 → 13:33 (255min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  14:41 → 15:36 ( 55min) [LOJA    ] 579009     FEIRA NOVA QUEIMADOS
+  16:29 → 16:33 (  3min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  16:38 → 16:43 (  5min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  16:44 → 20:22 (219min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  20:23 → 20:27 (  3min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  20:38 → 23:53 (194min) [BASE    ]            BASE BENASSI - BASE BENASSI
+
+========== KOP4978 ==========
+  14 paradas
+  00:08 → 03:54 (226min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  04:20 → 04:31 ( 11min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  04:50 → 04:56 (  6min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  05:16 → 06:26 ( 71min) [LOJA    ] 7000718    PREZUNIC CAMPINHO
+  06:59 → 07:51 ( 52min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  08:41 → 09:08 ( 27min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  09:12 → 09:57 ( 46min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  10:07 → 12:31 (144min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  12:36 → 13:23 ( 47min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  13:39 → 13:53 ( 14min) [LOJA    ] 6018000    MEGA BOX (OLARIA)
+  13:56 → 14:12 ( 16min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  14:15 → 14:34 ( 19min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  14:39 → 15:46 ( 67min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  16:42 → 16:53 ( 10min) [LOJA    ] 6018001    MEGA BOX 2 (RECREIO)
+
+========== KXR7F27 ==========
+  23 paradas
+  00:01 → 03:37 (216min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  03:39 → 04:01 ( 22min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  04:12 → 04:29 ( 17min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  04:31 → 04:44 ( 13min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  05:00 → 05:45 ( 45min) [LOJA    ] 7000720    PREZUNIC ITAOCA
+  05:46 → 06:05 ( 19min) [LOJA    ] 7000720    PREZUNIC ITAOCA
+  06:24 → 07:01 ( 37min) [LOJA    ] 7000715    PREZUNIC VISTA ALEGRE
+  07:13 → 08:21 ( 69min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  08:27 → 09:42 ( 75min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  09:42 → 11:17 ( 95min) [BASE    ]            BASE BENASSI - BASE de Janeiro, Região Geográfica Intermediá
+  11:21 → 14:25 (184min) [BASE    ]            BASE BENASSI - BASE BENASSI
+  14:29 → 14:42 ( 13min) [FAKE_EXIT]            BASE BENASSI - BASE BENASSI
+  15:00 → 15:27 ( 27min) [LOJA    ] 202009     PAX PILARES
+  15:54 → 16:08 ( 14min) [LOJA    ] 4568001    SAMS NITEROI
+  16:10 → 16:19 (  9min) [LOJA    ] 4568001    SAMS NITEROI
+  16:38 → 16:41 (  4min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  16:42 → 16:51 (  9min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  16:55 → 17:06 ( 11min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  17:07 → 17:14 (  7min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  17:15 → 17:25 ( 10min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  17:26 → 17:31 (  5min) [FAKE_EXIT]            FORA DE BASE E LOCAL DE SERVIÇO
+  17:53 → 18:35 ( 42min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+  18:43 → 23:53 (311min) [FORA_BASE]            FORA DE BASE E LOCAL DE SERVIÇO
+
+========== UBF5G34 ==========
+  (NÃO ENCONTRADA NO UNITRAC)

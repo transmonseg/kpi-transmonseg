@@ -1,0 +1,102 @@
+========== LLJ9C64 ==========
+  05:57 → 06:26 ( 29min) [LOJA    ] 7000734    PREZUNIC BARRA
+  06:47 → 08:21 ( 94min) [LOJA    ] 7000740    PREZUNIC SPID ALPHA MALL
+  08:47 → 09:16 ( 30min) [LOJA    ] 7000752    PREZUNIC SPID RECREIO
+========== KNC1I34 ==========
+========== HNG2B61 ==========
+  05:32 → 05:55 ( 23min) [LOJA    ] 8590134    PRINCESA LEME
+  10:41 → 12:15 ( 93min) [LOJA    ] 11623033   VIANENSE RECREIO
+  12:47 → 13:11 ( 23min) [LOJA    ] 560019     SENDAS FREGUESIA - LOJA 28
+========== UBF5G36 ==========
+  05:04 → 08:47 (223min) [LOJA    ] 7000750    PREZUNIC BOTAFOGO (VOLUNTÁRI OS DA PÁTRIA)
+  11:56 → 13:32 ( 96min) [LOJA    ] 560057     SENDAS CAXIAS II (PARQUE FL UMINENSE)
+========== KPE4133 ==========
+  04:38 → 05:16 ( 38min) [LOJA    ] 7000728    PREZUNIC ILHA
+  05:29 → 05:34 (  4min) [LOJA    ] 7000728    PREZUNIC ILHA
+  05:52 → 06:58 ( 66min) [LOJA    ] 7000728    PREZUNIC ILHA
+========== KUL1425 ==========
+  07:10 → 09:52 (162min) [LOJA    ] 7000709    PREZUNIC PECHINCHA
+  14:28 → 15:01 ( 33min) [LOJA    ] 579001     FEIRA NOVA OLINDA
+========== KPB5I95 ==========
+  06:25 → 07:50 ( 85min) [LOJA    ] 7000707    PREZUNIC FREGUESIA
+  14:30 → 15:24 ( 53min) [LOJA    ] 579012     FEIRA NOVA FREGUESIA
+========== KWI3461 ==========
+  06:34 → 08:47 (133min) [LOJA    ] 7000735    PREZUNIC ANIL (SHOPPING JACAREPAG UA)
+========== LUP1F13 ==========
+========== GAJ6H51 ==========
+  08:17 → 09:09 ( 52min) [LOJA    ] 7000730    PREZUNIC ICARAÍ
+  15:01 → 16:42 (101min) [LOJA    ] 202000     PAX OSWALDO CRUZ
+  16:48 → 17:13 ( 25min) [LOJA    ] 202006     PAX MADUREIRA
+========== KQV1D80 ==========
+  05:05 → 05:59 ( 54min) [LOJA    ] 7000722    PREZUNIC FONSECA
+========== NTT4858 ==========
+  06:02 → 06:22 ( 20min) [LOJA    ] 7000702    PREZUNIC RECREIO
+  06:23 → 07:49 ( 86min) [LOJA    ] 7000702    PREZUNIC RECREIO
+========== LCE4337 ==========
+  06:02 → 06:17 ( 15min) [LOJA    ] 7000717    PREZUNIC CAXIAS CENTRO
+  06:29 → 06:57 ( 27min) [LOJA    ] 7000713    PREZUNIC CAXIAS CENTENÁRI O
+========== LSX7C72 ==========
+  05:20 → 09:13 (233min) [LOJA    ] 7000766    PREZUNIC CAMPO GRANDE (TINGUI)
+  14:18 → 15:22 ( 65min) [LOJA    ] 579006     FEIRA NOVA SANTA CRUZ DA SERRA
+========== KWV7E89 ==========
+  06:34 → 07:39 ( 65min) [LOJA    ] 7000710    PREZUNIC CAMPO GRANDE
+  13:16 → 13:48 ( 31min) [LOJA    ] 560032     SENDAS BARRA I - LJ 32
+========== LNG7110 ==========
+  06:02 → 07:15 ( 73min) [LOJA    ] 7000733    PREZUNIC SANTA CRUZ
+  12:33 → 12:43 ( 10min) [LOJA    ] 560060     SENDAS SANTA CRUZ II - LOJA 338
+  12:44 → 14:00 ( 76min) [LOJA    ] 560060     SENDAS SANTA CRUZ II - LOJA 338
+  14:13 → 15:19 ( 67min) [LOJA    ] 560060     SENDAS SANTA CRUZ II - LOJA 338
+========== LAF0697 ==========
+  06:37 → 07:18 ( 41min) [LOJA    ] 7000721    PREZUNIC NILÓPOLIS
+========== KOA6A27 ==========
+  05:43 → 06:28 ( 45min) [LOJA    ] 7000725    PREZUNIC VILAR DOS TELES
+  13:59 → 14:26 ( 27min) [LOJA    ] 579007     FEIRA NOVA COELHO DA ROCHA
+========== NSM6D98 ==========
+  06:20 → 06:54 ( 35min) [LOJA    ] 7000729    PREZUNIC MEIER
+  06:55 → 07:29 ( 34min) [LOJA    ] 7000729    PREZUNIC MEIER
+========== LOU9928 ==========
+  07:33 → 08:04 ( 31min) [LOJA    ] 7000724    PREZUNIC CACHAMBI
+  14:57 → 15:50 ( 53min) [LOJA    ] 202001     PAX ENGENHO DE DENTRO
+========== LTC8F97 ==========
+  07:16 → 09:12 (116min) [LOJA    ] 7000704    PREZUNIC CATUMBI
+========== UFW0H63 ==========
+  00:04 → 02:57 (173min) [LOJA    ] 17659000   O BOM ATACADISTA
+  03:09 → 05:19 (130min) [LOJA    ] 17659000   O BOM ATACADISTA
+  05:46 → 06:27 ( 41min) [LOJA    ] 7000712    PREZUNIC REALENGO
+  06:41 → 08:13 ( 91min) [LOJA    ] 7000705    PREZUNIC SENADOR CAMARÁ
+  08:14 → 09:47 ( 93min) [LOJA    ] 7000705    PREZUNIC SENADOR CAMARÁ
+  10:42 → 11:19 ( 37min) [LOJA    ] 17659000   O BOM ATACADISTA
+  11:21 → 11:26 (  6min) [LOJA    ] 17659000   O BOM ATACADISTA
+  11:29 → 14:03 (154min) [LOJA    ] 17659000   O BOM ATACADISTA
+  15:39 → 16:34 ( 55min) [LOJA    ] 17659000   O BOM ATACADISTA
+  18:01 → 22:24 (263min) [LOJA    ] 17659000   O BOM ATACADISTA
+  22:25 → 23:56 ( 91min) [LOJA    ] 17659000   O BOM ATACADISTA
+========== TML3B11 ==========
+  05:09 → 06:58 (109min) [LOJA    ] 7000747    PREZUNIC TIJUCA
+========== LKR5990 ==========
+  07:08 → 08:21 ( 72min) [LOJA    ] 7000748    PREZUNIC VILA ISABEL
+  20:04 → 20:10 (  6min) [LOJA    ] 9039117    44 - ZONA SUL - BARRA OLEGARIO
+========== EFU5H04 ==========
+========== KXA7C24 ==========
+  05:10 → 06:21 ( 71min) [LOJA    ] 7000726    PREZUNIC PADRE MIGUEL
+  10:42 → 11:11 ( 28min) [LOJA    ] 71005      GB 05 - BANGU
+========== LKV5067 ==========
+  05:37 → 06:18 ( 40min) [LOJA    ] 7000714    PREZUNIC OLARIA
+  06:25 → 07:09 ( 45min) [LOJA    ] 7000723    PREZUNIC PENHA
+  14:11 → 15:08 ( 57min) [LOJA    ] 579013     FEIRA NOVA TODOS OS SANTOS
+========== TML5I70 ==========
+  05:49 → 07:12 ( 82min) [LOJA    ] 7000708    PREZUNIC ENGENHO NOVO
+  07:30 → 08:34 ( 64min) [LOJA    ] 7000706    PREZUNIC BENFICA
+  14:41 → 15:36 ( 55min) [LOJA    ] 579009     FEIRA NOVA QUEIMADOS
+========== KOP4978 ==========
+  05:16 → 06:26 ( 71min) [LOJA    ] 7000718    PREZUNIC CAMPINHO
+  13:39 → 13:53 ( 14min) [LOJA    ] 6018000    MEGA BOX (OLARIA)
+  16:42 → 16:53 ( 10min) [LOJA    ] 6018001    MEGA BOX 2 (RECREIO)
+========== KXR7F27 ==========
+  05:00 → 05:45 ( 45min) [LOJA    ] 7000720    PREZUNIC ITAOCA
+  05:46 → 06:05 ( 19min) [LOJA    ] 7000720    PREZUNIC ITAOCA
+  06:24 → 07:01 ( 37min) [LOJA    ] 7000715    PREZUNIC VISTA ALEGRE
+  15:00 → 15:27 ( 27min) [LOJA    ] 202009     PAX PILARES
+  15:54 → 16:08 ( 14min) [LOJA    ] 4568001    SAMS NITEROI
+  16:10 → 16:19 (  9min) [LOJA    ] 4568001    SAMS NITEROI
+========== UBF5G34 ==========

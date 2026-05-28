@@ -1,0 +1,24 @@
+# docs/conversas-tia-erica/dia-19/kpis-sistema-pos-fixes/KPI-VIANENSE-2026-05-19 (3).xlsx
+Aba: 19.05  rows: 8
+r01: RELATÓRIO KPI - VIANENSE
+Terça-feir|RELATÓRIO KPI - VIANENSE
+Terça-feir|RELATÓRIO KPI - VIANENSE
+Terça-feir|RELATÓRIO KPI - VIANENSE
+Terça-feir|RELATÓRIO KPI - VIANENSE
+Terça-feir|RELATÓRIO KPI - VIANENSE
+Terça-feir|RELATÓRIO KPI - VIANENSE
+Terça-feir|RELATÓRIO KPI - VIANENSE
+Terça-feir|RELATÓRIO KPI - VIANENSE
+Terça-feir|RELATÓRIO KPI - VIANENSE
+Terça-feir|RELATÓRIO KPI - VIANENSE
+Terça-feir|RELATÓRIO KPI - VIANENSE
+Terça-feir|RELATÓRIO KPI - VIANENSE
+Terça-feir|RELATÓRIO KPI - VIANENSE
+Terça-feir
+r02:                                    |VIANENSE 1º CARRO                  |VIANENSE 1º CARRO                  |VIANENSE 1º CARRO                  |VIANENSE 1º CARRO|VIANENSE 1º CARRO|VIANENSE 1º CARRO|VIANENSE 2º CARRO|VIANENSE 2º CARRO|VIANENSE 2º CARRO|VIANENSE 2º CARRO|VIANENSE 2º CARRO|VIANENSE 2º CARRO|        
+r03: REDES / FILIAIS                    |MOTORISTA                          |COD                                |PLACA                              |SAIDA CD|CHD LOJA|SAIDA LOJA|MOTORISTA|COD     |PLACA   |SAIDA CD|CHD LOJA|SAIDA LOJA|TEMPO EM LOJA 1
+r04:                                    |                                   |                                   |                                   |        |        |        |        |        |        |        |        |        |        
+r05: Vianense - Freguesia 2º entrega    |JOSE ROBERTO                       |353                                |TML-3B11                           |        |        |        |        |        |        |        |        |        |[object Object]
+r06: Vianense - Jardim Alvorada 2º entre|MÁRCIO                             |456                                |LTH-4J15                           |10:03   |11:43   |12:00   |        |        |        |        |        |        |[object Object]
+r07: Vianense - Nova Iguaçu 1º entrega  |MÁRCIO                             |456                                |LTH-4J15                           |10:03   |11:14   |11:32   |        |        |        |        |        |        |[object Object]
+r08: Vianense - Recreio 1º entrega      |JOSE ROBERTO                       |353                                |TML-3B11                           |        |        |        |        |        |        |        |        |        |[object Object]

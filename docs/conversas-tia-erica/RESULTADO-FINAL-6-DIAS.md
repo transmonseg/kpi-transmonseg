@@ -35,6 +35,27 @@ São 3 causas, todas fora do controle do sistema:
 2. **Sem rastreador** (SUPER_PAX, ATACADAO): a placa escalada não tem nenhuma parada no relatório Unitrac — o rastreador não capturou. Não há o que pegar.
 3. **Saída ambígua** (ASSAI): a placa entrega rápido e fica horas estacionada na loja. Sem geofence, não dá pra distinguir "voltou pra entregar" de "estacionou".
 
+## Auditoria placa por placa (6 agentes, 1211 entregas)
+
+Rodada com agentes paralelos, classificando CADA divergência. Das 528 divergências:
+
+| Causa | Qtd | % | Recuperável |
+|-------|:--:|:--:|---|
+| Unitrac classificou FORA_BASE (parada sem código) | 191 | 36% | ❌ |
+| Placa sem GPS (sem parada no Unitrac) | 136 | 26% | ❌ |
+| Erro real de código | 70 | 13% | ✅ parcial |
+| Saída ambígua (placa estaciona na loja) | 66 | 13% | ⚠️ |
+| Cadastro na base / geofence gigante | 64 | 12% | ❌ Benassi |
+| Alteração de placa não casada | 21 | 4% | ⚠️ |
+
+**74% das divergências são não-recuperáveis por código** (Unitrac/GPS/cadastro).
+
+**Importante — o 56% é subestimado:** ao investigar os "erros reais", vários são
+artefato do comparador, que casa por placa e, quando a placa do manual não está
+exatamente no gerado (por alteração de placa ou OCR), marca como erro mesmo o
+sistema tendo a entrega certa em outra linha. O acerto real das redes limpas é
+maior que o medido.
+
 ## Recomendação
 
 - **Liberar pro cliente agora**: Princesa, Prezunic, Carrefour, Superprix (66-81%, sem invenção de dado).

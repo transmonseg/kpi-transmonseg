@@ -1,0 +1,21 @@
+# docs/conversas-tia-erica/dia-19/kpis-sistema-pos-fixes/KPI-SUPERCOMPRAS-2026-05-19 (2).xlsx
+Aba: 19.05  rows: 5
+r01: RELATÓRIO KPI - SUPERCOMPRAS
+Terça-|RELATÓRIO KPI - SUPERCOMPRAS
+Terça-|RELATÓRIO KPI - SUPERCOMPRAS
+Terça-|RELATÓRIO KPI - SUPERCOMPRAS
+Terça-|RELATÓRIO KPI - SUPERCOMPRAS
+Terça-|RELATÓRIO KPI - SUPERCOMPRAS
+Terça-|RELATÓRIO KPI - SUPERCOMPRAS
+Terça-|RELATÓRIO KPI - SUPERCOMPRAS
+Terça-|RELATÓRIO KPI - SUPERCOMPRAS
+Terça-|RELATÓRIO KPI - SUPERCOMPRAS
+Terça-|RELATÓRIO KPI - SUPERCOMPRAS
+Terça-|RELATÓRIO KPI - SUPERCOMPRAS
+Terça-|RELATÓRIO KPI - SUPERCOMPRAS
+Terça-|RELATÓRIO KPI - SUPERCOMPRAS
+Terça-
+r02:                                    |SUPERCOMPRAS 1º CARRO              |SUPERCOMPRAS 1º CARRO              |SUPERCOMPRAS 1º CARRO              |SUPERCOMPRAS 1º CARRO|SUPERCOMPRAS 1º CARRO|SUPERCOMPRAS 1º CARRO|SUPERCOMPRAS 2º CARRO|SUPERCOMPRAS 2º CARRO|SUPERCOMPRAS 2º CARRO|SUPERCOMPRAS 2º CARRO|SUPERCOMPRAS 2º CARRO|SUPERCOMPRAS 2º CARRO|        
+r03: REDES / FILIAIS                    |MOTORISTA                          |COD                                |PLACA                              |SAIDA CD|CHD LOJA|SAIDA LOJA|MOTORISTA|COD     |PLACA   |SAIDA CD|CHD LOJA|SAIDA LOJA|TEMPO EM LOJA 1
+r04:                                    |                                   |                                   |                                   |        |        |        |        |        |        |        |        |        |        
+r05: SUPERCOMPRAS - COSMOS              |RAFAEL SOARES                      |184502                             |EYL-8B91                           |05:16   |08:05   |08:32   |        |        |        |        |        |        |[object Object]
