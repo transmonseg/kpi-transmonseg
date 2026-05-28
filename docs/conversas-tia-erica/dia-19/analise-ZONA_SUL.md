@@ -1,18 +1,13 @@
 # Analise ZONA_SUL — dia 19/05/2026 (tol 10min)
 
 **Total lojas:** 47
-- Acerto completo: 22
-- Chegada certa, saida >10min: 1
+- Acerto completo: 23
+- Chegada certa, saida >10min: 0
 - SEM-RASTRE valido: 7
 - Sem timestamp: 8
 - **LOJA ERRADA (bug):** 1
 - **INVENTADO (bug):** 8
 - SEM-RASTRE errado: 0
-
-## Saidas erradas (chd OK, saida diverge >10min)
-| Loja | Placa | Sai sistema | Sai Unitrac |
-|---|---|---|---|
-| Zona Sul Loja 45 - Flamengo | AOP3C73 | 18:02 | 17:29 |
 
 ## Loja ERRADA (timestamp bate mas loja outra)
 | Loja sistema | Placa | Horario | Loja real (Unitrac) |

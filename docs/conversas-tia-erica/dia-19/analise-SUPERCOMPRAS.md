@@ -12,4 +12,4 @@
 ## Loja ERRADA (timestamp bate mas loja outra)
 | Loja sistema | Placa | Horario | Loja real (Unitrac) |
 |---|---|---|---|
-| SUPERCOMPRAS - COSMOS | EYL8B91 | 08:05-08:40 | MERCADO SANTO AGOSTINHO - BARRA DA  |
+| SUPERCOMPRAS - COSMOS | EYL8B91 | 08:05-13:52 | MERCADO SANTO AGOSTINHO - BARRA DA  |

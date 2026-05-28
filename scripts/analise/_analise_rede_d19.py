@@ -84,15 +84,48 @@ def analisar_rede(rede_nome, kpi_path):
 
         paradas = UNITRAC.get(placa, [])
         lojas_un_raw = [p for p in paradas if p['tipo'] == 'LOJA']
-        # Consolida paradas LOJA com mesmo cod_loja e gap <=15min: 05:05-06:05 + 06:06-12:31 → 05:05-12:31
-        lojas_un = []
+        # Replica logica do matcher do projeto:
+        # 1) Consolidacao GAP_MAX=30min (mesmas paradas consecutivas)
+        # 2) Cluster por gap >=60min apos consolidacao
+        # 3) Em cada cluster, manter MAIOR DURACAO
+        consolidadas = []
         for p in lojas_un_raw:
-            if lojas_un and lojas_un[-1].get('cod_loja') == p.get('cod_loja') and lojas_un[-1].get('cod_loja') not in (None, '', '-'):
-                gap = hhmm_to_min(p['chd']) - hhmm_to_min(lojas_un[-1]['sai'])
-                if gap is not None and gap <= 15:
-                    lojas_un[-1] = {**lojas_un[-1], 'sai': p['sai']}
+            if consolidadas and consolidadas[-1].get('cod_loja') == p.get('cod_loja') and consolidadas[-1].get('cod_loja') not in (None, '', '-'):
+                gap = hhmm_to_min(p['chd']) - hhmm_to_min(consolidadas[-1]['sai'])
+                if gap is not None and gap <= 30:
+                    novo_dur = (hhmm_to_min(p['sai']) or 0) - (hhmm_to_min(consolidadas[-1]['chd']) or 0)
+                    consolidadas[-1] = {**consolidadas[-1], 'sai': p['sai'], 'dur_min': novo_dur}
                     continue
-            lojas_un.append(p)
+            consolidadas.append(p)
+
+        # Dedup por cluster (gap >=60min same-cod = visitas separadas, ambas mantidas;
+        # gap <60min = cluster, fica a maior duracao)
+        grupos = {}
+        sem_cod = []
+        for p in consolidadas:
+            cod = p.get('cod_loja')
+            if not cod or cod in ('', '-'):
+                sem_cod.append(p)
+                continue
+            grupos.setdefault(cod, []).append(p)
+        lojas_un = []
+        for cod, arr in grupos.items():
+            if len(arr) == 1:
+                lojas_un.append(arr[0]); continue
+            # Cluster por gap >=60min
+            clusters = [[arr[0]]]
+            for i in range(1, len(arr)):
+                gap = hhmm_to_min(arr[i]['chd']) - hhmm_to_min(arr[i-1]['sai'])
+                if gap is not None and gap >= 60:
+                    clusters.append([arr[i]])
+                else:
+                    clusters[-1].append(arr[i])
+            for cluster in clusters:
+                # maior duracao
+                maior = max(cluster, key=lambda x: x.get('dur_min', 0))
+                lojas_un.append(maior)
+        lojas_un.extend(sem_cod)
+        lojas_un.sort(key=lambda x: hhmm_to_min(x['chd']) or 0)
         num = num_loja(str(loja_raw))
 
         if is_sem_rast:
