@@ -26,7 +26,7 @@ import { parseEscalaZonaSul } from '@/lib/parsers/escala-zona-sul'
 import { parseEscalaPax } from '@/lib/parsers/escala-pax'
 import { parseEscalaArmazemGrao } from '@/lib/parsers/escala-armazem-grao'
 import { parseUnitrac } from '@/lib/parsers/unitrac'
-import { cruzaEscalaUnitrac } from '@/lib/kpi/matcher'
+import { cruzaEscalaUnitrac, setSemGeo } from '@/lib/kpi/matcher'
 import { isVeiculoInativo } from '@/lib/kpi/veiculos-inativos'
 import type { LinhaEscala } from '@/lib/types/escala'
 
@@ -178,6 +178,8 @@ export async function POST(req: NextRequest) {
     raio_metros: (l.raio_metros as number | null) ?? 150,
   }))
 
+  // Modo sem geofence (decisão Tia Erica/William 27/05) — ver nota no route /simples.
+  setSemGeo(true)
   const rotas = await cruzaEscalaUnitrac(escalaRows, paradaRows, lojas)
 
   // Agrupa rotas por placa+rede

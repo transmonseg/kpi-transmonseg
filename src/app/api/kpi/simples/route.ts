@@ -6,7 +6,7 @@ import { parseEscalaZonaSul } from '@/lib/parsers/escala-zona-sul'
 import { parseEscalaPax } from '@/lib/parsers/escala-pax'
 import { parseEscalaArmazemGrao } from '@/lib/parsers/escala-armazem-grao'
 import { parseUnitrac } from '@/lib/parsers/unitrac'
-import { cruzaEscalaUnitrac, variantesOcr } from '@/lib/kpi/matcher'
+import { cruzaEscalaUnitrac, variantesOcr, setSemGeo } from '@/lib/kpi/matcher'
 import { aplicarAlteracoes } from '@/lib/kpi/aplicar-alteracoes'
 import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
@@ -448,6 +448,10 @@ export async function POST(req: NextRequest) {
     raio_metros: (c.raio_metros as number | null) ?? 150,
   }))
 
+  // Modo sem geofence (decisão Tia Erica/William 27/05): cadastro do Unitrac tem
+  // geofences sobrepostos/errados; sem geo o sistema só preenche o que o código
+  // de loja prova e deixa o resto vazio em vez de inventar.
+  setSemGeo(true)
   const rotas = await cruzaEscalaUnitrac(escalaRows, paradaRows, lojasParaMatcher, svc, geoStores)
 
   // Detecção de anomalias — gera codigos por escala_linha_id pra exibir/cor no preview.
