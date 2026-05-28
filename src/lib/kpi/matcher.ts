@@ -1293,18 +1293,31 @@ export async function cruzaEscalaUnitrac(
             }
           }
 
-          // Fallback canonical_loja se nenhuma loja da rede bateu por geo+nome
+          // Fallback canonical_loja se nenhuma loja da rede bateu por geo+nome.
+          // Guard cod_loja dono: se a parada tem cod_loja cadastrado em loja
+          // diferente da linha alvo (rede não-fungível e nome não bate), não
+          // atribui — caso Sams Barra NSM6D98 ganhando PREZUNIC MEIER ou
+          // ZS L19 KMY5561 ganhando CARREFOUR BARRA.
           if (!atribuido && (geoStores ?? []).length > 0) {
             const bateCanonical = resolveForaBaseGeo(p.lat!, p.lng!, geoStores!)
             if (bateCanonical) {
-              // sem amarração de loja específica: atribui à primeira linha sem match
-              // (comportamento legacy preservado pra canonical, onde rede pode não existir)
               const linhaAlvo = linhasAindaSemMatch.find(l => !matchByEscalaId.has(l.id))
               if (linhaAlvo) {
-                matchByEscalaId.set(linhaAlvo.id, p)
-                usados.add(p.id)
-                usadosGeo.add(j)
-                geoMatchedLineIds.add(linhaAlvo.id)
+                let bloqueia = false
+                if (p.codigo_loja) {
+                  const dona = lojas.find(l => l.codigo_unitrac === p.codigo_loja)
+                  if (dona) {
+                    const fungAlvo = redesFungiveis(linhaAlvo.rede_id)
+                    const nomeBate = matchScore(linhaAlvo.loja_nome_raw, dona.nome) <= 1
+                    if (!fungAlvo.has(dona.rede_id) && !nomeBate) bloqueia = true
+                  }
+                }
+                if (!bloqueia) {
+                  matchByEscalaId.set(linhaAlvo.id, p)
+                  usados.add(p.id)
+                  usadosGeo.add(j)
+                  geoMatchedLineIds.add(linhaAlvo.id)
+                }
               }
             }
           }
