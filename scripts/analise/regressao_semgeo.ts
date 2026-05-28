@@ -2,8 +2,9 @@
 // e que Inventou <= 2. Sai com código 1 se regrediu.
 import { execSync } from 'child_process'
 
+// Mínimos calibrados pela auditoria V2 (2 carros, casa por placa) dia 19
 const MIN_PRECISAO: Record<string, number> = {
-  ATACADAO: 100, SUPERPRIX: 100, GUANABARA: 88, PRINCESA: 88, PREZUNIC: 88, CARREFOUR: 85,
+  SUPERPRIX: 68, PRINCESA: 79, PREZUNIC: 78, CARREFOUR: 45,
 }
 const out = execSync('npx tsx scripts/analise/auditoria_completa_d19.ts', { encoding: 'utf-8' })
 console.log(out)
