@@ -1929,53 +1929,15 @@ export async function cruzaEscalaUnitrac(
     // último FORA_BASE da cadeia adjacente (não do primeiro matched). A própria
     // função decide se estende baseado em classificação + critérios geo/duração.
     const saidaEstendida = matched ? estendeSaidaPorForaBase(matched, todasParadas) : null
-
-    // Regra Tia Erica: quando a placa para várias vezes na MESMA loja (mesmo
-    // codigo_loja) em sequência CONTÍGUA (sem entregar em outro código no meio),
-    // a saída é a ÚLTIMA saída do bloco contíguo. Chegada = primeira do bloco.
-    // Caso Cabo Frio: 05:48→06:58 → pausa → 11:01-11:35 → mas entre elas não
-    // houve outra loja, então consolida. Caso Arraial: 8590559 → 8590569 →
-    // 8590560 → 8590559: o segundo bloco 8590559 tem outro código no meio, logo
-    // é entrega separada e NÃO consolida com o primeiro bloco.
-    let chegadaFinal = matched ? new Date(matched.chegada) : null
-    let saidaFinal: Date | null = saidaEstendida ?? (matched?.saida ? new Date(matched.saida) : null)
-    if (matched && !isGeo && matched.codigo_loja) {
-      // Pega paradas LOJA ordenadas por chegada pra verificar contiguidade
-      const lojasOrdenadas = todasParadas
-        .filter(p => p.classificacao === 'LOJA' && p.codigo_loja && p.saida)
-        .sort((a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
-      // Localiza o bloco contíguo que começa no matched (não há outro cod entre elas)
-      const idxMatched = lojasOrdenadas.findIndex(p => p.id === matched.id)
-      if (idxMatched >= 0) {
-        // estende para trás: paradas antes do matched com mesmo cod e sem outro cod entre elas
-        let inicio = idxMatched
-        for (let j = idxMatched - 1; j >= 0; j--) {
-          if (lojasOrdenadas[j].codigo_loja !== matched.codigo_loja) break
-          inicio = j
-        }
-        // estende para frente: paradas depois com mesmo cod e sem outro cod entre elas
-        let fim = idxMatched
-        for (let j = idxMatched + 1; j < lojasOrdenadas.length; j++) {
-          if (lojasOrdenadas[j].codigo_loja !== matched.codigo_loja) break
-          fim = j
-        }
-        if (fim > inicio || fim > idxMatched) {
-          chegadaFinal = new Date(lojasOrdenadas[inicio].chegada)
-          const saidaBloco = new Date(lojasOrdenadas[fim].saida!)
-          if (!saidaFinal || saidaBloco.getTime() > saidaFinal.getTime()) saidaFinal = saidaBloco
-        }
-      }
-    }
-
     const paradas: ParadaKpi[] = matched
       ? [{
           parada_id: matched.id,
           loja_id: lojaId,
           nome: nomeResolvido,
-          chegada: chegadaFinal!,
-          saida: saidaFinal ?? chegadaFinal!,
-          duracao_min: saidaFinal
-            ? Math.round((saidaFinal.getTime() - chegadaFinal!.getTime()) / 60000)
+          chegada: new Date(matched.chegada),
+          saida: saidaEstendida ?? (matched.saida ? new Date(matched.saida) : new Date(matched.chegada)),
+          duracao_min: saidaEstendida
+            ? Math.round((saidaEstendida.getTime() - new Date(matched.chegada).getTime()) / 60000)
             : Math.round((matched.duracao_seg ?? 0) / 60),
           classificacao: isGeo ? 'FORA_BASE' : 'LOJA',
         }]
