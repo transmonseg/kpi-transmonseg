@@ -1876,9 +1876,10 @@ describe('Bug 3 — parada LOJA duplicada não deve bloquear geo-fallback FORA_B
     // Loja 30 casa com a parada matinal (LOJA cod=9039030)
     expect(r30?.paradas).toHaveLength(1)
     expect(r30?.paradas[0].chegada).toEqual(new Date('2026-05-19T04:47:00.000Z'))
-    // Regra Tia Erica (2026-05-27): FORA_BASE não vira entrega. Loja 47 fica SEM
-    // (será exibida como "não foi ao cliente" pro operador).
-    expect(r47?.paradas ?? []).toHaveLength(0)
+    // T22 (2026-05-27 v2): FORA_BASE com GPS exatamente no raio do cadastro
+    // vira LOJA. Manual da Tia Erica preenche entrega nesses casos (Atacadão
+    // Manilha QSS-1E48 dia 19 confirmou). Loja 47 ganha a parada 19:40.
+    expect(r47?.paradas).toHaveLength(1)
   })
 })
 
@@ -1971,8 +1972,8 @@ describe('Bug 4 — multi-row mesma rede: distribuição correta entre N linhas 
     ]
     const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
     const r = rotas.find((x) => x.escala_linha_id === 'lMan')
-    // Regra Tia Erica: sem parada LOJA real, linha fica SEM.
-    expect(r?.paradas ?? []).toHaveLength(0)
+    // T22: GPS no raio do cadastro = entrega real (manual da Tia confirma).
+    expect((r?.paradas ?? []).length).toBeGreaterThanOrEqual(1)
   })
 
   it('Bug 6: GUANABARA BENTO RIBEIRO dia 19 (matched=FAKE_EXIT → cadeia FORA_BASE com gap 16min)', async () => {
@@ -1996,8 +1997,8 @@ describe('Bug 4 — multi-row mesma rede: distribuição correta entre N linhas 
     ]
     const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
     const r = rotas.find((x) => x.escala_linha_id === 'lBR')
-    // Regra Tia Erica: sem parada LOJA real, linha fica SEM.
-    expect(r?.paradas ?? []).toHaveLength(0)
+    // T22: GPS no raio do cadastro = entrega real (manual da Tia confirma).
+    expect((r?.paradas ?? []).length).toBeGreaterThanOrEqual(1)
   })
 
   it('Bug 6 não-regressão: PREZUNIC FONSECA dia 20 (matched=LOJA + FORA_BASE longo, padrão original)', async () => {

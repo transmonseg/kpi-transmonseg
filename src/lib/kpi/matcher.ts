@@ -1058,7 +1058,48 @@ export async function cruzaEscalaUnitrac(
     //   Resolve caso 4 lojas REGINA com mesmo cod errado: cada parada GPS perto da
     //   loja real diferente é atribuída corretamente.
     // - Se ≤500m: mantém LOJA com código (caso ideal).
+    // T22 (regressão dia 19): primeira parada FORA_BASE de cada loja cadastrada
+    // (sem nenhuma LOJA com mesmo cod_unitrac no veículo) → reclassifica como
+    // LOJA. O parser PDF do Unitrac às vezes marca "FORA DE BASE E LOCAL DE
+    // SERVIÇO" mesmo quando o veículo está no endereço da loja (cliente sem
+    // geofence cadastrado no Unitrac). Casos: KNC-1I34 Prezunic Marapendi/JO,
+    // UBF-5G36 Prezunic Botafogo Voluntários, QSS-1E48 Atacadão Manilha.
+    // Estratégia: marca SÓ a primeira FORA_BASE por loja → demais FORA_BASE
+    // colados continuam, caem em estendeSaidaPorForaBase (mesma área).
+    const codsLojaJaPresentes = new Set(
+      todas.filter(p => p.classificacao === 'LOJA' && p.codigo_loja).map(p => p.codigo_loja as string)
+    )
+    const t22JaConvertido = new Set<string>() // chave (cod_unitrac || id) já promovida nesta placa
+    const t22Promoted = new Map<string, { codigo_unitrac: string | null; nome: string }>()
+    for (const p of todas) {
+      if (p.classificacao !== 'FORA_BASE') continue
+      if (p.lat == null || p.lng == null) continue
+      if (paradaEhRegiaoBase(p.lat, p.lng)) continue
+      const lojaPerto = lojas.find(l => {
+        if (l.lat == null || l.lng == null) return false
+        if (haversine(p.lat!, p.lng!, l.lat, l.lng) > (l.raio_metros ?? 150)) return false
+        const chave = l.codigo_unitrac ?? l.id
+        if (l.codigo_unitrac && codsLojaJaPresentes.has(l.codigo_unitrac)) return false
+        if (t22JaConvertido.has(chave)) return false
+        return true
+      })
+      if (lojaPerto) {
+        const chave = lojaPerto.codigo_unitrac ?? lojaPerto.id
+        t22JaConvertido.add(chave)
+        t22Promoted.set(p.id, { codigo_unitrac: lojaPerto.codigo_unitrac ?? null, nome: lojaPerto.nome })
+      }
+    }
+
     const todasAjustadas: typeof todas = todas.map(p => {
+      const t22 = t22Promoted.get(p.id)
+      if (t22) {
+        return {
+          ...p,
+          classificacao: 'LOJA' as const,
+          codigo_loja: t22.codigo_unitrac,
+          nome_loja: t22.nome,
+        }
+      }
       if (p.classificacao !== 'LOJA') return p
       if (!p.codigo_loja || p.lat == null || p.lng == null) return p
       // T20-BASE (regra Tia Erica 2026-05-27): se o GPS está na região da
