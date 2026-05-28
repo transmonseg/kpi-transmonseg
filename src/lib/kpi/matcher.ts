@@ -1051,6 +1051,27 @@ export async function cruzaEscalaUnitrac(
       if (!lojaCad?.lat || !lojaCad?.lng) return p
       const d = haversine(p.lat, p.lng, lojaCad.lat, lojaCad.lng)
       if (d > 500) {
+        // T20-fix dia 19: geofence Unitrac mal cadastrado classifica BASE BENASSI
+        // e Lucio Meira/Abastecedora/1 de Maio TODAS como REGINA BARRA IMBUY
+        // (cod 5353012). Antes de declarar FORA_BASE, tenta re-mapear para a
+        // loja cadastrada FISICAMENTE PRÓXIMA (≤ raio_metros). Caso TML6D96 dia
+        // 19: 4 paradas em Petrópolis com lat/lng exato da loja real são
+        // re-classificadas corretamente.
+        const corrigida = lojas.find(l =>
+          l !== lojaCad &&
+          l.lat != null && l.lng != null &&
+          haversine(p.lat!, p.lng!, l.lat, l.lng) <= (l.raio_metros ?? 150)
+        )
+        if (corrigida) {
+          // Se a corrigida tem cod_unitrac, usa. Senão limpa cod_loja (resolveLojaId
+          // resolve por nome/geo Priority 2-4). Mantém classificacao=LOJA pra ser
+          // candidata no assignOptimal.
+          return {
+            ...p,
+            codigo_loja: corrigida.codigo_unitrac ?? null,
+            nome_loja: corrigida.nome,
+          }
+        }
         return { ...p, classificacao: 'FORA_BASE' as const, codigo_loja: null, nome_loja: null }
       }
       return p
