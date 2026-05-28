@@ -7,6 +7,7 @@ import {
   scorePair,
   cruzaEscalaUnitrac,
   variantesOcr,
+  setSemGeo,
   type EscalaLinhaRow,
   type UnitracParadaRow,
   type LojaRow,
@@ -2026,3 +2027,41 @@ describe('Bug 4 — multi-row mesma rede: distribuição correta entre N linhas 
     expect(`${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`).toBe('09:28')
   })
 })
+
+describe('SEM_GEO — distribuição multi-loja ZONA_SUL por código suffix', () => {
+  it('LQU5546 dia 19: cada parada vai pra linha do código certo', async () => {
+    setSemGeo(true)
+    try {
+      const escalaLinhas: EscalaLinhaRow[] = [
+        { id: 'l27', rede_id: 'ZONA_SUL', placa_norm: 'LQU5546', loja_nome_raw: 'Zona Sul Loja 27 - Ipanema', loja_codigo_raw: '27', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+        { id: 'l15', rede_id: 'ZONA_SUL', placa_norm: 'LQU5546', loja_nome_raw: 'Zona Sul Loja 15 - Leblon', loja_codigo_raw: '15', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+        { id: 'l28', rede_id: 'ZONA_SUL', placa_norm: 'LQU5546', loja_nome_raw: 'Zona Sul Loja 28 - Urca', loja_codigo_raw: '28', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+        { id: 'l29', rede_id: 'ZONA_SUL', placa_norm: 'LQU5546', loja_nome_raw: 'Zona Sul Loja 29 - Flamengo', loja_codigo_raw: '29', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-19' },
+      ]
+      const paradaRows: UnitracParadaRow[] = [
+        { id: 'p27a', placa_norm: 'LQU5546', chegada: '2026-05-19T04:45:00Z', saida: '2026-05-19T05:03:00Z', duracao_seg: 1080, local_parada: '9039027 - 27 - ZONA SUL - IPANEMA', codigo_loja: '9039027', nome_loja: '27 - ZONA SUL - IPANEMA', lat: -22.984, lng: -43.198, classificacao: 'LOJA', ordem: 1 },
+        { id: 'p27b', placa_norm: 'LQU5546', chegada: '2026-05-19T05:04:00Z', saida: '2026-05-19T05:20:00Z', duracao_seg: 960, local_parada: '9039027 - 27 - ZONA SUL - IPANEMA', codigo_loja: '9039027', nome_loja: '27 - ZONA SUL - IPANEMA', lat: -22.984, lng: -43.198, classificacao: 'LOJA', ordem: 2 },
+        { id: 'p15', placa_norm: 'LQU5546', chegada: '2026-05-19T05:32:00Z', saida: '2026-05-19T06:40:00Z', duracao_seg: 4080, local_parada: '9039015 - 15 - ZONA SUL - LEBLON', codigo_loja: '9039015', nome_loja: '15 - ZONA SUL - LEBLON', lat: -22.987, lng: -43.224, classificacao: 'LOJA', ordem: 3 },
+        { id: 'p28', placa_norm: 'LQU5546', chegada: '2026-05-19T15:57:00Z', saida: '2026-05-19T16:16:00Z', duracao_seg: 1140, local_parada: '9039028 - 28 - ZONA SUL - URCA', codigo_loja: '9039028', nome_loja: '28 - ZONA SUL - URCA', lat: -22.948, lng: -43.165, classificacao: 'LOJA', ordem: 4 },
+      ]
+      const lojas: LojaRow[] = [
+        { id: 'c27', rede_id: 'ZONA_SUL', nome: 'Zona Sul Loja 27 - Ipanema', nome_normalizado: 'zona sul loja 27 ipanema', codigo_escala: '27', codigo_unitrac: '9039027', nome_unitrac: '27 - ZONA SUL - IPANEMA', lat: -22.984, lng: -43.198, raio_metros: 200 },
+        { id: 'c15', rede_id: 'ZONA_SUL', nome: 'Zona Sul Loja 15 - Leblon', nome_normalizado: 'zona sul loja 15 leblon', codigo_escala: '15', codigo_unitrac: '9039015', nome_unitrac: '15 - ZONA SUL - LEBLON', lat: -22.987, lng: -43.224, raio_metros: 200 },
+        { id: 'c28', rede_id: 'ZONA_SUL', nome: 'Zona Sul Loja 28 - Urca', nome_normalizado: 'zona sul loja 28 urca', codigo_escala: '28', codigo_unitrac: '9039028', nome_unitrac: '28 - ZONA SUL - URCA', lat: -22.948, lng: -43.165, raio_metros: 200 },
+        { id: 'c29', rede_id: 'ZONA_SUL', nome: 'Zona Sul Loja 29 - Flamengo', nome_normalizado: 'zona sul loja 29 flamengo', codigo_escala: '29', codigo_unitrac: '9039029', nome_unitrac: '29 - ZONA SUL - FLAMENGO', lat: -22.93, lng: -43.17, raio_metros: 200 },
+      ]
+      const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+      const r27 = rotas.find(r => r.escala_linha_id === 'l27')
+      const r15 = rotas.find(r => r.escala_linha_id === 'l15')
+      const r28 = rotas.find(r => r.escala_linha_id === 'l28')
+      const r29 = rotas.find(r => r.escala_linha_id === 'l29')
+      expect(r27?.paradas[0]?.chegada).toEqual(new Date('2026-05-19T04:45:00Z'))
+      expect(r15?.paradas[0]?.chegada).toEqual(new Date('2026-05-19T05:32:00Z'))
+      expect(r28?.paradas[0]?.chegada).toEqual(new Date('2026-05-19T15:57:00Z'))
+      expect(r29?.paradas ?? []).toHaveLength(0)
+    } finally {
+      setSemGeo(false)
+    }
+  })
+})
+

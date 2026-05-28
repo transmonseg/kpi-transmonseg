@@ -56,6 +56,12 @@ function paradaEhRegiaoBase(lat: number | null, lng: number | null): boolean {
   return haversine(lat, lng, BASE_BENASSI_LAT, BASE_BENASSI_LNG) <= BASE_BENASSI_RAIO_METROS
 }
 
+// MODO SEM GEOFENCE (beta): quando true, desliga todos os matches por proximidade
+// GPS — mantém só código/nome/placa. Lojas com cadastro Unitrac bugado (geofence
+// sobreposto) deixam de casar e ficam vazias na planilha. (regra Tia Erica/William)
+let SEM_GEO = false
+export function setSemGeo(v: boolean): void { SEM_GEO = v }
+
 // Prefixos numéricos conhecidos dos códigos do Unitrac (`codigo_loja`) por rede.
 // Quando o codigo_loja começa com um destes, o suffix-match aceita codigo_escala
 // de length>=2 (com padStart 3) — destrava match Zona Sul "21" → 9039021,
@@ -646,8 +652,8 @@ function resolveLojaId(
     if (byName) return byName.id
   }
 
-  // Priority 4: geo proximity
-  if (parada.lat != null && parada.lng != null) {
+  // Priority 4: geo proximity (DESLIGADO no modo SEM_GEO)
+  if (!SEM_GEO && parada.lat != null && parada.lng != null) {
     const byGeo = redeLojas.find(
       (l) =>
         l.lat != null &&
@@ -1071,7 +1077,8 @@ export async function cruzaEscalaUnitrac(
     )
     const t22JaConvertido = new Set<string>() // chave (cod_unitrac || id) já promovida nesta placa
     const t22Promoted = new Map<string, { codigo_unitrac: string | null; nome: string }>()
-    for (const p of todas) {
+    // T22 é geo — desligado no modo SEM_GEO
+    if (!SEM_GEO) for (const p of todas) {
       if (p.classificacao !== 'FORA_BASE') continue
       if (p.lat == null || p.lng == null) continue
       if (paradaEhRegiaoBase(p.lat, p.lng)) continue
@@ -1111,6 +1118,9 @@ export async function cruzaEscalaUnitrac(
       if (paradaEhRegiaoBase(p.lat, p.lng)) {
         return { ...p, classificacao: 'BASE' as const, codigo_loja: null, nome_loja: null }
       }
+      // T20-fix (re-map por proximidade) é geo — no modo SEM_GEO mantém a parada
+      // como está (código exato decide; nada de re-mapear por distância).
+      if (SEM_GEO) return p
       const lojaCad = lojas.find(l => l.codigo_unitrac === p.codigo_loja)
       if (!lojaCad?.lat || !lojaCad?.lng) return p
       const d = haversine(p.lat, p.lng, lojaCad.lat, lojaCad.lng)
@@ -1328,7 +1338,8 @@ export async function cruzaEscalaUnitrac(
 
       // Geo-R: pula se LOJA órfã é da mesma rede da linha (FP cross-rede); permite
       // se órfã é de outra rede (motorista fez multi-cliente).
-      if (!temLojaOrfaMesmaRede) {
+      // Bloco inteiro é geo — desligado no modo SEM_GEO.
+      if (!SEM_GEO && !temLojaOrfaMesmaRede) {
         const usadosGeo = new Set<number>()
         // Inverte loop: pra cada parada, acha loja mais próxima na rede e atribui
         // à LINHA correspondente (não à primeira linha iterada). Antes, BARRA DO IMBUY
