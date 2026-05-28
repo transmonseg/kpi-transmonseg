@@ -1929,15 +1929,48 @@ export async function cruzaEscalaUnitrac(
     // último FORA_BASE da cadeia adjacente (não do primeiro matched). A própria
     // função decide se estende baseado em classificação + critérios geo/duração.
     const saidaEstendida = matched ? estendeSaidaPorForaBase(matched, todasParadas) : null
+
+    // Regra Tia Erica: quando a placa para várias vezes seguidas na MESMA loja
+    // (mesmo codigo_loja, paradas CONSECUTIVAS na timeline — sem entregar em
+    // outra loja entre elas), é a mesma entrega (mudou de portão/lado). Considera
+    // chegada = PRIMEIRA do bloco, saída = ÚLTIMA do bloco. Se houver outra loja
+    // entre as visitas (ex: Arraial 1→2→3→volta 1), o segundo bloco é entrega
+    // separada e NÃO consolida.
+    let chegadaFinal = matched ? new Date(matched.chegada) : null
+    let saidaFinal: Date | null = saidaEstendida ?? (matched?.saida ? new Date(matched.saida) : null)
+    if (matched && !isGeo && matched.codigo_loja) {
+      const lojasOrdenadas = todasParadas
+        .filter(p => p.classificacao === 'LOJA' && p.codigo_loja && p.saida)
+        .sort((a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
+      const idxMatched = lojasOrdenadas.findIndex(p => p.id === matched.id)
+      if (idxMatched >= 0) {
+        let inicio = idxMatched
+        for (let j = idxMatched - 1; j >= 0; j--) {
+          if (lojasOrdenadas[j].codigo_loja !== matched.codigo_loja) break
+          inicio = j
+        }
+        let fim = idxMatched
+        for (let j = idxMatched + 1; j < lojasOrdenadas.length; j++) {
+          if (lojasOrdenadas[j].codigo_loja !== matched.codigo_loja) break
+          fim = j
+        }
+        if (inicio < idxMatched || fim > idxMatched) {
+          chegadaFinal = new Date(lojasOrdenadas[inicio].chegada)
+          const saidaBloco = new Date(lojasOrdenadas[fim].saida!)
+          if (!saidaFinal || saidaBloco.getTime() > saidaFinal.getTime()) saidaFinal = saidaBloco
+        }
+      }
+    }
+
     const paradas: ParadaKpi[] = matched
       ? [{
           parada_id: matched.id,
           loja_id: lojaId,
           nome: nomeResolvido,
-          chegada: new Date(matched.chegada),
-          saida: saidaEstendida ?? (matched.saida ? new Date(matched.saida) : new Date(matched.chegada)),
-          duracao_min: saidaEstendida
-            ? Math.round((saidaEstendida.getTime() - new Date(matched.chegada).getTime()) / 60000)
+          chegada: chegadaFinal!,
+          saida: saidaFinal ?? chegadaFinal!,
+          duracao_min: saidaFinal
+            ? Math.round((saidaFinal.getTime() - chegadaFinal!.getTime()) / 60000)
             : Math.round((matched.duracao_seg ?? 0) / 60),
           classificacao: isGeo ? 'FORA_BASE' : 'LOJA',
         }]
