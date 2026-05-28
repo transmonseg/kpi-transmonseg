@@ -42,6 +42,20 @@ function redesFungiveis(rede: string): Set<string> {
   return new Set([rede, ...(REDE_ALIASES[rede] ?? [])])
 }
 
+// Faixa geográfica da BASE BENASSI (Av Brasil, Coelho Neto / Irajá / CEASA-RJ).
+// Cliente Unitrac frequentemente cadastra geofences de loja cobrindo essa área
+// (ex: cod 13156084 MATRIZ CD DUQUE, cod 7012010 CAB PETROPOLIS, cod 25414000
+// NATURCON GELADOS, cod 23080000 SANTO AGOSTINHO). Quando o GPS cai aqui,
+// é BASE — ignora o cod_loja sobreposto.
+const BASE_BENASSI_LAT = -22.828
+const BASE_BENASSI_LNG = -43.339
+const BASE_BENASSI_RAIO_METROS = 1500
+
+function paradaEhRegiaoBase(lat: number | null, lng: number | null): boolean {
+  if (lat == null || lng == null) return false
+  return haversine(lat, lng, BASE_BENASSI_LAT, BASE_BENASSI_LNG) <= BASE_BENASSI_RAIO_METROS
+}
+
 // Prefixos numéricos conhecidos dos códigos do Unitrac (`codigo_loja`) por rede.
 // Quando o codigo_loja começa com um destes, o suffix-match aceita codigo_escala
 // de length>=2 (com padStart 3) — destrava match Zona Sul "21" → 9039021,
@@ -1047,6 +1061,15 @@ export async function cruzaEscalaUnitrac(
     const todasAjustadas: typeof todas = todas.map(p => {
       if (p.classificacao !== 'LOJA') return p
       if (!p.codigo_loja || p.lat == null || p.lng == null) return p
+      // T20-BASE (regra Tia Erica 2026-05-27): se o GPS está na região da
+      // BASE BENASSI (raio 1.5km), a parada É BASE — ignora o cod_loja
+      // sobreposto (cliente cadastrou geofence em cima da base).
+      // Resolve: KRB-2J76 Sendas Central, KNS-8D26 CAB nas paradas Av Brasil,
+      // TML-7D61 NATURCON, SFG-2F72 Assai Barra II base, KVT-5427 Emanuel
+      // Rede Economia, etc.
+      if (paradaEhRegiaoBase(p.lat, p.lng)) {
+        return { ...p, classificacao: 'BASE' as const, codigo_loja: null, nome_loja: null }
+      }
       const lojaCad = lojas.find(l => l.codigo_unitrac === p.codigo_loja)
       if (!lojaCad?.lat || !lojaCad?.lng) return p
       const d = haversine(p.lat, p.lng, lojaCad.lat, lojaCad.lng)
