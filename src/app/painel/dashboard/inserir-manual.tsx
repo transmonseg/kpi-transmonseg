@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { REDES, REDE_LABEL } from '@/lib/kpi/redes'
+import { CheckCircle, WarningCircle } from '@phosphor-icons/react/dist/ssr'
 
 type Estado = { status: 'idle' | 'enviando' | 'ok' | 'erro' | 'excluindo'; lojas?: number; msg?: string }
 
@@ -55,57 +56,75 @@ export default function InserirManual({ data, onChange }: { data: string; onChan
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-2">
-          <label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-fg-subtle)]">Data dos KPIs</label>
+          <label className="text-overline">Data dos KPIs</label>
           <input
             type="date" value={data} onChange={e => onChange(e.target.value)}
-            className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-fg)] outline-none transition-colors focus:border-[var(--color-accent)]"
+            className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
           />
         </div>
         <div className="text-right">
-          <div className="text-display text-[28px] text-[var(--color-fg)]">{enviadas}<span className="text-[var(--color-fg-subtle)]">/{REDES.length}</span></div>
-          <div className="text-[11px] uppercase tracking-[0.08em] text-[var(--color-fg-subtle)]">redes · <span className="text-numeric">{totalLojas}</span> lojas</div>
+          <div className="text-display text-numeric text-[28px] text-[var(--color-fg)]">{enviadas}<span className="text-[var(--color-fg-subtle)]">/{REDES.length}</span></div>
+          <div className="text-overline">redes · <span className="text-numeric" style={{ letterSpacing: 'normal' }}>{totalLojas}</span> lojas</div>
         </div>
       </div>
 
       {carregando ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-16 animate-pulse rounded-xl bg-[var(--color-bg-subtle)]" />)}
+          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-[58px] animate-shimmer rounded-[var(--radius-lg)]" style={{ animationDelay: `${i * 40}ms` }} />)}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {REDES.map(rede => {
+          {REDES.map((rede, i) => {
             const e = estados[rede] ?? { status: 'idle' }
             const enviado = e.status === 'ok'
+            const ocupado = e.status === 'enviando' || e.status === 'excluindo'
             return (
               <div
                 key={rede}
                 className={[
-                  'flex items-center justify-between gap-3 rounded-[var(--radius-lg)] border px-4 py-3 transition-colors',
-                  enviado ? 'border-[var(--color-success)]/35 bg-[var(--color-success-soft)]'
-                    : e.status === 'erro' ? 'border-[var(--color-danger)]/35 bg-[var(--color-danger-soft)]'
+                  'relative flex items-center justify-between gap-3 overflow-hidden rounded-[var(--radius-lg)] border px-4 py-3 animate-fade-up transition-[background-color,border-color] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                  e.status === 'erro' ? 'border-[var(--color-danger)]/40 bg-[var(--color-danger-soft)]'
                     : 'border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-soft',
                 ].join(' ')}
+                style={{ animationDelay: `${i * 35}ms` }}
               >
                 <div className="min-w-0">
-                  <div className="truncate text-[13.5px] font-semibold text-[var(--color-fg)]">{REDE_LABEL[rede] ?? rede}</div>
-                  <div className="mt-0.5 text-[11px] text-[var(--color-fg-muted)]">
+                  <div className="truncate text-[13px] font-semibold text-[var(--color-fg)]">{REDE_LABEL[rede] ?? rede}</div>
+                  <div className="mt-0.5 flex items-center gap-1 text-[11px] text-[var(--color-fg-muted)]">
                     {e.status === 'idle' && 'Não enviado'}
-                    {e.status === 'enviando' && 'Enviando…'}
-                    {e.status === 'excluindo' && 'Excluindo…'}
-                    {enviado && <span style={{ color: 'var(--color-success-soft-fg)' }}>Salvo · <span className="text-numeric">{e.lojas}</span> lojas</span>}
-                    {e.status === 'erro' && <span style={{ color: 'var(--color-danger-soft-fg)' }}>{e.msg?.slice(0, 40)}</span>}
+                    {ocupado && (
+                      <>
+                        <span className="inline-block h-3 w-3 animate-[spin_0.7s_linear_infinite] rounded-full border-[1.5px] border-[var(--color-fg-subtle)] border-t-transparent" />
+                        {e.status === 'enviando' ? 'Enviando…' : 'Excluindo…'}
+                      </>
+                    )}
+                    {enviado && (
+                      <span className="flex items-center gap-1" style={{ color: 'var(--color-success)' }}>
+                        <CheckCircle size={12} weight="fill" /> Salvo · <span className="text-numeric">{e.lojas}</span> lojas
+                      </span>
+                    )}
+                    {e.status === 'erro' && (
+                      <span className="flex items-center gap-1" style={{ color: 'var(--color-danger-soft-fg)' }} title={e.msg}>
+                        <WarningCircle size={12} weight="fill" /> {e.msg ? e.msg.slice(0, 44) + (e.msg.length > 44 ? '…' : '') : 'Falha no envio'}
+                      </span>
+                    )}
                   </div>
                 </div>
                 {enviado ? (
                   <button
                     onClick={() => excluir(rede)}
-                    className="shrink-0 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2.5 py-1 text-[11px] font-medium text-[var(--color-fg-muted)] transition-all duration-150 active:scale-[0.96] hover:border-[var(--color-danger)] hover:text-[var(--color-danger)]"
+                    className="h-7 shrink-0 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2.5 text-[11px] font-medium text-[var(--color-fg-muted)] transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-danger)] hover:text-[var(--color-danger)]"
                   >Excluir</button>
                 ) : (
-                  <label className="shrink-0 cursor-pointer rounded-[var(--radius-md)] border border-[var(--color-border)] px-2.5 py-1 text-[11px] font-medium text-[var(--color-fg-muted)] transition-all duration-150 active:scale-[0.96] hover:border-[var(--color-navy-700)] hover:text-[var(--color-accent)]">
-                    Enviar
+                  <label className={`h-7 inline-flex shrink-0 cursor-pointer items-center rounded-[var(--radius-md)] border px-2.5 text-[11px] font-medium transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] ${e.status === 'erro' ? 'border-[var(--color-danger)] text-[var(--color-danger)]' : 'border-[var(--color-border)] text-[var(--color-fg-muted)] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-fg)]'} ${ocupado ? 'pointer-events-none opacity-50' : ''}`}>
+                    {e.status === 'erro' ? 'Tentar de novo' : 'Enviar'}
                     <input type="file" accept=".xlsx" className="hidden" onChange={ev => { const f = ev.target.files?.[0]; if (f) enviar(rede, f) }} />
                   </label>
+                )}
+                {ocupado && (
+                  <div className="absolute inset-x-0 bottom-0 h-0.5 overflow-hidden bg-[var(--color-bg-subtle)]">
+                    <div className="h-full w-1/3 bg-[var(--color-accent)] animate-progress-sweep" />
+                  </div>
                 )}
               </div>
             )

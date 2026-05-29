@@ -48,29 +48,32 @@ function groupHasActive(pathname: string, g: Group) {
   return g.children.some(c => leafActive(pathname, c.href))
 }
 
+const ITEM_BASE =
+  'group relative flex items-center gap-2.5 rounded-lg py-2 text-[13px] font-medium ' +
+  'transition-[background-color,color] duration-150 active:scale-[0.98]'
+
 function LeafLink({ item, active, nested }: { item: Leaf; active: boolean; nested?: boolean }) {
   const { Icon } = item
   return (
     <Link
       href={item.href}
       className={
-        'group relative flex items-center gap-2.5 rounded-lg py-2 text-[13px] font-medium transition-all duration-150 ' +
-        (nested ? 'pl-9 pr-2.5 ' : 'px-2.5 ') +
+        ITEM_BASE + ' ' + (nested ? 'pl-9 pr-2.5 ' : 'px-2.5 ') +
         (active
-          ? 'bg-white/[0.06] text-white'
-          : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-100')
+          ? 'bg-[var(--color-sidebar-active)] text-[var(--color-sidebar-fg-strong)]'
+          : 'text-[var(--color-sidebar-fg-muted)] hover:bg-[var(--color-sidebar-hover)] hover:text-[var(--color-sidebar-fg)]')
       }
     >
       {active && (
         <span
           aria-hidden
-          className="absolute -left-2 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full bg-[var(--color-accent)]"
+          className="absolute -left-2 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full bg-[var(--color-sidebar-accent)]"
         />
       )}
       <Icon
         size={16}
         weight={active ? 'fill' : 'regular'}
-        className={active ? 'text-[var(--color-accent)]' : 'text-zinc-500 group-hover:text-zinc-300'}
+        className={active ? 'text-[var(--color-sidebar-accent)]' : 'text-[var(--color-sidebar-fg-muted)] group-hover:text-[var(--color-sidebar-fg)]'}
       />
       <span>{item.label}</span>
     </Link>
@@ -92,22 +95,23 @@ function GroupBlock({ group, pathname }: { group: Group; pathname: string }) {
           else setOpen(o => !o)
         }}
         className={
-          'group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-all duration-150 ' +
+          'group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium ' +
+          'transition-[background-color,color] duration-150 active:scale-[0.98] ' +
           (headerAtivo
-            ? 'bg-white/[0.06] text-white'
-            : 'text-zinc-300 hover:bg-white/[0.03] hover:text-zinc-100')
+            ? 'bg-[var(--color-sidebar-active)] text-[var(--color-sidebar-fg-strong)]'
+            : 'text-[var(--color-sidebar-fg)] hover:bg-[var(--color-sidebar-hover)]')
         }
       >
         <Icon
           size={16}
           weight={headerAtivo ? 'fill' : 'regular'}
-          className={headerAtivo ? 'text-[var(--color-accent)]' : 'text-zinc-500 group-hover:text-zinc-300'}
+          className={headerAtivo ? 'text-[var(--color-sidebar-accent)]' : 'text-[var(--color-sidebar-fg-muted)] group-hover:text-[var(--color-sidebar-fg)]'}
         />
         <span className="flex-1 text-left">{group.label}</span>
         <CaretRight
           size={13}
           weight="bold"
-          className={'text-zinc-600 transition-transform duration-200 ' + (open ? 'rotate-90' : '')}
+          className={'text-[var(--color-sidebar-fg-muted)] transition-transform duration-200 ' + (open ? 'rotate-90' : '')}
         />
       </button>
 
@@ -131,7 +135,7 @@ export function PainelNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="flex flex-1 flex-col gap-0.5 px-3 pt-4 pb-3">
+    <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
       <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
 
       <div className="my-2 h-px bg-[var(--color-sidebar-border)]" />
