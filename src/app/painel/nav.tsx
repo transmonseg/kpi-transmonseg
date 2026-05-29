@@ -7,6 +7,7 @@ import {
   ForkKnife,
   TableIcon,
   UsersThree,
+  ChartBar,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 
@@ -17,6 +18,7 @@ const NAV_ITEMS: Item[] = [
   { href: '/painel/cozinha', label: 'Cozinha', Icon: ForkKnife },
   { href: '/painel/cozinha/clientes', label: 'Clientes', Icon: UsersThree },
   { href: '/painel/kpi/simples', label: 'KPI', Icon: TableIcon },
+  { href: '/painel/dashboard', label: 'Dashboard', Icon: ChartBar },
 ]
 
 function isActive(pathname: string, href: string) {
