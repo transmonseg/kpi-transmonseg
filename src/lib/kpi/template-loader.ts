@@ -12,6 +12,17 @@ export async function getLogoBuffer(): Promise<Buffer> {
   return cachedLogoBuffer!
 }
 
+let cachedTemplateBuffer: Buffer | null = null
+
+/** Template XLSX do KPI (layout REDESIGN) — rows 1-4 = cabeçalho, rows 5/6 = modelos de linha de dados. */
+export async function getKpiTemplateBuffer(): Promise<Buffer> {
+  if (cachedTemplateBuffer) return cachedTemplateBuffer
+  const path = resolve(process.cwd(), 'src/assets/kpi-template.xlsx')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  cachedTemplateBuffer = (await readFile(path)) as any
+  return cachedTemplateBuffer!
+}
+
 export async function carregarOuCriarWorkbook(buffer: Uint8Array | Buffer | null): Promise<ExcelJS.Workbook> {
   const wb = new ExcelJS.Workbook()
   wb.creator = 'TRANSMONSEG'
