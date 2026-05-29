@@ -2,7 +2,7 @@
 
 # KPI TRANSMONSEG
 
-#### Sistema de geração e gestão de KPI de entregas operado pela TRANSMONSEG
+#### Geração e gestão de KPI de entregas para a operação logística da TRANSMONSEG
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.2-000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
@@ -10,19 +10,20 @@
 [![Tailwind](https://img.shields.io/badge/Tailwind-4-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
 [![Vercel](https://img.shields.io/badge/Deploy-Vercel-000?style=flat-square&logo=vercel&logoColor=white)](https://kpi-transmonseg.vercel.app)
-[![Tests](https://img.shields.io/badge/Tests-262%2F262-success?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev)
+[![Tests](https://img.shields.io/badge/Tests-358%2F358-success?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev)
 
 **[Acessar produção](https://kpi-transmonseg.vercel.app)** • **[GitHub](https://github.com/transmonseg/kpi-transmonseg)**
 
 </div>
 
-> Desenhado, construído e mantido por **Joaquim Salles** para a operação logística da TRANSMONSEG.
+> Desenhado, construído e mantido por **Joaquim Salles** para a operação real da TRANSMONSEG.
 
 ---
 
 ## Sumário
 
 - [Em 30 segundos](#em-30-segundos)
+- [Os dois módulos](#os-dois-módulos)
 - [Capabilities](#capabilities)
 - [Arquitetura](#arquitetura)
 - [Stack técnica](#stack-técnica)
@@ -30,9 +31,9 @@
 - [Estrutura do projeto](#estrutura-do-projeto)
 - [Fluxos principais](#fluxos-principais)
 - [Parsers de escala](#parsers-de-escala)
+- [Matcher: como o GPS vira KPI](#matcher-como-o-gps-vira-kpi)
+- [Gerador XLSX via template](#gerador-xlsx-via-template)
 - [Banco de dados](#banco-de-dados)
-- [MCP server](#mcp-server)
-- [Performance do matcher](#performance-do-matcher)
 - [Anomalias detectadas](#anomalias-detectadas)
 - [Deploy](#deploy)
 - [Convenções](#convenções)
@@ -43,34 +44,54 @@
 
 ## Em 30 segundos
 
-O sistema lê **escalas de cinco redes** em formatos heterogêneos (XLSX + PDF), cruza com o **relatório de rastreamento Unitrac**, e gera **XLSX + PDF prontos por rede** com horários de saída do CD, chegada na loja, saída da loja e tempo em loja.
+A TRANSMONSEG entrega para **redes de supermercado** (Prezunic, Sendas/Assaí, Zona Sul, Princesa, Superprix, Armazém do Grão, Mundial, Guanabara, Pax e mais). Todo dia precisa cruzar **escalas de motorista** com o **relatório de rastreamento GPS do Unitrac** para gerar o KPI de cada rede: que horas saiu do CD, chegou na loja, saiu da loja e quanto tempo ficou.
 
-Cruzar 240+ entregas por dia de cinco origens diferentes era trabalho manual de 4 horas. O sistema faz em 30 segundos com taxa de automação alvo de **85% +**.
+Fazer isso na mão eram **horas** de trabalho por dia. O sistema faz em **segundos** — e ainda monta um dashboard de operação por cima.
 
 ```
-ESCALAS (5 redes, XLSX/PDF)              UNITRAC (XLSX/PDF, GPS por veículo)
-         |                                        |
-         v                                        v
+ESCALAS (5+ formatos, XLSX/PDF)          UNITRAC (PDF/XLSX, GPS por veículo)
+         │                                        │
+         ▼                                        ▼
    ┌─────────────────────────────────────────────────────┐
    │   Parser dedicado por formato + dedup multi-escala   │
    └─────────────────────────────────────────────────────┘
-                              |
-                              v
+                              │
+                              ▼
    ┌─────────────────────────────────────────────────────┐
-   │  Matcher 3-path: codigo + nome exato + fuzzy + geo  │
-   │  (canonical_loja, alias_loja, batch_trgm_lookup)    │
+   │   Matcher por CÓDIGO EXATO (modo sem-geofence)       │
+   │   473 lojas cadastradas · fallback nome/fuzzy/geo    │
    └─────────────────────────────────────────────────────┘
-                              |
-                              v
+                              │
+                              ▼
    ┌─────────────────────────────────────────────────────┐
-   │       Detector de anomalias (11 códigos ativos)      │
+   │   XLSX (template aprovado) + PDF por rede + auditoria │
    └─────────────────────────────────────────────────────┘
-                              |
-                              v
+                              │
+                              ▼
    ┌─────────────────────────────────────────────────────┐
-   │   XLSX + PDF por rede   |  Persiste em kpi_simples   │
+   │   Dashboard de operação (taxa, falhas, GPS, tempo)   │
    └─────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Os dois módulos
+
+O sistema tem duas frentes que se complementam:
+
+### 🏭 Geração de KPI — *o pipeline*
+
+Sobe escala + Unitrac → recebe **XLSX e PDF prontos por rede**, no layout exato aprovado pela operação. Pré-visualização editável célula a célula, re-geração in-place sem novo upload, detecção de anomalias e histórico auditável de cada geração.
+
+### 📊 Dashboard de operação — *a visão de negócio*
+
+A partir dos KPIs inseridos, monta uma visão analítica em **pirâmide invertida** (NN/g):
+
+- **Resumo** — 4 hero metrics: taxa de entrega, não foi ao cliente, cobertura GPS, tempo médio em loja, com barra empilhada 100% do mix de status.
+- **Onde agir agora** — ranking de lojas problemáticas (sem GPS + não foi) e exceções do dia.
+- **Contexto** — tendência por dia, desempenho por rede (barras horizontais), volume por turno.
+
+Filtros por período (dia/semana/mês) e multi-rede, **inserção de KPIs manuais** por rede (upload XLSX), **histórico** com re-download, e **export mensal** consolidando os arquivos de cada dia numa aba por dia — preservando o layout original.
 
 ---
 
@@ -78,19 +99,19 @@ ESCALAS (5 redes, XLSX/PDF)              UNITRAC (XLSX/PDF, GPS por veículo)
 
 | Capacidade | Detalhe |
 |---|---|
-| **Multi-formato** | XLSX nativo, PDF via pdf-parse e pdfjs-serverless |
-| **Multi-escala** | 5 parsers dedicados (GERAL, PAX, ZONA_SUL, ARMAZEM_GRAO, GUANABARA) com dedup automática |
-| **Matcher 4-path** | código Unitrac, nome literal, levenshtein fuzzy, geo-proximidade haversine |
-| **Geo fallback** | Resolve paradas FORA_BASE sem geofence cadastrada usando 101 lojas canonicais com lat/lng e raio |
-| **Trigram batch** | RPC Postgres pg_trgm pra fuzzy enrichment em lote |
-| **OCR-tolerant** | Placas Mercosul com confusões 1↔B, 9↔J, 4↔E aceitas se forem únicas no Unitrac |
-| **Cross-midnight** | Detecta entregas que cruzam meia-noite (saída < chegada) e calcula tempo correto |
-| **11 anomalias** | Detecção automática de inconsistências (placa sem GPS, tempo invertido, fora da janela, etc.) |
+| **Multi-formato** | XLSX nativo (ExcelJS/SheetJS) e PDF (pdf-parse + pdfjs-serverless) |
+| **Multi-escala** | Parsers dedicados (GERAL, PAX/Feira/Emanuel, ZONA SUL, ARMAZÉM DO GRÃO, GUANABARA PDF) com dedup automática entre fontes |
+| **Match por código exato** | Modo sem-geofence: casa `codigo_unitrac` exato (dados exatos, não proximidade). 473 lojas no cadastro |
+| **Fallbacks de match** | Nome literal → Levenshtein fuzzy → geo-haversine — disponíveis, desligados em produção |
+| **OCR-tolerant** | Placas Mercosul com confusões `1↔B`, `9↔J`, `4↔E` aceitas se forem únicas no Unitrac |
+| **Cross-midnight** | Entregas que cruzam meia-noite (saída < chegada) com tempo correto |
+| **Gerador via template** | XLSX gerado a partir de um template aprovado (Calibri, paleta navy, 1º/2º carro) — byte-fiel ao modelo da operação |
+| **Detecção de anomalias** | Inconsistências automáticas no pipeline (placa sem GPS, tempo invertido, fora da janela…) |
 | **Edição inline** | Toda a pré-visualização é editável (loja, placa, motorista, turno, horários, tempo) |
-| **Re-geração in-place** | Edita > clica `Re-gerar` > novo XLSX/PDF com overrides sem re-upload |
-| **Histórico auditável** | Cada geração registra autor, momento, arquivos de origem, alterações, edições e summary |
-| **Alterações em lote** | Cola mensagem crua do WhatsApp > parser detecta sai/entra/motivo/confiança > aplica em massa |
-| **Confiança visual** | Header da rede mostra `Nh / Nl / N?` (high/low/unmatched). Linhas com anomalia HIGH viram danger-soft com tooltip |
+| **Re-geração in-place** | Edita → `Re-gerar` → novo XLSX/PDF com overrides sem re-upload |
+| **Dashboard de entregas** | Visão analítica em 3 faixas, filtros multi-rede, inserir/histórico de KPIs manuais, export mensal |
+| **Histórico auditável** | Cada geração registra autor, momento, arquivos de origem, alterações e edições |
+| **Alterações em lote** | Cola mensagem crua de WhatsApp → parser detecta sai/entra/motivo/confiança → aplica em massa |
 
 ---
 
@@ -100,48 +121,44 @@ ESCALAS (5 redes, XLSX/PDF)              UNITRAC (XLSX/PDF, GPS por veículo)
 graph TB
     subgraph "Cliente (Browser)"
         UI[Next.js App Router + React 19]
+        DASH[Dashboard de operação]
     end
 
-    subgraph "Vercel Edge / Node Runtime"
+    subgraph "Vercel / Node Runtime"
         API[API Routes Next.js]
         MW[Middleware Auth]
     end
 
     subgraph "Supabase"
         AUTH[Auth + RLS]
-        DB[(Postgres 17)]
+        DB[(Postgres)]
         STG[Storage Buckets]
-        RPC[RPC pg_trgm batch_trgm_lookup]
     end
 
-    subgraph "Parsers e Geradores"
-        PE[5 Parsers Escala]
-        PU[2 Parsers Unitrac]
-        M[Matcher 4-path]
-        AN[Detector Anomalias]
-        GX[Gerador XLSX exceljs]
-        GP[Gerador PDF pdf-lib]
+    subgraph "Pipeline (lib)"
+        PE[Parsers de Escala]
+        PU[Parsers Unitrac]
+        M[Matcher por codigo exato]
+        AN[Detector de Anomalias]
+        GX[Gerador XLSX via template]
+        GP[Gerador PDF]
     end
 
     UI -->|presigned URL| STG
     UI --> API
-    API --> MW
-    MW --> AUTH
+    DASH --> API
+    API --> MW --> AUTH
     API --> DB
     API --> STG
-    API --> PE
-    API --> PU
-    PE --> M
-    PU --> M
-    M --> RPC
+    API --> PE & PU
+    PE & PU --> M
     M --> AN
-    M --> GX
-    M --> GP
-    GX --> API
-    GP --> API
+    M --> GX & GP
+    GX & GP --> API
     AN --> DB
 
-    style UI fill:#1e293b,stroke:#475569,color:#f1f5f9
+    style UI fill:#153c6b,stroke:#1976d2,color:#f1f5f9
+    style DASH fill:#153c6b,stroke:#1976d2,color:#f1f5f9
     style API fill:#1e3a5f,stroke:#3b82f6,color:#f1f5f9
     style DB fill:#064e3b,stroke:#10b981,color:#f1f5f9
     style M fill:#7c2d12,stroke:#f59e0b,color:#f1f5f9
@@ -156,18 +173,16 @@ graph TB
 | Framework | Next.js (App Router + Turbopack) | 16.2.6 |
 | Linguagem | TypeScript (strict) | 5.x |
 | Runtime React | React | 19.2.4 |
-| UI | Tailwind CSS | 4.x |
+| UI | Tailwind CSS v4 + design tokens próprios | 4.x |
 | Iconografia | Phosphor Icons | 2.1 |
-| Tipografia | Geist Sans + Mono | 1.7 |
-| Auth e DB | Supabase (Postgres 17, RLS, Storage) | 0.10 |
+| Tipografia | Geist Sans + Geist Mono | — |
+| Auth e DB | Supabase (Postgres, RLS, Storage) | 2.105 |
 | Parser XLSX | ExcelJS + SheetJS (vendor tarball) | 4.4 + 0.20.3 |
 | Parser PDF | pdf-parse + pdfjs-serverless | 1.1 + 1.2 |
 | Geração PDF | pdf-lib | 1.17 |
 | Fuzzy matching | talisman (Jaro-Winkler + Levenshtein) | 1.1 |
 | Animação | motion | 12.38 |
-| Testes | Vitest + happy-dom | 4.1 + 20.9 |
-| Validação | Zod | 4.4 |
-| MCP | `@modelcontextprotocol/sdk` | 1.29 |
+| Testes | Vitest + happy-dom | 4.1 |
 | Deploy | Vercel (auto-deploy de `main`) | — |
 
 ---
@@ -177,42 +192,38 @@ graph TB
 #### Pré-requisitos
 
 - Node 24 LTS+
-- Conta Supabase com projeto criado
-- Acesso de `read` ao GitHub `transmonseg/kpi-transmonseg`
-
-#### Passo a passo
+- Projeto Supabase com as migrations aplicadas
+- Acesso ao repositório `transmonseg/kpi-transmonseg`
 
 ```bash
-# 1. Clonar
+# 1. Clonar e instalar
 git clone https://github.com/transmonseg/kpi-transmonseg.git
 cd kpi-transmonseg
-
-# 2. Instalar
 npm install
 
-# 3. Variáveis de ambiente
-cp .env.example .env.local
-# preencha com as chaves do projeto Supabase (URL, ANON_KEY, SERVICE_ROLE_KEY)
+# 2. Variáveis de ambiente
+cp .env.example .env.local      # preencha as chaves do Supabase
 
-# 4. Migrations (via Supabase CLI ou painel)
+# 3. Migrations
 supabase db push
 
-# 5. Dev server
-npm run dev
-# abrir http://localhost:3000
+# 4. Dev server
+npm run dev                     # http://localhost:3000
 ```
 
-#### Scripts disponíveis
+#### Scripts
 
 ```bash
-npm run dev          # dev server (turbopack)
-npm run build        # build produção
-npm start            # rodar produção
-npm run lint         # eslint
-npm test             # vitest run (262 testes)
-npm run test:watch   # vitest watch
+npm run dev           # dev server (Turbopack)
+npm run build         # build de produção
+npm start             # rodar produção
+npm run lint          # eslint
+npm test              # vitest run (358 testes)
+npm run test:watch    # vitest watch
 npm run test:coverage # cobertura
 ```
+
+> ⚠️ **Este Next.js tem breaking changes** — APIs e convenções podem diferir do que você conhece. Consulte `node_modules/next/dist/docs/` antes de escrever código (ver `AGENTS.md`).
 
 ---
 
@@ -223,320 +234,207 @@ kpi-transmonseg/
 │
 ├── src/
 │   ├── app/
-│   │   ├── page.tsx                   # Landing pública
 │   │   ├── login/, cadastro/          # Auth Supabase
-│   │   ├── painel/                    # Área autenticada
-│   │   │   ├── page.tsx               # Dashboard (stats + atalhos)
-│   │   │   ├── kpi/simples/           # Geração de KPI (UI principal)
-│   │   │   ├── alteracoes/nova/       # Form V2 de alterações em lote
-│   │   │   ├── lojas/                 # Registro canônico de lojas
-│   │   │   ├── cozinha/               # Romaneio Cozinha Industrial
-│   │   │   ├── revisao/               # Fila de revisão de anomalias
-│   │   │   └── historico/             # Auditoria de gerações
+│   │   ├── layout.tsx                 # Root layout + tema anti-FOUC
+│   │   ├── globals.css                # Design tokens (cores, radii, motion, text-*)
 │   │   │
-│   │   └── api/                       # 27 rotas (kpi, escalas, unitrac, alteracoes, lojas)
+│   │   └── painel/                    # Área autenticada
+│   │       ├── page.tsx               # ► Dashboard de operação (tela inicial)
+│   │       ├── nav.tsx                # Sidebar com grupos expansíveis (KPI, Cozinha)
+│   │       ├── dashboard/             # Visão geral · Inserir KPIs · Histórico · Print
+│   │       ├── kpi/simples/           # Geração de KPI (pipeline principal)
+│   │       ├── lojas/                 # Cadastro de lojas (codigo_unitrac)
+│   │       ├── historico/             # Auditoria de gerações
+│   │       └── cozinha/               # Romaneio Cozinha Industrial + Clientes
+│   │
+│   ├── app/api/                       # 26 rotas (kpi, dashboard, kpi-manual, escalas, unitrac, lojas)
 │   │
 │   ├── lib/
-│   │   ├── parsers/                   # 20 arquivos: escala, unitrac, alteracoes
-│   │   ├── kpi/                       # matcher, gerador-kpi, gerador-pdf, anomalia, trgm
+│   │   ├── parsers/                   # 24 parsers: escala, unitrac, alteracoes
+│   │   ├── kpi/                       # 20 módulos: matcher, gerador-kpi, dashboard-metricas,
+│   │   │                              #   parse-kpi-manual, export-mensal, anomalia, template-loader
 │   │   ├── supabase/                  # clients browser/server/middleware/service
-│   │   ├── lojas/                     # trigram lookup canonical, matriz de lojas
-│   │   ├── utils/                     # texto, geo (haversine), placa, score
-│   │   ├── hooks/, theme/, types/
-│   │   └── polyfills/
+│   │   ├── lojas/                     # catálogo e matriz de lojas
+│   │   ├── data-br.ts                 # data no fuso de Brasília (BRT)
+│   │   └── utils/                     # texto, geo (haversine), placa, score
 │   │
-│   └── components/
-│       ├── ui/                        # DS interno (Button, Card, Input, Badge)
-│       ├── ApplyToSimilarSheet.tsx
-│       └── FilaRevisao.tsx
+│   └── assets/
+│       └── kpi-template.xlsx          # Template aprovado do KPI (estilos byte-fiéis)
 │
-├── mcp/
-│   └── server.ts                      # MCP server (8 tools p/ Claude Code)
-│
-├── supabase/
-│   └── migrations/                    # 13 migrations versionadas com timestamp
-│
-├── scripts/                           # 11 utilitários (seed, gerar local, comparar)
-│   └── dev/                           # 33 debug histórico (não é parte do produto)
-│
-├── docs/
-│   ├── analise-kpi-dia15.md           # Análise técnica de cobertura
-│   ├── sessoes/                       # Relatórios datados
-│   └── superpowers/                   # Specs e plans
-│
-├── public/                            # Assets estáticos
-├── vendor/
-│   └── xlsx-0.20.3.tgz                # SheetJS vendorado
-│
-├── .env.example                       # Template de variáveis
-├── AGENTS.md                          # Regras para agentes IA
-└── package.json
+├── supabase/migrations/              # 19 migrations versionadas
+├── scripts/                          # utilitários (seed, gerar local, comparar)
+├── public/  ·  vendor/xlsx-0.20.3.tgz  ·  AGENTS.md  ·  package.json
 ```
 
-#### Stats do código
+#### Números do projeto
 
 | Métrica | Valor |
 |---|---|
-| Commits no main | **205+** |
-| Rotas Next.js (page + api) | **40** |
-| Parsers em `src/lib/parsers/` | **20** |
-| Módulos KPI em `src/lib/kpi/` | **13** |
-| Migrations Supabase | **13** |
-| Testes Vitest | **262** verdes |
+| Commits no `main` | **494** |
+| Rotas (page + api) | **39** |
+| Parsers | **24** |
+| Módulos KPI | **20** |
+| Migrations Supabase | **19** |
+| Lojas cadastradas | **473** |
+| Testes Vitest | **358** verdes |
 
 ---
 
 ## Fluxos principais
 
-### Fluxo 1: KPI Simples (geração diária)
+### Geração de KPI
 
 ```mermaid
 sequenceDiagram
     actor U as Operador
     participant UI as /painel/kpi/simples
-    participant ST as Storage Supabase
+    participant ST as Storage
     participant API as POST /api/kpi/simples
     participant M as Matcher
     participant DB as Postgres
 
     U->>UI: Sobe escalas + Unitrac + data
-    UI->>UI: Captura alterações de WhatsApp (opcional)
     UI->>ST: Presigned PUT por arquivo
     UI->>API: POST {paths, data, alteracoes, lineEdits}
-
-    API->>ST: Download escalas + Unitrac
-    API->>API: Parse 5 escalas + Unitrac
-    API->>API: Dedup multi-escala (PAX cobre GERAL sem placa)
-    API->>API: Aplica alteracoes confirmadas
-    API->>DB: Carrega lojas + canonical_loja + redes
-    API->>M: cruzaEscalaUnitrac(escala, paradas, lojas, geo)
-
-    M->>M: Tenta codigo > nome_unitrac > levenshtein > geo
-    M->>DB: batch_trgm_lookup (fuzzy enrichment)
-    M-->>API: rotas com _matchMeta
-
-    API->>API: Detecta anomalias (11 códigos)
-    API->>API: Aplica line_edits (placa/motorista/horário)
-    API->>API: Gera XLSX + PDF por rede
-
-    API->>DB: INSERT em kpi_simples (auditoria)
-    API-->>UI: {redes[], geracao_id}
-
-    UI->>U: Preview editável com confiança colorida
-    U->>UI: Edita células se necessário
-    UI->>API: POST regerar (mesma data, line_edits novos)
-    API-->>UI: Novos XLSX + PDF
-    U->>UI: Baixa arquivos
+    API->>ST: Download dos arquivos
+    API->>API: Parse 5 escalas + Unitrac, dedup multi-escala
+    API->>DB: Carrega lojas (codigo_unitrac)
+    API->>M: cruzaEscalaUnitrac (modo sem-geofence)
+    M->>M: codigo exato -> nome -> fuzzy
+    M-->>API: rotas com match
+    API->>API: Anomalias + line_edits
+    API->>API: Gera XLSX (template) + PDF por rede
+    API->>DB: INSERT kpi_simples (auditoria)
+    API-->>UI: Preview editável + downloads
 ```
 
-### Fluxo 2: Alterações em Lote
+### Dashboard de operação
 
-Cola mensagem crua do WhatsApp na rota `/painel/alteracoes/nova`. O parser detecta:
+`/painel` consome os **KPIs manuais inseridos** (a operação sobe o XLSX de cada rede pela aba *Inserir KPIs*). A aba *Visão geral* calcula as métricas (`dashboard-metricas.ts`), filtradas por período e rede. O *Histórico* lista os dias com re-download, e o *export mensal* (`export-mensal.ts`) junta os XLSX de um mês numa aba por dia preservando o layout. No topo, uma faixa de **operação** reúne cobertura GPS dos últimos 14 dias e a última geração.
 
-- `sai`: motorista e/ou placa que saiu
-- `entra`: motorista e/ou placa novos
-- `rede_id` e `filial`: rede e código identificados por âncoras
-- `motivo`: razão da troca
-- `confianca`: alta, média ou baixa baseado em quanto foi parseado
+### Alterações em lote
 
-Operador confirma cada bloco com badge de confiança, edita se preciso, e aplica em lote. O endpoint `aplicar-lote` atualiza `escala_linhas` no banco para todas as redes afetadas.
-
-### Fluxo 3: Reabrir Geração Salva
-
-A página `/painel/historico` lista todas as gerações de `kpi_simples`. Clicar `Reabrir` carrega a página simples com `?geracao=ID`, que dispara `POST /api/kpi/simples/regerar` re-baixando os arquivos do Storage e re-rodando o pipeline com as mesmas alterações e edições. Sem duplicar registro no banco.
+Cola a mensagem crua do WhatsApp → o parser detecta `sai`/`entra`/`rede`/`filial`/`motivo`/`confiança`. O operador confirma cada bloco (badge de confiança), edita se preciso, e aplica em massa em `escala_linhas`.
 
 ---
 
 ## Parsers de escala
 
-| Parser | Arquivo origem | Particularidades |
+| Parser | Origem | Particularidade |
 |---|---|---|
-| **escala-geral** | XLSX consolidado mensal | Layout multi-rede em colunas paralelas, deduplica linhas multi-entrega (Búzios 1/2/3) |
-| **escala-pax** | XLSX da PAX | Cobre redes da GERAL sem placa (PAX é a fonte real de placa/motorista para SUPER_PAX, EMANUEL, FEIRA_NOVA) |
-| **escala-zona-sul** | XLSX Zona Sul | Aba MATRIZ, ignora rows `Atenção` que viravam linhas-fantasma |
-| **escala-armazem-grao** | XLSX Armazém do Grão | Colunas de fornecedor a partir da 13ª, parser dedicado obrigatório |
-| **escala-guanabara-pdf** | PDF HLOG | Parseia tokens com posição absoluta, suporta formato "grudado" do `pdf-parse v1` (Caminho 2 com regex `PLACA_TIPO_RE`) |
+| **escala-geral** | XLSX consolidado mensal | Layout multi-rede em colunas paralelas; deduplica multi-entrega (Búzios 1/2/3) |
+| **escala-pax** | XLSX PAX/Feira/Emanuel | Fonte real de placa/motorista para SUPER_PAX, EMANUEL, FEIRA_NOVA (cobre a GERAL sem placa) |
+| **escala-zona-sul** | XLSX Zona Sul | Filiais na aba `ENDEREÇO - FILIAIS`; ignora linhas-fantasma de frete |
+| **escala-armazem-grao** | XLSX Armazém do Grão | Colunas de fornecedor; parser dedicado obrigatório |
+| **escala-guanabara-pdf** | PDF HLOG | Tokens por posição absoluta; suporta formato "grudado" do `pdf-parse` |
 
-Detector automático: roda parsers em ordem e fica com o primeiro que retornar `≥ 3` linhas reconhecidas. PDFs vão direto pro `escala-guanabara-pdf`.
+Detector automático: roda os parsers em ordem e fica com o primeiro que retornar `≥ 3` linhas reconhecidas. PDFs vão direto pro parser de coordenadas.
+
+---
+
+## Matcher: como o GPS vira KPI
+
+O matcher (`src/lib/kpi/matcher.ts`) cruza cada linha de escala com as paradas GPS do Unitrac. Hoje roda em **modo sem-geofence** (`setSemGeo(true)`): com **473 lojas cadastradas com `codigo_unitrac`**, o casamento por **código exato** é a fonte de verdade — preciso e auditável, sem depender de coordenada.
+
+```
+Priority 1 ─ codigo_unitrac exato      ← decide em produção
+Priority 2 ─ nome_unitrac literal
+Priority 3 ─ Levenshtein fuzzy (<=2)
+Priority 4 ─ geo-proximidade haversine ← DESLIGADO no modo sem-geofence
+```
+
+Em cima disso, regras finas tratam o mundo real do Unitrac: consolidação de saída pela **última** parada do bloco, distribuição multi-loja por código, T22 (FORA_BASE com GPS em loja cadastrada vira LOJA), proteção contra dado ausente e tolerância OCR de placa.
+
+> O cadastro de lojas é validado contra as **escalas reais** antes de entrar — o Unitrac lista muitos clientes que a operação não atende, então só vira loja o que aparece na operação.
+
+---
+
+## Gerador XLSX via template
+
+Em vez de recriar estilos no código (sempre divergindo num detalhe), o gerador parte de **`src/assets/kpi-template.xlsx`** — exportado do próprio arquivo aprovado pela operação:
+
+- Linhas 1-4 = cabeçalho pronto (título navy, faixas 1º/2º carro, header).
+- Linhas 5/6 = modelos de linha de dados (primeira/demais).
+- Cada loja **clona o estilo-modelo**; o resultado é **byte-fiel** ao modelo (Calibri, paleta `153C6B`/`1976D2`/`E3F2FD`, freeze `A5`, paisagem, aba `DD.MM`).
+
+O export mensal consolida os XLSX já aprovados de cada dia numa aba por dia, copiando célula+estilo+merges — sem regenerar nada.
 
 ---
 
 ## Banco de dados
 
-#### Tabelas principais
-
 | Tabela | Função |
 |---|---|
-| `escala_uploads` | Cada arquivo XLSX/PDF de escala enviado, com tipo e qtd_linhas |
-| `escala_linhas` | Linhas parseadas das escalas (motorista, placa, loja, turno, rede, data) |
-| `unitrac_uploads` | Cada arquivo Unitrac, vinculado a data_relatorio |
-| `paradas` | Cada parada GPS extraída do Unitrac (lat, lng, chegada, saida, classificação) |
-| `lojas` | Catálogo operacional (312 ativas, 307 com geo, 188 com codigo_unitrac) |
-| `redes` | Catálogo de redes com janelas operacionais (MANHA/TARDE) |
-| `canonical_loja` | Catálogo canônico para fuzzy lookup (110 entradas, 101 com geo + raio) |
-| `alias_loja` | Aliases de lojas para resolução de variações de nome (110 entradas) |
-| `kpi_simples` | Histórico de cada geração (paths, alterações, edits, summary por rede) |
-| `alteracoes` | Alterações de motorista/placa aplicadas em escala_linhas |
-| `anomalias` | 11 códigos detectados automaticamente em cada geração |
-| `review_queue` | Fila de revisão manual (Tia Érica resolve casos LOW) |
+| `lojas` | Catálogo operacional (473 lojas, casadas por `codigo_unitrac`) |
+| `redes` | Catálogo de redes com janelas operacionais |
+| `escala_uploads` · `escala_linhas` | Arquivos de escala e linhas parseadas |
+| `unitrac_uploads` · `paradas` | Arquivos Unitrac e paradas GPS extraídas |
+| `kpi_simples` | Histórico de cada geração (paths, alterações, edits, summary) |
+| `kpi_manual_entradas` | KPIs manuais inseridos pelo dashboard (status por loja, por rede/dia) |
+| `alteracoes` | Alterações de motorista/placa aplicadas em `escala_linhas` |
+| `anomalias` | Inconsistências detectadas no pipeline |
 | `cozinha_clientes` | Romaneio Cozinha Industrial |
 
-#### Migrations versionadas
-
-```
-20260516000000_storage_policies.sql      Buckets escalas-raw, unitrac-raw com RLS
-20260516010000_unique_constraints.sql    Indexes únicos
-20260518_clientes_cozinha.sql            Cozinha módulo
-20260519000100_extensions.sql            pg_trgm + unaccent
-20260519000200_canonical_loja.sql        Canonical catalog
-20260519000300_alias_loja.sql            Alias table
-20260519000400_review_queue.sql          Fila de revisão manual
-20260519000500_rpc_batch.sql             batch_trgm_lookup RPC
-20260519000600_rpc_approve.sql           Approval workflow
-20260519000700_cron_decay.sql            Cron de manutenção
-20260519000800_fix_rpcs_and_rls.sql      Hotfix RLS
-20260519001000_analise_ia.sql            Logs análise
-20260520000000_kpi_simples.sql           Persistência KPI Simples (autor, paths, summary)
-```
-
----
-
-## MCP Server
-
-`mcp/server.ts` expõe o pipeline inteiro como tools nativas para Claude Code. Útil para debug rápido de parsers direto da IDE sem mexer no app.
-
-| Tool | Função |
-|---|---|
-| `parse_escala_geral` | Parseia XLSX da escala geral |
-| `parse_escala_zona_sul` | Parseia XLSX Zona Sul |
-| `parse_escala_pax` | Parseia XLSX PAX |
-| `parse_escala_armazem_grao` | Parseia XLSX Armazém do Grão |
-| `parse_escala_guanabara_pdf` | Parseia PDF HLOG |
-| `parse_unitrac` | XLSX Unitrac |
-| `parse_unitrac_pdf` | PDF Unitrac (pdf-parse + pdfjs-serverless fallback) |
-| `load_files` | Carga em lote no Supabase |
-| `processar_kpi` | Roda matcher + anomalias |
-| `gerar_kpi` | Gera XLSX/PDF |
-| `query_kpi` | Consulta histórico |
-| `clear_data` | Limpa dados de teste |
-
----
-
-## Performance do matcher
-
-> Métrica: porcentagem de `escala_linhas` com `placa_norm` que ganharam parada GPS atribuída pelo matcher.
-
-#### Evolução por rede (dia 18/05/2026)
-
-| Rede | Match | Cobertura | Tendência |
-|---|---:|---:|---|
-| PRINCESA | 24/26 | **92%** | estável |
-| EMANUEL (PAX) | 5/6 | **83%** | +33pp |
-| PREZUNIC | 31/40 | **78%** | estável |
-| FEIRA_NOVA | 9/12 | **75%** | +8pp |
-| PAX geral | 22/30 | **73%** | +13pp |
-| GERAL | 103/149 | **71%** | +17pp |
-| SENDAS | 7/10 | **70%** | +30pp |
-| SUPERPRIX | 7/10 | **70%** | +10pp |
-| SUPER_PAX (PAX) | 8/12 | **67%** | +9pp |
-| ASSAI | 24/42 | **60%** | +10pp |
-| CARREFOUR | 6/11 | **60%** | estável |
-| ZONA_SUL | 41/70 | **59%** | +18pp |
-| ARMAZEM_GRAO | 8/14 | **57%** | +43pp |
-| **Total** | **155/260** | **~70%** | **+20pp em 1 sessão** |
-
-#### Plano de ataque para 85%+
-
-| Fase | Mecanismo | Impacto esperado |
-|---|---|---|
-| Baseline | matcher 4-path + dedup | 70% |
-| **FIX-1 ativo** | geo-proximidade + trgm + lojas operacionais carregadas | **+20 a 28 linhas → ~85%** |
-| **FIX-5 ativo** | match exato por `nome_unitrac` | **+5 a 10 linhas → ~87%** |
-| Review queue (UI) | Operadora resolve casos LOW | +8 a 12 linhas → 90% |
-| Cadastros faltantes | Cadastrar placas terceirizadas no Unitrac | +38 linhas teóricas (Categoria A) |
-
-#### Categorias dos no-matches restantes
-
-```
-TOTAL DESMATCHED ANTES DOS FIXES: 105 linhas
-
-  ▓▓▓▓▓▓▓▓▓▓ 38  Categoria A  Placa não cadastrada no Unitrac (terceirizado)
-  ▓▓▓▓▓▓▓▓   32  Categoria B  Placa OK, sem geofence (resolve com geo)  ← FIX-1
-  ▓▓▓▓▓▓▓▓▓  35  Categoria C  Cross-docking ou cadastro errado Unitrac
-```
+19 migrations versionadas com timestamp — desde políticas de Storage e extensões (`pg_trgm`, `unaccent`) até `kpi_simples` e o módulo de **KPIs manuais** (`kpi_manual_entradas` + bucket `kpi-manual-raw`). Storage buckets com RLS para escalas, Unitrac e XLSX manuais crus.
 
 ---
 
 ## Anomalias detectadas
 
-11 códigos ativos em `src/lib/kpi/anomalia.ts`:
+O detector (`src/lib/kpi/anomalia.ts`) marca inconsistências em cada geração:
 
-| Código | Severidade | Detecta |
-|---|---|---|
-| ANOM-01 | HIGH | Placa na escala mas sem nenhum dado GPS no Unitrac |
-| ANOM-02 | LOW | Placa no Unitrac mas sem linha na escala (extra-escala) |
-| ANOM-03 | MEDIUM | Parada com `chegada == saida` (placeholder GPS) |
-| ANOM-04 | HIGH | Saída anterior à chegada (cruzamento meia-noite ou dado inconsistente) |
-| ANOM-05 | MEDIUM | Quantidade de paradas LOJA ≠ 1 para loja única na escala |
-| ANOM-06 | HIGH | Paradas registradas sem saída do CD identificada |
-| ANOM-07 | HIGH | Chegada na primeira parada antes da saída do CD |
-| ANOM-08 | MEDIUM | Tempo em loja > 4h (240 min) |
-| ANOM-10 | LOW | EMANUEL com loja não normalizada no catálogo |
-| ANOM-11 | LOW | Saída do CD fora da janela operacional da rede |
+| Detecta | Severidade |
+|---|---|
+| Placa na escala mas sem nenhum dado GPS | HIGH |
+| Saída anterior à chegada (cruzamento meia-noite ou erro) | HIGH |
+| Paradas sem saída do CD identificada | HIGH |
+| Chegada na 1ª parada antes da saída do CD | HIGH |
+| Parada com `chegada == saída` (placeholder GPS) | MEDIUM |
+| Tempo em loja acima do esperado | MEDIUM |
+| Saída do CD fora da janela operacional | LOW |
+| Placa no Unitrac mas sem linha na escala | LOW |
 
-Anomalias `HIGH` viram `bg-danger-soft` na pré-visualização e bloqueiam finalização sem revisão. Cada linha mostra tooltip com os códigos atribuídos.
+Anomalias `HIGH` puxam o olho na pré-visualização e pedem revisão antes de finalizar.
 
 ---
 
 ## Deploy
 
-- **Provedor:** Vercel
-- **Auto-deploy:** push em `main`
-- **Preview:** cada PR ganha URL única
+- **Provedor:** Vercel · **Auto-deploy:** push em `main` · cada PR ganha preview
 - **URL produção:** [kpi-transmonseg.vercel.app](https://kpi-transmonseg.vercel.app)
-- **Variáveis:** configuradas no painel Vercel do projeto `kpi-transmonseg`
-- **Edge vs Node:** rotas KPI usam `runtime = 'nodejs'` (precisa de ExcelJS, pdf-lib, pdf-parse)
-- **Max duration:** 120s por geração
+- **Runtime:** rotas de KPI usam `runtime = 'nodejs'` (ExcelJS, pdf-lib, pdf-parse)
+- **Empacotamento:** `outputFileTracingIncludes` garante o `kpi-template.xlsx` na função serverless
+- **Max duration:** 60-120s por geração
 
 ---
 
 ## Convenções
 
-- **Português** em commits, código de domínio, comentários e docs com acentuação correta
-- **Travessão** somente em texto editorial. Nunca em copy de produto
-- **Commits no formato** `<tipo>(<escopo>): <descrição>` — tipos válidos: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`
-- **Sem `console.log`** em produção. Apenas `console.error` em erro real
-- **Rodar `npm test`** antes de mexer em parser ou matcher
-- **RLS sempre habilitado** em tabelas novas (`gerado_por = auth.uid()` é o padrão)
-- **Edge cases** documentados em testes vitest, não em comentários
-- **Sem mocks de banco** em testes de integração de pipeline
+- **Português** em commits, código de domínio, comentários e docs, com acentuação correta
+- **Sem travessão (—)** em copy de produto; só em texto editorial
+- **Commits** no formato `<tipo>(<escopo>): <descrição>` — `feat`, `fix`, `refactor`, `chore`, `docs`, `test`
+- **Horário em Brasília (BRT)** na UI — nunca `toISOString()` cru (use `hojeBR()`)
+- **Convenção de tempo:** parsers gravam BRT como `Date.UTC(...)` e leem com `getUTCHours()` direto
+- **`npm test`** antes de mexer em parser ou matcher · **RLS sempre** em tabelas novas
 
 ---
 
 ## Roadmap
 
-#### Curto prazo
+#### Feito recentemente
 
-- [x] Persistência de gerações com auditoria
-- [x] Edição inline completa da tabela
-- [x] Geo-fallback ativo no matcher
-- [x] Detecção de anomalias inline no fluxo simples
-- [ ] UI completa da `review_queue` para resolução manual de casos LOW
-- [ ] Confidence histogram por rede no histórico
+- [x] Dashboard de operação (3 faixas, inserir/histórico de KPIs manuais, export mensal)
+- [x] Modo sem-geofence (match por código exato) + cadastro de 473 lojas
+- [x] Redesign do gerador XLSX via template aprovado (byte-fiel)
+- [x] Nav reorganizada — Dashboard como entrada, grupos expansíveis
+- [x] Polish visual completo (auditoria de 6 dimensões de design)
 
-#### Médio prazo
+#### Próximos
 
-- [ ] Hungarian algorithm para optimal assignment com `nL > 5` (hoje cai em greedy)
-- [ ] Pipeline OCR para placas borradas em PDF Unitrac
-- [ ] Webhook de notificação ao concluir geração
-- [ ] Export para CSV além de XLSX e PDF
-
-#### Longo prazo
-
-- [ ] Modo white-label para outras transportadoras
-- [ ] Dashboard de cobertura GPS por rede ao longo do tempo
-- [ ] Detecção automática de cross-docking (Categoria C dos no-matches)
-- [ ] Integração direta com API do Unitrac (sem upload manual)
+- [ ] Coluna "tempo de operação" no KPI (helper pronto, atrás de flag)
+- [ ] Geocodificação opcional das lojas sem coordenada (para mapa, não para match)
+- [ ] Consolidação de registros duplicados (loja com e sem código)
+- [ ] Notificação ao concluir geração · Export CSV
 
 ---
 
@@ -548,7 +446,7 @@ Anomalias `HIGH` viram `bg-danger-soft` na pré-visualização e bloqueiam final
 
 #### **[Joaquim Salles](https://github.com/Joaquim-Salles)**
 
-Idealizador, arquiteto e mantenedor do sistema. Desenhou todo o pipeline de matching, definiu o catálogo de redes e parsers, e mantém o sistema em produção para a operação real da TRANSMONSEG.
+Idealizador, arquiteto e mantenedor. Desenhou todo o pipeline de matching, o catálogo de redes/parsers e o dashboard de operação, e mantém o sistema em produção para a TRANSMONSEG.
 
 </td>
 </tr>
