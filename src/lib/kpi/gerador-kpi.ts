@@ -25,6 +25,22 @@ function toExcelTime(d: Date | null | undefined): number | null {
 }
 
 /**
+ * Coluna "Tempo de Operação" — pedida pela Tia, ainda NÃO lançada.
+ * Quando true, adiciona ao KPI as colunas "Chegada Base" (volta) e "Tempo de
+ * Operação" (volta − saída da base). Manter FALSE até aprovação: com false a
+ * planilha sai idêntica à de hoje.
+ */
+export const COL_TEMPO_OPERACAO = false
+
+/** Tempo total da operação: da saída da base até a volta. Retorna min + HH:MM. */
+export function calcTempoOperacao(saidaBase: Date | null, voltaBase: Date | null): { min: number; fmt: string } | null {
+  if (!saidaBase || !voltaBase) return null
+  let min = Math.round((voltaBase.getTime() - saidaBase.getTime()) / 60000)
+  if (min < 0) min += 1440
+  return { min, fmt: `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}` }
+}
+
+/**
  * Calcula tempo em loja como fração do dia (formato Excel).
  *
  * Prioridade:
