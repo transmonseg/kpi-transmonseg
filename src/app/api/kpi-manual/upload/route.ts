@@ -38,3 +38,19 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true, rede_id, data, inseridas: entradas.length })
 }
+
+export async function DELETE(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return new NextResponse('Não autenticado', { status: 401 })
+
+  const u = new URL(req.url)
+  const data = u.searchParams.get('data') ?? ''
+  const rede_id = u.searchParams.get('rede_id') ?? ''
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || !rede_id) return new NextResponse('data e rede_id obrigatórios', { status: 400 })
+
+  const svc = createServiceClient()
+  await svc.from('kpi_manual_entradas').delete().eq('data', data).eq('rede_id', rede_id)
+  await svc.storage.from('kpi-manual-raw').remove([`${data}/${rede_id}.xlsx`])
+  return NextResponse.json({ ok: true })
+}

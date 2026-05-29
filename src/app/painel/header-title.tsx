@@ -3,11 +3,11 @@
 import { usePathname } from 'next/navigation'
 
 const TITLES: Record<string, string> = {
-  '/painel': 'Início',
+  '/painel': 'Dashboard',
   '/painel/cozinha': 'Cozinha',
-  '/painel/kpi/simples': 'KPI',
+  '/painel/cozinha/clientes': 'Clientes',
+  '/painel/kpi/simples': 'Gerar KPI',
   '/painel/historico': 'Histórico',
-  '/painel/revisao': 'Revisar Anomalias',
   '/painel/lojas': 'Lojas',
 }
 

@@ -26,6 +26,15 @@ export async function GET(req: NextRequest) {
     })
   }
 
+  // ?data=YYYY-MM-DD → retorna só as redes daquela data (pra aba Inserir saber o que já foi enviado)
+  const soData = u.searchParams.get('data')
+  if (soData) {
+    const { data: rows } = await svc.from('kpi_manual_entradas').select('rede_id').eq('data', soData)
+    const redes: Record<string, number> = {}
+    for (const r of rows ?? []) redes[r.rede_id as string] = (redes[r.rede_id as string] ?? 0) + 1
+    return NextResponse.json({ data: soData, redes })
+  }
+
   const { data } = await svc.from('kpi_manual_entradas').select('data, rede_id')
   const porDia = new Map<string, Record<string, number>>()
   for (const e of data ?? []) {

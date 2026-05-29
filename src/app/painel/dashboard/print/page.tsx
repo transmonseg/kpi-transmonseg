@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { calcularMetricas, filtrar } from '@/lib/kpi/dashboard-metricas'
 import type { EntradaManual } from '@/lib/kpi/parse-kpi-manual'
 import { REDE_LABEL } from '@/lib/kpi/redes'
+import { hojeBR } from '@/lib/data-br'
 import { redirect } from 'next/navigation'
 
 export const runtime = 'nodejs'
@@ -27,7 +28,7 @@ export default async function PrintPage({ searchParams }: { searchParams: Promis
   if (!user) redirect('/login')
 
   const periodo = sp.periodo ?? 'mes'
-  const ref = sp.data ?? new Date().toISOString().slice(0, 10)
+  const ref = sp.data ?? hojeBR()
   const [ini, fim] = intervalo(periodo, ref)
   const redes = (sp.redes ?? '').split(',').filter(Boolean)
 

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { calcularMetricas, filtrar } from '@/lib/kpi/dashboard-metricas'
 import type { EntradaManual } from '@/lib/kpi/parse-kpi-manual'
+import { hojeBR } from '@/lib/data-br'
 
 export const runtime = 'nodejs'
 
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
 
   const u = new URL(req.url)
   const periodo = u.searchParams.get('periodo') ?? 'dia'
-  const ref = u.searchParams.get('data') ?? new Date().toISOString().slice(0, 10)
+  const ref = u.searchParams.get('data') ?? hojeBR()
   const [ini, fim] = periodo === 'custom'
     ? [u.searchParams.get('de') ?? ref, u.searchParams.get('ate') ?? ref]
     : intervalo(periodo, ref)
