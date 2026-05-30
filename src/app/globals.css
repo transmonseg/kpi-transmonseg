@@ -67,7 +67,7 @@
 
   --color-fg: #0b1220;        /* quase preto, levemente azulado */
   --color-fg-muted: #3a4659;  /* slate — ~9:1 em bg light, sólido pra body */
-  --color-fg-subtle: #64748b; /* slate-500 — AA em bg light, captions */
+  --color-fg-subtle: #51607a; /* slate — contraste real (>5:1) sobre o bg azul claro */
 
   /* Acento = navy KPI #1F3864 (alinha UI com cor do XLSX gerado). */
   --color-accent: var(--color-navy-700);

@@ -355,7 +355,8 @@ export function CozinhaUploader() {
                     onClick={salvarEdicoes}
                     disabled={pendingRegen}
                     size="sm"
-                    className="bg-[var(--color-warning)] text-white hover:opacity-90"
+                    variant="secondary"
+                    className="border-[var(--color-warning)]/40 bg-[var(--color-warning-soft)] text-[var(--color-warning-soft-fg)] hover:border-[var(--color-warning)]/40 hover:bg-[var(--color-warning-soft)] hover:text-[var(--color-warning-soft-fg)] hover:opacity-90"
                   >
                     {pendingRegen ? (
                       <>
@@ -711,7 +712,7 @@ function FiltroChips({
             key={o.id}
             onClick={() => setFiltro(o.id)}
             className={cn(
-              'rounded-[5px] px-2 py-0.5 text-[11px] font-medium transition-colors',
+              'rounded-[4px] px-2 py-0.5 text-[11px] font-medium transition-colors',
               active
                 ? 'bg-[var(--color-bg-elevated)] text-[var(--color-fg)] shadow-sm'
                 : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]',
@@ -750,7 +751,7 @@ function FiltroExportControl({
             key={o.id}
             onClick={() => setFiltro(o.id)}
             className={cn(
-              'rounded-[5px] px-2 py-0.5 text-[11px] font-medium transition-colors',
+              'rounded-[4px] px-2 py-0.5 text-[11px] font-medium transition-colors',
               active
                 ? 'bg-[var(--color-bg-elevated)] text-[var(--color-fg)] shadow-sm'
                 : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]',

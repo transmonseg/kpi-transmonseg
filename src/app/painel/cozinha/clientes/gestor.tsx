@@ -356,16 +356,16 @@ export function GestorClientes() {
                         ) : (
                           <>
                             <td className="px-4 py-1.5 font-mono text-[12px] text-[var(--color-fg-muted)]">
-                              {c.cep || <span className="italic opacity-40">—</span>}
+                              {c.cep || <span className="italic text-[var(--color-fg-subtle)]">—</span>}
                             </td>
                             <td className="max-w-[180px] truncate px-4 py-1.5 text-[var(--color-fg)]">
-                              {c.endereco || <span className="italic text-[var(--color-warning-soft-fg)] opacity-70">sem endereço</span>}
+                              {c.endereco || <span className="italic text-[var(--color-warning-soft-fg)]">sem endereço</span>}
                             </td>
                             <td className="px-4 py-1.5 text-[var(--color-fg-muted)]">
-                              {c.numero || <span className="italic opacity-40">—</span>}
+                              {c.numero || <span className="italic text-[var(--color-fg-subtle)]">—</span>}
                             </td>
                             <td className="px-4 py-1.5 text-[var(--color-fg-muted)]">
-                              {c.complemento || <span className="italic opacity-40">—</span>}
+                              {c.complemento || <span className="italic text-[var(--color-fg-subtle)]">—</span>}
                             </td>
                             <td className="px-4 py-1.5">
                               <button

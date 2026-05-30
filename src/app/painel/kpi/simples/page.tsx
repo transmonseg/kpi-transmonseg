@@ -298,7 +298,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data }: AlteracoesCa
   const count = confirmadas.length
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <button
         type="button"
         onClick={() => setExpanded(v => !v)}
@@ -846,9 +846,9 @@ export default function KpiSimplesPage() {
         onClick={processar}
         disabled={pending || !pronto}
         className={cn(
-          'group relative mt-8 flex w-full items-center justify-between gap-4 overflow-hidden rounded-[var(--radius-card)] px-7 py-5 text-left transition-all duration-200 active:scale-[0.997]',
+          'group relative mt-8 flex w-full items-center justify-between gap-4 overflow-hidden rounded-[var(--radius-card)] px-7 py-5 text-left transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.99]',
           pronto && !pending
-            ? 'bg-[var(--color-navy-700)] text-white hover:opacity-90'
+            ? 'bg-[var(--color-navy-700)] text-white shadow-soft hover:-translate-y-0.5 hover:shadow-[0_14px_34px_-10px_rgba(31,56,100,0.55)]'
             : pending
               ? 'bg-[var(--color-navy-700)] text-white'
               : 'cursor-not-allowed bg-[var(--color-bg-subtle)] border border-[var(--color-border)] text-[var(--color-fg-muted)]'
@@ -1052,10 +1052,10 @@ function FileDropzone({ className, eyebrow, label, hint, accept, multiple, files
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
         className={cn(
-          'group relative flex min-h-[170px] cursor-pointer flex-col justify-between gap-4 overflow-hidden rounded-[var(--radius-card)] border border-dashed bg-[var(--color-bg-elevated)] p-5 transition-all duration-200',
+          'group relative flex min-h-[170px] cursor-pointer flex-col justify-between gap-4 overflow-hidden rounded-[var(--radius-card)] border border-dashed bg-[var(--color-bg-elevated)] p-5 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
           dragging
-            ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)]/40'
-            : 'border-[var(--color-border-strong)] hover:border-[var(--color-fg-muted)]'
+            ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)]/40 scale-[1.01] shadow-[0_0_0_3px_rgba(31,56,100,0.16),0_16px_42px_-12px_rgba(31,56,100,0.5)]'
+            : 'border-[var(--color-border-strong)] hover:-translate-y-0.5 hover:border-[var(--color-accent)] hover:shadow-soft'
         )}
       >
         <input

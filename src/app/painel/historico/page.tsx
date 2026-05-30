@@ -75,7 +75,7 @@ function formatarData(iso: string): string {
 }
 
 const INPUT_CLS =
-  'h-10 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] text-[var(--color-fg)] transition-colors focus-visible:outline-none focus-visible:border-[var(--color-fg)]'
+  'h-10 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] text-[var(--color-fg)] cursor-pointer transition-[border-color,box-shadow] duration-150 hover:border-[var(--color-border-strong)] focus-visible:outline-none focus-visible:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/15'
 
 const LABEL_CLS =
   'text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--color-fg-subtle)]'
@@ -140,7 +140,7 @@ export default async function HistoricoPage({
         </div>
         <button
           type="submit"
-          className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-navy-700)] px-5 text-[13px] font-medium text-white transition-all duration-150 active:scale-[0.97] hover:opacity-90"
+          className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-navy-700)] px-5 text-[13px] font-medium text-white shadow-soft transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.97] hover:-translate-y-0.5 hover:shadow-[0_8px_20px_-6px_rgba(31,56,100,0.45)]"
         >
           Filtrar
         </button>

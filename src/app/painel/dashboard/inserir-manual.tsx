@@ -109,7 +109,7 @@ export default function InserirManual({ data, onChange }: { data: string; onChan
                 <button
                   key={mo} onClick={() => setModo(mo)}
                   className={[
-                    'h-8 cursor-pointer rounded-[var(--radius-sm)] px-3.5 text-[12px] font-medium transition-[background-color,color] duration-150',
+                    'h-8 cursor-pointer rounded-[calc(var(--radius-md)-2px)] px-3.5 text-[12px] font-medium transition-[background-color,color] duration-150',
                     modo === mo ? 'bg-[var(--color-accent)] text-[var(--color-accent-fg)] shadow-soft' : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]',
                   ].join(' ')}
                 >{mo === 'mes' ? 'Mês inteiro' : 'Dia específico'}</button>
