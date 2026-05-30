@@ -49,6 +49,53 @@ export interface Metricas {
   topSemRastreador: Array<{ rede_id: string; loja: string; ocorrencias: number }>
   topNaoFoi: Array<{ rede_id: string; loja: string; ocorrencias: number }>
   placasMaisAtivas: Array<{ placa: string; entregas: number }>
+  tempoMedioRotaMin: number | null
+  tempoMedioTotalMin: number | null
+  porClienteComTempos: ClienteTempos[]
+  topRotasDemoradas: LojaTopRow[]
+  topTempoEmLoja: LojaTopRow[]
+  topTempoTotal: LojaTopRow[]
+  distHorarioSaida: HoraSaidaRow[]
+  topMotoristas: MotoristaStat[]
+  serieTempos: SerieTempoPonto[]
+}
+
+export interface ClienteTempos {
+  rede_id: string
+  entregas: number
+  lojas: number
+  tempo_rota: number | null
+  tempo_loja: number | null
+  tempo_total: number | null
+  sem_rast: number
+}
+
+export interface LojaTopRow {
+  rede_id: string
+  loja: string
+  n: number
+  tempo_rota: number | null
+  tempo_loja: number | null
+  tempo_total: number | null
+}
+
+export interface HoraSaidaRow {
+  hora: number
+  entregas: number
+}
+
+export interface MotoristaStat {
+  motorista: string
+  entregas: number
+  tempo_rota: number | null
+  tempo_loja: number | null
+}
+
+export interface SerieTempoPonto {
+  data: string
+  tempo_rota: number | null
+  tempo_loja: number | null
+  tempo_total: number | null
 }
 
 function diffMin(chd: string | null, sai: string | null): number | null {
@@ -67,6 +114,10 @@ function turno(chd: string | null): keyof Metricas['turnos'] | null {
   if (!chd) return null
   const h = Number(chd.split(':')[0])
   return h < 6 ? 'madrugada' : h < 12 ? 'manha' : h < 18 ? 'tarde' : 'noite'
+}
+function mediaVetorNulo(ns: (number | null)[]): number | null {
+  const t = ns.filter((n): n is number => n != null)
+  return t.length ? Math.round(t.reduce((a, b) => a + b, 0) / t.length) : null
 }
 
 export function calcularMetricas(ents: EntradaManual[]): Metricas {
@@ -112,6 +163,95 @@ export function calcularMetricas(ents: EntradaManual[]): Metricas {
   const placaMap = new Map<string, number>()
   for (const e of ents) if (e.status === 'entregue' && e.placa) placaMap.set(e.placa, (placaMap.get(e.placa) ?? 0) + 1)
 
+  const entregues = ents.filter(e => e.status === 'entregue')
+  const tempoMedioRotaMin = mediaVetorNulo(entregues.map(e => diffMin(e.saida_cd, e.chd)))
+  const tempoMedioTotalMin = mediaVetorNulo(entregues.map(e => diffMin(e.saida_cd, e.sai)))
+
+  const porClienteComTempos: ClienteTempos[] = [...redeMap.entries()].map(([rede_id, es]) => {
+    const ent = es.filter(e => e.status === 'entregue')
+    return {
+      rede_id,
+      entregas: es.length,
+      lojas: new Set(es.map(e => e.loja)).size,
+      tempo_rota: mediaVetorNulo(ent.map(e => diffMin(e.saida_cd, e.chd))),
+      tempo_loja: mediaVetorNulo(ent.map(e => diffMin(e.chd, e.sai))),
+      tempo_total: mediaVetorNulo(ent.map(e => diffMin(e.saida_cd, e.sai))),
+      sem_rast: es.filter(e => e.status === 'sem_rastreador').length,
+    }
+  }).sort((a, b) => b.entregas - a.entregas)
+
+  type LojaAcc = { rede_id: string; loja: string; rotas: number[]; lojas_t: number[]; totais: number[] }
+  const lojaMap = new Map<string, LojaAcc>()
+  for (const e of entregues) {
+    const k = `${e.rede_id}|${e.loja}`
+    const cur: LojaAcc = lojaMap.get(k) ?? { rede_id: e.rede_id, loja: e.loja, rotas: [], lojas_t: [], totais: [] }
+    const r = diffMin(e.saida_cd, e.chd); if (r != null) cur.rotas.push(r)
+    const l = diffMin(e.chd, e.sai);     if (l != null) cur.lojas_t.push(l)
+    const t = diffMin(e.saida_cd, e.sai); if (t != null) cur.totais.push(t)
+    lojaMap.set(k, cur)
+  }
+  const todasLojas: LojaTopRow[] = [...lojaMap.values()]
+    .filter(v => v.rotas.length >= 2 || v.lojas_t.length >= 2)
+    .map(v => ({
+      rede_id: v.rede_id, loja: v.loja,
+      n: Math.max(v.rotas.length, v.lojas_t.length),
+      tempo_rota: mediaVetorNulo(v.rotas),
+      tempo_loja: mediaVetorNulo(v.lojas_t),
+      tempo_total: mediaVetorNulo(v.totais),
+    }))
+
+  const topRotasDemoradas = [...todasLojas]
+    .filter(l => l.tempo_rota != null)
+    .sort((a, b) => (b.tempo_rota ?? 0) - (a.tempo_rota ?? 0))
+    .slice(0, 15)
+  const topTempoEmLoja = [...todasLojas]
+    .filter(l => l.tempo_loja != null)
+    .sort((a, b) => (b.tempo_loja ?? 0) - (a.tempo_loja ?? 0))
+    .slice(0, 15)
+  const topTempoTotal = [...todasLojas]
+    .filter(l => l.tempo_total != null)
+    .sort((a, b) => (b.tempo_total ?? 0) - (a.tempo_total ?? 0))
+    .slice(0, 15)
+
+  const horaBuckets: HoraSaidaRow[] = Array.from({ length: 24 }, (_, h) => ({ hora: h, entregas: 0 }))
+  for (const e of ents) {
+    if (!e.saida_cd) continue
+    const h = Number(e.saida_cd.split(':')[0])
+    if (h >= 0 && h < 24) horaBuckets[h].entregas++
+  }
+
+  type MotorAcc = { motorista: string; cnt: number; rotas: number[]; lojas_t: number[] }
+  const motorMap = new Map<string, MotorAcc>()
+  for (const e of entregues.filter(e => e.motorista)) {
+    const k = e.motorista!
+    const cur: MotorAcc = motorMap.get(k) ?? { motorista: k, cnt: 0, rotas: [], lojas_t: [] }
+    cur.cnt++
+    const r = diffMin(e.saida_cd, e.chd); if (r != null) cur.rotas.push(r)
+    const l = diffMin(e.chd, e.sai);     if (l != null) cur.lojas_t.push(l)
+    motorMap.set(k, cur)
+  }
+  const topMotoristas: MotoristaStat[] = [...motorMap.values()]
+    .sort((a, b) => b.cnt - a.cnt).slice(0, 15)
+    .map(v => ({ motorista: v.motorista, entregas: v.cnt, tempo_rota: mediaVetorNulo(v.rotas), tempo_loja: mediaVetorNulo(v.lojas_t) }))
+
+  type SerieTAcc = { rotas: number[]; lojas_t: number[]; totais: number[] }
+  const serieTMap = new Map<string, SerieTAcc>()
+  for (const e of entregues) {
+    const cur: SerieTAcc = serieTMap.get(e.data) ?? { rotas: [], lojas_t: [], totais: [] }
+    const r = diffMin(e.saida_cd, e.chd); if (r != null) cur.rotas.push(r)
+    const l = diffMin(e.chd, e.sai);     if (l != null) cur.lojas_t.push(l)
+    const t = diffMin(e.saida_cd, e.sai); if (t != null) cur.totais.push(t)
+    serieTMap.set(e.data, cur)
+  }
+  const serieTempos: SerieTempoPonto[] = [...serieTMap.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([data, v]) => ({
+      data,
+      tempo_rota: mediaVetorNulo(v.rotas),
+      tempo_loja: mediaVetorNulo(v.lojas_t),
+      tempo_total: mediaVetorNulo(v.totais),
+    }))
+
   return {
     total, entregue, nao_foi, sem_rastreador, com_rastreador: entregue + nao_foi,
     pctEntregue: total ? Math.round(100 * entregue / total) : 0,
@@ -125,5 +265,14 @@ export function calcularMetricas(ents: EntradaManual[]): Metricas {
     topSemRastreador: agrupaLoja('sem_rastreador'),
     topNaoFoi: agrupaLoja('nao_foi'),
     placasMaisAtivas: [...placaMap.entries()].map(([placa, entregas]) => ({ placa, entregas })).sort((a, b) => b.entregas - a.entregas).slice(0, 15),
+    tempoMedioRotaMin,
+    tempoMedioTotalMin,
+    porClienteComTempos,
+    topRotasDemoradas,
+    topTempoEmLoja,
+    topTempoTotal,
+    distHorarioSaida: horaBuckets,
+    topMotoristas,
+    serieTempos,
   }
 }
