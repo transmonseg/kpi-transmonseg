@@ -8,7 +8,7 @@ import Historico from './historico'
 import ResumoOperacao, { type ResumoOperacaoData } from './resumo-operacao'
 import { hojeBR } from '@/lib/data-br'
 import { ArrowSquareOut, CheckCircle, WarningCircle, ArrowClockwise } from '@phosphor-icons/react/dist/ssr'
-import { LineChart, BarList, ColumnChart, type BarItem } from '@/app/painel/charts'
+import { LineChart, BarList, ColumnChart, fmtNum, type BarItem } from '@/app/painel/charts'
 
 type Periodo = 'dia' | 'semana' | 'mes'
 type Tab = 'geral' | 'inserir' | 'historico'
@@ -33,9 +33,6 @@ const BTN_SEC = 'inline-flex h-9 items-center gap-2 rounded-[var(--radius-md)] b
 // link-chip compacto (download)
 const CHIP_LINK = 'rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2.5 py-1 text-[11px] text-[var(--color-fg-muted)] transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]'
 const CARD = 'rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-soft'
-
-const fmtH = (min: number | null | undefined) =>
-  min == null ? '—' : `${Math.floor(min / 60)}h${String(min % 60).padStart(2, '0')}`
 
 const fmtMin = (n: number | null | undefined) => {
   if (n == null) return '—'
@@ -263,41 +260,60 @@ function Conteudo({ m, mes }: { m: Metricas; mes: string }) {
   }, [m])
 
   return (
-    <div className="space-y-12">
-      {/* ───────── FAIXA 1 — RESUMO ───────── */}
-      <section className="space-y-3 animate-fade-up">
-        <div className={`grid grid-cols-2 overflow-hidden divide-x divide-y divide-[var(--color-border)] sm:grid-cols-4 sm:divide-y-0 ${CARD}`}>
-          <HeroTile i={0} valor={`${m.pctEntregue}%`} label="Taxa de entrega" status={tomTaxa(m.pctEntregue)} nota="meta ≥ 95%" />
-          <HeroTile i={1} valor={`${pctFalha}%`} label="Não foi ao cliente" status={tomFalha(pctFalha)} nota={`${m.nao_foi} de ${m.total}`} />
-          <HeroTile i={2} valor={`${pctGps}%`} label="Cobertura GPS" status={tomGps(pctGps)} nota={`${m.sem_rastreador} sem rastreador`} />
-          <HeroTile i={3} valor={fmtH(m.tempoMedioLojaMin)} label="Tempo médio em loja" nota="média do período" />
+    <div className="space-y-14">
+      {/* ═══════ CAMADA 1 — COMO FOI A OPERAÇÃO ═══════ */}
+      <section className="space-y-4 animate-fade-up">
+        <SecaoHead n="01" titulo="Como foi a operação" sub="O resultado do período num olhar." />
+
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+          {/* Número dominante — taxa de entrega manda na hierarquia */}
+          <div className={`flex flex-col justify-between gap-8 p-6 sm:p-7 lg:col-span-4 ${CARD}`}>
+            <div className="flex items-center gap-1.5 text-overline">
+              Taxa de entrega
+              {tomTaxa(m.pctEntregue) !== 'ok' && <span className="h-1.5 w-1.5 rounded-full" style={{ background: COR[tomTaxa(m.pctEntregue)] }} />}
+            </div>
+            <div>
+              <div className="text-display text-numeric text-[clamp(44px,6vw,60px)] leading-none text-[var(--color-fg)]">{m.pctEntregue}%</div>
+              <div className="mt-2 text-[12px] text-[var(--color-fg-subtle)]">
+                <span className="text-numeric">{m.entregue}</span> de <span className="text-numeric">{m.total}</span> entregas · meta ≥ 95%
+              </div>
+            </div>
+          </div>
+
+          {/* Secundários — menores, comunicam o resto do status */}
+          <div className={`grid grid-cols-1 overflow-hidden divide-y divide-[var(--color-border)] sm:grid-cols-3 sm:divide-x sm:divide-y-0 lg:col-span-8 ${CARD}`}>
+            <HeroTile i={0} valor={`${pctFalha}%`} label="Não foi ao cliente" status={tomFalha(pctFalha)} nota={`${m.nao_foi} não realizadas`} />
+            <HeroTile i={1} valor={`${pctGps}%`} label="Cobertura GPS" status={tomGps(pctGps)} nota={`${m.sem_rastreador} sem rastreador`} />
+            <HeroTile i={2} valor={fmtNum(m.total)} label="Entregas no período" nota={`${m.serie.length} dia${m.serie.length === 1 ? '' : 's'} operados`} />
+          </div>
         </div>
-        {/* barra empilhada 100% do mix de status */}
-        <div className="flex items-center gap-3">
-          <div className="flex h-2.5 flex-1 overflow-hidden rounded-full bg-[var(--color-bg-subtle)]">
+
+        {/* Barra empilhada do mix de status, com rótulo (não depende só de cor) */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex h-2.5 min-w-[200px] flex-1 overflow-hidden rounded-full bg-[var(--color-bg-subtle)]">
             {(['entregue', 'nao_foi', 'sem_rastreador'] as const).map(k => (
               <Tip key={k} label={`${STATUS[k].label}: ${m[k]}`}>
                 <div className="h-full" style={{ width: `${100 * m[k] / (m.total || 1)}%`, background: STATUS[k].cor }} />
               </Tip>
             ))}
           </div>
-          <div className="flex shrink-0 gap-3 text-[10px] text-[var(--color-fg-muted)]">
+          <div className="flex shrink-0 flex-wrap gap-x-3 gap-y-1 text-[11px] text-[var(--color-fg-muted)]">
             {(['entregue', 'nao_foi', 'sem_rastreador'] as const).map(k => (
               <span key={k} className="flex items-center gap-1">
                 <span className="h-2 w-2 rounded-full" style={{ background: STATUS[k].cor }} />
-                <span className="text-numeric">{m[k]}</span>
+                {STATUS[k].label} <span className="text-numeric font-semibold">{m[k]}</span>
               </span>
             ))}
           </div>
         </div>
+
+        {/* Tempos médios da operação */}
+        <TempoStrip m={m} />
       </section>
 
-      {/* Strip de tempos médios */}
-      <TempoStrip m={m} />
-
-      {/* ───────── FAIXA 2 — ONDE AGIR AGORA ───────── */}
-      <section className="animate-fade-up" style={{ animationDelay: '80ms' }}>
-        <h2 className="mb-3 text-overline">Onde agir agora</h2>
+      {/* ═══════ CAMADA 2 — ONDE AGIR AGORA ═══════ */}
+      <section className="space-y-5 animate-fade-up" style={{ animationDelay: '80ms' }}>
+        <SecaoHead n="02" titulo="Onde agir agora" sub="Lojas com problema e os clientes/rotas mais lentos." />
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
           <div className={`overflow-hidden lg:col-span-3 ${CARD}`}>
             <table className="w-full text-[13px]">
@@ -310,7 +326,7 @@ function Conteudo({ m, mes }: { m: Metricas; mes: string }) {
               </thead>
               <tbody className="divide-y divide-[var(--color-border)]">
                 {problema.length === 0 && (
-                  <tr><td colSpan={3} className="px-5 py-8 text-center text-[13px] text-[var(--color-fg-muted)]">Nenhuma ocorrência no período 🎉</td></tr>
+                  <tr><td colSpan={3} className="px-5 py-8 text-center text-[13px] text-[var(--color-fg-muted)]">Nenhuma loja com ocorrência neste período.</td></tr>
                 )}
                 {problema.map((p, i) => (
                   <tr key={i} className="transition-colors hover:bg-[var(--color-bg-subtle)]">
@@ -343,12 +359,31 @@ function Conteudo({ m, mes }: { m: Metricas; mes: string }) {
             </Painel>
           </div>
         </div>
+
+        {/* Rotas e lojas mais lentas — agir = atacar os piores */}
+        {(m.topRotasDemoradas.length > 0 || m.topTempoEmLoja.length > 0) && (
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <TopRotas m={m} />
+            <TopTempoLoja m={m} />
+          </div>
+        )}
       </section>
 
-      {/* ───────── FAIXA 3 — CONTEXTO ───────── */}
+      {/* ═══════ CAMADA 3 — TENDÊNCIAS E ANÁLISE ═══════ */}
       <section className="space-y-5 animate-fade-up" style={{ animationDelay: '160ms' }}>
-        <h2 className="text-overline">Contexto e distribuição</h2>
+        <SecaoHead n="03" titulo="Tendências e análise" sub="Como o período evoluiu dia a dia." />
+
         {m.serie.length > 1 && <SerieChart serie={m.serie} />}
+
+        {(m.serieTempos.length >= 2 || m.distHorarioSaida.some(h => h.entregas > 0)) && (
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <EvolucaoTempos m={m} />
+            <DistribuicaoHoraria m={m} />
+          </div>
+        )}
+
+        <ComparativoRede m={m} />
+
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <PorRede redes={m.porRede} />
           <Painel titulo="Volume por turno">
@@ -370,8 +405,10 @@ function Conteudo({ m, mes }: { m: Metricas; mes: string }) {
           </Painel>
         </div>
 
+        {m.topMotoristas.length > 0 && <TopMotoristas m={m} />}
+
         {/* Export mensal por rede */}
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5 border-t border-[var(--color-border)] pt-5">
           <span className="mr-1 inline-flex items-center gap-1.5 text-[11px] text-[var(--color-fg-subtle)]">
             <CheckCircle size={13} weight="bold" /> Baixar KPI mensal ({mes}):
           </span>
@@ -382,30 +419,6 @@ function Conteudo({ m, mes }: { m: Metricas; mes: string }) {
           ))}
         </div>
       </section>
-
-      {/* ───────── FAIXA 4 — TEMPOS E DISTRIBUIÇÃO ───────── */}
-      {(m.serieTempos.length >= 2 || m.distHorarioSaida.some(h => h.entregas > 0)) && (
-        <section className="space-y-5 animate-fade-up" style={{ animationDelay: '240ms' }}>
-          <h2 className="text-overline">Tempos e distribuição</h2>
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-            <EvolucaoTempos m={m} />
-            <DistribuicaoHoraria m={m} />
-          </div>
-          <ComparativoRede m={m} />
-        </section>
-      )}
-
-      {/* ───────── FAIXA 5 — RANKINGS ───────── */}
-      {(m.topRotasDemoradas.length > 0 || m.topTempoEmLoja.length > 0 || m.topMotoristas.length > 0) && (
-        <section className="space-y-5 animate-fade-up" style={{ animationDelay: '320ms' }}>
-          <h2 className="text-overline">Rankings de performance</h2>
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-            <TopRotas m={m} />
-            <TopTempoLoja m={m} />
-          </div>
-          <TopMotoristas m={m} />
-        </section>
-      )}
     </div>
   )
 }
@@ -418,6 +431,20 @@ function Tip({ label, children }: { label: string; children: React.ReactNode }) 
       <span className="pointer-events-none absolute -top-7 left-1/2 z-10 -translate-x-1/2 scale-95 whitespace-nowrap rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2 py-1 text-numeric text-[10px] text-[var(--color-fg)] opacity-0 shadow-soft transition-[opacity,transform] duration-150 group-hover/tip:scale-100 group-hover/tip:opacity-100">
         {label}
       </span>
+    </div>
+  )
+}
+
+// Cabeçalho de camada — número + pergunta + uma linha de contexto. Cria a
+// hierarquia de seção que faltava (antes eram só text-overline soltos).
+function SecaoHead({ n, titulo, sub }: { n: string; titulo: string; sub: string }) {
+  return (
+    <div className="flex items-baseline gap-3 border-b border-[var(--color-border)] pb-3">
+      <span className="text-numeric text-[11px] font-semibold tabular-nums text-[var(--color-fg-subtle)]">{n}</span>
+      <div className="min-w-0">
+        <h2 className="text-[16px] font-semibold leading-tight tracking-[-0.01em] text-[var(--color-fg)]">{titulo}</h2>
+        <p className="mt-0.5 text-[12px] text-[var(--color-fg-muted)]">{sub}</p>
+      </div>
     </div>
   )
 }
