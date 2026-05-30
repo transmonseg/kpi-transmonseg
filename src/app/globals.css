@@ -376,37 +376,4 @@ table {
   border-collapse: collapse;
 }
 
-/* ── Tour guiado (driver.js) — popover na identidade do projeto ── */
-.driver-popover.driver-popover-navy {
-  background: var(--color-bg-elevated);
-  color: var(--color-fg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-diffusion);
-  max-width: min(92vw, 340px);
-  padding: 16px;
-}
-.driver-popover-navy .driver-popover-title { font-size: 15px; font-weight: 600; color: var(--color-fg); }
-.driver-popover-navy .driver-popover-description { font-size: 13px; line-height: 1.55; color: var(--color-fg-muted); margin-top: 4px; }
-.driver-popover-navy .driver-popover-progress-text { font-size: 11px; color: var(--color-fg-subtle); }
-.driver-popover-navy .driver-popover-next-btn,
-.driver-popover-navy .driver-popover-done-btn {
-  background: var(--color-accent); color: var(--color-accent-fg);
-  border: 0; border-radius: var(--radius-sm); padding: 7px 14px;
-  font-size: 12px; font-weight: 600; text-shadow: none; cursor: pointer;
-}
-.driver-popover-navy .driver-popover-next-btn:hover,
-.driver-popover-navy .driver-popover-done-btn:hover { background: var(--color-accent-hover); }
-.driver-popover-navy .driver-popover-prev-btn {
-  background: var(--color-bg-subtle); color: var(--color-fg-muted);
-  border: 0; border-radius: var(--radius-sm); padding: 7px 12px;
-  font-size: 12px; font-weight: 500; text-shadow: none; cursor: pointer;
-}
-.driver-popover-navy .driver-popover-close-btn { color: var(--color-fg-subtle); }
-
-/* Pulse suave no elemento destacado pelo tutorial (driver.js) */
-@keyframes tour-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(31, 56, 100, 0); }
-  50% { box-shadow: 0 0 0 4px rgba(31, 56, 100, 0.18); }
-}
-.driver-active-element { border-radius: 12px; animation: tour-pulse 2s ease-in-out infinite; }
+/* O tutorial guiado agora é 100% custom (motion) em src/app/painel/tour-overlay.tsx. */
