@@ -19,12 +19,24 @@ export async function GET(req: NextRequest) {
   if (!/^\d{4}-\d{2}$/.test(mes)) return new NextResponse('mês inválido (YYYY-MM)', { status: 400 })
 
   const svc = createServiceClient()
-  // dias do mês em que esta rede tem KPI inserido
-  const { data: rows, error } = await svc.from('kpi_manual_entradas')
-    .select('data')
-    .eq('rede_id', rede).gte('data', `${mes}-01`).lte('data', `${mes}-31`)
-  if (error) return new NextResponse(error.message, { status: 500 })
-  const dias = [...new Set((rows ?? []).map(r => r.data as string))].sort()
+  // dias do mês em que esta rede tem KPI inserido. Pagina até esgotar: uma rede
+  // cheia (várias lojas × até 31 dias) passa do teto de 1000 linhas do Supabase, e
+  // sem paginar o export perdia dias silenciosamente. ORDER BY id estabiliza as
+  // janelas; só precisamos das datas distintas no fim.
+  const PAGE = 1000
+  const datasRaw: string[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data: rows, error } = await svc.from('kpi_manual_entradas')
+      .select('data')
+      .eq('rede_id', rede).gte('data', `${mes}-01`).lte('data', `${mes}-31`)
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1)
+    if (error) return new NextResponse(error.message, { status: 500 })
+    const lote = (rows ?? []) as { data: string }[]
+    datasRaw.push(...lote.map(r => r.data))
+    if (lote.length < PAGE) break
+  }
+  const dias = [...new Set(datasRaw)].sort()
 
   // baixa o XLSX bruto que foi inserido em cada dia (preserva o layout original)
   const raws: RawDoDia[] = []

@@ -35,9 +35,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ data: soData, redes })
   }
 
-  const { data } = await svc.from('kpi_manual_entradas').select('data, rede_id')
+  // Histórico completo (sem filtro de data) → cresce além de 1000 linhas rápido.
+  // Sem paginar, o teto do Supabase cortava dias e a completude por dia saía errada.
+  const PAGE = 1000
+  const todas: { data: string; rede_id: string }[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await svc.from('kpi_manual_entradas')
+      .select('data, rede_id')
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1)
+    if (error) break
+    const lote = (data ?? []) as { data: string; rede_id: string }[]
+    todas.push(...lote)
+    if (lote.length < PAGE) break
+  }
   const porDia = new Map<string, Record<string, number>>()
-  for (const e of data ?? []) {
+  for (const e of todas) {
     const d = porDia.get(e.data as string) ?? {}
     d[e.rede_id as string] = (d[e.rede_id as string] ?? 0) + 1
     porDia.set(e.data as string, d)

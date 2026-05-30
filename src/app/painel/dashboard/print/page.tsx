@@ -1,25 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { calcularMetricas, filtrar } from '@/lib/kpi/dashboard-metricas'
-import type { EntradaManual } from '@/lib/kpi/parse-kpi-manual'
+import { intervaloPeriodo, carregarEntradasManuais } from '@/lib/kpi/dashboard-query'
 import { REDE_LABEL } from '@/lib/kpi/redes'
 import { hojeBR } from '@/lib/data-br'
 import { redirect } from 'next/navigation'
 
 export const runtime = 'nodejs'
-
-function intervalo(periodo: string, ref: string): [string, string] {
-  const d = new Date(`${ref}T00:00:00Z`)
-  if (periodo === 'dia') return [ref, ref]
-  if (periodo === 'semana') {
-    const day = d.getUTCDay(); const i = new Date(d); i.setUTCDate(d.getUTCDate() - day)
-    const f = new Date(i); f.setUTCDate(i.getUTCDate() + 6)
-    return [i.toISOString().slice(0, 10), f.toISOString().slice(0, 10)]
-  }
-  const i = `${ref.slice(0, 7)}-01`
-  const f = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0))
-  return [i, f.toISOString().slice(0, 10)]
-}
 
 export default async function PrintPage({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
   const sp = await searchParams
@@ -29,14 +16,11 @@ export default async function PrintPage({ searchParams }: { searchParams: Promis
 
   const periodo = sp.periodo ?? 'mes'
   const ref = sp.data ?? hojeBR()
-  const [ini, fim] = intervalo(periodo, ref)
+  const [ini, fim] = intervaloPeriodo(periodo, ref)
   const redes = (sp.redes ?? '').split(',').filter(Boolean)
 
   const svc = createServiceClient()
-  const { data } = await svc.from('kpi_manual_entradas')
-    .select('data, rede_id, loja, placa, motorista, status, saida_cd, chd, sai')
-    .gte('data', ini).lte('data', fim)
-  const m = calcularMetricas(filtrar((data ?? []) as EntradaManual[], { redes }))
+  const m = calcularMetricas(filtrar(await carregarEntradasManuais(svc, ini, fim), { redes }))
 
   return (
     <html lang="pt-BR">

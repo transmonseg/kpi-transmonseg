@@ -772,7 +772,16 @@ function assignOptimal(
   const result = new Map<string, UnitracParadaRow>()
   if (!linhas.length || !paradas.length) return result
 
-  const ls = [...linhas].sort((a, b) => a.loja_nome_raw.localeCompare(b.loja_nome_raw))
+  // Desempate determinístico: além do nome, carro_ordem e id. Sem isso, duas linhas
+  // da MESMA loja (carro1/carro2) dependiam da ordem de chegada do array vinda do
+  // banco (não-determinística sem ORDER BY) → paradas podiam sair trocadas entre os
+  // carros entre execuções/ambientes. Com carro_ordem, carro1 fica antes do carro2
+  // e, como ps é cronológico e o DFS prefere a 1ª permutação em empate, carro1 casa
+  // com a parada mais cedo. id é o desempate final estável.
+  const ls = [...linhas].sort((a, b) =>
+    a.loja_nome_raw.localeCompare(b.loja_nome_raw)
+    || (a.carro_ordem ?? 0) - (b.carro_ordem ?? 0)
+    || a.id.localeCompare(b.id))
   const ps = [...paradas].sort((a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
   const nL = ls.length
   const nP = ps.length

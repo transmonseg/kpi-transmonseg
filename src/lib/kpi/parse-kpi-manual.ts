@@ -79,9 +79,12 @@ export async function parseKpiManual(buf: Buffer, rede_id: string, data: string)
     if (!loja || loja.length < 2 || /^REDES|TOTAL/i.test(loja)) continue
     const placa = cell(ws.getRow(r).getCell(col.placa).value) || null
     const motorista = cell(ws.getRow(r).getCell(col.motorista).value) || null
-    // junta o range saidaCd..sai+1 pra capturar "SEM RASTREADOR" / "NÃO FOI AO CLIENTE"
-    // que vazam entre células mescladas
-    const ini = Math.min(col.saidaCd, col.chd, col.sai)
+    // junta o range placa..sai+1 pra capturar "SEM RASTREADOR" / "NÃO FOI AO CLIENTE"
+    // que vazam entre células mescladas. Inclui a coluna da PLACA porque é comum o
+    // marcador substituir a placa (sem GPS → "SEM RASTREADOR" no lugar da placa);
+    // sem isso a linha tinha chd e virava 'entregue' indevidamente. Não passa de
+    // sai+1 pra não vazar nos marcadores do 2º carro.
+    const ini = Math.min(col.placa, col.saidaCd, col.chd, col.sai)
     const fim = Math.max(col.saidaCd, col.chd, col.sai) + 1
     let txt = ''
     for (let i = ini; i <= fim; i++) txt += ' ' + cell(ws.getRow(r).getCell(i).value).toUpperCase()

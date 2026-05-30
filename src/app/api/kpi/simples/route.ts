@@ -219,6 +219,23 @@ export async function POST(req: NextRequest) {
     l.obs === 'SEM PEDIDO'
   )
 
+  // Dedup de DUPLICATA EXATA entre escalas: quando GERAL traz SUPER_PAX/FEIRA_NOVA/
+  // EMANUEL já COM placa preenchida (acontece em parte das semanas) e o PAX também
+  // cobre a rede, a mesma entrega aparecia 2x → contagem inflada. Colapsa linhas
+  // idênticas em (rede, loja, carro, placa) mantendo a 1ª. Só remove o que é
+  // genuinamente redundante — entregas distintas (carro_ordem ou placa diferentes)
+  // permanecem intactas.
+  const normLojaKey = (s: string | null | undefined) =>
+    (s ?? '').trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  const vistosDup = new Set<string>()
+  escalaLinhas = escalaLinhas.filter(l => {
+    if (!l.placa_norm) return true
+    const k = `${l.rede_id}|${normLojaKey(l.loja_nome_raw)}|${l.carro_ordem ?? ''}|${l.placa_norm}`
+    if (vistosDup.has(k)) return false
+    vistosDup.add(k)
+    return true
+  })
+
   // Baixa e parseia todos os arquivos Unitrac, mergeando os veículos
   // (suporta XLSX + PDF simultâneos para cobrir formatos diferentes do mesmo dia)
 
