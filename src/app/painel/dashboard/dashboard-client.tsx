@@ -154,12 +154,23 @@ function VisaoGeral(props: {
             >{p === 'mes' ? 'Mês' : p}</button>
           ))}
         </div>
-        <input
-          type="date" value={data} onChange={e => setData(e.target.value)}
-          className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
-        />
+        {/* O input acompanha o período: mês → escolhe o mês; dia/semana → escolhe o dia.
+            Sem isso, no modo "Mês" o operador escolhia um dia mas via o mês inteiro. */}
+        {periodo === 'mes' ? (
+          <input
+            type="month" value={data.slice(0, 7)} onChange={e => setData(`${e.target.value}-01`)}
+            className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
+          />
+        ) : (
+          <input
+            type="date" value={data} onChange={e => setData(e.target.value)}
+            className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
+          />
+        )}
         {intervalo && (
-          <span className="text-numeric text-[11px] text-[var(--color-fg-subtle)]">{intervalo[0]} → {intervalo[1]}</span>
+          <span className="text-numeric text-[11px] text-[var(--color-fg-subtle)]">
+            {periodo === 'dia' ? intervalo[0] : `${intervalo[0]} → ${intervalo[1]}`}
+          </span>
         )}
       </div>
 
