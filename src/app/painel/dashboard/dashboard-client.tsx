@@ -567,7 +567,13 @@ function ComparativoRede({ m }: { m: Metricas }) {
           ))}
         </div>
       </div>
-      <BarList items={items} format={fmtMin} />
+      {items.length > 0 ? (
+        <BarList items={items} format={fmtMin} />
+      ) : (
+        <p className="py-6 text-center text-[12px] text-[var(--color-fg-subtle)]">
+          Sem dados de {LABEL_METRICA[metrica].toLowerCase()} no período.
+        </p>
+      )}
     </div>
   )
 }
