@@ -8,7 +8,7 @@ import { REDES, REDE_LABEL } from '@/lib/kpi/redes'
 import InserirManual from './inserir-manual'
 import Historico from './historico'
 import ResumoOperacao, { type ResumoOperacaoData } from './resumo-operacao'
-import { iniciarTour, tourJaVisto } from './tour'
+import { iniciarTutorial, tourJaVisto } from '@/lib/tour/store'
 import { hojeBR } from '@/lib/data-br'
 import { ArrowSquareOut, CheckCircle, WarningCircle, ArrowClockwise, Question } from '@phosphor-icons/react/dist/ssr'
 import { LineChart, BarList, ColumnChart, fmtNum, type BarItem } from '@/app/painel/charts'
@@ -77,7 +77,7 @@ export default function DashboardClient({ resumo, tabInicial = 'geral' }: { resu
   useEffect(() => {
     if (tab !== 'geral' || !m || tourAuto.current || tourJaVisto()) return
     tourAuto.current = true
-    const id = setTimeout(() => iniciarTour(), 800)
+    const id = setTimeout(() => iniciarTutorial(), 800)
     return () => clearTimeout(id)
   }, [tab, m])
 
@@ -97,7 +97,7 @@ export default function DashboardClient({ resumo, tabInicial = 'geral' }: { resu
         </div>
         {tab === 'geral' && (
           <div className="flex gap-2">
-            <button onClick={() => iniciarTour()} className={BTN_SEC}>
+            <button onClick={() => iniciarTutorial()} className={BTN_SEC}>
               <Question size={14} weight="bold" /> Ver tutorial
             </button>
             <button

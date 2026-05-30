@@ -7,6 +7,7 @@ import { List, X, SignOut } from '@phosphor-icons/react/dist/ssr'
 import { ThemeToggle } from '@/lib/theme/ThemeToggle'
 import { HeaderTitle } from './header-title'
 import { PainelNav } from './nav'
+import { TourRunner } from './tour-runner'
 
 type Props = {
   userEmail: string | null | undefined
@@ -45,6 +46,9 @@ export function PainelShell({ userEmail, sairAction, children }: Props) {
 
   return (
     <div className="flex min-h-[100dvh] bg-[var(--color-bg)] text-[var(--color-fg)]">
+      {/* Tour guiado multi-página — montado uma vez aqui (não re-monta ao navegar). */}
+      <TourRunner />
+
       {/* Desktop sidebar — always dark, regardless of app theme. */}
       <aside
         className="sticky top-0 hidden h-[100dvh] w-[196px] shrink-0 flex-col border-r border-white/[0.06] bg-[#0a0a0a] md:flex"
