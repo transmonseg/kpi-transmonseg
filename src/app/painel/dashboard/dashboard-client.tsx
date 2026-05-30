@@ -8,6 +8,7 @@ import Historico from './historico'
 import ResumoOperacao, { type ResumoOperacaoData } from './resumo-operacao'
 import { hojeBR } from '@/lib/data-br'
 import { ArrowSquareOut, CheckCircle, WarningCircle, ArrowClockwise } from '@phosphor-icons/react/dist/ssr'
+import { LineChart, BarList, ColumnChart, type BarItem } from '@/app/painel/charts'
 
 type Periodo = 'dia' | 'semana' | 'mes'
 type Tab = 'geral' | 'inserir' | 'historico'
@@ -35,6 +36,13 @@ const CARD = 'rounded-[var(--radius-card)] border border-[var(--color-border)] b
 
 const fmtH = (min: number | null | undefined) =>
   min == null ? '—' : `${Math.floor(min / 60)}h${String(min % 60).padStart(2, '0')}`
+
+const fmtMin = (n: number | null | undefined) => {
+  if (n == null) return '—'
+  const h = Math.floor(n / 60)
+  const m = Math.round(n % 60)
+  return h > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${m}min`
+}
 
 export default function DashboardClient({ resumo }: { resumo?: ResumoOperacaoData }) {
   const [tab, setTab] = useState<Tab>('geral')
@@ -273,6 +281,9 @@ function Conteudo({ m, mes }: { m: Metricas; mes: string }) {
         </div>
       </section>
 
+      {/* Strip de tempos médios */}
+      <TempoStrip m={m} />
+
       {/* ───────── FAIXA 2 — ONDE AGIR AGORA ───────── */}
       <section className="animate-fade-up" style={{ animationDelay: '80ms' }}>
         <h2 className="mb-3 text-overline">Onde agir agora</h2>
@@ -360,6 +371,30 @@ function Conteudo({ m, mes }: { m: Metricas; mes: string }) {
           ))}
         </div>
       </section>
+
+      {/* ───────── FAIXA 4 — TEMPOS E DISTRIBUIÇÃO ───────── */}
+      {(m.serieTempos.length >= 2 || m.distHorarioSaida.some(h => h.entregas > 0)) && (
+        <section className="space-y-5 animate-fade-up" style={{ animationDelay: '240ms' }}>
+          <h2 className="text-overline">Tempos e distribuição</h2>
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <EvolucaoTempos m={m} />
+            <DistribuicaoHoraria m={m} />
+          </div>
+          <ComparativoRede m={m} />
+        </section>
+      )}
+
+      {/* ───────── FAIXA 5 — RANKINGS ───────── */}
+      {(m.topRotasDemoradas.length > 0 || m.topTempoEmLoja.length > 0 || m.topMotoristas.length > 0) && (
+        <section className="space-y-5 animate-fade-up" style={{ animationDelay: '320ms' }}>
+          <h2 className="text-overline">Rankings de performance</h2>
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <TopRotas m={m} />
+            <TopTempoLoja m={m} />
+          </div>
+          <TopMotoristas m={m} />
+        </section>
+      )}
     </div>
   )
 }
@@ -416,6 +451,221 @@ function PorRede({ redes }: { redes: Metricas['porRede'] }) {
             <span className="w-7 text-right text-numeric text-[11px] text-[var(--color-fg-subtle)]">{r.total}</span>
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+// ──────────────────────────────────────────────── Seções de tempo (novas) ──
+
+function TempoStrip({ m }: { m: Metricas }) {
+  if (m.tempoMedioRotaMin == null && m.tempoMedioTotalMin == null) return null
+  const tiles = [
+    { label: 'Tempo médio de rota', value: fmtMin(m.tempoMedioRotaMin), sub: 'CD → Loja', color: 'var(--color-accent)' },
+    { label: 'Tempo médio em loja', value: fmtMin(m.tempoMedioLojaMin), sub: 'Chegada → Saída', color: 'var(--color-warning)' },
+    { label: 'Tempo total médio', value: fmtMin(m.tempoMedioTotalMin), sub: 'Saída CD → Saída Loja', color: 'var(--color-info)' },
+  ]
+  return (
+    <div className={`grid grid-cols-3 overflow-hidden divide-x divide-[var(--color-border)] ${CARD} animate-fade-up`}>
+      {tiles.map(t => (
+        <div key={t.label} className="p-4 sm:p-5">
+          <div className="text-overline">{t.label}</div>
+          <div className="mt-2 text-display text-numeric text-[28px] leading-none" style={{ color: t.color }}>
+            {t.value}
+          </div>
+          <div className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">{t.sub}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function EvolucaoTempos({ m }: { m: Metricas }) {
+  if (m.serieTempos.length < 2) return null
+  return (
+    <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
+      <h3 className="text-overline mb-4">Evolução dos tempos médios</h3>
+      <LineChart
+        labels={m.serieTempos.map(s => s.data.slice(8, 10))}
+        series={[
+          { name: 'Tempo de Rota', color: 'var(--color-accent)', values: m.serieTempos.map(s => s.tempo_rota ?? 0), fill: true },
+          { name: 'Tempo em Loja', color: 'var(--color-warning)', values: m.serieTempos.map(s => s.tempo_loja ?? 0), fill: true },
+          { name: 'Tempo Total', color: 'var(--color-info)', values: m.serieTempos.map(s => s.tempo_total ?? 0), dashed: true },
+        ]}
+        height={260}
+        labelEvery={m.serieTempos.length > 14 ? 3 : 2}
+      />
+    </div>
+  )
+}
+
+function DistribuicaoHoraria({ m }: { m: Metricas }) {
+  const temDados = m.distHorarioSaida.some(h => h.entregas > 0)
+  if (!temDados) return null
+  const peak = m.distHorarioSaida.reduce((best, h) => h.entregas > best.entregas ? h : best)
+  const total = m.distHorarioSaida.reduce((s, h) => s + h.entregas, 0)
+  const earlyShare = total ? Math.round(m.distHorarioSaida.filter(h => h.hora >= 3 && h.hora <= 6).reduce((s, h) => s + h.entregas, 0) / total * 100) : 0
+  return (
+    <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
+      <h3 className="text-overline mb-1">Horário de saída do CD</h3>
+      <p className="mb-4 text-[12px] text-[var(--color-fg-subtle)]">Quando os caminhões deixam o centro de distribuição</p>
+      <ColumnChart
+        items={m.distHorarioSaida.map(h => ({
+          label: String(h.hora).padStart(2, '0'),
+          value: h.entregas,
+        }))}
+        format={n => String(Math.round(n))}
+        height={220}
+        highlightIndex={peak.hora}
+        labelEvery={2}
+      />
+      <div className="mt-3 rounded-[var(--radius-md)] border-l-[3px] border-l-[var(--color-info)] bg-[var(--color-info-soft)] px-3.5 py-2.5 text-[12.5px] leading-relaxed text-[var(--color-info-soft-fg)]">
+        <strong>Pico às {String(peak.hora).padStart(2, '0')}h</strong> — {earlyShare}% das saídas ocorrem entre 03h e 06h.
+      </div>
+    </div>
+  )
+}
+
+type MetricaRede = 'tempo_rota' | 'tempo_loja' | 'tempo_total'
+const LABEL_METRICA: Record<MetricaRede, string> = { tempo_rota: 'Tempo de Rota', tempo_loja: 'Tempo em Loja', tempo_total: 'Tempo Total' }
+
+function ComparativoRede({ m }: { m: Metricas }) {
+  const [metrica, setMetrica] = useState<MetricaRede>('tempo_rota')
+  const temDados = m.porClienteComTempos.some(c => c.tempo_rota != null || c.tempo_loja != null)
+  if (!temDados) return null
+
+  const sorted = [...m.porClienteComTempos]
+    .filter(c => c[metrica] != null)
+    .sort((a, b) => (b[metrica] ?? 0) - (a[metrica] ?? 0))
+
+  const items: BarItem[] = sorted.map(c => ({
+    key: c.rede_id,
+    label: REDE_LABEL[c.rede_id] ?? c.rede_id,
+    value: c[metrica] ?? 0,
+    sub: `${c.entregas} entregas · ${c.lojas} lojas`,
+    tone: 'accent' as const,
+  }))
+
+  return (
+    <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h3 className="text-overline">{LABEL_METRICA[metrica]} médio por rede</h3>
+        <div className="flex gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)] p-0.5">
+          {(Object.keys(LABEL_METRICA) as MetricaRede[]).map(k => (
+            <button
+              key={k}
+              onClick={() => setMetrica(k)}
+              className={[
+                'cursor-pointer rounded-[calc(var(--radius-md)-3px)] px-2.5 py-1 text-[11px] font-medium transition-colors duration-150',
+                metrica === k
+                  ? 'bg-[var(--color-accent)] text-[var(--color-accent-fg)]'
+                  : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]',
+              ].join(' ')}
+            >
+              {LABEL_METRICA[k]}
+            </button>
+          ))}
+        </div>
+      </div>
+      <BarList items={items} format={fmtMin} />
+    </div>
+  )
+}
+
+function TopRotas({ m }: { m: Metricas }) {
+  if (m.topRotasDemoradas.length === 0) return null
+  const maxRota = m.topRotasDemoradas[0].tempo_rota ?? 1
+  const items: BarItem[] = m.topRotasDemoradas.map((r, i) => ({
+    key: `${r.rede_id}|${r.loja}`,
+    label: r.loja,
+    value: r.tempo_rota ?? 0,
+    sub: `${REDE_LABEL[r.rede_id] ?? r.rede_id} · ${r.n} entregas`,
+    tone: i < 3 ? 'danger' : ('warning' as const),
+  }))
+  const worst = m.topRotasDemoradas[0]
+  const pctAcima = m.tempoMedioRotaMin
+    ? Math.round((worst.tempo_rota ?? 0) / m.tempoMedioRotaMin * 100 - 100)
+    : null
+  return (
+    <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
+      <h3 className="text-overline mb-1">Rotas mais demoradas</h3>
+      <p className="mb-5 text-[12px] text-[var(--color-fg-subtle)]">Top 15 lojas com maior tempo médio CD → Loja</p>
+      <BarList items={items} format={fmtMin} showRank maxValue={maxRota} />
+      {pctAcima != null && (
+        <div className="mt-4 rounded-[var(--radius-md)] border-l-[3px] border-l-[var(--color-warning)] bg-[var(--color-warning-soft)] px-3.5 py-2.5 text-[12.5px] leading-relaxed text-[var(--color-warning-soft-fg)]">
+          <strong>{worst.loja}</strong> ({REDE_LABEL[worst.rede_id] ?? worst.rede_id}) lidera com {fmtMin(worst.tempo_rota)} — {pctAcima}% acima da média geral.
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TopTempoLoja({ m }: { m: Metricas }) {
+  if (m.topTempoEmLoja.length === 0) return null
+  const maxLoja = m.topTempoEmLoja[0].tempo_loja ?? 1
+  const items: BarItem[] = m.topTempoEmLoja.map((r, i) => ({
+    key: `${r.rede_id}|${r.loja}`,
+    label: r.loja,
+    value: r.tempo_loja ?? 0,
+    sub: `${REDE_LABEL[r.rede_id] ?? r.rede_id} · ${r.n} entregas`,
+    tone: i < 3 ? 'danger' : ('warning' as const),
+  }))
+  return (
+    <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
+      <h3 className="text-overline mb-1">Maior tempo parado em cliente</h3>
+      <p className="mb-5 text-[12px] text-[var(--color-fg-subtle)]">Top 15 lojas com maior tempo médio de descarga</p>
+      <BarList items={items} format={fmtMin} showRank maxValue={maxLoja} />
+    </div>
+  )
+}
+
+function TopMotoristas({ m }: { m: Metricas }) {
+  if (m.topMotoristas.length === 0) return null
+  const maxEnt = m.topMotoristas[0].entregas
+  return (
+    <div className={`${CARD} overflow-hidden animate-fade-up`}>
+      <div className="px-5 pt-5 sm:px-6 sm:pt-6">
+        <h3 className="text-overline mb-1">Visão por motorista</h3>
+        <p className="mb-4 text-[12px] text-[var(--color-fg-subtle)]">Top 15 por volume de entregas no período</p>
+      </div>
+      <div className="overflow-auto">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="border-b border-[var(--color-border)] text-left text-[10px] uppercase tracking-[0.1em] text-[var(--color-fg-subtle)]">
+              <th className="px-5 py-2.5 font-semibold">#</th>
+              <th className="px-3 py-2.5 font-semibold">Motorista</th>
+              <th className="px-3 py-2.5 font-semibold">Entregas</th>
+              <th className="px-3 py-2.5 text-right font-semibold">Rota</th>
+              <th className="px-5 py-2.5 text-right font-semibold">Loja</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--color-border)]">
+            {m.topMotoristas.map((r, i) => (
+              <tr key={r.motorista} className="transition-colors hover:bg-[var(--color-bg-subtle)]">
+                <td className="px-5 py-2.5">
+                  <span className={[
+                    'inline-flex h-5 min-w-5 items-center justify-center rounded-md px-1 text-[11px] font-semibold tabular-nums',
+                    i < 3
+                      ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent-soft-fg)]'
+                      : 'bg-[var(--color-bg-subtle)] text-[var(--color-fg-subtle)]',
+                  ].join(' ')}>{i + 1}</span>
+                </td>
+                <td className="px-3 py-2.5 font-medium text-[var(--color-fg)]">{r.motorista}</td>
+                <td className="px-3 py-2.5">
+                  <span className="flex items-center gap-2">
+                    <span
+                      className="hidden h-1.5 rounded-full bg-[var(--color-accent)] sm:inline-block"
+                      style={{ width: `${(r.entregas / maxEnt) * 56}px` }}
+                    />
+                    <span className="font-semibold tabular-nums text-[var(--color-fg)]">{r.entregas}</span>
+                  </span>
+                </td>
+                <td className="px-3 py-2.5 text-right tabular-nums text-[var(--color-fg-muted)]">{fmtMin(r.tempo_rota)}</td>
+                <td className="px-5 py-2.5 text-right tabular-nums text-[var(--color-fg-muted)]">{fmtMin(r.tempo_loja)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )
