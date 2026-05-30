@@ -57,7 +57,8 @@ export const CAPITULOS: Capitulo[] = [
     steps: [
       s('[data-tour="gk-escala"]', 'Gerar o KPI do zero', 'Esta tela cruza a escala com o relatório do Unitrac. Comece subindo a(s) escala(s) aqui.'),
       s('[data-tour="gk-unitrac"]', 'Suba o Unitrac', 'O relatório do rastreador (PDF). É ele que dá os horários reais de cada parada.', 'top'),
-      s('[data-tour="gk-gerar"]', 'Gere', 'Com escala, Unitrac e data, clique pra gerar. O sistema cruza tudo e monta o KPI por rede.', 'top'),
+      s('[data-tour="gk-alteracoes"]', 'Alterações da escala', 'As mudanças que chegaram por texto e não estão na planilha (troca de motorista, de veículo, etc). Cole o texto ou adicione manualmente aqui pra elas entrarem no KPI antes de gerar.', 'top'),
+      s('[data-tour="gk-gerar"]', 'Gere', 'Com escala, Unitrac, alterações e data, clique pra gerar. O sistema cruza tudo e monta o KPI por rede.', 'top'),
       s('[data-tour="gk-resultado"]', 'Baixe e regere', 'O resultado sai por rede (XLSX e PDF). Pra regerar, suba os arquivos de novo ou use o "Re-gerar".', 'top'),
     ],
   },

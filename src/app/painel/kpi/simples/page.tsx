@@ -823,7 +823,7 @@ export default function KpiSimplesPage() {
       </section>
 
       {/* Alterações (componente preservado) */}
-      <div className="mt-6">
+      <div data-tour="gk-alteracoes" className="mt-6">
         <AlteracoesCard confirmadas={alteracoes} onConfirm={addAlteracao} onRemove={removeAlteracao} data={data} />
       </div>
 
