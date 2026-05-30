@@ -54,11 +54,13 @@ export function BarList({
   format = fmtNum,
   showRank = false,
   maxValue,
+  hrefDe,
 }: {
   items: BarItem[]
   format?: (n: number) => string
   showRank?: boolean
   maxValue?: number
+  hrefDe?: (item: BarItem) => string
 }) {
   const max = maxValue ?? Math.max(...items.map(i => i.value), 1)
   return (
@@ -79,9 +81,19 @@ export function BarList({
                   {i + 1}
                 </span>
               )}
-              <span className="truncate text-[var(--color-fg)]" title={it.label}>
-                {it.label}
-              </span>
+              {hrefDe ? (
+                <a
+                  href={hrefDe(it)}
+                  className="truncate text-[var(--color-fg)] transition-colors hover:text-[var(--color-accent)] hover:underline"
+                  title={it.label}
+                >
+                  {it.label}
+                </a>
+              ) : (
+                <span className="truncate text-[var(--color-fg)]" title={it.label}>
+                  {it.label}
+                </span>
+              )}
             </span>
             <span className="shrink-0 font-semibold tabular-nums text-[var(--color-fg)]">{format(it.value)}</span>
           </div>

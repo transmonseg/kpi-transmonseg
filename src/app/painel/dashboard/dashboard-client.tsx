@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import type { Metricas } from '@/lib/kpi/dashboard-metricas'
 import { REDES, REDE_LABEL } from '@/lib/kpi/redes'
 import InserirManual from './inserir-manual'
@@ -192,7 +193,7 @@ function VisaoGeral(props: {
       </div>
 
       {carregando ? <Skeleton /> : erro ? <Erro onRetry={onRetry} /> : !m || m.total === 0 ? <Vazio /> : (
-        <Conteudo key={`${periodo}-${data}-${redes.join(',')}`} m={m} mAnt={mAnt} mes={mes} />
+        <Conteudo key={`${periodo}-${data}-${redes.join(',')}`} m={m} mAnt={mAnt} mes={mes} periodo={periodo} data={data} />
       )}
     </div>
   )
@@ -255,7 +256,9 @@ function Erro({ onRetry }: { onRetry: () => void }) {
   )
 }
 
-function Conteudo({ m, mAnt, mes }: { m: Metricas; mAnt: Metricas | null; mes: string }) {
+function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas | null; mes: string; periodo: Periodo; data: string }) {
+  const lojaHref = (rede: string, loja: string) =>
+    `/painel/loja?rede=${encodeURIComponent(rede)}&loja=${encodeURIComponent(loja)}&periodo=${periodo}&data=${data}`
   const pctGps = m.total ? Math.round(100 * m.com_rastreador / m.total) : 0
   const pctFalha = m.total ? Math.round(100 * m.nao_foi / m.total) : 0
   const pctGpsAnt = mAnt ? Math.round(100 * mAnt.com_rastreador / (mAnt.total || 1)) : null
@@ -346,7 +349,7 @@ function Conteudo({ m, mAnt, mes }: { m: Metricas; mAnt: Metricas | null; mes: s
                 {problema.map((p, i) => (
                   <tr key={i} className="transition-colors hover:bg-[var(--color-bg-subtle)]">
                     <td className="px-5 py-3">
-                      <div className="max-w-[260px] truncate font-medium text-[var(--color-fg)]">{p.loja}</div>
+                      <Link href={lojaHref(p.rede_id, p.loja)} className="block max-w-[260px] truncate font-medium text-[var(--color-fg)] transition-colors hover:text-[var(--color-accent)]">{p.loja}</Link>
                       <div className="text-[11px] text-[var(--color-fg-subtle)]">{REDE_LABEL[p.rede_id] ?? p.rede_id}</div>
                     </td>
                     <td className="px-3 py-3 text-right text-numeric" style={{ color: p.sem ? 'var(--color-danger)' : 'var(--color-fg-subtle)' }}>{p.sem || '—'}</td>
@@ -378,8 +381,8 @@ function Conteudo({ m, mAnt, mes }: { m: Metricas; mAnt: Metricas | null; mes: s
         {/* Rotas e lojas mais lentas — agir = atacar os piores */}
         {(m.topRotasDemoradas.length > 0 || m.topTempoEmLoja.length > 0) && (
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-            <TopRotas m={m} />
-            <TopTempoLoja m={m} />
+            <TopRotas m={m} lojaHref={lojaHref} />
+            <TopTempoLoja m={m} lojaHref={lojaHref} />
           </div>
         )}
       </section>
@@ -642,7 +645,7 @@ function ComparativoRede({ m }: { m: Metricas }) {
   )
 }
 
-function TopRotas({ m }: { m: Metricas }) {
+function TopRotas({ m, lojaHref }: { m: Metricas; lojaHref: (rede: string, loja: string) => string }) {
   if (m.topRotasDemoradas.length === 0) return null
   const maxRota = m.topRotasDemoradas[0].tempo_rota ?? 1
   const items: BarItem[] = m.topRotasDemoradas.map((r, i) => ({
@@ -660,7 +663,7 @@ function TopRotas({ m }: { m: Metricas }) {
     <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
       <h3 className="text-overline mb-1">Rotas mais demoradas</h3>
       <p className="mb-5 text-[12px] text-[var(--color-fg-subtle)]">Top 15 lojas com maior tempo médio CD → Loja</p>
-      <BarList items={items} format={fmtMin} showRank maxValue={maxRota} />
+      <BarList items={items} format={fmtMin} showRank maxValue={maxRota} hrefDe={it => { const [r, l] = it.key.split('|'); return lojaHref(r, l) }} />
       {pctAcima != null && (
         <div className="mt-4 rounded-[var(--radius-md)] border-l-[3px] border-l-[var(--color-warning)] bg-[var(--color-warning-soft)] px-3.5 py-2.5 text-[12.5px] leading-relaxed text-[var(--color-warning-soft-fg)]">
           <strong>{worst.loja}</strong> ({REDE_LABEL[worst.rede_id] ?? worst.rede_id}) lidera com {fmtMin(worst.tempo_rota)} — {pctAcima}% acima da média geral.
@@ -670,7 +673,7 @@ function TopRotas({ m }: { m: Metricas }) {
   )
 }
 
-function TopTempoLoja({ m }: { m: Metricas }) {
+function TopTempoLoja({ m, lojaHref }: { m: Metricas; lojaHref: (rede: string, loja: string) => string }) {
   if (m.topTempoEmLoja.length === 0) return null
   const maxLoja = m.topTempoEmLoja[0].tempo_loja ?? 1
   const items: BarItem[] = m.topTempoEmLoja.map((r, i) => ({
@@ -684,7 +687,7 @@ function TopTempoLoja({ m }: { m: Metricas }) {
     <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
       <h3 className="text-overline mb-1">Maior tempo parado em cliente</h3>
       <p className="mb-5 text-[12px] text-[var(--color-fg-subtle)]">Top 15 lojas com maior tempo médio de descarga</p>
-      <BarList items={items} format={fmtMin} showRank maxValue={maxLoja} />
+      <BarList items={items} format={fmtMin} showRank maxValue={maxLoja} hrefDe={it => { const [r, l] = it.key.split('|'); return lojaHref(r, l) }} />
     </div>
   )
 }
