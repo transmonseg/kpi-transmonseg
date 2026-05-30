@@ -125,6 +125,7 @@ export default async function HistoricoPage({
 
       {/* Filtros — linha editorial sem card wrapper */}
       <form
+        data-tour="hist-filtro"
         method="GET"
         action="/painel/historico"
         className="mb-8 flex flex-wrap items-end gap-4 border-y border-[var(--color-border)] py-6"
@@ -170,7 +171,7 @@ export default async function HistoricoPage({
         </div>
       ) : (
         <div className="overflow-x-auto border-y border-[var(--color-border)]">
-          <table className="w-full text-[13px]">
+          <table data-tour="hist-tabela" className="w-full text-[13px]">
             <thead>
               <tr className="text-left">
                 <Th>Data</Th>
@@ -179,7 +180,7 @@ export default async function HistoricoPage({
                 <Th align="right">Sem GPS</Th>
                 <Th align="right">Anomalias</Th>
                 <Th>Gerado</Th>
-                <Th align="right">Ação</Th>
+                <Th align="right" dataTour="hist-regerar">Ação</Th>
               </tr>
             </thead>
             <tbody>
@@ -325,9 +326,18 @@ export default async function HistoricoPage({
   )
 }
 
-function Th({ children, align = 'left' }: { children: React.ReactNode; align?: 'left' | 'right' }) {
+function Th({
+  children,
+  align = 'left',
+  dataTour,
+}: {
+  children: React.ReactNode
+  align?: 'left' | 'right'
+  dataTour?: string
+}) {
   return (
     <th
+      data-tour={dataTour}
       className={cn(
         'px-4 py-3 text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--color-fg-subtle)]',
         align === 'right' && 'text-right'

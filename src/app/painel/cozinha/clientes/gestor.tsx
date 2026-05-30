@@ -224,13 +224,14 @@ export function GestorClientes() {
               <div className="relative">
                 <MagnifyingGlass size={14} weight="bold" className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-fg-subtle)]" />
                 <Input
+                  data-tour="cli-busca"
                   value={q}
                   onChange={e => setQ(e.target.value)}
                   placeholder="Buscar empresa, nome, código..."
                   className="h-8 w-60 pl-7 text-[13px]"
                 />
               </div>
-              <Button size="sm" variant="secondary" onClick={abrirNovo} disabled={!!novo}>
+              <Button data-tour="cli-novo" size="sm" variant="secondary" onClick={abrirNovo} disabled={!!novo}>
                 <Plus size={13} weight="bold" />
                 Novo Cliente
               </Button>
@@ -264,7 +265,7 @@ export function GestorClientes() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
+              <table data-tour="cli-tabela" className="w-full text-[13px]">
                 <thead>
                   <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] text-left">
                     {['Nome da Empresa', 'Código', 'CEP', 'Endereço', 'Nº', 'Comp.', ''].map(h => (

@@ -171,6 +171,7 @@ export function LojasList() {
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3">
         <Input
+          data-tour="lojas-busca"
           type="text"
           placeholder="Buscar por nome…"
           value={q}
@@ -197,6 +198,7 @@ export function LojasList() {
         </div>
         <div className="ml-auto">
           <Button
+            data-tour="lojas-nova"
             onClick={() => { setCreating(true); setError(null) }}
             size="md"
           >
@@ -274,7 +276,7 @@ export function LojasList() {
       )}
 
       {/* Tabela */}
-      <Card className="overflow-hidden">
+      <Card data-tour="lojas-tabela" className="overflow-hidden">
         {pending && (
           <div className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-5 py-2 text-[11px] text-[var(--color-fg-muted)]">
             Carregando…

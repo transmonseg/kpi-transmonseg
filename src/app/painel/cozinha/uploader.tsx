@@ -232,6 +232,7 @@ export function CozinhaUploader() {
             <div className="space-y-1.5">
               <Label htmlFor="cozinha-arquivo">Arquivo XLSX</Label>
               <label
+                data-tour="coz-upload"
                 htmlFor="cozinha-arquivo"
                 className={cn(
                   'flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed px-4 text-center transition-colors',
@@ -282,6 +283,7 @@ export function CozinhaUploader() {
 
           <div>
             <Button
+              data-tour="coz-processar"
               onClick={processar}
               disabled={pending || !arquivo}
               size="md"
@@ -335,7 +337,7 @@ export function CozinhaUploader() {
             totalNaMatriz={resultado.totalClientesNaMatriz ?? 0}
           />
 
-          <Card>
+          <Card data-tour="coz-rotas">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] px-5 py-3">
               <div className="flex items-center gap-3">
                 <h2 className="text-sm font-semibold text-[var(--color-fg)]">

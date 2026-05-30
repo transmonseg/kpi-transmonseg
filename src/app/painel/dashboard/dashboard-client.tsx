@@ -303,7 +303,7 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
           {/* Número dominante — taxa de entrega manda na hierarquia */}
-          <div className={`flex flex-col justify-between gap-8 p-6 sm:p-7 lg:col-span-4 ${CARD}`}>
+          <div data-tour="resumo-taxa" className={`flex flex-col justify-between gap-8 p-6 sm:p-7 lg:col-span-4 ${CARD}`}>
             <div className="flex items-center gap-1.5 text-overline">
               Taxa de entrega
               {tomTaxa(m.pctEntregue) !== 'ok' && <span className="h-1.5 w-1.5 rounded-full" style={{ background: COR[tomTaxa(m.pctEntregue)] }} />}
@@ -318,7 +318,7 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
           </div>
 
           {/* Secundários — menores, comunicam o resto do status */}
-          <div className={`grid grid-cols-1 overflow-hidden divide-y divide-[var(--color-border)] sm:grid-cols-3 sm:divide-x sm:divide-y-0 lg:col-span-8 ${CARD}`}>
+          <div data-tour="resumo-secundarios" className={`grid grid-cols-1 overflow-hidden divide-y divide-[var(--color-border)] sm:grid-cols-3 sm:divide-x sm:divide-y-0 lg:col-span-8 ${CARD}`}>
             <HeroTile i={0} valor={`${pctFalha}%`} label="Não foi ao cliente" status={tomFalha(pctFalha)} nota={`${m.nao_foi} não realizadas`} delta={<Delta atual={pctFalha} anterior={pctFalhaAnt} inverso />} />
             <HeroTile i={1} valor={`${pctGps}%`} label="Cobertura GPS" status={tomGps(pctGps)} nota={`${m.sem_rastreador} sem rastreador`} delta={<Delta atual={pctGps} anterior={pctGpsAnt} />} />
             <HeroTile i={2} valor={fmtNum(m.total)} label="Entregas no período" nota={`${m.serie.length} dia${m.serie.length === 1 ? '' : 's'} operados`} delta={<Delta atual={m.total} anterior={mAnt?.total} neutro suf="" />} />
@@ -352,7 +352,7 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
       <section data-tour="agir" className="space-y-5 animate-fade-up" style={{ animationDelay: '80ms' }}>
         <SecaoHead n="02" titulo="Onde agir agora" sub="Lojas com problema e os clientes/rotas mais lentos." />
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
-          <div className={`overflow-hidden lg:col-span-3 ${CARD}`}>
+          <div data-tour="agir-tabela" className={`overflow-hidden lg:col-span-3 ${CARD}`}>
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="border-b border-[var(--color-border)] text-left text-[10px] uppercase tracking-[0.1em] text-[var(--color-fg-subtle)]">
@@ -379,7 +379,7 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
             </table>
           </div>
 
-          <div className="grid grid-cols-2 gap-5 lg:col-span-2 lg:grid-cols-1">
+          <div data-tour="agir-paineis" className="grid grid-cols-2 gap-5 lg:col-span-2 lg:grid-cols-1">
             <Painel titulo="Sem rastreador">
               <div className="flex items-end gap-2">
                 <span className="text-display text-numeric text-[40px] leading-none" style={{ color: m.pctSemRastreador > 10 ? 'var(--color-danger)' : 'var(--color-fg)' }}>{m.sem_rastreador}</span>
@@ -399,7 +399,7 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
 
         {/* Rotas e lojas mais lentas — agir = atacar os piores */}
         {(m.topRotasDemoradas.length > 0 || m.topTempoEmLoja.length > 0) && (
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <div data-tour="agir-lentos" className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <TopRotas m={m} lojaHref={lojaHref} />
             <TopTempoLoja m={m} lojaHref={lojaHref} />
           </div>
@@ -413,7 +413,7 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
         {m.serie.length > 1 && <SerieChart serie={m.serie} />}
 
         {(m.serieTempos.length >= 2 || m.distHorarioSaida.some(h => h.entregas > 0)) && (
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <div data-tour="tendencias-tempos" className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <EvolucaoTempos m={m} />
             <DistribuicaoHoraria m={m} />
           </div>
@@ -421,7 +421,7 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
 
         <ComparativoRede m={m} />
 
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div data-tour="tendencias-rede" className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <PorRede redes={m.porRede} />
           <Painel titulo="Volume por turno">
             <div className="space-y-2.5 pt-1">
@@ -445,7 +445,7 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
         {m.topMotoristas.length > 0 && <TopMotoristas m={m} />}
 
         {/* Export mensal por rede */}
-        <div className="flex flex-wrap items-center gap-1.5 border-t border-[var(--color-border)] pt-5">
+        <div data-tour="tendencias-export" className="flex flex-wrap items-center gap-1.5 border-t border-[var(--color-border)] pt-5">
           <span className="mr-1 inline-flex items-center gap-1.5 text-[11px] text-[var(--color-fg-subtle)]">
             <CheckCircle size={13} weight="bold" /> Baixar KPI mensal ({mes}):
           </span>
@@ -551,7 +551,7 @@ function TempoStrip({ m, mAnt }: { m: Metricas; mAnt: Metricas | null }) {
     { label: 'Tempo total médio', value: fmtMin(m.tempoMedioTotalMin), sub: 'Saída CD → Saída Loja', color: 'var(--color-info)', atual: m.tempoMedioTotalMin, anterior: mAnt?.tempoMedioTotalMin },
   ]
   return (
-    <div className={`grid grid-cols-3 overflow-hidden divide-x divide-[var(--color-border)] ${CARD} animate-fade-up`}>
+    <div data-tour="resumo-tempos" className={`grid grid-cols-3 overflow-hidden divide-x divide-[var(--color-border)] ${CARD} animate-fade-up`}>
       {tiles.map(t => (
         <div key={t.label} className="p-4 sm:p-5">
           <div className="text-overline">{t.label}</div>
@@ -633,7 +633,7 @@ function ComparativoRede({ m }: { m: Metricas }) {
   }))
 
   return (
-    <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
+    <div data-tour="tendencias-comparativo" className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
       <div className="mb-4 flex items-center justify-between gap-3">
         <h3 className="text-overline">{LABEL_METRICA[metrica]} médio por rede</h3>
         <div className="flex gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)] p-0.5">
@@ -715,7 +715,7 @@ function TopMotoristas({ m }: { m: Metricas }) {
   if (m.topMotoristas.length === 0) return null
   const maxEnt = m.topMotoristas[0].entregas
   return (
-    <div className={`${CARD} overflow-hidden animate-fade-up`}>
+    <div data-tour="tendencias-motoristas" className={`${CARD} overflow-hidden animate-fade-up`}>
       <div className="px-5 pt-5 sm:px-6 sm:pt-6">
         <h3 className="text-overline mb-1">Visão por motorista</h3>
         <p className="mb-4 text-[12px] text-[var(--color-fg-subtle)]">Top 15 por volume de entregas no período</p>
@@ -766,7 +766,7 @@ function TopMotoristas({ m }: { m: Metricas }) {
 function SerieChart({ serie }: { serie: Metricas['serie'] }) {
   const max = useMemo(() => Math.max(1, ...serie.map(s => s.total)), [serie])
   return (
-    <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
+    <div data-tour="tendencias-serie" className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
       <div className="mb-5 flex items-center justify-between">
         <h3 className="text-overline">Entregas por dia</h3>
         <div className="flex gap-3 text-[11px] text-[var(--color-fg-muted)]">
