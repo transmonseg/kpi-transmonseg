@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
+    "@react-pdf/renderer": "^4.5.1",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.4",
     "exceljs": "^4.4.0",

@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   },
   // pdf-parse usa require dinâmico do pdfjs-dist; precisa ser externo pra
   // não passar pelo bundler (resolve "Cannot find module as expression is too dynamic")
-  serverExternalPackages: ['pdf-parse'],
+  serverExternalPackages: ['pdf-parse', '@react-pdf/renderer'],
   // O gerador de KPI lê src/assets/kpi-template.xlsx em runtime via readFile —
   // força o Next a empacotar a pasta na função serverless dos endpoints de KPI.
   outputFileTracingIncludes: {
