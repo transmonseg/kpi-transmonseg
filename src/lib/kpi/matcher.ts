@@ -59,6 +59,14 @@ function paradaEhRegiaoBase(lat: number | null, lng: number | null): boolean {
 // MODO SEM GEOFENCE (beta): quando true, desliga todos os matches por proximidade
 // GPS — mantém só código/nome/placa. Lojas com cadastro Unitrac bugado (geofence
 // sobreposto) deixam de casar e ficam vazias na planilha. (regra Tia Erica/William)
+//
+// INVARIANTE DE PRODUÇÃO: SEM_GEO é um global de módulo compartilhado entre requests
+// concorrentes na mesma instância serverless. Em produção é SEMPRE setado `true`
+// (kpi/preview e kpi/simples) e NUNCA resetado para `false` — só os testes alternam,
+// sempre com try/finally restaurando o default. Se algum dia uma rota precisar de
+// geo, NÃO faça setSemGeo(false) num fluxo concorrente: o certo é passar o modo
+// explícito por chamada (AsyncLocalStorage ou parâmetro de cruzaEscalaUnitrac).
+// Resetar o global entre o set e o await corromperia o KPI de requests paralelos.
 let SEM_GEO = false
 export function setSemGeo(v: boolean): void { SEM_GEO = v }
 

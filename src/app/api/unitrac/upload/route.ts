@@ -194,19 +194,45 @@ export async function POST(req: NextRequest) {
     const nomesNorm = [...agregadas.values()].map((a) => normalizaNomeCanonico(a.name))
     const codigos = [...agregadas.values()].map((a) => a.codigo).filter((c): c is string => !!c)
 
-    const [{ data: canonExist }, { data: lojasExist }] = await Promise.all([
+    const [{ data: canonExist }, { data: lojasExist }, { data: escalaDoDia }] = await Promise.all([
       svc.from('canonical_loja').select('nome_norm').in('nome_norm', nomesNorm),
       codigos.length > 0
         ? svc.from('lojas').select('codigo_unitrac').in('codigo_unitrac', codigos)
         : Promise.resolve({ data: [] as { codigo_unitrac: string | null }[] }),
+      svc.from('escala_linhas').select('loja_codigo_raw, loja_nome_raw').eq('data_entrega', data),
     ])
     const jaCanon = new Set((canonExist ?? []).map((r) => r.nome_norm as string))
     const jaLoja = new Set((lojasExist ?? []).map((r) => r.codigo_unitrac as string).filter(Boolean))
+
+    // Regra de produto (validar loja na escala): o Unitrac traz MUITOS clientes que
+    // a Triforce não atende. Só auto-cadastra o que aparece na ESCALA real do dia —
+    // cruzando por código (exato/sufixo) ou nome normalizado. Sem escala carregada
+    // pro dia, nada entra (conservador) — evita poluir canonical_loja com não-clientes.
+    const codigosEscala = new Set<string>()
+    const nomesEscala = new Set<string>()
+    for (const e of escalaDoDia ?? []) {
+      const c = e.loja_codigo_raw as string | null
+      const n = e.loja_nome_raw as string | null
+      if (c) codigosEscala.add(String(c).trim())
+      if (n) nomesEscala.add(normalizaNomeCanonico(n))
+    }
+    const naEscala = (a: AggLoja): boolean => {
+      if (nomesEscala.has(normalizaNomeCanonico(a.name))) return true
+      if (!a.codigo) return false
+      const cod = a.codigo.trim()
+      if (codigosEscala.has(cod)) return true
+      for (const e of codigosEscala) {
+        if (cod.length >= 3 && e.endsWith(cod)) return true
+        if (e.length >= 3 && cod.endsWith(e)) return true
+      }
+      return false
+    }
 
     const novas = [...agregadas.values()]
       .filter((a) => {
         if (jaCanon.has(normalizaNomeCanonico(a.name))) return false
         if (a.codigo && jaLoja.has(a.codigo)) return false
+        if (!naEscala(a)) return false
         return true
       })
       .map((a) => ({

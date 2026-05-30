@@ -75,6 +75,9 @@ function classificaParada(local: string, duracaoSeg: number): ParadaUnitrac['cla
   // marcadores BASE/FORA/ROTA, é FORA_BASE conservador. Antes retornava LOJA
   // por default, mas quebras de página produzem locais como "FORA DE DE JANEIRO"
   // (FORA DE BASE truncado) que viravam LOJA falsamente.
+  // DIVERGE DE PROPÓSITO do parser XLSX (unitrac.ts:classificaParada), cujo default é
+  // LOJA — lá o dado é limpo e estruturado; aqui é texto ruidoso de PDF. Não unificar
+  // sem decisão de produto (Tia Erica). Ver nota equivalente no parser XLSX.
   return duracaoSeg < 600 ? 'FAKE_EXIT' : 'FORA_BASE'
 }
 

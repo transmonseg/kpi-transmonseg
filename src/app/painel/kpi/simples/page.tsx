@@ -658,6 +658,18 @@ export default function KpiSimplesPage() {
   }
 
   async function processar() {
+    // Guard contra perda silenciosa de edições: "Gerar agora" reprocessa do zero e
+    // reseta lineEdits. Se o operador editou linhas manualmente e clica aqui (em vez
+    // de "Re-gerar"), confirma antes de descartar — evita baixar um KPI desatualizado.
+    const nEdits = Object.keys(lineEdits).length
+    if (nEdits > 0) {
+      const ok = window.confirm(
+        `Há ${nEdits} edição(ões) manual(is) não aplicada(s).\n\n` +
+        `"Gerar agora" reprocessa do zero e DESCARTA essas edições. ` +
+        `Para aplicá-las, cancele e use o botão "Re-gerar".\n\nContinuar e descartar?`
+      )
+      if (!ok) return
+    }
     if (escalas.length === 0) { setErro('Selecione ao menos uma escala.'); return }
     if (unitracFiles.length === 0) { setErro('Selecione o Unitrac (PDF).'); return }
     // PDF é OBRIGATÓRIO (formato principal usado pela Erica).

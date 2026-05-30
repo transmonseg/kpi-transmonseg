@@ -162,6 +162,13 @@ function classificaParada(local: string, duracaoSeg: number): ParadaUnitrac['cla
   if (ehSoROTA(local)) {
     return duracaoSeg < MIN_DURACAO_FORA_SEG ? 'FAKE_EXIT' : 'FORA_BASE'
   }
+  // DEFAULT = LOJA. Diverge DE PROPÓSITO do parser PDF (unitrac-pdf.ts:classificaParada),
+  // que usa FORA_BASE como default. Motivo: o XLSX é dado estruturado e limpo — um local
+  // sem marcador BASE/FORA/ROTA é uma loja real. Já o PDF sofre quebra de página e
+  // produz lixo de texto ("FORA DE DE JANEIRO") que NÃO pode virar LOJA, por isso lá o
+  // default é conservador. Em modo sem-geofence (produção) parada sem código não casa
+  // por código de qualquer forma, então o impacto da divergência é mínimo. Unificar os
+  // dois defaults é decisão de produto (Tia Erica) — não alterar sem essa definição.
   return 'LOJA'
 }
 
