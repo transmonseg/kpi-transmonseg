@@ -1139,14 +1139,14 @@ function FileDropzone({ className, eyebrow, label, hint, accept, multiple, files
 
 function AvisosRevisao({ linhas }: { linhas: PreviewLinha[] }) {
   const semPlaca = linhas.filter(l => !l.placa).length
-  const baixaConfianca = linhas.filter(l => l.confianca === 'LOW' || l.confianca === 'UNMATCHED').length
-  const comAnomalia = linhas.filter(l => l.anomalias.length > 0).length
+  const semRastreador = linhas.filter(l => l.status === 'SEM_RASTREADOR').length
+  const naoFoi = linhas.filter(l => l.status === 'NAO_FOI_AO_CLIENTE').length
   const foraDeBase = linhas.filter(l => l.status === 'FORA_DE_BASE').length
 
   const itens = [
     { n: semPlaca, txt: 'sem placa' },
-    { n: baixaConfianca, txt: 'baixa confiança' },
-    { n: comAnomalia, txt: 'com anomalia' },
+    { n: semRastreador, txt: 'sem rastreador' },
+    { n: naoFoi, txt: 'não foi ao cliente' },
     { n: foraDeBase, txt: 'fora de base' },
   ].filter(i => i.n > 0)
 
@@ -1322,9 +1322,6 @@ function PreviewRow({
   editValues: LineEditPatch
   onEdit: (patch: LineEditPatch) => void
 }) {
-  const semGps = !linha.tem_gps
-  const temAnomaliaHigh = linha.anomalias.some(c => ['ANOM-01','ANOM-04','ANOM-06','ANOM-07'].includes(c))
-  const precisaRevisao = linha.revisar || linha.confianca === 'UNMATCHED' || !linha.placa || linha.anomalias.length > 0
   const placaDisplay = linha.placa ? `${linha.placa.slice(0, 3)}-${linha.placa.slice(3)}` : ''
 
   const cellInput =
@@ -1335,14 +1332,14 @@ function PreviewRow({
     <tr
       className={cn(
         'transition-colors duration-100',
-        temAnomaliaHigh
-          ? 'bg-[var(--color-danger-soft)]/60 hover:bg-[var(--color-danger-soft)]'
-          : semGps
-          ? 'bg-[var(--color-warning-soft)]/40 hover:bg-[var(--color-warning-soft)]/60'
-          : precisaRevisao
-          ? 'bg-[var(--color-warning-soft)]/25 hover:bg-[var(--color-warning-soft)]/45'
-          : 'hover:bg-[var(--color-bg-hover)]',
-        precisaRevisao && 'border-l-2 border-l-[var(--color-warning)]',
+        linha.status === 'ENTREGUE'
+          ? 'hover:bg-[var(--color-bg-hover)]'
+          : linha.status === 'SEM_RASTREADOR'
+          ? 'bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/60'
+          : linha.status === 'NAO_FOI_AO_CLIENTE'
+          ? 'bg-[var(--color-warning-soft)]/35 hover:bg-[var(--color-warning-soft)]/55'
+          : 'bg-[var(--color-info-soft)]/40 hover:bg-[var(--color-info-soft)]/60',
+        linha.status === 'FORA_DE_BASE' && 'border-l-2 border-l-[var(--color-info)]',
       )}
       title={linha.anomalias.length > 0 ? `Anomalias: ${linha.anomalias.join(', ')}` : undefined}
     >
@@ -1350,12 +1347,13 @@ function PreviewRow({
         <span className="flex items-center gap-1.5">
           <span
             aria-hidden
-            title={linha.confianca === 'HIGH' ? `Match alta confiança via ${linha.algoritmo}` : linha.confianca === 'LOW' ? `Match baixa confiança via ${linha.algoritmo}` : 'Sem match GPS'}
+            title={STATUS_LABEL[linha.status]}
             className={cn(
               'h-1.5 w-1.5 shrink-0 rounded-full',
-              linha.confianca === 'HIGH' && 'bg-[var(--color-success)]',
-              linha.confianca === 'LOW' && 'bg-[var(--color-warning)]',
-              linha.confianca === 'UNMATCHED' && 'bg-[var(--color-danger)] animate-pulse-dot',
+              linha.status === 'ENTREGUE' && 'bg-[var(--color-success)]',
+              linha.status === 'SEM_RASTREADOR' && 'bg-[var(--color-danger)]',
+              linha.status === 'NAO_FOI_AO_CLIENTE' && 'bg-[var(--color-warning)]',
+              linha.status === 'FORA_DE_BASE' && 'bg-[var(--color-info)]',
             )}
           />
           {linha.ordem}
