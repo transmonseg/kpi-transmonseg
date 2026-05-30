@@ -1,14 +1,15 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import type { Metricas } from '@/lib/kpi/dashboard-metricas'
 import { REDES, REDE_LABEL } from '@/lib/kpi/redes'
 import InserirManual from './inserir-manual'
 import Historico from './historico'
 import ResumoOperacao, { type ResumoOperacaoData } from './resumo-operacao'
+import { iniciarTour, tourJaVisto } from './tour'
 import { hojeBR } from '@/lib/data-br'
-import { ArrowSquareOut, CheckCircle, WarningCircle, ArrowClockwise } from '@phosphor-icons/react/dist/ssr'
+import { ArrowSquareOut, CheckCircle, WarningCircle, ArrowClockwise, Question } from '@phosphor-icons/react/dist/ssr'
 import { LineChart, BarList, ColumnChart, fmtNum, type BarItem } from '@/app/painel/charts'
 
 type Periodo = 'dia' | 'semana' | 'mes' | 'ano'
@@ -56,6 +57,7 @@ export default function DashboardClient({ resumo }: { resumo?: ResumoOperacaoDat
   const [intervalo, setIntervalo] = useState<[string, string] | null>(null)
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState(false)
+  const tourAuto = useRef(false)
 
   useEffect(() => {
     if (tab !== 'geral') return
@@ -68,6 +70,13 @@ export default function DashboardClient({ resumo }: { resumo?: ResumoOperacaoDat
       .finally(() => setCarregando(false))
   }, [tab, periodo, data, redes])
 
+  useEffect(() => {
+    if (tab !== 'geral' || !m || tourAuto.current || tourJaVisto()) return
+    tourAuto.current = true
+    const id = setTimeout(() => iniciarTour(), 800)
+    return () => clearTimeout(id)
+  }, [tab, m])
+
   const mesAtual = data.slice(0, 7)
   const recarregar = () => setRedes(r => [...r])
 
@@ -77,24 +86,30 @@ export default function DashboardClient({ resumo }: { resumo?: ResumoOperacaoDat
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <span className="text-overline">Operação</span>
-          <h1 className="mt-1 text-display text-[30px] leading-none text-[var(--color-fg)]">Dashboard</h1>
+          <h1 data-tour="titulo" className="mt-1 text-display text-[30px] leading-none text-[var(--color-fg)]">Dashboard</h1>
           <p className="mt-2 max-w-[52ch] text-[13px] leading-relaxed text-[var(--color-fg-muted)]">
             Entregas, rastreamento e desempenho por rede, consolidado a partir dos KPIs inseridos.
           </p>
         </div>
         {tab === 'geral' && (
-          <button
-            onClick={() => window.open(`/api/dashboard/relatorio?periodo=${periodo}&data=${data}&redes=${redes.join(',')}`, '_blank')}
-            className={BTN_SEC}
-          >
-            <ArrowSquareOut size={14} weight="bold" />
-            Gerar relatório
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => iniciarTour()} className={BTN_SEC}>
+              <Question size={14} weight="bold" /> Ver tour
+            </button>
+            <button
+              data-tour="relatorio"
+              onClick={() => window.open(`/api/dashboard/relatorio?periodo=${periodo}&data=${data}&redes=${redes.join(',')}`, '_blank')}
+              className={BTN_SEC}
+            >
+              <ArrowSquareOut size={14} weight="bold" />
+              Gerar relatório
+            </button>
+          </div>
         )}
       </header>
 
       {/* Tabs */}
-      <nav className="mt-8 flex gap-1 border-b border-[var(--color-border)]">
+      <nav data-tour="abas" className="mt-8 flex gap-1 border-b border-[var(--color-border)]">
         {([['geral', 'Visão geral'], ['inserir', 'Inserir KPIs'], ['historico', 'Histórico']] as [Tab, string][]).map(([t, label]) => (
           <button
             key={t} onClick={() => setTab(t)}
@@ -146,7 +161,7 @@ function VisaoGeral(props: {
     <div className="space-y-10">
       {/* Filtros */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-0.5 shadow-soft">
+        <div data-tour="periodo" className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-0.5 shadow-soft">
           {(['dia', 'semana', 'mes', 'ano'] as Periodo[]).map(p => (
             <button
               key={p} onClick={() => setPeriodo(p)}
@@ -279,7 +294,7 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
   return (
     <div className="space-y-14">
       {/* ═══════ CAMADA 1 — COMO FOI A OPERAÇÃO ═══════ */}
-      <section className="space-y-4 animate-fade-up">
+      <section data-tour="resumo" className="space-y-4 animate-fade-up">
         <SecaoHead n="01" titulo="Como foi a operação" sub="O resultado do período num olhar." />
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
@@ -330,7 +345,7 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
       </section>
 
       {/* ═══════ CAMADA 2 — ONDE AGIR AGORA ═══════ */}
-      <section className="space-y-5 animate-fade-up" style={{ animationDelay: '80ms' }}>
+      <section data-tour="agir" className="space-y-5 animate-fade-up" style={{ animationDelay: '80ms' }}>
         <SecaoHead n="02" titulo="Onde agir agora" sub="Lojas com problema e os clientes/rotas mais lentos." />
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
           <div className={`overflow-hidden lg:col-span-3 ${CARD}`}>
@@ -388,7 +403,7 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
       </section>
 
       {/* ═══════ CAMADA 3 — TENDÊNCIAS E ANÁLISE ═══════ */}
-      <section className="space-y-5 animate-fade-up" style={{ animationDelay: '160ms' }}>
+      <section data-tour="tendencias" className="space-y-5 animate-fade-up" style={{ animationDelay: '160ms' }}>
         <SecaoHead n="03" titulo="Tendências e análise" sub="Como o período evoluiu dia a dia." />
 
         {m.serie.length > 1 && <SerieChart serie={m.serie} />}
