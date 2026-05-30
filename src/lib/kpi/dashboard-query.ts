@@ -18,10 +18,23 @@ export function intervaloPeriodo(periodo: string, ref: string): [string, string]
     const f = new Date(i); f.setUTCDate(i.getUTCDate() + 6)
     return [i.toISOString().slice(0, 10), f.toISOString().slice(0, 10)]
   }
+  if (periodo === 'ano') return [`${ref.slice(0, 4)}-01-01`, `${ref.slice(0, 4)}-12-31`]
   // mês
   const i = `${ref.slice(0, 7)}-01`
   const f = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0))
   return [i, f.toISOString().slice(0, 10)]
+}
+
+/** Intervalo do período imediatamente anterior ao de `ref` (pra comparação). */
+export function intervaloAnterior(periodo: string, ref: string): [string, string] {
+  const d = new Date(`${ref}T00:00:00Z`)
+  if (periodo === 'dia') { const p = new Date(d); p.setUTCDate(d.getUTCDate() - 1); const s = p.toISOString().slice(0, 10); return [s, s] }
+  if (periodo === 'semana') { const p = new Date(d); p.setUTCDate(d.getUTCDate() - 7); return intervaloPeriodo('semana', p.toISOString().slice(0, 10)) }
+  if (periodo === 'ano') { const a = Number(ref.slice(0, 4)) - 1; return [`${a}-01-01`, `${a}-12-31`] }
+  // mês (default)
+  const y = d.getUTCFullYear(), mo = d.getUTCMonth() // 0-based; mês anterior = mo-1
+  const ini = new Date(Date.UTC(y, mo - 1, 1)), fim = new Date(Date.UTC(y, mo, 0))
+  return [ini.toISOString().slice(0, 10), fim.toISOString().slice(0, 10)]
 }
 
 /**
