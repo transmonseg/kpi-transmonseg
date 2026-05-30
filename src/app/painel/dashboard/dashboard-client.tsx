@@ -94,7 +94,7 @@ export default function DashboardClient({ resumo }: { resumo?: ResumoOperacaoDat
         {tab === 'geral' && (
           <div className="flex gap-2">
             <button onClick={() => iniciarTour()} className={BTN_SEC}>
-              <Question size={14} weight="bold" /> Ver tour
+              <Question size={14} weight="bold" /> Ver tutorial
             </button>
             <button
               data-tour="relatorio"
