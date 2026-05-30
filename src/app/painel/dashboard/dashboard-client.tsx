@@ -51,6 +51,7 @@ export default function DashboardClient({ resumo }: { resumo?: ResumoOperacaoDat
   const [data, setData] = useState(hoje())
   const [redes, setRedes] = useState<string[]>([])
   const [m, setM] = useState<Metricas | null>(null)
+  const [mAnt, setMAnt] = useState<Metricas | null>(null)
   const [intervalo, setIntervalo] = useState<[string, string] | null>(null)
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState(false)
@@ -61,8 +62,8 @@ export default function DashboardClient({ resumo }: { resumo?: ResumoOperacaoDat
     const qs = new URLSearchParams({ periodo, data, redes: redes.join(',') })
     fetch(`/api/dashboard?${qs}`)
       .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() })
-      .then(j => { setM(j.metricas); setIntervalo(j.intervalo); setErro(false) })
-      .catch(() => { setM(null); setErro(true) })
+      .then(j => { setM(j.metricas); setMAnt(j.metricasAnterior ?? null); setIntervalo(j.intervalo); setErro(false) })
+      .catch(() => { setM(null); setMAnt(null); setErro(true) })
       .finally(() => setCarregando(false))
   }, [tab, periodo, data, redes])
 
@@ -118,7 +119,7 @@ export default function DashboardClient({ resumo }: { resumo?: ResumoOperacaoDat
             {resumo && <ResumoOperacao r={resumo} />}
             <VisaoGeral
               periodo={periodo} setPeriodo={setPeriodo} data={data} setData={setData}
-              redes={redes} setRedes={setRedes} m={m} intervalo={intervalo}
+              redes={redes} setRedes={setRedes} m={m} mAnt={mAnt} intervalo={intervalo}
               carregando={carregando} erro={erro} onRetry={recarregar} mes={mesAtual}
             />
           </div>
@@ -134,10 +135,10 @@ function VisaoGeral(props: {
   periodo: Periodo; setPeriodo: (p: Periodo) => void
   data: string; setData: (d: string) => void
   redes: string[]; setRedes: (r: string[]) => void
-  m: Metricas | null; intervalo: [string, string] | null
+  m: Metricas | null; mAnt: Metricas | null; intervalo: [string, string] | null
   carregando: boolean; erro: boolean; onRetry: () => void; mes: string
 }) {
-  const { periodo, setPeriodo, data, setData, redes, setRedes, m, intervalo, carregando, erro, onRetry, mes } = props
+  const { periodo, setPeriodo, data, setData, redes, setRedes, m, mAnt, intervalo, carregando, erro, onRetry, mes } = props
   const toggleRede = (r: string) => setRedes(redes.includes(r) ? redes.filter(x => x !== r) : [...redes, r])
 
   return (
@@ -191,7 +192,7 @@ function VisaoGeral(props: {
       </div>
 
       {carregando ? <Skeleton /> : erro ? <Erro onRetry={onRetry} /> : !m || m.total === 0 ? <Vazio /> : (
-        <Conteudo key={`${periodo}-${data}-${redes.join(',')}`} m={m} mes={mes} />
+        <Conteudo key={`${periodo}-${data}-${redes.join(',')}`} m={m} mAnt={mAnt} mes={mes} />
       )}
     </div>
   )
@@ -254,9 +255,11 @@ function Erro({ onRetry }: { onRetry: () => void }) {
   )
 }
 
-function Conteudo({ m, mes }: { m: Metricas; mes: string }) {
+function Conteudo({ m, mAnt, mes }: { m: Metricas; mAnt: Metricas | null; mes: string }) {
   const pctGps = m.total ? Math.round(100 * m.com_rastreador / m.total) : 0
   const pctFalha = m.total ? Math.round(100 * m.nao_foi / m.total) : 0
+  const pctGpsAnt = mAnt ? Math.round(100 * mAnt.com_rastreador / (mAnt.total || 1)) : null
+  const pctFalhaAnt = mAnt ? Math.round(100 * mAnt.nao_foi / (mAnt.total || 1)) : null
 
   const problema = useMemo(() => {
     const map = new Map<string, { rede_id: string; loja: string; sem: number; nao: number }>()
@@ -288,14 +291,15 @@ function Conteudo({ m, mes }: { m: Metricas; mes: string }) {
               <div className="mt-2 text-[12px] text-[var(--color-fg-subtle)]">
                 <span className="text-numeric">{m.entregue}</span> de <span className="text-numeric">{m.total}</span> entregas · meta ≥ 95%
               </div>
+              <div className="mt-2"><Delta atual={m.pctEntregue} anterior={mAnt?.pctEntregue} /></div>
             </div>
           </div>
 
           {/* Secundários — menores, comunicam o resto do status */}
           <div className={`grid grid-cols-1 overflow-hidden divide-y divide-[var(--color-border)] sm:grid-cols-3 sm:divide-x sm:divide-y-0 lg:col-span-8 ${CARD}`}>
-            <HeroTile i={0} valor={`${pctFalha}%`} label="Não foi ao cliente" status={tomFalha(pctFalha)} nota={`${m.nao_foi} não realizadas`} />
-            <HeroTile i={1} valor={`${pctGps}%`} label="Cobertura GPS" status={tomGps(pctGps)} nota={`${m.sem_rastreador} sem rastreador`} />
-            <HeroTile i={2} valor={fmtNum(m.total)} label="Entregas no período" nota={`${m.serie.length} dia${m.serie.length === 1 ? '' : 's'} operados`} />
+            <HeroTile i={0} valor={`${pctFalha}%`} label="Não foi ao cliente" status={tomFalha(pctFalha)} nota={`${m.nao_foi} não realizadas`} delta={<Delta atual={pctFalha} anterior={pctFalhaAnt} inverso />} />
+            <HeroTile i={1} valor={`${pctGps}%`} label="Cobertura GPS" status={tomGps(pctGps)} nota={`${m.sem_rastreador} sem rastreador`} delta={<Delta atual={pctGps} anterior={pctGpsAnt} />} />
+            <HeroTile i={2} valor={fmtNum(m.total)} label="Entregas no período" nota={`${m.serie.length} dia${m.serie.length === 1 ? '' : 's'} operados`} delta={<Delta atual={m.total} anterior={mAnt?.total} neutro suf="" />} />
           </div>
         </div>
 
@@ -319,7 +323,7 @@ function Conteudo({ m, mes }: { m: Metricas; mes: string }) {
         </div>
 
         {/* Tempos médios da operação */}
-        <TempoStrip m={m} />
+        <TempoStrip m={m} mAnt={mAnt} />
       </section>
 
       {/* ═══════ CAMADA 2 — ONDE AGIR AGORA ═══════ */}
@@ -460,7 +464,7 @@ function SecaoHead({ n, titulo, sub }: { n: string; titulo: string; sub: string 
   )
 }
 
-function HeroTile({ i, valor, label, status, nota }: { i: number; valor: string | number; label: string; status?: 'ok' | 'warn' | 'bad'; nota?: string }) {
+function HeroTile({ i, valor, label, status, nota, delta }: { i: number; valor: string | number; label: string; status?: 'ok' | 'warn' | 'bad'; nota?: string; delta?: React.ReactNode }) {
   const alerta = status && status !== 'ok'
   return (
     <div className="p-5 sm:p-6 animate-fade-up" style={{ animationDelay: `${i * 60}ms` }}>
@@ -470,8 +474,18 @@ function HeroTile({ i, valor, label, status, nota }: { i: number; valor: string 
         {alerta && <span className="h-1.5 w-1.5 rounded-full" style={{ background: COR[status!] }} />}
       </div>
       {nota && <div className="mt-0.5 text-[11px]" style={{ color: alerta ? COR[status!] : 'var(--color-fg-subtle)' }}>{nota}</div>}
+      {delta && <div className="mt-1.5">{delta}</div>}
     </div>
   )
+}
+
+function Delta({ atual, anterior, inverso, neutro, suf = ' p.p.' }: { atual: number | null | undefined; anterior: number | null | undefined; inverso?: boolean; neutro?: boolean; suf?: string }) {
+  if (atual == null || anterior == null) return <span className="text-[10px] text-[var(--color-fg-subtle)]">sem comparação</span>
+  const d = Math.round((atual - anterior) * 10) / 10
+  if (d === 0) return <span className="text-[10px] text-[var(--color-fg-subtle)]">estável vs anterior</span>
+  const seta = d > 0 ? '▲' : '▼'
+  const cor = neutro ? 'var(--color-fg-muted)' : (inverso ? d < 0 : d > 0) ? 'var(--color-success)' : 'var(--color-danger)'
+  return <span className="text-[10px] font-medium" style={{ color: cor }}>{seta} {Math.abs(d).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}{suf} vs anterior</span>
 }
 
 function Painel({ titulo, children, className }: { titulo: string; children: React.ReactNode; className?: string }) {
@@ -507,12 +521,12 @@ function PorRede({ redes }: { redes: Metricas['porRede'] }) {
 
 // ──────────────────────────────────────────────── Seções de tempo (novas) ──
 
-function TempoStrip({ m }: { m: Metricas }) {
+function TempoStrip({ m, mAnt }: { m: Metricas; mAnt: Metricas | null }) {
   if (m.tempoMedioRotaMin == null && m.tempoMedioTotalMin == null) return null
   const tiles = [
-    { label: 'Tempo médio de rota', value: fmtMin(m.tempoMedioRotaMin), sub: 'CD → Loja', color: 'var(--color-accent)' },
-    { label: 'Tempo médio em loja', value: fmtMin(m.tempoMedioLojaMin), sub: 'Chegada → Saída', color: 'var(--color-warning)' },
-    { label: 'Tempo total médio', value: fmtMin(m.tempoMedioTotalMin), sub: 'Saída CD → Saída Loja', color: 'var(--color-info)' },
+    { label: 'Tempo médio de rota', value: fmtMin(m.tempoMedioRotaMin), sub: 'CD → Loja', color: 'var(--color-accent)', atual: m.tempoMedioRotaMin, anterior: mAnt?.tempoMedioRotaMin },
+    { label: 'Tempo médio em loja', value: fmtMin(m.tempoMedioLojaMin), sub: 'Chegada → Saída', color: 'var(--color-warning)', atual: m.tempoMedioLojaMin, anterior: mAnt?.tempoMedioLojaMin },
+    { label: 'Tempo total médio', value: fmtMin(m.tempoMedioTotalMin), sub: 'Saída CD → Saída Loja', color: 'var(--color-info)', atual: m.tempoMedioTotalMin, anterior: mAnt?.tempoMedioTotalMin },
   ]
   return (
     <div className={`grid grid-cols-3 overflow-hidden divide-x divide-[var(--color-border)] ${CARD} animate-fade-up`}>
@@ -523,6 +537,7 @@ function TempoStrip({ m }: { m: Metricas }) {
             {t.value}
           </div>
           <div className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">{t.sub}</div>
+          <div className="mt-1.5"><Delta atual={t.atual} anterior={t.anterior} inverso suf=" min" /></div>
         </div>
       ))}
     </div>

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { calcularMetricas, filtrar } from '@/lib/kpi/dashboard-metricas'
-import { intervaloPeriodo, carregarEntradasManuais } from '@/lib/kpi/dashboard-query'
+import { intervaloPeriodo, intervaloAnterior, carregarEntradasManuais } from '@/lib/kpi/dashboard-query'
 import { hojeBR } from '@/lib/data-br'
 
 export const runtime = 'nodejs'
@@ -29,5 +29,19 @@ export async function GET(req: NextRequest) {
   }
 
   const filt = filtrar(linhas, { redes })
-  return NextResponse.json({ periodo, ref, intervalo: [ini, fim], redes, metricas: calcularMetricas(filt) })
+
+  // Período anterior (comparação best-effort — erro nunca derruba a resposta).
+  let metricasAnterior = null
+  if (periodo !== 'custom') {
+    try {
+      const [aIni, aFim] = intervaloAnterior(periodo, ref)
+      const linhasAnt = await carregarEntradasManuais(svc, aIni, aFim)
+      const filtAnt = filtrar(linhasAnt, { redes })
+      if (filtAnt.length) metricasAnterior = calcularMetricas(filtAnt)
+    } catch {
+      metricasAnterior = null
+    }
+  }
+
+  return NextResponse.json({ periodo, ref, intervalo: [ini, fim], redes, metricas: calcularMetricas(filt), metricasAnterior })
 }
