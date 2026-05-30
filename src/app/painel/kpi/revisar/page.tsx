@@ -98,7 +98,7 @@ export default function RevisarKpiPage() {
             {Object.entries(preview.redes).sort((a, b) => b[1].total - a[1].total).map(([rede, bucket]) => {
               const okPct = bucket.total === 0 ? 0 : Math.round((bucket.ok_full.length / bucket.total) * 100)
               return (
-                <Card key={rede} className="cursor-pointer hover:bg-gray-50" onClick={() => setRedeAberta(redeAberta === rede ? null : rede)}>
+                <Card key={rede} className="cursor-pointer hover:bg-[var(--color-bg-subtle)]" onClick={() => setRedeAberta(redeAberta === rede ? null : rede)}>
                   <CardContent className="p-4">
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="font-semibold">{rede}</h3>
@@ -107,7 +107,7 @@ export default function RevisarKpiPage() {
                     <div className="space-y-1 text-sm">
                       <div className="flex items-center gap-2"><CheckCircle className="text-green-600" /> <strong>{bucket.ok_full.length}</strong> placas casaram (todas as rotas) {okPct}%</div>
                       <div className="flex items-center gap-2"><WarningCircle className="text-amber-600" /> <strong>{bucket.ok_parcial.length}</strong> parciais (revisar)</div>
-                      <div className="flex items-center gap-2"><WifiSlash className="text-gray-500" /> <strong>{bucket.sem_rastreador.length}</strong> sem rastreador</div>
+                      <div className="flex items-center gap-2"><WifiSlash className="text-[var(--color-fg-subtle)]" /> <strong>{bucket.sem_rastreador.length}</strong> sem rastreador</div>
                     </div>
 
                     {redeAberta === rede && (
@@ -126,9 +126,9 @@ export default function RevisarKpiPage() {
                         )}
                         {bucket.sem_rastreador.length > 0 && (
                           <div>
-                            <div className="font-medium text-gray-700 mb-1">⊙ SEM RASTREADOR — KPI sai sem horários</div>
+                            <div className="font-medium text-[var(--color-fg-muted)] mb-1">⊙ SEM RASTREADOR — KPI sai sem horários</div>
                             {bucket.sem_rastreador.map(p => (
-                              <div key={p.placa} className="mb-1 pl-2 border-l-2 border-gray-300">
+                              <div key={p.placa} className="mb-1 pl-2 border-l-2 border-[var(--color-border-strong)]">
                                 <strong>{p.placa}</strong> {p.motorista && `· ${p.motorista}`} — {p.lojas_escala.map(l => l.nome).join(' | ')}
                               </div>
                             ))}

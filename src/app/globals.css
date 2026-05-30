@@ -55,24 +55,25 @@
 
   /* Semantic surface/foreground tokens (LIGHT defaults).
      Off-white de fundo, off-black (zinc-950) de texto — pure black/white banidos. */
-  --color-bg: #fafaf9;
+  /* Superfícies em azul navy claro — casa com o #1F3864 das planilhas. */
+  --color-bg: #eef2fb;
   --color-bg-elevated: #ffffff;
-  --color-bg-subtle: #f4f4f3;
-  --color-bg-hover: #ececea;
+  --color-bg-subtle: #e3eaf6;
+  --color-bg-hover: #dbe4f4;
 
-  /* Bordas levemente mais marcadas no light pra dar definição. */
-  --color-border: #e1ddd9;       /* stone-200/300 ajustado, contrasta com bg #fafaf9 */
-  --color-border-strong: #c8c2bc; /* mais sólida pra Card destacar */
+  /* Bordas azuladas, dão definição sobre o fundo azul claro. */
+  --color-border: #d2ddef;
+  --color-border-strong: #b9c8e4;
 
-  --color-fg: #0a0a0a;
-  --color-fg-muted: #3f3e3a;   /* stone-700+ — 10.5:1 em bg light, sólido pra body */
-  --color-fg-subtle: #6b6660;  /* stone-500+ — 5.4:1 em bg light, AA solid pra small text */
+  --color-fg: #0b1220;        /* quase preto, levemente azulado */
+  --color-fg-muted: #3a4659;  /* slate — ~9:1 em bg light, sólido pra body */
+  --color-fg-subtle: #64748b; /* slate-500 — AA em bg light, captions */
 
   /* Acento = navy KPI #1F3864 (alinha UI com cor do XLSX gerado). */
   --color-accent: var(--color-navy-700);
   --color-accent-fg: #ffffff;
   --color-accent-hover: var(--color-navy-800);
-  --color-accent-soft: var(--color-navy-50);
+  --color-accent-soft: #dde8f8;
   --color-accent-soft-fg: var(--color-navy-800);
 
   --color-success: #16a34a;
@@ -91,15 +92,15 @@
   --color-info-soft: #dbeafe;
   --color-info-soft-fg: #1d4ed8;
 
-  /* Sidebar (always-dark, independent of theme). */
-  --color-sidebar-bg: #09090b;
-  --color-sidebar-bg-2: #0c0c0e;
-  --color-sidebar-border: #1f1f23;
-  --color-sidebar-fg: #d4d4d8;
-  --color-sidebar-fg-muted: #71717a;
-  --color-sidebar-fg-strong: #fafafa;
-  --color-sidebar-hover: #18181b;
-  --color-sidebar-active: #1f1f23;
+  /* Sidebar (always-dark, independent of theme) — navy escuro, sem preto. */
+  --color-sidebar-bg: #0a1020;
+  --color-sidebar-bg-2: #0c1426;
+  --color-sidebar-border: #1e2a44;
+  --color-sidebar-fg: #c7d2e6;
+  --color-sidebar-fg-muted: #6b7a95;
+  --color-sidebar-fg-strong: #f4f7fc;
+  --color-sidebar-hover: #16203a;
+  --color-sidebar-active: #1f2c49;
   /* Acento do sidebar: navy claro pra contrastar com o fundo always-dark
      (var(--color-accent) = navy-700 escuro some sobre #09090b). */
   --color-sidebar-accent: var(--color-navy-300);
@@ -118,28 +119,29 @@
 /* DARK theme overrides — applied when <html class="dark">.
    Zinc-950 puro (não black puro) com tons quentes pra equilibrar o blue accent. */
 .dark {
-  --color-bg: #0a0a0a;
-  --color-bg-elevated: #141414;
-  --color-bg-subtle: #1c1c1c;
-  --color-bg-hover: #232323;
+  /* Superfícies navy escuras — sem mais preto puro, tudo azulado. */
+  --color-bg: #0a1122;
+  --color-bg-elevated: #141d33;
+  --color-bg-subtle: #1b2740;
+  --color-bg-hover: #233152;
 
-  --color-border: #242424;
-  --color-border-strong: #333333;
+  --color-border: #28324b;
+  --color-border-strong: #394b6e;
 
-  --color-fg: #fafaf9;
-  --color-fg-muted: #d6d3d1;   /* stone-300 — alto contraste em bg dark */
-  --color-fg-subtle: #a8a29e;  /* stone-400 — captions em bg dark */
+  --color-fg: #eef2fb;
+  --color-fg-muted: #c2cde2;   /* azul-claro — alto contraste em bg navy */
+  --color-fg-subtle: #94a3bd;  /* slate azulado — captions em bg navy */
 
-  --shadow-diffusion: 0 20px 40px -15px rgba(0, 0, 0, 0.4);
-  --shadow-soft: 0 1px 0 0 rgba(0, 0, 0, 0.4),
-    0 4px 12px -2px rgba(0, 0, 0, 0.3);
-  --shadow-inner-edge: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --shadow-diffusion: 0 20px 44px -15px rgba(3, 8, 20, 0.55);
+  --shadow-soft: 0 1px 0 0 rgba(3, 8, 20, 0.5),
+    0 4px 12px -2px rgba(3, 8, 20, 0.4);
+  --shadow-inner-edge: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 
-  /* Acento dark: navy invertido (mais claro pra contrastar com bg dark). */
+  /* Acento dark: navy invertido (mais claro pra contrastar com bg navy). */
   --color-accent: var(--color-navy-300);
   --color-accent-fg: var(--color-navy-900);
   --color-accent-hover: var(--color-navy-200);
-  --color-accent-soft: var(--color-navy-800);
+  --color-accent-soft: #1c2a47;
   --color-accent-soft-fg: var(--color-navy-200);
 
   --color-success: #22c55e;

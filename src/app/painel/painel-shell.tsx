@@ -133,10 +133,10 @@ function SidebarBrand({ onCloseHint }: { onCloseHint?: () => void }) {
           T
         </span>
         <span className="flex flex-col leading-none">
-          <span className="text-[14px] font-medium tracking-tight text-zinc-50">
+          <span className="text-[14px] font-medium tracking-tight text-[var(--color-sidebar-fg-strong)]">
             Transmonseg
           </span>
-          <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-600">
+          <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--color-sidebar-fg-muted)]">
             KPI
           </span>
         </span>
@@ -146,7 +146,7 @@ function SidebarBrand({ onCloseHint }: { onCloseHint?: () => void }) {
           type="button"
           onClick={onCloseHint}
           aria-label="Fechar menu"
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition active:scale-[0.96] hover:bg-white/[0.06] hover:text-zinc-100 md:hidden"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-sidebar-fg-muted)] transition active:scale-[0.96] hover:bg-white/[0.06] hover:text-[var(--color-sidebar-fg-strong)] md:hidden"
         >
           <X size={16} weight="bold" />
         </button>
@@ -164,13 +164,13 @@ function SidebarFooter({
 }) {
   return (
     <div className="mt-auto border-t border-white/[0.06] p-3">
-      <div className="truncate px-2.5 pb-2 text-[11px] text-zinc-600">
+      <div className="truncate px-2.5 pb-2 text-[11px] text-[var(--color-sidebar-fg-muted)]">
         {userEmail}
       </div>
       <form action={sairAction}>
         <button
           type="submit"
-          className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium text-zinc-500 transition-all duration-150 active:scale-[0.98] hover:bg-white/[0.04] hover:text-zinc-100"
+          className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium text-[var(--color-sidebar-fg-muted)] transition-all duration-150 active:scale-[0.98] hover:bg-white/[0.04] hover:text-[var(--color-sidebar-fg-strong)]"
         >
           <SignOut size={15} weight="bold" />
           Sair

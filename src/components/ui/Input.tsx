@@ -9,8 +9,8 @@ export interface InputProps
 const INPUT_BASE =
   'h-10 w-full rounded-lg border bg-[var(--color-bg-elevated)] ' +
   'px-3 text-[13px] text-[var(--color-fg)] placeholder:text-[var(--color-fg-subtle)] ' +
-  'transition-colors duration-150 ' +
-  'focus-visible:outline-none focus-visible:border-[var(--color-fg)] ' +
+  'transition-[border-color,box-shadow] duration-150 ' +
+  'focus-visible:outline-none focus-visible:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/15 ' +
   'disabled:cursor-not-allowed disabled:opacity-50'
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
@@ -47,8 +47,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         className={cn(
           'min-h-[96px] w-full rounded-lg border bg-[var(--color-bg-elevated)] ' +
             'px-3 py-2.5 text-[13px] leading-relaxed text-[var(--color-fg)] placeholder:text-[var(--color-fg-subtle)] ' +
-            'transition-colors duration-150 ' +
-            'focus-visible:outline-none focus-visible:border-[var(--color-fg)] ' +
+            'transition-[border-color,box-shadow] duration-150 ' +
+            'focus-visible:outline-none focus-visible:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/15 ' +
             'disabled:cursor-not-allowed disabled:opacity-50',
           invalid
             ? 'border-[var(--color-danger)]'
