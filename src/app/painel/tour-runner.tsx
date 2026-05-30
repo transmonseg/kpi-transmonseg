@@ -41,6 +41,12 @@ export function TourRunner() {
     entrarNoFim.current = false
   }, [cap])
 
+  // Pré-carrega todas as telas do tour pra a troca entre capítulos ser rápida.
+  useEffect(() => {
+    if (!ativo) return
+    for (const c of CAPITULOS) router.prefetch(c.href)
+  }, [ativo, router])
+
   // Navegação: leva a tela certa pro capítulo e libera o overlay quando ela casar.
   useEffect(() => {
     if (!ativo) { setPronto(false); return }
@@ -61,16 +67,23 @@ export function TourRunner() {
 
   const capitulo = ativo ? CAPITULOS[cap] : null
 
-  // Tela pronta: se o passo atual não existe, pula (na direção atual). Se a tela
-  // não tem nenhum passo válido, segue pro próximo capítulo.
+  // Tela pronta: se o passo atual não existe AINDA, dá um tempo pra ele montar
+  // (telas pesadas como a cozinha demoram) antes de decidir pular. Só pula
+  // depois de esgotar a tolerância. Sem isso, o capítulo inteiro era pulado.
   useEffect(() => {
     if (!pronto || !capitulo) return
     const p = capitulo.steps[stepIdx]
     if (p && existe(p.element)) return
-    const v = acharValido(capitulo.steps, stepIdx, dir.current)
-    if (v >= 0) { setStepIdx(v); return }
-    if (cap < CAPITULOS.length - 1) setTour({ cap: cap + 1 })
-    else encerrarTutorial()
+    let tentativas = 0
+    const iv = window.setInterval(() => {
+      if (existe(capitulo.steps[stepIdx].element)) { window.clearInterval(iv); return }
+      if (++tentativas < 12) return // ~1.8s de tolerância pra a tela montar
+      window.clearInterval(iv)
+      const v = acharValido(capitulo.steps, stepIdx, dir.current)
+      if (v >= 0 && v !== stepIdx) setStepIdx(v)
+      else if (v < 0) { if (cap < CAPITULOS.length - 1) setTour({ cap: cap + 1 }); else encerrarTutorial() }
+    }, 150)
+    return () => window.clearInterval(iv)
   }, [pronto, capitulo, stepIdx, cap])
 
   const passo = capitulo?.steps[stepIdx]

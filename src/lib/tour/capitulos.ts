@@ -84,8 +84,8 @@ export const CAPITULOS: Capitulo[] = [
     href: '/painel/cozinha', pathname: '/painel/cozinha',
     steps: [
       s('[data-tour="coz-upload"]', 'Cozinha: a escala', 'Suba aqui a planilha da escala da cozinha pra processar as rotas do dia.'),
-      s('[data-tour="coz-processar"]', 'Processar', 'Depois de escolher o arquivo e a data de referência, clique pra processar e ver as rotas.', 'top'),
-      s('[data-tour="coz-rotas"]', 'As rotas', 'A tabela com as rotas. Você ajusta motorista e placa e exporta em XLSX ou PDF (salve as edições antes de exportar).', 'top'),
+      s('[data-tour="coz-processar"]', 'Processar a escala', 'Escolha o arquivo e a data, clique aqui e o sistema monta as rotas do dia. Aí aparece a tabela de rotas, onde você altera o motorista e a placa de cada uma e exporta em XLSX ou PDF.', 'top'),
+      s('[data-tour="coz-rotas"]', 'As rotas e as alterações', 'Cada linha é uma rota. Edite o motorista e a placa direto na tabela e clique em "Salvar edições" antes de exportar.', 'top'),
     ],
   },
   // 6 ─ Clientes da cozinha
