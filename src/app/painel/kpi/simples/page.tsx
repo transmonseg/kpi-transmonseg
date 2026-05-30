@@ -18,6 +18,7 @@ import {
   ArrowClockwise,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button, Card, CardContent, Input, cn } from '@/components/ui'
+import { STATUS_LABEL, type StatusRota } from '@/lib/kpi/status-rota'
 import { hojeBR } from '@/lib/data-br'
 
 type VeiculoSlot = {
@@ -51,6 +52,10 @@ type PreviewLinha = {
   confianca: 'HIGH' | 'LOW' | 'UNMATCHED'
   algoritmo: string
   anomalias: string[]
+  status: StatusRota
+  revisar: boolean
+  motivoRevisao: string | null
+  saida_loja_fmt: string | null
 }
 
 type LineEditPatch = {
@@ -1132,6 +1137,35 @@ function FileDropzone({ className, eyebrow, label, hint, accept, multiple, files
 // ─── Rede preview section ────────────────────────────────────────────────────
 
 
+function AvisosRevisao({ linhas }: { linhas: PreviewLinha[] }) {
+  const semPlaca = linhas.filter(l => !l.placa).length
+  const baixaConfianca = linhas.filter(l => l.confianca === 'LOW' || l.confianca === 'UNMATCHED').length
+  const comAnomalia = linhas.filter(l => l.anomalias.length > 0).length
+  const foraDeBase = linhas.filter(l => l.status === 'FORA_DE_BASE').length
+
+  const itens = [
+    { n: semPlaca, txt: 'sem placa' },
+    { n: baixaConfianca, txt: 'baixa confiança' },
+    { n: comAnomalia, txt: 'com anomalia' },
+    { n: foraDeBase, txt: 'fora de base' },
+  ].filter(i => i.n > 0)
+
+  if (itens.length === 0) return null
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-[var(--color-border)] bg-[var(--color-warning-soft)]/40 px-5 py-2.5 text-[12px]">
+      <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--color-warning-soft-fg)]">
+        <WarningCircle size={14} weight="fill" /> Revisar:
+      </span>
+      {itens.map((i, k) => (
+        <span key={k} className="text-[var(--color-fg-muted)]">
+          <span className="text-numeric font-semibold text-[var(--color-fg)]">{i.n}</span> {i.txt}{k < itens.length - 1 ? ' ·' : ''}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 function RedePreviewSection({
   rede,
   data,
@@ -1224,6 +1258,8 @@ function RedePreviewSection({
         />
       </div>
 
+      <AvisosRevisao linhas={rede.preview} />
+
       {/* Tabela de preview */}
       <div className="overflow-x-auto">
         <table className="w-full text-[12.5px]">
@@ -1231,12 +1267,14 @@ function RedePreviewSection({
             <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)]">
               <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] w-8">#</th>
               <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)]">Loja</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)]">Status</th>
               <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)]">Placa</th>
               <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden sm:table-cell">Motorista</th>
               <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden lg:table-cell w-20">Turno</th>
               <th className="px-4 py-2.5 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] w-14">GPS</th>
               <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Saída CD</th>
               <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Ch. Loja</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Saída Loja</th>
               <th className="px-4 py-2.5 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden lg:table-cell w-20">Tempo</th>
             </tr>
           </thead>
@@ -1256,6 +1294,25 @@ function RedePreviewSection({
   )
 }
 
+const STATUS_TOM: Record<StatusRota, { bg: string; fg: string }> = {
+  ENTREGUE:           { bg: 'var(--color-success-soft)', fg: 'var(--color-success-soft-fg)' },
+  SEM_RASTREADOR:     { bg: 'var(--color-danger-soft)',  fg: 'var(--color-danger-soft-fg)' },
+  NAO_FOI_AO_CLIENTE: { bg: 'var(--color-warning-soft)', fg: 'var(--color-warning-soft-fg)' },
+  FORA_DE_BASE:       { bg: 'var(--color-info-soft)',    fg: 'var(--color-info-soft-fg)' },
+}
+
+function StatusBadge({ status }: { status: StatusRota }) {
+  const t = STATUS_TOM[status]
+  return (
+    <span
+      className="inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-semibold whitespace-nowrap"
+      style={{ background: t.bg, color: t.fg }}
+    >
+      {STATUS_LABEL[status]}
+    </span>
+  )
+}
+
 function PreviewRow({
   linha,
   editValues,
@@ -1267,6 +1324,7 @@ function PreviewRow({
 }) {
   const semGps = !linha.tem_gps
   const temAnomaliaHigh = linha.anomalias.some(c => ['ANOM-01','ANOM-04','ANOM-06','ANOM-07'].includes(c))
+  const precisaRevisao = linha.revisar || linha.confianca === 'UNMATCHED' || !linha.placa || linha.anomalias.length > 0
   const placaDisplay = linha.placa ? `${linha.placa.slice(0, 3)}-${linha.placa.slice(3)}` : ''
 
   const cellInput =
@@ -1281,7 +1339,10 @@ function PreviewRow({
           ? 'bg-[var(--color-danger-soft)]/60 hover:bg-[var(--color-danger-soft)]'
           : semGps
           ? 'bg-[var(--color-warning-soft)]/40 hover:bg-[var(--color-warning-soft)]/60'
+          : precisaRevisao
+          ? 'bg-[var(--color-warning-soft)]/25 hover:bg-[var(--color-warning-soft)]/45'
           : 'hover:bg-[var(--color-bg-hover)]',
+        precisaRevisao && 'border-l-2 border-l-[var(--color-warning)]',
       )}
       title={linha.anomalias.length > 0 ? `Anomalias: ${linha.anomalias.join(', ')}` : undefined}
     >
@@ -1308,6 +1369,9 @@ function PreviewRow({
           placeholder="Loja"
           className={cn(cellInput, 'font-medium text-[var(--color-fg)] truncate')}
         />
+      </td>
+      <td className="px-4 py-2 whitespace-nowrap">
+        <StatusBadge status={linha.status} />
       </td>
       <td className="px-4 py-2">
         <input
@@ -1364,6 +1428,9 @@ function PreviewRow({
           pattern="\d{1,2}:\d{2}"
           className={cn(monoCell, 'w-[64px] text-[var(--color-fg-muted)]')}
         />
+      </td>
+      <td className="px-4 py-2 hidden md:table-cell text-numeric text-[12px] text-[var(--color-fg-muted)]">
+        {linha.saida_loja_fmt ?? '—'}
       </td>
       <td className="px-4 py-2 hidden lg:table-cell text-right">
         <input
