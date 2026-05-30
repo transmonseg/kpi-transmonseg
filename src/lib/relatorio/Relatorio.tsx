@@ -227,7 +227,7 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
   const colHorario = m.distHorarioSaida.map(h => ({ label: String(h.hora), value: h.entregas }))
   const linhaLabels = m.serieTempos.map(p => p.data.slice(8, 10))
   const linhaSeries = [
-    { name: 'Rota (CD→loja)', color: C.navy, values: m.serieTempos.map(p => p.tempo_rota) },
+    { name: 'Rota (CD-loja)', color: C.navy, values: m.serieTempos.map(p => p.tempo_rota) },
     { name: 'Em loja', color: C.warn, values: m.serieTempos.map(p => p.tempo_loja) },
     { name: 'Total', color: C.info, values: m.serieTempos.map(p => p.tempo_total) },
   ]
@@ -363,7 +363,7 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
             sentido="maior_melhor"
           />
           <KpiCard
-            rotulo="Tempo total (CD→loja)"
+            rotulo="Tempo total (CD-loja)"
             valor={fmtMin(m.tempoMedioTotalMin)}
             delta={dTotal}
             unidadeDelta=" min"
@@ -466,7 +466,7 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
         </View>
 
         <View style={{ marginBottom: 16 }}>
-          <Text style={[S.h2, { fontSize: 11 }]}>Rotas mais demoradas (CD→loja)</Text>
+          <Text style={[S.h2, { fontSize: 11 }]}>Rotas mais demoradas (CD-loja)</Text>
           {rotasDemoradas.length > 0 ? (
             <BarPdf data={rotasDemoradas} width={CONTENT_W} color={C.bad} format={v => fmtMin(v)} />
           ) : (

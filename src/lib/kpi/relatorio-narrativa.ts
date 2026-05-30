@@ -26,18 +26,18 @@ export function montarNarrativa(m: Metricas, ant: Metricas | null, periodo: stri
 
   // 4. Tempos
   if (m.tempoMedioTotalMin != null) {
-    sumario.push(`O ciclo médio (saída do CD → saída da loja) foi de ${fmtMin(m.tempoMedioTotalMin)}, sendo ${fmtMin(m.tempoMedioRotaMin)} de rota e ${fmtMin(m.tempoMedioLojaMin)} parado em loja.`)
+    sumario.push(`O ciclo médio (da saída do CD até a saída da loja) foi de ${fmtMin(m.tempoMedioTotalMin)}, sendo ${fmtMin(m.tempoMedioRotaMin)} de rota e ${fmtMin(m.tempoMedioLojaMin)} parado em loja.`)
   }
 
   // 5. Pior rota/loja (exceção concreta)
   const piorRota = m.topRotasDemoradas[0]
-  if (piorRota) sumario.push(`A rota mais lenta foi ${piorRota.loja} (${REDE_LABEL[piorRota.rede_id] ?? piorRota.rede_id}), com ${fmtMin(piorRota.tempo_rota)} médios de CD → loja.`)
+  if (piorRota) sumario.push(`A rota mais lenta foi ${piorRota.loja} (${REDE_LABEL[piorRota.rede_id] ?? piorRota.rede_id}), com ${fmtMin(piorRota.tempo_rota)} médios de CD a loja.`)
 
   // ── Recomendações (por threshold) ──
   const recomendacoes: Narrativa['recomendacoes'] = []
   if (m.pctSemRastreador > 10) recomendacoes.push({ titulo: 'Reduzir entregas sem rastreador', corpo: `${m.pctSemRastreador}% das entregas ficaram sem GPS. Priorizar instalação/manutenção de rastreadores e cadastro no Unitrac pra recuperar visibilidade.` })
   if (m.pctEntregue < META_ENTREGA) recomendacoes.push({ titulo: 'Recuperar a taxa de entrega', corpo: `A taxa (${m.pctEntregue}%) está abaixo da meta de ${META_ENTREGA}%. Investigar as ${m.nao_foi} entregas não realizadas e as lojas com mais ocorrências.` })
-  if (m.topRotasDemoradas[0] && (m.topRotasDemoradas[0].tempo_rota ?? 0) > 240) recomendacoes.push({ titulo: 'Otimizar as rotas críticas', corpo: `As rotas mais lentas passam de 4h de CD → loja. Rever roteirização, janelas de saída e consolidação de cargas.` })
+  if (m.topRotasDemoradas[0] && (m.topRotasDemoradas[0].tempo_rota ?? 0) > 240) recomendacoes.push({ titulo: 'Otimizar as rotas críticas', corpo: `As rotas mais lentas passam de 4h de CD a loja. Rever roteirização, janelas de saída e consolidação de cargas.` })
   if (recomendacoes.length === 0) recomendacoes.push({ titulo: 'Manter o desempenho', corpo: 'Os indicadores estão dentro das metas no período. Manter o acompanhamento.' })
 
   return { sumario, recomendacoes }
