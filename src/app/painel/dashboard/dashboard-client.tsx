@@ -39,7 +39,7 @@ const tomGps   = (p: number) => p >= 90 ? 'ok' : p >= 50 ? 'warn' : 'bad'
 const BTN_SEC = 'inline-flex h-9 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3.5 text-[13px] font-medium text-[var(--color-fg)] shadow-soft transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-hover)]'
 // link-chip compacto (download)
 const CHIP_LINK = 'rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2.5 py-1 text-[11px] text-[var(--color-fg-muted)] transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]'
-const CARD = 'rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-soft'
+const CARD = 'rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-soft kpi-quad'
 
 const fmtMin = (n: number | null | undefined) => {
   if (n == null) return '—'

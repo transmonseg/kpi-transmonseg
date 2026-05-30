@@ -12,7 +12,8 @@ export const Card = forwardRef<HTMLDivElement, DivProps>(function Card(
       ref={ref}
       className={cn(
         // radius card (1.5rem) + border 1px sutil + shadow-soft tinted (skill section 9)
-        'rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-soft transition-[box-shadow,border-color,transform] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
+        // kpi-quad = luz navy em volta (acende no hover), definida em globals.css
+        'rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-soft kpi-quad',
         className,
       )}
       {...props}
