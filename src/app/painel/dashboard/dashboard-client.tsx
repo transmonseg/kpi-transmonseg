@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import type { Metricas } from '@/lib/kpi/dashboard-metricas'
 import { REDES, REDE_LABEL } from '@/lib/kpi/redes'
@@ -47,8 +48,11 @@ const fmtMin = (n: number | null | undefined) => {
   return h > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${m}min`
 }
 
-export default function DashboardClient({ resumo }: { resumo?: ResumoOperacaoData }) {
-  const [tab, setTab] = useState<Tab>('geral')
+export default function DashboardClient({ resumo, tabInicial = 'geral' }: { resumo?: ResumoOperacaoData; tabInicial?: Tab }) {
+  const router = useRouter()
+  const sp = useSearchParams()
+  const tab = (sp.get('tab') as Tab) || tabInicial
+  const setTab = (t: Tab) => router.replace(t === 'geral' ? '/painel' : `/painel?tab=${t}`, { scroll: false })
   const [periodo, setPeriodo] = useState<Periodo>('mes')
   const [data, setData] = useState(hoje())
   const [redes, setRedes] = useState<string[]>([])

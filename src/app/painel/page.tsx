@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { createServiceClient } from '@/lib/supabase/service'
 import { hojeBR } from '@/lib/data-br'
 import DashboardClient from './dashboard/dashboard-client'
@@ -73,7 +74,12 @@ async function fetchResumo(): Promise<ResumoOperacaoData> {
   }
 }
 
-export default async function PainelHome() {
+export default async function PainelHome({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const sp = await searchParams
   const resumo = await fetchResumo()
-  return <DashboardClient resumo={resumo} />
+  return (
+    <Suspense fallback={null}>
+      <DashboardClient resumo={resumo} tabInicial={sp.tab === 'inserir' || sp.tab === 'historico' ? sp.tab : 'geral'} />
+    </Suspense>
+  )
 }
