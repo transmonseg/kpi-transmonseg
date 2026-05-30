@@ -6,29 +6,67 @@ import { CheckCircle, WarningCircle } from '@phosphor-icons/react/dist/ssr'
 
 type Modo = 'mes' | 'dia'
 type Estado = { status: 'idle' | 'enviando' | 'ok' | 'erro' | 'excluindo'; lojas?: number; dias?: number; msg?: string }
+type Fechamento = { nome: string | null; em: string }
+
+// formata um timestamptz/ISO em DD/MM
+function ddmm(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+}
 
 export default function InserirManual({ data, onChange }: { data: string; onChange: (d: string) => void }) {
   const [modo, setModo] = useState<Modo>('mes')
   const [estados, setEstados] = useState<Record<string, Estado>>({})
+  const [fechados, setFechados] = useState<Record<string, Fechamento>>({})
   const [carregando, setCarregando] = useState(true)
   const mes = data.slice(0, 7)
 
   // No modo DIA pré-carrega o que já foi enviado pra a data (vindo do banco).
   // No modo MÊS não há pré-load por dia — o operador envia a planilha do mês inteiro.
   useEffect(() => {
-    if (modo === 'mes') { setEstados({}); setCarregando(false); return }
+    if (modo === 'mes') { setEstados({}); setFechados({}); setCarregando(false); return }
     setCarregando(true)
     setEstados({})
-    fetch(`/api/kpi-manual/historico?data=${data}`)
-      .then(r => r.json())
-      .then(j => {
+    setFechados({})
+    // status de envio por rede + carimbos de fechamento (revisão) da data
+    Promise.all([
+      fetch(`/api/kpi-manual/historico?data=${data}`).then(r => r.json()).catch(() => ({})),
+      fetch(`/api/kpi-manual/fechar?data=${data}`).then(r => r.json()).catch(() => ({})),
+    ])
+      .then(([hist, fech]) => {
         const e: Record<string, Estado> = {}
-        for (const [rede, n] of Object.entries(j.redes ?? {})) e[rede] = { status: 'ok', lojas: n as number }
+        for (const [rede, n] of Object.entries(hist.redes ?? {})) e[rede] = { status: 'ok', lojas: n as number }
         setEstados(e)
+        const f: Record<string, Fechamento> = {}
+        for (const row of (fech.fechados ?? []) as { rede_id: string; fechado_por_nome: string | null; fechado_em: string }[]) {
+          f[row.rede_id] = { nome: row.fechado_por_nome, em: row.fechado_em }
+        }
+        setFechados(f)
       })
-      .catch(() => {})
       .finally(() => setCarregando(false))
   }, [data, modo])
+
+  const fechar = useCallback(async (rede: string) => {
+    try {
+      const r = await fetch('/api/kpi-manual/fechar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data, rede_id: rede }),
+      })
+      if (!r.ok) return
+      const j = await r.json()
+      setFechados(s => ({ ...s, [rede]: { nome: j.fechado_por_nome ?? null, em: j.fechado_em } }))
+    } catch { /* silencioso — o estado fica como aberto */ }
+  }, [data])
+
+  const reabrir = useCallback(async (rede: string) => {
+    try {
+      const r = await fetch(`/api/kpi-manual/fechar?data=${data}&rede_id=${rede}`, { method: 'DELETE' })
+      if (!r.ok) return
+      setFechados(s => { const c = { ...s }; delete c[rede]; return c })
+    } catch { /* silencioso */ }
+  }, [data])
 
   const enviar = useCallback(async (rede: string, file: File) => {
     setEstados(s => ({ ...s, [rede]: { status: 'enviando' } }))
@@ -116,6 +154,7 @@ export default function InserirManual({ data, onChange }: { data: string; onChan
             const e = estados[rede] ?? { status: 'idle' }
             const enviado = e.status === 'ok'
             const ocupado = e.status === 'enviando' || e.status === 'excluindo'
+            const fech = modo === 'dia' ? fechados[rede] : undefined
             return (
               <div
                 key={rede}
@@ -147,6 +186,27 @@ export default function InserirManual({ data, onChange }: { data: string; onChan
                       </span>
                     )}
                   </div>
+                  {modo === 'dia' && (
+                    fech ? (
+                      <div className="mt-1.5 flex items-center gap-1.5">
+                        <span className="inline-flex items-center gap-1 text-[10.5px] font-medium" style={{ color: 'var(--color-success)' }}>
+                          <CheckCircle size={11} weight="fill" /> Revisado
+                          {fech.nome ? <span className="text-[var(--color-fg-subtle)] font-normal">· {fech.nome}</span> : null}
+                          {fech.em ? <span className="text-[var(--color-fg-subtle)] font-normal text-numeric">· {ddmm(fech.em)}</span> : null}
+                        </span>
+                        <button
+                          onClick={() => reabrir(rede)}
+                          className="cursor-pointer rounded-[var(--radius-sm)] px-1.5 py-0.5 text-[10.5px] font-medium text-[var(--color-fg-subtle)] transition-colors hover:text-[var(--color-fg)]"
+                        >Reabrir</button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => fechar(rede)}
+                        className="mt-1.5 inline-flex h-6 cursor-pointer items-center gap-1 rounded-[var(--radius-md)] border px-2 text-[10.5px] font-medium transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97]"
+                        style={{ borderColor: 'color-mix(in oklab, var(--color-success) 45%, transparent)', color: 'var(--color-success)' }}
+                      ><CheckCircle size={11} weight="bold" /> Fechar revisão</button>
+                    )
+                  )}
                 </div>
                 {enviado ? (
                   <button
