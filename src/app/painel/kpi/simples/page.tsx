@@ -779,28 +779,31 @@ export default function KpiSimplesPage() {
 
       {/* Upload grid asymmetric — escalas 7/12 (mais peso) + Unitrac+data 5/12 */}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <FileDropzone
-          className="col-span-1 lg:col-span-7"
-          eyebrow="Passo 1"
-          label="Escalas do dia"
-          hint="XLSX ou PDF · pode subir várias"
-          accept=".xlsx,.pdf"
-          multiple
-          files={escalas}
-          onAdd={addEscalas}
-          onRemove={i => setEscalas(prev => prev.filter((_, j) => j !== i))}
-        />
+        <div data-tour="gk-escala" className="col-span-1 lg:col-span-7">
+          <FileDropzone
+            eyebrow="Passo 1"
+            label="Escalas do dia"
+            hint="XLSX ou PDF · pode subir várias"
+            accept=".xlsx,.pdf"
+            multiple
+            files={escalas}
+            onAdd={addEscalas}
+            onRemove={i => setEscalas(prev => prev.filter((_, j) => j !== i))}
+          />
+        </div>
 
         <div className="col-span-1 flex flex-col gap-4 lg:col-span-5">
-          <FileDropzone
-            eyebrow="Passo 2"
-            label="Relatório Unitrac"
-            hint="XLSX e/ou PDF · múltiplos permitidos"
-            accept=".xlsx,.pdf"
-            files={unitracFiles}
-            onAdd={files => setUnitracFiles(prev => [...prev, ...files])}
-            onRemove={idx => setUnitracFiles(prev => prev.filter((_, i) => i !== idx))}
-          />
+          <div data-tour="gk-unitrac">
+            <FileDropzone
+              eyebrow="Passo 2"
+              label="Relatório Unitrac"
+              hint="XLSX e/ou PDF · múltiplos permitidos"
+              accept=".xlsx,.pdf"
+              files={unitracFiles}
+              onAdd={files => setUnitracFiles(prev => [...prev, ...files])}
+              onRemove={idx => setUnitracFiles(prev => prev.filter((_, i) => i !== idx))}
+            />
+          </div>
 
           <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
             <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
@@ -824,6 +827,10 @@ export default function KpiSimplesPage() {
         <AlteracoesCard confirmadas={alteracoes} onConfirm={addAlteracao} onRemove={removeAlteracao} data={data} />
       </div>
 
+      {/* Zona estável do CTA + resultados — alvo do tour (data-tour="gk-resultado").
+          A área de resultado por rede só existe após gerar (render condicional),
+          então o seletor aponta pra este wrapper que SEMPRE existe na 1ª visita. */}
+      <div data-tour="gk-resultado">
       {/* Error inline */}
       {erro && (
         <div className="mt-6 flex items-start gap-3 rounded-[var(--radius-card)] border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-5 py-4">
@@ -834,6 +841,7 @@ export default function KpiSimplesPage() {
 
       {/* CTA hero — botão grande tactile com progress sweep durante pending */}
       <button
+        data-tour="gk-gerar"
         type="button"
         onClick={processar}
         disabled={pending || !pronto}
@@ -974,6 +982,7 @@ export default function KpiSimplesPage() {
           ))}
         </section>
       )}
+      </div>
 
       {/* Toast de sucesso — slide-in bottom-right, auto-dismiss 4s */}
       {showToast && geracaoId && (

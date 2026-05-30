@@ -102,7 +102,7 @@ export default function InserirManual({ data, onChange }: { data: string; onChan
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-wrap items-end gap-4">
           {/* toggle modo */}
-          <div className="flex flex-col gap-2">
+          <div data-tour="ins-modo" className="flex flex-col gap-2">
             <label className="text-overline">Como enviar</label>
             <div className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-0.5 shadow-soft">
               {(['mes', 'dia'] as Modo[]).map(mo => (
@@ -117,7 +117,7 @@ export default function InserirManual({ data, onChange }: { data: string; onChan
             </div>
           </div>
           {/* seletor de período conforme o modo */}
-          <div className="flex flex-col gap-2">
+          <div data-tour="ins-periodo" className="flex flex-col gap-2">
             <label className="text-overline">{modo === 'mes' ? 'Mês dos KPIs' : 'Data dos KPIs'}</label>
             {modo === 'mes' ? (
               <input
@@ -149,7 +149,7 @@ export default function InserirManual({ data, onChange }: { data: string; onChan
           {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-[58px] animate-shimmer rounded-[var(--radius-lg)]" style={{ animationDelay: `${i * 40}ms` }} />)}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div data-tour="ins-grid" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {REDES.map((rede, i) => {
             const e = estados[rede] ?? { status: 'idle' }
             const enviado = e.status === 'ok'
