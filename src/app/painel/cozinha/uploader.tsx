@@ -21,6 +21,7 @@ import {
   Label,
   cn,
 } from '@/components/ui'
+import { hojeBR } from '@/lib/data-br'
 
 type Status = 'completa' | 'sem-placa' | 'sem-motorista' | 'vazia'
 
@@ -64,9 +65,7 @@ const SEM_VALOR = '—'
 
 export function CozinhaUploader() {
   const [arquivo, setArquivo] = useState<File | null>(null)
-  const [dataRef, setDataRef] = useState<string>(() =>
-    new Date().toISOString().slice(0, 10),
-  )
+  const [dataRef, setDataRef] = useState<string>(() => hojeBR())
   const [resultado, setResultado] = useState<Resultado | null>(null)
   const [rotasEditadas, setRotasEditadas] = useState<Rota[] | null>(null)
   const [erro, setErro] = useState<string | null>(null)

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { sugereLoja } from '@/lib/lojas/sugestao'
 import type { LojaRow } from '@/lib/lojas/catalogo'
@@ -6,6 +7,10 @@ import type { LojaRow } from '@/lib/lojas/catalogo'
 export const runtime = 'nodejs'
 
 export async function POST(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return new NextResponse('Não autenticado', { status: 401 })
+
   const body = await req.json()
   const { codigo_unitrac, nome_unitrac, lat, lng, rede_id_sugerida } = body
 

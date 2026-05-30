@@ -220,7 +220,7 @@ function preprocess(raw: string): string {
   // Reconstrói a sequência original: insere as horas entre as datas e concatena o
   // prefixo + sufixo do local_parada.
   // Padrão genérico: <date1> <date2> <campos até lat/lng> <prefix_local?> HH:MM HH:MM <suffix_local>
-  const REPAIR = /(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})\s+(0D \d{2}:\d{2}:\d{2}\s+\d+(?:[,.]\d+)?\s+0D \d{2}:\d{2}:\d{2}\s+[\s\S]+?-\d{1,2}\.\d{4,6}\s+-\d{1,3}\.\d{4,6})([\s\S]*?)\s+(\d{2}:\d{2})\s+(\d{2}:\d{2})\s+([\s\S]*?)(?=\s*\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}|\|VEHICLE_HEADER\||$)/g
+  const REPAIR = /(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})\s+(\d+D \d{2}:\d{2}:\d{2}\s+\d+(?:[,.]\d+)?\s+\d+D \d{2}:\d{2}:\d{2}\s+[\s\S]+?-\d{1,2}\.\d{4,6}\s+-\d{1,3}\.\d{4,6})([\s\S]*?)\s+(\d{2}:\d{2})\s+(\d{2}:\d{2})\s+([\s\S]*?)(?=\s*\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}|\|VEHICLE_HEADER\||$)/g
   out = out.replace(REPAIR, (_match, d1, d2, midFields, prefixLocal, h1, h2, suffixLocal) => {
     const prefix = String(prefixLocal).replace(/\s+/g, ' ').trim().replace(/\s*-\s*$/, '').trim()
     const suffix = String(suffixLocal).replace(/\s+/g, ' ').trim()
@@ -279,9 +279,9 @@ const PARADA_REGEX = new RegExp(
   [
     String.raw`(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2})\s+`,                  // chegada
     String.raw`(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2})\s+`,                  // saída
-    String.raw`(0D \d{2}:\d{2}:\d{2})\s+`,                                 // duração
+    String.raw`(\d+D \d{2}:\d{2}:\d{2})\s+`,                               // duração (\d+D: aceita estacionamento multi-dia, >24h)
     String.raw`(\d+(?:[.,]\d+)?)\s+`,                                      // distância km
-    String.raw`(0D \d{2}:\d{2}:\d{2})\s+`,                                 // tempo até
+    String.raw`(\d+D \d{2}:\d{2}:\d{2})\s+`,                               // tempo até (\d+D: idem)
     String.raw`([\s\S]*?)\s+`,                                             // endereço (não-greedy)
     String.raw`(-\d{1,2}\.\d{4,6})\s+`,                                    // lat
     String.raw`(-\d{1,3}\.\d{4,6})\s+`,                                    // lng

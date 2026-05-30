@@ -199,8 +199,15 @@ function escreverLinha(ws: ExcelJS.Worksheet, row: number, ag: LinhaAgrupada, es
   }
 
   // Fórmulas TEMPO EM LOJA com result pré-calculado (ExcelJS não calcula sozinho).
-  const tempo1 = computeTempoLoja(c1?.tempo_loja_1_min, chd1, sai1)
-  const tempo2 = computeTempoLoja(c2?.tempo_loja_1_min, chd2, sai2)
-  ws.getCell(row, 14).value = { formula: `MOD(G${row}-F${row},1)`, result: tempo1 }
-  ws.getCell(row, 15).value = { formula: `MOD(M${row}-L${row},1)`, result: tempo2 }
+  // Só emite a fórmula quando CHD e SAÍDA são horários numéricos. Se a célula tem
+  // texto ("SEM RASTREADOR" / "NÃO FOI AO CLIENTE"), MOD(texto) recalcula como #VALUE!
+  // no Excel — então deixa em branco (como no modelo aprovado).
+  const temTempo1 = !textoSlot1 && chd1 !== null && sai1 !== null
+  const temTempo2 = !textoSlot2 && chd2 !== null && sai2 !== null
+  if (temTempo1) {
+    ws.getCell(row, 14).value = { formula: `MOD(G${row}-F${row},1)`, result: computeTempoLoja(c1?.tempo_loja_1_min, chd1, sai1) }
+  }
+  if (temTempo2) {
+    ws.getCell(row, 15).value = { formula: `MOD(M${row}-L${row},1)`, result: computeTempoLoja(c2?.tempo_loja_1_min, chd2, sai2) }
+  }
 }

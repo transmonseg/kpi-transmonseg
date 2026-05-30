@@ -18,6 +18,7 @@ import {
   ArrowClockwise,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button, Card, CardContent, Input, cn } from '@/components/ui'
+import { hojeBR } from '@/lib/data-br'
 
 type VeiculoSlot = {
   motorista_nome: string | null
@@ -83,7 +84,8 @@ function downloadBase64(base64: string, filename: string, mime: string) {
 }
 
 function hoje(): string {
-  return new Date().toISOString().slice(0, 10)
+  // data no fuso de Brasília — toISOString() (UTC) à noite já vira o dia seguinte
+  return hojeBR()
 }
 
 function fmtSlot(slot: VeiculoSlot | null): string {

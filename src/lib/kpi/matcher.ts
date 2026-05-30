@@ -1225,6 +1225,8 @@ export async function cruzaEscalaUnitrac(
       for (let i = 0; i < linhasOrdenadas.length; i++) {
         const linha = linhasOrdenadas[i]
         let melhorIdx = -1
+        let melhorScore = Infinity
+        let coringaIdx = -1  // T12 coringa: fallback fraco, usado só se nenhum scorePair finito
         // Bug ARMAZEM dia 19 REGINA 1 DE MAIO: TML6D96 fez 14 paradas todas em
         // BARRA IMBUY (cod=5353012). Linha 1 DE MAIO (cod_escala diferente, sem
         // codigo_unitrac cadastrado) compartilha token "REGINA" → scorePair finito.
@@ -1261,10 +1263,16 @@ export async function cruzaEscalaUnitrac(
               if (!fung.has(donaCadastrada.rede_id) && !nomeBate) continue
             }
           }
-          // Critério primário: scorePair finito (tokens compartilhados ou levenshtein <= 2).
-          if (scorePair(linha, parada) < Infinity) {
+          // Critério primário: escolhe a parada com MENOR scorePair (a mais parecida
+          // com a loja escalada), NÃO a primeira cronológica. Bug #255: quando várias
+          // paradas livres têm score finito, a primeira no tempo nem sempre é a certa
+          // (ex: LOJA 06 às 04h vs LOJA 30 às 06h — score 0 da 30 deve ganhar).
+          // paradasOrdenadas já está em ordem cronológica → `<` estrito mantém a mais
+          // antiga em empate de score.
+          const sPar = scorePair(linha, parada)
+          if (sPar < Infinity && sPar < melhorScore) {
+            melhorScore = sPar
             melhorIdx = j
-            break
           }
           // T12: Rede fallback agora SÓ aceita paradas SEM rede identificada (coringa).
           // Antes aceitava também parada com rede igual à da escala (redes.has(linha.rede_id)),
@@ -1273,11 +1281,13 @@ export async function cruzaEscalaUnitrac(
           // física DIFERENTE, sem tokens em comum). Sem T12, o `redes.has(PREZUNIC)`
           // aceitava e o KPI saía com horários da loja errada — pior que UNMATCHED.
           // Agora: só parada não-identificada (redes.size === 0) entra como coringa.
-          if (linhasOrdenadas.length === 1 && redes.size === 0) {
-            melhorIdx = j
-            break
+          // Registrado como fallback fraco (cronologicamente primeiro); aplicado só
+          // se nenhuma parada teve scorePair finito (melhorIdx continua -1).
+          if (coringaIdx === -1 && linhasOrdenadas.length === 1 && redes.size === 0) {
+            coringaIdx = j
           }
         }
+        if (melhorIdx === -1 && coringaIdx >= 0) melhorIdx = coringaIdx
         if (melhorIdx >= 0) {
           matchByEscalaId.set(linha.id, paradasOrdenadas[melhorIdx])
           usados.add(paradasOrdenadas[melhorIdx].id)

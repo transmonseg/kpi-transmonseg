@@ -97,7 +97,7 @@ async function extractItems(buffer: Buffer): Promise<PdfItem[]> {
 
 const DATE_RE = /^(\d{2})\/(\d{2})\/(\d{4})$/
 const TIME_RE = /^(\d{2}):(\d{2})$/
-const DUR_RE = /^0D\s*(\d{2}):(\d{2}):(\d{2})$/
+const DUR_RE = /^(\d+)D\s*(\d{2}):(\d{2}):(\d{2})$/
 const LATLNG_RE = /^-\d{1,2}\.\d{4,6}$/
 const PLACA_RE = /^([A-Z]{3}-?\d[A-Z0-9]\d{2})$/
 
@@ -114,7 +114,7 @@ function parseHHMM(s: string): { hh: number; mm: number } | null {
 function parseDur(s: string): number {
   const m = s.match(DUR_RE)
   if (!m) return 0
-  return +m[1] * 3600 + +m[2] * 60 + +m[3]
+  return +m[1] * 86400 + +m[2] * 3600 + +m[3] * 60 + +m[4]
 }
 
 /**
