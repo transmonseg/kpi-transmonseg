@@ -4,14 +4,19 @@ import { useState, useCallback, useEffect } from 'react'
 import { REDES, REDE_LABEL } from '@/lib/kpi/redes'
 import { CheckCircle, WarningCircle } from '@phosphor-icons/react/dist/ssr'
 
-type Estado = { status: 'idle' | 'enviando' | 'ok' | 'erro' | 'excluindo'; lojas?: number; msg?: string }
+type Modo = 'mes' | 'dia'
+type Estado = { status: 'idle' | 'enviando' | 'ok' | 'erro' | 'excluindo'; lojas?: number; dias?: number; msg?: string }
 
 export default function InserirManual({ data, onChange }: { data: string; onChange: (d: string) => void }) {
+  const [modo, setModo] = useState<Modo>('mes')
   const [estados, setEstados] = useState<Record<string, Estado>>({})
   const [carregando, setCarregando] = useState(true)
+  const mes = data.slice(0, 7)
 
-  // Carrega o que já foi enviado pra esta data (persistência real, vinda do banco)
+  // No modo DIA pré-carrega o que já foi enviado pra a data (vindo do banco).
+  // No modo MÊS não há pré-load por dia — o operador envia a planilha do mês inteiro.
   useEffect(() => {
+    if (modo === 'mes') { setEstados({}); setCarregando(false); return }
     setCarregando(true)
     setEstados({})
     fetch(`/api/kpi-manual/historico?data=${data}`)
@@ -23,31 +28,33 @@ export default function InserirManual({ data, onChange }: { data: string; onChan
       })
       .catch(() => {})
       .finally(() => setCarregando(false))
-  }, [data])
+  }, [data, modo])
 
   const enviar = useCallback(async (rede: string, file: File) => {
     setEstados(s => ({ ...s, [rede]: { status: 'enviando' } }))
     const fd = new FormData()
-    fd.set('data', data); fd.set('rede_id', rede); fd.set('file', file)
+    fd.set('rede_id', rede); fd.set('file', file)
+    if (modo === 'mes') fd.set('mes', mes); else fd.set('data', data)
     try {
       const r = await fetch('/api/kpi-manual/upload', { method: 'POST', body: fd })
       if (!r.ok) { const msg = await r.text(); setEstados(s => ({ ...s, [rede]: { status: 'erro', msg } })); return }
       const j = await r.json()
-      setEstados(s => ({ ...s, [rede]: { status: 'ok', lojas: j.inseridas } }))
+      setEstados(s => ({ ...s, [rede]: { status: 'ok', lojas: j.inseridas, dias: j.dias } }))
     } catch (e) {
       setEstados(s => ({ ...s, [rede]: { status: 'erro', msg: String(e) } }))
     }
-  }, [data])
+  }, [data, mes, modo])
 
   const excluir = useCallback(async (rede: string) => {
     setEstados(s => ({ ...s, [rede]: { status: 'excluindo' } }))
     try {
-      await fetch(`/api/kpi-manual/upload?data=${data}&rede_id=${rede}`, { method: 'DELETE' })
+      // modo mês não tem delete por dia — só recarrega; modo dia apaga aquele dia
+      if (modo === 'dia') await fetch(`/api/kpi-manual/upload?data=${data}&rede_id=${rede}`, { method: 'DELETE' })
       setEstados(s => { const c = { ...s }; delete c[rede]; return c })
     } catch {
       setEstados(s => ({ ...s, [rede]: { status: 'erro', msg: 'falha ao excluir' } }))
     }
-  }, [data])
+  }, [data, modo])
 
   const enviadas = Object.values(estados).filter(e => e.status === 'ok').length
   const totalLojas = Object.values(estados).reduce((a, e) => a + (e.lojas ?? 0), 0)
@@ -55,18 +62,49 @@ export default function InserirManual({ data, onChange }: { data: string; onChan
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <label className="text-overline">Data dos KPIs</label>
-          <input
-            type="date" value={data} onChange={e => onChange(e.target.value)}
-            className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
-          />
+        <div className="flex flex-wrap items-end gap-4">
+          {/* toggle modo */}
+          <div className="flex flex-col gap-2">
+            <label className="text-overline">Como enviar</label>
+            <div className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-0.5 shadow-soft">
+              {(['mes', 'dia'] as Modo[]).map(mo => (
+                <button
+                  key={mo} onClick={() => setModo(mo)}
+                  className={[
+                    'h-8 cursor-pointer rounded-[var(--radius-sm)] px-3.5 text-[12px] font-medium transition-[background-color,color] duration-150',
+                    modo === mo ? 'bg-[var(--color-accent)] text-[var(--color-accent-fg)] shadow-soft' : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]',
+                  ].join(' ')}
+                >{mo === 'mes' ? 'Mês inteiro' : 'Dia específico'}</button>
+              ))}
+            </div>
+          </div>
+          {/* seletor de período conforme o modo */}
+          <div className="flex flex-col gap-2">
+            <label className="text-overline">{modo === 'mes' ? 'Mês dos KPIs' : 'Data dos KPIs'}</label>
+            {modo === 'mes' ? (
+              <input
+                type="month" value={mes} onChange={e => onChange(`${e.target.value}-01`)}
+                className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
+              />
+            ) : (
+              <input
+                type="date" value={data} onChange={e => onChange(e.target.value)}
+                className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
+              />
+            )}
+          </div>
         </div>
         <div className="text-right">
           <div className="text-display text-numeric text-[28px] text-[var(--color-fg)]">{enviadas}<span className="text-[var(--color-fg-subtle)]">/{REDES.length}</span></div>
           <div className="text-overline">redes · <span className="text-numeric" style={{ letterSpacing: 'normal' }}>{totalLojas}</span> lojas</div>
         </div>
       </div>
+
+      {modo === 'mes' && (
+        <p className="rounded-[var(--radius-md)] border-l-[3px] border-l-[var(--color-info)] bg-[var(--color-info-soft)] px-3.5 py-2.5 text-[12.5px] leading-relaxed text-[var(--color-info-soft-fg)]">
+          Suba a planilha da rede com as abas de todos os dias — o sistema identifica cada aba-dia e importa o mês inteiro de uma vez.
+        </p>
+      )}
 
       {carregando ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -100,7 +138,7 @@ export default function InserirManual({ data, onChange }: { data: string; onChan
                     )}
                     {enviado && (
                       <span className="flex items-center gap-1" style={{ color: 'var(--color-success)' }}>
-                        <CheckCircle size={12} weight="fill" /> Salvo · <span className="text-numeric">{e.lojas}</span> lojas
+                        <CheckCircle size={12} weight="fill" /> Salvo · {e.dias ? <><span className="text-numeric">{e.dias}</span> dias · </> : null}<span className="text-numeric">{e.lojas}</span> lojas
                       </span>
                     )}
                     {e.status === 'erro' && (
@@ -113,8 +151,8 @@ export default function InserirManual({ data, onChange }: { data: string; onChan
                 {enviado ? (
                   <button
                     onClick={() => excluir(rede)}
-                    className="h-7 shrink-0 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2.5 text-[11px] font-medium text-[var(--color-fg-muted)] transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-danger)] hover:text-[var(--color-danger)]"
-                  >Excluir</button>
+                    className="h-7 shrink-0 cursor-pointer rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2.5 text-[11px] font-medium text-[var(--color-fg-muted)] transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-danger)] hover:text-[var(--color-danger)]"
+                  >{modo === 'mes' ? 'Limpar' : 'Excluir'}</button>
                 ) : (
                   <label className={`h-7 inline-flex shrink-0 cursor-pointer items-center rounded-[var(--radius-md)] border px-2.5 text-[11px] font-medium transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] ${e.status === 'erro' ? 'border-[var(--color-danger)] text-[var(--color-danger)]' : 'border-[var(--color-border)] text-[var(--color-fg-muted)] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-fg)]'} ${ocupado ? 'pointer-events-none opacity-50' : ''}`}>
                     {e.status === 'erro' ? 'Tentar de novo' : 'Enviar'}

@@ -56,16 +56,10 @@ function acharColunas(ws: ExcelJS.Worksheet, hr: number): Cols {
 }
 
 /**
- * Lê um XLSX de KPI manual da Tia (aba do dia, ex "19") e extrai uma entrada por
- * loja do 1º carro: status (entregue/nao_foi/sem_rastreador), placa, motorista,
- * horários. Usado pelo dashboard que consome os KPIs manuais inseridos.
+ * Extrai as entradas de UMA aba (do 1º carro): status, placa, motorista, horários.
+ * `data` é a data já resolvida (YYYY-MM-DD) que carimba cada entrada.
  */
-export async function parseKpiManual(buf: Buffer, rede_id: string, data: string): Promise<EntradaManual[]> {
-  const wb = new ExcelJS.Workbook()
-  await wb.xlsx.load(buf as unknown as ArrayBuffer)
-  const ws = wb.getWorksheet(data.slice(8, 10)) ?? wb.worksheets[0]
-  if (!ws) return []
-
+function parseWorksheet(ws: ExcelJS.Worksheet, rede_id: string, data: string): EntradaManual[] {
   let hr = -1
   for (let r = 1; r <= Math.min(ws.rowCount, 10); r++) {
     if (/REDES|FILIAIS/i.test(cell(ws.getRow(r).getCell(1).value))) { hr = r; break }
@@ -99,4 +93,50 @@ export async function parseKpiManual(buf: Buffer, rede_id: string, data: string)
     out.push({ rede_id, data, loja, placa, motorista, status, saida_cd, chd, sai })
   }
   return out
+}
+
+/** Nome de aba que representa um dia do mês (1..31). Ignora "matriz", "base", etc. */
+export function ehAbaDia(nome: string): number | null {
+  const t = nome.trim()
+  if (!/^\d{1,2}$/.test(t)) return null
+  const dia = Number(t)
+  return dia >= 1 && dia <= 31 ? dia : null
+}
+
+/**
+ * Lê um XLSX de KPI manual da Tia (aba do dia, ex "19") e extrai uma entrada por
+ * loja do 1º carro. Usado pelo dashboard que consome os KPIs manuais inseridos.
+ */
+export async function parseKpiManual(buf: Buffer, rede_id: string, data: string): Promise<EntradaManual[]> {
+  const wb = new ExcelJS.Workbook()
+  await wb.xlsx.load(buf as unknown as ArrayBuffer)
+  const ws = wb.getWorksheet(data.slice(8, 10)) ?? wb.worksheets[0]
+  if (!ws) return []
+  return parseWorksheet(ws, rede_id, data)
+}
+
+/**
+ * Lê um XLSX de KPI manual com VÁRIAS abas-dia (uma por dia do mês) e extrai TODAS
+ * de uma vez. `mes` é 'YYYY-MM'; cada aba cujo nome é um dia (1..31) vira a data
+ * `${mes}-${dia}`. Abas auxiliares (matriz, base, endereços) são ignoradas.
+ * Retorna o conjunto completo + a lista de dias detectados.
+ */
+export async function parseKpiManualTodasAbas(
+  buf: Buffer,
+  rede_id: string,
+  mes: string,
+): Promise<{ entradas: EntradaManual[]; dias: string[] }> {
+  const wb = new ExcelJS.Workbook()
+  await wb.xlsx.load(buf as unknown as ArrayBuffer)
+  const entradas: EntradaManual[] = []
+  const dias: string[] = []
+  for (const ws of wb.worksheets) {
+    const dia = ehAbaDia(ws.name)
+    if (dia == null) continue
+    const data = `${mes}-${String(dia).padStart(2, '0')}`
+    const ents = parseWorksheet(ws, rede_id, data)
+    if (ents.length > 0) { entradas.push(...ents); dias.push(data) }
+  }
+  dias.sort()
+  return { entradas, dias }
 }

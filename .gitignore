@@ -43,3 +43,6 @@ next-env.d.ts
 
 # git worktrees
 .worktrees/
+
+# Backups locais (não versionar — grandes)
+docs/backup/
