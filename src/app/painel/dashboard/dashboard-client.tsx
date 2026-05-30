@@ -10,10 +10,14 @@ import { hojeBR } from '@/lib/data-br'
 import { ArrowSquareOut, CheckCircle, WarningCircle, ArrowClockwise } from '@phosphor-icons/react/dist/ssr'
 import { LineChart, BarList, ColumnChart, fmtNum, type BarItem } from '@/app/painel/charts'
 
-type Periodo = 'dia' | 'semana' | 'mes'
+type Periodo = 'dia' | 'semana' | 'mes' | 'ano'
 type Tab = 'geral' | 'inserir' | 'historico'
 
 const hoje = () => hojeBR()
+
+// Anos disponíveis no seletor do período "Ano": ano atual + 2 anteriores.
+const ANO_ATUAL = Number(hojeBR().slice(0, 4))
+const ANOS = [ANO_ATUAL, ANO_ATUAL - 1, ANO_ATUAL - 2].map(String)
 
 // status → token semântico (sem cores hardcoded)
 const STATUS = {
@@ -78,11 +82,11 @@ export default function DashboardClient({ resumo }: { resumo?: ResumoOperacaoDat
         </div>
         {tab === 'geral' && (
           <button
-            onClick={() => window.open(`/painel/dashboard/print?periodo=${periodo}&data=${data}&redes=${redes.join(',')}`, '_blank')}
+            onClick={() => window.open(`/api/dashboard/relatorio?periodo=${periodo}&data=${data}&redes=${redes.join(',')}`, '_blank')}
             className={BTN_SEC}
           >
             <ArrowSquareOut size={14} weight="bold" />
-            Baixar PDF
+            Gerar relatório
           </button>
         )}
       </header>
@@ -141,19 +145,26 @@ function VisaoGeral(props: {
       {/* Filtros */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-0.5 shadow-soft">
-          {(['dia', 'semana', 'mes'] as Periodo[]).map(p => (
+          {(['dia', 'semana', 'mes', 'ano'] as Periodo[]).map(p => (
             <button
               key={p} onClick={() => setPeriodo(p)}
               className={[
                 'h-8 rounded-[var(--radius-sm)] px-3.5 text-[12px] font-medium capitalize transition-[background-color,color,transform] duration-150 active:scale-[0.97]',
                 periodo === p ? 'bg-[var(--color-accent)] text-[var(--color-accent-fg)] shadow-soft' : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]',
               ].join(' ')}
-            >{p === 'mes' ? 'Mês' : p}</button>
+            >{p === 'mes' ? 'Mês' : p === 'ano' ? 'Ano' : p}</button>
           ))}
         </div>
-        {/* O input acompanha o período: mês → escolhe o mês; dia/semana → escolhe o dia.
+        {/* O input acompanha o período: ano → escolhe o ano; mês → escolhe o mês; dia/semana → escolhe o dia.
             Sem isso, no modo "Mês" o operador escolhia um dia mas via o mês inteiro. */}
-        {periodo === 'mes' ? (
+        {periodo === 'ano' ? (
+          <select
+            value={data.slice(0, 4)} onChange={e => setData(`${e.target.value}-01-01`)}
+            className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
+          >
+            {ANOS.map(a => <option key={a} value={a}>{a}</option>)}
+          </select>
+        ) : periodo === 'mes' ? (
           <input
             type="month" value={data.slice(0, 7)} onChange={e => setData(`${e.target.value}-01`)}
             className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
