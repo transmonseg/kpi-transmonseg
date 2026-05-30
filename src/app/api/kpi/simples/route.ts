@@ -11,6 +11,7 @@ import { aplicarAlteracoes } from '@/lib/kpi/aplicar-alteracoes'
 import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
 import { REDE_NOMES_CANONICOS } from '@/lib/kpi/kpi-styles'
+import { derivarStatus, type StatusRota } from '@/lib/kpi/status-rota'
 import { partitionSettled } from '@/lib/utils/partition-settled'
 import type { KpiLinha, RotaKpi } from '@/lib/types/kpi'
 import type { LinhaEscala } from '@/lib/types/escala'
@@ -32,6 +33,10 @@ type PreviewLinha = {
   confianca: 'HIGH' | 'LOW' | 'UNMATCHED'
   algoritmo: string
   anomalias: string[]
+  status: StatusRota
+  revisar: boolean
+  motivoRevisao: string | null
+  saida_loja_fmt: string | null
 }
 
 // Parsers do Unitrac armazenam BRT como Date.UTC(...) — ler getUTCHours direto.
@@ -634,21 +639,38 @@ export async function POST(req: NextRequest) {
       const rede_nome = REDE_NOMES_CANONICOS[rede_id] ?? rede_id
       const qtd_sem_gps = linhas.filter(l => !l.saida_cd && !l.chd_loja_1).length
 
-      const preview: PreviewLinha[] = sorted.map(({ rota, esc }, idx) => ({
-        ordem: idx + 1,
-        loja_nome: esc.loja_nome_raw,
-        placa: rota.placa_norm,
-        motorista: esc.motorista_nome,
-        turno: esc.turno,
-        tem_gps: !!(rota.saida_cd || rota.paradas.length > 0),
-        ficou_na_base: rota.status === 'sem_entrega' && !!esc.placa_norm,
-        saida_cd_fmt: fmtHoraBRT(rota.saida_cd),
-        chegada_loja_fmt: fmtHoraBRT(rota.paradas[0]?.chegada),
-        tempo_loja_min: rota.paradas[0]?.duracao_min ?? null,
-        confianca: rota._matchMeta?.confidence ?? 'UNMATCHED',
-        algoritmo: rota._matchMeta?.algorithm ?? 'none',
-        anomalias: rota.anomalias_codigos,
-      }))
+      const preview: PreviewLinha[] = sorted.map(({ rota, esc }, idx) => {
+        const p0 = rota.paradas[0]
+        const temGps = !!(rota.saida_cd || rota.paradas.length > 0)
+        const ficouNaBase = rota.status === 'sem_entrega' && !!esc.placa_norm
+        const statusInfo = derivarStatus({
+          temGps,
+          ficouNaBase,
+          paradas: rota.paradas.map(p => ({ classificacao: p.classificacao, loja_id: p.loja_id ?? null })),
+        })
+        const saidaLoja = p0 && p0.chegada && p0.duracao_min != null
+          ? new Date(p0.chegada.getTime() + p0.duracao_min * 60_000)
+          : null
+        return {
+          ordem: idx + 1,
+          loja_nome: esc.loja_nome_raw,
+          placa: rota.placa_norm,
+          motorista: esc.motorista_nome,
+          turno: esc.turno,
+          tem_gps: temGps,
+          ficou_na_base: ficouNaBase,
+          saida_cd_fmt: fmtHoraBRT(rota.saida_cd),
+          chegada_loja_fmt: fmtHoraBRT(rota.paradas[0]?.chegada),
+          tempo_loja_min: rota.paradas[0]?.duracao_min ?? null,
+          confianca: rota._matchMeta?.confidence ?? 'UNMATCHED',
+          algoritmo: rota._matchMeta?.algorithm ?? 'none',
+          anomalias: rota.anomalias_codigos,
+          status: statusInfo.status,
+          revisar: statusInfo.revisar,
+          motivoRevisao: statusInfo.motivoRevisao,
+          saida_loja_fmt: fmtHoraBRT(saidaLoja),
+        }
+      })
 
       const [xlsxBuffer, pdfBuffer] = await Promise.all([
         gerarKpi({ rede_id, data, linhas }),
