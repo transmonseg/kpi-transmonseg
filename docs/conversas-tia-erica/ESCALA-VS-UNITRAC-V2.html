@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Análise Cadastro Unitrac — Estimativa</title>
+<style>
+  @page { size: A4; margin: 18mm; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5pt; color: #222; line-height: 1.4; }
+  .aviso {
+    background: #fff4e0;
+    border-left: 5px solid #ff9500;
+    padding: 14px 18px;
+    margin-bottom: 18px;
+    border-radius: 4px;
+  }
+  .aviso strong { color: #b04400; }
+  h1 { color: #1a3a52; font-size: 18pt; margin-bottom: 4px; border-bottom: 2px solid #1a3a52; padding-bottom: 6px; }
+  h2 { color: #205070; font-size: 13pt; margin-top: 18px; margin-bottom: 6px; border-bottom: 1px solid #ddd; padding-bottom: 3px; }
+  h3 { color: #2a6080; font-size: 11pt; margin-top: 12px; margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 14px 0; font-size: 8.5pt; page-break-inside: avoid; }
+  th { background: #1a3a52; color: white; padding: 5px 8px; text-align: left; border: 1px solid #1a3a52; }
+  td { padding: 4px 8px; border: 1px solid #ddd; vertical-align: top; }
+  tr:nth-child(even) td { background: #f7f9fb; }
+  strong { color: #1a3a52; }
+  li { margin-left: 16px; margin-bottom: 3px; }
+  p { margin: 6px 0; }
+  .rodape { margin-top: 24px; padding-top: 12px; border-top: 1px solid #ccc; font-size: 8pt; color: #888; text-align: center; }
+</style>
+</head>
+<body>
+<div class="aviso">
+  <strong>⚠️ AVISO IMPORTANTE — ESTA É UMA ESTIMATIVA</strong><br>
+  Este relatório foi gerado automaticamente cruzando as escalas com os relatórios Unitrac dos dias <strong>19, 20 e 25 de maio de 2026</strong>.
+  Não é uma certeza absoluta — pode haver falsos positivos (loja marcada como CERTA mas que na verdade tem problema)
+  ou falsos negativos (loja marcada como BUGADA que na verdade está OK). A análise depende de:
+  <br>• A placa escalada ter sido efetivamente rastreada nos dias analisados<br>
+  • O Unitrac ter reportado código de loja específico nas paradas<br>
+  • Ausência de geofences sobrepostos com a BASE Benassi ou outras lojas<br>
+  Use este documento como guia de prioridades para verificação manual e correção junto à Unitrac.
+</div>
+<p><h1>Escala × Unitrac — análise APENAS do Unitrac (sem usar cadastro interno)</h1></p><p>Pra cada loja da escala dos 3 dias (19/20/25), verifica se o Unitrac reporta
+parada LOJA com cod específico (CERTO) ou só BASE/FORA_BASE/cluster sobreposto (BUGADO).</p><p><h2>Sumário por rede</h2></p><p><table><tbody><tr><th>Rede</th><th>✅ CERTO</th><th>❌ BUGADO</th><th>Total</th><th>% certo</th></tr>
+
+<tr><td><strong>CAB_PETROPOLIS</strong></td><td>1</td><td>0</td><td>1</td><td>100%</td></tr>
+<tr><td><strong>SAMS_CLUB</strong></td><td>3</td><td>0</td><td>3</td><td>100%</td></tr>
+<tr><td><strong>VIANENSE</strong></td><td>4</td><td>0</td><td>4</td><td>100%</td></tr>
+<tr><td><strong>DESCONHECIDO</strong></td><td>1</td><td>0</td><td>1</td><td>100%</td></tr>
+<tr><td><strong>SUPER_PAX</strong></td><td>13</td><td>1</td><td>14</td><td>93%</td></tr>
+<tr><td><strong>PRINCESA</strong></td><td>24</td><td>2</td><td>26</td><td>92%</td></tr>
+<tr><td><strong>PREZUNIC</strong></td><td>52</td><td>5</td><td>57</td><td>91%</td></tr>
+<tr><td><strong>CARREFOUR</strong></td><td>9</td><td>1</td><td>10</td><td>90%</td></tr>
+<tr><td><strong>ZONA_SUL</strong></td><td>42</td><td>5</td><td>47</td><td>89%</td></tr>
+<tr><td><strong>SUPERPRIX</strong></td><td>8</td><td>1</td><td>9</td><td>89%</td></tr>
+<tr><td><strong>ASSAI</strong></td><td>35</td><td>6</td><td>41</td><td>85%</td></tr>
+<tr><td><strong>FEIRA_NOVA</strong></td><td>13</td><td>3</td><td>16</td><td>81%</td></tr>
+<tr><td><strong>ARMAZEM_GRAO</strong></td><td>12</td><td>3</td><td>15</td><td>80%</td></tr>
+<tr><td><strong>SENDAS</strong></td><td>6</td><td>3</td><td>9</td><td>67%</td></tr>
+<tr><td><strong>EMANUEL</strong></td><td>4</td><td>3</td><td>7</td><td>57%</td></tr>
+<tr><td><strong>ATACADAO</strong></td><td>1</td><td>1</td><td>2</td><td>50%</td></tr>
+<tr><td><strong>GUANABARA</strong></td><td>11</td><td>16</td><td>27</td><td>41%</td></tr>
+<tr><td><strong>SUPERCOMPRAS</strong></td><td>0</td><td>1</td><td>1</td><td>0%</td></tr>
+<tr><td><strong>MUNDIAL</strong></td><td>0</td><td>1</td><td>1</td><td>0%</td></tr></tbody></table></p><p><h2>CAB_PETROPOLIS — 1/1 certas (100%)</h2></p><p><table><tbody><tr><th>Loja na escala</th><th>Status</th><th>Placas</th><th>Dias</th><th>Observação</th></tr>
+
+<tr><td>CAB - PETRÓPOLIS</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=7012010,579011</td></tr></tbody></table></p><p><h2>SAMS_CLUB — 3/3 certas (100%)</h2></p><p><table><tbody><tr><th>Loja na escala</th><th>Status</th><th>Placas</th><th>Dias</th><th>Observação</th></tr>
+
+<tr><td>Sam's - Barra (Ayrton Senna)</td><td>✅ CERTO</td><td>1</td><td>3</td><td>2/3 dias com parada LOJA cod=8590004,9006012</td></tr>
+<tr><td>Sam's - Linha Amarela</td><td>✅ CERTO</td><td>1</td><td>3</td><td>2/3 dias com parada LOJA cod=7000721,4568002</td></tr>
+<tr><td>Sam's - Niterói</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=7000707,579012,579006</td></tr></tbody></table></p><p><h2>VIANENSE — 4/4 certas (100%)</h2></p><p><table><tbody><tr><th>Loja na escala</th><th>Status</th><th>Placas</th><th>Dias</th><th>Observação</th></tr>
+
+<tr><td>Vianense - Freguesia 2º entrega</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=7000747</td></tr>
+<tr><td>Vianense - Jardim Alvorada 2º entrega</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=22980000,22144002,22144000</td></tr>
+<tr><td>Vianense - Nova Iguaçu 1º entrega</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=22980000,22144002,22144000</td></tr>
+<tr><td>Vianense - Recreio 1º entrega</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=7000747</td></tr></tbody></table></p><p><h2>DESCONHECIDO — 1/1 certas (100%)</h2></p><p><table><tbody><tr><th>Loja na escala</th><th>Status</th><th>Placas</th><th>Dias</th><th>Observação</th></tr>
+
+<tr><td>GPA</td><td>✅ CERTO</td><td>2</td><td>1</td><td>1/1 dias com parada LOJA cod=71035</td></tr></tbody></table></p><p><h2>SUPER_PAX — 13/14 certas (93%)</h2></p><p><table><tbody><tr><th>Loja na escala</th><th>Status</th><th>Placas</th><th>Dias</th><th>Observação</th></tr>
+
+<tr><td>Del Castilho</td><td>✅ CERTO</td><td>2</td><td>3</td><td>1/3 dias com parada LOJA cod=8590003,202004</td></tr>
+<tr><td>Engenho de Dentro</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=7000724,202001,202003</td></tr>
+<tr><td>Guadalupe</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=560031,202005</td></tr>
+<tr><td>Inhauma</td><td>✅ CERTO</td><td>1</td><td>2</td><td>2/2 dias com parada LOJA cod=7000724,202001,202003</td></tr>
+<tr><td>Lins</td><td>✅ CERTO</td><td>3</td><td>3</td><td>1/3 dias com parada LOJA cod=202013,7000712,7000705</td></tr>
+<tr><td>LINS 2º CARRO</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=579010,202013</td></tr>
+<tr><td>Madureira</td><td>✅ CERTO</td><td>3</td><td>3</td><td>2/3 dias com parada LOJA cod=7000730,202000,7000722</td></tr>
+<tr><td>Oswaldo Cruz</td><td>✅ CERTO</td><td>3</td><td>3</td><td>2/3 dias com parada LOJA cod=7000730,202000,7000722</td></tr>
+<tr><td>Pilares</td><td>✅ CERTO</td><td>2</td><td>3</td><td>1/3 dias com parada LOJA cod=7000720,7000715,202009</td></tr>
+<tr><td>Realengo</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=9006001,202002</td></tr>
+<tr><td>Sepetiba</td><td>✅ CERTO</td><td>3</td><td>3</td><td>2/3 dias com parada LOJA cod=560056,7000712,7000705</td></tr>
+<tr><td>Taquara</td><td>✅ CERTO</td><td>3</td><td>3</td><td>2/3 dias com parada LOJA cod=560018,202011,7000766</td></tr>
+<tr><td>Vila da Penha</td><td>✅ CERTO</td><td>3</td><td>3</td><td>2/3 dias com parada LOJA cod=202010</td></tr>
+<tr><td>INHAUMA</td><td>❌ BUGADO</td><td>1</td><td>1</td><td>placa escalada nunca fez parada LOJA com cod (1/1 dias sem parada)</td></tr></tbody></table></p><p><h2>PRINCESA — 24/26 certas (92%)</h2></p><p><table><tbody><tr><th>Loja na escala</th><th>Status</th><th>Placas</th><th>Dias</th><th>Observação</th></tr>
+
+<tr><td>Princesa - Arraial 1 (1ª Entrega)</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=8590559,8590569,8590560</td></tr>
+<tr><td>Princesa - Arraial 2 (2ª Entrega)</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=8590559,8590569,8590560</td></tr>
+<tr><td>Princesa - Arraial 3 (3ª Entrega)</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=8590559,8590569,8590560</td></tr>
+<tr><td>Princesa - Barra de São João (1ª Entrega)</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=8590568,8590562,9039017</td></tr>
+<tr><td>Princesa - Buzios 1 (2ª Entrega)</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=8590571,8590563,8590564</td></tr>
+<tr><td>Princesa - Buzios 2 (3ª Entrega)</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=8590571,8590563,8590564</td></tr>
+<tr><td>Princesa - Buzios 3 (1ª Entrega)</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=8590571,8590563,8590564</td></tr>
+<tr><td>Princesa - Cabo Frio 1 (1ª Entrega)</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=8590565,8590567,8590566</td></tr>
+<tr><td>Princesa - Cabo Frio 2 (3ª Entrega)</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=8590565,8590567,8590566</td></tr>
+<tr><td>Princesa - Cabo Frio 3 (2ª Entrega)</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=8590565,8590567,8590566</td></tr>
+<tr><td>Princesa - Catete</td><td>✅ CERTO</td><td>1</td><td>3</td><td>2/3 dias com parada LOJA cod=8590120,7000744,7000755</td></tr>
+<tr><td>Princesa - Copacabana</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=8590034,11623026</td></tr>
+<tr><td>Princesa - Cosme Velho</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=8590000,9039011</td></tr>
+<tr><td>Princesa - Flamengo</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=8590165,7000758,7000745</td></tr>
+<tr><td>Princesa - Fonseca</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=8590555,7000760,560021</td></tr>
+<tr><td>Princesa - Icaraí</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=8590004,560048,71032</td></tr>
+<tr><td>Princesa - Iguaba (1º Entrega)</td><td>✅ CERTO</td><td>2</td><td>3</td><td>1/3 dias com parada LOJA cod=8590573,8590570</td></tr>
+<tr><td>Princesa - Inga</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=8590556,7000759,560040</td></tr>
+<tr><td>Princesa - Itaboraí (2ª Entrega)</td><td>✅ CERTO</td><td>2</td><td>3</td><td>1/3 dias com parada LOJA cod=8590573,8590570</td></tr>
+<tr><td>Princesa - Leme</td><td>✅ CERTO</td><td>2</td><td>3</td><td>1/3 dias com parada LOJA cod=11623033</td></tr>
+<tr><td>Princesa - Maricá 1 (2ª Entrega)</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=8590003,202004,5353005</td></tr>
+<tr><td>Princesa - Maricá 2 (1ª Entrega)</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=8590003,202004,5353005</td></tr>
+<tr><td>Princesa - Pechincha</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=8590031,560030</td></tr>
+<tr><td>Princesa - Rio das Ostras (2ª Entrega)</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=8590568,8590562,9039017</td></tr>
+<tr><td>Princesa - Laranjeiras</td><td>❌ BUGADO</td><td>2</td><td>3</td><td>cod sobreposto/BASE: 8590218</td></tr>
+<tr><td>Princesa - Niteroí Barcas</td><td>❌ BUGADO</td><td>1</td><td>3</td><td>placa escalada nunca fez parada LOJA com cod (3/3 dias sem parada)</td></tr></tbody></table></p><p><h2>PREZUNIC — 52/57 certas (91%)</h2></p><p><table><tbody><tr><th>Loja na escala</th><th>Status</th><th>Placas</th><th>Dias</th><th>Observação</th></tr>
+
+<tr><td>Prezunic - Anil (Jacarepaguá)</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=7000735</td></tr>
+<tr><td>Prezunic - Barra da Tijuca</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=7000734,7000740</td></tr>
+<tr><td>Prezunic - Benfica</td><td>✅ CERTO</td><td>3</td><td>3</td><td>2/3 dias com parada LOJA cod=7000708,7000706,579009</td></tr>
+<tr><td>Prezunic - Botafogo (Voluntários)</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=7000750,560057,560054</td></tr>
+<tr><td>Prezunic - Botafogo / Serra Azul</td><td>✅ CERTO</td><td>3</td><td>3</td><td>1/3 dias com parada LOJA cod=11623033</td></tr>
+<tr><td>Prezunic - Cachambi</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=7000724,202001,202003</td></tr>
+<tr><td>Prezunic - Campinho</td><td>✅ CERTO</td><td>3</td><td>3</td><td>3/3 dias com parada LOJA cod=7000718,6018000,2018006</td></tr>
+<tr><td>Prezunic - Campo Grande (TINGUI)</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=7000766,202011,579006</td></tr>
+<tr><td>Prezunic - Campo Grande / Serra Azul</td><td>✅ CERTO</td><td>3</td><td>3</td><td>3/3 dias com parada LOJA cod=7000710,9039012</td></tr>
+<tr><td>Prezunic - Catumbi / Serra Azul</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=7000704,560031</td></tr>
+<tr><td>Prezunic - Caxias Centenário</td><td>✅ CERTO</td><td>2</td><td>3</td><td>2/3 dias com parada LOJA cod=7000717,7000713</td></tr>
+<tr><td>Prezunic - Caxias Centro / Serra Azul</td><td>✅ CERTO</td><td>2</td><td>3</td><td>2/3 dias com parada LOJA cod=7000717,7000713</td></tr>
+<tr><td>Prezunic - Cidade de Deus</td><td>✅ CERTO</td><td>3</td><td>3</td><td>3/3 dias com parada LOJA cod=7000718,6018000,2018006</td></tr>
+<tr><td>Prezunic - Engenho Novo</td><td>✅ CERTO</td><td>3</td><td>3</td><td>2/3 dias com parada LOJA cod=7000708,7000706,579009</td></tr>
+<tr><td>Prezunic - Fonseca</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=7000722,202006,202000</td></tr>
+<tr><td>Prezunic - Freguesia</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=7000707,579012,579006</td></tr>
+<tr><td>Prezunic - Icaraí</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=7000730,202000,579009</td></tr>
+<tr><td>Prezunic - Ilha do Governador</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=7000728,579010</td></tr>
+<tr><td>Prezunic - Itaoca</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=7000720,7000715,202009</td></tr>
+<tr><td>Prezunic - Jauru / Serra Azul</td><td>✅ CERTO</td><td>2</td><td>3</td><td>1/3 dias com parada LOJA cod=7000711,7000719,9039008</td></tr>
+<tr><td>Prezunic - Maricá</td><td>✅ CERTO</td><td>1</td><td>3</td><td>2/3 dias com parada LOJA cod=71034,71038,9039009</td></tr>
+<tr><td>Prezunic - Méier / Serra Azul</td><td>✅ CERTO</td><td>3</td><td>3</td><td>1/3 dias com parada LOJA cod=9039114</td></tr>
+<tr><td>Prezunic - Nilópolis</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=7000721,4568002</td></tr>
+<tr><td>Prezunic - Olaria</td><td>✅ CERTO</td><td>2</td><td>3</td><td>2/3 dias com parada LOJA cod=7000714,7000723,579001</td></tr>
+<tr><td>Prezunic - Padre Miguel</td><td>✅ CERTO</td><td>2</td><td>3</td><td>2/3 dias com parada LOJA cod=7000726,71005</td></tr>
+<tr><td>Prezunic - Pechincha</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=7000709,579001,9039117</td></tr>
+<tr><td>Prezunic - Penha</td><td>✅ CERTO</td><td>2</td><td>3</td><td>2/3 dias com parada LOJA cod=7000714,7000723,579001</td></tr>
+<tr><td>Prezunic - Realengo/ Serra Azul</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=7000712,7000705,202012</td></tr>
+<tr><td>Prezunic - Santa Cruz / Serra Azul</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=7000733</td></tr>
+<tr><td>Prezunic - Senador Camará</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=7000712,7000705,202012</td></tr>
+<tr><td>Prezunic - Taquara / Serra Azul</td><td>✅ CERTO</td><td>2</td><td>3</td><td>1/3 dias com parada LOJA cod=7000711,7000719,9039008</td></tr>
+<tr><td>Prezunic - Tijuca</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=7000747</td></tr>
+<tr><td>Prezunic - Vila Isabel</td><td>✅ CERTO</td><td>3</td><td>3</td><td>2/3 dias com parada LOJA cod=202010,9039018</td></tr>
+<tr><td>Prezunic - Vilar dos Teles</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=7000725,579008,579007</td></tr>
+<tr><td>Prezunic - Vista Alegre</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=7000720,7000715,202009</td></tr>
+<tr><td>Prezunic SPID - Alpha Mall</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=7000734,7000740</td></tr>
+<tr><td>Prezunic SPID - Barra</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=7000734,7000740</td></tr>
+<tr><td>Prezunic SPID - Botafogo</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=8590165,7000758,7000745</td></tr>
+<tr><td>Prezunic SPID - Carioca</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=8590120,7000744,7000755</td></tr>
+<tr><td>Prezunic SPID - Centro</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=8590120,7000744,7000755</td></tr>
+<tr><td>Prezunic SPID - Copacabana</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=8590165,7000758,7000745</td></tr>
+<tr><td>Prezunic SPID - Farme de Amoedo</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=8590165,7000758,7000745</td></tr>
+<tr><td>Prezunic SPID - Freguesia</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=8590031</td></tr>
+<tr><td>Prezunic SPID - Glória</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=8590120,7000744,7000755</td></tr>
+<tr><td>Prezunic SPID - Jacarepagua</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=7000734,7000740</td></tr>
+<tr><td>Prezunic SPID - Meier</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=8590555,7000760</td></tr>
+<tr><td>Prezunic SPID - Parque das Rosas</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=7000734,7000740</td></tr>
+<tr><td>Prezunic SPID - Recreio</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=7000734,7000740</td></tr>
+<tr><td>Prezunic SPID - Santa Rosa (Niterói)</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=8590556,7000759</td></tr>
+<tr><td>Prezunic SPID - Tijuca</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=8590555,7000760</td></tr>
+<tr><td>Prezunic SPID - Vila Isabel</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=8590555,7000760</td></tr>
+<tr><td>Prezunic SPID - Visconde de Pirajá (Ipanema)</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=8590165,7000758,7000745</td></tr>
+<tr><td>Prezunic - Barra Marapendi</td><td>❌ BUGADO</td><td>1</td><td>3</td><td>placa escalada nunca fez parada LOJA com cod (3/3 dias sem parada)</td></tr>
+<tr><td>Prezunic - Depósito Central</td><td>❌ BUGADO</td><td>1</td><td>1</td><td>placa escalada nunca fez parada LOJA com cod (1/1 dias sem parada)</td></tr>
+<tr><td>Prezunic - Jardim Oceanico</td><td>❌ BUGADO</td><td>1</td><td>3</td><td>placa escalada nunca fez parada LOJA com cod (3/3 dias sem parada)</td></tr>
+<tr><td>Prezunic - Laranjeiras</td><td>❌ BUGADO</td><td>1</td><td>3</td><td>placa escalada nunca fez parada LOJA com cod (3/3 dias sem parada)</td></tr>
+<tr><td>Prezunic - Recreio dos Bandeirantes</td><td>❌ BUGADO</td><td>2</td><td>3</td><td>cod sobreposto/BASE: 7000702</td></tr></tbody></table></p><p><h2>CARREFOUR — 9/10 certas (90%)</h2></p><p><table><tbody><tr><th>Loja na escala</th><th>Status</th><th>Placas</th><th>Dias</th><th>Observação</th></tr>
+
+<tr><td>Carrefour - Alcântara</td><td>✅ CERTO</td><td>3</td><td>3</td><td>2/3 dias com parada LOJA cod=9006012</td></tr>
+<tr><td>Carrefour - Barra da Tijuca</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=9006001,202002</td></tr>
+<tr><td>Carrefour - Brigadeiro (Caxias)</td><td>✅ CERTO</td><td>3</td><td>3</td><td>3/3 dias com parada LOJA cod=9006144,579008</td></tr>
+<tr><td>Carrefour - Campo Grande</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=9006154,71035,8590004</td></tr>
+<tr><td>Carrefour - Campos dos Goytacazes</td><td>✅ CERTO</td><td>1</td><td>2</td><td>2/2 dias com parada LOJA cod=9006159,9006158</td></tr>
+<tr><td>Carrefour - Juiz de Fora</td><td>✅ CERTO</td><td>1</td><td>2</td><td>2/2 dias com parada LOJA cod=9006156,5353003,5353006</td></tr>
+<tr><td>Carrefour - Macaé</td><td>✅ CERTO</td><td>1</td><td>2</td><td>2/2 dias com parada LOJA cod=9006159,9006158</td></tr>
+<tr><td>Carrefour - Sulacap</td><td>✅ CERTO</td><td>3</td><td>3</td><td>1/3 dias com parada LOJA cod=9006007</td></tr>
+<tr><td>Carrefour - Washington Luiz</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=9006010</td></tr>
+<tr><td>Carrefour - Norte Shopping</td><td>❌ BUGADO</td><td>1</td><td>3</td><td>placa escalada nunca fez parada LOJA com cod (3/3 dias sem parada)</td></tr></tbody></table></p><p><h2>ZONA_SUL — 42/47 certas (89%)</h2></p><p><table><tbody><tr><th>Loja na escala</th><th>Status</th><th>Placas</th><th>Dias</th><th>Observação</th></tr>
+
+<tr><td>MEGA BOX 01 - Olaria</td><td>✅ CERTO</td><td>7</td><td>3</td><td>3/3 dias com parada LOJA cod=7000718,6018000,9039018</td></tr>
+<tr><td>MEGA BOX 02 - Olaria</td><td>✅ CERTO</td><td>6</td><td>3</td><td>3/3 dias com parada LOJA cod=7000718,6018000,560019</td></tr>
+<tr><td>Zona Sul - Entrega Extra</td><td>✅ CERTO</td><td>2</td><td>2</td><td>2/2 dias com parada LOJA cod=7000718,6018000,9039018</td></tr>
+<tr><td>Zona Sul Loja 03 - Copacabana I</td><td>✅ CERTO</td><td>3</td><td>3</td><td>2/3 dias com parada LOJA cod=9039104,9039018</td></tr>
+<tr><td>Zona Sul Loja 04 - Copacabana II</td><td>✅ CERTO</td><td>2</td><td>2</td><td>2/2 dias com parada LOJA cod=9039018,9039107,9039004</td></tr>
+<tr><td>Zona Sul Loja 05 - Copacabana III</td><td>✅ CERTO</td><td>3</td><td>3</td><td>2/3 dias com parada LOJA cod=7000718,2018006,7000716</td></tr>
+<tr><td>Zona Sul Loja 06 - Gávea</td><td>✅ CERTO</td><td>3</td><td>2</td><td>1/2 dias com parada LOJA cod=7000709,579001</td></tr>
+<tr><td>Zona Sul Loja 07 - Leblon</td><td>✅ CERTO</td><td>4</td><td>2</td><td>2/2 dias com parada LOJA cod=3030201,8590165,9039007</td></tr>
+<tr><td>Zona Sul Loja 08 - Ipanema</td><td>✅ CERTO</td><td>5</td><td>3</td><td>2/3 dias com parada LOJA cod=9039007,9039008,9039027</td></tr>
+<tr><td>Zona Sul Loja 09 - Ipanema</td><td>✅ CERTO</td><td>3</td><td>3</td><td>2/3 dias com parada LOJA cod=9039009</td></tr>
+<tr><td>Zona Sul Loja 10 - Recreio</td><td>✅ CERTO</td><td>3</td><td>3</td><td>3/3 dias com parada LOJA cod=560019,9039010,202005</td></tr>
+<tr><td>Zona Sul Loja 11 - Leblon</td><td>✅ CERTO</td><td>3</td><td>3</td><td>3/3 dias com parada LOJA cod=3030007,71039,9039011</td></tr>
+<tr><td>Zona Sul Loja 12 - Leme</td><td>✅ CERTO</td><td>3</td><td>3</td><td>2/3 dias com parada LOJA cod=7000710,9039012</td></tr>
+<tr><td>Zona Sul Loja 14 - Leblon</td><td>✅ CERTO</td><td>3</td><td>3</td><td>1/3 dias com parada LOJA cod=9039027,9039015,9039101</td></tr>
+<tr><td>Zona Sul Loja 15 - Leblon</td><td>✅ CERTO</td><td>2</td><td>2</td><td>2/2 dias com parada LOJA cod=9039027,9039015,9039028</td></tr>
+<tr><td>Zona Sul Loja 17 - Barra</td><td>✅ CERTO</td><td>4</td><td>3</td><td>2/3 dias com parada LOJA cod=8590562,8590568,9039017</td></tr>
+<tr><td>Zona Sul Loja 18 - Copacabana</td><td>✅ CERTO</td><td>1</td><td>2</td><td>2/2 dias com parada LOJA cod=9039018,9039107,6018000</td></tr>
+<tr><td>Zona Sul Loja 19 - Copacabana</td><td>✅ CERTO</td><td>5</td><td>3</td><td>2/3 dias com parada LOJA cod=9006001,202002,9039104</td></tr>
+<tr><td>Zona Sul Loja 20 - Botafogo</td><td>✅ CERTO</td><td>3</td><td>3</td><td>1/3 dias com parada LOJA cod=7000718,2018006,7000716</td></tr>
+<tr><td>Zona Sul Loja 21 - Flamengo</td><td>✅ CERTO</td><td>3</td><td>2</td><td>2/2 dias com parada LOJA cod=9039103,9039110</td></tr>
+<tr><td>Zona Sul Loja 22 - S. Conrado</td><td>✅ CERTO</td><td>3</td><td>3</td><td>1/3 dias com parada LOJA cod=560022,9039099,9039022</td></tr>
+<tr><td>Zona Sul Loja 23 - Barra</td><td>✅ CERTO</td><td>4</td><td>3</td><td>2/3 dias com parada LOJA cod=560047,560028,6018001</td></tr>
+<tr><td>Zona Sul Loja 25 - Jd. Botânico</td><td>✅ CERTO</td><td>4</td><td>3</td><td>2/3 dias com parada LOJA cod=560022,9039099,9039022</td></tr>
+<tr><td>Zona Sul Loja 26 - Copacabana</td><td>✅ CERTO</td><td>4</td><td>3</td><td>2/3 dias com parada LOJA cod=22980000,22144002,22144000</td></tr>
+<tr><td>Zona Sul Loja 27 - Ipanema</td><td>✅ CERTO</td><td>1</td><td>2</td><td>2/2 dias com parada LOJA cod=9039027,9039015,9039028</td></tr>
+<tr><td>Zona Sul Loja 28 - Urca</td><td>✅ CERTO</td><td>4</td><td>3</td><td>3/3 dias com parada LOJA cod=9039027,9039015,9039028</td></tr>
+<tr><td>Zona Sul Loja 29 - Flamengo</td><td>✅ CERTO</td><td>3</td><td>3</td><td>3/3 dias com parada LOJA cod=9039027,9039015,9039028</td></tr>
+<tr><td>Zona Sul Loja 31 - Jd. Botânico</td><td>✅ CERTO</td><td>5</td><td>3</td><td>2/3 dias com parada LOJA cod=22980000,22144002,22144000</td></tr>
+<tr><td>Zona Sul Loja 32 - Laranjeiras</td><td>✅ CERTO</td><td>2</td><td>3</td><td>1/3 dias com parada LOJA cod=7000728,579010</td></tr>
+<tr><td>Zona Sul Loja 33 - Humaitá</td><td>✅ CERTO</td><td>2</td><td>2</td><td>1/2 dias com parada LOJA cod=9039104</td></tr>
+<tr><td>Zona Sul Loja 34 - Barra</td><td>✅ CERTO</td><td>4</td><td>3</td><td>1/3 dias com parada LOJA cod=7000718,7000716,9039114</td></tr>
+<tr><td>Zona Sul Loja 35 - Barra</td><td>✅ CERTO</td><td>3</td><td>3</td><td>1/3 dias com parada LOJA cod=9039018,9039107</td></tr>
+<tr><td>Zona Sul Loja 36 - Botafogo</td><td>✅ CERTO</td><td>3</td><td>2</td><td>1/2 dias com parada LOJA cod=9039122,9039108,9039005</td></tr>
+<tr><td>Zona Sul Loja 38 - Copacabana</td><td>✅ CERTO</td><td>3</td><td>3</td><td>3/3 dias com parada LOJA cod=9039103,9039110</td></tr>
+<tr><td>Zona Sul Loja 40 - Ipanema</td><td>✅ CERTO</td><td>4</td><td>3</td><td>1/3 dias com parada LOJA cod=22980000,22144002,22144000</td></tr>
+<tr><td>Zona Sul Loja 42 - Botafogo</td><td>✅ CERTO</td><td>2</td><td>3</td><td>1/3 dias com parada LOJA cod=7000711,7000719,9039008</td></tr>
+<tr><td>Zona Sul Loja 43 - Barra (Península)</td><td>✅ CERTO</td><td>3</td><td>3</td><td>1/3 dias com parada LOJA cod=560054,9039115</td></tr>
+<tr><td>Zona Sul Loja 44 - Barra</td><td>✅ CERTO</td><td>3</td><td>3</td><td>1/3 dias com parada LOJA cod=7000709,9039117</td></tr>
+<tr><td>Zona Sul Loja 45 - Flamengo</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=71039,9039120</td></tr>
+<tr><td>Zona Sul Loja 46 - Botafogo</td><td>✅ CERTO</td><td>3</td><td>3</td><td>3/3 dias com parada LOJA cod=8590568,8590562,9039004</td></tr>
+<tr><td>Zona Sul Loja 47</td><td>✅ CERTO</td><td>4</td><td>3</td><td>2/3 dias com parada LOJA cod=9039121,579003,9039015</td></tr>
+<tr><td>Zona Sul Loja 48 - Recreio</td><td>✅ CERTO</td><td>2</td><td>2</td><td>1/2 dias com parada LOJA cod=9039121,579003</td></tr>
+<tr><td>EXTRA F.31</td><td>❌ BUGADO</td><td>1</td><td>1</td><td>placa escalada nunca fez parada LOJA com cod (1/1 dias sem parada)</td></tr>
+<tr><td>Zona Sul Loja 01 - Ipanema</td><td>❌ BUGADO</td><td>2</td><td>3</td><td>placa escalada nunca fez parada LOJA com cod (3/3 dias sem parada)</td></tr>
+<tr><td>Zona Sul Loja 1129 - Olaria</td><td>❌ BUGADO</td><td>3</td><td>3</td><td>placa escalada nunca fez parada LOJA com cod (3/3 dias sem parada)</td></tr>
+<tr><td>Zona Sul Loja 13 - Angra</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr>
+<tr><td>Zona Sul Loja 30 - Laranjeiras</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr></tbody></table></p><p><h2>SUPERPRIX — 8/9 certas (89%)</h2></p><p><table><tbody><tr><th>Loja na escala</th><th>Status</th><th>Placas</th><th>Dias</th><th>Observação</th></tr>
+
+<tr><td>Super Prix - Icaraí - Loja 10 - 2° ENTREGA</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=3030113,3030011,2018008</td></tr>
+<tr><td>Super Prix - Ipanema - Loja 201</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=3030201,560030</td></tr>
+<tr><td>Super Prix - Niterói - Loja 13 - 1° ENTREGA</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=3030113,3030011,2018008</td></tr>
+<tr><td>Super Prix - Tijuca  (2° °ENTREGA) Loja 14</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=3030013,3030014</td></tr>
+<tr><td>Super Prix -Grajaú  VERDUN Loja 04 2°ENTREGA</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=3030008,3030004</td></tr>
+<tr><td>Super Prix -Grajaú -  Loja 08 - 1°° ENTREGA</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=3030008,3030004</td></tr>
+<tr><td>Super Prix -Riachuelo Loja 07</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=3030007,71039,9039011</td></tr>
+<tr><td>Super Prix -Tijuquinha (1° ENTREGA)  Loja 13</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=3030013,3030014</td></tr>
+<tr><td>Super Prix - Barra - Loja 202</td><td>❌ BUGADO</td><td>1</td><td>3</td><td>placa escalada nunca fez parada LOJA com cod (3/3 dias sem parada)</td></tr></tbody></table></p><p><h2>ASSAI — 35/41 certas (85%)</h2></p><p><table><tbody><tr><th>Loja na escala</th><th>Status</th><th>Placas</th><th>Dias</th><th>Observação</th></tr>
+
+<tr><td>Assaí - Alcântara I - Loja 35</td><td>✅ CERTO</td><td>3</td><td>3</td><td>1/3 dias com parada LOJA cod=560022,9039099,9039022</td></tr>
+<tr><td>Assaí - Araruama - Loja 221</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=560049</td></tr>
+<tr><td>Assaí - Bangu I - Loja 55</td><td>✅ CERTO</td><td>3</td><td>3</td><td>3/3 dias com parada LOJA cod=560028,71016,6018001</td></tr>
+<tr><td>Assaí - Bangu II - Loja 332</td><td>✅ CERTO</td><td>2</td><td>2</td><td>1/2 dias com parada LOJA cod=9006154,7000710,560058</td></tr>
+<tr><td>Assaí - Barra I (Senna) - Loja 133</td><td>✅ CERTO</td><td>2</td><td>3</td><td>2/3 dias com parada LOJA cod=560032</td></tr>
+<tr><td>Assaí - Barra II  - Loja 245</td><td>✅ CERTO</td><td>2</td><td>3</td><td>2/3 dias com parada LOJA cod=560042</td></tr>
+<tr><td>Assaí - Boulevard (Vila Isabel) - Loja 294</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=560056,5353005</td></tr>
+<tr><td>Assaí - Cabo Frio - Loja 82</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=560017</td></tr>
+<tr><td>Assaí - Campinho - Loja 37</td><td>✅ CERTO</td><td>2</td><td>3</td><td>2/3 dias com parada LOJA cod=560024,2018001</td></tr>
+<tr><td>Assaí - Campos dos Goytacazes- Loja 188</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=560036</td></tr>
+<tr><td>Assaí - Carioca Shopping - Loja 316</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=560048</td></tr>
+<tr><td>Assaí - Caxias I - Loja 131</td><td>✅ CERTO</td><td>2</td><td>3</td><td>2/3 dias com parada LOJA cod=560018,202011</td></tr>
+<tr><td>Assaí - Caxias II (Parque Fluminense) - Loja 219</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=7000750,560057,560054</td></tr>
+<tr><td>Assaí - Cesário de Melo - Loja 202</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=560039</td></tr>
+<tr><td>Assaí - Cordovil - Loja 231</td><td>✅ CERTO</td><td>2</td><td>2</td><td>1/2 dias com parada LOJA cod=3030007,560046,9039011</td></tr>
+<tr><td>Assaí - Freguesia - Loja 28</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=560019,202005,9039019</td></tr>
+<tr><td>Assaí - Galeão - Loja 302</td><td>✅ CERTO</td><td>2</td><td>3</td><td>2/3 dias com parada LOJA cod=560051</td></tr>
+<tr><td>AssaÍ - Ilha do Governador - Loja 29</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=560020</td></tr>
+<tr><td>Assaí - Macaé - Loja 232</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=560041</td></tr>
+<tr><td>Assaí - Méier - Loja 160</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=560031,202005</td></tr>
+<tr><td>Assaí - Mendanha (Campo Grande) - Loja 65</td><td>✅ CERTO</td><td>3</td><td>3</td><td>1/3 dias com parada LOJA cod=560016</td></tr>
+<tr><td>Assaí - Mesquita (Dutra) - Loja 142</td><td>✅ CERTO</td><td>3</td><td>3</td><td>3/3 dias com parada LOJA cod=560035</td></tr>
+<tr><td>Assaí - Nilópolis - Loja 36</td><td>✅ CERTO</td><td>3</td><td>3</td><td>3/3 dias com parada LOJA cod=560023,579013</td></tr>
+<tr><td>Assaí - Niterói - Loja 41</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=560025</td></tr>
+<tr><td>Assaí - Nova Iguaçu - Loja 30</td><td>✅ CERTO</td><td>3</td><td>3</td><td>3/3 dias com parada LOJA cod=560021,5353003,5353006</td></tr>
+<tr><td>Assaí - Nova Iguaçu 2 - Loja 291</td><td>✅ CERTO</td><td>3</td><td>3</td><td>1/3 dias com parada LOJA cod=560054,9039115</td></tr>
+<tr><td>Assaí - Petrópolis- Loja 181</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=560038</td></tr>
+<tr><td>Assaí - Pilares - Loja 128</td><td>✅ CERTO</td><td>2</td><td>3</td><td>2/3 dias com parada LOJA cod=560030</td></tr>
+<tr><td>Assaí - Sabão Rio (Benfica) - Loja 136</td><td>✅ CERTO</td><td>3</td><td>3</td><td>1/3 dias com parada LOJA cod=560033</td></tr>
+<tr><td>Assaí - Santa Cruz - Loja 201</td><td>✅ CERTO</td><td>2</td><td>3</td><td>2/3 dias com parada LOJA cod=560037</td></tr>
+<tr><td>Assaí - Santa Cruz 2 - Loja 338</td><td>✅ CERTO</td><td>2</td><td>2</td><td>2/2 dias com parada LOJA cod=7000733,7000721</td></tr>
+<tr><td>Assaí - São Gonçalo Centro - Loja 266</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=560047,9039017</td></tr>
+<tr><td>Assaí - São João do Meriti  - Loja 217</td><td>✅ CERTO</td><td>2</td><td>3</td><td>2/3 dias com parada LOJA cod=560040</td></tr>
+<tr><td>Assaí - Taquara   - Loja 340</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=560062,5353008,5353004</td></tr>
+<tr><td>Assaí - Tijuca II  - Loja 150</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=560043</td></tr>
+<tr><td>Assaí - Alcântara II - Loja 293</td><td>❌ BUGADO</td><td>1</td><td>3</td><td>placa escalada nunca fez parada LOJA com cod (3/3 dias sem parada)</td></tr>
+<tr><td>Assaí - Ceasa - Loja 42</td><td>❌ BUGADO</td><td>1</td><td>3</td><td>placa escalada nunca fez parada LOJA com cod (3/3 dias sem parada)</td></tr>
+<tr><td>Assaí - Maracanã - Loja 286</td><td>❌ BUGADO</td><td>1</td><td>3</td><td>placa escalada nunca fez parada LOJA com cod (3/3 dias sem parada)</td></tr>
+<tr><td>Assaí - Niterói Ponte - Loja 292</td><td>❌ BUGADO</td><td>2</td><td>3</td><td>placa escalada nunca fez parada LOJA com cod (3/3 dias sem parada)</td></tr>
+<tr><td>Assaí - São Gonçalo Camil - Loja 211</td><td>❌ BUGADO</td><td>1</td><td>3</td><td>placa escalada nunca fez parada LOJA com cod (3/3 dias sem parada)</td></tr>
+<tr><td>Assaí - Tribobó - Loja 248</td><td>❌ BUGADO</td><td>1</td><td>3</td><td>placa escalada nunca fez parada LOJA com cod (3/3 dias sem parada)</td></tr></tbody></table></p><p><h2>FEIRA_NOVA — 13/16 certas (81%)</h2></p><p><table><tbody><tr><th>Loja na escala</th><th>Status</th><th>Placas</th><th>Dias</th><th>Observação</th></tr>
+
+<tr><td>1- Nilopolis (Olinda)</td><td>✅ CERTO</td><td>3</td><td>3</td><td>3/3 dias com parada LOJA cod=7000709,579001,7000714</td></tr>
+<tr><td>10- Cachambi</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=9039004,579010,579013</td></tr>
+<tr><td>11- Boa Dica (Piabetá)</td><td>✅ CERTO</td><td>2</td><td>3</td><td>1/3 dias com parada LOJA cod=7012010,579011</td></tr>
+<tr><td>12- Freguesia</td><td>✅ CERTO</td><td>1</td><td>2</td><td>2/2 dias com parada LOJA cod=7000707,579012,4568001</td></tr>
+<tr><td>13- Todos os Santos</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=7000714,7000723,9039004</td></tr>
+<tr><td>3- Anchieta</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=9039104,9039121,579003</td></tr>
+<tr><td>6- Santa Cruz da Serra</td><td>✅ CERTO</td><td>2</td><td>2</td><td>2/2 dias com parada LOJA cod=7000707,579006,7000766</td></tr>
+<tr><td>7- C.ROCHA</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=7000725</td></tr>
+<tr><td>7- Coelho da Rocha</td><td>✅ CERTO</td><td>1</td><td>2</td><td>2/2 dias com parada LOJA cod=7000725,579008,579007</td></tr>
+<tr><td>8- Cerâmica</td><td>✅ CERTO</td><td>2</td><td>3</td><td>3/3 dias com parada LOJA cod=9006144,579008,7000725</td></tr>
+<tr><td>9- Queimados</td><td>✅ CERTO</td><td>2</td><td>3</td><td>1/3 dias com parada LOJA cod=7000708,7000706,579009</td></tr>
+<tr><td>Mercado Santo Agostinho (Barra)</td><td>✅ CERTO</td><td>3</td><td>3</td><td>2/3 dias com parada LOJA cod=8590004,15247000</td></tr>
+<tr><td>SANTA CRUZ</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=7000766</td></tr>
+<tr><td>4- Irajá</td><td>❌ BUGADO</td><td>1</td><td>3</td><td>placa escalada nunca fez parada LOJA com cod (3/3 dias sem parada)</td></tr>
+<tr><td>4- Irajá - 2ª VIAGEM</td><td>❌ BUGADO</td><td>1</td><td>1</td><td>placa escalada nunca fez parada LOJA com cod (1/1 dias sem parada)</td></tr>
+<tr><td>ANCHIETA - 2º CARRO</td><td>❌ BUGADO</td><td>1</td><td>1</td><td>placa escalada nunca fez parada LOJA com cod (1/1 dias sem parada)</td></tr></tbody></table></p><p><h2>ARMAZEM_GRAO — 12/15 certas (80%)</h2></p><p><table><tbody><tr><th>Loja na escala</th><th>Status</th><th>Placas</th><th>Dias</th><th>Observação</th></tr>
+
+<tr><td>ABASTECEDORA GRÃO DA SERRA (ALTO)</td><td>✅ CERTO</td><td>3</td><td>3</td><td>1/3 dias com parada LOJA cod=8590003</td></tr>
+<tr><td>ARMAZEM DO GRÃO  (MOSELA)</td><td>✅ CERTO</td><td>3</td><td>3</td><td>3/3 dias com parada LOJA cod=8590571,8590563,8590564</td></tr>
+<tr><td>ARMAZEM DO GRAO (16 DE MARÇO)</td><td>✅ CERTO</td><td>3</td><td>3</td><td>3/3 dias com parada LOJA cod=8590565,8590567,8590566</td></tr>
+<tr><td>ARMAZEM DO GRÃO (CAPELA)</td><td>✅ CERTO</td><td>3</td><td>3</td><td>3/3 dias com parada LOJA cod=8590565,8590567,8590566</td></tr>
+<tr><td>ARMAZEM DO GRAO (CORREAS)</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=560021,5353003,5353006</td></tr>
+<tr><td>ARMAZEM DO GRÃO (ITAIPAVA)</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=560021,5353003,5353006</td></tr>
+<tr><td>ARMAZEM DO GRÃO (QUITANDINHA)</td><td>✅ CERTO</td><td>3</td><td>3</td><td>3/3 dias com parada LOJA cod=8590571,8590563,8590564</td></tr>
+<tr><td>ARMAZEM DO GRÃO (VALPARAÍSO)</td><td>✅ CERTO</td><td>3</td><td>3</td><td>3/3 dias com parada LOJA cod=8590571,8590563,8590564</td></tr>
+<tr><td>ARMAZEM DO GRAO A. BARRA DA TIJUCA</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=9039030,5353011,9039006</td></tr>
+<tr><td>REGINA  1 DE MAIO</td><td>✅ CERTO</td><td>3</td><td>3</td><td>1/3 dias com parada LOJA cod=8590003</td></tr>
+<tr><td>REGINA  BARRA DO IMBUY</td><td>✅ CERTO</td><td>3</td><td>3</td><td>1/3 dias com parada LOJA cod=8590003</td></tr>
+<tr><td>REGINA  LUCIO MEIRA</td><td>✅ CERTO</td><td>3</td><td>3</td><td>1/3 dias com parada LOJA cod=8590003</td></tr>
+<tr><td>Armazem do grão - Central</td><td>❌ BUGADO</td><td>1</td><td>1</td><td>placa escalada nunca fez parada LOJA com cod (1/1 dias sem parada)</td></tr>
+<tr><td>ARMAZÉM DO GRÃO ( BOA VISTA)</td><td>❌ BUGADO</td><td>3</td><td>3</td><td>cod sobreposto/BASE: 7000749</td></tr>
+<tr><td>ARMAZÉM DO GRÃO MATRIZ ( POSSE)</td><td>❌ BUGADO</td><td>3</td><td>3</td><td>cod sobreposto/BASE: 7000749</td></tr></tbody></table></p><p><h2>SENDAS — 6/9 certas (67%)</h2></p><p><table><tbody><tr><th>Loja na escala</th><th>Status</th><th>Placas</th><th>Dias</th><th>Observação</th></tr>
+
+<tr><td>Americanas</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=7000714,7000723,579001</td></tr>
+<tr><td>Atlantico Sul (Barra da Tijuca)</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=22980000,22144002,22144000</td></tr>
+<tr><td>Barra Tower</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=22980000,22144002,22144000</td></tr>
+<tr><td>Barramares (Barra da Tijuca)</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=22980000,22144002,22144000</td></tr>
+<tr><td>Mercearia Sachinho (Vargem Grande)</td><td>✅ CERTO</td><td>1</td><td>3</td><td>3/3 dias com parada LOJA cod=15247000</td></tr>
+<tr><td>Santo Agostinho</td><td>✅ CERTO</td><td>1</td><td>3</td><td>2/3 dias com parada LOJA cod=8590004,9006012</td></tr>
+<tr><td>Armazem do grão - Central</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr>
+<tr><td>Mercado de Santa</td><td>❌ BUGADO</td><td>1</td><td>3</td><td>placa escalada nunca fez parada LOJA com cod (3/3 dias sem parada)</td></tr>
+<tr><td>Sendas Central 1º Carro</td><td>❌ BUGADO</td><td>1</td><td>3</td><td>cod sobreposto/BASE: 13156084</td></tr></tbody></table></p><p><h2>EMANUEL — 4/7 certas (57%)</h2></p><p><table><tbody><tr><th>Loja na escala</th><th>Status</th><th>Placas</th><th>Dias</th><th>Observação</th></tr>
+
+<tr><td>ALHAMBRA</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=560021</td></tr>
+<tr><td>CACHAMORRA</td><td>✅ CERTO</td><td>1</td><td>1</td><td>1/1 dias com parada LOJA cod=8590034,11623026</td></tr>
+<tr><td>SANTA_MARIA</td><td>✅ CERTO</td><td>1</td><td>2</td><td>1/2 dias com parada LOJA cod=8590120</td></tr>
+<tr><td>VARGEM_GRANDE</td><td>✅ CERTO</td><td>2</td><td>2</td><td>2/2 dias com parada LOJA cod=17659003,560021</td></tr>
+<tr><td>Alhambra / Cachamorra</td><td>❌ BUGADO</td><td>1</td><td>1</td><td>placa escalada nunca fez parada LOJA com cod (1/1 dias sem parada)</td></tr>
+<tr><td>JARDIM_MARAVILHA</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr>
+<tr><td>PEDRA_GUARATIBA</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>cod sobreposto/BASE: 11139000,17659000</td></tr></tbody></table></p><p><h2>ATACADAO — 1/2 certas (50%)</h2></p><p><table><tbody><tr><th>Loja na escala</th><th>Status</th><th>Placas</th><th>Dias</th><th>Observação</th></tr>
+
+<tr><td>Atacadão - Belford Roxo</td><td>✅ CERTO</td><td>3</td><td>3</td><td>2/3 dias com parada LOJA cod=23843003,5353011,9039105</td></tr>
+<tr><td>Atacadão - Manilha</td><td>❌ BUGADO</td><td>1</td><td>3</td><td>placa escalada nunca fez parada LOJA com cod (3/3 dias sem parada)</td></tr></tbody></table></p><p><h2>GUANABARA — 11/27 certas (41%)</h2></p><p><table><tbody><tr><th>Loja na escala</th><th>Status</th><th>Placas</th><th>Dias</th><th>Observação</th></tr>
+
+<tr><td>GB BANGU FILIAL 5</td><td>✅ CERTO</td><td>1</td><td>2</td><td>1/2 dias com parada LOJA cod=71005</td></tr>
+<tr><td>GB BARRA FILIAL 7</td><td>✅ CERTO</td><td>2</td><td>2</td><td>2/2 dias com parada LOJA cod=71032</td></tr>
+<tr><td>GB CAMPO GRANDE FILIAL 26</td><td>✅ CERTO</td><td>2</td><td>2</td><td>1/2 dias com parada LOJA cod=71035</td></tr>
+<tr><td>GB DEL CASTILHO FILIAL 23</td><td>✅ CERTO</td><td>1</td><td>2</td><td>2/2 dias com parada LOJA cod=71023</td></tr>
+<tr><td>GB ENG DE DENTRO FILIAL 1</td><td>✅ CERTO</td><td>2</td><td>2</td><td>1/2 dias com parada LOJA cod=71001</td></tr>
+<tr><td>GB NITEROI FILIAL 8</td><td>✅ CERTO</td><td>2</td><td>2</td><td>2/2 dias com parada LOJA cod=71008</td></tr>
+<tr><td>GB NOVA IGUACU FILIAL 16</td><td>✅ CERTO</td><td>2</td><td>2</td><td>2/2 dias com parada LOJA cod=71016</td></tr>
+<tr><td>GB PENHA FILIAL 2</td><td>✅ CERTO</td><td>1</td><td>2</td><td>2/2 dias com parada LOJA cod=71002</td></tr>
+<tr><td>GB REALENGO FILIAL 4</td><td>✅ CERTO</td><td>1</td><td>2</td><td>2/2 dias com parada LOJA cod=71004</td></tr>
+<tr><td>GB RECREIO FILIAL 27</td><td>✅ CERTO</td><td>2</td><td>2</td><td>2/2 dias com parada LOJA cod=71039</td></tr>
+<tr><td>GB RIO DA PRATA FILIAL 13</td><td>✅ CERTO</td><td>1</td><td>2</td><td>2/2 dias com parada LOJA cod=71013</td></tr>
+<tr><td>GB BENTO RIBEIRO FILIAL 15</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr>
+<tr><td>GB BONSUCESSO FILIAL 30</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr>
+<tr><td>GB CAMPINHO FILIAL 17</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr>
+<tr><td>GB CAMPO GRANDE FILIAL 11</td><td>❌ BUGADO</td><td>2</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr>
+<tr><td>GB CATONHO FILIAL 31</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr>
+<tr><td>GB CAXIAS FILIAL 18</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr>
+<tr><td>GB IRAJA FILIAL 9</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr>
+<tr><td>GB ITAGUAI FILIAL 6</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr>
+<tr><td>GB PACIENCIA FILIAL 20</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr>
+<tr><td>GB PADRE MIGUEL FILIAL 14</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr>
+<tr><td>GB PIEDADE FILIAL 3</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr>
+<tr><td>GB SANTA CRUZ FILIAL 28</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr>
+<tr><td>GB SAO JOAO FILIAL 29</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr>
+<tr><td>GB TANQUE FILIAL 19</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr>
+<tr><td>GB TIJUCA FILIAL 25</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr>
+<tr><td>GB VILA ISABEL FILIAL 10</td><td>❌ BUGADO</td><td>1</td><td>2</td><td>placa escalada nunca fez parada LOJA com cod (2/2 dias sem parada)</td></tr></tbody></table></p><p><h2>SUPERCOMPRAS — 0/1 certas (0%)</h2></p><p><table><tbody><tr><th>Loja na escala</th><th>Status</th><th>Placas</th><th>Dias</th><th>Observação</th></tr>
+
+<tr><td>SUPERCOMPRAS - COSMOS</td><td>❌ BUGADO</td><td>2</td><td>3</td><td>cod sobreposto/BASE: 23080000</td></tr></tbody></table></p><p><h2>MUNDIAL — 0/1 certas (0%)</h2></p><p><table><tbody><tr><th>Loja na escala</th><th>Status</th><th>Placas</th><th>Dias</th><th>Observação</th></tr>
+
+<tr><td>MUNDIAL</td><td>❌ BUGADO</td><td>1</td><td>3</td><td>placa escalada nunca fez parada LOJA com cod (3/3 dias sem parada)</td></tr></tbody></table>
+</p>
+<div class="rodape">
+  Análise estimada baseada em PDFs Unitrac dias 19/20/25 de maio 2026 — Triforce Auto / KPI Transmonseg
+</div>
+</body>
+</html>

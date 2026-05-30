@@ -5,7 +5,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import {
   ChartBar,
-  ChartLineUp,
   ForkKnife,
   TableIcon,
   UsersThree,
@@ -19,7 +18,6 @@ type Leaf = { href: string; label: string; Icon: PhosphorIcon }
 type Group = { label: string; Icon: PhosphorIcon; href?: string; children: Leaf[] }
 
 const DASHBOARD: Leaf = { href: '/painel', label: 'Dashboard', Icon: ChartBar }
-const FECHAMENTO: Leaf = { href: '/painel/fechamento', label: 'Fechamento', Icon: ChartLineUp }
 
 const GROUPS: Group[] = [
   {
@@ -139,7 +137,6 @@ export function PainelNav() {
   return (
     <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
       <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
-      <LeafLink item={FECHAMENTO} active={leafActive(pathname, FECHAMENTO.href)} />
 
       <div className="my-2 h-px bg-[var(--color-sidebar-border)]" />
 

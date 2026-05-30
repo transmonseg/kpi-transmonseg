@@ -1,0 +1,313 @@
+
+=== ARMAZEM_GRAO ===
+ABASTECEDORA GRÃO DA SERRA (ALTO)         |GILSON            TML-6D96  |                  |                        |                  
+ARMAZEM DO GRAO (16 DE MARÇO)             |JAIRO             UDC-6I03  |                  |                        |                  
+ARMAZEM DO GRAO (CORREAS)                 |ROBERTO           LSL-9670  |12:39 14:28 14:47 |                        |                  
+ARMAZEM DO GRAO A. BARRA DA TIJUCA        |SIDNEI            LQE-5E01  |                  |                        |                  
+ARMAZEM DO GRÃO  (MOSELA)                 |JEFERSON          QST-4C52  |                  |                        |                  
+ARMAZEM DO GRÃO (CAPELA)                  |JAIRO             UDC-6I03  |                  |                        |                  
+ARMAZEM DO GRÃO (ITAIPAVA)                |ROBERTO           LSL-9670  |12:39 14:09 14:18 |                        |                  
+ARMAZEM DO GRÃO (QUITANDINHA)             |JEFERSON          QST-4C52  |                  |                        |                  
+ARMAZEM DO GRÃO (VALPARAÍSO)              |JEFERSON          QST-4C52  |                  |                        |                  
+ARMAZÉM DO GRÃO ( BOA VISTA)              |ANTUNES           TML-9I75  |                  |                        |                  
+ARMAZÉM DO GRÃO MATRIZ ( POSSE)           |ANTUNES           TML-9I75  |                  |                        |                  
+REGINA  1 DE MAIO                         |GILSON            TML-6D96  |                  |                        |                  
+REGINA  BARRA DO IMBUY                    |GILSON            TML-6D96  |      15:38 16:26 |                        |                  
+REGINA  LUCIO MEIRA                       |GILSON            TML-6D96  |                  |                        |                  
+
+=== ASSAI ===
+Assaí - Alcântara I - Loja 35             |PAULO HENRIQUE    DBB-8D19  |                  |                        |                  
+Assaí - Alcântara II - Loja 293           |LUIZ CARLOS       FQN-6J72  |                  |                        |                  
+Assaí - Araruama - Loja 221               |ADILSON           KZU-4C37  |03:46 06:01 09:42 |                        |                  
+Assaí - Bangu I - Loja 55                 |JEFERSON BATALHA  UBO-5E01  |04:56 05:43 08:31 |                        |                  
+Assaí - Bangu II - Loja 332               |LUIZ CESAR        LMF-2049  |                  |                        |                  
+Assaí - Barra I (Senna) - Loja 133        |FELIPE DIEGO      UBO-5E01  |                  |                        |                  
+Assaí - Barra II  - Loja 245              |CELSO             SFG-2F72  |04:56 09:51 09:56 |                        |                  
+Assaí - Boulevard (Vila Isabel) - Loja 2  |LUCIANO MARINHO   TML-7D21  |05:44 06:58 12:42 |                        |                  
+Assaí - Cabo Frio - Loja 82               |JOSE              AWA-6B40  |02:46 05:48 06:58 |                        |                  
+Assaí - Campinho - Loja 37                |RICARDO           KXB-6E57  |                  |                        |                  
+Assaí - Campos dos Goytacazes- Loja 188   |JUCA              CZZ-8H82  |00:55 06:45 08:38 |                        |                  
+Assaí - Carioca Shopping - Loja 316       |MARCUS VINICIUS   QSW-3B65  |05:16 05:37 10:41 |                        |                  
+Assaí - Caxias I - Loja 131               |ALLAN             EZU-9J51  |04:44 05:05 12:31 |                        |                  
+Assaí - Caxias II (Parque Fluminense) -   |YAGO / RODRIGO    UBF-5G36  |11:25 11:56 13:32 |                        |                  
+Assaí - Ceasa - Loja 42                   |ANTONIO CARLOS    EZU-9325  |                  |                        |                  
+Assaí - Cesário de Melo - Loja 202        |FÁBIO ALVES       GSK-0G53  |04:27 05:11 10:11 |                        |                  
+Assaí - Cordovil - Loja 231               |                            |                  |                        |                  
+Assaí - Freguesia - Loja 28               |NILTON            AKZ-2594  |03:54 04:40 08:12 |                        |                  
+Assaí - Galeão - Loja 302                 |EDMARIO           CUC-6J83  |05:12 05:43 11:37 |                        |                  
+Assaí - Ilha do Governador - Loja 29      |JOSE M            UBF-5G32  |05:13 05:48 13:17 |                        |                  
+Assaí - Macaé - Loja 232                  |RODRIGO           KZJ-0E14  |00:55 04:07 06:21 |                        |                  
+Assaí - Maracanã - Loja 286               |CRISTIANO         GAR-0802  |                  |                        |                  
+Assaí - Mendanha (Campo Grande) - Loja 6  |ANTÔNIO           LFJ-8442  |04:33 07:48 11:21 |                        |                  
+Assaí - Mesquita (Dutra) - Loja 142       |FLAVIANO          SFG-2F73  |04:25 04:54 10:30 |                        |                  
+Assaí - Méier - Loja 160                  |LUIZ JR.          AKZ-2745  |04:49 05:35 06:42 |                        |                  
+Assaí - Nilópolis - Loja 36               |JOAO CARLOS       LOT-2962  |05:19 05:42 09:36 |                        |                  
+Assaí - Niterói - Loja 41                 |BRUNO             UBF-5G33  |04:52 05:35 10:02 |                        |                  
+Assaí - Niterói Ponte - Loja 292          |LUIS FERREIRA     LAU-1I64  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+Assaí - Nova Iguaçu - Loja 30             |ROBERTO           LSL-9670  |04:16 04:57 06:34 |                        |                  
+Assaí - Nova Iguaçu 2 - Loja 291          |WANDERLEY         AFY-7J99  |05:37 06:05 11:45 |                        |                  
+Assaí - Petrópolis- Loja 181              |CARLINHOS         KMZ-7057  |02:47 04:27 05:59 |                        |                  
+Assaí - Pilares - Loja 128                |ADRIANO           CEJ-3426  |                  |                        |                  
+Assaí - Sabão Rio (Benfica) - Loja 136    |EDVALDO           LKA-3935  |                  |                        |                  
+Assaí - Santa Cruz - Loja 201             |FERNANDO          KGO-5E65  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+Assaí - Santa Cruz 2 - Loja 338           |ANTÔNIO FREITAS   LNG-7110  |11:14 12:33 15:19 |                        |                  
+Assaí - São Gonçalo Camil - Loja 211      |MESSIAS           AMW-3424  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+Assaí - São Gonçalo Centro - Loja 266     |JOSÉLIO           KRK-3D12  |05:32 06:54 12:39 |                        |                  
+Assaí - São João do Meriti  - Loja 217    |MILTON            EAC-4D65  |04:35 05:52 11:54 |                        |                  
+Assaí - Taquara   - Loja 340              |WALTER REGIS      UBO-0B68  |06:40 07:31 12:57 |                        |                  
+Assaí - Tijuca II  - Loja 150             |VALDIR            DDI-6J90  |04:30 05:03 12:52 |                        |                  
+Assaí - Tribobó - Loja 248                |FÁBIO DEUSETI     LON-7G98  |                  |                        |                  
+
+=== ATACADAO ===
+Atacadão - Belford Roxo                   |RODRIGO           UBF-5G34  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+Atacadão - Manilha                        |LUCIANO MATIAS    QSS-1E48  |                  |                        |                  
+
+=== CAB_PETROPOLIS ===
+CAB - PETRÓPOLIS                          |ZOZIMO            KNS-8D26  |                  |                        |                  
+
+=== CARREFOUR ===
+Carrefour - Alcântara                     |JOSE CARLOS       LSE-1D35  |05:29 06:59 07:45 |                        |                  
+Carrefour - Barra da Tijuca               |LUÍZ ANTÔNIO      KMY-5561  |04:57 05:50 07:19 |                        |                  
+Carrefour - Brigadeiro (Caxias)           |VALDEMIRIO        QSU-6I54  |04:34 04:55 07:14 |                        |                  
+Carrefour - Campo Grande                  |SIMÃO             LSN-6I72  |05:21 06:06 06:43 |RENAN         KRW-8E86  |05:38 06:23 07:05 
+Carrefour - Norte Shopping                |SÉRGIO            LJS-2B72  |                  |                        |                  
+Carrefour - Sulacap                       |VICTOR LUIZ       TJQ-6J26  |                  |                        |                  
+Carrefour - Washington Luiz               |GORDO             AMF-0325  |05:15 05:36 08:08 |                        |                  
+Carrefour - Campos dos Goytacazes         |                            |                  |                        |                  
+Carrefour - Macaé                         |                            |                  |                        |                  
+Carrefour - Juiz de Fora                  |                            |                  |                        |                  
+Carrefour - Espírito Santo                |                            |                  |                        |                  
+
+=== FEIRA_NOVA ===
+1- Nilopolis (Olinda)                     |SIDNEY            KUL-1425  |13:41 14:28 15:01 |                        |                  
+10- Cachambi                              |MARCIO            KVH-9J42  |13:43 14:07 14:54 |                        |                  
+11- Boa Dica (Piabetá)                    |ZOZIMO            KNS-8D26  |13:41 14:42 15:20 |                        |                  
+12- Freguesia                             |JOSE              KPB-5I95  |13:47 14:30 15:24 |                        |                  
+13- Todos os Santos                       |DANIEL            LKV-5067  |13:43 14:11 15:08 |                        |                  
+3- Anchieta                               |JOSUE             BBH-1C94  |12:14 12:43 13:52 |                        |                  
+4- Irajá                                  |WILLIAM           EFU-5704  |                  |                        |                  
+7- C.ROCHA                                |JOSE HUMBERTO     KOA-6A27  |13:40 13:59 14:26 |                        |                  
+8- Cerâmica                               |MARCIO            QSU-6I54  |13:46 14:57 15:50 |                        |                  
+9- Queimados                              |ADRIANO BORGES    TML-5I70  |13:33 14:41 15:36 |                        |                  
+ANCHIETA - 2º CARRO                       |MARCELO           KNC-1834  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+Mercado Santo Agostinho (Barra)           |RAFAEL            EYL-8B91  |13:52 14:34 14:51 |                        |                  
+SANTA CRUZ                                |ANDRE             LSX-7C72  |13:45 14:18 15:22 |                        |                  
+
+=== GUANABARA ===
+GB BANGU FILIAL 5                         |MARCOS            KSP-8814  |10:01 10:42 11:59 |                        |                  
+GB BARRA FILIAL 7                         |MOISES            GBC-6E12  |07:07 08:20 10:41 |ANDERSON      KST-0246  |08:05 09:50 10:58 
+GB BENTO RIBEIRO FILIAL 15                |WILLIAM/JUNIOR    LBB-5205  |                  |                        |                  
+GB BONSUCESSO FILIAL 30                   |DANIEL            GVH-0163  |                  |                        |                  
+GB CAMPINHO FILIAL 17                     |LUCIANO           DBB-9084  |                  |LUCIANO       DBB-9084  |                  
+GB CAMPO GRANDE FILIAL 11                 |ARTHUR            KNI-8942  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+GB CAMPO GRANDE FILIAL 26                 |MAURICIO          CDM-8645  |06:34 08:55 10:14 |JONESON       EBG-2D13  |                  
+GB CATONHO FILIAL 31                      |ADILSON/SONIA     LFI-1467  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+GB CAXIAS FILIAL 18                       |ELSON             GVH-1397  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+GB DEL CASTILHO FILIAL 23                 |ANTONIO           KTP-4F70  |10:03 10:29 11:29 |                        |                  
+GB ENG DE DENTRO FILIAL 1                 |RONALDO           KSG-5412  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|JOSE NILDON (DKVG-7A00  |09:51 10:54 12:35 
+GB IRAJA FILIAL 9                         |JULIO CESAR       LIF-3965  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|JULIO CESAR   LIF-3965  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR
+GB ITAGUAI FILIAL 6                       |CLAUDECI/TICO     LGX-1J41  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+GB NITEROI FILIAL 8                       |CELSO             KTR-0546  |07:14 09:20 10:07 |JONAS/BETO    LKF-7A79  |10:11 11:23 12:44 
+GB NOVA IGUACU FILIAL 16                  |HENRIQUE          KNB-0752  |08:37 09:13 10:14 |ICARDO /JUNIORLGT-1200  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR
+GB PACIENCIA FILIAL 20                    |LUAN              LHE-3473  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+GB PADRE MIGUEL FILIAL 14                 |ALOISIO/RAFAEL    LFA-4744  |                  |                        |                  
+GB PENHA FILIAL 2                         |P.CESAR           LFK-2C56  |07:04 07:40 08:45 |P.CESAR       LFK-2C56  |10:13 11:47 11:50 
+GB PIEDADE FILIAL 3                       |RAFAEL            KNI-8988  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+GB REALENGO FILIAL 4                      |MARCOS            LBL-5907  |10:11 11:01 12:39 |                        |                  
+GB RECREIO FILIAL 27                      |DANIEL QUIRINO    GEB-9H31  |07:08 08:29 10:11 |JHONATAN      KPE-3776  |                  
+GB RIO DA PRATA FILIAL 13                 |CLEBER            KRA-1083  |10:06 10:51 12:01 |                        |                  
+GB SANTA CRUZ FILIAL 28                   |ERIBERTO          KTR-6724  |                  |                        |                  
+GB SAO JOAO FILIAL 29                     |HENRIQUE /SONIA   KTZ-2055  |                  |                        |                  
+GB TANQUE FILIAL 19                       |LIRA              LIA-7683  |09:56 10:50 12:14 |                        |                  
+GB TIJUCA FILIAL 25                       |GUTEMBERG         CBR-9452  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+GB VILA ISABEL FILIAL 10                  |MARCIO/OLIMPO     GUE-0D63  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+
+=== MUNDIAL ===
+MUNDIAL                                   |CLUDIOMIR         CDL-8E52  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+
+=== PREZUNIC ===
+Prezunic - Barra da Tijuca                |HELIO ALVES       LLJ-9C64  |05:06 05:57 06:26 |                        |                  
+Prezunic - Jardim Oceanico                |MARCELO           KNC-1I34  |                  |                        |                  
+Prezunic - Barra Marapendi                |MARCELO           KNC-1I34  |                  |                        |                  
+Prezunic - Botafogo / Serra Azul          |DELSON            KWB-6998  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|MANOEL P 2° ENHNG-2B61  |09:46 12:47 13:11 
+Prezunic - Botafogo (Voluntários)         |YAGO / RODRIGO    UBF-5G36  |                  |                        |                  
+Prezunic - Ilha do Governador             |CIRLANDO          KPE-4133  |04:10 04:38 06:58 |                        |                  
+Prezunic - Pechincha                      |FELIPE            KUL-1425  |06:06 07:10 09:52 |                        |                  
+Prezunic - Freguesia                      |JOSE ROBERTO      KPB-5I95  |05:43 06:25 07:50 |                        |                  
+Prezunic - Anil (Jacarepaguá)             |EDUARDO           KWI-3461  |05:43 06:34 08:47 |                        |                  
+Prezunic - Jauru / Serra Azul             |CARLOS DO SANTOS  LUP-1F13  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+Prezunic - Taquara / Serra Azul           |CARLOS DO SANTOS  LUP-1F13  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+Prezunic - Icaraí                         |ESTELITA          GAJ-6H51  |05:10 08:17 09:09 |                        |                  
+Prezunic - Fonseca                        |DOVAL             KQV-1D80  |04:33 05:05 05:59 |                        |                  
+Prezunic - Recreio dos Bandeirantes       |EDUARDO           NTT-4858  |                  |                        |                  
+Prezunic - Caxias Centro / Serra Azul     |ANDERSON          LCE-4337  |05:43 06:02 06:17 |                        |                  
+Prezunic - Caxias Centenário              |ANDERSON          LCE-4337  |05:43 06:29 06:57 |                        |                  
+Prezunic - Campo Grande (TINGUI)          |ANDRE             LSX-7C72  |04:37 05:20 09:13 |                        |                  
+Prezunic - Campo Grande / Serra Azul      |MAGACIEL          KWV-7E89  |05:50 06:34 07:39 |                        |                  
+Prezunic - Santa Cruz / Serra Azul        |ANTÔNIO FREITAS   LNG-7110  |05:04 06:02 07:15 |                        |                  
+Prezunic - Nilópolis                      |FÁBIO BORGES      LAF-0697  |06:06 06:37 07:18 |                        |                  
+Prezunic - Vilar dos Teles                |HUMBERTO          KOA-6A27  |05:28 05:43 06:28 |                        |                  
+Prezunic - Méier / Serra Azul             |FLÁVIO            NSM-6D98  |05:45 06:20 07:29 |                        |                  
+Prezunic - Cachambi                       |SÉRGIO FIDÉLIS    LOU-9928  |04:12 07:33 08:04 |                        |                  
+Prezunic - Maricá                         |ALEXANDRE         TML-9I75  |04:02 05:12 09:43 |                        |                  
+Prezunic - Catumbi / Serra Azul           |EDSON CAFÉ        LTC-8F97  |05:58 07:16 09:12 |                        |                  
+Prezunic - Senador Camará                 |WILLIAM RODRIGUES UFW-0H63  |05:19 06:41 09:47 |                        |                  
+Prezunic - Realengo/ Serra Azul           |WILLIAM RODRIGUES UFW-0H63  |05:19 05:46 06:27 |                        |                  
+Prezunic - Tijuca                         |JOSE ROBERTO      TML-3B11  |04:39 05:09 06:58 |                        |                  
+Prezunic - Vila Isabel                    |AGNALDO           LKR-5990  |05:57 07:08 08:21 |                        |                  
+Prezunic - Laranjeiras                    |WILLIAM FERES     EFU-5H04  |                  |                        |                  
+Prezunic - Padre Miguel                   |SANTIAGO          KXA-7C24  |04:41 05:10 06:21 |                        |                  
+Prezunic - Penha                          |DANIEL            LKV-5067  |05:16 06:25 07:09 |                        |                  
+Prezunic - Olaria                         |DANIEL            LKV-5067  |05:16 05:37 06:18 |                        |                  
+Prezunic - Engenho Novo                   |ADRIANO           TML-5I70  |05:18 05:49 07:12 |                        |                  
+Prezunic - Benfica                        |ADRIANO           TML-5I70  |05:18 07:30 08:34 |                        |                  
+Prezunic - Campinho                       |MILTON            KOP-4978  |04:56 05:16 06:26 |                        |                  
+Prezunic - Cidade de Deus                 |MILTON            KOP-4978  |                  |                        |                  
+Prezunic - Itaoca                         |MÁRCIO            KXR-7F27  |04:44 05:00 06:05 |                        |                  
+Prezunic - Vista Alegre                   |MÁRCIO            KXR-7F27  |04:44 06:24 07:01 |                        |                  
+Prezunic - Depósito Central               |RODRIGO           UBF-5G34  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+Prezunic SPID - Tijuca                    |JULIO PEREIRA     RJN-9F68  |05:11 08:03 08:28 |                        |                  
+Prezunic SPID - Jacarepagua               |HELIO ALVES       LLJ-9C64  |                  |                        |                  
+Prezunic SPID - Santa Rosa (Niterói)      |WALLACE           ETI-5F79  |04:39 06:32 07:27 |                        |                  
+Prezunic SPID - Freguesia                 |ALISSON           MSK-3752  |                  |                        |                  
+Prezunic SPID - Glória                    |RAFAEL            KVT-5427  |04:31 07:46 08:18 |                        |                  
+Prezunic SPID - Botafogo                  |KANU              KQR-2J11  |05:07 09:00 09:19 |                        |                  
+Prezunic SPID - Meier                     |JULIO PEREIRA     RJN-9F68  |05:11 09:27 10:01 |                        |                  
+Prezunic SPID - Vila Isabel               |JULIO PEREIRA     RJN-9F68  |05:11 08:45 09:03 |                        |                  
+Prezunic SPID - Recreio                   |HELIO ALVES       LLJ-9C64  |05:06 08:47 09:16 |                        |                  
+Prezunic SPID - Barra                     |HELIO ALVES       LLJ-9C64  |                  |                        |                  
+Prezunic SPID - Alpha Mall                |HELIO ALVES       LLJ-9C64  |05:06 06:47 08:21 |                        |                  
+Prezunic SPID - Parque das Rosas          |HELIO ALVES       LLJ-9C64  |                  |                        |                  
+Prezunic SPID - Carioca                   |RAFAEL            KVT-5427  |04:31 06:45 07:22 |                        |                  
+Prezunic SPID - Centro                    |RAFAEL            KVT-5427  |04:31 07:34 07:39 |                        |                  
+Prezunic SPID - Farme de Amoedo           |KANU              KQR-2J11  |05:07 07:49 07:58 |                        |                  
+Prezunic SPID - Visconde de Pirajá (Ipan  |KANU              KQR-2J11  |      03:35 03:41 |                        |                  
+Prezunic SPID - Copacabana                |KANU              KQR-2J11  |05:07 08:11 08:39 |                        |                  
+
+=== PRINCESA ===
+Princesa - Catete                         |RAFAEL            KVT-5427  |04:31 05:11 06:38 |                        |                  
+Princesa - Flamengo                       |KANU              KQR-2J11  |05:07 05:53 07:01 |                        |                  
+Princesa - Cosme Velho                    |ERIVELTON         KRH-5H67  |04:25 04:59 05:57 |                        |                  
+Princesa - Laranjeiras                    |ELVIS             KPS-4J07  |04:54 05:31 06:22 |                        |                  
+Princesa - Copacabana                     |WANDERSON         KWH-2J02  |04:29 05:11 06:40 |                        |                  
+Princesa - Leme                           |MANOEL PAULINO    HNG-2B61  |04:45 05:32 05:55 |                        |                  
+Princesa - Pechincha                      |ALISSON           MSK-3752  |04:08 04:38 06:46 |                        |                  
+Princesa - Niteroí Barcas                 |LUIZ CESAR        LMF-2049  |                  |                        |                  
+Princesa - Inga                           |WALLACE           ETI-5F79  |04:39 05:24 06:24 |                        |                  
+Princesa - Fonseca                        |JULIO PEREIRA     RJN-9F68  |05:11 05:58 07:18 |                        |                  
+Princesa - Icaraí                         |JOHN              KVI-9088  |04:16 04:56 06:13 |                        |                  
+Princesa - Iguaba (1ª Entrega)            |DIEGO             LRA-9C41  |                  |                        |                  
+Princesa - Itaboraí (2ª Entrega)          |DIEGO             LRA-9C41  |                  |                        |                  
+Princesa - Maricá 1 (2ª Entrega)          |DANIEL CAVALCANTE QSZ-9A20  |03:21 04:49 06:47 |                        |                  
+Princesa - Maricá 2 (1ª Entrega)          |DANIEL CAVALCANTE QSZ-9A20  |03:21 06:51 07:22 |                        |                  
+Princesa - Barra de São João (1ª Entrega  |RENATO            JAJ-6B36  |02:55 09:46 11:56 |                        |                  
+Princesa - Rio das Ostras (2ª Entrega)    |RENATO            JAJ-6B36  |02:55 08:49 09:18 |                        |                  
+Princesa - Arraial 1 (1ª Entrega)         |ANTÔNIO           MES-7F27  |03:16 05:56 06:30 |                        |                  
+Princesa - Arraial 2 (2ª Entrega)         |ANTÔNIO           MES-7F27  |03:16 07:19 11:12 |                        |                  
+Princesa - Arraial 3 (3ª Entrega)         |ANTÔNIO           MES-7F27  |03:16 06:32 07:15 |                        |                  
+Princesa - Buzios 1 (2ª Entrega)          |LEONARDO          QST-4C52  |02:49 06:14 06:32 |                        |                  
+Princesa - Buzios 2 (3ª Entrega)          |LEONARDO          QST-4C52  |02:49 06:33 07:36 |                        |                  
+Princesa - Buzios 3 (1ª Entrega)          |LEONARDO          QST-4C52  |02:49 07:38 10:36 |                        |                  
+Princesa - Cabo Frio 1 (1ª Entrega)       |CLAUDIO           UDC-6I03  |02:20 05:27 07:04 |                        |                  
+Princesa - Cabo Frio 2 (3ª Entrega)       |CLAUDIO           UDC-6I03  |02:20 08:24 08:48 |                        |                  
+Princesa - Cabo Frio 3 (2ª Entrega)       |CLAUDIO           UDC-6I03  |02:20 07:06 08:02 |                        |                  
+
+=== SAMS_CLUB ===
+Sam's - Barra (Ayrton Senna)              |FLÁVIO            NSM-6D98  |05:45 06:55 07:29 |                        |                  
+Sam's - Linha Amarela                     |FÁBIO BORGES      LAF-0697  |                  |                        |                  
+Sam's - Niterói                           |JOSE ROBERTO      KPB-5I95  |                  |                        |                  
+
+=== SENDAS ===
+Americanas                                |JOSÉ CARLOS       LKV-5067  |                  |                        |                  
+Armazem do grão - Central                 |EDUARDO           KPH-8C41  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+Atlantico Sul (Barra da Tijuca)           |MÁRCIO            LTH-4J15  |04:25 05:58 06:23 |                        |                  
+Barra Tower                               |MÁRCIO            LTH-4J15  |04:25 05:10 05:47 |                        |                  
+Barramares (Barra da Tijuca)              |MÁRCIO            LTH-4J15  |04:25 06:28 07:01 |                        |                  
+Mercado de Santa                          |LUIZ CESAR        LMF-2049  |                  |                        |                  
+Mercearia Sachinho (Vargem Grande)        |SANDRO            KXA-5966  |10:52 11:42 12:25 |                        |                  
+Santo Agostinho                           |FLÁVIO            NSM-6D98  |                  |                        |                  
+Sendas Central 1º Carro                   |NELSON            KRB-2J76  |      00:04 10:25 |                        |                  
+
+=== SUPERCOMPRAS ===
+SUPERCOMPRAS - COSMOS                     |RAFAEL SOARES     EYL-8B91  |                  |                        |                  
+
+=== SUPERPRIX ===
+Super Prix - Barra - Loja 202             |MATHEUS SANDES    UBG-7F79  |                  |                        |                  
+Super Prix - Icaraí - Loja 10 - 2° ENTRE  |RODRIGO           KZC-4D39  |05:01 06:37 07:42 |                        |                  
+Super Prix - Ipanema - Loja 201           |CLEYTON           FHO-5F88  |05:00 05:55 06:45 |                        |                  
+Super Prix - Niterói - Loja 13 - 1° ENTR  |RODRIGO           KZC-4D39  |                  |                        |                  
+Super Prix - Tijuca  (2° °ENTREGA) Loja   |ERALDO            TML-7D61  |05:12 07:08 08:16 |                        |                  
+Super Prix -Grajaú  VERDUN Loja 04 2°ENT  |BRUNO             CXA-7B36  |05:12 07:35 10:09 |                        |                  
+Super Prix -Grajaú -  Loja 08 - 1°° ENTR  |BRUNO             CXA-7B36  |05:12 05:57 07:29 |                        |                  
+Super Prix -Riachuelo Loja 07             |WILLIAM           INW-8A51  |04:49 05:16 06:10 |                        |                  
+Super Prix -Tijuquinha (1° ENTREGA)  Loj  |ERALDO            TML-7D61  |05:12 06:01 07:01 |                        |                  
+
+=== SUPER_PAX ===
+Del Castilho                              |DANIEL            QSZ-9A20  |14:22 15:13 15:58 |                        |                  
+Engenho de Dentro                         |SERGIO            LOU-9928  |14:22 14:57 15:50 |                        |                  
+Guadalupe                                 |LUIZ              AKZ-2745  |14:20 15:03 15:20 |                        |                  
+INHAUMA                                   |SILVIO            UBF-7F79  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+LINS 2º CARRO                             |DENIS BEZERRA     QSY-2H32  |14:20 15:31 16:33 |                        |                  
+Lins                                      |CARLOS            LUP-1F13  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+Madureira                                 |ESTELITA          GAJ-6H51  |14:32 16:48 17:13 |                        |                  
+Oswaldo Cruz                              |ESTELITA          GAJ-6H51  |14:32 15:01 16:42 |                        |                  
+Pilares                                   |MARCIO            KXR-7F27  |14:42 15:00 15:27 |                        |                  
+Realengo                                  |LUIZ              KMY-5561  |14:13 15:10 15:33 |                        |                  
+Sepetiba                                  |DENNIS AUGUSTO    TML-7D21  |                  |                        |                  
+Taquara                                   |ALLAN             EZU-9J51  |14:41 15:30 16:06 |                        |                  
+Vila da Penha                             |FELIPE            LNU-7H38  |14:21 14:49 15:38 |                        |                  
+
+=== VIANENSE ===
+Vianense - Freguesia 2º entrega           |JOSE ROBERTO      TML-3B11  |                  |                        |                  
+Vianense - Jardim Alvorada 2º entrega     |MÁRCIO            LTH-4J15  |10:03 11:43 12:00 |                        |                  
+Vianense - Nova Iguaçu 1º entrega         |MÁRCIO            LTH-4J15  |10:03 11:14 11:32 |                        |                  
+Vianense - Recreio 1º entrega             |JOSE ROBERTO      TML-3B11  |                  |                        |                  
+
+=== ZONA_SUL ===
+EXTRA F.31                                |PAULO HENRIQUE    DBB-8D19  |                  |                        |                  
+MEGA BOX 01 - Olaria                      |MILTON            KOP-4978  |                  |PAULO ROBERTO MDV-3746  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR
+MEGA BOX 02 - Olaria                      |MILTON            KOP-4978  |                  |PAULO CESAR   LNU-7733  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR
+Zona Sul - Entrega Extra                  |MILTON            KOP-4978  |                  |                        |                  
+Zona Sul Loja 01 - Ipanema                |SÉRGIO JOSE DA SILLJS-2172  |                  |                        |                  
+Zona Sul Loja 03 - Copacabana I           |JOSUE DOS SANTOS  BBH-1C94  |19:32 20:20 20:39 |                        |                  
+Zona Sul Loja 04 - Copacabana II          |MARCIO            KVH-9J42  |05:06 05:52 09:38 |                        |                  
+Zona Sul Loja 05 - Copacabana III         |ANDERSON          LVE-0688  |18:37 20:43 21:00 |                        |                  
+Zona Sul Loja 06 - Gávea                  |DOUGLAS           LTE-0A64  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+Zona Sul Loja 07 - Leblon                 |ALESSIO           KQR-2J11  |14:09 14:58 16:11 |RODRIGO       KWK-4593  |                  
+Zona Sul Loja 08 - Ipanema                |LUIZ ALVES        LCO-0978  |                  |                        |                  
+Zona Sul Loja 09 - Ipanema                |SÉRGIO JOSE DA SILLJS-2172  |                  |                        |                  
+Zona Sul Loja 10 - Recreio                |NILTON RODRIGUES  AKZ-2594  |18:32 19:45 20:21 |                        |                  
+Zona Sul Loja 11 - Leblon                 |PAULO HENRIQUE    DBB-8D19  |12:55 14:37 17:05 |WILLIAM       INW-8A51  |14:10 15:12 16:30 
+Zona Sul Loja 1129 - Olaria               |JHONATA FREIRE DA KYM-2I62  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|PAULO ROBERTO MDV-3746  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR
+Zona Sul Loja 12 - Leme                   |EDMILSON JOSÉ     LTQ-0783  |15:54 16:56 17:39 |                        |                  
+Zona Sul Loja 13 - Angra                  |JULIO             CZB-9J19  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+Zona Sul Loja 14 - Leblon                 |MARCOS FERNANDO   UBO-5E05  |                  |                        |                  
+Zona Sul Loja 15 - Leblon                 |INACIO ARAUJO     LQU-5546  |03:26 05:32 06:40 |                        |                  
+Zona Sul Loja 17 - Barra                  |VLADIMIR          KQY-9E24  |17:49 18:50 19:31 |                        |                  
+Zona Sul Loja 18 - Copacabana             |ALEX              LKW-2B80  |04:28 05:12 06:39 |                        |                  
+Zona Sul Loja 19 - Copacabana             |LUIZ ANTONIO ALVESKMY-5561  |04:57 05:50 06:01 |JOSUE DOS SANTBBH-1C94  |19:32 20:42 20:52 
+Zona Sul Loja 20 - Botafogo               |ANDERSON          LVE-0688  |18:37 19:40 20:26 |                        |                  
+Zona Sul Loja 21 - Flamengo               |EDMILSON JOSÉ DE MLTQ-0783  |                  |                        |                  
+Zona Sul Loja 22 - S. Conrado             |JONESON           EBG-2D13  |                  |                        |                  
+Zona Sul Loja 23 - Barra                  |JOSENILDO ANISIO  KRK-3D12  |18:38 19:41 20:40 |                        |                  
+Zona Sul Loja 25 - Jd. Botânico           |JONESON           EBG-2D13  |                  |                        |                  
+Zona Sul Loja 26 - Copacabana             |MARCIO            LTH-4J15  |18:32 19:51 20:15 |                        |                  
+Zona Sul Loja 27 - Ipanema                |INACIO ARAUJO     LQU-5546  |03:26 04:45 05:20 |                        |                  
+Zona Sul Loja 28 - Urca                   |INACIO ARAUJO     LQU-5546  |14:57 15:57 16:16 |                        |                  
+Zona Sul Loja 29 - Flamengo               |INACIO ARAUJO     LQU-5546  |14:57 16:29 16:48 |                        |                  
+Zona Sul Loja 30 - Laranjeiras            |SIDNEI ANTONIO MENLQE-5401  |04:15 04:47 05:27 |                        |                  
+Zona Sul Loja 31 - Jd. Botânico           |PAULO HENRIQUE    DBB-8D19  |12:55 13:58 14:11 |DOUGLAS       LTE-0A64  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR
+Zona Sul Loja 32 - Laranjeiras            |EDUARDO           QAH-2H50  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+Zona Sul Loja 33 - Humaitá                |LUIZ ALVES        LCO-0978  |                  |                        |                  
+Zona Sul Loja 34 - Barra                  |CARLOS GONÇALVES  LNU-9595  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+Zona Sul Loja 35 - Barra                  |ALEX              LKW-2B80  |13:54 15:04 15:43 |                        |                  
+Zona Sul Loja 36 - Botafogo               |LUIZ ALVES        LCO-0978  |                  |                        |                  
+Zona Sul Loja 38 - Copacabana             |RODRIGO           KWK-4593  |16:22 17:24 17:51 |                        |                  
+Zona Sul Loja 40 - Ipanema                |EDUARDO           LQA-5883  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+Zona Sul Loja 42 - Botafogo               |EDUARDO           QAH-2H50  |SEM RASTREADORSEM RASTREADORSEM RASTREADOR|                        |                  
+Zona Sul Loja 43 - Barra (Península)      |WANDERLEY         AFY-7J99  |15:05 16:09 16:54 |                        |                  
+Zona Sul Loja 44 - Barra                  |AGNALDO           LKR-5990  |18:43 20:04 20:10 |                        |                  
+Zona Sul Loja 45 - Flamengo               |MOBRICI           AOP-3C73  |14:40 16:03 18:02 |                        |                  
+Zona Sul Loja 46 - Botafogo               |RENATO            JAJ-6B36  |18:06 19:16 19:51 |                        |                  
+Zona Sul Loja 47                          |SIDNEI ANTONIO    LQE-5401  |                  |                        |                  
+Zona Sul Loja 48 - Recreio                |JOSUE DOS SANTOS  BBH-1C94  |                  |                        |                  
