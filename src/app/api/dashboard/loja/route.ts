@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { intervaloPeriodo, carregarEntradasManuais } from '@/lib/kpi/dashboard-query'
+import { intervaloPeriodo } from '@/lib/kpi/dashboard-query'
 import { hojeBR } from '@/lib/data-br'
-import type { EntradaManual } from '@/lib/kpi/parse-kpi-manual'
 
 export const runtime = 'nodejs'
 
@@ -47,18 +46,33 @@ export async function GET(req: NextRequest) {
 
   const [ini, fim] = intervaloPeriodo(periodo, ref)
 
+  // Filtra DIRETO no banco (rede + loja + intervalo) em vez de carregar o período
+  // inteiro e filtrar em memória — traz só as ~dezenas de linhas desta loja, não
+  // as milhares de todas. Pagina por segurança (no modo 'ano' uma loja pode passar
+  // de 1000); ORDER BY id estabiliza as janelas.
   const svc = createServiceClient()
-  let linhas: EntradaManual[]
+  type Row = { data: string; status: string; saida_cd: string | null; chd: string | null; sai: string | null }
+  const ents: Row[] = []
   try {
-    linhas = await carregarEntradasManuais(svc, ini, fim)
+    const PAGE = 1000
+    for (let off = 0; ; off += PAGE) {
+      const { data, error } = await svc.from('kpi_manual_entradas')
+        .select('data, status, saida_cd, chd, sai')
+        .eq('rede_id', rede).eq('loja', loja)
+        .gte('data', ini).lte('data', fim)
+        .order('id', { ascending: true })
+        .range(off, off + PAGE - 1)
+      if (error) throw new Error(error.message)
+      const lote = (data ?? []) as Row[]
+      ents.push(...lote)
+      if (lote.length < PAGE) break
+    }
   } catch (e) {
     return new NextResponse(e instanceof Error ? e.message : 'Erro ao carregar KPIs', { status: 500 })
   }
 
-  const ents = linhas.filter(e => e.rede_id === rede && e.loja === loja)
-
   // Agrupa por dia.
-  const mapDia = new Map<string, EntradaManual[]>()
+  const mapDia = new Map<string, Row[]>()
   for (const e of ents) {
     const a = mapDia.get(e.data) ?? []
     a.push(e)
