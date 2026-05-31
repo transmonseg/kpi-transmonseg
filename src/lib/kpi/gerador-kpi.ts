@@ -198,6 +198,17 @@ function escreverLinha(ws: ExcelJS.Worksheet, row: number, ag: LinhaAgrupada, es
     cell.style = estilo[c - 1]
   }
 
+  // Garante numFmt de hora nas colunas de tempo de AMBOS os carros.
+  // O template tem o formato correto nas colunas do 1º carro (col 5-7), mas
+  // frequentemente não nas do 2º carro (col 11-13) — sem isso o Excel exibe
+  // a fração decimal (ex: 0.188194) em vez de "04:31".
+  const fmtHora = (estilo[4]?.numFmt as string | undefined) || 'hh:mm'
+  const COLS_HORA = [5, 6, 7, 11, 12, 13]
+  for (const c of COLS_HORA) {
+    const cell = ws.getCell(row, c)
+    if (typeof cell.value === 'number') cell.numFmt = fmtHora
+  }
+
   // Fórmulas TEMPO EM LOJA com result pré-calculado (ExcelJS não calcula sozinho).
   // Só emite a fórmula quando CHD e SAÍDA são horários numéricos. Se a célula tem
   // texto ("SEM RASTREADOR" / "NÃO FOI AO CLIENTE"), MOD(texto) recalcula como #VALUE!
