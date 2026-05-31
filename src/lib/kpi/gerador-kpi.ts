@@ -87,11 +87,6 @@ export async function gerarKpi(input: GerarKpiInput): Promise<Buffer> {
 
   preencherAba(ws, { rede_id, redeNome, data, linhas })
 
-  if (rede_id === 'ZONA_SUL') {
-    const { gerarAbaBaseZonaSul } = await import('./zona-sul-base')
-    gerarAbaBaseZonaSul(wb)
-  }
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return Buffer.from((await wb.xlsx.writeBuffer()) as any) as any
 }
