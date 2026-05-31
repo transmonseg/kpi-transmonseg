@@ -118,9 +118,12 @@ describe('agruparPorLoja', () => {
     ]
     const out = agruparPorLoja(linhas)
     expect(out).toHaveLength(1)
+    // Fix de ordem (2026-05-31): donos (carro_ordem=1) têm prioridade sobre a
+    // carona (carro_ordem=2). A e C (donos) ocupam os 2 slots; D (3º dono) e B
+    // (carona) vão pra descartadas — preservadas, não somem (Bug I4).
     expect(out[0].carro1?.motorista).toBe('A')
-    expect(out[0].carro2?.motorista).toBe('B')
-    expect(out[0].descartadas.map(d => d.motorista)).toEqual(['C', 'D'])
+    expect(out[0].carro2?.motorista).toBe('C')
+    expect(out[0].descartadas.map(d => d.motorista)).toEqual(['D', 'B'])
   })
 
   it('padrao 2 carros: descartadas vazio', () => {

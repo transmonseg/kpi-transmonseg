@@ -320,7 +320,7 @@ export async function parseEscalaZonaSul(
 
     if (lojas.length === 0) return
 
-    for (const { loja, kilos } of lojas) {
+    lojas.forEach(({ loja, kilos }, posIdx) => {
       const dataEntrega = resolveDataEntrega(dataCarga, loja, hora)
 
       const lojaNum = parseInt(loja.trim(), 10)
@@ -340,7 +340,7 @@ export async function parseEscalaZonaSul(
         motorista_nome: motoristaRaw,
         motorista_codigo: codMotorista,
         tipo_carro: tipoVeiculo,
-        carro_ordem: 1,
+        carro_ordem: posIdx === 0 ? 1 : 2,
         turno,
         tipo_emissao: 'NORMAL',
         obs: null,
@@ -351,8 +351,19 @@ export async function parseEscalaZonaSul(
       }
 
       results.push(linha)
-    }
+    })
   })
 
-  return results
+  // Regra Zona Sul: mesma placa na mesma loja = 1 carro. Mantém a entrega de
+  // MENOR posição (1ª entrega = "dono" tem prioridade sobre 2ª/3ª = "carona").
+  // carro_ordem final: 1 = dono (1ª entrega), 2 = carona (só passa pela loja).
+  const dedup = new Map<string, LinhaEscala>()
+  for (const l of results) {
+    const key = l.placa_norm
+      ? `${l.loja_codigo_raw}|${l.placa_norm}`
+      : `${l.loja_codigo_raw}|sempl|${l.raw_row_num}`
+    const prev = dedup.get(key)
+    if (!prev || l.carro_ordem < prev.carro_ordem) dedup.set(key, l)
+  }
+  return [...dedup.values()]
 }

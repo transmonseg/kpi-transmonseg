@@ -21,22 +21,25 @@ export type LinhaAgrupada = {
  * descartada (cenário raro — KPI só tem 2 colunas de carro).
  */
 export function agruparPorLoja(linhas: LinhaParaKpi[]): LinhaAgrupada[] {
-  const map = new Map<string, LinhaAgrupada>()
+  const map = new Map<string, LinhaParaKpi[]>()
   for (const l of linhas) {
-    const entry = map.get(l.loja_nome) ?? { loja_nome: l.loja_nome, carro1: null, carro2: null, descartadas: [] }
-    const preferred = l.carro_ordem === 1 ? 'carro1' : 'carro2'
-    const fallback = preferred === 'carro1' ? 'carro2' : 'carro1'
-    if (entry[preferred] === null) {
-      entry[preferred] = l
-    } else if (entry[fallback] === null) {
-      entry[fallback] = l
-    } else {
-      // Bug I4 (auditoria 2026-05-27): antes descartava silenciosamente. Agora
-      // preserva em `descartadas` pra warning no preview/PDF. KPI core continua
-      // com 2 carros, mas a 3ª linha nao some do sistema.
-      entry.descartadas.push(l)
-    }
-    map.set(l.loja_nome, entry)
+    const arr = map.get(l.loja_nome) ?? []
+    arr.push(l)
+    map.set(l.loja_nome, arr)
   }
-  return [...map.values()]
+  const out: LinhaAgrupada[] = []
+  for (const [loja_nome, arr] of map) {
+    // Ordena por carro_ordem (1 = dono/1ª entrega vem antes de 2 = carona) com
+    // sort ESTÁVEL (mantém a ordem original entre iguais), e preenche os slots
+    // na sequência: 1º slot = maior prioridade, 2º slot = seguinte. A 3ª+ linha
+    // fica em `descartadas` (Bug I4 — não some do sistema, vira warning).
+    const ordenadas = [...arr].sort((a, b) => (a.carro_ordem ?? 1) - (b.carro_ordem ?? 1))
+    out.push({
+      loja_nome,
+      carro1: ordenadas[0] ?? null,
+      carro2: ordenadas[1] ?? null,
+      descartadas: ordenadas.slice(2),
+    })
+  }
+  return out
 }
