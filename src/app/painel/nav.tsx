@@ -10,11 +10,12 @@ import {
   UsersThree,
   Storefront,
   ClockCounterClockwise,
+  ClipboardText,
   CaretRight,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 
-type Leaf = { href: string; label: string; Icon: PhosphorIcon }
+type Leaf = { href: string; label: string; Icon: PhosphorIcon; exact?: boolean }
 type Group = { label: string; Icon: PhosphorIcon; href?: string; children: Leaf[] }
 
 const DASHBOARD: Leaf = { href: '/painel', label: 'Dashboard', Icon: ChartBar }
@@ -32,20 +33,21 @@ const GROUPS: Group[] = [
   {
     label: 'Cozinha',
     Icon: ForkKnife,
-    href: '/painel/cozinha',
     children: [
+      { href: '/painel/cozinha', label: 'Gerar Romaneio', Icon: ClipboardText, exact: true },
       { href: '/painel/cozinha/clientes', label: 'Clientes', Icon: UsersThree },
     ],
   },
 ]
 
-function leafActive(pathname: string, href: string) {
+function leafActive(pathname: string, href: string, exact?: boolean) {
+  if (exact) return pathname === href
   return pathname === href || pathname.startsWith(href + '/')
 }
 
 function groupHasActive(pathname: string, g: Group) {
   if (g.href && pathname === g.href) return true
-  return g.children.some(c => leafActive(pathname, c.href))
+  return g.children.some(c => leafActive(pathname, c.href, c.exact))
 }
 
 const ITEM_BASE =
@@ -122,7 +124,7 @@ function GroupBlock({ group, pathname }: { group: Group; pathname: string }) {
         <div className="overflow-hidden">
           <div className="mt-px flex flex-col gap-px pt-px">
             {group.children.map(c => (
-              <LeafLink key={c.href} item={c} active={leafActive(pathname, c.href)} nested />
+              <LeafLink key={c.href} item={c} active={leafActive(pathname, c.href, c.exact)} nested />
             ))}
           </div>
         </div>
