@@ -28,12 +28,21 @@ export function agruparPorLoja(linhas: LinhaParaKpi[]): LinhaAgrupada[] {
     map.set(l.loja_nome, arr)
   }
   const out: LinhaAgrupada[] = []
+  // Tem rastreador = rodou de fato (tem saída do CD ou chegada na loja).
+  const rodou = (l: LinhaParaKpi) => !!(l.saida_cd || l.chd_loja_1)
   for (const [loja_nome, arr] of map) {
-    // Ordena por carro_ordem (1 = dono/1ª entrega vem antes de 2 = carona) com
-    // sort ESTÁVEL (mantém a ordem original entre iguais), e preenche os slots
-    // na sequência: 1º slot = maior prioridade, 2º slot = seguinte. A 3ª+ linha
-    // fica em `descartadas` (Bug I4 — não some do sistema, vira warning).
-    const ordenadas = [...arr].sort((a, b) => (a.carro_ordem ?? 1) - (b.carro_ordem ?? 1))
+    // Ordena (sort ESTÁVEL) e preenche os slots em sequência: 1º slot = maior
+    // prioridade, 2º slot = seguinte, 3ª+ em `descartadas` (Bug I4 — não some).
+    // Prioridade:
+    //   1) quem RODOU (tem horário/rastreador) vem primeiro — o carro que
+    //      entregou de fato ocupa o 1º carro; o sem rastreador cai pro 2º (que
+    //      a operação filtra). Regra confirmada com o operador em 2026-05-31.
+    //   2) desempate: dono (carro_ordem=1, 1ª entrega) antes de carona (=2).
+    const ordenadas = [...arr].sort((a, b) => {
+      const g = (rodou(b) ? 1 : 0) - (rodou(a) ? 1 : 0)
+      if (g !== 0) return g
+      return (a.carro_ordem ?? 1) - (b.carro_ordem ?? 1)
+    })
     out.push({
       loja_nome,
       carro1: ordenadas[0] ?? null,

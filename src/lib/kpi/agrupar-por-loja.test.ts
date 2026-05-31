@@ -36,6 +36,18 @@ describe('agruparPorLoja', () => {
     expect(out[0].carro2).toBeNull()
   })
 
+  it('carro que RODOU (tem horário) vai pro 1º slot; sem rastreador pro 2º', () => {
+    // Loja 30 (2026-05-31): LQE5401 é dono mas sem rastreador; BBH1C94 também é
+    // dono e TEM horário. O que rodou de fato tem que ser o 1º carro.
+    const linhas = [
+      stub({ loja_nome: 'L', placa: 'LQE5401', carro_ordem: 1, saida_cd: null, chd_loja_1: null }),
+      stub({ loja_nome: 'L', placa: 'BBH1C94', carro_ordem: 1, saida_cd: new Date('2026-05-31T04:31:00Z'), chd_loja_1: new Date('2026-05-31T04:56:00Z') }),
+    ]
+    const out = agruparPorLoja(linhas)
+    expect(out[0].carro1?.placa).toBe('BBH1C94')
+    expect(out[0].carro2?.placa).toBe('LQE5401')
+  })
+
   it('2 linhas mesma loja com carro_ordem 1 e 2: cada um vai pro seu slot', () => {
     const linhas = [
       stub({ loja_nome: 'L', motorista: 'A', carro_ordem: 1 }),
