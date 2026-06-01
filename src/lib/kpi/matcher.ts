@@ -8,6 +8,7 @@ import { hungarianMin } from '@/lib/utils/hungarian'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isRotaGigante } from './rotas-gigantes'
 import { isVeiculoInativo } from './veiculos-inativos'
+import { matchGeoEndereco } from '@/lib/lojas/match-geo-endereco'
 
 // Tokeniza nome de loja pra match fuzzy: remove acentos, parênteses (1ª Entrega), redes,
 // stopwords (DO, DE, DA, SAO), retorna set de tokens significativos.
@@ -222,6 +223,7 @@ export type UnitracParadaRow = {
   nome_loja: string | null
   lat: number | null
   lng: number | null
+  endereco?: string | null
   classificacao: string
   ordem: number
 }
@@ -237,6 +239,10 @@ export type LojaRow = {
   lat: number | null
   lng: number | null
   raio_metros: number
+  endereco?: string | null
+  bairro?: string | null
+  municipio?: string | null
+  numero?: string | null
 }
 
 /**
@@ -952,6 +958,7 @@ export async function cruzaEscalaUnitrac(
   lojas: LojaRow[],
   supabase?: SupabaseClient,
   geoStores?: GeoStore[],
+  opts?: { geoEndereco?: boolean },
 ): Promise<RotaKpi[]> {
   // V2.1 fix — tradução codigo_escala → codigo_unitrac.
   // Quando uma loja tem codigo_escala='338' e codigo_unitrac='560060', uma linha de
@@ -2034,6 +2041,82 @@ export async function cruzaEscalaUnitrac(
         ? { score: metaScore, confidence: metaConfidence, requiresReview: metaRequiresReview, algorithm: metaAlgorithm }
         : { score: 0, confidence: 'UNMATCHED', requiresReview: true, algorithm: 'none' },
     })
+  }
+
+  // ── Pós-processamento: match por geo/endereço de paradas FORA_BASE ──────────
+  // Só roda com opts.geoEndereco. NÃO altera nenhum match já feito — apenas
+  // preenche rotas que ficaram VAZIAS, casando uma parada FORA_BASE sem código à
+  // LOJA QUE A PRÓPRIA LINHA espera, quando a coordenada bate o cadastro (≤100m,
+  // ou 100–250m se a rua/bairro confirmar). Marca algorithm:'geo' + requiresReview.
+  // Validado em dados reais (dia 20): rua-texto falha, coordenada casa limpo.
+  if (opts?.geoEndereco) {
+    const consumidas = new Set<string>()
+    for (const r of rotas) for (const p of r.paradas) if (p.parada_id) consumidas.add(p.parada_id)
+
+    const lojaEsperadaDaLinha = (linha: EscalaLinhaRow): LojaRow | null => {
+      const fung = redesFungiveis(linha.rede_id)
+      const cands = lojas.filter(l => fung.has(l.rede_id))
+      if (linha.loja_codigo_raw) {
+        const porCod = cands.find(l =>
+          l.codigo_escala === linha.loja_codigo_raw ||
+          (l.codigo_unitrac != null && codCasa(linha.loja_codigo_raw!, l.codigo_unitrac)))
+        if (porCod) return porCod
+      }
+      return cands.find(l => matchScore(linha.loja_nome_raw, l.nome) === 0) ?? null
+    }
+
+    for (const rota of rotas) {
+      if (rota.paradas.length > 0 || !rota.placa_norm) continue
+      const linha = escalaLinhas.find(l => l.id === rota.escala_linha_id)
+      if (!linha) continue
+      const esperada = lojaEsperadaDaLinha(linha)
+      if (!esperada || esperada.lat == null || esperada.lng == null) continue
+
+      const candidatas = (paradaByPlaca.get(rota.placa_norm) ?? []).filter(p =>
+        !consumidas.has(p.id) && p.lat != null && p.lng != null)
+
+      let melhorP: UnitracParadaRow | null = null
+      let melhorDist = Infinity
+      // (1) FORA_BASE sem código casado por coordenada/endereço à loja agendada.
+      for (const p of candidatas) {
+        if (p.classificacao !== 'FORA_BASE' || p.codigo_loja) continue
+        const m = matchGeoEndereco(
+          { lat: p.lat, lng: p.lng, endereco: p.endereco ?? null, classificacao: p.classificacao, codigo_loja: p.codigo_loja },
+          [{ id: esperada.id, rede_id: esperada.rede_id, nome: esperada.nome, lat: esperada.lat, lng: esperada.lng, endereco: esperada.endereco, bairro: esperada.bairro, municipio: esperada.municipio, numero: esperada.numero }],
+        )
+        if (m && m.distancia < melhorDist) { melhorDist = m.distancia; melhorP = p }
+      }
+      // (2) Loja DUPLICADA no cadastro: parada LOJA (código de uma loja-gêmea no
+      //     mesmo ponto físico, ≤60m) que ficou órfã. Ex: escala casa "Iguaba (1
+      //     Entrega)" 8590575 por nome, mas o GPS marca 8590570 "IGUABA GRANDE"
+      //     (mesma loja, ~10m). Sem isso a entrega real some.
+      if (!melhorP) {
+        for (const p of candidatas) {
+          if (p.classificacao !== 'LOJA') continue
+          const d = haversine(p.lat!, p.lng!, esperada.lat, esperada.lng)
+          if (d <= 60 && d < melhorDist) { melhorDist = d; melhorP = p }
+        }
+      }
+      if (!melhorP) continue
+
+      const chegada = new Date(melhorP.chegada)
+      const saida = melhorP.saida ? new Date(melhorP.saida) : chegada
+      rota.paradas = [{
+        parada_id: melhorP.id,
+        loja_id: esperada.id,
+        nome: esperada.nome,
+        chegada,
+        saida,
+        duracao_min: Math.round((saida.getTime() - chegada.getTime()) / 60000),
+        classificacao: melhorP.classificacao === 'LOJA' ? 'LOJA' : 'FORA_BASE',
+      }]
+      // Saída do CD: última BASE BENASSI antes da parada geo (mesma regra do fluxo
+      // normal). Sem isso, rotas casadas por geo saíam sem saida_cd no KPI.
+      rota.saida_cd = computeSaidaCdParaParada(melhorP, paradaByPlaca.get(rota.placa_norm) ?? [], { redeId: rota.rede_id, data: rota.data })
+      rota.status = 'ok'
+      rota._matchMeta = { score: 0.7, confidence: 'LOW', requiresReview: true, algorithm: 'geo' }
+      consumidas.add(melhorP.id)
+    }
   }
 
   return rotas

@@ -28,3 +28,15 @@ describe('derivarStatus', () => {
     expect(derivarStatus({ ...base, temGps: false, ficouNaBase: true }).status).toBe('SEM_RASTREADOR')
   })
 })
+
+describe('derivarStatus — ENTREGUE_GEO', () => {
+  it('FORA_BASE com loja_id e viaGeo → ENTREGUE_GEO + revisar', () => {
+    const r = derivarStatus({ temGps: true, ficouNaBase: false, viaGeo: true, paradas: [{ classificacao: 'FORA_BASE', loja_id: 'zs7' }] })
+    expect(r.status).toBe('ENTREGUE_GEO')
+    expect(r.revisar).toBe(true)
+  })
+  it('sem viaGeo, FORA_BASE com loja_id → ENTREGUE normal', () => {
+    const r = derivarStatus({ temGps: true, ficouNaBase: false, paradas: [{ classificacao: 'FORA_BASE', loja_id: 'zs7' }] })
+    expect(r.status).toBe('ENTREGUE')
+  })
+})

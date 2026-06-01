@@ -1296,6 +1296,7 @@ function RedePreviewSection({
 
 const STATUS_TOM: Record<StatusRota, { bg: string; fg: string }> = {
   ENTREGUE:           { bg: 'var(--color-success-soft)', fg: 'var(--color-success-soft-fg)' },
+  ENTREGUE_GEO:       { bg: 'var(--color-warning-soft)', fg: 'var(--color-warning-soft-fg)' },
   SEM_RASTREADOR:     { bg: 'var(--color-danger-soft)',  fg: 'var(--color-danger-soft-fg)' },
   NAO_FOI_AO_CLIENTE: { bg: 'var(--color-warning-soft)', fg: 'var(--color-warning-soft-fg)' },
   FORA_DE_BASE:       { bg: 'var(--color-info-soft)',    fg: 'var(--color-info-soft-fg)' },
@@ -1336,10 +1337,11 @@ function PreviewRow({
           ? 'hover:bg-[var(--color-bg-hover)]'
           : linha.status === 'SEM_RASTREADOR'
           ? 'bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/60'
-          : linha.status === 'NAO_FOI_AO_CLIENTE'
+          : linha.status === 'NAO_FOI_AO_CLIENTE' || linha.status === 'ENTREGUE_GEO'
           ? 'bg-[var(--color-warning-soft)]/35 hover:bg-[var(--color-warning-soft)]/55'
           : 'bg-[var(--color-info-soft)]/40 hover:bg-[var(--color-info-soft)]/60',
         linha.status === 'FORA_DE_BASE' && 'border-l-2 border-l-[var(--color-info)]',
+        linha.status === 'ENTREGUE_GEO' && 'border-l-2 border-l-[var(--color-warning)]',
       )}
       title={linha.anomalias.length > 0 ? `Anomalias: ${linha.anomalias.join(', ')}` : undefined}
     >
@@ -1351,6 +1353,7 @@ function PreviewRow({
             className={cn(
               'h-1.5 w-1.5 shrink-0 rounded-full',
               linha.status === 'ENTREGUE' && 'bg-[var(--color-success)]',
+              linha.status === 'ENTREGUE_GEO' && 'bg-[var(--color-warning)]',
               linha.status === 'SEM_RASTREADOR' && 'bg-[var(--color-danger)]',
               linha.status === 'NAO_FOI_AO_CLIENTE' && 'bg-[var(--color-warning)]',
               linha.status === 'FORA_DE_BASE' && 'bg-[var(--color-info)]',

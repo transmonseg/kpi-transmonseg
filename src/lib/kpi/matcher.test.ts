@@ -2065,3 +2065,59 @@ describe('SEM_GEO — distribuição multi-loja ZONA_SUL por código suffix', ()
   })
 })
 
+
+describe('geoEndereco — match FORA_BASE por coordenada (opts.geoEndereco)', () => {
+  const linha: EscalaLinhaRow = {
+    id: 'l1', rede_id: 'ZONA_SUL', placa_norm: 'ABC1D23',
+    loja_nome_raw: '07 - ZONA SUL - LEBLON', loja_codigo_raw: '07',
+    motorista_nome: 'JOAO', carro_ordem: 1, data_entrega: '2026-05-20',
+  }
+  const loja: LojaRow = {
+    id: 'zs7', rede_id: 'ZONA_SUL', nome: '07 - ZONA SUL - LEBLON',
+    nome_normalizado: '07 ZONA SUL LEBLON', codigo_escala: '07', codigo_unitrac: '9039007',
+    nome_unitrac: '07 - ZONA SUL - LEBLON', lat: -22.984, lng: -43.2272, raio_metros: 100,
+    endereco: 'RUA DIAS FERREIRA', bairro: 'LEBLON', municipio: 'RIO DE JANEIRO',
+  }
+  // parada FORA_BASE ~30m da loja, sem codigo_loja
+  const parada: UnitracParadaRow = {
+    id: 'p1', placa_norm: 'ABC1D23', chegada: '2026-05-20T09:00:00Z', saida: '2026-05-20T09:40:00Z',
+    duracao_seg: 2400, local_parada: 'FORA DE BASE E LOCAL DE SERVICO', codigo_loja: null, nome_loja: null,
+    lat: -22.9842, lng: -43.2273, endereco: 'Rua Dias Ferreira, Leblon, Rio de Janeiro', classificacao: 'FORA_BASE', ordem: 1,
+  }
+
+  it('com geoEndereco:true a rota vazia recebe a parada e marca algorithm geo', async () => {
+    setSemGeo(true)
+    try {
+      const rotas = await cruzaEscalaUnitrac([linha], [parada], [loja], undefined, undefined, { geoEndereco: true })
+      const r = rotas.find(x => x.escala_linha_id === 'l1')
+      expect(r?.paradas).toHaveLength(1)
+      expect(r?.paradas[0]?.loja_id).toBe('zs7')
+      expect(r?._matchMeta?.algorithm).toBe('geo')
+      expect(r?._matchMeta?.requiresReview).toBe(true)
+    } finally { setSemGeo(false) }
+  })
+
+  it('rota geo recebe saida_cd da última BASE antes da parada', async () => {
+    setSemGeo(true)
+    try {
+      const base: UnitracParadaRow = {
+        id: 'b0', placa_norm: 'ABC1D23', chegada: '2026-05-20T07:00:00Z', saida: '2026-05-20T07:30:00Z',
+        duracao_seg: 1800, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null,
+        lat: -22.828, lng: -43.339, endereco: null, classificacao: 'BASE', ordem: 0,
+      }
+      const rotas = await cruzaEscalaUnitrac([linha], [base, parada], [loja], undefined, undefined, { geoEndereco: true })
+      const r = rotas.find(x => x.escala_linha_id === 'l1')
+      expect(r?.paradas).toHaveLength(1)
+      expect(r?.saida_cd?.toISOString()).toBe('2026-05-20T07:30:00.000Z')
+    } finally { setSemGeo(false) }
+  })
+
+  it('sem a flag (default) a rota fica vazia — comportamento atual preservado', async () => {
+    setSemGeo(true)
+    try {
+      const rotas = await cruzaEscalaUnitrac([linha], [parada], [loja])
+      const r = rotas.find(x => x.escala_linha_id === 'l1')
+      expect(r?.paradas ?? []).toHaveLength(0)
+    } finally { setSemGeo(false) }
+  })
+})

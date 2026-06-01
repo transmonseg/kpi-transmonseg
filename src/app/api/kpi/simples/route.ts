@@ -424,10 +424,21 @@ export async function POST(req: NextRequest) {
       nome_loja: p.nome_loja,
       lat: p.lat,
       lng: p.lng,
+      endereco: p.endereco,
       classificacao: p.classificacao,
       ordem: p.ordem,
     }))
   )
+
+  // "Sem rastreador" = a PLACA não aparece no relatório Unitrac (com variantes OCR).
+  // Não é por-linha: um caminhão multi-entrega que tem GPS mas uma linha ficou sem
+  // parada NÃO é sem rastreador — ele está rastreado, só não casou aquela loja.
+  const placasNoRelatorio = new Set(paradaRows.map(p => p.placa_norm))
+  const placaRastreada = (placa: string | null): boolean => {
+    if (!placa) return false
+    if (placasNoRelatorio.has(placa)) return true
+    return variantesOcr(placa).some(v => placasNoRelatorio.has(v))
+  }
 
   // Carrega lojas operacionais (resolveLojaId) e canonical_loja com geo
   // (geo fallback para paradas FORA_BASE sem geofence — Categoria B do plano-90%).
@@ -436,7 +447,7 @@ export async function POST(req: NextRequest) {
   const [lojasRes, canonicalRes, redesRes] = await Promise.all([
     svc
       .from('lojas')
-      .select('id, rede_id, nome, nome_normalizado, codigo_escala, codigo_unitrac, nome_unitrac, lat, lng, raio_metros')
+      .select('id, rede_id, nome, nome_normalizado, codigo_escala, codigo_unitrac, nome_unitrac, lat, lng, raio_metros, endereco, bairro, municipio, numero')
       .eq('ativo', true),
     svc
       .from('canonical_loja')
@@ -460,6 +471,10 @@ export async function POST(req: NextRequest) {
     lat: l.lat as number | null,
     lng: l.lng as number | null,
     raio_metros: (l.raio_metros as number | null) ?? 150,
+    endereco: l.endereco as string | null,
+    bairro: l.bairro as string | null,
+    municipio: l.municipio as string | null,
+    numero: l.numero as string | null,
   }))
 
   const geoStores = (canonicalRes.data ?? []).map(c => ({
@@ -474,7 +489,7 @@ export async function POST(req: NextRequest) {
   // geofences sobrepostos/errados; sem geo o sistema só preenche o que o código
   // de loja prova e deixa o resto vazio em vez de inventar.
   setSemGeo(true)
-  const rotas = await cruzaEscalaUnitrac(escalaRows, paradaRows, lojasParaMatcher, svc, geoStores)
+  const rotas = await cruzaEscalaUnitrac(escalaRows, paradaRows, lojasParaMatcher, svc, geoStores, { geoEndereco: true })
 
   // Detecção de anomalias — gera codigos por escala_linha_id pra exibir/cor no preview.
   // Constrói paradasIndex direto dos paradaRows (em memória, sem ida ao DB).
@@ -641,12 +656,14 @@ export async function POST(req: NextRequest) {
 
       const preview: PreviewLinha[] = sorted.map(({ rota, esc }, idx) => {
         const p0 = rota.paradas[0]
-        const temGps = !!(rota.saida_cd || rota.paradas.length > 0)
+        // temGps = a placa está no relatório (rastreada), não só esta linha ter casado.
+        const temGps = rota.paradas.length > 0 || placaRastreada(rota.placa_norm)
         const ficouNaBase = rota.status === 'sem_entrega' && !!esc.placa_norm
         const statusInfo = derivarStatus({
           temGps,
           ficouNaBase,
           paradas: rota.paradas.map(p => ({ classificacao: p.classificacao, loja_id: p.loja_id ?? null })),
+          viaGeo: rota._matchMeta?.algorithm === 'geo',
         })
         const saidaLoja = p0 && p0.chegada && p0.duracao_min != null
           ? new Date(p0.chegada.getTime() + p0.duracao_min * 60_000)
