@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
   // Load lojas
   const { data: lojasData } = await svc
     .from('lojas')
-    .select('id, rede_id, nome, nome_normalizado, codigo_escala, codigo_unitrac, nome_unitrac, lat, lng, raio_metros')
+    .select('id, rede_id, nome, nome_normalizado, codigo_escala, codigo_unitrac, nome_unitrac, lat, lng, raio_metros, endereco, bairro, municipio')
     .eq('ativo', true)
   const lojas = (lojasData ?? []).map(l => ({
     id: l.id as string,
@@ -176,6 +176,9 @@ export async function POST(req: NextRequest) {
     lat: l.lat as number | null,
     lng: l.lng as number | null,
     raio_metros: (l.raio_metros as number | null) ?? 150,
+    endereco: l.endereco as string | null,
+    bairro: l.bairro as string | null,
+    municipio: l.municipio as string | null,
   }))
 
   // Modo sem geofence (decisão Tia Erica/William 27/05) — ver nota no route /simples.

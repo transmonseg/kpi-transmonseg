@@ -237,6 +237,9 @@ export type LojaRow = {
   lat: number | null
   lng: number | null
   raio_metros: number
+  endereco?: string | null
+  bairro?: string | null
+  municipio?: string | null
 }
 
 /**
