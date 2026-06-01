@@ -1,0 +1,100 @@
+[
+  {
+    "id": "f2367c9e-5ec6-47b4-b715-0677edb801aa",
+    "nome": "EMANUEL COMERCIO PEDRA DE GUARATIBA",
+    "de": [
+      -22.82731,
+      -43.33811
+    ],
+    "para": [
+      -23.001177,
+      -43.634995
+    ],
+    "distM": 36033,
+    "raio": 100
+  },
+  {
+    "id": "06c04337-8323-49be-8636-03c3f811c4d0",
+    "nome": "EMANUEL JARDIM MARAVILHA",
+    "de": [
+      -22.827,
+      -43.3063
+    ],
+    "para": [
+      -22.95551,
+      -43.607378
+    ],
+    "distM": 33991,
+    "raio": 50
+  },
+  {
+    "id": "04d651a1-8056-46ab-bec3-a63115789b03",
+    "nome": "EMANUEL ALHAMBRA",
+    "de": [
+      -22.827905,
+      -43.34005
+    ],
+    "para": [
+      -22.928918,
+      -43.566543
+    ],
+    "distM": 25779,
+    "raio": 100
+  },
+  {
+    "id": "cbd87c84-61a3-4a8b-a54a-aef08406be31",
+    "nome": "EMANUEL REDE ECONOMIA SANTA MARIA",
+    "de": [
+      -22.8289,
+      -43.4565
+    ],
+    "para": [
+      -22.878243,
+      -43.581839
+    ],
+    "distM": 13966,
+    "raio": 100
+  },
+  {
+    "id": "15a43cbb-2eb6-42d5-b838-545399a57cac",
+    "nome": "EMANUEL VARGEM GRANDE",
+    "de": [
+      -22.8852,
+      -43.437
+    ],
+    "para": [
+      -22.979388,
+      -43.492365
+    ],
+    "distM": 11909,
+    "raio": 100
+  },
+  {
+    "id": "d3739d8e-2fe3-4dd7-adae-476332f6879b",
+    "nome": "EMANUEL CACHAMORRA",
+    "de": [
+      -22.8895,
+      -43.4737
+    ],
+    "para": [
+      -22.946241,
+      -43.557178
+    ],
+    "distM": 10626,
+    "raio": 100
+  },
+  {
+    "id": "664c5360-c41d-4175-98ec-c2a5673b6b7d",
+    "nome": "EMANUEL REDE ECONOMIA SANTA MARIA",
+    "de": [
+      -22.8563,
+      -43.5011
+    ],
+    "para": [
+      -22.877101,
+      -43.5831
+    ],
+    "distM": 8714,
+    "raio": 100
+  }
+]
