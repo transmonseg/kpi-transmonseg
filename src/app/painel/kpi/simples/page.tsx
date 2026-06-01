@@ -1297,8 +1297,8 @@ function RedePreviewSection({
 const STATUS_TOM: Record<StatusRota, { bg: string; fg: string }> = {
   ENTREGUE:           { bg: 'var(--color-success-soft)', fg: 'var(--color-success-soft-fg)' },
   ENTREGUE_GEO:       { bg: 'var(--color-warning-soft)', fg: 'var(--color-warning-soft-fg)' },
-  SEM_RASTREADOR:     { bg: 'var(--color-danger-soft)',  fg: 'var(--color-danger-soft-fg)' },
-  NAO_FOI_AO_CLIENTE: { bg: 'var(--color-warning-soft)', fg: 'var(--color-warning-soft-fg)' },
+  SEM_RASTREADOR:     { bg: 'var(--color-bg-subtle)',    fg: 'var(--color-fg-muted)' },
+  NAO_FOI_AO_CLIENTE: { bg: 'var(--color-danger-soft)',  fg: 'var(--color-danger-soft-fg)' },
   FORA_DE_BASE:       { bg: 'var(--color-info-soft)',    fg: 'var(--color-info-soft-fg)' },
 }
 
@@ -1335,10 +1335,12 @@ function PreviewRow({
         'transition-colors duration-100',
         linha.status === 'ENTREGUE'
           ? 'hover:bg-[var(--color-bg-hover)]'
-          : linha.status === 'SEM_RASTREADOR'
+          : linha.status === 'NAO_FOI_AO_CLIENTE'
           ? 'bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/60'
-          : linha.status === 'NAO_FOI_AO_CLIENTE' || linha.status === 'ENTREGUE_GEO'
+          : linha.status === 'ENTREGUE_GEO'
           ? 'bg-[var(--color-warning-soft)]/35 hover:bg-[var(--color-warning-soft)]/55'
+          : linha.status === 'SEM_RASTREADOR'
+          ? 'bg-[var(--color-bg-subtle)]/50 hover:bg-[var(--color-bg-subtle)]/70'
           : 'bg-[var(--color-info-soft)]/40 hover:bg-[var(--color-info-soft)]/60',
         linha.status === 'FORA_DE_BASE' && 'border-l-2 border-l-[var(--color-info)]',
         linha.status === 'ENTREGUE_GEO' && 'border-l-2 border-l-[var(--color-warning)]',
@@ -1354,8 +1356,8 @@ function PreviewRow({
               'h-1.5 w-1.5 shrink-0 rounded-full',
               linha.status === 'ENTREGUE' && 'bg-[var(--color-success)]',
               linha.status === 'ENTREGUE_GEO' && 'bg-[var(--color-warning)]',
-              linha.status === 'SEM_RASTREADOR' && 'bg-[var(--color-danger)]',
-              linha.status === 'NAO_FOI_AO_CLIENTE' && 'bg-[var(--color-warning)]',
+              linha.status === 'SEM_RASTREADOR' && 'bg-[var(--color-fg-subtle)]',
+              linha.status === 'NAO_FOI_AO_CLIENTE' && 'bg-[var(--color-danger)]',
               linha.status === 'FORA_DE_BASE' && 'bg-[var(--color-info)]',
             )}
           />
@@ -1406,7 +1408,7 @@ function PreviewRow({
       <td className="px-4 py-2 text-center">
         {linha.tem_gps
           ? <WifiHigh size={14} weight="bold" className="mx-auto text-[var(--color-success)]" />
-          : <WifiSlash size={14} weight="bold" className="mx-auto text-[var(--color-danger)]" />}
+          : <WifiSlash size={14} weight="bold" className="mx-auto text-[var(--color-fg-subtle)]" />}
       </td>
       <td className="px-4 py-2 hidden md:table-cell">
         <input
