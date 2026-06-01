@@ -437,7 +437,7 @@ export async function POST(req: NextRequest) {
   const [lojasRes, canonicalRes, redesRes] = await Promise.all([
     svc
       .from('lojas')
-      .select('id, rede_id, nome, nome_normalizado, codigo_escala, codigo_unitrac, nome_unitrac, lat, lng, raio_metros, endereco, bairro, municipio')
+      .select('id, rede_id, nome, nome_normalizado, codigo_escala, codigo_unitrac, nome_unitrac, lat, lng, raio_metros, endereco, bairro, municipio, numero')
       .eq('ativo', true),
     svc
       .from('canonical_loja')
@@ -464,6 +464,7 @@ export async function POST(req: NextRequest) {
     endereco: l.endereco as string | null,
     bairro: l.bairro as string | null,
     municipio: l.municipio as string | null,
+    numero: l.numero as string | null,
   }))
 
   const geoStores = (canonicalRes.data ?? []).map(c => ({

@@ -34,6 +34,13 @@ describe('matchGeoEndereco', () => {
     expect(r).toBeNull()
   })
 
+  it('3b. reforço: a ~200m com SÓ a rua (sem bairro/município/número) → não casa', () => {
+    const loja: LojaGeo = { id: 'x', rede_id: 'PREZUNIC', nome: 'PREZUNIC X', lat: -22.9252, lng: -43.178, endereco: 'AVENIDA DAS AMERICAS', bairro: 'BARRA DA TIJUCA', municipio: 'RIO DE JANEIRO', numero: '500' }
+    // ~200m, endereço cita só a avenida, sem bairro/cidade/numero
+    const r = matchGeoEndereco(fb(-22.9252, -43.176, 'Avenida das Americas'), [loja])
+    expect(r).toBeNull()
+  })
+
   it('4. FORA_BASE longe (>250m) → não casa (ruído)', () => {
     const r = matchGeoEndereco(fb(-22.90, -43.20, 'Rua do Catete'), [ZS_LEBLON, ZS_CATETE])
     expect(r).toBeNull()

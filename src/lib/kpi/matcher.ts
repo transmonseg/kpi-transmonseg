@@ -242,6 +242,7 @@ export type LojaRow = {
   endereco?: string | null
   bairro?: string | null
   municipio?: string | null
+  numero?: string | null
 }
 
 /**
@@ -2080,7 +2081,7 @@ export async function cruzaEscalaUnitrac(
       for (const p of fbs) {
         const m = matchGeoEndereco(
           { lat: p.lat, lng: p.lng, endereco: p.endereco ?? null, classificacao: p.classificacao, codigo_loja: p.codigo_loja },
-          [{ id: esperada.id, rede_id: esperada.rede_id, nome: esperada.nome, lat: esperada.lat, lng: esperada.lng, endereco: esperada.endereco, bairro: esperada.bairro, municipio: esperada.municipio }],
+          [{ id: esperada.id, rede_id: esperada.rede_id, nome: esperada.nome, lat: esperada.lat, lng: esperada.lng, endereco: esperada.endereco, bairro: esperada.bairro, municipio: esperada.municipio, numero: esperada.numero }],
         )
         if (m && m.distancia < melhorDist) { melhorDist = m.distancia; melhorP = p }
       }

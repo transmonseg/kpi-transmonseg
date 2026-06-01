@@ -29,6 +29,7 @@ export type LojaGeo = {
   endereco?: string | null
   bairro?: string | null
   municipio?: string | null
+  numero?: string | null
 }
 
 export type ParadaGeo = {
@@ -65,13 +66,26 @@ export function normRua(s: string | null | undefined): string {
   return tokens.join(' ').trim()
 }
 
-function ruaConfirma(loja: LojaGeo, paradaEndereco: string | null): boolean {
+/**
+ * Confirmação REFORÇADA (faixa 100–250m): a RUA do cadastro tem que aparecer no
+ * endereço da parada E pelo menos mais um sinal de localidade (bairro, município
+ * ou número). Rua sozinha não basta — evita casar "Av. das Américas" genérica.
+ * Número entra best-effort (o cadastro Unitrac costuma ter "0"/vazio).
+ */
+function enderecoConfirma(loja: LojaGeo, paradaEndereco: string | null): boolean {
   const endParada = normRua(paradaEndereco)
   if (!endParada) return false
+  const endParadaRaw = String(paradaEndereco).toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+
   const ruaCad = normRua(loja.endereco)
-  if (ruaCad && ruaCad.length >= 4 && endParada.includes(ruaCad)) return true
+  if (!ruaCad || ruaCad.length < 4 || !endParada.includes(ruaCad)) return false // rua é obrigatória
+
   const bairroCad = normRua(loja.bairro)
   if (bairroCad && bairroCad.length >= 4 && endParada.includes(bairroCad)) return true
+  const munCad = normRua(loja.municipio)
+  if (munCad && munCad.length >= 4 && endParada.includes(munCad)) return true
+  const num = loja.numero
+  if (num && num !== '0' && /^\d+$/.test(num) && new RegExp(`\\b${num}\\b`).test(endParadaRaw)) return true
   return false
 }
 
@@ -97,7 +111,7 @@ export function matchGeoEndereco(
   if (!best) return null
 
   if (bestDist <= hard) return { loja: best, via: 'coord', distancia: bestDist }
-  if (bestDist <= confirm && ruaConfirma(best, parada.endereco)) {
+  if (bestDist <= confirm && enderecoConfirma(best, parada.endereco)) {
     return { loja: best, via: 'coord+rua', distancia: bestDist }
   }
   return null
