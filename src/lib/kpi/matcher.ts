@@ -43,14 +43,34 @@ function redesFungiveis(rede: string): Set<string> {
   return new Set([rede, ...(REDE_ALIASES[rede] ?? [])])
 }
 
-// Faixa geográfica da BASE BENASSI (Av Brasil, Coelho Neto / Irajá / CEASA-RJ).
-// Cliente Unitrac frequentemente cadastra geofences de loja cobrindo essa área
-// (ex: cod 13156084 MATRIZ CD DUQUE, cod 7012010 CAB PETROPOLIS, cod 25414000
-// NATURCON GELADOS, cod 23080000 SANTO AGOSTINHO). Quando o GPS cai aqui,
-// é BASE — ignora o cod_loja sobreposto.
+// Faixa geográfica das BASES (Av Brasil, CEASA-RJ). São DUAS bases coladas (~320m),
+// confirmadas pela cliente em 2026-06-01:
+//   - Av Brasil, Coelho Neto, CEP 21530-900   → ~(-22.8288, -43.3420)
+//   - Av Brasil 19.001, Irajá, CEP 21230-000  → ~(-22.8280, -43.3383)
+// O ponto central abaixo + raio 1500m cobre as duas. Cliente Unitrac às vezes
+// cadastra geofences de loja cobrindo essa área (ex: cod 13156084 MATRIZ CD DUQUE,
+// 7012010 CAB PETROPOLIS, 25414000 NATURCON, 23080000 SANTO AGOSTINHO). Quando o
+// GPS cai aqui, é BASE — ignora o cod_loja sobreposto E conta como saída do CD,
+// mesmo que o texto do Unitrac não diga "BASE BENASSI" (a 2ª base não diz).
 const BASE_BENASSI_LAT = -22.828
 const BASE_BENASSI_LNG = -43.339
 const BASE_BENASSI_RAIO_METROS = 1500
+
+// Centros das 2 bases reais (confirmados 2026-06-01). Raio de 1000m definido PELA
+// CLIENTE (cobre o pátio das duas bases). Mais apertado que o BASE_BENASSI_RAIO_METROS
+// (1500m, usado p/ ignorar geofence sobreposto) pra saída CD não confundir loja
+// perto do CEASA com base.
+const BASES_CD: ReadonlyArray<{ lat: number; lng: number }> = [
+  { lat: -22.8288, lng: -43.3420 }, // Av Brasil, Coelho Neto, CEP 21530-900
+  { lat: -22.8280, lng: -43.3383 }, // Av Brasil 19.001, Irajá, CEP 21230-000
+]
+const BASE_CD_RAIO_METROS = 1000
+
+/** Parada fisicamente numa das 2 bases (para detectar saída do CD por coordenada). */
+function paradaEhBaseCd(lat: number | null, lng: number | null): boolean {
+  if (lat == null || lng == null) return false
+  return BASES_CD.some(b => haversine(lat, lng, b.lat, b.lng) <= BASE_CD_RAIO_METROS)
+}
 
 function paradaEhRegiaoBase(lat: number | null, lng: number | null): boolean {
   if (lat == null || lng == null) return false
@@ -491,7 +511,11 @@ function computeSaidaCdParaParada(
     const isBase =
       p.classificacao === 'BASE' ||
       (p.classificacao === 'FAKE_EXIT' && localStr.startsWith('BASE BENASSI')) ||
-      localStr.includes('BASE BENASSI')
+      localStr.includes('BASE BENASSI') ||
+      // 2ª base (Irajá/Coelho Neto) não escreve "BASE BENASSI" no Unitrac — detecta
+      // por coordenada (raio apertado 600m). Resolve saída CD de quem sai dela (ex:
+      // caminhão que aparece FORA_BASE na base de madrugada antes da 1ª entrega).
+      paradaEhBaseCd(p.lat, p.lng)
     if (isBase && p.saida) {
       const s = new Date(p.saida)
       if (s.getTime() < alvoTs) {
