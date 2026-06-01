@@ -651,6 +651,7 @@ export async function POST(req: NextRequest) {
           temGps,
           ficouNaBase,
           paradas: rota.paradas.map(p => ({ classificacao: p.classificacao, loja_id: p.loja_id ?? null })),
+          viaGeo: rota._matchMeta?.algorithm === 'geo',
         })
         const saidaLoja = p0 && p0.chegada && p0.duracao_min != null
           ? new Date(p0.chegada.getTime() + p0.duracao_min * 60_000)
