@@ -156,6 +156,7 @@ export async function POST(req: NextRequest) {
     nome_loja: p.nome_loja,
     lat: p.lat,
     lng: p.lng,
+    endereco: p.endereco,
     classificacao: p.classificacao,
     ordem: p.ordem,
   })))
@@ -183,7 +184,7 @@ export async function POST(req: NextRequest) {
 
   // Modo sem geofence (decisão Tia Erica/William 27/05) — ver nota no route /simples.
   setSemGeo(true)
-  const rotas = await cruzaEscalaUnitrac(escalaRows, paradaRows, lojas)
+  const rotas = await cruzaEscalaUnitrac(escalaRows, paradaRows, lojas, undefined, undefined, { geoEndereco: true })
 
   // Agrupa rotas por placa+rede
   const grupos = new Map<string, { rede: string; placa: string; motorista: string | null; linhas: typeof escalaRows; matches: number; total: number; lojas_casadas: string[]; lojas_sem_match: string[] }>()

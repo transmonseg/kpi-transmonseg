@@ -424,6 +424,7 @@ export async function POST(req: NextRequest) {
       nome_loja: p.nome_loja,
       lat: p.lat,
       lng: p.lng,
+      endereco: p.endereco,
       classificacao: p.classificacao,
       ordem: p.ordem,
     }))
@@ -477,7 +478,7 @@ export async function POST(req: NextRequest) {
   // geofences sobrepostos/errados; sem geo o sistema só preenche o que o código
   // de loja prova e deixa o resto vazio em vez de inventar.
   setSemGeo(true)
-  const rotas = await cruzaEscalaUnitrac(escalaRows, paradaRows, lojasParaMatcher, svc, geoStores)
+  const rotas = await cruzaEscalaUnitrac(escalaRows, paradaRows, lojasParaMatcher, svc, geoStores, { geoEndereco: true })
 
   // Detecção de anomalias — gera codigos por escala_linha_id pra exibir/cor no preview.
   // Constrói paradasIndex direto dos paradaRows (em memória, sem ida ao DB).
