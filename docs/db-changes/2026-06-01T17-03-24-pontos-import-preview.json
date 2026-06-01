@@ -1,0 +1,3612 @@
+{
+  "updates": [
+    {
+      "id": "0fc33056-e505-43aa-8e7d-aaae64e84aa3",
+      "nome": "CARREFOUR JUIZ DE FORA",
+      "set": {
+        "endereco": "AVENIDA PRESIDENTE JOÃO GOULART",
+        "bairro": "CRUZEIRO DO SUL",
+        "municipio": "JUIZ DE FORA",
+        "numero": "5001"
+      }
+    },
+    {
+      "id": "566f4a53-8209-402c-8134-c44344bac2f8",
+      "nome": "ZONA SUL LOJA 13 - ANGRA",
+      "set": {
+        "endereco": "AVENIDA ALMIRANTE JÚLIO CÉSAR DE NORONHA",
+        "bairro": "SÃO BENTO",
+        "municipio": "ANGRA DOS REIS",
+        "numero": "0",
+        "lat": -23.004152,
+        "lng": -44.29973
+      }
+    },
+    {
+      "id": "53c8f273-50db-4c60-b6b2-91d2bc005491",
+      "nome": "PRINCESA - BUZIOS 1",
+      "set": {
+        "endereco": "AVENIDA JOSÉ BENTO RIBEIRO DANTAS",
+        "bairro": "CENTRO (MANGUE)",
+        "municipio": "ARMACAO DOS BUZIOS",
+        "numero": "0"
+      }
+    },
+    {
+      "id": "707eceaf-2544-4064-8796-3bef2e102e5b",
+      "nome": "PRINCESA - BUZIOS 2",
+      "set": {
+        "endereco": "AVENIDA JOSÉ BENTO RIBEIRO DANTAS",
+        "bairro": "CENTRO (MANGUE)",
+        "municipio": "ARMACAO DOS BUZIOS",
+        "numero": "3125"
+      }
+    },
+    {
+      "id": "5fa5b6ff-6b6a-4c40-ba3a-3c06c8f1a293",
+      "nome": "PRINCESA - BUZIOS 3",
+      "set": {
+        "endereco": "AVENIDA JOSÉ BENTO RIBEIRO DANTAS",
+        "bairro": "CENTRO (MANGUE)",
+        "municipio": "ARMACAO DOS BUZIOS",
+        "numero": "0"
+      }
+    },
+    {
+      "id": "fd552736-fc6d-4169-acfb-2cf84a329fbd",
+      "nome": "PRINCESA - ARRAIAL DO CABO 1",
+      "set": {
+        "endereco": "AVENIDA GETÚLIO VARGAS",
+        "bairro": "CENTRO",
+        "municipio": "ARRAIAL DO CABO",
+        "numero": "6"
+      }
+    },
+    {
+      "id": "8226fd96-6098-440f-a35f-f126a1e62278",
+      "nome": "PRINCESA - ARRAIAL DO CABO 2",
+      "set": {
+        "endereco": "AVENIDA GETÚLIO VARGAS",
+        "bairro": "CENTRO",
+        "municipio": "ARRAIAL DO CABO",
+        "numero": "101"
+      }
+    },
+    {
+      "id": "2cc629d5-1548-4cd5-8c2b-cfd7e88a75fa",
+      "nome": "PRINCESA - ARRAIAL DO CABO 3",
+      "set": {
+        "endereco": "PRAÇA DA BANDEIRA",
+        "bairro": null,
+        "municipio": "ARRAIAL DO CABO",
+        "numero": "0"
+      }
+    },
+    {
+      "id": "7e89d44d-3002-49b0-8a97-dd85409d723d",
+      "nome": "ATACADÃO - BELFORD ROXO",
+      "set": {
+        "endereco": "AVENIDA PREFEITO JORGE JÚLIO COSTA DOS SANTOS",
+        "bairro": "CENTRO",
+        "municipio": "BELFORD ROXO",
+        "numero": "200"
+      }
+    },
+    {
+      "id": "c3517a59-d0bd-40b3-830b-7c4709a641bf",
+      "nome": "PRINCESA - CABO FRIO 1",
+      "set": {
+        "endereco": "AVENIDA TEIXEIRA E SOUZA",
+        "bairro": "CENTRO",
+        "municipio": "CABO FRIO",
+        "numero": "1025"
+      }
+    },
+    {
+      "id": "1f329d1d-783f-4cdf-85e8-79e5559e9a13",
+      "nome": "PRINCESA - CABO FRIO 2",
+      "set": {
+        "endereco": "RUA IRMÃ JOSEFINA DA VEIGA",
+        "bairro": "PRAIA DO SIQUEIRA",
+        "municipio": "CABO FRIO",
+        "numero": "0"
+      }
+    },
+    {
+      "id": "05d77aa4-ebdc-4a28-ba51-6ccb2b786273",
+      "nome": "PRINCESA - CABO FRIO 3",
+      "set": {
+        "endereco": "AVENIDA TEIXEIRA E SOUZA",
+        "bairro": "CENTRO",
+        "municipio": "CABO FRIO",
+        "numero": "301"
+      }
+    },
+    {
+      "id": "6f687ed8-546a-4ffe-bf30-37e7b87231ec",
+      "nome": "SENDAS CABO FRIO - LOJA 82",
+      "set": {
+        "endereco": "AVENIDA AMÉRICA CENTRAL",
+        "bairro": "SÃO CRISTÓVÃO",
+        "municipio": "CABO FRIO",
+        "numero": "900"
+      }
+    },
+    {
+      "id": "e5c902e1-b4e4-4982-81cf-e4def97e55bd",
+      "nome": "CARREFOUR CAMPOS",
+      "set": {
+        "endereco": "AVENIDA DOUTOR NILO PEÇANHA",
+        "bairro": "PARQUE SANTO AMARO",
+        "municipio": "CAMPOS DOS GOYTACAZES",
+        "numero": "439"
+      }
+    },
+    {
+      "id": "1ebfdccd-5e5d-4b7c-add8-bdee12f991c5",
+      "nome": "SENDAS CAMPOS - LJ 36",
+      "set": {
+        "endereco": "AVENIDA DOUTOR NILO PEÇANHA",
+        "bairro": "PARQUE SANTO AMARO",
+        "municipio": "CAMPOS DOS GOYTACAZES",
+        "numero": "479"
+      }
+    },
+    {
+      "id": "ae38b034-8b18-4360-a448-8206673f93ad",
+      "nome": "PRINCESA - BARRA DE SÃO JOÃO",
+      "set": {
+        "endereco": "RODOVIA AMARAL PEIXOTO",
+        "bairro": "BARRA DE SÃO JOÃO",
+        "municipio": "CASIMIRO DE ABREU",
+        "numero": "903"
+      }
+    },
+    {
+      "id": "f879f899-1d02-4c27-85d4-33fca22b590b",
+      "nome": "CARREFOUR BRIGADEIRO",
+      "set": {
+        "endereco": "AV BRIG LIMA E SILVA ",
+        "bairro": "25 DE AGOSTO",
+        "municipio": "DUQUE DE CAXIAS",
+        "numero": "1363"
+      }
+    },
+    {
+      "id": "5e876e53-bcfa-4213-8677-2e5fdffd7fe2",
+      "nome": "GB 18 - DUQUE DE CAXIAS",
+      "set": {
+        "endereco": "RUA TENENTE JOSÉ DIAS",
+        "bairro": "CENTRO",
+        "municipio": "DUQUE DE CAXIAS",
+        "numero": "460"
+      }
+    },
+    {
+      "id": "fc318d47-6f36-472e-96ac-2574df344932",
+      "nome": "PREZUNIC CAXIAS CENTENÁRIO",
+      "set": {
+        "endereco": "AVENIDA PERIMETRAL DOUTOR MANOEL REIS",
+        "bairro": "VILA MERITI",
+        "municipio": "DUQUE DE CAXIAS",
+        "numero": "175"
+      }
+    },
+    {
+      "id": "e2d17770-dd46-4fb3-a226-4b9cf935b582",
+      "nome": "PREZUNIC CAXIAS CENTRO",
+      "set": {
+        "endereco": "RUA JOSE DE ALVARENGA",
+        "bairro": "CENTRO",
+        "municipio": "DUQUE DE CAXIAS",
+        "numero": "95"
+      }
+    },
+    {
+      "id": "156ee2af-e909-43bb-b1e5-577dc4a8cdb0",
+      "nome": "SENDAS CAXIAS - LOJA 131",
+      "set": {
+        "endereco": "AVENIDA GOVERNADOR LEONEL DE MOURA BRIZOLA",
+        "bairro": "VILA CENTENÁRIO",
+        "municipio": "DUQUE DE CAXIAS",
+        "numero": "2973"
+      }
+    },
+    {
+      "id": "dce5e487-f4ad-482e-87f8-8ebc2290efaa",
+      "nome": "SENDAS CAXIAS II (PARQUE FLUMINENSE)",
+      "set": {
+        "endereco": "AVENIDA GOVERNADOR LEONEL DE MOURA BRIZOLA",
+        "bairro": "PARQUE FLUMINENSE",
+        "municipio": "DUQUE DE CAXIAS",
+        "numero": "9275"
+      }
+    },
+    {
+      "id": "88a188f0-525e-4709-8749-13d7b134bcc2",
+      "nome": "PRINCESA - IGUABA GRANDE",
+      "set": {
+        "endereco": null,
+        "bairro": null,
+        "municipio": "Iguaba Grande",
+        "numero": "2289"
+      }
+    },
+    {
+      "id": "ac02b46a-6d82-4423-819a-85a7193c571d",
+      "nome": "PRINCESA ITABORAÍ",
+      "set": {
+        "endereco": "Avenida Vinte e Dois de Maio",
+        "bairro": "Nova Cidade",
+        "municipio": "Itaboraí",
+        "numero": "6224"
+      }
+    },
+    {
+      "id": "d1827007-6bb7-42ad-aef0-3fe21b515fa6",
+      "nome": "GB 06 - ITAGUAI",
+      "set": {
+        "endereco": "RUA ARAPUCAIA",
+        "bairro": "MAZOMBA",
+        "municipio": "ITAGUAI",
+        "numero": "758"
+      }
+    },
+    {
+      "id": "67ce9d26-36f9-471b-8d97-2db08f46eb2a",
+      "nome": "CARREFOUR MACAE",
+      "set": {
+        "endereco": "AVENIDA ALUÍZIO DA SILVA GOMES",
+        "bairro": "GRANJA DOS CAVALEIROS",
+        "municipio": "MACAE",
+        "numero": "800"
+      }
+    },
+    {
+      "id": "0b27fbc4-5eab-4434-b132-53b12e0ac6ea",
+      "nome": "SENDAS MACAÉ - LOJA 232",
+      "set": {
+        "endereco": "AVENIDA LACERDA AGOSTINHO",
+        "bairro": "VIRGEM SANTA",
+        "municipio": "MACAE",
+        "numero": "0"
+      }
+    },
+    {
+      "id": "d62e22ff-3888-4632-84cf-6da69d75450a",
+      "nome": "PREZUNIC MARICÁ",
+      "set": {
+        "endereco": "RUA ABREU SODRE",
+        "bairro": "CENTRO",
+        "municipio": "MARICA",
+        "numero": "27"
+      }
+    },
+    {
+      "id": "9ee6526f-5351-4375-8357-4c053e9e3f2a",
+      "nome": "PRINCESA MARICÁ 1",
+      "set": {
+        "endereco": "RUA ABREU SODRÉ",
+        "bairro": "CENTRO",
+        "municipio": "MARICA",
+        "numero": "0"
+      }
+    },
+    {
+      "id": "e37c4bce-f13c-497f-9cdd-427a7be25808",
+      "nome": "PRINCESA MARICÁ 2",
+      "set": {
+        "endereco": "PRAÇA CONSELHEIRO MACEDO SOARES",
+        "bairro": "CENTRO",
+        "municipio": "MARICA",
+        "numero": "102"
+      }
+    },
+    {
+      "id": "dd27e52d-5143-4580-82a7-3647ab1c1129",
+      "nome": "SENDAS MESQUITA - LJ 35",
+      "set": {
+        "endereco": "RODOVIA PRESIDENTE DUTRA",
+        "bairro": "BNH",
+        "municipio": "MESQUITA",
+        "numero": "10521"
+      }
+    },
+    {
+      "id": "ceef03bd-e85f-4421-8c07-fde95ee0f8eb",
+      "nome": "PREZUNIC NILÓPOLIS",
+      "set": {
+        "endereco": "AVENIDA GETÚLIO DE MOURA",
+        "bairro": "CENTRO",
+        "municipio": "NILOPOLIS",
+        "numero": "1591"
+      }
+    },
+    {
+      "id": "02779cfc-8217-49a2-998d-ed21143b54fc",
+      "nome": "SENDAS NILOPOLIS - LOJA 36",
+      "set": {
+        "endereco": "AVENIDA GETÚLIO DE MOURA",
+        "bairro": "CENTRO",
+        "municipio": "NILOPOLIS",
+        "numero": "1983"
+      }
+    },
+    {
+      "id": "d4edb70c-c5fc-4111-8513-45d019ae97a7",
+      "nome": "GB 08 - NITEROI",
+      "set": {
+        "endereco": "RUA MARECHAL DEODORO",
+        "bairro": "CENTRO",
+        "municipio": "NITEROI",
+        "numero": "360"
+      }
+    },
+    {
+      "id": "f6956303-f8a9-4b48-a100-193138c44f5c",
+      "nome": "PREZUNIC FONSECA",
+      "set": {
+        "endereco": "ALAMEDA SÃO BOAVENTURA",
+        "bairro": "FONSECA",
+        "municipio": "NITEROI",
+        "numero": "1012"
+      }
+    },
+    {
+      "id": "50c58ebf-138e-42fc-8013-121ccb78ceae",
+      "nome": "PREZUNIC SPID SANTA ROSA",
+      "set": {
+        "endereco": "RUA DOUTOR PAULO CÉSAR",
+        "bairro": "SANTA ROSA",
+        "municipio": "NITEROI",
+        "numero": "320"
+      }
+    },
+    {
+      "id": "0b383771-2e16-401f-b1ee-f3615da2a18e",
+      "nome": "PRINCESA FONSECA",
+      "set": {
+        "endereco": "ALAMEDA SÃO BOAVENTURA",
+        "bairro": "FONSECA",
+        "municipio": "NITEROI",
+        "numero": "555"
+      }
+    },
+    {
+      "id": "315cf8a4-88a4-4f49-9725-718ebd110705",
+      "nome": "PRINCESA ICARAÍ",
+      "set": {
+        "endereco": "Rua Coronel Moreira Cesar",
+        "bairro": "Icaraí",
+        "municipio": "Niterói",
+        "numero": "323"
+      }
+    },
+    {
+      "id": "1f6f7ca2-fd22-4bbd-a9b9-6a7a29f59bba",
+      "nome": "PRINCESA INGÁ",
+      "set": {
+        "endereco": "RUA PRESIDENTE PEDREIRA",
+        "bairro": "INGÁ",
+        "municipio": "NITEROI",
+        "numero": "189"
+      }
+    },
+    {
+      "id": "31912079-b6b2-4eb2-ae48-8ee68330b823",
+      "nome": "Sam's - Niteroi",
+      "set": {
+        "endereco": "TRAVESSA AUGUSTO COUPEY",
+        "bairro": "BARRETO",
+        "municipio": "NITEROI",
+        "numero": "319"
+      }
+    },
+    {
+      "id": "6c7ebe4f-f144-45ea-b06b-91d3a02968b1",
+      "nome": "SENDAS NITERÓI - LOJA 41",
+      "set": {
+        "endereco": "RUA BENJAMIN CONSTANT",
+        "bairro": "SANTANA",
+        "municipio": "NITEROI",
+        "numero": "263"
+      }
+    },
+    {
+      "id": "b0f492a6-727e-41d1-8e9b-0a436cde38be",
+      "nome": "SENDAS NITERÓI PONTE",
+      "set": {
+        "endereco": "RUA PRESIDENTE CASTELO BRANCO",
+        "bairro": "CENTRO",
+        "municipio": "NITEROI",
+        "numero": "161"
+      }
+    },
+    {
+      "id": "32519f9f-69f1-4427-98b7-1beeda80709e",
+      "nome": "VIANENSE JARDIM ALVORADA",
+      "set": {
+        "endereco": "AVENIDA ABÍLIO AUGUSTO TÁVORA",
+        "bairro": "JARDIM NOVA ERA",
+        "municipio": "NOVA IGUACU",
+        "numero": "2956"
+      }
+    },
+    {
+      "id": "d6618890-b7e7-4c53-8cdd-4082fde0d4be",
+      "nome": "GB 16 - NOVA IGUAÇU",
+      "set": {
+        "endereco": "RUA PROFESSOR AMADEU LARA",
+        "bairro": "CENTRO",
+        "municipio": "NOVA IGUACU",
+        "numero": "1552"
+      }
+    },
+    {
+      "id": "2c910254-d052-4f98-8a3c-32591d0d79a9",
+      "nome": "SENDAS NOVA IGUACU - LOJA 30",
+      "set": {
+        "endereco": "AVENIDA MARECHAL FLORIANO PEIXOTO",
+        "bairro": "CENTRO",
+        "municipio": "NOVA IGUACU",
+        "numero": "1448"
+      }
+    },
+    {
+      "id": "dec0826d-4863-41d2-845f-fd35ce38a150",
+      "nome": "SENDAS NOVA IGUACU II",
+      "set": {
+        "endereco": "AVENIDA TANCREDO NEVES",
+        "bairro": "CENTRO",
+        "municipio": "NOVA IGUACU",
+        "numero": "3424"
+      }
+    },
+    {
+      "id": "5c1e998f-1af4-423f-9e7e-29cea288022a",
+      "nome": "ARMAZEM DO GRAO (CAPELA)",
+      "set": {
+        "endereco": "Rua Doutor Paulo Herve",
+        "bairro": "Bingen",
+        "municipio": "Petrópolis",
+        "numero": "955"
+      }
+    },
+    {
+      "id": "15e64d66-0abb-4e63-a076-0288a5d830b9",
+      "nome": "SENDAS PETRÓPOLIS - LJ 38",
+      "set": {
+        "endereco": "ESTRADA UNIÃO E INDÚSTRIA",
+        "bairro": "ROSEIRAL",
+        "municipio": "PETROPOLIS",
+        "numero": "870"
+      }
+    },
+    {
+      "id": "305c5ab8-83b0-4dbd-a783-51e37829f540",
+      "nome": "PRINCESA - RIO DAS OSTRAS",
+      "set": {
+        "endereco": "RUA CASIMIRO DE ABREU",
+        "bairro": "COSTAZUL",
+        "municipio": "RIO DAS OSTRAS",
+        "numero": "120"
+      }
+    },
+    {
+      "id": "38f62d40-4a62-4b91-99c9-0dc611513cf4",
+      "nome": "00 - ZONA SUL - MATRIZ",
+      "set": {
+        "endereco": "RUA COMANDANTE VERGUEIRO DA CRUZ",
+        "bairro": "OLARIA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "226"
+      }
+    },
+    {
+      "id": "3aee5775-5896-4f37-9b52-38c63116ea2d",
+      "nome": "01 - ZONA SUL - IPANEMA",
+      "set": {
+        "endereco": "RUA VISCONDE DE PIRAJÁ",
+        "bairro": "IPANEMA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "118"
+      }
+    },
+    {
+      "id": "9f1586bf-b620-46af-b151-614128978784",
+      "nome": "Zona Sul Loja 03 - Copacabana",
+      "set": {
+        "endereco": "RUA FRANCISCO SÁ",
+        "bairro": "COPACABANA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "504"
+      }
+    },
+    {
+      "id": "bac51e51-a957-459d-becc-5dd11ac961bb",
+      "nome": "ZONA SUL LOJA 04 - COPACABANA II",
+      "set": {
+        "endereco": "RUA COMANDANTE VERGUEIRO DA CRUZ",
+        "bairro": "OLARIA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "226"
+      }
+    },
+    {
+      "id": "3ce5e5a6-e1a0-4321-8395-ede941d077fb",
+      "nome": "Zona Sul Loja 05 - Copacabana III",
+      "set": {
+        "endereco": "RUA GENERAL BARBOSA LIMA",
+        "bairro": "COPACABANA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1369"
+      }
+    },
+    {
+      "id": "f496eec1-105d-42ef-83c9-8b9be25f4404",
+      "nome": "ZONA SUL LOJA 06 - GAVEA",
+      "set": {
+        "endereco": "AVENIDA RODRIGO OTAVIO",
+        "bairro": "GÁVEA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "504"
+      }
+    },
+    {
+      "id": "fd2858b1-1148-42a4-b831-042f297fd587",
+      "nome": "ZONA SUL LOJA 07 - LEBLON",
+      "set": {
+        "endereco": "RUA DIAS FERREIRA",
+        "bairro": "LEBLON",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "290"
+      }
+    },
+    {
+      "id": "fdf29cda-e97a-4977-9357-9f2ee2a124ab",
+      "nome": "ZONA SUL LOJA 08 - LEBLON",
+      "set": {
+        "endereco": "RUA VISCONDE DE PIRAJÁ",
+        "bairro": "IPANEMA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "504"
+      }
+    },
+    {
+      "id": "79224bf1-77e4-410b-84b1-e535a312c801",
+      "nome": "ZONA SUL LOJA 09 - IPANEMA",
+      "set": {
+        "endereco": "RUA PRUDENTE DE MORAIS",
+        "bairro": "IPANEMA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "49"
+      }
+    },
+    {
+      "id": "cd28b2f7-60a3-43ab-a108-0a0f81e9fdf9",
+      "nome": "ZONA SUL LOJA 10 - RECREIO",
+      "set": {
+        "endereco": "AVENIDA DAS AMÉRICAS",
+        "bairro": "RECREIO DOS BANDEIRANTES",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "16237"
+      }
+    },
+    {
+      "id": "0877d61f-0ae3-4a1a-b3bf-ccefc3cdb87a",
+      "nome": "ZONA SUL LOJA 11 - LEBLON",
+      "set": {
+        "endereco": "RUA CARLOS GOIS",
+        "bairro": "LEBLON",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "344"
+      }
+    },
+    {
+      "id": "75baaa67-5913-45eb-9c14-19ca9aa31761",
+      "nome": "ZONA SUL LOJA 1129 - OLARIA",
+      "set": {
+        "endereco": "RUA COMANDANTE VERGUEIRO DA CRUZ",
+        "bairro": "OLARIA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "380"
+      }
+    },
+    {
+      "id": "a11b926b-67fc-4f19-a223-9d4e9e6d932b",
+      "nome": "43 - ZONA SUL - BARRA PENINSULA",
+      "set": {
+        "endereco": "AVENIDA FLAMBOYANTS DA PENÍNSULA",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "855"
+      }
+    },
+    {
+      "id": "207867b1-ffb5-40f4-8df7-66926eaa1f49",
+      "nome": "ZONA SUL LOJA 42 - BOTAFOGO",
+      "set": {
+        "endereco": "RUA SÃO CLEMENTE",
+        "bairro": "BOTAFOGO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "114"
+      }
+    },
+    {
+      "id": "b36a740a-d87a-43e1-9e88-aba0fedb3cd9",
+      "nome": "ZONA SUL LOJA 44 - BARRA OLEGARIO",
+      "set": {
+        "endereco": "AVENIDA OLEGÁRIO MACIEL",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "293"
+      }
+    },
+    {
+      "id": "4220b0f8-dee8-445b-94ee-c54eaf6d4f83",
+      "nome": "ZONA SUL LOJA 40 - IPANEMA",
+      "set": {
+        "endereco": "RUA BARÃO DA TORRE",
+        "bairro": "IPANEMA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "218"
+      }
+    },
+    {
+      "id": "5bf3fe09-0c41-493e-8315-045d78c985a4",
+      "nome": "ZONA SUL LOJA 12 - LEME",
+      "set": {
+        "endereco": "AVENIDA ATLÂNTICA",
+        "bairro": "COPACABANA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "679"
+      }
+    },
+    {
+      "id": "5fd92049-236e-4f84-a090-750d1fc38e31",
+      "nome": "14 - ZONA SUL - LEBLON",
+      "set": {
+        "endereco": "AV BARTOLOMEU MITRE ",
+        "bairro": "LEBLON",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "705"
+      }
+    },
+    {
+      "id": "6203e2e0-06a6-4ad1-b2a0-33cb52c1817b",
+      "nome": "Zona Sul Filial 15",
+      "set": {
+        "endereco": "RUA GENERAL ARTIGAS",
+        "bairro": "LEBLON",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "325"
+      }
+    },
+    {
+      "id": "3ca16e7e-2c1d-42b0-b22a-0a47b9da3fae",
+      "nome": "ZONA SUL LOJA 17 - BARRA",
+      "set": {
+        "endereco": "AVENIDA DAS AMÉRICAS",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "3665"
+      }
+    },
+    {
+      "id": "4f07ec5c-9db6-4b98-a6a1-619ad1bd757b",
+      "nome": "ZONA SUL LOJA 18 - COPACABANA",
+      "set": {
+        "endereco": "AVENIDA NOSSA SENHORA DE COPACABANA",
+        "bairro": "COPACABANA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1200"
+      }
+    },
+    {
+      "id": "7fc708e1-3cf3-467e-b63c-c0befe1a2abf",
+      "nome": "ZONA SUL LOJA 19 - COPACABANA",
+      "set": {
+        "endereco": "AVENIDA NOSSA SENHORA DE COPACABANA",
+        "bairro": "COPACABANA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "936"
+      }
+    },
+    {
+      "id": "f184319c-f456-431f-a254-348a3582e813",
+      "nome": "20 - ZONA SUL - BOTAFOGO",
+      "set": {
+        "endereco": "RUA BANBINA ",
+        "bairro": "BOTAFOGO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "36"
+      }
+    },
+    {
+      "id": "8979ef2f-19b2-4aa1-b9de-870a56469f10",
+      "nome": "21 - ZONA SUL - FLAMENGO 2",
+      "set": {
+        "endereco": "RUA SENADOR VERGUEIRO ",
+        "bairro": "FLAMENGO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "51"
+      }
+    },
+    {
+      "id": "0023f6e9-907b-4eba-bea1-61cd48f22018",
+      "nome": "22 - ZONA SUL - SAO CONRADO",
+      "set": {
+        "endereco": "ESTRADA DA GÁVEA",
+        "bairro": "SÃO CONRADO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "870"
+      }
+    },
+    {
+      "id": "cb484c5e-9668-4b9e-969f-1e0859ddf26a",
+      "nome": "ZONA SUL LOJA 23 - BARRA DA TIJUCA",
+      "set": {
+        "endereco": "AVENIDA ÉRICO VERÍSSIMO",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "565"
+      }
+    },
+    {
+      "id": "4e8dda98-79b9-47fd-b435-3d50f3e3f02e",
+      "nome": "ZONA SUL LOJA 25 - JARDIM BOTANICO",
+      "set": {
+        "endereco": "RUA JARDIM BOTÂNICO",
+        "bairro": "JARDIM BOTÂNICO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "16"
+      }
+    },
+    {
+      "id": "0c77adb6-6594-44ee-a8e0-9f4b2d0acaea",
+      "nome": "ZONA SUL LOJA 26 - COPACABANA",
+      "set": {
+        "endereco": "AVENIDA NOSSA SENHORA DE COPACABANA",
+        "bairro": "COPACABANA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "591"
+      }
+    },
+    {
+      "id": "1334017b-1422-4b05-bad6-ad0e5dba9356",
+      "nome": "Zona Sul Filial 27",
+      "set": {
+        "endereco": "RUA VISCONDE DE PIRAJÁ",
+        "bairro": "IPANEMA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "577"
+      }
+    },
+    {
+      "id": "188c7527-00ac-44bf-addd-eb48ce2472c1",
+      "nome": "28 - ZONA SUL - URCA",
+      "set": {
+        "endereco": "RUA OSÓRIO DE ALMEIDA",
+        "bairro": "URCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "178"
+      }
+    },
+    {
+      "id": "60f9b60f-9990-4268-aac8-22235765eb46",
+      "nome": "29 - ZONA SUL - FLAMENGO",
+      "set": {
+        "endereco": "RUA MARQUÊS DE ABRANTES",
+        "bairro": "FLAMENGO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "181"
+      }
+    },
+    {
+      "id": "8586bdaf-ab8e-4de9-a100-68af990865d2",
+      "nome": "ZONA SUL LOJA 30 - LARANJEIRAS",
+      "set": {
+        "endereco": "RUA ESTEVES JÚNIOR",
+        "bairro": "LARANJEIRAS",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "36"
+      }
+    },
+    {
+      "id": "c907d214-a459-48f0-81ca-7c1289d50a34",
+      "nome": "ZONA SUL LOJA 31 - JARDIM BOTANICO",
+      "set": {
+        "endereco": "Rua Jardim Botânico",
+        "bairro": "Jardim Botânico",
+        "municipio": "Rio de Janeiro",
+        "numero": "81"
+      }
+    },
+    {
+      "id": "4bab9c25-6c85-41aa-929c-6118c2a238ad",
+      "nome": "33 - ZONA SUL - HUMAITA",
+      "set": {
+        "endereco": "RUA DO HUMAITÁ",
+        "bairro": "HUMAITÁ",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "110"
+      }
+    },
+    {
+      "id": "6c7977ba-9fef-4154-bc3b-fb4ea3445128",
+      "nome": "ZONA SUL LOJA 34 - BARRA DA TIJUCA",
+      "set": {
+        "endereco": "AVENIDA DAS AMÉRICAS",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "7870"
+      }
+    },
+    {
+      "id": "91908d75-5874-4331-b5cd-28f75b90a6a9",
+      "nome": "ZONA SUL LOJA 35 - BARRA",
+      "set": {
+        "endereco": "AVENIDA LÚCIO COSTA",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "4700"
+      }
+    },
+    {
+      "id": "23a8f1ba-9759-4c43-8d28-f0d8324cd432",
+      "nome": "ZONA SUL LOJA 36 - BOTAFOGO",
+      "set": {
+        "endereco": "RUA ARNALDO QUINTELA",
+        "bairro": "BOTAFOGO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "70"
+      }
+    },
+    {
+      "id": "688bace9-4cbc-4a01-b480-9a18524cb190",
+      "nome": "ZONA SUL LOJA 37 - BOTAFOGO",
+      "set": {
+        "endereco": "RUA SÃO JOÃO BATISTA",
+        "bairro": "BOTAFOGO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "27"
+      }
+    },
+    {
+      "id": "be54cc8c-62be-43fe-b04a-01f78f196ec7",
+      "nome": "ZONA SUL LOJA 38 - COPACABANA",
+      "set": {
+        "endereco": "RUA DIAS DA ROCHA",
+        "bairro": "COPACABANA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "29"
+      }
+    },
+    {
+      "id": "d71c1a91-4509-48a1-90e2-88fd27c7b6e4",
+      "nome": "ZONA SUL LOJA 45 - FLAMENGO",
+      "set": {
+        "endereco": "RUA MACHADO DE ASSIS",
+        "bairro": "FLAMENGO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "40"
+      }
+    },
+    {
+      "id": "70db3e61-f191-4367-981d-93b091a3b33a",
+      "nome": "48 - ZONA SUL - RECREIO DOS BANDEIRANTES",
+      "set": {
+        "endereco": "RUA MINISTRO ALIOMAR BALEEIRO",
+        "bairro": "RECREIO DOS BANDEIRANTES",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "555"
+      }
+    },
+    {
+      "id": "e7d4b398-5344-4a5e-afb2-489a7b17c39f",
+      "nome": "CARREFOUR BARRA",
+      "set": {
+        "endereco": "AVENIDA DAS AMÉRICAS",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "5150"
+      }
+    },
+    {
+      "id": "ace5686e-0ab6-4295-9a62-0c28422de128",
+      "nome": "CARREFOUR CAMPO GRANDE",
+      "set": {
+        "endereco": "ESTRADA DAS CAPOEIRAS",
+        "bairro": "CAMPO GRANDE",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "355"
+      }
+    },
+    {
+      "id": "5c01503a-5c0e-41ef-ae76-b947758f85cf",
+      "nome": "CARREFOUR NORTE SHOPPING",
+      "set": {
+        "endereco": "Rua Ibiraci",
+        "bairro": "Engenho de Dentro",
+        "municipio": "Rio de Janeiro",
+        "numero": "225"
+      }
+    },
+    {
+      "id": "66975a12-b2b5-4d1c-a241-655e656fadcc",
+      "nome": "CARREFOUR SULACAP",
+      "set": {
+        "endereco": "AVENIDA MARECHAL FONTENELLE",
+        "bairro": "CAMPO DOS AFONSOS",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "3655"
+      }
+    },
+    {
+      "id": "07de8cbb-1a57-48d5-b7b1-820a5557eae5",
+      "nome": "CARREFOUR WASHINGTON LUIS",
+      "set": {
+        "endereco": "AV WHASHINGTON LUIZ",
+        "bairro": "QUARTOZE DE JULHO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "7735"
+      }
+    },
+    {
+      "id": "90d042a1-8100-4bb2-9130-6d765aac32a2",
+      "nome": "CASAFRUTI",
+      "set": {
+        "endereco": "RODOVIA PRESIDENTE DUTRA",
+        "bairro": "PARQUE COLÚMBIA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "2611"
+      }
+    },
+    {
+      "id": "38da6a34-36d1-4ee7-b28d-73f8af849ee1",
+      "nome": "EMPORIO BARRA TOWER",
+      "set": {
+        "endereco": "AVENIDA DAS AMÉRICAS",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "8445"
+      }
+    },
+    {
+      "id": "0302af98-19cb-4fb9-bc9a-59224f6f4cd7",
+      "nome": "GB 15 - Bento Ribeiro",
+      "set": {
+        "endereco": "ESTRADA INTENDENTE MAGALHÃES",
+        "bairro": "OSWALDO CRUZ",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1236"
+      }
+    },
+    {
+      "id": "1fc1b6b6-8f00-4772-823f-cc7cae464415",
+      "nome": "GB 31 - TAQUARA",
+      "set": {
+        "endereco": "ESTRADA DO CAFUNDÁ",
+        "bairro": "TANQUE",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1560"
+      }
+    },
+    {
+      "id": "2f169c72-958d-44cd-9da3-a352ab5fec1e",
+      "nome": "GB 05 - BANGU",
+      "set": {
+        "endereco": "Rua da Chita",
+        "bairro": "Bangu",
+        "municipio": "Rio de Janeiro",
+        "numero": "399"
+      }
+    },
+    {
+      "id": "184609a4-3f00-4434-98b5-b102ded28c86",
+      "nome": "GB 13 - BANGU - RIO DA PRATA",
+      "set": {
+        "endereco": "RUA RIO DA PRATA",
+        "bairro": "BANGU",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1370"
+      }
+    },
+    {
+      "id": "937d3521-a065-43a1-94d5-2a850488da1d",
+      "nome": "GB 30 - Bonsucesso",
+      "set": {
+        "endereco": "AVENIDA TEIXEIRA DE CASTRO",
+        "bairro": "BONSUCESSO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "90"
+      }
+    },
+    {
+      "id": "6470ae30-b036-4974-b113-6f76e245094b",
+      "nome": "GB 11 - CAMPO GRANDE",
+      "set": {
+        "endereco": "RUA AURÉLIO FIGUEIREDO",
+        "bairro": "CAMPO GRANDE",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "205"
+      }
+    },
+    {
+      "id": "a5714442-c3b6-443a-bd68-71aa0f454011",
+      "nome": "GB 23 - DEL CASTILHO",
+      "set": {
+        "endereco": "ESTRADA ADHEMAR BEBIANO",
+        "bairro": "ENGENHO DA RAINHA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "3994"
+      }
+    },
+    {
+      "id": "07956daf-53ea-47e7-9da4-8f3cdbf6cdd1",
+      "nome": "GB 09 - IRAJA",
+      "set": {
+        "endereco": "AVENIDA MONSENHOR FÉLIX",
+        "bairro": "IRAJÁ",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1213"
+      }
+    },
+    {
+      "id": "e3941a6b-595d-455b-8227-173cf0a8f571",
+      "nome": "GB 20 - PACIENCIA",
+      "set": {
+        "endereco": "AVENIDA CESÁRIO DE MELO",
+        "bairro": "PACIENCIA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "10809"
+      }
+    },
+    {
+      "id": "5adaac77-c6b6-4ca5-93f0-72355ef4b644",
+      "nome": "GB 04 - REALENGO",
+      "set": {
+        "endereco": "Avenida de Santa Cruz",
+        "bairro": "Realengo",
+        "municipio": "Rio de Janeiro",
+        "numero": "419"
+      }
+    },
+    {
+      "id": "bea225ec-3b72-4235-8930-d02f066d7a3a",
+      "nome": "GB 14 - REALENGO",
+      "set": {
+        "endereco": "ESTRADA DA ÁGUA BRANCA",
+        "bairro": "REALENGO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "2380"
+      }
+    },
+    {
+      "id": "b7582a48-e50c-4619-b257-7386252de4c6",
+      "nome": "GB 28 - Santa Cruz",
+      "set": {
+        "endereco": "RUA FELIPE CARDOSO",
+        "bairro": "SANTA CRUZ",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1470"
+      }
+    },
+    {
+      "id": "55d4251f-1ab3-4e6d-b8df-732d0ce085b5",
+      "nome": "GB 02 - PENHA",
+      "set": {
+        "endereco": "Avenida Braz de Pina",
+        "bairro": "Penha",
+        "municipio": "Rio de Janeiro",
+        "numero": "150"
+      }
+    },
+    {
+      "id": "e412030b-46b2-4a65-8536-6ab7cb9cbd46",
+      "nome": "GB 27 - RECREIO DOS BANDEIRANTES",
+      "set": {
+        "endereco": "AVENIDA DAS AMÉRICAS",
+        "bairro": "RECREIO DOS BANDEIRANTES",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "16880"
+      }
+    },
+    {
+      "id": "b79e2190-8cea-4a6a-8b1c-982d31114887",
+      "nome": "GB 17 - MADUREIRA",
+      "set": {
+        "endereco": "AVENIDA ERNANI CARDOSO",
+        "bairro": "CASCADURA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "350"
+      }
+    },
+    {
+      "id": "5f93f8b0-bc61-43db-aedb-182cd3e3eeef",
+      "nome": "GB 07 - BARRA",
+      "set": {
+        "endereco": "Avenida das Américas",
+        "bairro": "Barra da Tijuca",
+        "municipio": "Rio de Janeiro",
+        "numero": "3501"
+      }
+    },
+    {
+      "id": "578c993d-ed06-488f-b407-b1ba862c912a",
+      "nome": "GB 26 - CAMPO GRANDE",
+      "set": {
+        "endereco": "ESTRADA RIO DO A",
+        "bairro": "CAMPO GRANDE",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1415"
+      }
+    },
+    {
+      "id": "f116b313-9fc8-4490-9da0-37306b3a222c",
+      "nome": "GB 01 - ENG. DE DENTRO",
+      "set": {
+        "endereco": "Rua Adolfo Bergamini",
+        "bairro": "Engenho de Dentro",
+        "municipio": "Rio de Janeiro",
+        "numero": "113"
+      }
+    },
+    {
+      "id": "bbbef0d7-210f-4cc7-9f23-b87b173a23d3",
+      "nome": "GB 03 - PIEDADE",
+      "set": {
+        "endereco": "AVENIDA DOM HÉLDER CÂMARA",
+        "bairro": "PIEDADE",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "8403"
+      }
+    },
+    {
+      "id": "84b74b54-0900-4ca0-b497-9bf91c2da7d4",
+      "nome": "GB 19 - TANQUE",
+      "set": {
+        "endereco": "RUA CÂNDIDO BENÍCIO",
+        "bairro": "TANQUE",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "3936"
+      }
+    },
+    {
+      "id": "2ffca8d5-d909-4a96-8e99-692f49c82a0c",
+      "nome": "GB 33 - Tijuca",
+      "set": {
+        "endereco": "RUA ALMIRANTE COCHRANE",
+        "bairro": "TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "146"
+      }
+    },
+    {
+      "id": "c7192fe3-2922-4dd0-a54c-4ad4f2d7661e",
+      "nome": "GB 10 - VILA ISABEL",
+      "set": {
+        "endereco": "RUA MAXWELL",
+        "bairro": "VILA ISABEL",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "520"
+      }
+    },
+    {
+      "id": "b3074842-d34f-4c30-8adf-3da195a66c08",
+      "nome": "GEMA DE OURO",
+      "set": {
+        "endereco": "AVENIDA BRASIL",
+        "bairro": "COELHO NETO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "19001"
+      }
+    },
+    {
+      "id": "334c5c5d-813a-40b5-8367-283123bbe344",
+      "nome": "ZONA SUL LOJA 46 - BOTAFOGO",
+      "set": {
+        "endereco": "RUA VOLUNTÁRIOS DA PÁTRIA",
+        "bairro": "BOTAFOGO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "190"
+      }
+    },
+    {
+      "id": "53cc5fff-06b9-4cce-873f-26f0a7c454f7",
+      "nome": "MEGA BOX 01 - Olaria",
+      "set": {
+        "endereco": "AV BRASIL, 9.561",
+        "bairro": "OLARIA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "9561"
+      }
+    },
+    {
+      "id": "77a9221b-93cf-4b7d-bc8f-b2d43af56e40",
+      "nome": "MEGA BOX 2 - Recreio",
+      "set": {
+        "endereco": "AV. DAS AMERICAS, 13700",
+        "bairro": "RECREIO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "13700"
+      }
+    },
+    {
+      "id": "138c0518-b97c-441f-a531-baee1f432969",
+      "nome": "MUITO MAIS VOCÊ - ROCHA MIRANDA",
+      "set": {
+        "endereco": "ESTRADA DO SAPÉ",
+        "bairro": "TURIAÇU",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "631"
+      }
+    },
+    {
+      "id": "f5ed8b53-2989-4f02-b56b-57505d9d37d4",
+      "nome": "PAX PILARES",
+      "set": {
+        "endereco": "RUA ALVARO MIRANDA ",
+        "bairro": "PILARES",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "226"
+      }
+    },
+    {
+      "id": "6633457e-483b-43dd-8287-4b558a8024da",
+      "nome": "PAX GUADALUPE",
+      "set": {
+        "endereco": "AV BRASIL ",
+        "bairro": "GUADALUPE",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "22155"
+      }
+    },
+    {
+      "id": "09cdf72b-7720-47ea-a49f-2079e59ba761",
+      "nome": "PAX INHAUMA",
+      "set": {
+        "endereco": "EST ADHEMAR BEBIANO ",
+        "bairro": "ENGENHO DA RAINHA ",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "4618"
+      }
+    },
+    {
+      "id": "ea963466-dddd-4239-837a-6e210a2ed97a",
+      "nome": "PAX MADUREIRA",
+      "set": {
+        "endereco": "ESTRADA DO PORTELA ",
+        "bairro": "MADUREIRA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "267"
+      }
+    },
+    {
+      "id": "c0cf2d78-b4ae-4553-b822-31520c20d6b6",
+      "nome": "PAX OSWALDO CRUZ",
+      "set": {
+        "endereco": "RUA CAROLINA MACHADO",
+        "bairro": "OSWALDO CRUZ",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "990"
+      }
+    },
+    {
+      "id": "6e8bdfa7-a5ad-48e7-9572-7d61c4020f48",
+      "nome": "PAX REALENGO",
+      "set": {
+        "endereco": "RUA LIMITIS  1309",
+        "bairro": "REALENGO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1309"
+      }
+    },
+    {
+      "id": "b000bca6-3e88-4bc1-9d25-0ecfb1e487d0",
+      "nome": "PAX VILA DA PENHA",
+      "set": {
+        "endereco": "AVENIDA PADRE ROSER",
+        "bairro": "VILA DA PENHA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "330"
+      }
+    },
+    {
+      "id": "7cb52d6c-1e6e-4dde-b40a-fe74ac2b6179",
+      "nome": "PAX TAQUARA",
+      "set": {
+        "endereco": "ESTRADA DO TINDIBA",
+        "bairro": "TAQUARA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "945"
+      }
+    },
+    {
+      "id": "1eca0968-71dd-4d9e-8660-2eec3592efab",
+      "nome": "PETIT ATLANTICO SUL",
+      "set": {
+        "endereco": "AVENIDA LCIO COSTA",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "3600"
+      }
+    },
+    {
+      "id": "5c91a9c1-6346-4ad6-a450-124528941151",
+      "nome": "PETIT MARCHE BARRAMARES",
+      "set": {
+        "endereco": "AVENIDA DAS AMRICAS",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "111"
+      }
+    },
+    {
+      "id": "25f2a679-8486-4dbd-978d-af4ddab229e8",
+      "nome": "PREZUNIC SPID ALPHA MALL",
+      "set": {
+        "endereco": "RUA PAULO MOURA",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "50"
+      }
+    },
+    {
+      "id": "9a5c1f79-3efd-43af-bfbe-7c518ba05505",
+      "nome": "PREZUNIC SPID FARME DE AMOEDO",
+      "set": {
+        "endereco": "RUA FARME DE AMOEDO",
+        "bairro": "IPANEMA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "83"
+      }
+    },
+    {
+      "id": "f45360d3-93ab-4dbe-95ff-e0f8aa7a8144",
+      "nome": "PREZUNIC ANIL (SHOPPING JACAREPAGUA)",
+      "set": {
+        "endereco": "ESTRADA DE JACAREPAGUÁ",
+        "bairro": "ANIL",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "6069"
+      }
+    },
+    {
+      "id": "2bb3d6ad-cac4-4bef-8d51-23947c7d7289",
+      "nome": "PREZUNIC BARRA",
+      "set": {
+        "endereco": "AV. DAS AMERICAS, 13.850",
+        "bairro": "RECREIO DOS BANDEIRANTES",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "13850"
+      }
+    },
+    {
+      "id": "b11b638b-c7ab-45d9-92db-ed45e1fe5b93",
+      "nome": "PREZUNIC BARRA MARAPENDI",
+      "set": {
+        "endereco": "AVENIDA DAS AMÉRICAS",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "4245"
+      }
+    },
+    {
+      "id": "e31c514d-8f49-44d8-9462-114f9d1f0047",
+      "nome": "PREZUNIC BENFICA",
+      "set": {
+        "endereco": "AVENIDA DOM HÉLDER CÂMARA",
+        "bairro": "BENFICA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "105"
+      }
+    },
+    {
+      "id": "c3029985-c9fa-4578-b056-dde069fa9fb2",
+      "nome": "Prezunic - Botafogo (Voluntarios)",
+      "set": {
+        "endereco": "Rua General Polidoro",
+        "bairro": "Botafogo",
+        "municipio": "Rio de Janeiro",
+        "numero": "260"
+      }
+    },
+    {
+      "id": "edd12359-bcbe-4dbb-9b1e-3dece045767a",
+      "nome": "PREZUNIC BOTAFOGO (VOLUNTÁRIOS DA PÁTRIA)",
+      "set": {
+        "endereco": "RUA VOLUNTARIOS DA PATRIA",
+        "bairro": "BOTAFOGO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "222"
+      }
+    },
+    {
+      "id": "77d7039b-d1b3-40a4-9ce7-06fad96cb108",
+      "nome": "PREZUNIC CACHAMBI",
+      "set": {
+        "endereco": "Rua Miguel Cervantes",
+        "bairro": "Cachambi",
+        "municipio": "Rio de Janeiro",
+        "numero": "240"
+      }
+    },
+    {
+      "id": "57e5cd71-5b39-470d-8be6-240ea9401e02",
+      "nome": "PREZUNIC CAMPINHO",
+      "set": {
+        "endereco": "RUA CÂNDIDO BENÍCIO",
+        "bairro": "CAMPINH",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "20"
+      }
+    },
+    {
+      "id": "01c8cca5-132f-4a69-8997-5138ab355274",
+      "nome": "PREZUNIC CAMPO GRANDE",
+      "set": {
+        "endereco": "ESTRADA DO CABUÇU",
+        "bairro": "CAMPO GRANDE",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1654"
+      }
+    },
+    {
+      "id": "fef0fc0e-d9c8-469c-b23e-db2f1a643c0a",
+      "nome": "PREZUNIC CATUMBI",
+      "set": {
+        "endereco": "RUA ITAPIRU",
+        "bairro": "CATUMBI",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "474"
+      }
+    },
+    {
+      "id": "050d1ddc-2b4c-4c17-b4df-e25b67eb791f",
+      "nome": "PREZUNIC CIDADE DE DEUS",
+      "set": {
+        "endereco": "ESTRADA MARECHAL MIGUEL SALAZAR MENDES DE MORAIS",
+        "bairro": "TAQUARA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "906"
+      }
+    },
+    {
+      "id": "930804e3-bad3-45dc-a826-5bf1f0bcf58e",
+      "nome": "PREZUNIC DEPÓSITO CENTRAL",
+      "set": {
+        "endereco": "RUA DO ALPISTE",
+        "bairro": "PENHA CIRCULAR",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "568"
+      }
+    },
+    {
+      "id": "f827c7ee-7986-4001-8129-62960a03c529",
+      "nome": "PREZUNIC ENGENHO NOVO",
+      "set": {
+        "endereco": "R SOUSA BAROS",
+        "bairro": "ENGENHO NOVO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "450"
+      }
+    },
+    {
+      "id": "e87e6086-b066-4120-ad0b-7a16befeaf02",
+      "nome": "PREZUNIC FREGUESIA",
+      "set": {
+        "endereco": "ESTRADA DE JACAREPAGUÁ",
+        "bairro": "ANIL",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "7153"
+      }
+    },
+    {
+      "id": "5b6caef8-4a4c-4ef6-89d7-411422cfbdbb",
+      "nome": "PREZUNIC ICARAI",
+      "set": {
+        "endereco": "R CORORENL MOREIRA CESAR 414",
+        "bairro": "ICARA?",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "414"
+      }
+    },
+    {
+      "id": "e4b36ab2-2b10-4776-b104-512626428299",
+      "nome": "PREZUNIC ILHA",
+      "set": {
+        "endereco": "ESTRADA DO GALEÃO",
+        "bairro": "JARDIM CARIOCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1800"
+      }
+    },
+    {
+      "id": "e58c8400-619e-4bc4-9ade-1f63d643ebd4",
+      "nome": "PREZUNIC ITAOCA",
+      "set": {
+        "endereco": "ESTRADA DO TIMBÓ",
+        "bairro": "HIGIENÓPOLIS",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "52"
+      }
+    },
+    {
+      "id": "136eb2f5-8f5c-4581-8e3f-f21b5a409576",
+      "nome": "PREZUNIC JARDIM OCEANICO",
+      "set": {
+        "endereco": "AVENIDA RODOLFO AMOEDO",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "347"
+      }
+    },
+    {
+      "id": "81db5a16-1bbb-4057-8684-ae8fa81ada7b",
+      "nome": "PREZUNIC JAURU",
+      "set": {
+        "endereco": "PRAÇA JAURU",
+        "bairro": "TAQUARA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "32"
+      }
+    },
+    {
+      "id": "4ad30e59-53e2-44e2-bcb1-2dd446f928d3",
+      "nome": "PREZUNIC LARANJEIRAS",
+      "set": {
+        "endereco": "RUA DAS LARANJEIRAS",
+        "bairro": "LARANJEIRAS",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "139"
+      }
+    },
+    {
+      "id": "df6668e7-40bd-4ee5-8c37-fd405f1bb6ee",
+      "nome": "PREZUNIC MEIER",
+      "set": {
+        "endereco": "RUA DIAS DA CRUZ",
+        "bairro": "MÉIER",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "579"
+      }
+    },
+    {
+      "id": "db771f72-c5ce-4939-a060-5c286e2a78ad",
+      "nome": "PREZUNIC OLARIA",
+      "set": {
+        "endereco": "Rua Uranos",
+        "bairro": "Olaria",
+        "municipio": "Rio de Janeiro",
+        "numero": "1293"
+      }
+    },
+    {
+      "id": "b65f1f86-aedf-4d1f-be0e-1aa40c3a7444",
+      "nome": "PREZUNIC PADRE MIGUEL",
+      "set": {
+        "endereco": "RUA GENERAL JACQUES OURIQUE",
+        "bairro": "PADRE MIGUEL",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "770"
+      }
+    },
+    {
+      "id": "ac35a178-c9d8-41e4-b0cc-d575f18c92f1",
+      "nome": "PREZUNIC PECHINCHA",
+      "set": {
+        "endereco": "ESTRADA DO TINDIBA",
+        "bairro": "PECHINCHA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "565"
+      }
+    },
+    {
+      "id": "27ead962-77a1-4117-9495-3217b44898c7",
+      "nome": "PREZUNIC PENHA",
+      "set": {
+        "endereco": "RUA BENTO CARDOSO",
+        "bairro": "PENHA CIRCULAR",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "313"
+      }
+    },
+    {
+      "id": "b7ea8ee5-8eb0-4e17-a75b-00e8dcf4a539",
+      "nome": "PREZUNIC REALENGO",
+      "set": {
+        "endereco": "AVENIDA MARECHAL FONTENELLE",
+        "bairro": "VILA MILITAR",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "5100"
+      }
+    },
+    {
+      "id": "6729cf2e-cec1-4f3f-adc1-b6c9bafbe0ab",
+      "nome": "PREZUNIC RECREIO",
+      "set": {
+        "endereco": "AVENIDA DAS AMÉRICAS",
+        "bairro": "RECREIO DOS BANDEIRANTES",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "16100"
+      }
+    },
+    {
+      "id": "32702aff-9cd9-4fff-8e59-c48ef55e2b84",
+      "nome": "PREZUNIC SANTA CRUZ",
+      "set": {
+        "endereco": "Rua Dom Pedro I",
+        "bairro": "Santa Cruz",
+        "municipio": "Rio de Janeiro",
+        "numero": "53"
+      }
+    },
+    {
+      "id": "7766ca09-05ce-4c48-8b1c-73a32b9d6d4b",
+      "nome": "PREZUNIC SENADOR CAMARÁ",
+      "set": {
+        "endereco": "AVENIDA DE SANTA CRUZ",
+        "bairro": "SENADOR VASCONCELOS",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "7138"
+      }
+    },
+    {
+      "id": "44313502-1e2b-4f03-a2fe-8f425faed246",
+      "nome": "PREZUNIC SPID BOTAFOGO",
+      "set": {
+        "endereco": "RUA NELSON MANDELA",
+        "bairro": "BOTAFOGO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "100"
+      }
+    },
+    {
+      "id": "3910b047-106c-4b1a-a866-ce976c434610",
+      "nome": "PREZUNIC SPID CENTRO",
+      "set": {
+        "endereco": "RUA DOS INVÁLIDOS",
+        "bairro": "CENTRO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "185"
+      }
+    },
+    {
+      "id": "a32bd233-ddfe-4af2-8659-f3c223bb6843",
+      "nome": "PREZUNIC SPID COPACABANA",
+      "set": {
+        "endereco": "RUA MINISTRO VIVEIROS DE CASTRO",
+        "bairro": "COPACABANA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "17"
+      }
+    },
+    {
+      "id": "95f0aca2-01b7-4b27-8636-642ba758dae9",
+      "nome": "PREZUNIC SPID ESTAÇÃO CARIOCA (METRÔ)",
+      "set": {
+        "endereco": "LARGO DA CARIOCA",
+        "bairro": "CENTRO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "0"
+      }
+    },
+    {
+      "id": "129fedf7-d0e7-44d8-b606-2fe64f8138d2",
+      "nome": "PREZUNIC SPID FREGUESIA (TRÊS RIOS)",
+      "set": {
+        "endereco": "ESTRADA DOS TRÊS RIOS",
+        "bairro": "FREGUESIA (JACAREPAGUÁ)",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "624"
+      }
+    },
+    {
+      "id": "e1b87007-738b-4af5-a0f2-51a2c3e716d0",
+      "nome": "PREZUNIC SPID GLÓRIA",
+      "set": {
+        "endereco": "RUA DA GLÓRIA",
+        "bairro": "GLÓRIA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "214"
+      }
+    },
+    {
+      "id": "86cdf4d8-f6a2-4ce4-8713-1c7109a36eab",
+      "nome": "PREZUNIC SPID IPANEMA V. PIRAJA",
+      "set": {
+        "endereco": "RUA VISCONDE DE PIRAJÁ",
+        "bairro": "IPANEMA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "4"
+      }
+    },
+    {
+      "id": "145acf62-10cb-44b1-ac66-aaf012b1ea18",
+      "nome": "PREZUNIC SPID MÉIER",
+      "set": {
+        "endereco": "RUA DIAS DA CRUZ",
+        "bairro": "MÉIER",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "58"
+      }
+    },
+    {
+      "id": "ef95747e-e681-4463-b601-11c20c38671c",
+      "nome": "Prezunic - Recreio dos Bandeirantes",
+      "set": {
+        "endereco": "AVENIDA DAS AMÉRICAS",
+        "bairro": "RECREIO DOS BANDEIRANTES",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "16100"
+      }
+    },
+    {
+      "id": "8eeeab2c-8e57-4df5-bab0-7aa9c52058a1",
+      "nome": "PREZUNIC SPID TIJUCA",
+      "set": {
+        "endereco": "RUA CONDE DE BONFIM",
+        "bairro": "TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "787"
+      }
+    },
+    {
+      "id": "8f78383a-f471-4951-aba3-cd0059c9e88b",
+      "nome": "PREZUNIC SPID VILA ISABEL",
+      "set": {
+        "endereco": "BOULEVARD VINTE E OITO DE SETEMBRO",
+        "bairro": "VILA ISABEL",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "150"
+      }
+    },
+    {
+      "id": "6fa7453a-18cb-40f0-90fd-735ae5e7ceae",
+      "nome": "PREZUNIC TAQUARA",
+      "set": {
+        "endereco": "ESTRADA DOS BANDEIRANTES",
+        "bairro": "TAQUARA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "105"
+      }
+    },
+    {
+      "id": "f04d8e93-303a-4a2a-9394-343e49bfdb83",
+      "nome": "PREZUNIC TIJUCA",
+      "set": {
+        "endereco": "RUA URUGUAI",
+        "bairro": "TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "330"
+      }
+    },
+    {
+      "id": "284e6ec5-e138-4a65-9341-8da7479780a2",
+      "nome": "PREZUNIC VILA ISABEL",
+      "set": {
+        "endereco": "BOULEVARD VINTE E OITO DE SETEMBRO",
+        "bairro": "VILA ISABEL",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "160"
+      }
+    },
+    {
+      "id": "dc60a226-769e-4d65-b398-f32d5c484f9b",
+      "nome": "PREZUNIC VILAR DOS TELES",
+      "set": {
+        "endereco": "AV AUTOMOVEL CLUBE ",
+        "bairro": "JARDIM JOSE BONIFACIO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1659"
+      }
+    },
+    {
+      "id": "db869bff-41a7-430d-a898-28a5dec22013",
+      "nome": "PREZUNIC VISTA ALEGRE",
+      "set": {
+        "endereco": "AVENIDA BRAZ DE PINA",
+        "bairro": "VISTA ALEGRE",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1952"
+      }
+    },
+    {
+      "id": "518d2449-65c9-4d88-86c3-dcbe231f8fb5",
+      "nome": "PRINCESA CATETE",
+      "set": {
+        "endereco": "RUA DO CATETE",
+        "bairro": "CATETE",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "120"
+      }
+    },
+    {
+      "id": "217bc5e9-a159-4d55-9fee-8d3be1b45c16",
+      "nome": "Princesa - Copacabana",
+      "set": {
+        "endereco": "RUA BOLIVAR",
+        "bairro": "COPACABANA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "34"
+      }
+    },
+    {
+      "id": "bf19f48b-e360-4448-acb5-e051181db216",
+      "nome": "PRINCESA COSME VELHO",
+      "set": {
+        "endereco": "RUA DAS LARANJEIRAS",
+        "bairro": "COSME VELHO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "519"
+      }
+    },
+    {
+      "id": "5f649611-f1d9-4030-b502-65d13e3ac8d8",
+      "nome": "PRINCESA FLAMENGO",
+      "set": {
+        "endereco": "RUA SENADOR VERGUEIRO",
+        "bairro": "FLAMENGO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "165"
+      }
+    },
+    {
+      "id": "05c9e9e5-579f-42c6-8bd4-dc820555ba9a",
+      "nome": "PRINCESA LARANJEIRAS",
+      "set": {
+        "endereco": "RUA DAS LARANJEIRAS",
+        "bairro": "LARANJEIRAS",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "218"
+      }
+    },
+    {
+      "id": "18aec3cc-4b42-4bc1-8fb3-3b1fab0a306e",
+      "nome": "PRINCESA LEME",
+      "set": {
+        "endereco": "RUA PRINCESA ISABEL",
+        "bairro": "BARROS FILHO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "134"
+      }
+    },
+    {
+      "id": "fa145e43-1745-451e-9101-7f996f270564",
+      "nome": "PRINCESA PECHINCHA",
+      "set": {
+        "endereco": "ESTRADA PAUFERRO",
+        "bairro": "PECHINCHA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "31"
+      }
+    },
+    {
+      "id": "89aa1ced-8de0-43c3-b7d7-6acdd710bc37",
+      "nome": "SAMS BARRA",
+      "set": {
+        "endereco": "AVENIDA AYRTON SENNA",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "2300"
+      }
+    },
+    {
+      "id": "2a949792-99f2-4d4b-9281-c91b3df2fc14",
+      "nome": "Sam's - Linha Amarela",
+      "set": {
+        "endereco": "TRAVESSA GUERRA",
+        "bairro": "QUINTINO BOCAIÚVA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "345"
+      }
+    },
+    {
+      "id": "da690482-a2e3-4d30-8d61-65046573a141",
+      "nome": "SENDAS SANTA CRUZ  II -  LOJA 338",
+      "set": {
+        "endereco": "ESTRADA DOS PALMARES",
+        "bairro": "PACIÊNCIA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "178"
+      }
+    },
+    {
+      "id": "532c14a9-89c5-4b34-8579-4943b752a773",
+      "nome": "SENDAS ARARUAMA - LJ 221",
+      "set": {
+        "endereco": "AV. GETULIO VARGAS S/N",
+        "bairro": "PICADA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "0"
+      }
+    },
+    {
+      "id": "3d623f48-0fc7-4185-8258-0773785e2e65",
+      "nome": "SENDAS BANGU - LOJA 55",
+      "set": {
+        "endereco": "RUA FRANCISCO REAL",
+        "bairro": "BANGU",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "2050"
+      }
+    },
+    {
+      "id": "fb582c40-7345-452a-9f4f-4c53beae5b8c",
+      "nome": "SENDAS BANGU II",
+      "set": {
+        "endereco": "Avenida Brasil",
+        "bairro": "Bangu",
+        "municipio": "Rio de Janeiro",
+        "numero": "33809"
+      }
+    },
+    {
+      "id": "a8c86a7c-e45b-46da-86fd-b2728f0df107",
+      "nome": "SENDAS BARRA I - LJ 32",
+      "set": {
+        "endereco": "AVENIDA AYRTON SENNA",
+        "bairro": "JACAREPAGUÁ",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "6000"
+      }
+    },
+    {
+      "id": "440f3ca0-6523-4e6e-a932-ca7fb2e6b0d0",
+      "nome": "SENDAS BARRA II - LJ 245",
+      "set": {
+        "endereco": "AVENIDA DAS AMERICAS ",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "900"
+      }
+    },
+    {
+      "id": "f2f12545-a5b6-46d5-8979-ae37c1d792db",
+      "nome": "SENDAS BOULEVARD",
+      "set": {
+        "endereco": "RUA MAXWELL",
+        "bairro": "VILA ISABEL",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "300"
+      }
+    },
+    {
+      "id": "384bfd5f-95ea-49bc-b46b-e4aadddf9e08",
+      "nome": "SENDAS CAMPINHO - LOJA 37",
+      "set": {
+        "endereco": "RUA DOMINGOS LÓPES",
+        "bairro": "MADUREIRA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "195"
+      }
+    },
+    {
+      "id": "f4e1a4c3-d523-41a2-b4a5-4550b3263112",
+      "nome": "SENDAS CARIOCA SHOPPING",
+      "set": {
+        "endereco": "AV VICENTE DE CARVALHO  ",
+        "bairro": "VICENTE DE CARVALHO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "909"
+      }
+    },
+    {
+      "id": "1e9d1a98-b81a-4a24-be84-0834b8038505",
+      "nome": "SENDAS CEASA - LOJA 42",
+      "set": {
+        "endereco": "AVENIDA BRASIL",
+        "bairro": "COELHO NETO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "19201"
+      }
+    },
+    {
+      "id": "c7a8e44a-8068-4b7c-96a8-69560b32800b",
+      "nome": "SENDAS CESÁRIO DE MELO - LJ 202",
+      "set": {
+        "endereco": "AVENIDA CESÁRIO DE MELO",
+        "bairro": "CAMPO GRANDE",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "3470"
+      }
+    },
+    {
+      "id": "4c9147a9-c904-4832-a70a-6daa45fcdcef",
+      "nome": "SENDAS CORDOVIL",
+      "set": {
+        "endereco": "RUA ARICAMBU,65",
+        "bairro": "CORDOVIL",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "65"
+      }
+    },
+    {
+      "id": "7ab43886-52b9-46c8-965c-790410ffe008",
+      "nome": "SENDAS FREGUESIA - LOJA 28",
+      "set": {
+        "endereco": "ESTRADA DE JACAREPAGUÁ",
+        "bairro": "FREGUESIA (JACAREPAGUÁ)",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "7753"
+      }
+    },
+    {
+      "id": "054aa7f7-346f-4d8f-aeaf-c403f0db808e",
+      "nome": "SENDAS GALEÃO - LJ 302",
+      "set": {
+        "endereco": "ESTRADA DO GALEÃO",
+        "bairro": "PORTUGUESA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "2700"
+      }
+    },
+    {
+      "id": "73d0149a-9ff3-4913-b260-46ee4be2df81",
+      "nome": "SENDAS ILHA - LOJA 29",
+      "set": {
+        "endereco": "AVENIDA MAESTRO PAULO SILVA",
+        "bairro": "JARDIM CARIOCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "100"
+      }
+    },
+    {
+      "id": "2b0664ec-7321-4b8b-a7a2-0c7ee33dd1b4",
+      "nome": "SENDAS MARACANÃ - LJ 286",
+      "set": {
+        "endereco": "RUA JOSE HIGINO",
+        "bairro": "TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "0"
+      }
+    },
+    {
+      "id": "dd1b64cc-048b-4926-ba48-bbd2a741a596",
+      "nome": "SENDAS MEIER",
+      "set": {
+        "endereco": "RUA DIAS DA CRUZ",
+        "bairro": "MÉIER",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "371"
+      }
+    },
+    {
+      "id": "855e5e91-989d-4906-92ca-fcd42b013558",
+      "nome": "SENDAS MENDANHA - LOJA 65",
+      "set": {
+        "endereco": "ESTRADA DO MENDANHA",
+        "bairro": "CAMPO GRANDE",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "3457"
+      }
+    },
+    {
+      "id": "cca51c19-b906-4200-895e-1dafa30a8caa",
+      "nome": "SENDAS PILARES - LJ 128",
+      "set": {
+        "endereco": "AVENIDA DOM HÉLDER CÂMARA",
+        "bairro": "PILARES",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "6350"
+      }
+    },
+    {
+      "id": "6971e0bb-b867-4a99-9d91-2a320b03dc28",
+      "nome": "SENDAS SABÃO PORTUGUÊS",
+      "set": {
+        "endereco": "AVENIDA BRASIL",
+        "bairro": "BENFICA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "2251"
+      }
+    },
+    {
+      "id": "1ca9946b-d6a0-43fd-a07b-bf21a15c2e9c",
+      "nome": "SENDAS SANTA CRUZ - LJ 37",
+      "set": {
+        "endereco": "AVENIDA PADRE GUILHERME DECAMINADA",
+        "bairro": "SANTA CRUZ",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "2385"
+      }
+    },
+    {
+      "id": "d9cc9b57-1349-4cb8-9cfd-26cfb5142e03",
+      "nome": "SENDAS SÃO GONÇALO CAMIL - LJ 211",
+      "set": {
+        "endereco": "RUA SAO JORGE",
+        "bairro": "PORTO VELHO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "95"
+      }
+    },
+    {
+      "id": "557967f4-cc6e-4e58-a96f-25386c0aef61",
+      "nome": "SENDAS TIJUCA II - LJ 43",
+      "set": {
+        "endereco": "RUA MARIZ E BARROS",
+        "bairro": "MARACANÃ",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "975"
+      }
+    },
+    {
+      "id": "e2b9bd06-9cb1-42c2-ab1a-e671ec18358a",
+      "nome": "SENDAS TRIBOBÓ - LJ 248",
+      "set": {
+        "endereco": "AVENIDA FUED MOISES",
+        "bairro": "TRIBOBO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "114"
+      }
+    },
+    {
+      "id": "ad55cfff-84f2-4e1d-a74e-c2506520a990",
+      "nome": "PAX DEL CASTILHO",
+      "set": {
+        "endereco": "Rua Bispo Lacerda",
+        "bairro": "Del Castilho",
+        "municipio": "Rio de Janeiro",
+        "numero": "91"
+      }
+    },
+    {
+      "id": "9a859270-f71d-46c6-9ddc-cfd6f4d7894a",
+      "nome": "PAX ENGENHO DE DENTRO",
+      "set": {
+        "endereco": "Rua Bento Gonçalves",
+        "bairro": "Engenho de Dentro",
+        "municipio": "Rio de Janeiro",
+        "numero": "556"
+      }
+    },
+    {
+      "id": "275404ec-23be-4723-9cf5-5649c70f5521",
+      "nome": "ZONA SUL LOJA 32 - LARANJEIRAS",
+      "set": {
+        "endereco": "RUA DAS LARANJEIRAS",
+        "bairro": "LARANJEIRAS",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "215219"
+      }
+    },
+    {
+      "id": "e6b7a80d-e9c0-440f-a55d-2f1d0229811d",
+      "nome": "ATACADÃO - MANILHA",
+      "set": {
+        "endereco": "RUA OLIVEIRA BOTELHO",
+        "bairro": "NEVES (NEVES)",
+        "municipio": "SAO GONCALO",
+        "numero": "346"
+      }
+    },
+    {
+      "id": "ead4dc8a-66e6-46bd-8fcc-40248f540540",
+      "nome": "CARREFOUR ALCANTARA",
+      "set": {
+        "endereco": "RUA DOUTOR ALFREDO BACKER",
+        "bairro": "ALCÂNTARA",
+        "municipio": "SAO GONCALO",
+        "numero": "500"
+      }
+    },
+    {
+      "id": "caeb470d-19c1-469a-bb57-c6d9bc5d2e5c",
+      "nome": "GB 12 - SÃO GONÇALO - MUTONDO",
+      "set": {
+        "endereco": "Avenida Jornalista Roberto Marinho",
+        "bairro": "Mutondo",
+        "municipio": "São Gonçalo",
+        "numero": "221"
+      }
+    },
+    {
+      "id": "4c18c8d1-7c95-4800-95e5-745f308adde9",
+      "nome": "SENDAS ALCÂNTARA I - LOJA 35",
+      "set": {
+        "endereco": "Rua Doutor Alfredo Backer",
+        "bairro": "Mutondo",
+        "municipio": "São Gonçalo",
+        "numero": "605"
+      }
+    },
+    {
+      "id": "35c3adfc-88cb-4aae-8ec9-9b781fe65018",
+      "nome": "SENDAS ALCÂNTARA II - LJ 293",
+      "set": {
+        "endereco": "Estrada Raul Veiga",
+        "bairro": "Raul Veiga",
+        "municipio": "São Gonçalo",
+        "numero": "243"
+      }
+    },
+    {
+      "id": "006cea54-319e-49f5-950c-4d45957b4d6e",
+      "nome": "SENDAS SÃO GONÇALO CENTRO",
+      "set": {
+        "endereco": "AVENIDA PRESIDENTE KENNEDY",
+        "bairro": "CENTRO",
+        "municipio": "SAO GONCALO",
+        "numero": "429"
+      }
+    },
+    {
+      "id": "8f9f7e5f-f3b3-48e4-a4ec-01170b9d7bd5",
+      "nome": "GUANABARA 29 - SAO JOAO DE MERITI",
+      "set": {
+        "endereco": "AVENIDA NOSSA SENHORA DAS GRAÇAS",
+        "bairro": "CENTRO",
+        "municipio": "SAO JOAO DE MERITI",
+        "numero": "222"
+      }
+    },
+    {
+      "id": "3335d32d-68e5-406f-bbdf-80e5189f5f00",
+      "nome": "SENDAS SÃO JOÃO DE MERITI",
+      "set": {
+        "endereco": "RODOVIA PRESIDENTE DUTRA",
+        "bairro": "COELHO DA ROCHA",
+        "municipio": "SAO JOAO DE MERITI",
+        "numero": "4301"
+      }
+    },
+    {
+      "id": "8043a9af-cb66-464b-831c-2579557f9a69",
+      "nome": "VIANENSE NOVA IGUACU",
+      "set": {
+        "endereco": "R DR. THIBAU E R.MARIO GUIMARAES, S/N",
+        "bairro": "CENTRO",
+        "municipio": "NOVA IGUACU",
+        "numero": "80"
+      }
+    },
+    {
+      "id": "3cb51a81-7ea2-4161-be41-2b4ca4def61d",
+      "nome": "VIANENSE FREGUESIA",
+      "set": {
+        "endereco": "Estrada do Bananal",
+        "bairro": "Freguesia (Jacarepaguá)",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "400"
+      }
+    },
+    {
+      "id": "28a5c12f-151d-462a-ad6d-64a9cbe461d7",
+      "nome": "VIANENSE RECREIO",
+      "set": {
+        "endereco": "AVENIDA DAS AMERICAS ",
+        "bairro": "RECREIO DOS BANDEIRANTES",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "16701"
+      }
+    },
+    {
+      "id": "9f232d8e-954c-4c29-a42f-a61aedc6dfdf",
+      "nome": "DOCES DA DÉIA",
+      "set": {
+        "endereco": "RUA MARINHO PESSOA",
+        "bairro": "IRAJA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "155"
+      }
+    },
+    {
+      "id": "251fc97f-f1e2-46e1-a70f-d5574ee23432",
+      "nome": "DOCES DE SONHO",
+      "set": {
+        "endereco": "RUA RIBEYROLLES",
+        "bairro": "COELHO NETO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "767"
+      }
+    },
+    {
+      "id": "8ff3a83e-5cf3-4ddc-840b-cdbb70faffb3",
+      "nome": "MOMENTOS ALEGRES",
+      "set": {
+        "endereco": "RUA MOREIRA DE VASCONÇELOS",
+        "bairro": "PENHA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "27"
+      }
+    },
+    {
+      "id": "ca461ee0-3219-4b09-be53-bf43dbe5bbf8",
+      "nome": "RAZÃO DE VIVER",
+      "set": {
+        "endereco": "AVENIDA BRASIL",
+        "bairro": "PARADA DE LUCAS",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "14865"
+      }
+    },
+    {
+      "id": "d04327ff-0c03-4f6c-b763-20508abe06d1",
+      "nome": "DISPOSIÇÃO CAIXAS",
+      "set": {
+        "endereco": "AVENIDA BRASIL",
+        "bairro": "COELHO NETO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "19001"
+      }
+    },
+    {
+      "id": "06840662-6b34-44df-99e8-5ff077bffdf8",
+      "nome": "DISPOSICAO - JANAUBA",
+      "set": {
+        "endereco": "AVENIDA BRASIL",
+        "bairro": "COELHO NETO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "19001"
+      }
+    },
+    {
+      "id": "47ad3fdf-7fb4-4483-a731-205db96324cf",
+      "nome": "SENDAS JACAREPAGUA - LOJA 340 (TAQUARA)",
+      "set": {
+        "endereco": "Estrada de Jacarepaguá",
+        "bairro": "Freguesia (Jacarepaguá)",
+        "municipio": "Rio de Janeiro",
+        "numero": "1430"
+      }
+    },
+    {
+      "id": "17da9799-1bd7-4f97-a102-4115087d5af8",
+      "nome": "CARREFOUR ESPIRITO SANTO",
+      "set": {
+        "endereco": "Travessa Santa Leopoldina",
+        "bairro": "Coqueiral de Itaparica",
+        "municipio": "Vila Velha",
+        "numero": "2418"
+      }
+    },
+    {
+      "id": "e6ac8309-3890-4bc4-8225-8cfa5e50de61",
+      "nome": "DISPOSICAO - BENASSI",
+      "set": {
+        "endereco": "AVENIDA BRASIL",
+        "bairro": "COELHO NETO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "19001"
+      }
+    },
+    {
+      "id": "6c6573d1-ce37-4884-989a-a6e082023b2c",
+      "nome": "MUNDIAL  ABELARDO BUENO",
+      "set": {
+        "endereco": "AVENIDA EMBAIXADOR ABELARDO BUENO",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "2660"
+      }
+    },
+    {
+      "id": "ed256c93-0b77-478f-bcaa-c64e9784c1d5",
+      "nome": "PREZUNIC CAMPO GRANDE (TINGUI)",
+      "set": {
+        "endereco": "ESTRADA DO TINGUI",
+        "bairro": "CAMPO GRANDE",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1333"
+      }
+    },
+    {
+      "id": "c02e930d-e863-4369-9f3a-e42ff20051c2",
+      "nome": "SUPERMARKET COELHO NETO",
+      "set": {
+        "endereco": "AV PREFEITO SA LESSA",
+        "bairro": "COELHO NETO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "621"
+      }
+    },
+    {
+      "id": "970c7963-1d89-42e3-9b5d-c25b3eda0eaf",
+      "nome": "PRINCESA - NITERÓI BARCAS",
+      "set": {
+        "endereco": "Avenida Visconde do Rio Branco",
+        "bairro": "Centro",
+        "municipio": "Niterói",
+        "numero": "171"
+      }
+    },
+    {
+      "id": "73a27c2a-ba83-4e78-aba6-52191f611fd4",
+      "nome": "DISPOSIÇÃO MUNDIAL",
+      "set": {
+        "endereco": "AVENIDA BRASIL",
+        "bairro": "COELHO NETO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "19001"
+      }
+    },
+    {
+      "id": "4122dcac-210d-45d4-bd66-23f1ee43f130",
+      "nome": "ARMAZEM DO GRÃO (BINGEN)",
+      "set": {
+        "endereco": "RUA ALICE HERVE",
+        "bairro": "BINGEN",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "86"
+      }
+    },
+    {
+      "id": "d465ee4d-4549-42c9-b063-86425ac3384a",
+      "nome": "MERCEARIA SACHINHO",
+      "set": {
+        "endereco": "Estrada dos Bandeirantes",
+        "bairro": "Vargem Pequena",
+        "municipio": "Rio de Janeiro",
+        "numero": "15072"
+      }
+    },
+    {
+      "id": "74944b51-765f-4dc7-bb71-12728761c21e",
+      "nome": "MUNDIAL RIACHUELO",
+      "set": {
+        "endereco": "RUA RIACHUELO",
+        "bairro": "CENTRO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "194"
+      }
+    },
+    {
+      "id": "f74513c3-c40d-4c6a-8750-418b2e7ebebe",
+      "nome": "MUNDIAL CACUIA",
+      "set": {
+        "endereco": "ESTRADA DA CACUIÁ",
+        "bairro": "CACUIA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "226"
+      }
+    },
+    {
+      "id": "8fb5939a-b68c-45ea-b480-49c27a0cde6e",
+      "nome": "ARMAZEM DO GRAO (BARRA DA TIJUCA)",
+      "set": {
+        "endereco": "Avenida das Américas",
+        "bairro": "Barra da Tijuca",
+        "municipio": "Rio de Janeiro",
+        "numero": "11599"
+      }
+    },
+    {
+      "id": "d4cd4046-a50b-4ef0-b244-3d3139124d58",
+      "nome": "MUNDIAL RECREIO",
+      "set": {
+        "endereco": "AV. DAS AMERICAS",
+        "bairro": "RECREIO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "13701"
+      }
+    },
+    {
+      "id": "8d772e02-1775-4892-a8bb-de78642891fe",
+      "nome": "MUNDIAL IRAJÁ",
+      "set": {
+        "endereco": "AV. MONSENHOR FELIX",
+        "bairro": "IRAJA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1180"
+      }
+    },
+    {
+      "id": "0d6475f7-1410-4196-a199-63a388753f5b",
+      "nome": "MUNDIAL ERICO VERISSIMO",
+      "set": {
+        "endereco": "AVENIDA ÉRICO VERÍSSIMO",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "918"
+      }
+    },
+    {
+      "id": "d47232a1-a303-4ce2-87da-67a25ea48d13",
+      "nome": "MUNDIAL FREGUESIA (ILHA)",
+      "set": {
+        "endereco": "Av. Paranapuã",
+        "bairro": "Tauá",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1436"
+      }
+    },
+    {
+      "id": "2972b326-73aa-4ee3-8a14-ab485908594c",
+      "nome": "DISPOSICAO - COZINHA",
+      "set": {
+        "endereco": "AVENIDA BRASIL",
+        "bairro": "COELHO NETO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "19001"
+      }
+    },
+    {
+      "id": "f8b36405-fb75-4e95-b9e6-308ad5f11410",
+      "nome": "PAX LINS",
+      "set": {
+        "endereco": "RUA CABUÇU",
+        "bairro": "LINS DE VASCONCELOS",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "118"
+      }
+    },
+    {
+      "id": "dba0761d-337d-4f7a-8595-1c2793924121",
+      "nome": "PAX SEPETIBA",
+      "set": {
+        "endereco": "ESTRADA DO PIAI",
+        "bairro": "SEPETIBA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "4775"
+      }
+    },
+    {
+      "id": "98a4a4a8-83ec-429b-b077-d07cad24e2d3",
+      "nome": "HNT COMERCIO - PARQUE COLUMBIA",
+      "set": {
+        "endereco": "Rua Embau",
+        "bairro": "Pavuna",
+        "municipio": "Rio de Janeiro",
+        "numero": "2207"
+      }
+    },
+    {
+      "id": "11ea634c-11f9-4f2d-842c-699c68bdb895",
+      "nome": "FEIRA NOVA FREGUESIA",
+      "set": {
+        "endereco": "Estrada do Gabinal",
+        "bairro": "Freguesia (Jacarepaguá)",
+        "municipio": "Rio de Janeiro",
+        "numero": "433"
+      }
+    },
+    {
+      "id": "ef4c3b5f-ccd8-4eab-a365-44035695a408",
+      "nome": "FEIRA NOVA TODOS OS SANTOS",
+      "set": {
+        "endereco": "RUA JOSÉ BONIFÁCIO",
+        "bairro": "TODOS OS SANTOS",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "642"
+      }
+    },
+    {
+      "id": "a8a36811-d95b-4b65-b1e4-3b8de19bc193",
+      "nome": "FEIRA NOVA OLINDA",
+      "set": {
+        "endereco": "Avenida Getúlio Vargas",
+        "bairro": "OLINDA",
+        "municipio": "Nilópolis",
+        "numero": "150"
+      }
+    },
+    {
+      "id": "bf012ac3-13c1-4efd-897a-a0535691d6a1",
+      "nome": "FEIRA NOVA ANCHIETA",
+      "set": {
+        "endereco": "ESTRADA DO ENGENHO NOVO",
+        "bairro": "ANCHIETA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "34"
+      }
+    },
+    {
+      "id": "4e73769b-cfd0-4b9f-9290-cf7cccce02a7",
+      "nome": "FEIRA NOVA IRAJA",
+      "set": {
+        "endereco": "Rua André Filho",
+        "bairro": "Irajá",
+        "municipio": "Rio de Janeiro",
+        "numero": "13"
+      }
+    },
+    {
+      "id": "337b7e7d-d242-44d9-ab6d-54da36127570",
+      "nome": "FEIRA NOVA BOA DICA (PIABETA)",
+      "set": {
+        "endereco": "Rua Eduardina Miranda Teles",
+        "bairro": "Piabetá (Inhomirim)",
+        "municipio": "Magé",
+        "numero": "233"
+      }
+    },
+    {
+      "id": "fb267c8a-c470-4677-b64c-247a4d0a7ea1",
+      "nome": "FEIRA NOVA SANTA CRUZ DA SERRA",
+      "set": {
+        "endereco": "Avenida Automóvel Clube",
+        "bairro": "Santa Cruz da Serra",
+        "municipio": "Duque de Caxias",
+        "numero": "76"
+      }
+    },
+    {
+      "id": "632eff69-df9b-4d32-ac19-4b05fa892ad6",
+      "nome": "FEIRA NOVA QUEIMADOS",
+      "set": {
+        "endereco": "Avenida Doutor Pedro Jorge",
+        "bairro": "Centro",
+        "municipio": "Queimados",
+        "numero": "352"
+      }
+    },
+    {
+      "id": "3f8f28b6-4e2f-4a26-b619-ffd5468075f3",
+      "nome": "FEIRA NOVA CERAMICA",
+      "set": {
+        "endereco": "RUA EMÍLIA FERREIRA BESSA",
+        "bairro": "PONTO CHIC",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "216"
+      }
+    },
+    {
+      "id": "8fa3f9ee-0dc3-4aa1-82be-5ec8e41609aa",
+      "nome": "FEIRA NOVA COELHO DA ROCHA",
+      "set": {
+        "endereco": "Rua Arnaud Guedes de Amorim",
+        "bairro": "Coelho da Rocha",
+        "municipio": "São João de Meriti",
+        "numero": "81"
+      }
+    },
+    {
+      "id": "c3412b41-a15b-4881-b7fe-2c56d52aa3c7",
+      "nome": "FEIRA NOVA M. SANTO AGOSTINHO (BARRA)",
+      "set": {
+        "endereco": "Avenida das Américas",
+        "bairro": "Barra da Tijuca",
+        "municipio": "Rio de Janeiro",
+        "numero": "7607"
+      }
+    },
+    {
+      "id": "bcdd0844-fa8b-4768-bf1c-7e485ef35611",
+      "nome": "FEIRA NOVA CACHAMBI",
+      "set": {
+        "endereco": "RUA CACHAMBI",
+        "bairro": "CACHAMBI",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "362"
+      }
+    },
+    {
+      "id": "a8adc9f9-42c2-4977-88c3-162b540c0228",
+      "nome": "SUPERPRIX TIJUQUINHA LJ 13",
+      "set": {
+        "endereco": "RUA CONDE DE BONFIM",
+        "bairro": "TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "540"
+      }
+    },
+    {
+      "id": "ea79a5b5-dc63-42d1-9cd1-b43417c07e39",
+      "nome": "SUPERPRIX LJ 14 - TIJUCA",
+      "set": {
+        "endereco": "R CONDE DE BONFIM",
+        "bairro": "TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "812"
+      }
+    },
+    {
+      "id": "8ce8b4a9-b0c9-40f3-8d5c-7249c8f9936e",
+      "nome": "SUPERPRIX LJ 08 - GRAJAÚ",
+      "set": {
+        "endereco": "Praça Edmundo Rego",
+        "bairro": "Grajaú",
+        "municipio": "Rio de Janeiro",
+        "numero": "8"
+      }
+    },
+    {
+      "id": "9c42753a-a81f-4584-84eb-60fc4a243525",
+      "nome": "SUPERPRIX LJ 202 - BARRA",
+      "set": {
+        "endereco": "Rua Bruno Giorgi",
+        "bairro": "Barra Olimpica",
+        "municipio": "Rio de Janeiro",
+        "numero": "114"
+      }
+    },
+    {
+      "id": "c45edf73-05be-4fda-9441-6d42397521b9",
+      "nome": "PREZUNIC SPID BARRA DA TIJUCA",
+      "set": {
+        "endereco": "RUA PAULO MOURA",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "50"
+      }
+    },
+    {
+      "id": "abd228a8-96b6-43a2-a862-4e3c3dd436c3",
+      "nome": "SUPERPRIX LJ 201 - IPANEMA",
+      "set": {
+        "endereco": "Rua Visconde de Pirajá",
+        "bairro": "Ipanema",
+        "municipio": "Rio de Janeiro",
+        "numero": "270"
+      }
+    },
+    {
+      "id": "f18ee595-3701-413c-9695-96900437df7e",
+      "nome": "SUPERPRIX LJ 10 - ICARAI",
+      "set": {
+        "endereco": "AVENIDA SETE DE SETEMBRO",
+        "bairro": "ICARAÍ",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "62"
+      }
+    },
+    {
+      "id": "99e3ce01-c0f9-49fb-b2f4-c2e7466c9735",
+      "nome": "SUPERPRIX NITEROI LJ 13",
+      "set": {
+        "endereco": "Rua Gavião Peixoto",
+        "bairro": "Icaraí",
+        "municipio": "Niterói",
+        "numero": "123"
+      }
+    },
+    {
+      "id": "8e82b685-e81a-4868-bb10-c237b9bf53c8",
+      "nome": "SUPERPRIX LJ 04 - GRAJAÚ VERDUN",
+      "set": {
+        "endereco": "Rua Barão de Mesquita",
+        "bairro": "Grajaú",
+        "municipio": "Rio de Janeiro",
+        "numero": "972"
+      }
+    },
+    {
+      "id": "cd4833c0-bf32-4dd2-ba92-795b86c26187",
+      "nome": "SUPERPRIX LJ 07 - RIACHUELO",
+      "set": {
+        "endereco": "Rua Vinte e Quatro de Maio",
+        "bairro": "Riachuelo",
+        "municipio": "Rio de Janeiro",
+        "numero": "432/ 434"
+      }
+    },
+    {
+      "id": "30d9bac4-c855-4ce9-afd7-df87677fe078",
+      "nome": "ARMAZEM DO GRAO (ITAIPAVA)",
+      "set": {
+        "endereco": "Estrada União e Indústria",
+        "bairro": "Itaipava",
+        "municipio": "Petrópolis",
+        "numero": "8461"
+      }
+    },
+    {
+      "id": "300d0f1d-9d1b-4c68-a595-ff8e9e3284bc",
+      "nome": "ARMAZEM DO GRAO (QUITANDINHA)",
+      "set": {
+        "endereco": "Rua General Rondon",
+        "bairro": "Quitandinha",
+        "municipio": "Petrópolis",
+        "numero": "550"
+      }
+    },
+    {
+      "id": "8a1d0622-2631-431c-88af-30581403019b",
+      "nome": "ARMAZEM DO GRAO (VALPARAISO)",
+      "set": {
+        "endereco": "Rua Gonçalves Dias",
+        "bairro": "Valparaíso",
+        "municipio": "Petrópolis",
+        "numero": "290"
+      }
+    },
+    {
+      "id": "5d1bfca0-8e4d-4355-8c1e-1e3449854b65",
+      "nome": "ARMAZEM DO GRAO (MOSELA)",
+      "set": {
+        "endereco": "Rua Mosela",
+        "bairro": "Mosela",
+        "municipio": "Petrópolis",
+        "numero": "983"
+      }
+    },
+    {
+      "id": "b5c7472f-5f0f-4c3d-914d-8aa1c915a248",
+      "nome": "ARMAZÉM DO GRÃO MATRIZ ( POSSE)",
+      "set": {
+        "endereco": "Estr. União e Indústria",
+        "bairro": "Posse",
+        "municipio": "Petrópolis",
+        "numero": "33735 "
+      }
+    },
+    {
+      "id": "5ce47482-758b-4443-8757-a2c0f9902915",
+      "nome": "ARMAZEM DO GRAO (16 DE MARÇO)",
+      "set": {
+        "endereco": "Rua Dezesseis de Março",
+        "bairro": "Centro",
+        "municipio": "Petrópolis",
+        "numero": "195"
+      }
+    },
+    {
+      "id": "75fafaea-40d4-4aa7-bb7e-d76b32317897",
+      "nome": "ARMAZEM DO GRAO (CORREAS)",
+      "set": {
+        "endereco": "Rua Castro Alves",
+        "bairro": "Corrêas",
+        "municipio": "Petrópolis",
+        "numero": "112"
+      }
+    },
+    {
+      "id": "132c1543-9411-4570-b85c-617a3689ced3",
+      "nome": "ARMAZÉM DO GRÃO (BOA VISTA)",
+      "set": {
+        "endereco": "Estrada União e Indústria",
+        "bairro": "Itaipava",
+        "municipio": "Petrópolis",
+        "numero": "12235"
+      }
+    },
+    {
+      "id": "27de53c0-a2e9-4123-b406-b29be3557def",
+      "nome": "ARMAZEM DO GRÃO LTDA (CENTRO)",
+      "set": {
+        "endereco": "Rua Doutor Porciuncula",
+        "bairro": "Centro",
+        "municipio": "Petrópolis",
+        "numero": "94"
+      }
+    },
+    {
+      "id": "3e9b6938-446c-4cdc-a764-9ced77db4565",
+      "nome": "47 - ZONA SUL - CATETE",
+      "set": {
+        "endereco": "Rua do Catete",
+        "bairro": "Catete",
+        "municipio": "Rio de Janeiro",
+        "numero": "196"
+      }
+    },
+    {
+      "id": "d3739d8e-2fe3-4dd7-adae-476332f6879b",
+      "nome": "EMANUEL CACHAMORRA",
+      "set": {
+        "endereco": "Estrada Cachamorra",
+        "bairro": "Campo Grande",
+        "municipio": "Rio de Janeiro",
+        "numero": "162"
+      }
+    },
+    {
+      "id": "04d651a1-8056-46ab-bec3-a63115789b03",
+      "nome": "EMANUEL ALHAMBRA",
+      "set": {
+        "endereco": "Avenida Alhambra",
+        "bairro": "Campo Grande",
+        "municipio": "Rio de Janeiro",
+        "numero": "00575"
+      }
+    },
+    {
+      "id": "f2367c9e-5ec6-47b4-b715-0677edb801aa",
+      "nome": "EMANUEL COMERCIO PEDRA DE GUARATIBA",
+      "set": {
+        "endereco": "Estrada do Catruz",
+        "bairro": "Pedra de Guaratiba",
+        "municipio": "Rio de Janeiro",
+        "numero": "2.818"
+      }
+    },
+    {
+      "id": "664c5360-c41d-4175-98ec-c2a5673b6b7d",
+      "nome": "EMANUEL REDE ECONOMIA SANTA MARIA",
+      "set": {
+        "endereco": "Estrada Santa Maria",
+        "bairro": "Campo Grande",
+        "municipio": "Rio de Janeiro",
+        "numero": "02148"
+      }
+    },
+    {
+      "id": "cbd87c84-61a3-4a8b-a54a-aef08406be31",
+      "nome": "EMANUEL REDE ECONOMIA SANTA MARIA",
+      "set": {
+        "endereco": "Estrada Santa Maria",
+        "bairro": "Campo Grande",
+        "municipio": "Rio de Janeiro",
+        "numero": "01321"
+      }
+    },
+    {
+      "id": "15a43cbb-2eb6-42d5-b838-545399a57cac",
+      "nome": "EMANUEL VARGEM GRANDE",
+      "set": {
+        "endereco": "Estrada dos Bandeirantes",
+        "bairro": "Vargem Grande",
+        "municipio": "Rio de Janeiro",
+        "numero": "24310"
+      }
+    },
+    {
+      "id": "06c04337-8323-49be-8636-03c3f811c4d0",
+      "nome": "EMANUEL JARDIM MARAVILHA",
+      "set": {
+        "endereco": "Avenida Pilar do Sul",
+        "bairro": "Guaratiba",
+        "municipio": "Rio de Janeiro",
+        "numero": "09"
+      }
+    },
+    {
+      "id": "b8d4029d-3db7-4852-9488-9b61c9f0fe26",
+      "nome": "GB DEPOSITO - PACIENCIA",
+      "set": {
+        "endereco": "Avenida Brasil",
+        "bairro": "Campo Grande",
+        "municipio": "Rio de Janeiro",
+        "numero": "50800"
+      }
+    },
+    {
+      "id": "14144892-2a1c-4b78-a308-5c7f04d45896",
+      "nome": "PRINCESA CENTRAL",
+      "set": {
+        "endereco": "RUA  DO MILHO",
+        "bairro": "PENHA CIRCULAR",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "17"
+      }
+    },
+    {
+      "id": "3f5d5232-66a8-4632-bb2b-f3db81d85cd7",
+      "nome": "GUANABARA MATRIZ",
+      "set": {
+        "endereco": "ESTRADA DA AGUA BRANCA",
+        "bairro": "PADRE MIGUEL",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "3400"
+      }
+    },
+    {
+      "id": "0e3fdfda-15cc-4ac0-abfd-d9e3856390cf",
+      "nome": "PORTO RIO DE JANEIRO",
+      "set": {
+        "endereco": "AVENIDA RODRIGUES ALVES",
+        "bairro": "CENTRO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "20",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "d17a19c9-7387-4aeb-b0cc-fd21002fe175",
+      "nome": "PORTO DE SANTOS ( NAVIO)",
+      "set": {
+        "endereco": "AVENIDA CONSELHEIRO RODRIGUES ALVES",
+        "bairro": "MACUCO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "0",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "a8629c73-edff-43eb-8841-7a8e86af5fd3",
+      "nome": "SAPORE",
+      "set": {
+        "endereco": "ESTRADA VENÂNCIO PEREIRA VELOSO",
+        "bairro": "CHÁCARAS RIO-PETRÓPOLIS",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "0",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "115e640d-547a-485e-add8-0af4e13a52f7",
+      "nome": "ROTA COPACABANA",
+      "set": {
+        "endereco": "Av. José Silva de Azevedo Neto",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "200"
+      }
+    },
+    {
+      "id": "0e73a0e3-e3b6-4e99-8e56-5df85ef9da0e",
+      "nome": "BENASSI ESPIRITO SANTO",
+      "set": {
+        "endereco": "RUA ACEZILIO MARIANELLI",
+        "bairro": "VILA BETHANIA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "129",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "cb9f7270-0518-4587-8d2a-d1c7d32b6faa",
+      "nome": "ROTA CANTAGALO",
+      "set": {
+        "endereco": "AVENIDA JOSE SILVA DE AZEVEDO NETO,200 BL. 02 / SALA 207",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "0"
+      }
+    },
+    {
+      "id": "50c56a9f-8aa8-492e-accb-cfc2a7d39c52",
+      "nome": "ROTA JANEIRO",
+      "set": {
+        "endereco": "AVENIDA JOSE SILVA DE AZEVEDO NETO,200 BL. 02 / SALA 207",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "0"
+      }
+    },
+    {
+      "id": "4a86e6bf-89ef-4f62-8196-5e404e371ee1",
+      "nome": "SENDAS MATRIZ CD DUQUE",
+      "set": {
+        "endereco": "ROD WASHINGTON LUIZ",
+        "bairro": "VILA SANTO ANTONIO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "20755"
+      }
+    },
+    {
+      "id": "a28752c6-362b-4088-a8bb-166a2a1a3e1f",
+      "nome": "DOM ATACADISTA S?O JO?O DE MERITI",
+      "set": {
+        "endereco": "RUA MARIA SOARES SENDAS",
+        "bairro": "VENDA VELHA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "4200",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "fd3e174b-1478-48d6-8fa7-2da786eb55c0",
+      "nome": "CBD - 1500 - EXTRA BARRA",
+      "set": {
+        "endereco": "AV DAS AMERICAS",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1510",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "68a1a515-be9b-487b-9ca7-48e5cdc8f23a",
+      "nome": "ADONAI MENDANHA",
+      "set": {
+        "endereco": "ESTRADA DO MENDANHA,4517",
+        "bairro": "CAMPO GRANDE",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "4517",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "e2c9bc49-4f80-4fc2-b7f9-52ac2c925ea0",
+      "nome": "REAL DE EDEN BARROS FILHO",
+      "set": {
+        "endereco": "AV.BRASIL, 20204",
+        "bairro": "BARROS FILHO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "20204"
+      }
+    },
+    {
+      "id": "84c0d8a3-4a37-4215-b15a-be9404643731",
+      "nome": "CAB LOJA 2 LOTE XV",
+      "set": {
+        "endereco": "RUA SANTIAGO DANTAS",
+        "bairro": "NOSSA SENHORA DO CARMO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "SN",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "dd09b1e6-6c0d-4f90-ab57-ca97a09179d6",
+      "nome": "GB 19 ****( INATIVA NÃO FATURAR )****",
+      "set": {
+        "endereco": "RUA SILVA VALE",
+        "bairro": "SENADOR CAMARA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "281",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "7b4e7a20-4daa-4ed8-802b-907b126e3541",
+      "nome": "HLOG SERVICOS DE LOGISTICA LTDA",
+      "set": {
+        "endereco": "AVENIDA BRASIL",
+        "bairro": "COELHO NETO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "19001",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "394ba02b-6bb5-4ba8-97a3-5e51d718086b",
+      "nome": "NATURCON GELADOS",
+      "set": {
+        "endereco": "ETR DOS BANDEIRANTES",
+        "bairro": "JACAREPAGUÁ",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "18001"
+      }
+    },
+    {
+      "id": "0b9d44fa-8261-416b-b930-296bb2770332",
+      "nome": "ATACADÃO S. A - BARRA DA TIJUCA",
+      "set": {
+        "endereco": "AV. AYRTON SENNA, 2300",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "2300",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "49e36f4d-6f26-4790-95b6-62272e233f4b",
+      "nome": "ATACADAO - NOVA IGUAÇU",
+      "set": {
+        "endereco": "RUA PORTO CARRITO, S/N",
+        "bairro": "NOVA IGUA?U",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "464",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "bad788a3-a49b-4ff2-982f-410145490d52",
+      "nome": "ATACADÃO -SANTA CRUZ",
+      "set": {
+        "endereco": "AV BRASIL 55300",
+        "bairro": "SANTA CRUZ",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "55300",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "15385737-77b0-4e18-87f9-cc17602aa092",
+      "nome": "REGINA BARRA DO IMBUY",
+      "set": {
+        "endereco": "AVENIDA PRESIDENTE ROOSEVELT",
+        "bairro": "PAINEIRA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1360"
+      }
+    },
+    {
+      "id": "e9611e77-6803-4060-9cde-a994a5ebf9ad",
+      "nome": "REGINA 1 DE MAIO",
+      "set": {
+        "endereco": "RUA DOUTOR WALDIR BARBOSA MOREIRA",
+        "bairro": "VÁRZEA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "257"
+      }
+    },
+    {
+      "id": "feab8590-0de9-45e0-a1e3-c6566a322957",
+      "nome": "REGINA LUCIO MEIRA",
+      "set": {
+        "endereco": "AVENIDA LÚCIO MEIRA",
+        "bairro": "VÁRZEA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "85"
+      }
+    },
+    {
+      "id": "4d3a75bb-e616-40e2-93b7-532ea6aa9b2d",
+      "nome": "ABASTECEDORA GRÃO DA SERRA (ALTO)",
+      "set": {
+        "endereco": "AVENIDA OLIVEIRA BOTELHO",
+        "bairro": "ALTO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "328",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "c53f9099-3096-4ace-996c-aafa66e5d188",
+      "nome": "ATACADÃO S.A- JACAREPAGUÁ",
+      "set": {
+        "endereco": "ESTRADA DOS BANDEIRANTES 3285",
+        "bairro": "JACAREPAGUA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "3285",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "75c0cd6a-0f25-4ae8-b0b0-f032a7faf44d",
+      "nome": "CHEIA DE GRACA",
+      "set": {
+        "endereco": "AV JOSE SILVA DE AZEVEDO NETO",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "200",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "4569b7f7-4319-4a84-8acc-046012d1b52f",
+      "nome": "(3) MUNDIAL 24",
+      "set": {
+        "endereco": "RUA VOLUNTÁRIOS DA PÁTRIA",
+        "bairro": "BOTAFOGO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "024",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "4f005202-d908-4b9f-bc8f-5c2caf8890c9",
+      "nome": "MUNDIAL FREGUESIA",
+      "set": {
+        "endereco": "RUA FRANCISCO DANTAS",
+        "bairro": "FREGUESIA (JACAREPAGUÁ)",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "7563",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "e109af0a-07c1-4531-a6b9-35a07864a929",
+      "nome": "( 14 ) MUNDIAL 71",
+      "set": {
+        "endereco": "Rua Siqueira Campos",
+        "bairro": "Copacabana",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "71",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "c278bb11-fa42-4eec-a145-b92f88084cd8",
+      "nome": "MUNDIAL VAZ LOBO",
+      "set": {
+        "endereco": "AVENIDA VICENTE DE CARVALHO",
+        "bairro": "VAZ LOBO",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "235",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "2862b182-25e3-4286-bc21-1a1aa3425f3f",
+      "nome": "CBD 5263 - TIJUCA",
+      "set": {
+        "endereco": "RUA CONDE DE BONFIM, N? 186",
+        "bairro": "TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "186",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "2d8467c0-3eb6-497d-8f40-0badc3d5f081",
+      "nome": "O BOM CAMPO GRANDE",
+      "set": {
+        "endereco": "ESTRADA DAS AGULHAS NEGRAS 101",
+        "bairro": "CAMPO GRANDE",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "101"
+      }
+    },
+    {
+      "id": "b7c4848d-c14a-4f48-8226-96c481ab31c9",
+      "nome": "O BOM ATACADISTA",
+      "set": {
+        "endereco": "ESTRADA DO MATO ALTO",
+        "bairro": "GUARATIBA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "7500"
+      }
+    },
+    {
+      "id": "d22c5761-eb8b-4282-871d-80534d0df39d",
+      "nome": "VIANENSE BARRA",
+      "set": {
+        "endereco": "R BRUNO GIORGI",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "114",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "9d4dbe73-1e14-494d-8a47-c9d3f89ecc6e",
+      "nome": "GB  PIEDADE 26",
+      "set": {
+        "endereco": "ESTRADA RIO DO A",
+        "bairro": "CAMPO GRANDE",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1415",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "334e2210-471a-49ac-ace4-54538b4169a2",
+      "nome": "CAB - PETROPOLIS",
+      "set": {
+        "endereco": "RUA QUISSAMÃ",
+        "bairro": "QUISSAMA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "1983"
+      }
+    },
+    {
+      "id": "d8dd43f8-22d5-4da0-a7ae-217746b53f05",
+      "nome": "FEIRA NOVA MERCADO SANTO AGOSTINHO",
+      "set": {
+        "endereco": "AVENIDA DAS AMÉRICAS",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "07607"
+      }
+    },
+    {
+      "id": "2b0c2fe4-d86e-46c1-801a-4da4434b04fe",
+      "nome": "ARMAZEM DO GRÃO (CENTRAL)",
+      "set": {
+        "endereco": "RUA JOÃO XAVIER",
+        "bairro": "DUARTE SILVEIRA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "170",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "6cf71ced-50f7-4c89-a770-3ed3950af5dd",
+      "nome": "PREZUNIC CENTRAL (PENHA)",
+      "set": {
+        "endereco": "RUA DO ALPISTE, 568",
+        "bairro": "PENHA CIRCULAR",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "0",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "dbb3536c-31c6-4971-9109-f76e5c7a0f9c",
+      "nome": "INDUSTRIAS DE BEBIDAS JOAQUIM THOMAS DE AQUINO FILHO SA",
+      "set": {
+        "endereco": "AVENIDA JOSÉ SILVA DE AZEVEDO NETO",
+        "bairro": "BARRA DA TIJUCA",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "200",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "33bd5959-0fc0-4203-b025-3c34979d8db1",
+      "nome": "MERCADO ITAGIBA DE COSMOS LTDA",
+      "set": {
+        "endereco": "R ITAGIBA",
+        "bairro": "COSMOS",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "693"
+      }
+    },
+    {
+      "id": "506cd235-e8ea-4bc2-9926-4af3c8b7e641",
+      "nome": "ZONA SUL LOJA 47",
+      "set": {
+        "endereco": "RUA DO CATETE",
+        "bairro": "CATETE",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "194"
+      }
+    },
+    {
+      "id": "b0f346f7-0459-4232-917f-204883aef5ca",
+      "nome": "ESG MERCADO COMERCIO (JACAREPAGUA)",
+      "set": {
+        "endereco": "RUA ANDRE ROCHA",
+        "bairro": "JACAREPAGUÁ",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "03884"
+      }
+    },
+    {
+      "id": "2edac3a1-5ea8-4307-b5c8-c5e58d4514ca",
+      "nome": "SUPER PAX  - FILIAL 3",
+      "set": {
+        "endereco": "RUA CAROLINA MACHADO",
+        "bairro": "OSWALDO CRUZ",
+        "municipio": "RIO DE JANEIRO",
+        "numero": "970",
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "id": "eb5c5a28-6b65-4b8b-a356-006decc46bd7",
+      "nome": "AMERICANAS S.A PARQUE COLUMBIA",
+      "set": {
+        "endereco": "Rua Embau",
+        "bairro": "Pavuna",
+        "municipio": "Rio de Janeiro",
+        "numero": "2207"
+      }
+    }
+  ],
+  "semLoja": [
+    "560 SENDAS ALCÂNTARA II - LJ 293",
+    "BASE BENASSI BASE BENASSI",
+    "8590 XXXX",
+    "2018036 ROTA RECREIO / VARGEM GRANDE",
+    "2018001 ROTA BARRA",
+    "2018002 ROTA BOTAFOGO",
+    "2018008 ROTA CAXIAS",
+    "2018039 ROTA VALENÇA / VASSOURAS/ VOLTA REDONDA",
+    "2018040 ROTA NOVA FRIBURGO / PETRÓPOLIS",
+    "2018018 ROTA NITEROI",
+    "2018022 ROTA ZONA SUL",
+    "2018006 ROTA CAMPO GRANDE",
+    "2018033 ROTA PETROPOLIS",
+    "2018038 ROTA NITEROI / MARICA",
+    "2018037 ROTA  PARATY /  ANGRA OU MANGARATIBA",
+    "2018009 ROTA CENTRO",
+    "2018017 ROTA MANGARATIBA",
+    "2018019 ROTA NOVA IGUACU",
+    "2018035 ROTA REGIÃO DOS LAGOS",
+    "2018013 ROTA GAVEA",
+    "2018014 ROTA ILHA",
+    "2018005 ROTA CAMPOS",
+    "2018020 ROTA RESENDE",
+    "2018030 ROTA ORIENTAL - REG. DOS LAGOS",
+    "2018021 ROTA VOLTA REDONDA",
+    "2018000 ROTA ORIENTAL - BARRA",
+    "2018016 ROTA MACAE",
+    "CD BENASSI CD BENASSI"
+  ],
+  "conflitos": [
+    {
+      "codigo": "17659002",
+      "nome": "EMANUEL CACHAMORRA",
+      "distM": 10626
+    },
+    {
+      "codigo": "21469000",
+      "nome": "EMANUEL ALHAMBRA",
+      "distM": 25779
+    },
+    {
+      "codigo": "11139000",
+      "nome": "EMANUEL COMÉRCIO PEDRA DE GUARATIBA",
+      "distM": 36033
+    },
+    {
+      "codigo": "25140000",
+      "nome": "EMANUEL- REDE ECONOMIA SANTA MARIA",
+      "distM": 8714
+    },
+    {
+      "codigo": "17659004",
+      "nome": "REDE ECONOMIA SANTA MARIA",
+      "distM": 13966
+    },
+    {
+      "codigo": "17659003",
+      "nome": "EMANUEL VARGEM GRANDE",
+      "distM": 11909
+    },
+    {
+      "codigo": "21468000",
+      "nome": "EMANUEL JARDIM MARAVILHA",
+      "distM": 33991
+    },
+    {
+      "codigo": "2018007",
+      "nome": "ROTA CANTAGALO",
+      "distM": 5185793
+    },
+    {
+      "codigo": "2018023",
+      "nome": "ROTA ZONA NORTE",
+      "distM": 5327316
+    },
+    {
+      "codigo": "13156084",
+      "nome": "MATRIZ CD DUQUE",
+      "distM": 5323982
+    },
+    {
+      "codigo": "131000",
+      "nome": "REAL DE ÉDEN BARROS FILHO",
+      "distM": 5327003
+    },
+    {
+      "codigo": "25414000",
+      "nome": "NATURCONGELADOS",
+      "distM": 5315898
+    },
+    {
+      "codigo": "5353012",
+      "nome": "REGINA  BARRA DO IMBUY",
+      "distM": 5305977
+    },
+    {
+      "codigo": "5353014",
+      "nome": "REGINA  1 DE MAIO",
+      "distM": 5274579
+    },
+    {
+      "codigo": "5353016",
+      "nome": "REGINA  LUCIO MEIRA",
+      "distM": 5335478
+    },
+    {
+      "codigo": "17659001",
+      "nome": "O BOM CAMPO GRANDE",
+      "distM": 5340351
+    },
+    {
+      "codigo": "17659000",
+      "nome": "O BOM ATACADISTA",
+      "distM": 5360328
+    },
+    {
+      "codigo": "7012010",
+      "nome": "CAB - PETROPOLIS",
+      "distM": 5311685
+    },
+    {
+      "codigo": "23080000",
+      "nome": "MERCADO SANTO AGOSTINHO - BARRA DA TIJUCA",
+      "distM": 5336761
+    },
+    {
+      "codigo": "15755000",
+      "nome": "MERCADO ITAGIBA DE COSMOS LTDA",
+      "distM": 5326986
+    },
+    {
+      "codigo": "9039124",
+      "nome": "47- ZONA SUL",
+      "distM": 5327844
+    },
+    {
+      "codigo": "28023000",
+      "nome": "ESG MERCADO COMERCIO (JACAREPAGUA)",
+      "distM": 5332377
+    }
+  ]
+}
