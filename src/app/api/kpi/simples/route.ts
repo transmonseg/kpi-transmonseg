@@ -439,6 +439,14 @@ export async function POST(req: NextRequest) {
     if (placasNoRelatorio.has(placa)) return true
     return variantesOcr(placa).some(v => placasNoRelatorio.has(v))
   }
+  // "Mudou de rota": placa rastreada que foi a alguma LOJA (entregou em outro lugar),
+  // mas não na loja agendada desta linha. Distingue de "não foi ao cliente" (ficou na base).
+  const placasComLoja = new Set(paradaRows.filter(p => p.classificacao === 'LOJA').map(p => p.placa_norm))
+  const placaFoiAlgumLugar = (placa: string | null): boolean => {
+    if (!placa) return false
+    if (placasComLoja.has(placa)) return true
+    return variantesOcr(placa).some(v => placasComLoja.has(v))
+  }
 
   // Carrega lojas operacionais (resolveLojaId) e canonical_loja com geo
   // (geo fallback para paradas FORA_BASE sem geofence — Categoria B do plano-90%).
@@ -647,9 +655,12 @@ export async function POST(req: NextRequest) {
         sorted[i] = { rota: nextRota, esc: nextEsc }
       }
 
-      const linhas: LinhaParaKpi[] = sorted.map(({ rota, esc }, idx) =>
-        rotaToLinha(rota, esc, idx + 1)
-      )
+      const linhas: LinhaParaKpi[] = sorted.map(({ rota, esc }, idx) => {
+        const l = rotaToLinha(rota, esc, idx + 1)
+        l.placa_rastreada = placaRastreada(rota.placa_norm)
+        l.placa_foi_algum_lugar = placaFoiAlgumLugar(rota.placa_norm)
+        return l
+      })
 
       const rede_nome = REDE_NOMES_CANONICOS[rede_id] ?? rede_id
       const qtd_sem_gps = linhas.filter(l => !l.saida_cd && !l.chd_loja_1).length

@@ -51,6 +51,10 @@ export type KpiLinha = {
   kpi_rota_id?: string | null
   rota_status?: string | null
   kpi_linha_id?: string | null
+  /** A placa aparece no relatório Unitrac (tem rastreador). Define a legenda do KPI. */
+  placa_rastreada?: boolean
+  /** A placa foi a algum lugar (loja ou parada fora da base) — usada para "mudou de rota". */
+  placa_foi_algum_lugar?: boolean
 }
 
 export type AnomaliaDetectada = {

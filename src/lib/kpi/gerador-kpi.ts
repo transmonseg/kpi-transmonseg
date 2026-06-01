@@ -144,21 +144,32 @@ function preencherAba(
   if (usadas < 2) ws.spliceRows(5 + usadas, 2 - usadas)
 }
 
+/**
+ * Legenda da observação no XLSX quando o carro NÃO entregou nesta loja.
+ * Regra (cliente, 2026-06-01):
+ *  - placa NÃO aparece no Unitrac (sem rastreador de verdade) → "SEM RASTREADOR"
+ *  - placa rastreada e foi a algum lugar (outra loja / fora da base) → "MUDOU DE ROTA"
+ *  - placa rastreada mas ficou na base → "NÃO FOI AO CLIENTE"
+ * Carro com entrega nesta loja (chd_loja_1 != null) → null (mostra os horários).
+ * Sem os flags por-placa (ex: linha recarregada do banco), cai num fallback seguro.
+ */
+export function legendaSlot(c: LinhaParaKpi | null): string | null {
+  if (!c) return null
+  if (c.chd_loja_1 !== null) return null
+  if (c.placa_rastreada === undefined) {
+    const semGps = c.saida_cd === null && c.saida_loja_1 === null
+    if (c.rota_status === 'sem_entrega') return 'NÃO FOI AO CLIENTE'
+    return semGps ? 'SEM RASTREADOR' : 'NÃO FOI AO CLIENTE'
+  }
+  if (!c.placa_rastreada) return 'SEM RASTREADOR'
+  return c.placa_foi_algum_lugar ? 'MUDOU DE ROTA' : 'NÃO FOI AO CLIENTE'
+}
+
 function escreverLinha(ws: ExcelJS.Worksheet, row: number, ag: LinhaAgrupada, estilo: Partial<ExcelJS.Style>[]) {
   ws.getRow(row).height = 21.95
 
   const c1 = ag.carro1
   const c2 = ag.carro2
-
-  // Veículo existe na escala mas sem nenhuma parada GPS registrada
-  const semGps1 = c1 !== null && c1.saida_cd === null && c1.chd_loja_1 === null && c1.saida_loja_1 === null
-  const semGps2 = c2 !== null && c2.saida_cd === null && c2.chd_loja_1 === null && c2.saida_loja_1 === null
-  // Tem GPS (saiu do CD) mas não foi a esta loja específica
-  const naoFoi1 = c1 !== null && !semGps1 && c1.chd_loja_1 === null
-  const naoFoi2 = c2 !== null && !semGps2 && c2.chd_loja_1 === null
-  // Veículo rastreado mas ficou na base / não fez entrega (sem_entrega) — não é erro de GPS
-  const ficouNaBase1 = semGps1 && c1?.rota_status === 'sem_entrega'
-  const ficouNaBase2 = semGps2 && c2?.rota_status === 'sem_entrega'
 
   const saida1 = toExcelTime(c1?.saida_cd)
   const chd1   = toExcelTime(c1?.chd_loja_1)
@@ -167,8 +178,8 @@ function escreverLinha(ws: ExcelJS.Worksheet, row: number, ag: LinhaAgrupada, es
   const chd2   = toExcelTime(c2?.chd_loja_1)
   const sai2   = toExcelTime(c2?.saida_loja_1)
 
-  const textoSlot1 = naoFoi1 ? 'NÃO FOI AO CLIENTE' : ficouNaBase1 ? null : semGps1 ? 'SEM RASTREADOR' : null
-  const textoSlot2 = naoFoi2 ? 'NÃO FOI AO CLIENTE' : ficouNaBase2 ? null : semGps2 ? 'SEM RASTREADOR' : null
+  const textoSlot1 = legendaSlot(c1)
+  const textoSlot2 = legendaSlot(c2)
 
   // Strip "(2º CARRO)" prefix — redundante na coluna dedicada ao 2º carro
   const nome2 = c2?.motorista?.replace(/^\(2[oº°]\s*CARRO\)\s*/i, '') ?? ''
