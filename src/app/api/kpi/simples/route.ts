@@ -430,6 +430,16 @@ export async function POST(req: NextRequest) {
     }))
   )
 
+  // "Sem rastreador" = a PLACA não aparece no relatório Unitrac (com variantes OCR).
+  // Não é por-linha: um caminhão multi-entrega que tem GPS mas uma linha ficou sem
+  // parada NÃO é sem rastreador — ele está rastreado, só não casou aquela loja.
+  const placasNoRelatorio = new Set(paradaRows.map(p => p.placa_norm))
+  const placaRastreada = (placa: string | null): boolean => {
+    if (!placa) return false
+    if (placasNoRelatorio.has(placa)) return true
+    return variantesOcr(placa).some(v => placasNoRelatorio.has(v))
+  }
+
   // Carrega lojas operacionais (resolveLojaId) e canonical_loja com geo
   // (geo fallback para paradas FORA_BASE sem geofence — Categoria B do plano-90%).
   // Em paralelo: trgm-lookup usa o supabase client para enriquecer matches fuzzy.
@@ -646,7 +656,8 @@ export async function POST(req: NextRequest) {
 
       const preview: PreviewLinha[] = sorted.map(({ rota, esc }, idx) => {
         const p0 = rota.paradas[0]
-        const temGps = !!(rota.saida_cd || rota.paradas.length > 0)
+        // temGps = a placa está no relatório (rastreada), não só esta linha ter casado.
+        const temGps = rota.paradas.length > 0 || placaRastreada(rota.placa_norm)
         const ficouNaBase = rota.status === 'sem_entrega' && !!esc.placa_norm
         const statusInfo = derivarStatus({
           temGps,

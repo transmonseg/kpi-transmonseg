@@ -2072,18 +2072,30 @@ export async function cruzaEscalaUnitrac(
       const esperada = lojaEsperadaDaLinha(linha)
       if (!esperada || esperada.lat == null || esperada.lng == null) continue
 
-      const fbs = (paradaByPlaca.get(rota.placa_norm) ?? []).filter(p =>
-        p.classificacao === 'FORA_BASE' && !p.codigo_loja && !consumidas.has(p.id) &&
-        p.lat != null && p.lng != null)
+      const candidatas = (paradaByPlaca.get(rota.placa_norm) ?? []).filter(p =>
+        !consumidas.has(p.id) && p.lat != null && p.lng != null)
 
       let melhorP: UnitracParadaRow | null = null
       let melhorDist = Infinity
-      for (const p of fbs) {
+      // (1) FORA_BASE sem código casado por coordenada/endereço à loja agendada.
+      for (const p of candidatas) {
+        if (p.classificacao !== 'FORA_BASE' || p.codigo_loja) continue
         const m = matchGeoEndereco(
           { lat: p.lat, lng: p.lng, endereco: p.endereco ?? null, classificacao: p.classificacao, codigo_loja: p.codigo_loja },
           [{ id: esperada.id, rede_id: esperada.rede_id, nome: esperada.nome, lat: esperada.lat, lng: esperada.lng, endereco: esperada.endereco, bairro: esperada.bairro, municipio: esperada.municipio, numero: esperada.numero }],
         )
         if (m && m.distancia < melhorDist) { melhorDist = m.distancia; melhorP = p }
+      }
+      // (2) Loja DUPLICADA no cadastro: parada LOJA (código de uma loja-gêmea no
+      //     mesmo ponto físico, ≤60m) que ficou órfã. Ex: escala casa "Iguaba (1
+      //     Entrega)" 8590575 por nome, mas o GPS marca 8590570 "IGUABA GRANDE"
+      //     (mesma loja, ~10m). Sem isso a entrega real some.
+      if (!melhorP) {
+        for (const p of candidatas) {
+          if (p.classificacao !== 'LOJA') continue
+          const d = haversine(p.lat!, p.lng!, esperada.lat, esperada.lng)
+          if (d <= 60 && d < melhorDist) { melhorDist = d; melhorP = p }
+        }
       }
       if (!melhorP) continue
 
@@ -2096,7 +2108,7 @@ export async function cruzaEscalaUnitrac(
         chegada,
         saida,
         duracao_min: Math.round((saida.getTime() - chegada.getTime()) / 60000),
-        classificacao: 'FORA_BASE',
+        classificacao: melhorP.classificacao === 'LOJA' ? 'LOJA' : 'FORA_BASE',
       }]
       // Saída do CD: última BASE BENASSI antes da parada geo (mesma regra do fluxo
       // normal). Sem isso, rotas casadas por geo saíam sem saida_cd no KPI.
