@@ -2098,6 +2098,9 @@ export async function cruzaEscalaUnitrac(
         duracao_min: Math.round((saida.getTime() - chegada.getTime()) / 60000),
         classificacao: 'FORA_BASE',
       }]
+      // Saída do CD: última BASE BENASSI antes da parada geo (mesma regra do fluxo
+      // normal). Sem isso, rotas casadas por geo saíam sem saida_cd no KPI.
+      rota.saida_cd = computeSaidaCdParaParada(melhorP, paradaByPlaca.get(rota.placa_norm) ?? [], { redeId: rota.rede_id, data: rota.data })
       rota.status = 'ok'
       rota._matchMeta = { score: 0.7, confidence: 'LOW', requiresReview: true, algorithm: 'geo' }
       consumidas.add(melhorP.id)

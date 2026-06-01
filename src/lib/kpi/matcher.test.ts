@@ -2097,6 +2097,21 @@ describe('geoEndereco — match FORA_BASE por coordenada (opts.geoEndereco)', ()
     } finally { setSemGeo(false) }
   })
 
+  it('rota geo recebe saida_cd da última BASE antes da parada', async () => {
+    setSemGeo(true)
+    try {
+      const base: UnitracParadaRow = {
+        id: 'b0', placa_norm: 'ABC1D23', chegada: '2026-05-20T07:00:00Z', saida: '2026-05-20T07:30:00Z',
+        duracao_seg: 1800, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null,
+        lat: -22.828, lng: -43.339, endereco: null, classificacao: 'BASE', ordem: 0,
+      }
+      const rotas = await cruzaEscalaUnitrac([linha], [base, parada], [loja], undefined, undefined, { geoEndereco: true })
+      const r = rotas.find(x => x.escala_linha_id === 'l1')
+      expect(r?.paradas).toHaveLength(1)
+      expect(r?.saida_cd?.toISOString()).toBe('2026-05-20T07:30:00.000Z')
+    } finally { setSemGeo(false) }
+  })
+
   it('sem a flag (default) a rota fica vazia — comportamento atual preservado', async () => {
     setSemGeo(true)
     try {
