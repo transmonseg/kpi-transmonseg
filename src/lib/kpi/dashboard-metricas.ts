@@ -58,6 +58,7 @@ export interface Metricas {
   distHorarioSaida: HoraSaidaRow[]
   topMotoristas: MotoristaStat[]
   serieTempos: SerieTempoPonto[]
+  matrizDiaRede?: { dias: string[]; redes: Array<{ rede_id: string; celulas: Array<{ pct: number | null; n: number }> }> }
 }
 
 export interface ClienteTempos {
@@ -252,6 +253,26 @@ export function calcularMetricas(ents: EntradaManual[]): Metricas {
       tempo_total: mediaVetorNulo(v.totais),
     }))
 
+  // Matriz dia × rede (taxa de entrega) para o heatmap.
+  const dmMap = new Map<string, { ent: number; tot: number }>()
+  for (const e of ents) {
+    const k = `${e.data}|${e.rede_id}`
+    const x = dmMap.get(k) ?? { ent: 0, tot: 0 }
+    x.tot++; if (e.status === 'entregue') x.ent++
+    dmMap.set(k, x)
+  }
+  const diasMatriz = [...serieMap.keys()].sort((a, b) => a.localeCompare(b))
+  const matrizDiaRede = {
+    dias: diasMatriz,
+    redes: [...porRede].sort((a, b) => b.total - a.total).map(r => ({
+      rede_id: r.rede_id,
+      celulas: diasMatriz.map(d => {
+        const x = dmMap.get(`${d}|${r.rede_id}`)
+        return x && x.tot > 0 ? { pct: Math.round(100 * x.ent / x.tot), n: x.tot } : { pct: null, n: 0 }
+      }),
+    })),
+  }
+
   return {
     total, entregue, nao_foi, sem_rastreador, com_rastreador: entregue + nao_foi,
     pctEntregue: total ? Math.round(100 * entregue / total) : 0,
@@ -274,5 +295,6 @@ export function calcularMetricas(ents: EntradaManual[]): Metricas {
     distHorarioSaida: horaBuckets,
     topMotoristas,
     serieTempos,
+    matrizDiaRede,
   }
 }

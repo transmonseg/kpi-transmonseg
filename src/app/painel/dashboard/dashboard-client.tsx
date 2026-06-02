@@ -11,7 +11,7 @@ import ResumoOperacao, { type ResumoOperacaoData } from './resumo-operacao'
 import { iniciarTutorial, tourJaVisto } from '@/lib/tour/store'
 import { hojeBR } from '@/lib/data-br'
 import { ArrowSquareOut, CheckCircle, WarningCircle, ArrowClockwise, Question } from '@phosphor-icons/react/dist/ssr'
-import { LineChart, BarList, ColumnChart, fmtNum, type BarItem } from '@/app/painel/charts'
+import { LineChart, BarList, ColumnChart, Donut, Gauge, Heatmap, fmtNum, type BarItem } from '@/app/painel/charts'
 
 type Periodo = 'dia' | 'semana' | 'mes' | 'ano'
 type Tab = 'geral' | 'inserir' | 'historico'
@@ -346,6 +346,29 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
 
         {/* Tempos médios da operação */}
         <TempoStrip m={m} mAnt={mAnt} />
+
+        {/* Visão visual — rosca de status + medidores */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+          <div className={`p-5 sm:p-6 lg:col-span-6 ${CARD} animate-fade-up`}>
+            <h3 className="text-overline mb-4">Mix de status</h3>
+            <Donut
+              slices={[
+                { label: 'Entregue', value: m.entregue, color: STATUS.entregue.cor },
+                { label: 'Não foi', value: m.nao_foi, color: STATUS.nao_foi.cor },
+                { label: 'Sem rastreador', value: m.sem_rastreador, color: STATUS.sem_rastreador.cor },
+              ]}
+              centerValue={fmtNum(m.total)} centerLabel="entregas"
+            />
+          </div>
+          <div className={`grid grid-cols-2 divide-x divide-[var(--color-border)] overflow-hidden lg:col-span-6 ${CARD} animate-fade-up`}>
+            <div className="flex flex-col items-center justify-center p-5">
+              <Gauge value={m.pctEntregue} label="Taxa de entrega" color={COR[tomTaxa(m.pctEntregue)]} sub="meta ≥ 95%" />
+            </div>
+            <div className="flex flex-col items-center justify-center p-5">
+              <Gauge value={m.total ? Math.round(100 * m.com_rastreador / m.total) : 0} label="Cobertura GPS" color={COR[tomGps(m.total ? Math.round(100 * m.com_rastreador / m.total) : 0)]} sub={`${m.sem_rastreador} sem rastreador`} />
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* ═══════ CAMADA 2 — ONDE AGIR AGORA ═══════ */}
@@ -421,7 +444,10 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
 
         <ComparativoRede m={m} />
 
+        <HeatmapDiaRede m={m} />
+
         <div data-tour="tendencias-rede" className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <DonutRede porRede={m.porRede} />
           <PorRede redes={m.porRede} />
           <Painel titulo="Volume por turno">
             <div className="space-y-2.5 pt-1">
@@ -537,6 +563,38 @@ function PorRede({ redes }: { redes: Metricas['porRede'] }) {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+const PALETA_REDE = ['var(--color-accent)', 'var(--color-info)', 'var(--color-success)', 'var(--color-warning)', 'var(--color-danger)', 'var(--color-navy-300)']
+
+function DonutRede({ porRede }: { porRede: Metricas['porRede'] }) {
+  const sorted = [...porRede].sort((a, b) => b.total - a.total)
+  const top = sorted.slice(0, 6)
+  const resto = sorted.slice(6)
+  const slices = top.map((r, i) => ({ label: REDE_LABEL[r.rede_id] ?? r.rede_id, value: r.total, color: PALETA_REDE[i] }))
+  if (resto.length) slices.push({ label: `Outras (${resto.length})`, value: resto.reduce((s, r) => s + r.total, 0), color: 'var(--color-fg-subtle)' })
+  return (
+    <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
+      <h3 className="text-overline mb-4">Participação no volume por rede</h3>
+      <Donut slices={slices} centerLabel="entregas" />
+    </div>
+  )
+}
+
+function HeatmapDiaRede({ m }: { m: Metricas }) {
+  const md = m.matrizDiaRede
+  if (!md || md.dias.length < 2 || md.redes.length === 0) return null
+  const { dias, redes } = md
+  return (
+    <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
+      <h3 className="text-overline mb-1">Taxa de entrega — dia × rede</h3>
+      <p className="mb-4 text-[12px] text-[var(--color-fg-subtle)]">Cada célula é a % de entrega da rede naquele dia. Vermelho = ponto fraco; passe o mouse pra ver o valor.</p>
+      <Heatmap
+        colLabels={dias.map(d => d.slice(8, 10))}
+        rows={redes.map(r => ({ key: r.rede_id, label: REDE_LABEL[r.rede_id] ?? r.rede_id, cells: r.celulas.map(c => ({ value: c.pct, n: c.n })) }))}
+      />
     </div>
   )
 }
