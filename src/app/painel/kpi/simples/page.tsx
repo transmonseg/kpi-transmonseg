@@ -73,6 +73,7 @@ type RedeResult = {
   rede_nome: string
   qtd_rotas: number
   qtd_sem_gps: number
+  avisoParcial?: string | null
   xlsxBase64: string
   pdfBase64: string
   preview: PreviewLinha[]
@@ -1257,6 +1258,14 @@ function RedePreviewSection({
           style={{ width: `${cobertura}%` }}
         />
       </div>
+
+      {/* Aviso de relatório parcial (gerado antes das entregas) */}
+      {rede.avisoParcial && (
+        <div className="flex items-start gap-2 border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-5 py-2.5 text-[12px] text-[var(--color-warning)]">
+          <WarningCircle size={14} weight="fill" className="mt-0.5 shrink-0" />
+          <span>{rede.avisoParcial}</span>
+        </div>
+      )}
 
       <AvisosRevisao linhas={rede.preview} />
 

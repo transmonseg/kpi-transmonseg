@@ -456,6 +456,17 @@ export async function POST(req: NextRequest) {
     return variantesOcr(placa).some(v => placasComLoja.has(v))
   }
 
+  // Hora mais recente coberta pelo relatório (BRT mascarado como UTC → getUTCHours
+  // = hora BR direto). Usada pra detectar RELATÓRIO PARCIAL: gerado de madrugada,
+  // antes das entregas (caso Princesa 4h: caminhões saem 2h, entregam 5-6h, então
+  // às 4h aparecem "saíram da base" sem entrega — não é erro, é relatório cedo).
+  const reportMaxHora = paradaRows.reduce((mx, p) => {
+    const iso = p.saida ?? p.chegada
+    if (!iso) return mx
+    const d = new Date(iso)
+    return Math.max(mx, d.getUTCHours() + d.getUTCMinutes() / 60)
+  }, 0)
+
   // Carrega lojas operacionais (resolveLojaId) e canonical_loja com geo
   // (geo fallback para paradas FORA_BASE sem geofence — Categoria B do plano-90%).
   // Em paralelo: trgm-lookup usa o supabase client para enriquecer matches fuzzy.
@@ -717,11 +728,21 @@ export async function POST(req: NextRequest) {
 
       const anomCounts = anomaliasPorRede[rede_id] ?? { high: 0, medium: 0, low: 0 }
 
+      // Aviso de relatório parcial: muitos veículos rastreados saíram da base mas
+      // quase ninguém entregou E o relatório só vai até cedo → provavelmente gerado
+      // antes das entregas. Não bloqueia, só alerta o operador (caso Princesa 4h).
+      const rastreados = preview.filter(p => p.tem_gps)
+      const entregaram = rastreados.filter(p => p.chegada_loja_fmt)
+      const avisoParcial = rastreados.length >= 5 && reportMaxHora < 7 && entregaram.length / rastreados.length < 0.2
+        ? `Relatório parece parcial: só ${entregaram.length}/${rastreados.length} veículos rastreados com entrega e o relatório vai até ~${String(Math.floor(reportMaxHora)).padStart(2, '0')}h. Gere de novo depois das entregas.`
+        : null
+
       return {
         rede_id,
         rede_nome,
         qtd_rotas: linhas.length,
         qtd_sem_gps,
+        avisoParcial,
         qtd_anomalias_high: anomCounts.high,
         qtd_anomalias_medium: anomCounts.medium,
         qtd_anomalias_low: anomCounts.low,
