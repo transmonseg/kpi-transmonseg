@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs'
 import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from 'pdf-lib'
 import type { RotaCozinha } from './cozinha-parser'
+import { fmtInstanteBR } from '@/lib/data-br'
 
 const COR_BRAND_600 = 'FF1F4E78'
 const COR_BRAND_500 = 'FF2E75B6'
@@ -380,7 +381,7 @@ function drawBordersV(page: PDFPage, topY: number, bottomY: number) {
 }
 
 function drawPageFooter(page: PDFPage, font: PDFFont, rotaNome: string) {
-  const txt = `TRANSMONSEG  ·  ${rotaNome}  ·  Gerado em ${new Date().toLocaleString('pt-BR')}`
+  const txt = `TRANSMONSEG  ·  ${rotaNome}  ·  Gerado em ${fmtInstanteBR(new Date(), { dateStyle: 'short', timeStyle: 'medium' })}`
   const size = 7
   const tw = font.widthOfTextAtSize(txt, size)
   page.drawText(txt, {

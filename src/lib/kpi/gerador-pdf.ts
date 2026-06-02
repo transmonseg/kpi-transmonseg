@@ -1,5 +1,6 @@
 import { PDFDocument, StandardFonts, rgb, PDFPage, PDFFont } from 'pdf-lib'
 import type { KpiLinha } from '@/lib/types/kpi'
+import { fmtInstanteBR } from '@/lib/data-br'
 
 // Landscape A4
 const PAGE_W = 841.89
@@ -324,7 +325,7 @@ function drawRodape(
   totalLinhas: number,
   tableWidth: number
 ) {
-  const txt = `TRANSMONSEG  ·  ${totalLinhas} linhas  ·  Página ${pageNum} de ${totalPages}  ·  Gerado em ${new Date().toLocaleString('pt-BR')}`
+  const txt = `TRANSMONSEG  ·  ${totalLinhas} linhas  ·  Página ${pageNum} de ${totalPages}  ·  Gerado em ${fmtInstanteBR(new Date(), { dateStyle: 'short', timeStyle: 'medium' })}`
   const size = 7
   const tw = font.widthOfTextAtSize(txt, size)
   page.drawText(txt, {

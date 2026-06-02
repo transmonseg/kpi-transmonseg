@@ -8,6 +8,7 @@ import {
   ArrowClockwise,
 } from '@phosphor-icons/react/dist/ssr'
 import { createServiceClient } from '@/lib/supabase/service'
+import { fmtInstanteBR } from '@/lib/data-br'
 import { cn } from '@/components/ui'
 
 export const metadata = { title: 'Histórico de KPIs — Transmonseg' }
@@ -259,9 +260,7 @@ export default async function HistoricoPage({
                     <Td>
                       <Link href={hrefRegerar}>
                         <span className="text-numeric text-[12px] text-[var(--color-fg-muted)]">
-                          {g.gerado_em
-                            ? new Date(g.gerado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
-                            : '—'}
+                          {fmtInstanteBR(g.gerado_em)}
                         </span>
                       </Link>
                     </Td>
