@@ -2141,6 +2141,58 @@ export async function cruzaEscalaUnitrac(
       rota._matchMeta = { score: 0.7, confidence: 'LOW', requiresReview: true, algorithm: 'geo' }
       consumidas.add(melhorP.id)
     }
+
+    // ── (3) Cross-placa "troca de carro" ────────────────────────────────────
+    // Rota AINDA vazia + existe parada LOJA de OUTRA placa cujo código BATE o
+    // cadastro E a coordenada cai dentro do raio da loja agendada. É prova forte
+    // (código + GPS, sem ambiguidade) de que a loja FOI entregue — só que por um
+    // veículo diferente do escalado (Tia troca placa sem registrar). Credita à
+    // placa real, marca requiresReview (vai pra tela de revisão, igual ao geo,
+    // não entra cego no KPI do cliente). Roda por ÚLTIMO: só pega o que o fluxo
+    // por-placa, o T18 e o geo-endereço não resolveram, sem roubar parada usada.
+    // Validado dia 20 contra KPI manual da Tia: +11 entregas, 0 falso positivo.
+    const lojaParadasGlobais = paradaRows.filter(
+      p => p.classificacao === 'LOJA' && p.lat != null && p.lng != null && p.codigo_loja,
+    )
+    for (const rota of rotas) {
+      if (rota.paradas.length > 0) continue
+      const linha = escalaLinhas.find(l => l.id === rota.escala_linha_id)
+      if (!linha) continue
+      const esperada = lojaEsperadaDaLinha(linha)
+      if (!esperada || esperada.lat == null || esperada.lng == null || !esperada.codigo_unitrac) continue
+      const raio = esperada.raio_metros ?? 200
+      const placaEscala = rota.placa_norm
+      const varsEscala = placaEscala ? new Set([placaEscala, ...variantesOcr(placaEscala)]) : new Set<string>()
+
+      let melhorP: UnitracParadaRow | null = null
+      let melhorDist = Infinity
+      for (const p of lojaParadasGlobais) {
+        if (consumidas.has(p.id)) continue
+        if (varsEscala.has(p.placa_norm)) continue // mesma placa → não é troca de carro
+        if (!codCasa(esperada.codigo_unitrac, p.codigo_loja!)) continue
+        const d = haversine(p.lat!, p.lng!, esperada.lat, esperada.lng)
+        if (d > raio || d >= melhorDist) continue
+        melhorDist = d; melhorP = p
+      }
+      if (!melhorP) continue
+
+      const chegada = new Date(melhorP.chegada)
+      const saida = melhorP.saida ? new Date(melhorP.saida) : chegada
+      rota.paradas = [{
+        parada_id: melhorP.id,
+        loja_id: esperada.id,
+        nome: esperada.nome,
+        chegada,
+        saida,
+        duracao_min: Math.round((saida.getTime() - chegada.getTime()) / 60000),
+        classificacao: 'LOJA',
+      }]
+      rota.saida_cd = computeSaidaCdParaParada(melhorP, paradaByPlaca.get(melhorP.placa_norm) ?? [], { redeId: rota.rede_id, data: rota.data })
+      rota.placa_real = melhorP.placa_norm
+      rota.status = 'ok'
+      rota._matchMeta = { score: 0.7, confidence: 'LOW', requiresReview: true, algorithm: 'troca' }
+      consumidas.add(melhorP.id)
+    }
   }
 
   return rotas

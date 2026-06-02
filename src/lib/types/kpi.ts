@@ -12,7 +12,7 @@ export type ParadaKpi = {
   classificacao: 'LOJA' | 'FORA_BASE'
 }
 
-export type MatchAlgorithm = 'exact' | 'alias' | 'trgm' | 'hybrid' | 'geo' | 'crossdock' | 'none'
+export type MatchAlgorithm = 'exact' | 'alias' | 'trgm' | 'hybrid' | 'geo' | 'crossdock' | 'troca' | 'none'
 export type MatchConfidence = 'HIGH' | 'LOW' | 'UNMATCHED'
 
 export interface MatchMeta {
@@ -27,6 +27,8 @@ export type RotaKpi = {
   data: string
   rede_id: string
   placa_norm: string | null
+  /** Placa que REALMENTE entregou, quando difere da escalada (troca de carro). */
+  placa_real?: string | null
   saida_cd: Date | null
   paradas: ParadaKpi[]
   anomalias_codigos: string[]

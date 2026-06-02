@@ -106,7 +106,7 @@ function rotaToLinha(rota: RotaKpi, escala: LinhaEscala, ordem: number): LinhaPa
     ordem,
     loja_nome: escala.loja_nome_raw,
     motorista,
-    placa: rota.placa_norm,
+    placa: rota.placa_real ?? rota.placa_norm,
     carro_ordem: escala.carro_ordem,
     saida_cd: rota.saida_cd,
     chd_loja_1: p1?.chegada ?? null,
@@ -118,7 +118,9 @@ function rotaToLinha(rota: RotaKpi, escala: LinhaEscala, ordem: number): LinhaPa
     chd_loja_3: p3?.chegada ?? null,
     saida_loja_3: p3?.saida ?? null,
     tempo_loja_3_min: p3?.duracao_min ?? null,
-    observacao: null,
+    observacao: rota.placa_real
+      ? `Troca de carro: entregue pela placa ${rota.placa_real} (escala: ${rota.placa_norm ?? '—'}).`
+      : null,
     anomalias_codigos: rota.anomalias_codigos,
     motorista_codigo: escala.motorista_codigo,
     rota_status: rota.status,
@@ -430,14 +432,20 @@ export async function POST(req: NextRequest) {
     }))
   )
 
-  // "Sem rastreador" = a PLACA não aparece no relatório Unitrac (com variantes OCR).
-  // Não é por-linha: um caminhão multi-entrega que tem GPS mas uma linha ficou sem
-  // parada NÃO é sem rastreador — ele está rastreado, só não casou aquela loja.
+  // "Sem rastreador" = a PLACA não tem rastreador cadastrado (não está na frota
+  // monitorada do Unitrac, tabela `veiculos`). FONTE AUTORITATIVA — não é "não
+  // apareceu no relatório de hoje": um caminhão com rastreador que só não rodou
+  // hoje NÃO é sem rastreador. Fallback: se a frota estiver vazia (não importada),
+  // cai no "presente no relatório" pra não marcar tudo como sem rastreador.
+  const frotaRows = (await svc.from('veiculos').select('placa_norm').eq('ativo', true)).data ?? []
+  const frotaRastreada = new Set(frotaRows.map(v => v.placa_norm as string))
   const placasNoRelatorio = new Set(paradaRows.map(p => p.placa_norm))
+  const temFrota = frotaRastreada.size > 0
   const placaRastreada = (placa: string | null): boolean => {
     if (!placa) return false
-    if (placasNoRelatorio.has(placa)) return true
-    return variantesOcr(placa).some(v => placasNoRelatorio.has(v))
+    const base = temFrota ? frotaRastreada : placasNoRelatorio
+    if (base.has(placa)) return true
+    return variantesOcr(placa).some(v => base.has(v))
   }
   // "Mudou de rota": placa rastreada que foi a alguma LOJA (entregou em outro lugar),
   // mas não na loja agendada desta linha. Distingue de "não foi ao cliente" (ficou na base).
@@ -675,6 +683,8 @@ export async function POST(req: NextRequest) {
           ficouNaBase,
           paradas: rota.paradas.map(p => ({ classificacao: p.classificacao, loja_id: p.loja_id ?? null })),
           viaGeo: rota._matchMeta?.algorithm === 'geo',
+          viaTroca: rota._matchMeta?.algorithm === 'troca',
+          placaReal: rota.placa_real ?? null,
         })
         const saidaLoja = p0 && p0.chegada && p0.duracao_min != null
           ? new Date(p0.chegada.getTime() + p0.duracao_min * 60_000)
@@ -682,7 +692,7 @@ export async function POST(req: NextRequest) {
         return {
           ordem: idx + 1,
           loja_nome: esc.loja_nome_raw,
-          placa: rota.placa_norm,
+          placa: rota.placa_real ?? rota.placa_norm,
           motorista: esc.motorista_nome,
           turno: esc.turno,
           tem_gps: temGps,

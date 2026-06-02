@@ -6,6 +6,11 @@ export interface DadosStatusRota {
   paradas: ReadonlyArray<{ classificacao: string; loja_id: string | null }>
   /** Rota cujo match veio do geo/endereço (FORA_BASE casado pela coordenada do cadastro). */
   viaGeo?: boolean
+  /** Rota recuperada por troca de carro: loja entregue por placa diferente da escalada
+   * (código + coordenada batem, mas o veículo é outro). */
+  viaTroca?: boolean
+  /** Placa que realmente entregou, quando viaTroca. Usada no motivo da revisão. */
+  placaReal?: string | null
 }
 
 export interface ResultadoStatus {
@@ -24,6 +29,14 @@ export function derivarStatus(d: DadosStatusRota): ResultadoStatus {
   // não confirmou por código).
   if (d.viaGeo && d.paradas.some(p => p.classificacao === 'FORA_BASE' && p.loja_id)) {
     return { status: 'ENTREGUE_GEO', revisar: true, motivoRevisao: 'Localizado pelo endereço cadastrado, não pelo código do Unitrac. Confira.' }
+  }
+
+  // Troca de carro: a loja foi entregue (código + coordenada batem), mas por um
+  // veículo diferente do escalado. Conta como entrega e sempre pede conferência
+  // da placa — usa o mesmo tratamento visual do geo (cinza/revisão).
+  if (d.viaTroca) {
+    const placa = d.placaReal ? ` Placa real: ${d.placaReal}.` : ''
+    return { status: 'ENTREGUE_GEO', revisar: true, motivoRevisao: `Entregue por veículo diferente do escalado (troca de carro).${placa} Confira a placa.` }
   }
 
   const visitouLoja = d.paradas.some(p => p.classificacao === 'LOJA')
