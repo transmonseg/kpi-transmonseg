@@ -40,6 +40,201 @@ function useWidth<T extends HTMLElement>() {
   return [ref, w] as const
 }
 
+// ---------- Donut: rosca (mix de status, participação por rede) ----------
+export interface DonutSlice { label: string; value: number; color: string }
+
+export function Donut({
+  slices,
+  size = 180,
+  thickness = 20,
+  centerValue,
+  centerLabel,
+  format = fmtNum,
+}: {
+  slices: DonutSlice[]
+  size?: number
+  thickness?: number
+  centerValue?: string
+  centerLabel?: string
+  format?: (n: number) => string
+}) {
+  const [hover, setHover] = useState<number | null>(null)
+  const total = slices.reduce((s, x) => s + x.value, 0) || 1
+  const r = (size - thickness) / 2
+  const c = 2 * Math.PI * r
+  const cx = size / 2
+  let acc = 0
+  const segs = slices.map((s, i) => {
+    const frac = s.value / total
+    const seg = { ...s, i, frac, offset: acc }
+    acc += frac
+    return seg
+  })
+  const hv = hover != null ? segs[hover] : null
+  return (
+    <div className="flex items-center gap-5">
+      <div className="relative shrink-0" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="-rotate-90">
+          <circle cx={cx} cy={cx} r={r} fill="none" stroke="var(--color-bg-subtle)" strokeWidth={thickness} />
+          {segs.map(s => (
+            <circle
+              key={s.i}
+              cx={cx} cy={cx} r={r} fill="none"
+              stroke={s.color}
+              strokeWidth={hover === s.i ? thickness + 3 : thickness}
+              strokeDasharray={`${s.frac * c} ${c}`}
+              strokeDashoffset={-s.offset * c}
+              className="transition-[stroke-width] duration-150"
+              style={{ opacity: hover == null || hover === s.i ? 1 : 0.45, cursor: 'default' }}
+              onMouseEnter={() => setHover(s.i)}
+              onMouseLeave={() => setHover(null)}
+            />
+          ))}
+        </svg>
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+          <span className="text-display text-numeric text-[26px] leading-none text-[var(--color-fg)]">
+            {hv ? format(hv.value) : centerValue ?? format(total)}
+          </span>
+          <span className="mt-1 max-w-[80%] text-[10px] uppercase tracking-[0.08em] text-[var(--color-fg-subtle)]">
+            {hv ? hv.label : centerLabel ?? 'total'}
+          </span>
+        </div>
+      </div>
+      <ul className="min-w-0 flex-1 space-y-2">
+        {segs.map(s => (
+          <li
+            key={s.i}
+            className="flex items-center justify-between gap-2 text-[12.5px]"
+            onMouseEnter={() => setHover(s.i)}
+            onMouseLeave={() => setHover(null)}
+          >
+            <span className="flex min-w-0 items-center gap-2 text-[var(--color-fg-muted)]">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-[3px]" style={{ background: s.color }} />
+              <span className="truncate" title={s.label}>{s.label}</span>
+            </span>
+            <span className="shrink-0 tabular-nums text-[var(--color-fg)]">
+              <span className="font-semibold">{format(s.value)}</span>
+              <span className="ml-1 text-[11px] text-[var(--color-fg-subtle)]">{Math.round(s.frac * 100)}%</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+// ---------- Gauge: medidor radial (taxa de entrega, cobertura) ----------
+export function Gauge({
+  value,
+  label,
+  sub,
+  color = 'var(--color-accent)',
+  size = 180,
+}: {
+  value: number // 0..100
+  label?: string
+  sub?: string
+  color?: string
+  size?: number
+}) {
+  const thickness = 14
+  const r = (size - thickness) / 2
+  const cx = size / 2
+  const sweep = 0.75 // 270°
+  const c = 2 * Math.PI * r
+  const arc = c * sweep
+  const v = Math.max(0, Math.min(100, value))
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative" style={{ width: size, height: size * 0.82 }}>
+        {/* gira -225° pra abrir o arco embaixo (gap de 90°) */}
+        <svg width={size} height={size} style={{ transform: 'rotate(135deg)' }}>
+          <circle cx={cx} cy={cx} r={r} fill="none" stroke="var(--color-bg-subtle)" strokeWidth={thickness}
+            strokeLinecap="round" strokeDasharray={`${arc} ${c}`} />
+          <circle cx={cx} cy={cx} r={r} fill="none" stroke={color} strokeWidth={thickness}
+            strokeLinecap="round" strokeDasharray={`${arc * (v / 100)} ${c}`}
+            className="transition-[stroke-dasharray] duration-700 ease-out" />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+          <span className="text-display text-numeric leading-none text-[var(--color-fg)]" style={{ fontSize: size * 0.26 }}>
+            {Math.round(v)}<span className="text-[0.5em] text-[var(--color-fg-subtle)]">%</span>
+          </span>
+          {label && <span className="mt-1 text-overline">{label}</span>}
+        </div>
+      </div>
+      {sub && <div className="-mt-1 text-[11px] text-[var(--color-fg-subtle)]">{sub}</div>}
+    </div>
+  )
+}
+
+// ---------- Heatmap: grade dia × rede (taxa de entrega) ----------
+export interface HeatRow { key: string; label: string; cells: ({ value: number | null; n?: number })[] }
+
+// escala vermelho→amarelo→verde para % (0..100). null = cinza (sem dado).
+function heatColor(v: number | null): string {
+  if (v == null) return 'var(--color-bg-subtle)'
+  if (v >= 95) return 'var(--color-success)'
+  if (v >= 85) return 'color-mix(in srgb, var(--color-success) 55%, var(--color-warning))'
+  if (v >= 70) return 'var(--color-warning)'
+  if (v >= 50) return 'color-mix(in srgb, var(--color-warning) 55%, var(--color-danger))'
+  return 'var(--color-danger)'
+}
+
+export function Heatmap({
+  colLabels,
+  rows,
+  format = (n) => `${Math.round(n)}%`,
+}: {
+  colLabels: string[]
+  rows: HeatRow[]
+  format?: (n: number) => string
+}) {
+  const [hover, setHover] = useState<{ r: number; c: number } | null>(null)
+  return (
+    <div className="overflow-x-auto">
+      <div className="min-w-[480px]">
+        <div className="flex gap-[3px] pl-[92px]">
+          {colLabels.map((lb, i) => (
+            <div key={i} className="flex-1 text-center text-[9px] tabular-nums text-[var(--color-fg-subtle)]">{lb}</div>
+          ))}
+        </div>
+        <div className="mt-1 space-y-[3px]">
+          {rows.map((row, ri) => (
+            <div key={row.key} className="flex items-center gap-[3px]">
+              <div className="w-[89px] shrink-0 truncate pr-2 text-right text-[11px] text-[var(--color-fg-muted)]" title={row.label}>{row.label}</div>
+              {row.cells.map((cell, ci) => {
+                const on = hover?.r === ri && hover?.c === ci
+                return (
+                  <div
+                    key={ci}
+                    onMouseEnter={() => setHover({ r: ri, c: ci })}
+                    onMouseLeave={() => setHover(null)}
+                    className="relative aspect-square flex-1 rounded-[3px] transition-transform duration-100"
+                    style={{ background: heatColor(cell.value), opacity: cell.value == null ? 0.5 : 0.9, transform: on ? 'scale(1.15)' : 'none', zIndex: on ? 5 : 0 }}
+                  >
+                    {on && cell.value != null && (
+                      <div className="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-[var(--color-fg)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-bg-elevated)] shadow-soft">
+                        {colLabels[ci]} · {format(cell.value)}{cell.n != null ? ` (${cell.n})` : ''}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex items-center gap-2 pl-[92px] text-[10px] text-[var(--color-fg-subtle)]">
+          <span>pior</span>
+          {['var(--color-danger)', 'color-mix(in srgb, var(--color-warning) 55%, var(--color-danger))', 'var(--color-warning)', 'color-mix(in srgb, var(--color-success) 55%, var(--color-warning))', 'var(--color-success)'].map((c, i) => (
+            <span key={i} className="h-2.5 w-5 rounded-[2px]" style={{ background: c }} />
+          ))}
+          <span>melhor</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ---------- BarList: barras horizontais (rankings, comparativos) ----------
 export interface BarItem {
   key: string
@@ -142,7 +337,7 @@ export function ColumnChart({
               key={i}
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
-              className="relative flex flex-1 cursor-default flex-col justify-end"
+              className="relative flex h-full flex-1 cursor-default flex-col justify-end"
             >
               {isActive && (
                 <div className="pointer-events-none absolute -top-6 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-[var(--color-fg)] px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-[var(--color-bg-elevated)] shadow-soft">
