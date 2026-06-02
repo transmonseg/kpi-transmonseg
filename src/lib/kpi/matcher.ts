@@ -741,6 +741,30 @@ export function variantesOcr(placa: string): string[] {
   return [...variantes]
 }
 
+// Conversão Mercosul: ao migrar placa antiga (LLL-NNNN) pro padrão Mercosul
+// (LLL-NLNN), o 5º caractere (índice 4) vira LETRA por uma tabela fixa
+// 0→A,1→B,2→C,3→D,4→E,5→F,6→G,7→H,8→I,9→J. Ex: EAC-4365 → EAC-4D65 (3→D).
+// No Unitrac às vezes ficam DOIS cadastros do mesmo veículo (antigo + Mercosul),
+// um deles vazio. Sem reconhecer essa equivalência o KPI marca "não foi" errado.
+const MERCOSUL_DIG = '0123456789'
+const MERCOSUL_LET = 'ABCDEFGHIJ'
+export function variantesMercosul(placa: string): string[] {
+  if (placa.length !== 7) return [placa]
+  const c = placa[4]
+  const out = new Set<string>([placa])
+  const di = MERCOSUL_DIG.indexOf(c)
+  if (di >= 0) out.add(placa.slice(0, 4) + MERCOSUL_LET[di] + placa.slice(5))
+  const li = MERCOSUL_LET.indexOf(c)
+  if (li >= 0) out.add(placa.slice(0, 4) + MERCOSUL_DIG[li] + placa.slice(5))
+  return [...out]
+}
+
+// União das variantes plausíveis (cada uma a ≤1 substituição da original — sem
+// compor OCR+Mercosul, pra não inflar e casar placas não relacionadas).
+export function variantesPlaca(placa: string): string[] {
+  return [...new Set([...variantesOcr(placa), ...variantesMercosul(placa)])]
+}
+
 /**
  * Score between one escala line and one Unitrac parada.
  * Returns 0 for exact code match, finite for name match, Infinity for no match.
@@ -1029,11 +1053,19 @@ export async function cruzaEscalaUnitrac(
   //   2) parada LOJA/FORA_BASE geograficamente dentro do raio da loja escalada
   //      (caso ZS dia 20 LCO0978→LCO0J78: paradas só FORA_BASE mas dentro do raio
   //      das lojas 33/36/01 — antes rejeitava por falta de classificação LOJA).
+  const temMov = (placa: string) =>
+    (paradaByPlaca.get(placa) ?? []).some(p => p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE')
   function resolvePlacaUnitrac(placaEscala: string, linha?: EscalaLinhaRow): string | null {
-    if (paradaByPlaca.has(placaEscala)) return placaEscala
-    const variantes = variantesOcr(placaEscala).filter(v => v !== placaEscala)
-    const presentes = variantes.filter(v => paradaByPlaca.has(v))
-    if (presentes.length !== 1) return null
+    // Placa exata presente E com entrega/movimento → usa ela (caso normal).
+    if (paradaByPlaca.has(placaEscala) && temMov(placaEscala)) return placaEscala
+    // Variantes plausíveis: OCR (erro de leitura) + Mercosul (conversão de placa,
+    // pos 5: 3↔D etc). BUG 3 (placa duplicada no Unitrac): se a exata existe mas
+    // está VAZIA/só-base, prefere a variante que TEM entrega (cadastro antigo
+    // vazio + Mercosul com dados). Senão, mantém a exata ("não foi" legítimo).
+    const variantes = variantesPlaca(placaEscala).filter(v => v !== placaEscala)
+    const ricas = variantes.filter(v => paradaByPlaca.has(v) && temMov(v))
+    const presentes = ricas.length ? ricas : variantes.filter(v => paradaByPlaca.has(v))
+    if (presentes.length !== 1) return paradaByPlaca.has(placaEscala) ? placaEscala : null
     const candidata = presentes[0]
     if (linha) {
       const paradas = paradaByPlaca.get(candidata) ?? []
@@ -1072,17 +1104,23 @@ export async function cruzaEscalaUnitrac(
         }
         return false
       })
-      if (!bate) return null
+      if (!bate) return paradaByPlaca.has(placaEscala) ? placaEscala : null
     }
     return candidata
   }
 
   // Mapa: escala_linha_id -> placa do Unitrac (resolvendo OCR-confusable)
   const placaResolvida = new Map<string, string>()
+  // Linhas onde a placa da escala existe no relatório mas estava VAZIA e a entrega
+  // estava numa variante (placa duplicada/atualizada no Unitrac) → vira anomalia.
+  const placaDuplicadaLines = new Set<string>()
   for (const l of escalaLinhas) {
     if (!l.placa_norm) continue
     const resolved = resolvePlacaUnitrac(l.placa_norm, l)
-    if (resolved) placaResolvida.set(l.id, resolved)
+    if (resolved) {
+      placaResolvida.set(l.id, resolved)
+      if (resolved !== l.placa_norm && paradaByPlaca.has(l.placa_norm)) placaDuplicadaLines.add(l.id)
+    }
   }
 
   // Agrupa escala_linhas pela placa RESOLVIDA pra fazer matching parada↔linha
@@ -2047,7 +2085,8 @@ export async function cruzaEscalaUnitrac(
     const metaConfidence: MatchConfidence = isGeo || isPlateTroca || metaScore < 0.85
       ? (metaScore >= 0.6 ? 'LOW' : 'UNMATCHED')
       : 'HIGH'
-    const metaRequiresReview = metaScore < 0.75 || isPlateTroca
+    const placaDup = placaDuplicadaLines.has(linha.id)
+    const metaRequiresReview = metaScore < 0.75 || isPlateTroca || placaDup
 
     rotas.push({
       escala_linha_id: linha.id,
@@ -2056,7 +2095,7 @@ export async function cruzaEscalaUnitrac(
       placa_norm: linha.placa_norm,
       saida_cd,
       paradas,
-      anomalias_codigos: [],
+      anomalias_codigos: placaDup ? ['PLACA_DUPLICADA'] : [],
       // 'sem_entrega' quando a placa aparece no unitrac mas não há parada operacional
       // correspondente — o veículo foi rastreado mas ficou na base ou não fez entrega
       // para esta loja. Distinto de 'pendente' (placa ausente do unitrac = sem GPS real).
@@ -2206,6 +2245,17 @@ export async function cruzaEscalaUnitrac(
       rota.status = 'ok'
       rota._matchMeta = { score: 0.7, confidence: 'LOW', requiresReview: true, algorithm: 'troca' }
       consumidas.add(melhorP.id)
+    }
+  }
+
+  // Guard: saída do CD nunca pode ser DEPOIS da chegada na loja (impossível sair
+  // da base após já ter chegado). Acontece com caminhão que dorme no CD/cliente
+  // distante (chegada de madrugada) — o cálculo pega uma saída-base posterior.
+  // Anula a saída_cd nesses casos em vez de mostrar horário ilógico no KPI.
+  for (const rota of rotas) {
+    const chd = rota.paradas[0]?.chegada
+    if (rota.saida_cd && chd && new Date(rota.saida_cd).getTime() > new Date(chd).getTime()) {
+      rota.saida_cd = null
     }
   }
 

@@ -7,6 +7,7 @@ import {
   scorePair,
   cruzaEscalaUnitrac,
   variantesOcr,
+  variantesMercosul,
   setSemGeo,
   type EscalaLinhaRow,
   type UnitracParadaRow,
@@ -2221,6 +2222,42 @@ describe('geoEndereco — consolida movimentações no cliente (BUG 2 chegada/sa
       expect(r?.paradas).toHaveLength(1)
       expect(r?.paradas[0].chegada.toISOString()).toBe('2026-06-02T05:26:00.000Z') // primeira, não a mais próxima (08:49)
       expect(r?.paradas[0].saida.toISOString()).toBe('2026-06-02T10:28:00.000Z')  // última do cluster, não 13:05
+    } finally { setSemGeo(false) }
+  })
+})
+
+describe('BUG 3 — placa duplicada Unitrac (conversão Mercosul) prefere registro com dados', () => {
+  it('variantesMercosul converte o 5º char dígito↔letra (3↔D)', () => {
+    expect(variantesMercosul('EAC4365')).toContain('EAC4D65')
+    expect(variantesMercosul('EAC4D65')).toContain('EAC4365')
+  })
+
+  it('escala com placa antiga VAZIA casa a entrega da variante Mercosul + marca anomalia', async () => {
+    setSemGeo(true)
+    try {
+      const loja: LojaRow = {
+        id: 'cb', rede_id: 'CARREFOUR', nome: 'Carrefour - Brigadeiro',
+        nome_normalizado: 'carrefour brigadeiro', codigo_escala: null, codigo_unitrac: '9006144',
+        nome_unitrac: 'CARREFOUR BRIGADEIRO', lat: -22.7935, lng: -43.30, raio_metros: 200,
+        endereco: null, bairro: null, municipio: null,
+      }
+      const linha: EscalaLinhaRow = {
+        id: 'l1', rede_id: 'CARREFOUR', placa_norm: 'EAC4365', // placa ANTIGA na escala
+        loja_nome_raw: 'Carrefour - Brigadeiro', loja_codigo_raw: '9006144',
+        motorista_nome: 'M', carro_ordem: 1, data_entrega: '2026-06-02',
+      }
+      const paradas: UnitracParadaRow[] = [
+        // cadastro antigo no relatório: vazio (só base)
+        { id: 'a0', placa_norm: 'EAC4365', chegada: '2026-06-02T00:07:00Z', saida: '2026-06-02T03:06:00Z', duracao_seg: 0, local_parada: 'BASE BENASSI', codigo_loja: null, nome_loja: null, lat: -22.82, lng: -43.33, endereco: null, classificacao: 'BASE', ordem: 0 },
+        // cadastro Mercosul: a entrega real
+        { id: 'b0', placa_norm: 'EAC4D65', chegada: '2026-06-02T05:24:00Z', saida: '2026-06-02T08:12:00Z', duracao_seg: 0, local_parada: '9006144 - CARREFOUR BRIGADEIRO', codigo_loja: '9006144', nome_loja: 'CARREFOUR BRIGADEIRO', lat: -22.7935, lng: -43.30, endereco: null, classificacao: 'LOJA', ordem: 0 },
+      ]
+      const rotas = await cruzaEscalaUnitrac([linha], paradas, [loja], undefined, undefined, { geoEndereco: true })
+      const r = rotas.find(x => x.escala_linha_id === 'l1')
+      expect(r?.paradas).toHaveLength(1)
+      expect(r?.paradas[0].chegada.toISOString()).toBe('2026-06-02T05:24:00.000Z')
+      expect(r?.anomalias_codigos).toContain('PLACA_DUPLICADA')
+      expect(r?._matchMeta?.requiresReview).toBe(true)
     } finally { setSemGeo(false) }
   })
 })
