@@ -2121,3 +2121,70 @@ describe('geoEndereco — match FORA_BASE por coordenada (opts.geoEndereco)', ()
     } finally { setSemGeo(false) }
   })
 })
+
+describe('troca de carro — recuperação cross-placa (código + coordenada)', () => {
+  const lojaX: LojaRow = {
+    id: 'zs21', rede_id: 'ZONA_SUL', nome: '21 - ZONA SUL - FLAMENGO',
+    nome_normalizado: '21 zona sul flamengo', codigo_escala: '21', codigo_unitrac: '9039103',
+    nome_unitrac: '21 - ZONA SUL - FLAMENGO', lat: -22.9345, lng: -43.1755, raio_metros: 200,
+  }
+  // Linha escalada para a placa BBH1C94, que NÃO entregou na loja X.
+  const linhaX: EscalaLinhaRow = {
+    id: 'lx', rede_id: 'ZONA_SUL', placa_norm: 'BBH1C94',
+    loja_nome_raw: '21 - ZONA SUL - FLAMENGO', loja_codigo_raw: '21',
+    motorista_nome: 'JOAO', carro_ordem: 1, data_entrega: '2026-05-20',
+  }
+  // BBH1C94 só tem FORA_BASE longe → exclui a linha do T18 (não é órfã-loja nem só-base).
+  const foraBBH: UnitracParadaRow = {
+    id: 'fb', placa_norm: 'BBH1C94', chegada: '2026-05-20T05:00:00Z', saida: '2026-05-20T05:20:00Z',
+    duracao_seg: 1200, local_parada: 'FORA DE BASE E LOCAL DE SERVICO', codigo_loja: null, nome_loja: null,
+    lat: -22.80, lng: -43.30, endereco: null, classificacao: 'FORA_BASE', ordem: 1,
+  }
+  // LTQ0783 (placa diferente) entregou DE FATO na loja X — código e coordenada batem.
+  const paradaLTQ = (lat: number, lng: number): UnitracParadaRow => ({
+    id: 'lt', placa_norm: 'LTQ0783', chegada: '2026-05-20T06:17:00Z', saida: '2026-05-20T06:40:00Z',
+    duracao_seg: 1380, local_parada: '9039103 - 21 - ZONA SUL - FLAMENGO', codigo_loja: '9039103',
+    nome_loja: '21 - ZONA SUL - FLAMENGO', lat, lng, endereco: null, classificacao: 'LOJA', ordem: 1,
+  })
+
+  it('rota vazia é recuperada pela placa real (código + coord batem) → algorithm troca', async () => {
+    setSemGeo(true)
+    try {
+      const rotas = await cruzaEscalaUnitrac(
+        [linhaX], [foraBBH, paradaLTQ(-22.9345, -43.1755)], [lojaX], undefined, undefined, { geoEndereco: true })
+      const r = rotas.find(x => x.escala_linha_id === 'lx')
+      expect(r?.paradas).toHaveLength(1)
+      expect(r?.paradas[0]?.loja_id).toBe('zs21')
+      expect(r?.placa_real).toBe('LTQ0783')
+      expect(r?._matchMeta?.algorithm).toBe('troca')
+      expect(r?._matchMeta?.requiresReview).toBe(true)
+    } finally { setSemGeo(false) }
+  })
+
+  it('dual-lock: código bate mas coordenada FORA do raio → NÃO recupera', async () => {
+    setSemGeo(true)
+    try {
+      const rotas = await cruzaEscalaUnitrac(
+        [linhaX], [foraBBH, paradaLTQ(-22.90, -43.20)], [lojaX], undefined, undefined, { geoEndereco: true })
+      const r = rotas.find(x => x.escala_linha_id === 'lx')
+      expect(r?.paradas ?? []).toHaveLength(0)
+      expect(r?.placa_real ?? null).toBeNull()
+    } finally { setSemGeo(false) }
+  })
+
+  it('não rouba parada já usada por outra linha (carro 1 casa, carro 2 não vira troca)', async () => {
+    setSemGeo(true)
+    try {
+      const linhaA: EscalaLinhaRow = { ...linhaX, id: 'la', placa_norm: 'LTQ0783', carro_ordem: 1 }
+      const linhaB: EscalaLinhaRow = { ...linhaX, id: 'lb', placa_norm: 'BBH1C94', carro_ordem: 2 }
+      const rotas = await cruzaEscalaUnitrac(
+        [linhaA, linhaB], [foraBBH, paradaLTQ(-22.9345, -43.1755)], [lojaX], undefined, undefined, { geoEndereco: true })
+      const rA = rotas.find(x => x.escala_linha_id === 'la')
+      const rB = rotas.find(x => x.escala_linha_id === 'lb')
+      expect(rA?.paradas).toHaveLength(1)            // carro 1 casa normalmente
+      expect(rA?._matchMeta?.algorithm).not.toBe('troca')
+      expect(rB?.paradas ?? []).toHaveLength(0)       // carro 2 não rouba a parada já usada
+      expect(rB?.placa_real ?? null).toBeNull()
+    } finally { setSemGeo(false) }
+  })
+})
