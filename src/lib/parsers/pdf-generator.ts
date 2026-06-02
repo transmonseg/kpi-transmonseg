@@ -1,5 +1,6 @@
 import { PDFDocument, StandardFonts, rgb, PDFPage, PDFFont } from 'pdf-lib'
 import type { RotaCozinha, EstatisticasCozinha } from './cozinha-parser'
+import { fmtInstanteBR } from '@/lib/data-br'
 
 const PAGE_W = 595.28
 const PAGE_H = 841.89
@@ -408,7 +409,7 @@ function drawRodape(
   totalPages: number,
   totalRotas: number
 ) {
-  const txt = `TRANSMONSEG  ·  ${totalRotas} rotas  ·  Página ${pageNum} de ${totalPages}  ·  Gerado em ${new Date().toLocaleString('pt-BR')}`
+  const txt = `TRANSMONSEG  ·  ${totalRotas} rotas  ·  Página ${pageNum} de ${totalPages}  ·  Gerado em ${fmtInstanteBR(new Date(), { dateStyle: 'short', timeStyle: 'medium' })}`
   const size = 8
   const tw = font.widthOfTextAtSize(txt, size)
   page.drawText(txt, {
