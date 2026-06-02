@@ -2188,3 +2188,39 @@ describe('troca de carro — recuperação cross-placa (código + coordenada)', 
     } finally { setSemGeo(false) }
   })
 })
+
+describe('geoEndereco — consolida movimentações no cliente (BUG 2 chegada/saída)', () => {
+  const loja: LojaRow = {
+    id: 'atc', rede_id: 'ATACADAO', nome: 'Atacadão - Manilha',
+    nome_normalizado: 'atacadao manilha', codigo_escala: null, codigo_unitrac: null,
+    nome_unitrac: 'ATACADAO MANILHA', lat: -22.8545, lng: -43.1006, raio_metros: 200,
+    endereco: null, bairro: null, municipio: null,
+  }
+  const linha: EscalaLinhaRow = {
+    id: 'l1', rede_id: 'ATACADAO', placa_norm: 'QSS1E48',
+    loja_nome_raw: 'Atacadão - Manilha', loja_codigo_raw: null,
+    motorista_nome: 'X', carro_ordem: 1, data_entrega: '2026-06-02',
+  }
+  const mk = (id: string, chegada: string, saida: string, lat: number, lng: number): UnitracParadaRow => ({
+    id, placa_norm: 'QSS1E48', chegada, saida, duracao_seg: 0,
+    local_parada: 'FORA DE BASE E LOCAL DE SERVIÇO', codigo_loja: null, nome_loja: null,
+    lat, lng, endereco: 'Manilha', classificacao: 'FORA_BASE', ordem: 0,
+  })
+
+  it('várias FORA_BASE coladas → chegada = primeira, saída = última (ignora viagem distante)', async () => {
+    setSemGeo(true)
+    try {
+      const paradas: UnitracParadaRow[] = [
+        mk('p1', '2026-06-02T05:26:00Z', '2026-06-02T06:04:00Z', -22.8536, -43.1012),
+        mk('p2', '2026-06-02T06:11:00Z', '2026-06-02T08:48:00Z', -22.8545, -43.1006),
+        mk('p3', '2026-06-02T08:49:00Z', '2026-06-02T10:28:00Z', -22.8553, -43.1001),
+        mk('p4', '2026-06-02T11:22:00Z', '2026-06-02T13:05:00Z', -22.7755, -43.2855), // ~20km → fora do cluster
+      ]
+      const rotas = await cruzaEscalaUnitrac([linha], paradas, [loja], undefined, undefined, { geoEndereco: true })
+      const r = rotas.find(x => x.escala_linha_id === 'l1')
+      expect(r?.paradas).toHaveLength(1)
+      expect(r?.paradas[0].chegada.toISOString()).toBe('2026-06-02T05:26:00.000Z') // primeira, não a mais próxima (08:49)
+      expect(r?.paradas[0].saida.toISOString()).toBe('2026-06-02T10:28:00.000Z')  // última do cluster, não 13:05
+    } finally { setSemGeo(false) }
+  })
+})

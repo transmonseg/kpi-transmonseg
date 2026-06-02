@@ -2123,23 +2123,37 @@ export async function cruzaEscalaUnitrac(
       }
       if (!melhorP) continue
 
-      const chegada = new Date(melhorP.chegada)
-      const saida = melhorP.saida ? new Date(melhorP.saida) : chegada
+      // BUG 2 fix (relatório 02.06): no match por geo, o veículo costuma registrar
+      // VÁRIAS paradas FORA_BASE coladas no mesmo cliente (movimentações durante a
+      // permanência). Antes pegávamos só a parada mais próxima do cadastro → chegada
+      // e saída erradas. Casos reais: QSS-1E48 marcava 08:49 (real 05:26); TJQ-6J26
+      // marcava 05:45 (real 05:08). Consolida o cluster ao redor do ponto casado:
+      // chegada = a PRIMEIRA parada, saída = a ÚLTIMA (pedido da analista). Ignora
+      // BASE/FAKE_EXIT e paradas a >raio do cluster (ex: viagem a outro cliente depois).
+      const raioConsol = Math.max(esperada.raio_metros ?? 200, 300)
+      const cluster = candidatas.filter(p =>
+        (p.classificacao === 'FORA_BASE' || p.classificacao === 'LOJA') &&
+        haversine(p.lat!, p.lng!, melhorP!.lat!, melhorP!.lng!) <= raioConsol)
+      const grupo = cluster.length ? cluster : [melhorP]
+      const ordenado = [...grupo].sort((a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
+      const primeira = ordenado[0]
+      const chegada = new Date(primeira.chegada)
+      const saida = new Date(Math.max(...grupo.map(p => new Date(p.saida ?? p.chegada).getTime())))
       rota.paradas = [{
-        parada_id: melhorP.id,
+        parada_id: primeira.id,
         loja_id: esperada.id,
         nome: esperada.nome,
         chegada,
         saida,
         duracao_min: Math.round((saida.getTime() - chegada.getTime()) / 60000),
-        classificacao: melhorP.classificacao === 'LOJA' ? 'LOJA' : 'FORA_BASE',
+        classificacao: grupo.some(p => p.classificacao === 'LOJA') ? 'LOJA' : 'FORA_BASE',
       }]
-      // Saída do CD: última BASE BENASSI antes da parada geo (mesma regra do fluxo
-      // normal). Sem isso, rotas casadas por geo saíam sem saida_cd no KPI.
-      rota.saida_cd = computeSaidaCdParaParada(melhorP, paradaByPlaca.get(rota.placa_norm) ?? [], { redeId: rota.rede_id, data: rota.data })
+      // Saída do CD: última BASE BENASSI antes da PRIMEIRA parada do cluster (mesma
+      // regra do fluxo normal). Sem isso, rotas casadas por geo saíam sem saida_cd.
+      rota.saida_cd = computeSaidaCdParaParada(primeira, paradaByPlaca.get(rota.placa_norm) ?? [], { redeId: rota.rede_id, data: rota.data })
       rota.status = 'ok'
       rota._matchMeta = { score: 0.7, confidence: 'LOW', requiresReview: true, algorithm: 'geo' }
-      consumidas.add(melhorP.id)
+      for (const p of grupo) consumidas.add(p.id)
     }
 
     // ── (3) Cross-placa "troca de carro" ────────────────────────────────────
