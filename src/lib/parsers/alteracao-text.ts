@@ -44,12 +44,15 @@ const REDE_MAP: Array<{ pat: string; id: string }> = [
 ]
 
 const PLACA_RE = /\b([A-Z]{3}[\s-]?\d[A-Z0-9]\d{2}|[A-Z]{3}[\s-]?\d{4})\b/i
-const ENTRA_LABEL_RE = /^\s*entra\s*:?\s*[:\-]?\s*/i
-const SAI_LABEL_RE = /^\s*sai\s*:?\s*[:\-]?\s*/i
-const ENTRA_LINE_RE = /^\s*entra\s*:/i
-const SAI_LINE_RE = /^\s*sai\s*:/i
-const PLACA_SAI_RE = /^\s*placa\s+sai\s*:/i
-const PLACA_ENTRA_RE = /^\s*placa\s+entra\s*:/i
+// Aceita separadores ; : . - (cliente escreve "Entra;", "Entra :", "Sai:", etc.)
+const ENTRA_LABEL_RE = /^\s*entra\s*[;:.\-]+\s*/i
+const SAI_LABEL_RE = /^\s*sai\s*[;:.\-]+\s*/i
+const ENTRA_LINE_RE = /^\s*entra\s*[;:.\-]/i
+const SAI_LINE_RE = /^\s*sai\s*[;:.\-]/i
+const PLACA_SAI_RE = /^\s*placa\s+sai\s*[;:.\-]/i
+const PLACA_ENTRA_RE = /^\s*placa\s+entra\s*[;:.\-]/i
+// "Placa : X" genérico (linha própria, sem "entra/sai") — anexa ao último slot visto.
+const PLACA_GENERIC_RE = /^\s*placa\s*[;:.\-]\s*/i
 const MOTIVO_RE = /^\s*(?:motivo|obs)\s*\.?\s*:?\s*(.+?)\s*$/i
 const FILIAL_NUM_RE = /\bfilial\s+(\d+)/i
 const DASH_ONLY_RE = /^[-—–\s]+$/
@@ -120,14 +123,19 @@ function detectaRede(texto: string, filialFound: boolean): string | null {
 }
 
 function detectaLoja(linhas: string[], redeId: string | null): string | null {
+  // Fallback: 1ª linha não-estrutural (header da loja sem palavra-da-rede, ex "Caxias 1").
+  // Resolve o caso da cliente "só tem entra e não identifica loja".
+  let fallback: string | null = null
   for (const linha of linhas) {
     if (!linha) continue
     if (ENTRA_LINE_RE.test(linha)) continue
     if (SAI_LINE_RE.test(linha)) continue
     if (PLACA_SAI_RE.test(linha)) continue
     if (PLACA_ENTRA_RE.test(linha)) continue
+    if (PLACA_GENERIC_RE.test(linha)) continue
     if (MOTIVO_RE.test(linha)) continue
     if (/altera[çc][aã]o|comunicado/i.test(linha)) continue
+    if (/^\s*troca\s+de\s+carro/i.test(linha)) continue
     // Skip structured "Rede: X" lines
     if (/^\s*rede\s*:/i.test(linha)) continue
     // Handle structured "Loja: X" → return just X
@@ -145,8 +153,10 @@ function detectaLoja(linhas: string[], redeId: string | null): string | null {
         if (lower.includes(pat)) return linha
       }
     }
+    // Não casou rede — guarda como fallback (1ª linha "livre" = provável header da loja)
+    if (!fallback && !DASH_ONLY_RE.test(linha) && linha.length >= 2) fallback = linha
   }
-  return null
+  return fallback
 }
 
 export function parseAlteracaoText(texto: string): AlteracaoParsed {
@@ -161,6 +171,7 @@ export function parseAlteracaoText(texto: string): AlteracaoParsed {
   let entra: VeiculoSlot | null = null
   let sai: VeiculoSlot | null = null
   let motivo: string | null = null
+  let lastSlot: 'entra' | 'sai' | null = null
 
   for (const linha of linhas) {
     if (ENTRA_LINE_RE.test(linha)) {
@@ -168,12 +179,30 @@ export function parseAlteracaoText(texto: string): AlteracaoParsed {
       const slot = parseSlot(seg)
       // Only overwrite if we get a better slot (has placa or name)
       if (!entra || slot?.placa_norm) entra = slot
+      lastSlot = 'entra'
       continue
     }
     if (SAI_LINE_RE.test(linha)) {
       const seg = linha.replace(SAI_LABEL_RE, '')
       const slot = parseSlot(seg)
       if (!sai || slot?.placa_norm) sai = slot
+      lastSlot = 'sai'
+      continue
+    }
+    // "Placa : X" genérico (linha própria) — anexa a placa ao ÚLTIMO slot visto
+    // (entra por padrão). Resolve Princesa Arraial: "Entra; Walter" / "Placa : UBO0B68".
+    if (PLACA_GENERIC_RE.test(linha) && !PLACA_SAI_RE.test(linha) && !PLACA_ENTRA_RE.test(linha)) {
+      const seg = linha.replace(PLACA_GENERIC_RE, '').trim()
+      const placa = extraiPlaca(seg)
+      if (placa) {
+        if (lastSlot === 'sai') {
+          sai = sai ? { ...sai, placa_raw: placa.raw, placa_norm: placa.norm }
+            : { motorista_nome: null, motorista_codigo: null, placa_raw: placa.raw, placa_norm: placa.norm }
+        } else {
+          entra = entra ? { ...entra, placa_raw: placa.raw, placa_norm: placa.norm }
+            : { motorista_nome: null, motorista_codigo: null, placa_raw: placa.raw, placa_norm: placa.norm }
+        }
+      }
       continue
     }
     // Structured "Placa sai: X" — add/override placa on sai slot
