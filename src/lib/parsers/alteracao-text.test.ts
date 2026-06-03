@@ -154,4 +154,21 @@ describe('parseAlteracaoText', () => {
       expect(r.tipo).toBe('SUBSTITUICAO')
     })
   })
+
+  describe('casos reais da cliente (varredura 02.06)', () => {
+    it('Entra; com ponto-e-vírgula + "Placa : X" em linha própria (Princesa Arraial)', () => {
+      const r = parseAlteracaoText('princesa Arraial 1 2 3\nEntra; Walter Regis\nPlaca : UBO 0B68\nSai: Antônio\nPlaca : MES 7F27\nCARRO QUEBROU')
+      expect(r.tipo).toBe('SUBSTITUICAO')
+      expect(r.rede_id).toBe('PRINCESA')
+      expect(r.entra?.placa_norm).toBe('UBO0B68')   // substituto capturado (era perdido)
+      expect(r.sai?.placa_norm).toBe('MES7F27')
+    })
+
+    it('header de loja SEM palavra-da-rede é identificado por fallback ("Caxias 1")', () => {
+      const r = parseAlteracaoText('Caxias 1\nEntra: Victor 353 TJQ6J26')
+      expect(r.loja_nome_raw).toBe('Caxias 1')      // antes vinha null
+      expect(r.tipo).toBe('INCLUSAO')
+      expect(r.entra?.placa_norm).toBe('TJQ6J26')
+    })
+  })
 })
