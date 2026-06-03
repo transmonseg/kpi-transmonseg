@@ -2261,3 +2261,27 @@ describe('BUG 3 — placa duplicada Unitrac (conversão Mercosul) prefere regist
     } finally { setSemGeo(false) }
   })
 })
+
+describe('anti-dupla-contagem — uma parada não credita 2 lojas DIFERENTES (REGINA)', () => {
+  const lojas: LojaRow[] = [
+    { id: 'rbi', rede_id: 'ARMAZEM_GRAO', nome: 'REGINA BARRA DO IMBUY', nome_normalizado: 'regina barra do imbuy', codigo_escala: null, codigo_unitrac: '5353012', nome_unitrac: 'REGINA BARRA DO IMBUY', lat: null, lng: null, raio_metros: 150 },
+    { id: 'rlm', rede_id: 'ARMAZEM_GRAO', nome: 'REGINA LUCIO MEIRA', nome_normalizado: 'regina lucio meira', codigo_escala: null, codigo_unitrac: '5353099', nome_unitrac: 'REGINA LUCIO MEIRA', lat: null, lng: null, raio_metros: 150 },
+  ]
+  const linhas: EscalaLinhaRow[] = [
+    { id: 'l1', rede_id: 'ARMAZEM_GRAO', placa_norm: 'RGN1234', loja_nome_raw: 'REGINA BARRA DO IMBUY', loja_codigo_raw: null, motorista_nome: 'M', carro_ordem: 1, data_entrega: '2026-05-20' },
+    { id: 'l2', rede_id: 'ARMAZEM_GRAO', placa_norm: 'RGN1234', loja_nome_raw: 'REGINA LUCIO MEIRA', loja_codigo_raw: null, motorista_nome: 'M', carro_ordem: 1, data_entrega: '2026-05-20' },
+  ]
+  const paradas: UnitracParadaRow[] = [
+    { id: 'p1', placa_norm: 'RGN1234', chegada: '2026-05-20T15:38:00Z', saida: '2026-05-20T17:13:00Z', duracao_seg: 0, local_parada: '5353012 - REGINA BARRA DO IMBUY', codigo_loja: '5353012', nome_loja: 'REGINA BARRA DO IMBUY', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+  ]
+
+  it('parada cód 5353012 fica só com Barra do Imbuy (dona do código); Lúcio Meira não infla', async () => {
+    const rotas = await cruzaEscalaUnitrac(linhas, paradas, lojas)
+    const r1 = rotas.find(r => r.escala_linha_id === 'l1')
+    const r2 = rotas.find(r => r.escala_linha_id === 'l2')
+    const usos = rotas.filter(r => r.paradas.some(p => p.parada_id === 'p1')).length
+    expect(usos).toBe(1)                    // a parada credita NO MÁXIMO 1 rota
+    expect(r1?.paradas[0]?.parada_id).toBe('p1')
+    expect(r2?.paradas.length ?? 0).toBe(0)
+  })
+})
