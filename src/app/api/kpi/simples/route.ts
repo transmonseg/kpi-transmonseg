@@ -475,7 +475,11 @@ export async function POST(req: NextRequest) {
     svc
       .from('lojas')
       .select('id, rede_id, nome, nome_normalizado, codigo_escala, codigo_unitrac, nome_unitrac, lat, lng, raio_metros, endereco, bairro, municipio, numero')
-      .eq('ativo', true),
+      .eq('ativo', true)
+      // ORDER BY estável: sem isso a ordem do Postgres é não-determinística e o
+      // `.find()` do matcher pode escolher lojas diferentes entre execuções em
+      // casos ambíguos (duplicatas). Ordena por id pra resultado reprodutível.
+      .order('id', { ascending: true }),
     svc
       .from('canonical_loja')
       .select('id, name, lat, lng, raio_metros')
