@@ -46,3 +46,8 @@ next-env.d.ts
 
 # Backups locais (não versionar — grandes)
 docs/backup/
+
+# Scratch local de análise/varredura (não versionar)
+_varredura/
+_tmp_*.ts
+_tmp_*.md

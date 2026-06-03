@@ -10,7 +10,7 @@
 [![Tailwind](https://img.shields.io/badge/Tailwind-4-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
 [![Vercel](https://img.shields.io/badge/Deploy-Vercel-000?style=flat-square&logo=vercel&logoColor=white)](https://kpi-transmonseg.vercel.app)
-[![Tests](https://img.shields.io/badge/Tests-358%2F358-success?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev)
+[![Tests](https://img.shields.io/badge/Tests-425%2F425-success?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev)
 
 **[Acessar produção](https://kpi-transmonseg.vercel.app)** • **[GitHub](https://github.com/transmonseg/kpi-transmonseg)**
 
@@ -58,8 +58,8 @@ ESCALAS (5+ formatos, XLSX/PDF)          UNITRAC (PDF/XLSX, GPS por veículo)
                               │
                               ▼
    ┌─────────────────────────────────────────────────────┐
-   │   Matcher por CÓDIGO EXATO (modo sem-geofence)       │
-   │   473 lojas cadastradas · fallback nome/fuzzy/geo    │
+   │   Matcher: código exato + recuperação geográfica     │
+   │   419 lojas · nome/fuzzy · geo-endereço/troca/N:N     │
    └─────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -101,10 +101,14 @@ Filtros por período (dia/semana/mês) e multi-rede, **inserção de KPIs manuai
 |---|---|
 | **Multi-formato** | XLSX nativo (ExcelJS/SheetJS) e PDF (pdf-parse + pdfjs-serverless) |
 | **Multi-escala** | Parsers dedicados (GERAL, PAX/Feira/Emanuel, ZONA SUL, ARMAZÉM DO GRÃO, GUANABARA PDF) com dedup automática entre fontes |
-| **Match por código exato** | Modo sem-geofence: casa `codigo_unitrac` exato (dados exatos, não proximidade). 473 lojas no cadastro |
-| **Fallbacks de match** | Nome literal → Levenshtein fuzzy → geo-haversine — disponíveis, desligados em produção |
-| **OCR-tolerant** | Placas Mercosul com confusões `1↔B`, `9↔J`, `4↔E` aceitas se forem únicas no Unitrac |
+| **Match por código exato** | Base: casa `codigo_unitrac` exato (preciso, auditável). 419 lojas no cadastro |
+| **Recuperação geográfica** | Entrega sem geofence (`FORA_BASE`) casada por coord à loja (limiar = raio da loja), sempre marcada pra revisão |
+| **Troca de carro / substituição** | Entrega feita por OUTRA placa (substituto) creditada quando código E coordenada batem |
+| **Geo multi-entrega (N:N)** | 1 placa em N lojas próximas: clusteriza paradas e atribui por ordem temporal (1ª→1ª) |
+| **OCR + Mercosul** | Placas com confusão de leitura (`1↔B`, `9↔J`) e conversão Mercosul (`3↔D`) reconhecidas |
+| **Anti-dupla-contagem** | Uma parada nunca credita 2 lojas diferentes (geofence sobreposto) — exceto cross-dock |
 | **Cross-midnight** | Entregas que cruzam meia-noite (saída < chegada) com tempo correto |
+| **Alterações de escala** | Cola WhatsApp cru → parser detecta entra/sai/troca-de-carro/loja → aplica e credita o substituto |
 | **Gerador via template** | XLSX gerado a partir de um template aprovado (Calibri, paleta navy, 1º/2º carro) — byte-fiel ao modelo da operação |
 | **Detecção de anomalias** | Inconsistências automáticas no pipeline (placa sem GPS, tempo invertido, fora da janela…) |
 | **Edição inline** | Toda a pré-visualização é editável (loja, placa, motorista, turno, horários, tempo) |
@@ -218,7 +222,7 @@ npm run dev           # dev server (Turbopack)
 npm run build         # build de produção
 npm start             # rodar produção
 npm run lint          # eslint
-npm test              # vitest run (358 testes)
+npm test              # vitest run (425 testes)
 npm run test:watch    # vitest watch
 npm run test:coverage # cobertura
 ```
@@ -270,13 +274,13 @@ kpi-transmonseg/
 
 | Métrica | Valor |
 |---|---|
-| Commits no `main` | **494** |
+| Commits no `main` | **596** |
 | Rotas (page + api) | **39** |
 | Parsers | **24** |
 | Módulos KPI | **20** |
 | Migrations Supabase | **19** |
-| Lojas cadastradas | **473** |
-| Testes Vitest | **358** verdes |
+| Lojas ativas | **419** |
+| Testes Vitest | **425** verdes |
 
 ---
 
@@ -299,8 +303,8 @@ sequenceDiagram
     API->>ST: Download dos arquivos
     API->>API: Parse 5 escalas + Unitrac, dedup multi-escala
     API->>DB: Carrega lojas (codigo_unitrac)
-    API->>M: cruzaEscalaUnitrac (modo sem-geofence)
-    M->>M: codigo exato -> nome -> fuzzy
+    API->>M: cruzaEscalaUnitrac (código + geo-endereço)
+    M->>M: codigo exato -> nome -> fuzzy -> geo/troca/N:N
     M-->>API: rotas com match
     API->>API: Anomalias + line_edits
     API->>API: Gera XLSX (template) + PDF por rede
@@ -334,16 +338,23 @@ Detector automático: roda os parsers em ordem e fica com o primeiro que retorna
 
 ## Matcher: como o GPS vira KPI
 
-O matcher (`src/lib/kpi/matcher.ts`) cruza cada linha de escala com as paradas GPS do Unitrac. Hoje roda em **modo sem-geofence** (`setSemGeo(true)`): com **473 lojas cadastradas com `codigo_unitrac`**, o casamento por **código exato** é a fonte de verdade — preciso e auditável, sem depender de coordenada.
+O matcher (`src/lib/kpi/matcher.ts`) cruza cada linha de escala com as paradas GPS do Unitrac. A base é o **casamento por código exato** (`codigo_unitrac`) — preciso e auditável. Em cima disso, uma **camada de recuperação geográfica** (`geoEndereco: true`) resgata as entregas que o Unitrac não fechou por código (parada `FORA_BASE`, sem geofence cadastrado), sempre marcando `requiresReview` — não entra cego no KPI do cliente.
 
 ```
-Priority 1 ─ codigo_unitrac exato      ← decide em produção
-Priority 2 ─ nome_unitrac literal
-Priority 3 ─ Levenshtein fuzzy (<=2)
-Priority 4 ─ geo-proximidade haversine ← DESLIGADO no modo sem-geofence
+Camada 1 ─ casamento por código/nome (assignment Hungarian por placa)
+  Priority 1 ─ codigo_unitrac exato      ← decide a maioria
+  Priority 2 ─ nome_unitrac literal
+  Priority 3 ─ Levenshtein fuzzy (<=2)
+
+Camada 2 ─ recuperação geográfica (revisão)
+  · geo-endereço   ─ FORA_BASE casado pela COORD à loja (limiar = raio da loja,
+                     100-200m; acima exige confirmação de rua/bairro)
+  · troca de carro ─ entrega de OUTRA placa (substituto) que bate código E coord
+  · geo N:N        ─ 1 placa, N lojas próximas: clusteriza paradas e atribui por
+                     ORDEM TEMPORAL (1ª parada → 1ª entrega) — caso multi-entrega
 ```
 
-Em cima disso, regras finas tratam o mundo real do Unitrac: consolidação de saída pela **última** parada do bloco, distribuição multi-loja por código, T22 (FORA_BASE com GPS em loja cadastrada vira LOJA), proteção contra dado ausente e tolerância OCR de placa.
+Em cima disso, regras finas e **redes de segurança** tratam o mundo real do Unitrac: consolidação de movimentações coladas no cliente (chegada = 1ª, saída = última), placa duplicada Mercosul (`3↔D` na conversão de placa), **anti-dupla-contagem** (uma parada nunca credita 2 lojas diferentes), guard `saída CD > chegada`, tolerância OCR de placa, e aviso de **relatório parcial** quando gerado antes da janela de entrega da rede.
 
 > O cadastro de lojas é validado contra as **escalas reais** antes de entrar — o Unitrac lista muitos clientes que a operação não atende, então só vira loja o que aparece na operação.
 
@@ -365,7 +376,7 @@ O export mensal consolida os XLSX já aprovados de cada dia numa aba por dia, co
 
 | Tabela | Função |
 |---|---|
-| `lojas` | Catálogo operacional (473 lojas, casadas por `codigo_unitrac`) |
+| `lojas` | Catálogo operacional (419 lojas, casadas por `codigo_unitrac`) |
 | `redes` | Catálogo de redes com janelas operacionais |
 | `escala_uploads` · `escala_linhas` | Arquivos de escala e linhas parseadas |
 | `unitrac_uploads` · `paradas` | Arquivos Unitrac e paradas GPS extraídas |
@@ -423,17 +434,18 @@ Anomalias `HIGH` puxam o olho na pré-visualização e pedem revisão antes de f
 
 #### Feito recentemente
 
+- [x] **Camada de recuperação geográfica** — geo-endereço (raio da loja), troca de carro (substituto), geo N:N por ordem temporal
+- [x] **Alterações de escala robustas** — parser (separadores, "Placa:" solta, loja sem rede) + aplicação que credita o substituto
+- [x] **Redes de segurança** — anti-dupla-contagem, placa Mercosul (`3↔D`), guard `saída CD > chegada`, determinismo (ORDER BY)
+- [x] **Aviso de relatório parcial** por janela de entrega da rede
 - [x] Dashboard de operação (3 faixas, inserir/histórico de KPIs manuais, export mensal)
-- [x] Modo sem-geofence (match por código exato) + cadastro de 473 lojas
 - [x] Redesign do gerador XLSX via template aprovado (byte-fiel)
-- [x] Nav reorganizada — Dashboard como entrada, grupos expansíveis
-- [x] Polish visual completo (auditoria de 6 dimensões de design)
 
 #### Próximos
 
 - [ ] Coluna "tempo de operação" no KPI (helper pronto, atrás de flag)
-- [ ] Geocodificação opcional das lojas sem coordenada (para mapa, não para match)
-- [ ] Consolidação de registros duplicados (loja com e sem código)
+- [ ] Limpeza de duplicatas de cadastro (loja com e sem código) — ferramenta dry-run pronta, revisão manual
+- [ ] Cadastro de lojas dentro do CD (CEASA) com coord fora do raio da base
 - [ ] Notificação ao concluir geração · Export CSV
 
 ---
