@@ -2285,3 +2285,39 @@ describe('anti-dupla-contagem — uma parada não credita 2 lojas DIFERENTES (RE
     expect(r2?.paradas.length ?? 0).toBe(0)
   })
 })
+
+describe('geo N:N — uma placa, N lojas próximas, atribui por ORDEM TEMPORAL (Arraial)', () => {
+  const lojas: LojaRow[] = [
+    { id: 'a1', rede_id: 'PRINCESA', nome: 'Princesa - X 1', nome_normalizado: 'princesa x 1', codigo_escala: null, codigo_unitrac: null, nome_unitrac: 'Princesa - X 1', lat: -22.9670, lng: -42.0281, raio_metros: 150, endereco: null, bairro: null, municipio: null },
+    { id: 'a2', rede_id: 'PRINCESA', nome: 'Princesa - X 2', nome_normalizado: 'princesa x 2', codigo_escala: null, codigo_unitrac: null, nome_unitrac: 'Princesa - X 2', lat: -22.9676, lng: -42.0242, raio_metros: 150, endereco: null, bairro: null, municipio: null },
+    { id: 'a3', rede_id: 'PRINCESA', nome: 'Princesa - X 3', nome_normalizado: 'princesa x 3', codigo_escala: null, codigo_unitrac: null, nome_unitrac: 'Princesa - X 3', lat: -22.9726, lng: -42.0285, raio_metros: 150, endereco: null, bairro: null, municipio: null },
+  ]
+  const linhas: EscalaLinhaRow[] = [
+    { id: 'l1', rede_id: 'PRINCESA', placa_norm: 'SUB1234', loja_nome_raw: 'Princesa - X 1', loja_codigo_raw: null, motorista_nome: 'W', carro_ordem: 1, data_entrega: '2026-06-02' },
+    { id: 'l2', rede_id: 'PRINCESA', placa_norm: 'SUB1234', loja_nome_raw: 'Princesa - X 2', loja_codigo_raw: null, motorista_nome: 'W', carro_ordem: 1, data_entrega: '2026-06-02' },
+    { id: 'l3', rede_id: 'PRINCESA', placa_norm: 'SUB1234', loja_nome_raw: 'Princesa - X 3', loja_codigo_raw: null, motorista_nome: 'W', carro_ordem: 1, data_entrega: '2026-06-02' },
+  ]
+  const fb = (id: string, chd: string, lat: number, lng: number): UnitracParadaRow => ({ id, placa_norm: 'SUB1234', chegada: chd, saida: chd, duracao_seg: 1800, local_parada: 'FORA DE BASE E LOCAL DE SERVICO', codigo_loja: null, nome_loja: null, lat, lng, endereco: null, classificacao: 'FORA_BASE', ordem: 1 })
+
+  it('3 paradas FORA_BASE no cluster → 1ª linha = 1ª parada (horário), todas casadas', async () => {
+    setSemGeo(true)
+    try {
+      const paradas: UnitracParadaRow[] = [
+        { id: 'b', placa_norm: 'SUB1234', chegada: '2026-06-02T00:06:00Z', saida: '2026-06-02T02:33:00Z', duracao_seg: 0, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: -22.827, lng: -43.337, endereco: null, classificacao: 'BASE', ordem: 0 },
+        fb('p3', '2026-06-02T12:31:00Z', -22.9726, -42.0285),
+        fb('p1', '2026-06-02T10:49:00Z', -22.9670, -42.0281),
+        fb('p2', '2026-06-02T11:40:00Z', -22.9676, -42.0242),
+      ]
+      const rotas = await cruzaEscalaUnitrac(linhas, paradas, lojas, undefined, undefined, { geoEndereco: true })
+      const r1 = rotas.find(r => r.escala_linha_id === 'l1')
+      const r2 = rotas.find(r => r.escala_linha_id === 'l2')
+      const r3 = rotas.find(r => r.escala_linha_id === 'l3')
+      expect(r1?.paradas[0]?.chegada.toISOString()).toBe('2026-06-02T10:49:00.000Z') // 1ª entrega = 1ª parada
+      expect(r2?.paradas[0]?.chegada.toISOString()).toBe('2026-06-02T11:40:00.000Z')
+      expect(r3?.paradas[0]?.chegada.toISOString()).toBe('2026-06-02T12:31:00.000Z')
+      // cada parada credita só 1 rota (sem dupla)
+      const ids = [r1, r2, r3].map(r => r?.paradas[0]?.parada_id)
+      expect(new Set(ids).size).toBe(3)
+    } finally { setSemGeo(false) }
+  })
+})

@@ -2128,6 +2128,65 @@ export async function cruzaEscalaUnitrac(
       return cands.find(l => matchScore(linha.loja_nome_raw, l.nome) === 0) ?? null
     }
 
+    // (0) GEO N:N por placa (cluster + ORDEM TEMPORAL). Quando UMA placa faz VÁRIAS
+    // paradas FORA_BASE para VÁRIAS lojas PRÓXIMAS da mesma rede (ex: Princesa
+    // Arraial 1/2/3, muitas vezes substituto), os passos single abaixo recuperariam
+    // só 1 (limiar apertado por parada) e na ordem errada. Aqui: agrupa as linhas
+    // vazias por placa; se as lojas esperadas formam um CLUSTER (≤3km) e a placa tem
+    // paradas FORA_BASE/LOJA não usadas no cluster, atribui por HORÁRIO (1ª parada →
+    // 1ª entrega). Roda ANTES dos passos single pra fixar a ordem certa.
+    const vaziasNN = new Map<string, RotaKpi[]>()
+    for (const r of rotas) {
+      if (r.paradas.length > 0 || !r.placa_norm) continue
+      const a = vaziasNN.get(r.placa_norm) ?? []; a.push(r); vaziasNN.set(r.placa_norm, a)
+    }
+    for (const [placa, rs] of vaziasNN) {
+      if (rs.length < 2) continue
+      const comLoja = rs.map(r => {
+        const linha = escalaLinhas.find(l => l.id === r.escala_linha_id)
+        const esperada = linha ? lojaEsperadaDaLinha(linha) : null
+        return esperada && esperada.lat != null && esperada.lng != null ? { r, linha: linha!, esperada } : null
+      }).filter((x): x is { r: RotaKpi; linha: EscalaLinhaRow; esperada: LojaRow } => x != null)
+      if (comLoja.length < 2) continue
+      // paradas FORA_BASE/LOJA não usadas da placa, agrupadas em CLUSTERS espaciais
+      // (≤1km do âncora). Cada cluster = uma "área de entrega" da placa. Assim uma
+      // loja distante (4ª linha da mesma placa) não quebra o cluster do Arraial.
+      const ps = (paradaByPlaca.get(placa) ?? []).filter(p =>
+        !consumidas.has(p.id) && p.lat != null && p.lng != null &&
+        (p.classificacao === 'FORA_BASE' || p.classificacao === 'LOJA'))
+        .sort((a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime())
+      const clusters: UnitracParadaRow[][] = []
+      for (const p of ps) {
+        const c = clusters.find(cl => haversine(p.lat!, p.lng!, cl[0].lat!, cl[0].lng!) <= 1000)
+        if (c) c.push(p); else clusters.push([p])
+      }
+      for (const cl of clusters) {
+        if (cl.length < 2) continue
+        const clLat = cl.reduce((s, p) => s + p.lat!, 0) / cl.length
+        const clLng = cl.reduce((s, p) => s + p.lng!, 0) / cl.length
+        // rotas (ainda vazias) cuja loja esperada cai nesse cluster (≤1.5km)
+        const rotasCl = comLoja.filter(x => x.r.paradas.length === 0 && haversine(x.esperada.lat!, x.esperada.lng!, clLat, clLng) <= 1500)
+        if (rotasCl.length < 2) continue
+        // ORDEM TEMPORAL: linha por ordem da escala; parada por horário; 1:1
+        const rotasOrd = [...rotasCl].sort((a, b) =>
+          (a.linha.carro_ordem ?? 0) - (b.linha.carro_ordem ?? 0) || a.linha.loja_nome_raw.localeCompare(b.linha.loja_nome_raw))
+        const n = Math.min(rotasOrd.length, cl.length)
+        for (let i = 0; i < n; i++) {
+          const { r, esperada } = rotasOrd[i]; const p = cl[i]
+          const chegada = new Date(p.chegada); const saida = p.saida ? new Date(p.saida) : chegada
+          r.paradas = [{
+            parada_id: p.id, loja_id: esperada.id, nome: esperada.nome, chegada, saida,
+            duracao_min: Math.round((saida.getTime() - chegada.getTime()) / 60000),
+            classificacao: p.classificacao === 'LOJA' ? 'LOJA' : 'FORA_BASE',
+          }]
+          r.saida_cd = computeSaidaCdParaParada(p, paradaByPlaca.get(placa) ?? [], { redeId: r.rede_id, data: r.data })
+          r.status = 'ok'
+          r._matchMeta = { score: 0.65, confidence: 'LOW', requiresReview: true, algorithm: 'geo' }
+          consumidas.add(p.id)
+        }
+      }
+    }
+
     for (const rota of rotas) {
       if (rota.paradas.length > 0 || !rota.placa_norm) continue
       const linha = escalaLinhas.find(l => l.id === rota.escala_linha_id)
