@@ -728,13 +728,21 @@ export async function POST(req: NextRequest) {
 
       const anomCounts = anomaliasPorRede[rede_id] ?? { high: 0, medium: 0, low: 0 }
 
-      // Aviso de relatório parcial: muitos veículos rastreados saíram da base mas
-      // quase ninguém entregou E o relatório só vai até cedo → provavelmente gerado
-      // antes das entregas. Não bloqueia, só alerta o operador (caso Princesa 4h).
+      // Aviso de relatório parcial: a JANELA de entrega da rede ainda não fechou e
+      // quase ninguém entregou → relatório gerado cedo demais (caso Princesa 4h).
+      // Janelas informadas pela operação (Tia Érica): a maioria das redes entrega
+      // 3:30–12:00; Guanabara 9–15; SuperPax/Feira Nova/Emanuel 13–17; Armazém do
+      // Grão 12–18; Zona Sul 3:30–23. Por isso ZS/Armazém de manhã ter pouca entrega
+      // é NORMAL, não erro — e o aviso reflete isso.
+      const JANELA_FIM: Record<string, number> = {
+        PREZUNIC: 12, CARREFOUR: 12, PRINCESA: 12, ASSAI: 12, SUPERPRIX: 12, ATACADAO: 12,
+        GUANABARA: 15, SUPER_PAX: 17, FEIRA_NOVA: 17, EMANUEL: 17, ARMAZEM_GRAO: 18, ZONA_SUL: 23,
+      }
+      const janelaFim = JANELA_FIM[rede_id] ?? 12
       const rastreados = preview.filter(p => p.tem_gps)
       const entregaram = rastreados.filter(p => p.chegada_loja_fmt)
-      const avisoParcial = rastreados.length >= 5 && reportMaxHora < 7 && entregaram.length / rastreados.length < 0.2
-        ? `Relatório parece parcial: só ${entregaram.length}/${rastreados.length} veículos rastreados com entrega e o relatório vai até ~${String(Math.floor(reportMaxHora)).padStart(2, '0')}h. Gere de novo depois das entregas.`
+      const avisoParcial = rastreados.length >= 5 && reportMaxHora < janelaFim && entregaram.length / rastreados.length < 0.2
+        ? `Relatório parece parcial: só ${entregaram.length}/${rastreados.length} veículos rastreados com entrega e o relatório vai até ~${String(Math.floor(reportMaxHora)).padStart(2, '0')}h, mas as entregas desta rede vão até ${janelaFim}h. Gere de novo depois das entregas.`
         : null
 
       return {
