@@ -2205,6 +2205,11 @@ export async function cruzaEscalaUnitrac(
         const m = matchGeoEndereco(
           { lat: p.lat, lng: p.lng, endereco: p.endereco ?? null, classificacao: p.classificacao, codigo_loja: p.codigo_loja },
           [{ id: esperada.id, rede_id: esperada.rede_id, nome: esperada.nome, lat: esperada.lat, lng: esperada.lng, endereco: esperada.endereco, bairro: esperada.bairro, municipio: esperada.municipio, numero: esperada.numero }],
+          // Usa o RAIO da loja como limiar direto (capado em 100–200m) em vez dos 100m
+          // fixos: entregas a 100–150m do ponto cadastrado (ex Prezunic Fonseca, 137m,
+          // raio 150) escapavam por poucos metros. Acima do raio ainda exige confirmação
+          // de rua/bairro (anti-falso-positivo).
+          { hardMetros: Math.min(Math.max(esperada.raio_metros ?? 100, 100), 200) },
         )
         if (m && m.distancia < melhorDist) { melhorDist = m.distancia; melhorP = p }
       }
