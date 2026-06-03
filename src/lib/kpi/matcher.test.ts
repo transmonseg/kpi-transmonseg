@@ -2286,6 +2286,32 @@ describe('anti-dupla-contagem — uma parada não credita 2 lojas DIFERENTES (RE
   })
 })
 
+describe('geo-endereço — usa RAIO da loja (FORA_BASE a ~137m de loja raio 150 casa)', () => {
+  const loja: LojaRow = {
+    id: 'fon', rede_id: 'PREZUNIC', nome: 'Prezunic - Fonseca', nome_normalizado: 'prezunic fonseca',
+    codigo_escala: null, codigo_unitrac: '7000722', nome_unitrac: 'PREZUNIC FONSECA',
+    lat: -22.88147, lng: -43.08468, raio_metros: 150, endereco: null, bairro: null, municipio: null,
+  }
+  const linha: EscalaLinhaRow = {
+    id: 'l1', rede_id: 'PREZUNIC', placa_norm: 'LKV5067', loja_nome_raw: 'Prezunic - Fonseca',
+    loja_codigo_raw: null, motorista_nome: 'X', carro_ordem: 1, data_entrega: '2026-06-03',
+  }
+  const parada: UnitracParadaRow = {
+    id: 'p1', placa_norm: 'LKV5067', chegada: '2026-06-03T07:29:00Z', saida: '2026-06-03T09:23:00Z',
+    duracao_seg: 6840, local_parada: 'FORA DE BASE E LOCAL DE SERVICO', codigo_loja: null, nome_loja: null,
+    lat: -22.8827, lng: -43.0846, endereco: null, classificacao: 'FORA_BASE', ordem: 1,
+  }
+  it('FORA_BASE dentro do raio da loja (mas >100m) é recuperada', async () => {
+    setSemGeo(true)
+    try {
+      const rotas = await cruzaEscalaUnitrac([linha], [parada], [loja], undefined, undefined, { geoEndereco: true })
+      const r = rotas.find(x => x.escala_linha_id === 'l1')
+      expect(r?.paradas).toHaveLength(1)
+      expect(r?.paradas[0]?.chegada.toISOString()).toBe('2026-06-03T07:29:00.000Z')
+    } finally { setSemGeo(false) }
+  })
+})
+
 describe('geo N:N — uma placa, N lojas próximas, atribui por ORDEM TEMPORAL (Arraial)', () => {
   const lojas: LojaRow[] = [
     { id: 'a1', rede_id: 'PRINCESA', nome: 'Princesa - X 1', nome_normalizado: 'princesa x 1', codigo_escala: null, codigo_unitrac: null, nome_unitrac: 'Princesa - X 1', lat: -22.9670, lng: -42.0281, raio_metros: 150, endereco: null, bairro: null, municipio: null },
