@@ -2248,6 +2248,41 @@ export async function cruzaEscalaUnitrac(
     }
   }
 
+  // Rede de segurança ANTI-DUPLA-CONTAGEM: uma MESMA parada (parada_id) não pode
+  // creditar 2 rotas distintas — inflaria o KPI (1 parada do caminhão = 2 entregas).
+  // Caso real REGINA dia 20: cód 5353012 (geofence sobreposta) casava "Barra do
+  // Imbuy" E "Lúcio Meira". EXCEÇÃO: cross-dock (T9), onde uma parada serve 2 redes
+  // legitimamente (ex: Feira Nova entregue via loja Prezunic). Quando NÃO é
+  // cross-dock, mantém a rota cuja loja é dona do código da parada (ou maior score)
+  // e remove a parada das demais.
+  const rotasPorParada = new Map<string, RotaKpi[]>()
+  for (const r of rotas) for (const p of r.paradas) if (p.parada_id) {
+    const a = rotasPorParada.get(p.parada_id) ?? []; a.push(r); rotasPorParada.set(p.parada_id, a)
+  }
+  for (const [pid, rs] of rotasPorParada) {
+    if (rs.length < 2) continue
+    if (rs.some(r => r._matchMeta?.algorithm === 'crossdock')) continue // dupla intencional
+    // Mesma loja com 1ª/2ª entrega (ASSAI TIJUCA) → compartilhar é correto. Só é
+    // inflação quando a parada credita 2+ lojas cadastradas DIFERENTES (caso REGINA).
+    const lojaIds = rs.map(r => r.paradas.find(p => p.parada_id === pid)?.loja_id ?? null)
+    if (new Set(lojaIds.filter(Boolean)).size < 2) continue
+    const codP = paradaRows.find(p => p.id === pid)?.codigo_loja ?? null
+    const donaCod = (r: RotaKpi) => {
+      const lid = r.paradas.find(p => p.parada_id === pid)?.loja_id
+      const l = lid ? lojas.find(x => x.id === lid) : undefined
+      return l?.codigo_unitrac && codP && codCasa(l.codigo_unitrac, codP) ? 1 : 0
+    }
+    const ranked = [...rs].sort((a, b) => donaCod(b) - donaCod(a) || (b._matchMeta?.score ?? 0) - (a._matchMeta?.score ?? 0))
+    for (let i = 1; i < ranked.length; i++) {
+      ranked[i].paradas = ranked[i].paradas.filter(p => p.parada_id !== pid)
+      if (ranked[i].paradas.length === 0) {
+        ranked[i].saida_cd = null
+        ranked[i].status = 'sem_entrega'
+        ranked[i]._matchMeta = { score: 0, confidence: 'UNMATCHED', requiresReview: true, algorithm: 'none' }
+      }
+    }
+  }
+
   // Guard: saída do CD nunca pode ser DEPOIS da chegada na loja (impossível sair
   // da base após já ter chegado). Acontece com caminhão que dorme no CD/cliente
   // distante (chegada de madrugada) — o cálculo pega uma saída-base posterior.
