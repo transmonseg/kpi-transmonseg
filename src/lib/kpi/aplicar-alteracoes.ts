@@ -78,7 +78,10 @@ export function aplicarAlteracoes(
       // PRIORIDADE 4: match por loja_raw via tokens fortes do nome (quando
       // nao ha "Loja N" explicito nem info de "sai").
       // Caso "Carrefour Campo Grande" / "Assai Sao Goncalo Camil" sem numero.
-      if (!alt.sai?.placa_norm && !alt.sai?.motorista_nome && alt.loja_raw) {
+      // EXIGE rede_id: sem rede, um token genérico ("CAXIAS") casaria Carrefour,
+      // Prezunic E Assaí juntos (contaminação cross-rede). Alteração sem rede não
+      // é aplicada por token — fica pro operador completar.
+      if (alt.rede_id && !alt.sai?.placa_norm && !alt.sai?.motorista_nome && alt.loja_raw) {
         const norm = (s: string) =>
           s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
             .replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim()
