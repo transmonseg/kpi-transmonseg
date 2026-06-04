@@ -784,8 +784,9 @@ export async function POST(req: NextRequest) {
         }
       })
 
-      const [xlsxBuffer, pdfBuffer] = await Promise.all([
+      const [xlsxBuffer, xlsxComChegadaBuffer, pdfBuffer] = await Promise.all([
         gerarKpi({ rede_id, data, linhas }),
+        gerarKpi({ rede_id, data, linhas, comChegadaCd: true }),
         gerarKpiPdf({ rede_id, rede_nome, data, linhas: linhas as KpiLinha[] }),
       ])
 
@@ -818,6 +819,7 @@ export async function POST(req: NextRequest) {
         qtd_anomalias_medium: anomCounts.medium,
         qtd_anomalias_low: anomCounts.low,
         xlsxBase64: xlsxBuffer.toString('base64'),
+        xlsxComChegadaBase64: xlsxComChegadaBuffer.toString('base64'),
         pdfBase64: pdfBuffer.toString('base64'),
         preview,
       }

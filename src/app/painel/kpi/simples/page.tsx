@@ -76,6 +76,7 @@ type RedeResult = {
   qtd_sem_gps: number
   avisoParcial?: string | null
   xlsxBase64: string
+  xlsxComChegadaBase64?: string
   pdfBase64: string
   preview: PreviewLinha[]
 }
@@ -1187,6 +1188,7 @@ function RedePreviewSection({
   const qtdHigh = rede.preview.filter(l => l.confianca === 'HIGH').length
   const qtdLow = rede.preview.filter(l => l.confianca === 'LOW').length
   const qtdUnmatched = rede.preview.filter(l => l.confianca === 'UNMATCHED').length
+  const [xlsxMenu, setXlsxMenu] = useState(false)
 
   return (
     <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
@@ -1226,15 +1228,43 @@ function RedePreviewSection({
         <div className="flex shrink-0 items-center gap-1.5">
           {tomCobertura === 'success' && <CheckCircle size={16} weight="fill" className="text-[var(--color-success)]" />}
           {tomCobertura !== 'success' && <WarningCircle size={16} weight="fill" className={tomCobertura === 'warning' ? 'text-[var(--color-warning)]' : 'text-[var(--color-danger)]'} />}
-          <button
-            type="button"
-            onClick={() => downloadBase64(rede.xlsxBase64, `KPI-${rede.rede_id}-${data}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
-            className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--color-fg)] transition-all duration-150 active:scale-[0.96] hover:border-[var(--color-navy-700)] hover:bg-[var(--color-navy-700)] hover:text-white"
-          >
-            <FileArrowDown size={12} weight="bold" />
-            <FileXls size={12} weight="bold" />
-            XLSX
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setXlsxMenu(v => !v)}
+              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--color-fg)] transition-all duration-150 active:scale-[0.96] hover:border-[var(--color-navy-700)] hover:bg-[var(--color-navy-700)] hover:text-white"
+            >
+              <FileArrowDown size={12} weight="bold" />
+              <FileXls size={12} weight="bold" />
+              XLSX
+            </button>
+            {xlsxMenu && (
+              <>
+                {/* backdrop pra fechar ao clicar fora */}
+                <button type="button" aria-label="Fechar" className="fixed inset-0 z-40 cursor-default" onClick={() => setXlsxMenu(false)} />
+                <div className="absolute right-0 z-50 mt-1 w-56 overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-lg">
+                  <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)]">Baixar planilha</div>
+                  <button
+                    type="button"
+                    onClick={() => { downloadBase64(rede.xlsxBase64, `KPI-${rede.rede_id}-${data}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); setXlsxMenu(false) }}
+                    className="block w-full px-3 py-2 text-left text-[12px] text-[var(--color-fg)] transition-colors hover:bg-[var(--color-navy-700)] hover:text-white"
+                  >
+                    Sem coluna Chegada CD
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!rede.xlsxComChegadaBase64}
+                    title={rede.xlsxComChegadaBase64 ? 'Baixar com a coluna Chegada CD' : 'Gere o KPI de novo para habilitar (esta geração é anterior à coluna)'}
+                    onClick={() => { if (rede.xlsxComChegadaBase64) { downloadBase64(rede.xlsxComChegadaBase64, `KPI-${rede.rede_id}-${data}-com-chegada-cd.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); setXlsxMenu(false) } }}
+                    className="block w-full px-3 py-2 text-left text-[12px] text-[var(--color-fg)] transition-colors hover:bg-[var(--color-navy-700)] hover:text-white disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--color-fg)]"
+                  >
+                    Com coluna Chegada CD
+                    {!rede.xlsxComChegadaBase64 && <span className="block text-[10px] text-[var(--color-fg-subtle)]">gere o KPI de novo p/ habilitar</span>}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           <button
             type="button"
             onClick={() => downloadBase64(rede.pdfBase64, `KPI-${rede.rede_id}-${data}.pdf`, 'application/pdf')}
