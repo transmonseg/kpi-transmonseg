@@ -146,11 +146,13 @@ function preencherAba(
 
 /**
  * Legenda da observação no XLSX quando o carro NÃO entregou nesta loja.
- * Regra (cliente, 2026-06-01):
- *  - placa NÃO aparece no Unitrac (sem rastreador de verdade) → "SEM RASTREADOR"
- *  - placa rastreada e foi a algum lugar (outra loja / fora da base) → "MUDOU DE ROTA"
- *  - placa rastreada mas ficou na base → "NÃO FOI AO CLIENTE"
- * Carro com entrega nesta loja (chd_loja_1 != null) → null (mostra os horários).
+ * Regra (cliente, atualizada 2026-06-04):
+ *  - placa NÃO aparece no relatório (sem rastreador de verdade) → "SEM RASTREADOR"
+ *  - placa rastreada e foi a alguma LOJA (entregou em outro lugar) → "MUDOU DE ROTA"
+ *  - placa rastreada mas só ficou na BASE (não saiu do CD) → "NÃO SAIU DA BASE"
+ *  - placa rastreada, saiu da base mas sem entrega confirmada → "NÃO FOI AO CLIENTE"
+ * IMPORTANTE: se a placa está no relatório, ela TEM rastreador — só vira "sem
+ * rastreador" quando nem aparece. Carro com entrega (chd_loja_1 != null) → null.
  * Sem os flags por-placa (ex: linha recarregada do banco), cai num fallback seguro.
  */
 export function legendaSlot(c: LinhaParaKpi | null): string | null {
@@ -162,7 +164,9 @@ export function legendaSlot(c: LinhaParaKpi | null): string | null {
     return semGps ? 'SEM RASTREADOR' : 'NÃO FOI AO CLIENTE'
   }
   if (!c.placa_rastreada) return 'SEM RASTREADOR'
-  return c.placa_foi_algum_lugar ? 'MUDOU DE ROTA' : 'NÃO FOI AO CLIENTE'
+  if (c.placa_foi_algum_lugar) return 'MUDOU DE ROTA'
+  if (c.placa_saiu_da_base === false) return 'NÃO SAIU DA BASE'
+  return 'NÃO FOI AO CLIENTE'
 }
 
 function escreverLinha(ws: ExcelJS.Worksheet, row: number, ag: LinhaAgrupada, estilo: Partial<ExcelJS.Style>[]) {

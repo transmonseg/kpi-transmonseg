@@ -1053,6 +1053,43 @@ export async function cruzaEscalaUnitrac(
   //   2) parada LOJA/FORA_BASE geograficamente dentro do raio da loja escalada
   //      (caso ZS dia 20 LCO0978→LCO0J78: paradas só FORA_BASE mas dentro do raio
   //      das lojas 33/36/01 — antes rejeitava por falta de classificação LOJA).
+  // Acha a loja do cadastro que a LINHA da escala espera. Usado tanto na validação
+  // geográfica do resolvePlacaUnitrac quanto no pós-processamento geo. Antes cada
+  // ponto fazia `matchScore(nome) <= 1`, exato demais: "GB IRAJA FILIAL 9" (escala) vs
+  // "GB 09 - IRAJA" (cadastro) dá score 2 (token "FILIAL") → loja não encontrada → o
+  // Mercosul não validava e o geo não disparava (entrega a ≤66m sumia do KPI). Aqui:
+  // código primeiro; senão o MELHOR score (menor) entre nome e nome_unitrac, com o
+  // número da loja já travado dentro do matchScore. Empate → prefere o cadastro COM
+  // coordenada (não a duplicata-fantasma). É seguro afrouxar porque quem usa esse
+  // resultado revalida por COORDENADA (parada dentro do raio).
+  const melhorLojaEscalada = (linha: EscalaLinhaRow): LojaRow | null => {
+    const fung = redesFungiveis(linha.rede_id)
+    const cands = lojas.filter(l => fung.has(l.rede_id))
+    if (linha.loja_codigo_raw) {
+      const porCod = cands.find(l =>
+        l.codigo_escala === linha.loja_codigo_raw ||
+        (l.codigo_unitrac != null && codCasa(linha.loja_codigo_raw!, l.codigo_unitrac)))
+      if (porCod) return porCod
+    }
+    if (!linha.loja_nome_raw) return null
+    const scoreLoja = (l: LojaRow): number => Math.min(
+      matchScore(linha.loja_nome_raw, l.nome),
+      l.nome_unitrac != null ? matchScore(linha.loja_nome_raw, l.nome_unitrac) : Infinity,
+    )
+    let melhor: LojaRow | null = null
+    let melhorScore = Infinity
+    for (const l of cands) {
+      const s = scoreLoja(l)
+      if (s === Infinity) continue
+      const temGeo = l.lat != null && l.lng != null
+      const melhorTemGeo = melhor != null && melhor.lat != null && melhor.lng != null
+      if (s < melhorScore || (s === melhorScore && temGeo && !melhorTemGeo)) {
+        melhorScore = s; melhor = l
+      }
+    }
+    return melhorScore <= 4 ? melhor : null
+  }
+
   const temMov = (placa: string) =>
     (paradaByPlaca.get(placa) ?? []).some(p => p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE')
   function resolvePlacaUnitrac(placaEscala: string, linha?: EscalaLinhaRow): string | null {
@@ -1070,14 +1107,7 @@ export async function cruzaEscalaUnitrac(
     if (linha) {
       const paradas = paradaByPlaca.get(candidata) ?? []
       // Acha loja escalada no cadastro (por código ou nome) pra validar via geo
-      const fung = redesFungiveis(linha.rede_id)
-      const lojaEscalada = lojas.find(l => {
-        if (!fung.has(l.rede_id)) return false
-        if (linha.loja_codigo_raw && ((l.codigo_escala && codCasa(linha.loja_codigo_raw, l.codigo_escala)) || (l.codigo_unitrac && codCasa(linha.loja_codigo_raw, l.codigo_unitrac)))) return true
-        if (linha.loja_nome_raw && matchScore(linha.loja_nome_raw, l.nome) <= 1) return true
-        if (linha.loja_nome_raw && l.nome_unitrac && matchScore(linha.loja_nome_raw, l.nome_unitrac) <= 1) return true
-        return false
-      })
+      const lojaEscalada = melhorLojaEscalada(linha)
       const bate = paradas.some(p => {
         if (p.classificacao === 'LOJA') {
           if (linha.loja_codigo_raw && p.codigo_loja && codCasa(linha.loja_codigo_raw, p.codigo_loja)) return true
@@ -2093,6 +2123,8 @@ export async function cruzaEscalaUnitrac(
       data: linha.data_entrega,
       rede_id: linha.rede_id,
       placa_norm: linha.placa_norm,
+      // Placa resolvida no Unitrac (Mercosul/OCR) — usada pelo geo pra achar paradas.
+      placa_unitrac: placaUnitrac,
       saida_cd,
       paradas,
       anomalias_codigos: placaDup ? ['PLACA_DUPLICADA'] : [],
@@ -2116,17 +2148,7 @@ export async function cruzaEscalaUnitrac(
     const consumidas = new Set<string>()
     for (const r of rotas) for (const p of r.paradas) if (p.parada_id) consumidas.add(p.parada_id)
 
-    const lojaEsperadaDaLinha = (linha: EscalaLinhaRow): LojaRow | null => {
-      const fung = redesFungiveis(linha.rede_id)
-      const cands = lojas.filter(l => fung.has(l.rede_id))
-      if (linha.loja_codigo_raw) {
-        const porCod = cands.find(l =>
-          l.codigo_escala === linha.loja_codigo_raw ||
-          (l.codigo_unitrac != null && codCasa(linha.loja_codigo_raw!, l.codigo_unitrac)))
-        if (porCod) return porCod
-      }
-      return cands.find(l => matchScore(linha.loja_nome_raw, l.nome) === 0) ?? null
-    }
+    const lojaEsperadaDaLinha = (linha: EscalaLinhaRow): LojaRow | null => melhorLojaEscalada(linha)
 
     // (0) GEO N:N por placa (cluster + ORDEM TEMPORAL). Quando UMA placa faz VÁRIAS
     // paradas FORA_BASE para VÁRIAS lojas PRÓXIMAS da mesma rede (ex: Princesa
@@ -2135,10 +2157,13 @@ export async function cruzaEscalaUnitrac(
     // vazias por placa; se as lojas esperadas formam um CLUSTER (≤3km) e a placa tem
     // paradas FORA_BASE/LOJA não usadas no cluster, atribui por HORÁRIO (1ª parada →
     // 1ª entrega). Roda ANTES dos passos single pra fixar a ordem certa.
+    // Chaveia pela placa RESOLVIDA no Unitrac (placa_unitrac), não a da escala: placa
+    // antiga (KNI8988) não acha as paradas do Mercosul (KNI8J88).
     const vaziasNN = new Map<string, RotaKpi[]>()
     for (const r of rotas) {
-      if (r.paradas.length > 0 || !r.placa_norm) continue
-      const a = vaziasNN.get(r.placa_norm) ?? []; a.push(r); vaziasNN.set(r.placa_norm, a)
+      const pUni = r.placa_unitrac ?? r.placa_norm
+      if (r.paradas.length > 0 || !pUni) continue
+      const a = vaziasNN.get(pUni) ?? []; a.push(r); vaziasNN.set(pUni, a)
     }
     for (const [placa, rs] of vaziasNN) {
       if (rs.length < 2) continue
@@ -2188,13 +2213,14 @@ export async function cruzaEscalaUnitrac(
     }
 
     for (const rota of rotas) {
-      if (rota.paradas.length > 0 || !rota.placa_norm) continue
+      const placaUni = rota.placa_unitrac ?? rota.placa_norm
+      if (rota.paradas.length > 0 || !placaUni) continue
       const linha = escalaLinhas.find(l => l.id === rota.escala_linha_id)
       if (!linha) continue
       const esperada = lojaEsperadaDaLinha(linha)
       if (!esperada || esperada.lat == null || esperada.lng == null) continue
 
-      const candidatas = (paradaByPlaca.get(rota.placa_norm) ?? []).filter(p =>
+      const candidatas = (paradaByPlaca.get(placaUni) ?? []).filter(p =>
         !consumidas.has(p.id) && p.lat != null && p.lng != null)
 
       let melhorP: UnitracParadaRow | null = null
@@ -2253,9 +2279,12 @@ export async function cruzaEscalaUnitrac(
       }]
       // Saída do CD: última BASE BENASSI antes da PRIMEIRA parada do cluster (mesma
       // regra do fluxo normal). Sem isso, rotas casadas por geo saíam sem saida_cd.
-      rota.saida_cd = computeSaidaCdParaParada(primeira, paradaByPlaca.get(rota.placa_norm) ?? [], { redeId: rota.rede_id, data: rota.data })
+      rota.saida_cd = computeSaidaCdParaParada(primeira, paradaByPlaca.get(placaUni) ?? [], { redeId: rota.rede_id, data: rota.data })
       rota.status = 'ok'
-      rota._matchMeta = { score: 0.7, confidence: 'LOW', requiresReview: true, algorithm: 'geo' }
+      // Confiável = parada caiu DENTRO do raio cadastrado da loja (nosso limite de
+      // metros). Nesse caso entra no KPI do cliente sem revisão (status-rota).
+      rota.geo_confiavel = melhorDist <= (esperada.raio_metros ?? 100)
+      rota._matchMeta = { score: 0.7, confidence: 'LOW', requiresReview: !rota.geo_confiavel, algorithm: 'geo' }
       for (const p of grupo) consumidas.add(p.id)
     }
 
@@ -2278,8 +2307,12 @@ export async function cruzaEscalaUnitrac(
       const esperada = lojaEsperadaDaLinha(linha)
       if (!esperada || esperada.lat == null || esperada.lng == null || !esperada.codigo_unitrac) continue
       const raio = esperada.raio_metros ?? 200
-      const placaEscala = rota.placa_norm
-      const varsEscala = placaEscala ? new Set([placaEscala, ...variantesOcr(placaEscala)]) : new Set<string>()
+      // Considera a placa escalada E a resolvida no Unitrac (Mercosul) — ambas são "o
+      // mesmo veículo", não pode ser confundido com troca de carro.
+      const varsEscala = new Set<string>()
+      for (const pe of [rota.placa_norm, rota.placa_unitrac]) {
+        if (pe) { varsEscala.add(pe); for (const v of variantesOcr(pe)) varsEscala.add(v) }
+      }
 
       let melhorP: UnitracParadaRow | null = null
       let melhorDist = Infinity

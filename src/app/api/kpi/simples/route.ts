@@ -6,7 +6,7 @@ import { parseEscalaZonaSul } from '@/lib/parsers/escala-zona-sul'
 import { parseEscalaPax } from '@/lib/parsers/escala-pax'
 import { parseEscalaArmazemGrao } from '@/lib/parsers/escala-armazem-grao'
 import { parseUnitrac } from '@/lib/parsers/unitrac'
-import { cruzaEscalaUnitrac, variantesOcr, setSemGeo } from '@/lib/kpi/matcher'
+import { cruzaEscalaUnitrac, variantesOcr, variantesPlaca, setSemGeo } from '@/lib/kpi/matcher'
 import { aplicarAlteracoes } from '@/lib/kpi/aplicar-alteracoes'
 import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
@@ -441,19 +441,33 @@ export async function POST(req: NextRequest) {
   const frotaRastreada = new Set(frotaRows.map(v => v.placa_norm as string))
   const placasNoRelatorio = new Set(paradaRows.map(p => p.placa_norm))
   const temFrota = frotaRastreada.size > 0
+  // Usa variantesPlaca (OCR + Mercosul): a escala pode ter a placa antiga (LKF-7079)
+  // e o relatório a Mercosul (LKF-7A79) — sem isso a placa rastreada seria tida como
+  // "sem rastreador" por engano. Se a placa aparece no relatório, ela TEM rastreador.
   const placaRastreada = (placa: string | null): boolean => {
     if (!placa) return false
     const base = temFrota ? frotaRastreada : placasNoRelatorio
     if (base.has(placa)) return true
-    return variantesOcr(placa).some(v => base.has(v))
+    return variantesPlaca(placa).some(v => base.has(v))
   }
   // "Mudou de rota": placa rastreada que foi a alguma LOJA (entregou em outro lugar),
-  // mas não na loja agendada desta linha. Distingue de "não foi ao cliente" (ficou na base).
+  // mas não na loja agendada desta linha. Distingue de "não saiu da base" (só base).
   const placasComLoja = new Set(paradaRows.filter(p => p.classificacao === 'LOJA').map(p => p.placa_norm))
   const placaFoiAlgumLugar = (placa: string | null): boolean => {
     if (!placa) return false
     if (placasComLoja.has(placa)) return true
-    return variantesOcr(placa).some(v => placasComLoja.has(v))
+    return variantesPlaca(placa).some(v => placasComLoja.has(v))
+  }
+  // "Saiu da base": tem QUALQUER parada LOJA ou FORA_BASE no relatório. Se a placa está
+  // no relatório (tem rastreador) mas NÃO saiu da base, o caminhão só ficou no CD →
+  // "NÃO SAIU DA BASE" (mais preciso que "não foi ao cliente").
+  const placasSairam = new Set(
+    paradaRows.filter(p => p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE').map(p => p.placa_norm),
+  )
+  const placaSaiuDaBase = (placa: string | null): boolean => {
+    if (!placa) return false
+    if (placasSairam.has(placa)) return true
+    return variantesPlaca(placa).some(v => placasSairam.has(v))
   }
 
   // Hora mais recente coberta pelo relatório (BRT mascarado como UTC → getUTCHours
@@ -682,6 +696,7 @@ export async function POST(req: NextRequest) {
         const l = rotaToLinha(rota, esc, idx + 1)
         l.placa_rastreada = placaRastreada(rota.placa_norm)
         l.placa_foi_algum_lugar = placaFoiAlgumLugar(rota.placa_norm)
+        l.placa_saiu_da_base = placaSaiuDaBase(rota.placa_norm)
         return l
       })
 
@@ -700,10 +715,24 @@ export async function POST(req: NextRequest) {
           viaGeo: rota._matchMeta?.algorithm === 'geo',
           viaTroca: rota._matchMeta?.algorithm === 'troca',
           placaReal: rota.placa_real ?? null,
+          // Geo dentro do raio cadastrado → entra no KPI sem revisão.
+          geoConfiavel: rota.geo_confiavel ?? false,
+          // Placa rodou outra rota (foi a clientes) e não a escalada → mudou de rota.
+          // (Se houvesse alteração informada, a linha já teria a placa certa e não cairia aqui.)
+          placaFoiAlgumLugar: placaFoiAlgumLugar(rota.placa_norm),
+          // Placa no relatório mas só com parada na base → "não saiu da base".
+          placaSaiuDaBase: placaSaiuDaBase(rota.placa_norm),
         })
         const saidaLoja = p0 && p0.chegada && p0.duracao_min != null
           ? new Date(p0.chegada.getTime() + p0.duracao_min * 60_000)
           : null
+        // Alerta "placa desatualizada na escala": a entrega só casou porque o sistema
+        // converteu a placa antiga da escala pro padrão Mercosul do Unitrac. Sinaliza
+        // pra operação pedir a atualização da escala (áudio Cecília 04/06).
+        const placaDesatualizada = !!rota.placa_unitrac && !!rota.placa_norm && rota.placa_unitrac !== rota.placa_norm
+        const motivoRevisao = placaDesatualizada
+          ? [statusInfo.motivoRevisao, `Placa da escala (${rota.placa_norm}) desatualizada — no Unitrac é Mercosul (${rota.placa_unitrac}). Pedir atualização da escala.`].filter(Boolean).join(' ')
+          : statusInfo.motivoRevisao
         return {
           ordem: idx + 1,
           loja_nome: esc.loja_nome_raw,
@@ -719,8 +748,8 @@ export async function POST(req: NextRequest) {
           algoritmo: rota._matchMeta?.algorithm ?? 'none',
           anomalias: rota.anomalias_codigos,
           status: statusInfo.status,
-          revisar: statusInfo.revisar,
-          motivoRevisao: statusInfo.motivoRevisao,
+          revisar: statusInfo.revisar || placaDesatualizada,
+          motivoRevisao,
           saida_loja_fmt: fmtHoraBRT(saidaLoja),
         }
       })
