@@ -605,6 +605,26 @@ export async function POST(req: NextRequest) {
     if (codigos) rota.anomalias_codigos = codigos
   }
 
+  // Sinais por placa pro status mais preciso (reaproveitam as anomalias já detectadas):
+  //  • placaDivergeUnitrac: ANOM-15 (placa quase igual no Unitrac — typo de cadastro)
+  //  • rastreadorTravado:   ANOM-16 (rastro degenerado — 1 ponto o dia todo)
+  //  • placaEntregouEscala: a placa casou ≥1 das próprias linhas → linha sem parada
+  //    dela é "não foi ao cliente" (pulou a loja), não "mudou de rota" (outra rota).
+  const placaDivergeUnitrac = new Map<string, string>()
+  const rastreadorTravado = new Set<string>()
+  for (const a of anomalias) {
+    const pl = a.payload as Record<string, unknown> | undefined
+    if (a.codigo === 'ANOM-15' && pl?.placa_escala) placaDivergeUnitrac.set(String(pl.placa_escala), String(pl.placa_unitrac))
+    if (a.codigo === 'ANOM-16' && pl?.placa) rastreadorTravado.add(String(pl.placa))
+  }
+  const placaEntregouEscala = new Map<string, boolean>()
+  for (const r of rotas) {
+    if (!r.placa_norm) continue
+    const entregou = r.paradas.some(p => p.classificacao === 'LOJA' || (p.classificacao === 'FORA_BASE' && !!p.loja_id))
+    if (entregou) placaEntregouEscala.set(r.placa_norm, true)
+    else if (!placaEntregouEscala.has(r.placa_norm)) placaEntregouEscala.set(r.placa_norm, false)
+  }
+
   const redeMap = new Map<string, { rotas: RotaKpi[]; escala: LinhaEscala[] }>()
   for (const rota of rotas) {
     const escala = escalaMap.get(rota.escala_linha_id)
@@ -723,6 +743,12 @@ export async function POST(req: NextRequest) {
           placaFoiAlgumLugar: placaFoiAlgumLugar(rota.placa_norm),
           // Placa no relatório mas só com parada na base → "não saiu da base".
           placaSaiuDaBase: placaSaiuDaBase(rota.placa_norm),
+          // Entregou ≥1 das próprias lojas → linha sem parada é "não foi", não "mudou de rota".
+          placaEntregouPropriaEscala: placaEntregouEscala.get(rota.placa_norm ?? '') ?? false,
+          // Placa quase-igual no Unitrac (typo de cadastro) → não é "sem rastreador".
+          placaDivergeUnitrac: placaDivergeUnitrac.get(rota.placa_norm ?? '') ?? null,
+          // Rastro degenerado (1 ponto o dia todo) → rastreador travado.
+          rastreadorTravado: rastreadorTravado.has(rota.placa_norm ?? ''),
         })
         const saidaLoja = p0 && p0.chegada && p0.duracao_min != null
           ? new Date(p0.chegada.getTime() + p0.duracao_min * 60_000)

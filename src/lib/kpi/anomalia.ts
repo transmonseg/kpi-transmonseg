@@ -91,21 +91,29 @@ export function detectaAnomalias(params: DetectaParams): AnomaliaDetectada[] {
   // caractere de diferença) no relatório → provável erro de digitação no Unitrac.
   // Caso real KWV-7E49 (escala) x KWV-7E89 (Unitrac): 6 entregas sumiam como "sem
   // rastreador". Avisa o operador pra confirmar/corrigir a placa no painel.
+  // Emite UM aviso por linha de escala da placa (kpi_rota_id = id da linha), pra o
+  // alerta aparecer FIXADO em cada entrega afetada — não só no resumo do dia.
   const placasReport = [...placasUnitrac]
+  const linhasPorPlaca = new Map<string, string[]>()
+  for (const l of escalaLinhas) if (l.placa_norm) (linhasPorPlaca.get(l.placa_norm) ?? linhasPorPlaca.set(l.placa_norm, []).get(l.placa_norm)!).push(l.id)
   for (const ep of escalaPlacas) {
     if (placasUnitrac.has(ep)) continue
     const quase = placasReport.find((rp) => !escalaPlacas.has(rp) && charDist(ep, rp) === 1)
     if (quase) {
-      anomalias.push({
-        kpi_rota_id: null,
-        parada_id: null,
-        data,
-        codigo: 'ANOM-15',
-        severidade: 'HIGH',
-        descricao: `Placa ${ep} (escala) não está no Unitrac, mas há "${quase}" — 1 caractere diferente. Provável placa errada no Unitrac.`,
-        sugestao: 'Confirmar/corrigir a placa no painel do Unitrac — as entregas dessa placa estão como "sem rastreador".',
-        payload: { placa_escala: ep, placa_unitrac: quase },
-      })
+      const linhas = linhasPorPlaca.get(ep) ?? []
+      const alvos = linhas.length ? linhas : [null]
+      for (const linhaId of alvos) {
+        anomalias.push({
+          kpi_rota_id: linhaId,
+          parada_id: null,
+          data,
+          codigo: 'ANOM-15',
+          severidade: 'HIGH',
+          descricao: `Placa ${ep} (escala) não está no Unitrac, mas há "${quase}" — 1 caractere diferente. Provável placa errada no Unitrac.`,
+          sugestao: 'Confirmar/corrigir a placa no painel do Unitrac — as entregas dessa placa estão como "sem rastreador".',
+          payload: { placa_escala: ep, placa_unitrac: quase },
+        })
+      }
     }
   }
 
