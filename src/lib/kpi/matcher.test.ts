@@ -350,6 +350,73 @@ describe('cruzaEscalaUnitrac — saida_cd fallback sem BASE (Bug B)', () => {
     expect(rotas[0].saida_cd).not.toBeNull()
     expect(rotas[0].saida_cd!.toISOString()).toBe('2026-05-20T07:00:00.000Z')
   })
+
+  it('chegada_base = chegada da primeira BASE DEPOIS da entrega (volta pra base)', async () => {
+    const paradas: UnitracParadaRow[] = [
+      { id: 'pb', placa_norm: 'XYZ9876', chegada: '2026-05-20T06:00:00.000Z', saida: '2026-05-20T07:00:00.000Z', duracao_seg: 3600, local_parada: 'BASE BENASSI', codigo_loja: null, nome_loja: null, lat: null, lng: null, classificacao: 'BASE', ordem: 1 },
+      { id: 'pc', placa_norm: 'XYZ9876', chegada: '2026-05-20T08:30:00.000Z', saida: '2026-05-20T10:00:00.000Z', duracao_seg: 5400, local_parada: '7777 - CLIENTE FOO', codigo_loja: '7777', nome_loja: 'CLIENTE FOO', lat: null, lng: null, classificacao: 'LOJA', ordem: 2 },
+      { id: 'pd', placa_norm: 'XYZ9876', chegada: '2026-05-20T11:00:00.000Z', saida: '2026-05-20T15:00:00.000Z', duracao_seg: 14400, local_parada: 'BASE BENASSI', codigo_loja: null, nome_loja: null, lat: null, lng: null, classificacao: 'BASE', ordem: 3 },
+    ]
+    const rotas = await cruzaEscalaUnitrac([linha], paradas, lojas)
+    expect(rotas[0].chegada_base?.toISOString()).toBe('2026-05-20T11:00:00.000Z')
+  })
+
+  it('sem BASE depois da entrega (terminou fora) -> chegada_base = null', async () => {
+    const paradas: UnitracParadaRow[] = [
+      { id: 'pb', placa_norm: 'XYZ9876', chegada: '2026-05-20T06:00:00.000Z', saida: '2026-05-20T07:00:00.000Z', duracao_seg: 3600, local_parada: 'BASE BENASSI', codigo_loja: null, nome_loja: null, lat: null, lng: null, classificacao: 'BASE', ordem: 1 },
+      { id: 'pc', placa_norm: 'XYZ9876', chegada: '2026-05-20T08:30:00.000Z', saida: '2026-05-20T10:00:00.000Z', duracao_seg: 5400, local_parada: '7777 - CLIENTE FOO', codigo_loja: '7777', nome_loja: 'CLIENTE FOO', lat: null, lng: null, classificacao: 'LOJA', ordem: 2 },
+    ]
+    const rotas = await cruzaEscalaUnitrac([linha], paradas, lojas)
+    expect(rotas[0].chegada_base ?? null).toBeNull()
+  })
+})
+
+// --- Multi-viagem: base → loja → base → loja → base. Cada entrega tem que pegar
+//     a saída/volta da SUA viagem, não a do dia inteiro (caso real placa que faz
+//     2+ rotas ou 2 redes diferentes no mesmo dia). ---
+describe('cruzaEscalaUnitrac — multi-viagem distingue saída/volta por trip', () => {
+  const lojas: LojaRow[] = [
+    { id: 'lA', rede_id: 'r1', nome: 'Cliente Foo', nome_normalizado: 'cliente foo', codigo_escala: '7777', codigo_unitrac: '7777', nome_unitrac: 'CLIENTE FOO', lat: null, lng: null, raio_metros: 300 },
+    { id: 'lB', rede_id: 'r2', nome: 'Cliente Bar', nome_normalizado: 'cliente bar', codigo_escala: '8888', codigo_unitrac: '8888', nome_unitrac: 'CLIENTE BAR', lat: null, lng: null, raio_metros: 300 },
+  ]
+  const escala: EscalaLinhaRow[] = [
+    { id: 'elA', rede_id: 'r1', placa_norm: 'XYZ9876', loja_nome_raw: 'CLIENTE FOO', loja_codigo_raw: '7777', motorista_nome: 'Joao', carro_ordem: 1, data_entrega: '2026-05-20' },
+    { id: 'elB', rede_id: 'r2', placa_norm: 'XYZ9876', loja_nome_raw: 'CLIENTE BAR', loja_codigo_raw: '8888', motorista_nome: 'Joao', carro_ordem: 1, data_entrega: '2026-05-20' },
+  ]
+  // base 05:00→05:30 | LOJA A 06:00→06:30 | base 07:00→07:30 | LOJA B 09:00→09:30 | base 10:00
+  const paradas: UnitracParadaRow[] = [
+    { id: 'b1', placa_norm: 'XYZ9876', chegada: '2026-05-20T05:00:00.000Z', saida: '2026-05-20T05:30:00.000Z', duracao_seg: 1800, local_parada: 'BASE BENASSI', codigo_loja: null, nome_loja: null, lat: null, lng: null, classificacao: 'BASE', ordem: 1 },
+    { id: 'a',  placa_norm: 'XYZ9876', chegada: '2026-05-20T06:00:00.000Z', saida: '2026-05-20T06:30:00.000Z', duracao_seg: 1800, local_parada: '7777 - CLIENTE FOO', codigo_loja: '7777', nome_loja: 'CLIENTE FOO', lat: null, lng: null, classificacao: 'LOJA', ordem: 2 },
+    { id: 'b2', placa_norm: 'XYZ9876', chegada: '2026-05-20T07:00:00.000Z', saida: '2026-05-20T07:30:00.000Z', duracao_seg: 1800, local_parada: 'BASE BENASSI', codigo_loja: null, nome_loja: null, lat: null, lng: null, classificacao: 'BASE', ordem: 3 },
+    { id: 'b',  placa_norm: 'XYZ9876', chegada: '2026-05-20T09:00:00.000Z', saida: '2026-05-20T09:30:00.000Z', duracao_seg: 1800, local_parada: '8888 - CLIENTE BAR', codigo_loja: '8888', nome_loja: 'CLIENTE BAR', lat: null, lng: null, classificacao: 'LOJA', ordem: 4 },
+    { id: 'b3', placa_norm: 'XYZ9876', chegada: '2026-05-20T10:00:00.000Z', saida: '2026-05-20T12:00:00.000Z', duracao_seg: 7200, local_parada: 'BASE BENASSI', codigo_loja: null, nome_loja: null, lat: null, lng: null, classificacao: 'BASE', ordem: 5 },
+  ]
+
+  it('viagem 1 (LOJA A): saída 05:30 → volta 07:00; viagem 2 (LOJA B): saída 07:30 → volta 10:00', async () => {
+    const rotas = await cruzaEscalaUnitrac(escala, paradas, lojas)
+    const rA = rotas.find(r => r.escala_linha_id === 'elA')!
+    const rB = rotas.find(r => r.escala_linha_id === 'elB')!
+    expect(rA.saida_cd!.toISOString()).toBe('2026-05-20T05:30:00.000Z')
+    expect(rA.chegada_base!.toISOString()).toBe('2026-05-20T07:00:00.000Z')
+    expect(rB.saida_cd!.toISOString()).toBe('2026-05-20T07:30:00.000Z')
+    expect(rB.chegada_base!.toISOString()).toBe('2026-05-20T10:00:00.000Z')
+  })
+
+  // Volta detectada por COORDENADA: parada rotulada FORA_BASE mas dentro do raio
+  // da base (caso real FHO5F88/KPB5I95: o caminhão volta e o GPS marca "fora de
+  // base" a ~800m, mas é a base — raio 1000m).
+  it('FORA_BASE dentro do raio da base (coord) conta como volta', async () => {
+    const lojaFar: LojaRow[] = [{ id: 'lF', rede_id: 'r1', nome: 'Cliente Foo', nome_normalizado: 'cliente foo', codigo_escala: '7777', codigo_unitrac: '7777', nome_unitrac: 'CLIENTE FOO', lat: null, lng: null, raio_metros: 300 }]
+    const escF: EscalaLinhaRow[] = [{ id: 'eF', rede_id: 'r1', placa_norm: 'XYZ9876', loja_nome_raw: 'CLIENTE FOO', loja_codigo_raw: '7777', motorista_nome: 'Joao', carro_ordem: 1, data_entrega: '2026-05-20' }]
+    const par: UnitracParadaRow[] = [
+      { id: 'b1', placa_norm: 'XYZ9876', chegada: '2026-05-20T05:00:00.000Z', saida: '2026-05-20T05:30:00.000Z', duracao_seg: 1800, local_parada: 'BASE BENASSI', codigo_loja: null, nome_loja: null, lat: -22.8288, lng: -43.3420, classificacao: 'BASE', ordem: 1 },
+      { id: 'lj', placa_norm: 'XYZ9876', chegada: '2026-05-20T06:00:00.000Z', saida: '2026-05-20T06:30:00.000Z', duracao_seg: 1800, local_parada: '7777 - CLIENTE FOO', codigo_loja: '7777', nome_loja: 'CLIENTE FOO', lat: -22.95, lng: -43.20, classificacao: 'LOJA', ordem: 2 },
+      // Volta marcada FORA_BASE, sem texto "BASE BENASSI", mas em cima da base (coord).
+      { id: 'vb', placa_norm: 'XYZ9876', chegada: '2026-05-20T07:30:00.000Z', saida: '2026-05-20T12:00:00.000Z', duracao_seg: 16200, local_parada: 'FORA DE BASE E LOCAL DE SERVICO', codigo_loja: null, nome_loja: null, lat: -22.8288, lng: -43.3420, classificacao: 'FORA_BASE', ordem: 3 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escF, par, lojaFar)
+    expect(rotas[0].chegada_base!.toISOString()).toBe('2026-05-20T07:30:00.000Z')
+  })
 })
 
 // --- PETROPOLIS como token discriminante (não deve estar em REDES_TOKEN) ---

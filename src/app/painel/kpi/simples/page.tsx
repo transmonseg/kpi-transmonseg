@@ -48,6 +48,7 @@ type PreviewLinha = {
   tem_gps: boolean
   saida_cd_fmt: string | null
   chegada_loja_fmt: string | null
+  chegada_base_fmt: string | null
   tempo_loja_min: number | null
   confianca: 'HIGH' | 'LOW' | 'UNMATCHED'
   algoritmo: string
@@ -1284,6 +1285,7 @@ function RedePreviewSection({
               <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Saída CD</th>
               <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Ch. Loja</th>
               <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Saída Loja</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Volta Base</th>
               <th className="px-4 py-2.5 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden lg:table-cell w-20">Tempo</th>
             </tr>
           </thead>
@@ -1445,6 +1447,9 @@ function PreviewRow({
       </td>
       <td className="px-4 py-2 hidden md:table-cell text-numeric text-[12px] text-[var(--color-fg-muted)]">
         {linha.saida_loja_fmt ?? '—'}
+      </td>
+      <td className="px-4 py-2 hidden md:table-cell text-numeric text-[12px] text-[var(--color-fg-muted)]">
+        {linha.chegada_base_fmt ?? '—'}
       </td>
       <td className="px-4 py-2 hidden lg:table-cell text-right">
         <input

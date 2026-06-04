@@ -29,6 +29,7 @@ type PreviewLinha = {
   ficou_na_base: boolean
   saida_cd_fmt: string | null
   chegada_loja_fmt: string | null
+  chegada_base_fmt: string | null
   tempo_loja_min: number | null
   confianca: 'HIGH' | 'LOW' | 'UNMATCHED'
   algoritmo: string
@@ -109,6 +110,7 @@ function rotaToLinha(rota: RotaKpi, escala: LinhaEscala, ordem: number): LinhaPa
     placa: rota.placa_real ?? rota.placa_norm,
     carro_ordem: escala.carro_ordem,
     saida_cd: rota.saida_cd,
+    chegada_base: rota.chegada_base ?? null,
     chd_loja_1: p1?.chegada ?? null,
     saida_loja_1: p1?.saida ?? null,
     tempo_loja_1_min: p1?.duracao_min ?? null,
@@ -770,6 +772,7 @@ export async function POST(req: NextRequest) {
           ficou_na_base: ficouNaBase,
           saida_cd_fmt: fmtHoraBRT(rota.saida_cd),
           chegada_loja_fmt: fmtHoraBRT(rota.paradas[0]?.chegada),
+          chegada_base_fmt: fmtHoraBRT(rota.chegada_base),
           tempo_loja_min: rota.paradas[0]?.duracao_min ?? null,
           confianca: rota._matchMeta?.confidence ?? 'UNMATCHED',
           algoritmo: rota._matchMeta?.algorithm ?? 'none',

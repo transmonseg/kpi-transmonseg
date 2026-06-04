@@ -530,6 +530,36 @@ function computeSaidaCdParaParada(
 }
 
 /**
+ * Espelho do saida_cd pra o RETORNO: dada uma parada operacional, retorna a
+ * chegada da PRIMEIRA parada de BASE BENASSI estritamente DEPOIS dela — ou seja,
+ * o horário em que o caminhão voltou pra base ao terminar a rota daquela entrega.
+ * Mesmo predicado canônico de BASE do computeSaidaCdParaParada.
+ *
+ * Sem BASE posterior: null (terminou o dia fora da base — não inventa).
+ */
+function computeChegadaBaseParaParada(
+  paradaAlvo: UnitracParadaRow,
+  todasParadas: UnitracParadaRow[],
+): Date | null {
+  const alvoTs = new Date(paradaAlvo.chegada).getTime()
+  // Pega a BASE mais CEDO depois da entrega (não depende da ordem da lista).
+  let earliest: Date | null = null
+  for (const p of todasParadas) {
+    const chTs = new Date(p.chegada).getTime()
+    if (chTs <= alvoTs) continue
+    if (earliest && chTs >= earliest.getTime()) continue
+    const localStr = p.local_parada ?? ''
+    const isBase =
+      p.classificacao === 'BASE' ||
+      (p.classificacao === 'FAKE_EXIT' && localStr.startsWith('BASE BENASSI')) ||
+      localStr.includes('BASE BENASSI') ||
+      paradaEhBaseCd(p.lat, p.lng)
+    if (isBase) earliest = new Date(p.chegada)
+  }
+  return earliest
+}
+
+/**
  * Quando o caminhão passa brevemente pela loja antes da entrega real (ex: motorista
  * verifica se a loja está aberta, gera parada de 5-9 min com o mesmo codigo_loja),
  * o Unitrac gera duas paradas LOJA com mesmo código. Fica com a de MAIOR duração
@@ -2036,11 +2066,14 @@ export async function cruzaEscalaUnitrac(
     const isPlateTroca = plateTrocaLineIds.has(linha.id)
 
     let saida_cd: Date | null = null
+    let chegada_base: Date | null = null
     if (matched) {
       // Usa a parada matched como alvo: a saída-CD é a última saída de BASE
       // estritamente antes da chegada dessa parada. Cobre multi-trip:
       // Trip 1 e Trip 2 pegam saídas diferentes (cada uma da sua BASE anterior).
       saida_cd = computeSaidaCdParaParada(matched, todasParadas, { redeId: linha.rede_id, data: linha.data_entrega })
+      // Volta pra base: primeira BASE depois da parada de entrega.
+      chegada_base = computeChegadaBaseParaParada(matched, todasParadas)
     }
     // Sem match: saida_cd fica null. Não usar fallback com primeira parada da placa —
     // para veículos multi-trip (PREZUNIC manhã + ZONA_SUL noite), isso produzia a
@@ -2145,6 +2178,7 @@ export async function cruzaEscalaUnitrac(
       // Placa resolvida no Unitrac (Mercosul/OCR) — usada pelo geo pra achar paradas.
       placa_unitrac: placaUnitrac,
       saida_cd,
+      chegada_base,
       paradas,
       anomalias_codigos: placaDup ? ['PLACA_DUPLICADA'] : [],
       // 'sem_entrega' quando a placa aparece no unitrac mas não há parada operacional
@@ -2224,6 +2258,7 @@ export async function cruzaEscalaUnitrac(
             classificacao: p.classificacao === 'LOJA' ? 'LOJA' : 'FORA_BASE',
           }]
           r.saida_cd = computeSaidaCdParaParada(p, paradaByPlaca.get(placa) ?? [], { redeId: r.rede_id, data: r.data })
+          r.chegada_base = computeChegadaBaseParaParada(p, paradaByPlaca.get(placa) ?? [])
           r.status = 'ok'
           r._matchMeta = { score: 0.65, confidence: 'LOW', requiresReview: true, algorithm: 'geo' }
           consumidas.add(p.id)
@@ -2318,6 +2353,7 @@ export async function cruzaEscalaUnitrac(
       // Saída do CD: última BASE BENASSI antes da PRIMEIRA parada do cluster (mesma
       // regra do fluxo normal). Sem isso, rotas casadas por geo saíam sem saida_cd.
       rota.saida_cd = computeSaidaCdParaParada(primeira, paradaByPlaca.get(placaUni) ?? [], { redeId: rota.rede_id, data: rota.data })
+      rota.chegada_base = computeChegadaBaseParaParada(primeira, paradaByPlaca.get(placaUni) ?? [])
       rota.status = 'ok'
       // Confiável = parada caiu DENTRO do raio cadastrado da loja (nosso limite de
       // metros). Nesse caso entra no KPI do cliente sem revisão (status-rota).
@@ -2376,6 +2412,7 @@ export async function cruzaEscalaUnitrac(
         classificacao: 'LOJA',
       }]
       rota.saida_cd = computeSaidaCdParaParada(melhorP, paradaByPlaca.get(melhorP.placa_norm) ?? [], { redeId: rota.rede_id, data: rota.data })
+      rota.chegada_base = computeChegadaBaseParaParada(melhorP, paradaByPlaca.get(melhorP.placa_norm) ?? [])
       rota.placa_real = melhorP.placa_norm
       rota.status = 'ok'
       rota._matchMeta = { score: 0.7, confidence: 'LOW', requiresReview: true, algorithm: 'troca' }
@@ -2412,6 +2449,7 @@ export async function cruzaEscalaUnitrac(
       ranked[i].paradas = ranked[i].paradas.filter(p => p.parada_id !== pid)
       if (ranked[i].paradas.length === 0) {
         ranked[i].saida_cd = null
+        ranked[i].chegada_base = null
         ranked[i].status = 'sem_entrega'
         ranked[i]._matchMeta = { score: 0, confidence: 'UNMATCHED', requiresReview: true, algorithm: 'none' }
       }
