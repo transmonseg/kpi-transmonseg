@@ -2226,7 +2226,26 @@ export async function cruzaEscalaUnitrac(
       if (rota.paradas.length > 0 || !placaUni) continue
       const linha = escalaLinhas.find(l => l.id === rota.escala_linha_id)
       if (!linha) continue
-      const esperada = lojaEsperadaDaLinha(linha)
+      let esperada = lojaEsperadaDaLinha(linha)
+      // Correção por CÓDIGO autoritativo: se esta placa tem uma parada LOJA cujo
+      // codigo_loja resolve a uma loja da MESMA rede que bate o nome da linha tão bem
+      // quanto (ou melhor que) a esperada-por-nome, usa a loja do código. Cobre número
+      // de loja repetido em outro bairro (Niterói 13 vs Tijuquinha 13, onde o match por
+      // nome escolhia o bairro errado) e rótulo de texto errado do Unitrac (geofence
+      // sobreposta "ROTA MANGARATIBA"). O código é a verdade — o caminhão esteve ali.
+      if (linha.loja_nome_raw) {
+        const scoreNome = (l: LojaRow) => Math.min(
+          matchScore(linha.loja_nome_raw, l.nome),
+          l.nome_unitrac != null ? matchScore(linha.loja_nome_raw, l.nome_unitrac) : Infinity,
+        )
+        const scEsp = esperada ? scoreNome(esperada) : Infinity
+        for (const p of (paradaByPlaca.get(placaUni) ?? [])) {
+          if (p.classificacao !== 'LOJA' || !p.codigo_loja || consumidas.has(p.id)) continue
+          const lp = lojas.find(l => l.codigo_unitrac != null && redesFungiveis(linha.rede_id).has(l.rede_id) && codCasa(p.codigo_loja!, l.codigo_unitrac))
+          if (!lp || lp.lat == null || lp.lng == null) continue
+          if (scoreNome(lp) <= 4 && scoreNome(lp) <= scEsp) { esperada = lp; break }
+        }
+      }
       if (!esperada || esperada.lat == null || esperada.lng == null) continue
 
       const candidatas = (paradaByPlaca.get(placaUni) ?? []).filter(p =>
