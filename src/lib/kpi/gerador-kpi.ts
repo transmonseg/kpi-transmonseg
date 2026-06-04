@@ -15,6 +15,9 @@ export interface GerarKpiInput {
   data: string
   linhas: LinhaParaKpi[]
   arquivoExistente?: Buffer | null
+  /** Adiciona a coluna "CHEGADA CD" (volta pra base) logo após a SAÍDA LOJA de cada
+   * carro. Quando false (padrão), a planilha sai idêntica à aprovada. */
+  comChegadaCd?: boolean
 }
 
 function toExcelTime(d: Date | null | undefined): number | null {
@@ -76,7 +79,7 @@ const N_COLS = 15
  * Assim o resultado é byte-fiel ao modelo aprovado pela operação.
  */
 export async function gerarKpi(input: GerarKpiInput): Promise<Buffer> {
-  const { rede_id, data, linhas } = input
+  const { rede_id, data, linhas, comChegadaCd } = input
   const redeNome = REDE_NOMES_CANONICOS[rede_id] ?? rede_id
 
   const wb = new ExcelJS.Workbook()
@@ -85,7 +88,7 @@ export async function gerarKpi(input: GerarKpiInput): Promise<Buffer> {
   const ws = wb.worksheets[0]
   ws.name = nomeAbaDoDia(data)
 
-  preencherAba(ws, { rede_id, redeNome, data, linhas })
+  preencherAba(ws, { rede_id, redeNome, data, linhas }, comChegadaCd ?? false)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return Buffer.from((await wb.xlsx.writeBuffer()) as any) as any
@@ -101,6 +104,7 @@ function capturaEstilo(ws: ExcelJS.Worksheet, row: number): Partial<ExcelJS.Styl
 function preencherAba(
   ws: ExcelJS.Worksheet,
   ctx: { rede_id: string; redeNome: string; data: string; linhas: LinhaParaKpi[] },
+  comChegadaCd: boolean,
 ) {
   const { rede_id, redeNome, data, linhas: linhasRaw } = ctx
 
@@ -112,14 +116,14 @@ function preencherAba(
   const agrupadas = agruparPorLoja(linhas)
   const REDE = redeNome.toUpperCase()
 
+  // Estilos-modelo (capturados ANTES de mexer no layout): row 5 = 1ª linha, row 6 = demais
+  const estiloPrimeira: Partial<ExcelJS.Style>[] = capturaEstilo(ws, 5)
+  const estiloMeio: Partial<ExcelJS.Style>[] = capturaEstilo(ws, 6)
+
   // Título e faixas de grupo — estilo já vem pronto do template
   ws.getCell('A1').value = `RELATÓRIO KPI - ${REDE}\n${formataDataPtBr(data)}`
   ws.getCell('B2').value = `${REDE} 1º CARRO`
   ws.getCell('H2').value = `${REDE} 2º CARRO`
-
-  // Estilos-modelo (capturados ANTES de escrever): row 5 = 1ª linha, row 6 = demais
-  const estiloPrimeira: Partial<ExcelJS.Style>[] = capturaEstilo(ws, 5)
-  const estiloMeio: Partial<ExcelJS.Style>[] = capturaEstilo(ws, 6)
 
   // Ordem de lojas pelo catálogo; redes com catálogo fixo incluem todas as lojas
   const lojasNoDia = [...new Set(linhas.map(l => l.loja_nome).filter(Boolean))]
@@ -139,9 +143,25 @@ function preencherAba(
 
   lojasFinal.forEach((ag, i) => escreverLinha(ws, 5 + i, ag, i === 0 ? estiloPrimeira : estiloMeio))
 
-  // Remove linhas-modelo não usadas (o template traz rows 5 e 6 de fábrica)
   const usadas = lojasFinal.length
-  if (usadas < 2) ws.spliceRows(5 + usadas, 2 - usadas)
+
+  // Coluna CHEGADA CD: insere DEPOIS da Saída Loja de cada carro, preservando todo
+  // o resto (spliceColumns nativo, sem mexer no layout aprovado).
+  if (comChegadaCd) inserirColunaChegada(ws, lojasFinal)
+
+  // A planilha termina na última loja: o template traz o grid pré-formatado (bordas)
+  // até a linha 30. spliceRows não reduz a dimensão do template, então zera
+  // estilo + valor das células abaixo do último dado (some o grid vazio).
+  const ultimaLinha = 4 + Math.max(usadas, 1)
+  const totalRows = ws.rowCount
+  const totalCols = ws.columnCount
+  for (let r = ultimaLinha + 1; r <= totalRows; r++) {
+    for (let c = 1; c <= totalCols; c++) {
+      const cell = ws.getCell(r, c)
+      cell.value = null
+      cell.style = {}
+    }
+  }
 }
 
 /**
@@ -231,4 +251,66 @@ function escreverLinha(ws: ExcelJS.Worksheet, row: number, ag: LinhaAgrupada, es
   if (temTempo2) {
     ws.getCell(row, 15).value = { formula: `MOD(M${row}-L${row},1)`, result: computeTempoLoja(c2?.tempo_loja_1_min, chd2, sai2) }
   }
+}
+
+// Clone profundo de estilo (evita corromper objetos de estilo compartilhados pelo
+// ExcelJS quando reatribuímos bordas).
+function cloneEstilo(s: Partial<ExcelJS.Style>): Partial<ExcelJS.Style> {
+  return JSON.parse(JSON.stringify(s ?? {}))
+}
+
+/**
+ * Insere a coluna "CHEGADA CD" (volta pra base) DEPOIS da Saída Loja de cada carro.
+ * Parte da planilha "sem" já pronta e usa `spliceColumns` nativo — preserva todo o
+ * resto (estilos, bordas, larguras) sem reescrever o layout aprovado. A coluna nova
+ * herda o estilo da Saída Loja (vira o fim do carro, com a borda grossa de separação)
+ * e a Saída Loja passa a ter borda fina.
+ */
+function inserirColunaChegada(ws: ExcelJS.Worksheet, lojasFinal: LinhaAgrupada[]) {
+  const bordaFina: Partial<ExcelJS.Border> = { style: 'thin', color: { argb: 'FFCFD8DC' } }
+
+  // spliceColumns não atualiza merges → desfaz antes, refaz depois.
+  for (const m of ['A1:O1', 'B2:G2', 'H2:M2']) {
+    try { ws.unMergeCells(m) } catch { /* pode não existir */ }
+  }
+
+  // Insere coluna vazia depois da Saída Loja do carro 1 (col 7) e do carro 2 (col 13,
+  // que vira 14 após o primeiro splice → insere na 15).
+  ws.spliceColumns(8, 0, [])
+  ws.spliceColumns(15, 0, [])
+  ws.getColumn(8).width = ws.getColumn(7).width
+  ws.getColumn(15).width = ws.getColumn(14).width
+
+  // Para cada par (Saída Loja → Chegada CD): a Chegada herda o estilo da Saída Loja
+  // (inclui a borda grossa de fim-de-carro) e a Saída Loja recebe borda fina.
+  // Só nas linhas com dado — as vazias são limpas depois (preencherAba).
+  const lastDataRow = 4 + lojasFinal.length
+  for (let r = 1; r <= lastDataRow; r++) {
+    if (r === 4) continue
+    for (const [saidaCol, chegadaCol] of [[7, 8], [14, 15]] as const) {
+      const estiloSaida = cloneEstilo(ws.getCell(r, saidaCol).style)
+      ws.getCell(r, chegadaCol).style = estiloSaida
+      const estiloFino = cloneEstilo(estiloSaida)
+      estiloFino.border = { ...(estiloFino.border ?? {}), right: bordaFina }
+      ws.getCell(r, saidaCol).style = estiloFino
+    }
+  }
+
+  // Cabeçalho da coluna nova.
+  ws.getCell(3, 8).value = 'CHEGADA CD'
+  ws.getCell(3, 15).value = 'CHEGADA CD'
+
+  // Valor da volta por linha (vazio quando o carro não entregou). O numFmt de hora já
+  // veio no estilo herdado da Saída Loja.
+  lojasFinal.forEach((ag, i) => {
+    const row = 5 + i
+    const v1 = legendaSlot(ag.carro1) ? '' : toExcelTime(ag.carro1?.chegada_base)
+    const v2 = legendaSlot(ag.carro2) ? '' : toExcelTime(ag.carro2?.chegada_base)
+    ws.getCell(row, 8).value = v1 ?? ''
+    ws.getCell(row, 15).value = v2 ?? ''
+  })
+
+  ws.mergeCells('A1:Q1')
+  ws.mergeCells('B2:H2')
+  ws.mergeCells('I2:O2')
 }
