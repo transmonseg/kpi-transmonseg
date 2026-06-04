@@ -1066,10 +1066,18 @@ export async function cruzaEscalaUnitrac(
     const fung = redesFungiveis(linha.rede_id)
     const cands = lojas.filter(l => fung.has(l.rede_id))
     if (linha.loja_codigo_raw) {
-      const porCod = cands.find(l =>
-        l.codigo_escala === linha.loja_codigo_raw ||
-        (l.codigo_unitrac != null && codCasa(linha.loja_codigo_raw!, l.codigo_unitrac)))
-      if (porCod) return porCod
+      const raw = linha.loja_codigo_raw
+      const valida = (l: LojaRow) => l.lat != null && l.lng != null && !(l.lat === 0 && l.lng === 0)
+      const matches = cands.filter(l =>
+        l.codigo_escala === raw || (l.codigo_unitrac != null && codCasa(raw, l.codigo_unitrac)))
+      // codigo_escala EXATO e único vence sempre.
+      const exato = matches.filter(l => l.codigo_escala === raw)
+      if (exato.length === 1) return exato[0]
+      const validos = matches.filter(valida)
+      // SÓ confia no código quando ele aponta UMA loja com coord válida. Códigos curtos
+      // (ex "Filial 3") casam várias lojas via codCasa (71003, 71013, 71023…) — aí o
+      // nome decide ("PIEDADE" → GB 03 - PIEDADE). Antes pegava a 1ª (às vezes 0,0).
+      if (validos.length === 1) return validos[0]
     }
     if (!linha.loja_nome_raw) return null
     const scoreLoja = (l: LojaRow): number => Math.min(
@@ -1089,7 +1097,9 @@ export async function cruzaEscalaUnitrac(
       const s = scoreLoja(l)
       if (s === Infinity) continue
       const coded = l.codigo_unitrac != null
-      const geo = l.lat != null && l.lng != null
+      // coord 0,0 NÃO conta como geo válido — senão uma loja zerada (ex "GB PIEDADE 26")
+      // empata e vence a real ("GB 03 - PIEDADE") no desempate, quebrando a validação geo.
+      const geo = l.lat != null && l.lng != null && !(l.lat === 0 && l.lng === 0)
       const vence =
         s < melhorScore ||
         (s === melhorScore && coded && !melhorCoded) ||
