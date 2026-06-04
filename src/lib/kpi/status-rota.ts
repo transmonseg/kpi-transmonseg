@@ -53,6 +53,20 @@ export function derivarStatus(d: DadosStatusRota): ResultadoStatus {
     return { status: 'NAO_FOI_AO_CLIENTE', revisar: false, motivoRevisao: null }
   }
 
+  // Sem NENHUMA parada de entrega: não pode ser "entregue", mesmo quando a rota não
+  // caiu em ficouNaBase (status 'pendente' em vez de 'sem_entrega'). Classifica pelo
+  // que a placa fez no relatório. Sem isso, o fallback final marcava ENTREGUE uma
+  // rota vazia (falso positivo — ex: LKF só na base mas status pendente).
+  if (d.paradas.length === 0) {
+    if (d.placaFoiAlgumLugar && !d.alteracaoInformada) {
+      return { status: 'MUDOU_DE_ROTA', revisar: true, motivoRevisao: 'A placa rodou outra rota (não a escalada) e não há alteração registrada. Confira.' }
+    }
+    if (d.placaSaiuDaBase === false) {
+      return { status: 'NAO_SAIU_DA_BASE', revisar: false, motivoRevisao: null }
+    }
+    return { status: 'NAO_FOI_AO_CLIENTE', revisar: false, motivoRevisao: null }
+  }
+
   // Match por geo/endereço: parada FORA_BASE casada à loja pela coordenada do cadastro.
   // Conta como entrega. Se caiu DENTRO do nosso limite de metros (raio cadastrado), é
   // alta confiança → entra no KPI sem revisão (pedido do Joaquim 2026-06-04). Acima do
