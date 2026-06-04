@@ -484,6 +484,22 @@ describe('ANOM-15: placa errada no Unitrac (typo)', () => {
     expect(a).toBeTruthy()
     expect(a?.severidade).toBe('HIGH')
     expect(a?.descricao).toContain('KWV7E89')
+    // O aviso fica fixado na LINHA da entrega afetada (não solto no resumo).
+    expect(a?.kpi_rota_id).toBe('escala-1')
+    expect(a?.payload).toMatchObject({ placa_escala: 'KWV7E49', placa_unitrac: 'KWV7E89' })
+  })
+  it('amarra um aviso em CADA linha da placa errada (várias entregas)', () => {
+    const r = detectaAnomalias({
+      rotas: [],
+      escalaLinhas: [
+        makeEscalaLinha({ id: 'l1', placa_norm: 'KWV7E49', loja_nome_raw: 'Prezunic Barra' }),
+        makeEscalaLinha({ id: 'l2', placa_norm: 'KWV7E49', loja_nome_raw: 'Prezunic Recreio' }),
+      ],
+      paradasIndex: new Map([['KWV7E89', [{ id: 'p1', classificacao: 'LOJA', chegada: new Date('2026-05-18T08:00:00Z'), saida: new Date('2026-05-18T08:30:00Z'), duracao_seg: 1800, lat: -22.9, lng: -43.2 }]]]),
+      janelasRede: new Map(), data: '2026-05-18',
+    })
+    const ids = r.filter(x => x.codigo === 'ANOM-15').map(x => x.kpi_rota_id).sort()
+    expect(ids).toEqual(['l1', 'l2'])
   })
   it('NÃO dispara quando a placa bate direto', () => {
     const r = detectaAnomalias({ rotas: [], escalaLinhas: [makeEscalaLinha({ placa_norm: 'KWV7E89' })], paradasIndex: new Map([['KWV7E89', []]]), janelasRede: new Map(), data: '2026-05-18' })

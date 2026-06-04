@@ -25,6 +25,21 @@ export interface DadosStatusRota {
   /** Houve alteração de escala registrada para esta linha (troca/rota informada).
    * Quando true, uma entrega por outro veículo é ESPERADA, não "mudou de rota". */
   alteracaoInformada?: boolean
+  /** A placa entregou ao menos UMA das próprias linhas da escala (casou loja/geo).
+   * Quando true, uma linha desta placa SEM parada é "não foi ao cliente" (rodou a
+   * própria rota e pulou esta loja), NÃO "mudou de rota" (que é rodar outra rota
+   * inteira). Caso real CXA-7B36 (entregou Grajaú 08, pulou Verdun 04) e KQR-2J11
+   * (entregou 4, pulou Copacabana): saíam como "mudou de rota" — rótulo errado. */
+  placaEntregouPropriaEscala?: boolean
+  /** Placa da escala não está no Unitrac, mas existe uma placa a 1 caractere de
+   * diferença que rodou a rota (provável typo no cadastro). Guarda essa placa. O
+   * veículo TEM rastreador — não é "sem rastreador", é cadastro errado. Caso real
+   * KWV-7E49 (escala) x KWV-7E89 (Unitrac). */
+  placaDivergeUnitrac?: string | null
+  /** Placa rastreada com rastro degenerado (um único ponto o dia todo / sem
+   * deslocamento) — rastreador travado/sem sinal. Não dá pra concluir entrega.
+   * Caso real LCE-4337 (1 ponto às 00:00 o dia inteiro). */
+  rastreadorTravado?: boolean
 }
 
 export interface ResultadoStatus {
@@ -35,13 +50,36 @@ export interface ResultadoStatus {
 
 /** Deriva o status de uma rota a partir do que o motor já computa. A ordem importa. */
 export function derivarStatus(d: DadosStatusRota): ResultadoStatus {
-  if (!d.temGps) return { status: 'SEM_RASTREADOR', revisar: false, motivoRevisao: null }
+  if (!d.temGps) {
+    // Placa não está no Unitrac, mas existe uma quase idêntica (1 caractere) que
+    // rodou esta rota → cadastro errado no Unitrac, NÃO falta de rastreador. O
+    // veículo tem rastreador; as entregas existem sob a placa divergente.
+    if (d.placaDivergeUnitrac) {
+      return {
+        status: 'SEM_RASTREADOR',
+        revisar: true,
+        motivoRevisao: `Placa não encontrada no Unitrac, mas "${d.placaDivergeUnitrac}" (1 caractere de diferença) rodou esta rota. Provável placa errada no cadastro do Unitrac — o veículo TEM rastreador. Corrigir a placa no painel.`,
+      }
+    }
+    return { status: 'SEM_RASTREADOR', revisar: false, motivoRevisao: null }
+  }
+
+  // Rastreador travado/sem sinal (um único ponto o dia todo) e nenhuma entrega
+  // casada: não dá pra concluir "mudou de rota" nem "entregue". Sinaliza o defeito.
+  if (d.rastreadorTravado && d.paradas.length === 0) {
+    return { status: 'NAO_FOI_AO_CLIENTE', revisar: true, motivoRevisao: 'Rastreador travado/sem sinal (um único ponto o dia todo, sem deslocamento). Não dá pra confirmar a entrega — conferir manualmente.' }
+  }
 
   if (d.ficouNaBase) {
     // A placa apareceu no relatório e rodou OUTRA rota (foi a clientes), mas não a
     // escalada, e não houve alteração registrada → mudou de rota não informada.
     // Aparece no KPI marcada "MUDOU DE ROTA" (legendaSlot) e vai pra revisão.
+    // EXCEÇÃO: se a placa entregou alguma das PRÓPRIAS lojas da escala, ela rodou a
+    // própria rota e só pulou esta → "não foi ao cliente", não "mudou de rota".
     if (d.placaFoiAlgumLugar && !d.alteracaoInformada) {
+      if (d.placaEntregouPropriaEscala) {
+        return { status: 'NAO_FOI_AO_CLIENTE', revisar: true, motivoRevisao: 'A placa rodou a própria rota e entregou outras lojas da escala, mas não passou nesta. Confira.' }
+      }
       return { status: 'MUDOU_DE_ROTA', revisar: true, motivoRevisao: 'A placa rodou outra rota (não a escalada) e não há alteração registrada. Confira.' }
     }
     // A placa ESTÁ no relatório (tem rastreador) mas só tem parada na BASE — o
@@ -59,6 +97,11 @@ export function derivarStatus(d: DadosStatusRota): ResultadoStatus {
   // rota vazia (falso positivo — ex: LKF só na base mas status pendente).
   if (d.paradas.length === 0) {
     if (d.placaFoiAlgumLugar && !d.alteracaoInformada) {
+      // Mesma distinção: entregou alguma das próprias lojas → pulou esta ("não foi
+      // ao cliente"); não entregou nenhuma → rodou outra rota ("mudou de rota").
+      if (d.placaEntregouPropriaEscala) {
+        return { status: 'NAO_FOI_AO_CLIENTE', revisar: true, motivoRevisao: 'A placa rodou a própria rota e entregou outras lojas da escala, mas não passou nesta. Confira.' }
+      }
       return { status: 'MUDOU_DE_ROTA', revisar: true, motivoRevisao: 'A placa rodou outra rota (não a escalada) e não há alteração registrada. Confira.' }
     }
     if (d.placaSaiuDaBase === false) {

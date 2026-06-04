@@ -80,3 +80,43 @@ describe('derivarStatus — MUDOU_DE_ROTA', () => {
     expect(r.status).toBe('NAO_SAIU_DA_BASE')
   })
 })
+
+describe('derivarStatus — pulou loja vs mudou de rota (placaEntregouPropriaEscala)', () => {
+  // Caso real CXA-7B36 / KQR-2J11: a placa entregou outras lojas DA PRÓPRIA escala e
+  // pulou esta. Antes saía como "mudou de rota" (errado) — agora é "não foi ao cliente".
+  it('entregou própria escala + linha sem parada (ficou na base) → NAO_FOI_AO_CLIENTE', () => {
+    const r = derivarStatus({ ...base, ficouNaBase: true, placaFoiAlgumLugar: true, placaEntregouPropriaEscala: true })
+    expect(r.status).toBe('NAO_FOI_AO_CLIENTE')
+    expect(r.revisar).toBe(true)
+  })
+  it('entregou própria escala + linha sem parada (branch vazia) → NAO_FOI_AO_CLIENTE', () => {
+    const r = derivarStatus({ ...base, placaFoiAlgumLugar: true, placaSaiuDaBase: true, placaEntregouPropriaEscala: true })
+    expect(r.status).toBe('NAO_FOI_AO_CLIENTE')
+  })
+  it('NÃO entregou nenhuma própria + rodou → continua MUDOU_DE_ROTA', () => {
+    const r = derivarStatus({ ...base, ficouNaBase: true, placaFoiAlgumLugar: true, placaEntregouPropriaEscala: false })
+    expect(r.status).toBe('MUDOU_DE_ROTA')
+  })
+})
+
+describe('derivarStatus — placa divergente no Unitrac (typo) e rastreador travado', () => {
+  // KWV-7E49 (escala) x KWV-7E89 (Unitrac): não é "sem rastreador", é cadastro errado.
+  it('sem GPS mas com placa divergente → SEM_RASTREADOR com motivo + revisão', () => {
+    const r = derivarStatus({ ...base, temGps: false, placaDivergeUnitrac: 'KWV7E89' })
+    expect(r.status).toBe('SEM_RASTREADOR')
+    expect(r.revisar).toBe(true)
+    expect(r.motivoRevisao).toContain('KWV7E89')
+  })
+  it('sem GPS e sem divergência → SEM_RASTREADOR limpo (sem revisão)', () => {
+    const r = derivarStatus({ ...base, temGps: false })
+    expect(r.status).toBe('SEM_RASTREADOR')
+    expect(r.revisar).toBe(false)
+  })
+  // LCE-4337: 1 ponto o dia todo, rastreador travado, nenhuma entrega casada.
+  it('rastreador travado + sem parada casada → NAO_FOI_AO_CLIENTE com revisão', () => {
+    const r = derivarStatus({ ...base, rastreadorTravado: true, placaFoiAlgumLugar: true })
+    expect(r.status).toBe('NAO_FOI_AO_CLIENTE')
+    expect(r.revisar).toBe(true)
+    expect(r.motivoRevisao).toContain('travado')
+  })
+})
