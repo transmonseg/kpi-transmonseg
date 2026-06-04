@@ -1306,7 +1306,9 @@ function RedePreviewSection({
 const STATUS_TOM: Record<StatusRota, { bg: string; fg: string }> = {
   ENTREGUE:           { bg: 'var(--color-success-soft)', fg: 'var(--color-success-soft-fg)' },
   ENTREGUE_GEO:       { bg: 'var(--color-bg-subtle)',    fg: 'var(--color-fg-muted)' },
+  MUDOU_DE_ROTA:      { bg: 'var(--color-warning-soft)', fg: 'var(--color-warning-soft-fg)' },
   SEM_RASTREADOR:     { bg: 'var(--color-danger-soft)',  fg: 'var(--color-danger-soft-fg)' },
+  NAO_SAIU_DA_BASE:   { bg: 'var(--color-warning-soft)', fg: 'var(--color-warning-soft-fg)' },
   NAO_FOI_AO_CLIENTE: { bg: 'var(--color-warning-soft)', fg: 'var(--color-warning-soft-fg)' },
   FORA_DE_BASE:       { bg: 'var(--color-info-soft)',    fg: 'var(--color-info-soft-fg)' },
 }

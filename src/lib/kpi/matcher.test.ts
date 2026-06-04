@@ -2094,7 +2094,58 @@ describe('geoEndereco — match FORA_BASE por coordenada (opts.geoEndereco)', ()
       expect(r?.paradas).toHaveLength(1)
       expect(r?.paradas[0]?.loja_id).toBe('zs7')
       expect(r?._matchMeta?.algorithm).toBe('geo')
+      // Parada ~25m da loja (DENTRO do raio 100m) → confiável, entra no KPI sem revisão.
+      expect(r?.geo_confiavel).toBe(true)
+      expect(r?._matchMeta?.requiresReview).toBe(false)
+    } finally { setSemGeo(false) }
+  })
+
+  it('geo FORA do raio (rua/bairro confirma) → casa mas geo_confiavel=false (pede revisão)', async () => {
+    setSemGeo(true)
+    try {
+      // parada ~180m da loja: fora do raio 100, mas mesma rua/bairro confirma o match.
+      const paradaLonge: UnitracParadaRow = {
+        ...parada, id: 'p2', lat: -22.9856, lng: -43.2273,
+      }
+      const rotas = await cruzaEscalaUnitrac([linha], [paradaLonge], [loja], undefined, undefined, { geoEndereco: true })
+      const r = rotas.find(x => x.escala_linha_id === 'l1')
+      expect(r?.paradas).toHaveLength(1)
+      expect(r?._matchMeta?.algorithm).toBe('geo')
+      expect(r?.geo_confiavel).toBe(false)
       expect(r?._matchMeta?.requiresReview).toBe(true)
+    } finally { setSemGeo(false) }
+  })
+
+  // Regressão 03.06 (caso real GB Iraja / KNI): escala com placa ANTIGA + nome que não
+  // bate exato o cadastro + parada FORA_BASE Mercosul a ~61m. Antes: lojaEscalada não
+  // era achada (score 2 > 1) → Mercosul não validava → geo não disparava → "não foi".
+  // Agora: nome resolvido pelo melhor score + geo dentro do raio → ENTREGUE_GEO no KPI.
+  it('escala placa antiga + nome divergente + parada Mercosul FORA_BASE dentro do raio → casa e entra no KPI', async () => {
+    setSemGeo(true)
+    try {
+      const linhaGb: EscalaLinhaRow = {
+        id: 'gb1', rede_id: 'GUANABARA', placa_norm: 'KNI8988',
+        loja_nome_raw: 'GB IRAJA FILIAL 9', loja_codigo_raw: null,
+        motorista_nome: 'KNI', carro_ordem: 1, data_entrega: '2026-06-03',
+      }
+      const lojaGb: LojaRow = {
+        id: 'gbiraja', rede_id: 'GUANABARA', nome: 'GB 09 - IRAJA',
+        nome_normalizado: 'GB 09 IRAJA', codigo_escala: null, codigo_unitrac: '71009',
+        nome_unitrac: 'GB 09 - IRAJA', lat: -22.831889, lng: -43.329636, raio_metros: 150,
+        endereco: 'R JOSE BORGES', bairro: 'IRAJA', municipio: 'RIO DE JANEIRO',
+      }
+      const paradaGb: UnitracParadaRow = {
+        id: 'pgb', placa_norm: 'KNI8J88', chegada: '2026-06-03T07:10:00Z', saida: '2026-06-03T07:42:00Z',
+        duracao_seg: 1920, local_parada: 'FORA DE BASE E LOCAL DE SERVICO', codigo_loja: null, nome_loja: null,
+        lat: -22.832320, lng: -43.330010, endereco: 'R Jose Borges, Rio de Janeiro', classificacao: 'FORA_BASE', ordem: 1,
+      }
+      const rotas = await cruzaEscalaUnitrac([linhaGb], [paradaGb], [lojaGb], undefined, undefined, { geoEndereco: true })
+      const r = rotas.find(x => x.escala_linha_id === 'gb1')
+      expect(r?.paradas).toHaveLength(1)
+      expect(r?.paradas[0]?.loja_id).toBe('gbiraja')
+      expect(r?._matchMeta?.algorithm).toBe('geo')
+      expect(r?.geo_confiavel).toBe(true)
+      expect(r?._matchMeta?.requiresReview).toBe(false)
     } finally { setSemGeo(false) }
   })
 

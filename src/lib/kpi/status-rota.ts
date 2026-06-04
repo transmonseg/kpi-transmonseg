@@ -1,4 +1,4 @@
-export type StatusRota = 'ENTREGUE' | 'ENTREGUE_GEO' | 'SEM_RASTREADOR' | 'NAO_FOI_AO_CLIENTE' | 'FORA_DE_BASE'
+export type StatusRota = 'ENTREGUE' | 'ENTREGUE_GEO' | 'MUDOU_DE_ROTA' | 'SEM_RASTREADOR' | 'NAO_SAIU_DA_BASE' | 'NAO_FOI_AO_CLIENTE' | 'FORA_DE_BASE'
 
 export interface DadosStatusRota {
   temGps: boolean
@@ -11,6 +11,20 @@ export interface DadosStatusRota {
   viaTroca?: boolean
   /** Placa que realmente entregou, quando viaTroca. Usada no motivo da revisão. */
   placaReal?: string | null
+  /** Geo casou DENTRO do raio cadastrado (nosso limite de metros). Quando true, a
+   * entrega entra no KPI do cliente sem precisar de revisão manual. Acima do raio
+   * (zona 100–250m confirmada por rua/bairro) continua pedindo conferência. */
+  geoConfiavel?: boolean
+  /** A placa escalada apareceu no relatório e rodou OUTRA rota (foi a clientes
+   * diferentes), não a escalada. Diferencia "mudou de rota" de "ficou na base". */
+  placaFoiAlgumLugar?: boolean
+  /** A placa saiu da base (tem alguma parada LOJA ou FORA_BASE no relatório).
+   * Se a placa está no relatório (tem rastreador) mas isto é `false`, o caminhão
+   * só ficou no CD → "NÃO SAIU DA BASE" (mais preciso que "não foi ao cliente"). */
+  placaSaiuDaBase?: boolean
+  /** Houve alteração de escala registrada para esta linha (troca/rota informada).
+   * Quando true, uma entrega por outro veículo é ESPERADA, não "mudou de rota". */
+  alteracaoInformada?: boolean
 }
 
 export interface ResultadoStatus {
@@ -22,21 +36,44 @@ export interface ResultadoStatus {
 /** Deriva o status de uma rota a partir do que o motor já computa. A ordem importa. */
 export function derivarStatus(d: DadosStatusRota): ResultadoStatus {
   if (!d.temGps) return { status: 'SEM_RASTREADOR', revisar: false, motivoRevisao: null }
-  if (d.ficouNaBase) return { status: 'NAO_FOI_AO_CLIENTE', revisar: false, motivoRevisao: null }
+
+  if (d.ficouNaBase) {
+    // A placa apareceu no relatório e rodou OUTRA rota (foi a clientes), mas não a
+    // escalada, e não houve alteração registrada → mudou de rota não informada.
+    // Aparece no KPI marcada "MUDOU DE ROTA" (legendaSlot) e vai pra revisão.
+    if (d.placaFoiAlgumLugar && !d.alteracaoInformada) {
+      return { status: 'MUDOU_DE_ROTA', revisar: true, motivoRevisao: 'A placa rodou outra rota (não a escalada) e não há alteração registrada. Confira.' }
+    }
+    // A placa ESTÁ no relatório (tem rastreador) mas só tem parada na BASE — o
+    // caminhão não saiu do CD. Mais preciso que "não foi ao cliente". (Sem rastreador
+    // é só quando a placa nem aparece no relatório — tratado em !temGps acima.)
+    if (d.placaSaiuDaBase === false) {
+      return { status: 'NAO_SAIU_DA_BASE', revisar: false, motivoRevisao: null }
+    }
+    return { status: 'NAO_FOI_AO_CLIENTE', revisar: false, motivoRevisao: null }
+  }
 
   // Match por geo/endereço: parada FORA_BASE casada à loja pela coordenada do cadastro.
-  // Conta como entrega, mas sempre pede conferência (a coordenada bate, mas o Unitrac
-  // não confirmou por código).
+  // Conta como entrega. Se caiu DENTRO do nosso limite de metros (raio cadastrado), é
+  // alta confiança → entra no KPI sem revisão (pedido do Joaquim 2026-06-04). Acima do
+  // raio (casou só por rua/bairro), continua pedindo conferência.
   if (d.viaGeo && d.paradas.some(p => p.classificacao === 'FORA_BASE' && p.loja_id)) {
-    return { status: 'ENTREGUE_GEO', revisar: true, motivoRevisao: 'Localizado pelo endereço cadastrado, não pelo código do Unitrac. Confira.' }
+    if (d.geoConfiavel) {
+      return { status: 'ENTREGUE_GEO', revisar: false, motivoRevisao: null }
+    }
+    return { status: 'ENTREGUE_GEO', revisar: true, motivoRevisao: 'Localizado pelo endereço cadastrado (fora do raio), não pelo código do Unitrac. Confira.' }
   }
 
   // Troca de carro: a loja foi entregue (código + coordenada batem), mas por um
-  // veículo diferente do escalado. Conta como entrega e sempre pede conferência
-  // da placa — usa o mesmo tratamento visual do geo (cinza/revisão).
+  // veículo diferente do escalado. Se NÃO houve alteração registrada, é uma mudança
+  // de rota não informada → aparece no KPI como "MUDOU DE ROTA" e pede conferência.
+  // Se a alteração foi informada, a troca é esperada → conta como entrega normal.
   if (d.viaTroca) {
-    const placa = d.placaReal ? ` Placa real: ${d.placaReal}.` : ''
-    return { status: 'ENTREGUE_GEO', revisar: true, motivoRevisao: `Entregue por veículo diferente do escalado (troca de carro).${placa} Confira a placa.` }
+    if (!d.alteracaoInformada) {
+      const placa = d.placaReal ? ` Placa real: ${d.placaReal}.` : ''
+      return { status: 'MUDOU_DE_ROTA', revisar: true, motivoRevisao: `Entregue por veículo diferente do escalado, sem alteração registrada.${placa} Confira a placa.` }
+    }
+    return { status: 'ENTREGUE', revisar: false, motivoRevisao: null }
   }
 
   const visitouLoja = d.paradas.some(p => p.classificacao === 'LOJA')
@@ -51,7 +88,9 @@ export function derivarStatus(d: DadosStatusRota): ResultadoStatus {
 export const STATUS_LABEL: Record<StatusRota, string> = {
   ENTREGUE: 'Entregue',
   ENTREGUE_GEO: 'Entregue (geo)',
+  MUDOU_DE_ROTA: 'Mudou de rota',
   SEM_RASTREADOR: 'Sem rastreador',
+  NAO_SAIU_DA_BASE: 'Não saiu da base',
   NAO_FOI_AO_CLIENTE: 'Não foi ao cliente',
   FORA_DE_BASE: 'Fora de base',
 }

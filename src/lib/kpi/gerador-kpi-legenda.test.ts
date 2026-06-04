@@ -21,8 +21,11 @@ describe('legendaSlot — legenda do KPI gerado', () => {
   it('placa rastreada e foi a alguma loja, mas não nesta → MUDOU DE ROTA', () => {
     expect(legendaSlot(linha({ placa_rastreada: true, placa_foi_algum_lugar: true }))).toBe('MUDOU DE ROTA')
   })
-  it('placa rastreada e NÃO foi a loja nenhuma (ficou na base) → NÃO FOI AO CLIENTE', () => {
-    expect(legendaSlot(linha({ placa_rastreada: true, placa_foi_algum_lugar: false }))).toBe('NÃO FOI AO CLIENTE')
+  it('placa rastreada mas só ficou na base (não saiu do CD) → NÃO SAIU DA BASE', () => {
+    expect(legendaSlot(linha({ placa_rastreada: true, placa_foi_algum_lugar: false, placa_saiu_da_base: false }))).toBe('NÃO SAIU DA BASE')
+  })
+  it('placa rastreada, saiu da base mas sem entrega confirmada → NÃO FOI AO CLIENTE', () => {
+    expect(legendaSlot(linha({ placa_rastreada: true, placa_foi_algum_lugar: false, placa_saiu_da_base: true }))).toBe('NÃO FOI AO CLIENTE')
   })
   it('slot vazio (carro nulo) → null', () => {
     expect(legendaSlot(null)).toBeNull()

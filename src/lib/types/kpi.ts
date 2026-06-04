@@ -29,6 +29,13 @@ export type RotaKpi = {
   placa_norm: string | null
   /** Placa que REALMENTE entregou, quando difere da escalada (troca de carro). */
   placa_real?: string | null
+  /** Match por geo caiu DENTRO do raio cadastrado (nosso limite de metros) →
+   * alta confiança, entra no KPI do cliente sem precisar de revisão. */
+  geo_confiavel?: boolean
+  /** Placa REALMENTE usada no Unitrac (resolvida via Mercosul/OCR a partir da escala).
+   * Usada internamente para buscar as paradas — a placa antiga da escala não acha as
+   * paradas registradas no padrão Mercosul. Não exibida (display usa placa_norm). */
+  placa_unitrac?: string | null
   saida_cd: Date | null
   paradas: ParadaKpi[]
   anomalias_codigos: string[]
@@ -55,8 +62,11 @@ export type KpiLinha = {
   kpi_linha_id?: string | null
   /** A placa aparece no relatório Unitrac (tem rastreador). Define a legenda do KPI. */
   placa_rastreada?: boolean
-  /** A placa foi a algum lugar (loja ou parada fora da base) — usada para "mudou de rota". */
+  /** A placa foi a alguma LOJA (entregou em outro lugar) — usada para "mudou de rota". */
   placa_foi_algum_lugar?: boolean
+  /** A placa saiu da base (tem parada LOJA ou FORA_BASE). Se está no relatório mas
+   * isto é false → "NÃO SAIU DA BASE" (caminhão ficou no CD). */
+  placa_saiu_da_base?: boolean
 }
 
 export type AnomaliaDetectada = {
