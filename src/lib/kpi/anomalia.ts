@@ -22,6 +22,16 @@ type DetectaParams = {
   paradasIndex: Map<string, ParadaIndexEntry[]>
   janelasRede: Map<string, { janela_inicio: string; janela_fim: string }>
   data: string
+  /** Coords cadastradas por loja_id — usado p/ detectar entrega geograficamente
+   * implausível (ANOM-13). Opcional: sem isso a checagem não roda. */
+  lojaCoords?: Map<string, { lat: number | null; lng: number | null; raio_metros: number | null }>
+}
+
+function haversineM(a: number, b: number, c: number, d: number): number {
+  const R = 6371000, t = (x: number) => (x * Math.PI) / 180
+  const dp = t(c - a), dl = t(d - b)
+  const x = Math.sin(dp / 2) ** 2 + Math.cos(t(a)) * Math.cos(t(c)) * Math.sin(dl / 2) ** 2
+  return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x))
 }
 
 function timeToMinutes(hhmm: string): number {
@@ -38,8 +48,12 @@ function dateToMinutesOfDay(d: Date): number {
 }
 
 export function detectaAnomalias(params: DetectaParams): AnomaliaDetectada[] {
-  const { rotas, escalaLinhas, paradasIndex, janelasRede, data } = params
+  const { rotas, escalaLinhas, paradasIndex, janelasRede, data, lojaCoords } = params
   const anomalias: AnomaliaDetectada[] = []
+
+  // GPS por parada_id (pra ANOM-13). A parada da rota não carrega lat/lng — vem daqui.
+  const gpsByParadaId = new Map<string, { lat: number | null; lng: number | null }>()
+  for (const list of paradasIndex.values()) for (const p of list) gpsByParadaId.set(p.id, { lat: p.lat, lng: p.lng })
 
   const escalaPlacas = new Set(
     escalaLinhas.filter((l) => l.placa_norm).map((l) => l.placa_norm as string),
@@ -155,6 +169,33 @@ export function detectaAnomalias(params: DetectaParams): AnomaliaDetectada[] {
             duracao_min: 0,
           },
         })
+      }
+    }
+
+    // ANOM-13: entrega geograficamente IMPLAUSÍVEL — a parada creditada está a >2km
+    // da loja casada (coord do cadastro válida). Pega falso-positivo/super-contagem
+    // (ex: transbordo "O BOM" creditado a 47km da loja real, ou coord trocada). Não
+    // bloqueia (o operador confere) — só impede que info errada passe silenciosa.
+    if (lojaCoords) {
+      for (const parada of rota.paradas) {
+        if (!parada.loja_id || !parada.parada_id) continue
+        const lc = lojaCoords.get(parada.loja_id)
+        const gps = gpsByParadaId.get(parada.parada_id)
+        if (lc && lc.lat != null && lc.lng != null && !(lc.lat === 0 && lc.lng === 0) && gps?.lat != null && gps?.lng != null) {
+          const dist = Math.round(haversineM(gps.lat, gps.lng, lc.lat, lc.lng))
+          if (dist > 2000) {
+            anomalias.push({
+              kpi_rota_id: rotaId,
+              parada_id: parada.parada_id,
+              data,
+              codigo: 'ANOM-13',
+              severidade: 'MEDIUM',
+              descricao: `Entrega de ${rota.placa_norm} em "${parada.nome}" está a ${(dist / 1000).toFixed(1)}km da loja cadastrada — distância implausível.`,
+              sugestao: 'Conferir se a entrega é nessa loja mesmo ou se a coordenada do cadastro está errada (possível ponto de transbordo).',
+              payload: { placa: rota.placa_norm, nome_parada: parada.nome, distancia_m: dist },
+            })
+          }
+        }
       }
     }
 
@@ -294,6 +335,40 @@ export function detectaAnomalias(params: DetectaParams): AnomaliaDetectada[] {
             },
           })
         }
+      }
+    }
+  }
+
+  // ANOM-14: a MESMA placa creditada com duas entregas SOBREPOSTAS no tempo (em lojas
+  // diferentes) — fisicamente impossível p/ um caminhão. Sinaliza super-contagem (ex:
+  // transbordo creditado a 2 linhas ao mesmo tempo). Usa a placa que realmente entregou.
+  const porPlaca = new Map<string, Array<{ ini: number; fim: number; nome: string; loja_id: string | null }>>()
+  for (const rota of rotas) {
+    const placa = rota.placa_real ?? rota.placa_norm
+    if (!placa) continue
+    for (const p of rota.paradas) {
+      if (!p.loja_id) continue
+      const arr = porPlaca.get(placa) ?? []
+      arr.push({ ini: p.chegada.getTime(), fim: (p.saida ?? p.chegada).getTime(), nome: p.nome, loja_id: p.loja_id })
+      porPlaca.set(placa, arr)
+    }
+  }
+  for (const [placa, arr] of porPlaca) {
+    arr.sort((a, b) => a.ini - b.ini)
+    for (let i = 1; i < arr.length; i++) {
+      const prev = arr[i - 1], cur = arr[i]
+      // sobreposição real (>1min) e em lojas distintas
+      if (cur.ini < prev.fim - 60_000 && cur.loja_id !== prev.loja_id) {
+        anomalias.push({
+          kpi_rota_id: null,
+          parada_id: null,
+          data,
+          codigo: 'ANOM-14',
+          severidade: 'HIGH',
+          descricao: `Placa ${placa} aparece entregando em "${prev.nome}" e "${cur.nome}" ao mesmo tempo — impossível para um caminhão.`,
+          sugestao: 'Conferir: provável super-contagem (mesma parada/transbordo creditada a 2 lojas).',
+          payload: { placa, loja_a: prev.nome, loja_b: cur.nome },
+        })
       }
     }
   }
