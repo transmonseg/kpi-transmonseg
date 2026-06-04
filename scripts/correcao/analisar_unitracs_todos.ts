@@ -3,7 +3,7 @@
  * Coleta amostras dos "Local da Parada" pra eu (Claude) interpretar.
  */
 import ExcelJS from 'exceljs'
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const XLSX = require('xlsx') as typeof import('xlsx')
 
 const BASE = 'C:/Users/media/OneDrive/Desktop/EMPRESA TRIFORCE AUTO/clientes/tia-erica/CONVERSAS COM ERICA'

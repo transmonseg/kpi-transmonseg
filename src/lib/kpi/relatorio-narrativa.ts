@@ -6,7 +6,7 @@ export interface Narrativa { sumario: string[]; recomendacoes: { titulo: string;
 const META_ENTREGA = 95
 const fmtMin = (n: number | null | undefined) => n == null ? '—' : `${Math.floor(n / 60)}h${String(Math.round(n % 60)).padStart(2, '0')}`
 
-export function montarNarrativa(m: Metricas, ant: Metricas | null, periodo: string, intervalo: [string, string]): Narrativa {
+export function montarNarrativa(m: Metricas, ant: Metricas | null, periodo: string, _intervalo: [string, string]): Narrativa {
   const sumario: string[] = []
   const rotuloP = { dia: 'no dia', semana: 'na semana', mes: 'no mês', ano: 'no ano' }[periodo] ?? 'no período'
 

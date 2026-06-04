@@ -11,7 +11,7 @@ import type { ParseContext } from '@/lib/parsers/alteracoes-v2.types'
 
 export const runtime = 'nodejs'
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
 
 function parseTextoV2(texto: string, ctx: ParseContext): AlteracaoParsed[] {

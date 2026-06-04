@@ -24,8 +24,15 @@ export async function batchTrgmLookup(
     return {}
   }
 
+  type TrgmRow = {
+    input_name: string
+    canonical_id: string
+    canonical_nm: string
+    trgm_score: number
+    match_source: 'canonical' | 'alias'
+  }
   const result: Record<string, TrgmResult> = {}
-  for (const row of data as any[]) {
+  for (const row of data as TrgmRow[]) {
     result[row.input_name] = {
       canonical_id: row.canonical_id,
       canonical_nm: row.canonical_nm,

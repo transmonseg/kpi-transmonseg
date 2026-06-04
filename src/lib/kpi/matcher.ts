@@ -493,7 +493,7 @@ function estendeSaidaPorForaBase(
 function computeSaidaCdParaParada(
   paradaAlvo: UnitracParadaRow,
   todasParadas: UnitracParadaRow[],
-  ctx?: { redeId?: string; data?: string },
+  _ctx?: { redeId?: string; data?: string },
 ): Date | null {
   const alvoTs = new Date(paradaAlvo.chegada).getTime()
   // REGRA UNIVERSAL (confirmada pela Tia Érica no vídeo 11/05/2026):

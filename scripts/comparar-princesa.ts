@@ -17,9 +17,9 @@ function cv(cell: ExcelJS.Cell): string {
     const frac = (v.getUTCHours() * 3600 + v.getUTCMinutes() * 60 + v.getUTCSeconds()) / 86400
     return serialToHora(frac)
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   if (typeof v === 'object' && 'result' in (v as any)) return serialToHora((v as any).result)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   if (typeof v === 'object' && 'text' in (v as any)) return String((v as any).text).trim()
   if (typeof v === 'number') return serialToHora(v)
   return String(v).trim()
