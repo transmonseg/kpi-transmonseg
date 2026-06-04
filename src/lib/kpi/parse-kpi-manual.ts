@@ -12,6 +12,8 @@ export interface EntradaManual {
   saida_cd: string | null
   chd: string | null
   sai: string | null
+  /** Volta pra base (coluna "CHEGADA CD"). Null quando o KPI não tem a coluna. */
+  volta_base: string | null
 }
 
 function cell(v: unknown): string {
@@ -34,10 +36,11 @@ const hhmm = (s: string): string | null => {
 
 // Localiza as colunas do 1º carro pelo HEADER. O layout varia por rede (ex: Zona
 // Sul não tem coluna COD), então posição fixa não serve — detecta dinamicamente.
-interface Cols { motorista: number; placa: number; saidaCd: number; chd: number; sai: number }
+interface Cols { motorista: number; placa: number; saidaCd: number; chd: number; sai: number; voltaBase: number }
 function acharColunas(ws: ExcelJS.Worksheet, hr: number): Cols {
-  const c: Cols = { motorista: 2, placa: 4, saidaCd: 5, chd: 6, sai: 7 }
-  let mot = -1, pl = -1, cd = -1, ch = -1, sa = -1
+  // voltaBase = -1 → coluna "CHEGADA CD" não existe nesse KPI (retrocompatível).
+  const c: Cols = { motorista: 2, placa: 4, saidaCd: 5, chd: 6, sai: 7, voltaBase: -1 }
+  let mot = -1, pl = -1, cd = -1, ch = -1, sa = -1, vb = -1
   const row = ws.getRow(hr)
   for (let i = 1; i <= ws.columnCount; i++) {
     const t = cell(row.getCell(i).value).toUpperCase().replace(/\s+/g, ' ')
@@ -46,12 +49,15 @@ function acharColunas(ws: ExcelJS.Worksheet, hr: number): Cols {
     else if (/SAIDA\s*CD/.test(t) && cd === -1) cd = i
     else if (/(CH?D|CHEGAD)/.test(t) && /LOJA/.test(t) && ch === -1) ch = i
     else if (/SAIDA\s*LOJA/.test(t) && sa === -1) sa = i
+    // "CHEGADA CD" = volta pra base (sem LOJA; difere de "CHD LOJA" e "SAIDA CD").
+    else if (/CHEGAD/.test(t) && /CD/.test(t) && vb === -1) vb = i
   }
   if (mot !== -1) c.motorista = mot
   if (pl !== -1) c.placa = pl
   if (cd !== -1) c.saidaCd = cd
   if (ch !== -1) c.chd = ch
   if (sa !== -1) c.sai = sa
+  if (vb !== -1) c.voltaBase = vb
   return c
 }
 
@@ -85,12 +91,13 @@ function parseWorksheet(ws: ExcelJS.Worksheet, rede_id: string, data: string): E
     const chd = hhmm(cell(ws.getRow(r).getCell(col.chd).value))
     const sai = hhmm(cell(ws.getRow(r).getCell(col.sai).value))
     const saida_cd = hhmm(cell(ws.getRow(r).getCell(col.saidaCd).value))
+    const volta_base = col.voltaBase !== -1 ? hhmm(cell(ws.getRow(r).getCell(col.voltaBase).value)) : null
     let status: StatusManual
     if (/N[ÃA]O\s*FOI/.test(txt)) status = 'nao_foi'
     else if (/SEM\s*RASTREAD/.test(txt)) status = 'sem_rastreador'
     else if (chd) status = 'entregue'
     else continue
-    out.push({ rede_id, data, loja, placa, motorista, status, saida_cd, chd, sai })
+    out.push({ rede_id, data, loja, placa, motorista, status, saida_cd, chd, sai, volta_base })
   }
   return out
 }

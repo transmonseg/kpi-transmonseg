@@ -21,6 +21,7 @@ const base = (o: Partial<Metricas>): Metricas => ({
   placasMaisAtivas: [],
   tempoMedioRotaMin: null,
   tempoMedioTotalMin: null,
+  tempoMedioOperacaoMin: null,
   porClienteComTempos: [],
   topRotasDemoradas: [],
   topTempoEmLoja: [],
