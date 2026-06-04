@@ -1076,16 +1076,25 @@ export async function cruzaEscalaUnitrac(
       matchScore(linha.loja_nome_raw, l.nome),
       l.nome_unitrac != null ? matchScore(linha.loja_nome_raw, l.nome_unitrac) : Infinity,
     )
+    // Desempate de score igual, em ordem de prioridade:
+    //  1) loja COM codigo_unitrac (cadastro canônico) vence rótulos sem código —
+    //     resolve o caso "{bairro} Serra Azul" (rótulos de rota sem código, às vezes
+    //     com coord errada, que empatam no nome com a loja real).
+    //  2) loja COM coordenada vence sem coordenada.
     let melhor: LojaRow | null = null
     let melhorScore = Infinity
+    let melhorCoded = false
+    let melhorGeo = false
     for (const l of cands) {
       const s = scoreLoja(l)
       if (s === Infinity) continue
-      const temGeo = l.lat != null && l.lng != null
-      const melhorTemGeo = melhor != null && melhor.lat != null && melhor.lng != null
-      if (s < melhorScore || (s === melhorScore && temGeo && !melhorTemGeo)) {
-        melhorScore = s; melhor = l
-      }
+      const coded = l.codigo_unitrac != null
+      const geo = l.lat != null && l.lng != null
+      const vence =
+        s < melhorScore ||
+        (s === melhorScore && coded && !melhorCoded) ||
+        (s === melhorScore && coded === melhorCoded && geo && !melhorGeo)
+      if (vence) { melhorScore = s; melhor = l; melhorCoded = coded; melhorGeo = geo }
     }
     return melhorScore <= 4 ? melhor : null
   }
