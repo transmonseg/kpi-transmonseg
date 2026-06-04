@@ -17,6 +17,7 @@ interface PontoDia {
   tempo_rota: number | null
   tempo_loja: number | null
   tempo_total: number | null
+  tempo_operacao: number | null
 }
 interface Resumo {
   total: number
@@ -27,6 +28,7 @@ interface Resumo {
   tempoMedioRota: number | null
   tempoMedioLoja: number | null
   tempoMedioTotal: number | null
+  tempoMedioOperacao: number | null
 }
 interface LojaData {
   rede: string
@@ -157,11 +159,16 @@ function Conteudo({ d }: { d: LojaData }) {
     { label: 'Sem rastreador', valor: fmtNum(resumo.sem_rast), sub: `${resumo.pctSemRastreador}% do total`, cor: resumo.pctSemRastreador > 10 ? 'var(--color-danger)' : 'var(--color-fg)' },
     { label: 'Tempo total médio', valor: fmtMin(resumo.tempoMedioTotal), sub: 'Saída CD → Saída Loja', cor: 'var(--color-info)' },
   ]
+  // Tempo de operação (Saída CD → Chegada CD) só quando a loja tem a coluna preenchida.
+  if (resumo.tempoMedioOperacao != null) {
+    tiles.push({ label: 'Tempo de operação', valor: fmtMin(resumo.tempoMedioOperacao), sub: 'Saída CD → Chegada CD', cor: 'var(--color-success)' })
+  }
+  const gridCols = tiles.length === 5 ? 'sm:grid-cols-5' : 'sm:grid-cols-4'
 
   return (
     <div className="space-y-12">
       {/* Cards de resumo */}
-      <div className={`grid grid-cols-2 overflow-hidden divide-x divide-y divide-[var(--color-border)] sm:grid-cols-4 sm:divide-y-0 ${CARD} animate-fade-up`}>
+      <div className={`grid grid-cols-2 overflow-hidden divide-x divide-y divide-[var(--color-border)] ${gridCols} sm:divide-y-0 ${CARD} animate-fade-up`}>
         {tiles.map((t, i) => (
           <div key={t.label} className="p-5 sm:p-6 animate-fade-up" style={{ animationDelay: `${i * 60}ms` }}>
             <div className="text-display text-numeric text-[34px] leading-none" style={{ color: t.cor }}>{t.valor}</div>
