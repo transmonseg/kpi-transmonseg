@@ -608,8 +608,14 @@ function TempoStrip({ m, mAnt }: { m: Metricas; mAnt: Metricas | null }) {
     { label: 'Tempo médio em loja', value: fmtMin(m.tempoMedioLojaMin), sub: 'Chegada → Saída', color: 'var(--color-warning)', atual: m.tempoMedioLojaMin, anterior: mAnt?.tempoMedioLojaMin },
     { label: 'Tempo total médio', value: fmtMin(m.tempoMedioTotalMin), sub: 'Saída CD → Saída Loja', color: 'var(--color-info)', atual: m.tempoMedioTotalMin, anterior: mAnt?.tempoMedioTotalMin },
   ]
+  // Tempo de operação (Saída CD → volta à base) só aparece quando os KPIs do período
+  // têm a coluna "Chegada CD" preenchida.
+  if (m.tempoMedioOperacaoMin != null) {
+    tiles.push({ label: 'Tempo de operação', value: fmtMin(m.tempoMedioOperacaoMin), sub: 'Saída CD → Volta à base', color: 'var(--color-success)', atual: m.tempoMedioOperacaoMin, anterior: mAnt?.tempoMedioOperacaoMin ?? null })
+  }
+  const gridCols = tiles.length === 4 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'
   return (
-    <div data-tour="resumo-tempos" className={`grid grid-cols-3 overflow-hidden divide-x divide-[var(--color-border)] ${CARD} animate-fade-up`}>
+    <div data-tour="resumo-tempos" className={`grid ${gridCols} overflow-hidden divide-x divide-[var(--color-border)] ${CARD} animate-fade-up`}>
       {tiles.map(t => (
         <div key={t.label} className="p-4 sm:p-5">
           <div className="text-overline">{t.label}</div>

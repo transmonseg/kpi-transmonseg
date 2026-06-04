@@ -4,7 +4,7 @@ import type { EntradaManual } from './parse-kpi-manual'
 
 const E = (o: Partial<EntradaManual>): EntradaManual => ({
   rede_id: 'PRINCESA', data: '2026-05-19', loja: 'L', placa: 'P', motorista: 'M',
-  status: 'entregue', saida_cd: '05:00', chd: '06:00', sai: '06:30', ...o,
+  status: 'entregue', saida_cd: '05:00', chd: '06:00', sai: '06:30', volta_base: null, ...o,
 })
 const ents: EntradaManual[] = [
   E({ rede_id: 'PRINCESA', loja: 'A', chd: '06:00', sai: '06:30' }),
@@ -41,7 +41,7 @@ describe('calcularMetricas — novos campos de tempo', () => {
   const E2 = (o: Partial<EntradaManual>): EntradaManual => ({
     rede_id: 'PRINCESA', data: '2026-05-19', loja: 'A',
     placa: 'ABC1234', motorista: 'JOAO',
-    status: 'entregue', saida_cd: '04:00', chd: '05:30', sai: '06:00', ...o,
+    status: 'entregue', saida_cd: '04:00', chd: '05:30', sai: '06:00', volta_base: null, ...o,
   })
 
   const ents2: EntradaManual[] = [
@@ -61,6 +61,20 @@ describe('calcularMetricas — novos campos de tempo', () => {
   it('tempoMedioTotalMin: media de saida_cd→sai (so entregues)', () => {
     const m = calcularMetricas(ents2)
     expect(m.tempoMedioTotalMin).toBe(128)
+  })
+
+  it('tempoMedioOperacaoMin: media de saida_cd→volta_base (so entregues com volta)', () => {
+    // saida 04:00 → volta 08:00 = 240; saida 04:00 → volta 09:00 = 300 → média 270.
+    const comVolta: EntradaManual[] = [
+      E2({ loja: 'A', saida_cd: '04:00', volta_base: '08:00' }),
+      E2({ loja: 'B', saida_cd: '04:00', volta_base: '09:00' }),
+      E2({ loja: 'C', saida_cd: '04:00', volta_base: null }), // sem volta → ignorado
+    ]
+    expect(calcularMetricas(comVolta).tempoMedioOperacaoMin).toBe(270)
+  })
+
+  it('tempoMedioOperacaoMin: null quando nenhum KPI tem a coluna Chegada CD', () => {
+    expect(calcularMetricas(ents2).tempoMedioOperacaoMin).toBeNull()
   })
 
   it('distHorarioSaida: agrupa por hora de saida_cd', () => {

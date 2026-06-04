@@ -50,7 +50,7 @@ export async function carregarEntradasManuais(svc: Svc, ini: string, fim: string
   const linhas: EntradaManual[] = []
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await svc.from('kpi_manual_entradas')
-      .select('data, rede_id, loja, placa, motorista, status, saida_cd, chd, sai')
+      .select('data, rede_id, loja, placa, motorista, status, saida_cd, chd, sai, volta_base')
       .gte('data', ini).lte('data', fim)
       .order('id', { ascending: true })
       .range(from, from + PAGE - 1)

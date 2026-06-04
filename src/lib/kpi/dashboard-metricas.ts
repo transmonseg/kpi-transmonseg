@@ -51,6 +51,9 @@ export interface Metricas {
   placasMaisAtivas: Array<{ placa: string; entregas: number }>
   tempoMedioRotaMin: number | null
   tempoMedioTotalMin: number | null
+  /** Tempo de operação completo: Saída CD → volta à base (coluna Chegada CD). Null
+   * quando os KPIs do período não têm a coluna. */
+  tempoMedioOperacaoMin: number | null
   porClienteComTempos: ClienteTempos[]
   topRotasDemoradas: LojaTopRow[]
   topTempoEmLoja: LojaTopRow[]
@@ -68,6 +71,7 @@ export interface ClienteTempos {
   tempo_rota: number | null
   tempo_loja: number | null
   tempo_total: number | null
+  tempo_operacao: number | null
   sem_rast: number
 }
 
@@ -167,6 +171,8 @@ export function calcularMetricas(ents: EntradaManual[]): Metricas {
   const entregues = ents.filter(e => e.status === 'entregue')
   const tempoMedioRotaMin = mediaVetorNulo(entregues.map(e => diffMin(e.saida_cd, e.chd)))
   const tempoMedioTotalMin = mediaVetorNulo(entregues.map(e => diffMin(e.saida_cd, e.sai)))
+  // Tempo de operação completo: da saída do CD até a volta pra base.
+  const tempoMedioOperacaoMin = mediaVetorNulo(entregues.map(e => diffMin(e.saida_cd, e.volta_base)))
 
   const porClienteComTempos: ClienteTempos[] = [...redeMap.entries()].map(([rede_id, es]) => {
     const ent = es.filter(e => e.status === 'entregue')
@@ -177,6 +183,7 @@ export function calcularMetricas(ents: EntradaManual[]): Metricas {
       tempo_rota: mediaVetorNulo(ent.map(e => diffMin(e.saida_cd, e.chd))),
       tempo_loja: mediaVetorNulo(ent.map(e => diffMin(e.chd, e.sai))),
       tempo_total: mediaVetorNulo(ent.map(e => diffMin(e.saida_cd, e.sai))),
+      tempo_operacao: mediaVetorNulo(ent.map(e => diffMin(e.saida_cd, e.volta_base))),
       sem_rast: es.filter(e => e.status === 'sem_rastreador').length,
     }
   }).sort((a, b) => b.entregas - a.entregas)
@@ -288,6 +295,7 @@ export function calcularMetricas(ents: EntradaManual[]): Metricas {
     placasMaisAtivas: [...placaMap.entries()].map(([placa, entregas]) => ({ placa, entregas })).sort((a, b) => b.entregas - a.entregas).slice(0, 15),
     tempoMedioRotaMin,
     tempoMedioTotalMin,
+    tempoMedioOperacaoMin,
     porClienteComTempos,
     topRotasDemoradas,
     topTempoEmLoja,
