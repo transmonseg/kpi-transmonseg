@@ -469,3 +469,66 @@ describe('ANOM-14: sobreposição temporal', () => {
     expect(r.some(a => a.codigo === 'ANOM-14')).toBe(false)
   })
 })
+
+// ---------------------------------------------------------------------------
+// ANOM-15/16/17: avisos pré-KPI (placa typada, rastro suspeito, saída-falsa)
+// ---------------------------------------------------------------------------
+describe('ANOM-15: placa errada no Unitrac (typo)', () => {
+  it('dispara quando a placa da escala tem uma quase-igual (1 char) no relatório', () => {
+    const r = detectaAnomalias({
+      rotas: [], escalaLinhas: [makeEscalaLinha({ placa_norm: 'KWV7E49' })],
+      paradasIndex: new Map([['KWV7E89', [{ id: 'p1', classificacao: 'LOJA', chegada: new Date('2026-05-18T08:00:00Z'), saida: new Date('2026-05-18T08:30:00Z'), duracao_seg: 1800, lat: -22.9, lng: -43.2 }]]]),
+      janelasRede: new Map(), data: '2026-05-18',
+    })
+    const a = r.find(x => x.codigo === 'ANOM-15')
+    expect(a).toBeTruthy()
+    expect(a?.severidade).toBe('HIGH')
+    expect(a?.descricao).toContain('KWV7E89')
+  })
+  it('NÃO dispara quando a placa bate direto', () => {
+    const r = detectaAnomalias({ rotas: [], escalaLinhas: [makeEscalaLinha({ placa_norm: 'KWV7E89' })], paradasIndex: new Map([['KWV7E89', []]]), janelasRede: new Map(), data: '2026-05-18' })
+    expect(r.some(x => x.codigo === 'ANOM-15')).toBe(false)
+  })
+})
+
+describe('ANOM-16: rastro suspeito', () => {
+  it('dispara com 1 único ponto operacional de madrugada', () => {
+    const r = detectaAnomalias({
+      rotas: [], escalaLinhas: [makeEscalaLinha({ placa_norm: 'LCE4337' })],
+      paradasIndex: new Map([['LCE4337', [{ id: 'p1', classificacao: 'FORA_BASE', chegada: new Date('2026-05-18T00:00:00Z'), saida: new Date('2026-05-18T00:05:00Z'), duracao_seg: 300, lat: -22.79, lng: -43.32 }]]]),
+      janelasRede: new Map(), data: '2026-05-18',
+    })
+    expect(r.some(x => x.codigo === 'ANOM-16')).toBe(true)
+  })
+  it('NÃO dispara com paradas normais durante o dia', () => {
+    const r = detectaAnomalias({
+      rotas: [], escalaLinhas: [makeEscalaLinha({ placa_norm: 'ABC1234' })],
+      paradasIndex: new Map([['ABC1234', [{ id: 'p1', classificacao: 'LOJA', chegada: new Date('2026-05-18T09:00:00Z'), saida: new Date('2026-05-18T09:30:00Z'), duracao_seg: 1800, lat: -22.9, lng: -43.2 }]]]),
+      janelasRede: new Map(), data: '2026-05-18',
+    })
+    expect(r.some(x => x.codigo === 'ANOM-16')).toBe(false)
+  })
+})
+
+describe('ANOM-17: saída-falsa perto de loja', () => {
+  it('dispara quando um ponto FAKE_EXIT está ≤80m de uma loja cadastrada', () => {
+    const r = detectaAnomalias({
+      rotas: [], escalaLinhas: [makeEscalaLinha({ placa_norm: 'KQR2J11' })],
+      paradasIndex: new Map([['KQR2J11', [{ id: 'p1', classificacao: 'FAKE_EXIT', chegada: new Date('2026-05-18T08:30:00Z'), saida: new Date('2026-05-18T08:31:00Z'), duracao_seg: 60, lat: -22.9840, lng: -43.2000 }]]]),
+      janelasRede: new Map(), data: '2026-05-18',
+      lojaCoords: new Map([['loja-amoedo', { lat: -22.9842, lng: -43.2000, raio_metros: 150, nome: 'PREZUNIC SPID AMOEDO' }]]),
+    })
+    const a = r.find(x => x.codigo === 'ANOM-17')
+    expect(a).toBeTruthy()
+    expect(a?.descricao).toContain('AMOEDO')
+  })
+  it('NÃO dispara sem FAKE_EXIT', () => {
+    const r = detectaAnomalias({
+      rotas: [], escalaLinhas: [makeEscalaLinha({ placa_norm: 'KQR2J11' })],
+      paradasIndex: new Map([['KQR2J11', [{ id: 'p1', classificacao: 'LOJA', chegada: new Date('2026-05-18T08:30:00Z'), saida: new Date('2026-05-18T08:40:00Z'), duracao_seg: 600, lat: -22.9840, lng: -43.2000 }]]]),
+      janelasRede: new Map(), data: '2026-05-18',
+      lojaCoords: new Map([['loja-amoedo', { lat: -22.9842, lng: -43.2000, raio_metros: 150, nome: 'PREZUNIC SPID AMOEDO' }]]),
+    })
+    expect(r.some(x => x.codigo === 'ANOM-17')).toBe(false)
+  })
+})

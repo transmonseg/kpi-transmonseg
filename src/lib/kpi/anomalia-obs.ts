@@ -12,9 +12,12 @@ const OBS_MAP: Record<string, string> = {
   'ANOM-12': '⚠ parada sem saída registrada',
   'ANOM-13': '⚠ entrega longe da loja (>2km)',
   'ANOM-14': '⚠ placa em 2 lugares ao mesmo tempo',
+  'ANOM-15': '⚠ placa errada no Unitrac (typo)',
+  'ANOM-16': '⚠ rastro suspeito (ponto isolado/madrugada)',
+  'ANOM-17': '⚠ saída-falsa perto de loja',
 }
 
-export const ANOMALIAS_HIGH = new Set(['ANOM-01', 'ANOM-04', 'ANOM-06', 'ANOM-07', 'ANOM-14'])
+export const ANOMALIAS_HIGH = new Set(['ANOM-01', 'ANOM-04', 'ANOM-06', 'ANOM-07', 'ANOM-14', 'ANOM-15'])
 
 export function codigoToObsText(codigo: string): string {
   return OBS_MAP[codigo] ?? `⚠ anomalia ${codigo}`
