@@ -30,6 +30,7 @@ interface PontoDia {
   tempo_rota: number | null
   tempo_loja: number | null
   tempo_total: number | null
+  tempo_operacao: number | null
 }
 
 export async function GET(req: NextRequest) {
@@ -51,13 +52,13 @@ export async function GET(req: NextRequest) {
   // as milhares de todas. Pagina por segurança (no modo 'ano' uma loja pode passar
   // de 1000); ORDER BY id estabiliza as janelas.
   const svc = createServiceClient()
-  type Row = { data: string; status: string; saida_cd: string | null; chd: string | null; sai: string | null }
+  type Row = { data: string; status: string; saida_cd: string | null; chd: string | null; sai: string | null; volta_base: string | null }
   const ents: Row[] = []
   try {
     const PAGE = 1000
     for (let off = 0; ; off += PAGE) {
       const { data, error } = await svc.from('kpi_manual_entradas')
-        .select('data, status, saida_cd, chd, sai')
+        .select('data, status, saida_cd, chd, sai, volta_base')
         .eq('rede_id', rede).eq('loja', loja)
         .gte('data', ini).lte('data', fim)
         .order('id', { ascending: true })
@@ -91,6 +92,7 @@ export async function GET(req: NextRequest) {
         tempo_rota: media(entregues.map(e => diffMin(e.saida_cd, e.chd))),
         tempo_loja: media(entregues.map(e => diffMin(e.chd, e.sai))),
         tempo_total: media(entregues.map(e => diffMin(e.saida_cd, e.sai))),
+        tempo_operacao: media(entregues.map(e => diffMin(e.saida_cd, e.volta_base))),
       }
     })
 
@@ -108,6 +110,7 @@ export async function GET(req: NextRequest) {
     tempoMedioRota: media(entreguesTodos.map(e => diffMin(e.saida_cd, e.chd))),
     tempoMedioLoja: media(entreguesTodos.map(e => diffMin(e.chd, e.sai))),
     tempoMedioTotal: media(entreguesTodos.map(e => diffMin(e.saida_cd, e.sai))),
+    tempoMedioOperacao: media(entreguesTodos.map(e => diffMin(e.saida_cd, e.volta_base))),
   }
 
   return NextResponse.json({ rede, loja, intervalo: [ini, fim], resumo, serie })

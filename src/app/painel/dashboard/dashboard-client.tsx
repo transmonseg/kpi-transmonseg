@@ -611,7 +611,7 @@ function TempoStrip({ m, mAnt }: { m: Metricas; mAnt: Metricas | null }) {
   // Tempo de operação (Saída CD → volta à base) só aparece quando os KPIs do período
   // têm a coluna "Chegada CD" preenchida.
   if (m.tempoMedioOperacaoMin != null) {
-    tiles.push({ label: 'Tempo de operação', value: fmtMin(m.tempoMedioOperacaoMin), sub: 'Saída CD → Volta à base', color: 'var(--color-success)', atual: m.tempoMedioOperacaoMin, anterior: mAnt?.tempoMedioOperacaoMin ?? null })
+    tiles.push({ label: 'Tempo de operação', value: fmtMin(m.tempoMedioOperacaoMin), sub: 'Saída CD → Chegada CD', color: 'var(--color-success)', atual: m.tempoMedioOperacaoMin, anterior: mAnt?.tempoMedioOperacaoMin ?? null })
   }
   const gridCols = tiles.length === 4 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'
   return (

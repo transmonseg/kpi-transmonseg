@@ -784,10 +784,11 @@ export async function POST(req: NextRequest) {
         }
       })
 
-      const [xlsxBuffer, xlsxComChegadaBuffer, pdfBuffer] = await Promise.all([
+      const [xlsxBuffer, xlsxComChegadaBuffer, pdfBuffer, pdfComChegadaBuffer] = await Promise.all([
         gerarKpi({ rede_id, data, linhas }),
         gerarKpi({ rede_id, data, linhas, comChegadaCd: true }),
         gerarKpiPdf({ rede_id, rede_nome, data, linhas: linhas as KpiLinha[] }),
+        gerarKpiPdf({ rede_id, rede_nome, data, linhas: linhas as KpiLinha[], comChegadaCd: true }),
       ])
 
       const anomCounts = anomaliasPorRede[rede_id] ?? { high: 0, medium: 0, low: 0 }
@@ -821,6 +822,7 @@ export async function POST(req: NextRequest) {
         xlsxBase64: xlsxBuffer.toString('base64'),
         xlsxComChegadaBase64: xlsxComChegadaBuffer.toString('base64'),
         pdfBase64: pdfBuffer.toString('base64'),
+        pdfComChegadaBase64: pdfComChegadaBuffer.toString('base64'),
         preview,
       }
     })

@@ -53,9 +53,9 @@ function maxLojas(linhas: KpiLinha[]): number {
   return Math.min(Math.max(max, 1), 3)
 }
 
-function buildColWidths(nLojas: number): number[] {
+function buildColWidths(nLojas: number, comChegada = false): number[] {
   const maxW = PAGE_W - 2 * MARGIN_X
-  const fixed = [120, 100, 52, 50]
+  const fixed = comChegada ? [120, 100, 52, 50, 50] : [120, 100, 52, 50]
   const lojaBlock = Array.from({ length: nLojas }, () => [55, 55, 48]).flat()
   const obs = [70]
   const raw = [...fixed, ...lojaBlock, ...obs]
@@ -66,8 +66,9 @@ function buildColWidths(nLojas: number): number[] {
   return raw.map(w => Math.max(Math.floor(w * scale), 1))
 }
 
-function buildHeaders(nLojas: number): string[] {
+function buildHeaders(nLojas: number, comChegada = false): string[] {
   const h = ['REDES/FILIAIS', 'MOTORISTA', 'PLACA', 'SAÍDA CD']
+  if (comChegada) h.push('CHEGADA CD')
   for (let n = 1; n <= nLojas; n++) {
     h.push(`CHE.L${n}`, `SAÍ.L${n}`, `TEMPO${n}`)
   }
@@ -75,8 +76,9 @@ function buildHeaders(nLojas: number): string[] {
   return h
 }
 
-function rowValues(l: KpiLinha, nLojas: number): string[] {
+function rowValues(l: KpiLinha, nLojas: number, comChegada = false): string[] {
   const vals = [safeText(l.loja_nome), safeText(l.motorista ?? '—'), l.placa ?? '—', fmt(l.saida_cd)]
+  if (comChegada) vals.push(fmt(l.chegada_base ?? null))
   for (let n = 1; n <= nLojas; n++) {
     const chd = n === 1 ? l.chd_loja_1 : n === 2 ? l.chd_loja_2 : l.chd_loja_3
     const sai = n === 1 ? l.saida_loja_1 : n === 2 ? l.saida_loja_2 : l.saida_loja_3
@@ -92,11 +94,12 @@ export async function gerarKpiPdf(params: {
   rede_nome: string
   data: string
   linhas: KpiLinha[]
+  comChegadaCd?: boolean
 }): Promise<Buffer> {
-  const { rede_nome, data, linhas } = params
+  const { rede_nome, data, linhas, comChegadaCd = false } = params
   const nLojas = maxLojas(linhas)
-  const colWidths = buildColWidths(nLojas)
-  const headers = buildHeaders(nLojas)
+  const colWidths = buildColWidths(nLojas, comChegadaCd)
+  const headers = buildHeaders(nLojas, comChegadaCd)
   const tableWidth = colWidths.reduce((a, b) => a + b, 0)
 
   const pdf = await PDFDocument.create()
@@ -131,7 +134,7 @@ export async function gerarKpiPdf(params: {
       tableTop = y
     }
 
-    drawRow(page, font, xStart, y, rowH, i, rowValues(l, nLojas), colWidths, tableWidth)
+    drawRow(page, font, xStart, y, rowH, i, rowValues(l, nLojas, comChegadaCd), colWidths, tableWidth)
     y -= rowH
   })
 

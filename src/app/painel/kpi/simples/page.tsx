@@ -78,6 +78,7 @@ type RedeResult = {
   xlsxBase64: string
   xlsxComChegadaBase64?: string
   pdfBase64: string
+  pdfComChegadaBase64?: string
   preview: PreviewLinha[]
 }
 
@@ -1189,6 +1190,7 @@ function RedePreviewSection({
   const qtdLow = rede.preview.filter(l => l.confianca === 'LOW').length
   const qtdUnmatched = rede.preview.filter(l => l.confianca === 'UNMATCHED').length
   const [xlsxMenu, setXlsxMenu] = useState(false)
+  const [pdfMenu, setPdfMenu] = useState(false)
 
   return (
     <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
@@ -1265,15 +1267,42 @@ function RedePreviewSection({
               </>
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => downloadBase64(rede.pdfBase64, `KPI-${rede.rede_id}-${data}.pdf`, 'application/pdf')}
-            className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--color-fg)] transition-all duration-150 active:scale-[0.96] hover:border-[var(--color-navy-700)] hover:bg-[var(--color-navy-700)] hover:text-white"
-          >
-            <FileArrowDown size={12} weight="bold" />
-            <FilePdf size={12} weight="bold" />
-            PDF
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setPdfMenu(v => !v)}
+              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--color-fg)] transition-all duration-150 active:scale-[0.96] hover:border-[var(--color-navy-700)] hover:bg-[var(--color-navy-700)] hover:text-white"
+            >
+              <FileArrowDown size={12} weight="bold" />
+              <FilePdf size={12} weight="bold" />
+              PDF
+            </button>
+            {pdfMenu && (
+              <>
+                <button type="button" aria-label="Fechar" className="fixed inset-0 z-40 cursor-default" onClick={() => setPdfMenu(false)} />
+                <div className="absolute right-0 z-50 mt-1 w-56 overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-lg">
+                  <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)]">Baixar PDF</div>
+                  <button
+                    type="button"
+                    onClick={() => { downloadBase64(rede.pdfBase64, `KPI-${rede.rede_id}-${data}.pdf`, 'application/pdf'); setPdfMenu(false) }}
+                    className="block w-full px-3 py-2 text-left text-[12px] text-[var(--color-fg)] transition-colors hover:bg-[var(--color-navy-700)] hover:text-white"
+                  >
+                    Sem coluna Chegada CD
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!rede.pdfComChegadaBase64}
+                    title={rede.pdfComChegadaBase64 ? 'Baixar com a coluna Chegada CD' : 'Gere o KPI de novo para habilitar (esta geração é anterior à coluna)'}
+                    onClick={() => { if (rede.pdfComChegadaBase64) { downloadBase64(rede.pdfComChegadaBase64, `KPI-${rede.rede_id}-${data}-com-chegada-cd.pdf`, 'application/pdf'); setPdfMenu(false) } }}
+                    className="block w-full px-3 py-2 text-left text-[12px] text-[var(--color-fg)] transition-colors hover:bg-[var(--color-navy-700)] hover:text-white disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--color-fg)]"
+                  >
+                    Com coluna Chegada CD
+                    {!rede.pdfComChegadaBase64 && <span className="block text-[10px] text-[var(--color-fg-subtle)]">gere o KPI de novo p/ habilitar</span>}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1315,7 +1344,7 @@ function RedePreviewSection({
               <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Saída CD</th>
               <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Ch. Loja</th>
               <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Saída Loja</th>
-              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Volta Base</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Chegada CD</th>
               <th className="px-4 py-2.5 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden lg:table-cell w-20">Tempo</th>
             </tr>
           </thead>
