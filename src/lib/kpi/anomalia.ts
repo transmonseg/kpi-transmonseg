@@ -22,9 +22,17 @@ type DetectaParams = {
   paradasIndex: Map<string, ParadaIndexEntry[]>
   janelasRede: Map<string, { janela_inicio: string; janela_fim: string }>
   data: string
-  /** Coords cadastradas por loja_id — usado p/ detectar entrega geograficamente
-   * implausível (ANOM-13). Opcional: sem isso a checagem não roda. */
-  lojaCoords?: Map<string, { lat: number | null; lng: number | null; raio_metros: number | null }>
+  /** Coords cadastradas por loja_id — usado p/ ANOM-13 (entrega longe) e ANOM-17
+   * (saída-falsa perto de loja). Opcional: sem isso as checagens não rodam. */
+  lojaCoords?: Map<string, { lat: number | null; lng: number | null; raio_metros: number | null; nome?: string; rede_id?: string }>
+}
+
+/** Distância de caracteres (mesmo comprimento). Usada p/ achar placa "quase igual". */
+function charDist(a: string, b: string): number {
+  if (a.length !== b.length) return 99
+  let d = 0
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) d++
+  return d
 }
 
 function haversineM(a: number, b: number, c: number, d: number): number {
@@ -58,6 +66,9 @@ export function detectaAnomalias(params: DetectaParams): AnomaliaDetectada[] {
   const escalaPlacas = new Set(
     escalaLinhas.filter((l) => l.placa_norm).map((l) => l.placa_norm as string),
   )
+  // redes que cada placa atende (pra filtrar avisos cross-rede)
+  const placaRedes = new Map<string, Set<string>>()
+  for (const l of escalaLinhas) if (l.placa_norm) (placaRedes.get(l.placa_norm) ?? placaRedes.set(l.placa_norm, new Set()).get(l.placa_norm)!).add(l.rede_id)
 
   // ANOM-02: GPS sem escala — plaques in unitrac but not in escala
   const placasUnitrac = new Set(paradasIndex.keys())
@@ -73,6 +84,83 @@ export function detectaAnomalias(params: DetectaParams): AnomaliaDetectada[] {
         sugestao: 'Verificar se a placa está na escala ou se houve erro de digitação.',
         payload: { placa },
       })
+    }
+  }
+
+  // ANOM-15: placa da escala NÃO está no GPS, mas existe uma placa quase igual (1
+  // caractere de diferença) no relatório → provável erro de digitação no Unitrac.
+  // Caso real KWV-7E49 (escala) x KWV-7E89 (Unitrac): 6 entregas sumiam como "sem
+  // rastreador". Avisa o operador pra confirmar/corrigir a placa no painel.
+  const placasReport = [...placasUnitrac]
+  for (const ep of escalaPlacas) {
+    if (placasUnitrac.has(ep)) continue
+    const quase = placasReport.find((rp) => !escalaPlacas.has(rp) && charDist(ep, rp) === 1)
+    if (quase) {
+      anomalias.push({
+        kpi_rota_id: null,
+        parada_id: null,
+        data,
+        codigo: 'ANOM-15',
+        severidade: 'HIGH',
+        descricao: `Placa ${ep} (escala) não está no Unitrac, mas há "${quase}" — 1 caractere diferente. Provável placa errada no Unitrac.`,
+        sugestao: 'Confirmar/corrigir a placa no painel do Unitrac — as entregas dessa placa estão como "sem rastreador".',
+        payload: { placa_escala: ep, placa_unitrac: quase },
+      })
+    }
+  }
+
+  // ANOM-16: rastro suspeito — placa rastreada cujas paradas operacionais (loja/fora
+  // de base) são TODAS de madrugada (<5h) ou só ponto isolado, sem entrega. Caso real
+  // LCE-4337 (Caxias): 1 único ponto às 00:00 ("marcação arrastada"). Sinaliza
+  // rastreador que provavelmente falhou/oscilou.
+  for (const placa of escalaPlacas) {
+    const lst = paradasIndex.get(placa)
+    if (!lst) continue
+    const op = lst.filter((p) => p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE')
+    if (op.length === 0) continue
+    const todasMadrugada = op.every((p) => p.chegada.getUTCHours() < 5)
+    if (op.length <= 1 && todasMadrugada) {
+      anomalias.push({
+        kpi_rota_id: null,
+        parada_id: null,
+        data,
+        codigo: 'ANOM-16',
+        severidade: 'MEDIUM',
+        descricao: `Placa ${placa} tem rastro suspeito: só ${op.length} ponto operacional e de madrugada (${op[0].chegada.toISOString().slice(11, 16)}). Rastreador pode ter falhado.`,
+        sugestao: 'Conferir manualmente — possível marcação arrastada/oscilante; a rota real pode não ter sido registrada.',
+        payload: { placa, qtd_pontos: op.length },
+      })
+    }
+  }
+
+  // ANOM-17: saída-falsa perto de loja — uma parada classificada FAKE_EXIT (saída
+  // espúria do rastreador) está a ≤80m de uma loja cadastrada → possível entrega que
+  // não foi contada. Caso real KQR Amoedo: ponto a 25m da loja, marcado FAKE_EXIT.
+  if (lojaCoords) {
+    const lojasArr = [...lojaCoords.values()].filter((l) => l.lat != null && l.lng != null && !(l.lat === 0 && l.lng === 0))
+    for (const placa of escalaPlacas) {
+      const lst = paradasIndex.get(placa)
+      if (!lst) continue
+      const redesDaPlaca = placaRedes.get(placa)
+      for (const p of lst) {
+        if (p.classificacao !== 'FAKE_EXIT' || p.lat == null || p.lng == null) continue
+        // só considera lojas da MESMA rede que a placa atende (evita cross-rede: ex
+        // placa Zona Sul pegando uma loja Carrefour/Assaí vizinha).
+        let nl: typeof lojasArr[number] | null = null, nd = Infinity
+        for (const l of lojasArr) { if (l.rede_id && redesDaPlaca && !redesDaPlaca.has(l.rede_id)) continue; const d = haversineM(p.lat, p.lng, l.lat!, l.lng!); if (d < nd) { nd = d; nl = l } }
+        if (nl && nd <= 80) {
+          anomalias.push({
+            kpi_rota_id: null,
+            parada_id: p.id,
+            data,
+            codigo: 'ANOM-17',
+            severidade: 'MEDIUM',
+            descricao: `Placa ${placa}: ponto a ${Math.round(nd)}m de "${nl.nome ?? 'loja cadastrada'}" foi classificado como saída-falsa pelo Unitrac — possível entrega não contada.`,
+            sugestao: 'Conferir se houve entrega nessa loja (o ponto existe, mas o Unitrac marcou como saída espúria).',
+            payload: { placa, loja: nl.nome, distancia_m: Math.round(nd) },
+          })
+        }
+      }
     }
   }
 

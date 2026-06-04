@@ -579,7 +579,7 @@ export async function POST(req: NextRequest) {
           janela_fim: String(r.janela_fim).slice(0, 5),
         }])
     ),
-    lojaCoords: new Map(lojasParaMatcher.map(l => [l.id, { lat: l.lat, lng: l.lng, raio_metros: l.raio_metros }])),
+    lojaCoords: new Map(lojasParaMatcher.map(l => [l.id, { lat: l.lat, lng: l.lng, raio_metros: l.raio_metros, nome: l.nome, rede_id: l.rede_id }])),
     data,
   })
   // Indexa anomalias por rota_id pra anexar nos códigos
