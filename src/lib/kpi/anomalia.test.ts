@@ -420,3 +420,52 @@ describe('ANOM-04 / ANOM-12: parada com tempo inválido ou sem saída', () => {
     expect(result.filter((a) => a.codigo === 'ANOM-12')).toHaveLength(0)
   })
 })
+
+// ---------------------------------------------------------------------------
+// ANOM-13: entrega geograficamente implausível (>2km da loja)
+// ---------------------------------------------------------------------------
+describe('ANOM-13: entrega longe da loja', () => {
+  const baseArgs = { escalaLinhas: [makeEscalaLinha()], janelasRede: new Map(), data: '2026-05-18' }
+  function paradasIdxGps(lat: number, lng: number) {
+    return new Map([['ABC1234', [{ id: 'p1', classificacao: 'LOJA', chegada: new Date('2026-05-18T09:00:00Z'), saida: new Date('2026-05-18T09:30:00Z'), duracao_seg: 1800, lat, lng }]]])
+  }
+  it('dispara quando a parada está a >2km da loja cadastrada', () => {
+    const rota = makeRota({ paradas: [makeParada({ parada_id: 'p1', loja_id: 'loja-1' })] })
+    const r = detectaAnomalias({ ...baseArgs, rotas: [rota], paradasIndex: paradasIdxGps(-22.90, -43.50), lojaCoords: new Map([['loja-1', { lat: -22.90, lng: -43.20, raio_metros: 150 }]]) })
+    expect(r.some(a => a.codigo === 'ANOM-13')).toBe(true)
+  })
+  it('NÃO dispara quando a parada está perto (<2km)', () => {
+    const rota = makeRota({ paradas: [makeParada({ parada_id: 'p1', loja_id: 'loja-1' })] })
+    const r = detectaAnomalias({ ...baseArgs, rotas: [rota], paradasIndex: paradasIdxGps(-22.9005, -43.2005), lojaCoords: new Map([['loja-1', { lat: -22.90, lng: -43.20, raio_metros: 150 }]]) })
+    expect(r.some(a => a.codigo === 'ANOM-13')).toBe(false)
+  })
+  it('NÃO dispara quando a loja está em 0,0 (coord inválida)', () => {
+    const rota = makeRota({ paradas: [makeParada({ parada_id: 'p1', loja_id: 'loja-1' })] })
+    const r = detectaAnomalias({ ...baseArgs, rotas: [rota], paradasIndex: paradasIdxGps(-22.90, -43.50), lojaCoords: new Map([['loja-1', { lat: 0, lng: 0, raio_metros: 150 }]]) })
+    expect(r.some(a => a.codigo === 'ANOM-13')).toBe(false)
+  })
+  it('NÃO dispara sem lojaCoords (retrocompatível)', () => {
+    const rota = makeRota({ paradas: [makeParada({ parada_id: 'p1', loja_id: 'loja-1' })] })
+    const r = detectaAnomalias({ ...baseArgs, rotas: [rota], paradasIndex: paradasIdxGps(-22.90, -43.50) })
+    expect(r.some(a => a.codigo === 'ANOM-13')).toBe(false)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// ANOM-14: mesma placa em 2 lugares ao mesmo tempo (super-contagem)
+// ---------------------------------------------------------------------------
+describe('ANOM-14: sobreposição temporal', () => {
+  const baseArgs = { escalaLinhas: [makeEscalaLinha({ id: 'e1' }), makeEscalaLinha({ id: 'e2' })], paradasIndex: new Map(), janelasRede: new Map(), data: '2026-05-18' }
+  it('dispara quando a mesma placa entrega em 2 lojas com horários sobrepostos', () => {
+    const r1 = makeRota({ escala_linha_id: 'e1', paradas: [makeParada({ parada_id: 'pa', loja_id: 'lA', nome: 'Loja A', chegada: new Date('2026-05-18T09:00:00Z'), saida: new Date('2026-05-18T10:00:00Z') })] })
+    const r2 = makeRota({ escala_linha_id: 'e2', paradas: [makeParada({ parada_id: 'pb', loja_id: 'lB', nome: 'Loja B', chegada: new Date('2026-05-18T09:30:00Z'), saida: new Date('2026-05-18T10:30:00Z') })] })
+    const r = detectaAnomalias({ ...baseArgs, rotas: [r1, r2] })
+    expect(r.some(a => a.codigo === 'ANOM-14')).toBe(true)
+  })
+  it('NÃO dispara quando as entregas não se sobrepõem', () => {
+    const r1 = makeRota({ escala_linha_id: 'e1', paradas: [makeParada({ parada_id: 'pa', loja_id: 'lA', nome: 'Loja A', chegada: new Date('2026-05-18T09:00:00Z'), saida: new Date('2026-05-18T09:30:00Z') })] })
+    const r2 = makeRota({ escala_linha_id: 'e2', paradas: [makeParada({ parada_id: 'pb', loja_id: 'lB', nome: 'Loja B', chegada: new Date('2026-05-18T10:00:00Z'), saida: new Date('2026-05-18T10:30:00Z') })] })
+    const r = detectaAnomalias({ ...baseArgs, rotas: [r1, r2] })
+    expect(r.some(a => a.codigo === 'ANOM-14')).toBe(false)
+  })
+})
