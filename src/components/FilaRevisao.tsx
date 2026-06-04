@@ -7,7 +7,7 @@ import { useRealtimeQueue, type ReviewQueueRow } from '@/lib/hooks/useRealtimeQu
 import { useGridKeyNav } from '@/lib/hooks/useGridKeyNav'
 import { ApplyToSimilarSheet } from './ApplyToSimilarSheet'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const DataGrid = dynamic(() => import('react-data-grid').then(m => ({ default: m.DataGrid })), { ssr: false }) as React.ComponentType<DataGridProps<ReviewQueueRow>>
 
 // React is needed for JSX and the ComponentType cast above

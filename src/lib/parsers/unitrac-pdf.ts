@@ -8,16 +8,14 @@
 // usando regex multilinha ancorado em lat/lng (estável).
 
 import type { ParadaUnitrac, ResumoVeiculo } from '@/lib/types/unitrac'
-import { normalizaPlaca, corrigeOcrPlaca } from '@/lib/utils/placa'
+import { corrigeOcrPlaca } from '@/lib/utils/placa'
 
 // pdf-parse v1.1.1 — default export é função (buf) => Promise<{text}>.
 // v1 funciona em Node serverless sem depender de @napi-rs/canvas.
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
 
-const BASE_LOCAL = 'BASE BENASSI - BASE BENASSI'
 const BASE_LOCAL_SHORT = 'BASE BENASSI'
-const FORA_LOCAL = 'FORA DE BASE E LOCAL DE SERVIÇO'
 const FORA_LOCAL_SHORT = 'FORA DE BASE'
 
 function parseDataBR(s: string, hora: string): Date | null {

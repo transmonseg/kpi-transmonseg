@@ -48,7 +48,7 @@ const GUANABARA_FILIAIS: Record<number, string> = {
 
 // pdf-parse v1.1.1 — default export é função (buf) => Promise<{text}>.
 // v1 funciona em Node serverless sem depender de @napi-rs/canvas.
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
 
 // Regex pra placa (aceita formato antigo ABC1234 / ABC-1234 / ABC 1234 e Mercosul ABC1D23 / ABC-1D23 / ABC 1D23)

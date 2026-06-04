@@ -216,7 +216,7 @@ function sep(s: string) { console.log(`\n── ${s} ──`) }
   const redeIds = [...new Set((escalaLinhas ?? []).filter(l => l.rede_id).map(l => l.rede_id as string))]
   info(`Redes a processar: ${redeIds.join(', ')}`)
 
-  let totalAnomalias = { HIGH: 0, MEDIUM: 0, LOW: 0 }
+  const totalAnomalias = { HIGH: 0, MEDIUM: 0, LOW: 0 }
   const kpiSummary: { rede_id: string; kpi_id: string; qtd_rotas: number; qtd_anomalias: number }[] = []
 
   for (const rid of redeIds) {

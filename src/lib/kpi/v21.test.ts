@@ -4,7 +4,7 @@
  *   - Reforço 7: placas CD-only crônicas com 0 paradas LOJA são descartadas
  */
 import { describe, it, expect } from 'vitest'
-import { scorePair, cruzaEscalaUnitrac, type EscalaLinhaRow, type UnitracParadaRow, type LojaRow } from './matcher'
+import { scorePair, cruzaEscalaUnitrac, type EscalaLinhaRow, type UnitracParadaRow } from './matcher'
 import { isRotaGigante } from './rotas-gigantes'
 import { isVeiculoInativo } from './veiculos-inativos'
 

@@ -9,7 +9,7 @@ import { createClient } from '@supabase/supabase-js'
 
 async function main() {
   // Pegar os erros mais recentes
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+   
   const fs = require('fs') as typeof import('fs')
   const files = fs.readdirSync('docs/db-changes/').filter((f: string) => f.endsWith('-erros.json')).sort()
   if (files.length === 0) { console.log('Sem arquivos de erro.'); return }

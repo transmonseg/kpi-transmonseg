@@ -49,7 +49,8 @@ export function ApplyToSimilarSheet({ open, onClose, resolvedName, currentRowId,
                 <input type="checkbox" checked={selected.has(row.id)}
                   onChange={e => {
                     const next = new Set(selected)
-                    e.target.checked ? next.add(row.id) : next.delete(row.id)
+                    if (e.target.checked) next.add(row.id)
+                    else next.delete(row.id)
                     setSelected(next)
                   }} />
                 <span>{row.raw_name}</span>

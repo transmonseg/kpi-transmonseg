@@ -525,7 +525,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data }: AlteracoesCa
                 <Button size="sm" onClick={adicionarManual}>Adicionar alteração</Button>
                 {sucessoManual && (
                   <span className="text-[11px] text-[var(--color-success)] animate-fade-up">
-                    ✓ Adicionada — veja em "Confirmadas" acima
+                    ✓ Adicionada — veja em &quot;Confirmadas&quot; acima
                   </span>
                 )}
               </div>

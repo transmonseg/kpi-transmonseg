@@ -173,7 +173,6 @@ export async function parseAlteracaoPdfTabular(buffer: Buffer): Promise<Alteraca
 
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i)
-    const viewport = page.getViewport({ scale: 1 })
     const content = await page.getTextContent()
 
     const items: PdfItem[] = []

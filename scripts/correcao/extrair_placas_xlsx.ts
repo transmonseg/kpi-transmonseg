@@ -8,7 +8,7 @@
  * Depois EU (Claude) leio cada arquivo do começo ao fim.
  */
 import { readFileSync, writeFileSync, mkdirSync } from 'fs'
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const XLSX = require('xlsx') as typeof import('xlsx')
 
 const RELATORIOS = [
