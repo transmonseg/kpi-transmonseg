@@ -37,6 +37,10 @@ export type RotaKpi = {
    * paradas registradas no padrão Mercosul. Não exibida (display usa placa_norm). */
   placa_unitrac?: string | null
   saida_cd: Date | null
+  /** Horário em que a placa VOLTOU pra base depois das entregas: chegada da
+   * primeira parada de BASE após a parada de entrega. Null quando o caminhão não
+   * registrou retorno à base no relatório (ex: terminou o dia fora). */
+  chegada_base?: Date | null
   paradas: ParadaKpi[]
   anomalias_codigos: string[]
   status: RotaStatus
@@ -52,6 +56,8 @@ export type KpiLinha = {
   placa: string | null
   carro_ordem: 1 | 2
   saida_cd: Date | null
+  /** Horário de retorno à base depois das entregas (volta pra base). */
+  chegada_base?: Date | null
   chd_loja_1: Date | null; saida_loja_1: Date | null; tempo_loja_1_min: number | null
   chd_loja_2: Date | null; saida_loja_2: Date | null; tempo_loja_2_min: number | null
   chd_loja_3: Date | null; saida_loja_3: Date | null; tempo_loja_3_min: number | null
