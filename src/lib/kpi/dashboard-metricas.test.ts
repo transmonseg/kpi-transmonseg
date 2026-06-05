@@ -77,6 +77,27 @@ describe('calcularMetricas — novos campos de tempo', () => {
     expect(calcularMetricas(ents2).tempoMedioOperacaoMin).toBeNull()
   })
 
+  it('tempoMedioVoltaMin + pctComVolta + distHorarioVolta a partir da Chegada CD', () => {
+    const m = calcularMetricas([
+      E2({ loja: 'A', sai: '06:00', volta_base: '07:30' }),  // volta 90min, hora 7
+      E2({ loja: 'B', sai: '06:00', volta_base: '06:30' }),  // volta 30min, hora 6
+      E2({ loja: 'C', sai: '06:00', volta_base: null }),     // sem volta
+    ])
+    expect(m.tempoMedioVoltaMin).toBe(60)         // (90+30)/2
+    expect(m.pctComVolta).toBe(67)                // 2 de 3
+    expect(m.distHorarioVolta.find(h => h.hora === 7)!.entregas).toBe(1)
+    expect(m.distHorarioVolta.find(h => h.hora === 6)!.entregas).toBe(1)
+    expect(m.distHorarioVolta).toHaveLength(24)
+  })
+
+  it('serieTempos inclui tempo_operacao (saida_cd → volta) por dia', () => {
+    const m = calcularMetricas([
+      E2({ loja: 'A', saida_cd: '04:00', volta_base: '10:00', data: '2026-05-19' }), // 360min
+      E2({ loja: 'B', saida_cd: '04:00', volta_base: '08:00', data: '2026-05-19' }), // 240min
+    ])
+    expect(m.serieTempos.find(s => s.data === '2026-05-19')!.tempo_operacao).toBe(300)
+  })
+
   it('distHorarioSaida: agrupa por hora de saida_cd', () => {
     const m = calcularMetricas(ents2)
     const h4 = m.distHorarioSaida.find(h => h.hora === 4)!

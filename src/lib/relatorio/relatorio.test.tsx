@@ -40,6 +40,9 @@ function fakeMetricas(over: Partial<Metricas> = {}): Metricas {
     tempoMedioRotaMin: 90,
     tempoMedioTotalMin: 125,
     tempoMedioOperacaoMin: 140,
+    tempoMedioVoltaMin: 55,
+    pctComVolta: 77,
+    distHorarioVolta: Array.from({ length: 24 }, (_, h) => ({ hora: h, entregas: h >= 9 && h <= 13 ? 12 : 1 })),
     porClienteComTempos: [],
     topRotasDemoradas: [
       { rede_id: 'SENDAS', loja: 'Sendas Centro', n: 5, tempo_rota: 260, tempo_loja: 40, tempo_total: 300 },
@@ -55,9 +58,9 @@ function fakeMetricas(over: Partial<Metricas> = {}): Metricas {
       { motorista: 'Maria Souza', entregas: 25, tempo_rota: 95, tempo_loja: 40 },
     ],
     serieTempos: [
-      { data: '2026-05-01', tempo_rota: 85, tempo_loja: 30, tempo_total: 115 },
-      { data: '2026-05-02', tempo_rota: 92, tempo_loja: 35, tempo_total: 127 },
-      { data: '2026-05-03', tempo_rota: 90, tempo_loja: 38, tempo_total: 128 },
+      { data: '2026-05-01', tempo_rota: 85, tempo_loja: 30, tempo_total: 115, tempo_operacao: 170 },
+      { data: '2026-05-02', tempo_rota: 92, tempo_loja: 35, tempo_total: 127, tempo_operacao: 182 },
+      { data: '2026-05-03', tempo_rota: 90, tempo_loja: 38, tempo_total: 128, tempo_operacao: 185 },
     ],
     ...over,
   }

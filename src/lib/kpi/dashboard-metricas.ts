@@ -54,6 +54,12 @@ export interface Metricas {
   /** Tempo de operação completo: Saída CD → volta à base (coluna Chegada CD). Null
    * quando os KPIs do período não têm a coluna. */
   tempoMedioOperacaoMin: number | null
+  /** Tempo de volta: Saída Loja → Chegada CD (o trecho de retorno pra base). */
+  tempoMedioVoltaMin: number | null
+  /** % das entregas que registraram volta à base (cobertura da Chegada CD). */
+  pctComVolta: number
+  /** Distribuição da hora de retorno à base (0–23h), espelho do horário de saída. */
+  distHorarioVolta: HoraSaidaRow[]
   porClienteComTempos: ClienteTempos[]
   topRotasDemoradas: LojaTopRow[]
   topTempoEmLoja: LojaTopRow[]
@@ -101,6 +107,7 @@ export interface SerieTempoPonto {
   tempo_rota: number | null
   tempo_loja: number | null
   tempo_total: number | null
+  tempo_operacao: number | null
 }
 
 function diffMin(chd: string | null, sai: string | null): number | null {
@@ -173,6 +180,10 @@ export function calcularMetricas(ents: EntradaManual[]): Metricas {
   const tempoMedioTotalMin = mediaVetorNulo(entregues.map(e => diffMin(e.saida_cd, e.sai)))
   // Tempo de operação completo: da saída do CD até a volta pra base.
   const tempoMedioOperacaoMin = mediaVetorNulo(entregues.map(e => diffMin(e.saida_cd, e.volta_base)))
+  // Trecho de volta (saída loja → chegada base) e cobertura da volta.
+  const tempoMedioVoltaMin = mediaVetorNulo(entregues.map(e => diffMin(e.sai, e.volta_base)))
+  const comVolta = entregues.filter(e => e.volta_base).length
+  const pctComVolta = entregues.length ? Math.round((comVolta / entregues.length) * 100) : 0
 
   const porClienteComTempos: ClienteTempos[] = [...redeMap.entries()].map(([rede_id, es]) => {
     const ent = es.filter(e => e.status === 'entregue')
@@ -228,6 +239,14 @@ export function calcularMetricas(ents: EntradaManual[]): Metricas {
     if (h >= 0 && h < 24) horaBuckets[h].entregas++
   }
 
+  // Distribuição da hora de retorno à base (Chegada CD).
+  const horaVoltaBuckets: HoraSaidaRow[] = Array.from({ length: 24 }, (_, h) => ({ hora: h, entregas: 0 }))
+  for (const e of ents) {
+    if (!e.volta_base) continue
+    const h = Number(e.volta_base.split(':')[0])
+    if (h >= 0 && h < 24) horaVoltaBuckets[h].entregas++
+  }
+
   type MotorAcc = { motorista: string; cnt: number; rotas: number[]; lojas_t: number[] }
   const motorMap = new Map<string, MotorAcc>()
   for (const e of entregues.filter(e => e.motorista)) {
@@ -242,13 +261,14 @@ export function calcularMetricas(ents: EntradaManual[]): Metricas {
     .sort((a, b) => b.cnt - a.cnt).slice(0, 15)
     .map(v => ({ motorista: v.motorista, entregas: v.cnt, tempo_rota: mediaVetorNulo(v.rotas), tempo_loja: mediaVetorNulo(v.lojas_t) }))
 
-  type SerieTAcc = { rotas: number[]; lojas_t: number[]; totais: number[] }
+  type SerieTAcc = { rotas: number[]; lojas_t: number[]; totais: number[]; operacao: number[] }
   const serieTMap = new Map<string, SerieTAcc>()
   for (const e of entregues) {
-    const cur: SerieTAcc = serieTMap.get(e.data) ?? { rotas: [], lojas_t: [], totais: [] }
+    const cur: SerieTAcc = serieTMap.get(e.data) ?? { rotas: [], lojas_t: [], totais: [], operacao: [] }
     const r = diffMin(e.saida_cd, e.chd); if (r != null) cur.rotas.push(r)
     const l = diffMin(e.chd, e.sai);     if (l != null) cur.lojas_t.push(l)
     const t = diffMin(e.saida_cd, e.sai); if (t != null) cur.totais.push(t)
+    const o = diffMin(e.saida_cd, e.volta_base); if (o != null) cur.operacao.push(o)
     serieTMap.set(e.data, cur)
   }
   const serieTempos: SerieTempoPonto[] = [...serieTMap.entries()]
@@ -258,6 +278,7 @@ export function calcularMetricas(ents: EntradaManual[]): Metricas {
       tempo_rota: mediaVetorNulo(v.rotas),
       tempo_loja: mediaVetorNulo(v.lojas_t),
       tempo_total: mediaVetorNulo(v.totais),
+      tempo_operacao: mediaVetorNulo(v.operacao),
     }))
 
   // Matriz dia × rede (taxa de entrega) para o heatmap.
@@ -296,6 +317,9 @@ export function calcularMetricas(ents: EntradaManual[]): Metricas {
     tempoMedioRotaMin,
     tempoMedioTotalMin,
     tempoMedioOperacaoMin,
+    tempoMedioVoltaMin,
+    pctComVolta,
+    distHorarioVolta: horaVoltaBuckets,
     porClienteComTempos,
     topRotasDemoradas,
     topTempoEmLoja,
