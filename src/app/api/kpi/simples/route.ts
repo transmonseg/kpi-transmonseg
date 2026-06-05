@@ -334,14 +334,23 @@ export async function POST(req: NextRequest) {
   for (const l of escalaLinhas) {
     if (l.placa_norm) cadastroPlacas.add(l.placa_norm)
   }
-  const { data: placasHist } = await svc
-    .from('unitrac_paradas')
-    .select('placa_norm')
-    .not('placa_norm', 'is', null)
-  if (placasHist) {
-    for (const r of placasHist) {
-      if (r.placa_norm) cadastroPlacas.add(String(r.placa_norm))
-    }
+  // Frota ativa (autoritativa, ~centenas de placas) + histórico de paradas (reforço
+  // p/ OCR), buscados EM PARALELO. O histórico é limitado: sem cap, varríamos a
+  // tabela `unitrac_paradas` INTEIRA a cada geração — e ela cresce todo dia, então
+  // o custo degradava com o tempo. Com ~centenas de placas distintas, 20k linhas
+  // cobrem todas com folga; a frota garante o conjunto autoritativo mesmo com o cap.
+  // (frotaRastreada é reusada abaixo no cálculo de "sem rastreador".)
+  const [frotaRes, placasHistRes] = await Promise.all([
+    svc.from('veiculos').select('placa_norm').eq('ativo', true),
+    svc.from('unitrac_paradas').select('placa_norm').not('placa_norm', 'is', null).limit(20000),
+  ])
+  const frotaRows = frotaRes.data ?? []
+  const frotaRastreada = new Set(frotaRows.map(v => v.placa_norm as string))
+  for (const v of frotaRows) {
+    if (v.placa_norm) cadastroPlacas.add(String(v.placa_norm))
+  }
+  for (const r of (placasHistRes.data ?? [])) {
+    if (r.placa_norm) cadastroPlacas.add(String(r.placa_norm))
   }
 
   // Parse unitrac — baixa e parseia cada arquivo, mergeia por placa
@@ -439,8 +448,7 @@ export async function POST(req: NextRequest) {
   // apareceu no relatório de hoje": um caminhão com rastreador que só não rodou
   // hoje NÃO é sem rastreador. Fallback: se a frota estiver vazia (não importada),
   // cai no "presente no relatório" pra não marcar tudo como sem rastreador.
-  const frotaRows = (await svc.from('veiculos').select('placa_norm').eq('ativo', true)).data ?? []
-  const frotaRastreada = new Set(frotaRows.map(v => v.placa_norm as string))
+  // (frotaRastreada já foi carregada lá em cima, junto do cadastro de placas.)
   const placasNoRelatorio = new Set(paradaRows.map(p => p.placa_norm))
   const temFrota = frotaRastreada.size > 0
   // Usa variantesPlaca (OCR + Mercosul): a escala pode ter a placa antiga (LKF-7079)
@@ -470,6 +478,18 @@ export async function POST(req: NextRequest) {
     if (!placa) return false
     if (placasSairam.has(placa)) return true
     return variantesPlaca(placa).some(v => placasSairam.has(v))
+  }
+
+  // Cat 3 (regra Tia Érica 05/06): uma placa pode estar em DUAS escalas no mesmo dia
+  // (redes diferentes). Quando ela entrega numa rede e a linha da OUTRA rede aparece
+  // como "erro", costuma ser a 2ª rota do dia (ainda vai/foi rodar), não erro real.
+  // Mapeia placa → redes em que está escalada, pra sinalizar isso no motivo de revisão.
+  const redesPorPlaca = new Map<string, Set<string>>()
+  for (const l of escalaLinhas) {
+    if (!l.placa_norm) continue
+    const s = redesPorPlaca.get(l.placa_norm) ?? new Set<string>()
+    s.add(l.rede_id)
+    redesPorPlaca.set(l.placa_norm, s)
   }
 
   // Hora mais recente coberta pelo relatório (BRT mascarado como UTC → getUTCHours
@@ -759,9 +779,19 @@ export async function POST(req: NextRequest) {
         // converteu a placa antiga da escala pro padrão Mercosul do Unitrac. Sinaliza
         // pra operação pedir a atualização da escala (áudio Cecília 04/06).
         const placaDesatualizada = !!rota.placa_unitrac && !!rota.placa_norm && rota.placa_unitrac !== rota.placa_norm
-        const motivoRevisao = placaDesatualizada
-          ? [statusInfo.motivoRevisao, `Placa da escala (${rota.placa_norm}) desatualizada — no Unitrac é Mercosul (${rota.placa_unitrac}). Pedir atualização da escala.`].filter(Boolean).join(' ')
-          : statusInfo.motivoRevisao
+        const notaDesatualizada = placaDesatualizada
+          ? `Placa da escala (${rota.placa_norm}) desatualizada — no Unitrac é Mercosul (${rota.placa_unitrac}). Pedir atualização da escala.`
+          : null
+        // Cat 3: linha de erro cuja placa também está escalada em OUTRA rede e entregou
+        // lá → provável 2ª rota do dia. Sinaliza pra operação não tratar como erro real.
+        const ehErro = statusInfo.status !== 'ENTREGUE' && statusInfo.status !== 'ENTREGUE_GEO'
+        const outrasRedes = rota.placa_norm
+          ? [...(redesPorPlaca.get(rota.placa_norm) ?? new Set<string>())].filter(r => r !== rede_id)
+          : []
+        const notaMultiEscala = ehErro && outrasRedes.length > 0 && (placaEntregouEscala.get(rota.placa_norm ?? '') ?? false)
+          ? `Placa também escalada em ${outrasRedes.map(r => REDE_NOMES_CANONICOS[r] ?? r).join(', ')} e entregou lá — pode ser a 2ª rota do dia (não necessariamente erro). Conferir a ordem das rotas.`
+          : null
+        const motivoRevisao = [statusInfo.motivoRevisao, notaDesatualizada, notaMultiEscala].filter(Boolean).join(' ') || null
         return {
           ordem: idx + 1,
           loja_nome: esc.loja_nome_raw,
@@ -778,7 +808,7 @@ export async function POST(req: NextRequest) {
           algoritmo: rota._matchMeta?.algorithm ?? 'none',
           anomalias: rota.anomalias_codigos,
           status: statusInfo.status,
-          revisar: statusInfo.revisar || placaDesatualizada,
+          revisar: statusInfo.revisar || placaDesatualizada || !!notaMultiEscala,
           motivoRevisao,
           saida_loja_fmt: fmtHoraBRT(saidaLoja),
         }
