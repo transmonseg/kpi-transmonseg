@@ -1251,16 +1251,16 @@ function RedePreviewSection({
                     onClick={() => { downloadBase64(rede.xlsxBase64, `KPI-${rede.rede_id}-${data}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); setXlsxMenu(false) }}
                     className="block w-full px-3 py-2 text-left text-[12px] text-[var(--color-fg)] transition-colors hover:bg-[var(--color-navy-700)] hover:text-white"
                   >
-                    Sem coluna Chegada CD
+                    Sem Chegada CD e Operação
                   </button>
                   <button
                     type="button"
                     disabled={!rede.xlsxComChegadaBase64}
-                    title={rede.xlsxComChegadaBase64 ? 'Baixar com a coluna Chegada CD' : 'Gere o KPI de novo para habilitar (esta geração é anterior à coluna)'}
+                    title={rede.xlsxComChegadaBase64 ? 'Baixar com Chegada CD e Tempo de Operação' : 'Gere o KPI de novo para habilitar (esta geração é anterior às colunas)'}
                     onClick={() => { if (rede.xlsxComChegadaBase64) { downloadBase64(rede.xlsxComChegadaBase64, `KPI-${rede.rede_id}-${data}-com-chegada-cd.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); setXlsxMenu(false) } }}
                     className="block w-full px-3 py-2 text-left text-[12px] text-[var(--color-fg)] transition-colors hover:bg-[var(--color-navy-700)] hover:text-white disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--color-fg)]"
                   >
-                    Com coluna Chegada CD
+                    Com Chegada CD e Operação
                     {!rede.xlsxComChegadaBase64 && <span className="block text-[10px] text-[var(--color-fg-subtle)]">gere o KPI de novo p/ habilitar</span>}
                   </button>
                 </div>
@@ -1287,16 +1287,16 @@ function RedePreviewSection({
                     onClick={() => { downloadBase64(rede.pdfBase64, `KPI-${rede.rede_id}-${data}.pdf`, 'application/pdf'); setPdfMenu(false) }}
                     className="block w-full px-3 py-2 text-left text-[12px] text-[var(--color-fg)] transition-colors hover:bg-[var(--color-navy-700)] hover:text-white"
                   >
-                    Sem coluna Chegada CD
+                    Sem Chegada CD e Operação
                   </button>
                   <button
                     type="button"
                     disabled={!rede.pdfComChegadaBase64}
-                    title={rede.pdfComChegadaBase64 ? 'Baixar com a coluna Chegada CD' : 'Gere o KPI de novo para habilitar (esta geração é anterior à coluna)'}
+                    title={rede.pdfComChegadaBase64 ? 'Baixar com Chegada CD e Tempo de Operação' : 'Gere o KPI de novo para habilitar (esta geração é anterior às colunas)'}
                     onClick={() => { if (rede.pdfComChegadaBase64) { downloadBase64(rede.pdfComChegadaBase64, `KPI-${rede.rede_id}-${data}-com-chegada-cd.pdf`, 'application/pdf'); setPdfMenu(false) } }}
                     className="block w-full px-3 py-2 text-left text-[12px] text-[var(--color-fg)] transition-colors hover:bg-[var(--color-navy-700)] hover:text-white disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--color-fg)]"
                   >
-                    Com coluna Chegada CD
+                    Com Chegada CD e Operação
                     {!rede.pdfComChegadaBase64 && <span className="block text-[10px] text-[var(--color-fg-subtle)]">gere o KPI de novo p/ habilitar</span>}
                   </button>
                 </div>
