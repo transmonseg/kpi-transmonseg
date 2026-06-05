@@ -1,7 +1,6 @@
 import ExcelJS from 'exceljs'
 import type { LinhaEscala } from '@/lib/types/escala'
 import { normalizaPlaca } from '@/lib/utils/placa'
-import { formataDataISO } from '@/lib/utils/data-brasileira'
 
 const SECTION_HEADERS = new Set(['SUPER PAX', 'FEIRA NOVA', 'REDE EMANUEL'])
 
@@ -140,12 +139,18 @@ function detectYearMonth(wb: ExcelJS.Workbook): { ano: number; mes: number } {
   let mes = now.getMonth() + 1
   for (const ws of wb.worksheets) {
     if (!isTabDay(ws.name)) continue
+    // Pega a PRIMEIRA data sã (2024–2100) e para. Antes, sem teto de ano e pegando
+    // a ÚLTIMA data, uma célula lixo (ex: virava ano 5427) sobrescrevia ano/mês →
+    // tabToDate gerava "5427-01-05" e nenhuma seção batia a data-alvo (0 linhas).
+    let achou = false
     ws.eachRow((row) => {
+      if (achou) return
       for (let c = 1; c <= 12; c++) {
         const d = dateVal(row.getCell(c))
-        if (d && d.getFullYear() >= 2024) {
+        if (d && d.getFullYear() >= 2024 && d.getFullYear() <= 2100) {
           ano = d.getFullYear()
           mes = d.getMonth() + 1
+          achou = true
           return
         }
       }
@@ -153,6 +158,47 @@ function detectYearMonth(wb: ExcelJS.Workbook): { ano: number; mes: number } {
     break
   }
   return { ano, mes }
+}
+
+// Mapa de colunas (1-based) por campo. A ordem das colunas MOTORISTA/PLACA/CÓDIGO
+// mudou entre versões da escala (ex: junho passou MOTORISTA p/ col7 e PLACA p/ col9,
+// invertendo a ordem antiga PLACA=col7/MOTORISTA=col9). Em vez de fixar a posição,
+// lemos pelos RÓTULOS do cabeçalho — robusto a qualquer ordem.
+type ColMap = {
+  filial: number; qtd: number; tipo: number
+  motorista: number | null; codigo: number | null; placa: number | null
+  paletesSup: number | null; qtdPaletes: number | null; tonelagem: number | null
+}
+
+// Layout antigo (fallback quando não há linha de cabeçalho FILIAL): PLACA=7, MOTORISTA=9.
+const DEFAULT_COLMAP: ColMap = {
+  filial: 4, qtd: 5, tipo: 6, placa: 7, paletesSup: 8, motorista: 9, codigo: 10,
+  qtdPaletes: 11, tonelagem: 12,
+}
+
+function normLabel(s: string): string {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
+    .replace(/[^A-Z ]/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+// Constrói o mapa a partir de uma linha de cabeçalho ("FILIAL | QTD | TIPO | ...").
+// Campos não encontrados ficam null (lê null). Sem coluna FILIAL → não é cabeçalho.
+function buildColMap(row: ExcelJS.Row): ColMap | null {
+  const m: ColMap = { filial: 4, qtd: 5, tipo: 6, motorista: null, codigo: null, placa: null, paletesSup: null, qtdPaletes: null, tonelagem: null }
+  let achouFilial = false
+  for (let c = 3; c <= 16; c++) {
+    const lbl = normLabel(strVal(row.getCell(c)) ?? '')
+    if (!lbl) continue
+    if (lbl === 'FILIAL' || lbl === 'FILIAIS') { m.filial = c; achouFilial = true }
+    else if (lbl === 'QTD' || lbl === 'QUANTIDADE') m.qtd = c
+    else if (lbl.startsWith('TIPO')) m.tipo = c
+    else if (lbl === 'MOTORISTA' || lbl === 'NOME') m.motorista = c
+    else if (lbl === 'CODIGO' || lbl === 'COD') m.codigo = c
+    else if (lbl === 'PLACA' || lbl === 'PLACAS') m.placa = c
+    else if (lbl.includes('SUPORTAD')) m.paletesSup = c
+    else if (lbl === 'TONELAGEM' || lbl.includes('PESO') || lbl === 'KG') m.tonelagem = c
+  }
+  return achouFilial ? m : null
 }
 
 export async function parseEscalaPax(
@@ -199,9 +245,13 @@ export async function parseEscalaPax(
     let currentRede: RedeId | null = null
     let currentDataEntrega: string = tabDate
     let currentDataTab: string = tabDate
-    // Filial-format files have the real date in the section header (col7).
-    // Day-format files have no date in col7 and use the tab name as the day.
+    // Só processamos abas DIA (isTabDay) — a data da ABA é a fonte de verdade.
+    // A data no cabeçalho da seção é metadado e às vezes vem DESATUALIZADA (ex:
+    // junho dia 05: SUPER PAX com 06-05 mas FEIRA NOVA/EMANUEL com 06-01 stale),
+    // o que fazia o parser PULAR essas redes. Não usamos mais a data do cabeçalho
+    // pra decidir o skip — usamos a data da aba.
     let skipSection = false
+    let colMap: ColMap = DEFAULT_COLMAP
 
     ws.eachRow((row, rowNumber) => {
       const col4 = row.getCell(4)
@@ -212,26 +262,22 @@ export async function parseEscalaPax(
       // Section header detection
       if (SECTION_HEADERS.has(raw4)) {
         currentRede = HEADER_TO_REDE[raw4]
-        const dateCell = row.getCell(7)
-        const d = dateVal(dateCell)
-        if (d && d.getFullYear() >= 2020) {
-          // Filial-format: date is in the section header row
-          currentDataEntrega = formataDataISO(d)
-          currentDataTab = currentDataEntrega
-        } else {
-          // Day-format: derive date from tab name
-          currentDataEntrega = tabDate
-          currentDataTab = tabDate
-        }
-        // Skip sections that don't match the effective target date.
-        // When efectivaDataAlvo is a proxy (latest ≤ dataAlvo), rows are still
-        // included but data_entrega is overridden to dataAlvo below.
-        skipSection = efectivaDataAlvo != null && currentDataTab !== efectivaDataAlvo
+        // Data da ABA é autoritativa (ver nota acima). Ignora data stale do cabeçalho.
+        currentDataEntrega = tabDate
+        currentDataTab = tabDate
+        colMap = DEFAULT_COLMAP // reset; será atualizado pela linha de cabeçalho da seção
+        skipSection = efectivaDataAlvo != null && tabDate !== efectivaDataAlvo
         return
       }
 
       if (skipSection) return
       if (!currentRede) return
+
+      // Linha de cabeçalho de colunas ("FILIAL | QTD | TIPO | MOTORISTA | CÓDIGO |
+      // PLACA" ou variantes com ordem trocada) → atualiza o mapa de colunas e segue.
+      const novoMap = buildColMap(row)
+      if (novoMap) { colMap = novoMap; return }
+
       if (SKIP_VALUES.has(raw4)) return
 
       // Footer detection: col5 === 'TOTAL'
@@ -241,15 +287,16 @@ export async function parseEscalaPax(
       // Rows that look like footers: col4 starts with 'TOTAL'
       if (raw4.toUpperCase().startsWith('TOTAL')) return
 
-      // Data row: col4 has a non-null string (already checked above)
-      const qtdCarrosRaw = strVal(row.getCell(5))
-      const tipoVeiculo = strVal(row.getCell(6))
-      const placaRaw = strVal(row.getCell(7))
-      const paletesSuportados = numVal(row.getCell(8))
-      const motoristaNome = strVal(row.getCell(9))
-      const motoristaCod = strVal(row.getCell(10))
-      const qtdPaletes = numVal(row.getCell(11))
-      const tonelagemKg = numVal(row.getCell(12))
+      // Data row: lê cada campo pela coluna mapeada do cabeçalho (robusto a ordem).
+      const cel = (c: number | null) => (c ? row.getCell(c) : undefined)
+      const qtdCarrosRaw = strVal(cel(colMap.qtd))
+      const tipoVeiculo = strVal(cel(colMap.tipo))
+      const placaRaw = strVal(cel(colMap.placa))
+      const paletesSuportados = numVal(cel(colMap.paletesSup))
+      const motoristaNome = strVal(cel(colMap.motorista))
+      const motoristaCod = strVal(cel(colMap.codigo))
+      const qtdPaletes = numVal(cel(colMap.qtdPaletes))
+      const tonelagemKg = numVal(cel(colMap.tonelagem))
 
       const isSemPedido =
         typeof qtdCarrosRaw === 'string' &&
