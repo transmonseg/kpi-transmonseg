@@ -260,57 +260,78 @@ function cloneEstilo(s: Partial<ExcelJS.Style>): Partial<ExcelJS.Style> {
 }
 
 /**
- * Insere a coluna "CHEGADA CD" (volta pra base) DEPOIS da Saída Loja de cada carro.
- * Parte da planilha "sem" já pronta e usa `spliceColumns` nativo — preserva todo o
- * resto (estilos, bordas, larguras) sem reescrever o layout aprovado. A coluna nova
- * herda o estilo da Saída Loja (vira o fim do carro, com a borda grossa de separação)
- * e a Saída Loja passa a ter borda fina.
+ * Versão "com Chegada CD": adiciona 3 colunas ao FIM de cada carro —
+ * CHEGADA CD (volta pra base), TEMPO EM LOJA (tirado do canto e trazido pra dentro do
+ * carro) e TEMPO OPERAÇÃO (Chegada CD − Saída CD, o ciclo base→base). Parte da planilha
+ * "sem" pronta e usa `spliceColumns` nativo (preserva estilos), depois ajusta bordas,
+ * cabeçalhos, valores e merges. 15 colunas → 19.
  */
 function inserirColunaChegada(ws: ExcelJS.Worksheet, lojasFinal: LinhaAgrupada[]) {
-  const bordaFina: Partial<ExcelJS.Border> = { style: 'thin', color: { argb: 'FFCFD8DC' } }
+  const fina: Partial<ExcelJS.Border> = { style: 'thin', color: { argb: 'FFCFD8DC' } }
+  const grossa = (argb: string): Partial<ExcelJS.Border> => ({ style: 'medium', color: { argb } })
 
-  // spliceColumns não atualiza merges → desfaz antes, refaz depois.
   for (const m of ['A1:O1', 'B2:G2', 'H2:M2']) {
     try { ws.unMergeCells(m) } catch { /* pode não existir */ }
   }
 
-  // Insere coluna vazia depois da Saída Loja do carro 1 (col 7) e do carro 2 (col 13,
-  // que vira 14 após o primeiro splice → insere na 15).
-  ws.spliceColumns(8, 0, [])
-  ws.spliceColumns(15, 0, [])
-  ws.getColumn(8).width = ws.getColumn(7).width
-  ws.getColumn(15).width = ws.getColumn(14).width
+  // Remove as 2 colunas "TEMPO EM LOJA" do canto (vão voltar dentro de cada carro).
+  ws.spliceColumns(14, 2)
+  // Insere 3 colunas depois da Saída Loja do carro 1 (col 7) e do carro 2 (agora col 16).
+  ws.spliceColumns(8, 0, [], [], [])
+  ws.spliceColumns(17, 0, [], [], [])
 
-  // Para cada par (Saída Loja → Chegada CD): a Chegada herda o estilo da Saída Loja
-  // (inclui a borda grossa de fim-de-carro) e a Saída Loja recebe borda fina.
-  // Só nas linhas com dado — as vazias são limpas depois (preencherAba).
+  // Cada carro: [saídaLoja, chegada, tempoLoja, tempoOp] + cor da borda de fim-de-carro.
+  const carros = [
+    { saida: 7, cols: [8, 9, 10] as const, dado: (ag: LinhaAgrupada) => ag.carro1, endArgb: 'FF153C6B' },
+    { saida: 16, cols: [17, 18, 19] as const, dado: (ag: LinhaAgrupada) => ag.carro2, endArgb: 'FF1E3C72' },
+  ]
+  for (const c of carros) for (const col of c.cols) ws.getColumn(col).width = ws.getColumn(5).width
+
+  // Estilos + bordas em TODAS as linhas do cabeçalho/dados — incluindo a row 4, que é
+  // uma faixa fina escura embaixo do cabeçalho (a "linha"). Pular a row 4 deixava a
+  // coluna nova branca embaixo do nome.
   const lastDataRow = 4 + lojasFinal.length
   for (let r = 1; r <= lastDataRow; r++) {
-    if (r === 4) continue
-    for (const [saidaCol, chegadaCol] of [[7, 8], [14, 15]] as const) {
-      const estiloSaida = cloneEstilo(ws.getCell(r, saidaCol).style)
-      ws.getCell(r, chegadaCol).style = estiloSaida
-      const estiloFino = cloneEstilo(estiloSaida)
-      estiloFino.border = { ...(estiloFino.border ?? {}), right: bordaFina }
-      ws.getCell(r, saidaCol).style = estiloFino
+    for (const c of carros) {
+      // Saída Loja deixa de ser fim-de-carro → borda fina.
+      const eSaida = cloneEstilo(ws.getCell(r, c.saida).style)
+      eSaida.border = { ...(eSaida.border ?? {}), right: fina }
+      ws.getCell(r, c.saida).style = eSaida
+      // As 3 novas herdam o estilo da Saída CD (hora + grid); a última (Tempo Op) leva
+      // a borda grossa de fim-de-carro.
+      c.cols.forEach((col, idx) => {
+        const e = cloneEstilo(ws.getCell(r, 5).style)
+        e.border = { ...(e.border ?? {}), right: idx === 2 ? grossa(c.endArgb) : fina }
+        ws.getCell(r, col).style = e
+      })
     }
   }
 
-  // Cabeçalho da coluna nova.
-  ws.getCell(3, 8).value = 'CHEGADA CD'
-  ws.getCell(3, 15).value = 'CHEGADA CD'
+  // Cabeçalhos das novas colunas.
+  for (const c of carros) {
+    ws.getCell(3, c.cols[0]).value = 'CHEGADA CD'
+    ws.getCell(3, c.cols[1]).value = 'TEMPO EM LOJA'
+    ws.getCell(3, c.cols[2]).value = 'TEMPO OPERAÇÃO'
+  }
 
-  // Valor da volta por linha (vazio quando o carro não entregou). O numFmt de hora já
-  // veio no estilo herdado da Saída Loja.
+  // Valores por linha de dado.
   lojasFinal.forEach((ag, i) => {
     const row = 5 + i
-    const v1 = legendaSlot(ag.carro1) ? '' : toExcelTime(ag.carro1?.chegada_base)
-    const v2 = legendaSlot(ag.carro2) ? '' : toExcelTime(ag.carro2?.chegada_base)
-    ws.getCell(row, 8).value = v1 ?? ''
-    ws.getCell(row, 15).value = v2 ?? ''
+    for (const c of carros) {
+      const d = c.dado(ag)
+      const slot = legendaSlot(d)
+      const chd = toExcelTime(d?.chd_loja_1)
+      const sai = toExcelTime(d?.saida_loja_1)
+      const chegada = slot ? '' : (toExcelTime(d?.chegada_base) ?? '')
+      const tLoja = (!slot && chd !== null && sai !== null) ? computeTempoLoja(d?.tempo_loja_1_min, chd, sai) : ''
+      const op = (!slot && d?.saida_cd && d?.chegada_base) ? calcTempoOperacao(d.saida_cd, d.chegada_base) : null
+      ws.getCell(row, c.cols[0]).value = chegada
+      ws.getCell(row, c.cols[1]).value = tLoja
+      ws.getCell(row, c.cols[2]).value = op ? op.min / 1440 : ''
+    }
   })
 
-  ws.mergeCells('A1:Q1')
-  ws.mergeCells('B2:H2')
-  ws.mergeCells('I2:O2')
+  ws.mergeCells('A1:S1')
+  ws.mergeCells('B2:J2')
+  ws.mergeCells('K2:S2')
 }
