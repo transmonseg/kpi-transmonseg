@@ -439,6 +439,7 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
           <div data-tour="tendencias-tempos" className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <EvolucaoTempos m={m} />
             <DistribuicaoHoraria m={m} />
+            <DistribuicaoVolta m={m} />
           </div>
         )}
 
@@ -608,12 +609,15 @@ function TempoStrip({ m, mAnt }: { m: Metricas; mAnt: Metricas | null }) {
     { label: 'Tempo médio em loja', value: fmtMin(m.tempoMedioLojaMin), sub: 'Chegada → Saída', color: 'var(--color-warning)', atual: m.tempoMedioLojaMin, anterior: mAnt?.tempoMedioLojaMin },
     { label: 'Tempo total médio', value: fmtMin(m.tempoMedioTotalMin), sub: 'Saída CD → Saída Loja', color: 'var(--color-info)', atual: m.tempoMedioTotalMin, anterior: mAnt?.tempoMedioTotalMin },
   ]
-  // Tempo de operação (Saída CD → volta à base) só aparece quando os KPIs do período
-  // têm a coluna "Chegada CD" preenchida.
+  // Tempo de volta e tempo de operação (Chegada CD) só aparecem quando os KPIs do
+  // período têm a coluna preenchida.
+  if (m.tempoMedioVoltaMin != null) {
+    tiles.push({ label: 'Tempo de volta', value: fmtMin(m.tempoMedioVoltaMin), sub: 'Saída Loja → Chegada CD', color: 'var(--color-fg-muted)', atual: m.tempoMedioVoltaMin, anterior: mAnt?.tempoMedioVoltaMin ?? null })
+  }
   if (m.tempoMedioOperacaoMin != null) {
     tiles.push({ label: 'Tempo de operação', value: fmtMin(m.tempoMedioOperacaoMin), sub: 'Saída CD → Chegada CD', color: 'var(--color-success)', atual: m.tempoMedioOperacaoMin, anterior: mAnt?.tempoMedioOperacaoMin ?? null })
   }
-  const gridCols = tiles.length === 4 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'
+  const gridCols = tiles.length >= 5 ? 'grid-cols-2 sm:grid-cols-5' : tiles.length === 4 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'
   return (
     <div data-tour="resumo-tempos" className={`grid ${gridCols} overflow-hidden divide-x divide-[var(--color-border)] ${CARD} animate-fade-up`}>
       {tiles.map(t => (
@@ -632,16 +636,19 @@ function TempoStrip({ m, mAnt }: { m: Metricas; mAnt: Metricas | null }) {
 
 function EvolucaoTempos({ m }: { m: Metricas }) {
   if (m.serieTempos.length < 2) return null
+  const temOperacao = m.serieTempos.some(s => s.tempo_operacao != null)
+  const series = [
+    { name: 'Tempo de Rota', color: 'var(--color-accent)', values: m.serieTempos.map(s => s.tempo_rota ?? 0), fill: true },
+    { name: 'Tempo em Loja', color: 'var(--color-warning)', values: m.serieTempos.map(s => s.tempo_loja ?? 0), fill: true },
+    { name: 'Tempo Total', color: 'var(--color-info)', values: m.serieTempos.map(s => s.tempo_total ?? 0), dashed: true },
+  ]
+  if (temOperacao) series.push({ name: 'Operação (base→base)', color: 'var(--color-success)', values: m.serieTempos.map(s => s.tempo_operacao ?? 0), dashed: true })
   return (
     <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
       <h3 className="text-overline mb-4">Evolução dos tempos médios</h3>
       <LineChart
         labels={m.serieTempos.map(s => s.data.slice(8, 10))}
-        series={[
-          { name: 'Tempo de Rota', color: 'var(--color-accent)', values: m.serieTempos.map(s => s.tempo_rota ?? 0), fill: true },
-          { name: 'Tempo em Loja', color: 'var(--color-warning)', values: m.serieTempos.map(s => s.tempo_loja ?? 0), fill: true },
-          { name: 'Tempo Total', color: 'var(--color-info)', values: m.serieTempos.map(s => s.tempo_total ?? 0), dashed: true },
-        ]}
+        series={series}
         height={260}
         labelEvery={m.serieTempos.length > 14 ? 3 : 2}
       />
@@ -676,8 +683,30 @@ function DistribuicaoHoraria({ m }: { m: Metricas }) {
   )
 }
 
-type MetricaRede = 'tempo_rota' | 'tempo_loja' | 'tempo_total'
-const LABEL_METRICA: Record<MetricaRede, string> = { tempo_rota: 'Tempo de Rota', tempo_loja: 'Tempo em Loja', tempo_total: 'Tempo Total' }
+function DistribuicaoVolta({ m }: { m: Metricas }) {
+  const temDados = m.distHorarioVolta.some(h => h.entregas > 0)
+  if (!temDados) return null
+  const peak = m.distHorarioVolta.reduce((best, h) => h.entregas > best.entregas ? h : best)
+  return (
+    <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
+      <h3 className="text-overline mb-1">Horário de retorno à base</h3>
+      <p className="mb-4 text-[12px] text-[var(--color-fg-subtle)]">Quando os caminhões voltam pro CD (coluna Chegada CD)</p>
+      <ColumnChart
+        items={m.distHorarioVolta.map(h => ({ label: String(h.hora).padStart(2, '0'), value: h.entregas }))}
+        format={n => String(Math.round(n))}
+        height={220}
+        highlightIndex={peak.hora}
+        labelEvery={2}
+      />
+      <div className="mt-3 rounded-[var(--radius-md)] border-l-[3px] border-l-[var(--color-success)] bg-[var(--color-success-soft)] px-3.5 py-2.5 text-[12.5px] leading-relaxed text-[var(--color-success-soft-fg)]">
+        <strong>Pico de retorno às {String(peak.hora).padStart(2, '0')}h</strong> — {m.pctComVolta}% das entregas registraram a volta à base no período.
+      </div>
+    </div>
+  )
+}
+
+type MetricaRede = 'tempo_rota' | 'tempo_loja' | 'tempo_total' | 'tempo_operacao'
+const LABEL_METRICA: Record<MetricaRede, string> = { tempo_rota: 'Tempo de Rota', tempo_loja: 'Tempo em Loja', tempo_total: 'Tempo Total', tempo_operacao: 'Operação' }
 
 function ComparativoRede({ m }: { m: Metricas }) {
   const [metrica, setMetrica] = useState<MetricaRede>('tempo_rota')
