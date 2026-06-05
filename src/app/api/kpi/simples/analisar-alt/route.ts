@@ -6,6 +6,7 @@ import { parseAlteracoesV2 } from '@/lib/parsers/alteracoes-v2'
 import { blocoToParsed } from '@/lib/parsers/alteracoes-v2-adapter'
 import { buildLookupContext } from '@/lib/parsers/lookup-canonical'
 import { parseAlteracaoPdfTabular } from '@/lib/parsers/alteracao-pdf-tabular'
+import { parseAlteracaoTextoLivre } from '@/lib/parsers/alteracao-texto-livre'
 import { inferirSaiDaEscala } from '@/lib/parsers/inferir-sai'
 import type { ParseContext } from '@/lib/parsers/alteracoes-v2.types'
 
@@ -15,9 +16,16 @@ export const runtime = 'nodejs'
 const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
 
 function parseTextoV2(texto: string, ctx: ParseContext): AlteracaoParsed[] {
-  return parseAlteracoesV2(texto, ctx)
+  // Parser de prosa (estruturada) + parser de texto LIVRE (heurístico, ancora na
+  // placa). Mescla os dois e deduplica: o de prosa tem prioridade; o livre só
+  // acrescenta placas que a prosa não pegou. Cobre "qualquer formato" sem IA.
+  const prosa = parseAlteracoesV2(texto, ctx)
     .filter((b) => b.entra || b.sai)
     .map(blocoToParsed)
+  const placasProsa = new Set(prosa.map((a) => a.entra?.placa_norm).filter(Boolean))
+  const extra = parseAlteracaoTextoLivre(texto, ctx)
+    .filter((a) => !a.entra?.placa_norm || !placasProsa.has(a.entra.placa_norm))
+  return [...prosa, ...extra]
 }
 
 async function extrairAlteracoesPdf(

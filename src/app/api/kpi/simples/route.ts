@@ -836,7 +836,7 @@ export async function POST(req: NextRequest) {
       const janelaFim = JANELA_FIM[rede_id] ?? 12
       const rastreados = preview.filter(p => p.tem_gps)
       const entregaram = rastreados.filter(p => p.chegada_loja_fmt)
-      const avisoParcial = rastreados.length >= 5 && reportMaxHora < janelaFim && entregaram.length / rastreados.length < 0.2
+      const avisoParcial = rastreados.length >= 3 && reportMaxHora < janelaFim && entregaram.length / rastreados.length < 0.2
         ? `Relatório parece parcial: só ${entregaram.length}/${rastreados.length} veículos rastreados com entrega e o relatório vai até ~${String(Math.floor(reportMaxHora)).padStart(2, '0')}h, mas as entregas desta rede vão até ${janelaFim}h. Gere de novo depois das entregas.`
         : null
 

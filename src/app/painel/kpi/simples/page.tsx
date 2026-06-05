@@ -1049,6 +1049,17 @@ export default function KpiSimplesPage() {
       {/* Resultado — preview completo por rede */}
       {redes && redes.length > 0 && (
         <section className="mt-12 space-y-8">
+          {redes.some(r => r.avisoParcial) && (
+            <div className="flex items-start gap-2 rounded-md border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 px-4 py-3">
+              <WarningCircle size={18} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-warning)]" />
+              <div className="text-sm">
+                <p className="font-semibold text-[var(--color-warning)]">
+                  {redes.filter(r => r.avisoParcial).length} de {redes.length} rede{redes.length !== 1 ? 's' : ''} parece{redes.filter(r => r.avisoParcial).length !== 1 ? 'm' : ''} ter sido gerada{redes.filter(r => r.avisoParcial).length !== 1 ? 's' : ''} cedo demais
+                </p>
+                <p className="text-[var(--color-fg-muted)]">As entregas dessas redes ainda não terminaram — gere o KPI de novo depois da janela pra não mandar dado parcial pro cliente.</p>
+              </div>
+            </div>
+          )}
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex flex-col gap-1">
               <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
