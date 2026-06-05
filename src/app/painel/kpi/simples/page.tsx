@@ -97,27 +97,138 @@ function hoje(): string {
   return hojeBR()
 }
 
-function fmtSlot(slot: VeiculoSlot | null): string {
-  if (!slot) return '—'
-  const parts: string[] = []
-  if (slot.motorista_nome) parts.push(slot.motorista_nome)
-  if (slot.motorista_codigo !== null && slot.motorista_codigo !== undefined) parts.push(`#${slot.motorista_codigo}`)
-  if (slot.placa_norm) parts.push(slot.placa_norm)
-  return parts.join(' · ') || '—'
-}
-
-const TIPO_LABELS: Record<AlteracaoParsed['tipo'], string> = {
-  SUBSTITUICAO: 'Substituição',
-  INCLUSAO: 'Inclusão',
-  COMUNICADO: 'Comunicado',
-  INFORMATIVO: 'Informativo',
-  SWAP: 'Swap',
-}
-
 const CONF_CLASS: Record<string, string> = {
   alta: 'text-[var(--color-success)]',
   media: 'text-[var(--color-warning)]',
   baixa: 'text-[var(--color-danger)]',
+}
+
+// ─── Diff visual da alteração (o que mudou: carro / motorista / ambos) ───────
+
+type MudancaTipo = 'CARRO' | 'MOTORISTA' | 'AMBOS' | 'INCLUSAO' | 'INDEFINIDA'
+
+const PLACA_RE = /^[A-Z]{3}\d[A-Z0-9]\d{2}$/
+
+// Decide o que a alteração mudou comparando ENTRA × SAI, e coleta problemas
+// pra avisar quando não dá pra identificar com segurança.
+function analisaMudanca(a: AlteracaoParsed): {
+  tipo: MudancaTipo; mudouMotorista: boolean; mudouPlaca: boolean; problemas: string[]
+} {
+  const e = a.entra, s = a.sai
+  const eNome = (e?.motorista_nome ?? '').trim().toUpperCase()
+  const sNome = (s?.motorista_nome ?? '').trim().toUpperCase()
+  const ePlaca = e?.placa_norm ?? ''
+  const sPlaca = s?.placa_norm ?? ''
+  const temEntra = !!eNome || !!ePlaca
+  const temSai = !!sNome || !!sPlaca
+
+  const problemas: string[] = []
+  if (!a.loja_nome_raw) problemas.push('loja não identificada')
+  if (!temEntra) problemas.push('sem motorista nem placa de quem entra')
+  if (e?.placa_norm && !PLACA_RE.test(e.placa_norm)) problemas.push('placa parece inválida')
+  if (a.confianca === 'baixa') problemas.push('confiança baixa')
+
+  // "Não identificado" = faltou o essencial (loja ou quem entra).
+  if (!a.loja_nome_raw || !temEntra) {
+    return { tipo: 'INDEFINIDA', mudouMotorista: false, mudouPlaca: false, problemas }
+  }
+
+  const mudouMotorista = !!eNome && !!sNome && eNome !== sNome
+  const mudouPlaca = !!ePlaca && !!sPlaca && ePlaca !== sPlaca
+  let tipo: MudancaTipo
+  if (!temSai) tipo = 'INCLUSAO'
+  else if (mudouMotorista && mudouPlaca) tipo = 'AMBOS'
+  else if (mudouPlaca) tipo = 'CARRO'
+  else if (mudouMotorista) tipo = 'MOTORISTA'
+  else tipo = 'INCLUSAO'
+  return { tipo, mudouMotorista, mudouPlaca, problemas }
+}
+
+const MUDANCA_STYLE: Record<Exclude<MudancaTipo, 'INDEFINIDA'>, { label: string; cls: string }> = {
+  CARRO:     { label: 'Trocou o carro',           cls: 'bg-[var(--color-info-soft)] text-[var(--color-info-soft-fg)]' },
+  MOTORISTA: { label: 'Trocou o motorista',       cls: 'bg-[var(--color-warning)]/12 text-[var(--color-warning)]' },
+  AMBOS:     { label: 'Trocou motorista e carro', cls: 'bg-[var(--color-info-soft)] text-[var(--color-info-soft-fg)]' },
+  INCLUSAO:  { label: 'Entrada nova',             cls: 'bg-[var(--color-success)]/12 text-[var(--color-success)]' },
+}
+
+function SlotView({ slot, tone, hlMotorista, hlPlaca }: {
+  slot: VeiculoSlot | null; tone: 'sai' | 'entra'; hlMotorista?: boolean; hlPlaca?: boolean
+}) {
+  const base = tone === 'entra' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'
+  if (!slot || (!slot.motorista_nome && !slot.placa_norm)) {
+    return <span className="text-[var(--color-fg-subtle)]">—</span>
+  }
+  const hl = 'font-semibold underline decoration-2 underline-offset-2'
+  return (
+    <span className={cn('inline-flex flex-wrap items-baseline gap-x-1.5', base)}>
+      {slot.motorista_nome && <span className={cn(hlMotorista && hl)}>{slot.motorista_nome}</span>}
+      {slot.motorista_codigo !== null && slot.motorista_codigo !== undefined && (
+        <span className="text-[10px] text-[var(--color-fg-muted)]">#{slot.motorista_codigo}</span>
+      )}
+      {slot.placa_norm && <span className={cn('font-mono text-[11px]', hlPlaca && hl)}>{slot.placa_norm}</span>}
+    </span>
+  )
+}
+
+// Mostra a alteração com o "o que mudou" na cara: badge + SAI→ENTRA com o campo
+// alterado destacado. Se não der pra identificar, mostra aviso vermelho.
+function AlteracaoDiff({ a }: { a: AlteracaoParsed }) {
+  const m = analisaMudanca(a)
+  if (m.tipo === 'INDEFINIDA') {
+    return (
+      <div className="space-y-1">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-danger)]">
+          <WarningCircle size={14} weight="fill" /> Não consegui identificar
+        </div>
+        <p className="text-[11px] text-[var(--color-fg-muted)]">{m.problemas.join(' · ')} — confira e complete manualmente.</p>
+        {a.texto_original && (
+          <p className="text-[11px] italic text-[var(--color-fg-subtle)] break-words">“{a.texto_original.slice(0, 140)}”</p>
+        )}
+      </div>
+    )
+  }
+  const st = MUDANCA_STYLE[m.tipo]
+  const hint = m.tipo === 'CARRO' ? 'mesmo motorista' : m.tipo === 'MOTORISTA' ? 'mesmo carro' : null
+  const temSai = !!a.sai && (!!a.sai.motorista_nome || !!a.sai.placa_norm)
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className={cn('text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full', st.cls)}>{st.label}</span>
+        {(a.loja_nome_raw || a.rede_id) && (
+          <span className="text-[11px] text-[var(--color-fg-subtle)] truncate">{a.loja_nome_raw ?? a.rede_id}</span>
+        )}
+      </div>
+      {temSai && (
+        <div className="flex items-baseline gap-2">
+          <span className="w-11 shrink-0 text-[10px] font-medium text-[var(--color-fg-subtle)]">SAI</span>
+          <SlotView slot={a.sai} tone="sai" />
+        </div>
+      )}
+      <div className="flex items-baseline gap-2">
+        <span className="w-11 shrink-0 text-[10px] font-medium text-[var(--color-fg-subtle)]">ENTRA</span>
+        <SlotView slot={a.entra} tone="entra" hlMotorista={m.mudouMotorista} hlPlaca={m.mudouPlaca} />
+        {hint && <span className="text-[10px] text-[var(--color-fg-subtle)]">({hint})</span>}
+      </div>
+      {m.problemas.length > 0 && (
+        <p className="flex items-center gap-1 text-[10px] text-[var(--color-warning)]">
+          <WarningCircle size={11} weight="fill" /> {m.problemas.join(' · ')}
+        </p>
+      )}
+    </div>
+  )
+}
+
+// Resumo "4 alterações · 2 trocas de carro · 1 de motorista · 1 inclusão"
+function resumoMudancas(list: AlteracaoParsed[]): string {
+  const c = { CARRO: 0, MOTORISTA: 0, AMBOS: 0, INCLUSAO: 0, INDEFINIDA: 0 }
+  for (const a of list) c[analisaMudanca(a).tipo]++
+  const p: string[] = []
+  if (c.CARRO) p.push(`${c.CARRO} de carro`)
+  if (c.MOTORISTA) p.push(`${c.MOTORISTA} de motorista`)
+  if (c.AMBOS) p.push(`${c.AMBOS} de ambos`)
+  if (c.INCLUSAO) p.push(`${c.INCLUSAO} inclusã${c.INCLUSAO > 1 ? 'ões' : 'o'}`)
+  if (c.INDEFINIDA) p.push(`${c.INDEFINIDA} não identificada${c.INDEFINIDA > 1 ? 's' : ''}`)
+  return p.join(' · ')
 }
 
 // ─── Seção de alterações ────────────────────────────────────────────────────
@@ -330,20 +441,17 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data }: AlteracoesCa
         <CardContent className="space-y-4 pt-0 border-t border-[var(--color-border)]">
           {/* Lista de confirmadas */}
           {confirmadas.length > 0 && (
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-[var(--color-fg-subtle)] pt-1">Confirmadas</p>
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-[var(--color-fg-subtle)] pt-1">
+                Confirmadas <span className="font-normal text-[var(--color-fg-muted)]">· {resumoMudancas(confirmadas)}</span>
+              </p>
               {confirmadas.map((a, i) => (
-                <div key={i} className="flex items-center justify-between gap-2 rounded bg-[var(--color-bg-subtle)] px-3 py-2 text-xs">
-                  <span className="text-[var(--color-fg)]">
-                    <span className="font-medium">{TIPO_LABELS[a.tipo]}</span>
-                    {a.rede_id && <span className="text-[var(--color-fg-muted)]"> · {a.rede_id}</span>}
-                    {a.loja_nome_raw && <span className="text-[var(--color-fg-subtle)]"> · {a.loja_nome_raw}</span>}
-                    {a.entra && <span className="text-[var(--color-success)]"> → {fmtSlot(a.entra)}</span>}
-                  </span>
+                <div key={i} className="flex items-start justify-between gap-2 rounded bg-[var(--color-bg-subtle)] px-3 py-2">
+                  <div className="min-w-0 flex-1"><AlteracaoDiff a={a} /></div>
                   <button
                     type="button"
                     onClick={() => onRemove(i)}
-                    className="ml-2 shrink-0 inline-flex items-center justify-center h-5 w-5 rounded text-[var(--color-fg-subtle)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors"
+                    className="shrink-0 inline-flex items-center justify-center h-5 w-5 rounded text-[var(--color-fg-subtle)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors"
                   >
                     <X size={12} weight="bold" />
                   </button>
@@ -541,33 +649,28 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data }: AlteracoesCa
           {previews.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-medium text-[var(--color-fg-muted)]">
-                {previews.length} alteração{previews.length !== 1 ? 'ões' : ''} identificada{previews.length !== 1 ? 's' : ''} — confirme antes de gerar
+                {previews.length} alteração{previews.length !== 1 ? 'ões' : ''} identificada{previews.length !== 1 ? 's' : ''}
+                <span className="text-[var(--color-fg-subtle)]"> · {resumoMudancas(previews)}</span> — confirme antes de gerar
               </p>
               {previews.map((a, i) => (
                 <div key={i} className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
-                  <div className="flex items-center gap-2 border-b border-[var(--color-border)] px-3 py-2">
-                    <span className="text-xs font-semibold text-[var(--color-fg)]">{TIPO_LABELS[a.tipo]}</span>
-                    <span className={cn('text-xs', CONF_CLASS[a.confianca] ?? 'text-[var(--color-fg-muted)]')}>
-                      confiança {a.confianca}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 px-3 py-2.5 text-xs">
-                    <div><span className="text-[var(--color-fg-subtle)]">Rede </span><span className="text-[var(--color-fg)]">{a.rede_id ?? '—'}</span></div>
-                    <div><span className="text-[var(--color-fg-subtle)]">Loja </span><span className="text-[var(--color-fg)]">{a.loja_nome_raw ?? '—'}</span></div>
-                    <div><span className="text-[var(--color-fg-subtle)]">Entra </span><span className="text-[var(--color-success)]">{fmtSlot(a.entra)}</span></div>
-                    <div><span className="text-[var(--color-fg-subtle)]">Sai </span><span className="text-[var(--color-danger)]">{fmtSlot(a.sai)}</span></div>
+                  <div className="px-3 py-2.5">
+                    <AlteracaoDiff a={a} />
                     {a.motivo && (
-                      <div className="col-span-2">
+                      <p className="mt-1.5 text-[11px]">
                         <span className="text-[var(--color-fg-subtle)]">Motivo </span>
                         <span className="text-[var(--color-fg-muted)]">{a.motivo}</span>
-                      </div>
+                      </p>
                     )}
                   </div>
-                  <div className="flex gap-2 px-3 pb-3">
+                  <div className="flex items-center gap-2 px-3 pb-3">
                     <Button size="sm" onClick={() => confirmar(a)}>Confirmar</Button>
                     <Button size="sm" variant="ghost" onClick={() => setPreviews(prev => prev.filter((_, j) => j !== i))}>
                       Descartar
                     </Button>
+                    <span className={cn('ml-auto text-[10px]', CONF_CLASS[a.confianca] ?? 'text-[var(--color-fg-muted)]')}>
+                      confiança {a.confianca}
+                    </span>
                   </div>
                 </div>
               ))}
