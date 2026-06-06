@@ -2465,3 +2465,38 @@ describe('geo N:N — uma placa, N lojas próximas, atribui por ORDEM TEMPORAL (
     } finally { setSemGeo(false) }
   })
 })
+
+describe('SPID cluster — resolução por containment (nome canônico longo não perde p/ rede compartilhada)', () => {
+  // Dados REAIS do cadastro Prezunic SPID (Supabase 2026-06-06). Linhas da escala
+  // têm rótulo curto ("SPID - Carioca") e loja_codigo_raw=null → resolução 100% por
+  // nome. A loja certa "PREZUNIC SPID ESTAÇÃO CARIOCA (METRÔ)" tem 4 tokens; o
+  // matchScore antigo dava {SPID,CARIOCA} vs {SPID,ESTAÇÃO,CARIOCA,METRÔ} = score 2,
+  // PERDENDO pra "PREZUNIC SPID MÉIER" {SPID,MÉIER} = score 1 (só "SPID" em comum).
+  // A entrega real (FORA_BASE na coord da Carioca) não era resgatada → "não foi".
+  const lojas: LojaRow[] = [
+    { id: 'carioca', rede_id: 'PREZUNIC', nome: 'PREZUNIC SPID ESTAÇÃO CARIOCA (METRÔ)', nome_normalizado: 'prezunic spid estacao carioca metro', codigo_escala: null, codigo_unitrac: '7000744', nome_unitrac: 'PREZUNIC SPID ESTAÇÃO CARIOCA (METRÔ)', lat: -22.907786, lng: -43.178007, raio_metros: 150, endereco: null, bairro: 'CENTRO', municipio: null },
+    { id: 'meier',   rede_id: 'PREZUNIC', nome: 'PREZUNIC SPID MÉIER', nome_normalizado: 'prezunic spid meier', codigo_escala: null, codigo_unitrac: '7000737', nome_unitrac: 'PREZUNIC SPID MÉIER', lat: -22.905412, lng: -43.29205, raio_metros: 150, endereco: null, bairro: 'MÉIER', municipio: null },
+    { id: 'centro',  rede_id: 'PREZUNIC', nome: 'PREZUNIC SPID CENTRO', nome_normalizado: 'prezunic spid centro', codigo_escala: null, codigo_unitrac: '7000755', nome_unitrac: 'PREZUNIC SPID CENTRO', lat: -22.91369, lng: -43.184095, raio_metros: 150, endereco: null, bairro: 'CENTRO', municipio: null },
+    { id: 'gloria',  rede_id: 'PREZUNIC', nome: 'PREZUNIC SPID GLÓRIA', nome_normalizado: 'prezunic spid gloria', codigo_escala: null, codigo_unitrac: '7000754', nome_unitrac: 'PREZUNIC SPID GLÓRIA', lat: -22.91886, lng: -43.17711, raio_metros: 150, endereco: null, bairro: 'GLÓRIA', municipio: null },
+  ]
+
+  it('"Prezunic SPID - Carioca" (FORA_BASE na coord da Carioca) é resgatada p/ a loja Carioca, não Méier', async () => {
+    setSemGeo(true)
+    try {
+      const linha: EscalaLinhaRow = {
+        id: 'lC', rede_id: 'PREZUNIC', placa_norm: 'LSN6I72', loja_nome_raw: 'Prezunic SPID - Carioca',
+        loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-06-06',
+      }
+      // Parada FORA_BASE (sem código) exatamente na coord da Estação Carioca.
+      const parada: UnitracParadaRow = {
+        id: 'pC', placa_norm: 'LSN6I72', chegada: '2026-06-06T11:00:00Z', saida: '2026-06-06T11:40:00Z',
+        duracao_seg: 2400, local_parada: 'FORA DE BASE E LOCAL DE SERVICO', codigo_loja: null, nome_loja: null,
+        lat: -22.907786, lng: -43.178007, endereco: null, classificacao: 'FORA_BASE', ordem: 1,
+      }
+      const rotas = await cruzaEscalaUnitrac([linha], [parada], lojas, undefined, undefined, { geoEndereco: true })
+      const r = rotas.find(x => x.escala_linha_id === 'lC')
+      expect(r?.paradas).toHaveLength(1)
+      expect(r?.paradas[0]?.parada_id).toBe('pC')
+    } finally { setSemGeo(false) }
+  })
+})

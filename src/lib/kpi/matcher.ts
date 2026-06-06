@@ -1114,15 +1114,35 @@ export async function cruzaEscalaUnitrac(
       matchScore(linha.loja_nome_raw, l.nome),
       l.nome_unitrac != null ? matchScore(linha.loja_nome_raw, l.nome_unitrac) : Infinity,
     )
-    // Desempate de score igual, em ordem de prioridade:
-    //  1) loja COM codigo_unitrac (cadastro canônico) vence rótulos sem código —
-    //     resolve o caso "{bairro} Serra Azul" (rótulos de rota sem código, às vezes
-    //     com coord errada, que empatam no nome com a loja real).
-    //  2) loja COM coordenada vence sem coordenada.
+    // CONTAINMENT (cluster SPID): todos os tokens discriminativos da escala estão
+    // presentes no nome da loja do cadastro. Sinal forte — a escala costuma ser um
+    // rótulo curto ("SPID - Carioca" = {SPID,CARIOCA}) da loja canônica mais
+    // descritiva ("SPID Estação Carioca (Metrô)" = {SPID,ESTAÇÃO,CARIOCA,METRÔ}).
+    // Sem isso o matchScore = max(2,4)-2 = 2 PERDE pra uma loja errada de nome curto
+    // que compartilha só o token de marca ("SPID Méier" = {SPID,MÉIER} = score 1).
+    // SÓ desempata escala→cadastro (resolução); NÃO toca scorePair (escala↔parada),
+    // que continua simétrico — por isso não regride a distribuição multi-linha (LLJ9C64).
+    const tEsc = tokensCore(linha.loja_nome_raw)
+    const contidoEm = (l: LojaRow): boolean => {
+      if (tEsc.size === 0) return false
+      const dentro = (alvo: Set<string>): boolean => {
+        for (const t of tEsc) if (!alvo.has(t)) return false
+        return true
+      }
+      return dentro(tokensCore(l.nome)) ||
+        (l.nome_unitrac != null && dentro(tokensCore(l.nome_unitrac)))
+    }
+    // Desempate, em ordem de prioridade:
+    //  0) loja que CONTÉM todos os tokens da escala (rótulo curto ⊆ nome canônico).
+    //  1) menor score de nome.
+    //  2) loja COM codigo_unitrac (cadastro canônico) vence rótulos sem código —
+    //     resolve "{bairro} Serra Azul" (rótulos de rota sem código com coord errada).
+    //  3) loja COM coordenada vence sem coordenada.
     let melhor: LojaRow | null = null
     let melhorScore = Infinity
     let melhorCoded = false
     let melhorGeo = false
+    let melhorContido = false
     for (const l of cands) {
       const s = scoreLoja(l)
       if (s === Infinity) continue
@@ -1130,13 +1150,17 @@ export async function cruzaEscalaUnitrac(
       // coord 0,0 NÃO conta como geo válido — senão uma loja zerada (ex "GB PIEDADE 26")
       // empata e vence a real ("GB 03 - PIEDADE") no desempate, quebrando a validação geo.
       const geo = l.lat != null && l.lng != null && !(l.lat === 0 && l.lng === 0)
+      const contido = contidoEm(l)
       const vence =
-        s < melhorScore ||
-        (s === melhorScore && coded && !melhorCoded) ||
-        (s === melhorScore && coded === melhorCoded && geo && !melhorGeo)
-      if (vence) { melhorScore = s; melhor = l; melhorCoded = coded; melhorGeo = geo }
+        (contido && !melhorContido) ||
+        (contido === melhorContido && s < melhorScore) ||
+        (contido === melhorContido && s === melhorScore && coded && !melhorCoded) ||
+        (contido === melhorContido && s === melhorScore && coded === melhorCoded && geo && !melhorGeo)
+      if (vence) { melhorScore = s; melhor = l; melhorCoded = coded; melhorGeo = geo; melhorContido = contido }
     }
-    return melhorScore <= 4 ? melhor : null
+    // Match contido = alta confiança mesmo com score alto (nome canônico mais longo
+    // infla o denominador do matchScore). Senão, mantém o teto de 4.
+    return (melhorContido || melhorScore <= 4) ? melhor : null
   }
 
   const temMov = (placa: string) =>
