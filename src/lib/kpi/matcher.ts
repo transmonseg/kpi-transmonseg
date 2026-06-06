@@ -2336,6 +2336,30 @@ export async function cruzaEscalaUnitrac(
         )
         if (m && m.distancia < melhorDist) { melhorDist = m.distancia; melhorP = p }
       }
+      // (1b) ABISMO NATURAL: a entrega real às vezes é registrada como FORA_BASE a
+      // pouco além do raio (210–250m da doca/rua lateral) e sem rua no texto, então
+      // (1) não pega. Resgata até 300m SÓ quando a esperada é INEQUIVOCAMENTE a loja
+      // mais próxima da rede — a 2ª loja a ≥2× a distância E ≥ dist+300m. Esse guard
+      // de unicidade evita falso "entregue" em área densa (Copacabana/Ipanema): se
+      // houver QUALQUER outra loja perto, não resgata. Caso real 06.06: RJN9F68 Méier
+      // (FORA_BASE a ~210m, próxima Prezunic a ~3km) virava "não foi".
+      if (!melhorP) {
+        const esp = esperada
+        const GAP_MAX = 300
+        const redeEsp = redesFungiveis(esp.rede_id)
+        const outras = lojas.filter(l => l.id !== esp.id && redeEsp.has(l.rede_id) && l.lat != null && l.lng != null)
+        for (const p of candidatas) {
+          if (p.classificacao !== 'FORA_BASE' || p.codigo_loja) continue
+          const d = haversine(p.lat!, p.lng!, esp.lat!, esp.lng!)
+          if (d > GAP_MAX || d >= melhorDist) continue
+          let segunda = Infinity
+          for (const o of outras) {
+            const od = haversine(p.lat!, p.lng!, o.lat!, o.lng!)
+            if (od < segunda) segunda = od
+          }
+          if (segunda >= Math.max(d * 2, d + 300)) { melhorDist = d; melhorP = p }
+        }
+      }
       // (2) Loja DUPLICADA no cadastro: parada LOJA (código de uma loja-gêmea no
       //     mesmo ponto físico, ≤60m) que ficou órfã. Ex: escala casa "Iguaba (1
       //     Entrega)" 8590575 por nome, mas o GPS marca 8590570 "IGUABA GRANDE"

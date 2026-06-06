@@ -2500,3 +2500,42 @@ describe('SPID cluster — resolução por containment (nome canônico longo nã
     } finally { setSemGeo(false) }
   })
 })
+
+describe('Abismo natural — resgata FORA_BASE 200-300m só quando loja é inequivocamente a mais próxima', () => {
+  const base = (id: string, lat: number, lng: number): LojaRow => ({
+    id, rede_id: 'PREZUNIC', nome: `PREZUNIC ${id}`, nome_normalizado: `prezunic ${id}`,
+    codigo_escala: null, codigo_unitrac: `700${id}`, nome_unitrac: `PREZUNIC ${id}`,
+    lat, lng, raio_metros: 150, endereco: null, bairro: null, municipio: null,
+  })
+  const linha = (lojaNome: string): EscalaLinhaRow => ({
+    id: 'lx', rede_id: 'PREZUNIC', placa_norm: 'RJN9F68', loja_nome_raw: lojaNome,
+    loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-06-06',
+  })
+  // FORA_BASE ~210m ao sul de (-22.9054,-43.2920)
+  const fora: UnitracParadaRow = {
+    id: 'pf', placa_norm: 'RJN9F68', chegada: '2026-06-06T11:36:00Z', saida: '2026-06-06T12:10:00Z',
+    duracao_seg: 2040, local_parada: 'FORA DE BASE E LOCAL DE SERVICO', codigo_loja: null, nome_loja: null,
+    lat: -22.90730, lng: -43.2920, endereco: null, classificacao: 'FORA_BASE', ordem: 1,
+  }
+
+  it('loja ISOLADA (próxima a ~3km): resgata a entrega a ~210m', async () => {
+    setSemGeo(true)
+    try {
+      const lojas = [base('001', -22.9054, -43.2920), base('999', -22.9346, -43.2429)] // 2ª a ~3km
+      const rotas = await cruzaEscalaUnitrac([linha('PREZUNIC 001')], [fora], lojas, undefined, undefined, { geoEndereco: true })
+      const r = rotas.find(x => x.escala_linha_id === 'lx')
+      expect(r?.paradas).toHaveLength(1)
+      expect(r?.paradas[0]?.parada_id).toBe('pf')
+    } finally { setSemGeo(false) }
+  })
+
+  it('loja em CLUSTER (outra a ~350m): NÃO resgata (evita falso "entregue")', async () => {
+    setSemGeo(true)
+    try {
+      const lojas = [base('001', -22.9054, -43.2920), base('002', -22.91045, -43.2920)] // 2ª a ~350m da parada
+      const rotas = await cruzaEscalaUnitrac([linha('PREZUNIC 001')], [fora], lojas, undefined, undefined, { geoEndereco: true })
+      const r = rotas.find(x => x.escala_linha_id === 'lx')
+      expect(r?.paradas ?? []).toHaveLength(0)
+    } finally { setSemGeo(false) }
+  })
+})
