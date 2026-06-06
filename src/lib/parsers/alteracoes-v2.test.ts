@@ -135,6 +135,36 @@ Entra : B LQE5401`
     expect(r.sai).toBeNull()
     expect(r.entra).toBeNull()
   })
+
+  // Caso real 06.06 Assaí Camil: "Placa:" em linha SEPARADA do "Sai:/Entra:".
+  it('agrega a linha "Placa:" separada ao slot do Sai/Entra acima', () => {
+    const bloco = `Entra: João Carlos
+Placa : LOT 2962
+Sai : Luiz Ferreira
+Placa : LAU 1I64`
+    const r = detectaSentido(bloco)
+    expect(r.entra).toContain('LOT 2962')
+    expect(r.entra).toContain('João Carlos')
+    expect(r.sai).toContain('LAU 1I64')
+    expect(r.sai).toContain('Luiz Ferreira')
+  })
+
+  it('agrega Cod/Motorista em linha separada também', () => {
+    const bloco = `Sai: Fulano
+Cod: 123
+Placa: ABC1D23`
+    const r = detectaSentido(bloco)
+    expect(r.sai).toContain('123')
+    expect(r.sai).toContain('ABC1D23')
+  })
+
+  it('aceita "Entra -" / "Sai -" com traço (não só dois-pontos)', () => {
+    const bloco = `Entra - Marcio 489
+Sai - Victor lins 353`
+    const r = detectaSentido(bloco)
+    expect(r.entra).toContain('Marcio')
+    expect(r.sai).toContain('Victor')
+  })
 })
 
 const lojasCtx = [

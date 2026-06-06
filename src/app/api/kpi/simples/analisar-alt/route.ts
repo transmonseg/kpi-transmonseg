@@ -31,7 +31,7 @@ function parseTextoV2(texto: string, ctx: ParseContext): AlteracaoParsed[] {
 async function extrairAlteracoesPdf(
   buf: Buffer,
   ctx: ParseContext,
-): Promise<{ alteracoes: AlteracaoParsed[]; fonte: string }> {
+): Promise<{ alteracoes: AlteracaoParsed[]; fonte: string; semTexto?: boolean }> {
   try {
     const tabulares = await parseAlteracaoPdfTabular(buf)
     if (tabulares.length > 0) return { alteracoes: tabulares, fonte: 'pdf-tabular' }
@@ -39,7 +39,17 @@ async function extrairAlteracoesPdf(
     // ignora, tenta fallback texto
   }
 
-  const { text } = await pdfParse(buf)
+  let text = ''
+  try {
+    text = (await pdfParse(buf)).text
+  } catch {
+    text = ''
+  }
+  // PDF sem camada de texto = foto/print (imagem). pdf-parse não extrai nada.
+  // Sinaliza pra UI avisar "cole o texto" em vez de devolver 0 alterações em silêncio.
+  if (text.replace(/\s/g, '').length < 8) {
+    return { alteracoes: [], fonte: 'pdf-imagem', semTexto: true }
+  }
   return { alteracoes: parseTextoV2(text, ctx), fonte: 'pdf-texto' }
 }
 
@@ -65,7 +75,13 @@ export async function POST(req: NextRequest) {
     const pdfFile = fd.get('pdf')
     if (pdfFile instanceof File) {
       const buf = Buffer.from(await pdfFile.arrayBuffer())
-      const { alteracoes } = await extrairAlteracoesPdf(buf, ctx)
+      const { alteracoes, semTexto } = await extrairAlteracoesPdf(buf, ctx)
+      if (semTexto) {
+        return new NextResponse(
+          'Esse PDF é uma imagem/foto (não tem texto pra ler). Cole o texto da alteração no campo de texto, ou envie um PDF de texto.',
+          { status: 422 },
+        )
+      }
       const inferidas = await inferirSaiDaEscala(alteracoes, data, svc)
       return NextResponse.json(inferidas)
     }

@@ -183,20 +183,34 @@ export interface SentidoExtraido {
   entra: string | null
 }
 
+// Início de direção: "Sai", "Saiu", "Entra", "Entrou" seguido de :, - ou espaço.
+const SAI_LINHA_RE = /^sai[uo]?\b[\s:\-]*(.*)$/i
+const ENTRA_LINHA_RE = /^entr[ao]u?\b[\s:\-]*(.*)$/i
+// Sublinha que COMPLEMENTA o slot atual (placa/cod/motorista digitados em linha
+// separada do "Sai:/Entra:"). Sem isso, "Sai: Fulano \n Placa: ABC1D23" perdia a
+// placa e o sistema caía no histórico do motorista (placa errada). Caso real
+// 06.06 Assaí Camil: "Sai: Luiz Ferreira / Placa: LAU 1I64".
+const SUB_LINHA_RE = /^(?:placa|cod|c[óo]digo|motorista|nome)\b[\s:\-.]*(.*)$/i
+
 export function detectaSentido(blocoNormalizado: string): SentidoExtraido {
   if (!blocoNormalizado) return { sai: null, entra: null }
 
-  const linhas = blocoNormalizado.split('\n').map((l) => l.trim())
-  let sai: string | null = null
-  let entra: string | null = null
+  const linhas = blocoNormalizado.split('\n').map((l) => l.trim()).filter(Boolean)
+  const buf: { sai: string[]; entra: string[] } = { sai: [], entra: [] }
+  let cur: 'sai' | 'entra' | null = null
 
   for (const linha of linhas) {
-    if (/^sai[uo]?\s*:/i.test(linha) && !sai) {
-      sai = linha.replace(/^sai[uo]?\s*:\s*/i, '').trim()
-    } else if (/^entr[ao]u?\s*:/i.test(linha) && !entra) {
-      entra = linha.replace(/^entr[ao]u?\s*:\s*/i, '').trim()
-    }
+    const mEntra = ENTRA_LINHA_RE.exec(linha)
+    if (mEntra) { cur = 'entra'; if (mEntra[1].trim()) buf.entra.push(mEntra[1].trim()); continue }
+    const mSai = SAI_LINHA_RE.exec(linha)
+    if (mSai) { cur = 'sai'; if (mSai[1].trim()) buf.sai.push(mSai[1].trim()); continue }
+    // Linha de placa/código/motorista solta → complementa o slot aberto acima.
+    const mSub = SUB_LINHA_RE.exec(linha)
+    if (mSub && cur && mSub[1].trim()) { buf[cur].push(mSub[1].trim()); continue }
   }
+
+  let sai: string | null = buf.sai.length ? buf.sai.join(' ') : null
+  let entra: string | null = buf.entra.length ? buf.entra.join(' ') : null
 
   if (!sai || !entra) {
     const inline = blocoNormalizado.replace(/\n/g, ' ')
