@@ -17,6 +17,17 @@ function tokensFortes(s: string): string[] {
   return normTexto(s).split(' ').filter(t => t.length >= 4 && !STOP_TOKENS.has(t))
 }
 
+/** Extrai o nº do carro (1 ou 2) de textos tipo "2º CARRO" / "Filial 08 - 2° carro". */
+function extraiCarro(s: string | null | undefined): number | null {
+  if (!s) return null
+  const m = s.match(/(\d)\s*[ºo°]?\s*carro/i) ?? s.match(/carro\s*(\d)/i)
+  if (m) {
+    const n = parseInt(m[1], 10)
+    if (n === 1 || n === 2) return n
+  }
+  return null
+}
+
 export const DIAS_LOOKBACK_INFERIR_SAI = 14
 
 export interface EscalaLinha {
@@ -53,35 +64,42 @@ export function inferirSaiDaEscalaLista(
     // casava qualquer "Nova" do banco com sai errado.
     const filialM = p.loja_nome_raw.match(/\b(?:Loja|Filial)\s+(\d{1,3})\b/i)
     const altTok = tokensFortes(p.loja_nome_raw)
+    // Carro da alteração (1º/2º) — vem no motivo ("2º CARRO") ou no nome da loja
+    // ("Filial 08 - 2° carro"). Usado pra casar a linha do MESMO carro.
+    const carroAlt = extraiCarro(p.motivo) ?? extraiCarro(p.loja_nome_raw)
 
-    let linhaMatch: EscalaLinha | null = null
+    // Coleta TODAS as linhas da loja (escala vem DESC por data → mais recente primeiro).
+    const candidatos: EscalaLinha[] = []
 
-    // 1) Match por filial (prefere o mais recente — escala vem ordenada DESC)
+    // 1) Match por filial
     if (filialM) {
       const filialInt = parseInt(filialM[1], 10)
       for (const l of escala) {
         if (p.rede_id && l.rede_id !== p.rede_id) continue
         const codInt = parseInt(l.loja_codigo_raw ?? '', 10)
-        if (!isNaN(codInt) && codInt === filialInt) {
-          linhaMatch = l
-          break
-        }
+        if (!isNaN(codInt) && codInt === filialInt) candidatos.push(l)
       }
     }
 
-    // 2) Match por tokens fortes
-    if (!linhaMatch && altTok.length >= 1) {
+    // 2) Match por tokens fortes (se a filial não achou nada)
+    if (candidatos.length === 0 && altTok.length >= 1) {
       for (const l of escala) {
         if (p.rede_id && l.rede_id !== p.rede_id) continue
         const linTok = new Set(tokensFortes(l.loja_nome_raw ?? ''))
-        if (altTok.every(t => linTok.has(t))) {
-          linhaMatch = l
-          break
-        }
+        if (altTok.every(t => linTok.has(t))) candidatos.push(l)
       }
     }
 
-    if (!linhaMatch) return p
+    if (candidatos.length === 0) return p
+
+    // Quando a alteração diz o carro (1º/2º), casa a linha DAQUELE carro — senão o
+    // 2º carro pegava o SAI do 1º (caso real Assaí Camil 211). Sem info de carro,
+    // usa a 1ª (mais recente).
+    let linhaMatch: EscalaLinha = candidatos[0]
+    if (carroAlt != null) {
+      const doCarro = candidatos.find(l => l.carro_ordem === carroAlt)
+      if (doCarro) linhaMatch = doCarro
+    }
 
     // Anti-falso-positivo: SO ignora se motorista E placa iguais (alteracao
     // redundante). Casos validos que ANTES eram bloqueados:

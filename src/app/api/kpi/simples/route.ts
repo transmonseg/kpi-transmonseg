@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { parseEscalaGeral } from '@/lib/parsers/escala-geral'
-import { parseEscalaZonaSul } from '@/lib/parsers/escala-zona-sul'
-import { parseEscalaPax } from '@/lib/parsers/escala-pax'
-import { parseEscalaArmazemGrao } from '@/lib/parsers/escala-armazem-grao'
+import { parseEscalaArquivo } from '@/lib/parsers/escala-arquivo'
 import { parseUnitrac } from '@/lib/parsers/unitrac'
 import { cruzaEscalaUnitrac, variantesOcr, variantesPlaca, setSemGeo, resolverLojaEsperada, lojaNomeDivergeDaEscala } from '@/lib/kpi/matcher'
 import { haversine } from '@/lib/utils/geo'
@@ -183,7 +180,6 @@ export async function POST(req: NextRequest) {
 
   // Baixa e parseia cada escala, acumulando todas as linhas
   let escalaLinhas: LinhaEscala[] = []
-  const MIN = 3
 
   for (const escalaPath of escalaPaths) {
     const { data: escalaBlob, error: escalaErr } = await svc.storage.from('escalas-raw').download(escalaPath)
@@ -191,31 +187,7 @@ export async function POST(req: NextRequest) {
       return new NextResponse(`Erro ao baixar escala: ${escalaErr?.message ?? 'não encontrado'}`, { status: 400 })
     }
     const escalaBuffer = await escalaBlob.arrayBuffer()
-
-    let linhasDoArquivo: LinhaEscala[] = []
-    try {
-      if (escalaPath.endsWith('.pdf')) {
-        const { parseEscalaGuanabaraPdf } = await import('@/lib/parsers/escala-guanabara-pdf')
-        linhasDoArquivo = await parseEscalaGuanabaraPdf(Buffer.from(escalaBuffer), data)
-      } else {
-        const tentativas: Array<() => Promise<LinhaEscala[]>> = [
-          () => parseEscalaZonaSul(escalaBuffer, data),
-          () => parseEscalaArmazemGrao(escalaBuffer, data),
-          () => parseEscalaPax(escalaBuffer, data),
-          () => parseEscalaGeral(escalaBuffer, data),
-        ]
-        for (const fn of tentativas) {
-          try {
-            const r = await fn()
-            if (r.length >= MIN) { linhasDoArquivo = r; break }
-          } catch { /* próximo */ }
-        }
-      }
-    } catch {
-      // arquivo não reconhecido — continua com o próximo
-    }
-
-    escalaLinhas.push(...linhasDoArquivo)
+    escalaLinhas.push(...await parseEscalaArquivo(escalaBuffer, escalaPath, data))
   }
 
   if (escalaLinhas.length === 0)

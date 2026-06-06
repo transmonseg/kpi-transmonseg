@@ -107,3 +107,28 @@ describe('U5 — inferirSaiDaEscalaLista (fallback dias anteriores)', () => {
     expect(r.sai).toBe(null)
   })
 })
+
+describe('carro_ordem — 2º carro pega o SAI do 2º carro (não do 1º)', () => {
+  const escala: EscalaLinha[] = [
+    { rede_id: 'ASSAI', loja_nome_raw: 'Assai Camil 211', loja_codigo_raw: '211',
+      motorista_nome: 'LUIS', motorista_codigo: 141, placa_norm: 'LOT2962', placa_raw: 'LOT-2962',
+      carro_ordem: 1, data_entrega: '2026-06-06' },
+    { rede_id: 'ASSAI', loja_nome_raw: 'Assai Camil 211', loja_codigo_raw: '211',
+      motorista_nome: 'PEDRO', motorista_codigo: 200, placa_norm: 'ABC1D23', placa_raw: 'ABC-1D23',
+      carro_ordem: 2, data_entrega: '2026-06-06' },
+  ]
+  function alt(carroMotivo: string, entraPlaca: string): AlteracaoParsed {
+    return { tipo: 'INCLUSAO', rede_id: 'ASSAI', loja_nome_raw: 'Assaí - Camil - Loja 211',
+      entra: { motorista_nome: 'X', motorista_codigo: null, placa_norm: entraPlaca, placa_raw: entraPlaca },
+      sai: null, motivo: carroMotivo, texto_original: '', confianca: 'media' }
+  }
+  it('2º CARRO → SAI = PEDRO (carro 2)', () => {
+    const [r] = inferirSaiDaEscalaLista([alt('2º CARRO', 'KXR7F27')], escala)
+    expect(r.sai?.motorista_nome).toBe('PEDRO')
+    expect(r.sai?.placa_norm).toBe('ABC1D23')
+  })
+  it('1º CARRO → SAI = LUIS (carro 1)', () => {
+    const [r] = inferirSaiDaEscalaLista([alt('1º CARRO', 'KMZ7057')], escala)
+    expect(r.sai?.motorista_nome).toBe('LUIS')
+  })
+})
