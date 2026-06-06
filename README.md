@@ -15,7 +15,7 @@
 
 </div>
 
-> Desenhado, construído e mantido por **Joaquim Salles** ([Triforce Auto](https://github.com/Joaquim-Salles)) para a operação real da TRANSMONSEG. **Em produção.**
+> Desenhado, construído e mantido por **[Joaquim Salles](https://github.com/Joaquim-Salles)** para a operação real da TRANSMONSEG. **Em produção.**
 
 ---
 
@@ -210,7 +210,7 @@ npm run dev                     # http://localhost:3000
 <tr>
 <td valign="top">
 
-#### **[Joaquim Salles](https://github.com/Joaquim-Salles)** — *Triforce Auto*
+#### **[Joaquim Salles](https://github.com/Joaquim-Salles)**
 
 Idealizador, arquiteto e desenvolvedor. Desenhou todo o pipeline de matching, o catálogo de redes/parsers, o gerador via template e o dashboard de operação — e mantém o sistema em produção para a TRANSMONSEG.
 
@@ -226,6 +226,6 @@ Idealizador, arquiteto e desenvolvedor. Desenhou todo o pipeline de matching, o 
 
 <div align="center">
 
-**Construído para a operação da [TRANSMONSEG](https://github.com/transmonseg)** · por **Triforce Auto**
+**Construído para a operação da [TRANSMONSEG](https://github.com/transmonseg)** · por **Joaquim Salles**
 
 </div>
