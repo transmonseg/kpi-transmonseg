@@ -6,12 +6,13 @@ import { parseEscalaZonaSul } from '@/lib/parsers/escala-zona-sul'
 import { parseEscalaPax } from '@/lib/parsers/escala-pax'
 import { parseEscalaArmazemGrao } from '@/lib/parsers/escala-armazem-grao'
 import { parseUnitrac } from '@/lib/parsers/unitrac'
-import { cruzaEscalaUnitrac, variantesOcr, variantesPlaca, setSemGeo } from '@/lib/kpi/matcher'
+import { cruzaEscalaUnitrac, variantesOcr, variantesPlaca, setSemGeo, resolverLojaEsperada, lojaNomeDivergeDaEscala } from '@/lib/kpi/matcher'
+import { haversine } from '@/lib/utils/geo'
 import { aplicarAlteracoes } from '@/lib/kpi/aplicar-alteracoes'
 import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
 import { REDE_NOMES_CANONICOS } from '@/lib/kpi/kpi-styles'
-import { derivarStatus, type StatusRota } from '@/lib/kpi/status-rota'
+import { derivarStatus, type StatusRota, type CategoriaRevisao, type NaturezaRevisao } from '@/lib/kpi/status-rota'
 import { partitionSettled } from '@/lib/utils/partition-settled'
 import { mapLimitSettled } from '@/lib/utils/map-limit'
 import type { KpiLinha, RotaKpi } from '@/lib/types/kpi'
@@ -38,6 +39,8 @@ type PreviewLinha = {
   status: StatusRota
   revisar: boolean
   motivoRevisao: string | null
+  categoria: CategoriaRevisao | null
+  natureza: NaturezaRevisao | null
   saida_loja_fmt: string | null
 }
 
@@ -749,11 +752,34 @@ export async function POST(req: NextRequest) {
       const rede_nome = REDE_NOMES_CANONICOS[rede_id] ?? rede_id
       const qtd_sem_gps = linhas.filter(l => !l.saida_cd && !l.chd_loja_1).length
 
+      const lojaById = new Map(lojasParaMatcher.map(l => [l.id, l]))
       const preview: PreviewLinha[] = sorted.map(({ rota, esc }, idx) => {
         const p0 = rota.paradas[0]
         // temGps = a placa está no relatório (rastreada), não só esta linha ter casado.
         const temGps = rota.paradas.length > 0 || placaRastreada(rota.placa_norm)
         const ficouNaBase = rota.status === 'sem_entrega' && !!esc.placa_norm
+        // Classificação dos avisos (não muda match — só explica o motivo):
+        const esperada = resolverLojaEsperada(esc, lojasParaMatcher)
+        const temEntrega = rota.paradas.some(p => p.loja_id != null)
+        // (a) loja sem cadastro no Unitrac → impossível rastrear
+        const lojaSemCadastroUnitrac = !temEntrega &&
+          (!esperada || esperada.codigo_unitrac == null || esperada.lat == null || esperada.lng == null)
+        // (b) loja-gêmea: outra loja da mesma rede a ≤120m → relatório sem código não decide
+        let lojaAmbiguaComGemea: { outra: string } | null = null
+        if (!temEntrega && !lojaSemCadastroUnitrac && esperada && esperada.lat != null && esperada.lng != null) {
+          const gemea = lojasParaMatcher.find(l =>
+            l.id !== esperada.id && l.rede_id === esperada.rede_id &&
+            l.lat != null && l.lng != null &&
+            haversine(esperada.lat!, esperada.lng!, l.lat, l.lng) <= 120)
+          if (gemea) lojaAmbiguaComGemea = { outra: gemea.nome }
+        }
+        // (c) entregou em loja com código que não bate a escala → rota ≠ escala
+        let entregouLojaForaEscala: { lojaReal: string } | null = null
+        const pLoja = rota.paradas.find(p => p.classificacao === 'LOJA' && p.loja_id)
+        if (pLoja?.loja_id) {
+          const lr = lojaById.get(pLoja.loja_id)
+          if (lr && lojaNomeDivergeDaEscala(esc.loja_nome_raw, lr)) entregouLojaForaEscala = { lojaReal: lr.nome }
+        }
         const statusInfo = derivarStatus({
           temGps,
           ficouNaBase,
@@ -774,6 +800,10 @@ export async function POST(req: NextRequest) {
           placaDivergeUnitrac: placaDivergeUnitrac.get(rota.placa_norm ?? '') ?? null,
           // Rastro degenerado (1 ponto o dia todo) → rastreador travado.
           rastreadorTravado: rastreadorTravado.has(rota.placa_norm ?? ''),
+          // Avisos: dado faltando / ambíguo / fora da escala.
+          lojaSemCadastroUnitrac,
+          lojaAmbiguaComGemea,
+          entregouLojaForaEscala,
         })
         const saidaLoja = p0 && p0.chegada && p0.duracao_min != null
           ? new Date(p0.chegada.getTime() + p0.duracao_min * 60_000)
@@ -813,6 +843,8 @@ export async function POST(req: NextRequest) {
           status: statusInfo.status,
           revisar: statusInfo.revisar || placaDesatualizada || !!notaMultiEscala,
           motivoRevisao,
+          categoria: statusInfo.categoria,
+          natureza: statusInfo.natureza,
           saida_loja_fmt: fmtHoraBRT(saidaLoja),
         }
       })

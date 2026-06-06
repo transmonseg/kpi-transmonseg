@@ -1036,7 +1036,10 @@ function assignOptimal(
  * reusável — usada no cruzamento (via wrapper interno) e fora dele pra classificar
  * avisos (loja sem cadastro / loja-gêmea ambígua). NÃO altera decisão de match.
  */
-export function resolverLojaEsperada(linha: EscalaLinhaRow, lojas: LojaRow[]): LojaRow | null {
+export function resolverLojaEsperada(
+  linha: Pick<EscalaLinhaRow, 'rede_id' | 'loja_codigo_raw' | 'loja_nome_raw'>,
+  lojas: LojaRow[],
+): LojaRow | null {
   const fung = redesFungiveis(linha.rede_id)
   const cands = lojas.filter(l => fung.has(l.rede_id))
   if (linha.loja_codigo_raw) {
