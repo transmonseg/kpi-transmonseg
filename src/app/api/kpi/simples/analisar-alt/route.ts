@@ -8,8 +8,11 @@ import { buildLookupContext } from '@/lib/parsers/lookup-canonical'
 import { parseAlteracaoPdfTabular } from '@/lib/parsers/alteracao-pdf-tabular'
 import { getDocument } from 'pdfjs-serverless'
 import { parseAlteracaoTextoLivre } from '@/lib/parsers/alteracao-texto-livre'
-import { inferirSaiDaEscala } from '@/lib/parsers/inferir-sai'
+import { inferirSaiDaEscala, inferirSaiDaEscalaLista, type EscalaLinha } from '@/lib/parsers/inferir-sai'
+import { parseEscalaArquivo } from '@/lib/parsers/escala-arquivo'
+import type { LinhaEscala } from '@/lib/types/escala'
 import type { ParseContext } from '@/lib/parsers/alteracoes-v2.types'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 
@@ -76,6 +79,36 @@ async function extrairTextoPdfjs(buf: Buffer): Promise<string> {
 }
 
 
+/** Parseia os arquivos de escala enviados na sessão (campo "escala", multipart). */
+async function parseEscalasSessao(fd: FormData): Promise<LinhaEscala[]> {
+  const arquivos = fd.getAll('escala').filter((f): f is File => f instanceof File)
+  const dataField = fd.get('data')
+  const data = typeof dataField === 'string' ? dataField : undefined
+  const linhas: LinhaEscala[] = []
+  for (const f of arquivos) {
+    const buf = Buffer.from(await f.arrayBuffer())
+    linhas.push(...await parseEscalaArquivo(buf, f.name, data))
+  }
+  return linhas
+}
+
+/**
+ * Infere o SAI usando a escala da SESSÃO (a que o operador subiu na tela) quando
+ * disponível; senão cai no banco (escala_linhas, 14 dias). É o cerne do fluxo: a
+ * alteração tem que ler a escala que está sendo processada agora, não o histórico.
+ */
+async function inferirComEscala(
+  alteracoes: AlteracaoParsed[],
+  escalaSessao: LinhaEscala[],
+  data: string,
+  svc: SupabaseClient,
+): Promise<AlteracaoParsed[]> {
+  if (escalaSessao.length > 0) {
+    return inferirSaiDaEscalaLista(alteracoes, escalaSessao as EscalaLinha[])
+  }
+  return inferirSaiDaEscala(alteracoes, data, svc)
+}
+
 export async function POST(req: NextRequest) {
   // createClient (com cookies) so pra autenticacao
   const supabaseAuth = await createClient()
@@ -94,6 +127,7 @@ export async function POST(req: NextRequest) {
     const fd = await req.formData()
     const dataField = fd.get('data')
     const data = typeof dataField === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dataField) ? dataField : ''
+    const escalaSessao = await parseEscalasSessao(fd)
     const pdfFile = fd.get('pdf')
     if (pdfFile instanceof File) {
       const buf = Buffer.from(await pdfFile.arrayBuffer())
@@ -104,13 +138,13 @@ export async function POST(req: NextRequest) {
           { status: 422 },
         )
       }
-      const inferidas = await inferirSaiDaEscala(alteracoes, data, svc)
+      const inferidas = await inferirComEscala(alteracoes, escalaSessao, data, svc)
       return NextResponse.json(inferidas)
     }
     const textoField = fd.get('texto')
     if (typeof textoField === 'string') {
       const alteracoes = parseTextoV2(textoField, ctx)
-      const inferidas = await inferirSaiDaEscala(alteracoes, data, svc)
+      const inferidas = await inferirComEscala(alteracoes, escalaSessao, data, svc)
       return NextResponse.json(inferidas)
     }
     return new NextResponse('Envie "texto" ou "pdf".', { status: 400 })

@@ -241,6 +241,9 @@ interface AlteracoesCardProps {
   onRemove: (idx: number) => void
   /** Data da escala (YYYY-MM-DD) — usada pra inferir `Sai` quando alteração não traz */
   data?: string
+  /** Escalas selecionadas na tela — enviadas pra inferir `Sai` da escala da SESSÃO
+   *  (não do banco). É o que faz a alteração ler a escala que o operador subiu. */
+  escalas?: File[]
 }
 
 const REDES_OPCOES: Array<{ value: string; label: string }> = [
@@ -283,7 +286,7 @@ async function readTxtWithEncodingFallback(file: File): Promise<string> {
   return new TextDecoder('utf-8').decode(buffer)
 }
 
-function AlteracoesCard({ confirmadas, onConfirm, onRemove, data }: AlteracoesCardProps) {
+function AlteracoesCard({ confirmadas, onConfirm, onRemove, data, escalas = [] }: AlteracoesCardProps) {
   const [expanded, setExpanded] = useState(false)
   const [modo, setModo] = useState<'texto' | 'pdf' | 'manual' | 'txt'>('texto')
   const [texto, setTexto] = useState('')
@@ -363,11 +366,11 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data }: AlteracoesCa
     resetPreviews()
     startAnalisar(async () => {
       try {
-        const res = await fetch('/api/kpi/simples/analisar-alt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ texto, data }),
-        })
+        const fd = new FormData()
+        fd.append('texto', texto)
+        if (data) fd.append('data', data)
+        for (const f of escalas) fd.append('escala', f)
+        const res = await fetch('/api/kpi/simples/analisar-alt', { method: 'POST', body: fd })
         if (!res.ok) throw new Error(await res.text())
         setPreviews(await res.json() as AlteracaoParsed[])
       } catch (e) {
@@ -383,6 +386,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data }: AlteracoesCa
         const fd = new FormData()
         fd.append('pdf', file)
         if (data) fd.append('data', data)
+        for (const f of escalas) fd.append('escala', f)
         const res = await fetch('/api/kpi/simples/analisar-alt', { method: 'POST', body: fd })
         if (!res.ok) throw new Error(await res.text())
         setPreviews(await res.json() as AlteracaoParsed[])
@@ -399,11 +403,11 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data }: AlteracoesCa
     startAnalisar(async () => {
       try {
         const conteudo = await readTxtWithEncodingFallback(file)
-        const res = await fetch('/api/kpi/simples/analisar-alt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ texto: conteudo, data }),
-        })
+        const fd = new FormData()
+        fd.append('texto', conteudo)
+        if (data) fd.append('data', data)
+        for (const f of escalas) fd.append('escala', f)
+        const res = await fetch('/api/kpi/simples/analisar-alt', { method: 'POST', body: fd })
         if (!res.ok) throw new Error(await res.text())
         setPreviews(await res.json() as AlteracaoParsed[])
       } catch (e) {
@@ -938,7 +942,7 @@ export default function KpiSimplesPage() {
 
       {/* Alterações (componente preservado) */}
       <div data-tour="gk-alteracoes" className="mt-6">
-        <AlteracoesCard confirmadas={alteracoes} onConfirm={addAlteracao} onRemove={removeAlteracao} data={data} />
+        <AlteracoesCard confirmadas={alteracoes} onConfirm={addAlteracao} onRemove={removeAlteracao} data={data} escalas={escalas} />
       </div>
 
       {/* Zona estável do CTA + resultados — alvo do tour (data-tour="gk-resultado").
