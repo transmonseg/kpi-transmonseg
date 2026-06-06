@@ -18,7 +18,7 @@ import {
   ArrowClockwise,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button, Card, CardContent, Input, cn } from '@/components/ui'
-import { STATUS_LABEL, type StatusRota } from '@/lib/kpi/status-rota'
+import { STATUS_LABEL, CATEGORIA_LABEL, NATUREZA_STYLE, type StatusRota, type CategoriaRevisao, type NaturezaRevisao } from '@/lib/kpi/status-rota'
 import { hojeBR } from '@/lib/data-br'
 
 type VeiculoSlot = {
@@ -56,6 +56,8 @@ type PreviewLinha = {
   status: StatusRota
   revisar: boolean
   motivoRevisao: string | null
+  categoria: CategoriaRevisao | null
+  natureza: NaturezaRevisao | null
   saida_loja_fmt: string | null
 }
 
@@ -1268,18 +1270,45 @@ function AvisosRevisao({ linhas }: { linhas: PreviewLinha[] }) {
     { n: foraDeBase, txt: 'fora de base' },
   ].filter(i => i.n > 0)
 
-  if (itens.length === 0) return null
+  // Pendências classificadas (dado faltando / fora da escala) — o que dá pra resolver.
+  const categorias = (['LOJA_SEM_CADASTRO', 'LOJA_AMBIGUA', 'ENTREGOU_FORA_ESCALA'] as CategoriaRevisao[])
+    .map(cat => {
+      const ls = linhas.filter(l => l.categoria === cat)
+      return { cat, n: ls.length, nat: ls[0]?.natureza ?? null }
+    })
+    .filter(c => c.n > 0)
+
+  if (itens.length === 0 && categorias.length === 0) return null
 
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-[var(--color-border)] bg-[var(--color-warning-soft)]/40 px-5 py-2.5 text-[12px]">
-      <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--color-warning-soft-fg)]">
-        <WarningCircle size={14} weight="fill" /> Revisar:
-      </span>
-      {itens.map((i, k) => (
-        <span key={k} className="text-[var(--color-fg-muted)]">
-          <span className="text-numeric font-semibold text-[var(--color-fg)]">{i.n}</span> {i.txt}{k < itens.length - 1 ? ' ·' : ''}
-        </span>
-      ))}
+    <div className="border-b border-[var(--color-border)] bg-[var(--color-warning-soft)]/40 px-5 py-2.5 text-[12px]">
+      {itens.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--color-warning-soft-fg)]">
+            <WarningCircle size={14} weight="fill" /> Revisar:
+          </span>
+          {itens.map((i, k) => (
+            <span key={k} className="text-[var(--color-fg-muted)]">
+              <span className="text-numeric font-semibold text-[var(--color-fg)]">{i.n}</span> {i.txt}{k < itens.length - 1 ? ' ·' : ''}
+            </span>
+          ))}
+        </div>
+      )}
+      {categorias.length > 0 && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          <span className="font-semibold text-[var(--color-fg-muted)]">Pendências:</span>
+          {categorias.map(c => (
+            <span
+              key={c.cat}
+              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-medium"
+              style={c.nat ? { borderColor: NATUREZA_STYLE[c.nat].cor, color: NATUREZA_STYLE[c.nat].cor } : undefined}
+              title={c.nat ? NATUREZA_STYLE[c.nat].label : undefined}
+            >
+              {c.nat ? NATUREZA_STYLE[c.nat].emoji : ''} <span className="text-numeric font-semibold">{c.n}</span> {CATEGORIA_LABEL[c.cat]}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -1560,7 +1589,18 @@ function PreviewRow({
         />
       </td>
       <td className="px-4 py-2 whitespace-nowrap">
-        <StatusBadge status={linha.status} />
+        <div className="flex flex-col items-start gap-1">
+          <StatusBadge status={linha.status} />
+          {linha.natureza && linha.motivoRevisao && (
+            <span
+              className="inline-flex w-fit items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium leading-tight"
+              style={{ color: NATUREZA_STYLE[linha.natureza].cor, borderColor: NATUREZA_STYLE[linha.natureza].cor }}
+              title={linha.motivoRevisao}
+            >
+              {NATUREZA_STYLE[linha.natureza].emoji} {linha.categoria ? CATEGORIA_LABEL[linha.categoria] : NATUREZA_STYLE[linha.natureza].label}
+            </span>
+          )}
+        </div>
       </td>
       <td className="px-4 py-2">
         <input
