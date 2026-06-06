@@ -1,5 +1,15 @@
 export type StatusRota = 'ENTREGUE' | 'ENTREGUE_GEO' | 'MUDOU_DE_ROTA' | 'SEM_RASTREADOR' | 'NAO_SAIU_DA_BASE' | 'NAO_FOI_AO_CLIENTE' | 'FORA_DE_BASE'
 
+/** Categoria específica do motivo de revisão — refina o "não foi" genérico. */
+export type CategoriaRevisao = 'LOJA_SEM_CADASTRO' | 'LOJA_AMBIGUA' | 'ENTREGOU_FORA_ESCALA' | 'RELATORIO_PARCIAL'
+
+/** Natureza do problema: separa "não é erro do sistema" de erro real.
+ *  - dado: cadastro/loja faltando ou ambíguo (resolve cadastrando)
+ *  - operacao: caminhão fez diferente da escala (resolve conferindo a rota)
+ *  - relatorio: relatório gerado cedo/parcial
+ *  - sistema: falha do próprio sistema (idealmente, nunca) */
+export type NaturezaRevisao = 'dado' | 'operacao' | 'relatorio' | 'sistema'
+
 export interface DadosStatusRota {
   temGps: boolean
   ficouNaBase: boolean
@@ -40,16 +50,33 @@ export interface DadosStatusRota {
    * deslocamento) — rastreador travado/sem sinal. Não dá pra concluir entrega.
    * Caso real LCE-4337 (1 ponto às 00:00 o dia inteiro). */
   rastreadorTravado?: boolean
+  /** Loja escalada não tem codigo_unitrac/coordenada no cadastro → impossível
+   * rastrear. Caso real: Jacarepaguá / Parque das Rosas (não existem no Unitrac). */
+  lojaSemCadastroUnitrac?: boolean
+  /** Existe outra loja da mesma rede praticamente no mesmo ponto (≤120m) e o
+   * relatório veio sem código → geo não decide qual. Caso real: Méier
+   * ("Prezunic Méier" + "Prezunic SPID Méier" a ~80m). */
+  lojaAmbiguaComGemea?: { outra: string } | null
+  /** A parada de entrega casada é uma loja com código que NÃO bate o nome da
+   * escala → caminhão entregou em loja fora da escala. Caso real: Freguesia →
+   * Vista Alegre. */
+  entregouLojaForaEscala?: { lojaReal: string } | null
 }
 
 export interface ResultadoStatus {
   status: StatusRota
   revisar: boolean
   motivoRevisao: string | null
+  /** Categoria específica do motivo (null quando é um caso genérico). */
+  categoria: CategoriaRevisao | null
+  /** Natureza do problema (só quando revisar=true). */
+  natureza: NaturezaRevisao | null
 }
 
+type StatusBase = Pick<ResultadoStatus, 'status' | 'revisar' | 'motivoRevisao'>
+
 /** Deriva o status de uma rota a partir do que o motor já computa. A ordem importa. */
-export function derivarStatus(d: DadosStatusRota): ResultadoStatus {
+function derivarStatusBase(d: DadosStatusRota): StatusBase {
   if (!d.temGps) {
     // Placa não está no Unitrac, mas existe uma quase idêntica (1 caractere) que
     // rodou esta rota → cadastro errado no Unitrac, NÃO falta de rastreador. O
@@ -139,6 +166,69 @@ export function derivarStatus(d: DadosStatusRota): ResultadoStatus {
     return { status: 'FORA_DE_BASE', revisar: true, motivoRevisao: 'Parou fora de base; conferir se houve entrega.' }
   }
   return { status: 'ENTREGUE', revisar: false, motivoRevisao: null }
+}
+
+/** Natureza padrão por status, quando nenhuma categoria específica se aplica. */
+const NATUREZA_DE_STATUS: Record<StatusRota, NaturezaRevisao> = {
+  ENTREGUE: 'sistema', ENTREGUE_GEO: 'sistema',
+  MUDOU_DE_ROTA: 'operacao', FORA_DE_BASE: 'operacao',
+  NAO_SAIU_DA_BASE: 'operacao', NAO_FOI_AO_CLIENTE: 'operacao',
+  SEM_RASTREADOR: 'dado',
+}
+
+/**
+ * Classifica o resultado base numa categoria + natureza, refinando o motivo.
+ * Não inventa erro: só refina linhas que JÁ iriam pra revisão (dado faltando que
+ * explica o "não foi") ou reclassifica entrega em loja errada como "mudou de rota".
+ */
+export function derivarStatus(d: DadosStatusRota): ResultadoStatus {
+  const base = derivarStatusBase(d)
+  const temEntrega = d.paradas.some(p => p.loja_id != null)
+
+  // Entregou numa loja que não é a escalada → mudou de rota (com a loja real no motivo).
+  if (d.entregouLojaForaEscala && (base.status === 'ENTREGUE' || base.status === 'ENTREGUE_GEO')) {
+    return {
+      status: 'MUDOU_DE_ROTA', revisar: true,
+      motivoRevisao: `Entregou em loja fora da escala (${d.entregouLojaForaEscala.lojaReal}). Conferir a rota.`,
+      categoria: 'ENTREGOU_FORA_ESCALA', natureza: 'operacao',
+    }
+  }
+  // Linha sem entrega: dado faltando explica o "não foi" (não é erro do sistema).
+  if (!temEntrega && d.lojaSemCadastroUnitrac) {
+    return {
+      status: base.status, revisar: true,
+      motivoRevisao: 'Loja sem cadastro no Unitrac (código/coordenada) — impossível rastrear. Cadastrar a loja.',
+      categoria: 'LOJA_SEM_CADASTRO', natureza: 'dado',
+    }
+  }
+  if (!temEntrega && d.lojaAmbiguaComGemea) {
+    return {
+      status: base.status, revisar: true,
+      motivoRevisao: `Duas lojas no mesmo ponto (${d.lojaAmbiguaComGemea.outra}) e o relatório veio sem código — confirmar qual recebeu.`,
+      categoria: 'LOJA_AMBIGUA', natureza: 'dado',
+    }
+  }
+  return {
+    ...base,
+    categoria: null,
+    natureza: base.revisar ? NATUREZA_DE_STATUS[base.status] : null,
+  }
+}
+
+/** Rótulo legível da categoria. */
+export const CATEGORIA_LABEL: Record<CategoriaRevisao, string> = {
+  LOJA_SEM_CADASTRO: 'Sem cadastro no Unitrac',
+  LOJA_AMBIGUA: 'Loja ambígua (gêmea)',
+  ENTREGOU_FORA_ESCALA: 'Entregou fora da escala',
+  RELATORIO_PARCIAL: 'Relatório parcial',
+}
+
+/** Estilo do selo por natureza (emoji + cor) pra UI. */
+export const NATUREZA_STYLE: Record<NaturezaRevisao, { label: string; emoji: string; cor: string }> = {
+  dado: { label: 'Dado faltando', emoji: '🟣', cor: '#a855f7' },
+  operacao: { label: 'Operação', emoji: '🔵', cor: '#3b82f6' },
+  relatorio: { label: 'Relatório', emoji: '⚪', cor: '#9ca3af' },
+  sistema: { label: 'Sistema', emoji: '🔴', cor: '#ef4444' },
 }
 
 /** Rótulo legível pra UI. */

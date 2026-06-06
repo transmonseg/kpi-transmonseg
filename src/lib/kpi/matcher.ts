@@ -1030,6 +1030,95 @@ function assignOptimal(
   return result
 }
 
+/**
+ * Resolve a loja do cadastro que a LINHA da escala espera: por código exato/único,
+ * senão por nome com desempate containment > score > código > coordenada. Pura e
+ * reusável — usada no cruzamento (via wrapper interno) e fora dele pra classificar
+ * avisos (loja sem cadastro / loja-gêmea ambígua). NÃO altera decisão de match.
+ */
+export function resolverLojaEsperada(linha: EscalaLinhaRow, lojas: LojaRow[]): LojaRow | null {
+  const fung = redesFungiveis(linha.rede_id)
+  const cands = lojas.filter(l => fung.has(l.rede_id))
+  if (linha.loja_codigo_raw) {
+    const raw = linha.loja_codigo_raw
+    const valida = (l: LojaRow) => l.lat != null && l.lng != null && !(l.lat === 0 && l.lng === 0)
+    const matches = cands.filter(l =>
+      l.codigo_escala === raw || (l.codigo_unitrac != null && codCasa(raw, l.codigo_unitrac)))
+    // codigo_escala EXATO e único vence sempre.
+    const exato = matches.filter(l => l.codigo_escala === raw)
+    if (exato.length === 1) return exato[0]
+    const validos = matches.filter(valida)
+    // SÓ confia no código quando ele aponta UMA loja com coord válida. Códigos curtos
+    // (ex "Filial 3") casam várias lojas via codCasa (71003, 71013, 71023…) — aí o
+    // nome decide ("PIEDADE" → GB 03 - PIEDADE). Antes pegava a 1ª (às vezes 0,0).
+    if (validos.length === 1) return validos[0]
+  }
+  if (!linha.loja_nome_raw) return null
+  const scoreLoja = (l: LojaRow): number => Math.min(
+    matchScore(linha.loja_nome_raw, l.nome),
+    l.nome_unitrac != null ? matchScore(linha.loja_nome_raw, l.nome_unitrac) : Infinity,
+  )
+  // CONTAINMENT (cluster SPID): todos os tokens discriminativos da escala estão
+  // presentes no nome da loja do cadastro. Sinal forte — a escala costuma ser um
+  // rótulo curto ("SPID - Carioca" = {SPID,CARIOCA}) da loja canônica mais
+  // descritiva ("SPID Estação Carioca (Metrô)" = {SPID,ESTAÇÃO,CARIOCA,METRÔ}).
+  // Sem isso o matchScore = max(2,4)-2 = 2 PERDE pra uma loja errada de nome curto
+  // que compartilha só o token de marca ("SPID Méier" = {SPID,MÉIER} = score 1).
+  // SÓ desempata escala→cadastro (resolução); NÃO toca scorePair (escala↔parada),
+  // que continua simétrico — por isso não regride a distribuição multi-linha (LLJ9C64).
+  const tEsc = tokensCore(linha.loja_nome_raw)
+  const contidoEm = (l: LojaRow): boolean => {
+    if (tEsc.size === 0) return false
+    const dentro = (alvo: Set<string>): boolean => {
+      for (const t of tEsc) if (!alvo.has(t)) return false
+      return true
+    }
+    return dentro(tokensCore(l.nome)) ||
+      (l.nome_unitrac != null && dentro(tokensCore(l.nome_unitrac)))
+  }
+  // Desempate, em ordem de prioridade:
+  //  0) loja que CONTÉM todos os tokens da escala (rótulo curto ⊆ nome canônico).
+  //  1) menor score de nome.
+  //  2) loja COM codigo_unitrac (cadastro canônico) vence rótulos sem código —
+  //     resolve "{bairro} Serra Azul" (rótulos de rota sem código com coord errada).
+  //  3) loja COM coordenada vence sem coordenada.
+  let melhor: LojaRow | null = null
+  let melhorScore = Infinity
+  let melhorCoded = false
+  let melhorGeo = false
+  let melhorContido = false
+  for (const l of cands) {
+    const s = scoreLoja(l)
+    if (s === Infinity) continue
+    const coded = l.codigo_unitrac != null
+    // coord 0,0 NÃO conta como geo válido — senão uma loja zerada (ex "GB PIEDADE 26")
+    // empata e vence a real ("GB 03 - PIEDADE") no desempate, quebrando a validação geo.
+    const geo = l.lat != null && l.lng != null && !(l.lat === 0 && l.lng === 0)
+    const contido = contidoEm(l)
+    const vence =
+      (contido && !melhorContido) ||
+      (contido === melhorContido && s < melhorScore) ||
+      (contido === melhorContido && s === melhorScore && coded && !melhorCoded) ||
+      (contido === melhorContido && s === melhorScore && coded === melhorCoded && geo && !melhorGeo)
+    if (vence) { melhorScore = s; melhor = l; melhorCoded = coded; melhorGeo = geo; melhorContido = contido }
+  }
+  // Match contido = alta confiança mesmo com score alto (nome canônico mais longo
+  // infla o denominador do matchScore). Senão, mantém o teto de 4.
+  return (melhorContido || melhorScore <= 4) ? melhor : null
+}
+
+/** True quando o nome da escala diverge da loja (matchScore > 4 em nome e nome_unitrac).
+ *  Detecta "entregou em loja fora da escala" (a parada casou numa loja com código cujo
+ *  nome não bate o que a escala pedia). */
+export function lojaNomeDivergeDaEscala(nomeEscala: string, loja: LojaRow): boolean {
+  if (!nomeEscala) return false
+  const s = Math.min(
+    matchScore(nomeEscala, loja.nome),
+    loja.nome_unitrac != null ? matchScore(nomeEscala, loja.nome_unitrac) : Infinity,
+  )
+  return s > 4
+}
+
 export async function cruzaEscalaUnitrac(
   escalaLinhas: EscalaLinhaRow[],
   paradaRows: UnitracParadaRow[],
@@ -1092,76 +1181,8 @@ export async function cruzaEscalaUnitrac(
   // número da loja já travado dentro do matchScore. Empate → prefere o cadastro COM
   // coordenada (não a duplicata-fantasma). É seguro afrouxar porque quem usa esse
   // resultado revalida por COORDENADA (parada dentro do raio).
-  const melhorLojaEscalada = (linha: EscalaLinhaRow): LojaRow | null => {
-    const fung = redesFungiveis(linha.rede_id)
-    const cands = lojas.filter(l => fung.has(l.rede_id))
-    if (linha.loja_codigo_raw) {
-      const raw = linha.loja_codigo_raw
-      const valida = (l: LojaRow) => l.lat != null && l.lng != null && !(l.lat === 0 && l.lng === 0)
-      const matches = cands.filter(l =>
-        l.codigo_escala === raw || (l.codigo_unitrac != null && codCasa(raw, l.codigo_unitrac)))
-      // codigo_escala EXATO e único vence sempre.
-      const exato = matches.filter(l => l.codigo_escala === raw)
-      if (exato.length === 1) return exato[0]
-      const validos = matches.filter(valida)
-      // SÓ confia no código quando ele aponta UMA loja com coord válida. Códigos curtos
-      // (ex "Filial 3") casam várias lojas via codCasa (71003, 71013, 71023…) — aí o
-      // nome decide ("PIEDADE" → GB 03 - PIEDADE). Antes pegava a 1ª (às vezes 0,0).
-      if (validos.length === 1) return validos[0]
-    }
-    if (!linha.loja_nome_raw) return null
-    const scoreLoja = (l: LojaRow): number => Math.min(
-      matchScore(linha.loja_nome_raw, l.nome),
-      l.nome_unitrac != null ? matchScore(linha.loja_nome_raw, l.nome_unitrac) : Infinity,
-    )
-    // CONTAINMENT (cluster SPID): todos os tokens discriminativos da escala estão
-    // presentes no nome da loja do cadastro. Sinal forte — a escala costuma ser um
-    // rótulo curto ("SPID - Carioca" = {SPID,CARIOCA}) da loja canônica mais
-    // descritiva ("SPID Estação Carioca (Metrô)" = {SPID,ESTAÇÃO,CARIOCA,METRÔ}).
-    // Sem isso o matchScore = max(2,4)-2 = 2 PERDE pra uma loja errada de nome curto
-    // que compartilha só o token de marca ("SPID Méier" = {SPID,MÉIER} = score 1).
-    // SÓ desempata escala→cadastro (resolução); NÃO toca scorePair (escala↔parada),
-    // que continua simétrico — por isso não regride a distribuição multi-linha (LLJ9C64).
-    const tEsc = tokensCore(linha.loja_nome_raw)
-    const contidoEm = (l: LojaRow): boolean => {
-      if (tEsc.size === 0) return false
-      const dentro = (alvo: Set<string>): boolean => {
-        for (const t of tEsc) if (!alvo.has(t)) return false
-        return true
-      }
-      return dentro(tokensCore(l.nome)) ||
-        (l.nome_unitrac != null && dentro(tokensCore(l.nome_unitrac)))
-    }
-    // Desempate, em ordem de prioridade:
-    //  0) loja que CONTÉM todos os tokens da escala (rótulo curto ⊆ nome canônico).
-    //  1) menor score de nome.
-    //  2) loja COM codigo_unitrac (cadastro canônico) vence rótulos sem código —
-    //     resolve "{bairro} Serra Azul" (rótulos de rota sem código com coord errada).
-    //  3) loja COM coordenada vence sem coordenada.
-    let melhor: LojaRow | null = null
-    let melhorScore = Infinity
-    let melhorCoded = false
-    let melhorGeo = false
-    let melhorContido = false
-    for (const l of cands) {
-      const s = scoreLoja(l)
-      if (s === Infinity) continue
-      const coded = l.codigo_unitrac != null
-      // coord 0,0 NÃO conta como geo válido — senão uma loja zerada (ex "GB PIEDADE 26")
-      // empata e vence a real ("GB 03 - PIEDADE") no desempate, quebrando a validação geo.
-      const geo = l.lat != null && l.lng != null && !(l.lat === 0 && l.lng === 0)
-      const contido = contidoEm(l)
-      const vence =
-        (contido && !melhorContido) ||
-        (contido === melhorContido && s < melhorScore) ||
-        (contido === melhorContido && s === melhorScore && coded && !melhorCoded) ||
-        (contido === melhorContido && s === melhorScore && coded === melhorCoded && geo && !melhorGeo)
-      if (vence) { melhorScore = s; melhor = l; melhorCoded = coded; melhorGeo = geo; melhorContido = contido }
-    }
-    // Match contido = alta confiança mesmo com score alto (nome canônico mais longo
-    // infla o denominador do matchScore). Senão, mantém o teto de 4.
-    return (melhorContido || melhorScore <= 4) ? melhor : null
-  }
+  // Wrapper interno: delega pra função pura de módulo (reusada fora p/ classificar avisos).
+  const melhorLojaEscalada = (linha: EscalaLinhaRow): LojaRow | null => resolverLojaEsperada(linha, lojas)
 
   const temMov = (placa: string) =>
     (paradaByPlaca.get(placa) ?? []).some(p => p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE')
