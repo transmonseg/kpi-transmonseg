@@ -13,6 +13,7 @@ import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
 import { REDE_NOMES_CANONICOS } from '@/lib/kpi/kpi-styles'
 import { derivarStatus, type StatusRota } from '@/lib/kpi/status-rota'
 import { partitionSettled } from '@/lib/utils/partition-settled'
+import { mapLimitSettled } from '@/lib/utils/map-limit'
 import type { KpiLinha, RotaKpi } from '@/lib/types/kpi'
 import type { LinhaEscala } from '@/lib/types/escala'
 
@@ -662,8 +663,10 @@ export async function POST(req: NextRequest) {
   let redes_com_erro: { rede_id: string; erro_mensagem: string }[] = []
   try {
     const redesEntries = Array.from(redeMap.entries())
-    const settled = await Promise.allSettled(
-    redesEntries.map(async ([rede_id, { rotas: redeRotas, escala: redeEscala }]) => {
+    const settled = await mapLimitSettled(
+    redesEntries,
+    2,
+    async ([rede_id, { rotas: redeRotas, escala: redeEscala }]) => {
       const sorted = redeRotas
         .map((r, i) => ({ rota: r, esc: redeEscala[i] }))
         .sort((a, b) => {
@@ -855,7 +858,7 @@ export async function POST(req: NextRequest) {
         pdfComChegadaBase64: pdfComChegadaBuffer.toString('base64'),
         preview,
       }
-    })
+    }
     )
 
     const redeIds = redesEntries.map(([id]) => id)

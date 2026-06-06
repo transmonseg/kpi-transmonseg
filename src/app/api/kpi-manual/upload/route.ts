@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { parseKpiManual, parseKpiManualTodasAbas } from '@/lib/kpi/parse-kpi-manual'
+import { replaceEntradasManualMes } from '@/lib/kpi/manual-import'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -31,12 +32,11 @@ export async function POST(req: NextRequest) {
     if (entradas.length === 0) {
       return new NextResponse('Nenhuma aba-dia reconhecida na planilha (abas devem ser o número do dia, ex "19")', { status: 422 })
     }
-    // sobrescreve o mês inteiro desta rede
-    await svc.from('kpi_manual_entradas').delete().eq('rede_id', rede_id).gte('data', `${mes}-01`).lte('data', `${mes}-31`)
-    const rows = entradas.map(e => ({ ...e, uploaded_by: user.id }))
-    for (let i = 0; i < rows.length; i += 500) {
-      const { error } = await svc.from('kpi_manual_entradas').insert(rows.slice(i, i + 500))
-      if (error) return new NextResponse(error.message, { status: 500 })
+    // sobrescreve o mês inteiro desta rede numa RPC transacional
+    try {
+      await replaceEntradasManualMes(svc, rede_id, mes, entradas, user.id)
+    } catch (e) {
+      return new NextResponse(e instanceof Error ? e.message : 'Erro ao importar KPI manual do mês', { status: 500 })
     }
     // sobe o XLSX cru por dia detectado (best-effort; alimenta o export mensal)
     await Promise.all(dias.map(d =>

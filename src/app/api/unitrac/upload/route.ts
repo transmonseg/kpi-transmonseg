@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { parseUnitrac } from '@/lib/parsers/unitrac'
+import { carregarCadastroPlacasPdf } from '@/lib/unitrac/cadastro-placas'
 // parseUnitracPdf carrega pdf-parse (depende de DOMMatrix); import dinâmico
 // dentro do handler pra não falhar no "collect page data" do build.
 
@@ -78,13 +79,7 @@ export async function POST(req: NextRequest) {
   // estruturado e o nome de aba já vem limpo.
   let cadastroPlacas: Set<string> | null = null
   if (formato === 'pdf') {
-    const { data: placasDb } = await svc
-      .from('unitrac_paradas')
-      .select('placa_norm')
-      .not('placa_norm', 'is', null)
-    if (placasDb) {
-      cadastroPlacas = new Set(placasDb.map(r => String(r.placa_norm)).filter(Boolean))
-    }
+    cadastroPlacas = await carregarCadastroPlacasPdf(svc)
   }
 
   try {

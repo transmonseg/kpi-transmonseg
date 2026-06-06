@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { extensaoUploadSuportada } from '@/lib/uploads/arquivo'
 
 export const runtime = 'nodejs'
 
@@ -16,9 +17,12 @@ export async function POST(req: NextRequest) {
   if (!escalaFilename || !unitracFilename)
     return new NextResponse('"escalaFilename" e "unitracFilename" obrigatórios.', { status: 400 })
 
+  const escalaExt = extensaoUploadSuportada(String(escalaFilename))
+  const unitracExt = extensaoUploadSuportada(String(unitracFilename))
+  if (!escalaExt || !unitracExt)
+    return new NextResponse('Extensão não suportada. Use .xlsx ou .pdf.', { status: 400 })
+
   const ts = Date.now()
-  const escalaExt = String(escalaFilename).toLowerCase().endsWith('.pdf') ? 'pdf' : 'xlsx'
-  const unitracExt = String(unitracFilename).toLowerCase().endsWith('.pdf') ? 'pdf' : 'xlsx'
 
   const escalaBucketPath = `simples/${data}/escala_${ts}.${escalaExt}`
   const unitracBucketPath = `simples/${data}/unitrac_${ts}.${unitracExt}`

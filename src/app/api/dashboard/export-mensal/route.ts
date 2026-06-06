@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { montarXlsxMensal, type RawDoDia } from '@/lib/kpi/export-mensal'
+import { ultimoDiaDoMes } from '@/lib/kpi/manual-import'
 import { mesBR } from '@/lib/data-br'
 
 export const runtime = 'nodejs'
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
   for (let from = 0; ; from += PAGE) {
     const { data: rows, error } = await svc.from('kpi_manual_entradas')
       .select('data')
-      .eq('rede_id', rede).gte('data', `${mes}-01`).lte('data', `${mes}-31`)
+      .eq('rede_id', rede).gte('data', `${mes}-01`).lte('data', ultimoDiaDoMes(mes))
       .order('id', { ascending: true })
       .range(from, from + PAGE - 1)
     if (error) return new NextResponse(error.message, { status: 500 })

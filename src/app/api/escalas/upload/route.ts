@@ -8,6 +8,7 @@ import { parseEscalaPax } from '@/lib/parsers/escala-pax'
 import { parseEscalaArmazemGrao } from '@/lib/parsers/escala-armazem-grao'
 import { parseEscalaUniversal } from '@/lib/parsers/escala-universal'
 import type { LinhaEscala } from '@/lib/types/escala'
+import { deleteEscalaUploadExistente } from '@/lib/escalas/upload'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -185,7 +186,11 @@ export async function POST(req: NextRequest) {
     .maybeSingle()
 
   if (existente) {
-    await svc.from('escala_uploads').delete().eq('id', existente.id)
+    try {
+      await deleteEscalaUploadExistente(svc, existente.id)
+    } catch (e) {
+      return new NextResponse(e instanceof Error ? e.message : 'Erro ao remover escala anterior', { status: 500 })
+    }
   }
 
   const { data: upload, error: uploadErr } = await svc

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { extensaoUploadSuportada } from '@/lib/uploads/arquivo'
 
 export const runtime = 'nodejs'
 
@@ -19,7 +20,10 @@ export async function POST(req: NextRequest) {
   if (!filename || typeof filename !== 'string')
     return new NextResponse('Campo "filename" obrigatório.', { status: 400 })
 
-  const ext = filename.toLowerCase().endsWith('.pdf') ? 'pdf' : 'xlsx'
+  const ext = extensaoUploadSuportada(filename)
+  if (!ext)
+    return new NextResponse('Extensão não suportada. Use .xlsx ou .pdf.', { status: 400 })
+
   const tipoSlug = tipo && typeof tipo === 'string' ? tipo.toLowerCase() : 'auto'
   const storagePath = `${data}/${tipoSlug}_${Date.now()}.${ext}`
   const svc = createServiceClient()
