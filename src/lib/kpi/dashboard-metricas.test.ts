@@ -135,3 +135,19 @@ describe('calcularMetricas — novos campos de tempo', () => {
     expect(typeof princesa.tempo_rota).toBe('number')
   })
 })
+
+describe('calcularMetricas — hora malformada não vira NaN', () => {
+  const E2 = (o: Partial<EntradaManual>): EntradaManual => ({
+    rede_id: 'PRINCESA', data: '2026-06-06', loja: 'L', placa: 'P', motorista: 'M',
+    status: 'entregue', saida_cd: '05:00', chd: '06:00', sai: '06:30', volta_base: null, ...o,
+  })
+  it('entrada com horário lixo ("—"/"FOLGA") não polui a média (sem NaN)', () => {
+    const m = calcularMetricas([
+      E2({ chd: '06:00', sai: '06:30' }),   // 30 min
+      E2({ chd: '—', sai: 'FOLGA' }),        // lixo → ignorado, não NaN
+    ])
+    expect(m.tempoMedioLojaMin).toBe(30)
+    expect(Number.isNaN(m.tempoMedioLojaMin as number)).toBe(false)
+    expect(m.tempoMedioRotaMin == null || Number.isFinite(m.tempoMedioRotaMin)).toBe(true)
+  })
+})

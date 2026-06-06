@@ -114,6 +114,9 @@ function diffMin(chd: string | null, sai: string | null): number | null {
   if (!chd || !sai) return null
   const [ch, cm] = chd.split(':').map(Number)
   const [sh, sm] = sai.split(':').map(Number)
+  // Hora malformada (ex: "—", "FOLGA") vira NaN — rejeita pra não poluir a média
+  // com NaN (mediaVetorNulo não filtra NaN, e o dashboard mostraria "NaN min").
+  if (![ch, cm, sh, sm].every(Number.isFinite)) return null
   let d = (sh * 60 + sm) - (ch * 60 + cm)
   if (d < 0) d += 1440
   return d
@@ -125,6 +128,7 @@ function mediaTempo(es: EntradaManual[]): number | null {
 function turno(chd: string | null): keyof Metricas['turnos'] | null {
   if (!chd) return null
   const h = Number(chd.split(':')[0])
+  if (!Number.isFinite(h)) return null  // hora malformada não vira "noite" por engano
   return h < 6 ? 'madrugada' : h < 12 ? 'manha' : h < 18 ? 'tarde' : 'noite'
 }
 function mediaVetorNulo(ns: (number | null)[]): number | null {
