@@ -236,3 +236,45 @@ describe('aplicarAlteracoes', () => {
     expect(out.sai?.placa_norm).toBe('OLD0000')
   })
 })
+
+describe('aplicarAlteracoes — carro_ordem (não corrompe o outro carro)', () => {
+  const escala = (): LinhaEscala[] => [
+    mkLinha({ rede_id: 'ASSAI', loja_nome_raw: 'Assai Camil', loja_codigo_raw: '211', carro_ordem: 1, motorista_nome: 'LUIS', placa_norm: 'LOT2962', placa_raw: 'LOT2962' }),
+    mkLinha({ rede_id: 'ASSAI', loja_nome_raw: 'Assai Camil', loja_codigo_raw: '211', carro_ordem: 2, motorista_nome: 'PEDRO', placa_norm: 'ABC1D23', placa_raw: 'ABC1D23' }),
+  ]
+  const alt = (carro: number, mot: string, placa: string): AltConfirmada => ({
+    tipo: 'SUBSTITUICAO', rede_id: 'ASSAI', loja_raw: 'Assaí - Loja 211', carro,
+    entra: { motorista_nome: mot, motorista_codigo: null, placa_raw: placa, placa_norm: placa }, sai: null,
+  })
+
+  it('alteração do 2º carro NÃO mexe no 1º (via loja_raw "Loja 211")', () => {
+    const r = aplicarAlteracoes(escala(), [alt(2, 'MARCIO', 'KXR7F27')])
+    const c1 = r.find(l => l.carro_ordem === 1)!
+    const c2 = r.find(l => l.carro_ordem === 2)!
+    expect(c1.motorista_nome).toBe('LUIS')       // 1º intacto
+    expect(c2.motorista_nome).toBe('MARCIO')      // 2º trocado
+    expect(c2.placa_norm).toBe('KXR7F27')
+  })
+
+  it('1º e 2º carro juntos → cada um no seu', () => {
+    const r = aplicarAlteracoes(escala(), [alt(1, 'JOAO', 'LOT2962'), alt(2, 'MARCIO', 'KXR7F27')])
+    expect(r.find(l => l.carro_ordem === 1)!.motorista_nome).toBe('JOAO')
+    expect(r.find(l => l.carro_ordem === 2)!.motorista_nome).toBe('MARCIO')
+  })
+
+  it('carro NOVO (loja só tem 1º) → adiciona linha do 2º carro', () => {
+    const so1 = [mkLinha({ rede_id: 'ASSAI', loja_nome_raw: 'Assai Camil', loja_codigo_raw: '211', carro_ordem: 1, motorista_nome: 'LUIS', placa_norm: 'LOT2962' })]
+    const r = aplicarAlteracoes(so1, [alt(2, 'MARCIO', 'KXR7F27')])
+    expect(r.length).toBe(2)
+    const c2 = r.find(l => l.carro_ordem === 2)!
+    expect(c2.motorista_nome).toBe('MARCIO')
+    expect(c2.loja_codigo_raw).toBe('211')        // clonou o contexto da loja
+    expect(r.find(l => l.carro_ordem === 1)!.motorista_nome).toBe('LUIS') // 1º intacto
+  })
+
+  it('parsedToConfirmada extrai carro do motivo "2º CARRO"', () => {
+    const c = parsedToConfirmada({ tipo: 'INCLUSAO', rede_id: 'ASSAI', loja_nome_raw: 'Loja 211', motivo: '2º CARRO', entra: null, sai: null })
+    expect(c.carro).toBe(2)
+    expect(c.loja_raw).toBe('Loja 211')
+  })
+})

@@ -5,7 +5,8 @@ import { parseEscalaArquivo } from '@/lib/parsers/escala-arquivo'
 import { parseUnitrac } from '@/lib/parsers/unitrac'
 import { cruzaEscalaUnitrac, variantesOcr, variantesPlaca, setSemGeo, resolverLojaEsperada, lojaNomeDivergeDaEscala } from '@/lib/kpi/matcher'
 import { haversine } from '@/lib/utils/geo'
-import { aplicarAlteracoes } from '@/lib/kpi/aplicar-alteracoes'
+import { aplicarAlteracoes, parsedToConfirmada } from '@/lib/kpi/aplicar-alteracoes'
+import type { AlteracaoParsed } from '@/lib/parsers/alteracao-text'
 import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
 import { REDE_NOMES_CANONICOS } from '@/lib/kpi/kpi-styles'
@@ -150,7 +151,9 @@ export async function POST(req: NextRequest) {
     unitracBucketPath?: string
     unitracBucketPaths?: string[]
     data: string
-    alteracoes?: AltConfirmada[]
+    // A UI manda AlteracaoParsed (loja_nome_raw, motivo); normalizado p/ AltConfirmada
+    // na aplicação (parsedToConfirmada) — preenche loja_raw + carro.
+    alteracoes?: AlteracaoParsed[]
     lineEdits?: LineEdit[]
     skipSave?: boolean
   }
@@ -228,7 +231,7 @@ export async function POST(req: NextRequest) {
   // Sem busca no banco — cada geração de KPI carrega o que o operador adicionou
   // naquele momento. Tabela `alteracoes` deixou de ser usada pra esse fluxo.
   if (alteracoes.length > 0) {
-    escalaLinhas = aplicaAlteracoes([...escalaLinhas], alteracoes)
+    escalaLinhas = aplicaAlteracoes([...escalaLinhas], alteracoes.map(parsedToConfirmada))
     console.log(`[/api/kpi/simples] Aplicando ${alteracoes.length} alterações inline`)
   }
 

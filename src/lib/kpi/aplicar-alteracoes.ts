@@ -16,6 +16,9 @@ export type AltConfirmada = {
   tipo: string
   rede_id: string | null
   loja_raw: string | null
+  /** Carro da alteração (1 ou 2) — quando souber, casa SÓ a linha desse carro
+   *  (senão o 2º carro sobrescreve o 1º numa loja com dois carros). */
+  carro?: number | null
   entra: {
     motorista_nome: string | null
     motorista_codigo: number | null
@@ -26,6 +29,17 @@ export type AltConfirmada = {
     motorista_nome: string | null
     placa_norm: string | null
   } | null
+}
+
+/** Extrai o nº do carro (1/2) de "2º CARRO" / "Filial 08 - 2° carro". */
+export function extraiCarroAlt(s: string | null | undefined): number | null {
+  if (!s) return null
+  const m = s.match(/(\d)\s*[ºo°]?\s*carro/i) ?? s.match(/carro\s*(\d)/i)
+  if (m) {
+    const n = parseInt(m[1], 10)
+    if (n === 1 || n === 2) return n
+  }
+  return null
 }
 
 export function aplicarAlteracoes(
@@ -43,30 +57,22 @@ export function aplicarAlteracoes(
     if (!tipoOk) continue
     if (!alt.entra) continue
 
-    const matches = (l: LinhaEscala, i: number): boolean => {
+    // Casa a LOJA (sem considerar o carro) — prioridades originais 1-4.
+    const matchesLoja = (l: LinhaEscala, i: number): boolean => {
       // Filtra cross-rede
       if (alt.rede_id && l.rede_id !== alt.rede_id) return false
 
-      // PRIORIDADE 1: match por numero de loja EXPLICITO na loja_raw da alteracao.
-      //
-      // Bug D dia 25 (auditoria 2026-05-27): quando a alteracao vem com "Loja N"
-      // explicito (do PDF tabular), esse numero E fonte de verdade direto do
-      // documento. Inferencias de sai (motorista/placa via banco) podem dar
-      // resultado errado e jogar a alteracao em loja diferente. Priorizar
-      // numero explicito da alteracao previne contaminacao.
+      // PRIORIDADE 1: número de loja EXPLÍCITO na loja_raw ("Loja N") — fonte de
+      // verdade direto do PDF. (Antes morria porque a rota não preenchia loja_raw.)
       if (alt.loja_raw) {
         const filialExplicito = alt.loja_raw.match(/\b(?:Loja|Filial)\s+(\d{1,3})\b/i)
         const codInt = parseInt(l.loja_codigo_raw ?? '', 10)
         if (filialExplicito && !isNaN(codInt)) {
-          const filialInt = parseInt(filialExplicito[1], 10)
-          // Match estrito: aceita SOMENTE a linha com o mesmo numero. Nao cai
-          // em outros matches por placa do sai.
-          return filialInt === codInt
+          return parseInt(filialExplicito[1], 10) === codInt
         }
       }
 
       // PRIORIDADE 2: match por placa do "sai" (snapshot original)
-      // Usado quando alteracao nao tem "Loja N" explicito (texto WhatsApp curto)
       if (alt.sai?.placa_norm && placasOriginais[i] === alt.sai.placa_norm) return true
 
       // PRIORIDADE 3: match por motorista do "sai"
@@ -75,12 +81,8 @@ export function aplicarAlteracoes(
         if (needle.length >= 3 && motoristasOriginais[i]?.toLowerCase().includes(needle)) return true
       }
 
-      // PRIORIDADE 4: match por loja_raw via tokens fortes do nome (quando
-      // nao ha "Loja N" explicito nem info de "sai").
-      // Caso "Carrefour Campo Grande" / "Assai Sao Goncalo Camil" sem numero.
-      // EXIGE rede_id: sem rede, um token genérico ("CAXIAS") casaria Carrefour,
-      // Prezunic E Assaí juntos (contaminação cross-rede). Alteração sem rede não
-      // é aplicada por token — fica pro operador completar.
+      // PRIORIDADE 4: tokens fortes do nome (sem "Loja N" nem info de sai). EXIGE
+      // rede — sem ela um token genérico ("CAXIAS") casaria várias redes.
       if (alt.rede_id && !alt.sai?.placa_norm && !alt.sai?.motorista_nome && alt.loja_raw) {
         const norm = (s: string) =>
           s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
@@ -100,30 +102,52 @@ export function aplicarAlteracoes(
       }
       return false
     }
+    // Carro: quando a alteração diz 1º/2º, casa SÓ a linha daquele carro. Linha
+    // sem carro_ordem não filtra (não derruba match).
+    const carroOk = (l: LinhaEscala): boolean =>
+      alt.carro == null || l.carro_ordem == null || l.carro_ordem === alt.carro
 
     if (alt.tipo === 'SWAP') {
-      // SWAP: só troca placa, motorista permanece. Aplica em UMA linha (a primeira que casar).
+      // SWAP: só troca placa, motorista permanece. Aplica em UMA linha.
       for (let i = 0; i < linhas.length; i++) {
-        if (!matches(linhas[i], i)) continue
+        if (!matchesLoja(linhas[i], i) || !carroOk(linhas[i])) continue
         const l = { ...linhas[i] }
         if (alt.entra.placa_norm) l.placa_norm = alt.entra.placa_norm
         if (alt.entra.placa_raw) l.placa_raw = alt.entra.placa_raw
         linhas[i] = l
         break
       }
-    } else {
-      // SUBSTITUICAO / INCLUSAO: aplica em todas linhas que casarem (placa pode servir
-      // múltiplas lojas)
-      for (let i = 0; i < linhas.length; i++) {
-        if (!matches(linhas[i], i)) continue
-        const l = { ...linhas[i] }
-        if (alt.entra.placa_norm) l.placa_norm = alt.entra.placa_norm
-        if (alt.entra.placa_raw) l.placa_raw = alt.entra.placa_raw
-        if (alt.entra.motorista_nome) l.motorista_nome = alt.entra.motorista_nome
-        if (alt.entra.motorista_codigo !== null && alt.entra.motorista_codigo !== undefined)
-          l.motorista_codigo = String(alt.entra.motorista_codigo)
-        linhas[i] = l
-      }
+      continue
+    }
+
+    // SUBSTITUICAO / INCLUSAO: aplica em todas as linhas que casarem loja+carro.
+    let aplicou = false
+    let template: LinhaEscala | null = null
+    for (let i = 0; i < linhas.length; i++) {
+      if (!matchesLoja(linhas[i], i)) continue
+      if (template === null) template = linhas[i] // 1ª linha da loja (p/ clonar carro novo)
+      if (!carroOk(linhas[i])) continue
+      const l = { ...linhas[i] }
+      if (alt.entra.placa_norm) l.placa_norm = alt.entra.placa_norm
+      if (alt.entra.placa_raw) l.placa_raw = alt.entra.placa_raw
+      if (alt.entra.motorista_nome) l.motorista_nome = alt.entra.motorista_nome
+      if (alt.entra.motorista_codigo !== null && alt.entra.motorista_codigo !== undefined)
+        l.motorista_codigo = String(alt.entra.motorista_codigo)
+      linhas[i] = l
+      aplicou = true
+    }
+    // Carro NOVO: alteração pra um carro que não existe na escala da loja →
+    // adiciona uma linha clonando o contexto da loja (template). Sem template
+    // (loja fora da escala) não dá pra adicionar — fica pro operador.
+    if (!aplicou && alt.carro != null && template !== null) {
+      linhas.push({
+        ...template,
+        carro_ordem: alt.carro === 1 || alt.carro === 2 ? alt.carro : template.carro_ordem,
+        motorista_nome: alt.entra.motorista_nome ?? template.motorista_nome,
+        motorista_codigo: alt.entra.motorista_codigo != null ? String(alt.entra.motorista_codigo) : null,
+        placa_norm: alt.entra.placa_norm ?? '',
+        placa_raw: alt.entra.placa_raw ?? null,
+      })
     }
   }
   return linhas
@@ -138,6 +162,8 @@ export function parsedToConfirmada(
     tipo: string
     rede_id: string | null
     loja_nome_raw: string | null
+    motivo?: string | null
+    carro?: number | null
     entra: { motorista_nome: string | null; motorista_codigo: number | null; placa_raw: string | null; placa_norm: string | null } | null
     sai: { motorista_nome: string | null; placa_norm: string | null } | null
   }
@@ -146,6 +172,7 @@ export function parsedToConfirmada(
     tipo: parsed.tipo,
     rede_id: parsed.rede_id,
     loja_raw: parsed.loja_nome_raw,
+    carro: parsed.carro ?? extraiCarroAlt(parsed.motivo) ?? extraiCarroAlt(parsed.loja_nome_raw),
     entra: parsed.entra,
     sai: parsed.sai,
   }
