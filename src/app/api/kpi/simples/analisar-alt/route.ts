@@ -6,6 +6,7 @@ import { parseAlteracoesV2 } from '@/lib/parsers/alteracoes-v2'
 import { blocoToParsed } from '@/lib/parsers/alteracoes-v2-adapter'
 import { buildLookupContext } from '@/lib/parsers/lookup-canonical'
 import { parseAlteracaoPdfTabular } from '@/lib/parsers/alteracao-pdf-tabular'
+import { getDocument } from 'pdfjs-serverless'
 import { parseAlteracaoTextoLivre } from '@/lib/parsers/alteracao-texto-livre'
 import { inferirSaiDaEscala } from '@/lib/parsers/inferir-sai'
 import type { ParseContext } from '@/lib/parsers/alteracoes-v2.types'
@@ -39,18 +40,39 @@ async function extrairAlteracoesPdf(
     // ignora, tenta fallback texto
   }
 
+  // pdf-parse é rápido mas falha em fontes CID/sem ToUnicode (devolve vazio mesmo
+  // havendo texto). Nesse caso cai pro pdfjs, que lê essas fontes (provado no PDF
+  // de alteração 06.06: pdf-parse=0 chars, pdfjs=641 chars).
   let text = ''
   try {
     text = (await pdfParse(buf)).text
   } catch {
     text = ''
   }
-  // PDF sem camada de texto = foto/print (imagem). pdf-parse não extrai nada.
-  // Sinaliza pra UI avisar "cole o texto" em vez de devolver 0 alterações em silêncio.
+  if (text.replace(/\s/g, '').length < 8) {
+    text = await extrairTextoPdfjs(buf)
+  }
+  // Só é imagem (foto/print) de verdade quando NEM o pdfjs extrai texto.
   if (text.replace(/\s/g, '').length < 8) {
     return { alteracoes: [], fonte: 'pdf-imagem', semTexto: true }
   }
   return { alteracoes: parseTextoV2(text, ctx), fonte: 'pdf-texto' }
+}
+
+/** Extrai texto plano via pdfjs (lê fontes CID que o pdf-parse perde). */
+async function extrairTextoPdfjs(buf: Buffer): Promise<string> {
+  try {
+    const pdf = await getDocument({ data: new Uint8Array(buf), useSystemFonts: true }).promise
+    let txt = ''
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i)
+      const content = await page.getTextContent()
+      txt += content.items.map((it) => ('str' in it ? (it as { str: string }).str : '')).join(' ') + '\n'
+    }
+    return txt
+  } catch {
+    return ''
+  }
 }
 
 
