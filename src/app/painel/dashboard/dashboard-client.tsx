@@ -277,10 +277,11 @@ function Erro({ onRetry }: { onRetry: () => void }) {
   )
 }
 
-type DashView = 'resumo' | 'agir' | 'tendencias'
+type DashView = 'resumo' | 'agir' | 'rede' | 'tendencias'
 const DASH_VIEWS: [DashView, string][] = [
   ['resumo', 'Como foi'],
   ['agir', 'Onde agir'],
+  ['rede', 'Por rede'],
   ['tendencias', 'Tendências'],
 ]
 
@@ -462,20 +463,10 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
       </section>
       )}
 
-      {/* ═══════ VIEW 3 — TENDÊNCIAS E ANÁLISE ═══════ */}
-      {view === 'tendencias' && (
-      <section key="v-tend" data-tour="tendencias" className="space-y-5 animate-fade-up">
-        <SecaoHead n="03" titulo="Tendências e análise" sub="Como o período evoluiu dia a dia." />
-
-        {m.serie.length > 1 && <SerieChart serie={m.serie} />}
-
-        {(m.serieTempos.length >= 2 || m.distHorarioSaida.some(h => h.entregas > 0)) && (
-          <div data-tour="tendencias-tempos" className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-            <EvolucaoTempos m={m} />
-            <DistribuicaoHoraria m={m} />
-            <DistribuicaoVolta m={m} />
-          </div>
-        )}
+      {/* ═══════ VIEW 3 — POR REDE ═══════ */}
+      {view === 'rede' && (
+      <section key="v-rede" data-tour="tendencias" className="space-y-5 animate-fade-up">
+        <SecaoHead n="03" titulo="Por rede" sub="Desempenho de cada rede e onde puxar o resultado." />
 
         <ComparativoRede m={m} />
 
@@ -503,8 +494,6 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
           </Painel>
         </div>
 
-        {m.topMotoristas.length > 0 && <TopMotoristas m={m} />}
-
         {/* Export mensal por rede */}
         <div data-tour="tendencias-export" className="flex flex-wrap items-center gap-1.5 border-t border-[var(--color-border)] pt-5">
           <span className="mr-1 inline-flex items-center gap-1.5 text-[11px] text-[var(--color-fg-subtle)]">
@@ -516,6 +505,25 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
             </a>
           ))}
         </div>
+      </section>
+      )}
+
+      {/* ═══════ VIEW 4 — TENDÊNCIAS ═══════ */}
+      {view === 'tendencias' && (
+      <section key="v-tend" data-tour="tendencias" className="space-y-5 animate-fade-up">
+        <SecaoHead n="04" titulo="Tendências e análise" sub="Como o período evoluiu dia a dia." />
+
+        {m.serie.length > 1 && <SerieChart serie={m.serie} />}
+
+        {(m.serieTempos.length >= 2 || m.distHorarioSaida.some(h => h.entregas > 0)) && (
+          <div data-tour="tendencias-tempos" className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <EvolucaoTempos m={m} />
+            <DistribuicaoHoraria m={m} />
+            <DistribuicaoVolta m={m} />
+          </div>
+        )}
+
+        {m.topMotoristas.length > 0 && <TopMotoristas m={m} />}
       </section>
       )}
     </div>
