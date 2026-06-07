@@ -162,8 +162,9 @@ function VisaoGeral(props: {
   const toggleRede = (r: string) => setRedes(redes.includes(r) ? redes.filter(x => x !== r) : [...redes, r])
 
   return (
-    <div className="space-y-10">
-      {/* Filtros */}
+    <div className="space-y-8">
+      {/* Filtros + chips num header STICKY — não somem ao rolar o dashboard. */}
+      <div className="sticky top-0 z-20 -mx-5 space-y-3 border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 px-5 py-3 backdrop-blur sm:-mx-8 sm:px-8">
       <div className="flex flex-wrap items-center gap-3">
         <div data-tour="periodo" className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-0.5 shadow-soft">
           {(['dia', 'semana', 'mes', 'ano'] as Periodo[]).map(p => (
@@ -209,6 +210,7 @@ function VisaoGeral(props: {
         {REDES.map(r => (
           <Chip key={r} ativo={redes.includes(r)} onClick={() => toggleRede(r)}>{REDE_LABEL[r] ?? r}</Chip>
         ))}
+      </div>
       </div>
 
       {carregando ? <Skeleton /> : erro ? <Erro onRetry={onRetry} /> : !m || m.total === 0 ? <Vazio /> : (
@@ -275,6 +277,30 @@ function Erro({ onRetry }: { onRetry: () => void }) {
   )
 }
 
+type DashView = 'resumo' | 'agir' | 'tendencias'
+const DASH_VIEWS: [DashView, string][] = [
+  ['resumo', 'Como foi'],
+  ['agir', 'Onde agir'],
+  ['tendencias', 'Tendências'],
+]
+
+// Seletor das 3 views (antes era um scroll só com as 3 camadas empilhadas).
+function DashViewTabs({ view, setView }: { view: DashView; setView: (v: DashView) => void }) {
+  return (
+    <div className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-0.5 shadow-soft">
+      {DASH_VIEWS.map(([v, label]) => (
+        <button
+          key={v} onClick={() => setView(v)}
+          className={[
+            'h-8 rounded-[var(--radius-sm)] px-4 text-[12px] font-medium transition-[background-color,color,transform] duration-150 active:scale-[0.97]',
+            view === v ? 'bg-[var(--color-accent)] text-[var(--color-accent-fg)] shadow-soft' : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]',
+          ].join(' ')}
+        >{label}</button>
+      ))}
+    </div>
+  )
+}
+
 function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas | null; mes: string; periodo: Periodo; data: string }) {
   const lojaHref = (rede: string, loja: string) =>
     `/painel/loja?rede=${encodeURIComponent(rede)}&loja=${encodeURIComponent(loja)}&periodo=${periodo}&data=${data}`
@@ -295,10 +321,14 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
     return [...map.values()].sort((a, b) => (b.sem + b.nao) - (a.sem + a.nao)).slice(0, 10)
   }, [m])
 
+  const [view, setView] = useState<DashView>('resumo')
   return (
-    <div className="space-y-14">
-      {/* ═══════ CAMADA 1 — COMO FOI A OPERAÇÃO ═══════ */}
-      <section data-tour="resumo" className="space-y-4 animate-fade-up">
+    <div className="space-y-8">
+      <DashViewTabs view={view} setView={setView} />
+
+      {/* ═══════ VIEW 1 — COMO FOI A OPERAÇÃO ═══════ */}
+      {view === 'resumo' && (
+      <section key="v-resumo" data-tour="resumo" className="space-y-4 animate-fade-up">
         <SecaoHead n="01" titulo="Como foi a operação" sub="O resultado do período num olhar." />
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
@@ -370,9 +400,11 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
           </div>
         </div>
       </section>
+      )}
 
-      {/* ═══════ CAMADA 2 — ONDE AGIR AGORA ═══════ */}
-      <section data-tour="agir" className="space-y-5 animate-fade-up" style={{ animationDelay: '80ms' }}>
+      {/* ═══════ VIEW 2 — ONDE AGIR AGORA ═══════ */}
+      {view === 'agir' && (
+      <section key="v-agir" data-tour="agir" className="space-y-5 animate-fade-up">
         <SecaoHead n="02" titulo="Onde agir agora" sub="Lojas com problema e os clientes/rotas mais lentos." />
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
           <div data-tour="agir-tabela" className={`overflow-hidden lg:col-span-3 ${CARD}`}>
@@ -428,9 +460,11 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
           </div>
         )}
       </section>
+      )}
 
-      {/* ═══════ CAMADA 3 — TENDÊNCIAS E ANÁLISE ═══════ */}
-      <section data-tour="tendencias" className="space-y-5 animate-fade-up" style={{ animationDelay: '160ms' }}>
+      {/* ═══════ VIEW 3 — TENDÊNCIAS E ANÁLISE ═══════ */}
+      {view === 'tendencias' && (
+      <section key="v-tend" data-tour="tendencias" className="space-y-5 animate-fade-up">
         <SecaoHead n="03" titulo="Tendências e análise" sub="Como o período evoluiu dia a dia." />
 
         {m.serie.length > 1 && <SerieChart serie={m.serie} />}
@@ -483,6 +517,7 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
           ))}
         </div>
       </section>
+      )}
     </div>
   )
 }
