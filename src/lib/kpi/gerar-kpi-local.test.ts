@@ -1,0 +1,83 @@
+import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { gerarKpiLocal, rotaToLinha } from './gerar-kpi-local'
+import type { RotaKpi } from '@/lib/types/kpi'
+import type { LinhaEscala } from '@/lib/types/escala'
+
+const DIA20 = join(process.cwd(), 'docs', 'conversas-tia-erica', 'dia-20')
+
+function arq(rel: string) {
+  return { nome: rel.split('/').pop()!, buffer: readFileSync(join(DIA20, rel)) }
+}
+
+describe('gerarKpiLocal (núcleo offline)', () => {
+  it('gera XLSX + PDF por rede a partir de escala + Unitrac reais, sem nuvem', async () => {
+    const escalas = [arq('escalas/ESCALA GERAL DE MAIO 1 (7).xlsx')]
+    // Usa o Unitrac XLSX: o caminho .pdf (parseUnitracPdf → pdf-parse) precisa do
+    // worker do pdfjs, que o vitest não inicializa (mesma razão pela qual os testes
+    // de unitrac-pdf usam texto). Esse caminho roda no Node real (rota + Electron) e
+    // é validado no E2E offline da Fase 6.
+    const unitracs = [arq('unitrac/relatorio_9573.xlsx')]
+
+    const saidas = await gerarKpiLocal({
+      escalas,
+      unitracs,
+      cadastro: { lojas: [], veiculos: [] }, // offline puro, sem snapshot de cadastro
+      data: '2026-05-20',
+    })
+
+    expect(saidas.length).toBeGreaterThanOrEqual(1)
+    for (const s of saidas) {
+      expect(s.rede_id).toBeTruthy()
+      expect(s.linhas).toBeGreaterThan(0)
+      expect(s.xlsx.length).toBeGreaterThan(0)
+      expect(s.xlsx_com_cd.length).toBeGreaterThan(0)
+      expect(s.pdf.length).toBeGreaterThan(0)
+      expect(s.pdf_com_cd.length).toBeGreaterThan(0)
+      // XLSX começa com a assinatura ZIP (PK); PDF com "%PDF".
+      expect(s.xlsx.subarray(0, 2).toString('latin1')).toBe('PK')
+      expect(s.pdf.subarray(0, 4).toString('latin1')).toBe('%PDF')
+    }
+  }, 60_000)
+
+  it('rotaToLinha mapeia rota+escala pra linha do gerador', () => {
+    const escala = {
+      rede_id: 'GUANABARA',
+      loja_nome_raw: 'Loja 1',
+      loja_codigo_raw: '1',
+      motorista_nome: 'FULANO',
+      motorista_codigo: 10,
+      placa_norm: 'ABC1234',
+      carro_ordem: 1,
+      data_entrega: '2026-05-20',
+    } as unknown as LinhaEscala
+    const rota = {
+      escala_linha_id: 'esc-0',
+      placa_norm: 'ABC1234',
+      placa_real: null,
+      saida_cd: null,
+      chegada_base: null,
+      paradas: [],
+      anomalias_codigos: [],
+      status: 'OK',
+    } as unknown as RotaKpi
+
+    const linha = rotaToLinha(rota, escala, 1)
+    expect(linha.ordem).toBe(1)
+    expect(linha.loja_nome).toBe('Loja 1')
+    expect(linha.placa).toBe('ABC1234')
+    expect(linha.motorista).toBe('FULANO')
+  })
+
+  it('lança erro claro quando a escala não tem linhas', async () => {
+    await expect(
+      gerarKpiLocal({
+        escalas: [{ nome: 'vazio.xlsx', buffer: Buffer.from('') }],
+        unitracs: [],
+        cadastro: { lojas: [], veiculos: [] },
+        data: '2026-05-20',
+      }),
+    ).rejects.toThrow(/escala/i)
+  })
+})

@@ -9,6 +9,7 @@ import { aplicarAlteracoes, parsedToConfirmada } from '@/lib/kpi/aplicar-alterac
 import type { AlteracaoParsed } from '@/lib/parsers/alteracao-text'
 import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
+import { rotaToLinha } from '@/lib/kpi/gerar-kpi-local'
 import { REDE_NOMES_CANONICOS } from '@/lib/kpi/kpi-styles'
 import { derivarStatus, type StatusRota, type CategoriaRevisao, type NaturezaRevisao } from '@/lib/kpi/status-rota'
 import { partitionSettled } from '@/lib/utils/partition-settled'
@@ -96,41 +97,6 @@ type AltConfirmada = {
   loja_raw: string | null
   entra: { motorista_nome: string | null; motorista_codigo: number | null; placa_raw: string | null; placa_norm: string | null } | null
   sai: { motorista_nome: string | null; placa_norm: string | null } | null
-}
-
-function rotaToLinha(rota: RotaKpi, escala: LinhaEscala, ordem: number): LinhaParaKpi {
-  const p1 = rota.paradas[0] ?? null
-  const p2 = rota.paradas[1] ?? null
-  const p3 = rota.paradas[2] ?? null
-
-  const motorista = escala.motorista_nome ?? null
-
-  return {
-    kpi_id: 'simples',
-    escala_linha_id: rota.escala_linha_id,
-    ordem,
-    loja_nome: escala.loja_nome_raw,
-    motorista,
-    placa: rota.placa_real ?? rota.placa_norm,
-    carro_ordem: escala.carro_ordem,
-    saida_cd: rota.saida_cd,
-    chegada_base: rota.chegada_base ?? null,
-    chd_loja_1: p1?.chegada ?? null,
-    saida_loja_1: p1?.saida ?? null,
-    tempo_loja_1_min: p1?.duracao_min ?? null,
-    chd_loja_2: p2?.chegada ?? null,
-    saida_loja_2: p2?.saida ?? null,
-    tempo_loja_2_min: p2?.duracao_min ?? null,
-    chd_loja_3: p3?.chegada ?? null,
-    saida_loja_3: p3?.saida ?? null,
-    tempo_loja_3_min: p3?.duracao_min ?? null,
-    observacao: rota.placa_real
-      ? `Troca de carro: entregue pela placa ${rota.placa_real} (escala: ${rota.placa_norm ?? '—'}).`
-      : null,
-    anomalias_codigos: rota.anomalias_codigos,
-    motorista_codigo: escala.motorista_codigo,
-    rota_status: rota.status,
-  }
 }
 
 // Wrapper para a função canônica (em src/lib/kpi/aplicar-alteracoes.ts)
