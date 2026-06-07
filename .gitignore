@@ -51,3 +51,7 @@ docs/backup/
 _varredura/
 _tmp_*.ts
 _tmp_*.md
+
+# Electron (app desktop) — build artifacts
+electron/dist/
+release/

@@ -2,6 +2,7 @@
   "name": "kpi-transmonseg",
   "version": "0.1.0",
   "private": true,
+  "main": "electron/dist/main.cjs",
   "description": "Sistema de geração e gestão de KPI de entregas da TRANSMONSEG: parsers de escala (5 redes), matcher com relatório Unitrac, geração de XLSX/PDF, alterações de motorista/placa e histórico auditável.",
   "author": "Joaquim Salles",
   "homepage": "https://kpi-transmonseg.vercel.app",
@@ -26,7 +27,11 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "app:typecheck": "tsc -p electron/tsconfig.json",
+    "app:bundle": "node electron/build.mjs",
+    "app:dev": "node electron/build.mjs && electron .",
+    "app:build": "node electron/build.mjs && electron-builder"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
@@ -57,6 +62,9 @@
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^4.1.6",
     "dotenv": "^17.4.2",
+    "electron": "^42.3.3",
+    "electron-builder": "^26.15.0",
+    "esbuild": "^0.28.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "happy-dom": "^20.9.0",

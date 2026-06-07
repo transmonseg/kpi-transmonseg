@@ -1,0 +1,31 @@
+appId: br.com.transmonseg.kpi
+productName: KPI TransMonSeg
+copyright: TRANSMONSEG
+
+directories:
+  output: release
+  buildResources: electron/build-resources
+
+# O que entra no app empacotado: o bundle do Electron, o renderer e os assets do
+# KPI (template xlsx + logo). O código do site (src/app, .next) NÃO é incluído —
+# o Electron já tem `src/lib` bundlado dentro de electron/dist/main.cjs.
+files:
+  - electron/dist/**/*
+  - electron/renderer/**/*
+  - package.json
+
+extraResources:
+  - from: src/assets
+    to: assets
+
+win:
+  target:
+    - nsis
+  artifactName: ${productName}-${version}-setup.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: KPI TransMonSeg
