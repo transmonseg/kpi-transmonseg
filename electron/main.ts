@@ -3,7 +3,7 @@ import { createServer } from 'node:net'
 import http from 'node:http'
 import { spawn, type ChildProcess } from 'node:child_process'
 import path from 'node:path'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { carregarCadastroLocal, atualizarCadastroSeOnline, statusCadastro } from './cadastro'
 import { enfileirarSaidas, listarFila, sincronizarFila } from './fila-upload'
 import { gerarKpiLocalPreview, type GerarOfflineReq } from './gerar-offline'
@@ -11,19 +11,35 @@ import { gerarKpiLocalPreview, type GerarOfflineReq } from './gerar-offline'
 // ─── Ambiente ────────────────────────────────────────────────────────────────
 // Em dev, carrega o .env.local do repo (Supabase URL/chave). Empacotado, as vars
 // vêm do ambiente do operador (ou de um .env ao lado do executável, se existir).
-function carregarEnv() {
-  const candidatos = app.isPackaged
-    ? [path.join(process.resourcesPath, '.env'), path.join(path.dirname(app.getPath('exe')), '.env')]
-    : [path.join(app.getAppPath(), '.env.local')]
-  for (const p of candidatos) {
-    if (!existsSync(p)) continue
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      require('dotenv').config({ path: p })
-    } catch {
-      /* dotenv é devDep — em prod sem dotenv as vars vêm do ambiente do SO */
+// Parser .env simples (KEY=VALUE por linha), SEM dependência — `dotenv` é devDep e
+// não vai pro app empacotado. Não sobrescreve vars já definidas (ambiente do SO e
+// arquivos carregados antes têm precedência).
+function carregarArquivoEnv(p: string) {
+  if (!existsSync(p)) return
+  let txt: string
+  try { txt = readFileSync(p, 'utf8') } catch { return }
+  for (const linha of txt.split(/\r?\n/)) {
+    const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*)$/.exec(linha)
+    if (!m) continue
+    let val = m[2].trim()
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1)
     }
+    if (process.env[m[1]] === undefined) process.env[m[1]] = val
   }
+}
+
+function carregarEnv() {
+  // runtime.env (vars PÚBLICAS do Supabase) viaja junto do bundle — garante login
+  // funcionando no app empacotado mesmo sem .env.local na máquina. .env.local (dev)
+  // e o ambiente do SO têm precedência (carregados antes / não sobrescritos).
+  if (!app.isPackaged) carregarArquivoEnv(path.join(app.getAppPath(), '.env.local'))
+  else {
+    carregarArquivoEnv(path.join(process.resourcesPath, '.env'))
+    carregarArquivoEnv(path.join(path.dirname(app.getPath('exe')), '.env'))
+  }
+  // Fallback público (sempre por último — só preenche o que ainda falta).
+  carregarArquivoEnv(path.join(__dirname, 'runtime.env'))
 }
 
 // Pasta do build standalone do Next (server.js + .next + node_modules + static/public).
