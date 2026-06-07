@@ -1,36 +1,122 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
-import { readFile, writeFile } from 'node:fs/promises'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { createServer } from 'node:net'
+import http from 'node:http'
+import { spawn, type ChildProcess } from 'node:child_process'
 import path from 'node:path'
-import { gerarKpiLocal } from '@/lib/kpi/gerar-kpi-local'
+import { existsSync } from 'node:fs'
 import { carregarCadastroLocal, atualizarCadastroSeOnline, statusCadastro } from './cadastro'
 import { enfileirarSaidas, listarFila, sincronizarFila } from './fila-upload'
+import { gerarKpiLocalPreview, type GerarOfflineReq } from './gerar-offline'
 
-// Em dev, carrega as variáveis do repo (.env.local) — Supabase URL/chave pro
-// snapshot do cadastro e pra fila. Empacotado, as vars vêm do ambiente do operador.
-if (!app.isPackaged) {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require('dotenv').config({ path: path.join(app.getAppPath(), '.env.local') })
-  } catch {
-    /* dotenv é devDep — ausência não quebra o app */
+// ─── Ambiente ────────────────────────────────────────────────────────────────
+// Em dev, carrega o .env.local do repo (Supabase URL/chave). Empacotado, as vars
+// vêm do ambiente do operador (ou de um .env ao lado do executável, se existir).
+function carregarEnv() {
+  const candidatos = app.isPackaged
+    ? [path.join(process.resourcesPath, '.env'), path.join(path.dirname(app.getPath('exe')), '.env')]
+    : [path.join(app.getAppPath(), '.env.local')]
+  for (const p of candidatos) {
+    if (!existsSync(p)) continue
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require('dotenv').config({ path: p })
+    } catch {
+      /* dotenv é devDep — em prod sem dotenv as vars vêm do ambiente do SO */
+    }
   }
 }
 
-// Assets do KPI (template xlsx + logo). Em dev ficam em src/assets do repo; quando
-// empacotado, o electron-builder copia pra `resources/assets` (ver electron-builder.yml).
-const ASSETS_DIR = app.isPackaged
-  ? path.join(process.resourcesPath, 'assets')
-  : path.join(app.getAppPath(), 'src', 'assets')
-process.env.KPI_ASSETS_DIR = ASSETS_DIR
+// Pasta do build standalone do Next (server.js + .next + node_modules + static/public).
+function standaloneDir(): string {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, 'standalone')
+    : path.join(app.getAppPath(), '.next', 'standalone')
+}
 
+// Assets do KPI (template xlsx + logo) — usados pela geração offline.
+function assetsDir(): string {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, 'assets')
+    : path.join(app.getAppPath(), 'src', 'assets')
+}
+
+let serverProc: ChildProcess | null = null
+let serverPort = 0
 let win: BrowserWindow | null = null
 
-function createWindow() {
+// Porta TCP livre no loopback.
+function portaLivre(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const srv = createServer()
+    srv.unref()
+    srv.on('error', reject)
+    srv.listen(0, '127.0.0.1', () => {
+      const addr = srv.address()
+      const porta = typeof addr === 'object' && addr ? addr.port : 0
+      srv.close(() => resolve(porta))
+    })
+  })
+}
+
+// Espera o servidor Next aceitar conexões (poll HTTP até responder ou timeout).
+function esperarServidor(porta: number, timeoutMs = 30000): Promise<void> {
+  const inicio = Date.now()
+  return new Promise((resolve, reject) => {
+    const tentar = () => {
+      const req = http.get({ host: '127.0.0.1', port: porta, path: '/', timeout: 2000 }, (res) => {
+        res.destroy()
+        resolve()
+      })
+      req.on('error', () => {
+        if (Date.now() - inicio > timeoutMs) reject(new Error('Servidor Next não subiu a tempo.'))
+        else setTimeout(tentar, 300)
+      })
+      req.on('timeout', () => { req.destroy(); setTimeout(tentar, 300) })
+    }
+    tentar()
+  })
+}
+
+// Sobe o server.js standalone como processo Node (Electron rodando como node).
+async function iniciarServidor(): Promise<number> {
+  const dir = standaloneDir()
+  const serverJs = path.join(dir, 'server.js')
+  if (!existsSync(serverJs)) {
+    throw new Error(
+      `server.js não encontrado em ${dir}.\n` +
+      'Rode `npm run app:bundle` (que faz o build standalone) antes de abrir o app.',
+    )
+  }
+
+  const porta = await portaLivre()
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    ELECTRON_RUN_AS_NODE: '1',
+    NODE_ENV: 'production',
+    PORT: String(porta),
+    HOSTNAME: '127.0.0.1',
+    // Sinaliza pro código compartilhado (middleware/layout/rotas) o modo desktop.
+    // Tudo que olha essa flag é no-op no site quando ela não está setada.
+    DESKTOP_APP: '1',
+    KPI_ASSETS_DIR: assetsDir(),
+  }
+
+  serverProc = spawn(process.execPath, [serverJs], { cwd: dir, env, stdio: 'inherit' })
+  serverProc.on('exit', (code) => {
+    if (code && code !== 0) console.error(`[next] servidor saiu com código ${code}`)
+    serverProc = null
+  })
+
+  await esperarServidor(porta)
+  return porta
+}
+
+function createWindow(porta: number) {
   win = new BrowserWindow({
-    width: 1120,
-    height: 780,
-    minWidth: 900,
-    minHeight: 600,
+    width: 1280,
+    height: 860,
+    minWidth: 980,
+    minHeight: 640,
     title: 'KPI TransMonSeg',
     backgroundColor: '#0b1220',
     webPreferences: {
@@ -40,98 +126,84 @@ function createWindow() {
     },
   })
   win.removeMenu()
-  void win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'))
-}
 
-type GerarReq = {
-  escalaPaths: string[]
-  unitracPaths: string[]
-  data: string
-}
-
-function registerIpc() {
-  // Abre o seletor de arquivos (escala/Unitrac: xlsx ou pdf).
-  ipcMain.handle('escolher-arquivos', async () => {
-    const r = await dialog.showOpenDialog(win!, {
-      title: 'Escolher arquivos (escala / Unitrac)',
-      properties: ['openFile', 'multiSelections'],
-      filters: [{ name: 'Planilhas e PDFs', extensions: ['xlsx', 'xls', 'pdf'] }],
-    })
-    return r.canceled ? [] : r.filePaths
+  // Links externos (mailto, http externo) abrem no navegador do SO, não na janela.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (!url.startsWith(`http://127.0.0.1:${porta}`)) {
+      void shell.openExternal(url)
+      return { action: 'deny' }
+    }
+    return { action: 'allow' }
   })
 
-  // Status do snapshot do cadastro (data do último download + nº de lojas).
+  void win.loadURL(`http://127.0.0.1:${porta}/painel`)
+}
+
+// ─── IPC: cadastro + fila + geração offline ──────────────────────────────────
+function registerIpc() {
   ipcMain.handle('cadastro-status', async () => statusCadastro())
-
-  // Força atualizar o snapshot do cadastro (se houver internet).
   ipcMain.handle('cadastro-atualizar', async () => atualizarCadastroSeOnline())
-
-  // Lista a fila de upload (KPIs gerados aguardando subir).
   ipcMain.handle('fila-listar', async () => listarFila())
-
-  // Sincroniza a fila com o Supabase (sobe os pendentes).
   ipcMain.handle('fila-sincronizar', async () => sincronizarFila())
 
-  // Gera o KPI offline e salva os arquivos numa pasta escolhida.
-  ipcMain.handle('gerar', async (_e, req: GerarReq) => {
+  // Geração OFFLINE: recebe os arquivos (buffers) + data + alterações da tela real,
+  // roda o motor local (gerarKpiLocal) e devolve o MESMO formato RedeResult[] que a
+  // UI já renderiza (base64 xlsx/pdf + preview por linha). Enfileira pra subir depois.
+  ipcMain.handle('gerar-offline', async (_e, req: GerarOfflineReq) => {
     try {
-      if (!req.escalaPaths?.length) return { ok: false, error: 'Escolha ao menos uma escala.' }
-      if (!req.unitracPaths?.length) return { ok: false, error: 'Escolha ao menos um relatório Unitrac.' }
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(req.data || '')) return { ok: false, error: 'Data inválida (use AAAA-MM-DD).' }
-
-      const escalas = await Promise.all(
-        req.escalaPaths.map(async (p) => ({ nome: path.basename(p), buffer: await readFile(p) })),
-      )
-      const unitracs = await Promise.all(
-        req.unitracPaths.map(async (p) => ({ nome: path.basename(p), buffer: await readFile(p) })),
-      )
-
       const cadastro = await carregarCadastroLocal()
-      const saidas = await gerarKpiLocal({ escalas, unitracs, cadastro, data: req.data })
-      if (saidas.length === 0) return { ok: false, error: 'Nada gerado (escala/Unitrac não casaram em nenhuma rede).' }
-
-      // Pasta destino.
-      const dest = await dialog.showOpenDialog(win!, {
-        title: 'Onde salvar os KPIs?',
-        properties: ['openDirectory', 'createDirectory'],
-      })
-      if (dest.canceled || !dest.filePaths[0]) return { ok: false, error: 'Salvamento cancelado.' }
-      const outDir = dest.filePaths[0]
-
-      const salvos: string[] = []
-      for (const s of saidas) {
-        const base = `KPI-${s.rede_id}-${req.data}`
-        await writeFile(path.join(outDir, `${base}.xlsx`), s.xlsx)
-        await writeFile(path.join(outDir, `${base}.pdf`), s.pdf)
-        salvos.push(base)
+      const redes = await gerarKpiLocalPreview(req, cadastro)
+      if (redes.length > 0) {
+        await enfileirarSaidas(
+          req.data,
+          redes.map((r) => ({
+            rede_id: r.rede_id,
+            rede_nome: r.rede_nome,
+            xlsx: Buffer.from(r.xlsxBase64, 'base64'),
+            xlsx_com_cd: r.xlsxComChegadaBase64 ? Buffer.from(r.xlsxComChegadaBase64, 'base64') : Buffer.alloc(0),
+            pdf: Buffer.from(r.pdfBase64, 'base64'),
+            pdf_com_cd: r.pdfComChegadaBase64 ? Buffer.from(r.pdfComChegadaBase64, 'base64') : Buffer.alloc(0),
+            linhas: r.qtd_rotas,
+          })),
+        )
       }
-
-      // Enfileira pra subir ao Supabase quando houver internet.
-      await enfileirarSaidas(req.data, saidas)
-
-      return {
-        ok: true,
-        outDir,
-        redes: saidas.map((s) => ({ rede_id: s.rede_id, rede_nome: s.rede_nome, linhas: s.linhas })),
-        cadastro: await statusCadastro(),
-      }
+      return { ok: true, redes }
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : String(e) }
     }
   })
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  carregarEnv()
   registerIpc()
-  createWindow()
-  // Best-effort: tenta atualizar o cadastro e subir a fila ao abrir (se online).
+  try {
+    serverPort = await iniciarServidor()
+    createWindow(serverPort)
+  } catch (e) {
+    // Sem servidor não há app — mostra o erro numa janela mínima.
+    win = new BrowserWindow({ width: 720, height: 420, title: 'KPI TransMonSeg — erro' })
+    win.removeMenu()
+    const msg = e instanceof Error ? e.message : String(e)
+    void win.loadURL('data:text/html,' + encodeURIComponent(
+      `<body style="font-family:system-ui;background:#0b1220;color:#e5e7eb;padding:40px">
+       <h2>Não consegui iniciar o app</h2><pre style="white-space:pre-wrap">${msg}</pre></body>`,
+    ))
+  }
+
+  // Best-effort: atualiza o cadastro e sobe a fila ao abrir (se online).
   void atualizarCadastroSeOnline()
   void sincronizarFila()
+
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0 && serverPort) createWindow(serverPort)
   })
 })
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('before-quit', () => {
+  if (serverProc) { serverProc.kill(); serverProc = null }
 })

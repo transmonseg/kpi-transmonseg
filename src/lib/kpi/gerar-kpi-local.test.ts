@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { gerarKpiLocal, rotaToLinha } from './gerar-kpi-local'
+import { gerarKpiLocal, gerarKpiLocalComPreview, rotaToLinha } from './gerar-kpi-local'
 import type { RotaKpi } from '@/lib/types/kpi'
 import type { LinhaEscala } from '@/lib/types/escala'
 
@@ -38,6 +38,33 @@ describe('gerarKpiLocal (núcleo offline)', () => {
       // XLSX começa com a assinatura ZIP (PK); PDF com "%PDF".
       expect(s.xlsx.subarray(0, 2).toString('latin1')).toBe('PK')
       expect(s.pdf.subarray(0, 4).toString('latin1')).toBe('%PDF')
+    }
+  }, 60_000)
+
+  it('gerarKpiLocalComPreview devolve preview por linha (pro app desktop)', async () => {
+    const escalas = [arq('escalas/ESCALA GERAL DE MAIO 1 (7).xlsx')]
+    const unitracs = [arq('unitrac/relatorio_9573.xlsx')]
+
+    const saidas = await gerarKpiLocalComPreview({
+      escalas,
+      unitracs,
+      cadastro: { lojas: [], veiculos: [] },
+      data: '2026-05-20',
+    })
+
+    expect(saidas.length).toBeGreaterThanOrEqual(1)
+    for (const s of saidas) {
+      // Uma linha de preview por rota, na mesma quantidade do KPI.
+      expect(s.preview.length).toBe(s.linhas)
+      expect(s.xlsx.length).toBeGreaterThan(0)
+      expect(s.pdf.subarray(0, 4).toString('latin1')).toBe('%PDF')
+      for (const p of s.preview) {
+        expect(typeof p.ordem).toBe('number')
+        expect(typeof p.loja_nome).toBe('string')
+        expect(typeof p.tem_gps).toBe('boolean')
+        // status é um dos rótulos válidos do sistema.
+        expect(p.status).toMatch(/^(ENTREGUE|ENTREGUE_GEO|MUDOU_DE_ROTA|SEM_RASTREADOR|NAO_SAIU_DA_BASE|NAO_FOI_AO_CLIENTE|FORA_DE_BASE)$/)
+      }
     }
   }, 60_000)
 

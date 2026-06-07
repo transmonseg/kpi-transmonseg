@@ -85,6 +85,35 @@ type RedeResult = {
   preview: PreviewLinha[]
 }
 
+// ─── Ponte com o app desktop (Electron) ─────────────────────────────────────
+// No site (browser comum) `window.api` não existe → tudo abaixo é inerte. No app
+// desktop, `window.api.gerarOffline` roda o MESMO motor do servidor, mas local,
+// pra gerar o KPI sem internet. A tela é a mesma; só a fonte dos dados muda.
+type DesktopApi = {
+  isDesktop?: boolean
+  gerarOffline?: (req: {
+    escalas: { nome: string; bytes: Uint8Array }[]
+    unitracs: { nome: string; bytes: Uint8Array }[]
+    data: string
+    alteracoes?: unknown[]
+  }) => Promise<{ ok: true; redes: RedeResult[] } | { ok: false; error: string }>
+}
+
+function getDesktopApi(): DesktopApi | undefined {
+  if (typeof window === 'undefined') return undefined
+  return (window as unknown as { api?: DesktopApi }).api
+}
+
+/** True quando rodando no app desktop E sem internet → usa a geração local. */
+function deveGerarOffline(): boolean {
+  const api = getDesktopApi()
+  return !!api?.isDesktop && !!api.gerarOffline && typeof navigator !== 'undefined' && !navigator.onLine
+}
+
+async function fileParaBytes(f: File): Promise<{ nome: string; bytes: Uint8Array }> {
+  return { nome: f.name, bytes: new Uint8Array(await f.arrayBuffer()) }
+}
+
 function downloadBase64(base64: string, filename: string, mime: string) {
   const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0))
   const url = URL.createObjectURL(new Blob([bytes], { type: mime }))
@@ -806,6 +835,25 @@ export default function KpiSimplesPage() {
 
     startTransition(async () => {
       try {
+        // App desktop SEM internet: gera local (mesmo motor), sem nuvem.
+        if (deveGerarOffline()) {
+          const api = getDesktopApi()!
+          const [escalasBytes, unitracsBytes] = await Promise.all([
+            Promise.all(escalas.map(fileParaBytes)),
+            Promise.all(unitracFiles.map(fileParaBytes)),
+          ])
+          const r = await api.gerarOffline!({
+            escalas: escalasBytes,
+            unitracs: unitracsBytes,
+            data,
+            alteracoes,
+          })
+          if (!r.ok) throw new Error(r.error || 'Falha na geração offline.')
+          setBucketPaths(null) // offline não tem re-gerar via Storage
+          setRedes(r.redes)
+          return
+        }
+
         const [escalaBucketPaths, unitracBucketPaths] = await Promise.all([
           Promise.all(escalas.map(f => uploadComPresign(f, false))),
           Promise.all(unitracFiles.map(f => uploadComPresign(f, true))),

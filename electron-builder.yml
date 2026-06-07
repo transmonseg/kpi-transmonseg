@@ -6,17 +6,20 @@ directories:
   output: release
   buildResources: electron/build-resources
 
-# O que entra no app empacotado: o bundle do Electron, o renderer e os assets do
-# KPI (template xlsx + logo). O código do site (src/app, .next) NÃO é incluído —
-# o Electron já tem `src/lib` bundlado dentro de electron/dist/main.cjs.
+# O que entra no app empacotado: o bundle do Electron (main/preload) + package.json.
+# A interface é o site Next REAL, empacotado em build standalone e colocado em
+# resources/standalone (server.js + .next + node_modules + static/public). O
+# Electron sobe esse servidor local e carrega /painel.
 files:
   - electron/dist/**/*
-  - electron/renderer/**/*
   - package.json
 
 extraResources:
   - from: src/assets
     to: assets
+  # Site Next real (build standalone). O main.ts sobe resources/standalone/server.js.
+  - from: .next/standalone
+    to: standalone
 
 win:
   target:

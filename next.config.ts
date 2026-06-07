@@ -2,6 +2,9 @@ import type { NextConfig } from 'next'
 import path from 'node:path'
 
 const nextConfig: NextConfig = {
+  // Build standalone (server.js auto-contido) APENAS para empacotar o app desktop
+  // (Electron). Inerte na Vercel — só liga quando NEXT_OUTPUT=standalone.
+  output: process.env.NEXT_OUTPUT === 'standalone' ? 'standalone' : undefined,
   turbopack: {
     root: path.resolve(__dirname),
   },

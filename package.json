@@ -29,9 +29,10 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "app:typecheck": "tsc -p electron/tsconfig.json",
+    "app:web": "node electron/build-web.mjs",
     "app:bundle": "node electron/build.mjs",
-    "app:dev": "node electron/build.mjs && electron .",
-    "app:build": "node electron/build.mjs && electron-builder"
+    "app:dev": "node electron/build-web.mjs && node electron/build.mjs && electron .",
+    "app:build": "node electron/build-web.mjs && node electron/build.mjs && electron-builder"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",

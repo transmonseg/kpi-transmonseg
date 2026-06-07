@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { resolveUserDesktopAware } from './desktop-auth'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -25,7 +26,9 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  // No site: getUser() normal. No app desktop offline: cai pra sessão local
+  // (não expulsa pro /login quem já logou). No-op no web (DESKTOP_APP unset).
+  const user = await resolveUserDesktopAware(supabase)
 
   const path = request.nextUrl.pathname
   const isAuthPage = path.startsWith('/login') || path.startsWith('/cadastro')

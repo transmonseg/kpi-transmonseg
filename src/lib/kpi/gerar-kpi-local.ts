@@ -15,14 +15,19 @@ import { parseUnitrac } from '@/lib/parsers/unitrac'
 import {
   cruzaEscalaUnitrac,
   setSemGeo,
+  resolverLojaEsperada,
+  lojaNomeDivergeDaEscala,
   type LojaRow,
 } from '@/lib/kpi/matcher'
 import { aplicarAlteracoes, type AltConfirmada } from '@/lib/kpi/aplicar-alteracoes'
 import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
 import { REDE_NOMES_CANONICOS } from '@/lib/kpi/kpi-styles'
+import { derivarStatus, type StatusRota, type CategoriaRevisao, type NaturezaRevisao } from '@/lib/kpi/status-rota'
+import { haversine } from '@/lib/utils/geo'
 import type { KpiLinha, RotaKpi } from '@/lib/types/kpi'
 import type { LinhaEscala } from '@/lib/types/escala'
+import type { ResumoVeiculo } from '@/lib/types/unitrac'
 
 export type ArquivoEntrada = { nome: string; buffer: Buffer }
 
@@ -92,15 +97,21 @@ export function rotaToLinha(rota: RotaKpi, escala: LinhaEscala, ordem: number): 
   }
 }
 
+type RedeGrupo = { rotas: RotaKpi[]; escala: LinhaEscala[] }
+type Pipeline = {
+  data: string
+  veiculos: ResumoVeiculo[]
+  redeMap: Map<string, RedeGrupo>
+  lojas: LojaRow[]
+}
+
 /**
- * Gera os KPIs (XLSX + PDF, com e sem "Chegada CD") por rede, offline.
- *
- * Replica o miolo da rota `kpi/simples` SEM: Supabase, preview, lineEdits,
- * detecção de anomalia extra e persistência. Usa o snapshot do cadastro no lugar
- * das queries ao banco. Geo: `setSemGeo(true)` (mesma decisão de produção) — o
- * resgate geo restrito à escala (≤500m) continua rodando dentro do matcher.
+ * Pipeline compartilhado (parse escala/Unitrac → matcher → agrupa por rede).
+ * É o miolo comum de `gerarKpiLocal` e `gerarKpiLocalComPreview` — sem Supabase,
+ * usando o snapshot do cadastro. Geo: `setSemGeo(true)` (decisão de produção); o
+ * resgate geo restrito à escala (≤500m) roda dentro do matcher.
  */
-export async function gerarKpiLocal(opts: GerarKpiLocalOpts): Promise<SaidaRede[]> {
+async function prepararPipeline(opts: GerarKpiLocalOpts): Promise<Pipeline> {
   const { escalas, unitracs, cadastro, data, alteracoes } = opts
 
   // 1) Escala(s) → LinhaEscala[] (auto-detecta o formato por arquivo).
@@ -130,7 +141,7 @@ export async function gerarKpiLocal(opts: GerarKpiLocalOpts): Promise<SaidaRede[
 
   // 3) Unitrac(s) → ResumoVeiculo[], mergeando por placa (prefere a parada mais
   //    informativa quando a mesma placa vem em XLSX + PDF).
-  const veiculosMap = new Map<string, import('@/lib/types/unitrac').ResumoVeiculo>()
+  const veiculosMap = new Map<string, ResumoVeiculo>()
   for (const arq of unitracs) {
     let parsed
     if (arq.nome.toLowerCase().endsWith('.pdf')) {
@@ -211,7 +222,7 @@ export async function gerarKpiLocal(opts: GerarKpiLocalOpts): Promise<SaidaRede[
   })
 
   // 6) Agrupa por rede, mantendo a linha de escala pareada com cada rota.
-  const redeMap = new Map<string, { rotas: RotaKpi[]; escala: LinhaEscala[] }>()
+  const redeMap = new Map<string, RedeGrupo>()
   for (const rota of rotas) {
     const escala = escalaMap.get(rota.escala_linha_id)
     if (!escala) continue
@@ -221,7 +232,19 @@ export async function gerarKpiLocal(opts: GerarKpiLocalOpts): Promise<SaidaRede[
     redeMap.get(rede_id)!.escala.push(escala)
   }
 
-  // 7) Por rede: rotaToLinha → linhas → gera XLSX + PDF (com e sem Chegada CD).
+  return { data, veiculos, redeMap, lojas: cadastro.lojas }
+}
+
+/**
+ * Gera os KPIs (XLSX + PDF, com e sem "Chegada CD") por rede, offline.
+ *
+ * Replica o miolo da rota `kpi/simples` SEM: Supabase, preview, lineEdits,
+ * detecção de anomalia extra e persistência.
+ */
+export async function gerarKpiLocal(opts: GerarKpiLocalOpts): Promise<SaidaRede[]> {
+  const { data, redeMap } = await prepararPipeline(opts)
+
+  // Por rede: rotaToLinha → linhas → gera XLSX + PDF (com e sem Chegada CD).
   const saidas: SaidaRede[] = []
   for (const [rede_id, grupo] of redeMap.entries()) {
     const rede_nome = REDE_NOMES_CANONICOS[rede_id] ?? rede_id
@@ -235,6 +258,214 @@ export async function gerarKpiLocal(opts: GerarKpiLocalOpts): Promise<SaidaRede[
     ])
 
     saidas.push({ rede_id, rede_nome, xlsx, xlsx_com_cd, pdf, pdf_com_cd, linhas: linhas.length })
+  }
+
+  return saidas
+}
+
+// ─── Variante COM preview (pro app desktop renderizar a tela igual ao site) ────
+
+/** Linha do preview — espelha o contrato que a tela `painel/kpi/simples` consome. */
+export type PreviewLinhaLocal = {
+  ordem: number
+  loja_nome: string
+  placa: string | null
+  motorista: string | null
+  turno: string
+  tem_gps: boolean
+  ficou_na_base: boolean
+  saida_cd_fmt: string | null
+  chegada_loja_fmt: string | null
+  chegada_base_fmt: string | null
+  tempo_loja_min: number | null
+  confianca: 'HIGH' | 'LOW' | 'UNMATCHED'
+  algoritmo: string
+  geo_dist_metros?: number | null
+  anomalias: string[]
+  status: StatusRota
+  revisar: boolean
+  motivoRevisao: string | null
+  categoria: CategoriaRevisao | null
+  natureza: NaturezaRevisao | null
+  saida_loja_fmt: string | null
+}
+
+export type SaidaRedeComPreview = SaidaRede & {
+  qtd_sem_gps: number
+  avisoParcial: string | null
+  preview: PreviewLinhaLocal[]
+}
+
+// Parsers guardam BRT como Date.UTC(...) — ler getUTCHours direto (convenção do sistema).
+function fmtHoraBRT(d: Date | null | undefined): string | null {
+  if (!d) return null
+  return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`
+}
+
+const JANELA_FIM: Record<string, number> = {
+  PREZUNIC: 12, CARREFOUR: 12, PRINCESA: 12, ASSAI: 12, SUPERPRIX: 12, ATACADAO: 12,
+  GUANABARA: 15, SUPER_PAX: 17, FEIRA_NOVA: 17, EMANUEL: 17, ARMAZEM_GRAO: 18, ZONA_SUL: 23,
+}
+
+/**
+ * Igual a `gerarKpiLocal`, mas também devolve o preview por linha (status,
+ * horários, avisos) — pra o app desktop renderizar a MESMA tela do site offline.
+ *
+ * O preview reusa `derivarStatus` (mesma regra do site). Os mapas auxiliares
+ * (rastreada, foi-a-algum-lugar, entregou-própria-escala, redes-por-placa) são
+ * derivados do próprio relatório/escala offline. Casos raros que no site dependem
+ * de sinais extras (rastreador travado, placa-typo no Unitrac) caem no default
+ * seguro — o status fica correto para a grande maioria das linhas.
+ */
+export async function gerarKpiLocalComPreview(opts: GerarKpiLocalOpts): Promise<SaidaRedeComPreview[]> {
+  const { data, veiculos, redeMap, lojas } = await prepararPipeline(opts)
+
+  // Mapas auxiliares derivados do relatório/escala (espelham os do route).
+  const rastreadas = new Set(veiculos.map(v => v.placa_norm))
+  const paradasPorPlaca = new Map<string, ResumoVeiculo['paradas']>()
+  for (const v of veiculos) paradasPorPlaca.set(v.placa_norm, v.paradas)
+  const foiAlgumLugar = (placa: string | null) => {
+    const ps = placa ? paradasPorPlaca.get(placa) : null
+    return !!ps && ps.some(p => p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE')
+  }
+  // Placas que entregaram ≥1 loja (parada com loja_id) em qualquer rota da escala.
+  const placasComEntrega = new Set<string>()
+  const redesPorPlaca = new Map<string, Set<string>>()
+  let reportMaxHora = 0
+  for (const v of veiculos) {
+    for (const p of v.paradas) {
+      const arr = [p.chegada, p.saida].filter(Boolean) as Date[]
+      for (const d of arr) reportMaxHora = Math.max(reportMaxHora, d.getUTCHours() + d.getUTCMinutes() / 60)
+    }
+  }
+  for (const [rede_id, grupo] of redeMap.entries()) {
+    grupo.rotas.forEach((rota, i) => {
+      const placa = rota.placa_norm
+      if (placa) {
+        if (!redesPorPlaca.has(placa)) redesPorPlaca.set(placa, new Set())
+        redesPorPlaca.get(placa)!.add(grupo.escala[i].rede_id ?? rede_id)
+        if (rota.paradas.some(p => p.loja_id != null)) placasComEntrega.add(placa)
+      }
+    })
+  }
+  const lojaById = new Map(lojas.map(l => [l.id, l]))
+
+  const saidas: SaidaRedeComPreview[] = []
+  for (const [rede_id, grupo] of redeMap.entries()) {
+    const rede_nome = REDE_NOMES_CANONICOS[rede_id] ?? rede_id
+
+    // Ordena igual ao site (loja, depois carro_ordem) pra a numeração bater.
+    const sorted = grupo.rotas
+      .map((rota, i) => ({ rota, esc: grupo.escala[i] }))
+      .sort((a, b) => {
+        const cmp = a.esc.loja_nome_raw.localeCompare(b.esc.loja_nome_raw, 'pt-BR')
+        return cmp !== 0 ? cmp : a.esc.carro_ordem - b.esc.carro_ordem
+      })
+
+    const linhas = sorted.map(({ rota, esc }, idx) => rotaToLinha(rota, esc, idx + 1))
+    const qtd_sem_gps = linhas.filter(l => !l.saida_cd && !l.chd_loja_1).length
+
+    const preview: PreviewLinhaLocal[] = sorted.map(({ rota, esc }, idx) => {
+      const p0 = rota.paradas[0]
+      const temGps = rota.paradas.length > 0 || rastreadas.has(rota.placa_norm ?? '')
+      const ficouNaBase = rota.status === 'sem_entrega' && !!esc.placa_norm
+
+      // Avisos de loja (não mudam o match — explicam o motivo).
+      const esperada = resolverLojaEsperada(esc, lojas)
+      const temEntrega = rota.paradas.some(p => p.loja_id != null)
+      const lojaSemCadastroUnitrac = !temEntrega &&
+        (!esperada || esperada.codigo_unitrac == null || esperada.lat == null || esperada.lng == null)
+      let lojaAmbiguaComGemea: { outra: string } | null = null
+      if (!temEntrega && !lojaSemCadastroUnitrac && esperada && esperada.lat != null && esperada.lng != null) {
+        const gemea = lojas.find(l =>
+          l.id !== esperada.id && l.rede_id === esperada.rede_id &&
+          l.lat != null && l.lng != null &&
+          haversine(esperada.lat!, esperada.lng!, l.lat, l.lng) <= 120)
+        if (gemea) lojaAmbiguaComGemea = { outra: gemea.nome }
+      }
+      let entregouLojaForaEscala: { lojaReal: string } | null = null
+      const pLoja = rota.paradas.find(p => p.classificacao === 'LOJA' && p.loja_id)
+      if (pLoja?.loja_id) {
+        const lr = lojaById.get(pLoja.loja_id)
+        if (lr && lojaNomeDivergeDaEscala(esc.loja_nome_raw, lr)) entregouLojaForaEscala = { lojaReal: lr.nome }
+      }
+
+      const statusInfo = derivarStatus({
+        temGps,
+        ficouNaBase,
+        paradas: rota.paradas.map(p => ({ classificacao: p.classificacao, loja_id: p.loja_id ?? null })),
+        viaGeo: rota._matchMeta?.algorithm === 'geo',
+        viaTroca: rota._matchMeta?.algorithm === 'troca',
+        placaReal: rota.placa_real ?? null,
+        geoConfiavel: rota.geo_confiavel ?? false,
+        placaFoiAlgumLugar: foiAlgumLugar(rota.placa_norm),
+        placaSaiuDaBase: foiAlgumLugar(rota.placa_norm),
+        placaEntregouPropriaEscala: placasComEntrega.has(rota.placa_norm ?? ''),
+        lojaSemCadastroUnitrac,
+        lojaAmbiguaComGemea,
+        entregouLojaForaEscala,
+      })
+
+      const saidaLoja = p0 && p0.chegada && p0.duracao_min != null
+        ? new Date(p0.chegada.getTime() + p0.duracao_min * 60_000)
+        : null
+      const placaDesatualizada = !!rota.placa_unitrac && !!rota.placa_norm && rota.placa_unitrac !== rota.placa_norm
+      const notaDesatualizada = placaDesatualizada
+        ? `Placa da escala (${rota.placa_norm}) desatualizada — no Unitrac é Mercosul (${rota.placa_unitrac}). Pedir atualização da escala.`
+        : null
+      const ehErro = statusInfo.status !== 'ENTREGUE' && statusInfo.status !== 'ENTREGUE_GEO'
+      const outrasRedes = rota.placa_norm
+        ? [...(redesPorPlaca.get(rota.placa_norm) ?? new Set<string>())].filter(r => r !== rede_id)
+        : []
+      const notaMultiEscala = ehErro && outrasRedes.length > 0 && placasComEntrega.has(rota.placa_norm ?? '')
+        ? `Placa também escalada em ${outrasRedes.map(r => REDE_NOMES_CANONICOS[r] ?? r).join(', ')} e entregou lá — pode ser a 2ª rota do dia (não necessariamente erro).`
+        : null
+      const motivoRevisao = [statusInfo.motivoRevisao, notaDesatualizada, notaMultiEscala].filter(Boolean).join(' ') || null
+
+      return {
+        ordem: idx + 1,
+        loja_nome: esc.loja_nome_raw,
+        placa: rota.placa_real ?? rota.placa_norm,
+        motorista: esc.motorista_nome,
+        turno: esc.turno,
+        tem_gps: temGps,
+        ficou_na_base: ficouNaBase,
+        saida_cd_fmt: fmtHoraBRT(rota.saida_cd),
+        chegada_loja_fmt: fmtHoraBRT(rota.paradas[0]?.chegada),
+        chegada_base_fmt: fmtHoraBRT(rota.chegada_base),
+        tempo_loja_min: rota.paradas[0]?.duracao_min ?? null,
+        confianca: rota._matchMeta?.confidence ?? 'UNMATCHED',
+        algoritmo: rota._matchMeta?.algorithm ?? 'none',
+        geo_dist_metros: rota.geo_dist_metros ?? null,
+        anomalias: rota.anomalias_codigos,
+        status: statusInfo.status,
+        revisar: statusInfo.revisar || placaDesatualizada || !!notaMultiEscala,
+        motivoRevisao,
+        categoria: statusInfo.categoria,
+        natureza: statusInfo.natureza,
+        saida_loja_fmt: fmtHoraBRT(saidaLoja),
+      }
+    })
+
+    const [xlsx, xlsx_com_cd, pdf, pdf_com_cd] = await Promise.all([
+      gerarKpi({ rede_id, data, linhas }),
+      gerarKpi({ rede_id, data, linhas, comChegadaCd: true }),
+      gerarKpiPdf({ rede_id, rede_nome, data, linhas: linhas as KpiLinha[] }),
+      gerarKpiPdf({ rede_id, rede_nome, data, linhas: linhas as KpiLinha[], comChegadaCd: true }),
+    ])
+
+    // Aviso de relatório parcial (mesma heurística do site).
+    const janelaFim = JANELA_FIM[rede_id] ?? 12
+    const rastreados = preview.filter(p => p.tem_gps)
+    const entregaram = rastreados.filter(p => p.chegada_loja_fmt)
+    const avisoParcial = rastreados.length >= 3 && reportMaxHora < janelaFim && entregaram.length / rastreados.length < 0.2
+      ? `Relatório parece parcial: só ${entregaram.length}/${rastreados.length} veículos rastreados com entrega e o relatório vai até ~${String(Math.floor(reportMaxHora)).padStart(2, '0')}h, mas as entregas desta rede vão até ${janelaFim}h. Gere de novo depois das entregas.`
+      : null
+
+    saidas.push({
+      rede_id, rede_nome, xlsx, xlsx_com_cd, pdf, pdf_com_cd,
+      linhas: linhas.length, qtd_sem_gps, avisoParcial, preview,
+    })
   }
 
   return saidas
