@@ -6,6 +6,10 @@ directories:
   output: release
   buildResources: electron/build-resources
 
+# Copia o standalone do Next (com node_modules) DEPOIS do empacotamento — o
+# electron-builder não copia node_modules via extraResources (ver afterPack.cjs).
+afterPack: electron/afterPack.cjs
+
 # O que entra no app empacotado: o bundle do Electron (main/preload) + package.json.
 # A interface é o site Next REAL, empacotado em build standalone e colocado em
 # resources/standalone (server.js + .next + node_modules + static/public). O
@@ -17,9 +21,8 @@ files:
 extraResources:
   - from: src/assets
     to: assets
-  # Site Next real (build standalone). O main.ts sobe resources/standalone/server.js.
-  - from: .next/standalone
-    to: standalone
+# O site Next real (resources/standalone) é copiado pelo afterPack.cjs — o
+# electron-builder não copia o node_modules dele via extraResources.
 
 win:
   target:
