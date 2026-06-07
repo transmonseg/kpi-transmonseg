@@ -52,6 +52,7 @@ type PreviewLinha = {
   tempo_loja_min: number | null
   confianca: 'HIGH' | 'LOW' | 'UNMATCHED'
   algoritmo: string
+  geo_dist_metros?: number | null
   anomalias: string[]
   status: StatusRota
   revisar: boolean
@@ -1595,6 +1596,14 @@ function PreviewRow({
       <td className="px-4 py-2 whitespace-nowrap">
         <div className="flex flex-col items-start gap-1">
           <StatusBadge status={linha.status} />
+          {linha.algoritmo === 'geo' && linha.geo_dist_metros != null && (
+            <span
+              className="inline-flex w-fit items-center gap-1 rounded border border-[var(--color-border-strong)] px-1.5 py-0.5 text-[10px] font-medium leading-tight text-[var(--color-fg-muted)]"
+              title={`Casou por geolocalização a ${linha.geo_dist_metros}m do ponto cadastrado da loja`}
+            >
+              📍 {linha.geo_dist_metros}m
+            </span>
+          )}
           {linha.natureza && linha.motivoRevisao && (
             <span
               className="inline-flex w-fit items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium leading-tight"

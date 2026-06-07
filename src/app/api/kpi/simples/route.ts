@@ -33,6 +33,8 @@ type PreviewLinha = {
   tempo_loja_min: number | null
   confianca: 'HIGH' | 'LOW' | 'UNMATCHED'
   algoritmo: string
+  /** Distância em metros quando casou por geo (até 500m). Mostra no preview. */
+  geo_dist_metros?: number | null
   anomalias: string[]
   status: StatusRota
   revisar: boolean
@@ -814,6 +816,7 @@ export async function POST(req: NextRequest) {
           tempo_loja_min: rota.paradas[0]?.duracao_min ?? null,
           confianca: rota._matchMeta?.confidence ?? 'UNMATCHED',
           algoritmo: rota._matchMeta?.algorithm ?? 'none',
+          geo_dist_metros: rota.geo_dist_metros ?? null,
           anomalias: rota.anomalias_codigos,
           status: statusInfo.status,
           revisar: statusInfo.revisar || placaDesatualizada || !!notaMultiEscala,

@@ -32,6 +32,10 @@ export type RotaKpi = {
   /** Match por geo caiu DENTRO do raio cadastrado (nosso limite de metros) →
    * alta confiança, entra no KPI do cliente sem precisar de revisão. */
   geo_confiavel?: boolean
+  /** Distância em metros entre o GPS e a loja esperada, quando a entrega casou por
+   * geo (expansão em degraus de 50m até 500m). Exibida no preview pra operação ver
+   * quão perto bateu. Null quando não casou por geo. */
+  geo_dist_metros?: number | null
   /** Placa REALMENTE usada no Unitrac (resolvida via Mercosul/OCR a partir da escala).
    * Usada internamente para buscar as paradas — a placa antiga da escala não acha as
    * paradas registradas no padrão Mercosul. Não exibida (display usa placa_norm). */

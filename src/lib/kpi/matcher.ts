@@ -8,7 +8,6 @@ import { hungarianMin } from '@/lib/utils/hungarian'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isRotaGigante } from './rotas-gigantes'
 import { isVeiculoInativo } from './veiculos-inativos'
-import { matchGeoEndereco } from '@/lib/lojas/match-geo-endereco'
 
 // Tokeniza nome de loja pra match fuzzy: remove acentos, parênteses (1ª Entrega), redes,
 // stopwords (DO, DE, DA, SAO), retorna set de tokens significativos.
@@ -90,6 +89,19 @@ function paradaEhRegiaoBase(lat: number | null, lng: number | null): boolean {
 // Resetar o global entre o set e o await corromperia o KPI de requests paralelos.
 let SEM_GEO = false
 export function setSemGeo(v: boolean): void { SEM_GEO = v }
+
+// Resgate geo em DEGRAUS de 50m (50,100,150…500m). Retorna o degrau onde a parada
+// cai, ou null se passar de 500m. É a expansão pedida pelo dono: tenta 50m, não
+// achou vai 100, 150… até 500m no máximo pra bater a loja da escala. (O resultado
+// é o mesmo que "≤500m", mas é a lógica do degrau — e o degrau é a faixa da distância.)
+const GEO_MAX_METROS = 500
+const GEO_PASSO_METROS = 50
+export function passoGeoQueBate(distM: number): number | null {
+  for (let passo = GEO_PASSO_METROS; passo <= GEO_MAX_METROS; passo += GEO_PASSO_METROS) {
+    if (distM <= passo) return passo
+  }
+  return null
+}
 
 // Prefixos numéricos conhecidos dos códigos do Unitrac (`codigo_loja`) por rede.
 // Quando o codigo_loja começa com um destes, o suffix-match aceita codigo_escala
@@ -2346,43 +2358,17 @@ export async function cruzaEscalaUnitrac(
 
       let melhorP: UnitracParadaRow | null = null
       let melhorDist = Infinity
-      // (1) FORA_BASE sem código casado por coordenada/endereço à loja agendada.
+      // (1) FORA_BASE sem código casado por COORDENADA à loja que a ESCALA espera.
+      // Expansão em degraus de 50m: tenta 50, 100, 150… até 500m no máximo. A escala
+      // diz QUAL loja aquela placa ia entregar — é o desempate quando há duas lojas
+      // perto (Méier/SPID Méier). Confia na escala: se ela estiver errada, é da
+      // operação, não do sistema. SEM confirmação de rua e SEM marcar revisão (regra
+      // do dono 2026-06-06) — a distância em metros fica à vista no preview.
       for (const p of candidatas) {
         if (p.classificacao !== 'FORA_BASE' || p.codigo_loja) continue
-        const m = matchGeoEndereco(
-          { lat: p.lat, lng: p.lng, endereco: p.endereco ?? null, classificacao: p.classificacao, codigo_loja: p.codigo_loja },
-          [{ id: esperada.id, rede_id: esperada.rede_id, nome: esperada.nome, lat: esperada.lat, lng: esperada.lng, endereco: esperada.endereco, bairro: esperada.bairro, municipio: esperada.municipio, numero: esperada.numero }],
-          // Usa o RAIO da loja como limiar direto (capado em 100–200m) em vez dos 100m
-          // fixos: entregas a 100–150m do ponto cadastrado (ex Prezunic Fonseca, 137m,
-          // raio 150) escapavam por poucos metros. Acima do raio ainda exige confirmação
-          // de rua/bairro (anti-falso-positivo).
-          { hardMetros: Math.min(Math.max(esperada.raio_metros ?? 100, 100), 200) },
-        )
-        if (m && m.distancia < melhorDist) { melhorDist = m.distancia; melhorP = p }
-      }
-      // (1b) ABISMO NATURAL: a entrega real às vezes é registrada como FORA_BASE a
-      // pouco além do raio (210–250m da doca/rua lateral) e sem rua no texto, então
-      // (1) não pega. Resgata até 300m SÓ quando a esperada é INEQUIVOCAMENTE a loja
-      // mais próxima da rede — a 2ª loja a ≥2× a distância E ≥ dist+300m. Esse guard
-      // de unicidade evita falso "entregue" em área densa (Copacabana/Ipanema): se
-      // houver QUALQUER outra loja perto, não resgata. Caso real 06.06: RJN9F68 Méier
-      // (FORA_BASE a ~210m, próxima Prezunic a ~3km) virava "não foi".
-      if (!melhorP) {
-        const esp = esperada
-        const GAP_MAX = 300
-        const redeEsp = redesFungiveis(esp.rede_id)
-        const outras = lojas.filter(l => l.id !== esp.id && redeEsp.has(l.rede_id) && l.lat != null && l.lng != null)
-        for (const p of candidatas) {
-          if (p.classificacao !== 'FORA_BASE' || p.codigo_loja) continue
-          const d = haversine(p.lat!, p.lng!, esp.lat!, esp.lng!)
-          if (d > GAP_MAX || d >= melhorDist) continue
-          let segunda = Infinity
-          for (const o of outras) {
-            const od = haversine(p.lat!, p.lng!, o.lat!, o.lng!)
-            if (od < segunda) segunda = od
-          }
-          if (segunda >= Math.max(d * 2, d + 300)) { melhorDist = d; melhorP = p }
-        }
+        const d = haversine(p.lat!, p.lng!, esperada.lat, esperada.lng)
+        if (passoGeoQueBate(d) == null) continue   // passou de 500m → não casa
+        if (d < melhorDist) { melhorDist = d; melhorP = p }
       }
       // (2) Loja DUPLICADA no cadastro: parada LOJA (código de uma loja-gêmea no
       //     mesmo ponto físico, ≤60m) que ficou órfã. Ex: escala casa "Iguaba (1
@@ -2427,10 +2413,11 @@ export async function cruzaEscalaUnitrac(
       rota.saida_cd = computeSaidaCdParaParada(primeira, paradaByPlaca.get(placaUni) ?? [], { redeId: rota.rede_id, data: rota.data })
       rota.chegada_base = computeChegadaBaseParaParada(primeira, paradaByPlaca.get(placaUni) ?? [])
       rota.status = 'ok'
-      // Confiável = parada caiu DENTRO do raio cadastrado da loja (nosso limite de
-      // metros). Nesse caso entra no KPI do cliente sem revisão (status-rota).
-      rota.geo_confiavel = melhorDist <= (esperada.raio_metros ?? 100)
-      rota._matchMeta = { score: 0.7, confidence: 'LOW', requiresReview: !rota.geo_confiavel, algorithm: 'geo' }
+      // Dono 2026-06-06: geo até 500m conta como entregue SEM revisão — a distância
+      // em metros fica à vista no preview pra operação julgar os longes.
+      rota.geo_confiavel = true
+      rota.geo_dist_metros = Math.round(melhorDist)
+      rota._matchMeta = { score: 0.7, confidence: 'LOW', requiresReview: false, algorithm: 'geo' }
       for (const p of grupo) consumidas.add(p.id)
     }
 

@@ -2167,10 +2167,10 @@ describe('geoEndereco — match FORA_BASE por coordenada (opts.geoEndereco)', ()
     } finally { setSemGeo(false) }
   })
 
-  it('geo FORA do raio (rua/bairro confirma) → casa mas geo_confiavel=false (pede revisão)', async () => {
+  it('geo FORA do raio (≤500m) → casa SEM revisão + com a distância em metros (regra do dono)', async () => {
     setSemGeo(true)
     try {
-      // parada ~180m da loja: fora do raio 100, mas mesma rua/bairro confirma o match.
+      // parada ~180m da loja: fora do raio, mas dentro dos 500m da loja da escala.
       const paradaLonge: UnitracParadaRow = {
         ...parada, id: 'p2', lat: -22.9856, lng: -43.2273,
       }
@@ -2178,8 +2178,10 @@ describe('geoEndereco — match FORA_BASE por coordenada (opts.geoEndereco)', ()
       const r = rotas.find(x => x.escala_linha_id === 'l1')
       expect(r?.paradas).toHaveLength(1)
       expect(r?._matchMeta?.algorithm).toBe('geo')
-      expect(r?.geo_confiavel).toBe(false)
-      expect(r?._matchMeta?.requiresReview).toBe(true)
+      expect(r?.geo_confiavel).toBe(true)
+      expect(r?._matchMeta?.requiresReview).toBe(false)
+      expect(r?.geo_dist_metros).toBeGreaterThan(100)
+      expect(r?.geo_dist_metros).toBeLessThanOrEqual(500)
     } finally { setSemGeo(false) }
   })
 
@@ -2501,7 +2503,7 @@ describe('SPID cluster — resolução por containment (nome canônico longo nã
   })
 })
 
-describe('Abismo natural — resgata FORA_BASE 200-300m só quando loja é inequivocamente a mais próxima', () => {
+describe('Geo em degraus até 500m + distância (regra do dono 2026-06-06)', () => {
   const base = (id: string, lat: number, lng: number): LojaRow => ({
     id, rede_id: 'PREZUNIC', nome: `PREZUNIC ${id}`, nome_normalizado: `prezunic ${id}`,
     codigo_escala: null, codigo_unitrac: `700${id}`, nome_unitrac: `PREZUNIC ${id}`,
@@ -2512,28 +2514,44 @@ describe('Abismo natural — resgata FORA_BASE 200-300m só quando loja é inequ
     loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-06-06',
   })
   // FORA_BASE ~210m ao sul de (-22.9054,-43.2920)
-  const fora: UnitracParadaRow = {
+  const fora = (lat: number, lng: number): UnitracParadaRow => ({
     id: 'pf', placa_norm: 'RJN9F68', chegada: '2026-06-06T11:36:00Z', saida: '2026-06-06T12:10:00Z',
     duracao_seg: 2040, local_parada: 'FORA DE BASE E LOCAL DE SERVICO', codigo_loja: null, nome_loja: null,
-    lat: -22.90730, lng: -43.2920, endereco: null, classificacao: 'FORA_BASE', ordem: 1,
-  }
+    lat, lng, endereco: null, classificacao: 'FORA_BASE', ordem: 1,
+  })
 
-  it('loja ISOLADA (próxima a ~3km): resgata a entrega a ~210m', async () => {
+  it('entrega a ~210m casa, sem revisão, com a distância em metros', async () => {
     setSemGeo(true)
     try {
-      const lojas = [base('001', -22.9054, -43.2920), base('999', -22.9346, -43.2429)] // 2ª a ~3km
-      const rotas = await cruzaEscalaUnitrac([linha('PREZUNIC 001')], [fora], lojas, undefined, undefined, { geoEndereco: true })
+      const lojas = [base('001', -22.9054, -43.2920), base('999', -22.9346, -43.2429)]
+      const rotas = await cruzaEscalaUnitrac([linha('PREZUNIC 001')], [fora(-22.90730, -43.2920)], lojas, undefined, undefined, { geoEndereco: true })
       const r = rotas.find(x => x.escala_linha_id === 'lx')
       expect(r?.paradas).toHaveLength(1)
-      expect(r?.paradas[0]?.parada_id).toBe('pf')
+      expect(r?.geo_confiavel).toBe(true)
+      expect(r?._matchMeta?.requiresReview).toBe(false)
+      expect(r?.geo_dist_metros).toBeGreaterThan(150)
+      expect(r?.geo_dist_metros).toBeLessThan(260)
     } finally { setSemGeo(false) }
   })
 
-  it('loja em CLUSTER (outra a ~350m): NÃO resgata (evita falso "entregue")', async () => {
+  it('DUAS lojas perto: a escala desempata — casa na loja que a escala mandou', async () => {
     setSemGeo(true)
     try {
-      const lojas = [base('001', -22.9054, -43.2920), base('002', -22.91045, -43.2920)] // 2ª a ~350m da parada
-      const rotas = await cruzaEscalaUnitrac([linha('PREZUNIC 001')], [fora], lojas, undefined, undefined, { geoEndereco: true })
+      // 002 a ~350m da parada; a escala manda 001 → casa 001 (confia na escala).
+      const lojas = [base('001', -22.9054, -43.2920), base('002', -22.91045, -43.2920)]
+      const rotas = await cruzaEscalaUnitrac([linha('PREZUNIC 001')], [fora(-22.90730, -43.2920)], lojas, undefined, undefined, { geoEndereco: true })
+      const r = rotas.find(x => x.escala_linha_id === 'lx')
+      expect(r?.paradas).toHaveLength(1)
+      expect(r?.paradas[0]?.loja_id).toBe('001')
+    } finally { setSemGeo(false) }
+  })
+
+  it('parada a >500m da loja esperada → NÃO casa', async () => {
+    setSemGeo(true)
+    try {
+      const lojas = [base('001', -22.9054, -43.2920)]
+      // ~700m ao sul
+      const rotas = await cruzaEscalaUnitrac([linha('PREZUNIC 001')], [fora(-22.9117, -43.2920)], lojas, undefined, undefined, { geoEndereco: true })
       const r = rotas.find(x => x.escala_linha_id === 'lx')
       expect(r?.paradas ?? []).toHaveLength(0)
     } finally { setSemGeo(false) }
