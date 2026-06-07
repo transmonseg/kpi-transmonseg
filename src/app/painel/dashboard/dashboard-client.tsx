@@ -322,7 +322,17 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
     return [...map.values()].sort((a, b) => (b.sem + b.nao) - (a.sem + a.nao)).slice(0, 10)
   }, [m])
 
-  const [view, setView] = useState<DashView>('resumo')
+  // View persistida na URL (?view=rede) — refresh/link mantêm onde você estava.
+  const router = useRouter()
+  const sp = useSearchParams()
+  const viewParam = sp.get('view')
+  const view: DashView = DASH_VIEWS.some(([v]) => v === viewParam) ? (viewParam as DashView) : 'resumo'
+  const setView = (v: DashView) => {
+    const params = new URLSearchParams(sp.toString())
+    if (v === 'resumo') params.delete('view'); else params.set('view', v)
+    const q = params.toString()
+    router.replace(q ? `/painel?${q}` : '/painel', { scroll: false })
+  }
   return (
     <div className="space-y-8">
       <DashViewTabs view={view} setView={setView} />
