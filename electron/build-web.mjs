@@ -8,12 +8,15 @@ import { fileURLToPath } from 'node:url'
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
-function run(cmd, args, env) {
+// `useShell` resolve o `next.cmd` no Windows. NÃO usar shell quando o cmd é um
+// caminho absoluto com espaço (ex.: C:\Program Files\nodejs\node.exe) — o shell
+// quebraria no espaço. Por isso o prepare roda sem shell.
+function run(cmd, args, { env, useShell } = {}) {
   return new Promise((resolve, reject) => {
     const p = spawn(cmd, args, {
       cwd: repo,
       stdio: 'inherit',
-      shell: process.platform === 'win32', // resolve next.cmd no Windows
+      shell: !!useShell && process.platform === 'win32',
       env: { ...process.env, ...env },
     })
     p.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`${cmd} saiu com código ${code}`))))
@@ -21,6 +24,6 @@ function run(cmd, args, env) {
   })
 }
 
-await run('next', ['build'], { NEXT_OUTPUT: 'standalone' })
+await run('next', ['build'], { env: { NEXT_OUTPUT: 'standalone' }, useShell: true })
 await run(process.execPath, [path.join(repo, 'electron', 'prepare-standalone.mjs')])
 console.log('[build-web] OK → .next/standalone pronto')
