@@ -161,10 +161,24 @@ function VisaoGeral(props: {
   const { periodo, setPeriodo, data, setData, redes, setRedes, m, mAnt, intervalo, carregando, erro, onRetry, mes } = props
   const toggleRede = (r: string) => setRedes(redes.includes(r) ? redes.filter(x => x !== r) : [...redes, r])
 
+  // View persistida na URL (?view=) E no header STICKY — fica sempre acessível,
+  // mesmo ao rolar; refresh/link mantêm onde você estava.
+  const router = useRouter()
+  const sp = useSearchParams()
+  const viewParam = sp.get('view')
+  const view: DashView = DASH_VIEWS.some(([v]) => v === viewParam) ? (viewParam as DashView) : 'resumo'
+  const setView = (v: DashView) => {
+    const params = new URLSearchParams(sp.toString())
+    if (v === 'resumo') params.delete('view'); else params.set('view', v)
+    const q = params.toString()
+    router.replace(q ? `/painel?${q}` : '/painel', { scroll: false })
+  }
+
   return (
     <div className="space-y-8">
-      {/* Filtros + chips num header STICKY — não somem ao rolar o dashboard. */}
+      {/* Seletor de view + filtros num header STICKY — não somem ao rolar. */}
       <div className="sticky top-0 z-20 -mx-5 space-y-3 border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 px-5 py-3 backdrop-blur sm:-mx-8 sm:px-8">
+      <DashViewTabs view={view} setView={setView} />
       <div className="flex flex-wrap items-center gap-3">
         <div data-tour="periodo" className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-0.5 shadow-soft">
           {(['dia', 'semana', 'mes', 'ano'] as Periodo[]).map(p => (
@@ -214,7 +228,7 @@ function VisaoGeral(props: {
       </div>
 
       {carregando ? <Skeleton /> : erro ? <Erro onRetry={onRetry} /> : !m || m.total === 0 ? <Vazio /> : (
-        <Conteudo key={`${periodo}-${data}-${redes.join(',')}`} m={m} mAnt={mAnt} mes={mes} periodo={periodo} data={data} />
+        <Conteudo key={`${periodo}-${data}-${redes.join(',')}`} m={m} mAnt={mAnt} mes={mes} periodo={periodo} data={data} view={view} />
       )}
     </div>
   )
@@ -302,7 +316,7 @@ function DashViewTabs({ view, setView }: { view: DashView; setView: (v: DashView
   )
 }
 
-function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas | null; mes: string; periodo: Periodo; data: string }) {
+function Conteudo({ m, mAnt, mes, periodo, data, view }: { m: Metricas; mAnt: Metricas | null; mes: string; periodo: Periodo; data: string; view: DashView }) {
   const lojaHref = (rede: string, loja: string) =>
     `/painel/loja?rede=${encodeURIComponent(rede)}&loja=${encodeURIComponent(loja)}&periodo=${periodo}&data=${data}`
   const pctGps = m.total ? Math.round(100 * m.com_rastreador / m.total) : 0
@@ -322,21 +336,8 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
     return [...map.values()].sort((a, b) => (b.sem + b.nao) - (a.sem + a.nao)).slice(0, 10)
   }, [m])
 
-  // View persistida na URL (?view=rede) — refresh/link mantêm onde você estava.
-  const router = useRouter()
-  const sp = useSearchParams()
-  const viewParam = sp.get('view')
-  const view: DashView = DASH_VIEWS.some(([v]) => v === viewParam) ? (viewParam as DashView) : 'resumo'
-  const setView = (v: DashView) => {
-    const params = new URLSearchParams(sp.toString())
-    if (v === 'resumo') params.delete('view'); else params.set('view', v)
-    const q = params.toString()
-    router.replace(q ? `/painel?${q}` : '/painel', { scroll: false })
-  }
   return (
     <div className="space-y-8">
-      <DashViewTabs view={view} setView={setView} />
-
       {/* ═══════ VIEW 1 — COMO FOI A OPERAÇÃO ═══════ */}
       {view === 'resumo' && (
       <section key="v-resumo" data-tour="resumo" className="space-y-4 animate-fade-up">
