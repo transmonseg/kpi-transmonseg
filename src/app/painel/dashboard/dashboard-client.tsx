@@ -333,6 +333,9 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
 
   return (
     <div className="space-y-8">
+      {/* Resumo executivo — o período inteiro numa frase, pro cliente ler em 3s */}
+      <ResumoExecutivo m={m} mAnt={mAnt} periodo={periodo} />
+
       {/* ═══════ 01 — COMO FOI A OPERAÇÃO ═══════ */}
       <section id="sec-resumo" key="v-resumo" data-tour="resumo" className="scroll-mt-32 space-y-4 animate-fade-up">
         <SecaoHead n="01" titulo="Como foi a operação" sub="O resultado do período num olhar." />
@@ -542,6 +545,32 @@ function Tip({ label, children }: { label: string; children: React.ReactNode }) 
 
 // Cabeçalho de camada — número + pergunta + uma linha de contexto. Cria a
 // hierarquia de seção que faltava (antes eram só text-overline soltos).
+// Resumo executivo: o período inteiro numa frase. Usa só dados que já existem.
+function ResumoExecutivo({ m, mAnt, periodo }: { m: Metricas; mAnt: Metricas | null; periodo: Periodo }) {
+  const pctGps = m.total ? Math.round(100 * m.com_rastreador / m.total) : 0
+  const pctFalha = m.total ? Math.round(100 * m.nao_foi / m.total) : 0
+  const delta = mAnt && mAnt.total ? m.pctEntregue - mAnt.pctEntregue : null
+  const periodoLabel = ({ dia: 'No dia', semana: 'Na semana', mes: 'No mês', ano: 'No ano' } as Record<Periodo, string>)[periodo]
+  const pior = [...m.porRede].filter(r => r.total >= 5).sort((a, b) => a.pctEntregue - b.pctEntregue)[0]
+  const tom = tomTaxa(m.pctEntregue)
+  return (
+    <div className="flex items-start gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-5 py-4 shadow-soft animate-fade-up sm:px-6">
+      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: COR[tom] }} />
+      <p className="text-[14px] leading-relaxed text-[var(--color-fg-muted)] sm:text-[15px]">
+        {periodoLabel}, <strong style={{ color: COR[tom] }}>{m.pctEntregue}% das entregas</strong> foram concluídas
+        {delta != null && delta !== 0 && (
+          <span className="text-numeric"> ({delta > 0 ? '↑' : '↓'} {Math.abs(delta)} p.p. vs período anterior)</span>
+        )}
+        {' · '}<strong className="text-[var(--color-fg)]">{pctFalha}%</strong> não foi ao cliente
+        {' · '}<strong className="text-[var(--color-fg)]">{pctGps}%</strong> com GPS
+        {pior && pior.pctEntregue < m.pctEntregue && (
+          <> · rede que mais puxa pra baixo: <strong className="text-[var(--color-fg)]">{REDE_LABEL[pior.rede_id] ?? pior.rede_id}</strong> <span className="text-numeric">({pior.pctEntregue}%)</span></>
+        )}.
+      </p>
+    </div>
+  )
+}
+
 function SecaoHead({ n, titulo, sub }: { n: string; titulo: string; sub: string }) {
   return (
     <div className="flex items-baseline gap-3 border-b border-[var(--color-border)] pb-3">
@@ -587,23 +616,37 @@ function Painel({ titulo, children, className }: { titulo: string; children: Rea
   )
 }
 
+const META_ENTREGA = 95
+
 function PorRede({ redes }: { redes: Metricas['porRede'] }) {
-  const max = Math.max(1, ...redes.map(r => r.total))
+  // ordena pior → melhor: quem está abaixo da meta aparece primeiro (onde agir)
+  const ord = [...redes].sort((a, b) => a.pctEntregue - b.pctEntregue)
+  const abaixo = ord.filter(r => r.pctEntregue < META_ENTREGA).length
   return (
     <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
-      <h3 className="text-overline">Desempenho por rede</h3>
-      <div className="mt-4 space-y-2">
-        {redes.map(r => (
-          <div key={r.rede_id} className="flex items-center gap-2.5">
-            <span className="w-24 shrink-0 truncate text-[12px] text-[var(--color-fg)]" title={REDE_LABEL[r.rede_id] ?? r.rede_id}>{REDE_LABEL[r.rede_id] ?? r.rede_id}</span>
-            <div className="relative h-4 flex-1 overflow-hidden rounded bg-[var(--color-bg-subtle)] ring-1 ring-inset ring-[var(--color-border)]">
-              <div className="absolute inset-y-0 left-0 w-full origin-left rounded" style={{ transform: `scaleX(${r.total / max})`, transition: 'transform 0.7s cubic-bezier(0.16,1,0.3,1)', background: 'var(--color-accent-soft)' }} />
-              <div className="absolute inset-y-0 left-0 w-full origin-left rounded" style={{ transform: `scaleX(${r.entregue / max})`, transition: 'transform 0.7s cubic-bezier(0.16,1,0.3,1)', background: 'var(--color-success)' }} />
+      <div className="flex items-baseline justify-between gap-2">
+        <h3 className="text-overline">Desempenho por rede</h3>
+        <span className="text-[11px] text-[var(--color-fg-subtle)]">
+          meta ≥ {META_ENTREGA}%{abaixo > 0 && <> · <span className="font-semibold" style={{ color: COR.bad }}>{abaixo} abaixo</span></>}
+        </span>
+      </div>
+      <div className="mt-4 space-y-2.5">
+        {ord.map(r => {
+          const tom = tomTaxa(r.pctEntregue)
+          return (
+            <div key={r.rede_id} className="flex items-center gap-2.5">
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: COR[tom] }} title={tom === 'ok' ? 'na meta' : tom === 'warn' ? 'atenção' : 'abaixo da meta'} />
+              <span className="w-24 shrink-0 truncate text-[12px] text-[var(--color-fg)]" title={REDE_LABEL[r.rede_id] ?? r.rede_id}>{REDE_LABEL[r.rede_id] ?? r.rede_id}</span>
+              <div className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-[var(--color-bg-subtle)] ring-1 ring-inset ring-[var(--color-border)]">
+                <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${r.pctEntregue}%`, transition: 'width 0.7s cubic-bezier(0.16,1,0.3,1)', background: COR[tom] }} />
+                {/* marca da meta */}
+                <span className="absolute inset-y-0 w-px bg-[var(--color-fg-subtle)]" style={{ left: `${META_ENTREGA}%`, opacity: 0.55 }} />
+              </div>
+              <span className="w-10 text-right text-numeric text-[11px] font-semibold" style={{ color: COR[tom] }}>{r.pctEntregue}%</span>
+              <span className="w-7 text-right text-numeric text-[11px] text-[var(--color-fg-subtle)]" title="entregas no período">{r.total}</span>
             </div>
-            <span className="w-10 text-right text-numeric text-[11px] font-semibold text-[var(--color-fg)]">{r.pctEntregue}%</span>
-            <span className="w-7 text-right text-numeric text-[11px] text-[var(--color-fg-subtle)]">{r.total}</span>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
