@@ -104,10 +104,12 @@ function getDesktopApi(): DesktopApi | undefined {
   return (window as unknown as { api?: DesktopApi }).api
 }
 
-/** True quando rodando no app desktop E sem internet → usa a geração local. */
+/** True no app desktop → SEMPRE gera local (o motor é o mesmo do servidor e não
+ *  depende da nuvem/chave de serviço). Funciona com ou sem internet. O caminho da
+ *  nuvem (presign + rota) fica só pro site no navegador. */
 function deveGerarOffline(): boolean {
   const api = getDesktopApi()
-  return !!api?.isDesktop && !!api.gerarOffline && typeof navigator !== 'undefined' && !navigator.onLine
+  return !!api?.isDesktop && !!api.gerarOffline
 }
 
 async function fileParaBytes(f: File): Promise<{ nome: string; bytes: Uint8Array }> {
@@ -835,7 +837,7 @@ export default function KpiSimplesPage() {
 
     startTransition(async () => {
       try {
-        // App desktop SEM internet: gera local (mesmo motor), sem nuvem.
+        // App desktop: gera local (mesmo motor), sem depender da nuvem/chave.
         if (deveGerarOffline()) {
           const api = getDesktopApi()!
           const [escalasBytes, unitracsBytes] = await Promise.all([

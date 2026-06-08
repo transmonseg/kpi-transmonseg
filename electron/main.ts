@@ -152,7 +152,10 @@ function createWindow(porta: number) {
     return { action: 'allow' }
   })
 
-  void win.loadURL(`http://127.0.0.1:${porta}/painel`)
+  // Abre direto na tela Gerar KPI (trabalho do dia, funciona offline). As telas de
+  // nuvem (Dashboard/Histórico) ficam acessíveis pela navegação, mas dependem de
+  // internet + chave — por isso não são a tela inicial.
+  void win.loadURL(`http://127.0.0.1:${porta}/painel/kpi/simples`)
 }
 
 // ─── IPC: cadastro + fila + geração offline ──────────────────────────────────

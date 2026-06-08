@@ -42,7 +42,8 @@ export async function updateSession(request: NextRequest) {
 
   if (user && isAuthPage) {
     const url = request.nextUrl.clone()
-    url.pathname = '/painel'
+    // Desktop cai na tela offline (Gerar KPI); site vai pro painel (dashboard).
+    url.pathname = process.env.DESKTOP_APP === '1' ? '/painel/kpi/simples' : '/painel'
     return NextResponse.redirect(url)
   }
 

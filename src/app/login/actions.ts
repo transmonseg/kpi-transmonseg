@@ -25,5 +25,6 @@ export async function login(formData: FormData) {
     redirect('/login?erro=' + encodeURIComponent(msg))
   }
 
-  redirect('/painel')
+  // No app desktop, cai direto na tela que funciona offline (Gerar KPI). No site, /painel.
+  redirect(process.env.DESKTOP_APP === '1' ? '/painel/kpi/simples' : '/painel')
 }
