@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import type { Metricas } from '@/lib/kpi/dashboard-metricas'
-import { REDES, REDE_LABEL } from '@/lib/kpi/redes'
+import { REDES, REDE_LABEL, REDE_ALIASES } from '@/lib/kpi/redes'
 import InserirManual from './inserir-manual'
 import Historico from './historico'
 import ResumoOperacao, { type ResumoOperacaoData } from './resumo-operacao'
@@ -63,10 +63,16 @@ export default function DashboardClient({ resumo, tabInicial = 'geral' }: { resu
   const [erro, setErro] = useState(false)
   const tourAuto = useRef(false)
 
+  // Expande aliases: filtrar ASSAI inclui SENDAS (mesmo grupo no Unitrac).
+  const redesExpandidas = useMemo(
+    () => redes.flatMap(r => REDE_ALIASES[r] ?? [r]),
+    [redes],
+  )
+
   useEffect(() => {
     if (tab !== 'geral') return
     setCarregando(true)
-    const qs = new URLSearchParams({ periodo, data, redes: redes.join(',') })
+    const qs = new URLSearchParams({ periodo, data, redes: redesExpandidas.join(',') })
     fetch(`/api/dashboard?${qs}`)
       .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() })
       .then(j => { setM(j.metricas); setMAnt(j.metricasAnterior ?? null); setIntervalo(j.intervalo); setErro(false) })
@@ -177,7 +183,7 @@ function VisaoGeral(props: {
   return (
     <div className="space-y-8">
       {/* Seletor de view + filtros num header STICKY — não somem ao rolar. */}
-      <div className="sticky top-0 z-20 -mx-5 space-y-3 border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 px-5 py-3 backdrop-blur sm:-mx-8 sm:px-8">
+      <div className="sticky top-14 z-20 -mx-5 space-y-3 border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 px-5 py-3 backdrop-blur sm:-mx-8 sm:px-8">
       <DashViewTabs view={view} setView={setView} />
       <div className="flex flex-wrap items-center gap-3">
         <div data-tour="periodo" className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-0.5 shadow-soft">

@@ -43,7 +43,13 @@ export function TourOverlay({ passo, idxGlobal, total, ehUltimoCap, ehFinal, onN
       const b = el.getBoundingClientRect()
       if (alive) setBox({ x: b.left - PAD, y: b.top - PAD, w: b.width + PAD * 2, h: b.height + PAD * 2 })
     }
-    document.querySelector(passo.element)?.scrollIntoView({ behavior: reduz ? 'auto' : 'smooth', block: 'center' })
+    const elScroll = document.querySelector(passo.element)
+    if (elScroll) {
+      // Compensa o header do shell (56px) + o sticky dos filtros (56px) = ~112px
+      const rect = elScroll.getBoundingClientRect()
+      const offset = rect.top + window.scrollY - 128
+      window.scrollTo({ top: Math.max(0, offset), behavior: reduz ? 'auto' : 'smooth' })
+    }
     medir()
     const t = setTimeout(medir, 380)
     const iv = setInterval(medir, 400)
