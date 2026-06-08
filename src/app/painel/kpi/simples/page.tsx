@@ -1572,7 +1572,21 @@ const STATUS_TOM: Record<StatusRota, { bg: string; fg: string }> = {
   FORA_DE_BASE:       { bg: 'var(--color-info-soft)',    fg: 'var(--color-info-soft-fg)' },
 }
 
-function StatusBadge({ status }: { status: StatusRota }) {
+function StatusBadge({ status, naoConfirmado }: { status: StatusRota; naoConfirmado?: boolean }) {
+  // "Entregue + sem cadastro" confundia a operação (verde positivo + alerta). Quando
+  // a parada não casou com a loja da escala (loja_id nulo), mostra "Entregue (não
+  // confirmado)" em âmbar — entregou numa loja, mas não dá pra provar que foi a certa.
+  if (naoConfirmado) {
+    return (
+      <span
+        className="inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-semibold whitespace-nowrap"
+        style={{ background: 'var(--color-warning-soft)', color: 'var(--color-warning-soft-fg)' }}
+        title="O caminhão entregou numa loja, mas o sistema não confirmou que é a loja da escala (falta código/coordenada no cadastro)."
+      >
+        Entregue (não confirmado)
+      </span>
+    )
+  }
   const t = STATUS_TOM[status]
   return (
     <span
@@ -1645,7 +1659,7 @@ function PreviewRow({
       </td>
       <td className="px-4 py-2 whitespace-nowrap">
         <div className="flex flex-col items-start gap-1">
-          <StatusBadge status={linha.status} />
+          <StatusBadge status={linha.status} naoConfirmado={linha.categoria === 'LOJA_SEM_CADASTRO' && (linha.status === 'ENTREGUE' || linha.status === 'ENTREGUE_GEO')} />
           {linha.algoritmo === 'geo' && linha.geo_dist_metros != null && (
             <span
               className="inline-flex w-fit items-center gap-1 rounded border border-[var(--color-border-strong)] px-1.5 py-0.5 text-[10px] font-medium leading-tight text-[var(--color-fg-muted)]"
