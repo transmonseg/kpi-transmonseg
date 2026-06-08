@@ -78,7 +78,7 @@ export default function DashboardClient({ resumo, tabInicial = 'geral' }: { resu
       .then(j => { setM(j.metricas); setMAnt(j.metricasAnterior ?? null); setIntervalo(j.intervalo); setErro(false) })
       .catch(() => { setM(null); setMAnt(null); setErro(true) })
       .finally(() => setCarregando(false))
-  }, [tab, periodo, data, redes])
+  }, [tab, periodo, data, redesExpandidas])
 
   useEffect(() => {
     if (tab !== 'geral' || !m || tourAuto.current || tourJaVisto()) return
@@ -165,27 +165,12 @@ function VisaoGeral(props: {
   carregando: boolean; erro: boolean; onRetry: () => void; mes: string
 }) {
   const { periodo, setPeriodo, data, setData, redes, setRedes, m, mAnt, intervalo, carregando, erro, onRetry, mes } = props
-  const toggleRede = (r: string) => setRedes(redes.includes(r) ? redes.filter(x => x !== r) : [...redes, r])
-
-  // View persistida na URL (?view=) E no header STICKY — fica sempre acessível,
-  // mesmo ao rolar; refresh/link mantêm onde você estava.
-  const router = useRouter()
-  const sp = useSearchParams()
-  const viewParam = sp.get('view')
-  const view: DashView = DASH_VIEWS.some(([v]) => v === viewParam) ? (viewParam as DashView) : 'resumo'
-  const setView = (v: DashView) => {
-    const params = new URLSearchParams(sp.toString())
-    if (v === 'resumo') params.delete('view'); else params.set('view', v)
-    const q = params.toString()
-    router.replace(q ? `/painel?${q}` : '/painel', { scroll: false })
-  }
 
   return (
     <div className="space-y-8">
-      {/* Seletor de view + filtros num header STICKY — não somem ao rolar. */}
-      <div className="sticky top-14 z-20 -mx-5 space-y-3 border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 px-5 py-3 backdrop-blur sm:-mx-8 sm:px-8">
-      <DashViewTabs view={view} setView={setView} />
-      <div className="flex flex-wrap items-center gap-3">
+      {/* Barra de controle ENXUTA — uma linha: período + data + intervalo + filtro de redes.
+          Sticky logo abaixo do header do shell, sem sobrepor. */}
+      <div className="sticky top-14 z-20 -mx-5 flex flex-wrap items-center gap-2.5 border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 px-5 py-2.5 backdrop-blur sm:-mx-8 sm:px-8">
         <div data-tour="periodo" className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-0.5 shadow-soft">
           {(['dia', 'semana', 'mes', 'ano'] as Periodo[]).map(p => (
             <button
@@ -197,8 +182,6 @@ function VisaoGeral(props: {
             >{p === 'mes' ? 'Mês' : p === 'ano' ? 'Ano' : p}</button>
           ))}
         </div>
-        {/* O input acompanha o período: ano → escolhe o ano; mês → escolhe o mês; dia/semana → escolhe o dia.
-            Sem isso, no modo "Mês" o operador escolhia um dia mas via o mês inteiro. */}
         {periodo === 'ano' ? (
           <select
             value={data.slice(0, 4)} onChange={e => setData(`${e.target.value}-01-01`)}
@@ -218,23 +201,54 @@ function VisaoGeral(props: {
           />
         )}
         {intervalo && (
-          <span className="text-numeric text-[11px] text-[var(--color-fg-subtle)]">
+          <span className="hidden text-numeric text-[11px] text-[var(--color-fg-subtle)] sm:inline">
             {periodo === 'dia' ? intervalo[0] : `${intervalo[0]} → ${intervalo[1]}`}
           </span>
         )}
-      </div>
-
-      {/* Chips de rede */}
-      <div className="flex flex-wrap gap-1.5">
-        <Chip ativo={redes.length === 0} onClick={() => setRedes([])}>Todas</Chip>
-        {REDES.map(r => (
-          <Chip key={r} ativo={redes.includes(r)} onClick={() => toggleRede(r)}>{REDE_LABEL[r] ?? r}</Chip>
-        ))}
-      </div>
+        {/* Filtro de redes recolhido num dropdown — não polui o topo com 18 chips */}
+        <div className="ml-auto"><RedesFiltro redes={redes} setRedes={setRedes} /></div>
       </div>
 
       {carregando ? <Skeleton /> : erro ? <Erro onRetry={onRetry} /> : !m || m.total === 0 ? <Vazio /> : (
-        <Conteudo key={`${periodo}-${data}-${redes.join(',')}`} m={m} mAnt={mAnt} mes={mes} periodo={periodo} data={data} view={view} />
+        <Conteudo key={`${periodo}-${data}-${redes.join(',')}`} m={m} mAnt={mAnt} mes={mes} periodo={periodo} data={data} />
+      )}
+    </div>
+  )
+}
+
+// Filtro de redes recolhido: botão "Redes: Todas ▾" abre um painel com os chips.
+// Mantém todos os filtros, mas tira os 18 chips da cara do topo.
+function RedesFiltro({ redes, setRedes }: { redes: string[]; setRedes: (r: string[]) => void }) {
+  const [aberto, setAberto] = useState(false)
+  const toggleRede = (r: string) => setRedes(redes.includes(r) ? redes.filter(x => x !== r) : [...redes, r])
+  const label = redes.length === 0 ? 'Todas as redes' : redes.length === 1 ? (REDE_LABEL[redes[0]] ?? redes[0]) : `${redes.length} redes`
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setAberto(v => !v)}
+        className="inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[12px] font-medium text-[var(--color-fg)] shadow-soft transition-[background-color,border-color] duration-150 hover:border-[var(--color-border-strong)]"
+      >
+        <span className="text-[var(--color-fg-subtle)]">Redes:</span> {label}
+        <span className={`transition-transform duration-150 ${aberto ? 'rotate-180' : ''}`}>▾</span>
+      </button>
+      {aberto && (
+        <>
+          <button aria-label="Fechar" className="fixed inset-0 z-30 cursor-default" onClick={() => setAberto(false)} />
+          <div className="absolute right-0 z-40 mt-1.5 w-[min(92vw,360px)] rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3 shadow-diffusion">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-overline">Filtrar por rede</span>
+              {redes.length > 0 && (
+                <button onClick={() => setRedes([])} className="text-[11px] font-medium text-[var(--color-accent)] hover:underline">Limpar</button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <Chip ativo={redes.length === 0} onClick={() => setRedes([])}>Todas</Chip>
+              {REDES.map(r => (
+                <Chip key={r} ativo={redes.includes(r)} onClick={() => toggleRede(r)}>{REDE_LABEL[r] ?? r}</Chip>
+              ))}
+            </div>
+          </div>
+        </>
       )}
     </div>
   )
@@ -297,32 +311,7 @@ function Erro({ onRetry }: { onRetry: () => void }) {
   )
 }
 
-type DashView = 'resumo' | 'agir' | 'rede' | 'tendencias'
-const DASH_VIEWS: [DashView, string][] = [
-  ['resumo', 'Como foi'],
-  ['agir', 'Onde agir'],
-  ['rede', 'Por rede'],
-  ['tendencias', 'Tendências'],
-]
-
-// Seletor das 3 views (antes era um scroll só com as 3 camadas empilhadas).
-function DashViewTabs({ view, setView }: { view: DashView; setView: (v: DashView) => void }) {
-  return (
-    <div className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-0.5 shadow-soft">
-      {DASH_VIEWS.map(([v, label]) => (
-        <button
-          key={v} onClick={() => setView(v)}
-          className={[
-            'h-8 rounded-[var(--radius-sm)] px-4 text-[12px] font-medium transition-[background-color,color,transform] duration-150 active:scale-[0.97]',
-            view === v ? 'bg-[var(--color-accent)] text-[var(--color-accent-fg)] shadow-soft' : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]',
-          ].join(' ')}
-        >{label}</button>
-      ))}
-    </div>
-  )
-}
-
-function Conteudo({ m, mAnt, mes, periodo, data, view }: { m: Metricas; mAnt: Metricas | null; mes: string; periodo: Periodo; data: string; view: DashView }) {
+function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas | null; mes: string; periodo: Periodo; data: string }) {
   const lojaHref = (rede: string, loja: string) =>
     `/painel/loja?rede=${encodeURIComponent(rede)}&loja=${encodeURIComponent(loja)}&periodo=${periodo}&data=${data}`
   const pctGps = m.total ? Math.round(100 * m.com_rastreador / m.total) : 0
@@ -344,9 +333,8 @@ function Conteudo({ m, mAnt, mes, periodo, data, view }: { m: Metricas; mAnt: Me
 
   return (
     <div className="space-y-8">
-      {/* ═══════ VIEW 1 — COMO FOI A OPERAÇÃO ═══════ */}
-      {view === 'resumo' && (
-      <section key="v-resumo" data-tour="resumo" className="space-y-4 animate-fade-up">
+      {/* ═══════ 01 — COMO FOI A OPERAÇÃO ═══════ */}
+      <section id="sec-resumo" key="v-resumo" data-tour="resumo" className="scroll-mt-32 space-y-4 animate-fade-up">
         <SecaoHead n="01" titulo="Como foi a operação" sub="O resultado do período num olhar." />
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
@@ -418,11 +406,9 @@ function Conteudo({ m, mAnt, mes, periodo, data, view }: { m: Metricas; mAnt: Me
           </div>
         </div>
       </section>
-      )}
 
-      {/* ═══════ VIEW 2 — ONDE AGIR AGORA ═══════ */}
-      {view === 'agir' && (
-      <section key="v-agir" data-tour="agir" className="space-y-5 animate-fade-up">
+      {/* ═══════ 02 — ONDE AGIR AGORA ═══════ */}
+      <section id="sec-agir" key="v-agir" data-tour="agir" className="scroll-mt-32 space-y-5 animate-fade-up">
         <SecaoHead n="02" titulo="Onde agir agora" sub="Lojas com problema e os clientes/rotas mais lentos." />
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
           <div data-tour="agir-tabela" className={`overflow-hidden lg:col-span-3 ${CARD}`}>
@@ -478,11 +464,9 @@ function Conteudo({ m, mAnt, mes, periodo, data, view }: { m: Metricas; mAnt: Me
           </div>
         )}
       </section>
-      )}
 
-      {/* ═══════ VIEW 3 — POR REDE ═══════ */}
-      {view === 'rede' && (
-      <section key="v-rede" data-tour="tendencias" className="space-y-5 animate-fade-up">
+      {/* ═══════ 03 — POR REDE ═══════ */}
+      <section id="sec-rede" key="v-rede" data-tour="tendencias" className="scroll-mt-32 space-y-5 animate-fade-up">
         <SecaoHead n="03" titulo="Por rede" sub="Desempenho de cada rede e onde puxar o resultado." />
 
         <ComparativoRede m={m} />
@@ -523,11 +507,9 @@ function Conteudo({ m, mAnt, mes, periodo, data, view }: { m: Metricas; mAnt: Me
           ))}
         </div>
       </section>
-      )}
 
-      {/* ═══════ VIEW 4 — TENDÊNCIAS ═══════ */}
-      {view === 'tendencias' && (
-      <section key="v-tend" data-tour="tendencias" className="space-y-5 animate-fade-up">
+      {/* ═══════ 04 — TENDÊNCIAS ═══════ */}
+      <section id="sec-tend" key="v-tend" data-tour="tendencias" className="scroll-mt-32 space-y-5 animate-fade-up">
         <SecaoHead n="04" titulo="Tendências e análise" sub="Como o período evoluiu dia a dia." />
 
         {m.serie.length > 1 && <SerieChart serie={m.serie} />}
@@ -542,7 +524,6 @@ function Conteudo({ m, mAnt, mes, periodo, data, view }: { m: Metricas; mAnt: Me
 
         {m.topMotoristas.length > 0 && <TopMotoristas m={m} />}
       </section>
-      )}
     </div>
   )
 }
