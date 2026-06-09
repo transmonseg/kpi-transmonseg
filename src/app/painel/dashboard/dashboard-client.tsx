@@ -13,7 +13,7 @@ import { hojeBR } from '@/lib/data-br'
 import { ArrowSquareOut, CheckCircle, WarningCircle, ArrowClockwise, Question } from '@phosphor-icons/react/dist/ssr'
 import { LineChart, BarList, ColumnChart, Donut, Gauge, Heatmap, fmtNum, type BarItem } from '@/app/painel/charts'
 
-type Periodo = 'dia' | 'semana' | 'mes' | 'ano'
+type Periodo = 'dia' | 'semana' | 'mes' | 'ano' | 'custom'
 type Tab = 'geral' | 'inserir' | 'historico'
 
 const hoje = () => hojeBR()
@@ -55,6 +55,9 @@ export default function DashboardClient({ resumo, tabInicial = 'geral' }: { resu
   const setTab = (t: Tab) => router.replace(t === 'geral' ? '/painel' : `/painel?tab=${t}`, { scroll: false })
   const [periodo, setPeriodo] = useState<Periodo>('mes')
   const [data, setData] = useState(hoje())
+  // Intervalo personalizado (de–até) — usado quando periodo === 'custom'.
+  const [de, setDe] = useState(() => `${hoje().slice(0, 7)}-01`)
+  const [ate, setAte] = useState(hoje())
   const [redes, setRedes] = useState<string[]>([])
   const [m, setM] = useState<Metricas | null>(null)
   const [mAnt, setMAnt] = useState<Metricas | null>(null)
@@ -72,13 +75,17 @@ export default function DashboardClient({ resumo, tabInicial = 'geral' }: { resu
   useEffect(() => {
     if (tab !== 'geral') return
     setCarregando(true)
-    const qs = new URLSearchParams({ periodo, data, redes: redesExpandidas.join(',') })
+    const qs = new URLSearchParams(
+      periodo === 'custom'
+        ? { periodo, de, ate, redes: redesExpandidas.join(',') }
+        : { periodo, data, redes: redesExpandidas.join(',') },
+    )
     fetch(`/api/dashboard?${qs}`)
       .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() })
       .then(j => { setM(j.metricas); setMAnt(j.metricasAnterior ?? null); setIntervalo(j.intervalo); setErro(false) })
       .catch(() => { setM(null); setMAnt(null); setErro(true) })
       .finally(() => setCarregando(false))
-  }, [tab, periodo, data, redesExpandidas])
+  }, [tab, periodo, data, de, ate, redesExpandidas])
 
   useEffect(() => {
     if (tab !== 'geral' || !m || tourAuto.current || tourJaVisto()) return
@@ -145,6 +152,7 @@ export default function DashboardClient({ resumo, tabInicial = 'geral' }: { resu
             {resumo && <ResumoOperacao r={resumo} />}
             <VisaoGeral
               periodo={periodo} setPeriodo={setPeriodo} data={data} setData={setData}
+              de={de} setDe={setDe} ate={ate} setAte={setAte}
               redes={redes} setRedes={setRedes} m={m} mAnt={mAnt} intervalo={intervalo}
               carregando={carregando} erro={erro} onRetry={recarregar} mes={mesAtual}
             />
@@ -160,11 +168,12 @@ export default function DashboardClient({ resumo, tabInicial = 'geral' }: { resu
 function VisaoGeral(props: {
   periodo: Periodo; setPeriodo: (p: Periodo) => void
   data: string; setData: (d: string) => void
+  de: string; setDe: (d: string) => void; ate: string; setAte: (d: string) => void
   redes: string[]; setRedes: (r: string[]) => void
   m: Metricas | null; mAnt: Metricas | null; intervalo: [string, string] | null
   carregando: boolean; erro: boolean; onRetry: () => void; mes: string
 }) {
-  const { periodo, setPeriodo, data, setData, redes, setRedes, m, mAnt, intervalo, carregando, erro, onRetry, mes } = props
+  const { periodo, setPeriodo, data, setData, de, setDe, ate, setAte, redes, setRedes, m, mAnt, intervalo, carregando, erro, onRetry, mes } = props
 
   return (
     <div className="space-y-8">
@@ -172,17 +181,29 @@ function VisaoGeral(props: {
           Sticky logo abaixo do header do shell, sem sobrepor. */}
       <div className="sticky top-14 z-20 -mx-5 flex flex-wrap items-center gap-2.5 border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 px-5 py-2.5 backdrop-blur sm:-mx-8 sm:px-8">
         <div data-tour="periodo" className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-0.5 shadow-soft">
-          {(['dia', 'semana', 'mes', 'ano'] as Periodo[]).map(p => (
+          {(['dia', 'semana', 'mes', 'ano', 'custom'] as Periodo[]).map(p => (
             <button
               key={p} onClick={() => setPeriodo(p)}
               className={[
                 'h-8 rounded-[var(--radius-sm)] px-3.5 text-[12px] font-medium capitalize transition-[background-color,color,transform] duration-150 active:scale-[0.97]',
                 periodo === p ? 'bg-[var(--color-accent)] text-[var(--color-accent-fg)] shadow-soft' : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]',
               ].join(' ')}
-            >{p === 'mes' ? 'Mês' : p === 'ano' ? 'Ano' : p}</button>
+            >{p === 'mes' ? 'Mês' : p === 'ano' ? 'Ano' : p === 'custom' ? 'Período' : p}</button>
           ))}
         </div>
-        {periodo === 'ano' ? (
+        {periodo === 'custom' ? (
+          <div className="flex items-center gap-1.5">
+            <input
+              type="date" value={de} max={ate} onChange={e => setDe(e.target.value)}
+              className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2.5 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30 [color-scheme:light] dark:[color-scheme:dark]"
+            />
+            <span className="text-[12px] text-[var(--color-fg-subtle)]">até</span>
+            <input
+              type="date" value={ate} min={de} onChange={e => setAte(e.target.value)}
+              className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2.5 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30 [color-scheme:light] dark:[color-scheme:dark]"
+            />
+          </div>
+        ) : periodo === 'ano' ? (
           <select
             value={data.slice(0, 4)} onChange={e => setData(`${e.target.value}-01-01`)}
             className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
@@ -210,7 +231,7 @@ function VisaoGeral(props: {
       </div>
 
       {carregando ? <Skeleton /> : erro ? <Erro onRetry={onRetry} /> : !m || m.total === 0 ? <Vazio /> : (
-        <Conteudo key={`${periodo}-${data}-${redes.join(',')}`} m={m} mAnt={mAnt} mes={mes} periodo={periodo} data={data} />
+        <Conteudo key={`${periodo}-${data}-${de}-${ate}-${redes.join(',')}`} m={m} mAnt={mAnt} mes={mes} periodo={periodo} data={data} />
       )}
     </div>
   )
@@ -335,6 +356,9 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
     <div className="space-y-8">
       {/* Resumo executivo — o período inteiro numa frase, pro cliente ler em 3s */}
       <ResumoExecutivo m={m} mAnt={mAnt} periodo={periodo} />
+
+      {/* Alertas automáticos — o sistema destaca os pontos críticos sozinho */}
+      <Alertas m={m} mAnt={mAnt} lojaHref={lojaHref} />
 
       {/* ═══════ 01 — COMO FOI A OPERAÇÃO ═══════ */}
       <section id="sec-resumo" key="v-resumo" data-tour="resumo" className="scroll-mt-32 space-y-4 animate-fade-up">
@@ -545,12 +569,60 @@ function Tip({ label, children }: { label: string; children: React.ReactNode }) 
 
 // Cabeçalho de camada — número + pergunta + uma linha de contexto. Cria a
 // hierarquia de seção que faltava (antes eram só text-overline soltos).
+// Alertas automáticos: o sistema acha sozinho os 3-4 pontos mais críticos do
+// período (taxa, queda, rede ruim, GPS, loja problema) — tira do cliente o
+// trabalho de garimpar nos gráficos. Tudo derivado das métricas existentes.
+function Alertas({ m, mAnt, lojaHref }: { m: Metricas; mAnt: Metricas | null; lojaHref: (r: string, l: string) => string }) {
+  type Al = { sev: 'bad' | 'warn'; txt: string; href?: string }
+  const al: Al[] = []
+  const pctFalha = m.total ? Math.round(100 * m.nao_foi / m.total) : 0
+  const delta = mAnt && mAnt.total ? m.pctEntregue - mAnt.pctEntregue : null
+
+  if (m.pctEntregue < META_ENTREGA) al.push({ sev: m.pctEntregue < 80 ? 'bad' : 'warn', txt: `Taxa de entrega em ${m.pctEntregue}% (meta ${META_ENTREGA}%)` })
+  if (delta != null && delta <= -3) al.push({ sev: 'bad', txt: `Caiu ${Math.abs(delta)} p.p. vs período anterior` })
+  const pior = [...m.porRede].filter(r => r.total >= 5).sort((a, b) => a.pctEntregue - b.pctEntregue)[0]
+  if (pior && pior.pctEntregue < 80) al.push({ sev: 'bad', txt: `${REDE_LABEL[pior.rede_id] ?? pior.rede_id} com ${pior.pctEntregue}% de entrega` })
+  if (m.pctSemRastreador > 10) al.push({ sev: m.pctSemRastreador > 20 ? 'bad' : 'warn', txt: `${m.pctSemRastreador}% sem rastreador (${m.sem_rastreador} entregas)` })
+  if (pctFalha > 10) al.push({ sev: pctFalha > 20 ? 'bad' : 'warn', txt: `${pctFalha}% não foi ao cliente (${m.nao_foi})` })
+  const topLoja = m.topNaoFoi[0] ?? m.topSemRastreador[0]
+  if (topLoja && topLoja.ocorrencias >= 3) al.push({ sev: 'warn', txt: `${topLoja.loja}: ${topLoja.ocorrencias} ocorrências`, href: lojaHref(topLoja.rede_id, topLoja.loja) })
+
+  const top = al.slice(0, 4)
+  if (top.length === 0) {
+    return (
+      <div className="flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-success)]/30 bg-[var(--color-success-soft)] px-4 py-2.5 text-[12.5px] font-medium animate-fade-up" style={{ color: 'var(--color-success-soft-fg)' }}>
+        <CheckCircle size={15} weight="fill" /> Tudo dentro da meta neste período — nenhum alerta.
+      </div>
+    )
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2 animate-fade-up">
+      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-fg-subtle)]">
+        <WarningCircle size={13} weight="fill" style={{ color: COR.warn }} /> Atenção
+      </span>
+      {top.map((a, i) => {
+        const cor = a.sev === 'bad' ? COR.bad : COR.warn
+        const inner = (
+          <>
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: cor }} />
+            {a.txt}
+          </>
+        )
+        const cls = 'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] font-medium'
+        return a.href
+          ? <Link key={i} href={a.href} className={`${cls} transition-colors hover:bg-[var(--color-bg-hover)]`} style={{ borderColor: `color-mix(in oklab, ${cor} 45%, transparent)`, color: 'var(--color-fg)' }}>{inner}</Link>
+          : <span key={i} className={cls} style={{ borderColor: `color-mix(in oklab, ${cor} 45%, transparent)`, color: 'var(--color-fg)' }}>{inner}</span>
+      })}
+    </div>
+  )
+}
+
 // Resumo executivo: o período inteiro numa frase. Usa só dados que já existem.
 function ResumoExecutivo({ m, mAnt, periodo }: { m: Metricas; mAnt: Metricas | null; periodo: Periodo }) {
   const pctGps = m.total ? Math.round(100 * m.com_rastreador / m.total) : 0
   const pctFalha = m.total ? Math.round(100 * m.nao_foi / m.total) : 0
   const delta = mAnt && mAnt.total ? m.pctEntregue - mAnt.pctEntregue : null
-  const periodoLabel = ({ dia: 'No dia', semana: 'Na semana', mes: 'No mês', ano: 'No ano' } as Record<Periodo, string>)[periodo]
+  const periodoLabel = ({ dia: 'No dia', semana: 'Na semana', mes: 'No mês', ano: 'No ano', custom: 'No período' } as Record<Periodo, string>)[periodo]
   const pior = [...m.porRede].filter(r => r.total >= 5).sort((a, b) => a.pctEntregue - b.pctEntregue)[0]
   const tom = tomTaxa(m.pctEntregue)
   return (
