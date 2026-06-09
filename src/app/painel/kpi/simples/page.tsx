@@ -85,6 +85,9 @@ type RedeResult = {
   preview: PreviewLinha[]
 }
 
+/** #36 — código que aparece como LOJA no Unitrac mas não está no cadastro. */
+type LojaNova = { codigo: string; nome: string; vezes: number; placa: string }
+
 // ─── Ponte com o app desktop (Electron) ─────────────────────────────────────
 // No site (browser comum) `window.api` não existe → tudo abaixo é inerte. No app
 // desktop, `window.api.gerarOffline` roda o MESMO motor do servidor, mas local,
@@ -728,6 +731,7 @@ export default function KpiSimplesPage() {
   const [data, setData] = useState<string>(hoje)
   const [alteracoes, setAlteracoes] = useState<AlteracaoParsed[]>([])
   const [redes, setRedes] = useState<RedeResult[] | null>(null)
+  const [lojasNovas, setLojasNovas] = useState<LojaNova[]>([])
   const [erro, setErro] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [bucketPaths, setBucketPaths] = useState<{ escalaBucketPaths: string[]; unitracBucketPaths: string[] } | null>(null)
@@ -833,6 +837,7 @@ export default function KpiSimplesPage() {
 
     setErro(null)
     setRedes(null)
+    setLojasNovas([])
     setLineEdits({})
 
     startTransition(async () => {
@@ -869,8 +874,9 @@ export default function KpiSimplesPage() {
           body: JSON.stringify({ escalaBucketPaths, unitracBucketPaths, data, alteracoes }),
         })
         if (!res.ok) throw new Error((await res.text()) || 'Erro ao processar.')
-        const json = await res.json() as { redes: RedeResult[]; geracao_id?: string }
+        const json = await res.json() as { redes: RedeResult[]; geracao_id?: string; lojasNovas?: LojaNova[] }
         setRedes(json.redes)
+        setLojasNovas(json.lojasNovas ?? [])
         if (json.geracao_id) setGeracaoId(json.geracao_id)
       } catch (e) {
         setErro(e instanceof Error ? e.message : 'Erro inesperado.')
@@ -903,8 +909,9 @@ export default function KpiSimplesPage() {
           body: JSON.stringify({ ...bucketPaths, data, alteracoes, lineEdits: editsArr }),
         })
         if (!res.ok) throw new Error((await res.text()) || 'Erro ao processar.')
-        const json = await res.json() as { redes: RedeResult[]; geracao_id?: string }
+        const json = await res.json() as { redes: RedeResult[]; geracao_id?: string; lojasNovas?: LojaNova[] }
         setRedes(json.redes)
+        setLojasNovas(json.lojasNovas ?? [])
         if (json.geracao_id) setGeracaoId(json.geracao_id)
       } catch (e) {
         setErro(e instanceof Error ? e.message : 'Erro inesperado.')
@@ -1106,6 +1113,28 @@ export default function KpiSimplesPage() {
       {/* Resultado — preview completo por rede */}
       {redes && redes.length > 0 && (
         <section className="mt-12 space-y-8">
+          {lojasNovas.length > 0 && (
+            <div className="flex items-start gap-2 rounded-md border border-[var(--color-info)]/40 bg-[var(--color-info)]/10 px-4 py-3">
+              <WarningCircle size={18} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-info)]" />
+              <div className="text-sm">
+                <p className="font-semibold text-[var(--color-info)]">
+                  {lojasNovas.length} código{lojasNovas.length !== 1 ? 's' : ''} novo{lojasNovas.length !== 1 ? 's' : ''} no Unitrac sem cadastro — cadastrar?
+                </p>
+                <p className="text-[var(--color-fg-muted)]">
+                  Apareceram como loja no relatório mas não estão no cadastro. Cadastre pra eles entrarem no KPI nas próximas gerações:
+                </p>
+                <ul className="mt-1.5 flex flex-col gap-0.5 text-[12.5px] text-[var(--color-fg)]">
+                  {lojasNovas.map(l => (
+                    <li key={l.codigo} className="flex items-baseline gap-2">
+                      <span className="text-numeric font-semibold tracking-wider">{l.codigo}</span>
+                      <span className="text-[var(--color-fg-muted)]">{l.nome || '(sem nome no relatório)'}</span>
+                      <span className="text-[11px] text-[var(--color-fg-subtle)]">· {l.vezes}× · ex. {l.placa}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
           {redes.some(r => r.avisoParcial) && (
             <div className="flex items-start gap-2 rounded-md border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 px-4 py-3">
               <WarningCircle size={18} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-warning)]" />

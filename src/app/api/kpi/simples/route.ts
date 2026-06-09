@@ -10,6 +10,7 @@ import type { AlteracaoParsed } from '@/lib/parsers/alteracao-text'
 import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
 import { rotaToLinha, saidaBaseSeEmRota, JANELA_FIM } from '@/lib/kpi/gerar-kpi-local'
+import { isRotaGigante } from '@/lib/kpi/rotas-gigantes'
 import { REDE_NOMES_CANONICOS } from '@/lib/kpi/kpi-styles'
 import { derivarStatus, type StatusRota, type CategoriaRevisao, type NaturezaRevisao } from '@/lib/kpi/status-rota'
 import { partitionSettled } from '@/lib/utils/partition-settled'
@@ -875,6 +876,21 @@ export async function POST(req: NextRequest) {
     return new NextResponse(msg, { status: 500 })
   }
 
+  // #36 — Lojas novas: códigos que aparecem como LOJA no Unitrac mas NÃO estão no
+  // cadastro. Preventivo: avisa pra cadastrar antes do cadastro envelhecer (caso
+  // clássico do código novo 560xxx). Match exato (código Unitrac↔Unitrac); exclui
+  // geofences de rota gigante (não são lojas).
+  const cadastroCods = new Set(lojasParaMatcher.map(l => l.codigo_unitrac).filter((c): c is string => !!c))
+  const novasMap = new Map<string, { codigo: string; nome: string; vezes: number; placa: string }>()
+  for (const p of paradaRows) {
+    if (p.classificacao !== 'LOJA' || !p.codigo_loja) continue
+    if (cadastroCods.has(p.codigo_loja) || isRotaGigante(p.codigo_loja)) continue
+    const ex = novasMap.get(p.codigo_loja)
+    if (ex) { ex.vezes++; if (!ex.nome && p.nome_loja) ex.nome = p.nome_loja }
+    else novasMap.set(p.codigo_loja, { codigo: p.codigo_loja, nome: p.nome_loja ?? '', vezes: 1, placa: p.placa_norm })
+  }
+  const lojasNovas = [...novasMap.values()].sort((a, b) => b.vezes - a.vezes)
+
   // Persistência: registra a geração (apenas metadados leves, sem base64)
   let geracaoId: string | null = null
   if (!skipSave && results.length > 0) {
@@ -908,7 +924,7 @@ export async function POST(req: NextRequest) {
     geracaoId = (inserted?.id as string) ?? null
   }
 
-  return NextResponse.json({ redes: results, redes_com_erro, geracao_id: geracaoId })
+  return NextResponse.json({ redes: results, redes_com_erro, geracao_id: geracaoId, lojasNovas })
 }
 
 // GET /api/kpi/simples?data=YYYY-MM-DD → lista histórico de gerações
