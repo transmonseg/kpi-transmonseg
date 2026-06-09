@@ -1234,11 +1234,15 @@ export async function cruzaEscalaUnitrac(
             return false
           }
         }
-        // Geo fallback: parada LOJA/FORA_BASE dentro do raio da loja escalada
+        // Geo fallback: parada LOJA/FORA_BASE perto da loja escalada. Teto igual ao
+        // do RESGATE geo (≤500m): antes era só o raio (ex. 200m) e a ponte de placa
+        // era rejeitada num caso que o resgate creditaria — caso real LCO-0978
+        // (escala antiga) ↔ LCO-0J78 (Unitrac Mercosul) parada a 258m do ZS Leblon
+        // 14 em 08/06: ponte negada → resgate nunca via as paradas → "não foi" falso.
         if (lojaEscalada && lojaEscalada.lat != null && lojaEscalada.lng != null && p.lat != null && p.lng != null) {
           if (p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE') {
             const dist = haversine(p.lat, p.lng, lojaEscalada.lat, lojaEscalada.lng)
-            if (dist <= lojaEscalada.raio_metros) return true
+            if (dist <= Math.max(lojaEscalada.raio_metros ?? 150, GEO_MAX_METROS)) return true
           }
         }
         return false

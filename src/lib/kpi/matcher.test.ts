@@ -2557,3 +2557,42 @@ describe('Geo em degraus até 500m + distância (regra do dono 2026-06-06)', () 
     } finally { setSemGeo(false) }
   })
 })
+
+describe('ponte Mercosul + resgate geo ≤500m (caso LCO-0978 dia 08/06)', () => {
+  // Bug real: escala com placa ANTIGA (LCO0978), Unitrac com a forma MERCOSUL
+  // (LCO0J78, 9→J) e a entrega como FORA_BASE sem código a 258m da loja (fora do
+  // raio de 200m, dentro dos 500m do resgate). A validação da ponte de placa usava
+  // só o raio → rejeitava a ponte → o resgate nunca via as paradas → "não foi"
+  // falso. A ponte agora valida com o MESMO teto do resgate (≤500m).
+  it('credita entrega via geo quando a parada está entre o raio e 500m', async () => {
+    setSemGeo(true)
+    try {
+      const linha: EscalaLinhaRow = {
+        id: 'lleb', rede_id: 'ZONA_SUL', placa_norm: 'LCO0978',
+        loja_nome_raw: 'Zona Sul Loja 14 - Leblon', loja_codigo_raw: '14',
+        motorista_nome: 'LUIZ', carro_ordem: 1, data_entrega: '2026-06-08',
+      }
+      const loja: LojaRow = {
+        id: 'loja-leb14', rede_id: 'ZONA_SUL', nome: '14 - ZONA SUL - LEBLON',
+        nome_normalizado: '14 zona sul leblon', codigo_escala: '14', codigo_unitrac: '9039101',
+        nome_unitrac: null, lat: -22.98032, lng: -43.2245, raio_metros: 200,
+        endereco: null, bairro: null, municipio: null, numero: null,
+      }
+      // Parada FORA_BASE sem código a ~258m ao norte da loja, sob a placa MERCOSUL.
+      const paradas: UnitracParadaRow[] = [{
+        id: 'pfb', placa_norm: 'LCO0J78',
+        chegada: '2026-06-08T16:37:00.000Z', saida: '2026-06-08T17:10:00.000Z',
+        duracao_seg: 1980, local_parada: 'RUA X', codigo_loja: null, nome_loja: null,
+        lat: -22.978, lng: -43.2245, classificacao: 'FORA_BASE', ordem: 1,
+      }]
+      const rotas = await cruzaEscalaUnitrac([linha], paradas, [loja], undefined, undefined, { geoEndereco: true })
+      const r = rotas.find(x => x.escala_linha_id === 'lleb')
+      expect(r?.paradas).toHaveLength(1)
+      expect(r?.paradas[0].loja_id).toBe('loja-leb14')
+      expect(r?._matchMeta?.algorithm).toBe('geo')
+      // fora do raio (200m) mas ≤500m → credita com distância à vista
+      expect(r?.geo_dist_metros).toBeGreaterThan(200)
+      expect(r?.geo_dist_metros).toBeLessThanOrEqual(500)
+    } finally { setSemGeo(false) }
+  })
+})
