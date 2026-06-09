@@ -350,13 +350,18 @@ h1 {
   border: 2px solid transparent;
 }
 
-/* Native form controls inherit the page colors so dark mode looks right. */
-input,
-textarea,
-select,
-button {
-  font: inherit;
-  color: inherit;
+/* Native form controls inherit the page colors so dark mode looks right.
+   DENTRO de @layer base: sem isso, esta regra (não-layered) vence as utilities
+   do Tailwind v4 e `text-white` virava `inherit` (texto escuro em botão navy no
+   modo claro — só "funcionava" no escuro porque lá o fg já é claro). */
+@layer base {
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+    color: inherit;
+  }
 }
 
 input[type="text"],
