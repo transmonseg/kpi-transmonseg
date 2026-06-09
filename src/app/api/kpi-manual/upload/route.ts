@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { parseKpiManual, parseKpiManualTodasAbas } from '@/lib/kpi/parse-kpi-manual'
-import { replaceEntradasManualMes } from '@/lib/kpi/manual-import'
+import { replaceEntradasManualMes, deleteEntradasManualMes, ultimoDiaDoMes } from '@/lib/kpi/manual-import'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -65,10 +65,25 @@ export async function DELETE(req: NextRequest) {
 
   const u = new URL(req.url)
   const data = u.searchParams.get('data') ?? ''
+  const mes = u.searchParams.get('mes') ?? ''
   const rede_id = u.searchParams.get('rede_id') ?? ''
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || !rede_id) return new NextResponse('data e rede_id obrigatórios', { status: 400 })
+  if (!rede_id) return new NextResponse('rede_id obrigatório', { status: 400 })
 
   const svc = createServiceClient()
+
+  // Modo MÊS: apaga as entradas da rede no mês inteiro (espelho do upload mensal).
+  // Antes o "Limpar" do modo mês só limpava o visual — os dados ficavam no banco.
+  if (mes) {
+    if (!/^\d{4}-\d{2}$/.test(mes)) return new NextResponse('mes inválido (YYYY-MM)', { status: 400 })
+    await deleteEntradasManualMes(svc, rede_id, mes)
+    // remove os XLSX crus de cada dia do mês (best-effort)
+    const ultimo = Number(ultimoDiaDoMes(mes).slice(-2))
+    const alvos = Array.from({ length: ultimo }, (_, i) => `${mes}-${String(i + 1).padStart(2, '0')}/${rede_id}.xlsx`)
+    await svc.storage.from('kpi-manual-raw').remove(alvos)
+    return NextResponse.json({ ok: true, mes, rede_id })
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return new NextResponse('data (YYYY-MM-DD) ou mes (YYYY-MM) obrigatório', { status: 400 })
   await svc.from('kpi_manual_entradas').delete().eq('data', data).eq('rede_id', rede_id)
   await svc.storage.from('kpi-manual-raw').remove([`${data}/${rede_id}.xlsx`])
   return NextResponse.json({ ok: true })

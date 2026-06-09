@@ -84,15 +84,18 @@ export default function InserirManual({ data, onChange }: { data: string; onChan
   }, [data, mes, modo])
 
   const excluir = useCallback(async (rede: string) => {
+    if (modo === 'mes' && !window.confirm(`Apagar TODOS os KPIs de ${REDE_LABEL[rede] ?? rede} no mês ${mes}? Essa ação não tem volta.`)) return
     setEstados(s => ({ ...s, [rede]: { status: 'excluindo' } }))
     try {
-      // modo mês não tem delete por dia — só recarrega; modo dia apaga aquele dia
-      if (modo === 'dia') await fetch(`/api/kpi-manual/upload?data=${data}&rede_id=${rede}`, { method: 'DELETE' })
+      // modo mês apaga o MÊS inteiro da rede; modo dia apaga aquele dia
+      const qs = modo === 'mes' ? `mes=${mes}&rede_id=${rede}` : `data=${data}&rede_id=${rede}`
+      const r = await fetch(`/api/kpi-manual/upload?${qs}`, { method: 'DELETE' })
+      if (!r.ok) throw new Error(await r.text())
       setEstados(s => { const c = { ...s }; delete c[rede]; return c })
     } catch {
       setEstados(s => ({ ...s, [rede]: { status: 'erro', msg: 'falha ao excluir' } }))
     }
-  }, [data, modo])
+  }, [data, mes, modo])
 
   const enviadas = Object.values(estados).filter(e => e.status === 'ok').length
   const totalLojas = Object.values(estados).reduce((a, e) => a + (e.lojas ?? 0), 0)
