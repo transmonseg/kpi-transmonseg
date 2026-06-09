@@ -184,9 +184,28 @@ export function legendaSlot(c: LinhaParaKpi | null): string | null {
     return semGps ? 'SEM RASTREADOR' : 'NÃO FOI AO CLIENTE'
   }
   if (!c.placa_rastreada) return 'SEM RASTREADOR'
-  if (c.placa_foi_algum_lugar) return 'MUDOU DE ROTA'
+  if (c.placa_foi_algum_lugar) return 'MUDOU DE ROTA - CONFERIR'
   if (c.placa_saiu_da_base === false) return 'NÃO SAIU DA BASE'
   return 'NÃO FOI AO CLIENTE'
+}
+
+/**
+ * Valores das 3 células de tempo de um carro (SAÍDA CD, CHEGADA LOJA, SAÍDA LOJA).
+ *  - Relatório parcial (saiu da base, sem chegada no corte): mostra a SAÍDA DE BASE
+ *    na coluna SAÍDA CD e "RELATÓRIO PARCIAL" nas demais — não esconde a saída real.
+ *  - Sem entrega: repete a legenda nas 3 células (comportamento atual).
+ *  - Entregue: os próprios horários.
+ */
+export function celulasSlot(
+  c: LinhaParaKpi | null,
+  saidaEx: number | null, chdEx: number | null, saiEx: number | null,
+): (string | number)[] {
+  if (c?.relatorio_parcial && c.chd_loja_1 === null) {
+    const sb = toExcelTime(c.saida_base_parcial)
+    return [sb ?? (saidaEx ?? ''), 'RELATÓRIO PARCIAL', '']
+  }
+  const slot = legendaSlot(c)
+  return [slot ?? (saidaEx ?? ''), slot ?? (chdEx ?? ''), slot ?? (saiEx ?? '')]
 }
 
 function escreverLinha(ws: ExcelJS.Worksheet, row: number, ag: LinhaAgrupada, estilo: Partial<ExcelJS.Style>[]) {
@@ -202,8 +221,8 @@ function escreverLinha(ws: ExcelJS.Worksheet, row: number, ag: LinhaAgrupada, es
   const chd2   = toExcelTime(c2?.chd_loja_1)
   const sai2   = toExcelTime(c2?.saida_loja_1)
 
-  const textoSlot1 = legendaSlot(c1)
-  const textoSlot2 = legendaSlot(c2)
+  const [s1cd, s1chd, s1sai] = celulasSlot(c1, saida1, chd1, sai1)
+  const [s2cd, s2chd, s2sai] = celulasSlot(c2, saida2, chd2, sai2)
 
   // Strip "(2º CARRO)" prefix — redundante na coluna dedicada ao 2º carro
   const nome2 = c2?.motorista?.replace(/^\(2[oº°]\s*CARRO\)\s*/i, '') ?? ''
@@ -211,13 +230,9 @@ function escreverLinha(ws: ExcelJS.Worksheet, row: number, ag: LinhaAgrupada, es
   const valores: (string | number)[] = [
     ag.loja_nome,
     c1?.motorista ?? '', c1?.motorista_codigo ?? '', formatarPlacaDisplay(c1?.placa),
-    textoSlot1 ?? (saida1 ?? ''),
-    textoSlot1 ?? (chd1 ?? ''),
-    textoSlot1 ?? (sai1 ?? ''),
+    s1cd, s1chd, s1sai,
     nome2, c2?.motorista_codigo ?? '', formatarPlacaDisplay(c2?.placa),
-    textoSlot2 ?? (saida2 ?? ''),
-    textoSlot2 ?? (chd2 ?? ''),
-    textoSlot2 ?? (sai2 ?? ''),
+    s2cd, s2chd, s2sai,
     '', '',
   ]
 
@@ -243,8 +258,10 @@ function escreverLinha(ws: ExcelJS.Worksheet, row: number, ag: LinhaAgrupada, es
   // Só emite a fórmula quando CHD e SAÍDA são horários numéricos. Se a célula tem
   // texto ("SEM RASTREADOR" / "NÃO FOI AO CLIENTE"), MOD(texto) recalcula como #VALUE!
   // no Excel — então deixa em branco (como no modelo aprovado).
-  const temTempo1 = !textoSlot1 && chd1 !== null && sai1 !== null
-  const temTempo2 = !textoSlot2 && chd2 !== null && sai2 !== null
+  // Só emite a fórmula quando as células de CHD/SAÍDA são horários numéricos
+  // (não um rótulo de texto como "NÃO FOI AO CLIENTE" / "RELATÓRIO PARCIAL").
+  const temTempo1 = typeof s1chd === 'number' && typeof s1sai === 'number' && chd1 !== null && sai1 !== null
+  const temTempo2 = typeof s2chd === 'number' && typeof s2sai === 'number' && chd2 !== null && sai2 !== null
   if (temTempo1) {
     ws.getCell(row, 14).value = { formula: `MOD(G${row}-F${row},1)`, result: computeTempoLoja(c1?.tempo_loja_1_min, chd1, sai1) }
   }

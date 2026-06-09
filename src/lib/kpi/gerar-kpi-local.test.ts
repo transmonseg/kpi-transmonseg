@@ -1,9 +1,31 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { gerarKpiLocal, gerarKpiLocalComPreview, rotaToLinha } from './gerar-kpi-local'
+import { gerarKpiLocal, gerarKpiLocalComPreview, rotaToLinha, saidaBaseSeEmRota } from './gerar-kpi-local'
 import type { RotaKpi } from '@/lib/types/kpi'
 import type { LinhaEscala } from '@/lib/types/escala'
+
+describe('saidaBaseSeEmRota — caso KOP-4978 (relatório parcial)', () => {
+  // BRT mascarado como UTC. Corte do relatório 16:11.
+  const corte = Date.UTC(2026, 5, 9, 16, 11)
+  const d = (h: number, m: number) => new Date(Date.UTC(2026, 5, 9, h, m))
+
+  it('última parada BASE com saída ≥15min antes do corte → devolve a saída de base', () => {
+    const paradas = [
+      { classificacao: 'FORA_BASE', chegada: d(0, 5), saida: d(7, 11) },
+      { classificacao: 'BASE', chegada: d(10, 21), saida: d(15, 4) }, // saiu 15:04, dirigindo no corte
+    ]
+    expect(saidaBaseSeEmRota(paradas, corte)).toEqual(d(15, 4))
+  })
+  it('caminhão ainda na base no corte (saída ~corte) → null', () => {
+    const paradas = [{ classificacao: 'BASE', chegada: d(10, 0), saida: d(16, 8) }]
+    expect(saidaBaseSeEmRota(paradas, corte)).toBeNull()
+  })
+  it('última parada NÃO é base (parou na rua) → null', () => {
+    const paradas = [{ classificacao: 'FORA_BASE', chegada: d(14, 0), saida: d(14, 30) }]
+    expect(saidaBaseSeEmRota(paradas, corte)).toBeNull()
+  })
+})
 
 const DIA20 = join(process.cwd(), 'docs', 'conversas-tia-erica', 'dia-20')
 

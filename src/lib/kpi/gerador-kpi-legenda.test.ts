@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { legendaSlot } from './gerador-kpi'
+import { legendaSlot, celulasSlot } from './gerador-kpi'
 import type { LinhaParaKpi } from './gerador-kpi'
 
 function linha(p: Partial<LinhaParaKpi>): LinhaParaKpi {
@@ -18,8 +18,8 @@ describe('legendaSlot — legenda do KPI gerado', () => {
   it('placa NÃO rastreada (ausente do Unitrac) → SEM RASTREADOR', () => {
     expect(legendaSlot(linha({ placa_rastreada: false }))).toBe('SEM RASTREADOR')
   })
-  it('placa rastreada e foi a alguma loja, mas não nesta → MUDOU DE ROTA', () => {
-    expect(legendaSlot(linha({ placa_rastreada: true, placa_foi_algum_lugar: true }))).toBe('MUDOU DE ROTA')
+  it('placa rastreada e foi a alguma loja, mas não nesta → MUDOU DE ROTA - CONFERIR', () => {
+    expect(legendaSlot(linha({ placa_rastreada: true, placa_foi_algum_lugar: true }))).toBe('MUDOU DE ROTA - CONFERIR')
   })
   it('placa rastreada mas só ficou na base (não saiu do CD) → NÃO SAIU DA BASE', () => {
     expect(legendaSlot(linha({ placa_rastreada: true, placa_foi_algum_lugar: false, placa_saiu_da_base: false }))).toBe('NÃO SAIU DA BASE')
@@ -29,5 +29,32 @@ describe('legendaSlot — legenda do KPI gerado', () => {
   })
   it('slot vazio (carro nulo) → null', () => {
     expect(legendaSlot(null)).toBeNull()
+  })
+})
+
+describe('celulasSlot — células de tempo (SAÍDA CD / CHD / SAÍDA)', () => {
+  // BRT mascarado como UTC (convenção do sistema). 15:04 BRT.
+  const saida1504 = new Date(Date.UTC(2026, 5, 9, 15, 4))
+
+  it('relatório parcial: mostra a saída de base na SAÍDA CD e "RELATÓRIO PARCIAL" nas demais', () => {
+    const c = linha({ relatorio_parcial: true, saida_base_parcial: saida1504, chd_loja_1: null, placa_rastreada: true })
+    const [cd, chd, sai] = celulasSlot(c, null, null, null)
+    expect(typeof cd).toBe('number')          // saída de base (fração do dia Excel)
+    expect(chd).toBe('RELATÓRIO PARCIAL')
+    expect(sai).toBe('')
+  })
+
+  it('sem entrega comum: repete a legenda nas 3 células (não é parcial)', () => {
+    const c = linha({ placa_rastreada: true, placa_foi_algum_lugar: true })
+    const [cd, chd, sai] = celulasSlot(c, null, null, null)
+    expect(cd).toBe('MUDOU DE ROTA - CONFERIR')
+    expect(chd).toBe('MUDOU DE ROTA - CONFERIR')
+    expect(sai).toBe('MUDOU DE ROTA - CONFERIR')
+  })
+
+  it('entregue: usa os horários passados (sem legenda)', () => {
+    const c = linha({ chd_loja_1: new Date(), placa_rastreada: true })
+    const [cd, chd, sai] = celulasSlot(c, 0.5, 0.6, 0.7)
+    expect([cd, chd, sai]).toEqual([0.5, 0.6, 0.7])
   })
 })

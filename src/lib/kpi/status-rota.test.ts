@@ -1,7 +1,47 @@
 import { describe, it, expect } from 'vitest'
-import { derivarStatus } from './status-rota'
+import { derivarStatus, tierEfetivo, TIER_DE_STATUS, MOTIVO_CURTO, STATUS_LABEL, type StatusRota } from './status-rota'
 
 const base = { temGps: true, ficouNaBase: false, paradas: [] as { classificacao: string; loja_id: string | null }[] }
+
+const TODOS_STATUS: StatusRota[] = ['ENTREGUE', 'ENTREGUE_GEO', 'MUDOU_DE_ROTA', 'SEM_RASTREADOR', 'NAO_SAIU_DA_BASE', 'NAO_FOI_AO_CLIENTE', 'FORA_DE_BASE']
+
+describe('tiers de certeza', () => {
+  it('todo status tem tier base, MOTIVO_CURTO e STATUS_LABEL', () => {
+    for (const s of TODOS_STATUS) {
+      expect(TIER_DE_STATUS[s]).toBeDefined()
+      expect(MOTIVO_CURTO[s]).toBeTruthy()
+      expect(STATUS_LABEL[s]).toBeTruthy()
+    }
+  })
+  it('tierEfetivo: entregue confirmado, no-show não-entregou', () => {
+    expect(tierEfetivo({ status: 'ENTREGUE', revisar: false })).toBe('confirmado')
+    expect(tierEfetivo({ status: 'NAO_SAIU_DA_BASE', revisar: false })).toBe('nao_entregou')
+    expect(tierEfetivo({ status: 'MUDOU_DE_ROTA', revisar: true })).toBe('conferir')
+  })
+  it('tierEfetivo: geo fora do raio e no-show revisável caem em conferir', () => {
+    expect(tierEfetivo({ status: 'ENTREGUE_GEO', revisar: true })).toBe('conferir')
+    expect(tierEfetivo({ status: 'ENTREGUE_GEO', revisar: false })).toBe('confirmado')
+    expect(tierEfetivo({ status: 'NAO_FOI_AO_CLIENTE', revisar: true })).toBe('conferir')
+  })
+  it('tierEfetivo: relatório parcial é conferir', () => {
+    expect(tierEfetivo({ status: 'NAO_FOI_AO_CLIENTE', revisar: true, categoria: 'RELATORIO_PARCIAL' })).toBe('conferir')
+  })
+})
+
+describe('relatório parcial', () => {
+  it('saiu da base e relatório cortou antes → categoria RELATORIO_PARCIAL, natureza relatorio', () => {
+    const r = derivarStatus({ ...base, relatorioParcial: true, saidaBaseParcial: '15:04' })
+    expect(r.categoria).toBe('RELATORIO_PARCIAL')
+    expect(r.natureza).toBe('relatorio')
+    expect(r.revisar).toBe(true)
+    expect(r.motivoRevisao).toContain('15:04')
+  })
+  it('NÃO sobrepõe quando houve entrega real', () => {
+    const r = derivarStatus({ ...base, relatorioParcial: true, paradas: [{ classificacao: 'LOJA', loja_id: 'l1' }] })
+    expect(r.categoria).toBeNull()
+    expect(r.status).toBe('ENTREGUE')
+  })
+})
 
 describe('derivarStatus', () => {
   it('SEM_RASTREADOR quando não tem GPS', () => {

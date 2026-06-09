@@ -97,6 +97,55 @@ export function rotaToLinha(rota: RotaKpi, escala: LinhaEscala, ordem: number): 
   }
 }
 
+/** Maior timestamp de parada do relatório = horizonte/corte (quando foi emitido). */
+function corteRelatorioMs(veiculos: ResumoVeiculo[]): number {
+  let max = 0
+  for (const v of veiculos) for (const p of v.paradas) {
+    const t = p.saida instanceof Date ? p.saida.getTime() : 0
+    if (t > max) max = t
+  }
+  return max
+}
+
+/**
+ * Saída de base de um caminhão que estava EM ROTA quando o relatório cortou.
+ * Assinatura (caso KOP-4978 09/06): a ÚLTIMA parada da placa é BASE e a saída
+ * ficou ≥15min antes do corte → o caminhão deixou a base e estava dirigindo (sem
+ * parada nova porque ainda não chegou). Retorna a saída de base ou null.
+ * Conservador: nunca conclui entrega — só expõe a saída que comprovadamente houve.
+ */
+export function saidaBaseSeEmRota(
+  paradas: ReadonlyArray<{ classificacao: string; chegada: Date; saida: Date | null }> | undefined,
+  corteMs: number,
+): Date | null {
+  if (!paradas || paradas.length === 0) return null
+  const ord = [...paradas].sort((a, b) => a.chegada.getTime() - b.chegada.getTime())
+  const ultima = ord[ord.length - 1]
+  if (ultima.classificacao !== 'BASE') return null
+  const saida = ultima.saida ?? ultima.chegada
+  if (corteMs - saida.getTime() < 15 * 60_000) return null // ainda na base no corte
+  return saida
+}
+
+/** Marca a linha como "relatório parcial" quando a placa estava em rota no corte e
+ *  esta linha não teve entrega. Só dispara se o relatório acabou ANTES da janela da
+ *  rede (relatorioCedo) — evita falso-positivo em relatório de fim de dia. */
+function aplicarParcial(
+  linha: LinhaParaKpi, rota: RotaKpi,
+  paradasPorPlaca: Map<string, ResumoVeiculo['paradas']>,
+  relatorioCedo: boolean, corteMs: number,
+): void {
+  if (!relatorioCedo) return
+  if (rota.paradas.some(p => p.loja_id != null)) return // teve entrega → não é parcial
+  const saida = saidaBaseSeEmRota(paradasPorPlaca.get(rota.placa_norm ?? ''), corteMs)
+  if (!saida) return
+  linha.relatorio_parcial = true
+  linha.saida_base_parcial = saida
+  linha.saida_cd = saida // saída de base é fato — alimenta PDF e contagem de GPS
+  const hhmm = `${String(saida.getUTCHours()).padStart(2, '0')}:${String(saida.getUTCMinutes()).padStart(2, '0')}`
+  linha.observacao = [linha.observacao, `Relatório parcial — saiu da base ${hhmm}, ainda em rota no corte.`].filter(Boolean).join(' ')
+}
+
 type RedeGrupo = { rotas: RotaKpi[]; escala: LinhaEscala[] }
 type Pipeline = {
   data: string
@@ -242,13 +291,24 @@ async function prepararPipeline(opts: GerarKpiLocalOpts): Promise<Pipeline> {
  * detecção de anomalia extra e persistência.
  */
 export async function gerarKpiLocal(opts: GerarKpiLocalOpts): Promise<SaidaRede[]> {
-  const { data, redeMap } = await prepararPipeline(opts)
+  const { data, veiculos, redeMap } = await prepararPipeline(opts)
+
+  // Corte do relatório + paradas por placa (pra detectar "relatório parcial").
+  const corteMs = corteRelatorioMs(veiculos)
+  const corteHora = corteMs ? new Date(corteMs).getUTCHours() + new Date(corteMs).getUTCMinutes() / 60 : 24
+  const paradasPorPlaca = new Map<string, ResumoVeiculo['paradas']>()
+  for (const v of veiculos) paradasPorPlaca.set(v.placa_norm, v.paradas)
 
   // Por rede: rotaToLinha → linhas → gera XLSX + PDF (com e sem Chegada CD).
   const saidas: SaidaRede[] = []
   for (const [rede_id, grupo] of redeMap.entries()) {
     const rede_nome = REDE_NOMES_CANONICOS[rede_id] ?? rede_id
-    const linhas = grupo.rotas.map((rota, idx) => rotaToLinha(rota, grupo.escala[idx], idx + 1))
+    const relatorioCedo = corteHora < (JANELA_FIM[rede_id] ?? 12)
+    const linhas = grupo.rotas.map((rota, idx) => {
+      const linha = rotaToLinha(rota, grupo.escala[idx], idx + 1)
+      aplicarParcial(linha, rota, paradasPorPlaca, relatorioCedo, corteMs)
+      return linha
+    })
 
     const [xlsx, xlsx_com_cd, pdf, pdf_com_cd] = await Promise.all([
       gerarKpi({ rede_id, data, linhas }),
@@ -302,7 +362,10 @@ function fmtHoraBRT(d: Date | null | undefined): string | null {
   return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`
 }
 
-const JANELA_FIM: Record<string, number> = {
+/** Hora de fim da janela de entrega por rede (informada pela operação). Usada pra
+ *  saber se o relatório foi gerado ANTES das entregas (parcial). Exportada e reusada
+ *  pelo route da web pra os dois caminhos não divergirem. */
+export const JANELA_FIM: Record<string, number> = {
   PREZUNIC: 12, CARREFOUR: 12, PRINCESA: 12, ASSAI: 12, SUPERPRIX: 12, ATACADAO: 12,
   GUANABARA: 15, SUPER_PAX: 17, FEIRA_NOVA: 17, EMANUEL: 17, ARMAZEM_GRAO: 18, ZONA_SUL: 23,
 }
@@ -338,6 +401,7 @@ export async function gerarKpiLocalComPreview(opts: GerarKpiLocalOpts): Promise<
       for (const d of arr) reportMaxHora = Math.max(reportMaxHora, d.getUTCHours() + d.getUTCMinutes() / 60)
     }
   }
+  const corteMs = corteRelatorioMs(veiculos)
   for (const [rede_id, grupo] of redeMap.entries()) {
     grupo.rotas.forEach((rota, i) => {
       const placa = rota.placa_norm
@@ -362,7 +426,12 @@ export async function gerarKpiLocalComPreview(opts: GerarKpiLocalOpts): Promise<
         return cmp !== 0 ? cmp : a.esc.carro_ordem - b.esc.carro_ordem
       })
 
-    const linhas = sorted.map(({ rota, esc }, idx) => rotaToLinha(rota, esc, idx + 1))
+    const relatorioCedo = reportMaxHora < (JANELA_FIM[rede_id] ?? 12)
+    const linhas = sorted.map(({ rota, esc }, idx) => {
+      const linha = rotaToLinha(rota, esc, idx + 1)
+      aplicarParcial(linha, rota, paradasPorPlaca, relatorioCedo, corteMs)
+      return linha
+    })
     const qtd_sem_gps = linhas.filter(l => !l.saida_cd && !l.chd_loja_1).length
 
     const preview: PreviewLinhaLocal[] = sorted.map(({ rota, esc }, idx) => {
@@ -390,6 +459,10 @@ export async function gerarKpiLocalComPreview(opts: GerarKpiLocalOpts): Promise<
         if (lr && lojaNomeDivergeDaEscala(esc.loja_nome_raw, lr)) entregouLojaForaEscala = { lojaReal: lr.nome }
       }
 
+      const saidaParcial = relatorioCedo && !temEntrega
+        ? saidaBaseSeEmRota(paradasPorPlaca.get(rota.placa_norm ?? ''), corteMs)
+        : null
+
       const statusInfo = derivarStatus({
         temGps,
         ficouNaBase,
@@ -404,6 +477,8 @@ export async function gerarKpiLocalComPreview(opts: GerarKpiLocalOpts): Promise<
         lojaSemCadastroUnitrac,
         lojaAmbiguaComGemea,
         entregouLojaForaEscala,
+        relatorioParcial: !!saidaParcial,
+        saidaBaseParcial: saidaParcial ? fmtHoraBRT(saidaParcial) : null,
       })
 
       const saidaLoja = p0 && p0.chegada && p0.duracao_min != null
@@ -430,7 +505,7 @@ export async function gerarKpiLocalComPreview(opts: GerarKpiLocalOpts): Promise<
         turno: esc.turno,
         tem_gps: temGps,
         ficou_na_base: ficouNaBase,
-        saida_cd_fmt: fmtHoraBRT(rota.saida_cd),
+        saida_cd_fmt: fmtHoraBRT(rota.saida_cd) ?? (saidaParcial ? fmtHoraBRT(saidaParcial) : null),
         chegada_loja_fmt: fmtHoraBRT(rota.paradas[0]?.chegada),
         chegada_base_fmt: fmtHoraBRT(rota.chegada_base),
         tempo_loja_min: rota.paradas[0]?.duracao_min ?? null,

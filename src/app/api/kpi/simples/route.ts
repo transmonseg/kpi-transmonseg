@@ -9,7 +9,7 @@ import { aplicarAlteracoes, parsedToConfirmada } from '@/lib/kpi/aplicar-alterac
 import type { AlteracaoParsed } from '@/lib/parsers/alteracao-text'
 import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
-import { rotaToLinha } from '@/lib/kpi/gerar-kpi-local'
+import { rotaToLinha, saidaBaseSeEmRota, JANELA_FIM } from '@/lib/kpi/gerar-kpi-local'
 import { REDE_NOMES_CANONICOS } from '@/lib/kpi/kpi-styles'
 import { derivarStatus, type StatusRota, type CategoriaRevisao, type NaturezaRevisao } from '@/lib/kpi/status-rota'
 import { partitionSettled } from '@/lib/utils/partition-settled'
@@ -449,6 +449,13 @@ export async function POST(req: NextRequest) {
     const d = new Date(iso)
     return Math.max(mx, d.getUTCHours() + d.getUTCMinutes() / 60)
   }, 0)
+  // Corte do relatório em ms (maior timestamp) — pra detectar "relatório parcial":
+  // caminhão que saiu da base e estava em rota quando o relatório foi emitido.
+  const corteMs = paradaRows.reduce((mx, p) => {
+    const iso = p.saida ?? p.chegada
+    const t = iso ? new Date(iso).getTime() : 0
+    return t > mx ? t : mx
+  }, 0)
 
   // Carrega lojas operacionais (resolveLojaId) e canonical_loja com geo
   // (geo fallback para paradas FORA_BASE sem geofence — Categoria B do plano-90%).
@@ -620,6 +627,16 @@ export async function POST(req: NextRequest) {
           return cmp !== 0 ? cmp : a.esc.carro_ordem - b.esc.carro_ordem
         })
 
+      // Relatório gerado ANTES do fim da janela desta rede → entregas em andamento.
+      const janelaFim = JANELA_FIM[rede_id] ?? 12
+      const relatorioCedo = reportMaxHora < janelaFim
+      // Saída de base de um caminhão em rota no corte (caso KOP-4978): só quando o
+      // relatório foi cedo, a linha não teve entrega e a placa saiu da base.
+      const saidaParcialDe = (rota: RotaKpi): Date | null => {
+        if (!relatorioCedo || rota.paradas.some(p => p.loja_id != null)) return null
+        return saidaBaseSeEmRota(paradasIndex.get(rota.placa_unitrac ?? rota.placa_norm ?? ''), corteMs)
+      }
+
       // Apply per-line overrides from frontend edits
       for (const edit of lineEdits) {
         if (edit.rede_id !== rede_id) continue
@@ -689,6 +706,14 @@ export async function POST(req: NextRequest) {
         l.placa_rastreada = placaRastreada(rota.placa_norm)
         l.placa_foi_algum_lugar = placaFoiAlgumLugar(rota.placa_norm)
         l.placa_saiu_da_base = placaSaiuDaBase(rota.placa_norm)
+        const saidaParcial = saidaParcialDe(rota)
+        if (saidaParcial) {
+          l.relatorio_parcial = true
+          l.saida_base_parcial = saidaParcial
+          l.saida_cd = saidaParcial // saída de base é fato — alimenta PDF e contagem de GPS
+          const hhmm = `${String(saidaParcial.getUTCHours()).padStart(2, '0')}:${String(saidaParcial.getUTCMinutes()).padStart(2, '0')}`
+          l.observacao = [l.observacao, `Relatório parcial — saiu da base ${hhmm}, ainda em rota no corte.`].filter(Boolean).join(' ')
+        }
         return l
       })
 
@@ -704,6 +729,7 @@ export async function POST(req: NextRequest) {
         // Classificação dos avisos (não muda match — só explica o motivo):
         const esperada = resolverLojaEsperada(esc, lojasParaMatcher)
         const temEntrega = rota.paradas.some(p => p.loja_id != null)
+        const saidaParcialPreview = saidaParcialDe(rota)
         // (a) loja sem cadastro no Unitrac → impossível rastrear
         const lojaSemCadastroUnitrac = !temEntrega &&
           (!esperada || esperada.codigo_unitrac == null || esperada.lat == null || esperada.lng == null)
@@ -747,6 +773,10 @@ export async function POST(req: NextRequest) {
           lojaSemCadastroUnitrac,
           lojaAmbiguaComGemea,
           entregouLojaForaEscala,
+          relatorioParcial: !!saidaParcialPreview,
+          saidaBaseParcial: saidaParcialPreview
+            ? `${String(saidaParcialPreview.getUTCHours()).padStart(2, '0')}:${String(saidaParcialPreview.getUTCMinutes()).padStart(2, '0')}`
+            : null,
         })
         const saidaLoja = p0 && p0.chegada && p0.duracao_min != null
           ? new Date(p0.chegada.getTime() + p0.duracao_min * 60_000)
@@ -776,7 +806,7 @@ export async function POST(req: NextRequest) {
           turno: esc.turno,
           tem_gps: temGps,
           ficou_na_base: ficouNaBase,
-          saida_cd_fmt: fmtHoraBRT(rota.saida_cd),
+          saida_cd_fmt: fmtHoraBRT(rota.saida_cd) ?? (saidaParcialPreview ? fmtHoraBRT(saidaParcialPreview) : null),
           chegada_loja_fmt: fmtHoraBRT(rota.paradas[0]?.chegada),
           chegada_base_fmt: fmtHoraBRT(rota.chegada_base),
           tempo_loja_min: rota.paradas[0]?.duracao_min ?? null,
@@ -808,11 +838,6 @@ export async function POST(req: NextRequest) {
       // 3:30–12:00; Guanabara 9–15; SuperPax/Feira Nova/Emanuel 13–17; Armazém do
       // Grão 12–18; Zona Sul 3:30–23. Por isso ZS/Armazém de manhã ter pouca entrega
       // é NORMAL, não erro — e o aviso reflete isso.
-      const JANELA_FIM: Record<string, number> = {
-        PREZUNIC: 12, CARREFOUR: 12, PRINCESA: 12, ASSAI: 12, SUPERPRIX: 12, ATACADAO: 12,
-        GUANABARA: 15, SUPER_PAX: 17, FEIRA_NOVA: 17, EMANUEL: 17, ARMAZEM_GRAO: 18, ZONA_SUL: 23,
-      }
-      const janelaFim = JANELA_FIM[rede_id] ?? 12
       const rastreados = preview.filter(p => p.tem_gps)
       const entregaram = rastreados.filter(p => p.chegada_loja_fmt)
       const avisoParcial = rastreados.length >= 3 && reportMaxHora < janelaFim && entregaram.length / rastreados.length < 0.2

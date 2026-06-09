@@ -18,7 +18,7 @@ import {
   ArrowClockwise,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button, Card, CardContent, Input, cn } from '@/components/ui'
-import { STATUS_LABEL, CATEGORIA_LABEL, NATUREZA_STYLE, type StatusRota, type CategoriaRevisao, type NaturezaRevisao } from '@/lib/kpi/status-rota'
+import { STATUS_LABEL, CATEGORIA_LABEL, NATUREZA_STYLE, MOTIVO_CURTO, TIER_STYLE, tierEfetivo, type StatusRota, type CategoriaRevisao, type NaturezaRevisao } from '@/lib/kpi/status-rota'
 import { hojeBR } from '@/lib/data-br'
 
 type VeiculoSlot = {
@@ -1146,6 +1146,20 @@ export default function KpiSimplesPage() {
             </div>
           </div>
 
+          {/* Legenda dos 3 níveis de certeza — pra operação "bater o olho". */}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-subtle)]/40 px-4 py-2.5 text-[11.5px]">
+            <span className="font-medium uppercase tracking-[0.14em] text-[var(--color-fg-subtle)]">Como ler:</span>
+            {(['confirmado', 'conferir', 'nao_entregou'] as const).map(tier => (
+              <span key={tier} className="inline-flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full" style={{ background: TIER_STYLE[tier].dot }} />
+                <span className="font-semibold" style={{ color: TIER_STYLE[tier].dot }}>{TIER_STYLE[tier].label}</span>
+                <span className="text-[var(--color-fg-muted)]">
+                  {tier === 'confirmado' ? '— pode confiar' : tier === 'conferir' ? '— bata o olho' : '— não saiu/não foi'}
+                </span>
+              </span>
+            ))}
+          </div>
+
           {redes.map((r, idx) => (
             <div
               key={r.rede_id}
@@ -1562,17 +1576,7 @@ function RedePreviewSection({
   )
 }
 
-const STATUS_TOM: Record<StatusRota, { bg: string; fg: string }> = {
-  ENTREGUE:           { bg: 'var(--color-success-soft)', fg: 'var(--color-success-soft-fg)' },
-  ENTREGUE_GEO:       { bg: 'var(--color-bg-subtle)',    fg: 'var(--color-fg-muted)' },
-  MUDOU_DE_ROTA:      { bg: 'var(--color-warning-soft)', fg: 'var(--color-warning-soft-fg)' },
-  SEM_RASTREADOR:     { bg: 'var(--color-danger-soft)',  fg: 'var(--color-danger-soft-fg)' },
-  NAO_SAIU_DA_BASE:   { bg: 'var(--color-warning-soft)', fg: 'var(--color-warning-soft-fg)' },
-  NAO_FOI_AO_CLIENTE: { bg: 'var(--color-warning-soft)', fg: 'var(--color-warning-soft-fg)' },
-  FORA_DE_BASE:       { bg: 'var(--color-info-soft)',    fg: 'var(--color-info-soft-fg)' },
-}
-
-function StatusBadge({ status, naoConfirmado }: { status: StatusRota; naoConfirmado?: boolean }) {
+function StatusBadge({ status, revisar, categoria, naoConfirmado }: { status: StatusRota; revisar: boolean; categoria: CategoriaRevisao | null; naoConfirmado?: boolean }) {
   // "Entregue + sem cadastro" confundia a operação (verde positivo + alerta). Quando
   // a parada não casou com a loja da escala (loja_id nulo), mostra "Entregue (não
   // confirmado)" em âmbar — entregou numa loja, mas não dá pra provar que foi a certa.
@@ -1587,7 +1591,10 @@ function StatusBadge({ status, naoConfirmado }: { status: StatusRota; naoConfirm
       </span>
     )
   }
-  const t = STATUS_TOM[status]
+  // Cor pelo NÍVEL DE CERTEZA (confirmado / conferir / não entregou), não pelo status
+  // solto — assim "mudou de rota" (conferir) e "não foi" (não entregou) deixam de
+  // parecer a mesma coisa.
+  const t = TIER_STYLE[tierEfetivo({ status, revisar, categoria })]
   return (
     <span
       className="inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-semibold whitespace-nowrap"
@@ -1659,7 +1666,7 @@ function PreviewRow({
       </td>
       <td className="px-4 py-2 whitespace-nowrap">
         <div className="flex flex-col items-start gap-1">
-          <StatusBadge status={linha.status} naoConfirmado={linha.categoria === 'LOJA_SEM_CADASTRO' && (linha.status === 'ENTREGUE' || linha.status === 'ENTREGUE_GEO')} />
+          <StatusBadge status={linha.status} revisar={linha.revisar} categoria={linha.categoria} naoConfirmado={linha.categoria === 'LOJA_SEM_CADASTRO' && (linha.status === 'ENTREGUE' || linha.status === 'ENTREGUE_GEO')} />
           {linha.algoritmo === 'geo' && linha.geo_dist_metros != null && (
             <span
               className="inline-flex w-fit items-center gap-1 rounded border border-[var(--color-border-strong)] px-1.5 py-0.5 text-[10px] font-medium leading-tight text-[var(--color-fg-muted)]"
@@ -1668,15 +1675,26 @@ function PreviewRow({
               📍 {linha.geo_dist_metros}m
             </span>
           )}
-          {linha.natureza && linha.motivoRevisao && (
-            <span
-              className="inline-flex w-fit items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium leading-tight"
-              style={{ color: NATUREZA_STYLE[linha.natureza].cor, borderColor: NATUREZA_STYLE[linha.natureza].cor }}
-              title={linha.motivoRevisao}
-            >
-              {NATUREZA_STYLE[linha.natureza].emoji} {linha.categoria ? CATEGORIA_LABEL[linha.categoria] : NATUREZA_STYLE[linha.natureza].label}
-            </span>
-          )}
+          {(() => {
+            // Motivo SEMPRE visível quando não é entrega confirmada — antes os
+            // "não foi"/"não saiu" com revisar:false ficavam sem explicação nenhuma.
+            const tier = tierEfetivo({ status: linha.status, revisar: linha.revisar, categoria: linha.categoria })
+            if (tier === 'confirmado' && !linha.motivoRevisao) return null
+            const cor = linha.natureza ? NATUREZA_STYLE[linha.natureza].cor : TIER_STYLE[tier].dot
+            const emoji = linha.natureza ? NATUREZA_STYLE[linha.natureza].emoji : TIER_STYLE[tier].emoji
+            const label = linha.categoria
+              ? CATEGORIA_LABEL[linha.categoria]
+              : (linha.natureza ? NATUREZA_STYLE[linha.natureza].label : TIER_STYLE[tier].label)
+            return (
+              <span
+                className="inline-flex w-fit items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium leading-tight"
+                style={{ color: cor, borderColor: cor }}
+                title={linha.motivoRevisao ?? MOTIVO_CURTO[linha.status]}
+              >
+                {emoji} {label}
+              </span>
+            )
+          })()}
         </div>
       </td>
       <td className="px-4 py-2">

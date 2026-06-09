@@ -61,6 +61,15 @@ export interface DadosStatusRota {
    * escala → caminhão entregou em loja fora da escala. Caso real: Freguesia →
    * Vista Alegre. */
   entregouLojaForaEscala?: { lojaReal: string } | null
+  /** O relatório do Unitrac foi emitido com o caminhão AINDA em rota: a placa saiu
+   * da base perto do corte do relatório e não há chegada registrada (a entrega caiu
+   * depois do horizonte do relatório). Honesto = "saiu da base, relatório parcial",
+   * NÃO "não foi ao cliente". Caso real KOP-4978 09/06 (saiu 15:13, relatório cortou
+   * 16:09, chegou 16:15). */
+  relatorioParcial?: boolean
+  /** Hora de saída de base (HH:MM) atribuída ao caso de relatório parcial — o fato
+   * comprovado que o KPI deve mostrar mesmo sem entrega confirmada. */
+  saidaBaseParcial?: string | null
 }
 
 export interface ResultadoStatus {
@@ -193,6 +202,18 @@ export function derivarStatus(d: DadosStatusRota): ResultadoStatus {
       categoria: 'ENTREGOU_FORA_ESCALA', natureza: 'operacao',
     }
   }
+  // Relatório emitido com o caminhão ainda em rota: a placa saiu da base perto do
+  // corte e a chegada caiu depois do horizonte do relatório. Não é "não foi" — é
+  // parcial. Mantém o status base (não conta como entregue), mas refina o motivo e
+  // pede conferência. O KPI mostra a saída de base (fato), não um "não foi" seco.
+  if (!temEntrega && d.relatorioParcial) {
+    const saiu = d.saidaBaseParcial ? ` (saiu da base ${d.saidaBaseParcial})` : ''
+    return {
+      status: base.status, revisar: true,
+      motivoRevisao: `Relatório emitido antes da chegada${saiu} — o caminhão ainda estava em rota. Confirmar depois do próximo relatório.`,
+      categoria: 'RELATORIO_PARCIAL', natureza: 'relatorio',
+    }
+  }
   // Linha sem entrega: dado faltando explica o "não foi" (não é erro do sistema).
   if (!temEntrega && d.lojaSemCadastroUnitrac) {
     return {
@@ -240,4 +261,53 @@ export const STATUS_LABEL: Record<StatusRota, string> = {
   NAO_SAIU_DA_BASE: 'Não saiu da base',
   NAO_FOI_AO_CLIENTE: 'Não foi ao cliente',
   FORA_DE_BASE: 'Fora de base',
+}
+
+// ── Níveis de certeza (3 baldes) ─────────────────────────────────────────────
+// Agrupa os 7 status em 3 níveis pra operação "bater o olho": o que dá pra
+// confiar, o que é pra conferir, e o que realmente não saiu. Fonte única usada
+// pela tela E pelo XLSX, pra os dois nunca divergirem.
+export type TierCerteza = 'confirmado' | 'conferir' | 'nao_entregou'
+
+/** Tier base por status (antes de considerar revisar/categoria). */
+export const TIER_DE_STATUS: Record<StatusRota, TierCerteza> = {
+  ENTREGUE: 'confirmado',
+  ENTREGUE_GEO: 'confirmado',
+  MUDOU_DE_ROTA: 'conferir',
+  FORA_DE_BASE: 'conferir',
+  NAO_FOI_AO_CLIENTE: 'nao_entregou',
+  NAO_SAIU_DA_BASE: 'nao_entregou',
+  SEM_RASTREADOR: 'nao_entregou',
+}
+
+/** Tier EFETIVO: refina pelo `revisar`/`categoria`. Uma entrega geo fora do raio,
+ *  um "não foi" que pede conferência, ou um relatório parcial não são certezas —
+ *  caem em 'conferir'. Recebe o resultado de derivarStatus (ou um subset). */
+export function tierEfetivo(r: Pick<ResultadoStatus, 'status' | 'revisar'> & { categoria?: CategoriaRevisao | null }): TierCerteza {
+  if (r.categoria === 'RELATORIO_PARCIAL') return 'conferir'
+  const base = TIER_DE_STATUS[r.status]
+  // Geo fora do raio (revisar) e no-show revisável (placa entregou própria escala /
+  // rastreador travado) viram "conferir" — não são certezas pra cima nem pra baixo.
+  if (r.status === 'ENTREGUE_GEO' && r.revisar) return 'conferir'
+  if (r.status === 'NAO_FOI_AO_CLIENTE' && r.revisar) return 'conferir'
+  return base
+}
+
+/** Estilo de cada tier pra UI (cores do design system). */
+export const TIER_STYLE: Record<TierCerteza, { label: string; emoji: string; bg: string; fg: string; dot: string }> = {
+  confirmado:   { label: 'Confirmado',   emoji: '✅', bg: 'var(--color-success-soft)', fg: 'var(--color-success-soft-fg)', dot: 'var(--color-success)' },
+  conferir:     { label: 'Conferir',     emoji: '🟡', bg: 'var(--color-warning-soft)', fg: 'var(--color-warning-soft-fg)', dot: 'var(--color-warning)' },
+  nao_entregou: { label: 'Não entregou', emoji: '❌', bg: 'var(--color-danger-soft)',  fg: 'var(--color-danger-soft-fg)',  dot: 'var(--color-danger)' },
+}
+
+/** Explicação curta por status — usada na tela quando não há `motivoRevisao`
+ *  específico (antes os no-show com revisar:false ficavam sem o porquê). */
+export const MOTIVO_CURTO: Record<StatusRota, string> = {
+  ENTREGUE: 'Entrega confirmada pelo código da loja no Unitrac.',
+  ENTREGUE_GEO: 'Confirmada pela coordenada cadastrada da loja.',
+  MUDOU_DE_ROTA: 'Rodou outra rota (não a escalada) — conferir.',
+  FORA_DE_BASE: 'Parou fora de base; conferir se houve entrega.',
+  NAO_FOI_AO_CLIENTE: 'Tem rastreador e saiu, mas não passou nesta loja.',
+  NAO_SAIU_DA_BASE: 'O caminhão não saiu do CD neste relatório.',
+  SEM_RASTREADOR: 'A placa não aparece no relatório do Unitrac.',
 }

@@ -77,6 +77,12 @@ export type KpiLinha = {
   /** A placa saiu da base (tem parada LOJA ou FORA_BASE). Se está no relatório mas
    * isto é false → "NÃO SAIU DA BASE" (caminhão ficou no CD). */
   placa_saiu_da_base?: boolean
+  /** O relatório foi cortado com o caminhão AINDA em rota: saiu da base e a chegada
+   * caiu depois do horizonte do relatório. O KPI mostra a saída de base (fato) e
+   * marca "RELATÓRIO PARCIAL", em vez de "não foi ao cliente". Caso KOP-4978 09/06. */
+  relatorio_parcial?: boolean
+  /** Saída de base atribuída ao caso parcial — o fato a exibir na coluna SAÍDA CD. */
+  saida_base_parcial?: Date | null
 }
 
 export type AnomaliaDetectada = {
