@@ -1605,6 +1605,19 @@ function RedePreviewSection({
   )
 }
 
+// #5 — rótulo curto de COMO a entrega casou (auditabilidade). 'geo' tem chip próprio.
+const CASOU_LABEL: Record<string, string> = {
+  exact: '✓ código', hybrid: '✓ código+nome', alias: '~ nome', trgm: '~ nome', troca: '⇄ troca de carro', crossdock: '⇄ cross-dock',
+}
+const CASOU_TITLE: Record<string, string> = {
+  exact: 'Casou pelo código exato da loja no Unitrac — alta confiança.',
+  hybrid: 'Casou por código + nome — alta confiança.',
+  alias: 'Casou pelo apelido/nome cadastrado da loja.',
+  trgm: 'Casou por semelhança de nome (aproximado) — confira se for crítico.',
+  troca: 'Entregue por veículo diferente do escalado (troca de carro).',
+  crossdock: 'Entrega via cross-dock.',
+}
+
 function StatusBadge({ status, revisar, categoria, naoConfirmado }: { status: StatusRota; revisar: boolean; categoria: CategoriaRevisao | null; naoConfirmado?: boolean }) {
   // "Entregue + sem cadastro" confundia a operação (verde positivo + alerta). Quando
   // a parada não casou com a loja da escala (loja_id nulo), mostra "Entregue (não
@@ -1702,6 +1715,15 @@ function PreviewRow({
               title={`Casou por geolocalização a ${linha.geo_dist_metros}m do ponto cadastrado da loja`}
             >
               📍 {linha.geo_dist_metros}m
+            </span>
+          )}
+          {/* #5 — Como a linha casou (auditabilidade): confia no "código", fiscaliza o "nome". */}
+          {(linha.status === 'ENTREGUE' || linha.status === 'ENTREGUE_GEO') && CASOU_LABEL[linha.algoritmo] && linha.algoritmo !== 'geo' && (
+            <span
+              className="inline-flex w-fit items-center gap-1 rounded border border-[var(--color-border-strong)] px-1.5 py-0.5 text-[10px] font-medium leading-tight text-[var(--color-fg-muted)]"
+              title={CASOU_TITLE[linha.algoritmo]}
+            >
+              {CASOU_LABEL[linha.algoritmo]}
             </span>
           )}
           {(() => {

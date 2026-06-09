@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { validarCoordLoja } from '@/lib/lojas/validar-coord'
 
 export const runtime = 'nodejs'
 
@@ -53,6 +54,10 @@ export async function POST(req: NextRequest) {
   if (!rede_id || !nome) {
     return new NextResponse('rede_id e nome são obrigatórios.', { status: 400 })
   }
+
+  // #37: valida coord (pega lat↔lng trocada / fora da região da operação).
+  const erroCoord = validarCoordLoja(lat, lng)
+  if (erroCoord) return new NextResponse(erroCoord, { status: 400 })
 
   const svc = createServiceClient()
   const { data, error } = await svc

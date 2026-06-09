@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { validarCoordLoja } from '@/lib/lojas/validar-coord'
 
 export const runtime = 'nodejs'
 
@@ -39,6 +40,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   if (Object.keys(patch).length === 0) {
     return new NextResponse('Nenhum campo válido para atualizar.', { status: 400 })
+  }
+
+  // #37: valida coord quando lat/lng forem alterados (pega lat↔lng trocada / fora da região).
+  if ('lat' in patch || 'lng' in patch) {
+    const erro = validarCoordLoja(patch.lat ?? body.lat, patch.lng ?? body.lng)
+    if (erro) return new NextResponse(erro, { status: 400 })
   }
 
   const svc = createServiceClient()
