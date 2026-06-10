@@ -227,7 +227,7 @@ function VisaoGeral(props: {
           </span>
         )}
         {/* Filtro de redes recolhido num dropdown — não polui o topo com 18 chips */}
-        <div className="ml-auto"><RedesFiltro redes={redes} setRedes={setRedes} /></div>
+        <div data-tour="filtro-redes" className="ml-auto"><RedesFiltro redes={redes} setRedes={setRedes} /></div>
       </div>
 
       {carregando ? <Skeleton /> : erro ? <Erro onRetry={onRetry} /> : !m || m.total === 0 ? <Vazio /> : (
@@ -355,10 +355,10 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
   return (
     <div className="space-y-8">
       {/* Resumo executivo — o período inteiro numa frase, pro cliente ler em 3s */}
-      <ResumoExecutivo m={m} mAnt={mAnt} periodo={periodo} />
+      <div data-tour="resumo-exec" className="scroll-mt-32"><ResumoExecutivo m={m} mAnt={mAnt} periodo={periodo} /></div>
 
       {/* Alertas automáticos — o sistema destaca os pontos críticos sozinho */}
-      <Alertas m={m} mAnt={mAnt} lojaHref={lojaHref} />
+      <div data-tour="alertas" className="scroll-mt-32"><Alertas m={m} mAnt={mAnt} lojaHref={lojaHref} /></div>
 
       {/* ═══════ 01 — COMO FOI A OPERAÇÃO ═══════ */}
       <section id="sec-resumo" key="v-resumo" data-tour="resumo" className="scroll-mt-32 space-y-4 animate-fade-up">
