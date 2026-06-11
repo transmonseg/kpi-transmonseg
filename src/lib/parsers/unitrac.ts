@@ -3,6 +3,7 @@ import ExcelJS from 'exceljs'
 const JSZip = require('jszip')
 import type { ParadaUnitrac, ResumoVeiculo } from '@/lib/types/unitrac'
 import { normalizaPlaca } from '@/lib/utils/placa'
+import { isRotaGigante } from '@/lib/kpi/rotas-gigantes'
 
 /**
  * Some Unitrac XLSX files are generated with namespace prefixes on all XML element names
@@ -117,13 +118,22 @@ function primaryLocal(local: string): string {
 // (CODIGO_LONGO - NOME). Retorna null se nenhuma bate.
 function findLojaGeofence(local: string): string | null {
   const parts = (local ?? '').split(',').map(p => p.trim())
+  let viuBaseOuFora = false
+  let fallbackGigante: string | null = null
   for (const p of parts) {
-    if (LOJA_GF_RE.test(p) && !p.startsWith('BASE BENASSI') && !p.startsWith('FORA DE BASE')) {
-      // Filtra também "ROTA X" (geofence genérica de rota, não loja física)
-      if (!/^\d+\s*-\s*ROTA\s/i.test(p)) return p
-    }
+    if (p.startsWith('BASE BENASSI') || p.startsWith('FORA DE BASE')) { viuBaseOuFora = true; continue }
+    if (!LOJA_GF_RE.test(p)) continue
+    // Filtra "ROTA X" (geofence genérica de rota, não loja física)
+    if (/^\d+\s*-\s*ROTA\s/i.test(p)) continue
+    // Rota gigante (≥5km, ex: "17659000 - O BOM ATACADISTA" 72km) após marcador
+    // BASE/FORA é sobreposição espúria. Loja não-gigante específica vence sempre;
+    // entre só-gigantes, a primeira (Unitrac lista o geofence relevante primeiro).
+    const cod = p.match(/^(\d+)/)?.[1]
+    if (!isRotaGigante(cod)) return p
+    if (viuBaseOuFora) continue
+    if (!fallbackGigante) fallbackGigante = p
   }
-  return null
+  return fallbackGigante
 }
 
 // Paradas muito curtas na BASE são GPS bounce (caminhão saiu e voltou em segundos).

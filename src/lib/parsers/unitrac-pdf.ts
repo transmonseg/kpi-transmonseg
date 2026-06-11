@@ -9,6 +9,7 @@
 
 import type { ParadaUnitrac, ResumoVeiculo } from '@/lib/types/unitrac'
 import { corrigeOcrPlaca } from '@/lib/utils/placa'
+import { isRotaGigante } from '@/lib/kpi/rotas-gigantes'
 
 // pdf-parse v1.1.1 — default export é função (buf) => Promise<{text}>.
 // v1 funciona em Node serverless sem depender de @napi-rs/canvas.
@@ -42,8 +43,9 @@ function parseDuracaoStr(s: string): number {
 // Mesma semântica de findLojaGeofence no parser XLSX (unitrac.ts:120).
 function temLojaConcatenada(local: string): boolean {
   const partes = local.split(',').map(s => s.trim())
+  let viuBaseOuFora = false
   for (const p of partes) {
-    if (p.startsWith(BASE_LOCAL_SHORT) || p.startsWith(FORA_LOCAL_SHORT)) continue
+    if (p.startsWith(BASE_LOCAL_SHORT) || p.startsWith(FORA_LOCAL_SHORT)) { viuBaseOuFora = true; continue }
     if (ROTA_GENERICA_RE.test(p)) continue
     // Loja: "código - texto" com pelo menos UMA letra na parte (nome real).
     // CEP brasileiro tem formato "\d{5}-\d{3}" (só dígitos), iria casar
@@ -51,6 +53,12 @@ function temLojaConcatenada(local: string): boolean {
     // tem letra (ZONA), CEP "21530-900" não tem letra.
     if (!/^\d+\s*-\s*\S/.test(p)) continue
     if (!/[A-Za-zÀ-Ýà-ý]/.test(p)) continue
+    // Rota gigante (geofence ≥ 5km, ex: "17659000 - O BOM ATACADISTA" 72km) que
+    // aparece DEPOIS de um marcador BASE/FORA é sobreposição espúria — o caminhão
+    // está na base e o geofence gigante só engloba a região. Não conta como loja.
+    // Loja não-gigante após BASE continua contando (overlap real, ex: MERCADO X).
+    const cod = p.match(/^(\d+)/)?.[1]
+    if (viuBaseOuFora && isRotaGigante(cod)) continue
     return true
   }
   return false
@@ -100,7 +108,6 @@ function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: str
   // Importante: NÃO descartamos cedo só porque começa com BASE — pode ter loja
   // real concatenada (ex: "BASE BENASSI, 23080000 - MERCADO X").
   const partes = cleaned.split(',').map(s => s.trim())
-  let fallback: { codigo_loja: string; nome_loja: string | null } | null = null
 
   // Regex: "código - nome" começando com dígitos seguidos de " - " e nome com letra.
   // Antes usávamos indexOf(' - '), que pegava o PRIMEIRO " - " mesmo no meio da
@@ -111,6 +118,13 @@ function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: str
   // exigindo que código seja apenas dígitos antes de " - ".
   const PAR_LOJA = /^(\d+)\s+-\s+(.+)$/
 
+  // Preferência: 1ª loja NÃO-gigante vence sempre (código específico). Entre
+  // só-gigantes, a PRIMEIRA (Unitrac lista o geofence mais relevante primeiro).
+  // Antes preferíamos por REDE_CODIGO_PREFIX_RE, o que fazia "17659000 - O BOM
+  // ATACADISTA" (prefixo 17659 conhecido) vencer "11139000 - EMANUEL PEDRA
+  // GUARATIBA" (prefixo não-listado) na entrega REAL Emanuel.
+  let fallbackGigante: { codigo_loja: string; nome_loja: string | null } | null = null
+
   for (const parte of partes) {
     // Pula bases, foras e ROTAs genéricas
     if (parte.startsWith(BASE_LOCAL_SHORT) || parte.startsWith(FORA_LOCAL_SHORT)) continue
@@ -119,11 +133,11 @@ function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: str
     if (!m) continue
     const codigo = m[1]
     const nome = m[2].trim() || null
-    if (REDE_CODIGO_PREFIX_RE.test(codigo)) return { codigo_loja: codigo, nome_loja: nome }
-    if (!fallback) fallback = { codigo_loja: codigo, nome_loja: nome }
+    if (!isRotaGigante(codigo)) return { codigo_loja: codigo, nome_loja: nome }
+    if (!fallbackGigante) fallbackGigante = { codigo_loja: codigo, nome_loja: nome }
   }
 
-  return fallback ?? { codigo_loja: null, nome_loja: null }
+  return fallbackGigante ?? { codigo_loja: null, nome_loja: null }
 }
 
 // Verifica se o `local_parada` é puramente uma geofence ROTA (sem loja real).

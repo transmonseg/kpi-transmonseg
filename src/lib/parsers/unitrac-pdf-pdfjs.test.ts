@@ -102,3 +102,33 @@ describe('parseTextToResumos — bug OCR placa antiga pos-4 (HLOG 2026-05-20)', 
     expect(out[0].placa_norm).toBe('LCO0J78')
   })
 })
+
+// --- Bug (cliente 11/06): geofence gigante sobreposto à base polui paradas ---
+// UFW-0H63 Emanuel: "17659000 - O BOM ATACADISTA" (72km, rota gigante) é
+// concatenado em TODA parada, inclusive as de BASE. Sem tratamento, paradas
+// de base viravam LOJA (KPI mostrava 10:58→22:12) e a entrega real Emanuel
+// (11139000) ficava com o nome errado (O BOM ATACADISTA).
+describe('parseTextToResumos — geofence gigante sobreposto à base', () => {
+  function comLocal(local: string, dur = '0D 01:00:00'): string {
+    return (
+      `|VEHICLE_HEADER| UFW-0H63 10/06/2026 04:00 10/06/2026 18:00 1 50,0 ` +
+      `0D 08:00:00 ` +
+      `10/06/2026 10:58 10/06/2026 11:25 ${dur} 1,0 0D 02:00:00 ` +
+      `AV BRASIL -22.828000 -43.339000 ` + local
+    )
+  }
+  it('BASE + rota gigante concatenada → BASE (não LOJA)', () => {
+    const out = parseTextToResumos(comLocal('BASE BENASSI - BASE BENASSI, 17659000 - O BOM ATACADISTA'))
+    expect(out[0].paradas[0].classificacao).toBe('BASE')
+  })
+  it('loja real (gigante) primária + outra gigante → extrai a PRIMEIRA', () => {
+    const out = parseTextToResumos(comLocal('11139000 - EMANUEL COMÉRCIO PEDRA DE GUARATIBA, 17659000 - O BOM ATACADISTA'))
+    expect(out[0].paradas[0].classificacao).toBe('LOJA')
+    expect(out[0].paradas[0].codigo_loja).toBe('11139000')
+    expect(out[0].paradas[0].nome_loja).toMatch(/EMANUEL/)
+  })
+  it('loja NÃO-gigante vence gigante (regressão)', () => {
+    const out = parseTextToResumos(comLocal('7000712 - PREZUNIC REALENGO, 17659000 - O BOM ATACADISTA'))
+    expect(out[0].paradas[0].codigo_loja).toBe('7000712')
+  })
+})
