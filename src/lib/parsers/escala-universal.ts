@@ -1,13 +1,14 @@
 import ExcelJS from 'exceljs'
 import { normalizaPlaca, placaValida } from '@/lib/utils/placa'
 import type { LinhaEscala } from '@/lib/types/escala'
+import { inferRedeFromLoja } from './infer-rede'
 
 type FieldKey = 'placa' | 'motorista' | 'loja' | 'codigo' | 'carro'
 
 const HEADER_KEYWORDS: Array<{ keys: string[]; field: FieldKey }> = [
   { keys: ['PLACA', 'VEÍCULO', 'VEICULO', 'CAMINHÃO', 'CAMINHAO', 'TRUCK'], field: 'placa' },
   { keys: ['MOTORISTA', 'DRIVER', 'NOME', 'COLABORADOR', 'CHOFER'], field: 'motorista' },
-  { keys: ['LOJA', 'ROTA', 'CLIENTE', 'DESTINO', 'LOCAL', 'ESTABELECIMENTO'], field: 'loja' },
+  { keys: ['LOJA', 'FILIAL', 'REDE', 'ROTA', 'CLIENTE', 'DESTINO', 'LOCAL', 'ESTABELECIMENTO'], field: 'loja' },
   { keys: ['CÓDIGO', 'CODIGO', 'COD', 'CD', 'MATRÍCULA', 'MATRICULA'], field: 'codigo' },
   { keys: ['CARRO', 'TIPO CARRO', 'TIPO', 'FROTA', 'VEIC'], field: 'carro' },
 ]
@@ -85,6 +86,9 @@ function parsearAbaXlsx(sheet: ExcelJS.Worksheet, dataAlvo?: string): LinhaEscal
   const startRow = cabecalho ? cabecalho.rowIdx + 1 : 1
   const linhas: LinhaEscala[] = []
 
+  // Contador por loja: 2ª aparição da mesma loja = carro 2 (multi-entrega)
+  const contagemLoja = new Map<string, number>()
+
   sheet.eachRow((row, rIdx) => {
     if (rIdx < startRow) return
 
@@ -100,11 +104,17 @@ function parsearAbaXlsx(sheet: ExcelJS.Worksheet, dataAlvo?: string): LinhaEscal
     if (!placaRaw && !lojaRaw && !motoristaRaw) return
 
     const placaNorm = placaValida(placaRaw) ? normalizaPlaca(placaRaw) : ''
+    const redeId = inferRedeFromLoja(lojaRaw)
+
+    const lojaKey = lojaRaw.toUpperCase().trim()
+    const ordemAtual = (contagemLoja.get(lojaKey) ?? 0) + 1
+    contagemLoja.set(lojaKey, ordemAtual)
+    const carro_ordem: 1 | 2 = ordemAtual >= 2 ? 2 : 1
 
     linhas.push({
       data,
       data_entrega: data,
-      rede_id: 'DESCONHECIDO',
+      rede_id: redeId,
       loja_nome_raw: lojaRaw || '',
       loja_codigo_raw: get('codigo') || null,
       placa_norm: placaNorm,
@@ -112,7 +122,7 @@ function parsearAbaXlsx(sheet: ExcelJS.Worksheet, dataAlvo?: string): LinhaEscal
       motorista_nome: motoristaRaw || null,
       motorista_codigo: null,
       tipo_carro: get('carro') || null,
-      carro_ordem: 1,
+      carro_ordem,
       turno: 'MANHA',
       tipo_emissao: 'NORMAL',
       obs: null,

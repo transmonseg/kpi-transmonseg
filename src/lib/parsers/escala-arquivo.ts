@@ -3,6 +3,7 @@ import { parseEscalaZonaSul } from './escala-zona-sul'
 import { parseEscalaArmazemGrao } from './escala-armazem-grao'
 import { parseEscalaPax } from './escala-pax'
 import { parseEscalaGeral } from './escala-geral'
+import { parseEscalaUniversal } from './escala-universal'
 
 /** Mínimo de linhas pra considerar que um parser reconheceu o arquivo. */
 const MIN_LINHAS = 3
@@ -25,16 +26,20 @@ export async function parseEscalaArquivo(
       const buf = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer)
       return await parseEscalaGuanabaraPdf(buf, data)
     }
-    const tentativas: Array<() => Promise<LinhaEscala[]>> = [
-      () => parseEscalaZonaSul(buffer, data),
-      () => parseEscalaArmazemGrao(buffer, data),
-      () => parseEscalaPax(buffer, data),
-      () => parseEscalaGeral(buffer, data),
+    // Universal por último com min=1: só roda quando todos os parsers
+    // específicos falharam, e aceita escalas pequenas/simples (rede única,
+    // piloto "REDE/FILIAL", sem cor, qualquer layout com placa+loja).
+    const tentativas: Array<{ fn: () => Promise<LinhaEscala[]>; min: number }> = [
+      { fn: () => parseEscalaZonaSul(buffer, data), min: MIN_LINHAS },
+      { fn: () => parseEscalaArmazemGrao(buffer, data), min: MIN_LINHAS },
+      { fn: () => parseEscalaPax(buffer, data), min: MIN_LINHAS },
+      { fn: () => parseEscalaGeral(buffer, data), min: MIN_LINHAS },
+      { fn: () => parseEscalaUniversal(buffer, data), min: 1 },
     ]
-    for (const fn of tentativas) {
+    for (const { fn, min } of tentativas) {
       try {
         const r = await fn()
-        if (r.length >= MIN_LINHAS) return r
+        if (r.length >= min) return r
       } catch { /* tenta o próximo */ }
     }
   } catch { /* arquivo não reconhecido */ }
