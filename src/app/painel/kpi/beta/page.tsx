@@ -732,6 +732,9 @@ export default function KpiSimplesPage() {
   const [alteracoes, setAlteracoes] = useState<AlteracaoParsed[]>([])
   const [redes, setRedes] = useState<RedeResult[] | null>(null)
   const [lojasNovas, setLojasNovas] = useState<LojaNova[]>([])
+  // KPI BETA: correções de cadastro sugeridas pela API (read-only, não grava)
+  type SugestaoCadastro = { codigo: string; nome: string; tipo: 'sem_coord' | 'coord_errada'; detalhe: string }
+  const [sugestoesCadastro, setSugestoesCadastro] = useState<SugestaoCadastro[]>([])
   const [erro, setErro] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [bucketPaths, setBucketPaths] = useState<{ escalaBucketPaths: string[]; unitracBucketPaths: string[] } | null>(null)
@@ -874,9 +877,10 @@ export default function KpiSimplesPage() {
           body: JSON.stringify({ escalaBucketPaths, unitracBucketPaths, data, alteracoes }),
         })
         if (!res.ok) throw new Error((await res.text()) || 'Erro ao processar.')
-        const json = await res.json() as { redes: RedeResult[]; geracao_id?: string; lojasNovas?: LojaNova[] }
+        const json = await res.json() as { redes: RedeResult[]; geracao_id?: string; lojasNovas?: LojaNova[]; sugestoesCadastro?: SugestaoCadastro[] }
         setRedes(json.redes)
         setLojasNovas(json.lojasNovas ?? [])
+        setSugestoesCadastro(json.sugestoesCadastro ?? [])
         if (json.geracao_id) setGeracaoId(json.geracao_id)
       } catch (e) {
         setErro(e instanceof Error ? e.message : 'Erro inesperado.')
@@ -909,9 +913,10 @@ export default function KpiSimplesPage() {
           body: JSON.stringify({ ...bucketPaths, data, alteracoes, lineEdits: editsArr }),
         })
         if (!res.ok) throw new Error((await res.text()) || 'Erro ao processar.')
-        const json = await res.json() as { redes: RedeResult[]; geracao_id?: string; lojasNovas?: LojaNova[] }
+        const json = await res.json() as { redes: RedeResult[]; geracao_id?: string; lojasNovas?: LojaNova[]; sugestoesCadastro?: SugestaoCadastro[] }
         setRedes(json.redes)
         setLojasNovas(json.lojasNovas ?? [])
+        setSugestoesCadastro(json.sugestoesCadastro ?? [])
         if (json.geracao_id) setGeracaoId(json.geracao_id)
       } catch (e) {
         setErro(e instanceof Error ? e.message : 'Erro inesperado.')
@@ -1114,6 +1119,23 @@ export default function KpiSimplesPage() {
       {/* Resultado — preview completo por rede */}
       {redes && redes.length > 0 && (
         <section className="mt-12 space-y-8">
+          {sugestoesCadastro.length > 0 && (
+            <div className="rounded-lg border border-[#9fb3ce]/40 bg-[#16294a]/20 px-4 py-3">
+              <p className="font-semibold text-[#9fb3ce]">
+                {sugestoesCadastro.length} correç{sugestoesCadastro.length !== 1 ? 'ões' : 'ão'} de cadastro que eu aplicaria (via API) — somente sugestão, nada foi gravado
+              </p>
+              <ul className="mt-2 space-y-1 text-[13px] text-[var(--color-fg-muted)]">
+                {sugestoesCadastro.map(s => (
+                  <li key={s.codigo}>
+                    <span className={s.tipo === 'coord_errada' ? 'text-[#fca5a5]' : 'text-[#fcd34d]'}>
+                      {s.tipo === 'coord_errada' ? '🔴 coordenada errada' : '🟡 sem coordenada'}
+                    </span>{' '}
+                    — <strong>{s.nome}</strong> (cód {s.codigo}): {s.detalhe}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {lojasNovas.length > 0 && (
             <div className="flex items-start gap-2 rounded-md border border-[var(--color-info)]/40 bg-[var(--color-info)]/10 px-4 py-3">
               <WarningCircle size={18} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-info)]" />
