@@ -4,6 +4,7 @@ const JSZip = require('jszip')
 import type { ParadaUnitrac, ResumoVeiculo } from '@/lib/types/unitrac'
 import { normalizaPlaca } from '@/lib/utils/placa'
 import { isRotaGigante } from '@/lib/kpi/rotas-gigantes'
+import { temLojaLocal, extraiLojaLocal } from './extrai-loja-local'
 
 /**
  * Some Unitrac XLSX files are generated with namespace prefixes on all XML element names
@@ -100,11 +101,6 @@ function cellValue(row: ExcelJS.Row, col: number): unknown {
 const BASE_LOCAL = 'BASE BENASSI - BASE BENASSI'
 const FORA_LOCAL = 'FORA DE BASE E LOCAL DE SERVIÇO'
 
-// Detecta geofence LOJA: "CÓDIGO - NOME" onde código tem 4+ dígitos.
-// 4+ dígitos exclui códigos de "ROTA X" (1-3 dígitos) e geofences genéricas.
-// Todos os clientes cadastrados no Unitrac têm códigos de 5+ dígitos.
-const LOJA_GF_RE = /^\d{4,}\s*-\s*\S/
-
 // Unitrac retorna múltiplas geofences sobrepostas separadas por vírgula
 // (ex: "BASE BENASSI - BASE BENASSI,25140000 - EMANUEL- REDE ECONOMIA...").
 // A primeira costuma ser a "primária" mas quando o caminhão chega num cliente
@@ -114,26 +110,33 @@ function primaryLocal(local: string): string {
   return (local ?? '').split(',')[0].trim()
 }
 
-// Procura entre TODAS as geofences a primeira que tem formato de loja
-// (CODIGO_LONGO - NOME). Retorna null se nenhuma bate.
+// Procura entre TODAS as geofences a primeira que tem formato de loja.
+// temLojaLocal cobre "CÓDIGO - NOME" padrão e formatos com endereço
+// interposto ("CÓDIGO Cidade - UF NOME"). Retorna null se nenhuma bate.
 function findLojaGeofence(local: string): string | null {
   const parts = (local ?? '').split(',').map(p => p.trim())
   let viuBaseOuFora = false
   let fallbackGigante: string | null = null
   for (const p of parts) {
     if (p.startsWith('BASE BENASSI') || p.startsWith('FORA DE BASE')) { viuBaseOuFora = true; continue }
-    if (!LOJA_GF_RE.test(p)) continue
     // Filtra "ROTA X" (geofence genérica de rota, não loja física)
     if (/^\d+\s*-\s*ROTA\s/i.test(p)) continue
+    if (!temLojaLocal(p)) continue
     // Rota gigante (≥5km, ex: "17659000 - O BOM ATACADISTA" 72km) após marcador
     // BASE/FORA é sobreposição espúria. Loja não-gigante específica vence sempre;
     // entre só-gigantes, a primeira (Unitrac lista o geofence relevante primeiro).
-    const cod = p.match(/^(\d+)/)?.[1]
-    if (!isRotaGigante(cod)) return p
+    const { codigo_loja } = extraiLojaLocal(p)
+    if (!isRotaGigante(codigo_loja)) return p
     if (viuBaseOuFora) continue
     if (!fallbackGigante) fallbackGigante = p
   }
-  return fallbackGigante
+  if (fallbackGigante) return fallbackGigante
+  // Endereço COM vírgulas entre código e nome fragmenta a loja no split.
+  const inteiro = (local ?? '').trim()
+  if (inteiro && !inteiro.startsWith('BASE BENASSI') && !inteiro.startsWith('FORA DE BASE')) {
+    if (temLojaLocal(inteiro, { exigePrefixoRede: true })) return inteiro
+  }
+  return null
 }
 
 // Paradas muito curtas na BASE são GPS bounce (caminhão saiu e voltou em segundos).
@@ -189,11 +192,10 @@ function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: str
   // Se a "target" é uma ROTA genérica, não tem loja real — retorna null
   // (caso típico: "2018002 - ROTA BOTAFOGO" como única geofence).
   if (/^\d+\s*-\s*ROTA\s/i.test(target)) return { codigo_loja: null, nome_loja: null }
-  const idx = target.indexOf(' - ')
-  if (idx === -1) return { codigo_loja: null, nome_loja: null }
-  const codigo = target.slice(0, idx).trim()
-  const nome = target.slice(idx + 3).trim() || null
-  return { codigo_loja: codigo || null, nome_loja: nome }
+  // extraiLojaLocal valida que o código é numérico (o indexOf(' - ') antigo
+  // aceitava qualquer texto antes do hífen, corrompendo codigo_loja) e cobre
+  // o formato com endereço interposto.
+  return extraiLojaLocal(target)
 }
 
 // ATENÇÃO: existe uma segunda implementação de saida_cd em matcher.ts:cruzaEscalaUnitrac.

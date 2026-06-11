@@ -10,6 +10,7 @@
 import type { ParadaUnitrac, ResumoVeiculo } from '@/lib/types/unitrac'
 import { corrigeOcrPlaca } from '@/lib/utils/placa'
 import { isRotaGigante } from '@/lib/kpi/rotas-gigantes'
+import { temLojaLocal, extraiLojaLocal } from './extrai-loja-local'
 
 // pdf-parse v1.1.1 — default export é função (buf) => Promise<{text}>.
 // v1 funciona em Node serverless sem depender de @napi-rs/canvas.
@@ -47,19 +48,23 @@ function temLojaConcatenada(local: string): boolean {
   for (const p of partes) {
     if (p.startsWith(BASE_LOCAL_SHORT) || p.startsWith(FORA_LOCAL_SHORT)) { viuBaseOuFora = true; continue }
     if (ROTA_GENERICA_RE.test(p)) continue
-    // Loja: "código - texto" com pelo menos UMA letra na parte (nome real).
-    // CEP brasileiro tem formato "\d{5}-\d{3}" (só dígitos), iria casar
-    // se exigíssemos só `\d+ - \S`. Caso real: "9039124 - 47- ZONA SUL"
-    // tem letra (ZONA), CEP "21530-900" não tem letra.
-    if (!/^\d+\s*-\s*\S/.test(p)) continue
-    if (!/[A-Za-zÀ-Ýà-ý]/.test(p)) continue
+    // temLojaLocal cobre "CÓDIGO - NOME" padrão e formatos com endereço
+    // interposto ("CÓDIGO Cidade - UF NOME"). CEP "21530-900" não casa
+    // (sem letra no nome após strip de endereço).
+    if (!temLojaLocal(p)) continue
     // Rota gigante (geofence ≥ 5km, ex: "17659000 - O BOM ATACADISTA" 72km) que
     // aparece DEPOIS de um marcador BASE/FORA é sobreposição espúria — o caminhão
     // está na base e o geofence gigante só engloba a região. Não conta como loja.
     // Loja não-gigante após BASE continua contando (overlap real, ex: MERCADO X).
-    const cod = p.match(/^(\d+)/)?.[1]
-    if (viuBaseOuFora && isRotaGigante(cod)) continue
+    const { codigo_loja } = extraiLojaLocal(p)
+    if (viuBaseOuFora && isRotaGigante(codigo_loja)) continue
     return true
+  }
+  // Endereço COM vírgulas entre código e nome fragmenta a loja no split
+  // ("8590573 26-40, NOVA CIDADE, ..., CEP 24804033 PRINCESA ITABORAÍ").
+  // Tenta o local inteiro; exigePrefixoRede evita CEP no início virar código.
+  if (!local.startsWith(BASE_LOCAL_SHORT) && !local.startsWith(FORA_LOCAL_SHORT)) {
+    if (temLojaLocal(local, { exigePrefixoRede: true })) return true
   }
   return false
 }
@@ -87,11 +92,7 @@ function classificaParada(local: string, duracaoSeg: number): ParadaUnitrac['cla
   return duracaoSeg < 600 ? 'FAKE_EXIT' : 'FORA_BASE'
 }
 
-// Prefixos numéricos de códigos de loja conhecidos (mesmos do matcher.ts).
-// Quando o Unitrac concatena múltiplas zonas/lojas num único local_parada,
-// usamos esse padrão para preferir a entrada que é uma loja real vs uma
-// "ROTA ZONA NORTE" ou similar (ex: "2018023 - ROTA ZONA NORTE, 3030113 - SUPERPRIX LJ 13").
-const REDE_CODIGO_PREFIX_RE = /^(9039|3030|7000|8590|5353|5790|9006|710[0-3]|5600|11623|17659|2384|7012|202)/
+// REDE_CODIGO_PREFIX_RE agora vive em extrai-loja-local.ts (fonte única).
 
 // "12345 - ROTA ..." é geofence genérico de bairro/região (não loja física).
 // Mesma regra do parser XLSX (unitrac.ts:123).
@@ -109,35 +110,36 @@ function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: str
   // real concatenada (ex: "BASE BENASSI, 23080000 - MERCADO X").
   const partes = cleaned.split(',').map(s => s.trim())
 
-  // Regex: "código - nome" começando com dígitos seguidos de " - " e nome com letra.
-  // Antes usávamos indexOf(' - '), que pegava o PRIMEIRO " - " mesmo no meio da
-  // string. Caso real (UFW0H63 dia 21): texto "7000705 8967 101 de CLIENTES
-  // ESPECIAIS - HERMES PREZUNIC SENADOR CAMARÁ" — primeiro " - " está depois
-  // de "ESPECIAIS", capturando "7000705 8967 101 de CLIENTES ESPECIAIS" como
-  // código (não numérico, era descartado). Solução: ancorar a regex no início,
-  // exigindo que código seja apenas dígitos antes de " - ".
-  const PAR_LOJA = /^(\d+)\s+-\s+(.+)$/
-
-  // Preferência: 1ª loja NÃO-gigante vence sempre (código específico). Entre
-  // só-gigantes, a PRIMEIRA (Unitrac lista o geofence mais relevante primeiro).
-  // Antes preferíamos por REDE_CODIGO_PREFIX_RE, o que fazia "17659000 - O BOM
-  // ATACADISTA" (prefixo 17659 conhecido) vencer "11139000 - EMANUEL PEDRA
-  // GUARATIBA" (prefixo não-listado) na entrega REAL Emanuel.
+  // extraiLojaLocal cobre o formato padrão "CÓDIGO - NOME" (ancorado no início,
+  // imune ao caso UFW0H63 dia 21 "CLIENTES ESPECIAIS - HERMES...") e os formatos
+  // com endereço interposto ("CÓDIGO Cidade - UF NOME").
+  // Preferência: 1ª loja NÃO-gigante vence; entre só-gigantes, a PRIMEIRA.
+  // Partes com código mas SEM nome (fragmentos "8590573 26-40") não retornam
+  // cedo — o local inteiro pode reconstituir o nome (ver abaixo).
   let fallbackGigante: { codigo_loja: string; nome_loja: string | null } | null = null
+  let semNome: { codigo_loja: string; nome_loja: null } | null = null
 
   for (const parte of partes) {
     // Pula bases, foras e ROTAs genéricas
     if (parte.startsWith(BASE_LOCAL_SHORT) || parte.startsWith(FORA_LOCAL_SHORT)) continue
     if (ROTA_GENERICA_RE.test(parte)) continue
-    const m = parte.match(PAR_LOJA)
-    if (!m) continue
-    const codigo = m[1]
-    const nome = m[2].trim() || null
+    const { codigo_loja: codigo, nome_loja: nome } = extraiLojaLocal(parte)
+    if (!codigo) continue
+    if (!nome) { if (!semNome) semNome = { codigo_loja: codigo, nome_loja: null }; continue }
     if (!isRotaGigante(codigo)) return { codigo_loja: codigo, nome_loja: nome }
     if (!fallbackGigante) fallbackGigante = { codigo_loja: codigo, nome_loja: nome }
   }
 
-  return fallbackGigante ?? { codigo_loja: null, nome_loja: null }
+  if (fallbackGigante) return fallbackGigante
+
+  // Endereço COM vírgulas entre código e nome fragmenta a loja no split.
+  // Tenta o local inteiro pra reconstituir código+nome de uma vez.
+  if (!cleaned.startsWith(BASE_LOCAL_SHORT) && !cleaned.startsWith(FORA_LOCAL_SHORT)) {
+    const inteiro = extraiLojaLocal(cleaned, { exigePrefixoRede: true })
+    if (inteiro.codigo_loja && inteiro.nome_loja) return inteiro
+  }
+
+  return semNome ?? { codigo_loja: null, nome_loja: null }
 }
 
 // Verifica se o `local_parada` é puramente uma geofence ROTA (sem loja real).
