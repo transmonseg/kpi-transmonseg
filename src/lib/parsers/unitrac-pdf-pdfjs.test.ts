@@ -132,3 +132,40 @@ describe('parseTextToResumos — geofence gigante sobreposto à base', () => {
     expect(out[0].paradas[0].codigo_loja).toBe('7000712')
   })
 })
+
+// --- Bug: local_parada com endereço interposto entre código e nome ---
+// O Unitrac às vezes formata como "CÓDIGO Cidade - UF NOME" ou
+// "CÓDIGO endereço, CEP NOME" em vez do padrão "CÓDIGO - NOME".
+// Casos reais (relatorio_10202): GAJ-6H51 "7000730 Niterói - RJ PREZUNIC
+// ICARAÍ" virava FORA_BASE → veículo dado como "não foi ao cliente".
+describe('parseTextToResumos — local_parada com endereço interposto', () => {
+  function comLocal(local: string): string {
+    return (
+      `|VEHICLE_HEADER| GAJ-6H51 10/06/2026 04:00 10/06/2026 18:00 1 50,0 ` +
+      `0D 08:00:00 ` +
+      `10/06/2026 08:13 10/06/2026 08:58 0D 00:44:00 35,1 0D 02:00:00 ` +
+      `RUA CORONEL MOREIRA CESAR -22.910630 -43.106850 ` + local
+    )
+  }
+  it('"CÓDIGO Cidade - UF NOME" vira LOJA com código extraído', () => {
+    const out = parseTextToResumos(comLocal('7000730 Niterói - RJ PREZUNIC ICARAÍ'))
+    const p = out[0].paradas[0]
+    expect(p.classificacao).toBe('LOJA')
+    expect(p.codigo_loja).toBe('7000730')
+    expect(p.nome_loja).toMatch(/PREZUNIC ICARAÍ/)
+  })
+  it('"CÓDIGO endereço, CEP NOME" vira LOJA', () => {
+    const out = parseTextToResumos(comLocal('8590573 26-40 NOVA CIDADE ITABORAI RJ BRASIL CEP 24804033 PRINCESA ITABORAÍ'))
+    const p = out[0].paradas[0]
+    expect(p.classificacao).toBe('LOJA')
+    expect(p.codigo_loja).toBe('8590573')
+  })
+  it('formato padrão continua funcionando (regressão)', () => {
+    const out = parseTextToResumos(comLocal('7000730 - PREZUNIC ICARAÍ'))
+    expect(out[0].paradas[0].codigo_loja).toBe('7000730')
+  })
+  it('BASE BENASSI continua BASE', () => {
+    const out = parseTextToResumos(comLocal('BASE BENASSI - BASE BENASSI'))
+    expect(out[0].paradas[0].classificacao).toBe('BASE')
+  })
+})
