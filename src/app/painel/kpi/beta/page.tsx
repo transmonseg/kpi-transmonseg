@@ -1020,6 +1020,16 @@ export default function KpiSimplesPage() {
                 🛰️ API (sem PDF)
               </button>
             </div>
+            {fonte === 'api' && (
+              <div className="mt-3 rounded-[var(--radius-card)] border border-[var(--color-warning)] bg-[var(--color-warning-soft)] p-3 text-[12px] leading-relaxed text-[var(--color-warning-soft-fg)]">
+                <div className="font-semibold mb-1">⚠️ Modo API (experimental) — leia antes de confiar</div>
+                <ul className="list-disc pl-4 space-y-0.5">
+                  <li><b>Só funciona pros últimos ~4 dias.</b> A API não guarda histórico — pra dias mais antigos, use o PDF.</li>
+                  <li><b>Pode ter buracos:</b> placa fora da frota da API aparece como &quot;sem rastreador&quot;, e veículo com GPS fraco pode faltar uma entrega.</li>
+                  <li><b>É pra comparar, não pra substituir o PDF ainda.</b> Gere também pelo PDF e cruze os dois antes de fechar o KPI.</li>
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       </section>
