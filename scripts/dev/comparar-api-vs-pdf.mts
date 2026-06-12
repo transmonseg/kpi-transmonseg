@@ -6,6 +6,7 @@ import { buscarPontos } from '../../src/lib/unitrac-api/pontos.ts'
 import { buscarStopsCru, consolidaParadasApi } from '../../src/lib/unitrac-api/consolida.ts'
 import { parseUnitracPdfJs } from '../../src/lib/parsers/unitrac-pdf-pdfjs.ts'
 import { haversine } from '../../src/lib/utils/geo.ts'
+import { isRotaGigante } from '../../src/lib/kpi/rotas-gigantes.ts'
 
 // USO: npx tsx scripts/dev/comparar-api-vs-pdf.mts <caminho-pdf> <YYYY-MM-DD> [horas]
 const [pdfPath, data, horasArg] = process.argv.slice(2)
@@ -26,7 +27,8 @@ let lojaTotal = 0, lojaRepro = 0, lojaHora = 0
 const verbose = process.argv.includes('-v')
 for (const r of resumos) {
   const v = frota.find(x => x.placaNorm === r.placa_norm)
-  const lojasPdf = (r.paradas ?? []).filter((p: any) => p.classificacao === 'LOJA' && p.codigo_loja)
+  // exclui rota gigante (geofences de área, não loja-ponto — espalham por km)
+  const lojasPdf = (r.paradas ?? []).filter((p: any) => p.classificacao === 'LOJA' && p.codigo_loja && !isRotaGigante(p.codigo_loja))
   if (lojasPdf.length === 0) continue
   // dedup por codigo_loja → mantém a 1ª chegada (a entrega começou aí)
   const porLoja = new Map<string, any>()
@@ -39,11 +41,17 @@ for (const r of resumos) {
 
   for (const pdfP of porLoja.values()) {
     lojaTotal++
-    // a API reproduziu se parou ≤300m do ponto dessa loja (por geofence OU coordenada)
-    const m = api.find(a => a.lat != null && pdfP.lat != null && haversine(a.lat, a.lng!, pdfP.lat, pdfP.lng) <= 300)
-    if (!m) { if (verbose) console.log(`  ❌ ${r.placa_norm} loja ${pdfP.codigo_loja} (${hhmm(pdfP.chegada)})`); continue }
+    // candidatas: paradas da API ≤300m da loja. Escolhe a MAIS PRÓXIMA NO TEMPO
+    // da chegada do PDF (evita casar uma passagem cedo da manhã, drive-by).
+    const cand = api.filter(a => a.lat != null && pdfP.lat != null && haversine(a.lat, a.lng!, pdfP.lat, pdfP.lng) <= 300)
+    if (!cand.length) { if (verbose) console.log(`  ❌ ${r.placa_norm} loja ${pdfP.codigo_loja} (${hhmm(pdfP.chegada)})`); continue }
+    const m = cand.reduce((best, a) =>
+      Math.abs(new Date(a.chegada).getTime() - new Date(pdfP.chegada).getTime()) <
+      Math.abs(new Date(best.chegada).getTime() - new Date(pdfP.chegada).getTime()) ? a : best)
     lojaRepro++
-    if (Math.abs(new Date(m.chegada).getTime() - new Date(pdfP.chegada).getTime()) <= 5 * 60_000) lojaHora++
+    const diff = Math.abs(new Date(m.chegada).getTime() - new Date(pdfP.chegada).getTime())
+    if (diff <= 5 * 60_000) lojaHora++
+    else if (verbose) console.log(`  ⏱ ${r.placa_norm} loja ${pdfP.codigo_loja}: PDF ${hhmm(pdfP.chegada)} vs API ${hhmm(m.chegada)}`)
   }
 }
 const pc = (n: number, t: number) => t ? Math.round((n / t) * 100) : 0
