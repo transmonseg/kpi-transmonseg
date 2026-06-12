@@ -17,7 +17,7 @@ import { partitionSettled } from '@/lib/utils/partition-settled'
 import { mapLimitSettled } from '@/lib/utils/map-limit'
 import type { KpiLinha, RotaKpi } from '@/lib/types/kpi'
 import type { LinhaEscala } from '@/lib/types/escala'
-import { buscarFrota, buscarPontos, buscarPosicoes, validarRotaConcluida, confirmaEntregaViaApi, buscarStopsCru, consolidaParadasApi, type MapaPontos, type MapaPosicoes } from '@/lib/unitrac-api'
+import { buscarFrota, buscarPontos, buscarPosicoes, validarRotaConcluida, confirmaEntregaViaApi, buscarStopsCru, consolidaParadasApi, buscarAlvos, confirmaPorAlvo, type MapaPontos, type MapaPosicoes, type AlvoApi } from '@/lib/unitrac-api'
 import type { ResumoVeiculo, ClassificacaoParada } from '@/lib/types/unitrac'
 
 export const runtime = 'nodejs'
@@ -48,6 +48,8 @@ type PreviewLinha = {
   saida_loja_fmt: string | null
   /** KPI BETA: rótulos de correções aplicadas via API do Unitrac (ex: "rota: ainda rodando"). */
   viaApi?: string[]
+  /** Notas fiscais da entrega (quando confirmada por alvo na API). */
+  notasFiscais?: string[]
 }
 
 // Parsers do Unitrac armazenam BRT como Date.UTC(...) — ler getUTCHours direto.
@@ -653,13 +655,16 @@ export async function POST(req: NextRequest) {
   // e CORRIGE/RESGATA os que o matcher errou ou não casou. Best-effort: se a API não
   // responder, segue com o resultado do matcher. (beta — nada disto persiste.)
   const confirmacoesApi = new Map<string, string[]>()
+  // Notas fiscais por linha (quando confirmada por alvo) — exibidas no preview.
+  const notasPorLinha = new Map<string, string[]>()
   let pontosApi: MapaPontos = {}
   let posicoesApi: MapaPosicoes = {}
+  let alvosApi: AlvoApi[] = []
   try {
     const frotaApi = await buscarFrota()
     const cvsApi = frotaApi.map(v => v.cv)
-    const [pts, poss] = await Promise.all([buscarPontos(cvsApi), buscarPosicoes(cvsApi)])
-    pontosApi = pts; posicoesApi = poss
+    const [pts, poss, alvs] = await Promise.all([buscarPontos(cvsApi), buscarPosicoes(cvsApi), buscarAlvos(cvsApi)])
+    pontosApi = pts; posicoesApi = poss; alvosApi = alvs
 
     if (Object.keys(pontosApi).length > 0) {
       const stopsPorPlaca = (placa: string | null) => {
@@ -699,6 +704,38 @@ export async function POST(req: NextRequest) {
         rota._matchMeta = { score: 0.95, confidence: 'HIGH', requiresReview: false, algorithm: 'api' }
         consumidasApi.add(sp.id)
         confirmacoesApi.set(rota.escala_linha_id, [`ponto corrigido pela API (${conf.nomeApi}, ${conf.distMetros}m)`])
+      }
+    }
+
+    // === Confirmação por ALVO + NOTA FISCAL (a Unitrac marcou a entrega FEITA) ===
+    // Sinal mais forte que o GPS: hora de conclusão real + nota fiscal. POSITIVO-SÓ
+    // (alvo pendente NÃO é "não foi"). Quando há alvo feito: carimba a NF; e se a
+    // linha ficou SEM parada (GPS perdeu — ex relatório parcial), RESGATA a entrega.
+    if (alvosApi.length > 0) {
+      for (const rota of rotas) {
+        const esc = escalaMap.get(rota.escala_linha_id)
+        if (!esc) continue
+        const esperada = resolverLojaEsperada(esc, lojasParaMatcher)
+        if (!esperada?.codigo_unitrac || !rota.placa_norm) continue
+        const placaAlvo = rota.placa_unitrac ?? rota.placa_norm
+        const cAlvo = confirmaPorAlvo(placaAlvo, esperada.codigo_unitrac, alvosApi)
+        if (!cAlvo) continue
+        notasPorLinha.set(rota.escala_linha_id, cAlvo.notas)
+        const hhmm = fmtHoraBRT(new Date(cAlvo.feitoISO + 'Z'))
+        const nfTxt = cAlvo.notas.length ? ` · NF ${cAlvo.notas.slice(0, 3).join(', ')}${cAlvo.notas.length > 3 ? '…' : ''}` : ''
+        const jaTem = rota.paradas.some(p => p.loja_id === esperada.id)
+        const sel = confirmacoesApi.get(rota.escala_linha_id) ?? []
+        if (jaTem) {
+          confirmacoesApi.set(rota.escala_linha_id, [...sel, `✅ confirmado por NF (${hhmm})${nfTxt}`])
+        } else {
+          // RESGATE: só sabemos a hora de conclusão — usa como chegada/saída.
+          const t = new Date(cAlvo.feitoISO + 'Z')
+          rota.paradas = [{ parada_id: null, loja_id: esperada.id, nome: esperada.nome, chegada: t, saida: t, duracao_min: 0, classificacao: 'LOJA' }]
+          rota.status = 'ok'
+          rota.geo_confiavel = true
+          rota._matchMeta = { score: 0.98, confidence: 'HIGH', requiresReview: false, algorithm: 'api' }
+          confirmacoesApi.set(rota.escala_linha_id, [...sel, `✅ entrega confirmada por NF — resgatada (${hhmm})${nfTxt}`])
+        }
       }
     }
   } catch (e) {
@@ -925,6 +962,7 @@ export async function POST(req: NextRequest) {
           natureza: statusInfo.natureza,
           saida_loja_fmt: fmtHoraBRT(saidaLoja),
           viaApi: confirmacoesApi.get(rota.escala_linha_id),
+          notasFiscais: notasPorLinha.get(rota.escala_linha_id),
         }
       })
 

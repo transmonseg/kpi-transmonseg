@@ -1770,15 +1770,16 @@ function PreviewRow({
               📍 {linha.geo_dist_metros}m
             </span>
           )}
-          {/* Selo do gabarito da API: a geofence autoritativa do Unitrac confirmou
-              (ou corrigiu) qual loja é esta parada — certeza, não palpite. */}
+          {/* Selos da API: geofence autoritativa (ponto) e/ou nota fiscal (entrega
+              marcada FEITA pela Unitrac) — certeza, não palpite. O selo de NF já
+              traz seu próprio ✅; o de ponto recebe o 🛰️. */}
           {linha.viaApi?.map((sel, i) => (
             <span
               key={i}
               className="inline-flex w-fit items-center gap-1 rounded border border-[var(--color-success)] bg-[var(--color-success-soft)] px-1.5 py-0.5 text-[10px] font-medium leading-tight text-[var(--color-success-soft-fg)]"
-              title="Confirmado pela geofence autoritativa da API do Unitrac"
+              title="Confirmado pela API do Unitrac (geofence e/ou nota fiscal)"
             >
-              🛰️ {sel}
+              {sel.startsWith('✅') ? sel : `🛰️ ${sel}`}
             </span>
           ))}
           {/* #5 — Como a linha casou (auditabilidade): confia no "código", fiscaliza o "nome". */}
