@@ -48,7 +48,7 @@ const fmtMin = (n: number | null | undefined) => {
   return h > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${m}min`
 }
 
-export default function DashboardClient({ resumo, tabInicial = 'geral' }: { resumo?: ResumoOperacaoData; tabInicial?: Tab }) {
+export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint = '/api/dashboard' }: { resumo?: ResumoOperacaoData; tabInicial?: Tab; endpoint?: string }) {
   const router = useRouter()
   const sp = useSearchParams()
   const tab = (sp.get('tab') as Tab) || tabInicial
@@ -80,7 +80,7 @@ export default function DashboardClient({ resumo, tabInicial = 'geral' }: { resu
         ? { periodo, de, ate, redes: redesExpandidas.join(',') }
         : { periodo, data, redes: redesExpandidas.join(',') },
     )
-    fetch(`/api/dashboard?${qs}`)
+    fetch(`${endpoint}?${qs}`)
       .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() })
       .then(j => { setM(j.metricas); setMAnt(j.metricasAnterior ?? null); setIntervalo(j.intervalo); setErro(false) })
       .catch(() => { setM(null); setMAnt(null); setErro(true) })

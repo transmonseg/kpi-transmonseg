@@ -1,0 +1,144 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { StatusRota } from './status-rota'
+import type { StatusManual, EntradaManual } from './parse-kpi-manual'
+import type { RotaKpi } from '@/lib/types/kpi'
+import type { LinhaEscala } from '@/lib/types/escala'
+import { buscarFrota, buscarPontos, buscarStopsCru, consolidaParadasApi, buscarAlvos, confirmaPorAlvo } from '@/lib/unitrac-api'
+import { cruzaEscalaUnitrac, setSemGeo, resolverLojaEsperada, type EscalaLinhaRow, type LojaRow, type GeoStore, type UnitracParadaRow } from '@/lib/kpi/matcher'
+import { derivarStatus } from './status-rota'
+
+/** HH:MM em BRT (convenção do sistema: BRT mascarado como UTC). */
+function fmtHora(d: Date | null | undefined): string | null {
+  if (!d) return null
+  return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`
+}
+
+export function statusRotaParaDashboard(status: StatusRota): StatusManual {
+  if (status === 'ENTREGUE' || status === 'ENTREGUE_GEO') return 'entregue'
+  if (status === 'SEM_RASTREADOR') return 'sem_rastreador'
+  return 'nao_foi'
+}
+
+/** Converte uma rota+linha de escala+status numa linha do dashboard. */
+export function rotaParaEntrada(
+  rota: Pick<RotaKpi, 'placa_norm' | 'saida_cd' | 'chegada_base' | 'paradas'>,
+  esc: Pick<LinhaEscala, 'rede_id' | 'loja_nome_raw' | 'motorista_nome'>,
+  status: StatusRota,
+  data: string,
+): EntradaManual {
+  const p0 = rota.paradas[0]
+  const chegada = p0?.chegada ?? null
+  const saida = chegada && p0?.duracao_min != null
+    ? new Date(chegada.getTime() + p0.duracao_min * 60_000)
+    : null
+  return {
+    data,
+    rede_id: esc.rede_id,
+    loja: esc.loja_nome_raw ?? '',
+    placa: rota.placa_norm ?? null,
+    motorista: esc.motorista_nome ?? null,
+    status: statusRotaParaDashboard(status),
+    saida_cd: fmtHora(rota.saida_cd ? new Date(rota.saida_cd) : null),
+    chd: fmtHora(chegada),
+    sai: fmtHora(saida),
+    volta_base: fmtHora(rota.chegada_base ? new Date(rota.chegada_base) : null),
+  }
+}
+
+// ── Storage do dia (bucket kpi-api-dash, 1 JSON por dia) ────────────────────────
+
+export const BUCKET_API_DASH = 'kpi-api-dash'
+
+/** Grava (upsert) as linhas de UM dia no bucket: {data}.json. */
+export async function salvarDiaApi(svc: SupabaseClient, data: string, entradas: EntradaManual[]): Promise<void> {
+  const blob = new Blob([JSON.stringify(entradas)], { type: 'application/json' })
+  const { error } = await svc.storage.from(BUCKET_API_DASH).upload(`${data}.json`, blob, { upsert: true })
+  if (error) throw new Error(`Falha ao salvar dia ${data}: ${error.message}`)
+}
+
+/** Enumera as datas YYYY-MM-DD de ini..fim (inclusive). */
+export function datasNoIntervalo(ini: string, fim: string): string[] {
+  const out: string[] = []
+  const d = new Date(`${ini}T00:00:00Z`)
+  const end = new Date(`${fim}T00:00:00Z`)
+  while (d.getTime() <= end.getTime()) {
+    out.push(d.toISOString().slice(0, 10))
+    d.setUTCDate(d.getUTCDate() + 1)
+  }
+  return out
+}
+
+/** Lê e concatena as linhas dos dias do intervalo (ignora dias sem arquivo). */
+export async function carregarEntradasApi(svc: SupabaseClient, ini: string, fim: string): Promise<EntradaManual[]> {
+  const datas = datasNoIntervalo(ini, fim)
+  const lotes = await Promise.all(datas.map(async (dt) => {
+    const { data: blob, error } = await svc.storage.from(BUCKET_API_DASH).download(`${dt}.json`)
+    if (error || !blob) return [] as EntradaManual[]
+    try { return JSON.parse(await blob.text()) as EntradaManual[] } catch { return [] }
+  }))
+  return lotes.flat()
+}
+
+// ── Orquestrador do dia: escala + API → linhas do dashboard ─────────────────────
+
+export type EscalaParaDia = Pick<EscalaLinhaRow, 'rede_id' | 'placa_norm' | 'loja_nome_raw' | 'loja_codigo_raw' | 'motorista_nome' | 'carro_ordem' | 'data_entrega'>
+
+/** Calcula as linhas do dashboard de UM dia 100% pela API (paradas consolidadas +
+ *  confirmação por alvo/NF), reusando o matcher de produção. */
+export async function gerarDiaApi(
+  svc: SupabaseClient,
+  data: string,
+  escala: EscalaParaDia[],
+  lojas: LojaRow[],
+  geoStores: GeoStore[],
+): Promise<EntradaManual[]> {
+  const escalaRows: EscalaLinhaRow[] = escala.map((l, i) => ({
+    id: `e${i}`, rede_id: l.rede_id, placa_norm: l.placa_norm || null,
+    loja_nome_raw: l.loja_nome_raw, loja_codigo_raw: l.loja_codigo_raw,
+    motorista_nome: l.motorista_nome, carro_ordem: l.carro_ordem, data_entrega: l.data_entrega ?? data,
+  }))
+  const escMap = new Map(escalaRows.map((e, i) => [e.id, escala[i]]))
+
+  const frota = await buscarFrota()
+  const cvs = frota.map(v => v.cv)
+  const [pontos, alvos] = await Promise.all([buscarPontos(cvs), buscarAlvos(cvs)])
+  const placas = new Set(escalaRows.map(e => e.placa_norm).filter(Boolean) as string[])
+  const paradaRows: UnitracParadaRow[] = []
+  for (const v of frota) {
+    if (!placas.has(v.placaNorm)) continue
+    const ps = consolidaParadasApi(await buscarStopsCru(v.cv, 48), pontos, data, v.placaNorm)
+    paradaRows.push(...ps)
+  }
+
+  setSemGeo(true)
+  const rotas = await cruzaEscalaUnitrac(escalaRows, paradaRows, lojas, svc, geoStores, { geoEndereco: true })
+
+  const porPlaca = new Map<string, UnitracParadaRow[]>()
+  for (const p of paradaRows) { const a = porPlaca.get(p.placa_norm) ?? []; a.push(p); porPlaca.set(p.placa_norm, a) }
+  const saiu = (pl: string | null) => !!pl && (porPlaca.get(pl) ?? []).some(p => p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE')
+
+  const out: EntradaManual[] = []
+  for (const rota of rotas) {
+    const esc = escMap.get(rota.escala_linha_id)
+    if (!esc) continue
+    // Confirmação por alvo/NF: resgata entrega que o GPS perdeu.
+    const esperada = resolverLojaEsperada({ rede_id: esc.rede_id, loja_codigo_raw: esc.loja_codigo_raw, loja_nome_raw: esc.loja_nome_raw }, lojas)
+    if (esperada?.codigo_unitrac && rota.placa_norm) {
+      const c = confirmaPorAlvo(rota.placa_unitrac ?? rota.placa_norm, esperada.codigo_unitrac, alvos)
+      if (c && !rota.paradas.some(p => p.loja_id === esperada.id)) {
+        const t = new Date(c.feitoISO + 'Z')
+        rota.paradas = [{ parada_id: null, loja_id: esperada.id, nome: esperada.nome, chegada: t, saida: t, duracao_min: 0, classificacao: 'LOJA' }]
+      }
+    }
+    const placaUni = rota.placa_unitrac ?? rota.placa_norm
+    const st = derivarStatus({
+      temGps: rota.paradas.length > 0 || porPlaca.has(placaUni ?? ''),
+      ficouNaBase: rota.status === 'sem_entrega' && !!rota.placa_norm,
+      paradas: rota.paradas.map(p => ({ classificacao: p.classificacao, loja_id: p.loja_id ?? null })),
+      viaGeo: rota._matchMeta?.algorithm === 'geo', viaTroca: rota._matchMeta?.algorithm === 'troca',
+      geoConfiavel: rota.geo_confiavel ?? false, placaFoiAlgumLugar: saiu(placaUni), placaSaiuDaBase: saiu(placaUni),
+    })
+    out.push(rotaParaEntrada(rota, esc, st.status, data))
+  }
+  return out
+}
