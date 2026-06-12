@@ -2469,6 +2469,38 @@ describe('geo N:N — uma placa, N lojas próximas, atribui por ORDEM TEMPORAL (
   })
 })
 
+describe('geo N:N — lojas distintas casam pela COORDENADA mais próxima, não por horário (FUM-8748)', () => {
+  // Caso real FUM-8748 12/06: duas lojas ~600m apart (Niterói x Icaraí), a parada
+  // MAIS CEDO (05:51) está colada na Niterói e a mais tarde (06:42) na Icaraí.
+  // Por ordem temporal+nome, "Icaraí" (alfabético antes) levava a parada de 05:51
+  // e "Niterói" a de 06:42 → horários TROCADOS entre 1ª e 2ª entrega. A atribuição
+  // por menor distância casa cada loja à sua parada real.
+  const lojas: LojaRow[] = [
+    { id: 'nit', rede_id: 'SUPERPRIX', nome: 'Super Prix - Niterói - Loja 13', nome_normalizado: 'super prix niteroi loja 13', codigo_escala: null, codigo_unitrac: null, nome_unitrac: null, lat: -22.90327, lng: -43.11062, raio_metros: 200, endereco: null, bairro: null, municipio: null },
+    { id: 'ica', rede_id: 'SUPERPRIX', nome: 'Super Prix - Icaraí - Loja 10', nome_normalizado: 'super prix icarai loja 10', codigo_escala: null, codigo_unitrac: null, nome_unitrac: null, lat: -22.907512, lng: -43.103701, raio_metros: 300, endereco: null, bairro: null, municipio: null },
+  ]
+  const linhas: EscalaLinhaRow[] = [
+    { id: 'lnit', rede_id: 'SUPERPRIX', placa_norm: 'FUM8748', loja_nome_raw: 'Super Prix - Niterói - Loja 13', loja_codigo_raw: null, motorista_nome: 'X', carro_ordem: 1, data_entrega: '2026-06-12' },
+    { id: 'lica', rede_id: 'SUPERPRIX', placa_norm: 'FUM8748', loja_nome_raw: 'Super Prix - Icaraí - Loja 10', loja_codigo_raw: null, motorista_nome: 'X', carro_ordem: 1, data_entrega: '2026-06-12' },
+  ]
+  const fb = (id: string, chd: string, lat: number, lng: number): UnitracParadaRow => ({ id, placa_norm: 'FUM8748', chegada: chd, saida: chd, duracao_seg: 1800, local_parada: 'FORA DE BASE E LOCAL DE SERVICO', codigo_loja: null, nome_loja: null, lat, lng, endereco: null, classificacao: 'FORA_BASE', ordem: 1 })
+
+  it('Niterói (1ª) leva a parada de 05:51 (15m), Icaraí (2ª) a de 06:42 (35m)', async () => {
+    setSemGeo(true)
+    try {
+      const paradas: UnitracParadaRow[] = [
+        fb('p-niteroi', '2026-06-12T05:51:00Z', -22.90316, -43.11053),
+        fb('p-icarai', '2026-06-12T06:42:00Z', -22.90721, -43.10379),
+      ]
+      const rotas = await cruzaEscalaUnitrac(linhas, paradas, lojas, undefined, undefined, { geoEndereco: true })
+      const rnit = rotas.find(r => r.escala_linha_id === 'lnit')
+      const rica = rotas.find(r => r.escala_linha_id === 'lica')
+      expect(rnit?.paradas[0]?.chegada.toISOString()).toBe('2026-06-12T05:51:00.000Z')
+      expect(rica?.paradas[0]?.chegada.toISOString()).toBe('2026-06-12T06:42:00.000Z')
+    } finally { setSemGeo(false) }
+  })
+})
+
 describe('SPID cluster — resolução por containment (nome canônico longo não perde p/ rede compartilhada)', () => {
   // Dados REAIS do cadastro Prezunic SPID (Supabase 2026-06-06). Linhas da escala
   // têm rótulo curto ("SPID - Carioca") e loja_codigo_raw=null → resolução 100% por
