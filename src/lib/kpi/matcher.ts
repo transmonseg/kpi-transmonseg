@@ -2327,12 +2327,23 @@ export async function cruzaEscalaUnitrac(
         // rotas (ainda vazias) cuja loja esperada cai nesse cluster (≤1.5km)
         const rotasCl = comLoja.filter(x => x.r.paradas.length === 0 && haversine(x.esperada.lat!, x.esperada.lng!, clLat, clLng) <= 1500)
         if (rotasCl.length < 2) continue
-        // ORDEM TEMPORAL: linha por ordem da escala; parada por horário; 1:1
-        const rotasOrd = [...rotasCl].sort((a, b) =>
-          (a.linha.carro_ordem ?? 0) - (b.linha.carro_ordem ?? 0) || a.linha.loja_nome_raw.localeCompare(b.linha.loja_nome_raw))
-        const n = Math.min(rotasOrd.length, cl.length)
-        for (let i = 0; i < n; i++) {
-          const { r, esperada } = rotasOrd[i]; const p = cl[i]
+        // ATRIBUIÇÃO POR MENOR DISTÂNCIA (greedy): cada loja casa a parada mais
+        // próxima da SUA coordenada cadastrada, par a par. Quando as lojas têm
+        // coords distintas (ex Niterói x Icaraí ~600m), o índice temporal cruzava
+        // os horários — a parada mais cedo ia pra loja errada (FUM-8748 12/06).
+        // Empate de distância → desempata pelo horário (preserva o caso Arraial,
+        // onde cada parada está em cima da sua loja e a ordem cai natural).
+        const pares: { ri: number; pi: number; d: number }[] = []
+        rotasCl.forEach((x, ri) => cl.forEach((p, pi) => {
+          pares.push({ ri, pi, d: haversine(x.esperada.lat!, x.esperada.lng!, p.lat!, p.lng!) })
+        }))
+        pares.sort((a, b) =>
+          a.d - b.d || new Date(cl[a.pi].chegada).getTime() - new Date(cl[b.pi].chegada).getTime())
+        const usadosR = new Set<number>(); const usadosP = new Set<number>()
+        for (const { ri, pi } of pares) {
+          if (usadosR.has(ri) || usadosP.has(pi)) continue
+          usadosR.add(ri); usadosP.add(pi)
+          const { r, esperada } = rotasCl[ri]; const p = cl[pi]
           const chegada = new Date(p.chegada); const saida = p.saida ? new Date(p.saida) : chegada
           r.paradas = [{
             parada_id: p.id, loja_id: esperada.id, nome: esperada.nome, chegada, saida,
