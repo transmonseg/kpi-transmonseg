@@ -34,3 +34,58 @@ export function clusteriza(eventos: StopApiCru[]): Cluster[] {
   }
   return clusters
 }
+
+/** Eventos crus → paradas no formato que o matcher consome.
+ *  - filtra a janela do dia (`_data` já vem em BRT mascarado como UTC)
+ *  - clusteriza permanências
+ *  - saída = chegada do PRÓXIMO cluster (o caminhão "saiu" ao aparecer noutro lugar);
+ *    no último cluster, saída = último evento + sua duração
+ *  - resolve geofence autoritativa; classifica BASE/LOJA/FORA_BASE
+ *  - descarta cluster curto sem geofence (blip de trânsito) */
+export function consolidaParadasApi(
+  eventos: StopApiCru[],
+  pontos: MapaPontos,
+  data: string,
+  placaNorm: string,
+  baseCoord: BaseCoord = BASE_BENASSI,
+): UnitracParadaRow[] {
+  const doDia = eventos.filter(e => e._data.slice(0, 10) === data)
+  const clusters = clusteriza(doDia)
+  const out: UnitracParadaRow[] = []
+  let ordem = 0
+  for (let i = 0; i < clusters.length; i++) {
+    const c = clusters[i]
+    const ultimo = c.eventos[c.eventos.length - 1]
+    const chegada = c.eventos[0]._data
+    const proximo = clusters[i + 1]
+    const saida = proximo
+      ? proximo.eventos[0]._data
+      : new Date(new Date(ultimo._data).getTime() + (ultimo.tempoparada ?? 0) * 1000).toISOString()
+    const durSeg = Math.round((new Date(saida).getTime() - new Date(chegada).getTime()) / 1000)
+
+    const naBase = haversine(baseCoord.lat, baseCoord.lng, c.lat, c.lng) <= RAIO_BASE_M
+    const geo = naBase ? null : acharLojaPorCoordenada(c.lat, c.lng, pontos)
+    const classificacao = naBase ? 'BASE' : geo ? 'LOJA' : 'FORA_BASE'
+
+    // blip de trânsito: cluster curto, sem geofence e fora da base → descarta
+    if (!naBase && !geo && durSeg < MIN_DUR_SEM_GEO_SEG) continue
+
+    ordem++
+    out.push({
+      id: `${placaNorm}-api-${ordem}`,
+      placa_norm: placaNorm,
+      chegada: new Date(chegada).toISOString(),
+      saida: new Date(saida).toISOString(),
+      duracao_seg: durSeg,
+      local_parada: geo ? geo.nome : naBase ? 'BASE BENASSI - BASE BENASSI' : 'FORA DE BASE E LOCAL DE SERVICO',
+      codigo_loja: geo?.cod ?? null,
+      nome_loja: geo?.nome ?? null,
+      lat: c.lat,
+      lng: c.lng,
+      endereco: null,
+      classificacao,
+      ordem,
+    })
+  }
+  return out
+}
