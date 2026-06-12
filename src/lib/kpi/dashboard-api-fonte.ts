@@ -3,6 +3,9 @@ import type { StatusRota } from './status-rota'
 import type { StatusManual, EntradaManual } from './parse-kpi-manual'
 import type { RotaKpi } from '@/lib/types/kpi'
 import type { LinhaEscala } from '@/lib/types/escala'
+import { buscarFrota, buscarPontos, buscarStopsCru, consolidaParadasApi, buscarAlvos, confirmaPorAlvo } from '@/lib/unitrac-api'
+import { cruzaEscalaUnitrac, setSemGeo, resolverLojaEsperada, type EscalaLinhaRow, type LojaRow, type GeoStore, type UnitracParadaRow } from '@/lib/kpi/matcher'
+import { derivarStatus } from './status-rota'
 
 /** HH:MM em BRT (convenção do sistema: BRT mascarado como UTC). */
 function fmtHora(d: Date | null | undefined): string | null {
@@ -74,4 +77,68 @@ export async function carregarEntradasApi(svc: SupabaseClient, ini: string, fim:
     try { return JSON.parse(await blob.text()) as EntradaManual[] } catch { return [] }
   }))
   return lotes.flat()
+}
+
+// ── Orquestrador do dia: escala + API → linhas do dashboard ─────────────────────
+
+export type EscalaParaDia = Pick<EscalaLinhaRow, 'rede_id' | 'placa_norm' | 'loja_nome_raw' | 'loja_codigo_raw' | 'motorista_nome' | 'carro_ordem' | 'data_entrega'>
+
+/** Calcula as linhas do dashboard de UM dia 100% pela API (paradas consolidadas +
+ *  confirmação por alvo/NF), reusando o matcher de produção. */
+export async function gerarDiaApi(
+  svc: SupabaseClient,
+  data: string,
+  escala: EscalaParaDia[],
+  lojas: LojaRow[],
+  geoStores: GeoStore[],
+): Promise<EntradaManual[]> {
+  const escalaRows: EscalaLinhaRow[] = escala.map((l, i) => ({
+    id: `e${i}`, rede_id: l.rede_id, placa_norm: l.placa_norm || null,
+    loja_nome_raw: l.loja_nome_raw, loja_codigo_raw: l.loja_codigo_raw,
+    motorista_nome: l.motorista_nome, carro_ordem: l.carro_ordem, data_entrega: l.data_entrega ?? data,
+  }))
+  const escMap = new Map(escalaRows.map((e, i) => [e.id, escala[i]]))
+
+  const frota = await buscarFrota()
+  const cvs = frota.map(v => v.cv)
+  const [pontos, alvos] = await Promise.all([buscarPontos(cvs), buscarAlvos(cvs)])
+  const placas = new Set(escalaRows.map(e => e.placa_norm).filter(Boolean) as string[])
+  const paradaRows: UnitracParadaRow[] = []
+  for (const v of frota) {
+    if (!placas.has(v.placaNorm)) continue
+    const ps = consolidaParadasApi(await buscarStopsCru(v.cv, 48), pontos, data, v.placaNorm)
+    paradaRows.push(...ps)
+  }
+
+  setSemGeo(true)
+  const rotas = await cruzaEscalaUnitrac(escalaRows, paradaRows, lojas, svc, geoStores, { geoEndereco: true })
+
+  const porPlaca = new Map<string, UnitracParadaRow[]>()
+  for (const p of paradaRows) { const a = porPlaca.get(p.placa_norm) ?? []; a.push(p); porPlaca.set(p.placa_norm, a) }
+  const saiu = (pl: string | null) => !!pl && (porPlaca.get(pl) ?? []).some(p => p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE')
+
+  const out: EntradaManual[] = []
+  for (const rota of rotas) {
+    const esc = escMap.get(rota.escala_linha_id)
+    if (!esc) continue
+    // Confirmação por alvo/NF: resgata entrega que o GPS perdeu.
+    const esperada = resolverLojaEsperada({ rede_id: esc.rede_id, loja_codigo_raw: esc.loja_codigo_raw, loja_nome_raw: esc.loja_nome_raw }, lojas)
+    if (esperada?.codigo_unitrac && rota.placa_norm) {
+      const c = confirmaPorAlvo(rota.placa_unitrac ?? rota.placa_norm, esperada.codigo_unitrac, alvos)
+      if (c && !rota.paradas.some(p => p.loja_id === esperada.id)) {
+        const t = new Date(c.feitoISO + 'Z')
+        rota.paradas = [{ parada_id: null, loja_id: esperada.id, nome: esperada.nome, chegada: t, saida: t, duracao_min: 0, classificacao: 'LOJA' }]
+      }
+    }
+    const placaUni = rota.placa_unitrac ?? rota.placa_norm
+    const st = derivarStatus({
+      temGps: rota.paradas.length > 0 || porPlaca.has(placaUni ?? ''),
+      ficouNaBase: rota.status === 'sem_entrega' && !!rota.placa_norm,
+      paradas: rota.paradas.map(p => ({ classificacao: p.classificacao, loja_id: p.loja_id ?? null })),
+      viaGeo: rota._matchMeta?.algorithm === 'geo', viaTroca: rota._matchMeta?.algorithm === 'troca',
+      geoConfiavel: rota.geo_confiavel ?? false, placaFoiAlgumLugar: saiu(placaUni), placaSaiuDaBase: saiu(placaUni),
+    })
+    out.push(rotaParaEntrada(rota, esc, st.status, data))
+  }
+  return out
 }
