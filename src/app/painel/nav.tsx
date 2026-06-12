@@ -27,6 +27,7 @@ const GROUPS: Group[] = [
     children: [
       { href: '/painel/kpi/simples', label: 'Gerar KPI', Icon: TableIcon },
       { href: '/painel/kpi/beta', label: 'Gerar KPI (API Beta)', Icon: TableIcon },
+      { href: '/painel/dashboard/beta', label: 'Dashboard (API Beta)', Icon: ChartBar },
       { href: '/painel/historico', label: 'Histórico', Icon: ClockCounterClockwise },
       { href: '/painel/lojas', label: 'Lojas', Icon: Storefront },
     ],
