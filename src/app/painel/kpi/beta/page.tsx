@@ -60,6 +60,8 @@ type PreviewLinha = {
   categoria: CategoriaRevisao | null
   natureza: NaturezaRevisao | null
   saida_loja_fmt: string | null
+  /** Selos de confirmação/correção pelo gabarito da API do Unitrac (beta). */
+  viaApi?: string[]
 }
 
 type LineEditPatch = {
@@ -1740,6 +1742,17 @@ function PreviewRow({
               📍 {linha.geo_dist_metros}m
             </span>
           )}
+          {/* Selo do gabarito da API: a geofence autoritativa do Unitrac confirmou
+              (ou corrigiu) qual loja é esta parada — certeza, não palpite. */}
+          {linha.viaApi?.map((sel, i) => (
+            <span
+              key={i}
+              className="inline-flex w-fit items-center gap-1 rounded border border-[var(--color-success)] bg-[var(--color-success-soft)] px-1.5 py-0.5 text-[10px] font-medium leading-tight text-[var(--color-success-soft-fg)]"
+              title="Confirmado pela geofence autoritativa da API do Unitrac"
+            >
+              🛰️ {sel}
+            </span>
+          ))}
           {/* #5 — Como a linha casou (auditabilidade): confia no "código", fiscaliza o "nome". */}
           {(linha.status === 'ENTREGUE' || linha.status === 'ENTREGUE_GEO') && CASOU_LABEL[linha.algoritmo] && linha.algoritmo !== 'geo' && (
             <span

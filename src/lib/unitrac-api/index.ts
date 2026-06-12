@@ -7,6 +7,7 @@ export * from './frota'
 export * from './pontos'
 export * from './paradas'
 export * from './posicoes'
+export * from './confirma'
 
 export type CorrecaoPlaca = { placa: string; cv: string; origem: 'api' }
 export type CorrecaoLoja = { codigoUnitrac: string; nome: string; lat: number; lon: number; origem: 'api' }
