@@ -9,6 +9,7 @@ import {
   variantesOcr,
   variantesMercosul,
   setSemGeo,
+  resolverLojaEsperada,
   type EscalaLinhaRow,
   type UnitracParadaRow,
   type LojaRow,
@@ -2594,5 +2595,32 @@ describe('ponte Mercosul + resgate geo ≤500m (caso LCO-0978 dia 08/06)', () =>
       expect(r?.geo_dist_metros).toBeGreaterThan(200)
       expect(r?.geo_dist_metros).toBeLessThanOrEqual(500)
     } finally { setSemGeo(false) }
+  })
+})
+
+describe('resolverLojaEsperada — código curto colidindo entre lojas homônimas (FUM-8748 12/06)', () => {
+  // Caso real: duas SUPERPRIX "Loja 13" em bairros diferentes. A escala manda
+  // código "13" + nome "Niterói". O codCasa('13','3030013') casa a Tijuquinha
+  // (sufixo via padStart→"013") mas codCasa('13','3030113') NÃO casa a Niterói
+  // ("113"). Resultado antigo: resolve Tijuquinha (Tijuca, ~13km da entrega real)
+  // → a parada FORA_BASE a 15m da Niterói nunca casava → "não foi ao cliente".
+  // O NOME ("Niterói") deve desempatar a favor da loja que contém esse token.
+  const lojas: LojaRow[] = [
+    { id: 'tijuquinha', rede_id: 'SUPERPRIX', nome: 'Super Prix - Tijuquinha (1 ENTREGA) Loja 13', nome_normalizado: 'super prix tijuquinha 1 entrega loja 13', codigo_escala: null, codigo_unitrac: '3030013', nome_unitrac: null, lat: -22.929627, lng: -43.237071, raio_metros: 300, endereco: null, bairro: null, municipio: null, numero: null },
+    { id: 'niteroi', rede_id: 'SUPERPRIX', nome: 'SUPERPRIX NITEROI LJ 13', nome_normalizado: 'superprix niteroi lj 13', codigo_escala: null, codigo_unitrac: '3030113', nome_unitrac: 'SUPERPRIX LJ 13 - NITEROI', lat: -22.90327, lng: -43.11062, raio_metros: 200, endereco: null, bairro: 'Icaraí', municipio: 'Niterói', numero: null },
+  ]
+
+  it('"Super Prix - Niterói - Loja 13" cód "13" resolve a loja Niterói, não a Tijuquinha', () => {
+    const linha = { rede_id: 'SUPERPRIX', loja_codigo_raw: '13', loja_nome_raw: 'Super Prix - Niterói - Loja 13 - 1° ENTREGA' }
+    const r = resolverLojaEsperada(linha, lojas)
+    expect(r?.id).toBe('niteroi')
+  })
+
+  it('sem token discriminante no nome (só "Loja 13"), mantém a loja do código', () => {
+    // Quando o nome NÃO aponta outra loja (não contém token que só a outra tenha),
+    // o código curto continua valendo — não inventa override.
+    const linha = { rede_id: 'SUPERPRIX', loja_codigo_raw: '13', loja_nome_raw: 'Super Prix - Loja 13' }
+    const r = resolverLojaEsperada(linha, lojas)
+    expect(r?.id).toBe('tijuquinha')
   })
 })

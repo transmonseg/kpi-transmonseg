@@ -1054,6 +1054,19 @@ export function resolverLojaEsperada(
 ): LojaRow | null {
   const fung = redesFungiveis(linha.rede_id)
   const cands = lojas.filter(l => fung.has(l.rede_id))
+  // CONTAINMENT (cluster SPID): todos os tokens discriminativos da escala estão
+  // presentes no nome da loja do cadastro. Definido no topo pra desambiguar tanto
+  // o código curto (logo abaixo) quanto o desempate por nome (mais adiante).
+  const tEsc = tokensCore(linha.loja_nome_raw)
+  const contidoEm = (l: LojaRow): boolean => {
+    if (tEsc.size === 0) return false
+    const dentro = (alvo: Set<string>): boolean => {
+      for (const t of tEsc) if (!alvo.has(t)) return false
+      return true
+    }
+    return dentro(tokensCore(l.nome)) ||
+      (l.nome_unitrac != null && dentro(tokensCore(l.nome_unitrac)))
+  }
   if (linha.loja_codigo_raw) {
     const raw = linha.loja_codigo_raw
     const valida = (l: LojaRow) => l.lat != null && l.lng != null && !(l.lat === 0 && l.lng === 0)
@@ -1066,31 +1079,36 @@ export function resolverLojaEsperada(
     // SÓ confia no código quando ele aponta UMA loja com coord válida. Códigos curtos
     // (ex "Filial 3") casam várias lojas via codCasa (71003, 71013, 71023…) — aí o
     // nome decide ("PIEDADE" → GB 03 - PIEDADE). Antes pegava a 1ª (às vezes 0,0).
-    if (validos.length === 1) return validos[0]
+    if (validos.length === 1) {
+      const porCodigo = validos[0]
+      // Match via codCasa (sufixo/padStart) usa código CURTO — colide entre lojas
+      // homônimas de bairros diferentes (duas "Loja 13"). Quando a loja do código
+      // NÃO contém os tokens do nome da escala MAS existe outra que CONTÉM todos
+      // (e tem coordenada), o NOME manda. Caso real FUM-8748 12/06: "Niterói Loja
+      // 13" cód "13" casava ...013 (Tijuquinha) via padStart; o nome aponta ...113
+      // (Niterói). O guard !contidoEm(porCodigo) garante que isto NÃO dispara quando
+      // o código já aponta a loja certa (nome consistente).
+      if (!contidoEm(porCodigo)) {
+        const porNome = cands.find(l => l.id !== porCodigo.id && contidoEm(l) &&
+          l.lat != null && l.lng != null && !(l.lat === 0 && l.lng === 0))
+        if (porNome) return porNome
+      }
+      return porCodigo
+    }
   }
   if (!linha.loja_nome_raw) return null
   const scoreLoja = (l: LojaRow): number => Math.min(
     matchScore(linha.loja_nome_raw, l.nome),
     l.nome_unitrac != null ? matchScore(linha.loja_nome_raw, l.nome_unitrac) : Infinity,
   )
-  // CONTAINMENT (cluster SPID): todos os tokens discriminativos da escala estão
-  // presentes no nome da loja do cadastro. Sinal forte — a escala costuma ser um
-  // rótulo curto ("SPID - Carioca" = {SPID,CARIOCA}) da loja canônica mais
-  // descritiva ("SPID Estação Carioca (Metrô)" = {SPID,ESTAÇÃO,CARIOCA,METRÔ}).
-  // Sem isso o matchScore = max(2,4)-2 = 2 PERDE pra uma loja errada de nome curto
-  // que compartilha só o token de marca ("SPID Méier" = {SPID,MÉIER} = score 1).
-  // SÓ desempata escala→cadastro (resolução); NÃO toca scorePair (escala↔parada),
-  // que continua simétrico — por isso não regride a distribuição multi-linha (LLJ9C64).
-  const tEsc = tokensCore(linha.loja_nome_raw)
-  const contidoEm = (l: LojaRow): boolean => {
-    if (tEsc.size === 0) return false
-    const dentro = (alvo: Set<string>): boolean => {
-      for (const t of tEsc) if (!alvo.has(t)) return false
-      return true
-    }
-    return dentro(tokensCore(l.nome)) ||
-      (l.nome_unitrac != null && dentro(tokensCore(l.nome_unitrac)))
-  }
+  // CONTAINMENT (cluster SPID): `tEsc`/`contidoEm` definidos no topo da função.
+  // Sinal forte — a escala costuma ser um rótulo curto ("SPID - Carioca" =
+  // {SPID,CARIOCA}) da loja canônica mais descritiva ("SPID Estação Carioca
+  // (Metrô)" = {SPID,ESTAÇÃO,CARIOCA,METRÔ}). Sem isso o matchScore = max(2,4)-2 = 2
+  // PERDE pra uma loja errada de nome curto que compartilha só o token de marca
+  // ("SPID Méier" = {SPID,MÉIER} = score 1). SÓ desempata escala→cadastro
+  // (resolução); NÃO toca scorePair (escala↔parada), que continua simétrico — por
+  // isso não regride a distribuição multi-linha (LLJ9C64).
   // Desempate, em ordem de prioridade:
   //  0) loja que CONTÉM todos os tokens da escala (rótulo curto ⊆ nome canônico).
   //  1) menor score de nome.
