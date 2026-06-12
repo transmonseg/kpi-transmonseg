@@ -17,7 +17,8 @@ import { partitionSettled } from '@/lib/utils/partition-settled'
 import { mapLimitSettled } from '@/lib/utils/map-limit'
 import type { KpiLinha, RotaKpi } from '@/lib/types/kpi'
 import type { LinhaEscala } from '@/lib/types/escala'
-import { buscarFrota, buscarPontos, buscarPosicoes, validarRotaConcluida, confirmaEntregaViaApi, type MapaPontos, type MapaPosicoes } from '@/lib/unitrac-api'
+import { buscarFrota, buscarPontos, buscarPosicoes, validarRotaConcluida, confirmaEntregaViaApi, buscarStopsCru, consolidaParadasApi, type MapaPontos, type MapaPosicoes } from '@/lib/unitrac-api'
+import type { ResumoVeiculo, ClassificacaoParada } from '@/lib/types/unitrac'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -117,7 +118,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
   if (!body) return new NextResponse('Body JSON inválido.', { status: 400 })
 
-  const { escalaBucketPath, escalaBucketPaths, unitracBucketPath, unitracBucketPaths, data, alteracoes = [], lineEdits = [], skipSave = false } = body as {
+  const { escalaBucketPath, escalaBucketPaths, unitracBucketPath, unitracBucketPaths, data, alteracoes = [], lineEdits = [], skipSave = false, fonte = 'pdf' } = body as {
     escalaBucketPath?: string
     escalaBucketPaths?: string[]
     unitracBucketPath?: string
@@ -128,20 +129,24 @@ export async function POST(req: NextRequest) {
     alteracoes?: AlteracaoParsed[]
     lineEdits?: LineEdit[]
     skipSave?: boolean
+    // KPI BETA: 'api' monta as paradas pela consolidação dos eventos do Unitrac
+    // (sem PDF). 'pdf' é o fluxo atual. Default 'pdf'.
+    fonte?: 'pdf' | 'api'
   }
 
   // Normalize to array
   const escalaPaths: string[] = escalaBucketPaths ?? (escalaBucketPath ? [escalaBucketPath] : [])
   if (escalaPaths.length === 0) return new NextResponse('"escalaBucketPath" ou "escalaBucketPaths" obrigatório.', { status: 400 })
   const rawUnitracPaths: string[] = unitracBucketPaths ?? (unitracBucketPath ? [unitracBucketPath] : [])
-  if (rawUnitracPaths.length === 0) return new NextResponse('"unitracBucketPath" ou "unitracBucketPaths" obrigatório.', { status: 400 })
+  // No modo 'api' as paradas vêm da API — não precisa de arquivo Unitrac.
+  if (fonte === 'pdf' && rawUnitracPaths.length === 0) return new NextResponse('"unitracBucketPath" ou "unitracBucketPaths" obrigatório.', { status: 400 })
 
   // PDF é OBRIGATÓRIO (fonte primária — Tia Érica usa só PDF, é mais completo).
   // XLSX é OPCIONAL (fallback que pode ter parsing mais limpo em alguns casos).
   // Antes exigíamos os dois, mas Tia Érica trabalha só com PDF, então o sistema
-  // deve refletir esse fluxo.
+  // deve refletir esse fluxo. No modo 'api' o PDF não é exigido.
   const temPdf = rawUnitracPaths.some(p => p.toLowerCase().endsWith('.pdf'))
-  if (!temPdf) {
+  if (fonte === 'pdf' && !temPdf) {
     return new NextResponse(
       'Suba o relatório Unitrac em PDF (formato principal). XLSX é opcional como fallback.',
       { status: 400 },
@@ -304,8 +309,43 @@ export async function POST(req: NextRequest) {
     if (r.placa_norm) cadastroPlacas.add(String(r.placa_norm))
   }
 
-  // Parse unitrac — baixa e parseia cada arquivo, mergeia por placa
-  const veiculosMap = new Map<string, import('@/lib/types/unitrac').ResumoVeiculo>()
+  // Monta os veículos. 'api': consolida os eventos crus do Unitrac (sem PDF).
+  // 'pdf': baixa e parseia cada arquivo, mergeia por placa (fluxo atual).
+  const veiculosMap = new Map<string, ResumoVeiculo>()
+  if (fonte === 'api') {
+    const frotaApi = await buscarFrota()
+    const pontosApiVeic = await buscarPontos(frotaApi.map(vv => vv.cv))
+    const placasEscala = new Set(escalaLinhas.map(l => l.placa_norm).filter(Boolean) as string[])
+    for (const vv of frotaApi) {
+      if (!placasEscala.has(vv.placaNorm)) continue
+      const eventos = await buscarStopsCru(vv.cv, 48)
+      const paradas = consolidaParadasApi(eventos, pontosApiVeic, data, vv.placaNorm)
+      if (paradas.length === 0) continue
+      veiculosMap.set(vv.placaNorm, {
+        placa_norm: vv.placaNorm,
+        placa_raw: vv.placa,
+        inicio_viagem: null,
+        fim_viagem: null,
+        qtd_paradas: paradas.length,
+        saida_cd: null,
+        paradas: paradas.map(p => ({
+          placa_norm: vv.placaNorm,
+          chegada: new Date(p.chegada),
+          saida: new Date(p.saida!),
+          duracao_seg: p.duracao_seg ?? 0,
+          distancia_km: null,
+          endereco: p.endereco ?? null,
+          lat: p.lat,
+          lng: p.lng,
+          local_parada: p.local_parada,
+          codigo_loja: p.codigo_loja,
+          nome_loja: p.nome_loja,
+          classificacao: p.classificacao as ClassificacaoParada,
+          ordem: p.ordem,
+        })),
+      })
+    }
+  } else {
   for (const unitracPath of unitracPaths) {
     const { data: unitracBlob, error: unitracErr } = await svc.storage.from('unitrac-raw').download(unitracPath)
     if (unitracErr || !unitracBlob) {
@@ -354,6 +394,7 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       return new NextResponse(e instanceof Error ? e.message : 'Erro ao ler Unitrac.', { status: 400 })
     }
+  }
   }
   const veiculos = Array.from(veiculosMap.values())
   if (veiculos.length === 0)
