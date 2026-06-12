@@ -279,6 +279,9 @@ interface AlteracoesCardProps {
   /** Escalas selecionadas na tela — enviadas pra inferir `Sai` da escala da SESSÃO
    *  (não do banco). É o que faz a alteração ler a escala que o operador subiu. */
   escalas?: File[]
+  /** Sobe uma escala via presign e devolve o path no Storage. Quando presente (web),
+   *  a escala vai por path (não inline) — evita o limite de 4.5MB da função no Vercel. */
+  uploadEscala?: (f: File) => Promise<string>
 }
 
 const REDES_OPCOES: Array<{ value: string; label: string }> = [
@@ -321,7 +324,7 @@ async function readTxtWithEncodingFallback(file: File): Promise<string> {
   return new TextDecoder('utf-8').decode(buffer)
 }
 
-function AlteracoesCard({ confirmadas, onConfirm, onRemove, data, escalas = [] }: AlteracoesCardProps) {
+function AlteracoesCard({ confirmadas, onConfirm, onRemove, data, escalas = [], uploadEscala }: AlteracoesCardProps) {
   const [expanded, setExpanded] = useState(false)
   const [modo, setModo] = useState<'texto' | 'pdf' | 'manual' | 'txt'>('texto')
   const [texto, setTexto] = useState('')
@@ -396,6 +399,19 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data, escalas = [] }
 
   function resetPreviews() { setPreviews([]); setErr(null) }
 
+  /** Anexa a escala à requisição de análise. Web: sobe via presign e manda só os
+   *  paths (escala de 5MB não cabe inline — limite 4.5MB da função no Vercel).
+   *  Desktop/offline OU sem data (presign exige data): inline. */
+  async function appendEscalas(fd: FormData) {
+    const dataValida = !!data && /^\d{4}-\d{2}-\d{2}$/.test(data)
+    if (uploadEscala && dataValida && !deveGerarOffline() && escalas.length > 0) {
+      const paths = await Promise.all(escalas.map(uploadEscala))
+      fd.append('escalaPaths', JSON.stringify(paths))
+    } else {
+      for (const f of escalas) fd.append('escala', f)
+    }
+  }
+
   function analisarTexto() {
     if (!texto.trim()) return
     resetPreviews()
@@ -404,7 +420,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data, escalas = [] }
         const fd = new FormData()
         fd.append('texto', texto)
         if (data) fd.append('data', data)
-        for (const f of escalas) fd.append('escala', f)
+        await appendEscalas(fd)
         const res = await fetch('/api/kpi/simples/analisar-alt', { method: 'POST', body: fd })
         if (!res.ok) throw new Error(await res.text())
         setPreviews(await res.json() as AlteracaoParsed[])
@@ -421,7 +437,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data, escalas = [] }
         const fd = new FormData()
         fd.append('pdf', file)
         if (data) fd.append('data', data)
-        for (const f of escalas) fd.append('escala', f)
+        await appendEscalas(fd)
         const res = await fetch('/api/kpi/simples/analisar-alt', { method: 'POST', body: fd })
         if (!res.ok) throw new Error(await res.text())
         setPreviews(await res.json() as AlteracaoParsed[])
@@ -441,7 +457,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data, escalas = [] }
         const fd = new FormData()
         fd.append('texto', conteudo)
         if (data) fd.append('data', data)
-        for (const f of escalas) fd.append('escala', f)
+        await appendEscalas(fd)
         const res = await fetch('/api/kpi/simples/analisar-alt', { method: 'POST', body: fd })
         if (!res.ok) throw new Error(await res.text())
         setPreviews(await res.json() as AlteracaoParsed[])
@@ -1000,7 +1016,7 @@ export default function KpiSimplesPage() {
 
       {/* Alterações (componente preservado) */}
       <div data-tour="gk-alteracoes" className="mt-6">
-        <AlteracoesCard confirmadas={alteracoes} onConfirm={addAlteracao} onRemove={removeAlteracao} data={data} escalas={escalas} />
+        <AlteracoesCard confirmadas={alteracoes} onConfirm={addAlteracao} onRemove={removeAlteracao} data={data} escalas={escalas} uploadEscala={f => uploadComPresign(f, false)} />
       </div>
 
       {/* Zona estável do CTA + resultados — alvo do tour (data-tour="gk-resultado").

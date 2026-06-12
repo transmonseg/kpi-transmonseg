@@ -79,12 +79,31 @@ async function extrairTextoPdfjs(buf: Buffer): Promise<string> {
 }
 
 
-/** Parseia os arquivos de escala enviados na sessão (campo "escala", multipart). */
-async function parseEscalasSessao(fd: FormData): Promise<LinhaEscala[]> {
-  const arquivos = fd.getAll('escala').filter((f): f is File => f instanceof File)
+/**
+ * Parseia as escalas da sessão. Preferência: PATHS no Storage (`escalaPaths`,
+ * JSON), que o cliente sobe via presign — a escala grande (≥5MB) NÃO pode
+ * trafegar inline no multipart, senão estoura o limite de 4.5MB da função no
+ * Vercel (PAYLOAD_TOO_LARGE). Fallback: arquivos inline (campo "escala") pro
+ * desktop/local, onde não há esse limite nem Storage.
+ */
+async function parseEscalasSessao(fd: FormData, svc: SupabaseClient): Promise<LinhaEscala[]> {
   const dataField = fd.get('data')
   const data = typeof dataField === 'string' ? dataField : undefined
   const linhas: LinhaEscala[] = []
+
+  const pathsField = fd.get('escalaPaths')
+  if (typeof pathsField === 'string' && pathsField.trim()) {
+    let paths: string[] = []
+    try { paths = JSON.parse(pathsField) } catch { paths = [] }
+    for (const p of paths) {
+      const { data: blob, error } = await svc.storage.from('escalas-raw').download(p)
+      if (error || !blob) continue
+      linhas.push(...await parseEscalaArquivo(await blob.arrayBuffer(), p, data))
+    }
+    return linhas
+  }
+
+  const arquivos = fd.getAll('escala').filter((f): f is File => f instanceof File)
   for (const f of arquivos) {
     const buf = Buffer.from(await f.arrayBuffer())
     linhas.push(...await parseEscalaArquivo(buf, f.name, data))
@@ -127,7 +146,7 @@ export async function POST(req: NextRequest) {
     const fd = await req.formData()
     const dataField = fd.get('data')
     const data = typeof dataField === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dataField) ? dataField : ''
-    const escalaSessao = await parseEscalasSessao(fd)
+    const escalaSessao = await parseEscalasSessao(fd, svc)
     const pdfFile = fd.get('pdf')
     if (pdfFile instanceof File) {
       const buf = Buffer.from(await pdfFile.arrayBuffer())
