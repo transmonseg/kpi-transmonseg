@@ -17,7 +17,7 @@ import { partitionSettled } from '@/lib/utils/partition-settled'
 import { mapLimitSettled } from '@/lib/utils/map-limit'
 import type { KpiLinha, RotaKpi } from '@/lib/types/kpi'
 import type { LinhaEscala } from '@/lib/types/escala'
-import { buscarFrota, buscarPontos, buscarPosicoes, validarRotaConcluida } from '@/lib/unitrac-api'
+import { buscarFrota, buscarPontos, buscarPosicoes, validarRotaConcluida, confirmaEntregaViaApi, type MapaPontos, type MapaPosicoes } from '@/lib/unitrac-api'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -605,6 +605,65 @@ export async function POST(req: NextRequest) {
     else if (!placaEntregouEscala.has(r.placa_norm)) placaEntregouEscala.set(r.placa_norm, false)
   }
 
+  // === KPI BETA: confirmação de PONTO via gabarito da API do Unitrac ===
+  // Depois de identificar placas e paradas, puxa as geofences AUTORITATIVAS da API
+  // e confirma, pela COORDENADA, qual loja cada parada é — independente do palpite
+  // do matcher (nome/código curto colide entre lojas homônimas). Confirma os certos
+  // e CORRIGE/RESGATA os que o matcher errou ou não casou. Best-effort: se a API não
+  // responder, segue com o resultado do matcher. (beta — nada disto persiste.)
+  const confirmacoesApi = new Map<string, string[]>()
+  let pontosApi: MapaPontos = {}
+  let posicoesApi: MapaPosicoes = {}
+  try {
+    const frotaApi = await buscarFrota()
+    const cvsApi = frotaApi.map(v => v.cv)
+    const [pts, poss] = await Promise.all([buscarPontos(cvsApi), buscarPosicoes(cvsApi)])
+    pontosApi = pts; posicoesApi = poss
+
+    if (Object.keys(pontosApi).length > 0) {
+      const stopsPorPlaca = (placa: string | null) => {
+        if (!placa) return []
+        const vars = new Set([placa, ...variantesPlaca(placa)])
+        return paradaRows.filter(p => vars.has(p.placa_norm))
+      }
+      const consumidasApi = new Set<string>()
+      for (const rota of rotas) {
+        const esc = escalaMap.get(rota.escala_linha_id)
+        if (!esc) continue
+        const esperada = resolverLojaEsperada(esc, lojasParaMatcher)
+        if (!esperada?.codigo_unitrac) continue
+        const conf = confirmaEntregaViaApi(
+          esperada.codigo_unitrac,
+          stopsPorPlaca(rota.placa_unitrac ?? rota.placa_norm),
+          pontosApi,
+        )
+        if (!conf || consumidasApi.has(conf.stopId)) continue
+        // Já casou na loja certa → só carimba "confirmado". Senão, CORRIGE/RESGATA.
+        if (rota.paradas.some(p => p.loja_id === esperada.id)) {
+          confirmacoesApi.set(rota.escala_linha_id, ['ponto confirmado pela API'])
+          continue
+        }
+        const sp = paradaRows.find(p => p.id === conf.stopId)
+        if (!sp) continue
+        const chegada = new Date(sp.chegada)
+        const saida = sp.saida ? new Date(sp.saida) : chegada
+        rota.paradas = [{
+          parada_id: sp.id, loja_id: esperada.id, nome: esperada.nome, chegada, saida,
+          duracao_min: Math.round((saida.getTime() - chegada.getTime()) / 60000),
+          classificacao: 'LOJA',
+        }]
+        rota.status = 'ok'
+        rota.geo_confiavel = true
+        rota.geo_dist_metros = conf.distMetros
+        rota._matchMeta = { score: 0.95, confidence: 'HIGH', requiresReview: false, algorithm: 'api' }
+        consumidasApi.add(sp.id)
+        confirmacoesApi.set(rota.escala_linha_id, [`ponto corrigido pela API (${conf.nomeApi}, ${conf.distMetros}m)`])
+      }
+    }
+  } catch (e) {
+    console.error('[kpi/beta] confirmação via API falhou (segue sem):', e)
+  }
+
   const redeMap = new Map<string, { rotas: RotaKpi[]; escala: LinhaEscala[] }>()
   for (const rota of rotas) {
     const escala = escalaMap.get(rota.escala_linha_id)
@@ -824,6 +883,7 @@ export async function POST(req: NextRequest) {
           categoria: statusInfo.categoria,
           natureza: statusInfo.natureza,
           saida_loja_fmt: fmtHoraBRT(saidaLoja),
+          viaApi: confirmacoesApi.get(rota.escala_linha_id),
         }
       })
 
@@ -899,16 +959,13 @@ export async function POST(req: NextRequest) {
   const geracaoId: string | null = null
   void skipSave
 
-  // === KPI BETA: enriquecimento via API do Unitrac (best-effort, nunca quebra) ===
+  // === KPI BETA: enriquecimento via API (reusa pontos/posições já buscados) ===
+  // best-effort: se a API caiu, pontosApi/posicoesApi vêm vazios e isto é no-op.
   type SugestaoCadastro = { codigo: string; nome: string; tipo: 'sem_coord' | 'coord_errada'; detalhe: string }
-  let sugestoesCadastro: SugestaoCadastro[] = []
-  let correcoesViaApi = 0
+  const sugestoesCadastro: SugestaoCadastro[] = []
+  // Quantas linhas foram confirmadas OU corrigidas pelo gabarito da API.
+  let correcoesViaApi = confirmacoesApi.size
   try {
-    const frotaApi = await buscarFrota()
-    const cvsApi = frotaApi.map(v => v.cv)
-    const pontosApi = await buscarPontos(cvsApi)
-    const posicoesApi = await buscarPosicoes(cvsApi)
-
     // 1) Quadro de correções de cadastro (cruza cadastro x gabarito da API; NÃO grava)
     for (const loja of lojasParaMatcher) {
       if (!loja.codigo_unitrac) continue

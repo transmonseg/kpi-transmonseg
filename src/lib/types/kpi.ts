@@ -12,7 +12,7 @@ export type ParadaKpi = {
   classificacao: 'LOJA' | 'FORA_BASE'
 }
 
-export type MatchAlgorithm = 'exact' | 'alias' | 'trgm' | 'hybrid' | 'geo' | 'crossdock' | 'troca' | 'none'
+export type MatchAlgorithm = 'exact' | 'alias' | 'trgm' | 'hybrid' | 'geo' | 'crossdock' | 'troca' | 'api' | 'none'
 export type MatchConfidence = 'HIGH' | 'LOW' | 'UNMATCHED'
 
 export interface MatchMeta {
