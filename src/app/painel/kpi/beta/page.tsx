@@ -731,6 +731,8 @@ export default function KpiSimplesPage() {
   const [escalas, setEscalas] = useState<File[]>([])
   const [unitracFiles, setUnitracFiles] = useState<File[]>([])
   const [data, setData] = useState<string>(hoje)
+  // KPI BETA: fonte das paradas — 'pdf' (atual) ou 'api' (consolidação sem PDF).
+  const [fonte, setFonte] = useState<'pdf' | 'api'>('pdf')
   const [alteracoes, setAlteracoes] = useState<AlteracaoParsed[]>([])
   const [redes, setRedes] = useState<RedeResult[] | null>(null)
   const [lojasNovas, setLojasNovas] = useState<LojaNova[]>([])
@@ -830,13 +832,15 @@ export default function KpiSimplesPage() {
       if (!ok) return
     }
     if (escalas.length === 0) { setErro('Selecione ao menos uma escala.'); return }
-    if (unitracFiles.length === 0) { setErro('Selecione o Unitrac (PDF).'); return }
-    // PDF é OBRIGATÓRIO (formato principal usado pela Erica).
-    // XLSX é opcional como fallback.
-    const temPdf = unitracFiles.some(f => f.name.toLowerCase().endsWith('.pdf'))
-    if (!temPdf) {
-      setErro('Suba o Unitrac em PDF (formato principal). XLSX é opcional.')
-      return
+    // No modo API as paradas vêm da consolidação — não precisa de arquivo Unitrac.
+    if (fonte === 'pdf') {
+      if (unitracFiles.length === 0) { setErro('Selecione o Unitrac (PDF).'); return }
+      // PDF é OBRIGATÓRIO (formato principal usado pela Erica). XLSX é opcional.
+      const temPdf = unitracFiles.some(f => f.name.toLowerCase().endsWith('.pdf'))
+      if (!temPdf) {
+        setErro('Suba o Unitrac em PDF (formato principal). XLSX é opcional.')
+        return
+      }
     }
     if (!data) { setErro('Selecione a data.'); return }
 
@@ -868,7 +872,8 @@ export default function KpiSimplesPage() {
 
         const [escalaBucketPaths, unitracBucketPaths] = await Promise.all([
           Promise.all(escalas.map(f => uploadComPresign(f, false))),
-          Promise.all(unitracFiles.map(f => uploadComPresign(f, true))),
+          // No modo API não há arquivo Unitrac — as paradas vêm da consolidação.
+          fonte === 'api' ? Promise.resolve([] as string[]) : Promise.all(unitracFiles.map(f => uploadComPresign(f, true))),
         ])
 
         setBucketPaths({ escalaBucketPaths, unitracBucketPaths })
@@ -876,7 +881,7 @@ export default function KpiSimplesPage() {
         const res = await fetch('/api/kpi/beta', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ escalaBucketPaths, unitracBucketPaths, data, alteracoes }),
+          body: JSON.stringify({ escalaBucketPaths, unitracBucketPaths, data, alteracoes, fonte }),
         })
         if (!res.ok) throw new Error((await res.text()) || 'Erro ao processar.')
         const json = await res.json() as { redes: RedeResult[]; geracao_id?: string; lojasNovas?: LojaNova[]; sugestoesCadastro?: SugestaoCadastro[] }
@@ -893,7 +898,8 @@ export default function KpiSimplesPage() {
   // Habilita o botão quando temos: pelo menos 1 escala + Unitrac PDF + data.
   // XLSX é opcional (fallback).
   const temUnitracPdf = unitracFiles.some(f => f.name.toLowerCase().endsWith('.pdf'))
-  const pronto = escalas.length > 0 && temUnitracPdf && !!data
+  // No modo API basta escala + data (sem PDF). No modo PDF exige o Unitrac.
+  const pronto = escalas.length > 0 && !!data && (fonte === 'api' || temUnitracPdf)
 
   function handleLineEdit(redeId: string, ordem: number, patch: LineEditPatch) {
     const key = `${redeId}:::${ordem}`
@@ -1002,6 +1008,18 @@ export default function KpiSimplesPage() {
               className="mt-1 w-full bg-transparent text-[24px] font-medium tracking-tight text-[var(--color-fg)] outline-none [color-scheme:light] dark:[color-scheme:dark]"
               style={{ fontFamily: 'var(--font-mono)' }}
             />
+            {/* KPI BETA: fonte das paradas. API = sem PDF, consolida os eventos do Unitrac. */}
+            <div className="mt-3 flex items-center gap-2 border-t border-[var(--color-border)] pt-3">
+              <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">Fonte das paradas</span>
+              <button type="button" onClick={() => setFonte('pdf')}
+                className={cn('px-2.5 py-1 rounded text-xs font-medium border transition-colors', fonte === 'pdf' ? 'border-[var(--color-success)] bg-[var(--color-success-soft)] text-[var(--color-success-soft-fg)]' : 'border-[var(--color-border-strong)] text-[var(--color-fg-muted)]')}>
+                PDF
+              </button>
+              <button type="button" onClick={() => setFonte('api')}
+                className={cn('px-2.5 py-1 rounded text-xs font-medium border transition-colors', fonte === 'api' ? 'border-[var(--color-success)] bg-[var(--color-success-soft)] text-[var(--color-success-soft-fg)]' : 'border-[var(--color-border-strong)] text-[var(--color-fg-muted)]')}>
+                🛰️ API (sem PDF)
+              </button>
+            </div>
           </div>
         </div>
       </section>
