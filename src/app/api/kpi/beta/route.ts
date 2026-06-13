@@ -134,9 +134,9 @@ export async function POST(req: NextRequest) {
     alteracoes?: AlteracaoParsed[]
     lineEdits?: LineEdit[]
     skipSave?: boolean
-    // KPI BETA: 'api' monta as paradas pela consolidação dos eventos do Unitrac
-    // (sem PDF). 'pdf' é o fluxo atual. Default 'pdf'.
-    fonte?: 'pdf' | 'api'
+    // KPI BETA, 3 modos: 'pdf' (só PDF, sem API), 'pdf_api' (PDF base + API
+    // confirma/completa), 'api' (sem PDF, paradas da API). Default 'pdf'.
+    fonte?: 'pdf' | 'pdf_api' | 'api'
   }
 
   // Normalize to array
@@ -144,14 +144,14 @@ export async function POST(req: NextRequest) {
   if (escalaPaths.length === 0) return new NextResponse('"escalaBucketPath" ou "escalaBucketPaths" obrigatório.', { status: 400 })
   const rawUnitracPaths: string[] = unitracBucketPaths ?? (unitracBucketPath ? [unitracBucketPath] : [])
   // No modo 'api' as paradas vêm da API — não precisa de arquivo Unitrac.
-  if (fonte === 'pdf' && rawUnitracPaths.length === 0) return new NextResponse('"unitracBucketPath" ou "unitracBucketPaths" obrigatório.', { status: 400 })
+  if (fonte !== 'api' && rawUnitracPaths.length === 0) return new NextResponse('"unitracBucketPath" ou "unitracBucketPaths" obrigatório.', { status: 400 })
 
   // PDF é OBRIGATÓRIO (fonte primária — Tia Érica usa só PDF, é mais completo).
   // XLSX é OPCIONAL (fallback que pode ter parsing mais limpo em alguns casos).
   // Antes exigíamos os dois, mas Tia Érica trabalha só com PDF, então o sistema
   // deve refletir esse fluxo. No modo 'api' o PDF não é exigido.
   const temPdf = rawUnitracPaths.some(p => p.toLowerCase().endsWith('.pdf'))
-  if (fonte === 'pdf' && !temPdf) {
+  if (fonte !== 'api' && !temPdf) {
     return new NextResponse(
       'Suba o relatório Unitrac em PDF (formato principal). XLSX é opcional como fallback.',
       { status: 400 },
@@ -663,7 +663,8 @@ export async function POST(req: NextRequest) {
   let pontosApi: MapaPontos = {}
   let posicoesApi: MapaPosicoes = {}
   let alvosApi: AlvoApi[] = []
-  try {
+  // Modo 'pdf' puro NÃO chama a API (vira o KPI normal). 'pdf_api' e 'api' enriquecem.
+  if (fonte !== 'pdf') try {
     const frotaApi = await buscarFrota()
     const cvsApi = frotaApi.map(v => v.cv)
     const [pts, poss, alvs] = await Promise.all([buscarPontos(cvsApi), buscarPosicoes(cvsApi), buscarAlvos(cvsApi)])
