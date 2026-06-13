@@ -21,6 +21,7 @@ import { buscarFrota, buscarPontos, buscarPosicoes, validarRotaConcluida, confir
 import type { ResumoVeiculo, ClassificacaoParada } from '@/lib/types/unitrac'
 import { situacaoViva, type SituacaoViva } from '@/lib/kpi/situacao-viva'
 import { mesclarParadas } from '@/lib/kpi/merge-paradas'
+import { validarEscala } from '@/lib/parsers/validar-escala'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -206,6 +207,9 @@ export async function POST(req: NextRequest) {
     vistosDup.add(k)
     return true
   })
+
+  // Sanidade pós-parse: avisa se a escala parece lida errada (não bloqueia).
+  const avisosEscala = validarEscala(escalaLinhas).avisos
 
   // Baixa e parseia todos os arquivos Unitrac, mergeando os veículos
   // (suporta XLSX + PDF simultâneos para cobrir formatos diferentes do mesmo dia)
@@ -1108,7 +1112,7 @@ export async function POST(req: NextRequest) {
     console.error('[kpi/beta] enriquecimento via API falhou (segue sem):', e)
   }
 
-  return NextResponse.json({ redes: results, redes_com_erro, geracao_id: geracaoId, lojasNovas, sugestoesCadastro, correcoesViaApi })
+  return NextResponse.json({ redes: results, redes_com_erro, geracao_id: geracaoId, lojasNovas, sugestoesCadastro, correcoesViaApi, avisosEscala })
 }
 
 // GET /api/kpi/simples?data=YYYY-MM-DD → lista histórico de gerações
