@@ -6,6 +6,9 @@ import type { LinhaEscala } from '@/lib/types/escala'
 import { buscarFrota, buscarPontos, buscarStopsCru, consolidaParadasApi, buscarAlvos, confirmaPorAlvo } from '@/lib/unitrac-api'
 import { cruzaEscalaUnitrac, setSemGeo, resolverLojaEsperada, type EscalaLinhaRow, type LojaRow, type GeoStore, type UnitracParadaRow } from '@/lib/kpi/matcher'
 import { derivarStatus } from './status-rota'
+import { situacaoViva, type SituacaoViva } from './situacao-viva'
+
+export type EntradaApiDia = EntradaManual & { situacaoViva: SituacaoViva }
 
 /** HH:MM em BRT (convenção do sistema: BRT mascarado como UTC). */
 function fmtHora(d: Date | null | undefined): string | null {
@@ -91,7 +94,7 @@ export async function gerarDiaApi(
   escala: EscalaParaDia[],
   lojas: LojaRow[],
   geoStores: GeoStore[],
-): Promise<EntradaManual[]> {
+): Promise<EntradaApiDia[]> {
   const escalaRows: EscalaLinhaRow[] = escala.map((l, i) => ({
     id: `e${i}`, rede_id: l.rede_id, placa_norm: l.placa_norm || null,
     loja_nome_raw: l.loja_nome_raw, loja_codigo_raw: l.loja_codigo_raw,
@@ -117,7 +120,7 @@ export async function gerarDiaApi(
   for (const p of paradaRows) { const a = porPlaca.get(p.placa_norm) ?? []; a.push(p); porPlaca.set(p.placa_norm, a) }
   const saiu = (pl: string | null) => !!pl && (porPlaca.get(pl) ?? []).some(p => p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE')
 
-  const out: EntradaManual[] = []
+  const out: EntradaApiDia[] = []
   for (const rota of rotas) {
     const esc = escMap.get(rota.escala_linha_id)
     if (!esc) continue
@@ -138,7 +141,13 @@ export async function gerarDiaApi(
       viaGeo: rota._matchMeta?.algorithm === 'geo', viaTroca: rota._matchMeta?.algorithm === 'troca',
       geoConfiavel: rota.geo_confiavel ?? false, placaFoiAlgumLugar: saiu(placaUni), placaSaiuDaBase: saiu(placaUni),
     })
-    out.push(rotaParaEntrada(rota, esc, st.status, data))
+    const ent = rotaParaEntrada(rota, esc, st.status, data)
+    const sv = situacaoViva({
+      entregue: st.status === 'ENTREGUE' || st.status === 'ENTREGUE_GEO',
+      naApi: !!placaUni && porPlaca.has(placaUni),
+      saiuDaBase: saiu(placaUni),
+    })
+    out.push({ ...ent, situacaoViva: sv })
   }
   return out
 }
