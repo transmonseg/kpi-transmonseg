@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { parseAlvos, confirmaPorAlvo } from './alvos'
+import { parseAlvos, confirmaPorAlvo, inicioRotaPorAlvo } from './alvos'
 
 // Forma crua da API (campos reais de /mapa_servicos/alvos, dados de 12/06).
 const raw = {
   alvos: [
-    { placa: 'RJN-9F68', pontoidentificador: '8590555', pontonome: 'PRINCESA FONSECA', alvosituacaoservico: 1, alvodatarealizado: '2026-06-12T06:55:34', alvodocumento: '607174' },
-    { placa: 'RJN-9F68', pontoidentificador: '8590555', pontonome: 'PRINCESA FONSECA', alvosituacaoservico: 1, alvodatarealizado: '2026-06-12T06:55:34', alvodocumento: '193424' },
-    { placa: 'RJN-9F68', pontoidentificador: '7000710', pontonome: 'PREZUNIC CAMPO GRANDE', alvosituacaoservico: 1, alvodatarealizado: '2026-06-12T16:19:21', alvodocumento: '282815' },
-    // pendente, sem data real (0001) → não conta como feito
-    { placa: 'LKR-5990', pontoidentificador: '7000729', pontonome: 'PREZUNIC MEIER', alvosituacaoservico: 0, alvodatarealizado: '0001-01-01T00:00:00', alvodocumento: '140465' },
+    { placa: 'RJN-9F68', pontoidentificador: '8590555', pontonome: 'PRINCESA FONSECA', alvosituacaoservico: 1, alvodatainicio: '2026-06-12T02:51:03', alvodatarealizado: '2026-06-12T06:55:34', alvodocumento: '607174' },
+    { placa: 'RJN-9F68', pontoidentificador: '8590555', pontonome: 'PRINCESA FONSECA', alvosituacaoservico: 1, alvodatainicio: '2026-06-12T02:51:03', alvodatarealizado: '2026-06-12T06:55:34', alvodocumento: '193424' },
+    { placa: 'RJN-9F68', pontoidentificador: '7000710', pontonome: 'PREZUNIC CAMPO GRANDE', alvosituacaoservico: 1, alvodatainicio: '2026-06-12T13:23:55', alvodatarealizado: '2026-06-12T16:19:21', alvodocumento: '282815' },
+    // pendente (rota longa): NÃO feito, mas TEM início (saída CD vem daqui)
+    { placa: 'KZU-4C37', pontoidentificador: '560049', pontonome: 'SENDAS ARARUAMA', alvosituacaoservico: 0, alvodatainicio: '2026-06-12T02:48:00', alvodatarealizado: '0001-01-01T00:00:00', alvodocumento: '999' },
   ],
 }
 
@@ -22,9 +22,11 @@ describe('parseAlvos', () => {
     expect(rjn.situacao).toBe(1)
     expect(rjn.feitoISO).toBe('2026-06-12T06:55:34')
     expect(rjn.documento).toBe('607174')
-    const lkr = alvos[3]
-    expect(lkr.situacao).toBe(0)
-    expect(lkr.feitoISO).toBeNull() // 0001 → null
+    expect(rjn.inicioISO).toBe('2026-06-12T02:51:03')
+    const kzu = alvos[3]
+    expect(kzu.situacao).toBe(0)
+    expect(kzu.feitoISO).toBeNull() // 0001 → null
+    expect(kzu.inicioISO).toBe('2026-06-12T02:48:00') // início existe mesmo pendente
   })
 
   it('aceita resposta vazia/ inválida sem quebrar', () => {
@@ -50,10 +52,27 @@ describe('confirmaPorAlvo', () => {
   })
 
   it('NÃO confirma alvo pendente (sit=0) — positivo-só', () => {
-    expect(confirmaPorAlvo('LKR5990', '7000729', alvos)).toBeNull()
+    expect(confirmaPorAlvo('KZU4C37', '560049', alvos)).toBeNull()
   })
 
   it('sem alvo para a loja → null', () => {
     expect(confirmaPorAlvo('RJN9F68', '9999999', alvos)).toBeNull()
+  })
+})
+
+describe('inicioRotaPorAlvo (saída CD = início da rota)', () => {
+  const alvos = parseAlvos(raw)
+
+  it('pega o início do alvo da loja — mesmo PENDENTE (rota longa que o /stops não pega)', () => {
+    expect(inicioRotaPorAlvo('KZU4C37', '560049', alvos)).toBe('2026-06-12T02:48:00')
+  })
+
+  it('usa o início do alvo daquela loja/trip (2ª viagem tem início próprio)', () => {
+    expect(inicioRotaPorAlvo('RJN9F68', '8590555', alvos)).toBe('2026-06-12T02:51:03')
+    expect(inicioRotaPorAlvo('RJN9F68', '7000710', alvos)).toBe('2026-06-12T13:23:55')
+  })
+
+  it('sem alvo da loja → null', () => {
+    expect(inicioRotaPorAlvo('RJN9F68', '9999999', alvos)).toBeNull()
   })
 })
