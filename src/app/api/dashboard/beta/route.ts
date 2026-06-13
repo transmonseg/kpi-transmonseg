@@ -84,6 +84,11 @@ export async function GET(req: NextRequest) {
   const svc = createServiceClient()
   const linhas = await carregarEntradasApi(svc, ini, fim)
   const filt = filtrar(linhas, { redes })
+  // Andamento ao vivo (campo extra gravado no JSON do dia; calcularMetricas o ignora).
+  const andamento = { ENTREGUE: 0, EM_ROTA: 0, NA_BASE: 0, SEM_SINAL: 0 }
+  for (const l of filt as Array<{ situacaoViva?: keyof typeof andamento }>) {
+    if (l.situacaoViva && l.situacaoViva in andamento) andamento[l.situacaoViva]++
+  }
   let metricasAnterior = null
   if (periodo !== 'custom') {
     try {
@@ -92,5 +97,5 @@ export async function GET(req: NextRequest) {
       if (ant.length) metricasAnterior = calcularMetricas(ant)
     } catch { metricasAnterior = null }
   }
-  return NextResponse.json({ periodo, ref, intervalo: [ini, fim], redes, metricas: calcularMetricas(filt), metricasAnterior })
+  return NextResponse.json({ periodo, ref, intervalo: [ini, fim], redes, metricas: calcularMetricas(filt), metricasAnterior, andamento })
 }
