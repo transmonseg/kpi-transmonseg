@@ -754,6 +754,7 @@ export async function POST(req: NextRequest) {
         l.placa_rastreada = placaRastreada(rota.placa_norm)
         l.placa_foi_algum_lugar = placaFoiAlgumLugar(rota.placa_norm)
         l.placa_saiu_da_base = placaSaiuDaBase(rota.placa_norm)
+        l.relatorio_cedo = relatorioCedo
         const saidaParcial = saidaParcialDe(rota)
         if (saidaParcial) {
           l.relatorio_parcial = true
