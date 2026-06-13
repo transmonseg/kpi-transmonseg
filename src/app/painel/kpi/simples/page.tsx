@@ -60,6 +60,8 @@ type PreviewLinha = {
   categoria: CategoriaRevisao | null
   natureza: NaturezaRevisao | null
   saida_loja_fmt: string | null
+  /** Relatório cedo: andamento ao vivo em vez de "não foi" vermelho. */
+  situacaoViva?: 'ENTREGUE' | 'EM_ROTA' | 'NA_BASE' | 'SEM_SINAL'
 }
 
 type LineEditPatch = {
@@ -1152,13 +1154,13 @@ export default function KpiSimplesPage() {
             </div>
           )}
           {redes.some(r => r.avisoParcial) && (
-            <div className="flex items-start gap-2 rounded-md border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 px-4 py-3">
-              <WarningCircle size={18} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-warning)]" />
+            <div className="flex items-start gap-3 rounded-[var(--radius-card)] border-2 border-[var(--color-warning)] bg-[var(--color-warning-soft)] px-5 py-4">
+              <WarningCircle size={24} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-warning)]" />
               <div className="text-sm">
-                <p className="font-semibold text-[var(--color-warning)]">
-                  {redes.filter(r => r.avisoParcial).length} de {redes.length} rede{redes.length !== 1 ? 's' : ''} parece{redes.filter(r => r.avisoParcial).length !== 1 ? 'm' : ''} ter sido gerada{redes.filter(r => r.avisoParcial).length !== 1 ? 's' : ''} cedo demais
+                <p className="text-[15px] font-bold text-[var(--color-warning-soft-fg)]">
+                  ⚠ Relatório gerado CEDO — {redes.filter(r => r.avisoParcial).length} de {redes.length} rede{redes.length !== 1 ? 's' : ''} ainda em rota
                 </p>
-                <p className="text-[var(--color-fg-muted)]">As entregas dessas redes ainda não terminaram — gere o KPI de novo depois da janela pra não mandar dado parcial pro cliente.</p>
+                <p className="mt-0.5 text-[var(--color-warning-soft-fg)]">As entregas dessas redes <b>ainda não terminaram</b>. O que aparece como &quot;em rota / aguardando base&quot; pode ainda ser entregue. Gere de novo depois da janela (ou use uma fonte com API) antes de mandar pro cliente.</p>
               </div>
             </div>
           )}
@@ -1724,7 +1726,24 @@ function PreviewRow({
       </td>
       <td className="px-4 py-2 whitespace-nowrap">
         <div className="flex flex-col items-start gap-1">
-          <StatusBadge status={linha.status} revisar={linha.revisar} categoria={linha.categoria} naoConfirmado={linha.categoria === 'LOJA_SEM_CADASTRO' && (linha.status === 'ENTREGUE' || linha.status === 'ENTREGUE_GEO')} />
+          {(() => {
+            // Relatório cedo: andamento ao vivo (em rota / na base / sem sinal) em
+            // vez do vermelho "não foi" — não dá pra concluir falha com parcial.
+            const sv = linha.situacaoViva
+            if (sv === 'EM_ROTA' || sv === 'NA_BASE' || sv === 'SEM_SINAL') {
+              const cfg = sv === 'EM_ROTA' ? { txt: 'Em rota', cls: 'border-[var(--color-info)] text-[var(--color-info)]' }
+                : sv === 'NA_BASE' ? { txt: 'Aguardando base', cls: 'border-[var(--color-border-strong)] text-[var(--color-fg-muted)]' }
+                : { txt: 'Sem sinal', cls: 'border-[var(--color-border-strong)] text-[var(--color-fg-subtle)]' }
+              return (
+                <span className={cn('inline-flex w-fit items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium leading-tight', cfg.cls)}
+                  title="Relatório gerado cedo — andamento ao vivo pela API (ainda não concluído)">
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: 'currentColor' }} />
+                  {cfg.txt}
+                </span>
+              )
+            }
+            return <StatusBadge status={linha.status} revisar={linha.revisar} categoria={linha.categoria} naoConfirmado={linha.categoria === 'LOJA_SEM_CADASTRO' && (linha.status === 'ENTREGUE' || linha.status === 'ENTREGUE_GEO')} />
+          })()}
           {linha.algoritmo === 'geo' && linha.geo_dist_metros != null && (
             <span
               className="inline-flex w-fit items-center gap-1 rounded border border-[var(--color-border-strong)] px-1.5 py-0.5 text-[10px] font-medium leading-tight text-[var(--color-fg-muted)]"

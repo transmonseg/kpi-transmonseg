@@ -178,6 +178,12 @@ function preencherAba(
 export function legendaSlot(c: LinhaParaKpi | null): string | null {
   if (!c) return null
   if (c.chd_loja_1 !== null) return null
+  // Relatório cedo: não dá pra concluir "não foi" — mostra o ANDAMENTO honesto.
+  if (c.relatorio_cedo) {
+    if (c.placa_rastreada === false) return 'SEM RASTREADOR'
+    if (c.placa_saiu_da_base === false) return 'AGUARDANDO BASE'
+    return 'EM ROTA'
+  }
   if (c.placa_rastreada === undefined) {
     const semGps = c.saida_cd === null && c.saida_loja_1 === null
     if (c.rota_status === 'sem_entrega') return 'NÃO FOI AO CLIENTE'

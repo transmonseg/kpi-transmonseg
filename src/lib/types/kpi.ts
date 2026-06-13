@@ -83,6 +83,9 @@ export type KpiLinha = {
   relatorio_parcial?: boolean
   /** Saída de base atribuída ao caso parcial — o fato a exibir na coluna SAÍDA CD. */
   saida_base_parcial?: Date | null
+  /** Relatório gerado cedo (corte << janela da rede): não-entregue vira "EM ROTA /
+   *  AGUARDANDO BASE" em vez de "não foi" — relatório parcial não conclui falha. */
+  relatorio_cedo?: boolean
 }
 
 export type AnomaliaDetectada = {
