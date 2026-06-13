@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { parseEscalaArquivo } from '@/lib/parsers/escala-arquivo'
 import { parseUnitrac } from '@/lib/parsers/unitrac'
-import { cruzaEscalaUnitrac, variantesOcr, variantesPlaca, setSemGeo, resolverLojaEsperada, lojaNomeDivergeDaEscala } from '@/lib/kpi/matcher'
+import { cruzaEscalaUnitrac, variantesOcr, variantesPlaca, setSemGeo, resolverLojaEsperada, lojaNomeDivergeDaEscala, type UnitracParadaRow } from '@/lib/kpi/matcher'
 import { haversine } from '@/lib/utils/geo'
 import { aplicarAlteracoes, parsedToConfirmada } from '@/lib/kpi/aplicar-alteracoes'
 import type { AlteracaoParsed } from '@/lib/parsers/alteracao-text'
@@ -20,6 +20,7 @@ import type { LinhaEscala } from '@/lib/types/escala'
 import { buscarFrota, buscarPontos, buscarPosicoes, validarRotaConcluida, confirmaEntregaViaApi, buscarStopsCru, consolidaParadasApi, buscarAlvos, confirmaPorAlvo, inicioRotaPorAlvo, type MapaPontos, type MapaPosicoes, type AlvoApi } from '@/lib/unitrac-api'
 import type { ResumoVeiculo, ClassificacaoParada } from '@/lib/types/unitrac'
 import { situacaoViva, type SituacaoViva } from '@/lib/kpi/situacao-viva'
+import { mesclarParadas } from '@/lib/kpi/merge-paradas'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -422,7 +423,7 @@ export async function POST(req: NextRequest) {
     }
   })
 
-  const paradaRows = veiculos.flatMap((v, vi) =>
+  let paradaRows: UnitracParadaRow[] = veiculos.flatMap((v, vi) =>
     v.paradas.map((p, pi) => ({
       id: `par-${vi}-${pi}`,
       placa_norm: p.placa_norm,
@@ -439,6 +440,25 @@ export async function POST(req: NextRequest) {
       ordem: p.ordem,
     }))
   )
+
+  // MODO PDF+API: mescla as paradas GPS ao vivo da API no PDF base. O PDF manda
+  // onde tem; a API PREENCHE o que o relatório (gerado cedo) perdeu — ex entregas
+  // da tarde. Best-effort: se a API cair, segue só com o PDF.
+  if (fonte === 'pdf_api') {
+    try {
+      const frotaM = await buscarFrota()
+      const pontosM = await buscarPontos(frotaM.map(v => v.cv))
+      const placasEscala = new Set(escalaLinhas.map(l => l.placa_norm).filter(Boolean) as string[])
+      const apiRows: UnitracParadaRow[] = []
+      for (const v of frotaM) {
+        if (!placasEscala.has(v.placaNorm)) continue
+        apiRows.push(...consolidaParadasApi(await buscarStopsCru(v.cv, 48), pontosM, data, v.placaNorm))
+      }
+      paradaRows = mesclarParadas(paradaRows, apiRows)
+    } catch (e) {
+      console.error('[kpi/beta] merge PDF+API falhou (segue só com PDF):', e)
+    }
+  }
 
   // "Sem rastreador" = a PLACA não tem rastreador cadastrado (não está na frota
   // monitorada do Unitrac, tabela `veiculos`). FONTE AUTORITATIVA — não é "não
