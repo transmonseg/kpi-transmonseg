@@ -729,10 +729,10 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data, escalas = [] }
 
 export default function KpiSimplesPage() {
   const [escalas, setEscalas] = useState<File[]>([])
-  const [unitracFiles, setUnitracFiles] = useState<File[]>([])
+  // KPI BETA é teste DA API: paradas vêm sempre da API. Sem PDF, sem escolha.
+  const [unitracFiles] = useState<File[]>([])
   const [data, setData] = useState<string>(hoje)
-  // KPI BETA: fonte das paradas — 'pdf' (atual) ou 'api' (consolidação sem PDF).
-  const [fonte, setFonte] = useState<'pdf' | 'api'>('pdf')
+  const fonte: 'pdf' | 'api' = 'api'
   const [alteracoes, setAlteracoes] = useState<AlteracaoParsed[]>([])
   const [redes, setRedes] = useState<RedeResult[] | null>(null)
   const [lojasNovas, setLojasNovas] = useState<LojaNova[]>([])
@@ -944,8 +944,8 @@ export default function KpiSimplesPage() {
           <span className="align-middle rounded-md bg-[#16294a] px-2 py-0.5 text-[12px] font-bold text-[#9fb3ce]">BETA</span>
         </h1>
         <p className="mt-1 max-w-[55ch] text-[14px] leading-relaxed text-[var(--color-fg-muted)]">
-          Suba escalas (GERAL, PAX, ZONA SUL, GUANABARA PDF) e o relatório Unitrac.
-          Em alguns segundos você recebe um XLSX e PDF por rede.
+          Teste da API: suba só a escala do dia (e alterações, se houver) e escolha o dia.
+          As paradas vêm direto da API do Unitrac, sem PDF.
         </p>
       </header>
 
@@ -983,22 +983,10 @@ export default function KpiSimplesPage() {
         </div>
 
         <div className="col-span-1 flex flex-col gap-4 lg:col-span-5">
-          <div data-tour="gk-unitrac">
-            <FileDropzone
-              eyebrow="Passo 2"
-              label="Relatório Unitrac"
-              hint="XLSX e/ou PDF · múltiplos permitidos"
-              accept=".xlsx,.pdf"
-              files={unitracFiles}
-              onAdd={files => setUnitracFiles(prev => [...prev, ...files])}
-              onRemove={idx => setUnitracFiles(prev => prev.filter((_, i) => i !== idx))}
-            />
-          </div>
-
           <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
             <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
               <CalendarBlank size={12} weight="bold" />
-              Passo 3 · Data de referência
+              Passo 2 · Data de referência
             </div>
             <input
               id="data"
@@ -1008,28 +996,14 @@ export default function KpiSimplesPage() {
               className="mt-1 w-full bg-transparent text-[24px] font-medium tracking-tight text-[var(--color-fg)] outline-none [color-scheme:light] dark:[color-scheme:dark]"
               style={{ fontFamily: 'var(--font-mono)' }}
             />
-            {/* KPI BETA: fonte das paradas. API = sem PDF, consolida os eventos do Unitrac. */}
-            <div className="mt-3 flex items-center gap-2 border-t border-[var(--color-border)] pt-3">
-              <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">Fonte das paradas</span>
-              <button type="button" onClick={() => setFonte('pdf')}
-                className={cn('px-2.5 py-1 rounded text-xs font-medium border transition-colors', fonte === 'pdf' ? 'border-[var(--color-success)] bg-[var(--color-success-soft)] text-[var(--color-success-soft-fg)]' : 'border-[var(--color-border-strong)] text-[var(--color-fg-muted)]')}>
-                PDF
-              </button>
-              <button type="button" onClick={() => setFonte('api')}
-                className={cn('px-2.5 py-1 rounded text-xs font-medium border transition-colors', fonte === 'api' ? 'border-[var(--color-success)] bg-[var(--color-success-soft)] text-[var(--color-success-soft-fg)]' : 'border-[var(--color-border-strong)] text-[var(--color-fg-muted)]')}>
-                🛰️ API (sem PDF)
-              </button>
+            <div className="mt-3 rounded-[var(--radius-card)] border border-[var(--color-warning)] bg-[var(--color-warning-soft)] p-3 text-[12px] leading-relaxed text-[var(--color-warning-soft-fg)]">
+              <div className="font-semibold mb-1">🛰️ KPI pela API (teste) — sem PDF</div>
+              <ul className="list-disc pl-4 space-y-0.5">
+                <li>As paradas vêm direto da API do Unitrac. Só precisa da <b>escala + alterações + o dia</b>.</li>
+                <li><b>Funciona pros últimos ~4 dias</b> (a API não guarda histórico).</li>
+                <li>Pode ter buracos: placa fora da frota da API vira &quot;sem rastreador&quot;, e GPS fraco pode faltar uma entrega.</li>
+              </ul>
             </div>
-            {fonte === 'api' && (
-              <div className="mt-3 rounded-[var(--radius-card)] border border-[var(--color-warning)] bg-[var(--color-warning-soft)] p-3 text-[12px] leading-relaxed text-[var(--color-warning-soft-fg)]">
-                <div className="font-semibold mb-1">⚠️ Modo API (experimental) — leia antes de confiar</div>
-                <ul className="list-disc pl-4 space-y-0.5">
-                  <li><b>Só funciona pros últimos ~4 dias.</b> A API não guarda histórico — pra dias mais antigos, use o PDF.</li>
-                  <li><b>Pode ter buracos:</b> placa fora da frota da API aparece como &quot;sem rastreador&quot;, e veículo com GPS fraco pode faltar uma entrega.</li>
-                  <li><b>É pra comparar, não pra substituir o PDF ainda.</b> Gere também pelo PDF e cruze os dois antes de fechar o KPI.</li>
-                </ul>
-              </div>
-            )}
           </div>
         </div>
       </section>
