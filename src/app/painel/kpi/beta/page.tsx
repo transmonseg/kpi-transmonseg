@@ -731,10 +731,11 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data, escalas = [] }
 
 export default function KpiSimplesPage() {
   const [escalas, setEscalas] = useState<File[]>([])
-  // KPI BETA é teste DA API: paradas vêm sempre da API. Sem PDF, sem escolha.
-  const [unitracFiles] = useState<File[]>([])
+  const [unitracFiles, setUnitracFiles] = useState<File[]>([])
   const [data, setData] = useState<string>(hoje)
-  const fonte: 'pdf' | 'api' = 'api'
+  // KPI BETA — 3 modos pra comparar: 'pdf' (só PDF, = normal), 'pdf_api' (PDF +
+  // API confirma/completa), 'api' (sem PDF, paradas da API).
+  const [fonte, setFonte] = useState<'pdf' | 'pdf_api' | 'api'>('pdf')
   const [alteracoes, setAlteracoes] = useState<AlteracaoParsed[]>([])
   const [redes, setRedes] = useState<RedeResult[] | null>(null)
   const [lojasNovas, setLojasNovas] = useState<LojaNova[]>([])
@@ -834,8 +835,8 @@ export default function KpiSimplesPage() {
       if (!ok) return
     }
     if (escalas.length === 0) { setErro('Selecione ao menos uma escala.'); return }
-    // No modo API as paradas vêm da consolidação — não precisa de arquivo Unitrac.
-    if (fonte === 'pdf') {
+    // Só o modo API dispensa o Unitrac; 'pdf' e 'pdf_api' exigem o PDF.
+    if (fonte !== 'api') {
       if (unitracFiles.length === 0) { setErro('Selecione o Unitrac (PDF).'); return }
       // PDF é OBRIGATÓRIO (formato principal usado pela Erica). XLSX é opcional.
       const temPdf = unitracFiles.some(f => f.name.toLowerCase().endsWith('.pdf'))
@@ -920,7 +921,7 @@ export default function KpiSimplesPage() {
         const res = await fetch('/api/kpi/beta', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...bucketPaths, data, alteracoes, lineEdits: editsArr }),
+          body: JSON.stringify({ ...bucketPaths, data, alteracoes, lineEdits: editsArr, fonte }),
         })
         if (!res.ok) throw new Error((await res.text()) || 'Erro ao processar.')
         const json = await res.json() as { redes: RedeResult[]; geracao_id?: string; lojasNovas?: LojaNova[]; sugestoesCadastro?: SugestaoCadastro[] }
@@ -946,8 +947,8 @@ export default function KpiSimplesPage() {
           <span className="align-middle rounded-md bg-[#16294a] px-2 py-0.5 text-[12px] font-bold text-[#9fb3ce]">BETA</span>
         </h1>
         <p className="mt-1 max-w-[55ch] text-[14px] leading-relaxed text-[var(--color-fg-muted)]">
-          Teste da API: suba só a escala do dia (e alterações, se houver) e escolha o dia.
-          As paradas vêm direto da API do Unitrac, sem PDF.
+          Ambiente de teste: escolha a fonte (Só PDF / PDF + API / Só API), suba a
+          escala (e o Unitrac, se usar PDF) e gere. Compare os modos e veja qual fica melhor.
         </p>
       </header>
 
@@ -985,10 +986,44 @@ export default function KpiSimplesPage() {
         </div>
 
         <div className="col-span-1 flex flex-col gap-4 lg:col-span-5">
+          {/* Passo 2: fonte das paradas — 3 modos pra comparar */}
+          <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
+            <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">Passo 2 · Fonte das paradas</div>
+            <div className="mt-1 flex flex-wrap gap-2">
+              {([['pdf', 'Só PDF'], ['pdf_api', 'PDF + API'], ['api', 'Só API']] as const).map(([v, lbl]) => (
+                <button key={v} type="button" onClick={() => setFonte(v)}
+                  className={cn('px-2.5 py-1 rounded text-xs font-medium border transition-colors', fonte === v ? 'border-[var(--color-success)] bg-[var(--color-success-soft)] text-[var(--color-success-soft-fg)]' : 'border-[var(--color-border-strong)] text-[var(--color-fg-muted)]')}>
+                  {lbl}
+                </button>
+              ))}
+            </div>
+            <div className="mt-1 text-[12px] leading-relaxed text-[var(--color-fg-muted)]">
+              {fonte === 'pdf' && <span>Só o relatório Unitrac em PDF (igual ao KPI normal). Não usa a API.</span>}
+              {fonte === 'pdf_api' && <span>PDF como base + API confirma por nota fiscal, completa a saída CD e resgata o que o PDF perdeu.</span>}
+              {fonte === 'api' && <span>Sem PDF: paradas vêm da API ao vivo. Só os <b>últimos ~4 dias</b>; placa fora da frota da API vira &quot;sem sinal&quot;.</span>}
+            </div>
+          </div>
+
+          {/* Unitrac PDF — só nos modos que usam PDF */}
+          {fonte !== 'api' && (
+            <div data-tour="gk-unitrac">
+              <FileDropzone
+                eyebrow="Passo 3"
+                label="Relatório Unitrac"
+                hint="PDF (XLSX opcional)"
+                accept=".xlsx,.pdf"
+                multiple
+                files={unitracFiles}
+                onAdd={files => setUnitracFiles(prev => [...prev, ...files])}
+                onRemove={i => setUnitracFiles(prev => prev.filter((_, j) => j !== i))}
+              />
+            </div>
+          )}
+
           <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
             <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
               <CalendarBlank size={12} weight="bold" />
-              Passo 2 · Data de referência
+              {fonte === 'api' ? 'Passo 3' : 'Passo 4'} · Data de referência
             </div>
             <input
               id="data"
@@ -998,14 +1033,6 @@ export default function KpiSimplesPage() {
               className="mt-1 w-full bg-transparent text-[24px] font-medium tracking-tight text-[var(--color-fg)] outline-none [color-scheme:light] dark:[color-scheme:dark]"
               style={{ fontFamily: 'var(--font-mono)' }}
             />
-            <div className="mt-3 rounded-[var(--radius-card)] border border-[var(--color-warning)] bg-[var(--color-warning-soft)] p-3 text-[12px] leading-relaxed text-[var(--color-warning-soft-fg)]">
-              <div className="font-semibold mb-1">🛰️ KPI pela API (teste) — sem PDF</div>
-              <ul className="list-disc pl-4 space-y-0.5">
-                <li>As paradas vêm direto da API do Unitrac. Só precisa da <b>escala + alterações + o dia</b>.</li>
-                <li><b>Funciona pros últimos ~4 dias</b> (a API não guarda histórico).</li>
-                <li>Pode ter buracos: placa fora da frota da API vira &quot;sem rastreador&quot;, e GPS fraco pode faltar uma entrega.</li>
-              </ul>
-            </div>
           </div>
         </div>
       </section>

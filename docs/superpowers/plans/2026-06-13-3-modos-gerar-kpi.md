@@ -1,5 +1,12 @@
 # 3 Modos de Geração de KPI (PDF / PDF+API / só API) Implementation Plan
 
+> **PIVOT (13/06):** por decisão do usuário, o NORMAL (`/api/kpi/simples`) fica
+> INTOCÁVEL (só mexer pra corrigir bug dele). Os 3 modos foram implementados no
+> **BETA** (`/api/kpi/beta` + `/painel/kpi/beta`), não na produção. As Tasks abaixo
+> descrevem a abordagem de produção (não executada); a versão real ficou no beta,
+> que já tinha 2 modos — só virou 3 (gate do 'pdf' puro sem API + seletor de 3 pills).
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:executing-plans. Steps usam checkbox.
 
 **Goal:** Na tela "Gerar KPI" de PRODUÇÃO, o operador escolhe a fonte das paradas — Só PDF (atual) / PDF + API (PDF base + API confirma/completa) / Só API (sem PDF) — pra comparar e usar o que funciona melhor, sem regredir o fluxo atual.
