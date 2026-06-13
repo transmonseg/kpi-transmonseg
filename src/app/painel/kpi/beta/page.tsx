@@ -62,6 +62,8 @@ type PreviewLinha = {
   saida_loja_fmt: string | null
   /** Selos de confirmação/correção pelo gabarito da API do Unitrac (beta). */
   viaApi?: string[]
+  /** Andamento ao vivo: entregue / em rota / na base / sem sinal. */
+  situacaoViva?: 'ENTREGUE' | 'EM_ROTA' | 'NA_BASE' | 'SEM_SINAL'
 }
 
 type LineEditPatch = {
@@ -1760,6 +1762,23 @@ function PreviewRow({
                 >
                   <CheckCircle size={11} weight="fill" className="text-[var(--color-success)]" />
                   {rotulo}
+                </span>
+              )
+            }
+            // Andamento ao vivo (beta): em rota / na base / sem sinal em vez de
+            // pintar de vermelho cedo. Não-entregue mostra o estado real da placa.
+            const sv = linha.situacaoViva
+            if (sv && sv !== 'ENTREGUE') {
+              const cfg = sv === 'EM_ROTA' ? { txt: 'Em rota', cls: 'border-[var(--color-info)] text-[var(--color-info)]' }
+                : sv === 'NA_BASE' ? { txt: 'Na base', cls: 'border-[var(--color-border-strong)] text-[var(--color-fg-muted)]' }
+                : { txt: 'Sem sinal', cls: 'border-[var(--color-border-strong)] text-[var(--color-fg-subtle)]' }
+              return (
+                <span
+                  className={cn('inline-flex w-fit items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium leading-tight', cfg.cls)}
+                  title="Andamento ao vivo pela API (ainda não entregue)"
+                >
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: 'currentColor' }} />
+                  {cfg.txt}
                 </span>
               )
             }

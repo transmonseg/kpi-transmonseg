@@ -19,6 +19,7 @@ import type { KpiLinha, RotaKpi } from '@/lib/types/kpi'
 import type { LinhaEscala } from '@/lib/types/escala'
 import { buscarFrota, buscarPontos, buscarPosicoes, validarRotaConcluida, confirmaEntregaViaApi, buscarStopsCru, consolidaParadasApi, buscarAlvos, confirmaPorAlvo, type MapaPontos, type MapaPosicoes, type AlvoApi } from '@/lib/unitrac-api'
 import type { ResumoVeiculo, ClassificacaoParada } from '@/lib/types/unitrac'
+import { situacaoViva, type SituacaoViva } from '@/lib/kpi/situacao-viva'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -50,6 +51,8 @@ type PreviewLinha = {
   viaApi?: string[]
   /** Notas fiscais da entrega (quando confirmada por alvo na API). */
   notasFiscais?: string[]
+  /** Andamento ao vivo (beta): entregue / em rota / na base / sem sinal. */
+  situacaoViva?: SituacaoViva
 }
 
 // Parsers do Unitrac armazenam BRT como Date.UTC(...) — ler getUTCHours direto.
@@ -963,6 +966,11 @@ export async function POST(req: NextRequest) {
           saida_loja_fmt: fmtHoraBRT(saidaLoja),
           viaApi: confirmacoesApi.get(rota.escala_linha_id),
           notasFiscais: notasPorLinha.get(rota.escala_linha_id),
+          situacaoViva: situacaoViva({
+            entregue: statusInfo.status === 'ENTREGUE' || statusInfo.status === 'ENTREGUE_GEO',
+            naApi: placaRastreada(rota.placa_norm),
+            saiuDaBase: placaSaiuDaBase(rota.placa_norm),
+          }),
         }
       })
 
