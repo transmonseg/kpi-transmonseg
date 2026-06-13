@@ -3,7 +3,10 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { parseEscalaArquivo } from '@/lib/parsers/escala-arquivo'
 import { parseUnitrac } from '@/lib/parsers/unitrac'
-import { cruzaEscalaUnitrac, variantesOcr, variantesPlaca, setSemGeo, resolverLojaEsperada, lojaNomeDivergeDaEscala } from '@/lib/kpi/matcher'
+import { cruzaEscalaUnitrac, variantesOcr, variantesPlaca, setSemGeo, resolverLojaEsperada, lojaNomeDivergeDaEscala, type UnitracParadaRow } from '@/lib/kpi/matcher'
+import { mesclarParadas } from '@/lib/kpi/merge-paradas'
+import { buscarFrota, buscarPontos, buscarStopsCru, consolidaParadasApi, buscarAlvos, confirmaPorAlvo, inicioRotaPorAlvo, type AlvoApi } from '@/lib/unitrac-api'
+import { situacaoViva, type SituacaoViva } from '@/lib/kpi/situacao-viva'
 import { haversine } from '@/lib/utils/geo'
 import { aplicarAlteracoes, parsedToConfirmada } from '@/lib/kpi/aplicar-alteracoes'
 import type { AlteracaoParsed } from '@/lib/parsers/alteracao-text'
@@ -373,7 +376,7 @@ export async function POST(req: NextRequest) {
     }
   })
 
-  const paradaRows = veiculos.flatMap((v, vi) =>
+  let paradaRows: UnitracParadaRow[] = veiculos.flatMap((v, vi) =>
     v.paradas.map((p, pi) => ({
       id: `par-${vi}-${pi}`,
       placa_norm: p.placa_norm,
@@ -390,6 +393,27 @@ export async function POST(req: NextRequest) {
       ordem: p.ordem,
     }))
   )
+
+  // NORMAL: completa o PDF com as paradas ao vivo da API (best-effort). PDF manda
+  // onde tem; a API preenche o que um relatório gerado cedo perdeu. API fora do ar
+  // → segue só com o PDF (= comportamento de hoje). Paralelo com limite p/ não
+  // estourar o tempo da função. `alvosApi` reusado no enriquecimento por NF abaixo.
+  let alvosApi: AlvoApi[] = []
+  try {
+    const frotaApi = await buscarFrota()
+    const cvs = frotaApi.map(v => v.cv)
+    const [pontos, alvs] = await Promise.all([buscarPontos(cvs), buscarAlvos(cvs)])
+    alvosApi = alvs
+    const placasEscala = new Set(escalaLinhas.map(l => l.placa_norm).filter(Boolean) as string[])
+    const veicEscala = frotaApi.filter(v => placasEscala.has(v.placaNorm))
+    const settled = await mapLimitSettled(veicEscala, 8, (v) =>
+      buscarStopsCru(v.cv, 48).then(ev => consolidaParadasApi(ev, pontos, data, v.placaNorm)))
+    const apiRows: UnitracParadaRow[] = []
+    for (const r of settled) if (r.status === 'fulfilled') apiRows.push(...r.value)
+    paradaRows = mesclarParadas(paradaRows, apiRows)
+  } catch (e) {
+    console.warn('[/api/kpi/simples] merge PDF+API falhou (segue só PDF):', e instanceof Error ? e.message : e)
+  }
 
   // "Sem rastreador" = a PLACA não tem rastreador cadastrado (não está na frota
   // monitorada do Unitrac, tabela `veiculos`). FONTE AUTORITATIVA — não é "não
@@ -512,6 +536,29 @@ export async function POST(req: NextRequest) {
   // de loja prova e deixa o resto vazio em vez de inventar.
   setSemGeo(true)
   const rotas = await cruzaEscalaUnitrac(escalaRows, paradaRows, lojasParaMatcher, svc, geoStores, { geoEndereco: true })
+
+  // Confirma/resgata por ALVO+NF e completa a saída CD pelo início do alvo (best-
+  // effort). Se a API não respondeu (alvosApi vazio), é no-op. Positivo-só: alvo
+  // pendente não vira entrega.
+  if (alvosApi.length > 0) {
+    for (const rota of rotas) {
+      const esc = escalaMap.get(rota.escala_linha_id)
+      if (!esc || !rota.placa_norm) continue
+      const esperada = resolverLojaEsperada(esc, lojasParaMatcher)
+      if (!esperada?.codigo_unitrac) continue
+      const placaAlvo = rota.placa_unitrac ?? rota.placa_norm
+      if (!rota.saida_cd) {
+        const ini = inicioRotaPorAlvo(placaAlvo, esperada.codigo_unitrac, alvosApi)
+        if (ini) rota.saida_cd = new Date(ini + 'Z')
+      }
+      const c = confirmaPorAlvo(placaAlvo, esperada.codigo_unitrac, alvosApi)
+      if (c && !rota.paradas.some(p => p.loja_id === esperada.id)) {
+        const t = new Date(c.feitoISO + 'Z')
+        rota.paradas = [{ parada_id: null, loja_id: esperada.id, nome: esperada.nome, chegada: t, saida: t, duracao_min: 0, classificacao: 'LOJA' }]
+        rota.status = 'ok'
+      }
+    }
+  }
 
   // Detecção de anomalias — gera codigos por escala_linha_id pra exibir/cor no preview.
   // Constrói paradasIndex direto dos paradaRows (em memória, sem ida ao DB).
