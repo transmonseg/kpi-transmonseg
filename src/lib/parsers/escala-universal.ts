@@ -15,6 +15,18 @@ const HEADER_KEYWORDS: Array<{ keys: string[]; field: FieldKey }> = [
 
 const PLACA_RE = /[A-Z]{3}[\s\-]?\d[A-Z0-9]\d{2}/i
 const DATE_CELL_RE = /(\d{2})\/(\d{2})\/(\d{4})/
+// Nome de motorista: letras/espaços/pontos, ≥4 chars, SEM dígitos (descarta placa/loja com número).
+const NOME_RE = /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .'-]{3,}$/
+
+function semAcento(s: string): string {
+  return s.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+}
+
+/** Casa por PALAVRA inteira (não substring) — "PLACA" não casa "PLACARESERVA". */
+function headerCasa(txt: string, keys: string[]): boolean {
+  const norm = semAcento(txt)
+  return keys.some((k) => new RegExp(`(^|[^A-Z])${semAcento(k)}([^A-Z]|$)`).test(norm))
+}
 
 function detectarCabecalho(
   sheet: ExcelJS.Worksheet,
@@ -23,9 +35,9 @@ function detectarCabecalho(
     const row = sheet.getRow(r)
     const colMap = new Map<FieldKey, number>()
     row.eachCell((cell, col) => {
-      const txt = String(cell.value ?? '').toUpperCase().trim()
+      const txt = String(cell.value ?? '').trim()
       for (const { keys, field } of HEADER_KEYWORDS) {
-        if (keys.some((k) => txt.includes(k))) {
+        if (headerCasa(txt, keys)) {
           if (!colMap.has(field)) colMap.set(field, col)
           break
         }
@@ -34,6 +46,20 @@ function detectarCabecalho(
     if (colMap.size >= 2) return { rowIdx: r, colMap }
   }
   return null
+}
+
+/** A coluna apontada como placa realmente tem placas nos dados? (≥30% das células
+ *  não-vazias casam PLACA_RE). Guarda contra cabeçalho que rotulou a coluna errada. */
+function placaColValida(sheet: ExcelJS.Worksheet, col: number, startRow: number): boolean {
+  const maxRow = Math.min(sheet.rowCount, startRow + 40)
+  let total = 0, ok = 0
+  for (let r = startRow; r <= maxRow; r++) {
+    const v = String(sheet.getRow(r).getCell(col).value ?? '').trim()
+    if (!v) continue
+    total++
+    if (PLACA_RE.test(v)) ok++
+  }
+  return total > 0 && ok / total >= 0.3
 }
 
 function extrairData(sheet: ExcelJS.Worksheet, dataAlvo?: string): string | undefined {
@@ -53,25 +79,50 @@ function extrairData(sheet: ExcelJS.Worksheet, dataAlvo?: string): string | unde
   return undefined
 }
 
-// Quando sem cabeçalho: detecta coluna de placa por padrão regex e infere adjacentes
-function detectarColunaPorPadrao(sheet: ExcelJS.Worksheet): Map<FieldKey, number> {
-  const placaMatches = new Map<number, number>()
-  const maxRow = Math.min(sheet.rowCount, 20)
-  for (let r = 1; r <= maxRow; r++) {
+/**
+ * Detecta cada coluna pelo CONTEÚDO (não por posição/adjacência): placa pela regex,
+ * loja pela rede reconhecida (ou maior texto médio), motorista por nome, código por
+ * número curto. Robusto a qualquer ORDEM de colunas. Atribui 1 coluna por campo, na
+ * ordem placa → loja → motorista → código (cada uma exclui as já usadas).
+ */
+function detectarColunaPorConteudo(sheet: ExcelJS.Worksheet, startRow: number): Map<FieldKey, number> {
+  const maxRow = Math.min(sheet.rowCount, startRow + 40)
+  const placa = new Map<number, number>()
+  const rede = new Map<number, number>()
+  const nome = new Map<number, number>()
+  const numCurto = new Map<number, number>()
+  const textLen = new Map<number, { sum: number; n: number }>()
+  for (let r = startRow; r <= maxRow; r++) {
     const row = sheet.getRow(r)
     row.eachCell((cell, col) => {
-      if (PLACA_RE.test(String(cell.value ?? ''))) {
-        placaMatches.set(col, (placaMatches.get(col) ?? 0) + 1)
-      }
+      const v = String(cell.value ?? '').trim()
+      if (!v) return
+      const ehPlaca = PLACA_RE.test(v)
+      if (ehPlaca) placa.set(col, (placa.get(col) ?? 0) + 1)
+      if (inferRedeFromLoja(v) !== 'DESCONHECIDO') rede.set(col, (rede.get(col) ?? 0) + 1)
+      if (!ehPlaca && NOME_RE.test(v)) nome.set(col, (nome.get(col) ?? 0) + 1)
+      if (/^\d{1,4}$/.test(v)) numCurto.set(col, (numCurto.get(col) ?? 0) + 1)
+      const t = textLen.get(col) ?? { sum: 0, n: 0 }; t.sum += v.length; t.n++; textLen.set(col, t)
     })
   }
-  const colMap = new Map<FieldKey, number>()
-  if (placaMatches.size > 0) {
-    const melhorCol = [...placaMatches.entries()].sort((a, b) => b[1] - a[1])[0][0]
-    colMap.set('placa', melhorCol)
-    if (melhorCol > 1) colMap.set('loja', melhorCol - 1)
-    if (melhorCol > 2) colMap.set('motorista', melhorCol - 2)
+  const argmax = (m: Map<number, number>, excl: Set<number>): number | null => {
+    let best: number | null = null, bv = 0
+    for (const [c, n] of m) if (!excl.has(c) && n > bv) { bv = n; best = c }
+    return best
   }
+  const colMap = new Map<FieldKey, number>()
+  const usados = new Set<number>()
+  const pc = argmax(placa, usados); if (pc != null) { colMap.set('placa', pc); usados.add(pc) }
+  // loja: melhor por rede reconhecida; senão a coluna de maior texto médio.
+  let lc = argmax(rede, usados)
+  if (lc == null) {
+    let best: number | null = null, bl = 0
+    for (const [c, t] of textLen) if (!usados.has(c) && t.n > 0 && t.sum / t.n > bl) { bl = t.sum / t.n; best = c }
+    lc = best
+  }
+  if (lc != null) { colMap.set('loja', lc); usados.add(lc) }
+  const mc = argmax(nome, usados); if (mc != null) { colMap.set('motorista', mc); usados.add(mc) }
+  const cc = argmax(numCurto, usados); if (cc != null) colMap.set('codigo', cc)
   return colMap
 }
 
@@ -80,10 +131,24 @@ function parsearAbaXlsx(sheet: ExcelJS.Worksheet, dataAlvo?: string): LinhaEscal
   if (!data) return []
 
   const cabecalho = detectarCabecalho(sheet)
-  const colMap = cabecalho?.colMap ?? detectarColunaPorPadrao(sheet)
-  if (colMap.size === 0) return []
-
   const startRow = cabecalho ? cabecalho.rowIdx + 1 : 1
+  // Cabeçalho só é confiável se a coluna que ele chamou de "placa" realmente tem
+  // placas. Se não tem (rótulo errado / formato torto), cai pra detecção por
+  // conteúdo, que acha cada coluna pelo que ela contém — em qualquer ordem.
+  const cabValido = cabecalho != null && cabecalho.colMap.has('placa')
+    && placaColValida(sheet, cabecalho.colMap.get('placa')!, startRow)
+  let colMap: Map<FieldKey, number>
+  if (cabValido) {
+    colMap = cabecalho!.colMap
+    // completa campos que o cabeçalho não rotulou, pelo conteúdo
+    const porConteudo = detectarColunaPorConteudo(sheet, startRow)
+    for (const f of ['placa', 'loja', 'motorista', 'codigo', 'carro'] as FieldKey[]) {
+      if (!colMap.has(f) && porConteudo.has(f)) colMap.set(f, porConteudo.get(f)!)
+    }
+  } else {
+    colMap = detectarColunaPorConteudo(sheet, startRow)
+  }
+  if (colMap.size === 0) return []
   const linhas: LinhaEscala[] = []
 
   // Contador por loja: 2ª aparição da mesma loja = carro 2 (multi-entrega)

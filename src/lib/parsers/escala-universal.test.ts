@@ -60,6 +60,56 @@ describe('parseEscalaUniversal — sem cabeçalho (detecção por padrão de pla
   })
 })
 
+describe('parseEscalaUniversal — detecção por CONTEÚDO (coluna em qualquer ordem)', () => {
+  async function noHeader(rows: (string | number)[][]): Promise<Buffer> {
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet('Planilha1')
+    for (const r of rows) ws.addRow(r)
+    return Buffer.from(await wb.xlsx.writeBuffer() as ArrayBuffer)
+  }
+
+  it('placa NA 1ª coluna: acha loja e motorista pelas demais (não por adjacência à esquerda)', async () => {
+    // ordem [placa, motorista, loja] — o código antigo não inferia (placa na col 1)
+    const buf = await noHeader([
+      ['GAJ-6H51', 'ESTELITA SANTOS', 'Prezunic - Icaraí'],
+      ['EZU-9325', 'ANTONIO CARLOS', 'Assaí - Ceasa - Loja 42'],
+      ['KRK-3D12', 'JOSELIO LIMA', 'Guanabara - Madureira'],
+    ])
+    const linhas = await parseEscalaUniversal(buf, '2026-06-10')
+    const gaj = linhas.find(l => l.placa_norm === 'GAJ6H51')
+    expect(gaj?.rede_id).toBe('PREZUNIC')
+    expect(gaj?.loja_nome_raw).toBe('Prezunic - Icaraí')
+    expect(gaj?.motorista_nome).toBe('ESTELITA SANTOS')
+  })
+
+  it('ordem [codigo, loja, motorista, placa]: cada coluna pelo conteúdo', async () => {
+    const buf = await noHeader([
+      ['42', 'Assaí - Ceasa', 'ANTONIO CARLOS', 'EZU-9325'],
+      ['10', 'Prezunic - Icaraí', 'ESTELITA SANTOS', 'GAJ-6H51'],
+      ['7', 'Guanabara - Madureira', 'JOSELIO LIMA', 'KRK-3D12'],
+    ])
+    const linhas = await parseEscalaUniversal(buf, '2026-06-10')
+    const ezu = linhas.find(l => l.placa_norm === 'EZU9325')
+    expect(ezu?.rede_id).toBe('ASSAI')
+    expect(ezu?.loja_nome_raw).toBe('Assaí - Ceasa')
+    expect(ezu?.motorista_nome).toBe('ANTONIO CARLOS')
+    expect(ezu?.loja_codigo_raw).toBe('42')
+  })
+
+  it('cabeçalho com coluna inutil colada ("PLACARESERVA") não rouba a placa real', async () => {
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet('Planilha1')
+    ws.addRow(['PLACARESERVA', 'MOTORISTA', 'LOJA', 'PLACA'])
+    ws.addRow(['—', 'ANTONIO CARLOS', 'Assaí - Ceasa', 'EZU-9325'])
+    ws.addRow(['—', 'ESTELITA SANTOS', 'Prezunic - Icaraí', 'GAJ-6H51'])
+    const buf = Buffer.from(await wb.xlsx.writeBuffer() as ArrayBuffer)
+    const linhas = await parseEscalaUniversal(buf, '2026-06-10')
+    const ezu = linhas.find(l => l.placa_norm === 'EZU9325')
+    expect(ezu).toBeTruthy()
+    expect(ezu?.rede_id).toBe('ASSAI')
+  })
+})
+
 describe('parseEscalaUniversal — carro_ordem', () => {
   it('segunda linha da mesma loja recebe carro_ordem=2', async () => {
     const buf = await buildXlsx([
