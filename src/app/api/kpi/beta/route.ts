@@ -726,7 +726,7 @@ export async function POST(req: NextRequest) {
         const jaTem = rota.paradas.some(p => p.loja_id === esperada.id)
         const sel = confirmacoesApi.get(rota.escala_linha_id) ?? []
         if (jaTem) {
-          confirmacoesApi.set(rota.escala_linha_id, [...sel, `✅ confirmado por NF (${hhmm})${nfTxt}`])
+          confirmacoesApi.set(rota.escala_linha_id, [...sel, `Confirmado por NF (${hhmm})${nfTxt}`])
         } else {
           // RESGATE: só sabemos a hora de conclusão — usa como chegada/saída.
           const t = new Date(cAlvo.feitoISO + 'Z')
@@ -734,7 +734,7 @@ export async function POST(req: NextRequest) {
           rota.status = 'ok'
           rota.geo_confiavel = true
           rota._matchMeta = { score: 0.98, confidence: 'HIGH', requiresReview: false, algorithm: 'api' }
-          confirmacoesApi.set(rota.escala_linha_id, [...sel, `✅ entrega confirmada por NF — resgatada (${hhmm})${nfTxt}`])
+          confirmacoesApi.set(rota.escala_linha_id, [...sel, `Entrega confirmada por NF, resgatada (${hhmm})${nfTxt}`])
         }
       }
     }

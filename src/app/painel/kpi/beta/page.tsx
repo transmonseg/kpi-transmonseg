@@ -1736,42 +1736,36 @@ function PreviewRow({
       <td className="px-4 py-2 whitespace-nowrap">
         <div className="flex flex-col items-start gap-1">
           <StatusBadge status={linha.status} revisar={linha.revisar} categoria={linha.categoria} naoConfirmado={linha.categoria === 'LOJA_SEM_CADASTRO' && (linha.status === 'ENTREGUE' || linha.status === 'ENTREGUE_GEO')} />
-          {linha.algoritmo === 'geo' && linha.geo_dist_metros != null && (
-            <span
-              className="inline-flex w-fit items-center gap-1 rounded border border-[var(--color-border-strong)] px-1.5 py-0.5 text-[10px] font-medium leading-tight text-[var(--color-fg-muted)]"
-              title={`Casou por geolocalização a ${linha.geo_dist_metros}m do ponto cadastrado da loja`}
-            >
-              📍 {linha.geo_dist_metros}m
-            </span>
-          )}
-          {/* Selos da API: geofence autoritativa (ponto) e/ou nota fiscal (entrega
-              marcada FEITA pela Unitrac) — certeza, não palpite. O selo de NF já
-              traz seu próprio ✅; o de ponto recebe o 🛰️. */}
-          {linha.viaApi?.map((sel, i) => (
-            <span
-              key={i}
-              className="inline-flex w-fit items-center gap-1 rounded border border-[var(--color-success)] bg-[var(--color-success-soft)] px-1.5 py-0.5 text-[10px] font-medium leading-tight text-[var(--color-success-soft-fg)]"
-              title="Confirmado pela API do Unitrac (geofence e/ou nota fiscal)"
-            >
-              {sel.startsWith('✅') ? sel : `🛰️ ${sel}`}
-            </span>
-          ))}
-          {/* #5 — Como a linha casou (auditabilidade): confia no "código", fiscaliza o "nome". */}
-          {(linha.status === 'ENTREGUE' || linha.status === 'ENTREGUE_GEO') && CASOU_LABEL[linha.algoritmo] && linha.algoritmo !== 'geo' && (
-            <span
-              className="inline-flex w-fit items-center gap-1 rounded border border-[var(--color-border-strong)] px-1.5 py-0.5 text-[10px] font-medium leading-tight text-[var(--color-fg-muted)]"
-              title={CASOU_TITLE[linha.algoritmo]}
-            >
-              {CASOU_LABEL[linha.algoritmo]}
-            </span>
-          )}
           {(() => {
-            // Motivo SEMPRE visível quando não é entrega confirmada — antes os
-            // "não foi"/"não saiu" com revisar:false ficavam sem explicação nenhuma.
+            // UM chip só, pra não poluir. Entrega confirmada e sem revisão → selo de
+            // confiança (NF > API > geo > código), com TODO o detalhe no tooltip.
+            // Caso contrário → ponto colorido + motivo. Sem emoji (ícone Phosphor/dot).
+            const entregue = linha.status === 'ENTREGUE' || linha.status === 'ENTREGUE_GEO'
+            if (entregue && !linha.revisar) {
+              const detalhes = [
+                ...(linha.viaApi ?? []),
+                CASOU_LABEL[linha.algoritmo] && linha.algoritmo !== 'geo' ? CASOU_TITLE[linha.algoritmo] : null,
+                linha.algoritmo === 'geo' && linha.geo_dist_metros != null ? `Geolocalização a ${linha.geo_dist_metros}m do cadastro` : null,
+              ].filter(Boolean) as string[]
+              const temNf = (linha.viaApi ?? []).some(s => s.toUpperCase().includes('NF'))
+              const rotulo = temNf ? 'NF confirmada'
+                : linha.viaApi?.length ? 'API'
+                : linha.algoritmo === 'geo' && linha.geo_dist_metros != null ? `${linha.geo_dist_metros}m`
+                : CASOU_LABEL[linha.algoritmo] ?? null
+              if (!rotulo) return null
+              return (
+                <span
+                  className="inline-flex w-fit items-center gap-1 rounded border border-[var(--color-border-strong)] px-1.5 py-0.5 text-[10px] font-medium leading-tight text-[var(--color-fg-muted)]"
+                  title={detalhes.join(' · ') || undefined}
+                >
+                  <CheckCircle size={11} weight="fill" className="text-[var(--color-success)]" />
+                  {rotulo}
+                </span>
+              )
+            }
             const tier = tierEfetivo({ status: linha.status, revisar: linha.revisar, categoria: linha.categoria })
             if (tier === 'confirmado' && !linha.motivoRevisao) return null
             const cor = linha.natureza ? NATUREZA_STYLE[linha.natureza].cor : TIER_STYLE[tier].dot
-            const emoji = linha.natureza ? NATUREZA_STYLE[linha.natureza].emoji : TIER_STYLE[tier].emoji
             const label = linha.categoria
               ? CATEGORIA_LABEL[linha.categoria]
               : (linha.natureza ? NATUREZA_STYLE[linha.natureza].label : TIER_STYLE[tier].label)
@@ -1781,7 +1775,8 @@ function PreviewRow({
                 style={{ color: cor, borderColor: cor }}
                 title={linha.motivoRevisao ?? MOTIVO_CURTO[linha.status]}
               >
-                {emoji} {label}
+                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cor }} />
+                {label}
               </span>
             )
           })()}
