@@ -17,7 +17,7 @@ import { partitionSettled } from '@/lib/utils/partition-settled'
 import { mapLimitSettled } from '@/lib/utils/map-limit'
 import type { KpiLinha, RotaKpi } from '@/lib/types/kpi'
 import type { LinhaEscala } from '@/lib/types/escala'
-import { buscarFrota, buscarPontos, buscarPosicoes, validarRotaConcluida, confirmaEntregaViaApi, buscarStopsCru, consolidaParadasApi, buscarAlvos, confirmaPorAlvo, type MapaPontos, type MapaPosicoes, type AlvoApi } from '@/lib/unitrac-api'
+import { buscarFrota, buscarPontos, buscarPosicoes, validarRotaConcluida, confirmaEntregaViaApi, buscarStopsCru, consolidaParadasApi, buscarAlvos, confirmaPorAlvo, inicioRotaPorAlvo, type MapaPontos, type MapaPosicoes, type AlvoApi } from '@/lib/unitrac-api'
 import type { ResumoVeiculo, ClassificacaoParada } from '@/lib/types/unitrac'
 import { situacaoViva, type SituacaoViva } from '@/lib/kpi/situacao-viva'
 
@@ -721,6 +721,12 @@ export async function POST(req: NextRequest) {
         const esperada = resolverLojaEsperada(esc, lojasParaMatcher)
         if (!esperada?.codigo_unitrac || !rota.placa_norm) continue
         const placaAlvo = rota.placa_unitrac ?? rota.placa_norm
+        // Saída CD: quando o /stops não captou a base (rota longa), usa o início da
+        // rota do alvo (alvodatainicio). Roda pra TODA loja, mesmo alvo pendente.
+        if (!rota.saida_cd) {
+          const ini = inicioRotaPorAlvo(placaAlvo, esperada.codigo_unitrac, alvosApi)
+          if (ini) rota.saida_cd = new Date(ini + 'Z')
+        }
         const cAlvo = confirmaPorAlvo(placaAlvo, esperada.codigo_unitrac, alvosApi)
         if (!cAlvo) continue
         notasPorLinha.set(rota.escala_linha_id, cAlvo.notas)

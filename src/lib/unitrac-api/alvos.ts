@@ -12,6 +12,9 @@ export type AlvoApi = {
   feitoISO: string | null
   /** documento = nota fiscal */
   documento: string | null
+  /** alvodatainicio = início da rota (≈ saída do CD). Existe mesmo em alvo pendente
+   *  e em rota longa que o /stops não captura como parada de base. */
+  inicioISO: string | null
 }
 
 type AlvoRaw = {
@@ -20,6 +23,7 @@ type AlvoRaw = {
   pontonome?: string
   alvosituacaoservico?: string | number
   alvodatarealizado?: string
+  alvodatainicio?: string
   alvodocumento?: string | number
 }
 
@@ -31,15 +35,37 @@ export function parseAlvos(raw: unknown): AlvoApi[] {
     const dt = String(a.alvodatarealizado ?? '')
     // "0001-01-01..." (ou vazio) = não realizado → null
     const feitoISO = dt && !dt.startsWith('0001') ? dt : null
+    const ini = String(a.alvodatainicio ?? '')
+    const inicioISO = ini && !ini.startsWith('0001') ? ini : null
     return {
       placaNorm: normPlaca(String(a.placa ?? '')),
       codigoUnitrac: String(a.pontoidentificador ?? ''),
       nome: String(a.pontonome ?? ''),
       situacao: Number(a.alvosituacaoservico ?? 0),
       feitoISO,
+      inicioISO,
       documento: a.alvodocumento != null && String(a.alvodocumento).trim() ? String(a.alvodocumento) : null,
     }
   })
+}
+
+/**
+ * Saída do CD ≈ início da rota: hora do `alvodatainicio` do alvo daquela loja
+ * (por trip — a 2ª viagem tem início próprio). Existe mesmo em alvo PENDENTE e em
+ * rota longa que o /stops não captura como parada de base. Retorna null se não há
+ * alvo da loja com início. (Resolve a "saída CD em branco" do beta.)
+ */
+export function inicioRotaPorAlvo(
+  placaNorm: string,
+  codigoUnitrac: string,
+  alvos: AlvoApi[],
+): string | null {
+  const daLoja = alvos.filter(
+    (a) => a.placaNorm === placaNorm && a.codigoUnitrac === codigoUnitrac && a.inicioISO,
+  )
+  if (daLoja.length === 0) return null
+  // mais cedo (início da rota daquela viagem)
+  return daLoja.map((a) => a.inicioISO!).sort()[0]
 }
 
 /** Busca os alvos (plano de entregas) das placas — best-effort, nunca lança. */
