@@ -21,7 +21,7 @@ describe('legendaSlot — relatório cedo', () => {
     expect(legendaSlot(baseLinha({ relatorio_cedo: false, placa_saiu_da_base: true, placa_foi_algum_lugar: false }))).toBe('NÃO FOI AO CLIENTE')
   })
   it('com entrega (chd != null) → null mesmo cedo', () => {
-    expect(legendaSlot(baseLinha({ relatorio_cedo: true, chd_loja_1: 0.25 }))).toBeNull()
+    expect(legendaSlot(baseLinha({ relatorio_cedo: true, chd_loja_1: new Date('2026-06-13T05:00:00Z') }))).toBeNull()
   })
 })
 

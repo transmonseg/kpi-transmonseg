@@ -46,6 +46,7 @@ type PreviewLinha = {
   motivoRevisao: string | null
   categoria: CategoriaRevisao | null
   natureza: NaturezaRevisao | null
+  situacaoViva?: SituacaoViva
   saida_loja_fmt: string | null
 }
 
@@ -869,6 +870,13 @@ export async function POST(req: NextRequest) {
           categoria: statusInfo.categoria,
           natureza: statusInfo.natureza,
           saida_loja_fmt: fmtHoraBRT(saidaLoja),
+          situacaoViva: relatorioCedo
+            ? situacaoViva({
+                entregue: statusInfo.status === 'ENTREGUE' || statusInfo.status === 'ENTREGUE_GEO',
+                naApi: placaRastreada(rota.placa_norm),
+                saiuDaBase: placaSaiuDaBase(rota.placa_norm),
+              })
+            : undefined,
         }
       })
 
