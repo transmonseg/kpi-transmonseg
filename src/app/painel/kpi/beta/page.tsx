@@ -970,41 +970,42 @@ export default function KpiSimplesPage() {
         </div>
       )}
 
-      {/* Upload grid asymmetric — escalas 7/12 (mais peso) + Unitrac+data 5/12 */}
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <div data-tour="gk-escala" className="col-span-1 lg:col-span-7">
-          <FileDropzone
-            eyebrow="Passo 1"
-            label="Escalas do dia"
-            hint="XLSX ou PDF · pode subir várias"
-            accept=".xlsx,.pdf"
-            multiple
-            files={escalas}
-            onAdd={addEscalas}
-            onRemove={i => setEscalas(prev => prev.filter((_, j) => j !== i))}
-          />
-        </div>
-
-        <div className="col-span-1 flex flex-col gap-4 lg:col-span-5">
-          {/* Passo 2: fonte das paradas — 3 modos pra comparar */}
-          <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-            <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">Passo 2 · Fonte das paradas</div>
-            <div className="mt-1 flex flex-wrap gap-2">
+      {/* Setup balanceado: fonte (faixa) → escala + unitrac lado a lado → data (faixa) */}
+      <section className="space-y-4">
+        {/* Passo 1 · Fonte das paradas */}
+        <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">Passo 1 · Fonte das paradas</span>
+            <div className="flex flex-wrap gap-2">
               {([['pdf', 'Só PDF'], ['pdf_api', 'PDF + API'], ['api', 'Só API']] as const).map(([v, lbl]) => (
                 <button key={v} type="button" onClick={() => setFonte(v)}
-                  className={cn('px-2.5 py-1 rounded text-xs font-medium border transition-colors', fonte === v ? 'border-[var(--color-success)] bg-[var(--color-success-soft)] text-[var(--color-success-soft-fg)]' : 'border-[var(--color-border-strong)] text-[var(--color-fg-muted)]')}>
+                  className={cn('px-3 py-1.5 rounded text-xs font-medium border transition-colors', fonte === v ? 'border-[var(--color-success)] bg-[var(--color-success-soft)] text-[var(--color-success-soft-fg)]' : 'border-[var(--color-border-strong)] text-[var(--color-fg-muted)]')}>
                   {lbl}
                 </button>
               ))}
             </div>
-            <div className="mt-1 text-[12px] leading-relaxed text-[var(--color-fg-muted)]">
-              {fonte === 'pdf' && <span>Só o relatório Unitrac em PDF (igual ao KPI normal). Não usa a API.</span>}
-              {fonte === 'pdf_api' && <span>PDF como base + API confirma por nota fiscal, completa a saída CD e resgata o que o PDF perdeu.</span>}
-              {fonte === 'api' && <span>Sem PDF: paradas vêm da API ao vivo. Só os <b>últimos ~4 dias</b>; placa fora da frota da API vira &quot;sem sinal&quot;.</span>}
-            </div>
           </div>
+          <div className="mt-2 text-[12px] leading-relaxed text-[var(--color-fg-muted)]">
+            {fonte === 'pdf' && <span>Só o relatório Unitrac em PDF (igual ao KPI normal). Não usa a API.</span>}
+            {fonte === 'pdf_api' && <span>PDF como base + API confirma por nota fiscal, completa a saída CD e resgata o que o PDF perdeu.</span>}
+            {fonte === 'api' && <span>Sem PDF: paradas vêm da API ao vivo. Só os <b>últimos ~4 dias</b>; placa fora da frota da API vira &quot;sem sinal&quot;.</span>}
+          </div>
+        </div>
 
-          {/* Unitrac PDF — só nos modos que usam PDF */}
+        {/* Uploads lado a lado (mesma altura). No modo Só API, a escala ocupa tudo. */}
+        <div className={cn('grid grid-cols-1 gap-4', fonte !== 'api' && 'lg:grid-cols-2')}>
+          <div data-tour="gk-escala">
+            <FileDropzone
+              eyebrow="Passo 2"
+              label="Escalas do dia"
+              hint="XLSX ou PDF · pode subir várias"
+              accept=".xlsx,.pdf"
+              multiple
+              files={escalas}
+              onAdd={addEscalas}
+              onRemove={i => setEscalas(prev => prev.filter((_, j) => j !== i))}
+            />
+          </div>
           {fonte !== 'api' && (
             <div data-tour="gk-unitrac">
               <FileDropzone
@@ -1019,21 +1020,22 @@ export default function KpiSimplesPage() {
               />
             </div>
           )}
+        </div>
 
-          <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-            <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
-              <CalendarBlank size={12} weight="bold" />
-              {fonte === 'api' ? 'Passo 3' : 'Passo 4'} · Data de referência
-            </div>
-            <input
-              id="data"
-              type="date"
-              value={data}
-              onChange={e => setData(e.target.value)}
-              className="mt-1 w-full bg-transparent text-[24px] font-medium tracking-tight text-[var(--color-fg)] outline-none [color-scheme:light] dark:[color-scheme:dark]"
-              style={{ fontFamily: 'var(--font-mono)' }}
-            />
-          </div>
+        {/* Data (faixa fina, inline) */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-5 py-4">
+          <span className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)] whitespace-nowrap">
+            <CalendarBlank size={12} weight="bold" />
+            {fonte === 'api' ? 'Passo 3' : 'Passo 4'} · Data de referência
+          </span>
+          <input
+            id="data"
+            type="date"
+            value={data}
+            onChange={e => setData(e.target.value)}
+            className="bg-transparent text-[22px] font-medium tracking-tight text-[var(--color-fg)] outline-none [color-scheme:light] dark:[color-scheme:dark]"
+            style={{ fontFamily: 'var(--font-mono)' }}
+          />
         </div>
       </section>
 
