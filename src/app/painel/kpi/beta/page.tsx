@@ -739,6 +739,7 @@ export default function KpiSimplesPage() {
   const [alteracoes, setAlteracoes] = useState<AlteracaoParsed[]>([])
   const [redes, setRedes] = useState<RedeResult[] | null>(null)
   const [lojasNovas, setLojasNovas] = useState<LojaNova[]>([])
+  const [avisosEscala, setAvisosEscala] = useState<string[]>([])
   // KPI BETA: correções de cadastro sugeridas pela API (read-only, não grava)
   type SugestaoCadastro = { codigo: string; nome: string; tipo: 'sem_coord' | 'coord_errada'; detalhe: string }
   const [sugestoesCadastro, setSugestoesCadastro] = useState<SugestaoCadastro[]>([])
@@ -887,10 +888,11 @@ export default function KpiSimplesPage() {
           body: JSON.stringify({ escalaBucketPaths, unitracBucketPaths, data, alteracoes, fonte }),
         })
         if (!res.ok) throw new Error((await res.text()) || 'Erro ao processar.')
-        const json = await res.json() as { redes: RedeResult[]; geracao_id?: string; lojasNovas?: LojaNova[]; sugestoesCadastro?: SugestaoCadastro[] }
+        const json = await res.json() as { redes: RedeResult[]; geracao_id?: string; lojasNovas?: LojaNova[]; sugestoesCadastro?: SugestaoCadastro[]; avisosEscala?: string[] }
         setRedes(json.redes)
         setLojasNovas(json.lojasNovas ?? [])
         setSugestoesCadastro(json.sugestoesCadastro ?? [])
+        setAvisosEscala(json.avisosEscala ?? [])
         if (json.geracao_id) setGeracaoId(json.geracao_id)
       } catch (e) {
         setErro(e instanceof Error ? e.message : 'Erro inesperado.')
@@ -924,10 +926,11 @@ export default function KpiSimplesPage() {
           body: JSON.stringify({ ...bucketPaths, data, alteracoes, lineEdits: editsArr, fonte }),
         })
         if (!res.ok) throw new Error((await res.text()) || 'Erro ao processar.')
-        const json = await res.json() as { redes: RedeResult[]; geracao_id?: string; lojasNovas?: LojaNova[]; sugestoesCadastro?: SugestaoCadastro[] }
+        const json = await res.json() as { redes: RedeResult[]; geracao_id?: string; lojasNovas?: LojaNova[]; sugestoesCadastro?: SugestaoCadastro[]; avisosEscala?: string[] }
         setRedes(json.redes)
         setLojasNovas(json.lojasNovas ?? [])
         setSugestoesCadastro(json.sugestoesCadastro ?? [])
+        setAvisosEscala(json.avisosEscala ?? [])
         if (json.geracao_id) setGeracaoId(json.geracao_id)
       } catch (e) {
         setErro(e instanceof Error ? e.message : 'Erro inesperado.')
@@ -1189,6 +1192,17 @@ export default function KpiSimplesPage() {
                       <span className="text-[11px] text-[var(--color-fg-subtle)]">· {l.vezes}× · ex. {l.placa}</span>
                     </li>
                   ))}
+                </ul>
+              </div>
+            </div>
+          )}
+          {avisosEscala.length > 0 && (
+            <div className="flex items-start gap-3 rounded-[var(--radius-card)] border-2 border-[var(--color-danger)] bg-[var(--color-danger-soft)] px-5 py-4">
+              <WarningCircle size={24} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-danger)]" />
+              <div className="text-sm">
+                <p className="text-[15px] font-bold text-[var(--color-danger-soft-fg)]">⚠ A escala pode ter sido lida errada — confira</p>
+                <ul className="mt-0.5 list-disc pl-4 text-[var(--color-danger-soft-fg)]">
+                  {avisosEscala.map((a, i) => <li key={i}>{a}</li>)}
                 </ul>
               </div>
             </div>

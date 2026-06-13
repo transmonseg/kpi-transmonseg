@@ -7,6 +7,7 @@ import { cruzaEscalaUnitrac, variantesOcr, variantesPlaca, setSemGeo, resolverLo
 import { mesclarParadas } from '@/lib/kpi/merge-paradas'
 import { buscarFrota, buscarPontos, buscarStopsCru, consolidaParadasApi, buscarAlvos, confirmaPorAlvo, inicioRotaPorAlvo, type AlvoApi } from '@/lib/unitrac-api'
 import { situacaoViva, type SituacaoViva } from '@/lib/kpi/situacao-viva'
+import { validarEscala } from '@/lib/parsers/validar-escala'
 import { haversine } from '@/lib/utils/geo'
 import { aplicarAlteracoes, parsedToConfirmada } from '@/lib/kpi/aplicar-alteracoes'
 import type { AlteracaoParsed } from '@/lib/parsers/alteracao-text'
@@ -196,6 +197,10 @@ export async function POST(req: NextRequest) {
     vistosDup.add(k)
     return true
   })
+
+  // Sanidade pós-parse: se a escala parece lida errada (placa/loja/rede em massa),
+  // AVISA (não bloqueia — pode ser caso legítimo). Devolvido no response p/ a tela.
+  const avisosEscala = validarEscala(escalaLinhas).avisos
 
   // Baixa e parseia todos os arquivos Unitrac, mergeando os veículos
   // (suporta XLSX + PDF simultâneos para cobrir formatos diferentes do mesmo dia)
@@ -980,7 +985,7 @@ export async function POST(req: NextRequest) {
     geracaoId = (inserted?.id as string) ?? null
   }
 
-  return NextResponse.json({ redes: results, redes_com_erro, geracao_id: geracaoId, lojasNovas })
+  return NextResponse.json({ redes: results, redes_com_erro, geracao_id: geracaoId, lojasNovas, avisosEscala })
 }
 
 // GET /api/kpi/simples?data=YYYY-MM-DD → lista histórico de gerações
