@@ -109,10 +109,16 @@ function corteRelatorioMs(veiculos: ResumoVeiculo[]): number {
 
 /**
  * Saída de base de um caminhão que estava EM ROTA quando o relatório cortou.
- * Assinatura (caso KOP-4978 09/06): a ÚLTIMA parada da placa é BASE e a saída
- * ficou ≥15min antes do corte → o caminhão deixou a base e estava dirigindo (sem
- * parada nova porque ainda não chegou). Retorna a saída de base ou null.
- * Conservador: nunca conclui entrega — só expõe a saída que comprovadamente houve.
+ * Caso KOP-4978 (09/06): o caminhão deixou a base e estava dirigindo (sem parada
+ * nova porque ainda não chegou). Retorna a saída da ÚLTIMA parada BASE ou null.
+ *
+ * Robustez (incidente dia 15): pega a última BASE mesmo que DEPOIS dela venham
+ * blips FAKE_EXIT (ruído de GPS perto da base) ou trechos FORA_BASE "em rota" — o
+ * relatório só cortou no meio do caminho, a saída de base continua sendo fato.
+ * Antes exigia que a última parada fosse BASE, e o merge da API (parada em rota
+ * depois da saída) zerava a saída → "saída em branco" que a cliente reclamou.
+ * Conservador: se houve ENTREGA (LOJA) depois da base, NÃO é "em rota a partir da
+ * base" → null. Nunca conclui entrega; só expõe a saída que comprovadamente houve.
  */
 export function saidaBaseSeEmRota(
   paradas: ReadonlyArray<{ classificacao: string; chegada: Date; saida: Date | null }> | undefined,
@@ -120,9 +126,15 @@ export function saidaBaseSeEmRota(
 ): Date | null {
   if (!paradas || paradas.length === 0) return null
   const ord = [...paradas].sort((a, b) => a.chegada.getTime() - b.chegada.getTime())
-  const ultima = ord[ord.length - 1]
-  if (ultima.classificacao !== 'BASE') return null
-  const saida = ultima.saida ?? ultima.chegada
+  let baseIdx = -1
+  for (let i = ord.length - 1; i >= 0; i--) {
+    if (ord[i].classificacao === 'BASE') { baseIdx = i; break }
+  }
+  if (baseIdx < 0) return null // nunca parou na base (parou só na rua) → não dá pra afirmar saída
+  for (let i = baseIdx + 1; i < ord.length; i++) {
+    if (ord[i].classificacao === 'LOJA') return null // entregou depois da base → não é "em rota a partir da base"
+  }
+  const saida = ord[baseIdx].saida ?? ord[baseIdx].chegada
   if (corteMs - saida.getTime() < 15 * 60_000) return null // ainda na base no corte
   return saida
 }

@@ -25,6 +25,23 @@ describe('saidaBaseSeEmRota — caso KOP-4978 (relatório parcial)', () => {
     const paradas = [{ classificacao: 'FORA_BASE', chegada: d(14, 0), saida: d(14, 30) }]
     expect(saidaBaseSeEmRota(paradas, corte)).toBeNull()
   })
+  it('BASE seguida de blip FAKE_EXIT e trecho FORA_BASE em rota → devolve a saída da base (dia 15)', () => {
+    // Caso INW/FQN: saiu da base 15:04, GPS registrou um blip e um trecho em rota
+    // antes do corte. A saída de base continua sendo fato.
+    const paradas = [
+      { classificacao: 'BASE', chegada: d(10, 21), saida: d(15, 4) },
+      { classificacao: 'FAKE_EXIT', chegada: d(15, 20), saida: d(15, 23) },
+      { classificacao: 'FORA_BASE', chegada: d(15, 40), saida: d(16, 0) },
+    ]
+    expect(saidaBaseSeEmRota(paradas, corte)).toEqual(d(15, 4))
+  })
+  it('entregou (LOJA) depois da última base → null (não é "em rota a partir da base")', () => {
+    const paradas = [
+      { classificacao: 'BASE', chegada: d(5, 0), saida: d(5, 30) },
+      { classificacao: 'LOJA', chegada: d(7, 0), saida: d(7, 20) },
+    ]
+    expect(saidaBaseSeEmRota(paradas, corte)).toBeNull()
+  })
 })
 
 const DIA20 = join(process.cwd(), 'docs', 'conversas-tia-erica', 'dia-20')

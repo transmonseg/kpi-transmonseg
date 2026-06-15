@@ -5,7 +5,7 @@ import { parseEscalaArquivo } from '@/lib/parsers/escala-arquivo'
 import { parseUnitrac } from '@/lib/parsers/unitrac'
 import { cruzaEscalaUnitrac, variantesOcr, variantesPlaca, setSemGeo, resolverLojaEsperada, lojaNomeDivergeDaEscala, type UnitracParadaRow } from '@/lib/kpi/matcher'
 import { mesclarParadas } from '@/lib/kpi/merge-paradas'
-import { buscarFrota, buscarPontos, buscarStopsCru, consolidaParadasApi, buscarAlvos, confirmaPorAlvo, inicioRotaPorAlvo, type AlvoApi } from '@/lib/unitrac-api'
+import { buscarFrota, buscarPontos, buscarStopsCru, consolidaParadasApi, buscarAlvos, confirmaPorAlvo, type AlvoApi } from '@/lib/unitrac-api'
 import { situacaoViva, type SituacaoViva } from '@/lib/kpi/situacao-viva'
 import { validarEscala } from '@/lib/parsers/validar-escala'
 import { haversine } from '@/lib/utils/geo'
@@ -543,9 +543,13 @@ export async function POST(req: NextRequest) {
   setSemGeo(true)
   const rotas = await cruzaEscalaUnitrac(escalaRows, paradaRows, lojasParaMatcher, svc, geoStores, { geoEndereco: true })
 
-  // Confirma/resgata por ALVO+NF e completa a saída CD pelo início do alvo (best-
-  // effort). Se a API não respondeu (alvosApi vazio), é no-op. Positivo-só: alvo
-  // pendente não vira entrega.
+  // Confirma/resgata por ALVO+NF (best-effort). Se a API não respondeu (alvosApi
+  // vazio), é no-op. Positivo-só: alvo pendente não vira entrega.
+  //
+  // NÃO usamos mais `alvodatainicio` como saída CD: ele é a hora PLANEJADA da rota
+  // (madrugada, ou até a 2ª viagem da noite), não a saída física do caminhão —
+  // dava saída 00:35/23:28 contra o GPS (incidente dia 15). A saída de base verdadeira
+  // vem do GPS (relatório/saída parcial). Sem isso, fica em branco (honesto > inventado).
   if (alvosApi.length > 0) {
     for (const rota of rotas) {
       const esc = escalaMap.get(rota.escala_linha_id)
@@ -553,10 +557,6 @@ export async function POST(req: NextRequest) {
       const esperada = resolverLojaEsperada(esc, lojasParaMatcher)
       if (!esperada?.codigo_unitrac) continue
       const placaAlvo = rota.placa_unitrac ?? rota.placa_norm
-      if (!rota.saida_cd) {
-        const ini = inicioRotaPorAlvo(placaAlvo, esperada.codigo_unitrac, alvosApi)
-        if (ini) rota.saida_cd = new Date(ini + 'Z')
-      }
       const c = confirmaPorAlvo(placaAlvo, esperada.codigo_unitrac, alvosApi)
       if (c && !rota.paradas.some(p => p.loja_id === esperada.id)) {
         const t = new Date(c.feitoISO + 'Z')

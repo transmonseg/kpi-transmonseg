@@ -3,7 +3,7 @@ import type { StatusRota } from './status-rota'
 import type { StatusManual, EntradaManual } from './parse-kpi-manual'
 import type { RotaKpi } from '@/lib/types/kpi'
 import type { LinhaEscala } from '@/lib/types/escala'
-import { buscarFrota, buscarPontos, buscarStopsCru, consolidaParadasApi, buscarAlvos, confirmaPorAlvo, inicioRotaPorAlvo } from '@/lib/unitrac-api'
+import { buscarFrota, buscarPontos, buscarStopsCru, consolidaParadasApi, buscarAlvos, confirmaPorAlvo } from '@/lib/unitrac-api'
 import { cruzaEscalaUnitrac, setSemGeo, resolverLojaEsperada, type EscalaLinhaRow, type LojaRow, type GeoStore, type UnitracParadaRow } from '@/lib/kpi/matcher'
 import { derivarStatus } from './status-rota'
 import { situacaoViva, type SituacaoViva } from './situacao-viva'
@@ -132,12 +132,9 @@ export async function gerarDiaApi(
         const t = new Date(c.feitoISO + 'Z')
         rota.paradas = [{ parada_id: null, loja_id: esperada.id, nome: esperada.nome, chegada: t, saida: t, duracao_min: 0, classificacao: 'LOJA' }]
       }
-      // Saída CD: quando o /stops não captou a base (rota longa), usa o início da
-      // rota do alvo (alvodatainicio). Joaquim 13/06: "somar API + algo que id. a saída".
-      if (!rota.saida_cd) {
-        const ini = inicioRotaPorAlvo(rota.placa_unitrac ?? rota.placa_norm, esperada.codigo_unitrac, alvos)
-        if (ini) rota.saida_cd = new Date(ini + 'Z')
-      }
+      // NÃO usar `alvodatainicio` como saída CD: é a hora PLANEJADA da rota
+      // (madrugada / 2ª viagem da noite), não a saída física — dava 00:35/23:28
+      // contra o GPS (incidente dia 15). Removido das rotas; idem aqui no dashboard.
     }
     const placaUni = rota.placa_unitrac ?? rota.placa_norm
     const st = derivarStatus({

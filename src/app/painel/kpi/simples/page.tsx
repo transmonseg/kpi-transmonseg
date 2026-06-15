@@ -741,6 +741,63 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data, escalas = [], 
   )
 }
 
+// ─── Placar de certeza ───────────────────────────────────────────────────────
+
+type ContagemTiers = { confirmado: number; conferir: number; naoEntregou: number; total: number }
+
+/** Conta as linhas por nível de certeza (mesma régua dos selos: tierEfetivo).
+ *  Vira placar na língua da operação (ok / conferir / não foi), não os códigos
+ *  internos de match (H/L/?). */
+function contarTiers(preview: PreviewLinha[]): ContagemTiers {
+  let confirmado = 0, conferir = 0, naoEntregou = 0
+  for (const l of preview) {
+    const t = tierEfetivo({ status: l.status, revisar: l.revisar, categoria: l.categoria })
+    if (t === 'confirmado') confirmado++
+    else if (t === 'conferir') conferir++
+    else naoEntregou++
+  }
+  return { confirmado, conferir, naoEntregou, total: preview.length }
+}
+
+const PLACAR_HINT: Record<'confirmado' | 'conferir' | 'nao_entregou', string> = {
+  confirmado: 'pode confiar',
+  conferir: 'bata o olho',
+  nao_entregou: 'não saiu / não foi',
+}
+
+/** Placar do dia inteiro: três números pra bater o olho antes de descer na tabela.
+ *  Faixa única dividida (sem 3 cards soltos), números mono, cor por nível de certeza. */
+function PlacarGeral({ redes }: { redes: RedeResult[] }) {
+  const c = contarTiers(redes.flatMap(r => r.preview))
+  const total = c.total || 1
+  const metrics = [
+    { tier: 'confirmado' as const, n: c.confirmado },
+    { tier: 'conferir' as const, n: c.conferir },
+    { tier: 'nao_entregou' as const, n: c.naoEntregou },
+  ]
+  return (
+    <div className="grid grid-cols-3 divide-x divide-[var(--color-border)] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
+      {metrics.map(m => {
+        const st = TIER_STYLE[m.tier]
+        const pct = Math.round((m.n / total) * 100)
+        return (
+          <div key={m.tier} className="flex flex-col gap-1.5 px-5 py-4">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: st.dot }} />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: st.dot }}>{st.label}</span>
+            </span>
+            <span className="flex items-baseline gap-2">
+              <span className="text-numeric text-[30px] font-semibold leading-none tracking-tight text-[var(--color-fg)]">{m.n}</span>
+              <span className="text-numeric text-[12px] text-[var(--color-fg-subtle)]">{pct}%</span>
+            </span>
+            <span className="text-[11px] text-[var(--color-fg-muted)]">{PLACAR_HINT[m.tier]}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ─── Page ───────────────────────────────────────────────────────────────────
 
 export default function KpiSimplesPage() {
@@ -1207,19 +1264,9 @@ export default function KpiSimplesPage() {
             </div>
           </div>
 
-          {/* Legenda dos 3 níveis de certeza — pra operação "bater o olho". */}
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-subtle)]/40 px-4 py-2.5 text-[11.5px]">
-            <span className="font-medium uppercase tracking-[0.14em] text-[var(--color-fg-subtle)]">Como ler:</span>
-            {(['confirmado', 'conferir', 'nao_entregou'] as const).map(tier => (
-              <span key={tier} className="inline-flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full" style={{ background: TIER_STYLE[tier].dot }} />
-                <span className="font-semibold" style={{ color: TIER_STYLE[tier].dot }}>{TIER_STYLE[tier].label}</span>
-                <span className="text-[var(--color-fg-muted)]">
-                  {tier === 'confirmado' ? '— pode confiar' : tier === 'conferir' ? '— bata o olho' : '— não saiu/não foi'}
-                </span>
-              </span>
-            ))}
-          </div>
+          {/* Placar do dia: bate o olho no total antes de descer na tabela.
+              Carrega rótulo + cor + hint, então dispensa a legenda solta. */}
+          <PlacarGeral redes={redes} />
 
           {redes.map((r, idx) => (
             <div
@@ -1459,9 +1506,7 @@ function RedePreviewSection({
     : 0
   const tomCobertura =
     cobertura >= 80 ? 'success' : cobertura >= 50 ? 'warning' : 'danger'
-  const qtdHigh = rede.preview.filter(l => l.confianca === 'HIGH').length
-  const qtdLow = rede.preview.filter(l => l.confianca === 'LOW').length
-  const qtdUnmatched = rede.preview.filter(l => l.confianca === 'UNMATCHED').length
+  const tiers = contarTiers(rede.preview)
   const [xlsxMenu, setXlsxMenu] = useState(false)
   const [pdfMenu, setPdfMenu] = useState(false)
 
@@ -1489,12 +1534,12 @@ function RedePreviewSection({
               {rede.qtd_sem_gps > 0 && (
                 <span className="text-[var(--color-fg-subtle)]"> · {rede.qtd_sem_gps} sem dado</span>
               )}
-              {(qtdLow > 0 || qtdUnmatched > 0) && (
+              {(tiers.conferir > 0 || tiers.naoEntregou > 0) && (
                 <>
                   <span className="text-[var(--color-fg-subtle)]"> · </span>
-                  <span className="text-[var(--color-success)] text-numeric">{qtdHigh}H</span>
-                  {qtdLow > 0 && <span className="text-[var(--color-warning)] text-numeric ml-1">{qtdLow}L</span>}
-                  {qtdUnmatched > 0 && <span className="text-[var(--color-danger)] text-numeric ml-1">{qtdUnmatched}?</span>}
+                  <span className="text-numeric" style={{ color: TIER_STYLE.confirmado.dot }}>{tiers.confirmado} ok</span>
+                  {tiers.conferir > 0 && <span className="text-numeric ml-1" style={{ color: TIER_STYLE.conferir.dot }}>{tiers.conferir} conferir</span>}
+                  {tiers.naoEntregou > 0 && <span className="text-numeric ml-1" style={{ color: TIER_STYLE.nao_entregou.dot }}>{tiers.naoEntregou} não foi</span>}
                 </>
               )}
             </p>
