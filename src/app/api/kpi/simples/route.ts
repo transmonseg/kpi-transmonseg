@@ -5,7 +5,8 @@ import { parseEscalaArquivo } from '@/lib/parsers/escala-arquivo'
 import { parseUnitrac } from '@/lib/parsers/unitrac'
 import { cruzaEscalaUnitrac, variantesOcr, variantesPlaca, setSemGeo, resolverLojaEsperada, lojaNomeDivergeDaEscala, type UnitracParadaRow } from '@/lib/kpi/matcher'
 import { mesclarParadas } from '@/lib/kpi/merge-paradas'
-import { buscarFrota, buscarPontos, buscarStopsCru, consolidaParadasApi, buscarAlvos, confirmaPorAlvo, type AlvoApi } from '@/lib/unitrac-api'
+import { buscarFrota, buscarPontos, buscarStopsCru, consolidaParadasApi, buscarAlvos, confirmaPorAlvo, confirmaEntregaViaApi, buscarPosicoes, classificarPlacaViaApi, type AlvoApi, type MapaPontos, type MapaPosicoes } from '@/lib/unitrac-api'
+import { horarioEntregaGabarito } from '@/lib/kpi/horario-gabarito'
 import { situacaoViva, type SituacaoViva } from '@/lib/kpi/situacao-viva'
 import { validarEscala } from '@/lib/parsers/validar-escala'
 import { haversine } from '@/lib/utils/geo'
@@ -13,7 +14,7 @@ import { aplicarAlteracoes, parsedToConfirmada } from '@/lib/kpi/aplicar-alterac
 import type { AlteracaoParsed } from '@/lib/parsers/alteracao-text'
 import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
-import { rotaToLinha, saidaBaseSeEmRota, JANELA_FIM } from '@/lib/kpi/gerar-kpi-local'
+import { rotaToLinha, saidaBaseSeEmRota, saidaBaseConhecida, JANELA_FIM } from '@/lib/kpi/gerar-kpi-local'
 import { isRotaGigante } from '@/lib/kpi/rotas-gigantes'
 import { REDE_NOMES_CANONICOS } from '@/lib/kpi/kpi-styles'
 import { derivarStatus, type StatusRota, type CategoriaRevisao, type NaturezaRevisao } from '@/lib/kpi/status-rota'
@@ -48,6 +49,9 @@ type PreviewLinha = {
   categoria: CategoriaRevisao | null
   natureza: NaturezaRevisao | null
   situacaoViva?: SituacaoViva
+  /** Min sem comunicar (API) quando a placa É rastreada mas saiu como "sem rastreador"
+   *  — pra mostrar "sem comunicação há X min" em vez de "sem rastreador" na tela. */
+  semComunicacaoMin?: number | null
   saida_loja_fmt: string | null
 }
 
@@ -405,17 +409,35 @@ export async function POST(req: NextRequest) {
   // → segue só com o PDF (= comportamento de hoje). Paralelo com limite p/ não
   // estourar o tempo da função. `alvosApi` reusado no enriquecimento por NF abaixo.
   let alvosApi: AlvoApi[] = []
+  // Geofences AUTORITATIVAS da API (vêm dos alvos: pontolat/long/raio). Reusadas
+  // pra confirmar entrega por COORDENADA depois do matcher (gabarito da API, não o
+  // cadastro furado — seguro mesmo com setSemGeo).
+  let pontosApi: MapaPontos = {}
+  // Posições ao vivo (por placa) — usamos `atraso` (min sem comunicar) pra explicar
+  // "sem rastreador" como "sem comunicação há X min" quando a placa TEM rastreador
+  // na API mas não mandou dado.
+  let posicoesApi: MapaPosicoes = {}
+  // Placas que TÊM rastreador (frota monitorada da API). Quem está aqui nunca é
+  // "sem rastreador"; quem não está É sem rastreador. Base do funil placa-por-placa.
+  let frotaApiPlacas = new Set<string>()
+  // Paradas CONSOLIDADAS da API (por geofence + duração) — gabarito de horário pra
+  // corrigir quando o PDF marca um drive-by em vez da parada real de entrega.
+  let apiRowsConsolidadas: UnitracParadaRow[] = []
   try {
     const frotaApi = await buscarFrota()
     const cvs = frotaApi.map(v => v.cv)
-    const [pontos, alvs] = await Promise.all([buscarPontos(cvs), buscarAlvos(cvs)])
+    const [pontos, alvs, poss] = await Promise.all([buscarPontos(cvs), buscarAlvos(cvs), buscarPosicoes(cvs)])
     alvosApi = alvs
+    pontosApi = pontos
+    posicoesApi = poss
+    frotaApiPlacas = new Set(frotaApi.map(v => v.placaNorm))
     const placasEscala = new Set(escalaLinhas.map(l => l.placa_norm).filter(Boolean) as string[])
     const veicEscala = frotaApi.filter(v => placasEscala.has(v.placaNorm))
     const settled = await mapLimitSettled(veicEscala, 8, (v) =>
       buscarStopsCru(v.cv, 48).then(ev => consolidaParadasApi(ev, pontos, data, v.placaNorm)))
     const apiRows: UnitracParadaRow[] = []
     for (const r of settled) if (r.status === 'fulfilled') apiRows.push(...r.value)
+    apiRowsConsolidadas = apiRows
     paradaRows = mesclarParadas(paradaRows, apiRows)
   } catch (e) {
     console.warn('[/api/kpi/simples] merge PDF+API falhou (segue só PDF):', e instanceof Error ? e.message : e)
@@ -457,6 +479,19 @@ export async function POST(req: NextRequest) {
     if (placasSairam.has(placa)) return true
     return variantesPlaca(placa).some(v => placasSairam.has(v))
   }
+  // Minutos desde a última comunicação do rastreador (API), ou null se a placa não
+  // está na API. Se está → TEM rastreador (mesmo sem dado no relatório de hoje), e
+  // dá pra dizer "sem comunicação há X min" em vez do enganoso "sem rastreador".
+  const semComunicacaoDe = (placa: string | null): number | null => {
+    if (!placa) return null
+    const p = posicoesApi[placa] ?? variantesPlaca(placa).map(v => posicoesApi[v]).find(Boolean)
+    return p ? p.atraso : null
+  }
+  // Funil placa-por-placa: 'sem_rastreador' (não está na frota da API) | 'desatualizado'
+  // (está na frota mas sem transmitir hoje) | 'rastreado'. Best-effort: API vazia →
+  // frotaApiPlacas vazio → tudo 'sem_rastreador' (cai no comportamento de hoje).
+  const classApiDaPlaca = (placa: string | null) =>
+    placa ? classificarPlacaViaApi(placa, frotaApiPlacas, posicoesApi, data) : 'sem_rastreador'
 
   // Cat 3 (regra Tia Érica 05/06): uma placa pode estar em DUAS escalas no mesmo dia
   // (redes diferentes). Quando ela entrega numa rede e a linha da OUTRA rede aparece
@@ -543,6 +578,68 @@ export async function POST(req: NextRequest) {
   setSemGeo(true)
   const rotas = await cruzaEscalaUnitrac(escalaRows, paradaRows, lojasParaMatcher, svc, geoStores, { geoEndereco: true })
 
+  // === Enriquecimento via API (geo + alvo/NF) — BEST-EFFORT, blindado ===
+  // Se a API cair ou devolver dado estranho, captura e segue SÓ com o resultado do
+  // matcher (PDF). A API nunca derruba a geração nem o KPI do cliente.
+  try {
+  // Confirmação por COORDENADA (gabarito da API): pra rota cuja loja esperada NÃO
+  // casou no matcher, se o GPS da placa passou DENTRO da geofence autoritativa do
+  // Unitrac daquela loja, confirma/resgata a entrega. Usa pontosApi (coords que a
+  // própria Unitrac fornece), então é seguro mesmo com setSemGeo (não depende do
+  // cadastro). Positivo-só: só confirma, nunca marca "não foi".
+  if (Object.keys(pontosApi).length > 0) {
+    const stopsPorPlaca = (placa: string | null) => {
+      if (!placa) return []
+      const vars = new Set([placa, ...variantesPlaca(placa)])
+      return paradaRows.filter(p => vars.has(p.placa_norm))
+    }
+    const usadosGeo = new Set<string>()
+    for (const rota of rotas) {
+      const esc = escalaMap.get(rota.escala_linha_id)
+      if (!esc) continue
+      const esperada = resolverLojaEsperada(esc, lojasParaMatcher)
+      if (!esperada?.codigo_unitrac) continue
+      if (rota.paradas.some(p => p.loja_id === esperada.id)) continue // já casou na loja certa
+      const conf = confirmaEntregaViaApi(esperada.codigo_unitrac, stopsPorPlaca(rota.placa_unitrac ?? rota.placa_norm), pontosApi)
+      if (!conf || usadosGeo.has(conf.stopId)) continue
+      const sp = paradaRows.find(p => p.id === conf.stopId)
+      if (!sp) continue
+      const chegada = new Date(sp.chegada)
+      const saida = sp.saida ? new Date(sp.saida) : chegada
+      rota.paradas = [{ parada_id: sp.id, loja_id: esperada.id, nome: esperada.nome, chegada, saida, duracao_min: Math.round((saida.getTime() - chegada.getTime()) / 60000), classificacao: 'LOJA' }]
+      rota.status = 'ok'
+      rota.geo_confiavel = true
+      rota.geo_dist_metros = conf.distMetros
+      rota._matchMeta = { score: 0.95, confidence: 'HIGH', requiresReview: false, algorithm: 'api' }
+      usadosGeo.add(sp.id)
+    }
+  }
+
+  // === HORÁRIO-GABARITO: corrige drive-by do PDF ===
+  // Pra linha JÁ casada na loja certa, se a API tem a parada consolidada da mesma loja
+  // e o horário diverge >15min (PDF marcou passagem rápida), usa o horário da API
+  // (parada real por geofence + duração). Escolhe a parada API MAIS LONGA na loja (a
+  // entrega de verdade, não um drive-by). Não muda a entrega, só o horário.
+  if (apiRowsConsolidadas.length > 0) {
+    for (const rota of rotas) {
+      const esc = escalaMap.get(rota.escala_linha_id)
+      if (!esc) continue
+      const esperada = resolverLojaEsperada(esc, lojasParaMatcher)
+      if (!esperada?.codigo_unitrac) continue
+      const p0 = rota.paradas[0]
+      if (!p0 || p0.loja_id !== esperada.id || !p0.chegada) continue // só linhas casadas na loja certa
+      const vars = new Set([rota.placa_norm, rota.placa_unitrac, ...variantesPlaca(rota.placa_norm ?? '')].filter(Boolean) as string[])
+      const candidatas = apiRowsConsolidadas.filter(p => vars.has(p.placa_norm) && p.codigo_loja === esperada.codigo_unitrac)
+      if (candidatas.length === 0) continue
+      const apiStop = candidatas.reduce((a, b) => (b.duracao_seg ?? 0) > (a.duracao_seg ?? 0) ? b : a)
+      const novaChegada = horarioEntregaGabarito(p0.chegada, new Date(apiStop.chegada))
+      if (novaChegada.getTime() !== p0.chegada.getTime()) {
+        const dur = p0.duracao_min ?? 0
+        rota.paradas[0] = { ...p0, chegada: novaChegada, saida: new Date(novaChegada.getTime() + dur * 60000) }
+      }
+    }
+  }
+
   // Confirma/resgata por ALVO+NF (best-effort). Se a API não respondeu (alvosApi
   // vazio), é no-op. Positivo-só: alvo pendente não vira entrega.
   //
@@ -564,6 +661,9 @@ export async function POST(req: NextRequest) {
         rota.status = 'ok'
       }
     }
+  }
+  } catch (e) {
+    console.warn('[/api/kpi/simples] enriquecimento via API falhou (segue com o PDF):', e instanceof Error ? e.message : e)
   }
 
   // Detecção de anomalias — gera codigos por escala_linha_id pra exibir/cor no preview.
@@ -761,13 +861,22 @@ export async function POST(req: NextRequest) {
         l.placa_foi_algum_lugar = placaFoiAlgumLugar(rota.placa_norm)
         l.placa_saiu_da_base = placaSaiuDaBase(rota.placa_norm)
         l.relatorio_cedo = relatorioCedo
+        // Placa fora do relatório + na frota da API sem transmitir hoje → desatualizado
+        // (alimenta a legenda "DESATUALIZADO" no XLSX em vez de "SEM RASTREADOR").
+        l.placa_desatualizada = !l.placa_rastreada && classApiDaPlaca(rota.placa_norm) === 'desatualizado'
+        // Saída de base quando em rota: parcial estrito OU a saída conhecida (caso FHO,
+        // onde o relatório cortou logo após a saída). Mostra a saída e marca "em rota".
+        const semEntregaLinha = !rota.paradas.some(p => p.loja_id != null)
         const saidaParcial = saidaParcialDe(rota)
+          ?? (relatorioCedo && semEntregaLinha
+            ? saidaBaseConhecida(paradasIndex.get(rota.placa_unitrac ?? rota.placa_norm ?? '') ?? [])
+            : null)
         if (saidaParcial) {
           l.relatorio_parcial = true
           l.saida_base_parcial = saidaParcial
           l.saida_cd = saidaParcial // saída de base é fato — alimenta PDF e contagem de GPS
           const hhmm = `${String(saidaParcial.getUTCHours()).padStart(2, '0')}:${String(saidaParcial.getUTCMinutes()).padStart(2, '0')}`
-          l.observacao = [l.observacao, `Relatório parcial — saiu da base ${hhmm}, ainda em rota no corte.`].filter(Boolean).join(' ')
+          l.observacao = [l.observacao, `Saiu da base ${hhmm}, ainda em rota no relatório.`].filter(Boolean).join(' ')
         }
         return l
       })
@@ -824,6 +933,9 @@ export async function POST(req: NextRequest) {
           placaDivergeUnitrac: placaDivergeUnitrac.get(rota.placa_norm ?? '') ?? null,
           // Rastro degenerado (1 ponto o dia todo) → rastreador travado.
           rastreadorTravado: rastreadorTravado.has(rota.placa_norm ?? ''),
+          // Funil: placa fora do relatório mas na frota da API sem transmitir hoje →
+          // DESATUALIZADO (tem rastreador, precisa manutenção), não "sem rastreador".
+          placaDesatualizadaApi: !temGps && classApiDaPlaca(rota.placa_norm) === 'desatualizado',
           // Avisos: dado faltando / ambíguo / fora da escala.
           lojaSemCadastroUnitrac,
           lojaAmbiguaComGemea,
@@ -861,7 +973,11 @@ export async function POST(req: NextRequest) {
           turno: esc.turno,
           tem_gps: temGps,
           ficou_na_base: ficouNaBase,
-          saida_cd_fmt: fmtHoraBRT(rota.saida_cd) ?? (saidaParcialPreview ? fmtHoraBRT(saidaParcialPreview) : null),
+          // Em rota mostra a saída de base que JÁ sabe (regra do operador / caso FHO):
+          // matcher → parcial estrito → saída de base conhecida (sem o guard de corte).
+          saida_cd_fmt: fmtHoraBRT(rota.saida_cd)
+            ?? fmtHoraBRT(saidaParcialPreview)
+            ?? (!temEntrega ? fmtHoraBRT(saidaBaseConhecida(paradasIndex.get(rota.placa_unitrac ?? rota.placa_norm ?? '') ?? [])) : null),
           chegada_loja_fmt: fmtHoraBRT(rota.paradas[0]?.chegada),
           chegada_base_fmt: fmtHoraBRT(rota.chegada_base),
           tempo_loja_min: rota.paradas[0]?.duracao_min ?? null,
@@ -882,6 +998,10 @@ export async function POST(req: NextRequest) {
                 saiuDaBase: placaSaiuDaBase(rota.placa_norm),
               })
             : undefined,
+          // "Sem rastreador" mas a placa está viva na API → tem rastreador, só não
+          // comunicou. Mostra "sem comunicação há X min" (verdade) em vez de acusar
+          // ausência de equipamento.
+          semComunicacaoMin: statusInfo.status === 'SEM_RASTREADOR' ? semComunicacaoDe(rota.placa_norm) : null,
         }
       })
 

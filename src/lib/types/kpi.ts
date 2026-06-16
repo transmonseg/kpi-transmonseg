@@ -86,6 +86,10 @@ export type KpiLinha = {
   /** Relatório gerado cedo (corte << janela da rede): não-entregue vira "EM ROTA /
    *  AGUARDANDO BASE" em vez de "não foi" — relatório parcial não conclui falha. */
   relatorio_cedo?: boolean
+  /** Placa não está no relatório, mas TEM rastreador na frota da API e está sem
+   *  transmitir hoje → legenda "DESATUALIZADO" (precisa manutenção) no XLSX, em vez
+   *  do enganoso "SEM RASTREADOR". */
+  placa_desatualizada?: boolean
 }
 
 export type AnomaliaDetectada = {

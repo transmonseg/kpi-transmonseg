@@ -23,6 +23,9 @@ describe('legendaSlot — relatório cedo', () => {
   it('com entrega (chd != null) → null mesmo cedo', () => {
     expect(legendaSlot(baseLinha({ relatorio_cedo: true, chd_loja_1: new Date('2026-06-13T05:00:00Z') }))).toBeNull()
   })
+  it('placa desatualizada → DESATUALIZADO (não SEM RASTREADOR)', () => {
+    expect(legendaSlot(baseLinha({ placa_rastreada: false, placa_desatualizada: true }))).toBe('DESATUALIZADO')
+  })
 })
 
 describe('calcTempoOperacao', () => {

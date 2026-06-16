@@ -178,6 +178,9 @@ function preencherAba(
 export function legendaSlot(c: LinhaParaKpi | null): string | null {
   if (!c) return null
   if (c.chd_loja_1 !== null) return null
+  // Tem rastreador na frota da API mas sem transmitir hoje → DESATUALIZADO (precisa
+  // manutenção). Precede tudo: não é "sem rastreador" (informação falsa pro cliente).
+  if (c.placa_desatualizada) return 'DESATUALIZADO'
   // Relatório cedo: não dá pra concluir "não foi" — mostra o ANDAMENTO honesto.
   if (c.relatorio_cedo) {
     if (c.placa_rastreada === false) return 'SEM RASTREADOR'
@@ -208,7 +211,10 @@ export function celulasSlot(
 ): (string | number)[] {
   if (c?.relatorio_parcial && c.chd_loja_1 === null) {
     const sb = toExcelTime(c.saida_base_parcial)
-    return [sb ?? (saidaEx ?? ''), 'RELATÓRIO PARCIAL', '']
+    // Em rota: mostra a SAÍDA CD (fato) e "EM ROTA" nas outras colunas (regra do
+    // operador / caso FHO). Em relatório não-cedo, mantém "RELATÓRIO PARCIAL".
+    const txt = c.relatorio_cedo ? (legendaSlot(c) ?? 'EM ROTA') : 'RELATÓRIO PARCIAL'
+    return [sb ?? (saidaEx ?? ''), txt, txt]
   }
   const slot = legendaSlot(c)
   return [slot ?? (saidaEx ?? ''), slot ?? (chdEx ?? ''), slot ?? (saiEx ?? '')]
