@@ -36,12 +36,20 @@ describe('celulasSlot — células de tempo (SAÍDA CD / CHD / SAÍDA)', () => {
   // BRT mascarado como UTC (convenção do sistema). 15:04 BRT.
   const saida1504 = new Date(Date.UTC(2026, 5, 9, 15, 4))
 
-  it('relatório parcial: mostra a saída de base na SAÍDA CD e "RELATÓRIO PARCIAL" nas demais', () => {
+  it('relatório parcial (não-cedo): saída de base na SAÍDA CD e "RELATÓRIO PARCIAL" nas demais', () => {
     const c = linha({ relatorio_parcial: true, saida_base_parcial: saida1504, chd_loja_1: null, placa_rastreada: true })
     const [cd, chd, sai] = celulasSlot(c, null, null, null)
     expect(typeof cd).toBe('number')          // saída de base (fração do dia Excel)
     expect(chd).toBe('RELATÓRIO PARCIAL')
-    expect(sai).toBe('')
+    expect(sai).toBe('RELATÓRIO PARCIAL')     // legenda "nas demais" (CHD e SAÍDA LOJA)
+  })
+
+  it('em rota (relatório cedo): saída de base na SAÍDA CD e "EM ROTA" nas demais (caso FHO)', () => {
+    const c = linha({ relatorio_parcial: true, relatorio_cedo: true, saida_base_parcial: saida1504, chd_loja_1: null, placa_rastreada: true, placa_saiu_da_base: true, placa_foi_algum_lugar: false })
+    const [cd, chd, sai] = celulasSlot(c, null, null, null)
+    expect(typeof cd).toBe('number')
+    expect(chd).toBe('EM ROTA')
+    expect(sai).toBe('EM ROTA')
   })
 
   it('sem entrega comum: repete a legenda nas 3 células (não é parcial)', () => {
