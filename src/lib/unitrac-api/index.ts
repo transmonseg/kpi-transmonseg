@@ -10,6 +10,7 @@ export * from './posicoes'
 export * from './confirma'
 export * from './consolida'
 export * from './alvos'
+export * from './classificar-placa'
 
 export type CorrecaoPlaca = { placa: string; cv: string; origem: 'api' }
 export type CorrecaoLoja = { codigoUnitrac: string; nome: string; lat: number; lon: number; origem: 'api' }
