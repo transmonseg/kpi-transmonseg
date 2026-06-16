@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { gerarKpiLocal, gerarKpiLocalComPreview, rotaToLinha, saidaBaseSeEmRota } from './gerar-kpi-local'
+import { gerarKpiLocal, gerarKpiLocalComPreview, rotaToLinha, saidaBaseSeEmRota, saidaBaseConhecida } from './gerar-kpi-local'
 import type { RotaKpi } from '@/lib/types/kpi'
 import type { LinhaEscala } from '@/lib/types/escala'
 
@@ -35,12 +35,39 @@ describe('saidaBaseSeEmRota — caso KOP-4978 (relatório parcial)', () => {
     ]
     expect(saidaBaseSeEmRota(paradas, corte)).toEqual(d(15, 4))
   })
-  it('entregou (LOJA) depois da última base → null (não é "em rota a partir da base")', () => {
+  it('foi a outra loja depois da base → AINDA mostra a saída de base (o horário é fato; regra do operador)', () => {
     const paradas = [
       { classificacao: 'BASE', chegada: d(5, 0), saida: d(5, 30) },
       { classificacao: 'LOJA', chegada: d(7, 0), saida: d(7, 20) },
     ]
-    expect(saidaBaseSeEmRota(paradas, corte)).toBeNull()
+    expect(saidaBaseSeEmRota(paradas, corte)).toEqual(d(5, 30))
+  })
+  it('saiu da base há <15min mas JÁ está em rota (tem parada fora) → mostra a saída', () => {
+    // Caso real dia 15: base 06:20, corte 06:30 (10min), mas já tem trecho fora de base.
+    const c2 = Date.UTC(2026, 5, 9, 6, 30)
+    const paradas = [
+      { classificacao: 'BASE', chegada: d(0, 5), saida: d(6, 20) },
+      { classificacao: 'FORA_BASE', chegada: d(6, 25), saida: d(6, 28) },
+    ]
+    expect(saidaBaseSeEmRota(paradas, c2)).toEqual(d(6, 20))
+  })
+})
+
+describe('saidaBaseConhecida (FHO: em rota mostra a saída)', () => {
+  const d = (h: number, m: number) => new Date(Date.UTC(2026, 5, 16, h, m))
+  it('FHO: operou (LOJA 06:01), voltou e saiu de novo 08:20 → 08:20 mesmo perto do corte', () => {
+    const paradas = [
+      { classificacao: 'BASE', chegada: d(4, 38), saida: d(5, 10) },
+      { classificacao: 'LOJA', chegada: d(6, 1), saida: d(6, 59) },
+      { classificacao: 'BASE', chegada: d(7, 55), saida: d(8, 20) },
+    ]
+    expect(saidaBaseConhecida(paradas)).toEqual(d(8, 20))
+  })
+  it('só ficou na base o dia todo → null (não operou)', () => {
+    expect(saidaBaseConhecida([{ classificacao: 'BASE', chegada: d(0, 5), saida: d(8, 20) }])).toBeNull()
+  })
+  it('sem parada nenhuma → null', () => {
+    expect(saidaBaseConhecida([])).toBeNull()
   })
 })
 

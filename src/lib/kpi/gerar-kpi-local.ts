@@ -131,12 +131,34 @@ export function saidaBaseSeEmRota(
     if (ord[i].classificacao === 'BASE') { baseIdx = i; break }
   }
   if (baseIdx < 0) return null // nunca parou na base (parou só na rua) → não dá pra afirmar saída
-  for (let i = baseIdx + 1; i < ord.length; i++) {
-    if (ord[i].classificacao === 'LOJA') return null // entregou depois da base → não é "em rota a partir da base"
-  }
   const saida = ord[baseIdx].saida ?? ord[baseIdx].chegada
-  if (corteMs - saida.getTime() < 15 * 60_000) return null // ainda na base no corte
+  // Houve movimento REAL (loja ou fora de base) depois da última base? Então o
+  // caminhão SAIU de fato — a saída de base é fato conhecido e DEVE aparecer (regra
+  // do operador: "em rota mostra tudo que já sabe, só a chegada fica em branco"),
+  // inclusive quando ele foi a outra loja (mudou de rota). FAKE_EXIT (blip) não conta.
+  const saiuDeFato = ord.slice(baseIdx + 1).some(p => p.classificacao === 'FORA_BASE' || p.classificacao === 'LOJA')
+  if (saiuDeFato) return saida
+  // Sem movimento depois: pode estar AINDA na base → só conta como saída se já passou
+  // tempo suficiente do corte (senão a "saída" é só o último ping na base, não partida).
+  if (corteMs - saida.getTime() < 15 * 60_000) return null
   return saida
+}
+
+/**
+ * Saída de base CONHECIDA pra exibição de linha "em rota": saída da última parada
+ * BASE, desde que a placa tenha QUALQUER parada FORA_BASE/LOJA no dia (prova de que
+ * operou). Sem guard de corte — regra do operador: "em rota mostra tudo que já sabe".
+ * Caso FHO-5F88: o relatório cortou logo após a saída de base, mas ela é fato.
+ */
+export function saidaBaseConhecida(
+  paradas: ReadonlyArray<{ classificacao: string; chegada: Date; saida: Date | null }>,
+): Date | null {
+  if (paradas.length === 0) return null
+  const operou = paradas.some(p => p.classificacao === 'FORA_BASE' || p.classificacao === 'LOJA')
+  if (!operou) return null
+  const bases = paradas.filter(p => p.classificacao === 'BASE').sort((a, b) => a.chegada.getTime() - b.chegada.getTime())
+  const u = bases[bases.length - 1]
+  return u ? (u.saida ?? u.chegada) : null
 }
 
 /** Marca a linha como "relatório parcial" quando a placa estava em rota no corte e
