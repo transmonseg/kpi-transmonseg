@@ -33,6 +33,14 @@ describe('parseAlvos', () => {
     expect(parseAlvos(null)).toEqual([])
     expect(parseAlvos({})).toEqual([])
   })
+
+  it('extrai ordem e rota do alvo (pra distinguir viagem/sequência)', () => {
+    const alvos = parseAlvos({ alvos: [
+      { placa: 'ABC1D23', pontoidentificador: '111', alvosituacaoservico: 1, alvodatarealizado: '2026-06-12T06:00:00', alvoordem: '3', alvorota: 'ROTA 2' },
+    ] })
+    expect(alvos[0].ordem).toBe(3)
+    expect(alvos[0].rota).toBe('ROTA 2')
+  })
 })
 
 describe('confirmaPorAlvo', () => {
@@ -53,6 +61,15 @@ describe('confirmaPorAlvo', () => {
 
   it('NÃO confirma alvo pendente (sit=0) — positivo-só', () => {
     expect(confirmaPorAlvo('KZU4C37', '560049', alvos)).toBeNull()
+  })
+
+  it('é determinístico com 2 feitos na mesma loja (escolhe o mais cedo, não a ordem do array)', () => {
+    const al = parseAlvos({ alvos: [
+      { placa: 'ABC1D23', pontoidentificador: '111', alvosituacaoservico: 1, alvodatarealizado: '2026-06-12T16:00:00', alvodocumento: 'B', alvoordem: '9' },
+      { placa: 'ABC1D23', pontoidentificador: '111', alvosituacaoservico: 1, alvodatarealizado: '2026-06-12T06:00:00', alvodocumento: 'A', alvoordem: '2' },
+    ] })
+    const c = confirmaPorAlvo('ABC1D23', '111', al)
+    expect(c!.feitoISO).toBe('2026-06-12T06:00:00') // o mais cedo, independente da ordem da API
   })
 
   it('sem alvo para a loja → null', () => {

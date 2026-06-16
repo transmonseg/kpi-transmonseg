@@ -15,6 +15,10 @@ export type AlvoApi = {
   /** alvodatainicio = início da rota (≈ saída do CD). Existe mesmo em alvo pendente
    *  e em rota longa que o /stops não captura como parada de base. */
   inicioISO: string | null
+  /** alvoordem = sequência da entrega na rota; alvorota = nome da rota/viagem.
+   *  Usados pra distinguir 1ª x 2ª viagem do dia pra mesma loja. */
+  ordem: number
+  rota: string
 }
 
 type AlvoRaw = {
@@ -25,6 +29,8 @@ type AlvoRaw = {
   alvodatarealizado?: string
   alvodatainicio?: string
   alvodocumento?: string | number
+  alvoordem?: string | number
+  alvorota?: string
 }
 
 /** Converte a resposta crua de /mapa_servicos/alvos em AlvoApi[]. Pura. */
@@ -45,6 +51,8 @@ export function parseAlvos(raw: unknown): AlvoApi[] {
       feitoISO,
       inicioISO,
       documento: a.alvodocumento != null && String(a.alvodocumento).trim() ? String(a.alvodocumento) : null,
+      ordem: Number(a.alvoordem ?? 0) || 0,
+      rota: String(a.alvorota ?? ''),
     }
   })
 }
@@ -73,7 +81,7 @@ export async function buscarAlvos(cvs: string[]): Promise<AlvoApi[]> {
   return parseAlvos(await apiPost('/mapa_servicos/alvos', cvs))
 }
 
-export type ConfirmacaoAlvo = { feitoISO: string; notas: string[] }
+export type ConfirmacaoAlvo = { feitoISO: string; notas: string[]; ordem: number; rota: string }
 
 /**
  * Confirmação autoritativa por ALVO: a própria Unitrac marcou a entrega como
@@ -87,10 +95,13 @@ export function confirmaPorAlvo(
   codigoUnitrac: string,
   alvos: AlvoApi[],
 ): ConfirmacaoAlvo | null {
-  const feitos = alvos.filter(
-    (a) => a.placaNorm === placaNorm && a.codigoUnitrac === codigoUnitrac && a.situacao === 1 && a.feitoISO,
-  )
+  const feitos = alvos
+    .filter((a) => a.placaNorm === placaNorm && a.codigoUnitrac === codigoUnitrac && a.situacao === 1 && a.feitoISO)
+    // Determinístico: ordena pela hora de conclusão (não pela ordem do array da API).
+    // Com 2 viagens à mesma loja no dia, escolhe a MAIS CEDO (a 1ª entrega, que é a
+    // que o KPI da manhã quer). `ordem`/`rota` ficam expostos pra desambiguar no futuro.
+    .sort((a, b) => a.feitoISO!.localeCompare(b.feitoISO!))
   if (feitos.length === 0) return null
   const notas = [...new Set(feitos.map((a) => a.documento).filter((d): d is string => !!d))]
-  return { feitoISO: feitos[0].feitoISO!, notas }
+  return { feitoISO: feitos[0].feitoISO!, notas, ordem: feitos[0].ordem, rota: feitos[0].rota }
 }

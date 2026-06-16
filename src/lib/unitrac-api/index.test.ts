@@ -22,7 +22,7 @@ describe('corrigirLoja', () => {
 
 describe('validarRotaConcluida', () => {
   it('marca suspeita quando carro ainda em movimento', () => {
-    const pos = { TUL1C38: { cv: '18594', velocidade: 40, ignicao: true, datagps: 'x' } }
+    const pos = { TUL1C38: { cv: '18594', velocidade: 40, ignicao: true, datagps: 'x', atraso: 0 } }
     expect(validarRotaConcluida('TUL-1C38', pos)).toEqual({ aindaRodando: true, origem: 'api' })
   })
   it('null quando parado/sem dado', () => {
