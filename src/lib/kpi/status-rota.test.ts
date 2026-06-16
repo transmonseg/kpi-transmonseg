@@ -13,6 +13,9 @@ describe('DESATUALIZADO', () => {
   it('placa fora do relatório sem sinal de API → continua SEM_RASTREADOR', () => {
     expect(derivarStatus({ ...baseSemGps }).status).toBe('SEM_RASTREADOR')
   })
+  it('placa fora do relatório mas na frota da API + transmitindo → NAO_FOI_AO_CLIENTE (tem rastreador)', () => {
+    expect(derivarStatus({ ...baseSemGps, placaTemRastreadorApi: true }).status).toBe('NAO_FOI_AO_CLIENTE')
+  })
   it('tem label e tier', () => {
     expect(STATUS_LABEL.DESATUALIZADO).toBe('Desatualizado')
     expect(TIER_DE_STATUS.DESATUALIZADO).toBe('conferir')

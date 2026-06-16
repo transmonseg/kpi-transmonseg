@@ -913,6 +913,8 @@ export async function POST(req: NextRequest) {
           const lr = lojaById.get(pLoja.loja_id)
           if (lr && lojaNomeDivergeDaEscala(esc.loja_nome_raw, lr)) entregouLojaForaEscala = { lojaReal: lr.nome }
         }
+        // Funil placa-por-placa: classifica a placa que não apareceu no relatório.
+        const classApiLinha = !temGps && rota.placa_norm ? classApiDaPlaca(rota.placa_norm) : 'rastreado'
         const statusInfo = derivarStatus({
           temGps,
           ficouNaBase,
@@ -935,7 +937,10 @@ export async function POST(req: NextRequest) {
           rastreadorTravado: rastreadorTravado.has(rota.placa_norm ?? ''),
           // Funil: placa fora do relatório mas na frota da API sem transmitir hoje →
           // DESATUALIZADO (tem rastreador, precisa manutenção), não "sem rastreador".
-          placaDesatualizadaApi: !temGps && classApiDaPlaca(rota.placa_norm) === 'desatualizado',
+          placaDesatualizadaApi: classApiLinha === 'desatualizado',
+          // Na frota da API + transmitindo, mas fora do relatório → tem rastreador,
+          // "não foi ao cliente" (não "sem rastreador").
+          placaTemRastreadorApi: classApiLinha === 'rastreado' && !temGps,
           // Avisos: dado faltando / ambíguo / fora da escala.
           lojaSemCadastroUnitrac,
           lojaAmbiguaComGemea,

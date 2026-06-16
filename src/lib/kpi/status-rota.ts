@@ -74,6 +74,10 @@ export interface DadosStatusRota {
    *  está sem transmitir (último GPS não é de hoje) → desatualizado, precisa
    *  manutenção. Não é "sem rastreador" (que é não ter equipamento). */
   placaDesatualizadaApi?: boolean
+  /** A placa não está no relatório Unitrac, mas ESTÁ na frota da API e transmitiu
+   *  hoje (tem rastreador funcionando) → não é "sem rastreador"; é "não foi ao
+   *  cliente" (tem equipamento, só não apareceu no relatório). Regra do fundador. */
+  placaTemRastreadorApi?: boolean
 }
 
 export interface ResultadoStatus {
@@ -105,6 +109,11 @@ function derivarStatusBase(d: DadosStatusRota): StatusBase {
         revisar: true,
         motivoRevisao: `Placa não encontrada no Unitrac, mas "${d.placaDivergeUnitrac}" (1 caractere de diferença) rodou esta rota. Provável placa errada no cadastro do Unitrac — o veículo TEM rastreador. Corrigir a placa no painel.`,
       }
+    }
+    // Tem rastreador na frota da API e transmitiu hoje, mas não apareceu no relatório
+    // → tem equipamento funcionando, só não há dado no Unitrac. Não é "sem rastreador".
+    if (d.placaTemRastreadorApi) {
+      return { status: 'NAO_FOI_AO_CLIENTE', revisar: true, motivoRevisao: 'Tem rastreador na frota do Unitrac e transmitiu hoje, mas não apareceu no relatório. Conferir.' }
     }
     return { status: 'SEM_RASTREADOR', revisar: false, motivoRevisao: null }
   }
