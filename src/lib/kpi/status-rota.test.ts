@@ -3,7 +3,21 @@ import { derivarStatus, tierEfetivo, TIER_DE_STATUS, MOTIVO_CURTO, STATUS_LABEL,
 
 const base = { temGps: true, ficouNaBase: false, paradas: [] as { classificacao: string; loja_id: string | null }[] }
 
-const TODOS_STATUS: StatusRota[] = ['ENTREGUE', 'ENTREGUE_GEO', 'MUDOU_DE_ROTA', 'SEM_RASTREADOR', 'NAO_SAIU_DA_BASE', 'NAO_FOI_AO_CLIENTE', 'FORA_DE_BASE']
+const TODOS_STATUS: StatusRota[] = ['ENTREGUE', 'ENTREGUE_GEO', 'MUDOU_DE_ROTA', 'SEM_RASTREADOR', 'DESATUALIZADO', 'NAO_SAIU_DA_BASE', 'NAO_FOI_AO_CLIENTE', 'FORA_DE_BASE']
+
+describe('DESATUALIZADO', () => {
+  const baseSemGps = { temGps: false, ficouNaBase: false, paradas: [] as { classificacao: string; loja_id: string | null }[] }
+  it('placa fora do relatório + desatualizada na API → DESATUALIZADO', () => {
+    expect(derivarStatus({ ...baseSemGps, placaDesatualizadaApi: true }).status).toBe('DESATUALIZADO')
+  })
+  it('placa fora do relatório sem sinal de API → continua SEM_RASTREADOR', () => {
+    expect(derivarStatus({ ...baseSemGps }).status).toBe('SEM_RASTREADOR')
+  })
+  it('tem label e tier', () => {
+    expect(STATUS_LABEL.DESATUALIZADO).toBe('Desatualizado')
+    expect(TIER_DE_STATUS.DESATUALIZADO).toBe('conferir')
+  })
+})
 
 describe('tiers de certeza', () => {
   it('todo status tem tier base, MOTIVO_CURTO e STATUS_LABEL', () => {

@@ -1,4 +1,4 @@
-export type StatusRota = 'ENTREGUE' | 'ENTREGUE_GEO' | 'MUDOU_DE_ROTA' | 'SEM_RASTREADOR' | 'NAO_SAIU_DA_BASE' | 'NAO_FOI_AO_CLIENTE' | 'FORA_DE_BASE'
+export type StatusRota = 'ENTREGUE' | 'ENTREGUE_GEO' | 'MUDOU_DE_ROTA' | 'SEM_RASTREADOR' | 'DESATUALIZADO' | 'NAO_SAIU_DA_BASE' | 'NAO_FOI_AO_CLIENTE' | 'FORA_DE_BASE'
 
 /** Categoria específica do motivo de revisão — refina o "não foi" genérico. */
 export type CategoriaRevisao = 'LOJA_SEM_CADASTRO' | 'LOJA_AMBIGUA' | 'ENTREGOU_FORA_ESCALA' | 'RELATORIO_PARCIAL'
@@ -70,6 +70,10 @@ export interface DadosStatusRota {
   /** Hora de saída de base (HH:MM) atribuída ao caso de relatório parcial — o fato
    * comprovado que o KPI deve mostrar mesmo sem entrega confirmada. */
   saidaBaseParcial?: string | null
+  /** A placa não está no relatório Unitrac, mas a API diz que ela TEM rastreador e
+   *  está sem transmitir (último GPS não é de hoje) → desatualizado, precisa
+   *  manutenção. Não é "sem rastreador" (que é não ter equipamento). */
+  placaDesatualizadaApi?: boolean
 }
 
 export interface ResultadoStatus {
@@ -87,6 +91,11 @@ type StatusBase = Pick<ResultadoStatus, 'status' | 'revisar' | 'motivoRevisao'>
 /** Deriva o status de uma rota a partir do que o motor já computa. A ordem importa. */
 function derivarStatusBase(d: DadosStatusRota): StatusBase {
   if (!d.temGps) {
+    // A placa não está no relatório, mas a API confirma que TEM rastreador e está
+    // sem transmitir hoje → desatualizado/manutenção (não é "sem rastreador").
+    if (d.placaDesatualizadaApi) {
+      return { status: 'DESATUALIZADO', revisar: true, motivoRevisao: 'Tem rastreador na frota do Unitrac, mas está sem transmitir hoje (último GPS de outro dia). Solicitar manutenção do rastreador.' }
+    }
     // Placa não está no Unitrac, mas existe uma quase idêntica (1 caractere) que
     // rodou esta rota → cadastro errado no Unitrac, NÃO falta de rastreador. O
     // veículo tem rastreador; as entregas existem sob a placa divergente.
@@ -182,7 +191,7 @@ const NATUREZA_DE_STATUS: Record<StatusRota, NaturezaRevisao> = {
   ENTREGUE: 'sistema', ENTREGUE_GEO: 'sistema',
   MUDOU_DE_ROTA: 'operacao', FORA_DE_BASE: 'operacao',
   NAO_SAIU_DA_BASE: 'operacao', NAO_FOI_AO_CLIENTE: 'operacao',
-  SEM_RASTREADOR: 'dado',
+  SEM_RASTREADOR: 'dado', DESATUALIZADO: 'dado',
 }
 
 /**
@@ -258,6 +267,7 @@ export const STATUS_LABEL: Record<StatusRota, string> = {
   ENTREGUE_GEO: 'Entregue (geo)',
   MUDOU_DE_ROTA: 'Mudou de rota',
   SEM_RASTREADOR: 'Sem rastreador',
+  DESATUALIZADO: 'Desatualizado',
   NAO_SAIU_DA_BASE: 'Não saiu da base',
   NAO_FOI_AO_CLIENTE: 'Não foi ao cliente',
   FORA_DE_BASE: 'Fora de base',
@@ -278,6 +288,7 @@ export const TIER_DE_STATUS: Record<StatusRota, TierCerteza> = {
   NAO_FOI_AO_CLIENTE: 'nao_entregou',
   NAO_SAIU_DA_BASE: 'nao_entregou',
   SEM_RASTREADOR: 'nao_entregou',
+  DESATUALIZADO: 'conferir',
 }
 
 /** Tier EFETIVO: refina pelo `revisar`/`categoria`. Uma entrega geo fora do raio,
@@ -310,4 +321,5 @@ export const MOTIVO_CURTO: Record<StatusRota, string> = {
   NAO_FOI_AO_CLIENTE: 'Tem rastreador e saiu, mas não passou nesta loja.',
   NAO_SAIU_DA_BASE: 'O caminhão não saiu do CD neste relatório.',
   SEM_RASTREADOR: 'A placa não aparece no relatório do Unitrac.',
+  DESATUALIZADO: 'Tem rastreador, mas sem transmitir hoje — precisa manutenção.',
 }
