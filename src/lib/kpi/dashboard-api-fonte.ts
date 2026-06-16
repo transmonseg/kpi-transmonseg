@@ -3,7 +3,7 @@ import type { StatusRota } from './status-rota'
 import type { StatusManual, EntradaManual } from './parse-kpi-manual'
 import type { RotaKpi } from '@/lib/types/kpi'
 import type { LinhaEscala } from '@/lib/types/escala'
-import { buscarFrota, buscarPontos, buscarStopsCru, consolidaParadasApi, buscarAlvos, confirmaPorAlvo } from '@/lib/unitrac-api'
+import { buscarFrota, buscarPontos, buscarStopsCru, consolidaParadasApi, buscarAlvos, confirmaPorAlvo, buscarPosicoes, classificarPlacaViaApi } from '@/lib/unitrac-api'
 import { cruzaEscalaUnitrac, setSemGeo, resolverLojaEsperada, type EscalaLinhaRow, type LojaRow, type GeoStore, type UnitracParadaRow } from '@/lib/kpi/matcher'
 import { derivarStatus } from './status-rota'
 import { situacaoViva, type SituacaoViva } from './situacao-viva'
@@ -104,7 +104,8 @@ export async function gerarDiaApi(
 
   const frota = await buscarFrota()
   const cvs = frota.map(v => v.cv)
-  const [pontos, alvos] = await Promise.all([buscarPontos(cvs), buscarAlvos(cvs)])
+  const [pontos, alvos, posicoes] = await Promise.all([buscarPontos(cvs), buscarAlvos(cvs), buscarPosicoes(cvs)])
+  const frotaApiPlacas = new Set(frota.map(v => v.placaNorm))
   const placas = new Set(escalaRows.map(e => e.placa_norm).filter(Boolean) as string[])
   const paradaRows: UnitracParadaRow[] = []
   for (const v of frota) {
@@ -137,12 +138,18 @@ export async function gerarDiaApi(
       // contra o GPS (incidente dia 15). Removido das rotas; idem aqui no dashboard.
     }
     const placaUni = rota.placa_unitrac ?? rota.placa_norm
+    const temGps = rota.paradas.length > 0 || porPlaca.has(placaUni ?? '')
+    // Funil: placa fora do relatório classificada pela API (sem rastreador x
+    // desatualizado x rastreado), pra não chamar desatualizado de "sem rastreador".
+    const classApi = !temGps && rota.placa_norm ? classificarPlacaViaApi(rota.placa_norm, frotaApiPlacas, posicoes, data) : 'rastreado'
     const st = derivarStatus({
-      temGps: rota.paradas.length > 0 || porPlaca.has(placaUni ?? ''),
+      temGps,
       ficouNaBase: rota.status === 'sem_entrega' && !!rota.placa_norm,
       paradas: rota.paradas.map(p => ({ classificacao: p.classificacao, loja_id: p.loja_id ?? null })),
       viaGeo: rota._matchMeta?.algorithm === 'geo', viaTroca: rota._matchMeta?.algorithm === 'troca',
       geoConfiavel: rota.geo_confiavel ?? false, placaFoiAlgumLugar: saiu(placaUni), placaSaiuDaBase: saiu(placaUni),
+      placaDesatualizadaApi: classApi === 'desatualizado',
+      placaTemRastreadorApi: classApi === 'rastreado' && !temGps,
     })
     const ent = rotaParaEntrada(rota, esc, st.status, data)
     const sv = situacaoViva({

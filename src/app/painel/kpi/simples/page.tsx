@@ -62,6 +62,9 @@ type PreviewLinha = {
   saida_loja_fmt: string | null
   /** Relatório cedo: andamento ao vivo em vez de "não foi" vermelho. */
   situacaoViva?: 'ENTREGUE' | 'EM_ROTA' | 'NA_BASE' | 'SEM_SINAL'
+  /** Min sem comunicar quando a placa É rastreada (tem equipamento) mas saiu como
+   *  "sem rastreador" — mostra "sem comunicação há X min" em vez de "sem rastreador". */
+  semComunicacaoMin?: number | null
 }
 
 type LineEditPatch = {
@@ -1786,6 +1789,30 @@ function PreviewRow({
       <td className="px-4 py-2 whitespace-nowrap">
         <div className="flex flex-col items-start gap-1">
           {(() => {
+            // Desatualizado: tem rastreador na frota da API mas sem transmitir hoje.
+            // Precede o "sem sinal" da situacaoViva (não é ausência de equipamento).
+            if (linha.status === 'DESATUALIZADO') {
+              return (
+                <span className="inline-flex w-fit items-center gap-1 rounded border border-[var(--color-warning)] px-1.5 py-0.5 text-[10px] font-semibold leading-tight text-[var(--color-warning)]"
+                  title="Tem rastreador na frota do Unitrac, mas está sem transmitir hoje (último GPS de outro dia). Solicitar manutenção do rastreador.">
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: 'currentColor' }} />
+                  Desatualizado · manutenção
+                </span>
+              )
+            }
+            // Placa É rastreada na API (tem equipamento), só não comunicou: mostra
+            // "sem comunicação há X" em vez do enganoso "sem rastreador".
+            if (linha.status === 'SEM_RASTREADOR' && linha.semComunicacaoMin != null) {
+              const m = linha.semComunicacaoMin
+              const dur = m < 60 ? `${m}min` : m < 2880 ? `${Math.round(m / 60)}h` : `${Math.round(m / 1440)}d`
+              return (
+                <span className="inline-flex w-fit items-center gap-1 rounded border border-[var(--color-warning)] px-1.5 py-0.5 text-[10px] font-medium leading-tight text-[var(--color-warning)]"
+                  title={`A placa tem rastreador na frota do Unitrac, mas a última comunicação foi há ${dur} (possível sinal fraco/jammer/rastreador desligado). Não é ausência de equipamento.`}>
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: 'currentColor' }} />
+                  Sem comunicação · {dur}
+                </span>
+              )
+            }
             // Relatório cedo: andamento ao vivo (em rota / na base / sem sinal) em
             // vez do vermelho "não foi" — não dá pra concluir falha com parcial.
             const sv = linha.situacaoViva
