@@ -42,6 +42,7 @@ function fakeMetricas(over: Partial<Metricas> = {}): Metricas {
       { rede_id: 'SENDAS', loja: 'Sendas Centro', ocorrencias: 2 },
       { rede_id: 'ASSAI', loja: 'Assaí Sul', ocorrencias: 1 },
     ],
+    topIndefinido: [],
     placasMaisAtivas: [{ placa: 'ABC1234', entregas: 20 }],
     tempoMedioRotaMin: 90,
     tempoMedioTotalMin: 125,

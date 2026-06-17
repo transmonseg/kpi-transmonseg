@@ -58,6 +58,7 @@ export interface Metricas {
   serie: PontoSerie[]
   topSemRastreador: Array<{ rede_id: string; loja: string; ocorrencias: number }>
   topNaoFoi: Array<{ rede_id: string; loja: string; ocorrencias: number }>
+  topIndefinido: Array<{ rede_id: string; loja: string; ocorrencias: number }>
   placasMaisAtivas: Array<{ placa: string; entregas: number }>
   tempoMedioRotaMin: number | null
   tempoMedioTotalMin: number | null
@@ -346,6 +347,7 @@ export function calcularMetricas(ents: EntradaManual[]): Metricas {
     serie: [...serieMap.values()].sort((a, b) => a.data.localeCompare(b.data)),
     topSemRastreador: agrupaLoja('sem_rastreador'),
     topNaoFoi: agrupaLoja('nao_foi'),
+    topIndefinido: agrupaLoja('indefinido'),
     placasMaisAtivas: [...placaMap.entries()].map(([placa, entregas]) => ({ placa, entregas })).sort((a, b) => b.entregas - a.entregas).slice(0, 15),
     tempoMedioRotaMin,
     tempoMedioTotalMin,

@@ -11,18 +11,19 @@ const ents: EntradaManual[] = [
   E({ rede_id: 'PRINCESA', loja: 'B', status: 'sem_rastreador', chd: null, sai: null }),
   E({ rede_id: 'ASSAI', loja: 'C', status: 'nao_foi', chd: null, sai: null }),
   E({ rede_id: 'ASSAI', data: '2026-05-20', loja: 'C', chd: '05:00', sai: '05:40' }),
+  E({ rede_id: 'ASSAI', loja: 'D', status: 'indefinido', chd: null, sai: null }),
 ]
 
 describe('filtrar', () => {
-  it('por redes (multi)', () => { expect(filtrar(ents, { redes: ['ASSAI'] }).length).toBe(2) })
+  it('por redes (multi)', () => { expect(filtrar(ents, { redes: ['ASSAI'] }).length).toBe(3) })
   it('por intervalo', () => { expect(filtrar(ents, { de: '2026-05-20', ate: '2026-05-20' }).length).toBe(1) })
-  it('sem filtro retorna tudo', () => { expect(filtrar(ents, {}).length).toBe(4) })
+  it('sem filtro retorna tudo', () => { expect(filtrar(ents, {}).length).toBe(5) })
 })
 
 describe('calcularMetricas', () => {
   it('totais, rede, serie, turno, tempo', () => {
     const m = calcularMetricas(ents)
-    expect(m.total).toBe(4)
+    expect(m.total).toBe(5)
     expect(m.entregue).toBe(2)
     expect(m.nao_foi).toBe(1)
     expect(m.sem_rastreador).toBe(1)
@@ -37,6 +38,7 @@ describe('calcularMetricas', () => {
     // 1 sem rastreador (fora do denom) → 100%; ASSAI tem 1 entregue + 1 não foi → 50%.
     expect(m.porRede.find(r => r.rede_id === 'PRINCESA')!.pctEntregue).toBe(100)
     expect(m.porRede.find(r => r.rede_id === 'ASSAI')!.pctEntregue).toBe(50)
+    expect(m.topIndefinido[0]).toMatchObject({ rede_id: 'ASSAI', loja: 'D', ocorrencias: 1 })
     expect(m.serie.find(s => s.data === '2026-05-19')!.entregue).toBe(1)
     expect(m.turnos.manha).toBe(1)      // 06:00
     expect(m.turnos.madrugada).toBe(1)  // 05:00
