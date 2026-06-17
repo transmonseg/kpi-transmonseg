@@ -239,3 +239,95 @@ export function LinePdf({
     </View>
   )
 }
+
+/** Reparte `largura` proporcional aos valores. Total <= 0 devolve tudo zero. */
+export function segmentos(valores: number[], largura: number): number[] {
+  const total = valores.reduce((a, b) => a + b, 0)
+  if (total <= 0) return valores.map(() => 0)
+  return valores.map(v => (v / total) * largura)
+}
+
+// ── StackedBarPdf: uma barra horizontal empilhada por status + legenda ────────
+export function StackedBarPdf({
+  data,
+  width,
+  height = 14,
+}: {
+  data: { label: string; value: number; color: string }[]
+  width: number
+  height?: number
+}) {
+  const segs = segmentos(data.map(d => d.value), width)
+  const total = data.reduce((a, d) => a + d.value, 0)
+  let x = 0
+  return (
+    <View>
+      <Svg width={width} height={height}>
+        <Rect x={0} y={0} width={width} height={height} fill={C.bgSubtle} />
+        {data.map((d, i) => {
+          const w = segs[i]
+          const rect = w > 0 ? <Rect key={i} x={x} y={0} width={w} height={height} fill={d.color} /> : null
+          x += w
+          return rect
+        })}
+      </Svg>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 6 }}>
+        {data.filter(d => d.value > 0).map((d, i) => (
+          <View key={i} style={{ flexDirection: 'row', alignItems: 'center', marginRight: 12, marginBottom: 3 }}>
+            <View style={{ width: 7, height: 7, borderRadius: 2, backgroundColor: d.color, marginRight: 4 }} />
+            <Text style={{ fontSize: 7.5, color: C.inkSoft }}>
+              {d.label} {d.value} ({total > 0 ? Math.round((100 * d.value) / total) : 0}%)
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  )
+}
+
+// ── StackedColumnPdf: colunas empilhadas por status (série diária) ────────────
+export function StackedColumnPdf({
+  data,
+  width,
+  height = 120,
+}: {
+  data: { label: string; segments: { value: number; color: string }[] }[]
+  width: number
+  height?: number
+}) {
+  const n = Math.max(data.length, 1)
+  const totals = data.map(d => d.segments.reduce((a, s) => a + s.value, 0))
+  const max = Math.max(...totals, 1)
+  const gap = n > 30 ? 1 : 2
+  const slot = width / n
+  const barW = Math.max(slot - gap, 1)
+  const every = Math.max(1, Math.ceil(n / 12))
+  return (
+    <View>
+      <Svg width={width} height={height}>
+        <Line x1={0} y1={height - 0.5} x2={width} y2={height - 0.5} stroke={AXIS} strokeWidth={1} />
+        {data.map((d, i) => {
+          const colTotal = totals[i]
+          const colH = max > 0 ? (colTotal / max) * (height - 2) : 0
+          let yTop = height - colH
+          return d.segments.map((s, si) => {
+            if (s.value <= 0) return null
+            const segH = (s.value / (colTotal || 1)) * colH
+            const rect = (
+              <Rect key={`${i}-${si}`} x={i * slot + gap / 2} y={yTop} width={barW} height={segH} fill={s.color} />
+            )
+            yTop += segH
+            return rect
+          })
+        })}
+      </Svg>
+      <View style={{ flexDirection: 'row', marginTop: 2 }}>
+        {data.map((d, i) => (
+          <Text key={i} style={{ width: slot, fontSize: 6.5, color: LABEL, textAlign: 'center' }}>
+            {i % every === 0 ? d.label : ''}
+          </Text>
+        ))}
+      </View>
+    </View>
+  )
+}
