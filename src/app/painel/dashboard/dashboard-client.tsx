@@ -24,9 +24,13 @@ const ANOS = [ANO_ATUAL, ANO_ATUAL - 1, ANO_ATUAL - 2].map(String)
 
 // status → token semântico (sem cores hardcoded)
 const STATUS = {
-  entregue:       { label: 'Entregues',      cor: 'var(--color-success)' },
-  nao_foi:        { label: 'Não foi',        cor: 'var(--color-warning)' },
-  sem_rastreador: { label: 'Sem rastreador', cor: 'var(--color-danger)'  },
+  entregue:       { label: 'Entregue',       cor: 'var(--color-success)' },
+  em_rota:        { label: 'Em rota',        cor: 'var(--color-info)' },
+  nao_foi:        { label: 'Não foi',        cor: 'var(--color-danger)' },
+  mudou_de_rota:  { label: 'Mudou de rota',  cor: 'var(--color-warning)' },
+  desatualizado:  { label: 'Desatualizado',  cor: 'var(--color-warning)' },
+  sem_rastreador: { label: 'Sem rastreador', cor: 'var(--color-fg-subtle)' },
+  indefinido:     { label: 'Indefinido',     cor: 'var(--color-fg-subtle)' },
 } as const
 
 // semáforo discreto
@@ -364,6 +368,19 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
       <section id="sec-resumo" key="v-resumo" data-tour="resumo" className="scroll-mt-32 space-y-4 animate-fade-up">
         <SecaoHead n="01" titulo="Como foi a operação" sub="O resultado do período num olhar." />
 
+        {/* Selo provisório/final: tem entrega em rota → o período ainda não fechou. */}
+        {m.em_rota > 0 ? (
+          <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[var(--color-warning)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-warning)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-warning)]" />
+            Provisório · {m.em_rota} em rota (gere de novo depois das entregas)
+          </div>
+        ) : (
+          <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[var(--color-success)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-success)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)]" />
+            Final
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
           {/* Número dominante — taxa de entrega manda na hierarquia */}
           <div data-tour="resumo-taxa" className={`flex flex-col justify-between gap-8 p-6 sm:p-7 lg:col-span-4 ${CARD}`}>
@@ -374,8 +391,13 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
             <div>
               <div className="text-display text-numeric text-[clamp(44px,6vw,60px)] leading-none text-[var(--color-fg)]">{m.pctEntregue}%</div>
               <div className="mt-2 text-[12px] text-[var(--color-fg-subtle)]">
-                <span className="text-numeric">{m.entregue}</span> de <span className="text-numeric">{m.total}</span> entregas · meta ≥ 95%
+                <span className="text-numeric">{m.entregue}</span> de <span className="text-numeric">{m.entregue + m.nao_foi}</span> definitivas · meta ≥ 95%
               </div>
+              {(m.em_rota > 0 || m.desatualizado > 0 || m.sem_rastreador > 0) && (
+                <div className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">
+                  fora da taxa: <span className="text-numeric">{m.em_rota}</span> em rota · <span className="text-numeric">{m.desatualizado}</span> desatualizado · <span className="text-numeric">{m.sem_rastreador}</span> sem rastreador
+                </div>
+              )}
               <div className="mt-2"><Delta atual={m.pctEntregue} anterior={mAnt?.pctEntregue} /></div>
             </div>
           </div>
@@ -391,14 +413,14 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
         {/* Barra empilhada do mix de status, com rótulo (não depende só de cor) */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex h-2.5 min-w-[200px] flex-1 overflow-hidden rounded-full bg-[var(--color-bg-subtle)]">
-            {(['entregue', 'nao_foi', 'sem_rastreador'] as const).map(k => (
+            {(['entregue', 'em_rota', 'nao_foi', 'mudou_de_rota', 'desatualizado', 'sem_rastreador'] as const).filter(k => m[k] > 0).map(k => (
               <Tip key={k} label={`${STATUS[k].label}: ${m[k]}`}>
                 <div className="h-full" style={{ width: `${100 * m[k] / (m.total || 1)}%`, background: STATUS[k].cor }} />
               </Tip>
             ))}
           </div>
           <div className="flex shrink-0 flex-wrap gap-x-3 gap-y-1 text-[11px] text-[var(--color-fg-muted)]">
-            {(['entregue', 'nao_foi', 'sem_rastreador'] as const).map(k => (
+            {(['entregue', 'em_rota', 'nao_foi', 'mudou_de_rota', 'desatualizado', 'sem_rastreador'] as const).filter(k => m[k] > 0).map(k => (
               <span key={k} className="flex items-center gap-1">
                 <span className="h-2 w-2 rounded-full" style={{ background: STATUS[k].cor }} />
                 {STATUS[k].label} <span className="text-numeric font-semibold">{m[k]}</span>
@@ -415,11 +437,9 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
           <div className={`p-5 sm:p-6 lg:col-span-6 ${CARD} animate-fade-up`}>
             <h3 className="text-overline mb-4">Mix de status</h3>
             <Donut
-              slices={[
-                { label: 'Entregue', value: m.entregue, color: STATUS.entregue.cor },
-                { label: 'Não foi', value: m.nao_foi, color: STATUS.nao_foi.cor },
-                { label: 'Sem rastreador', value: m.sem_rastreador, color: STATUS.sem_rastreador.cor },
-              ]}
+              slices={(['entregue', 'em_rota', 'nao_foi', 'mudou_de_rota', 'desatualizado', 'sem_rastreador'] as const)
+                .filter(k => m[k] > 0)
+                .map(k => ({ label: STATUS[k].label, value: m[k], color: STATUS[k].cor }))}
               centerValue={fmtNum(m.total)} centerLabel="entregas"
             />
           </div>
