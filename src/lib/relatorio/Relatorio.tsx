@@ -103,7 +103,6 @@ function KpiCard({
     <View
       style={{
         width: '31.5%',
-        marginRight: '2.75%',
         marginBottom: 10,
         borderWidth: 1,
         borderColor: C.border,
@@ -402,7 +401,7 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
       {/* ─────────────────── 4. SCORECARD ─────────────────── */}
       <Page size="A4" style={S.page}>
         <TituloSecao titulo="Scorecard do período" />
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
           <KpiCard rotulo="Taxa de entrega" valor={`${m.pctEntregue}%`} sub={`${fmtNum(m.entregue)} de ${fmtNum(conf)} conferíveis`} delta={dEntrega} unidadeDelta=" p.p." sentido="maior_melhor" />
           <KpiCard rotulo="Não realizadas" valor={fmtNum(m.nao_foi)} delta={dNaoFoi} unidadeDelta="" sentido="menor_melhor" />
           <KpiCard rotulo="Visibilidade GPS" valor={`${vis}%`} delta={dGps} unidadeDelta=" p.p." sentido="maior_melhor" />
