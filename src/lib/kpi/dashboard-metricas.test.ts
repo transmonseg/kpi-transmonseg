@@ -33,6 +33,10 @@ describe('calcularMetricas', () => {
     expect(m.taxaEntregaDefinitiva).toBe(67)
     expect(m.tempoMedioLojaMin).toBe(35) // (30 + 40)/2
     expect(m.porRede.find(r => r.rede_id === 'PRINCESA')!.total).toBe(2)
+    // por-rede usa a MESMA taxa definitiva do headline: PRINCESA tem 1 entregue +
+    // 1 sem rastreador (fora do denom) → 100%; ASSAI tem 1 entregue + 1 não foi → 50%.
+    expect(m.porRede.find(r => r.rede_id === 'PRINCESA')!.pctEntregue).toBe(100)
+    expect(m.porRede.find(r => r.rede_id === 'ASSAI')!.pctEntregue).toBe(50)
     expect(m.serie.find(s => s.data === '2026-05-19')!.entregue).toBe(1)
     expect(m.turnos.manha).toBe(1)      // 06:00
     expect(m.turnos.madrugada).toBe(1)  // 05:00

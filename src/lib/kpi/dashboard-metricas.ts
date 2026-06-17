@@ -173,11 +173,12 @@ export function calcularMetricas(ents: EntradaManual[]): Metricas {
   for (const e of ents) { const a = redeMap.get(e.rede_id) ?? []; a.push(e); redeMap.set(e.rede_id, a) }
   const porRede: MetricasRede[] = [...redeMap.entries()].map(([rede_id, es]) => {
     const en = es.filter(e => e.status === 'entregue').length
+    const nf = es.filter(e => e.status === 'nao_foi').length
+    const denom = en + nf // mesma taxa definitiva do headline: não dilui com sem rastreador/em análise
     return {
-      rede_id, total: es.length, entregue: en,
-      nao_foi: es.filter(e => e.status === 'nao_foi').length,
+      rede_id, total: es.length, entregue: en, nao_foi: nf,
       sem_rastreador: es.filter(e => e.status === 'sem_rastreador').length,
-      pctEntregue: es.length ? Math.round(100 * en / es.length) : 0,
+      pctEntregue: denom ? Math.round(100 * en / denom) : 0,
       tempoMedioMin: mediaTempo(es),
     }
   })

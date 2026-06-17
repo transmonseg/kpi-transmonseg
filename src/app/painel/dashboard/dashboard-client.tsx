@@ -30,8 +30,13 @@ const STATUS = {
   mudou_de_rota:  { label: 'Mudou de rota',  cor: 'var(--color-warning)' },
   desatualizado:  { label: 'Desatualizado',  cor: 'var(--color-warning)' },
   sem_rastreador: { label: 'Sem rastreador', cor: 'var(--color-fg-subtle)' },
-  indefinido:     { label: 'Indefinido',     cor: 'var(--color-fg-subtle)' },
+  indefinido:     { label: 'Em análise',     cor: 'var(--color-fg-muted)' },
 } as const
+
+// Ordem do mix de status na barra/donut/legenda. Inclui 'indefinido' (em análise)
+// pra que a soma FECHE com o total: nenhuma linha some da visualização (era a
+// raiz da informação falsa: o que não fechava taxa simplesmente desaparecia).
+const MIX_CATS = ['entregue', 'em_rota', 'nao_foi', 'mudou_de_rota', 'desatualizado', 'sem_rastreador', 'indefinido'] as const
 
 // semáforo discreto
 const COR = { ok: 'var(--color-success)', warn: 'var(--color-warning)', bad: 'var(--color-danger)' } as const
@@ -393,9 +398,9 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
               <div className="mt-2 text-[12px] text-[var(--color-fg-subtle)]">
                 <span className="text-numeric">{m.entregue}</span> de <span className="text-numeric">{m.entregue + m.nao_foi}</span> definitivas · meta ≥ 95%
               </div>
-              {(m.em_rota > 0 || m.desatualizado > 0 || m.sem_rastreador > 0) && (
+              {(m.em_rota > 0 || m.desatualizado > 0 || m.sem_rastreador > 0 || m.indefinido > 0) && (
                 <div className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">
-                  fora da taxa: <span className="text-numeric">{m.em_rota}</span> em rota · <span className="text-numeric">{m.desatualizado}</span> desatualizado · <span className="text-numeric">{m.sem_rastreador}</span> sem rastreador
+                  fora da taxa: <span className="text-numeric">{m.em_rota}</span> em rota · <span className="text-numeric">{m.desatualizado}</span> desatualizado · <span className="text-numeric">{m.sem_rastreador}</span> sem rastreador · <span className="text-numeric">{m.indefinido}</span> em análise
                 </div>
               )}
               <div className="mt-2"><Delta atual={m.pctEntregue} anterior={mAnt?.pctEntregue} /></div>
@@ -413,14 +418,14 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
         {/* Barra empilhada do mix de status, com rótulo (não depende só de cor) */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex h-2.5 min-w-[200px] flex-1 overflow-hidden rounded-full bg-[var(--color-bg-subtle)]">
-            {(['entregue', 'em_rota', 'nao_foi', 'mudou_de_rota', 'desatualizado', 'sem_rastreador'] as const).filter(k => m[k] > 0).map(k => (
+            {MIX_CATS.filter(k => m[k] > 0).map(k => (
               <Tip key={k} label={`${STATUS[k].label}: ${m[k]}`}>
                 <div className="h-full" style={{ width: `${100 * m[k] / (m.total || 1)}%`, background: STATUS[k].cor }} />
               </Tip>
             ))}
           </div>
           <div className="flex shrink-0 flex-wrap gap-x-3 gap-y-1 text-[11px] text-[var(--color-fg-muted)]">
-            {(['entregue', 'em_rota', 'nao_foi', 'mudou_de_rota', 'desatualizado', 'sem_rastreador'] as const).filter(k => m[k] > 0).map(k => (
+            {MIX_CATS.filter(k => m[k] > 0).map(k => (
               <span key={k} className="flex items-center gap-1">
                 <span className="h-2 w-2 rounded-full" style={{ background: STATUS[k].cor }} />
                 {STATUS[k].label} <span className="text-numeric font-semibold">{m[k]}</span>
@@ -437,7 +442,7 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
           <div className={`p-5 sm:p-6 lg:col-span-6 ${CARD} animate-fade-up`}>
             <h3 className="text-overline mb-4">Mix de status</h3>
             <Donut
-              slices={(['entregue', 'em_rota', 'nao_foi', 'mudou_de_rota', 'desatualizado', 'sem_rastreador'] as const)
+              slices={MIX_CATS
                 .filter(k => m[k] > 0)
                 .map(k => ({ label: STATUS[k].label, value: m[k], color: STATUS[k].cor }))}
               centerValue={fmtNum(m.total)} centerLabel="entregas"
@@ -604,6 +609,10 @@ function Alertas({ m, mAnt, lojaHref }: { m: Metricas; mAnt: Metricas | null; lo
   if (pior && pior.pctEntregue < 80) al.push({ sev: 'bad', txt: `${REDE_LABEL[pior.rede_id] ?? pior.rede_id} com ${pior.pctEntregue}% de entrega` })
   if (m.pctSemRastreador > 10) al.push({ sev: m.pctSemRastreador > 20 ? 'bad' : 'warn', txt: `${m.pctSemRastreador}% sem rastreador (${m.sem_rastreador} entregas)` })
   if (pctFalha > 10) al.push({ sev: pctFalha > 20 ? 'bad' : 'warn', txt: `${pctFalha}% não foi ao cliente (${m.nao_foi})` })
+  // Safeguard anti-falsa-confiança: muita linha "em análise" (sem legenda nem
+  // horário) significa que a taxa, mesmo alta, cobre só uma parte do dia.
+  const pctIndef = m.total ? Math.round(100 * m.indefinido / m.total) : 0
+  if (pctIndef > 15) al.push({ sev: pctIndef > 30 ? 'bad' : 'warn', txt: `${pctIndef}% em análise (${m.indefinido} sem legenda/horário)` })
   const topLoja = m.topNaoFoi[0] ?? m.topSemRastreador[0]
   if (topLoja && topLoja.ocorrencias >= 3) al.push({ sev: 'warn', txt: `${topLoja.loja}: ${topLoja.ocorrencias} ocorrências`, href: lojaHref(topLoja.rede_id, topLoja.loja) })
 
@@ -640,7 +649,8 @@ function Alertas({ m, mAnt, lojaHref }: { m: Metricas; mAnt: Metricas | null; lo
 // Resumo executivo: o período inteiro numa frase. Usa só dados que já existem.
 function ResumoExecutivo({ m, mAnt, periodo }: { m: Metricas; mAnt: Metricas | null; periodo: Periodo }) {
   const pctGps = m.total ? Math.round(100 * m.com_rastreador / m.total) : 0
-  const pctFalha = m.total ? Math.round(100 * m.nao_foi / m.total) : 0
+  const conferiveis = m.entregue + m.nao_foi
+  const foraConf = m.total - conferiveis // em rota + mudou + desatualizado + sem rastreador + em análise
   const delta = mAnt && mAnt.total ? m.pctEntregue - mAnt.pctEntregue : null
   const periodoLabel = ({ dia: 'No dia', semana: 'Na semana', mes: 'No mês', ano: 'No ano', custom: 'No período' } as Record<Periodo, string>)[periodo]
   const pior = [...m.porRede].filter(r => r.total >= 5).sort((a, b) => a.pctEntregue - b.pctEntregue)[0]
@@ -649,11 +659,14 @@ function ResumoExecutivo({ m, mAnt, periodo }: { m: Metricas; mAnt: Metricas | n
     <div className="flex items-start gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-5 py-4 shadow-soft animate-fade-up sm:px-6">
       <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: COR[tom] }} />
       <p className="text-[14px] leading-relaxed text-[var(--color-fg-muted)] sm:text-[15px]">
-        {periodoLabel}, <strong style={{ color: COR[tom] }}>{m.pctEntregue}% das entregas</strong> foram concluídas
+        {periodoLabel}, <strong style={{ color: COR[tom] }}>{m.pctEntregue}% das conferíveis</strong> foram concluídas <span className="text-numeric">({m.entregue} de {conferiveis})</span>
         {delta != null && delta !== 0 && (
           <span className="text-numeric"> ({delta > 0 ? '↑' : '↓'} {Math.abs(delta)} p.p. vs período anterior)</span>
         )}
-        {' · '}<strong className="text-[var(--color-fg)]">{pctFalha}%</strong> não foi ao cliente
+        {' · '}<strong className="text-[var(--color-fg)]">{m.nao_foi}</strong> não foi ao cliente
+        {foraConf > 0 && (
+          <> · <strong className="text-[var(--color-fg)]">{foraConf}</strong> fora da conferência</>
+        )}
         {' · '}<strong className="text-[var(--color-fg)]">{pctGps}%</strong> com GPS
         {pior && pior.pctEntregue < m.pctEntregue && (
           <> · rede que mais puxa pra baixo: <strong className="text-[var(--color-fg)]">{REDE_LABEL[pior.rede_id] ?? pior.rede_id}</strong> <span className="text-numeric">({pior.pctEntregue}%)</span></>
