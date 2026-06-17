@@ -150,9 +150,11 @@ denominador da taxa nunca inclui "fora da conferência"; missing nunca vira zero
 - `src/lib/relatorio/Relatorio.tsx`: nova capa com selo, página de confiança,
   scorecard e tabela por rede com taxa definitiva, tendências empilhadas, exceções
   com "em análise", apêndice com definições corretas + caixa de cálculo + glossário.
-- `src/lib/kpi/dashboard-metricas.ts`: NÃO muda. O empilhado diário deriva
-  "outros" = `total - (entregue + nao_foi + sem_rastreador + em_rota)` no próprio
-  componente, usando os campos que `PontoSerie` já expõe.
+- `src/lib/kpi/dashboard-metricas.ts`: ganha apenas `topIndefinido`
+  (`agrupaLoja('indefinido')`, reusando o helper que já existe) para a página de
+  Exceções poder cruzar "em análise" por loja. `PontoSerie` NÃO muda: o empilhado
+  diário deriva "outros" = `total - (entregue + nao_foi + sem_rastreador + em_rota)`
+  no próprio componente, usando os campos que `PontoSerie` já expõe.
 
 ## Constraints
 
