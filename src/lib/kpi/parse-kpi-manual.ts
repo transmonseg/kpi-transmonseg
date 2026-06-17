@@ -1,6 +1,20 @@
 import ExcelJS from 'exceljs'
 
-export type StatusManual = 'entregue' | 'nao_foi' | 'sem_rastreador'
+export type StatusManual = 'entregue' | 'em_rota' | 'nao_foi' | 'mudou_de_rota' | 'desatualizado' | 'sem_rastreador' | 'indefinido'
+
+/** Classifica a legenda do XLSX em status rico. Ordem por especificidade. NUNCA
+ *  devolve "descartar": sem legenda + sem chegada = 'indefinido' (visível na tela). */
+export function classificarStatusManual(txt: string, temChegada: boolean): StatusManual {
+  const t = txt.toUpperCase()
+  if (/DESATUALIZ/.test(t)) return 'desatualizado'
+  if (/SEM\s*RASTREAD/.test(t)) return 'sem_rastreador'
+  if (/MUDOU\s*DE\s*ROTA/.test(t)) return 'mudou_de_rota'
+  if (/EM\s*ROTA|AGUARDANDO\s*BASE/.test(t)) return 'em_rota'
+  if (/N[ÃA]O\s*SAIU/.test(t)) return 'nao_foi'
+  if (/N[ÃA]O\s*FOI/.test(t)) return 'nao_foi'
+  if (temChegada) return 'entregue'
+  return 'indefinido'
+}
 
 export interface EntradaManual {
   rede_id: string
@@ -92,11 +106,9 @@ function parseWorksheet(ws: ExcelJS.Worksheet, rede_id: string, data: string): E
     const sai = hhmm(cell(ws.getRow(r).getCell(col.sai).value))
     const saida_cd = hhmm(cell(ws.getRow(r).getCell(col.saidaCd).value))
     const volta_base = col.voltaBase !== -1 ? hhmm(cell(ws.getRow(r).getCell(col.voltaBase).value)) : null
-    let status: StatusManual
-    if (/N[ÃA]O\s*FOI/.test(txt)) status = 'nao_foi'
-    else if (/SEM\s*RASTREAD/.test(txt)) status = 'sem_rastreador'
-    else if (chd) status = 'entregue'
-    else continue
+    // NUNCA descarta linha: legenda rica → categoria; sem legenda + sem chegada =
+    // 'indefinido' (visível). Antes, o `else continue` sumia com em rota/desatualizado.
+    const status = classificarStatusManual(txt, !!chd)
     out.push({ rede_id, data, loja, placa, motorista, status, saida_cd, chd, sai, volta_base })
   }
   return out

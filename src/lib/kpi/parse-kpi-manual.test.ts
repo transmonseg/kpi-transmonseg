@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import ExcelJS from 'exceljs'
-import { parseKpiManual } from './parse-kpi-manual'
+import { parseKpiManual, classificarStatusManual } from './parse-kpi-manual'
 
 async function makeWb(): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
@@ -23,5 +23,23 @@ describe('parseKpiManual', () => {
     expect(catete.motorista).toBe('JOAO')
     expect(ents.find(e => e.loja.includes('Flamengo'))!.status).toBe('sem_rastreador')
     expect(ents.find(e => e.loja.includes('Leme'))!.status).toBe('nao_foi')
+  })
+})
+
+describe('classificarStatusManual', () => {
+  it('reconhece todas as legendas ricas, sem descartar', () => {
+    expect(classificarStatusManual('DESATUALIZADO', false)).toBe('desatualizado')
+    expect(classificarStatusManual('SEM RASTREADOR', false)).toBe('sem_rastreador')
+    expect(classificarStatusManual('MUDOU DE ROTA - CONFERIR', false)).toBe('mudou_de_rota')
+    expect(classificarStatusManual('EM ROTA', false)).toBe('em_rota')
+    expect(classificarStatusManual('AGUARDANDO BASE', false)).toBe('em_rota')
+    expect(classificarStatusManual('NÃO SAIU DA BASE', false)).toBe('nao_foi')
+    expect(classificarStatusManual('NÃO FOI AO CLIENTE', false)).toBe('nao_foi')
+    expect(classificarStatusManual('', true)).toBe('entregue')   // tem chegada
+    expect(classificarStatusManual('', false)).toBe('indefinido') // nunca descarta
+  })
+  it('desatualizado tem prioridade sobre rastreador; em rota não vira não foi', () => {
+    expect(classificarStatusManual('DESATUALIZADO SEM RASTREADOR', false)).toBe('desatualizado')
+    expect(classificarStatusManual('EM ROTA', false)).not.toBe('nao_foi')
   })
 })

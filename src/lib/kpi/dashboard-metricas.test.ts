@@ -27,7 +27,10 @@ describe('calcularMetricas', () => {
     expect(m.nao_foi).toBe(1)
     expect(m.sem_rastreador).toBe(1)
     expect(m.com_rastreador).toBe(3)
-    expect(m.pctEntregue).toBe(50)
+    // Taxa DEFINITIVA = entregue/(entregue+não foi) = 2/3 = 67 (sem rastreador FORA do
+    // denominador). Antes era entregue/total = 2/4 = 50, que desinflava com o sem-dado.
+    expect(m.pctEntregue).toBe(67)
+    expect(m.taxaEntregaDefinitiva).toBe(67)
     expect(m.tempoMedioLojaMin).toBe(35) // (30 + 40)/2
     expect(m.porRede.find(r => r.rede_id === 'PRINCESA')!.total).toBe(2)
     expect(m.serie.find(s => s.data === '2026-05-19')!.entregue).toBe(1)
