@@ -2,8 +2,9 @@ import { Document, Page, View, Text } from '@react-pdf/renderer'
 import type { Metricas, MetricasRede } from '@/lib/kpi/dashboard-metricas'
 import type { Narrativa } from '@/lib/kpi/relatorio-narrativa'
 import { REDE_LABEL } from '@/lib/kpi/redes'
-import { C, S, fmtMin, fmtNum } from './tema'
-import { ColumnPdf, BarPdf, LinePdf } from './charts-pdf'
+import { C, S, fmtMin, fmtNum, ORDEM_STATUS, STATUS_LABEL, STATUS_COR } from './tema'
+import { ColumnPdf, BarPdf, LinePdf, StackedBarPdf, StackedColumnPdf } from './charts-pdf'
+import { conferiveis, foraConferencia, visibilidadeGps, seloTexto } from './derivados'
 
 // Largura útil de uma página A4 com as margens de S.page (595pt - 2*44).
 const CONTENT_W = 595 - 44 * 2
@@ -88,12 +89,14 @@ function KpiCard({
   delta,
   unidadeDelta,
   sentido,
+  sub,
 }: {
   rotulo: string
   valor: string
   delta: number | null
   unidadeDelta: string
   sentido: Sentido
+  sub?: string
 }) {
   const cor = statusDelta(delta, sentido)
   return (
@@ -110,6 +113,7 @@ function KpiCard({
     >
       <Text style={[S.overline, { marginBottom: 4 }]}>{rotulo}</Text>
       <Text style={{ fontSize: 18, fontFamily: 'Helvetica-Bold', color: C.ink }}>{valor}</Text>
+      {sub ? <Text style={{ fontSize: 7.5, color: C.muted, marginTop: 2 }}>{sub}</Text> : null}
       <Text style={{ fontSize: 7.5, color: cor, marginTop: 3 }}>
         {delta == null
           ? 'sem comparação'
@@ -177,13 +181,18 @@ function Tabela({
   )
 }
 
-function TituloSecao({ over, titulo }: { over: string; titulo: string }) {
+// Cabeçalho de seção: título forte + régua navy. Sem eyebrow tracked repetido.
+function TituloSecao({ titulo }: { titulo: string }) {
   return (
-    <View style={{ marginBottom: 10 }}>
-      <Text style={S.overline}>{over}</Text>
-      <Text style={[S.h2, { marginTop: 2, marginBottom: 0 }]}>{titulo}</Text>
+    <View style={{ marginBottom: 12 }}>
+      <Text style={{ fontSize: 15, fontFamily: 'Helvetica-Bold', color: C.ink }}>{titulo}</Text>
+      <View style={{ height: 2, width: 36, backgroundColor: C.navy, marginTop: 5, borderRadius: 1 }} />
     </View>
   )
+}
+
+function H3({ children }: { children: string }) {
+  return <Text style={[S.h2, { fontSize: 11 }]}>{children}</Text>
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -194,7 +203,7 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
 
   // deltas vs período anterior
   const dEntrega = ant ? m.pctEntregue - ant.pctEntregue : null
-  const dGps = ant ? (100 - m.pctSemRastreador) - (100 - ant.pctSemRastreador) : null
+  const dGps = ant ? visibilidadeGps(m) - visibilidadeGps(ant) : null
   const dNaoFoi = ant ? m.nao_foi - ant.nao_foi : null
   const dTotal =
     ant && m.tempoMedioTotalMin != null && ant.tempoMedioTotalMin != null
@@ -211,6 +220,28 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
 
   const pExtenso = periodoExtenso(periodo, intervalo, mes)
 
+  // honestidade: conferíveis, fora da conferência, visibilidade, selo
+  const conf = conferiveis(m)
+  const fora = foraConferencia(m)
+  const vis = visibilidadeGps(m)
+  const selo = seloTexto(m)
+  const mix = ORDEM_STATUS.map(k => ({ key: k, label: STATUS_LABEL[k], value: m[k] as number, color: STATUS_COR[k] }))
+
+  // série diária empilhada por status (fecha com o total do dia via "outros")
+  const serieStack = m.serie.map(p => {
+    const outros = Math.max(p.total - p.entregue - p.nao_foi - p.sem_rastreador - p.em_rota, 0)
+    return {
+      label: p.data.slice(8, 10),
+      segments: [
+        { value: p.entregue, color: STATUS_COR.entregue },
+        { value: p.em_rota, color: STATUS_COR.em_rota },
+        { value: p.nao_foi, color: STATUS_COR.nao_foi },
+        { value: p.sem_rastreador, color: STATUS_COR.sem_rastreador },
+        { value: outros, color: STATUS_COR.indefinido },
+      ],
+    }
+  })
+
   // ── Tendências: interpretações simples (por regras) ──
   const serie = m.serie
   const diaPico = serie.reduce<{ data: string; total: number } | null>(
@@ -222,8 +253,6 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
     null,
   )
 
-  // dados dos gráficos
-  const colEntregas = serie.map(p => ({ label: p.data.slice(8, 10), value: p.total }))
   const colHorario = m.distHorarioSaida.map(h => ({ label: String(h.hora), value: h.entregas }))
   const linhaLabels = m.serieTempos.map(p => p.data.slice(8, 10))
   const linhaSeries = [
@@ -232,23 +261,20 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
     { name: 'Total', color: C.info, values: m.serieTempos.map(p => p.tempo_total) },
   ]
 
-  // ── Exceções: lojas-problema cruzando sem GPS + não foi ──
-  type LojaProb = { rede_id: string; loja: string; sem_rast: number; nao_foi: number }
+  // ── Exceções: lojas-problema cruzando sem GPS + não foi + em análise ──
+  type LojaProb = { rede_id: string; loja: string; sem_rast: number; nao_foi: number; em_analise: number }
   const probMap = new Map<string, LojaProb>()
-  for (const r of m.topSemRastreador) {
+  const acc = (r: { rede_id: string; loja: string }) => {
     const k = `${r.rede_id}|${r.loja}`
-    const cur = probMap.get(k) ?? { rede_id: r.rede_id, loja: r.loja, sem_rast: 0, nao_foi: 0 }
-    cur.sem_rast += r.ocorrencias
-    probMap.set(k, cur)
+    let cur = probMap.get(k)
+    if (!cur) { cur = { rede_id: r.rede_id, loja: r.loja, sem_rast: 0, nao_foi: 0, em_analise: 0 }; probMap.set(k, cur) }
+    return cur
   }
-  for (const r of m.topNaoFoi) {
-    const k = `${r.rede_id}|${r.loja}`
-    const cur = probMap.get(k) ?? { rede_id: r.rede_id, loja: r.loja, sem_rast: 0, nao_foi: 0 }
-    cur.nao_foi += r.ocorrencias
-    probMap.set(k, cur)
-  }
+  for (const r of m.topSemRastreador) acc(r).sem_rast += r.ocorrencias
+  for (const r of m.topNaoFoi) acc(r).nao_foi += r.ocorrencias
+  for (const r of m.topIndefinido) acc(r).em_analise += r.ocorrencias
   const lojasProblema = [...probMap.values()]
-    .sort((a, b) => (b.sem_rast + b.nao_foi) - (a.sem_rast + a.nao_foi))
+    .sort((a, b) => (b.sem_rast + b.nao_foi + b.em_analise) - (a.sem_rast + a.nao_foi + a.em_analise))
     .slice(0, 12)
 
   const rotasDemoradas = m.topRotasDemoradas
@@ -257,13 +283,6 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
   const tempoEmLoja = m.topTempoEmLoja
     .slice(0, 8)
     .map(l => ({ label: `${l.loja} · ${REDE_LABEL[l.rede_id] ?? l.rede_id}`, value: l.tempo_loja ?? 0 }))
-
-  const redeRow = (r: MetricasRede): string[] => [
-    REDE_LABEL[r.rede_id] ?? r.rede_id,
-    fmtNum(r.entregue),
-    `${r.pctEntregue}%`,
-    fmtMin(r.tempoMedioMin),
-  ]
 
   return (
     <Document>
@@ -298,10 +317,14 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
             <Text style={{ fontSize: 12, marginTop: 3 }}>{rotuloRedes(redes)}</Text>
           </View>
           <View style={{ marginBottom: 16 }}>
-            <Text style={S.overline}>Total de entregas no período</Text>
+            <Text style={S.overline}>Resultado do período</Text>
             <Text style={{ fontSize: 12, marginTop: 3 }}>
-              {m.total.toLocaleString('pt-BR')} programadas · {m.pctEntregue}% entregues
+              {m.entregue.toLocaleString('pt-BR')} de {conf.toLocaleString('pt-BR')} entregas conferíveis concluídas ({m.pctEntregue}%) · visibilidade GPS {vis}%
             </Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+            <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: selo.provisorio ? C.warn : C.ok, marginRight: 6 }} />
+            <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', color: selo.provisorio ? C.warn : C.ok }}>{selo.texto}</Text>
           </View>
         </View>
 
@@ -316,7 +339,7 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
 
       {/* ─────────────────── 2. SUMÁRIO EXECUTIVO ─────────────────── */}
       <Page size="A4" style={S.page}>
-        <TituloSecao over="Visão geral" titulo="Sumário executivo" />
+        <TituloSecao titulo="Sumário executivo" />
         <View style={{ marginTop: 4 }}>
           {narrativa.sumario.map((b, i) => (
             <View key={i} style={{ flexDirection: 'row', marginBottom: 9 }}>
@@ -337,77 +360,88 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
         <Rodape geradoEm={geradoEm} />
       </Page>
 
-      {/* ─────────────────── 3. SCORECARD ─────────────────── */}
+      {/* ─────────────────── 3. PAINEL DE CONFIANÇA ─────────────────── */}
       <Page size="A4" style={S.page}>
-        <TituloSecao over="Indicadores" titulo="Scorecard do período" />
+        <TituloSecao titulo="Painel de confiança" />
+        <View style={{ flexDirection: 'row', marginBottom: 16 }}>
+          {[
+            { rot: 'Entregas confirmadas', val: `${m.pctEntregue}%`, sub: `${fmtNum(m.entregue)} de ${fmtNum(conf)} conferíveis` },
+            { rot: 'Visibilidade GPS', val: `${vis}%`, sub: 'da operação rastreada' },
+            { rot: 'Fora da conferência', val: fmtNum(fora), sub: `${m.sem_rastreador} sem GPS · ${m.indefinido} em análise` },
+          ].map((c, i) => (
+            <View key={i} style={{ width: '31.5%', marginRight: i < 2 ? '2.75%' : 0, borderWidth: 1, borderColor: C.border, borderRadius: 8, padding: 10 }}>
+              <Text style={[S.overline, { marginBottom: 4 }]}>{c.rot}</Text>
+              <Text style={{ fontSize: 18, fontFamily: 'Helvetica-Bold', color: C.navy }}>{c.val}</Text>
+              <Text style={{ fontSize: 7.5, color: C.muted, marginTop: 3 }}>{c.sub}</Text>
+            </View>
+          ))}
+        </View>
+
+        <H3>Mix de status do período</H3>
+        <View style={{ marginBottom: 14 }}>
+          <StackedBarPdf data={mix} width={CONTENT_W} />
+        </View>
+
+        <Tabela
+          cols={[
+            { titulo: 'Categoria', width: '55%' },
+            { titulo: 'Linhas', width: '22%', align: 'right' },
+            { titulo: '% do total', width: '23%', align: 'right' },
+          ]}
+          rows={mix.map(s => [s.label, fmtNum(s.value), m.total ? `${Math.round((100 * s.value) / m.total)}%` : '0%'])}
+        />
+
+        <View style={{ marginTop: 12, borderWidth: 1, borderColor: C.border, borderRadius: 6, padding: 10, backgroundColor: C.navySoft }}>
+          <Text style={{ fontSize: 9, lineHeight: 1.45, color: C.inkSoft }}>
+            Como lemos a taxa: contamos como entrega só o que foi confirmado e dividimos pelas linhas conferíveis (entregue mais não foi). Linhas sem rastreador ou em análise ficam fora da taxa, não inflam nem derrubam o número. O detalhe do cálculo está no apêndice.
+          </Text>
+        </View>
+        <Rodape geradoEm={geradoEm} />
+      </Page>
+
+      {/* ─────────────────── 4. SCORECARD ─────────────────── */}
+      <Page size="A4" style={S.page}>
+        <TituloSecao titulo="Scorecard do período" />
         <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-          <KpiCard
-            rotulo="Taxa de entrega"
-            valor={`${m.pctEntregue}%`}
-            delta={dEntrega}
-            unidadeDelta=" p.p."
-            sentido="maior_melhor"
-          />
-          <KpiCard
-            rotulo="Não realizadas"
-            valor={fmtNum(m.nao_foi)}
-            delta={dNaoFoi}
-            unidadeDelta=""
-            sentido="menor_melhor"
-          />
-          <KpiCard
-            rotulo="Cobertura GPS"
-            valor={`${100 - m.pctSemRastreador}%`}
-            delta={dGps}
-            unidadeDelta=" p.p."
-            sentido="maior_melhor"
-          />
-          <KpiCard
-            rotulo="Tempo total (CD-loja)"
-            valor={fmtMin(m.tempoMedioTotalMin)}
-            delta={dTotal}
-            unidadeDelta=" min"
-            sentido="menor_melhor"
-          />
-          <KpiCard
-            rotulo="Tempo de rota"
-            valor={fmtMin(m.tempoMedioRotaMin)}
-            delta={dRota}
-            unidadeDelta=" min"
-            sentido="menor_melhor"
-          />
-          <KpiCard
-            rotulo="Tempo em loja"
-            valor={fmtMin(m.tempoMedioLojaMin)}
-            delta={dLoja}
-            unidadeDelta=" min"
-            sentido="menor_melhor"
-          />
+          <KpiCard rotulo="Taxa de entrega" valor={`${m.pctEntregue}%`} sub={`${fmtNum(m.entregue)} de ${fmtNum(conf)} conferíveis`} delta={dEntrega} unidadeDelta=" p.p." sentido="maior_melhor" />
+          <KpiCard rotulo="Não realizadas" valor={fmtNum(m.nao_foi)} delta={dNaoFoi} unidadeDelta="" sentido="menor_melhor" />
+          <KpiCard rotulo="Visibilidade GPS" valor={`${vis}%`} delta={dGps} unidadeDelta=" p.p." sentido="maior_melhor" />
+          <KpiCard rotulo="Em análise" valor={fmtNum(m.indefinido)} delta={null} unidadeDelta="" sentido="menor_melhor" />
+          <KpiCard rotulo="Tempo total (CD-loja)" valor={fmtMin(m.tempoMedioTotalMin)} delta={dTotal} unidadeDelta=" min" sentido="menor_melhor" />
+          <KpiCard rotulo="Tempo de rota" valor={fmtMin(m.tempoMedioRotaMin)} delta={dRota} unidadeDelta=" min" sentido="menor_melhor" />
+          <KpiCard rotulo="Tempo em loja" valor={fmtMin(m.tempoMedioLojaMin)} delta={dLoja} unidadeDelta=" min" sentido="menor_melhor" />
         </View>
 
         <View style={{ marginTop: 12 }}>
-          <Text style={[S.h2, { fontSize: 11 }]}>Desempenho por rede</Text>
+          <H3>Desempenho por rede</H3>
           <Tabela
             cols={[
-              { titulo: 'Rede', width: '40%' },
-              { titulo: 'Entregas', width: '20%', align: 'right' },
-              { titulo: '% entrega', width: '20%', align: 'right' },
-              { titulo: 'Tempo médio', width: '20%', align: 'right' },
+              { titulo: 'Rede', width: '34%' },
+              { titulo: 'Entregas', width: '16%', align: 'right' },
+              { titulo: '% entrega', width: '17%', align: 'right' },
+              { titulo: 'Sem conf.', width: '16%', align: 'right' },
+              { titulo: 'Tempo médio', width: '17%', align: 'right' },
             ]}
-            rows={m.porRede.slice(0, 18).map(redeRow)}
+            rows={m.porRede.slice(0, 18).map((r: MetricasRede) => [
+              REDE_LABEL[r.rede_id] ?? r.rede_id,
+              fmtNum(r.entregue),
+              `${r.pctEntregue}%`,
+              fmtNum(r.total - r.entregue - r.nao_foi),
+              fmtMin(r.tempoMedioMin),
+            ])}
           />
         </View>
         <Rodape geradoEm={geradoEm} />
       </Page>
 
-      {/* ─────────────────── 4. TENDÊNCIAS ─────────────────── */}
+      {/* ─────────────────── 5. TENDÊNCIAS ─────────────────── */}
       <Page size="A4" style={S.page}>
-        <TituloSecao over="Evolução" titulo="Tendências do período" />
+        <TituloSecao titulo="Tendências do período" />
 
         <View style={{ marginBottom: 16 }}>
-          <Text style={[S.h2, { fontSize: 11 }]}>Entregas por dia</Text>
-          {colEntregas.length > 0 ? (
-            <ColumnPdf data={colEntregas} width={CONTENT_W} height={120} color={C.navy} />
+          <H3>Entregas por dia (por status)</H3>
+          {serieStack.length > 0 ? (
+            <StackedColumnPdf data={serieStack} width={CONTENT_W} height={120} />
           ) : (
             <Text style={S.muted}>Sem dados no período.</Text>
           )}
@@ -419,7 +453,7 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
         </View>
 
         <View style={{ marginBottom: 16 }}>
-          <Text style={[S.h2, { fontSize: 11 }]}>Evolução dos tempos (min)</Text>
+          <H3>Evolução dos tempos (min)</H3>
           {linhaLabels.length > 0 ? (
             <LinePdf labels={linhaLabels} series={linhaSeries} width={CONTENT_W} height={140} />
           ) : (
@@ -428,7 +462,7 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
         </View>
 
         <View>
-          <Text style={[S.h2, { fontSize: 11 }]}>Horário de saída do CD</Text>
+          <H3>Horário de saída do CD</H3>
           <ColumnPdf data={colHorario} width={CONTENT_W} height={100} color={C.info} labelEvery={2} />
           {horaPico && horaPico.entregas > 0 && (
             <Text style={{ fontSize: 8.5, color: C.muted, marginTop: 6 }}>
@@ -439,25 +473,27 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
         <Rodape geradoEm={geradoEm} />
       </Page>
 
-      {/* ─────────────────── 5. EXCEÇÕES ─────────────────── */}
+      {/* ─────────────────── 6. EXCEÇÕES ─────────────────── */}
       <Page size="A4" style={S.page}>
-        <TituloSecao over="Onde agir" titulo="Exceções do período" />
+        <TituloSecao titulo="Exceções do período" />
 
         <View style={{ marginBottom: 16 }}>
-          <Text style={[S.h2, { fontSize: 11 }]}>Lojas com mais ocorrências</Text>
+          <H3>Lojas com mais ocorrências</H3>
           {lojasProblema.length > 0 ? (
             <Tabela
               cols={[
-                { titulo: 'Loja', width: '38%' },
-                { titulo: 'Rede', width: '30%' },
-                { titulo: 'Sem GPS', width: '16%', align: 'right' },
-                { titulo: 'Não foi', width: '16%', align: 'right' },
+                { titulo: 'Loja', width: '34%' },
+                { titulo: 'Rede', width: '26%' },
+                { titulo: 'Sem GPS', width: '13%', align: 'right' },
+                { titulo: 'Não foi', width: '13%', align: 'right' },
+                { titulo: 'Em análise', width: '14%', align: 'right' },
               ]}
               rows={lojasProblema.map(l => [
                 l.loja,
                 REDE_LABEL[l.rede_id] ?? l.rede_id,
                 String(l.sem_rast),
                 String(l.nao_foi),
+                String(l.em_analise),
               ])}
             />
           ) : (
@@ -466,7 +502,7 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
         </View>
 
         <View style={{ marginBottom: 16 }}>
-          <Text style={[S.h2, { fontSize: 11 }]}>Rotas mais demoradas (CD-loja)</Text>
+          <H3>Rotas mais demoradas (CD-loja)</H3>
           {rotasDemoradas.length > 0 ? (
             <BarPdf data={rotasDemoradas} width={CONTENT_W} color={C.bad} format={v => fmtMin(v)} />
           ) : (
@@ -475,7 +511,7 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
         </View>
 
         <View>
-          <Text style={[S.h2, { fontSize: 11 }]}>Maior tempo parado em loja</Text>
+          <H3>Maior tempo parado em loja</H3>
           {tempoEmLoja.length > 0 ? (
             <BarPdf data={tempoEmLoja} width={CONTENT_W} color={C.warn} format={v => fmtMin(v)} />
           ) : (
@@ -485,9 +521,9 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
         <Rodape geradoEm={geradoEm} />
       </Page>
 
-      {/* ─────────────────── 6. RECOMENDAÇÕES ─────────────────── */}
+      {/* ─────────────────── 7. RECOMENDAÇÕES ─────────────────── */}
       <Page size="A4" style={S.page}>
-        <TituloSecao over="Plano de ação" titulo="Recomendações" />
+        <TituloSecao titulo="Recomendações" />
         <View>
           {narrativa.recomendacoes.map((r, i) => (
             <View
@@ -495,16 +531,18 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
               style={{
                 borderWidth: 1,
                 borderColor: C.border,
-                borderLeftWidth: 3,
-                borderLeftColor: C.navy,
                 borderRadius: 6,
                 padding: 12,
                 marginBottom: 10,
+                backgroundColor: C.bgSubtle,
               }}
             >
-              <Text style={{ fontSize: 11, fontFamily: 'Helvetica-Bold', color: C.navy, marginBottom: 4 }}>
-                {i + 1}. {r.titulo}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: C.navy, alignItems: 'center', justifyContent: 'center', marginRight: 6 }}>
+                  <Text style={{ fontSize: 8, color: '#FFFFFF', fontFamily: 'Helvetica-Bold' }}>{i + 1}</Text>
+                </View>
+                <Text style={{ fontSize: 11, fontFamily: 'Helvetica-Bold', color: C.navy }}>{r.titulo}</Text>
+              </View>
               <Text style={{ fontSize: 9.5, lineHeight: 1.45, color: C.inkSoft }}>{r.corpo}</Text>
             </View>
           ))}
@@ -512,12 +550,12 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
         <Rodape geradoEm={geradoEm} />
       </Page>
 
-      {/* ─────────────────── 7. APÊNDICE ─────────────────── */}
+      {/* ─────────────────── 8. APÊNDICE ─────────────────── */}
       <Page size="A4" style={S.page}>
-        <TituloSecao over="Detalhamento" titulo="Apêndice" />
+        <TituloSecao titulo="Apêndice" />
 
         <View style={{ marginBottom: 18 }}>
-          <Text style={[S.h2, { fontSize: 11 }]}>Top motoristas</Text>
+          <H3>Top motoristas</H3>
           {m.topMotoristas.length > 0 ? (
             <Tabela
               cols={[
@@ -538,21 +576,59 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
           )}
         </View>
 
-        <View>
-          <Text style={[S.h2, { fontSize: 11 }]}>Definições das métricas</Text>
+        <View style={{ marginBottom: 18 }}>
+          <H3>Definições das métricas</H3>
           <View style={{ borderWidth: 1, borderColor: C.border, borderRadius: 6, padding: 12 }}>
             {[
-              ['Taxa de entrega', 'Entregas realizadas ÷ entregas programadas no período.'],
-              ['Cobertura GPS', 'Percentual de entregas com rastreador ativo (100% − sem rastreador).'],
+              ['Taxa de entrega', 'Entregas confirmadas ÷ conferíveis (entregue + não foi). Linhas sem confirmação ficam fora.'],
+              ['Conferíveis', 'Linhas com desfecho definido: entregue ou não foi ao cliente.'],
+              ['Visibilidade GPS', 'Percentual da operação com rastreador ativo no período.'],
+              ['Fora da conferência', 'Linhas sem desfecho confirmável: em rota, sem rastreador, em análise, desatualizado ou mudou de rota.'],
               ['Tempo de rota', 'Da saída do CD até a chegada na loja.'],
               ['Tempo em loja', 'Da chegada na loja até a saída da loja.'],
-              ['Tempo total', 'Da saída do CD até a saída da loja (rota + tempo em loja).'],
-              ['Não realizadas', 'Entregas programadas que não foram concluídas no período.'],
-            ].map(([t, d], i) => (
-              <View key={i} style={{ flexDirection: 'row', marginBottom: i === 5 ? 0 : 5 }}>
-                <Text style={{ width: 110, fontSize: 8.5, fontFamily: 'Helvetica-Bold', color: C.ink }}>
-                  {t}
-                </Text>
+              ['Não realizadas', 'Entregas programadas com confirmação de que não foram concluídas.'],
+            ].map(([t, d], i, arr) => (
+              <View key={i} style={{ flexDirection: 'row', marginBottom: i === arr.length - 1 ? 0 : 5 }}>
+                <Text style={{ width: 110, fontSize: 8.5, fontFamily: 'Helvetica-Bold', color: C.ink }}>{t}</Text>
+                <Text style={{ flex: 1, fontSize: 8.5, color: C.inkSoft }}>{d}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={{ marginBottom: 18 }}>
+          <H3>Como a taxa foi calculada</H3>
+          <View style={{ borderWidth: 1, borderColor: C.border, borderRadius: 6, padding: 12 }}>
+            {[
+              ['Entregas confirmadas (numerador)', fmtNum(m.entregue)],
+              ['Não realizadas', fmtNum(m.nao_foi)],
+              ['Conferíveis (denominador)', `${fmtNum(conf)}  =  ${fmtNum(m.entregue)} + ${fmtNum(m.nao_foi)}`],
+              ['Taxa de entrega', `${m.pctEntregue}%  =  ${fmtNum(m.entregue)} / ${fmtNum(conf)}`],
+              ['Total de linhas no período', fmtNum(m.total)],
+              ['Fora da conferência', `${fmtNum(fora)}  (${m.sem_rastreador} sem GPS · ${m.indefinido} em análise · ${m.em_rota} em rota · ${m.desatualizado} desatualizado · ${m.mudou_de_rota} mudou de rota)`],
+            ].map(([t, d], i, arr) => (
+              <View key={i} style={{ flexDirection: 'row', marginBottom: i === arr.length - 1 ? 0 : 5 }}>
+                <Text style={{ width: 180, fontSize: 8.5, color: C.inkSoft }}>{t}</Text>
+                <Text style={{ flex: 1, fontSize: 8.5, fontFamily: 'Helvetica-Bold', color: C.ink }}>{d}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View>
+          <H3>Glossário das categorias</H3>
+          <View style={{ borderWidth: 1, borderColor: C.border, borderRadius: 6, padding: 12 }}>
+            {[
+              ['Entregue', 'Entrega confirmada na loja esperada.'],
+              ['Em rota', 'Veículo ainda em operação no fechamento (período provisório).'],
+              ['Não foi', 'Confirmado que o veículo não chegou ao cliente.'],
+              ['Mudou de rota', 'Entregou, mas em destino diferente do programado.'],
+              ['Desatualizado', 'Rastreador existe mas parou de comunicar.'],
+              ['Sem rastreador', 'Placa sem GPS ou sem cadastro no Unitrac.'],
+              ['Em análise', 'Sem legenda nem horário no relatório de origem: aguarda classificação.'],
+            ].map(([t, d], i, arr) => (
+              <View key={i} style={{ flexDirection: 'row', marginBottom: i === arr.length - 1 ? 0 : 5 }}>
+                <Text style={{ width: 90, fontSize: 8.5, fontFamily: 'Helvetica-Bold', color: C.ink }}>{t}</Text>
                 <Text style={{ flex: 1, fontSize: 8.5, color: C.inkSoft }}>{d}</Text>
               </View>
             ))}
