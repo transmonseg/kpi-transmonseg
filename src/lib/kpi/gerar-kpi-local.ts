@@ -517,6 +517,9 @@ export async function gerarKpiLocalComPreview(opts: GerarKpiLocalOpts): Promise<
         entregouLojaForaEscala,
         relatorioParcial: !!saidaParcial,
         saidaBaseParcial: saidaParcial ? fmtHoraBRT(saidaParcial) : null,
+        sugestaoTrocaAlta: rota.sugestao_confianca === 'alta' && rota.placa_sugerida
+          ? { placa: rota.placa_sugerida, hora: rota.sugestao_hora ?? null }
+          : null,
       })
 
       const saidaLoja = p0 && p0.chegada && p0.duracao_min != null
