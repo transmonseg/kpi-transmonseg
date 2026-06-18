@@ -178,6 +178,10 @@ function preencherAba(
 export function legendaSlot(c: LinhaParaKpi | null): string | null {
   if (!c) return null
   if (c.chd_loja_1 !== null) return null
+  // Sugestão de troca ALTA: outro carro da rede (com rota própria) esteve nesta loja.
+  // Mostra "mudou de rota, conferir" mesmo se a placa escalada não estiver rastreada
+  // (foi a substituta que rodou). Precede os ramos de "não foi"/"sem rastreador".
+  if (c.sugestao_troca_alta) return 'MUDOU DE ROTA - CONFERIR'
   // Tem rastreador na frota da API mas sem transmitir hoje → DESATUALIZADO (precisa
   // manutenção). Precede tudo: não é "sem rastreador" (informação falsa pro cliente).
   if (c.placa_desatualizada) return 'DESATUALIZADO'

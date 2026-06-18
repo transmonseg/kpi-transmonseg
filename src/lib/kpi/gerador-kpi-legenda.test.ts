@@ -27,6 +27,12 @@ describe('legendaSlot — legenda do KPI gerado', () => {
   it('placa rastreada, saiu da base mas sem entrega confirmada → NÃO FOI AO CLIENTE', () => {
     expect(legendaSlot(linha({ placa_rastreada: true, placa_foi_algum_lugar: false, placa_saiu_da_base: true }))).toBe('NÃO FOI AO CLIENTE')
   })
+  it('sugestão de troca ALTA → MUDOU DE ROTA - CONFERIR (mesmo sem rastreador da placa escalada)', () => {
+    expect(legendaSlot(linha({ sugestao_troca_alta: true, placa_rastreada: false }))).toBe('MUDOU DE ROTA - CONFERIR')
+  })
+  it('sem sugestão ALTA, placa não rastreada → continua SEM RASTREADOR', () => {
+    expect(legendaSlot(linha({ sugestao_troca_alta: false, placa_rastreada: false }))).toBe('SEM RASTREADOR')
+  })
   it('slot vazio (carro nulo) → null', () => {
     expect(legendaSlot(null)).toBeNull()
   })

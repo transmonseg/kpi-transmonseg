@@ -97,6 +97,9 @@ export type KpiLinha = {
    *  transmitir hoje → legenda "DESATUALIZADO" (precisa manutenção) no XLSX, em vez
    *  do enganoso "SEM RASTREADOR". */
   placa_desatualizada?: boolean
+  /** Sugestão de troca de ALTA confiança (T18 segurou; carro da rede com rota própria
+   *  esteve nesta loja). Faz a célula do XLSX mostrar "MUDOU DE ROTA - CONFERIR". */
+  sugestao_troca_alta?: boolean
 }
 
 export type AnomaliaDetectada = {
