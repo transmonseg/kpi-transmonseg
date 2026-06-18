@@ -163,6 +163,42 @@ describe('gerarKpiLocal (núcleo offline)', () => {
     expect(linha.motorista).toBe('FULANO')
   })
 
+  it('rotaToLinha emite observação de sugestão ALTA + liga a flag do XLSX', () => {
+    const escala = {
+      rede_id: 'GUANABARA', loja_nome_raw: 'Loja 1', loja_codigo_raw: '1',
+      motorista_nome: 'FULANO', motorista_codigo: 10, placa_norm: 'ABC1234',
+      carro_ordem: 1, data_entrega: '2026-05-20',
+    } as unknown as LinhaEscala
+    const rota = {
+      escala_linha_id: 'esc-0', placa_norm: 'ABC1234', placa_real: null,
+      saida_cd: null, chegada_base: null, paradas: [], anomalias_codigos: [], status: 'sem_entrega',
+      placa_sugerida: 'LTQ0783', sugestao_confianca: 'alta', sugestao_hora: '06:17',
+    } as unknown as RotaKpi
+
+    const linha = rotaToLinha(rota, escala, 1)
+    expect(linha.observacao).toBe('Possível troca: a placa LTQ0783 esteve nesta loja às 06:17, confirmar.')
+    expect(linha.sugestao_troca_alta).toBe(true)
+    expect(linha.placa).toBe('ABC1234') // placa exibida continua a da escala
+  })
+
+  it('rotaToLinha: sugestão BAIXA vai na observação mas NÃO liga a flag do XLSX', () => {
+    const escala = {
+      rede_id: 'GUANABARA', loja_nome_raw: 'Loja 1', loja_codigo_raw: '1',
+      motorista_nome: 'FULANO', motorista_codigo: 10, placa_norm: 'ABC1234',
+      carro_ordem: 1, data_entrega: '2026-05-20',
+    } as unknown as LinhaEscala
+    const rota = {
+      escala_linha_id: 'esc-0', placa_norm: 'ABC1234', placa_real: null,
+      saida_cd: null, chegada_base: null, paradas: [], anomalias_codigos: [], status: 'sem_entrega',
+      placa_sugerida: 'XYZ9K88', sugestao_confianca: 'baixa', sugestao_hora: '06:10',
+    } as unknown as RotaKpi
+
+    const linha = rotaToLinha(rota, escala, 1)
+    expect(linha.observacao).toContain('Verificar')
+    expect(linha.observacao).toContain('XYZ9K88')
+    expect(linha.sugestao_troca_alta).toBe(false)
+  })
+
   it('lança erro claro quando a escala não tem linhas', async () => {
     await expect(
       gerarKpiLocal({
