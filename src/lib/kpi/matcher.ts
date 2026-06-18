@@ -487,6 +487,58 @@ function estendeSaidaPorForaBase(
 }
 
 /**
+ * Espelho de estendeSaidaPorForaBase para a CHEGADA. Quando a visita começa fora
+ * do raio registrado (cadeia FORA_BASE) e só depois o GPS entra na geofence LOJA,
+ * a chegada real é a da PRIMEIRA parada FORA_BASE adjacente, não a do matched.
+ * Caminha para trás na timeline com os mesmos critérios de gap/duração/distância.
+ *
+ * Caso real (Caxias Sul Fluminense, UBF5G32, 18/06): FORA_BASE 10:25→12:29
+ * seguido de LOJA 12:31→13:07. Sem isto o KPI reporta só 0h36; real ≈2h42.
+ */
+function estendeChegadaPorForaBase(
+  matched: UnitracParadaRow,
+  todasParadas: UnitracParadaRow[],
+): Date | null {
+  const matchedChegadaTs = new Date(matched.chegada).getTime()
+  const cls = matched.classificacao
+  if (cls !== 'LOJA' && cls !== 'FORA_BASE' && cls !== 'FAKE_EXIT') return null
+  if (matched.lat == null || matched.lng == null) return null
+
+  const ordenadas = [...todasParadas].sort(
+    (a, b) => new Date(a.chegada).getTime() - new Date(b.chegada).getTime(),
+  )
+  const idx = ordenadas.findIndex((p) => p.id === matched.id)
+  if (idx < 0) return null
+
+  let chegadaEstendida: Date | null = null
+  let prevChegadaTs = matchedChegadaTs
+  for (let i = idx - 1; i >= 0; i--) {
+    const p = ordenadas[i]
+    if (!p.saida) break
+    const pSaidaTs = new Date(p.saida).getTime()
+    // p precisa terminar até o início do segmento atual (gap não-negativo).
+    if (pSaidaTs > prevChegadaTs) break
+    if (p.classificacao !== 'FORA_BASE') break
+    if (p.lat == null || p.lng == null) break
+
+    const gapSeg = (prevChegadaTs - pSaidaTs) / 1000
+    const pDurSeg = p.duracao_seg ?? 0
+    const aceitaPorGapCurto = gapSeg <= 10 * 60 && pDurSeg >= 15 * 60
+    const aceitaPorGapMedio = gapSeg <= 20 * 60 && pDurSeg >= 30 * 60
+    if (!aceitaPorGapCurto && !aceitaPorGapMedio) break
+
+    // Dist sempre do matched original (não acumula deriva entre FORA_BASE).
+    const dist = haversine(matched.lat, matched.lng, p.lat, p.lng)
+    if (dist > 300) break
+
+    chegadaEstendida = new Date(p.chegada)
+    prevChegadaTs = new Date(p.chegada).getTime()
+    // Continua iterando para trás — multi-step. Acumula a chegada mais antiga.
+  }
+  return chegadaEstendida
+}
+
+/**
  * T16: Saída CD per-parada (multi-trip). Para uma parada operacional alvo,
  * retorna a ÚLTIMA saída de BASE BENASSI estritamente ANTES da chegada do alvo.
  * Sem isso, placas com 2+ turnos no dia ficavam todas com a mesma saida_cd
@@ -2199,6 +2251,12 @@ export async function cruzaEscalaUnitrac(
     // separada e NÃO consolida.
     let chegadaFinal = matched ? new Date(matched.chegada) : null
     let saidaFinal: Date | null = saidaEstendida ?? (matched?.saida ? new Date(matched.saida) : null)
+    // Bug permanência 18/06 (Caxias): visita que COMEÇA fora do raio (cadeia
+    // FORA_BASE antes da geofence LOJA). Espelho de estendeSaidaPorForaBase.
+    const chegadaEstendida = matched ? estendeChegadaPorForaBase(matched, todasParadas) : null
+    if (chegadaEstendida && chegadaFinal && chegadaEstendida.getTime() < chegadaFinal.getTime()) {
+      chegadaFinal = chegadaEstendida
+    }
     if (matched && !isGeo && matched.codigo_loja) {
       const lojasOrdenadas = todasParadas
         .filter(p => p.classificacao === 'LOJA' && p.codigo_loja && p.saida)
@@ -2216,7 +2274,8 @@ export async function cruzaEscalaUnitrac(
           fim = j
         }
         if (inicio < idxMatched || fim > idxMatched) {
-          chegadaFinal = new Date(lojasOrdenadas[inicio].chegada)
+          const chegadaBloco = new Date(lojasOrdenadas[inicio].chegada)
+          if (!chegadaFinal || chegadaBloco.getTime() < chegadaFinal.getTime()) chegadaFinal = chegadaBloco
           const saidaBloco = new Date(lojasOrdenadas[fim].saida!)
           if (!saidaFinal || saidaBloco.getTime() > saidaFinal.getTime()) saidaFinal = saidaBloco
         }

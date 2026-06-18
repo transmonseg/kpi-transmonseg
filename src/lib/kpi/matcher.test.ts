@@ -2124,6 +2124,34 @@ describe('Bug 4 — multi-row mesma rede: distribuição correta entre N linhas 
     expect(`${String(saida.getUTCHours()).padStart(2, '0')}:${String(saida.getUTCMinutes()).padStart(2, '0')}`).toBe('12:18')
     expect(r!.paradas[0].duracao_min).toBe(409)
   })
+
+  it('Permanência 18/06: CAXIAS SUL FLUMINENSE UBF5G32 (FORA_BASE longo ANTES da LOJA → estende chegada)', async () => {
+    // Mapa: chegada 10:25, permanência ~2:45h. KPI reportava só 0h36 (segmento LOJA).
+    // Visita COMEÇA fora do raio (FORA_BASE 10:25→12:29) e só depois entra na
+    // geofence (LOJA 12:31→13:07). Espelho de estendeSaidaPorForaBase pra chegada.
+    const lojaLat = -22.7100, lojaLng = -43.3050
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'lCax', rede_id: 'ASSAI', placa_norm: 'UBF5G32', loja_nome_raw: 'Assaí - Caxias Sul Fluminense', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-06-18' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p0', placa_norm: 'UBF5G32', chegada: '2026-06-18T07:00:00Z', saida: '2026-06-18T09:30:00Z', duracao_seg: 9000, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: -22.83, lng: -43.32, classificacao: 'BASE', ordem: 1 },
+      { id: 'p1', placa_norm: 'UBF5G32', chegada: '2026-06-18T10:25:00Z', saida: '2026-06-18T12:29:00Z', duracao_seg: 7440, local_parada: 'FORA DE BASE E LOCAL DE SERVIÇO', codigo_loja: null, nome_loja: null, lat: -22.71030, lng: -43.30540, classificacao: 'FORA_BASE', ordem: 2 },
+      { id: 'p2', placa_norm: 'UBF5G32', chegada: '2026-06-18T12:31:00Z', saida: '2026-06-18T13:07:00Z', duracao_seg: 2160, local_parada: '560219 - ASSAI CAXIAS', codigo_loja: '560219', nome_loja: 'ASSAI CAXIAS', lat: -22.71001, lng: -43.30499, classificacao: 'LOJA', ordem: 3 },
+      { id: 'p3', placa_norm: 'UBF5G32', chegada: '2026-06-18T14:10:00Z', saida: '2026-06-18T14:45:00Z', duracao_seg: 2100, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: -22.83, lng: -43.32, classificacao: 'BASE', ordem: 4 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'cad-cax', rede_id: 'ASSAI', nome: 'Assaí - Caxias Sul Fluminense', nome_normalizado: 'caxias sul fluminense', codigo_escala: null, codigo_unitrac: '560219', nome_unitrac: 'ASSAI CAXIAS', lat: lojaLat, lng: lojaLng, raio_metros: 200 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    const r = rotas.find((x) => x.escala_linha_id === 'lCax')
+    expect(r?.paradas ?? []).toHaveLength(1)
+    expect(r!.paradas[0].parada_id).toBe('p2')
+    const chegada = r!.paradas[0].chegada
+    const saida = r!.paradas[0].saida
+    expect(`${String(chegada.getUTCHours()).padStart(2, '0')}:${String(chegada.getUTCMinutes()).padStart(2, '0')}`).toBe('10:25')
+    expect(`${String(saida.getUTCHours()).padStart(2, '0')}:${String(saida.getUTCMinutes()).padStart(2, '0')}`).toBe('13:07')
+    expect(r!.paradas[0].duracao_min).toBe(162)
+  })
 })
 
 describe('SEM_GEO — distribuição multi-loja ZONA_SUL por código suffix', () => {
