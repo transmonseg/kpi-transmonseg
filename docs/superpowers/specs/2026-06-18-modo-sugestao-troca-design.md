@@ -46,8 +46,11 @@ se avisa que outra placa esteve na loja é contraditório.
    - **Baixa:** o status CONTINUA `NAO_FOI_AO_CLIENTE` (vermelho). Só ganha o aviso de
      hipótese na observação. Conservador: um carro passar perto não rebaixa uma falha real
      para amarelo.
-3. **Superfícies:** planilha (coluna observação do PDF, que é o KPI definitivo) e painel
-   (dashboard do dia).
+3. **Superfícies:** planilha (coluna observação do PDF, que é o KPI definitivo) e painel.
+   O painel real por linha é a tela de preview do KPI (`painel/kpi/simples`), que já mostra
+   um selo de status por linha; o dashboard agregado do dia não tem lista por entrada (só
+   métricas), então ele reflete a sugestão pela mudança de status (ALTA conta como "mudou
+   de rota" amarelo em vez de "não foi" vermelho), não por um marcador novo.
 
 ## Não objetivos
 
@@ -187,19 +190,24 @@ observacao: rota.placa_real
 
 Nenhuma mudança no gerador de PDF nem no gerador de XLSX (só em `legendaSlot`, item 7).
 
-### 9. Surface painel — `dashboard-api-fonte.ts` + `parse-kpi-manual.ts` + `dashboard-client.tsx`
+### 9. Surface painel — `route.ts` (preview) + `dashboard-api-fonte.ts` (agregado)
 
-- `EntradaManual` ganha `obs_sugestao?: string | null` (opcional; o parser do KPI manual
-  deixa `undefined`).
-- `gerarDiaApi` passa `sugestaoTrocaAlta` para `derivarStatus` quando
-  `rota.sugestao_confianca === 'alta'` (com `placa` e `hora`), para a linha já vir amarela.
-- `rotaParaEntrada` amplia o `Pick<RotaKpi, ...>` para incluir os 3 campos de sugestão e
-  preenche `obs_sugestao` via `textoSugestaoTroca` quando `placa_sugerida` existe (alta ou
-  baixa).
-- `dashboard-client.tsx` mostra um marcador amarelo discreto (badge com tooltip) na linha
-  quando `obs_sugestao` está preenchido, com o texto da sugestão. Nunca verde. Antes de
-  dar por pronto: invocar a skill de taste de UI e VER a tela rodando
-  (`scripts/dev/print-painel.mjs`).
+Existem DOIS call sites de `derivarStatus`. Ambos recebem `sugestaoTrocaAlta` quando
+`rota.sugestao_confianca === 'alta'` (com `placa` e `hora` de `rota.placa_sugerida` /
+`rota.sugestao_hora`):
+
+- **Preview por linha** (`src/app/api/kpi/simples/route.ts:918`, monta `PreviewLinha`): a
+  linha ALTA vira `MUDOU_DE_ROTA`, o selo (`StatusBadge` → `tierEfetivo`) fica amarelo, e o
+  `motivoRevisao` carrega "Provável troca: a placa X esteve nesta loja às HH:MM. Confirmar."
+  Nenhuma mudança na página `painel/kpi/simples/page.tsx` (já renderiza selo + motivo). Para
+  conferência visual: VER a tela rodando antes de dar por pronto.
+- **Dashboard agregado** (`src/lib/kpi/dashboard-api-fonte.ts:151`, `gerarDiaApi`): a linha
+  ALTA entra como `mudou_de_rota` (amarelo) nas métricas, em vez de `nao_foi` (vermelho).
+
+BAIXA não passa `sugestaoTrocaAlta`: continua vermelha no painel; seu aviso de hipótese
+aparece só na planilha (observação do PDF). Conservador por desenho. Nenhum marcador novo
+no dashboard agregado (ele não lista entradas individuais), nenhuma mudança em
+`parse-kpi-manual.ts` ou `dashboard-client.tsx`.
 
 ## Fluxo de dados
 
@@ -214,10 +222,9 @@ escala + paradas
       → rotaToLinha
           observacao (PDF, offline + produção) → gerarKpiPdf
           sugestao_troca_alta → legendaSlot (XLSX) → "MUDOU DE ROTA - CONFERIR" (só alta)
-      → gerarDiaApi
-          alta → derivarStatus(sugestaoTrocaAlta) → MUDOU_DE_ROTA (amarelo)
-          baixa → status vermelho mantido
-        → rotaParaEntrada → obs_sugestao (painel) → dashboard-client (badge amarelo)
+      → derivarStatus (2 call sites: preview route.ts + agregado gerarDiaApi)
+          alta → sugestaoTrocaAlta → MUDOU_DE_ROTA (amarelo) + motivo no preview
+          baixa → status vermelho mantido (aviso só na planilha)
 ```
 
 ## Casos de teste (fixtures do dia 17)
@@ -261,7 +268,6 @@ Invariantes que todo teste verifica:
 - `src/lib/kpi/status-rota.ts` (`sugestaoTrocaAlta` + reclassificação ALTA → MUDOU_DE_ROTA)
 - `src/lib/kpi/gerador-kpi.ts` (`legendaSlot` ramo ALTA + `sugestao_troca_alta` em `LinhaParaKpi`)
 - `src/lib/kpi/gerar-kpi-local.ts` (`rotaToLinha`: observação + flag `sugestao_troca_alta`)
-- `src/lib/kpi/parse-kpi-manual.ts` (`obs_sugestao` opcional em `EntradaManual`)
-- `src/lib/kpi/dashboard-api-fonte.ts` (`gerarDiaApi` passa `sugestaoTrocaAlta`; `rotaParaEntrada` preenche `obs_sugestao`)
-- `src/app/painel/dashboard/dashboard-client.tsx` (badge amarelo de aviso)
+- `src/app/api/kpi/simples/route.ts` (preview: `derivarStatus` recebe `sugestaoTrocaAlta`)
+- `src/lib/kpi/dashboard-api-fonte.ts` (`gerarDiaApi`: `derivarStatus` recebe `sugestaoTrocaAlta`)
 - testes: `sugestao-troca.test.ts`, fixture do dia 17 no matcher, casos novos em `status-rota` e `gerador-kpi-legenda`
