@@ -1205,6 +1205,40 @@ export function lojaNomeDivergeDaEscala(nomeEscala: string, loja: LojaRow): bool
   return s > 4
 }
 
+// Versão compacta do guard T18 para uso fora do bloco semGpsLines
+// (passe de sugestão complementar, Task 3). Sem paradaRedesT18 precomputado:
+// resolve a rede da parada inline via resolveLojaId.
+function t18CompatCompact(
+  linha: EscalaLinhaRow,
+  p: UnitracParadaRow,
+  lojaEscala: LojaRow | undefined,
+  lojaEscalaAmbigua: boolean,
+  redesFung: Set<string>,
+  lojas: LojaRow[],
+): boolean {
+  // T18-D: distância máxima 5km da loja escalada
+  if (lojaEscala?.lat != null && lojaEscala?.lng != null && p.lat != null && p.lng != null) {
+    if (haversine(lojaEscala.lat, lojaEscala.lng, p.lat, p.lng) > 5000) return false
+  }
+  // T18-R: guard de rede (resolve inline)
+  const lojaIdParada = resolveLojaId(p, lojas, linha.rede_id)
+  if (lojaIdParada) {
+    const lojaPar = lojas.find(l => l.id === lojaIdParada)
+    if (lojaPar) {
+      if (!redesFung.has(lojaPar.rede_id)) return false
+      const codigoBate = !!(linha.loja_codigo_raw && (
+        (lojaPar.codigo_escala && codCasa(linha.loja_codigo_raw, lojaPar.codigo_escala)) ||
+        (lojaPar.codigo_unitrac && codCasa(linha.loja_codigo_raw, lojaPar.codigo_unitrac))
+      ))
+      const nomeBate = matchScore(linha.loja_nome_raw, lojaPar.nome) <= 1
+      if (!codigoBate && !nomeBate) return false
+      if (lojaEscalaAmbigua) return false
+      if (lojaEscala && lojaPar.id !== lojaEscala.id) return false
+    }
+  }
+  return scorePair(linha, p) <= 2
+}
+
 export async function cruzaEscalaUnitrac(
   escalaLinhas: EscalaLinhaRow[],
   paradaRows: UnitracParadaRow[],
@@ -1352,6 +1386,7 @@ export async function cruzaEscalaUnitrac(
   const crossDockLineIds = new Set<string>()
   const plateTrocaLineIds = new Set<string>()
   const placaSubstituta = new Map<string, string>() // lineId → placa da parada encontrada (T18)
+  const placaSugerida = new Map<string, { placa: string; confianca: 'alta' | 'baixa'; chegada: string }>() // lineId → sugestão (T18 segurou)
   const matchByEscalaId = new Map<string, UnitracParadaRow>()
   for (const [placa, linhas] of escalaByPlaca) {
     const todas = paradaByPlaca.get(placa) ?? []
@@ -2139,17 +2174,105 @@ export async function cruzaEscalaUnitrac(
         const candidatas = todasLojaParadas.filter(p =>
           !usedIds.has(p.id) && t18Compativel(linha, p, lojaEscala, lojaEscalaAmbigua, redesFungT18),
         )
-        if (!candidatas.length) continue
-        candidatas.sort((a, b) => {
+        const ordenaPorScoreEChegada = (a: UnitracParadaRow, b: UnitracParadaRow) => {
+          const sa = scorePair(linha, a), sb = scorePair(linha, b)
+          if (sa !== sb) return sa - sb
+          return new Date(a.chegada).getTime() - new Date(b.chegada).getTime()
+        }
+        if (candidatas.length) {
+          candidatas.sort(ordenaPorScoreEChegada)
+          const best = candidatas[0]
+          matchByEscalaId.set(linha.id, best)
+          usedIds.add(best.id)
+          plateTrocaLineIds.add(linha.id)
+          placaSubstituta.set(linha.id, best.placa_norm)
+          continue
+        }
+        // Sem candidata livre: NÃO aplica troca, mas tenta SUGERIR a placa provável.
+        // ALTA: parada que passaria no guard do T18, mas está bloqueada por usedIds
+        // (o carro tem rota própria / já foi usado). Sinal forte de quem rodou esta loja.
+        const alta = todasLojaParadas.filter(p =>
+          usedIds.has(p.id) && p.placa_norm !== linha.placa_norm &&
+          t18Compativel(linha, p, lojaEscala, lojaEscalaAmbigua, redesFungT18),
+        )
+        if (alta.length) {
+          alta.sort(ordenaPorScoreEChegada)
+          const best = alta[0]
+          placaSugerida.set(linha.id, { placa: best.placa_norm, confianca: 'alta', chegada: best.chegada })
+          continue
+        }
+        // BAIXA: nenhum carro da rede; hipótese só geográfica (placa mais próxima ≤5km da loja).
+        if (lojaEscala?.lat != null && lojaEscala?.lng != null) {
+          const lat = lojaEscala.lat, lng = lojaEscala.lng
+          const perto = todasLojaParadas
+            .filter(p => p.placa_norm !== linha.placa_norm && p.lat != null && p.lng != null &&
+              haversine(lat, lng, p.lat, p.lng) <= 5000)
+            .map(p => ({ p, d: haversine(lat, lng, p.lat as number, p.lng as number) }))
+            .sort((a, b) => a.d - b.d)
+          if (perto.length) {
+            const best = perto[0].p
+            placaSugerida.set(linha.id, { placa: best.placa_norm, confianca: 'baixa', chegada: best.chegada })
+          }
+        }
+      }
+    }
+  }
+
+  // Passe de sugestão complementar: linhas que NÃO entram no semGpsLines (veículo
+  // com FORA_BASE mas sem LOJA) também recebem sugestão ALTA quando há parada já usada
+  // que passaria no guard T18. Não altera matchByEscalaId/usedIds/placaSubstituta.
+  {
+    const todasLojaParadasSug = paradaRows.filter(p => p.classificacao === 'LOJA')
+    const allUsedIds = new Set([...matchByEscalaId.values()].map(p => p.id))
+    for (const linha of escalaLinhas) {
+      if (!linha.placa_norm) continue
+      if (matchByEscalaId.has(linha.id) || plateTrocaLineIds.has(linha.id)) continue
+      if (placaSugerida.has(linha.id)) continue // já sugerido pelo passe interno T18
+      // Localiza loja escalada no cadastro (mesmo algoritmo do T18)
+      let lojaEscalaSug: typeof lojas[0] | undefined
+      let lojaEscalaAmbiguaSug = false
+      if (linha.loja_codigo_raw) {
+        lojaEscalaSug = lojas.find(l => l.rede_id === linha.rede_id && l.codigo_escala === linha.loja_codigo_raw)
+      }
+      if (!lojaEscalaSug) {
+        const cands = lojas
+          .filter(l => l.rede_id === linha.rede_id)
+          .map(l => ({ l, s: matchScore(linha.loja_nome_raw, l.nome) }))
+          .filter(x => x.s <= 2)
+          .sort((a, b) => a.s - b.s)
+        if (cands.length > 0) {
+          lojaEscalaSug = cands[0].l
+          if (cands.length > 1 && cands[0].s === cands[1].s) lojaEscalaAmbiguaSug = true
+        }
+      }
+      const redesFungSug = redesFungiveis(linha.rede_id)
+      // ALTA: parada usada que passaria no guard (distância + rede + score)
+      const altaSug = todasLojaParadasSug.filter(p =>
+        allUsedIds.has(p.id) && p.placa_norm !== linha.placa_norm &&
+        t18CompatCompact(linha, p, lojaEscalaSug, lojaEscalaAmbiguaSug, redesFungSug, lojas),
+      )
+      if (altaSug.length) {
+        altaSug.sort((a, b) => {
           const sa = scorePair(linha, a), sb = scorePair(linha, b)
           if (sa !== sb) return sa - sb
           return new Date(a.chegada).getTime() - new Date(b.chegada).getTime()
         })
-        const best = candidatas[0]
-        matchByEscalaId.set(linha.id, best)
-        usedIds.add(best.id)
-        plateTrocaLineIds.add(linha.id)
-        placaSubstituta.set(linha.id, best.placa_norm)
+        const best = altaSug[0]
+        placaSugerida.set(linha.id, { placa: best.placa_norm, confianca: 'alta', chegada: best.chegada })
+        continue
+      }
+      // BAIXA: parada mais próxima ≤5km de qualquer placa
+      if (lojaEscalaSug?.lat != null && lojaEscalaSug?.lng != null) {
+        const lat = lojaEscalaSug.lat, lng = lojaEscalaSug.lng
+        const perto = todasLojaParadasSug
+          .filter(p => p.placa_norm !== linha.placa_norm && p.lat != null && p.lng != null &&
+            haversine(lat, lng, p.lat, p.lng) <= 5000)
+          .map(p => ({ p, d: haversine(lat, lng, p.lat as number, p.lng as number) }))
+          .sort((a, b) => a.d - b.d)
+        if (perto.length) {
+          const best = perto[0].p
+          placaSugerida.set(linha.id, { placa: best.placa_norm, confianca: 'baixa', chegada: best.chegada })
+        }
       }
     }
   }
@@ -2603,6 +2726,18 @@ export async function cruzaEscalaUnitrac(
     const chd = rota.paradas[0]?.chegada
     if (rota.saida_cd && chd && new Date(rota.saida_cd).getTime() > new Date(chd).getTime()) {
       rota.saida_cd = null
+    }
+  }
+
+  // Sugestão de troca (T18 segurou): grava placa provável + confiança + hora.
+  // Só quando a rota NÃO virou troca real (placa_real null) — troca aplicada não sugere.
+  for (const rota of rotas) {
+    const sug = placaSugerida.get(rota.escala_linha_id)
+    if (sug && !rota.placa_real) {
+      const d = new Date(sug.chegada)
+      rota.placa_sugerida = sug.placa
+      rota.sugestao_confianca = sug.confianca
+      rota.sugestao_hora = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`
     }
   }
 
