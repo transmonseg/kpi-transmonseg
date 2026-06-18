@@ -2376,7 +2376,7 @@ describe('troca de carro — recuperação cross-placa (código + coordenada)', 
       const linhaA: EscalaLinhaRow = { ...linhaX, id: 'la', placa_norm: 'LTQ0783', carro_ordem: 1 }
       const linhaB: EscalaLinhaRow = { ...linhaX, id: 'lb', placa_norm: 'BBH1C94', carro_ordem: 2 }
       const rotas = await cruzaEscalaUnitrac(
-        [linhaA, linhaB], [foraBBH, paradaLTQ(-22.9345, -43.1755)], [lojaX], undefined, undefined, { geoEndereco: true })
+        [linhaA, linhaB], [paradaLTQ(-22.9345, -43.1755)], [lojaX], undefined, undefined, { geoEndereco: true })
       const rB = rotas.find(x => x.escala_linha_id === 'lb')
       expect(rB?.placa_sugerida).toBe('LTQ0783')
       expect(rB?.sugestao_confianca).toBe('alta')
