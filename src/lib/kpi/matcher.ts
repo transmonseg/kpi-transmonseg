@@ -533,7 +533,7 @@ function estendeChegadaPorForaBase(
 
     chegadaEstendida = new Date(p.chegada)
     prevChegadaTs = new Date(p.chegada).getTime()
-    // Continua iterando para trás — multi-step. Acumula a chegada mais antiga.
+    // Continua iterando para trás, multi-step. Acumula a chegada mais antiga.
   }
   return chegadaEstendida
 }
