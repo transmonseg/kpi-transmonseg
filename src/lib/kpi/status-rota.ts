@@ -78,6 +78,10 @@ export interface DadosStatusRota {
    *  hoje (tem rastreador funcionando) → não é "sem rastreador"; é "não foi ao
    *  cliente" (tem equipamento, só não apareceu no relatório). Regra do fundador. */
   placaTemRastreadorApi?: boolean
+  /** Sugestão de troca de ALTA confiança (T18 segurou): a placa provável esteve nesta
+   *  loja. Reclassifica status vermelho (não foi / sem rastreador / não saiu) para
+   *  MUDOU_DE_ROTA (conferir). Ausente/null para sugestão BAIXA ou sem sugestão. */
+  sugestaoTrocaAlta?: { placa: string; hora: string | null } | null
 }
 
 export interface ResultadoStatus {
@@ -211,6 +215,20 @@ const NATUREZA_DE_STATUS: Record<StatusRota, NaturezaRevisao> = {
 export function derivarStatus(d: DadosStatusRota): ResultadoStatus {
   const base = derivarStatusBase(d)
   const temEntrega = d.paradas.some(p => p.loja_id != null)
+
+  // Sugestão de troca ALTA: o T18 segurou, mas um carro da rede com rota própria esteve
+  // nesta loja. Em vez de vermelho ("não foi"/"sem rastreador"/"não saiu da base"), marca
+  // "mudou de rota" (conferir, amarelo) com a placa provável no motivo. Espelha o caminho
+  // de troca real não informada (viaTroca && !alteracaoInformada).
+  if (d.sugestaoTrocaAlta &&
+      (base.status === 'NAO_FOI_AO_CLIENTE' || base.status === 'SEM_RASTREADOR' || base.status === 'NAO_SAIU_DA_BASE')) {
+    const h = d.sugestaoTrocaAlta.hora ? ` às ${d.sugestaoTrocaAlta.hora}` : ''
+    return {
+      status: 'MUDOU_DE_ROTA', revisar: true,
+      motivoRevisao: `Provável troca: a placa ${d.sugestaoTrocaAlta.placa} esteve nesta loja${h}. Confirmar.`,
+      categoria: null, natureza: 'operacao',
+    }
+  }
 
   // Entregou numa loja que não é a escalada → mudou de rota (com a loja real no motivo).
   if (d.entregouLojaForaEscala && (base.status === 'ENTREGUE' || base.status === 'ENTREGUE_GEO')) {

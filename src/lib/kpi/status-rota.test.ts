@@ -228,3 +228,34 @@ describe('derivarStatus — categorias + natureza (avisos)', () => {
     expect(r.categoria).toBeNull()
   })
 })
+
+describe('sugestão de troca ALTA reclassifica para MUDOU_DE_ROTA', () => {
+  const semGps = { temGps: false, ficouNaBase: false, paradas: [] as { classificacao: string; loja_id: string | null }[] }
+
+  it('base "não foi" + sugestão ALTA → MUDOU_DE_ROTA, revisar, motivo com a placa', () => {
+    const r = derivarStatus({ temGps: true, ficouNaBase: true, paradas: [], placaSaiuDaBase: true,
+      sugestaoTrocaAlta: { placa: 'LTQ0783', hora: '06:17' } })
+    expect(r.status).toBe('MUDOU_DE_ROTA')
+    expect(r.revisar).toBe(true)
+    expect(r.motivoRevisao).toContain('LTQ0783')
+    expect(r.motivoRevisao).toContain('06:17')
+    expect(tierEfetivo(r)).toBe('conferir')
+  })
+
+  it('base "sem rastreador" + sugestão ALTA → MUDOU_DE_ROTA', () => {
+    expect(derivarStatus({ ...semGps, sugestaoTrocaAlta: { placa: 'AAA1A11', hora: null } }).status)
+      .toBe('MUDOU_DE_ROTA')
+  })
+
+  it('sem sugestão → status base inalterado (não foi ao cliente)', () => {
+    expect(derivarStatus({ temGps: true, ficouNaBase: true, paradas: [], placaSaiuDaBase: true }).status)
+      .toBe('NAO_FOI_AO_CLIENTE')
+  })
+
+  it('entrega confirmada ignora sugestão ALTA (não rebaixa entrega)', () => {
+    const r = derivarStatus({ temGps: true, ficouNaBase: false,
+      paradas: [{ classificacao: 'LOJA', loja_id: 'x' }],
+      sugestaoTrocaAlta: { placa: 'AAA1A11', hora: '06:00' } })
+    expect(r.status).toBe('ENTREGUE')
+  })
+})
