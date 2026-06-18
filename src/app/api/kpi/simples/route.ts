@@ -941,6 +941,11 @@ export async function POST(req: NextRequest) {
           // Na frota da API + transmitindo, mas fora do relatório → tem rastreador,
           // "não foi ao cliente" (não "sem rastreador").
           placaTemRastreadorApi: classApiLinha === 'rastreado' && !temGps,
+          // Sugestão de troca ALTA (T18 segurou): vira "mudou de rota" (amarelo) em vez
+          // de "não foi" (vermelho), com a placa provável no motivo.
+          sugestaoTrocaAlta: rota.sugestao_confianca === 'alta' && rota.placa_sugerida
+            ? { placa: rota.placa_sugerida, hora: rota.sugestao_hora ?? null }
+            : null,
           // Avisos: dado faltando / ambíguo / fora da escala.
           lojaSemCadastroUnitrac,
           lojaAmbiguaComGemea,
