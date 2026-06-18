@@ -49,6 +49,13 @@ export type RotaKpi = {
   anomalias_codigos: string[]
   status: RotaStatus
   _matchMeta?: MatchMeta
+  /** Placa que PROVAVELMENTE fez a rota quando o T18 segurou (não aplica troca). */
+  placa_sugerida?: string | null
+  /** Confiança da sugestão: 'alta' = carro da rede parado na loja com rota própria;
+   *  'baixa' = só geográfico (hipótese não confirmada). */
+  sugestao_confianca?: 'alta' | 'baixa' | null
+  /** HH:MM (BRT) em que a placa sugerida esteve no local. */
+  sugestao_hora?: string | null
 }
 
 export type KpiLinha = {

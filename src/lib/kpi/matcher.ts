@@ -2063,6 +2063,47 @@ export async function cruzaEscalaUnitrac(
         }
       }
 
+      // Guard de compatibilidade do T18 (T18-D distância, T18-R rede, T18-X loja,
+      // scorePair ≤ 2), fatorado do filtro de candidatas SEM o teste de `usedIds`.
+      // Reusado pelo passe de sugestão (Task 3): "passaria no guard, mas está bloqueado".
+      const t18Compativel = (
+        linha: EscalaLinhaRow,
+        p: UnitracParadaRow,
+        lojaEscala: typeof lojas[0] | undefined,
+        lojaEscalaAmbigua: boolean,
+        redesFungT18: Set<string>,
+      ): boolean => {
+        // T18-D: guard de distância. Loja com lat/lng → parada ≤5km da loja.
+        if (lojaEscala?.lat != null && lojaEscala?.lng != null && p.lat != null && p.lng != null) {
+          const distM = haversine(lojaEscala.lat, lojaEscala.lng, p.lat, p.lng)
+          if (distM > 5000) return false
+        }
+        // T18-R: guard de rede.
+        const redesDaParada = paradaRedesT18.get(p.id) ?? new Set<string>()
+        if (redesDaParada.size > 0) {
+          if ([...redesDaParada].every(r => !redesFungT18.has(r))) return false
+          // T18-X / T18-X2: parada que resolve para cadastro diferente da escalada é rejeitada.
+          const lojaIdParada = resolveLojaId(p, lojas, linha.rede_id)
+          if (lojaIdParada) {
+            const lojaPar = lojas.find(l => l.id === lojaIdParada)
+            if (lojaPar) {
+              const codigoBate = !!(linha.loja_codigo_raw && (
+                (lojaPar.codigo_escala && codCasa(linha.loja_codigo_raw, lojaPar.codigo_escala)) ||
+                (lojaPar.codigo_unitrac && codCasa(linha.loja_codigo_raw, lojaPar.codigo_unitrac))
+              ))
+              const nomeBate = matchScore(linha.loja_nome_raw, lojaPar.nome) <= 1
+              if (!codigoBate && !nomeBate) return false
+              if (lojaEscalaAmbigua) return false
+              if (lojaEscala && lojaPar.id !== lojaEscala.id) return false
+            }
+          }
+          return scorePair(linha, p) <= 2
+        }
+        // Coringa (parada sem rede): exige score ≤ 2; cadastro ambíguo exige match perfeito.
+        if (lojaEscalaAmbigua) return scorePair(linha, p) === 0
+        return scorePair(linha, p) <= 2
+      }
+
       for (const linha of semGpsLines) {
         // Tenta encontrar a loja no cadastro para usar GPS como fallback.
         // Bug 7 fix: quando MÚLTIPLAS lojas da rede dão matchScore ≤ 1 (token
@@ -2095,63 +2136,9 @@ export async function cruzaEscalaUnitrac(
           }
         }
         const redesFungT18 = redesFungiveis(linha.rede_id)
-        const candidatas = todasLojaParadas.filter(p => {
-          if (usedIds.has(p.id)) return false
-          // T18-N removido: ZS faz entregas de madrugada legitimamente (caminhão carregado
-          // 17h dia anterior sai dia seguinte 04-06h). Vídeo v43-2 Tia Érica confirma.
-          // Guard de DISTÂNCIA (T18-D abaixo) e RAIO da loja (≤5km do cadastro) já evita FP
-          // de veículos estacionados aleatoriamente perto.
-          // T18-D: guard de distância. Se a linha da escala tem loja com lat/lng
-          // cadastrado, a parada candidata DEVE estar a no máximo 5km da loja.
-          // Caso ARMAZEM dia 19 MATRIZ POSSE: parada KRB2J76 "MATRIZ CD DUQUE" tem
-          // token "MATRIZ" comum mas fica 47km longe da POSSE em Petrópolis.
-          if (lojaEscala?.lat != null && lojaEscala?.lng != null && p.lat != null && p.lng != null) {
-            const distM = haversine(lojaEscala.lat, lojaEscala.lng, p.lat, p.lng)
-            if (distM > 5000) return false
-          }
-          // T18-R: guard de rede
-          const redesDaParada = paradaRedesT18.get(p.id) ?? new Set<string>()
-          if (redesDaParada.size > 0) {
-            // Rede identificada: só aceita se compatível com a rede da escala
-            if ([...redesDaParada].every(r => !redesFungT18.has(r))) return false
-            // T18-X: se a parada resolve para uma loja CADASTRADA diferente da escalada,
-            // rejeitar. Caso ZS Loja 1129 (não cadastrada): T18 atribuía parada MEGA BOX
-            // OLARIA (cadastrada) pelo token comum "OLARIA". Sem este guard, lojas com
-            // tokens geográficos em comum casavam por engano.
-            const lojaIdParada = resolveLojaId(p, lojas, linha.rede_id)
-            if (lojaIdParada) {
-              const lojaPar = lojas.find(l => l.id === lojaIdParada)
-              if (lojaPar) {
-                const codigoBate = !!(linha.loja_codigo_raw && (
-                  (lojaPar.codigo_escala && codCasa(linha.loja_codigo_raw, lojaPar.codigo_escala)) ||
-                  (lojaPar.codigo_unitrac && codCasa(linha.loja_codigo_raw, lojaPar.codigo_unitrac))
-                ))
-                const nomeBate = matchScore(linha.loja_nome_raw, lojaPar.nome) <= 1
-                if (!codigoBate && !nomeBate) return false
-                // T18-X2 (Bug 7): mesmo com nomeBate, exige que o cadastro identificado
-                // seja IGUAL ao cadastro da loja escalada. Caso PREZUNIC dia 19:
-                // escala "Prezunic - Jauru / Serra Azul" → cadastro PREZUNIC JAURU,
-                // mas parada UBO5E01 (Sendas Bangu) tem geo→Catumbi Serra Azul (matchScore
-                // 1 via SERRA+AZUL). Sem este guard, T18-X aceitava (nomeBate=true). Agora:
-                // se ambos lojaEscala e lojaPar foram identificados e são diferentes, rejeita.
-                // Também rejeita quando lojaEscalaAmbigua (múltiplos cadastros empatam no
-                // matchScore — token discriminador da escala não é único, alto risco de FP).
-                if (lojaEscalaAmbigua) return false
-                if (lojaEscala && lojaPar.id !== lojaEscala.id) return false
-              }
-            }
-            // Exige match próximo (≤ 2 tokens de diferença) — evita FP por tokens genéricos
-            // como "BARRA" ou "LOJA" que aparecem em múltiplas lojas diferentes.
-            return scorePair(linha, p) <= 2
-          }
-          // Coringa (sem rede): exige score ≤ 2 — geo fallback removido para evitar FP
-          // de paradas de outras cadeias geograficamente próximas (ex: Guanabara Barra).
-          // T18-X2-Coringa (Bug 7): quando lojaEscala é ambígua (cadastro tem token
-          // qualificador comum como "Serra Azul"), exige score=0 (match perfeito) para
-          // evitar FP por tokens genéricos do cadastro.
-          if (lojaEscalaAmbigua) return scorePair(linha, p) === 0
-          return scorePair(linha, p) <= 2
-        })
+        const candidatas = todasLojaParadas.filter(p =>
+          !usedIds.has(p.id) && t18Compativel(linha, p, lojaEscala, lojaEscalaAmbigua, redesFungT18),
+        )
         if (!candidatas.length) continue
         candidatas.sort((a, b) => {
           const sa = scorePair(linha, a), sb = scorePair(linha, b)
