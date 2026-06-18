@@ -306,10 +306,13 @@ export const TIER_DE_STATUS: Record<StatusRota, TierCerteza> = {
 export function tierEfetivo(r: Pick<ResultadoStatus, 'status' | 'revisar'> & { categoria?: CategoriaRevisao | null }): TierCerteza {
   if (r.categoria === 'RELATORIO_PARCIAL') return 'conferir'
   const base = TIER_DE_STATUS[r.status]
-  // Geo fora do raio (revisar) e no-show revisável (placa entregou própria escala /
-  // rastreador travado) viram "conferir" — não são certezas pra cima nem pra baixo.
+  // Geo fora do raio com revisar não é certeza pra cima.
   if (r.status === 'ENTREGUE_GEO' && r.revisar) return 'conferir'
-  if (r.status === 'NAO_FOI_AO_CLIENTE' && r.revisar) return 'conferir'
+  // Qualquer "não entregou" marcado para revisão é incerteza, não negativa
+  // definitiva: cai em "conferir". Cobre placa divergente no cadastro Unitrac
+  // (SEM_RASTREADOR+revisar, ex.: KWV-7E49 x KWV-7E89), NAO_FOI_AO_CLIENTE
+  // revisável e loja sem cadastro/ambígua que caiu em NAO_SAIU_DA_BASE.
+  if (base === 'nao_entregou' && r.revisar) return 'conferir'
   return base
 }
 

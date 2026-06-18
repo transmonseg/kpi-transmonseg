@@ -43,6 +43,16 @@ describe('tiers de certeza', () => {
   it('tierEfetivo: relatório parcial é conferir', () => {
     expect(tierEfetivo({ status: 'NAO_FOI_AO_CLIENTE', revisar: true, categoria: 'RELATORIO_PARCIAL' })).toBe('conferir')
   })
+  it('tierEfetivo: no-show revisável (placa divergente no Unitrac) cai em conferir', () => {
+    // placaDivergeUnitrac → SEM_RASTREADOR + revisar=true. Não é "não entregou":
+    // o veículo tem rastreador, é placa errada no cadastro.
+    expect(tierEfetivo({ status: 'SEM_RASTREADOR', revisar: true })).toBe('conferir')
+    expect(tierEfetivo({ status: 'NAO_SAIU_DA_BASE', revisar: true })).toBe('conferir')
+  })
+  it('tierEfetivo: no-show NÃO revisável continua não-entregou', () => {
+    expect(tierEfetivo({ status: 'SEM_RASTREADOR', revisar: false })).toBe('nao_entregou')
+    expect(tierEfetivo({ status: 'NAO_SAIU_DA_BASE', revisar: false })).toBe('nao_entregou')
+  })
 })
 
 describe('relatório parcial', () => {
