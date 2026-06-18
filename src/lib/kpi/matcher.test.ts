@@ -2095,6 +2095,35 @@ describe('Bug 4 — multi-row mesma rede: distribuição correta entre N linhas 
     const mm = saida.getUTCMinutes()
     expect(`${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`).toBe('09:28')
   })
+
+  it('Permanência 18/06: ASSAI BARRA SFG2F72 (LOJA 16min + FORA_BASE longo → estende saída)', async () => {
+    // Cliente reportou 16min; real ≈6h49 (chegou ~05:29, permaneceu até ~12:18).
+    // LOJA de 16min (>15min) seguida de FORA_BASE longo, ~150m da loja: GPS oscila
+    // pra fora do raio mas o caminhão segue no cliente. Antes do fix o guard de
+    // 15min zerava a extensão.
+    const lojaLat = -22.9970, lojaLng = -43.3650
+    const escalaLinhas: EscalaLinhaRow[] = [
+      { id: 'lAss', rede_id: 'ASSAI', placa_norm: 'SFG2F72', loja_nome_raw: 'Assaí - Barra', loja_codigo_raw: null, motorista_nome: null, carro_ordem: 1, data_entrega: '2026-06-18' },
+    ]
+    const paradaRows: UnitracParadaRow[] = [
+      { id: 'p0', placa_norm: 'SFG2F72', chegada: '2026-06-18T03:10:00Z', saida: '2026-06-18T04:50:00Z', duracao_seg: 6000, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: -22.83, lng: -43.32, classificacao: 'BASE', ordem: 1 },
+      { id: 'p1', placa_norm: 'SFG2F72', chegada: '2026-06-18T05:29:00Z', saida: '2026-06-18T05:45:00Z', duracao_seg: 960, local_parada: '560245 - ASSAI BARRA', codigo_loja: '560245', nome_loja: 'ASSAI BARRA', lat: -22.99701, lng: -43.36499, classificacao: 'LOJA', ordem: 2 },
+      { id: 'p2', placa_norm: 'SFG2F72', chegada: '2026-06-18T05:46:00Z', saida: '2026-06-18T12:18:00Z', duracao_seg: 23520, local_parada: 'FORA DE BASE E LOCAL DE SERVIÇO', codigo_loja: null, nome_loja: null, lat: -22.99820, lng: -43.36460, classificacao: 'FORA_BASE', ordem: 3 },
+      { id: 'p3', placa_norm: 'SFG2F72', chegada: '2026-06-18T13:20:00Z', saida: '2026-06-18T13:55:00Z', duracao_seg: 2100, local_parada: 'BASE BENASSI - BASE BENASSI', codigo_loja: null, nome_loja: null, lat: -22.83, lng: -43.32, classificacao: 'BASE', ordem: 4 },
+    ]
+    const lojas: LojaRow[] = [
+      { id: 'cad-ass', rede_id: 'ASSAI', nome: 'Assaí - Barra', nome_normalizado: 'barra', codigo_escala: null, codigo_unitrac: '560245', nome_unitrac: 'ASSAI BARRA', lat: lojaLat, lng: lojaLng, raio_metros: 200 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(escalaLinhas, paradaRows, lojas)
+    const r = rotas.find((x) => x.escala_linha_id === 'lAss')
+    expect(r?.paradas ?? []).toHaveLength(1)
+    expect(r!.paradas[0].parada_id).toBe('p1')
+    const chegada = r!.paradas[0].chegada
+    const saida = r!.paradas[0].saida
+    expect(`${String(chegada.getUTCHours()).padStart(2, '0')}:${String(chegada.getUTCMinutes()).padStart(2, '0')}`).toBe('05:29')
+    expect(`${String(saida.getUTCHours()).padStart(2, '0')}:${String(saida.getUTCMinutes()).padStart(2, '0')}`).toBe('12:18')
+    expect(r!.paradas[0].duracao_min).toBe(409)
+  })
 })
 
 describe('SEM_GEO — distribuição multi-loja ZONA_SUL por código suffix', () => {

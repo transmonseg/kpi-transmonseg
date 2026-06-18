@@ -423,7 +423,7 @@ function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracPara
  *     Sem extensão, sistema usa saída do PRIMEIRO FORA_BASE matched (cedo demais).
  *
  * Critérios:
- *   - matched.classificacao ∈ {LOJA (dur≤15min), FORA_BASE, FAKE_EXIT}
+ *   - matched.classificacao ∈ {LOJA, FORA_BASE, FAKE_EXIT}
  *   - matched.lat/lng disponíveis (georreferenciada)
  *   - próxima parada deve ser FORA_BASE (FAKE_EXIT NÃO conta como step da cadeia
  *     pra evitar regressões; apenas como ponto de matched)
@@ -433,9 +433,9 @@ function consolidarParadasMesmoCliente(paradas: UnitracParadaRow[]): UnitracPara
  *   - segue cadeia (multi-step) acumulando o último saida válido
  *
  * Não aplica:
- *   - LOJA longa (≥15min) seguida de outras LOJAs (Recreio: entregas legítimas)
+ *   - LOJA seguida de outra LOJA (Recreio: o break em não-FORA_BASE barra)
  *   - FORA_BASE >300m do matched (Vilar dos Teles: FORA_BASE a 660m)
- *   - sem FORA_BASE seguinte (Loja 43/45 ZS: fim-de-rota — não fixável aqui)
+ *   - sem FORA_BASE seguinte (Loja 43/45 ZS: fim-de-rota, não fixável aqui)
  */
 function estendeSaidaPorForaBase(
   matched: UnitracParadaRow,
@@ -443,13 +443,14 @@ function estendeSaidaPorForaBase(
 ): Date | null {
   if (!matched.saida) return null
   const matchedSaidaTs = new Date(matched.saida).getTime()
-  const matchedDurSeg = matched.duracao_seg ?? 0
   const cls = matched.classificacao
-  // LOJA: só estende se for curta (≤15min). FORA_BASE/FAKE_EXIT: estende sem
-  // restrição de duração (matched pode ser longo, ex: MANILHA 106min).
-  if (cls === 'LOJA') {
-    if (matchedDurSeg > 15 * 60) return null
-  } else if (cls !== 'FORA_BASE' && cls !== 'FAKE_EXIT') {
+  // Estende LOJA / FORA_BASE / FAKE_EXIT sem restrição de duração do matched.
+  // A cadeia forward só caminha por FORA_BASE adjacente (break em não-FORA_BASE
+  // abaixo), então LOJA+LOJA (Recreio) continua barrada.
+  // O guard antigo de 15min em LOJA zerava casos legítimos onde o GPS oscila pra
+  // fora do raio e o caminhão segue no cliente (Assaí Barra 18/06: 16min de LOJA
+  // + ~6h30 de FORA_BASE a ~150m).
+  if (cls !== 'LOJA' && cls !== 'FORA_BASE' && cls !== 'FAKE_EXIT') {
     return null
   }
   if (matched.lat == null || matched.lng == null) return null
