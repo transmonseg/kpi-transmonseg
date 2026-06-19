@@ -139,9 +139,11 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <span className="text-overline">Operação</span>
-          <h1 data-tour="titulo" className="mt-1 text-display text-[30px] leading-none text-[var(--color-fg)]">Dashboard</h1>
+          <h1 data-tour="titulo" className="mt-1 text-display text-[30px] leading-none text-[var(--color-fg)]">{tab === 'painel' ? 'Painel do dia' : 'Dashboard'}</h1>
           <p className="mt-2 max-w-[52ch] text-[13px] leading-relaxed text-[var(--color-fg-muted)]">
-            Entregas, rastreamento e desempenho por rede, consolidado a partir dos KPIs inseridos.
+            {tab === 'painel'
+              ? 'Operação ao vivo, direto do rastreamento (API do Unitrac): entregas, paradas indevidas e desempenho do dia.'
+              : 'Entregas, rastreamento e desempenho por rede, consolidado a partir dos KPIs inseridos.'}
           </p>
         </div>
         {tab === 'geral' && (
@@ -871,9 +873,13 @@ function PainelDiaConteudo({ m, resumo, andamento }: { m: Metricas; resumo: Resu
   const concluidasPct = m.total ? Math.round(100 * m.entregue / m.total) : 0
   const tempoLoja = m.tempoMedioLojaMin
   const indevidas = resumo?.paradasIndevidas ?? 0
-  const topIndevidas: BarItem[] = (resumo?.topIndevidas ?? []).map((p, i) => ({
-    key: `${p.placa}-${i}`, label: `${p.placa} · ${p.local}`, value: p.duracaoMin, sub: `parada às ${p.hora}`, tone: 'danger' as const,
-  }))
+  // 1 linha por placa (a parada mais longa de cada — já vem ordenado por duração), sem
+  // repetir o "FORA DE BASE" em todo rótulo. Placa em destaque, contexto no subtítulo.
+  const placasVistas = new Set<string>()
+  const topIndevidas: BarItem[] = (resumo?.topIndevidas ?? [])
+    .filter(p => { if (placasVistas.has(p.placa)) return false; placasVistas.add(p.placa); return true })
+    .slice(0, 6)
+    .map(p => ({ key: p.placa, label: p.placa, value: p.duracaoMin, sub: `parou às ${p.hora}, fora de base`, tone: 'danger' as const }))
   // Ranking de retenção (prática do setor): o que mais consome a frota = tempo médio
   // em loja × nº de visitas, não só o maior tempo médio.
   const retencao: BarItem[] = [...m.topTempoEmLoja]
@@ -885,12 +891,6 @@ function PainelDiaConteudo({ m, resumo, andamento }: { m: Metricas; resumo: Resu
   const motoristas: BarItem[] = m.topMotoristas.slice(0, 8).map(d => ({
     key: d.motorista, label: d.motorista, value: d.entregas,
     sub: d.tempo_loja != null ? `${fmtMin(d.tempo_loja)} em loja` : undefined,
-  }))
-  const naoFoi: BarItem[] = m.topNaoFoi.slice(0, 8).map(x => ({
-    key: `${x.rede_id}|${x.loja}`, label: x.loja, value: x.ocorrencias, sub: REDE_LABEL[x.rede_id] ?? x.rede_id, tone: 'warning' as const,
-  }))
-  const semGps: BarItem[] = m.topSemRastreador.slice(0, 8).map(x => ({
-    key: `${x.rede_id}|${x.loja}`, label: x.loja, value: x.ocorrencias, sub: REDE_LABEL[x.rede_id] ?? x.rede_id, tone: 'danger' as const,
   }))
 
   return (
@@ -935,22 +935,9 @@ function PainelDiaConteudo({ m, resumo, andamento }: { m: Metricas; resumo: Resu
         </div>
       </section>
 
-      {/* 04 — EXCEÇÕES */}
+      {/* 04 — RANKINGS */}
       <section className="space-y-5 animate-fade-up">
-        <SecaoHead n="04" titulo="Exceções" sub="Lojas que precisam de atenção." />
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Painel titulo="Mais 'não foi ao cliente'">
-            {naoFoi.length ? <BarList items={naoFoi} showRank /> : <VazioMini>Nenhuma ocorrência.</VazioMini>}
-          </Painel>
-          <Painel titulo="Mais 'sem rastreador'">
-            {semGps.length ? <BarList items={semGps} showRank /> : <VazioMini>Nenhuma ocorrência.</VazioMini>}
-          </Painel>
-        </div>
-      </section>
-
-      {/* 05 — RANKINGS */}
-      <section className="space-y-5 animate-fade-up">
-        <SecaoHead n="05" titulo="Rankings" sub="Quem mais retém a frota e quem mais entrega." />
+        <SecaoHead n="04" titulo="Rankings" sub="Quem mais retém a frota e quem mais entrega." />
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <Painel titulo="Lojas que mais retêm">
             {retencao.length ? <BarList items={retencao} format={(n) => fmtMin(n)} showRank /> : <VazioMini>Sem dado de tempo em loja.</VazioMini>}
