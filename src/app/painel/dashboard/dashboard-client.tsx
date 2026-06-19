@@ -14,7 +14,7 @@ import { ArrowSquareOut, CheckCircle, WarningCircle, ArrowClockwise, Question } 
 import { LineChart, BarList, ColumnChart, Donut, Gauge, Heatmap, fmtNum, type BarItem } from '@/app/painel/charts'
 
 type Periodo = 'dia' | 'semana' | 'mes' | 'ano' | 'custom'
-type Tab = 'geral' | 'inserir' | 'historico'
+type Tab = 'geral' | 'painel' | 'inserir' | 'historico'
 
 const hoje = () => hojeBR()
 
@@ -82,7 +82,7 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
   )
 
   useEffect(() => {
-    if (tab !== 'geral') return
+    if (tab !== 'geral' && tab !== 'painel') return
     setCarregando(true)
     const qs = new URLSearchParams(
       periodo === 'custom'
@@ -136,9 +136,9 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
 
       {/* Tabs */}
       <nav data-tour="abas" className="mt-8 flex gap-1 border-b border-[var(--color-border)]">
-        {([['geral', 'Visão geral'], ['inserir', 'Inserir KPIs'], ['historico', 'Histórico']] as [Tab, string][]).map(([t, label]) => (
+        {([['geral', 'Visão geral'], ['painel', 'Painel do dia'], ['inserir', 'Inserir KPIs'], ['historico', 'Histórico']] as [Tab, string][]).map(([t, label]) => (
           <button
-            key={t} onClick={() => setTab(t)}
+            key={t} onClick={() => { if (t === 'painel') { setPeriodo('dia'); setData(hoje()) } setTab(t) }}
             className={[
               'relative px-4 py-2.5 text-[13px] font-medium transition-[color,transform] duration-150 active:scale-[0.98]',
               tab === t ? 'text-[var(--color-fg)]' : 'text-[var(--color-fg-subtle)] hover:text-[var(--color-fg)]',
@@ -164,6 +164,16 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
               de={de} setDe={setDe} ate={ate} setAte={setAte}
               redes={redes} setRedes={setRedes} m={m} mAnt={mAnt} intervalo={intervalo}
               carregando={carregando} erro={erro} onRetry={recarregar} mes={mesAtual}
+            />
+          </div>
+        )}
+        {tab === 'painel' && (
+          <div key="painel" className="animate-fade-up">
+            <PainelDia
+              periodo={periodo} setPeriodo={setPeriodo} data={data} setData={setData}
+              de={de} setDe={setDe} ate={ate} setAte={setAte} intervalo={intervalo}
+              redes={redes} setRedes={setRedes}
+              m={m} mAnt={mAnt} carregando={carregando} erro={erro} onRetry={recarregar}
             />
           </div>
         )}
@@ -717,6 +727,190 @@ function Painel({ titulo, children, className }: { titulo: string; children: Rea
     <div className={`${CARD} p-5 sm:p-6 animate-fade-up ${className ?? ''}`}>
       <h3 className="text-overline">{titulo}</h3>
       <div className="mt-4">{children}</div>
+    </div>
+  )
+}
+
+// ──────────────────────────────────────────────────────────── Painel do dia ──
+// Barra de período/data/redes. Espelha a de VisaoGeral (mantida separada de
+// propósito pra não mexer na aba geral em produção); se editar uma, editar a outra.
+function BarraControle(props: {
+  periodo: Periodo; setPeriodo: (p: Periodo) => void
+  data: string; setData: (d: string) => void
+  de: string; setDe: (d: string) => void; ate: string; setAte: (d: string) => void
+  intervalo: [string, string] | null
+  redes: string[]; setRedes: (r: string[]) => void
+}) {
+  const { periodo, setPeriodo, data, setData, de, setDe, ate, setAte, intervalo, redes, setRedes } = props
+  return (
+    <div className="sticky top-14 z-20 -mx-5 flex flex-wrap items-center gap-2.5 border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 px-5 py-2.5 backdrop-blur sm:-mx-8 sm:px-8">
+      <div className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-0.5 shadow-soft">
+        {(['dia', 'semana', 'mes', 'ano', 'custom'] as Periodo[]).map(p => (
+          <button
+            key={p} onClick={() => setPeriodo(p)}
+            className={[
+              'h-8 rounded-[var(--radius-sm)] px-3.5 text-[12px] font-medium capitalize transition-[background-color,color,transform] duration-150 active:scale-[0.97]',
+              periodo === p ? 'bg-[var(--color-accent)] text-[var(--color-accent-fg)] shadow-soft' : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]',
+            ].join(' ')}
+          >{p === 'mes' ? 'Mês' : p === 'ano' ? 'Ano' : p === 'custom' ? 'Período' : p}</button>
+        ))}
+      </div>
+      {periodo === 'custom' ? (
+        <div className="flex items-center gap-1.5">
+          <input type="date" value={de} max={ate} onChange={e => setDe(e.target.value)}
+            className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2.5 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30 [color-scheme:light] dark:[color-scheme:dark]" />
+          <span className="text-[12px] text-[var(--color-fg-subtle)]">até</span>
+          <input type="date" value={ate} min={de} onChange={e => setAte(e.target.value)}
+            className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2.5 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30 [color-scheme:light] dark:[color-scheme:dark]" />
+        </div>
+      ) : periodo === 'ano' ? (
+        <select value={data.slice(0, 4)} onChange={e => setData(`${e.target.value}-01-01`)}
+          className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30">
+          {ANOS.map(a => <option key={a} value={a}>{a}</option>)}
+        </select>
+      ) : periodo === 'mes' ? (
+        <input type="month" value={data.slice(0, 7)} onChange={e => setData(`${e.target.value}-01`)}
+          className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30" />
+      ) : (
+        <input type="date" value={data} onChange={e => setData(e.target.value)}
+          className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30" />
+      )}
+      {intervalo && (
+        <span className="hidden text-numeric text-[11px] text-[var(--color-fg-subtle)] sm:inline">
+          {periodo === 'dia' ? intervalo[0] : `${intervalo[0]} → ${intervalo[1]}`}
+        </span>
+      )}
+      <div className="ml-auto"><RedesFiltro redes={redes} setRedes={setRedes} /></div>
+    </div>
+  )
+}
+
+function PainelDia(props: {
+  periodo: Periodo; setPeriodo: (p: Periodo) => void
+  data: string; setData: (d: string) => void
+  de: string; setDe: (d: string) => void; ate: string; setAte: (d: string) => void
+  intervalo: [string, string] | null
+  redes: string[]; setRedes: (r: string[]) => void
+  m: Metricas | null; mAnt: Metricas | null; carregando: boolean; erro: boolean; onRetry: () => void
+}) {
+  const { m, mAnt, carregando, erro, onRetry, periodo, data, redes } = props
+  return (
+    <div className="space-y-8">
+      <BarraControle
+        periodo={props.periodo} setPeriodo={props.setPeriodo} data={props.data} setData={props.setData}
+        de={props.de} setDe={props.setDe} ate={props.ate} setAte={props.setAte}
+        intervalo={props.intervalo} redes={props.redes} setRedes={props.setRedes}
+      />
+      {carregando ? <Skeleton /> : erro ? <Erro onRetry={onRetry} /> : !m || m.total === 0 ? <Vazio /> : (
+        <PainelDiaConteudo key={`${periodo}-${data}-${redes.join(',')}`} m={m} mAnt={mAnt} />
+      )}
+    </div>
+  )
+}
+
+function StatVivo({ i, label, valor, cor, nota }: { i: number; label: string; valor: number; cor: string; nota?: string }) {
+  return (
+    <div className="p-5 sm:p-6 animate-fade-up" style={{ animationDelay: `${i * 60}ms` }}>
+      <div className="flex items-center gap-2">
+        <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: cor }} />
+        <div className="text-overline">{label}</div>
+      </div>
+      <div className="mt-2 text-display text-numeric text-[44px] leading-none text-[var(--color-fg)]">{fmtNum(valor)}</div>
+      {nota && <div className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">{nota}</div>}
+    </div>
+  )
+}
+
+function VazioMini({ children }: { children: React.ReactNode }) {
+  return <p className="py-6 text-center text-[12px] text-[var(--color-fg-muted)]">{children}</p>
+}
+
+function PainelDiaConteudo({ m, mAnt }: { m: Metricas; mAnt: Metricas | null }) {
+  const pendentes = m.nao_foi + m.sem_rastreador + m.desatualizado + m.indefinido
+  const concluidasPct = m.total ? Math.round(100 * m.entregue / m.total) : 0
+  const tempoLoja = m.tempoMedioLojaMin
+  // Ranking de retenção (prática do setor): o que mais consome a frota = tempo médio
+  // em loja × nº de visitas, não só o maior tempo médio.
+  const retencao: BarItem[] = [...m.topTempoEmLoja]
+    .map(l => ({ l, score: Math.round((l.tempo_loja ?? 0) * l.n) }))
+    .filter(x => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 8)
+    .map(({ l }) => ({ key: `${l.rede_id}|${l.loja}`, label: l.loja, value: Math.round(l.tempo_loja ?? 0), sub: `${REDE_LABEL[l.rede_id] ?? l.rede_id} · ${l.n} visitas` }))
+  const motoristas: BarItem[] = m.topMotoristas.slice(0, 8).map(d => ({
+    key: d.motorista, label: d.motorista, value: d.entregas,
+    sub: d.tempo_loja != null ? `${fmtMin(d.tempo_loja)} em loja` : undefined,
+  }))
+  const naoFoi: BarItem[] = m.topNaoFoi.slice(0, 8).map(x => ({
+    key: `${x.rede_id}|${x.loja}`, label: x.loja, value: x.ocorrencias, sub: REDE_LABEL[x.rede_id] ?? x.rede_id, tone: 'warning' as const,
+  }))
+  const semGps: BarItem[] = m.topSemRastreador.slice(0, 8).map(x => ({
+    key: `${x.rede_id}|${x.loja}`, label: x.loja, value: x.ocorrencias, sub: REDE_LABEL[x.rede_id] ?? x.rede_id, tone: 'danger' as const,
+  }))
+
+  return (
+    <div className="space-y-12">
+      {/* 01 — AO VIVO */}
+      <section className="space-y-5 animate-fade-up">
+        <SecaoHead n="01" titulo="Status do dia" sub="Onde a frota está, no período selecionado." />
+        <div className={`grid grid-cols-2 overflow-hidden divide-x divide-y divide-[var(--color-border)] sm:grid-cols-4 sm:divide-y-0 ${CARD}`}>
+          <StatVivo i={0} label="Em rota" valor={m.em_rota} cor="var(--color-info)" nota="ainda em andamento" />
+          <StatVivo i={1} label="Concluídas" valor={m.entregue} cor="var(--color-success)" nota={`${concluidasPct}% do total`} />
+          <StatVivo i={2} label="Pendentes" valor={pendentes} cor="var(--color-danger)" nota="não realizadas / sem dado" />
+          <StatVivo i={3} label="Desvios de rota" valor={m.mudou_de_rota} cor="var(--color-warning)" nota="entregou fora da escala" />
+        </div>
+      </section>
+
+      {/* 02 — NÚMEROS DO DIA */}
+      <section className="space-y-5 animate-fade-up">
+        <SecaoHead n="02" titulo="Números do dia" sub="Os indicadores que viram o relatório." />
+        <div className={`grid grid-cols-1 overflow-hidden divide-y divide-[var(--color-border)] sm:grid-cols-3 sm:divide-x sm:divide-y-0 ${CARD}`}>
+          <HeroTile i={0} valor={`${m.taxaEntregaDefinitiva}%`} label="Taxa de entrega" status={tomTaxa(m.taxaEntregaDefinitiva)}
+            nota={`${m.entregue} de ${m.entregue + m.nao_foi} definitivas · meta ≥ 95%`}
+            delta={<Delta atual={m.taxaEntregaDefinitiva} anterior={mAnt?.taxaEntregaDefinitiva} />} />
+          <HeroTile i={1} valor={fmtMin(tempoLoja)} label="Tempo médio em loja"
+            status={tempoLoja != null && tempoLoja > 20 ? 'warn' : 'ok'} nota="meta < 20 min"
+            delta={<Delta atual={tempoLoja} anterior={mAnt?.tempoMedioLojaMin} neutro suf=" min" />} />
+          <HeroTile i={2} valor={fmtNum(m.entregue)} label="Entregas concluídas" nota={`de ${fmtNum(m.total)} no período`}
+            delta={<Delta atual={m.entregue} anterior={mAnt?.entregue} neutro suf="" />} />
+        </div>
+      </section>
+
+      {/* 03 — EXCEÇÕES */}
+      <section className="space-y-5 animate-fade-up">
+        <SecaoHead n="03" titulo="Exceções" sub="Lojas que precisam de atenção." />
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <Painel titulo="Mais 'não foi ao cliente'">
+            {naoFoi.length ? <BarList items={naoFoi} showRank /> : <VazioMini>Nenhuma ocorrência.</VazioMini>}
+          </Painel>
+          <Painel titulo="Mais 'sem rastreador'">
+            {semGps.length ? <BarList items={semGps} showRank /> : <VazioMini>Nenhuma ocorrência.</VazioMini>}
+          </Painel>
+        </div>
+      </section>
+
+      {/* 04 — RANKINGS */}
+      <section className="space-y-5 animate-fade-up">
+        <SecaoHead n="04" titulo="Rankings" sub="Quem mais retém a frota e quem mais entrega." />
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <Painel titulo="Lojas que mais retêm">
+            {retencao.length ? <BarList items={retencao} format={(n) => fmtMin(n)} showRank /> : <VazioMini>Sem dado de tempo em loja.</VazioMini>}
+          </Painel>
+          <Painel titulo="Motoristas (entregas)">
+            {motoristas.length ? <BarList items={motoristas} showRank /> : <VazioMini>Sem motorista identificado.</VazioMini>}
+          </Painel>
+        </div>
+      </section>
+
+      {/* RESERVADO — telemetria que a API não expõe hoje */}
+      <section className="animate-fade-up">
+        <div className="rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] p-5 sm:p-6">
+          <h3 className="text-overline">Em breve, com o relatório Paradas x Serviços</h3>
+          <p className="mt-2 max-w-[60ch] text-[12px] leading-relaxed text-[var(--color-fg-muted)]">
+            Paradas indevidas e eventos de risco (frenagem, velocidade, pânico) dependem de telemetria que a API de hoje não expõe. Entram aqui quando integrarmos o relatório Paradas x Serviços.
+          </p>
+        </div>
+      </section>
     </div>
   )
 }
