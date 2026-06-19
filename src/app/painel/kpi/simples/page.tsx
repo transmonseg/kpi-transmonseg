@@ -1742,19 +1742,23 @@ function PreviewRow({
     'w-full bg-transparent text-[12px] outline-none border-b border-transparent hover:border-[var(--color-border)] focus:border-[var(--color-navy-700)] transition-colors duration-100 rounded-none placeholder:text-[var(--color-fg-subtle)]'
   const monoCell = cellInput + ' text-numeric tracking-wider'
 
+  // Cor da linha pelo NÍVEL DE CERTEZA real (confirmado/conferir/não entregou), não
+  // pelo status cru. Sem isso, "mudou de rota"/"não saiu da base"/"desatualizado"
+  // caíam num azul genérico que contradizia o selo, e "não foi ao cliente" ficava
+  // amarelo mesmo sendo vermelho (não entregou).
+  const tier = tierEfetivo({ status: linha.status, revisar: linha.revisar, categoria: linha.categoria })
+
   return (
     <tr
       className={cn(
         'transition-colors duration-100',
-        linha.status === 'ENTREGUE'
-          ? 'hover:bg-[var(--color-bg-hover)]'
-          : linha.status === 'SEM_RASTREADOR'
-          ? 'bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/60'
-          : linha.status === 'NAO_FOI_AO_CLIENTE'
+        tier === 'confirmado'
+          ? linha.status === 'ENTREGUE_GEO'
+            ? 'bg-[var(--color-bg-subtle)]/50 hover:bg-[var(--color-bg-subtle)]/70'
+            : 'hover:bg-[var(--color-bg-hover)]'
+          : tier === 'conferir'
           ? 'bg-[var(--color-warning-soft)]/35 hover:bg-[var(--color-warning-soft)]/55'
-          : linha.status === 'ENTREGUE_GEO'
-          ? 'bg-[var(--color-bg-subtle)]/50 hover:bg-[var(--color-bg-subtle)]/70'
-          : 'bg-[var(--color-info-soft)]/40 hover:bg-[var(--color-info-soft)]/60',
+          : 'bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/60',
         linha.status === 'FORA_DE_BASE' && 'border-l-2 border-l-[var(--color-info)]',
         linha.status === 'ENTREGUE_GEO' && 'border-l-2 border-l-[var(--color-border-strong)]',
       )}
@@ -1767,11 +1771,15 @@ function PreviewRow({
             title={STATUS_LABEL[linha.status]}
             className={cn(
               'h-1.5 w-1.5 shrink-0 rounded-full',
-              linha.status === 'ENTREGUE' && 'bg-[var(--color-success)]',
-              linha.status === 'ENTREGUE_GEO' && 'bg-[var(--color-fg-subtle)]',
-              linha.status === 'SEM_RASTREADOR' && 'bg-[var(--color-danger)]',
-              linha.status === 'NAO_FOI_AO_CLIENTE' && 'bg-[var(--color-warning)]',
-              linha.status === 'FORA_DE_BASE' && 'bg-[var(--color-info)]',
+              // Bolinha pela mesma fonte de verdade do selo (tier), pra nunca ficar sem
+              // cor nem contradizer o badge.
+              linha.status === 'ENTREGUE_GEO'
+                ? 'bg-[var(--color-fg-subtle)]'
+                : tier === 'confirmado'
+                ? 'bg-[var(--color-success)]'
+                : tier === 'conferir'
+                ? 'bg-[var(--color-warning)]'
+                : 'bg-[var(--color-danger)]',
             )}
           />
           {linha.ordem}

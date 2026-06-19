@@ -169,9 +169,12 @@ function computeSaidaCd(paradas: ParadaUnitrac[]): Date | null {
     if (isBase) lastBaseSaida = p.saida
   }
 
-  // Se não passou pelo CD neste período (já estava na rua desde a meia-noite),
-  // usa a chegada na primeira loja como proxy do horário de saída do CD.
-  if (!lastBaseSaida) return paradas[primeiraLojaIdx].chegada
+  // Bug I1 (auditoria 2026-05-27): sem BASE antes da 1ª loja, NÃO usar a chegada na
+  // loja como proxy — isso dava saida_cd = chegada_loja (viagem de 0 min, impossível).
+  // O parser XLSX (unitrac.ts) já retorna null aqui; este gêmeo PDF tinha ficado pra
+  // trás e o KPI definitivo (PDF) ainda mostrava a saída CD inflada. "Em branco honesto
+  // > timestamp errado" (decisão da Tia Érica, vídeo 11/05).
+  if (!lastBaseSaida) return null
 
   return lastBaseSaida
 }
