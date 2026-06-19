@@ -49,6 +49,13 @@ export type RotaKpi = {
   anomalias_codigos: string[]
   status: RotaStatus
   _matchMeta?: MatchMeta
+  /** Placa que PROVAVELMENTE fez a rota quando o T18 segurou (não aplica troca). */
+  placa_sugerida?: string | null
+  /** Confiança da sugestão: 'alta' = carro da rede parado na loja com rota própria;
+   *  'baixa' = só geográfico (hipótese não confirmada). */
+  sugestao_confianca?: 'alta' | 'baixa' | null
+  /** HH:MM (BRT) em que a placa sugerida esteve no local. */
+  sugestao_hora?: string | null
 }
 
 export type KpiLinha = {
@@ -90,6 +97,9 @@ export type KpiLinha = {
    *  transmitir hoje → legenda "DESATUALIZADO" (precisa manutenção) no XLSX, em vez
    *  do enganoso "SEM RASTREADOR". */
   placa_desatualizada?: boolean
+  /** Sugestão de troca de ALTA confiança (T18 segurou; carro da rede com rota própria
+   *  esteve nesta loja). Faz a célula do XLSX mostrar "MUDOU DE ROTA - CONFERIR". */
+  sugestao_troca_alta?: boolean
 }
 
 export type AnomaliaDetectada = {

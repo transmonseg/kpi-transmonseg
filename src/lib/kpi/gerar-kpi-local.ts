@@ -21,6 +21,7 @@ import {
 } from '@/lib/kpi/matcher'
 import { aplicarAlteracoes, type AltConfirmada } from '@/lib/kpi/aplicar-alteracoes'
 import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
+import { textoSugestaoTroca } from './sugestao-troca'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
 import { REDE_NOMES_CANONICOS } from '@/lib/kpi/kpi-styles'
 import { derivarStatus, type StatusRota, type CategoriaRevisao, type NaturezaRevisao } from '@/lib/kpi/status-rota'
@@ -90,7 +91,10 @@ export function rotaToLinha(rota: RotaKpi, escala: LinhaEscala, ordem: number): 
     tempo_loja_3_min: p3?.duracao_min ?? null,
     observacao: rota.placa_real
       ? `Troca de carro: entregue pela placa ${rota.placa_real} (escala: ${rota.placa_norm ?? '—'}).`
-      : null,
+      : rota.placa_sugerida
+        ? textoSugestaoTroca(rota.placa_sugerida, rota.sugestao_confianca ?? 'baixa', rota.sugestao_hora ?? null)
+        : null,
+    sugestao_troca_alta: rota.sugestao_confianca === 'alta',
     anomalias_codigos: rota.anomalias_codigos,
     motorista_codigo: escala.motorista_codigo,
     rota_status: rota.status,
@@ -513,6 +517,9 @@ export async function gerarKpiLocalComPreview(opts: GerarKpiLocalOpts): Promise<
         entregouLojaForaEscala,
         relatorioParcial: !!saidaParcial,
         saidaBaseParcial: saidaParcial ? fmtHoraBRT(saidaParcial) : null,
+        sugestaoTrocaAlta: rota.sugestao_confianca === 'alta' && rota.placa_sugerida
+          ? { placa: rota.placa_sugerida, hora: rota.sugestao_hora ?? null }
+          : null,
       })
 
       const saidaLoja = p0 && p0.chegada && p0.duracao_min != null

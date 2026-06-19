@@ -156,6 +156,9 @@ export async function gerarDiaApi(
       geoConfiavel: rota.geo_confiavel ?? false, placaFoiAlgumLugar: saiu(placaUni), placaSaiuDaBase: saiu(placaUni),
       placaDesatualizadaApi: classApi === 'desatualizado',
       placaTemRastreadorApi: classApi === 'rastreado' && !temGps,
+      sugestaoTrocaAlta: rota.sugestao_confianca === 'alta' && rota.placa_sugerida
+        ? { placa: rota.placa_sugerida, hora: rota.sugestao_hora ?? null }
+        : null,
     })
     const ent = rotaParaEntrada(rota, esc, st.status, data)
     const sv = situacaoViva({

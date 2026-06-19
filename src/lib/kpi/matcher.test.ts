@@ -2366,6 +2366,48 @@ describe('troca de carro — recuperação cross-placa (código + coordenada)', 
       expect(rB?.placa_real ?? null).toBeNull()
     } finally { setSemGeo(false) }
   })
+
+  it('ALTA: substituto com rota própria → sugere a placa, sem aplicar troca', async () => {
+    setSemGeo(true)
+    try {
+      // LTQ0783 (carro 1) entrega a loja X e fica com a parada (rota própria).
+      // BBH1C94 (carro 2) não entrega: T18 segura porque a parada está usada →
+      // sugere LTQ0783 (ALTA), sem mexer em placa_real nem nas paradas.
+      const linhaA: EscalaLinhaRow = { ...linhaX, id: 'la', placa_norm: 'LTQ0783', carro_ordem: 1 }
+      const linhaB: EscalaLinhaRow = { ...linhaX, id: 'lb', placa_norm: 'BBH1C94', carro_ordem: 2 }
+      const rotas = await cruzaEscalaUnitrac(
+        [linhaA, linhaB], [paradaLTQ(-22.9345, -43.1755)], [lojaX], undefined, undefined, { geoEndereco: true })
+      const rB = rotas.find(x => x.escala_linha_id === 'lb')
+      expect(rB?.placa_sugerida).toBe('LTQ0783')
+      expect(rB?.sugestao_confianca).toBe('alta')
+      expect(rB?.sugestao_hora).toBe('06:17') // chegada 06:17Z = BRT mascarado
+      expect(rB?.placa_real ?? null).toBeNull()  // NÃO aplica troca
+      expect(rB?.paradas ?? []).toHaveLength(0)  // status segue "não entregou"
+    } finally { setSemGeo(false) }
+  })
+
+  it('troca REAL aplicada não recebe sugestão', async () => {
+    setSemGeo(true)
+    try {
+      const rotas = await cruzaEscalaUnitrac(
+        [linhaX], [foraBBH, paradaLTQ(-22.9345, -43.1755)], [lojaX], undefined, undefined, { geoEndereco: true })
+      const r = rotas.find(x => x.escala_linha_id === 'lx')
+      expect(r?.placa_real).toBe('LTQ0783')          // troca aplicada
+      expect(r?.placa_sugerida ?? null).toBeNull()    // logo, sem sugestão
+    } finally { setSemGeo(false) }
+  })
+
+  it('entrega normal não recebe sugestão', async () => {
+    setSemGeo(true)
+    try {
+      const linhaOk: EscalaLinhaRow = { ...linhaX, id: 'lok', placa_norm: 'LTQ0783' }
+      const rotas = await cruzaEscalaUnitrac(
+        [linhaOk], [paradaLTQ(-22.9345, -43.1755)], [lojaX], undefined, undefined, { geoEndereco: true })
+      const r = rotas.find(x => x.escala_linha_id === 'lok')
+      expect(r?.paradas).toHaveLength(1)
+      expect(r?.placa_sugerida ?? null).toBeNull()
+    } finally { setSemGeo(false) }
+  })
 })
 
 describe('geoEndereco — consolida movimentações no cliente (BUG 2 chegada/saída)', () => {
