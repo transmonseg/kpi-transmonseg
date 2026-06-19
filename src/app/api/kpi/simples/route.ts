@@ -864,6 +864,9 @@ export async function POST(req: NextRequest) {
         // Placa fora do relatório + na frota da API sem transmitir hoje → desatualizado
         // (alimenta a legenda "DESATUALIZADO" no XLSX em vez de "SEM RASTREADOR").
         l.placa_desatualizada = !l.placa_rastreada && classApiDaPlaca(rota.placa_norm) === 'desatualizado'
+        // Fora do relatório mas rastreador funcionando na API → "não foi", não "sem
+        // rastreador" no XLSX (espelha a tela, que já usa placaTemRastreadorApi).
+        l.placa_tem_rastreador_api = !l.placa_rastreada && classApiDaPlaca(rota.placa_norm) === 'rastreado'
         // Saída de base quando em rota: parcial estrito OU a saída conhecida (caso FHO,
         // onde o relatório cortou logo após a saída). Mostra a saída e marca "em rota".
         const semEntregaLinha = !rota.paradas.some(p => p.loja_id != null)

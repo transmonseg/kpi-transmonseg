@@ -196,6 +196,9 @@ export function legendaSlot(c: LinhaParaKpi | null): string | null {
     if (c.rota_status === 'sem_entrega') return 'NÃO FOI AO CLIENTE'
     return semGps ? 'SEM RASTREADOR' : 'NÃO FOI AO CLIENTE'
   }
+  // Fora do relatório, mas a API confirma rastreador funcionando hoje → tem equipamento,
+  // só não apareceu. "NÃO FOI AO CLIENTE", nunca "SEM RASTREADOR" (acusação falsa).
+  if (!c.placa_rastreada && c.placa_tem_rastreador_api) return 'NÃO FOI AO CLIENTE'
   if (!c.placa_rastreada) return 'SEM RASTREADOR'
   if (c.placa_foi_algum_lugar) return 'MUDOU DE ROTA - CONFERIR'
   if (c.placa_saiu_da_base === false) return 'NÃO SAIU DA BASE'

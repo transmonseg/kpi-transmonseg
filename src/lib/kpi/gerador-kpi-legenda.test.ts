@@ -18,6 +18,9 @@ describe('legendaSlot — legenda do KPI gerado', () => {
   it('placa NÃO rastreada (ausente do Unitrac) → SEM RASTREADOR', () => {
     expect(legendaSlot(linha({ placa_rastreada: false }))).toBe('SEM RASTREADOR')
   })
+  it('fora do relatório mas com rastreador na API (transmitindo) → NÃO FOI AO CLIENTE, não SEM RASTREADOR', () => {
+    expect(legendaSlot(linha({ placa_rastreada: false, placa_tem_rastreador_api: true }))).toBe('NÃO FOI AO CLIENTE')
+  })
   it('placa rastreada e foi a alguma loja, mas não nesta → MUDOU DE ROTA - CONFERIR', () => {
     expect(legendaSlot(linha({ placa_rastreada: true, placa_foi_algum_lugar: true }))).toBe('MUDOU DE ROTA - CONFERIR')
   })

@@ -100,6 +100,10 @@ export type KpiLinha = {
   /** Sugestão de troca de ALTA confiança (T18 segurou; carro da rede com rota própria
    *  esteve nesta loja). Faz a célula do XLSX mostrar "MUDOU DE ROTA - CONFERIR". */
   sugestao_troca_alta?: boolean
+  /** Placa fora do relatório mas presente na frota da API e transmitindo hoje (tem
+   *  rastreador funcionando). Faz o XLSX dizer "NÃO FOI AO CLIENTE" em vez de acusar
+   *  falsamente "SEM RASTREADOR", igual ao que a tela já mostra. */
+  placa_tem_rastreador_api?: boolean
 }
 
 export type AnomaliaDetectada = {
