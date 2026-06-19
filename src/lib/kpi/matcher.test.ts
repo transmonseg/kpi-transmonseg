@@ -2755,3 +2755,46 @@ describe('resolverLojaEsperada — código curto colidindo entre lojas homônima
     expect(r?.id).toBe('tijuquinha')
   })
 })
+
+describe('sugestão por geofence — parada FORA_BASE dentro do raio da loja', () => {
+  // Caso real dia 17 (Bento Ribeiro): a placa da escala não entregou; outra placa
+  // parou DENTRO do raio da loja, mas o Unitrac classificou como FORA_BASE (não LOJA).
+  const loja: LojaRow = {
+    id: 'gb15', rede_id: 'GUANABARA', nome: 'GB 15 - Bento Ribeiro',
+    nome_normalizado: 'gb 15 bento ribeiro', codigo_escala: '15', codigo_unitrac: '71015',
+    nome_unitrac: 'GB 15 - Bento Ribeiro', lat: -22.875976, lng: -43.371342, raio_metros: 300,
+  }
+  const linha: EscalaLinhaRow = {
+    id: 'l1', rede_id: 'GUANABARA', placa_norm: 'LGT1200',
+    loja_nome_raw: 'GB BENTO RIBEIRO FILIAL 15', loja_codigo_raw: '15',
+    motorista_nome: 'X', carro_ordem: 1, data_entrega: '2026-06-17',
+  } as EscalaLinhaRow
+  // LBB5205 parou a ~7m da loja (dentro do raio 300m), 43min, mas FORA_BASE.
+  const foraBaseNoRaio: UnitracParadaRow = {
+    id: 'fb1', placa_norm: 'LBB5205', chegada: '2026-06-17T09:07:00Z', saida: '2026-06-17T09:50:00Z',
+    duracao_seg: 2580, local_parada: 'FORA DE BASE E LOCAL DE SERVICO', codigo_loja: null, nome_loja: null,
+    lat: -22.876, lng: -43.3714, endereco: null, classificacao: 'FORA_BASE', ordem: 1,
+  } as UnitracParadaRow
+
+  it('FORA_BASE dentro do raio → sugere a placa (BAIXA), sem aplicar troca nem flipar status', async () => {
+    setSemGeo(true)
+    try {
+      const rotas = await cruzaEscalaUnitrac([linha], [foraBaseNoRaio], [loja], undefined, undefined, { geoEndereco: true })
+      const r = rotas.find(x => x.escala_linha_id === 'l1')
+      expect(r?.placa_sugerida).toBe('LBB5205')
+      expect(r?.sugestao_confianca).toBe('baixa') // FORA_BASE nunca flipa pra mudou de rota
+      expect(r?.placa_real ?? null).toBeNull()
+      expect(r?.paradas ?? []).toHaveLength(0)
+    } finally { setSemGeo(false) }
+  })
+
+  it('parada FORA do raio da loja (~3km) NÃO vira sugestão', async () => {
+    setSemGeo(true)
+    try {
+      const longe = { ...foraBaseNoRaio, id: 'fb2', lat: -22.85, lng: -43.40 } as UnitracParadaRow
+      const rotas = await cruzaEscalaUnitrac([linha], [longe], [loja], undefined, undefined, { geoEndereco: true })
+      const r = rotas.find(x => x.escala_linha_id === 'l1')
+      expect(r?.placa_sugerida ?? null).toBeNull()
+    } finally { setSemGeo(false) }
+  })
+})

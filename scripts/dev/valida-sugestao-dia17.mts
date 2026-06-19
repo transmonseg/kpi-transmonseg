@@ -80,5 +80,16 @@ console.log(`── ALTA (${alta.length}) ${'─'.repeat(40)}`)
 for (const r of alta.slice(0, 25)) console.log(linha(r))
 console.log(`\n── BAIXA (primeiras 15 de ${baixa.length}) ${'─'.repeat(28)}`)
 for (const r of baixa.slice(0, 15)) console.log(linha(r))
+
+console.log(`\n── ALVOS DA AUDITORIA ${'─'.repeat(40)}`)
+for (const f of ['UBO5E05', 'UEH9I93', 'LGT1200', 'GVH1397']) {
+  const rs = rotas.filter((r: any) => r.placa_norm === f)
+  if (!rs.length) { console.log(`  ${f}: sem rota`); continue }
+  for (const r of rs as any[]) {
+    const esc: any = escMap.get(r.escala_linha_id)
+    const sug = r.placa_sugerida ? `${r.placa_sugerida} (${r.sugestao_confianca}${r.sugestao_hora ? ` ${r.sugestao_hora}` : ''})` : 'NENHUMA'
+    console.log(`  ${f}  "${(esc?.loja_nome_raw ?? '?').slice(0,34)}"  matched=${r.paradas?.length ? 'SIM' : 'não'}  sugestão=${sug}`)
+  }
+}
 console.log('\n' + '═'.repeat(78))
 process.exit(0)

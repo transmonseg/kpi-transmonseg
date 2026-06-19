@@ -2167,20 +2167,69 @@ export async function cruzaEscalaUnitrac(
           placaSugerida.set(linha.id, { placa: best.placa_norm, confianca: 'alta', chegada: best.chegada })
           continue
         }
-        // BAIXA: nenhum carro da rede; hipótese só geográfica (placa mais próxima ≤5km da loja).
-        if (lojaEscala?.lat != null && lojaEscala?.lng != null) {
-          const lat = lojaEscala.lat, lng = lojaEscala.lng
-          const perto = todasLojaParadas
-            .filter(p => p.placa_norm !== linha.placa_norm && p.lat != null && p.lng != null &&
-              haversine(lat, lng, p.lat, p.lng) <= 5000)
-            .map(p => ({ p, d: haversine(lat, lng, p.lat as number, p.lng as number) }))
-            .sort((a, b) => a.d - b.d)
-          if (perto.length) {
-            const best = perto[0].p
-            placaSugerida.set(linha.id, { placa: best.placa_norm, confianca: 'baixa', chegada: best.chegada })
-          }
-        }
+        // Geográfica: tratada no passe de geofence por raio da loja (abaixo), que inclui
+        // paradas FORA_BASE — o Unitrac às vezes marca a entrega real como FORA_BASE.
       }
+    }
+  }
+
+  // Sugestão por geofence (método da auditoria manual): quem parou DENTRO do raio
+  // cadastrado da loja, incluindo paradas FORA_BASE (o Unitrac com frequência não
+  // reconhece a entrega como LOJA, mas o GPS cai dentro do raio da loja). Cobre TODA
+  // linha não casada e ainda sem sugestão, inclusive as que ficaram fora do semGpsLines
+  // (placa com FORA_BASE própria). É só AVISO, nunca vira entrega verde automática —
+  // por isso o raio APERTADO da loja (não os 5km do passe antigo) não cai na armadilha
+  // de "afrouxar geo" do plano de correção.
+  {
+    const paradasGeofence = paradaRows.filter(p =>
+      (p.classificacao === 'LOJA' || p.classificacao === 'FORA_BASE') && p.lat != null && p.lng != null)
+    // Placas que entregaram ALGUMA linha da sua escala (rodaram a própria rota). Se a
+    // placa rodou e só pulou ESTA loja, o caso é "não foi ao cliente", não "mudou placa"
+    // — não cabe sugestão geográfica (seria nomear o carro do vizinho). A sugestão só
+    // faz sentido pra placa que NÃO entregou nada (no-show total): foi pra outro lugar
+    // ou ficou parada, e quem cobriu a loja foi outra placa. Caso real dia 17 (UBO5E05
+    // foi pra Búzios; UEH9I93/LGT1200 ficaram idle).
+    const placasComMatch = new Set<string>()
+    for (const l of escalaLinhas) if (l.placa_norm && matchByEscalaId.has(l.id)) placasComMatch.add(l.placa_norm)
+    for (const linha of escalaLinhas) {
+      if (!linha.placa_norm) continue
+      if (matchByEscalaId.has(linha.id) || plateTrocaLineIds.has(linha.id)) continue
+      if (placasComMatch.has(linha.placa_norm)) continue // placa rodou a própria rota: é "não foi", não troca
+      if (placaSugerida.has(linha.id)) continue // já sugerido pelo passe T18 (ALTA mesma-rede)
+      const loja = resolverLojaEsperada(linha, lojas)
+      if (!loja || loja.lat == null || loja.lng == null) continue
+      // Raio APERTADO pra sugestão (≤120m): os entregadores reais da auditoria estavam
+      // todos ≤49m. Usar o raio cadastrado cheio (até 300m) fazia a entrega de uma loja
+      // cair no raio das vizinhas em áreas densas (Copacabana) e gerar nota em cascata.
+      const raio = Math.min(loja.raio_metros ?? 150, 120)
+      const lat = loja.lat, lng = loja.lng
+      const dentro = paradasGeofence
+        .filter(p => p.placa_norm !== linha.placa_norm
+          && haversine(lat, lng, p.lat as number, p.lng as number) <= raio
+          // FORA_BASE só conta se o carro PAROU (≥10min) dentro do raio — passagem curta
+          // é drive-by, não entrega. LOJA já é parada reconhecida, entra sempre.
+          && (p.classificacao === 'LOJA' || (p.duracao_seg ?? 0) >= 600))
+        .map(p => ({ p, dist: haversine(lat, lng, p.lat as number, p.lng as number), dur: p.duracao_seg ?? 0 }))
+      if (!dentro.length) continue
+      // Ranking: parada LOJA antes de FORA_BASE; depois maior duração; depois menor distância.
+      dentro.sort((a, b) => {
+        const la = a.p.classificacao === 'LOJA' ? 0 : 1
+        const lb = b.p.classificacao === 'LOJA' ? 0 : 1
+        if (la !== lb) return la - lb
+        if (a.dur !== b.dur) return b.dur - a.dur
+        return a.dist - b.dist
+      })
+      const best = dentro[0]
+      // SEMPRE aviso (BAIXA): a linha continua vermelha e a observação nomeia a placa
+      // provável. Geofence cruza com lojas vizinhas em áreas densas (uma entrega legítima
+      // cai no raio de várias lojas), então NÃO flipa status em massa — só o sinal forte
+      // do T18 (mesma rede + rota própria, acima) vira "mudou de rota" amarelo. Aqui o
+      // valor é nomear quem provavelmente entregou, pro operador conferir a placa.
+      placaSugerida.set(linha.id, {
+        placa: best.p.placa_norm,
+        confianca: 'baixa',
+        chegada: best.p.chegada,
+      })
     }
   }
 
