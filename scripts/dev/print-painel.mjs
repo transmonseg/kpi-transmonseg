@@ -110,12 +110,17 @@ try {
   await evalJS(`try{localStorage.setItem('kpi-tutorial-v2','done')}catch(e){}`)
   await goto(`${ORIGIN}${PAINEL_PATH}`)
   // espera o fetch /api/dashboard e os charts montarem
-  for (let i = 0; i < 25; i++) {
+  for (let i = 0; i < 45; i++) {
     await sleep(600)
-    const ready = await evalJS(`!!document.querySelector('svg, table') && !document.body.innerText.includes('Não autenticado')`)
+    const ready = await evalJS(`(() => {
+      const t = document.body.innerText;
+      if (t.includes('Não autenticado')) return false;
+      // conteúdo carregado: gráfico/tabela (visão geral) OU faixas do painel do dia
+      return !!document.querySelector('svg, table, ol') && (t.includes('Status do dia') || t.includes('Mix de status') || t.includes('Taxa de entrega'));
+    })()`)
     if (ready) break
   }
-  await sleep(1500)
+  await sleep(2000)
   // remove overlays do tour se existirem
   await evalJS(`document.querySelectorAll('.driver-overlay,.driver-popover,#driver-page-overlay,.driver-active-element').forEach(el=>el.remove())`)
 

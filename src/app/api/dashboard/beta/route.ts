@@ -5,7 +5,7 @@ import { calcularMetricas, filtrar } from '@/lib/kpi/dashboard-metricas'
 import { intervaloPeriodo, intervaloAnterior } from '@/lib/kpi/dashboard-query'
 import { hojeBR } from '@/lib/data-br'
 import { parseEscalaArquivo } from '@/lib/parsers/escala-arquivo'
-import { gerarDiaApi, salvarDiaApi, carregarEntradasApi, type EscalaParaDia } from '@/lib/kpi/dashboard-api-fonte'
+import { gerarDiaApi, salvarDiaApi, carregarEntradasApi, carregarResumosApi, type EscalaParaDia } from '@/lib/kpi/dashboard-api-fonte'
 import type { LojaRow, GeoStore } from '@/lib/kpi/matcher'
 
 export const runtime = 'nodejs'
@@ -97,5 +97,6 @@ export async function GET(req: NextRequest) {
       if (ant.length) metricasAnterior = calcularMetricas(ant)
     } catch { metricasAnterior = null }
   }
-  return NextResponse.json({ periodo, ref, intervalo: [ini, fim], redes, metricas: calcularMetricas(filt), metricasAnterior, andamento })
+  const resumoApi = await carregarResumosApi(svc, ini, fim)
+  return NextResponse.json({ periodo, ref, intervalo: [ini, fim], redes, metricas: calcularMetricas(filt), metricasAnterior, andamento, resumoApi })
 }

@@ -16,6 +16,10 @@ import { LineChart, BarList, ColumnChart, Donut, Gauge, Heatmap, fmtNum, type Ba
 type Periodo = 'dia' | 'semana' | 'mes' | 'ano' | 'custom'
 type Tab = 'geral' | 'painel' | 'inserir' | 'historico'
 
+// Resumo de risco vindo da fonte da API (rota beta): paradas indevidas do dia.
+type ResumoApi = { paradasIndevidas: number; topIndevidas: Array<{ placa: string; hora: string; duracaoMin: number; local: string }> }
+type Andamento = { ENTREGUE: number; EM_ROTA: number; NA_BASE: number; SEM_SINAL: number }
+
 const hoje = () => hojeBR()
 
 // Anos disponíveis no seletor do período "Ano": ano atual + 2 anteriores.
@@ -73,6 +77,12 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
   const [intervalo, setIntervalo] = useState<[string, string] | null>(null)
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState(false)
+  // Fonte da API (rota beta) — alimenta a aba "Painel do dia" (live + paradas indevidas).
+  const [betaM, setBetaM] = useState<Metricas | null>(null)
+  const [betaResumo, setBetaResumo] = useState<ResumoApi | null>(null)
+  const [betaAndamento, setBetaAndamento] = useState<Andamento | null>(null)
+  const [betaCarregando, setBetaCarregando] = useState(false)
+  const [betaErro, setBetaErro] = useState(false)
   const tourAuto = useRef(false)
 
   // Expande aliases: filtrar ASSAI inclui SENDAS (mesmo grupo no Unitrac).
@@ -82,7 +92,7 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
   )
 
   useEffect(() => {
-    if (tab !== 'geral' && tab !== 'painel') return
+    if (tab !== 'geral') return
     setCarregando(true)
     const qs = new URLSearchParams(
       periodo === 'custom'
@@ -94,6 +104,23 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
       .then(j => { setM(j.metricas); setMAnt(j.metricasAnterior ?? null); setIntervalo(j.intervalo); setErro(false) })
       .catch(() => { setM(null); setMAnt(null); setErro(true) })
       .finally(() => setCarregando(false))
+  }, [tab, periodo, data, de, ate, redesExpandidas])
+
+  // Aba "Painel do dia": lê da FONTE DA API (rota beta), não dos KPIs manuais. Traz o
+  // andamento ao vivo + as paradas indevidas (risco) que só existem no dado da API.
+  useEffect(() => {
+    if (tab !== 'painel') return
+    setBetaCarregando(true)
+    const qs = new URLSearchParams(
+      periodo === 'custom'
+        ? { periodo, de, ate, redes: redesExpandidas.join(',') }
+        : { periodo, data, redes: redesExpandidas.join(',') },
+    )
+    fetch(`/api/dashboard/beta?${qs}`)
+      .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() })
+      .then(j => { setBetaM(j.metricas); setBetaResumo(j.resumoApi ?? null); setBetaAndamento(j.andamento ?? null); setIntervalo(j.intervalo); setBetaErro(false) })
+      .catch(() => { setBetaM(null); setBetaResumo(null); setBetaAndamento(null); setBetaErro(true) })
+      .finally(() => setBetaCarregando(false))
   }, [tab, periodo, data, de, ate, redesExpandidas])
 
   useEffect(() => {
@@ -173,7 +200,8 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
               periodo={periodo} setPeriodo={setPeriodo} data={data} setData={setData}
               de={de} setDe={setDe} ate={ate} setAte={setAte} intervalo={intervalo}
               redes={redes} setRedes={setRedes}
-              m={m} mAnt={mAnt} carregando={carregando} erro={erro} onRetry={recarregar}
+              m={betaM} resumo={betaResumo} andamento={betaAndamento}
+              carregando={betaCarregando} erro={betaErro} onRetry={recarregar}
             />
           </div>
         )}
@@ -791,9 +819,10 @@ function PainelDia(props: {
   de: string; setDe: (d: string) => void; ate: string; setAte: (d: string) => void
   intervalo: [string, string] | null
   redes: string[]; setRedes: (r: string[]) => void
-  m: Metricas | null; mAnt: Metricas | null; carregando: boolean; erro: boolean; onRetry: () => void
+  m: Metricas | null; resumo: ResumoApi | null; andamento: Andamento | null
+  carregando: boolean; erro: boolean; onRetry: () => void
 }) {
-  const { m, mAnt, carregando, erro, onRetry, periodo, data, redes } = props
+  const { m, resumo, andamento, carregando, erro, onRetry, periodo, data, redes } = props
   return (
     <div className="space-y-8">
       <BarraControle
@@ -801,9 +830,20 @@ function PainelDia(props: {
         de={props.de} setDe={props.setDe} ate={props.ate} setAte={props.setAte}
         intervalo={props.intervalo} redes={props.redes} setRedes={props.setRedes}
       />
-      {carregando ? <Skeleton /> : erro ? <Erro onRetry={onRetry} /> : !m || m.total === 0 ? <Vazio /> : (
-        <PainelDiaConteudo key={`${periodo}-${data}-${redes.join(',')}`} m={m} mAnt={mAnt} />
+      {carregando ? <Skeleton /> : erro ? <Erro onRetry={onRetry} /> : !m || m.total === 0 ? <VazioPainel data={data} periodo={periodo} /> : (
+        <PainelDiaConteudo key={`${periodo}-${data}-${redes.join(',')}`} m={m} resumo={resumo} andamento={andamento} />
       )}
+    </div>
+  )
+}
+
+function VazioPainel({ data, periodo }: { data: string; periodo: Periodo }) {
+  return (
+    <div className={`${CARD} p-8 text-center animate-fade-up`}>
+      <p className="text-[14px] font-medium text-[var(--color-fg)]">Sem dado da API para {periodo === 'dia' ? `o dia ${data}` : 'o período'}.</p>
+      <p className="mx-auto mt-2 max-w-[48ch] text-[12px] leading-relaxed text-[var(--color-fg-muted)]">
+        O Painel do dia lê direto do rastreamento (API do Unitrac). Gere o KPI desta data em “Gerar KPI” para ela aparecer aqui.
+      </p>
     </div>
   )
 }
@@ -825,10 +865,15 @@ function VazioMini({ children }: { children: React.ReactNode }) {
   return <p className="py-6 text-center text-[12px] text-[var(--color-fg-muted)]">{children}</p>
 }
 
-function PainelDiaConteudo({ m, mAnt }: { m: Metricas; mAnt: Metricas | null }) {
+function PainelDiaConteudo({ m, resumo, andamento }: { m: Metricas; resumo: ResumoApi | null; andamento: Andamento | null }) {
   const pendentes = m.nao_foi + m.sem_rastreador + m.desatualizado + m.indefinido
+  const emRota = andamento?.EM_ROTA ?? m.em_rota
   const concluidasPct = m.total ? Math.round(100 * m.entregue / m.total) : 0
   const tempoLoja = m.tempoMedioLojaMin
+  const indevidas = resumo?.paradasIndevidas ?? 0
+  const topIndevidas: BarItem[] = (resumo?.topIndevidas ?? []).map((p, i) => ({
+    key: `${p.placa}-${i}`, label: `${p.placa} · ${p.local}`, value: p.duracaoMin, sub: `parada às ${p.hora}`, tone: 'danger' as const,
+  }))
   // Ranking de retenção (prática do setor): o que mais consome a frota = tempo médio
   // em loja × nº de visitas, não só o maior tempo médio.
   const retencao: BarItem[] = [...m.topTempoEmLoja]
@@ -850,13 +895,13 @@ function PainelDiaConteudo({ m, mAnt }: { m: Metricas; mAnt: Metricas | null }) 
 
   return (
     <div className="space-y-12">
-      {/* 01 — AO VIVO */}
+      {/* 01 — STATUS DO DIA (ao vivo, da API) */}
       <section className="space-y-5 animate-fade-up">
-        <SecaoHead n="01" titulo="Status do dia" sub="Onde a frota está, no período selecionado." />
+        <SecaoHead n="01" titulo="Status do dia" sub="Direto do rastreamento (API do Unitrac), no período selecionado." />
         <div className={`grid grid-cols-2 overflow-hidden divide-x divide-y divide-[var(--color-border)] sm:grid-cols-4 sm:divide-y-0 ${CARD}`}>
-          <StatVivo i={0} label="Em rota" valor={m.em_rota} cor="var(--color-info)" nota="ainda em andamento" />
-          <StatVivo i={1} label="Concluídas" valor={m.entregue} cor="var(--color-success)" nota={`${concluidasPct}% do total`} />
-          <StatVivo i={2} label="Pendentes" valor={pendentes} cor="var(--color-danger)" nota="não realizadas / sem dado" />
+          <StatVivo i={0} label="Veículos em rota" valor={emRota} cor="var(--color-info)" nota="ainda em andamento" />
+          <StatVivo i={1} label="Entregas realizadas" valor={m.entregue} cor="var(--color-success)" nota={`${concluidasPct}% do total`} />
+          <StatVivo i={2} label="Entregas pendentes" valor={pendentes} cor="var(--color-danger)" nota="não realizadas / sem dado" />
           <StatVivo i={3} label="Desvios de rota" valor={m.mudou_de_rota} cor="var(--color-warning)" nota="entregou fora da escala" />
         </div>
       </section>
@@ -866,19 +911,33 @@ function PainelDiaConteudo({ m, mAnt }: { m: Metricas; mAnt: Metricas | null }) 
         <SecaoHead n="02" titulo="Números do dia" sub="Os indicadores que viram o relatório." />
         <div className={`grid grid-cols-1 overflow-hidden divide-y divide-[var(--color-border)] sm:grid-cols-3 sm:divide-x sm:divide-y-0 ${CARD}`}>
           <HeroTile i={0} valor={`${m.taxaEntregaDefinitiva}%`} label="Taxa de entrega" status={tomTaxa(m.taxaEntregaDefinitiva)}
-            nota={`${m.entregue} de ${m.entregue + m.nao_foi} definitivas · meta ≥ 95%`}
-            delta={<Delta atual={m.taxaEntregaDefinitiva} anterior={mAnt?.taxaEntregaDefinitiva} />} />
+            nota={`${m.entregue} de ${m.entregue + m.nao_foi} definitivas · meta ≥ 95%`} />
           <HeroTile i={1} valor={fmtMin(tempoLoja)} label="Tempo médio em loja"
-            status={tempoLoja != null && tempoLoja > 20 ? 'warn' : 'ok'} nota="meta < 20 min"
-            delta={<Delta atual={tempoLoja} anterior={mAnt?.tempoMedioLojaMin} neutro suf=" min" />} />
-          <HeroTile i={2} valor={fmtNum(m.entregue)} label="Entregas concluídas" nota={`de ${fmtNum(m.total)} no período`}
-            delta={<Delta atual={m.entregue} anterior={mAnt?.entregue} neutro suf="" />} />
+            status={tempoLoja != null && tempoLoja > 20 ? 'warn' : 'ok'} nota="meta < 20 min" />
+          <HeroTile i={2} valor={fmtNum(m.entregue)} label="Entregas concluídas" nota={`de ${fmtNum(m.total)} no período`} />
         </div>
       </section>
 
-      {/* 03 — EXCEÇÕES */}
+      {/* 03 — RISCO / PARADAS INDEVIDAS (da API) */}
       <section className="space-y-5 animate-fade-up">
-        <SecaoHead n="03" titulo="Exceções" sub="Lojas que precisam de atenção." />
+        <SecaoHead n="03" titulo="Risco e paradas indevidas" sub="Paradas fora de loja e da base por 10min ou mais — o evento de risco da carga." />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+          <div className={`flex flex-col justify-center p-5 sm:p-6 ${CARD}`}>
+            <div className="text-overline">Paradas indevidas</div>
+            <div className="mt-2 text-display text-numeric text-[44px] leading-none" style={{ color: indevidas > 0 ? 'var(--color-danger)' : 'var(--color-fg)' }}>{fmtNum(indevidas)}</div>
+            <p className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">eventos de risco no período</p>
+          </div>
+          <div className="lg:col-span-2">
+            <Painel titulo="Onde pararam (maior duração)">
+              {topIndevidas.length ? <BarList items={topIndevidas} format={(n) => fmtMin(n)} showRank /> : <VazioMini>Nenhuma parada indevida registrada.</VazioMini>}
+            </Painel>
+          </div>
+        </div>
+      </section>
+
+      {/* 04 — EXCEÇÕES */}
+      <section className="space-y-5 animate-fade-up">
+        <SecaoHead n="04" titulo="Exceções" sub="Lojas que precisam de atenção." />
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <Painel titulo="Mais 'não foi ao cliente'">
             {naoFoi.length ? <BarList items={naoFoi} showRank /> : <VazioMini>Nenhuma ocorrência.</VazioMini>}
@@ -889,9 +948,9 @@ function PainelDiaConteudo({ m, mAnt }: { m: Metricas; mAnt: Metricas | null }) 
         </div>
       </section>
 
-      {/* 04 — RANKINGS */}
+      {/* 05 — RANKINGS */}
       <section className="space-y-5 animate-fade-up">
-        <SecaoHead n="04" titulo="Rankings" sub="Quem mais retém a frota e quem mais entrega." />
+        <SecaoHead n="05" titulo="Rankings" sub="Quem mais retém a frota e quem mais entrega." />
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <Painel titulo="Lojas que mais retêm">
             {retencao.length ? <BarList items={retencao} format={(n) => fmtMin(n)} showRank /> : <VazioMini>Sem dado de tempo em loja.</VazioMini>}
@@ -899,16 +958,6 @@ function PainelDiaConteudo({ m, mAnt }: { m: Metricas; mAnt: Metricas | null }) 
           <Painel titulo="Motoristas (entregas)">
             {motoristas.length ? <BarList items={motoristas} showRank /> : <VazioMini>Sem motorista identificado.</VazioMini>}
           </Painel>
-        </div>
-      </section>
-
-      {/* RESERVADO — telemetria que a API não expõe hoje */}
-      <section className="animate-fade-up">
-        <div className="rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] p-5 sm:p-6">
-          <h3 className="text-overline">Em breve, com o relatório Paradas x Serviços</h3>
-          <p className="mt-2 max-w-[60ch] text-[12px] leading-relaxed text-[var(--color-fg-muted)]">
-            Paradas indevidas e eventos de risco (frenagem, velocidade, pânico) dependem de telemetria que a API de hoje não expõe. Entram aqui quando integrarmos o relatório Paradas x Serviços.
-          </p>
         </div>
       </section>
     </div>

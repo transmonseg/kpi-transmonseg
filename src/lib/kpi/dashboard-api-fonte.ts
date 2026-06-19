@@ -65,6 +65,38 @@ export async function salvarDiaApi(svc: SupabaseClient, data: string, entradas: 
   if (error) throw new Error(`Falha ao salvar dia ${data}: ${error.message}`)
 }
 
+/** Resumo de risco do dia (derivado das paradas da API). Parada indevida = parada
+ *  FORA_BASE (fora de loja e fora da base) de ≥10min: pra uma operação de segurança
+ *  de carga, é o evento de risco do dia (caminhão parado onde não devia). */
+export interface ResumoDiaApi {
+  paradasIndevidas: number
+  topIndevidas: Array<{ placa: string; hora: string; duracaoMin: number; local: string }>
+}
+
+const RESUMO_VAZIO: ResumoDiaApi = { paradasIndevidas: 0, topIndevidas: [] }
+
+export async function salvarResumoDiaApi(svc: SupabaseClient, data: string, resumo: ResumoDiaApi): Promise<void> {
+  const blob = new Blob([JSON.stringify(resumo)], { type: 'application/json' })
+  const { error } = await svc.storage.from(BUCKET_API_DASH).upload(`${data}.resumo.json`, blob, { upsert: true })
+  if (error) throw new Error(`Falha ao salvar resumo ${data}: ${error.message}`)
+}
+
+/** Soma os resumos de risco dos dias do intervalo (ignora dias sem arquivo). */
+export async function carregarResumosApi(svc: SupabaseClient, ini: string, fim: string): Promise<ResumoDiaApi> {
+  const datas = datasNoIntervalo(ini, fim)
+  const lotes = await Promise.all(datas.map(async (dt) => {
+    const { data: blob, error } = await svc.storage.from(BUCKET_API_DASH).download(`${dt}.resumo.json`)
+    if (error || !blob) return null
+    try { return JSON.parse(await blob.text()) as ResumoDiaApi } catch { return null }
+  }))
+  const validos = lotes.filter((r): r is ResumoDiaApi => r != null)
+  if (!validos.length) return RESUMO_VAZIO
+  return {
+    paradasIndevidas: validos.reduce((s, r) => s + r.paradasIndevidas, 0),
+    topIndevidas: validos.flatMap(r => r.topIndevidas).sort((a, b) => b.duracaoMin - a.duracaoMin).slice(0, 10),
+  }
+}
+
 /** Enumera as datas YYYY-MM-DD de ini..fim (inclusive). */
 export function datasNoIntervalo(ini: string, fim: string): string[] {
   const out: string[] = []
@@ -168,5 +200,22 @@ export async function gerarDiaApi(
     })
     out.push({ ...ent, situacaoViva: sv })
   }
+
+  // Resumo de risco do dia: paradas indevidas = paradas FORA_BASE de ≥10min (caminhão
+  // parado fora de loja e fora da base). consolidaParadasApi já descartou blips <5min.
+  const indevidas = paradaRows
+    .filter(p => p.classificacao === 'FORA_BASE' && (p.duracao_seg ?? 0) >= 600)
+    .sort((a, b) => (b.duracao_seg ?? 0) - (a.duracao_seg ?? 0))
+  const resumo: ResumoDiaApi = {
+    paradasIndevidas: indevidas.length,
+    topIndevidas: indevidas.slice(0, 10).map(p => ({
+      placa: p.placa_norm,
+      hora: fmtHora(new Date(p.chegada)) ?? '',
+      duracaoMin: Math.round((p.duracao_seg ?? 0) / 60),
+      local: p.local_parada ?? 'Fora de base',
+    })),
+  }
+  await salvarResumoDiaApi(svc, data, resumo)
+
   return out
 }
