@@ -13,6 +13,7 @@ import { iniciarTutorial, tourJaVisto } from '@/lib/tour/store'
 import { hojeBR } from '@/lib/data-br'
 import { ArrowSquareOut, CheckCircle, WarningCircle, ArrowClockwise, Question } from '@phosphor-icons/react/dist/ssr'
 import { LineChart, BarList, ColumnChart, Donut, Gauge, Heatmap, fmtNum, type BarItem } from '@/app/painel/charts'
+import { ModalDetalhe, type TipoDetalhe } from './modal-detalhe'
 
 type Periodo = 'dia' | 'semana' | 'mes' | 'ano' | 'custom'
 type Tab = 'geral' | 'inserir' | 'historico'
@@ -319,7 +320,7 @@ function VisaoGeral(props: {
       </div>
 
       {carregando ? <Skeleton /> : erro ? <Erro onRetry={onRetry} /> : !m || m.total === 0 ? <Vazio /> : (
-        <Conteudo key={`${periodo}-${data}-${de}-${ate}-${redes.join(',')}`} m={m} mAnt={mAnt} mes={mes} periodo={periodo} data={data} redes={redes} resumoRisco={resumoRisco} riscoCarregando={riscoCarregando} fonte={fonte} />
+        <Conteudo key={`${periodo}-${data}-${de}-${ate}-${redes.join(',')}`} m={m} mAnt={mAnt} mes={mes} periodo={periodo} data={data} de={de} ate={ate} redes={redes} resumoRisco={resumoRisco} riscoCarregando={riscoCarregando} fonte={fonte} />
       )}
     </div>
   )
@@ -420,12 +421,11 @@ function Erro({ onRetry }: { onRetry: () => void }) {
   )
 }
 
-function Conteudo({ m, mAnt, mes, periodo, data, redes, resumoRisco, riscoCarregando, fonte }: { m: Metricas; mAnt: Metricas | null; mes: string; periodo: Periodo; data: string; redes: string[]; resumoRisco: ResumoApi | null; riscoCarregando: boolean; fonte: 'planilha' | 'rastreamento' | null }) {
+function Conteudo({ m, mAnt, mes, periodo, data, de, ate, redes, resumoRisco, riscoCarregando, fonte }: { m: Metricas; mAnt: Metricas | null; mes: string; periodo: Periodo; data: string; de: string; ate: string; redes: string[]; resumoRisco: ResumoApi | null; riscoCarregando: boolean; fonte: 'planilha' | 'rastreamento' | null }) {
   const lojaHref = (rede: string, loja: string) =>
     `/painel/loja?rede=${encodeURIComponent(rede)}&loja=${encodeURIComponent(loja)}&periodo=${periodo}&data=${data}`
-  // Atalho pra página de rankings (tabela completa), mantendo período/rede e ancorando.
-  const rankHref = (ancora: string) =>
-    `/painel/rankings?periodo=${periodo}&data=${data}${redes.length ? `&redes=${encodeURIComponent(redes.join(','))}` : ''}#${ancora}`
+  // Clicar num quadradinho amplia o detalhe AQUI na tela (modal), não em outra página.
+  const [detalhe, setDetalhe] = useState<TipoDetalhe | null>(null)
   const pctGps = m.total ? Math.round(100 * m.com_rastreador / m.total) : 0
   const pctFalha = m.total ? Math.round(100 * m.nao_foi / m.total) : 0
   const pctGpsAnt = mAnt ? Math.round(100 * mAnt.com_rastreador / (mAnt.total || 1)) : null
@@ -490,9 +490,10 @@ function Conteudo({ m, mAnt, mes, periodo, data, redes, resumoRisco, riscoCarreg
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
           {/* Número dominante — taxa de entrega manda na hierarquia */}
-          <div data-tour="resumo-taxa" className={`flex flex-col justify-between gap-8 p-6 sm:p-7 lg:col-span-4 ${CARD}`}>
+          <div data-tour="resumo-taxa" onClick={() => setDetalhe('rede')} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setDetalhe('rede') } }} className={`flex cursor-pointer flex-col justify-between gap-8 p-6 sm:p-7 lg:col-span-4 ${CARD}`}>
             <div className="flex items-center gap-1.5 text-overline">
               Taxa de entrega
+              <span className="text-[10px] text-[var(--color-fg-subtle)]">↗</span>
               {tomTaxa(m.pctEntregue) !== 'ok' && <span className="h-1.5 w-1.5 rounded-full" style={{ background: COR[tomTaxa(m.pctEntregue)] }} />}
               <InfoTip titulo="Como a taxa é calculada">
                 Entregas <strong>concluídas</strong> dividido pelas <strong>conferíveis</strong> (concluídas + não foi ao cliente). Linhas ainda em rota, sem rastreador ou em análise ficam <strong>fora</strong> da conta — por isso a taxa não esconde o dia incompleto. Meta ≥ 95%.
@@ -515,10 +516,10 @@ function Conteudo({ m, mAnt, mes, periodo, data, redes, resumoRisco, riscoCarreg
 
           {/* Secundários — menores, comunicam o resto do status */}
           <div data-tour="resumo-secundarios" className={`grid grid-cols-1 overflow-hidden divide-y divide-[var(--color-border)] sm:grid-cols-3 sm:divide-x sm:divide-y-0 lg:col-span-8 ${CARD}`}>
-            <HeroTile i={0} valor={`${pctFalha}%`} label="Não foi ao cliente" status={tomFalha(pctFalha)} nota={`${m.nao_foi} não realizadas`} delta={<Delta atual={pctFalha} anterior={pctFalhaAnt} inverso />} />
-            <HeroTile i={1} valor={`${pctGps}%`} label="Cobertura GPS" status={tomGps(pctGps)} nota={`${m.sem_rastreador} sem rastreador`} delta={<Delta atual={pctGps} anterior={pctGpsAnt} />}
+            <HeroTile i={0} valor={`${pctFalha}%`} label="Não foi ao cliente" status={tomFalha(pctFalha)} nota={`${m.nao_foi} não realizadas`} delta={<Delta atual={pctFalha} anterior={pctFalhaAnt} inverso />} onClick={() => setDetalhe('nao-foi')} />
+            <HeroTile i={1} valor={`${pctGps}%`} label="Cobertura GPS" status={tomGps(pctGps)} nota={`${m.sem_rastreador} sem rastreador`} delta={<Delta atual={pctGps} anterior={pctGpsAnt} />} onClick={() => setDetalhe('gps')}
               info={<InfoTip titulo="Cobertura GPS">Quantas entregas tiveram <strong>posição do rastreador</strong>. O resto (&quot;sem rastreador&quot;) é placa sem aparelho de GPS ou que não está no cadastro do Unitrac — nesses não dá pra confirmar a entrega pelo mapa.</InfoTip>} />
-            <HeroTile i={2} valor={fmtNum(m.total)} label="Entregas no período" nota={`${m.serie.length} dia${m.serie.length === 1 ? '' : 's'} operados`} delta={<Delta atual={m.total} anterior={mAnt?.total} neutro suf="" />} />
+            <HeroTile i={2} valor={fmtNum(m.total)} label="Entregas no período" nota={`${m.serie.length} dia${m.serie.length === 1 ? '' : 's'} operados`} delta={<Delta atual={m.total} anterior={mAnt?.total} neutro suf="" />} onClick={() => setDetalhe('rede')} />
           </div>
         </div>
 
@@ -567,7 +568,7 @@ function Conteudo({ m, mAnt, mes, periodo, data, redes, resumoRisco, riscoCarreg
       </section>
 
       {/* ═══════ 02 — SEGURANÇA DA CARGA (paradas indevidas + mapa) ═══════ */}
-      <SecaoRiscoMapa resumo={resumoRisco} carregando={riscoCarregando} n="02" verTodasHref={rankHref('placas-param')} fonte={fonte} />
+      <SecaoRiscoMapa resumo={resumoRisco} carregando={riscoCarregando} n="02" onVerTodas={() => setDetalhe('placas')} fonte={fonte} />
 
       {/* ═══════ 03 — ONDE AGIR AGORA ═══════ */}
       <section id="sec-agir" key="v-agir" data-tour="agir" className="scroll-mt-32 space-y-5 animate-fade-up">
@@ -599,7 +600,7 @@ function Conteudo({ m, mAnt, mes, periodo, data, redes, resumoRisco, riscoCarreg
               </tbody>
             </table>
             <div className="border-t border-[var(--color-border)] px-5 py-3">
-              <Link href={rankHref('lojas-problema')} className="inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline">Ver todas as lojas →</Link>
+              <button onClick={() => setDetalhe('lojas')} className="inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline">Ver todas as lojas →</button>
             </div>
           </div>
 
@@ -624,8 +625,8 @@ function Conteudo({ m, mAnt, mes, periodo, data, redes, resumoRisco, riscoCarreg
         {/* Rotas e lojas mais lentas — agir = atacar os piores */}
         {(m.topRotasDemoradas.length > 0 || m.topTempoEmLoja.length > 0) && (
           <div data-tour="agir-lentos" className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(340px,1fr))]">
-            <TopRotas m={m} lojaHref={lojaHref} verTodosHref={rankHref('rotas')} />
-            <TopTempoLoja m={m} lojaHref={lojaHref} verTodosHref={rankHref('tempo-loja')} />
+            <TopRotas m={m} lojaHref={lojaHref} onVerTodos={() => setDetalhe('rotas')} />
+            <TopTempoLoja m={m} lojaHref={lojaHref} onVerTodos={() => setDetalhe('tempo-loja')} />
           </div>
         )}
       </section>
@@ -678,8 +679,16 @@ function Conteudo({ m, mAnt, mes, periodo, data, redes, resumoRisco, riscoCarreg
           </div>
         )}
 
-        {m.topMotoristas.length > 0 && <TopMotoristas m={m} verTodosHref={rankHref('motoristas')} />}
+        {m.topMotoristas.length > 0 && <TopMotoristas m={m} onVerTodos={() => setDetalhe('motoristas')} />}
       </section>
+
+      {detalhe && (
+        <ModalDetalhe
+          tipo={detalhe} periodo={periodo} data={data} de={de} ate={ate}
+          redes={redes.join(',')} resumo={resumoRisco}
+          onClose={() => setDetalhe(null)}
+        />
+      )}
     </div>
   )
 }
@@ -792,14 +801,21 @@ function SecaoHead({ n, titulo, sub }: { n: string; titulo: string; sub: string 
   )
 }
 
-function HeroTile({ i, valor, label, status, nota, delta, info }: { i: number; valor: string | number; label: string; status?: 'ok' | 'warn' | 'bad'; nota?: string; delta?: React.ReactNode; info?: React.ReactNode }) {
+function HeroTile({ i, valor, label, status, nota, delta, info, onClick }: { i: number; valor: string | number; label: string; status?: 'ok' | 'warn' | 'bad'; nota?: string; delta?: React.ReactNode; info?: React.ReactNode; onClick?: () => void }) {
   const alerta = status && status !== 'ok'
   return (
-    <div className="p-5 sm:p-6 animate-fade-up" style={{ animationDelay: `${i * 60}ms` }}>
+    <div
+      onClick={onClick}
+      role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } } : undefined}
+      className={`p-5 sm:p-6 animate-fade-up ${onClick ? 'cursor-pointer' : ''}`}
+      style={{ animationDelay: `${i * 60}ms` }}
+    >
       <div className="text-display text-numeric text-[40px] text-[var(--color-fg)]">{valor}</div>
       <div className="mt-2 flex items-center gap-1.5">
         <div className="text-overline">{label}</div>
         {alerta && <span className="h-1.5 w-1.5 rounded-full" style={{ background: COR[status!] }} />}
+        {onClick && <span className="text-[10px] text-[var(--color-fg-subtle)]">↗</span>}
         {info}
       </div>
       {nota && <div className="mt-0.5 text-[11px]" style={{ color: alerta ? COR[status!] : 'var(--color-fg-subtle)' }}>{nota}</div>}
@@ -838,7 +854,7 @@ function InfoTip({ children, titulo }: { children: React.ReactNode; titulo?: str
     <span className="relative inline-flex align-middle">
       <button
         type="button"
-        onClick={() => setOpen(v => !v)}
+        onClick={(e) => { e.stopPropagation(); setOpen(v => !v) }}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         aria-label={titulo ? `Explicação: ${titulo}` : 'Explicação'}
         className="flex h-[15px] w-[15px] items-center justify-center rounded-full border border-[var(--color-border)] text-[10px] font-bold italic leading-none text-[var(--color-fg-subtle)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
@@ -855,7 +871,7 @@ function InfoTip({ children, titulo }: { children: React.ReactNode; titulo?: str
 
 // Seção de segurança da carga: paradas indevidas (FORA_BASE ≥10min) + mapa dos
 // pontos. Vem da FONTE DA API (resumoApi), buscada em paralelo na Visão geral.
-function SecaoRiscoMapa({ resumo, carregando, n, verTodasHref, fonte }: { resumo: ResumoApi | null; carregando: boolean; n: string; verTodasHref: string; fonte: 'planilha' | 'rastreamento' | null }) {
+function SecaoRiscoMapa({ resumo, carregando, n, onVerTodas, fonte }: { resumo: ResumoApi | null; carregando: boolean; n: string; onVerTodas: () => void; fonte: 'planilha' | 'rastreamento' | null }) {
   const [filtro, setFiltro] = useState<Gravidade | 'todas'>('todas')
   const pontosTodos = resumo?.pontosRisco ?? []
   const pontos = filtro === 'todas' ? pontosTodos : pontosTodos.filter(p => gravidadeDe(p.duracaoMin) === filtro)
@@ -966,9 +982,9 @@ function SecaoRiscoMapa({ resumo, carregando, n, verTodasHref, fonte }: { resumo
                   <>
                     <BarList items={rankingTop} format={(v) => `${v}×`} showRank />
                     {rankingPlacas.length > rankingTop.length && (
-                      <Link href={verTodasHref} className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline">
+                      <button onClick={onVerTodas} className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline">
                         Ver todas as {rankingPlacas.length} placas →
-                      </Link>
+                      </button>
                     )}
                   </>
                 ) : <VazioMini>Nenhuma parada indevida nesse filtro.</VazioMini>}
@@ -1227,7 +1243,7 @@ function ComparativoRede({ m }: { m: Metricas }) {
   )
 }
 
-function TopRotas({ m, lojaHref, verTodosHref }: { m: Metricas; lojaHref: (rede: string, loja: string) => string; verTodosHref: string }) {
+function TopRotas({ m, lojaHref, onVerTodos }: { m: Metricas; lojaHref: (rede: string, loja: string) => string; onVerTodos: () => void }) {
   if (m.topRotasDemoradas.length === 0) return null
   const maxRota = m.topRotasDemoradas[0].tempo_rota ?? 1
   const items: BarItem[] = m.topRotasDemoradas.map((r, i) => ({
@@ -1251,12 +1267,12 @@ function TopRotas({ m, lojaHref, verTodosHref }: { m: Metricas; lojaHref: (rede:
           <strong>{worst.loja}</strong> ({REDE_LABEL[worst.rede_id] ?? worst.rede_id}) lidera com {fmtMin(worst.tempo_rota)} — {pctAcima}% acima da média geral.
         </div>
       )}
-      <Link href={verTodosHref} className="mt-4 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline">Ver todas as rotas →</Link>
+      <button onClick={onVerTodos} className="mt-4 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline">Ver todas as rotas →</button>
     </div>
   )
 }
 
-function TopTempoLoja({ m, lojaHref, verTodosHref }: { m: Metricas; lojaHref: (rede: string, loja: string) => string; verTodosHref: string }) {
+function TopTempoLoja({ m, lojaHref, onVerTodos }: { m: Metricas; lojaHref: (rede: string, loja: string) => string; onVerTodos: () => void }) {
   if (m.topTempoEmLoja.length === 0) return null
   const maxLoja = m.topTempoEmLoja[0].tempo_loja ?? 1
   const items: BarItem[] = m.topTempoEmLoja.map((r, i) => ({
@@ -1271,12 +1287,12 @@ function TopTempoLoja({ m, lojaHref, verTodosHref }: { m: Metricas; lojaHref: (r
       <h3 className="text-overline mb-1">Maior tempo parado em cliente</h3>
       <p className="mb-5 text-[12px] text-[var(--color-fg-subtle)]">Top 15 lojas com maior tempo médio de descarga</p>
       <BarList items={items} format={fmtMin} showRank maxValue={maxLoja} hrefDe={it => { const [r, l] = it.key.split('|'); return lojaHref(r, l) }} />
-      <Link href={verTodosHref} className="mt-4 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline">Ver todas as lojas →</Link>
+      <button onClick={onVerTodos} className="mt-4 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline">Ver todas as lojas →</button>
     </div>
   )
 }
 
-function TopMotoristas({ m, verTodosHref }: { m: Metricas; verTodosHref: string }) {
+function TopMotoristas({ m, onVerTodos }: { m: Metricas; onVerTodos: () => void }) {
   if (m.topMotoristas.length === 0) return null
   const maxEnt = m.topMotoristas[0].entregas
   return (
@@ -1325,7 +1341,7 @@ function TopMotoristas({ m, verTodosHref }: { m: Metricas; verTodosHref: string 
         </table>
       </div>
       <div className="px-5 pb-5 sm:px-6">
-        <Link href={verTodosHref} className="inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline">Ver todos os motoristas →</Link>
+        <button onClick={onVerTodos} className="inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline">Ver todos os motoristas →</button>
       </div>
     </div>
   )
