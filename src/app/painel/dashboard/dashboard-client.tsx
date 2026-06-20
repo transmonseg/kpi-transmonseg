@@ -453,6 +453,9 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando }:
             <div className="flex items-center gap-1.5 text-overline">
               Taxa de entrega
               {tomTaxa(m.pctEntregue) !== 'ok' && <span className="h-1.5 w-1.5 rounded-full" style={{ background: COR[tomTaxa(m.pctEntregue)] }} />}
+              <InfoTip titulo="Como a taxa é calculada">
+                Entregas <strong>concluídas</strong> dividido pelas <strong>conferíveis</strong> (concluídas + não foi ao cliente). Linhas ainda em rota, sem rastreador ou em análise ficam <strong>fora</strong> da conta — por isso a taxa não esconde o dia incompleto. Meta ≥ 95%.
+              </InfoTip>
             </div>
             <div>
               <div className="text-display text-numeric text-[clamp(44px,6vw,60px)] leading-none text-[var(--color-fg)]">{m.pctEntregue}%</div>
@@ -789,6 +792,29 @@ function VazioMini({ children }: { children: React.ReactNode }) {
   return <p className="py-6 text-center text-[12px] text-[var(--color-fg-muted)]">{children}</p>
 }
 
+// Botão de ajuda (ⓘ): abre um balão com a explicação ao clicar. Fecha ao clicar
+// de novo ou ao perder o foco — sem depender de hover (funciona no touch).
+function InfoTip({ children, titulo }: { children: React.ReactNode; titulo?: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <span className="relative inline-flex align-middle">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        aria-label={titulo ? `Explicação: ${titulo}` : 'Explicação'}
+        className="flex h-[15px] w-[15px] items-center justify-center rounded-full border border-[var(--color-border)] text-[10px] font-bold italic leading-none text-[var(--color-fg-subtle)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+      >i</button>
+      {open && (
+        <span className="absolute left-1/2 top-[22px] z-40 w-64 -translate-x-1/2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3 text-left text-[11.5px] font-normal normal-case leading-relaxed tracking-normal text-[var(--color-fg-muted)] shadow-soft">
+          {titulo && <span className="mb-1 block text-[11px] font-semibold text-[var(--color-fg)]">{titulo}</span>}
+          {children}
+        </span>
+      )}
+    </span>
+  )
+}
+
 // Seção de segurança da carga: paradas indevidas (FORA_BASE ≥10min) + mapa dos
 // pontos. Vem da FONTE DA API (resumoApi), buscada em paralelo na Visão geral.
 function SecaoRiscoMapa({ resumo, carregando, n }: { resumo: ResumoApi | null; carregando: boolean; n: string }) {
@@ -821,7 +847,12 @@ function SecaoRiscoMapa({ resumo, carregando, n }: { resumo: ResumoApi | null; c
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
             <div className={`flex flex-col justify-between gap-4 p-5 sm:p-6 ${CARD}`}>
               <div>
-                <div className="text-overline">Paradas indevidas</div>
+                <div className="flex items-center gap-1.5 text-overline">
+                  Paradas indevidas
+                  <InfoTip titulo="O que é uma parada indevida?">
+                    Veículo parado <strong>10 minutos ou mais</strong> fora de qualquer loja e fora da base. É o principal sinal de risco da carga: desvio de rota, parada não programada ou abordagem. Quanto mais tempo parado, mais grave.
+                  </InfoTip>
+                </div>
                 <div className="mt-2 text-display text-numeric text-[44px] leading-none" style={{ color: 'var(--color-danger)' }}>{fmtNum(indevidas)}</div>
                 <p className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">eventos de risco no período</p>
               </div>
