@@ -438,7 +438,7 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando }:
         {m.em_rota > 0 ? (
           <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[var(--color-warning)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-warning)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-warning)]" />
-            Provisório · {m.em_rota} em rota (gere de novo depois das entregas)
+            Provisório · {m.em_rota} em rota ({m.total ? Math.round(100 * m.em_rota / m.total) : 0}% em andamento) · gere de novo depois das entregas
           </div>
         ) : (
           <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[var(--color-success)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-success)]">
@@ -525,9 +525,12 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando }:
         </div>
       </section>
 
-      {/* ═══════ 02 — ONDE AGIR AGORA ═══════ */}
+      {/* ═══════ 02 — SEGURANÇA DA CARGA (paradas indevidas + mapa) ═══════ */}
+      <SecaoRiscoMapa resumo={resumoRisco} carregando={riscoCarregando} n="02" />
+
+      {/* ═══════ 03 — ONDE AGIR AGORA ═══════ */}
       <section id="sec-agir" key="v-agir" data-tour="agir" className="scroll-mt-32 space-y-5 animate-fade-up">
-        <SecaoHead n="02" titulo="Onde agir agora" sub="Lojas com problema e os clientes/rotas mais lentos." />
+        <SecaoHead n="03" titulo="Onde agir agora" sub="Lojas com problema e os clientes/rotas mais lentos." />
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
           <div data-tour="agir-tabela" className={`overflow-hidden lg:col-span-3 ${CARD}`}>
             <table className="w-full text-[13px]">
@@ -576,15 +579,12 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando }:
 
         {/* Rotas e lojas mais lentas — agir = atacar os piores */}
         {(m.topRotasDemoradas.length > 0 || m.topTempoEmLoja.length > 0) && (
-          <div data-tour="agir-lentos" className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <div data-tour="agir-lentos" className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(340px,1fr))]">
             <TopRotas m={m} lojaHref={lojaHref} />
             <TopTempoLoja m={m} lojaHref={lojaHref} />
           </div>
         )}
       </section>
-
-      {/* ═══════ 03 — SEGURANÇA DA CARGA (paradas indevidas + mapa, da API) ═══════ */}
-      <SecaoRiscoMapa resumo={resumoRisco} carregando={riscoCarregando} n="03" />
 
       {/* ═══════ 04 — POR REDE ═══════ */}
       <section id="sec-rede" key="v-rede" data-tour="tendencias" className="scroll-mt-32 space-y-5 animate-fade-up">
