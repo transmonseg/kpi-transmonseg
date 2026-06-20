@@ -953,14 +953,23 @@ function PainelDiaConteudo({ m, resumo, andamento, periodo, data }: { m: Metrica
         </div>
       </section>
 
-      {/* 02 — STATUS DO DIA (ao vivo, da API) */}
+      {/* 02 — STATUS DO DIA (ao vivo, da API) — bento: mix visual + números */}
       <section className="space-y-5 animate-fade-up">
         <SecaoHead n="02" titulo="Status do dia" sub="Direto do rastreamento (API do Unitrac), no período selecionado." />
-        <div className={`grid grid-cols-2 overflow-hidden divide-x divide-y divide-[var(--color-border)] sm:grid-cols-4 sm:divide-y-0 ${CARD}`}>
-          <StatVivo i={0} label="Veículos em rota" valor={emRota} cor="var(--color-info)" nota="ainda em andamento" />
-          <StatVivo i={1} label="Entregas realizadas" valor={m.entregue} cor="var(--color-success)" nota={`${concluidasPct}% do total`} />
-          <StatVivo i={2} label="Entregas pendentes" valor={pendentes} cor="var(--color-danger)" nota="não realizadas / sem dado" />
-          <StatVivo i={3} label="Desvios de rota" valor={m.mudou_de_rota} cor="var(--color-warning)" nota="entregou fora da escala" />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+          <div className={`p-5 sm:p-6 lg:col-span-5 ${CARD}`}>
+            <h3 className="text-overline mb-4">Mix do dia</h3>
+            <Donut
+              slices={MIX_CATS.filter(k => m[k] > 0).map(k => ({ label: STATUS[k].label, value: m[k], color: STATUS[k].cor }))}
+              centerValue={fmtNum(m.total)} centerLabel="entregas"
+            />
+          </div>
+          <div className={`grid grid-cols-2 overflow-hidden divide-x divide-y divide-[var(--color-border)] sm:divide-y-0 lg:col-span-7 ${CARD}`}>
+            <StatVivo i={0} label="Veículos em rota" valor={emRota} cor="var(--color-info)" nota="ainda em andamento" />
+            <StatVivo i={1} label="Entregas realizadas" valor={m.entregue} cor="var(--color-success)" nota={`${concluidasPct}% do total`} />
+            <StatVivo i={2} label="Entregas pendentes" valor={pendentes} cor="var(--color-danger)" nota="não realizadas / sem dado" />
+            <StatVivo i={3} label="Desvios de rota" valor={m.mudou_de_rota} cor="var(--color-warning)" nota="entregou fora da escala" />
+          </div>
         </div>
       </section>
 
