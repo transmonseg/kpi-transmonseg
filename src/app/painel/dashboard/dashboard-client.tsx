@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import type { Metricas } from '@/lib/kpi/dashboard-metricas'
@@ -17,8 +18,24 @@ type Periodo = 'dia' | 'semana' | 'mes' | 'ano' | 'custom'
 type Tab = 'geral' | 'painel' | 'inserir' | 'historico'
 
 // Resumo de risco vindo da fonte da API (rota beta): paradas indevidas do dia.
-type ResumoApi = { paradasIndevidas: number; topIndevidas: Array<{ placa: string; hora: string; duracaoMin: number; local: string }> }
+type PontoRisco = { placa: string; hora: string; duracaoMin: number; lat: number; lng: number }
+type ResumoApi = {
+  paradasIndevidas: number
+  topIndevidas: Array<{ placa: string; hora: string; duracaoMin: number; local: string }>
+  pontosRisco: PontoRisco[]
+}
 type Andamento = { ENTREGUE: number; EM_ROTA: number; NA_BASE: number; SEM_SINAL: number }
+
+// Mapa Leaflet só roda no client (precisa de window) — carrega sob demanda.
+const MapaRisco = dynamic(() => import('./mapa-risco'), {
+  ssr: false,
+  loading: () => (
+    <div
+      style={{ height: 380, borderRadius: 'var(--radius-card)' }}
+      className="animate-pulse bg-[var(--color-bg-elevated)]"
+    />
+  ),
+})
 
 const hoje = () => hojeBR()
 
@@ -981,9 +998,22 @@ function PainelDiaConteudo({ m, mAnt, resumo, andamento, periodo, data }: { m: M
         </div>
       </section>
 
-      {/* 04 — RANKINGS */}
+      {/* 04 — MAPA DO DIA (paradas indevidas geolocalizadas) */}
+      {(resumo?.pontosRisco?.length ?? 0) > 0 && (
+        <section className="space-y-5 animate-fade-up">
+          <SecaoHead n="04" titulo="Mapa do dia" sub="Onde os veículos pararam fora de loja e da base — bolha maior, parada mais longa." />
+          <div className={`overflow-hidden p-1.5 ${CARD}`}>
+            <MapaRisco pontos={resumo!.pontosRisco} />
+          </div>
+          <p className="text-[11px] text-[var(--color-fg-subtle)]">
+            {resumo!.pontosRisco.length} ponto{resumo!.pontosRisco.length === 1 ? '' : 's'} de parada indevida no período. Passe o mouse para ver placa, duração e horário.
+          </p>
+        </section>
+      )}
+
+      {/* 05 — RANKINGS */}
       <section className="space-y-5 animate-fade-up">
-        <SecaoHead n="04" titulo="Rankings" sub="Quem mais retém a frota e quem mais entrega." />
+        <SecaoHead n="05" titulo="Rankings" sub="Quem mais retém a frota e quem mais entrega." />
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <Painel titulo="Lojas que mais retêm">
             {retencao.length ? <BarList items={retencao} format={(n) => fmtMin(n)} showRank hrefDe={(it) => { const [rede, loja] = it.key.split('|'); return lojaHref(rede, loja) }} /> : <VazioMini>Sem dado de tempo em loja.</VazioMini>}
@@ -994,10 +1024,10 @@ function PainelDiaConteudo({ m, mAnt, resumo, andamento, periodo, data }: { m: M
         </div>
       </section>
 
-      {/* 05 — TENDÊNCIA (só quando o período tem mais de 1 dia) */}
+      {/* 06 — TENDÊNCIA (só quando o período tem mais de 1 dia) */}
       {m.serie.length > 1 && (
         <section className="space-y-5 animate-fade-up">
-          <SecaoHead n="05" titulo="Tendência" sub="Como variou ao longo dos dias do período — melhorando ou piorando." />
+          <SecaoHead n="06" titulo="Tendência" sub="Como variou ao longo dos dias do período — melhorando ou piorando." />
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <div className={`${CARD} p-5 sm:p-6`}>
               <h3 className="text-overline mb-4">Entregas por dia</h3>

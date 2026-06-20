@@ -71,9 +71,11 @@ export async function salvarDiaApi(svc: SupabaseClient, data: string, entradas: 
 export interface ResumoDiaApi {
   paradasIndevidas: number
   topIndevidas: Array<{ placa: string; hora: string; duracaoMin: number; local: string }>
+  /** Pontos das paradas indevidas pro mapa (coordenada + duração). */
+  pontosRisco: Array<{ placa: string; hora: string; duracaoMin: number; lat: number; lng: number }>
 }
 
-const RESUMO_VAZIO: ResumoDiaApi = { paradasIndevidas: 0, topIndevidas: [] }
+const RESUMO_VAZIO: ResumoDiaApi = { paradasIndevidas: 0, topIndevidas: [], pontosRisco: [] }
 
 export async function salvarResumoDiaApi(svc: SupabaseClient, data: string, resumo: ResumoDiaApi): Promise<void> {
   const blob = new Blob([JSON.stringify(resumo)], { type: 'application/json' })
@@ -94,6 +96,7 @@ export async function carregarResumosApi(svc: SupabaseClient, ini: string, fim: 
   return {
     paradasIndevidas: validos.reduce((s, r) => s + r.paradasIndevidas, 0),
     topIndevidas: validos.flatMap(r => r.topIndevidas).sort((a, b) => b.duracaoMin - a.duracaoMin).slice(0, 10),
+    pontosRisco: validos.flatMap(r => r.pontosRisco ?? []).slice(0, 120),
   }
 }
 
@@ -214,6 +217,16 @@ export async function gerarDiaApi(
       duracaoMin: Math.round((p.duracao_seg ?? 0) / 60),
       local: p.local_parada ?? 'Fora de base',
     })),
+    pontosRisco: indevidas
+      .filter(p => p.lat != null && p.lng != null && Math.abs(p.lat) > 1)
+      .slice(0, 120)
+      .map(p => ({
+        placa: p.placa_norm,
+        hora: fmtHora(new Date(p.chegada)) ?? '',
+        duracaoMin: Math.round((p.duracao_seg ?? 0) / 60),
+        lat: p.lat as number,
+        lng: p.lng as number,
+      })),
   }
   await salvarResumoDiaApi(svc, data, resumo)
 
