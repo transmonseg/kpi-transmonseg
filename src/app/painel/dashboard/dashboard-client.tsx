@@ -18,12 +18,14 @@ type Periodo = 'dia' | 'semana' | 'mes' | 'ano' | 'custom'
 type Tab = 'geral' | 'inserir' | 'historico'
 
 // Resumo de risco vindo da fonte da API (rota beta): paradas indevidas do dia.
-type PontoRisco = { placa: string; hora: string; duracaoMin: number; lat: number; lng: number }
+type PontoRisco = { placa: string; hora: string; duracaoMin: number; lat: number; lng: number; rede?: string }
 type ResumoApi = {
   paradasIndevidas: number
-  topIndevidas: Array<{ placa: string; hora: string; duracaoMin: number; local: string }>
+  topIndevidas: Array<{ placa: string; hora: string; duracaoMin: number; local: string; rede?: string }>
   pontosRisco: PontoRisco[]
 }
+type Gravidade = 'moderada' | 'alta' | 'critica'
+const gravidadeDe = (min: number): Gravidade => (min >= 90 ? 'critica' : min >= 30 ? 'alta' : 'moderada')
 
 // Mapa Leaflet só roda no client (precisa de window) — carrega sob demanda.
 const MapaRisco = dynamic(() => import('./mapa-risco'), {
@@ -824,15 +826,36 @@ function InfoTip({ children, titulo }: { children: React.ReactNode; titulo?: str
 // Seção de segurança da carga: paradas indevidas (FORA_BASE ≥10min) + mapa dos
 // pontos. Vem da FONTE DA API (resumoApi), buscada em paralelo na Visão geral.
 function SecaoRiscoMapa({ resumo, carregando, n }: { resumo: ResumoApi | null; carregando: boolean; n: string }) {
-  // 1 linha por placa (a parada mais longa de cada — já vem ordenado por duração).
-  const placasVistas = new Set<string>()
-  const topIndevidas: BarItem[] = (resumo?.topIndevidas ?? [])
-    .filter(p => { if (placasVistas.has(p.placa)) return false; placasVistas.add(p.placa); return true })
-    .slice(0, 15)
-    .map(p => ({ key: p.placa, label: p.placa, value: p.duracaoMin, sub: `parou às ${p.hora}, fora de base`, tone: 'danger' as const }))
+  const [filtro, setFiltro] = useState<Gravidade | 'todas'>('todas')
+  const pontosTodos = resumo?.pontosRisco ?? []
+  const pontos = filtro === 'todas' ? pontosTodos : pontosTodos.filter(p => gravidadeDe(p.duracaoMin) === filtro)
   const pior = resumo?.topIndevidas?.[0] ?? null
   const indevidas = resumo?.paradasIndevidas ?? 0
-  const pontos = resumo?.pontosRisco ?? []
+
+  // Ranking de placas que MAIS PARAM (nº de paradas indevidas + tempo total parado),
+  // do conjunto filtrado. Responde "quais placas são as mais problemáticas".
+  const porPlaca = new Map<string, { placa: string; n: number; totalMin: number }>()
+  for (const p of pontos) {
+    const e = porPlaca.get(p.placa) ?? { placa: p.placa, n: 0, totalMin: 0 }
+    e.n++; e.totalMin += p.duracaoMin; porPlaca.set(p.placa, e)
+  }
+  const rankingPlacas = [...porPlaca.values()].sort((a, b) => b.n - a.n || b.totalMin - a.totalMin)
+  const rankingTop: BarItem[] = rankingPlacas.slice(0, 12).map(e => ({
+    key: e.placa, label: e.placa, value: e.n, sub: `${fmtMin(e.totalMin)} parado no total`, tone: 'danger' as const,
+  }))
+
+  // Quebra por rede (do total, não do filtro — visão geral da distribuição).
+  const porRede = new Map<string, number>()
+  for (const p of pontosTodos) { const r = p.rede ?? '—'; porRede.set(r, (porRede.get(r) ?? 0) + 1) }
+  const porRedeOrd = [...porRede.entries()].sort((a, b) => b[1] - a[1])
+  const temRede = porRedeOrd.some(([r]) => r !== '—')
+
+  const FILTROS: Array<{ k: Gravidade | 'todas'; rotulo: string; cor?: string }> = [
+    { k: 'todas', rotulo: 'Todas' },
+    { k: 'moderada', rotulo: '< 30min', cor: '#eab308' },
+    { k: 'alta', rotulo: '30min–1h30', cor: '#f97316' },
+    { k: 'critica', rotulo: '> 1h30', cor: '#ef4444' },
+  ]
 
   return (
     <section id="sec-risco" data-tour="risco" className="scroll-mt-32 space-y-5 animate-fade-up">
@@ -851,7 +874,7 @@ function SecaoRiscoMapa({ resumo, carregando, n }: { resumo: ResumoApi | null; c
       ) : (
         <>
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-            <div className={`flex flex-col justify-between gap-4 p-5 sm:p-6 ${CARD}`}>
+            <div className={`flex flex-col gap-4 p-5 sm:p-6 ${CARD}`}>
               <div>
                 <div className="flex items-center gap-1.5 text-overline">
                   Paradas indevidas
@@ -869,21 +892,54 @@ function SecaoRiscoMapa({ resumo, carregando, n }: { resumo: ResumoApi | null; c
                   <div className="text-[11px] text-[var(--color-fg-subtle)]">{fmtMin(pior.duracaoMin)} parada, às {pior.hora}</div>
                 </div>
               )}
+              {temRede && (
+                <div className="border-t border-[var(--color-border)] pt-3">
+                  <div className="mb-2 text-[10px] uppercase tracking-[0.1em] text-[var(--color-fg-subtle)]">Por rede</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {porRedeOrd.filter(([r]) => r !== '—').slice(0, 8).map(([r, q]) => (
+                      <span key={r} className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-2 py-0.5 text-[11px] text-[var(--color-fg-muted)]">
+                        {REDE_LABEL[r] ?? r} <span className="text-numeric font-semibold text-[var(--color-fg)]">{q}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="lg:col-span-2">
-              <Painel titulo="Onde pararam (maior duração por placa)">
-                {topIndevidas.length ? <BarList items={topIndevidas} format={(v) => fmtMin(v)} showRank /> : <VazioMini>Nenhuma parada indevida registrada.</VazioMini>}
+              <Painel titulo="Placas que mais param">
+                {rankingTop.length ? (
+                  <BarList items={rankingTop} format={(v) => `${v}×`} showRank />
+                ) : <VazioMini>Nenhuma parada indevida nesse filtro.</VazioMini>}
               </Painel>
             </div>
           </div>
 
-          {pontos.length > 0 && (
+          {pontosTodos.length > 0 && (
             <div className="space-y-2">
+              {/* Filtro por gravidade — clica e o mapa + ranking mostram só aquela faixa */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] text-[var(--color-fg-subtle)]">Filtrar por tempo parado:</span>
+                {FILTROS.map(f => (
+                  <button
+                    key={f.k} onClick={() => setFiltro(f.k)}
+                    className={[
+                      'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors',
+                      filtro === f.k ? 'border-[var(--color-accent)] text-[var(--color-fg)]' : 'border-[var(--color-border)] text-[var(--color-fg-muted)] hover:border-[var(--color-border-strong)]',
+                    ].join(' ')}
+                  >
+                    {f.cor && <span className="h-2 w-2 rounded-full" style={{ background: f.cor }} />}
+                    {f.rotulo}
+                  </button>
+                ))}
+              </div>
               <div className={`overflow-hidden p-1.5 ${CARD}`}>
                 <MapaRisco pontos={pontos} />
               </div>
               <p className="text-[11px] text-[var(--color-fg-subtle)]">
-                {pontos.length} ponto{pontos.length === 1 ? '' : 's'} no mapa · bolha maior = parada mais longa · passe o mouse para ver placa, duração e horário.
+                {pontos.length === pontosTodos.length
+                  ? `${pontos.length} parada${pontos.length === 1 ? '' : 's'} no mapa`
+                  : `${pontos.length} de ${pontosTodos.length} paradas (filtro ativo)`}
+                {' · '}bolha maior = parada mais longa · passe o mouse para ver placa, duração e horário.
               </p>
             </div>
           )}
