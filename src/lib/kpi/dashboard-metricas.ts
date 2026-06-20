@@ -153,7 +153,11 @@ function mediaVetorNulo(ns: (number | null)[]): number | null {
   return t.length ? Math.round(t.reduce((a, b) => a + b, 0) / t.length) : null
 }
 
-export function calcularMetricas(ents: EntradaManual[]): Metricas {
+export function calcularMetricas(ents: EntradaManual[], completo = false): Metricas {
+  // completo=true (página de rankings) traz a lista inteira; default corta como sempre,
+  // pra não inchar o payload nem as listas do dashboard.
+  const LIM_TOP = completo ? 5000 : 15
+  const LIM_LOJA = completo ? 5000 : 20
   const cont = (s: StatusManual) => ents.filter(e => e.status === s).length
   const total = ents.length
   const entregue = cont('entregue')
@@ -199,7 +203,7 @@ export function calcularMetricas(ents: EntradaManual[]): Metricas {
       const x = m.get(k) ?? { rede_id: e.rede_id, loja: e.loja, ocorrencias: 0 }
       x.ocorrencias++; m.set(k, x)
     }
-    return [...m.values()].sort((a, b) => b.ocorrencias - a.ocorrencias).slice(0, 20)
+    return [...m.values()].sort((a, b) => b.ocorrencias - a.ocorrencias).slice(0, LIM_LOJA)
   }
 
   const placaMap = new Map<string, number>()
@@ -252,15 +256,15 @@ export function calcularMetricas(ents: EntradaManual[]): Metricas {
   const topRotasDemoradas = [...todasLojas]
     .filter(l => l.tempo_rota != null)
     .sort((a, b) => (b.tempo_rota ?? 0) - (a.tempo_rota ?? 0))
-    .slice(0, 15)
+    .slice(0, LIM_TOP)
   const topTempoEmLoja = [...todasLojas]
     .filter(l => l.tempo_loja != null)
     .sort((a, b) => (b.tempo_loja ?? 0) - (a.tempo_loja ?? 0))
-    .slice(0, 15)
+    .slice(0, LIM_TOP)
   const topTempoTotal = [...todasLojas]
     .filter(l => l.tempo_total != null)
     .sort((a, b) => (b.tempo_total ?? 0) - (a.tempo_total ?? 0))
-    .slice(0, 15)
+    .slice(0, LIM_TOP)
 
   const horaBuckets: HoraSaidaRow[] = Array.from({ length: 24 }, (_, h) => ({ hora: h, entregas: 0 }))
   for (const e of ents) {
@@ -288,7 +292,7 @@ export function calcularMetricas(ents: EntradaManual[]): Metricas {
     motorMap.set(k, cur)
   }
   const topMotoristas: MotoristaStat[] = [...motorMap.values()]
-    .sort((a, b) => b.cnt - a.cnt).slice(0, 15)
+    .sort((a, b) => b.cnt - a.cnt).slice(0, LIM_TOP)
     .map(v => ({ motorista: v.motorista, entregas: v.cnt, tempo_rota: mediaVetorNulo(v.rotas), tempo_loja: mediaVetorNulo(v.lojas_t) }))
 
   type SerieTAcc = { rotas: number[]; lojas_t: number[]; totais: number[]; operacao: number[] }
@@ -348,7 +352,7 @@ export function calcularMetricas(ents: EntradaManual[]): Metricas {
     topSemRastreador: agrupaLoja('sem_rastreador'),
     topNaoFoi: agrupaLoja('nao_foi'),
     topIndefinido: agrupaLoja('indefinido'),
-    placasMaisAtivas: [...placaMap.entries()].map(([placa, entregas]) => ({ placa, entregas })).sort((a, b) => b.entregas - a.entregas).slice(0, 15),
+    placasMaisAtivas: [...placaMap.entries()].map(([placa, entregas]) => ({ placa, entregas })).sort((a, b) => b.entregas - a.entregas).slice(0, LIM_TOP),
     tempoMedioRotaMin,
     tempoMedioTotalMin,
     tempoMedioOperacaoMin,

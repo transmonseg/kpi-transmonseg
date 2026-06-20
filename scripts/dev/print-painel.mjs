@@ -116,7 +116,7 @@ try {
       const t = document.body.innerText;
       if (t.includes('Não autenticado')) return false;
       // conteúdo carregado: gráfico/tabela (visão geral) OU faixas do painel do dia
-      return !!document.querySelector('svg, table, ol') && (t.includes('Status do dia') || t.includes('Mix de status') || t.includes('Taxa de entrega'));
+      return !!document.querySelector('svg, table, ol') && (t.includes('Status do dia') || t.includes('Mix de status') || t.includes('Taxa de entrega') || t.includes('Rankings completos') || t.includes('Placas que mais param'));
     })()`)
     if (ready) break
   }

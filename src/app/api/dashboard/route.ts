@@ -19,6 +19,8 @@ export async function GET(req: NextRequest) {
     ? [u.searchParams.get('de') ?? ref, u.searchParams.get('ate') ?? ref]
     : intervaloPeriodo(periodo, ref)
   const redes = (u.searchParams.get('redes') ?? '').split(',').filter(Boolean)
+  // completo=1 (página de rankings) traz as listas inteiras, sem o corte top-N.
+  const completo = u.searchParams.get('completo') === '1'
 
   const svc = createServiceClient()
   let linhas
@@ -43,5 +45,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ periodo, ref, intervalo: [ini, fim], redes, metricas: calcularMetricas(filt), metricasAnterior })
+  return NextResponse.json({ periodo, ref, intervalo: [ini, fim], redes, metricas: calcularMetricas(filt, completo), metricasAnterior })
 }

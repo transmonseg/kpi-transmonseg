@@ -303,7 +303,7 @@ function VisaoGeral(props: {
       </div>
 
       {carregando ? <Skeleton /> : erro ? <Erro onRetry={onRetry} /> : !m || m.total === 0 ? <Vazio /> : (
-        <Conteudo key={`${periodo}-${data}-${de}-${ate}-${redes.join(',')}`} m={m} mAnt={mAnt} mes={mes} periodo={periodo} data={data} resumoRisco={resumoRisco} riscoCarregando={riscoCarregando} />
+        <Conteudo key={`${periodo}-${data}-${de}-${ate}-${redes.join(',')}`} m={m} mAnt={mAnt} mes={mes} periodo={periodo} data={data} redes={redes} resumoRisco={resumoRisco} riscoCarregando={riscoCarregando} />
       )}
     </div>
   )
@@ -404,9 +404,12 @@ function Erro({ onRetry }: { onRetry: () => void }) {
   )
 }
 
-function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando }: { m: Metricas; mAnt: Metricas | null; mes: string; periodo: Periodo; data: string; resumoRisco: ResumoApi | null; riscoCarregando: boolean }) {
+function Conteudo({ m, mAnt, mes, periodo, data, redes, resumoRisco, riscoCarregando }: { m: Metricas; mAnt: Metricas | null; mes: string; periodo: Periodo; data: string; redes: string[]; resumoRisco: ResumoApi | null; riscoCarregando: boolean }) {
   const lojaHref = (rede: string, loja: string) =>
     `/painel/loja?rede=${encodeURIComponent(rede)}&loja=${encodeURIComponent(loja)}&periodo=${periodo}&data=${data}`
+  // Atalho pra página de rankings (tabela completa), mantendo período/rede e ancorando.
+  const rankHref = (ancora: string) =>
+    `/painel/rankings?periodo=${periodo}&data=${data}${redes.length ? `&redes=${encodeURIComponent(redes.join(','))}` : ''}#${ancora}`
   const pctGps = m.total ? Math.round(100 * m.com_rastreador / m.total) : 0
   const pctFalha = m.total ? Math.round(100 * m.nao_foi / m.total) : 0
   const pctGpsAnt = mAnt ? Math.round(100 * mAnt.com_rastreador / (mAnt.total || 1)) : null
@@ -528,7 +531,7 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando }:
       </section>
 
       {/* ═══════ 02 — SEGURANÇA DA CARGA (paradas indevidas + mapa) ═══════ */}
-      <SecaoRiscoMapa resumo={resumoRisco} carregando={riscoCarregando} n="02" />
+      <SecaoRiscoMapa resumo={resumoRisco} carregando={riscoCarregando} n="02" verTodasHref={rankHref('placas-param')} />
 
       {/* ═══════ 03 — ONDE AGIR AGORA ═══════ */}
       <section id="sec-agir" key="v-agir" data-tour="agir" className="scroll-mt-32 space-y-5 animate-fade-up">
@@ -559,6 +562,9 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando }:
                 ))}
               </tbody>
             </table>
+            <div className="border-t border-[var(--color-border)] px-5 py-3">
+              <Link href={rankHref('lojas-problema')} className="inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline">Ver todas as lojas →</Link>
+            </div>
           </div>
 
           <div data-tour="agir-paineis" className="grid grid-cols-2 gap-5 lg:col-span-2 lg:grid-cols-1">
@@ -582,8 +588,8 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando }:
         {/* Rotas e lojas mais lentas — agir = atacar os piores */}
         {(m.topRotasDemoradas.length > 0 || m.topTempoEmLoja.length > 0) && (
           <div data-tour="agir-lentos" className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(340px,1fr))]">
-            <TopRotas m={m} lojaHref={lojaHref} />
-            <TopTempoLoja m={m} lojaHref={lojaHref} />
+            <TopRotas m={m} lojaHref={lojaHref} verTodosHref={rankHref('rotas')} />
+            <TopTempoLoja m={m} lojaHref={lojaHref} verTodosHref={rankHref('tempo-loja')} />
           </div>
         )}
       </section>
@@ -648,7 +654,7 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando }:
           </div>
         )}
 
-        {m.topMotoristas.length > 0 && <TopMotoristas m={m} />}
+        {m.topMotoristas.length > 0 && <TopMotoristas m={m} verTodosHref={rankHref('motoristas')} />}
       </section>
     </div>
   )
@@ -825,7 +831,7 @@ function InfoTip({ children, titulo }: { children: React.ReactNode; titulo?: str
 
 // Seção de segurança da carga: paradas indevidas (FORA_BASE ≥10min) + mapa dos
 // pontos. Vem da FONTE DA API (resumoApi), buscada em paralelo na Visão geral.
-function SecaoRiscoMapa({ resumo, carregando, n }: { resumo: ResumoApi | null; carregando: boolean; n: string }) {
+function SecaoRiscoMapa({ resumo, carregando, n, verTodasHref }: { resumo: ResumoApi | null; carregando: boolean; n: string; verTodasHref: string }) {
   const [filtro, setFiltro] = useState<Gravidade | 'todas'>('todas')
   const pontosTodos = resumo?.pontosRisco ?? []
   const pontos = filtro === 'todas' ? pontosTodos : pontosTodos.filter(p => gravidadeDe(p.duracaoMin) === filtro)
@@ -908,7 +914,14 @@ function SecaoRiscoMapa({ resumo, carregando, n }: { resumo: ResumoApi | null; c
             <div className="lg:col-span-2">
               <Painel titulo="Placas que mais param">
                 {rankingTop.length ? (
-                  <BarList items={rankingTop} format={(v) => `${v}×`} showRank />
+                  <>
+                    <BarList items={rankingTop} format={(v) => `${v}×`} showRank />
+                    {rankingPlacas.length > rankingTop.length && (
+                      <Link href={verTodasHref} className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline">
+                        Ver todas as {rankingPlacas.length} placas →
+                      </Link>
+                    )}
+                  </>
                 ) : <VazioMini>Nenhuma parada indevida nesse filtro.</VazioMini>}
               </Painel>
             </div>
@@ -1181,7 +1194,7 @@ function ComparativoRede({ m }: { m: Metricas }) {
   )
 }
 
-function TopRotas({ m, lojaHref }: { m: Metricas; lojaHref: (rede: string, loja: string) => string }) {
+function TopRotas({ m, lojaHref, verTodosHref }: { m: Metricas; lojaHref: (rede: string, loja: string) => string; verTodosHref: string }) {
   if (m.topRotasDemoradas.length === 0) return null
   const maxRota = m.topRotasDemoradas[0].tempo_rota ?? 1
   const items: BarItem[] = m.topRotasDemoradas.map((r, i) => ({
@@ -1205,11 +1218,12 @@ function TopRotas({ m, lojaHref }: { m: Metricas; lojaHref: (rede: string, loja:
           <strong>{worst.loja}</strong> ({REDE_LABEL[worst.rede_id] ?? worst.rede_id}) lidera com {fmtMin(worst.tempo_rota)} — {pctAcima}% acima da média geral.
         </div>
       )}
+      <Link href={verTodosHref} className="mt-4 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline">Ver todas as rotas →</Link>
     </div>
   )
 }
 
-function TopTempoLoja({ m, lojaHref }: { m: Metricas; lojaHref: (rede: string, loja: string) => string }) {
+function TopTempoLoja({ m, lojaHref, verTodosHref }: { m: Metricas; lojaHref: (rede: string, loja: string) => string; verTodosHref: string }) {
   if (m.topTempoEmLoja.length === 0) return null
   const maxLoja = m.topTempoEmLoja[0].tempo_loja ?? 1
   const items: BarItem[] = m.topTempoEmLoja.map((r, i) => ({
@@ -1224,11 +1238,12 @@ function TopTempoLoja({ m, lojaHref }: { m: Metricas; lojaHref: (rede: string, l
       <h3 className="text-overline mb-1">Maior tempo parado em cliente</h3>
       <p className="mb-5 text-[12px] text-[var(--color-fg-subtle)]">Top 15 lojas com maior tempo médio de descarga</p>
       <BarList items={items} format={fmtMin} showRank maxValue={maxLoja} hrefDe={it => { const [r, l] = it.key.split('|'); return lojaHref(r, l) }} />
+      <Link href={verTodosHref} className="mt-4 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline">Ver todas as lojas →</Link>
     </div>
   )
 }
 
-function TopMotoristas({ m }: { m: Metricas }) {
+function TopMotoristas({ m, verTodosHref }: { m: Metricas; verTodosHref: string }) {
   if (m.topMotoristas.length === 0) return null
   const maxEnt = m.topMotoristas[0].entregas
   return (
@@ -1275,6 +1290,9 @@ function TopMotoristas({ m }: { m: Metricas }) {
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="px-5 pb-5 sm:px-6">
+        <Link href={verTodosHref} className="inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline">Ver todos os motoristas →</Link>
       </div>
     </div>
   )
