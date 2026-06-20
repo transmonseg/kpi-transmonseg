@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { parseKpiManual, parseKpiManualTodasAbas } from '@/lib/kpi/parse-kpi-manual'
 import { replaceEntradasManualMes, deleteEntradasManualMes, ultimoDiaDoMes } from '@/lib/kpi/manual-import'
+import { puxarResumoDoPdfDoDia } from '@/lib/kpi/resumo-do-pdf'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -42,6 +43,10 @@ export async function POST(req: NextRequest) {
     await Promise.all(dias.map(d =>
       svc.storage.from('kpi-manual-raw').upload(`${d}/${rede_id}.xlsx`, buf, { upsert: true, contentType: XLSX_CT }),
     ))
+    // puxa as paradas indevidas do PDF do Unitrac de cada dia (se já estiver no banco)
+    // pra o mapa aparecer nos dias inseridos só pela planilha. Best-effort, sequencial
+    // pra não estourar memória parseando vários PDFs ao mesmo tempo.
+    for (const d of dias) { await puxarResumoDoPdfDoDia(svc, d) }
     return NextResponse.json({ ok: true, rede_id, mes, dias: dias.length, inseridas: entradas.length })
   }
 
@@ -55,6 +60,8 @@ export async function POST(req: NextRequest) {
   const { error } = await svc.from('kpi_manual_entradas').insert(entradas.map(e => ({ ...e, uploaded_by: user.id })))
   if (error) return new NextResponse(error.message, { status: 500 })
   await svc.storage.from('kpi-manual-raw').upload(`${data}/${rede_id}.xlsx`, buf, { upsert: true, contentType: XLSX_CT })
+  // puxa as paradas indevidas do PDF do Unitrac deste dia (se já estiver no banco)
+  await puxarResumoDoPdfDoDia(svc, data)
   return NextResponse.json({ ok: true, rede_id, data, inseridas: entradas.length })
 }
 
