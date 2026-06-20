@@ -102,9 +102,12 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
   const [intervalo, setIntervalo] = useState<[string, string] | null>(null)
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState(false)
-  // Risco da carga (paradas indevidas + mapa) vem da FONTE DA API (rota beta).
-  // Buscado em paralelo à Visão geral e injetado nela — não é mais aba separada.
+  // Fonte da API (rota beta): mapa de risco + os MESMOS números (calculados do dado
+  // do rastreamento). Buscado em paralelo. Quando a planilha (manual) não cobre o
+  // período, os números caem pra cá — número e mapa deixam de sumir sem explicação.
   const [betaResumo, setBetaResumo] = useState<ResumoApi | null>(null)
+  const [betaMetricas, setBetaMetricas] = useState<Metricas | null>(null)
+  const [betaMAnt, setBetaMAnt] = useState<Metricas | null>(null)
   const [betaCarregando, setBetaCarregando] = useState(false)
   const tourAuto = useRef(false)
 
@@ -129,9 +132,8 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
       .finally(() => setCarregando(false))
   }, [tab, periodo, data, de, ate, redesExpandidas])
 
-  // Risco da carga: busca o resumo da API (paradas indevidas + pontos do mapa) em
-  // paralelo, no mesmo período/redes da Visão geral. Só o resumoApi é usado — os
-  // KPIs continuam vindo da fonte consolidada (endpoint principal).
+  // Fonte da API (rota beta): traz o mapa (resumoApi) E os números calculados do
+  // rastreamento (metricas/metricasAnterior), no mesmo período/redes.
   useEffect(() => {
     if (tab !== 'geral') return
     setBetaCarregando(true)
@@ -142,8 +144,8 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
     )
     fetch(`/api/dashboard/beta?${qs}`)
       .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() })
-      .then(j => setBetaResumo(j.resumoApi ?? null))
-      .catch(() => setBetaResumo(null))
+      .then(j => { setBetaResumo(j.resumoApi ?? null); setBetaMetricas(j.metricas ?? null); setBetaMAnt(j.metricasAnterior ?? null) })
+      .catch(() => { setBetaResumo(null); setBetaMetricas(null); setBetaMAnt(null) })
       .finally(() => setBetaCarregando(false))
   }, [tab, periodo, data, de, ate, redesExpandidas])
 
@@ -156,6 +158,19 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
 
   const mesAtual = data.slice(0, 7)
   const recarregar = () => setRedes(r => [...r])
+
+  // Combina as duas fontes: usa os números da planilha (manual) quando o período
+  // tem dado; senão cai pros números do rastreamento (API). Assim os números nunca
+  // somem só porque um dia foi gerado por um caminho e não pelo outro.
+  const temManual = !!m && m.total > 0
+  const mFinal = temManual ? m : betaMetricas
+  const mAntFinal = temManual ? mAnt : betaMAnt
+  const fonteDados: 'planilha' | 'rastreamento' | null = temManual
+    ? 'planilha'
+    : (betaMetricas && betaMetricas.total > 0 ? 'rastreamento' : null)
+  // Só mostra "vazio/erro" quando NENHUMA das duas fontes trouxe número.
+  const carregandoFinal = carregando || (!temManual && betaCarregando)
+  const erroFinal = erro && !mFinal
 
   return (
     <div className="mx-auto w-full max-w-[1180px] px-5 sm:px-8">
@@ -213,9 +228,9 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
             <VisaoGeral
               periodo={periodo} setPeriodo={setPeriodo} data={data} setData={setData}
               de={de} setDe={setDe} ate={ate} setAte={setAte}
-              redes={redes} setRedes={setRedes} m={m} mAnt={mAnt} intervalo={intervalo}
-              carregando={carregando} erro={erro} onRetry={recarregar} mes={mesAtual}
-              resumoRisco={betaResumo} riscoCarregando={betaCarregando}
+              redes={redes} setRedes={setRedes} m={mFinal} mAnt={mAntFinal} intervalo={intervalo}
+              carregando={carregandoFinal} erro={erroFinal} onRetry={recarregar} mes={mesAtual}
+              resumoRisco={betaResumo} riscoCarregando={betaCarregando} fonte={fonteDados}
             />
           </div>
         )}
@@ -234,8 +249,9 @@ function VisaoGeral(props: {
   m: Metricas | null; mAnt: Metricas | null; intervalo: [string, string] | null
   carregando: boolean; erro: boolean; onRetry: () => void; mes: string
   resumoRisco: ResumoApi | null; riscoCarregando: boolean
+  fonte: 'planilha' | 'rastreamento' | null
 }) {
-  const { periodo, setPeriodo, data, setData, de, setDe, ate, setAte, redes, setRedes, m, mAnt, intervalo, carregando, erro, onRetry, mes, resumoRisco, riscoCarregando } = props
+  const { periodo, setPeriodo, data, setData, de, setDe, ate, setAte, redes, setRedes, m, mAnt, intervalo, carregando, erro, onRetry, mes, resumoRisco, riscoCarregando, fonte } = props
 
   return (
     <div className="space-y-8">
@@ -303,7 +319,7 @@ function VisaoGeral(props: {
       </div>
 
       {carregando ? <Skeleton /> : erro ? <Erro onRetry={onRetry} /> : !m || m.total === 0 ? <Vazio /> : (
-        <Conteudo key={`${periodo}-${data}-${de}-${ate}-${redes.join(',')}`} m={m} mAnt={mAnt} mes={mes} periodo={periodo} data={data} redes={redes} resumoRisco={resumoRisco} riscoCarregando={riscoCarregando} />
+        <Conteudo key={`${periodo}-${data}-${de}-${ate}-${redes.join(',')}`} m={m} mAnt={mAnt} mes={mes} periodo={periodo} data={data} redes={redes} resumoRisco={resumoRisco} riscoCarregando={riscoCarregando} fonte={fonte} />
       )}
     </div>
   )
@@ -404,7 +420,7 @@ function Erro({ onRetry }: { onRetry: () => void }) {
   )
 }
 
-function Conteudo({ m, mAnt, mes, periodo, data, redes, resumoRisco, riscoCarregando }: { m: Metricas; mAnt: Metricas | null; mes: string; periodo: Periodo; data: string; redes: string[]; resumoRisco: ResumoApi | null; riscoCarregando: boolean }) {
+function Conteudo({ m, mAnt, mes, periodo, data, redes, resumoRisco, riscoCarregando, fonte }: { m: Metricas; mAnt: Metricas | null; mes: string; periodo: Periodo; data: string; redes: string[]; resumoRisco: ResumoApi | null; riscoCarregando: boolean; fonte: 'planilha' | 'rastreamento' | null }) {
   const lojaHref = (rede: string, loja: string) =>
     `/painel/loja?rede=${encodeURIComponent(rede)}&loja=${encodeURIComponent(loja)}&periodo=${periodo}&data=${data}`
   // Atalho pra página de rankings (tabela completa), mantendo período/rede e ancorando.
@@ -429,6 +445,14 @@ function Conteudo({ m, mAnt, mes, periodo, data, redes, resumoRisco, riscoCarreg
 
   return (
     <div className="space-y-8">
+      {/* De onde vieram os números deste período (planilha ou rastreamento) */}
+      {fonte && (
+        <div className="flex items-center gap-1.5 text-[11px] text-[var(--color-fg-subtle)]">
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: fonte === 'planilha' ? 'var(--color-info)' : 'var(--color-success)' }} />
+          Números deste período vindos {fonte === 'planilha' ? 'da planilha (Inserir KPIs)' : 'da geração por rastreamento (Unitrac)'}
+        </div>
+      )}
+
       {/* Resumo executivo — o período inteiro numa frase, pro cliente ler em 3s */}
       <div data-tour="resumo-exec" className="scroll-mt-32"><ResumoExecutivo m={m} mAnt={mAnt} periodo={periodo} /></div>
 
@@ -531,7 +555,7 @@ function Conteudo({ m, mAnt, mes, periodo, data, redes, resumoRisco, riscoCarreg
       </section>
 
       {/* ═══════ 02 — SEGURANÇA DA CARGA (paradas indevidas + mapa) ═══════ */}
-      <SecaoRiscoMapa resumo={resumoRisco} carregando={riscoCarregando} n="02" verTodasHref={rankHref('placas-param')} />
+      <SecaoRiscoMapa resumo={resumoRisco} carregando={riscoCarregando} n="02" verTodasHref={rankHref('placas-param')} fonte={fonte} />
 
       {/* ═══════ 03 — ONDE AGIR AGORA ═══════ */}
       <section id="sec-agir" key="v-agir" data-tour="agir" className="scroll-mt-32 space-y-5 animate-fade-up">
@@ -831,7 +855,7 @@ function InfoTip({ children, titulo }: { children: React.ReactNode; titulo?: str
 
 // Seção de segurança da carga: paradas indevidas (FORA_BASE ≥10min) + mapa dos
 // pontos. Vem da FONTE DA API (resumoApi), buscada em paralelo na Visão geral.
-function SecaoRiscoMapa({ resumo, carregando, n, verTodasHref }: { resumo: ResumoApi | null; carregando: boolean; n: string; verTodasHref: string }) {
+function SecaoRiscoMapa({ resumo, carregando, n, verTodasHref, fonte }: { resumo: ResumoApi | null; carregando: boolean; n: string; verTodasHref: string; fonte: 'planilha' | 'rastreamento' | null }) {
   const [filtro, setFiltro] = useState<Gravidade | 'todas'>('todas')
   const pontosTodos = resumo?.pontosRisco ?? []
   const pontos = filtro === 'todas' ? pontosTodos : pontosTodos.filter(p => gravidadeDe(p.duracaoMin) === filtro)
@@ -869,13 +893,18 @@ function SecaoRiscoMapa({ resumo, carregando, n, verTodasHref }: { resumo: Resum
 
       {carregando && !resumo ? (
         <div style={{ height: 320, borderRadius: 'var(--radius-card)' }} className="animate-pulse bg-[var(--color-bg-elevated)]" />
-      ) : !resumo ? (
+      ) : (!resumo || (indevidas === 0 && fonte !== 'rastreamento')) ? (
+        // Tem número (planilha) mas não tem rastreamento gerado pra este período:
+        // explica o porquê em vez de sumir o mapa sem aviso.
         <div className={`${CARD} p-8 text-center`}>
-          <p className="text-[13px] text-[var(--color-fg-muted)]">Sem dado de rastreamento da API para este período.</p>
+          <p className="text-[13px] font-medium text-[var(--color-fg)]">Este período não tem rastreamento gerado.</p>
+          <p className="mx-auto mt-1.5 max-w-[48ch] text-[12px] leading-relaxed text-[var(--color-fg-muted)]">
+            Os números acima vieram da planilha. Para ver o mapa e as paradas indevidas, gere este período em <strong>Gerar KPI</strong> (escala + relatório do Unitrac).
+          </p>
         </div>
       ) : indevidas === 0 ? (
         <div className="flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-success)]/30 bg-[var(--color-success-soft)] px-4 py-3 text-[13px] font-medium" style={{ color: 'var(--color-success-soft-fg)' }}>
-          <CheckCircle size={16} weight="fill" /> Nenhuma parada indevida registrada no período.
+          <CheckCircle size={16} weight="fill" /> Rastreamento gerado, nenhuma parada indevida no período.
         </div>
       ) : (
         <>
