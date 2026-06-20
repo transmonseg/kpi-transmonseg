@@ -124,6 +124,13 @@ try {
   // remove overlays do tour se existirem
   await evalJS(`document.querySelectorAll('.driver-overlay,.driver-popover,#driver-page-overlay,.driver-active-element').forEach(el=>el.remove())`)
 
+  // clique opcional (valida interatividade: ⓘ explicações, etc.) + scroll até alvo
+  if (process.env.PRE_CLICK) {
+    const clicked = await evalJS(`(() => { const el = document.querySelector(${JSON.stringify(process.env.PRE_CLICK)}); if (!el) return 'nao-achou'; el.scrollIntoView({block:'center'}); el.click(); return 'ok'; })()`)
+    console.log('pre-click:', process.env.PRE_CLICK, '->', clicked)
+    await sleep(700)
+  }
+
   const title = await evalJS('document.title')
   const bodyLen = await evalJS('document.body.innerText.length')
   console.log('painel title:', title, '| texto chars:', bodyLen)
