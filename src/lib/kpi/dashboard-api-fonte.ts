@@ -95,8 +95,8 @@ export async function carregarResumosApi(svc: SupabaseClient, ini: string, fim: 
   if (!validos.length) return RESUMO_VAZIO
   return {
     paradasIndevidas: validos.reduce((s, r) => s + r.paradasIndevidas, 0),
-    topIndevidas: validos.flatMap(r => r.topIndevidas).sort((a, b) => b.duracaoMin - a.duracaoMin).slice(0, 10),
-    pontosRisco: validos.flatMap(r => r.pontosRisco ?? []).slice(0, 120),
+    topIndevidas: validos.flatMap(r => r.topIndevidas).sort((a, b) => b.duracaoMin - a.duracaoMin).slice(0, 60),
+    pontosRisco: validos.flatMap(r => r.pontosRisco ?? []).slice(0, 5000),
   }
 }
 
@@ -211,7 +211,7 @@ export async function gerarDiaApi(
     .sort((a, b) => (b.duracao_seg ?? 0) - (a.duracao_seg ?? 0))
   const resumo: ResumoDiaApi = {
     paradasIndevidas: indevidas.length,
-    topIndevidas: indevidas.slice(0, 10).map(p => ({
+    topIndevidas: indevidas.slice(0, 60).map(p => ({
       placa: p.placa_norm,
       hora: fmtHora(new Date(p.chegada)) ?? '',
       duracaoMin: Math.round((p.duracao_seg ?? 0) / 60),
@@ -219,7 +219,7 @@ export async function gerarDiaApi(
     })),
     pontosRisco: indevidas
       .filter(p => p.lat != null && p.lng != null && Math.abs(p.lat) > 1)
-      .slice(0, 120)
+      .slice(0, 1000)
       .map(p => ({
         placa: p.placa_norm,
         hora: fmtHora(new Date(p.chegada)) ?? '',

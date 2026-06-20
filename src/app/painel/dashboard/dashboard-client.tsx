@@ -796,7 +796,7 @@ function SecaoRiscoMapa({ resumo, carregando, n }: { resumo: ResumoApi | null; c
   const placasVistas = new Set<string>()
   const topIndevidas: BarItem[] = (resumo?.topIndevidas ?? [])
     .filter(p => { if (placasVistas.has(p.placa)) return false; placasVistas.add(p.placa); return true })
-    .slice(0, 6)
+    .slice(0, 15)
     .map(p => ({ key: p.placa, label: p.placa, value: p.duracaoMin, sub: `parou às ${p.hora}, fora de base`, tone: 'danger' as const }))
   const pior = resumo?.topIndevidas?.[0] ?? null
   const indevidas = resumo?.paradasIndevidas ?? 0
