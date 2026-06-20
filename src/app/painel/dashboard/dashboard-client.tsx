@@ -22,6 +22,13 @@ type Andamento = { ENTREGUE: number; EM_ROTA: number; NA_BASE: number; SEM_SINAL
 
 const hoje = () => hojeBR()
 
+// Anda N dias a partir de uma data YYYY-MM-DD (meio-dia UTC pra não virar de fuso).
+const stepDay = (d: string, delta: number) => {
+  const x = new Date(`${d}T12:00:00Z`)
+  x.setUTCDate(x.getUTCDate() + delta)
+  return x.toISOString().slice(0, 10)
+}
+
 // Anos disponíveis no seletor do período "Ano": ano atual + 2 anteriores.
 const ANO_ATUAL = Number(hojeBR().slice(0, 4))
 const ANOS = [ANO_ATUAL, ANO_ATUAL - 1, ANO_ATUAL - 2].map(String)
@@ -167,7 +174,7 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
       <nav data-tour="abas" className="mt-8 flex gap-1 border-b border-[var(--color-border)]">
         {([['geral', 'Visão geral'], ['painel', 'Painel do dia'], ['inserir', 'Inserir KPIs'], ['historico', 'Histórico']] as [Tab, string][]).map(([t, label]) => (
           <button
-            key={t} onClick={() => { if (t === 'painel') { setPeriodo('dia'); setData(hoje()) } setTab(t) }}
+            key={t} onClick={() => setTab(t)}
             className={[
               'relative px-4 py-2.5 text-[13px] font-medium transition-[color,transform] duration-150 active:scale-[0.98]',
               tab === t ? 'text-[var(--color-fg)]' : 'text-[var(--color-fg-subtle)] hover:text-[var(--color-fg)]',
@@ -802,8 +809,18 @@ function BarraControle(props: {
         <input type="month" value={data.slice(0, 7)} onChange={e => setData(`${e.target.value}-01`)}
           className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30" />
       ) : (
-        <input type="date" value={data} onChange={e => setData(e.target.value)}
-          className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30" />
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setData(stepDay(data, -1))} aria-label="Dia anterior"
+            className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[16px] leading-none text-[var(--color-fg-muted)] shadow-soft transition-[background-color,border-color,transform] duration-150 active:scale-[0.95] hover:border-[var(--color-border-strong)] hover:text-[var(--color-fg)]"
+          >‹</button>
+          <input type="date" value={data} max={hoje()} onChange={e => setData(e.target.value)}
+            className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30" />
+          <button
+            onClick={() => setData(stepDay(data, 1))} aria-label="Próximo dia" disabled={data >= hoje()}
+            className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[16px] leading-none text-[var(--color-fg-muted)] shadow-soft transition-[background-color,border-color,transform] duration-150 active:scale-[0.95] hover:border-[var(--color-border-strong)] hover:text-[var(--color-fg)] disabled:pointer-events-none disabled:opacity-40"
+          >›</button>
+        </div>
       )}
       {intervalo && (
         <span className="hidden text-numeric text-[11px] text-[var(--color-fg-subtle)] sm:inline">
@@ -833,7 +850,7 @@ function PainelDia(props: {
         intervalo={props.intervalo} redes={props.redes} setRedes={props.setRedes}
       />
       {carregando ? <Skeleton /> : erro ? <Erro onRetry={onRetry} /> : !m || m.total === 0 ? <VazioPainel data={data} periodo={periodo} /> : (
-        <PainelDiaConteudo key={`${periodo}-${data}-${redes.join(',')}`} m={m} resumo={resumo} andamento={andamento} />
+        <PainelDiaConteudo key={`${periodo}-${data}-${redes.join(',')}`} m={m} resumo={resumo} andamento={andamento} periodo={periodo} data={data} />
       )}
     </div>
   )
@@ -889,7 +906,9 @@ function SlaCard({ i, label, valor, meta, ok }: { i: number; label: string; valo
   )
 }
 
-function PainelDiaConteudo({ m, resumo, andamento }: { m: Metricas; resumo: ResumoApi | null; andamento: Andamento | null }) {
+function PainelDiaConteudo({ m, resumo, andamento, periodo, data }: { m: Metricas; resumo: ResumoApi | null; andamento: Andamento | null; periodo: Periodo; data: string }) {
+  const lojaHref = (rede: string, loja: string) =>
+    `/painel/loja?rede=${encodeURIComponent(rede)}&loja=${encodeURIComponent(loja)}&periodo=${periodo}&data=${data}`
   const pendentes = m.nao_foi + m.sem_rastreador + m.desatualizado + m.indefinido
   const emRota = andamento?.EM_ROTA ?? m.em_rota
   const concluidasPct = m.total ? Math.round(100 * m.entregue / m.total) : 0
@@ -967,7 +986,7 @@ function PainelDiaConteudo({ m, resumo, andamento }: { m: Metricas; resumo: Resu
         <SecaoHead n="04" titulo="Rankings" sub="Quem mais retém a frota e quem mais entrega." />
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <Painel titulo="Lojas que mais retêm">
-            {retencao.length ? <BarList items={retencao} format={(n) => fmtMin(n)} showRank /> : <VazioMini>Sem dado de tempo em loja.</VazioMini>}
+            {retencao.length ? <BarList items={retencao} format={(n) => fmtMin(n)} showRank hrefDe={(it) => { const [rede, loja] = it.key.split('|'); return lojaHref(rede, loja) }} /> : <VazioMini>Sem dado de tempo em loja.</VazioMini>}
           </Painel>
           <Painel titulo="Motoristas (entregas)">
             {motoristas.length ? <BarList items={motoristas} showRank /> : <VazioMini>Sem motorista identificado.</VazioMini>}
