@@ -884,28 +884,6 @@ function VazioMini({ children }: { children: React.ReactNode }) {
   return <p className="py-6 text-center text-[12px] text-[var(--color-fg-muted)]">{children}</p>
 }
 
-// Metas de SLA (nível de serviço acordado) — base do scorecard "estamos cumprindo?".
-const SLA = { taxa: 95, tempoLojaMax: 20, indevidas: 0, gps: 90 }
-
-function SlaCard({ i, label, valor, meta, ok }: { i: number; label: string; valor: string; meta: string; ok: boolean }) {
-  return (
-    <div className="flex flex-col gap-3 p-5 sm:p-6 animate-fade-up" style={{ animationDelay: `${i * 60}ms` }}>
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-overline">{label}</span>
-        <span
-          className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
-          style={{ background: ok ? 'var(--color-success-soft)' : 'var(--color-danger-soft)', color: ok ? 'var(--color-success-soft-fg)' : 'var(--color-danger-soft-fg)' }}
-        >
-          <span className="h-1.5 w-1.5 rounded-full" style={{ background: ok ? 'var(--color-success)' : 'var(--color-danger)' }} />
-          {ok ? 'Dentro' : 'Fora'}
-        </span>
-      </div>
-      <div className="text-display text-numeric text-[40px] leading-none" style={{ color: ok ? 'var(--color-fg)' : 'var(--color-danger)' }}>{valor}</div>
-      <div className="text-[11px] text-[var(--color-fg-subtle)]">Meta SLA: {meta}</div>
-    </div>
-  )
-}
-
 function PainelDiaConteudo({ m, resumo, andamento, periodo, data }: { m: Metricas; resumo: ResumoApi | null; andamento: Andamento | null; periodo: Periodo; data: string }) {
   const lojaHref = (rede: string, loja: string) =>
     `/painel/loja?rede=${encodeURIComponent(rede)}&loja=${encodeURIComponent(loja)}&periodo=${periodo}&data=${data}`
@@ -914,15 +892,6 @@ function PainelDiaConteudo({ m, resumo, andamento, periodo, data }: { m: Metrica
   const concluidasPct = m.total ? Math.round(100 * m.entregue / m.total) : 0
   const tempoLoja = m.tempoMedioLojaMin
   const indevidas = resumo?.paradasIndevidas ?? 0
-  const gps = m.total ? Math.round(100 * m.com_rastreador / m.total) : 0
-  // Scorecard de SLA: cada meta acordada + se está dentro. É o "estamos cumprindo?".
-  const slas = [
-    { label: 'Taxa de entrega', valor: `${m.taxaEntregaDefinitiva}%`, meta: `≥ ${SLA.taxa}%`, ok: m.taxaEntregaDefinitiva >= SLA.taxa },
-    { label: 'Tempo em loja', valor: fmtMin(tempoLoja), meta: `< ${SLA.tempoLojaMax} min`, ok: tempoLoja == null || tempoLoja < SLA.tempoLojaMax },
-    { label: 'Paradas indevidas', valor: fmtNum(indevidas), meta: `= ${SLA.indevidas}`, ok: indevidas <= SLA.indevidas },
-    { label: 'Cobertura GPS', valor: `${gps}%`, meta: `≥ ${SLA.gps}%`, ok: gps >= SLA.gps },
-  ]
-  const slaOk = slas.filter(s => s.ok).length
   // 1 linha por placa (a parada mais longa de cada — já vem ordenado por duração), sem
   // repetir o "FORA DE BASE" em todo rótulo. Placa em destaque, contexto no subtítulo.
   const placasVistas = new Set<string>()
@@ -946,17 +915,9 @@ function PainelDiaConteudo({ m, resumo, andamento, periodo, data }: { m: Metrica
 
   return (
     <div className="space-y-12">
-      {/* 01 — SLA DO DIA (herói: estamos cumprindo o acordado?) */}
+      {/* 01 — STATUS DO DIA (ao vivo, da API) — bento: mix visual + números */}
       <section className="space-y-5 animate-fade-up">
-        <SecaoHead n="01" titulo="SLA do dia" sub={`${slaOk} de ${slas.length} metas dentro do acordado.`} />
-        <div className={`grid grid-cols-2 overflow-hidden divide-x divide-y divide-[var(--color-border)] lg:grid-cols-4 lg:divide-y-0 ${CARD}`}>
-          {slas.map((s, i) => <SlaCard key={s.label} i={i} label={s.label} valor={s.valor} meta={s.meta} ok={s.ok} />)}
-        </div>
-      </section>
-
-      {/* 02 — STATUS DO DIA (ao vivo, da API) — bento: mix visual + números */}
-      <section className="space-y-5 animate-fade-up">
-        <SecaoHead n="02" titulo="Status do dia" sub="Direto do rastreamento (API do Unitrac), no período selecionado." />
+        <SecaoHead n="01" titulo="Status do dia" sub="Direto do rastreamento (API do Unitrac), no período selecionado." />
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
           <div className={`p-5 sm:p-6 lg:col-span-5 ${CARD}`}>
             <h3 className="text-overline mb-4">Mix do dia</h3>
@@ -971,6 +932,18 @@ function PainelDiaConteudo({ m, resumo, andamento, periodo, data }: { m: Metrica
             <StatVivo i={2} label="Entregas pendentes" valor={pendentes} cor="var(--color-danger)" nota="não realizadas / sem dado" />
             <StatVivo i={3} label="Desvios de rota" valor={m.mudou_de_rota} cor="var(--color-warning)" nota="entregou fora da escala" />
           </div>
+        </div>
+      </section>
+
+      {/* 02 — NÚMEROS DO DIA (tempo em loja é um dos itens pedidos) */}
+      <section className="space-y-5 animate-fade-up">
+        <SecaoHead n="02" titulo="Números do dia" sub="Tempo em loja e taxa de entrega no período." />
+        <div className={`grid grid-cols-2 overflow-hidden divide-x divide-[var(--color-border)] sm:grid-cols-3 ${CARD}`}>
+          <HeroTile i={0} valor={fmtMin(tempoLoja)} label="Tempo médio em loja"
+            status={tempoLoja != null && tempoLoja > 20 ? 'warn' : 'ok'} nota="por entrega" />
+          <HeroTile i={1} valor={`${m.taxaEntregaDefinitiva}%`} label="Taxa de entrega" status={tomTaxa(m.taxaEntregaDefinitiva)}
+            nota={`${m.entregue} de ${m.entregue + m.nao_foi} definitivas`} />
+          <HeroTile i={2} valor={fmtNum(m.total)} label="Total de entregas" nota={`${m.serie.length} dia${m.serie.length === 1 ? '' : 's'}`} />
         </div>
       </section>
 
