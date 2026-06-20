@@ -453,6 +453,18 @@ function Conteudo({ m, mAnt, mes, periodo, data, redes, resumoRisco, riscoCarreg
         </div>
       )}
 
+      {/* Baixar KPI mensal — no topo, visível (era escondido lá embaixo) */}
+      <div data-tour="tendencias-export" className={`flex flex-wrap items-center gap-2 p-4 sm:p-5 ${CARD}`}>
+        <span className="mr-1 inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[var(--color-fg)]">
+          <ArrowSquareOut size={15} weight="bold" /> Baixar KPI mensal ({mes}):
+        </span>
+        {m.porRede.map(r => (
+          <a key={r.rede_id} href={`/api/dashboard/export-mensal?rede=${r.rede_id}&mes=${mes}`} className={CHIP_LINK}>
+            {REDE_LABEL[r.rede_id] ?? r.rede_id}
+          </a>
+        ))}
+      </div>
+
       {/* Resumo executivo — o período inteiro numa frase, pro cliente ler em 3s */}
       <div data-tour="resumo-exec" className="scroll-mt-32"><ResumoExecutivo m={m} mAnt={mAnt} periodo={periodo} /></div>
 
@@ -621,18 +633,6 @@ function Conteudo({ m, mAnt, mes, periodo, data, redes, resumoRisco, riscoCarreg
       {/* ═══════ 04 — POR REDE ═══════ */}
       <section id="sec-rede" key="v-rede" data-tour="tendencias" className="scroll-mt-32 space-y-5 animate-fade-up">
         <SecaoHead n="04" titulo="Por rede" sub="Desempenho de cada rede e onde puxar o resultado." />
-
-        {/* Baixar KPI mensal — faixa de destaque no topo da seção (era escondido lá embaixo) */}
-        <div data-tour="tendencias-export" className={`flex flex-wrap items-center gap-2 p-4 sm:p-5 ${CARD}`}>
-          <span className="mr-1 inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[var(--color-fg)]">
-            <ArrowSquareOut size={15} weight="bold" /> Baixar KPI mensal ({mes}):
-          </span>
-          {m.porRede.map(r => (
-            <a key={r.rede_id} href={`/api/dashboard/export-mensal?rede=${r.rede_id}&mes=${mes}`} className={CHIP_LINK}>
-              {REDE_LABEL[r.rede_id] ?? r.rede_id}
-            </a>
-          ))}
-        </div>
 
         <ComparativoRede m={m} />
 
@@ -889,7 +889,27 @@ function SecaoRiscoMapa({ resumo, carregando, n, verTodasHref, fonte }: { resumo
 
   return (
     <section id="sec-risco" data-tour="risco" className="scroll-mt-32 space-y-5 animate-fade-up">
-      <SecaoHead n={n} titulo="Segurança da carga" sub="Paradas fora de loja e da base por 10min ou mais — o evento de risco da carga, e onde aconteceram." />
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <SecaoHead n={n} titulo="Segurança da carga" sub="Paradas fora de loja e da base por 10min ou mais — o evento de risco da carga, e onde aconteceram." />
+        {/* Filtros de gravidade NO TOPO da seção — controlam o ranking e o mapa juntos */}
+        {pontosTodos.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] text-[var(--color-fg-subtle)]">Tempo parado:</span>
+            {FILTROS.map(f => (
+              <button
+                key={f.k} onClick={() => setFiltro(f.k)}
+                className={[
+                  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors',
+                  filtro === f.k ? 'border-[var(--color-accent)] text-[var(--color-fg)]' : 'border-[var(--color-border)] text-[var(--color-fg-muted)] hover:border-[var(--color-border-strong)]',
+                ].join(' ')}
+              >
+                {f.cor && <span className="h-2 w-2 rounded-full" style={{ background: f.cor }} />}
+                {f.rotulo}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {carregando && !resumo ? (
         <div style={{ height: 320, borderRadius: 'var(--radius-card)' }} className="animate-pulse bg-[var(--color-bg-elevated)]" />
@@ -958,22 +978,6 @@ function SecaoRiscoMapa({ resumo, carregando, n, verTodasHref, fonte }: { resumo
 
           {pontosTodos.length > 0 && (
             <div className="space-y-2">
-              {/* Filtro por gravidade — clica e o mapa + ranking mostram só aquela faixa */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] text-[var(--color-fg-subtle)]">Filtrar por tempo parado:</span>
-                {FILTROS.map(f => (
-                  <button
-                    key={f.k} onClick={() => setFiltro(f.k)}
-                    className={[
-                      'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors',
-                      filtro === f.k ? 'border-[var(--color-accent)] text-[var(--color-fg)]' : 'border-[var(--color-border)] text-[var(--color-fg-muted)] hover:border-[var(--color-border-strong)]',
-                    ].join(' ')}
-                  >
-                    {f.cor && <span className="h-2 w-2 rounded-full" style={{ background: f.cor }} />}
-                    {f.rotulo}
-                  </button>
-                ))}
-              </div>
               <div className={`overflow-hidden p-1.5 ${CARD}`}>
                 <MapaRisco pontos={pontos} />
               </div>
