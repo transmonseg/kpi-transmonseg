@@ -63,6 +63,24 @@ describe('saidaBaseConhecida (FHO: em rota mostra a saída)', () => {
     ]
     expect(saidaBaseConhecida(paradas)).toEqual(d(8, 20))
   })
+  it('FHO real: saiu de novo 08:20 e o corte foi bem depois → ainda 08:20', () => {
+    const paradas = [
+      { classificacao: 'BASE', chegada: d(4, 38), saida: d(5, 10) },
+      { classificacao: 'LOJA', chegada: d(6, 1), saida: d(6, 59) },
+      { classificacao: 'BASE', chegada: d(7, 55), saida: d(8, 20) },
+    ]
+    expect(saidaBaseConhecida(paradas, d(9, 30).getTime())).toEqual(d(8, 20))
+  })
+  it('UBO-5E05: voltou no fim e o relatório cortou em cima da volta → usa a PARTIDA (02:56), não a volta (11:47)', () => {
+    const paradas = [
+      { classificacao: 'BASE', chegada: d(0, 6), saida: d(0, 21) },
+      { classificacao: 'BASE', chegada: d(2, 7), saida: d(2, 56) },
+      { classificacao: 'FORA_BASE', chegada: d(4, 27), saida: d(4, 41) },
+      { classificacao: 'FORA_BASE', chegada: d(9, 10), saida: d(9, 42) },
+      { classificacao: 'BASE', chegada: d(11, 24), saida: d(11, 47) },
+    ]
+    expect(saidaBaseConhecida(paradas, d(11, 47).getTime())).toEqual(d(2, 56))
+  })
   it('só ficou na base o dia todo → null (não operou)', () => {
     expect(saidaBaseConhecida([{ classificacao: 'BASE', chegada: d(0, 5), saida: d(8, 20) }])).toBeNull()
   })

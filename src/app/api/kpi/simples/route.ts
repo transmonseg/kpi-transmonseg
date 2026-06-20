@@ -873,7 +873,7 @@ export async function POST(req: NextRequest) {
         const semEntregaLinha = !rota.paradas.some(p => p.loja_id != null)
         const saidaParcial = saidaParcialDe(rota)
           ?? (relatorioCedo && semEntregaLinha
-            ? saidaBaseConhecida(paradasIndex.get(rota.placa_unitrac ?? rota.placa_norm ?? '') ?? [])
+            ? saidaBaseConhecida(paradasIndex.get(rota.placa_unitrac ?? rota.placa_norm ?? '') ?? [], corteMs)
             : null)
         if (saidaParcial) {
           l.relatorio_parcial = true
@@ -988,10 +988,11 @@ export async function POST(req: NextRequest) {
           tem_gps: temGps,
           ficou_na_base: ficouNaBase,
           // Em rota mostra a saída de base que JÁ sabe (regra do operador / caso FHO):
-          // matcher → parcial estrito → saída de base conhecida (sem o guard de corte).
+          // matcher → parcial estrito → saída de base conhecida (corteMs evita pegar a
+          // volta no fim do dia como saída — incidente UBO-5E05).
           saida_cd_fmt: fmtHoraBRT(rota.saida_cd)
             ?? fmtHoraBRT(saidaParcialPreview)
-            ?? (!temEntrega ? fmtHoraBRT(saidaBaseConhecida(paradasIndex.get(rota.placa_unitrac ?? rota.placa_norm ?? '') ?? [])) : null),
+            ?? (!temEntrega ? fmtHoraBRT(saidaBaseConhecida(paradasIndex.get(rota.placa_unitrac ?? rota.placa_norm ?? '') ?? [], corteMs)) : null),
           chegada_loja_fmt: fmtHoraBRT(rota.paradas[0]?.chegada),
           chegada_base_fmt: fmtHoraBRT(rota.chegada_base),
           tempo_loja_min: rota.paradas[0]?.duracao_min ?? null,

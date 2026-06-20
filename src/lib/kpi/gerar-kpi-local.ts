@@ -156,13 +156,32 @@ export function saidaBaseSeEmRota(
  */
 export function saidaBaseConhecida(
   paradas: ReadonlyArray<{ classificacao: string; chegada: Date; saida: Date | null }>,
+  corteMs?: number,
 ): Date | null {
   if (paradas.length === 0) return null
-  const operou = paradas.some(p => p.classificacao === 'FORA_BASE' || p.classificacao === 'LOJA')
-  if (!operou) return null
-  const bases = paradas.filter(p => p.classificacao === 'BASE').sort((a, b) => a.chegada.getTime() - b.chegada.getTime())
-  const u = bases[bases.length - 1]
-  return u ? (u.saida ?? u.chegada) : null
+  const ord = [...paradas].sort((a, b) => a.chegada.getTime() - b.chegada.getTime())
+  const idxPrimeiraRota = ord.findIndex(p => p.classificacao === 'FORA_BASE' || p.classificacao === 'LOJA')
+  if (idxPrimeiraRota < 0) return null // nunca saiu pra rota → não operou
+  const bases = ord.filter(p => p.classificacao === 'BASE')
+  const ultima = bases[bases.length - 1]
+  if (!ultima) return null
+  const saidaUltima = ultima.saida ?? ultima.chegada
+  // Incidente UBO-5E05 (20/06): a última base é a VOLTA no fim do dia — o caminhão
+  // voltou e ficou parado, e o relatório cortou em cima dessa parada. A "saída"
+  // dela é só o último ping (o corte), não uma partida. Detecta isso: não saiu pra
+  // rota DEPOIS dela E a saída coincide com o corte (<15min). Nesse caso a saída de
+  // base real é a PARTIDA (última base antes da 1ª ida pra rota), não a volta.
+  // Sem corteMs (ou se ele saiu de novo de fato) mantém a última base — caso FHO.
+  const idxUltima = ord.lastIndexOf(ultima)
+  const saiuDepois = ord.slice(idxUltima + 1).some(p => p.classificacao === 'FORA_BASE' || p.classificacao === 'LOJA')
+  const noCorte = corteMs != null && corteMs - saidaUltima.getTime() < 15 * 60_000
+  if (!saiuDepois && noCorte) {
+    for (let i = idxPrimeiraRota - 1; i >= 0; i--) {
+      if (ord[i].classificacao === 'BASE') return ord[i].saida ?? ord[i].chegada
+    }
+    return null
+  }
+  return saidaUltima
 }
 
 /** Marca a linha como "relatório parcial" quando a placa estava em rota no corte e
