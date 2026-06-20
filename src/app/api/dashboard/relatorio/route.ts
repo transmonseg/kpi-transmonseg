@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { calcularMetricas, filtrar } from '@/lib/kpi/dashboard-metricas'
 import { intervaloPeriodo, intervaloAnterior, carregarEntradasManuais } from '@/lib/kpi/dashboard-query'
+import { carregarResumosApi } from '@/lib/kpi/dashboard-api-fonte'
 import { montarNarrativa } from '@/lib/kpi/relatorio-narrativa'
 import { Relatorio, type RelatorioCtx } from '@/lib/relatorio/Relatorio'
 import { hojeBR } from '@/lib/data-br'
@@ -38,6 +39,11 @@ export async function GET(req: NextRequest) {
 
   const narrativa = montarNarrativa(m, ant, periodo, intervalo)
 
+  // Segurança da carga (paradas indevidas) — best-effort: se não houver resumo, a
+  // seção do relatório só mostra o estado "sem rastreamento gerado".
+  let resumo = null
+  try { resumo = await carregarResumosApi(svc, intervalo[0], intervalo[1]) } catch { resumo = null }
+
   const ctx: RelatorioCtx = {
     m,
     ant,
@@ -45,6 +51,7 @@ export async function GET(req: NextRequest) {
     intervalo,
     redes,
     narrativa,
+    resumo,
     mes: ref.slice(0, 7),
     geradoEm: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
   }

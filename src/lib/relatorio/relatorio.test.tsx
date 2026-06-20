@@ -85,6 +85,7 @@ describe('Relatorio (smoke)', () => {
       intervalo,
       redes: ['PRINCESA', 'ASSAI', 'SENDAS'],
       narrativa: montarNarrativa(m, ant, 'mes', intervalo),
+      resumo: null,
       mes: '2026-05',
       geradoEm: '30/05/2026 14:00',
     }
@@ -112,6 +113,7 @@ describe('Relatorio (smoke)', () => {
       intervalo,
       redes: [],
       narrativa: montarNarrativa(m, null, 'dia', intervalo),
+      resumo: null,
       mes: '2026-05',
       geradoEm: '30/05/2026 14:00',
     }

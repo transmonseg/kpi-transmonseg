@@ -1,6 +1,7 @@
 import { Document, Page, View, Text } from '@react-pdf/renderer'
 import type { Metricas, MetricasRede } from '@/lib/kpi/dashboard-metricas'
 import type { Narrativa } from '@/lib/kpi/relatorio-narrativa'
+import type { ResumoDiaApi } from '@/lib/kpi/dashboard-api-fonte'
 import { REDE_LABEL } from '@/lib/kpi/redes'
 import { C, S, fmtMin, fmtNum, ORDEM_STATUS, STATUS_LABEL, STATUS_COR } from './tema'
 import { ColumnPdf, BarPdf, LinePdf, StackedBarPdf, StackedColumnPdf } from './charts-pdf'
@@ -16,8 +17,38 @@ export interface RelatorioCtx {
   intervalo: [string, string]
   redes: string[]
   narrativa: Narrativa
+  resumo: ResumoDiaApi | null
   mes: string
   geradoEm: string
+}
+
+/** Agrupa as paradas indevidas do resumo por placa / motorista / rede e por local. */
+function agregaRisco(resumo: ResumoDiaApi | null) {
+  const pts = resumo?.pontosRisco ?? []
+  const top = resumo?.topIndevidas ?? []
+  const grupo = <K extends string>(key: (p: typeof pts[number]) => K | undefined, fallback: K) => {
+    const m = new Map<string, { chave: string; n: number; totalMin: number }>()
+    for (const p of pts) {
+      const k = key(p) ?? fallback
+      const e = m.get(k) ?? { chave: k, n: 0, totalMin: 0 }
+      e.n++; e.totalMin += p.duracaoMin; m.set(k, e)
+    }
+    return [...m.values()].sort((a, b) => b.n - a.n || b.totalMin - a.totalMin)
+  }
+  const porLocal = new Map<string, { chave: string; n: number; totalMin: number }>()
+  for (const p of top) {
+    const k = p.local || 'Fora de base'
+    const e = porLocal.get(k) ?? { chave: k, n: 0, totalMin: 0 }
+    e.n++; e.totalMin += p.duracaoMin; porLocal.set(k, e)
+  }
+  return {
+    total: resumo?.paradasIndevidas ?? 0,
+    placas: grupo(p => p.placa, '—'),
+    motoristas: grupo(p => p.motorista, 'Sem motorista'),
+    redes: grupo(p => p.rede, '—'),
+    locais: [...porLocal.values()].sort((a, b) => b.n - a.n),
+    maisLongas: [...top].sort((a, b) => b.duracaoMin - a.duracaoMin),
+  }
 }
 
 const MESES = [
@@ -198,7 +229,8 @@ function H3({ children }: { children: string }) {
 // Documento
 // ═════════════════════════════════════════════════════════════════════════════
 export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
-  const { m, ant, periodo, intervalo, redes, narrativa, mes, geradoEm } = ctx
+  const { m, ant, periodo, intervalo, redes, narrativa, resumo, mes, geradoEm } = ctx
+  const risco = agregaRisco(resumo)
 
   // deltas vs período anterior
   const dEntrega = ant ? m.pctEntregue - ant.pctEntregue : null
@@ -550,6 +582,66 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
       </Page>
 
       {/* ─────────────────── 8. APÊNDICE ─────────────────── */}
+      {/* ═══ Segurança da carga (paradas indevidas) ═══ */}
+      <Page size="A4" style={S.page}>
+        <TituloSecao titulo="Segurança da carga" />
+        <Text style={[S.muted, { marginBottom: 14 }]}>
+          Paradas fora de loja e da base por 10 minutos ou mais — o evento de risco da carga no período.
+        </Text>
+
+        {risco.total === 0 ? (
+          <Text style={S.muted}>
+            Sem rastreamento gerado para este período (ou nenhuma parada indevida registrada). Gere o KPI pelo Unitrac para alimentar esta seção.
+          </Text>
+        ) : (
+          <View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+              <View style={{ width: '48%', borderWidth: 1, borderColor: C.border, borderRadius: 8, padding: 12 }}>
+                <Text style={[S.overline, { marginBottom: 4 }]}>Paradas indevidas</Text>
+                <Text style={{ fontSize: 24, fontFamily: 'Helvetica-Bold', color: C.bad }}>{fmtNum(risco.total)}</Text>
+                <Text style={{ fontSize: 7.5, color: C.muted, marginTop: 2 }}>eventos de risco no período</Text>
+              </View>
+              <View style={{ width: '48%', borderWidth: 1, borderColor: C.border, borderRadius: 8, padding: 12 }}>
+                <Text style={[S.overline, { marginBottom: 4 }]}>Pior caso</Text>
+                {risco.maisLongas[0] ? (
+                  <View>
+                    <Text style={{ fontSize: 13, fontFamily: 'Helvetica-Bold', color: C.ink }}>{risco.maisLongas[0].placa}</Text>
+                    <Text style={{ fontSize: 8, color: C.muted, marginTop: 2 }}>{fmtMin(risco.maisLongas[0].duracaoMin)} parado · às {risco.maisLongas[0].hora}</Text>
+                  </View>
+                ) : <Text style={S.muted}>—</Text>}
+              </View>
+            </View>
+
+            <View style={{ marginBottom: 16 }}>
+              <H3>Placas que mais param</H3>
+              <Tabela
+                cols={[{ titulo: 'Placa', width: '50%' }, { titulo: 'Paradas', width: '25%', align: 'right' }, { titulo: 'Tempo total parado', width: '25%', align: 'right' }]}
+                rows={risco.placas.slice(0, 12).map(p => [p.chave, String(p.n), fmtMin(p.totalMin)])}
+              />
+            </View>
+
+            <View style={{ marginBottom: 16 }}>
+              <H3>Motoristas com mais paradas indevidas</H3>
+              <Tabela
+                cols={[{ titulo: 'Motorista', width: '56%' }, { titulo: 'Paradas', width: '22%', align: 'right' }, { titulo: 'Tempo total', width: '22%', align: 'right' }]}
+                rows={risco.motoristas.slice(0, 12).map(p => [p.chave, String(p.n), fmtMin(p.totalMin)])}
+              />
+            </View>
+
+            {risco.redes.some(r => r.chave !== '—') ? (
+              <View>
+                <H3>Por rede</H3>
+                <Tabela
+                  cols={[{ titulo: 'Rede', width: '60%' }, { titulo: 'Paradas', width: '20%', align: 'right' }, { titulo: 'Tempo total', width: '20%', align: 'right' }]}
+                  rows={risco.redes.map(p => [p.chave === '—' ? 'Sem rede' : (REDE_LABEL[p.chave] ?? p.chave), String(p.n), fmtMin(p.totalMin)])}
+                />
+              </View>
+            ) : null}
+          </View>
+        )}
+        <Rodape geradoEm={geradoEm} />
+      </Page>
+
       <Page size="A4" style={S.page}>
         <TituloSecao titulo="Apêndice" />
 
