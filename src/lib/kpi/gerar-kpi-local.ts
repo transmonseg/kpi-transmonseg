@@ -130,58 +130,76 @@ export function saidaBaseSeEmRota(
 ): Date | null {
   if (!paradas || paradas.length === 0) return null
   const ord = [...paradas].sort((a, b) => a.chegada.getTime() - b.chegada.getTime())
-  let baseIdx = -1
-  for (let i = ord.length - 1; i >= 0; i--) {
-    if (ord[i].classificacao === 'BASE') { baseIdx = i; break }
-  }
-  if (baseIdx < 0) return null // nunca parou na base (parou só na rua) → não dá pra afirmar saída
-  const saida = ord[baseIdx].saida ?? ord[baseIdx].chegada
-  // Houve movimento REAL (loja ou fora de base) depois da última base? Então o
-  // caminhão SAIU de fato — a saída de base é fato conhecido e DEVE aparecer (regra
-  // do operador: "em rota mostra tudo que já sabe, só a chegada fica em branco"),
-  // inclusive quando ele foi a outra loja (mudou de rota). FAKE_EXIT (blip) não conta.
-  const saiuDeFato = ord.slice(baseIdx + 1).some(p => p.classificacao === 'FORA_BASE' || p.classificacao === 'LOJA')
-  if (saiuDeFato) return saida
-  // Sem movimento depois: pode estar AINDA na base → só conta como saída se já passou
-  // tempo suficiente do corte (senão a "saída" é só o último ping na base, não partida).
-  if (corteMs - saida.getTime() < 15 * 60_000) return null
+  // Saída de base da viagem PENDENTE (mesma regra de saidaBaseConhecida): quando há
+  // duas viagens no dia, pega a PARTIDA da 1ª, não a 2ª. Incidente KNC-1I34 (20/06):
+  // a saída oscilava entre 05:26 (de manhã, 1 viagem) e 11:15 (à tarde, 2ª partida)
+  // conforme o relatório avançava — fonte da inconsistência que a cliente reportou.
+  const saida = saidaBaseConhecida(ord)
+  if (!saida) return null // nunca saiu pra rota / nunca parou na base → não afirma saída
+  // Guard de corte (KOP-4978): se a saída coincide com o corte (<15min) e NÃO há
+  // parada de rota depois dela, pode ser só o último ping na base (ainda não partiu).
+  const saiuDepois = ord.some(p =>
+    (p.classificacao === 'FORA_BASE' || p.classificacao === 'LOJA') && p.chegada.getTime() > saida.getTime())
+  if (!saiuDepois && corteMs - saida.getTime() < 15 * 60_000) return null
   return saida
 }
 
 /**
- * Saída de base CONHECIDA pra exibição de linha "em rota": saída da última parada
- * BASE, desde que a placa tenha QUALQUER parada FORA_BASE/LOJA no dia (prova de que
- * operou). Sem guard de corte — regra do operador: "em rota mostra tudo que já sabe".
- * Caso FHO-5F88: o relatório cortou logo após a saída de base, mas ela é fato.
+ * Saída de base CONHECIDA pra exibição de linha "em rota" (sem entrega reconhecida).
+ *
+ * Regra: a saída que importa é a PARTIDA da primeira "viagem" do dia que NÃO terminou
+ * em entrega reconhecida (LOJA). Uma viagem é a saída da última BASE de um bloco
+ * seguida de um trecho de rota (FORA_BASE/LOJA) até voltar à base; FAKE_EXIT (blips de
+ * GPS junto à base) é ruído e não conta. Casos reais que essa regra cobre:
+ *  - FHO-5F88: a 1ª viagem entregou (LOJA) e o caminhão saiu de novo → a saída em-rota
+ *    é a 2ª partida (a 1ª já está "resolvida").
+ *  - KNC-1I34 (20/06): a 1ª viagem foi à loja mas ela não foi reconhecida (virou
+ *    FORA_BASE), o caminhão voltou e saiu de novo à tarde → a saída da linha (entrega
+ *    da manhã) é a PARTIDA da manhã (05:26), não a 2ª saída (11:15).
+ *  - UBO-5E05 (20/06): voltou no fim do dia e o relatório cortou em cima da volta → a
+ *    1ª viagem (sem loja) ganha, então usa a partida (02:56), não a volta.
+ * A última base sem rota depois (em rota AGORA, ainda não chegou) conta como partida
+ * da viagem corrente — caso original KOP-4978. `corteMs` não é mais necessário (a
+ * regra é estrutural); mantido na assinatura por compatibilidade dos chamadores.
  */
 export function saidaBaseConhecida(
   paradas: ReadonlyArray<{ classificacao: string; chegada: Date; saida: Date | null }>,
-  corteMs?: number,
+  _corteMs?: number,
 ): Date | null {
   if (paradas.length === 0) return null
   const ord = [...paradas].sort((a, b) => a.chegada.getTime() - b.chegada.getTime())
-  const idxPrimeiraRota = ord.findIndex(p => p.classificacao === 'FORA_BASE' || p.classificacao === 'LOJA')
-  if (idxPrimeiraRota < 0) return null // nunca saiu pra rota → não operou
-  const bases = ord.filter(p => p.classificacao === 'BASE')
-  const ultima = bases[bases.length - 1]
-  if (!ultima) return null
-  const saidaUltima = ultima.saida ?? ultima.chegada
-  // Incidente UBO-5E05 (20/06): a última base é a VOLTA no fim do dia — o caminhão
-  // voltou e ficou parado, e o relatório cortou em cima dessa parada. A "saída"
-  // dela é só o último ping (o corte), não uma partida. Detecta isso: não saiu pra
-  // rota DEPOIS dela E a saída coincide com o corte (<15min). Nesse caso a saída de
-  // base real é a PARTIDA (última base antes da 1ª ida pra rota), não a volta.
-  // Sem corteMs (ou se ele saiu de novo de fato) mantém a última base — caso FHO.
-  const idxUltima = ord.lastIndexOf(ultima)
-  const saiuDepois = ord.slice(idxUltima + 1).some(p => p.classificacao === 'FORA_BASE' || p.classificacao === 'LOJA')
-  const noCorte = corteMs != null && corteMs - saidaUltima.getTime() < 15 * 60_000
-  if (!saiuDepois && noCorte) {
-    for (let i = idxPrimeiraRota - 1; i >= 0; i--) {
-      if (ord[i].classificacao === 'BASE') return ord[i].saida ?? ord[i].chegada
+  const ehRota = (c: string) => c === 'FORA_BASE' || c === 'LOJA'
+  if (!ord.some(p => ehRota(p.classificacao))) return null // nunca saiu pra rota → não operou
+
+  let ultimaPartida: Date | null = null
+  let i = 0
+  while (i < ord.length) {
+    if (ord[i].classificacao !== 'BASE') { i++; continue }
+    // última BASE consecutiva do bloco — a saída dela é a partida candidata.
+    let j = i
+    while (j + 1 < ord.length && ord[j + 1].classificacao === 'BASE') j++
+    const partida = ord[j].saida ?? ord[j].chegada
+    // o que vem depois da base, pulando blips FAKE_EXIT?
+    let k = j + 1
+    while (k < ord.length && ord[k].classificacao === 'FAKE_EXIT') k++
+    if (k < ord.length && ehRota(ord[k].classificacao)) {
+      ultimaPartida = partida
+      // a viagem vai até voltar à base; teve entrega reconhecida (LOJA)?
+      let m = k, temLoja = false
+      while (m < ord.length && ord[m].classificacao !== 'BASE') {
+        if (ord[m].classificacao === 'LOJA') temLoja = true
+        m++
+      }
+      if (!temLoja) return partida // 1ª viagem pendente → essa é a saída de base
+      i = m // entregou: pula pro próximo bloco de base
+      continue
     }
-    return null
+    // base sem rota depois: se não há mais rota em lugar nenhum, é a última base —
+    // o caminhão está em rota AGORA a partir dela (viagem corrente sem loja). FHO/KOP.
+    if (!ord.slice(j + 1).some(p => ehRota(p.classificacao))) return partida
+    i = j + 1
   }
-  return saidaUltima
+  return ultimaPartida
 }
 
 /** Marca a linha como "relatório parcial" quando a placa estava em rota no corte e

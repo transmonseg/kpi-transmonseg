@@ -51,6 +51,19 @@ describe('saidaBaseSeEmRota — caso KOP-4978 (relatório parcial)', () => {
     ]
     expect(saidaBaseSeEmRota(paradas, c2)).toEqual(d(6, 20))
   })
+  it('KNC-1I34: relatório parcial avançou até a 2ª partida → ainda mostra a saída da MANHÃ (05:26), não a 2ª (11:15)', () => {
+    // Era a causa da inconsistência: de manhã a última base era 05:26 (correto); à
+    // tarde virava 11:15. A regra de "1ª viagem pendente" estabiliza em 05:26.
+    const c2 = Date.UTC(2026, 5, 9, 11, 49) // corte ~11:49 (relatório do meio-dia)
+    const paradas = [
+      { classificacao: 'BASE', chegada: d(4, 29), saida: d(5, 26) }, // partida da manhã
+      { classificacao: 'FORA_BASE', chegada: d(6, 10), saida: d(6, 58) }, // loja não reconhecida
+      { classificacao: 'BASE', chegada: d(7, 34), saida: d(7, 51) },
+      { classificacao: 'BASE', chegada: d(10, 0), saida: d(11, 15) }, // 2ª partida
+      { classificacao: 'FORA_BASE', chegada: d(11, 36), saida: d(11, 49) },
+    ]
+    expect(saidaBaseSeEmRota(paradas, c2)).toEqual(d(5, 26))
+  })
 })
 
 describe('saidaBaseConhecida (FHO: em rota mostra a saída)', () => {
@@ -80,6 +93,32 @@ describe('saidaBaseConhecida (FHO: em rota mostra a saída)', () => {
       { classificacao: 'BASE', chegada: d(11, 24), saida: d(11, 47) },
     ]
     expect(saidaBaseConhecida(paradas, d(11, 47).getTime())).toEqual(d(2, 56))
+  })
+  it('KNC-1I34 (20/06): 1ª viagem não foi reconhecida (loja virou FORA_BASE), voltou e saiu de novo 11:15 → usa a PARTIDA da manhã (05:26), não a 2ª saída', () => {
+    const paradas = [
+      { classificacao: 'FORA_BASE', chegada: d(0, 2), saida: d(3, 49) }, // ruído de madrugada
+      { classificacao: 'FAKE_EXIT', chegada: d(4, 11), saida: d(4, 25) },
+      { classificacao: 'BASE', chegada: d(4, 29), saida: d(5, 26) }, // partida da manhã
+      { classificacao: 'FORA_BASE', chegada: d(6, 10), saida: d(6, 58) }, // a loja (não reconhecida)
+      { classificacao: 'BASE', chegada: d(7, 34), saida: d(7, 51) }, // voltou
+      { classificacao: 'BASE', chegada: d(7, 54), saida: d(9, 57) },
+      { classificacao: 'BASE', chegada: d(10, 0), saida: d(11, 15) }, // 2ª partida (tarde)
+      { classificacao: 'FAKE_EXIT', chegada: d(11, 17), saida: d(11, 28) },
+      { classificacao: 'FORA_BASE', chegada: d(11, 36), saida: d(11, 49) },
+      { classificacao: 'FORA_BASE', chegada: d(11, 59), saida: d(13, 18) },
+      { classificacao: 'FAKE_EXIT', chegada: d(13, 45), saida: d(13, 53) },
+      { classificacao: 'FORA_BASE', chegada: d(13, 57), saida: d(14, 46) },
+    ]
+    expect(saidaBaseConhecida(paradas, d(14, 49).getTime())).toEqual(d(5, 26))
+  })
+  it('duas viagens, a 1ª ENTREGOU (LOJA): a saída em-rota é a 2ª partida (não a 1ª)', () => {
+    const paradas = [
+      { classificacao: 'BASE', chegada: d(4, 38), saida: d(5, 10) },
+      { classificacao: 'LOJA', chegada: d(6, 1), saida: d(6, 59) }, // 1ª viagem entregou
+      { classificacao: 'BASE', chegada: d(7, 55), saida: d(8, 20) },
+      { classificacao: 'FORA_BASE', chegada: d(9, 0), saida: d(9, 30) }, // 2ª viagem, sem loja
+    ]
+    expect(saidaBaseConhecida(paradas)).toEqual(d(8, 20))
   })
   it('só ficou na base o dia todo → null (não operou)', () => {
     expect(saidaBaseConhecida([{ classificacao: 'BASE', chegada: d(0, 5), saida: d(8, 20) }])).toBeNull()
