@@ -86,6 +86,7 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
   const [erro, setErro] = useState(false)
   // Fonte da API (rota beta) — alimenta a aba "Painel do dia" (live + paradas indevidas).
   const [betaM, setBetaM] = useState<Metricas | null>(null)
+  const [betaMAnt, setBetaMAnt] = useState<Metricas | null>(null)
   const [betaResumo, setBetaResumo] = useState<ResumoApi | null>(null)
   const [betaAndamento, setBetaAndamento] = useState<Andamento | null>(null)
   const [betaCarregando, setBetaCarregando] = useState(false)
@@ -125,8 +126,8 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
     )
     fetch(`/api/dashboard/beta?${qs}`)
       .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() })
-      .then(j => { setBetaM(j.metricas); setBetaResumo(j.resumoApi ?? null); setBetaAndamento(j.andamento ?? null); setIntervalo(j.intervalo); setBetaErro(false) })
-      .catch(() => { setBetaM(null); setBetaResumo(null); setBetaAndamento(null); setBetaErro(true) })
+      .then(j => { setBetaM(j.metricas); setBetaMAnt(j.metricasAnterior ?? null); setBetaResumo(j.resumoApi ?? null); setBetaAndamento(j.andamento ?? null); setIntervalo(j.intervalo); setBetaErro(false) })
+      .catch(() => { setBetaM(null); setBetaMAnt(null); setBetaResumo(null); setBetaAndamento(null); setBetaErro(true) })
       .finally(() => setBetaCarregando(false))
   }, [tab, periodo, data, de, ate, redesExpandidas])
 
@@ -209,7 +210,7 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
               periodo={periodo} setPeriodo={setPeriodo} data={data} setData={setData}
               de={de} setDe={setDe} ate={ate} setAte={setAte} intervalo={intervalo}
               redes={redes} setRedes={setRedes}
-              m={betaM} resumo={betaResumo} andamento={betaAndamento}
+              m={betaM} mAnt={betaMAnt} resumo={betaResumo} andamento={betaAndamento}
               carregando={betaCarregando} erro={betaErro} onRetry={recarregar}
             />
           </div>
@@ -838,10 +839,10 @@ function PainelDia(props: {
   de: string; setDe: (d: string) => void; ate: string; setAte: (d: string) => void
   intervalo: [string, string] | null
   redes: string[]; setRedes: (r: string[]) => void
-  m: Metricas | null; resumo: ResumoApi | null; andamento: Andamento | null
+  m: Metricas | null; mAnt: Metricas | null; resumo: ResumoApi | null; andamento: Andamento | null
   carregando: boolean; erro: boolean; onRetry: () => void
 }) {
-  const { m, resumo, andamento, carregando, erro, onRetry, periodo, data, redes } = props
+  const { m, mAnt, resumo, andamento, carregando, erro, onRetry, periodo, data, redes } = props
   return (
     <div className="space-y-8">
       <BarraControle
@@ -850,7 +851,7 @@ function PainelDia(props: {
         intervalo={props.intervalo} redes={props.redes} setRedes={props.setRedes}
       />
       {carregando ? <Skeleton /> : erro ? <Erro onRetry={onRetry} /> : !m || m.total === 0 ? <VazioPainel data={data} periodo={periodo} /> : (
-        <PainelDiaConteudo key={`${periodo}-${data}-${redes.join(',')}`} m={m} resumo={resumo} andamento={andamento} periodo={periodo} data={data} />
+        <PainelDiaConteudo key={`${periodo}-${data}-${redes.join(',')}`} m={m} mAnt={mAnt} resumo={resumo} andamento={andamento} periodo={periodo} data={data} />
       )}
     </div>
   )
@@ -867,7 +868,7 @@ function VazioPainel({ data, periodo }: { data: string; periodo: Periodo }) {
   )
 }
 
-function StatVivo({ i, label, valor, cor, nota }: { i: number; label: string; valor: number; cor: string; nota?: string }) {
+function StatVivo({ i, label, valor, cor, nota, delta }: { i: number; label: string; valor: number; cor: string; nota?: string; delta?: React.ReactNode }) {
   return (
     <div className="p-5 sm:p-6 animate-fade-up" style={{ animationDelay: `${i * 60}ms` }}>
       <div className="flex items-center gap-2">
@@ -876,6 +877,7 @@ function StatVivo({ i, label, valor, cor, nota }: { i: number; label: string; va
       </div>
       <div className="mt-2 text-display text-numeric text-[44px] leading-none text-[var(--color-fg)]">{fmtNum(valor)}</div>
       {nota && <div className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">{nota}</div>}
+      {delta && <div className="mt-1.5">{delta}</div>}
     </div>
   )
 }
@@ -884,7 +886,7 @@ function VazioMini({ children }: { children: React.ReactNode }) {
   return <p className="py-6 text-center text-[12px] text-[var(--color-fg-muted)]">{children}</p>
 }
 
-function PainelDiaConteudo({ m, resumo, andamento, periodo, data }: { m: Metricas; resumo: ResumoApi | null; andamento: Andamento | null; periodo: Periodo; data: string }) {
+function PainelDiaConteudo({ m, mAnt, resumo, andamento, periodo, data }: { m: Metricas; mAnt: Metricas | null; resumo: ResumoApi | null; andamento: Andamento | null; periodo: Periodo; data: string }) {
   const lojaHref = (rede: string, loja: string) =>
     `/painel/loja?rede=${encodeURIComponent(rede)}&loja=${encodeURIComponent(loja)}&periodo=${periodo}&data=${data}`
   const pendentes = m.nao_foi + m.sem_rastreador + m.desatualizado + m.indefinido
@@ -928,9 +930,12 @@ function PainelDiaConteudo({ m, resumo, andamento, periodo, data }: { m: Metrica
           </div>
           <div className={`grid grid-cols-2 overflow-hidden divide-x divide-y divide-[var(--color-border)] sm:divide-y-0 lg:col-span-7 ${CARD}`}>
             <StatVivo i={0} label="Veículos em rota" valor={emRota} cor="var(--color-info)" nota="ainda em andamento" />
-            <StatVivo i={1} label="Entregas realizadas" valor={m.entregue} cor="var(--color-success)" nota={`${concluidasPct}% do total`} />
-            <StatVivo i={2} label="Entregas pendentes" valor={pendentes} cor="var(--color-danger)" nota="não realizadas / sem dado" />
-            <StatVivo i={3} label="Desvios de rota" valor={m.mudou_de_rota} cor="var(--color-warning)" nota="entregou fora da escala" />
+            <StatVivo i={1} label="Entregas realizadas" valor={m.entregue} cor="var(--color-success)" nota={`${concluidasPct}% do total`}
+              delta={<Delta atual={m.entregue} anterior={mAnt?.entregue} neutro suf="" />} />
+            <StatVivo i={2} label="Entregas pendentes" valor={pendentes} cor="var(--color-danger)" nota="não realizadas / sem dado"
+              delta={<Delta atual={pendentes} anterior={mAnt ? mAnt.nao_foi + mAnt.sem_rastreador + mAnt.desatualizado + mAnt.indefinido : undefined} inverso suf="" />} />
+            <StatVivo i={3} label="Desvios de rota" valor={m.mudou_de_rota} cor="var(--color-warning)" nota="entregou fora da escala"
+              delta={<Delta atual={m.mudou_de_rota} anterior={mAnt?.mudou_de_rota} inverso suf="" />} />
           </div>
         </div>
       </section>
@@ -940,10 +945,13 @@ function PainelDiaConteudo({ m, resumo, andamento, periodo, data }: { m: Metrica
         <SecaoHead n="02" titulo="Números do dia" sub="Tempo em loja e taxa de entrega no período." />
         <div className={`grid grid-cols-2 overflow-hidden divide-x divide-[var(--color-border)] sm:grid-cols-3 ${CARD}`}>
           <HeroTile i={0} valor={fmtMin(tempoLoja)} label="Tempo médio em loja"
-            status={tempoLoja != null && tempoLoja > 20 ? 'warn' : 'ok'} nota="por entrega" />
+            status={tempoLoja != null && tempoLoja > 20 ? 'warn' : 'ok'} nota="por entrega"
+            delta={<Delta atual={tempoLoja} anterior={mAnt?.tempoMedioLojaMin} inverso neutro suf=" min" />} />
           <HeroTile i={1} valor={`${m.taxaEntregaDefinitiva}%`} label="Taxa de entrega" status={tomTaxa(m.taxaEntregaDefinitiva)}
-            nota={`${m.entregue} de ${m.entregue + m.nao_foi} definitivas`} />
-          <HeroTile i={2} valor={fmtNum(m.total)} label="Total de entregas" nota={`${m.serie.length} dia${m.serie.length === 1 ? '' : 's'}`} />
+            nota={`${m.entregue} de ${m.entregue + m.nao_foi} definitivas`}
+            delta={<Delta atual={m.taxaEntregaDefinitiva} anterior={mAnt?.taxaEntregaDefinitiva} />} />
+          <HeroTile i={2} valor={fmtNum(m.total)} label="Total de entregas" nota={`${m.serie.length} dia${m.serie.length === 1 ? '' : 's'}`}
+            delta={<Delta atual={m.total} anterior={mAnt?.total} neutro suf="" />} />
         </div>
       </section>
 
@@ -985,6 +993,34 @@ function PainelDiaConteudo({ m, resumo, andamento, periodo, data }: { m: Metrica
           </Painel>
         </div>
       </section>
+
+      {/* 05 — TENDÊNCIA (só quando o período tem mais de 1 dia) */}
+      {m.serie.length > 1 && (
+        <section className="space-y-5 animate-fade-up">
+          <SecaoHead n="05" titulo="Tendência" sub="Como variou ao longo dos dias do período — melhorando ou piorando." />
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <div className={`${CARD} p-5 sm:p-6`}>
+              <h3 className="text-overline mb-4">Entregas por dia</h3>
+              <LineChart
+                labels={m.serie.map(s => s.data.slice(8, 10))}
+                series={[
+                  { name: 'Realizadas', color: 'var(--color-success)', values: m.serie.map(s => s.entregue), fill: true },
+                  { name: 'Não foi', color: 'var(--color-danger)', values: m.serie.map(s => s.nao_foi) },
+                ]}
+                format={fmtNum} height={220} labelEvery={m.serie.length > 14 ? 3 : 2}
+              />
+            </div>
+            <div className={`${CARD} p-5 sm:p-6`}>
+              <h3 className="text-overline mb-4">Tempo em loja por dia</h3>
+              <LineChart
+                labels={m.serieTempos.map(s => s.data.slice(8, 10))}
+                series={[{ name: 'Tempo em loja', color: 'var(--color-warning)', values: m.serieTempos.map(s => s.tempo_loja ?? 0), fill: true }]}
+                format={fmtMin} height={220} labelEvery={m.serieTempos.length > 14 ? 3 : 2}
+              />
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   )
 }
