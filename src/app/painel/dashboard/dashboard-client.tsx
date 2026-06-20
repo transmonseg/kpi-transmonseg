@@ -126,7 +126,7 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
         ? { periodo, de, ate, redes: redesExpandidas.join(',') }
         : { periodo, data, redes: redesExpandidas.join(',') },
     )
-    fetch(`${endpoint}?${qs}`)
+    fetch(`${endpoint}?${qs}&completo=1`)
       .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() })
       .then(j => { setM(j.metricas); setMAnt(j.metricasAnterior ?? null); setIntervalo(j.intervalo); setErro(false) })
       .catch(() => { setM(null); setMAnt(null); setErro(true) })
@@ -143,7 +143,7 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
         ? { periodo, de, ate, redes: redesExpandidas.join(',') }
         : { periodo, data, redes: redesExpandidas.join(',') },
     )
-    fetch(`/api/dashboard/beta?${qs}`)
+    fetch(`/api/dashboard/beta?${qs}&completo=1`)
       .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() })
       .then(j => { setBetaResumo(j.resumoApi ?? null); setBetaMetricas(j.metricas ?? null); setBetaMAnt(j.metricasAnterior ?? null) })
       .catch(() => { setBetaResumo(null); setBetaMetricas(null); setBetaMAnt(null) })
@@ -320,7 +320,7 @@ function VisaoGeral(props: {
       </div>
 
       {carregando ? <Skeleton /> : erro ? <Erro onRetry={onRetry} /> : !m || m.total === 0 ? <Vazio /> : (
-        <Conteudo key={`${periodo}-${data}-${de}-${ate}-${redes.join(',')}`} m={m} mAnt={mAnt} mes={mes} periodo={periodo} data={data} de={de} ate={ate} redes={redes} resumoRisco={resumoRisco} riscoCarregando={riscoCarregando} fonte={fonte} />
+        <Conteudo key={`${periodo}-${data}-${de}-${ate}-${redes.join(',')}`} m={m} mAnt={mAnt} mes={mes} periodo={periodo} data={data} resumoRisco={resumoRisco} riscoCarregando={riscoCarregando} fonte={fonte} />
       )}
     </div>
   )
@@ -421,7 +421,7 @@ function Erro({ onRetry }: { onRetry: () => void }) {
   )
 }
 
-function Conteudo({ m, mAnt, mes, periodo, data, de, ate, redes, resumoRisco, riscoCarregando, fonte }: { m: Metricas; mAnt: Metricas | null; mes: string; periodo: Periodo; data: string; de: string; ate: string; redes: string[]; resumoRisco: ResumoApi | null; riscoCarregando: boolean; fonte: 'planilha' | 'rastreamento' | null }) {
+function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, fonte }: { m: Metricas; mAnt: Metricas | null; mes: string; periodo: Periodo; data: string; resumoRisco: ResumoApi | null; riscoCarregando: boolean; fonte: 'planilha' | 'rastreamento' | null }) {
   const lojaHref = (rede: string, loja: string) =>
     `/painel/loja?rede=${encodeURIComponent(rede)}&loja=${encodeURIComponent(loja)}&periodo=${periodo}&data=${data}`
   // Clicar num quadradinho amplia o detalhe AQUI na tela (modal), não em outra página.
@@ -543,7 +543,7 @@ function Conteudo({ m, mAnt, mes, periodo, data, de, ate, redes, resumoRisco, ri
         </div>
 
         {/* Tempos médios da operação */}
-        <TempoStrip m={m} mAnt={mAnt} />
+        <TempoStrip m={m} mAnt={mAnt} onVer={setDetalhe} />
 
         {/* Visão visual — rosca de status + medidores */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
@@ -683,11 +683,7 @@ function Conteudo({ m, mAnt, mes, periodo, data, de, ate, redes, resumoRisco, ri
       </section>
 
       {detalhe && (
-        <ModalDetalhe
-          tipo={detalhe} periodo={periodo} data={data} de={de} ate={ate}
-          redes={redes.join(',')} resumo={resumoRisco}
-          onClose={() => setDetalhe(null)}
-        />
+        <ModalDetalhe tipo={detalhe} m={m} resumo={resumoRisco} onClose={() => setDetalhe(null)} />
       )}
     </div>
   )
@@ -945,10 +941,11 @@ function SecaoRiscoMapa({ resumo, carregando, n, onVerTodas, fonte }: { resumo: 
       ) : (
         <>
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-            <div className={`flex flex-col gap-4 p-5 sm:p-6 ${CARD}`}>
+            <div onClick={onVerTodas} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onVerTodas() } }} className={`flex cursor-pointer flex-col gap-4 p-5 sm:p-6 ${CARD}`}>
               <div>
                 <div className="flex items-center gap-1.5 text-overline">
                   Paradas indevidas
+                  <span className="text-[10px] text-[var(--color-fg-subtle)]">↗</span>
                   <InfoTip titulo="O que é uma parada indevida?">
                     Veículo parado <strong>10 minutos ou mais</strong> fora de qualquer loja e fora da base. É o principal sinal de risco da carga: desvio de rota, parada não programada ou abordagem. Quanto mais tempo parado, mais grave.
                   </InfoTip>
@@ -1081,11 +1078,11 @@ function HeatmapDiaRede({ m }: { m: Metricas }) {
 
 // ──────────────────────────────────────────────── Seções de tempo (novas) ──
 
-function TempoStrip({ m, mAnt }: { m: Metricas; mAnt: Metricas | null }) {
+function TempoStrip({ m, mAnt, onVer }: { m: Metricas; mAnt: Metricas | null; onVer: (t: TipoDetalhe) => void }) {
   if (m.tempoMedioRotaMin == null && m.tempoMedioTotalMin == null) return null
-  const tiles = [
-    { label: 'Tempo médio de rota', value: fmtMin(m.tempoMedioRotaMin), sub: 'CD → Loja', color: 'var(--color-accent)', atual: m.tempoMedioRotaMin, anterior: mAnt?.tempoMedioRotaMin },
-    { label: 'Tempo médio em loja', value: fmtMin(m.tempoMedioLojaMin), sub: 'Chegada → Saída', color: 'var(--color-warning)', atual: m.tempoMedioLojaMin, anterior: mAnt?.tempoMedioLojaMin },
+  const tiles: Array<{ label: string; value: string; sub: string; color: string; atual: number | null; anterior: number | null | undefined; detalhe?: TipoDetalhe }> = [
+    { label: 'Tempo médio de rota', value: fmtMin(m.tempoMedioRotaMin), sub: 'CD → Loja', color: 'var(--color-accent)', atual: m.tempoMedioRotaMin, anterior: mAnt?.tempoMedioRotaMin, detalhe: 'rotas' },
+    { label: 'Tempo médio em loja', value: fmtMin(m.tempoMedioLojaMin), sub: 'Chegada → Saída', color: 'var(--color-warning)', atual: m.tempoMedioLojaMin, anterior: mAnt?.tempoMedioLojaMin, detalhe: 'tempo-loja' },
     { label: 'Tempo total médio', value: fmtMin(m.tempoMedioTotalMin), sub: 'Saída CD → Saída Loja', color: 'var(--color-info)', atual: m.tempoMedioTotalMin, anterior: mAnt?.tempoMedioTotalMin },
   ]
   // Tempo de volta e tempo de operação (Chegada CD) só aparecem quando os KPIs do
@@ -1100,9 +1097,16 @@ function TempoStrip({ m, mAnt }: { m: Metricas; mAnt: Metricas | null }) {
   return (
     <div data-tour="resumo-tempos" className={`grid ${gridCols} overflow-hidden divide-x divide-[var(--color-border)] ${CARD} animate-fade-up`}>
       {tiles.map((t, i) => (
-        <div key={t.label} className="p-4 sm:p-5">
+        <div
+          key={t.label}
+          onClick={t.detalhe ? () => onVer(t.detalhe!) : undefined}
+          role={t.detalhe ? 'button' : undefined} tabIndex={t.detalhe ? 0 : undefined}
+          onKeyDown={t.detalhe ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onVer(t.detalhe!) } } : undefined}
+          className={`p-4 sm:p-5 ${t.detalhe ? 'cursor-pointer transition-colors hover:bg-[var(--color-bg-subtle)]' : ''}`}
+        >
           <div className="flex items-center gap-1.5 text-overline">
             {t.label}
+            {t.detalhe && <span className="text-[10px] text-[var(--color-fg-subtle)]">↗</span>}
             {i === 0 && (
               <InfoTip titulo="Como ler os tempos">
                 Cada número é a <strong>média</strong> de todas as entregas do período (soma os tempos e divide pela quantidade). O texto embaixo diz o trecho medido: <strong>rota</strong> é do CD até a loja, <strong>em loja</strong> é da chegada à saída, e <strong>total</strong> é da saída do CD até sair da loja.
@@ -1246,7 +1250,7 @@ function ComparativoRede({ m }: { m: Metricas }) {
 function TopRotas({ m, lojaHref, onVerTodos }: { m: Metricas; lojaHref: (rede: string, loja: string) => string; onVerTodos: () => void }) {
   if (m.topRotasDemoradas.length === 0) return null
   const maxRota = m.topRotasDemoradas[0].tempo_rota ?? 1
-  const items: BarItem[] = m.topRotasDemoradas.map((r, i) => ({
+  const items: BarItem[] = m.topRotasDemoradas.slice(0, 15).map((r, i) => ({
     key: `${r.rede_id}|${r.loja}`,
     label: r.loja,
     value: r.tempo_rota ?? 0,
@@ -1275,7 +1279,7 @@ function TopRotas({ m, lojaHref, onVerTodos }: { m: Metricas; lojaHref: (rede: s
 function TopTempoLoja({ m, lojaHref, onVerTodos }: { m: Metricas; lojaHref: (rede: string, loja: string) => string; onVerTodos: () => void }) {
   if (m.topTempoEmLoja.length === 0) return null
   const maxLoja = m.topTempoEmLoja[0].tempo_loja ?? 1
-  const items: BarItem[] = m.topTempoEmLoja.map((r, i) => ({
+  const items: BarItem[] = m.topTempoEmLoja.slice(0, 15).map((r, i) => ({
     key: `${r.rede_id}|${r.loja}`,
     label: r.loja,
     value: r.tempo_loja ?? 0,
@@ -1313,7 +1317,7 @@ function TopMotoristas({ m, onVerTodos }: { m: Metricas; onVerTodos: () => void 
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border)]">
-            {m.topMotoristas.map((r, i) => (
+            {m.topMotoristas.slice(0, 15).map((r, i) => (
               <tr key={r.motorista} className="transition-colors hover:bg-[var(--color-bg-subtle)]">
                 <td className="px-5 py-2.5">
                   <span className={[

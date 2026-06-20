@@ -80,6 +80,7 @@ export async function GET(req: NextRequest) {
     ? [u.searchParams.get('de') ?? ref, u.searchParams.get('ate') ?? ref]
     : intervaloPeriodo(periodo, ref)
   const redes = (u.searchParams.get('redes') ?? '').split(',').filter(Boolean)
+  const completo = u.searchParams.get('completo') === '1'
 
   const svc = createServiceClient()
   const linhas = await carregarEntradasApi(svc, ini, fim)
@@ -98,5 +99,5 @@ export async function GET(req: NextRequest) {
     } catch { metricasAnterior = null }
   }
   const resumoApi = await carregarResumosApi(svc, ini, fim)
-  return NextResponse.json({ periodo, ref, intervalo: [ini, fim], redes, metricas: calcularMetricas(filt), metricasAnterior, andamento, resumoApi })
+  return NextResponse.json({ periodo, ref, intervalo: [ini, fim], redes, metricas: calcularMetricas(filt, completo), metricasAnterior, andamento, resumoApi })
 }

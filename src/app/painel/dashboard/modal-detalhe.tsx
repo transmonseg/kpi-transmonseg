@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { X } from '@phosphor-icons/react/dist/ssr'
 import type { Metricas } from '@/lib/kpi/dashboard-metricas'
 import type { ResumoDiaApi } from '@/lib/kpi/dashboard-api-fonte'
@@ -30,36 +30,22 @@ const colLoja = <T extends { rede_id: string; loja: string }>(): ColunaRanking<T
   ord: l => l.loja, busca: l => `${l.loja} ${REDE_LABEL[l.rede_id] ?? l.rede_id}`,
 })
 
-export function ModalDetalhe({ tipo, periodo, data, de, ate, redes, resumo, onClose }: {
+// Abre instantâneo: usa os números que o dashboard JÁ carregou (sem novo fetch).
+export function ModalDetalhe({ tipo, m, resumo, onClose }: {
   tipo: TipoDetalhe
-  periodo: string; data: string; de: string; ate: string; redes: string
+  m: Metricas
   resumo: ResumoDiaApi | null
   onClose: () => void
 }) {
-  const [m, setM] = useState<Metricas | null>(null)
-  const [carregando, setCarregando] = useState(true)
-
-  // Fecha no Esc.
+  // Trava o scroll do fundo enquanto o modal está aberto (não rola "atrás").
   useEffect(() => {
+    const anterior = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', h)
-    return () => window.removeEventListener('keydown', h)
+    return () => { document.body.style.overflow = anterior; window.removeEventListener('keydown', h) }
   }, [onClose])
 
-  // Busca os números COMPLETOS (sem corte) só quando o detalhe é de loja/motorista.
-  const precisaMetricas = tipo !== 'placas'
-  useEffect(() => {
-    if (!precisaMetricas) { setCarregando(false); return }
-    setCarregando(true)
-    const qs = new URLSearchParams(periodo === 'custom' ? { periodo, de, ate, redes } : { periodo, data, redes })
-    fetch(`/api/dashboard?${qs}&completo=1`)
-      .then(r => r.ok ? r.json() : null)
-      .then(j => setM(j?.metricas ?? null))
-      .catch(() => setM(null))
-      .finally(() => setCarregando(false))
-  }, [tipo, periodo, data, de, ate, redes, precisaMetricas])
-
-  // Placas que mais param (do resumo de risco, já completo).
   const placas = useMemo(() => {
     const map = new Map<string, { placa: string; n: number; totalMin: number; rede?: string }>()
     for (const p of resumo?.pontosRisco ?? []) {
@@ -77,71 +63,68 @@ export function ModalDetalhe({ tipo, periodo, data, de, ate, redes, resumo, onCl
       if (!e) { e = { rede_id, loja, sem: 0, nao: 0 }; map.set(k, e) }
       return e
     }
-    for (const x of m?.topSemRastreador ?? []) get(x.rede_id, x.loja).sem = x.ocorrencias
-    for (const x of m?.topNaoFoi ?? []) get(x.rede_id, x.loja).nao = x.ocorrencias
+    for (const x of m.topSemRastreador) get(x.rede_id, x.loja).sem = x.ocorrencias
+    for (const x of m.topNaoFoi) get(x.rede_id, x.loja).nao = x.ocorrencias
     return [...map.values()].sort((a, b) => (b.sem + b.nao) - (a.sem + a.nao))
   }, [m])
 
   let tabela: React.ReactNode = null
-  if (carregando) {
-    tabela = <div className="h-64 animate-pulse rounded-[var(--radius-card)] bg-[var(--color-bg-elevated)]" />
-  } else if (tipo === 'placas') {
-    tabela = (
-      <TabelaRanking titulo="Placas que mais param" ancora="m-placas" sub="Paradas indevidas por placa (fora de loja e da base, 10min+)." buscaPlaceholder="Buscar placa…"
-        linhas={placas}
-        colunas={[
-          { chave: 'placa', titulo: 'Placa', render: l => <span className="text-numeric font-medium text-[var(--color-fg)]">{l.placa}</span>, ord: l => l.placa, busca: l => l.placa },
-          { chave: 'rede', titulo: 'Rede', render: l => <span className="text-[12px] text-[var(--color-fg-muted)]">{l.rede ? (REDE_LABEL[l.rede] ?? l.rede) : '—'}</span>, ord: l => l.rede ?? '', busca: l => (l.rede ? REDE_LABEL[l.rede] ?? l.rede : '') },
-          { chave: 'n', titulo: 'Paradas', alinhar: 'right', render: l => <span className="font-semibold" style={{ color: 'var(--color-danger)' }}>{l.n}</span>, ord: l => l.n },
-          { chave: 'total', titulo: 'Tempo total parado', alinhar: 'right', render: l => fmtMin(l.totalMin), ord: l => l.totalMin },
-        ] as ColunaRanking<typeof placas[number]>[]} />
-    )
-  } else if (m) {
-    if (tipo === 'nao-foi') tabela = (
-      <TabelaRanking titulo="Não foi ao cliente" ancora="m-naofoi" sub="Por loja, no período." buscaPlaceholder="Buscar loja…" linhas={m.topNaoFoi}
-        colunas={[colLoja<Metricas['topNaoFoi'][number]>(), { chave: 'oc', titulo: 'Ocorrências', alinhar: 'right', render: l => l.ocorrencias, ord: l => l.ocorrencias }]} />
-    )
-    else if (tipo === 'gps') tabela = (
-      <TabelaRanking titulo="Sem rastreador (sem GPS)" ancora="m-gps" sub="Entregas sem registro de GPS, por loja." buscaPlaceholder="Buscar loja…" linhas={m.topSemRastreador}
-        colunas={[colLoja<Metricas['topSemRastreador'][number]>(), { chave: 'oc', titulo: 'Ocorrências', alinhar: 'right', render: l => l.ocorrencias, ord: l => l.ocorrencias }]} />
-    )
-    else if (tipo === 'lojas') tabela = (
-      <TabelaRanking titulo="Lojas com problema" ancora="m-lojas" sub="Sem GPS + não foi, combinados." buscaPlaceholder="Buscar loja…" linhas={lojasProblema}
-        colunas={[colLoja<typeof lojasProblema[number]>(), { chave: 'sem', titulo: 'Sem GPS', alinhar: 'right', render: l => l.sem || '—', ord: l => l.sem }, { chave: 'nao', titulo: 'Não foi', alinhar: 'right', render: l => l.nao || '—', ord: l => l.nao }]} />
-    )
-    else if (tipo === 'rotas') tabela = (
-      <TabelaRanking titulo="Rotas mais demoradas (CD → loja)" ancora="m-rotas" buscaPlaceholder="Buscar loja…" linhas={m.topRotasDemoradas}
-        colunas={[colLoja<Metricas['topRotasDemoradas'][number]>(), { chave: 't', titulo: 'Tempo de rota', alinhar: 'right', render: l => fmtMin(l.tempo_rota), ord: l => l.tempo_rota ?? 0 }, { chave: 'n', titulo: 'Visitas', alinhar: 'right', render: l => l.n, ord: l => l.n }]} />
-    )
-    else if (tipo === 'tempo-loja') tabela = (
-      <TabelaRanking titulo="Mais tempo em loja" ancora="m-tloja" buscaPlaceholder="Buscar loja…" linhas={m.topTempoEmLoja}
-        colunas={[colLoja<Metricas['topTempoEmLoja'][number]>(), { chave: 't', titulo: 'Tempo em loja', alinhar: 'right', render: l => fmtMin(l.tempo_loja), ord: l => l.tempo_loja ?? 0 }, { chave: 'n', titulo: 'Visitas', alinhar: 'right', render: l => l.n, ord: l => l.n }]} />
-    )
-    else if (tipo === 'motoristas') tabela = (
-      <TabelaRanking titulo="Motoristas" ancora="m-mot" buscaPlaceholder="Buscar motorista…" linhas={m.topMotoristas}
-        colunas={[
-          { chave: 'mot', titulo: 'Motorista', render: l => <span className="font-medium text-[var(--color-fg)]">{l.motorista}</span>, ord: l => l.motorista, busca: l => l.motorista },
-          { chave: 'ent', titulo: 'Entregas', alinhar: 'right', render: l => fmtNum(l.entregas), ord: l => l.entregas },
-          { chave: 'r', titulo: 'Tempo de rota', alinhar: 'right', render: l => fmtMin(l.tempo_rota), ord: l => l.tempo_rota ?? 0 },
-          { chave: 'l', titulo: 'Tempo em loja', alinhar: 'right', render: l => fmtMin(l.tempo_loja), ord: l => l.tempo_loja ?? 0 },
-        ]} />
-    )
-    else if (tipo === 'rede') tabela = (
-      <TabelaRanking titulo="Desempenho por rede" ancora="m-rede" buscaPlaceholder="Buscar rede…" linhas={m.porRede}
-        colunas={[
-          { chave: 'rede', titulo: 'Rede', render: l => <span className="font-medium text-[var(--color-fg)]">{REDE_LABEL[l.rede_id] ?? l.rede_id}</span>, ord: l => REDE_LABEL[l.rede_id] ?? l.rede_id, busca: l => REDE_LABEL[l.rede_id] ?? l.rede_id },
-          { chave: 'tx', titulo: 'Taxa de entrega', alinhar: 'right', render: l => `${l.pctEntregue}%`, ord: l => l.pctEntregue },
-          { chave: 'tot', titulo: 'Entregas', alinhar: 'right', render: l => fmtNum(l.total), ord: l => l.total },
-        ]} />
-    )
-  }
+  if (tipo === 'placas') tabela = (
+    <TabelaRanking titulo="Placas que mais param" ancora="m-placas" sub="Paradas indevidas por placa (fora de loja e da base, 10min+)." buscaPlaceholder="Buscar placa…" linhas={placas}
+      colunas={[
+        { chave: 'placa', titulo: 'Placa', render: l => <span className="text-numeric font-medium text-[var(--color-fg)]">{l.placa}</span>, ord: l => l.placa, busca: l => l.placa },
+        { chave: 'rede', titulo: 'Rede', render: l => <span className="text-[12px] text-[var(--color-fg-muted)]">{l.rede ? (REDE_LABEL[l.rede] ?? l.rede) : '—'}</span>, ord: l => l.rede ?? '', busca: l => (l.rede ? REDE_LABEL[l.rede] ?? l.rede : '') },
+        { chave: 'n', titulo: 'Paradas', alinhar: 'right', render: l => <span className="font-semibold" style={{ color: 'var(--color-danger)' }}>{l.n}</span>, ord: l => l.n },
+        { chave: 'total', titulo: 'Tempo total parado', alinhar: 'right', render: l => fmtMin(l.totalMin), ord: l => l.totalMin },
+      ] as ColunaRanking<typeof placas[number]>[]} />
+  )
+  else if (tipo === 'nao-foi') tabela = (
+    <TabelaRanking titulo="Não foi ao cliente" ancora="m-naofoi" sub="Por loja, no período." buscaPlaceholder="Buscar loja…" linhas={m.topNaoFoi}
+      colunas={[colLoja<Metricas['topNaoFoi'][number]>(), { chave: 'oc', titulo: 'Ocorrências', alinhar: 'right', render: l => l.ocorrencias, ord: l => l.ocorrencias }]} />
+  )
+  else if (tipo === 'gps') tabela = (
+    <TabelaRanking titulo="Sem rastreador (sem GPS)" ancora="m-gps" sub="Entregas sem registro de GPS, por loja." buscaPlaceholder="Buscar loja…" linhas={m.topSemRastreador}
+      colunas={[colLoja<Metricas['topSemRastreador'][number]>(), { chave: 'oc', titulo: 'Ocorrências', alinhar: 'right', render: l => l.ocorrencias, ord: l => l.ocorrencias }]} />
+  )
+  else if (tipo === 'lojas') tabela = (
+    <TabelaRanking titulo="Lojas com problema" ancora="m-lojas" sub="Sem GPS + não foi, combinados." buscaPlaceholder="Buscar loja…" linhas={lojasProblema}
+      colunas={[colLoja<typeof lojasProblema[number]>(), { chave: 'sem', titulo: 'Sem GPS', alinhar: 'right', render: l => l.sem || '—', ord: l => l.sem }, { chave: 'nao', titulo: 'Não foi', alinhar: 'right', render: l => l.nao || '—', ord: l => l.nao }]} />
+  )
+  else if (tipo === 'rotas') tabela = (
+    <TabelaRanking titulo="Rotas mais demoradas (CD → loja)" ancora="m-rotas" buscaPlaceholder="Buscar loja…" linhas={m.topRotasDemoradas}
+      colunas={[colLoja<Metricas['topRotasDemoradas'][number]>(), { chave: 't', titulo: 'Tempo de rota', alinhar: 'right', render: l => fmtMin(l.tempo_rota), ord: l => l.tempo_rota ?? 0 }, { chave: 'n', titulo: 'Visitas', alinhar: 'right', render: l => l.n, ord: l => l.n }]} />
+  )
+  else if (tipo === 'tempo-loja') tabela = (
+    <TabelaRanking titulo="Mais tempo em loja" ancora="m-tloja" buscaPlaceholder="Buscar loja…" linhas={m.topTempoEmLoja}
+      colunas={[colLoja<Metricas['topTempoEmLoja'][number]>(), { chave: 't', titulo: 'Tempo em loja', alinhar: 'right', render: l => fmtMin(l.tempo_loja), ord: l => l.tempo_loja ?? 0 }, { chave: 'n', titulo: 'Visitas', alinhar: 'right', render: l => l.n, ord: l => l.n }]} />
+  )
+  else if (tipo === 'motoristas') tabela = (
+    <TabelaRanking titulo="Motoristas" ancora="m-mot" buscaPlaceholder="Buscar motorista…" linhas={m.topMotoristas}
+      colunas={[
+        { chave: 'mot', titulo: 'Motorista', render: l => <span className="font-medium text-[var(--color-fg)]">{l.motorista}</span>, ord: l => l.motorista, busca: l => l.motorista },
+        { chave: 'ent', titulo: 'Entregas', alinhar: 'right', render: l => fmtNum(l.entregas), ord: l => l.entregas },
+        { chave: 'r', titulo: 'Tempo de rota', alinhar: 'right', render: l => fmtMin(l.tempo_rota), ord: l => l.tempo_rota ?? 0 },
+        { chave: 'l', titulo: 'Tempo em loja', alinhar: 'right', render: l => fmtMin(l.tempo_loja), ord: l => l.tempo_loja ?? 0 },
+      ]} />
+  )
+  else if (tipo === 'rede') tabela = (
+    <TabelaRanking titulo="Desempenho por rede" ancora="m-rede" buscaPlaceholder="Buscar rede…" linhas={m.porRede}
+      colunas={[
+        { chave: 'rede', titulo: 'Rede', render: l => <span className="font-medium text-[var(--color-fg)]">{REDE_LABEL[l.rede_id] ?? l.rede_id}</span>, ord: l => REDE_LABEL[l.rede_id] ?? l.rede_id, busca: l => REDE_LABEL[l.rede_id] ?? l.rede_id },
+        { chave: 'tx', titulo: 'Taxa de entrega', alinhar: 'right', render: l => `${l.pctEntregue}%`, ord: l => l.pctEntregue },
+        { chave: 'tot', titulo: 'Entregas', alinhar: 'right', render: l => fmtNum(l.total), ord: l => l.total },
+      ]} />
+  )
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-start justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm sm:p-8" onClick={onClose}>
+    <div className="fixed inset-0 z-[200] flex items-start justify-center overflow-y-auto overscroll-contain bg-black/65 p-4 backdrop-blur-sm sm:p-8" onClick={onClose}>
       <div className="w-full max-w-[760px]" onClick={e => e.stopPropagation()}>
         <div className="mb-3 flex justify-end">
-          <button onClick={onClose} aria-label="Fechar" className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-fg-muted)] shadow-soft transition-colors hover:text-[var(--color-fg)]">
-            <X size={16} weight="bold" />
+          <button
+            type="button" onClick={onClose} aria-label="Fechar"
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-fg-muted)] shadow-soft transition-colors hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-fg)] active:scale-95"
+          >
+            <X size={18} weight="bold" />
           </button>
         </div>
         {tabela}
