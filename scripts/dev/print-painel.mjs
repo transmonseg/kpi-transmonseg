@@ -126,9 +126,30 @@ try {
 
   // clique opcional (valida interatividade: ⓘ explicações, etc.) + scroll até alvo
   if (process.env.PRE_CLICK) {
-    const clicked = await evalJS(`(() => { const el = document.querySelector(${JSON.stringify(process.env.PRE_CLICK)}); if (!el) return 'nao-achou'; el.scrollIntoView({block:'center'}); el.click(); return 'ok'; })()`)
+    const clicked = await evalJS(`(() => {
+      const q = ${JSON.stringify(process.env.PRE_CLICK)};
+      let el;
+      if (q.startsWith('text:')) { const txt = q.slice(5); el = [...document.querySelectorAll('button,a')].find(b => (b.textContent||'').trim().includes(txt)); }
+      else { el = document.querySelector(q); }
+      if (!el) return 'nao-achou';
+      el.scrollIntoView({block:'center'}); el.click(); return 'ok';
+    })()`)
     console.log('pre-click:', process.env.PRE_CLICK, '->', clicked)
-    await sleep(700)
+    await sleep(Number(process.env.CLICK_WAIT) || 700)
+    const abriu = await evalJS(`document.body.innerText.includes('Bem-vindo')`)
+    console.log('tour abriu (passo 1):', abriu)
+    if (process.env.ADVANCE_TO) {
+      const alvo = process.env.ADVANCE_TO
+      let achou = false
+      for (let k = 0; k < 25; k++) {
+        achou = await evalJS(`document.body.innerText.includes(${JSON.stringify(alvo)})`)
+        if (achou) break
+        await evalJS(`(() => { const b = [...document.querySelectorAll('button')].find(x => /Próximo|Próxima tela/.test(x.textContent||'')); if (b) b.click(); return !!b; })()`)
+        await sleep(560)
+      }
+      await sleep(500)
+      console.log('chegou no passo alvo:', achou, '|', alvo)
+    }
   }
 
   const title = await evalJS('document.title')
