@@ -1,6 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { CaretRight } from '@phosphor-icons/react/dist/ssr'
 
 // Coluna genérica: render pra exibir, ord (opcional) pra ordenar, busca (opcional)
 // pra entrar no filtro. Sem acesso por string-key (evita `any`).
@@ -15,19 +17,24 @@ export type ColunaRanking<T> = {
 
 const CARD = 'rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-soft'
 
-export function TabelaRanking<T>({ titulo, ancora, colunas, linhas, sub, buscaPlaceholder }: {
+export function TabelaRanking<T>({ titulo, ancora, colunas, linhas, sub, buscaPlaceholder, href }: {
   titulo: string
   ancora: string
   colunas: ColunaRanking<T>[]
   linhas: T[]
   sub?: string
   buscaPlaceholder?: string
+  // Linha clicável: quando href(linha) devolve uma URL, a linha vira navegável
+  // (ex.: abrir a página da loja). Devolve undefined para deixar a linha inerte.
+  href?: (linha: T) => string | undefined
 }) {
+  const router = useRouter()
   const [ordCol, setOrdCol] = useState<string | null>(null)
   const [ordDir, setOrdDir] = useState<'asc' | 'desc'>('desc')
   const [busca, setBusca] = useState('')
 
   const temBusca = colunas.some(c => c.busca)
+  const temHref = !!href
 
   const linhasFmt = useMemo(() => {
     const termo = busca.trim().toLowerCase()
@@ -98,19 +105,51 @@ export function TabelaRanking<T>({ titulo, ancora, colunas, linhas, sub, buscaPl
                     </th>
                   )
                 })}
+                {temHref && <th className="w-9 px-3 py-3" aria-hidden />}
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border)]">
-              {linhasFmt.map((l, i) => (
-                <tr key={i} className="transition-colors hover:bg-[var(--color-bg-subtle)]">
-                  <td className="px-4 py-2.5 text-numeric text-[12px] text-[var(--color-fg-subtle)]">{i + 1}</td>
-                  {colunas.map(c => (
-                    <td key={c.chave} className={`px-3 py-2.5 ${c.alinhar === 'right' ? 'text-right text-numeric' : 'text-left'}`}>
-                      {c.render(l)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
+              {linhasFmt.map((l, i) => {
+                const url = href?.(l)
+                const ir = (e: React.MouseEvent | React.KeyboardEvent) => {
+                  if (!url) return
+                  if ('metaKey' in e && (e.metaKey || e.ctrlKey)) window.open(url, '_blank')
+                  else router.push(url)
+                }
+                return (
+                  <tr
+                    key={i}
+                    onClick={url ? ir : undefined}
+                    onKeyDown={url ? (e) => { if (e.key === 'Enter') ir(e) } : undefined}
+                    role={url ? 'link' : undefined}
+                    tabIndex={url ? 0 : undefined}
+                    title={url ? 'Abrir a página da loja' : undefined}
+                    className={[
+                      'group transition-colors',
+                      url
+                        ? 'cursor-pointer hover:bg-[var(--color-bg-hover)] focus-visible:bg-[var(--color-bg-hover)] focus-visible:outline-none'
+                        : 'hover:bg-[var(--color-bg-subtle)]',
+                    ].join(' ')}
+                  >
+                    <td className="px-4 py-2.5 text-numeric text-[12px] text-[var(--color-fg-subtle)]">{i + 1}</td>
+                    {colunas.map(c => (
+                      <td key={c.chave} className={`px-3 py-2.5 ${c.alinhar === 'right' ? 'text-right text-numeric' : 'text-left'}`}>
+                        {c.render(l)}
+                      </td>
+                    ))}
+                    {temHref && (
+                      <td className="w-9 px-3 py-2.5 text-right">
+                        {url && (
+                          <CaretRight
+                            size={14} weight="bold"
+                            className="ml-auto text-[var(--color-fg-subtle)] opacity-40 transition-all group-hover:translate-x-0.5 group-hover:text-[var(--color-accent)] group-hover:opacity-100 group-focus-visible:opacity-100"
+                          />
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

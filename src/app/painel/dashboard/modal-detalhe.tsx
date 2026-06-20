@@ -36,12 +36,17 @@ const colLoja = <T extends { rede_id: string; loja: string }>(): ColunaRanking<T
 })
 
 // Abre instantâneo: usa os números que o dashboard JÁ carregou (sem novo fetch).
-export function ModalDetalhe({ tipo, m, resumo, onClose }: {
+export function ModalDetalhe({ tipo, m, resumo, lojaHref, onClose }: {
   tipo: TipoDetalhe
   m: Metricas
   resumo: ResumoDiaApi | null
+  // Monta a URL da página de uma loja; quando presente, as linhas de loja viram clicáveis.
+  lojaHref?: (rede: string, loja: string) => string
   onClose: () => void
 }) {
+  const hrefLoja = lojaHref
+    ? <T extends { rede_id: string; loja: string }>(l: T) => lojaHref(l.rede_id, l.loja)
+    : undefined
   // Trava o scroll do fundo enquanto o modal está aberto (não rola "atrás").
   useEffect(() => {
     const anterior = document.body.style.overflow
@@ -126,23 +131,23 @@ export function ModalDetalhe({ tipo, m, resumo, onClose }: {
       ] as ColunaRanking<typeof placas[number]>[]} />
   )
   else if (tipo === 'nao-foi') tabela = (
-    <TabelaRanking titulo="Não foi ao cliente" ancora="m-naofoi" sub="Por loja, no período." buscaPlaceholder="Buscar loja…" linhas={m.topNaoFoi}
+    <TabelaRanking titulo="Não foi ao cliente" ancora="m-naofoi" sub="Por loja, no período." buscaPlaceholder="Buscar loja…" linhas={m.topNaoFoi} href={hrefLoja}
       colunas={[colLoja<Metricas['topNaoFoi'][number]>(), { chave: 'oc', titulo: 'Ocorrências', alinhar: 'right', render: l => l.ocorrencias, ord: l => l.ocorrencias }]} />
   )
   else if (tipo === 'gps') tabela = (
-    <TabelaRanking titulo="Sem rastreador (sem GPS)" ancora="m-gps" sub="Entregas sem registro de GPS, por loja." buscaPlaceholder="Buscar loja…" linhas={m.topSemRastreador}
+    <TabelaRanking titulo="Sem rastreador (sem GPS)" ancora="m-gps" sub="Entregas sem registro de GPS, por loja." buscaPlaceholder="Buscar loja…" linhas={m.topSemRastreador} href={hrefLoja}
       colunas={[colLoja<Metricas['topSemRastreador'][number]>(), { chave: 'oc', titulo: 'Ocorrências', alinhar: 'right', render: l => l.ocorrencias, ord: l => l.ocorrencias }]} />
   )
   else if (tipo === 'lojas') tabela = (
-    <TabelaRanking titulo="Lojas com problema" ancora="m-lojas" sub="Sem GPS + não foi, combinados." buscaPlaceholder="Buscar loja…" linhas={lojasProblema}
+    <TabelaRanking titulo="Lojas com problema" ancora="m-lojas" sub="Sem GPS + não foi, combinados." buscaPlaceholder="Buscar loja…" linhas={lojasProblema} href={hrefLoja}
       colunas={[colLoja<typeof lojasProblema[number]>(), { chave: 'sem', titulo: 'Sem GPS', alinhar: 'right', render: l => l.sem || '—', ord: l => l.sem }, { chave: 'nao', titulo: 'Não foi', alinhar: 'right', render: l => l.nao || '—', ord: l => l.nao }]} />
   )
   else if (tipo === 'rotas') tabela = (
-    <TabelaRanking titulo="Rotas mais demoradas (CD → loja)" ancora="m-rotas" buscaPlaceholder="Buscar loja…" linhas={m.topRotasDemoradas}
+    <TabelaRanking titulo="Rotas mais demoradas (CD → loja)" ancora="m-rotas" buscaPlaceholder="Buscar loja…" linhas={m.topRotasDemoradas} href={hrefLoja}
       colunas={[colLoja<Metricas['topRotasDemoradas'][number]>(), { chave: 't', titulo: 'Tempo de rota', alinhar: 'right', render: l => fmtMin(l.tempo_rota), ord: l => l.tempo_rota ?? 0 }, { chave: 'n', titulo: 'Visitas', alinhar: 'right', render: l => l.n, ord: l => l.n }]} />
   )
   else if (tipo === 'tempo-loja') tabela = (
-    <TabelaRanking titulo="Mais tempo em loja" ancora="m-tloja" buscaPlaceholder="Buscar loja…" linhas={m.topTempoEmLoja}
+    <TabelaRanking titulo="Mais tempo em loja" ancora="m-tloja" buscaPlaceholder="Buscar loja…" linhas={m.topTempoEmLoja} href={hrefLoja}
       colunas={[colLoja<Metricas['topTempoEmLoja'][number]>(), { chave: 't', titulo: 'Tempo em loja', alinhar: 'right', render: l => fmtMin(l.tempo_loja), ord: l => l.tempo_loja ?? 0 }, { chave: 'n', titulo: 'Visitas', alinhar: 'right', render: l => l.n, ord: l => l.n }]} />
   )
   else if (tipo === 'motoristas') tabela = (

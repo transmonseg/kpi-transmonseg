@@ -129,7 +129,7 @@ try {
     const clicked = await evalJS(`(() => {
       const q = ${JSON.stringify(process.env.PRE_CLICK)};
       let el;
-      if (q.startsWith('text:')) { const txt = q.slice(5); el = [...document.querySelectorAll('button,a')].find(b => (b.textContent||'').trim().includes(txt)); }
+      if (q.startsWith('text:')) { const txt = q.slice(5); el = [...document.querySelectorAll('button,a,[role=button],[role=link]')].find(b => (b.textContent||'').trim().includes(txt)); }
       else { el = document.querySelector(q); }
       if (!el) return 'nao-achou';
       el.scrollIntoView({block:'center'}); el.click(); return 'ok';
@@ -150,6 +150,21 @@ try {
       await sleep(500)
       console.log('chegou no passo alvo:', achou, '|', alvo)
     }
+  }
+
+  // clique secundário opcional (ex.: clicar numa linha de tabela e validar navegação)
+  if (process.env.CLICK2) {
+    const r = await evalJS(`(() => {
+      const q = ${JSON.stringify(process.env.CLICK2)};
+      let el;
+      if (q.startsWith('text:')) { const txt = q.slice(5); el = [...document.querySelectorAll('*')].find(b => (b.textContent||'').trim().includes(txt) && (b.getAttribute('role')==='link' || b.tagName==='A')); }
+      else { el = document.querySelector(q); }
+      if (!el) return 'nao-achou';
+      el.scrollIntoView({block:'center'}); el.click(); return 'ok';
+    })()`)
+    await sleep(Number(process.env.CLICK2_WAIT) || 1500)
+    const dest = await evalJS('location.href')
+    console.log('click2:', process.env.CLICK2, '->', r, '| url agora:', dest)
   }
 
   const title = await evalJS('document.title')

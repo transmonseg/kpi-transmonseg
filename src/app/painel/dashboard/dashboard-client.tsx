@@ -683,7 +683,7 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, f
       </section>
 
       {detalhe && (
-        <ModalDetalhe tipo={detalhe} m={m} resumo={resumoRisco} onClose={() => setDetalhe(null)} />
+        <ModalDetalhe tipo={detalhe} m={m} resumo={resumoRisco} lojaHref={lojaHref} onClose={() => setDetalhe(null)} />
       )}
     </div>
   )
