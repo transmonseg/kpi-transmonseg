@@ -930,6 +930,7 @@ function PainelDiaConteudo({ m, resumo, andamento, periodo, data }: { m: Metrica
     .filter(p => { if (placasVistas.has(p.placa)) return false; placasVistas.add(p.placa); return true })
     .slice(0, 6)
     .map(p => ({ key: p.placa, label: p.placa, value: p.duracaoMin, sub: `parou às ${p.hora}, fora de base`, tone: 'danger' as const }))
+  const pior = resumo?.topIndevidas?.[0] ?? null // a parada mais longa do período
   // Ranking de retenção (prática do setor): o que mais consome a frota = tempo médio
   // em loja × nº de visitas, não só o maior tempo médio.
   const retencao: BarItem[] = [...m.topTempoEmLoja]
@@ -977,10 +978,19 @@ function PainelDiaConteudo({ m, resumo, andamento, periodo, data }: { m: Metrica
       <section className="space-y-5 animate-fade-up">
         <SecaoHead n="03" titulo="Risco e paradas indevidas" sub="Paradas fora de loja e da base por 10min ou mais — o evento de risco da carga." />
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-          <div className={`flex flex-col justify-center p-5 sm:p-6 ${CARD}`}>
-            <div className="text-overline">Paradas indevidas</div>
-            <div className="mt-2 text-display text-numeric text-[44px] leading-none" style={{ color: indevidas > 0 ? 'var(--color-danger)' : 'var(--color-fg)' }}>{fmtNum(indevidas)}</div>
-            <p className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">eventos de risco no período</p>
+          <div className={`flex flex-col justify-between gap-4 p-5 sm:p-6 ${CARD}`}>
+            <div>
+              <div className="text-overline">Paradas indevidas</div>
+              <div className="mt-2 text-display text-numeric text-[44px] leading-none" style={{ color: indevidas > 0 ? 'var(--color-danger)' : 'var(--color-fg)' }}>{fmtNum(indevidas)}</div>
+              <p className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">eventos de risco no período</p>
+            </div>
+            {pior && (
+              <div className="border-t border-[var(--color-border)] pt-3">
+                <div className="text-[10px] uppercase tracking-[0.1em] text-[var(--color-fg-subtle)]">Pior caso</div>
+                <div className="mt-1 text-numeric text-[15px] font-semibold text-[var(--color-fg)]">{pior.placa}</div>
+                <div className="text-[11px] text-[var(--color-fg-subtle)]">{fmtMin(pior.duracaoMin)} parada, às {pior.hora}</div>
+              </div>
+            )}
           </div>
           <div className="lg:col-span-2">
             <Painel titulo="Onde pararam (maior duração)">
