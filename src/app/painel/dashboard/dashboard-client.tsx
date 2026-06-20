@@ -455,6 +455,7 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando }:
               {tomTaxa(m.pctEntregue) !== 'ok' && <span className="h-1.5 w-1.5 rounded-full" style={{ background: COR[tomTaxa(m.pctEntregue)] }} />}
               <InfoTip titulo="Como a taxa é calculada">
                 Entregas <strong>concluídas</strong> dividido pelas <strong>conferíveis</strong> (concluídas + não foi ao cliente). Linhas ainda em rota, sem rastreador ou em análise ficam <strong>fora</strong> da conta — por isso a taxa não esconde o dia incompleto. Meta ≥ 95%.
+                <br /><br />A seta <strong>▲▼</strong> compara com o período anterior. <strong>pts</strong> = pontos percentuais: de 94% para 97% é ▲ 3 pts, e não 3%.
               </InfoTip>
             </div>
             <div>
@@ -474,7 +475,8 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando }:
           {/* Secundários — menores, comunicam o resto do status */}
           <div data-tour="resumo-secundarios" className={`grid grid-cols-1 overflow-hidden divide-y divide-[var(--color-border)] sm:grid-cols-3 sm:divide-x sm:divide-y-0 lg:col-span-8 ${CARD}`}>
             <HeroTile i={0} valor={`${pctFalha}%`} label="Não foi ao cliente" status={tomFalha(pctFalha)} nota={`${m.nao_foi} não realizadas`} delta={<Delta atual={pctFalha} anterior={pctFalhaAnt} inverso />} />
-            <HeroTile i={1} valor={`${pctGps}%`} label="Cobertura GPS" status={tomGps(pctGps)} nota={`${m.sem_rastreador} sem rastreador`} delta={<Delta atual={pctGps} anterior={pctGpsAnt} />} />
+            <HeroTile i={1} valor={`${pctGps}%`} label="Cobertura GPS" status={tomGps(pctGps)} nota={`${m.sem_rastreador} sem rastreador`} delta={<Delta atual={pctGps} anterior={pctGpsAnt} />}
+              info={<InfoTip titulo="Cobertura GPS">Quantas entregas tiveram <strong>posição do rastreador</strong>. O resto (&quot;sem rastreador&quot;) é placa sem aparelho de GPS ou que não está no cadastro do Unitrac — nesses não dá pra confirmar a entrega pelo mapa.</InfoTip>} />
             <HeroTile i={2} valor={fmtNum(m.total)} label="Entregas no período" nota={`${m.serie.length} dia${m.serie.length === 1 ? '' : 's'} operados`} delta={<Delta atual={m.total} anterior={mAnt?.total} neutro suf="" />} />
           </div>
         </div>
@@ -588,11 +590,23 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando }:
       <section id="sec-rede" key="v-rede" data-tour="tendencias" className="scroll-mt-32 space-y-5 animate-fade-up">
         <SecaoHead n="04" titulo="Por rede" sub="Desempenho de cada rede e onde puxar o resultado." />
 
+        {/* Baixar KPI mensal — faixa de destaque no topo da seção (era escondido lá embaixo) */}
+        <div data-tour="tendencias-export" className={`flex flex-wrap items-center gap-2 p-4 sm:p-5 ${CARD}`}>
+          <span className="mr-1 inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[var(--color-fg)]">
+            <ArrowSquareOut size={15} weight="bold" /> Baixar KPI mensal ({mes}):
+          </span>
+          {m.porRede.map(r => (
+            <a key={r.rede_id} href={`/api/dashboard/export-mensal?rede=${r.rede_id}&mes=${mes}`} className={CHIP_LINK}>
+              {REDE_LABEL[r.rede_id] ?? r.rede_id}
+            </a>
+          ))}
+        </div>
+
         <ComparativoRede m={m} />
 
         <HeatmapDiaRede m={m} />
 
-        <div data-tour="tendencias-rede" className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div data-tour="tendencias-rede" className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))]">
           <DonutRede porRede={m.porRede} />
           <PorRede redes={m.porRede} />
           <Painel titulo="Volume por turno">
@@ -614,17 +628,6 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando }:
           </Painel>
         </div>
 
-        {/* Export mensal por rede */}
-        <div data-tour="tendencias-export" className="flex flex-wrap items-center gap-1.5 border-t border-[var(--color-border)] pt-5">
-          <span className="mr-1 inline-flex items-center gap-1.5 text-[11px] text-[var(--color-fg-subtle)]">
-            <CheckCircle size={13} weight="bold" /> Baixar KPI mensal ({mes}):
-          </span>
-          {m.porRede.map(r => (
-            <a key={r.rede_id} href={`/api/dashboard/export-mensal?rede=${r.rede_id}&mes=${mes}`} className={CHIP_LINK}>
-              {REDE_LABEL[r.rede_id] ?? r.rede_id}
-            </a>
-          ))}
-        </div>
       </section>
 
       {/* ═══════ 05 — TENDÊNCIAS ═══════ */}
@@ -634,7 +637,9 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando }:
         {m.serie.length > 1 && <SerieChart serie={m.serie} />}
 
         {(m.serieTempos.length >= 2 || m.distHorarioSaida.some(h => h.entregas > 0)) && (
-          <div data-tour="tendencias-tempos" className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          // auto-fit: um gráfico sozinho ocupa a largura toda (sem "buraco" ao lado);
+          // dois ou três se distribuem em colunas iguais.
+          <div data-tour="tendencias-tempos" className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(340px,1fr))]">
             <EvolucaoTempos m={m} />
             <DistribuicaoHoraria m={m} />
             <DistribuicaoVolta m={m} />
@@ -671,7 +676,7 @@ function Alertas({ m, mAnt, lojaHref }: { m: Metricas; mAnt: Metricas | null; lo
   const delta = mAnt && mAnt.total ? m.pctEntregue - mAnt.pctEntregue : null
 
   if (m.pctEntregue < META_ENTREGA) al.push({ sev: m.pctEntregue < 80 ? 'bad' : 'warn', txt: `Taxa de entrega em ${m.pctEntregue}% (meta ${META_ENTREGA}%)` })
-  if (delta != null && delta <= -3) al.push({ sev: 'bad', txt: `Caiu ${Math.abs(delta)} p.p. vs período anterior` })
+  if (delta != null && delta <= -3) al.push({ sev: 'bad', txt: `Caiu ${Math.abs(delta)} pts vs período anterior` })
   const pior = [...m.porRede].filter(r => r.total >= 5).sort((a, b) => a.pctEntregue - b.pctEntregue)[0]
   if (pior && pior.pctEntregue < 80) al.push({ sev: 'bad', txt: `${REDE_LABEL[pior.rede_id] ?? pior.rede_id} com ${pior.pctEntregue}% de entrega` })
   if (m.pctSemRastreador > 10) al.push({ sev: m.pctSemRastreador > 20 ? 'bad' : 'warn', txt: `${m.pctSemRastreador}% sem rastreador (${m.sem_rastreador} entregas)` })
@@ -728,7 +733,7 @@ function ResumoExecutivo({ m, mAnt, periodo }: { m: Metricas; mAnt: Metricas | n
       <p className="text-[14px] leading-relaxed text-[var(--color-fg-muted)] sm:text-[15px]">
         {periodoLabel}, <strong style={{ color: COR[tom] }}>{m.pctEntregue}% das conferíveis</strong> foram concluídas <span className="text-numeric">({m.entregue} de {conferiveis})</span>
         {delta != null && delta !== 0 && (
-          <span className="text-numeric"> ({delta > 0 ? '↑' : '↓'} {Math.abs(delta)} p.p. vs período anterior)</span>
+          <span className="text-numeric"> ({delta > 0 ? '↑' : '↓'} {Math.abs(delta)} pts vs período anterior)</span>
         )}
         {' · '}<strong className="text-[var(--color-fg)]">{m.nao_foi}</strong> não foi ao cliente
         {foraConf > 0 && (
@@ -755,7 +760,7 @@ function SecaoHead({ n, titulo, sub }: { n: string; titulo: string; sub: string 
   )
 }
 
-function HeroTile({ i, valor, label, status, nota, delta }: { i: number; valor: string | number; label: string; status?: 'ok' | 'warn' | 'bad'; nota?: string; delta?: React.ReactNode }) {
+function HeroTile({ i, valor, label, status, nota, delta, info }: { i: number; valor: string | number; label: string; status?: 'ok' | 'warn' | 'bad'; nota?: string; delta?: React.ReactNode; info?: React.ReactNode }) {
   const alerta = status && status !== 'ok'
   return (
     <div className="p-5 sm:p-6 animate-fade-up" style={{ animationDelay: `${i * 60}ms` }}>
@@ -763,6 +768,7 @@ function HeroTile({ i, valor, label, status, nota, delta }: { i: number; valor: 
       <div className="mt-2 flex items-center gap-1.5">
         <div className="text-overline">{label}</div>
         {alerta && <span className="h-1.5 w-1.5 rounded-full" style={{ background: COR[status!] }} />}
+        {info}
       </div>
       {nota && <div className="mt-0.5 text-[11px]" style={{ color: alerta ? COR[status!] : 'var(--color-fg-subtle)' }}>{nota}</div>}
       {delta && <div className="mt-1.5">{delta}</div>}
@@ -770,7 +776,7 @@ function HeroTile({ i, valor, label, status, nota, delta }: { i: number; valor: 
   )
 }
 
-function Delta({ atual, anterior, inverso, neutro, suf = ' p.p.' }: { atual: number | null | undefined; anterior: number | null | undefined; inverso?: boolean; neutro?: boolean; suf?: string }) {
+function Delta({ atual, anterior, inverso, neutro, suf = ' pts' }: { atual: number | null | undefined; anterior: number | null | undefined; inverso?: boolean; neutro?: boolean; suf?: string }) {
   if (atual == null || anterior == null) return <span className="text-[10px] text-[var(--color-fg-subtle)]">sem comparação</span>
   const d = Math.round((atual - anterior) * 10) / 10
   if (d === 0) return <span className="text-[10px] text-[var(--color-fg-subtle)]">estável vs anterior</span>
@@ -975,9 +981,16 @@ function TempoStrip({ m, mAnt }: { m: Metricas; mAnt: Metricas | null }) {
   const gridCols = tiles.length >= 5 ? 'grid-cols-2 sm:grid-cols-5' : tiles.length === 4 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'
   return (
     <div data-tour="resumo-tempos" className={`grid ${gridCols} overflow-hidden divide-x divide-[var(--color-border)] ${CARD} animate-fade-up`}>
-      {tiles.map(t => (
+      {tiles.map((t, i) => (
         <div key={t.label} className="p-4 sm:p-5">
-          <div className="text-overline">{t.label}</div>
+          <div className="flex items-center gap-1.5 text-overline">
+            {t.label}
+            {i === 0 && (
+              <InfoTip titulo="Como ler os tempos">
+                Cada número é a <strong>média</strong> de todas as entregas do período (soma os tempos e divide pela quantidade). O texto embaixo diz o trecho medido: <strong>rota</strong> é do CD até a loja, <strong>em loja</strong> é da chegada à saída, e <strong>total</strong> é da saída do CD até sair da loja.
+              </InfoTip>
+            )}
+          </div>
           <div className="mt-2 text-display text-numeric text-[28px] leading-none" style={{ color: t.color }}>
             {t.value}
           </div>
