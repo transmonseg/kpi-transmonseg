@@ -123,6 +123,21 @@ Grades que podem deixar gráfico sozinho com vazio ao lado → padrão auto-fit 
 - Não regressar o fluxo crítico `/api/kpi/simples` (a mudança no backend é aditiva — `placaRede` opcional).
 - Conferir dark mode (preto) em todas as telas novas.
 
+## Fases de implementação
+
+Cada fase é testável e deployável sozinha, em ordem de mais valor visível + menos risco primeiro.
+
+| Fase | Entrega | Arquivos | Depende de |
+|------|---------|----------|------------|
+| 1 | Reorganizar seções (Segurança sobe) + zerar buracos de layout + badge "% em andamento" | `dashboard-client.tsx` | — |
+| 2 | Rede em cada parada de risco (backend, aditivo) | `dashboard-api-fonte.ts`, `api/kpi/simples/route.ts` | — |
+| 3 | Mapa: contador total/por rede, filtro por gravidade (legenda clicável), ranking de placas que mais param | `mapa-risco.tsx`, `dashboard-client.tsx` | Fase 2 |
+| 4 | Página `/painel/rankings` + `TabelaRanking` + links "Ver todos" + dados ociosos; subir cortes em `Metricas` | `painel/rankings/*` (novos), `dashboard-metricas.ts`, `dashboard-client.tsx` | — |
+
+Notas:
+- Fase 2 é aditiva (`placaRede` opcional); dias gerados antes dela não têm `rede` nas paradas até serem regerados — a quebra por rede degrada pra "sem rede".
+- Fase 4 é a maior; isolada por último pra não misturar com a reorganização.
+
 ## Riscos
 
 - Página de rankings é tela nova com auth/layout próprios — seguir o shell do `/painel` pra herdar sidebar/tema.
