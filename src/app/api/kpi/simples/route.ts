@@ -1124,7 +1124,8 @@ export async function POST(req: NextRequest) {
     // falhar, não atrapalha a geração do KPI. Salva só se for mais completo (não regride).
     try {
       const placaRede = new Map(escalaLinhas.filter(l => l.placa_norm).map(l => [l.placa_norm as string, l.rede_id]))
-      const r = await salvarResumoSeMelhor(svc, data, montarResumoDeParadaRows(paradaRows, placaRede))
+      const placaMotorista = new Map(escalaLinhas.filter(l => l.placa_norm && l.motorista_nome).map(l => [l.placa_norm as string, l.motorista_nome as string]))
+      const r = await salvarResumoSeMelhor(svc, data, montarResumoDeParadaRows(paradaRows, placaRede, placaMotorista))
       console.log(`[kpi/simples] resumo de risco ${data}: ${r.salvou ? 'atualizado' : 'mantido'} (antes ${r.antes}, agora ${r.agora} indevidas)`)
     } catch (e) {
       console.warn('[kpi/simples] salvar resumo de risco falhou (best-effort):', e instanceof Error ? e.message : e)

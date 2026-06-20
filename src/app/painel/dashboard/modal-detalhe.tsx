@@ -10,6 +10,11 @@ import { TabelaRanking, type ColunaRanking } from '../rankings/tabela-ranking'
 
 // Cada card do dashboard abre um destes detalhes, ampliado na própria tela.
 export type TipoDetalhe = 'rede' | 'nao-foi' | 'gps' | 'placas' | 'rotas' | 'tempo-loja' | 'motoristas' | 'lojas'
+  // análises de paradas indevidas (do resumo de risco)
+  | 'mot-paradas' | 'paradas-rede' | 'paradas-local' | 'paradas-longas' | 'paradas-horario'
+
+// rótulo amigável de hora (08h)
+const fmtHoraFaixa = (h: number) => `${String(h).padStart(2, '0')}h`
 
 const fmtMin = (n: number | null | undefined) => {
   if (n == null) return '—'
@@ -68,6 +73,48 @@ export function ModalDetalhe({ tipo, m, resumo, onClose }: {
     return [...map.values()].sort((a, b) => (b.sem + b.nao) - (a.sem + a.nao))
   }, [m])
 
+  // ── Análises de paradas indevidas (do resumo de risco) ──
+  const motParadas = useMemo(() => {
+    const map = new Map<string, { motorista: string; n: number; totalMin: number }>()
+    for (const p of resumo?.pontosRisco ?? []) {
+      const mot = p.motorista ?? 'Sem motorista no cadastro'
+      const e = map.get(mot) ?? { motorista: mot, n: 0, totalMin: 0 }
+      e.n++; e.totalMin += p.duracaoMin; map.set(mot, e)
+    }
+    return [...map.values()].sort((a, b) => b.n - a.n || b.totalMin - a.totalMin)
+  }, [resumo])
+
+  const paradasRede = useMemo(() => {
+    const map = new Map<string, { rede: string; n: number; totalMin: number }>()
+    for (const p of resumo?.pontosRisco ?? []) {
+      const r = p.rede ?? '—'
+      const e = map.get(r) ?? { rede: r, n: 0, totalMin: 0 }
+      e.n++; e.totalMin += p.duracaoMin; map.set(r, e)
+    }
+    return [...map.values()].sort((a, b) => b.n - a.n)
+  }, [resumo])
+
+  const paradasLocal = useMemo(() => {
+    const map = new Map<string, { local: string; n: number; totalMin: number }>()
+    for (const p of resumo?.topIndevidas ?? []) {
+      const l = p.local || 'Fora de base'
+      const e = map.get(l) ?? { local: l, n: 0, totalMin: 0 }
+      e.n++; e.totalMin += p.duracaoMin; map.set(l, e)
+    }
+    return [...map.values()].sort((a, b) => b.n - a.n)
+  }, [resumo])
+
+  const paradasLongas = useMemo(() => [...(resumo?.topIndevidas ?? [])].sort((a, b) => b.duracaoMin - a.duracaoMin), [resumo])
+
+  const paradasHora = useMemo(() => {
+    const map = new Map<number, number>()
+    for (const p of resumo?.pontosRisco ?? []) {
+      const h = parseInt((p.hora || '').slice(0, 2), 10)
+      if (!Number.isNaN(h)) map.set(h, (map.get(h) ?? 0) + 1)
+    }
+    return Array.from({ length: 24 }, (_, h) => ({ hora: h, n: map.get(h) ?? 0 })).filter(x => x.n > 0)
+  }, [resumo])
+
   let tabela: React.ReactNode = null
   if (tipo === 'placas') tabela = (
     <TabelaRanking titulo="Placas que mais param" ancora="m-placas" sub="Paradas indevidas por placa (fora de loja e da base, 10min+)." buscaPlaceholder="Buscar placa…" linhas={placas}
@@ -113,6 +160,47 @@ export function ModalDetalhe({ tipo, m, resumo, onClose }: {
         { chave: 'rede', titulo: 'Rede', render: l => <span className="font-medium text-[var(--color-fg)]">{REDE_LABEL[l.rede_id] ?? l.rede_id}</span>, ord: l => REDE_LABEL[l.rede_id] ?? l.rede_id, busca: l => REDE_LABEL[l.rede_id] ?? l.rede_id },
         { chave: 'tx', titulo: 'Taxa de entrega', alinhar: 'right', render: l => `${l.pctEntregue}%`, ord: l => l.pctEntregue },
         { chave: 'tot', titulo: 'Entregas', alinhar: 'right', render: l => fmtNum(l.total), ord: l => l.total },
+      ]} />
+  )
+  else if (tipo === 'mot-paradas') tabela = (
+    <TabelaRanking titulo="Motoristas com mais paradas indevidas" ancora="m-motpar" sub="Quem mais parou fora de loja e da base por 10min+." buscaPlaceholder="Buscar motorista…" linhas={motParadas}
+      colunas={[
+        { chave: 'mot', titulo: 'Motorista', render: l => <span className="font-medium text-[var(--color-fg)]">{l.motorista}</span>, ord: l => l.motorista, busca: l => l.motorista },
+        { chave: 'n', titulo: 'Paradas', alinhar: 'right', render: l => <span className="font-semibold" style={{ color: 'var(--color-danger)' }}>{l.n}</span>, ord: l => l.n },
+        { chave: 't', titulo: 'Tempo total parado', alinhar: 'right', render: l => fmtMin(l.totalMin), ord: l => l.totalMin },
+      ]} />
+  )
+  else if (tipo === 'paradas-rede') tabela = (
+    <TabelaRanking titulo="Paradas indevidas por rede" ancora="m-parrede" buscaPlaceholder="Buscar rede…" linhas={paradasRede}
+      colunas={[
+        { chave: 'rede', titulo: 'Rede', render: l => <span className="font-medium text-[var(--color-fg)]">{l.rede === '—' ? 'Sem rede' : (REDE_LABEL[l.rede] ?? l.rede)}</span>, ord: l => l.rede, busca: l => REDE_LABEL[l.rede] ?? l.rede },
+        { chave: 'n', titulo: 'Paradas', alinhar: 'right', render: l => <span className="font-semibold" style={{ color: 'var(--color-danger)' }}>{l.n}</span>, ord: l => l.n },
+        { chave: 't', titulo: 'Tempo total', alinhar: 'right', render: l => fmtMin(l.totalMin), ord: l => l.totalMin },
+      ]} />
+  )
+  else if (tipo === 'paradas-local') tabela = (
+    <TabelaRanking titulo="Onde mais concentram paradas" ancora="m-parlocal" sub="Locais com mais paradas indevidas." buscaPlaceholder="Buscar local…" linhas={paradasLocal}
+      colunas={[
+        { chave: 'local', titulo: 'Local', render: l => <span className="block max-w-[360px] truncate text-[var(--color-fg)]">{l.local}</span>, ord: l => l.local, busca: l => l.local },
+        { chave: 'n', titulo: 'Paradas', alinhar: 'right', render: l => l.n, ord: l => l.n },
+        { chave: 't', titulo: 'Tempo total', alinhar: 'right', render: l => fmtMin(l.totalMin), ord: l => l.totalMin },
+      ]} />
+  )
+  else if (tipo === 'paradas-longas') tabela = (
+    <TabelaRanking titulo="Paradas mais longas" ancora="m-parlongas" sub="As paradas indevidas individuais mais demoradas." buscaPlaceholder="Buscar placa…" linhas={paradasLongas}
+      colunas={[
+        { chave: 'placa', titulo: 'Placa', render: l => <span className="text-numeric font-medium text-[var(--color-fg)]">{l.placa}</span>, ord: l => l.placa, busca: l => l.placa },
+        { chave: 'mot', titulo: 'Motorista', render: l => <span className="text-[12px] text-[var(--color-fg-muted)]">{l.motorista ?? '—'}</span>, busca: l => l.motorista ?? '' },
+        { chave: 'dur', titulo: 'Duração', alinhar: 'right', render: l => <span className="font-semibold" style={{ color: 'var(--color-danger)' }}>{fmtMin(l.duracaoMin)}</span>, ord: l => l.duracaoMin },
+        { chave: 'hora', titulo: 'Hora', alinhar: 'right', render: l => l.hora, ord: l => l.hora },
+        { chave: 'local', titulo: 'Local', render: l => <span className="block max-w-[220px] truncate text-[12px] text-[var(--color-fg-muted)]">{l.local}</span>, busca: l => l.local },
+      ] as ColunaRanking<typeof paradasLongas[number]>[]} />
+  )
+  else if (tipo === 'paradas-horario') tabela = (
+    <TabelaRanking titulo="Paradas indevidas por horário" ancora="m-parhora" sub="Em que horas do dia mais acontecem." linhas={paradasHora}
+      colunas={[
+        { chave: 'hora', titulo: 'Hora do dia', render: l => fmtHoraFaixa(l.hora), ord: l => l.hora },
+        { chave: 'n', titulo: 'Paradas', alinhar: 'right', render: l => <span className="font-semibold text-[var(--color-fg)]">{l.n}</span>, ord: l => l.n },
       ]} />
   )
 

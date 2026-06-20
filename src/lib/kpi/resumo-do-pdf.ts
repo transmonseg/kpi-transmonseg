@@ -60,15 +60,14 @@ export async function puxarResumoDoPdfDoDia(svc: SupabaseClient, data: string): 
       }
     }
 
-    // 5) placa→rede das entradas manuais do dia (pro "por rede" no mapa)
-    const { data: ents } = await svc.from('kpi_manual_entradas').select('placa, rede_id').eq('data', data).not('placa', 'is', null)
-    const placaRede = new Map<string, string>(
-      ((ents ?? []) as Array<{ placa: string | null; rede_id: string }>)
-        .filter(e => e.placa).map(e => [e.placa as string, e.rede_id]),
-    )
+    // 5) placa→rede e placa→motorista das entradas manuais do dia
+    const { data: ents } = await svc.from('kpi_manual_entradas').select('placa, rede_id, motorista').eq('data', data).not('placa', 'is', null)
+    const entsArr = (ents ?? []) as Array<{ placa: string | null; rede_id: string; motorista: string | null }>
+    const placaRede = new Map<string, string>(entsArr.filter(e => e.placa).map(e => [e.placa as string, e.rede_id]))
+    const placaMotorista = new Map<string, string>(entsArr.filter(e => e.placa && e.motorista).map(e => [e.placa as string, e.motorista as string]))
 
     // 6) monta e salva (só sobe se ficar mais completo)
-    const r = await salvarResumoSeMelhor(svc, data, montarResumoDeParadaRows(paradaRows, placaRede))
+    const r = await salvarResumoSeMelhor(svc, data, montarResumoDeParadaRows(paradaRows, placaRede, placaMotorista))
     return { ok: true, paradas: r.agora }
   } catch {
     return { ok: false, motivo: 'erro' }

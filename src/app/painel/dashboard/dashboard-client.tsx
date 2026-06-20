@@ -19,10 +19,10 @@ type Periodo = 'dia' | 'semana' | 'mes' | 'ano' | 'custom'
 type Tab = 'geral' | 'inserir' | 'historico'
 
 // Resumo de risco vindo da fonte da API (rota beta): paradas indevidas do dia.
-type PontoRisco = { placa: string; hora: string; duracaoMin: number; lat: number; lng: number; rede?: string }
+type PontoRisco = { placa: string; hora: string; duracaoMin: number; lat: number; lng: number; rede?: string; motorista?: string }
 type ResumoApi = {
   paradasIndevidas: number
-  topIndevidas: Array<{ placa: string; hora: string; duracaoMin: number; local: string; rede?: string }>
+  topIndevidas: Array<{ placa: string; hora: string; duracaoMin: number; local: string; rede?: string; motorista?: string }>
   pontosRisco: PontoRisco[]
 }
 type Gravidade = 'moderada' | 'alta' | 'critica'
@@ -568,7 +568,7 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, f
       </section>
 
       {/* ═══════ 02 — SEGURANÇA DA CARGA (paradas indevidas + mapa) ═══════ */}
-      <SecaoRiscoMapa resumo={resumoRisco} carregando={riscoCarregando} n="02" onVerTodas={() => setDetalhe('placas')} fonte={fonte} />
+      <SecaoRiscoMapa resumo={resumoRisco} carregando={riscoCarregando} n="02" onVerAnalise={setDetalhe} fonte={fonte} />
 
       {/* ═══════ 03 — ONDE AGIR AGORA ═══════ */}
       <section id="sec-agir" key="v-agir" data-tour="agir" className="scroll-mt-32 space-y-5 animate-fade-up">
@@ -867,7 +867,7 @@ function InfoTip({ children, titulo }: { children: React.ReactNode; titulo?: str
 
 // Seção de segurança da carga: paradas indevidas (FORA_BASE ≥10min) + mapa dos
 // pontos. Vem da FONTE DA API (resumoApi), buscada em paralelo na Visão geral.
-function SecaoRiscoMapa({ resumo, carregando, n, onVerTodas, fonte }: { resumo: ResumoApi | null; carregando: boolean; n: string; onVerTodas: () => void; fonte: 'planilha' | 'rastreamento' | null }) {
+function SecaoRiscoMapa({ resumo, carregando, n, onVerAnalise, fonte }: { resumo: ResumoApi | null; carregando: boolean; n: string; onVerAnalise: (t: TipoDetalhe) => void; fonte: 'planilha' | 'rastreamento' | null }) {
   const [filtro, setFiltro] = useState<Gravidade | 'todas'>('todas')
   const pontosTodos = resumo?.pontosRisco ?? []
   const pontos = filtro === 'todas' ? pontosTodos : pontosTodos.filter(p => gravidadeDe(p.duracaoMin) === filtro)
@@ -941,7 +941,7 @@ function SecaoRiscoMapa({ resumo, carregando, n, onVerTodas, fonte }: { resumo: 
       ) : (
         <>
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-            <div onClick={onVerTodas} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onVerTodas() } }} className={`flex cursor-pointer flex-col gap-4 p-5 sm:p-6 ${CARD}`}>
+            <div onClick={() => onVerAnalise('placas')} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onVerAnalise('placas') } }} className={`flex cursor-pointer flex-col gap-4 p-5 sm:p-6 ${CARD}`}>
               <div>
                 <div className="flex items-center gap-1.5 text-overline">
                   Paradas indevidas
@@ -979,7 +979,7 @@ function SecaoRiscoMapa({ resumo, carregando, n, onVerTodas, fonte }: { resumo: 
                   <>
                     <BarList items={rankingTop} format={(v) => `${v}×`} showRank />
                     {rankingPlacas.length > rankingTop.length && (
-                      <button onClick={onVerTodas} className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline">
+                      <button onClick={() => onVerAnalise('placas')} className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline">
                         Ver todas as {rankingPlacas.length} placas →
                       </button>
                     )}
@@ -987,6 +987,16 @@ function SecaoRiscoMapa({ resumo, carregando, n, onVerTodas, fonte }: { resumo: 
                 ) : <VazioMini>Nenhuma parada indevida nesse filtro.</VazioMini>}
               </Painel>
             </div>
+          </div>
+
+          {/* Atalhos pra TODAS as análises de paradas indevidas (abrem ampliado na tela) */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] text-[var(--color-fg-subtle)]">Ver paradas por:</span>
+            {([['placas', 'Placa'], ['mot-paradas', 'Motorista'], ['paradas-rede', 'Rede'], ['paradas-local', 'Local'], ['paradas-longas', 'Mais longas'], ['paradas-horario', 'Horário']] as [TipoDetalhe, string][]).map(([t, label]) => (
+              <button key={t} onClick={() => onVerAnalise(t)} className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-2.5 py-1 text-[11px] font-medium text-[var(--color-fg-muted)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-fg)]">
+                {label} →
+              </button>
+            ))}
           </div>
 
           {pontosTodos.length > 0 && (
