@@ -70,9 +70,9 @@ export async function salvarDiaApi(svc: SupabaseClient, data: string, entradas: 
  *  de carga, é o evento de risco do dia (caminhão parado onde não devia). */
 export interface ResumoDiaApi {
   paradasIndevidas: number
-  topIndevidas: Array<{ placa: string; hora: string; duracaoMin: number; local: string }>
+  topIndevidas: Array<{ placa: string; hora: string; duracaoMin: number; local: string; rede?: string }>
   /** Pontos das paradas indevidas pro mapa (coordenada + duração). */
-  pontosRisco: Array<{ placa: string; hora: string; duracaoMin: number; lat: number; lng: number }>
+  pontosRisco: Array<{ placa: string; hora: string; duracaoMin: number; lat: number; lng: number; rede?: string }>
 }
 
 const RESUMO_VAZIO: ResumoDiaApi = { paradasIndevidas: 0, topIndevidas: [], pontosRisco: [] }
@@ -105,7 +105,8 @@ export async function carregarResumosApi(svc: SupabaseClient, ini: string, fim: 
  * já consolidadas. Mesma regra pra qualquer fonte: parada FORA_BASE de ≥10min é o
  * evento de risco. Usado tanto pela fonte API quanto pelo PDF do "Gerar KPI".
  */
-export function montarResumoDeParadaRows(paradaRows: UnitracParadaRow[]): ResumoDiaApi {
+export function montarResumoDeParadaRows(paradaRows: UnitracParadaRow[], placaRede?: Map<string, string>): ResumoDiaApi {
+  const redeDe = (placa: string) => placaRede?.get(placa)
   const indevidas = paradaRows
     .filter(p => p.classificacao === 'FORA_BASE' && (p.duracao_seg ?? 0) >= 600)
     .sort((a, b) => (b.duracao_seg ?? 0) - (a.duracao_seg ?? 0))
@@ -116,6 +117,7 @@ export function montarResumoDeParadaRows(paradaRows: UnitracParadaRow[]): Resumo
       hora: fmtHora(new Date(p.chegada)) ?? '',
       duracaoMin: Math.round((p.duracao_seg ?? 0) / 60),
       local: p.local_parada ?? 'Fora de base',
+      rede: redeDe(p.placa_norm),
     })),
     pontosRisco: indevidas
       .filter(p => p.lat != null && p.lng != null && Math.abs(p.lat) > 1)
@@ -126,6 +128,7 @@ export function montarResumoDeParadaRows(paradaRows: UnitracParadaRow[]): Resumo
         duracaoMin: Math.round((p.duracao_seg ?? 0) / 60),
         lat: p.lat as number,
         lng: p.lng as number,
+        rede: redeDe(p.placa_norm),
       })),
   }
 }
@@ -254,7 +257,9 @@ export async function gerarDiaApi(
   // parado fora de loja e fora da base). consolidaParadasApi já descartou blips <5min.
   // Salva só se for mais completo que o já gravado — assim a API ao vivo não regride
   // um resumo que o PDF do dia já tinha deixado mais completo (e vice-versa).
-  await salvarResumoSeMelhor(svc, data, montarResumoDeParadaRows(paradaRows))
+  // placaRede (da escala) carimba a rede em cada parada — base do "por rede" no mapa.
+  const placaRede = new Map(escalaRows.filter(e => e.placa_norm).map(e => [e.placa_norm as string, e.rede_id]))
+  await salvarResumoSeMelhor(svc, data, montarResumoDeParadaRows(paradaRows, placaRede))
 
   return out
 }

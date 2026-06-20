@@ -1123,7 +1123,8 @@ export async function POST(req: NextRequest) {
     // pra QUALQUER dia gerado, sem depender da janela de 48h da API. Best-effort: se
     // falhar, não atrapalha a geração do KPI. Salva só se for mais completo (não regride).
     try {
-      const r = await salvarResumoSeMelhor(svc, data, montarResumoDeParadaRows(paradaRows))
+      const placaRede = new Map(escalaLinhas.filter(l => l.placa_norm).map(l => [l.placa_norm as string, l.rede_id]))
+      const r = await salvarResumoSeMelhor(svc, data, montarResumoDeParadaRows(paradaRows, placaRede))
       console.log(`[kpi/simples] resumo de risco ${data}: ${r.salvou ? 'atualizado' : 'mantido'} (antes ${r.antes}, agora ${r.agora} indevidas)`)
     } catch (e) {
       console.warn('[kpi/simples] salvar resumo de risco falhou (best-effort):', e instanceof Error ? e.message : e)
