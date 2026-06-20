@@ -15,7 +15,7 @@ import { ArrowSquareOut, CheckCircle, WarningCircle, ArrowClockwise, Question } 
 import { LineChart, BarList, ColumnChart, Donut, Gauge, Heatmap, fmtNum, type BarItem } from '@/app/painel/charts'
 
 type Periodo = 'dia' | 'semana' | 'mes' | 'ano' | 'custom'
-type Tab = 'geral' | 'painel' | 'inserir' | 'historico'
+type Tab = 'geral' | 'inserir' | 'historico'
 
 // Resumo de risco vindo da fonte da API (rota beta): paradas indevidas do dia.
 type PontoRisco = { placa: string; hora: string; duracaoMin: number; lat: number; lng: number }
@@ -24,7 +24,6 @@ type ResumoApi = {
   topIndevidas: Array<{ placa: string; hora: string; duracaoMin: number; local: string }>
   pontosRisco: PontoRisco[]
 }
-type Andamento = { ENTREGUE: number; EM_ROTA: number; NA_BASE: number; SEM_SINAL: number }
 
 // Mapa Leaflet só roda no client (precisa de window) — carrega sob demanda.
 const MapaRisco = dynamic(() => import('./mapa-risco'), {
@@ -101,13 +100,10 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
   const [intervalo, setIntervalo] = useState<[string, string] | null>(null)
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState(false)
-  // Fonte da API (rota beta) — alimenta a aba "Painel do dia" (live + paradas indevidas).
-  const [betaM, setBetaM] = useState<Metricas | null>(null)
-  const [betaMAnt, setBetaMAnt] = useState<Metricas | null>(null)
+  // Risco da carga (paradas indevidas + mapa) vem da FONTE DA API (rota beta).
+  // Buscado em paralelo à Visão geral e injetado nela — não é mais aba separada.
   const [betaResumo, setBetaResumo] = useState<ResumoApi | null>(null)
-  const [betaAndamento, setBetaAndamento] = useState<Andamento | null>(null)
   const [betaCarregando, setBetaCarregando] = useState(false)
-  const [betaErro, setBetaErro] = useState(false)
   const tourAuto = useRef(false)
 
   // Expande aliases: filtrar ASSAI inclui SENDAS (mesmo grupo no Unitrac).
@@ -131,10 +127,11 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
       .finally(() => setCarregando(false))
   }, [tab, periodo, data, de, ate, redesExpandidas])
 
-  // Aba "Painel do dia": lê da FONTE DA API (rota beta), não dos KPIs manuais. Traz o
-  // andamento ao vivo + as paradas indevidas (risco) que só existem no dado da API.
+  // Risco da carga: busca o resumo da API (paradas indevidas + pontos do mapa) em
+  // paralelo, no mesmo período/redes da Visão geral. Só o resumoApi é usado — os
+  // KPIs continuam vindo da fonte consolidada (endpoint principal).
   useEffect(() => {
-    if (tab !== 'painel') return
+    if (tab !== 'geral') return
     setBetaCarregando(true)
     const qs = new URLSearchParams(
       periodo === 'custom'
@@ -143,8 +140,8 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
     )
     fetch(`/api/dashboard/beta?${qs}`)
       .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() })
-      .then(j => { setBetaM(j.metricas); setBetaMAnt(j.metricasAnterior ?? null); setBetaResumo(j.resumoApi ?? null); setBetaAndamento(j.andamento ?? null); setIntervalo(j.intervalo); setBetaErro(false) })
-      .catch(() => { setBetaM(null); setBetaMAnt(null); setBetaResumo(null); setBetaAndamento(null); setBetaErro(true) })
+      .then(j => setBetaResumo(j.resumoApi ?? null))
+      .catch(() => setBetaResumo(null))
       .finally(() => setBetaCarregando(false))
   }, [tab, periodo, data, de, ate, redesExpandidas])
 
@@ -164,11 +161,9 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <span className="text-overline">Operação</span>
-          <h1 data-tour="titulo" className="mt-1 text-display text-[30px] leading-none text-[var(--color-fg)]">{tab === 'painel' ? 'Painel do dia' : 'Dashboard'}</h1>
+          <h1 data-tour="titulo" className="mt-1 text-display text-[30px] leading-none text-[var(--color-fg)]">Dashboard</h1>
           <p className="mt-2 max-w-[52ch] text-[13px] leading-relaxed text-[var(--color-fg-muted)]">
-            {tab === 'painel'
-              ? 'Operação ao vivo, direto do rastreamento (API do Unitrac): entregas, paradas indevidas e desempenho do dia.'
-              : 'Entregas, rastreamento e desempenho por rede, consolidado a partir dos KPIs inseridos.'}
+            Entregas, rastreamento, paradas indevidas e desempenho por rede — consolidado no período.
           </p>
         </div>
         {tab === 'geral' && (
@@ -190,7 +185,7 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
 
       {/* Tabs */}
       <nav data-tour="abas" className="mt-8 flex gap-1 border-b border-[var(--color-border)]">
-        {([['geral', 'Visão geral'], ['painel', 'Painel do dia'], ['inserir', 'Inserir KPIs'], ['historico', 'Histórico']] as [Tab, string][]).map(([t, label]) => (
+        {([['geral', 'Visão geral'], ['inserir', 'Inserir KPIs'], ['historico', 'Histórico']] as [Tab, string][]).map(([t, label]) => (
           <button
             key={t} onClick={() => setTab(t)}
             className={[
@@ -218,17 +213,7 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
               de={de} setDe={setDe} ate={ate} setAte={setAte}
               redes={redes} setRedes={setRedes} m={m} mAnt={mAnt} intervalo={intervalo}
               carregando={carregando} erro={erro} onRetry={recarregar} mes={mesAtual}
-            />
-          </div>
-        )}
-        {tab === 'painel' && (
-          <div key="painel" className="animate-fade-up">
-            <PainelDia
-              periodo={periodo} setPeriodo={setPeriodo} data={data} setData={setData}
-              de={de} setDe={setDe} ate={ate} setAte={setAte} intervalo={intervalo}
-              redes={redes} setRedes={setRedes}
-              m={betaM} mAnt={betaMAnt} resumo={betaResumo} andamento={betaAndamento}
-              carregando={betaCarregando} erro={betaErro} onRetry={recarregar}
+              resumoRisco={betaResumo} riscoCarregando={betaCarregando}
             />
           </div>
         )}
@@ -246,8 +231,9 @@ function VisaoGeral(props: {
   redes: string[]; setRedes: (r: string[]) => void
   m: Metricas | null; mAnt: Metricas | null; intervalo: [string, string] | null
   carregando: boolean; erro: boolean; onRetry: () => void; mes: string
+  resumoRisco: ResumoApi | null; riscoCarregando: boolean
 }) {
-  const { periodo, setPeriodo, data, setData, de, setDe, ate, setAte, redes, setRedes, m, mAnt, intervalo, carregando, erro, onRetry, mes } = props
+  const { periodo, setPeriodo, data, setData, de, setDe, ate, setAte, redes, setRedes, m, mAnt, intervalo, carregando, erro, onRetry, mes, resumoRisco, riscoCarregando } = props
 
   return (
     <div className="space-y-8">
@@ -290,10 +276,20 @@ function VisaoGeral(props: {
             className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
           />
         ) : (
-          <input
-            type="date" value={data} onChange={e => setData(e.target.value)}
-            className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
-          />
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setData(stepDay(data, -1))} aria-label="Dia anterior"
+              className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[16px] leading-none text-[var(--color-fg-muted)] shadow-soft transition-[background-color,border-color,transform] duration-150 active:scale-[0.95] hover:border-[var(--color-border-strong)] hover:text-[var(--color-fg)]"
+            >‹</button>
+            <input
+              type="date" value={data} max={hoje()} onChange={e => setData(e.target.value)}
+              className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
+            />
+            <button
+              onClick={() => setData(stepDay(data, 1))} aria-label="Próximo dia" disabled={data >= hoje()}
+              className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[16px] leading-none text-[var(--color-fg-muted)] shadow-soft transition-[background-color,border-color,transform] duration-150 active:scale-[0.95] hover:border-[var(--color-border-strong)] hover:text-[var(--color-fg)] disabled:pointer-events-none disabled:opacity-40"
+            >›</button>
+          </div>
         )}
         {intervalo && (
           <span className="hidden text-numeric text-[11px] text-[var(--color-fg-subtle)] sm:inline">
@@ -305,7 +301,7 @@ function VisaoGeral(props: {
       </div>
 
       {carregando ? <Skeleton /> : erro ? <Erro onRetry={onRetry} /> : !m || m.total === 0 ? <Vazio /> : (
-        <Conteudo key={`${periodo}-${data}-${de}-${ate}-${redes.join(',')}`} m={m} mAnt={mAnt} mes={mes} periodo={periodo} data={data} />
+        <Conteudo key={`${periodo}-${data}-${de}-${ate}-${redes.join(',')}`} m={m} mAnt={mAnt} mes={mes} periodo={periodo} data={data} resumoRisco={resumoRisco} riscoCarregando={riscoCarregando} />
       )}
     </div>
   )
@@ -406,7 +402,7 @@ function Erro({ onRetry }: { onRetry: () => void }) {
   )
 }
 
-function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas | null; mes: string; periodo: Periodo; data: string }) {
+function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando }: { m: Metricas; mAnt: Metricas | null; mes: string; periodo: Periodo; data: string; resumoRisco: ResumoApi | null; riscoCarregando: boolean }) {
   const lojaHref = (rede: string, loja: string) =>
     `/painel/loja?rede=${encodeURIComponent(rede)}&loja=${encodeURIComponent(loja)}&periodo=${periodo}&data=${data}`
   const pctGps = m.total ? Math.round(100 * m.com_rastreador / m.total) : 0
@@ -582,9 +578,12 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
         )}
       </section>
 
-      {/* ═══════ 03 — POR REDE ═══════ */}
+      {/* ═══════ 03 — SEGURANÇA DA CARGA (paradas indevidas + mapa, da API) ═══════ */}
+      <SecaoRiscoMapa resumo={resumoRisco} carregando={riscoCarregando} n="03" />
+
+      {/* ═══════ 04 — POR REDE ═══════ */}
       <section id="sec-rede" key="v-rede" data-tour="tendencias" className="scroll-mt-32 space-y-5 animate-fade-up">
-        <SecaoHead n="03" titulo="Por rede" sub="Desempenho de cada rede e onde puxar o resultado." />
+        <SecaoHead n="04" titulo="Por rede" sub="Desempenho de cada rede e onde puxar o resultado." />
 
         <ComparativoRede m={m} />
 
@@ -625,9 +624,9 @@ function Conteudo({ m, mAnt, mes, periodo, data }: { m: Metricas; mAnt: Metricas
         </div>
       </section>
 
-      {/* ═══════ 04 — TENDÊNCIAS ═══════ */}
+      {/* ═══════ 05 — TENDÊNCIAS ═══════ */}
       <section id="sec-tend" key="v-tend" data-tour="tendencias" className="scroll-mt-32 space-y-5 animate-fade-up">
-        <SecaoHead n="04" titulo="Tendências e análise" sub="Como o período evoluiu dia a dia." />
+        <SecaoHead n="05" titulo="Tendências e análise" sub="Como o período evoluiu dia a dia." />
 
         {m.serie.length > 1 && <SerieChart serie={m.serie} />}
 
@@ -786,272 +785,74 @@ function Painel({ titulo, children, className }: { titulo: string; children: Rea
   )
 }
 
-// ──────────────────────────────────────────────────────────── Painel do dia ──
-// Barra de período/data/redes. Espelha a de VisaoGeral (mantida separada de
-// propósito pra não mexer na aba geral em produção); se editar uma, editar a outra.
-function BarraControle(props: {
-  periodo: Periodo; setPeriodo: (p: Periodo) => void
-  data: string; setData: (d: string) => void
-  de: string; setDe: (d: string) => void; ate: string; setAte: (d: string) => void
-  intervalo: [string, string] | null
-  redes: string[]; setRedes: (r: string[]) => void
-}) {
-  const { periodo, setPeriodo, data, setData, de, setDe, ate, setAte, intervalo, redes, setRedes } = props
-  return (
-    <div className="sticky top-14 z-20 -mx-5 flex flex-wrap items-center gap-2.5 border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 px-5 py-2.5 backdrop-blur sm:-mx-8 sm:px-8">
-      <div className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-0.5 shadow-soft">
-        {(['dia', 'semana', 'mes', 'ano', 'custom'] as Periodo[]).map(p => (
-          <button
-            key={p} onClick={() => setPeriodo(p)}
-            className={[
-              'h-8 rounded-[var(--radius-sm)] px-3.5 text-[12px] font-medium capitalize transition-[background-color,color,transform] duration-150 active:scale-[0.97]',
-              periodo === p ? 'bg-[var(--color-accent)] text-[var(--color-accent-fg)] shadow-soft' : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]',
-            ].join(' ')}
-          >{p === 'mes' ? 'Mês' : p === 'ano' ? 'Ano' : p === 'custom' ? 'Período' : p}</button>
-        ))}
-      </div>
-      {periodo === 'custom' ? (
-        <div className="flex items-center gap-1.5">
-          <input type="date" value={de} max={ate} onChange={e => setDe(e.target.value)}
-            className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2.5 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30 [color-scheme:light] dark:[color-scheme:dark]" />
-          <span className="text-[12px] text-[var(--color-fg-subtle)]">até</span>
-          <input type="date" value={ate} min={de} onChange={e => setAte(e.target.value)}
-            className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2.5 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30 [color-scheme:light] dark:[color-scheme:dark]" />
-        </div>
-      ) : periodo === 'ano' ? (
-        <select value={data.slice(0, 4)} onChange={e => setData(`${e.target.value}-01-01`)}
-          className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30">
-          {ANOS.map(a => <option key={a} value={a}>{a}</option>)}
-        </select>
-      ) : periodo === 'mes' ? (
-        <input type="month" value={data.slice(0, 7)} onChange={e => setData(`${e.target.value}-01`)}
-          className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30" />
-      ) : (
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setData(stepDay(data, -1))} aria-label="Dia anterior"
-            className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[16px] leading-none text-[var(--color-fg-muted)] shadow-soft transition-[background-color,border-color,transform] duration-150 active:scale-[0.95] hover:border-[var(--color-border-strong)] hover:text-[var(--color-fg)]"
-          >‹</button>
-          <input type="date" value={data} max={hoje()} onChange={e => setData(e.target.value)}
-            className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30" />
-          <button
-            onClick={() => setData(stepDay(data, 1))} aria-label="Próximo dia" disabled={data >= hoje()}
-            className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[16px] leading-none text-[var(--color-fg-muted)] shadow-soft transition-[background-color,border-color,transform] duration-150 active:scale-[0.95] hover:border-[var(--color-border-strong)] hover:text-[var(--color-fg)] disabled:pointer-events-none disabled:opacity-40"
-          >›</button>
-        </div>
-      )}
-      {intervalo && (
-        <span className="hidden text-numeric text-[11px] text-[var(--color-fg-subtle)] sm:inline">
-          {periodo === 'dia' ? intervalo[0] : `${intervalo[0]} → ${intervalo[1]}`}
-        </span>
-      )}
-      <div className="ml-auto"><RedesFiltro redes={redes} setRedes={setRedes} /></div>
-    </div>
-  )
-}
-
-function PainelDia(props: {
-  periodo: Periodo; setPeriodo: (p: Periodo) => void
-  data: string; setData: (d: string) => void
-  de: string; setDe: (d: string) => void; ate: string; setAte: (d: string) => void
-  intervalo: [string, string] | null
-  redes: string[]; setRedes: (r: string[]) => void
-  m: Metricas | null; mAnt: Metricas | null; resumo: ResumoApi | null; andamento: Andamento | null
-  carregando: boolean; erro: boolean; onRetry: () => void
-}) {
-  const { m, mAnt, resumo, andamento, carregando, erro, onRetry, periodo, data, redes } = props
-  return (
-    <div className="space-y-8">
-      <BarraControle
-        periodo={props.periodo} setPeriodo={props.setPeriodo} data={props.data} setData={props.setData}
-        de={props.de} setDe={props.setDe} ate={props.ate} setAte={props.setAte}
-        intervalo={props.intervalo} redes={props.redes} setRedes={props.setRedes}
-      />
-      {carregando ? <Skeleton /> : erro ? <Erro onRetry={onRetry} /> : !m || m.total === 0 ? <VazioPainel data={data} periodo={periodo} /> : (
-        <PainelDiaConteudo key={`${periodo}-${data}-${redes.join(',')}`} m={m} mAnt={mAnt} resumo={resumo} andamento={andamento} periodo={periodo} data={data} />
-      )}
-    </div>
-  )
-}
-
-function VazioPainel({ data, periodo }: { data: string; periodo: Periodo }) {
-  return (
-    <div className={`${CARD} p-8 text-center animate-fade-up`}>
-      <p className="text-[14px] font-medium text-[var(--color-fg)]">Sem dado da API para {periodo === 'dia' ? `o dia ${data}` : 'o período'}.</p>
-      <p className="mx-auto mt-2 max-w-[48ch] text-[12px] leading-relaxed text-[var(--color-fg-muted)]">
-        O Painel do dia lê direto do rastreamento (API do Unitrac). Gere o KPI desta data em “Gerar KPI” para ela aparecer aqui.
-      </p>
-    </div>
-  )
-}
-
-function StatVivo({ i, label, valor, cor, nota, delta }: { i: number; label: string; valor: number; cor: string; nota?: string; delta?: React.ReactNode }) {
-  return (
-    <div className="p-5 sm:p-6 animate-fade-up" style={{ animationDelay: `${i * 60}ms` }}>
-      <div className="flex items-center gap-2">
-        <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: cor }} />
-        <div className="text-overline">{label}</div>
-      </div>
-      <div className="mt-2 text-display text-numeric text-[44px] leading-none text-[var(--color-fg)]">{fmtNum(valor)}</div>
-      {nota && <div className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">{nota}</div>}
-      {delta && <div className="mt-1.5">{delta}</div>}
-    </div>
-  )
-}
-
 function VazioMini({ children }: { children: React.ReactNode }) {
   return <p className="py-6 text-center text-[12px] text-[var(--color-fg-muted)]">{children}</p>
 }
 
-function PainelDiaConteudo({ m, mAnt, resumo, andamento, periodo, data }: { m: Metricas; mAnt: Metricas | null; resumo: ResumoApi | null; andamento: Andamento | null; periodo: Periodo; data: string }) {
-  const lojaHref = (rede: string, loja: string) =>
-    `/painel/loja?rede=${encodeURIComponent(rede)}&loja=${encodeURIComponent(loja)}&periodo=${periodo}&data=${data}`
-  const pendentes = m.nao_foi + m.sem_rastreador + m.desatualizado + m.indefinido
-  const emRota = andamento?.EM_ROTA ?? m.em_rota
-  const concluidasPct = m.total ? Math.round(100 * m.entregue / m.total) : 0
-  const tempoLoja = m.tempoMedioLojaMin
-  const indevidas = resumo?.paradasIndevidas ?? 0
-  // 1 linha por placa (a parada mais longa de cada — já vem ordenado por duração), sem
-  // repetir o "FORA DE BASE" em todo rótulo. Placa em destaque, contexto no subtítulo.
+// Seção de segurança da carga: paradas indevidas (FORA_BASE ≥10min) + mapa dos
+// pontos. Vem da FONTE DA API (resumoApi), buscada em paralelo na Visão geral.
+function SecaoRiscoMapa({ resumo, carregando, n }: { resumo: ResumoApi | null; carregando: boolean; n: string }) {
+  // 1 linha por placa (a parada mais longa de cada — já vem ordenado por duração).
   const placasVistas = new Set<string>()
   const topIndevidas: BarItem[] = (resumo?.topIndevidas ?? [])
     .filter(p => { if (placasVistas.has(p.placa)) return false; placasVistas.add(p.placa); return true })
     .slice(0, 6)
     .map(p => ({ key: p.placa, label: p.placa, value: p.duracaoMin, sub: `parou às ${p.hora}, fora de base`, tone: 'danger' as const }))
-  const pior = resumo?.topIndevidas?.[0] ?? null // a parada mais longa do período
-  // Ranking de retenção (prática do setor): o que mais consome a frota = tempo médio
-  // em loja × nº de visitas, não só o maior tempo médio.
-  const retencao: BarItem[] = [...m.topTempoEmLoja]
-    .map(l => ({ l, score: Math.round((l.tempo_loja ?? 0) * l.n) }))
-    .filter(x => x.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 8)
-    .map(({ l }) => ({ key: `${l.rede_id}|${l.loja}`, label: l.loja, value: Math.round(l.tempo_loja ?? 0), sub: `${REDE_LABEL[l.rede_id] ?? l.rede_id} · ${l.n} visitas` }))
-  const motoristas: BarItem[] = m.topMotoristas.slice(0, 8).map(d => ({
-    key: d.motorista, label: d.motorista, value: d.entregas,
-    sub: d.tempo_loja != null ? `${fmtMin(d.tempo_loja)} em loja` : undefined,
-  }))
+  const pior = resumo?.topIndevidas?.[0] ?? null
+  const indevidas = resumo?.paradasIndevidas ?? 0
+  const pontos = resumo?.pontosRisco ?? []
 
   return (
-    <div className="space-y-12">
-      {/* 01 — STATUS DO DIA (ao vivo, da API) — bento: mix visual + números */}
-      <section className="space-y-5 animate-fade-up">
-        <SecaoHead n="01" titulo="Status do dia" sub="Direto do rastreamento (API do Unitrac), no período selecionado." />
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-          <div className={`p-5 sm:p-6 lg:col-span-5 ${CARD}`}>
-            <h3 className="text-overline mb-4">Mix do dia</h3>
-            <Donut
-              slices={MIX_CATS.filter(k => m[k] > 0).map(k => ({ label: STATUS[k].label, value: m[k], color: STATUS[k].cor }))}
-              centerValue={fmtNum(m.total)} centerLabel="entregas"
-            />
-          </div>
-          <div className={`grid grid-cols-2 overflow-hidden divide-x divide-y divide-[var(--color-border)] sm:divide-y-0 lg:col-span-7 ${CARD}`}>
-            <StatVivo i={0} label="Veículos em rota" valor={emRota} cor="var(--color-info)" nota="ainda em andamento" />
-            <StatVivo i={1} label="Entregas realizadas" valor={m.entregue} cor="var(--color-success)" nota={`${concluidasPct}% do total`}
-              delta={<Delta atual={m.entregue} anterior={mAnt?.entregue} neutro suf="" />} />
-            <StatVivo i={2} label="Entregas pendentes" valor={pendentes} cor="var(--color-danger)" nota="não realizadas / sem dado"
-              delta={<Delta atual={pendentes} anterior={mAnt ? mAnt.nao_foi + mAnt.sem_rastreador + mAnt.desatualizado + mAnt.indefinido : undefined} inverso suf="" />} />
-            <StatVivo i={3} label="Desvios de rota" valor={m.mudou_de_rota} cor="var(--color-warning)" nota="entregou fora da escala"
-              delta={<Delta atual={m.mudou_de_rota} anterior={mAnt?.mudou_de_rota} inverso suf="" />} />
-          </div>
-        </div>
-      </section>
+    <section id="sec-risco" data-tour="risco" className="scroll-mt-32 space-y-5 animate-fade-up">
+      <SecaoHead n={n} titulo="Segurança da carga" sub="Paradas fora de loja e da base por 10min ou mais — o evento de risco da carga, e onde aconteceram." />
 
-      {/* 02 — NÚMEROS DO DIA (tempo em loja é um dos itens pedidos) */}
-      <section className="space-y-5 animate-fade-up">
-        <SecaoHead n="02" titulo="Números do dia" sub="Tempo em loja e taxa de entrega no período." />
-        <div className={`grid grid-cols-2 overflow-hidden divide-x divide-[var(--color-border)] sm:grid-cols-3 ${CARD}`}>
-          <HeroTile i={0} valor={fmtMin(tempoLoja)} label="Tempo médio em loja"
-            status={tempoLoja != null && tempoLoja > 20 ? 'warn' : 'ok'} nota="por entrega"
-            delta={<Delta atual={tempoLoja} anterior={mAnt?.tempoMedioLojaMin} inverso neutro suf=" min" />} />
-          <HeroTile i={1} valor={`${m.taxaEntregaDefinitiva}%`} label="Taxa de entrega" status={tomTaxa(m.taxaEntregaDefinitiva)}
-            nota={`${m.entregue} de ${m.entregue + m.nao_foi} definitivas`}
-            delta={<Delta atual={m.taxaEntregaDefinitiva} anterior={mAnt?.taxaEntregaDefinitiva} />} />
-          <HeroTile i={2} valor={fmtNum(m.total)} label="Total de entregas" nota={`${m.serie.length} dia${m.serie.length === 1 ? '' : 's'}`}
-            delta={<Delta atual={m.total} anterior={mAnt?.total} neutro suf="" />} />
+      {carregando && !resumo ? (
+        <div style={{ height: 320, borderRadius: 'var(--radius-card)' }} className="animate-pulse bg-[var(--color-bg-elevated)]" />
+      ) : !resumo ? (
+        <div className={`${CARD} p-8 text-center`}>
+          <p className="text-[13px] text-[var(--color-fg-muted)]">Sem dado de rastreamento da API para este período.</p>
         </div>
-      </section>
-
-      {/* 03 — RISCO / PARADAS INDEVIDAS (da API) */}
-      <section className="space-y-5 animate-fade-up">
-        <SecaoHead n="03" titulo="Risco e paradas indevidas" sub="Paradas fora de loja e da base por 10min ou mais — o evento de risco da carga." />
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-          <div className={`flex flex-col justify-between gap-4 p-5 sm:p-6 ${CARD}`}>
-            <div>
-              <div className="text-overline">Paradas indevidas</div>
-              <div className="mt-2 text-display text-numeric text-[44px] leading-none" style={{ color: indevidas > 0 ? 'var(--color-danger)' : 'var(--color-fg)' }}>{fmtNum(indevidas)}</div>
-              <p className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">eventos de risco no período</p>
-            </div>
-            {pior && (
-              <div className="border-t border-[var(--color-border)] pt-3">
-                <div className="text-[10px] uppercase tracking-[0.1em] text-[var(--color-fg-subtle)]">Pior caso</div>
-                <div className="mt-1 text-numeric text-[15px] font-semibold text-[var(--color-fg)]">{pior.placa}</div>
-                <div className="text-[11px] text-[var(--color-fg-subtle)]">{fmtMin(pior.duracaoMin)} parada, às {pior.hora}</div>
+      ) : indevidas === 0 ? (
+        <div className="flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-success)]/30 bg-[var(--color-success-soft)] px-4 py-3 text-[13px] font-medium" style={{ color: 'var(--color-success-soft-fg)' }}>
+          <CheckCircle size={16} weight="fill" /> Nenhuma parada indevida registrada no período.
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+            <div className={`flex flex-col justify-between gap-4 p-5 sm:p-6 ${CARD}`}>
+              <div>
+                <div className="text-overline">Paradas indevidas</div>
+                <div className="mt-2 text-display text-numeric text-[44px] leading-none" style={{ color: 'var(--color-danger)' }}>{fmtNum(indevidas)}</div>
+                <p className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">eventos de risco no período</p>
               </div>
-            )}
-          </div>
-          <div className="lg:col-span-2">
-            <Painel titulo="Onde pararam (maior duração)">
-              {topIndevidas.length ? <BarList items={topIndevidas} format={(n) => fmtMin(n)} showRank /> : <VazioMini>Nenhuma parada indevida registrada.</VazioMini>}
-            </Painel>
-          </div>
-        </div>
-      </section>
-
-      {/* 04 — MAPA DO DIA (paradas indevidas geolocalizadas) */}
-      {(resumo?.pontosRisco?.length ?? 0) > 0 && (
-        <section className="space-y-5 animate-fade-up">
-          <SecaoHead n="04" titulo="Mapa do dia" sub="Onde os veículos pararam fora de loja e da base — bolha maior, parada mais longa." />
-          <div className={`overflow-hidden p-1.5 ${CARD}`}>
-            <MapaRisco pontos={resumo!.pontosRisco} />
-          </div>
-          <p className="text-[11px] text-[var(--color-fg-subtle)]">
-            {resumo!.pontosRisco.length} ponto{resumo!.pontosRisco.length === 1 ? '' : 's'} de parada indevida no período. Passe o mouse para ver placa, duração e horário.
-          </p>
-        </section>
-      )}
-
-      {/* 05 — RANKINGS */}
-      <section className="space-y-5 animate-fade-up">
-        <SecaoHead n="05" titulo="Rankings" sub="Quem mais retém a frota e quem mais entrega." />
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Painel titulo="Lojas que mais retêm">
-            {retencao.length ? <BarList items={retencao} format={(n) => fmtMin(n)} showRank hrefDe={(it) => { const [rede, loja] = it.key.split('|'); return lojaHref(rede, loja) }} /> : <VazioMini>Sem dado de tempo em loja.</VazioMini>}
-          </Painel>
-          <Painel titulo="Motoristas (entregas)">
-            {motoristas.length ? <BarList items={motoristas} showRank /> : <VazioMini>Sem motorista identificado.</VazioMini>}
-          </Painel>
-        </div>
-      </section>
-
-      {/* 06 — TENDÊNCIA (só quando o período tem mais de 1 dia) */}
-      {m.serie.length > 1 && (
-        <section className="space-y-5 animate-fade-up">
-          <SecaoHead n="06" titulo="Tendência" sub="Como variou ao longo dos dias do período — melhorando ou piorando." />
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-            <div className={`${CARD} p-5 sm:p-6`}>
-              <h3 className="text-overline mb-4">Entregas por dia</h3>
-              <LineChart
-                labels={m.serie.map(s => s.data.slice(8, 10))}
-                series={[
-                  { name: 'Realizadas', color: 'var(--color-success)', values: m.serie.map(s => s.entregue), fill: true },
-                  { name: 'Não foi', color: 'var(--color-danger)', values: m.serie.map(s => s.nao_foi) },
-                ]}
-                format={fmtNum} height={220} labelEvery={m.serie.length > 14 ? 3 : 2}
-              />
+              {pior && (
+                <div className="border-t border-[var(--color-border)] pt-3">
+                  <div className="text-[10px] uppercase tracking-[0.1em] text-[var(--color-fg-subtle)]">Pior caso</div>
+                  <div className="mt-1 text-numeric text-[15px] font-semibold text-[var(--color-fg)]">{pior.placa}</div>
+                  <div className="text-[11px] text-[var(--color-fg-subtle)]">{fmtMin(pior.duracaoMin)} parada, às {pior.hora}</div>
+                </div>
+              )}
             </div>
-            <div className={`${CARD} p-5 sm:p-6`}>
-              <h3 className="text-overline mb-4">Tempo em loja por dia</h3>
-              <LineChart
-                labels={m.serieTempos.map(s => s.data.slice(8, 10))}
-                series={[{ name: 'Tempo em loja', color: 'var(--color-warning)', values: m.serieTempos.map(s => s.tempo_loja ?? 0), fill: true }]}
-                format={fmtMin} height={220} labelEvery={m.serieTempos.length > 14 ? 3 : 2}
-              />
+            <div className="lg:col-span-2">
+              <Painel titulo="Onde pararam (maior duração por placa)">
+                {topIndevidas.length ? <BarList items={topIndevidas} format={(v) => fmtMin(v)} showRank /> : <VazioMini>Nenhuma parada indevida registrada.</VazioMini>}
+              </Painel>
             </div>
           </div>
-        </section>
+
+          {pontos.length > 0 && (
+            <div className="space-y-2">
+              <div className={`overflow-hidden p-1.5 ${CARD}`}>
+                <MapaRisco pontos={pontos} />
+              </div>
+              <p className="text-[11px] text-[var(--color-fg-subtle)]">
+                {pontos.length} ponto{pontos.length === 1 ? '' : 's'} no mapa · bolha maior = parada mais longa · passe o mouse para ver placa, duração e horário.
+              </p>
+            </div>
+          )}
+        </>
       )}
-    </div>
+    </section>
   )
 }
 
