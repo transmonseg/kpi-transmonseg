@@ -15,6 +15,7 @@ import type { AlteracaoParsed } from '@/lib/parsers/alteracao-text'
 import { gerarKpi, type LinhaParaKpi } from '@/lib/kpi/gerador-kpi'
 import { gerarKpiPdf } from '@/lib/kpi/gerador-pdf'
 import { rotaToLinha, saidaBaseSeEmRota, saidaBaseConhecida, JANELA_FIM } from '@/lib/kpi/gerar-kpi-local'
+import { montarResumoDeParadaRows, salvarResumoSeMelhor } from '@/lib/kpi/dashboard-api-fonte'
 import { isRotaGigante } from '@/lib/kpi/rotas-gigantes'
 import { REDE_NOMES_CANONICOS } from '@/lib/kpi/kpi-styles'
 import { derivarStatus, type StatusRota, type CategoriaRevisao, type NaturezaRevisao } from '@/lib/kpi/status-rota'
@@ -1116,6 +1117,17 @@ export async function POST(req: NextRequest) {
       .select('id')
       .single()
     geracaoId = (inserted?.id as string) ?? null
+
+    // Risco da carga: do MESMO paradaRows (já mesclado PDF + API) calcula as paradas
+    // indevidas e fixa o resumo do dia no storage — assim o mapa do dashboard funciona
+    // pra QUALQUER dia gerado, sem depender da janela de 48h da API. Best-effort: se
+    // falhar, não atrapalha a geração do KPI. Salva só se for mais completo (não regride).
+    try {
+      const r = await salvarResumoSeMelhor(svc, data, montarResumoDeParadaRows(paradaRows))
+      console.log(`[kpi/simples] resumo de risco ${data}: ${r.salvou ? 'atualizado' : 'mantido'} (antes ${r.antes}, agora ${r.agora} indevidas)`)
+    } catch (e) {
+      console.warn('[kpi/simples] salvar resumo de risco falhou (best-effort):', e instanceof Error ? e.message : e)
+    }
   }
 
   return NextResponse.json({ redes: results, redes_com_erro, geracao_id: geracaoId, lojasNovas, avisosEscala })

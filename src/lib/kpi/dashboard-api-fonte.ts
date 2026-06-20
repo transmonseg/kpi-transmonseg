@@ -100,6 +100,52 @@ export async function carregarResumosApi(svc: SupabaseClient, ini: string, fim: 
   }
 }
 
+/**
+ * Monta o resumo de risco (paradas indevidas + pontos do mapa) a partir das paradas
+ * já consolidadas. Mesma regra pra qualquer fonte: parada FORA_BASE de ≥10min é o
+ * evento de risco. Usado tanto pela fonte API quanto pelo PDF do "Gerar KPI".
+ */
+export function montarResumoDeParadaRows(paradaRows: UnitracParadaRow[]): ResumoDiaApi {
+  const indevidas = paradaRows
+    .filter(p => p.classificacao === 'FORA_BASE' && (p.duracao_seg ?? 0) >= 600)
+    .sort((a, b) => (b.duracao_seg ?? 0) - (a.duracao_seg ?? 0))
+  return {
+    paradasIndevidas: indevidas.length,
+    topIndevidas: indevidas.slice(0, 60).map(p => ({
+      placa: p.placa_norm,
+      hora: fmtHora(new Date(p.chegada)) ?? '',
+      duracaoMin: Math.round((p.duracao_seg ?? 0) / 60),
+      local: p.local_parada ?? 'Fora de base',
+    })),
+    pontosRisco: indevidas
+      .filter(p => p.lat != null && p.lng != null && Math.abs(p.lat) > 1)
+      .slice(0, 1000)
+      .map(p => ({
+        placa: p.placa_norm,
+        hora: fmtHora(new Date(p.chegada)) ?? '',
+        duracaoMin: Math.round((p.duracao_seg ?? 0) / 60),
+        lat: p.lat as number,
+        lng: p.lng as number,
+      })),
+  }
+}
+
+/**
+ * Salva o resumo do dia só se for MAIS completo que o já gravado (mais paradas
+ * indevidas). Cada relatório do dia que chega (API ao vivo durante o dia ou o PDF
+ * do Unitrac depois) vai melhorando o resumo, nunca regride — e o dado não some
+ * quando a API expira (48h), porque fica fixado no storage. Redundância: se a API
+ * cair, o último relatório PDF mantém o dia.
+ */
+export async function salvarResumoSeMelhor(svc: SupabaseClient, data: string, novo: ResumoDiaApi): Promise<{ salvou: boolean; antes: number; agora: number }> {
+  const atual = await carregarResumosApi(svc, data, data)
+  if (novo.paradasIndevidas >= atual.paradasIndevidas) {
+    await salvarResumoDiaApi(svc, data, novo)
+    return { salvou: true, antes: atual.paradasIndevidas, agora: novo.paradasIndevidas }
+  }
+  return { salvou: false, antes: atual.paradasIndevidas, agora: novo.paradasIndevidas }
+}
+
 /** Enumera as datas YYYY-MM-DD de ini..fim (inclusive). */
 export function datasNoIntervalo(ini: string, fim: string): string[] {
   const out: string[] = []
@@ -206,29 +252,9 @@ export async function gerarDiaApi(
 
   // Resumo de risco do dia: paradas indevidas = paradas FORA_BASE de ≥10min (caminhão
   // parado fora de loja e fora da base). consolidaParadasApi já descartou blips <5min.
-  const indevidas = paradaRows
-    .filter(p => p.classificacao === 'FORA_BASE' && (p.duracao_seg ?? 0) >= 600)
-    .sort((a, b) => (b.duracao_seg ?? 0) - (a.duracao_seg ?? 0))
-  const resumo: ResumoDiaApi = {
-    paradasIndevidas: indevidas.length,
-    topIndevidas: indevidas.slice(0, 60).map(p => ({
-      placa: p.placa_norm,
-      hora: fmtHora(new Date(p.chegada)) ?? '',
-      duracaoMin: Math.round((p.duracao_seg ?? 0) / 60),
-      local: p.local_parada ?? 'Fora de base',
-    })),
-    pontosRisco: indevidas
-      .filter(p => p.lat != null && p.lng != null && Math.abs(p.lat) > 1)
-      .slice(0, 1000)
-      .map(p => ({
-        placa: p.placa_norm,
-        hora: fmtHora(new Date(p.chegada)) ?? '',
-        duracaoMin: Math.round((p.duracao_seg ?? 0) / 60),
-        lat: p.lat as number,
-        lng: p.lng as number,
-      })),
-  }
-  await salvarResumoDiaApi(svc, data, resumo)
+  // Salva só se for mais completo que o já gravado — assim a API ao vivo não regride
+  // um resumo que o PDF do dia já tinha deixado mais completo (e vice-versa).
+  await salvarResumoSeMelhor(svc, data, montarResumoDeParadaRows(paradaRows))
 
   return out
 }
