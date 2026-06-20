@@ -80,6 +80,15 @@ try {
   await cdp.send('Page.enable', {}, S)
   await cdp.send('Runtime.enable', {}, S)
 
+  // emulação mobile opcional (MOBILE=1 → viewport de celular)
+  if (process.env.MOBILE) {
+    const mw = Number(process.env.MOBILE_W || 390)
+    const mh = Number(process.env.MOBILE_H || 844)
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: mw, height: mh, deviceScaleFactor: 2, mobile: true }, S)
+    await cdp.send('Emulation.setUserAgentOverride', { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1' }, S)
+    console.log('emulação mobile:', mw, 'x', mh)
+  }
+
   const evalJS = (expression, awaitPromise = false) =>
     cdp.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise }, S).then((r) => r.result?.value)
   const goto = async (url) => { await cdp.send('Page.navigate', { url }, S); await sleep(1200) }
