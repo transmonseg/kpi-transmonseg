@@ -675,6 +675,8 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, f
       <section id="sec-tend" key="v-tend" data-tour="tendencias" className="scroll-mt-32 space-y-5 animate-fade-up">
         <SecaoHead n={MOSTRAR_SEGURANCA_CARGA ? '05' : '04'} titulo="Tendências e análise" sub="Como o período evoluiu dia a dia." />
 
+        {(m.tempoMedioRotaMin != null || m.tempoMedioLojaMin != null) && <JornadaOperacional m={m} />}
+
         {m.serie.length > 1 && <SerieChart serie={m.serie} />}
 
         {(m.serieTempos.length >= 2 || m.distHorarioSaida.some(h => h.entregas > 0)) && (
@@ -1400,6 +1402,73 @@ function TopMotoristas({ m, onVerTodos }: { m: Metricas; onVerTodos: () => void 
       <div className="px-5 pb-5 sm:px-6">
         <button onClick={onVerTodos} className="inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline">Ver todos os motoristas →</button>
       </div>
+    </div>
+  )
+}
+
+// Jornada do dia — o ciclo médio do veículo: sai do CD, roda, fica na loja e volta
+// à base. Linha do tempo com as horas de pico e os tempos de cada trecho.
+function JornadaOperacional({ m }: { m: Metricas }) {
+  const pico = (arr: Metricas['distHorarioSaida']) => {
+    let best: { hora: number; entregas: number } | null = null
+    for (const h of arr) if (h.entregas > 0 && (!best || h.entregas > best.entregas)) best = h
+    return best ? best.hora : null
+  }
+  const fmtH = (h: number | null) => (h == null ? null : `${String(h).padStart(2, '0')}h`)
+  const temVolta = m.tempoMedioOperacaoMin != null && m.pctComVolta > 0
+
+  const marcos = [
+    { label: 'Sai do CD', hora: fmtH(pico(m.distHorarioSaida)), cor: 'var(--color-accent)' },
+    { label: 'Chega na loja', hora: null as string | null, cor: 'var(--color-warning)' },
+    { label: 'Sai da loja', hora: null as string | null, cor: 'var(--color-warning)' },
+    ...(temVolta ? [{ label: 'Volta à base', hora: fmtH(pico(m.distHorarioVolta)), cor: 'var(--color-success)' }] : []),
+  ]
+  const segmentos = [
+    { label: 'rota', valor: m.tempoMedioRotaMin },
+    { label: 'na loja', valor: m.tempoMedioLojaMin },
+    ...(temVolta ? [{ label: 'volta', valor: m.tempoMedioVoltaMin }] : []),
+  ]
+
+  return (
+    <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
+      <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
+        <div>
+          <h3 className="text-overline">Jornada do dia</h3>
+          <p className="mt-0.5 text-[12px] text-[var(--color-fg-subtle)]">O ciclo médio do veículo, do CD até a volta à base</p>
+        </div>
+        {temVolta && (
+          <span className="text-[12px] text-[var(--color-fg-muted)]">operação completa <strong className="text-numeric text-[var(--color-fg)]">{fmtMin(m.tempoMedioOperacaoMin)}</strong></span>
+        )}
+      </div>
+      <div className="flex items-start gap-1 overflow-x-auto pb-1">
+        {marcos.flatMap((mk, i) => {
+          const els = [
+            <div key={`n${i}`} className="flex shrink-0 flex-col items-center gap-1.5" style={{ minWidth: 92 }}>
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-bg-subtle)] ring-1 ring-inset ring-[var(--color-border)]">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: mk.cor }} />
+              </span>
+              <span className="text-center text-[11px] font-medium leading-tight text-[var(--color-fg)]">{mk.label}</span>
+              {mk.hora && <span className="text-numeric text-[11px] text-[var(--color-fg-subtle)]">~{mk.hora}</span>}
+            </div>,
+          ]
+          if (i < segmentos.length) {
+            const s = segmentos[i]
+            els.push(
+              <div key={`s${i}`} className="flex min-w-[78px] flex-1 flex-col items-center pt-1.5">
+                <span className="mb-1.5 text-numeric text-[13px] font-semibold text-[var(--color-fg)]">{fmtMin(s.valor)}</span>
+                <div className="h-px w-full bg-gradient-to-r from-transparent via-[var(--color-border-strong)] to-transparent" />
+                <span className="mt-1.5 text-[10px] uppercase tracking-wide text-[var(--color-fg-subtle)]">{s.label}</span>
+              </div>,
+            )
+          }
+          return els
+        })}
+      </div>
+      <p className="mt-4 text-[11px] text-[var(--color-fg-subtle)]">
+        {temVolta
+          ? `A volta à base foi registrada em ${m.pctComVolta}% das entregas do período.`
+          : 'A volta à base (coluna Chegada CD) ainda não vem preenchida nos KPIs deste período — quando vier, o ciclo completa até o retorno.'}
+      </p>
     </div>
   )
 }
