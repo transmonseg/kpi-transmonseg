@@ -421,6 +421,11 @@ function Erro({ onRetry }: { onRetry: () => void }) {
   )
 }
 
+// "Segurança da carga" (paradas indevidas + mapa) em STAND BY — o cliente pediu pra
+// não usar por enquanto. O mapa, o backend e os componentes continuam no código;
+// troque pra `true` pra reativar a seção (a numeração das demais se ajusta sozinha).
+const MOSTRAR_SEGURANCA_CARGA = false
+
 function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, fonte }: { m: Metricas; mAnt: Metricas | null; mes: string; periodo: Periodo; data: string; resumoRisco: ResumoApi | null; riscoCarregando: boolean; fonte: 'planilha' | 'rastreamento' | null }) {
   const lojaHref = (rede: string, loja: string) =>
     `/painel/loja?rede=${encodeURIComponent(rede)}&loja=${encodeURIComponent(loja)}&periodo=${periodo}&data=${data}`
@@ -568,11 +573,13 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, f
       </section>
 
       {/* ═══════ 02 — SEGURANÇA DA CARGA (paradas indevidas + mapa) ═══════ */}
-      <SecaoRiscoMapa resumo={resumoRisco} carregando={riscoCarregando} n="02" onVerAnalise={setDetalhe} fonte={fonte} />
+      {MOSTRAR_SEGURANCA_CARGA && (
+        <SecaoRiscoMapa resumo={resumoRisco} carregando={riscoCarregando} n="02" onVerAnalise={setDetalhe} fonte={fonte} />
+      )}
 
       {/* ═══════ 03 — ONDE AGIR AGORA ═══════ */}
       <section id="sec-agir" key="v-agir" data-tour="agir" className="scroll-mt-32 space-y-5 animate-fade-up">
-        <SecaoHead n="03" titulo="Onde agir agora" sub="Lojas com problema e os clientes/rotas mais lentos." />
+        <SecaoHead n={MOSTRAR_SEGURANCA_CARGA ? '03' : '02'} titulo="Onde agir agora" sub="Lojas com problema e os clientes/rotas mais lentos." />
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
           <div data-tour="agir-tabela" className={`overflow-hidden lg:col-span-3 ${CARD}`}>
             <table className="w-full text-[13px]">
@@ -633,7 +640,7 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, f
 
       {/* ═══════ 04 — POR REDE ═══════ */}
       <section id="sec-rede" key="v-rede" data-tour="tendencias" className="scroll-mt-32 space-y-5 animate-fade-up">
-        <SecaoHead n="04" titulo="Por rede" sub="Desempenho de cada rede e onde puxar o resultado." />
+        <SecaoHead n={MOSTRAR_SEGURANCA_CARGA ? '04' : '03'} titulo="Por rede" sub="Desempenho de cada rede e onde puxar o resultado." />
 
         <ComparativoRede m={m} />
 
@@ -642,6 +649,7 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, f
         <div data-tour="tendencias-rede" className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))]">
           <DonutRede porRede={m.porRede} />
           <PorRede redes={m.porRede} />
+          <CoberturaGpsRede redes={m.porRede} />
           <Painel titulo="Volume por turno">
             <div className="space-y-2.5 pt-1">
               {(['madrugada', 'manha', 'tarde', 'noite'] as const).map(t => {
@@ -665,7 +673,7 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, f
 
       {/* ═══════ 05 — TENDÊNCIAS ═══════ */}
       <section id="sec-tend" key="v-tend" data-tour="tendencias" className="scroll-mt-32 space-y-5 animate-fade-up">
-        <SecaoHead n="05" titulo="Tendências e análise" sub="Como o período evoluiu dia a dia." />
+        <SecaoHead n={MOSTRAR_SEGURANCA_CARGA ? '05' : '04'} titulo="Tendências e análise" sub="Como o período evoluiu dia a dia." />
 
         {m.serie.length > 1 && <SerieChart serie={m.serie} />}
 
@@ -679,7 +687,10 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, f
           </div>
         )}
 
-        {m.topMotoristas.length > 0 && <TopMotoristas m={m} onVerTodos={() => setDetalhe('motoristas')} />}
+        <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(420px,1fr))]">
+          <TopFrota m={m} />
+          {m.topMotoristas.length > 0 && <TopMotoristas m={m} onVerTodos={() => setDetalhe('motoristas')} />}
+        </div>
       </section>
 
       {detalhe && (
@@ -1054,6 +1065,38 @@ function PorRede({ redes }: { redes: Metricas['porRede'] }) {
   )
 }
 
+// Cobertura de GPS por rede — espelho do "Desempenho por rede", mas pra rastreamento.
+// Mostra quais redes têm mais entregas sem registro de GPS (onde o rastreador falha).
+function CoberturaGpsRede({ redes }: { redes: Metricas['porRede'] }) {
+  const linhas = redes
+    .map(r => ({ rede_id: r.rede_id, total: r.total, sem: r.sem_rastreador, pct: r.total > 0 ? Math.round(((r.total - r.sem_rastreador) / r.total) * 100) : 0 }))
+    .sort((a, b) => a.pct - b.pct) // pior cobertura primeiro (onde agir)
+  return (
+    <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
+      <div className="flex items-baseline justify-between gap-2">
+        <h3 className="text-overline">Cobertura de GPS por rede</h3>
+        <span className="text-[11px] text-[var(--color-fg-subtle)]">% das entregas com rastreador</span>
+      </div>
+      <div className="mt-4 space-y-2.5">
+        {linhas.map(r => {
+          const tom = tomGps(r.pct)
+          return (
+            <div key={r.rede_id} className="flex items-center gap-2.5">
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: COR[tom] }} />
+              <span className="w-24 shrink-0 truncate text-[12px] text-[var(--color-fg)]" title={REDE_LABEL[r.rede_id] ?? r.rede_id}>{REDE_LABEL[r.rede_id] ?? r.rede_id}</span>
+              <div className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-[var(--color-bg-subtle)] ring-1 ring-inset ring-[var(--color-border)]">
+                <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${r.pct}%`, transition: 'width 0.7s cubic-bezier(0.16,1,0.3,1)', background: COR[tom] }} />
+              </div>
+              <span className="w-10 text-right text-numeric text-[11px] font-semibold" style={{ color: COR[tom] }}>{r.pct}%</span>
+              <span className="w-9 text-right text-numeric text-[11px] text-[var(--color-fg-subtle)]" title="entregas sem rastreador">{r.sem || '—'}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 const PALETA_REDE = ['var(--color-accent)', 'var(--color-info)', 'var(--color-success)', 'var(--color-warning)', 'var(--color-danger)', 'var(--color-navy-300)']
 
 function DonutRede({ porRede }: { porRede: Metricas['porRede'] }) {
@@ -1356,6 +1399,51 @@ function TopMotoristas({ m, onVerTodos }: { m: Metricas; onVerTodos: () => void 
       </div>
       <div className="px-5 pb-5 sm:px-6">
         <button onClick={onVerTodos} className="inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent)] hover:underline">Ver todos os motoristas →</button>
+      </div>
+    </div>
+  )
+}
+
+// Frota — veículos que mais entregaram no período (produtividade da placa).
+function TopFrota({ m }: { m: Metricas }) {
+  if (m.placasMaisAtivas.length === 0) return null
+  const top = m.placasMaisAtivas.slice(0, 12)
+  const maxEnt = top[0].entregas
+  return (
+    <div className={`${CARD} overflow-hidden animate-fade-up`}>
+      <div className="px-5 pt-5 sm:px-6 sm:pt-6">
+        <h3 className="text-overline mb-1">Frota</h3>
+        <p className="mb-4 text-[12px] text-[var(--color-fg-subtle)]">Veículos que mais entregaram no período</p>
+      </div>
+      <div className="overflow-auto">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="border-b border-[var(--color-border)] text-left text-[10px] uppercase tracking-[0.1em] text-[var(--color-fg-subtle)]">
+              <th className="px-5 py-2.5 font-semibold">#</th>
+              <th className="px-3 py-2.5 font-semibold">Placa</th>
+              <th className="px-5 py-2.5 font-semibold">Entregas</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--color-border)]">
+            {top.map((r, i) => (
+              <tr key={r.placa} className="transition-colors hover:bg-[var(--color-bg-subtle)]">
+                <td className="px-5 py-2.5">
+                  <span className={[
+                    'inline-flex h-5 min-w-5 items-center justify-center rounded-md px-1 text-[11px] font-semibold tabular-nums',
+                    i < 3 ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent-soft-fg)]' : 'bg-[var(--color-bg-subtle)] text-[var(--color-fg-subtle)]',
+                  ].join(' ')}>{i + 1}</span>
+                </td>
+                <td className="px-3 py-2.5 text-numeric font-medium text-[var(--color-fg)]">{r.placa}</td>
+                <td className="px-5 py-2.5">
+                  <span className="flex items-center gap-2">
+                    <span className="hidden h-1.5 rounded-full bg-[var(--color-accent)] sm:inline-block" style={{ width: `${(r.entregas / maxEnt) * 64}px` }} />
+                    <span className="font-semibold tabular-nums text-[var(--color-fg)]">{r.entregas}</span>
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )
