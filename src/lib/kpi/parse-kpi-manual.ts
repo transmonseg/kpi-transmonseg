@@ -48,6 +48,51 @@ const hhmm = (s: string): string | null => {
   return m ? `${m[1].padStart(2, '0')}:${m[2]}` : null
 }
 
+// UPPER sem acento — base de toda detecção semântica (header, coluna de loja).
+const up = (s: string): string => s.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+
+// Palavras-chave de um cabeçalho de KPI manual. O header é a linha que casa o
+// maior número delas (em QUALQUER coluna), não uma posição/texto fixo — assim
+// tolera "CHEGADA LOJA" vs "CHD LOJA", header na linha 2 ou 3, coluna deslocada.
+const HEADER_KW = [/REDES/, /FILIA/, /MOTORISTA/, /PLACA/, /SAIDA/, /CHEGAD/, /\bCHD\b/, /LOJA/, /CLIENTE/]
+
+// Acha a linha de cabeçalho varrendo as primeiras linhas e pontuando por
+// palavras-chave. Retorna -1 quando nenhuma linha parece um header (≥2 kw).
+function acharHeaderRow(ws: ExcelJS.Worksheet): number {
+  let best = -1, bestScore = 1 // exige ≥2 kw: começa em 1 pra que só score≥2 vença
+  const limR = Math.min(ws.rowCount, 15)
+  const limC = Math.min(ws.columnCount, 20)
+  for (let r = 1; r <= limR; r++) {
+    const row = ws.getRow(r)
+    let txt = ''
+    for (let c = 1; c <= limC; c++) txt += ' ' + up(cell(row.getCell(c).value))
+    let score = 0
+    for (const kw of HEADER_KW) if (kw.test(txt)) score++
+    if (score > bestScore) { bestScore = score; best = r }
+  }
+  return best
+}
+
+// Acha a coluna do identificador da loja a partir do header. Prioriza o rótulo
+// do cliente (REDES/FILIAIS/CLIENTE/UNIDADE); evita "SAIDA LOJA"/"CHEGADA LOJA"
+// (que também contêm "LOJA"). Fallback: 1ª coluna textual do header.
+function acharColunaLoja(ws: ExcelJS.Worksheet, hr: number): number {
+  const row = ws.getRow(hr)
+  const limC = Math.min(ws.columnCount, 20)
+  for (let c = 1; c <= limC; c++) {
+    const t = up(cell(row.getCell(c).value)).replace(/\s+/g, ' ').trim()
+    if (/REDES|FILIA|CLIENTE|UNIDADE/.test(t)) return c
+  }
+  for (let c = 1; c <= limC; c++) {
+    const t = up(cell(row.getCell(c).value)).replace(/\s+/g, ' ').trim()
+    if (/^LOJAS?$/.test(t)) return c   // "LOJA" sozinho, não "SAIDA LOJA"
+  }
+  for (let c = 1; c <= limC; c++) {
+    if (cell(row.getCell(c).value).trim().length >= 2) return c
+  }
+  return 1
+}
+
 // Localiza as colunas do 1º carro pelo HEADER. O layout varia por rede (ex: Zona
 // Sul não tem coluna COD), então posição fixa não serve — detecta dinamicamente.
 interface Cols { motorista: number; placa: number; saidaCd: number; chd: number; sai: number; voltaBase: number }
@@ -80,17 +125,17 @@ function acharColunas(ws: ExcelJS.Worksheet, hr: number): Cols {
  * `data` é a data já resolvida (YYYY-MM-DD) que carimba cada entrada.
  */
 function parseWorksheet(ws: ExcelJS.Worksheet, rede_id: string, data: string): EntradaManual[] {
-  let hr = -1
-  for (let r = 1; r <= Math.min(ws.rowCount, 10); r++) {
-    if (/REDES|FILIAIS/i.test(cell(ws.getRow(r).getCell(1).value))) { hr = r; break }
-  }
-  if (hr === -1) hr = 3
+  // Header e coluna da loja por SEMÂNTICA (não posição fixa). Sem header
+  // reconhecível, devolve [] — o diagnóstico explica o que faltou.
+  const hr = acharHeaderRow(ws)
+  if (hr === -1) return []
+  const colLoja = acharColunaLoja(ws, hr)
   const col = acharColunas(ws, hr)
 
   const out: EntradaManual[] = []
   for (let r = hr + 1; r <= ws.rowCount; r++) {
-    const loja = cell(ws.getRow(r).getCell(1).value)
-    if (!loja || loja.length < 2 || /^REDES|TOTAL/i.test(loja)) continue
+    const loja = cell(ws.getRow(r).getCell(colLoja).value)
+    if (!loja || loja.length < 2 || /^REDES|^FILIA|TOTAL/i.test(up(loja))) continue
     const placa = cell(ws.getRow(r).getCell(col.placa).value) || null
     const motorista = cell(ws.getRow(r).getCell(col.motorista).value) || null
     // junta o range placa..sai+1 pra capturar "SEM RASTREADOR" / "NÃO FOI AO CLIENTE"
@@ -114,12 +159,38 @@ function parseWorksheet(ws: ExcelJS.Worksheet, rede_id: string, data: string): E
   return out
 }
 
-/** Nome de aba que representa um dia do mês (1..31). Ignora "matriz", "base", etc. */
+// Abas que NUNCA são um dia, mesmo contendo número (ex "BASE 2", "endereço
+// filiais"). Checado antes de extrair dígitos pra não virar dia por engano.
+const ABA_AUXILIAR_RE = /matriz|base|endere|total|resumo|consolidad|m[êe]s|sheet|planilha|p[áa]gina/i
+
+/**
+ * Nome de aba que representa um dia do mês (1..31), tolerante a como o operador
+ * digita: "19", "01", "19/05", "19-05", "19.05", "DIA 19", "19 SEG", "SEG 19".
+ * Ignora abas auxiliares (matriz, base, endereço, total, resumo…). Retorna o dia
+ * ou null. Antes exigia o nome ser EXATAMENTE o número — qualquer variação
+ * (data, prefixo "DIA", dia da semana junto) derrubava o reconhecimento do mês.
+ */
 export function ehAbaDia(nome: string): number | null {
   const t = nome.trim()
-  if (!/^\d{1,2}$/.test(t)) return null
-  const dia = Number(t)
-  return dia >= 1 && dia <= 31 ? dia : null
+  if (!t || ABA_AUXILIAR_RE.test(t)) return null
+  // 1) Puro número (caso canônico): "19", "01"
+  if (/^\d{1,2}$/.test(t)) {
+    const d = Number(t)
+    return d >= 1 && d <= 31 ? d : null
+  }
+  // 2) Data com dia primeiro (formato BR): "19/05", "19-05", "19.05"
+  const dm = t.match(/^(\d{1,2})\s*[/.\-]\s*\d{1,2}/)
+  if (dm) {
+    const d = Number(dm[1])
+    if (d >= 1 && d <= 31) return d
+  }
+  // 3) Dia como token isolado: "DIA 19", "19 SEG", "SEG 19". \b\d{1,2}\b não casa
+  //    dentro de "2026" (ano), então não confunde com data completa.
+  for (const m of t.matchAll(/\b(\d{1,2})\b/g)) {
+    const d = Number(m[1])
+    if (d >= 1 && d <= 31) return d
+  }
+  return null
 }
 
 /**
@@ -129,33 +200,63 @@ export function ehAbaDia(nome: string): number | null {
 export async function parseKpiManual(buf: Buffer, rede_id: string, data: string): Promise<EntradaManual[]> {
   const wb = new ExcelJS.Workbook()
   await wb.xlsx.load(buf as unknown as ArrayBuffer)
-  const ws = wb.getWorksheet(data.slice(8, 10)) ?? wb.worksheets[0]
+  const diaAlvo = Number(data.slice(8, 10))
+  // Acha a aba do dia por SEMÂNTICA (tolera "19/05", "DIA 19"); cai no nome exato
+  // e, por fim, na 1ª aba só se nada casar (retrocompat com o que existia).
+  const ws =
+    wb.worksheets.find(w => ehAbaDia(w.name) === diaAlvo) ??
+    wb.getWorksheet(data.slice(8, 10)) ??
+    wb.worksheets[0]
   if (!ws) return []
   return parseWorksheet(ws, rede_id, data)
 }
 
+/** Diagnóstico da planilha — alimenta a mensagem de erro quando nada é extraído. */
+export interface DiagPlanilha {
+  abas: string[]          // todas as abas do arquivo
+  abasDia: string[]       // abas reconhecidas como dia (1..31)
+  abasComLojas: string[]  // abas-dia das quais extraiu ≥1 linha de loja
+}
+
+/** Monta a mensagem de erro explicando O QUE não foi reconhecido (em vez do
+ *  genérico "nenhuma loja"). Usada pela rota de upload. */
+export function mensagemDiagnostico(diag: DiagPlanilha): string {
+  const abas = diag.abas.length ? diag.abas.map(a => `"${a}"`).join(', ') : '(nenhuma)'
+  if (diag.abasDia.length === 0) {
+    return `Nenhuma aba parece um dia do mês. Abas encontradas: ${abas}. `
+      + `Renomeie a aba de cada dia para o número do dia (ex: "19", "01" ou "19/05").`
+  }
+  // Tem aba-dia, mas nenhuma rendeu linhas → cabeçalho/coluna de loja não achados.
+  return `Abas de dia reconhecidas (${diag.abasDia.map(a => `"${a}"`).join(', ')}), `
+    + `mas não encontrei o cabeçalho com a coluna de lojas. Confira se existe uma `
+    + `linha de cabeçalho com "REDES / FILIAIS" (ou "LOJA"/"CLIENTE") e colunas `
+    + `como MOTORISTA, PLACA, SAÍDA CD, CHEGADA LOJA, SAÍDA LOJA.`
+}
+
 /**
  * Lê um XLSX de KPI manual com VÁRIAS abas-dia (uma por dia do mês) e extrai TODAS
- * de uma vez. `mes` é 'YYYY-MM'; cada aba cujo nome é um dia (1..31) vira a data
- * `${mes}-${dia}`. Abas auxiliares (matriz, base, endereços) são ignoradas.
- * Retorna o conjunto completo + a lista de dias detectados.
+ * de uma vez. `mes` é 'YYYY-MM'; cada aba cujo nome representa um dia (1..31) vira
+ * a data `${mes}-${dia}`. Abas auxiliares (matriz, base, endereços) são ignoradas.
+ * Retorna o conjunto completo, os dias detectados e um diagnóstico do arquivo.
  */
 export async function parseKpiManualTodasAbas(
   buf: Buffer,
   rede_id: string,
   mes: string,
-): Promise<{ entradas: EntradaManual[]; dias: string[] }> {
+): Promise<{ entradas: EntradaManual[]; dias: string[]; diag: DiagPlanilha }> {
   const wb = new ExcelJS.Workbook()
   await wb.xlsx.load(buf as unknown as ArrayBuffer)
   const entradas: EntradaManual[] = []
   const dias: string[] = []
+  const diag: DiagPlanilha = { abas: wb.worksheets.map(w => w.name), abasDia: [], abasComLojas: [] }
   for (const ws of wb.worksheets) {
     const dia = ehAbaDia(ws.name)
     if (dia == null) continue
+    diag.abasDia.push(ws.name)
     const data = `${mes}-${String(dia).padStart(2, '0')}`
     const ents = parseWorksheet(ws, rede_id, data)
-    if (ents.length > 0) { entradas.push(...ents); dias.push(data) }
+    if (ents.length > 0) { entradas.push(...ents); dias.push(data); diag.abasComLojas.push(ws.name) }
   }
   dias.sort()
-  return { entradas, dias }
+  return { entradas, dias, diag }
 }

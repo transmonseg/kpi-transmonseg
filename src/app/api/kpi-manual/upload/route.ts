@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { parseKpiManual, parseKpiManualTodasAbas } from '@/lib/kpi/parse-kpi-manual'
+import { parseKpiManual, parseKpiManualTodasAbas, mensagemDiagnostico } from '@/lib/kpi/parse-kpi-manual'
 import { replaceEntradasManualMes, deleteEntradasManualMes, ultimoDiaDoMes } from '@/lib/kpi/manual-import'
 import { puxarResumoDoPdfDoDia } from '@/lib/kpi/resumo-do-pdf'
 
@@ -29,9 +29,9 @@ export async function POST(req: NextRequest) {
   // ── Modo MÊS INTEIRO: lê todas as abas-dia da planilha e importa o mês todo ──
   if (mes) {
     if (!/^\d{4}-\d{2}$/.test(mes)) return new NextResponse('Mês inválido (use YYYY-MM)', { status: 400 })
-    const { entradas, dias } = await parseKpiManualTodasAbas(buf, rede_id, mes)
+    const { entradas, dias, diag } = await parseKpiManualTodasAbas(buf, rede_id, mes)
     if (entradas.length === 0) {
-      return new NextResponse('Nenhuma aba-dia reconhecida na planilha (abas devem ser o número do dia, ex "19")', { status: 422 })
+      return new NextResponse(mensagemDiagnostico(diag), { status: 422 })
     }
     // sobrescreve o mês inteiro desta rede numa RPC transacional
     try {
