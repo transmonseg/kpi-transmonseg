@@ -246,6 +246,9 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Dados já estão em unitrac_paradas — arquivo bruto não serve mais.
+  await svc.storage.from('unitrac-raw').remove([storagePath]).catch(() => {})
+
   return NextResponse.json({
     upload_id: uploadId,
     qtd_abas: veiculos.length,

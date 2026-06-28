@@ -260,6 +260,9 @@ export async function POST(req: NextRequest) {
     qtdOrfas += batch.filter((l) => !l.placa_norm).length
   }
 
+  // Dados já estão em escala_linhas — arquivo bruto não serve mais.
+  await svc.storage.from('escalas-raw').remove([storagePath]).catch(() => {})
+
   return NextResponse.json({
     upload_id: upload.id,
     qtd_linhas: linhas.length,
