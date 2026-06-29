@@ -20,12 +20,18 @@ export async function buscarPontos(cvs: string[]): Promise<MapaPontos> {
   return mapa
 }
 
+// Raio mínimo garantido: o Unitrac cadastra alguns pontos com raio muito pequeno
+// (ex: 100m) enquanto a entrega real pode ocorrer a 150m do centro do geofence.
+// 150m é o padrão do sistema; raios menores da API são expandidos até esse mínimo.
+const RAIO_MIN_M = 150
+
 export function acharLojaPorCoordenada(lat: number, lon: number, pontos: MapaPontos): PontoApi | null {
   let melhor: PontoApi | null = null
   let melhorDist = Infinity
   for (const p of Object.values(pontos)) {
     const d = distMetros(lat, lon, p.lat, p.lon)
-    if (d <= p.raio + 30 && d < melhorDist) {
+    const raioEfetivo = Math.max(p.raio, RAIO_MIN_M)
+    if (d <= raioEfetivo + 30 && d < melhorDist) {
       melhor = p
       melhorDist = d
     }

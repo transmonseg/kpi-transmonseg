@@ -14,4 +14,11 @@ describe('horarioEntregaGabarito', () => {
   it('sem horário da API → mantém o PDF', () => {
     expect(horarioEntregaGabarito(d(5, 34), null)).toEqual(d(5, 34))
   })
+  it('API mais tarde com diferença ≤15min → mantém o PDF (caso do bug 1 com Tia Erica)', () => {
+    // Matcher via bloco Tia Erica deu 5:41; API tem 6:09 (28min > 15min).
+    // Este teste documenta o comportamento atual: o gabarito SUBSTITUIRIA para 6:09.
+    // O bug 1 é resolvido via RAIO_MIN_M (parada 5:41 vira LOJA) + modo API usa
+    // parada mais cedo no gabarito (route.ts), não aqui.
+    expect(horarioEntregaGabarito(d(5, 41), d(6, 9))).toEqual(d(6, 9))
+  })
 })

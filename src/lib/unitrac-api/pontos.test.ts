@@ -35,4 +35,19 @@ describe('acharLojaPorCoordenada', () => {
     const pontos = { '560036': { nome: 'LOJA A', lat: -22.9, lon: -43.2, raio: 50, cod: '560036' } }
     expect(acharLojaPorCoordenada(-23.5, -43.9, pontos)).toBeNull()
   })
+
+  it('raio mínimo 150m: aceita ponto a 160m mesmo com raio=100 no cadastro (caso Caxias II)', () => {
+    // Simula o bug real: Unitrac cadastra geofence com raio=100m mas entrega ocorre a
+    // 157m do centro. Sem o raio mínimo, FORA_BASE. Com RAIO_MIN_M=150, LOJA.
+    const pontos = { '560057': { nome: 'SENDAS CAXIAS II', lat: -22.726031, lon: -43.314276, raio: 100, cod: '560057' } }
+    // ~160m de distância (dentro de 150+30=180m com raio mínimo)
+    const hit = acharLojaPorCoordenada(-22.7257, -43.3129, pontos)
+    expect(hit?.cod).toBe('560057')
+  })
+
+  it('raio mínimo não expande para distâncias claramente fora (>180m)', () => {
+    const pontos = { '560057': { nome: 'SENDAS CAXIAS II', lat: -22.726031, lon: -43.314276, raio: 100, cod: '560057' } }
+    // ~300m de distância — fora mesmo com raio mínimo
+    expect(acharLojaPorCoordenada(-22.728, -43.312, pontos)).toBeNull()
+  })
 })

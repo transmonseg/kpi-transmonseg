@@ -632,7 +632,12 @@ export async function POST(req: NextRequest) {
       const vars = new Set([rota.placa_norm, rota.placa_unitrac, ...variantesPlaca(rota.placa_norm ?? '')].filter(Boolean) as string[])
       const candidatas = apiRowsConsolidadas.filter(p => vars.has(p.placa_norm) && p.codigo_loja === esperada.codigo_unitrac)
       if (candidatas.length === 0) continue
-      const apiStop = candidatas.reduce((a, b) => (b.duracao_seg ?? 0) > (a.duracao_seg ?? 0) ? b : a)
+      // No modo API, o veículo pode ter múltiplas paradas na mesma loja (ex: fila
+      // antes do doca). Usa a chegada da parada MAIS CEDO (o momento real da chegada
+      // ao local). No modo PDF, usa a MAIS LONGA (parada real vs. drive-by curto do PDF).
+      const apiStop = modoApi
+        ? candidatas.reduce((a, b) => new Date(a.chegada).getTime() < new Date(b.chegada).getTime() ? a : b)
+        : candidatas.reduce((a, b) => (b.duracao_seg ?? 0) > (a.duracao_seg ?? 0) ? b : a)
       const novaChegada = horarioEntregaGabarito(p0.chegada, new Date(apiStop.chegada))
       if (novaChegada.getTime() !== p0.chegada.getTime()) {
         const dur = p0.duracao_min ?? 0
