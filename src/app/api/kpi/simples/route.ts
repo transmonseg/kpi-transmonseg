@@ -640,8 +640,13 @@ export async function POST(req: NextRequest) {
         : candidatas.reduce((a, b) => (b.duracao_seg ?? 0) > (a.duracao_seg ?? 0) ? b : a)
       const novaChegada = horarioEntregaGabarito(p0.chegada, new Date(apiStop.chegada))
       if (novaChegada.getTime() !== p0.chegada.getTime()) {
-        const dur = p0.duracao_min ?? 0
-        rota.paradas[0] = { ...p0, chegada: novaChegada, saida: new Date(novaChegada.getTime() + dur * 60000) }
+        // Em modo PDF com drive-by, a duração do PDF reflete o drive-by (curto),
+        // não a entrega real. Usa saida da parada API (a mais longa) quando disponível.
+        const novaSaida = (!modoApi && apiStop.saida)
+          ? new Date(apiStop.saida)
+          : new Date(novaChegada.getTime() + (p0.duracao_min ?? 0) * 60000)
+        const novaDur = Math.round((novaSaida.getTime() - novaChegada.getTime()) / 60000)
+        rota.paradas[0] = { ...p0, chegada: novaChegada, saida: novaSaida, duracao_min: novaDur }
       }
     }
   }
