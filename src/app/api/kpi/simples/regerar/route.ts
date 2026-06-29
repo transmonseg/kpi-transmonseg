@@ -26,6 +26,21 @@ export async function POST(req: NextRequest) {
     .maybeSingle()
   if (error || !geracao) return new NextResponse('Geração não encontrada', { status: 404 })
 
+  // Tenta servir do cache — elimina CPU de re-processamento completo.
+  // O cache é gravado pelo POST /api/kpi/simples após cada geração bem-sucedida.
+  try {
+    const { data: cacheBlob, error: cacheErr } = await svc.storage
+      .from('kpi-outputs')
+      .download(`${body.id}/cache.json`)
+    if (cacheBlob && !cacheErr) {
+      const cached = JSON.parse(await cacheBlob.text()) as Record<string, unknown>
+      console.log(`[kpi/regerar] cache hit: ${body.id}`)
+      return NextResponse.json({ ...cached, geracao_id: body.id })
+    }
+  } catch {
+    // cache miss — segue com re-processamento normal
+  }
+
   // Re-encaminha pro endpoint principal com skipSave para não duplicar histórico
   const url = new URL('/api/kpi/simples', req.url).toString()
   const res = await fetch(url, {

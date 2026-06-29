@@ -1169,6 +1169,27 @@ export async function POST(req: NextRequest) {
       .single()
     geracaoId = (inserted?.id as string) ?? null
 
+    // Cache completo em Storage para servir regerar sem re-executar o pipeline.
+    // Elimina CPU de re-processamento quando o usuário reabre uma geração histórica.
+    // Best-effort: falha silenciosa não afeta a resposta nem o KPI.
+    try {
+      // Garante que o bucket existe (idempotente — ignora erro se já existir)
+      await svc.storage.createBucket('kpi-outputs', { public: false }).catch(() => {})
+      const cachePayload = JSON.stringify({
+        redes: results,
+        lojasNovas,
+        avisosEscala,
+      })
+      await svc.storage
+        .from('kpi-outputs')
+        .upload(`${geracaoId}/cache.json`, Buffer.from(cachePayload, 'utf-8'), {
+          contentType: 'application/json',
+          upsert: true,
+        })
+    } catch (e) {
+      console.warn('[kpi/simples] cache upload falhou (best-effort):', e instanceof Error ? e.message : e)
+    }
+
     // Risco da carga: do MESMO paradaRows (já mesclado PDF + API) calcula as paradas
     // indevidas e fixa o resumo do dia no storage — assim o mapa do dashboard funciona
     // pra QUALQUER dia gerado, sem depender da janela de 48h da API. Best-effort: se
