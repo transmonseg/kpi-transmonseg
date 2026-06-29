@@ -646,6 +646,33 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // SAIDA-CD-GABARITO: quando saida_cd do PDF está implausível perto de CHD LOJA
+  // (< 20 min de viagem — impossível fisicamente dada a distância CD→loja), o
+  // motorista checou tarde no sistema mas o caminhão já saía pelo GPS. Substitui
+  // pela última saída de BASE do GPS (API). Só em modo PDF: no modoApi o GPS já
+  // é a fonte primária de saida_cd.
+  const MIN_VIAGEM_CD_MIN = 20
+  if (apiRowsConsolidadas.length > 0 && !modoApi) {
+    for (const rota of rotas) {
+      if (!rota.saida_cd || rota.paradas.length === 0) continue
+      const chdLoja = rota.paradas[0].chegada
+      if (!chdLoja) continue
+      const diffMin = (chdLoja.getTime() - rota.saida_cd.getTime()) / 60000
+      if (diffMin < 0 || diffMin >= MIN_VIAGEM_CD_MIN) continue
+      const vars = new Set([rota.placa_norm, rota.placa_unitrac, ...variantesPlaca(rota.placa_norm ?? '')].filter(Boolean) as string[])
+      const baseExits = apiRowsConsolidadas
+        .filter(p => vars.has(p.placa_norm) && p.classificacao === 'BASE' && p.saida)
+        .filter(p => new Date(p.saida!).getTime() < chdLoja.getTime())
+        .sort((a, b) => new Date(b.saida!).getTime() - new Date(a.saida!).getTime())
+      const melhor = baseExits[0]
+      if (!melhor?.saida) continue
+      const apiSaida = new Date(melhor.saida)
+      if ((chdLoja.getTime() - apiSaida.getTime()) / 60000 >= MIN_VIAGEM_CD_MIN) {
+        rota.saida_cd = apiSaida
+      }
+    }
+  }
+
   // Confirma/resgata por ALVO+NF (best-effort). Se a API não respondeu (alvosApi
   // vazio), é no-op. Positivo-só: alvo pendente não vira entrega.
   //
@@ -661,10 +688,23 @@ export async function POST(req: NextRequest) {
       if (!esperada?.codigo_unitrac) continue
       const placaAlvo = rota.placa_unitrac ?? rota.placa_norm
       const c = confirmaPorAlvo(placaAlvo, esperada.codigo_unitrac, alvosApi)
-      if (c && !rota.paradas.some(p => p.loja_id === esperada.id)) {
+      if (!c) continue
+      if (!rota.paradas.some(p => p.loja_id === esperada.id)) {
+        // Sem match GPS: cria parada a partir do feitoISO
         const t = new Date(c.feitoISO + 'Z')
         rota.paradas = [{ parada_id: null, loja_id: esperada.id, nome: esperada.nome, chegada: t, saida: t, duracao_min: 0, classificacao: 'LOJA' }]
         rota.status = 'ok'
+      } else {
+        // Já tem match GPS: usa feitoISO como SAIDA LOJA quando disponível.
+        // O motorista confirmou a entrega no app — mais preciso que a próxima
+        // parada GPS (que pode ser a base horas depois, se o motor ficou ligado).
+        const p0Idx = rota.paradas.findIndex(p => p.loja_id === esperada.id)
+        if (p0Idx < 0) continue
+        const p0 = rota.paradas[p0Idx]
+        const feitoDate = new Date(c.feitoISO + 'Z')
+        if (p0.saida && feitoDate > p0.chegada && feitoDate < p0.saida) {
+          rota.paradas[p0Idx] = { ...p0, saida: feitoDate, duracao_min: Math.round((feitoDate.getTime() - p0.chegada.getTime()) / 60000) }
+        }
       }
     }
   }
