@@ -817,6 +817,7 @@ export default function KpiSimplesPage() {
   const [lineEdits, setLineEdits] = useState<Record<string, LineEditPatch>>({})
   const [geracaoId, setGeracaoId] = useState<string | null>(null)
   const [reabrindoGeracaoId, setReabrindoGeracaoId] = useState<string | null>(null)
+  const [modoApi, setModoApi] = useState(false)
 
   function addAlteracao(a: AlteracaoParsed) { setAlteracoes(prev => [...prev, a]) }
   function removeAlteracao(idx: number) { setAlteracoes(prev => prev.filter((_, i) => i !== idx)) }
@@ -904,13 +905,13 @@ export default function KpiSimplesPage() {
       if (!ok) return
     }
     if (escalas.length === 0) { setErro('Selecione ao menos uma escala.'); return }
-    if (unitracFiles.length === 0) { setErro('Selecione o Unitrac (PDF).'); return }
-    // PDF é OBRIGATÓRIO (formato principal usado pela Erica).
-    // XLSX é opcional como fallback.
-    const temPdf = unitracFiles.some(f => f.name.toLowerCase().endsWith('.pdf'))
-    if (!temPdf) {
-      setErro('Suba o Unitrac em PDF (formato principal). XLSX é opcional.')
-      return
+    if (!modoApi) {
+      if (unitracFiles.length === 0) { setErro('Selecione o Unitrac (PDF).'); return }
+      const temPdf = unitracFiles.some(f => f.name.toLowerCase().endsWith('.pdf'))
+      if (!temPdf) {
+        setErro('Suba o Unitrac em PDF (formato principal). XLSX é opcional.')
+        return
+      }
     }
     if (!data) { setErro('Selecione a data.'); return }
 
@@ -942,7 +943,7 @@ export default function KpiSimplesPage() {
 
         const [escalaBucketPaths, unitracBucketPaths] = await Promise.all([
           Promise.all(escalas.map(f => uploadComPresign(f, false))),
-          Promise.all(unitracFiles.map(f => uploadComPresign(f, true))),
+          modoApi ? Promise.resolve([]) : Promise.all(unitracFiles.map(f => uploadComPresign(f, true))),
         ])
 
         setBucketPaths({ escalaBucketPaths, unitracBucketPaths })
@@ -950,7 +951,7 @@ export default function KpiSimplesPage() {
         const res = await fetch('/api/kpi/simples', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ escalaBucketPaths, unitracBucketPaths, data, alteracoes }),
+          body: JSON.stringify({ escalaBucketPaths, unitracBucketPaths, data, alteracoes, ...(modoApi ? { modoApi: true } : {}) }),
         })
         if (!res.ok) throw new Error((await res.text()) || 'Erro ao processar.')
         const json = await res.json() as { redes: RedeResult[]; geracao_id?: string; lojasNovas?: LojaNova[]; avisosEscala?: string[] }
@@ -965,9 +966,9 @@ export default function KpiSimplesPage() {
   }
 
   // Habilita o botão quando temos: pelo menos 1 escala + Unitrac PDF + data.
-  // XLSX é opcional (fallback).
+  // Em modoApi (beta), o PDF não é necessário — a API fornece os dados.
   const temUnitracPdf = unitracFiles.some(f => f.name.toLowerCase().endsWith('.pdf'))
-  const pronto = escalas.length > 0 && temUnitracPdf && !!data
+  const pronto = escalas.length > 0 && (modoApi || temUnitracPdf) && !!data
 
   function handleLineEdit(redeId: string, ordem: number, patch: LineEditPatch) {
     const key = `${redeId}:::${ordem}`
@@ -1034,6 +1035,34 @@ export default function KpiSimplesPage() {
         </div>
       )}
 
+      {/* Toggle Modo API Beta */}
+      <div className="mb-4 flex items-center gap-3">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={modoApi}
+          onClick={() => setModoApi(v => !v)}
+          className={cn(
+            'relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200',
+            modoApi ? 'bg-[var(--color-success)]' : 'bg-[var(--color-border-strong)]',
+          )}
+        >
+          <span
+            className={cn(
+              'pointer-events-none inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200',
+              modoApi ? 'translate-x-4' : 'translate-x-0.5',
+            )}
+          />
+        </button>
+        <div className="flex items-baseline gap-2">
+          <span className="text-[13px] font-semibold text-[var(--color-fg)]">Modo API</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider rounded-full px-1.5 py-0.5 bg-[var(--color-info-soft)] text-[var(--color-info-soft-fg)]">Beta</span>
+          <span className="text-[12px] text-[var(--color-fg-muted)]">
+            {modoApi ? 'Paradas puxadas direto da API Unitrac — sem PDF necessario' : 'Ativar para gerar KPI so com a escala (sem PDF do Unitrac)'}
+          </span>
+        </div>
+      </div>
+
       {/* Upload grid asymmetric — escalas 7/12 (mais peso) + Unitrac+data 5/12 */}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div data-tour="gk-escala" className="col-span-1 lg:col-span-7">
@@ -1051,15 +1080,27 @@ export default function KpiSimplesPage() {
 
         <div className="col-span-1 flex flex-col gap-4 lg:col-span-5">
           <div data-tour="gk-unitrac">
-            <FileDropzone
-              eyebrow="Passo 2"
-              label="Relatório Unitrac"
-              hint="XLSX e/ou PDF · múltiplos permitidos"
-              accept=".xlsx,.pdf"
-              files={unitracFiles}
-              onAdd={files => setUnitracFiles(prev => [...prev, ...files])}
-              onRemove={idx => setUnitracFiles(prev => prev.filter((_, i) => i !== idx))}
-            />
+            {modoApi ? (
+              <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-success)]/40 bg-[var(--color-success)]/5 p-5">
+                <div className="flex items-center gap-2">
+                  <WifiHigh size={16} weight="bold" className="text-[var(--color-success)]" />
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-success)]">API Unitrac · Passo 2 automatico</span>
+                </div>
+                <p className="text-[13px] text-[var(--color-fg-muted)]">
+                  As paradas serao puxadas direto da API Unitrac em tempo real. Nenhum arquivo necessario.
+                </p>
+              </div>
+            ) : (
+              <FileDropzone
+                eyebrow="Passo 2"
+                label="Relatório Unitrac"
+                hint="XLSX e/ou PDF · múltiplos permitidos"
+                accept=".xlsx,.pdf"
+                files={unitracFiles}
+                onAdd={files => setUnitracFiles(prev => [...prev, ...files])}
+                onRemove={idx => setUnitracFiles(prev => prev.filter((_, i) => i !== idx))}
+              />
+            )}
           </div>
 
           <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">

@@ -124,35 +124,34 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
   if (!body) return new NextResponse('Body JSON inválido.', { status: 400 })
 
-  const { escalaBucketPath, escalaBucketPaths, unitracBucketPath, unitracBucketPaths, data, alteracoes = [], lineEdits = [], skipSave = false } = body as {
+  const { escalaBucketPath, escalaBucketPaths, unitracBucketPath, unitracBucketPaths, data, alteracoes = [], lineEdits = [], skipSave = false, modoApi = false } = body as {
     escalaBucketPath?: string
     escalaBucketPaths?: string[]
     unitracBucketPath?: string
     unitracBucketPaths?: string[]
     data: string
-    // A UI manda AlteracaoParsed (loja_nome_raw, motivo); normalizado p/ AltConfirmada
-    // na aplicação (parsedToConfirmada) — preenche loja_raw + carro.
     alteracoes?: AlteracaoParsed[]
     lineEdits?: LineEdit[]
     skipSave?: boolean
+    /** Beta: pula o PDF do Unitrac e usa a API diretamente como fonte de paradas. */
+    modoApi?: boolean
   }
 
   // Normalize to array
   const escalaPaths: string[] = escalaBucketPaths ?? (escalaBucketPath ? [escalaBucketPath] : [])
   if (escalaPaths.length === 0) return new NextResponse('"escalaBucketPath" ou "escalaBucketPaths" obrigatório.', { status: 400 })
   const rawUnitracPaths: string[] = unitracBucketPaths ?? (unitracBucketPath ? [unitracBucketPath] : [])
-  if (rawUnitracPaths.length === 0) return new NextResponse('"unitracBucketPath" ou "unitracBucketPaths" obrigatório.', { status: 400 })
 
-  // PDF é OBRIGATÓRIO (fonte primária — Tia Érica usa só PDF, é mais completo).
-  // XLSX é OPCIONAL (fallback que pode ter parsing mais limpo em alguns casos).
-  // Antes exigíamos os dois, mas Tia Érica trabalha só com PDF, então o sistema
-  // deve refletir esse fluxo.
-  const temPdf = rawUnitracPaths.some(p => p.toLowerCase().endsWith('.pdf'))
-  if (!temPdf) {
-    return new NextResponse(
-      'Suba o relatório Unitrac em PDF (formato principal). XLSX é opcional como fallback.',
-      { status: 400 },
-    )
+  // Em modoApi (beta), o PDF do Unitrac é opcional — usamos a API como fonte primária.
+  if (!modoApi) {
+    if (rawUnitracPaths.length === 0) return new NextResponse('"unitracBucketPath" ou "unitracBucketPaths" obrigatório.', { status: 400 })
+    const temPdf = rawUnitracPaths.some(p => p.toLowerCase().endsWith('.pdf'))
+    if (!temPdf) {
+      return new NextResponse(
+        'Suba o relatório Unitrac em PDF (formato principal). XLSX é opcional como fallback.',
+        { status: 400 },
+      )
+    }
   }
 
   const unitracPaths = Array.from(new Set(rawUnitracPaths))
@@ -315,9 +314,10 @@ export async function POST(req: NextRequest) {
     if (r.placa_norm) cadastroPlacas.add(String(r.placa_norm))
   }
 
-  // Parse unitrac — baixa e parseia cada arquivo, mergeia por placa
+  // Parse unitrac — baixa e parseia cada arquivo, mergeia por placa.
+  // Em modoApi (beta), pulamos o PDF — paradaRows vira [] e é preenchido pela API abaixo.
   const veiculosMap = new Map<string, import('@/lib/types/unitrac').ResumoVeiculo>()
-  for (const unitracPath of unitracPaths) {
+  if (!modoApi) for (const unitracPath of unitracPaths) {
     const { data: unitracBlob, error: unitracErr } = await svc.storage.from('unitrac-raw').download(unitracPath)
     if (unitracErr || !unitracBlob) {
       console.warn(`[/api/kpi/simples] Unitrac ${unitracPath} não encontrado, pulando.`)
@@ -367,7 +367,7 @@ export async function POST(req: NextRequest) {
     }
   }
   const veiculos = Array.from(veiculosMap.values())
-  if (veiculos.length === 0)
+  if (veiculos.length === 0 && !modoApi)
     return new NextResponse('Nenhum veículo encontrado no Unitrac.', { status: 400 })
 
   // Build matcher inputs
@@ -439,7 +439,7 @@ export async function POST(req: NextRequest) {
     const apiRows: UnitracParadaRow[] = []
     for (const r of settled) if (r.status === 'fulfilled') apiRows.push(...r.value)
     apiRowsConsolidadas = apiRows
-    paradaRows = mesclarParadas(paradaRows, apiRows)
+    paradaRows = modoApi ? apiRows : mesclarParadas(paradaRows, apiRows)
   } catch (e) {
     console.warn('[/api/kpi/simples] merge PDF+API falhou (segue só PDF):', e instanceof Error ? e.message : e)
   }
