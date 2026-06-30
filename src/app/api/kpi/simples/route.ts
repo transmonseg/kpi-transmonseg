@@ -699,18 +699,12 @@ export async function POST(req: NextRequest) {
         const t = new Date(c.feitoISO + 'Z')
         rota.paradas = [{ parada_id: null, loja_id: esperada.id, nome: esperada.nome, chegada: t, saida: t, duracao_min: 0, classificacao: 'LOJA' }]
         rota.status = 'ok'
-      } else {
-        // Já tem match GPS: usa feitoISO como SAIDA LOJA quando disponível.
-        // O motorista confirmou a entrega no app — mais preciso que a próxima
-        // parada GPS (que pode ser a base horas depois, se o motor ficou ligado).
-        const p0Idx = rota.paradas.findIndex(p => p.loja_id === esperada.id)
-        if (p0Idx < 0) continue
-        const p0 = rota.paradas[p0Idx]
-        const feitoDate = new Date(c.feitoISO + 'Z')
-        if (p0.saida && feitoDate > p0.chegada && feitoDate < p0.saida) {
-          rota.paradas[p0Idx] = { ...p0, saida: feitoDate, duracao_min: Math.round((feitoDate.getTime() - p0.chegada.getTime()) / 60000) }
-        }
       }
+      // Já tem match GPS: NÃO sobrescreve com feitoISO. feitoISO é a hora em que
+      // o motorista confirmou no app (ou o motor religou brevemente em meio à
+      // entrega) — não é a saída real. O GPS/cluster já calcula a saída correta
+      // (último ponto do cluster); usar feitoISO aqui zerava entregas longas
+      // (ex.: EAC-4D65, saída real ~12:55, feitoISO 6:33 cortava pra 24min).
     }
   }
   } catch (e) {
