@@ -32,7 +32,12 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname
   const isAuthPage = path.startsWith('/login') || path.startsWith('/cadastro')
-  const isPublic = path === '/' || isAuthPage
+  // /dashboard (e o alias antigo /apresentacao, que só redireciona pra lá) é o
+  // link público sem login; a API que ele consome também precisa passar aqui.
+  const isDashboardPublico = path === '/dashboard' || path.startsWith('/dashboard/') ||
+    path === '/apresentacao' || path.startsWith('/apresentacao/') ||
+    path === '/api/dashboard/publico'
+  const isPublic = path === '/' || isAuthPage || isDashboardPublico
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
