@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -17,6 +17,11 @@ import { ModalDetalhe, type TipoDetalhe } from './modal-detalhe'
 
 type Periodo = 'dia' | 'semana' | 'mes' | 'ano' | 'custom'
 type Tab = 'geral' | 'inserir' | 'historico'
+
+// True só no link público (/dashboard) — evita repassar "standalone" prop por
+// toda a árvore de gráficos só pra decidir se mostra a explicação extra.
+const StandaloneCtx = createContext(false)
+const useStandalone = () => useContext(StandaloneCtx)
 
 // Resumo de risco vindo da fonte da API (rota beta): paradas indevidas do dia.
 type PontoRisco = { placa: string; hora: string; duracaoMin: number; lat: number; lng: number; rede?: string; motorista?: string }
@@ -177,6 +182,7 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
   const erroFinal = erro && !mFinal
 
   return (
+    <StandaloneCtx.Provider value={standalone}>
     <div className="mx-auto w-full max-w-[1180px] px-5 sm:px-8">
       {/* Header */}
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -242,6 +248,7 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
         )}
       </div>
     </div>
+    </StandaloneCtx.Provider>
   )
 }
 
@@ -558,7 +565,12 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, f
         {/* Visão visual — rosca de status + medidores */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
           <div className={`p-5 sm:p-6 lg:col-span-6 ${CARD} animate-fade-up`}>
-            <h3 className="text-overline mb-4">Mix de status</h3>
+            <h3 className="mb-4 flex items-center gap-1.5 text-overline">
+              Mix de status
+              <ChartInfo titulo="Mix de status">
+                Como as <strong>{fmtNum(m.total)}</strong> entregas do período se dividem entre entregue, não foi, sem rastreador etc — mesma proporção da barra colorida logo acima, só que em rosca.
+              </ChartInfo>
+            </h3>
             <Donut
               slices={MIX_CATS
                 .filter(k => m[k] > 0)
@@ -655,7 +667,12 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, f
           <DonutRede porRede={m.porRede} />
           <PorRede redes={m.porRede} />
           <CoberturaGpsRede redes={m.porRede} />
-          <Painel titulo="Volume por turno">
+          <Painel titulo={<>
+            Volume por turno
+            <ChartInfo titulo="Volume por turno">
+              Quantidade de entregas por faixa de horário — <strong>madrugada</strong> 00–06h, <strong>manhã</strong> 06–12h, <strong>tarde</strong> 12–18h, <strong>noite</strong> 18–24h. Mostra quando a operação mais roda no dia.
+            </ChartInfo>
+          </>}>
             <div className="space-y-2.5 pt-1">
               {(['madrugada', 'manha', 'tarde', 'noite'] as const).map(t => {
                 const max = Math.max(1, ...Object.values(m.turnos))
@@ -847,10 +864,10 @@ function Delta({ atual, anterior, inverso, neutro, suf = ' pts' }: { atual: numb
   return <span className="text-[10px] font-medium" style={{ color: cor }}>{seta} {Math.abs(d).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}{suf} vs anterior</span>
 }
 
-function Painel({ titulo, children, className }: { titulo: string; children: React.ReactNode; className?: string }) {
+function Painel({ titulo, children, className }: { titulo: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
     <div className={`${CARD} p-5 sm:p-6 animate-fade-up ${className ?? ''}`}>
-      <h3 className="text-overline">{titulo}</h3>
+      <h3 className="flex items-center gap-1.5 text-overline">{titulo}</h3>
       <div className="mt-4">{children}</div>
     </div>
   )
@@ -881,6 +898,14 @@ function InfoTip({ children, titulo }: { children: React.ReactNode; titulo?: str
       )}
     </span>
   )
+}
+
+// Mesmo balão do InfoTip, mas só aparece no link público (/dashboard) — pra
+// alguém de fora entender cada gráfico sem precisar perguntar. No /painel
+// (equipe já conhece o sistema) o ícone nem é renderizado.
+function ChartInfo({ children, titulo }: { children: React.ReactNode; titulo?: string }) {
+  if (!useStandalone()) return null
+  return <InfoTip titulo={titulo}>{children}</InfoTip>
 }
 
 // Seção de segurança da carga: paradas indevidas (FORA_BASE ≥10min) + mapa dos
@@ -1045,7 +1070,12 @@ function PorRede({ redes }: { redes: Metricas['porRede'] }) {
   return (
     <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-overline">Desempenho por rede</h3>
+        <h3 className="flex items-center gap-1.5 text-overline">
+          Desempenho por rede
+          <ChartInfo titulo="Desempenho por rede">
+            Barra de <strong>% de entrega</strong> de cada rede no período, da pior pra melhor. O traço vertical marca a meta ({META_ENTREGA}%); o número à direita é o total de entregas da rede.
+          </ChartInfo>
+        </h3>
         <span className="text-[11px] text-[var(--color-fg-subtle)]">
           meta ≥ {META_ENTREGA}%{abaixo > 0 && <> · <span className="font-semibold" style={{ color: COR.bad }}>{abaixo} abaixo</span></>}
         </span>
@@ -1081,7 +1111,12 @@ function CoberturaGpsRede({ redes }: { redes: Metricas['porRede'] }) {
   return (
     <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-overline">Cobertura de GPS por rede</h3>
+        <h3 className="flex items-center gap-1.5 text-overline">
+          Cobertura de GPS por rede
+          <ChartInfo titulo="Cobertura de GPS por rede">
+            % de entregas de cada rede com <strong>posição confirmada pelo rastreador</strong>, da pior cobertura pra melhor. O número à direita é quantas entregas ficaram sem GPS.
+          </ChartInfo>
+        </h3>
         <span className="text-[11px] text-[var(--color-fg-subtle)]">% das entregas com rastreador</span>
       </div>
       <div className="mt-4 space-y-2.5">
@@ -1114,7 +1149,12 @@ function DonutRede({ porRede }: { porRede: Metricas['porRede'] }) {
   if (resto.length) slices.push({ label: `Outras (${resto.length})`, value: resto.reduce((s, r) => s + r.total, 0), color: 'var(--color-fg-subtle)' })
   return (
     <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
-      <h3 className="text-overline mb-4">Participação no volume por rede</h3>
+      <h3 className="mb-4 flex items-center gap-1.5 text-overline">
+        Participação no volume por rede
+        <ChartInfo titulo="Participação no volume por rede">
+          Fatia de cada rede no <strong>total de entregas</strong> do período — quem puxa mais volume, não necessariamente quem entrega melhor (isso é a seção &quot;Desempenho por rede&quot;).
+        </ChartInfo>
+      </h3>
       <Donut slices={slices} centerLabel="entregas" />
     </div>
   )
@@ -1195,7 +1235,12 @@ function EvolucaoTempos({ m }: { m: Metricas }) {
   if (temOperacao) series.push({ name: 'Operação (base→base)', color: 'var(--color-success)', values: m.serieTempos.map(s => s.tempo_operacao ?? 0), dashed: true })
   return (
     <div className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
-      <h3 className="text-overline mb-4">Evolução dos tempos médios</h3>
+      <h3 className="mb-4 flex items-center gap-1.5 text-overline">
+        Evolução dos tempos médios
+        <ChartInfo titulo="Evolução dos tempos médios">
+          Como os tempos de <strong>rota</strong>, <strong>loja</strong> e <strong>total</strong> mudaram dia a dia no período — linha subindo é o trecho ficando mais lento.
+        </ChartInfo>
+      </h3>
       <LineChart
         labels={m.serieTempos.map(s => s.data.slice(8, 10))}
         series={series}
@@ -1278,7 +1323,12 @@ function ComparativoRede({ m }: { m: Metricas }) {
   return (
     <div data-tour="tendencias-comparativo" className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h3 className="text-overline">{LABEL_METRICA[metrica]} médio por rede</h3>
+        <h3 className="flex items-center gap-1.5 text-overline">
+          {LABEL_METRICA[metrica]} médio por rede
+          <ChartInfo titulo="Tempo médio por rede">
+            Média do trecho escolhido nos botões acima, por rede — <strong>rota</strong> é CD→loja, <strong>em loja</strong> é chegada→saída, <strong>total</strong> é saída do CD até sair da loja. Barras maiores = mais tempo (pior).
+          </ChartInfo>
+        </h3>
         <div className="flex gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)] p-0.5">
           {(Object.keys(LABEL_METRICA) as MetricaRede[]).map(k => (
             <button
@@ -1528,7 +1578,12 @@ function SerieChart({ serie }: { serie: Metricas['serie'] }) {
   return (
     <div data-tour="tendencias-serie" className={`${CARD} p-5 sm:p-6 animate-fade-up`}>
       <div className="mb-5 flex items-center justify-between">
-        <h3 className="text-overline">Entregas por dia</h3>
+        <h3 className="flex items-center gap-1.5 text-overline">
+          Entregas por dia
+          <ChartInfo titulo="Entregas por dia">
+            Cada barra é um dia do período, empilhando <strong>entregues</strong>, <strong>não foi</strong> e <strong>sem rastreador</strong> — passe o mouse (ou toque) numa barra pra ver os números daquele dia.
+          </ChartInfo>
+        </h3>
         <div className="flex gap-3 text-[11px] text-[var(--color-fg-muted)]">
           {(['entregue', 'nao_foi', 'sem_rastreador'] as const).map(k => (
             <span key={k} className="flex items-center gap-1.5">
