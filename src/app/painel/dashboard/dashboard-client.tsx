@@ -443,6 +443,7 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, f
     `/painel/loja?rede=${encodeURIComponent(rede)}&loja=${encodeURIComponent(loja)}&periodo=${periodo}&data=${data}`
   // Clicar num quadradinho amplia o detalhe AQUI na tela (modal), não em outra página.
   const [detalhe, setDetalhe] = useState<TipoDetalhe | null>(null)
+  const standalone = useStandalone()
   const pctGps = m.total ? Math.round(100 * m.com_rastreador / m.total) : 0
   const pctFalha = m.total ? Math.round(100 * m.nao_foi / m.total) : 0
   const pctGpsAnt = mAnt ? Math.round(100 * mAnt.com_rastreador / (mAnt.total || 1)) : null
@@ -492,11 +493,12 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, f
       <section id="sec-resumo" key="v-resumo" data-tour="resumo" className="scroll-mt-32 space-y-4 animate-fade-up">
         <SecaoHead n="01" titulo="Como foi a operação" sub="O resultado do período num olhar." />
 
-        {/* Selo provisório/final: tem entrega em rota → o período ainda não fechou. */}
+        {/* Selo provisório/final: tem entrega em rota → o período ainda não fechou.
+            No link público não menciona "gerar de novo" (denuncia a automação). */}
         {m.em_rota > 0 ? (
           <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[var(--color-warning)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-warning)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-warning)]" />
-            Provisório · {m.em_rota} em rota ({m.total ? Math.round(100 * m.em_rota / m.total) : 0}% em andamento) · gere de novo depois das entregas
+            Provisório · {m.em_rota} em rota ({m.total ? Math.round(100 * m.em_rota / m.total) : 0}% em andamento){!standalone && ' · gere de novo depois das entregas'}
           </div>
         ) : (
           <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[var(--color-success)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-success)]">
