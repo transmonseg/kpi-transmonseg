@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { REDES } from '@/lib/kpi/redes'
 import { gerarXlsxDia, type EntradaManualRow } from '@/lib/kpi/gerar-xlsx-manual'
+import { ultimoDiaDoMes } from '@/lib/kpi/manual-import'
 
 export const runtime = 'nodejs'
 
@@ -43,6 +44,37 @@ export async function GET(req: NextRequest) {
     const redes: Record<string, number> = {}
     for (const r of rows ?? []) redes[r.rede_id as string] = (redes[r.rede_id as string] ?? 0) + 1
     return NextResponse.json({ data: soData, redes })
+  }
+
+  // ?mes=YYYY-MM → por rede, quantos dias distintos e quantas linhas (lojas) já
+  // tem no mês (pra aba Inserir mostrar "já enviado" no modo Mês inteiro, igual
+  // já faz no modo Dia). Pagina pelo mesmo motivo do histórico completo.
+  const soMes = u.searchParams.get('mes')
+  if (soMes) {
+    if (!/^\d{4}-\d{2}$/.test(soMes)) return new NextResponse('mes inválido (YYYY-MM)', { status: 400 })
+    const PAGE = 1000
+    const linhas: { data: string; rede_id: string }[] = []
+    for (let from = 0; ; from += PAGE) {
+      const { data: rows, error } = await svc.from('kpi_manual_entradas')
+        .select('data, rede_id')
+        .gte('data', `${soMes}-01`).lte('data', ultimoDiaDoMes(soMes))
+        .order('id', { ascending: true })
+        .range(from, from + PAGE - 1)
+      if (error) return new NextResponse(error.message, { status: 500 })
+      const lote = (rows ?? []) as { data: string; rede_id: string }[]
+      linhas.push(...lote)
+      if (lote.length < PAGE) break
+    }
+    const porRede: Record<string, { dias: Set<string>; lojas: number }> = {}
+    for (const l of linhas) {
+      const r = porRede[l.rede_id] ?? { dias: new Set<string>(), lojas: 0 }
+      r.dias.add(l.data)
+      r.lojas++
+      porRede[l.rede_id] = r
+    }
+    const redes: Record<string, { dias: number; lojas: number }> = {}
+    for (const [rede_id, r] of Object.entries(porRede)) redes[rede_id] = { dias: r.dias.size, lojas: r.lojas }
+    return NextResponse.json({ mes: soMes, redes })
   }
 
   // Histórico completo (sem filtro de data) → cresce além de 1000 linhas rápido.

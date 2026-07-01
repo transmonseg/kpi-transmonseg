@@ -23,9 +23,27 @@ export default function InserirManual({ data, onChange }: { data: string; onChan
   const mes = data.slice(0, 7)
 
   // No modo DIA pré-carrega o que já foi enviado pra a data (vindo do banco).
-  // No modo MÊS não há pré-load por dia — o operador envia a planilha do mês inteiro.
+  // No modo MÊS pré-carrega o que já foi enviado pro mês inteiro — sem isso o
+  // operador não sabia quais redes já tinham dado sem tentar reenviar.
   useEffect(() => {
-    if (modo === 'mes') { setEstados({}); setFechados({}); setCarregando(false); return }
+    if (modo === 'mes') {
+      setCarregando(true)
+      setEstados({})
+      setFechados({})
+      fetch(`/api/kpi-manual/historico?mes=${mes}`)
+        .then(r => r.json())
+        .then(j => {
+          const e: Record<string, Estado> = {}
+          for (const [rede, info] of Object.entries(j.redes ?? {})) {
+            const { dias, lojas } = info as { dias: number; lojas: number }
+            e[rede] = { status: 'ok', dias, lojas }
+          }
+          setEstados(e)
+        })
+        .catch(() => {})
+        .finally(() => setCarregando(false))
+      return
+    }
     setCarregando(true)
     setEstados({})
     setFechados({})
@@ -45,7 +63,7 @@ export default function InserirManual({ data, onChange }: { data: string; onChan
         setFechados(f)
       })
       .finally(() => setCarregando(false))
-  }, [data, modo])
+  }, [data, mes, modo])
 
   const fechar = useCallback(async (rede: string) => {
     try {
