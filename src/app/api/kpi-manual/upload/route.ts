@@ -2,13 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { parseKpiManual, parseKpiManualTodasAbas, mensagemDiagnostico } from '@/lib/kpi/parse-kpi-manual'
-import { replaceEntradasManualMes, deleteEntradasManualMes, ultimoDiaDoMes } from '@/lib/kpi/manual-import'
+import { replaceEntradasManualMes, deleteEntradasManualMes } from '@/lib/kpi/manual-import'
 import { puxarResumoDoPdfDoDia } from '@/lib/kpi/resumo-do-pdf'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
-
-const XLSX_CT = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -39,10 +37,6 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       return new NextResponse(e instanceof Error ? e.message : 'Erro ao importar KPI manual do mês', { status: 500 })
     }
-    // sobe o XLSX cru por dia detectado (best-effort; alimenta o export mensal)
-    await Promise.all(dias.map(d =>
-      svc.storage.from('kpi-manual-raw').upload(`${d}/${rede_id}.xlsx`, buf, { upsert: true, contentType: XLSX_CT }),
-    ))
     // puxa as paradas indevidas do PDF do Unitrac de cada dia (se já estiver no banco)
     // pra o mapa aparecer nos dias inseridos só pela planilha. Best-effort, sequencial
     // pra não estourar memória parseando vários PDFs ao mesmo tempo.
@@ -59,7 +53,6 @@ export async function POST(req: NextRequest) {
   await svc.from('kpi_manual_entradas').delete().eq('data', data).eq('rede_id', rede_id)
   const { error } = await svc.from('kpi_manual_entradas').insert(entradas.map(e => ({ ...e, uploaded_by: user.id })))
   if (error) return new NextResponse(error.message, { status: 500 })
-  await svc.storage.from('kpi-manual-raw').upload(`${data}/${rede_id}.xlsx`, buf, { upsert: true, contentType: XLSX_CT })
   // puxa as paradas indevidas do PDF do Unitrac deste dia (se já estiver no banco)
   await puxarResumoDoPdfDoDia(svc, data)
   return NextResponse.json({ ok: true, rede_id, data, inseridas: entradas.length })
@@ -83,15 +76,10 @@ export async function DELETE(req: NextRequest) {
   if (mes) {
     if (!/^\d{4}-\d{2}$/.test(mes)) return new NextResponse('mes inválido (YYYY-MM)', { status: 400 })
     await deleteEntradasManualMes(svc, rede_id, mes)
-    // remove os XLSX crus de cada dia do mês (best-effort)
-    const ultimo = Number(ultimoDiaDoMes(mes).slice(-2))
-    const alvos = Array.from({ length: ultimo }, (_, i) => `${mes}-${String(i + 1).padStart(2, '0')}/${rede_id}.xlsx`)
-    await svc.storage.from('kpi-manual-raw').remove(alvos)
     return NextResponse.json({ ok: true, mes, rede_id })
   }
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return new NextResponse('data (YYYY-MM-DD) ou mes (YYYY-MM) obrigatório', { status: 400 })
   await svc.from('kpi_manual_entradas').delete().eq('data', data).eq('rede_id', rede_id)
-  await svc.storage.from('kpi-manual-raw').remove([`${data}/${rede_id}.xlsx`])
   return NextResponse.json({ ok: true })
 }

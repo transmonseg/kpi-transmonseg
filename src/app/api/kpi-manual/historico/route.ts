@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { REDES } from '@/lib/kpi/redes'
+import { gerarXlsxDia, type EntradaManualRow } from '@/lib/kpi/gerar-xlsx-manual'
 
 export const runtime = 'nodejs'
 
@@ -13,15 +14,24 @@ export async function GET(req: NextRequest) {
   const svc = createServiceClient()
   const u = new URL(req.url)
 
-  // re-download do XLSX cru: ?download=DATA/REDE
+  // re-download do KPI de um dia: ?download=DATA/REDE — regenerado a partir dos
+  // dados salvos (kpi_manual_entradas), não depende de arquivo bruto guardado.
   const dl = u.searchParams.get('download')
   if (dl) {
-    const { data } = await svc.storage.from('kpi-manual-raw').download(`${dl}.xlsx`)
-    if (!data) return new NextResponse('Não encontrado', { status: 404 })
-    return new NextResponse(await data.arrayBuffer(), {
+    const [dataDia, redeId] = dl.split('/')
+    if (!dataDia || !redeId) return new NextResponse('Formato esperado: DATA/REDE', { status: 400 })
+    const { data: rows, error } = await svc.from('kpi_manual_entradas')
+      .select('data, loja, placa, motorista, status, saida_cd, chd, sai, volta_base')
+      .eq('rede_id', redeId).eq('data', dataDia)
+      .order('id', { ascending: true })
+    if (error) return new NextResponse(error.message, { status: 500 })
+    const linhas = (rows ?? []) as EntradaManualRow[]
+    if (linhas.length === 0) return new NextResponse('Não encontrado', { status: 404 })
+    const buf = await gerarXlsxDia(redeId, dataDia, linhas)
+    return new NextResponse(buf as unknown as BodyInit, {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="${dl.replace('/', '-')}.xlsx"`,
+        'Content-Disposition': `attachment; filename="KPI-${redeId}-${dataDia}.xlsx"`,
       },
     })
   }

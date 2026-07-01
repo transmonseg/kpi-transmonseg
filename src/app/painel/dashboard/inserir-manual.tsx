@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { REDES, REDE_LABEL } from '@/lib/kpi/redes'
-import { CheckCircle, WarningCircle } from '@phosphor-icons/react/dist/ssr'
+import { CheckCircle, WarningCircle, DownloadSimple } from '@phosphor-icons/react/dist/ssr'
 
 type Modo = 'mes' | 'dia'
 type Estado = { status: 'idle' | 'enviando' | 'ok' | 'erro' | 'excluindo'; lojas?: number; dias?: number; msg?: string }
@@ -212,10 +212,17 @@ export default function InserirManual({ data, onChange }: { data: string; onChan
                   )}
                 </div>
                 {enviado ? (
-                  <button
-                    onClick={() => excluir(rede)}
-                    className="h-7 shrink-0 cursor-pointer rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2.5 text-[11px] font-medium text-[var(--color-fg-muted)] transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-danger)] hover:text-[var(--color-danger)]"
-                  >{modo === 'mes' ? 'Limpar' : 'Excluir'}</button>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <a
+                      href={modo === 'mes' ? `/api/dashboard/export-mensal?rede=${rede}&mes=${mes}` : `/api/kpi-manual/export?rede=${rede}&data=${data}`}
+                      className="inline-flex h-7 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2.5 text-[11px] font-medium text-[var(--color-fg-muted)] transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+                      title="Baixar XLSX desta rede"
+                    ><DownloadSimple size={12} weight="bold" /> Baixar</a>
+                    <button
+                      onClick={() => excluir(rede)}
+                      className="h-7 cursor-pointer rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2.5 text-[11px] font-medium text-[var(--color-fg-muted)] transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-danger)] hover:text-[var(--color-danger)]"
+                    >{modo === 'mes' ? 'Limpar' : 'Excluir'}</button>
+                  </div>
                 ) : (
                   <label className={`h-7 inline-flex shrink-0 cursor-pointer items-center rounded-[var(--radius-md)] border px-2.5 text-[11px] font-medium transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] ${e.status === 'erro' ? 'border-[var(--color-danger)] text-[var(--color-danger)]' : 'border-[var(--color-border)] text-[var(--color-fg-muted)] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-fg)]'} ${ocupado ? 'pointer-events-none opacity-50' : ''}`}>
                     {e.status === 'erro' ? 'Tentar de novo' : 'Enviar'}
