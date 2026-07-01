@@ -39,7 +39,15 @@ export async function parseEscalaArquivo(
     for (const { fn, min } of tentativas) {
       try {
         const r = await fn()
-        if (r.length >= min) return r
+        // Exige `min` linhas com PLACA preenchida, não só `min` linhas. Um parser
+        // de formato errado pode "reconhecer" o arquivo por coincidência de layout
+        // (colunas deslocadas) e devolver dezenas de linhas com placa_norm vazia —
+        // inúteis pro matcher (chave de junção é a placa) mas suficientes pra vencer
+        // o dispatch e bloquear o parser CERTO de rodar. Caso real: arquivo "ESCALA
+        // GERAL" caía no parser PAX (919 linhas, TODAS placa='', rede/ano errados),
+        // nunca chegava no parser Geral (4059 linhas corretas) — toda a escala do
+        // dia sumia do KPI (SVB-1F74/Loja 294 e outras: 0:00 sem motivo aparente).
+        if (r.filter(l => l.placa_norm).length >= min) return r
       } catch { /* tenta o próximo */ }
     }
   } catch { /* arquivo não reconhecido */ }
