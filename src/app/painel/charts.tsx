@@ -213,7 +213,9 @@ export function Heatmap({
                     style={{ background: heatColor(cell.value), opacity: cell.value == null ? 0.5 : 0.9, transform: on ? 'scale(1.15)' : 'none', zIndex: on ? 5 : 0 }}
                   >
                     {on && cell.value != null && (
-                      <div className="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-[var(--color-fg)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-bg-elevated)] shadow-soft">
+                      <div
+                        className={`pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-[var(--color-fg)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-bg-elevated)] shadow-soft ${ri === 0 ? 'top-full mt-1' : '-top-8'}`}
+                      >
                         {colLabels[ci]} · {format(cell.value)}{cell.n != null ? ` (${cell.n})` : ''}
                       </div>
                     )}
