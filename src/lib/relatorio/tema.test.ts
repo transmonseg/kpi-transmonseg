@@ -10,12 +10,12 @@ describe('tema', () => {
     expect(fmtMin(45)).toBe('45min')
     for (const v of [fmtMin(null), fmtNum(null)]) expect(v).not.toContain('—')
   })
-  it('as 7 categorias têm rótulo e cor; "indefinido" é "Em análise"', () => {
-    expect(ORDEM_STATUS).toHaveLength(7)
-    expect(STATUS_LABEL.indefinido).toBe('Em análise')
+  it('as 4 categorias têm rótulo e cor; "indefinido" é "Sem dado"', () => {
+    expect(ORDEM_STATUS).toHaveLength(4)
+    expect(STATUS_LABEL.indefinido).toBe('Sem dado')
     expect(STATUS_LABEL.entregue).toBe('Entregue')
     for (const k of ORDEM_STATUS) expect(STATUS_COR[k]).toMatch(/^#|^var|^rgb/)
-    // em análise e sem rastreador NÃO podem ter a mesma cor (viram blob único)
+    // sem dado e sem rastreador NÃO podem ter a mesma cor (viram blob único)
     expect(STATUS_COR.indefinido).not.toBe(STATUS_COR.sem_rastreador)
   })
 })

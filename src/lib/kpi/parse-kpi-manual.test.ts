@@ -96,19 +96,19 @@ describe('parseKpiManualTodasAbas — abas-dia variantes e diagnóstico', () => 
 })
 
 describe('classificarStatusManual', () => {
-  it('reconhece todas as legendas ricas, sem descartar', () => {
-    expect(classificarStatusManual('DESATUALIZADO', false)).toBe('desatualizado')
+  it('reconhece todas as legendas ricas, consolidadas em 4 categorias, sem descartar', () => {
+    expect(classificarStatusManual('DESATUALIZADO', false)).toBe('sem_rastreador')
     expect(classificarStatusManual('SEM RASTREADOR', false)).toBe('sem_rastreador')
-    expect(classificarStatusManual('MUDOU DE ROTA - CONFERIR', false)).toBe('mudou_de_rota')
-    expect(classificarStatusManual('EM ROTA', false)).toBe('em_rota')
-    expect(classificarStatusManual('AGUARDANDO BASE', false)).toBe('em_rota')
+    expect(classificarStatusManual('MUDOU DE ROTA - CONFERIR', false)).toBe('nao_foi')
+    expect(classificarStatusManual('EM ROTA', false)).toBe('indefinido')
+    expect(classificarStatusManual('AGUARDANDO BASE', false)).toBe('indefinido')
     expect(classificarStatusManual('NÃO SAIU DA BASE', false)).toBe('nao_foi')
     expect(classificarStatusManual('NÃO FOI AO CLIENTE', false)).toBe('nao_foi')
     expect(classificarStatusManual('', true)).toBe('entregue')   // tem chegada
     expect(classificarStatusManual('', false)).toBe('indefinido') // nunca descarta
   })
-  it('desatualizado tem prioridade sobre rastreador; em rota não vira não foi', () => {
-    expect(classificarStatusManual('DESATUALIZADO SEM RASTREADOR', false)).toBe('desatualizado')
+  it('desatualizado cai em sem_rastreador; em rota cai em indefinido, não em não foi', () => {
+    expect(classificarStatusManual('DESATUALIZADO SEM RASTREADOR', false)).toBe('sem_rastreador')
     expect(classificarStatusManual('EM ROTA', false)).not.toBe('nao_foi')
   })
 })

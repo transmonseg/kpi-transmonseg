@@ -19,10 +19,10 @@ function fmtHora(d: Date | null | undefined): string | null {
 export function statusRotaParaDashboard(status: StatusRota): StatusManual {
   switch (status) {
     case 'ENTREGUE': case 'ENTREGUE_GEO': return 'entregue'
-    case 'MUDOU_DE_ROTA': return 'mudou_de_rota'
-    case 'DESATUALIZADO': return 'desatualizado'
+    case 'MUDOU_DE_ROTA': return 'nao_foi'
+    case 'DESATUALIZADO': return 'sem_rastreador'
     case 'SEM_RASTREADOR': return 'sem_rastreador'
-    case 'FORA_DE_BASE': return 'em_rota'
+    case 'FORA_DE_BASE': return 'indefinido'
     case 'NAO_SAIU_DA_BASE': case 'NAO_FOI_AO_CLIENTE': return 'nao_foi'
     default: return 'nao_foi'
   }

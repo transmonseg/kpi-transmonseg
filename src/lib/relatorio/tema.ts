@@ -41,29 +41,23 @@ export const fmtMin = (n: number | null | undefined) => {
 export const fmtNum = (n: number | null | undefined) =>
   n == null || isNaN(n) ? 's/d' : Number(n).toLocaleString('pt-BR', { maximumFractionDigits: 1 })
 
-/** Ordem canônica das 7 categorias no mix de status do relatório. */
+/** Ordem canônica das 4 categorias no mix de status do relatório. */
 export const ORDEM_STATUS = [
-  'entregue', 'em_rota', 'nao_foi', 'mudou_de_rota', 'desatualizado', 'sem_rastreador', 'indefinido',
+  'entregue', 'nao_foi', 'sem_rastreador', 'indefinido',
 ] as const
 export type StatusKey = typeof ORDEM_STATUS[number]
 
 export const STATUS_LABEL: Record<StatusKey, string> = {
   entregue: 'Entregue',
-  em_rota: 'Em rota',
   nao_foi: 'Não foi',
-  mudou_de_rota: 'Mudou de rota',
-  desatualizado: 'Desatualizado',
   sem_rastreador: 'Sem rastreador',
-  indefinido: 'Em análise',
+  indefinido: 'Sem dado',
 }
 
-// Cores print-friendly; "em análise" usa um cinza claro distinto de "sem rastreador".
+// Cores print-friendly; "sem dado" usa um cinza claro distinto de "sem rastreador".
 export const STATUS_COR: Record<StatusKey, string> = {
   entregue: C.ok,
-  em_rota: C.info,
   nao_foi: C.bad,
-  mudou_de_rota: C.warn,
-  desatualizado: '#B45309',
   sem_rastreador: C.muted,
   indefinido: '#B8B2AA',
 }

@@ -20,10 +20,7 @@ const COR_BORDER = 'FFE2E8F0'
 
 const LABEL_STATUS: Record<StatusManual, string> = {
   entregue: '',
-  em_rota: 'EM ROTA',
   nao_foi: 'NÃO FOI AO CLIENTE',
-  mudou_de_rota: 'MUDOU DE ROTA',
-  desatualizado: 'DESATUALIZADO',
   sem_rastreador: 'SEM RASTREADOR',
   indefinido: '',
 }

@@ -255,17 +255,16 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
   const conf = conferiveis(m)
   const fora = foraConferencia(m)
   const vis = visibilidadeGps(m)
-  const selo = seloTexto(m)
+  const selo = seloTexto()
   const mix = ORDEM_STATUS.map(k => ({ key: k, label: STATUS_LABEL[k], value: m[k] as number, color: STATUS_COR[k] }))
 
   // série diária empilhada por status (fecha com o total do dia via "outros")
   const serieStack = m.serie.map(p => {
-    const outros = Math.max(p.total - p.entregue - p.nao_foi - p.sem_rastreador - p.em_rota, 0)
+    const outros = Math.max(p.total - p.entregue - p.nao_foi - p.sem_rastreador, 0)
     return {
       label: p.data.slice(8, 10),
       segments: [
         { value: p.entregue, color: STATUS_COR.entregue },
-        { value: p.em_rota, color: STATUS_COR.em_rota },
         { value: p.nao_foi, color: STATUS_COR.nao_foi },
         { value: p.sem_rastreador, color: STATUS_COR.sem_rastreador },
         { value: outros, color: STATUS_COR.indefinido },
@@ -696,7 +695,7 @@ export function Relatorio({ ctx }: { ctx: RelatorioCtx }) {
               ['Conferíveis (denominador)', `${fmtNum(conf)}  =  ${fmtNum(m.entregue)} + ${fmtNum(m.nao_foi)}`],
               ['Taxa de entrega', `${m.pctEntregue}%  =  ${fmtNum(m.entregue)} / ${fmtNum(conf)}`],
               ['Total de linhas no período', fmtNum(m.total)],
-              ['Fora da conferência', `${fmtNum(fora)}  (${m.sem_rastreador} sem GPS · ${m.indefinido} em análise · ${m.em_rota} em rota · ${m.desatualizado} desatualizado · ${m.mudou_de_rota} mudou de rota)`],
+              ['Fora da conferência', `${fmtNum(fora)}  (${m.sem_rastreador} sem GPS · ${m.indefinido} sem dado)`],
             ].map(([t, d], i, arr) => (
               <View key={i} style={{ flexDirection: 'row', marginBottom: i === arr.length - 1 ? 0 : 5 }}>
                 <Text style={{ width: 180, fontSize: 8.5, color: C.inkSoft }}>{t}</Text>

@@ -3,9 +3,9 @@ import { montarNarrativa } from './relatorio-narrativa'
 import type { Metricas } from './dashboard-metricas'
 
 const base = (o: Partial<Metricas>): Metricas => ({
-  total: 0, entregue: 0, nao_foi: 0, sem_rastreador: 0, em_rota: 0, mudou_de_rota: 0,
-  desatualizado: 0, indefinido: 0, com_rastreador: 0, pctEntregue: 0, taxaEntregaDefinitiva: 0,
-  andamentoPct: 0, pctSemRastreador: 0, tempoMedioLojaMin: null,
+  total: 0, entregue: 0, nao_foi: 0, sem_rastreador: 0,
+  indefinido: 0, com_rastreador: 0, pctEntregue: 0, taxaEntregaDefinitiva: 0,
+  pctSemRastreador: 0, tempoMedioLojaMin: null,
   turnos: { madrugada: 0, manha: 0, tarde: 0, noite: 0 }, porRede: [], rankingSucesso: [],
   rankingSemRastreador: [], serie: [], topSemRastreador: [], topNaoFoi: [], topIndefinido: [],
   placasMaisAtivas: [], tempoMedioRotaMin: null, tempoMedioTotalMin: null, tempoMedioOperacaoMin: null,

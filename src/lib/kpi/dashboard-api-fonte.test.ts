@@ -9,10 +9,10 @@ describe('statusRotaParaDashboard', () => {
   it('SEM_RASTREADOR → sem_rastreador', () => {
     expect(statusRotaParaDashboard('SEM_RASTREADOR')).toBe('sem_rastreador')
   })
-  it('status ricos mapeiam pras categorias certas (não tudo pra nao_foi)', () => {
-    expect(statusRotaParaDashboard('MUDOU_DE_ROTA')).toBe('mudou_de_rota')
-    expect(statusRotaParaDashboard('DESATUALIZADO')).toBe('desatualizado')
-    expect(statusRotaParaDashboard('FORA_DE_BASE')).toBe('em_rota')
+  it('status ricos mapeiam pras 4 categorias (mudou de rota e desatualizado não são mais categorias próprias)', () => {
+    expect(statusRotaParaDashboard('MUDOU_DE_ROTA')).toBe('nao_foi')
+    expect(statusRotaParaDashboard('DESATUALIZADO')).toBe('sem_rastreador')
+    expect(statusRotaParaDashboard('FORA_DE_BASE')).toBe('indefinido')
     expect(statusRotaParaDashboard('NAO_SAIU_DA_BASE')).toBe('nao_foi')
     expect(statusRotaParaDashboard('NAO_FOI_AO_CLIENTE')).toBe('nao_foi')
   })

@@ -1,15 +1,25 @@
 import ExcelJS from 'exceljs'
 
-export type StatusManual = 'entregue' | 'em_rota' | 'nao_foi' | 'mudou_de_rota' | 'desatualizado' | 'sem_rastreador' | 'indefinido'
+// 4 status apenas — pedido do Joaquim 2026-07-01: a planilha real usa dezenas de
+// legendas (MUDOU DE ROTA, DESATUALIZADO, EM ROTA, SEM INFORMAÇÃO DE ALTERAÇÃO...)
+// e categorias como "em rota"/"em análise" ficavam presas pra sempre em dias já
+// fechados (quem preenche marca e nunca volta pra completar). Consolida tudo em
+// entregue / não foi / sem rastreador / indefinido (sem dado).
+export type StatusManual = 'entregue' | 'nao_foi' | 'sem_rastreador' | 'indefinido'
 
 /** Classifica a legenda do XLSX em status rico. Ordem por especificidade. NUNCA
- *  devolve "descartar": sem legenda + sem chegada = 'indefinido' (visível na tela). */
+ *  devolve "descartar": sem legenda + sem chegada = 'indefinido' (visível na tela).
+ *  - "desatualizado" (rastreador sem transmitir) conta como sem_rastreador: na
+ *    prática não há dado de GPS de qualquer forma.
+ *  - "mudou de rota" conta como não_foi: o veículo confirmadamente não passou
+ *    nesta loja.
+ *  - "em rota"/"aguardando base" vira indefinido: não dá pra saber o desfecho. */
 export function classificarStatusManual(txt: string, temChegada: boolean): StatusManual {
   const t = txt.toUpperCase()
-  if (/DESATUALIZ/.test(t)) return 'desatualizado'
+  if (/DESATUALIZ/.test(t)) return 'sem_rastreador'
   if (/SEM\s*RASTREAD/.test(t)) return 'sem_rastreador'
-  if (/MUDOU\s*DE\s*ROTA/.test(t)) return 'mudou_de_rota'
-  if (/EM\s*ROTA|AGUARDANDO\s*BASE/.test(t)) return 'em_rota'
+  if (/MUDOU\s*DE\s*ROTA/.test(t)) return 'nao_foi'
+  if (/EM\s*ROTA|AGUARDANDO\s*BASE/.test(t)) return 'indefinido'
   if (/N[ÃA]O\s*SAIU/.test(t)) return 'nao_foi'
   if (/N[ÃA]O\s*FOI/.test(t)) return 'nao_foi'
   if (temChegada) return 'entregue'

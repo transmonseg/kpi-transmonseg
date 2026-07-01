@@ -30,7 +30,6 @@ export interface PontoSerie {
   entregue: number
   nao_foi: number
   sem_rastreador: number
-  em_rota: number
   total: number
 }
 export interface Metricas {
@@ -38,17 +37,12 @@ export interface Metricas {
   entregue: number
   nao_foi: number
   sem_rastreador: number
-  em_rota: number
-  mudou_de_rota: number
-  desatualizado: number
   indefinido: number
   com_rastreador: number
   pctEntregue: number
-  /** Taxa de entrega DEFINITIVA = entregue / (entregue + não foi). Em rota e sem dado
-   *  ficam FORA do denominador (senão a taxa mente nos dois sentidos). */
+  /** Taxa de entrega DEFINITIVA = entregue / (entregue + não foi). Sem dado
+   *  fica FORA do denominador (senão a taxa mente nos dois sentidos). */
   taxaEntregaDefinitiva: number
-  /** % das linhas ainda em rota (em andamento) sobre o total — frescor/parcialidade. */
-  andamentoPct: number
   pctSemRastreador: number
   tempoMedioLojaMin: number | null
   turnos: { madrugada: number; manha: number; tarde: number; noite: number }
@@ -121,12 +115,6 @@ export interface SerieTempoPonto {
   tempo_operacao: number | null
 }
 
-/** Resumo do dia pro selo provisório/final: tem alguma entrega ainda "em rota" →
- *  provisório (o dia não fechou). Sem em rota → final. */
-export function resumoDia(ents: EntradaManual[]): { provisorio: boolean } {
-  return { provisorio: ents.some(e => e.status === 'em_rota') }
-}
-
 function diffMin(chd: string | null, sai: string | null): number | null {
   if (!chd || !sai) return null
   const [ch, cm] = chd.split(':').map(Number)
@@ -163,13 +151,9 @@ export function calcularMetricas(ents: EntradaManual[], completo = false): Metri
   const entregue = cont('entregue')
   const nao_foi = cont('nao_foi')
   const sem_rastreador = cont('sem_rastreador')
-  const em_rota = cont('em_rota')
-  const mudou_de_rota = cont('mudou_de_rota')
-  const desatualizado = cont('desatualizado')
   const indefinido = cont('indefinido')
   const denomDefinitivo = entregue + nao_foi
   const taxaEntregaDefinitiva = denomDefinitivo ? Math.round(100 * entregue / denomDefinitivo) : 0
-  const andamentoPct = total ? Math.round(100 * em_rota / total) : 0
 
   const turnos = { madrugada: 0, manha: 0, tarde: 0, noite: 0 }
   for (const e of ents) { const t = turno(e.chd); if (t) turnos[t]++ }
@@ -190,8 +174,8 @@ export function calcularMetricas(ents: EntradaManual[], completo = false): Metri
 
   const serieMap = new Map<string, PontoSerie>()
   for (const e of ents) {
-    const p = serieMap.get(e.data) ?? { data: e.data, entregue: 0, nao_foi: 0, sem_rastreador: 0, em_rota: 0, total: 0 }
-    if (e.status === 'entregue' || e.status === 'nao_foi' || e.status === 'sem_rastreador' || e.status === 'em_rota') p[e.status]++
+    const p = serieMap.get(e.data) ?? { data: e.data, entregue: 0, nao_foi: 0, sem_rastreador: 0, total: 0 }
+    if (e.status === 'entregue' || e.status === 'nao_foi' || e.status === 'sem_rastreador') p[e.status]++
     p.total++
     serieMap.set(e.data, p)
   }
@@ -337,10 +321,10 @@ export function calcularMetricas(ents: EntradaManual[], completo = false): Metri
 
   return {
     total, entregue, nao_foi, sem_rastreador, com_rastreador: entregue + nao_foi,
-    em_rota, mudou_de_rota, desatualizado, indefinido,
-    taxaEntregaDefinitiva, andamentoPct,
+    indefinido,
+    taxaEntregaDefinitiva,
     // Headline agora é a taxa DEFINITIVA (entregue/(entregue+não foi)), não entregue/total
-    // (que inflava ao incluir em rota/sem dado no denominador).
+    // (que inflava ao incluir sem dado no denominador).
     pctEntregue: taxaEntregaDefinitiva,
     pctSemRastreador: total ? Math.round(100 * sem_rastreador / total) : 0,
     tempoMedioLojaMin: mediaTempo(ents),

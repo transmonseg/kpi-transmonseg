@@ -57,21 +57,21 @@ const stepDay = (d: string, delta: number) => {
 const ANO_ATUAL = Number(hojeBR().slice(0, 4))
 const ANOS = [ANO_ATUAL, ANO_ATUAL - 1, ANO_ATUAL - 2].map(String)
 
-// status → token semântico (sem cores hardcoded)
+// status → token semântico (sem cores hardcoded). Só 4 categorias — pedido do
+// Joaquim 2026-07-01: "em rota"/"mudou de rota"/"desatualizado" ficavam presas
+// pra sempre em dias já fechados (a fonte nunca era corrigida depois). Ver
+// classificarStatusManual em parse-kpi-manual.ts pra como cada legenda cai aqui.
 const STATUS = {
   entregue:       { label: 'Entregue',       cor: 'var(--color-success)' },
-  em_rota:        { label: 'Em rota',        cor: 'var(--color-info)' },
   nao_foi:        { label: 'Não foi',        cor: 'var(--color-danger)' },
-  mudou_de_rota:  { label: 'Mudou de rota',  cor: 'var(--color-warning)' },
-  desatualizado:  { label: 'Desatualizado',  cor: 'var(--color-warning)' },
   sem_rastreador: { label: 'Sem rastreador', cor: 'var(--color-fg-subtle)' },
-  indefinido:     { label: 'Em análise',     cor: 'var(--color-fg-muted)' },
+  indefinido:     { label: 'Sem dado',       cor: 'var(--color-fg-muted)' },
 } as const
 
-// Ordem do mix de status na barra/donut/legenda. Inclui 'indefinido' (em análise)
+// Ordem do mix de status na barra/donut/legenda. Inclui 'indefinido' (sem dado)
 // pra que a soma FECHE com o total: nenhuma linha some da visualização (era a
 // raiz da informação falsa: o que não fechava taxa simplesmente desaparecia).
-const MIX_CATS = ['entregue', 'em_rota', 'nao_foi', 'mudou_de_rota', 'desatualizado', 'sem_rastreador', 'indefinido'] as const
+const MIX_CATS = ['entregue', 'nao_foi', 'sem_rastreador', 'indefinido'] as const
 
 // semáforo discreto
 const COR = { ok: 'var(--color-success)', warn: 'var(--color-warning)', bad: 'var(--color-danger)' } as const
@@ -443,7 +443,6 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, f
     `/painel/loja?rede=${encodeURIComponent(rede)}&loja=${encodeURIComponent(loja)}&periodo=${periodo}&data=${data}`
   // Clicar num quadradinho amplia o detalhe AQUI na tela (modal), não em outra página.
   const [detalhe, setDetalhe] = useState<TipoDetalhe | null>(null)
-  const standalone = useStandalone()
   const pctGps = m.total ? Math.round(100 * m.com_rastreador / m.total) : 0
   const pctFalha = m.total ? Math.round(100 * m.nao_foi / m.total) : 0
   const pctGpsAnt = mAnt ? Math.round(100 * mAnt.com_rastreador / (mAnt.total || 1)) : null
@@ -493,20 +492,6 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, f
       <section id="sec-resumo" key="v-resumo" data-tour="resumo" className="scroll-mt-32 space-y-4 animate-fade-up">
         <SecaoHead n="01" titulo="Como foi a operação" sub="O resultado do período num olhar." />
 
-        {/* Selo provisório/final: tem entrega em rota → o período ainda não fechou.
-            No link público não menciona "gerar de novo" (denuncia a automação). */}
-        {m.em_rota > 0 ? (
-          <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[var(--color-warning)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-warning)]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-warning)]" />
-            Provisório · {m.em_rota} em rota ({m.total ? Math.round(100 * m.em_rota / m.total) : 0}% em andamento){!standalone && ' · gere de novo depois das entregas'}
-          </div>
-        ) : (
-          <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[var(--color-success)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-success)]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)]" />
-            Final
-          </div>
-        )}
-
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
           {/* Número dominante — taxa de entrega manda na hierarquia */}
           <div data-tour="resumo-taxa" onClick={() => setDetalhe('rede')} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setDetalhe('rede') } }} className={`flex cursor-pointer flex-col justify-between gap-8 p-6 sm:p-7 lg:col-span-4 ${CARD}`}>
@@ -515,7 +500,7 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, f
               <span className="text-[10px] text-[var(--color-fg-subtle)]">↗</span>
               {tomTaxa(m.pctEntregue) !== 'ok' && <span className="h-1.5 w-1.5 rounded-full" style={{ background: COR[tomTaxa(m.pctEntregue)] }} />}
               <InfoTip titulo="Como a taxa é calculada">
-                Entregas <strong>concluídas</strong> dividido pelas <strong>conferíveis</strong> (concluídas + não foi ao cliente). Linhas ainda em rota, sem rastreador ou em análise ficam <strong>fora</strong> da conta — por isso a taxa não esconde o dia incompleto. Meta ≥ 95%.
+                Entregas <strong>concluídas</strong> dividido pelas <strong>conferíveis</strong> (concluídas + não foi ao cliente). Linhas sem rastreador ou sem dado ficam <strong>fora</strong> da conta — por isso a taxa não esconde o dia incompleto. Meta ≥ 95%.
                 <br /><br />A seta <strong>▲▼</strong> compara com o período anterior. <strong>pts</strong> = pontos percentuais: de 94% para 97% é ▲ 3 pts, e não 3%.
               </InfoTip>
             </div>
@@ -524,9 +509,9 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, f
               <div className="mt-2 text-[12px] text-[var(--color-fg-subtle)]">
                 <span className="text-numeric">{m.entregue}</span> de <span className="text-numeric">{m.entregue + m.nao_foi}</span> definitivas · meta ≥ 95%
               </div>
-              {(m.em_rota > 0 || m.desatualizado > 0 || m.sem_rastreador > 0 || m.indefinido > 0) && (
+              {(m.sem_rastreador > 0 || m.indefinido > 0) && (
                 <div className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">
-                  fora da taxa: <span className="text-numeric">{m.em_rota}</span> em rota · <span className="text-numeric">{m.desatualizado}</span> desatualizado · <span className="text-numeric">{m.sem_rastreador}</span> sem rastreador · <span className="text-numeric">{m.indefinido}</span> em análise
+                  fora da taxa: <span className="text-numeric">{m.sem_rastreador}</span> sem rastreador · <span className="text-numeric">{m.indefinido}</span> sem dado
                 </div>
               )}
               <div className="mt-2"><Delta atual={m.pctEntregue} anterior={mAnt?.pctEntregue} /></div>
@@ -796,7 +781,7 @@ function Alertas({ m, mAnt, lojaHref }: { m: Metricas; mAnt: Metricas | null; lo
 function ResumoExecutivo({ m, mAnt, periodo }: { m: Metricas; mAnt: Metricas | null; periodo: Periodo }) {
   const pctGps = m.total ? Math.round(100 * m.com_rastreador / m.total) : 0
   const conferiveis = m.entregue + m.nao_foi
-  const foraConf = m.total - conferiveis // em rota + mudou + desatualizado + sem rastreador + em análise
+  const foraConf = m.total - conferiveis // sem rastreador + sem dado
   const delta = mAnt && mAnt.total ? m.pctEntregue - mAnt.pctEntregue : null
   const periodoLabel = ({ dia: 'No dia', semana: 'Na semana', mes: 'No mês', ano: 'No ano', custom: 'No período' } as Record<Periodo, string>)[periodo]
   const pior = [...m.porRede].filter(r => r.total >= 5).sort((a, b) => a.pctEntregue - b.pctEntregue)[0]
