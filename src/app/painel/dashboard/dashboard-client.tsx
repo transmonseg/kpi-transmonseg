@@ -698,10 +698,11 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, f
           </div>
         )}
 
-        <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(420px,1fr))]">
-          <TopFrota m={m} />
-          {m.topMotoristas.length > 0 && <TopMotoristas m={m} onVerTodos={() => setDetalhe('motoristas')} />}
-        </div>
+        {m.topMotoristas.length > 0 && (
+          <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(420px,1fr))]">
+            <TopMotoristas m={m} onVerTodos={() => setDetalhe('motoristas')} />
+          </div>
+        )}
       </section>
 
       {detalhe && (
@@ -1511,51 +1512,6 @@ function JornadaOperacional({ m }: { m: Metricas }) {
           ? `A volta à base foi registrada em ${m.pctComVolta}% das entregas do período.`
           : 'A volta à base (coluna Chegada CD) ainda não vem preenchida nos KPIs deste período — quando vier, o ciclo completa até o retorno.'}
       </p>
-    </div>
-  )
-}
-
-// Frota — veículos que mais entregaram no período (produtividade da placa).
-function TopFrota({ m }: { m: Metricas }) {
-  if (m.placasMaisAtivas.length === 0) return null
-  const top = m.placasMaisAtivas.slice(0, 12)
-  const maxEnt = top[0].entregas
-  return (
-    <div className={`${CARD} overflow-hidden animate-fade-up`}>
-      <div className="px-5 pt-5 sm:px-6 sm:pt-6">
-        <h3 className="text-overline mb-1">Frota</h3>
-        <p className="mb-4 text-[12px] text-[var(--color-fg-subtle)]">Veículos que mais entregaram no período</p>
-      </div>
-      <div className="overflow-auto">
-        <table className="w-full text-[13px]">
-          <thead>
-            <tr className="border-b border-[var(--color-border)] text-left text-[10px] uppercase tracking-[0.1em] text-[var(--color-fg-subtle)]">
-              <th className="px-5 py-2.5 font-semibold">#</th>
-              <th className="px-3 py-2.5 font-semibold">Placa</th>
-              <th className="px-5 py-2.5 font-semibold">Entregas</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--color-border)]">
-            {top.map((r, i) => (
-              <tr key={r.placa} className="transition-colors hover:bg-[var(--color-bg-subtle)]">
-                <td className="px-5 py-2.5">
-                  <span className={[
-                    'inline-flex h-5 min-w-5 items-center justify-center rounded-md px-1 text-[11px] font-semibold tabular-nums',
-                    i < 3 ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent-soft-fg)]' : 'bg-[var(--color-bg-subtle)] text-[var(--color-fg-subtle)]',
-                  ].join(' ')}>{i + 1}</span>
-                </td>
-                <td className="px-3 py-2.5 text-numeric font-medium text-[var(--color-fg)]">{r.placa}</td>
-                <td className="px-5 py-2.5">
-                  <span className="flex items-center gap-2">
-                    <span className="hidden h-1.5 rounded-full bg-[var(--color-accent)] sm:inline-block" style={{ width: `${(r.entregas / maxEnt) * 64}px` }} />
-                    <span className="font-semibold tabular-nums text-[var(--color-fg)]">{r.entregas}</span>
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   )
 }
