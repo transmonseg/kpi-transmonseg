@@ -1,20 +1,13 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { resolveUserDesktopAware } from '@/lib/supabase/desktop-auth'
 import { ThemeToggle } from '@/lib/theme/ThemeToggle'
 
 // Shell mínimo — só o dashboard, sem a barra lateral com KPI/Cozinha/Romaneio/
-// Clientes. Pensado pra compartilhar um link e mostrar só a visão geral +
-// inserir manual, sem expor o resto do sistema. Exige login como o /painel.
-export default async function ApresentacaoLayout({
+// Clientes. Link público (sem login): quem abrir vê a Visão geral na hora.
+// Os dados vêm de /api/dashboard/publico (só leitura, service client).
+export default function ApresentacaoLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
-  const user = await resolveUserDesktopAware(supabase)
-  if (!user) redirect('/login')
-
   return (
     <div className="flex min-h-[100dvh] flex-col bg-[var(--color-bg)] text-[var(--color-fg)]">
       <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-[var(--color-bg)]/70 md:px-8">

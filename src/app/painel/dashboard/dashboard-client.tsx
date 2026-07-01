@@ -90,7 +90,10 @@ const fmtMin = (n: number | null | undefined) => {
 export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint = '/api/dashboard', basePath = '/painel' }: { resumo?: ResumoOperacaoData; tabInicial?: Tab; endpoint?: string; basePath?: string }) {
   const router = useRouter()
   const sp = useSearchParams()
-  const tab = (sp.get('tab') as Tab) || tabInicial
+  // Standalone (link público, sem login): trava em "Visão geral" — Inserir KPIs e
+  // Histórico exigem sessão e não fazem sentido pra quem abriu sem conta.
+  const standalone = basePath !== '/painel'
+  const tab = standalone ? 'geral' : (sp.get('tab') as Tab) || tabInicial
   const setTab = (t: Tab) => router.replace(t === 'geral' ? basePath : `${basePath}?tab=${t}`, { scroll: false })
   const [periodo, setPeriodo] = useState<Periodo>('mes')
   const [data, setData] = useState(hoje())
@@ -151,11 +154,11 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
   }, [tab, periodo, data, de, ate, redesExpandidas])
 
   useEffect(() => {
-    if (tab !== 'geral' || !m || tourAuto.current || tourJaVisto()) return
+    if (standalone || tab !== 'geral' || !m || tourAuto.current || tourJaVisto()) return
     tourAuto.current = true
     const id = setTimeout(() => iniciarTutorial(), 800)
     return () => clearTimeout(id)
-  }, [tab, m])
+  }, [standalone, tab, m])
 
   const mesAtual = data.slice(0, 7)
   const recarregar = () => setRedes(r => [...r])
@@ -184,7 +187,7 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
             Entregas, rastreamento, paradas indevidas e desempenho por rede — consolidado no período.
           </p>
         </div>
-        {tab === 'geral' && (
+        {tab === 'geral' && !standalone && (
           <div className="flex gap-2">
             <button onClick={() => iniciarTutorial()} className={BTN_SEC}>
               <Question size={14} weight="bold" /> Ver tutorial
@@ -201,24 +204,26 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
         )}
       </header>
 
-      {/* Tabs */}
-      <nav data-tour="abas" className="mt-8 flex gap-1 border-b border-[var(--color-border)]">
-        {([['geral', 'Visão geral'], ['inserir', 'Inserir KPIs'], ['historico', 'Histórico']] as [Tab, string][]).map(([t, label]) => (
-          <button
-            key={t} onClick={() => setTab(t)}
-            className={[
-              'relative px-4 py-2.5 text-[13px] font-medium transition-[color,transform] duration-150 active:scale-[0.98]',
-              tab === t ? 'text-[var(--color-fg)]' : 'text-[var(--color-fg-subtle)] hover:text-[var(--color-fg)]',
-            ].join(' ')}
-          >
-            {label}
-            <span
-              aria-hidden
-              className={`absolute inset-x-2 -bottom-px h-0.5 origin-left rounded-full bg-[var(--color-accent)] transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${tab === t ? 'scale-x-100' : 'scale-x-0'}`}
-            />
-          </button>
-        ))}
-      </nav>
+      {/* Tabs — Inserir/Histórico exigem sessão, então somem no link público. */}
+      {!standalone && (
+        <nav data-tour="abas" className="mt-8 flex gap-1 border-b border-[var(--color-border)]">
+          {([['geral', 'Visão geral'], ['inserir', 'Inserir KPIs'], ['historico', 'Histórico']] as [Tab, string][]).map(([t, label]) => (
+            <button
+              key={t} onClick={() => setTab(t)}
+              className={[
+                'relative px-4 py-2.5 text-[13px] font-medium transition-[color,transform] duration-150 active:scale-[0.98]',
+                tab === t ? 'text-[var(--color-fg)]' : 'text-[var(--color-fg-subtle)] hover:text-[var(--color-fg)]',
+              ].join(' ')}
+            >
+              {label}
+              <span
+                aria-hidden
+                className={`absolute inset-x-2 -bottom-px h-0.5 origin-left rounded-full bg-[var(--color-accent)] transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${tab === t ? 'scale-x-100' : 'scale-x-0'}`}
+              />
+            </button>
+          ))}
+        </nav>
+      )}
 
       <div className="py-8">
         {tab === 'inserir' && <div key="inserir" className="animate-fade-up"><InserirManual data={data} onChange={setData} /></div>}

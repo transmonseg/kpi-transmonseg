@@ -1,13 +1,7 @@
-import { Suspense } from 'react'
 import DashboardClient from '../painel/dashboard/dashboard-client'
-import { fetchResumo } from '../painel/dashboard/fetch-resumo'
 
-export default async function ApresentacaoPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
-  const sp = await searchParams
-  const resumo = await fetchResumo()
-  return (
-    <Suspense fallback={null}>
-      <DashboardClient resumo={resumo} tabInicial={sp.tab === 'inserir' || sp.tab === 'historico' ? sp.tab : 'geral'} basePath="/apresentacao" />
-    </Suspense>
-  )
+// Link público — sem resumo (esconde "Gerar KPI"/"última geração", que denunciam
+// a automação) e sem sessão (endpoint publico, service client, só leitura).
+export default function ApresentacaoPage() {
+  return <DashboardClient tabInicial="geral" basePath="/dashboard" endpoint="/api/dashboard/publico" />
 }
