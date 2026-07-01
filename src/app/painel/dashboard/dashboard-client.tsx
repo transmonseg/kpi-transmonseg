@@ -87,11 +87,11 @@ const fmtMin = (n: number | null | undefined) => {
   return h > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${m}min`
 }
 
-export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint = '/api/dashboard' }: { resumo?: ResumoOperacaoData; tabInicial?: Tab; endpoint?: string }) {
+export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint = '/api/dashboard', basePath = '/painel' }: { resumo?: ResumoOperacaoData; tabInicial?: Tab; endpoint?: string; basePath?: string }) {
   const router = useRouter()
   const sp = useSearchParams()
   const tab = (sp.get('tab') as Tab) || tabInicial
-  const setTab = (t: Tab) => router.replace(t === 'geral' ? '/painel' : `/painel?tab=${t}`, { scroll: false })
+  const setTab = (t: Tab) => router.replace(t === 'geral' ? basePath : `${basePath}?tab=${t}`, { scroll: false })
   const [periodo, setPeriodo] = useState<Periodo>('mes')
   const [data, setData] = useState(hoje())
   // Intervalo personalizado (de–até) — usado quando periodo === 'custom'.
