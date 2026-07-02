@@ -44,6 +44,20 @@ describe('rotaParaEntrada', () => {
     expect(e.status).toBe('nao_foi')
     expect(e.chd).toBeNull(); expect(e.sai).toBeNull(); expect(e.saida_cd).toBeNull()
   })
+  it('placa_real (troca de veículo, ex: T18) vence a placa escalada — mesmo bug do dashboard /api/kpi/simples corrigido aqui', () => {
+    const e = rotaParaEntrada(
+      { placa_norm: 'RJN9F68', placa_real: 'ABC1234', saida_cd: null, chegada_base: null, paradas: [] } as any,
+      esc as any, 'ENTREGUE', '2026-06-12',
+    )
+    expect(e.placa).toBe('ABC1234')
+  })
+  it('sem placa_real, cai pra placa escalada normalmente', () => {
+    const e = rotaParaEntrada(
+      { placa_norm: 'RJN9F68', placa_real: null, saida_cd: null, chegada_base: null, paradas: [] } as any,
+      esc as any, 'ENTREGUE', '2026-06-12',
+    )
+    expect(e.placa).toBe('RJN9F68')
+  })
 })
 
 describe('datasNoIntervalo', () => {

@@ -30,7 +30,7 @@ export function statusRotaParaDashboard(status: StatusRota): StatusManual {
 
 /** Converte uma rota+linha de escala+status numa linha do dashboard. */
 export function rotaParaEntrada(
-  rota: Pick<RotaKpi, 'placa_norm' | 'saida_cd' | 'chegada_base' | 'paradas'>,
+  rota: Pick<RotaKpi, 'placa_norm' | 'placa_real' | 'saida_cd' | 'chegada_base' | 'paradas'>,
   esc: Pick<LinhaEscala, 'rede_id' | 'loja_nome_raw' | 'motorista_nome'>,
   status: StatusRota,
   data: string,
@@ -44,7 +44,10 @@ export function rotaParaEntrada(
     data,
     rede_id: esc.rede_id,
     loja: esc.loja_nome_raw ?? '',
-    placa: rota.placa_norm ?? null,
+    // Mesmo bug do T18 (matcher.ts): a placa que REALMENTE entregou (troca de
+    // veículo) tem que vencer a placa escalada, senão o dashboard ao vivo mostra
+    // a placa errada — igual aconteceu em /api/kpi/simples antes do fix.
+    placa: rota.placa_real ?? rota.placa_norm ?? null,
     motorista: esc.motorista_nome ?? null,
     status: statusRotaParaDashboard(status),
     saida_cd: fmtHora(rota.saida_cd ? new Date(rota.saida_cd) : null),
