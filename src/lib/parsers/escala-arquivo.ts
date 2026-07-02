@@ -53,7 +53,14 @@ export async function parseEscalaArquivo(
         const r = await fn()
         const count = contaValidas(r)
         if (count >= MIN_LINHAS && count > melhorCount) { melhor = r; melhorCount = count }
-      } catch { /* tenta o próximo */ }
+      } catch (e) {
+        // Não interrompe a busca pelo formato certo (é esperado um parser
+        // específico rejeitar um arquivo que não é o dele), mas fica logado —
+        // sem isso, um parser que quebra por bug real (não por "não é meu
+        // formato") falha do mesmo jeito silencioso que o caso real do
+        // comentário acima (linhas 18-24: escala sumia sem erro visível).
+        console.warn(`[escala-arquivo] parser específico falhou em "${filename}":`, e instanceof Error ? e.message : e)
+      }
     }
     if (melhor) return melhor
 
@@ -62,7 +69,12 @@ export async function parseEscalaArquivo(
     try {
       const r = await parseEscalaUniversal(buffer, data)
       if (contaValidas(r) >= 1) return r
-    } catch { /* arquivo não reconhecido */ }
-  } catch { /* arquivo não reconhecido */ }
+      console.warn(`[escala-arquivo] "${filename}": nenhum formato específico nem o universal reconheceram (0 linhas válidas).`)
+    } catch (e) {
+      console.warn(`[escala-arquivo] parser universal falhou em "${filename}":`, e instanceof Error ? e.message : e)
+    }
+  } catch (e) {
+    console.warn(`[escala-arquivo] falha inesperada lendo "${filename}":`, e instanceof Error ? e.message : e)
+  }
   return []
 }

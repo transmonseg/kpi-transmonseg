@@ -372,7 +372,15 @@ export async function parseEscalaGuanabaraPdf(
     if (/^--\s*\d+\s+of\s+\d+/i.test(line.trim())) continue
 
     const row = parseRow(line)
-    if (!row) continue
+    if (!row) {
+      // Chegou até aqui passando pelos filtros de cabeçalho/rodapé (linhas
+      // 369-372) — ou seja, PARECIA linha de dado real mas não bateu o formato
+      // esperado (ex: placa corrompida pelo OCR). Log em vez de sumir sem
+      // rastro: sem isso, rota que falha aqui só aparece como "faltando
+      // ~N linhas" numa auditoria manual, sem pista de qual nem por quê.
+      console.warn(`[escala-guanabara-pdf] linha não reconhecida (descartada): "${line.trim()}"`)
+      continue
+    }
     if (!row.carro1) continue
 
     const lojaNome = GUANABARA_FILIAIS[row.rota] ?? `Guanabara - Rota ${String(row.rota).padStart(2, '0')}`
