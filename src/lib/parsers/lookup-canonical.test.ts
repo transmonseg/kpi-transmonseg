@@ -46,6 +46,34 @@ describe('lookupSlot', () => {
     expect(slot.fonte_placa).toBe('banco')
   })
 
+  it('código duplicado apontando pra motoristas/placas diferentes: não chuta o mais recente (achado real 184016 → 13 motoristas)', () => {
+    const ctxAmbiguo: ParseContext = {
+      associacoes: [
+        { motorista_nome: 'Claudio Luiz', motorista_nome_norm: 'CLAUDIO LUIZ', motorista_codigo: 184016, placa_norm: 'LQK0F07', placa_raw: 'LQK-0F07', data_entrega: '2026-05-17', rede_id: 'ASSAI' },
+        { motorista_nome: 'Pereira Eller', motorista_nome_norm: 'PEREIRA ELLER', motorista_codigo: 184016, placa_norm: 'KSW2J05', placa_raw: 'KSW-2J05', data_entrega: '2026-05-18', rede_id: 'ASSAI' },
+      ],
+      lojas: [],
+    }
+    const slot = lookupSlot({ placas: [], codigos: [184016], nomeHint: '' }, ctxAmbiguo)
+    expect(slot.motorista_nome).toBe(null)
+    expect(slot.placa_norm).toBe(null)
+    expect(slot.fonte_nome).toBe(null)
+    expect(slot.fonte_placa).toBe(null)
+  })
+
+  it('código repetido mas sempre na mesma dupla placa+motorista: não é ambiguidade real, resolve normal', () => {
+    const ctxRepetido: ParseContext = {
+      associacoes: [
+        { motorista_nome: 'José Roberto', motorista_nome_norm: 'JOSE ROBERTO', motorista_codigo: 138, placa_norm: 'DDI6J90', placa_raw: 'DDI-6J90', data_entrega: '2026-05-18', rede_id: 'ASSAI' },
+        { motorista_nome: 'José Roberto', motorista_nome_norm: 'JOSE ROBERTO', motorista_codigo: 138, placa_norm: 'DDI6J90', placa_raw: 'DDI-6J90', data_entrega: '2026-05-10', rede_id: 'ASSAI' },
+      ],
+      lojas: [],
+    }
+    const slot = lookupSlot({ placas: [], codigos: [138], nomeHint: '' }, ctxRepetido)
+    expect(slot.motorista_nome).toBe('José Roberto')
+    expect(slot.placa_norm).toBe('DDI6J90')
+  })
+
   it('resolve por nome fuzzy: aceita pequena variação', () => {
     const slot = lookupSlot({ placas: [], codigos: [], nomeHint: 'JOSE ROBERTO' }, ctxBase)
     expect(slot.motorista_codigo).toBe(138)

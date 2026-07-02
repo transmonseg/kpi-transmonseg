@@ -104,10 +104,20 @@ export function lookupSlot(
   }
 
   if (!match && codigos.length > 0) {
-    const sorted = candidatos
-      .filter((a) => a.motorista_codigo !== null && codigos.includes(a.motorista_codigo))
-      .sort((a, b) => b.data_entrega.localeCompare(a.data_entrega))
-    if (sorted.length > 0) match = sorted[0]
+    const porCodigo = candidatos.filter(
+      (a) => a.motorista_codigo !== null && codigos.includes(a.motorista_codigo),
+    )
+    // Código de motorista às vezes é reaproveitado como placeholder genérico pra
+    // terceiros/avulsos (achado real: código 184016 aponta pra 13 motoristas e
+    // placas diferentes na escala). Escolher "o mais recente" às cegas nesse caso
+    // arrisca aplicar a alteração no motorista errado, sem nenhum aviso. Só usa
+    // o match por código quando TODAS as ocorrências históricas apontam pra
+    // mesma dupla placa+motorista — aí não há ambiguidade real, é só repetição.
+    const distintos = new Set(porCodigo.map((a) => `${a.placa_norm ?? ''}|${a.motorista_nome_norm}`))
+    if (distintos.size === 1) {
+      const sorted = porCodigo.sort((a, b) => b.data_entrega.localeCompare(a.data_entrega))
+      if (sorted.length > 0) match = sorted[0]
+    }
   }
 
   if (!match && nomeHint) {
