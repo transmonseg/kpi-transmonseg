@@ -134,6 +134,13 @@ export async function parseEscalaArmazemGrao(
       // Linha sem placa e sem motorista → descartar (linha em branco/total)
       if (!placaRaw && !motorista) return
 
+      // Tem motorista mas SEM placa — linha real da escala, mas normalizaPlaca(null)
+      // vira '' silenciosamente, indistinguível de "não achou coluna" vs "coluna
+      // vazia mesmo". Loga pra dar rastro (achado na varredura ampla).
+      if (!placaRaw && motorista) {
+        console.warn(`[escala-armazem-grao] linha sem placa (loja "${lojaRaw}", motorista "${motorista}")`)
+      }
+
       // TOTAL / linhas-resumo
       if (/^TOTAL/i.test(lojaRaw)) return
 

@@ -312,6 +312,14 @@ export async function parseEscalaPax(
       }
 
       const placaNorm = isSemPedido ? '' : normalizaPlaca(placaRaw)
+      // Linha "real" (não é SEM PEDIDO) mas a coluna de placa veio vazia/inválida —
+      // normalizaPlaca(null) devolve '' silenciosamente, indistinguível de "não
+      // achou coluna" vs "coluna vazia mesmo". Loga pra dar rastro numa auditoria
+      // (achado na varredura ampla — mesma classe do bug de parser que já sumia
+      // linha sem aviso em escala-arquivo.ts/escala-guanabara-pdf.ts).
+      if (!isSemPedido && !placaNorm) {
+        console.warn(`[escala-pax] linha sem placa válida (loja "${lojaNomeNorm}", motorista "${motoristaNome ?? '?'}"): placaRaw=${JSON.stringify(placaRaw)}`)
+      }
 
       // If a proxy date was used (file had no exact match for dataAlvo),
       // report data_entrega as the requested target date so DB queries find it.
