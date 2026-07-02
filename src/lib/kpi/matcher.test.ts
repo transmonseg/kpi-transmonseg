@@ -1777,6 +1777,19 @@ describe('T18 — plate-swap aceita madrugada + GPS:NAO', () => {
     expect(rotas.find(r => r.escala_linha_id === 'l3')?.paradas).toHaveLength(1)
     expect(rotas.find(r => r.escala_linha_id === 'l3')?.paradas[0].parada_id).toBe('pz')
   })
+
+  it('T18 grava placa_real quando aplica a troca (bug KSW-2J05 02/07 — dashboard mostrava a placa escalada, sem rastreador, em vez de quem realmente entregou)', async () => {
+    const linhas: EscalaLinhaRow[] = [
+      { id: 'l4', rede_id: 'ZONA_SUL', placa_norm: 'ABC1234', loja_nome_raw: 'ZONA SUL LOJA 30', loja_codigo_raw: '30', motorista_nome: null, carro_ordem: 1, data_entrega: '2026-05-20' },
+    ]
+    const paradas: UnitracParadaRow[] = [
+      { id: 'pz2', placa_norm: 'XYZ9999', chegada: '2026-05-20T07:00:00.000Z', saida: '2026-05-20T08:30:00.000Z', duracao_seg: 5400, local_parada: '9039030 - ZONA SUL LOJA 30', codigo_loja: '9039030', nome_loja: 'ZONA SUL LOJA 30', lat: null, lng: null, classificacao: 'LOJA', ordem: 1 },
+    ]
+    const rotas = await cruzaEscalaUnitrac(linhas, paradas, [])
+    const r = rotas.find(rt => rt.escala_linha_id === 'l4')
+    expect(r?.paradas).toHaveLength(1)
+    expect(r?.placa_real).toBe('XYZ9999')
+  })
 })
 
 // --- T8-X: bug 2A dia 19 ZS Loja 07 — guard de codigo cross-rede ---

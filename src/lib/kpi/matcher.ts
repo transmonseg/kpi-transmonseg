@@ -2385,6 +2385,13 @@ export async function cruzaEscalaUnitrac(
       placa_norm: linha.placa_norm,
       // Placa resolvida no Unitrac (Mercosul/OCR) — usada pelo geo pra achar paradas.
       placa_unitrac: placaUnitrac,
+      // T18 (plate-swap por loja) troca o veículo mas não passava pelo isso pro
+      // display: o dashboard mostra `placa_real ?? placa_norm`, então sem isso a
+      // placa da ESCALA (sem rastreador/errada) ficava visível mesmo com os dados
+      // sendo de outro carro (caso KSW-2J05 dia 02/07 — Assaí Loja 217, achado via
+      // auditoria do cliente). O path geo/coordenada (linha ~2634) já setava certo;
+      // este cobre o T18 por nome/código de loja.
+      placa_real: isPlateTroca ? placaUnitrac : null,
       saida_cd,
       chegada_base,
       paradas,
