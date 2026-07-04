@@ -108,6 +108,16 @@ export default async function LoginPage({
             </form>
           </div>
         </div>
+
+        <p className="mt-6 text-center text-[13px] text-[var(--color-fg-muted)]">
+          Não tem conta?{' '}
+          <Link
+            href="/cadastro"
+            className="font-medium text-[var(--color-fg)] underline decoration-[var(--color-navy-700)] underline-offset-[3px] transition-colors hover:text-[var(--color-navy-700)] dark:hover:text-[var(--color-navy-300)]"
+          >
+            Criar conta
+          </Link>
+        </p>
       </div>
     </div>
   )

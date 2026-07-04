@@ -31,12 +31,7 @@ export async function updateSession(request: NextRequest) {
   const user = await resolveUserDesktopAware(supabase)
 
   const path = request.nextUrl.pathname
-  // Auditoria de segurança: /cadastro criava conta sem convite/aprovação — qualquer
-  // pessoa da internet virava usuário autenticado com acesso de service-role a
-  // lojas/KPI de todos os clientes (nenhuma rota checa dono por rede). Fechado até
-  // existir controle de acesso por rede — login continua liberado pros 5 usuários
-  // já existentes.
-  const isAuthPage = path.startsWith('/login')
+  const isAuthPage = path.startsWith('/login') || path.startsWith('/cadastro')
   // /dashboard (e o alias antigo /apresentacao, que só redireciona pra lá) é o
   // link público sem login; a API que ele consome também precisa passar aqui.
   const isDashboardPublico = path === '/dashboard' || path.startsWith('/dashboard/') ||
