@@ -42,7 +42,15 @@ export interface EntradaManual {
 
 function cell(v: unknown): string {
   if (v == null) return ''
-  if (v instanceof Date) return `${String(v.getUTCHours()).padStart(2, '0')}:${String(v.getUTCMinutes()).padStart(2, '0')}`
+  if (v instanceof Date) {
+    // Data/hora inválida (célula corrompida ou fórmula não resolvida no Excel do
+    // cliente): sem o guard, getUTCHours()/getUTCMinutes() retornam NaN e o
+    // String(NaN) grava o texto literal "NaN:NaN" na célula — aconteceu na
+    // coluna PLACA quando o Excel do cliente tinha uma célula de hora corrompida
+    // ali (Zona Sul/Guanabara/Feira Nova, 01/07). Vazio > lixo visível na planilha.
+    if (Number.isNaN(v.getTime())) return ''
+    return `${String(v.getUTCHours()).padStart(2, '0')}:${String(v.getUTCMinutes()).padStart(2, '0')}`
+  }
   if (typeof v === 'object') {
     const o = v as { text?: string; result?: unknown; richText?: Array<{ text: string }> }
     if (o.text) return o.text
