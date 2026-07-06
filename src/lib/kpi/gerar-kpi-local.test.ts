@@ -238,6 +238,82 @@ describe('gerarKpiLocal (núcleo offline)', () => {
     expect(linha.placa).toBe('ABC1234') // placa exibida continua a da escala
   })
 
+  it('rotaToLinha: parada em andamento no corte → AINDA NO CLIENTE (sem saída inventada)', () => {
+    // Caso FKY-8H51 (06/07): relatório puxado 06:41 com o caminhão DENTRO da loja
+    // desde 06:35 — a "Data Saída" da parada é só o corte do relatório, não uma
+    // saída real. O KPI mostrava "saída 6:41 / 0:06 em loja"; o certo é chegada
+    // 06:35 + AINDA NO CLIENTE (sem saída, sem tempo em loja).
+    const escala = {
+      rede_id: 'ASSAI', loja_nome_raw: 'Assaí - Barra I (Senna) - Loja 133', loja_codigo_raw: '133',
+      motorista_nome: 'CLAUDO', motorista_codigo: 353, placa_norm: 'FKY8H51',
+      carro_ordem: 1, data_entrega: '2026-07-06',
+    } as unknown as LinhaEscala
+    const corte = new Date('2026-07-06T06:41:00Z')
+    const rota = {
+      escala_linha_id: 'esc-0', placa_norm: 'FKY8H51', placa_real: null,
+      saida_cd: new Date('2026-07-06T05:24:00Z'), chegada_base: null,
+      paradas: [{
+        parada_id: 'p1', loja_id: 'loja-133', nome: 'SENDAS BARRA I - LJ 32',
+        chegada: new Date('2026-07-06T06:35:00Z'), saida: corte, duracao_min: 6,
+        classificacao: 'LOJA',
+      }],
+      anomalias_codigos: [], status: 'OK',
+    } as unknown as RotaKpi
+
+    const linha = rotaToLinha(rota, escala, 1, corte.getTime())
+    expect(linha.chd_loja_1).toEqual(new Date('2026-07-06T06:35:00Z')) // chegada é fato
+    expect(linha.saida_loja_1).toBeNull()                              // saída NÃO é fato
+    expect(linha.tempo_loja_1_min).toBeNull()
+    expect(linha.ainda_no_cliente_1).toBe(true)
+    expect(linha.observacao).toContain('no cliente')
+  })
+
+  it('rotaToLinha: parada encerrada bem antes do corte → saída normal (sem flag)', () => {
+    const escala = {
+      rede_id: 'ASSAI', loja_nome_raw: 'Loja 1', loja_codigo_raw: '1',
+      motorista_nome: 'FULANO', motorista_codigo: 10, placa_norm: 'ABC1234',
+      carro_ordem: 1, data_entrega: '2026-07-06',
+    } as unknown as LinhaEscala
+    const rota = {
+      escala_linha_id: 'esc-0', placa_norm: 'ABC1234', placa_real: null,
+      saida_cd: new Date('2026-07-06T05:00:00Z'), chegada_base: null,
+      paradas: [{
+        parada_id: 'p1', loja_id: 'loja-1', nome: 'LOJA 1',
+        chegada: new Date('2026-07-06T06:00:00Z'), saida: new Date('2026-07-06T06:45:00Z'),
+        duracao_min: 45, classificacao: 'LOJA',
+      }],
+      anomalias_codigos: [], status: 'OK',
+    } as unknown as RotaKpi
+
+    // Corte 4h depois da saída: a saída é real.
+    const linha = rotaToLinha(rota, escala, 1, new Date('2026-07-06T10:45:00Z').getTime())
+    expect(linha.saida_loja_1).toEqual(new Date('2026-07-06T06:45:00Z'))
+    expect(linha.tempo_loja_1_min).toBe(45)
+    expect(linha.ainda_no_cliente_1).toBeUndefined()
+  })
+
+  it('rotaToLinha: sem corte informado → comportamento antigo intacto', () => {
+    const escala = {
+      rede_id: 'ASSAI', loja_nome_raw: 'Loja 1', loja_codigo_raw: '1',
+      motorista_nome: 'FULANO', motorista_codigo: 10, placa_norm: 'ABC1234',
+      carro_ordem: 1, data_entrega: '2026-07-06',
+    } as unknown as LinhaEscala
+    const rota = {
+      escala_linha_id: 'esc-0', placa_norm: 'ABC1234', placa_real: null,
+      saida_cd: null, chegada_base: null,
+      paradas: [{
+        parada_id: 'p1', loja_id: 'loja-1', nome: 'LOJA 1',
+        chegada: new Date('2026-07-06T06:00:00Z'), saida: new Date('2026-07-06T06:45:00Z'),
+        duracao_min: 45, classificacao: 'LOJA',
+      }],
+      anomalias_codigos: [], status: 'OK',
+    } as unknown as RotaKpi
+
+    const linha = rotaToLinha(rota, escala, 1)
+    expect(linha.saida_loja_1).toEqual(new Date('2026-07-06T06:45:00Z'))
+    expect(linha.ainda_no_cliente_1).toBeUndefined()
+  })
+
   it('rotaToLinha: sugestão BAIXA vai na observação mas NÃO liga a flag do XLSX', () => {
     const escala = {
       rede_id: 'GUANABARA', loja_nome_raw: 'Loja 1', loja_codigo_raw: '1',

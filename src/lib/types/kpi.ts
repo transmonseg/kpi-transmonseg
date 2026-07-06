@@ -104,6 +104,14 @@ export type KpiLinha = {
    *  rastreador funcionando). Faz o XLSX dizer "NÃO FOI AO CLIENTE" em vez de acusar
    *  falsamente "SEM RASTREADOR", igual ao que a tela já mostra. */
   placa_tem_rastreador_api?: boolean
+  /** A parada na loja N estava EM ANDAMENTO quando o relatório foi puxado: a
+   *  "Data Saída" do Unitrac era só o corte do relatório, não uma saída real
+   *  (caso FKY-8H51 06/07: KPI mostrava "saída 6:41 / 0:06 em loja" com o
+   *  caminhão ainda descarregando — ficou 6h+). A chegada é fato e fica; a
+   *  saída/tempo são anulados e o XLSX mostra "AINDA NO CLIENTE". */
+  ainda_no_cliente_1?: boolean
+  ainda_no_cliente_2?: boolean
+  ainda_no_cliente_3?: boolean
 }
 
 export type AnomaliaDetectada = {

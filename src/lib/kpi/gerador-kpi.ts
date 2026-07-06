@@ -223,6 +223,13 @@ export function celulasSlot(
     const txt = c.relatorio_cedo ? (legendaSlot(c) ?? 'EM ROTA') : 'RELATÓRIO PARCIAL'
     return [sb ?? (saidaEx ?? ''), txt, txt]
   }
+  // Chegou na loja mas a parada estava EM ANDAMENTO no corte do relatório: a
+  // chegada é fato, a saída não existe ainda — mostra "AINDA NO CLIENTE" em vez
+  // de inventar horário (caso FKY-8H51 06/07: "saída 6:41" com o caminhão
+  // descarregando por 6h+).
+  if (c?.ainda_no_cliente_1 && c.chd_loja_1 !== null) {
+    return [saidaEx ?? '', chdEx ?? '', 'AINDA NO CLIENTE']
+  }
   const slot = legendaSlot(c)
   return [slot ?? (saidaEx ?? ''), slot ?? (chdEx ?? ''), slot ?? (saiEx ?? '')]
 }

@@ -84,7 +84,9 @@ function rowValues(l: KpiLinha, nLojas: number, comChegada = false): string[] {
     const chd = n === 1 ? l.chd_loja_1 : n === 2 ? l.chd_loja_2 : l.chd_loja_3
     const sai = n === 1 ? l.saida_loja_1 : n === 2 ? l.saida_loja_2 : l.saida_loja_3
     const tempo = n === 1 ? l.tempo_loja_1_min : n === 2 ? l.tempo_loja_2_min : l.tempo_loja_3_min
-    vals.push(fmt(chd), fmt(sai), tempo !== null ? `${tempo}m` : '—')
+    // Parada em andamento no corte do relatório: não há saída real ainda.
+    const ainda = n === 1 ? l.ainda_no_cliente_1 : n === 2 ? l.ainda_no_cliente_2 : l.ainda_no_cliente_3
+    vals.push(fmt(chd), ainda ? 'NO CLIENTE' : fmt(sai), tempo !== null ? `${tempo}m` : '—')
   }
   vals.push(safeText(l.observacao ?? ''))
   return vals

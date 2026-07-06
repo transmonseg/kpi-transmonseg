@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calcTempoOperacao, COL_TEMPO_OPERACAO, legendaSlot, type LinhaParaKpi } from './gerador-kpi'
+import { calcTempoOperacao, celulasSlot, COL_TEMPO_OPERACAO, legendaSlot, type LinhaParaKpi } from './gerador-kpi'
 
 const baseLinha = (o: Partial<LinhaParaKpi>): LinhaParaKpi => ({
   rede_id: 'ASSAI', loja: 'X', placa: 'ABC1234', motorista: null, turno: 'MANHA',
@@ -25,6 +25,33 @@ describe('legendaSlot — relatório cedo', () => {
   })
   it('placa desatualizada → DESATUALIZADO (não SEM RASTREADOR)', () => {
     expect(legendaSlot(baseLinha({ placa_rastreada: false, placa_desatualizada: true }))).toBe('DESATUALIZADO')
+  })
+})
+
+describe('celulasSlot — ainda no cliente (parada em andamento no corte)', () => {
+  it('chegada real + flag → SAÍDA LOJA vira "AINDA NO CLIENTE", chegada preservada', () => {
+    const linha = baseLinha({
+      chd_loja_1: new Date('2026-07-06T06:35:00Z'),
+      saida_loja_1: null,
+      ainda_no_cliente_1: true,
+      rota_status: 'OK',
+    })
+    // saidaEx=0.225 (5:24), chdEx=0.274 (6:35), saiEx=null (sem saída)
+    const [cd, chd, sai] = celulasSlot(linha, 0.225, 0.274, null)
+    expect(cd).toBe(0.225)
+    expect(chd).toBe(0.274)
+    expect(sai).toBe('AINDA NO CLIENTE')
+  })
+  it('sem a flag, entrega normal continua com as 3 células de hora', () => {
+    const linha = baseLinha({
+      chd_loja_1: new Date('2026-07-06T06:35:00Z'),
+      saida_loja_1: new Date('2026-07-06T07:35:00Z'),
+      rota_status: 'OK',
+    })
+    const [cd, chd, sai] = celulasSlot(linha, 0.225, 0.274, 0.316)
+    expect(cd).toBe(0.225)
+    expect(chd).toBe(0.274)
+    expect(sai).toBe(0.316)
   })
 })
 

@@ -901,7 +901,7 @@ export async function POST(req: NextRequest) {
       }
 
       const linhas: LinhaParaKpi[] = sorted.map(({ rota, esc }, idx) => {
-        const l = rotaToLinha(rota, esc, idx + 1)
+        const l = rotaToLinha(rota, esc, idx + 1, corteMs)
         l.placa_rastreada = placaRastreada(rota.placa_norm)
         l.placa_foi_algum_lugar = placaFoiAlgumLugar(rota.placa_norm)
         l.placa_saiu_da_base = placaSaiuDaBase(rota.placa_norm)
