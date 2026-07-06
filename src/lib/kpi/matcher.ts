@@ -2320,8 +2320,10 @@ export async function cruzaEscalaUnitrac(
     // Bug permanência 18/06 (Caxias): visita que COMEÇA fora do raio (cadeia
     // FORA_BASE antes da geofence LOJA). Espelho de estendeSaidaPorForaBase.
     const chegadaEstendida = matched ? estendeChegadaPorForaBase(matched, todasParadas) : null
+    let chegadaFoiEstendida = false
     if (chegadaEstendida && chegadaFinal && chegadaEstendida.getTime() < chegadaFinal.getTime()) {
       chegadaFinal = chegadaEstendida
+      chegadaFoiEstendida = true
     }
     if (matched && !isGeo && matched.codigo_loja) {
       const lojasOrdenadas = todasParadas
@@ -2359,6 +2361,7 @@ export async function cruzaEscalaUnitrac(
             ? Math.round((saidaFinal.getTime() - chegadaFinal!.getTime()) / 60000)
             : Math.round((matched.duracao_seg ?? 0) / 60),
           classificacao: isGeo ? 'FORA_BASE' : 'LOJA',
+          ...(chegadaFoiEstendida ? { chegada_estendida: true } : {}),
         }]
       : []
 

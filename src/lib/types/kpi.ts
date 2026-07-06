@@ -10,6 +10,11 @@ export type ParadaKpi = {
   saida: Date
   duracao_min: number
   classificacao: 'LOJA' | 'FORA_BASE'
+  /** A chegada veio da extensão por cadeia FORA_BASE adjacente (fila/pátio a
+   *  <300m da loja antes de entrar na geofence) — presença física verificada,
+   *  não drive-by. O gabarito da API não deve atropelar uma chegada assim
+   *  quando ela é mais cedo (caso FKY-8H51 06/07). */
+  chegada_estendida?: boolean
 }
 
 export type MatchAlgorithm = 'exact' | 'alias' | 'trgm' | 'hybrid' | 'geo' | 'crossdock' | 'troca' | 'api' | 'none'

@@ -21,4 +21,13 @@ describe('horarioEntregaGabarito', () => {
     // parada mais cedo no gabarito (route.ts), não aqui.
     expect(horarioEntregaGabarito(d(5, 41), d(6, 9))).toEqual(d(6, 9))
   })
+  it('chegada PDF ESTENDIDA (fila fora da cerca) mais cedo que a API → PDF ganha', () => {
+    // FKY-8H51 (06/07): fila colada na loja desde 05:29 (cadeia FORA_BASE <300m),
+    // entrou na geofence 06:35. A chegada real é 05:29 — o gabarito não pode
+    // atropelar uma chegada comprovada por presença física contínua.
+    expect(horarioEntregaGabarito(d(5, 29), d(6, 35), 15, true)).toEqual(d(5, 29))
+  })
+  it('chegada PDF estendida mas MAIS TARDE que a API → API ainda ganha (drive-by real)', () => {
+    expect(horarioEntregaGabarito(d(7, 10), d(6, 35), 15, true)).toEqual(d(6, 35))
+  })
 })
