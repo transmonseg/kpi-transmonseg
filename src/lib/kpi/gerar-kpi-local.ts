@@ -59,16 +59,49 @@ export type GerarKpiLocalOpts = {
   alteracoes?: AltConfirmada[]
 }
 
+/** A parada estava EM ANDAMENTO quando o relatório foi puxado? A "Data Saída"
+ *  da última parada de um caminhão parado é sempre o momento do corte — não é
+ *  uma saída real. Tolerância de 10min cobre variação entre placas no mesmo
+ *  relatório. Caso FKY-8H51 (06/07): relatório puxado 06:41 com o caminhão na
+ *  loja desde 06:35 → KPI inventava "saída 6:41 / 0:06 em loja" quando o
+ *  caminhão ficou 6h+ descarregando. */
+const CORTE_TOL_MS = 10 * 60_000
+function paradaEmAndamentoNoCorte(
+  p: { saida: Date | null } | null,
+  corteMs: number | undefined,
+): boolean {
+  if (!p?.saida || !corteMs) return false
+  return corteMs - p.saida.getTime() < CORTE_TOL_MS
+}
+
 /**
  * Converte uma RotaKpi (saída do matcher) + a linha de escala numa LinhaParaKpi
  * (entrada dos geradores). Regra ÚNICA, compartilhada com a rota `kpi/simples`.
+ *
+ * `corteMs` (opcional): horizonte do relatório Unitrac (maior "Data Saída" do
+ * arquivo). Quando informado, paradas cuja saída coincide com o corte são
+ * tratadas como EM ANDAMENTO — chegada fica (é fato), saída/tempo são anulados
+ * e a linha ganha a flag `ainda_no_cliente_N` (XLSX mostra "AINDA NO CLIENTE").
  */
-export function rotaToLinha(rota: RotaKpi, escala: LinhaEscala, ordem: number): LinhaParaKpi {
+export function rotaToLinha(rota: RotaKpi, escala: LinhaEscala, ordem: number, corteMs?: number): LinhaParaKpi {
   const p1 = rota.paradas[0] ?? null
   const p2 = rota.paradas[1] ?? null
   const p3 = rota.paradas[2] ?? null
 
+  const anc1 = paradaEmAndamentoNoCorte(p1, corteMs)
+  const anc2 = paradaEmAndamentoNoCorte(p2, corteMs)
+  const anc3 = paradaEmAndamentoNoCorte(p3, corteMs)
+
   const motorista = escala.motorista_nome ?? null
+
+  const obsBase = rota.placa_real
+    ? `Troca de carro: entregue pela placa ${rota.placa_real} (escala: ${rota.placa_norm ?? '—'}).`
+    : rota.placa_sugerida
+      ? textoSugestaoTroca(rota.placa_sugerida, rota.sugestao_confianca ?? 'baixa', rota.sugestao_hora ?? null)
+      : null
+  const obsAinda = (anc1 || anc2 || anc3)
+    ? 'Ainda no cliente no corte do relatório — sem saída registrada.'
+    : null
 
   return {
     kpi_id: 'simples',
@@ -81,19 +114,18 @@ export function rotaToLinha(rota: RotaKpi, escala: LinhaEscala, ordem: number): 
     saida_cd: rota.saida_cd,
     chegada_base: rota.chegada_base ?? null,
     chd_loja_1: p1?.chegada ?? null,
-    saida_loja_1: p1?.saida ?? null,
-    tempo_loja_1_min: p1?.duracao_min ?? null,
+    saida_loja_1: anc1 ? null : p1?.saida ?? null,
+    tempo_loja_1_min: anc1 ? null : p1?.duracao_min ?? null,
     chd_loja_2: p2?.chegada ?? null,
-    saida_loja_2: p2?.saida ?? null,
-    tempo_loja_2_min: p2?.duracao_min ?? null,
+    saida_loja_2: anc2 ? null : p2?.saida ?? null,
+    tempo_loja_2_min: anc2 ? null : p2?.duracao_min ?? null,
     chd_loja_3: p3?.chegada ?? null,
-    saida_loja_3: p3?.saida ?? null,
-    tempo_loja_3_min: p3?.duracao_min ?? null,
-    observacao: rota.placa_real
-      ? `Troca de carro: entregue pela placa ${rota.placa_real} (escala: ${rota.placa_norm ?? '—'}).`
-      : rota.placa_sugerida
-        ? textoSugestaoTroca(rota.placa_sugerida, rota.sugestao_confianca ?? 'baixa', rota.sugestao_hora ?? null)
-        : null,
+    saida_loja_3: anc3 ? null : p3?.saida ?? null,
+    tempo_loja_3_min: anc3 ? null : p3?.duracao_min ?? null,
+    ...(anc1 ? { ainda_no_cliente_1: true } : {}),
+    ...(anc2 ? { ainda_no_cliente_2: true } : {}),
+    ...(anc3 ? { ainda_no_cliente_3: true } : {}),
+    observacao: [obsBase, obsAinda].filter(Boolean).join(' ') || null,
     sugestao_troca_alta: rota.sugestao_confianca === 'alta',
     anomalias_codigos: rota.anomalias_codigos,
     motorista_codigo: escala.motorista_codigo,
@@ -380,7 +412,7 @@ export async function gerarKpiLocal(opts: GerarKpiLocalOpts): Promise<SaidaRede[
     const rede_nome = REDE_NOMES_CANONICOS[rede_id] ?? rede_id
     const relatorioCedo = corteHora < (JANELA_FIM[rede_id] ?? 12)
     const linhas = grupo.rotas.map((rota, idx) => {
-      const linha = rotaToLinha(rota, grupo.escala[idx], idx + 1)
+      const linha = rotaToLinha(rota, grupo.escala[idx], idx + 1, corteMs)
       aplicarParcial(linha, rota, paradasPorPlaca, relatorioCedo, corteMs)
       return linha
     })
@@ -503,7 +535,7 @@ export async function gerarKpiLocalComPreview(opts: GerarKpiLocalOpts): Promise<
 
     const relatorioCedo = reportMaxHora < (JANELA_FIM[rede_id] ?? 12)
     const linhas = sorted.map(({ rota, esc }, idx) => {
-      const linha = rotaToLinha(rota, esc, idx + 1)
+      const linha = rotaToLinha(rota, esc, idx + 1, corteMs)
       aplicarParcial(linha, rota, paradasPorPlaca, relatorioCedo, corteMs)
       return linha
     })

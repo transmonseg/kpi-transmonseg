@@ -638,7 +638,9 @@ export async function POST(req: NextRequest) {
       const apiStop = modoApi
         ? candidatas.reduce((a, b) => new Date(a.chegada).getTime() < new Date(b.chegada).getTime() ? a : b)
         : candidatas.reduce((a, b) => (b.duracao_seg ?? 0) > (a.duracao_seg ?? 0) ? b : a)
-      const novaChegada = horarioEntregaGabarito(p0.chegada, new Date(apiStop.chegada))
+      // chegada_estendida: fila/pátio verificado a <300m antes da geofence — o
+      // gabarito não atropela uma chegada mais cedo comprovada (caso FKY-8H51).
+      const novaChegada = horarioEntregaGabarito(p0.chegada, new Date(apiStop.chegada), 15, p0.chegada_estendida ?? false)
       if (novaChegada.getTime() !== p0.chegada.getTime()) {
         // Em modo PDF com drive-by, a duração do PDF reflete o drive-by (curto),
         // não a entrega real. Usa saida da parada API (a mais longa) quando disponível.
@@ -901,7 +903,7 @@ export async function POST(req: NextRequest) {
       }
 
       const linhas: LinhaParaKpi[] = sorted.map(({ rota, esc }, idx) => {
-        const l = rotaToLinha(rota, esc, idx + 1)
+        const l = rotaToLinha(rota, esc, idx + 1, corteMs)
         l.placa_rastreada = placaRastreada(rota.placa_norm)
         l.placa_foi_algum_lugar = placaFoiAlgumLugar(rota.placa_norm)
         l.placa_saiu_da_base = placaSaiuDaBase(rota.placa_norm)
