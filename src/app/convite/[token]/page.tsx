@@ -87,8 +87,8 @@ export default async function ConvitePage({
             ) : (
               <form action={resgatarComToken} className="flex flex-col gap-5">
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" name="email" type="email" value={convite.email as string} disabled readOnly />
+                  <Label htmlFor="email">Seu email</Label>
+                  <Input id="email" name="email" type="email" required autoComplete="email" placeholder="voce@email.com" />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="senha">Senha</Label>

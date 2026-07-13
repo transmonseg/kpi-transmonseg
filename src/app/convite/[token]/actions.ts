@@ -4,9 +4,11 @@ import { redirect } from 'next/navigation'
 import { createServiceClient } from '@/lib/supabase/service'
 
 export async function resgatar(token: string, formData: FormData) {
+  const email = String(formData.get('email') ?? '').trim().toLowerCase()
   const senha = String(formData.get('senha') ?? '')
   const confirmar = String(formData.get('confirmar') ?? '')
 
+  if (!email) redirect(`/convite/${token}?erro=` + encodeURIComponent('Informe um email.'))
   if (senha.length < 6) {
     redirect(`/convite/${token}?erro=` + encodeURIComponent('Senha deve ter pelo menos 6 caracteres.'))
   }
@@ -24,7 +26,7 @@ export async function resgatar(token: string, formData: FormData) {
   }
 
   const { data: created, error } = await svc.auth.admin.createUser({
-    email: convite.email as string,
+    email,
     password: senha,
     email_confirm: true,
   })
@@ -34,7 +36,7 @@ export async function resgatar(token: string, formData: FormData) {
 
   await svc.from('perfis').insert({
     user_id: created.user.id,
-    email: convite.email,
+    email,
     papel: convite.papel,
     redes: convite.redes,
     criado_por: convite.criado_por,

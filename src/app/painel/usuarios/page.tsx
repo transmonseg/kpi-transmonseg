@@ -1,7 +1,7 @@
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { WarningCircle, CheckCircle, X } from '@phosphor-icons/react/dist/ssr'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Input, Label, Badge } from '@/components/ui'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Label, Badge } from '@/components/ui'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getPerfil } from '@/lib/perfil'
@@ -26,7 +26,7 @@ export default async function UsuariosPage({
   const svc = createServiceClient()
   const [{ data: perfisRows }, { data: convitesRows }] = await Promise.all([
     svc.from('perfis').select('user_id, email, papel, redes, criado_por').neq('papel', 'admin').order('email'),
-    svc.from('convites').select('token, email, papel, redes, criado_por, expira_em').is('usado_em', null).order('criado_em', { ascending: false }),
+    svc.from('convites').select('token, papel, redes, criado_por, expira_em').is('usado_em', null).order('criado_em', { ascending: false }),
   ])
 
   const meus = perfil.papel === 'gerente'
@@ -79,26 +79,20 @@ export default async function UsuariosPage({
         </CardHeader>
         <CardContent>
           <form action={criarConvite} className="flex flex-col gap-5">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="email">Email da pessoa</Label>
-                <Input id="email" name="email" type="email" required placeholder="pessoa@email.com" />
+            {perfil.papel === 'admin' ? (
+              <div className="flex max-w-[280px] flex-col gap-2">
+                <Label htmlFor="papel">Papel</Label>
+                <select
+                  id="papel" name="papel" defaultValue="visualizador"
+                  className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)]"
+                >
+                  <option value="visualizador">Visualizador (só vê)</option>
+                  <option value="gerente">Gerente (vê + convida)</option>
+                </select>
               </div>
-              {perfil.papel === 'admin' ? (
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="papel">Papel</Label>
-                  <select
-                    id="papel" name="papel" defaultValue="visualizador"
-                    className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)]"
-                  >
-                    <option value="visualizador">Visualizador (só vê)</option>
-                    <option value="gerente">Gerente (vê + convida)</option>
-                  </select>
-                </div>
-              ) : (
-                <input type="hidden" name="papel" value="visualizador" />
-              )}
-            </div>
+            ) : (
+              <input type="hidden" name="papel" value="visualizador" />
+            )}
 
             <div className="flex flex-col gap-2">
               <Label>Redes que esse login pode ver</Label>
@@ -131,7 +125,6 @@ export default async function UsuariosPage({
               <div key={c.token as string} className="flex flex-wrap items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] px-4 py-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-fg)]">
-                    {c.email}
                     <Badge>{PAPEL_LABEL[c.papel as 'gerente' | 'visualizador']}</Badge>
                   </div>
                   <div className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">

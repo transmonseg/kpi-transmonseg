@@ -18,11 +18,8 @@ async function perfilAtual(): Promise<{ userId: string; perfil: Perfil }> {
 export async function criarConvite(formData: FormData) {
   const { userId, perfil } = await perfilAtual()
 
-  const email = String(formData.get('email') ?? '').trim().toLowerCase()
   const papelPedido = String(formData.get('papel') ?? 'visualizador')
   const redesPedidas = formData.getAll('redes').map(String).filter(redeValida)
-
-  if (!email) redirect('/painel/usuarios?erro=' + encodeURIComponent('Email obrigatório.'))
 
   // Gerente só cria Visualizador, e só dentro das próprias redes — nunca confia no
   // que vier do form (poderia ser adulterado).
@@ -37,7 +34,7 @@ export async function criarConvite(formData: FormData) {
   const svc = createServiceClient()
   const { data, error } = await svc
     .from('convites')
-    .insert({ email, papel, redes, criado_por: userId })
+    .insert({ papel, redes, criado_por: userId })
     .select('token')
     .single()
 
