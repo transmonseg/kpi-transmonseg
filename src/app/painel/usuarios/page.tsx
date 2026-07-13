@@ -7,6 +7,8 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { getPerfil } from '@/lib/perfil'
 import { REDES, REDE_LABEL } from '@/lib/kpi/redes'
 import { criarConvite, revogarConvite, revogarAcesso } from './actions'
+import { CopiarLink } from './copiar-link'
+import { RedesCheckboxes } from './redes-checkboxes'
 
 const PAPEL_LABEL = { gerente: 'Gerente', visualizador: 'Visualizador' } as const
 
@@ -57,13 +59,14 @@ export default async function UsuariosPage({
       )}
 
       {link && (
-        <div role="status" className="flex items-start gap-2.5 rounded-lg border border-[var(--color-success)]/30 bg-[var(--color-success-soft)] px-3.5 py-3 text-[12px] leading-relaxed text-[var(--color-success-soft-fg)]">
-          <CheckCircle size={14} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-success)]" />
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-            <span>Link gerado — copie e mande pra pessoa:</span>
+        <div role="status" className="flex items-start gap-2.5 rounded-lg border border-[var(--color-success)]/40 bg-[var(--color-success-soft)] px-4 py-3.5 text-[13px] leading-relaxed text-[var(--color-success-soft-fg)]">
+          <CheckCircle size={18} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-success)]" />
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+            <span className="font-medium">Convite criado com sucesso.</span>
             <code className="min-w-0 flex-1 truncate rounded border border-[var(--color-success)]/30 bg-[var(--color-bg-elevated)] px-2 py-1 text-[11px] text-[var(--color-fg)]">
               {origin}/convite/{link}
             </code>
+            <CopiarLink texto={`${origin}/convite/${link}`} />
           </div>
         </div>
       )}
@@ -94,20 +97,7 @@ export default async function UsuariosPage({
               <input type="hidden" name="papel" value="visualizador" />
             )}
 
-            <div className="flex flex-col gap-2">
-              <Label>Redes que esse login pode ver</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {redesDisponiveis.map(r => (
-                  <label
-                    key={r}
-                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 py-1.5 text-[12px] font-medium text-[var(--color-fg-muted)] transition-colors has-[:checked]:border-[var(--color-accent)] has-[:checked]:bg-[var(--color-accent-soft)] has-[:checked]:text-[var(--color-accent-soft-fg)]"
-                  >
-                    <input type="checkbox" name="redes" value={r} className="sr-only" />
-                    {REDE_LABEL[r] ?? r}
-                  </label>
-                ))}
-              </div>
-            </div>
+            <RedesCheckboxes opcoes={redesDisponiveis} />
 
             <Button type="submit" className="self-start">Gerar link de convite</Button>
           </form>
@@ -134,6 +124,7 @@ export default async function UsuariosPage({
                     {origin}/convite/{c.token as string}
                   </code>
                 </div>
+                <CopiarLink texto={`${origin}/convite/${c.token as string}`} />
                 <form action={revogarConvite.bind(null, c.token as string)}>
                   <Button type="submit" variant="ghost" size="sm">
                     <X size={13} weight="bold" /> Cancelar
