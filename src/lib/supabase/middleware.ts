@@ -67,6 +67,7 @@ export async function updateSession(request: NextRequest) {
         path === '/painel' ||
         path === '/api/dashboard' ||
         path === '/api/dashboard/beta' ||
+        path === '/api/dashboard/export-mensal' ||
         (path === '/painel/usuarios' && perfil.papel === 'gerente')
       if (!permitido) {
         if (path.startsWith('/api/')) {
