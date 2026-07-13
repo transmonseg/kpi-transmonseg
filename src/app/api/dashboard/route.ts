@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { calcularMetricas, filtrar } from '@/lib/kpi/dashboard-metricas'
 import { intervaloPeriodo, intervaloAnterior, carregarEntradasManuais } from '@/lib/kpi/dashboard-query'
 import { hojeBR } from '@/lib/data-br'
+import { getPerfil, redesEfetivas } from '@/lib/perfil'
 
 export const runtime = 'nodejs'
 
@@ -11,6 +12,7 @@ export async function GET(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
+  const perfil = await getPerfil(user.id)
 
   const u = new URL(req.url)
   const periodo = u.searchParams.get('periodo') ?? 'dia'
@@ -18,7 +20,9 @@ export async function GET(req: NextRequest) {
   const [ini, fim] = periodo === 'custom'
     ? [u.searchParams.get('de') ?? ref, u.searchParams.get('ate') ?? ref]
     : intervaloPeriodo(periodo, ref)
-  const redes = (u.searchParams.get('redes') ?? '').split(',').filter(Boolean)
+  // Login restrito (gerente/visualizador) só enxerga a interseção com o que o
+  // perfil permite — defesa em profundidade, não confia só no filtro da tela.
+  const redes = redesEfetivas(perfil, (u.searchParams.get('redes') ?? '').split(',').filter(Boolean))
   // completo=1 (página de rankings) traz as listas inteiras, sem o corte top-N.
   const completo = u.searchParams.get('completo') === '1'
 

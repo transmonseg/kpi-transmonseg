@@ -11,11 +11,12 @@ import { TourRunner } from './tour-runner'
 
 type Props = {
   userEmail: string | null | undefined
+  papel: 'admin' | 'gerente' | 'visualizador'
   sairAction: () => void | Promise<void>
   children: React.ReactNode
 }
 
-export function PainelShell({ userEmail, sairAction, children }: Props) {
+export function PainelShell({ userEmail, papel, sairAction, children }: Props) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
 
@@ -55,7 +56,7 @@ export function PainelShell({ userEmail, sairAction, children }: Props) {
         style={{ colorScheme: 'dark' }}
       >
         <SidebarBrand />
-        <PainelNav />
+        <PainelNav papel={papel} />
         <SidebarFooter userEmail={userEmail} sairAction={sairAction} />
       </aside>
 
@@ -87,7 +88,7 @@ export function PainelShell({ userEmail, sairAction, children }: Props) {
           }
         >
           <SidebarBrand onCloseHint={() => setOpen(false)} />
-          <PainelNav />
+          <PainelNav papel={papel} />
           <SidebarFooter userEmail={userEmail} sairAction={sairAction} />
         </aside>
       </div>

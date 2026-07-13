@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { resolveUserDesktopAware } from './desktop-auth'
+import { getPerfil } from '@/lib/perfil'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -31,13 +32,16 @@ export async function updateSession(request: NextRequest) {
   const user = await resolveUserDesktopAware(supabase)
 
   const path = request.nextUrl.pathname
-  const isAuthPage = path.startsWith('/login') || path.startsWith('/cadastro')
+  // /cadastro fechado (auditoria de segurança, commit 1f82413): daqui pra frente
+  // login novo só nasce de convite (/convite/<token>), gerado por admin/gerente.
+  const isAuthPage = path.startsWith('/login')
   // /dashboard (e o alias antigo /apresentacao, que só redireciona pra lá) é o
   // link público sem login; a API que ele consome também precisa passar aqui.
   const isDashboardPublico = path === '/dashboard' || path.startsWith('/dashboard/') ||
     path === '/apresentacao' || path.startsWith('/apresentacao/') ||
     path === '/api/dashboard/publico'
-  const isPublic = path === '/' || isAuthPage || isDashboardPublico
+  const isConvite = path.startsWith('/convite/')
+  const isPublic = path === '/' || isAuthPage || isDashboardPublico || isConvite
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
@@ -50,6 +54,29 @@ export async function updateSession(request: NextRequest) {
     // Desktop cai na tela offline (Gerar KPI); site vai pro painel (dashboard).
     url.pathname = process.env.DESKTOP_APP === '1' ? '/painel/kpi/simples' : '/painel'
     return NextResponse.redirect(url)
+  }
+
+  // Login restrito (gerente/visualizador): só a tela de Dashboard (/painel), a
+  // tela de convidados do gerente, e as APIs que a própria tela de Dashboard usa.
+  // Qualquer outra rota do sistema (KPI, Lojas, Cozinha, Histórico) é bloqueada —
+  // ver docs/superpowers/specs/2026-07-13-rbac-dashboard-design.md.
+  if (user && !isPublic) {
+    const perfil = await getPerfil(user.id)
+    if (perfil.papel !== 'admin') {
+      const permitido =
+        path === '/painel' ||
+        path === '/api/dashboard' ||
+        path === '/api/dashboard/beta' ||
+        (path === '/painel/usuarios' && perfil.papel === 'gerente')
+      if (!permitido) {
+        if (path.startsWith('/api/')) {
+          return new NextResponse('Sem permissão.', { status: 403 })
+        }
+        const url = request.nextUrl.clone()
+        url.pathname = '/painel'
+        return NextResponse.redirect(url)
+      }
+    }
   }
 
   return supabaseResponse

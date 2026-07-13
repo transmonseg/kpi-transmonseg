@@ -7,6 +7,7 @@ import { hojeBR } from '@/lib/data-br'
 import { parseEscalaArquivo } from '@/lib/parsers/escala-arquivo'
 import { gerarDiaApi, salvarDiaApi, carregarEntradasApi, carregarResumosApi, type EscalaParaDia } from '@/lib/kpi/dashboard-api-fonte'
 import type { LojaRow, GeoStore } from '@/lib/kpi/matcher'
+import { getPerfil, redesEfetivas } from '@/lib/perfil'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -53,6 +54,9 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
+  // Gera e GRAVA o KPI do dia — login restrito (gerente/visualizador) é só-leitura.
+  const perfil = await getPerfil(user.id)
+  if (perfil.papel !== 'admin') return new NextResponse('Sem permissão.', { status: 403 })
   const body = await req.json().catch(() => null)
   const data: string = body?.data
   if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data)) return new NextResponse('Data inválida (YYYY-MM-DD).', { status: 400 })
@@ -73,13 +77,14 @@ export async function GET(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
+  const perfil = await getPerfil(user.id)
   const u = new URL(req.url)
   const periodo = u.searchParams.get('periodo') ?? 'dia'
   const ref = u.searchParams.get('data') ?? hojeBR()
   const [ini, fim] = periodo === 'custom'
     ? [u.searchParams.get('de') ?? ref, u.searchParams.get('ate') ?? ref]
     : intervaloPeriodo(periodo, ref)
-  const redes = (u.searchParams.get('redes') ?? '').split(',').filter(Boolean)
+  const redes = redesEfetivas(perfil, (u.searchParams.get('redes') ?? '').split(',').filter(Boolean))
   const completo = u.searchParams.get('completo') === '1'
 
   const svc = createServiceClient()

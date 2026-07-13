@@ -17,8 +17,10 @@ import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 
 type Leaf = { href: string; label: string; Icon: PhosphorIcon; exact?: boolean }
 type Group = { label: string; Icon: PhosphorIcon; href?: string; children: Leaf[] }
+type Papel = 'admin' | 'gerente' | 'visualizador'
 
 const DASHBOARD: Leaf = { href: '/painel', label: 'Dashboard', Icon: ChartBar }
+const USUARIOS: Leaf = { href: '/painel/usuarios', label: 'Usuários', Icon: UsersThree }
 
 const GROUPS: Group[] = [
   {
@@ -134,12 +136,26 @@ function GroupBlock({ group, pathname }: { group: Group; pathname: string }) {
   )
 }
 
-export function PainelNav() {
+export function PainelNav({ papel }: { papel: Papel }) {
   const pathname = usePathname()
+
+  // Login restrito (gerente/visualizador): só Dashboard (+ Usuários pro gerente,
+  // que pode convidar visualizadores). Sem acesso a KPI/Cozinha.
+  if (papel !== 'admin') {
+    return (
+      <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
+        <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
+        {papel === 'gerente' && (
+          <LeafLink item={USUARIOS} active={pathname.startsWith('/painel/usuarios')} />
+        )}
+      </nav>
+    )
+  }
 
   return (
     <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
       <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
+      <LeafLink item={USUARIOS} active={pathname.startsWith('/painel/usuarios')} />
 
       <div className="my-2 h-px bg-[var(--color-sidebar-border)]" />
 

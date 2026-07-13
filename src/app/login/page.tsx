@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowUpRight, WarningCircle, CaretLeft } from '@phosphor-icons/react/dist/ssr'
+import { ArrowUpRight, WarningCircle, CheckCircle, CaretLeft } from '@phosphor-icons/react/dist/ssr'
 import { Input, Label } from '@/components/ui'
 import { ThemeToggle } from '@/lib/theme/ThemeToggle'
 import { login } from './actions'
@@ -7,9 +7,9 @@ import { login } from './actions'
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ erro?: string }>
+  searchParams: Promise<{ erro?: string; sucesso?: string }>
 }) {
-  const { erro } = await searchParams
+  const { erro, sucesso } = await searchParams
 
   return (
     <div className="relative flex min-h-[100dvh] items-center justify-center overflow-hidden bg-[var(--color-bg)] px-6 py-10 text-[var(--color-fg)]">
@@ -96,6 +96,16 @@ export default async function LoginPage({
                 </div>
               )}
 
+              {sucesso && (
+                <div
+                  role="status"
+                  className="flex items-start gap-2.5 rounded-lg border border-[var(--color-success)]/30 bg-[var(--color-success-soft)] px-3.5 py-3 text-[12px] leading-relaxed text-[var(--color-success-soft-fg)]"
+                >
+                  <CheckCircle size={14} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-success)]" />
+                  <span>{decodeURIComponent(sucesso)}</span>
+                </div>
+              )}
+
               <button
                 type="submit"
                 className="group mt-2 inline-flex h-12 items-center justify-between rounded-full bg-[var(--color-navy-700)] pl-6 pr-2 text-[14px] font-medium text-white transition-all duration-[700ms] ease-[cubic-bezier(0.32,0.72,0,1)] hover:opacity-90 active:scale-[0.98]"
@@ -108,16 +118,6 @@ export default async function LoginPage({
             </form>
           </div>
         </div>
-
-        <p className="mt-6 text-center text-[13px] text-[var(--color-fg-muted)]">
-          Não tem conta?{' '}
-          <Link
-            href="/cadastro"
-            className="font-medium text-[var(--color-fg)] underline decoration-[var(--color-navy-700)] underline-offset-[3px] transition-colors hover:text-[var(--color-navy-700)] dark:hover:text-[var(--color-navy-300)]"
-          >
-            Criar conta
-          </Link>
-        </p>
       </div>
     </div>
   )

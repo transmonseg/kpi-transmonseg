@@ -92,12 +92,13 @@ const fmtMin = (n: number | null | undefined) => {
   return h > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${m}min`
 }
 
-export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint = '/api/dashboard', basePath = '/painel' }: { resumo?: ResumoOperacaoData; tabInicial?: Tab; endpoint?: string; basePath?: string }) {
+export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint = '/api/dashboard', basePath = '/painel', redesPermitidas }: { resumo?: ResumoOperacaoData; tabInicial?: Tab; endpoint?: string; basePath?: string; redesPermitidas?: string[] }) {
   const router = useRouter()
   const sp = useSearchParams()
-  // Standalone (link público, sem login): trava em "Visão geral" — Inserir KPIs e
-  // Histórico exigem sessão e não fazem sentido pra quem abriu sem conta.
-  const standalone = basePath !== '/painel'
+  // Standalone (link público sem login, OU login restrito de dashboard): trava em
+  // "Visão geral" — Inserir KPIs e Histórico exigem acesso completo ao sistema.
+  const standalone = basePath !== '/painel' || !!redesPermitidas
+  const opcoesRedes = redesPermitidas ?? [...REDES]
   const tab = standalone ? 'geral' : (sp.get('tab') as Tab) || tabInicial
   const setTab = (t: Tab) => router.replace(t === 'geral' ? basePath : `${basePath}?tab=${t}`, { scroll: false })
   const [periodo, setPeriodo] = useState<Periodo>('mes')
@@ -240,7 +241,7 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
             <VisaoGeral
               periodo={periodo} setPeriodo={setPeriodo} data={data} setData={setData}
               de={de} setDe={setDe} ate={ate} setAte={setAte}
-              redes={redes} setRedes={setRedes} m={mFinal} mAnt={mAntFinal} intervalo={intervalo}
+              redes={redes} setRedes={setRedes} opcoesRedes={opcoesRedes} m={mFinal} mAnt={mAntFinal} intervalo={intervalo}
               carregando={carregandoFinal} erro={erroFinal} onRetry={recarregar} mes={mesAtual}
               resumoRisco={betaResumo} riscoCarregando={betaCarregando} fonte={fonteDados}
             />
@@ -258,13 +259,13 @@ function VisaoGeral(props: {
   periodo: Periodo; setPeriodo: (p: Periodo) => void
   data: string; setData: (d: string) => void
   de: string; setDe: (d: string) => void; ate: string; setAte: (d: string) => void
-  redes: string[]; setRedes: (r: string[]) => void
+  redes: string[]; setRedes: (r: string[]) => void; opcoesRedes: string[]
   m: Metricas | null; mAnt: Metricas | null; intervalo: [string, string] | null
   carregando: boolean; erro: boolean; onRetry: () => void; mes: string
   resumoRisco: ResumoApi | null; riscoCarregando: boolean
   fonte: 'planilha' | 'rastreamento' | null
 }) {
-  const { periodo, setPeriodo, data, setData, de, setDe, ate, setAte, redes, setRedes, m, mAnt, intervalo, carregando, erro, onRetry, mes, resumoRisco, riscoCarregando, fonte } = props
+  const { periodo, setPeriodo, data, setData, de, setDe, ate, setAte, redes, setRedes, opcoesRedes, m, mAnt, intervalo, carregando, erro, onRetry, mes, resumoRisco, riscoCarregando, fonte } = props
 
   return (
     <div className="space-y-8">
@@ -328,7 +329,7 @@ function VisaoGeral(props: {
           </span>
         )}
         {/* Filtro de redes recolhido num dropdown — não polui o topo com 18 chips */}
-        <div data-tour="filtro-redes" className="ml-auto"><RedesFiltro redes={redes} setRedes={setRedes} /></div>
+        <div data-tour="filtro-redes" className="ml-auto"><RedesFiltro redes={redes} setRedes={setRedes} opcoes={opcoesRedes} /></div>
       </div>
 
       {carregando ? <Skeleton /> : erro ? <Erro onRetry={onRetry} /> : !m || m.total === 0 ? <Vazio /> : (
@@ -340,7 +341,7 @@ function VisaoGeral(props: {
 
 // Filtro de redes recolhido: botão "Redes: Todas ▾" abre um painel com os chips.
 // Mantém todos os filtros, mas tira os 18 chips da cara do topo.
-function RedesFiltro({ redes, setRedes }: { redes: string[]; setRedes: (r: string[]) => void }) {
+function RedesFiltro({ redes, setRedes, opcoes }: { redes: string[]; setRedes: (r: string[]) => void; opcoes: string[] }) {
   const [aberto, setAberto] = useState(false)
   const toggleRede = (r: string) => setRedes(redes.includes(r) ? redes.filter(x => x !== r) : [...redes, r])
   const label = redes.length === 0 ? 'Todas as redes' : redes.length === 1 ? (REDE_LABEL[redes[0]] ?? redes[0]) : `${redes.length} redes`
@@ -365,7 +366,7 @@ function RedesFiltro({ redes, setRedes }: { redes: string[]; setRedes: (r: strin
             </div>
             <div className="flex flex-wrap gap-1.5">
               <Chip ativo={redes.length === 0} onClick={() => setRedes([])}>Todas</Chip>
-              {REDES.map(r => (
+              {opcoes.map(r => (
                 <Chip key={r} ativo={redes.includes(r)} onClick={() => toggleRede(r)}>{REDE_LABEL[r] ?? r}</Chip>
               ))}
             </div>
