@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 
 export async function resgatar(token: string, formData: FormData) {
@@ -44,6 +45,12 @@ export async function resgatar(token: string, formData: FormData) {
   await svc.from('convites')
     .update({ usado_em: new Date().toISOString(), usado_por: created.user.id })
     .eq('token', token)
+
+  // Quem resgata o convite pode já estar logado (o próprio admin/gerente testando
+  // o link no mesmo navegador) — sem isso, o /login barra a entrada de volta pra
+  // sessão antiga e a conta nova nunca é usada de verdade.
+  const supabase = await createClient()
+  await supabase.auth.signOut()
 
   redirect('/login?sucesso=' + encodeURIComponent('Conta criada! Entre com o email e a senha que você acabou de definir.'))
 }
