@@ -41,6 +41,15 @@ const GROUPS: Group[] = [
       { href: '/painel/cozinha/clientes', label: 'Clientes', Icon: UsersThree },
     ],
   },
+  {
+    label: 'Nutrimax',
+    Icon: TableIcon,
+    children: [
+      { href: '/painel/nutrimax/gerar', label: 'Gerar KPI', Icon: TableIcon },
+      { href: '/painel/nutrimax/inserir', label: 'Inserir KPI', Icon: TableIcon },
+      { href: '/painel/nutrimax/dashboard', label: 'Dashboard', Icon: ChartBar },
+    ],
+  },
 ]
 
 function leafActive(pathname: string, href: string, exact?: boolean) {

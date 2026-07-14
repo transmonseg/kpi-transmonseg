@@ -1,5 +1,6 @@
 export const BASE = 'https://datalayer.portalunitrac.com'
 export const COD_USER = '4586' // Benassi / conta transmonseg
+export const COD_USER_NUTRIMAX = '4096' // Nutrimax / conta erica.rastreamento
 
 const TIMEOUT_MS = 6000
 
