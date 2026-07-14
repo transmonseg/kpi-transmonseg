@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { parseKpiManual, parseKpiManualTodasAbas, mensagemDiagnostico } from '@/lib/kpi/parse-kpi-manual'
-import { replaceEntradasManualMes, deleteEntradasManualMes } from '@/lib/kpi/manual-import'
+import { replaceEntradasManualMes, deleteEntradasManualMes, ultimoDiaDoMes } from '@/lib/kpi/manual-import'
 import { puxarResumoDoPdfDoDia } from '@/lib/kpi/resumo-do-pdf'
 
 export const runtime = 'nodejs'
@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
   const data = String(form.get('data') ?? '')  // 'YYYY-MM-DD' → modo aba única (legado)
   const rede_id = String(form.get('rede_id') ?? '')
   const file = form.get('file')
+  const confirmar = String(form.get('confirmar') ?? '') === 'true'
   if (!rede_id) return new NextResponse('rede_id obrigatório', { status: 400 })
   if (!(file instanceof File)) return new NextResponse('Arquivo obrigatório', { status: 400 })
 
@@ -30,6 +31,28 @@ export async function POST(req: NextRequest) {
     const { entradas, dias, diag } = await parseKpiManualTodasAbas(buf, rede_id, mes)
     if (entradas.length === 0) {
       return new NextResponse(mensagemDiagnostico(diag), { status: 422 })
+    }
+    // A RPC abaixo APAGA o mês inteiro da rede antes de inserir. Se a planilha nova
+    // cobre menos dias que o que já está salvo, isso apaga dias bons silenciosamente
+    // (foi exatamente o que aconteceu com julho/2026). Avisa e exige confirmação antes.
+    if (!confirmar) {
+      const diasNovos = new Set(dias)
+      const { data: existentes, error: errExist } = await svc
+        .from('kpi_manual_entradas')
+        .select('data')
+        .eq('rede_id', rede_id)
+        .gte('data', `${mes}-01`)
+        .lte('data', ultimoDiaDoMes(mes))
+      if (errExist) return new NextResponse(errExist.message, { status: 500 })
+      const diasPerdidos = [...new Set((existentes ?? []).map(r => r.data as string))]
+        .filter(d => !diasNovos.has(d))
+        .sort()
+      if (diasPerdidos.length > 0) {
+        return NextResponse.json(
+          { precisaConfirmar: true, diasPerdidos, diasNovos: dias.length },
+          { status: 409 },
+        )
+      }
     }
     // sobrescreve o mês inteiro desta rede numa RPC transacional
     try {

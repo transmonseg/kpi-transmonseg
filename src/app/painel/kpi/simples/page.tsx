@@ -811,6 +811,7 @@ export default function KpiSimplesPage() {
   const [redes, setRedes] = useState<RedeResult[] | null>(null)
   const [lojasNovas, setLojasNovas] = useState<LojaNova[]>([])
   const [avisosEscala, setAvisosEscala] = useState<string[]>([])
+  const [redesComErro, setRedesComErro] = useState<{ rede_id: string; erro_mensagem: string }[]>([])
   const [erro, setErro] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [bucketPaths, setBucketPaths] = useState<{ escalaBucketPaths: string[]; unitracBucketPaths: string[] } | null>(null)
@@ -918,6 +919,7 @@ export default function KpiSimplesPage() {
     setErro(null)
     setRedes(null)
     setLojasNovas([])
+    setRedesComErro([])
     setLineEdits({})
 
     startTransition(async () => {
@@ -954,10 +956,11 @@ export default function KpiSimplesPage() {
           body: JSON.stringify({ escalaBucketPaths, unitracBucketPaths, data, alteracoes, ...(modoApi ? { modoApi: true } : {}) }),
         })
         if (!res.ok) throw new Error((await res.text()) || 'Erro ao processar.')
-        const json = await res.json() as { redes: RedeResult[]; geracao_id?: string; lojasNovas?: LojaNova[]; avisosEscala?: string[] }
+        const json = await res.json() as { redes: RedeResult[]; geracao_id?: string; lojasNovas?: LojaNova[]; avisosEscala?: string[]; redes_com_erro?: { rede_id: string; erro_mensagem: string }[] }
         setRedes(json.redes)
         setLojasNovas(json.lojasNovas ?? [])
         setAvisosEscala(json.avisosEscala ?? [])
+        setRedesComErro(json.redes_com_erro ?? [])
         if (json.geracao_id) setGeracaoId(json.geracao_id)
       } catch (e) {
         setErro(e instanceof Error ? e.message : 'Erro inesperado.')
@@ -990,10 +993,11 @@ export default function KpiSimplesPage() {
           body: JSON.stringify({ ...bucketPaths, data, alteracoes, lineEdits: editsArr }),
         })
         if (!res.ok) throw new Error((await res.text()) || 'Erro ao processar.')
-        const json = await res.json() as { redes: RedeResult[]; geracao_id?: string; lojasNovas?: LojaNova[]; avisosEscala?: string[] }
+        const json = await res.json() as { redes: RedeResult[]; geracao_id?: string; lojasNovas?: LojaNova[]; avisosEscala?: string[]; redes_com_erro?: { rede_id: string; erro_mensagem: string }[] }
         setRedes(json.redes)
         setLojasNovas(json.lojasNovas ?? [])
         setAvisosEscala(json.avisosEscala ?? [])
+        setRedesComErro(json.redes_com_erro ?? [])
         if (json.geracao_id) setGeracaoId(json.geracao_id)
       } catch (e) {
         setErro(e instanceof Error ? e.message : 'Erro inesperado.')
@@ -1223,12 +1227,31 @@ export default function KpiSimplesPage() {
       )}
 
       {/* Empty result */}
-      {redes && redes.length === 0 && (
+      {redes && redes.length === 0 && redesComErro.length === 0 && (
         <div className="mt-8 flex flex-col items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-6 py-12 text-center">
           <ChartBarHorizontal size={28} weight="bold" className="text-[var(--color-fg-subtle)]" />
           <p className="text-[14px] text-[var(--color-fg-muted)]">
             Nenhuma rede encontrada. Verifique os arquivos enviados.
           </p>
+        </div>
+      )}
+
+      {/* Todas as redes falharam — não é "sem dado", é erro de verdade */}
+      {redes && redes.length === 0 && redesComErro.length > 0 && (
+        <div className="mt-8 flex items-start gap-3 rounded-[var(--radius-card)] border-2 border-[var(--color-danger)] bg-[var(--color-danger-soft)] px-5 py-4">
+          <WarningCircle size={24} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-danger)]" />
+          <div className="text-sm">
+            <p className="text-[15px] font-bold text-[var(--color-danger-soft-fg)]">
+              ⚠ Todas as {redesComErro.length} rede{redesComErro.length !== 1 ? 's' : ''} falharam na geração
+            </p>
+            <ul className="mt-1.5 flex flex-col gap-0.5 text-[12.5px] text-[var(--color-danger-soft-fg)]">
+              {redesComErro.map(r => (
+                <li key={r.rede_id}>
+                  <span className="font-semibold">{r.rede_id}</span>: {r.erro_mensagem}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       )}
 
@@ -1251,6 +1274,24 @@ export default function KpiSimplesPage() {
                       <span className="text-numeric font-semibold tracking-wider">{l.codigo}</span>
                       <span className="text-[var(--color-fg-muted)]">{l.nome || '(sem nome no relatório)'}</span>
                       <span className="text-[11px] text-[var(--color-fg-subtle)]">· {l.vezes}× · ex. {l.placa}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+          {redesComErro.length > 0 && (
+            <div className="flex items-start gap-3 rounded-[var(--radius-card)] border-2 border-[var(--color-danger)] bg-[var(--color-danger-soft)] px-5 py-4">
+              <WarningCircle size={24} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-danger)]" />
+              <div className="text-sm">
+                <p className="text-[15px] font-bold text-[var(--color-danger-soft-fg)]">
+                  ⚠ {redesComErro.length} rede{redesComErro.length !== 1 ? 's' : ''} falhou{redesComErro.length !== 1 ? 'ram' : ''} na geração — {redes ? redes.length : 0} de {(redes?.length ?? 0) + redesComErro.length} concluídas
+                </p>
+                <p className="mt-0.5 text-[var(--color-danger-soft-fg)]">Essas redes NÃO aparecem no resultado abaixo. Corrija o problema e gere de novo antes de subir pro Dashboard:</p>
+                <ul className="mt-1.5 flex flex-col gap-0.5 text-[12.5px] text-[var(--color-danger-soft-fg)]">
+                  {redesComErro.map(r => (
+                    <li key={r.rede_id}>
+                      <span className="font-semibold">{r.rede_id}</span>: {r.erro_mensagem}
                     </li>
                   ))}
                 </ul>

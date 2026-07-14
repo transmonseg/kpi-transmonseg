@@ -92,7 +92,22 @@ export default function InserirManual({ data, onChange }: { data: string; onChan
     fd.set('rede_id', rede); fd.set('file', file)
     if (modo === 'mes') fd.set('mes', mes); else fd.set('data', data)
     try {
-      const r = await fetch('/api/kpi-manual/upload', { method: 'POST', body: fd })
+      let r = await fetch('/api/kpi-manual/upload', { method: 'POST', body: fd })
+      // Modo mês: a planilha nova cobre menos dias do que já está salvo — confirma
+      // antes de deixar apagar dias bons (upload no modo mês SUBSTITUI o mês inteiro).
+      if (r.status === 409) {
+        const j409 = await r.json().catch(() => null) as { diasPerdidos?: string[] } | null
+        const dias = j409?.diasPerdidos ?? []
+        const ok = window.confirm(
+          `Essa planilha só cobre ${dias.length > 0 ? 'menos dias que o já salvo' : 'parte do mês'}. ` +
+          `Os seguintes dias JÁ SALVOS de ${REDE_LABEL[rede] ?? rede} serão APAGADOS por não estarem na planilha nova:\n\n` +
+          dias.map(ddmm).join(', ') +
+          `\n\nContinuar e apagar esses dias?`
+        )
+        if (!ok) { setEstados(s => ({ ...s, [rede]: { status: 'erro', msg: 'envio cancelado — planilha incompleta em relação ao que já está salvo' } })); return }
+        fd.set('confirmar', 'true')
+        r = await fetch('/api/kpi-manual/upload', { method: 'POST', body: fd })
+      }
       if (!r.ok) { const msg = await r.text(); setEstados(s => ({ ...s, [rede]: { status: 'erro', msg } })); return }
       const j = await r.json()
       setEstados(s => ({ ...s, [rede]: { status: 'ok', lojas: j.inseridas, dias: j.dias } }))
