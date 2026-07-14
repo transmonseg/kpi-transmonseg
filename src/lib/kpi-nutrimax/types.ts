@@ -45,3 +45,27 @@ export type EntradaNutrimax = {
   status: 'entregue' | 'pendente'
   hora_realizado: string | null // ISO, null quando pendente
 }
+
+/** Um cliente dentro da aba de uma placa, no relatório de conferência. */
+export type ClienteRomaneioResumo = {
+  nf: string
+  clienteNome: string
+  endereco: string | null
+}
+
+/** Uma linha do relatório "Romaneio Nutry" — uma carga/placa da escala, com o resultado
+ *  da conferência contra o romaneio e os clientes encontrados. */
+export type RelatorioPlacaNutrimax = {
+  carga: string
+  placaRaw: string
+  placaNorm: string
+  destino: string
+  motorista: string
+  ajudante1: string | null
+  ajudante2: string | null
+  pesoKg: number | null
+  nfPlanejado: number | null
+  nfRecebido: number
+  status: 'ok' | 'divergente' | 'ausente'
+  clientes: ClienteRomaneioResumo[]
+}
