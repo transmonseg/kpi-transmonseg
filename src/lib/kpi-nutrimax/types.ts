@@ -11,6 +11,26 @@ export type LinhaRomaneioNutrimax = {
   endereco: string
 }
 
+/** Uma linha da Escala de Rota — o planejado (qual placa vai pra qual destino, quantos NFs). */
+export type LinhaEscalaNutrimax = {
+  carga: string
+  placaRaw: string
+  placaNorm: string
+  destino: string
+  motorista: string
+  ajudante1: string | null
+  ajudante2: string | null
+  pesoKg: number | null
+  entPlanejado: number | null
+  nfPlanejado: number | null
+}
+
+/** Aviso de cobertura ao cruzar a Escala (planejado) com o Romaneio (executado). */
+export type AvisoCoberturaNutrimax =
+  | { tipo: 'carga_ausente'; carga: string; destino: string; placa: string }
+  | { tipo: 'placa_divergente'; carga: string; placaEscala: string; placaRomaneio: string }
+  | { tipo: 'entregas_incompletas'; carga: string; planejado: number; recebido: number }
+
 /** Uma linha pronta pra persistir em kpi_nutrimax_entradas — já cruzada com o Unitrac. */
 export type EntradaNutrimax = {
   data: string // YYYY-MM-DD
