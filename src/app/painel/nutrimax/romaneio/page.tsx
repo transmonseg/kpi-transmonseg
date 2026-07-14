@@ -1,12 +1,23 @@
 'use client'
 
-import { useState } from 'react'
-import { ArrowRight, CalendarBlank, WarningCircle, FileArrowDown } from '@phosphor-icons/react/dist/ssr'
-import { cn } from '@/components/ui'
+import { useMemo, useState } from 'react'
+import { ArrowRight, CalendarBlank, WarningCircle, FileArrowDown, Truck } from '@phosphor-icons/react/dist/ssr'
+import { Badge, cn } from '@/components/ui'
 import { FileDropzone } from '@/app/painel/file-dropzone'
 
 type Resumo = { total: number; ok: number; divergentes: number; ausentes: number }
 type Tone = 'default' | 'success' | 'warning' | 'danger'
+type StatusLinha = 'ok' | 'divergente' | 'ausente'
+type Linha = {
+  carga: string
+  placa: string
+  destino: string
+  motorista: string
+  nfPlanejado: number | null
+  nfRecebido: number
+  status: StatusLinha
+}
+type Filtro = 'todas' | 'problemas' | 'ok'
 
 export default function NutrimaxRomaneioPage() {
   const [escala, setEscala] = useState<File[]>([])
@@ -15,6 +26,8 @@ export default function NutrimaxRomaneioPage() {
   const [pending, setPending] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [resumo, setResumo] = useState<Resumo | null>(null)
+  const [linhas, setLinhas] = useState<Linha[]>([])
+  const [filtro, setFiltro] = useState<Filtro>('problemas')
   const [resultado, setResultado] = useState<{ xlsxBase64: string; filename: string } | null>(null)
 
   const pronto = escala.length > 0 && romaneio.length > 0 && !!data
@@ -24,6 +37,7 @@ export default function NutrimaxRomaneioPage() {
     setPending(true)
     setErro(null)
     setResumo(null)
+    setLinhas([])
     setResultado(null)
     try {
       const fd = new FormData()
@@ -32,8 +46,10 @@ export default function NutrimaxRomaneioPage() {
       fd.set('data', data)
       const res = await fetch('/api/kpi/nutrimax/romaneio', { method: 'POST', body: fd })
       if (!res.ok) throw new Error(await res.text())
-      const json = await res.json() as { resumo: Resumo; xlsxBase64: string; filename: string }
+      const json = await res.json() as { resumo: Resumo; linhas: Linha[]; xlsxBase64: string; filename: string }
       setResumo(json.resumo)
+      setLinhas(json.linhas)
+      setFiltro(json.resumo.divergentes + json.resumo.ausentes > 0 ? 'problemas' : 'todas')
       setResultado({ xlsxBase64: json.xlsxBase64, filename: json.filename })
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Erro inesperado.')
@@ -56,6 +72,12 @@ export default function NutrimaxRomaneioPage() {
     URL.revokeObjectURL(url)
   }
 
+  const linhasFiltradas = useMemo(() => {
+    if (filtro === 'todas') return linhas
+    if (filtro === 'ok') return linhas.filter(l => l.status === 'ok')
+    return linhas.filter(l => l.status !== 'ok')
+  }, [linhas, filtro])
+
   return (
     <div className="mx-auto w-full max-w-[1200px]">
       <header className="mb-10 flex flex-col gap-1.5">
@@ -63,12 +85,11 @@ export default function NutrimaxRomaneioPage() {
           Nutrimax
         </span>
         <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.02em] text-[var(--color-fg)] md:text-[34px]">
-          Romaneio Nutry
+          Gerar Romaneio
         </h1>
         <p className="mt-1 max-w-[55ch] text-[14px] leading-relaxed text-[var(--color-fg-muted)]">
           Suba a Escala de Rota e o Romaneio de Entrega. Confere cada placa da escala contra o
-          romaneio (sem consultar o Unitrac) e devolve um XLSX com uma aba de resumo e uma aba
-          por placa.
+          romaneio e devolve um XLSX com uma aba de resumo e uma aba por placa.
         </p>
       </header>
 
@@ -122,27 +143,78 @@ export default function NutrimaxRomaneioPage() {
 
       {resumo && (
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <CardResumo label="Total" valor={resumo.total} tone="default" />
+          <CardResumo label="Total de cargas" valor={resumo.total} tone="default" />
           <CardResumo label="OK" valor={resumo.ok} tone="success" />
           <CardResumo label="Divergentes" valor={resumo.divergentes} tone="warning" />
           <CardResumo label="Ausentes" valor={resumo.ausentes} tone="danger" />
         </div>
       )}
 
-      {resultado && (
-        <div className="mt-6 flex items-center justify-between gap-3 rounded-[var(--radius-card)] border border-[var(--color-success)]/30 bg-[var(--color-success-soft)] px-5 py-4">
-          <span className="text-[13px] text-[var(--color-success-soft-fg)]">
-            Relatório gerado. Baixe o XLSX — aba &quot;Resumo&quot; lista tudo, uma aba por placa
-            traz o detalhe.
-          </span>
-          <button
-            type="button"
-            onClick={baixar}
-            className="flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--color-navy-700)] px-4 py-2 text-[12.5px] font-medium text-white"
-          >
-            <FileArrowDown size={14} weight="bold" />
-            Baixar XLSX
-          </button>
+      {resumo && (
+        <div className="mt-6 overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] px-5 py-3">
+            <div className="flex items-center gap-3">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-fg)]">
+                <Truck size={16} weight="fill" className="text-[var(--color-accent)]" />
+                Cargas
+              </h2>
+              <FiltroChips filtro={filtro} setFiltro={setFiltro} resumo={resumo} />
+            </div>
+            {resultado && (
+              <button
+                type="button"
+                onClick={baixar}
+                className="flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--color-navy-700)] px-4 py-2 text-[12.5px] font-medium text-white transition-opacity hover:opacity-90"
+              >
+                <FileArrowDown size={14} weight="bold" />
+                Baixar XLSX
+              </button>
+            )}
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] text-left">
+                  <th className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Carga</th>
+                  <th className="w-32 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Placa</th>
+                  <th className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Destino</th>
+                  <th className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Motorista</th>
+                  <th className="w-24 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">NFs</th>
+                  <th className="w-32 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {linhasFiltradas.map(l => (
+                  <tr
+                    key={`${l.carga}-${l.placa}`}
+                    className={cn(
+                      'border-b border-[var(--color-border)] last:border-0',
+                      l.status !== 'ok' && 'bg-[var(--color-warning-soft)]/20',
+                    )}
+                  >
+                    <td className="px-4 py-1.5 text-numeric font-medium text-[var(--color-fg)]">{l.carga}</td>
+                    <td className="px-4 py-1.5 text-numeric text-[var(--color-fg)]">{l.placa}</td>
+                    <td className="px-4 py-1.5 text-[var(--color-fg)]">{l.destino}</td>
+                    <td className="px-4 py-1.5 text-[var(--color-fg-muted)]">{l.motorista}</td>
+                    <td className="px-4 py-1.5 text-center text-numeric text-[var(--color-fg-muted)]">
+                      {l.nfRecebido}{l.nfPlanejado != null ? `/${l.nfPlanejado}` : ''}
+                    </td>
+                    <td className="px-4 py-1.5 text-center">
+                      <StatusBadge status={l.status} />
+                    </td>
+                  </tr>
+                ))}
+                {linhasFiltradas.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-8 text-center text-[var(--color-fg-subtle)]">
+                      Nenhuma carga nesse filtro.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -197,9 +269,49 @@ function CardResumo({ label, valor, tone }: { label: string; valor: number; tone
     danger: 'border-transparent bg-[var(--color-danger-soft)] text-[var(--color-danger-soft-fg)]',
   }
   return (
-    <div className={cn('rounded-xl border px-4 py-3', toneCls[tone])}>
+    <div className={cn('rounded-xl border px-4 py-3 transition-colors', toneCls[tone])}>
       <div className="text-[22px] font-semibold leading-tight tracking-tight">{valor}</div>
       <div className="mt-1 text-[10px] font-semibold uppercase tracking-wider opacity-80">{label}</div>
     </div>
   )
+}
+
+function FiltroChips({ filtro, setFiltro, resumo }: { filtro: Filtro; setFiltro: (f: Filtro) => void; resumo: Resumo }) {
+  const opts: { id: Filtro; label: string; count: number }[] = [
+    { id: 'todas', label: 'Todas', count: resumo.total },
+    { id: 'problemas', label: 'Com problema', count: resumo.divergentes + resumo.ausentes },
+    { id: 'ok', label: 'OK', count: resumo.ok },
+  ]
+  return (
+    <div className="flex items-center gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-subtle)] p-0.5">
+      {opts.map(o => {
+        const active = filtro === o.id
+        return (
+          <button
+            key={o.id}
+            type="button"
+            onClick={() => setFiltro(o.id)}
+            className={cn(
+              'rounded-[4px] px-2 py-0.5 text-[11px] font-medium transition-colors',
+              active
+                ? 'bg-[var(--color-bg-elevated)] text-[var(--color-fg)] shadow-sm'
+                : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]',
+            )}
+          >
+            {o.label} <span className="text-[var(--color-fg-subtle)]">({o.count})</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function StatusBadge({ status }: { status: StatusLinha }) {
+  const cfg: Record<StatusLinha, { label: string; variant: 'success' | 'warning' | 'danger' }> = {
+    ok: { label: 'OK', variant: 'success' },
+    divergente: { label: 'DIVERGENTE', variant: 'warning' },
+    ausente: { label: 'AUSENTE', variant: 'danger' },
+  }
+  const c = cfg[status]
+  return <Badge variant={c.variant}>{c.label}</Badge>
 }

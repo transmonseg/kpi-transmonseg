@@ -43,8 +43,21 @@ export async function POST(req: NextRequest) {
     ausentes: relatorio.filter(r => r.status === 'ausente').length,
   }
 
+  // Prévia pra tela — sem a lista de clientes (isso fica só dentro do XLSX, evita
+  // inflar o payload à toa).
+  const linhas = relatorio.map(r => ({
+    carga: r.carga,
+    placa: r.placaNorm,
+    destino: r.destino,
+    motorista: r.motorista,
+    nfPlanejado: r.nfPlanejado,
+    nfRecebido: r.nfRecebido,
+    status: r.status,
+  }))
+
   return NextResponse.json({
     resumo,
+    linhas,
     xlsxBase64: xlsxBuf.toString('base64'),
     filename: `Romaneio-Nutry-${data}.xlsx`,
   })
