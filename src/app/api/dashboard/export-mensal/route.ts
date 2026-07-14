@@ -4,7 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { gerarXlsxMes, type EntradaManualRow } from '@/lib/kpi/gerar-xlsx-manual'
 import { ultimoDiaDoMes } from '@/lib/kpi/manual-import'
 import { mesBR } from '@/lib/data-br'
-import { getPerfil } from '@/lib/perfil'
+import { getPerfil, mesLiberado } from '@/lib/perfil'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -20,10 +20,13 @@ export async function GET(req: NextRequest) {
   if (!rede) return new NextResponse('rede obrigatória', { status: 400 })
   if (!/^\d{4}-\d{2}$/.test(mes)) return new NextResponse('mês inválido (YYYY-MM)', { status: 400 })
 
-  // Login restrito (gerente/visualizador) só baixa a(s) rede(s) que o perfil permite.
+  // Login restrito (gerente/visualizador) só baixa a(s) rede(s)/mês que o perfil permite.
   const perfil = await getPerfil(user.id)
   if (perfil.papel !== 'admin' && !perfil.redes.includes(rede)) {
     return new NextResponse('Sem permissão pra essa rede.', { status: 403 })
+  }
+  if (!mesLiberado(perfil, mes)) {
+    return new NextResponse('Sem permissão pra esse mês.', { status: 403 })
   }
 
   const svc = createServiceClient()

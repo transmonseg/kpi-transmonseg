@@ -5,6 +5,8 @@ export interface Filtro {
   de?: string
   ate?: string
   status?: StatusManual
+  /** Meses (YYYY-MM) liberados pro perfil — undefined = sem restrição (admin). */
+  meses?: string[]
 }
 
 export function filtrar(ents: EntradaManual[], f: Filtro): EntradaManual[] {
@@ -12,7 +14,8 @@ export function filtrar(ents: EntradaManual[], f: Filtro): EntradaManual[] {
     (!f.redes || f.redes.length === 0 || f.redes.includes(e.rede_id)) &&
     (!f.de || e.data >= f.de) &&
     (!f.ate || e.data <= f.ate) &&
-    (!f.status || e.status === f.status),
+    (!f.status || e.status === f.status) &&
+    (!f.meses || f.meses.includes(e.data.slice(0, 7))),
   )
 }
 

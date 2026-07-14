@@ -23,6 +23,8 @@ export async function GET(req: NextRequest) {
   // Login restrito (gerente/visualizador) só enxerga a interseção com o que o
   // perfil permite — defesa em profundidade, não confia só no filtro da tela.
   const redes = redesEfetivas(perfil, (u.searchParams.get('redes') ?? '').split(',').filter(Boolean))
+  // Mesmo princípio pra mês: admin sem restrição, senão só os meses liberados.
+  const meses = perfil.papel === 'admin' ? undefined : perfil.meses
   // completo=1 (página de rankings) traz as listas inteiras, sem o corte top-N.
   const completo = u.searchParams.get('completo') === '1'
 
@@ -34,7 +36,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse(e instanceof Error ? e.message : 'Erro ao carregar KPIs', { status: 500 })
   }
 
-  const filt = filtrar(linhas, { redes })
+  const filt = filtrar(linhas, { redes, meses })
 
   // Período anterior (comparação best-effort — erro nunca derruba a resposta).
   let metricasAnterior = null
@@ -42,7 +44,7 @@ export async function GET(req: NextRequest) {
     try {
       const [aIni, aFim] = intervaloAnterior(periodo, ref)
       const linhasAnt = await carregarEntradasManuais(svc, aIni, aFim)
-      const filtAnt = filtrar(linhasAnt, { redes })
+      const filtAnt = filtrar(linhasAnt, { redes, meses })
       if (filtAnt.length) metricasAnterior = calcularMetricas(filtAnt)
     } catch {
       metricasAnterior = null

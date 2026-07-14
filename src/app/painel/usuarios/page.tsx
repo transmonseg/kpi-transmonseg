@@ -6,9 +6,11 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getPerfil } from '@/lib/perfil'
 import { REDES, REDE_LABEL } from '@/lib/kpi/redes'
-import { criarConvite, revogarConvite, revogarAcesso } from './actions'
+import { mesesConhecidos, formatMes } from '@/lib/kpi/meses'
+import { criarConvite, revogarConvite, revogarAcesso, atualizarMeses } from './actions'
 import { CopiarLink } from './copiar-link'
 import { RedesCheckboxes } from './redes-checkboxes'
+import { MesesCheckboxes } from './meses-checkboxes'
 
 const PAPEL_LABEL = { gerente: 'Gerente', visualizador: 'Visualizador' } as const
 
@@ -27,8 +29,8 @@ export default async function UsuariosPage({
 
   const svc = createServiceClient()
   const [{ data: perfisRows }, { data: convitesRows }] = await Promise.all([
-    svc.from('perfis').select('user_id, email, papel, redes, criado_por').neq('papel', 'admin').order('email'),
-    svc.from('convites').select('token, papel, redes, criado_por, expira_em').is('usado_em', null).order('criado_em', { ascending: false }),
+    svc.from('perfis').select('user_id, email, papel, redes, meses, criado_por').neq('papel', 'admin').order('email'),
+    svc.from('convites').select('token, papel, redes, meses, criado_por, expira_em').is('usado_em', null).order('criado_em', { ascending: false }),
   ])
 
   const meus = perfil.papel === 'gerente'
@@ -40,6 +42,10 @@ export default async function UsuariosPage({
   const h = await headers()
   const origin = `${h.get('x-forwarded-proto') ?? 'https'}://${h.get('x-forwarded-host') ?? h.get('host')}`
   const redesDisponiveis = perfil.papel === 'gerente' ? perfil.redes : (REDES as readonly string[])
+  const mesesDisponiveis = perfil.papel === 'gerente' ? perfil.meses : mesesConhecidos()
+  // Default: tudo liberado exceto o mês mais recente (cada mês novo passa a
+  // exigir liberação explícita — é justamente a restrição que essa feature existe pra fazer).
+  const mesesDefault = perfil.papel === 'gerente' ? perfil.meses : mesesConhecidos().slice(0, -1)
 
   return (
     <div className="mx-auto w-full max-w-[1180px] space-y-8 px-5 sm:px-8">
@@ -98,6 +104,7 @@ export default async function UsuariosPage({
             )}
 
             <RedesCheckboxes opcoes={redesDisponiveis} />
+            <MesesCheckboxes opcoes={mesesDisponiveis} defaultMarcados={mesesDefault} />
 
             <Button type="submit" className="self-start">Gerar link de convite</Button>
           </form>
@@ -119,6 +126,9 @@ export default async function UsuariosPage({
                   </div>
                   <div className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">
                     {(c.redes as string[]).map(r => REDE_LABEL[r] ?? r).join(', ')}
+                  </div>
+                  <div className="mt-0.5 text-[11px] capitalize text-[var(--color-fg-subtle)]">
+                    {(c.meses as string[] | null)?.length ? (c.meses as string[]).map(formatMes).join(', ') : 'sem mês liberado'}
                   </div>
                   <code className="mt-1.5 block max-w-full truncate text-[11px] text-[var(--color-fg-muted)]">
                     {origin}/convite/{c.token as string}
@@ -146,18 +156,26 @@ export default async function UsuariosPage({
             <p className="text-[13px] text-[var(--color-fg-muted)]">Nenhum login restrito ainda.</p>
           )}
           {logins.map(p => (
-            <div key={p.user_id as string} className="flex flex-wrap items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] px-4 py-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-fg)]">
-                  {p.email}
-                  <Badge>{PAPEL_LABEL[p.papel as 'gerente' | 'visualizador']}</Badge>
+            <div key={p.user_id as string} className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] px-4 py-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-fg)]">
+                    {p.email}
+                    <Badge>{PAPEL_LABEL[p.papel as 'gerente' | 'visualizador']}</Badge>
+                  </div>
+                  <div className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">
+                    {(p.redes as string[]).map(r => REDE_LABEL[r] ?? r).join(', ') || 'sem rede'}
+                  </div>
                 </div>
-                <div className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">
-                  {(p.redes as string[]).map(r => REDE_LABEL[r] ?? r).join(', ') || 'sem rede'}
-                </div>
+                <form action={revogarAcesso.bind(null, p.user_id as string)}>
+                  <Button type="submit" variant="danger" size="sm">Revogar</Button>
+                </form>
               </div>
-              <form action={revogarAcesso.bind(null, p.user_id as string)}>
-                <Button type="submit" variant="danger" size="sm">Revogar</Button>
+              <form action={atualizarMeses.bind(null, p.user_id as string)} className="flex flex-wrap items-end gap-3 border-t border-[var(--color-border)] pt-3">
+                <div className="min-w-0 flex-1">
+                  <MesesCheckboxes opcoes={mesesDisponiveis} defaultMarcados={(p.meses as string[] | null) ?? []} />
+                </div>
+                <Button type="submit" variant="secondary" size="sm">Salvar meses</Button>
               </form>
             </div>
           ))}

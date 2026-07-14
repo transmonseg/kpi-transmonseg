@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import type { Metricas } from '@/lib/kpi/dashboard-metricas'
 import { REDES, REDE_LABEL, REDE_ALIASES } from '@/lib/kpi/redes'
+import { formatMes } from '@/lib/kpi/meses'
 import InserirManual from './inserir-manual'
 import Historico from './historico'
 import ResumoOperacao, { type ResumoOperacaoData } from './resumo-operacao'
@@ -92,17 +93,23 @@ const fmtMin = (n: number | null | undefined) => {
   return h > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${m}min`
 }
 
-export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint = '/api/dashboard', basePath = '/painel', redesPermitidas }: { resumo?: ResumoOperacaoData; tabInicial?: Tab; endpoint?: string; basePath?: string; redesPermitidas?: string[] }) {
+export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint = '/api/dashboard', basePath = '/painel', redesPermitidas, mesesPermitidos }: { resumo?: ResumoOperacaoData; tabInicial?: Tab; endpoint?: string; basePath?: string; redesPermitidas?: string[]; mesesPermitidos?: string[] }) {
   const router = useRouter()
   const sp = useSearchParams()
   // Standalone (link público sem login, OU login restrito de dashboard): trava em
   // "Visão geral" — Inserir KPIs e Histórico exigem acesso completo ao sistema.
   const standalone = basePath !== '/painel' || !!redesPermitidas
   const opcoesRedes = redesPermitidas ?? [...REDES]
+  const mesesOrdenados = useMemo(() => mesesPermitidos ? [...mesesPermitidos].sort() : undefined, [mesesPermitidos])
   const tab = standalone ? 'geral' : (sp.get('tab') as Tab) || tabInicial
   const setTab = (t: Tab) => router.replace(t === 'geral' ? basePath : `${basePath}?tab=${t}`, { scroll: false })
   const [periodo, setPeriodo] = useState<Periodo>('mes')
-  const [data, setData] = useState(hoje())
+  // Login restrito sem acesso ao mês atual cairia num período vazio por default —
+  // parte do mês liberado mais recente em vez de "hoje".
+  const [data, setData] = useState(() => {
+    if (!mesesOrdenados || mesesOrdenados.length === 0 || mesesOrdenados.includes(hoje().slice(0, 7))) return hoje()
+    return `${mesesOrdenados[mesesOrdenados.length - 1]}-01`
+  })
   // Intervalo personalizado (de–até) — usado quando periodo === 'custom'.
   const [de, setDe] = useState(() => `${hoje().slice(0, 7)}-01`)
   const [ate, setAte] = useState(hoje())
@@ -244,6 +251,7 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
               redes={redes} setRedes={setRedes} opcoesRedes={opcoesRedes} m={mFinal} mAnt={mAntFinal} intervalo={intervalo}
               carregando={carregandoFinal} erro={erroFinal} onRetry={recarregar} mes={mesAtual}
               resumoRisco={betaResumo} riscoCarregando={betaCarregando} fonte={fonteDados}
+              mesesPermitidos={mesesOrdenados}
             />
           </div>
         )}
@@ -264,8 +272,9 @@ function VisaoGeral(props: {
   carregando: boolean; erro: boolean; onRetry: () => void; mes: string
   resumoRisco: ResumoApi | null; riscoCarregando: boolean
   fonte: 'planilha' | 'rastreamento' | null
+  mesesPermitidos?: string[]
 }) {
-  const { periodo, setPeriodo, data, setData, de, setDe, ate, setAte, redes, setRedes, opcoesRedes, m, mAnt, intervalo, carregando, erro, onRetry, mes, resumoRisco, riscoCarregando, fonte } = props
+  const { periodo, setPeriodo, data, setData, de, setDe, ate, setAte, redes, setRedes, opcoesRedes, m, mAnt, intervalo, carregando, erro, onRetry, mes, resumoRisco, riscoCarregando, fonte, mesesPermitidos } = props
 
   return (
     <div className="space-y-8">
@@ -302,6 +311,17 @@ function VisaoGeral(props: {
           >
             {ANOS.map(a => <option key={a} value={a}>{a}</option>)}
           </select>
+        ) : periodo === 'mes' && mesesPermitidos ? (
+          mesesPermitidos.length === 0 ? (
+            <span className="text-[12px] text-[var(--color-fg-subtle)]">Nenhum mês liberado ainda — fale com o admin.</span>
+          ) : (
+            <select
+              value={data.slice(0, 7)} onChange={e => setData(`${e.target.value}-01`)}
+              className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
+            >
+              {mesesPermitidos.map(mesOpcao => <option key={mesOpcao} value={mesOpcao}>{formatMes(mesOpcao)}</option>)}
+            </select>
+          )
         ) : periodo === 'mes' ? (
           <input
             type="month" value={data.slice(0, 7)} onChange={e => setData(`${e.target.value}-01`)}

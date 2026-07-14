@@ -85,11 +85,12 @@ export async function GET(req: NextRequest) {
     ? [u.searchParams.get('de') ?? ref, u.searchParams.get('ate') ?? ref]
     : intervaloPeriodo(periodo, ref)
   const redes = redesEfetivas(perfil, (u.searchParams.get('redes') ?? '').split(',').filter(Boolean))
+  const meses = perfil.papel === 'admin' ? undefined : perfil.meses
   const completo = u.searchParams.get('completo') === '1'
 
   const svc = createServiceClient()
   const linhas = await carregarEntradasApi(svc, ini, fim)
-  const filt = filtrar(linhas, { redes })
+  const filt = filtrar(linhas, { redes, meses })
   // Andamento ao vivo (campo extra gravado no JSON do dia; calcularMetricas o ignora).
   const andamento = { ENTREGUE: 0, EM_ROTA: 0, NA_BASE: 0, SEM_SINAL: 0 }
   for (const l of filt as Array<{ situacaoViva?: keyof typeof andamento }>) {
@@ -99,7 +100,7 @@ export async function GET(req: NextRequest) {
   if (periodo !== 'custom') {
     try {
       const [aIni, aFim] = intervaloAnterior(periodo, ref)
-      const ant = filtrar(await carregarEntradasApi(svc, aIni, aFim), { redes })
+      const ant = filtrar(await carregarEntradasApi(svc, aIni, aFim), { redes, meses })
       if (ant.length) metricasAnterior = calcularMetricas(ant)
     } catch { metricasAnterior = null }
   }
