@@ -59,7 +59,7 @@ export default async function NutrimaxDashboardPage({
   return (
     <div className="mx-auto w-full max-w-[1180px] space-y-8 px-5 py-8">
       <header>
-        <span className="text-overline">Nutrimax</span>
+        <span className="text-overline">Nutry Max</span>
         <h1 className="mt-1 text-display text-[28px] leading-none text-[var(--color-fg)]">Dashboard</h1>
       </header>
 

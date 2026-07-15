@@ -32,7 +32,7 @@ export default function NutrimaxInserirPage() {
   return (
     <div className="mx-auto w-full max-w-[640px] space-y-6 px-5 py-8">
       <header>
-        <span className="text-overline">Nutrimax</span>
+        <span className="text-overline">Nutry Max</span>
         <h1 className="mt-1 text-display text-[28px] leading-none text-[var(--color-fg)]">Inserir KPI</h1>
         <p className="mt-2 text-[13px] text-[var(--color-fg-muted)]">
           Suba de volta o mesmo XLSX baixado em &quot;Gerar KPI&quot; pra ele aparecer no Dashboard.

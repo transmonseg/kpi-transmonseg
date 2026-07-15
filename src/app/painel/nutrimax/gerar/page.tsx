@@ -73,7 +73,7 @@ export default function NutrimaxGerarPage() {
     <div className="mx-auto w-full max-w-[1200px]">
       <header className="mb-10 flex flex-col gap-1.5">
         <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
-          KPI Nutrimax
+          KPI Nutry Max
         </span>
         <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.02em] text-[var(--color-fg)] md:text-[34px]">
           Gerar KPI

@@ -8,7 +8,7 @@ export const COLUNAS_KPI_NUTRIMAX = [
 
 export async function gerarKpiNutrimax(entradas: EntradaNutrimax[]): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
-  const ws = wb.addWorksheet('KPI Nutrimax')
+  const ws = wb.addWorksheet('KPI Nutry Max')
   ws.addRow([...COLUNAS_KPI_NUTRIMAX])
   for (const e of entradas) {
     ws.addRow([

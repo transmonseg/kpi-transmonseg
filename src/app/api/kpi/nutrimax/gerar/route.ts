@@ -43,6 +43,6 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     avisos,
     xlsxBase64: xlsxBuf.toString('base64'),
-    filename: `KPI-Nutrimax-${data}.xlsx`,
+    filename: `KPI-Nutry-Max-${data}.xlsx`,
   })
 }

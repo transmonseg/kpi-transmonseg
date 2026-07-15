@@ -42,7 +42,7 @@ const GROUPS: Group[] = [
     ],
   },
   {
-    label: 'Nutrimax',
+    label: 'Nutry Max',
     Icon: TableIcon,
     children: [
       { href: '/painel/nutrimax/romaneio', label: 'Gerar Romaneio', Icon: ClipboardText, exact: true },
