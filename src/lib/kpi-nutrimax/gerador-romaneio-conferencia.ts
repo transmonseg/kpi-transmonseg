@@ -95,7 +95,13 @@ export async function gerarRomaneioConferencia(relatorio: RelatorioPlacaNutrimax
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const imageId = wb.addImage({ buffer: logoBuf as any, extension: 'png' })
 
+  // Nomes das abas decididos ANTES de desenhar o Resumo, pra poder linkar cada
+  // linha direto pra aba da placa correspondente.
+  const usados = new Set<string>(['Resumo'])
+  const nomesAba = relatorio.map(r => nomeUnicoAba(usados, `${r.placaNorm} (${r.carga})`))
+
   const resumo = wb.addWorksheet('Resumo')
+  resumo.views = [{ state: 'frozen', ySplit: 3 }]
   resumo.columns = [{ width: 12 }, { width: 14 }, { width: 28 }, { width: 16 }]
   aplicarCabecalhoDeMarca(resumo, imageId, 'ROMANEIO NUTRY — CONFERÊNCIA', `${relatorio.length} carga(s) na escala`, 4)
   const headerResumo = resumo.addRow(['CARGA', 'PLACA', 'DESTINO', 'STATUS'])
@@ -105,12 +111,14 @@ export async function gerarRomaneioConferencia(relatorio: RelatorioPlacaNutrimax
     if (i % 2 === 1) {
       row.eachCell((cell, col) => { if (col < 4) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_BG_ALT } } })
     }
+    row.getCell(2).value = { text: r.placaNorm, hyperlink: `#'${nomesAba[i]}'!A1` }
+    row.getCell(2).font = { color: { argb: 'FF1F4E78' }, underline: true }
     pintaStatusCell(row.getCell(4), r.status)
   })
 
-  const usados = new Set<string>(['Resumo'])
-  for (const r of relatorio) {
-    const ws = wb.addWorksheet(nomeUnicoAba(usados, `${r.placaNorm} (${r.carga})`))
+  relatorio.forEach((r, i) => {
+    const ws = wb.addWorksheet(nomesAba[i])
+    ws.properties.tabColor = { argb: STATUS_COR[r.status].txt }
     ws.columns = [{ width: 16 }, { width: 34 }, { width: 55 }]
     aplicarCabecalhoDeMarca(ws, imageId, `${r.placaNorm} — CARGA ${r.carga}`, r.destino, 3)
 
@@ -129,13 +137,13 @@ export async function gerarRomaneioConferencia(relatorio: RelatorioPlacaNutrimax
 
     const headerClientes = ws.addRow(['NF', 'CLIENTE', 'ENDEREÇO'])
     estilizaHeaderTabela(headerClientes)
-    r.clientes.forEach((c, i) => {
+    r.clientes.forEach((c, ci) => {
       const row = ws.addRow([c.nf, c.clienteNome, c.endereco ?? ''])
-      if (i % 2 === 1) {
+      if (ci % 2 === 1) {
         row.eachCell(cell => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_BG_ALT } } })
       }
     })
-  }
+  })
 
   return Buffer.from(await wb.xlsx.writeBuffer() as ArrayBuffer)
 }
