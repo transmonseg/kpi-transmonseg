@@ -3,6 +3,12 @@ import { buscarAlvos } from '@/lib/unitrac-api/alvos'
 import { COD_USER_NUTRIMAX } from '@/lib/unitrac-api/client'
 import type { LinhaRomaneioNutrimax, EntradaNutrimax } from './types'
 
+function statusPorSituacao(situacao: number | undefined): EntradaNutrimax['status'] {
+  if (situacao === 1) return 'entregue'
+  if (situacao === 98) return 'confirmado_indireto'
+  return 'pendente'
+}
+
 export async function cruzaRomaneioAlvosNutrimax(
   linhas: LinhaRomaneioNutrimax[],
   data: string,
@@ -14,6 +20,15 @@ export async function cruzaRomaneioAlvosNutrimax(
   const porPlacaNf = new Map(
     alvos.filter(a => a.documento).map(a => [`${a.placaNorm}:${a.documento}`, a]),
   )
+  const placasComSinal = new Set(alvos.map(a => a.placaNorm))
+
+  const cargasPorPlaca = new Map<string, Set<string>>()
+  for (const l of linhas) {
+    const placaNorm = normPlaca(l.placa)
+    const set = cargasPorPlaca.get(placaNorm) ?? new Set<string>()
+    set.add(l.carga)
+    cargasPorPlaca.set(placaNorm, set)
+  }
 
   return linhas.map((l): EntradaNutrimax => {
     const placaNorm = normPlaca(l.placa)
@@ -28,8 +43,10 @@ export async function cruzaRomaneioAlvosNutrimax(
       cliente_codigo: l.clienteCodigo || null,
       cliente_nome: l.clienteNome,
       endereco: l.endereco || null,
-      status: alvo?.situacao === 1 ? 'entregue' : 'pendente',
+      status: statusPorSituacao(alvo?.situacao),
       hora_realizado: alvo?.feitoISO ?? null,
+      placa_rastreada: placasComSinal.has(placaNorm),
+      placa_duplicada: (cargasPorPlaca.get(placaNorm)?.size ?? 0) > 1,
     }
   })
 }

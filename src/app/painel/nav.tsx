@@ -46,6 +46,7 @@ const GROUPS: Group[] = [
     Icon: TableIcon,
     children: [
       { href: '/painel/nutrimax/romaneio', label: 'Gerar Romaneio', Icon: ClipboardText, exact: true },
+      { href: '/painel/nutrimax/gerar', label: 'Gerar KPI', Icon: TableIcon },
     ],
   },
 ]

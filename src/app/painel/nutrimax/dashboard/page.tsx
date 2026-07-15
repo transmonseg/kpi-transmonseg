@@ -11,7 +11,9 @@ type LinhaBanco = {
   motorista: string | null
   nf: string
   cliente_nome: string
-  status: 'entregue' | 'pendente'
+  status: 'entregue' | 'pendente' | 'confirmado_indireto'
+  placa_rastreada: boolean
+  placa_duplicada: boolean
 }
 
 export default async function NutrimaxDashboardPage({
@@ -30,7 +32,7 @@ export default async function NutrimaxDashboardPage({
   for (let from = 0; ; from += PAGE) {
     const { data: pagina } = await svc
       .from('kpi_nutrimax_entradas')
-      .select('carga, destino, placa, motorista, nf, cliente_nome, status')
+      .select('carga, destino, placa, motorista, nf, cliente_nome, status, placa_rastreada, placa_duplicada')
       .eq('data', data)
       .range(from, from + PAGE - 1)
     const lote = (pagina ?? []) as LinhaBanco[]
@@ -39,7 +41,11 @@ export default async function NutrimaxDashboardPage({
   }
   const total = linhas.length
   const entregues = linhas.filter(l => l.status === 'entregue').length
+  const confirmadosIndireto = linhas.filter(l => l.status === 'confirmado_indireto').length
   const pct = total > 0 ? Math.round((entregues / total) * 100) : 0
+
+  const placasSemRastreador = new Set(linhas.filter(l => !l.placa_rastreada).map(l => l.placa))
+  const placasDuplicadas = new Set(linhas.filter(l => l.placa_duplicada).map(l => l.placa))
 
   const porCarga = new Map<string, { destino: string; placa: string; motorista: string | null; total: number; entregues: number }>()
   for (const l of linhas) {
@@ -73,7 +79,7 @@ export default async function NutrimaxDashboardPage({
         </p>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-4">
               <p className="text-overline">Taxa de entrega</p>
               <p className="mt-1 text-[28px] font-semibold text-[var(--color-fg)]">{pct}%</p>
@@ -86,7 +92,22 @@ export default async function NutrimaxDashboardPage({
               <p className="text-overline">Rotas no dia</p>
               <p className="mt-1 text-[28px] font-semibold text-[var(--color-fg)]">{porCarga.size}</p>
             </div>
+            <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-4">
+              <p className="text-overline">Confirmado indireto</p>
+              <p className="mt-1 text-[28px] font-semibold text-[var(--color-fg)]">{confirmadosIndireto}</p>
+            </div>
           </div>
+
+          {(placasSemRastreador.size > 0 || placasDuplicadas.size > 0) && (
+            <div className="flex flex-col gap-1 rounded-[var(--radius-card)] border border-[var(--color-warning)]/30 bg-[var(--color-warning-soft)] px-4 py-3 text-[12.5px] text-[var(--color-warning-soft-fg)]">
+              {placasSemRastreador.size > 0 && (
+                <p>{placasSemRastreador.size} placa(s) sem sinal do Unitrac hoje: {[...placasSemRastreador].join(', ')}</p>
+              )}
+              {placasDuplicadas.size > 0 && (
+                <p>{placasDuplicadas.size} placa(s) usada(s) em mais de uma carga hoje: {[...placasDuplicadas].join(', ')}</p>
+              )}
+            </div>
+          )}
 
           <table className="w-full text-[13px]">
             <thead>

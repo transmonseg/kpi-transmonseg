@@ -31,7 +31,14 @@ export type AvisoCoberturaNutrimax =
   | { tipo: 'placa_divergente'; carga: string; placaEscala: string; placaRomaneio: string }
   | { tipo: 'entregas_incompletas'; carga: string; planejado: number; recebido: number }
 
-/** Uma linha pronta pra persistir em kpi_nutrimax_entradas — já cruzada com o Unitrac. */
+/** Uma linha pronta pra persistir em kpi_nutrimax_entradas — já cruzada com o Unitrac.
+ *
+ *  `status`: situacao=1 do Unitrac vira 'entregue'; situacao=98 vira
+ *  'confirmado_indireto' — código sem documentação oficial do Unitrac, inferido
+ *  a partir do padrão real dos dados (mesmo horário exato de conclusão em
+ *  vários alvos de clientes diferentes pra mesma placa — indica confirmação
+ *  automática por proximidade/lote, não um scan individual por cliente).
+ *  Qualquer outro valor (incluindo 0, o mais comum) vira 'pendente'. */
 export type EntradaNutrimax = {
   data: string // YYYY-MM-DD
   carga: string
@@ -42,8 +49,14 @@ export type EntradaNutrimax = {
   cliente_codigo: string | null
   cliente_nome: string
   endereco: string | null
-  status: 'entregue' | 'pendente'
+  status: 'entregue' | 'pendente' | 'confirmado_indireto'
   hora_realizado: string | null // ISO, null quando pendente
+  /** A placa transmitiu algum dado pro Unitrac nesse dia (apareceu em pelo menos
+   *  um alvo, de qualquer cliente) — false = sem rastreador ou offline o dia todo. */
+  placa_rastreada: boolean
+  /** A mesma placa aparece em mais de uma carga nesse dia (indício de troca de
+   *  veículo no meio do dia ou erro de escala/romaneio). */
+  placa_duplicada: boolean
 }
 
 /** Um cliente dentro da aba de uma placa, no relatório de conferência. */
