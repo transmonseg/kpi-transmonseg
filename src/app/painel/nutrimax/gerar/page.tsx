@@ -1,54 +1,57 @@
 'use client'
 
-import { useState } from 'react'
-import { ArrowRight, CalendarBlank, WarningCircle, FileArrowDown } from '@phosphor-icons/react/dist/ssr'
-import { cn } from '@/components/ui'
+import { useMemo, useState } from 'react'
+import { ArrowRight, CalendarBlank, WarningCircle, FileArrowDown, Truck } from '@phosphor-icons/react/dist/ssr'
+import { Badge, cn } from '@/components/ui'
 import { FileDropzone } from '@/app/painel/file-dropzone'
 
-type AvisoCobertura =
-  | { tipo: 'carga_ausente'; carga: string; destino: string; placa: string }
-  | { tipo: 'placa_divergente'; carga: string; placaEscala: string; placaRomaneio: string }
-  | { tipo: 'entregas_incompletas'; carga: string; planejado: number; recebido: number }
-
-function descreveAviso(a: AvisoCobertura): string {
-  switch (a.tipo) {
-    case 'carga_ausente':
-      return `Carga ${a.carga} (${a.destino}, placa ${a.placa}) está na escala mas não apareceu no romaneio.`
-    case 'placa_divergente':
-      return `Carga ${a.carga}: placa da escala (${a.placaEscala}) diverge da placa no romaneio (${a.placaRomaneio}).`
-    case 'entregas_incompletas':
-      return `Carga ${a.carga}: escala planejava ${a.planejado} NFs, romaneio trouxe só ${a.recebido}.`
-  }
+type Resumo = { total: number; ok: number; incompletos: number; semRastreador: number }
+type Tone = 'default' | 'success' | 'warning' | 'danger'
+type StatusLinha = 'ok' | 'incompleto' | 'sem_rastreador'
+type Linha = {
+  carga: string
+  placa: string
+  destino: string
+  motorista: string
+  pesoKg: number | null
+  entPlanejado: number | null
+  qtdParadasReal: number
+  kmPercorrido: number | null
+  status: StatusLinha
 }
+type Filtro = 'todas' | 'problemas' | 'ok'
 
 export default function NutrimaxGerarPage() {
   const [escala, setEscala] = useState<File[]>([])
-  const [romaneio, setRomaneio] = useState<File[]>([])
   const [relatorio, setRelatorio] = useState<File[]>([])
   const [data, setData] = useState('')
   const [pending, setPending] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
-  const [avisos, setAvisos] = useState<AvisoCobertura[]>([])
+  const [resumo, setResumo] = useState<Resumo | null>(null)
+  const [linhas, setLinhas] = useState<Linha[]>([])
+  const [filtro, setFiltro] = useState<Filtro>('problemas')
   const [resultado, setResultado] = useState<{ xlsxBase64: string; filename: string } | null>(null)
 
-  const pronto = escala.length > 0 && romaneio.length > 0 && !!data
+  const pronto = escala.length > 0 && relatorio.length > 0 && !!data
 
   async function gerar() {
     if (!pronto) return
     setPending(true)
     setErro(null)
-    setAvisos([])
+    setResumo(null)
+    setLinhas([])
     setResultado(null)
     try {
       const fd = new FormData()
       fd.set('escala', escala[0])
-      fd.set('romaneio', romaneio[0])
-      if (relatorio[0]) fd.set('relatorio', relatorio[0])
+      fd.set('relatorio', relatorio[0])
       fd.set('data', data)
       const res = await fetch('/api/kpi/nutrimax/gerar', { method: 'POST', body: fd })
       if (!res.ok) throw new Error(await res.text())
-      const json = await res.json() as { avisos: AvisoCobertura[]; xlsxBase64: string; filename: string }
-      setAvisos(json.avisos ?? [])
+      const json = await res.json() as { resumo: Resumo; linhas: Linha[]; xlsxBase64: string; filename: string }
+      setResumo(json.resumo)
+      setLinhas(json.linhas)
+      setFiltro(json.resumo.incompletos + json.resumo.semRastreador > 0 ? 'problemas' : 'todas')
       setResultado({ xlsxBase64: json.xlsxBase64, filename: json.filename })
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Erro inesperado.')
@@ -71,6 +74,12 @@ export default function NutrimaxGerarPage() {
     URL.revokeObjectURL(url)
   }
 
+  const linhasFiltradas = useMemo(() => {
+    if (filtro === 'todas') return linhas
+    if (filtro === 'ok') return linhas.filter(l => l.status === 'ok')
+    return linhas.filter(l => l.status !== 'ok')
+  }, [linhas, filtro])
+
   return (
     <div className="mx-auto w-full max-w-[1200px]">
       <header className="mb-10 flex flex-col gap-1.5">
@@ -81,50 +90,40 @@ export default function NutrimaxGerarPage() {
           Gerar KPI
         </h1>
         <p className="mt-1 max-w-[55ch] text-[14px] leading-relaxed text-[var(--color-fg-muted)]">
-          Suba a Escala de Rota (o planejado: qual placa vai pra qual destino) e o Romaneio de
-          Entrega (o executado). O sistema cruza os dois com o status do Unitrac e avisa se
-          alguma carga da escala não apareceu no romaneio antes de gerar o XLSX. O Relatório
-          Parada e Serviço é opcional — traz km percorrido real por placa.
+          Suba a Escala de Rota e o Relatório Parada e Serviço do Unitrac. O sistema cruza o
+          planejado com o realizado de verdade (paradas e km reais, por GPS) e gera o KPI por
+          carga/placa.
         </p>
       </header>
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <div className="col-span-1 flex flex-col gap-4 lg:col-span-7">
+        <div className="col-span-1 lg:col-span-7">
           <FileDropzone
             eyebrow="Passo 1"
             label="Escala de Rota"
-            hint="PDF · o planejado (placa, destino, NFs previstos)"
+            hint="PDF · o planejado (placa, destino, clientes previstos)"
             accept=".pdf"
             files={escala}
             onAdd={files => setEscala(files.slice(0, 1))}
             onRemove={() => setEscala([])}
-          />
-          <FileDropzone
-            eyebrow="Passo 3 · opcional"
-            label="Relatório Parada e Serviço"
-            hint="PDF do Unitrac · km percorrido real por placa"
-            accept=".pdf"
-            files={relatorio}
-            onAdd={files => setRelatorio(files.slice(0, 1))}
-            onRemove={() => setRelatorio([])}
           />
         </div>
 
         <div className="col-span-1 flex flex-col gap-4 lg:col-span-5">
           <FileDropzone
             eyebrow="Passo 2"
-            label="Romaneio de Entrega"
-            hint="PDF · o executado (cliente a cliente por carga)"
+            label="Relatório Parada e Serviço"
+            hint="PDF do Unitrac · paradas e km reais por placa"
             accept=".pdf"
-            files={romaneio}
-            onAdd={files => setRomaneio(files.slice(0, 1))}
-            onRemove={() => setRomaneio([])}
+            files={relatorio}
+            onAdd={files => setRelatorio(files.slice(0, 1))}
+            onRemove={() => setRelatorio([])}
           />
 
           <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
             <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
               <CalendarBlank size={12} weight="bold" />
-              Passo 4 · Data de referência
+              Passo 3 · Data de referência
             </div>
             <input
               id="data"
@@ -145,35 +144,84 @@ export default function NutrimaxGerarPage() {
         </div>
       )}
 
-      {avisos.length > 0 && (
-        <div className="mt-6 flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-warning)]/30 bg-[var(--color-warning-soft)] px-5 py-4">
-          <div className="flex items-center gap-2">
-            <WarningCircle size={18} weight="fill" className="shrink-0 text-[var(--color-warning)]" />
-            <span className="text-[13px] font-semibold text-[var(--color-warning-soft-fg)]">
-              {avisos.length} aviso{avisos.length > 1 ? 's' : ''} de cobertura
-            </span>
-          </div>
-          <ul className="ml-7 flex flex-col gap-1 text-[12.5px] leading-relaxed text-[var(--color-warning-soft-fg)]">
-            {avisos.map((a, i) => (
-              <li key={i}>{descreveAviso(a)}</li>
-            ))}
-          </ul>
+      {resumo && (
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <CardResumo label="Total de cargas" valor={resumo.total} tone="default" />
+          <CardResumo label="OK" valor={resumo.ok} tone="success" />
+          <CardResumo label="Incompletos" valor={resumo.incompletos} tone="warning" />
+          <CardResumo label="Sem rastreador" valor={resumo.semRastreador} tone="danger" />
         </div>
       )}
 
-      {resultado && (
-        <div className="mt-6 flex items-center justify-between gap-3 rounded-[var(--radius-card)] border border-[var(--color-success)]/30 bg-[var(--color-success-soft)] px-5 py-4">
-          <span className="text-[13px] text-[var(--color-success-soft-fg)]">
-            KPI gerado{avisos.length > 0 ? ' com avisos acima' : ''}. Baixe o XLSX e suba em &quot;Inserir KPI&quot;.
-          </span>
-          <button
-            type="button"
-            onClick={baixar}
-            className="flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--color-navy-700)] px-4 py-2 text-[12.5px] font-medium text-white"
-          >
-            <FileArrowDown size={14} weight="bold" />
-            Baixar XLSX
-          </button>
+      {resumo && (
+        <div className="mt-6 overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] px-5 py-3">
+            <div className="flex items-center gap-3">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-fg)]">
+                <Truck size={16} weight="fill" className="text-[var(--color-accent)]" />
+                Cargas
+              </h2>
+              <FiltroChips filtro={filtro} setFiltro={setFiltro} resumo={resumo} />
+            </div>
+            {resultado && (
+              <button
+                type="button"
+                onClick={baixar}
+                className="flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--color-navy-700)] px-4 py-2 text-[12.5px] font-medium text-white transition-opacity hover:opacity-90"
+              >
+                <FileArrowDown size={14} weight="bold" />
+                Baixar XLSX
+              </button>
+            )}
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] text-left">
+                  <th className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Carga</th>
+                  <th className="w-32 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Placa</th>
+                  <th className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Destino</th>
+                  <th className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Motorista</th>
+                  <th className="w-24 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Paradas</th>
+                  <th className="w-24 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Km</th>
+                  <th className="w-36 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {linhasFiltradas.map(l => (
+                  <tr
+                    key={`${l.carga}-${l.placa}`}
+                    className={cn(
+                      'border-b border-[var(--color-border)] last:border-0',
+                      l.status !== 'ok' && 'bg-[var(--color-warning-soft)]/20',
+                    )}
+                  >
+                    <td className="px-4 py-1.5 text-numeric font-medium text-[var(--color-fg)]">{l.carga}</td>
+                    <td className="px-4 py-1.5 text-numeric text-[var(--color-fg)]">{l.placa}</td>
+                    <td className="px-4 py-1.5 text-[var(--color-fg)]">{l.destino}</td>
+                    <td className="px-4 py-1.5 text-[var(--color-fg-muted)]">{l.motorista}</td>
+                    <td className="px-4 py-1.5 text-center text-numeric text-[var(--color-fg-muted)]">
+                      {l.qtdParadasReal}{l.entPlanejado != null ? `/${l.entPlanejado}` : ''}
+                    </td>
+                    <td className="px-4 py-1.5 text-center text-numeric text-[var(--color-fg-muted)]">
+                      {l.kmPercorrido != null ? l.kmPercorrido.toLocaleString('pt-BR') : '—'}
+                    </td>
+                    <td className="px-4 py-1.5 text-center">
+                      <StatusBadge status={l.status} />
+                    </td>
+                  </tr>
+                ))}
+                {linhasFiltradas.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-[var(--color-fg-subtle)]">
+                      Nenhuma carga nesse filtro.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -202,7 +250,7 @@ export default function NutrimaxGerarPage() {
             {pending ? 'Processando' : 'Gerar KPI'}
           </span>
           <span className="text-[18px] font-semibold tracking-tight">
-            {pending ? 'Cruzando escala com romaneio…' : pronto ? 'Gerar agora' : 'Aguardando arquivos'}
+            {pending ? 'Cruzando escala com o relatório…' : pronto ? 'Gerar agora' : 'Aguardando arquivos'}
           </span>
         </div>
         {!pending && pronto && (
@@ -218,4 +266,59 @@ export default function NutrimaxGerarPage() {
       </button>
     </div>
   )
+}
+
+function CardResumo({ label, valor, tone }: { label: string; valor: number; tone: Tone }) {
+  const toneCls: Record<Tone, string> = {
+    default: 'border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-fg)]',
+    success: 'border-transparent bg-[var(--color-success-soft)] text-[var(--color-success-soft-fg)]',
+    warning: 'border-transparent bg-[var(--color-warning-soft)] text-[var(--color-warning-soft-fg)]',
+    danger: 'border-transparent bg-[var(--color-danger-soft)] text-[var(--color-danger-soft-fg)]',
+  }
+  return (
+    <div className={cn('rounded-xl border px-4 py-3 transition-colors', toneCls[tone])}>
+      <div className="text-[22px] font-semibold leading-tight tracking-tight">{valor}</div>
+      <div className="mt-1 text-[10px] font-semibold uppercase tracking-wider opacity-80">{label}</div>
+    </div>
+  )
+}
+
+function FiltroChips({ filtro, setFiltro, resumo }: { filtro: Filtro; setFiltro: (f: Filtro) => void; resumo: Resumo }) {
+  const opts: { id: Filtro; label: string; count: number }[] = [
+    { id: 'todas', label: 'Todas', count: resumo.total },
+    { id: 'problemas', label: 'Com problema', count: resumo.incompletos + resumo.semRastreador },
+    { id: 'ok', label: 'OK', count: resumo.ok },
+  ]
+  return (
+    <div className="flex items-center gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-subtle)] p-0.5">
+      {opts.map(o => {
+        const active = filtro === o.id
+        return (
+          <button
+            key={o.id}
+            type="button"
+            onClick={() => setFiltro(o.id)}
+            className={cn(
+              'rounded-[4px] px-2 py-0.5 text-[11px] font-medium transition-colors',
+              active
+                ? 'bg-[var(--color-bg-elevated)] text-[var(--color-fg)] shadow-sm'
+                : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]',
+            )}
+          >
+            {o.label} <span className="text-[var(--color-fg-subtle)]">({o.count})</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function StatusBadge({ status }: { status: StatusLinha }) {
+  const cfg: Record<StatusLinha, { label: string; variant: 'success' | 'warning' | 'danger' }> = {
+    ok: { label: 'OK', variant: 'success' },
+    incompleto: { label: 'INCOMPLETO', variant: 'warning' },
+    sem_rastreador: { label: 'SEM RASTREADOR', variant: 'danger' },
+  }
+  const c = cfg[status]
+  return <Badge variant={c.variant}>{c.label}</Badge>
 }
