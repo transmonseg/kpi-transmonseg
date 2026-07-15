@@ -41,6 +41,13 @@ function nomeUnicoAba(usados: Set<string>, base: string): string {
   return nome
 }
 
+/** HH:MM a partir de um ISO. String vazia quando não há valor — fica em
+ *  branco na célula em vez de poluir a planilha com "null"/"undefined". */
+function fmtHora(iso: string | null): string {
+  if (!iso) return ''
+  return iso.slice(11, 16)
+}
+
 /** Faixa de marca (logo + título navy + subtítulo) nas 2 primeiras linhas da aba —
  *  mesmo padrão visual do template aprovado do KPI Benassi. Conteúdo real da aba
  *  começa na linha 3. */
@@ -86,6 +93,12 @@ function pintaStatusCell(cell: ExcelJS.Cell, status: RelatorioPlacaNutrimax['sta
   cell.alignment = { horizontal: 'center' }
 }
 
+function pintaConfirmacaoCell(cell: ExcelJS.Cell, confirmado: boolean) {
+  cell.font = { bold: true, size: 10, color: { argb: confirmado ? COR_OK_TXT : COR_DIVERGENTE_TXT } }
+  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: confirmado ? COR_OK_BG : COR_DIVERGENTE_BG } }
+  cell.alignment = { horizontal: 'center' }
+}
+
 export async function gerarRomaneioConferencia(relatorio: RelatorioPlacaNutrimax[]): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
   wb.creator = 'TRANSMONSEG'
@@ -102,13 +115,18 @@ export async function gerarRomaneioConferencia(relatorio: RelatorioPlacaNutrimax
 
   const resumo = wb.addWorksheet('Resumo')
   resumo.views = [{ state: 'frozen', ySplit: 3 }]
-  resumo.columns = [{ width: 12 }, { width: 14 }, { width: 26 }, { width: 12 }, { width: 12 }, { width: 10 }, { width: 14 }]
-  aplicarCabecalhoDeMarca(resumo, imageId, 'ROMANEIO NUTRY — CONFERÊNCIA', `${relatorio.length} carga(s) na escala`, 7)
-  const headerResumo = resumo.addRow(['CARGA', 'PLACA', 'DESTINO', 'PESO (KG)', 'CLIENTES', 'NFS', 'STATUS'])
+  resumo.columns = [
+    { width: 12 }, { width: 14 }, { width: 26 }, { width: 12 }, { width: 12 },
+    { width: 10 }, { width: 10 }, { width: 13 }, { width: 14 },
+  ]
+  aplicarCabecalhoDeMarca(resumo, imageId, 'ROMANEIO NUTRY — CONFERÊNCIA', `${relatorio.length} carga(s) na escala`, 9)
+  const headerResumo = resumo.addRow(['CARGA', 'PLACA', 'DESTINO', 'PESO (KG)', 'CLIENTES', 'NFS', 'KM', 'PARADAS GPS', 'STATUS'])
   estilizaHeaderTabela(headerResumo)
   let pesoTotal = 0
+  let kmTotal = 0
   relatorio.forEach((r, i) => {
     pesoTotal += r.pesoKg ?? 0
+    kmTotal += r.kmPercorrido ?? 0
     const row = resumo.addRow([
       r.carga,
       r.placaNorm,
@@ -116,17 +134,19 @@ export async function gerarRomaneioConferencia(relatorio: RelatorioPlacaNutrimax
       r.pesoKg ?? '',
       `${r.entRecebido}/${r.entPlanejado ?? '—'}`,
       `${r.nfRecebido}/${r.nfPlanejado ?? '—'}`,
+      r.kmPercorrido ?? '',
+      r.qtdParadasReal,
       STATUS_LABEL[r.status],
     ])
     if (i % 2 === 1) {
-      row.eachCell((cell, col) => { if (col < 7) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_BG_ALT } } })
+      row.eachCell((cell, col) => { if (col < 9) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_BG_ALT } } })
     }
     row.getCell(2).value = { text: r.placaNorm, hyperlink: `#'${nomesAba[i]}'!A1` }
     row.getCell(2).font = { color: { argb: 'FF1F4E78' }, underline: true }
-    pintaStatusCell(row.getCell(7), r.status)
+    pintaStatusCell(row.getCell(9), r.status)
   })
   if (relatorio.length > 0) {
-    const totalRow = resumo.addRow(['TOTAL', '', '', pesoTotal, '', '', ''])
+    const totalRow = resumo.addRow(['TOTAL', '', '', pesoTotal, '', '', Math.round(kmTotal * 10) / 10, '', ''])
     totalRow.font = { bold: true }
     totalRow.eachCell(cell => { cell.border = { top: { style: 'thin', color: { argb: 'FF94A3B8' } } } })
   }
@@ -134,8 +154,8 @@ export async function gerarRomaneioConferencia(relatorio: RelatorioPlacaNutrimax
   relatorio.forEach((r, i) => {
     const ws = wb.addWorksheet(nomesAba[i])
     ws.properties.tabColor = { argb: STATUS_COR[r.status].txt }
-    ws.columns = [{ width: 16 }, { width: 34 }, { width: 55 }]
-    aplicarCabecalhoDeMarca(ws, imageId, `${r.placaNorm} — CARGA ${r.carga}`, r.destino, 3)
+    ws.columns = [{ width: 18 }, { width: 32 }, { width: 40 }, { width: 16 }, { width: 11 }, { width: 9 }]
+    aplicarCabecalhoDeMarca(ws, imageId, `${r.placaNorm} — CARGA ${r.carga}`, r.destino, 6)
 
     ws.addRow(['CARGA', r.carga])
     ws.addRow(['PLACA', r.placaNorm])
@@ -144,20 +164,45 @@ export async function gerarRomaneioConferencia(relatorio: RelatorioPlacaNutrimax
     ws.addRow(['AJUDANTE 1', r.ajudante1 ?? ''])
     ws.addRow(['AJUDANTE 2', r.ajudante2 ?? ''])
     ws.addRow(['PESO (KG)', r.pesoKg ?? ''])
+    ws.addRow(['KM PERCORRIDO', r.kmPercorrido ?? ''])
+    ws.addRow(['INÍCIO VIAGEM', fmtHora(r.inicioViagem)])
+    ws.addRow(['FIM VIAGEM', fmtHora(r.fimViagem)])
     ws.addRow(['CLIENTES (ENT)', `${r.entRecebido} / ${r.entPlanejado ?? '—'}`])
     ws.addRow(['NF', `${r.nfRecebido} / ${r.nfPlanejado ?? '—'}`])
     const statusRow = ws.addRow(['STATUS', STATUS_LABEL[r.status]])
     pintaStatusCell(statusRow.getCell(2), r.status)
     ws.addRow([])
 
-    const headerClientes = ws.addRow(['NF', 'CLIENTE', 'ENDEREÇO'])
+    const headerClientes = ws.addRow(['NF', 'CLIENTE', 'ENDEREÇO', 'CONFIRMADO GPS', 'CHEGADA', 'KM'])
     estilizaHeaderTabela(headerClientes)
     r.clientes.forEach((c, ci) => {
-      const row = ws.addRow([c.nf, c.clienteNome, c.endereco ?? ''])
+      const row = ws.addRow([
+        c.nf,
+        c.clienteNome,
+        c.endereco ?? '',
+        c.parada ? 'SIM' : 'NÃO',
+        c.parada ? fmtHora(c.parada.chegada) : '',
+        c.parada?.distanciaKm ?? '',
+      ])
       if (ci % 2 === 1) {
-        row.eachCell(cell => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_BG_ALT } } })
+        row.eachCell((cell, col) => { if (col < 4) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_BG_ALT } } })
       }
+      pintaConfirmacaoCell(row.getCell(4), c.parada !== null)
     })
+
+    if (r.paradasSemCliente.length > 0) {
+      ws.addRow([])
+      const titulo = ws.addRow(['PARADAS SEM CLIENTE IDENTIFICADO'])
+      titulo.font = { bold: true, size: 11, color: { argb: COR_DIVERGENTE_TXT } }
+      const headerSemCliente = ws.addRow(['LOCAL', 'CHEGADA', 'KM'])
+      estilizaHeaderTabela(headerSemCliente)
+      r.paradasSemCliente.forEach((p, pi) => {
+        const row = ws.addRow([p.localParada, fmtHora(p.chegada), p.distanciaKm ?? ''])
+        if (pi % 2 === 1) {
+          row.eachCell(cell => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_BG_ALT } } })
+        }
+      })
+    }
   })
 
   return Buffer.from(await wb.xlsx.writeBuffer() as ArrayBuffer)

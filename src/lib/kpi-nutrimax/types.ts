@@ -96,15 +96,30 @@ export type KpiViagemNutrimax = {
   status: 'ok' | 'incompleto' | 'sem_rastreador'
 }
 
-/** Um cliente dentro da aba de uma placa, no relatório de conferência. */
-export type ClienteRomaneioResumo = {
+/** Uma parada real do GPS (Relatório Parada e Serviço do Unitrac) casada com
+ *  um cliente do romaneio pelo código da loja. */
+export type ParadaConferidaNutrimax = {
+  chegada: string // ISO
+  saida: string // ISO
+  distanciaKm: number | null
+  localParada: string
+  codigoLoja: string | null
+  nomeLoja: string | null
+}
+
+/** Um cliente dentro da aba de uma placa, no relatório de conferência —
+ *  com a confirmação física (GPS) além do documental (romaneio). */
+export type ClienteConferidoNutrimax = {
   nf: string
   clienteNome: string
   endereco: string | null
+  /** null = nenhuma parada GPS bateu o código de loja desse cliente. */
+  parada: ParadaConferidaNutrimax | null
 }
 
 /** Uma linha do relatório "Romaneio Nutry" — uma carga/placa da escala, com o resultado
- *  da conferência contra o romaneio e os clientes encontrados. */
+ *  da conferência contra o romaneio, os clientes encontrados, e o cruzamento com o
+ *  GPS real (Relatório Parada e Serviço). */
 export type RelatorioPlacaNutrimax = {
   carga: string
   placaRaw: string
@@ -122,5 +137,14 @@ export type RelatorioPlacaNutrimax = {
   /** Clientes distintos que de fato apareceram no romaneio pra essa carga. */
   entRecebido: number
   status: 'ok' | 'divergente' | 'ausente'
-  clientes: ClienteRomaneioResumo[]
+  clientes: ClienteConferidoNutrimax[]
+  /** Soma da distância de todas as paradas do dia (GPS). null = placa não
+   *  apareceu no Relatório Parada e Serviço (sem rastreador nesse dia). */
+  kmPercorrido: number | null
+  qtdParadasReal: number
+  inicioViagem: string | null // ISO
+  fimViagem: string | null // ISO
+  /** Paradas do GPS classificadas como LOJA que não bateram nenhum cliente
+   *  do romaneio dessa carga — evita esconder anomalias. */
+  paradasSemCliente: ParadaConferidaNutrimax[]
 }

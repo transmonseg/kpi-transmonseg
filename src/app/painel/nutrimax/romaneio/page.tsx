@@ -18,6 +18,8 @@ type Linha = {
   nfRecebido: number
   entPlanejado: number | null
   entRecebido: number
+  kmPercorrido: number | null
+  qtdParadasReal: number
   status: StatusLinha
 }
 type Filtro = 'todas' | 'problemas' | 'ok'
@@ -29,6 +31,7 @@ function fmtKg(n: number): string {
 export default function NutrimaxRomaneioPage() {
   const [escala, setEscala] = useState<File[]>([])
   const [romaneio, setRomaneio] = useState<File[]>([])
+  const [relatorio, setRelatorio] = useState<File[]>([])
   const [data, setData] = useState('')
   const [pending, setPending] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -37,7 +40,7 @@ export default function NutrimaxRomaneioPage() {
   const [filtro, setFiltro] = useState<Filtro>('problemas')
   const [resultado, setResultado] = useState<{ xlsxBase64: string; filename: string } | null>(null)
 
-  const pronto = escala.length > 0 && romaneio.length > 0 && !!data
+  const pronto = escala.length > 0 && romaneio.length > 0 && relatorio.length > 0 && !!data
 
   async function processar() {
     if (!pronto) return
@@ -50,6 +53,7 @@ export default function NutrimaxRomaneioPage() {
       const fd = new FormData()
       fd.set('escala', escala[0])
       fd.set('romaneio', romaneio[0])
+      fd.set('relatorio', relatorio[0])
       fd.set('data', data)
       const res = await fetch('/api/kpi/nutrimax/romaneio', { method: 'POST', body: fd })
       if (!res.ok) throw new Error(await res.text())
@@ -94,9 +98,10 @@ export default function NutrimaxRomaneioPage() {
         <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.02em] text-[var(--color-fg)] md:text-[34px]">
           Gerar Romaneio
         </h1>
-        <p className="mt-1 max-w-[55ch] text-[14px] leading-relaxed text-[var(--color-fg-muted)]">
-          Suba a Escala de Rota e o Romaneio de Entrega. Confere cada placa da escala contra o
-          romaneio e devolve um XLSX com uma aba de resumo e uma aba por placa.
+        <p className="mt-1 max-w-[60ch] text-[14px] leading-relaxed text-[var(--color-fg-muted)]">
+          Suba a Escala de Rota, o Romaneio de Entrega e o Relatório Parada e Serviço do
+          Unitrac. Confere cada placa da escala contra o romaneio e cruza com o GPS real
+          (paradas, km, horários) — devolve um XLSX com uma aba de resumo e uma aba por placa.
         </p>
       </header>
 
@@ -124,10 +129,20 @@ export default function NutrimaxRomaneioPage() {
             onRemove={() => setRomaneio([])}
           />
 
+          <FileDropzone
+            eyebrow="Passo 3"
+            label="Relatório Parada e Serviço"
+            hint="PDF do Unitrac · paradas e km reais por placa"
+            accept=".pdf"
+            files={relatorio}
+            onAdd={files => setRelatorio(files.slice(0, 1))}
+            onRemove={() => setRelatorio([])}
+          />
+
           <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
             <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
               <CalendarBlank size={12} weight="bold" />
-              Passo 3 · Data de referência
+              Passo 4 · Data de referência
             </div>
             <input
               id="data"
@@ -191,6 +206,8 @@ export default function NutrimaxRomaneioPage() {
                   <th className="w-24 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Peso</th>
                   <th className="w-24 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Clientes</th>
                   <th className="w-20 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">NFs</th>
+                  <th className="w-20 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">KM</th>
+                  <th className="w-24 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Paradas GPS</th>
                   <th className="w-32 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Status</th>
                 </tr>
               </thead>
@@ -216,6 +233,12 @@ export default function NutrimaxRomaneioPage() {
                     <td className="px-4 py-1.5 text-center text-numeric text-[var(--color-fg-muted)]">
                       {l.nfRecebido}{l.nfPlanejado != null ? `/${l.nfPlanejado}` : ''}
                     </td>
+                    <td className="px-4 py-1.5 text-center text-numeric text-[var(--color-fg-muted)]">
+                      {l.kmPercorrido != null ? l.kmPercorrido.toLocaleString('pt-BR') : '—'}
+                    </td>
+                    <td className="px-4 py-1.5 text-center text-numeric text-[var(--color-fg-muted)]">
+                      {l.qtdParadasReal}
+                    </td>
                     <td className="px-4 py-1.5 text-center">
                       <StatusBadge status={l.status} />
                     </td>
@@ -223,7 +246,7 @@ export default function NutrimaxRomaneioPage() {
                 ))}
                 {linhasFiltradas.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-[var(--color-fg-subtle)]">
+                    <td colSpan={10} className="px-4 py-8 text-center text-[var(--color-fg-subtle)]">
                       Nenhuma carga nesse filtro.
                     </td>
                   </tr>
@@ -259,7 +282,7 @@ export default function NutrimaxRomaneioPage() {
             {pending ? 'Processando' : 'Conferir'}
           </span>
           <span className="text-[18px] font-semibold tracking-tight">
-            {pending ? 'Cruzando escala com romaneio…' : pronto ? 'Gerar conferência' : 'Aguardando arquivos'}
+            {pending ? 'Cruzando escala, romaneio e GPS…' : pronto ? 'Gerar conferência' : 'Aguardando arquivos'}
           </span>
         </div>
         {!pending && pronto && (

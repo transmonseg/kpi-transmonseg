@@ -18,9 +18,20 @@ const base: RelatorioPlacaNutrimax = {
   entRecebido: 2,
   status: 'ok',
   clientes: [
-    { nf: '1', clienteNome: 'ANDRE LUIS SILVA VELASCO', endereco: 'RUA X, 1 - BAIRRO, CAMPOS - *' },
-    { nf: '2', clienteNome: 'M A SARDINHA', endereco: 'RUA Y, 2 - BAIRRO, CAMPOS - *' },
+    {
+      nf: '1', clienteNome: 'ANDRE LUIS SILVA VELASCO', endereco: 'RUA X, 1 - BAIRRO, CAMPOS - *',
+      parada: {
+        chegada: '2026-07-15T10:00:00.000Z', saida: '2026-07-15T10:15:00.000Z', distanciaKm: 12.5,
+        localParada: '165049 - ANDRE LUIS SILVA VELASCO', codigoLoja: '165049', nomeLoja: 'ANDRE LUIS SILVA VELASCO',
+      },
+    },
+    { nf: '2', clienteNome: 'M A SARDINHA', endereco: 'RUA Y, 2 - BAIRRO, CAMPOS - *', parada: null },
   ],
+  kmPercorrido: 93.5,
+  qtdParadasReal: 2,
+  inicioViagem: '2026-07-15T05:07:00.000Z',
+  fimViagem: '2026-07-15T14:08:00.000Z',
+  paradasSemCliente: [],
 }
 
 const ausente: RelatorioPlacaNutrimax = {
@@ -33,6 +44,11 @@ const ausente: RelatorioPlacaNutrimax = {
   entRecebido: 0,
   status: 'ausente',
   clientes: [],
+  kmPercorrido: null,
+  qtdParadasReal: 0,
+  inicioViagem: null,
+  fimViagem: null,
+  paradasSemCliente: [],
 }
 
 describe('gerarRomaneioConferencia', () => {
@@ -54,7 +70,9 @@ describe('gerarRomaneioConferencia', () => {
     expect(resumo.getImages()).toHaveLength(1)
 
     // Linha 3 = header da tabela, linha 4 = primeira carga (linhas 1-2 = faixa de marca)
-    expect(resumo.getRow(3).values).toEqual([, 'CARGA', 'PLACA', 'DESTINO', 'PESO (KG)', 'CLIENTES', 'NFS', 'STATUS'])
+    expect(resumo.getRow(3).values).toEqual([
+      , 'CARGA', 'PLACA', 'DESTINO', 'PESO (KG)', 'CLIENTES', 'NFS', 'KM', 'PARADAS GPS', 'STATUS',
+    ])
     const linha4 = resumo.getRow(4).values as unknown[]
     expect(linha4[1]).toBe('92593')
     expect((linha4[2] as { text: string }).text).toBe('TTL7D40') // placa vira link pra aba
@@ -62,15 +80,21 @@ describe('gerarRomaneioConferencia', () => {
     expect(linha4[4]).toBe(2405)
     expect(linha4[5]).toBe('2/2')
     expect(linha4[6]).toBe('2/2')
-    expect(linha4[7]).toBe('OK')
+    expect(linha4[7]).toBe(93.5)
+    expect(linha4[8]).toBe(2)
+    expect(linha4[9]).toBe('OK')
 
     const aba = wb.getWorksheet('TTL7D40 (92593)')!
     expect(aba.getImages()).toHaveLength(1)
     const linhas = aba.getSheetValues().filter(Boolean).map(r => (r as unknown[]).slice(1))
     expect(linhas).toContainEqual(['MOTORISTA', 'LUAN VIANA AREAS RIBEIRO'])
+    expect(linhas).toContainEqual(['KM PERCORRIDO', 93.5])
+    expect(linhas).toContainEqual(['INÍCIO VIAGEM', '05:07'])
+    expect(linhas).toContainEqual(['FIM VIAGEM', '14:08'])
     expect(linhas).toContainEqual(['CLIENTES (ENT)', '2 / 2'])
-    expect(linhas).toContainEqual(['NF', 'CLIENTE', 'ENDEREÇO'])
-    expect(linhas).toContainEqual(['1', 'ANDRE LUIS SILVA VELASCO', 'RUA X, 1 - BAIRRO, CAMPOS - *'])
+    expect(linhas).toContainEqual(['NF', 'CLIENTE', 'ENDEREÇO', 'CONFIRMADO GPS', 'CHEGADA', 'KM'])
+    expect(linhas).toContainEqual(['1', 'ANDRE LUIS SILVA VELASCO', 'RUA X, 1 - BAIRRO, CAMPOS - *', 'SIM', '10:00', 12.5])
+    expect(linhas).toContainEqual(['2', 'M A SARDINHA', 'RUA Y, 2 - BAIRRO, CAMPOS - *', 'NÃO', '', ''])
   })
 
   it('duas cargas com a mesma placa geram abas com nomes distintos (placa + carga)', async () => {
@@ -126,5 +150,44 @@ describe('gerarRomaneioConferencia', () => {
     const totalRow = resumo.getRow(6).values as unknown[]
     expect(totalRow[1]).toBe('TOTAL')
     expect(totalRow[4]).toBe(2405 + 1000)
+  })
+
+  it('cliente confirmado por GPS fica verde; sem confirmação fica âmbar', async () => {
+    const buf = await gerarRomaneioConferencia([base])
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buf as unknown as ArrayBuffer)
+    const aba = wb.getWorksheet('TTL7D40 (92593)')!
+    const rows = aba.getRows(1, aba.rowCount) ?? []
+    const linhaConfirmada = rows.find(r => r.getCell(1).value === '1')!
+    const linhaNaoConfirmada = rows.find(r => r.getCell(1).value === '2')!
+    expect(linhaConfirmada.getCell(4).value).toBe('SIM')
+    expect(linhaConfirmada.getCell(4).fill).toMatchObject({ fgColor: { argb: 'FFD1FAE5' } })
+    expect(linhaNaoConfirmada.getCell(4).value).toBe('NÃO')
+    expect(linhaNaoConfirmada.getCell(4).fill).toMatchObject({ fgColor: { argb: 'FFFEF3C7' } })
+  })
+
+  it('paradas sem cliente identificado aparecem numa seção à parte, só quando existem', async () => {
+    const comSobra: RelatorioPlacaNutrimax = {
+      ...base,
+      paradasSemCliente: [{
+        chegada: '2026-07-15T11:00:00.000Z', saida: '2026-07-15T11:10:00.000Z', distanciaKm: 5.2,
+        localParada: '999999 - LOJA FANTASMA', codigoLoja: '999999', nomeLoja: 'LOJA FANTASMA',
+      }],
+    }
+    const buf = await gerarRomaneioConferencia([comSobra])
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buf as unknown as ArrayBuffer)
+    const aba = wb.getWorksheet('TTL7D40 (92593)')!
+    const linhas = aba.getSheetValues().filter(Boolean).map(r => (r as unknown[]).slice(1))
+    expect(linhas).toContainEqual(['PARADAS SEM CLIENTE IDENTIFICADO'])
+    expect(linhas).toContainEqual(['LOCAL', 'CHEGADA', 'KM'])
+    expect(linhas).toContainEqual(['999999 - LOJA FANTASMA', '11:00', 5.2])
+
+    const buf2 = await gerarRomaneioConferencia([base])
+    const wb2 = new ExcelJS.Workbook()
+    await wb2.xlsx.load(buf2 as unknown as ArrayBuffer)
+    const aba2 = wb2.getWorksheet('TTL7D40 (92593)')!
+    const linhas2 = aba2.getSheetValues().filter(Boolean).map(r => (r as unknown[]).slice(1))
+    expect(linhas2).not.toContainEqual(['PARADAS SEM CLIENTE IDENTIFICADO'])
   })
 })
