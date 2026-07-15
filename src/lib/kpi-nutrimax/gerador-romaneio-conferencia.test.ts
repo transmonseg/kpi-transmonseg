@@ -14,6 +14,8 @@ const base: RelatorioPlacaNutrimax = {
   pesoKg: 2405,
   nfPlanejado: 2,
   nfRecebido: 2,
+  entPlanejado: 2,
+  entRecebido: 2,
   status: 'ok',
   clientes: [
     { nf: '1', clienteNome: 'ANDRE LUIS SILVA VELASCO', endereco: 'RUA X, 1 - BAIRRO, CAMPOS - *' },
@@ -28,6 +30,7 @@ const ausente: RelatorioPlacaNutrimax = {
   placaNorm: 'XXX0000',
   destino: 'DIRETA FRATELLI',
   nfRecebido: 0,
+  entRecebido: 0,
   status: 'ausente',
   clientes: [],
 }
@@ -51,17 +54,21 @@ describe('gerarRomaneioConferencia', () => {
     expect(resumo.getImages()).toHaveLength(1)
 
     // Linha 3 = header da tabela, linha 4 = primeira carga (linhas 1-2 = faixa de marca)
-    expect(resumo.getRow(3).values).toEqual([, 'CARGA', 'PLACA', 'DESTINO', 'STATUS'])
+    expect(resumo.getRow(3).values).toEqual([, 'CARGA', 'PLACA', 'DESTINO', 'PESO (KG)', 'CLIENTES', 'NFS', 'STATUS'])
     const linha4 = resumo.getRow(4).values as unknown[]
     expect(linha4[1]).toBe('92593')
     expect((linha4[2] as { text: string }).text).toBe('TTL7D40') // placa vira link pra aba
     expect(linha4[3]).toBe('CAMPOS')
-    expect(linha4[4]).toBe('OK')
+    expect(linha4[4]).toBe(2405)
+    expect(linha4[5]).toBe('2/2')
+    expect(linha4[6]).toBe('2/2')
+    expect(linha4[7]).toBe('OK')
 
     const aba = wb.getWorksheet('TTL7D40 (92593)')!
     expect(aba.getImages()).toHaveLength(1)
     const linhas = aba.getSheetValues().filter(Boolean).map(r => (r as unknown[]).slice(1))
     expect(linhas).toContainEqual(['MOTORISTA', 'LUAN VIANA AREAS RIBEIRO'])
+    expect(linhas).toContainEqual(['CLIENTES (ENT)', '2 / 2'])
     expect(linhas).toContainEqual(['NF', 'CLIENTE', 'ENDEREÇO'])
     expect(linhas).toContainEqual(['1', 'ANDRE LUIS SILVA VELASCO', 'RUA X, 1 - BAIRRO, CAMPOS - *'])
   })
@@ -108,5 +115,16 @@ describe('gerarRomaneioConferencia', () => {
     const linkCell = resumo.getCell('B4')
     expect(linkCell.text).toBe('TTL7D40')
     expect(linkCell.hyperlink).toBe("#'TTL7D40 (92593)'!A1")
+  })
+
+  it('linha TOTAL no fim do Resumo soma o peso do dia', async () => {
+    const buf = await gerarRomaneioConferencia([base, { ...base, carga: '92594', pesoKg: 1000 }])
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buf as unknown as ArrayBuffer)
+    const resumo = wb.getWorksheet('Resumo')!
+    // linha 3 = header, linhas 4-5 = as 2 cargas, linha 6 = TOTAL
+    const totalRow = resumo.getRow(6).values as unknown[]
+    expect(totalRow[1]).toBe('TOTAL')
+    expect(totalRow[4]).toBe(2405 + 1000)
   })
 })

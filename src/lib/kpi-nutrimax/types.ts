@@ -66,6 +66,11 @@ export type RelatorioPlacaNutrimax = {
   pesoKg: number | null
   nfPlanejado: number | null
   nfRecebido: number
+  /** Clientes distintos planejados (ENT da escala) — diferente de NF: um cliente
+   *  pode receber mais de uma nota fiscal na mesma carga. */
+  entPlanejado: number | null
+  /** Clientes distintos que de fato apareceram no romaneio pra essa carga. */
+  entRecebido: number
   status: 'ok' | 'divergente' | 'ausente'
   clientes: ClienteRomaneioResumo[]
 }

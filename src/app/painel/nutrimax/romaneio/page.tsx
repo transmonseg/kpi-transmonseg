@@ -5,7 +5,7 @@ import { ArrowRight, CalendarBlank, WarningCircle, FileArrowDown, Truck } from '
 import { Badge, cn } from '@/components/ui'
 import { FileDropzone } from '@/app/painel/file-dropzone'
 
-type Resumo = { total: number; ok: number; divergentes: number; ausentes: number }
+type Resumo = { total: number; ok: number; divergentes: number; ausentes: number; pesoTotalKg: number }
 type Tone = 'default' | 'success' | 'warning' | 'danger'
 type StatusLinha = 'ok' | 'divergente' | 'ausente'
 type Linha = {
@@ -13,11 +13,18 @@ type Linha = {
   placa: string
   destino: string
   motorista: string
+  pesoKg: number | null
   nfPlanejado: number | null
   nfRecebido: number
+  entPlanejado: number | null
+  entRecebido: number
   status: StatusLinha
 }
 type Filtro = 'todas' | 'problemas' | 'ok'
+
+function fmtKg(n: number): string {
+  return `${n.toLocaleString('pt-BR')} kg`
+}
 
 export default function NutrimaxRomaneioPage() {
   const [escala, setEscala] = useState<File[]>([])
@@ -142,11 +149,12 @@ export default function NutrimaxRomaneioPage() {
       )}
 
       {resumo && (
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
           <CardResumo label="Total de cargas" valor={resumo.total} tone="default" />
           <CardResumo label="OK" valor={resumo.ok} tone="success" />
           <CardResumo label="Divergentes" valor={resumo.divergentes} tone="warning" />
           <CardResumo label="Ausentes" valor={resumo.ausentes} tone="danger" />
+          <CardResumo label="Peso total" valor={fmtKg(resumo.pesoTotalKg)} tone="default" />
         </div>
       )}
 
@@ -180,7 +188,9 @@ export default function NutrimaxRomaneioPage() {
                   <th className="w-32 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Placa</th>
                   <th className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Destino</th>
                   <th className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Motorista</th>
-                  <th className="w-24 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">NFs</th>
+                  <th className="w-24 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Peso</th>
+                  <th className="w-24 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Clientes</th>
+                  <th className="w-20 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">NFs</th>
                   <th className="w-32 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Status</th>
                 </tr>
               </thead>
@@ -198,6 +208,12 @@ export default function NutrimaxRomaneioPage() {
                     <td className="px-4 py-1.5 text-[var(--color-fg)]">{l.destino}</td>
                     <td className="px-4 py-1.5 text-[var(--color-fg-muted)]">{l.motorista}</td>
                     <td className="px-4 py-1.5 text-center text-numeric text-[var(--color-fg-muted)]">
+                      {l.pesoKg != null ? l.pesoKg.toLocaleString('pt-BR') : '—'}
+                    </td>
+                    <td className="px-4 py-1.5 text-center text-numeric text-[var(--color-fg-muted)]">
+                      {l.entRecebido}{l.entPlanejado != null ? `/${l.entPlanejado}` : ''}
+                    </td>
+                    <td className="px-4 py-1.5 text-center text-numeric text-[var(--color-fg-muted)]">
                       {l.nfRecebido}{l.nfPlanejado != null ? `/${l.nfPlanejado}` : ''}
                     </td>
                     <td className="px-4 py-1.5 text-center">
@@ -207,7 +223,7 @@ export default function NutrimaxRomaneioPage() {
                 ))}
                 {linhasFiltradas.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-[var(--color-fg-subtle)]">
+                    <td colSpan={8} className="px-4 py-8 text-center text-[var(--color-fg-subtle)]">
                       Nenhuma carga nesse filtro.
                     </td>
                   </tr>
@@ -261,7 +277,7 @@ export default function NutrimaxRomaneioPage() {
   )
 }
 
-function CardResumo({ label, valor, tone }: { label: string; valor: number; tone: Tone }) {
+function CardResumo({ label, valor, tone }: { label: string; valor: number | string; tone: Tone }) {
   const toneCls: Record<Tone, string> = {
     default: 'border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-fg)]',
     success: 'border-transparent bg-[var(--color-success-soft)] text-[var(--color-success-soft-fg)]',

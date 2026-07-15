@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
     ok: relatorio.filter(r => r.status === 'ok').length,
     divergentes: relatorio.filter(r => r.status === 'divergente').length,
     ausentes: relatorio.filter(r => r.status === 'ausente').length,
+    pesoTotalKg: relatorio.reduce((acc, r) => acc + (r.pesoKg ?? 0), 0),
   }
 
   // Prévia pra tela — sem a lista de clientes (isso fica só dentro do XLSX, evita
@@ -50,8 +51,11 @@ export async function POST(req: NextRequest) {
     placa: r.placaNorm,
     destino: r.destino,
     motorista: r.motorista,
+    pesoKg: r.pesoKg,
     nfPlanejado: r.nfPlanejado,
     nfRecebido: r.nfRecebido,
+    entPlanejado: r.entPlanejado,
+    entRecebido: r.entRecebido,
     status: r.status,
   }))
 

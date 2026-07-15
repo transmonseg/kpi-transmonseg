@@ -102,19 +102,34 @@ export async function gerarRomaneioConferencia(relatorio: RelatorioPlacaNutrimax
 
   const resumo = wb.addWorksheet('Resumo')
   resumo.views = [{ state: 'frozen', ySplit: 3 }]
-  resumo.columns = [{ width: 12 }, { width: 14 }, { width: 28 }, { width: 16 }]
-  aplicarCabecalhoDeMarca(resumo, imageId, 'ROMANEIO NUTRY — CONFERÊNCIA', `${relatorio.length} carga(s) na escala`, 4)
-  const headerResumo = resumo.addRow(['CARGA', 'PLACA', 'DESTINO', 'STATUS'])
+  resumo.columns = [{ width: 12 }, { width: 14 }, { width: 26 }, { width: 12 }, { width: 12 }, { width: 10 }, { width: 14 }]
+  aplicarCabecalhoDeMarca(resumo, imageId, 'ROMANEIO NUTRY — CONFERÊNCIA', `${relatorio.length} carga(s) na escala`, 7)
+  const headerResumo = resumo.addRow(['CARGA', 'PLACA', 'DESTINO', 'PESO (KG)', 'CLIENTES', 'NFS', 'STATUS'])
   estilizaHeaderTabela(headerResumo)
+  let pesoTotal = 0
   relatorio.forEach((r, i) => {
-    const row = resumo.addRow([r.carga, r.placaNorm, r.destino, STATUS_LABEL[r.status]])
+    pesoTotal += r.pesoKg ?? 0
+    const row = resumo.addRow([
+      r.carga,
+      r.placaNorm,
+      r.destino,
+      r.pesoKg ?? '',
+      `${r.entRecebido}/${r.entPlanejado ?? '—'}`,
+      `${r.nfRecebido}/${r.nfPlanejado ?? '—'}`,
+      STATUS_LABEL[r.status],
+    ])
     if (i % 2 === 1) {
-      row.eachCell((cell, col) => { if (col < 4) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_BG_ALT } } })
+      row.eachCell((cell, col) => { if (col < 7) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_BG_ALT } } })
     }
     row.getCell(2).value = { text: r.placaNorm, hyperlink: `#'${nomesAba[i]}'!A1` }
     row.getCell(2).font = { color: { argb: 'FF1F4E78' }, underline: true }
-    pintaStatusCell(row.getCell(4), r.status)
+    pintaStatusCell(row.getCell(7), r.status)
   })
+  if (relatorio.length > 0) {
+    const totalRow = resumo.addRow(['TOTAL', '', '', pesoTotal, '', '', ''])
+    totalRow.font = { bold: true }
+    totalRow.eachCell(cell => { cell.border = { top: { style: 'thin', color: { argb: 'FF94A3B8' } } } })
+  }
 
   relatorio.forEach((r, i) => {
     const ws = wb.addWorksheet(nomesAba[i])
@@ -129,8 +144,8 @@ export async function gerarRomaneioConferencia(relatorio: RelatorioPlacaNutrimax
     ws.addRow(['AJUDANTE 1', r.ajudante1 ?? ''])
     ws.addRow(['AJUDANTE 2', r.ajudante2 ?? ''])
     ws.addRow(['PESO (KG)', r.pesoKg ?? ''])
-    ws.addRow(['NF PLANEJADO', r.nfPlanejado ?? ''])
-    ws.addRow(['NF RECEBIDO', r.nfRecebido])
+    ws.addRow(['CLIENTES (ENT)', `${r.entRecebido} / ${r.entPlanejado ?? '—'}`])
+    ws.addRow(['NF', `${r.nfRecebido} / ${r.nfPlanejado ?? '—'}`])
     const statusRow = ws.addRow(['STATUS', STATUS_LABEL[r.status]])
     pintaStatusCell(statusRow.getCell(2), r.status)
     ws.addRow([])

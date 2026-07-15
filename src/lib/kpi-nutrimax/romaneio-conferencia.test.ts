@@ -12,8 +12,8 @@ function escala(overrides: Partial<LinhaEscalaNutrimax> = {}): LinhaEscalaNutrim
     ajudante1: 'LEANDRO DA HORA BATISTA',
     ajudante2: null,
     pesoKg: 2405,
-    entPlanejado: 31,
-    nfPlanejado: 2,
+    entPlanejado: null,
+    nfPlanejado: null,
     ...overrides,
   }
 }
@@ -34,14 +34,18 @@ function romaneio(overrides: Partial<LinhaRomaneioNutrimax> = {}): LinhaRomaneio
 }
 
 describe('montaRelatorioPorPlaca', () => {
-  it('status ok: placa bate e recebeu todos os NFs planejados', () => {
+  it('status ok: placa bate, recebeu todos os NFs e todos os clientes planejados', () => {
     const r = montaRelatorioPorPlaca(
-      [escala({ nfPlanejado: 2 })],
-      [romaneio({ nf: '1' }), romaneio({ nf: '2' })],
+      [escala({ nfPlanejado: 2, entPlanejado: 2 })],
+      [
+        romaneio({ nf: '1', clienteCodigo: 'C1' }),
+        romaneio({ nf: '2', clienteCodigo: 'C2' }),
+      ],
     )
     expect(r).toHaveLength(1)
     expect(r[0].status).toBe('ok')
     expect(r[0].nfRecebido).toBe(2)
+    expect(r[0].entRecebido).toBe(2)
     expect(r[0].clientes).toHaveLength(2)
     expect(r[0].clientes[0]).toEqual({ nf: '1', clienteNome: 'ANDRE LUIS SILVA VELASCO', endereco: 'RUA X, 1 - BAIRRO, CAMPOS - *' })
   })
@@ -50,6 +54,7 @@ describe('montaRelatorioPorPlaca', () => {
     const r = montaRelatorioPorPlaca([escala({ carga: '99999' })], [romaneio({ carga: '92593' })])
     expect(r[0].status).toBe('ausente')
     expect(r[0].nfRecebido).toBe(0)
+    expect(r[0].entRecebido).toBe(0)
     expect(r[0].clientes).toEqual([])
   })
 
@@ -64,15 +69,28 @@ describe('montaRelatorioPorPlaca', () => {
   it('status divergente: recebeu menos NFs do que o planejado', () => {
     const r = montaRelatorioPorPlaca(
       [escala({ nfPlanejado: 5 })],
-      [romaneio({ nf: '1' }), romaneio({ nf: '2' })],
+      [romaneio({ nf: '1', clienteCodigo: 'C1' }), romaneio({ nf: '2', clienteCodigo: 'C2' })],
     )
     expect(r[0].status).toBe('divergente')
     expect(r[0].nfRecebido).toBe(2)
   })
 
-  it('sem nfPlanejado (null) não gera falso-divergente por contagem — só confere placa', () => {
+  it('status divergente: NF bate mas faltou cliente (ENT) — 2 notas pro mesmo cliente, outro cliente nunca apareceu', () => {
     const r = montaRelatorioPorPlaca(
-      [escala({ nfPlanejado: null })],
+      [escala({ nfPlanejado: 2, entPlanejado: 2 })],
+      [
+        romaneio({ nf: '1', clienteCodigo: 'C1' }),
+        romaneio({ nf: '2', clienteCodigo: 'C1' }), // mesmo cliente de novo — só 1 cliente distinto, não 2
+      ],
+    )
+    expect(r[0].nfRecebido).toBe(2) // NF bate com o planejado...
+    expect(r[0].entRecebido).toBe(1) // ...mas só 1 cliente distinto, não 2
+    expect(r[0].status).toBe('divergente')
+  })
+
+  it('sem nfPlanejado nem entPlanejado (null) não gera falso-divergente — só confere placa', () => {
+    const r = montaRelatorioPorPlaca(
+      [escala({ nfPlanejado: null, entPlanejado: null })],
       [romaneio({ nf: '1' })],
     )
     expect(r[0].status).toBe('ok')
