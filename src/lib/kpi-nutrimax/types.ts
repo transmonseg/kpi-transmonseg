@@ -59,6 +59,18 @@ export type EntradaNutrimax = {
   placa_duplicada: boolean
 }
 
+/** Resumo de viagem de uma placa no dia, extraído do Relatório Parada e Serviço
+ *  do Unitrac (PDF) — km real percorrido, não uma estimativa. */
+export type ResumoViagemPlacaNutrimax = {
+  placaNorm: string
+  /** Soma da distância de todas as paradas do dia. null se o PDF não trouxe
+   *  distância pra nenhuma parada dessa placa (não confundir com 0). */
+  kmPercorrido: number | null
+  qtdParadas: number
+  inicioViagem: string | null // ISO
+  fimViagem: string | null // ISO
+}
+
 /** Um cliente dentro da aba de uma placa, no relatório de conferência. */
 export type ClienteRomaneioResumo = {
   nf: string

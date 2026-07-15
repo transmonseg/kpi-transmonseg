@@ -24,6 +24,7 @@ function descreveAviso(a: AvisoCobertura): string {
 export default function NutrimaxGerarPage() {
   const [escala, setEscala] = useState<File[]>([])
   const [romaneio, setRomaneio] = useState<File[]>([])
+  const [relatorio, setRelatorio] = useState<File[]>([])
   const [data, setData] = useState('')
   const [pending, setPending] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -42,6 +43,7 @@ export default function NutrimaxGerarPage() {
       const fd = new FormData()
       fd.set('escala', escala[0])
       fd.set('romaneio', romaneio[0])
+      if (relatorio[0]) fd.set('relatorio', relatorio[0])
       fd.set('data', data)
       const res = await fetch('/api/kpi/nutrimax/gerar', { method: 'POST', body: fd })
       if (!res.ok) throw new Error(await res.text())
@@ -81,12 +83,13 @@ export default function NutrimaxGerarPage() {
         <p className="mt-1 max-w-[55ch] text-[14px] leading-relaxed text-[var(--color-fg-muted)]">
           Suba a Escala de Rota (o planejado: qual placa vai pra qual destino) e o Romaneio de
           Entrega (o executado). O sistema cruza os dois com o status do Unitrac e avisa se
-          alguma carga da escala não apareceu no romaneio antes de gerar o XLSX.
+          alguma carga da escala não apareceu no romaneio antes de gerar o XLSX. O Relatório
+          Parada e Serviço é opcional — traz km percorrido real por placa.
         </p>
       </header>
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <div className="col-span-1 lg:col-span-7">
+        <div className="col-span-1 flex flex-col gap-4 lg:col-span-7">
           <FileDropzone
             eyebrow="Passo 1"
             label="Escala de Rota"
@@ -95,6 +98,15 @@ export default function NutrimaxGerarPage() {
             files={escala}
             onAdd={files => setEscala(files.slice(0, 1))}
             onRemove={() => setEscala([])}
+          />
+          <FileDropzone
+            eyebrow="Passo 3 · opcional"
+            label="Relatório Parada e Serviço"
+            hint="PDF do Unitrac · km percorrido real por placa"
+            accept=".pdf"
+            files={relatorio}
+            onAdd={files => setRelatorio(files.slice(0, 1))}
+            onRemove={() => setRelatorio([])}
           />
         </div>
 
@@ -112,7 +124,7 @@ export default function NutrimaxGerarPage() {
           <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
             <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
               <CalendarBlank size={12} weight="bold" />
-              Passo 3 · Data de referência
+              Passo 4 · Data de referência
             </div>
             <input
               id="data"

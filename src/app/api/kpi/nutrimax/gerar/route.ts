@@ -5,7 +5,9 @@ import { parseRomaneioNutrimax } from '@/lib/kpi-nutrimax/parse-romaneio'
 import { cruzaRomaneioAlvosNutrimax } from '@/lib/kpi-nutrimax/matcher'
 import { checarCobertura } from '@/lib/kpi-nutrimax/cobertura'
 import { gerarKpiNutrimax } from '@/lib/kpi-nutrimax/gerador'
-import type { AvisoCoberturaNutrimax } from '@/lib/kpi-nutrimax/types'
+import { montaResumoViagemPorPlaca } from '@/lib/kpi-nutrimax/resumo-viagem'
+import { parseUnitracPdf } from '@/lib/parsers/unitrac-pdf'
+import type { AvisoCoberturaNutrimax, ResumoViagemPlacaNutrimax } from '@/lib/kpi-nutrimax/types'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -19,6 +21,7 @@ export async function POST(req: NextRequest) {
   const data = String(form.get('data') ?? '')
   const escalaFile = form.get('escala')
   const romaneioFile = form.get('romaneio')
+  const relatorioFile = form.get('relatorio') // opcional — Relatório Parada e Serviço do Unitrac
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return new NextResponse('Data inválida (YYYY-MM-DD)', { status: 400 })
   if (!(escalaFile instanceof File)) return new NextResponse('Escala de Rota (PDF) obrigatória', { status: 400 })
   if (!(romaneioFile instanceof File)) return new NextResponse('Romaneio de Entrega (PDF) obrigatório', { status: 400 })
@@ -38,7 +41,15 @@ export async function POST(req: NextRequest) {
   const avisos: AvisoCoberturaNutrimax[] = checarCobertura(escala, linhasRomaneio)
 
   const entradas = await cruzaRomaneioAlvosNutrimax(linhasRomaneio, data)
-  const xlsxBuf = await gerarKpiNutrimax(entradas)
+
+  let resumoViagem: ResumoViagemPlacaNutrimax[] | undefined
+  if (relatorioFile instanceof File) {
+    const relatorioBuf = Buffer.from(await relatorioFile.arrayBuffer())
+    const resumosVeiculo = await parseUnitracPdf(relatorioBuf)
+    resumoViagem = montaResumoViagemPorPlaca(resumosVeiculo)
+  }
+
+  const xlsxBuf = await gerarKpiNutrimax(entradas, resumoViagem)
 
   return NextResponse.json({
     avisos,
