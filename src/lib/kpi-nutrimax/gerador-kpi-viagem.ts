@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs'
 import { getLogoBuffer } from '@/lib/kpi/template-loader'
+import { formataDataPtBr } from '@/lib/kpi/kpi-styles'
 import type { KpiViagemNutrimax } from './types'
 
 // Mesmas cores do template aprovado do KPI Benassi.
@@ -25,20 +26,26 @@ const STATUS_COR: Record<KpiViagemNutrimax['status'], { bg: string; txt: string 
   sem_rastreador: { bg: COR_SEM_RASTREADOR_BG, txt: COR_SEM_RASTREADOR_TXT },
 }
 
+const COL_INICIO = 12
+const COL_FIM = 13
+
 const COLUNAS = [
   'CARGA', 'PLACA', 'DESTINO', 'MOTORISTA', 'AJUDANTE 1', 'AJUDANTE 2', 'PESO (KG)',
   'CLIENTES PLANEJADOS', 'NF PLANEJADO', 'PARADAS REAIS', 'KM PERCORRIDO',
   'INÍCIO VIAGEM', 'FIM VIAGEM', 'STATUS',
 ] as const
 
-/** HH:MM a partir de um ISO. String vazia quando não há valor — fica em
- *  branco na célula em vez de poluir a planilha com o ISO cru. */
-function fmtHora(iso: string | null): string {
-  if (!iso) return ''
-  return iso.slice(11, 16)
+/** Fração do dia (formato de hora nativo do Excel) a partir de um ISO —
+ *  mesma técnica do gerador do Benassi (gerador-kpi.ts:toExcelTime). Sem
+ *  isso, a hora vira texto solto em vez de um valor de hora de verdade
+ *  (alinhamento, numFmt e ordenação do Excel dependem disso). */
+function toExcelTime(iso: string | null): number | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  return (d.getUTCHours() * 3600 + d.getUTCMinutes() * 60 + d.getUTCSeconds()) / 86400
 }
 
-export async function gerarKpiViagemXlsx(kpi: KpiViagemNutrimax[]): Promise<Buffer> {
+export async function gerarKpiViagemXlsx(kpi: KpiViagemNutrimax[], data: string): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
   wb.creator = 'TRANSMONSEG'
   wb.created = new Date()
@@ -47,7 +54,8 @@ export async function gerarKpiViagemXlsx(kpi: KpiViagemNutrimax[]): Promise<Buff
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const imageId = wb.addImage({ buffer: logoBuf as any, extension: 'png' })
 
-  const ws = wb.addWorksheet('KPI Nutry Max')
+  const [, mesIso, diaIso] = data.split('-')
+  const ws = wb.addWorksheet(`${diaIso}.${mesIso}`)
   ws.columns = [
     { width: 10 }, { width: 12 }, { width: 22 }, { width: 26 }, { width: 22 }, { width: 22 },
     { width: 12 }, { width: 14 }, { width: 12 }, { width: 12 }, { width: 13 },
@@ -56,7 +64,7 @@ export async function gerarKpiViagemXlsx(kpi: KpiViagemNutrimax[]): Promise<Buff
 
   ws.mergeCells(1, 1, 1, COLUNAS.length)
   const titulo = ws.getCell(1, 1)
-  titulo.value = 'KPI NUTRY MAX — POR CARGA/PLACA'
+  titulo.value = 'RELATÓRIO KPI - NUTRY MAX'
   titulo.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } }
   titulo.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_TITULO } }
   titulo.alignment = { horizontal: 'center', vertical: 'middle' }
@@ -65,7 +73,7 @@ export async function gerarKpiViagemXlsx(kpi: KpiViagemNutrimax[]): Promise<Buff
 
   ws.mergeCells(2, 1, 2, COLUNAS.length)
   const subtitulo = ws.getCell(2, 1)
-  subtitulo.value = `${kpi.length} carga(s) — planejado (Escala) x realizado (Relatório Parada e Serviço)`
+  subtitulo.value = `${formataDataPtBr(data)} — ${kpi.length} carga(s) — planejado (Escala) x realizado (Relatório Parada e Serviço)`
   subtitulo.font = { italic: true, size: 10, color: { argb: 'FF475569' } }
   subtitulo.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_BG_ALT } }
   subtitulo.alignment = { horizontal: 'center' }
@@ -87,10 +95,14 @@ export async function gerarKpiViagemXlsx(kpi: KpiViagemNutrimax[]): Promise<Buff
     const row = ws.addRow([
       k.carga, k.placaNorm, k.destino, k.motorista, k.ajudante1 ?? '', k.ajudante2 ?? '',
       k.pesoKg ?? '', k.entPlanejado ?? '', k.nfPlanejado ?? '', k.qtdParadasReal, k.kmPercorrido ?? '',
-      fmtHora(k.inicioViagem), fmtHora(k.fimViagem), STATUS_LABEL[k.status],
+      toExcelTime(k.inicioViagem) ?? '', toExcelTime(k.fimViagem) ?? '', STATUS_LABEL[k.status],
     ])
     if (i % 2 === 1) {
       row.eachCell((cell, col) => { if (col < COLUNAS.length) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_BG_ALT } } })
+    }
+    for (const col of [COL_INICIO, COL_FIM]) {
+      const cell = row.getCell(col)
+      if (typeof cell.value === 'number') { cell.numFmt = 'h:mm'; cell.alignment = { horizontal: 'center' } }
     }
     const cor = STATUS_COR[k.status]
     const statusCell = row.getCell(COLUNAS.length)

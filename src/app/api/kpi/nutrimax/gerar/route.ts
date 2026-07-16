@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
 
   const resumoViagem = montaResumoViagemPorPlaca(resumosVeiculo)
   const kpi = montaKpiViagemPorCarga(escala, resumoViagem)
-  const xlsxBuf = await gerarKpiViagemXlsx(kpi)
+  const xlsxBuf = await gerarKpiViagemXlsx(kpi, data)
 
   const resumo = {
     total: kpi.length,
