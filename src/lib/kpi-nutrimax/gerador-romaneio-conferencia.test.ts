@@ -89,12 +89,27 @@ describe('gerarRomaneioConferencia', () => {
     const linhas = aba.getSheetValues().filter(Boolean).map(r => (r as unknown[]).slice(1))
     expect(linhas).toContainEqual(['MOTORISTA', 'LUAN VIANA AREAS RIBEIRO'])
     expect(linhas).toContainEqual(['KM PERCORRIDO', 93.5])
-    expect(linhas).toContainEqual(['INÍCIO VIAGEM', '05:07'])
-    expect(linhas).toContainEqual(['FIM VIAGEM', '14:08'])
     expect(linhas).toContainEqual(['CLIENTES (ENT)', '2 / 2'])
     expect(linhas).toContainEqual(['NF', 'CLIENTE', 'ENDEREÇO', 'CONFIRMADO GPS', 'CHEGADA', 'KM'])
-    expect(linhas).toContainEqual(['1', 'ANDRE LUIS SILVA VELASCO', 'RUA X, 1 - BAIRRO, CAMPOS - *', 'SIM', '10:00', 12.5])
-    expect(linhas).toContainEqual(['2', 'M A SARDINHA', 'RUA Y, 2 - BAIRRO, CAMPOS - *', 'NÃO', '', ''])
+
+    // Horas são valores nativos do Excel (Date na época 1899-12-30), não texto.
+    const inicioLinha = linhas.find(l => l[0] === 'INÍCIO VIAGEM') as unknown[]
+    expect((inicioLinha[1] as Date).getUTCHours()).toBe(5)
+    expect((inicioLinha[1] as Date).getUTCMinutes()).toBe(7)
+    const fimLinha = linhas.find(l => l[0] === 'FIM VIAGEM') as unknown[]
+    expect((fimLinha[1] as Date).getUTCHours()).toBe(14)
+    expect((fimLinha[1] as Date).getUTCMinutes()).toBe(8)
+
+    const clienteConfirmado = linhas.find(l => l[0] === '1') as unknown[]
+    expect(clienteConfirmado[1]).toBe('ANDRE LUIS SILVA VELASCO')
+    expect(clienteConfirmado[2]).toBe('RUA X, 1 - BAIRRO, CAMPOS - *')
+    expect(clienteConfirmado[3]).toBe('SIM')
+    expect((clienteConfirmado[4] as Date).getUTCHours()).toBe(10)
+    expect((clienteConfirmado[4] as Date).getUTCMinutes()).toBe(0)
+    expect(clienteConfirmado[5]).toBe(12.5)
+
+    const clienteNaoConfirmado = linhas.find(l => l[0] === '2') as unknown[]
+    expect(clienteNaoConfirmado).toEqual(['2', 'M A SARDINHA', 'RUA Y, 2 - BAIRRO, CAMPOS - *', 'NÃO', '', ''])
   })
 
   it('duas cargas com a mesma placa geram abas com nomes distintos (placa + carga)', async () => {
@@ -181,7 +196,10 @@ describe('gerarRomaneioConferencia', () => {
     const linhas = aba.getSheetValues().filter(Boolean).map(r => (r as unknown[]).slice(1))
     expect(linhas).toContainEqual(['PARADAS SEM CLIENTE IDENTIFICADO'])
     expect(linhas).toContainEqual(['LOCAL', 'CHEGADA', 'KM'])
-    expect(linhas).toContainEqual(['999999 - LOJA FANTASMA', '11:00', 5.2])
+    const paradaSemCliente = linhas.find(l => l[0] === '999999 - LOJA FANTASMA') as unknown[]
+    expect((paradaSemCliente[1] as Date).getUTCHours()).toBe(11)
+    expect((paradaSemCliente[1] as Date).getUTCMinutes()).toBe(0)
+    expect(paradaSemCliente[2]).toBe(5.2)
 
     const buf2 = await gerarRomaneioConferencia([base])
     const wb2 = new ExcelJS.Workbook()

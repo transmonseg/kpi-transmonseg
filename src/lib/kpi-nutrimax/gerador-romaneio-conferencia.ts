@@ -41,11 +41,22 @@ function nomeUnicoAba(usados: Set<string>, base: string): string {
   return nome
 }
 
-/** HH:MM a partir de um ISO. String vazia quando não há valor — fica em
- *  branco na célula em vez de poluir a planilha com "null"/"undefined". */
-function fmtHora(iso: string | null): string {
-  if (!iso) return ''
-  return iso.slice(11, 16)
+/** Fração do dia (formato de hora nativo do Excel) a partir de um ISO — mesma
+ *  técnica do gerador do Benassi (gerador-kpi.ts:toExcelTime). Sem isso, a
+ *  hora vira texto solto em vez de um valor de hora de verdade (alinhamento,
+ *  numFmt e ordenação do Excel dependem disso). */
+function toExcelTime(iso: string | null): number | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  return (d.getUTCHours() * 3600 + d.getUTCMinutes() * 60 + d.getUTCSeconds()) / 86400
+}
+
+/** Aplica valor de hora + numFmt numa célula de uma linha chave/valor
+ *  (cabeçalho por placa: coluna 2) ou de tabela (coluna variável). */
+function setCelulaHora(cell: ExcelJS.Cell, iso: string | null) {
+  const t = toExcelTime(iso)
+  cell.value = t ?? ''
+  if (t !== null) { cell.numFmt = 'h:mm'; cell.alignment = { horizontal: 'center' } }
 }
 
 /** Faixa de marca (logo + título navy + subtítulo) nas 2 primeiras linhas da aba —
@@ -165,8 +176,10 @@ export async function gerarRomaneioConferencia(relatorio: RelatorioPlacaNutrimax
     ws.addRow(['AJUDANTE 2', r.ajudante2 ?? ''])
     ws.addRow(['PESO (KG)', r.pesoKg ?? ''])
     ws.addRow(['KM PERCORRIDO', r.kmPercorrido ?? ''])
-    ws.addRow(['INÍCIO VIAGEM', fmtHora(r.inicioViagem)])
-    ws.addRow(['FIM VIAGEM', fmtHora(r.fimViagem)])
+    const inicioRow = ws.addRow(['INÍCIO VIAGEM', ''])
+    setCelulaHora(inicioRow.getCell(2), r.inicioViagem)
+    const fimRow = ws.addRow(['FIM VIAGEM', ''])
+    setCelulaHora(fimRow.getCell(2), r.fimViagem)
     ws.addRow(['CLIENTES (ENT)', `${r.entRecebido} / ${r.entPlanejado ?? '—'}`])
     ws.addRow(['NF', `${r.nfRecebido} / ${r.nfPlanejado ?? '—'}`])
     const statusRow = ws.addRow(['STATUS', STATUS_LABEL[r.status]])
@@ -181,9 +194,10 @@ export async function gerarRomaneioConferencia(relatorio: RelatorioPlacaNutrimax
         c.clienteNome,
         c.endereco ?? '',
         c.parada ? 'SIM' : 'NÃO',
-        c.parada ? fmtHora(c.parada.chegada) : '',
+        '',
         c.parada?.distanciaKm ?? '',
       ])
+      setCelulaHora(row.getCell(5), c.parada?.chegada ?? null)
       if (ci % 2 === 1) {
         row.eachCell((cell, col) => { if (col < 4) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_BG_ALT } } })
       }
@@ -197,7 +211,8 @@ export async function gerarRomaneioConferencia(relatorio: RelatorioPlacaNutrimax
       const headerSemCliente = ws.addRow(['LOCAL', 'CHEGADA', 'KM'])
       estilizaHeaderTabela(headerSemCliente)
       r.paradasSemCliente.forEach((p, pi) => {
-        const row = ws.addRow([p.localParada, fmtHora(p.chegada), p.distanciaKm ?? ''])
+        const row = ws.addRow([p.localParada, '', p.distanciaKm ?? ''])
+        setCelulaHora(row.getCell(2), p.chegada)
         if (pi % 2 === 1) {
           row.eachCell(cell => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_BG_ALT } } })
         }

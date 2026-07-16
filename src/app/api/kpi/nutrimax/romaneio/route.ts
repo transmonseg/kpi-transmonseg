@@ -6,6 +6,7 @@ import { parseUnitracPdf } from '@/lib/parsers/unitrac-pdf'
 import { montaRelatorioPorPlaca } from '@/lib/kpi-nutrimax/romaneio-conferencia'
 import { gerarRomaneioConferencia } from '@/lib/kpi-nutrimax/gerador-romaneio-conferencia'
 import { MARCADOR_BASE_NUTRIMAX } from '@/lib/kpi-nutrimax/constants'
+import { buscarResumosViagemViaApi, mesclarResumosPdfApi } from '@/lib/kpi-nutrimax/api-paradas'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -37,9 +38,20 @@ export async function POST(req: NextRequest) {
   if (romaneio.length === 0) {
     return new NextResponse('Nenhum cliente reconhecido no romaneio — confira se o PDF é o "Romaneio de Entrega".', { status: 422 })
   }
-  const resumosVeiculo = await parseUnitracPdf(relatorioBuf, null, MARCADOR_BASE_NUTRIMAX)
-  if (resumosVeiculo.length === 0) {
+  const pdfResumos = await parseUnitracPdf(relatorioBuf, null, MARCADOR_BASE_NUTRIMAX)
+  if (pdfResumos.length === 0) {
     return new NextResponse('Nenhum veículo reconhecido no relatório — confira se o PDF é o "Relatório Parada e Serviço".', { status: 422 })
+  }
+
+  // Completa com a API ao vivo do Unitrac, igual ao Gerar KPI — best-effort:
+  // API fora do ar ou sem dado não bloqueia, segue só com o PDF.
+  let resumosVeiculo = pdfResumos
+  try {
+    const placasEscala = new Set(escala.map(e => e.placaNorm).filter(Boolean))
+    const apiResumos = await buscarResumosViagemViaApi(placasEscala, data)
+    if (apiResumos.length > 0) resumosVeiculo = mesclarResumosPdfApi(pdfResumos, apiResumos)
+  } catch (e) {
+    console.warn('[/api/kpi/nutrimax/romaneio] enriquecimento via API falhou (segue só com o PDF):', e instanceof Error ? e.message : e)
   }
 
   const relatorio = montaRelatorioPorPlaca(escala, romaneio, resumosVeiculo)
