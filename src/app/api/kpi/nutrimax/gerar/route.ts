@@ -76,6 +76,8 @@ export async function POST(req: NextRequest) {
     entPlanejado: k.entPlanejado,
     qtdParadasReal: k.qtdParadasReal,
     kmPercorrido: k.kmPercorrido,
+    inicioViagem: k.inicioViagem,
+    fimViagem: k.fimViagem,
     status: k.status,
   }))
 
