@@ -17,7 +17,12 @@ import { temLojaLocal, extraiLojaLocal } from './extrai-loja-local'
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
 
-const BASE_LOCAL_SHORT = 'BASE BENASSI'
+// BASE_LOCAL_SHORT é o nome cadastrado da garagem/CD no Unitrac — MUDA por cliente
+// (Benassi: "BASE BENASSI"; Nutrimax: "BASE - BASE GARAGEM"). Por isso é parâmetro,
+// não constante, com o default do Benassi pra manter os call sites existentes intactos.
+// FORA_LOCAL_SHORT ("FORA DE BASE E LOCAL DE SERVIÇO") já é um rótulo fixo do
+// próprio Unitrac, igual pra qualquer conta — não precisa parametrizar.
+const BASE_LOCAL_SHORT_DEFAULT = 'BASE BENASSI'
 const FORA_LOCAL_SHORT = 'FORA DE BASE'
 
 function parseDataBR(s: string, hora: string): Date | null {
@@ -42,11 +47,11 @@ function parseDuracaoStr(s: string): number {
 // no local concatenado. Se houver, a parada é LOJA mesmo se a parte primária
 // for BASE BENASSI (caminhão parou em raio sobreposto BASE+LOJA).
 // Mesma semântica de findLojaGeofence no parser XLSX (unitrac.ts:120).
-function temLojaConcatenada(local: string): boolean {
+function temLojaConcatenada(local: string, marcadorBase: string): boolean {
   const partes = local.split(',').map(s => s.trim())
   let viuBaseOuFora = false
   for (const p of partes) {
-    if (p.startsWith(BASE_LOCAL_SHORT) || p.startsWith(FORA_LOCAL_SHORT)) { viuBaseOuFora = true; continue }
+    if (p.startsWith(marcadorBase) || p.startsWith(FORA_LOCAL_SHORT)) { viuBaseOuFora = true; continue }
     if (ROTA_GENERICA_RE.test(p)) continue
     // temLojaLocal cobre "CÓDIGO - NOME" padrão e formatos com endereço
     // interposto ("CÓDIGO Cidade - UF NOME"). CEP "21530-900" não casa
@@ -63,23 +68,23 @@ function temLojaConcatenada(local: string): boolean {
   // Endereço COM vírgulas entre código e nome fragmenta a loja no split
   // ("8590573 26-40, NOVA CIDADE, ..., CEP 24804033 PRINCESA ITABORAÍ").
   // Tenta o local inteiro; exigePrefixoRede evita CEP no início virar código.
-  if (!local.startsWith(BASE_LOCAL_SHORT) && !local.startsWith(FORA_LOCAL_SHORT)) {
+  if (!local.startsWith(marcadorBase) && !local.startsWith(FORA_LOCAL_SHORT)) {
     if (temLojaLocal(local, { exigePrefixoRede: true })) return true
   }
   return false
 }
 
-function classificaParada(local: string, duracaoSeg: number): ParadaUnitrac['classificacao'] {
+function classificaParada(local: string, duracaoSeg: number, marcadorBase: string): ParadaUnitrac['classificacao'] {
   // Caminhão parado em raio sobreposto BASE/FORA + LOJA: sempre LOJA.
   // Antes, paradas com "BASE BENASSI, 23080000 - MERCADO X" viravam BASE
   // indevidamente (XLSX já tinha essa lógica via findLojaGeofence).
-  if (temLojaConcatenada(local)) return 'LOJA'
+  if (temLojaConcatenada(local, marcadorBase)) return 'LOJA'
   // BASE BENASSI / FORA DE BASE podem aparecer em QUALQUER ponto do local
   // (não só no início) quando há quebra de página no PDF que insere texto
   // do endereço entre os fragmentos. Procurar como substring é robusto.
-  if (local.includes(BASE_LOCAL_SHORT)) return duracaoSeg > 900 ? 'BASE' : 'FAKE_EXIT'
+  if (local.includes(marcadorBase)) return duracaoSeg > 900 ? 'BASE' : 'FAKE_EXIT'
   if (local.includes(FORA_LOCAL_SHORT)) return duracaoSeg < 600 ? 'FAKE_EXIT' : 'FORA_BASE'
-  if (ehSoROTA(local)) {
+  if (ehSoROTA(local, marcadorBase)) {
     return duracaoSeg < 600 ? 'FAKE_EXIT' : 'FORA_BASE'
   }
   // Default: se não tem código de loja real (temLojaConcatenada=false) nem
@@ -98,7 +103,7 @@ function classificaParada(local: string, duracaoSeg: number): ParadaUnitrac['cla
 // Mesma regra do parser XLSX (unitrac.ts:123).
 const ROTA_GENERICA_RE = /^\d+\s*-\s*ROTA\s/i
 
-function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: string | null } {
+function extraiLoja(local: string, marcadorBase: string): { codigo_loja: string | null; nome_loja: string | null } {
   // Limpa sufixo |VEHICLE_HEADER|<placa próx veículo> que vaza no last parada
   const cleaned = local.replace(/\s*\|VEHICLE_HEADER\|.*$/, '').trim()
 
@@ -121,7 +126,7 @@ function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: str
 
   for (const parte of partes) {
     // Pula bases, foras e ROTAs genéricas
-    if (parte.startsWith(BASE_LOCAL_SHORT) || parte.startsWith(FORA_LOCAL_SHORT)) continue
+    if (parte.startsWith(marcadorBase) || parte.startsWith(FORA_LOCAL_SHORT)) continue
     if (ROTA_GENERICA_RE.test(parte)) continue
     const { codigo_loja: codigo, nome_loja: nome } = extraiLojaLocal(parte)
     if (!codigo) continue
@@ -134,7 +139,7 @@ function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: str
 
   // Endereço COM vírgulas entre código e nome fragmenta a loja no split.
   // Tenta o local inteiro pra reconstituir código+nome de uma vez.
-  if (!cleaned.startsWith(BASE_LOCAL_SHORT) && !cleaned.startsWith(FORA_LOCAL_SHORT)) {
+  if (!cleaned.startsWith(marcadorBase) && !cleaned.startsWith(FORA_LOCAL_SHORT)) {
     const inteiro = extraiLojaLocal(cleaned, { exigePrefixoRede: true })
     if (inteiro.codigo_loja && inteiro.nome_loja) return inteiro
   }
@@ -144,14 +149,14 @@ function extraiLoja(local: string): { codigo_loja: string | null; nome_loja: str
 
 // Verifica se o `local_parada` é puramente uma geofence ROTA (sem loja real).
 // Quando é só ROTA, a parada deve ser tratada como FORA_BASE (não LOJA).
-function ehSoROTA(local: string): boolean {
-  if (local.startsWith(BASE_LOCAL_SHORT) || local.startsWith(FORA_LOCAL_SHORT)) return false
+function ehSoROTA(local: string, marcadorBase: string): boolean {
+  if (local.startsWith(marcadorBase) || local.startsWith(FORA_LOCAL_SHORT)) return false
   const partes = local.split(',').map(s => s.trim())
   // Se TODAS as partes são ROTAs ou vazias, é só ROTA
   return partes.length > 0 && partes.every(p => !p || ROTA_GENERICA_RE.test(p))
 }
 
-function computeSaidaCd(paradas: ParadaUnitrac[]): Date | null {
+function computeSaidaCd(paradas: ParadaUnitrac[], marcadorBase: string): Date | null {
   // Localiza a primeira LOJA (destino real de entrega)
   const primeiraLojaIdx = paradas.findIndex(p => p.classificacao === 'LOJA')
   if (primeiraLojaIdx === -1) return null
@@ -165,7 +170,7 @@ function computeSaidaCd(paradas: ParadaUnitrac[]): Date | null {
     const p = paradas[i]
     const isBase =
       p.classificacao === 'BASE' ||
-      (p.classificacao === 'FAKE_EXIT' && p.local_parada.startsWith(BASE_LOCAL_SHORT))
+      (p.classificacao === 'FAKE_EXIT' && p.local_parada.startsWith(marcadorBase))
     if (isBase) lastBaseSaida = p.saida
   }
 
@@ -310,7 +315,7 @@ const PARADA_REGEX = new RegExp(
   'g',
 )
 
-function extractParadas(rawText: string, placaNorm: string): ParadaUnitrac[] {
+function extractParadas(rawText: string, placaNorm: string, marcadorBase: string): ParadaUnitrac[] {
   const paradas: ParadaUnitrac[] = []
   let ordem = 1
   PARADA_REGEX.lastIndex = 0
@@ -329,8 +334,8 @@ function extractParadas(rawText: string, placaNorm: string): ParadaUnitrac[] {
     const endereco = enderecoRaw.trim().replace(/\s+/g, ' ').trim() || null
     const local_parada = localRaw.trim().replace(/\s+/g, ' ').trim() || ''
 
-    const classificacao = classificaParada(local_parada, duracao_seg)
-    const { codigo_loja, nome_loja } = extraiLoja(local_parada)
+    const classificacao = classificaParada(local_parada, duracao_seg, marcadorBase)
+    const { codigo_loja, nome_loja } = extraiLoja(local_parada, marcadorBase)
 
     paradas.push({
       placa_norm: placaNorm,
@@ -365,6 +370,9 @@ function extractParadas(rawText: string, placaNorm: string): ParadaUnitrac[] {
 export function parseTextToResumos(
   rawText: string,
   cadastroPlacas?: ReadonlySet<string> | null,
+  /** Nome cadastrado da garagem/CD no Unitrac pra essa conta — varia por
+   *  cliente (Benassi: "BASE BENASSI"; Nutrimax: "BASE - BASE GARAGEM"). */
+  marcadorBase: string = BASE_LOCAL_SHORT_DEFAULT,
 ): ResumoVeiculo[] {
   const cleaned = preprocess(rawText)
   const rawVeiculos = splitByVeiculo(cleaned)
@@ -373,10 +381,10 @@ export function parseTextToResumos(
   for (const rv of rawVeiculos) {
     const placaNorm = corrigeOcrPlaca(rv.placa, cadastroPlacas)
     if (!placaNorm) continue
-    const paradas = extractParadas(rv.rawText, placaNorm)
+    const paradas = extractParadas(rv.rawText, placaNorm, marcadorBase)
     if (paradas.length === 0) continue
 
-    const saida_cd = computeSaidaCd(paradas)
+    const saida_cd = computeSaidaCd(paradas, marcadorBase)
     out.push({
       placa_norm: placaNorm,
       placa_raw: rv.placa,
@@ -393,26 +401,27 @@ export function parseTextToResumos(
 export async function parseUnitracPdf(
   buffer: ArrayBuffer | Buffer,
   cadastroPlacas?: ReadonlySet<string> | null,
+  marcadorBase: string = BASE_LOCAL_SHORT_DEFAULT,
 ): Promise<ResumoVeiculo[]> {
   const USE_PDFJS = process.env.PDF_PARSER_BACKEND === 'pdfjs-serverless'
   const buf = buffer instanceof ArrayBuffer ? Buffer.from(buffer) : buffer
 
   if (USE_PDFJS) {
     const { parseUnitracPdfJs } = await import('./unitrac-pdf-pdfjs')
-    return parseUnitracPdfJs(buf, cadastroPlacas)
+    return parseUnitracPdfJs(buf, cadastroPlacas, marcadorBase)
   }
 
   const result = await pdfParse(buf)
 
   if (process.env.PDF_SHADOW_MODE === 'true') {
     import('./unitrac-pdf-pdfjs').then(({ parseUnitracPdfJs }) =>
-      parseUnitracPdfJs(buf, cadastroPlacas).then(shadow => {
-        const original = parseTextToResumos(result.text, cadastroPlacas)
+      parseUnitracPdfJs(buf, cadastroPlacas, marcadorBase).then(shadow => {
+        const original = parseTextToResumos(result.text, cadastroPlacas, marcadorBase)
         if (original.length !== shadow.length)
           console.log(`[pdf-shadow] mismatch: orig=${original.length} pdfjs=${shadow.length}`)
       }).catch(() => {})
     )
   }
 
-  return parseTextToResumos(result.text, cadastroPlacas)
+  return parseTextToResumos(result.text, cadastroPlacas, marcadorBase)
 }

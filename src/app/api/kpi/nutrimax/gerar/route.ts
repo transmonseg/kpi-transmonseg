@@ -5,6 +5,9 @@ import { parseUnitracPdf } from '@/lib/parsers/unitrac-pdf'
 import { montaResumoViagemPorPlaca } from '@/lib/kpi-nutrimax/resumo-viagem'
 import { montaKpiViagemPorCarga } from '@/lib/kpi-nutrimax/kpi-viagem'
 import { gerarKpiViagemXlsx } from '@/lib/kpi-nutrimax/gerador-kpi-viagem'
+import { MARCADOR_BASE_NUTRIMAX } from '@/lib/kpi-nutrimax/constants'
+import { buscarResumosViagemViaApi, mesclarResumosPdfApi } from '@/lib/kpi-nutrimax/api-paradas'
+import type { ResumoVeiculo } from '@/lib/types/unitrac'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -18,20 +21,39 @@ export async function POST(req: NextRequest) {
   const data = String(form.get('data') ?? '')
   const escalaFile = form.get('escala')
   const relatorioFile = form.get('relatorio')
+  const modoApi = form.get('modoApi') === 'true'
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return new NextResponse('Data inválida (YYYY-MM-DD)', { status: 400 })
   if (!(escalaFile instanceof File)) return new NextResponse('Escala de Rota (PDF) obrigatória', { status: 400 })
-  if (!(relatorioFile instanceof File)) return new NextResponse('Relatório Parada e Serviço (PDF) obrigatório', { status: 400 })
+  if (!modoApi && !(relatorioFile instanceof File)) {
+    return new NextResponse('Relatório Parada e Serviço (PDF) obrigatório', { status: 400 })
+  }
 
   const escalaBuf = Buffer.from(await escalaFile.arrayBuffer())
-  const relatorioBuf = Buffer.from(await relatorioFile.arrayBuffer())
-
   const escala = await parseEscalaNutrimax(escalaBuf)
   if (escala.length === 0) {
     return new NextResponse('Nenhuma carga reconhecida na escala — confira se o PDF é a "Escala de Rota".', { status: 422 })
   }
-  const resumosVeiculo = await parseUnitracPdf(relatorioBuf)
-  if (resumosVeiculo.length === 0) {
-    return new NextResponse('Nenhum veículo reconhecido no relatório — confira se o PDF é o "Relatório Parada e Serviço".', { status: 422 })
+
+  const placasEscala = new Set(escala.map(e => e.placaNorm).filter(Boolean))
+
+  let resumosVeiculo: ResumoVeiculo[]
+  if (modoApi) {
+    // Sem PDF pra cair de volta — se a API não trouxer nada, a geração segue
+    // e o KPI reflete isso honestamente (tudo "sem_rastreador"), sem bloquear.
+    resumosVeiculo = await buscarResumosViagemViaApi(placasEscala, data)
+  } else {
+    const relatorioBuf = Buffer.from(await (relatorioFile as File).arrayBuffer())
+    const pdfResumos = await parseUnitracPdf(relatorioBuf, null, MARCADOR_BASE_NUTRIMAX)
+    if (pdfResumos.length === 0) {
+      return new NextResponse('Nenhum veículo reconhecido no relatório — confira se o PDF é o "Relatório Parada e Serviço".', { status: 422 })
+    }
+    try {
+      const apiResumos = await buscarResumosViagemViaApi(placasEscala, data)
+      resumosVeiculo = apiResumos.length > 0 ? mesclarResumosPdfApi(pdfResumos, apiResumos) : pdfResumos
+    } catch (e) {
+      console.warn('[/api/kpi/nutrimax/gerar] enriquecimento via API falhou (segue só com o PDF):', e instanceof Error ? e.message : e)
+      resumosVeiculo = pdfResumos
+    }
   }
 
   const resumoViagem = montaResumoViagemPorPlaca(resumosVeiculo)

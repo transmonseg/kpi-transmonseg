@@ -13,6 +13,7 @@ import { parseTextToResumos } from './unitrac-pdf'
 export async function parseUnitracPdfJs(
   buffer: Buffer,
   cadastroPlacas?: ReadonlySet<string> | null,
+  marcadorBase?: string,
 ): Promise<ResumoVeiculo[]> {
   if (buffer.length === 0) return []
 
@@ -29,7 +30,7 @@ export async function parseUnitracPdfJs(
       pages.push(pageText)
     }
     const fullText = pages.join('\n')
-    return parseTextToResumos(fullText, cadastroPlacas)
+    return parseTextToResumos(fullText, cadastroPlacas, marcadorBase)
   } catch (err) {
     console.error('[pdfjs-serverless] extraction error:', err)
     return []

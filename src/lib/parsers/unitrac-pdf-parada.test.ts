@@ -103,6 +103,39 @@ describe('parseTextToResumos — extração e classificação de paradas', () =>
     expect(p.nome_loja).toBe('ASSAI TIJUCA')
   })
 
+  it('marcador de BASE customizado (Nutrimax): "BASE - BASE GARAGEM" pura → BASE', () => {
+    // Bug real: com o default "BASE BENASSI", esse local nunca batia (marcador
+    // errado pro cliente) e virava FORA_BASE/FAKE_EXIT em vez de BASE.
+    const out = parseTextToResumos(mkVeiculo('ABC-1234', [
+      { dur: '0D 00:30:00', local: 'BASE - BASE GARAGEM' },
+    ]), null, 'BASE - BASE GARAGEM')
+    expect(out[0].paradas[0].classificacao).toBe('BASE')
+    expect(out[0].paradas[0].codigo_loja).toBeNull()
+  })
+
+  it('marcador de BASE customizado: sem passar o parâmetro, "BASE - BASE GARAGEM" NÃO vira BASE (usa default Benassi)', () => {
+    const out = parseTextToResumos(mkVeiculo('ABC-1234', [
+      { dur: '0D 00:30:00', local: 'BASE - BASE GARAGEM' },
+    ]))
+    expect(out[0].paradas[0].classificacao).not.toBe('BASE')
+  })
+
+  it('marcador de BASE customizado concatenado com loja real → LOJA', () => {
+    const out = parseTextToResumos(mkVeiculo('ABC-1234', [
+      { dur: '0D 00:30:00', local: 'BASE - BASE GARAGEM, 163743 - CLIENTE TESTE' },
+    ]), null, 'BASE - BASE GARAGEM')
+    const p = out[0].paradas[0]
+    expect(p.classificacao).toBe('LOJA')
+    expect(p.codigo_loja).toBe('163743')
+  })
+
+  it('marcador padrão do Benassi continua funcionando quando o parâmetro não é passado', () => {
+    const out = parseTextToResumos(mkVeiculo('ABC-1234', [
+      { dur: '0D 00:30:00', local: 'BASE BENASSI' },
+    ]))
+    expect(out[0].paradas[0].classificacao).toBe('BASE')
+  })
+
   it('prefere código com prefixo de rede conhecido sobre ROTA genérica', () => {
     const out = parseTextToResumos(mkVeiculo('ABC-1234', [
       { dur: '0D 00:30:00', local: '2018023 - ROTA ZONA NORTE, 3030113 - SUPERPRIX LJ 13' },

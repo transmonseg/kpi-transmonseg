@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ArrowRight, CalendarBlank, WarningCircle, FileArrowDown, Truck } from '@phosphor-icons/react/dist/ssr'
+import { ArrowRight, CalendarBlank, WarningCircle, FileArrowDown, Truck, WifiHigh } from '@phosphor-icons/react/dist/ssr'
 import { Badge, cn } from '@/components/ui'
 import { FileDropzone } from '@/app/painel/file-dropzone'
 
@@ -24,6 +24,7 @@ type Filtro = 'todas' | 'problemas' | 'ok'
 export default function NutrimaxGerarPage() {
   const [escala, setEscala] = useState<File[]>([])
   const [relatorio, setRelatorio] = useState<File[]>([])
+  const [modoApi, setModoApi] = useState(false)
   const [data, setData] = useState('')
   const [pending, setPending] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -32,7 +33,7 @@ export default function NutrimaxGerarPage() {
   const [filtro, setFiltro] = useState<Filtro>('problemas')
   const [resultado, setResultado] = useState<{ xlsxBase64: string; filename: string } | null>(null)
 
-  const pronto = escala.length > 0 && relatorio.length > 0 && !!data
+  const pronto = escala.length > 0 && (modoApi || relatorio.length > 0) && !!data
 
   async function gerar() {
     if (!pronto) return
@@ -44,8 +45,9 @@ export default function NutrimaxGerarPage() {
     try {
       const fd = new FormData()
       fd.set('escala', escala[0])
-      fd.set('relatorio', relatorio[0])
+      if (!modoApi) fd.set('relatorio', relatorio[0])
       fd.set('data', data)
+      if (modoApi) fd.set('modoApi', 'true')
       const res = await fetch('/api/kpi/nutrimax/gerar', { method: 'POST', body: fd })
       if (!res.ok) throw new Error(await res.text())
       const json = await res.json() as { resumo: Resumo; linhas: Linha[]; xlsxBase64: string; filename: string }
@@ -91,10 +93,37 @@ export default function NutrimaxGerarPage() {
         </h1>
         <p className="mt-1 max-w-[55ch] text-[14px] leading-relaxed text-[var(--color-fg-muted)]">
           Suba a Escala de Rota e o Relatório Parada e Serviço do Unitrac. O sistema cruza o
-          planejado com o realizado de verdade (paradas e km reais, por GPS) e gera o KPI por
-          carga/placa.
+          planejado com o realizado de verdade (paradas e km reais, por GPS, completado com a
+          API ao vivo) e gera o KPI por carga/placa.
         </p>
       </header>
+
+      <div className="mb-4 flex items-center gap-3">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={modoApi}
+          onClick={() => setModoApi(v => !v)}
+          className={cn(
+            'relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200',
+            modoApi ? 'bg-[var(--color-success)]' : 'bg-[var(--color-border-strong)]',
+          )}
+        >
+          <span
+            className={cn(
+              'pointer-events-none inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200',
+              modoApi ? 'translate-x-4' : 'translate-x-0.5',
+            )}
+          />
+        </button>
+        <div className="flex items-baseline gap-2">
+          <span className="text-[13px] font-semibold text-[var(--color-fg)]">Modo API</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider rounded-full px-1.5 py-0.5 bg-[var(--color-info-soft)] text-[var(--color-info-soft-fg)]">Beta</span>
+          <span className="text-[12px] text-[var(--color-fg-muted)]">
+            {modoApi ? 'Paradas puxadas direto da API Unitrac — sem PDF necessário' : 'Ativar para gerar KPI só com a escala (sem PDF do Unitrac)'}
+          </span>
+        </div>
+      </div>
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="col-span-1 lg:col-span-7">
@@ -110,15 +139,27 @@ export default function NutrimaxGerarPage() {
         </div>
 
         <div className="col-span-1 flex flex-col gap-4 lg:col-span-5">
-          <FileDropzone
-            eyebrow="Passo 2"
-            label="Relatório Parada e Serviço"
-            hint="PDF do Unitrac · paradas e km reais por placa"
-            accept=".pdf"
-            files={relatorio}
-            onAdd={files => setRelatorio(files.slice(0, 1))}
-            onRemove={() => setRelatorio([])}
-          />
+          {modoApi ? (
+            <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-success)]/40 bg-[var(--color-success)]/5 p-5">
+              <div className="flex items-center gap-2">
+                <WifiHigh size={16} weight="bold" className="text-[var(--color-success)]" />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-success)]">API Unitrac · Passo 2 automático</span>
+              </div>
+              <p className="text-[13px] text-[var(--color-fg-muted)]">
+                As paradas serão puxadas direto da API Unitrac em tempo real. Nenhum arquivo necessário.
+              </p>
+            </div>
+          ) : (
+            <FileDropzone
+              eyebrow="Passo 2"
+              label="Relatório Parada e Serviço"
+              hint="PDF do Unitrac · paradas e km reais por placa"
+              accept=".pdf"
+              files={relatorio}
+              onAdd={files => setRelatorio(files.slice(0, 1))}
+              onRemove={() => setRelatorio([])}
+            />
+          )}
 
           <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
             <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
@@ -250,7 +291,7 @@ export default function NutrimaxGerarPage() {
             {pending ? 'Processando' : 'Gerar KPI'}
           </span>
           <span className="text-[18px] font-semibold tracking-tight">
-            {pending ? 'Cruzando escala com o relatório…' : pronto ? 'Gerar agora' : 'Aguardando arquivos'}
+            {pending ? (modoApi ? 'Puxando paradas da API…' : 'Cruzando escala com o relatório…') : pronto ? 'Gerar agora' : 'Aguardando arquivos'}
           </span>
         </div>
         {!pending && pronto && (
