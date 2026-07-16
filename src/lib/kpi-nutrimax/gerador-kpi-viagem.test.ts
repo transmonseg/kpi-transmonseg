@@ -26,7 +26,7 @@ describe('gerarKpiViagemXlsx', () => {
     expect(ws.getRow(3).values).toEqual([
       , 'CARGA', 'PLACA', 'DESTINO', 'MOTORISTA', 'AJUDANTE 1', 'AJUDANTE 2', 'PESO (KG)',
       'CLIENTES PLANEJADOS', 'NF PLANEJADO', 'PARADAS REAIS', 'KM PERCORRIDO',
-      'INÍCIO VIAGEM', 'FIM VIAGEM', 'STATUS',
+      'SAÍDA CD', 'CHEGADA CD', 'TEMPO OPERAÇÃO', 'STATUS',
     ])
     const linha4 = ws.getRow(4).values as unknown[]
     expect(linha4[1]).toBe('92593')
@@ -41,9 +41,13 @@ describe('gerarKpiViagemXlsx', () => {
     expect((linha4[12] as Date).getUTCMinutes()).toBe(7)
     expect((linha4[13] as Date).getUTCHours()).toBe(14)
     expect((linha4[13] as Date).getUTCMinutes()).toBe(8)
+    // TEMPO OPERAÇÃO = 14:08 - 05:07 = 09:01
+    expect((linha4[14] as Date).getUTCHours()).toBe(9)
+    expect((linha4[14] as Date).getUTCMinutes()).toBe(1)
     expect(ws.getRow(4).getCell(12).numFmt).toBe('h:mm')
     expect(ws.getRow(4).getCell(13).numFmt).toBe('h:mm')
-    expect(linha4[14]).toBe('OK')
+    expect(ws.getRow(4).getCell(14).numFmt).toBe('h:mm')
+    expect(linha4[15]).toBe('OK')
   })
 
   it('linha TOTAL soma peso e km', async () => {

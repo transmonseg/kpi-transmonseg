@@ -26,13 +26,19 @@ const STATUS_COR: Record<KpiViagemNutrimax['status'], { bg: string; txt: string 
   sem_rastreador: { bg: COR_SEM_RASTREADOR_BG, txt: COR_SEM_RASTREADOR_TXT },
 }
 
-const COL_INICIO = 12
-const COL_FIM = 13
+const COL_SAIDA_CD = 12
+const COL_CHEGADA_CD = 13
+const COL_TEMPO_OPERACAO = 14
 
+// Mesmos nomes de coluna do KPI Benassi pro que tem equivalente direto
+// (SAÍDA CD/CHEGADA CD = saída/volta ao CD; TEMPO OPERAÇÃO = duração da
+// viagem). CHD LOJA/SAÍDA LOJA/TEMPO EM LOJA do Benassi não têm equivalente
+// aqui — lá é por loja única; na Nutry Max uma carga visita dezenas de
+// clientes, não uma loja só.
 const COLUNAS = [
   'CARGA', 'PLACA', 'DESTINO', 'MOTORISTA', 'AJUDANTE 1', 'AJUDANTE 2', 'PESO (KG)',
   'CLIENTES PLANEJADOS', 'NF PLANEJADO', 'PARADAS REAIS', 'KM PERCORRIDO',
-  'INÍCIO VIAGEM', 'FIM VIAGEM', 'STATUS',
+  'SAÍDA CD', 'CHEGADA CD', 'TEMPO OPERAÇÃO', 'STATUS',
 ] as const
 
 /** Fração do dia (formato de hora nativo do Excel) a partir de um ISO —
@@ -43,6 +49,15 @@ function toExcelTime(iso: string | null): number | null {
   if (!iso) return null
   const d = new Date(iso)
   return (d.getUTCHours() * 3600 + d.getUTCMinutes() * 60 + d.getUTCSeconds()) / 86400
+}
+
+/** Duração SAÍDA CD → CHEGADA CD como fração do dia, mesma semântica de
+ *  calcTempoOperacao do Benassi (gerador-kpi.ts). */
+function toExcelTempoOperacao(inicioIso: string | null, fimIso: string | null): number | null {
+  if (!inicioIso || !fimIso) return null
+  let min = Math.round((new Date(fimIso).getTime() - new Date(inicioIso).getTime()) / 60000)
+  if (min < 0) min += 1440
+  return min / 1440
 }
 
 export async function gerarKpiViagemXlsx(kpi: KpiViagemNutrimax[], data: string): Promise<Buffer> {
@@ -59,7 +74,7 @@ export async function gerarKpiViagemXlsx(kpi: KpiViagemNutrimax[], data: string)
   ws.columns = [
     { width: 10 }, { width: 12 }, { width: 22 }, { width: 26 }, { width: 22 }, { width: 22 },
     { width: 12 }, { width: 14 }, { width: 12 }, { width: 12 }, { width: 13 },
-    { width: 11 }, { width: 11 }, { width: 16 },
+    { width: 11 }, { width: 11 }, { width: 14 }, { width: 16 },
   ]
 
   ws.mergeCells(1, 1, 1, COLUNAS.length)
@@ -95,12 +110,13 @@ export async function gerarKpiViagemXlsx(kpi: KpiViagemNutrimax[], data: string)
     const row = ws.addRow([
       k.carga, k.placaNorm, k.destino, k.motorista, k.ajudante1 ?? '', k.ajudante2 ?? '',
       k.pesoKg ?? '', k.entPlanejado ?? '', k.nfPlanejado ?? '', k.qtdParadasReal, k.kmPercorrido ?? '',
-      toExcelTime(k.inicioViagem) ?? '', toExcelTime(k.fimViagem) ?? '', STATUS_LABEL[k.status],
+      toExcelTime(k.inicioViagem) ?? '', toExcelTime(k.fimViagem) ?? '',
+      toExcelTempoOperacao(k.inicioViagem, k.fimViagem) ?? '', STATUS_LABEL[k.status],
     ])
     if (i % 2 === 1) {
       row.eachCell((cell, col) => { if (col < COLUNAS.length) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_BG_ALT } } })
     }
-    for (const col of [COL_INICIO, COL_FIM]) {
+    for (const col of [COL_SAIDA_CD, COL_CHEGADA_CD, COL_TEMPO_OPERACAO]) {
       const cell = row.getCell(col)
       if (typeof cell.value === 'number') { cell.numFmt = 'h:mm'; cell.alignment = { horizontal: 'center' } }
     }
@@ -112,7 +128,7 @@ export async function gerarKpiViagemXlsx(kpi: KpiViagemNutrimax[], data: string)
   })
 
   if (kpi.length > 0) {
-    const totalRow = ws.addRow(['TOTAL', '', '', '', '', '', pesoTotal, '', '', '', Math.round(kmTotal * 10) / 10, '', '', ''])
+    const totalRow = ws.addRow(['TOTAL', '', '', '', '', '', pesoTotal, '', '', '', Math.round(kmTotal * 10) / 10, '', '', '', ''])
     totalRow.font = { bold: true }
     totalRow.eachCell(cell => { cell.border = { top: { style: 'thin', color: { argb: 'FF94A3B8' } } } })
   }
