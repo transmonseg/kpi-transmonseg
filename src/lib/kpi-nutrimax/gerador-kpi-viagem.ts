@@ -26,9 +26,17 @@ const STATUS_COR: Record<KpiViagemNutrimax['status'], { bg: string; txt: string 
 }
 
 const COLUNAS = [
-  'CARGA', 'PLACA', 'DESTINO', 'MOTORISTA', 'PESO (KG)', 'CLIENTES PLANEJADOS',
-  'PARADAS REAIS', 'KM PERCORRIDO', 'INÍCIO VIAGEM', 'FIM VIAGEM', 'STATUS',
+  'CARGA', 'PLACA', 'DESTINO', 'MOTORISTA', 'AJUDANTE 1', 'AJUDANTE 2', 'PESO (KG)',
+  'CLIENTES PLANEJADOS', 'NF PLANEJADO', 'PARADAS REAIS', 'KM PERCORRIDO',
+  'INÍCIO VIAGEM', 'FIM VIAGEM', 'STATUS',
 ] as const
+
+/** HH:MM a partir de um ISO. String vazia quando não há valor — fica em
+ *  branco na célula em vez de poluir a planilha com o ISO cru. */
+function fmtHora(iso: string | null): string {
+  if (!iso) return ''
+  return iso.slice(11, 16)
+}
 
 export async function gerarKpiViagemXlsx(kpi: KpiViagemNutrimax[]): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
@@ -41,8 +49,9 @@ export async function gerarKpiViagemXlsx(kpi: KpiViagemNutrimax[]): Promise<Buff
 
   const ws = wb.addWorksheet('KPI Nutry Max')
   ws.columns = [
-    { width: 10 }, { width: 12 }, { width: 22 }, { width: 26 }, { width: 12 },
-    { width: 14 }, { width: 12 }, { width: 13 }, { width: 20 }, { width: 20 }, { width: 16 },
+    { width: 10 }, { width: 12 }, { width: 22 }, { width: 26 }, { width: 22 }, { width: 22 },
+    { width: 12 }, { width: 14 }, { width: 12 }, { width: 12 }, { width: 13 },
+    { width: 11 }, { width: 11 }, { width: 16 },
   ]
 
   ws.mergeCells(1, 1, 1, COLUNAS.length)
@@ -76,9 +85,9 @@ export async function gerarKpiViagemXlsx(kpi: KpiViagemNutrimax[]): Promise<Buff
     pesoTotal += k.pesoKg ?? 0
     kmTotal += k.kmPercorrido ?? 0
     const row = ws.addRow([
-      k.carga, k.placaNorm, k.destino, k.motorista, k.pesoKg ?? '',
-      k.entPlanejado ?? '', k.qtdParadasReal, k.kmPercorrido ?? '',
-      k.inicioViagem ?? '', k.fimViagem ?? '', STATUS_LABEL[k.status],
+      k.carga, k.placaNorm, k.destino, k.motorista, k.ajudante1 ?? '', k.ajudante2 ?? '',
+      k.pesoKg ?? '', k.entPlanejado ?? '', k.nfPlanejado ?? '', k.qtdParadasReal, k.kmPercorrido ?? '',
+      fmtHora(k.inicioViagem), fmtHora(k.fimViagem), STATUS_LABEL[k.status],
     ])
     if (i % 2 === 1) {
       row.eachCell((cell, col) => { if (col < COLUNAS.length) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_BG_ALT } } })
@@ -91,7 +100,7 @@ export async function gerarKpiViagemXlsx(kpi: KpiViagemNutrimax[]): Promise<Buff
   })
 
   if (kpi.length > 0) {
-    const totalRow = ws.addRow(['TOTAL', '', '', '', pesoTotal, '', '', Math.round(kmTotal * 10) / 10, '', '', ''])
+    const totalRow = ws.addRow(['TOTAL', '', '', '', '', '', pesoTotal, '', '', '', Math.round(kmTotal * 10) / 10, '', '', ''])
     totalRow.font = { bold: true }
     totalRow.eachCell(cell => { cell.border = { top: { style: 'thin', color: { argb: 'FF94A3B8' } } } })
   }

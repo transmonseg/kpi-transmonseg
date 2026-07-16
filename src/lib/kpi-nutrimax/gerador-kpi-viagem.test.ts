@@ -23,14 +23,20 @@ describe('gerarKpiViagemXlsx', () => {
 
     // Linha 3 = header da tabela (linhas 1-2 = faixa de marca)
     expect(ws.getRow(3).values).toEqual([
-      , 'CARGA', 'PLACA', 'DESTINO', 'MOTORISTA', 'PESO (KG)', 'CLIENTES PLANEJADOS',
-      'PARADAS REAIS', 'KM PERCORRIDO', 'INÍCIO VIAGEM', 'FIM VIAGEM', 'STATUS',
+      , 'CARGA', 'PLACA', 'DESTINO', 'MOTORISTA', 'AJUDANTE 1', 'AJUDANTE 2', 'PESO (KG)',
+      'CLIENTES PLANEJADOS', 'NF PLANEJADO', 'PARADAS REAIS', 'KM PERCORRIDO',
+      'INÍCIO VIAGEM', 'FIM VIAGEM', 'STATUS',
     ])
     const linha4 = ws.getRow(4).values as unknown[]
     expect(linha4[1]).toBe('92593')
     expect(linha4[2]).toBe('TTL7D40')
-    expect(linha4[8]).toBe(93.5)
-    expect(linha4[11]).toBe('OK')
+    expect(linha4[5]).toBe('LEANDRO DA HORA BATISTA')
+    expect(linha4[6]).toBe('')
+    expect(linha4[9]).toBe(36)
+    expect(linha4[11]).toBe(93.5)
+    expect(linha4[12]).toBe('05:07')
+    expect(linha4[13]).toBe('14:08')
+    expect(linha4[14]).toBe('OK')
   })
 
   it('linha TOTAL soma peso e km', async () => {
@@ -40,8 +46,8 @@ describe('gerarKpiViagemXlsx', () => {
     const ws = wb.worksheets[0]
     const totalRow = ws.getRow(6).values as unknown[]
     expect(totalRow[1]).toBe('TOTAL')
-    expect(totalRow[5]).toBe(2405 + 1000)
-    expect(totalRow[8]).toBe(93.5 + 50)
+    expect(totalRow[7]).toBe(2405 + 1000)
+    expect(totalRow[11]).toBe(93.5 + 50)
   })
 
   it('lista vazia gera só cabeçalho, sem TOTAL', async () => {
