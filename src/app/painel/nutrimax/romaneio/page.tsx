@@ -1,7 +1,8 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { ArrowRight, CalendarBlank, WarningCircle, FileArrowDown, Truck } from '@phosphor-icons/react/dist/ssr'
+import { useEffect, useMemo, useState } from 'react'
+import { ArrowRight, CalendarBlank, WarningCircle, FileArrowDown, Truck, ClockCounterClockwise } from '@phosphor-icons/react/dist/ssr'
+import Link from 'next/link'
 import { Badge, cn } from '@/components/ui'
 import { FileDropzone } from '@/app/painel/file-dropzone'
 
@@ -39,6 +40,35 @@ export default function NutrimaxRomaneioPage() {
   const [linhas, setLinhas] = useState<Linha[]>([])
   const [filtro, setFiltro] = useState<Filtro>('problemas')
   const [resultado, setResultado] = useState<{ xlsxBase64: string; filename: string } | null>(null)
+  const [reabrindoId, setReabrindoId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const id = params.get('geracao')
+    if (!id) return
+    setReabrindoId(id)
+    ;(async () => {
+      try {
+        const res = await fetch('/api/kpi/nutrimax/historico/reabrir', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ id }),
+        })
+        if (!res.ok) throw new Error(await res.text())
+        const json = await res.json() as { resumo: Resumo; linhas: Linha[]; xlsxBase64: string; filename: string }
+        setResumo(json.resumo)
+        setLinhas(json.linhas)
+        setFiltro(json.resumo.divergentes + json.resumo.ausentes > 0 ? 'problemas' : 'todas')
+        setResultado({ xlsxBase64: json.xlsxBase64, filename: json.filename })
+      } catch (e) {
+        setErro(e instanceof Error ? e.message : 'Não foi possível reabrir essa geração.')
+      } finally {
+        setReabrindoId(null)
+      }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const pronto = escala.length > 0 && romaneio.length > 0 && relatorio.length > 0 && !!data
 
@@ -92,9 +122,18 @@ export default function NutrimaxRomaneioPage() {
   return (
     <div className="mx-auto w-full max-w-[1200px]">
       <header className="mb-10 flex flex-col gap-1.5">
-        <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
-          Nutry Max
-        </span>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
+            Nutry Max
+          </span>
+          <Link
+            href="/painel/nutrimax/historico"
+            className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]"
+          >
+            <ClockCounterClockwise size={13} weight="bold" />
+            Histórico
+          </Link>
+        </div>
         <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.02em] text-[var(--color-fg)] md:text-[34px]">
           Gerar Romaneio
         </h1>
@@ -104,6 +143,13 @@ export default function NutrimaxRomaneioPage() {
           (paradas, km, horários) — devolve um XLSX com uma aba de resumo e uma aba por placa.
         </p>
       </header>
+
+      {reabrindoId && (
+        <div className="mb-6 flex items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-info)]/30 bg-[var(--color-info-soft)] px-5 py-4">
+          <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-[var(--color-info)] border-t-transparent" />
+          <p className="text-[13px] text-[var(--color-info-soft-fg)]">Reabrindo geração #{reabrindoId.slice(0, 8)}…</p>
+        </div>
+      )}
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="col-span-1 lg:col-span-7">
