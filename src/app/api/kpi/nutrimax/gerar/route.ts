@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { parseEscalaNutrimax } from '@/lib/kpi-nutrimax/parse-escala'
 import { parseUnitracPdf } from '@/lib/parsers/unitrac-pdf'
 import { montaResumoViagemPorPlaca } from '@/lib/kpi-nutrimax/resumo-viagem'
@@ -7,6 +8,7 @@ import { montaKpiViagemPorCarga } from '@/lib/kpi-nutrimax/kpi-viagem'
 import { gerarKpiViagemXlsx } from '@/lib/kpi-nutrimax/gerador-kpi-viagem'
 import { MARCADOR_BASE_NUTRIMAX } from '@/lib/kpi-nutrimax/constants'
 import { buscarResumosViagemViaApi, mesclarResumosPdfApi } from '@/lib/kpi-nutrimax/api-paradas'
+import { salvarGeracao } from '@/lib/kpi-nutrimax/historico'
 import type { ResumoVeiculo } from '@/lib/types/unitrac'
 
 export const runtime = 'nodejs'
@@ -65,6 +67,7 @@ export async function POST(req: NextRequest) {
     ok: kpi.filter(k => k.status === 'ok').length,
     incompletos: kpi.filter(k => k.status === 'incompleto').length,
     semRastreador: kpi.filter(k => k.status === 'sem_rastreador').length,
+    modoApi,
   }
 
   const linhas = kpi.map(k => ({
@@ -81,10 +84,23 @@ export async function POST(req: NextRequest) {
     status: k.status,
   }))
 
-  return NextResponse.json({
-    resumo,
-    linhas,
-    xlsxBase64: xlsxBuf.toString('base64'),
-    filename: `KPI-Nutry-Max-${data}.xlsx`,
-  })
+  const filename = `KPI-Nutry-Max-${data}.xlsx`
+  const resultado = { resumo, linhas, xlsxBase64: xlsxBuf.toString('base64'), filename }
+
+  let geracaoId: string | null = null
+  try {
+    const svc = createServiceClient()
+    geracaoId = await salvarGeracao(svc, {
+      tipo: 'KPI',
+      data,
+      filename,
+      resumo,
+      geradoPor: user.id,
+      payload: resultado,
+    })
+  } catch (e) {
+    console.warn('[/api/kpi/nutrimax/gerar] salvar no histórico falhou (best-effort):', e instanceof Error ? e.message : e)
+  }
+
+  return NextResponse.json({ ...resultado, geracaoId })
 }

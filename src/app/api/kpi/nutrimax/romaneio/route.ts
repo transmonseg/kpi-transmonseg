@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { parseEscalaNutrimax } from '@/lib/kpi-nutrimax/parse-escala'
 import { parseRomaneioNutrimax } from '@/lib/kpi-nutrimax/parse-romaneio'
 import { parseUnitracPdf } from '@/lib/parsers/unitrac-pdf'
@@ -7,6 +8,7 @@ import { montaRelatorioPorPlaca } from '@/lib/kpi-nutrimax/romaneio-conferencia'
 import { gerarRomaneioConferencia } from '@/lib/kpi-nutrimax/gerador-romaneio-conferencia'
 import { MARCADOR_BASE_NUTRIMAX } from '@/lib/kpi-nutrimax/constants'
 import { buscarResumosViagemViaApi, mesclarResumosPdfApi } from '@/lib/kpi-nutrimax/api-paradas'
+import { salvarGeracao } from '@/lib/kpi-nutrimax/historico'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -43,8 +45,6 @@ export async function POST(req: NextRequest) {
     return new NextResponse('Nenhum veículo reconhecido no relatório — confira se o PDF é o "Relatório Parada e Serviço".', { status: 422 })
   }
 
-  // Completa com a API ao vivo do Unitrac, igual ao Gerar KPI — best-effort:
-  // API fora do ar ou sem dado não bloqueia, segue só com o PDF.
   let resumosVeiculo = pdfResumos
   try {
     const placasEscala = new Set(escala.map(e => e.placaNorm).filter(Boolean))
@@ -65,8 +65,6 @@ export async function POST(req: NextRequest) {
     pesoTotalKg: relatorio.reduce((acc, r) => acc + (r.pesoKg ?? 0), 0),
   }
 
-  // Prévia pra tela — sem a lista de clientes (isso fica só dentro do XLSX, evita
-  // inflar o payload à toa).
   const linhas = relatorio.map(r => ({
     carga: r.carga,
     placa: r.placaNorm,
@@ -82,10 +80,23 @@ export async function POST(req: NextRequest) {
     status: r.status,
   }))
 
-  return NextResponse.json({
-    resumo,
-    linhas,
-    xlsxBase64: xlsxBuf.toString('base64'),
-    filename: `Romaneio-Nutry-${data}.xlsx`,
-  })
+  const filename = `Romaneio-Nutry-${data}.xlsx`
+  const resultado = { resumo, linhas, xlsxBase64: xlsxBuf.toString('base64'), filename }
+
+  let geracaoId: string | null = null
+  try {
+    const svc = createServiceClient()
+    geracaoId = await salvarGeracao(svc, {
+      tipo: 'ROMANEIO',
+      data,
+      filename,
+      resumo,
+      geradoPor: user.id,
+      payload: resultado,
+    })
+  } catch (e) {
+    console.warn('[/api/kpi/nutrimax/romaneio] salvar no histórico falhou (best-effort):', e instanceof Error ? e.message : e)
+  }
+
+  return NextResponse.json({ ...resultado, geracaoId })
 }
