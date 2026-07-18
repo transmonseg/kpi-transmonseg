@@ -47,8 +47,12 @@ export function consolidaParadasApi(
   pontos: MapaPontos,
   data: string,
   placaNorm: string,
-  baseCoord: BaseCoord = BASE_BENASSI,
+  /** Uma ou mais bases/garagens da conta — algumas contas (Nutrimax) têm mais
+   *  de um CD físico, e um cluster dentro do raio de QUALQUER uma delas conta
+   *  como BASE. */
+  baseCoord: BaseCoord | BaseCoord[] = BASE_BENASSI,
 ): UnitracParadaRow[] {
+  const baseCoords = Array.isArray(baseCoord) ? baseCoord : [baseCoord]
   const doDia = eventos.filter(e => e._data.slice(0, 10) === data)
   const clusters = clusteriza(doDia)
   const out: UnitracParadaRow[] = []
@@ -63,7 +67,7 @@ export function consolidaParadasApi(
       : new Date(new Date(ultimo._data).getTime() + (ultimo.tempoparada ?? 0) * 1000).toISOString()
     const durSeg = Math.round((new Date(saida).getTime() - new Date(chegada).getTime()) / 1000)
 
-    const naBase = haversine(baseCoord.lat, baseCoord.lng, c.lat, c.lng) <= RAIO_BASE_M
+    const naBase = baseCoords.some(bc => haversine(bc.lat, bc.lng, c.lat, c.lng) <= RAIO_BASE_M)
     const geo = naBase ? null : acharLojaPorCoordenada(c.lat, c.lng, pontos)
     const classificacao = naBase ? 'BASE' : geo ? 'LOJA' : 'FORA_BASE'
 

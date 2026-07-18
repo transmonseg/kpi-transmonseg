@@ -6,7 +6,7 @@ import { mesclarParadas } from '@/lib/kpi/merge-paradas'
 import { mapLimitSettled } from '@/lib/utils/map-limit'
 import type { ResumoVeiculo, ParadaUnitrac, ClassificacaoParada } from '@/lib/types/unitrac'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
-import { BASE_COORD_NUTRIMAX, MARCADOR_BASE_NUTRIMAX } from './constants'
+import { BASES_COORD_NUTRIMAX, MARCADOR_BASE_NUTRIMAX } from './constants'
 
 const HORAS_JANELA = 48
 const CONCORRENCIA = 8
@@ -92,7 +92,7 @@ export async function buscarResumosViagemViaApi(
 
   const settled = await mapLimitSettled(veiculosEscala, CONCORRENCIA, (v) =>
     buscarStopsCru(v.cv, HORAS_JANELA).then(eventos =>
-      consolidaParadasApi(eventos, pontos, data, v.placaNorm, BASE_COORD_NUTRIMAX)))
+      consolidaParadasApi(eventos, pontos, data, v.placaNorm, BASES_COORD_NUTRIMAX)))
 
   const rows: UnitracParadaRow[] = []
   for (const r of settled) if (r.status === 'fulfilled') rows.push(...r.value)

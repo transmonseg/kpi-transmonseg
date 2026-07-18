@@ -63,4 +63,25 @@ describe('consolidaParadasApi', () => {
     const ps = consolidaParadasApi(ev, pontos, '2026-06-12', 'FUM8748')
     expect(ps.map(p => p.classificacao)).toEqual(['FORA_BASE'])
   })
+
+  it('aceita array de bases (contas com mais de uma garagem) — classifica BASE se bater QUALQUER uma', () => {
+    // Caso real Nutrimax (2026-07-18): garagem de Campos, longe da de Penha.
+    const penha = { lat: -22.816007, lng: -43.277827 }
+    const campos = { lat: -21.6886, lng: -41.3113 }
+    const ev: StopApiCru[] = [
+      { _data: '2026-06-12T04:00:00Z', tempoparada: 600, latitude: campos.lat, longitude: campos.lng },
+    ]
+    const ps = consolidaParadasApi(ev, pontos, '2026-06-12', 'TUL1C38', [penha, campos])
+    expect(ps[0].classificacao).toBe('BASE')
+  })
+
+  it('array de bases: cluster fora do raio de TODAS não vira BASE', () => {
+    const penha = { lat: -22.816007, lng: -43.277827 }
+    const campos = { lat: -21.6886, lng: -41.3113 }
+    const ev: StopApiCru[] = [
+      { _data: '2026-06-12T04:00:00Z', tempoparada: 600, latitude: -22.80, longitude: -43.50 },
+    ]
+    const ps = consolidaParadasApi(ev, pontos, '2026-06-12', 'TUL1C38', [penha, campos])
+    expect(ps[0].classificacao).toBe('FORA_BASE')
+  })
 })
