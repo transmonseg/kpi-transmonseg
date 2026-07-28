@@ -183,6 +183,11 @@ const LOJA_ALIASES_BRUTOS: Record<string, Record<string, string>> = {
   ASSAI: {
     // Variante com Í maiúsculo que aparece em algumas linhas da escala
     'assai - ilha do governador - loja 29': 'Assaí - Ilha do Governador - Loja 29',
+    // Nomes abreviados que passaram a vir truncados na escala GERAL de julho/2026
+    // junto com o sufixo "- CARRETA" (ver normalizaParaMatch) — provavelmente
+    // encurtados pra caber na célula depois do sufixo ser adicionado.
+    'Assaí - Campos dos Goy- Loja 188': 'Assaí - Campos dos Goytacazes- Loja 188',
+    'Assaí - Mendanha  - Loja 65': 'Assaí - Mendanha (Campo Grande) - Loja 65',
   },
 }
 
@@ -195,6 +200,10 @@ function normalizaParaMatch(nome: string): string {
     .toLowerCase()
     .replace(/\(\s*\d+\s*[ºoa°ª]\s*entrega\s*\)/gi, '')
     .replace(/\(\s*\d+\s*[ºoa°ª]\s*\)/gi, '')
+    // Sufixo "- CARRETA" / "(CARRETA)" adicionado na escala GERAL de julho/2026
+    // pra marcar entrega feita por carreta — não existe no catálogo, então sem
+    // isso a loja não casava e sumia (linha em branco) do KPI.
+    .replace(/\s*-?\s*\(?\s*carreta\s*\)?\s*$/i, '')
     .replace(/\s+/g, ' ')
     .trim()
 }
