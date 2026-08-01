@@ -1,3 +1,5 @@
+import { hojeBR } from '@/lib/data-br'
+
 /** Nome cadastrado da garagem/CD da Nutry Max no Unitrac — aparece em
  *  `local_parada` como "BASE - BASE GARAGEM, ...". Diferente do Benassi
  *  ("BASE BENASSI"), por isso não dá pra usar o default do parser. */
@@ -19,3 +21,19 @@ export const BASE_COORD_NUTRIMAX = { lat: -22.816007, lng: -43.277827 }
 export const BASE_COORD_NUTRIMAX_CAMPOS = { lat: -21.6886, lng: -41.3113 }
 
 export const BASES_COORD_NUTRIMAX = [BASE_COORD_NUTRIMAX, BASE_COORD_NUTRIMAX_CAMPOS]
+
+/** `buscarStopsCru` só pede as últimas 48h da API (ver api-paradas.ts) — cobertura
+ *  garantida é hoje + ontem. Verificado ao vivo: pedir uma data de 17 dias atrás
+ *  devolveu 0 veículos (vs. 85 no PDF do mesmo dia), silenciosamente — sem esse
+ *  aviso, o Modo API pra uma data antiga sai com tudo "sem_rastreador"/"ausente"
+ *  igual a um dia realmente sem dados, sem indicar que a causa é a janela da API. */
+const DIAS_ALCANCE_API_HOJE_ONTEM = 1
+
+/** true quando `data` (YYYY-MM-DD) está fora do alcance garantido da API ao vivo
+ *  (mais antiga que ontem) — Modo API não deve ser usado nesse caso. */
+export function foraDoAlcanceApi(data: string): boolean {
+  const hoje = new Date(`${hojeBR()}T00:00:00`).getTime()
+  const alvo = new Date(`${data}T00:00:00`).getTime()
+  const diffDias = Math.round((hoje - alvo) / 86_400_000)
+  return diffDias > DIAS_ALCANCE_API_HOJE_ONTEM
+}

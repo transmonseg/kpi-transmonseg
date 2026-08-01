@@ -5,6 +5,7 @@ import { ArrowRight, CalendarBlank, WarningCircle, FileArrowDown, Truck, WifiHig
 import Link from 'next/link'
 import { Badge, cn } from '@/components/ui'
 import { FileDropzone } from '@/app/painel/file-dropzone'
+import { foraDoAlcanceApi } from '@/lib/kpi-nutrimax/constants'
 
 type Resumo = { total: number; ok: number; incompletos: number; semRastreador: number }
 type Tone = 'default' | 'success' | 'warning' | 'danger'
@@ -70,7 +71,8 @@ export default function NutrimaxGerarPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const pronto = escala.length > 0 && (modoApi || relatorio.length > 0) && !!data
+  const dataForaDoAlcance = modoApi && !!data && foraDoAlcanceApi(data)
+  const pronto = escala.length > 0 && (modoApi || relatorio.length > 0) && !!data && !dataForaDoAlcance
 
   async function gerar() {
     if (!pronto) return
@@ -227,6 +229,11 @@ export default function NutrimaxGerarPage() {
               className="mt-1 w-full bg-transparent text-[24px] font-medium tracking-tight text-[var(--color-fg)] outline-none [color-scheme:light] dark:[color-scheme:dark]"
               style={{ fontFamily: 'var(--font-mono)' }}
             />
+            {dataForaDoAlcance && (
+              <p className="mt-2 text-[12px] leading-relaxed text-[var(--color-danger)]">
+                Modo API só alcança as últimas 48h (hoje/ontem). Pra essa data, desligue o Modo API e envie o Relatório Parada e Serviço em PDF.
+              </p>
+            )}
           </div>
         </div>
       </section>

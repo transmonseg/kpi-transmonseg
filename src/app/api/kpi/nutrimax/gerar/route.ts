@@ -6,7 +6,7 @@ import { parseUnitracPdf } from '@/lib/parsers/unitrac-pdf'
 import { montaResumoViagemPorPlaca } from '@/lib/kpi-nutrimax/resumo-viagem'
 import { montaKpiViagemPorCarga } from '@/lib/kpi-nutrimax/kpi-viagem'
 import { gerarKpiViagemXlsx } from '@/lib/kpi-nutrimax/gerador-kpi-viagem'
-import { MARCADOR_BASE_NUTRIMAX } from '@/lib/kpi-nutrimax/constants'
+import { MARCADOR_BASE_NUTRIMAX, foraDoAlcanceApi } from '@/lib/kpi-nutrimax/constants'
 import { buscarResumosViagemViaApi, mesclarResumosPdfApi } from '@/lib/kpi-nutrimax/api-paradas'
 import { salvarGeracao } from '@/lib/kpi-nutrimax/historico'
 import type { ResumoVeiculo } from '@/lib/types/unitrac'
@@ -28,6 +28,12 @@ export async function POST(req: NextRequest) {
   if (!(escalaFile instanceof File)) return new NextResponse('Escala de Rota (PDF) obrigatória', { status: 400 })
   if (!modoApi && !(relatorioFile instanceof File)) {
     return new NextResponse('Relatório Parada e Serviço (PDF) obrigatório', { status: 400 })
+  }
+  if (modoApi && foraDoAlcanceApi(data)) {
+    return new NextResponse(
+      'Modo API só alcança as últimas 48h (hoje/ontem) — para essa data, desligue o Modo API e envie o Relatório Parada e Serviço em PDF.',
+      { status: 422 },
+    )
   }
 
   const escalaBuf = Buffer.from(await escalaFile.arrayBuffer())
