@@ -33,8 +33,6 @@ function fmtKg(n: number): string {
 export default function NutrimaxRomaneioPage() {
   const [escala, setEscala] = useState<File[]>([])
   const [romaneio, setRomaneio] = useState<File[]>([])
-  const [relatorio, setRelatorio] = useState<File[]>([])
-  const [modoApi, setModoApi] = useState(false)
   const [data, setData] = useState('')
   const [pending, setPending] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -72,8 +70,8 @@ export default function NutrimaxRomaneioPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const dataForaDoAlcance = modoApi && !!data && foraDoAlcanceApi(data)
-  const pronto = escala.length > 0 && romaneio.length > 0 && (modoApi || relatorio.length > 0) && !!data && !dataForaDoAlcance
+  const dataForaDoAlcance = !!data && foraDoAlcanceApi(data)
+  const pronto = escala.length > 0 && romaneio.length > 0 && !!data && !dataForaDoAlcance
 
   async function processar() {
     if (!pronto) return
@@ -86,9 +84,7 @@ export default function NutrimaxRomaneioPage() {
       const fd = new FormData()
       fd.set('escala', escala[0])
       fd.set('romaneio', romaneio[0])
-      if (!modoApi) fd.set('relatorio', relatorio[0])
       fd.set('data', data)
-      if (modoApi) fd.set('modoApi', 'true')
       const res = await fetch('/api/kpi/nutrimax/romaneio', { method: 'POST', body: fd })
       if (!res.ok) throw new Error(await res.text())
       const json = await res.json() as { resumo: Resumo; linhas: Linha[]; xlsxBase64: string; filename: string }
@@ -142,9 +138,9 @@ export default function NutrimaxRomaneioPage() {
           Gerar Romaneio
         </h1>
         <p className="mt-1 max-w-[60ch] text-[14px] leading-relaxed text-[var(--color-fg-muted)]">
-          Suba a Escala de Rota, o Romaneio de Entrega e o Relatório Parada e Serviço do
-          Unitrac. Confere cada placa da escala contra o romaneio e cruza com o GPS real
-          (paradas, km, horários) — devolve um XLSX com uma aba de resumo e uma aba por placa.
+          Suba a Escala de Rota e o Romaneio de Entrega. O sistema busca as paradas reais direto
+          da API ao vivo do Unitrac (GPS, sem PDF de relatório) e confere cada placa da escala
+          contra o romaneio — devolve um XLSX com uma aba de resumo e uma aba por placa.
         </p>
       </header>
 
@@ -154,33 +150,6 @@ export default function NutrimaxRomaneioPage() {
           <p className="text-[13px] text-[var(--color-info-soft-fg)]">Reabrindo geração #{reabrindoId.slice(0, 8)}…</p>
         </div>
       )}
-
-      <div className="mb-4 flex items-center gap-3">
-        <button
-          type="button"
-          role="switch"
-          aria-checked={modoApi}
-          onClick={() => setModoApi(v => !v)}
-          className={cn(
-            'relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200',
-            modoApi ? 'bg-[var(--color-success)]' : 'bg-[var(--color-border-strong)]',
-          )}
-        >
-          <span
-            className={cn(
-              'pointer-events-none inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200',
-              modoApi ? 'translate-x-4' : 'translate-x-0.5',
-            )}
-          />
-        </button>
-        <div className="flex items-baseline gap-2">
-          <span className="text-[13px] font-semibold text-[var(--color-fg)]">Modo API</span>
-          <span className="text-[10px] font-semibold uppercase tracking-wider rounded-full px-1.5 py-0.5 bg-[var(--color-info-soft)] text-[var(--color-info-soft-fg)]">Beta</span>
-          <span className="text-[12px] text-[var(--color-fg-muted)]">
-            {modoApi ? 'Paradas puxadas direto da API Unitrac — sem PDF necessário' : 'Ativar para conferir só com escala + romaneio (sem PDF do Unitrac)'}
-          </span>
-        </div>
-      </div>
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="col-span-1 lg:col-span-7">
@@ -206,32 +175,21 @@ export default function NutrimaxRomaneioPage() {
             onRemove={() => setRomaneio([])}
           />
 
-          {modoApi ? (
-            <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-success)]/40 bg-[var(--color-success)]/5 p-5">
-              <div className="flex items-center gap-2">
-                <WifiHigh size={16} weight="bold" className="text-[var(--color-success)]" />
-                <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-success)]">API Unitrac · Passo 3 automático</span>
-              </div>
-              <p className="text-[13px] text-[var(--color-fg-muted)]">
-                As paradas serão puxadas direto da API Unitrac em tempo real. Nenhum arquivo necessário.
-              </p>
+          <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-success)]/40 bg-[var(--color-success)]/5 p-5">
+            <div className="flex items-center gap-2">
+              <WifiHigh size={16} weight="bold" className="text-[var(--color-success)]" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-success)]">API Unitrac · automático</span>
             </div>
-          ) : (
-            <FileDropzone
-              eyebrow="Passo 3"
-              label="Relatório Parada e Serviço"
-              hint="PDF do Unitrac · paradas e km reais por placa"
-              accept=".pdf"
-              files={relatorio}
-              onAdd={files => setRelatorio(files.slice(0, 1))}
-              onRemove={() => setRelatorio([])}
-            />
-          )}
+            <p className="text-[13px] text-[var(--color-fg-muted)]">
+              As paradas são puxadas direto da API Unitrac em tempo real. Nenhum arquivo de
+              relatório necessário — só alcança hoje e ontem (últimas 48h).
+            </p>
+          </div>
 
           <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
             <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
               <CalendarBlank size={12} weight="bold" />
-              Passo 4 · Data de referência
+              Passo 3 · Data de referência
             </div>
             <input
               id="data"
@@ -243,7 +201,7 @@ export default function NutrimaxRomaneioPage() {
             />
             {dataForaDoAlcance && (
               <p className="mt-2 text-[12px] leading-relaxed text-[var(--color-danger)]">
-                Modo API só alcança as últimas 48h (hoje/ontem). Pra essa data, desligue o Modo API e envie o Relatório Parada e Serviço em PDF.
+                A API do Unitrac só alcança as últimas 48h (hoje/ontem) — escolha uma dessas datas.
               </p>
             )}
           </div>
@@ -376,7 +334,7 @@ export default function NutrimaxRomaneioPage() {
             {pending ? 'Processando' : 'Conferir'}
           </span>
           <span className="text-[18px] font-semibold tracking-tight">
-            {pending ? (modoApi ? 'Puxando paradas da API…' : 'Cruzando escala, romaneio e GPS…') : pronto ? 'Gerar conferência' : 'Aguardando arquivos'}
+            {pending ? 'Puxando paradas da API…' : pronto ? 'Gerar conferência' : 'Aguardando arquivos'}
           </span>
         </div>
         {!pending && pronto && (
