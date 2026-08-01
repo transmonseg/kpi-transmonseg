@@ -7,7 +7,7 @@ import { parseUnitracPdf } from '@/lib/parsers/unitrac-pdf'
 import { montaRelatorioPorPlaca } from '@/lib/kpi-nutrimax/romaneio-conferencia'
 import { gerarRomaneioConferencia } from '@/lib/kpi-nutrimax/gerador-romaneio-conferencia'
 import { MARCADOR_BASE_NUTRIMAX, foraDoAlcanceApi } from '@/lib/kpi-nutrimax/constants'
-import { buscarResumosViagemViaApi, mesclarResumosPdfApi } from '@/lib/kpi-nutrimax/api-paradas'
+import { buscarResumosViagemViaApi, mesclarResumosPdfApi, filtraResumosPorDia } from '@/lib/kpi-nutrimax/api-paradas'
 import { salvarGeracao } from '@/lib/kpi-nutrimax/historico'
 import type { ResumoVeiculo } from '@/lib/types/unitrac'
 
@@ -59,10 +59,13 @@ export async function POST(req: NextRequest) {
     resumosVeiculo = await buscarResumosViagemViaApi(placasEscala, data)
   } else {
     const relatorioBuf = Buffer.from(await (relatorioFile as File).arrayBuffer())
-    const pdfResumos = await parseUnitracPdf(relatorioBuf, null, MARCADOR_BASE_NUTRIMAX)
-    if (pdfResumos.length === 0) {
+    const pdfResumosBrutos = await parseUnitracPdf(relatorioBuf, null, MARCADOR_BASE_NUTRIMAX)
+    if (pdfResumosBrutos.length === 0) {
       return new NextResponse('Nenhum veículo reconhecido no relatório — confira se o PDF é o "Relatório Parada e Serviço".', { status: 422 })
     }
+    // O Relatório costuma cobrir vários dias no mesmo PDF — filtra só as
+    // paradas do dia pedido antes de seguir (ver comentário em api-paradas.ts).
+    const pdfResumos = filtraResumosPorDia(pdfResumosBrutos, data)
     resumosVeiculo = pdfResumos
     try {
       const apiResumos = await buscarResumosViagemViaApi(placasEscala, data)

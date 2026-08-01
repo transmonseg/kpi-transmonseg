@@ -23,7 +23,7 @@ vi.mock('@/lib/unitrac-api/consolida', () => ({
   }),
 }))
 
-import { buscarResumosViagemViaApi, mesclarResumosPdfApi } from './api-paradas'
+import { buscarResumosViagemViaApi, mesclarResumosPdfApi, filtraResumosPorDia } from './api-paradas'
 import type { ResumoVeiculo, ParadaUnitrac } from '@/lib/types/unitrac'
 
 function parada(overrides: Partial<ParadaUnitrac> = {}): ParadaUnitrac {
@@ -110,5 +110,51 @@ describe('mesclarResumosPdfApi', () => {
     const pdf = [resumoVeiculo()]
     const out = mesclarResumosPdfApi(pdf, [])
     expect(out).toEqual(pdf)
+  })
+})
+
+// O Relatório em PDF costuma cobrir vários dias no mesmo arquivo — verificado
+// contra relatorio_51246.pdf real (30/07 + 31/07): 81 de 89 placas tinham
+// parada(s) do dia errado misturadas, inflando qtd_paradas/km.
+describe('filtraResumosPorDia', () => {
+  it('remove paradas de outro dia e recalcula qtd_paradas', () => {
+    const resumos = [resumoVeiculo({
+      qtd_paradas: 2,
+      paradas: [
+        parada({ chegada: new Date('2026-07-30T23:50:00.000Z'), ordem: 1 }),
+        parada({ chegada: new Date('2026-07-31T10:00:00.000Z'), ordem: 2 }),
+      ],
+    })]
+    const out = filtraResumosPorDia(resumos, '2026-07-31')
+    expect(out[0].paradas).toHaveLength(1)
+    expect(out[0].paradas[0].chegada.toISOString()).toBe('2026-07-31T10:00:00.000Z')
+    expect(out[0].qtd_paradas).toBe(1)
+  })
+
+  it('renumera ordem a partir de 1 após filtrar', () => {
+    const resumos = [resumoVeiculo({
+      paradas: [
+        parada({ chegada: new Date('2026-07-30T23:50:00.000Z'), ordem: 1 }),
+        parada({ chegada: new Date('2026-07-31T09:00:00.000Z'), ordem: 2 }),
+        parada({ chegada: new Date('2026-07-31T10:00:00.000Z'), ordem: 3 }),
+      ],
+    })]
+    const out = filtraResumosPorDia(resumos, '2026-07-31')
+    expect(out[0].paradas.map(p => p.ordem)).toEqual([1, 2])
+  })
+
+  it('não mexe em inicio_viagem/fim_viagem (vêm do cabeçalho do Unitrac, não das paradas)', () => {
+    const resumos = [resumoVeiculo({ paradas: [parada({ chegada: new Date('2026-07-30T23:50:00.000Z') })] })]
+    const out = filtraResumosPorDia(resumos, '2026-07-31')
+    expect(out[0].inicio_viagem).toEqual(resumos[0].inicio_viagem)
+    expect(out[0].fim_viagem).toEqual(resumos[0].fim_viagem)
+  })
+
+  it('placa sem nenhuma parada no dia pedido fica com array vazio (não remove a placa)', () => {
+    const resumos = [resumoVeiculo({ paradas: [parada({ chegada: new Date('2026-07-30T23:50:00.000Z') })] })]
+    const out = filtraResumosPorDia(resumos, '2026-07-31')
+    expect(out).toHaveLength(1)
+    expect(out[0].paradas).toHaveLength(0)
+    expect(out[0].qtd_paradas).toBe(0)
   })
 })

@@ -75,6 +75,27 @@ function agrupaResumosPorPlaca(rows: UnitracParadaRow[]): ResumoVeiculo[] {
   return out
 }
 
+/** O Relatório Parada e Serviço em PDF costuma cobrir uma janela de vários
+ *  dias (ex: relatorio_51246.pdf trouxe 30/07 E 31/07 no mesmo arquivo) —
+ *  `parseUnitracPdf` não filtra por data, devolve TODAS as paradas de cada
+ *  placa no PDF inteiro num único ResumoVeiculo. Gerando o KPI/Romaneio de
+ *  um dia específico, isso conta parada(s) de outro dia como se fossem
+ *  desse dia (verificado: 81 de 89 placas em relatorio_51246.pdf tinham
+ *  paradas de 30/07 misturadas com as de 31/07 — normalmente 1 parada
+ *  perdida, o suficiente pra inflar km/qtd_paradas e aparecer como "parada
+ *  sem cliente correspondente" no Romaneio). `inicio_viagem`/`fim_viagem`
+ *  NÃO são recalculados aqui — vêm de "Início/Fim Viagem" do próprio
+ *  cabeçalho do Unitrac no PDF (autoritativo, sem granularidade por parada
+ *  pra filtrar; ver nota em constants.ts sobre não tentar recalcular isso). */
+export function filtraResumosPorDia(resumos: ResumoVeiculo[], data: string): ResumoVeiculo[] {
+  return resumos.map(r => {
+    const paradas = r.paradas
+      .filter(p => p.chegada.toISOString().slice(0, 10) === data)
+      .map((p, i) => ({ ...p, ordem: i + 1 }))
+    return { ...r, paradas, qtd_paradas: paradas.length }
+  })
+}
+
 /** Busca as paradas ao vivo da API do Unitrac pras placas da escala, no
  *  mesmo formato ResumoVeiculo[] que parseUnitracPdf produz — o resto do
  *  pipeline da Nutry Max (montaResumoViagemPorPlaca, montaKpiViagemPorCarga)
