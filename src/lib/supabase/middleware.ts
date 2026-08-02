@@ -41,7 +41,10 @@ export async function updateSession(request: NextRequest) {
     path === '/apresentacao' || path.startsWith('/apresentacao/') ||
     path === '/api/dashboard/publico'
   const isConvite = path.startsWith('/convite/')
-  const isPublic = path === '/' || isAuthPage || isDashboardPublico || isConvite
+  // Link público do KPI Manual (sem login) — token é a própria permissão,
+  // ver /api/kpi-manual/link-publico (onde ele é gerado, isso sim autenticado).
+  const isKpiPublico = path.startsWith('/kpi-publico/')
+  const isPublic = path === '/' || isAuthPage || isDashboardPublico || isConvite || isKpiPublico
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
@@ -73,7 +76,10 @@ export async function updateSession(request: NextRequest) {
         path === '/painel/kpi/visualizar' ||
         path === '/api/kpi-manual/dia' ||
         path === '/api/kpi-manual/export' ||
-        (path === '/painel/usuarios' && perfil.papel === 'gerente')
+        (path === '/painel/usuarios' && perfil.papel === 'gerente') ||
+        // Gerar link público: admin/gerente podem, visualizador não (a rota
+        // já rechecha isso, aqui é só pra não bloquear o gerente também).
+        (path === '/api/kpi-manual/link-publico' && perfil.papel === 'gerente')
       if (!permitido) {
         if (path.startsWith('/api/')) {
           return new NextResponse('Sem permissão.', { status: 403 })

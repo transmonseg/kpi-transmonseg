@@ -8,21 +8,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getPerfil, redesEfetivas } from '@/lib/perfil'
-import { REDE_LABEL } from '@/lib/kpi/redes'
+import { agruparPorRede } from '@/lib/kpi/agrupar-manual'
+import type { LinhaManual } from '@/lib/kpi/manual-tipos'
 
 export const runtime = 'nodejs'
-
-type LinhaManual = {
-  rede_id: string
-  loja: string
-  placa: string | null
-  motorista: string | null
-  status: string
-  saida_cd: string | null
-  chd: string | null
-  sai: string | null
-  volta_base: string | null
-}
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
@@ -48,19 +37,7 @@ export async function GET(req: NextRequest) {
   const todasRedesPresentes = [...new Set(linhas.map(l => l.rede_id))]
   const permitidas = new Set(redesEfetivas(perfil, todasRedesPresentes))
 
-  const porRede = new Map<string, LinhaManual[]>()
-  for (const l of linhas) {
-    if (!permitidas.has(l.rede_id)) continue
-    const arr = porRede.get(l.rede_id) ?? []
-    arr.push(l)
-    porRede.set(l.rede_id, arr)
-  }
+  const redes = agruparPorRede(linhas.filter(l => permitidas.has(l.rede_id)))
 
-  const redes = [...porRede.entries()].map(([rede_id, linhasRede]) => ({
-    rede_id,
-    rede_nome: REDE_LABEL[rede_id] ?? rede_id,
-    linhas: linhasRede,
-  }))
-
-  return NextResponse.json({ data, redes })
+  return NextResponse.json({ data, redes, papel: perfil.papel })
 }
