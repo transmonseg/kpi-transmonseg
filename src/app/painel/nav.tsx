@@ -157,7 +157,7 @@ export function PainelNav({ papel }: { papel: Papel }) {
     return (
       <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
         <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
-        <LeafLink item={VER_KPIS} active={pathname.startsWith('/painel/historico') || pathname.startsWith('/painel/kpi/visualizar')} />
+        <LeafLink item={VER_KPIS} active={pathname.startsWith('/painel/kpi/visualizar')} />
         {papel === 'gerente' && (
           <LeafLink item={USUARIOS} active={pathname.startsWith('/painel/usuarios')} />
         )}

@@ -6,7 +6,6 @@ import {
   FileMagnifyingGlass,
   ClockCounterClockwise,
   ArrowClockwise,
-  Eye,
 } from '@phosphor-icons/react/dist/ssr'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -209,9 +208,7 @@ export default async function HistoricoPage({
             </thead>
             <tbody>
               {geracoes.map(g => {
-                const hrefRegerar = podeEditar
-                  ? `/painel/kpi/simples?geracao=${g.id}`
-                  : `/painel/kpi/visualizar?geracao=${g.id}`
+                const hrefRegerar = `/painel/kpi/simples?geracao=${g.id}`
                 return (
                   <tr
                     key={g.id}
@@ -294,17 +291,8 @@ export default async function HistoricoPage({
                         href={hrefRegerar}
                         className="inline-flex items-center gap-1.5 rounded-md bg-[var(--color-navy-700)] px-2.5 py-1 text-[11px] font-semibold text-white transition-all duration-150 hover:opacity-90 active:scale-[0.96] group-hover:shadow-sm"
                       >
-                        {podeEditar ? (
-                          <>
-                            <ArrowClockwise size={11} weight="bold" className="transition-transform duration-300 group-hover:rotate-90" />
-                            Regerar
-                          </>
-                        ) : (
-                          <>
-                            <Eye size={11} weight="bold" />
-                            Ver
-                          </>
-                        )}
+                        <ArrowClockwise size={11} weight="bold" className="transition-transform duration-300 group-hover:rotate-90" />
+                        Regerar
                       </Link>
                     </Td>
                   </tr>

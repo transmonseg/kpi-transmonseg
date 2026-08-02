@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { gerarXlsxDia, type EntradaManualRow } from '@/lib/kpi/gerar-xlsx-manual'
+import { getPerfil, redesEfetivas } from '@/lib/perfil'
 
 export const runtime = 'nodejs'
 
@@ -17,6 +18,14 @@ export async function GET(req: NextRequest) {
   const data = u.searchParams.get('data') ?? ''
   if (!rede) return new NextResponse('rede obrigatória', { status: 400 })
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return new NextResponse('data inválida (YYYY-MM-DD)', { status: 400 })
+
+  // Este endpoint agora é acessível por qualquer papel logado (botão "Baixar
+  // XLSX" do Ver KPIs) — sem essa checagem, trocar ?rede= na URL vazava dado
+  // de rede fora do perfil de quem pediu.
+  const perfil = await getPerfil(user.id)
+  if (!redesEfetivas(perfil, [rede]).includes(rede)) {
+    return new NextResponse('Sem permissão para esta rede.', { status: 403 })
+  }
 
   const svc = createServiceClient()
   const { data: rows, error } = await svc.from('kpi_manual_entradas')

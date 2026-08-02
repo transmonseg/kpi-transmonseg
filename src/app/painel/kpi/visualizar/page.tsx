@@ -2,102 +2,78 @@
 
 import { useEffect, useState } from 'react'
 import { WarningCircle, FileArrowDown, Truck, CalendarBlank, Link as LinkIcon, Check } from '@phosphor-icons/react/dist/ssr'
-import { STATUS_LABEL, TIER_STYLE, tierEfetivo, type StatusRota, type CategoriaRevisao } from '@/lib/kpi/status-rota'
 import { hojeBR } from '@/lib/data-br'
 import { cn } from '@/components/ui'
 
-type PreviewLinha = {
-  ordem: number
-  loja_nome: string
+type LinhaManual = {
+  rede_id: string
+  loja: string
   placa: string | null
   motorista: string | null
-  turno: string
-  saida_cd_fmt: string | null
-  chegada_loja_fmt: string | null
-  saida_loja_fmt: string | null
-  status: StatusRota
-  revisar: boolean
-  categoria: CategoriaRevisao | null
+  status: string
+  saida_cd: string | null
+  chd: string | null
+  sai: string | null
+  volta_base: string | null
 }
 
-type RedeResult = {
+type RedeManual = {
   rede_id: string
   rede_nome: string
-  qtd_rotas: number
-  qtd_sem_gps: number
-  xlsxBase64: string
-  preview: PreviewLinha[]
+  linhas: LinhaManual[]
 }
 
-function baixarXlsx(base64: string, nome: string) {
-  const bin = atob(base64)
-  const bytes = new Uint8Array(bin.length)
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-  const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = nome
-  a.click()
-  URL.revokeObjectURL(url)
+const STATUS_STYLE: Record<string, { label: string; bg: string; fg: string }> = {
+  entregue: { label: 'Entregue', bg: 'var(--color-success-soft)', fg: 'var(--color-success-soft-fg)' },
+  nao_foi: { label: 'Não foi ao cliente', bg: 'var(--color-danger-soft)', fg: 'var(--color-danger-soft-fg)' },
+  sem_rastreador: { label: 'Sem rastreador', bg: 'var(--color-danger-soft)', fg: 'var(--color-danger-soft-fg)' },
+  em_rota: { label: 'Em rota', bg: 'var(--color-warning-soft)', fg: 'var(--color-warning-soft-fg)' },
+  mudou_de_rota: { label: 'Mudou de rota', bg: 'var(--color-warning-soft)', fg: 'var(--color-warning-soft-fg)' },
+  desatualizado: { label: 'Desatualizado', bg: 'var(--color-warning-soft)', fg: 'var(--color-warning-soft-fg)' },
+  indefinido: { label: 'Indefinido', bg: 'var(--color-bg-subtle)', fg: 'var(--color-fg-muted)' },
 }
 
-function StatusBadge({ status, revisar, categoria }: { status: StatusRota; revisar: boolean; categoria: CategoriaRevisao | null }) {
-  const t = TIER_STYLE[tierEfetivo({ status, revisar, categoria })]
+function StatusBadge({ status }: { status: string }) {
+  const s = STATUS_STYLE[status] ?? { label: status, bg: 'var(--color-bg-subtle)', fg: 'var(--color-fg-muted)' }
   return (
     <span
       className="inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-semibold whitespace-nowrap"
-      style={{ background: t.bg, color: t.fg }}
+      style={{ background: s.bg, color: s.fg }}
     >
-      {STATUS_LABEL[status]}
+      {s.label}
     </span>
   )
 }
 
 export default function VisualizarKpiPage() {
   const [data, setData] = useState('')
-  const [redes, setRedes] = useState<RedeResult[] | null>(null)
+  const [redes, setRedes] = useState<RedeManual[] | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [linkCopiado, setLinkCopiado] = useState(false)
+  const [temVoltaBase, setTemVoltaBase] = useState(false)
 
-  // Fonte da página: ?data=YYYY-MM-DD (padrão — "o KPI desse dia", mescla
-  // gerações) ou ?geracao=ID (legado — uma geração específica, pontual).
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const dataParam = params.get('data')
-    const geracaoId = params.get('geracao')
+    let dataParam = params.get('data')
 
-    if (!dataParam && !geracaoId) {
-      // Sem parâmetro nenhum: assume hoje, já com a URL certa (fica um link
-      // estável — recarregar/copiar mantém o mesmo dia).
-      const hoje = hojeBR()
-      window.history.replaceState(null, '', `/painel/kpi/visualizar?data=${hoje}`)
-      setData(hoje)
-      return
+    if (!dataParam) {
+      // Sem data na URL: assume hoje, já com a URL certa (link estável —
+      // recarregar/copiar mantém o mesmo dia).
+      dataParam = hojeBR()
+      window.history.replaceState(null, '', `/painel/kpi/visualizar?data=${dataParam}`)
     }
 
-    setData(dataParam ?? '')
+    setData(dataParam)
     setCarregando(true)
     setErro(null)
     ;(async () => {
       try {
-        if (geracaoId) {
-          const res = await fetch('/api/kpi/simples/regerar', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ id: geracaoId }),
-          })
-          if (!res.ok) throw new Error(await res.text())
-          const json = await res.json() as { redes: RedeResult[]; data?: string }
-          setRedes(json.redes)
-          if (json.data) setData(json.data)
-        } else {
-          const res = await fetch(`/api/kpi/simples/dia?data=${dataParam}`)
-          if (!res.ok) throw new Error(await res.text())
-          const json = await res.json() as { redes: RedeResult[]; data: string }
-          setRedes(json.redes)
-        }
+        const res = await fetch(`/api/kpi-manual/dia?data=${dataParam}`)
+        if (!res.ok) throw new Error(await res.text())
+        const json = await res.json() as { redes: RedeManual[]; data: string }
+        setRedes(json.redes)
+        setTemVoltaBase(json.redes.some(r => r.linhas.some(l => l.volta_base != null)))
       } catch (e) {
         setErro(e instanceof Error ? e.message : 'Não foi possível carregar o KPI dessa data.')
       } finally {
@@ -167,7 +143,9 @@ export default function VisualizarKpiPage() {
 
       {!carregando && !erro && redes && redes.length === 0 && (
         <div className="flex flex-col items-center gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-6 py-16 text-center">
-          <p className="text-[14px] text-[var(--color-fg-muted)]">Nenhum KPI gerado nesse dia (ou nenhuma rede do seu acesso apareceu nele).</p>
+          <p className="text-[14px] text-[var(--color-fg-muted)]">
+            Nenhum KPI inserido nesse dia (ou nenhuma rede do seu acesso tem dado nele).
+          </p>
         </div>
       )}
 
@@ -184,18 +162,15 @@ export default function VisualizarKpiPage() {
                     <Truck size={16} weight="fill" className="text-[var(--color-accent)]" />
                     {rede.rede_nome}
                   </h2>
-                  <span className="text-[12px] text-[var(--color-fg-muted)]">
-                    {rede.qtd_rotas} rota(s){rede.qtd_sem_gps > 0 ? ` · ${rede.qtd_sem_gps} sem GPS` : ''}
-                  </span>
+                  <span className="text-[12px] text-[var(--color-fg-muted)]">{rede.linhas.length} loja(s)</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => baixarXlsx(rede.xlsxBase64, `KPI-${rede.rede_nome}-${data}.xlsx`)}
+                <a
+                  href={`/api/kpi-manual/export?rede=${rede.rede_id}&data=${data}`}
                   className="flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--color-navy-700)] px-4 py-2 text-[12.5px] font-medium text-white transition-opacity hover:opacity-90"
                 >
                   <FileArrowDown size={14} weight="bold" />
                   Baixar XLSX
-                </button>
+                </a>
               </div>
 
               <div className="overflow-x-auto">
@@ -207,28 +182,34 @@ export default function VisualizarKpiPage() {
                       <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)]">Placa</th>
                       <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden sm:table-cell">Motorista</th>
                       <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Saída CD</th>
-                      <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Ch. Loja</th>
+                      <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Chegada Loja</th>
                       <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Saída Loja</th>
+                      {temVoltaBase && (
+                        <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Chegada CD</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--color-border)]">
-                    {rede.preview.map(linha => (
-                      <tr key={linha.ordem} className="hover:bg-[var(--color-bg-hover)]">
-                        <td className="px-4 py-2 text-[var(--color-fg)]">{linha.loja_nome}</td>
+                    {rede.linhas.map((l, i) => (
+                      <tr key={`${l.loja}-${i}`} className="hover:bg-[var(--color-bg-hover)]">
+                        <td className="px-4 py-2 text-[var(--color-fg)]">{l.loja}</td>
                         <td className="px-4 py-2">
-                          <StatusBadge status={linha.status} revisar={linha.revisar} categoria={linha.categoria} />
+                          <StatusBadge status={l.status} />
                         </td>
-                        <td className="px-4 py-2 text-numeric text-[var(--color-fg)]">{linha.placa ?? '—'}</td>
-                        <td className="px-4 py-2 text-[var(--color-fg-muted)] hidden sm:table-cell">{linha.motorista ?? '—'}</td>
-                        <td className="px-4 py-2 text-numeric text-[var(--color-fg-muted)] hidden md:table-cell">{linha.saida_cd_fmt ?? '—'}</td>
-                        <td className="px-4 py-2 text-numeric text-[var(--color-fg-muted)] hidden md:table-cell">{linha.chegada_loja_fmt ?? '—'}</td>
-                        <td className="px-4 py-2 text-numeric text-[var(--color-fg-muted)] hidden md:table-cell">{linha.saida_loja_fmt ?? '—'}</td>
+                        <td className="px-4 py-2 text-numeric text-[var(--color-fg)]">{l.placa ?? '—'}</td>
+                        <td className="px-4 py-2 text-[var(--color-fg-muted)] hidden sm:table-cell">{l.motorista ?? '—'}</td>
+                        <td className="px-4 py-2 text-numeric text-[var(--color-fg-muted)] hidden md:table-cell">{l.saida_cd ?? '—'}</td>
+                        <td className="px-4 py-2 text-numeric text-[var(--color-fg-muted)] hidden md:table-cell">{l.chd ?? '—'}</td>
+                        <td className="px-4 py-2 text-numeric text-[var(--color-fg-muted)] hidden md:table-cell">{l.sai ?? '—'}</td>
+                        {temVoltaBase && (
+                          <td className="px-4 py-2 text-numeric text-[var(--color-fg-muted)] hidden md:table-cell">{l.volta_base ?? '—'}</td>
+                        )}
                       </tr>
                     ))}
-                    {rede.preview.length === 0 && (
+                    {rede.linhas.length === 0 && (
                       <tr>
-                        <td colSpan={7} className={cn('px-4 py-8 text-center text-[var(--color-fg-subtle)]')}>
-                          Nenhuma rota nesta rede.
+                        <td colSpan={temVoltaBase ? 8 : 7} className={cn('px-4 py-8 text-center text-[var(--color-fg-subtle)]')}>
+                          Nenhuma loja nesta rede.
                         </td>
                       </tr>
                     )}

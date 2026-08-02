@@ -68,12 +68,11 @@ export async function updateSession(request: NextRequest) {
         path === '/api/dashboard' ||
         path === '/api/dashboard/beta' ||
         path === '/api/dashboard/export-mensal' ||
-        // Ver KPI já gerado (read-only, sem upload/gerar) — qualquer papel
-        // logado acessa; a listagem e a leitura filtram por perfil.redes.
+        // Ver KPI Manual do dia (read-only) — qualquer papel logado acessa;
+        // a leitura filtra por perfil.redes.
         path === '/painel/kpi/visualizar' ||
-        path === '/painel/historico' ||
-        path === '/api/kpi/simples/regerar' ||
-        path === '/api/kpi/simples/dia' ||
+        path === '/api/kpi-manual/dia' ||
+        path === '/api/kpi-manual/export' ||
         (path === '/painel/usuarios' && perfil.papel === 'gerente')
       if (!permitido) {
         if (path.startsWith('/api/')) {
