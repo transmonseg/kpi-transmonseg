@@ -21,6 +21,7 @@ type Papel = 'admin' | 'gerente' | 'visualizador'
 
 const DASHBOARD: Leaf = { href: '/painel', label: 'Dashboard', Icon: ChartBar }
 const USUARIOS: Leaf = { href: '/painel/usuarios', label: 'Usuários', Icon: UsersThree }
+const VER_KPIS: Leaf = { href: '/painel/historico', label: 'Ver KPIs', Icon: ClockCounterClockwise }
 
 const GROUPS: Group[] = [
   {
@@ -47,6 +48,7 @@ const GROUPS: Group[] = [
     children: [
       { href: '/painel/nutrimax/romaneio', label: 'Gerar Romaneio', Icon: ClipboardText, exact: true },
       { href: '/painel/nutrimax/gerar', label: 'Gerar KPI', Icon: TableIcon },
+      { href: '/painel/nutrimax/dashboard', label: 'Dashboard', Icon: ChartBar },
       { href: '/painel/nutrimax/historico', label: 'Histórico', Icon: ClockCounterClockwise },
     ],
   },
@@ -148,12 +150,14 @@ function GroupBlock({ group, pathname }: { group: Group; pathname: string }) {
 export function PainelNav({ papel }: { papel: Papel }) {
   const pathname = usePathname()
 
-  // Login restrito (gerente/visualizador): só Dashboard (+ Usuários pro gerente,
-  // que pode convidar visualizadores). Sem acesso a KPI/Cozinha.
+  // Login restrito (gerente/visualizador): Dashboard, Ver KPIs (read-only,
+  // já filtrado pelas redes do perfil) e Usuários pro gerente (convidar
+  // visualizadores). Sem acesso ao resto (gerar/editar KPI, Cozinha etc).
   if (papel !== 'admin') {
     return (
       <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
         <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
+        <LeafLink item={VER_KPIS} active={pathname.startsWith('/painel/historico') || pathname.startsWith('/painel/kpi/visualizar')} />
         {papel === 'gerente' && (
           <LeafLink item={USUARIOS} active={pathname.startsWith('/painel/usuarios')} />
         )}

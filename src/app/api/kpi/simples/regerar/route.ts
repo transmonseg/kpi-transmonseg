@@ -6,9 +6,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { getPerfil, redesEfetivas } from '@/lib/perfil'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
+
+/** Filtra o array `redes` da resposta pelo perfil de quem pediu — defesa em
+ *  profundidade: mesmo alguém com o link de uma geração inteira só recebe as
+ *  redes que o próprio perfil permite (admin não é afetado). */
+async function filtrarPorPerfil(userId: string, payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const perfil = await getPerfil(userId)
+  const redes = (payload.redes as Array<{ rede_id: string }> | undefined) ?? []
+  const permitidas = new Set(redesEfetivas(perfil, redes.map(r => r.rede_id)))
+  return { ...payload, redes: redes.filter(r => permitidas.has(r.rede_id)) }
+}
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -35,7 +46,8 @@ export async function POST(req: NextRequest) {
     if (cacheBlob && !cacheErr) {
       const cached = JSON.parse(await cacheBlob.text()) as Record<string, unknown>
       console.log(`[kpi/regerar] cache hit: ${body.id}`)
-      return NextResponse.json({ ...cached, geracao_id: body.id })
+      const filtrado = await filtrarPorPerfil(user.id, { ...cached, geracao_id: body.id, data: geracao.data })
+      return NextResponse.json(filtrado)
     }
   } catch {
     // cache miss — segue com re-processamento normal
@@ -58,8 +70,13 @@ export async function POST(req: NextRequest) {
       skipSave: true,
     }),
   })
-  const text = await res.text()
-  return new NextResponse(text, { status: res.status, headers: { 'Content-Type': 'application/json' } })
+  if (!res.ok) {
+    const text = await res.text()
+    return new NextResponse(text, { status: res.status, headers: { 'Content-Type': 'application/json' } })
+  }
+  const json = await res.json() as Record<string, unknown>
+  const filtrado = await filtrarPorPerfil(user.id, { ...json, data: geracao.data })
+  return NextResponse.json(filtrado)
 }
 
 export async function DELETE(req: NextRequest) {

@@ -6,8 +6,11 @@ import {
   FileMagnifyingGlass,
   ClockCounterClockwise,
   ArrowClockwise,
+  Eye,
 } from '@phosphor-icons/react/dist/ssr'
+import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { getPerfil, redesEfetivas, type Perfil } from '@/lib/perfil'
 import { fmtInstanteBR } from '@/lib/data-br'
 import { cn } from '@/components/ui'
 
@@ -38,6 +41,7 @@ async function fetchHistorico(params: {
   page: number
   dataInicio: string
   dataFim: string
+  perfil: Perfil
 }) {
   const svc = createServiceClient()
   const from = (params.page - 1) * PER_PAGE
@@ -55,14 +59,26 @@ async function fetchHistorico(params: {
   const { data: rows, error, count } = await q
   if (error) throw new Error(error.message)
 
-  const geracoes: GeracaoRow[] = (rows ?? []).map(r => ({
-    id: r.id as string,
-    data: r.data as string,
-    gerado_em: r.gerado_em as string | null,
-    total_rotas: (r.total_rotas as number | null) ?? 0,
-    total_sem_gps: (r.total_sem_gps as number | null) ?? 0,
-    redes: (r.redes as RedeResumo[]) ?? [],
-  }))
+  // Defesa em profundidade: mesmo pra admin isso não filtra nada (redesEfetivas
+  // devolve tudo), mas pra gerente/visualizador restringe às redes do perfil —
+  // sem isso a listagem vazava contagem/nome de rede que o login não deveria ver.
+  const geracoes: GeracaoRow[] = (rows ?? [])
+    .map(r => {
+      const todasRedes = (r.redes as RedeResumo[]) ?? []
+      const permitidas = new Set(redesEfetivas(params.perfil, todasRedes.map(x => x.rede_id)))
+      const redes = todasRedes.filter(x => permitidas.has(x.rede_id))
+      return {
+        id: r.id as string,
+        data: r.data as string,
+        gerado_em: r.gerado_em as string | null,
+        total_rotas: redes.reduce((s, x) => s + x.qtd_rotas, 0),
+        total_sem_gps: redes.reduce((s, x) => s + x.qtd_sem_gps, 0),
+        redes,
+      }
+    })
+    // Geração sem nenhuma rede visível pro perfil não aparece — não é "0 rotas
+    // deu ruim", é "isso aqui não é seu".
+    .filter(g => g.redes.length > 0)
 
   return { geracoes, total: count ?? 0 }
 }
@@ -95,7 +111,12 @@ export default async function HistoricoPage({
   const dataInicio = sp.inicio ?? ''
   const dataFim = sp.fim ?? ''
 
-  const { geracoes, total } = await fetchHistorico({ page, dataInicio, dataFim })
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const perfil = user ? await getPerfil(user.id) : { papel: 'visualizador' as const, redes: [], meses: [] }
+  const podeEditar = perfil.papel === 'admin'
+
+  const { geracoes, total } = await fetchHistorico({ page, dataInicio, dataFim, perfil })
   const totalPages = Math.ceil(total / PER_PAGE)
 
   function buildHref(overrides: Record<string, string | number>) {
@@ -162,13 +183,15 @@ export default async function HistoricoPage({
           <p className="text-[14px] text-[var(--color-fg-muted)]">
             Nenhuma geração registrada para os filtros selecionados.
           </p>
-          <Link
-            href="/painel/kpi/simples"
-            className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-navy-700)] hover:underline"
-          >
-            Gerar novo KPI
-            <ArrowUpRight size={12} weight="bold" />
-          </Link>
+          {podeEditar && (
+            <Link
+              href="/painel/kpi/simples"
+              className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--color-navy-700)] hover:underline"
+            >
+              Gerar novo KPI
+              <ArrowUpRight size={12} weight="bold" />
+            </Link>
+          )}
         </div>
       ) : (
         <div className="overflow-x-auto border-y border-[var(--color-border)]">
@@ -186,7 +209,9 @@ export default async function HistoricoPage({
             </thead>
             <tbody>
               {geracoes.map(g => {
-                const hrefRegerar = `/painel/kpi/simples?geracao=${g.id}`
+                const hrefRegerar = podeEditar
+                  ? `/painel/kpi/simples?geracao=${g.id}`
+                  : `/painel/kpi/visualizar?geracao=${g.id}`
                 return (
                   <tr
                     key={g.id}
@@ -269,8 +294,17 @@ export default async function HistoricoPage({
                         href={hrefRegerar}
                         className="inline-flex items-center gap-1.5 rounded-md bg-[var(--color-navy-700)] px-2.5 py-1 text-[11px] font-semibold text-white transition-all duration-150 hover:opacity-90 active:scale-[0.96] group-hover:shadow-sm"
                       >
-                        <ArrowClockwise size={11} weight="bold" className="transition-transform duration-300 group-hover:rotate-90" />
-                        Regerar
+                        {podeEditar ? (
+                          <>
+                            <ArrowClockwise size={11} weight="bold" className="transition-transform duration-300 group-hover:rotate-90" />
+                            Regerar
+                          </>
+                        ) : (
+                          <>
+                            <Eye size={11} weight="bold" />
+                            Ver
+                          </>
+                        )}
                       </Link>
                     </Td>
                   </tr>
