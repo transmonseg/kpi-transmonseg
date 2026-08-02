@@ -68,6 +68,10 @@ export async function updateSession(request: NextRequest) {
         path === '/api/dashboard' ||
         path === '/api/dashboard/beta' ||
         path === '/api/dashboard/export-mensal' ||
+        // Ver KPI já gerado (read-only, sem upload/gerar) — link que o
+        // admin/gerente manda pro cliente logado, qualquer papel acessa.
+        path === '/painel/kpi/visualizar' ||
+        path === '/api/kpi/simples/regerar' ||
         (path === '/painel/usuarios' && perfil.papel === 'gerente')
       if (!permitido) {
         if (path.startsWith('/api/')) {
