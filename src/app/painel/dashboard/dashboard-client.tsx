@@ -205,8 +205,9 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
           <div className="flex gap-2">
             {/* Só no /painel autenticado (nunca no link público /dashboard) —
              *  qualquer papel logado vê, admin e login restrito a rede/loja
-             *  específica. Pré-preenche com a data selecionada nesta tela. */}
-            <Link href={`/painel/historico?inicio=${data}&fim=${data}`} className={BTN_SEC}>
+             *  específica. Abre a tabela do KPI na hora, pra data selecionada
+             *  nesta tela — sem passar por lista de gerações pra regenerar. */}
+            <Link href={`/painel/kpi/visualizar?data=${data}`} className={BTN_SEC}>
               <TableIcon size={14} weight="bold" /> Ver KPIs
             </Link>
             {!standalone && (

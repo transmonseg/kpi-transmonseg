@@ -21,7 +21,7 @@ type Papel = 'admin' | 'gerente' | 'visualizador'
 
 const DASHBOARD: Leaf = { href: '/painel', label: 'Dashboard', Icon: ChartBar }
 const USUARIOS: Leaf = { href: '/painel/usuarios', label: 'Usuários', Icon: UsersThree }
-const VER_KPIS: Leaf = { href: '/painel/historico', label: 'Ver KPIs', Icon: ClockCounterClockwise }
+const VER_KPIS: Leaf = { href: '/painel/kpi/visualizar', label: 'Ver KPIs', Icon: ClockCounterClockwise }
 
 const GROUPS: Group[] = [
   {

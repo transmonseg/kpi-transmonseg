@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { WarningCircle, FileArrowDown, Truck } from '@phosphor-icons/react/dist/ssr'
+import { WarningCircle, FileArrowDown, Truck, CalendarBlank, Link as LinkIcon, Check } from '@phosphor-icons/react/dist/ssr'
 import { STATUS_LABEL, TIER_STYLE, tierEfetivo, type StatusRota, type CategoriaRevisao } from '@/lib/kpi/status-rota'
+import { hojeBR } from '@/lib/data-br'
 import { cn } from '@/components/ui'
 
 type PreviewLinha = {
@@ -54,47 +55,100 @@ function StatusBadge({ status, revisar, categoria }: { status: StatusRota; revis
 }
 
 export default function VisualizarKpiPage() {
+  const [data, setData] = useState('')
   const [redes, setRedes] = useState<RedeResult[] | null>(null)
-  const [data, setData] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [carregando, setCarregando] = useState(true)
+  const [linkCopiado, setLinkCopiado] = useState(false)
 
+  // Fonte da página: ?data=YYYY-MM-DD (padrão — "o KPI desse dia", mescla
+  // gerações) ou ?geracao=ID (legado — uma geração específica, pontual).
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const id = params.get('geracao')
-    if (!id) {
-      setErro('Link inválido — falta o identificador da geração.')
-      setCarregando(false)
+    const dataParam = params.get('data')
+    const geracaoId = params.get('geracao')
+
+    if (!dataParam && !geracaoId) {
+      // Sem parâmetro nenhum: assume hoje, já com a URL certa (fica um link
+      // estável — recarregar/copiar mantém o mesmo dia).
+      const hoje = hojeBR()
+      window.history.replaceState(null, '', `/painel/kpi/visualizar?data=${hoje}`)
+      setData(hoje)
       return
     }
+
+    setData(dataParam ?? '')
+    setCarregando(true)
+    setErro(null)
     ;(async () => {
       try {
-        const res = await fetch('/api/kpi/simples/regerar', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ id }),
-        })
-        if (!res.ok) throw new Error(await res.text())
-        const json = await res.json() as { redes: RedeResult[]; data?: string }
-        setRedes(json.redes)
-        setData(json.data ?? null)
+        if (geracaoId) {
+          const res = await fetch('/api/kpi/simples/regerar', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ id: geracaoId }),
+          })
+          if (!res.ok) throw new Error(await res.text())
+          const json = await res.json() as { redes: RedeResult[]; data?: string }
+          setRedes(json.redes)
+          if (json.data) setData(json.data)
+        } else {
+          const res = await fetch(`/api/kpi/simples/dia?data=${dataParam}`)
+          if (!res.ok) throw new Error(await res.text())
+          const json = await res.json() as { redes: RedeResult[]; data: string }
+          setRedes(json.redes)
+        }
       } catch (e) {
-        setErro(e instanceof Error ? e.message : 'Não foi possível carregar essa geração.')
+        setErro(e instanceof Error ? e.message : 'Não foi possível carregar o KPI dessa data.')
       } finally {
         setCarregando(false)
       }
     })()
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typeof window !== 'undefined' ? window.location.search : ''])
+
+  function mudarData(novaData: string) {
+    if (!novaData) return
+    window.location.href = `/painel/kpi/visualizar?data=${novaData}`
+  }
+
+  function copiarLink() {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setLinkCopiado(true)
+      setTimeout(() => setLinkCopiado(false), 2000)
+    })
+  }
 
   return (
     <div className="mx-auto w-full max-w-[1200px]">
-      <header className="mb-8 flex flex-col gap-1.5">
-        <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
-          KPI Transmonseg
-        </span>
-        <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.02em] text-[var(--color-fg)] md:text-[34px]">
-          {data ? `KPI do dia ${data.split('-').reverse().join('/')}` : 'Visualizar KPI'}
-        </h1>
+      <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
+            KPI Transmonseg
+          </span>
+          <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.02em] text-[var(--color-fg)] md:text-[34px]">
+            {data ? `KPI do dia ${data.split('-').reverse().join('/')}` : 'Ver KPIs'}
+          </h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 py-2">
+            <CalendarBlank size={14} weight="bold" className="text-[var(--color-fg-subtle)]" />
+            <input
+              type="date"
+              value={data}
+              onChange={e => mudarData(e.target.value)}
+              className="bg-transparent text-[13px] text-[var(--color-fg)] outline-none [color-scheme:light] dark:[color-scheme:dark]"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={copiarLink}
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3.5 py-2 text-[12.5px] font-medium text-[var(--color-fg)] transition-colors hover:bg-[var(--color-bg-hover)]"
+          >
+            {linkCopiado ? <Check size={14} weight="bold" className="text-[var(--color-success)]" /> : <LinkIcon size={14} weight="bold" />}
+            {linkCopiado ? 'Link copiado' : 'Copiar link'}
+          </button>
+        </div>
       </header>
 
       {carregando && (
@@ -111,7 +165,13 @@ export default function VisualizarKpiPage() {
         </div>
       )}
 
-      {redes && (
+      {!carregando && !erro && redes && redes.length === 0 && (
+        <div className="flex flex-col items-center gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-6 py-16 text-center">
+          <p className="text-[14px] text-[var(--color-fg-muted)]">Nenhum KPI gerado nesse dia (ou nenhuma rede do seu acesso apareceu nele).</p>
+        </div>
+      )}
+
+      {redes && redes.length > 0 && (
         <div className="flex flex-col gap-6">
           {redes.map(rede => (
             <div
@@ -130,7 +190,7 @@ export default function VisualizarKpiPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => baixarXlsx(rede.xlsxBase64, `KPI-${rede.rede_nome}-${data ?? ''}.xlsx`)}
+                  onClick={() => baixarXlsx(rede.xlsxBase64, `KPI-${rede.rede_nome}-${data}.xlsx`)}
                   className="flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--color-navy-700)] px-4 py-2 text-[12.5px] font-medium text-white transition-opacity hover:opacity-90"
                 >
                   <FileArrowDown size={14} weight="bold" />
@@ -177,9 +237,6 @@ export default function VisualizarKpiPage() {
               </div>
             </div>
           ))}
-          {redes.length === 0 && (
-            <p className="text-[13px] text-[var(--color-fg-muted)]">Nenhuma rede encontrada nessa geração.</p>
-          )}
         </div>
       )}
     </div>

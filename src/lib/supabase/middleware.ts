@@ -73,6 +73,7 @@ export async function updateSession(request: NextRequest) {
         path === '/painel/kpi/visualizar' ||
         path === '/painel/historico' ||
         path === '/api/kpi/simples/regerar' ||
+        path === '/api/kpi/simples/dia' ||
         (path === '/painel/usuarios' && perfil.papel === 'gerente')
       if (!permitido) {
         if (path.startsWith('/api/')) {
