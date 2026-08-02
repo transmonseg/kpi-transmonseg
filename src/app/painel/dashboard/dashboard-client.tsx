@@ -12,7 +12,7 @@ import Historico from './historico'
 import ResumoOperacao, { type ResumoOperacaoData } from './resumo-operacao'
 import { iniciarTutorial, tourJaVisto } from '@/lib/tour/store'
 import { hojeBR } from '@/lib/data-br'
-import { ArrowSquareOut, CheckCircle, WarningCircle, ArrowClockwise, Question } from '@phosphor-icons/react/dist/ssr'
+import { ArrowSquareOut, CheckCircle, WarningCircle, ArrowClockwise, Question, TableIcon } from '@phosphor-icons/react/dist/ssr'
 import { LineChart, BarList, ColumnChart, Donut, Gauge, Heatmap, fmtNum, type BarItem } from '@/app/painel/charts'
 import { ModalDetalhe, type TipoDetalhe } from './modal-detalhe'
 
@@ -201,19 +201,29 @@ export default function DashboardClient({ resumo, tabInicial = 'geral', endpoint
             Entregas, rastreamento, paradas indevidas e desempenho por rede — consolidado no período.
           </p>
         </div>
-        {tab === 'geral' && !standalone && (
+        {tab === 'geral' && basePath === '/painel' && (
           <div className="flex gap-2">
-            <button onClick={() => iniciarTutorial()} className={BTN_SEC}>
-              <Question size={14} weight="bold" /> Ver tutorial
-            </button>
-            <button
-              data-tour="relatorio"
-              onClick={() => window.open(`/api/dashboard/relatorio?periodo=${periodo}&data=${data}&redes=${redes.join(',')}`, '_blank')}
-              className={BTN_SEC}
-            >
-              <ArrowSquareOut size={14} weight="bold" />
-              Gerar relatório
-            </button>
+            {/* Só no /painel autenticado (nunca no link público /dashboard) —
+             *  qualquer papel logado vê, admin e login restrito a rede/loja
+             *  específica. Pré-preenche com a data selecionada nesta tela. */}
+            <Link href={`/painel/historico?inicio=${data}&fim=${data}`} className={BTN_SEC}>
+              <TableIcon size={14} weight="bold" /> Ver KPIs
+            </Link>
+            {!standalone && (
+              <>
+                <button onClick={() => iniciarTutorial()} className={BTN_SEC}>
+                  <Question size={14} weight="bold" /> Ver tutorial
+                </button>
+                <button
+                  data-tour="relatorio"
+                  onClick={() => window.open(`/api/dashboard/relatorio?periodo=${periodo}&data=${data}&redes=${redes.join(',')}`, '_blank')}
+                  className={BTN_SEC}
+                >
+                  <ArrowSquareOut size={14} weight="bold" />
+                  Gerar relatório
+                </button>
+              </>
+            )}
           </div>
         )}
       </header>
