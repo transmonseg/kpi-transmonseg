@@ -13,35 +13,35 @@ export interface ReviewQueueRow {
   version: number
 }
 
+const POLL_INTERVAL_MS = 5000
+
 export function useRealtimeQueue() {
   const [rows, setRows] = useState<ReviewQueueRow[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
   useEffect(() => {
-    supabase
-      .from('review_queue')
-      .select('*')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: true })
-      .then(({ data }) => { setRows(data ?? []); setLoading(false) })
+    let cancelled = false
 
-    const channel = supabase
-      .channel('review_queue_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'review_queue' }, (payload) => {
-        if (payload.eventType === 'INSERT' && (payload.new as ReviewQueueRow).status === 'pending') {
-          setRows(prev => [...prev, payload.new as ReviewQueueRow])
-        } else if (payload.eventType === 'UPDATE') {
-          setRows(prev => {
-            const updated = payload.new as ReviewQueueRow
-            if (updated.status !== 'pending') return prev.filter(r => r.id !== updated.id)
-            return prev.map(r => r.id === updated.id ? updated : r)
-          })
-        }
-      })
-      .subscribe()
+    async function fetchRows() {
+      const { data } = await supabase
+        .from('review_queue')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true })
+      if (!cancelled) {
+        setRows(data ?? [])
+        setLoading(false)
+      }
+    }
 
-    return () => { supabase.removeChannel(channel) }
+    fetchRows()
+    const interval = setInterval(fetchRows, POLL_INTERVAL_MS)
+
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return { rows, setRows, loading }
