@@ -58,7 +58,7 @@ function formatarData(iso: string): string {
 function resumoTexto(g: GeracaoRow): string {
   if (g.tipo === 'KPI') {
     const r = g.resumo as ResumoKpi
-    return `${r.total} carga(s) · ${r.ok} OK · ${r.incompletos} incompletos · ${r.semRastreador} sem rastreador${r.modoApi ? ' · via API' : ''}`
+    return `${r.total} loja(s) · ${r.ok} confirmadas · ${r.incompletos} pendentes · ${r.semRastreador} sem rastreador${r.modoApi ? ' · via API' : ''}`
   }
   const r = g.resumo as ResumoRomaneio
   return `${r.total} carga(s) · ${r.ok} OK · ${r.divergentes} divergentes · ${r.ausentes} ausentes`
