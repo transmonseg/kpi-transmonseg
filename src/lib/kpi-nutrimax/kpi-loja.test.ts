@@ -65,4 +65,67 @@ describe('montaKpiLojaNutrimax', () => {
     expect(r[0].tempoNaLojaMin).toBeGreaterThan(0)
     expect(r[0].tempoOperacaoMin).toBeGreaterThan(0)
   })
+
+  it('loja pendente sem GPS correspondente: chegada/saída vazias, status pendente, não inventa horário', () => {
+    const r = montaKpiLojaNutrimax(
+      [escala()],
+      [alvo({ situacao: 0, feitoISO: null })],
+      [resumo({ paradas: [] })],
+    )
+    expect(r).toHaveLength(1)
+    expect(r[0].status).toBe('pendente')
+    expect(r[0].chegadaLoja).toBeNull()
+    expect(r[0].saidaLoja).toBeNull()
+    expect(r[0].tempoNaLojaMin).toBeNull()
+  })
+
+  it('placa da escala sem nenhum alvo: 1 linha "sem_rastreador", tudo nulo', () => {
+    const r = montaKpiLojaNutrimax(
+      [escala({ placaNorm: 'ZZZ9Z99', placaRaw: 'ZZZ9Z99' })],
+      [alvo()], // alvo é de outra placa (TTL7D40) — não deve casar
+      [resumo()],
+    )
+    expect(r).toHaveLength(1)
+    expect(r[0]).toMatchObject({ loja: '—', placaNorm: 'ZZZ9Z99', status: 'sem_rastreador' })
+  })
+
+  it('2 NFs pro mesmo ponto (mesmo codigoUnitrac) viram 1 linha, não 2', () => {
+    const r = montaKpiLojaNutrimax(
+      [escala()],
+      [
+        // feitoISO com Z (timestamp inequívoco) — mesma convenção do resto
+        // dos testes deste arquivo; ver nota da Task 2 sobre por que raw
+        // sem Z é frágil em máquina com timezone != UTC.
+        alvo({ documento: '2308904', feitoISO: '2026-08-06T10:20:21.120Z' }),
+        alvo({ documento: '2308905', feitoISO: '2026-08-06T10:20:21.130Z' }),
+      ],
+      [resumo()],
+    )
+    expect(r).toHaveLength(1)
+    // usa a confirmação mais cedo das duas
+    expect(r[0].chegadaLoja).toBe('2026-08-06T10:20:21.120Z')
+  })
+
+  it('duas lojas distintas confirmadas no mesmo instante exato (confirmação em lote) não quebram o cálculo — cada uma vira 1 linha', () => {
+    const r = montaKpiLojaNutrimax(
+      [escala()],
+      [
+        alvo({ codigoUnitrac: '129145', nome: 'LOJA A', documento: 'NF1', feitoISO: '2026-08-06T10:20:21.120' }),
+        alvo({ codigoUnitrac: '129146', nome: 'LOJA B', documento: 'NF2', feitoISO: '2026-08-06T10:20:21.120' }),
+      ],
+      [resumo()],
+    )
+    expect(r).toHaveLength(2)
+    expect(r.map(l => l.loja).sort()).toEqual(['LOJA A', 'LOJA B'])
+  })
+
+  it('só 1 permanência em base o dia inteiro: saída da base preenchida, chegada na base fica vazia (não "voltou" de verdade)', () => {
+    const r = montaKpiLojaNutrimax(
+      [escala()],
+      [alvo({ situacao: 0, feitoISO: null })],
+      [resumo({ paradas: [parada({ classificacao: 'BASE' })] })],
+    )
+    expect(r[0].saidaBase).not.toBeNull()
+    expect(r[0].chegadaBase).toBeNull()
+  })
 })
