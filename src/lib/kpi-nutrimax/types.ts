@@ -71,31 +71,6 @@ export type ResumoViagemPlacaNutrimax = {
   fimViagem: string | null // ISO
 }
 
-/** KPI por carga/placa (mesmo espírito do KPI do Benassi, que é por loja — aqui
- *  não existe loja fixa, então a unidade é a carga/placa do dia), cruzando o
- *  planejado (Escala) com o realizado de verdade (Relatório Parada e Serviço
- *  do Unitrac — GPS real, não status de alvo). */
-export type KpiViagemNutrimax = {
-  carga: string
-  placaRaw: string
-  placaNorm: string
-  destino: string
-  motorista: string
-  ajudante1: string | null
-  ajudante2: string | null
-  pesoKg: number | null
-  entPlanejado: number | null
-  nfPlanejado: number | null
-  qtdParadasReal: number
-  kmPercorrido: number | null
-  inicioViagem: string | null // ISO
-  fimViagem: string | null // ISO
-  /** 'sem_rastreador' = placa da escala não apareceu no relatório do Unitrac;
-   *  'incompleto' = apareceu, mas com menos paradas reais do que clientes
-   *  planejados (ENT); 'ok' = bateu ou passou do planejado. */
-  status: 'ok' | 'incompleto' | 'sem_rastreador'
-}
-
 /** Uma parada real do GPS (Relatório Parada e Serviço do Unitrac) casada com
  *  um cliente do romaneio pelo código da loja. */
 export type ParadaConferidaNutrimax = {
