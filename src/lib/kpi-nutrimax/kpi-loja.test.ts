@@ -163,4 +163,55 @@ describe('montaKpiLojaNutrimax', () => {
     expect(r[0].saidaBase).not.toBeNull()
     expect(r[0].chegadaBase).toBeNull()
   })
+
+  it('Unitrac não confirmou (situacao=0), mas o geofence dela já clusterizou a parada: confirmado_gps', () => {
+    const paradaLoja = parada({
+      classificacao: 'LOJA', codigo_loja: '129145', nome_loja: 'WW CARNES MERCEARIA EIRELI',
+      chegada: new Date('2026-08-06T10:20:00Z'), saida: new Date('2026-08-06T10:35:00Z'), ordem: 2,
+    })
+    const r = montaKpiLojaNutrimax(
+      [escala()],
+      [alvo({ situacao: 0, feitoISO: null })],
+      [resumo({ paradas: [paradaLoja] })],
+    )
+    expect(r[0]).toMatchObject({
+      status: 'confirmado_gps',
+      chegadaLoja: '2026-08-06T10:20:00.000Z',
+      saidaLoja: '2026-08-06T10:35:00.000Z',
+    })
+  })
+
+  it('sem confirmação da Unitrac e sem geofence batendo, mas o GPS parou dentro do raio do endereço geocodificado: confirmado_gps', () => {
+    const paradaForaBase = parada({
+      classificacao: 'FORA_BASE', codigo_loja: null,
+      chegada: new Date('2026-08-06T10:20:00Z'), saida: new Date('2026-08-06T10:35:00Z'),
+      lat: -22.9001, lng: -43.2001, ordem: 2,
+    })
+    const r = montaKpiLojaNutrimax(
+      [escala()],
+      [alvo({ situacao: 0, feitoISO: null, nome: 'WW CARNES MERCEARIA EIRELI' })],
+      [resumo({ paradas: [paradaForaBase] })],
+      [{ nomeFantasia: 'WW CARNES MERCEARIA EIRELI', lat: -22.9, lng: -43.2, raioM: 150 }],
+    )
+    expect(r[0]).toMatchObject({
+      status: 'confirmado_gps',
+      chegadaLoja: '2026-08-06T10:20:00.000Z',
+      saidaLoja: '2026-08-06T10:35:00.000Z',
+    })
+  })
+
+  it('sem confirmação, sem geofence, e o GPS não chegou perto de nenhum endereço conhecido: continua pendente', () => {
+    const paradaLonge = parada({
+      classificacao: 'FORA_BASE', codigo_loja: null,
+      chegada: new Date('2026-08-06T10:20:00Z'), saida: new Date('2026-08-06T10:35:00Z'),
+      lat: -22.95, lng: -43.25, ordem: 2, // ~6-7km do endereço cadastrado
+    })
+    const r = montaKpiLojaNutrimax(
+      [escala()],
+      [alvo({ situacao: 0, feitoISO: null, nome: 'WW CARNES MERCEARIA EIRELI' })],
+      [resumo({ paradas: [paradaLonge] })],
+      [{ nomeFantasia: 'WW CARNES MERCEARIA EIRELI', lat: -22.9, lng: -43.2, raioM: 150 }],
+    )
+    expect(r[0]).toMatchObject({ status: 'pendente', chegadaLoja: null, saidaLoja: null })
+  })
 })

@@ -139,8 +139,12 @@ export type LinhaKpiLojaNutrimax = {
   tempoOperacaoMin: number | null
   kmPercorrido: number | null
   /** 'confirmado' = a Unitrac marcou a entrega como feita (situacao=1) e deu
-   *  hora; 'pendente' = a loja está nos alvos do dia mas ainda sem
-   *  confirmação; 'sem_rastreador' = a placa da escala não apareceu em
-   *  nenhum alvo (offline, sem sinal, ou fora da conta). */
-  status: 'confirmado' | 'pendente' | 'sem_rastreador'
+   *  hora; 'confirmado_gps' = a Unitrac ainda não marcou, mas achamos prova
+   *  de GPS por conta própria (geofence dela já clusterizou uma parada ali,
+   *  ou uma parada bateu dentro do raio do endereço geocodificado nosso —
+   *  ver confirma-endereco.ts); 'pendente' = a loja está nos alvos do dia
+   *  mas sem confirmação nem por Unitrac nem por GPS; 'sem_rastreador' = a
+   *  placa da escala não apareceu em nenhum alvo (offline, sem sinal, ou
+   *  fora da conta). */
+  status: 'confirmado' | 'confirmado_gps' | 'pendente' | 'sem_rastreador'
 }

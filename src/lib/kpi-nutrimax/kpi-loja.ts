@@ -2,6 +2,7 @@ import type { AlvoApi } from '@/lib/unitrac-api/alvos'
 import type { ResumoVeiculo, ParadaUnitrac } from '@/lib/types/unitrac'
 import type { LinhaEscalaNutrimax, LinhaKpiLojaNutrimax } from './types'
 import { montaResumoViagemPorPlaca } from './resumo-viagem'
+import { achaClienteGeo, confirmaViaEndereco, type ClienteGeo } from './confirma-endereco'
 
 function acharSaidaBase(paradas: ParadaUnitrac[]): string | null {
   const bases = paradas.filter(p => p.classificacao === 'BASE')
@@ -24,11 +25,14 @@ function diffMin(inicioIso: string | null, fimIso: string | null): number | null
 /** Cruza Escala (motorista/placa) + alvos da Unitrac (loja/NF/confirmação) +
  *  GPS clusterizado (saída/chegada de base, saída da loja) numa linha por
  *  loja visitada. `alvos` e `resumosVeiculo` já devem vir filtrados pras
- *  placas da escala (mesmo padrão de buscarResumosViagemViaApi). */
+ *  placas da escala (mesmo padrão de buscarResumosViagemViaApi). `clientesGeo`
+ *  é o cadastro próprio geocodificado (nutrimax_clientes_geo) — reforço
+ *  quando a Unitrac não confirma nem por /alvos nem pelo geofence dela. */
 export function montaKpiLojaNutrimax(
   escala: LinhaEscalaNutrimax[],
   alvos: AlvoApi[],
   resumosVeiculo: ResumoVeiculo[],
+  clientesGeo: ClienteGeo[] = [],
 ): LinhaKpiLojaNutrimax[] {
   const resumoPorPlaca = new Map(resumosVeiculo.map(r => [r.placa_norm, r]))
   const kmPorPlaca = new Map(montaResumoViagemPorPlaca(resumosVeiculo).map(r => [r.placaNorm, r.kmPercorrido]))
@@ -86,24 +90,52 @@ export function montaKpiLojaNutrimax(
 
     const linhasDaPlaca: LinhaKpiLojaNutrimax[] = []
     for (const [codigoUnitrac, grupo] of porLoja) {
+      const nomeLoja = grupo[0].nome
       const confirmados = grupo
         .filter(a => a.situacao === 1 && a.feitoISO)
         .sort((a, b) => a.feitoISO!.localeCompare(b.feitoISO!))
-      // feitoISO vem sem Z (dígitos BRT crus) — o '+ Z' é a convenção já usada
-      // no resto do repo (kpi/simples, dashboard-api-fonte) e evita depender do
-      // timezone da máquina que roda o código.
-      const chegadaLoja = confirmados[0]?.feitoISO ? new Date(confirmados[0].feitoISO + 'Z').toISOString() : null
-
       const paradaGps = paradas.find(p => p.classificacao === 'LOJA' && p.codigo_loja === codigoUnitrac)
-      const saidaLoja = paradaGps ? paradaGps.saida.toISOString() : null
+
+      let chegadaLoja: string | null = null
+      let saidaLoja: string | null = null
+      let status: LinhaKpiLojaNutrimax['status']
+
+      if (confirmados[0]?.feitoISO) {
+        // Confirmado pela própria Unitrac (situacao=1) — fonte mais confiável.
+        // feitoISO vem sem Z (dígitos BRT crus) — o '+ Z' é a convenção já
+        // usada no resto do repo (kpi/simples, dashboard-api-fonte) e evita
+        // depender do timezone da máquina que roda o código.
+        chegadaLoja = new Date(confirmados[0].feitoISO + 'Z').toISOString()
+        saidaLoja = paradaGps ? paradaGps.saida.toISOString() : null
+        status = 'confirmado'
+      } else if (paradaGps) {
+        // Unitrac ainda não marcou como feito, mas o geofence dela já
+        // clusterizou uma parada ali — evidência de GPS independente da flag.
+        chegadaLoja = paradaGps.chegada.toISOString()
+        saidaLoja = paradaGps.saida.toISOString()
+        status = 'confirmado_gps'
+      } else {
+        // Sem confirmação da Unitrac nem geofence dela batendo — última
+        // tentativa: nosso próprio cadastro geocodificado (não depende do
+        // cadastro de pontos da Unitrac, que pode estar incompleto/errado).
+        const clienteGeo = achaClienteGeo(nomeLoja, clientesGeo)
+        const paradaEndereco = clienteGeo ? confirmaViaEndereco(paradas, clienteGeo) : null
+        if (paradaEndereco) {
+          chegadaLoja = paradaEndereco.chegada.toISOString()
+          saidaLoja = paradaEndereco.saida.toISOString()
+          status = 'confirmado_gps'
+        } else {
+          status = 'pendente'
+        }
+      }
 
       linhasDaPlaca.push({
-        loja: grupo[0].nome, motorista, placaNorm,
+        loja: nomeLoja, motorista, placaNorm,
         saidaBase, chegadaLoja, saidaLoja,
         tempoNaLojaMin: diffMin(chegadaLoja, saidaLoja),
         chegadaBase, tempoOperacaoMin: diffMin(saidaBase, chegadaBase),
         kmPercorrido: km,
-        status: chegadaLoja ? 'confirmado' : 'pendente',
+        status,
       })
     }
 

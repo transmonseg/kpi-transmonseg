@@ -6,6 +6,7 @@ import { buscarFrota } from '@/lib/unitrac-api/frota'
 import { buscarAlvos } from '@/lib/unitrac-api/alvos'
 import { COD_USER_NUTRIMAX } from '@/lib/unitrac-api/client'
 import { montaKpiLojaNutrimax } from '@/lib/kpi-nutrimax/kpi-loja'
+import type { ClienteGeo } from '@/lib/kpi-nutrimax/confirma-endereco'
 import { gerarKpiLojaXlsx } from '@/lib/kpi-nutrimax/gerador-kpi-loja'
 import { foraDoAlcanceApi } from '@/lib/kpi-nutrimax/constants'
 import { buscarResumosViagemViaApi } from '@/lib/kpi-nutrimax/api-paradas'
@@ -66,12 +67,33 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const kpi = montaKpiLojaNutrimax(escala, alvos, resumosVeiculo)
+  const svc = createServiceClient()
+  // Reforço de confirmação por endereço (nutrimax_clientes_geo, geocodificado
+  // uma vez via scripts/geocodificar-clientes-nutrimax.ts) — best-effort:
+  // se a tabela ainda não foi populada ou a busca falhar, segue sem esse
+  // reforço (só perde o "confirmado_gps" por endereço, o resto funciona igual).
+  let clientesGeo: ClienteGeo[] = []
+  try {
+    const { data: geoRows, error } = await svc
+      .from('nutrimax_clientes_geo')
+      .select('nome_fantasia, lat, lng, raio_m')
+    if (error) throw error
+    clientesGeo = (geoRows ?? []).map(r => ({
+      nomeFantasia: r.nome_fantasia as string,
+      lat: r.lat as number,
+      lng: r.lng as number,
+      raioM: r.raio_m as number,
+    }))
+  } catch (e) {
+    console.warn('[/api/kpi/nutrimax/gerar] cadastro geocodificado indisponível (segue sem reforço de endereço):', e instanceof Error ? e.message : e)
+  }
+
+  const kpi = montaKpiLojaNutrimax(escala, alvos, resumosVeiculo, clientesGeo)
   const xlsxBuf = await gerarKpiLojaXlsx(kpi, data)
 
   const resumo = {
     total: kpi.length,
-    ok: kpi.filter(k => k.status === 'confirmado').length,
+    ok: kpi.filter(k => k.status === 'confirmado' || k.status === 'confirmado_gps').length,
     incompletos: kpi.filter(k => k.status === 'pendente').length,
     semRastreador: kpi.filter(k => k.status === 'sem_rastreador').length,
   }
@@ -83,7 +105,6 @@ export async function POST(req: NextRequest) {
 
   let geracaoId: string | null = null
   try {
-    const svc = createServiceClient()
     geracaoId = await salvarGeracao(svc, {
       tipo: 'KPI',
       data,

@@ -9,7 +9,7 @@ import { foraDoAlcanceApi } from '@/lib/kpi-nutrimax/constants'
 
 type Resumo = { total: number; ok: number; incompletos: number; semRastreador: number }
 type Tone = 'default' | 'success' | 'warning' | 'danger'
-type StatusLinha = 'confirmado' | 'pendente' | 'sem_rastreador'
+type StatusLinha = 'confirmado' | 'confirmado_gps' | 'pendente' | 'sem_rastreador'
 type Linha = {
   loja: string
   motorista: string
@@ -111,10 +111,13 @@ export default function NutrimaxGerarPage() {
     URL.revokeObjectURL(url)
   }
 
+  // "confirmado_gps" conta como confirmado pra fins de filtro/resumo — é
+  // confirmação de verdade, só que veio do nosso reforço de GPS/endereço em
+  // vez de a Unitrac ter marcado. O badge na tabela deixa claro qual foi qual.
   const linhasFiltradas = useMemo(() => {
     if (filtro === 'todas') return linhas
-    if (filtro === 'ok') return linhas.filter(l => l.status === 'confirmado')
-    return linhas.filter(l => l.status !== 'confirmado')
+    if (filtro === 'ok') return linhas.filter(l => l.status === 'confirmado' || l.status === 'confirmado_gps')
+    return linhas.filter(l => l.status !== 'confirmado' && l.status !== 'confirmado_gps')
   }, [linhas, filtro])
 
   return (
@@ -172,7 +175,8 @@ export default function NutrimaxGerarPage() {
               As paradas são puxadas direto da API Unitrac em tempo real. Nenhum arquivo de
               relatório necessário — só alcança hoje e ontem (últimas 48h). A confirmação de
               chegada por loja só funciona pra hoje — gerar pra ontem mostra só os horários de
-              base (GPS).
+              base (GPS). Quando a Unitrac ainda não confirmou, a gente confere por conta própria
+              (GPS parado no endereço certo) — aparece como &quot;confirmado (GPS)&quot;.
             </p>
           </div>
 
@@ -259,7 +263,7 @@ export default function NutrimaxGerarPage() {
                     key={`${l.placaNorm}-${l.loja}-${i}`}
                     className={cn(
                       'border-b border-[var(--color-border)] last:border-0',
-                      l.status !== 'confirmado' && 'bg-[var(--color-warning-soft)]/20',
+                      l.status !== 'confirmado' && l.status !== 'confirmado_gps' && 'bg-[var(--color-warning-soft)]/20',
                     )}
                   >
                     <td className="px-4 py-1.5 text-[var(--color-fg)]">{l.loja}</td>
@@ -385,8 +389,9 @@ function FiltroChips({ filtro, setFiltro, resumo }: { filtro: Filtro; setFiltro:
 }
 
 function StatusBadge({ status }: { status: StatusLinha }) {
-  const cfg: Record<StatusLinha, { label: string; variant: 'success' | 'warning' | 'danger' }> = {
+  const cfg: Record<StatusLinha, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' }> = {
     confirmado: { label: 'CONFIRMADO', variant: 'success' },
+    confirmado_gps: { label: 'CONFIRMADO (GPS)', variant: 'info' },
     pendente: { label: 'PENDENTE', variant: 'warning' },
     sem_rastreador: { label: 'SEM RASTREADOR', variant: 'danger' },
   }

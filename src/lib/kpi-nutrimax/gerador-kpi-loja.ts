@@ -8,6 +8,8 @@ const COR_HEADER_TABELA = 'FF2E75B6'
 const COR_BG_ALT = 'FFF8FAFC'
 const COR_CONFIRMADO_BG = 'FFD1FAE5'
 const COR_CONFIRMADO_TXT = 'FF065F46'
+const COR_CONFIRMADO_GPS_BG = 'FFDBEAFE'
+const COR_CONFIRMADO_GPS_TXT = 'FF1E40AF'
 const COR_PENDENTE_BG = 'FFFEF3C7'
 const COR_PENDENTE_TXT = 'FF92400E'
 const COR_SEM_RASTREADOR_BG = 'FFFEE2E2'
@@ -15,11 +17,13 @@ const COR_SEM_RASTREADOR_TXT = 'FF991B1B'
 
 const STATUS_LABEL: Record<LinhaKpiLojaNutrimax['status'], string> = {
   confirmado: 'CONFIRMADO',
+  confirmado_gps: 'CONFIRMADO (GPS)',
   pendente: 'PENDENTE',
   sem_rastreador: 'SEM RASTREADOR',
 }
 const STATUS_COR: Record<LinhaKpiLojaNutrimax['status'], { bg: string; txt: string }> = {
   confirmado: { bg: COR_CONFIRMADO_BG, txt: COR_CONFIRMADO_TXT },
+  confirmado_gps: { bg: COR_CONFIRMADO_GPS_BG, txt: COR_CONFIRMADO_GPS_TXT },
   pendente: { bg: COR_PENDENTE_BG, txt: COR_PENDENTE_TXT },
   sem_rastreador: { bg: COR_SEM_RASTREADOR_BG, txt: COR_SEM_RASTREADOR_TXT },
 }
