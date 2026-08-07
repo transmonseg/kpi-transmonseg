@@ -11,16 +11,16 @@ type Resumo = { total: number; ok: number; incompletos: number; semRastreador: n
 type Tone = 'default' | 'success' | 'warning' | 'danger'
 type StatusLinha = 'ok' | 'incompleto' | 'sem_rastreador'
 type Linha = {
-  carga: string
-  placa: string
-  destino: string
+  loja: string
   motorista: string
-  pesoKg: number | null
-  entPlanejado: number | null
-  qtdParadasReal: number
+  placaNorm: string
+  saidaBase: string | null
+  chegadaLoja: string | null
+  saidaLoja: string | null
+  tempoNaLojaMin: number | null
+  chegadaBase: string | null
+  tempoOperacaoMin: number | null
   kmPercorrido: number | null
-  inicioViagem: string | null
-  fimViagem: string | null
   status: StatusLinha
 }
 type Filtro = 'todas' | 'problemas' | 'ok'
@@ -136,9 +136,9 @@ export default function NutrimaxGerarPage() {
           Gerar KPI
         </h1>
         <p className="mt-1 max-w-[55ch] text-[14px] leading-relaxed text-[var(--color-fg-muted)]">
-          Suba a Escala de Rota. O sistema busca as paradas reais direto da API ao vivo do
-          Unitrac (GPS, sem PDF de relatório) e cruza com o planejado pra gerar o KPI por
-          carga/placa.
+          Suba a Escala de Rota. O sistema busca as entregas confirmadas e o GPS direto da
+          API ao vivo do Unitrac e monta o KPI por loja — chegada, saída, tempo de
+          operação e km.
         </p>
       </header>
 
@@ -205,9 +205,9 @@ export default function NutrimaxGerarPage() {
 
       {resumo && (
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <CardResumo label="Total de cargas" valor={resumo.total} tone="default" />
-          <CardResumo label="OK" valor={resumo.ok} tone="success" />
-          <CardResumo label="Incompletos" valor={resumo.incompletos} tone="warning" />
+          <CardResumo label="Total de lojas" valor={resumo.total} tone="default" />
+          <CardResumo label="Confirmadas" valor={resumo.ok} tone="success" />
+          <CardResumo label="Pendentes" valor={resumo.incompletos} tone="warning" />
           <CardResumo label="Sem rastreador" valor={resumo.semRastreador} tone="danger" />
         </div>
       )}
@@ -218,7 +218,7 @@ export default function NutrimaxGerarPage() {
             <div className="flex items-center gap-3">
               <h2 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-fg)]">
                 <Truck size={16} weight="fill" className="text-[var(--color-accent)]" />
-                Cargas
+                Lojas
               </h2>
               <FiltroChips filtro={filtro} setFiltro={setFiltro} resumo={resumo} />
             </div>
@@ -238,45 +238,43 @@ export default function NutrimaxGerarPage() {
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] text-left">
-                  <th className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Carga</th>
-                  <th className="w-32 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Placa</th>
-                  <th className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Destino</th>
+                  <th className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Loja</th>
                   <th className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Motorista</th>
-                  <th className="w-24 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Peso</th>
-                  <th className="w-24 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Paradas</th>
-                  <th className="w-24 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Km</th>
-                  <th className="w-24 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Início</th>
-                  <th className="w-24 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Fim</th>
+                  <th className="w-28 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Placa</th>
+                  <th className="w-24 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Saída base</th>
+                  <th className="w-24 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Chegada loja</th>
+                  <th className="w-24 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Saída loja</th>
+                  <th className="w-20 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Tempo loja</th>
+                  <th className="w-24 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Chegada base</th>
+                  <th className="w-24 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Tempo op.</th>
+                  <th className="w-20 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Km</th>
                   <th className="w-36 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {linhasFiltradas.map(l => (
+                {linhasFiltradas.map((l, i) => (
                   <tr
-                    key={`${l.carga}-${l.placa}`}
+                    key={`${l.placaNorm}-${l.loja}-${i}`}
                     className={cn(
                       'border-b border-[var(--color-border)] last:border-0',
                       l.status !== 'ok' && 'bg-[var(--color-warning-soft)]/20',
                     )}
                   >
-                    <td className="px-4 py-1.5 text-numeric font-medium text-[var(--color-fg)]">{l.carga}</td>
-                    <td className="px-4 py-1.5 text-numeric text-[var(--color-fg)]">{l.placa}</td>
-                    <td className="px-4 py-1.5 text-[var(--color-fg)]">{l.destino}</td>
+                    <td className="px-4 py-1.5 text-[var(--color-fg)]">{l.loja}</td>
                     <td className="px-4 py-1.5 text-[var(--color-fg-muted)]">{l.motorista}</td>
+                    <td className="px-4 py-1.5 text-numeric text-[var(--color-fg)]">{l.placaNorm}</td>
+                    <td className="px-4 py-1.5 text-center text-numeric text-[var(--color-fg-muted)]">{fmtHora(l.saidaBase)}</td>
+                    <td className="px-4 py-1.5 text-center text-numeric text-[var(--color-fg-muted)]">{fmtHora(l.chegadaLoja)}</td>
+                    <td className="px-4 py-1.5 text-center text-numeric text-[var(--color-fg-muted)]">{fmtHora(l.saidaLoja)}</td>
                     <td className="px-4 py-1.5 text-center text-numeric text-[var(--color-fg-muted)]">
-                      {l.pesoKg != null ? l.pesoKg.toLocaleString('pt-BR') : '—'}
+                      {l.tempoNaLojaMin != null ? `${l.tempoNaLojaMin}min` : '—'}
                     </td>
+                    <td className="px-4 py-1.5 text-center text-numeric text-[var(--color-fg-muted)]">{fmtHora(l.chegadaBase)}</td>
                     <td className="px-4 py-1.5 text-center text-numeric text-[var(--color-fg-muted)]">
-                      {l.qtdParadasReal}{l.entPlanejado != null ? `/${l.entPlanejado}` : ''}
+                      {l.tempoOperacaoMin != null ? `${Math.floor(l.tempoOperacaoMin / 60)}h${String(l.tempoOperacaoMin % 60).padStart(2, '0')}` : '—'}
                     </td>
                     <td className="px-4 py-1.5 text-center text-numeric text-[var(--color-fg-muted)]">
                       {l.kmPercorrido != null ? l.kmPercorrido.toLocaleString('pt-BR') : '—'}
-                    </td>
-                    <td className="px-4 py-1.5 text-center text-numeric text-[var(--color-fg-muted)]">
-                      {fmtHora(l.inicioViagem)}
-                    </td>
-                    <td className="px-4 py-1.5 text-center text-numeric text-[var(--color-fg-muted)]">
-                      {fmtHora(l.fimViagem)}
                     </td>
                     <td className="px-4 py-1.5 text-center">
                       <StatusBadge status={l.status} />
@@ -285,8 +283,8 @@ export default function NutrimaxGerarPage() {
                 ))}
                 {linhasFiltradas.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-8 text-center text-[var(--color-fg-subtle)]">
-                      Nenhuma carga nesse filtro.
+                    <td colSpan={11} className="px-4 py-8 text-center text-[var(--color-fg-subtle)]">
+                      Nenhuma loja nesse filtro.
                     </td>
                   </tr>
                 )}
