@@ -886,7 +886,7 @@ git add src/app/painel/nutrimax/historico/page.tsx
 git commit -m "chore(nutrimax): texto do histórico reflete KPI por loja"
 ```
 
-**Nota pro usuário (não é uma ação, é só documentar):** gerações de KPI salvas ANTES dessa mudança, se reabertas pelo histórico, vão mostrar a tabela antiga (por carga) só que tentando encaixar nas colunas novas — o formato de linha mudou de verdade, não dá pra manter compatibilidade sem inventar dado que não existe. Isso é esperado, não bug.
+**Nota pro usuário (corrigida na revisão final):** isso não era só cosmético — reabrir uma geração salva ANTES dessa mudança quebrava o render da tabela inteira, porque os status antigos (`ok`/`incompleto`) não existem no `cfg` do `StatusBadge`. A revisão final adicionou um fallback: agora um status desconhecido vira um badge com o texto cru em vez de derrubar a página. As demais colunas (saída/chegada de base, tempo de loja etc.) continuam vazias nessas gerações antigas — o payload salvo nunca teve esses campos, e não dá pra inventar dado que não existe.
 
 ---
 

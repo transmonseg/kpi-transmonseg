@@ -58,7 +58,7 @@ function agrupaResumosPorPlaca(rows: UnitracParadaRow[]): ResumoVeiculo[] {
 
 /** Busca as paradas ao vivo da API do Unitrac pras placas da escala, no
  *  mesmo formato ResumoVeiculo[] que parseUnitracPdf produz — o resto do
- *  pipeline da Nutry Max (montaResumoViagemPorPlaca, montaKpiViagemPorCarga)
+ *  pipeline da Nutry Max (montaResumoViagemPorPlaca, montaKpiLojaNutrimax)
  *  não precisa saber de onde os dados vieram. */
 export async function buscarResumosViagemViaApi(
   placasEscala: ReadonlySet<string>,

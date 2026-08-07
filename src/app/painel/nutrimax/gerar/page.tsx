@@ -170,7 +170,9 @@ export default function NutrimaxGerarPage() {
             </div>
             <p className="text-[13px] text-[var(--color-fg-muted)]">
               As paradas são puxadas direto da API Unitrac em tempo real. Nenhum arquivo de
-              relatório necessário — só alcança hoje e ontem (últimas 48h).
+              relatório necessário — só alcança hoje e ontem (últimas 48h). A confirmação de
+              chegada por loja só funciona pra hoje — gerar pra ontem mostra só os horários de
+              base (GPS).
             </p>
           </div>
 
@@ -356,7 +358,7 @@ function FiltroChips({ filtro, setFiltro, resumo }: { filtro: Filtro; setFiltro:
   const opts: { id: Filtro; label: string; count: number }[] = [
     { id: 'todas', label: 'Todas', count: resumo.total },
     { id: 'problemas', label: 'Com problema', count: resumo.incompletos + resumo.semRastreador },
-    { id: 'ok', label: 'OK', count: resumo.ok },
+    { id: 'ok', label: 'Confirmadas', count: resumo.ok },
   ]
   return (
     <div className="flex items-center gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-subtle)] p-0.5">
@@ -388,6 +390,9 @@ function StatusBadge({ status }: { status: StatusLinha }) {
     pendente: { label: 'PENDENTE', variant: 'warning' },
     sem_rastreador: { label: 'SEM RASTREADOR', variant: 'danger' },
   }
-  const c = cfg[status]
+  // Gerações antigas (salvas antes do KPI por loja) trazem status que não
+  // existe mais ('ok'/'incompleto') — sem esse fallback o render da tabela
+  // inteira quebra ao reabrir pelo histórico.
+  const c = cfg[status] ?? { label: String(status).toUpperCase(), variant: 'warning' as const }
   return <Badge variant={c.variant}>{c.label}</Badge>
 }
