@@ -51,6 +51,12 @@ export async function POST(req: NextRequest) {
     cvsEscala.length > 0 ? buscarAlvos(cvsEscala) : Promise.resolve([]),
   ])
 
+  // /mapa_servicos/alvos não tem parâmetro de data — só devolve o plano de
+  // entrega ATUAL da conta. Se a data pedida não bate com a data real dos
+  // alvos, eles são de outro dia (normalmente hoje) e não podem ser usados
+  // pra confirmar loja/hora — descarta em vez de misturar dias silenciosamente.
+  alvos = alvos.filter(a => (a.feitoISO ?? a.inicioISO)?.slice(0, 10) === data)
+
   const orsKey = process.env.ORS_API_KEY
   if (orsKey) {
     try {

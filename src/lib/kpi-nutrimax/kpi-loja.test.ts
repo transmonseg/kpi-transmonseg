@@ -15,7 +15,9 @@ function escala(overrides: Partial<LinhaEscalaNutrimax> = {}): LinhaEscalaNutrim
 function alvo(overrides: Partial<AlvoApi> = {}): AlvoApi {
   return {
     placaNorm: 'TTL7D40', codigoUnitrac: '129145', nome: 'WW CARNES MERCEARIA EIRELI',
-    situacao: 1, feitoISO: '2026-08-06T10:20:21.120Z', inicioISO: '2026-08-06T07:00:00Z',
+    // feitoISO/inicioISO vêm da Unitrac como dígitos BRT crus, SEM Z — é essa a
+    // forma real que o código precisa normalizar (ver montaKpiLojaNutrimax).
+    situacao: 1, feitoISO: '2026-08-06T10:20:21.120', inicioISO: '2026-08-06T07:00:00',
     documento: '2310197', ordem: 0, rota: '95211', ...overrides,
   }
 }
@@ -93,11 +95,9 @@ describe('montaKpiLojaNutrimax', () => {
     const r = montaKpiLojaNutrimax(
       [escala()],
       [
-        // feitoISO com Z (timestamp inequívoco) — mesma convenção do resto
-        // dos testes deste arquivo; ver nota da Task 2 sobre por que raw
-        // sem Z é frágil em máquina com timezone != UTC.
-        alvo({ documento: '2308904', feitoISO: '2026-08-06T10:20:21.120Z' }),
-        alvo({ documento: '2308905', feitoISO: '2026-08-06T10:20:21.130Z' }),
+        // feitoISO cru, sem Z — igual ao que a Unitrac devolve.
+        alvo({ documento: '2308904', feitoISO: '2026-08-06T10:20:21.120' }),
+        alvo({ documento: '2308905', feitoISO: '2026-08-06T10:20:21.130' }),
       ],
       [resumo()],
     )
@@ -117,6 +117,41 @@ describe('montaKpiLojaNutrimax', () => {
     )
     expect(r).toHaveLength(2)
     expect(r.map(l => l.loja).sort()).toEqual(['LOJA A', 'LOJA B'])
+  })
+
+  it('mesma placa em 2 linhas da escala (2 cargas no dia): as lojas dela saem 1x só, com o motorista da 1ª carga', () => {
+    const r = montaKpiLojaNutrimax(
+      [
+        escala({ carga: '92593', motorista: 'MOTORISTA DA 1A CARGA' }),
+        escala({ carga: '92594', motorista: 'MOTORISTA DA 2A CARGA' }),
+      ],
+      [alvo()],
+      [resumo()],
+    )
+    expect(r).toHaveLength(1)
+    expect(r[0]).toMatchObject({ loja: 'WW CARNES MERCEARIA EIRELI', motorista: 'MOTORISTA DA 1A CARGA' })
+  })
+
+  it('placa sem nenhum alvo mas COM GPS: mantém saída/chegada de base e km (só o que depende de alvo fica nulo)', () => {
+    const r = montaKpiLojaNutrimax(
+      [escala({ placaNorm: 'ZZZ9Z99', placaRaw: 'ZZZ9Z99' })],
+      [alvo()], // alvo é de outra placa (TTL7D40) — a ZZZ9Z99 fica sem plano de entrega
+      [resumo({
+        placa_norm: 'ZZZ9Z99', placa_raw: 'ZZZ9Z99', qtd_paradas: 2,
+        paradas: [
+          parada({ placa_norm: 'ZZZ9Z99', classificacao: 'BASE', chegada: new Date('2026-08-06T07:00:00Z'), saida: new Date('2026-08-06T07:05:00Z'), ordem: 1 }),
+          parada({ placa_norm: 'ZZZ9Z99', classificacao: 'BASE', chegada: new Date('2026-08-06T15:00:00Z'), saida: new Date('2026-08-06T15:10:00Z'), ordem: 2 }),
+        ],
+      })],
+    )
+    expect(r).toHaveLength(1)
+    expect(r[0]).toMatchObject({
+      loja: '—', placaNorm: 'ZZZ9Z99', status: 'sem_rastreador',
+      saidaBase: '2026-08-06T07:05:00.000Z',
+      chegadaBase: '2026-08-06T15:00:00.000Z',
+      kmPercorrido: 20,
+      chegadaLoja: null, saidaLoja: null, tempoNaLojaMin: null,
+    })
   })
 
   it('só 1 permanência em base o dia inteiro: saída da base preenchida, chegada na base fica vazia (não "voltou" de verdade)', () => {

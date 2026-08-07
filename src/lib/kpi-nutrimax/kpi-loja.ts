@@ -30,7 +30,6 @@ export function montaKpiLojaNutrimax(
   alvos: AlvoApi[],
   resumosVeiculo: ResumoVeiculo[],
 ): LinhaKpiLojaNutrimax[] {
-  const motoristaPorPlaca = new Map(escala.map(e => [e.placaNorm, e.motorista]))
   const resumoPorPlaca = new Map(resumosVeiculo.map(r => [r.placa_norm, r]))
   const kmPorPlaca = new Map(montaResumoViagemPorPlaca(resumosVeiculo).map(r => [r.placaNorm, r.kmPercorrido]))
 
@@ -42,18 +41,29 @@ export function montaKpiLojaNutrimax(
   }
 
   const linhas: LinhaKpiLojaNutrimax[] = []
+  // Uma placa pode aparecer em mais de uma linha da escala (2 cargas no mesmo
+  // dia). O KPI é por placa/loja, então só processa a 1ª ocorrência — senão as
+  // lojas dessa placa sairiam duplicadas.
+  const placasProcessadas = new Set<string>()
 
   for (const e of escala) {
     const placaNorm = e.placaNorm
     if (!placaNorm) continue
-    const motorista = motoristaPorPlaca.get(placaNorm) ?? e.motorista
+    if (placasProcessadas.has(placaNorm)) continue
+    placasProcessadas.add(placaNorm)
+    const motorista = e.motorista
     const alvosDaPlaca = alvosPorPlaca.get(placaNorm)
 
     if (!alvosDaPlaca || alvosDaPlaca.length === 0) {
+      // "sem_rastreador" aqui é "sem plano de entrega pra essa placa" — o GPS
+      // pode existir mesmo assim, então preserva saída/chegada de base e km em
+      // vez de jogar fora dado bom. Só o que depende de alvo fica nulo.
+      const paradasSemAlvo = resumoPorPlaca.get(placaNorm)?.paradas ?? []
       linhas.push({
         loja: '—', motorista, placaNorm,
-        saidaBase: null, chegadaLoja: null, saidaLoja: null, tempoNaLojaMin: null,
-        chegadaBase: null, tempoOperacaoMin: null, kmPercorrido: null,
+        saidaBase: acharSaidaBase(paradasSemAlvo), chegadaLoja: null, saidaLoja: null, tempoNaLojaMin: null,
+        chegadaBase: acharChegadaBase(paradasSemAlvo), tempoOperacaoMin: null,
+        kmPercorrido: kmPorPlaca.get(placaNorm) ?? null,
         status: 'sem_rastreador',
       })
       continue
@@ -79,7 +89,10 @@ export function montaKpiLojaNutrimax(
       const confirmados = grupo
         .filter(a => a.situacao === 1 && a.feitoISO)
         .sort((a, b) => a.feitoISO!.localeCompare(b.feitoISO!))
-      const chegadaLoja = confirmados[0]?.feitoISO ? new Date(confirmados[0].feitoISO).toISOString() : null
+      // feitoISO vem sem Z (dígitos BRT crus) — o '+ Z' é a convenção já usada
+      // no resto do repo (kpi/simples, dashboard-api-fonte) e evita depender do
+      // timezone da máquina que roda o código.
+      const chegadaLoja = confirmados[0]?.feitoISO ? new Date(confirmados[0].feitoISO + 'Z').toISOString() : null
 
       const paradaGps = paradas.find(p => p.classificacao === 'LOJA' && p.codigo_loja === codigoUnitrac)
       const saidaLoja = paradaGps ? paradaGps.saida.toISOString() : null
