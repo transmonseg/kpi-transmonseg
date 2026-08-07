@@ -15,7 +15,7 @@ function escala(overrides: Partial<LinhaEscalaNutrimax> = {}): LinhaEscalaNutrim
 function alvo(overrides: Partial<AlvoApi> = {}): AlvoApi {
   return {
     placaNorm: 'TTL7D40', codigoUnitrac: '129145', nome: 'WW CARNES MERCEARIA EIRELI',
-    situacao: 1, feitoISO: '2026-08-06T10:20:21.120Z', inicioISO: '2026-08-06T07:00:00Z',
+    situacao: 1, feitoISO: '2026-08-06T10:20:21.120', inicioISO: '2026-08-06T07:00:00',
     documento: '2310197', ordem: 0, rota: '95211', ...overrides,
   }
 }
@@ -45,6 +45,9 @@ describe('montaKpiLojaNutrimax', () => {
     })
     const paradaVoltaBase = parada({ classificacao: 'BASE', chegada: new Date('2026-08-06T12:00:00Z'), saida: new Date('2026-08-06T12:00:00Z'), ordem: 3 })
 
+    // Compute expected chegadaLoja by normalizing the raw feitoISO (matches the fix in kpi-loja.ts)
+    const expectedChegadaLoja = new Date('2026-08-06T10:20:21.120').toISOString()
+
     const r = montaKpiLojaNutrimax(
       [escala()],
       [alvo()],
@@ -57,7 +60,7 @@ describe('montaKpiLojaNutrimax', () => {
       motorista: 'LUAN VIANA AREAS RIBEIRO',
       placaNorm: 'TTL7D40',
       saidaBase: '2026-08-06T07:00:00.000Z',
-      chegadaLoja: '2026-08-06T10:20:21.120Z',
+      chegadaLoja: expectedChegadaLoja,
       saidaLoja: '2026-08-06T10:35:00.000Z',
       chegadaBase: '2026-08-06T12:00:00.000Z',
       status: 'confirmado',

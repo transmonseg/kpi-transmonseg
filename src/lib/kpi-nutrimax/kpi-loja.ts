@@ -79,7 +79,7 @@ export function montaKpiLojaNutrimax(
       const confirmados = grupo
         .filter(a => a.situacao === 1 && a.feitoISO)
         .sort((a, b) => a.feitoISO!.localeCompare(b.feitoISO!))
-      const chegadaLoja = confirmados[0]?.feitoISO ?? null
+      const chegadaLoja = confirmados[0]?.feitoISO ? new Date(confirmados[0].feitoISO).toISOString() : null
 
       const paradaGps = paradas.find(p => p.classificacao === 'LOJA' && p.codigo_loja === codigoUnitrac)
       const saidaLoja = paradaGps ? paradaGps.saida.toISOString() : null
