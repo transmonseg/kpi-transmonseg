@@ -148,3 +148,24 @@ export type RelatorioPlacaNutrimax = {
    *  do romaneio dessa carga — evita esconder anomalias. */
   paradasSemCliente: ParadaConferidaNutrimax[]
 }
+
+/** Uma linha do KPI por loja (uma visita = uma linha, mesmo se teve mais de
+ *  uma NF pro mesmo ponto naquele dia) — o que a rota /api/kpi/nutrimax/gerar
+ *  produz agora, no mesmo espírito do KPI do Benassi (que também é por loja). */
+export type LinhaKpiLojaNutrimax = {
+  loja: string
+  motorista: string
+  placaNorm: string
+  saidaBase: string | null // ISO
+  chegadaLoja: string | null // ISO
+  saidaLoja: string | null // ISO
+  tempoNaLojaMin: number | null
+  chegadaBase: string | null // ISO
+  tempoOperacaoMin: number | null
+  kmPercorrido: number | null
+  /** 'confirmado' = a Unitrac marcou a entrega como feita (situacao=1) e deu
+   *  hora; 'pendente' = a loja está nos alvos do dia mas ainda sem
+   *  confirmação; 'sem_rastreador' = a placa da escala não apareceu em
+   *  nenhum alvo (offline, sem sinal, ou fora da conta). */
+  status: 'confirmado' | 'pendente' | 'sem_rastreador'
+}
