@@ -237,7 +237,11 @@ export function montaKpiLojaNutrimax(
       const confirmados = grupo
         .filter(a => a.situacao === 1 && a.feitoISO)
         .sort((a, b) => a.feitoISO!.localeCompare(b.feitoISO!))
-      const chegadaLoja = confirmados[0]?.feitoISO ?? null
+      // feitoISO cru da Unitrac não tem Z (ver alvos.ts) — normaliza via
+      // toISOString pra comparar em pé de igualdade com saidaLoja/saidaBase/
+      // chegadaBase, que já passam por esse mesmo tratamento. Correção real
+      // achada na review da Task 2 (docs/plans deste arquivo, ledger).
+      const chegadaLoja = confirmados[0]?.feitoISO ? new Date(confirmados[0].feitoISO).toISOString() : null
 
       const paradaGps = paradas.find(p => p.classificacao === 'LOJA' && p.codigo_loja === codigoUnitrac)
       const saidaLoja = paradaGps ? paradaGps.saida.toISOString() : null
@@ -317,14 +321,17 @@ Adicionar dentro do mesmo `describe('montaKpiLojaNutrimax', ...)`:
     const r = montaKpiLojaNutrimax(
       [escala()],
       [
-        alvo({ documento: '2308904', feitoISO: '2026-08-06T10:20:21.120' }),
-        alvo({ documento: '2308905', feitoISO: '2026-08-06T10:20:21.130' }),
+        // feitoISO com Z (timestamp inequívoco) — mesma convenção do resto
+        // dos testes deste arquivo; ver nota da Task 2 sobre por que raw
+        // sem Z é frágil em máquina com timezone != UTC.
+        alvo({ documento: '2308904', feitoISO: '2026-08-06T10:20:21.120Z' }),
+        alvo({ documento: '2308905', feitoISO: '2026-08-06T10:20:21.130Z' }),
       ],
       [resumo()],
     )
     expect(r).toHaveLength(1)
     // usa a confirmação mais cedo das duas
-    expect(r[0].chegadaLoja).toBe('2026-08-06T10:20:21.120')
+    expect(r[0].chegadaLoja).toBe('2026-08-06T10:20:21.120Z')
   })
 
   it('duas lojas distintas confirmadas no mesmo instante exato (confirmação em lote) não quebram o cálculo — cada uma vira 1 linha', () => {
