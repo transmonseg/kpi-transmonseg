@@ -711,7 +711,7 @@ type Linha = {
 ```
 por:
 ```ts
-type StatusLinha = 'ok' | 'incompleto' | 'sem_rastreador'
+type StatusLinha = 'confirmado' | 'pendente' | 'sem_rastreador'
 type Linha = {
   loja: string
   motorista: string
@@ -727,7 +727,7 @@ type Linha = {
 }
 ```
 
-Nota: `status` continua usando os valores `'ok'|'incompleto'|'sem_rastreador'` (não `'confirmado'|'pendente'`) porque é isso que a rota devolve no JSON — o `resumo` e as chaves de `status` no payload HTTP não mudam de nome, só o que cada uma conta (ver Task 5).
+Nota (correção pós-review — o texto original desta seção estava errado): `status` de cada LINHA usa o enum real de `LinhaKpiLojaNutrimax` (`'confirmado'|'pendente'|'sem_rastreador'`, definido na Task 1) — a rota passa `kpi` direto como `linhas`, sem remapear. Só o objeto `resumo` mantém as CHAVES antigas (`total`/`ok`/`incompletos`/`semRastreador`) por causa do `historico/page.tsx` (ver Task 5); isso é uma coisa diferente do `status` de cada linha, que sempre foi o enum novo. Todo comparativo/filtro/badge desta tela que testa `l.status` precisa usar `'confirmado'`/`'pendente'`, não `'ok'`/`'incompleto'` — só o `Filtro` (id de aba da UI, não o campo de dado) pode continuar chamado `'ok'` internamente.
 
 **Step 2: Trocar o texto de descrição do topo**
 
@@ -796,7 +796,7 @@ Trocar o bloco `<table>...</table>` (linhas ~238-294) por:
                     key={`${l.placaNorm}-${l.loja}-${i}`}
                     className={cn(
                       'border-b border-[var(--color-border)] last:border-0',
-                      l.status !== 'ok' && 'bg-[var(--color-warning-soft)]/20',
+                      l.status !== 'confirmado' && 'bg-[var(--color-warning-soft)]/20',
                     )}
                   >
                     <td className="px-4 py-1.5 text-[var(--color-fg)]">{l.loja}</td>
@@ -830,6 +830,13 @@ Trocar o bloco `<table>...</table>` (linhas ~238-294) por:
               </tbody>
             </table>
 ```
+
+**Step 5b (achado na review — faltava no plano original): também trocar `linhasFiltradas` e `StatusBadge`**
+
+O `StatusLinha` mudou de valor no Step 1 (`'confirmado'|'pendente'|'sem_rastreador'`), mas duas outras partes do arquivo ainda comparavam contra os valores antigos (`'ok'`/`'incompleto'`) e não estavam cobertas por nenhum Step anterior — isso teria quebrado a tela em tempo de execução (badge de status lançando exceção pra toda linha real) sem o `tsc` acusar nada, porque a resposta da API é consumida via `fetch().json()` sem checagem de tipo. Corrigir também:
+
+- No `useMemo` de `linhasFiltradas`: trocar `linhas.filter(l => l.status === 'ok')` → `linhas.filter(l => l.status === 'confirmado')`, e `linhas.filter(l => l.status !== 'ok')` → `linhas.filter(l => l.status !== 'confirmado')`. (O `id: 'ok'` do tipo `Filtro`/da aba da UI pode continuar se chamando `'ok'` — é só um identificador de botão, não o campo de dado.)
+- Na função `StatusBadge`: as chaves do `cfg` mudam de `ok`/`incompleto`/`sem_rastreador` pra `confirmado`/`pendente`/`sem_rastreador`, com labels "CONFIRMADO"/"PENDENTE"/"SEM RASTREADOR" (mesmos rótulos do gerador de XLSX da Task 4).
 
 **Step 6: Typecheck**
 
