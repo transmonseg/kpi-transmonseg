@@ -9,7 +9,7 @@ import { foraDoAlcanceApi } from '@/lib/kpi-nutrimax/constants'
 
 type Resumo = { total: number; ok: number; incompletos: number; semRastreador: number }
 type Tone = 'default' | 'success' | 'warning' | 'danger'
-type StatusLinha = 'ok' | 'incompleto' | 'sem_rastreador'
+type StatusLinha = 'confirmado' | 'pendente' | 'sem_rastreador'
 type Linha = {
   loja: string
   motorista: string
@@ -113,8 +113,8 @@ export default function NutrimaxGerarPage() {
 
   const linhasFiltradas = useMemo(() => {
     if (filtro === 'todas') return linhas
-    if (filtro === 'ok') return linhas.filter(l => l.status === 'ok')
-    return linhas.filter(l => l.status !== 'ok')
+    if (filtro === 'ok') return linhas.filter(l => l.status === 'confirmado')
+    return linhas.filter(l => l.status !== 'confirmado')
   }, [linhas, filtro])
 
   return (
@@ -257,7 +257,7 @@ export default function NutrimaxGerarPage() {
                     key={`${l.placaNorm}-${l.loja}-${i}`}
                     className={cn(
                       'border-b border-[var(--color-border)] last:border-0',
-                      l.status !== 'ok' && 'bg-[var(--color-warning-soft)]/20',
+                      l.status !== 'confirmado' && 'bg-[var(--color-warning-soft)]/20',
                     )}
                   >
                     <td className="px-4 py-1.5 text-[var(--color-fg)]">{l.loja}</td>
@@ -384,8 +384,8 @@ function FiltroChips({ filtro, setFiltro, resumo }: { filtro: Filtro; setFiltro:
 
 function StatusBadge({ status }: { status: StatusLinha }) {
   const cfg: Record<StatusLinha, { label: string; variant: 'success' | 'warning' | 'danger' }> = {
-    ok: { label: 'OK', variant: 'success' },
-    incompleto: { label: 'INCOMPLETO', variant: 'warning' },
+    confirmado: { label: 'CONFIRMADO', variant: 'success' },
+    pendente: { label: 'PENDENTE', variant: 'warning' },
     sem_rastreador: { label: 'SEM RASTREADOR', variant: 'danger' },
   }
   const c = cfg[status]
