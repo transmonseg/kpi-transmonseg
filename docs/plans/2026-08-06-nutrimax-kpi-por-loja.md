@@ -924,8 +924,10 @@ Expected: typecheck limpo, todos os testes passam (a suíte deve ter uns 4-6 tes
 
 **Step 5: Commit**
 
+Não use `git add -A` aqui — o worktree pode ter arquivo solto/não relacionado (já aconteceu 2x nesta mesma execução do plano, `git add -A` pegou um `.xlsx` de outra pasta sem relação com a task). Liste os arquivos deletados explicitamente:
+
 ```bash
-git add -A
+git add src/lib/kpi-nutrimax/kpi-viagem.ts src/lib/kpi-nutrimax/kpi-viagem.test.ts src/lib/kpi-nutrimax/gerador-kpi-viagem.ts src/lib/kpi-nutrimax/gerador-kpi-viagem.test.ts src/lib/kpi-nutrimax/types.ts
 git commit -m "chore(nutrimax): remove kpi-viagem/gerador-kpi-viagem (sem caller após KPI por loja)"
 ```
 
@@ -967,9 +969,12 @@ Expected: mesmo resultado do repo definitivo (sem erro, todos os testes passam).
 
 **Step 3: Commit no TEMP**
 
+Liste os arquivos explicitamente (não `git add -A` — o TEMP pode ter arquivo solto igual o worktree do definitivo teve, 2x nesta execução):
+
 ```bash
 cd "$DST"
-git add -A
+git add src/lib/kpi-nutrimax/types.ts src/lib/kpi-nutrimax/kpi-loja.ts src/lib/kpi-nutrimax/kpi-loja.test.ts src/lib/kpi-nutrimax/gerador-kpi-loja.ts src/lib/kpi-nutrimax/gerador-kpi-loja.test.ts src/app/api/kpi/nutrimax/gerar/route.ts src/app/painel/nutrimax/gerar/page.tsx src/app/painel/nutrimax/historico/page.tsx
+git rm src/lib/kpi-nutrimax/kpi-viagem.ts src/lib/kpi-nutrimax/kpi-viagem.test.ts src/lib/kpi-nutrimax/gerador-kpi-viagem.ts src/lib/kpi-nutrimax/gerador-kpi-viagem.test.ts
 git commit -m "feat(nutrimax): KPI por loja via alvos da Unitrac (mesma mudança do definitivo)"
 ```
 
