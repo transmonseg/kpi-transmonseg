@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { parseEscalaNutrimax } from '@/lib/kpi-nutrimax/parse-escala'
-import { montaResumoViagemPorPlaca } from '@/lib/kpi-nutrimax/resumo-viagem'
-import { montaKpiViagemPorCarga } from '@/lib/kpi-nutrimax/kpi-viagem'
-import { gerarKpiViagemXlsx } from '@/lib/kpi-nutrimax/gerador-kpi-viagem'
+import { buscarFrota } from '@/lib/unitrac-api/frota'
+import { buscarAlvos } from '@/lib/unitrac-api/alvos'
+import { COD_USER_NUTRIMAX } from '@/lib/unitrac-api/client'
+import { montaKpiLojaNutrimax } from '@/lib/kpi-nutrimax/kpi-loja'
+import { gerarKpiLojaXlsx } from '@/lib/kpi-nutrimax/gerador-kpi-loja'
 import { foraDoAlcanceApi } from '@/lib/kpi-nutrimax/constants'
 import { buscarResumosViagemViaApi } from '@/lib/kpi-nutrimax/api-paradas'
 import { enriquecerComKmReal } from '@/lib/kpi-nutrimax/km-ors'
@@ -41,7 +43,13 @@ export async function POST(req: NextRequest) {
   const placasEscala = new Set(escala.map(e => e.placaNorm).filter(Boolean))
   // Se a API não trouxer nada, a geração segue e o KPI reflete isso
   // honestamente (tudo "sem_rastreador"), sem bloquear.
-  let resumosVeiculo = await buscarResumosViagemViaApi(placasEscala, data)
+  const frota = await buscarFrota(COD_USER_NUTRIMAX)
+  const cvsEscala = frota.filter(v => placasEscala.has(v.placaNorm)).map(v => v.cv)
+
+  let [resumosVeiculo, alvos] = await Promise.all([
+    buscarResumosViagemViaApi(placasEscala, data),
+    cvsEscala.length > 0 ? buscarAlvos(cvsEscala) : Promise.resolve([]),
+  ])
 
   const orsKey = process.env.ORS_API_KEY
   if (orsKey) {
@@ -52,30 +60,17 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const resumoViagem = montaResumoViagemPorPlaca(resumosVeiculo)
-  const kpi = montaKpiViagemPorCarga(escala, resumoViagem)
-  const xlsxBuf = await gerarKpiViagemXlsx(kpi, data)
+  const kpi = montaKpiLojaNutrimax(escala, alvos, resumosVeiculo)
+  const xlsxBuf = await gerarKpiLojaXlsx(kpi, data)
 
   const resumo = {
     total: kpi.length,
-    ok: kpi.filter(k => k.status === 'ok').length,
-    incompletos: kpi.filter(k => k.status === 'incompleto').length,
+    ok: kpi.filter(k => k.status === 'confirmado').length,
+    incompletos: kpi.filter(k => k.status === 'pendente').length,
     semRastreador: kpi.filter(k => k.status === 'sem_rastreador').length,
   }
 
-  const linhas = kpi.map(k => ({
-    carga: k.carga,
-    placa: k.placaNorm,
-    destino: k.destino,
-    motorista: k.motorista,
-    pesoKg: k.pesoKg,
-    entPlanejado: k.entPlanejado,
-    qtdParadasReal: k.qtdParadasReal,
-    kmPercorrido: k.kmPercorrido,
-    inicioViagem: k.inicioViagem,
-    fimViagem: k.fimViagem,
-    status: k.status,
-  }))
+  const linhas = kpi
 
   const filename = `KPI-Nutry-Max-${data}.xlsx`
   const resultado = { resumo, linhas, xlsxBase64: xlsxBuf.toString('base64'), filename }
