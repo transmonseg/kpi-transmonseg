@@ -44,3 +44,9 @@ export function mesLiberado(perfil: Perfil, mes: string): boolean {
 export function mesValido(m: string): boolean {
   return /^\d{4}-\d{2}$/.test(m)
 }
+
+/** null = convite sem prazo (nunca expira). Só é expirado se tiver uma
+ *  data e ela já tiver passado. */
+export function conviteExpirado(expiraEm: string | null): boolean {
+  return expiraEm !== null && new Date(expiraEm) < new Date()
+}
