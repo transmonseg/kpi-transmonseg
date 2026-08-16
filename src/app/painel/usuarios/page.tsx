@@ -4,7 +4,7 @@ import { WarningCircle, CheckCircle, X } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Label, Badge } from '@/components/ui'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getPerfil } from '@/lib/perfil'
+import { getPerfil, conviteExpirado } from '@/lib/perfil'
 import { REDES, REDE_LABEL } from '@/lib/kpi/redes'
 import { mesesConhecidos, formatMes } from '@/lib/kpi/meses'
 import { criarConvite, revogarConvite, revogarAcesso, atualizarMeses } from './actions'
@@ -37,7 +37,7 @@ export default async function UsuariosPage({
   const logins = (perfisRows ?? []).filter(p => !meus || p.criado_por === user.id)
   const convites = (convitesRows ?? [])
     .filter(c => !meus || c.criado_por === user.id)
-    .filter(c => new Date(c.expira_em as string) > new Date())
+    .filter(c => !conviteExpirado(c.expira_em as string | null))
 
   const h = await headers()
   const origin = `${h.get('x-forwarded-proto') ?? 'https'}://${h.get('x-forwarded-host') ?? h.get('host')}`

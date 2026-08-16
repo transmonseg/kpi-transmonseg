@@ -3,6 +3,7 @@ import { ArrowUpRight, WarningCircle, CaretLeft } from '@phosphor-icons/react/di
 import { Input, Label } from '@/components/ui'
 import { ThemeToggle } from '@/lib/theme/ThemeToggle'
 import { createServiceClient } from '@/lib/supabase/service'
+import { conviteExpirado } from '@/lib/perfil'
 import { REDE_LABEL } from '@/lib/kpi/redes'
 import { resgatar } from './actions'
 
@@ -23,7 +24,7 @@ export default async function ConvitePage({
 
   const invalido = !convite
   const usado = !!convite?.usado_em
-  const expirado = !!convite && new Date(convite.expira_em as string) < new Date()
+  const expirado = !!convite && conviteExpirado(convite.expira_em as string | null)
   const bloqueado = invalido || usado || expirado
 
   const resgatarComToken = resgatar.bind(null, token)

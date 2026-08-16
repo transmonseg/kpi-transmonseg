@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { conviteExpirado } from '@/lib/perfil'
 
 export async function resgatar(token: string, formData: FormData) {
   const email = String(formData.get('email') ?? '').trim().toLowerCase()
@@ -22,7 +23,7 @@ export async function resgatar(token: string, formData: FormData) {
 
   if (!convite) redirect('/login?erro=' + encodeURIComponent('Convite inválido.'))
   if (convite.usado_em) redirect('/login?erro=' + encodeURIComponent('Esse convite já foi usado.'))
-  if (new Date(convite.expira_em as string) < new Date()) {
+  if (conviteExpirado(convite.expira_em as string | null)) {
     redirect('/login?erro=' + encodeURIComponent('Esse convite expirou. Peça um link novo.'))
   }
 
