@@ -41,10 +41,13 @@ export async function updateSession(request: NextRequest) {
     path === '/apresentacao' || path.startsWith('/apresentacao/') ||
     path === '/api/dashboard/publico'
   const isConvite = path.startsWith('/convite/')
+  // Link de acesso reutilizável (sem login) — qualquer um com o slug cria a
+  // própria conta, ver src/app/acesso/[slug]/.
+  const isAcesso = path.startsWith('/acesso/')
   // Link público do KPI Manual (sem login) — token é a própria permissão,
   // ver /api/kpi-manual/link-publico (onde ele é gerado, isso sim autenticado).
   const isKpiPublico = path.startsWith('/kpi-publico/')
-  const isPublic = path === '/' || isAuthPage || isDashboardPublico || isConvite || isKpiPublico
+  const isPublic = path === '/' || isAuthPage || isDashboardPublico || isConvite || isAcesso || isKpiPublico
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
