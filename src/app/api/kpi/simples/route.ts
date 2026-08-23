@@ -23,6 +23,7 @@ import { partitionSettled } from '@/lib/utils/partition-settled'
 import { mapLimitSettled } from '@/lib/utils/map-limit'
 import type { KpiLinha, RotaKpi } from '@/lib/types/kpi'
 import type { LinhaEscala } from '@/lib/types/escala'
+import { getPerfil } from '@/lib/perfil'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -120,6 +121,8 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
+  const perfil = await getPerfil(user.id)
+  if (perfil.papel !== 'admin') return new NextResponse('Sem permissão.', { status: 403 })
 
   const body = await req.json().catch(() => null)
   if (!body) return new NextResponse('Body JSON inválido.', { status: 400 })
@@ -1208,6 +1211,8 @@ export async function GET(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
+  const perfil = await getPerfil(user.id)
+  if (perfil.papel !== 'admin') return new NextResponse('Sem permissão.', { status: 403 })
 
   const url = new URL(req.url)
   const dataParam = url.searchParams.get('data')

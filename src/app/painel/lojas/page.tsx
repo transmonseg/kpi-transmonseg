@@ -1,8 +1,17 @@
+import { redirect } from 'next/navigation'
 import { Badge } from '@/components/ui'
+import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { getPerfil } from '@/lib/perfil'
 import { LojasList } from './lista'
 
 export default async function LojasPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+  const perfil = await getPerfil(user.id)
+  if (perfil.papel !== 'admin') redirect('/painel')
+
   const svc = createServiceClient()
 
   const [{ count: total }, { count: orfas }] = await Promise.all([

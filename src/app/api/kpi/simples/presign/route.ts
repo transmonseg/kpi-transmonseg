@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { extensaoUploadSuportada } from '@/lib/uploads/arquivo'
+import { getPerfil } from '@/lib/perfil'
 
 export const runtime = 'nodejs'
 
@@ -9,6 +10,8 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
+  const perfil = await getPerfil(user.id)
+  if (perfil.papel !== 'admin') return new NextResponse('Sem permissão.', { status: 403 })
 
   const { data, escalaFilename, unitracFilename } = await req.json()
 

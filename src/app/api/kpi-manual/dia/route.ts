@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getPerfil, redesEfetivas } from '@/lib/perfil'
+import { getPerfil, redesEfetivas, empresaLiberada } from '@/lib/perfil'
 import { agruparPorRede } from '@/lib/kpi/agrupar-manual'
 import type { LinhaManual } from '@/lib/kpi/manual-tipos'
 
@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
 
   const linhas = (rows ?? []) as LinhaManual[]
   const perfil = await getPerfil(user.id)
+  if (!empresaLiberada(perfil, 'benassi')) return new NextResponse('Sem permissão.', { status: 403 })
   const todasRedesPresentes = [...new Set(linhas.map(l => l.rede_id))]
   const permitidas = new Set(redesEfetivas(perfil, todasRedesPresentes))
 

@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getPerfil, redesEfetivas } from '@/lib/perfil'
+import { getPerfil, redesEfetivas, empresaLiberada } from '@/lib/perfil'
 
 export const runtime = 'nodejs'
 
@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
   if (perfil.papel === 'visualizador') {
     return new NextResponse('Sem permissão para gerar link público.', { status: 403 })
   }
+  if (!empresaLiberada(perfil, 'benassi')) return new NextResponse('Sem permissão.', { status: 403 })
 
   const body = await req.json().catch(() => null) as { data?: string; redes?: string[] } | null
   const data = body?.data

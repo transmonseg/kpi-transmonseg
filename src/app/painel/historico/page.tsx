@@ -7,9 +7,10 @@ import {
   ClockCounterClockwise,
   ArrowClockwise,
 } from '@phosphor-icons/react/dist/ssr'
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getPerfil, redesEfetivas, type Perfil } from '@/lib/perfil'
+import { getPerfil, redesEfetivas, empresaLiberada, type Perfil } from '@/lib/perfil'
 import { fmtInstanteBR } from '@/lib/data-br'
 import { cn } from '@/components/ui'
 
@@ -112,7 +113,9 @@ export default async function HistoricoPage({
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const perfil = user ? await getPerfil(user.id) : { papel: 'visualizador' as const, redes: [], meses: [], empresas: [] }
+  if (!user) redirect('/login')
+  const perfil = await getPerfil(user.id)
+  if (!empresaLiberada(perfil, 'benassi')) redirect('/painel')
   const podeEditar = perfil.papel === 'admin'
 
   const { geracoes, total } = await fetchHistorico({ page, dataInicio, dataFim, perfil })

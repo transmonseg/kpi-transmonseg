@@ -13,6 +13,7 @@ import { parseEscalaArquivo } from '@/lib/parsers/escala-arquivo'
 import type { LinhaEscala } from '@/lib/types/escala'
 import type { ParseContext } from '@/lib/parsers/alteracoes-v2.types'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { getPerfil } from '@/lib/perfil'
 
 export const runtime = 'nodejs'
 
@@ -133,6 +134,8 @@ export async function POST(req: NextRequest) {
   const supabaseAuth = await createClient()
   const { data: { user } } = await supabaseAuth.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
+  const perfil = await getPerfil(user.id)
+  if (perfil.papel !== 'admin') return new NextResponse('Sem permissão.', { status: 403 })
 
   // Bug I3 (auditoria 2026-05-27): buildLookupContext e inferirSaiDaEscala leem
   // escala_linhas/lojas. Se RLS esconder dados do user autenticado, retornam
