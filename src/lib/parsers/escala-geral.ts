@@ -64,7 +64,9 @@ export function isHeaderLikeRow(
 
 const ABAS_SKIP = new Set(['2° ENTREGA ', 'ARMAZÉM ', 'MOTORISTAS', 'MATRIZ'])
 
-const RE_DIA_ABA = /^\d{1,2}\s*$/
+// Aceita sufixo " (N)" que o Excel adiciona sozinho quando alguém duplica uma
+// aba (ex: "18 (2)") -- sem isso, a aba inteira é ignorada em silêncio.
+const RE_DIA_ABA = /^\d{1,2}(\s*\(\d+\))?\s*$/
 
 function cellVal(cell: ExcelJS.Cell | undefined): unknown {
   if (!cell) return null
@@ -503,7 +505,8 @@ export async function parseEscalaGeral(
     if (alvoAno !== null && alvoMes !== null) {
       // Quando dataAlvo está disponível, a data da aba = ano/mês de dataAlvo + dia do nome da aba.
       // Isso evita depender de qualquer célula dentro da planilha para determinar a data.
-      const dia = Number(trimmed)
+      // parseInt (não Number): trimmed pode vir com sufixo de duplicação, ex "18 (2)"
+      const dia = parseInt(trimmed, 10)
       dataISO = `${alvoAno}-${String(alvoMes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
       if (dataISO !== dataAlvo) return
     } else {
