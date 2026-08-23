@@ -99,6 +99,48 @@ describe('geocodificarEnderecos', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
+  it('lote com mais de um endereco 100% null (erro de rede) loga aviso explicito', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('ECONNREFUSED'))
+    const r = await geocodificarEnderecos(['A', 'B'])
+    expect(r).toEqual([null, null])
+    expect(errorSpy.mock.calls.some(args =>
+      String(args[0]).includes('geocodificação falhou para 100% do lote'),
+    )).toBe(true)
+  })
+
+  it('lote com mais de um endereco 100% null (resposta ok mas todos os itens invalidos) loga aviso explicito', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ resultados: [null, null] }), { status: 200 }),
+    )
+    const r = await geocodificarEnderecos(['A', 'B'])
+    expect(r).toEqual([null, null])
+    expect(errorSpy.mock.calls.some(args =>
+      String(args[0]).includes('geocodificação falhou para 100% do lote'),
+    )).toBe(true)
+  })
+
+  it('lote de um unico endereco que falha NAO dispara o aviso de lote (sinal fraco demais)', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('timeout'))
+    await geocodificarEnderecos(['A'])
+    expect(errorSpy.mock.calls.some(args =>
+      String(args[0]).includes('geocodificação falhou para 100% do lote'),
+    )).toBe(false)
+  })
+
+  it('lote com falha parcial NAO dispara o aviso de lote (nao e 100%)', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ resultados: [{ lat: -22.8, lng: -43.2 }, null] }), { status: 200 }),
+    )
+    await geocodificarEnderecos(['A', 'B'])
+    expect(errorSpy.mock.calls.some(args =>
+      String(args[0]).includes('geocodificação falhou para 100% do lote'),
+    )).toBe(false)
+  })
+
   it('manda o header x-motor-key e o corpo esperado', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ resultados: [{ lat: 1, lng: 2 }] }), { status: 200 })

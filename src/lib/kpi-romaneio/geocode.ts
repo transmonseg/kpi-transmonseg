@@ -54,7 +54,26 @@ function urlGeocode(): string {
   return `${base}/api/romaneio/geocode`
 }
 
+/** Fail-open por design cobre "esses enderecos especificos nao
+ *  geocodificaram" -- mas fica indistinguivel de "a rota do monitoramento
+ *  esta inalcancavel" (MONITORAMENTO_URL errado, projeto fora do mesmo
+ *  host) quando 100% do lote volta null. So' denuncia com lote de tamanho
+ *  > 1 (endereco unico que falha e' indistinguivel de "esse endereco
+ *  especifico nao geocodificou", sinal fraco demais); nunca lanca, nunca
+ *  muda o retorno -- so' o log. */
+function avisarSeLoteFalhouTotalmente(n: number): void {
+  if (n > 1) {
+    console.error(
+      '[kpi-romaneio/geocode] geocodificação falhou para 100% do lote -- verifique conectividade com MONITORAMENTO_URL',
+    )
+  }
+}
+
+/** Todo caminho de erro (rede, HTTP, JSON invalido, campo ausente) devolve
+ *  um lote inteiramente null -- passa por aqui, que tambem aciona o aviso
+ *  de falha total do lote. */
 function resultadosVazios(n: number): ResultadoGeocode[] {
+  avisarSeLoteFalhouTotalmente(n)
   return new Array(n).fill(null)
 }
 
@@ -123,5 +142,9 @@ export async function geocodificarEnderecos(enderecos: string[]): Promise<Result
   // versao divergente entre os dois repos), NUNCA devolve um array de
   // tamanho diferente do pedido -- quem consome mapeia por indice contra
   // a lista original de enderecos.
-  return enderecos.map((_, i) => validarResultado(resultadosBrutos[i]))
+  const resultados = enderecos.map((_, i) => validarResultado(resultadosBrutos[i]))
+
+  if (resultados.every(r => r === null)) avisarSeLoteFalhouTotalmente(resultados.length)
+
+  return resultados
 }

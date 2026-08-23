@@ -38,7 +38,24 @@ export function parseRomaneioTexto(texto: string): LinhaRomaneio[] {
     }
 
     const nfM = line.match(NF_CLIENTE_RE)
-    if (nfM && !pendente) {
+    if (nfM) {
+      // Duas linhas de NF/CLIENTE consecutivas sem endereco entre elas nao
+      // tem evidencia no PDF real (formato sempre intercala endereco), mas
+      // e' barato blindar: em vez de descartar silenciosamente o pendente
+      // anterior, emite a linha dele sem endereco antes de trocar de NF.
+      if (pendente) {
+        linhas.push({
+          carga: ctx.carga,
+          destino: ctx.destino,
+          placa: ctx.placa,
+          motorista: ctx.motorista,
+          ajudantes: ctx.ajudantes,
+          nf: pendente.nf,
+          clienteCodigo: pendente.codigo,
+          clienteNome: pendente.nome,
+          endereco: '(endereço não identificado)',
+        })
+      }
       pendente = { nf: nfM[1], codigo: nfM[2], nome: nfM[3].trim() }
       continue
     }

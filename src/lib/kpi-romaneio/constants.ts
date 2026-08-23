@@ -46,5 +46,7 @@ export function foraDoAlcanceApi(data: string, hojeISO: string): boolean {
   const hoje = new Date(`${hojeISO}T00:00:00`).getTime()
   const alvo = new Date(`${data}T00:00:00`).getTime()
   const diffDias = Math.round((hoje - alvo) / 86_400_000)
-  return diffDias > DIAS_ALCANCE_API_HOJE_ONTEM
+  // diffDias < 0 == data pedida no futuro -- a API nao tem esse dado (so'
+  // cobre hoje/ontem), entao e' tao fora de alcance quanto uma data antiga.
+  return diffDias < 0 || diffDias > DIAS_ALCANCE_API_HOJE_ONTEM
 }

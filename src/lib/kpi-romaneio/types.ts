@@ -70,3 +70,18 @@ export type LinhaKpiRomaneio = {
   tempoOperacaoMin: number | null
   status: 'OK' | 'INCOMPLETO'
 }
+
+/** Descasamento entre Escala e Romaneio -- carga que só aparece de um dos
+ *  dois lados (ver spec, secao "Tratamento de erro/ambiguidade": "aviso
+ *  agregado no topo do relatorio... nao bloqueia"). `sem_romaneio` = carga
+ *  planejada na Escala mas sem nenhuma linha no Romaneio geocodificado
+ *  (some do relatorio final sem isso -- o problema real que este aviso
+ *  existe pra cobrir). `sem_escala` = carga que existe no Romaneio mas sem
+ *  correspondencia na Escala -- ja aparece normalmente na aba principal
+ *  (agregarPorCarga trata escala===null), listada aqui so' pra visibilidade
+ *  agregada. */
+export type AvisoDescasamento = {
+  carga: string
+  placa: string
+  motivo: 'sem_romaneio' | 'sem_escala'
+}

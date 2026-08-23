@@ -1,11 +1,18 @@
 import ExcelJS from 'exceljs'
-import type { LinhaKpiRomaneio } from './types'
+import type { AvisoDescasamento, LinhaKpiRomaneio } from './types'
 
 export const COLUNAS_KPI_ROMANEIO = [
   'CARGA', 'PLACA', 'DESTINO', 'MOTORISTA', 'AJUDANTE 1', 'AJUDANTE 2', 'PESO (KG)',
   'CLIENTES PLANEJADOS', 'NF PLANEJADO', 'PARADAS REAIS', 'KM PERCORRIDO',
   'SAÍDA CD', 'CHEGADA CD', 'TEMPO OPERAÇÃO', 'STATUS',
 ] as const
+
+export const COLUNAS_AVISOS = ['CARGA', 'PLACA', 'PROBLEMA'] as const
+
+const LABEL_MOTIVO: Record<AvisoDescasamento['motivo'], string> = {
+  sem_romaneio: 'sem romaneio',
+  sem_escala: 'sem escala',
+}
 
 function formatarHora(iso: string | null): string {
   if (!iso) return ''
@@ -19,7 +26,16 @@ function formatarMinutos(min: number | null): string {
   return `${h}h${String(m).padStart(2, '0')}min`
 }
 
-export async function gerarKpiRomaneioXlsx(linhas: LinhaKpiRomaneio[], data: string): Promise<Buffer> {
+/** Terceiro parametro e' aditivo -- avisos de descasamento Escala<->Romaneio
+ *  (ver spec, secao "Tratamento de erro/ambiguidade"). Lista vazia (default)
+ *  nao cria a aba "Avisos": decisao de nao poluir o arquivo com uma aba
+ *  vazia todo dia em que nao houve nenhum descasamento -- so aparece
+ *  quando ha algo pra avisar. */
+export async function gerarKpiRomaneioXlsx(
+  linhas: LinhaKpiRomaneio[],
+  data: string,
+  avisos: AvisoDescasamento[] = [],
+): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
   wb.creator = 'TRANSMONSEG'
   wb.created = new Date()
@@ -34,5 +50,14 @@ export async function gerarKpiRomaneioXlsx(linhas: LinhaKpiRomaneio[], data: str
       l.status,
     ])
   }
+
+  if (avisos.length > 0) {
+    const wsAvisos = wb.addWorksheet('Avisos')
+    wsAvisos.addRow([...COLUNAS_AVISOS])
+    for (const a of avisos) {
+      wsAvisos.addRow([a.carga, a.placa, LABEL_MOTIVO[a.motivo]])
+    }
+  }
+
   return Buffer.from(await wb.xlsx.writeBuffer() as ArrayBuffer)
 }

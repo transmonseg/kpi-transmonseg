@@ -11,4 +11,7 @@ describe('foraDoAlcanceApi', () => {
   it('anteontem ja esta fora do alcance', () => {
     expect(foraDoAlcanceApi('2026-08-21', '2026-08-23')).toBe(true)
   })
+  it('data futura tambem esta fora do alcance', () => {
+    expect(foraDoAlcanceApi('2026-08-24', '2026-08-23')).toBe(true)
+  })
 })

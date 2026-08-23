@@ -51,4 +51,41 @@ RUA X, 1 - BAIRRO, CIDADE - *
     const linhas = parseRomaneioTexto(comAjudantes)
     expect(linhas[0].ajudantes).toEqual(['FULANO DE TAL', 'CICLANO'])
   })
+
+  it('duas linhas de NF/CLIENTE consecutivas sem endereco entre elas: a primeira nao e descartada', () => {
+    const texto = `
+PLACA/MOTORISTA:  RQU6E83 / JOBERTO DA MATA REIS          CARGA/DESTINO:96149 / ITAPERUNA
+AJUDANTE(S):  ,
+
+NF / CLIENTE:
+2331233 / 136063 - RESTAURANTE CAIÇARA
+2331234 / 136347 - MERCADO IDEAL
+RUA OLIVIA FARIA, 29 - CENTRO, ITALVA - *
+Total de 2 clientes
+`
+    const linhas = parseRomaneioTexto(texto)
+    expect(linhas).toHaveLength(2)
+    expect(linhas[0]).toEqual({
+      carga: '96149',
+      destino: 'ITAPERUNA',
+      placa: 'RQU6E83',
+      motorista: 'JOBERTO DA MATA REIS',
+      ajudantes: [],
+      nf: '2331233',
+      clienteCodigo: '136063',
+      clienteNome: 'RESTAURANTE CAIÇARA',
+      endereco: '(endereço não identificado)',
+    })
+    expect(linhas[1]).toEqual({
+      carga: '96149',
+      destino: 'ITAPERUNA',
+      placa: 'RQU6E83',
+      motorista: 'JOBERTO DA MATA REIS',
+      ajudantes: [],
+      nf: '2331234',
+      clienteCodigo: '136347',
+      clienteNome: 'MERCADO IDEAL',
+      endereco: 'RUA OLIVIA FARIA, 29 - CENTRO, ITALVA - *',
+    })
+  })
 })

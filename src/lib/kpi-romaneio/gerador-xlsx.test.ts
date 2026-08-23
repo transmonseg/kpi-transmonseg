@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import ExcelJS from 'exceljs'
-import { gerarKpiRomaneioXlsx, COLUNAS_KPI_ROMANEIO } from './gerador-xlsx'
-import type { LinhaKpiRomaneio } from './types'
+import { gerarKpiRomaneioXlsx, COLUNAS_KPI_ROMANEIO, COLUNAS_AVISOS } from './gerador-xlsx'
+import type { AvisoDescasamento, LinhaKpiRomaneio } from './types'
 
 describe('gerador-xlsx', () => {
   it('gera workbook com header exato', async () => {
@@ -175,5 +175,34 @@ describe('gerador-xlsx', () => {
     const values = dataValues.slice(1)
 
     expect(values[13]).toBe('2h05min')
+  })
+
+  it('sem avisos: nao cria a aba Avisos', async () => {
+    const buffer = await gerarKpiRomaneioXlsx([], '2026-08-23', [])
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    expect(wb.worksheets.map(w => w.name)).toEqual(['KPI 2026-08-23'])
+  })
+
+  it('com avisos: cria a aba Avisos com header e uma linha por descasamento', async () => {
+    const avisos: AvisoDescasamento[] = [
+      { carga: '111', placa: 'AAA1111', motivo: 'sem_romaneio' },
+      { carga: '222', placa: 'BBB2222', motivo: 'sem_escala' },
+    ]
+    const buffer = await gerarKpiRomaneioXlsx([], '2026-08-23', avisos)
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+
+    expect(wb.worksheets.map(w => w.name)).toEqual(['KPI 2026-08-23', 'Avisos'])
+
+    const wsAvisos = wb.getWorksheet('Avisos')!
+    const headerValues = (wsAvisos.getRow(1).values as unknown[]).slice(1)
+    expect(headerValues).toEqual([...COLUNAS_AVISOS])
+
+    const row1 = (wsAvisos.getRow(2).values as unknown[]).slice(1)
+    expect(row1).toEqual(['111', 'AAA1111', 'sem romaneio'])
+
+    const row2 = (wsAvisos.getRow(3).values as unknown[]).slice(1)
+    expect(row2).toEqual(['222', 'BBB2222', 'sem escala'])
   })
 })

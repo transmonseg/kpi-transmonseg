@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { buscarFrota, normPlaca, type AlvoApi } from '@/lib/unitrac-api'
+import { buscarFrota, normPlaca } from '@/lib/unitrac-api'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { hojeBR } from '@/lib/data-br'
 import { parseEscala } from '@/lib/kpi-romaneio/parse-escala'
 import { parseRomaneio } from '@/lib/kpi-romaneio/parse-romaneio'
 import { geocodificarEnderecos } from '@/lib/kpi-romaneio/geocode'
 import { buscarAlvosDoDia, buscarParadasDoDia } from '@/lib/kpi-romaneio/unitrac'
+import { alvosDaData } from '@/lib/kpi-romaneio/alvos-data'
+import { detectarDescasamentos } from '@/lib/kpi-romaneio/avisos'
 import { montarVisitas } from '@/lib/kpi-romaneio/visitas'
 import { agregarPorCarga } from '@/lib/kpi-romaneio/agregacao'
 import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
@@ -19,17 +21,6 @@ export const runtime = 'nodejs'
 // A busca de paradas GPS é sequencial por placa (buscarStopsCru + geocode em
 // lote) -- um dia com muitas placas pode passar do default de 10s da Vercel.
 export const maxDuration = 60
-
-/** `/mapa_servicos/alvos` não recebe parâmetro de data -- devolve sempre o
- *  plano de entrega ATUAL da conta, não o de uma data específica. Pedir KPI
- *  de ontem enquanto a Unitrac já girou pro plano de hoje faria confirmar
- *  entregas de ontem com os alvos (NF) errados. Mesma correção que o
- *  gerador antigo já aplicava (`/api/kpi/nutrimax/gerar`, destruído na
- *  Task 1) -- descarta alvo cuja data (feito ou início) não bate com a
- *  data pedida, em vez de misturar dias silenciosamente. */
-function alvosDaData(alvos: AlvoApi[], data: string): AlvoApi[] {
-  return alvos.filter(a => (a.feitoISO ?? a.inicioISO)?.slice(0, 10) === data)
-}
 
 function agrupar<T>(itens: T[], chave: (item: T) => string): Map<string, T[]> {
   const mapa = new Map<string, T[]>()
@@ -148,7 +139,16 @@ export async function POST(req: NextRequest) {
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
 
-  const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpi, data)
+  // Aviso agregado de descasamento Escala<->Romaneio (ver spec, secao
+  // "Tratamento de erro/ambiguidade") -- aditivo, nunca bloqueia o resto do
+  // relatorio. Usa a MESMA chave carga+placa ja calculada acima.
+  const cargasRomaneioList = [...cargasPorChave.keys()].map(chave => {
+    const [carga, placaNorm] = chave.split('::')
+    return { carga, placaNorm }
+  })
+  const avisos = detectarDescasamentos(escala, cargasRomaneioList)
+
+  const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpi, data, avisos)
 
   // Registra a geração no histórico (auditoria simples)
   // Falha ao salvar NUNCA deve derrubar a geração do arquivo
