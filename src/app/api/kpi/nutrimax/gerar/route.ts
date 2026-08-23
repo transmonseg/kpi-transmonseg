@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getPerfil, empresaLiberada } from '@/lib/perfil'
 import { buscarFrota, normPlaca } from '@/lib/unitrac-api'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { hojeBR } from '@/lib/data-br'
@@ -37,6 +38,11 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
+
+  const perfil = await getPerfil(user.id)
+  if (!empresaLiberada(perfil, 'nutrimax')) {
+    return new NextResponse('Sem permissão.', { status: 403 })
+  }
 
   const form = await req.formData()
   const data = String(form.get('data') ?? '')
