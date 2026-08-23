@@ -10,7 +10,7 @@ export default async function PainelHome({ searchParams }: { searchParams: Promi
 
   const supabase = await createClient()
   const user = await resolveUserDesktopAware(supabase)
-  const perfil = user && process.env.DESKTOP_APP !== '1' ? await getPerfil(user.id) : { papel: 'admin' as const, redes: [], meses: [] }
+  const perfil = user && process.env.DESKTOP_APP !== '1' ? await getPerfil(user.id) : { papel: 'admin' as const, redes: [], meses: [], empresas: [] }
   const redesPermitidas = perfil.papel === 'admin' ? undefined : perfil.redes
   const mesesPermitidos = perfil.papel === 'admin' ? undefined : perfil.meses
   // Resumo do topo mistura números de TODAS as redes (contagem global de gerações) —
