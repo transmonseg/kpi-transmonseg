@@ -112,7 +112,7 @@ export default async function HistoricoPage({
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const perfil = user ? await getPerfil(user.id) : { papel: 'visualizador' as const, redes: [], meses: [] }
+  const perfil = user ? await getPerfil(user.id) : { papel: 'visualizador' as const, redes: [], meses: [], empresas: [] }
   const podeEditar = perfil.papel === 'admin'
 
   const { geracoes, total } = await fetchHistorico({ page, dataInicio, dataFim, perfil })
