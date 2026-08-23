@@ -11,6 +11,7 @@ import { montarVisitas } from '@/lib/kpi-romaneio/visitas'
 import { agregarPorCarga } from '@/lib/kpi-romaneio/agregacao'
 import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
+import { salvarGeracao } from '@/lib/kpi-romaneio/historico'
 import { COD_USER_NUTRIMAX, foraDoAlcanceApi } from '@/lib/kpi-romaneio/constants'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, Visita } from '@/lib/kpi-romaneio/types'
 
@@ -148,6 +149,20 @@ export async function POST(req: NextRequest) {
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
 
   const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpi, data)
+
+  // Registra a geração no histórico (auditoria simples)
+  // Falha ao salvar NUNCA deve derrubar a geração do arquivo
+  try {
+    await salvarGeracao({
+      cliente: 'nutrimax',
+      dataReferencia: data,
+      geradoPor: user?.email ?? null,
+      qtdCargas: linhasKpi.length,
+      arquivoStoragePath: null,
+    })
+  } catch (err) {
+    console.error('Erro ao salvar histórico de geração:', err)
+  }
 
   return new NextResponse(xlsxBuf as unknown as BodyInit, {
     headers: {
