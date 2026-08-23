@@ -23,33 +23,36 @@ const DASHBOARD: Leaf = { href: '/painel', label: 'Dashboard', Icon: ChartBar }
 const USUARIOS: Leaf = { href: '/painel/usuarios', label: 'Usuários', Icon: UsersThree }
 const VER_KPIS: Leaf = { href: '/painel/kpi/visualizar', label: 'Ver KPIs', Icon: ClockCounterClockwise }
 
-const GROUPS: Group[] = [
-  {
-    label: 'KPI',
-    Icon: TableIcon,
-    children: [
-      { href: '/painel/kpi/simples', label: 'Gerar KPI', Icon: TableIcon },
-      { href: '/painel/dashboard/beta', label: 'Dashboard (API Beta)', Icon: ChartBar },
-      { href: '/painel/historico', label: 'Histórico', Icon: ClockCounterClockwise },
-      { href: '/painel/lojas', label: 'Lojas', Icon: Storefront },
-    ],
-  },
-  {
-    label: 'Cozinha',
-    Icon: ForkKnife,
-    children: [
-      { href: '/painel/cozinha', label: 'Gerar Romaneio', Icon: ClipboardText, exact: true },
-      { href: '/painel/cozinha/clientes', label: 'Clientes', Icon: UsersThree },
-    ],
-  },
-  {
-    label: 'Nutry Max',
-    Icon: TableIcon,
-    children: [
-      { href: '/painel/nutrimax/gerar', label: 'Gerar KPI', Icon: TableIcon },
-    ],
-  },
-]
+const GRUPO_BENASSI: Group = {
+  label: 'Benassi',
+  Icon: TableIcon,
+  children: [
+    { href: '/painel/kpi/simples', label: 'Gerar KPI', Icon: TableIcon },
+    { href: '/painel/dashboard/beta', label: 'Dashboard (API Beta)', Icon: ChartBar },
+    { href: '/painel/historico', label: 'Histórico', Icon: ClockCounterClockwise },
+    { href: '/painel/lojas', label: 'Lojas', Icon: Storefront },
+  ],
+}
+
+const GRUPO_NUTRIMAX: Group = {
+  label: 'Nutry Max',
+  Icon: TableIcon,
+  children: [
+    { href: '/painel/nutrimax/gerar', label: 'Gerar KPI', Icon: TableIcon },
+  ],
+}
+
+const GRUPO_COZINHA: Group = {
+  label: 'Cozinha',
+  Icon: ForkKnife,
+  children: [
+    { href: '/painel/cozinha', label: 'Gerar Romaneio', Icon: ClipboardText, exact: true },
+    { href: '/painel/cozinha/clientes', label: 'Clientes', Icon: UsersThree },
+  ],
+}
+
+// Grupos com tela hoje. Portefrio fica de fora até ter alguma página.
+const GRUPOS_EMPRESA: Group[] = [GRUPO_BENASSI, GRUPO_NUTRIMAX]
 
 function leafActive(pathname: string, href: string, exact?: boolean) {
   if (exact) return pathname === href
@@ -144,17 +147,20 @@ function GroupBlock({ group, pathname }: { group: Group; pathname: string }) {
   )
 }
 
-export function PainelNav({ papel }: { papel: Papel }) {
+export function PainelNav({ papel, empresas }: { papel: Papel; empresas: string[] }) {
   const pathname = usePathname()
 
-  // Login restrito (gerente/visualizador): Dashboard, Ver KPIs (read-only,
-  // já filtrado pelas redes do perfil) e Usuários pro gerente (convidar
-  // visualizadores). Sem acesso ao resto (gerar/editar KPI, Cozinha etc).
+  // Login restrito (gerente/visualizador): Dashboard, Ver KPIs (só se a empresa
+  // Benassi estiver liberada — read-only, já filtrado pelas redes do perfil) e
+  // Usuários pro gerente (convidar visualizadores). Sem acesso ao resto
+  // (gerar/editar KPI, Cozinha etc).
   if (papel !== 'admin') {
     return (
       <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
         <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
-        <LeafLink item={VER_KPIS} active={pathname.startsWith('/painel/kpi/visualizar')} />
+        {empresas.includes('benassi') && (
+          <LeafLink item={VER_KPIS} active={pathname.startsWith('/painel/kpi/visualizar')} />
+        )}
         {papel === 'gerente' && (
           <LeafLink item={USUARIOS} active={pathname.startsWith('/painel/usuarios')} />
         )}
@@ -168,10 +174,15 @@ export function PainelNav({ papel }: { papel: Papel }) {
       <LeafLink item={USUARIOS} active={pathname.startsWith('/painel/usuarios')} />
 
       <div className="my-2 h-px bg-[var(--color-sidebar-border)]" />
-
-      {GROUPS.map(g => (
+      <span className="px-2.5 pb-1 text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--color-sidebar-fg-muted)]">
+        Empresas
+      </span>
+      {GRUPOS_EMPRESA.map(g => (
         <GroupBlock key={g.label} group={g} pathname={pathname} />
       ))}
+
+      <div className="my-2 h-px bg-[var(--color-sidebar-border)]" />
+      <GroupBlock group={GRUPO_COZINHA} pathname={pathname} />
     </nav>
   )
 }
