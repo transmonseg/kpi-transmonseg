@@ -10,6 +10,7 @@ import { EMPRESA_LABEL } from '@/lib/kpi/empresas'
 const EMPRESA_HOME_ADMIN: Record<string, string> = {
   benassi: '/painel/kpi/simples',
   nutrimax: '/painel/nutrimax/gerar',
+  portefrio: '/painel/portefrio/gerar',
 }
 const EMPRESA_HOME_NAO_ADMIN: Record<string, string> = {
   benassi: '/painel/kpi/visualizar',

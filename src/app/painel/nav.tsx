@@ -42,6 +42,15 @@ const GRUPO_NUTRIMAX: Group = {
   ],
 }
 
+const GRUPO_PORTEFRIO: Group = {
+  label: 'Portefrio',
+  Icon: TableIcon,
+  children: [
+    { href: '/painel/portefrio/gerar', label: 'Gerar KPI', Icon: TableIcon },
+    { href: '/painel/portefrio/historico', label: 'Histórico', Icon: ClockCounterClockwise },
+  ],
+}
+
 const GRUPO_COZINHA: Group = {
   label: 'Cozinha',
   Icon: ForkKnife,
@@ -51,8 +60,7 @@ const GRUPO_COZINHA: Group = {
   ],
 }
 
-// Grupos com tela hoje. Portefrio fica de fora até ter alguma página.
-const GRUPOS_EMPRESA: Group[] = [GRUPO_BENASSI, GRUPO_NUTRIMAX]
+const GRUPOS_EMPRESA: Group[] = [GRUPO_BENASSI, GRUPO_NUTRIMAX, GRUPO_PORTEFRIO]
 
 function leafActive(pathname: string, href: string, exact?: boolean) {
   if (exact) return pathname === href
