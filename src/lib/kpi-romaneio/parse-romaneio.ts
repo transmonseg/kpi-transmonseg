@@ -2,7 +2,7 @@ import type { LinhaRomaneio } from './types'
 
 const HEADER_RE = /^PLACA\/MOTORISTA:(.+?)\s*\/\s*(.+?)CARGA\/DESTINO:(\d+)\s*\/\s*(.+)$/
 const AJUDANTE_RE = /^AJUDANTE\(S\):(.*)$/
-const NF_CLIENTE_RE = /^NF\s*\/\s*CLIENTE:\s*(\d+)\s*\/\s*(\d+)\s*-\s*(.+)$/
+const NF_CLIENTE_RE = /^(\d+)\s*\/\s*(\d+)\s*-\s*(.+)$/
 const FIM_CLIENTE_RE = /^NF\s*\/\s*CLIENTE:\s*$/
 const TOTAL_RE = /^Total de \d+ clientes?$/i
 
