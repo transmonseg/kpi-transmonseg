@@ -39,6 +39,7 @@ const GRUPO_NUTRIMAX: Group = {
   Icon: TableIcon,
   children: [
     { href: '/painel/nutrimax/gerar', label: 'Gerar KPI', Icon: TableIcon },
+    { href: '/painel/nutrimax/historico', label: 'Histórico', Icon: ClockCounterClockwise },
   ],
 }
 
