@@ -46,10 +46,15 @@ import { createServiceClient } from '@/lib/supabase/service'
 export type ResultadoGeocode = { lat: number; lng: number } | null
 
 // Teto de itens por filtro `.in()` na leitura do cache -- request GET,
-// endereco vai na URL; lote grande demais estoura tamanho de URL do
-// servidor. Nao precisa bater com LOTE_MAX_ENDERECOS (aquele e' sobre o
-// POST pro monitoramento, corpo JSON, sem esse limite).
-const LOTE_CACHE_LEITURA = 200
+// endereco vai na URL; lote grande demais estoura tamanho de URL e o
+// fetch falha antes de sair (achado real 24/08/2026: 200 enderecos reais
+// da Nutry Max, com ~80+ caracteres cada, gerava URL longa o bastante pra
+// TODA leitura de cache falhar com "fetch failed", nunca chegando no
+// servidor). 20 enderecos por chamada fica bem dentro de qualquer limite
+// pratico de URL mesmo com endereco de 100+ caracteres. Nao precisa bater
+// com LOTE_MAX_ENDERECOS (aquele e' sobre o POST pro monitoramento, corpo
+// JSON, sem esse limite).
+const LOTE_CACHE_LEITURA = 20
 
 // A rota do monitoramento rejeita lotes acima de MAX_ENDERECOS_POR_CHAMADA=300
 // (ver route.ts la), mas o teto que a gente manda por chamada e' bem menor

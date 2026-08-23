@@ -307,6 +307,24 @@ describe('geocodificarEnderecos - cache proprio', () => {
     expect(r).toEqual([{ lat: 1, lng: 2 }])
   })
 
+  it('mais de 20 enderecos particiona a leitura do cache em varias chamadas .in()', async () => {
+    const enderecos = Array.from({ length: 45 }, (_, i) => `Endereco ${i}`)
+    const inMock = vi.fn().mockImplementation((_col: string, valores: string[]) =>
+      Promise.resolve({ data: valores.map(e => ({ endereco: e, lat: 1, lng: 2 })), error: null }),
+    )
+    const selectMock = vi.fn().mockReturnValue({ in: inMock })
+    const fromMock = vi.fn().mockReturnValue({ select: selectMock, upsert: vi.fn() })
+    vi.mocked(createServiceClient).mockReturnValue({ from: fromMock } as any)
+
+    const r = await geocodificarEnderecos(enderecos)
+
+    // 45 enderecos / 20 por lote de leitura = 3 chamadas (20 + 20 + 5).
+    expect(inMock).toHaveBeenCalledTimes(3)
+    expect(inMock.mock.calls.map(([, valores]) => (valores as string[]).length)).toEqual([20, 20, 5])
+    expect(r).toHaveLength(45)
+    expect(r.every(x => x !== null)).toBe(true)
+  })
+
   it('todos os enderecos ja no cache nunca cria o client de novo pra escrever (nada pra salvar)', async () => {
     const { upsertMock } = mockSupabaseCache({ linhasNoCache: [{ endereco: 'Rua A', lat: 1, lng: 2 }] })
     await geocodificarEnderecos(['Rua A'])
