@@ -4,7 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { calcularMetricas, filtrar } from '@/lib/kpi/dashboard-metricas'
 import { intervaloPeriodo, intervaloAnterior, carregarEntradasManuais } from '@/lib/kpi/dashboard-query'
 import { hojeBR } from '@/lib/data-br'
-import { getPerfil, redesEfetivas } from '@/lib/perfil'
+import { getPerfil, redesEfetivas, empresaLiberada } from '@/lib/perfil'
 
 export const runtime = 'nodejs'
 
@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
   const perfil = await getPerfil(user.id)
+  if (!empresaLiberada(perfil, 'benassi')) return new NextResponse('Sem permissão.', { status: 403 })
 
   const u = new URL(req.url)
   const periodo = u.searchParams.get('periodo') ?? 'dia'

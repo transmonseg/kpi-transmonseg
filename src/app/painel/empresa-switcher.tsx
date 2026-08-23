@@ -4,14 +4,16 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { EMPRESA_LABEL } from '@/lib/kpi/empresas'
 
-// Só as empresas que já têm alguma tela hoje. Portefrio entra aqui quando
-// tiver a própria rota raiz.
-const EMPRESA_HOME: Record<string, string> = {
+// Admin: leva pra tela de geração de cada empresa (única coisa que existe
+// hoje). Não-admin: leva pra tela de leitura correspondente — Nutry Max
+// ainda não tem uma, então fica de fora do set pra não-admin até existir.
+const EMPRESA_HOME_ADMIN: Record<string, string> = {
   benassi: '/painel/kpi/simples',
   nutrimax: '/painel/nutrimax/gerar',
 }
-
-const EMPRESAS_COM_TELA = Object.keys(EMPRESA_HOME)
+const EMPRESA_HOME_NAO_ADMIN: Record<string, string> = {
+  benassi: '/painel/kpi/visualizar',
+}
 
 export function EmpresaSwitcher({
   papel,
@@ -21,19 +23,20 @@ export function EmpresaSwitcher({
   empresas: string[]
 }) {
   const pathname = usePathname()
-  const visiveis = EMPRESAS_COM_TELA.filter(e => papel === 'admin' || empresas.includes(e))
+  const homeMap = papel === 'admin' ? EMPRESA_HOME_ADMIN : EMPRESA_HOME_NAO_ADMIN
+  const visiveis = Object.keys(homeMap).filter(e => papel === 'admin' || empresas.includes(e))
 
   // 0 ou 1 opção: nada pra trocar, não mostra seletor nenhum.
   if (visiveis.length < 2) return null
 
-  const atual = visiveis.find(e => pathname.startsWith(EMPRESA_HOME[e])) ?? visiveis[0]
+  const atual = visiveis.find(e => pathname.startsWith(homeMap[e]))
 
   return (
     <div className="hidden items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-1 sm:flex">
       {visiveis.map(e => (
         <Link
           key={e}
-          href={EMPRESA_HOME[e]}
+          href={homeMap[e]}
           className={
             'rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors ' +
             (e === atual

@@ -69,20 +69,23 @@ export async function updateSession(request: NextRequest) {
   if (user && !isPublic) {
     const perfil = await getPerfil(user.id)
     if (perfil.papel !== 'admin') {
+      const podeBenassi = perfil.empresas.includes('benassi')
       const permitido =
         path === '/painel' ||
-        path === '/api/dashboard' ||
-        path === '/api/dashboard/beta' ||
-        path === '/api/dashboard/export-mensal' ||
-        // Ver KPI Manual do dia (read-only) — qualquer papel logado acessa;
-        // a leitura filtra por perfil.redes.
-        path === '/painel/kpi/visualizar' ||
-        path === '/api/kpi-manual/dia' ||
-        path === '/api/kpi-manual/export' ||
-        (path === '/painel/usuarios' && perfil.papel === 'gerente') ||
-        // Gerar link público: admin/gerente podem, visualizador não (a rota
-        // já rechecha isso, aqui é só pra não bloquear o gerente também).
-        (path === '/api/kpi-manual/link-publico' && perfil.papel === 'gerente')
+        (podeBenassi && (
+          path === '/api/dashboard' ||
+          path === '/api/dashboard/beta' ||
+          path === '/api/dashboard/export-mensal' ||
+          // Ver KPI Manual do dia (read-only) — qualquer papel logado com
+          // acesso a Benassi acessa; a leitura filtra por perfil.redes.
+          path === '/painel/kpi/visualizar' ||
+          path === '/api/kpi-manual/dia' ||
+          path === '/api/kpi-manual/export' ||
+          // Gerar link público: admin/gerente podem, visualizador não (a rota
+          // já rechecha isso, aqui é só pra não bloquear o gerente também).
+          (path === '/api/kpi-manual/link-publico' && perfil.papel === 'gerente')
+        )) ||
+        (path === '/painel/usuarios' && perfil.papel === 'gerente')
       if (!permitido) {
         if (path.startsWith('/api/')) {
           return new NextResponse('Sem permissão.', { status: 403 })

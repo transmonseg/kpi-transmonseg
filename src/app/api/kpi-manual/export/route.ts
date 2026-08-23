@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { gerarXlsxDia, type EntradaManualRow } from '@/lib/kpi/gerar-xlsx-manual'
-import { getPerfil, redesEfetivas } from '@/lib/perfil'
+import { getPerfil, redesEfetivas, empresaLiberada } from '@/lib/perfil'
 
 export const runtime = 'nodejs'
 
@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
   // XLSX" do Ver KPIs) — sem essa checagem, trocar ?rede= na URL vazava dado
   // de rede fora do perfil de quem pediu.
   const perfil = await getPerfil(user.id)
+  if (!empresaLiberada(perfil, 'benassi')) return new NextResponse('Sem permissão.', { status: 403 })
   if (!redesEfetivas(perfil, [rede]).includes(rede)) {
     return new NextResponse('Sem permissão para esta rede.', { status: 403 })
   }

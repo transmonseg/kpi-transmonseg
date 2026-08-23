@@ -24,6 +24,9 @@ export async function GET(req: NextRequest) {
     return new NextResponse('"data" inválida (use YYYY-MM-DD)', { status: 400 })
   }
 
+  const perfil = await getPerfil(user.id)
+  if (!empresaLiberada(perfil, 'benassi')) return new NextResponse('Sem permissão.', { status: 403 })
+
   const svc = createServiceClient()
   const { data: rows, error } = await svc
     .from('kpi_manual_entradas')
@@ -33,8 +36,6 @@ export async function GET(req: NextRequest) {
   if (error) return new NextResponse(error.message, { status: 500 })
 
   const linhas = (rows ?? []) as LinhaManual[]
-  const perfil = await getPerfil(user.id)
-  if (!empresaLiberada(perfil, 'benassi')) return new NextResponse('Sem permissão.', { status: 403 })
   const todasRedesPresentes = [...new Set(linhas.map(l => l.rede_id))]
   const permitidas = new Set(redesEfetivas(perfil, todasRedesPresentes))
 

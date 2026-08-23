@@ -10,6 +10,7 @@ import {
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { resolveUserDesktopAware } from '@/lib/supabase/desktop-auth'
 import { getPerfil, redesEfetivas, empresaLiberada, type Perfil } from '@/lib/perfil'
 import { fmtInstanteBR } from '@/lib/data-br'
 import { cn } from '@/components/ui'
@@ -112,9 +113,11 @@ export default async function HistoricoPage({
   const dataFim = sp.fim ?? ''
 
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await resolveUserDesktopAware(supabase)
   if (!user) redirect('/login')
-  const perfil = await getPerfil(user.id)
+  const perfil = process.env.DESKTOP_APP === '1'
+    ? { papel: 'admin' as const, redes: [], meses: [], empresas: [] }
+    : await getPerfil(user.id)
   if (!empresaLiberada(perfil, 'benassi')) redirect('/painel')
   const podeEditar = perfil.papel === 'admin'
 

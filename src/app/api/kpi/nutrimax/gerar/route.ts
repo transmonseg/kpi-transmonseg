@@ -40,7 +40,11 @@ export async function POST(req: NextRequest) {
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
 
   const perfil = await getPerfil(user.id)
-  if (!empresaLiberada(perfil, 'nutrimax')) {
+  // Geração de KPI é admin-only em todo o sistema (mesma regra do
+  // /api/kpi/simples da Benassi) — Nutry Max ainda não tem tela de leitura
+  // pra gerente/visualizador, então não há caso de uso pra liberar geração
+  // pra eles hoje.
+  if (perfil.papel !== 'admin' || !empresaLiberada(perfil, 'nutrimax')) {
     return new NextResponse('Sem permissão.', { status: 403 })
   }
 
