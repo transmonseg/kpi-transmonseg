@@ -4,6 +4,7 @@ import { resolveUserDesktopAware } from '@/lib/supabase/desktop-auth'
 import { getPerfil } from '@/lib/perfil'
 import DashboardClient from './dashboard/dashboard-client'
 import { fetchResumo } from './dashboard/fetch-resumo'
+import { EmpresaSwitcher } from './empresa-switcher'
 
 export default async function PainelHome({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const sp = await searchParams
@@ -18,13 +19,18 @@ export default async function PainelHome({ searchParams }: { searchParams: Promi
   const resumo = redesPermitidas ? undefined : await fetchResumo()
 
   return (
-    <Suspense fallback={null}>
-      <DashboardClient
-        resumo={resumo}
-        tabInicial={sp.tab === 'inserir' || sp.tab === 'historico' ? sp.tab : 'geral'}
-        redesPermitidas={redesPermitidas}
-        mesesPermitidos={mesesPermitidos}
-      />
-    </Suspense>
+    <>
+      <div className="mb-4">
+        <EmpresaSwitcher papel={perfil.papel} empresas={perfil.empresas} />
+      </div>
+      <Suspense fallback={null}>
+        <DashboardClient
+          resumo={resumo}
+          tabInicial={sp.tab === 'inserir' || sp.tab === 'historico' ? sp.tab : 'geral'}
+          redesPermitidas={redesPermitidas}
+          mesesPermitidos={mesesPermitidos}
+        />
+      </Suspense>
+    </>
   )
 }

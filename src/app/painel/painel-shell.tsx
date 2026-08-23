@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react'
 import { List, X, SignOut } from '@phosphor-icons/react/dist/ssr'
 import { ThemeToggle } from '@/lib/theme/ThemeToggle'
 import { HeaderTitle } from './header-title'
-import { EmpresaSwitcher } from './empresa-switcher'
 import { PainelNav } from './nav'
 import { TourRunner } from './tour-runner'
 
@@ -109,7 +108,6 @@ export function PainelShell({ userEmail, papel, empresas, sairAction, children }
               <List size={18} weight="bold" />
             </button>
             <HeaderTitle />
-            <EmpresaSwitcher papel={papel} empresas={empresas} />
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
