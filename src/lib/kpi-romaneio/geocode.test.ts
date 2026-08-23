@@ -141,6 +141,56 @@ describe('geocodificarEnderecos', () => {
     )).toBe(false)
   })
 
+  it('mais de 300 enderecos particiona em lotes sequenciais e concatena os resultados na ordem certa', async () => {
+    const enderecos = Array.from({ length: 620 }, (_, i) => `Endereco ${i}`)
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+      const body = JSON.parse((init as RequestInit).body as string) as { enderecos: string[] }
+      const resultados = body.enderecos.map((_, i) => ({ lat: i, lng: i }))
+      return new Response(JSON.stringify({ resultados }), { status: 200 })
+    })
+
+    const r = await geocodificarEnderecos(enderecos)
+
+    // 620 enderecos / 300 por lote = 3 chamadas (300 + 300 + 20).
+    expect(fetchSpy).toHaveBeenCalledTimes(3)
+    const tamanhos = fetchSpy.mock.calls.map(([, init]) =>
+      (JSON.parse((init as RequestInit).body as string) as { enderecos: string[] }).enderecos.length,
+    )
+    expect(tamanhos).toEqual([300, 300, 20])
+    expect(r).toHaveLength(620)
+    // Cada lote responde lat/lng = indice DENTRO do proprio lote -- resultado
+    // final tem que remontar na ordem original, nao ficar embaralhado por lote.
+    expect(r[0]).toEqual({ lat: 0, lng: 0 })
+    expect(r[300]).toEqual({ lat: 0, lng: 0 }) // primeiro item do 2o lote
+    expect(r[619]).toEqual({ lat: 19, lng: 19 }) // ultimo item do 3o lote (20 itens, indice 19)
+  })
+
+  it('exatamente 300 enderecos faz UMA chamada so (nao particiona sem necessidade)', async () => {
+    const enderecos = Array.from({ length: 300 }, (_, i) => `Endereco ${i}`)
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ resultados: enderecos.map(() => ({ lat: 1, lng: 2 })) }), { status: 200 }),
+    )
+    await geocodificarEnderecos(enderecos)
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('um lote falhar no meio nao derruba os outros lotes -- fail-open por lote', async () => {
+    const enderecos = Array.from({ length: 620 }, (_, i) => `Endereco ${i}`)
+    let chamada = 0
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+      chamada += 1
+      const body = JSON.parse((init as RequestInit).body as string) as { enderecos: string[] }
+      if (chamada === 2) throw new Error('timeout no segundo lote')
+      return new Response(JSON.stringify({ resultados: body.enderecos.map(() => ({ lat: 1, lng: 2 })) }), { status: 200 })
+    })
+
+    const r = await geocodificarEnderecos(enderecos)
+    expect(r).toHaveLength(620)
+    expect(r.slice(0, 300).every(x => x !== null)).toBe(true)
+    expect(r.slice(300, 600).every(x => x === null)).toBe(true) // lote 2, falhou
+    expect(r.slice(600, 620).every(x => x !== null)).toBe(true)
+  })
+
   it('manda o header x-motor-key e o corpo esperado', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ resultados: [{ lat: 1, lng: 2 }] }), { status: 200 })

@@ -34,20 +34,27 @@
 
 export type ResultadoGeocode = { lat: number; lng: number } | null
 
+// A rota do monitoramento rejeita lotes acima de MAX_ENDERECOS_POR_CHAMADA
+// (ver route.ts la) -- precisa bater exatamente com o teto de la, senao
+// lote grande volta 400 em vez de ser dividido. Achado real (23/08/2026,
+// validacao com romaneio de 31/07): um dia real da Nutry Max teve 1716
+// enderecos unicos, bem acima do "dezenas por dia" assumido originalmente
+// -- sem particionar em lotes, a chamada inteira falhava com 400.
+const LOTE_MAX_ENDERECOS = 300
+
 // Mesma referencia que TIMEOUT_UNITRAC_MS no monitoramento (usada la pra
 // chamada de rede que pode pendurar) -- uma chamada de geocodificacao
 // nunca deve travar o pipeline inteiro sem limite.
 //
-// Nota sobre o numero: essa e' UMA UNICA chamada HTTP em lote (todos os
-// enderecos de uma vez), nao uma promise por endereco -- arquitetura
-// sequencial do lado de la tambem (ver processar-geocode/route.ts:
-// ~74% dos enderecos resolvem local/rapido, ~26% caem no Nominatim
-// throttled a 1,1s cada). Pra um romaneio Nutry Max de tamanho tipico
-// (dezenas de enderecos/dia, ver LOTE_POR_INVOCACAO=60 la) 20s cobre
-// folgado. Se o romaneio real crescer muito alem disso, reavaliar --
-// fail-open cobre o caso degradado (lote inteiro volta null e a linha
-// ainda pode ser confirmada via Unitrac), mas nao e' o ideal.
-const GEOCODE_TIMEOUT_MS = 20_000
+// Nota sobre o numero: cada lote e' UMA UNICA chamada HTTP (ate
+// LOTE_MAX_ENDERECOS enderecos de uma vez), nao uma promise por endereco --
+// arquitetura sequencial do lado de la tambem (ver processar-geocode/
+// route.ts: ~74% dos enderecos resolvem local/rapido, ~26% caem no
+// Nominatim throttled a 1,1s cada). Pior caso de um lote cheio (300
+// enderecos, ~26% = 78 no Nominatim a 1,1s cada) fica perto de 90s --
+// timeout generoso o suficiente pra cobrir isso com folga, sem travar
+// pra sempre se o monitoramento cair.
+const GEOCODE_TIMEOUT_MS = 180_000
 
 function urlGeocode(): string {
   const base = process.env.MONITORAMENTO_URL ?? 'http://127.0.0.1:3010'
@@ -91,10 +98,24 @@ function validarResultado(r: unknown): ResultadoGeocode {
 
 /** Geocodifica uma lista de enderecos brasileiros. Falha em um endereco
  *  individual NAO lanca -- devolve null naquela posicao (fail-open, ver
- *  spec: uma linha sem coordenada ainda pode ser confirmada via Unitrac). */
+ *  spec: uma linha sem coordenada ainda pode ser confirmada via Unitrac).
+ *  Particiona em lotes de ate LOTE_MAX_ENDERECOS e chama sequencialmente
+ *  (nunca em paralelo -- o lado de la ja e' sequencial internamente pro
+ *  throttle do Nominatim, chamadas paralelas so' competiriam pelo mesmo
+ *  rate limit sem ganhar nada). */
 export async function geocodificarEnderecos(enderecos: string[]): Promise<ResultadoGeocode[]> {
   if (enderecos.length === 0) return []
+  if (enderecos.length <= LOTE_MAX_ENDERECOS) return geocodificarLote(enderecos)
 
+  const resultados: ResultadoGeocode[] = []
+  for (let i = 0; i < enderecos.length; i += LOTE_MAX_ENDERECOS) {
+    const lote = enderecos.slice(i, i + LOTE_MAX_ENDERECOS)
+    resultados.push(...await geocodificarLote(lote))
+  }
+  return resultados
+}
+
+async function geocodificarLote(enderecos: string[]): Promise<ResultadoGeocode[]> {
   const chave = process.env.MOTOR_SECRET
   if (!chave) {
     console.error('[kpi-romaneio/geocode] MOTOR_SECRET nao configurada -- geocodificacao pulada')
