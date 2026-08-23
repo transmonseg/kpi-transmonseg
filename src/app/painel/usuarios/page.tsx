@@ -7,10 +7,12 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { getPerfil, conviteExpirado } from '@/lib/perfil'
 import { REDES, REDE_LABEL } from '@/lib/kpi/redes'
 import { mesesConhecidos, formatMes } from '@/lib/kpi/meses'
+import { EMPRESAS, EMPRESA_LABEL } from '@/lib/kpi/empresas'
 import { criarConvite, revogarConvite, revogarAcesso, atualizarMeses } from './actions'
 import { CopiarLink } from './copiar-link'
 import { RedesCheckboxes } from './redes-checkboxes'
 import { MesesCheckboxes } from './meses-checkboxes'
+import { EmpresasCheckboxes } from './empresas-checkboxes'
 
 const PAPEL_LABEL = { gerente: 'Gerente', visualizador: 'Visualizador' } as const
 
@@ -29,8 +31,8 @@ export default async function UsuariosPage({
 
   const svc = createServiceClient()
   const [{ data: perfisRows }, { data: convitesRows }] = await Promise.all([
-    svc.from('perfis').select('user_id, email, papel, redes, meses, criado_por').neq('papel', 'admin').order('email'),
-    svc.from('convites').select('token, papel, redes, meses, criado_por, expira_em').is('usado_em', null).order('criado_em', { ascending: false }),
+    svc.from('perfis').select('user_id, email, papel, redes, meses, empresas, criado_por').neq('papel', 'admin').order('email'),
+    svc.from('convites').select('token, papel, redes, meses, empresas, criado_por, expira_em').is('usado_em', null).order('criado_em', { ascending: false }),
   ])
 
   const meus = perfil.papel === 'gerente'
@@ -46,6 +48,7 @@ export default async function UsuariosPage({
   // Default: tudo liberado exceto o mês mais recente (cada mês novo passa a
   // exigir liberação explícita — é justamente a restrição que essa feature existe pra fazer).
   const mesesDefault = perfil.papel === 'gerente' ? perfil.meses : mesesConhecidos().slice(0, -1)
+  const empresasDisponiveis = perfil.papel === 'gerente' ? perfil.empresas : (EMPRESAS as readonly string[])
 
   return (
     <div className="mx-auto w-full max-w-[1180px] space-y-8 px-5 sm:px-8">
@@ -103,8 +106,10 @@ export default async function UsuariosPage({
               <input type="hidden" name="papel" value="visualizador" />
             )}
 
-            <RedesCheckboxes opcoes={redesDisponiveis} />
-            <MesesCheckboxes opcoes={mesesDisponiveis} defaultMarcados={mesesDefault} />
+            <EmpresasCheckboxes opcoes={empresasDisponiveis}>
+              <RedesCheckboxes opcoes={redesDisponiveis} />
+              <MesesCheckboxes opcoes={mesesDisponiveis} defaultMarcados={mesesDefault} />
+            </EmpresasCheckboxes>
 
             <Button type="submit" className="self-start">Gerar link de convite</Button>
           </form>
@@ -123,6 +128,9 @@ export default async function UsuariosPage({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-fg)]">
                     <Badge>{PAPEL_LABEL[c.papel as 'gerente' | 'visualizador']}</Badge>
+                  </div>
+                  <div className="mt-1 text-[11px] font-medium text-[var(--color-fg)]">
+                    {((c.empresas as string[] | null) ?? []).map(e => EMPRESA_LABEL[e] ?? e).join(', ') || 'sem empresa'}
                   </div>
                   <div className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">
                     {(c.redes as string[]).map(r => REDE_LABEL[r] ?? r).join(', ')}
@@ -162,6 +170,9 @@ export default async function UsuariosPage({
                   <div className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-fg)]">
                     {p.email}
                     <Badge>{PAPEL_LABEL[p.papel as 'gerente' | 'visualizador']}</Badge>
+                  </div>
+                  <div className="mt-1 text-[11px] font-medium text-[var(--color-fg)]">
+                    {((p.empresas as string[] | null) ?? []).map(e => EMPRESA_LABEL[e] ?? e).join(', ') || 'sem empresa'}
                   </div>
                   <div className="mt-1 text-[11px] text-[var(--color-fg-subtle)]">
                     {(p.redes as string[]).map(r => REDE_LABEL[r] ?? r).join(', ') || 'sem rede'}
