@@ -42,6 +42,7 @@ export async function resgatar(token: string, formData: FormData) {
     papel: convite.papel,
     redes: convite.redes,
     meses: convite.meses,
+    empresas: convite.empresas,
     criado_por: convite.criado_por,
   })
   await svc.from('convites')

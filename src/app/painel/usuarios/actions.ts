@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getPerfil, redeValida, mesValido, type Perfil } from '@/lib/perfil'
+import { getPerfil, redeValida, mesValido, empresaValida, type Perfil } from '@/lib/perfil'
 
 async function perfilAtual(): Promise<{ userId: string; perfil: Perfil }> {
   const supabase = await createClient()
@@ -21,22 +21,27 @@ export async function criarConvite(formData: FormData) {
   const papelPedido = String(formData.get('papel') ?? 'visualizador')
   const redesPedidas = formData.getAll('redes').map(String).filter(redeValida)
   const mesesPedidos = formData.getAll('meses').map(String).filter(mesValido)
+  const empresasPedidas = formData.getAll('empresas').map(String).filter(empresaValida)
 
-  // Gerente só cria Visualizador, e só dentro das próprias redes/meses — nunca
-  // confia no que vier do form (poderia ser adulterado).
+  // Gerente só cria Visualizador, e só dentro das próprias redes/meses/empresas —
+  // nunca confia no que vier do form (poderia ser adulterado).
   const papel: 'gerente' | 'visualizador' =
     perfil.papel === 'gerente' ? 'visualizador' : (papelPedido === 'gerente' ? 'gerente' : 'visualizador')
   const redes = perfil.papel === 'gerente' ? redesPedidas.filter(r => perfil.redes.includes(r)) : redesPedidas
   const meses = perfil.papel === 'gerente' ? mesesPedidos.filter(m => perfil.meses.includes(m)) : mesesPedidos
+  const empresas = perfil.papel === 'gerente' ? empresasPedidas.filter(e => perfil.empresas.includes(e)) : empresasPedidas
 
-  if (redes.length === 0) {
-    redirect('/painel/usuarios?erro=' + encodeURIComponent('Escolha ao menos uma rede (dentro do seu próprio acesso).'))
+  if (empresas.length === 0) {
+    redirect('/painel/usuarios?erro=' + encodeURIComponent('Escolha ao menos uma empresa.'))
+  }
+  if (empresas.includes('benassi') && redes.length === 0) {
+    redirect('/painel/usuarios?erro=' + encodeURIComponent('Escolha ao menos uma rede da Benassi (dentro do seu próprio acesso).'))
   }
 
   const svc = createServiceClient()
   const { data, error } = await svc
     .from('convites')
-    .insert({ papel, redes, meses, criado_por: userId })
+    .insert({ papel, redes, meses, empresas, criado_por: userId })
     .select('token')
     .single()
 

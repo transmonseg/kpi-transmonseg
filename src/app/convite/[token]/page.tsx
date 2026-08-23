@@ -5,6 +5,7 @@ import { ThemeToggle } from '@/lib/theme/ThemeToggle'
 import { createServiceClient } from '@/lib/supabase/service'
 import { conviteExpirado } from '@/lib/perfil'
 import { REDE_LABEL } from '@/lib/kpi/redes'
+import { EMPRESA_LABEL } from '@/lib/kpi/empresas'
 import { resgatar } from './actions'
 
 const PAPEL_LABEL = { gerente: 'Gerente', visualizador: 'Visualizador' } as const
@@ -62,8 +63,11 @@ export default async function ConvitePage({
           </h1>
           {!bloqueado && (
             <p className="mt-2 max-w-[36ch] text-[13px] leading-relaxed text-[var(--color-fg-muted)]">
-              Acesso de <strong>{PAPEL_LABEL[convite.papel as 'gerente' | 'visualizador']}</strong> — só a tela de
-              Dashboard, redes: {(convite.redes as string[]).map(r => REDE_LABEL[r] ?? r).join(', ') || '—'}.
+              Acesso de <strong>{PAPEL_LABEL[convite.papel as 'gerente' | 'visualizador']}</strong> — empresas:{' '}
+              {((convite.empresas as string[] | null) ?? []).map(e => EMPRESA_LABEL[e] ?? e).join(', ') || '—'}
+              {((convite.empresas as string[] | null) ?? []).includes('benassi') && (
+                <> · redes: {(convite.redes as string[]).map(r => REDE_LABEL[r] ?? r).join(', ') || '—'}</>
+              )}.
             </p>
           )}
         </div>
