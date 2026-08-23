@@ -1,5 +1,31 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+
+vi.mock('@/lib/supabase/service', () => ({
+  createServiceClient: vi.fn(),
+}))
+
+import { createServiceClient } from '@/lib/supabase/service'
 import { geocodificarEnderecos } from './geocode'
+
+/** Builder de um mock minimo do client Supabase pros testes de cache:
+ *  `.from('kpi_romaneio_geocode_cache').select(...).in(...)` (leitura) e
+ *  `.from('kpi_romaneio_geocode_cache').upsert(...)` (escrita). */
+function mockSupabaseCache(opts: {
+  linhasNoCache?: Array<{ endereco: string; lat: number; lng: number }>
+  erroLeitura?: { message: string }
+  erroEscrita?: { message: string }
+}) {
+  const inMock = vi.fn().mockResolvedValue(
+    opts.erroLeitura
+      ? { data: null, error: opts.erroLeitura }
+      : { data: opts.linhasNoCache ?? [], error: null },
+  )
+  const selectMock = vi.fn().mockReturnValue({ in: inMock })
+  const upsertMock = vi.fn().mockResolvedValue({ error: opts.erroEscrita ?? null })
+  const fromMock = vi.fn().mockReturnValue({ select: selectMock, in: inMock, upsert: upsertMock })
+  vi.mocked(createServiceClient).mockReturnValue({ from: fromMock } as any)
+  return { fromMock, selectMock, inMock, upsertMock }
+}
 
 // Arquitetura sequencial de proposito: uma UNICA chamada HTTP em lote
 // (todos os enderecos de uma vez), nao uma promise por endereco -- ver
@@ -202,5 +228,88 @@ describe('geocodificarEnderecos', () => {
     expect(init?.method).toBe('POST')
     expect((init?.headers as Record<string, string>)['x-motor-key']).toBe('segredo-teste')
     expect(JSON.parse(init?.body as string)).toEqual({ enderecos: ['Rua X, 1 - Bairro, Cidade'] })
+  })
+})
+
+describe('geocodificarEnderecos - cache proprio', () => {
+  it('endereco ja no cache nao chama a ponte HTTP', async () => {
+    mockSupabaseCache({ linhasNoCache: [{ endereco: 'Rua A', lat: -22.8, lng: -43.2 }] })
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+
+    const r = await geocodificarEnderecos(['Rua A'])
+
+    expect(r).toEqual([{ lat: -22.8, lng: -43.2 }])
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('endereco novo chama a ponte e depois grava no cache', async () => {
+    const { upsertMock } = mockSupabaseCache({ linhasNoCache: [] })
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ resultados: [{ lat: 1, lng: 2 }] }), { status: 200 }),
+    )
+
+    const r = await geocodificarEnderecos(['Rua Nova'])
+
+    expect(r).toEqual([{ lat: 1, lng: 2 }])
+    expect(upsertMock).toHaveBeenCalledWith(
+      [{ endereco: 'Rua Nova', lat: 1, lng: 2 }],
+      { onConflict: 'endereco' },
+    )
+  })
+
+  it('endereco que nao geocodificou (null) NAO entra no upsert', async () => {
+    const { upsertMock } = mockSupabaseCache({ linhasNoCache: [] })
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ resultados: [{ lat: 1, lng: 2 }, null] }), { status: 200 }),
+    )
+
+    await geocodificarEnderecos(['Rua Ok', 'Rua Falhou'])
+
+    expect(upsertMock).toHaveBeenCalledWith(
+      [{ endereco: 'Rua Ok', lat: 1, lng: 2 }],
+      { onConflict: 'endereco' },
+    )
+  })
+
+  it('mistura de endereco no cache com endereco novo -- so o novo vai pra ponte, resultado remonta na ordem certa', async () => {
+    mockSupabaseCache({ linhasNoCache: [{ endereco: 'Rua Velha', lat: -22.8, lng: -43.2 }] })
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ resultados: [{ lat: 5, lng: 6 }] }), { status: 200 }),
+    )
+
+    const r = await geocodificarEnderecos(['Rua Velha', 'Rua Nova'])
+
+    expect(r).toEqual([{ lat: -22.8, lng: -43.2 }, { lat: 5, lng: 6 }])
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    expect(JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)).toEqual({ enderecos: ['Rua Nova'] })
+  })
+
+  it('leitura do cache falhando nao trava -- segue fail-open pro caminho normal (chama a ponte)', async () => {
+    mockSupabaseCache({ erroLeitura: { message: 'conexao recusada' } })
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ resultados: [{ lat: 1, lng: 2 }] }), { status: 200 }),
+    )
+
+    const r = await geocodificarEnderecos(['Rua A'])
+
+    expect(r).toEqual([{ lat: 1, lng: 2 }])
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('escrita no cache falhando nao muda o resultado ja calculado', async () => {
+    mockSupabaseCache({ linhasNoCache: [], erroEscrita: { message: 'tabela travada' } })
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ resultados: [{ lat: 1, lng: 2 }] }), { status: 200 }),
+    )
+
+    const r = await geocodificarEnderecos(['Rua A'])
+
+    expect(r).toEqual([{ lat: 1, lng: 2 }])
+  })
+
+  it('todos os enderecos ja no cache nunca cria o client de novo pra escrever (nada pra salvar)', async () => {
+    const { upsertMock } = mockSupabaseCache({ linhasNoCache: [{ endereco: 'Rua A', lat: 1, lng: 2 }] })
+    await geocodificarEnderecos(['Rua A'])
+    expect(upsertMock).not.toHaveBeenCalled()
   })
 })

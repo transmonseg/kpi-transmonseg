@@ -31,8 +31,25 @@
 // ser confirmada via Unitrac) -- NENHUM erro (rede, timeout, JSON
 // invalido, resposta malformada, tamanho de resposta divergente) lanca
 // daqui. Pior caso: todo mundo volta null, o resto do pipeline continua.
+//
+// Cache PROPRIO deste lado (kpi_romaneio_geocode_cache) por cima da ponte
+// HTTP -- a rota do monitoramento e' side-effect-free de proposito (nunca
+// escreve), entao sem esse cache aqui TODO dia reprocessa do zero os
+// mesmos enderecos recorrentes de um romaneio que se repete (achado real
+// 23/08/2026: >1700 enderecos, minutos de espera por geracao so' de
+// Nominatim throttled). Match exato por string -- sem normalizacao.
+// Leitura/escrita no cache tambem sao fail-open: erro aqui nunca bloqueia
+// a geocodificacao, so' faz o endereco seguir pro caminho lento normal.
+
+import { createServiceClient } from '@/lib/supabase/service'
 
 export type ResultadoGeocode = { lat: number; lng: number } | null
+
+// Teto de itens por filtro `.in()` na leitura do cache -- request GET,
+// endereco vai na URL; lote grande demais estoura tamanho de URL do
+// servidor. Nao precisa bater com LOTE_MAX_ENDERECOS (aquele e' sobre o
+// POST pro monitoramento, corpo JSON, sem esse limite).
+const LOTE_CACHE_LEITURA = 200
 
 // A rota do monitoramento rejeita lotes acima de MAX_ENDERECOS_POR_CHAMADA=300
 // (ver route.ts la), mas o teto que a gente manda por chamada e' bem menor
@@ -97,15 +114,81 @@ function validarResultado(r: unknown): ResultadoGeocode {
   return null
 }
 
+/** Le o que ja tiver no cache proprio pros enderecos pedidos. Fail-open:
+ *  qualquer erro (conexao, tabela ausente) devolve mapa vazio -- endereco
+ *  vira "faltante" e segue pro caminho lento normal, nunca trava aqui. */
+async function buscarNoCache(enderecos: string[]): Promise<Map<string, { lat: number; lng: number }>> {
+  const encontrados = new Map<string, { lat: number; lng: number }>()
+
+  for (let i = 0; i < enderecos.length; i += LOTE_CACHE_LEITURA) {
+    const lote = enderecos.slice(i, i + LOTE_CACHE_LEITURA)
+    try {
+      const supabase = createServiceClient()
+      const { data, error } = await supabase
+        .from('kpi_romaneio_geocode_cache')
+        .select('endereco, lat, lng')
+        .in('endereco', lote)
+      if (error) {
+        console.error('[kpi-romaneio/geocode] leitura do cache falhou (segue sem cache):', error.message)
+        continue
+      }
+      for (const row of data ?? []) {
+        encontrados.set(row.endereco as string, { lat: row.lat as number, lng: row.lng as number })
+      }
+    } catch (e) {
+      console.error('[kpi-romaneio/geocode] leitura do cache falhou (segue sem cache):', e instanceof Error ? e.message : String(e))
+    }
+  }
+
+  return encontrados
+}
+
+/** Grava no cache proprio os enderecos recem-resolvidos (nunca os que
+ *  vieram null -- endereco que nao geocodificou hoje pode geocodificar
+ *  amanha com o mesmo texto, nao vale a pena persistir uma falha).
+ *  Best-effort: erro aqui nunca propaga, resultado ja foi calculado. */
+async function salvarNoCache(enderecos: string[], resultados: ResultadoGeocode[]): Promise<void> {
+  const linhas = enderecos
+    .map((endereco, i) => ({ endereco, resultado: resultados[i] }))
+    .filter((x): x is { endereco: string; resultado: { lat: number; lng: number } } => x.resultado !== null)
+    .map(x => ({ endereco: x.endereco, lat: x.resultado.lat, lng: x.resultado.lng }))
+
+  if (linhas.length === 0) return
+
+  try {
+    const supabase = createServiceClient()
+    const { error } = await supabase.from('kpi_romaneio_geocode_cache').upsert(linhas, { onConflict: 'endereco' })
+    if (error) console.error('[kpi-romaneio/geocode] gravação no cache falhou (resultado ja foi calculado, sem impacto):', error.message)
+  } catch (e) {
+    console.error('[kpi-romaneio/geocode] gravação no cache falhou (resultado ja foi calculado, sem impacto):', e instanceof Error ? e.message : String(e))
+  }
+}
+
 /** Geocodifica uma lista de enderecos brasileiros. Falha em um endereco
  *  individual NAO lanca -- devolve null naquela posicao (fail-open, ver
  *  spec: uma linha sem coordenada ainda pode ser confirmada via Unitrac).
- *  Particiona em lotes de ate LOTE_MAX_ENDERECOS e chama sequencialmente
- *  (nunca em paralelo -- o lado de la ja e' sequencial internamente pro
- *  throttle do Nominatim, chamadas paralelas so' competiriam pelo mesmo
- *  rate limit sem ganhar nada). */
+ *  Consulta o cache proprio primeiro -- so' os enderecos que faltam vao
+ *  pra ponte HTTP, particionados em lotes de ate LOTE_MAX_ENDERECOS e
+ *  chamados sequencialmente (nunca em paralelo -- o lado de la ja e'
+ *  sequencial internamente pro throttle do Nominatim, chamadas paralelas
+ *  so' competiriam pelo mesmo rate limit sem ganhar nada). */
 export async function geocodificarEnderecos(enderecos: string[]): Promise<ResultadoGeocode[]> {
   if (enderecos.length === 0) return []
+
+  const doCache = await buscarNoCache(enderecos)
+  const faltantes = enderecos.filter(e => !doCache.has(e))
+
+  const porFaltante = new Map<string, ResultadoGeocode>()
+  if (faltantes.length > 0) {
+    const resolvidos = await geocodificarPorLotes(faltantes)
+    faltantes.forEach((e, i) => porFaltante.set(e, resolvidos[i]))
+    await salvarNoCache(faltantes, resolvidos)
+  }
+
+  return enderecos.map(e => doCache.get(e) ?? porFaltante.get(e) ?? null)
+}
+
+async function geocodificarPorLotes(enderecos: string[]): Promise<ResultadoGeocode[]> {
   if (enderecos.length <= LOTE_MAX_ENDERECOS) return geocodificarLote(enderecos)
 
   const resultados: ResultadoGeocode[] = []
