@@ -34,13 +34,15 @@
 
 export type ResultadoGeocode = { lat: number; lng: number } | null
 
-// A rota do monitoramento rejeita lotes acima de MAX_ENDERECOS_POR_CHAMADA
-// (ver route.ts la) -- precisa bater exatamente com o teto de la, senao
-// lote grande volta 400 em vez de ser dividido. Achado real (23/08/2026,
-// validacao com romaneio de 31/07): um dia real da Nutry Max teve 1716
-// enderecos unicos, bem acima do "dezenas por dia" assumido originalmente
-// -- sem particionar em lotes, a chamada inteira falhava com 400.
-const LOTE_MAX_ENDERECOS = 300
+// A rota do monitoramento rejeita lotes acima de MAX_ENDERECOS_POR_CHAMADA=300
+// (ver route.ts la), mas o teto que a gente manda por chamada e' bem menor
+// que isso de proposito -- ver GEOCODE_TIMEOUT_MS abaixo pro motivo. Achado
+// real (23/08/2026, validacao com romaneio de 31/07, regiao rural
+// Porciuncula/Itaperuna/Natividade): um dia real da Nutry Max teve 1716
+// enderecos unicos, e a fracao que cai no Nominatim (sem CNEFE/OSM local
+// bom pra essas cidades pequenas) foi bem maior que os ~26% observados na
+// area urbana/Benassi -- um lote de 300 com timeout de 180s ainda estourou.
+const LOTE_MAX_ENDERECOS = 120
 
 // Mesma referencia que TIMEOUT_UNITRAC_MS no monitoramento (usada la pra
 // chamada de rede que pode pendurar) -- uma chamada de geocodificacao
@@ -49,12 +51,11 @@ const LOTE_MAX_ENDERECOS = 300
 // Nota sobre o numero: cada lote e' UMA UNICA chamada HTTP (ate
 // LOTE_MAX_ENDERECOS enderecos de uma vez), nao uma promise por endereco --
 // arquitetura sequencial do lado de la tambem (ver processar-geocode/
-// route.ts: ~74% dos enderecos resolvem local/rapido, ~26% caem no
-// Nominatim throttled a 1,1s cada). Pior caso de um lote cheio (300
-// enderecos, ~26% = 78 no Nominatim a 1,1s cada) fica perto de 90s --
-// timeout generoso o suficiente pra cobrir isso com folga, sem travar
-// pra sempre se o monitoramento cair.
-const GEOCODE_TIMEOUT_MS = 180_000
+// route.ts). Pior caso pessimista (100% do lote caindo no Nominatim
+// throttled a 1,1s cada, cenario real visto em regiao rural -- ver nota de
+// LOTE_MAX_ENDERECOS) com lote de 120 fica em ~132s; 300s da mais que o
+// dobro de folga sem deixar travado pra sempre se o monitoramento cair.
+const GEOCODE_TIMEOUT_MS = 300_000
 
 function urlGeocode(): string {
   const base = process.env.MONITORAMENTO_URL ?? 'http://127.0.0.1:3010'
