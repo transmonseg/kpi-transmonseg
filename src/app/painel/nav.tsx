@@ -46,10 +46,7 @@ const GROUPS: Group[] = [
     label: 'Nutry Max',
     Icon: TableIcon,
     children: [
-      { href: '/painel/nutrimax/romaneio', label: 'Gerar Romaneio', Icon: ClipboardText, exact: true },
       { href: '/painel/nutrimax/gerar', label: 'Gerar KPI', Icon: TableIcon },
-      { href: '/painel/nutrimax/dashboard', label: 'Dashboard', Icon: ChartBar },
-      { href: '/painel/nutrimax/historico', label: 'Histórico', Icon: ClockCounterClockwise },
     ],
   },
 ]
