@@ -249,6 +249,14 @@ export type UnitracParadaRow = {
   placa_norm: string
   chegada: string
   saida: string | null
+  /** Diferente de `saida` — `saida` é a CHEGADA do próximo cluster (usado
+   *  historicamente pra classificação/consolidação, inclui o trajeto até o
+   *  próximo lugar). `fim_real` é quando ESSA parada terminou de verdade
+   *  (último evento bruto do cluster + duração dele), sem misturar trânsito.
+   *  Ver consolida.ts. Novo campo aditivo e OPCIONAL — só populado por
+   *  consolidaParadasApi (fonte usada pela Nutry Max); produtores mais
+   *  antigos (PDF do Benassi, testes) não precisam saber dele.  */
+  fim_real?: string
   duracao_seg: number | null
   local_parada: string
   codigo_loja: string | null

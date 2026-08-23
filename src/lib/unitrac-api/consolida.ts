@@ -40,6 +40,10 @@ export function clusteriza(eventos: StopApiCru[]): Cluster[] {
  *  - clusteriza permanências
  *  - saída = chegada do PRÓXIMO cluster (o caminhão "saiu" ao aparecer noutro lugar);
  *    no último cluster, saída = último evento + sua duração
+ *  - fim_real = SEMPRE último evento do próprio cluster + sua duração — quando
+ *    terminou de verdade, sem incluir o trajeto até o próximo lugar (`saida`
+ *    inclui; usado por quem precisa de duração real de permanência, ex.
+ *    "tempo na loja" da Nutry Max — ver kpi-loja.ts)
  *  - resolve geofence autoritativa; classifica BASE/LOJA/FORA_BASE
  *  - descarta cluster curto sem geofence (blip de trânsito) */
 export function consolidaParadasApi(
@@ -62,9 +66,8 @@ export function consolidaParadasApi(
     const ultimo = c.eventos[c.eventos.length - 1]
     const chegada = c.eventos[0]._data
     const proximo = clusters[i + 1]
-    const saida = proximo
-      ? proximo.eventos[0]._data
-      : new Date(new Date(ultimo._data).getTime() + (ultimo.tempoparada ?? 0) * 1000).toISOString()
+    const fimReal = new Date(new Date(ultimo._data).getTime() + (ultimo.tempoparada ?? 0) * 1000).toISOString()
+    const saida = proximo ? proximo.eventos[0]._data : fimReal
     const durSeg = Math.round((new Date(saida).getTime() - new Date(chegada).getTime()) / 1000)
 
     const naBase = baseCoords.some(bc => haversine(bc.lat, bc.lng, c.lat, c.lng) <= RAIO_BASE_M)
@@ -80,6 +83,7 @@ export function consolidaParadasApi(
       placa_norm: placaNorm,
       chegada: new Date(chegada).toISOString(),
       saida: new Date(saida).toISOString(),
+      fim_real: fimReal,
       duracao_seg: durSeg,
       local_parada: geo ? geo.nome : naBase ? 'BASE BENASSI - BASE BENASSI' : 'FORA DE BASE E LOCAL DE SERVICO',
       codigo_loja: geo?.cod ?? null,

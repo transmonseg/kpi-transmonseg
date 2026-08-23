@@ -4,6 +4,12 @@ export type ParadaUnitrac = {
   placa_norm: string
   chegada: Date
   saida: Date
+  /** Fim real dessa permanência (último evento GPS do cluster + duração dele) —
+   *  diferente de `saida`, que é a CHEGADA do próximo cluster e por isso inclui
+   *  o trajeto até lá. Ver consolida.ts. Opcional: só populado por dados vindos
+   *  da API ao vivo (Nutry Max); produtores mais antigos (PDF do Benassi) não
+   *  precisam saber dele — quem consome deve cair pra `saida` se ausente. */
+  fimReal?: Date
   duracao_seg: number
   distancia_km: number | null
   endereco: string | null

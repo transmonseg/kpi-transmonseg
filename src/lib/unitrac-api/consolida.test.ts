@@ -36,6 +36,19 @@ describe('consolidaParadasApi', () => {
     expect(ps[1].codigo_loja).toBe('3030011')
   })
 
+  it('fim_real não inclui o trajeto até o próximo cluster (diferente de saida)', () => {
+    const ev: StopApiCru[] = [
+      // permanência real de 1min no 1º ponto — o resto até 06:42 é trânsito
+      { _data: '2026-06-12T05:51:00Z', tempoparada: 60, latitude: -22.90316, longitude: -43.11053 },
+      { _data: '2026-06-12T06:42:00Z', tempoparada: 60, latitude: -22.90721, longitude: -43.10379 },
+    ]
+    const ps = consolidaParadasApi(ev, pontos, '2026-06-12', 'FUM8748')
+    expect(ps[0].saida).toBe('2026-06-12T06:42:00.000Z') // inclui trânsito
+    expect(ps[0].fim_real).toBe('2026-06-12T05:52:00.000Z') // só a permanência real (chegada + 60s)
+    // último cluster do dia: fim_real == saida (não tem próximo pra emprestar chegada)
+    expect(ps[1].fim_real).toBe(ps[1].saida)
+  })
+
   it('classifica BASE quando o cluster está dentro do raio da base Benassi', () => {
     const ev: StopApiCru[] = [
       { _data: '2026-06-12T04:00:00Z', tempoparada: 600, latitude: -22.8291, longitude: -43.3421 },
