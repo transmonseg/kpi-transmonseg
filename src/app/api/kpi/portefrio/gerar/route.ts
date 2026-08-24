@@ -6,7 +6,7 @@ import { salvarGeracao } from '@/lib/kpi-romaneio/historico'
 import { parseRomaneioPortefrio } from '@/lib/kpi-portefrio/parse-romaneio'
 import { resolverIdVeiculo, buscarHistoricoVeiculo } from '@/lib/kpi-portefrio/ravex-api'
 import { montarVisitas } from '@/lib/kpi-portefrio/visitas'
-import { agregarPorCliente } from '@/lib/kpi-portefrio/agregacao'
+import { agregarPorCliente, enderecoCompleto } from '@/lib/kpi-portefrio/agregacao'
 import { gerarKpiPortefrioXlsx } from '@/lib/kpi-portefrio/gerador-xlsx'
 import type { LinhaGeocodificada, LinhaKpiPortefrio } from '@/lib/kpi-portefrio/types'
 
@@ -55,13 +55,12 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const enderecosUnicos = [...new Set(romaneio.map(l => `${l.endereco}, ${l.numero} - ${l.bairro}, ${l.cidade} - ${l.uf}`))]
+  const enderecosUnicos = [...new Set(romaneio.map(enderecoCompleto))]
   const resultadosGeo = await geocodificarEnderecos(enderecosUnicos)
   const geoPorEndereco = new Map(enderecosUnicos.map((e, i) => [e, resultadosGeo[i]]))
 
   const romaneioGeo: LinhaGeocodificada[] = romaneio.map(l => {
-    const chave = `${l.endereco}, ${l.numero} - ${l.bairro}, ${l.cidade} - ${l.uf}`
-    const g = geoPorEndereco.get(chave) ?? null
+    const g = geoPorEndereco.get(enderecoCompleto(l)) ?? null
     return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null }
   })
 

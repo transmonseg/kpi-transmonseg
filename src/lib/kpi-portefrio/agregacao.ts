@@ -1,6 +1,13 @@
 import type { LinhaGeocodificada, LinhaKpiPortefrio, Visita } from './types'
 
-function enderecoCompleto(l: LinhaGeocodificada): string {
+// Recebe so os campos que efetivamente le -- assim serve tanto pra
+// LinhaGeocodificada (usado em agregarPorCliente) quanto pra
+// LinhaRomaneioPortefrio, o tipo pre-geocodificacao ainda sem lat/lng
+// (usado em route.ts pra chave do cache de geocoding). Ambos os tipos
+// tem esses 5 campos; so o subconjunto evita que o parametro exija lat/lng.
+type ComEndereco = Pick<LinhaGeocodificada, 'endereco' | 'numero' | 'bairro' | 'cidade' | 'uf'>
+
+export function enderecoCompleto(l: ComEndereco): string {
   return `${l.endereco}, ${l.numero} - ${l.bairro}, ${l.cidade} - ${l.uf}`
 }
 
