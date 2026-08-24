@@ -4,41 +4,46 @@ import type { EventoRavex } from './types'
 const BASE_URL = 'https://sistema.ravex.com.br/odata1'
 const TOP_HISTORICO = 5000
 
-async function chamarRavex(path: string): Promise<unknown | null> {
-  // obterTokenRavex fica FORA do try/catch de proposito -- falha de login
-  // (credencial invalida, conta bloqueada) precisa propagar como erro
-  // explicito pro chamador, nunca virar fail-open "sem GPS" (ver spec,
-  // secao "Tratamento de erro"). Só o que vem depois (chamada de rede,
-  // parse de resposta) e' fail-open -- EXCETO 401/403, que indicam que o
-  // token que tinhamos em cache parou de funcionar (revogado/expirado no
-  // servidor): nesse caso invalidamos o cache, tentamos UMA vez de novo
-  // com token novo, e se persistir lancamos (mesmo motivo do login falho:
-  // "sem GPS" pra frota inteira por token morto seria enganoso).
-  let token = await obterTokenRavex()
+async function fetchFailOpen(path: string, token: string): Promise<Response | null> {
+  try {
+    return await fetch(`${BASE_URL}${path}`, { headers: { Authorization: `Bearer ${token}` } })
+  } catch (e) {
+    console.error('[kpi-portefrio/ravex-api] chamada falhou:', e instanceof Error ? e.message : String(e))
+    return null
+  }
+}
 
-  async function tentar(): Promise<Response> {
-    return fetch(`${BASE_URL}${path}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+async function chamarRavex(path: string): Promise<unknown | null> {
+  // obterTokenRavex fica FORA de qualquer try/catch fail-open -- tanto o
+  // login inicial quanto o relogin apos 401/403 abaixo. Falha de
+  // autenticacao (credencial invalida, conta bloqueada, token revogado no
+  // servidor) precisa propagar como erro explicito pro chamador, nunca
+  // virar fail-open "sem GPS" pra frota inteira (ver spec, secao
+  // "Tratamento de erro"). So' a chamada de rede e o parse da resposta sao
+  // fail-open -- EXCETO 401/403 que persiste mesmo apos renovar o token,
+  // que tambem propaga (mesmo motivo do login falho).
+  let token = await obterTokenRavex()
+  let res = await fetchFailOpen(path, token)
+  if (!res) return null
+
+  if (res.status === 401 || res.status === 403) {
+    invalidarTokenRavex()
+    token = await obterTokenRavex()
+    res = await fetchFailOpen(path, token)
+    if (!res) return null
+    if (res.status === 401 || res.status === 403) {
+      throw new Error(`Ravex recusou o token mesmo apos renovar (HTTP ${res.status}) pra ${path}`)
+    }
+  }
+
+  if (!res.ok) {
+    console.error(`[kpi-portefrio/ravex-api] Ravex respondeu ${res.status} pra ${path}`)
+    return null
   }
 
   try {
-    let res = await tentar()
-    if (res.status === 401 || res.status === 403) {
-      invalidarTokenRavex()
-      token = await obterTokenRavex()
-      res = await tentar()
-      if (res.status === 401 || res.status === 403) {
-        throw new Error(`Ravex recusou o token mesmo apos renovar (HTTP ${res.status}) pra ${path}`)
-      }
-    }
-    if (!res.ok) {
-      console.error(`[kpi-portefrio/ravex-api] Ravex respondeu ${res.status} pra ${path}`)
-      return null
-    }
     return await res.json()
   } catch (e) {
-    if (e instanceof Error && e.message.startsWith('Ravex recusou o token')) throw e
     console.error('[kpi-portefrio/ravex-api] chamada falhou:', e instanceof Error ? e.message : String(e))
     return null
   }

@@ -63,6 +63,16 @@ describe('resolverIdVeiculo', () => {
     await expect(resolverIdVeiculo('LUE5C42')).rejects.toThrow(/Ravex.*token/i)
   })
 
+  it('relogin apos 401 tambem falha (conta bloqueada) -- propaga, nao devolve null', async () => {
+    vi.mocked(obterTokenRavex)
+      .mockResolvedValueOnce('token-velho')
+      .mockRejectedValueOnce(new Error('Falha ao autenticar na Ravex: acesso_bloqueado'))
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response('', { status: 401 }))
+
+    await expect(resolverIdVeiculo('LUE5C42')).rejects.toThrow('Falha ao autenticar na Ravex')
+    expect(invalidarTokenRavex).toHaveBeenCalledTimes(1)
+  })
+
   it('500 (nao e 401/403) devolve null, sem retry e sem lancar', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('', { status: 500 }))
     expect(await resolverIdVeiculo('LUE5C42')).toBeNull()
