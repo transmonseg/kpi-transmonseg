@@ -27,9 +27,14 @@ describe('resolverIdVeiculo', () => {
     expect(await resolverIdVeiculo('ZZZ0000')).toBeNull()
   })
 
-  it('erro de rede devolve null, nao lanca', async () => {
+  it('erro de rede (apos login ok) devolve null, nao lanca', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('timeout'))
     expect(await resolverIdVeiculo('LUE5C42')).toBeNull()
+  })
+
+  it('falha de login propaga como erro, nao vira null', async () => {
+    vi.mocked(obterTokenRavex).mockRejectedValue(new Error('Falha ao autenticar na Ravex: credenciais invalidas'))
+    await expect(resolverIdVeiculo('LUE5C42')).rejects.toThrow('Falha ao autenticar na Ravex')
   })
 })
 
@@ -50,8 +55,13 @@ describe('buscarHistoricoVeiculo', () => {
     ])
   })
 
-  it('erro de rede devolve array vazio, nao lanca', async () => {
+  it('erro de rede (apos login ok) devolve array vazio, nao lanca', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('timeout'))
     expect(await buscarHistoricoVeiculo(14296, 1000, 2000)).toEqual([])
+  })
+
+  it('falha de login propaga como erro, nao vira array vazio', async () => {
+    vi.mocked(obterTokenRavex).mockRejectedValue(new Error('Falha ao autenticar na Ravex: credenciais invalidas'))
+    await expect(buscarHistoricoVeiculo(14296, 1000, 2000)).rejects.toThrow('Falha ao autenticar na Ravex')
   })
 })
