@@ -12,3 +12,10 @@ export type LinhaRomaneioPortefrio = {
   uf: string
   ordem: number
 }
+
+export type EventoRavex = {
+  dataHora: string // ISO
+  lat: number
+  lng: number
+  temperatura: number | null
+}
