@@ -158,7 +158,19 @@ function calculaFaixasDaPagina(linhasCabecalho: LinhaVisual[]): Faixas {
   for (let i = 0; i < ORDEM_COLUNAS.length; i++) {
     const coluna = ORDEM_COLUNAS[i]
     const x = posicoes[coluna]
-    if (x === undefined) continue // mantem o fallback so pra essa coluna
+    // Mantem o fallback (FAIXAS_PADRAO) so pra essa coluna especifica --
+    // cabecalho parcial (algumas colunas achadas, outras nao) gera uma
+    // pagina com faixas MISTAS (algumas calculadas aqui, outras vindas do
+    // padrao global). Risco conhecido e NAO coberto por teste: como as
+    // faixas dinamicas sao derivadas so das colunas encontradas nesta
+    // pagina, elas nao sao garantidamente disjuntas das faixas padrao
+    // (fixas) das colunas que ficaram faltando -- ou seja, um item pode,
+    // em tese, cair dentro da faixa de DUAS colunas diferentes nesse
+    // cenario misto. Isso nunca ocorreu nas 10 paginas do PDF real
+    // validado (o cabecalho la sempre tem os 12 rotulos completos), mas
+    // se um romaneio futuro tiver cabecalho truncado/OCR incompleto, va
+    // la conferir a saida com o mesmo cuidado usado no Step 6 do brief.
+    if (x === undefined) continue
 
     const anterior = ORDEM_COLUNAS.slice(0, i).reverse().find(c => posicoes[c] !== undefined)
     const proxima = ORDEM_COLUNAS.slice(i + 1).find(c => posicoes[c] !== undefined)
@@ -220,20 +232,34 @@ export function parseRomaneioPortefrioTexto(itens: ItemComPagina[]): LinhaRomane
       const placaItem = itensEmFaixa(ancora.items, FAIXAS.placa).find(it => PLACA_RE.test(it.str.trim()))
       if (!placaItem) continue
 
-      const ordemStr = textoEmFaixaOrdenado(linhasDoRegistro, FAIXAS.ordem)
+      // Codigo/CNPJ/Numero/CEP/UF/Ordem NUNCA quebram linha (confirmado no
+      // brief e na validacao com o PDF real) -- ler so da linha-ancora.
+      // Isso e deliberadamente mais restrito que razaoSocial/nomeInformal/
+      // endereco/bairro/cidade (que leem o span inteiro via
+      // textoEmFaixaOrdenado): pra ultima ancora da pagina,
+      // `linhasDoRegistro` se estende ate a ULTIMA linha da pagina (sem
+      // limite superior, ja que nao ha proxima ancora) -- se uma pagina
+      // real algum dia tiver rodape/total apos o ultimo registro, ler so
+      // a ancora evita que esse texto vaze pra dentro desses campos.
+      const codigo = itensEmFaixa(ancora.items, FAIXAS.codigo)[0]?.str.trim() ?? ''
+      const cnpj = itensEmFaixa(ancora.items, FAIXAS.cnpj)[0]?.str.trim() ?? ''
+      const numero = itensEmFaixa(ancora.items, FAIXAS.numero)[0]?.str.trim() ?? ''
+      const cep = itensEmFaixa(ancora.items, FAIXAS.cep)[0]?.str.trim() ?? ''
+      const uf = itensEmFaixa(ancora.items, FAIXAS.uf)[0]?.str.trim() ?? ''
+      const ordemStr = itensEmFaixa(ancora.items, FAIXAS.ordem)[0]?.str.trim() ?? ''
 
       resultado.push({
         placa: placaItem.str.trim(),
-        codigoCliente: textoEmFaixaOrdenado(linhasDoRegistro, FAIXAS.codigo),
-        cnpj: textoEmFaixaOrdenado(linhasDoRegistro, FAIXAS.cnpj),
+        codigoCliente: codigo,
+        cnpj,
         razaoSocial: textoEmFaixaOrdenado(linhasDoRegistro, FAIXAS.razaoSocial),
         nomeInformal: textoEmFaixaOrdenado(linhasDoRegistro, FAIXAS.nomeInformal),
         endereco: textoEmFaixaOrdenado(linhasDoRegistro, FAIXAS.endereco),
-        numero: textoEmFaixaOrdenado(linhasDoRegistro, FAIXAS.numero),
-        cep: textoEmFaixaOrdenado(linhasDoRegistro, FAIXAS.cep),
+        numero,
+        cep,
         bairro: textoEmFaixaOrdenado(linhasDoRegistro, FAIXAS.bairro),
         cidade: textoEmFaixaOrdenado(linhasDoRegistro, FAIXAS.cidade),
-        uf: textoEmFaixaOrdenado(linhasDoRegistro, FAIXAS.uf),
+        uf,
         ordem: parseInt(ordemStr, 10) || 0,
       })
     }

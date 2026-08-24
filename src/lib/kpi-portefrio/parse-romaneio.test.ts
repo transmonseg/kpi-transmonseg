@@ -38,6 +38,52 @@ const ITENS_EXEMPLO: ItemComPagina[] = [
   { str: 'EXTENSA LTDA', x: 106, y: 675, page: 1 }, // continuacao ABAIXO
 ]
 
+// Pagina 2: cabecalho COMPLETO (12/12 rotulos), com colunas deslocadas pra
+// direita em relacao as FAIXAS_PADRAO (mesmo padrao observado no PDF real,
+// onde a largura das colunas se auto-ajusta por pagina). Numero/CEP/
+// Bairro/Cidade/UF ficam em posicoes que so caem no bucket certo se as
+// faixas forem calculadas dinamicamente a partir DESTE cabecalho -- se o
+// parser caisse no fallback (FAIXAS_PADRAO), cada um desses 5 campos
+// classificaria errado (ex: Numero cairia no bucket de CEP).
+const ITENS_CABECALHO_COMPLETO_DESLOCADO: ItemComPagina[] = [
+  { str: 'Placa', x: 15, y: 830, page: 2 },
+  { str: 'Código', x: 44, y: 830, page: 2 },
+  { str: 'CNPJ', x: 78, y: 830, page: 2 },
+  { str: 'Razão social', x: 130, y: 830, page: 2 },
+  { str: 'Nome informal', x: 215, y: 830, page: 2 },
+  { str: 'Endereço', x: 310, y: 830, page: 2 },
+  { str: 'Número', x: 368, y: 830, page: 2 },
+  { str: 'CEP', x: 408, y: 830, page: 2 },
+  { str: 'Bairro', x: 452, y: 830, page: 2 },
+  { str: 'Cidade', x: 498, y: 830, page: 2 },
+  { str: 'UF', x: 528, y: 830, page: 2 },
+  { str: 'Ordem de', x: 548, y: 835, page: 2 },
+  { str: 'atendimento', x: 544, y: 826, page: 2 },
+]
+
+const ITENS_REGISTRO_PAGINA_DESLOCADA: ItemComPagina[] = [
+  ...ITENS_CABECALHO_COMPLETO_DESLOCADO,
+  { str: 'CCC7D89', x: 7, y: 700, page: 2 },
+  { str: '333333', x: 44, y: 700, page: 2 },
+  { str: '33333333', x: 78, y: 700, page: 2 },
+  { str: 'EMPRESA DINAMICA LTDA', x: 106, y: 700, page: 2 },
+  { str: 'LOJA DINAMICA', x: 180, y: 700, page: 2 },
+  { str: 'RUA DINAMICA', x: 270, y: 700, page: 2 },
+  // Numero (x=365): dentro da faixa dinamica [339,388), mas fora da faixa
+  // PADRAO de numero [308,358) -- cairia no bucket de CEP se o parser nao
+  // calculasse as faixas dinamicamente pra esta pagina.
+  { str: '99', x: 365, y: 700, page: 2 },
+  // CEP (x=405): dentro da dinamica [388,430), fora da PADRAO [358,392).
+  { str: '30000000', x: 405, y: 700, page: 2 },
+  // Bairro (x=450): dentro da dinamica [430,475), fora da PADRAO [392,445).
+  { str: 'BAIRRO NOVO', x: 450, y: 700, page: 2 },
+  // Cidade (x=505): dentro da dinamica [475,513), fora da PADRAO [445,503).
+  { str: 'CIDADE DINAMICA', x: 505, y: 700, page: 2 },
+  // UF (x=535): dentro da dinamica [513,538), fora da PADRAO [503,532).
+  { str: 'RJ', x: 535, y: 700, page: 2 },
+  { str: '1', x: 545, y: 700, page: 2 },
+]
+
 describe('parseRomaneioPortefrioTexto', () => {
   it('ignora o cabecalho (nenhuma linha-ancora antes do primeiro registro)', () => {
     const linhas = parseRomaneioPortefrioTexto(ITENS_EXEMPLO)
@@ -67,5 +113,24 @@ describe('parseRomaneioPortefrioTexto', () => {
     expect(linhas[1].razaoSocial).toBe('RAZAO SOCIAL PARTE 1 DA EXTENSA LTDA')
     expect(linhas[1].placa).toBe('BBB4C56')
     expect(linhas[1].ordem).toBe(2)
+  })
+
+  it('calcula as faixas de coluna dinamicamente a partir do cabecalho da pagina (colunas deslocadas)', () => {
+    const linhas = parseRomaneioPortefrioTexto(ITENS_REGISTRO_PAGINA_DESLOCADA)
+    expect(linhas).toHaveLength(1)
+    expect(linhas[0]).toEqual({
+      placa: 'CCC7D89',
+      codigoCliente: '333333',
+      cnpj: '33333333',
+      razaoSocial: 'EMPRESA DINAMICA LTDA',
+      nomeInformal: 'LOJA DINAMICA',
+      endereco: 'RUA DINAMICA',
+      numero: '99',
+      cep: '30000000',
+      bairro: 'BAIRRO NOVO',
+      cidade: 'CIDADE DINAMICA',
+      uf: 'RJ',
+      ordem: 1,
+    })
   })
 })
