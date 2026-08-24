@@ -32,3 +32,16 @@ export type Visita = {
   distanciaMetrosDoPonto: number
   temperaturas: number[] // todas as leituras nao-null dentro do cluster
 }
+
+export type LinhaKpiPortefrio = {
+  placa: string
+  ordemPlanejada: number
+  ordemReal: number | null
+  cliente: string // nomeInformal, ou razaoSocial se nomeInformal vazio
+  endereco: string // endereco+numero - bairro, cidade - uf, concatenado
+  visitado: boolean
+  horarioChegada: string | null // ISO
+  tempMin: number | null
+  tempMax: number | null
+  tempMedia: number | null
+}
