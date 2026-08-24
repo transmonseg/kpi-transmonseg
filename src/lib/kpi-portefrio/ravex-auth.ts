@@ -58,3 +58,11 @@ export async function obterTokenRavex(): Promise<string> {
   }
   return tokenCache.token
 }
+
+/** Invalida o token em cache -- usar quando uma chamada autenticada
+ *  devolve 401/403 depois de um login que tinha funcionado (token
+ *  revogado/expirado no servidor antes do nosso relogio local achar
+ *  que ele ainda era valido). Forca reautenticacao na proxima chamada. */
+export function invalidarTokenRavex(): void {
+  tokenCache = null
+}

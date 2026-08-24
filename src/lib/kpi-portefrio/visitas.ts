@@ -42,7 +42,7 @@ export function montarVisitas(eventos: EventoRavex[], clientes: ClienteParaVisit
     let melhor: { cliente: ClienteParaVisita & { lat: number; lng: number }; dist: number } | null = null
     for (const cliente of clientesComCoord) {
       const dist = haversine(evento.lat, evento.lng, cliente.lat, cliente.lng)
-      if (dist > RAIO_ENTREGA_METROS) continue
+      if (!Number.isFinite(dist) || dist > RAIO_ENTREGA_METROS) continue
       if (!melhor || dist < melhor.dist) melhor = { cliente, dist }
     }
 

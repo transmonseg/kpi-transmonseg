@@ -1,4 +1,4 @@
-import { obterTokenRavex } from './ravex-auth'
+import { obterTokenRavex, invalidarTokenRavex } from './ravex-auth'
 import type { EventoRavex } from './types'
 
 const BASE_URL = 'https://sistema.ravex.com.br/odata1'
@@ -9,18 +9,36 @@ async function chamarRavex(path: string): Promise<unknown | null> {
   // (credencial invalida, conta bloqueada) precisa propagar como erro
   // explicito pro chamador, nunca virar fail-open "sem GPS" (ver spec,
   // secao "Tratamento de erro"). Só o que vem depois (chamada de rede,
-  // parse de resposta) e' fail-open.
-  const token = await obterTokenRavex()
-  try {
-    const res = await fetch(`${BASE_URL}${path}`, {
+  // parse de resposta) e' fail-open -- EXCETO 401/403, que indicam que o
+  // token que tinhamos em cache parou de funcionar (revogado/expirado no
+  // servidor): nesse caso invalidamos o cache, tentamos UMA vez de novo
+  // com token novo, e se persistir lancamos (mesmo motivo do login falho:
+  // "sem GPS" pra frota inteira por token morto seria enganoso).
+  let token = await obterTokenRavex()
+
+  async function tentar(): Promise<Response> {
+    return fetch(`${BASE_URL}${path}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
+  }
+
+  try {
+    let res = await tentar()
+    if (res.status === 401 || res.status === 403) {
+      invalidarTokenRavex()
+      token = await obterTokenRavex()
+      res = await tentar()
+      if (res.status === 401 || res.status === 403) {
+        throw new Error(`Ravex recusou o token mesmo apos renovar (HTTP ${res.status}) pra ${path}`)
+      }
+    }
     if (!res.ok) {
       console.error(`[kpi-portefrio/ravex-api] Ravex respondeu ${res.status} pra ${path}`)
       return null
     }
     return await res.json()
   } catch (e) {
+    if (e instanceof Error && e.message.startsWith('Ravex recusou o token')) throw e
     console.error('[kpi-portefrio/ravex-api] chamada falhou:', e instanceof Error ? e.message : String(e))
     return null
   }
@@ -50,10 +68,12 @@ export async function buscarHistoricoVeiculo(
 
   if (!data?.value) return []
 
-  return data.value.map(ev => ({
-    dataHora: ev.EventoDatahora,
-    lat: Number(ev.GPSLatitude),
-    lng: Number(ev.GPSLongitude),
-    temperatura: ev.CanRefrigeracao_CabineTemperatura ?? null,
-  }))
+  return data.value
+    .map(ev => ({
+      dataHora: ev.EventoDatahora,
+      lat: Number(ev.GPSLatitude),
+      lng: Number(ev.GPSLongitude),
+      temperatura: ev.CanRefrigeracao_CabineTemperatura ?? null,
+    }))
+    .filter(ev => Number.isFinite(ev.lat) && Number.isFinite(ev.lng))
 }

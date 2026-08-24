@@ -57,6 +57,12 @@ describe('montarVisitas', () => {
     expect(visitas.has('C2')).toBe(true)
   })
 
+  it('evento com lat/lng NaN (miss upstream do filtro de coordenada) nao gera visita', () => {
+    const eventos = [evento('2026-08-24T10:00:00Z', NaN, NaN)]
+    const visitas = montarVisitas(eventos, [CLIENTE_A, CLIENTE_B])
+    expect(visitas.size).toBe(0)
+  })
+
   it('ping isolado de volta ao mesmo cliente (nao-consecutivo) nao estende a visita antiga -- fica a de maior duracao', () => {
     const eventos = [
       // Visita real a C1: dois eventos consecutivos, 08:00-08:10 (10min de duracao).
