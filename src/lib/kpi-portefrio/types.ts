@@ -19,3 +19,16 @@ export type EventoRavex = {
   lng: number
   temperatura: number | null
 }
+
+export type LinhaGeocodificada = LinhaRomaneioPortefrio & {
+  lat: number | null
+  lng: number | null
+}
+
+export type Visita = {
+  codigoCliente: string
+  chegada: string // ISO, dataHora do primeiro evento do cluster
+  saida: string // ISO, dataHora do ultimo evento do cluster
+  distanciaMetrosDoPonto: number
+  temperaturas: number[] // todas as leituras nao-null dentro do cluster
+}
