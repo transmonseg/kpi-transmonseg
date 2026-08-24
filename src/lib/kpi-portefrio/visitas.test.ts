@@ -56,4 +56,25 @@ describe('montarVisitas', () => {
     expect(visitas.has('C1')).toBe(true)
     expect(visitas.has('C2')).toBe(true)
   })
+
+  it('ping isolado de volta ao mesmo cliente (nao-consecutivo) nao estende a visita antiga -- fica a de maior duracao', () => {
+    const eventos = [
+      // Visita real a C1: dois eventos consecutivos, 08:00-08:10 (10min de duracao).
+      evento('2026-08-24T08:00:00Z', -22.8, -43.2, -18),
+      evento('2026-08-24T08:10:00Z', -22.8, -43.2, -17.5),
+      // Visita real a C2, no meio.
+      evento('2026-08-24T11:00:00Z', -22.9, -43.3),
+      // Ping isolado de volta perto de C1 -- rota passando de novo pela rua, nao uma parada.
+      evento('2026-08-24T16:00:00Z', -22.8, -43.2, -10),
+    ]
+    const visitas = montarVisitas(eventos, [CLIENTE_A, CLIENTE_B])
+    expect(visitas.size).toBe(2)
+    expect(visitas.has('C1')).toBe(true)
+    expect(visitas.has('C2')).toBe(true)
+    const c1 = visitas.get('C1')!
+    // A visita real (maior duracao) vence -- o ping das 16:00 nao contamina saida/temperaturas.
+    expect(c1.chegada).toBe('2026-08-24T08:00:00Z')
+    expect(c1.saida).toBe('2026-08-24T08:10:00Z')
+    expect(c1.temperaturas).toEqual([-18, -17.5])
+  })
 })
