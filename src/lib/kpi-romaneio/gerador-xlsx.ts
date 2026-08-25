@@ -10,9 +10,12 @@ export const COLUNAS_KPI_ROMANEIO = [
 // PLACA não entra aqui -- cada placa agora e' a PRÓPRIA aba (pedido do
 // usuário 25/08: "detalhes quero abas por placa... com o estilo de kpi que
 // mandei... com a chegada, saída, tempo na nota fiscal"), seria redundante
-// repetir a mesma placa em toda linha de uma aba que já é só dela.
+// repetir a mesma placa em toda linha de uma aba que já é só dela. COD (o
+// codigo do cliente do romaneio, ver LinhaRomaneio.clienteCodigo) entra
+// pra casar com a coluna "COD" do modelo de referencia
+// (KPI-GUANABARA-2026-08-23-com-chegada-cd.xlsx).
 export const COLUNAS_DETALHE_PLACA = [
-  'CARGA', 'NF', 'CLIENTE', 'ENDEREÇO', 'CHEGADA', 'SAÍDA', 'TEMPO NA PARADA', 'STATUS',
+  'CARGA', 'COD', 'NF', 'CLIENTE', 'ENDEREÇO', 'CHEGADA', 'SAÍDA', 'TEMPO NA PARADA', 'STATUS',
 ] as const
 
 export const COLUNAS_AVISOS = ['CARGA', 'PLACA', 'PROBLEMA'] as const
@@ -88,6 +91,25 @@ function nomeAbaPlaca(placa: string): string {
   return placa.replace(CARACTERES_PROIBIDOS_ABA, '-').slice(0, 31)
 }
 
+// Linha de resumo do dia da placa (pedido do usuário 25/08: a aba por placa
+// tem que ter "as informações do arquivo que mandei de exemplo" -- no
+// modelo de referência MOTORISTA/SAÍDA CD/CHEGADA CD/TEMPO OPERAÇÃO são
+// colunas fixas por veículo; aqui viram uma linha de resumo, já que a aba
+// inteira já é dessa placa. `resumo` pode ser undefined (placa sem nenhuma
+// linha agregada, caso que não deveria acontecer na prática -- toda placa
+// da lista de abas vem de `linhas` -- mas o tipo permite, então trata).
+function escreverResumoPlaca(ws: ExcelJS.Worksheet, linhaResumo: number, qtdColunas: number, resumo: LinhaKpiRomaneio | undefined): void {
+  const texto = resumo
+    ? `MOTORISTA: ${resumo.motorista || '-'}    |    SAÍDA CD: ${formatarHora(resumo.saidaCd) || '-'}    |    CHEGADA CD: ${formatarHora(resumo.chegadaCd) || '-'}    |    TEMPO OPERAÇÃO: ${formatarMinutos(resumo.tempoOperacaoMin) || '-'}    |    KM PERCORRIDO: ${resumo.kmPercorrido != null ? `${Math.round(resumo.kmPercorrido * 10) / 10} km` : '-'}`
+    : ''
+  ws.mergeCells(linhaResumo, 1, linhaResumo, qtdColunas)
+  const cell = ws.getCell(linhaResumo, 1)
+  cell.value = texto
+  cell.font = { bold: true, size: 11 }
+  cell.alignment = { vertical: 'middle', horizontal: 'center' }
+  ws.getRow(linhaResumo).height = 20
+}
+
 function estilizarHeader(ws: ExcelJS.Worksheet, headerLinha: number, qtdColunas: number): void {
   const row = ws.getRow(headerLinha)
   for (let c = 1; c <= qtdColunas; c++) {
@@ -157,6 +179,14 @@ export async function gerarKpiRomaneioXlsx(
   // dado -- mesmo espírito de "Avisos vazio não cria aba, mas detalhe
   // sempre existe" já usado no resto do gerador.
   const placasEmOrdem = [...new Set(linhas.map(l => l.placa))]
+  // Resumo por placa: pega a PRIMEIRA linha agregada dessa placa. Caso raro
+  // (placa com 2 cargas no mesmo dia) mostra só o resumo operacional da
+  // primeira -- mesma simplificação já usada pra destino/motorista em
+  // agregacao.ts quando falta Escala.
+  const resumoPorPlaca = new Map<string, LinhaKpiRomaneio>()
+  for (const l of linhas) {
+    if (!resumoPorPlaca.has(l.placa)) resumoPorPlaca.set(l.placa, l)
+  }
   const detalhePorPlaca = new Map<string, LinhaDetalheEntrega[]>()
   for (const d of detalhe) {
     const lista = detalhePorPlaca.get(d.placa) ?? []
@@ -168,23 +198,24 @@ export async function gerarKpiRomaneioXlsx(
     const wsPlaca = wb.addWorksheet(nomeAbaPlaca(placa))
     const tituloPlaca = `RELATÓRIO KPI - NUTRY MAX - PLACA ${placa}\n${formatarTituloData(data)}`
     estilizarTitulo(wsPlaca, 1, COLUNAS_DETALHE_PLACA.length, tituloPlaca)
+    escreverResumoPlaca(wsPlaca, 2, COLUNAS_DETALHE_PLACA.length, resumoPorPlaca.get(placa))
     wsPlaca.addRow([...COLUNAS_DETALHE_PLACA])
-    estilizarHeader(wsPlaca, 2, COLUNAS_DETALHE_PLACA.length)
+    estilizarHeader(wsPlaca, 3, COLUNAS_DETALHE_PLACA.length)
     wsPlaca.columns = [
-      { width: 10 }, { width: 14 }, { width: 32 }, { width: 36 },
+      { width: 10 }, { width: 10 }, { width: 14 }, { width: 32 }, { width: 36 },
       { width: 10 }, { width: 10 }, { width: 16 }, { width: 20 },
     ]
     const linhasDaPlaca = detalhePorPlaca.get(placa) ?? []
     for (const d of linhasDaPlaca) {
       wsPlaca.addRow([
-        d.carga, d.nf, d.clienteNome, d.endereco,
+        d.carga, d.clienteCodigo, d.nf, d.clienteNome, d.endereco,
         formatarHora(d.chegada), formatarHora(d.saida), formatarMinutos(d.tempoParadaMin),
         LABEL_STATUS_ENTREGA[d.status],
       ])
     }
     wsPlaca.autoFilter = {
-      from: { row: 2, column: 1 },
-      to: { row: 2 + linhasDaPlaca.length, column: COLUNAS_DETALHE_PLACA.length },
+      from: { row: 3, column: 1 },
+      to: { row: 3 + linhasDaPlaca.length, column: COLUNAS_DETALHE_PLACA.length },
     }
   }
 

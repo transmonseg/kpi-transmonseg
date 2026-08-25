@@ -206,36 +206,47 @@ describe('gerador-xlsx', () => {
       expect(wb.worksheets.map(w => w.name)).toEqual(['KPI 2026-08-23', 'ABC1234', 'DEF5678'])
     })
 
-    it('header exato na linha 2, banner com a placa no título, sem coluna PLACA (redundante -- a aba já é da placa)', async () => {
-      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+    it('banner com a placa no título, linha de resumo (motorista/saída/chegada/tempo/km) na linha 2, header exato na linha 3, sem coluna PLACA', async () => {
+      const linhas: LinhaKpiRomaneio[] = [
+        linhaKpi({
+          carga: 'C001', placa: 'ABC1234', motorista: 'JOAO SILVA', kmPercorrido: 125.7,
+          saidaCd: '2026-08-23T08:30:00.000Z', chegadaCd: '2026-08-23T17:45:00.000Z', tempoOperacaoMin: 549,
+        }),
+      ]
       const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23')
       const wb = new ExcelJS.Workbook()
       await wb.xlsx.load(buffer)
 
       const wsPlaca = wb.getWorksheet('ABC1234')!
       expect(wsPlaca.getCell(1, 1).value).toContain('RELATÓRIO KPI - NUTRY MAX - PLACA ABC1234')
-      const headerValues = (wsPlaca.getRow(LINHA_HEADER).values as unknown[]).slice(1)
+
+      const resumo = wsPlaca.getCell(2, 1).value as string
+      expect(resumo).toContain('MOTORISTA: JOAO SILVA')
+      expect(resumo).toContain('TEMPO OPERAÇÃO: 9h09min')
+      expect(resumo).toContain('KM PERCORRIDO: 125.7 km')
+
+      const headerValues = (wsPlaca.getRow(3).values as unknown[]).slice(1)
       expect(headerValues).toEqual([...COLUNAS_DETALHE_PLACA])
     })
 
-    it('uma linha por entrega DESSA placa, com status legivel e tempo de parada formatado', async () => {
+    it('uma linha por entrega DESSA placa (com COD do cliente), status legivel e tempo de parada formatado', async () => {
       const linhas: LinhaKpiRomaneio[] = [
         linhaKpi({ carga: 'C001', placa: 'ABC1234' }),
         linhaKpi({ carga: 'C002', placa: 'DEF5678' }),
       ]
       const detalhe: LinhaDetalheEntrega[] = [
         {
-          carga: 'C001', placa: 'ABC1234', nf: 'NF1', clienteNome: 'CLIENTE A', endereco: 'RUA A, 1',
+          carga: 'C001', placa: 'ABC1234', clienteCodigo: 'CLI001', nf: 'NF1', clienteNome: 'CLIENTE A', endereco: 'RUA A, 1',
           chegada: '2026-08-23T10:00:00.000Z', saida: '2026-08-23T10:15:00.000Z', tempoParadaMin: 15,
           status: 'confirmado_gps',
         },
         {
-          carga: 'C001', placa: 'ABC1234', nf: 'NF2', clienteNome: 'CLIENTE B', endereco: 'RUA B, 2',
+          carga: 'C001', placa: 'ABC1234', clienteCodigo: 'CLI002', nf: 'NF2', clienteNome: 'CLIENTE B', endereco: 'RUA B, 2',
           chegada: null, saida: null, tempoParadaMin: null, status: 'pendente',
         },
         // NF de OUTRA placa -- nao pode vazar pra aba da ABC1234.
         {
-          carga: 'C002', placa: 'DEF5678', nf: 'NF3', clienteNome: 'CLIENTE C', endereco: 'RUA C, 3',
+          carga: 'C002', placa: 'DEF5678', clienteCodigo: 'CLI003', nf: 'NF3', clienteNome: 'CLIENTE C', endereco: 'RUA C, 3',
           chegada: null, saida: null, tempoParadaMin: null, status: 'pendente',
         },
       ]
@@ -244,25 +255,26 @@ describe('gerador-xlsx', () => {
       await wb.xlsx.load(buffer)
       const wsPlaca = wb.getWorksheet('ABC1234')!
 
-      const linha1 = (wsPlaca.getRow(LINHA_PRIMEIRO_DADO).values as unknown[]).slice(1)
+      const linha1 = (wsPlaca.getRow(4).values as unknown[]).slice(1)
       expect(linha1[0]).toBe('C001') // CARGA
-      expect(linha1[1]).toBe('NF1') // NF
-      expect(linha1[2]).toBe('CLIENTE A') // CLIENTE
-      expect(linha1[6]).toBe('0h15min') // TEMPO NA PARADA
-      expect(linha1[7]).toBe('CONFIRMADO (GPS)') // STATUS
+      expect(linha1[1]).toBe('CLI001') // COD
+      expect(linha1[2]).toBe('NF1') // NF
+      expect(linha1[3]).toBe('CLIENTE A') // CLIENTE
+      expect(linha1[7]).toBe('0h15min') // TEMPO NA PARADA
+      expect(linha1[8]).toBe('CONFIRMADO (GPS)') // STATUS
 
-      const linha2 = (wsPlaca.getRow(LINHA_PRIMEIRO_DADO + 1).values as unknown[]).slice(1)
-      expect(linha2[4]).toBe('') // CHEGADA
-      expect(linha2[5]).toBe('') // SAÍDA
-      expect(linha2[6]).toBe('') // TEMPO NA PARADA
-      expect(linha2[7]).toBe('PENDENTE')
+      const linha2 = (wsPlaca.getRow(5).values as unknown[]).slice(1)
+      expect(linha2[5]).toBe('') // CHEGADA
+      expect(linha2[6]).toBe('') // SAÍDA
+      expect(linha2[7]).toBe('') // TEMPO NA PARADA
+      expect(linha2[8]).toBe('PENDENTE')
 
       // NF3 (placa DEF5678) não aparece na aba da ABC1234.
-      expect(wsPlaca.rowCount).toBe(LINHA_PRIMEIRO_DADO + 1)
+      expect(wsPlaca.rowCount).toBe(5)
 
       const wsOutraPlaca = wb.getWorksheet('DEF5678')!
-      const linhaOutra = (wsOutraPlaca.getRow(LINHA_PRIMEIRO_DADO).values as unknown[]).slice(1)
-      expect(linhaOutra[1]).toBe('NF3')
+      const linhaOutra = (wsOutraPlaca.getRow(4).values as unknown[]).slice(1)
+      expect(linhaOutra[2]).toBe('NF3')
     })
 
     it('placa sem nenhuma entrega detalhável ainda ganha aba, só sem linha de dado', async () => {
@@ -271,19 +283,19 @@ describe('gerador-xlsx', () => {
       const wb = new ExcelJS.Workbook()
       await wb.xlsx.load(buffer)
       const wsPlaca = wb.getWorksheet('ABC1234')!
-      expect(wsPlaca.rowCount).toBe(LINHA_HEADER) // só título + header, zero linha de dado
+      expect(wsPlaca.rowCount).toBe(3) // título + resumo + header, zero linha de dado
     })
 
     it('autoFilter cobre header + linhas de dado da aba da placa', async () => {
       const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
       const detalhe: LinhaDetalheEntrega[] = [
-        { carga: 'C001', placa: 'ABC1234', nf: 'NF1', clienteNome: 'A', endereco: 'A', chegada: null, saida: null, tempoParadaMin: null, status: 'pendente' },
+        { carga: 'C001', placa: 'ABC1234', clienteCodigo: 'CLI001', nf: 'NF1', clienteNome: 'A', endereco: 'A', chegada: null, saida: null, tempoParadaMin: null, status: 'pendente' },
       ]
       const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
       const wb = new ExcelJS.Workbook()
       await wb.xlsx.load(buffer)
       const wsPlaca = wb.getWorksheet('ABC1234')!
-      expect(wsPlaca.autoFilter).toBe('A2:H3') // header linha 2, 1 linha de dado, 8 colunas (A..H)
+      expect(wsPlaca.autoFilter).toBe('A3:I4') // header linha 3, 1 linha de dado, 9 colunas (A..I)
     })
   })
 })

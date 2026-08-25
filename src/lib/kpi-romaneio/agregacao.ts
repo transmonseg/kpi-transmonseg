@@ -115,6 +115,7 @@ export function montarDetalheEntregas(
     return {
       carga,
       placa: placaNorm,
+      clienteCodigo: linha.clienteCodigo,
       nf: linha.nf,
       clienteNome: linha.clienteNome,
       endereco: linha.endereco,

@@ -189,7 +189,7 @@ describe('agregarPorCarga', () => {
 
 describe('montarDetalheEntregas', () => {
   it('uma linha por NF, status confirmado_gps com chegada/saida/tempoParadaMin da Visita', () => {
-    const linhas = [linha('NF1', { clienteNome: 'CLIENTE A', endereco: 'RUA A, 1' })]
+    const linhas = [linha('NF1', { clienteCodigo: 'CLI42', clienteNome: 'CLIENTE A', endereco: 'RUA A, 1' })]
     const visitas = new Map<string, Visita>([
       ['NF1', { nf: 'NF1', chegada: '2026-08-20T10:00:00.000Z', saida: '2026-08-20T10:15:00.000Z', distanciaMetrosDoPonto: 40 }],
     ])
@@ -198,6 +198,7 @@ describe('montarDetalheEntregas', () => {
 
     expect(d.carga).toBe('93758')
     expect(d.placa).toBe('TTL7D40')
+    expect(d.clienteCodigo).toBe('CLI42')
     expect(d.nf).toBe('NF1')
     expect(d.clienteNome).toBe('CLIENTE A')
     expect(d.endereco).toBe('RUA A, 1')

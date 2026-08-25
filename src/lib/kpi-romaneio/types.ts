@@ -80,6 +80,7 @@ export type LinhaKpiRomaneio = {
 export type LinhaDetalheEntrega = {
   carga: string
   placa: string
+  clienteCodigo: string
   nf: string
   clienteNome: string
   endereco: string
