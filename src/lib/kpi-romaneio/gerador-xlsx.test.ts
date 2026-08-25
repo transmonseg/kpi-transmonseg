@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import ExcelJS from 'exceljs'
-import { gerarKpiRomaneioXlsx, COLUNAS_KPI_ROMANEIO, COLUNAS_DETALHAMENTO, COLUNAS_AVISOS } from './gerador-xlsx'
+import { gerarKpiRomaneioXlsx, COLUNAS_KPI_ROMANEIO, COLUNAS_DETALHE_PLACA, COLUNAS_AVISOS } from './gerador-xlsx'
 import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega } from './types'
 
 // Achado real 24/08 (pedido do usuário, referência
@@ -8,6 +8,16 @@ import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega } from '.
 // na linha 1 -- header de coluna desceu pra linha 2, dados começam na 3.
 const LINHA_HEADER = 2
 const LINHA_PRIMEIRO_DADO = 3
+
+function linhaKpi(overrides: Partial<LinhaKpiRomaneio> = {}): LinhaKpiRomaneio {
+  return {
+    carga: 'C001', placa: 'ABC1234', destino: 'X', motorista: 'Y',
+    ajudante1: null, ajudante2: null, pesoKg: null, clientesPlanejados: null, nfPlanejado: null,
+    paradasReais: 1, kmPercorrido: null, saidaCd: null, chegadaCd: null,
+    tempoOperacaoMin: null, tempoMedioParadaMin: null, status: 'OK',
+    ...overrides,
+  }
+}
 
 describe('gerador-xlsx', () => {
   it('gera workbook com banner de título na linha 1 e header exato na linha 2', async () => {
@@ -31,24 +41,13 @@ describe('gerador-xlsx', () => {
 
   it('linha com todos campos preenchidos produz valores formatados certos', async () => {
     const linhas: LinhaKpiRomaneio[] = [
-      {
-        carga: 'C001',
-        placa: 'ABC1234',
-        destino: 'SAO PAULO',
-        motorista: 'JOAO SILVA',
-        ajudante1: 'MARIA',
-        ajudante2: 'PEDRO',
-        pesoKg: 1500.5,
-        clientesPlanejados: 5,
-        nfPlanejado: 10,
-        paradasReais: 4,
-        kmPercorrido: 125.7,
-        saidaCd: '2026-08-23T08:30:00.000Z',
-        chegadaCd: '2026-08-23T17:45:00.000Z',
-        tempoOperacaoMin: 549, // 9h 9min
-        tempoMedioParadaMin: 12,
-        status: 'OK',
-      },
+      linhaKpi({
+        carga: 'C001', placa: 'ABC1234', destino: 'SAO PAULO', motorista: 'JOAO SILVA',
+        ajudante1: 'MARIA', ajudante2: 'PEDRO', pesoKg: 1500.5, clientesPlanejados: 5,
+        nfPlanejado: 10, paradasReais: 4, kmPercorrido: 125.7,
+        saidaCd: '2026-08-23T08:30:00.000Z', chegadaCd: '2026-08-23T17:45:00.000Z',
+        tempoOperacaoMin: 549, tempoMedioParadaMin: 12, status: 'OK',
+      }),
     ]
     const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23')
 
@@ -83,24 +82,7 @@ describe('gerador-xlsx', () => {
 
   it('campos null viram string vazia', async () => {
     const linhas: LinhaKpiRomaneio[] = [
-      {
-        carga: 'C002',
-        placa: 'XYZ5678',
-        destino: 'RIO DE JANEIRO',
-        motorista: 'CARLOS',
-        ajudante1: null,
-        ajudante2: null,
-        pesoKg: null,
-        clientesPlanejados: null,
-        nfPlanejado: null,
-        paradasReais: 2,
-        kmPercorrido: null,
-        saidaCd: null,
-        chegadaCd: null,
-        tempoOperacaoMin: null,
-        tempoMedioParadaMin: null,
-        status: 'INCOMPLETO',
-      },
+      linhaKpi({ carga: 'C002', placa: 'XYZ5678', destino: 'RIO DE JANEIRO', motorista: 'CARLOS', paradasReais: 2, status: 'INCOMPLETO' }),
     ]
     const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23')
 
@@ -126,24 +108,7 @@ describe('gerador-xlsx', () => {
 
   it('arredonda KM PERCORRIDO para 1 casa decimal', async () => {
     const linhas: LinhaKpiRomaneio[] = [
-      {
-        carga: 'C003',
-        placa: 'DEF9012',
-        destino: 'BELO HORIZONTE',
-        motorista: 'FERNANDO',
-        ajudante1: null,
-        ajudante2: null,
-        pesoKg: null,
-        clientesPlanejados: null,
-        nfPlanejado: null,
-        paradasReais: 1,
-        kmPercorrido: 123.456, // deve virar 123.5
-        saidaCd: null,
-        chegadaCd: null,
-        tempoOperacaoMin: null,
-        tempoMedioParadaMin: null,
-        status: 'OK',
-      },
+      linhaKpi({ carga: 'C003', placa: 'DEF9012', destino: 'BELO HORIZONTE', motorista: 'FERNANDO', kmPercorrido: 123.456 }),
     ]
     const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23')
 
@@ -160,24 +125,7 @@ describe('gerador-xlsx', () => {
 
   it('formata tempo em horas e minutos (XhYYmin)', async () => {
     const linhas: LinhaKpiRomaneio[] = [
-      {
-        carga: 'C004',
-        placa: 'GHI3456',
-        destino: 'BRASILIA',
-        motorista: 'LUCIA',
-        ajudante1: null,
-        ajudante2: null,
-        pesoKg: null,
-        clientesPlanejados: null,
-        nfPlanejado: null,
-        paradasReais: 1,
-        kmPercorrido: null,
-        saidaCd: null,
-        chegadaCd: null,
-        tempoOperacaoMin: 125, // 2h 5min
-        tempoMedioParadaMin: null,
-        status: 'OK',
-      },
+      linhaKpi({ carga: 'C004', placa: 'GHI3456', destino: 'BRASILIA', motorista: 'LUCIA', tempoOperacaoMin: 125 }),
     ]
     const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23')
 
@@ -194,12 +142,7 @@ describe('gerador-xlsx', () => {
 
   it('achado real 24/08: TEMPO OPERAÇÃO negativo nunca deveria existir na origem, mas o formatador tambem nao inventa "-1h-1min" -- vira vazio', async () => {
     const linhas: LinhaKpiRomaneio[] = [
-      {
-        carga: 'C005', placa: 'JKL0000', destino: 'X', motorista: 'Y',
-        ajudante1: null, ajudante2: null, pesoKg: null, clientesPlanejados: null, nfPlanejado: null,
-        paradasReais: 1, kmPercorrido: null, saidaCd: null, chegadaCd: null,
-        tempoOperacaoMin: -128, tempoMedioParadaMin: null, status: 'OK',
-      },
+      linhaKpi({ carga: 'C005', placa: 'JKL0000', tempoOperacaoMin: -128 }),
     ]
     const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23')
     const wb = new ExcelJS.Workbook()
@@ -208,40 +151,24 @@ describe('gerador-xlsx', () => {
     expect(values[13]).toBe('')
   })
 
-  it('pedido do usuário 24/08 ("filtrável por placa"): autoFilter cobre header + todas as linhas de dado, nas duas abas', async () => {
+  it('pedido do usuário 24/08 ("filtrável por placa"): autoFilter cobre header + todas as linhas de dado na aba principal', async () => {
     const linhas: LinhaKpiRomaneio[] = [
-      {
-        carga: 'C001', placa: 'ABC1234', destino: 'X', motorista: 'Y',
-        ajudante1: null, ajudante2: null, pesoKg: null, clientesPlanejados: null, nfPlanejado: null,
-        paradasReais: 1, kmPercorrido: null, saidaCd: null, chegadaCd: null,
-        tempoOperacaoMin: null, tempoMedioParadaMin: null, status: 'OK',
-      },
-      {
-        carga: 'C002', placa: 'DEF5678', destino: 'Y', motorista: 'Z',
-        ajudante1: null, ajudante2: null, pesoKg: null, clientesPlanejados: null, nfPlanejado: null,
-        paradasReais: 1, kmPercorrido: null, saidaCd: null, chegadaCd: null,
-        tempoOperacaoMin: null, tempoMedioParadaMin: null, status: 'OK',
-      },
+      linhaKpi({ carga: 'C001', placa: 'ABC1234' }),
+      linhaKpi({ carga: 'C002', placa: 'DEF5678' }),
     ]
-    const detalhe: LinhaDetalheEntrega[] = [
-      { carga: 'C001', placa: 'ABC1234', nf: 'NF1', clienteNome: 'A', endereco: 'A', chegada: null, saida: null, tempoParadaMin: null, status: 'pendente' },
-    ]
-    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23')
     const wb = new ExcelJS.Workbook()
     await wb.xlsx.load(buffer)
 
     const ws = wb.worksheets[0]
     expect(ws.autoFilter).toBe('A2:P4') // header linha 2, 2 linhas de dado (linha 3 e 4), 16 colunas (A..P)
-
-    const wsDetalhe = wb.getWorksheet('Detalhamento')!
-    expect(wsDetalhe.autoFilter).toBe('A2:I3') // header linha 2, 1 linha de dado (linha 3), 9 colunas (A..I)
   })
 
-  it('sem avisos: nao cria a aba Avisos, mas Detalhamento sempre existe', async () => {
+  it('sem avisos e sem placa nenhuma: nao cria abas extra', async () => {
     const buffer = await gerarKpiRomaneioXlsx([], '2026-08-23', [])
     const wb = new ExcelJS.Workbook()
     await wb.xlsx.load(buffer)
-    expect(wb.worksheets.map(w => w.name)).toEqual(['KPI 2026-08-23', 'Detalhamento'])
+    expect(wb.worksheets.map(w => w.name)).toEqual(['KPI 2026-08-23'])
   })
 
   it('com avisos: cria a aba Avisos com header e uma linha por descasamento', async () => {
@@ -253,7 +180,7 @@ describe('gerador-xlsx', () => {
     const wb = new ExcelJS.Workbook()
     await wb.xlsx.load(buffer)
 
-    expect(wb.worksheets.map(w => w.name)).toEqual(['KPI 2026-08-23', 'Detalhamento', 'Avisos'])
+    expect(wb.worksheets.map(w => w.name)).toEqual(['KPI 2026-08-23', 'Avisos'])
 
     const wsAvisos = wb.getWorksheet('Avisos')!
     const headerValues = (wsAvisos.getRow(1).values as unknown[]).slice(1)
@@ -266,18 +193,36 @@ describe('gerador-xlsx', () => {
     expect(row2).toEqual(['222', 'BBB2222', 'sem escala'])
   })
 
-  describe('aba Detalhamento', () => {
-    it('header exato na linha 2 (banner na 1, igual a aba principal)', async () => {
-      const buffer = await gerarKpiRomaneioXlsx([], '2026-08-23')
+  describe('abas por placa (pedido do usuário 25/08)', () => {
+    it('uma aba por placa, nomeada com a própria placa, na ordem em que aparecem na aba principal', async () => {
+      const linhas: LinhaKpiRomaneio[] = [
+        linhaKpi({ carga: 'C001', placa: 'ABC1234' }),
+        linhaKpi({ carga: 'C002', placa: 'DEF5678' }),
+      ]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23')
       const wb = new ExcelJS.Workbook()
       await wb.xlsx.load(buffer)
-      const wsDetalhe = wb.getWorksheet('Detalhamento')!
-      expect(wsDetalhe.getCell(1, 1).value).toContain('RELATÓRIO KPI - NUTRY MAX')
-      const headerValues = (wsDetalhe.getRow(LINHA_HEADER).values as unknown[]).slice(1)
-      expect(headerValues).toEqual([...COLUNAS_DETALHAMENTO])
+
+      expect(wb.worksheets.map(w => w.name)).toEqual(['KPI 2026-08-23', 'ABC1234', 'DEF5678'])
     })
 
-    it('uma linha por entrega, com status legivel e tempo de parada formatado', async () => {
+    it('header exato na linha 2, banner com a placa no título, sem coluna PLACA (redundante -- a aba já é da placa)', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23')
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+
+      const wsPlaca = wb.getWorksheet('ABC1234')!
+      expect(wsPlaca.getCell(1, 1).value).toContain('RELATÓRIO KPI - NUTRY MAX - PLACA ABC1234')
+      const headerValues = (wsPlaca.getRow(LINHA_HEADER).values as unknown[]).slice(1)
+      expect(headerValues).toEqual([...COLUNAS_DETALHE_PLACA])
+    })
+
+    it('uma linha por entrega DESSA placa, com status legivel e tempo de parada formatado', async () => {
+      const linhas: LinhaKpiRomaneio[] = [
+        linhaKpi({ carga: 'C001', placa: 'ABC1234' }),
+        linhaKpi({ carga: 'C002', placa: 'DEF5678' }),
+      ]
       const detalhe: LinhaDetalheEntrega[] = [
         {
           carga: 'C001', placa: 'ABC1234', nf: 'NF1', clienteNome: 'CLIENTE A', endereco: 'RUA A, 1',
@@ -288,24 +233,57 @@ describe('gerador-xlsx', () => {
           carga: 'C001', placa: 'ABC1234', nf: 'NF2', clienteNome: 'CLIENTE B', endereco: 'RUA B, 2',
           chegada: null, saida: null, tempoParadaMin: null, status: 'pendente',
         },
+        // NF de OUTRA placa -- nao pode vazar pra aba da ABC1234.
+        {
+          carga: 'C002', placa: 'DEF5678', nf: 'NF3', clienteNome: 'CLIENTE C', endereco: 'RUA C, 3',
+          chegada: null, saida: null, tempoParadaMin: null, status: 'pendente',
+        },
       ]
-      const buffer = await gerarKpiRomaneioXlsx([], '2026-08-23', [], detalhe)
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
       const wb = new ExcelJS.Workbook()
       await wb.xlsx.load(buffer)
-      const wsDetalhe = wb.getWorksheet('Detalhamento')!
+      const wsPlaca = wb.getWorksheet('ABC1234')!
 
-      const linha1 = (wsDetalhe.getRow(LINHA_PRIMEIRO_DADO).values as unknown[]).slice(1)
-      expect(linha1[0]).toBe('C001')
-      expect(linha1[2]).toBe('NF1')
-      expect(linha1[3]).toBe('CLIENTE A')
-      expect(linha1[7]).toBe('0h15min')
-      expect(linha1[8]).toBe('CONFIRMADO (GPS)')
+      const linha1 = (wsPlaca.getRow(LINHA_PRIMEIRO_DADO).values as unknown[]).slice(1)
+      expect(linha1[0]).toBe('C001') // CARGA
+      expect(linha1[1]).toBe('NF1') // NF
+      expect(linha1[2]).toBe('CLIENTE A') // CLIENTE
+      expect(linha1[6]).toBe('0h15min') // TEMPO NA PARADA
+      expect(linha1[7]).toBe('CONFIRMADO (GPS)') // STATUS
 
-      const linha2 = (wsDetalhe.getRow(LINHA_PRIMEIRO_DADO + 1).values as unknown[]).slice(1)
-      expect(linha2[5]).toBe('') // CHEGADA
-      expect(linha2[6]).toBe('') // SAÍDA
-      expect(linha2[7]).toBe('') // TEMPO NA PARADA
-      expect(linha2[8]).toBe('PENDENTE')
+      const linha2 = (wsPlaca.getRow(LINHA_PRIMEIRO_DADO + 1).values as unknown[]).slice(1)
+      expect(linha2[4]).toBe('') // CHEGADA
+      expect(linha2[5]).toBe('') // SAÍDA
+      expect(linha2[6]).toBe('') // TEMPO NA PARADA
+      expect(linha2[7]).toBe('PENDENTE')
+
+      // NF3 (placa DEF5678) não aparece na aba da ABC1234.
+      expect(wsPlaca.rowCount).toBe(LINHA_PRIMEIRO_DADO + 1)
+
+      const wsOutraPlaca = wb.getWorksheet('DEF5678')!
+      const linhaOutra = (wsOutraPlaca.getRow(LINHA_PRIMEIRO_DADO).values as unknown[]).slice(1)
+      expect(linhaOutra[1]).toBe('NF3')
+    })
+
+    it('placa sem nenhuma entrega detalhável ainda ganha aba, só sem linha de dado', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], [])
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const wsPlaca = wb.getWorksheet('ABC1234')!
+      expect(wsPlaca.rowCount).toBe(LINHA_HEADER) // só título + header, zero linha de dado
+    })
+
+    it('autoFilter cobre header + linhas de dado da aba da placa', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+      const detalhe: LinhaDetalheEntrega[] = [
+        { carga: 'C001', placa: 'ABC1234', nf: 'NF1', clienteNome: 'A', endereco: 'A', chegada: null, saida: null, tempoParadaMin: null, status: 'pendente' },
+      ]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const wsPlaca = wb.getWorksheet('ABC1234')!
+      expect(wsPlaca.autoFilter).toBe('A2:H3') // header linha 2, 1 linha de dado, 8 colunas (A..H)
     })
   })
 })

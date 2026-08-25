@@ -7,8 +7,12 @@ export const COLUNAS_KPI_ROMANEIO = [
   'SAÍDA CD', 'CHEGADA CD', 'TEMPO OPERAÇÃO', 'TEMPO MÉDIO POR ENTREGA', 'STATUS',
 ] as const
 
-export const COLUNAS_DETALHAMENTO = [
-  'CARGA', 'PLACA', 'NF', 'CLIENTE', 'ENDEREÇO', 'CHEGADA', 'SAÍDA', 'TEMPO NA PARADA', 'STATUS',
+// PLACA não entra aqui -- cada placa agora e' a PRÓPRIA aba (pedido do
+// usuário 25/08: "detalhes quero abas por placa... com o estilo de kpi que
+// mandei... com a chegada, saída, tempo na nota fiscal"), seria redundante
+// repetir a mesma placa em toda linha de uma aba que já é só dela.
+export const COLUNAS_DETALHE_PLACA = [
+  'CARGA', 'NF', 'CLIENTE', 'ENDEREÇO', 'CHEGADA', 'SAÍDA', 'TEMPO NA PARADA', 'STATUS',
 ] as const
 
 export const COLUNAS_AVISOS = ['CARGA', 'PLACA', 'PROBLEMA'] as const
@@ -76,6 +80,14 @@ function estilizarTitulo(ws: ExcelJS.Worksheet, tituloLinha: number, qtdColunas:
   ws.getRow(tituloLinha).height = 32
 }
 
+// Nome de aba do Excel: máx 31 caracteres, proíbe : \ / ? * [ ]. Placa
+// normalizada (ex. "TTJ9I18") já é curta e alfanumérica, mas o guard fica
+// aqui pra nunca gerar um workbook corrompido se algum dia vier diferente.
+const CARACTERES_PROIBIDOS_ABA = /[:\\/?*[\]]/g
+function nomeAbaPlaca(placa: string): string {
+  return placa.replace(CARACTERES_PROIBIDOS_ABA, '-').slice(0, 31)
+}
+
 function estilizarHeader(ws: ExcelJS.Worksheet, headerLinha: number, qtdColunas: number): void {
   const row = ws.getRow(headerLinha)
   for (let c = 1; c <= qtdColunas; c++) {
@@ -138,24 +150,42 @@ export async function gerarKpiRomaneioXlsx(
     to: { row: 2 + linhas.length, column: COLUNAS_KPI_ROMANEIO.length },
   }
 
-  const wsDetalhe = wb.addWorksheet('Detalhamento')
-  estilizarTitulo(wsDetalhe, 1, COLUNAS_DETALHAMENTO.length, titulo)
-  wsDetalhe.addRow([...COLUNAS_DETALHAMENTO])
-  estilizarHeader(wsDetalhe, 2, COLUNAS_DETALHAMENTO.length)
-  wsDetalhe.columns = [
-    { width: 10 }, { width: 12 }, { width: 14 }, { width: 32 }, { width: 36 },
-    { width: 10 }, { width: 10 }, { width: 16 }, { width: 20 },
-  ]
+  // Uma aba por placa (pedido do usuário 25/08) -- ordem = ordem de
+  // aparição na aba principal (já ordenada por carga+placa), não a ordem
+  // alfabética de NF de `detalhe`. Placa sem NENHUMA entrega detalhável
+  // (romaneio vazio pra ela, caso raro) ainda ganha aba, só sem linha de
+  // dado -- mesmo espírito de "Avisos vazio não cria aba, mas detalhe
+  // sempre existe" já usado no resto do gerador.
+  const placasEmOrdem = [...new Set(linhas.map(l => l.placa))]
+  const detalhePorPlaca = new Map<string, LinhaDetalheEntrega[]>()
   for (const d of detalhe) {
-    wsDetalhe.addRow([
-      d.carga, d.placa, d.nf, d.clienteNome, d.endereco,
-      formatarHora(d.chegada), formatarHora(d.saida), formatarMinutos(d.tempoParadaMin),
-      LABEL_STATUS_ENTREGA[d.status],
-    ])
+    const lista = detalhePorPlaca.get(d.placa) ?? []
+    lista.push(d)
+    detalhePorPlaca.set(d.placa, lista)
   }
-  wsDetalhe.autoFilter = {
-    from: { row: 2, column: 1 },
-    to: { row: 2 + detalhe.length, column: COLUNAS_DETALHAMENTO.length },
+
+  for (const placa of placasEmOrdem) {
+    const wsPlaca = wb.addWorksheet(nomeAbaPlaca(placa))
+    const tituloPlaca = `RELATÓRIO KPI - NUTRY MAX - PLACA ${placa}\n${formatarTituloData(data)}`
+    estilizarTitulo(wsPlaca, 1, COLUNAS_DETALHE_PLACA.length, tituloPlaca)
+    wsPlaca.addRow([...COLUNAS_DETALHE_PLACA])
+    estilizarHeader(wsPlaca, 2, COLUNAS_DETALHE_PLACA.length)
+    wsPlaca.columns = [
+      { width: 10 }, { width: 14 }, { width: 32 }, { width: 36 },
+      { width: 10 }, { width: 10 }, { width: 16 }, { width: 20 },
+    ]
+    const linhasDaPlaca = detalhePorPlaca.get(placa) ?? []
+    for (const d of linhasDaPlaca) {
+      wsPlaca.addRow([
+        d.carga, d.nf, d.clienteNome, d.endereco,
+        formatarHora(d.chegada), formatarHora(d.saida), formatarMinutos(d.tempoParadaMin),
+        LABEL_STATUS_ENTREGA[d.status],
+      ])
+    }
+    wsPlaca.autoFilter = {
+      from: { row: 2, column: 1 },
+      to: { row: 2 + linhasDaPlaca.length, column: COLUNAS_DETALHE_PLACA.length },
+    }
   }
 
   if (avisos.length > 0) {
