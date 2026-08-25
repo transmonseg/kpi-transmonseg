@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { agregarPorCarga } from './agregacao'
+import { agregarPorCarga, montarDetalheEntregas } from './agregacao'
 import type { LinhaEscala, LinhaGeocodificada, Visita } from './types'
 import type { AlvoApi } from '@/lib/unitrac-api'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
@@ -135,6 +135,37 @@ describe('agregarPorCarga', () => {
     expect(r.tempoOperacaoMin).toBeNull()
   })
 
+  it('achado real 24/08: placa com UMA SÓ permanência na base (ex. parada de meio-dia) -- saidaCd/chegadaCd/tempoOperacaoMin ficam null em vez de inverter ordem e gerar tempo negativo', () => {
+    const paradas: UnitracParadaRow[] = [
+      parada({ id: 'base1', classificacao: 'BASE', chegada: '2026-08-20T14:59:00.000Z', saida: '2026-08-20T17:07:00.000Z', fim_real: '2026-08-20T17:07:00.000Z' }),
+    ]
+
+    const r = agregarPorCarga('93758', 'TTL7D40', [linha('NF1')], escala(), [], new Map(), paradas, null)
+
+    expect(r.saidaCd).toBeNull()
+    expect(r.chegadaCd).toBeNull()
+    expect(r.tempoOperacaoMin).toBeNull()
+  })
+
+  it('tempoMedioParadaMin: média das durações reais (Visita) das NF confirmadas por GPS nesta carga', () => {
+    const linhas = [linha('NF1'), linha('NF2'), linha('NF3')]
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', chegada: '2026-08-20T10:00:00.000Z', saida: '2026-08-20T10:10:00.000Z', distanciaMetrosDoPonto: 50 }],
+      ['NF2', { nf: 'NF2', chegada: '2026-08-20T11:00:00.000Z', saida: '2026-08-20T11:20:00.000Z', distanciaMetrosDoPonto: 30 }],
+      // NF3 sem Visita (só confirmada via Unitrac, se algum dia estiver) -- não entra na média.
+    ])
+
+    const r = agregarPorCarga('93758', 'TTL7D40', linhas, escala({ nfPlanejado: 3 }), [], visitas, [], null)
+
+    expect(r.tempoMedioParadaMin).toBe(15) // média de 10 e 20 minutos
+  })
+
+  it('tempoMedioParadaMin null quando nenhuma NF da carga tem Visita', () => {
+    const r = agregarPorCarga('93758', 'TTL7D40', [linha('NF1')], escala(), [], new Map(), [], null)
+
+    expect(r.tempoMedioParadaMin).toBeNull()
+  })
+
   it('escala === null: campos da escala ficam null, mas o resto continua calculável só do romaneio', () => {
     const linhas = [linha('NF1', { destino: 'DESTINO ROMANEIO', motorista: 'MOTORISTA ROMANEIO' }), linha('NF2')]
     const alvos = [alvo('NF1', 1)]
@@ -153,5 +184,60 @@ describe('agregarPorCarga', () => {
     // sem escala, cai pro destino/motorista da primeira linha do romaneio
     expect(r.destino).toBe('DESTINO ROMANEIO')
     expect(r.motorista).toBe('MOTORISTA ROMANEIO')
+  })
+})
+
+describe('montarDetalheEntregas', () => {
+  it('uma linha por NF, status confirmado_gps com chegada/saida/tempoParadaMin da Visita', () => {
+    const linhas = [linha('NF1', { clienteNome: 'CLIENTE A', endereco: 'RUA A, 1' })]
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', chegada: '2026-08-20T10:00:00.000Z', saida: '2026-08-20T10:15:00.000Z', distanciaMetrosDoPonto: 40 }],
+    ])
+
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], visitas)
+
+    expect(d.carga).toBe('93758')
+    expect(d.placa).toBe('TTL7D40')
+    expect(d.nf).toBe('NF1')
+    expect(d.clienteNome).toBe('CLIENTE A')
+    expect(d.endereco).toBe('RUA A, 1')
+    expect(d.chegada).toBe('2026-08-20T10:00:00.000Z')
+    expect(d.saida).toBe('2026-08-20T10:15:00.000Z')
+    expect(d.tempoParadaMin).toBe(15)
+    expect(d.status).toBe('confirmado_gps')
+  })
+
+  it('confirmado só via Unitrac (sem Visita): status confirmado_unitrac, chegada/saida/tempoParadaMin null', () => {
+    const linhas = [linha('NF1')]
+    const alvos = [alvo('NF1', 1)]
+
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, alvos, new Map())
+
+    expect(d.status).toBe('confirmado_unitrac')
+    expect(d.chegada).toBeNull()
+    expect(d.saida).toBeNull()
+    expect(d.tempoParadaMin).toBeNull()
+  })
+
+  it('nem Unitrac nem Visita: status pendente', () => {
+    const linhas = [linha('NF1')]
+
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map())
+
+    expect(d.status).toBe('pendente')
+  })
+
+  it('Unitrac E Visita ao mesmo tempo: confirmado_unitrac tem prioridade no status, mas horario ainda vem da Visita', () => {
+    const linhas = [linha('NF1')]
+    const alvos = [alvo('NF1', 1)]
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', chegada: '2026-08-20T10:00:00.000Z', saida: '2026-08-20T10:05:00.000Z', distanciaMetrosDoPonto: 20 }],
+    ])
+
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, alvos, visitas)
+
+    expect(d.status).toBe('confirmado_unitrac')
+    expect(d.chegada).toBe('2026-08-20T10:00:00.000Z')
+    expect(d.tempoParadaMin).toBe(5)
   })
 })

@@ -11,12 +11,12 @@ import { buscarAlvosDoDia, buscarParadasDoDia } from '@/lib/kpi-romaneio/unitrac
 import { alvosDaData } from '@/lib/kpi-romaneio/alvos-data'
 import { detectarDescasamentos } from '@/lib/kpi-romaneio/avisos'
 import { montarVisitas } from '@/lib/kpi-romaneio/visitas'
-import { agregarPorCarga } from '@/lib/kpi-romaneio/agregacao'
+import { agregarPorCarga, montarDetalheEntregas } from '@/lib/kpi-romaneio/agregacao'
 import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
 import { salvarGeracao } from '@/lib/kpi-romaneio/historico'
 import { COD_USER_NUTRIMAX, foraDoAlcanceApi } from '@/lib/kpi-romaneio/constants'
-import type { LinhaGeocodificada, LinhaKpiRomaneio, Visita } from '@/lib/kpi-romaneio/types'
+import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
 
 export const runtime = 'nodejs'
 // A busca de paradas GPS é sequencial por placa (buscarStopsCru + geocode em
@@ -149,6 +149,22 @@ export async function POST(req: NextRequest) {
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
 
+  // Aba "Detalhamento" (pedido do usuário 24/08): uma linha por NF/entrega,
+  // não só o resumo por carga -- mesma fonte de dado (linhasDaCarga/alvos/
+  // visitas) já calculada acima pra agregarPorCarga, só que sem agregar.
+  const detalhe: LinhaDetalheEntrega[] = [...cargasPorChave.entries()]
+    .flatMap(([chave, linhasDaCarga]) => {
+      const [carga, placaNorm] = chave.split('::')
+      return montarDetalheEntregas(
+        carga,
+        placaNorm,
+        linhasDaCarga,
+        alvosPorPlaca.get(placaNorm) ?? [],
+        visitasPorPlaca.get(placaNorm) ?? new Map(),
+      )
+    })
+    .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
+
   // Aviso agregado de descasamento Escala<->Romaneio (ver spec, secao
   // "Tratamento de erro/ambiguidade") -- aditivo, nunca bloqueia o resto do
   // relatorio. Usa a MESMA chave carga+placa ja calculada acima.
@@ -158,7 +174,7 @@ export async function POST(req: NextRequest) {
   })
   const avisos = detectarDescasamentos(escala, cargasRomaneioList)
 
-  const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpi, data, avisos)
+  const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpi, data, avisos, detalhe)
 
   // Registra a geração no histórico (auditoria simples)
   // Falha ao salvar NUNCA deve derrubar a geração do arquivo

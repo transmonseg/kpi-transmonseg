@@ -68,7 +68,25 @@ export type LinhaKpiRomaneio = {
   saidaCd: string | null // ISO
   chegadaCd: string | null // ISO
   tempoOperacaoMin: number | null
+  tempoMedioParadaMin: number | null
   status: 'OK' | 'INCOMPLETO'
+}
+
+/** Uma NF (entrega) dentro de uma carga -- linha da aba "Detalhamento" (pedido
+ *  do usuario 24/08: alem do resumo por carga, ver como ficou CADA entrega).
+ *  chegada/saida/tempoParadaMin so' vem preenchido quando ha Visita (GPS no
+ *  nosso perimetro) -- confirmacao so' via Unitrac (sem GPS) nao da pra medir
+ *  tempo de parada real, mesma filosofia de nunca inventar dado. */
+export type LinhaDetalheEntrega = {
+  carga: string
+  placa: string
+  nf: string
+  clienteNome: string
+  endereco: string
+  chegada: string | null // ISO
+  saida: string | null // ISO
+  tempoParadaMin: number | null
+  status: StatusEntrega
 }
 
 /** Descasamento entre Escala e Romaneio -- carga que só aparece de um dos
