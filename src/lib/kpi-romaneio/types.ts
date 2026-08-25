@@ -80,12 +80,21 @@ export type LinhaKpiRomaneio = {
 export type LinhaDetalheEntrega = {
   carga: string
   placa: string
+  motorista: string
   clienteCodigo: string
   nf: string
   clienteNome: string
   endereco: string
-  chegada: string | null // ISO
-  saida: string | null // ISO
+  // saidaCd/chegadaCd/tempoOperacaoMin (pedido do usuario 25/08): mesmos
+  // valores da carga inteira (LinhaKpiRomaneio), repetidos em toda linha de
+  // NF pra cada linha ficar auto-contida (mesmo raciocinio que ja trouxe
+  // PLACA de volta pra esta aba, ver spec da coluna) -- nao sao dados por
+  // entrega, sao dados da carga/placa emprestados aqui.
+  saidaCd: string | null // ISO
+  chegadaCd: string | null // ISO
+  tempoOperacaoMin: number | null
+  chegada: string | null // ISO -- chegada NA LOJA desta entrega
+  saida: string | null // ISO -- saida DA LOJA desta entrega
   tempoParadaMin: number | null
   status: StatusEntrega
 }

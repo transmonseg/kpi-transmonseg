@@ -92,12 +92,17 @@ export function agregarPorCarga(
  *  do usuário 24/08: além do resumo por carga, mostrar como ficou CADA
  *  entrega). Mesmo critério de confirmação de agregarPorCarga (alvo Unitrac
  *  OU Visita GPS), mas aqui por linha, não agregado. */
+/** saidaCd/chegadaCd/tempoOperacaoMin/motorista vem da carga inteira (mesma
+ *  LinhaKpiRomaneio ja calculada por agregarPorCarga pra esta carga+placa) --
+ *  repetidos em toda linha de NF, pedido do usuario 25/08 (ver comentario de
+ *  LinhaDetalheEntrega em types.ts). */
 export function montarDetalheEntregas(
   carga: string,
   placaNorm: string,
   linhasRomaneio: LinhaGeocodificada[],
   alvos: AlvoApi[],
   visitasPorNf: Map<string, Visita>,
+  resumoCarga: { motorista: string; saidaCd: string | null; chegadaCd: string | null; tempoOperacaoMin: number | null },
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
 
@@ -115,10 +120,14 @@ export function montarDetalheEntregas(
     return {
       carga,
       placa: placaNorm,
+      motorista: resumoCarga.motorista,
       clienteCodigo: linha.clienteCodigo,
       nf: linha.nf,
       clienteNome: linha.clienteNome,
       endereco: linha.endereco,
+      saidaCd: resumoCarga.saidaCd,
+      chegadaCd: resumoCarga.chegadaCd,
+      tempoOperacaoMin: resumoCarga.tempoOperacaoMin,
       chegada: visita?.chegada ?? null,
       saida: visita?.saida ?? null,
       tempoParadaMin: visita ? minutosEntre(visita.chegada, visita.saida) : null,

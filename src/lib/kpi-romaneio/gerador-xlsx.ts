@@ -1,10 +1,14 @@
 import ExcelJS from 'exceljs'
 import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega } from './types'
 
+// STATUS (OK/INCOMPLETO) removido da tela principal (pedido do usuario
+// 25/08: "tira esse status de concluido ou incompleto") -- o campo `status`
+// continua calculado em LinhaKpiRomaneio (agregacao.ts), so nao aparece
+// mais aqui.
 export const COLUNAS_KPI_ROMANEIO = [
   'CARGA', 'PLACA', 'DESTINO', 'MOTORISTA', 'AJUDANTE 1', 'AJUDANTE 2', 'PESO (KG)',
   'CLIENTES PLANEJADOS', 'NF PLANEJADO', 'PARADAS REAIS', 'KM PERCORRIDO',
-  'SAÍDA CD', 'CHEGADA CD', 'TEMPO OPERAÇÃO', 'TEMPO MÉDIO POR ENTREGA', 'STATUS',
+  'SAÍDA CD', 'CHEGADA CD', 'TEMPO OPERAÇÃO', 'TEMPO MÉDIO POR ENTREGA',
 ] as const
 
 // PLACA não entra aqui -- cada placa agora e' a PRÓPRIA aba (pedido do
@@ -14,8 +18,17 @@ export const COLUNAS_KPI_ROMANEIO = [
 // codigo do cliente do romaneio, ver LinhaRomaneio.clienteCodigo) entra
 // pra casar com a coluna "COD" do modelo de referencia
 // (KPI-GUANABARA-2026-08-23-com-chegada-cd.xlsx).
+// Ordem pedida pelo usuario 25/08: NF + nome do cliente logo em seguida,
+// depois motorista/codigo/placa (todos "se tiver" -- ja vem string vazia
+// quando falta, ver LinhaKpiRomaneio.motorista e LinhaRomaneio.clienteCodigo),
+// depois o bloco de horarios na ordem exata que ele pediu (saida da base ->
+// chegada na loja -> saida da loja -> chegada na base), tempo na loja e
+// tempo de operacao. CARGA/ENDEREÇO/STATUS mantidos (usuario confirmou que
+// sao ADITIVOS a essa lista, nao substituem).
 export const COLUNAS_DETALHE_PLACA = [
-  'CARGA', 'COD', 'NF', 'CLIENTE', 'ENDEREÇO', 'CHEGADA', 'SAÍDA', 'TEMPO NA PARADA', 'STATUS',
+  'CARGA', 'NF', 'CLIENTE', 'MOTORISTA', 'COD', 'PLACA', 'ENDEREÇO',
+  'SAÍDA DA BASE', 'CHEGADA NA LOJA', 'SAÍDA DA LOJA', 'CHEGADA NA BASE',
+  'TEMPO NA LOJA', 'TEMPO DE OPERAÇÃO', 'STATUS',
 ] as const
 
 export const COLUNAS_AVISOS = ['CARGA', 'PLACA', 'PROBLEMA'] as const
@@ -162,7 +175,7 @@ export async function gerarKpiRomaneioXlsx(
   ws.columns = [
     { width: 10 }, { width: 12 }, { width: 20 }, { width: 28 }, { width: 22 }, { width: 22 },
     { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 14 },
-    { width: 10 }, { width: 10 }, { width: 14 }, { width: 18 }, { width: 12 },
+    { width: 10 }, { width: 10 }, { width: 14 }, { width: 18 },
   ]
 
   for (const l of linhas) {
@@ -172,7 +185,6 @@ export async function gerarKpiRomaneioXlsx(
       l.kmPercorrido != null ? Math.round(l.kmPercorrido * 10) / 10 : '',
       formatarHora(l.saidaCd), formatarHora(l.chegadaCd), formatarMinutos(l.tempoOperacaoMin),
       formatarMinutos(l.tempoMedioParadaMin),
-      l.status,
     ])
   }
   // Filtro nativo do Excel (pedido do usuário 24/08: "filtrável por placa")
@@ -213,14 +225,15 @@ export async function gerarKpiRomaneioXlsx(
     wsPlaca.addRow([...COLUNAS_DETALHE_PLACA])
     estilizarHeader(wsPlaca, 3, COLUNAS_DETALHE_PLACA.length)
     wsPlaca.columns = [
-      { width: 10 }, { width: 10 }, { width: 14 }, { width: 32 }, { width: 36 },
-      { width: 10 }, { width: 10 }, { width: 16 }, { width: 20 },
+      { width: 10 }, { width: 14 }, { width: 32 }, { width: 22 }, { width: 10 }, { width: 12 }, { width: 36 },
+      { width: 10 }, { width: 10 }, { width: 10 }, { width: 10 }, { width: 14 }, { width: 16 }, { width: 20 },
     ]
     const linhasDaPlaca = detalhePorPlaca.get(placa) ?? []
     for (const d of linhasDaPlaca) {
       wsPlaca.addRow([
-        d.carga, d.clienteCodigo, d.nf, d.clienteNome, d.endereco,
-        formatarHora(d.chegada), formatarHora(d.saida), formatarMinutos(d.tempoParadaMin),
+        d.carga, d.nf, d.clienteNome, d.motorista, d.clienteCodigo, d.placa, d.endereco,
+        formatarHora(d.saidaCd), formatarHora(d.chegada), formatarHora(d.saida), formatarHora(d.chegadaCd),
+        formatarMinutos(d.tempoParadaMin), formatarMinutos(d.tempoOperacaoMin),
         LABEL_STATUS_ENTREGA[d.status],
       ])
     }

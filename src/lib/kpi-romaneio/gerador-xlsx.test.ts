@@ -81,7 +81,8 @@ describe('gerador-xlsx', () => {
     expect(values[12]).toBe('17:45') // CHEGADA CD (formatado, sem shift de fuso)
     expect(values[13]).toBe('9h09min') // TEMPO OPERAÇÃO (formatado em XhYYmin)
     expect(values[14]).toBe('0h12min') // TEMPO MÉDIO POR ENTREGA
-    expect(values[15]).toBe('OK') // STATUS
+    // STATUS (OK/INCOMPLETO) removido da tela principal (pedido 25/08) --
+    // values[15] nao existe mais.
   })
 
   it('campos null viram string vazia', async () => {
@@ -165,7 +166,7 @@ describe('gerador-xlsx', () => {
     await wb.xlsx.load(buffer)
 
     const ws = wb.worksheets[0]
-    expect(ws.autoFilter).toBe('A2:P4') // header linha 2, 2 linhas de dado (linha 3 e 4), 16 colunas (A..P)
+    expect(ws.autoFilter).toBe('A2:O4') // header linha 2, 2 linhas de dado (linha 3 e 4), 15 colunas (A..O, sem STATUS)
   })
 
   it('sem avisos e sem placa nenhuma: nao cria abas extra', async () => {
@@ -210,7 +211,7 @@ describe('gerador-xlsx', () => {
       expect(wb.worksheets.map(w => w.name)).toEqual(['KPI 2026-08-23', 'ABC1234', 'DEF5678'])
     })
 
-    it('banner com a placa no título, linha de resumo (motorista/saída/chegada/tempo/km) na linha 2, header exato na linha 3, sem coluna PLACA', async () => {
+    it('banner com a placa no título, linha de resumo (motorista/saída/chegada/tempo/km) na linha 2, header exato na linha 3', async () => {
       const linhas: LinhaKpiRomaneio[] = [
         linhaKpi({
           carga: 'C001', placa: 'ABC1234', motorista: 'JOAO SILVA', kmPercorrido: 125.7,
@@ -233,26 +234,29 @@ describe('gerador-xlsx', () => {
       expect(headerValues).toEqual([...COLUNAS_DETALHE_PLACA])
     })
 
-    it('uma linha por entrega DESSA placa (com COD do cliente), status legivel e tempo de parada formatado', async () => {
+    function detalheFixture(overrides: Partial<LinhaDetalheEntrega> = {}): LinhaDetalheEntrega {
+      return {
+        carga: 'C001', placa: 'ABC1234', motorista: 'JOAO SILVA', clienteCodigo: 'CLI001',
+        nf: 'NF1', clienteNome: 'CLIENTE A', endereco: 'RUA A, 1',
+        saidaCd: '2026-08-23T06:00:00.000Z', chegadaCd: '2026-08-23T19:00:00.000Z', tempoOperacaoMin: 780,
+        chegada: null, saida: null, tempoParadaMin: null, status: 'pendente',
+        ...overrides,
+      }
+    }
+
+    it('uma linha por entrega DESSA placa, na ordem pedida (NF/cliente/motorista/cod/placa/endereco/horarios/tempos/status)', async () => {
       const linhas: LinhaKpiRomaneio[] = [
         linhaKpi({ carga: 'C001', placa: 'ABC1234' }),
         linhaKpi({ carga: 'C002', placa: 'DEF5678' }),
       ]
       const detalhe: LinhaDetalheEntrega[] = [
-        {
-          carga: 'C001', placa: 'ABC1234', clienteCodigo: 'CLI001', nf: 'NF1', clienteNome: 'CLIENTE A', endereco: 'RUA A, 1',
+        detalheFixture({
           chegada: '2026-08-23T10:00:00.000Z', saida: '2026-08-23T10:15:00.000Z', tempoParadaMin: 15,
           status: 'confirmado_gps',
-        },
-        {
-          carga: 'C001', placa: 'ABC1234', clienteCodigo: 'CLI002', nf: 'NF2', clienteNome: 'CLIENTE B', endereco: 'RUA B, 2',
-          chegada: null, saida: null, tempoParadaMin: null, status: 'pendente',
-        },
+        }),
+        detalheFixture({ clienteCodigo: 'CLI002', nf: 'NF2', clienteNome: 'CLIENTE B', endereco: 'RUA B, 2' }),
         // NF de OUTRA placa -- nao pode vazar pra aba da ABC1234.
-        {
-          carga: 'C002', placa: 'DEF5678', clienteCodigo: 'CLI003', nf: 'NF3', clienteNome: 'CLIENTE C', endereco: 'RUA C, 3',
-          chegada: null, saida: null, tempoParadaMin: null, status: 'pendente',
-        },
+        detalheFixture({ carga: 'C002', placa: 'DEF5678', clienteCodigo: 'CLI003', nf: 'NF3', clienteNome: 'CLIENTE C', endereco: 'RUA C, 3' }),
       ]
       const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
       const wb = new ExcelJS.Workbook()
@@ -261,26 +265,36 @@ describe('gerador-xlsx', () => {
 
       const linha1 = (wsPlaca.getRow(4).values as unknown[]).slice(1)
       expect(linha1[0]).toBe('C001') // CARGA
-      expect(linha1[1]).toBe('CLI001') // COD
-      expect(linha1[2]).toBe('NF1') // NF
-      expect(linha1[3]).toBe('CLIENTE A') // CLIENTE
-      expect(linha1[5]).toBe('10:00') // CHEGADA (sem shift de fuso, ver formatarHora)
-      expect(linha1[6]).toBe('10:15') // SAÍDA (sem shift de fuso, ver formatarHora)
-      expect(linha1[7]).toBe('0h15min') // TEMPO NA PARADA
-      expect(linha1[8]).toBe('CONFIRMADO (GPS)') // STATUS
+      expect(linha1[1]).toBe('NF1') // NF
+      expect(linha1[2]).toBe('CLIENTE A') // CLIENTE
+      expect(linha1[3]).toBe('JOAO SILVA') // MOTORISTA
+      expect(linha1[4]).toBe('CLI001') // COD
+      expect(linha1[5]).toBe('ABC1234') // PLACA
+      expect(linha1[6]).toBe('RUA A, 1') // ENDEREÇO
+      expect(linha1[7]).toBe('06:00') // SAÍDA DA BASE
+      expect(linha1[8]).toBe('10:00') // CHEGADA NA LOJA (sem shift de fuso, ver formatarHora)
+      expect(linha1[9]).toBe('10:15') // SAÍDA DA LOJA (sem shift de fuso, ver formatarHora)
+      expect(linha1[10]).toBe('19:00') // CHEGADA NA BASE
+      expect(linha1[11]).toBe('0h15min') // TEMPO NA LOJA
+      expect(linha1[12]).toBe('13h00min') // TEMPO DE OPERAÇÃO
+      expect(linha1[13]).toBe('CONFIRMADO (GPS)') // STATUS
 
       const linha2 = (wsPlaca.getRow(5).values as unknown[]).slice(1)
-      expect(linha2[5]).toBe('') // CHEGADA
-      expect(linha2[6]).toBe('') // SAÍDA
-      expect(linha2[7]).toBe('') // TEMPO NA PARADA
-      expect(linha2[8]).toBe('PENDENTE')
+      expect(linha2[8]).toBe('') // CHEGADA NA LOJA
+      expect(linha2[9]).toBe('') // SAÍDA DA LOJA
+      expect(linha2[11]).toBe('') // TEMPO NA LOJA
+      expect(linha2[13]).toBe('PENDENTE')
+      // saida da base/chegada na base/tempo de operacao sao da CARGA, nao da
+      // Visita -- continuam preenchidos mesmo com a entrega pendente.
+      expect(linha2[7]).toBe('06:00')
+      expect(linha2[10]).toBe('19:00')
 
       // NF3 (placa DEF5678) não aparece na aba da ABC1234.
       expect(wsPlaca.rowCount).toBe(5)
 
       const wsOutraPlaca = wb.getWorksheet('DEF5678')!
       const linhaOutra = (wsOutraPlaca.getRow(4).values as unknown[]).slice(1)
-      expect(linhaOutra[2]).toBe('NF3')
+      expect(linhaOutra[1]).toBe('NF3')
     })
 
     it('placa sem nenhuma entrega detalhável ainda ganha aba, só sem linha de dado', async () => {
@@ -294,14 +308,12 @@ describe('gerador-xlsx', () => {
 
     it('autoFilter cobre header + linhas de dado da aba da placa', async () => {
       const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
-      const detalhe: LinhaDetalheEntrega[] = [
-        { carga: 'C001', placa: 'ABC1234', clienteCodigo: 'CLI001', nf: 'NF1', clienteNome: 'A', endereco: 'A', chegada: null, saida: null, tempoParadaMin: null, status: 'pendente' },
-      ]
+      const detalhe: LinhaDetalheEntrega[] = [detalheFixture()]
       const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
       const wb = new ExcelJS.Workbook()
       await wb.xlsx.load(buffer)
       const wsPlaca = wb.getWorksheet('ABC1234')!
-      expect(wsPlaca.autoFilter).toBe('A3:I4') // header linha 3, 1 linha de dado, 9 colunas (A..I)
+      expect(wsPlaca.autoFilter).toBe('A3:N4') // header linha 3, 1 linha de dado, 14 colunas (A..N)
     })
   })
 })

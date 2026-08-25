@@ -105,10 +105,20 @@ async function main() {
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
 
+  const resumoPorChave = new Map(linhasKpi.map(l => [`${l.carga}::${l.placa}`, l]))
   const detalhe: LinhaDetalheEntrega[] = [...cargasPorChave.entries()]
     .flatMap(([chave, linhasDaCarga]) => {
       const [carga, placaNorm] = chave.split('::')
-      return montarDetalheEntregas(carga, placaNorm, linhasDaCarga, alvosPorPlaca.get(placaNorm) ?? [], visitasPorPlaca.get(placaNorm) ?? new Map())
+      const resumo = resumoPorChave.get(chave)
+      return montarDetalheEntregas(
+        carga, placaNorm, linhasDaCarga, alvosPorPlaca.get(placaNorm) ?? [], visitasPorPlaca.get(placaNorm) ?? new Map(),
+        {
+          motorista: resumo?.motorista ?? '',
+          saidaCd: resumo?.saidaCd ?? null,
+          chegadaCd: resumo?.chegadaCd ?? null,
+          tempoOperacaoMin: resumo?.tempoOperacaoMin ?? null,
+        },
+      )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
 

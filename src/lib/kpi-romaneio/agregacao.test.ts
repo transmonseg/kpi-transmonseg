@@ -194,25 +194,32 @@ describe('montarDetalheEntregas', () => {
       ['NF1', { nf: 'NF1', chegada: '2026-08-20T10:00:00.000Z', saida: '2026-08-20T10:15:00.000Z', distanciaMetrosDoPonto: 40 }],
     ])
 
-    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], visitas)
+    const resumoCarga = { motorista: 'JOAO SILVA', saidaCd: '2026-08-20T08:00:00.000Z', chegadaCd: '2026-08-20T18:00:00.000Z', tempoOperacaoMin: 600 }
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], visitas, resumoCarga)
 
     expect(d.carga).toBe('93758')
     expect(d.placa).toBe('TTL7D40')
+    expect(d.motorista).toBe('JOAO SILVA')
     expect(d.clienteCodigo).toBe('CLI42')
     expect(d.nf).toBe('NF1')
     expect(d.clienteNome).toBe('CLIENTE A')
     expect(d.endereco).toBe('RUA A, 1')
+    expect(d.saidaCd).toBe('2026-08-20T08:00:00.000Z')
+    expect(d.chegadaCd).toBe('2026-08-20T18:00:00.000Z')
+    expect(d.tempoOperacaoMin).toBe(600)
     expect(d.chegada).toBe('2026-08-20T10:00:00.000Z')
     expect(d.saida).toBe('2026-08-20T10:15:00.000Z')
     expect(d.tempoParadaMin).toBe(15)
     expect(d.status).toBe('confirmado_gps')
   })
 
+  const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+
   it('confirmado só via Unitrac (sem Visita): status confirmado_unitrac, chegada/saida/tempoParadaMin null', () => {
     const linhas = [linha('NF1')]
     const alvos = [alvo('NF1', 1)]
 
-    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, alvos, new Map())
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, alvos, new Map(), resumoCargaVazio)
 
     expect(d.status).toBe('confirmado_unitrac')
     expect(d.chegada).toBeNull()
@@ -223,7 +230,7 @@ describe('montarDetalheEntregas', () => {
   it('nem Unitrac nem Visita: status pendente', () => {
     const linhas = [linha('NF1')]
 
-    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map())
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio)
 
     expect(d.status).toBe('pendente')
   })
@@ -235,7 +242,7 @@ describe('montarDetalheEntregas', () => {
       ['NF1', { nf: 'NF1', chegada: '2026-08-20T10:00:00.000Z', saida: '2026-08-20T10:05:00.000Z', distanciaMetrosDoPonto: 20 }],
     ])
 
-    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, alvos, visitas)
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, alvos, visitas, resumoCargaVazio)
 
     expect(d.status).toBe('confirmado_unitrac')
     expect(d.chegada).toBe('2026-08-20T10:00:00.000Z')

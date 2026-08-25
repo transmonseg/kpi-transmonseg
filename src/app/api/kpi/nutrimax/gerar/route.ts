@@ -149,18 +149,30 @@ export async function POST(req: NextRequest) {
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
 
+  // resumoPorChave (pedido do usuario 25/08): montarDetalheEntregas repete
+  // motorista/saidaCd/chegadaCd/tempoOperacaoMin da carga inteira em toda
+  // linha de NF -- mesma chave carga+placa usada pra montar linhasKpi acima.
+  const resumoPorChave = new Map(linhasKpi.map(l => [`${l.carga}::${l.placa}`, l]))
+
   // Aba "Detalhamento" (pedido do usuário 24/08): uma linha por NF/entrega,
   // não só o resumo por carga -- mesma fonte de dado (linhasDaCarga/alvos/
   // visitas) já calculada acima pra agregarPorCarga, só que sem agregar.
   const detalhe: LinhaDetalheEntrega[] = [...cargasPorChave.entries()]
     .flatMap(([chave, linhasDaCarga]) => {
       const [carga, placaNorm] = chave.split('::')
+      const resumo = resumoPorChave.get(chave)
       return montarDetalheEntregas(
         carga,
         placaNorm,
         linhasDaCarga,
         alvosPorPlaca.get(placaNorm) ?? [],
         visitasPorPlaca.get(placaNorm) ?? new Map(),
+        {
+          motorista: resumo?.motorista ?? '',
+          saidaCd: resumo?.saidaCd ?? null,
+          chegadaCd: resumo?.chegadaCd ?? null,
+          tempoOperacaoMin: resumo?.tempoOperacaoMin ?? null,
+        },
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
