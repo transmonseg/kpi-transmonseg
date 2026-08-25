@@ -66,6 +66,17 @@ describe('consolidaParadasApi', () => {
     expect(consolidaParadasApi(ev, pontos, '2026-06-12', 'FUM8748')).toHaveLength(0)
   })
 
+  it('descarta cluster curto DENTRO do raio da base (blip de trânsito perto da base), mantém o longo', () => {
+    const ev: StopApiCru[] = [
+      // blip perto da base: dwell inferido = próximo cluster (04:02) - 04:00 = 2min < 5min → descarta
+      { _data: '2026-06-12T04:00:00Z', tempoparada: 30, latitude: -22.8291, longitude: -43.3421 },
+      // último cluster: dwell = tempoparada = 600s ≥ 5min, longe da base → mantém FORA_BASE
+      { _data: '2026-06-12T04:02:00Z', tempoparada: 600, latitude: -22.80, longitude: -43.50 },
+    ]
+    const ps = consolidaParadasApi(ev, pontos, '2026-06-12', 'FUM8748')
+    expect(ps.map(p => p.classificacao)).toEqual(['FORA_BASE'])
+  })
+
   it('descarta cluster curto SEM geofence (blip de trânsito), mantém o longo', () => {
     const ev: StopApiCru[] = [
       // blip: dwell inferido = próximo cluster (05:02) - 05:00 = 2min < 5min → descarta

@@ -72,9 +72,13 @@ describe('gerador-xlsx', () => {
     expect(values[8]).toBe(10) // NF PLANEJADO
     expect(values[9]).toBe(4) // PARADAS REAIS
     expect(values[10]).toBe(125.7) // KM PERCORRIDO (arredondado para 1 casa)
-    // valores de hora vão depender da zona horária, então verificamos formato
-    expect(typeof values[11]).toBe('string') // SAÍDA CD (formatado)
-    expect(typeof values[12]).toBe('string') // CHEGADA CD (formatado)
+    // Achado real 25/08: o ISO de saidaCd/chegadaCd já vem em BRT mascarado
+    // como UTC (ver comentário de formatarHora em gerador-xlsx.ts) -- os
+    // dígitos do horário devem sair EXATAMENTE como vieram, sem conversão
+    // de fuso nenhuma (bug anterior aplicava America/Sao_Paulo em cima de
+    // um valor que já não precisava, atrasando todo horário exibido em 3h).
+    expect(values[11]).toBe('08:30') // SAÍDA CD (formatado, sem shift de fuso)
+    expect(values[12]).toBe('17:45') // CHEGADA CD (formatado, sem shift de fuso)
     expect(values[13]).toBe('9h09min') // TEMPO OPERAÇÃO (formatado em XhYYmin)
     expect(values[14]).toBe('0h12min') // TEMPO MÉDIO POR ENTREGA
     expect(values[15]).toBe('OK') // STATUS
@@ -260,6 +264,8 @@ describe('gerador-xlsx', () => {
       expect(linha1[1]).toBe('CLI001') // COD
       expect(linha1[2]).toBe('NF1') // NF
       expect(linha1[3]).toBe('CLIENTE A') // CLIENTE
+      expect(linha1[5]).toBe('10:00') // CHEGADA (sem shift de fuso, ver formatarHora)
+      expect(linha1[6]).toBe('10:15') // SAÍDA (sem shift de fuso, ver formatarHora)
       expect(linha1[7]).toBe('0h15min') // TEMPO NA PARADA
       expect(linha1[8]).toBe('CONFIRMADO (GPS)') // STATUS
 

@@ -74,8 +74,17 @@ export function consolidaParadasApi(
     const geo = naBase ? null : acharLojaPorCoordenada(c.lat, c.lng, pontos)
     const classificacao = naBase ? 'BASE' : geo ? 'LOJA' : 'FORA_BASE'
 
-    // blip de trânsito: cluster curto, sem geofence e fora da base → descarta
-    if (!naBase && !geo && durSeg < MIN_DUR_SEM_GEO_SEG) continue
+    // blip de trânsito: cluster curto sem geofence de loja → descarta.
+    // Achado real 25/08 (dado real RQU-1G17, reclamação "tempo operação
+    // 0h04min" com 18km rodados): antes exigia `!naBase` aqui, entao
+    // qualquer cluster dentro do raio da base (500m) virava um evento BASE
+    // completo sem NENHUM minimo de permanencia -- passar perto da base no
+    // transito (sinal de GPS parado num semaforo, engarrafamento) contava
+    // como "chegou na base", corrompendo saidaCd/chegadaCd em agregacao.ts
+    // (que so olha o 1o e o ultimo evento BASE do dia). LOJA continua sem
+    // minimo (geofence resolvida e' autoritativa), so BASE generica e
+    // FORA_BASE sem geofence precisam do dwell minimo de verdade.
+    if (!geo && durSeg < MIN_DUR_SEM_GEO_SEG) continue
 
     ordem++
     out.push({

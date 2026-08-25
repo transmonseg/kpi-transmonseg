@@ -56,9 +56,20 @@ function formatarTituloData(data: string): string {
   return `${DIAS_SEMANA[d.getUTCDay()]}, ${String(dia).padStart(2, '0')} de ${MESES[mes - 1]} de ${ano}`
 }
 
+// Achado real 25/08 (dado real da Nutry Max, reclamação "horários errados,
+// tudo errado"): todo horário que chega aqui (saidaCd/chegadaCd de
+// agregacao.ts, chegada/saida de Visita em visitas.ts) tem origem em
+// consolidaParadasApi (unitrac-api/consolida.ts), cujo comentário já
+// documenta que `_data` "já vem em BRT mascarado como UTC" -- os dígitos do
+// ISO já SÃO o horário de Brasília certo, só com sufixo 'Z' mentiroso.
+// Formatar com `timeZone: 'America/Sao_Paulo'` aplicava uma SEGUNDA
+// conversão de fuso em cima de um valor que já não precisava de nenhuma --
+// todo horário exibido no KPI saía 3h ATRASADO do real (mesmo problema que
+// formatarTituloData já evita, comentário dela mesma acima). Fix: ler os
+// dígitos como UTC (sem conversão), igual o resto do arquivo já faz.
 function formatarHora(iso: string | null): string {
   if (!iso) return ''
-  return new Date(iso).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })
+  return new Date(iso).toLocaleTimeString('pt-BR', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit' })
 }
 
 function formatarMinutos(min: number | null): string {
