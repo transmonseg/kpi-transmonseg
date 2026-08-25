@@ -33,6 +33,31 @@ function urlBaseHorarios(): string {
   return `${base}/api/kpi/base-horarios`
 }
 
+// Achado real 25/08 (bug encontrado pelo usuario, "TODAS AS INFORMACOES"
+// erradas -- confirmado com GPS bruto: CHEGADA CD mostrava 16:14 quando o
+// dado real era ~13:15, exatos 3h de diferenca, na direcao OPOSTA do bug
+// de fuso corrigido mais cedo hoje): posicoes_historico.criado_em (fonte
+// desta ponte) e' timestamptz de verdade, UTC correto -- diferente do
+// `_data` da Unitrac (unitrac-api/consolida.ts), que ja vem em BRT
+// mascarado como UTC (documentado la). formatarHora (gerador-xlsx.ts) foi
+// ajustado pra ler tudo como "ja mascarado, sem converter" -- certo pro
+// dado da Unitrac, errado pro dado desta ponte (que e' UTC de verdade e
+// PRECISA da conversao pra BRT). Em vez de formatarHora ter que saber de
+// qual das duas fontes veio cada valor, converte aqui, na fronteira, pro
+// MESMO formato mascarado que o resto do pipeline ja espera -- assim
+// saidaCd/chegadaCd em agregacao.ts continuam sendo um unico tipo, uma
+// unica convencao, sem condicional espalhada por formatarHora.
+function paraBrtMascaradoComoUtc(isoUtcReal: string | null): string | null {
+  if (isoUtcReal === null) return null
+  const instante = new Date(isoUtcReal)
+  if (Number.isNaN(instante.getTime())) return null
+  // Brasil nao observa horario de verao -- offset fixo -03:00, sem
+  // precisar de tabela de fuso (mesmo raciocinio usado em route.ts, do
+  // lado do monitoramento, pra calcular a janela do dia).
+  const comDigitosBrt = new Date(instante.getTime() - 3 * 60 * 60 * 1000)
+  return comDigitosBrt.toISOString()
+}
+
 function validarResultado(r: unknown): { placa: string; saidaBase: string | null; chegadaBase: string | null } | null {
   if (
     typeof r === 'object' &&
@@ -90,7 +115,7 @@ async function buscarLote(placas: string[], data: string): Promise<Map<string, H
 
   for (const bruto of resultados) {
     const r = validarResultado(bruto)
-    if (r) mapa.set(r.placa, { saidaBase: r.saidaBase, chegadaBase: r.chegadaBase })
+    if (r) mapa.set(r.placa, { saidaBase: paraBrtMascaradoComoUtc(r.saidaBase), chegadaBase: paraBrtMascaradoComoUtc(r.chegadaBase) })
   }
   return mapa
 }

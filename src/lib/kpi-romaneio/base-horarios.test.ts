@@ -28,13 +28,17 @@ describe('buscarHorariosBase', () => {
     expect(mapa.size).toBe(0)
   })
 
-  it('resposta ok: mapa indexado por placa com saida/chegada', async () => {
+  it('resposta ok: mapa indexado por placa, com saida/chegada CONVERTIDOS de UTC real pra BRT mascarado como UTC', async () => {
+    // Achado real 25/08: a ponte devolve UTC de verdade (timestamptz do
+    // monitoramento) -- o resto do pipeline (formatarHora) espera BRT
+    // mascarado como UTC (mesma convencao da Unitrac). 09:00 UTC real =
+    // 06:00 BRT; a mascara representa isso como "06:00...Z".
     mockFetchOk([
       { placa: 'ABC1234', saidaBase: '2026-08-25T09:00:00.000Z', chegadaBase: '2026-08-25T21:00:00.000Z' },
       { placa: 'XYZ5678', saidaBase: null, chegadaBase: null },
     ])
     const mapa = await buscarHorariosBase(['ABC1234', 'XYZ5678'], '2026-08-25')
-    expect(mapa.get('ABC1234')).toEqual({ saidaBase: '2026-08-25T09:00:00.000Z', chegadaBase: '2026-08-25T21:00:00.000Z' })
+    expect(mapa.get('ABC1234')).toEqual({ saidaBase: '2026-08-25T06:00:00.000Z', chegadaBase: '2026-08-25T18:00:00.000Z' })
     expect(mapa.get('XYZ5678')).toEqual({ saidaBase: null, chegadaBase: null })
   })
 
@@ -76,6 +80,17 @@ describe('buscarHorariosBase', () => {
     ])
     const mapa = await buscarHorariosBase(['ABC1234'], '2026-08-25')
     expect(mapa.size).toBe(1)
-    expect(mapa.get('ABC1234')).toEqual({ saidaBase: '2026-08-25T09:00:00.000Z', chegadaBase: null })
+    expect(mapa.get('ABC1234')).toEqual({ saidaBase: '2026-08-25T06:00:00.000Z', chegadaBase: null })
+  })
+
+  it('paraBrtMascaradoComoUtc: aceita offset explicito (+02:00 do Postgres, ver TimeZone da role) e converte pro mesmo resultado que Z', async () => {
+    // Achado real: PostgREST serializa timestamptz respeitando o TimeZone
+    // da role/sessao (Europe/Berlin neste projeto), entao a ponte pode
+    // devolver "+02:00" em vez de "Z" -- new Date() resolve os dois pro
+    // MESMO instante absoluto, entao o resultado tem que ser identico.
+    mockFetchOk([{ placa: 'ABC1234', saidaBase: '2026-08-25T11:00:00.000+02:00', chegadaBase: null }])
+    const mapa = await buscarHorariosBase(['ABC1234'], '2026-08-25')
+    // 11:00+02:00 == 09:00 UTC == 06:00 BRT
+    expect(mapa.get('ABC1234')).toEqual({ saidaBase: '2026-08-25T06:00:00.000Z', chegadaBase: null })
   })
 })
