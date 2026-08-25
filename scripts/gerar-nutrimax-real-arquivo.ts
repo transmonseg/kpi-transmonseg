@@ -11,6 +11,7 @@ import { parseRomaneio } from '../src/lib/kpi-romaneio/parse-romaneio'
 import { geocodificarEnderecos } from '../src/lib/kpi-romaneio/geocode'
 import { buscarFrota, normPlaca } from '../src/lib/unitrac-api'
 import { buscarAlvosDoDia, buscarParadasDoDia } from '../src/lib/kpi-romaneio/unitrac'
+import { buscarHorariosBase } from '../src/lib/kpi-romaneio/base-horarios'
 import { alvosDaData } from '../src/lib/kpi-romaneio/alvos-data'
 import { montarVisitas } from '../src/lib/kpi-romaneio/visitas'
 import { agregarPorCarga, montarDetalheEntregas } from '../src/lib/kpi-romaneio/agregacao'
@@ -90,6 +91,7 @@ async function main() {
   const alvosPorPlaca = agrupar(alvos, a => a.placaNorm)
   const escalaPorChave = new Map(escala.map(e => [`${e.carga}::${e.placaNorm}`, e]))
   const cargasPorChave = agrupar(romaneioGeo, l => `${l.carga}::${normPlaca(l.placa)}`)
+  const horarioBasePorPlaca = await buscarHorariosBase(placasNorm, data)
 
   const linhasKpi: LinhaKpiRomaneio[] = [...cargasPorChave.entries()]
     .map(([chave, linhasDaCarga]) => {
@@ -101,6 +103,7 @@ async function main() {
         visitasPorPlaca.get(placaNorm) ?? new Map(),
         paradasPorPlaca.get(placaNorm) ?? [],
         kmPorPlaca.get(placaNorm) ?? null,
+        horarioBasePorPlaca.get(placaNorm),
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))

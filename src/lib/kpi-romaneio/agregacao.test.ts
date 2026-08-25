@@ -147,6 +147,48 @@ describe('agregarPorCarga', () => {
     expect(r.tempoOperacaoMin).toBeNull()
   })
 
+  describe('horarioBaseBridge (achado real 25/08: posicao continua real via monitoramento)', () => {
+    it('ponte presente: usa saida/chegada da ponte, IGNORA eventosBase mesmo quando eventosBase teria dado outra coisa', () => {
+      const paradas: UnitracParadaRow[] = [
+        parada({ id: 'base1', classificacao: 'BASE', chegada: '2026-08-20T05:00:00.000Z', saida: '2026-08-20T06:00:00.000Z', fim_real: '2026-08-20T06:00:00.000Z' }),
+        parada({ id: 'base2', classificacao: 'BASE', chegada: '2026-08-20T18:00:00.000Z', saida: '2026-08-20T18:30:00.000Z', fim_real: '2026-08-20T18:30:00.000Z' }),
+      ]
+      const ponte = { saidaBase: '2026-08-20T05:30:00.000Z', chegadaBase: '2026-08-20T19:00:00.000Z' }
+
+      const r = agregarPorCarga('93758', 'TTL7D40', [linha('NF1')], escala(), [], new Map(), paradas, null, ponte)
+
+      expect(r.saidaCd).toBe('2026-08-20T05:30:00.000Z')
+      expect(r.chegadaCd).toBe('2026-08-20T19:00:00.000Z')
+    })
+
+    it('ponte presente mas com campo null (ex: dia ainda em andamento): confia no null dela, NAO cai pro eventosBase', () => {
+      // eventosBase teria 2 permanencias e computaria algo -- a ponte diz que
+      // ainda nao ha chegada confirmada (posicao real nunca voltou pra base).
+      const paradas: UnitracParadaRow[] = [
+        parada({ id: 'base1', classificacao: 'BASE', chegada: '2026-08-20T05:00:00.000Z', saida: '2026-08-20T06:00:00.000Z', fim_real: '2026-08-20T06:00:00.000Z' }),
+        parada({ id: 'base2', classificacao: 'BASE', chegada: '2026-08-20T12:00:00.000Z', saida: '2026-08-20T12:05:00.000Z', fim_real: '2026-08-20T12:05:00.000Z' }),
+      ]
+      const ponte = { saidaBase: '2026-08-20T05:30:00.000Z', chegadaBase: null }
+
+      const r = agregarPorCarga('93758', 'TTL7D40', [linha('NF1')], escala(), [], new Map(), paradas, null, ponte)
+
+      expect(r.saidaCd).toBe('2026-08-20T05:30:00.000Z')
+      expect(r.chegadaCd).toBeNull()
+    })
+
+    it('ponte ausente (undefined -- offline ou placa nao rastreada la): cai pro calculo antigo via eventosBase', () => {
+      const paradas: UnitracParadaRow[] = [
+        parada({ id: 'base1', classificacao: 'BASE', chegada: '2026-08-20T05:00:00.000Z', saida: '2026-08-20T06:00:00.000Z', fim_real: '2026-08-20T06:00:00.000Z' }),
+        parada({ id: 'base2', classificacao: 'BASE', chegada: '2026-08-20T18:00:00.000Z', saida: '2026-08-20T18:30:00.000Z', fim_real: '2026-08-20T18:30:00.000Z' }),
+      ]
+
+      const r = agregarPorCarga('93758', 'TTL7D40', [linha('NF1')], escala(), [], new Map(), paradas, null, undefined)
+
+      expect(r.saidaCd).toBe('2026-08-20T06:00:00.000Z')
+      expect(r.chegadaCd).toBe('2026-08-20T18:00:00.000Z')
+    })
+  })
+
   it('tempoMedioParadaMin: média das durações reais (Visita) das NF confirmadas por GPS nesta carga', () => {
     const linhas = [linha('NF1'), linha('NF2'), linha('NF3')]
     const visitas = new Map<string, Visita>([

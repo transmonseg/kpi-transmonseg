@@ -8,6 +8,7 @@ import { parseEscala } from '@/lib/kpi-romaneio/parse-escala'
 import { parseRomaneio } from '@/lib/kpi-romaneio/parse-romaneio'
 import { geocodificarEnderecos } from '@/lib/kpi-romaneio/geocode'
 import { buscarAlvosDoDia, buscarParadasDoDia } from '@/lib/kpi-romaneio/unitrac'
+import { buscarHorariosBase } from '@/lib/kpi-romaneio/base-horarios'
 import { alvosDaData } from '@/lib/kpi-romaneio/alvos-data'
 import { detectarDescasamentos } from '@/lib/kpi-romaneio/avisos'
 import { montarVisitas } from '@/lib/kpi-romaneio/visitas'
@@ -101,9 +102,10 @@ export async function POST(req: NextRequest) {
   const linhasPorPlaca = agrupar(romaneioGeo, l => normPlaca(l.placa))
   const placasNorm = [...linhasPorPlaca.keys()]
 
-  const [frota, alvosBrutos] = await Promise.all([
+  const [frota, alvosBrutos, horarioBasePorPlaca] = await Promise.all([
     buscarFrota(COD_USER_NUTRIMAX),
     buscarAlvosDoDia(placasNorm),
+    buscarHorariosBase(placasNorm, data),
   ])
   const alvos = alvosDaData(alvosBrutos, data)
   const cvPorPlaca = new Map(frota.map(v => [v.placaNorm, v.cv]))
@@ -145,6 +147,7 @@ export async function POST(req: NextRequest) {
         visitasPorPlaca.get(placaNorm) ?? new Map(),
         paradasPorPlaca.get(placaNorm) ?? [],
         kmPorPlaca.get(placaNorm) ?? null,
+        horarioBasePorPlaca.get(placaNorm),
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
