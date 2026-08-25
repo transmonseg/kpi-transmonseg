@@ -208,6 +208,35 @@ describe('gerador-xlsx', () => {
     expect(values[13]).toBe('')
   })
 
+  it('pedido do usuário 24/08 ("filtrável por placa"): autoFilter cobre header + todas as linhas de dado, nas duas abas', async () => {
+    const linhas: LinhaKpiRomaneio[] = [
+      {
+        carga: 'C001', placa: 'ABC1234', destino: 'X', motorista: 'Y',
+        ajudante1: null, ajudante2: null, pesoKg: null, clientesPlanejados: null, nfPlanejado: null,
+        paradasReais: 1, kmPercorrido: null, saidaCd: null, chegadaCd: null,
+        tempoOperacaoMin: null, tempoMedioParadaMin: null, status: 'OK',
+      },
+      {
+        carga: 'C002', placa: 'DEF5678', destino: 'Y', motorista: 'Z',
+        ajudante1: null, ajudante2: null, pesoKg: null, clientesPlanejados: null, nfPlanejado: null,
+        paradasReais: 1, kmPercorrido: null, saidaCd: null, chegadaCd: null,
+        tempoOperacaoMin: null, tempoMedioParadaMin: null, status: 'OK',
+      },
+    ]
+    const detalhe: LinhaDetalheEntrega[] = [
+      { carga: 'C001', placa: 'ABC1234', nf: 'NF1', clienteNome: 'A', endereco: 'A', chegada: null, saida: null, tempoParadaMin: null, status: 'pendente' },
+    ]
+    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+
+    const ws = wb.worksheets[0]
+    expect(ws.autoFilter).toBe('A2:P4') // header linha 2, 2 linhas de dado (linha 3 e 4), 16 colunas (A..P)
+
+    const wsDetalhe = wb.getWorksheet('Detalhamento')!
+    expect(wsDetalhe.autoFilter).toBe('A2:I3') // header linha 2, 1 linha de dado (linha 3), 9 colunas (A..I)
+  })
+
   it('sem avisos: nao cria a aba Avisos, mas Detalhamento sempre existe', async () => {
     const buffer = await gerarKpiRomaneioXlsx([], '2026-08-23', [])
     const wb = new ExcelJS.Workbook()

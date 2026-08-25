@@ -130,6 +130,13 @@ export async function gerarKpiRomaneioXlsx(
       l.status,
     ])
   }
+  // Filtro nativo do Excel (pedido do usuário 24/08: "filtrável por placa")
+  // -- dropdown em toda coluna, não só PLACA, é o comportamento padrão do
+  // recurso e o mais útil (também dá pra filtrar por STATUS, DESTINO etc).
+  ws.autoFilter = {
+    from: { row: 2, column: 1 },
+    to: { row: 2 + linhas.length, column: COLUNAS_KPI_ROMANEIO.length },
+  }
 
   const wsDetalhe = wb.addWorksheet('Detalhamento')
   estilizarTitulo(wsDetalhe, 1, COLUNAS_DETALHAMENTO.length, titulo)
@@ -145,6 +152,10 @@ export async function gerarKpiRomaneioXlsx(
       formatarHora(d.chegada), formatarHora(d.saida), formatarMinutos(d.tempoParadaMin),
       LABEL_STATUS_ENTREGA[d.status],
     ])
+  }
+  wsDetalhe.autoFilter = {
+    from: { row: 2, column: 1 },
+    to: { row: 2 + detalhe.length, column: COLUNAS_DETALHAMENTO.length },
   }
 
   if (avisos.length > 0) {
