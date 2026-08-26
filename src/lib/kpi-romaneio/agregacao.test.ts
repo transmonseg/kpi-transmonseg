@@ -236,6 +236,16 @@ describe('agregarPorCarga', () => {
     expect(r.destino).toBe('DESTINO ROMANEIO')
     expect(r.motorista).toBe('MOTORISTA ROMANEIO')
   })
+
+  it('temRastreador default true (compat com testes existentes) quando o chamador nao passa nada', () => {
+    const r = agregarPorCarga('93758', 'TTL7D40', [linha('NF1')], escala(), [], new Map(), [], null)
+    expect(r.temRastreador).toBe(true)
+  })
+
+  it('temRastreador=false repassado tal como veio do chamador (pedido do usuario 25/08, nivel Benassi)', () => {
+    const r = agregarPorCarga('93758', 'TTL7D40', [linha('NF1')], escala(), [], new Map(), [], null, undefined, false)
+    expect(r.temRastreador).toBe(false)
+  })
 })
 
 describe('montarDetalheEntregas', () => {
@@ -298,5 +308,72 @@ describe('montarDetalheEntregas', () => {
     expect(d.status).toBe('confirmado_unitrac')
     expect(d.chegada).toBe('2026-08-20T10:00:00.000Z')
     expect(d.tempoParadaMin).toBe(5)
+  })
+
+  it('temRastreador e observacao default (true/null, compat com testes existentes) quando o chamador nao passa nada', () => {
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio)
+    expect(d.temRastreador).toBe(true)
+    expect(d.observacao).toBeNull()
+  })
+
+  describe('observacao (pedido do usuario 25/08, nivel Benassi)', () => {
+    it('NF pendente + OUTRA placa da frota passou perto do ponto no dia: observacao de troca, com a placa suspeita', () => {
+      const linhas = [linha('NF1')] // lat -22.9, lng -43.2, sem alvo nem visita -> pendente
+      const paradaOutraPlaca = parada({ id: 'p2', placa_norm: 'RQV6I51', classificacao: 'FORA_BASE', lat: -22.9001, lng: -43.2001 })
+      const paradasFrota = new Map([
+        ['TTL7D40', []], // a propria placa escalada, sem paradas la
+        ['RQV6I51', [paradaOutraPlaca]],
+      ])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, paradasFrota)
+
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe('MUDOU DE ROTA - CONFERIR (placa provável: RQV6I51)')
+    })
+
+    it('NF pendente mas nenhuma outra placa passou perto: observacao null (nao inventa suspeita)', () => {
+      const linhas = [linha('NF1')]
+      const paradaLonge = parada({ id: 'p2', placa_norm: 'RQV6I51', classificacao: 'FORA_BASE', lat: -23.5, lng: -44.5 })
+      const paradasFrota = new Map([['RQV6I51', [paradaLonge]]])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, paradasFrota)
+
+      expect(d.observacao).toBeNull()
+    })
+
+    it('NF CONFIRMADA (nao pendente) nunca ganha observacao de troca, mesmo com outra placa perto -- so pendente e suspeita', () => {
+      const linhas = [linha('NF1')]
+      const alvos = [alvo('NF1', 1)]
+      const paradaOutraPlaca = parada({ id: 'p2', placa_norm: 'RQV6I51', classificacao: 'FORA_BASE', lat: -22.9001, lng: -43.2001 })
+      const paradasFrota = new Map([['RQV6I51', [paradaOutraPlaca]]])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, alvos, new Map(), resumoCargaVazio, true, paradasFrota)
+
+      expect(d.status).toBe('confirmado_unitrac')
+      expect(d.observacao).toBeNull()
+    })
+
+    it('tempo em loja acima de 4h: observacao de tempo excessivo', () => {
+      const linhas = [linha('NF1')]
+      const visitas = new Map<string, Visita>([
+        ['NF1', { nf: 'NF1', chegada: '2026-08-20T10:00:00.000Z', saida: '2026-08-20T14:30:00.000Z', distanciaMetrosDoPonto: 20 }], // 4h30
+      ])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio)
+
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.observacao).toBe('TEMPO EM LOJA ACIMA DE 4H - CONFERIR')
+    })
+
+    it('tempo em loja dentro do limite (exatamente 4h): observacao null', () => {
+      const linhas = [linha('NF1')]
+      const visitas = new Map<string, Visita>([
+        ['NF1', { nf: 'NF1', chegada: '2026-08-20T10:00:00.000Z', saida: '2026-08-20T14:00:00.000Z', distanciaMetrosDoPonto: 20 }], // exatos 4h
+      ])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio)
+
+      expect(d.observacao).toBeNull()
+    })
   })
 })

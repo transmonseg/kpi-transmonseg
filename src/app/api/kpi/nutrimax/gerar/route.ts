@@ -121,6 +121,11 @@ export async function POST(req: NextRequest) {
   ])
   const alvos = alvosDaData(alvosBrutos, data)
   const cvPorPlaca = new Map(frota.map(v => [v.placaNorm, v.cv]))
+  // Pedido do usuário 25/08 (nível Benassi): placa sem cv na Unitrac E sem
+  // entrada na ponte do monitoramento (nunca respondeu por ela, nem com
+  // null) não teve NENHUMA fonte de rastreamento no dia -- ver
+  // gerador-xlsx.ts/motivoAusencia.
+  const temRastreadorPorPlaca = new Map(placasNorm.map(p => [p, cvPorPlaca.has(p) || horarioBasePorPlaca.has(p)]))
 
   // Por placa (não por carga -- as paradas GPS do dia cobrem a placa
   // inteira, independente de quantas cargas ela rodou): busca paradas,
@@ -160,6 +165,7 @@ export async function POST(req: NextRequest) {
         paradasPorPlaca.get(placaNorm) ?? [],
         kmPorPlaca.get(placaNorm) ?? null,
         horarioBasePorPlaca.get(placaNorm),
+        temRastreadorPorPlaca.get(placaNorm) ?? false,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
@@ -188,6 +194,8 @@ export async function POST(req: NextRequest) {
           chegadaCd: resumo?.chegadaCd ?? null,
           tempoOperacaoMin: resumo?.tempoOperacaoMin ?? null,
         },
+        temRastreadorPorPlaca.get(placaNorm) ?? false,
+        paradasPorPlaca,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

@@ -3,9 +3,41 @@ import type { AlvoApi } from '@/lib/unitrac-api'
 // de unitrac.ts (Task 6).
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import type { LinhaEscala, LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega, Visita } from './types'
+import { haversine } from '@/lib/utils/geo'
+import { RAIO_ENTREGA_METROS } from './constants'
 
 function minutosEntre(a: string, b: string): number {
   return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 60000)
+}
+
+// Limiar de "tempo em loja implausível" (pedido do usuário 25/08, nível
+// Benassi -- mesmo espírito do ANOM-08 dela, que usa >4h). Não é regra de
+// conformidade, é sinal de dado suspeito pra conferir antes do relatório
+// sair errado (ex: caminhão ficou de fato parado, ou o cluster juntou duas
+// visitas em uma só).
+const LIMITE_TEMPO_LOJA_MIN = 240
+
+/** Acha, pra uma NF sem confirmação nenhuma pela placa escalada, se OUTRA
+ *  placa da frota passou perto do mesmo ponto no dia -- sinal de troca de
+ *  carro na hora da entrega (pedido do usuário 25/08, nível Benassi --
+ *  mesmo espírito de sugestao-troca.ts dela). Usa o mesmo raio de
+ *  confirmação por perímetro próprio (RAIO_ENTREGA_METROS), nunca o raio
+ *  que a Unitrac cadastra pro alvo. */
+function acharPlacaSuspeita(
+  linha: LinhaGeocodificada,
+  placaEsperada: string,
+  paradasPorOutraPlaca: Map<string, UnitracParadaRow[]>,
+): string | null {
+  if (linha.lat == null || linha.lng == null) return null
+  for (const [outraPlaca, paradas] of paradasPorOutraPlaca) {
+    if (outraPlaca === placaEsperada) continue
+    const achou = paradas.some(p =>
+      p.classificacao === 'FORA_BASE' && p.lat != null && p.lng != null &&
+      haversine(p.lat, p.lng, linha.lat as number, linha.lng as number) <= RAIO_ENTREGA_METROS,
+    )
+    if (achou) return outraPlaca
+  }
+  return null
 }
 
 /** Uma carga = todas as linhas do romaneio com o mesmo `carga`+`placa`.
@@ -33,6 +65,12 @@ export function agregarPorCarga(
   // a saida mas nao a chegada (dia em andamento) -- nesse caso so' a
   // chegada cai pro fallback antigo.
   horarioBaseBridge?: { saidaBase: string | null; chegadaBase: string | null; kmPercorrido: number | null },
+  // Pedido do usuário 25/08 (nível Benassi): placa sem NENHUMA fonte de
+  // rastreamento no dia (sem cv na Unitrac E sem entrada na ponte do
+  // monitoramento) -- default true por conveniência dos testes existentes
+  // (a maioria assume veículo rastreado); route.ts/script sempre passam o
+  // valor real calculado.
+  temRastreador: boolean = true,
 ): LinhaKpiRomaneio {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
 
@@ -112,6 +150,7 @@ export function agregarPorCarga(
     tempoOperacaoMin: saidaCd && chegadaCd ? minutosEntre(saidaCd, chegadaCd) : null,
     tempoMedioParadaMin,
     status,
+    temRastreador,
   }
 }
 
@@ -130,6 +169,13 @@ export function montarDetalheEntregas(
   alvos: AlvoApi[],
   visitasPorNf: Map<string, Visita>,
   resumoCarga: { motorista: string; saidaCd: string | null; chegadaCd: string | null; tempoOperacaoMin: number | null },
+  // Mesmo raciocinio/default de agregarPorCarga acima.
+  temRastreador: boolean = true,
+  // Paradas GPS de TODAS as placas da frota no dia (a própria incluída --
+  // acharPlacaSuspeita já exclui `placaNorm` internamente), pra detectar
+  // troca de carro (pedido do usuário 25/08). Default vazio = nenhuma
+  // detecção (comportamento antigo, testes existentes não são afetados).
+  paradasPorOutraPlaca: Map<string, UnitracParadaRow[]> = new Map(),
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
 
@@ -143,6 +189,16 @@ export function montarDetalheEntregas(
       : confirmadoGps
         ? 'confirmado_gps'
         : 'pendente'
+    const tempoParadaMin = visita ? minutosEntre(visita.chegada, visita.saida) : null
+
+    let observacao: string | null = null
+    if (status === 'pendente') {
+      const placaSuspeita = acharPlacaSuspeita(linha, placaNorm, paradasPorOutraPlaca)
+      if (placaSuspeita) observacao = `MUDOU DE ROTA - CONFERIR (placa provável: ${placaSuspeita})`
+    }
+    if (observacao == null && tempoParadaMin != null && tempoParadaMin > LIMITE_TEMPO_LOJA_MIN) {
+      observacao = 'TEMPO EM LOJA ACIMA DE 4H - CONFERIR'
+    }
 
     return {
       carga,
@@ -157,8 +213,10 @@ export function montarDetalheEntregas(
       tempoOperacaoMin: resumoCarga.tempoOperacaoMin,
       chegada: visita?.chegada ?? null,
       saida: visita?.saida ?? null,
-      tempoParadaMin: visita ? minutosEntre(visita.chegada, visita.saida) : null,
+      tempoParadaMin,
       status,
+      temRastreador,
+      observacao,
     }
   })
 }

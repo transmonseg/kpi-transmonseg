@@ -5,6 +5,7 @@ import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEn
 // nunca duplica cor/asset, um unico lugar de verdade pros dois clientes.
 import { KPI_COLORS, KPI_FONTS, KPI_BORDER_THIN } from '@/lib/kpi/kpi-styles'
 import { getLogoBuffer } from '@/lib/kpi/template-loader'
+import { hojeBR } from '@/lib/data-br'
 
 // STATUS (OK/INCOMPLETO) removido da tela principal (pedido do usuario
 // 25/08: "tira esse status de concluido ou incompleto") -- o campo `status`
@@ -93,6 +94,32 @@ function formatarHora(iso: string | null): string {
   return new Date(iso).toLocaleTimeString('pt-BR', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit' })
 }
 
+// Pedido do usuario 25/08 ("nada mais no quesito informacoes?" -> nivel
+// Benassi): celula de horario vazia sempre teve UM motivo real (sem
+// rastreador, dia ainda em andamento, ou de fato nunca aconteceu) -- em vez
+// de deixar em branco toda vez (o que gerou a reclamacao "praticamente tudo
+// branco"), mostra o motivo quando ele e' conhecido. `null` = nenhum motivo
+// conhecido, fica em branco mesmo (nunca inventa).
+function motivoAusencia(temRastreador: boolean, data: string, hoje: string): string | null {
+  if (!temRastreador) return 'SEM RASTREADOR'
+  if (data === hoje) return 'EM ROTA'
+  return null
+}
+
+// Envolve formatarHora: quando o horario e' null, tenta explicar o motivo
+// em vez de deixar a celula muda.
+function celulaHora(iso: string | null, temRastreador: boolean, data: string, hoje: string): string {
+  const hora = formatarHora(iso)
+  if (hora) return hora
+  return motivoAusencia(temRastreador, data, hoje) ?? ''
+}
+
+// STATUS da entrega: observacao concreta (troca de carro/tempo excessivo,
+// ver agregacao.ts) e' sempre mais informativa que o rotulo generico.
+function textoStatus(d: LinhaDetalheEntrega): string {
+  return d.observacao ?? LABEL_STATUS_ENTREGA[d.status]
+}
+
 function formatarMinutos(min: number | null): string {
   // Achado real 24/08: minutos negativos (chegada antes da saída, por bug de
   // dado upstream) geravam "-1h-1min" via Math.floor/`%` com sinal em JS --
@@ -152,9 +179,9 @@ function nomeAbaPlaca(placa: string): string {
 // inteira já é dessa placa. `resumo` pode ser undefined (placa sem nenhuma
 // linha agregada, caso que não deveria acontecer na prática -- toda placa
 // da lista de abas vem de `linhas` -- mas o tipo permite, então trata).
-function escreverResumoPlaca(ws: ExcelJS.Worksheet, linhaResumo: number, qtdColunas: number, resumo: LinhaKpiRomaneio | undefined): void {
+function escreverResumoPlaca(ws: ExcelJS.Worksheet, linhaResumo: number, qtdColunas: number, resumo: LinhaKpiRomaneio | undefined, data: string, hoje: string): void {
   const texto = resumo
-    ? `MOTORISTA: ${resumo.motorista || '-'}    |    SAÍDA CD: ${formatarHora(resumo.saidaCd) || '-'}    |    CHEGADA CD: ${formatarHora(resumo.chegadaCd) || '-'}    |    TEMPO OPERAÇÃO: ${formatarMinutos(resumo.tempoOperacaoMin) || '-'}    |    KM PERCORRIDO: ${resumo.kmPercorrido != null ? `${Math.round(resumo.kmPercorrido * 10) / 10} km` : '-'}`
+    ? `MOTORISTA: ${resumo.motorista || '-'}    |    SAÍDA CD: ${celulaHora(resumo.saidaCd, resumo.temRastreador, data, hoje) || '-'}    |    CHEGADA CD: ${celulaHora(resumo.chegadaCd, resumo.temRastreador, data, hoje) || '-'}    |    TEMPO OPERAÇÃO: ${formatarMinutos(resumo.tempoOperacaoMin) || '-'}    |    KM PERCORRIDO: ${resumo.kmPercorrido != null ? `${Math.round(resumo.kmPercorrido * 10) / 10} km` : '-'}`
     : ''
   ws.mergeCells(linhaResumo, 1, linhaResumo, qtdColunas)
   const cell = ws.getCell(linhaResumo, 1)
@@ -207,6 +234,10 @@ export async function gerarKpiRomaneioXlsx(
   data: string,
   avisos: AvisoDescasamento[] = [],
   detalhe: LinhaDetalheEntrega[] = [],
+  // Injetavel pra teste determinístico (motivoAusencia compara `data` contra
+  // "hoje" pra distinguir "ainda em rota" de "nunca aconteceu") -- produção
+  // sempre usa o default real.
+  hoje: string = hojeBR(),
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
   wb.creator = 'TRANSMONSEG'
@@ -229,8 +260,8 @@ export async function gerarKpiRomaneioXlsx(
       l.carga, l.placa, l.destino, l.motorista, l.ajudante1 ?? '', l.ajudante2 ?? '',
       l.pesoKg ?? '', l.clientesPlanejados ?? '', l.nfPlanejado ?? '', l.paradasReais,
       l.kmPercorrido != null ? Math.round(l.kmPercorrido * 10) / 10 : '',
-      formatarHora(l.saidaCd), formatarHora(l.chegadaCd), formatarMinutos(l.tempoOperacaoMin),
-      formatarMinutos(l.tempoMedioParadaMin),
+      celulaHora(l.saidaCd, l.temRastreador, data, hoje), celulaHora(l.chegadaCd, l.temRastreador, data, hoje),
+      formatarMinutos(l.tempoOperacaoMin), formatarMinutos(l.tempoMedioParadaMin),
     ])
     estilizarLinhaDado(ws, 2 + 1 + i, COLUNAS_KPI_ROMANEIO.length, i)
   })
@@ -269,20 +300,26 @@ export async function gerarKpiRomaneioXlsx(
     const tituloPlaca = `RELATÓRIO KPI - NUTRY MAX - PLACA ${placa}\n${formatarTituloData(data)}`
     estilizarTitulo(wsPlaca, 1, COLUNAS_DETALHE_PLACA.length, tituloPlaca)
     await adicionarLogo(wb, wsPlaca, 1)
-    escreverResumoPlaca(wsPlaca, 2, COLUNAS_DETALHE_PLACA.length, resumoPorPlaca.get(placa))
+    escreverResumoPlaca(wsPlaca, 2, COLUNAS_DETALHE_PLACA.length, resumoPorPlaca.get(placa), data, hoje)
     wsPlaca.addRow([...COLUNAS_DETALHE_PLACA])
     estilizarHeader(wsPlaca, 3, COLUNAS_DETALHE_PLACA.length)
     wsPlaca.columns = [
       { width: 10 }, { width: 14 }, { width: 32 }, { width: 22 }, { width: 10 }, { width: 12 }, { width: 36 },
-      { width: 10 }, { width: 10 }, { width: 10 }, { width: 10 }, { width: 14 }, { width: 16 }, { width: 20 },
+      { width: 10 }, { width: 10 }, { width: 10 }, { width: 10 }, { width: 14 }, { width: 16 }, { width: 36 },
     ]
     const linhasDaPlaca = detalhePorPlaca.get(placa) ?? []
     linhasDaPlaca.forEach((d, i) => {
+      // CHEGADA/SAÍDA NA LOJA: motivo só faz sentido quando 'pendente'
+      // (confirmado_unitrac já tem explicação própria via STATUS -- sabemos
+      // que aconteceu, só não temos o horário exato de GPS; confirmado_gps
+      // sempre tem os dois preenchidos).
+      const chegadaLoja = d.status === 'pendente' ? celulaHora(d.chegada, d.temRastreador, data, hoje) : formatarHora(d.chegada)
+      const saidaLoja = d.status === 'pendente' ? celulaHora(d.saida, d.temRastreador, data, hoje) : formatarHora(d.saida)
       wsPlaca.addRow([
         d.carga, d.nf, d.clienteNome, d.motorista, d.clienteCodigo, d.placa, d.endereco,
-        formatarHora(d.saidaCd), formatarHora(d.chegada), formatarHora(d.saida), formatarHora(d.chegadaCd),
+        celulaHora(d.saidaCd, d.temRastreador, data, hoje), chegadaLoja, saidaLoja, celulaHora(d.chegadaCd, d.temRastreador, data, hoje),
         formatarMinutos(d.tempoParadaMin), formatarMinutos(d.tempoOperacaoMin),
-        LABEL_STATUS_ENTREGA[d.status],
+        textoStatus(d),
       ])
       estilizarLinhaDado(wsPlaca, 3 + 1 + i, COLUNAS_DETALHE_PLACA.length, i)
     })

@@ -70,6 +70,7 @@ async function main() {
 
   const frota = await buscarFrota(COD_USER_NUTRIMAX)
   const cvPorPlaca = new Map(frota.map(v => [v.placaNorm, v.cv]))
+  const temRastreadorPorPlaca = new Map(placasNorm.map(p => [p, cvPorPlaca.has(p) || horarioBasePorPlaca.has(p)]))
   let alvosBrutos: Awaited<ReturnType<typeof buscarAlvosDoDia>> = []
   try {
     alvosBrutos = await buscarAlvosDoDia(placasNorm)
@@ -112,6 +113,7 @@ async function main() {
         paradasPorPlaca.get(placaNorm) ?? [],
         kmPorPlaca.get(placaNorm) ?? null,
         horarioBasePorPlaca.get(placaNorm),
+        temRastreadorPorPlaca.get(placaNorm) ?? false,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
@@ -129,6 +131,8 @@ async function main() {
           chegadaCd: resumo?.chegadaCd ?? null,
           tempoOperacaoMin: resumo?.tempoOperacaoMin ?? null,
         },
+        temRastreadorPorPlaca.get(placaNorm) ?? false,
+        paradasPorPlaca,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

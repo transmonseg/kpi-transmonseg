@@ -15,6 +15,18 @@ function linhaKpi(overrides: Partial<LinhaKpiRomaneio> = {}): LinhaKpiRomaneio {
     ajudante1: null, ajudante2: null, pesoKg: null, clientesPlanejados: null, nfPlanejado: null,
     paradasReais: 1, kmPercorrido: null, saidaCd: null, chegadaCd: null,
     tempoOperacaoMin: null, tempoMedioParadaMin: null, status: 'OK',
+    temRastreador: true,
+    ...overrides,
+  }
+}
+
+function detalheFixture(overrides: Partial<LinhaDetalheEntrega> = {}): LinhaDetalheEntrega {
+  return {
+    carga: 'C001', placa: 'ABC1234', motorista: 'JOAO SILVA', clienteCodigo: 'CLI001',
+    nf: 'NF1', clienteNome: 'CLIENTE A', endereco: 'RUA A, 1',
+    saidaCd: '2026-08-23T06:00:00.000Z', chegadaCd: '2026-08-23T19:00:00.000Z', tempoOperacaoMin: 780,
+    chegada: null, saida: null, tempoParadaMin: null, status: 'pendente',
+    temRastreador: true, observacao: null,
     ...overrides,
   }
 }
@@ -234,16 +246,6 @@ describe('gerador-xlsx', () => {
       expect(headerValues).toEqual([...COLUNAS_DETALHE_PLACA])
     })
 
-    function detalheFixture(overrides: Partial<LinhaDetalheEntrega> = {}): LinhaDetalheEntrega {
-      return {
-        carga: 'C001', placa: 'ABC1234', motorista: 'JOAO SILVA', clienteCodigo: 'CLI001',
-        nf: 'NF1', clienteNome: 'CLIENTE A', endereco: 'RUA A, 1',
-        saidaCd: '2026-08-23T06:00:00.000Z', chegadaCd: '2026-08-23T19:00:00.000Z', tempoOperacaoMin: 780,
-        chegada: null, saida: null, tempoParadaMin: null, status: 'pendente',
-        ...overrides,
-      }
-    }
-
     it('uma linha por entrega DESSA placa, na ordem pedida (NF/cliente/motorista/cod/placa/endereco/horarios/tempos/status)', async () => {
       const linhas: LinhaKpiRomaneio[] = [
         linhaKpi({ carga: 'C001', placa: 'ABC1234' }),
@@ -314,6 +316,84 @@ describe('gerador-xlsx', () => {
       await wb.xlsx.load(buffer)
       const wsPlaca = wb.getWorksheet('ABC1234')!
       expect(wsPlaca.autoFilter).toBe('A3:N4') // header linha 3, 1 linha de dado, 14 colunas (A..N)
+    })
+  })
+
+  describe('motivoAusencia / observacao (pedido do usuario 25/08: "nada mais no quesito informacoes?" -> nivel Benassi)', () => {
+    it('SEM RASTREADOR no lugar de celula vazia quando a placa nunca teve fonte de rastreamento', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234', temRastreador: false })]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23')
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const values = (wb.worksheets[0].getRow(LINHA_PRIMEIRO_DADO).values as unknown[]).slice(1)
+
+      expect(values[11]).toBe('SEM RASTREADOR') // SAÍDA CD
+      expect(values[12]).toBe('SEM RASTREADOR') // CHEGADA CD
+    })
+
+    it('EM ROTA no lugar de celula vazia quando a data do relatorio e o dia de hoje (rota ainda em andamento)', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234', temRastreador: true })]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-25', [], [], '2026-08-25')
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const values = (wb.worksheets[0].getRow(LINHA_PRIMEIRO_DADO).values as unknown[]).slice(1)
+
+      expect(values[11]).toBe('EM ROTA') // SAÍDA CD
+      expect(values[12]).toBe('EM ROTA') // CHEGADA CD
+    })
+
+    it('celula vazia continua vazia (nao inventa motivo) quando ha rastreador e a data ja passou', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234', temRastreador: true })]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], [], '2026-08-25')
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const values = (wb.worksheets[0].getRow(LINHA_PRIMEIRO_DADO).values as unknown[]).slice(1)
+
+      expect(values[11]).toBe('') // SAÍDA CD
+      expect(values[12]).toBe('') // CHEGADA CD
+    })
+
+    it('SEM RASTREADOR tambem aparece na aba por placa (CHEGADA/SAÍDA NA LOJA de NF pendente)', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234', temRastreador: false })]
+      const detalhe: LinhaDetalheEntrega[] = [detalheFixture({ temRastreador: false, saidaCd: null, chegadaCd: null })]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const wsPlaca = wb.getWorksheet('ABC1234')!
+      const values = (wsPlaca.getRow(4).values as unknown[]).slice(1)
+
+      expect(values[7]).toBe('SEM RASTREADOR') // SAÍDA DA BASE
+      expect(values[8]).toBe('SEM RASTREADOR') // CHEGADA NA LOJA
+      expect(values[9]).toBe('SEM RASTREADOR') // SAÍDA DA LOJA
+      expect(values[10]).toBe('SEM RASTREADOR') // CHEGADA NA BASE
+    })
+
+    it('NF confirmada via Unitrac (sem GPS) nunca ganha motivo em CHEGADA/SAÍDA NA LOJA, mesmo sem rastreador -- ja tem explicacao propria via STATUS', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+      const detalhe: LinhaDetalheEntrega[] = [detalheFixture({ temRastreador: false, status: 'confirmado_unitrac' })]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const wsPlaca = wb.getWorksheet('ABC1234')!
+      const values = (wsPlaca.getRow(4).values as unknown[]).slice(1)
+
+      expect(values[8]).toBe('') // CHEGADA NA LOJA
+      expect(values[9]).toBe('') // SAÍDA NA LOJA
+      expect(values[13]).toBe('CONFIRMADO (UNITRAC)') // STATUS
+    })
+
+    it('observacao presente SUBSTITUI o texto de STATUS (mais informativa que o rotulo generico)', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+      const detalhe: LinhaDetalheEntrega[] = [
+        detalheFixture({ observacao: 'MUDOU DE ROTA - CONFERIR (placa provável: RQV6I51)' }),
+      ]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const wsPlaca = wb.getWorksheet('ABC1234')!
+      const values = (wsPlaca.getRow(4).values as unknown[]).slice(1)
+
+      expect(values[13]).toBe('MUDOU DE ROTA - CONFERIR (placa provável: RQV6I51)')
     })
   })
 })

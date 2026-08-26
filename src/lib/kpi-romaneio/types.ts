@@ -70,6 +70,13 @@ export type LinhaKpiRomaneio = {
   tempoOperacaoMin: number | null
   tempoMedioParadaMin: number | null
   status: 'OK' | 'INCOMPLETO'
+  // Pedido do usuario 25/08 ("nada mais no quesito informacoes?" -> nivel
+  // Benassi): placa sem cv na Unitrac E sem entrada na ponte do
+  // monitoramento (nunca respondeu por essa placa, nem com null) nunca teve
+  // NENHUMA fonte de rastreamento no dia -- celula de horario vazia por
+  // "SEM RASTREADOR" e' informacao diferente de vazia por "ainda em rota"
+  // ou por bug real, ver gerador-xlsx.ts/motivoAusencia.
+  temRastreador: boolean
 }
 
 /** Uma NF (entrega) dentro de uma carga -- linha da aba "Detalhamento" (pedido
@@ -97,6 +104,14 @@ export type LinhaDetalheEntrega = {
   saida: string | null // ISO -- saida DA LOJA desta entrega
   tempoParadaMin: number | null
   status: StatusEntrega
+  // Mesmo raciocinio de LinhaKpiRomaneio.temRastreador, por NF -- herda o
+  // valor da placa inteira (rastreamento e' por veiculo, nao por entrega).
+  temRastreador: boolean
+  // Pedido do usuario 25/08 (nivel Benassi): nota concreta quando o dado e'
+  // suspeito -- troca de carro (outra placa da frota passou perto do ponto
+  // no lugar da escalada) ou tempo em loja implausivel (>4h, ver
+  // agregacao.ts). `null` = nada de suspeito, STATUS mostra o rotulo normal.
+  observacao: string | null
 }
 
 /** Descasamento entre Escala e Romaneio -- carga que só aparece de um dos
