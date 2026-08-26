@@ -20,7 +20,7 @@
 // malformada) devolve mapa vazio -- toda placa cai pro cálculo antigo,
 // nunca trava o resto do pipeline.
 
-export type HorarioBase = { saidaBase: string | null; chegadaBase: string | null }
+export type HorarioBase = { saidaBase: string | null; chegadaBase: string | null; kmPercorrido: number | null }
 
 // Mesma referência de timeout que geocode.ts usa pra chamada de rede que
 // pode pendurar -- aqui bem menor porque a rota do monitoramento só lê
@@ -58,16 +58,17 @@ function paraBrtMascaradoComoUtc(isoUtcReal: string | null): string | null {
   return comDigitosBrt.toISOString()
 }
 
-function validarResultado(r: unknown): { placa: string; saidaBase: string | null; chegadaBase: string | null } | null {
+function validarResultado(r: unknown): { placa: string; saidaBase: string | null; chegadaBase: string | null; kmPercorrido: number | null } | null {
   if (
     typeof r === 'object' &&
     r !== null &&
     typeof (r as { placa?: unknown }).placa === 'string' &&
     ((r as { saidaBase?: unknown }).saidaBase === null || typeof (r as { saidaBase?: unknown }).saidaBase === 'string') &&
-    ((r as { chegadaBase?: unknown }).chegadaBase === null || typeof (r as { chegadaBase?: unknown }).chegadaBase === 'string')
+    ((r as { chegadaBase?: unknown }).chegadaBase === null || typeof (r as { chegadaBase?: unknown }).chegadaBase === 'string') &&
+    ((r as { kmPercorrido?: unknown }).kmPercorrido === null || typeof (r as { kmPercorrido?: unknown }).kmPercorrido === 'number')
   ) {
-    const obj = r as { placa: string; saidaBase: string | null; chegadaBase: string | null }
-    return { placa: obj.placa, saidaBase: obj.saidaBase, chegadaBase: obj.chegadaBase }
+    const obj = r as { placa: string; saidaBase: string | null; chegadaBase: string | null; kmPercorrido: number | null }
+    return { placa: obj.placa, saidaBase: obj.saidaBase, chegadaBase: obj.chegadaBase, kmPercorrido: obj.kmPercorrido }
   }
   return null
 }
@@ -115,7 +116,13 @@ async function buscarLote(placas: string[], data: string): Promise<Map<string, H
 
   for (const bruto of resultados) {
     const r = validarResultado(bruto)
-    if (r) mapa.set(r.placa, { saidaBase: paraBrtMascaradoComoUtc(r.saidaBase), chegadaBase: paraBrtMascaradoComoUtc(r.chegadaBase) })
+    if (r) {
+      mapa.set(r.placa, {
+        saidaBase: paraBrtMascaradoComoUtc(r.saidaBase),
+        chegadaBase: paraBrtMascaradoComoUtc(r.chegadaBase),
+        kmPercorrido: r.kmPercorrido,
+      })
+    }
   }
   return mapa
 }

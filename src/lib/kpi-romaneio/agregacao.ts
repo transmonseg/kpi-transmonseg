@@ -20,17 +20,19 @@ export function agregarPorCarga(
   alvos: AlvoApi[],
   visitasPorNf: Map<string, Visita>,
   paradasGps: UnitracParadaRow[],
-  kmPercorrido: number | null,
-  // Achado real 25/08: fonte PREFERIDA de saida/chegada da base, via
-  // cruzamento de geofence em posicao continua real (monitoramento, ver
-  // base-horarios.ts) -- sem heuristica de cluster/duracao minima, ao
-  // contrario de eventosBase (paradasGps) abaixo. `undefined` = a ponte
-  // nao tinha dado pra essa placa (offline, placa nao rastreada la, erro
-  // de rede) -- cai pro calculo antigo via eventosBase, nunca quebra o
-  // pipeline. Cada campo (saida/chegada) e' fail-open INDEPENDENTEMENTE:
-  // a ponte pode saber a saida mas nao a chegada (dia em andamento) --
-  // nesse caso so' a chegada cai pro fallback antigo.
-  horarioBaseBridge?: { saidaBase: string | null; chegadaBase: string | null },
+  kmPercorridoFallback: number | null,
+  // Achado real 25/08: fonte PREFERIDA de saida/chegada/km da base, via
+  // cruzamento de geofence + soma ponto-a-ponto em posicao continua real
+  // (monitoramento, ver base-horarios.ts) -- sem heuristica de
+  // cluster/duracao minima pro horario, sem pular trecho entre paradas
+  // pro km (ao contrario de eventosBase/kmPercorridoFallback abaixo, que
+  // vem do feed de paradas da Unitrac). `undefined` = a ponte nao tinha
+  // dado pra essa placa (offline, placa nao rastreada la, erro de rede)
+  // -- cai pro calculo antigo, nunca quebra o pipeline. Cada campo
+  // (saida/chegada/km) e' fail-open INDEPENDENTEMENTE: a ponte pode saber
+  // a saida mas nao a chegada (dia em andamento) -- nesse caso so' a
+  // chegada cai pro fallback antigo.
+  horarioBaseBridge?: { saidaBase: string | null; chegadaBase: string | null; kmPercorrido: number | null },
 ): LinhaKpiRomaneio {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
 
@@ -70,6 +72,12 @@ export function agregarPorCarga(
   // NADA pra essa placa (undefined -- offline, placa nao rastreada la).
   const saidaCd = horarioBaseBridge ? horarioBaseBridge.saidaBase : saidaCdFallback
   const chegadaCd = horarioBaseBridge ? horarioBaseBridge.chegadaBase : chegadaCdFallback
+  // Mesmo raciocinio do saida/chegada acima: confia no km da ponte mesmo
+  // quando null (menos de 2 posicoes no dia -- sinal real de "sem dado",
+  // nao motivo pra cair pro calculo antigo que so soma reta entre paradas
+  // e subestima o trajeto real em ~45%, ver comentario de
+  // calcularKmContinuo do lado do monitoramento).
+  const kmPercorrido = horarioBaseBridge ? horarioBaseBridge.kmPercorrido : kmPercorridoFallback
 
   const nfPlanejado = escala?.nfPlanejado ?? null
   const status: 'OK' | 'INCOMPLETO' = nfPlanejado != null && confirmadas < nfPlanejado ? 'INCOMPLETO' : 'OK'

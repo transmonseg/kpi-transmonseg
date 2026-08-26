@@ -153,12 +153,15 @@ describe('agregarPorCarga', () => {
         parada({ id: 'base1', classificacao: 'BASE', chegada: '2026-08-20T05:00:00.000Z', saida: '2026-08-20T06:00:00.000Z', fim_real: '2026-08-20T06:00:00.000Z' }),
         parada({ id: 'base2', classificacao: 'BASE', chegada: '2026-08-20T18:00:00.000Z', saida: '2026-08-20T18:30:00.000Z', fim_real: '2026-08-20T18:30:00.000Z' }),
       ]
-      const ponte = { saidaBase: '2026-08-20T05:30:00.000Z', chegadaBase: '2026-08-20T19:00:00.000Z' }
+      const ponte = { saidaBase: '2026-08-20T05:30:00.000Z', chegadaBase: '2026-08-20T19:00:00.000Z', kmPercorrido: 203.4 }
 
-      const r = agregarPorCarga('93758', 'TTL7D40', [linha('NF1')], escala(), [], new Map(), paradas, null, ponte)
+      const r = agregarPorCarga('93758', 'TTL7D40', [linha('NF1')], escala(), [], new Map(), paradas, 140.2, ponte)
 
       expect(r.saidaCd).toBe('2026-08-20T05:30:00.000Z')
       expect(r.chegadaCd).toBe('2026-08-20T19:00:00.000Z')
+      // km da ponte (posicao continua) prevalece sobre o fallback (140.2,
+      // so' reta entre paradas) -- mesmo raciocinio de saida/chegada.
+      expect(r.kmPercorrido).toBe(203.4)
     })
 
     it('ponte presente mas com campo null (ex: dia ainda em andamento): confia no null dela, NAO cai pro eventosBase', () => {
@@ -168,12 +171,15 @@ describe('agregarPorCarga', () => {
         parada({ id: 'base1', classificacao: 'BASE', chegada: '2026-08-20T05:00:00.000Z', saida: '2026-08-20T06:00:00.000Z', fim_real: '2026-08-20T06:00:00.000Z' }),
         parada({ id: 'base2', classificacao: 'BASE', chegada: '2026-08-20T12:00:00.000Z', saida: '2026-08-20T12:05:00.000Z', fim_real: '2026-08-20T12:05:00.000Z' }),
       ]
-      const ponte = { saidaBase: '2026-08-20T05:30:00.000Z', chegadaBase: null }
+      const ponte = { saidaBase: '2026-08-20T05:30:00.000Z', chegadaBase: null, kmPercorrido: null }
 
-      const r = agregarPorCarga('93758', 'TTL7D40', [linha('NF1')], escala(), [], new Map(), paradas, null, ponte)
+      const r = agregarPorCarga('93758', 'TTL7D40', [linha('NF1')], escala(), [], new Map(), paradas, 140.2, ponte)
 
       expect(r.saidaCd).toBe('2026-08-20T05:30:00.000Z')
       expect(r.chegadaCd).toBeNull()
+      // km null da ponte tambem prevalece (menos de 2 posicoes no dia --
+      // sinal real de "sem dado"), nao cai pro fallback de 140.2.
+      expect(r.kmPercorrido).toBeNull()
     })
 
     it('ponte ausente (undefined -- offline ou placa nao rastreada la): cai pro calculo antigo via eventosBase', () => {
@@ -182,10 +188,13 @@ describe('agregarPorCarga', () => {
         parada({ id: 'base2', classificacao: 'BASE', chegada: '2026-08-20T18:00:00.000Z', saida: '2026-08-20T18:30:00.000Z', fim_real: '2026-08-20T18:30:00.000Z' }),
       ]
 
-      const r = agregarPorCarga('93758', 'TTL7D40', [linha('NF1')], escala(), [], new Map(), paradas, null, undefined)
+      const r = agregarPorCarga('93758', 'TTL7D40', [linha('NF1')], escala(), [], new Map(), paradas, 140.2, undefined)
 
       expect(r.saidaCd).toBe('2026-08-20T06:00:00.000Z')
       expect(r.chegadaCd).toBe('2026-08-20T18:00:00.000Z')
+      // sem ponte nenhuma, km cai pro fallback (calcularKmPercorrido, ja
+      // calculado pelo chamador).
+      expect(r.kmPercorrido).toBe(140.2)
     })
   })
 

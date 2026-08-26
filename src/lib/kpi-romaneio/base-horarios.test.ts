@@ -28,18 +28,19 @@ describe('buscarHorariosBase', () => {
     expect(mapa.size).toBe(0)
   })
 
-  it('resposta ok: mapa indexado por placa, com saida/chegada CONVERTIDOS de UTC real pra BRT mascarado como UTC', async () => {
+  it('resposta ok: mapa indexado por placa, com saida/chegada CONVERTIDOS de UTC real pra BRT mascarado como UTC, km passa direto (sem fuso)', async () => {
     // Achado real 25/08: a ponte devolve UTC de verdade (timestamptz do
     // monitoramento) -- o resto do pipeline (formatarHora) espera BRT
     // mascarado como UTC (mesma convencao da Unitrac). 09:00 UTC real =
-    // 06:00 BRT; a mascara representa isso como "06:00...Z".
+    // 06:00 BRT; a mascara representa isso como "06:00...Z". km nao tem
+    // fuso, passa direto.
     mockFetchOk([
-      { placa: 'ABC1234', saidaBase: '2026-08-25T09:00:00.000Z', chegadaBase: '2026-08-25T21:00:00.000Z' },
-      { placa: 'XYZ5678', saidaBase: null, chegadaBase: null },
+      { placa: 'ABC1234', saidaBase: '2026-08-25T09:00:00.000Z', chegadaBase: '2026-08-25T21:00:00.000Z', kmPercorrido: 203.4 },
+      { placa: 'XYZ5678', saidaBase: null, chegadaBase: null, kmPercorrido: null },
     ])
     const mapa = await buscarHorariosBase(['ABC1234', 'XYZ5678'], '2026-08-25')
-    expect(mapa.get('ABC1234')).toEqual({ saidaBase: '2026-08-25T06:00:00.000Z', chegadaBase: '2026-08-25T18:00:00.000Z' })
-    expect(mapa.get('XYZ5678')).toEqual({ saidaBase: null, chegadaBase: null })
+    expect(mapa.get('ABC1234')).toEqual({ saidaBase: '2026-08-25T06:00:00.000Z', chegadaBase: '2026-08-25T18:00:00.000Z', kmPercorrido: 203.4 })
+    expect(mapa.get('XYZ5678')).toEqual({ saidaBase: null, chegadaBase: null, kmPercorrido: null })
   })
 
   it('MOTOR_SECRET ausente: nao chama fetch, devolve mapa vazio', async () => {
@@ -74,13 +75,14 @@ describe('buscarHorariosBase', () => {
 
   it('item malformado na resposta e ignorado, sem derrubar os outros', async () => {
     mockFetchOk([
-      { placa: 'ABC1234', saidaBase: '2026-08-25T09:00:00.000Z', chegadaBase: null },
-      { placa: 123, saidaBase: null, chegadaBase: null }, // placa nao e string
+      { placa: 'ABC1234', saidaBase: '2026-08-25T09:00:00.000Z', chegadaBase: null, kmPercorrido: 203.4 },
+      { placa: 123, saidaBase: null, chegadaBase: null, kmPercorrido: null }, // placa nao e string
+      { placa: 'DEF5678', saidaBase: null, chegadaBase: null, kmPercorrido: '203.4' }, // km nao e number
       'nao e objeto',
     ])
-    const mapa = await buscarHorariosBase(['ABC1234'], '2026-08-25')
+    const mapa = await buscarHorariosBase(['ABC1234', 'DEF5678'], '2026-08-25')
     expect(mapa.size).toBe(1)
-    expect(mapa.get('ABC1234')).toEqual({ saidaBase: '2026-08-25T06:00:00.000Z', chegadaBase: null })
+    expect(mapa.get('ABC1234')).toEqual({ saidaBase: '2026-08-25T06:00:00.000Z', chegadaBase: null, kmPercorrido: 203.4 })
   })
 
   it('paraBrtMascaradoComoUtc: aceita offset explicito (+02:00 do Postgres, ver TimeZone da role) e converte pro mesmo resultado que Z', async () => {
@@ -88,9 +90,9 @@ describe('buscarHorariosBase', () => {
     // da role/sessao (Europe/Berlin neste projeto), entao a ponte pode
     // devolver "+02:00" em vez de "Z" -- new Date() resolve os dois pro
     // MESMO instante absoluto, entao o resultado tem que ser identico.
-    mockFetchOk([{ placa: 'ABC1234', saidaBase: '2026-08-25T11:00:00.000+02:00', chegadaBase: null }])
+    mockFetchOk([{ placa: 'ABC1234', saidaBase: '2026-08-25T11:00:00.000+02:00', chegadaBase: null, kmPercorrido: null }])
     const mapa = await buscarHorariosBase(['ABC1234'], '2026-08-25')
     // 11:00+02:00 == 09:00 UTC == 06:00 BRT
-    expect(mapa.get('ABC1234')).toEqual({ saidaBase: '2026-08-25T06:00:00.000Z', chegadaBase: null })
+    expect(mapa.get('ABC1234')).toEqual({ saidaBase: '2026-08-25T06:00:00.000Z', chegadaBase: null, kmPercorrido: null })
   })
 })
