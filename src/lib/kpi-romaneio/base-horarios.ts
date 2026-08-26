@@ -20,7 +20,21 @@
 // malformada) devolve mapa vazio -- toda placa cai pro cálculo antigo,
 // nunca trava o resto do pipeline.
 
-export type HorarioBase = { saidaBase: string | null; chegadaBase: string | null; kmPercorrido: number | null }
+export type HorarioBase = {
+  saidaBase: string | null
+  chegadaBase: string | null
+  kmPercorrido: number | null
+  // Achado real 25/08 (3a extensao da mesma ponte): CHEGADA/SAIDA NA LOJA
+  // via cruzamento de geofence por ponto de entrega, mesmo raciocinio de
+  // saidaBase/chegadaBase mas por NF em vez de por base. So' presente
+  // quando o chamador mandou pontos pra essa placa (buscarHorariosBase);
+  // dentro do mapa, cada NF individualmente pode ter chegada/saida null
+  // (nunca visitado -- ver montarVisitas.ts, que confia nisso e REMOVE
+  // qualquer guess antigo pra essa NF em vez de manter).
+  visitasPorNf?: Map<string, { chegada: string | null; saida: string | null }>
+}
+
+export type PontoEntregaBridge = { id: string; lat: number; lng: number }
 
 // Mesma referência de timeout que geocode.ts usa pra chamada de rede que
 // pode pendurar -- aqui bem menor porque a rota do monitoramento só lê
@@ -58,7 +72,30 @@ function paraBrtMascaradoComoUtc(isoUtcReal: string | null): string | null {
   return comDigitosBrt.toISOString()
 }
 
-function validarResultado(r: unknown): { placa: string; saidaBase: string | null; chegadaBase: string | null; kmPercorrido: number | null } | null {
+type VisitaBrutaResultado = { id: string; chegada: string | null; saida: string | null }
+
+function validarVisitaBruta(v: unknown): VisitaBrutaResultado | null {
+  if (
+    typeof v === 'object' && v !== null &&
+    typeof (v as VisitaBrutaResultado).id === 'string' &&
+    ((v as VisitaBrutaResultado).chegada === null || typeof (v as VisitaBrutaResultado).chegada === 'string') &&
+    ((v as VisitaBrutaResultado).saida === null || typeof (v as VisitaBrutaResultado).saida === 'string')
+  ) {
+    const obj = v as VisitaBrutaResultado
+    return { id: obj.id, chegada: obj.chegada, saida: obj.saida }
+  }
+  return null
+}
+
+type ResultadoBruto = {
+  placa: string
+  saidaBase: string | null
+  chegadaBase: string | null
+  kmPercorrido: number | null
+  visitas?: VisitaBrutaResultado[]
+}
+
+function validarResultado(r: unknown): ResultadoBruto | null {
   if (
     typeof r === 'object' &&
     r !== null &&
@@ -67,18 +104,32 @@ function validarResultado(r: unknown): { placa: string; saidaBase: string | null
     ((r as { chegadaBase?: unknown }).chegadaBase === null || typeof (r as { chegadaBase?: unknown }).chegadaBase === 'string') &&
     ((r as { kmPercorrido?: unknown }).kmPercorrido === null || typeof (r as { kmPercorrido?: unknown }).kmPercorrido === 'number')
   ) {
-    const obj = r as { placa: string; saidaBase: string | null; chegadaBase: string | null; kmPercorrido: number | null }
-    return { placa: obj.placa, saidaBase: obj.saidaBase, chegadaBase: obj.chegadaBase, kmPercorrido: obj.kmPercorrido }
+    const obj = r as { placa: string; saidaBase: string | null; chegadaBase: string | null; kmPercorrido: number | null; visitas?: unknown }
+    const visitasBrutas = Array.isArray(obj.visitas) ? obj.visitas.map(validarVisitaBruta).filter((v): v is VisitaBrutaResultado => v !== null) : undefined
+    return { placa: obj.placa, saidaBase: obj.saidaBase, chegadaBase: obj.chegadaBase, kmPercorrido: obj.kmPercorrido, visitas: visitasBrutas }
   }
   return null
 }
 
-async function buscarLote(placas: string[], data: string): Promise<Map<string, HorarioBase>> {
+async function buscarLote(
+  placas: string[],
+  data: string,
+  pontosPorPlaca: Map<string, PontoEntregaBridge[]>,
+): Promise<Map<string, HorarioBase>> {
   const mapa = new Map<string, HorarioBase>()
   const chave = process.env.MOTOR_SECRET
   if (!chave) {
     console.error('[kpi-romaneio/base-horarios] MOTOR_SECRET nao configurada -- pulado')
     return mapa
+  }
+
+  // So' manda `pontosPorPlaca` no corpo pras placas DESTE lote que tem
+  // pontos -- objeto vazio quando nenhuma tem (placas sem romaneio
+  // geocodificado ainda, por exemplo), sem mudar o contrato da rota.
+  const pontosPorPlacaBody: Record<string, PontoEntregaBridge[]> = {}
+  for (const placa of placas) {
+    const pontos = pontosPorPlaca.get(placa)
+    if (pontos && pontos.length > 0) pontosPorPlacaBody[placa] = pontos
   }
 
   const ctrl = new AbortController()
@@ -88,7 +139,7 @@ async function buscarLote(placas: string[], data: string): Promise<Map<string, H
     res = await fetch(urlBaseHorarios(), {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-motor-key': chave },
-      body: JSON.stringify({ placas, data }),
+      body: JSON.stringify({ placas, data, pontosPorPlaca: pontosPorPlacaBody }),
       signal: ctrl.signal,
     })
   } catch (e) {
@@ -117,10 +168,14 @@ async function buscarLote(placas: string[], data: string): Promise<Map<string, H
   for (const bruto of resultados) {
     const r = validarResultado(bruto)
     if (r) {
+      const visitasPorNf = r.visitas
+        ? new Map(r.visitas.map((v) => [v.id, { chegada: paraBrtMascaradoComoUtc(v.chegada), saida: paraBrtMascaradoComoUtc(v.saida) }]))
+        : undefined
       mapa.set(r.placa, {
         saidaBase: paraBrtMascaradoComoUtc(r.saidaBase),
         chegadaBase: paraBrtMascaradoComoUtc(r.chegadaBase),
         kmPercorrido: r.kmPercorrido,
+        visitasPorNf,
       })
     }
   }
@@ -130,12 +185,22 @@ async function buscarLote(placas: string[], data: string): Promise<Map<string, H
 /** Uma chamada por lote de ate MAX_PLACAS_POR_CHAMADA -- placa nao
  *  encontrada na resposta (erro parcial, placa desconhecida do lado do
  *  monitoramento) simplesmente nao aparece no mapa, tratado pelo chamador
- *  como "sem dado desta fonte, cai pro calculo antigo". */
-export async function buscarHorariosBase(placasNorm: string[], data: string): Promise<Map<string, HorarioBase>> {
+ *  como "sem dado desta fonte, cai pro calculo antigo".
+ *
+ *  `pontosPorPlaca` (opcional): coordenadas geocodificadas de cada
+ *  NF/entrega, pra pedir tambem CHEGADA/SAIDA NA LOJA via a mesma
+ *  posicao continua (ver visitasPorNf em HorarioBase). Placa sem entrada
+ *  neste mapa simplesmente nao pede visitas -- so' pede saida/chegada/km
+ *  da base, comportamento identico a antes desta extensao. */
+export async function buscarHorariosBase(
+  placasNorm: string[],
+  data: string,
+  pontosPorPlaca: Map<string, PontoEntregaBridge[]> = new Map(),
+): Promise<Map<string, HorarioBase>> {
   const mapa = new Map<string, HorarioBase>()
   for (let i = 0; i < placasNorm.length; i += MAX_PLACAS_POR_CHAMADA) {
     const lote = placasNorm.slice(i, i + MAX_PLACAS_POR_CHAMADA)
-    const doLote = await buscarLote(lote, data)
+    const doLote = await buscarLote(lote, data, pontosPorPlaca)
     for (const [placa, horario] of doLote) mapa.set(placa, horario)
   }
   return mapa

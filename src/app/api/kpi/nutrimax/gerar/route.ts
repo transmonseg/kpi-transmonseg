@@ -102,10 +102,22 @@ export async function POST(req: NextRequest) {
   const linhasPorPlaca = agrupar(romaneioGeo, l => normPlaca(l.placa))
   const placasNorm = [...linhasPorPlaca.keys()]
 
+  // Coordenadas de cada NF geocodificada, pra pedir tambem CHEGADA/SAIDA
+  // NA LOJA via a mesma ponte (id = NF, ver base-horarios.ts). Linha sem
+  // coordenada (geocode falhou) simplesmente nao entra -- confirmacao
+  // dessa NF continua podendo vir so' do Unitrac, sem bloquear nada.
+  const pontosPorPlacaBridge = new Map<string, { id: string; lat: number; lng: number }[]>()
+  for (const [placaNorm, linhasDaPlaca] of linhasPorPlaca) {
+    const pontos = linhasDaPlaca
+      .filter((l): l is LinhaGeocodificada & { lat: number; lng: number } => l.lat != null && l.lng != null)
+      .map(l => ({ id: l.nf, lat: l.lat, lng: l.lng }))
+    if (pontos.length > 0) pontosPorPlacaBridge.set(placaNorm, pontos)
+  }
+
   const [frota, alvosBrutos, horarioBasePorPlaca] = await Promise.all([
     buscarFrota(COD_USER_NUTRIMAX),
     buscarAlvosDoDia(placasNorm),
-    buscarHorariosBase(placasNorm, data),
+    buscarHorariosBase(placasNorm, data, pontosPorPlacaBridge),
   ])
   const alvos = alvosDaData(alvosBrutos, data)
   const cvPorPlaca = new Map(frota.map(v => [v.placaNorm, v.cv]))
@@ -123,7 +135,7 @@ export async function POST(req: NextRequest) {
     const cv = cvPorPlaca.get(placaNorm)
     const paradas = cv ? await buscarParadasDoDia(cv, placaNorm, data, 48) : []
     paradasPorPlaca.set(placaNorm, paradas)
-    visitasPorPlaca.set(placaNorm, montarVisitas(linhasPorPlaca.get(placaNorm) ?? [], paradas))
+    visitasPorPlaca.set(placaNorm, montarVisitas(linhasPorPlaca.get(placaNorm) ?? [], paradas, horarioBasePorPlaca.get(placaNorm)?.visitasPorNf))
     kmPorPlaca.set(placaNorm, calcularKmPercorrido(paradas))
   }))
 

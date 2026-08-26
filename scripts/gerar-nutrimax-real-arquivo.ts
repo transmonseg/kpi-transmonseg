@@ -59,6 +59,15 @@ async function main() {
   const linhasPorPlaca = agrupar(romaneioGeo, l => normPlaca(l.placa))
   const placasNorm = [...linhasPorPlaca.keys()]
 
+  const pontosPorPlacaBridge = new Map<string, { id: string; lat: number; lng: number }[]>()
+  for (const [placaNorm, linhasDaPlaca] of linhasPorPlaca) {
+    const pontos = linhasDaPlaca
+      .filter((l): l is LinhaGeocodificada & { lat: number; lng: number } => l.lat != null && l.lng != null)
+      .map(l => ({ id: l.nf, lat: l.lat, lng: l.lng }))
+    if (pontos.length > 0) pontosPorPlacaBridge.set(placaNorm, pontos)
+  }
+  const horarioBasePorPlaca = await buscarHorariosBase(placasNorm, data, pontosPorPlacaBridge)
+
   const frota = await buscarFrota(COD_USER_NUTRIMAX)
   const cvPorPlaca = new Map(frota.map(v => [v.placaNorm, v.cv]))
   let alvosBrutos: Awaited<ReturnType<typeof buscarAlvosDoDia>> = []
@@ -84,14 +93,13 @@ async function main() {
       }
     }
     paradasPorPlaca.set(placaNorm, paradas)
-    visitasPorPlaca.set(placaNorm, montarVisitas(linhasPorPlaca.get(placaNorm) ?? [], paradas))
+    visitasPorPlaca.set(placaNorm, montarVisitas(linhasPorPlaca.get(placaNorm) ?? [], paradas, horarioBasePorPlaca.get(placaNorm)?.visitasPorNf))
     kmPorPlaca.set(placaNorm, calcularKmPercorrido(paradas))
   }
 
   const alvosPorPlaca = agrupar(alvos, a => a.placaNorm)
   const escalaPorChave = new Map(escala.map(e => [`${e.carga}::${e.placaNorm}`, e]))
   const cargasPorChave = agrupar(romaneioGeo, l => `${l.carga}::${normPlaca(l.placa)}`)
-  const horarioBasePorPlaca = await buscarHorariosBase(placasNorm, data)
 
   const linhasKpi: LinhaKpiRomaneio[] = [...cargasPorChave.entries()]
     .map(([chave, linhasDaCarga]) => {

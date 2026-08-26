@@ -108,4 +108,55 @@ describe('montarVisitas', () => {
 
     expect(visitas.has('NF5')).toBe(false)
   })
+
+  describe('visitasPorNfBridge (achado real 25/08: posicao continua real via monitoramento)', () => {
+    it('ponte presente com chegada/saida: SUBSTITUI a visita do algoritmo antigo (mesmo quando o antigo achou outra coisa)', () => {
+      const l1 = linha('NF1', -22.9, -43.2)
+      const p1 = parada({ lat: -22.9001, lng: -43.2001, chegada: '2026-08-20T10:00:00.000Z', fim_real: '2026-08-20T10:10:00.000Z' })
+      const bridge = new Map([['NF1', { chegada: '2026-08-20T10:17:00.000Z', saida: '2026-08-20T10:28:00.000Z' }]])
+
+      const visitas = montarVisitas([l1], [p1], bridge)
+
+      expect(visitas.get('NF1')).toEqual({
+        nf: 'NF1',
+        chegada: '2026-08-20T10:17:00.000Z',
+        saida: '2026-08-20T10:28:00.000Z',
+        distanciaMetrosDoPonto: 0,
+      })
+    })
+
+    it('ponte presente mas com chegada/saida null: REMOVE a visita do algoritmo antigo (confia que nunca foi visitado)', () => {
+      const l1 = linha('NF1', -22.9, -43.2)
+      const p1 = parada({ lat: -22.9001, lng: -43.2001 }) // algoritmo antigo acharia visita aqui
+      const bridge = new Map([['NF1', { chegada: null, saida: null }]])
+
+      const visitas = montarVisitas([l1], [p1], bridge)
+
+      expect(visitas.has('NF1')).toBe(false)
+    })
+
+    it('NF ausente do mapa da ponte (ponte nao respondeu por ela): mantem o resultado do algoritmo antigo', () => {
+      const l1 = linha('NF1', -22.9, -43.2)
+      const p1 = parada({ lat: -22.9001, lng: -43.2001, chegada: '2026-08-20T10:00:00.000Z', fim_real: '2026-08-20T10:10:00.000Z' })
+      const bridge = new Map<string, { chegada: string | null; saida: string | null }>() // vazio -- NF1 nao esta aqui
+
+      const visitas = montarVisitas([l1], [p1], bridge)
+
+      expect(visitas.get('NF1')).toEqual({
+        nf: 'NF1',
+        chegada: '2026-08-20T10:00:00.000Z',
+        saida: '2026-08-20T10:10:00.000Z',
+        distanciaMetrosDoPonto: expect.any(Number),
+      })
+    })
+
+    it('sem ponte nenhuma (undefined): comportamento identico a antes desta extensao', () => {
+      const l1 = linha('NF1', -22.9, -43.2)
+      const p1 = parada({ lat: -22.9001, lng: -43.2001 })
+
+      const visitas = montarVisitas([l1], [p1], undefined)
+
+      expect(visitas.has('NF1')).toBe(true)
+    })
+  })
 })

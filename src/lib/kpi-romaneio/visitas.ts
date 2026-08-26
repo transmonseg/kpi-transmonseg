@@ -14,6 +14,19 @@ import { RAIO_ENTREGA_METROS } from './constants'
 export function montarVisitas(
   linhas: LinhaGeocodificada[],
   paradas: UnitracParadaRow[],
+  // Achado real 25/08: fonte PREFERIDA de CHEGADA/SAIDA NA LOJA, via
+  // cruzamento de geofence direto na coordenada de CADA ponto (ver
+  // base-horarios.ts/acharVisitasPorPonto do lado do monitoramento) --
+  // sem competir por cluster de parada nenhum, ao contrario do algoritmo
+  // abaixo (que casa parada da Unitrac com o ponto geocodificado mais
+  // proximo). `undefined` na entrada do mapa pra uma NF = a ponte nao
+  // respondeu por ela (offline, sem pontos geocodificados ainda) -- essa
+  // NF mantem o resultado do algoritmo antigo abaixo. Entrada PRESENTE
+  // (mesmo com chegada/saida null) = a ponte confia que a NF nunca foi
+  // visitada de verdade -- REMOVE qualquer guess do algoritmo antigo pra
+  // essa NF em vez de manter (mesmo raciocinio de "confia no null da
+  // ponte" ja usado em agregarPorCarga pra saida/chegada/km da base).
+  visitasPorNfBridge?: Map<string, { chegada: string | null; saida: string | null }>,
 ): Map<string, Visita> {
   // nf -> Visita
   const visitas = new Map<string, Visita>()
@@ -49,5 +62,22 @@ export function montarVisitas(
       })
     }
   }
+
+  if (visitasPorNfBridge) {
+    for (const linha of linhas) {
+      const doPonte = visitasPorNfBridge.get(linha.nf)
+      if (doPonte === undefined) continue // ponte nao respondeu por essa NF -- mantem o resultado antigo
+      if (doPonte.chegada && doPonte.saida) {
+        // distanciaMetrosDoPonto nao faz sentido aqui (a ponte confirma
+        // presenca dentro do raio do PROPRIO ponto, nao casa contra
+        // varios candidatos) -- 0, nunca lido em nenhum outro lugar do
+        // pipeline (so' escrito, ver grep).
+        visitas.set(linha.nf, { nf: linha.nf, chegada: doPonte.chegada, saida: doPonte.saida, distanciaMetrosDoPonto: 0 })
+      } else {
+        visitas.delete(linha.nf)
+      }
+    }
+  }
+
   return visitas
 }
