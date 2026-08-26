@@ -1,5 +1,10 @@
 import ExcelJS from 'exceljs'
 import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega } from './types'
+// Reusa a MESMA paleta/fonte/logo ja validados no relatorio da Benassi
+// (pedido do usuario 25/08: "deixar esse relatorio nivel o da Benassi") --
+// nunca duplica cor/asset, um unico lugar de verdade pros dois clientes.
+import { KPI_COLORS, KPI_FONTS, KPI_BORDER_THIN } from '@/lib/kpi/kpi-styles'
+import { getLogoBuffer } from '@/lib/kpi/template-loader'
 
 // STATUS (OK/INCOMPLETO) removido da tela principal (pedido do usuario
 // 25/08: "tira esse status de concluido ou incompleto") -- o campo `status`
@@ -44,12 +49,15 @@ const LABEL_STATUS_ENTREGA: Record<StatusEntrega, string> = {
   pendente: 'PENDENTE',
 }
 
-// Mesma paleta do modelo de referência que o usuário usa hoje
-// (KPI-GUANABARA-*.xlsx, banner "RELATÓRIO KPI - <CLIENTE>"): título branco
-// em negrito sobre fundo azul-marinho, cabeçalho de coluna em cinza claro.
-const COR_TITULO_FUNDO = 'FF153C6B'
-const COR_TITULO_TEXTO = 'FFFFFFFF'
-const COR_HEADER_FUNDO = 'FFD9E1F2'
+// Paleta/fonte de KPI_COLORS/KPI_FONTS (kpi-styles.ts) -- mesmo "nivel"
+// visual do relatorio da Benassi: titulo branco em negrito sobre azul-
+// marinho da marca, cabecalho de coluna em azul mais claro com texto
+// branco, Calibri em vez da fonte padrao do Excel.
+const COR_TITULO_FUNDO = KPI_COLORS.BRAND_BLUE
+const COR_TITULO_TEXTO = KPI_COLORS.HEADER_TEXT
+const COR_HEADER_FUNDO = KPI_COLORS.BRAND_BLUE_LIGHT
+const COR_HEADER_TEXTO = KPI_COLORS.HEADER_TEXT
+const FONTE = KPI_FONTS.BODY.name
 
 const DIAS_SEMANA = [
   'Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado',
@@ -97,11 +105,33 @@ function formatarMinutos(min: number | null): string {
   return `${h}h${String(m).padStart(2, '0')}min`
 }
 
+// Logo Transmonseg no canto esquerdo do banner de titulo -- mesmo asset
+// (src/assets/transmonseg-logo.png) que o template da Benassi ja usa,
+// so' que la' vem embutido no arquivo .xlsx modelo e aqui e' adicionado
+// via API do ExcelJS (o gerador da Nutry Max monta o workbook do zero,
+// nao carrega um template existente). Tamanho pequeno de proposito (nao
+// pode competir com o titulo, que carrega informacao real -- cliente e
+// data -- que a Benassi nao precisa repetir no mesmo lugar).
+async function adicionarLogo(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, linha: number): Promise<void> {
+  try {
+    const buffer = await getLogoBuffer()
+    const imageId = wb.addImage({ buffer: buffer as unknown as ExcelJS.Buffer, extension: 'png' })
+    ws.addImage(imageId, {
+      tl: { col: 0.15, row: linha - 1 + 0.15 },
+      ext: { width: 42, height: 30 },
+    })
+  } catch {
+    // Fail-open: logo e' puramente decorativo -- se o asset nao carregar
+    // por algum motivo, o relatorio sai sem logo em vez de quebrar a
+    // geracao inteira.
+  }
+}
+
 function estilizarTitulo(ws: ExcelJS.Worksheet, tituloLinha: number, qtdColunas: number, titulo: string): void {
   ws.mergeCells(tituloLinha, 1, tituloLinha, qtdColunas)
   const cell = ws.getCell(tituloLinha, 1)
   cell.value = titulo
-  cell.font = { bold: true, size: 14, color: { argb: COR_TITULO_TEXTO } }
+  cell.font = { name: FONTE, bold: true, size: 14, color: { argb: COR_TITULO_TEXTO } }
   cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_TITULO_FUNDO } }
   cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }
   ws.getRow(tituloLinha).height = 32
@@ -138,11 +168,26 @@ function estilizarHeader(ws: ExcelJS.Worksheet, headerLinha: number, qtdColunas:
   const row = ws.getRow(headerLinha)
   for (let c = 1; c <= qtdColunas; c++) {
     const cell = row.getCell(c)
-    cell.font = { bold: true }
+    cell.font = { name: FONTE, bold: true, color: { argb: COR_HEADER_TEXTO } }
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_HEADER_FUNDO } }
     cell.alignment = { vertical: 'middle', horizontal: 'center' }
   }
   ws.views = [{ state: 'frozen', ySplit: headerLinha }]
+}
+
+// Zebra + fonte Calibri + borda inferior sutil nas linhas de dado --
+// mesma paleta BG_ZEBRA/BORDER/TEXT_DEFAULT do relatorio da Benassi
+// (kpi-styles.ts), aplicada linha a linha depois do addRow (ExcelJS nao
+// tem "estilo de linha alternada" nativo).
+function estilizarLinhaDado(ws: ExcelJS.Worksheet, linha: number, qtdColunas: number, indice: number): void {
+  const row = ws.getRow(linha)
+  const zebra = indice % 2 === 1
+  for (let c = 1; c <= qtdColunas; c++) {
+    const cell = row.getCell(c)
+    cell.font = { name: FONTE, color: { argb: KPI_COLORS.TEXT_DEFAULT } }
+    if (zebra) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: KPI_COLORS.BG_ZEBRA } }
+    cell.border = KPI_BORDER_THIN
+  }
 }
 
 /** Terceiro parametro e' aditivo -- avisos de descasamento Escala<->Romaneio
@@ -170,6 +215,7 @@ export async function gerarKpiRomaneioXlsx(
 
   const ws = wb.addWorksheet(`KPI ${data}`)
   estilizarTitulo(ws, 1, COLUNAS_KPI_ROMANEIO.length, titulo)
+  await adicionarLogo(wb, ws, 1)
   ws.addRow([...COLUNAS_KPI_ROMANEIO])
   estilizarHeader(ws, 2, COLUNAS_KPI_ROMANEIO.length)
   ws.columns = [
@@ -178,7 +224,7 @@ export async function gerarKpiRomaneioXlsx(
     { width: 10 }, { width: 10 }, { width: 14 }, { width: 18 },
   ]
 
-  for (const l of linhas) {
+  linhas.forEach((l, i) => {
     ws.addRow([
       l.carga, l.placa, l.destino, l.motorista, l.ajudante1 ?? '', l.ajudante2 ?? '',
       l.pesoKg ?? '', l.clientesPlanejados ?? '', l.nfPlanejado ?? '', l.paradasReais,
@@ -186,7 +232,8 @@ export async function gerarKpiRomaneioXlsx(
       formatarHora(l.saidaCd), formatarHora(l.chegadaCd), formatarMinutos(l.tempoOperacaoMin),
       formatarMinutos(l.tempoMedioParadaMin),
     ])
-  }
+    estilizarLinhaDado(ws, 2 + 1 + i, COLUNAS_KPI_ROMANEIO.length, i)
+  })
   // Filtro nativo do Excel (pedido do usuário 24/08: "filtrável por placa")
   // -- dropdown em toda coluna, não só PLACA, é o comportamento padrão do
   // recurso e o mais útil (também dá pra filtrar por STATUS, DESTINO etc).
@@ -221,6 +268,7 @@ export async function gerarKpiRomaneioXlsx(
     const wsPlaca = wb.addWorksheet(nomeAbaPlaca(placa))
     const tituloPlaca = `RELATÓRIO KPI - NUTRY MAX - PLACA ${placa}\n${formatarTituloData(data)}`
     estilizarTitulo(wsPlaca, 1, COLUNAS_DETALHE_PLACA.length, tituloPlaca)
+    await adicionarLogo(wb, wsPlaca, 1)
     escreverResumoPlaca(wsPlaca, 2, COLUNAS_DETALHE_PLACA.length, resumoPorPlaca.get(placa))
     wsPlaca.addRow([...COLUNAS_DETALHE_PLACA])
     estilizarHeader(wsPlaca, 3, COLUNAS_DETALHE_PLACA.length)
@@ -229,14 +277,15 @@ export async function gerarKpiRomaneioXlsx(
       { width: 10 }, { width: 10 }, { width: 10 }, { width: 10 }, { width: 14 }, { width: 16 }, { width: 20 },
     ]
     const linhasDaPlaca = detalhePorPlaca.get(placa) ?? []
-    for (const d of linhasDaPlaca) {
+    linhasDaPlaca.forEach((d, i) => {
       wsPlaca.addRow([
         d.carga, d.nf, d.clienteNome, d.motorista, d.clienteCodigo, d.placa, d.endereco,
         formatarHora(d.saidaCd), formatarHora(d.chegada), formatarHora(d.saida), formatarHora(d.chegadaCd),
         formatarMinutos(d.tempoParadaMin), formatarMinutos(d.tempoOperacaoMin),
         LABEL_STATUS_ENTREGA[d.status],
       ])
-    }
+      estilizarLinhaDado(wsPlaca, 3 + 1 + i, COLUNAS_DETALHE_PLACA.length, i)
+    })
     wsPlaca.autoFilter = {
       from: { row: 3, column: 1 },
       to: { row: 3 + linhasDaPlaca.length, column: COLUNAS_DETALHE_PLACA.length },
