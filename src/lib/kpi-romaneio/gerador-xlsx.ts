@@ -17,24 +17,21 @@ export const COLUNAS_KPI_ROMANEIO = [
   'SAÍDA CD', 'CHEGADA CD', 'TEMPO OPERAÇÃO', 'TEMPO MÉDIO POR ENTREGA',
 ] as const
 
-// PLACA não entra aqui -- cada placa agora e' a PRÓPRIA aba (pedido do
-// usuário 25/08: "detalhes quero abas por placa... com o estilo de kpi que
-// mandei... com a chegada, saída, tempo na nota fiscal"), seria redundante
-// repetir a mesma placa em toda linha de uma aba que já é só dela. COD (o
-// codigo do cliente do romaneio, ver LinhaRomaneio.clienteCodigo) entra
-// pra casar com a coluna "COD" do modelo de referencia
-// (KPI-GUANABARA-2026-08-23-com-chegada-cd.xlsx).
-// Ordem pedida pelo usuario 25/08: NF + nome do cliente logo em seguida,
-// depois motorista/codigo/placa (todos "se tiver" -- ja vem string vazia
-// quando falta, ver LinhaKpiRomaneio.motorista e LinhaRomaneio.clienteCodigo),
-// depois o bloco de horarios na ordem exata que ele pediu (saida da base ->
-// chegada na loja -> saida da loja -> chegada na base), tempo na loja e
-// tempo de operacao. CARGA/ENDEREÇO/STATUS mantidos (usuario confirmou que
-// sao ADITIVOS a essa lista, nao substituem).
+// Achado real 27/08 (Tia Erica, audio no privado -- "na capa interna acho
+// que não seria necessário, porque fica muito repetitivo... eu não sei
+// também se eu deixo aqui a chegada na loja [base], porque fica muita
+// coluna repetida"): MOTORISTA/COD/PLACA/SAÍDA DA BASE/CHEGADA NA
+// BASE/TEMPO DE OPERAÇÃO sao valores por VEICULO/dia -- repetem o
+// EXATO mesmo texto em toda linha da aba (a aba ja e' so' dessa placa, e
+// esses 4 primeiros ja aparecem na linha de resumo acima da tabela, ver
+// escreverResumoPlaca). Removidos daqui -- ficam so' uma vez, no resumo.
+// Mantido o que varia por ENTREGA de verdade: carga, NF, cliente,
+// endereco, chegada/saida na loja, tempo na loja, status. Ordem
+// confirmada no mesmo audio ("vou deixar apenas a tabela com o endereço,
+// chegar na loja, sair da loja e tempo na loja e a nota fiscal").
 export const COLUNAS_DETALHE_PLACA = [
-  'CARGA', 'NF', 'CLIENTE', 'MOTORISTA', 'COD', 'PLACA', 'ENDEREÇO',
-  'SAÍDA DA BASE', 'CHEGADA NA LOJA', 'SAÍDA DA LOJA', 'CHEGADA NA BASE',
-  'TEMPO NA LOJA', 'TEMPO DE OPERAÇÃO', 'STATUS',
+  'CARGA', 'NF', 'CLIENTE', 'ENDEREÇO',
+  'CHEGADA NA LOJA', 'SAÍDA DA LOJA', 'TEMPO NA LOJA', 'STATUS',
 ] as const
 
 export const COLUNAS_AVISOS = ['CARGA', 'PLACA', 'PROBLEMA'] as const
@@ -304,8 +301,8 @@ export async function gerarKpiRomaneioXlsx(
     wsPlaca.addRow([...COLUNAS_DETALHE_PLACA])
     estilizarHeader(wsPlaca, 3, COLUNAS_DETALHE_PLACA.length)
     wsPlaca.columns = [
-      { width: 10 }, { width: 14 }, { width: 32 }, { width: 22 }, { width: 10 }, { width: 12 }, { width: 36 },
-      { width: 10 }, { width: 10 }, { width: 10 }, { width: 10 }, { width: 14 }, { width: 16 }, { width: 36 },
+      { width: 10 }, { width: 14 }, { width: 32 }, { width: 36 },
+      { width: 12 }, { width: 12 }, { width: 12 }, { width: 36 },
     ]
     const linhasDaPlaca = detalhePorPlaca.get(placa) ?? []
     linhasDaPlaca.forEach((d, i) => {
@@ -316,9 +313,8 @@ export async function gerarKpiRomaneioXlsx(
       const chegadaLoja = d.status === 'pendente' ? celulaHora(d.chegada, d.temRastreador, data, hoje) : formatarHora(d.chegada)
       const saidaLoja = d.status === 'pendente' ? celulaHora(d.saida, d.temRastreador, data, hoje) : formatarHora(d.saida)
       wsPlaca.addRow([
-        d.carga, d.nf, d.clienteNome, d.motorista, d.clienteCodigo, d.placa, d.endereco,
-        celulaHora(d.saidaCd, d.temRastreador, data, hoje), chegadaLoja, saidaLoja, celulaHora(d.chegadaCd, d.temRastreador, data, hoje),
-        formatarMinutos(d.tempoParadaMin), formatarMinutos(d.tempoOperacaoMin),
+        d.carga, d.nf, d.clienteNome, d.endereco,
+        chegadaLoja, saidaLoja, formatarMinutos(d.tempoParadaMin),
         textoStatus(d),
       ])
       estilizarLinhaDado(wsPlaca, 3 + 1 + i, COLUNAS_DETALHE_PLACA.length, i)

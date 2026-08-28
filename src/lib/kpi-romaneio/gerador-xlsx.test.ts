@@ -246,7 +246,7 @@ describe('gerador-xlsx', () => {
       expect(headerValues).toEqual([...COLUNAS_DETALHE_PLACA])
     })
 
-    it('uma linha por entrega DESSA placa, na ordem pedida (NF/cliente/motorista/cod/placa/endereco/horarios/tempos/status)', async () => {
+    it('uma linha por entrega DESSA placa, na ordem pedida (carga/nf/cliente/endereco/chegada/saida/tempo/status -- achado real 27/08, Tia Erica: motorista/cod/placa/saida-chegada-base ja estao no resumo, tirados daqui)', async () => {
       const linhas: LinhaKpiRomaneio[] = [
         linhaKpi({ carga: 'C001', placa: 'ABC1234' }),
         linhaKpi({ carga: 'C002', placa: 'DEF5678' }),
@@ -269,27 +269,17 @@ describe('gerador-xlsx', () => {
       expect(linha1[0]).toBe('C001') // CARGA
       expect(linha1[1]).toBe('NF1') // NF
       expect(linha1[2]).toBe('CLIENTE A') // CLIENTE
-      expect(linha1[3]).toBe('JOAO SILVA') // MOTORISTA
-      expect(linha1[4]).toBe('CLI001') // COD
-      expect(linha1[5]).toBe('ABC1234') // PLACA
-      expect(linha1[6]).toBe('RUA A, 1') // ENDEREÇO
-      expect(linha1[7]).toBe('06:00') // SAÍDA DA BASE
-      expect(linha1[8]).toBe('10:00') // CHEGADA NA LOJA (sem shift de fuso, ver formatarHora)
-      expect(linha1[9]).toBe('10:15') // SAÍDA DA LOJA (sem shift de fuso, ver formatarHora)
-      expect(linha1[10]).toBe('19:00') // CHEGADA NA BASE
-      expect(linha1[11]).toBe('0h15min') // TEMPO NA LOJA
-      expect(linha1[12]).toBe('13h00min') // TEMPO DE OPERAÇÃO
-      expect(linha1[13]).toBe('CONFIRMADO (GPS)') // STATUS
+      expect(linha1[3]).toBe('RUA A, 1') // ENDEREÇO
+      expect(linha1[4]).toBe('10:00') // CHEGADA NA LOJA (sem shift de fuso, ver formatarHora)
+      expect(linha1[5]).toBe('10:15') // SAÍDA DA LOJA (sem shift de fuso, ver formatarHora)
+      expect(linha1[6]).toBe('0h15min') // TEMPO NA LOJA
+      expect(linha1[7]).toBe('CONFIRMADO (GPS)') // STATUS
 
       const linha2 = (wsPlaca.getRow(5).values as unknown[]).slice(1)
-      expect(linha2[8]).toBe('') // CHEGADA NA LOJA
-      expect(linha2[9]).toBe('') // SAÍDA DA LOJA
-      expect(linha2[11]).toBe('') // TEMPO NA LOJA
-      expect(linha2[13]).toBe('PENDENTE')
-      // saida da base/chegada na base/tempo de operacao sao da CARGA, nao da
-      // Visita -- continuam preenchidos mesmo com a entrega pendente.
-      expect(linha2[7]).toBe('06:00')
-      expect(linha2[10]).toBe('19:00')
+      expect(linha2[4]).toBe('') // CHEGADA NA LOJA
+      expect(linha2[5]).toBe('') // SAÍDA DA LOJA
+      expect(linha2[6]).toBe('') // TEMPO NA LOJA
+      expect(linha2[7]).toBe('PENDENTE')
 
       // NF3 (placa DEF5678) não aparece na aba da ABC1234.
       expect(wsPlaca.rowCount).toBe(5)
@@ -315,7 +305,7 @@ describe('gerador-xlsx', () => {
       const wb = new ExcelJS.Workbook()
       await wb.xlsx.load(buffer)
       const wsPlaca = wb.getWorksheet('ABC1234')!
-      expect(wsPlaca.autoFilter).toBe('A3:N4') // header linha 3, 1 linha de dado, 14 colunas (A..N)
+      expect(wsPlaca.autoFilter).toBe('A3:H4') // header linha 3, 1 linha de dado, 8 colunas (A..H)
     })
   })
 
@@ -362,10 +352,8 @@ describe('gerador-xlsx', () => {
       const wsPlaca = wb.getWorksheet('ABC1234')!
       const values = (wsPlaca.getRow(4).values as unknown[]).slice(1)
 
-      expect(values[7]).toBe('SEM RASTREADOR') // SAÍDA DA BASE
-      expect(values[8]).toBe('SEM RASTREADOR') // CHEGADA NA LOJA
-      expect(values[9]).toBe('SEM RASTREADOR') // SAÍDA DA LOJA
-      expect(values[10]).toBe('SEM RASTREADOR') // CHEGADA NA BASE
+      expect(values[4]).toBe('SEM RASTREADOR') // CHEGADA NA LOJA
+      expect(values[5]).toBe('SEM RASTREADOR') // SAÍDA DA LOJA
     })
 
     it('NF confirmada via Unitrac (sem GPS) nunca ganha motivo em CHEGADA/SAÍDA NA LOJA, mesmo sem rastreador -- ja tem explicacao propria via STATUS', async () => {
@@ -377,9 +365,9 @@ describe('gerador-xlsx', () => {
       const wsPlaca = wb.getWorksheet('ABC1234')!
       const values = (wsPlaca.getRow(4).values as unknown[]).slice(1)
 
-      expect(values[8]).toBe('') // CHEGADA NA LOJA
-      expect(values[9]).toBe('') // SAÍDA NA LOJA
-      expect(values[13]).toBe('CONFIRMADO (UNITRAC)') // STATUS
+      expect(values[4]).toBe('') // CHEGADA NA LOJA
+      expect(values[5]).toBe('') // SAÍDA NA LOJA
+      expect(values[7]).toBe('CONFIRMADO (UNITRAC)') // STATUS
     })
 
     it('observacao presente SUBSTITUI o texto de STATUS (mais informativa que o rotulo generico)', async () => {
@@ -393,7 +381,7 @@ describe('gerador-xlsx', () => {
       const wsPlaca = wb.getWorksheet('ABC1234')!
       const values = (wsPlaca.getRow(4).values as unknown[]).slice(1)
 
-      expect(values[13]).toBe('MUDOU DE ROTA - CONFERIR (placa provável: RQV6I51)')
+      expect(values[7]).toBe('MUDOU DE ROTA - CONFERIR (placa provável: RQV6I51)')
     })
   })
 })
