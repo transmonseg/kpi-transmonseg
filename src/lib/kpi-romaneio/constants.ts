@@ -30,12 +30,14 @@ export const RAIO_BASE_METROS = 500
 
 /** Raio do perimetro PROPRIO em volta de cada ponto geocodificado do
  *  romaneio -- mesmo valor ja validado com dado real no projeto irmao
- *  monitoramento pra confirmacao de presenca por GPS (ajuste de 18/08,
- *  ver src/app/api/motor-romaneio/route.ts la). Comeca aqui como o mesmo
- *  valor por ser o unico dado real disponivel sobre precisao de
- *  geocodificacao de endereco brasileiro urbano -- reavaliar com dado
- *  real da Nutry Max especificamente depois da Task 11 (validacao). */
-export const RAIO_ENTREGA_METROS = 300
+ *  monitoramento pra confirmacao de presenca por GPS (ajuste de 30/08,
+ *  ver RAIO_PRESENCA_MIN_M em src/app/api/motor/route.ts e RAIO_ENTREGA_M
+ *  em src/app/api/kpi/base-horarios/route.ts la). Subido de 300 pra 500m:
+ *  auditoria dos 396 pendentes de 29/08 achou 69 casos (17%) com parada
+ *  real a 296-497m do ponto, faixa perdida pelo piso de 300m (caso
+ *  confirmado TOS2B69/SUPERMERCADO BOM PRECO, ITABORAI -- relatorio
+ *  Unitrac mostra parada na rua, fora do raio antigo do cliente). */
+export const RAIO_ENTREGA_METROS = 500
 
 /** `buscarStopsCru` so cobre as ultimas 48h (hoje + ontem) de forma
  *  garantida -- pedir data mais antiga devolve 0 veiculos em silencio.
