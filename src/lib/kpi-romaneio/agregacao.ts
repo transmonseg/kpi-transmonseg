@@ -199,6 +199,14 @@ export function montarDetalheEntregas(
     if (observacao == null && tempoParadaMin != null && tempoParadaMin > LIMITE_TEMPO_LOJA_MIN) {
       observacao = 'TEMPO EM LOJA ACIMA DE 4H - CONFERIR'
     }
+    // Achado real 30/08 (bucket 500m-2km, 27% eram 1 parada real servindo
+    // varios clientes vizinhos -- ex. TTM-2G02/Rocinha): horario emprestado
+    // de outro ponto do mesmo romaneio confirmado por perto, nao a
+    // chegada/saida exatas DESTA loja. Decisao do usuario 30/08: marcar
+    // distinto no relatorio em vez de mostrar como confirmacao normal.
+    if (observacao == null && visita?.viaVizinhanca) {
+      observacao = 'ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)'
+    }
 
     return {
       carga,

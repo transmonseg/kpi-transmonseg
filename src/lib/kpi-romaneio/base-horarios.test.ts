@@ -126,8 +126,8 @@ describe('buscarHorariosBase', () => {
       ])
       const mapa = await buscarHorariosBase(['ABC1234'], '2026-08-25')
       const visitasPorNf = mapa.get('ABC1234')?.visitasPorNf
-      expect(visitasPorNf?.get('NF1')).toEqual({ chegada: '2026-08-25T10:17:00.000Z', saida: '2026-08-25T10:28:00.000Z' })
-      expect(visitasPorNf?.get('NF2')).toEqual({ chegada: null, saida: null })
+      expect(visitasPorNf?.get('NF1')).toEqual({ chegada: '2026-08-25T10:17:00.000Z', saida: '2026-08-25T10:28:00.000Z', viaVizinhanca: false })
+      expect(visitasPorNf?.get('NF2')).toEqual({ chegada: null, saida: null, viaVizinhanca: false })
     })
 
     it('resposta sem campo visitas (placa sem pontos pedidos): visitasPorNf fica undefined', async () => {
@@ -149,7 +149,7 @@ describe('buscarHorariosBase', () => {
       const mapa = await buscarHorariosBase(['ABC1234'], '2026-08-25')
       const visitasPorNf = mapa.get('ABC1234')?.visitasPorNf
       expect(visitasPorNf?.size).toBe(1)
-      expect(visitasPorNf?.get('NF1')).toEqual({ chegada: '2026-08-25T10:00:00.000Z', saida: '2026-08-25T10:10:00.000Z' })
+      expect(visitasPorNf?.get('NF1')).toEqual({ chegada: '2026-08-25T10:00:00.000Z', saida: '2026-08-25T10:10:00.000Z', viaVizinhanca: false })
     })
   })
 })

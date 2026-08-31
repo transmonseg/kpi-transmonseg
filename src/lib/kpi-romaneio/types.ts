@@ -41,6 +41,14 @@ export type Visita = {
   chegada: string // ISO
   saida: string // ISO (fim_real do cluster, nao a chegada do proximo)
   distanciaMetrosDoPonto: number
+  // Achado real 30/08: chegada/saida emprestadas de OUTRO ponto do mesmo
+  // romaneio, confirmado a <=800m (mesmo caminhao, mesma parada real --
+  // ver acharVisitasPorPonto em base-horarios/route.ts do monitoramento,
+  // pendentes-500m-2km). true so quando a ponte confirmou por vizinhanca,
+  // nunca por dwell no proprio endereco -- decisao do usuario 30/08:
+  // marcar distinto no relatorio (observacao propria), nao tratar como
+  // confirmacao direta igual as demais.
+  viaVizinhanca?: boolean
 }
 
 export type StatusEntrega = 'confirmado_unitrac' | 'confirmado_gps' | 'pendente'

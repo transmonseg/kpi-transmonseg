@@ -26,7 +26,7 @@ export function montarVisitas(
   // visitada de verdade -- REMOVE qualquer guess do algoritmo antigo pra
   // essa NF em vez de manter (mesmo raciocinio de "confia no null da
   // ponte" ja usado em agregarPorCarga pra saida/chegada/km da base).
-  visitasPorNfBridge?: Map<string, { chegada: string | null; saida: string | null }>,
+  visitasPorNfBridge?: Map<string, { chegada: string | null; saida: string | null; viaVizinhanca?: boolean }>,
 ): Map<string, Visita> {
   // nf -> Visita
   const visitas = new Map<string, Visita>()
@@ -72,7 +72,7 @@ export function montarVisitas(
         // presenca dentro do raio do PROPRIO ponto, nao casa contra
         // varios candidatos) -- 0, nunca lido em nenhum outro lugar do
         // pipeline (so' escrito, ver grep).
-        visitas.set(linha.nf, { nf: linha.nf, chegada: doPonte.chegada, saida: doPonte.saida, distanciaMetrosDoPonto: 0 })
+        visitas.set(linha.nf, { nf: linha.nf, chegada: doPonte.chegada, saida: doPonte.saida, distanciaMetrosDoPonto: 0, viaVizinhanca: doPonte.viaVizinhanca === true })
       } else {
         visitas.delete(linha.nf)
       }

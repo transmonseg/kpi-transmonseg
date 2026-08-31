@@ -375,5 +375,39 @@ describe('montarDetalheEntregas', () => {
 
       expect(d.observacao).toBeNull()
     })
+
+    it('achado real 30/08 (bucket 500m-2km, ex. TTM-2G02/Rocinha): visita viaVizinhanca marca observacao distinta, status continua confirmado_gps', () => {
+      const linhas = [linha('NF1')]
+      const visitas = new Map<string, Visita>([
+        ['NF1', { nf: 'NF1', chegada: '2026-08-30T10:00:00.000Z', saida: '2026-08-30T10:15:00.000Z', distanciaMetrosDoPonto: 0, viaVizinhanca: true }],
+      ])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio)
+
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.observacao).toBe('ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)')
+    })
+
+    it('visita SEM viaVizinhanca (confirmacao direta normal): observacao null, sem marcacao', () => {
+      const linhas = [linha('NF1')]
+      const visitas = new Map<string, Visita>([
+        ['NF1', { nf: 'NF1', chegada: '2026-08-30T10:00:00.000Z', saida: '2026-08-30T10:15:00.000Z', distanciaMetrosDoPonto: 40 }],
+      ])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio)
+
+      expect(d.observacao).toBeNull()
+    })
+
+    it('viaVizinhanca E tempo em loja acima de 4h ao mesmo tempo: tempo excessivo tem prioridade (mais critico de conferir)', () => {
+      const linhas = [linha('NF1')]
+      const visitas = new Map<string, Visita>([
+        ['NF1', { nf: 'NF1', chegada: '2026-08-30T10:00:00.000Z', saida: '2026-08-30T14:30:00.000Z', distanciaMetrosDoPonto: 0, viaVizinhanca: true }],
+      ])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio)
+
+      expect(d.observacao).toBe('TEMPO EM LOJA ACIMA DE 4H - CONFERIR')
+    })
   })
 })

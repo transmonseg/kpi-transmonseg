@@ -122,7 +122,17 @@ describe('montarVisitas', () => {
         chegada: '2026-08-20T10:17:00.000Z',
         saida: '2026-08-20T10:28:00.000Z',
         distanciaMetrosDoPonto: 0,
+        viaVizinhanca: false,
       })
+    })
+
+    it('achado real 30/08: bridge com viaVizinhanca=true repassa a marcacao pra Visita', () => {
+      const l1 = linha('NF1', -22.9, -43.2)
+      const bridge = new Map([['NF1', { chegada: '2026-08-30T10:00:00.000Z', saida: '2026-08-30T10:15:00.000Z', viaVizinhanca: true }]])
+
+      const visitas = montarVisitas([l1], [], bridge)
+
+      expect(visitas.get('NF1')?.viaVizinhanca).toBe(true)
     })
 
     it('ponte presente mas com chegada/saida null: REMOVE a visita do algoritmo antigo (confia que nunca foi visitado)', () => {

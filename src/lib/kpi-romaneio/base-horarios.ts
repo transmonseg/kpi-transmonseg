@@ -31,7 +31,12 @@ export type HorarioBase = {
   // dentro do mapa, cada NF individualmente pode ter chegada/saida null
   // (nunca visitado -- ver montarVisitas.ts, que confia nisso e REMOVE
   // qualquer guess antigo pra essa NF em vez de manter).
-  visitasPorNf?: Map<string, { chegada: string | null; saida: string | null }>
+  // viaVizinhanca (achado real 30/08): true quando o monitoramento
+  // confirmou esta NF emprestando a janela de OUTRO ponto do mesmo
+  // romaneio a <=800m, nao por dwell no proprio endereco -- ver
+  // acharVisitasPorPonto la. Repassado ate agregacao.ts pra marcar
+  // observacao distinta no relatorio (decisao do usuario 30/08).
+  visitasPorNf?: Map<string, { chegada: string | null; saida: string | null; viaVizinhanca?: boolean }>
 }
 
 export type PontoEntregaBridge = { id: string; lat: number; lng: number }
@@ -72,7 +77,7 @@ function paraBrtMascaradoComoUtc(isoUtcReal: string | null): string | null {
   return comDigitosBrt.toISOString()
 }
 
-type VisitaBrutaResultado = { id: string; chegada: string | null; saida: string | null }
+type VisitaBrutaResultado = { id: string; chegada: string | null; saida: string | null; viaVizinhanca?: boolean }
 
 function validarVisitaBruta(v: unknown): VisitaBrutaResultado | null {
   if (
@@ -82,7 +87,7 @@ function validarVisitaBruta(v: unknown): VisitaBrutaResultado | null {
     ((v as VisitaBrutaResultado).saida === null || typeof (v as VisitaBrutaResultado).saida === 'string')
   ) {
     const obj = v as VisitaBrutaResultado
-    return { id: obj.id, chegada: obj.chegada, saida: obj.saida }
+    return { id: obj.id, chegada: obj.chegada, saida: obj.saida, viaVizinhanca: obj.viaVizinhanca === true }
   }
   return null
 }
@@ -169,7 +174,7 @@ async function buscarLote(
     const r = validarResultado(bruto)
     if (r) {
       const visitasPorNf = r.visitas
-        ? new Map(r.visitas.map((v) => [v.id, { chegada: paraBrtMascaradoComoUtc(v.chegada), saida: paraBrtMascaradoComoUtc(v.saida) }]))
+        ? new Map(r.visitas.map((v) => [v.id, { chegada: paraBrtMascaradoComoUtc(v.chegada), saida: paraBrtMascaradoComoUtc(v.saida), viaVizinhanca: v.viaVizinhanca }]))
         : undefined
       mapa.set(r.placa, {
         saidaBase: paraBrtMascaradoComoUtc(r.saidaBase),
