@@ -1,6 +1,7 @@
 import { ClockCounterClockwise, FileMagnifyingGlass } from '@phosphor-icons/react/dist/ssr'
 import { createServiceClient } from '@/lib/supabase/service'
 import { fmtInstanteBR } from '@/lib/data-br'
+import { RegenerarBotao } from './regenerar-botao'
 
 type GeracaoRow = {
   id: string
@@ -8,6 +9,8 @@ type GeracaoRow = {
   gerado_em: string
   gerado_por: string | null
   qtd_cargas: number
+  escala_storage_path: string | null
+  romaneio_storage_path: string | null
 }
 
 const PER_PAGE = 30
@@ -24,7 +27,7 @@ export default async function NutrimaxHistoricoPage() {
   const svc = createServiceClient()
   const { data: rows, error } = await svc
     .from('kpi_romaneio_geracoes')
-    .select('id, data_referencia, gerado_em, gerado_por, qtd_cargas')
+    .select('id, data_referencia, gerado_em, gerado_por, qtd_cargas, escala_storage_path, romaneio_storage_path')
     .eq('cliente', 'nutrimax')
     .order('gerado_em', { ascending: false })
     .limit(PER_PAGE)
@@ -43,8 +46,10 @@ export default async function NutrimaxHistoricoPage() {
           Gerações salvas
         </h1>
         <p className="mt-1 max-w-[55ch] text-[14px] leading-relaxed text-[var(--color-fg-muted)]">
-          Registro simples de auditoria — quem gerou, quando e quantas cargas. Ainda não guarda
-          o arquivo XLSX pra reabrir; baixe de novo gerando o KPI do mesmo dia se precisar.
+          Registro de auditoria — quem gerou, quando e quantas cargas. A partir de 01/09 os PDFs
+          originais (Escala + Romaneio) ficam guardados: use &quot;Regerar&quot; pra rodar o KPI de novo
+          com qualquer correção aplicada desde a geração. Geração anterior a essa data não guardou
+          os PDFs — baixe de novo gerando o KPI do mesmo dia se precisar.
         </p>
       </header>
 
@@ -62,6 +67,7 @@ export default async function NutrimaxHistoricoPage() {
                 <Th align="right">Cargas</Th>
                 <Th>Gerado por</Th>
                 <Th>Gerado em</Th>
+                <Th align="right">Ação</Th>
               </tr>
             </thead>
             <tbody>
@@ -77,6 +83,13 @@ export default async function NutrimaxHistoricoPage() {
                   <Td>{g.gerado_por ?? '—'}</Td>
                   <Td>
                     <span className="text-numeric text-[12px] text-[var(--color-fg-muted)]">{fmtInstanteBR(g.gerado_em)}</span>
+                  </Td>
+                  <Td align="right">
+                    {g.escala_storage_path && g.romaneio_storage_path ? (
+                      <RegenerarBotao geracaoId={g.id} dataReferencia={g.data_referencia} />
+                    ) : (
+                      <span className="text-[11px] text-[var(--color-fg-subtle)]">—</span>
+                    )}
                   </Td>
                 </tr>
               ))}

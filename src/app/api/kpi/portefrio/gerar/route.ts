@@ -109,6 +109,11 @@ export async function POST(req: NextRequest) {
       geradoPor: user.email ?? null,
       qtdCargas: linhasKpi.length,
       arquivoStoragePath: null,
+      // Portefrio ainda nao guarda os PDFs originais nem oferece
+      // "regenerar" (pedido do usuario 01/09 foi so' pra Nutry Max) --
+      // null aqui so' pra bater com a assinatura nova.
+      escalaStoragePath: null,
+      romaneioStoragePath: null,
     })
   } catch (err) {
     console.error('Erro ao salvar histórico de geração:', err)

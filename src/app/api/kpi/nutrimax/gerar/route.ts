@@ -15,7 +15,8 @@ import { montarVisitas } from '@/lib/kpi-romaneio/visitas'
 import { agregarPorCarga, montarDetalheEntregas } from '@/lib/kpi-romaneio/agregacao'
 import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
-import { salvarGeracao } from '@/lib/kpi-romaneio/historico'
+import { salvarGeracao, buscarGeracaoParaRegenerar } from '@/lib/kpi-romaneio/historico'
+import { createServiceClient } from '@/lib/supabase/service'
 import { COD_USER_NUTRIMAX, foraDoAlcanceApi } from '@/lib/kpi-romaneio/constants'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
 
@@ -50,30 +51,68 @@ export async function POST(req: NextRequest) {
   }
 
   const form = await req.formData()
-  const data = String(form.get('data') ?? '')
-  const escalaFile = form.get('escala')
-  const romaneioFile = form.get('romaneio')
+  // Pedido do usuario 01/09 ("quero um historico das geracoes... pra
+  // gente poder sempre regerar"): regenerarDeId pula o upload de arquivo
+  // -- baixa os PDFs originais (Escala + Romaneio) ja guardados no
+  // Storage da geracao passada e roda a MESMA pipeline de novo, se
+  // beneficiando de qualquer fix aplicado desde entao. Geracao antiga
+  // (antes desta mudanca, sem os PDFs guardados) nao pode ser regenerada
+  // -- so' as novas, a partir de agora.
+  const regenerarDeId = form.get('regenerarDeId')
+  let data: string
+  let escalaBuf: Buffer
+  let romaneioBuf: Buffer
+  let escalaStoragePathExistente: string | null = null
+  let romaneioStoragePathExistente: string | null = null
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) {
-    return new NextResponse('Data inválida (YYYY-MM-DD)', { status: 400 })
+  if (typeof regenerarDeId === 'string' && regenerarDeId) {
+    const geracao = await buscarGeracaoParaRegenerar(regenerarDeId)
+    if (!geracao) {
+      return new NextResponse('Geração não encontrada.', { status: 404 })
+    }
+    if (!geracao.escalaStoragePath || !geracao.romaneioStoragePath) {
+      return new NextResponse('Esta geração é anterior ao recurso de regenerar — não guardou os PDFs originais.', { status: 422 })
+    }
+    data = geracao.dataReferencia
+    const svc = createServiceClient()
+    const [escalaDl, romaneioDl] = await Promise.all([
+      svc.storage.from('kpi-romaneio-inputs').download(geracao.escalaStoragePath),
+      svc.storage.from('kpi-romaneio-inputs').download(geracao.romaneioStoragePath),
+    ])
+    if (escalaDl.error || !escalaDl.data || romaneioDl.error || !romaneioDl.data) {
+      return new NextResponse('Erro ao baixar os PDFs originais do Storage — arquivo pode ter sido removido.', { status: 500 })
+    }
+    escalaBuf = Buffer.from(await escalaDl.data.arrayBuffer())
+    romaneioBuf = Buffer.from(await romaneioDl.data.arrayBuffer())
+    escalaStoragePathExistente = geracao.escalaStoragePath
+    romaneioStoragePathExistente = geracao.romaneioStoragePath
+  } else {
+    data = String(form.get('data') ?? '')
+    const escalaFile = form.get('escala')
+    const romaneioFile = form.get('romaneio')
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) {
+      return new NextResponse('Data inválida (YYYY-MM-DD)', { status: 400 })
+    }
+    if (!(escalaFile instanceof File)) {
+      return new NextResponse('Escala de Rota (PDF) obrigatória', { status: 400 })
+    }
+    if (!(romaneioFile instanceof File)) {
+      return new NextResponse('Romaneio de Entrega (PDF) obrigatório', { status: 400 })
+    }
+
+    ;[escalaBuf, romaneioBuf] = await Promise.all([
+      escalaFile.arrayBuffer().then(b => Buffer.from(b)),
+      romaneioFile.arrayBuffer().then(b => Buffer.from(b)),
+    ])
   }
-  if (!(escalaFile instanceof File)) {
-    return new NextResponse('Escala de Rota (PDF) obrigatória', { status: 400 })
-  }
-  if (!(romaneioFile instanceof File)) {
-    return new NextResponse('Romaneio de Entrega (PDF) obrigatório', { status: 400 })
-  }
+
   if (foraDoAlcanceApi(data, hojeBR())) {
     return new NextResponse(
       'A API do Unitrac só alcança as últimas 48h (hoje/ontem) — não dá pra gerar KPI de uma data mais antiga.',
       { status: 422 },
     )
   }
-
-  const [escalaBuf, romaneioBuf] = await Promise.all([
-    escalaFile.arrayBuffer().then(b => Buffer.from(b)),
-    romaneioFile.arrayBuffer().then(b => Buffer.from(b)),
-  ])
 
   const [escala, romaneio] = await Promise.all([
     parseEscala(escalaBuf),
@@ -211,15 +250,41 @@ export async function POST(req: NextRequest) {
 
   const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpi, data, avisos, detalhe)
 
-  // Registra a geração no histórico (auditoria simples)
-  // Falha ao salvar NUNCA deve derrubar a geração do arquivo
+  // Registra a geração no histórico (auditoria simples) + guarda os PDFs
+  // originais no Storage (pedido do usuario 01/09, ver comentario da
+  // migration) pra viabilizar "regenerar" depois. Reusa o path existente
+  // quando esta chamada JA'  E' uma regeneracao (os PDFs sao os mesmos,
+  // nao faz sentido duplicar no Storage) -- so' faz upload novo na
+  // geracao original.
+  // Falha ao salvar NUNCA deve derrubar a geração do arquivo -- xlsx ja'
+  // esta pronto, o usuario nao pode ficar sem o download por causa disso.
   try {
+    const svc = createServiceClient()
+    let escalaStoragePath = escalaStoragePathExistente
+    let romaneioStoragePath = romaneioStoragePathExistente
+    if (!escalaStoragePath || !romaneioStoragePath) {
+      const prefixo = `nutrimax/${data}/${crypto.randomUUID()}`
+      escalaStoragePath = `${prefixo}-escala.pdf`
+      romaneioStoragePath = `${prefixo}-romaneio.pdf`
+      const [upEscala, upRomaneio] = await Promise.all([
+        svc.storage.from('kpi-romaneio-inputs').upload(escalaStoragePath, escalaBuf, { contentType: 'application/pdf' }),
+        svc.storage.from('kpi-romaneio-inputs').upload(romaneioStoragePath, romaneioBuf, { contentType: 'application/pdf' }),
+      ])
+      if (upEscala.error || upRomaneio.error) {
+        console.error('Erro ao guardar PDFs originais no Storage:', upEscala.error?.message, upRomaneio.error?.message)
+        escalaStoragePath = null
+        romaneioStoragePath = null
+      }
+    }
+
     await salvarGeracao({
       cliente: 'nutrimax',
       dataReferencia: data,
       geradoPor: user?.email ?? null,
       qtdCargas: linhasKpi.length,
       arquivoStoragePath: null,
+      escalaStoragePath,
+      romaneioStoragePath,
     })
   } catch (err) {
     console.error('Erro ao salvar histórico de geração:', err)
