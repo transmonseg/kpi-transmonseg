@@ -17,6 +17,14 @@ function minutosEntre(a: string, b: string): number {
 // visitas em uma só).
 const LIMITE_TEMPO_LOJA_MIN = 240
 
+// Achado real 03/09: placa com 0km percorrido no dia inteiro (2622
+// leituras na MESMA coordenada) tinha 29 entregas pendentes -- nenhuma
+// tinha chance de confirmar, o caminhao nunca saiu (ou o rastreador
+// travou). 2km de folga cobre deriva de GPS parado (nunca visto passar
+// de algumas dezenas de metros mesmo em 24h) sem arriscar marcar rota
+// curta de verdade como "sem movimento".
+const LIMITE_KM_SEM_MOVIMENTO = 2
+
 /** Acha, pra uma NF sem confirmação nenhuma pela placa escalada, se OUTRA
  *  placa da frota passou perto do mesmo ponto no dia -- sinal de troca de
  *  carro na hora da entrega (pedido do usuário 25/08, nível Benassi --
@@ -176,6 +184,16 @@ export function montarDetalheEntregas(
   // troca de carro (pedido do usuário 25/08). Default vazio = nenhuma
   // detecção (comportamento antigo, testes existentes não são afetados).
   paradasPorOutraPlaca: Map<string, UnitracParadaRow[]> = new Map(),
+  // Achado real 03/09 (investigação "acabar com os pendentes"): placa
+  // TTL-5J17 tinha 29 pendentes no mesmo dia -- rastro de GPS mostrou
+  // 2622 leituras na MESMA coordenada exata, 0km percorridos o dia
+  // inteiro. Rastreador travado ou o veículo nunca saiu -- nenhuma
+  // confirmação de presença é fisicamente possível nesse caso, então
+  // tratar como "pendente comum" (que sugere revisar geocode/raio) é
+  // enganoso. kmPercorrido já vem calculado (mesma fonte de
+  // agregarPorCarga, ponte pro monitoramento) -- default null preserva
+  // o comportamento antigo pra quem não passar nada.
+  kmPercorrido: number | null = null,
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
 
@@ -192,7 +210,10 @@ export function montarDetalheEntregas(
     const tempoParadaMin = visita ? minutosEntre(visita.chegada, visita.saida) : null
 
     let observacao: string | null = null
-    if (status === 'pendente') {
+    if (status === 'pendente' && kmPercorrido != null && kmPercorrido < LIMITE_KM_SEM_MOVIMENTO) {
+      observacao = 'VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA'
+    }
+    if (observacao == null && status === 'pendente') {
       const placaSuspeita = acharPlacaSuspeita(linha, placaNorm, paradasPorOutraPlaca)
       if (placaSuspeita) observacao = `MUDOU DE ROTA - CONFERIR (placa provável: ${placaSuspeita})`
     }

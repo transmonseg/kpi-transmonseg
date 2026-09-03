@@ -235,6 +235,10 @@ export async function POST(req: NextRequest) {
         },
         temRastreadorPorPlaca.get(placaNorm) ?? false,
         paradasPorPlaca,
+        // Mesmo valor final ja mostrado no resumo da carga (prefere a
+        // ponte de posicao continua real -- ver agregarPorCarga -- em vez
+        // do fallback baseado so' em paradas da Unitrac).
+        resumo?.kmPercorrido ?? null,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

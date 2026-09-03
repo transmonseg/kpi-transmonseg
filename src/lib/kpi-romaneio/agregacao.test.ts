@@ -409,5 +409,49 @@ describe('montarDetalheEntregas', () => {
 
       expect(d.observacao).toBe('TEMPO EM LOJA ACIMA DE 4H - CONFERIR')
     })
+
+    it('achado real 03/09 (TTL-5J17: 0km percorrido, 2622 leituras na mesma coordenada): pendente + veiculo sem movimento vira observacao dedicada', () => {
+      const linhas = [linha('NF1')] // sem alvo nem visita -> pendente
+
+      const [d] = montarDetalheEntregas(
+        '93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio,
+        true, new Map(), 0.3, // kmPercorrido = 300m, abaixo do limiar de 2km
+      )
+
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe('VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA')
+    })
+
+    it('pendente com km percorrido normal: NAO marca sem movimento (rota real, so nao confirmou essa entrega)', () => {
+      const linhas = [linha('NF1')]
+
+      const [d] = montarDetalheEntregas(
+        '93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio,
+        true, new Map(), 180.5,
+      )
+
+      expect(d.observacao).toBeNull()
+    })
+
+    it('NF CONFIRMADA com km baixo: nao marca sem movimento (observacao so vale pra pendente -- carga pode ter terminado cedo)', () => {
+      const linhas = [linha('NF1')]
+      const alvos = [alvo('NF1', 1)]
+
+      const [d] = montarDetalheEntregas(
+        '93758', 'TTL7D40', linhas, alvos, new Map(), resumoCargaVazio,
+        true, new Map(), 0.1,
+      )
+
+      expect(d.status).toBe('confirmado_unitrac')
+      expect(d.observacao).toBeNull()
+    })
+
+    it('kmPercorrido null (sem dado da ponte nem fallback): nao marca sem movimento, so fica pendente comum', () => {
+      const linhas = [linha('NF1')]
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, new Map(), null)
+
+      expect(d.observacao).toBeNull()
+    })
   })
 })
