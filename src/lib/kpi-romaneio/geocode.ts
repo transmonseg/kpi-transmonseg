@@ -64,7 +64,20 @@ const LOTE_CACHE_LEITURA = 20
 // enderecos unicos, e a fracao que cai no Nominatim (sem CNEFE/OSM local
 // bom pra essas cidades pequenas) foi bem maior que os ~26% observados na
 // area urbana/Benassi -- um lote de 300 com timeout de 180s ainda estourou.
-const LOTE_MAX_ENDERECOS = 120
+//
+// Reduzido de 120 pra 40 (achado real 03/09, romaneio de hoje -- regiao
+// rural Cachoeiras de Macacu/Carmo): 2 tentativas seguidas de geracao
+// bateram "geocodificacao falhou para 100% do lote" mesmo com o
+// monitoramento estavel havia 20+min -- um teste isolado de 1 UNICO
+// endereco chegou a levar 35s (Nominatim publico com pico de lentidao
+// pontual, nao e' sempre assim, mas acontece). Sequencial (1 endereco por
+// vez, ver geocode/route.ts do monitoramento): alguns poucos enderecos
+// lentos num lote de 120 already bastam pra estourar qualquer teto
+// razoavel. Lote de 40 corta o pior caso em ~3x -- mais chamadas HTTP,
+// mas cada uma com chance MUITO menor de estourar e perder o lote
+// inteiro (ver tambem o retorno parcial por prazo em geocode/route.ts,
+// mesma investigacao).
+const LOTE_MAX_ENDERECOS = 40
 
 // Mesma referencia que TIMEOUT_UNITRAC_MS no monitoramento (usada la pra
 // chamada de rede que pode pendurar) -- uma chamada de geocodificacao

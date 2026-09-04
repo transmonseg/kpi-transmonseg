@@ -167,8 +167,8 @@ describe('geocodificarEnderecos', () => {
     )).toBe(false)
   })
 
-  it('mais de 120 enderecos particiona em lotes sequenciais e concatena os resultados na ordem certa', async () => {
-    const enderecos = Array.from({ length: 260 }, (_, i) => `Endereco ${i}`)
+  it('mais de 40 enderecos particiona em lotes sequenciais e concatena os resultados na ordem certa', async () => {
+    const enderecos = Array.from({ length: 90 }, (_, i) => `Endereco ${i}`)
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
       const body = JSON.parse((init as RequestInit).body as string) as { enderecos: string[] }
       const resultados = body.enderecos.map((_, i) => ({ lat: i, lng: i }))
@@ -177,22 +177,22 @@ describe('geocodificarEnderecos', () => {
 
     const r = await geocodificarEnderecos(enderecos)
 
-    // 260 enderecos / 120 por lote = 3 chamadas (120 + 120 + 20).
+    // 90 enderecos / 40 por lote = 3 chamadas (40 + 40 + 10).
     expect(fetchSpy).toHaveBeenCalledTimes(3)
     const tamanhos = fetchSpy.mock.calls.map(([, init]) =>
       (JSON.parse((init as RequestInit).body as string) as { enderecos: string[] }).enderecos.length,
     )
-    expect(tamanhos).toEqual([120, 120, 20])
-    expect(r).toHaveLength(260)
+    expect(tamanhos).toEqual([40, 40, 10])
+    expect(r).toHaveLength(90)
     // Cada lote responde lat/lng = indice DENTRO do proprio lote -- resultado
     // final tem que remontar na ordem original, nao ficar embaralhado por lote.
     expect(r[0]).toEqual({ lat: 0, lng: 0 })
-    expect(r[120]).toEqual({ lat: 0, lng: 0 }) // primeiro item do 2o lote
-    expect(r[259]).toEqual({ lat: 19, lng: 19 }) // ultimo item do 3o lote (20 itens, indice 19)
+    expect(r[40]).toEqual({ lat: 0, lng: 0 }) // primeiro item do 2o lote
+    expect(r[89]).toEqual({ lat: 9, lng: 9 }) // ultimo item do 3o lote (10 itens, indice 9)
   })
 
-  it('exatamente 120 enderecos faz UMA chamada so (nao particiona sem necessidade)', async () => {
-    const enderecos = Array.from({ length: 120 }, (_, i) => `Endereco ${i}`)
+  it('exatamente 40 enderecos faz UMA chamada so (nao particiona sem necessidade)', async () => {
+    const enderecos = Array.from({ length: 40 }, (_, i) => `Endereco ${i}`)
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ resultados: enderecos.map(() => ({ lat: 1, lng: 2 })) }), { status: 200 }),
     )
@@ -201,7 +201,7 @@ describe('geocodificarEnderecos', () => {
   })
 
   it('um lote falhar no meio nao derruba os outros lotes -- fail-open por lote', async () => {
-    const enderecos = Array.from({ length: 260 }, (_, i) => `Endereco ${i}`)
+    const enderecos = Array.from({ length: 90 }, (_, i) => `Endereco ${i}`)
     let chamada = 0
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
       chamada += 1
@@ -211,10 +211,10 @@ describe('geocodificarEnderecos', () => {
     })
 
     const r = await geocodificarEnderecos(enderecos)
-    expect(r).toHaveLength(260)
-    expect(r.slice(0, 120).every(x => x !== null)).toBe(true)
-    expect(r.slice(120, 240).every(x => x === null)).toBe(true) // lote 2, falhou
-    expect(r.slice(240, 260).every(x => x !== null)).toBe(true)
+    expect(r).toHaveLength(90)
+    expect(r.slice(0, 40).every(x => x !== null)).toBe(true)
+    expect(r.slice(40, 80).every(x => x === null)).toBe(true) // lote 2, falhou
+    expect(r.slice(80, 90).every(x => x !== null)).toBe(true)
   })
 
   it('manda o header x-motor-key e o corpo esperado', async () => {
