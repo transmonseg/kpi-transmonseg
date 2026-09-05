@@ -13,6 +13,12 @@ function hoje(): string {
 // Clone da tela da Nutry Max com as duas planilhas da Rio Quality no lugar dos
 // PDFs (ver docs/plans/2026-09-05-kpi-rio-quality.md).
 export default function RioQualityGerarPage() {
+  // Formato NOVO (achado real 06/09): um unico arquivo, ja' com cidade/
+  // bairro/cliente/motorista -- geocodificacao mais precisa que o antigo
+  // (so' rua). Deixa os dois no ar: quem ainda manda as 2 planilhas antigas
+  // continua funcionando.
+  const [formato, setFormato] = useState<'completo' | 'antigo'>('completo')
+  const [completo, setCompleto] = useState<File[]>([])
   const [custos, setCustos] = useState<File[]>([])
   const [entregas, setEntregas] = useState<File[]>([])
   const [data, setData] = useState(hoje())
@@ -21,7 +27,9 @@ export default function RioQualityGerarPage() {
   const [baixado, setBaixado] = useState<string | null>(null)
 
   const dataForaDoAlcance = !!data && foraDoAlcanceApi(data, hoje())
-  const pronto = custos.length > 0 && entregas.length > 0 && !!data && !dataForaDoAlcance
+  const pronto =
+    !!data && !dataForaDoAlcance &&
+    (formato === 'completo' ? completo.length > 0 : custos.length > 0 && entregas.length > 0)
 
   async function gerar() {
     if (!pronto) return
@@ -30,8 +38,12 @@ export default function RioQualityGerarPage() {
     setBaixado(null)
     try {
       const fd = new FormData()
-      fd.set('custos', custos[0])
-      fd.set('entregas', entregas[0])
+      if (formato === 'completo') {
+        fd.set('completo', completo[0])
+      } else {
+        fd.set('custos', custos[0])
+        fd.set('entregas', entregas[0])
+      }
       fd.set('data', data)
       const res = await fetch('/api/kpi/rioquality/gerar', { method: 'POST', body: fd })
       if (!res.ok) throw new Error(await res.text())
@@ -62,43 +74,74 @@ export default function RioQualityGerarPage() {
           Gerar KPI
         </h1>
         <p className="mt-1 max-w-[65ch] text-[14px] leading-relaxed text-[var(--color-fg-muted)]">
-          Suba o Relatório de Custos (placa e rota) e o Relatório de Entregas (placa e endereço) do dia.
-          O sistema localiza cada rua pela coerência da rota do caminhão, cruza com o GPS do Unitrac e
-          monta o KPI por rota — paradas confirmadas, km percorrido e tempo de operação. Endereço que
-          não deu pra localizar com segurança sai marcado no detalhe, nunca inventado.
+          {formato === 'completo'
+            ? 'Suba o Relatório de Entregas do dia (Razão Social, Cidade, UF, Destino, Motorista, Placa, Endereço, Bairro). O sistema geocodifica cada endereço com cidade e bairro, cruza com o GPS do Unitrac e monta o KPI por rota — paradas confirmadas, km percorrido e tempo de operação. Endereço que não deu pra localizar com segurança sai marcado no detalhe, nunca inventado.'
+            : 'Suba o Relatório de Custos (placa e rota) e o Relatório de Entregas (placa e endereço) do dia. O sistema localiza cada rua pela coerência da rota do caminhão, cruza com o GPS do Unitrac e monta o KPI por rota. Endereço que não deu pra localizar com segurança sai marcado no detalhe, nunca inventado.'}
         </p>
+        <div className="mt-3 inline-flex w-fit rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-1 text-[12px] font-medium">
+          <button
+            type="button"
+            onClick={() => setFormato('completo')}
+            className={cn('rounded-full px-3.5 py-1.5 transition-colors', formato === 'completo' ? 'bg-[var(--color-navy-700)] text-white' : 'text-[var(--color-fg-muted)]')}
+          >
+            Arquivo único
+          </button>
+          <button
+            type="button"
+            onClick={() => setFormato('antigo')}
+            className={cn('rounded-full px-3.5 py-1.5 transition-colors', formato === 'antigo' ? 'bg-[var(--color-navy-700)] text-white' : 'text-[var(--color-fg-muted)]')}
+          >
+            2 planilhas (antigo)
+          </button>
+        </div>
       </header>
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <div className="col-span-1 lg:col-span-4">
-          <FileDropzone
-            eyebrow="Passo 1"
-            label="Relatório de Custos"
-            hint="XLSX · placa e rota (zona) de cada caminhão"
-            accept=".xlsx,.xls"
-            files={custos}
-            onAdd={files => setCustos(files.slice(0, 1))}
-            onRemove={() => setCustos([])}
-          />
-        </div>
+        {formato === 'completo' ? (
+          <div className="col-span-1 lg:col-span-8">
+            <FileDropzone
+              eyebrow="Passo 1"
+              label="Relatório de Entregas"
+              hint="XLSX · Razão Social, Cidade, UF, Destino, Motorista, Placa, Endereço, Bairro"
+              accept=".xlsx,.xls"
+              files={completo}
+              onAdd={files => setCompleto(files.slice(0, 1))}
+              onRemove={() => setCompleto([])}
+            />
+          </div>
+        ) : (
+          <>
+            <div className="col-span-1 lg:col-span-4">
+              <FileDropzone
+                eyebrow="Passo 1"
+                label="Relatório de Custos"
+                hint="XLSX · placa e rota (zona) de cada caminhão"
+                accept=".xlsx,.xls"
+                files={custos}
+                onAdd={files => setCustos(files.slice(0, 1))}
+                onRemove={() => setCustos([])}
+              />
+            </div>
 
-        <div className="col-span-1 lg:col-span-4">
-          <FileDropzone
-            eyebrow="Passo 2"
-            label="Relatório de Entregas"
-            hint="XLSX · placa e endereço (rua) de cada entrega"
-            accept=".xlsx,.xls"
-            files={entregas}
-            onAdd={files => setEntregas(files.slice(0, 1))}
-            onRemove={() => setEntregas([])}
-          />
-        </div>
+            <div className="col-span-1 lg:col-span-4">
+              <FileDropzone
+                eyebrow="Passo 2"
+                label="Relatório de Entregas"
+                hint="XLSX · placa e endereço (rua) de cada entrega"
+                accept=".xlsx,.xls"
+                files={entregas}
+                onAdd={files => setEntregas(files.slice(0, 1))}
+                onRemove={() => setEntregas([])}
+              />
+            </div>
+          </>
+        )}
 
-        <div className="col-span-1 lg:col-span-4">
+        <div className={cn('col-span-1', formato === 'completo' ? 'lg:col-span-4' : 'lg:col-span-4')}>
           <div className="flex h-full flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
             <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
               <CalendarBlank size={12} weight="bold" />
-              Passo 3 · Data de referência
+              {formato === 'completo' ? 'Passo 2' : 'Passo 3'} · Data de referência
             </div>
             <input
               id="data"

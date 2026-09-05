@@ -32,42 +32,61 @@ export async function POST(req: NextRequest) {
   const form = await req.formData()
   const regenerarDeId = form.get('regenerarDeId')
   let data: string
-  let custosBuf: Buffer
-  let entregasBuf: Buffer
+  // Formato ANTIGO (2 planilhas) usa custosBuf+entregasBuf; formato NOVO
+  // (achado real 06/09, 1 arquivo unico ja' com cidade/bairro/cliente/
+  // motorista) usa so' completaBuf -- ver pipeline.ts. Guardado no Storage
+  // reaproveitando as MESMAS colunas escala/romaneio da tabela: formato
+  // novo grava so' em romaneioStoragePath (escalaStoragePath fica null),
+  // o que tambem serve pra distinguir o formato na hora de regenerar.
+  let custosBuf: Buffer | null = null
+  let entregasBuf: Buffer | null = null
+  let completaBuf: Buffer | null = null
   let custosStoragePathExistente: string | null = null
   let entregasStoragePathExistente: string | null = null
 
   if (typeof regenerarDeId === 'string' && regenerarDeId) {
     const geracao = await buscarGeracaoParaRegenerar(regenerarDeId)
     if (!geracao) return new NextResponse('Geração não encontrada.', { status: 404 })
-    if (!geracao.escalaStoragePath || !geracao.romaneioStoragePath) {
+    if (!geracao.romaneioStoragePath) {
       return new NextResponse('Esta geração não guardou as planilhas originais.', { status: 422 })
     }
     data = geracao.dataReferencia
     const svc = createServiceClient()
-    // reaproveita as colunas escala/romaneio da tabela: escala := Custos, romaneio := Entregas
-    const [custosDl, entregasDl] = await Promise.all([
-      svc.storage.from(BUCKET).download(geracao.escalaStoragePath),
-      svc.storage.from(BUCKET).download(geracao.romaneioStoragePath),
-    ])
-    if (custosDl.error || !custosDl.data || entregasDl.error || !entregasDl.data) {
-      return new NextResponse('Erro ao baixar as planilhas originais do Storage.', { status: 500 })
+    if (geracao.escalaStoragePath) {
+      // reaproveita as colunas escala/romaneio da tabela: escala := Custos, romaneio := Entregas
+      const [custosDl, entregasDl] = await Promise.all([
+        svc.storage.from(BUCKET).download(geracao.escalaStoragePath),
+        svc.storage.from(BUCKET).download(geracao.romaneioStoragePath),
+      ])
+      if (custosDl.error || !custosDl.data || entregasDl.error || !entregasDl.data) {
+        return new NextResponse('Erro ao baixar as planilhas originais do Storage.', { status: 500 })
+      }
+      custosBuf = Buffer.from(await custosDl.data.arrayBuffer())
+      entregasBuf = Buffer.from(await entregasDl.data.arrayBuffer())
+      custosStoragePathExistente = geracao.escalaStoragePath
+      entregasStoragePathExistente = geracao.romaneioStoragePath
+    } else {
+      const dl = await svc.storage.from(BUCKET).download(geracao.romaneioStoragePath)
+      if (dl.error || !dl.data) return new NextResponse('Erro ao baixar o arquivo original do Storage.', { status: 500 })
+      completaBuf = Buffer.from(await dl.data.arrayBuffer())
+      entregasStoragePathExistente = geracao.romaneioStoragePath
     }
-    custosBuf = Buffer.from(await custosDl.data.arrayBuffer())
-    entregasBuf = Buffer.from(await entregasDl.data.arrayBuffer())
-    custosStoragePathExistente = geracao.escalaStoragePath
-    entregasStoragePathExistente = geracao.romaneioStoragePath
   } else {
     data = String(form.get('data') ?? '')
-    const custosFile = form.get('custos')
-    const entregasFile = form.get('entregas')
     if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return new NextResponse('Data inválida (YYYY-MM-DD)', { status: 400 })
-    if (!(custosFile instanceof File)) return new NextResponse('Relatório de Custos (xlsx) obrigatório', { status: 400 })
-    if (!(entregasFile instanceof File)) return new NextResponse('Relatório de Entregas (xlsx) obrigatório', { status: 400 })
-    ;[custosBuf, entregasBuf] = await Promise.all([
-      custosFile.arrayBuffer().then(b => Buffer.from(b)),
-      entregasFile.arrayBuffer().then(b => Buffer.from(b)),
-    ])
+    const completaFile = form.get('completo')
+    if (completaFile instanceof File) {
+      completaBuf = Buffer.from(await completaFile.arrayBuffer())
+    } else {
+      const custosFile = form.get('custos')
+      const entregasFile = form.get('entregas')
+      if (!(custosFile instanceof File)) return new NextResponse('Relatório de Custos (xlsx) obrigatório', { status: 400 })
+      if (!(entregasFile instanceof File)) return new NextResponse('Relatório de Entregas (xlsx) obrigatório', { status: 400 })
+      ;[custosBuf, entregasBuf] = await Promise.all([
+        custosFile.arrayBuffer().then(b => Buffer.from(b)),
+        entregasFile.arrayBuffer().then(b => Buffer.from(b)),
+      ])
+    }
   }
 
   if (foraDoAlcanceApi(data, hojeBR())) {
@@ -79,7 +98,9 @@ export async function POST(req: NextRequest) {
 
   let resultado
   try {
-    resultado = await gerarKpiRioQuality({ custosBuf, entregasBuf, data, cvPorPlaca: await buscarFrotaRioQuality() })
+    resultado = completaBuf
+      ? await gerarKpiRioQuality({ completaBuf, data, cvPorPlaca: await buscarFrotaRioQuality() })
+      : await gerarKpiRioQuality({ custosBuf: custosBuf!, entregasBuf: entregasBuf!, data, cvPorPlaca: await buscarFrotaRioQuality() })
   } catch (e) {
     if (e instanceof EntradaInvalidaError) return new NextResponse(e.message, { status: 422 })
     throw e
@@ -89,18 +110,27 @@ export async function POST(req: NextRequest) {
     const svc = createServiceClient()
     let custosStoragePath = custosStoragePathExistente
     let entregasStoragePath = entregasStoragePathExistente
-    if (!custosStoragePath || !entregasStoragePath) {
+    if (!entregasStoragePath) {
       const prefixo = `${CLIENTE}/${data}/${crypto.randomUUID()}`
-      custosStoragePath = `${prefixo}-custos.xlsx`
-      entregasStoragePath = `${prefixo}-entregas.xlsx`
-      const [upC, upE] = await Promise.all([
-        svc.storage.from(BUCKET).upload(custosStoragePath, custosBuf, { contentType: TIPO_XLSX }),
-        svc.storage.from(BUCKET).upload(entregasStoragePath, entregasBuf, { contentType: TIPO_XLSX }),
-      ])
-      if (upC.error || upE.error) {
-        console.error('Erro ao guardar planilhas originais no Storage:', upC.error?.message, upE.error?.message)
-        custosStoragePath = null
-        entregasStoragePath = null
+      if (completaBuf) {
+        entregasStoragePath = `${prefixo}-completo.xlsx`
+        const up = await svc.storage.from(BUCKET).upload(entregasStoragePath, completaBuf, { contentType: TIPO_XLSX })
+        if (up.error) {
+          console.error('Erro ao guardar arquivo original no Storage:', up.error.message)
+          entregasStoragePath = null
+        }
+      } else {
+        custosStoragePath = `${prefixo}-custos.xlsx`
+        entregasStoragePath = `${prefixo}-entregas.xlsx`
+        const [upC, upE] = await Promise.all([
+          svc.storage.from(BUCKET).upload(custosStoragePath, custosBuf!, { contentType: TIPO_XLSX }),
+          svc.storage.from(BUCKET).upload(entregasStoragePath, entregasBuf!, { contentType: TIPO_XLSX }),
+        ])
+        if (upC.error || upE.error) {
+          console.error('Erro ao guardar planilhas originais no Storage:', upC.error?.message, upE.error?.message)
+          custosStoragePath = null
+          entregasStoragePath = null
+        }
       }
     }
     await salvarGeracao({

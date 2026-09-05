@@ -132,3 +132,105 @@ export function montarLinhasRomaneio(custos: Map<string, string>, entregas: Entr
     }
   })
 }
+
+// Formato NOVO, achado real 06/09: um UNICO arquivo "Relatório de Entregas"
+// com Razão Social | Cidade | UF | Destino | Motorista | Placa | Endereço |
+// Bairro -- substitui as duas planilhas (Custos + Entregas) de cima. Bem
+// mais rico: tem CIDADE (usa a cascata PRECISA de geocodificacao da Nutry
+// Max em vez da coerencia de grupo -- sem numero ainda, mas rua+bairro+
+// cidade+UF ja' descarta rua homonima em municipio errado sem precisar de
+// ancora de outra parada), CLIENTE de verdade (Razao Social) e MOTORISTA de
+// verdade. Destino ja' vem por linha (evento/rota do dia), sem precisar de
+// planilha de Custos separada.
+export type EntregaRioQualityCompleta = {
+  placaNorm: string
+  clienteNome: string
+  cidade: string
+  uf: string
+  destino: string
+  motorista: string
+  rua: string
+  bairro: string
+}
+
+export function parseEntregasCompletas(buf: Buffer): EntregaRioQualityCompleta[] {
+  const rows = linhas(buf)
+  const h = rows.findIndex(r => {
+    const cols = (r ?? []).map(c => semAcentoMaiusculo(norm(c)))
+    return cols.includes('RAZAO SOCIAL') && cols.includes('CIDADE') && cols.includes('PLACA')
+  })
+  if (h < 0) return []
+  const header = (rows[h] ?? []).map(c => semAcentoMaiusculo(norm(c)))
+  const idx = (nomes: string[]) => header.findIndex(c => nomes.includes(c))
+  const iRazao = idx(['RAZAO SOCIAL'])
+  const iCidade = idx(['CIDADE'])
+  const iUf = idx(['UF'])
+  const iDestino = idx(['DESTINO'])
+  const iMotorista = idx(['MOTORISTA'])
+  const iPlaca = idx(['PLACA'])
+  const iEndereco = idx(['ENDERECO'])
+  const iBairro = idx(['BAIRRO'])
+  if (iPlaca < 0 || iEndereco < 0) return []
+  const out: EntregaRioQualityCompleta[] = []
+  for (const r of rows.slice(h + 1)) {
+    const placaNorm = normPlaca(norm(r?.[iPlaca]))
+    const rua = norm(r?.[iEndereco]).toUpperCase()
+    if (!placaNorm || !rua) continue
+    out.push({
+      placaNorm,
+      clienteNome: iRazao >= 0 ? norm(r?.[iRazao]) : '',
+      cidade: iCidade >= 0 ? norm(r?.[iCidade]) : '',
+      uf: iUf >= 0 ? norm(r?.[iUf]) : '',
+      destino: iDestino >= 0 ? norm(r?.[iDestino]) : '',
+      motorista: iMotorista >= 0 ? norm(r?.[iMotorista]) : '',
+      rua,
+      bairro: iBairro >= 0 ? norm(r?.[iBairro]).toUpperCase() : '',
+    })
+  }
+  return out
+}
+
+/** String no formato bruto que a cascata de geocodificacao do monitoramento
+ *  espera pra extrair cidade/bairro (extrairCidadeDoEndereco/
+ *  extrairBairroDoEndereco em romaneio-geocode-local.ts): "RUA, NUMERO -
+ *  BAIRRO, CIDADE - UF". Sem numero (Rio Quality nao manda) -- fica vazio
+ *  entre a virgula e o traco, extrairNumeroDoEndereco ja trata como null. */
+export function montarEnderecoBrutoCompleto(rua: string, bairro: string, cidade: string, uf: string): string {
+  return `${rua}, - ${bairro}, ${cidade} - ${uf}`
+}
+
+/** Endereco pra EXIBIR no relatorio -- diferente do bruto de cima (esse e'
+ *  so' pra geocodificar), legivel: "RUA X - BAIRRO, CIDADE". */
+function enderecoParaExibir(e: EntregaRioQualityCompleta): string {
+  const ruaBairro = e.bairro ? `${e.rua} - ${e.bairro}` : e.rua
+  return e.cidade ? `${ruaBairro}, ${e.cidade}` : ruaBairro
+}
+
+/** Mesmo formato de saida de montarLinhasRomaneio, mas pro layout novo de
+ *  arquivo unico: carga/destino = Destino (ja' vem por linha, sem precisar
+ *  de planilha de Custos); motorista e clienteNome sao os de verdade. O
+ *  endereco bruto pra geocodificar fica FORA da LinhaRomaneio (so' o texto
+ *  de exibicao entra) -- ver enderecoBrutoPorNf em pipeline.ts. */
+export function montarLinhasRomaneioCompleto(entregas: EntregaRioQualityCompleta[]): { linhas: LinhaRomaneio[]; enderecoBrutoPorNf: Map<string, string> } {
+  const seq = new Map<string, number>()
+  const enderecoBrutoPorNf = new Map<string, string>()
+  const linhas = entregas.map(e => {
+    const n = (seq.get(e.placaNorm) ?? 0) + 1
+    seq.set(e.placaNorm, n)
+    const nf = `${e.placaNorm}-${n}`
+    enderecoBrutoPorNf.set(nf, montarEnderecoBrutoCompleto(e.rua, e.bairro, e.cidade, e.uf))
+    const rota = e.destino || CARGA_SEM_ROTA
+    return {
+      carga: rota,
+      destino: rota,
+      placa: e.placaNorm,
+      motorista: e.motorista,
+      ajudantes: [],
+      nf,
+      clienteCodigo: '',
+      clienteNome: e.clienteNome || e.rua,
+      endereco: enderecoParaExibir(e),
+    }
+  })
+  return { linhas, enderecoBrutoPorNf }
+}

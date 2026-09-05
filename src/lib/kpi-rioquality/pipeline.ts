@@ -8,8 +8,9 @@ import { BASES_COORD_RIOQUALITY } from './constants'
 import { calcularKmPorRastro } from './km-rastro'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
-import { parseCustos, parseEntregas, montarLinhasRomaneio, rotaParaZona } from './parse-planilhas'
+import { parseCustos, parseEntregas, montarLinhasRomaneio, rotaParaZona, parseEntregasCompletas, montarLinhasRomaneioCompleto } from './parse-planilhas'
 import { geocodificarPorCoerencia, type ConfiancaCoerencia } from './geocode-coerencia'
+import { geocodificarEnderecos } from '@/lib/kpi-romaneio/geocode'
 
 // Nucleo do KPI Rio Quality -- usado pela rota /api/kpi/rioquality/gerar e
 // pelo script scripts/gerar-rioquality-real-arquivo.ts (mesma pipeline, sem
@@ -58,15 +59,20 @@ function agrupar<T>(itens: T[], chave: (item: T) => string): Map<string, T[]> {
 }
 
 export async function gerarKpiRioQuality(params: {
-  custosBuf: Buffer
-  entregasBuf: Buffer
+  // Formato ANTIGO (duas planilhas, sem cidade -- coerencia de grupo).
+  custosBuf?: Buffer
+  entregasBuf?: Buffer
+  // Formato NOVO, achado real 06/09: um UNICO arquivo, ja' com cidade/bairro/
+  // cliente/motorista -- cascata PRECISA de geocodificacao (mesma da Nutry
+  // Max), sem precisar de coerencia de grupo. Ver parse-planilhas.ts.
+  completaBuf?: Buffer
   data: string
   cvPorPlaca: Map<string, string>
   /** injetavel pra teste; padrao = Unitrac stops (48h) sem base cadastrada */
   buscarParadas?: (cv: string, placaNorm: string, data: string) => Promise<UnitracParadaRow[]>
   log?: (msg: string) => void
 }): Promise<ResultadoPipelineRioQuality> {
-  const { custosBuf, entregasBuf, data, cvPorPlaca } = params
+  const { custosBuf, entregasBuf, completaBuf, data, cvPorPlaca } = params
   const log = params.log ?? (() => {})
   const buscarParadas =
     params.buscarParadas ??
@@ -75,42 +81,74 @@ export async function gerarKpiRioQuality(params: {
       // NAO usar buscarParadasDoDia, que classifica pelas bases da Nutry Max
       consolidaParadasApi(await buscarStopsCru(cv, 48), {}, d, placaNorm, BASES_COORD_RIOQUALITY))
 
-  // 1) parse
-  const custos = parseCustos(custosBuf)
-  const entregas = parseEntregas(entregasBuf)
-  if (entregas.length === 0) {
-    throw new EntradaInvalidaError(
-      'Nenhuma linha reconhecida no Relatório de Entregas — confira se é a planilha "Relatório de Entregas" da Rio Quality (colunas Placa e Endereço).',
-    )
-  }
-  const romaneio = montarLinhasRomaneio(custos, entregas)
-  log(`Custos: ${custos.size} placas com rota; Entregas: ${entregas.length} linhas`)
-
-  // 2) geocodificacao por coerencia: um grupo por placa, zona pela rota
-  const linhasPorPlaca = agrupar(romaneio, l => normPlaca(l.placa))
-  const placasNorm = [...linhasPorPlaca.keys()]
-  const grupos = placasNorm.map(placaNorm => ({
-    id: placaNorm,
-    zona: rotaParaZona(custos.get(placaNorm) ?? null),
-    ruas: (linhasPorPlaca.get(placaNorm) ?? []).map(l => l.endereco),
-  }))
-  const geo = await geocodificarPorCoerencia(grupos)
-
+  // 1) parse + 2) geocodificacao -- dois formatos de entrada, mesma saida
+  // (romaneioGeo: LinhaGeocodificada[], confiancaPorNf, contConf).
   const confiancaPorNf = new Map<string, ConfiancaCoerencia>()
   const contConf: Record<ConfiancaCoerencia, number> = { alta: 0, media: 0, baixa: 0, sem_candidato: 0, isolado: 0 }
   const romaneioGeo: LinhaGeocodificada[] = []
-  for (const placaNorm of placasNorm) {
-    const linhas = linhasPorPlaca.get(placaNorm) ?? []
-    const res = geo.get(placaNorm) ?? []
-    linhas.forEach((l, i) => {
-      const r = res[i]
-      const conf = r?.confianca ?? 'sem_candidato'
+  const formatoCompleto = completaBuf != null
+
+  if (completaBuf) {
+    const entregasCompletas = parseEntregasCompletas(completaBuf)
+    if (entregasCompletas.length === 0) {
+      throw new EntradaInvalidaError(
+        'Nenhuma linha reconhecida no arquivo — confira se tem as colunas Razão Social, Cidade, UF, Destino, Motorista, Placa, Endereço e Bairro.',
+      )
+    }
+    const { linhas: romaneio, enderecoBrutoPorNf } = montarLinhasRomaneioCompleto(entregasCompletas)
+    log(`Entregas: ${romaneio.length} linhas (arquivo unico, com cidade)`)
+    // cascata PRECISA (rua+bairro+cidade+UF descarta rua homonima em
+    // municipio errado sozinha, sem precisar de ancora de outra parada) --
+    // so' devolve lat/lng, sem nivel de confianca proprio: 'alta' quando
+    // achou, 'sem_candidato' quando nao (mesmo criterio da Nutry Max).
+    const enderecosUnicos = [...new Set(romaneio.map(l => enderecoBrutoPorNf.get(l.nf)!))]
+    const resultados = await geocodificarEnderecos(enderecosUnicos)
+    const geoPorEndereco = new Map(enderecosUnicos.map((e, i) => [e, resultados[i]]))
+    for (const l of romaneio) {
+      const r = geoPorEndereco.get(enderecoBrutoPorNf.get(l.nf)!) ?? null
+      const conf: ConfiancaCoerencia = r ? 'alta' : 'sem_candidato'
       confiancaPorNf.set(l.nf, conf)
       contConf[conf]++
-      romaneioGeo.push({ ...l, lat: r?.lat ?? null, lng: r?.lng ?? null, pontosAlternativos: r?.pontosZona ?? [] })
-    })
+      romaneioGeo.push({ ...l, lat: r?.lat ?? null, lng: r?.lng ?? null })
+    }
+  } else {
+    if (!custosBuf || !entregasBuf) {
+      throw new EntradaInvalidaError('Faltam as planilhas: Relatório de Custos e Relatório de Entregas (ou o arquivo único novo).')
+    }
+    const custos = parseCustos(custosBuf)
+    const entregas = parseEntregas(entregasBuf)
+    if (entregas.length === 0) {
+      throw new EntradaInvalidaError(
+        'Nenhuma linha reconhecida no Relatório de Entregas — confira se é a planilha "Relatório de Entregas" da Rio Quality (colunas Placa e Endereço).',
+      )
+    }
+    const romaneio = montarLinhasRomaneio(custos, entregas)
+    log(`Custos: ${custos.size} placas com rota; Entregas: ${entregas.length} linhas`)
+
+    // geocodificacao por coerencia: um grupo por placa, zona pela rota
+    const linhasPorPlaca = agrupar(romaneio, l => normPlaca(l.placa))
+    const placasNormGeo = [...linhasPorPlaca.keys()]
+    const grupos = placasNormGeo.map(placaNorm => ({
+      id: placaNorm,
+      zona: rotaParaZona(custos.get(placaNorm) ?? null),
+      ruas: (linhasPorPlaca.get(placaNorm) ?? []).map(l => l.endereco),
+    }))
+    const geo = await geocodificarPorCoerencia(grupos)
+
+    for (const placaNorm of placasNormGeo) {
+      const linhas = linhasPorPlaca.get(placaNorm) ?? []
+      const res = geo.get(placaNorm) ?? []
+      linhas.forEach((l, i) => {
+        const r = res[i]
+        const conf = r?.confianca ?? 'sem_candidato'
+        confiancaPorNf.set(l.nf, conf)
+        contConf[conf]++
+        romaneioGeo.push({ ...l, lat: r?.lat ?? null, lng: r?.lng ?? null, pontosAlternativos: r?.pontosZona ?? [] })
+      })
+    }
   }
   log(`Geocodificacao: ${JSON.stringify(contConf)}`)
+  const placasNorm = [...new Set(romaneioGeo.map(l => normPlaca(l.placa)))]
   const linhasGeoPorPlaca = agrupar(romaneioGeo, l => normPlaca(l.placa))
 
   // 3) GPS do dia por CV
@@ -193,7 +231,13 @@ export async function gerarKpiRioQuality(params: {
         return { ...d, observacao: 'ENTREGUE - PARADA EM OUTRO TRECHO DA MESMA RUA (romaneio sem número, horário aproximado)' }
       }
       if (d.status !== 'pendente') return d
-      const obs = OBS_POR_CONFIANCA[confiancaPorNf.get(d.nf) ?? 'sem_candidato']
+      const conf = confiancaPorNf.get(d.nf) ?? 'sem_candidato'
+      // formato novo (com cidade): "sem_candidato" e' geocode que falhou
+      // MESMO com cidade -- mensagem diferente da coerencia de grupo (rua
+      // sem cidade no romaneio), que nao se aplica aqui.
+      const obs = formatoCompleto
+        ? (conf === 'sem_candidato' ? 'ENDEREÇO NÃO LOCALIZADO' : undefined)
+        : OBS_POR_CONFIANCA[conf]
       return obs ? { ...d, observacao: obs } : d
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
@@ -205,7 +249,7 @@ export async function gerarKpiRioQuality(params: {
     linhasKpi,
     detalhe,
     estatisticas: {
-      entregas: romaneio.length,
+      entregas: romaneioGeo.length,
       placas: placasNorm.length,
       placasComCv: placasNorm.filter(p => cvPorPlaca.has(p)).length,
       confianca: contConf,
