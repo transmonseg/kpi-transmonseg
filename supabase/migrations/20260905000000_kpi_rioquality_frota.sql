@@ -89,3 +89,9 @@ insert into kpi_rioquality_frota (placa_norm, cv, nome) values
   ('LMV8B05', '15177', 'CHAPOLIN'),
   ('RKE4H10', '15184', 'CAPELETI')
 on conflict (placa_norm) do update set cv = excluded.cv, nome = excluded.nome, atualizado_em = now();
+
+-- Achado real 05/09: sem isso o PostgREST do Supabase self-hosted continua
+-- com o schema antigo em cache e responde "Could not find the table
+-- 'public.kpi_rioquality_frota' in the schema cache" -- a primeira geracao
+-- real saiu com 0 CVs (tudo pendente) por causa disso.
+NOTIFY pgrst, 'reload schema';

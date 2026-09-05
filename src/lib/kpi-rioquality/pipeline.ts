@@ -160,7 +160,11 @@ export async function gerarKpiRioQuality(params: {
           tempoOperacaoMin: resumo?.tempoOperacaoMin ?? null,
         },
         temRastreadorPorPlaca.get(placaNorm) ?? false,
-        paradasPorPlaca,
+        // So' as paradas da PROPRIA placa: a heuristica "MUDOU DE ROTA" (casa
+        // pendente com GPS de OUTRA placa) foi feita pra Nutry Max; na Rio
+        // Quality -- 100 caminhoes na mesma regiao, rua sem numero -- disparou
+        // em ~400 entregas na primeira geracao real (05/09), puro ruido.
+        new Map([[placaNorm, paradasPorPlaca.get(placaNorm) ?? []]]),
         resumo?.kmPercorrido ?? null,
       )
     })
