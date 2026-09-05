@@ -1,7 +1,7 @@
 import type { LinhaGeocodificada, Visita } from '@/lib/kpi-romaneio/types'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { RAIO_ENTREGA_METROS } from '@/lib/kpi-romaneio/constants'
-import { RAIO_VIZINHANCA_METROS } from './constants'
+import { RAIO_VIZINHANCA_METROS, RAIO_CONFIRMACAO_AMPLIADO_METROS } from './constants'
 
 // Casamento INCLUSIVO entrega x parada GPS -- achado real 05/09 (primeira
 // geracao Rio Quality): montarVisitas da Nutry Max casa cada parada com UMA
@@ -29,15 +29,24 @@ export function montarVisitasInclusivas(linhas: LinhaGeocodificada[], paradas: U
   const foraBase = paradas.filter((p): p is UnitracParadaRow & { lat: number; lng: number } =>
     p.classificacao === 'FORA_BASE' && p.lat != null && p.lng != null)
 
-  // 1) direto: cada entrega pega a parada de maior permanencia dentro do raio
+  // 1) direto: cada entrega pega a parada de maior permanencia dentro do raio.
+  //    Duas faixas -- ate' RAIO_ENTREGA_METROS e' confirmacao normal; entre
+  //    ele e RAIO_CONFIRMACAO_AMPLIADO_METROS confirma MARCADA (achado 05/09:
+  //    romaneio sem numero, entregas com geocode certo ficavam pendentes por
+  //    47m e 107m alem do raio). A faixa de dentro sempre ganha da de fora,
+  //    mesmo que a de fora tenha permanencia maior.
   for (const linha of comCoord) {
-    let melhor: { parada: UnitracParadaRow; dist: number; dur: number } | null = null
+    let melhor: { parada: UnitracParadaRow; dist: number; dur: number; ampliado: boolean } | null = null
     for (const parada of foraBase) {
       const dist = haversine(parada.lat, parada.lng, linha.lat, linha.lng)
-      if (dist > RAIO_ENTREGA_METROS) continue
+      if (dist > RAIO_CONFIRMACAO_AMPLIADO_METROS) continue
+      const ampliado = dist > RAIO_ENTREGA_METROS
       const fim = parada.fim_real ?? parada.saida ?? parada.chegada
       const dur = new Date(fim).getTime() - new Date(parada.chegada).getTime()
-      if (!melhor || dur > melhor.dur) melhor = { parada, dist, dur }
+      const ganha = !melhor
+        || (melhor.ampliado && !ampliado)
+        || (melhor.ampliado === ampliado && dur > melhor.dur)
+      if (ganha) melhor = { parada, dist, dur, ampliado }
     }
     if (!melhor) continue
     visitas.set(linha.nf, {
@@ -46,6 +55,7 @@ export function montarVisitasInclusivas(linhas: LinhaGeocodificada[], paradas: U
       saida: melhor.parada.fim_real ?? melhor.parada.saida ?? melhor.parada.chegada,
       distanciaMetrosDoPonto: melhor.dist,
       viaVizinhanca: false,
+      viaRaioAmpliado: melhor.ampliado,
     })
   }
 
@@ -61,7 +71,7 @@ export function montarVisitasInclusivas(linhas: LinhaGeocodificada[], paradas: U
     }
     if (!melhor) continue
     const v = visitas.get(melhor.irma.nf)!
-    visitas.set(linha.nf, { nf: linha.nf, chegada: v.chegada, saida: v.saida, distanciaMetrosDoPonto: melhor.dist, viaVizinhanca: true })
+    visitas.set(linha.nf, { nf: linha.nf, chegada: v.chegada, saida: v.saida, distanciaMetrosDoPonto: melhor.dist, viaVizinhanca: true, viaRaioAmpliado: false })
   }
   return visitas
 }

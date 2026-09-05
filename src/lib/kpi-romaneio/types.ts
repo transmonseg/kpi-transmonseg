@@ -49,6 +49,12 @@ export type Visita = {
   // marcar distinto no relatorio (observacao propria), nao tratar como
   // confirmacao direta igual as demais.
   viaVizinhanca?: boolean
+  /** Confirmada por parada entre 500m e 800m do ponto -- so' Rio Quality, cujo
+   *  romaneio nao tem NUMERO (coordenada e' de trecho de rua). Achado 05/09:
+   *  entregas com geocode comprovadamente certo ficavam pendentes por 47m e
+   *  107m alem do raio. Sai marcada no relatorio, nunca como confirmacao
+   *  normal. Ver kpi-rioquality/visitas.ts. */
+  viaRaioAmpliado?: boolean
 }
 
 export type StatusEntrega = 'confirmado_unitrac' | 'confirmado_gps' | 'pendente'

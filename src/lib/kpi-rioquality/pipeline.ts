@@ -177,7 +177,15 @@ export async function gerarKpiRioQuality(params: {
     // observacao mais grave ja' posta por montarDetalheEntregas
     .map(d => {
       contStatus[d.status] = (contStatus[d.status] ?? 0) + 1
-      if (d.status !== 'pendente' || d.observacao) return d
+      if (d.observacao) return d
+      // confirmada pela faixa ampliada (500-800m): sai marcada, nunca como
+      // confirmacao normal -- romaneio sem numero, coordenada e' de trecho de
+      // rua (achado 05/09, ver kpi-rioquality/visitas.ts)
+      const visita = visitasPorPlaca.get(normPlaca(d.placa))?.get(d.nf)
+      if (visita?.viaRaioAmpliado) {
+        return { ...d, observacao: 'ENTREGUE - PARADA A ATÉ 800M DO ENDEREÇO (romaneio sem número, horário aproximado)' }
+      }
+      if (d.status !== 'pendente') return d
       const obs = OBS_POR_CONFIANCA[confiancaPorNf.get(d.nf) ?? 'sem_candidato']
       return obs ? { ...d, observacao: obs } : d
     })

@@ -17,7 +17,6 @@ function parada(id: string, lat: number, lng: number, chegada: string, fim: stri
 }
 
 const AUTOMOVEL = { lat: -22.7900, lng: -43.3050 }
-const NOVE = { lat: -22.7920, lng: -43.3060 }      // ~250m da parada de Automovel Clube
 const LONGE = { lat: -22.9000, lng: -43.2000 }     // outra regiao
 
 describe('montarVisitasInclusivas', () => {
@@ -41,26 +40,71 @@ describe('montarVisitasInclusivas', () => {
     expect(montarVisitasInclusivas(linhas, paradas).get('A-1')!.chegada).toBe('2026-09-04T11:00:00Z')
   })
 
+  // Geometria numa linha norte-sul (0.001 de lat ~ 111m): a parada fica ~700m
+  // ao SUL de A-1 (confirma A-1 pela faixa ampliada) e N-1 fica ~700m ao
+  // NORTE de A-1 -- ou seja ~1,4km da parada (longe demais pra confirmar
+  // direto) mas dentro dos 800m de A-1, entao herda por vizinhanca.
   it('vizinhanca: entrega sem parada propria mas com irma confirmada a <= 800m herda a visita, marcada viaVizinhanca', () => {
-    const linhas = [linha('A-1', AUTOMOVEL.lat, AUTOMOVEL.lng), linha('N-1', NOVE.lat, NOVE.lng)]
-    // parada ~330m ao NORTE de A-1 (confirma direto) e ~565m de N-1 (nao
-    // confirma direto); N-1 esta' a ~245m de A-1 -> herda por vizinhanca
-    const paradas = [parada('p1', AUTOMOVEL.lat + 0.003, AUTOMOVEL.lng, '2026-09-04T10:00:00Z', '2026-09-04T10:20:00Z')]
+    const norte = { lat: AUTOMOVEL.lat + 0.0063, lng: AUTOMOVEL.lng }
+    const linhas = [linha('A-1', AUTOMOVEL.lat, AUTOMOVEL.lng), linha('N-1', norte.lat, norte.lng)]
+    const paradas = [parada('p1', AUTOMOVEL.lat - 0.0063, AUTOMOVEL.lng, '2026-09-04T10:00:00Z', '2026-09-04T10:20:00Z')]
     const v = montarVisitasInclusivas(linhas, paradas)
-    expect(v.get('A-1')).toMatchObject({ viaVizinhanca: false })
+    expect(v.get('A-1')).toMatchObject({ viaVizinhanca: false, viaRaioAmpliado: true })
     expect(v.get('N-1')).toMatchObject({ chegada: '2026-09-04T10:00:00Z', saida: '2026-09-04T10:20:00Z', viaVizinhanca: true })
   })
 
   it('vizinhanca NAO encadeia (irma confirmada por vizinhanca nao empresta pra terceira) e respeita o raio', () => {
-    const viz = { lat: AUTOMOVEL.lat - 0.0055, lng: AUTOMOVEL.lng }  // ~610m de A-1: nao confirma direto (>500), herda (<=800)
-    const meio = { lat: AUTOMOVEL.lat - 0.0110, lng: AUTOMOVEL.lng } // ~1220m de A-1 (>800) e ~610m de viz -- viz nao pode emprestar
+    // parada 700m ao SUL de A-1; N-1 700m ao NORTE de A-1 (1,4km da parada ->
+    // so' vizinhanca); M-1 1,6km ao norte de A-1 e ~900m de N-1 -> ninguem
+    // pode confirmar (nem direto, nem por N-1, que so' tem vizinhanca)
+    const viz = { lat: AUTOMOVEL.lat + 0.0063, lng: AUTOMOVEL.lng }
+    const meio = { lat: AUTOMOVEL.lat + 0.0145, lng: AUTOMOVEL.lng }
     const linhas = [linha('A-1', AUTOMOVEL.lat, AUTOMOVEL.lng), linha('N-1', viz.lat, viz.lng), linha('M-1', meio.lat, meio.lng), linha('L-1', LONGE.lat, LONGE.lng)]
-    const paradas = [parada('p1', AUTOMOVEL.lat, AUTOMOVEL.lng, '2026-09-04T10:00:00Z', '2026-09-04T10:20:00Z')]
+    const paradas = [parada('p1', AUTOMOVEL.lat - 0.0063, AUTOMOVEL.lng, '2026-09-04T10:00:00Z', '2026-09-04T10:20:00Z')]
     const v = montarVisitasInclusivas(linhas, paradas)
     expect(v.has('A-1')).toBe(true)
-    expect(v.get('N-1')?.viaVizinhanca).toBe(true)   // ~610m de A-1
-    expect(v.has('M-1')).toBe(false)                  // 1220m de A-1 (> 800) e N-1 (vizinhanca) nao empresta
+    expect(v.get('N-1')?.viaVizinhanca).toBe(true)
+    expect(v.has('M-1')).toBe(false)
     expect(v.has('L-1')).toBe(false)
+  })
+
+  // Achado real 05/09 (conferencia manual de 20 entregas da Rio Quality): duas
+  // pendentes tinham a coordenada CERTA (verificada por reverse geocode -- 85m
+  // da Rua Raul Pompeia, e a Rua Beira Rio em Mage) e mesmo assim ficaram
+  // pendentes porque a parada da propria placa estava a 607m e 547m -- fora do
+  // raio de 500m por pouco. No romaneio da Rio Quality nao ha NUMERO, entao a
+  // coordenada e' de trecho de rua (+-200m facil): 500m e' apertado demais.
+  // Vira confirmada, mas MARCADA (raio ampliado), nunca como confirmacao
+  // normal -- mesma filosofia da vizinhanca.
+  it('parada entre 500m e 800m confirma, marcada como raio ampliado', () => {
+    const linhas = [linha('A-1', AUTOMOVEL.lat, AUTOMOVEL.lng)]
+    const paradas = [parada('p1', AUTOMOVEL.lat - 0.0055, AUTOMOVEL.lng, '2026-09-04T10:00:00Z', '2026-09-04T10:20:00Z')] // ~610m
+    const v = montarVisitasInclusivas(linhas, paradas)
+    expect(v.get('A-1')).toMatchObject({ viaRaioAmpliado: true, viaVizinhanca: false })
+    expect(v.get('A-1')!.distanciaMetrosDoPonto).toBeGreaterThan(500)
+  })
+
+  it('parada dentro de 500m continua confirmacao normal (nao marca raio ampliado)', () => {
+    const linhas = [linha('A-1', AUTOMOVEL.lat, AUTOMOVEL.lng)]
+    const paradas = [parada('p1', AUTOMOVEL.lat + 0.001, AUTOMOVEL.lng, '2026-09-04T10:00:00Z', '2026-09-04T10:20:00Z')]
+    expect(montarVisitasInclusivas(linhas, paradas).get('A-1')).toMatchObject({ viaRaioAmpliado: false, viaVizinhanca: false })
+  })
+
+  it('parada dentro de 500m tem prioridade sobre outra a 700m (nao rebaixa a toa)', () => {
+    const linhas = [linha('A-1', AUTOMOVEL.lat, AUTOMOVEL.lng)]
+    const paradas = [
+      parada('longe', AUTOMOVEL.lat - 0.0063, AUTOMOVEL.lng, '2026-09-04T09:00:00Z', '2026-09-04T09:40:00Z'), // ~700m, mais demorada
+      parada('perto', AUTOMOVEL.lat + 0.001, AUTOMOVEL.lng, '2026-09-04T11:00:00Z', '2026-09-04T11:10:00Z'), // ~110m
+    ]
+    const v = montarVisitasInclusivas(linhas, paradas)
+    expect(v.get('A-1')).toMatchObject({ viaRaioAmpliado: false })
+    expect(v.get('A-1')!.chegada).toBe('2026-09-04T11:00:00Z')
+  })
+
+  it('acima de 800m nao confirma direto (so por vizinhanca, se houver irma)', () => {
+    const linhas = [linha('A-1', AUTOMOVEL.lat, AUTOMOVEL.lng)]
+    const paradas = [parada('p1', AUTOMOVEL.lat - 0.0090, AUTOMOVEL.lng, '2026-09-04T10:00:00Z', '2026-09-04T10:20:00Z')] // ~1km
+    expect(montarVisitasInclusivas(linhas, paradas).size).toBe(0)
   })
 
   it('ignora parada BASE e entrega sem coordenada', () => {

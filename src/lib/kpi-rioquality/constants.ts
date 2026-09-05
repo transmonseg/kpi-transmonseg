@@ -11,3 +11,11 @@ export const BASES_COORD_RIOQUALITY = [BASE_COORD_RIOQUALITY]
 // sem parada propria, mas com entrega IRMA (mesma placa) confirmada a ate'
 // este raio, herda a visita dela -- marcada como viaVizinhanca.
 export const RAIO_VIZINHANCA_METROS = 800
+
+// Faixa ampliada de confirmacao (achado 05/09, conferencia manual de 20
+// entregas): o romaneio da Rio Quality nao tem NUMERO, entao a coordenada e'
+// de trecho de rua. Duas entregas com geocode comprovadamente certo (85m da
+// Rua Raul Pompeia; Rua Beira Rio em Mage) ficaram pendentes porque a parada
+// estava a 607m e 547m. Entre RAIO_ENTREGA_METROS e este valor a entrega
+// confirma, mas sai MARCADA no relatorio (nunca como confirmacao normal).
+export const RAIO_CONFIRMACAO_AMPLIADO_METROS = 800
