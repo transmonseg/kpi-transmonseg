@@ -45,6 +45,14 @@ describe('parseCustos', () => {
   it('planilha sem o cabeçalho esperado => vazio, não lança', () => {
     expect(parseCustos(planilha([['qualquer', 'coisa'], ['a', 'b']])).size).toBe(0)
   })
+  // Achado real 06/09: a Rio Quality manda "--" na coluna Rota quando o
+  // veículo não tem rota atribuída (PUT3E37 em 04/09) -- sem isso o
+  // relatório saía com "CARGA: --", parecendo bug nosso.
+  it('rota "--" (sem rota atribuída pela Rio Quality) vira sem-rota, não literal "--"', () => {
+    const m = parseCustos(planilha([['Relatório de Custos', null], ['Veículo', 'Rota'], ['PUT3E37', '--'], ['RJM5B51', 'BAIXADA 2']]))
+    expect(m.has('PUT3E37')).toBe(false)
+    expect(m.get('RJM5B51')).toBe('BAIXADA 2')
+  })
 })
 
 describe('parseEntregas', () => {

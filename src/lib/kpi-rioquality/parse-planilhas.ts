@@ -49,7 +49,13 @@ export function parseCustos(buf: Buffer): Map<string, string> {
   for (const r of rows.slice(h + 1)) {
     const placa = normPlaca(norm(r?.[0]))
     const rota = norm(r?.[1])
-    if (!placa || !rota) continue
+    // Achado real 06/09: a propria Rio Quality manda "--" na coluna Rota
+    // quando o veiculo nao tem rota atribuida (1 de 100 placas em 04/09,
+    // PUT3E37) -- sem isso o relatorio saia com "CARGA: --" (confuso, parece
+    // erro nosso) e a placa perdia o prior de zona na geocodificacao por
+    // coerencia (rotaParaZona('--') ja' dava null, mas o valor cru poluia o
+    // relatorio). Tratado igual a "sem rota": cai no fallback CARGA_SEM_ROTA.
+    if (!placa || !rota || /^-+$/.test(rota)) continue
     out.set(placa, rota)
   }
   return out
