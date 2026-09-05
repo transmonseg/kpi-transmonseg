@@ -317,8 +317,8 @@ describe('gerador-xlsx', () => {
       await wb.xlsx.load(buffer)
       const values = (wb.worksheets[0].getRow(LINHA_PRIMEIRO_DADO).values as unknown[]).slice(1)
 
-      expect(values[11]).toBe('SEM RASTREADOR') // SAÍDA CD
-      expect(values[12]).toBe('SEM RASTREADOR') // CHEGADA CD
+      expect(values[11]).toBe('SEM CADASTRO') // SAÍDA CD
+      expect(values[12]).toBe('SEM CADASTRO') // CHEGADA CD
     })
 
     it('EM ROTA no lugar de celula vazia quando a data do relatorio e o dia de hoje (rota ainda em andamento)', async () => {
@@ -352,8 +352,8 @@ describe('gerador-xlsx', () => {
       const wsPlaca = wb.getWorksheet('ABC1234')!
       const values = (wsPlaca.getRow(4).values as unknown[]).slice(1)
 
-      expect(values[4]).toBe('SEM RASTREADOR') // CHEGADA NA LOJA
-      expect(values[5]).toBe('SEM RASTREADOR') // SAÍDA DA LOJA
+      expect(values[4]).toBe('SEM CADASTRO') // CHEGADA NA LOJA
+      expect(values[5]).toBe('SEM CADASTRO') // SAÍDA DA LOJA
     })
 
     it('NF confirmada via Unitrac (sem GPS) nunca ganha motivo em CHEGADA/SAÍDA NA LOJA, mesmo sem rastreador -- ja tem explicacao propria via STATUS', async () => {
