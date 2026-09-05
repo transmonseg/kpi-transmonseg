@@ -119,7 +119,14 @@ function celulaHora(iso: string | null, temRastreador: boolean, data: string, ho
 // STATUS da entrega: observacao concreta (troca de carro/tempo excessivo,
 // ver agregacao.ts) e' sempre mais informativa que o rotulo generico.
 function textoStatus(d: LinhaDetalheEntrega): string {
-  return d.observacao ?? LABEL_STATUS_ENTREGA[d.status]
+  if (d.observacao) return d.observacao
+  // Veiculo sem rastreador nunca vai confirmar -- dizer "SEM CONFIRMACAO"
+  // esconde o motivo real (achado 05/09: 1294 das 3062 entregas da Rio
+  // Quality caiam nesse balde, e 1394 eram simplesmente placas fora da
+  // frota rastreada). As celulas de horario ja dizem SEM RASTREADOR; o
+  // STATUS passa a dizer tambem.
+  if (!d.temRastreador && d.status === 'pendente') return 'SEM RASTREADOR (veículo não monitorado)'
+  return LABEL_STATUS_ENTREGA[d.status]
 }
 
 function formatarMinutos(min: number | null): string {
