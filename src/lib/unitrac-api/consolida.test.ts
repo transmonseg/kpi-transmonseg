@@ -44,7 +44,20 @@ describe('consolidaParadasApi', () => {
     ]
     const ps = consolidaParadasApi(ev, pontos, '2026-06-12', 'FUM8748')
     expect(ps[0].saida).toBe('2026-06-12T06:42:00.000Z') // inclui trânsito
-    expect(ps[0].fim_real).toBe('2026-06-12T05:52:00.000Z') // só a permanência real (chegada + 60s)
+    // Achado real 05/09: `tempoparada` da Unitrac vem em MINUTOS, nao em
+    // segundos. Conferido nos eventos crus de producao (placa RQU6E83,
+    // 03/09) -- cada evento traz tempoparada logo abaixo do intervalo ate o
+    // proximo evento, que e' permanencia + deslocamento:
+    //   tempoparada=4  -> 8 min ate o proximo
+    //   tempoparada=20 -> 26 min
+    //   tempoparada=11 -> 16 min
+    //   tempoparada=22 -> 25 min
+    // Como segundos seria absurdo (parada de 4s nao vira evento) e a soma do
+    // dia daria ~15 min de veiculo parado numa jornada de 12h. Tratar como
+    // segundos encurtava fim_real em 60x: "TEMPO NA LOJA" saia 0h00min em 31
+    // de 33 entregas da Rio Quality, e a SAIDA DO CD virava o horario em que
+    // o caminhao CHEGOU na base, nao o que saiu.
+    expect(ps[0].fim_real).toBe('2026-06-12T06:51:00.000Z') // unico evento do cluster: 05:51 + 60 MINUTOS
     // último cluster do dia: fim_real == saida (não tem próximo pra emprestar chegada)
     expect(ps[1].fim_real).toBe(ps[1].saida)
   })

@@ -66,7 +66,13 @@ export function consolidaParadasApi(
     const ultimo = c.eventos[c.eventos.length - 1]
     const chegada = c.eventos[0]._data
     const proximo = clusters[i + 1]
-    const fimReal = new Date(new Date(ultimo._data).getTime() + (ultimo.tempoparada ?? 0) * 1000).toISOString()
+    // `tempoparada` da Unitrac vem em MINUTOS (achado real 05/09, conferido
+    // nos eventos crus de producao: tempoparada=4 com 8 min ate o proximo
+    // evento, 20 -> 26, 11 -> 16, 22 -> 25 -- a diferenca e' o deslocamento).
+    // Antes multiplicava por 1000 tratando como segundos: fim_real ficava 60x
+    // curto, "TEMPO NA LOJA" saia 0h00min em 31 de 33 entregas da Rio Quality
+    // e a SAIDA DO CD virava o horario de CHEGADA na base.
+    const fimReal = new Date(new Date(ultimo._data).getTime() + (ultimo.tempoparada ?? 0) * 60_000).toISOString()
     const saida = proximo ? proximo.eventos[0]._data : fimReal
     const durSeg = Math.round((new Date(saida).getTime() - new Date(chegada).getTime()) / 1000)
 
