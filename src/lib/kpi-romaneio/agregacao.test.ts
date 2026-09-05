@@ -327,8 +327,56 @@ describe('montarDetalheEntregas', () => {
 
       const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, paradasFrota)
 
-      expect(d.status).toBe('pendente')
-      expect(d.observacao).toBe('MUDOU DE ROTA - CONFERIR (placa provável: RQV6I51)')
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.observacao).toBe('ENTREGUE POR OUTRA PLACA (RQV6I51) - CARGA TRANSFERIDA')
+    })
+
+    // Achado real 05/09 (diagnostico do KPI Nutry Max de 03/09, cruzando cada
+    // pendente com o GPS bruto): dos 261 pendentes COM coordenada, 98 tinham
+    // OUTRA placa da frota parada a <= 500m do ponto -- carga transferida
+    // entre caminhoes. Caso mais claro: a placa TTJ9I18 tinha 19 pendentes,
+    // TODOS em Itaperuna, e ela nunca chegou a menos de 55km de la -- quem
+    // rodou Itaperuna foi a RQU-2G47 (chegou a 81m dos pontos). A entrega FOI
+    // FEITA; marcar "pendente" e' errado. Vira confirmada, com o horario da
+    // parada da outra placa e a observacao dizendo qual placa entregou (o
+    // operador confere).
+    it('a entrega confirmada por outra placa herda chegada/saida da parada dela', () => {
+      const linhas = [linha('NF1')]
+      const paradaOutraPlaca = parada({
+        id: 'p2', placa_norm: 'RQU2G47', classificacao: 'FORA_BASE', lat: -22.9001, lng: -43.2001,
+        chegada: '2026-09-03T13:00:00.000Z', fim_real: '2026-09-03T13:12:00.000Z',
+      })
+      const paradasFrota = new Map([['RQU2G47', [paradaOutraPlaca]]])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, paradasFrota)
+
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.chegada).toBe('2026-09-03T13:00:00.000Z')
+      expect(d.saida).toBe('2026-09-03T13:12:00.000Z')
+      expect(d.tempoParadaMin).toBe(12)
+    })
+
+    it('a PROPRIA placa confirmando tem prioridade sobre outra placa (nao rotula troca a toa)', () => {
+      const linhas = [linha('NF1')]
+      const visitas = new Map<string, Visita>([
+        ['NF1', { nf: 'NF1', chegada: '2026-09-03T10:00:00.000Z', saida: '2026-09-03T10:05:00.000Z', distanciaMetrosDoPonto: 20 }],
+      ])
+      const paradasFrota = new Map([['RQV6I51', [parada({ id: 'p2', placa_norm: 'RQV6I51', classificacao: 'FORA_BASE', lat: -22.9001, lng: -43.2001 })]]])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio, true, paradasFrota)
+
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.chegada).toBe('2026-09-03T10:00:00.000Z')
+      expect(d.observacao).toBeNull()
+    })
+
+    it("veiculo sem movimento no dia continua tendo prioridade na observacao (rastreador travado e outro problema)", () => {
+      const linhas = [linha('NF1')]
+      const paradasFrota = new Map([['RQV6I51', [parada({ id: 'p2', placa_norm: 'RQV6I51', classificacao: 'FORA_BASE', lat: -22.9001, lng: -43.2001 })]]])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, paradasFrota, 0.5)
+
+      expect(d.observacao).toBe('VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA')
     })
 
     it('NF pendente mas nenhuma outra placa passou perto: observacao null (nao inventa suspeita)', () => {

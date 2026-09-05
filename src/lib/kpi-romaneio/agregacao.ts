@@ -31,21 +31,30 @@ const LIMITE_KM_SEM_MOVIMENTO = 2
  *  mesmo espírito de sugestao-troca.ts dela). Usa o mesmo raio de
  *  confirmação por perímetro próprio (RAIO_ENTREGA_METROS), nunca o raio
  *  que a Unitrac cadastra pro alvo. */
-function acharPlacaSuspeita(
+// Achado real 05/09 (diagnostico do KPI Nutry Max de 03/09, cada pendente
+// cruzado com o GPS bruto do dia): dos 261 pendentes COM coordenada, 98
+// tinham OUTRA placa da frota PARADA a <= 500m do ponto -- carga transferida
+// entre caminhoes. Caso mais claro: a placa TTJ9I18 tinha 19 pendentes,
+// todos em Itaperuna, e nunca chegou a menos de 55km de la; quem rodou
+// Itaperuna foi a RQU-2G47 (chegou a 81m dos pontos). A entrega FOI FEITA --
+// marcar pendente e' errado. Devolve a parada junto pra herdar o horario.
+function acharParadaDeOutraPlaca(
   linha: LinhaGeocodificada,
   placaEsperada: string,
   paradasPorOutraPlaca: Map<string, UnitracParadaRow[]>,
-): string | null {
+): { placa: string; parada: UnitracParadaRow } | null {
   if (linha.lat == null || linha.lng == null) return null
+  let melhor: { placa: string; parada: UnitracParadaRow; dist: number } | null = null
   for (const [outraPlaca, paradas] of paradasPorOutraPlaca) {
     if (outraPlaca === placaEsperada) continue
-    const achou = paradas.some(p =>
-      p.classificacao === 'FORA_BASE' && p.lat != null && p.lng != null &&
-      haversine(p.lat, p.lng, linha.lat as number, linha.lng as number) <= RAIO_ENTREGA_METROS,
-    )
-    if (achou) return outraPlaca
+    for (const p of paradas) {
+      if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
+      const dist = haversine(p.lat, p.lng, linha.lat as number, linha.lng as number)
+      if (dist > RAIO_ENTREGA_METROS) continue
+      if (!melhor || dist < melhor.dist) melhor = { placa: outraPlaca, parada: p, dist }
+    }
   }
-  return null
+  return melhor ? { placa: melhor.placa, parada: melhor.parada } : null
 }
 
 /** Uma carga = todas as linhas do romaneio com o mesmo `carga`+`placa`.
@@ -202,20 +211,30 @@ export function montarDetalheEntregas(
     const visita = visitasPorNf.get(linha.nf)
     const confirmadoUnitrac = alvo?.situacao === 1
     const confirmadoGps = visita != null
+    const semMovimento = kmPercorrido != null && kmPercorrido < LIMITE_KM_SEM_MOVIMENTO
+    // Carga transferida: so' quando a PROPRIA placa nao confirmou. Rastreador
+    // travado (sem movimento) tem outra explicacao e nao vira "transferida".
+    const porOutraPlaca = confirmadoUnitrac || confirmadoGps || semMovimento
+      ? null
+      : acharParadaDeOutraPlaca(linha, placaNorm, paradasPorOutraPlaca)
+
     const status: StatusEntrega = confirmadoUnitrac
       ? 'confirmado_unitrac'
-      : confirmadoGps
+      : confirmadoGps || porOutraPlaca
         ? 'confirmado_gps'
         : 'pendente'
-    const tempoParadaMin = visita ? minutosEntre(visita.chegada, visita.saida) : null
+    const chegada = visita?.chegada ?? porOutraPlaca?.parada.chegada ?? null
+    const saida = visita?.saida
+      ?? porOutraPlaca?.parada.fim_real ?? porOutraPlaca?.parada.saida ?? porOutraPlaca?.parada.chegada
+      ?? null
+    const tempoParadaMin = chegada && saida ? minutosEntre(chegada, saida) : null
 
     let observacao: string | null = null
-    if (status === 'pendente' && kmPercorrido != null && kmPercorrido < LIMITE_KM_SEM_MOVIMENTO) {
+    if (status === 'pendente' && semMovimento) {
       observacao = 'VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA'
     }
-    if (observacao == null && status === 'pendente') {
-      const placaSuspeita = acharPlacaSuspeita(linha, placaNorm, paradasPorOutraPlaca)
-      if (placaSuspeita) observacao = `MUDOU DE ROTA - CONFERIR (placa provável: ${placaSuspeita})`
+    if (observacao == null && porOutraPlaca) {
+      observacao = `ENTREGUE POR OUTRA PLACA (${porOutraPlaca.placa}) - CARGA TRANSFERIDA`
     }
     if (observacao == null && tempoParadaMin != null && tempoParadaMin > LIMITE_TEMPO_LOJA_MIN) {
       observacao = 'TEMPO EM LOJA ACIMA DE 4H - CONFERIR'
@@ -240,8 +259,8 @@ export function montarDetalheEntregas(
       saidaCd: resumoCarga.saidaCd,
       chegadaCd: resumoCarga.chegadaCd,
       tempoOperacaoMin: resumoCarga.tempoOperacaoMin,
-      chegada: visita?.chegada ?? null,
-      saida: visita?.saida ?? null,
+      chegada,
+      saida,
       tempoParadaMin,
       status,
       temRastreador,
