@@ -1,7 +1,8 @@
 import { normPlaca, buscarStopsCru, consolidaParadasApi } from '@/lib/unitrac-api'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
-import { montarVisitas } from '@/lib/kpi-romaneio/visitas'
 import { agregarPorCarga, montarDetalheEntregas } from '@/lib/kpi-romaneio/agregacao'
+import { montarVisitasInclusivas } from './visitas'
+import { BASES_COORD_RIOQUALITY } from './constants'
 import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
@@ -17,7 +18,10 @@ import { geocodificarPorCoerencia, type ConfiancaCoerencia } from './geocode-coe
 //   - geocodificacao pela ponte de COERENCIA DE GRUPO, com confianca por parada;
 //   - presenca so' por GPS (paradas da Unitrac por CV) -- sem alvos/geofences
 //     da Unitrac de proposito (marcacoes proprias a partir do romaneio);
-//   - sem base/CD cadastrada: saida/chegada do CD ficam null.
+//   - casamento INCLUSIVO entrega x parada + vizinhanca (./visitas.ts): varias
+//     entregas na mesma rua/coordenada confirmam com a mesma parada;
+//   - base/CD descoberta pelo GPS (./constants.ts): saida/chegada do CD e km
+//     saem do fallback por eventos BASE de agregarPorCarga.
 
 export const OBS_POR_CONFIANCA: Partial<Record<ConfiancaCoerencia, string>> = {
   baixa: 'LOCALIZAÇÃO INCERTA (RUA SEM CIDADE NO ROMANEIO) - CONFERIR',
@@ -65,9 +69,9 @@ export async function gerarKpiRioQuality(params: {
   const buscarParadas =
     params.buscarParadas ??
     (async (cv: string, placaNorm: string, d: string) =>
-      // bases = [] de proposito: a Rio Quality nao tem CD cadastrado; usar as
-      // bases da Nutry Max (buscarParadasDoDia) classificaria parada errada
-      consolidaParadasApi(await buscarStopsCru(cv, 48), {}, d, placaNorm, []))
+      // base propria da Rio Quality (descoberta pelo GPS, ver constants.ts) --
+      // NAO usar buscarParadasDoDia, que classifica pelas bases da Nutry Max
+      consolidaParadasApi(await buscarStopsCru(cv, 48), {}, d, placaNorm, BASES_COORD_RIOQUALITY))
 
   // 1) parse
   const custos = parseCustos(custosBuf)
@@ -116,7 +120,7 @@ export async function gerarKpiRioQuality(params: {
     const cv = cvPorPlaca.get(placaNorm)
     const paradas = cv ? await buscarParadas(cv, placaNorm, data) : []
     paradasPorPlaca.set(placaNorm, paradas)
-    visitasPorPlaca.set(placaNorm, montarVisitas(linhasGeoPorPlaca.get(placaNorm) ?? [], paradas, undefined))
+    visitasPorPlaca.set(placaNorm, montarVisitasInclusivas(linhasGeoPorPlaca.get(placaNorm) ?? [], paradas))
     kmPorPlaca.set(placaNorm, calcularKmPercorrido(paradas))
   }))
   log(`Placas: ${placasNorm.length}, com CV: ${placasNorm.filter(p => cvPorPlaca.has(p)).length}`)
