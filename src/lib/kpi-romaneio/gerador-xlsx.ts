@@ -235,11 +235,14 @@ export async function gerarKpiRomaneioXlsx(
   // "hoje" pra distinguir "ainda em rota" de "nunca aconteceu") -- produção
   // sempre usa o default real.
   hoje: string = hojeBR(),
+  // Nome do cliente no titulo das abas -- o gerador nasceu pra Nutry Max e o
+  // KPI Rio Quality (05/09) reaproveita ele inteiro.
+  nomeCliente: string = 'NUTRY MAX',
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
   wb.creator = 'TRANSMONSEG'
   wb.created = new Date()
-  const titulo = `RELATÓRIO KPI - NUTRY MAX\n${formatarTituloData(data)}`
+  const titulo = `RELATÓRIO KPI - ${nomeCliente}\n${formatarTituloData(data)}`
 
   const ws = wb.addWorksheet(`KPI ${data}`)
   estilizarTitulo(ws, 1, COLUNAS_KPI_ROMANEIO.length, titulo)
@@ -294,7 +297,7 @@ export async function gerarKpiRomaneioXlsx(
 
   for (const placa of placasEmOrdem) {
     const wsPlaca = wb.addWorksheet(nomeAbaPlaca(placa))
-    const tituloPlaca = `RELATÓRIO KPI - NUTRY MAX - PLACA ${placa}\n${formatarTituloData(data)}`
+    const tituloPlaca = `RELATÓRIO KPI - ${nomeCliente} - PLACA ${placa}\n${formatarTituloData(data)}`
     estilizarTitulo(wsPlaca, 1, COLUNAS_DETALHE_PLACA.length, tituloPlaca)
     await adicionarLogo(wb, wsPlaca, 1)
     escreverResumoPlaca(wsPlaca, 2, COLUNAS_DETALHE_PLACA.length, resumoPorPlaca.get(placa), data, hoje)

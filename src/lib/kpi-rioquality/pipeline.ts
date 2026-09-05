@@ -180,7 +180,7 @@ export async function gerarKpiRioQuality(params: {
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
   log(`Status: ${JSON.stringify(contStatus)}`)
 
-  const xlsx = await gerarKpiRomaneioXlsx(linhasKpi, data, [], detalhe)
+  const xlsx = await gerarKpiRomaneioXlsx(linhasKpi, data, [], detalhe, undefined, 'RIO QUALITY')
   return {
     xlsx,
     linhasKpi,
