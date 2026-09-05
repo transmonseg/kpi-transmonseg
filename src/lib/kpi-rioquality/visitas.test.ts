@@ -9,8 +9,8 @@ import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 // numero) -- so' uma confirmava, o resto ficava pendente: 60% pendente com
 // rastreador contra ~70% "entregue" na propria Unitrac.
 
-function linha(nf: string, lat: number | null, lng: number | null): LinhaGeocodificada {
-  return { carga: 'BAIXADA 2', destino: 'BAIXADA 2', placa: 'RJM5B51', motorista: '', ajudantes: [], nf, clienteCodigo: '', clienteNome: nf, endereco: nf, lat, lng }
+function linha(nf: string, lat: number | null, lng: number | null, pontosAlternativos?: { lat: number; lng: number }[]): LinhaGeocodificada {
+  return { carga: 'BAIXADA 2', destino: 'BAIXADA 2', placa: 'RJM5B51', motorista: '', ajudantes: [], nf, clienteCodigo: '', clienteNome: nf, endereco: nf, lat, lng, pontosAlternativos }
 }
 function parada(id: string, lat: number, lng: number, chegada: string, fim: string, classificacao = 'FORA_BASE'): UnitracParadaRow {
   return { id, placa_norm: 'RJM5B51', chegada, saida: null, fim_real: fim, duracao_seg: null, local_parada: '', codigo_loja: null, nome_loja: null, lat, lng, classificacao, ordem: 0 }
@@ -105,6 +105,33 @@ describe('montarVisitasInclusivas', () => {
     const linhas = [linha('A-1', AUTOMOVEL.lat, AUTOMOVEL.lng)]
     const paradas = [parada('p1', AUTOMOVEL.lat - 0.0090, AUTOMOVEL.lng, '2026-09-04T10:00:00Z', '2026-09-04T10:20:00Z')] // ~1km
     expect(montarVisitasInclusivas(linhas, paradas).size).toBe(0)
+  })
+
+  // Pedido do usuario 06/09: "se disser a rua, e o caminhao parou naquela
+  // rua, conta como entrega" -- rua comprida, o CNEFE tem varios trechos e a
+  // coerencia so' escolhe UM (o mais perto das ancoras). O caminhao pode
+  // parar num trecho DIFERENTE da mesma rua, longe demais do escolhido pro
+  // raio ampliado, e ainda assim ter entregue.
+  it('confirma em OUTRO trecho da mesma rua quando o escolhido fica longe demais (>800m)', () => {
+    const outroTrecho = { lat: AUTOMOVEL.lat + 0.02, lng: AUTOMOVEL.lng } // ~2,2km do escolhido
+    const linhas = [linha('A-1', AUTOMOVEL.lat, AUTOMOVEL.lng, [AUTOMOVEL, outroTrecho])]
+    const paradas = [parada('p1', outroTrecho.lat, outroTrecho.lng, '2026-09-04T10:00:00Z', '2026-09-04T10:20:00Z')]
+    const v = montarVisitasInclusivas(linhas, paradas)
+    expect(v.get('A-1')).toMatchObject({ chegada: '2026-09-04T10:00:00Z', viaVizinhanca: false, viaRaioAmpliado: false, viaOutroPontoDaRua: true })
+  })
+
+  it('sem pontos alternativos ou nenhum deles perto: continua sem confirmar', () => {
+    const outroTrecho = { lat: AUTOMOVEL.lat + 0.02, lng: AUTOMOVEL.lng }
+    const linhas = [linha('A-1', AUTOMOVEL.lat, AUTOMOVEL.lng, [AUTOMOVEL, outroTrecho])]
+    const paradas = [parada('p1', LONGE.lat, LONGE.lng, '2026-09-04T10:00:00Z', '2026-09-04T10:20:00Z')]
+    expect(montarVisitasInclusivas(linhas, paradas).size).toBe(0)
+  })
+
+  it('confirmacao direta no ponto escolhido tem prioridade sobre outro trecho da rua', () => {
+    const outroTrecho = { lat: AUTOMOVEL.lat + 0.02, lng: AUTOMOVEL.lng }
+    const linhas = [linha('A-1', AUTOMOVEL.lat, AUTOMOVEL.lng, [AUTOMOVEL, outroTrecho])]
+    const paradas = [parada('p1', AUTOMOVEL.lat + 0.001, AUTOMOVEL.lng, '2026-09-04T10:00:00Z', '2026-09-04T10:20:00Z')]
+    expect(montarVisitasInclusivas(linhas, paradas).get('A-1')?.viaOutroPontoDaRua).toBeFalsy()
   })
 
   it('ignora parada BASE e entrega sem coordenada', () => {

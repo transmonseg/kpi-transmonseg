@@ -11,6 +11,8 @@
 
 export type ConfiancaCoerencia = 'alta' | 'media' | 'baixa' | 'sem_candidato' | 'isolado'
 
+export type PontoZona = { lat: number; lng: number }
+
 export type ResultadoCoerencia = {
   lat: number | null
   lng: number | null
@@ -18,6 +20,10 @@ export type ResultadoCoerencia = {
   confianca: ConfiancaCoerencia
   candidatos: number
   ancora: boolean
+  // TODOS os candidatos da mesma rua na zona (nao so' o escolhido) -- pedido
+  // 06/09: confirma entrega se o caminhao parou em QUALQUER um deles, nao
+  // so' no ponto que a coerencia escolheu. Ver kpi-rioquality/visitas.ts.
+  pontosZona: PontoZona[]
 }
 
 export type GrupoCoerencia = { id: string; zona: string | null; ruas: string[] }
@@ -29,7 +35,15 @@ function url(): string {
   return `${base}/api/romaneio/geocode-coerencia`
 }
 
-const SEM_CANDIDATO: ResultadoCoerencia = { lat: null, lng: null, municipioCodigo: null, confianca: 'sem_candidato', candidatos: 0, ancora: false }
+const SEM_CANDIDATO: ResultadoCoerencia = { lat: null, lng: null, municipioCodigo: null, confianca: 'sem_candidato', candidatos: 0, ancora: false, pontosZona: [] }
+
+function validarPontosZona(v: unknown): PontoZona[] {
+  if (!Array.isArray(v)) return []
+  return v
+    .filter((p): p is Record<string, unknown> => typeof p === 'object' && p !== null)
+    .map(p => ({ lat: Number(p.lat), lng: Number(p.lng) }))
+    .filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lng))
+}
 
 function tudoSemCandidato(grupos: GrupoCoerencia[]): Map<string, ResultadoCoerencia[]> {
   return new Map(grupos.map(g => [g.id, g.ruas.map(() => ({ ...SEM_CANDIDATO }))]))
@@ -43,7 +57,8 @@ function validar(r: unknown): ResultadoCoerencia {
   const conf = o.confianca
   const confianca: ConfiancaCoerencia =
     conf === 'alta' || conf === 'media' || conf === 'baixa' || conf === 'isolado' ? conf : 'sem_candidato'
-  if (lat === null || lng === null) return { ...SEM_CANDIDATO, candidatos: Number(o.candidatos) || 0 }
+  const pontosZona = validarPontosZona(o.pontosZona)
+  if (lat === null || lng === null) return { ...SEM_CANDIDATO, candidatos: Number(o.candidatos) || 0, pontosZona }
   return {
     lat,
     lng,
@@ -51,6 +66,7 @@ function validar(r: unknown): ResultadoCoerencia {
     confianca,
     candidatos: Number(o.candidatos) || 0,
     ancora: o.ancora === true,
+    pontosZona,
   }
 }
 

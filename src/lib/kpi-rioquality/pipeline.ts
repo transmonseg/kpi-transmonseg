@@ -107,7 +107,7 @@ export async function gerarKpiRioQuality(params: {
       const conf = r?.confianca ?? 'sem_candidato'
       confiancaPorNf.set(l.nf, conf)
       contConf[conf]++
-      romaneioGeo.push({ ...l, lat: r?.lat ?? null, lng: r?.lng ?? null })
+      romaneioGeo.push({ ...l, lat: r?.lat ?? null, lng: r?.lng ?? null, pontosAlternativos: r?.pontosZona ?? [] })
     })
   }
   log(`Geocodificacao: ${JSON.stringify(contConf)}`)
@@ -186,6 +186,11 @@ export async function gerarKpiRioQuality(params: {
       const visita = visitasPorPlaca.get(normPlaca(d.placa))?.get(d.nf)
       if (visita?.viaRaioAmpliado) {
         return { ...d, observacao: 'ENTREGUE - PARADA A ATÉ 800M DO ENDEREÇO (romaneio sem número, horário aproximado)' }
+      }
+      // confirmada em OUTRO trecho da mesma rua (rua comprida, o CNEFE tem
+      // varios pontos): sai marcada, mesma logica da faixa ampliada acima
+      if (visita?.viaOutroPontoDaRua) {
+        return { ...d, observacao: 'ENTREGUE - PARADA EM OUTRO TRECHO DA MESMA RUA (romaneio sem número, horário aproximado)' }
       }
       if (d.status !== 'pendente') return d
       const obs = OBS_POR_CONFIANCA[confiancaPorNf.get(d.nf) ?? 'sem_candidato']

@@ -48,14 +48,42 @@ export function montarVisitasInclusivas(linhas: LinhaGeocodificada[], paradas: U
         || (melhor.ampliado === ampliado && dur > melhor.dur)
       if (ganha) melhor = { parada, dist, dur, ampliado }
     }
-    if (!melhor) continue
+    if (melhor) {
+      visitas.set(linha.nf, {
+        nf: linha.nf,
+        chegada: melhor.parada.chegada,
+        saida: melhor.parada.fim_real ?? melhor.parada.saida ?? melhor.parada.chegada,
+        distanciaMetrosDoPonto: melhor.dist,
+        viaVizinhanca: false,
+        viaRaioAmpliado: melhor.ampliado,
+      })
+      continue
+    }
+
+    // 1b) nao confirmou no ponto escolhido: rua comprida pode ter varios
+    // trechos no CNEFE (a coerencia so' escolhe UM) -- pedido 06/09: se o
+    // romaneio diz a rua e o caminhao parou nela (mesmo que em outro trecho),
+    // conta como entrega. Testa contra os OUTROS candidatos da mesma rua na
+    // zona, raio normal (sao enderecos reais do CNEFE, nao precisa ampliar).
+    const alternativos = (linha.pontosAlternativos ?? []).filter(p => p.lat !== linha.lat || p.lng !== linha.lng)
+    if (alternativos.length === 0) continue
+    let melhorAlt: { parada: UnitracParadaRow; dist: number; dur: number } | null = null
+    for (const parada of foraBase) {
+      const dist = Math.min(...alternativos.map(p => haversine(parada.lat, parada.lng, p.lat, p.lng)))
+      if (dist > RAIO_ENTREGA_METROS) continue
+      const fim = parada.fim_real ?? parada.saida ?? parada.chegada
+      const dur = new Date(fim).getTime() - new Date(parada.chegada).getTime()
+      if (!melhorAlt || dur > melhorAlt.dur) melhorAlt = { parada, dist, dur }
+    }
+    if (!melhorAlt) continue
     visitas.set(linha.nf, {
       nf: linha.nf,
-      chegada: melhor.parada.chegada,
-      saida: melhor.parada.fim_real ?? melhor.parada.saida ?? melhor.parada.chegada,
-      distanciaMetrosDoPonto: melhor.dist,
+      chegada: melhorAlt.parada.chegada,
+      saida: melhorAlt.parada.fim_real ?? melhorAlt.parada.saida ?? melhorAlt.parada.chegada,
+      distanciaMetrosDoPonto: melhorAlt.dist,
       viaVizinhanca: false,
-      viaRaioAmpliado: melhor.ampliado,
+      viaRaioAmpliado: false,
+      viaOutroPontoDaRua: true,
     })
   }
 

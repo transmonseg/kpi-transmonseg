@@ -31,6 +31,9 @@ export type LinhaEscala = {
 export type LinhaGeocodificada = LinhaRomaneio & {
   lat: number | null
   lng: number | null
+  // So' preenchido pela coerencia de grupo (Rio Quality): outros pontos da
+  // MESMA rua na zona, alem do escolhido -- pedido 06/09, ver visitas.ts.
+  pontosAlternativos?: { lat: number; lng: number }[]
 }
 
 /** Uma visita confirmada por GPS dentro do perimetro PROPRIO (nunca o raio
@@ -55,6 +58,12 @@ export type Visita = {
    *  107m alem do raio. Sai marcada no relatorio, nunca como confirmacao
    *  normal. Ver kpi-rioquality/visitas.ts. */
   viaRaioAmpliado?: boolean
+  /** Confirmada por parada perto de OUTRO ponto da mesma rua (nao o que a
+   *  coerencia escolheu) -- pedido do usuario 06/09: "se disser a rua, e o
+   *  caminhao parou naquela rua, conta como entrega", rua comprida pode ter
+   *  varios trechos no CNEFE e o caminhao parar longe do trecho escolhido.
+   *  So' Rio Quality. Ver kpi-rioquality/visitas.ts. */
+  viaOutroPontoDaRua?: boolean
 }
 
 export type StatusEntrega = 'confirmado_unitrac' | 'confirmado_gps' | 'pendente'
