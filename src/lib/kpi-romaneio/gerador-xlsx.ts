@@ -103,7 +103,10 @@ function formatarHora(iso: string | null): string {
 // branco"), mostra o motivo quando ele e' conhecido. `null` = nenhum motivo
 // conhecido, fica em branco mesmo (nunca inventa).
 function motivoAusencia(temRastreador: boolean, data: string, hoje: string): string | null {
-  if (!temRastreador) return 'SEM RASTREADOR'
+  // "SEM CADASTRO", nao "SEM RASTREADOR": a placa pode ter rastreador e faltar
+  // o CV no nosso banco (Rio Quality, 05/09: portal lista ~102 veiculos, nos
+  // cadastramos 59). Nao afirmar sobre o veiculo o que e' falha nossa.
+  if (!temRastreador) return 'SEM CADASTRO'
   if (data === hoje) return 'EM ROTA'
   return null
 }
@@ -120,12 +123,14 @@ function celulaHora(iso: string | null, temRastreador: boolean, data: string, ho
 // ver agregacao.ts) e' sempre mais informativa que o rotulo generico.
 function textoStatus(d: LinhaDetalheEntrega): string {
   if (d.observacao) return d.observacao
-  // Veiculo sem rastreador nunca vai confirmar -- dizer "SEM CONFIRMACAO"
-  // esconde o motivo real (achado 05/09: 1294 das 3062 entregas da Rio
-  // Quality caiam nesse balde, e 1394 eram simplesmente placas fora da
-  // frota rastreada). As celulas de horario ja dizem SEM RASTREADOR; o
-  // STATUS passa a dizer tambem.
-  if (!d.temRastreador && d.status === 'pendente') return 'SEM RASTREADOR (veículo não monitorado)'
+  // Placa sem CV (codigo de rastreador) no nosso cadastro nunca vai
+  // confirmar -- e "SEM CONFIRMACAO" escondia o motivo (achado 05/09: 1294
+  // das 3062 entregas da Rio Quality caiam nesse balde). Mas o texto NAO
+  // pode afirmar que o veiculo nao tem rastreador: no caso da Rio Quality o
+  // portal lista ~102 veiculos e nos so' cadastramos 59, entao a maioria
+  // dessas placas provavelmente TEM rastreador e o buraco e' nosso. O rotulo
+  // diz o que sabemos de verdade: falta o codigo no cadastro.
+  if (!d.temRastreador && d.status === 'pendente') return 'PLACA SEM RASTREADOR CADASTRADO - COMPLETAR FROTA'
   return LABEL_STATUS_ENTREGA[d.status]
 }
 
