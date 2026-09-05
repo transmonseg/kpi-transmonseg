@@ -3,7 +3,8 @@ import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { agregarPorCarga, montarDetalheEntregas } from '@/lib/kpi-romaneio/agregacao'
 import { montarVisitasInclusivas } from './visitas'
 import { BASES_COORD_RIOQUALITY } from './constants'
-import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
+// calcularKmPercorrido (soma da reta entre paradas) NAO e' usado aqui de
+// proposito -- ver KM_PERCORRIDO_INDISPONIVEL abaixo.
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
 import { parseCustos, parseEntregas, montarLinhasRomaneio, rotaParaZona } from './parse-planilhas'
@@ -22,6 +23,22 @@ import { geocodificarPorCoerencia, type ConfiancaCoerencia } from './geocode-coe
 //     entregas na mesma rua/coordenada confirmam com a mesma parada;
 //   - base/CD descoberta pelo GPS (./constants.ts): saida/chegada do CD e km
 //     saem do fallback por eventos BASE de agregarPorCarga.
+
+// KM percorrido da Rio Quality: NAO ha fonte confiavel hoje -- medido em
+// 05/09 contra a verdade da Nutry Max (posicoes_historico, rastro continuo
+// coletado pelo motor a cada ~35s), em 6 placas de 03/09:
+//   soma da reta entre PARADAS  -> subestima 43% a 65% (mostra ~metade)
+//   rastro da Unitrac (48h)     -> inconsistente: 304 a 866 km onde a
+//                                   verdade era 385 a 523; sem timestamp,
+//                                   nao da' nem pra fatiar por dia (fatiar
+//                                   ancorando nas paradas errou 27% a 53%)
+// Publicar metade do km real num KPI que serve pra custo/produtividade e'
+// pior do que nao publicar. Fica null (sai "-" na planilha) ate' a Rio
+// Quality ser coletada pelo motor do monitoramento, que e' o que da' km real
+// -- decisao do usuario, porque registrar o cliente la' liga tambem a
+// deteccao de desvio (geofences de favela/CISP sao globais) pros 100
+// caminhoes.
+export const KM_PERCORRIDO_INDISPONIVEL: number | null = null
 
 export const OBS_POR_CONFIANCA: Partial<Record<ConfiancaCoerencia, string>> = {
   baixa: 'LOCALIZAÇÃO INCERTA (RUA SEM CIDADE NO ROMANEIO) - CONFERIR',
@@ -121,7 +138,7 @@ export async function gerarKpiRioQuality(params: {
     const paradas = cv ? await buscarParadas(cv, placaNorm, data) : []
     paradasPorPlaca.set(placaNorm, paradas)
     visitasPorPlaca.set(placaNorm, montarVisitasInclusivas(linhasGeoPorPlaca.get(placaNorm) ?? [], paradas))
-    kmPorPlaca.set(placaNorm, calcularKmPercorrido(paradas))
+    kmPorPlaca.set(placaNorm, KM_PERCORRIDO_INDISPONIVEL)
   }))
   log(`Placas: ${placasNorm.length}, com CV: ${placasNorm.filter(p => cvPorPlaca.has(p)).length}`)
 
