@@ -379,6 +379,54 @@ describe('montarDetalheEntregas', () => {
       expect(d.observacao).toBe('VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA')
     })
 
+    // Pedido do usuario 05/09 ("se a porra foi feita ... umas nomeclaturas
+    // melhores"): "PENDENTE" soa como "o motorista nao entregou", mas na
+    // maioria das vezes e' o nosso lado que nao conseguiu confirmar. O status
+    // passa a dizer o que o GPS mostra, com criterio medido:
+    //   caminhao esteve a <=500m mas sem parada  -> passou e nao parou
+    //   caminhao nunca chegou a 2km              -> ai sim, nao foi ao cliente
+    // Entre 500m e 2km fica sem rotulo extra (nao da' pra afirmar nada).
+    describe('nomenclatura por evidencia de GPS (pedido 05/09)', () => {
+      it('caminhao esteve a <=500m do ponto mas nao registrou parada: diz que passou sem parar', () => {
+        const perto = parada({ id: 'p', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.9012, lng: -43.2012 }) // ~180m
+        const paradasFrota = new Map([['TTL7D40', [perto]]])
+        const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio, true, paradasFrota)
+        expect(d.status).toBe('pendente')
+        expect(d.observacao).toBe('PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR')
+      })
+
+      it('caminhao nunca chegou a 2km do ponto: NAO FOI AO CLIENTE', () => {
+        const longe = parada({ id: 'p', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.95, lng: -43.30 }) // ~11km
+        const paradasFrota = new Map([['TTL7D40', [longe]]])
+        const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio, true, paradasFrota)
+        expect(d.observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
+      })
+
+      it('entre 500m e 2km: sem rotulo extra (nao afirma o que nao da pra saber)', () => {
+        const meio = parada({ id: 'p', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.910, lng: -43.200 }) // ~1,1km
+        const paradasFrota = new Map([['TTL7D40', [meio]]])
+        const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio, true, paradasFrota)
+        expect(d.observacao).toBeNull()
+      })
+
+      it('entrega confirmada nao ganha rotulo de nao-entrega, mesmo com parada longe no dia', () => {
+        const longe = parada({ id: 'p', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.95, lng: -43.30 })
+        const visitas = new Map<string, Visita>([
+          ['NF1', { nf: 'NF1', chegada: '2026-09-03T10:00:00.000Z', saida: '2026-09-03T10:05:00.000Z', distanciaMetrosDoPonto: 20 }],
+        ])
+        const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], visitas, resumoCargaVazio, true, new Map([['TTL7D40', [longe]]]))
+        expect(d.status).toBe('confirmado_gps')
+        expect(d.observacao).toBeNull()
+      })
+
+      it('sem coordenada ou sem parada nenhuma da propria placa: nao inventa rotulo', () => {
+        const semCoord = [linha('NF1', { lat: null, lng: null })]
+        const paradasFrota = new Map([['TTL7D40', [parada({ id: 'p', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.95, lng: -43.30 })]]])
+        expect(montarDetalheEntregas('93758', 'TTL7D40', semCoord, [], new Map(), resumoCargaVazio, true, paradasFrota)[0].observacao).toBeNull()
+        expect(montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio, true, new Map())[0].observacao).toBeNull()
+      })
+    })
+
     it('NF pendente mas nenhuma outra placa passou perto: observacao null (nao inventa suspeita)', () => {
       const linhas = [linha('NF1')]
       const paradaLonge = parada({ id: 'p2', placa_norm: 'RQV6I51', classificacao: 'FORA_BASE', lat: -23.5, lng: -44.5 })

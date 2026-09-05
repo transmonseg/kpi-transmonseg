@@ -44,7 +44,12 @@ const LABEL_MOTIVO: Record<AvisoDescasamento['motivo'], string> = {
 const LABEL_STATUS_ENTREGA: Record<StatusEntrega, string> = {
   confirmado_unitrac: 'CONFIRMADO (UNITRAC)',
   confirmado_gps: 'CONFIRMADO (GPS)',
-  pendente: 'PENDENTE',
+  // Pedido do usuario 05/09: "PENDENTE" soa como "o motorista nao entregou",
+  // quando na maioria dos casos e' o nosso lado que nao conseguiu confirmar
+  // (geocodificacao, raio, rastreador). O rotulo generico fica neutro; quando
+  // ha evidencia de GPS, a observacao de agregacao.ts diz o que aconteceu
+  // ("PASSOU NO ENDERECO MAS NAO REGISTROU PARADA", "NAO FOI AO CLIENTE").
+  pendente: 'SEM CONFIRMAÇÃO',
 }
 
 // Paleta/fonte de KPI_COLORS/KPI_FONTS (kpi-styles.ts) -- mesmo "nivel"

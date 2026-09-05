@@ -38,6 +38,33 @@ const LIMITE_KM_SEM_MOVIMENTO = 2
 // todos em Itaperuna, e nunca chegou a menos de 55km de la; quem rodou
 // Itaperuna foi a RQU-2G47 (chegou a 81m dos pontos). A entrega FOI FEITA --
 // marcar pendente e' errado. Devolve a parada junto pra herdar o horario.
+// Distancia do ponto ate a parada mais proxima DA PROPRIA PLACA no dia.
+// null quando nao da' pra medir (ponto sem coordenada, ou placa sem nenhuma
+// parada fora de base). Base a parte: parar na garagem nao diz nada sobre a
+// entrega.
+function distanciaAteParadaPropria(
+  linha: LinhaGeocodificada,
+  placaNorm: string,
+  paradasPorPlaca: Map<string, UnitracParadaRow[]>,
+): number | null {
+  if (linha.lat == null || linha.lng == null) return null
+  let menor: number | null = null
+  for (const p of paradasPorPlaca.get(placaNorm) ?? []) {
+    if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
+    const d = haversine(p.lat, p.lng, linha.lat, linha.lng)
+    if (menor === null || d < menor) menor = d
+  }
+  return menor
+}
+
+// Pedido do usuario 05/09 ("se a porra foi feita ... umas nomeclaturas
+// melhores"): "PENDENTE" soa como "o motorista nao entregou", quando na
+// maioria das vezes e' o nosso lado que nao confirmou. Estes rotulos dizem o
+// que o GPS mostra. Entre os dois limites nao ha rotulo -- nao da' pra
+// afirmar nada.
+const RAIO_PASSOU_SEM_PARAR_M = 500
+const RAIO_NAO_FOI_AO_CLIENTE_M = 2_000
+
 function acharParadaDeOutraPlaca(
   linha: LinhaGeocodificada,
   placaEsperada: string,
@@ -246,6 +273,15 @@ export function montarDetalheEntregas(
     // distinto no relatorio em vez de mostrar como confirmacao normal.
     if (observacao == null && visita?.viaVizinhanca) {
       observacao = 'ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)'
+    }
+    // Nomenclatura por evidencia de GPS -- so' pra quem ficou sem confirmacao
+    if (observacao == null && status === 'pendente') {
+      const dist = distanciaAteParadaPropria(linha, placaNorm, paradasPorOutraPlaca)
+      if (dist != null && dist <= RAIO_PASSOU_SEM_PARAR_M) {
+        observacao = 'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR'
+      } else if (dist != null && dist > RAIO_NAO_FOI_AO_CLIENTE_M) {
+        observacao = 'NÃO FOI AO CLIENTE (caminhão não esteve na região)'
+      }
     }
 
     return {

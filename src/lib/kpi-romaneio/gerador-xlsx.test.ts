@@ -279,7 +279,7 @@ describe('gerador-xlsx', () => {
       expect(linha2[4]).toBe('') // CHEGADA NA LOJA
       expect(linha2[5]).toBe('') // SAÍDA DA LOJA
       expect(linha2[6]).toBe('') // TEMPO NA LOJA
-      expect(linha2[7]).toBe('PENDENTE')
+      expect(linha2[7]).toBe('SEM CONFIRMAÇÃO')
 
       // NF3 (placa DEF5678) não aparece na aba da ABC1234.
       expect(wsPlaca.rowCount).toBe(5)
