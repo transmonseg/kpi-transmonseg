@@ -1,0 +1,192 @@
+import { normPlaca, buscarStopsCru, consolidaParadasApi } from '@/lib/unitrac-api'
+import type { UnitracParadaRow } from '@/lib/kpi/matcher'
+import { montarVisitas } from '@/lib/kpi-romaneio/visitas'
+import { agregarPorCarga, montarDetalheEntregas } from '@/lib/kpi-romaneio/agregacao'
+import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
+import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
+import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
+import { parseCustos, parseEntregas, montarLinhasRomaneio, rotaParaZona } from './parse-planilhas'
+import { geocodificarPorCoerencia, type ConfiancaCoerencia } from './geocode-coerencia'
+
+// Nucleo do KPI Rio Quality -- usado pela rota /api/kpi/rioquality/gerar e
+// pelo script scripts/gerar-rioquality-real-arquivo.ts (mesma pipeline, sem
+// HTTP/auth). Ver docs/plans/2026-09-05-kpi-rio-quality.md.
+//
+// Diferencas pro pipeline da Nutry Max (kpi-romaneio):
+//   - entrada = 2 planilhas (placa+rota, placa+rua); sem escala, sem NF, sem cidade;
+//   - geocodificacao pela ponte de COERENCIA DE GRUPO, com confianca por parada;
+//   - presenca so' por GPS (paradas da Unitrac por CV) -- sem alvos/geofences
+//     da Unitrac de proposito (marcacoes proprias a partir do romaneio);
+//   - sem base/CD cadastrada: saida/chegada do CD ficam null.
+
+export const OBS_POR_CONFIANCA: Partial<Record<ConfiancaCoerencia, string>> = {
+  baixa: 'LOCALIZAÇÃO INCERTA (RUA SEM CIDADE NO ROMANEIO) - CONFERIR',
+  isolado: 'LOCALIZAÇÃO INCERTA (RUA SEM CIDADE NO ROMANEIO) - CONFERIR',
+  sem_candidato: 'ENDEREÇO NÃO LOCALIZADO (RUA SEM CIDADE NO ROMANEIO)',
+}
+
+export type ResultadoPipelineRioQuality = {
+  xlsx: Buffer
+  linhasKpi: LinhaKpiRomaneio[]
+  detalhe: LinhaDetalheEntrega[]
+  estatisticas: {
+    entregas: number
+    placas: number
+    placasComCv: number
+    confianca: Record<ConfiancaCoerencia, number>
+    status: Record<string, number>
+  }
+}
+
+export class EntradaInvalidaError extends Error {}
+
+function agrupar<T>(itens: T[], chave: (item: T) => string): Map<string, T[]> {
+  const mapa = new Map<string, T[]>()
+  for (const item of itens) {
+    const k = chave(item)
+    const arr = mapa.get(k)
+    if (arr) arr.push(item)
+    else mapa.set(k, [item])
+  }
+  return mapa
+}
+
+export async function gerarKpiRioQuality(params: {
+  custosBuf: Buffer
+  entregasBuf: Buffer
+  data: string
+  cvPorPlaca: Map<string, string>
+  /** injetavel pra teste; padrao = Unitrac stops (48h) sem base cadastrada */
+  buscarParadas?: (cv: string, placaNorm: string, data: string) => Promise<UnitracParadaRow[]>
+  log?: (msg: string) => void
+}): Promise<ResultadoPipelineRioQuality> {
+  const { custosBuf, entregasBuf, data, cvPorPlaca } = params
+  const log = params.log ?? (() => {})
+  const buscarParadas =
+    params.buscarParadas ??
+    (async (cv: string, placaNorm: string, d: string) =>
+      // bases = [] de proposito: a Rio Quality nao tem CD cadastrado; usar as
+      // bases da Nutry Max (buscarParadasDoDia) classificaria parada errada
+      consolidaParadasApi(await buscarStopsCru(cv, 48), {}, d, placaNorm, []))
+
+  // 1) parse
+  const custos = parseCustos(custosBuf)
+  const entregas = parseEntregas(entregasBuf)
+  if (entregas.length === 0) {
+    throw new EntradaInvalidaError(
+      'Nenhuma linha reconhecida no Relatório de Entregas — confira se é a planilha "Relatório de Entregas" da Rio Quality (colunas Placa e Endereço).',
+    )
+  }
+  const romaneio = montarLinhasRomaneio(custos, entregas)
+  log(`Custos: ${custos.size} placas com rota; Entregas: ${entregas.length} linhas`)
+
+  // 2) geocodificacao por coerencia: um grupo por placa, zona pela rota
+  const linhasPorPlaca = agrupar(romaneio, l => normPlaca(l.placa))
+  const placasNorm = [...linhasPorPlaca.keys()]
+  const grupos = placasNorm.map(placaNorm => ({
+    id: placaNorm,
+    zona: rotaParaZona(custos.get(placaNorm) ?? null),
+    ruas: (linhasPorPlaca.get(placaNorm) ?? []).map(l => l.endereco),
+  }))
+  const geo = await geocodificarPorCoerencia(grupos)
+
+  const confiancaPorNf = new Map<string, ConfiancaCoerencia>()
+  const contConf: Record<ConfiancaCoerencia, number> = { alta: 0, media: 0, baixa: 0, sem_candidato: 0, isolado: 0 }
+  const romaneioGeo: LinhaGeocodificada[] = []
+  for (const placaNorm of placasNorm) {
+    const linhas = linhasPorPlaca.get(placaNorm) ?? []
+    const res = geo.get(placaNorm) ?? []
+    linhas.forEach((l, i) => {
+      const r = res[i]
+      const conf = r?.confianca ?? 'sem_candidato'
+      confiancaPorNf.set(l.nf, conf)
+      contConf[conf]++
+      romaneioGeo.push({ ...l, lat: r?.lat ?? null, lng: r?.lng ?? null })
+    })
+  }
+  log(`Geocodificacao: ${JSON.stringify(contConf)}`)
+  const linhasGeoPorPlaca = agrupar(romaneioGeo, l => normPlaca(l.placa))
+
+  // 3) GPS do dia por CV
+  const paradasPorPlaca = new Map<string, UnitracParadaRow[]>()
+  const visitasPorPlaca = new Map<string, Map<string, Visita>>()
+  const kmPorPlaca = new Map<string, number | null>()
+  const temRastreadorPorPlaca = new Map(placasNorm.map(p => [p, cvPorPlaca.has(p)]))
+  await Promise.all(placasNorm.map(async placaNorm => {
+    const cv = cvPorPlaca.get(placaNorm)
+    const paradas = cv ? await buscarParadas(cv, placaNorm, data) : []
+    paradasPorPlaca.set(placaNorm, paradas)
+    visitasPorPlaca.set(placaNorm, montarVisitas(linhasGeoPorPlaca.get(placaNorm) ?? [], paradas, undefined))
+    kmPorPlaca.set(placaNorm, calcularKmPercorrido(paradas))
+  }))
+  log(`Placas: ${placasNorm.length}, com CV: ${placasNorm.filter(p => cvPorPlaca.has(p)).length}`)
+
+  // 4) agregacao por carga (= rota) x placa -- sem escala, sem alvos
+  const cargasPorChave = agrupar(romaneioGeo, l => `${l.carga}::${normPlaca(l.placa)}`)
+  const linhasKpi: LinhaKpiRomaneio[] = [...cargasPorChave.entries()]
+    .map(([chave, linhasDaCarga]) => {
+      const [carga, placaNorm] = chave.split('::')
+      return agregarPorCarga(
+        carga,
+        placaNorm,
+        linhasDaCarga,
+        null,
+        [],
+        visitasPorPlaca.get(placaNorm) ?? new Map(),
+        paradasPorPlaca.get(placaNorm) ?? [],
+        kmPorPlaca.get(placaNorm) ?? null,
+        undefined,
+        temRastreadorPorPlaca.get(placaNorm) ?? false,
+      )
+    })
+    .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
+  const resumoPorChave = new Map(linhasKpi.map(l => [`${l.carga}::${l.placa}`, l]))
+
+  const contStatus: Record<string, number> = {}
+  const detalhe: LinhaDetalheEntrega[] = [...cargasPorChave.entries()]
+    .flatMap(([chave, linhasDaCarga]) => {
+      const [carga, placaNorm] = chave.split('::')
+      const resumo = resumoPorChave.get(chave)
+      return montarDetalheEntregas(
+        carga,
+        placaNorm,
+        linhasDaCarga,
+        [],
+        visitasPorPlaca.get(placaNorm) ?? new Map(),
+        {
+          motorista: resumo?.motorista ?? '',
+          saidaCd: resumo?.saidaCd ?? null,
+          chegadaCd: resumo?.chegadaCd ?? null,
+          tempoOperacaoMin: resumo?.tempoOperacaoMin ?? null,
+        },
+        temRastreadorPorPlaca.get(placaNorm) ?? false,
+        paradasPorPlaca,
+        resumo?.kmPercorrido ?? null,
+      )
+    })
+    // confianca da geocodificacao vira observacao -- so' quando pendente (se o
+    // GPS confirmou, a coordenada estava boa o bastante) e sem sobrescrever
+    // observacao mais grave ja' posta por montarDetalheEntregas
+    .map(d => {
+      contStatus[d.status] = (contStatus[d.status] ?? 0) + 1
+      if (d.status !== 'pendente' || d.observacao) return d
+      const obs = OBS_POR_CONFIANCA[confiancaPorNf.get(d.nf) ?? 'sem_candidato']
+      return obs ? { ...d, observacao: obs } : d
+    })
+    .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
+  log(`Status: ${JSON.stringify(contStatus)}`)
+
+  const xlsx = await gerarKpiRomaneioXlsx(linhasKpi, data, [], detalhe)
+  return {
+    xlsx,
+    linhasKpi,
+    detalhe,
+    estatisticas: {
+      entregas: romaneio.length,
+      placas: placasNorm.length,
+      placasComCv: placasNorm.filter(p => cvPorPlaca.has(p)).length,
+      confianca: contConf,
+      status: contStatus,
+    },
+  }
+}

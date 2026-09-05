@@ -61,7 +61,16 @@ const GRUPO_COZINHA: Group = {
   ],
 }
 
-const GRUPOS_EMPRESA: Group[] = [GRUPO_BENASSI, GRUPO_NUTRIMAX, GRUPO_PORTEFRIO]
+const GRUPO_RIOQUALITY: Group = {
+  label: 'Rio Quality',
+  Icon: TableIcon,
+  children: [
+    { href: '/painel/rioquality/gerar', label: 'Gerar KPI', Icon: TableIcon },
+    { href: '/painel/rioquality/historico', label: 'Histórico', Icon: ClockCounterClockwise },
+  ],
+}
+
+const GRUPOS_EMPRESA: Group[] = [GRUPO_BENASSI, GRUPO_NUTRIMAX, GRUPO_PORTEFRIO, GRUPO_RIOQUALITY]
 
 function leafActive(pathname: string, href: string, exact?: boolean) {
   if (exact) return pathname === href
