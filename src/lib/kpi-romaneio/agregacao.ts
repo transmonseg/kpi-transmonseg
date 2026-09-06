@@ -239,9 +239,23 @@ export function montarDetalheEntregas(
     const confirmadoUnitrac = alvo?.situacao === 1
     const confirmadoGps = visita != null
     const semMovimento = kmPercorrido != null && kmPercorrido < LIMITE_KM_SEM_MOVIMENTO
+    // Achado real 06/09 (grupo KPI AJUSTES, placa 5F67): motorista confirmou
+    // que NAO houve troca de carga com 4D17/9B98 -- "o fato de passar perto
+    // o sistema ta identificando [como troca]". acharParadaDeOutraPlaca
+    // disparava pra QUALQUER outra placa a <=500m, sem checar se a PROPRIA
+    // placa tambem estava plausivelmente por perto (rota urbana densa, varios
+    // caminhoes da mesma frota atendendo lojas vizinhas -- coincidencia, nao
+    // troca). O caso real que motivou essa logica (05/09, TTJ9I18) tinha a
+    // propria placa a 55km de distancia -- so' faz sentido atribuir a outra
+    // placa quando a PROPRIA genuinamente nunca chegou perto (mesmo teto de
+    // "NAO FOI AO CLIENTE" abaixo, 2km), nunca so' por nao ter confirmado.
+    const distPropria = confirmadoUnitrac || confirmadoGps || semMovimento
+      ? null
+      : distanciaAteParadaPropria(linha, placaNorm, paradasPorOutraPlaca)
+    const propriaPlacaPlausivelmentePerto = distPropria != null && distPropria <= RAIO_NAO_FOI_AO_CLIENTE_M
     // Carga transferida: so' quando a PROPRIA placa nao confirmou. Rastreador
     // travado (sem movimento) tem outra explicacao e nao vira "transferida".
-    const porOutraPlaca = confirmadoUnitrac || confirmadoGps || semMovimento
+    const porOutraPlaca = confirmadoUnitrac || confirmadoGps || semMovimento || propriaPlacaPlausivelmentePerto
       ? null
       : acharParadaDeOutraPlaca(linha, placaNorm, paradasPorOutraPlaca)
 
@@ -274,9 +288,10 @@ export function montarDetalheEntregas(
     if (observacao == null && visita?.viaVizinhanca) {
       observacao = 'ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)'
     }
-    // Nomenclatura por evidencia de GPS -- so' pra quem ficou sem confirmacao
+    // Nomenclatura por evidencia de GPS -- so' pra quem ficou sem confirmacao.
+    // Reusa distPropria (mesmo calculo do guard de carga transferida acima).
     if (observacao == null && status === 'pendente') {
-      const dist = distanciaAteParadaPropria(linha, placaNorm, paradasPorOutraPlaca)
+      const dist = distPropria
       if (dist != null && dist <= RAIO_PASSOU_SEM_PARAR_M) {
         observacao = 'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR'
       } else if (dist != null && dist > RAIO_NAO_FOI_AO_CLIENTE_M) {

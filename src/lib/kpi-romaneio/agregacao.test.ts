@@ -356,6 +356,30 @@ describe('montarDetalheEntregas', () => {
       expect(d.tempoParadaMin).toBe(12)
     })
 
+    // Achado real 06/09 (grupo KPI AJUSTES, placa 5F67): motorista confirmou
+    // que NAO houve troca de carga com 4D17/9B98 -- "o fato de passar perto
+    // o sistema ta identificando [como troca]". Rota urbana densa: a PROPRIA
+    // placa tambem parou perto (so' nao dentro do raio de confirmacao de
+    // 500m -- ex. 1,5km, mesma regiao/bairro), e o outra-placa disparava so'
+    // por essa proximidade coincidente. So' deve confiar em "carga
+    // transferida" quando a PROPRIA placa genuinamente nunca esteve perto
+    // (>2km, mesmo teto de "nao foi ao cliente" -- caso real que motivou
+    // essa logica, TTJ9I18 a 55km).
+    it('achado real 06/09 (placa 5F67): PROPRIA placa tambem parou perto (1,5km) -- NAO rotula troca, mesmo sem confirmar', () => {
+      const linhas = [linha('NF1')] // lat -22.9, lng -43.2
+      const paradaPropria = parada({ id: 'p1', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.9135, lng: -43.2 }) // ~1,5km, fora do raio de confirmacao mas plausivelmente na regiao
+      const paradaOutraPlaca = parada({ id: 'p2', placa_norm: 'RQV6I51', classificacao: 'FORA_BASE', lat: -22.9001, lng: -43.2001 }) // ~15m, dentro do raio
+      const paradasFrota = new Map([
+        ['TTL7D40', [paradaPropria]],
+        ['RQV6I51', [paradaOutraPlaca]],
+      ])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, paradasFrota)
+
+      expect(d.observacao ?? '').not.toContain('CARGA TRANSFERIDA')
+      expect(d.status).toBe('pendente')
+    })
+
     it('a PROPRIA placa confirmando tem prioridade sobre outra placa (nao rotula troca a toa)', () => {
       const linhas = [linha('NF1')]
       const visitas = new Map<string, Visita>([
