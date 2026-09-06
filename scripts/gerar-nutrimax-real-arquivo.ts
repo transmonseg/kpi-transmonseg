@@ -98,6 +98,26 @@ async function main() {
     kmPorPlaca.set(placaNorm, calcularKmPercorrido(paradas))
   }
 
+  // Achado real 06/09 (grupo KPI AJUSTES, placa TTH-3C94): "carga
+  // transferida" so' enxerga placa que aparece no romaneio -- caminhao
+  // reserva sem NF nenhuma sua no romaneio fica invisivel pra deteccao de
+  // troca. Busca GPS tambem da frota inteira (buscarFrota ja' devolve isso
+  // direto da Unitrac) so' pra alimentar paradasPorOutraPlaca -- nao cria
+  // linha/aba de relatorio pra placa sem NF (placasNorm intocado).
+  const placasFrotaExtra = frota.map(v => v.placaNorm).filter(p => !paradasPorPlaca.has(p))
+  for (const placaNorm of placasFrotaExtra) {
+    const cv = cvPorPlaca.get(placaNorm)
+    let paradas: UnitracParadaRow[] = []
+    if (cv) {
+      try {
+        paradas = await buscarParadasDoDia(cv, placaNorm, data, 48)
+      } catch (e) {
+        console.log(`buscarParadasDoDia(${placaNorm}) falhou:`, e instanceof Error ? e.message : e)
+      }
+    }
+    paradasPorPlaca.set(placaNorm, paradas)
+  }
+
   const alvosPorPlaca = agrupar(alvos, a => a.placaNorm)
   const escalaPorChave = new Map(escala.map(e => [`${e.carga}::${e.placaNorm}`, e]))
   const cargasPorChave = agrupar(romaneioGeo, l => `${l.carga}::${normPlaca(l.placa)}`)

@@ -183,6 +183,25 @@ export async function POST(req: NextRequest) {
     kmPorPlaca.set(placaNorm, calcularKmPercorrido(paradas))
   }))
 
+  // Achado real 06/09 (grupo KPI AJUSTES, placa TTH-3C94): "carga
+  // transferida" (acharParadaDeOutraPlaca em agregacao.ts) so' enxerga
+  // placa que aparece no ROMANEIO do dia -- se o caminhao que realmente
+  // pegou a carga trocada e' um RESERVA/backup que nao tem NENHUMA NF sua
+  // no romaneio (o papel continua no nome do caminhao original), o sistema
+  // nunca busca o GPS dele e a troca fica invisivel pros dois lados: o
+  // original marca pendente/nao-confirmado, e quem entregou de verdade nao
+  // aparece em lugar nenhum. Busca GPS tambem da FROTA INTEIRA da Nutry Max
+  // (buscarFrota ja' devolve isso, direto da Unitrac -- sem cadastro
+  // manual nosso) so' pra alimentar paradasPorOutraPlaca -- nao cria linha/
+  // aba de relatorio pra placa que nao tem NF nenhuma no romaneio
+  // (placasNorm continua sendo so' quem apareceu nele).
+  const placasFrotaExtra = frota.map(v => v.placaNorm).filter(p => !paradasPorPlaca.has(p))
+  await Promise.all(placasFrotaExtra.map(async placaNorm => {
+    const cv = cvPorPlaca.get(placaNorm)
+    const paradas = cv ? await buscarParadasDoDia(cv, placaNorm, data, 48) : []
+    paradasPorPlaca.set(placaNorm, paradas)
+  }))
+
   const alvosPorPlaca = agrupar(alvos, a => a.placaNorm)
 
   // Cargas vêm do Romaneio -- é a fonte de verdade de quantas cargas
