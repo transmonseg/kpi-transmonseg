@@ -14,7 +14,8 @@ export default function PortefrioGerarPage() {
   const [data, setData] = useState(hoje())
   const [pending, setPending] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
-  const [baixado, setBaixado] = useState<string | null>(null)
+  const [arquivoPronto, setArquivoPronto] = useState<{ blob: Blob; filename: string } | null>(null)
+  const [baixado, setBaixado] = useState(false)
 
   const pronto = romaneio.length > 0 && !!data
 
@@ -22,7 +23,8 @@ export default function PortefrioGerarPage() {
     if (!pronto) return
     setPending(true)
     setErro(null)
-    setBaixado(null)
+    setArquivoPronto(null)
+    setBaixado(false)
     try {
       const fd = new FormData()
       fd.set('romaneio', romaneio[0])
@@ -31,19 +33,26 @@ export default function PortefrioGerarPage() {
       if (!res.ok) throw new Error(await res.text())
 
       const blob = await res.blob()
-      const filename = `KPI-Portefrio-${data}.xlsx`
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = filename
-      a.click()
-      URL.revokeObjectURL(url)
-      setBaixado(filename)
+      setArquivoPronto({ blob, filename: `KPI-Portefrio-${data}.xlsx` })
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Erro inesperado.')
     } finally {
       setPending(false)
     }
+  }
+
+  // Pedido do usuario 06/09: nao baixa sozinho ao terminar -- so' fica pronto
+  // e o operador clica "Baixar" quando quiser (evita o navegador empilhar
+  // downloads de geracoes que ele so' queria conferir na tela).
+  function baixar() {
+    if (!arquivoPronto) return
+    const url = URL.createObjectURL(arquivoPronto.blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = arquivoPronto.filename
+    a.click()
+    URL.revokeObjectURL(url)
+    setBaixado(true)
   }
 
   return (
@@ -100,13 +109,20 @@ export default function PortefrioGerarPage() {
         </div>
       )}
 
-      {baixado && !erro && (
-        <div className="mt-6 flex items-start gap-3 rounded-[var(--radius-card)] border border-[var(--color-success)]/30 bg-[var(--color-success-soft)] px-5 py-4">
-          <CheckCircle size={18} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-success)]" />
+      {arquivoPronto && !erro && (
+        <div className="mt-6 flex items-center justify-between gap-3 rounded-[var(--radius-card)] border border-[var(--color-success)]/30 bg-[var(--color-success-soft)] px-5 py-4">
           <p className="flex items-center gap-2 text-[13px] leading-relaxed text-[var(--color-success-soft-fg)]">
-            <FileArrowDown size={14} weight="bold" />
-            {baixado} baixado.
+            <CheckCircle size={18} weight="fill" className="shrink-0 text-[var(--color-success)]" />
+            {arquivoPronto.filename} pronto{baixado ? ' (baixado)' : ''}.
           </p>
+          <button
+            type="button"
+            onClick={baixar}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--color-success)] px-3.5 py-1.5 text-[12px] font-medium text-white transition-opacity hover:opacity-90"
+          >
+            <FileArrowDown size={14} weight="bold" />
+            {baixado ? 'Baixar de novo' : 'Baixar'}
+          </button>
         </div>
       )}
 
