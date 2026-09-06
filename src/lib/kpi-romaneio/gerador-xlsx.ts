@@ -193,9 +193,9 @@ function nomeAbaPlaca(placa: string): string {
 // inteira já é dessa placa. `resumo` pode ser undefined (placa sem nenhuma
 // linha agregada, caso que não deveria acontecer na prática -- toda placa
 // da lista de abas vem de `linhas` -- mas o tipo permite, então trata).
-function escreverResumoPlaca(ws: ExcelJS.Worksheet, linhaResumo: number, qtdColunas: number, resumo: LinhaKpiRomaneio | undefined, data: string, hoje: string): void {
+function escreverResumoPlaca(ws: ExcelJS.Worksheet, linhaResumo: number, qtdColunas: number, resumo: LinhaKpiRomaneio | undefined, data: string, hoje: string, qtdNotas: number): void {
   const texto = resumo
-    ? `MOTORISTA: ${resumo.motorista || '-'}    |    SAÍDA CD: ${celulaHora(resumo.saidaCd, resumo.temRastreador, data, hoje) || '-'}    |    CHEGADA CD: ${celulaHora(resumo.chegadaCd, resumo.temRastreador, data, hoje) || '-'}    |    TEMPO OPERAÇÃO: ${formatarMinutos(resumo.tempoOperacaoMin) || '-'}    |    KM PERCORRIDO: ${resumo.kmPercorrido != null ? `${Math.round(resumo.kmPercorrido * 10) / 10} km` : '-'}`
+    ? `MOTORISTA: ${resumo.motorista || '-'}    |    SAÍDA CD: ${celulaHora(resumo.saidaCd, resumo.temRastreador, data, hoje) || '-'}    |    CHEGADA CD: ${celulaHora(resumo.chegadaCd, resumo.temRastreador, data, hoje) || '-'}    |    TEMPO OPERAÇÃO: ${formatarMinutos(resumo.tempoOperacaoMin) || '-'}    |    KM PERCORRIDO: ${resumo.kmPercorrido != null ? `${Math.round(resumo.kmPercorrido * 10) / 10} km` : '-'}    |    NOTAS: ${qtdNotas}`
     : ''
   ws.mergeCells(linhaResumo, 1, linhaResumo, qtdColunas)
   const cell = ws.getCell(linhaResumo, 1)
@@ -317,14 +317,18 @@ export async function gerarKpiRomaneioXlsx(
     const tituloPlaca = `RELATÓRIO KPI - ${nomeCliente} - PLACA ${placa}\n${formatarTituloData(data)}`
     estilizarTitulo(wsPlaca, 1, COLUNAS_DETALHE_PLACA.length, tituloPlaca)
     await adicionarLogo(wb, wsPlaca, 1)
-    escreverResumoPlaca(wsPlaca, 2, COLUNAS_DETALHE_PLACA.length, resumoPorPlaca.get(placa), data, hoje)
+    const linhasDaPlaca = detalhePorPlaca.get(placa) ?? []
+    // Pedido do usuario 06/09: mostrar quantas notas (NFs) a placa levou
+    // no dia junto com o resto do resumo (motorista/saida/chegada/tempo/km),
+    // que ja' e' tudo igual em qualquer parte do relatorio -- so' isso
+    // faltava.
+    escreverResumoPlaca(wsPlaca, 2, COLUNAS_DETALHE_PLACA.length, resumoPorPlaca.get(placa), data, hoje, linhasDaPlaca.length)
     wsPlaca.addRow([...COLUNAS_DETALHE_PLACA])
     estilizarHeader(wsPlaca, 3, COLUNAS_DETALHE_PLACA.length)
     wsPlaca.columns = [
       { width: 10 }, { width: 14 }, { width: 32 }, { width: 36 },
       { width: 12 }, { width: 12 }, { width: 12 }, { width: 36 },
     ]
-    const linhasDaPlaca = detalhePorPlaca.get(placa) ?? []
     linhasDaPlaca.forEach((d, i) => {
       // CHEGADA/SAÍDA NA LOJA: motivo só faz sentido quando 'pendente'
       // (confirmado_unitrac já tem explicação própria via STATUS -- sabemos
