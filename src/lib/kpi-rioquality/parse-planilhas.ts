@@ -211,14 +211,16 @@ function enderecoParaExibir(e: EntregaRioQualityCompleta): string {
  *  de planilha de Custos); motorista e clienteNome sao os de verdade. O
  *  endereco bruto pra geocodificar fica FORA da LinhaRomaneio (so' o texto
  *  de exibicao entra) -- ver enderecoBrutoPorNf em pipeline.ts. */
-export function montarLinhasRomaneioCompleto(entregas: EntregaRioQualityCompleta[]): { linhas: LinhaRomaneio[]; enderecoBrutoPorNf: Map<string, string> } {
+export function montarLinhasRomaneioCompleto(entregas: EntregaRioQualityCompleta[]): { linhas: LinhaRomaneio[]; enderecoBrutoPorNf: Map<string, string>; ruaPorNf: Map<string, string> } {
   const seq = new Map<string, number>()
   const enderecoBrutoPorNf = new Map<string, string>()
+  const ruaPorNf = new Map<string, string>()
   const linhas = entregas.map(e => {
     const n = (seq.get(e.placaNorm) ?? 0) + 1
     seq.set(e.placaNorm, n)
     const nf = `${e.placaNorm}-${n}`
     enderecoBrutoPorNf.set(nf, montarEnderecoBrutoCompleto(e.rua, e.bairro, e.cidade, e.uf))
+    ruaPorNf.set(nf, e.rua)
     const rota = e.destino || CARGA_SEM_ROTA
     return {
       carga: rota,
@@ -232,5 +234,5 @@ export function montarLinhasRomaneioCompleto(entregas: EntregaRioQualityCompleta
       endereco: enderecoParaExibir(e),
     }
   })
-  return { linhas, enderecoBrutoPorNf }
+  return { linhas, enderecoBrutoPorNf, ruaPorNf }
 }

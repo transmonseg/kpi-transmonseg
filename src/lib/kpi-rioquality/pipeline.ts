@@ -11,6 +11,7 @@ import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita 
 import { parseCustos, parseEntregas, montarLinhasRomaneio, rotaParaZona, parseEntregasCompletas, montarLinhasRomaneioCompleto } from './parse-planilhas'
 import { geocodificarPorCoerencia, type ConfiancaCoerencia } from './geocode-coerencia'
 import { geocodificarEnderecos } from '@/lib/kpi-romaneio/geocode'
+import { reposicionarPorAncoras } from '@/lib/kpi-romaneio/geocode-ancoras'
 
 // Nucleo do KPI Rio Quality -- usado pela rota /api/kpi/rioquality/gerar e
 // pelo script scripts/gerar-rioquality-real-arquivo.ts (mesma pipeline, sem
@@ -95,7 +96,7 @@ export async function gerarKpiRioQuality(params: {
         'Nenhuma linha reconhecida no arquivo — confira se tem as colunas Razão Social, Cidade, UF, Destino, Motorista, Placa, Endereço e Bairro.',
       )
     }
-    const { linhas: romaneio, enderecoBrutoPorNf } = montarLinhasRomaneioCompleto(entregasCompletas)
+    const { linhas: romaneio, enderecoBrutoPorNf, ruaPorNf } = montarLinhasRomaneioCompleto(entregasCompletas)
     log(`Entregas: ${romaneio.length} linhas (arquivo unico, com cidade)`)
     // cascata PRECISA (rua+bairro+cidade+UF descarta rua homonima em
     // municipio errado sozinha, sem precisar de ancora de outra parada) --
@@ -110,6 +111,44 @@ export async function gerarKpiRioQuality(params: {
       confiancaPorNf.set(l.nf, conf)
       contConf[conf]++
       romaneioGeo.push({ ...l, lat: r?.lat ?? null, lng: r?.lng ?? null })
+    }
+
+    // Passo 7 do motor de geolocalizacao universal (achado real 06/09, ver
+    // docs/superpowers/specs/2026-09-05-motor-geolocalizacao-universal-
+    // design.md do monitoramento): quem ficou sem_candidato na cascata
+    // precisa (rua truncada, erro leve de digitacao, CNEFE sem match exato)
+    // tenta de novo usando como ANCORA as coordenadas das OUTRAS entregas
+    // do MESMO caminhao que ja' resolveram -- sinal mais forte que a
+    // coerencia de grupo original (ancora e' coordenada REAL confirmada,
+    // nao inferida de "rua unica no estado"). So' entra quem tem pelo menos
+    // 1 ancora (caminhao com TODAS as entregas sem_candidato nao tem com
+    // que comparar) -- marca confianca 'baixa', nunca some com 'alta'.
+    const indicePorNf = new Map(romaneioGeo.map((l, i) => [l.nf, i]))
+    const semCandidatoPorPlaca = agrupar(romaneioGeo.filter(l => l.lat == null), l => normPlaca(l.placa))
+    if (semCandidatoPorPlaca.size > 0) {
+      const gruposAncoras = [...semCandidatoPorPlaca.entries()].map(([placaNorm, linhas]) => ({
+        id: placaNorm,
+        ruas: linhas.map(l => ruaPorNf.get(l.nf) ?? l.endereco),
+        ancoras: romaneioGeo
+          .filter((o): o is LinhaGeocodificada & { lat: number; lng: number } => normPlaca(o.placa) === placaNorm && o.lat != null && o.lng != null)
+          .map(o => ({ lat: o.lat, lng: o.lng })),
+      }))
+      const resgate = await reposicionarPorAncoras(gruposAncoras)
+      let resgatados = 0
+      for (const [placaNorm, linhas] of semCandidatoPorPlaca) {
+        const resultadosResgate = resgate.get(placaNorm) ?? []
+        linhas.forEach((l, i) => {
+          const r = resultadosResgate[i]
+          if (!r) return
+          const idx = indicePorNf.get(l.nf)!
+          romaneioGeo[idx] = { ...romaneioGeo[idx], lat: r.lat, lng: r.lng }
+          confiancaPorNf.set(l.nf, 'baixa')
+          contConf.sem_candidato--
+          contConf.baixa++
+          resgatados++
+        })
+      }
+      if (resgatados > 0) log(`Resgatados por ancora da rota do caminhao: ${resgatados}`)
     }
   } else {
     if (!custosBuf || !entregasBuf) {
@@ -236,7 +275,11 @@ export async function gerarKpiRioQuality(params: {
       // MESMO com cidade -- mensagem diferente da coerencia de grupo (rua
       // sem cidade no romaneio), que nao se aplica aqui.
       const obs = formatoCompleto
-        ? (conf === 'sem_candidato' ? 'ENDEREÇO NÃO LOCALIZADO' : undefined)
+        ? (conf === 'sem_candidato'
+          ? 'ENDEREÇO NÃO LOCALIZADO'
+          // resgatado pela ancora de outra entrega do mesmo caminhao (passo 7
+          // do motor universal) -- nunca some com uma coordenada de verdade
+          : conf === 'baixa' ? 'ENDEREÇO REPOSICIONADO PELA ROTA DO CAMINHÃO - CONFERIR' : undefined)
         : OBS_POR_CONFIANCA[conf]
       return obs ? { ...d, observacao: obs } : d
     })

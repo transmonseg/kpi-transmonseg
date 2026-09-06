@@ -147,7 +147,7 @@ describe('montarEnderecoBrutoCompleto', () => {
 
 describe('montarLinhasRomaneioCompleto', () => {
   it('carga/destino = Destino da linha, cliente e motorista de verdade, nf sintética por placa', () => {
-    const { linhas, enderecoBrutoPorNf } = montarLinhasRomaneioCompleto(parseEntregasCompletas(COMPLETA))
+    const { linhas, enderecoBrutoPorNf, ruaPorNf } = montarLinhasRomaneioCompleto(parseEntregasCompletas(COMPLETA))
     expect(linhas[0]).toMatchObject({
       carga: 'CHICO BENTO - BOTAFOGO 05/09', destino: 'CHICO BENTO - BOTAFOGO 05/09',
       placa: 'LRT6H89', nf: 'LRT6H89-1', motorista: 'DANIEL SILVA', clienteNome: '2F CAFE 2G LTDA',
@@ -155,5 +155,6 @@ describe('montarLinhasRomaneioCompleto', () => {
     })
     expect(linhas[1].nf).toBe('LRT6H89-2')
     expect(enderecoBrutoPorNf.get('LRT6H89-1')).toBe('AVENIDA MARACANA, - MARACANA, RIO DE JANEIRO - RJ')
+    expect(ruaPorNf.get('LRT6H89-1')).toBe('AVENIDA MARACANA')
   })
 })
