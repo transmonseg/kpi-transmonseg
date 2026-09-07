@@ -52,11 +52,11 @@ export type Visita = {
   // marcar distinto no relatorio (observacao propria), nao tratar como
   // confirmacao direta igual as demais.
   viaVizinhanca?: boolean
-  /** Confirmada por parada entre 500m e 800m do ponto -- so' Rio Quality, cujo
-   *  romaneio nao tem NUMERO (coordenada e' de trecho de rua). Achado 05/09:
-   *  entregas com geocode comprovadamente certo ficavam pendentes por 47m e
-   *  107m alem do raio. Sai marcada no relatorio, nunca como confirmacao
-   *  normal. Ver kpi-rioquality/visitas.ts. */
+  /** Confirmada por parada entre 500m e 800m do ponto -- achado 05/09 (Rio
+   *  Quality, romaneio sem numero) e achado 06/09 (Nutry Max, placa RQV5F67/
+   *  ENCONTRO PINHEIRO RESTAURANTE, parada real a 501m -- 1m fora do raio
+   *  normal). Sai marcada no relatorio, nunca como confirmacao normal. Ver
+   *  kpi-rioquality/visitas.ts e montarVisitas (kpi-romaneio/visitas.ts). */
   viaRaioAmpliado?: boolean
   /** Confirmada por parada perto de OUTRO ponto da mesma rua (nao o que a
    *  coerencia escolheu) -- pedido do usuario 06/09: "se disser a rua, e o

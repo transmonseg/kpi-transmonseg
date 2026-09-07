@@ -67,6 +67,42 @@ describe('montarVisitas', () => {
     expect(visitas.has('NF2')).toBe(false)
   })
 
+  // Achado real 06/09 (placa RQV5F67/ENCONTRO PINHEIRO RESTAURANTE): parada
+  // real de 27min a 501m do ponto -- 1m fora do raio normal, ficava
+  // "NÃO FOI AO CLIENTE" mesmo com o caminhão genuinamente ali do lado.
+  it('parada entre 500m e 800m confirma MARCADA (achado real 06/09, placa RQV5F67)', () => {
+    const l1 = linha('NF1', -22.9, -43.2)
+    // ~510m de l1 (0.0046 graus de latitude ~ 510m)
+    const p1 = parada({ lat: -22.9046, lng: -43.2, chegada: '2026-08-20T10:00:00.000Z', fim_real: '2026-08-20T10:27:00.000Z' })
+    const dist = haversine(p1.lat as number, p1.lng as number, l1.lat as number, l1.lng as number)
+    expect(dist).toBeGreaterThan(RAIO_ENTREGA_METROS)
+    expect(dist).toBeLessThan(800)
+
+    const visitas = montarVisitas([l1], [p1])
+
+    expect(visitas.get('NF1')).toMatchObject({ nf: 'NF1', viaRaioAmpliado: true })
+  })
+
+  it('parada dentro do raio normal ganha da ampliada, mesmo com duração menor', () => {
+    const l1 = linha('NF1', -22.9, -43.2)
+    const pAmpliada = parada({ id: 'ampliada', lat: -22.9046, lng: -43.2, chegada: '2026-08-20T09:00:00.000Z', fim_real: '2026-08-20T09:30:00.000Z' })
+    const pNormal = parada({ id: 'normal', lat: -22.9001, lng: -43.2001, chegada: '2026-08-20T11:00:00.000Z', fim_real: '2026-08-20T11:05:00.000Z' })
+
+    const visitas = montarVisitas([l1], [pAmpliada, pNormal])
+
+    expect(visitas.get('NF1')?.chegada).toBe('2026-08-20T11:00:00.000Z')
+    expect(visitas.get('NF1')?.viaRaioAmpliado).toBeUndefined()
+  })
+
+  it('parada a mais de 800m não confirma (fora do raio ampliado)', () => {
+    const l1 = linha('NF1', -22.9, -43.2)
+    const pLonge = parada({ lat: -22.91, lng: -43.2 }) // ~1.1km
+
+    const visitas = montarVisitas([l1], [pLonge])
+
+    expect(visitas.has('NF1')).toBe(false)
+  })
+
   it('duas paradas perto do mesmo ponto: fica a de MAIOR duração, independente da ordem', () => {
     const l3 = linha('NF3', -22.95, -43.25)
     const pCurta = parada({ id: 'curta', lat: -22.9501, lng: -43.2501, chegada: '2026-08-20T09:00:00.000Z', fim_real: '2026-08-20T09:05:00.000Z' })

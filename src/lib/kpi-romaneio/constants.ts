@@ -39,6 +39,16 @@ export const RAIO_BASE_METROS = 500
  *  Unitrac mostra parada na rua, fora do raio antigo do cliente). */
 export const RAIO_ENTREGA_METROS = 500
 
+/** Faixa ampliada de confirmacao -- achado real 05/09 na Rio Quality
+ *  (romaneio sem numero, endereco com geocode certo ficava pendente por
+ *  47m e 107m alem de RAIO_ENTREGA_METROS) e achado real 06/09 na Nutry
+ *  Max (placa RQV5F67/ENCONTRO PINHEIRO RESTAURANTE, parada real a 501m
+ *  -- 1m fora do raio normal, com 27min de permanencia). Confirma
+ *  "MARCADA" (nunca silenciosamente igual a uma confirmacao normal) --
+ *  a faixa de dentro do raio normal sempre ganha da de fora, mesmo que a
+ *  de fora tenha permanencia maior (ver montarVisitas/montarVisitasInclusivas). */
+export const RAIO_CONFIRMACAO_AMPLIADO_METROS = 800
+
 /** `buscarStopsCru` so cobre as ultimas 48h (hoje + ontem) de forma
  *  garantida -- pedir data mais antiga devolve 0 veiculos em silencio.
  *  Migrado de kpi-nutrimax/constants.ts. */

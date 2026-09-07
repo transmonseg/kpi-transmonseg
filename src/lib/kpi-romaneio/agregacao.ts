@@ -288,6 +288,13 @@ export function montarDetalheEntregas(
     if (observacao == null && visita?.viaVizinhanca) {
       observacao = 'ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)'
     }
+    // Achado real 06/09 (placa RQV5F67/ENCONTRO PINHEIRO RESTAURANTE): parada
+    // real de 27min a 501m do ponto, 1m fora do raio normal (RAIO_ENTREGA_
+    // METROS) -- ver RAIO_CONFIRMACAO_AMPLIADO_METROS/montarVisitas. Marcada
+    // distinta no relatorio, nunca como confirmacao normal.
+    if (observacao == null && visita?.viaRaioAmpliado) {
+      observacao = 'ENTREGUE - PARADA PRÓXIMA (500-800m) MAS DENTRO DA ROTA - CONFERIR'
+    }
     // Nomenclatura por evidencia de GPS -- so' pra quem ficou sem confirmacao.
     // Reusa distPropria (mesmo calculo do guard de carga transferida acima).
     if (observacao == null && status === 'pendente') {
