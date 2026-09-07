@@ -171,6 +171,17 @@ describe('montarVisitas', () => {
       expect(visitas.get('NF1')?.viaVizinhanca).toBe(true)
     })
 
+    // Achado real 06/09: mesmo raciocinio do viaVizinhanca acima, mas pro
+    // raio ampliado da PROPRIA ponte (ver RAIO_AMPLIADO_M no monitoramento).
+    it('achado real 06/09: bridge com viaRaioAmpliado=true repassa a marcacao pra Visita', () => {
+      const l1 = linha('NF1', -22.9, -43.2)
+      const bridge = new Map([['NF1', { chegada: '2026-09-06T10:00:00.000Z', saida: '2026-09-06T10:27:00.000Z', viaRaioAmpliado: true }]])
+
+      const visitas = montarVisitas([l1], [], bridge)
+
+      expect(visitas.get('NF1')?.viaRaioAmpliado).toBe(true)
+    })
+
     it('ponte presente mas com chegada/saida null: REMOVE a visita do algoritmo antigo (confia que nunca foi visitado)', () => {
       const l1 = linha('NF1', -22.9, -43.2)
       const p1 = parada({ lat: -22.9001, lng: -43.2001 }) // algoritmo antigo acharia visita aqui

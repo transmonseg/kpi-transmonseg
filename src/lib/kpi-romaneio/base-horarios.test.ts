@@ -126,14 +126,29 @@ describe('buscarHorariosBase', () => {
       ])
       const mapa = await buscarHorariosBase(['ABC1234'], '2026-08-25')
       const visitasPorNf = mapa.get('ABC1234')?.visitasPorNf
-      expect(visitasPorNf?.get('NF1')).toEqual({ chegada: '2026-08-25T10:17:00.000Z', saida: '2026-08-25T10:28:00.000Z', viaVizinhanca: false })
-      expect(visitasPorNf?.get('NF2')).toEqual({ chegada: null, saida: null, viaVizinhanca: false })
+      expect(visitasPorNf?.get('NF1')).toEqual({ chegada: '2026-08-25T10:17:00.000Z', saida: '2026-08-25T10:28:00.000Z', viaVizinhanca: false, viaRaioAmpliado: false })
+      expect(visitasPorNf?.get('NF2')).toEqual({ chegada: null, saida: null, viaVizinhanca: false, viaRaioAmpliado: false })
     })
 
     it('resposta sem campo visitas (placa sem pontos pedidos): visitasPorNf fica undefined', async () => {
       mockFetchOk([{ placa: 'ABC1234', saidaBase: null, chegadaBase: null, kmPercorrido: null }])
       const mapa = await buscarHorariosBase(['ABC1234'], '2026-08-25')
       expect(mapa.get('ABC1234')?.visitasPorNf).toBeUndefined()
+    })
+
+    // Achado real 06/09 (RAIO_AMPLIADO_M do lado do monitoramento): a ponte
+    // pode confirmar por dwell no PROPRIO endereco so' no raio ampliado
+    // (500-800m) -- repassa viaRaioAmpliado igual ja fazia com viaVizinhanca.
+    it('visita com viaRaioAmpliado=true na resposta: repassado pro Map, nao perdido', async () => {
+      mockFetchOk([
+        {
+          placa: 'ABC1234', saidaBase: null, chegadaBase: null, kmPercorrido: null,
+          visitas: [{ id: 'NF1', chegada: '2026-08-25T13:00:00.000Z', saida: '2026-08-25T13:10:00.000Z', viaRaioAmpliado: true }],
+        },
+      ])
+      const mapa = await buscarHorariosBase(['ABC1234'], '2026-08-25')
+      const visitasPorNf = mapa.get('ABC1234')?.visitasPorNf
+      expect(visitasPorNf?.get('NF1')).toEqual({ chegada: '2026-08-25T10:00:00.000Z', saida: '2026-08-25T10:10:00.000Z', viaVizinhanca: false, viaRaioAmpliado: true })
     })
 
     it('item de visita malformado e ignorado, sem derrubar os outros da mesma placa', async () => {
@@ -149,7 +164,7 @@ describe('buscarHorariosBase', () => {
       const mapa = await buscarHorariosBase(['ABC1234'], '2026-08-25')
       const visitasPorNf = mapa.get('ABC1234')?.visitasPorNf
       expect(visitasPorNf?.size).toBe(1)
-      expect(visitasPorNf?.get('NF1')).toEqual({ chegada: '2026-08-25T10:00:00.000Z', saida: '2026-08-25T10:10:00.000Z', viaVizinhanca: false })
+      expect(visitasPorNf?.get('NF1')).toEqual({ chegada: '2026-08-25T10:00:00.000Z', saida: '2026-08-25T10:10:00.000Z', viaVizinhanca: false, viaRaioAmpliado: false })
     })
   })
 })
