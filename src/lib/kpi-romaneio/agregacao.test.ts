@@ -403,6 +403,37 @@ describe('montarDetalheEntregas', () => {
       expect(d.observacao).toBe('VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA')
     })
 
+    // Achado real 08/09 (auditoria completa dos 762 pendentes/confirmado_gps
+    // do dia pedida pelo usuario): placa TTM2G01 passou o DIA INTEIRO em
+    // paradas classificadas BASE (nunca registrou nenhuma FORA_BASE), mas o
+    // km acumulado (deriva de GPS parado por ~13h) ficou por pouco ACIMA de
+    // LIMITE_KM_SEM_MOVIMENTO (2,44km) -- so' km e' fragil demais aqui.
+    // Resultado antes do fix: as 2 NFs dela foram erradamente atribuidas via
+    // "carga transferida" a 2 OUTRAS placas so' porque semMovimento nao
+    // disparava. "Nunca saiu da base" (toda parada classificada BASE) e'
+    // evidencia mais forte e direta que km: fisicamente nao fez entrega
+    // nenhuma, tem que virar "sem movimento", nunca "troca de carga".
+    it('achado real 08/09 (placa TTM2G01): nunca saiu da base o dia inteiro -- vira SEM MOVIMENTO mesmo com km>2 (deriva de GPS parado), nunca CARGA TRANSFERIDA', () => {
+      const linhas = [linha('NF1')]
+      const paradasPropriasSoBase = [
+        parada({ id: 'b1', placa_norm: 'TTM2G01', classificacao: 'BASE', lat: -22.8147, lng: -43.2783 }),
+        parada({ id: 'b2', placa_norm: 'TTM2G01', classificacao: 'BASE', lat: -22.8171, lng: -43.2805 }),
+        parada({ id: 'b3', placa_norm: 'TTM2G01', classificacao: 'BASE', lat: -22.8163, lng: -43.2780 }),
+      ]
+      const paradaOutraPlaca = parada({ id: 'p2', placa_norm: 'TUS1A47', classificacao: 'FORA_BASE', lat: -22.9001, lng: -43.2001 }) // dentro do raio
+      const paradasFrota = new Map([
+        ['TTM2G01', paradasPropriasSoBase],
+        ['TUS1A47', [paradaOutraPlaca]],
+      ])
+
+      // km=2.44 (> LIMITE_KM_SEM_MOVIMENTO=2) -- so' o km NAO seria suficiente pra disparar sem-movimento
+      const [d] = montarDetalheEntregas('93758', 'TTM2G01', linhas, [], new Map(), resumoCargaVazio, true, paradasFrota, 2.44)
+
+      expect(d.observacao).toBe('VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA')
+      expect(d.observacao ?? '').not.toContain('CARGA TRANSFERIDA')
+      expect(d.status).toBe('pendente')
+    })
+
     // Pedido do usuario 05/09 ("se a porra foi feita ... umas nomeclaturas
     // melhores"): "PENDENTE" soa como "o motorista nao entregou", mas na
     // maioria das vezes e' o nosso lado que nao conseguiu confirmar. O status
@@ -572,6 +603,33 @@ describe('montarDetalheEntregas', () => {
       const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, new Map(), null)
 
       expect(d.observacao).toBeNull()
+    })
+
+    // Achado real 08/09 (auditoria de todas as placas do dia, placa
+    // RQO2C74): CV cadastrado (tem rastreador -- temRastreador=true), mas
+    // ZERO eventos de GPS o dia inteiro -- paradasPorOutraPlaca.set(placa,
+    // []) foi chamado (o produtor BUSCOU e nao achou nada), diferente do
+    // teste acima (map nunca populado pra essa placa). Sem esta mensagem,
+    // as 34 entregas reais dessa placa ficavam pendente com observacao em
+    // branco -- pior caso pro operador, nem "sem movimento" nem "nao foi
+    // ao cliente" dizem nada.
+    it('rastreador cadastrado mas ZERO eventos de GPS no dia inteiro (produtor buscou e achou nada): marca SEM DADO DE GPS, distinto de sem-movimento', () => {
+      const linhas = [linha('NF1')]
+      const paradasFrota = new Map<string, UnitracParadaRow[]>([['TTL7D40', []]]) // buscou, achou 0
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, paradasFrota, null)
+
+      expect(d.observacao).toBe('SEM DADO DE GPS NO DIA - RASTREADOR NÃO REPORTOU NENHUMA POSIÇÃO - CONFERIR EQUIPAMENTO')
+      expect(d.status).toBe('pendente')
+    })
+
+    it('sem rastreador (temRastreador=false) e zero eventos: NAO marca "sem dado de GPS" (jeito errado de dizer "sem rastreador mesmo")', () => {
+      const linhas = [linha('NF1')]
+      const paradasFrota = new Map<string, UnitracParadaRow[]>([['TTL7D40', []]])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, false, paradasFrota, null)
+
+      expect(d.observacao).not.toBe('SEM DADO DE GPS NO DIA - RASTREADOR NÃO REPORTOU NENHUMA POSIÇÃO - CONFERIR EQUIPAMENTO')
     })
   })
 })

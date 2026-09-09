@@ -238,7 +238,21 @@ export function montarDetalheEntregas(
     const visita = visitasPorNf.get(linha.nf)
     const confirmadoUnitrac = alvo?.situacao === 1
     const confirmadoGps = visita != null
-    const semMovimento = kmPercorrido != null && kmPercorrido < LIMITE_KM_SEM_MOVIMENTO
+    // Achado real 08/09 (auditoria completa pedida pelo usuario): placa
+    // TTM2G01 passou o DIA INTEIRO em paradas classificadas BASE (nunca
+    // registrou nenhuma FORA_BASE) mas o km acumulado (2,44km, deriva de
+    // GPS parado ao longo de ~13h) ficou por pouco ACIMA de
+    // LIMITE_KM_SEM_MOVIMENTO -- so' km e' fragil demais pra esse caso
+    // (deriva pode superar 2km num dia inteiro parado, mesmo sem o
+    // caminhao nunca ter saido). "Nunca saiu da base" (toda parada
+    // classificada BASE, nenhuma FORA_BASE) e' evidencia direta e mais
+    // forte que km: se o caminhao nunca deixou a base, fisicamente nao fez
+    // nenhuma entrega, e as 2 NFs dele foram erroneamente atribuidas via
+    // "carga transferida" a 2 OUTRAS placas so' porque semMovimento nao
+    // disparou.
+    const paradasProprias = paradasPorOutraPlaca.get(placaNorm) ?? []
+    const nuncaSaiuDaBase = paradasProprias.length > 0 && paradasProprias.every(p => p.classificacao === 'BASE')
+    const semMovimento = (kmPercorrido != null && kmPercorrido < LIMITE_KM_SEM_MOVIMENTO) || nuncaSaiuDaBase
     // Achado real 06/09 (grupo KPI AJUSTES, placa 5F67): motorista confirmou
     // que NAO houve troca de carga com 4D17/9B98 -- "o fato de passar perto
     // o sistema ta identificando [como troca]". acharParadaDeOutraPlaca
@@ -304,6 +318,25 @@ export function montarDetalheEntregas(
       } else if (dist != null && dist > RAIO_NAO_FOI_AO_CLIENTE_M) {
         observacao = 'NÃO FOI AO CLIENTE (caminhão não esteve na região)'
       }
+    }
+    // Achado real 08/09 (auditoria de todas as placas do dia, placa
+    // RQO2C74): CV cadastrado na Unitrac (tem rastreador), mas ZERO eventos
+    // de GPS o dia inteiro -- diferente de "sem movimento" (que exige km
+    // CALCULADO e baixo -- aqui nao ha nem posicao pra calcular km, entao
+    // semMovimento fica false e nenhuma das duas branches acima dispara,
+    // porque distPropria tambem fica null com 0 paradas). Sem isso, as 34
+    // entregas dessa placa ficavam "pendente" com observacao EM BRANCO --
+    // pior caso pro operador (nem "sem movimento" nem "nao foi ao cliente"
+    // dizem nada). So' dispara quando ha' rastreador cadastrado mas a
+    // PROPRIA placa nunca apareceu nem uma vez no feed de paradas do dia
+    // (paradasProprias.length===0) -- placa sem rastreador NENHUM ja cai
+    // no `!temRastreador` de outra parte do relatorio, nao precisa disto.
+    // `.has()` (nao so' `.length === 0` do `?? []`) distingue "o produtor
+    // buscou GPS pra essa placa e achou zero eventos" (o caso real) de
+    // "essa placa nem foi consultada aqui" (map so' tem OUTRAS placas --
+    // acontece em chamador parcial/teste, nao deve disparar as cegas).
+    if (observacao == null && status === 'pendente' && temRastreador && paradasPorOutraPlaca.has(placaNorm) && paradasProprias.length === 0) {
+      observacao = 'SEM DADO DE GPS NO DIA - RASTREADOR NÃO REPORTOU NENHUMA POSIÇÃO - CONFERIR EQUIPAMENTO'
     }
 
     return {
