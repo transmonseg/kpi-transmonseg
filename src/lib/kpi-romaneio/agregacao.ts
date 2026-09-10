@@ -161,7 +161,13 @@ export function agregarPorCarga(
   // calcularKmContinuo do lado do monitoramento).
   const kmPercorrido = horarioBaseBridge ? horarioBaseBridge.kmPercorrido : kmPercorridoFallback
 
-  const nfPlanejado = escala?.nfPlanejado ?? null
+  // Achado 10/09 (pedido do usuario "so com romaneio da pra fazer o kpi?"):
+  // Escala virou OPCIONAL -- ver comentario completo no fallback de
+  // ajudante1/ajudante2/clientesPlanejados abaixo. nfPlanejado especificamente
+  // decide o status OK/INCOMPLETO (linha seguinte), entao sem fallback pro
+  // tamanho do proprio romaneio, toda carga sem Escala virava falsamente
+  // "OK" mesmo faltando confirmar entrega -- pior que so' perder uma coluna.
+  const nfPlanejado = escala?.nfPlanejado ?? (linhasRomaneio.length || null)
   const status: 'OK' | 'INCOMPLETO' = nfPlanejado != null && confirmadas < nfPlanejado ? 'INCOMPLETO' : 'OK'
 
   // Tempo médio por entrega (pedido do usuário 24/08): média da duração real
@@ -182,10 +188,23 @@ export function agregarPorCarga(
     placa: placaNorm,
     destino: escala?.destino ?? linhasRomaneio[0]?.destino ?? '',
     motorista: escala?.motorista ?? linhasRomaneio[0]?.motorista ?? '',
-    ajudante1: escala?.ajudante1 ?? null,
-    ajudante2: escala?.ajudante2 ?? null,
+    // Achado 10/09: Escala virou opcional (o Romaneio ja' repete
+    // motorista/destino/ajudantes por linha -- so' peso e' exclusivo da
+    // Escala, sem fonte nenhuma pra recuperar sem ela, ver conversa com o
+    // usuario). ajudante1/ajudante2 (Escala separa em 2 campos) cai pro
+    // array `ajudantes` do proprio Romaneio quando a Escala nao veio.
+    ajudante1: escala?.ajudante1 ?? linhasRomaneio[0]?.ajudantes[0] ?? null,
+    ajudante2: escala?.ajudante2 ?? linhasRomaneio[0]?.ajudantes[1] ?? null,
+    // pesoKg NAO tem fallback de proposito -- nao existe em nenhum outro
+    // documento nem na Unitrac (conferido: alvos/posicoes/frota, nenhum
+    // endpoint traz peso, e' so' rastreamento GPS/telemetria, nao WMS/ERP).
+    // Sem Escala, fica null mesmo -- nunca inventa peso.
     pesoKg: escala?.pesoKg ?? null,
-    clientesPlanejados: escala?.entPlanejado ?? null,
+    // clientesPlanejados sem Escala cai pra contagem de clientes UNICOS do
+    // proprio Romaneio desta carga -- mesma fonte de "planejado" que a
+    // Escala usa (as duas vem do mesmo processo de planejamento do CD, a
+    // Escala nunca teve um numero "mais realista" que o Romaneio pra isso).
+    clientesPlanejados: escala?.entPlanejado ?? new Set(linhasRomaneio.map(l => l.clienteCodigo)).size,
     nfPlanejado,
     paradasReais: confirmadas,
     kmPercorrido,

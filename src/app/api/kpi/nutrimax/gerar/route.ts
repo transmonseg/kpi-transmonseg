@@ -60,7 +60,14 @@ export async function POST(req: NextRequest) {
   // -- so' as novas, a partir de agora.
   const regenerarDeId = form.get('regenerarDeId')
   let data: string
-  let escalaBuf: Buffer
+  // Achado 10/09 (pedido do usuario "so com romaneio da pra fazer o kpi?"):
+  // Escala virou OPCIONAL -- null daqui pra baixo significa "nao veio",
+  // nunca "arquivo vazio". Unica perda real e' PESO (KG), que nao existe em
+  // nenhum outro lugar (nem no Romaneio, nem na Unitrac -- conferido nos 3
+  // endpoints, ela e' so' rastreamento GPS, nao tem dado de carga/peso).
+  // Todo o resto (motorista/destino/ajudantes/clientes planejados) ja cai
+  // pro proprio Romaneio -- ver fallback em agregarPorCarga.
+  let escalaBuf: Buffer | null
   let romaneioBuf: Buffer
   let escalaStoragePathExistente: string | null = null
   let romaneioStoragePathExistente: string | null = null
@@ -70,19 +77,19 @@ export async function POST(req: NextRequest) {
     if (!geracao) {
       return new NextResponse('Geração não encontrada.', { status: 404 })
     }
-    if (!geracao.escalaStoragePath || !geracao.romaneioStoragePath) {
+    if (!geracao.romaneioStoragePath) {
       return new NextResponse('Esta geração é anterior ao recurso de regenerar — não guardou os PDFs originais.', { status: 422 })
     }
     data = geracao.dataReferencia
     const svc = createServiceClient()
     const [escalaDl, romaneioDl] = await Promise.all([
-      svc.storage.from('kpi-romaneio-inputs').download(geracao.escalaStoragePath),
+      geracao.escalaStoragePath ? svc.storage.from('kpi-romaneio-inputs').download(geracao.escalaStoragePath) : Promise.resolve(null),
       svc.storage.from('kpi-romaneio-inputs').download(geracao.romaneioStoragePath),
     ])
-    if (escalaDl.error || !escalaDl.data || romaneioDl.error || !romaneioDl.data) {
+    if ((escalaDl && (escalaDl.error || !escalaDl.data)) || romaneioDl.error || !romaneioDl.data) {
       return new NextResponse('Erro ao baixar os PDFs originais do Storage — arquivo pode ter sido removido.', { status: 500 })
     }
-    escalaBuf = Buffer.from(await escalaDl.data.arrayBuffer())
+    escalaBuf = escalaDl ? Buffer.from(await escalaDl.data.arrayBuffer()) : null
     romaneioBuf = Buffer.from(await romaneioDl.data.arrayBuffer())
     escalaStoragePathExistente = geracao.escalaStoragePath
     romaneioStoragePathExistente = geracao.romaneioStoragePath
@@ -94,15 +101,12 @@ export async function POST(req: NextRequest) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) {
       return new NextResponse('Data inválida (YYYY-MM-DD)', { status: 400 })
     }
-    if (!(escalaFile instanceof File)) {
-      return new NextResponse('Escala de Rota (PDF) obrigatória', { status: 400 })
-    }
     if (!(romaneioFile instanceof File)) {
       return new NextResponse('Romaneio de Entrega (PDF) obrigatório', { status: 400 })
     }
 
     ;[escalaBuf, romaneioBuf] = await Promise.all([
-      escalaFile.arrayBuffer().then(b => Buffer.from(b)),
+      escalaFile instanceof File ? escalaFile.arrayBuffer().then(b => Buffer.from(b)) : Promise.resolve(null),
       romaneioFile.arrayBuffer().then(b => Buffer.from(b)),
     ])
   }
@@ -115,7 +119,7 @@ export async function POST(req: NextRequest) {
   }
 
   const [escala, romaneio] = await Promise.all([
-    parseEscala(escalaBuf),
+    escalaBuf ? parseEscala(escalaBuf) : Promise.resolve([]),
     parseRomaneio(romaneioBuf),
   ])
 
@@ -275,7 +279,12 @@ export async function POST(req: NextRequest) {
     const [carga, placaNorm] = chave.split('::')
     return { carga, placaNorm }
   })
-  const avisos = detectarDescasamentos(escala, cargasRomaneioList)
+  // Achado 10/09: sem Escala nenhuma (escalaBuf null), `escala` fica [] --
+  // detectarDescasamentos compararia isso com o Romaneio e marcaria TODA
+  // carga como "sem_escala" (79 avisos so' porque o documento nao veio, nao
+  // porque tem descasamento de verdade entre os dois). So' roda a checagem
+  // quando a Escala de fato foi enviada.
+  const avisos = escalaBuf ? detectarDescasamentos(escala, cargasRomaneioList) : []
 
   const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpi, data, avisos, detalhe)
 
@@ -291,16 +300,18 @@ export async function POST(req: NextRequest) {
     const svc = createServiceClient()
     let escalaStoragePath = escalaStoragePathExistente
     let romaneioStoragePath = romaneioStoragePathExistente
-    if (!escalaStoragePath || !romaneioStoragePath) {
+    if (!romaneioStoragePath) {
       const prefixo = `nutrimax/${data}/${crypto.randomUUID()}`
-      escalaStoragePath = `${prefixo}-escala.pdf`
       romaneioStoragePath = `${prefixo}-romaneio.pdf`
-      const [upEscala, upRomaneio] = await Promise.all([
-        svc.storage.from('kpi-romaneio-inputs').upload(escalaStoragePath, escalaBuf, { contentType: 'application/pdf' }),
-        svc.storage.from('kpi-romaneio-inputs').upload(romaneioStoragePath, romaneioBuf, { contentType: 'application/pdf' }),
-      ])
-      if (upEscala.error || upRomaneio.error) {
-        console.error('Erro ao guardar PDFs originais no Storage:', upEscala.error?.message, upRomaneio.error?.message)
+      const uploads = [svc.storage.from('kpi-romaneio-inputs').upload(romaneioStoragePath, romaneioBuf, { contentType: 'application/pdf' })]
+      // Escala e' opcional -- so' faz upload dela se de fato veio.
+      if (escalaBuf && !escalaStoragePath) {
+        escalaStoragePath = `${prefixo}-escala.pdf`
+        uploads.push(svc.storage.from('kpi-romaneio-inputs').upload(escalaStoragePath, escalaBuf, { contentType: 'application/pdf' }))
+      }
+      const resultados = await Promise.all(uploads)
+      if (resultados.some(r => r.error)) {
+        console.error('Erro ao guardar PDFs originais no Storage:', resultados.map(r => r.error?.message).filter(Boolean).join('; '))
         escalaStoragePath = null
         romaneioStoragePath = null
       }

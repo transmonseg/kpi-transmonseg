@@ -20,7 +20,11 @@ export default function NutrimaxGerarPage() {
   const [baixado, setBaixado] = useState(false)
 
   const dataForaDoAlcance = !!data && foraDoAlcanceApi(data, hoje())
-  const pronto = escala.length > 0 && romaneio.length > 0 && !!data && !dataForaDoAlcance
+  // Achado 10/09 (pedido do usuario "so com romaneio da pra fazer o kpi?"):
+  // Escala virou opcional -- so' o Romaneio bloqueia. Unica perda real e'
+  // a coluna PESO (KG), que nao existe em nenhum outro documento nem na
+  // Unitrac (ver comentario completo em agregacao.ts/nutrimax/gerar/route.ts).
+  const pronto = romaneio.length > 0 && !!data && !dataForaDoAlcance
 
   async function gerar() {
     if (!pronto) return
@@ -30,7 +34,7 @@ export default function NutrimaxGerarPage() {
     setBaixado(false)
     try {
       const fd = new FormData()
-      fd.set('escala', escala[0])
+      if (escala[0]) fd.set('escala', escala[0])
       fd.set('romaneio', romaneio[0])
       fd.set('data', data)
       const res = await fetch('/api/kpi/nutrimax/gerar', { method: 'POST', body: fd })
@@ -79,9 +83,9 @@ export default function NutrimaxGerarPage() {
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="col-span-1 lg:col-span-4">
           <FileDropzone
-            eyebrow="Passo 1"
+            eyebrow="Passo 1 · opcional"
             label="Escala de Rota"
-            hint="PDF · o planejado (placa, destino, clientes previstos)"
+            hint="PDF · só acrescenta peso (KG) — sem ela, o resto do relatório sai normal"
             accept=".pdf"
             files={escala}
             onAdd={files => setEscala(files.slice(0, 1))}

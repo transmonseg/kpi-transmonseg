@@ -73,6 +73,48 @@ function parada(overrides: Partial<UnitracParadaRow> = {}): UnitracParadaRow {
 }
 
 describe('agregarPorCarga', () => {
+  // Achado 10/09 (pedido do usuario "so com romaneio da pra fazer o kpi?"):
+  // Escala virou opcional -- escala=null cai pro proprio Romaneio pra tudo
+  // exceto peso (que nao existe em nenhum outro lugar, nem na Unitrac).
+  describe('sem Escala (escala=null, so Romaneio)', () => {
+    it('motorista/destino/ajudantes vem do Romaneio; peso fica null (nao existe em outro lugar)', () => {
+      const linhas = [linha('NF1', { motorista: 'MOTORISTA DO ROMANEIO', destino: 'MACAE', ajudantes: ['AJUDANTE A', 'AJUDANTE B'] })]
+      const r = agregarPorCarga('93758', 'TTL7D40', linhas, null, [], new Map(), [], null)
+
+      expect(r.motorista).toBe('MOTORISTA DO ROMANEIO')
+      expect(r.destino).toBe('MACAE')
+      expect(r.ajudante1).toBe('AJUDANTE A')
+      expect(r.ajudante2).toBe('AJUDANTE B')
+      expect(r.pesoKg).toBeNull()
+    })
+
+    it('clientesPlanejados cai pra contagem de clientes UNICOS do proprio Romaneio', () => {
+      const linhas = [
+        linha('NF1', { clienteCodigo: 'CLI1' }),
+        linha('NF2', { clienteCodigo: 'CLI1' }), // mesmo cliente, 2 NFs
+        linha('NF3', { clienteCodigo: 'CLI2' }),
+      ]
+      const r = agregarPorCarga('93758', 'TTL7D40', linhas, null, [], new Map(), [], null)
+      expect(r.clientesPlanejados).toBe(2)
+    })
+
+    it('nfPlanejado cai pro tamanho do proprio Romaneio -- status INCOMPLETO continua funcionando sem Escala', () => {
+      const linhas = [linha('NF1'), linha('NF2'), linha('NF3')]
+      const alvos = [alvo('NF1', 1)] // so' 1 de 3 confirmada
+      const r = agregarPorCarga('93758', 'TTL7D40', linhas, null, alvos, new Map(), [], null)
+      expect(r.nfPlanejado).toBe(3)
+      expect(r.paradasReais).toBe(1)
+      expect(r.status).toBe('INCOMPLETO')
+    })
+
+    it('todas as NF do Romaneio confirmadas, sem Escala: status OK (nao fica falso INCOMPLETO)', () => {
+      const linhas = [linha('NF1'), linha('NF2')]
+      const alvos = [alvo('NF1', 1), alvo('NF2', 1)]
+      const r = agregarPorCarga('93758', 'TTL7D40', linhas, null, alvos, new Map(), [], null)
+      expect(r.status).toBe('OK')
+    })
+  })
+
   it('todas as NF confirmadas via Unitrac -> status OK, paradasReais igual ao total', () => {
     const linhas = [linha('NF1'), linha('NF2')]
     const alvos = [alvo('NF1', 1), alvo('NF2', 1)]
@@ -217,7 +259,12 @@ describe('agregarPorCarga', () => {
     expect(r.tempoMedioParadaMin).toBeNull()
   })
 
-  it('escala === null: campos da escala ficam null, mas o resto continua calculável só do romaneio', () => {
+  // Achado 10/09 (pedido do usuario "so com romaneio da pra fazer o kpi?"):
+  // Escala virou opcional de verdade -- so' pesoKg fica null pra sempre
+  // (nao existe em nenhum outro lugar). O resto (ajudantes/clientesPlanejados/
+  // nfPlanejado) agora cai pro proprio Romaneio, ver describe dedicado logo
+  // acima ("sem Escala (escala=null, so Romaneio)") pra cada campo isolado.
+  it('escala === null: so pesoKg fica null -- o resto (inclusive nfPlanejado/status) calcula do romaneio', () => {
     const linhas = [linha('NF1', { destino: 'DESTINO ROMANEIO', motorista: 'MOTORISTA ROMANEIO' }), linha('NF2')]
     const alvos = [alvo('NF1', 1)]
 
@@ -226,12 +273,9 @@ describe('agregarPorCarga', () => {
     expect(r.carga).toBe('93758')
     expect(r.placa).toBe('TTL7D40')
     expect(r.paradasReais).toBe(1)
-    expect(r.ajudante1).toBeNull()
-    expect(r.ajudante2).toBeNull()
     expect(r.pesoKg).toBeNull()
-    expect(r.clientesPlanejados).toBeNull()
-    expect(r.nfPlanejado).toBeNull()
-    expect(r.status).toBe('OK') // sem nfPlanejado, nunca INCOMPLETO
+    expect(r.nfPlanejado).toBe(2) // tamanho do romaneio, ja que nao veio escala
+    expect(r.status).toBe('INCOMPLETO') // 1 confirmada de 2 -- continua detectando falta mesmo sem escala
     // sem escala, cai pro destino/motorista da primeira linha do romaneio
     expect(r.destino).toBe('DESTINO ROMANEIO')
     expect(r.motorista).toBe('MOTORISTA ROMANEIO')
