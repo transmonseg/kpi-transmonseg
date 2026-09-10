@@ -19,6 +19,7 @@ import { calcularKmPercorrido } from '../src/lib/kpi-romaneio/km'
 import { detectarDescasamentos } from '../src/lib/kpi-romaneio/avisos'
 import { gerarKpiRomaneioXlsx } from '../src/lib/kpi-romaneio/gerador-xlsx'
 import { COD_USER_NUTRIMAX } from '../src/lib/kpi-romaneio/constants'
+import { hojeBR } from '../src/lib/data-br'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '../src/lib/kpi-romaneio/types'
 import type { UnitracParadaRow } from '../src/lib/kpi/matcher'
 
@@ -153,6 +154,8 @@ async function main() {
         },
         temRastreadorPorPlaca.get(placaNorm) ?? false,
         paradasPorPlaca,
+        resumo?.kmPercorrido ?? null,
+        data === hojeBR() && (resumo?.chegadaCd ?? null) == null,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

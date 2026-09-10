@@ -258,6 +258,12 @@ export async function POST(req: NextRequest) {
         // ponte de posicao continua real -- ver agregarPorCarga -- em vez
         // do fallback baseado so' em paradas da Unitrac).
         resumo?.kmPercorrido ?? null,
+        // Ver comentario de diaEmAndamento em agregacao.ts: so' "em
+        // andamento" quando o relatorio e' de HOJE e essa rota especifica
+        // ainda nao retornou pra base (chegadaCd null) -- dia passado com
+        // chegadaCd null e' outra coisa (rota que genuinamente nunca voltou),
+        // nao deve virar "aguardando".
+        data === hojeBR() && (resumo?.chegadaCd ?? null) == null,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

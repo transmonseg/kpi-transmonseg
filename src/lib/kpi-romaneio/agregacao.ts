@@ -230,6 +230,20 @@ export function montarDetalheEntregas(
   // agregarPorCarga, ponte pro monitoramento) -- default null preserva
   // o comportamento antigo pra quem não passar nada.
   kmPercorrido: number | null = null,
+  // Achado real 10/09 (analise pedida pelo usuario sobre o KPI gerado no
+  // meio do dia): com o relatorio de HOJE gerado antes de todas as rotas
+  // acabarem, entrega que o caminhao simplesmente ainda nao chegou (rota em
+  // andamento, `resumoCarga.chegadaCd` ainda null) caia nos MESMOS ramos de
+  // "pendente" que uma entrega genuinamente perdida (NAO FOI AO CLIENTE, SEM
+  // CONFIRMACAO, etc) -- inflando artificialmente a taxa de falha do dia
+  // enquanto ele ainda esta rolando. `diaEmAndamento` (true so' quando o
+  // relatorio e' do dia de HOJE e essa rota especifica ainda nao retornou
+  // pra base) substitui qualquer observacao negativa por um status neutro
+  // de espera -- nunca declara falha antes do dia realmente terminar pra
+  // aquele veiculo. Default false preserva o comportamento antigo (relatorio
+  // de dia passado, ou dia de hoje mas rota ja' finalizada) pra quem nao
+  // passar nada.
+  diaEmAndamento: boolean = false,
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
 
@@ -337,6 +351,17 @@ export function montarDetalheEntregas(
     // acontece em chamador parcial/teste, nao deve disparar as cegas).
     if (observacao == null && status === 'pendente' && temRastreador && paradasPorOutraPlaca.has(placaNorm) && paradasProprias.length === 0) {
       observacao = 'SEM DADO DE GPS NO DIA - RASTREADOR NÃO REPORTOU NENHUMA POSIÇÃO - CONFERIR EQUIPAMENTO'
+    }
+    // Ver comentario de `diaEmAndamento` na assinatura da funcao: rota ainda
+    // em andamento nunca declara falha, so' espera -- substitui qualquer
+    // observacao negativa (inclusive nenhuma observacao, ainda "pendente"
+    // mudo) por um status neutro. So' entra depois de TODOS os ramos acima
+    // rodarem, entao continua valendo pro dia estar em andamento MAS ja'
+    // haver evidencia positiva (confirmado_gps/confirmado_unitrac, carga
+    // transferida, raio ampliado, vizinhanca) -- so' pendente sem evidencia
+    // vira "aguardando".
+    if (status === 'pendente' && diaEmAndamento) {
+      observacao = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
     }
 
     return {

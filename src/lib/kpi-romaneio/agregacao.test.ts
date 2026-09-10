@@ -482,6 +482,47 @@ describe('montarDetalheEntregas', () => {
       })
     })
 
+    // Achado real 10/09 (usuario pediu analise do KPI gerado no meio do dia,
+    // placa RQV6G75/97481): com o relatorio de HOJE gerado antes da rota
+    // terminar (CHEGADA CD ainda "EM ROTA"), entrega que o caminhao
+    // simplesmente ainda nao chegou caia nos MESMOS observacao de falha
+    // genuina (NAO FOI AO CLIENTE, SEM CONFIRMACAO) -- inflava a taxa de
+    // falha artificialmente enquanto o dia ainda estava rolando.
+    // `diaEmAndamento=true` substitui qualquer observacao negativa de
+    // "pendente" por um status neutro de espera.
+    describe('dia em andamento (achado real 10/09, nunca declara falha antes do dia terminar)', () => {
+      it('rota ainda em andamento (chegadaCd null) + entrega sem evidencia nenhuma: vira AGUARDANDO, nao NAO FOI AO CLIENTE', () => {
+        const longe = parada({ id: 'p', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.95, lng: -43.30 }) // ~11km, cairia em NAO FOI AO CLIENTE
+        const paradasFrota = new Map([['TTL7D40', [longe]]])
+        const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio, true, paradasFrota, null, true)
+        expect(d.status).toBe('pendente')
+        expect(d.observacao).toBe('AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO')
+      })
+
+      it('rota em andamento + passou perto sem parar: tambem vira AGUARDANDO (nao PASSOU NO ENDEREÇO)', () => {
+        const perto = parada({ id: 'p', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.9012, lng: -43.2012 })
+        const paradasFrota = new Map([['TTL7D40', [perto]]])
+        const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio, true, paradasFrota, null, true)
+        expect(d.observacao).toBe('AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO')
+      })
+
+      it('rota em andamento MAS entrega ja confirmada por GPS: mantem a confirmacao normal, nao vira AGUARDANDO', () => {
+        const visitas = new Map<string, Visita>([
+          ['NF1', { nf: 'NF1', chegada: '2026-09-10T10:00:00.000Z', saida: '2026-09-10T10:05:00.000Z', distanciaMetrosDoPonto: 20 }],
+        ])
+        const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], visitas, resumoCargaVazio, true, new Map(), null, true)
+        expect(d.status).toBe('confirmado_gps')
+        expect(d.observacao).toBeNull()
+      })
+
+      it('diaEmAndamento=false (default, dia passado ou rota ja finalizada): comportamento antigo preservado, declara NAO FOI AO CLIENTE normalmente', () => {
+        const longe = parada({ id: 'p', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.95, lng: -43.30 })
+        const paradasFrota = new Map([['TTL7D40', [longe]]])
+        const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio, true, paradasFrota)
+        expect(d.observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
+      })
+    })
+
     it('NF pendente mas nenhuma outra placa passou perto: observacao null (nao inventa suspeita)', () => {
       const linhas = [linha('NF1')]
       const paradaLonge = parada({ id: 'p2', placa_norm: 'RQV6I51', classificacao: 'FORA_BASE', lat: -23.5, lng: -44.5 })
