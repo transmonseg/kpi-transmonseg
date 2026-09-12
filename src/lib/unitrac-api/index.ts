@@ -5,7 +5,6 @@ import type { MapaPosicoes } from './posicoes'
 
 export * from './frota'
 export * from './pontos'
-export * from './paradas'
 export * from './posicoes'
 export * from './confirma'
 export * from './consolida'
