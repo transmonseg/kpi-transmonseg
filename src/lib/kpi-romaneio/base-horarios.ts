@@ -69,7 +69,16 @@ export type PontoEntregaBridge = { id: string; lat: number; lng: number }
 // pode pendurar -- aqui bem menor porque a rota do monitoramento só lê
 // posições já persistidas (sem geocodificação externa lenta no meio).
 const TIMEOUT_MS = 20_000
+// Achado real 12/09 (1a execucao real do fallback, dia 09/09): pedindo
+// tambem as paradas derivadas, 79 placas numa chamada so' estouraram os 20s
+// -- o lado de la faz uma query de posicoes POR PLACA (dia inteiro,
+// ~2500 leituras cada) e ainda clusteriza tudo. Resultado: mapa vazio,
+// 268 NFs cairam em "SEM DADO DE GPS NO DIA" sem que faltasse dado nenhum.
+// Modo com paradas usa prazo maior e lote menor, pra cada chamada caber
+// folgada no prazo.
+const TIMEOUT_PARADAS_MS = 120_000
 const MAX_PLACAS_POR_CHAMADA = 200
+const MAX_PLACAS_POR_CHAMADA_COM_PARADAS = 20
 
 function urlBaseHorarios(): string {
   const base = process.env.MONITORAMENTO_URL ?? 'http://127.0.0.1:3010'
@@ -186,7 +195,7 @@ async function buscarLote(
   }
 
   const ctrl = new AbortController()
-  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
+  const timer = setTimeout(() => ctrl.abort(), incluirParadas ? TIMEOUT_PARADAS_MS : TIMEOUT_MS)
   let res: Response
   try {
     res = await fetch(urlBaseHorarios(), {
@@ -258,8 +267,9 @@ export async function buscarHorariosBase(
   incluirParadas = false,
 ): Promise<Map<string, HorarioBase>> {
   const mapa = new Map<string, HorarioBase>()
-  for (let i = 0; i < placasNorm.length; i += MAX_PLACAS_POR_CHAMADA) {
-    const lote = placasNorm.slice(i, i + MAX_PLACAS_POR_CHAMADA)
+  const tamanhoLote = incluirParadas ? MAX_PLACAS_POR_CHAMADA_COM_PARADAS : MAX_PLACAS_POR_CHAMADA
+  for (let i = 0; i < placasNorm.length; i += tamanhoLote) {
+    const lote = placasNorm.slice(i, i + tamanhoLote)
     const doLote = await buscarLote(lote, data, pontosPorPlaca, incluirParadas)
     for (const [placa, horario] of doLote) mapa.set(placa, horario)
   }
