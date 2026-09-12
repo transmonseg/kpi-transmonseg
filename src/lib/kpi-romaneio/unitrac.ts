@@ -35,6 +35,24 @@ export async function buscarParadasDoDia(cv: string, placaNorm: string, data: st
 // /api/kpi/base-horarios). Converte pro formato que o resto do pipeline ja'
 // consome (UnitracParadaRow), sem geofence de loja -- BASE/FORA_BASE so',
 // mesma granularidade de buscarParadasDoDia.
+// LIMITE CONHECIDO, medido no dia 09/09 (2361 NFs, mesmo dia pelos dois
+// caminhos): a ponte confirma 1978 entregas contra 2075 do feed da Unitrac.
+// A diferenca NAO e' o piso de duracao (testado 5min e 2min, mesmo numero) --
+// e' APAGAO DE SINAL. Quando o rastreador para de comunicar, o polling deste
+// projeto continua gravando a ULTIMA posicao conhecida (com atraso_min
+// subindo), entao a posicao continua fica congelada e nao ha dwell pra
+// derivar; ja o feed da Unitrac recebe o trecho em lote quando o aparelho
+// reconecta, e mostra as paradas que aconteceram no apagao. Caso documentado
+// nesta sessao: RQV3G18 em 09/09, atraso subindo de 2 para 34+ min enquanto
+// a placa rodava Trapiche/Macae.
+//
+// Por isso a ordem importa e esta como esta: DENTRO das 48h manda o feed da
+// Unitrac; fora dele, a ponte -- que e' pior que o feed, mas
+// incomparavelmente melhor que nao poder reprocessar o dia nenhum.
+//
+// Proximo passo pra fechar essa lacuna: persistir as paradas da Unitrac no
+// momento da geracao (elas ja sao buscadas), pra que reprocessar um dia
+// antigo use exatamente a mesma entrada que gerou os numeros originais.
 export function paradasDaPonte(
   paradas: { chegada: string; saida: string; duracaoSeg: number; lat: number; lng: number; classificacao: 'BASE' | 'FORA_BASE' }[],
   placaNorm: string,

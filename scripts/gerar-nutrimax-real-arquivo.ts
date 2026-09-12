@@ -10,7 +10,7 @@ import { parseEscala } from '../src/lib/kpi-romaneio/parse-escala'
 import { parseRomaneio } from '../src/lib/kpi-romaneio/parse-romaneio'
 import { geocodificarEnderecos } from '../src/lib/kpi-romaneio/geocode'
 import { buscarFrota, normPlaca } from '../src/lib/unitrac-api'
-import { buscarAlvosDoDia, buscarParadasDoDia } from '../src/lib/kpi-romaneio/unitrac'
+import { buscarAlvosDoDia, buscarParadasDoDia, paradasDaPonte } from '../src/lib/kpi-romaneio/unitrac'
 import { buscarHorariosBase } from '../src/lib/kpi-romaneio/base-horarios'
 import { alvosDaData } from '../src/lib/kpi-romaneio/alvos-data'
 import { montarVisitas } from '../src/lib/kpi-romaneio/visitas'
@@ -18,7 +18,7 @@ import { agregarPorCarga, montarDetalheEntregas } from '../src/lib/kpi-romaneio/
 import { calcularKmPercorrido } from '../src/lib/kpi-romaneio/km'
 import { detectarDescasamentos } from '../src/lib/kpi-romaneio/avisos'
 import { gerarKpiRomaneioXlsx } from '../src/lib/kpi-romaneio/gerador-xlsx'
-import { COD_USER_NUTRIMAX } from '../src/lib/kpi-romaneio/constants'
+import { COD_USER_NUTRIMAX, foraDoAlcanceApi } from '../src/lib/kpi-romaneio/constants'
 import { hojeBR } from '../src/lib/data-br'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '../src/lib/kpi-romaneio/types'
 import type { UnitracParadaRow } from '../src/lib/kpi/matcher'
@@ -67,7 +67,10 @@ async function main() {
       .map(l => ({ id: l.nf, lat: l.lat, lng: l.lng }))
     if (pontos.length > 0) pontosPorPlacaBridge.set(placaNorm, pontos)
   }
-  const horarioBasePorPlaca = await buscarHorariosBase(placasNorm, data, pontosPorPlacaBridge)
+  // Fora da janela de 48h da Unitrac: pede tambem as paradas derivadas do
+  // historico permanente (mesma logica da rota /api/kpi/nutrimax/gerar).
+  const foraDaJanelaUnitrac = foraDoAlcanceApi(data, hojeBR())
+  const horarioBasePorPlaca = await buscarHorariosBase(placasNorm, data, pontosPorPlacaBridge, foraDaJanelaUnitrac)
 
   const frota = await buscarFrota(COD_USER_NUTRIMAX)
   const cvPorPlaca = new Map(frota.map(v => [v.placaNorm, v.cv]))
@@ -94,6 +97,8 @@ async function main() {
         console.log(`buscarParadasDoDia(${placaNorm}) falhou:`, e instanceof Error ? e.message : e)
       }
     }
+    const daPonte = horarioBasePorPlaca.get(placaNorm)?.paradas
+    if (paradas.length === 0 && daPonte?.length) paradas = paradasDaPonte(daPonte, placaNorm)
     paradasPorPlaca.set(placaNorm, paradas)
     visitasPorPlaca.set(placaNorm, montarVisitas(linhasPorPlaca.get(placaNorm) ?? [], paradas, horarioBasePorPlaca.get(placaNorm)?.visitasPorNf))
     kmPorPlaca.set(placaNorm, calcularKmPercorrido(paradas))
@@ -116,6 +121,8 @@ async function main() {
         console.log(`buscarParadasDoDia(${placaNorm}) falhou:`, e instanceof Error ? e.message : e)
       }
     }
+    const daPonteExtra = horarioBasePorPlaca.get(placaNorm)?.paradas
+    if (paradas.length === 0 && daPonteExtra?.length) paradas = paradasDaPonte(daPonteExtra, placaNorm)
     paradasPorPlaca.set(placaNorm, paradas)
   }
 
