@@ -123,6 +123,8 @@ Criar `scripts/carregar-malha-municipios.ts`. O script baixa o GeoJSON, converte
 // Idempotente: pode rodar quantas vezes quiser, faz upsert por codigo.
 // Uso: npx tsx scripts/carregar-malha-municipios.ts
 import { Client } from "pg";
+import { validarTerritorio } from "@/lib/territorio";
+import { expandirCidadeTruncada, municipioCodigoIbge } from "@/lib/romaneio-geocode-local";
 
 const URL_IBGE =
   "https://servicodados.ibge.gov.br/api/v3/malhas/estados/33" +
@@ -829,153 +831,42 @@ Esperado: 953 passando, build limpo.
 
 ---
 
-### Task 6: Rota de códigos IBGE por nome de cidade
+### Task 6: CANCELADA no pre-flight
 
-A auditoria da task 7 roda no repo do KPI e precisa converter o nome de cidade do romaneio ("CAMPOS DOS GOYT") em código IBGE. Essa tabela e a lógica de truncamento vivem no monitoramento (`MUNICIPIO_CODIGO_IBGE` e `expandirCidadeTruncada`, em `src/lib/romaneio-geocode-local.ts`) e reimplementá-las no KPI é duplicação garantida de divergir.
+**Não implementar.** Esta task criava uma rota `POST /api/romaneio/municipio-codigo`
+no monitoramento cuja única razão de existir era servir o script de auditoria da
+Task 7, que o plano colocava no repo do KPI.
 
-**Files:**
-- Create: `MONITORAMENTO transmonseg/src/app/api/romaneio/municipio-codigo/route.ts`
-- Create: `MONITORAMENTO transmonseg/src/app/api/romaneio/municipio-codigo/route.test.ts`
-- (espelhar em `MONITORAMENTO TEMP`)
+O pre-flight achou o defeito que a motivava: o script usava `new Client()` do
+pacote `pg`, e o repo do KPI **não tem `pg`** nas dependências (só
+`@supabase/supabase-js`) — o código não rodaria. A correção certa não é adicionar
+`pg` ao KPI e manter o hop HTTP: é mover o script para o repo do monitoramento,
+onde `pg` já existe (`^8.22.0`), os dois bancos são alcançáveis por connection
+string, e `expandirCidadeTruncada`/`municipioCodigoIbge` podem ser importados
+**direto** — que era exatamente o motivo declarado desta rota existir.
 
-**Interfaces:**
-- Consumes: `expandirCidadeTruncada` e `municipioCodigoIbge`, já exportados de `@/lib/romaneio-geocode-local`.
-- Produces: `POST /api/romaneio/municipio-codigo`, header `x-motor-key: <MOTOR_SECRET>`, corpo `{ cidades: string[] }`, resposta `{ codigos: (string | null)[] }` na mesma ordem da entrada. Consumido pela task 7.
-
-- [ ] **Step 1: Escrever o teste que falha**
-
-Criar `src/app/api/romaneio/municipio-codigo/route.test.ts`:
-
-```ts
-import { describe, it, expect, beforeAll } from "vitest";
-import { POST } from "./route";
-
-beforeAll(() => {
-  process.env.MOTOR_SECRET = "segredo-de-teste";
-});
-
-function requisicao(body: unknown, chave = "segredo-de-teste") {
-  return new Request("http://localhost/api/romaneio/municipio-codigo", {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-motor-key": chave },
-    body: JSON.stringify(body),
-  });
-}
-
-describe("POST /api/romaneio/municipio-codigo", () => {
-  it("rejeita sem a chave do motor", async () => {
-    const res = await POST(requisicao({ cidades: [] }, "errada"));
-    expect(res.status).toBe(401);
-  });
-
-  it("resolve nome exato", async () => {
-    const res = await POST(requisicao({ cidades: ["Rio de Janeiro"] }));
-    expect(await res.json()).toEqual({ codigos: ["3304557"] });
-  });
-
-  it("resolve nome truncado pelo romaneio", async () => {
-    // "CAMPOS DOS GOYT" e' o truncamento em 15 caracteres que aparece em 20 dos
-    // 100 erros comprovados da auditoria de 12/09.
-    const res = await POST(requisicao({ cidades: ["CAMPOS DOS GOYT"] }));
-    expect(await res.json()).toEqual({ codigos: ["3301009"] });
-  });
-
-  it("devolve null pra cidade que nao resolve", async () => {
-    const res = await POST(requisicao({ cidades: ["XXXXXXXX"] }));
-    expect(await res.json()).toEqual({ codigos: [null] });
-  });
-
-  it("preserva a ordem da entrada", async () => {
-    const res = await POST(requisicao({ cidades: ["XXXXXXXX", "Rio de Janeiro"] }));
-    expect(await res.json()).toEqual({ codigos: [null, "3304557"] });
-  });
-
-  it("rejeita corpo sem array de strings", async () => {
-    const res = await POST(requisicao({ cidades: "Rio" }));
-    expect(res.status).toBe(400);
-  });
-});
-```
-
-O código IBGE de Campos dos Goytacazes no teste (`3301009`) deve ser conferido contra `MUNICIPIO_CODIGO_IBGE` antes de rodar — se divergir, o valor da tabela é que vale.
-
-- [ ] **Step 2: Rodar e ver falhar**
-
-```bash
-cd "MONITORAMENTO transmonseg" && npx vitest run src/app/api/romaneio/municipio-codigo/route.test.ts
-```
-
-Esperado: FAIL — `Failed to resolve import "./route"`.
-
-- [ ] **Step 3: Implementar a rota**
-
-Ler antes o guia de route handlers em `node_modules/next/dist/docs/` — a versão do Next deste repo não é a padrão (ver `AGENTS.md`).
-
-```ts
-// Nome de cidade do romaneio -> codigo IBGE de 7 digitos, com o mesmo
-// tratamento de truncamento/corrupcao que a cascata de geocodificacao usa.
-//
-// Existe por causa da auditoria de 12/09: o script de reauditoria do cache roda
-// no repo do KPI, que nao pode importar deste. A tabela de 92 codigos e a
-// logica de expandirCidadeTruncada (aliases + prefixo) tem anos de "achado
-// real" acumulado -- duplicar no KPI seria garantir divergencia.
-//
-// So' leitura, sem efeito colateral. Mesma protecao x-motor-key das outras
-// rotas internas.
-import { expandirCidadeTruncada, municipioCodigoIbge } from "@/lib/romaneio-geocode-local";
-
-export async function POST(request: Request) {
-  const chave = request.headers.get("x-motor-key");
-  if (!chave || chave !== process.env.MOTOR_SECRET) {
-    return Response.json({ erro: "nao autorizado" }, { status: 401 });
-  }
-
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ erro: "corpo invalido, esperado JSON" }, { status: 400 });
-  }
-
-  const cidades = (body as { cidades?: unknown })?.cidades;
-  if (!Array.isArray(cidades) || !cidades.every((c) => typeof c === "string")) {
-    return Response.json({ erro: "'cidades' precisa ser um array de strings" }, { status: 400 });
-  }
-
-  const codigos = (cidades as string[]).map((c) => municipioCodigoIbge(expandirCidadeTruncada(c)) ?? null);
-  return Response.json({ codigos });
-}
-```
-
-- [ ] **Step 4: Rodar e ver passar**
-
-```bash
-cd "MONITORAMENTO transmonseg" && npx vitest run src/app/api/romaneio/municipio-codigo/route.test.ts
-```
-
-Esperado: 6 passando.
-
-- [ ] **Step 5: Rodar a suíte inteira, buildar, espelhar no TEMP e commitar**
-
-```bash
-cd "MONITORAMENTO transmonseg" && npm test && npm run build
-```
-
-Esperado: 959 passando.
+Ver "Ruling 1" no ledger. A numeração das demais tasks foi preservada de
+propósito, para não invalidar as referências cruzadas já escritas.
 
 ---
 
 ### Task 7: Auditoria e marcação do cache existente
 
-Depende das tasks 1, 2, 5 e 6. Entrega o efeito imediato: os 100 erros conhecidos param de sustentar conclusão negativa.
+Depende das tasks 1, 2 e 5. Entrega o efeito imediato: os 100 erros conhecidos param de sustentar conclusão negativa.
+
+**Atenção — revisado no pre-flight (Ruling 1).** O script vive no repo do
+**monitoramento**, não no do KPI: lá o pacote `pg` já é dependência
+(`^8.22.0`), os dois bancos são alcançáveis por connection string, e
+`expandirCidadeTruncada`/`municipioCodigoIbge` são importados direto de
+`@/lib/romaneio-geocode-local` em vez de por HTTP. A migration continua do lado
+do KPI, que é dono da tabela.
 
 **Files:**
-- Create: `KPI transmonseg/supabase/migrations/20260912010000_geocode_cache_motivo.sql`
-- Create: `KPI transmonseg/scripts/auditar-geocode-territorio.ts`
-- (espelhar os dois em `KPI TEMP`)
+- Create: `KPI transmonseg/supabase/migrations/20260912010000_geocode_cache_motivo.sql` (espelhar em `KPI TEMP`)
+- Create: `MONITORAMENTO transmonseg/scripts/auditar-geocode-territorio.ts` (espelhar em `MONITORAMENTO TEMP`)
 
 **Interfaces:**
-- Consumes: funções SQL `municipio_da_coordenada` e `bairro_da_coordenada` (task 5); rota `POST /api/romaneio/municipio-codigo` (task 6).
+- Consumes: funções SQL `municipio_da_coordenada` e `bairro_da_coordenada` (task 5); `expandirCidadeTruncada` e `municipioCodigoIbge` de `@/lib/romaneio-geocode-local` (já existentes).
 - Produces: coluna `motivo text` em `kpi_romaneio_geocode_cache`, lida pela task 8.
 
 - [ ] **Step 1: Escrever e aplicar a migration**
@@ -1003,7 +894,7 @@ O `NOTIFY` não é opcional: sem ele o PostgREST rejeita o upsert com "Could not
 
 Criar `scripts/auditar-geocode-territorio.ts`. Dois modos: dry-run (default, só relata) e `--aplicar`. Nunca marcar sem ver o relatório primeiro.
 
-A comparação é reimplementada aqui em vez de importada de `territorio.ts` porque os dois vivem em repos diferentes — são seis linhas, e os testes de `territorio.test.ts` (tasks 3 e 4) são a referência de comportamento. A resolução de código IBGE **não** é reimplementada: vem da rota da task 6.
+O script importa `validarTerritorio` de `@/lib/territorio` (tasks 3 e 4) em vez de reimplementar a comparação — mesma sede de lógica, mesmo comportamento coberto por `territorio.test.ts`. A resolução de código IBGE vem de `expandirCidadeTruncada` + `municipioCodigoIbge`, importados direto.
 
 ```ts
 // Reaudita kpi_romaneio_geocode_cache contra as camadas territoriais e marca
@@ -1018,6 +909,8 @@ A comparação é reimplementada aqui em vez de importada de `territorio.ts` por
 //   npx tsx scripts/auditar-geocode-territorio.ts            # dry-run
 //   npx tsx scripts/auditar-geocode-territorio.ts --aplicar
 import { Client } from "pg";
+import { validarTerritorio } from "@/lib/territorio";
+import { expandirCidadeTruncada, municipioCodigoIbge } from "@/lib/romaneio-geocode-local";
 
 const RAIO_MAXIMO_VIZINHO_CNEFE_M = 300;
 const MONITORAMENTO_URL = process.env.MONITORAMENTO_URL ?? "http://127.0.0.1:3010";
@@ -1034,22 +927,6 @@ function partesDoEndereco(e: string): { bairro: string | null; cidade: string | 
   return { bairro: seg[1].slice(0, i).trim(), cidade: seg[1].slice(i + 1).trim() };
 }
 
-/** Nomes de cidade -> codigos IBGE, via a rota do monitoramento (task 6).
- *  Em lote, porque o cache tem ~8.700 enderecos mas poucas centenas de
- *  cidades distintas. */
-async function resolverCodigos(cidades: string[]): Promise<Map<string, string | null>> {
-  const unicas = [...new Set(cidades)];
-  const res = await fetch(`${MONITORAMENTO_URL}/api/romaneio/municipio-codigo`, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-motor-key": process.env.MOTOR_SECRET ?? "" },
-    body: JSON.stringify({ cidades: unicas }),
-  });
-  if (!res.ok) throw new Error(`municipio-codigo respondeu ${res.status}`);
-  const { codigos } = (await res.json()) as { codigos: (string | null)[] };
-  if (codigos.length !== unicas.length) throw new Error("resposta com tamanho divergente");
-  return new Map(unicas.map((c, i) => [c, codigos[i]]));
-}
-
 async function main() {
   const aplicar = process.argv.includes("--aplicar");
   const kpi = new Client({ connectionString: process.env.KPI_DATABASE_URL });
@@ -1062,36 +939,29 @@ async function main() {
     );
     console.log(`cache: ${rows.length} enderecos`);
 
-    const partes = rows.map((r) => ({ ...r, ...partesDoEndereco(r.endereco) }));
-    const codigoPorCidade = await resolverCodigos(
-      partes.map((p) => p.cidade).filter((c): c is string => c !== null),
-    );
+    // Mesmas deps que a rota-ponte usa, so' que por pg em vez de Supabase RPC.
+    const deps = {
+      async municipioDaCoordenada(lat: number, lng: number) {
+        const r = await monit.query<{ municipio_codigo: string }>(
+          "SELECT * FROM municipio_da_coordenada($1, $2)", [lat, lng],
+        );
+        return r.rows[0]?.municipio_codigo ?? null;
+      },
+      async bairroDaCoordenada(lat: number, lng: number) {
+        const r = await monit.query<{ localidade: string; distancia_m: number }>(
+          "SELECT * FROM bairro_da_coordenada($1, $2)", [lat, lng],
+        );
+        const v = r.rows[0];
+        return v ? { localidade: v.localidade, distanciaM: v.distancia_m } : null;
+      },
+    };
 
     const marcar: { endereco: string; motivo: string }[] = [];
-    for (const p of partes) {
-      const esperado = p.cidade ? codigoPorCidade.get(p.cidade) ?? null : null;
-
-      if (esperado) {
-        const mun = await monit.query<{ municipio_codigo: string }>(
-          "SELECT * FROM municipio_da_coordenada($1, $2)", [p.lat, p.lng],
-        );
-        const real = mun.rows[0]?.municipio_codigo ?? null;
-        if (real && real !== esperado) {
-          marcar.push({ endereco: p.endereco, motivo: "municipio_divergente" });
-          continue; // municipio ganha do bairro, igual a validarTerritorio
-        }
-      }
-
-      if (p.bairro) {
-        const bai = await monit.query<{ localidade: string; distancia_m: number }>(
-          "SELECT * FROM bairro_da_coordenada($1, $2)", [p.lat, p.lng],
-        );
-        const v = bai.rows[0];
-        if (v && v.distancia_m <= RAIO_MAXIMO_VIZINHO_CNEFE_M &&
-            normalizarBairro(v.localidade) !== normalizarBairro(p.bairro)) {
-          marcar.push({ endereco: p.endereco, motivo: "bairro_divergente" });
-        }
-      }
+    for (const r of rows) {
+      const { bairro, cidade } = partesDoEndereco(r.endereco);
+      const municipioCodigo = cidade ? municipioCodigoIbge(expandirCidadeTruncada(cidade)) ?? null : null;
+      const t = await validarTerritorio({ lat: r.lat, lng: r.lng }, { municipioCodigo, bairro }, deps);
+      if (!t.ok) marcar.push({ endereco: r.endereco, motivo: t.motivo });
     }
 
     const porMotivo = marcar.reduce<Record<string, number>>((a, m) => {
