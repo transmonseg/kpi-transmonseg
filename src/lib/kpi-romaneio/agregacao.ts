@@ -386,7 +386,16 @@ export function montarDetalheEntregas(
     // entrega. Dizer "nao foi ao cliente" aqui seria acusar o motorista com
     // base num ponto que pode estar em outro municipio.
     if (observacao == null && status === 'pendente' && !geoConfiavel && linha.lat != null) {
-      observacao = 'ENDEREÇO COM COORDENADA IMPRECISA - CONFERIR CADASTRO (não dá pra afirmar se foi ou não)'
+      // O motivo importa pra triagem: "outro municipio" quase sempre e' erro de
+      // geocodificacao nossa; "outro bairro" pode ser cadastro errado do cliente
+      // no romaneio. Ver a secao "Triagem" da spec de 12/09.
+      const detalhe =
+        linha.geoMotivo === 'municipio_divergente' ? 'COORDENADA CAIU EM OUTRO MUNICÍPIO'
+        : linha.geoMotivo === 'bairro_divergente' ? 'COORDENADA CAIU EM OUTRO BAIRRO'
+        : null
+      observacao = detalhe
+        ? `ENDEREÇO COM COORDENADA IMPRECISA - ${detalhe} - CONFERIR CADASTRO`
+        : 'ENDEREÇO COM COORDENADA IMPRECISA - CONFERIR CADASTRO (não dá pra afirmar se foi ou não)'
     }
     // Ver comentario de `diaEmAndamento` na assinatura da funcao: rota ainda
     // em andamento nunca declara falha, so' espera -- substitui qualquer

@@ -40,6 +40,10 @@ export type LinhaGeocodificada = LinhaRomaneio & {
   // que nao passa nada continua valendo como confiavel (comportamento
   // anterior, nunca quebra chamador existente).
   geoConfiavel?: boolean
+  /** Por que geoConfiavel e' false -- "municipio_divergente" |
+   *  "bairro_divergente". Ausente quando a coordenada e' confiavel ou quando a
+   *  suspeita veio de outra origem (fonte cnefe_bairro). */
+  geoMotivo?: string
   // So' preenchido pela coerencia de grupo (Rio Quality): outros pontos da
   // MESMA rua na zona, alem do escolhido -- pedido 06/09, ver visitas.ts.
   pontosAlternativos?: { lat: number; lng: number }[]

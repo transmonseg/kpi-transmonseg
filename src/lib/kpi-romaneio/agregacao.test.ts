@@ -399,6 +399,30 @@ describe('montarDetalheEntregas', () => {
       expect(d.observacao).toBeNull()
     })
 
+    it('diz o motivo quando a coordenada caiu em outro municipio', () => {
+      const linhas = [linha('NF1', { geoConfiavel: false, geoMotivo: 'municipio_divergente' })]
+      const paradaLonge = parada({ id: 'p1', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -23.5, lng: -44.5 })
+      const paradasFrota = new Map([['TTL7D40', [paradaLonge]]])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, paradasFrota)
+
+      expect(d.observacao).toBe(
+        'ENDEREÇO COM COORDENADA IMPRECISA - COORDENADA CAIU EM OUTRO MUNICÍPIO - CONFERIR CADASTRO',
+      )
+    })
+
+    it('diz o motivo quando a coordenada caiu em outro bairro', () => {
+      const linhas = [linha('NF1', { geoConfiavel: false, geoMotivo: 'bairro_divergente' })]
+      const paradaLonge = parada({ id: 'p1', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -23.5, lng: -44.5 })
+      const paradasFrota = new Map([['TTL7D40', [paradaLonge]]])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, paradasFrota)
+
+      expect(d.observacao).toBe(
+        'ENDEREÇO COM COORDENADA IMPRECISA - COORDENADA CAIU EM OUTRO BAIRRO - CONFERIR CADASTRO',
+      )
+    })
+
     it('geocode confiavel (default): comportamento antigo intacto, carga transferida continua disparando', () => {
       const linhas = [linha('NF1')] // sem geoConfiavel -> tratado como confiavel
       const paradaOutraPlaca = parada({ id: 'p2', placa_norm: 'RQV6I51', classificacao: 'FORA_BASE', lat: -22.9001, lng: -43.2001 })

@@ -49,11 +49,11 @@ async function main() {
   console.log(`Escala: ${escala.length} linhas, Romaneio: ${romaneio.length} linhas`)
 
   const enderecosUnicos = [...new Set(romaneio.map(l => l.endereco))]
-  const resultadosGeo = await geocodificarEnderecos(enderecosUnicos)
+  const resultadosGeo = await geocodificarEnderecos(enderecosUnicos, { validarTerritorio: true })
   const geoPorEndereco = new Map(enderecosUnicos.map((e, i) => [e, resultadosGeo[i]]))
   const romaneioGeo: LinhaGeocodificada[] = romaneio.map(l => {
     const g = geoPorEndereco.get(l.endereco) ?? null
-    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true }
+    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: g?.motivo }
   })
   console.log(`Geocodificados: ${romaneioGeo.filter(l => l.lat != null).length}/${romaneioGeo.length}`)
 

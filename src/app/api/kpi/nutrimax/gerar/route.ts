@@ -141,12 +141,12 @@ export async function POST(req: NextRequest) {
   // lote -- eficiência e respeito ao rate-limit da cascata do lado do
   // monitoramento (ver src/lib/kpi-romaneio/geocode.ts).
   const enderecosUnicos = [...new Set(romaneio.map(l => l.endereco))]
-  const resultadosGeo = await geocodificarEnderecos(enderecosUnicos)
+  const resultadosGeo = await geocodificarEnderecos(enderecosUnicos, { validarTerritorio: true })
   const geoPorEndereco = new Map(enderecosUnicos.map((e, i) => [e, resultadosGeo[i]]))
 
   const romaneioGeo: LinhaGeocodificada[] = romaneio.map(l => {
     const g = geoPorEndereco.get(l.endereco) ?? null
-    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true }
+    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: g?.motivo }
   })
 
   const linhasPorPlaca = agrupar(romaneioGeo, l => normPlaca(l.placa))
