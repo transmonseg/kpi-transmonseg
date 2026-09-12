@@ -74,6 +74,43 @@ export function montarVisitas(
     }
   }
 
+  // Achado real 10/09 (auditoria dos 189 "problema" pos-correcao de
+  // geocode, Nutry Max dia 09/09, vila de Sana/Macae): closest-wins acima
+  // deixa NFs vizinhas SEM NADA quando varias linhas geocodificadas ficam
+  // perto umas das outras e poucas paradas (clusterizadas a 150m,
+  // ver consolidaParadasApi) disputam o mesmo grupo de clientes -- 8 de 9
+  // NFs da mesma rua confirmadas, as outras 8 a 14-350m (GPS real, 5-49min
+  // de parada) ficavam "PASSOU MAS NAO REGISTROU PARADA"/"SEM CONFIRMACAO"
+  // com evidencia de GPS genuina do lado. A ponte do monitoramento ja
+  // resolve isso pra quem tem frota cadastrada la (viaVizinhanca acima),
+  // mas Nutry Max nao tem -- essa 2a passada da o mesmo fallback pro
+  // algoritmo bruto: NF que NAO ganhou visita propria empresta o
+  // horario da visita ganha por outra NF da mesma carga, se estiver
+  // dentro do raio ampliado do SEU PROPRIO ponto. So' empresta de visita
+  // "propria" (fonte no.match, nunca ja emprestada) pra nao encadear erro.
+  const fontesEmprestaveis = [...visitas.values()].filter(v => !v.viaVizinhanca)
+  for (const linha of linhasComCoord) {
+    if (visitas.has(linha.nf)) continue
+    let melhor: { visita: Visita; dist: number } | null = null
+    for (const fonte of fontesEmprestaveis) {
+      if (fonte.nf === linha.nf) continue
+      const doadora = linhasComCoord.find(l => l.nf === fonte.nf)
+      if (!doadora) continue
+      const dist = haversine(doadora.lat, doadora.lng, linha.lat, linha.lng)
+      if (dist > RAIO_CONFIRMACAO_AMPLIADO_METROS) continue
+      if (!melhor || dist < melhor.dist) melhor = { visita: fonte, dist }
+    }
+    if (melhor) {
+      visitas.set(linha.nf, {
+        nf: linha.nf,
+        chegada: melhor.visita.chegada,
+        saida: melhor.visita.saida,
+        distanciaMetrosDoPonto: melhor.dist,
+        viaVizinhanca: true,
+      })
+    }
+  }
+
   if (visitasPorNfBridge) {
     for (const linha of linhas) {
       const doPonte = visitasPorNfBridge.get(linha.nf)

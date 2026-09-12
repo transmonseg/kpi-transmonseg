@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
   const romaneioGeo: LinhaGeocodificada[] = romaneio.map(l => {
     const g = geoPorEndereco.get(enderecoCompleto(l)) ?? null
-    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null }
+    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true }
   })
 
   const linhasPorPlaca = agrupar(romaneioGeo, l => l.placa)

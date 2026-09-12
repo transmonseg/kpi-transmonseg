@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { montarVisitas } from './visitas'
 import { haversine } from '@/lib/utils/geo'
-import { RAIO_ENTREGA_METROS } from './constants'
+import { RAIO_ENTREGA_METROS, RAIO_CONFIRMACAO_AMPLIADO_METROS } from './constants'
 import type { LinhaGeocodificada } from './types'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 
@@ -132,8 +132,12 @@ describe('montarVisitas', () => {
     // cairia em NF-B em vez de NF-C.
     const visitas = montarVisitas([lB, lC], [p])
 
-    expect(visitas.has('NF-C')).toBe(true)
-    expect(visitas.has('NF-B')).toBe(false)
+    expect(visitas.get('NF-C')).not.toHaveProperty('viaVizinhanca')
+    // Achado real 10/09 (vizinhanca local, ver 2a passada em montarVisitas):
+    // NF-B nao ganha a parada de C diretamente, mas como esta perto do
+    // ponto de C (que confirmou de verdade), empresta o horario dela --
+    // marcado distinto (viaVizinhanca), nunca como confirmacao direta.
+    expect(visitas.get('NF-B')).toMatchObject({ nf: 'NF-B', chegada: visitas.get('NF-C')!.chegada, viaVizinhanca: true })
   })
 
   it('parada classificada BASE é ignorada mesmo perto de um ponto de entrega', () => {
@@ -143,6 +147,62 @@ describe('montarVisitas', () => {
     const visitas = montarVisitas([l5], [pBase])
 
     expect(visitas.has('NF5')).toBe(false)
+  })
+
+  describe('vizinhanca local (achado real 10/09: Nutry Max nao tem frota na ponte, Sana/Macae)', () => {
+    it('NF sem parada propria dentro do raio ampliado empresta o horario de uma NF vizinha ja confirmada', () => {
+      const lGanhou = linha('NF-GANHOU', -22.9, -43.2)
+      const lVizinha = linha('NF-VIZINHA', -22.9004, -43.2) // ~44m de lGanhou, bem dentro do raio ampliado
+      const p = parada({ lat: -22.9001, lng: -43.2001, chegada: '2026-09-10T13:00:00.000Z', fim_real: '2026-09-10T13:15:00.000Z' })
+
+      const visitas = montarVisitas([lGanhou, lVizinha], [p])
+
+      expect(visitas.get('NF-GANHOU')).not.toHaveProperty('viaVizinhanca')
+      expect(visitas.get('NF-VIZINHA')).toEqual({
+        nf: 'NF-VIZINHA',
+        chegada: '2026-09-10T13:00:00.000Z',
+        saida: '2026-09-10T13:15:00.000Z',
+        distanciaMetrosDoPonto: expect.any(Number),
+        viaVizinhanca: true,
+      })
+    })
+
+    it('NF fora do raio ampliado de QUALQUER vizinha confirmada continua sem visita', () => {
+      const lGanhou = linha('NF-GANHOU', -22.9, -43.2)
+      const lLonge = linha('NF-LONGE', -22.92, -43.2) // ~2.2km de lGanhou
+      const p = parada({ lat: -22.9001, lng: -43.2001 })
+
+      const visitas = montarVisitas([lGanhou, lLonge], [p])
+
+      expect(visitas.has('NF-GANHOU')).toBe(true)
+      expect(visitas.has('NF-LONGE')).toBe(false)
+    })
+
+    it('so empresta de visita PROPRIA (nunca de uma ja emprestada) pra nao encadear erro', () => {
+      const lGanhou = linha('NF-GANHOU', -22.9, -43.2)
+      const lVizinha1 = linha('NF-VIZINHA-1', -22.9004, -43.2) // empresta de GANHOU
+      const lVizinha2 = linha('NF-VIZINHA-2', -22.9074, -43.2) // perto de VIZINHA-1 (~780m), longe demais de GANHOU (~824m)
+      const p = parada({ lat: -22.9001, lng: -43.2001, chegada: '2026-09-10T13:00:00.000Z', fim_real: '2026-09-10T13:15:00.000Z' })
+
+      const distGanhouVizinha2 = haversine(lGanhou.lat as number, lGanhou.lng as number, lVizinha2.lat as number, lVizinha2.lng as number)
+      expect(distGanhouVizinha2).toBeGreaterThan(RAIO_CONFIRMACAO_AMPLIADO_METROS) // sanity: so' alcanca via VIZINHA-1
+
+      const visitas = montarVisitas([lGanhou, lVizinha1, lVizinha2], [p])
+
+      expect(visitas.get('NF-VIZINHA-1')?.viaVizinhanca).toBe(true)
+      expect(visitas.has('NF-VIZINHA-2')).toBe(false)
+    })
+
+    it('bridge presente pra uma NF continua tendo prioridade sobre o emprestimo local', () => {
+      const lGanhou = linha('NF-GANHOU', -22.9, -43.2)
+      const lVizinha = linha('NF-VIZINHA', -22.9004, -43.2)
+      const p = parada({ lat: -22.9001, lng: -43.2001, chegada: '2026-09-10T13:00:00.000Z', fim_real: '2026-09-10T13:15:00.000Z' })
+      const bridge = new Map([['NF-VIZINHA', { chegada: null, saida: null }]]) // ponte confirma que NF-VIZINHA nunca foi visitada
+
+      const visitas = montarVisitas([lGanhou, lVizinha], [p], bridge)
+
+      expect(visitas.has('NF-VIZINHA')).toBe(false)
+    })
   })
 
   describe('visitasPorNfBridge (achado real 25/08: posicao continua real via monitoramento)', () => {

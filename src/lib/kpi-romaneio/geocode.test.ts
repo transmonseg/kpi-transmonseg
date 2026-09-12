@@ -7,6 +7,14 @@ vi.mock('@/lib/supabase/service', () => ({
 import { createServiceClient } from '@/lib/supabase/service'
 import { geocodificarEnderecos } from './geocode'
 
+// Achado 12/09: ResultadoGeocode ganhou `fonte`/`confiavel` (ver migration
+// 20260912000000). Os testes abaixo se importam com lat/lng -- normaliza pra
+// comparar so' isso, em vez de reescrever toda assercao a cada campo novo.
+function semExtras(rs: ({ lat: number; lng: number } | null)[]) {
+  return rs.map(r => (r === null ? null : { lat: r.lat, lng: r.lng }))
+}
+
+
 /** Builder de um mock minimo do client Supabase pros testes de cache:
  *  `.from('kpi_romaneio_geocode_cache').select(...).in(...)` (leitura) e
  *  `.from('kpi_romaneio_geocode_cache').upsert(...)` (escrita). */
@@ -60,7 +68,7 @@ describe('geocodificarEnderecos', () => {
       )
     )
     const r = await geocodificarEnderecos(['Rua A, 1 - Bairro, Cidade', 'Rua B, 2 - Bairro, Cidade'])
-    expect(r).toEqual([{ lat: -22.8, lng: -43.2 }, { lat: -21.7, lng: -41.3 }])
+    expect(semExtras(r)).toEqual([{ lat: -22.8, lng: -43.2 }, { lat: -21.7, lng: -41.3 }])
   })
 
   it('um endereco falha no meio -- fail-open, nao derruba os outros', async () => {
@@ -71,7 +79,7 @@ describe('geocodificarEnderecos', () => {
       )
     )
     const r = await geocodificarEnderecos(['A', 'B', 'C'])
-    expect(r).toEqual([{ lat: -22.8, lng: -43.2 }, null, { lat: -21.7, lng: -41.3 }])
+    expect(semExtras(r)).toEqual([{ lat: -22.8, lng: -43.2 }, null, { lat: -21.7, lng: -41.3 }])
   })
 
   it('entrada malformada num item nao derruba os demais', async () => {
@@ -82,31 +90,31 @@ describe('geocodificarEnderecos', () => {
       )
     )
     const r = await geocodificarEnderecos(['A', 'B', 'C'])
-    expect(r).toEqual([{ lat: -22.8, lng: -43.2 }, null, { lat: -21.7, lng: -41.3 }])
+    expect(semExtras(r)).toEqual([{ lat: -22.8, lng: -43.2 }, null, { lat: -21.7, lng: -41.3 }])
   })
 
   it('timeout/erro de rede na chamada inteira nao lanca -- devolve tudo null', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('timeout'))
     const r = await geocodificarEnderecos(['A', 'B', 'C'])
-    expect(r).toEqual([null, null, null])
+    expect(semExtras(r)).toEqual([null, null, null])
   })
 
   it('resposta HTTP de erro nao lanca -- devolve tudo null', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('', { status: 500 }))
     const r = await geocodificarEnderecos(['A', 'B'])
-    expect(r).toEqual([null, null])
+    expect(semExtras(r)).toEqual([null, null])
   })
 
   it('JSON invalido na resposta nao lanca -- devolve tudo null', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('nao e json', { status: 200 }))
     const r = await geocodificarEnderecos(['A'])
-    expect(r).toEqual([null])
+    expect(semExtras(r)).toEqual([null])
   })
 
   it("resposta sem campo 'resultados' valido nao lanca -- devolve tudo null", async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }))
     const r = await geocodificarEnderecos(['A', 'B'])
-    expect(r).toEqual([null, null])
+    expect(semExtras(r)).toEqual([null, null])
   })
 
   it('resposta menor que o pedido nao lanca nem desalinha -- preenche o resto com null', async () => {
@@ -114,14 +122,14 @@ describe('geocodificarEnderecos', () => {
       new Response(JSON.stringify({ resultados: [{ lat: -22.8, lng: -43.2 }] }), { status: 200 })
     )
     const r = await geocodificarEnderecos(['A', 'B', 'C'])
-    expect(r).toEqual([{ lat: -22.8, lng: -43.2 }, null, null])
+    expect(semExtras(r)).toEqual([{ lat: -22.8, lng: -43.2 }, null, null])
   })
 
   it('MOTOR_SECRET ausente nao chama fetch e devolve tudo null', async () => {
     delete process.env.MOTOR_SECRET
     const fetchSpy = vi.spyOn(globalThis, 'fetch')
     const r = await geocodificarEnderecos(['A', 'B'])
-    expect(r).toEqual([null, null])
+    expect(semExtras(r)).toEqual([null, null])
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
@@ -129,7 +137,7 @@ describe('geocodificarEnderecos', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('ECONNREFUSED'))
     const r = await geocodificarEnderecos(['A', 'B'])
-    expect(r).toEqual([null, null])
+    expect(semExtras(r)).toEqual([null, null])
     expect(errorSpy.mock.calls.some(args =>
       String(args[0]).includes('geocodificação falhou para 100% do lote'),
     )).toBe(true)
@@ -141,7 +149,7 @@ describe('geocodificarEnderecos', () => {
       new Response(JSON.stringify({ resultados: [null, null] }), { status: 200 }),
     )
     const r = await geocodificarEnderecos(['A', 'B'])
-    expect(r).toEqual([null, null])
+    expect(semExtras(r)).toEqual([null, null])
     expect(errorSpy.mock.calls.some(args =>
       String(args[0]).includes('geocodificação falhou para 100% do lote'),
     )).toBe(true)
@@ -186,9 +194,9 @@ describe('geocodificarEnderecos', () => {
     expect(r).toHaveLength(90)
     // Cada lote responde lat/lng = indice DENTRO do proprio lote -- resultado
     // final tem que remontar na ordem original, nao ficar embaralhado por lote.
-    expect(r[0]).toEqual({ lat: 0, lng: 0 })
-    expect(r[40]).toEqual({ lat: 0, lng: 0 }) // primeiro item do 2o lote
-    expect(r[89]).toEqual({ lat: 9, lng: 9 }) // ultimo item do 3o lote (10 itens, indice 9)
+    expect(r[0]).toMatchObject({ lat: 0, lng: 0 })
+    expect(r[40]).toMatchObject({ lat: 0, lng: 0 }) // primeiro item do 2o lote
+    expect(r[89]).toMatchObject({ lat: 9, lng: 9 }) // ultimo item do 3o lote (10 itens, indice 9)
   })
 
   it('exatamente 40 enderecos faz UMA chamada so (nao particiona sem necessidade)', async () => {
@@ -238,7 +246,7 @@ describe('geocodificarEnderecos - cache proprio', () => {
 
     const r = await geocodificarEnderecos(['Rua A'])
 
-    expect(r).toEqual([{ lat: -22.8, lng: -43.2 }])
+    expect(semExtras(r)).toEqual([{ lat: -22.8, lng: -43.2 }])
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
@@ -250,9 +258,9 @@ describe('geocodificarEnderecos - cache proprio', () => {
 
     const r = await geocodificarEnderecos(['Rua Nova'])
 
-    expect(r).toEqual([{ lat: 1, lng: 2 }])
+    expect(semExtras(r)).toEqual([{ lat: 1, lng: 2 }])
     expect(upsertMock).toHaveBeenCalledWith(
-      [{ endereco: 'Rua Nova', lat: 1, lng: 2 }],
+      [expect.objectContaining({ endereco: 'Rua Nova', lat: 1, lng: 2 })],
       { onConflict: 'endereco' },
     )
   })
@@ -266,7 +274,7 @@ describe('geocodificarEnderecos - cache proprio', () => {
     await geocodificarEnderecos(['Rua Ok', 'Rua Falhou'])
 
     expect(upsertMock).toHaveBeenCalledWith(
-      [{ endereco: 'Rua Ok', lat: 1, lng: 2 }],
+      [expect.objectContaining({ endereco: 'Rua Ok', lat: 1, lng: 2 })],
       { onConflict: 'endereco' },
     )
   })
@@ -279,7 +287,7 @@ describe('geocodificarEnderecos - cache proprio', () => {
 
     const r = await geocodificarEnderecos(['Rua Velha', 'Rua Nova'])
 
-    expect(r).toEqual([{ lat: -22.8, lng: -43.2 }, { lat: 5, lng: 6 }])
+    expect(semExtras(r)).toEqual([{ lat: -22.8, lng: -43.2 }, { lat: 5, lng: 6 }])
     expect(fetchSpy).toHaveBeenCalledTimes(1)
     expect(JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)).toEqual({ enderecos: ['Rua Nova'] })
   })
@@ -292,7 +300,7 @@ describe('geocodificarEnderecos - cache proprio', () => {
 
     const r = await geocodificarEnderecos(['Rua A'])
 
-    expect(r).toEqual([{ lat: 1, lng: 2 }])
+    expect(semExtras(r)).toEqual([{ lat: 1, lng: 2 }])
     expect(fetchSpy).toHaveBeenCalledTimes(1)
   })
 
@@ -304,7 +312,7 @@ describe('geocodificarEnderecos - cache proprio', () => {
 
     const r = await geocodificarEnderecos(['Rua A'])
 
-    expect(r).toEqual([{ lat: 1, lng: 2 }])
+    expect(semExtras(r)).toEqual([{ lat: 1, lng: 2 }])
   })
 
   it('mais de 20 enderecos particiona a leitura do cache em varias chamadas .in()', async () => {

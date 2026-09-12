@@ -31,6 +31,15 @@ export type LinhaEscala = {
 export type LinhaGeocodificada = LinhaRomaneio & {
   lat: number | null
   lng: number | null
+  // Achado real 11-12/09 (auditoria com a Ana, dias 09 e 10/09): coordenada
+  // pode existir e ainda assim estar a 20-130km do lugar certo (rua homonima
+  // de outro municipio aceita sem validacao de cidade, ou centroide de
+  // bairro). Quando false, a coordenada NAO sustenta conclusao negativa
+  // ("nao foi ao cliente") nem atribuicao de entrega a outra placa -- ver
+  // montarDetalheEntregas em agregacao.ts. Opcional: linha antiga/produtor
+  // que nao passa nada continua valendo como confiavel (comportamento
+  // anterior, nunca quebra chamador existente).
+  geoConfiavel?: boolean
   // So' preenchido pela coerencia de grupo (Rio Quality): outros pontos da
   // MESMA rua na zona, alem do escolhido -- pedido 06/09, ver visitas.ts.
   pontosAlternativos?: { lat: number; lng: number }[]

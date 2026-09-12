@@ -43,7 +43,13 @@
 
 import { createServiceClient } from '@/lib/supabase/service'
 
-export type ResultadoGeocode = { lat: number; lng: number } | null
+// Achado real 11-12/09: `confiavel` diz se da' pra tirar conclusao NEGATIVA
+// dessa coordenada. false = a ponte resolveu sem validar contra o ponto de
+// referencia da cidade (rua homonima de outro municipio passa por aqui -- ja
+// vimos 131km de erro), ou a precisao e' de bairro (fonte cnefe_bairro).
+// Coordenada assim ainda serve como pista fraca, mas NAO pode sustentar
+// "nao foi ao cliente" nem atribuir a entrega a outra placa.
+export type ResultadoGeocode = { lat: number; lng: number; fonte?: string; confiavel: boolean } | null
 
 // Teto de itens por filtro `.in()` na leitura do cache -- request GET,
 // endereco vai na URL; lote grande demais estoura tamanho de URL e o
@@ -127,7 +133,16 @@ function validarResultado(r: unknown): ResultadoGeocode {
     typeof (r as { lat?: unknown }).lat === 'number' &&
     typeof (r as { lng?: unknown }).lng === 'number'
   ) {
-    return { lat: (r as { lat: number }).lat, lng: (r as { lng: number }).lng }
+    const fonte = typeof (r as { fonte?: unknown }).fonte === 'string' ? (r as { fonte: string }).fonte : undefined
+    // Ponte antiga (sem os campos novos) => assume confiavel, mesmo default
+    // da coluna: nunca reclassifica em massa o que ja existia.
+    const validado = (r as { validado?: unknown }).validado
+    return {
+      lat: (r as { lat: number }).lat,
+      lng: (r as { lng: number }).lng,
+      fonte,
+      confiavel: typeof validado === 'boolean' ? validado : true,
+    }
   }
   return null
 }
@@ -135,8 +150,8 @@ function validarResultado(r: unknown): ResultadoGeocode {
 /** Le o que ja tiver no cache proprio pros enderecos pedidos. Fail-open:
  *  qualquer erro (conexao, tabela ausente) devolve mapa vazio -- endereco
  *  vira "faltante" e segue pro caminho lento normal, nunca trava aqui. */
-async function buscarNoCache(enderecos: string[]): Promise<Map<string, { lat: number; lng: number }>> {
-  const encontrados = new Map<string, { lat: number; lng: number }>()
+async function buscarNoCache(enderecos: string[]): Promise<Map<string, { lat: number; lng: number; fonte?: string; confiavel: boolean }>> {
+  const encontrados = new Map<string, { lat: number; lng: number; fonte?: string; confiavel: boolean }>()
 
   for (let i = 0; i < enderecos.length; i += LOTE_CACHE_LEITURA) {
     const lote = enderecos.slice(i, i + LOTE_CACHE_LEITURA)
@@ -144,14 +159,19 @@ async function buscarNoCache(enderecos: string[]): Promise<Map<string, { lat: nu
       const supabase = createServiceClient()
       const { data, error } = await supabase
         .from('kpi_romaneio_geocode_cache')
-        .select('endereco, lat, lng')
+        .select('endereco, lat, lng, fonte, confiavel')
         .in('endereco', lote)
       if (error) {
         console.error('[kpi-romaneio/geocode] leitura do cache falhou (segue sem cache):', error.message)
         continue
       }
       for (const row of data ?? []) {
-        encontrados.set(row.endereco as string, { lat: row.lat as number, lng: row.lng as number })
+        encontrados.set(row.endereco as string, {
+          lat: row.lat as number,
+          lng: row.lng as number,
+          fonte: (row as { fonte?: string | null }).fonte ?? undefined,
+          confiavel: (row as { confiavel?: boolean }).confiavel ?? true,
+        })
       }
     } catch (e) {
       console.error('[kpi-romaneio/geocode] leitura do cache falhou (segue sem cache):', e instanceof Error ? e.message : String(e))
@@ -168,8 +188,8 @@ async function buscarNoCache(enderecos: string[]): Promise<Map<string, { lat: nu
 async function salvarNoCache(enderecos: string[], resultados: ResultadoGeocode[]): Promise<void> {
   const linhas = enderecos
     .map((endereco, i) => ({ endereco, resultado: resultados[i] }))
-    .filter((x): x is { endereco: string; resultado: { lat: number; lng: number } } => x.resultado !== null)
-    .map(x => ({ endereco: x.endereco, lat: x.resultado.lat, lng: x.resultado.lng }))
+    .filter((x): x is { endereco: string; resultado: NonNullable<ResultadoGeocode> } => x.resultado !== null)
+    .map(x => ({ endereco: x.endereco, lat: x.resultado.lat, lng: x.resultado.lng, fonte: x.resultado.fonte ?? null, confiavel: x.resultado.confiavel }))
 
   if (linhas.length === 0) return
 

@@ -296,13 +296,23 @@ export function montarDetalheEntregas(
     // propria placa a 55km de distancia -- so' faz sentido atribuir a outra
     // placa quando a PROPRIA genuinamente nunca chegou perto (mesmo teto de
     // "NAO FOI AO CLIENTE" abaixo, 2km), nunca so' por nao ter confirmado.
-    const distPropria = confirmadoUnitrac || confirmadoGps || semMovimento
+    // Achado real 11-12/09 (auditoria com a Ana): coordenada nao confiavel
+    // (rua homonima de outro municipio aceita sem validacao de cidade, ou
+    // centroide de bairro -- ja vimos 22km, 27km, 131km de erro) nao pode
+    // sustentar NENHUMA conclusao por distancia. Zerar distPropria aqui
+    // desliga de uma vez: carga transferida, "NAO FOI AO CLIENTE" e
+    // "PASSOU NO ENDERECO" -- os tres saem de distPropria. O que sobra e'
+    // confirmacao POSITIVA (alvo da Unitrac, ou parada real da propria
+    // placa dentro do raio), que continua valendo: se o caminhao parou
+    // mesmo naquela coordenada, e' evidencia a favor, nao contra.
+    const geoConfiavel = linha.geoConfiavel !== false
+    const distPropria = confirmadoUnitrac || confirmadoGps || semMovimento || !geoConfiavel
       ? null
       : distanciaAteParadaPropria(linha, placaNorm, paradasPorOutraPlaca)
     const propriaPlacaPlausivelmentePerto = distPropria != null && distPropria <= RAIO_NAO_FOI_AO_CLIENTE_M
     // Carga transferida: so' quando a PROPRIA placa nao confirmou. Rastreador
     // travado (sem movimento) tem outra explicacao e nao vira "transferida".
-    const porOutraPlaca = confirmadoUnitrac || confirmadoGps || semMovimento || propriaPlacaPlausivelmentePerto
+    const porOutraPlaca = confirmadoUnitrac || confirmadoGps || semMovimento || propriaPlacaPlausivelmentePerto || !geoConfiavel
       ? null
       : acharParadaDeOutraPlaca(linha, placaNorm, paradasPorOutraPlaca)
 
@@ -370,6 +380,13 @@ export function montarDetalheEntregas(
     // acontece em chamador parcial/teste, nao deve disparar as cegas).
     if (observacao == null && status === 'pendente' && temRastreador && paradasPorOutraPlaca.has(placaNorm) && paradasProprias.length === 0) {
       observacao = 'SEM DADO DE GPS NO DIA - RASTREADOR NÃO REPORTOU NENHUMA POSIÇÃO - CONFERIR EQUIPAMENTO'
+    }
+    // Achado real 11-12/09: pendente cuja coordenada nao e' confiavel merece
+    // rotulo proprio -- o problema esta no CADASTRO do endereco, nao na
+    // entrega. Dizer "nao foi ao cliente" aqui seria acusar o motorista com
+    // base num ponto que pode estar em outro municipio.
+    if (observacao == null && status === 'pendente' && !geoConfiavel && linha.lat != null) {
+      observacao = 'ENDEREÇO COM COORDENADA IMPRECISA - CONFERIR CADASTRO (não dá pra afirmar se foi ou não)'
     }
     // Ver comentario de `diaEmAndamento` na assinatura da funcao: rota ainda
     // em andamento nunca declara falha, so' espera -- substitui qualquer

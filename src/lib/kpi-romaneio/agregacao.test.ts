@@ -360,6 +360,56 @@ describe('montarDetalheEntregas', () => {
     expect(d.observacao).toBeNull()
   })
 
+  describe('coordenada nao confiavel (achado real 11-12/09: erros de 22km/27km/131km no cache de geocode)', () => {
+    // Caso real da auditoria: a placa de origem entregou no lugar certo, mas
+    // como o ponto cadastrado estava em outro municipio, o sistema (a) nao
+    // confirmou e (b) creditou a entrega a outra placa qualquer que passou
+    // perto do ponto errado, alem de acusar "NAO FOI AO CLIENTE".
+    it('NAO atribui carga transferida quando o geocode nao e confiavel, mesmo com outra placa parada em cima do ponto', () => {
+      const linhas = [linha('NF1', { geoConfiavel: false })]
+      const paradaOutraPlaca = parada({ id: 'p2', placa_norm: 'RQV6I51', classificacao: 'FORA_BASE', lat: -22.9001, lng: -43.2001 })
+      const paradasFrota = new Map([['TTL7D40', []], ['RQV6I51', [paradaOutraPlaca]]])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, paradasFrota)
+
+      expect(d.status).toBe('pendente')
+      expect(d.observacao ?? '').not.toContain('CARGA TRANSFERIDA')
+    })
+
+    it('NAO afirma "nao foi ao cliente" com geocode nao confiavel -- rotula o problema como cadastro', () => {
+      const linhas = [linha('NF1', { geoConfiavel: false })]
+      const paradaLonge = parada({ id: 'p1', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -23.5, lng: -44.5 })
+      const paradasFrota = new Map([['TTL7D40', [paradaLonge]]])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, paradasFrota)
+
+      expect(d.observacao ?? '').not.toContain('NÃO FOI AO CLIENTE')
+      expect(d.observacao).toContain('COORDENADA IMPRECISA')
+    })
+
+    it('confirmacao POSITIVA continua valendo com geocode nao confiavel (parada real da propria placa e evidencia a favor)', () => {
+      const linhas = [linha('NF1', { geoConfiavel: false })]
+      const visitas = new Map<string, Visita>([
+        ['NF1', { nf: 'NF1', chegada: '2026-09-11T10:00:00.000Z', saida: '2026-09-11T10:20:00.000Z', distanciaMetrosDoPonto: 40 }],
+      ])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio)
+
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.observacao).toBeNull()
+    })
+
+    it('geocode confiavel (default): comportamento antigo intacto, carga transferida continua disparando', () => {
+      const linhas = [linha('NF1')] // sem geoConfiavel -> tratado como confiavel
+      const paradaOutraPlaca = parada({ id: 'p2', placa_norm: 'RQV6I51', classificacao: 'FORA_BASE', lat: -22.9001, lng: -43.2001 })
+      const paradasFrota = new Map([['TTL7D40', []], ['RQV6I51', [paradaOutraPlaca]]])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, paradasFrota)
+
+      expect(d.observacao).toBe('ENTREGUE POR OUTRA PLACA (RQV6I51) - CARGA TRANSFERIDA')
+    })
+  })
+
   describe('observacao (pedido do usuario 25/08, nivel Benassi)', () => {
     it('NF pendente + OUTRA placa da frota passou perto do ponto no dia: observacao de troca, com a placa suspeita', () => {
       const linhas = [linha('NF1')] // lat -22.9, lng -43.2, sem alvo nem visita -> pendente
