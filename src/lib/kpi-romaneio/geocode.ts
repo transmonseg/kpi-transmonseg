@@ -83,7 +83,16 @@ const LOTE_CACHE_LEITURA = 20
 // mas cada uma com chance MUITO menor de estourar e perder o lote
 // inteiro (ver tambem o retorno parcial por prazo em geocode/route.ts,
 // mesma investigacao).
-const LOTE_MAX_ENDERECOS = 40
+// Medido em producao 12/09 (relato da Ana no grupo: geracao pendurada ~35min,
+// log com "geocodificação falhou para 100% do lote" + "This operation was
+// aborted"): UM endereco novo real leva ~12s de ponta a ponta na ponte
+// (cascata + throttle do Nominatim). Com lote de 40, basta o lote ser
+// majoritariamente novo -- dia com clientes novos -- pra passar de 400s e
+// estourar tanto o prazo do KPI (300s) quanto o da ponte (280s), e ai
+// perdem-se os 40 enderecos de uma vez (fail-open devolve null pra todos).
+// Lote de 15 mantem o pior caso (~180s) dentro dos dois prazos e limita o
+// estrago de uma falha a 15 enderecos.
+const LOTE_MAX_ENDERECOS = 15
 
 // Mesma referencia que TIMEOUT_UNITRAC_MS no monitoramento (usada la pra
 // chamada de rede que pode pendurar) -- uma chamada de geocodificacao
