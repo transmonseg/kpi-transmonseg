@@ -7,7 +7,7 @@ import { hojeBR } from '@/lib/data-br'
 import { parseEscala } from '@/lib/kpi-romaneio/parse-escala'
 import { parseRomaneio } from '@/lib/kpi-romaneio/parse-romaneio'
 import { geocodificarEnderecos } from '@/lib/kpi-romaneio/geocode'
-import { buscarAlvosDoDia, buscarParadasDoDia } from '@/lib/kpi-romaneio/unitrac'
+import { buscarAlvosDoDia, buscarParadasDoDia, paradasDaPonte } from '@/lib/kpi-romaneio/unitrac'
 import { buscarHorariosBase } from '@/lib/kpi-romaneio/base-horarios'
 import { alvosDaData } from '@/lib/kpi-romaneio/alvos-data'
 import { detectarDescasamentos } from '@/lib/kpi-romaneio/avisos'
@@ -111,11 +111,18 @@ export async function POST(req: NextRequest) {
     ])
   }
 
-  if (foraDoAlcanceApi(data, hojeBR())) {
-    return new NextResponse(
-      'A API do Unitrac só alcança as últimas 48h (hoje/ontem) — não dá pra gerar KPI de uma data mais antiga.',
-      { status: 422 },
-    )
+  // Achado real 12/09: esta trava existia porque a UNICA fonte de parada era
+  // o feed da Unitrac (48h). Isso impedia reprocessar qualquer dia passado --
+  // inclusive pra medir o efeito de uma correcao de geocode, que foi
+  // exatamente o que travou a reauditoria do dia 10/09. Agora ha fonte
+  // permanente: o monitoramento guarda posicao continua e a ponte deriva as
+  // paradas dela (ver derivarParadas / paradasDaPonte). Data antiga passa a
+  // ser permitida; se nem a ponte tiver dado daquele dia, cada placa fica
+  // sem parada e o relatorio sai com as NFs sem confirmacao por GPS -- o
+  // mesmo fail-open do resto do pipeline, nunca um erro seco.
+  const foraDaJanelaUnitrac = foraDoAlcanceApi(data, hojeBR())
+  if (foraDaJanelaUnitrac) {
+    console.warn(`[kpi/nutrimax] data ${data} fora da janela de 48h da Unitrac -- usando paradas derivadas do historico do monitoramento`)
   }
 
   const [escala, romaneio] = await Promise.all([
@@ -160,7 +167,11 @@ export async function POST(req: NextRequest) {
   const [frota, alvosBrutos, horarioBasePorPlaca] = await Promise.all([
     buscarFrota(COD_USER_NUTRIMAX),
     buscarAlvosDoDia(placasNorm),
-    buscarHorariosBase(placasNorm, data, pontosPorPlacaBridge),
+    // Dia fora da janela de 48h da Unitrac: pede tambem as paradas
+    // derivadas do historico permanente do monitoramento (ver
+    // paradasDaPonte / derivarParadas). Dentro da janela nao pede -- o
+    // feed da Unitrac ja' cobre e o payload fica menor.
+    buscarHorariosBase(placasNorm, data, pontosPorPlacaBridge, foraDaJanelaUnitrac),
   ])
   const alvos = alvosDaData(alvosBrutos, data)
   const cvPorPlaca = new Map(frota.map(v => [v.placaNorm, v.cv]))
@@ -181,7 +192,11 @@ export async function POST(req: NextRequest) {
 
   await Promise.all(placasNorm.map(async placaNorm => {
     const cv = cvPorPlaca.get(placaNorm)
-    const paradas = cv ? await buscarParadasDoDia(cv, placaNorm, data, 48) : []
+    const daUnitrac = cv ? await buscarParadasDoDia(cv, placaNorm, data, 48) : []
+    // Sem parada nenhuma da Unitrac (dia fora das 48h, ou placa sem cv) mas
+    // com parada derivada do historico permanente: usa a da ponte.
+    const daPonte = horarioBasePorPlaca.get(placaNorm)?.paradas
+    const paradas = daUnitrac.length > 0 || !daPonte?.length ? daUnitrac : paradasDaPonte(daPonte, placaNorm)
     paradasPorPlaca.set(placaNorm, paradas)
     visitasPorPlaca.set(placaNorm, montarVisitas(linhasPorPlaca.get(placaNorm) ?? [], paradas, horarioBasePorPlaca.get(placaNorm)?.visitasPorNf))
     kmPorPlaca.set(placaNorm, calcularKmPercorrido(paradas))
@@ -202,8 +217,9 @@ export async function POST(req: NextRequest) {
   const placasFrotaExtra = frota.map(v => v.placaNorm).filter(p => !paradasPorPlaca.has(p))
   await Promise.all(placasFrotaExtra.map(async placaNorm => {
     const cv = cvPorPlaca.get(placaNorm)
-    const paradas = cv ? await buscarParadasDoDia(cv, placaNorm, data, 48) : []
-    paradasPorPlaca.set(placaNorm, paradas)
+    const daUnitrac = cv ? await buscarParadasDoDia(cv, placaNorm, data, 48) : []
+    const daPonte = horarioBasePorPlaca.get(placaNorm)?.paradas
+    paradasPorPlaca.set(placaNorm, daUnitrac.length > 0 || !daPonte?.length ? daUnitrac : paradasDaPonte(daPonte, placaNorm))
   }))
 
   const alvosPorPlaca = agrupar(alvos, a => a.placaNorm)

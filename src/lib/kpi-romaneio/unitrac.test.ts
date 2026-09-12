@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { buscarAlvosDoDia, buscarParadasDoDia } from './unitrac'
+import { buscarAlvosDoDia, buscarParadasDoDia, paradasDaPonte } from './unitrac'
 import { BASES_COORD_NUTRIMAX } from './constants'
 
 const { buscarFrotaMock, buscarAlvosMock, buscarStopsCruMock, consolidaParadasApiMock } = vi.hoisted(() => ({
@@ -62,5 +62,46 @@ describe('buscarParadasDoDia', () => {
     expect(buscarStopsCruMock).toHaveBeenCalledWith('111', 48)
     expect(consolidaParadasApiMock).toHaveBeenCalledWith(eventos, {}, '2026-08-20', 'TUL1C38', BASES_COORD_NUTRIMAX)
     expect(r).toEqual([{ id: 'x' }])
+  })
+})
+
+// Achado real 12/09: dia fora das 48h da Unitrac passa a usar as paradas
+// derivadas do historico permanente do monitoramento.
+describe('paradasDaPonte', () => {
+  const daPonte = [
+    { chegada: '2026-09-10T10:00:00.000Z', saida: '2026-09-10T10:20:00.000Z', duracaoSeg: 1200, lat: -22.9, lng: -43.2, classificacao: 'FORA_BASE' as const },
+    { chegada: '2026-09-10T18:00:00.000Z', saida: '2026-09-10T18:40:00.000Z', duracaoSeg: 2400, lat: -22.81, lng: -43.27, classificacao: 'BASE' as const },
+  ]
+
+  it('converte pro formato que o pipeline ja consome, preservando horario/coordenada/classificacao', () => {
+    const [fora, base] = paradasDaPonte(daPonte, 'RQU2G47')
+
+    expect(fora).toMatchObject({
+      placa_norm: 'RQU2G47',
+      chegada: '2026-09-10T10:00:00.000Z',
+      saida: '2026-09-10T10:20:00.000Z',
+      duracao_seg: 1200,
+      lat: -22.9,
+      lng: -43.2,
+      classificacao: 'FORA_BASE',
+      ordem: 1,
+    })
+    expect(base.classificacao).toBe('BASE')
+    expect(base.ordem).toBe(2)
+  })
+
+  it('fim_real coincide com a saida (a ponte devolve o fim REAL da permanencia, nao a chegada do proximo lugar)', () => {
+    const [p] = paradasDaPonte(daPonte, 'RQU2G47')
+    expect(p.fim_real).toBe(p.saida)
+  })
+
+  it('nunca inventa geofence de loja -- codigo_loja/nome_loja ficam null, mesma granularidade de buscarParadasDoDia', () => {
+    const [p] = paradasDaPonte(daPonte, 'RQU2G47')
+    expect(p.codigo_loja).toBeNull()
+    expect(p.nome_loja).toBeNull()
+  })
+
+  it('lista vazia devolve lista vazia (sem dado da ponte, pipeline segue sem parada)', () => {
+    expect(paradasDaPonte([], 'RQU2G47')).toEqual([])
   })
 })

@@ -41,6 +41,26 @@ export type HorarioBase = {
   // (500-800m) -- nem confirmacao normal, nem emprestada de vizinho. Ver
   // acharVisitasPorPonto/RAIO_AMPLIADO_M la.
   visitasPorNf?: Map<string, { chegada: string | null; saida: string | null; viaVizinhanca?: boolean; viaRaioAmpliado?: boolean }>
+  // Achado real 12/09: o feed de paradas da Unitrac (/mapa_servicos/stops)
+  // so' alcanca 48h -- passou disso, nenhum dia pode ser reprocessado. Foi o
+  // que impediu de medir o efeito das correcoes de geocode no relatorio de
+  // 10/09 (no dia 12 ja tinha saido da janela). O monitoramento guarda
+  // posicao continua PERMANENTE, entao da' pra derivar as paradas de la pra
+  // qualquer data. So' vem preenchido quando o chamador pede
+  // (`incluirParadas`), porque o payload cresce bastante.
+  paradas?: ParadaBridge[]
+}
+
+/** Parada derivada do historico continuo do monitoramento -- mesma forma
+ *  logica das paradas da Unitrac (chegada/saida/duracao/coordenada/
+ *  classificacao), so' que a partir de dado permanente e mais fino. */
+export type ParadaBridge = {
+  chegada: string
+  saida: string
+  duracaoSeg: number
+  lat: number
+  lng: number
+  classificacao: 'BASE' | 'FORA_BASE'
 }
 
 export type PontoEntregaBridge = { id: string; lat: number; lng: number }
@@ -102,6 +122,28 @@ type ResultadoBruto = {
   chegadaBase: string | null
   kmPercorrido: number | null
   visitas?: VisitaBrutaResultado[]
+  paradas?: ParadaBridge[]
+}
+
+function validarParadaBruta(p: unknown): ParadaBridge | null {
+  if (
+    typeof p === 'object' && p !== null &&
+    typeof (p as { chegada?: unknown }).chegada === 'string' &&
+    typeof (p as { saida?: unknown }).saida === 'string' &&
+    typeof (p as { lat?: unknown }).lat === 'number' &&
+    typeof (p as { lng?: unknown }).lng === 'number'
+  ) {
+    const o = p as { chegada: string; saida: string; duracaoSeg?: unknown; lat: number; lng: number; classificacao?: unknown }
+    return {
+      chegada: o.chegada,
+      saida: o.saida,
+      duracaoSeg: typeof o.duracaoSeg === 'number' ? o.duracaoSeg : 0,
+      lat: o.lat,
+      lng: o.lng,
+      classificacao: o.classificacao === 'BASE' ? 'BASE' : 'FORA_BASE',
+    }
+  }
+  return null
 }
 
 function validarResultado(r: unknown): ResultadoBruto | null {
@@ -113,9 +155,10 @@ function validarResultado(r: unknown): ResultadoBruto | null {
     ((r as { chegadaBase?: unknown }).chegadaBase === null || typeof (r as { chegadaBase?: unknown }).chegadaBase === 'string') &&
     ((r as { kmPercorrido?: unknown }).kmPercorrido === null || typeof (r as { kmPercorrido?: unknown }).kmPercorrido === 'number')
   ) {
-    const obj = r as { placa: string; saidaBase: string | null; chegadaBase: string | null; kmPercorrido: number | null; visitas?: unknown }
+    const obj = r as { placa: string; saidaBase: string | null; chegadaBase: string | null; kmPercorrido: number | null; visitas?: unknown; paradas?: unknown }
     const visitasBrutas = Array.isArray(obj.visitas) ? obj.visitas.map(validarVisitaBruta).filter((v): v is VisitaBrutaResultado => v !== null) : undefined
-    return { placa: obj.placa, saidaBase: obj.saidaBase, chegadaBase: obj.chegadaBase, kmPercorrido: obj.kmPercorrido, visitas: visitasBrutas }
+    const paradasBrutas = Array.isArray(obj.paradas) ? obj.paradas.map(validarParadaBruta).filter((v): v is ParadaBridge => v !== null) : undefined
+    return { placa: obj.placa, saidaBase: obj.saidaBase, chegadaBase: obj.chegadaBase, kmPercorrido: obj.kmPercorrido, visitas: visitasBrutas, paradas: paradasBrutas }
   }
   return null
 }
@@ -124,6 +167,7 @@ async function buscarLote(
   placas: string[],
   data: string,
   pontosPorPlaca: Map<string, PontoEntregaBridge[]>,
+  incluirParadas: boolean,
 ): Promise<Map<string, HorarioBase>> {
   const mapa = new Map<string, HorarioBase>()
   const chave = process.env.MOTOR_SECRET
@@ -148,7 +192,7 @@ async function buscarLote(
     res = await fetch(urlBaseHorarios(), {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-motor-key': chave },
-      body: JSON.stringify({ placas, data, pontosPorPlaca: pontosPorPlacaBody }),
+      body: JSON.stringify({ placas, data, pontosPorPlaca: pontosPorPlacaBody, incluirParadas }),
       signal: ctrl.signal,
     })
   } catch (e) {
@@ -180,11 +224,17 @@ async function buscarLote(
       const visitasPorNf = r.visitas
         ? new Map(r.visitas.map((v) => [v.id, { chegada: paraBrtMascaradoComoUtc(v.chegada), saida: paraBrtMascaradoComoUtc(v.saida), viaVizinhanca: v.viaVizinhanca, viaRaioAmpliado: v.viaRaioAmpliado }]))
         : undefined
+      const paradas = r.paradas?.map(p => ({
+        ...p,
+        chegada: paraBrtMascaradoComoUtc(p.chegada) as string,
+        saida: paraBrtMascaradoComoUtc(p.saida) as string,
+      }))
       mapa.set(r.placa, {
         saidaBase: paraBrtMascaradoComoUtc(r.saidaBase),
         chegadaBase: paraBrtMascaradoComoUtc(r.chegadaBase),
         kmPercorrido: r.kmPercorrido,
         visitasPorNf,
+        paradas,
       })
     }
   }
@@ -205,11 +255,12 @@ export async function buscarHorariosBase(
   placasNorm: string[],
   data: string,
   pontosPorPlaca: Map<string, PontoEntregaBridge[]> = new Map(),
+  incluirParadas = false,
 ): Promise<Map<string, HorarioBase>> {
   const mapa = new Map<string, HorarioBase>()
   for (let i = 0; i < placasNorm.length; i += MAX_PLACAS_POR_CHAMADA) {
     const lote = placasNorm.slice(i, i + MAX_PLACAS_POR_CHAMADA)
-    const doLote = await buscarLote(lote, data, pontosPorPlaca)
+    const doLote = await buscarLote(lote, data, pontosPorPlaca, incluirParadas)
     for (const [placa, horario] of doLote) mapa.set(placa, horario)
   }
   return mapa

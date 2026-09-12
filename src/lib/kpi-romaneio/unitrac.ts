@@ -26,3 +26,36 @@ export async function buscarParadasDoDia(cv: string, placaNorm: string, data: st
   // visita é nossa, feita em montarVisitas.ts contra o endereço geocodificado).
   return consolidaParadasApi(eventos, {}, data, placaNorm, BASES_COORD_NUTRIMAX)
 }
+
+// Achado real 12/09 (auditoria KPI Nutry Max): buscarStopsCru so' alcanca
+// 48h. No dia 12 nao dava mais pra reprocessar o dia 10 pra medir o efeito
+// das correcoes de geocode -- e' o mesmo teto que ja bloqueia reauditoria de
+// qualquer dia passado. O monitoramento guarda posicao continua PERMANENTE,
+// entao da' pra montar as mesmas paradas de la (ver derivarParadas na rota
+// /api/kpi/base-horarios). Converte pro formato que o resto do pipeline ja'
+// consome (UnitracParadaRow), sem geofence de loja -- BASE/FORA_BASE so',
+// mesma granularidade de buscarParadasDoDia.
+export function paradasDaPonte(
+  paradas: { chegada: string; saida: string; duracaoSeg: number; lat: number; lng: number; classificacao: 'BASE' | 'FORA_BASE' }[],
+  placaNorm: string,
+): UnitracParadaRow[] {
+  return paradas.map((p, i) => ({
+    id: `${placaNorm}-ponte-${i + 1}`,
+    placa_norm: placaNorm,
+    chegada: p.chegada,
+    saida: p.saida,
+    // A ponte devolve o fim REAL da permanencia (ultima leitura parada), nao
+    // a chegada do proximo lugar -- entao fim_real e saida coincidem aqui,
+    // diferente do feed da Unitrac (ver consolidaParadasApi).
+    fim_real: p.saida,
+    duracao_seg: p.duracaoSeg,
+    local_parada: p.classificacao === 'BASE' ? 'BASE' : 'FORA DE BASE E LOCAL DE SERVICO',
+    codigo_loja: null,
+    nome_loja: null,
+    lat: p.lat,
+    lng: p.lng,
+    endereco: null,
+    classificacao: p.classificacao,
+    ordem: i + 1,
+  }))
+}
