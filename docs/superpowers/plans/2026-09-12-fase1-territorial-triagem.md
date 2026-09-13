@@ -866,7 +866,7 @@ do KPI, que é dono da tabela.
 - Create: `MONITORAMENTO transmonseg/scripts/auditar-geocode-territorio.ts` (espelhar em `MONITORAMENTO TEMP`)
 
 **Interfaces:**
-- Consumes: funções SQL `municipio_da_coordenada` e `bairro_da_coordenada` (task 5); `expandirCidadeTruncada` e `municipioCodigoIbge` de `@/lib/romaneio-geocode-local` (já existentes).
+- Consumes: funções SQL `municipio_da_coordenada` e `distancia_ao_bairro` (task 5 — `bairro_da_coordenada` foi superseded por `distancia_ao_bairro`/Task 4b, ver `src/lib/territorio.ts`; corrigido no fix wave 12/09, Finding 9); `expandirCidadeTruncada` e `municipioCodigoIbge` de `@/lib/romaneio-geocode-local` (já existentes).
 - Produces: coluna `motivo text` em `kpi_romaneio_geocode_cache`, lida pela task 8.
 
 - [ ] **Step 1: Escrever e aplicar a migration**

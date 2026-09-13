@@ -264,6 +264,13 @@ export function montarDetalheEntregas(
   // de dia passado, ou dia de hoje mas rota ja' finalizada) pra quem nao
   // passar nada.
   diaEmAndamento: boolean = false,
+  // Fix 12/09 (revisao pos-guarda territorial, Finding 3): o rotulo de ilha
+  // (acessoSomentePorBarco, achado real da Vila do Abraao) e' especifico do
+  // romaneio da Nutry Max -- Rio Quality usa a MESMA funcao (pipeline.ts)
+  // e nao deveria herdar esse comportamento sem decisao explicita. Default
+  // false preserva Rio Quality como estava; o chamador da Nutry Max
+  // (nutrimax/gerar/route.ts) passa true.
+  verificarAcessoIlha: boolean = false,
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
 
@@ -361,7 +368,7 @@ export function montarDetalheEntregas(
     // "nao foi ao cliente" seria falso -- o caminhao genuinamente nao chega
     // la de estrada. O rotulo de ilha e' mais informativo que os dois. Ver
     // acesso-restrito.ts e a secao "Triagem" da spec de 12/09.
-    if (observacao == null && status === 'pendente' && acessoSomentePorBarco(linha.endereco)) {
+    if (observacao == null && status === 'pendente' && verificarAcessoIlha && acessoSomentePorBarco(linha.endereco)) {
       observacao = 'CLIENTE SEM ACESSO RODOVIÁRIO (ILHA) - CONFERIR COM A OPERAÇÃO'
     }
     // Nomenclatura por evidencia de GPS -- so' pra quem ficou sem confirmacao.

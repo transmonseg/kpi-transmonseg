@@ -11,8 +11,20 @@
 //     "ENDERECO EXATO COMO APARECE NO ROMANEIO" <lat> <lng>
 import { createServiceClient } from '../src/lib/supabase/service'
 
-function normalizarEndereco(enderecoBruto: string): string {
+export function normalizarEndereco(enderecoBruto: string): string {
   return enderecoBruto.trim().toUpperCase().replace(/\s+/g, ' ')
+}
+
+/** Payload do upsert -- extraido pra funcao pura testavel sem rede.
+ *  Fix 12/09 (revisao pos-guarda territorial): um humano digitando lat/lng
+ *  na mao ESTA acima da guarda automatica (src/lib/territorio.ts, monitoramento)
+ *  -- e' exatamente o sinal que a flag confiavel/motivo deveria respeitar.
+ *  Sem isso, corrigir um endereco marcado bairro_divergente/municipio_divergente
+ *  deixava confiavel=false e motivo preenchido pra sempre, e o relatorio
+ *  continuava imprimindo "COORDENADA CAIU EM OUTRO BAIRRO - CONFERIR CADASTRO"
+ *  sobre um ponto ja correto. */
+export function montarPayloadCadastroManual(enderecoBruto: string, lat: number, lng: number) {
+  return { endereco: normalizarEndereco(enderecoBruto), lat, lng, confiavel: true, motivo: null as null }
 }
 
 async function main() {
@@ -27,14 +39,18 @@ async function main() {
     console.error('lat/lng invalidos')
     process.exit(1)
   }
-  const endereco = normalizarEndereco(enderecoBruto)
+  const payload = montarPayloadCadastroManual(enderecoBruto, lat, lng)
   const supabase = createServiceClient()
-  const { error } = await supabase.from('kpi_romaneio_geocode_cache').upsert({ endereco, lat, lng }, { onConflict: 'endereco' })
+  const { error } = await supabase
+    .from('kpi_romaneio_geocode_cache')
+    .upsert(payload, { onConflict: 'endereco' })
   if (error) {
     console.error('Erro ao gravar:', error.message)
     process.exit(1)
   }
-  console.log(`Cadastrado: "${endereco}" -> ${lat},${lng}`)
+  console.log(`Cadastrado: "${payload.endereco}" -> ${lat},${lng}`)
 }
 
-main().catch(e => { console.error(e); process.exit(1) })
+if (process.env.VITEST !== 'true') {
+  main().catch(e => { console.error(e); process.exit(1) })
+}

@@ -25,6 +25,15 @@ export const runtime = 'nodejs'
 // lote) -- um dia com muitas placas pode passar do default de 10s da Vercel.
 export const maxDuration = 60
 
+// Fix 12/09 (Finding 8): `motivo` chega da ponte HTTP/cache como `string`
+// solto (ResultadoGeocode em geocode.ts) -- narrow explicito pro union real
+// de LinhaGeocodificada['geoMotivo'] em vez de crashar o build ou usar `as`
+// as cegas. Qualquer valor fora dos dois conhecidos vira undefined (mesmo
+// fail-open do resto do arquivo: motivo desconhecido nao sustenta rotulo).
+export function narrowGeoMotivo(motivo: string | undefined): 'municipio_divergente' | 'bairro_divergente' | undefined {
+  return motivo === 'municipio_divergente' || motivo === 'bairro_divergente' ? motivo : undefined
+}
+
 function agrupar<T>(itens: T[], chave: (item: T) => string): Map<string, T[]> {
   const mapa = new Map<string, T[]>()
   for (const item of itens) {
@@ -146,7 +155,7 @@ export async function POST(req: NextRequest) {
 
   const romaneioGeo: LinhaGeocodificada[] = romaneio.map(l => {
     const g = geoPorEndereco.get(l.endereco) ?? null
-    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: g?.motivo }
+    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: narrowGeoMotivo(g?.motivo) }
   })
 
   const linhasPorPlaca = agrupar(romaneioGeo, l => normPlaca(l.placa))
@@ -284,6 +293,9 @@ export async function POST(req: NextRequest) {
         // chegadaCd null e' outra coisa (rota que genuinamente nunca voltou),
         // nao deve virar "aguardando".
         data === hojeBR() && (resumo?.chegadaCd ?? null) == null,
+        // Fix 12/09 (Finding 3): rotulo de ilha (Vila do Abraao) e' so' desta
+        // pipeline -- ver comentario de verificarAcessoIlha em agregacao.ts.
+        true,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

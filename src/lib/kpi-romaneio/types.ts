@@ -40,10 +40,15 @@ export type LinhaGeocodificada = LinhaRomaneio & {
   // que nao passa nada continua valendo como confiavel (comportamento
   // anterior, nunca quebra chamador existente).
   geoConfiavel?: boolean
-  /** Por que geoConfiavel e' false -- "municipio_divergente" |
-   *  "bairro_divergente". Ausente quando a coordenada e' confiavel ou quando a
-   *  suspeita veio de outra origem (fonte cnefe_bairro). */
-  geoMotivo?: string
+  /** Por que geoConfiavel e' false. Ausente quando a coordenada e' confiavel
+   *  ou quando a suspeita veio de outra origem (fonte cnefe_bairro).
+   *  Fix 12/09 (Finding 8): union estreita, nao `string` solto -- os dois
+   *  literais comparados em agregacao.ts (`=== 'municipio_divergente'` /
+   *  `=== 'bairro_divergente'`) ficavam sem checagem de tipo. Fonte da
+   *  verdade e' `MotivoTerritorio` em MONITORAMENTO/src/lib/territorio.ts;
+   *  repositorios nao se importam entre si, entao o literal e' duplicado
+   *  aqui de proposito -- manter os dois em sincronia manualmente. */
+  geoMotivo?: 'municipio_divergente' | 'bairro_divergente'
   // So' preenchido pela coerencia de grupo (Rio Quality): outros pontos da
   // MESMA rua na zona, alem do escolhido -- pedido 06/09, ver visitas.ts.
   pontosAlternativos?: { lat: number; lng: number }[]
