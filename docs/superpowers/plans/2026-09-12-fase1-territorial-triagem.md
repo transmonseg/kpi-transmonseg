@@ -342,7 +342,20 @@ describe("validarTerritorio - municipio", () => {
 });
 ```
 
-Sobre o quarto teste: uma coordenada em Espírito Santo (o caso real de `AV SANTA CLARA, 8 - SANTA CLARA, PORCIUNCULA`, que foi parar em `-20.822, -41.910`) não cai em nenhum polígono do RJ. Reprovar por isso seria tentador, mas a malha carregada é só do RJ e o cliente pode um dia ter endereço em outro estado — a task 7 pega esse caso pela auditoria, não pela guarda em tempo real. Fail-open aqui é deliberado.
+Sobre o quarto teste: uma coordenada que não cai em nenhum polígono do RJ (por
+exemplo, um endereço em outro estado) é aprovada de propósito. A malha carregada
+cobre só o Rio de Janeiro, então "nenhum polígono contém este ponto" significa
+"não sei julgar", não "está errado". Quem pega essa classe é a auditoria, não a
+guarda em tempo real. Fail-open aqui é deliberado.
+
+**Correção de 13/09:** a versão anterior deste parágrafo citava
+`AV SANTA CLARA, 8 - SANTA CLARA, PORCIUNCULA` (`-20.822, -41.910`) como exemplo
+real de coordenada no Espírito Santo. **Isso estava errado** — a verificação
+placa a placa conferiu por três métodos independentes (polígono IBGE via
+`municipio_da_coordenada`, Nominatim e CNEFE) e os três devolvem Porciúncula/RJ,
+município 3304102, localidade rural Santa Clara. A coordenada está certa, nunca
+entrou na lista dos 100 erros comprovados e não está marcada em produção. O
+comportamento fail-open descrito acima continua correto; só o exemplo era falso.
 
 - [ ] **Step 2: Rodar os testes e ver falhar**
 
