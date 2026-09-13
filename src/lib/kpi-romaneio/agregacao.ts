@@ -5,6 +5,7 @@ import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import type { LinhaEscala, LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega, Visita } from './types'
 import { haversine } from '@/lib/utils/geo'
 import { RAIO_ENTREGA_METROS } from './constants'
+import { acessoSomentePorBarco } from './acesso-restrito'
 
 function minutosEntre(a: string, b: string): number {
   return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 60000)
@@ -351,6 +352,17 @@ export function montarDetalheEntregas(
     // distinta no relatorio, nunca como confirmacao normal.
     if (observacao == null && visita?.viaRaioAmpliado) {
       observacao = 'ENTREGUE - PARADA PRÓXIMA (500-800m) MAS DENTRO DA ROTA - CONFERIR'
+    }
+    // Achado real 12/09 (auditoria do dia 11/09): 9 NFs na Vila do Abraao,
+    // Ilha Grande, saiam como falha todo dia -- nao e' erro de geocodificacao
+    // nem cadastro errado, so' se chega la de barco. Roda ANTES da
+    // nomenclatura por distancia (abaixo) e antes da checagem de geoConfiavel
+    // (mais abaixo): uma coordenada CORRETA numa ilha nao e' "imprecisa", e
+    // "nao foi ao cliente" seria falso -- o caminhao genuinamente nao chega
+    // la de estrada. O rotulo de ilha e' mais informativo que os dois. Ver
+    // acesso-restrito.ts e a secao "Triagem" da spec de 12/09.
+    if (observacao == null && status === 'pendente' && acessoSomentePorBarco(linha.endereco)) {
+      observacao = 'CLIENTE SEM ACESSO RODOVIÁRIO (ILHA) - CONFERIR COM A OPERAÇÃO'
     }
     // Nomenclatura por evidencia de GPS -- so' pra quem ficou sem confirmacao.
     // Reusa distPropria (mesmo calculo do guard de carga transferida acima).

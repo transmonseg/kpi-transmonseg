@@ -434,6 +434,25 @@ describe('montarDetalheEntregas', () => {
     })
   })
 
+  describe('cliente sem acesso rodoviario (achado real 12/09: Vila do Abraao, Ilha Grande)', () => {
+    it('marca cliente sem acesso rodoviario em vez de "nao foi ao cliente"', () => {
+      const linhas = [
+        linha('NF1', {
+          endereco: 'RUA SANTANA, 58 - VILA DO ABRAAO ILHA GRANDE, ANGRA DOS REIS - PARTE',
+          lat: -23.141789,
+          lng: -44.167027,
+          geoConfiavel: true,
+        }),
+      ]
+      const paradaLonge = parada({ id: 'p1', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -23.0, lng: -44.3 })
+      const paradasFrota = new Map([['TTL7D40', [paradaLonge]]])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, paradasFrota)
+
+      expect(d.observacao).toBe('CLIENTE SEM ACESSO RODOVIÁRIO (ILHA) - CONFERIR COM A OPERAÇÃO')
+    })
+  })
+
   describe('observacao (pedido do usuario 25/08, nivel Benassi)', () => {
     it('NF pendente + OUTRA placa da frota passou perto do ponto no dia: observacao de troca, com a placa suspeita', () => {
       const linhas = [linha('NF1')] // lat -22.9, lng -43.2, sem alvo nem visita -> pendente
