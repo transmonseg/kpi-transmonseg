@@ -10,7 +10,7 @@ import { parseEscala } from '../src/lib/kpi-romaneio/parse-escala'
 import { parseRomaneio } from '../src/lib/kpi-romaneio/parse-romaneio'
 import { geocodificarEnderecos } from '../src/lib/kpi-romaneio/geocode'
 import { buscarFrota, normPlaca } from '../src/lib/unitrac-api'
-import { buscarAlvosDoDia, buscarParadasDoDia, paradasDaPonte } from '../src/lib/kpi-romaneio/unitrac'
+import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '../src/lib/kpi-romaneio/unitrac'
 import { buscarHorariosBase } from '../src/lib/kpi-romaneio/base-horarios'
 import { alvosDaData } from '../src/lib/kpi-romaneio/alvos-data'
 import { montarVisitas } from '../src/lib/kpi-romaneio/visitas'
@@ -98,7 +98,7 @@ async function main() {
       }
     }
     const daPonte = horarioBasePorPlaca.get(placaNorm)?.paradas
-    if (paradas.length === 0 && daPonte?.length) paradas = paradasDaPonte(daPonte, placaNorm)
+    paradas = resolverParadas(paradas, daPonte, placaNorm, foraDaJanelaUnitrac)
     paradasPorPlaca.set(placaNorm, paradas)
     visitasPorPlaca.set(placaNorm, montarVisitas(linhasPorPlaca.get(placaNorm) ?? [], paradas, horarioBasePorPlaca.get(placaNorm)?.visitasPorNf))
     kmPorPlaca.set(placaNorm, calcularKmPercorrido(paradas))
@@ -122,7 +122,7 @@ async function main() {
       }
     }
     const daPonteExtra = horarioBasePorPlaca.get(placaNorm)?.paradas
-    if (paradas.length === 0 && daPonteExtra?.length) paradas = paradasDaPonte(daPonteExtra, placaNorm)
+    paradas = resolverParadas(paradas, daPonteExtra, placaNorm, foraDaJanelaUnitrac)
     paradasPorPlaca.set(placaNorm, paradas)
   }
 

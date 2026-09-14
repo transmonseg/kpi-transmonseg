@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { buscarAlvosDoDia, buscarParadasDoDia, paradasDaPonte } from './unitrac'
+import { buscarAlvosDoDia, buscarParadasDoDia, paradasDaPonte, resolverParadas } from './unitrac'
 import { BASES_COORD_NUTRIMAX } from './constants'
 
 const { buscarFrotaMock, buscarAlvosMock, buscarStopsCruMock, consolidaParadasApiMock } = vi.hoisted(() => ({
@@ -103,5 +103,39 @@ describe('paradasDaPonte', () => {
 
   it('lista vazia devolve lista vazia (sem dado da ponte, pipeline segue sem parada)', () => {
     expect(paradasDaPonte([], 'RQU2G47')).toEqual([])
+  })
+})
+
+// Achado real 11/09 (regeneracao do dia 11 feita em 13/09): a Unitrac conta
+// as 48h pra tras de AGORA, nao da data pedida -- regenerar um dia de dois
+// dias atras devolve so' uma FATIA parcial daquele dia (tipicamente so' as
+// horas de madrugada, caminhao parado na base). Escolher a fonte por
+// "a API devolveu algo?" faz esse retalho passar como se fosse o dia
+// inteiro, e agregacao.ts conclui NUNCA SAIU DA BASE. A escolha tem que ser
+// por "a data pedida esta fora do alcance da API?", nao por len>0.
+describe('resolverParadas', () => {
+  const daPonteEx = [
+    { chegada: '2026-09-11T10:00:00.000Z', saida: '2026-09-11T10:20:00.000Z', duracaoSeg: 1200, lat: -22.9, lng: -43.2, classificacao: 'FORA_BASE' as const },
+  ]
+  const daUnitracParcial = [{ id: 'so-madrugada-na-base' }] as unknown as import('@/lib/kpi/matcher').UnitracParadaRow[]
+
+  it('fora da janela: usa a ponte mesmo com a Unitrac tendo devolvido uma fatia parcial (o bug real)', () => {
+    const r = resolverParadas(daUnitracParcial, daPonteEx, 'RQU2G47', true)
+    expect(r).toEqual(paradasDaPonte(daPonteEx, 'RQU2G47'))
+  })
+
+  it('fora da janela sem dado nenhum na ponte: cai pro que a Unitrac devolveu (fail-open, nunca erro seco)', () => {
+    const r = resolverParadas(daUnitracParcial, undefined, 'RQU2G47', true)
+    expect(r).toBe(daUnitracParcial)
+  })
+
+  it('dentro da janela com dado da Unitrac: comportamento de hoje intocado, usa a Unitrac mesmo com ponte disponivel', () => {
+    const r = resolverParadas(daUnitracParcial, daPonteEx, 'RQU2G47', false)
+    expect(r).toBe(daUnitracParcial)
+  })
+
+  it('dentro da janela sem dado nenhum da Unitrac: comportamento de hoje intocado, cai pra ponte', () => {
+    const r = resolverParadas([], daPonteEx, 'RQU2G47', false)
+    expect(r).toEqual(paradasDaPonte(daPonteEx, 'RQU2G47'))
   })
 })

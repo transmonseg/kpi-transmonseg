@@ -53,6 +53,35 @@ export async function buscarParadasDoDia(cv: string, placaNorm: string, data: st
 // Proximo passo pra fechar essa lacuna: persistir as paradas da Unitrac no
 // momento da geracao (elas ja sao buscadas), pra que reprocessar um dia
 // antigo use exatamente a mesma entrada que gerou os numeros originais.
+// Achado real 11/09 (regeneracao do dia 11 feita em 13/09): dentro dessa
+// mesma janela de 48h, buscarStopsCru conta as horas PRA TRAS DE AGORA, nao
+// da data pedida. Regenerar um dia de dois dias atras faz a Unitrac devolver
+// so' a FATIA do dia que ainda cabe nas 48h -- normalmente so' a madrugada,
+// caminhao parado na base. A escolha de fonte NAO PODE ser "a API devolveu
+// algo?" (daUnitrac.length > 0), porque esse retalho tem length>0 e passa
+// como se fosse o dia inteiro -- agregacao.ts conclui NUNCA SAIU DA BASE pra
+// toda placa cujas paradas sobreviventes sao so' de base (313 NFs marcadas
+// erradas em producao). A escolha certa e' por "a data pedida esta fora do
+// alcance da API?" (foraDaJanela, ver foraDoAlcanceApi em constants.ts) --
+// so' isso decide se o feed parcial da Unitrac e' confiavel ou nao.
+export function resolverParadas(
+  daUnitrac: UnitracParadaRow[],
+  daPonte: { chegada: string; saida: string; duracaoSeg: number; lat: number; lng: number; classificacao: 'BASE' | 'FORA_BASE' }[] | undefined,
+  placaNorm: string,
+  foraDaJanela: boolean,
+): UnitracParadaRow[] {
+  if (foraDaJanela) {
+    // Fora do alcance da API: o feed da Unitrac e' no maximo uma fatia
+    // parcial (nunca o dia inteiro) -- prefere a ponte sempre que ela tiver
+    // dado. So' cai pro que a Unitrac devolveu se a ponte tambem nao tiver
+    // nada (fail-open, nunca erro seco).
+    return daPonte?.length ? paradasDaPonte(daPonte, placaNorm) : daUnitrac
+  }
+  // Dentro da janela: comportamento de sempre, intocado -- a Unitrac cobre o
+  // dia inteiro, so' usa a ponte se a Unitrac nao devolveu nada.
+  return daUnitrac.length > 0 || !daPonte?.length ? daUnitrac : paradasDaPonte(daPonte, placaNorm)
+}
+
 export function paradasDaPonte(
   paradas: { chegada: string; saida: string; duracaoSeg: number; lat: number; lng: number; classificacao: 'BASE' | 'FORA_BASE' }[],
   placaNorm: string,

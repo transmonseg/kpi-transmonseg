@@ -7,7 +7,7 @@ import { hojeBR } from '@/lib/data-br'
 import { parseEscala } from '@/lib/kpi-romaneio/parse-escala'
 import { parseRomaneio } from '@/lib/kpi-romaneio/parse-romaneio'
 import { geocodificarEnderecos } from '@/lib/kpi-romaneio/geocode'
-import { buscarAlvosDoDia, buscarParadasDoDia, paradasDaPonte } from '@/lib/kpi-romaneio/unitrac'
+import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '@/lib/kpi-romaneio/unitrac'
 import { buscarHorariosBase } from '@/lib/kpi-romaneio/base-horarios'
 import { alvosDaData } from '@/lib/kpi-romaneio/alvos-data'
 import { detectarDescasamentos } from '@/lib/kpi-romaneio/avisos'
@@ -205,7 +205,7 @@ export async function POST(req: NextRequest) {
     // Sem parada nenhuma da Unitrac (dia fora das 48h, ou placa sem cv) mas
     // com parada derivada do historico permanente: usa a da ponte.
     const daPonte = horarioBasePorPlaca.get(placaNorm)?.paradas
-    const paradas = daUnitrac.length > 0 || !daPonte?.length ? daUnitrac : paradasDaPonte(daPonte, placaNorm)
+    const paradas = resolverParadas(daUnitrac, daPonte, placaNorm, foraDaJanelaUnitrac)
     paradasPorPlaca.set(placaNorm, paradas)
     visitasPorPlaca.set(placaNorm, montarVisitas(linhasPorPlaca.get(placaNorm) ?? [], paradas, horarioBasePorPlaca.get(placaNorm)?.visitasPorNf))
     kmPorPlaca.set(placaNorm, calcularKmPercorrido(paradas))
@@ -228,7 +228,7 @@ export async function POST(req: NextRequest) {
     const cv = cvPorPlaca.get(placaNorm)
     const daUnitrac = cv ? await buscarParadasDoDia(cv, placaNorm, data, 48) : []
     const daPonte = horarioBasePorPlaca.get(placaNorm)?.paradas
-    paradasPorPlaca.set(placaNorm, daUnitrac.length > 0 || !daPonte?.length ? daUnitrac : paradasDaPonte(daPonte, placaNorm))
+    paradasPorPlaca.set(placaNorm, resolverParadas(daUnitrac, daPonte, placaNorm, foraDaJanelaUnitrac))
   }))
 
   const alvosPorPlaca = agrupar(alvos, a => a.placaNorm)
