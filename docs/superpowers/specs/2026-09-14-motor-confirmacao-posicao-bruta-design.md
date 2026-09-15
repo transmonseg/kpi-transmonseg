@@ -233,3 +233,61 @@ domínio (rastreamento de frota via API proprietária) — os skills instalados
 neste ambiente (Superpowers, GSAP, genjutsu) não cobrem geoespacial/telemetria;
 a pesquisa serviu para validar a direção do desenho contra prática de mercado,
 não para importar uma ferramenta pronta.
+
+## Resultado medido
+
+Deploy inicial (Task 7, 14/09) achou uma regressão real antes de ir ao ar
+definitivamente: "VEÍCULO SEM MOVIMENTO NO DIA" no dia 12/09 subiu de 43
+(baseline Fase 2) para 155. Verificação em GPS bruto de 5 placas amostradas
+(RQV6I51, RBI0J25, TOS1H26, RQU8D91, RQU4B93) confirmou 5/5 falso positivo —
+todas percorreram 90+km com velocidade até 95km/h no mesmo dia.
+
+**Causa raiz**: pico breve de atraso de sinal (20-46min) em cada placa ligava
+`apagaoDeSinal=true`; o gate `apagaoDeSinal && daUnitrac.length > 0` então
+aceitava a parada da Unitrac -- mas a Unitrac devolvia, pra cada uma, uma
+ÚNICA parada "BASE" que nunca fechou (chegada no dia pedido, saída só em
+"hoje"), dado degenerado do lado deles, não um catch-up real. O item 3a não
+protegia porque só valida paradas FORA_BASE.
+
+**Conserto**: `descartarParadaAbertaAlemDoDia` (unitrac.ts) descarta qualquer
+parada (BASE ou FORA_BASE) da Unitrac cujo fechamento caia em hoje ou depois,
+quando o dia pedido é passado -- roda antes de qualquer outra checagem, então
+o array vazio resultante já aciona o fallback pra ponte que `resolverParadas`
+já tinha pra "Unitrac não devolveu nada". Aplicado também no pipeline da Rio
+Quality, que monta seu `daUnitrac` fora de `buscarParadasDoDia` e por isso não
+herdava o conserto automaticamente.
+
+**Dia 12/09, depois do conserto** (comparado ao baseline Fase 2 / ao resultado
+com o bug):
+
+| Métrica | Fase 2 (baseline) | Com o bug | Depois do conserto |
+|---|---|---|---|
+| CONFIRMADO (GPS) | 1308 | 1308 | 1308 |
+| VEÍCULO SEM MOVIMENTO NO DIA | 43 | 155 | **43** |
+| SEM CONFIRMAÇÃO | 64 | 34 | 63 |
+| NÃO FOI AO CLIENTE | 56 | 24 | 57 |
+
+As 5 placas amostradas voltaram a status normais (CONFIRMADO/SEM CONFIRMAÇÃO/
+NÃO FOI AO CLIENTE), condizentes com o GPS bruto. As duas linhas com diferença
+de 1 unidade contra o baseline (63 vs 64, 57 vs 56) não reapareceram nas 5
+placas verificadas -- não são o mesmo defeito, provável reclassificação
+pontual de 1 caso pela ponte virando fonte primária (efeito esperado desta
+fase, não regressão).
+
+**Dia 11/09**: resultado idêntico antes/depois do conserto (1711 CONFIRMADO,
+zero "VEÍCULO SEM MOVIMENTO") -- esse dia não exibia o padrão degenerado, o
+conserto não alterou nada nele (confirma que o filtro não é destrutivo fora
+do caso que ele mira).
+
+**Quantas placas/dias tiveram `apagaoDeSinal:true`**: não recontado
+separadamente nesta rodada (medido antes, ver spec Fase 2/motor: 25,7% dos
+plate/dias numa amostra de 7 dias têm alguma leitura de sinal degradado —
+número que já motivou o cuidado de não zerar o dia inteiro nesses casos).
+
+**Rio Quality**: pipeline recebeu o mesmo conserto por análise de código
+(mesma vulnerabilidade estrutural, `daUnitrac` montado do mesmo jeito); sem
+arquivo de entrada real disponível nesta sessão pra rodar geração completa —
+cobertura de teste unitário (`pipeline.test.ts`) inclui o caso real
+reproduzido (parada BASE aberta até hoje, dia pedido no passado → `[]`).
+Pendente: rodar geração real na próxima vez que houver dado de entrada
+disponível, como fechamento formal do Step 4 do plano.
