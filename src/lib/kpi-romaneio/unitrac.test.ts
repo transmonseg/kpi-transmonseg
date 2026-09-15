@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { buscarAlvosDoDia, buscarParadasDoDia, paradasDaPonte, resolverParadas } from './unitrac'
 import { BASES_COORD_NUTRIMAX } from './constants'
 import { RAIO_CLUSTER_M } from '@/lib/unitrac-api/consolida'
+import { hojeBR } from '@/lib/data-br'
 
 const { buscarFrotaMock, buscarAlvosMock, buscarStopsCruMock, consolidaParadasApiMock } = vi.hoisted(() => ({
   buscarFrotaMock: vi.fn(),
@@ -163,6 +164,85 @@ describe('buscarParadasDoDia -- 3a, valida FORA_BASE contra GPS proprio', () => 
 
     expect(consultarVelocidadeNaParadaMock).not.toHaveBeenCalled()
     expect(r).toEqual([paradaBase])
+  })
+})
+
+// Achado real 14/09 (Task 7 do motor de confirmacao, regressao medida em
+// producao): ao reprocessar um dia PASSADO, a Unitrac pode devolver uma
+// UNICA parada BASE que nunca fechou -- chegada no dia pedido, saida/
+// fim_real so' em HOJE, como se o veiculo ainda estivesse la agora. Caso
+// real 12/09 (RQV6I51 e outras 4 placas): GPS proprio mostrou 90+km
+// percorridos e velocidade ate 95km/h no mesmo dia -- a parada e' lixo de
+// API. Datas construidas relativas a hojeBR() pra nao depender de qual dia
+// e' "hoje" quando a suite rodar.
+function subtrairDias(dataBase: string, dias: number): string {
+  const d = new Date(`${dataBase}T00:00:00`)
+  d.setDate(d.getDate() - dias)
+  return d.toISOString().slice(0, 10)
+}
+
+describe('buscarParadasDoDia -- descarta parada BASE que nunca fechou (aberta ate hoje) num dia passado', () => {
+  const hoje = hojeBR()
+  const diaPassado = subtrairDias(hoje, 3)
+  const paradaAbertaAteHoje = {
+    id: 'p-aberta', placa_norm: 'RQV6I51',
+    chegada: `${diaPassado}T23:09:00.000Z`, saida: `${hoje}T07:12:00.000Z`, fim_real: `${hoje}T07:12:00.000Z`,
+    duracao_seg: 115_380, lat: -21.6885, lng: -41.3114, classificacao: 'BASE',
+  } as const
+  const paradaFechadaNoDia = {
+    id: 'p-fechada', placa_norm: 'RQV6I51',
+    chegada: `${diaPassado}T10:00:00.000Z`, saida: `${diaPassado}T10:30:00.000Z`, fim_real: `${diaPassado}T10:30:00.000Z`,
+    duracao_seg: 1800, lat: -21.6885, lng: -41.3114, classificacao: 'BASE',
+  } as const
+
+  it('parada BASE que so fecha hoje, pedida pra dia passado: descarta (array fica vazio)', async () => {
+    buscarStopsCruMock.mockResolvedValue([])
+    consolidaParadasApiMock.mockReturnValue([paradaAbertaAteHoje])
+
+    const r = await buscarParadasDoDia('111', 'RQV6I51', diaPassado, 48)
+
+    expect(r).toEqual([])
+  })
+
+  it('parada BASE que fechou dentro do proprio dia passado: mantem', async () => {
+    buscarStopsCruMock.mockResolvedValue([])
+    consolidaParadasApiMock.mockReturnValue([paradaFechadaNoDia])
+
+    const r = await buscarParadasDoDia('111', 'RQV6I51', diaPassado, 48)
+
+    expect(r).toEqual([paradaFechadaNoDia])
+  })
+
+  it('mistura: descarta so a aberta, mantem a fechada', async () => {
+    buscarStopsCruMock.mockResolvedValue([])
+    consolidaParadasApiMock.mockReturnValue([paradaFechadaNoDia, paradaAbertaAteHoje])
+
+    const r = await buscarParadasDoDia('111', 'RQV6I51', diaPassado, 48)
+
+    expect(r).toEqual([paradaFechadaNoDia])
+  })
+
+  it('pedido pro dia de HOJE: parada ainda aberta e normal, nao descarta', async () => {
+    buscarStopsCruMock.mockResolvedValue([])
+    const aindaAberta = { ...paradaAbertaAteHoje, chegada: `${hoje}T05:00:00.000Z` }
+    consolidaParadasApiMock.mockReturnValue([aindaAberta])
+
+    const r = await buscarParadasDoDia('111', 'RQV6I51', hoje, 48)
+
+    expect(r).toEqual([aindaAberta])
+  })
+
+  it('parada FORA_BASE tambem e descartada pelo mesmo criterio (nao so BASE)', async () => {
+    buscarStopsCruMock.mockResolvedValue([])
+    const foraBaseAberta = { ...paradaAbertaAteHoje, id: 'p-fora-aberta', classificacao: 'FORA_BASE' as const }
+    consolidaParadasApiMock.mockReturnValue([foraBaseAberta])
+    consultarVelocidadeNaParadaMock.mockResolvedValue([{ temParadaComVelocidade: true, temCobertura: true }])
+
+    const r = await buscarParadasDoDia('111', 'RQV6I51', diaPassado, 48)
+
+    expect(r).toEqual([])
+    // descartada ANTES da checagem 3a -- nunca chega a consultar a ponte
+    expect(consultarVelocidadeNaParadaMock).not.toHaveBeenCalled()
   })
 })
 

@@ -9,6 +9,7 @@ import { RAIO_CLUSTER_M } from '@/lib/unitrac-api/consolida'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { COD_USER_NUTRIMAX, BASES_COORD_NUTRIMAX } from './constants'
 import { consultarVelocidadeNaParada } from './velocidade-parada'
+import { hojeBR } from '@/lib/data-br'
 
 /** Alvos (plano de entregas) do dia pras placas da escala. Resolve placa → cv
  *  via frota da conta Nutrimax; placa sem correspondência na frota é ignorada
@@ -31,7 +32,29 @@ export async function buscarParadasDoDia(cv: string, placaNorm: string, data: st
   // exatamente a granularidade que queremos (a classificação real de
   // visita é nossa, feita em montarVisitas.ts contra o endereço geocodificado).
   const paradas = consolidaParadasApi(eventos, {}, data, placaNorm, BASES_COORD_NUTRIMAX)
-  return validarParadasContraGpsProprio(paradas, placaNorm)
+  return validarParadasContraGpsProprio(descartarParadaAbertaAlemDoDia(paradas, data), placaNorm)
+}
+
+// Achado real 14/09 (Task 7 do motor de confirmacao): ao reprocessar um dia
+// PASSADO durante um apagao de sinal, a Unitrac pode devolver uma UNICA
+// parada BASE que nunca fechou -- chegada no dia pedido, saida/fim_real so'
+// na data de HOJE (ou depois), como se o veiculo ainda estivesse la agora.
+// Caso real 12/09 (RQV6I51/RBI0J25/TOS1H26/RQU8D91/RQU4B93): GPS proprio
+// (posicoes_historico) mostra 90+km percorridos e velocidade ate 95km/h no
+// mesmo dia -- a parada e' lixo de API (geofence que nao fechou do lado
+// deles), nao um catch-up real pos-apagao. So' pode acontecer pra dia
+// PASSADO -- pro dia de hoje, uma parada "ainda em andamento" e' normal e
+// esperada, nao descartar. Descartar aqui (antes de resolverParadas) faz o
+// array ficar vazio nesse caso, o que ja' aciona o fallback pra ponte que
+// resolverParadas ja' tem pra "Unitrac nao devolveu nada".
+function descartarParadaAbertaAlemDoDia(paradas: UnitracParadaRow[], data: string): UnitracParadaRow[] {
+  const hoje = hojeBR()
+  if (data >= hoje) return paradas
+  return paradas.filter(p => {
+    const fimIso = p.fim_real ?? p.saida
+    if (!fimIso) return true
+    return fimIso.slice(0, 10) < hoje
+  })
 }
 
 // Item 3a (spec 2026-09-12, "Endurecimento da confirmacao"): as paradas de
