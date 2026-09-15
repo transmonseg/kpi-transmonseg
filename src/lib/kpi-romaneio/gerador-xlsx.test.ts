@@ -343,6 +343,45 @@ describe('gerador-xlsx', () => {
       expect(values[12]).toBe('') // CHEGADA CD
     })
 
+    // Achado real 15/09 (grupo KPI AJUSTES): NF que já recebeu veredito
+    // final (não é mais "espera", é uma acusação/observação concreta) num
+    // relatório de HOJE mostrava "EM ROTA" na célula de horário -- placa já
+    // tinha voltado pra base, mas `data === hoje` sozinho não distinguia
+    // isso de uma linha genuinamente ainda em andamento. Contradição visível
+    // no relatório: STATUS diz "CONFERIR" (veredito), horário diz "em rota"
+    // (espera).
+    it('NF com veredito final (nao AGUARDANDO) num relatorio de hoje: NAO mostra EM ROTA, mesmo com placa ja tendo voltado', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234', temRastreador: true })]
+      const detalhe: LinhaDetalheEntrega[] = [detalheFixture({
+        temRastreador: true, status: 'pendente', chegada: null, saida: null,
+        observacao: 'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR',
+      })]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-25', [], detalhe, '2026-08-25')
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const wsPlaca = wb.getWorksheet('ABC1234')!
+      const values = (wsPlaca.getRow(4).values as unknown[]).slice(1)
+
+      expect(values[4]).toBe('') // CHEGADA NA LOJA -- nao "EM ROTA"
+      expect(values[5]).toBe('') // SAÍDA DA LOJA -- nao "EM ROTA"
+    })
+
+    it('NF genuinamente sem veredito (AGUARDANDO) num relatorio de hoje: mostra EM ROTA normalmente', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234', temRastreador: true })]
+      const detalhe: LinhaDetalheEntrega[] = [detalheFixture({
+        temRastreador: true, status: 'pendente', chegada: null, saida: null,
+        observacao: 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO',
+      })]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-25', [], detalhe, '2026-08-25')
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const wsPlaca = wb.getWorksheet('ABC1234')!
+      const values = (wsPlaca.getRow(4).values as unknown[]).slice(1)
+
+      expect(values[4]).toBe('EM ROTA') // CHEGADA NA LOJA
+      expect(values[5]).toBe('EM ROTA') // SAÍDA DA LOJA
+    })
+
     it('SEM RASTREADOR tambem aparece na aba por placa (CHEGADA/SAÍDA NA LOJA de NF pendente)', async () => {
       const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234', temRastreador: false })]
       const detalhe: LinhaDetalheEntrega[] = [detalheFixture({ temRastreador: false, saidaCd: null, chegadaCd: null })]

@@ -102,21 +102,30 @@ function formatarHora(iso: string | null): string {
 // de deixar em branco toda vez (o que gerou a reclamacao "praticamente tudo
 // branco"), mostra o motivo quando ele e' conhecido. `null` = nenhum motivo
 // conhecido, fica em branco mesmo (nunca inventa).
-function motivoAusencia(temRastreador: boolean, data: string, hoje: string): string | null {
+// Achado real 15/09 (grupo KPI AJUSTES): `data === hoje` sozinho confundia
+// "o DIA CALENDÁRIO é hoje" com "ESTA LINHA ainda está em andamento" -- uma
+// placa que já voltou pra base (ou uma NF já julgada com veredito final,
+// tipo "PASSOU NO ENDEREÇO...CONFERIR") no MEIO do dia de hoje continuava
+// mostrando "EM ROTA" na célula de horário, contradizendo o STATUS final ao
+// lado ("CONFERIR" já é um veredito, não uma espera). `aindaEmAndamento`
+// substitui a comparação de data: cada chamador decide o que "em andamento"
+// significa pra aquela coluna (resumo por placa: `chegadaCd` nulo E dia de
+// hoje; detalhe por NF: a própria linha caiu no ramo AGUARDANDO).
+function motivoAusencia(temRastreador: boolean, aindaEmAndamento: boolean): string | null {
   // "SEM CADASTRO", nao "SEM RASTREADOR": a placa pode ter rastreador e faltar
   // o CV no nosso banco (Rio Quality, 05/09: portal lista ~102 veiculos, nos
   // cadastramos 59). Nao afirmar sobre o veiculo o que e' falha nossa.
   if (!temRastreador) return 'SEM CADASTRO'
-  if (data === hoje) return 'EM ROTA'
+  if (aindaEmAndamento) return 'EM ROTA'
   return null
 }
 
 // Envolve formatarHora: quando o horario e' null, tenta explicar o motivo
 // em vez de deixar a celula muda.
-function celulaHora(iso: string | null, temRastreador: boolean, data: string, hoje: string): string {
+function celulaHora(iso: string | null, temRastreador: boolean, aindaEmAndamento: boolean): string {
   const hora = formatarHora(iso)
   if (hora) return hora
-  return motivoAusencia(temRastreador, data, hoje) ?? ''
+  return motivoAusencia(temRastreador, aindaEmAndamento) ?? ''
 }
 
 // STATUS da entrega: observacao concreta (troca de carro/tempo excessivo,
@@ -194,8 +203,9 @@ function nomeAbaPlaca(placa: string): string {
 // linha agregada, caso que não deveria acontecer na prática -- toda placa
 // da lista de abas vem de `linhas` -- mas o tipo permite, então trata).
 function escreverResumoPlaca(ws: ExcelJS.Worksheet, linhaResumo: number, qtdColunas: number, resumo: LinhaKpiRomaneio | undefined, data: string, hoje: string, qtdNotas: number): void {
+  const emAndamento = data === hoje
   const texto = resumo
-    ? `MOTORISTA: ${resumo.motorista || '-'}    |    SAÍDA CD: ${celulaHora(resumo.saidaCd, resumo.temRastreador, data, hoje) || '-'}    |    CHEGADA CD: ${celulaHora(resumo.chegadaCd, resumo.temRastreador, data, hoje) || '-'}    |    TEMPO OPERAÇÃO: ${formatarMinutos(resumo.tempoOperacaoMin) || '-'}    |    KM PERCORRIDO: ${resumo.kmPercorrido != null ? `${Math.round(resumo.kmPercorrido * 10) / 10} km` : '-'}    |    NOTAS: ${qtdNotas}`
+    ? `MOTORISTA: ${resumo.motorista || '-'}    |    SAÍDA CD: ${celulaHora(resumo.saidaCd, resumo.temRastreador, emAndamento) || '-'}    |    CHEGADA CD: ${celulaHora(resumo.chegadaCd, resumo.temRastreador, emAndamento) || '-'}    |    TEMPO OPERAÇÃO: ${formatarMinutos(resumo.tempoOperacaoMin) || '-'}    |    KM PERCORRIDO: ${resumo.kmPercorrido != null ? `${Math.round(resumo.kmPercorrido * 10) / 10} km` : '-'}    |    NOTAS: ${qtdNotas}`
     : ''
   ws.mergeCells(linhaResumo, 1, linhaResumo, qtdColunas)
   const cell = ws.getCell(linhaResumo, 1)
@@ -277,7 +287,7 @@ export async function gerarKpiRomaneioXlsx(
       l.carga, l.placa, l.destino, l.motorista, l.ajudante1 ?? '', l.ajudante2 ?? '',
       l.pesoKg ?? '', l.clientesPlanejados ?? '', l.nfPlanejado ?? '', l.paradasReais,
       l.kmPercorrido != null ? Math.round(l.kmPercorrido * 10) / 10 : '',
-      celulaHora(l.saidaCd, l.temRastreador, data, hoje), celulaHora(l.chegadaCd, l.temRastreador, data, hoje),
+      celulaHora(l.saidaCd, l.temRastreador, data === hoje), celulaHora(l.chegadaCd, l.temRastreador, data === hoje),
       formatarMinutos(l.tempoOperacaoMin), formatarMinutos(l.tempoMedioParadaMin),
     ])
     estilizarLinhaDado(ws, 2 + 1 + i, COLUNAS_KPI_ROMANEIO.length, i)
@@ -334,8 +344,18 @@ export async function gerarKpiRomaneioXlsx(
       // (confirmado_unitrac já tem explicação própria via STATUS -- sabemos
       // que aconteceu, só não temos o horário exato de GPS; confirmado_gps
       // sempre tem os dois preenchidos).
-      const chegadaLoja = d.status === 'pendente' ? celulaHora(d.chegada, d.temRastreador, data, hoje) : formatarHora(d.chegada)
-      const saidaLoja = d.status === 'pendente' ? celulaHora(d.saida, d.temRastreador, data, hoje) : formatarHora(d.saida)
+      //
+      // Achado real 15/09: usar `data === hoje` aqui (em vez de checar se
+      // ESTA linha está genuinamente em andamento) mostrava "EM ROTA" numa
+      // NF que já recebeu veredito final ("PASSOU NO ENDEREÇO...CONFERIR",
+      // "NÃO FOI AO CLIENTE") só porque o dia calendário ainda não acabou --
+      // status final ao lado dizendo "CONFERIR" contradizendo o horário
+      // dizendo "ainda em rota" na mesma linha. `observacao` só vira o
+      // sentinel AGUARDANDO quando a linha realmente não tem veredito nenhum
+      // ainda (ver agregacao.ts) -- é o sinal certo de "em andamento" por NF.
+      const aindaEmAndamento = d.observacao === 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
+      const chegadaLoja = d.status === 'pendente' ? celulaHora(d.chegada, d.temRastreador, aindaEmAndamento) : formatarHora(d.chegada)
+      const saidaLoja = d.status === 'pendente' ? celulaHora(d.saida, d.temRastreador, aindaEmAndamento) : formatarHora(d.saida)
       wsPlaca.addRow([
         d.carga, d.nf, d.clienteNome, d.endereco,
         chegadaLoja, saidaLoja, formatarMinutos(d.tempoParadaMin),
