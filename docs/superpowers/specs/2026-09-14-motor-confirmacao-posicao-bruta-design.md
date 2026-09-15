@@ -71,24 +71,77 @@ janela, e trocar a regra de decisão.
 
 ### 2. Nova regra de prioridade — e a armadilha que já nos custou uma manhã
 
-Para cada placa e dia, consultar a ponte primeiro. Três resultados possíveis:
+Para cada placa e dia, consultar a ponte primeiro. Resultados possíveis:
 
-- **A ponte devolve ≥1 parada FORA_BASE** → usar essas, sempre. Corroboradas
-  por construção (vieram de leitura de velocidade real).
-- **A ponte devolve paradas, mas todas BASE (nenhuma FORA_BASE)** → o
-  caminhão genuinamente não saiu da base. **Não cair para a Unitrac** — isso
-  reintroduziria o mesmo bug do "veículo sem movimento" corrigido hoje mais
-  cedo, na direção oposta (inventar entrega em cima de silêncio de dado).
+- **A ponte devolve ≥1 parada FORA_BASE, sem apagão de sinal na janela**
+  (ver seção 2a) → usar essas, sempre. Corroboradas por construção (vieram de
+  leitura de velocidade real).
+- **A ponte devolve paradas, mas todas BASE (nenhuma FORA_BASE), sem apagão**
+  → o caminhão genuinamente não saiu da base. **Não cair para a Unitrac** —
+  isso reintroduziria o mesmo bug do "veículo sem movimento" corrigido hoje
+  mais cedo, na direção oposta (inventar entrega em cima de silêncio de dado).
+- **Há apagão de sinal na janela dessa placa/dia** (ver 2a) → cair para a
+  Unitrac para essa placa/dia, mesmo que a ponte tenha devolvido paradas —
+  ver seção 2a para o porquê.
 - **A ponte não devolve NENHUMA leitura para essa placa nesse dia** (sem
   cobertura — poller fora do ar, veículo sem rastreador nosso, etc.) → cair
   para a Unitrac (`buscarStopsCru`/`consolidaParadasApi`), como acontece hoje
-  no caminho "dentro da janela". A parada da Unitrac usada aqui continua
-  sujeita ao filtro de velocidade do item 3a antes de confirmar qualquer NF —
-  nunca é aceita sem checagem, mesmo como último recurso.
+  no caminho "dentro da janela".
 
-A distinção entre os dois últimos casos é a mesma dor de cabeça de hoje cedo
+Em todo caminho que usa a Unitrac (apagão ou sem cobertura), a parada
+continua sujeita ao filtro de velocidade do item 3a antes de confirmar
+qualquer NF — nunca é aceita sem checagem, mesmo como último recurso.
+
+A distinção entre os últimos casos é a mesma dor de cabeça de hoje cedo
 ("sem dado" ≠ "dado confirma silêncio") — só que espelhada. A resposta é a
 mesma: nunca inferir de ausência de linha o que só uma linha explícita prova.
+
+### 2a. Apagão de sinal — achado que quase virou regressão
+
+**Descoberto ao ler `unitrac.ts` antes de planejar a implementação, não na
+brainstorm.** O próprio código já documenta uma limitação medida: no mesmo
+dia (09/09, 2.361 NFs), a ponte confirma 1.978 contra 2.075 do feed da
+Unitrac. Causa: quando o rastreador para de comunicar, o poller deste
+projeto **continua gravando a última posição conhecida**, com `atraso_min`
+subindo — o que ou congela sem gerar parada, ou pior, `derivarParadas` vê
+várias leituras idênticas se repetindo e deriva uma **parada falsa** no ponto
+onde o sinal caiu. A Unitrac, ao reconectar, recebe o trecho em lote e mostra
+as paradas reais que aconteceram durante o apagão.
+
+Caso real documentado no código: placa RQV3G18, 09/09, `atraso_min` subindo
+de 2 para 34+ enquanto ela rodava de verdade entre Trapiche e Macaé.
+Reproduzido nesta sessão: a partir de 11:21, `lat/lng` congelados em
+`-22.25371,-41.97370` enquanto `atraso_min` sobe de 17 para 47+.
+
+**Isso invalidava a spec original** (ponte sempre primária): durante um
+apagão a ponte *tem* dado (a posição congelada), então a regra "sem paradas
+FORA_BASE → cai pra Unitrac" nunca disparava, e o sistema ficaria preso na
+posição congelada bem na hora em que a Unitrac tem a informação certa.
+
+**Correção, decidida com o usuário**: detectar o apagão e só trocar a
+prioridade fora dele.
+
+**Limiar medido, não escolhido a dedo**: distribuição de `atraso_min` em 3
+dias de produção (posicoes_historico) tem um degrau nítido — 283.183
+leituras na faixa 10-15min contra apenas 5.932 na faixa 15-20min. **15
+minutos** é o corte: acima disso é sinal degradado, abaixo é operação normal.
+
+**Regra**: para cada placa/dia, antes de aceitar a parada derivada da ponte,
+checar se alguma leitura de `posicoes_historico` naquela janela tem
+`atraso_min > 15`. Se sim, tratar a derivação da ponte para aquela placa/dia
+inteira como não confiável e usar a Unitrac (com o filtro de velocidade do
+3a) para essa placa/dia — granularidade por dia inteiro, não por parada
+individual, de propósito: partial-merge por parada dentro do mesmo dia seria
+mais preciso mas introduziria uma lógica de reconciliação nova (o que a
+Unitrac cobre não bate 1:1 com o que a ponte cobre) — complexidade que os
+achados de hoje (fail-open silencioso, função ambígua) mostram que este
+projeto já paga caro quando aparece sem necessidade. Coarse e auditável
+vence fino e frágil aqui.
+
+Isso exige expor `atraso_min` — ou um booleano já calculado — na resposta da
+ponte (`GET /api/kpi/base-horarios?incluirParadas=true`), calculado na MESMA
+consulta que já lê `posicoes_historico` para `derivarParadas` (custo
+adicional desprezível, mesmo dado já em memória).
 
 ### 3. Failover se a própria chamada da ponte falhar
 
@@ -133,6 +186,12 @@ chamada por placa — decidir com dado, não a priori.
   custou uma manhã inteira hoje na direção oposta. O plano de implementação
   precisa de teste explícito para as duas situações, não só para o caminho
   feliz.
+- **Apagão de sinal** (ver seção 2a) quase virou regressão silenciosa desta
+  spec. A granularidade da detecção é por dia inteiro, não por parada — um
+  apagão curto que não chega a comprometer nenhuma parada específica ainda
+  assim descarta o dia inteiro da ponte para aquela placa. Aceitável como
+  primeira versão (conservador: prefere Unitrac de mais a confiar de menos),
+  mas vale medir quantos dias isso afeta na validação.
 
 ## Validação
 
