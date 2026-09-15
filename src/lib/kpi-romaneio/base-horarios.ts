@@ -49,6 +49,13 @@ export type HorarioBase = {
   // qualquer data. So' vem preenchido quando o chamador pede
   // (`incluirParadas`), porque o payload cresce bastante.
   paradas?: ParadaBridge[]
+  // Achado real 14/09: quando true, a ponte teve leitura com atraso_min
+  // acima do limiar de apagao (LIMIAR_APAGAO_MIN, ver route.ts do
+  // monitoramento) na janela desta placa/dia -- as paradas derivadas
+  // acima NAO sao confiaveis para esse dia (podem ser congelamento na
+  // ultima posicao conhecida, nao permanencia real). resolverParadas usa
+  // este campo pra decidir se prefere esta ponte ou a Unitrac.
+  apagaoDeSinal?: boolean
 }
 
 /** Parada derivada do historico continuo do monitoramento -- mesma forma
@@ -132,6 +139,7 @@ type ResultadoBruto = {
   kmPercorrido: number | null
   visitas?: VisitaBrutaResultado[]
   paradas?: ParadaBridge[]
+  apagaoDeSinal?: unknown
 }
 
 function validarParadaBruta(p: unknown): ParadaBridge | null {
@@ -164,10 +172,10 @@ function validarResultado(r: unknown): ResultadoBruto | null {
     ((r as { chegadaBase?: unknown }).chegadaBase === null || typeof (r as { chegadaBase?: unknown }).chegadaBase === 'string') &&
     ((r as { kmPercorrido?: unknown }).kmPercorrido === null || typeof (r as { kmPercorrido?: unknown }).kmPercorrido === 'number')
   ) {
-    const obj = r as { placa: string; saidaBase: string | null; chegadaBase: string | null; kmPercorrido: number | null; visitas?: unknown; paradas?: unknown }
+    const obj = r as { placa: string; saidaBase: string | null; chegadaBase: string | null; kmPercorrido: number | null; visitas?: unknown; paradas?: unknown; apagaoDeSinal?: unknown }
     const visitasBrutas = Array.isArray(obj.visitas) ? obj.visitas.map(validarVisitaBruta).filter((v): v is VisitaBrutaResultado => v !== null) : undefined
     const paradasBrutas = Array.isArray(obj.paradas) ? obj.paradas.map(validarParadaBruta).filter((v): v is ParadaBridge => v !== null) : undefined
-    return { placa: obj.placa, saidaBase: obj.saidaBase, chegadaBase: obj.chegadaBase, kmPercorrido: obj.kmPercorrido, visitas: visitasBrutas, paradas: paradasBrutas }
+    return { placa: obj.placa, saidaBase: obj.saidaBase, chegadaBase: obj.chegadaBase, kmPercorrido: obj.kmPercorrido, visitas: visitasBrutas, paradas: paradasBrutas, apagaoDeSinal: obj.apagaoDeSinal === true }
   }
   return null
 }
@@ -244,6 +252,7 @@ async function buscarLote(
         kmPercorrido: r.kmPercorrido,
         visitasPorNf,
         paradas,
+        apagaoDeSinal: r.apagaoDeSinal === true,
       })
     }
   }
