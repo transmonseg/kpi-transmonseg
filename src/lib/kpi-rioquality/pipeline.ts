@@ -6,6 +6,8 @@ import { BASES_COORD_RIOQUALITY } from './constants'
 // calcularKmPercorrido (soma da reta entre paradas) NAO e' usado aqui de
 // proposito -- subestima 43% a 65%. Ver km-rastro.ts.
 import { calcularKmPorRastro } from './km-rastro'
+import { buscarHorariosBase } from '@/lib/kpi-romaneio/base-horarios'
+import { resolverParadas } from '@/lib/kpi-romaneio/unitrac'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
 import { parseCustos, parseEntregas, montarLinhasRomaneio, rotaParaZona, parseEntregasCompletas, montarLinhasRomaneioCompleto } from './parse-planilhas'
@@ -48,6 +50,37 @@ export type ResultadoPipelineRioQuality = {
 
 export class EntradaInvalidaError extends Error {}
 
+// Achado real 14/09 (fase que torna a ponte fonte PRIMARIA de parada
+// tambem pra Rio Quality, nao so' Nutry Max): antes, o default aqui
+// SEMPRE usava o feed de paradas ja processado pela Unitrac
+// (consolidaParadasApi sobre buscarStopsCru). Agora consulta primeiro a
+// ponte do monitoramento (mesma fonte que a Nutry Max usa, ver
+// resolverParadas em unitrac.ts), com a base propria da Rio Quality
+// (BASES_COORD_RIOQUALITY, nao a da Nutry Max). Extraida como funcao
+// nomeada (em vez de closure anonimo dentro de gerarKpiRioQuality) pra
+// ser testavel isolada, sem precisar montar um pipeline inteiro.
+//
+// Uma chamada a ponte POR PLACA (nao em lote) -- Rio Quality tem menos
+// placas por geracao que a Nutry Max; se isso se mostrar lento na
+// medicao real, agrupar como a Nutry Max ja faz (buscarHorariosBase
+// aceita array de placas). Decisao de nao otimizar cedo: YAGNI ate
+// medir.
+export async function buscarParadasPadraoRioQuality(
+  cv: string,
+  placaNorm: string,
+  data: string,
+): Promise<UnitracParadaRow[]> {
+  const [daUnitracEventos, horarioBasePorPlaca] = await Promise.all([
+    buscarStopsCru(cv, 48),
+    buscarHorariosBase([placaNorm], data, new Map(), true),
+  ])
+  // base propria da Rio Quality (descoberta pelo GPS, ver constants.ts) --
+  // NAO usar buscarParadasDoDia, que classifica pelas bases da Nutry Max
+  const daUnitrac = consolidaParadasApi(daUnitracEventos, {}, data, placaNorm, BASES_COORD_RIOQUALITY)
+  const horario = horarioBasePorPlaca.get(placaNorm)
+  return resolverParadas(daUnitrac, horario?.paradas, placaNorm, horario?.apagaoDeSinal ?? false)
+}
+
 function agrupar<T>(itens: T[], chave: (item: T) => string): Map<string, T[]> {
   const mapa = new Map<string, T[]>()
   for (const item of itens) {
@@ -69,18 +102,15 @@ export async function gerarKpiRioQuality(params: {
   completaBuf?: Buffer
   data: string
   cvPorPlaca: Map<string, string>
-  /** injetavel pra teste; padrao = Unitrac stops (48h) sem base cadastrada */
+  /** injetavel pra teste; padrao = buscarParadasPadraoRioQuality (ponte do
+   *  monitoramento primeiro, Unitrac como sinal secundario -- ver
+   *  resolverParadas) */
   buscarParadas?: (cv: string, placaNorm: string, data: string) => Promise<UnitracParadaRow[]>
   log?: (msg: string) => void
 }): Promise<ResultadoPipelineRioQuality> {
   const { custosBuf, entregasBuf, completaBuf, data, cvPorPlaca } = params
   const log = params.log ?? (() => {})
-  const buscarParadas =
-    params.buscarParadas ??
-    (async (cv: string, placaNorm: string, d: string) =>
-      // base propria da Rio Quality (descoberta pelo GPS, ver constants.ts) --
-      // NAO usar buscarParadasDoDia, que classifica pelas bases da Nutry Max
-      consolidaParadasApi(await buscarStopsCru(cv, 48), {}, d, placaNorm, BASES_COORD_RIOQUALITY))
+  const buscarParadas = params.buscarParadas ?? buscarParadasPadraoRioQuality
 
   // 1) parse + 2) geocodificacao -- dois formatos de entrada, mesma saida
   // (romaneioGeo: LinhaGeocodificada[], confiancaPorNf, contConf).

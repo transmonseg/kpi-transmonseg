@@ -176,11 +176,9 @@ export async function POST(req: NextRequest) {
   const [frota, alvosBrutos, horarioBasePorPlaca] = await Promise.all([
     buscarFrota(COD_USER_NUTRIMAX),
     buscarAlvosDoDia(placasNorm),
-    // Dia fora da janela de 48h da Unitrac: pede tambem as paradas
-    // derivadas do historico permanente do monitoramento (ver
-    // paradasDaPonte / derivarParadas). Dentro da janela nao pede -- o
-    // feed da Unitrac ja' cobre e o payload fica menor.
-    buscarHorariosBase(placasNorm, data, pontosPorPlacaBridge, foraDaJanelaUnitrac),
+    // Achado real 14/09: pede paradas SEMPRE agora, nao so' fora da janela
+    // -- a ponte virou fonte primaria (ver resolverParadas em unitrac.ts).
+    buscarHorariosBase(placasNorm, data, pontosPorPlacaBridge, true),
   ])
   const alvos = alvosDaData(alvosBrutos, data)
   const cvPorPlaca = new Map(frota.map(v => [v.placaNorm, v.cv]))
@@ -205,7 +203,7 @@ export async function POST(req: NextRequest) {
     // Sem parada nenhuma da Unitrac (dia fora das 48h, ou placa sem cv) mas
     // com parada derivada do historico permanente: usa a da ponte.
     const daPonte = horarioBasePorPlaca.get(placaNorm)?.paradas
-    const paradas = resolverParadas(daUnitrac, daPonte, placaNorm, foraDaJanelaUnitrac)
+    const paradas = resolverParadas(daUnitrac, daPonte, placaNorm, horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false)
     paradasPorPlaca.set(placaNorm, paradas)
     visitasPorPlaca.set(placaNorm, montarVisitas(linhasPorPlaca.get(placaNorm) ?? [], paradas, horarioBasePorPlaca.get(placaNorm)?.visitasPorNf))
     kmPorPlaca.set(placaNorm, calcularKmPercorrido(paradas))
@@ -228,7 +226,7 @@ export async function POST(req: NextRequest) {
     const cv = cvPorPlaca.get(placaNorm)
     const daUnitrac = cv ? await buscarParadasDoDia(cv, placaNorm, data, 48) : []
     const daPonte = horarioBasePorPlaca.get(placaNorm)?.paradas
-    paradasPorPlaca.set(placaNorm, resolverParadas(daUnitrac, daPonte, placaNorm, foraDaJanelaUnitrac))
+    paradasPorPlaca.set(placaNorm, resolverParadas(daUnitrac, daPonte, placaNorm, horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false))
   }))
 
   const alvosPorPlaca = agrupar(alvos, a => a.placaNorm)

@@ -101,9 +101,23 @@ async function validarParadasContraGpsProprio(paradas: UnitracParadaRow[], placa
 // nesta sessao: RQV3G18 em 09/09, atraso subindo de 2 para 34+ min enquanto
 // a placa rodava Trapiche/Macae.
 //
-// Por isso a ordem importa e esta como esta: DENTRO das 48h manda o feed da
-// Unitrac; fora dele, a ponte -- que e' pior que o feed, mas
-// incomparavelmente melhor que nao poder reprocessar o dia nenhum.
+// Por isso a ordem importa: a ponte manda sempre que tiver dado, janela ou
+// nao -- so' cai pro feed da Unitrac quando ha' apagao de sinal detectado
+// (ver apagaoDeSinal/teveApagaoDeSinal), porque so' a Unitrac recebe o
+// trecho em lote ao reconectar, algo que a ponte nao reconstroi a partir
+// de uma ultima posicao conhecida congelada. MAS essa troca so' vale se a
+// Unitrac realmente tiver algo pra devolver: buscarStopsCru so' alcanca as
+// 48h que antecedem AGORA (ver achado 11/09 abaixo), entao qualquer data
+// fora dessa janela chega aqui com daUnitrac=[] mesmo tendo havido apagao
+// de verdade -- nesse caso "usar a Unitrac" e' na pratica zerar o dia
+// inteiro da placa, nao usar um feed melhor. Medido em producao em 14/09
+// (7 dias, motor de confirmacao): 25,7% dos placa/dia (724 de 2.819) tem
+// pelo menos uma leitura com sinal degradado -- isso NAO e' raro, entao
+// reprocessar qualquer dia com mais de 48h e apagao detectado sem essa
+// checagem apagaria dado bom da ponte pra ~1/4 das placas. Por isso o
+// gate abaixo e' `apagaoDeSinal && daUnitrac.length > 0`, nao so'
+// `apagaoDeSinal`: a Unitrac so' pode vencer a ponte quando de fato tem
+// alguma coisa pra mostrar pra esse dia.
 //
 // Proximo passo pra fechar essa lacuna: persistir as paradas da Unitrac no
 // momento da geracao (elas ja sao buscadas), pra que reprocessar um dia
@@ -118,23 +132,27 @@ async function validarParadasContraGpsProprio(paradas: UnitracParadaRow[], placa
 // toda placa cujas paradas sobreviventes sao so' de base (313 NFs marcadas
 // erradas em producao). A escolha certa e' por "a data pedida esta fora do
 // alcance da API?" (foraDaJanela, ver foraDoAlcanceApi em constants.ts) --
-// so' isso decide se o feed parcial da Unitrac e' confiavel ou nao.
+// isso decidia se o feed parcial da Unitrac era confiavel ou nao. `foraDaJanela`
+// nao e' mais parametro desta funcao (substituido por `apagaoDeSinal` numa
+// fase seguinte, ver achado 14/09 abaixo) -- a regra atual e' a descrita la':
+// so' cai pra Unitrac quando ha' apagao E a Unitrac tem dado pra esse dia.
+// Achado real 14/09 (fase que torna a ponte fonte PRIMARIA, nao so'
+// fallback pra fora da janela): a inversao de prioridade abaixo e'
+// segura DESDE QUE o chamador tenha checado apagao de sinal antes --
+// ver teveApagaoDeSinal (monitoramento, route.ts) e o comentario em
+// HorarioBase.apagaoDeSinal (base-horarios.ts). Sem essa checagem, um
+// apagao faria a ponte parecer que tem dado bom (congelado na ultima
+// posicao) bem na hora em que a Unitrac tem a informacao certa
+// (recebe o trecho em lote ao reconectar) -- teria revertido a fase
+// 3a em vez de completa-la.
 export function resolverParadas(
   daUnitrac: UnitracParadaRow[],
   daPonte: { chegada: string; saida: string; duracaoSeg: number; lat: number; lng: number; classificacao: 'BASE' | 'FORA_BASE' }[] | undefined,
   placaNorm: string,
-  foraDaJanela: boolean,
+  apagaoDeSinal: boolean,
 ): UnitracParadaRow[] {
-  if (foraDaJanela) {
-    // Fora do alcance da API: o feed da Unitrac e' no maximo uma fatia
-    // parcial (nunca o dia inteiro) -- prefere a ponte sempre que ela tiver
-    // dado. So' cai pro que a Unitrac devolveu se a ponte tambem nao tiver
-    // nada (fail-open, nunca erro seco).
-    return daPonte?.length ? paradasDaPonte(daPonte, placaNorm) : daUnitrac
-  }
-  // Dentro da janela: comportamento de sempre, intocado -- a Unitrac cobre o
-  // dia inteiro, so' usa a ponte se a Unitrac nao devolveu nada.
-  return daUnitrac.length > 0 || !daPonte?.length ? daUnitrac : paradasDaPonte(daPonte, placaNorm)
+  if (apagaoDeSinal && daUnitrac.length > 0) return daUnitrac
+  return daPonte?.length ? paradasDaPonte(daPonte, placaNorm) : daUnitrac
 }
 
 export function paradasDaPonte(

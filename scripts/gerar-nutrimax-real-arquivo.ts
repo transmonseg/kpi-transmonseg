@@ -70,7 +70,7 @@ async function main() {
   // Fora da janela de 48h da Unitrac: pede tambem as paradas derivadas do
   // historico permanente (mesma logica da rota /api/kpi/nutrimax/gerar).
   const foraDaJanelaUnitrac = foraDoAlcanceApi(data, hojeBR())
-  const horarioBasePorPlaca = await buscarHorariosBase(placasNorm, data, pontosPorPlacaBridge, foraDaJanelaUnitrac)
+  const horarioBasePorPlaca = await buscarHorariosBase(placasNorm, data, pontosPorPlacaBridge, true)
 
   const frota = await buscarFrota(COD_USER_NUTRIMAX)
   const cvPorPlaca = new Map(frota.map(v => [v.placaNorm, v.cv]))
@@ -98,7 +98,7 @@ async function main() {
       }
     }
     const daPonte = horarioBasePorPlaca.get(placaNorm)?.paradas
-    paradas = resolverParadas(paradas, daPonte, placaNorm, foraDaJanelaUnitrac)
+    paradas = resolverParadas(paradas, daPonte, placaNorm, horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false)
     paradasPorPlaca.set(placaNorm, paradas)
     visitasPorPlaca.set(placaNorm, montarVisitas(linhasPorPlaca.get(placaNorm) ?? [], paradas, horarioBasePorPlaca.get(placaNorm)?.visitasPorNf))
     kmPorPlaca.set(placaNorm, calcularKmPercorrido(paradas))
@@ -122,7 +122,7 @@ async function main() {
       }
     }
     const daPonteExtra = horarioBasePorPlaca.get(placaNorm)?.paradas
-    paradas = resolverParadas(paradas, daPonteExtra, placaNorm, foraDaJanelaUnitrac)
+    paradas = resolverParadas(paradas, daPonteExtra, placaNorm, horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false)
     paradasPorPlaca.set(placaNorm, paradas)
   }
 
