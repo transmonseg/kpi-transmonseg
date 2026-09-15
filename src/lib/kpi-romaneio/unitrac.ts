@@ -119,22 +119,23 @@ async function validarParadasContraGpsProprio(paradas: UnitracParadaRow[], placa
 // erradas em producao). A escolha certa e' por "a data pedida esta fora do
 // alcance da API?" (foraDaJanela, ver foraDoAlcanceApi em constants.ts) --
 // so' isso decide se o feed parcial da Unitrac e' confiavel ou nao.
+// Achado real 14/09 (fase que torna a ponte fonte PRIMARIA, nao so'
+// fallback pra fora da janela): a inversao de prioridade abaixo e'
+// segura DESDE QUE o chamador tenha checado apagao de sinal antes --
+// ver teveApagaoDeSinal (monitoramento, route.ts) e o comentario em
+// HorarioBase.apagaoDeSinal (base-horarios.ts). Sem essa checagem, um
+// apagao faria a ponte parecer que tem dado bom (congelado na ultima
+// posicao) bem na hora em que a Unitrac tem a informacao certa
+// (recebe o trecho em lote ao reconectar) -- teria revertido a fase
+// 3a em vez de completa-la.
 export function resolverParadas(
   daUnitrac: UnitracParadaRow[],
   daPonte: { chegada: string; saida: string; duracaoSeg: number; lat: number; lng: number; classificacao: 'BASE' | 'FORA_BASE' }[] | undefined,
   placaNorm: string,
-  foraDaJanela: boolean,
+  apagaoDeSinal: boolean,
 ): UnitracParadaRow[] {
-  if (foraDaJanela) {
-    // Fora do alcance da API: o feed da Unitrac e' no maximo uma fatia
-    // parcial (nunca o dia inteiro) -- prefere a ponte sempre que ela tiver
-    // dado. So' cai pro que a Unitrac devolveu se a ponte tambem nao tiver
-    // nada (fail-open, nunca erro seco).
-    return daPonte?.length ? paradasDaPonte(daPonte, placaNorm) : daUnitrac
-  }
-  // Dentro da janela: comportamento de sempre, intocado -- a Unitrac cobre o
-  // dia inteiro, so' usa a ponte se a Unitrac nao devolveu nada.
-  return daUnitrac.length > 0 || !daPonte?.length ? daUnitrac : paradasDaPonte(daPonte, placaNorm)
+  if (apagaoDeSinal) return daUnitrac
+  return daPonte?.length ? paradasDaPonte(daPonte, placaNorm) : daUnitrac
 }
 
 export function paradasDaPonte(
