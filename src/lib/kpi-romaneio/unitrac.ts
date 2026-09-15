@@ -101,9 +101,11 @@ async function validarParadasContraGpsProprio(paradas: UnitracParadaRow[], placa
 // nesta sessao: RQV3G18 em 09/09, atraso subindo de 2 para 34+ min enquanto
 // a placa rodava Trapiche/Macae.
 //
-// Por isso a ordem importa e esta como esta: DENTRO das 48h manda o feed da
-// Unitrac; fora dele, a ponte -- que e' pior que o feed, mas
-// incomparavelmente melhor que nao poder reprocessar o dia nenhum.
+// Por isso a ordem importa: a ponte manda sempre que tiver dado, janela ou
+// nao -- so' cai pro feed da Unitrac quando ha' apagao de sinal detectado
+// (ver apagaoDeSinal/teveApagaoDeSinal), porque so' a Unitrac recebe o
+// trecho em lote ao reconectar, algo que a ponte nao reconstroi a partir
+// de uma ultima posicao conhecida congelada.
 //
 // Proximo passo pra fechar essa lacuna: persistir as paradas da Unitrac no
 // momento da geracao (elas ja sao buscadas), pra que reprocessar um dia
