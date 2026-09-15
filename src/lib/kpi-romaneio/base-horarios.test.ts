@@ -39,8 +39,8 @@ describe('buscarHorariosBase', () => {
       { placa: 'XYZ5678', saidaBase: null, chegadaBase: null, kmPercorrido: null },
     ])
     const mapa = await buscarHorariosBase(['ABC1234', 'XYZ5678'], '2026-08-25')
-    expect(mapa.get('ABC1234')).toEqual({ saidaBase: '2026-08-25T06:00:00.000Z', chegadaBase: '2026-08-25T18:00:00.000Z', kmPercorrido: 203.4, apagaoDeSinal: false })
-    expect(mapa.get('XYZ5678')).toEqual({ saidaBase: null, chegadaBase: null, kmPercorrido: null, apagaoDeSinal: false })
+    expect(mapa.get('ABC1234')).toEqual({ saidaBase: '2026-08-25T06:00:00.000Z', chegadaBase: '2026-08-25T18:00:00.000Z', kmPercorrido: 203.4 })
+    expect(mapa.get('XYZ5678')).toEqual({ saidaBase: null, chegadaBase: null, kmPercorrido: null })
   })
 
   it('MOTOR_SECRET ausente: nao chama fetch, devolve mapa vazio', async () => {
@@ -82,7 +82,7 @@ describe('buscarHorariosBase', () => {
     ])
     const mapa = await buscarHorariosBase(['ABC1234', 'DEF5678'], '2026-08-25')
     expect(mapa.size).toBe(1)
-    expect(mapa.get('ABC1234')).toEqual({ saidaBase: '2026-08-25T06:00:00.000Z', chegadaBase: null, kmPercorrido: 203.4, apagaoDeSinal: false })
+    expect(mapa.get('ABC1234')).toEqual({ saidaBase: '2026-08-25T06:00:00.000Z', chegadaBase: null, kmPercorrido: 203.4 })
   })
 
   it('paraBrtMascaradoComoUtc: aceita offset explicito (+02:00 do Postgres, ver TimeZone da role) e converte pro mesmo resultado que Z', async () => {
@@ -93,7 +93,7 @@ describe('buscarHorariosBase', () => {
     mockFetchOk([{ placa: 'ABC1234', saidaBase: '2026-08-25T11:00:00.000+02:00', chegadaBase: null, kmPercorrido: null }])
     const mapa = await buscarHorariosBase(['ABC1234'], '2026-08-25')
     // 11:00+02:00 == 09:00 UTC == 06:00 BRT
-    expect(mapa.get('ABC1234')).toEqual({ saidaBase: '2026-08-25T06:00:00.000Z', chegadaBase: null, kmPercorrido: null, apagaoDeSinal: false })
+    expect(mapa.get('ABC1234')).toEqual({ saidaBase: '2026-08-25T06:00:00.000Z', chegadaBase: null, kmPercorrido: null })
   })
 
   describe('pontosPorPlaca / visitasPorNf (achado real 25/08: CHEGADA/SAIDA NA LOJA via mesma ponte)', () => {
@@ -165,22 +165,6 @@ describe('buscarHorariosBase', () => {
       const visitasPorNf = mapa.get('ABC1234')?.visitasPorNf
       expect(visitasPorNf?.size).toBe(1)
       expect(visitasPorNf?.get('NF1')).toEqual({ chegada: '2026-08-25T10:00:00.000Z', saida: '2026-08-25T10:10:00.000Z', viaVizinhanca: false, viaRaioAmpliado: false })
-    })
-  })
-
-  describe('apagaoDeSinal (achado real 14/09: leitura com atraso_min acima do limiar de apagao)', () => {
-    it('repassa apagaoDeSinal quando a ponte manda true', async () => {
-      mockFetchOk([
-        { placa: 'RQU2G47', saidaBase: null, chegadaBase: null, kmPercorrido: null, apagaoDeSinal: true },
-      ])
-      const mapa = await buscarHorariosBase(['RQU2G47'], '2026-09-11', new Map(), true)
-      expect(mapa.get('RQU2G47')?.apagaoDeSinal).toBe(true)
-    })
-
-    it('apagaoDeSinal vira false quando ausente ou malformado -- nunca undefined pro chamador', async () => {
-      mockFetchOk([{ placa: 'RQU2G47', saidaBase: null, chegadaBase: null, kmPercorrido: null }])
-      const mapa = await buscarHorariosBase(['RQU2G47'], '2026-09-11', new Map(), true)
-      expect(mapa.get('RQU2G47')?.apagaoDeSinal).toBe(false)
     })
   })
 })

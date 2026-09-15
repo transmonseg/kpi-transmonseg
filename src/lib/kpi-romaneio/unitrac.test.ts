@@ -214,40 +214,29 @@ describe('paradasDaPonte', () => {
 // "a API devolveu algo?" faz esse retalho passar como se fosse o dia
 // inteiro, e agregacao.ts conclui NUNCA SAIU DA BASE. A escolha tem que ser
 // por "a data pedida esta fora do alcance da API?", nao por len>0.
-// Achado real 14/09 (planejamento da fase que inverte a prioridade de
-// fonte de parada): antes, a ponte so' era preferida fora da janela de
-// 48h da Unitrac. Agora e' preferida SEMPRE, exceto quando ha' apagao de
-// sinal detectado (ver route.ts do monitoramento, teveApagaoDeSinal) --
-// nesse caso a ponte pode estar mostrando uma parada FALSA (congelamento
-// na ultima posicao conhecida), entao cai pra Unitrac mesmo tendo dado.
 describe('resolverParadas', () => {
   const daPonteEx = [
     { chegada: '2026-09-11T10:00:00.000Z', saida: '2026-09-11T10:20:00.000Z', duracaoSeg: 1200, lat: -22.9, lng: -43.2, classificacao: 'FORA_BASE' as const },
   ]
-  const daUnitracEx = [{ id: 'unitrac-x' }] as unknown as import('@/lib/kpi/matcher').UnitracParadaRow[]
+  const daUnitracParcial = [{ id: 'so-madrugada-na-base' }] as unknown as import('@/lib/kpi/matcher').UnitracParadaRow[]
 
-  it('sem apagao, com dado da ponte: usa a ponte mesmo com a Unitrac tendo devolvido algo (nova prioridade)', () => {
-    const r = resolverParadas(daUnitracEx, daPonteEx, 'RQU2G47', false)
+  it('fora da janela: usa a ponte mesmo com a Unitrac tendo devolvido uma fatia parcial (o bug real)', () => {
+    const r = resolverParadas(daUnitracParcial, daPonteEx, 'RQU2G47', true)
     expect(r).toEqual(paradasDaPonte(daPonteEx, 'RQU2G47'))
   })
 
-  it('sem apagao, sem dado nenhum na ponte: cai pro que a Unitrac devolveu (fail-open, nunca erro seco)', () => {
-    const r = resolverParadas(daUnitracEx, undefined, 'RQU2G47', false)
-    expect(r).toBe(daUnitracEx)
+  it('fora da janela sem dado nenhum na ponte: cai pro que a Unitrac devolveu (fail-open, nunca erro seco)', () => {
+    const r = resolverParadas(daUnitracParcial, undefined, 'RQU2G47', true)
+    expect(r).toBe(daUnitracParcial)
   })
 
-  it('com apagao detectado: usa a Unitrac mesmo com a ponte tendo dado -- a ponte pode estar mostrando parada falsa', () => {
-    const r = resolverParadas(daUnitracEx, daPonteEx, 'RQU2G47', true)
-    expect(r).toBe(daUnitracEx)
+  it('dentro da janela com dado da Unitrac: comportamento de hoje intocado, usa a Unitrac mesmo com ponte disponivel', () => {
+    const r = resolverParadas(daUnitracParcial, daPonteEx, 'RQU2G47', false)
+    expect(r).toBe(daUnitracParcial)
   })
 
-  it('com apagao mas Unitrac sem dado nenhum pra esse dia (fora da janela de 48h): usa a ponte, nao zera o dia (achado 14/09)', () => {
-    const r = resolverParadas([], daPonteEx, 'RQU2G47', true)
+  it('dentro da janela sem dado nenhum da Unitrac: comportamento de hoje intocado, cai pra ponte', () => {
+    const r = resolverParadas([], daPonteEx, 'RQU2G47', false)
     expect(r).toEqual(paradasDaPonte(daPonteEx, 'RQU2G47'))
-  })
-
-  it('com apagao e sem dado nenhum em nenhum dos dois lados: lista vazia, nunca inventa (fail-open nos dois lados)', () => {
-    const r = resolverParadas([], undefined, 'RQU2G47', true)
-    expect(r).toEqual([])
   })
 })
