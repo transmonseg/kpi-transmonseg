@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { buscarAlvosDoDia, buscarParadasDoDia, paradasDaPonte, resolverParadas } from './unitrac'
 import { BASES_COORD_NUTRIMAX } from './constants'
+import { RAIO_CLUSTER_M } from '@/lib/unitrac-api/consolida'
 
 const { buscarFrotaMock, buscarAlvosMock, buscarStopsCruMock, consolidaParadasApiMock } = vi.hoisted(() => ({
   buscarFrotaMock: vi.fn(),
@@ -16,11 +17,21 @@ vi.mock('@/lib/unitrac-api', () => ({
   consolidaParadasApi: consolidaParadasApiMock,
 }))
 
+const { consultarVelocidadeNaParadaMock } = vi.hoisted(() => ({
+  consultarVelocidadeNaParadaMock: vi.fn(),
+}))
+
+vi.mock('./velocidade-parada', () => ({
+  consultarVelocidadeNaParada: consultarVelocidadeNaParadaMock,
+}))
+
 beforeEach(() => {
   buscarFrotaMock.mockReset()
   buscarAlvosMock.mockReset()
   buscarStopsCruMock.mockReset()
   consolidaParadasApiMock.mockReset()
+  consultarVelocidadeNaParadaMock.mockReset()
+  consultarVelocidadeNaParadaMock.mockResolvedValue([])
 })
 
 describe('buscarAlvosDoDia', () => {
@@ -62,6 +73,96 @@ describe('buscarParadasDoDia', () => {
     expect(buscarStopsCruMock).toHaveBeenCalledWith('111', 48)
     expect(consolidaParadasApiMock).toHaveBeenCalledWith(eventos, {}, '2026-08-20', 'TUL1C38', BASES_COORD_NUTRIMAX)
     expect(r).toEqual([{ id: 'x' }])
+  })
+})
+
+// Item 3a (spec 2026-09-12, "Endurecimento da confirmacao"): paradas
+// FORA_BASE do feed da Unitrac sao cruzadas contra o GPS PROPRIO (ponte
+// /api/romaneio/velocidade-na-parada) antes de serem devolvidas. Achado
+// real 11/09: a Unitrac reportou paradas dentro de 500m de enderecos pras
+// placas RQV6I51/TUI1A90/RQV3J99 -- o GPS proprio mostra que essas placas
+// nunca chegaram perto. So' BASE fica intocada (nunca cruzada).
+describe('buscarParadasDoDia -- 3a, valida FORA_BASE contra GPS proprio', () => {
+  const paradaForaBase = { id: 'p1', placa_norm: 'RQV6I51', chegada: '2026-09-11T10:00:00.000Z', saida: '2026-09-11T10:20:00.000Z', fim_real: '2026-09-11T10:18:00.000Z', duracao_seg: 1080, lat: -22.5, lng: -43.1, classificacao: 'FORA_BASE' } as const
+  const paradaBase = { id: 'p2', placa_norm: 'RQV6I51', chegada: '2026-09-11T06:00:00.000Z', saida: '2026-09-11T06:30:00.000Z', fim_real: '2026-09-11T06:30:00.000Z', duracao_seg: 1800, lat: -22.83, lng: -43.34, classificacao: 'BASE' } as const
+
+  it('sem cobertura de GPS (temCobertura false): mantem a parada (fail-open)', async () => {
+    buscarStopsCruMock.mockResolvedValue([])
+    consolidaParadasApiMock.mockReturnValue([paradaForaBase])
+    consultarVelocidadeNaParadaMock.mockResolvedValue([{ temParadaComVelocidade: false, temCobertura: false }])
+
+    const r = await buscarParadasDoDia('111', 'RQV6I51', '2026-09-11', 48)
+
+    expect(r).toEqual([paradaForaBase])
+  })
+
+  it('coberto mas em movimento (contradicao real): descarta a parada', async () => {
+    buscarStopsCruMock.mockResolvedValue([])
+    consolidaParadasApiMock.mockReturnValue([paradaForaBase])
+    consultarVelocidadeNaParadaMock.mockResolvedValue([{ temParadaComVelocidade: false, temCobertura: true }])
+
+    const r = await buscarParadasDoDia('111', 'RQV6I51', '2026-09-11', 48)
+
+    expect(r).toEqual([])
+  })
+
+  it('coberto e corroborado (temParadaComVelocidade true): mantem a parada', async () => {
+    buscarStopsCruMock.mockResolvedValue([])
+    consolidaParadasApiMock.mockReturnValue([paradaForaBase])
+    consultarVelocidadeNaParadaMock.mockResolvedValue([{ temParadaComVelocidade: true, temCobertura: true }])
+
+    const r = await buscarParadasDoDia('111', 'RQV6I51', '2026-09-11', 48)
+
+    expect(r).toEqual([paradaForaBase])
+  })
+
+  it('bridge devolve null (falha/entrada malformada): mantem a parada (fail-open)', async () => {
+    buscarStopsCruMock.mockResolvedValue([])
+    consolidaParadasApiMock.mockReturnValue([paradaForaBase])
+    consultarVelocidadeNaParadaMock.mockResolvedValue([null])
+
+    const r = await buscarParadasDoDia('111', 'RQV6I51', '2026-09-11', 48)
+
+    expect(r).toEqual([paradaForaBase])
+  })
+
+  it('parada BASE nunca e cruzada -- so FORA_BASE entra na consulta em lote', async () => {
+    buscarStopsCruMock.mockResolvedValue([])
+    consolidaParadasApiMock.mockReturnValue([paradaBase, paradaForaBase])
+    consultarVelocidadeNaParadaMock.mockResolvedValue([{ temParadaComVelocidade: true, temCobertura: true }])
+
+    const r = await buscarParadasDoDia('111', 'RQV6I51', '2026-09-11', 48)
+
+    expect(consultarVelocidadeNaParadaMock).toHaveBeenCalledTimes(1)
+    expect(consultarVelocidadeNaParadaMock).toHaveBeenCalledWith([
+      { placa: 'RQV6I51', lat: -22.5, lng: -43.1, raioM: RAIO_CLUSTER_M, inicioIso: paradaForaBase.chegada, fimIso: paradaForaBase.fim_real },
+    ])
+    expect(r).toEqual([paradaBase, paradaForaBase])
+  })
+
+  it('duas FORA_BASE viram UMA UNICA chamada em lote pra ponte (nao sequencial)', async () => {
+    const outraForaBase = { ...paradaForaBase, id: 'p3', lat: -22.6, lng: -43.2 }
+    buscarStopsCruMock.mockResolvedValue([])
+    consolidaParadasApiMock.mockReturnValue([paradaForaBase, outraForaBase])
+    consultarVelocidadeNaParadaMock.mockResolvedValue([
+      { temParadaComVelocidade: true, temCobertura: true },
+      { temParadaComVelocidade: false, temCobertura: true },
+    ])
+
+    const r = await buscarParadasDoDia('111', 'RQV6I51', '2026-09-11', 48)
+
+    expect(consultarVelocidadeNaParadaMock).toHaveBeenCalledTimes(1)
+    expect(r).toEqual([paradaForaBase])
+  })
+
+  it('nenhuma parada FORA_BASE: nao chama a ponte', async () => {
+    buscarStopsCruMock.mockResolvedValue([])
+    consolidaParadasApiMock.mockReturnValue([paradaBase])
+
+    const r = await buscarParadasDoDia('111', 'RQV6I51', '2026-09-11', 48)
+
+    expect(consultarVelocidadeNaParadaMock).not.toHaveBeenCalled()
+    expect(r).toEqual([paradaBase])
   })
 })
 

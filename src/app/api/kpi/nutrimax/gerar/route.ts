@@ -296,6 +296,10 @@ export async function POST(req: NextRequest) {
         // Fix 12/09 (Finding 3): rotulo de ilha (Vila do Abraao) e' so' desta
         // pipeline -- ver comentario de verificarAcessoIlha em agregacao.ts.
         true,
+        // Item 3b (spec 2026-09-12): parada curta compartilhada entre
+        // enderecos distintos e' so' desta pipeline -- ver comentario de
+        // detectarParadaCurtaCompartilhada em agregacao.ts.
+        true,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

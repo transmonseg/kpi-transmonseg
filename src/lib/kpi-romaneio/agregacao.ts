@@ -271,8 +271,40 @@ export function montarDetalheEntregas(
   // false preserva Rio Quality como estava; o chamador da Nutry Max
   // (nutrimax/gerar/route.ts) passa true.
   verificarAcessoIlha: boolean = false,
+  // Item 3b (spec 2026-09-12, "Endurecimento da confirmacao"): medido no
+  // dia 11/09 pos-correcao de geocode -- 133 de 1.761 confirmacoes (7,6%)
+  // tem ≤3min de dwell, e 20 paradas distintas confirmam mais de uma NF ao
+  // mesmo tempo (pior caso: 1 parada de 1min confirmando 5 clientes,
+  // Rodovia Amaral Peixoto, 4 KMs diferentes colapsados no mesmo ponto
+  // geocodificado). Mesmo raciocinio de opt-in de verificarAcessoIlha
+  // acima -- especifico da Nutry Max, default false preserva Rio Quality
+  // (que usa a MESMA funcao, ver pipeline.ts) intocada.
+  detectarParadaCurtaCompartilhada: boolean = false,
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
+
+  // Item 3b: agrupa NFs confirmadas por GPS que compartilham a MESMA
+  // parada fisica (mesma chegada+saida da Visita -- e' a chave que
+  // montarVisitas usa tanto pro "vencedor" do closest-wins quanto pros
+  // que emprestaram horario via viaVizinhanca) e cuja permanencia real e
+  // curta (<=3min, limiar medido, ver comentario acima). Quando o grupo
+  // tem mais de um endereco DISTINTO, a parada nao da pra confirmar
+  // individualmente cada NF -- vira rotulo de conferencia pra TODAS elas
+  // (inclusive a que "ganhou" a visita sem viaVizinhanca), nao so' pras
+  // que emprestaram horario.
+  const LIMITE_PARADA_COMPARTILHADA_MIN = 3
+  const enderecosPorChaveDeParada = new Map<string, Set<string>>()
+  if (detectarParadaCurtaCompartilhada) {
+    for (const linha of linhasRomaneio) {
+      const visita = visitasPorNf.get(linha.nf)
+      if (!visita) continue
+      if (minutosEntre(visita.chegada, visita.saida) > LIMITE_PARADA_COMPARTILHADA_MIN) continue
+      const chave = `${visita.chegada}|${visita.saida}`
+      const set = enderecosPorChaveDeParada.get(chave) ?? new Set<string>()
+      set.add(linha.endereco)
+      enderecosPorChaveDeParada.set(chave, set)
+    }
+  }
 
   return linhasRomaneio.map((linha): LinhaDetalheEntrega => {
     const alvo = alvoPorNf.get(linha.nf)
@@ -344,6 +376,20 @@ export function montarDetalheEntregas(
     }
     if (observacao == null && tempoParadaMin != null && tempoParadaMin > LIMITE_TEMPO_LOJA_MIN) {
       observacao = 'TEMPO EM LOJA ACIMA DE 4H - CONFERIR'
+    }
+    // Item 3b: roda ANTES de viaVizinhanca/viaRaioAmpliado de proposito --
+    // quando a parada curta e' compartilhada por enderecos distintos, TODO
+    // o grupo (inclusive o "vencedor" do closest-wins, que nao tem
+    // viaVizinhanca) leva o MESMO rotulo de conferencia, em vez de so' os
+    // que emprestaram horario aparecerem marcados e o vencedor sair como
+    // CONFIRMADO (GPS) normal (a evidencia por tras dos dois e' igualmente
+    // fraca: 1 parada, N enderecos).
+    if (observacao == null && visita) {
+      const chave = `${visita.chegada}|${visita.saida}`
+      const enderecos = enderecosPorChaveDeParada.get(chave)
+      if (enderecos && enderecos.size > 1) {
+        observacao = 'ENTREGUE - PARADA CURTA (ATÉ 3MIN) CONFIRMOU VÁRIOS ENDEREÇOS DIFERENTES AO MESMO TEMPO - CONFERIR'
+      }
     }
     // Achado real 30/08 (bucket 500m-2km, 27% eram 1 parada real servindo
     // varios clientes vizinhos -- ex. TTM-2G02/Rocinha): horario emprestado

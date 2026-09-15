@@ -830,3 +830,98 @@ describe('montarDetalheEntregas', () => {
     })
   })
 })
+
+// Item 3b (spec 2026-09-12, "Endurecimento da confirmacao"): medido no dia
+// 11/09 pos-correcao de geocode -- 133 de 1.761 confirmacoes (7,6%) tem
+// ≤3min de dwell; 20 paradas distintas confirmam mais de uma NF ao mesmo
+// tempo, a pior confirmando 5 clientes diferentes de uma so' parada de
+// 1min (Rodovia Amaral Peixoto, 4 KMs diferentes colapsados no mesmo ponto
+// geocodificado). Opt-in (Nutry Max so') via 13o parametro posicional de
+// montarDetalheEntregas, default false -- preserva Rio Quality intocada.
+describe('montarDetalheEntregas -- 3b, parada curta compartilhada entre enderecos distintos', () => {
+  const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+  const paradaCurta = { chegada: '2026-09-11T08:00:00.000Z', saida: '2026-09-11T08:01:00.000Z' } // 1min
+
+  it('parada de 1min confirmando 5 enderecos distintos: TODAS as 5 NFs (inclusive a que "ganhou" a visita) levam o rotulo de conferencia, nao CONFIRMADO (GPS)', () => {
+    const linhas = ['NF1', 'NF2', 'NF3', 'NF4', 'NF5'].map((nf, i) =>
+      linha(nf, { endereco: `RODOVIA AMARAL PEIXOTO, KM ${i + 1}` }))
+    const visitas = new Map<string, Visita>(
+      linhas.map(l => [l.nf, { nf: l.nf, chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 10 }]),
+    )
+
+    const detalhes = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio,
+      true, new Map(), null, false, false, true,
+    )
+
+    expect(detalhes).toHaveLength(5)
+    for (const d of detalhes) {
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.observacao).not.toBeNull()
+      expect(d.observacao).not.toBe(null)
+      expect(d.observacao).toMatch(/CONFERIR/)
+      expect(d.observacao).toMatch(/PARADA CURTA/i)
+    }
+  })
+
+  it('flag desligada (default): NAO aplica o rotulo, mesma parada de 1min confirmando 5 enderecos fica CONFIRMADO (GPS) normal', () => {
+    const linhas = ['NF1', 'NF2'].map((nf, i) =>
+      linha(nf, { endereco: `RODOVIA AMARAL PEIXOTO, KM ${i + 1}` }))
+    const visitas = new Map<string, Visita>(
+      linhas.map(l => [l.nf, { nf: l.nf, chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 10 }]),
+    )
+
+    const detalhes = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio)
+
+    for (const d of detalhes) {
+      expect(d.observacao).toBeNull()
+    }
+  })
+
+  it('duas NFs com o MESMO endereco (multiplos itens pro mesmo cliente): nao e colapso, mantem confirmacao normal mesmo com parada curta', () => {
+    const linhas = ['NF1', 'NF2'].map(nf => linha(nf, { endereco: 'RUA UNICA, 100 - BAIRRO' }))
+    const visitas = new Map<string, Visita>(
+      linhas.map(l => [l.nf, { nf: l.nf, chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 10 }]),
+    )
+
+    const detalhes = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio,
+      true, new Map(), null, false, false, true,
+    )
+
+    for (const d of detalhes) {
+      expect(d.observacao).toBeNull()
+    }
+  })
+
+  it('parada compartilhada mas LONGA (>3min): nao rotula -- parada longa plausivelmente e uma visita real servindo enderecos adjacentes', () => {
+    const paradaLonga = { chegada: '2026-09-11T08:00:00.000Z', saida: '2026-09-11T08:05:00.000Z' } // 5min
+    const linhas = ['NF1', 'NF2'].map((nf, i) => linha(nf, { endereco: `RUA ADJACENTE ${i + 1}` }))
+    const visitas = new Map<string, Visita>(
+      linhas.map(l => [l.nf, { nf: l.nf, chegada: paradaLonga.chegada, saida: paradaLonga.saida, distanciaMetrosDoPonto: 10 }]),
+    )
+
+    const detalhes = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio,
+      true, new Map(), null, false, false, true,
+    )
+
+    for (const d of detalhes) {
+      expect(d.observacao).toBeNull()
+    }
+  })
+
+  it('parada curta confirmando UMA UNICA NF: nao rotula (item 3a ja cobre parada nao genuina, isto e outra checagem)', () => {
+    const linhas = [linha('NF1', { endereco: 'RUA SOLITARIA, 1' })]
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 10 }],
+    ])
+
+    const detalhes = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio,
+      true, new Map(), null, false, false, true,
+    )
+
+    expect(detalhes[0].observacao).toBeNull()
+  })
+})

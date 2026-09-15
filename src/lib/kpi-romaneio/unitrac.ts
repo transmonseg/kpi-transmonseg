@@ -1,8 +1,14 @@
 import { buscarFrota, buscarAlvos, buscarStopsCru, consolidaParadasApi, type AlvoApi } from '@/lib/unitrac-api'
+// RAIO_CLUSTER_M importado direto do submodulo (nao do barrel '@/lib/
+// unitrac-api') de proposito -- unitrac.test.ts mocka o barrel inteiro
+// pra buscarFrota/buscarAlvos/buscarStopsCru/consolidaParadasApi, e um
+// import daqui pegaria `undefined` do mock em vez da constante real.
+import { RAIO_CLUSTER_M } from '@/lib/unitrac-api/consolida'
 // UnitracParadaRow é definido em matcher.ts (Benassi), não em unitrac-api --
 // consolida.ts importa de lá mas não reexporta.
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { COD_USER_NUTRIMAX, BASES_COORD_NUTRIMAX } from './constants'
+import { consultarVelocidadeNaParada } from './velocidade-parada'
 
 /** Alvos (plano de entregas) do dia pras placas da escala. Resolve placa → cv
  *  via frota da conta Nutrimax; placa sem correspondência na frota é ignorada
@@ -24,7 +30,56 @@ export async function buscarParadasDoDia(cv: string, placaNorm: string, data: st
   // retorna null) -- todo cluster fora da base vira FORA_BASE, que é
   // exatamente a granularidade que queremos (a classificação real de
   // visita é nossa, feita em montarVisitas.ts contra o endereço geocodificado).
-  return consolidaParadasApi(eventos, {}, data, placaNorm, BASES_COORD_NUTRIMAX)
+  const paradas = consolidaParadasApi(eventos, {}, data, placaNorm, BASES_COORD_NUTRIMAX)
+  return validarParadasContraGpsProprio(paradas, placaNorm)
+}
+
+// Item 3a (spec 2026-09-12, "Endurecimento da confirmacao"): as paradas de
+// consolidaParadasApi vem so' do feed de "stops" da Unitrac, que reporta
+// sua PROPRIA coordenada de parada -- sem velocidade nenhuma pra
+// confirmar. Achado real 11/09: Unitrac reportou paradas dentro de 500m
+// de 10 enderecos pras placas RQV6I51/TUI1A90/RQV3J99; o rastro de GPS
+// PROPRIO (posicoes_historico, ingestao independente) mostra que essas
+// placas nunca chegaram a menos de 3,6-18,3km desses pontos o dia
+// inteiro -- a coordenada da Unitrac estava errada, e o relatorio usava
+// ela pra ACUSAR ("PASSOU NO ENDERECO MAS NAO REGISTROU PARADA").
+//
+// So' FORA_BASE entra na checagem (BASE nunca precisa de confirmacao de
+// entrega). Uma UNICA chamada em lote pra ponte (nao uma por parada) --
+// tipicamente um punhado de paradas por placa/dia, mas o gerador roda
+// Promise.all sobre MUITAS placas por vez, entao chamada sequencial por
+// parada aqui multiplicaria round-trips desnecessariamente.
+//
+// Regra fail-open: so' descarta quando ha' CONTRADICAO REAL (cobertura de
+// GPS na janela E nenhuma leitura parada) -- sem cobertura, ou se a
+// propria chamada da ponte falhar, MANTEM a parada como veio (nunca
+// inventa negativa por falta de dado).
+async function validarParadasContraGpsProprio(paradas: UnitracParadaRow[], placaNorm: string): Promise<UnitracParadaRow[]> {
+  const foraBase = paradas.filter((p): p is UnitracParadaRow & { lat: number; lng: number } =>
+    p.classificacao === 'FORA_BASE' && p.lat != null && p.lng != null)
+  if (foraBase.length === 0) return paradas
+
+  const resultados = await consultarVelocidadeNaParada(foraBase.map(p => ({
+    placa: placaNorm,
+    lat: p.lat,
+    lng: p.lng,
+    raioM: RAIO_CLUSTER_M,
+    // Janela da PERMANENCIA real (chegada -> fim_real), nao ate' `saida`
+    // (que inclui o trajeto ate' o proximo lugar, ver consolida.ts) --
+    // senao o cruzamento poderia contradizer uma parada genuina so'
+    // porque o caminhao ja estava em movimento rumo ao proximo cluster
+    // dentro da propria janela verificada.
+    inicioIso: p.chegada,
+    fimIso: p.fim_real ?? p.saida ?? p.chegada,
+  })))
+
+  const descartar = new Set<string>()
+  foraBase.forEach((p, i) => {
+    const r = resultados[i]
+    if (r && r.temCobertura && !r.temParadaComVelocidade) descartar.add(p.id)
+  })
+  if (descartar.size === 0) return paradas
+  return paradas.filter(p => !descartar.has(p.id))
 }
 
 // Achado real 12/09 (auditoria KPI Nutry Max): buscarStopsCru so' alcanca

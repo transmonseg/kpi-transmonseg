@@ -163,6 +163,13 @@ async function main() {
         paradasPorPlaca,
         resumo?.kmPercorrido ?? null,
         data === hojeBR() && (resumo?.chegadaCd ?? null) == null,
+        // Espelha o chamador real de producao (nutrimax/gerar/route.ts):
+        // rotulo de ilha (verificarAcessoIlha) e parada curta compartilhada
+        // (item 3b, detectarParadaCurtaCompartilhada) sao so' desta
+        // pipeline -- sem os dois, este script de verificacao nao
+        // exercitaria o mesmo comportamento que vai pro relatorio real.
+        true,
+        true,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
