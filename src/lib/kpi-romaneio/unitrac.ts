@@ -105,7 +105,19 @@ async function validarParadasContraGpsProprio(paradas: UnitracParadaRow[], placa
 // nao -- so' cai pro feed da Unitrac quando ha' apagao de sinal detectado
 // (ver apagaoDeSinal/teveApagaoDeSinal), porque so' a Unitrac recebe o
 // trecho em lote ao reconectar, algo que a ponte nao reconstroi a partir
-// de uma ultima posicao conhecida congelada.
+// de uma ultima posicao conhecida congelada. MAS essa troca so' vale se a
+// Unitrac realmente tiver algo pra devolver: buscarStopsCru so' alcanca as
+// 48h que antecedem AGORA (ver achado 11/09 abaixo), entao qualquer data
+// fora dessa janela chega aqui com daUnitrac=[] mesmo tendo havido apagao
+// de verdade -- nesse caso "usar a Unitrac" e' na pratica zerar o dia
+// inteiro da placa, nao usar um feed melhor. Medido em producao em 14/09
+// (7 dias, motor de confirmacao): 25,7% dos placa/dia (724 de 2.819) tem
+// pelo menos uma leitura com sinal degradado -- isso NAO e' raro, entao
+// reprocessar qualquer dia com mais de 48h e apagao detectado sem essa
+// checagem apagaria dado bom da ponte pra ~1/4 das placas. Por isso o
+// gate abaixo e' `apagaoDeSinal && daUnitrac.length > 0`, nao so'
+// `apagaoDeSinal`: a Unitrac so' pode vencer a ponte quando de fato tem
+// alguma coisa pra mostrar pra esse dia.
 //
 // Proximo passo pra fechar essa lacuna: persistir as paradas da Unitrac no
 // momento da geracao (elas ja sao buscadas), pra que reprocessar um dia
@@ -120,7 +132,10 @@ async function validarParadasContraGpsProprio(paradas: UnitracParadaRow[], placa
 // toda placa cujas paradas sobreviventes sao so' de base (313 NFs marcadas
 // erradas em producao). A escolha certa e' por "a data pedida esta fora do
 // alcance da API?" (foraDaJanela, ver foraDoAlcanceApi em constants.ts) --
-// so' isso decide se o feed parcial da Unitrac e' confiavel ou nao.
+// isso decidia se o feed parcial da Unitrac era confiavel ou nao. `foraDaJanela`
+// nao e' mais parametro desta funcao (substituido por `apagaoDeSinal` numa
+// fase seguinte, ver achado 14/09 abaixo) -- a regra atual e' a descrita la':
+// so' cai pra Unitrac quando ha' apagao E a Unitrac tem dado pra esse dia.
 // Achado real 14/09 (fase que torna a ponte fonte PRIMARIA, nao so'
 // fallback pra fora da janela): a inversao de prioridade abaixo e'
 // segura DESDE QUE o chamador tenha checado apagao de sinal antes --
@@ -136,7 +151,7 @@ export function resolverParadas(
   placaNorm: string,
   apagaoDeSinal: boolean,
 ): UnitracParadaRow[] {
-  if (apagaoDeSinal) return daUnitrac
+  if (apagaoDeSinal && daUnitrac.length > 0) return daUnitrac
   return daPonte?.length ? paradasDaPonte(daPonte, placaNorm) : daUnitrac
 }
 

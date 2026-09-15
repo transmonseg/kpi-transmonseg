@@ -241,8 +241,13 @@ describe('resolverParadas', () => {
     expect(r).toBe(daUnitracEx)
   })
 
-  it('com apagao e sem dado nenhum da Unitrac: lista vazia, nunca inventa (fail-open nos dois lados)', () => {
+  it('com apagao mas Unitrac sem dado nenhum pra esse dia (fora da janela de 48h): usa a ponte, nao zera o dia (achado 14/09)', () => {
     const r = resolverParadas([], daPonteEx, 'RQU2G47', true)
+    expect(r).toEqual(paradasDaPonte(daPonteEx, 'RQU2G47'))
+  })
+
+  it('com apagao e sem dado nenhum em nenhum dos dois lados: lista vazia, nunca inventa (fail-open nos dois lados)', () => {
+    const r = resolverParadas([], undefined, 'RQU2G47', true)
     expect(r).toEqual([])
   })
 })
