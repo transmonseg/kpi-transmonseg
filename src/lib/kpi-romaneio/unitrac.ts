@@ -47,7 +47,10 @@ export async function buscarParadasDoDia(cv: string, placaNorm: string, data: st
 // esperada, nao descartar. Descartar aqui (antes de resolverParadas) faz o
 // array ficar vazio nesse caso, o que ja' aciona o fallback pra ponte que
 // resolverParadas ja' tem pra "Unitrac nao devolveu nada".
-function descartarParadaAbertaAlemDoDia(paradas: UnitracParadaRow[], data: string): UnitracParadaRow[] {
+// Exportada pra Rio Quality tambem usar (pipeline.ts monta seu proprio
+// daUnitrac direto de consolidaParadasApi, sem passar por buscarParadasDoDia
+// -- mesmo risco de parada BASE degenerada, mesmo conserto).
+export function descartarParadaAbertaAlemDoDia(paradas: UnitracParadaRow[], data: string): UnitracParadaRow[] {
   const hoje = hojeBR()
   if (data >= hoje) return paradas
   return paradas.filter(p => {

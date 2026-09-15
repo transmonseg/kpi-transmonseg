@@ -12,6 +12,7 @@ vi.mock('@/lib/kpi-romaneio/base-horarios', () => ({
 import { buscarStopsCru, consolidaParadasApi } from '@/lib/unitrac-api'
 import { buscarHorariosBase } from '@/lib/kpi-romaneio/base-horarios'
 import { buscarParadasPadraoRioQuality } from './pipeline'
+import { hojeBR } from '@/lib/data-br'
 
 describe('buscarParadasPadraoRioQuality', () => {
   beforeEach(() => {
@@ -46,7 +47,7 @@ describe('buscarParadasPadraoRioQuality', () => {
     vi.mocked(consolidaParadasApi).mockReturnValue(daUnitrac as never)
 
     const r = await buscarParadasPadraoRioQuality('12345', 'RQU2G47', '2026-09-11')
-    expect(r).toBe(daUnitrac)
+    expect(r).toEqual(daUnitrac)
   })
 
   it('sem dado na ponte: cai pra Unitrac (fail-open)', async () => {
@@ -56,6 +57,26 @@ describe('buscarParadasPadraoRioQuality', () => {
     vi.mocked(consolidaParadasApi).mockReturnValue(daUnitrac as never)
 
     const r = await buscarParadasPadraoRioQuality('12345', 'RQU2G47', '2026-09-11')
-    expect(r).toBe(daUnitrac)
+    expect(r).toEqual(daUnitrac)
+  })
+
+  // Achado real 14/09: mesmo conserto de unitrac.ts (descartarParadaAbertaAlemDoDia)
+  // -- Rio Quality monta seu proprio daUnitrac direto de consolidaParadasApi
+  // (nao passa por buscarParadasDoDia), entao precisa do mesmo filtro.
+  it('com apagao: parada BASE da Unitrac que nunca fechou (aberta ate hoje) num dia passado e descartada, cai pra ponte vazia -> []', async () => {
+    const hoje = hojeBR()
+    const diaPassado = '2026-01-01'
+    vi.mocked(buscarHorariosBase).mockResolvedValue(new Map([
+      ['RQU2G47', { saidaBase: null, chegadaBase: null, kmPercorrido: null, paradas: undefined, apagaoDeSinal: true }],
+    ]))
+    vi.mocked(buscarStopsCru).mockResolvedValue([])
+    vi.mocked(consolidaParadasApi).mockReturnValue([{
+      id: 'p-aberta', placa_norm: 'RQU2G47',
+      chegada: `${diaPassado}T23:09:00.000Z`, saida: `${hoje}T07:12:00.000Z`, fim_real: `${hoje}T07:12:00.000Z`,
+      duracao_seg: 115_380, lat: -21.6885, lng: -41.3114, classificacao: 'BASE',
+    }] as never)
+
+    const r = await buscarParadasPadraoRioQuality('12345', 'RQU2G47', diaPassado)
+    expect(r).toEqual([])
   })
 })

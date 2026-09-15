@@ -7,7 +7,7 @@ import { BASES_COORD_RIOQUALITY } from './constants'
 // proposito -- subestima 43% a 65%. Ver km-rastro.ts.
 import { calcularKmPorRastro } from './km-rastro'
 import { buscarHorariosBase } from '@/lib/kpi-romaneio/base-horarios'
-import { resolverParadas } from '@/lib/kpi-romaneio/unitrac'
+import { resolverParadas, descartarParadaAbertaAlemDoDia } from '@/lib/kpi-romaneio/unitrac'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
 import { parseCustos, parseEntregas, montarLinhasRomaneio, rotaParaZona, parseEntregasCompletas, montarLinhasRomaneioCompleto } from './parse-planilhas'
@@ -75,8 +75,11 @@ export async function buscarParadasPadraoRioQuality(
     buscarHorariosBase([placaNorm], data, new Map(), true),
   ])
   // base propria da Rio Quality (descoberta pelo GPS, ver constants.ts) --
-  // NAO usar buscarParadasDoDia, que classifica pelas bases da Nutry Max
-  const daUnitrac = consolidaParadasApi(daUnitracEventos, {}, data, placaNorm, BASES_COORD_RIOQUALITY)
+  // NAO usar buscarParadasDoDia, que classifica pelas bases da Nutry Max.
+  // descartarParadaAbertaAlemDoDia: mesmo conserto do achado real 14/09 em
+  // unitrac.ts (parada BASE degenerada que nunca fecha num dia passado).
+  const daUnitracBruto = consolidaParadasApi(daUnitracEventos, {}, data, placaNorm, BASES_COORD_RIOQUALITY)
+  const daUnitrac = descartarParadaAbertaAlemDoDia(daUnitracBruto, data)
   const horario = horarioBasePorPlaca.get(placaNorm)
   return resolverParadas(daUnitrac, horario?.paradas, placaNorm, horario?.apagaoDeSinal ?? false)
 }
