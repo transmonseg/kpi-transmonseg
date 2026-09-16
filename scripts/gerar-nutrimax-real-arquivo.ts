@@ -52,6 +52,14 @@ async function main() {
   const escalaCompleta = [...escala, ...resultadoPao.escala]
   const romaneioCompleto = [...romaneio, ...resultadoPao.linhas]
   console.log(`Escala: ${escalaCompleta.length} linhas, Romaneio: ${romaneioCompleto.length} linhas (${resultadoPao.linhas.length} do pão)`)
+  // Fix (revisao final de branch 15/09, Important 4 -- espelha route.ts): o
+  // Romaneio de Entrega da Nutry Max e' o documento obrigatorio. Linha
+  // nenhuma reconhecida nele e' PDF errado, mesmo que o pao tenha trazido
+  // linhas -- nao pode passar em silencio so' porque o total ficou > 0.
+  if (romaneio.length === 0) {
+    console.error('ERRO: nenhuma linha reconhecida no Romaneio de Entrega — confira se o PDF é o "Romaneio de Entrega" da Nutry Max.')
+    process.exit(1)
+  }
 
   const enderecosUnicos = [...new Set(romaneioCompleto.map(l => l.endereco))]
   const resultadosGeo = await geocodificarEnderecos(enderecosUnicos, { validarTerritorio: true })
@@ -183,7 +191,16 @@ async function main() {
     const [carga, placaNorm] = chave.split('::')
     return { carga, placaNorm }
   })
-  const avisos = detectarDescasamentos(escalaCompleta, cargasRomaneioList)
+  // Fix (revisao final de branch 15/09, Critical 1 -- espelha route.ts): as
+  // duas escalas sao INDEPENDENTES. A Escala de Rota so' cobre cargas Nutry
+  // Max; a escala sintetica do pao so' cobre cargas PAO-*. Cruzar o conjunto
+  // misturado marcava falsamente "sem_escala" no lado que nao tinha o
+  // documento correspondente.
+  const ehCargaPao = (carga: string) => carga.startsWith('PAO-')
+  const avisos = [
+    ...detectarDescasamentos(escala, cargasRomaneioList.filter(c => !ehCargaPao(c.carga))),
+    ...(romaneioPaoBuf ? detectarDescasamentos(resultadoPao.escala, cargasRomaneioList.filter(c => ehCargaPao(c.carga))) : []),
+  ].sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
 
   console.log(`Total cargas: ${linhasKpi.length}, OK: ${linhasKpi.filter(l => l.status === 'OK').length}, avisos: ${avisos.length}`)
   const negativos = linhasKpi.filter(l => l.tempoOperacaoMin != null && l.tempoOperacaoMin < 0)

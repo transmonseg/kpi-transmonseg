@@ -1,6 +1,18 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import ExcelJS from 'exceljs'
 import type { LinhaRomaneio, LinhaEscala } from '@/lib/kpi-romaneio/types'
+import type { UnitracParadaRow } from '@/lib/kpi/matcher'
+
+// Estado mutavel compartilhado com as factories de vi.mock (que sao
+// hoisted acima de qualquer `const` normal) -- deixa cada teste escolher
+// se a placa tem GPS/frota, sem duplicar o arquivo de mocks inteiro.
+const cenario = vi.hoisted(() => ({
+  paradas: [] as unknown[],
+  frota: [] as unknown[],
+  coordPorEndereco: new Map<string, { lat: number; lng: number }>(),
+  paoErro: null as Error | null,
+  romaneioVazio: false,
+}))
 
 // Task 2 (romaneio do pão): mocks de TODO módulo com efeito colateral
 // (rede/banco/storage) usado pela pipeline de POST -- não existia
@@ -22,7 +34,7 @@ vi.mock('@/lib/perfil', () => ({
 
 vi.mock('@/lib/unitrac-api', async importOriginal => {
   const real = await importOriginal<typeof import('@/lib/unitrac-api')>()
-  return { ...real, buscarFrota: async () => [] }
+  return { ...real, buscarFrota: async () => cenario.frota }
 })
 
 const PLACA = 'ABC1234'
@@ -55,18 +67,28 @@ function escalaSintetica(overrides: Partial<LinhaEscala> = {}): LinhaEscala {
 }
 
 vi.mock('@/lib/kpi-romaneio/parse-escala', () => ({ parseEscala: async () => [] }))
-vi.mock('@/lib/kpi-romaneio/parse-romaneio', () => ({ parseRomaneio: async () => [linhaNutrimax()] }))
+vi.mock('@/lib/kpi-romaneio/parse-romaneio', () => ({
+  parseRomaneio: async () => (cenario.romaneioVazio ? [] : [linhaNutrimax()]),
+}))
 vi.mock('@/lib/kpi-romaneio/parse-pao', () => ({
-  parsePao: async () => ({ linhas: [linhaPao()], escala: [escalaSintetica()] }),
+  parsePao: async () => {
+    if (cenario.paoErro) throw cenario.paoErro
+    return { linhas: [linhaPao()], escala: [escalaSintetica()] }
+  },
 }))
 vi.mock('@/lib/kpi-romaneio/geocode', () => ({
   geocodificarEnderecos: async (enderecos: string[]) =>
-    enderecos.map(() => ({ lat: -22.9, lng: -43.2, confiavel: true, motivo: undefined })),
+    enderecos.map(e => {
+      const c = cenario.coordPorEndereco.get(e) ?? { lat: -22.9, lng: -43.2 }
+      return { lat: c.lat, lng: c.lng, confiavel: true, motivo: undefined }
+    }),
 }))
 vi.mock('@/lib/kpi-romaneio/unitrac', () => ({
   buscarAlvosDoDia: async () => [],
-  buscarParadasDoDia: async () => [],
-  resolverParadas: () => [],
+  buscarParadasDoDia: async () => cenario.paradas,
+  // Passa adiante o que veio da Unitrac (mesmo efeito do caminho real
+  // quando nao ha ponte de posicao continua pra placa).
+  resolverParadas: (daUnitrac: unknown[]) => daUnitrac,
 }))
 vi.mock('@/lib/kpi-romaneio/base-horarios', () => ({
   buscarHorariosBase: async () => new Map(),
@@ -113,25 +135,40 @@ describe('narrowGeoMotivo', () => {
 // se juntar ao Romaneio/Escala normais da Nutry Max ANTES do resto do
 // pipeline (geocode, agregação, xlsx), pra placa que roda as duas cargas
 // no mesmo dia sair com tudo na mesma aba.
-describe('POST /api/kpi/nutrimax/gerar -- romaneioPao opcional', () => {
-  function montarRequest(comRomaneioPao: boolean): Request {
-    const fd = new FormData()
-    fd.set('data', '2026-09-15')
-    fd.set('romaneio', new File(['romaneio pdf'], 'romaneio.pdf', { type: 'application/pdf' }))
-    if (comRomaneioPao) {
-      fd.set('romaneioPao', new File(['pao pdf'], 'romaneio-pao.pdf', { type: 'application/pdf' }))
-    }
-    return new Request('http://localhost/api/kpi/nutrimax/gerar', { method: 'POST', body: fd })
+function montarRequest(comRomaneioPao: boolean, comEscala = false): Request {
+  const fd = new FormData()
+  fd.set('data', '2026-09-15')
+  fd.set('romaneio', new File(['romaneio pdf'], 'romaneio.pdf', { type: 'application/pdf' }))
+  if (comEscala) fd.set('escala', new File(['escala pdf'], 'escala.pdf', { type: 'application/pdf' }))
+  if (comRomaneioPao) {
+    fd.set('romaneioPao', new File(['pao pdf'], 'romaneio-pao.pdf', { type: 'application/pdf' }))
   }
+  return new Request('http://localhost/api/kpi/nutrimax/gerar', { method: 'POST', body: fd })
+}
 
+async function abrirXlsx(res: Response): Promise<ExcelJS.Workbook> {
+  const wb = new ExcelJS.Workbook()
+  // `as never`: os tipos do exceljs declaram um `Buffer` proprio, incompativel
+  // com o Buffer generico do @types/node atual (mesmo atrito ja presente em
+  // gerador-xlsx.test.ts). Em runtime e' exatamente o mesmo objeto.
+  await wb.xlsx.load(Buffer.from(await res.arrayBuffer()) as never)
+  return wb
+}
+
+beforeEach(() => {
+  cenario.paradas = []
+  cenario.frota = []
+  cenario.coordPorEndereco = new Map()
+  cenario.paoErro = null
+  cenario.romaneioVazio = false
+})
+
+describe('POST /api/kpi/nutrimax/gerar -- romaneioPao opcional', () => {
   it('carga do pão aparece misturada com a Nutry Max, na mesma aba da placa', async () => {
     const res = await POST(montarRequest(true) as never)
     expect(res.status).toBe(200)
 
-    const buffer = Buffer.from(await res.arrayBuffer())
-    const wb = new ExcelJS.Workbook()
-    await wb.xlsx.load(buffer)
-
+    const wb = await abrirXlsx(res)
     const wsPlaca = wb.getWorksheet(PLACA)
     expect(wsPlaca).toBeDefined()
 
@@ -149,10 +186,7 @@ describe('POST /api/kpi/nutrimax/gerar -- romaneioPao opcional', () => {
     const res = await POST(montarRequest(false) as never)
     expect(res.status).toBe(200)
 
-    const buffer = Buffer.from(await res.arrayBuffer())
-    const wb = new ExcelJS.Workbook()
-    await wb.xlsx.load(buffer)
-
+    const wb = await abrirXlsx(res)
     const wsPlaca = wb.getWorksheet(PLACA)
     expect(wsPlaca).toBeDefined()
 
@@ -163,5 +197,134 @@ describe('POST /api/kpi/nutrimax/gerar -- romaneioPao opcional', () => {
 
     expect(cargasNaAba.has('97900')).toBe(true)
     expect(cargasNaAba.has('PAO-1')).toBe(false)
+  })
+})
+
+// Achado Important 6 da revisao FINAL de branch (15/09): o requisito central
+// da spec e' que a carga do pao e a carga Nutry Max da MESMA placa sejam
+// confirmadas pelo MESMO `paradasPorPlaca` -- os testes acima so' provavam
+// que a linha aparece na aba certa, com zero parada mockada (nenhum status
+// real exercitado). Aqui ha' GPS de verdade: 2 paradas FORA_BASE, uma na
+// coordenada de cada endereco, vindas da MESMA busca por placa.
+describe('POST /api/kpi/nutrimax/gerar -- pão e Nutry Max confirmam pelo mesmo GPS da placa', () => {
+  const COORD_NUTRIMAX = { lat: -22.9, lng: -43.2 }
+  const COORD_PAO = { lat: -22.95, lng: -43.25 }
+
+  function parada(id: string, coord: { lat: number; lng: number }, chegada: string, saida: string): UnitracParadaRow {
+    return {
+      id,
+      placa_norm: PLACA,
+      chegada,
+      saida,
+      fim_real: saida,
+      duracao_seg: 1800,
+      local_parada: 'RUA X',
+      codigo_loja: null,
+      nome_loja: null,
+      lat: coord.lat,
+      lng: coord.lng,
+      endereco: null,
+      classificacao: 'FORA_BASE',
+      ordem: 1,
+    }
+  }
+
+  it('NF da Nutry Max e NF do pão na mesma placa saem CONFIRMADO (GPS) pelas paradas da própria placa', async () => {
+    cenario.frota = [{ placaNorm: PLACA, cv: 'CV-1' }]
+    cenario.coordPorEndereco = new Map([
+      ['RUA A, 1 - RIO DE JANEIRO', COORD_NUTRIMAX],
+      ['RUA B, 2 - RIO DE JANEIRO', COORD_PAO],
+    ])
+    cenario.paradas = [
+      parada('p1', COORD_NUTRIMAX, '2026-09-15T11:00:00.000Z', '2026-09-15T11:30:00.000Z'),
+      parada('p2', COORD_PAO, '2026-09-15T13:00:00.000Z', '2026-09-15T13:30:00.000Z'),
+    ]
+
+    const res = await POST(montarRequest(true) as never)
+    expect(res.status).toBe(200)
+
+    const wb = await abrirXlsx(res)
+    const wsPlaca = wb.getWorksheet(PLACA)
+    expect(wsPlaca).toBeDefined()
+
+    // Colunas de COLUNAS_DETALHE_PLACA: 1=CARGA, 2=NF, ..., 8=STATUS.
+    const statusPorNf = new Map<string, string>()
+    const cargaPorNf = new Map<string, string>()
+    wsPlaca!.eachRow((row, rowNumber) => {
+      if (rowNumber < 4) return
+      const nf = String(row.getCell(2).value)
+      statusPorNf.set(nf, String(row.getCell(8).value))
+      cargaPorNf.set(nf, String(row.getCell(1).value))
+    })
+
+    // A NF do pão e a da Nutry Max vieram de cargas diferentes...
+    expect(cargaPorNf.get('NF001')).toBe('97900')
+    expect(cargaPorNf.get('NF900')).toBe('PAO-1')
+    // ...mas foram confirmadas pelo MESMO conjunto de paradas da placa.
+    expect(statusPorNf.get('NF001')).toBe('CONFIRMADO (GPS)')
+    expect(statusPorNf.get('NF900')).toBe('CONFIRMADO (GPS)')
+  })
+})
+
+// Achado Critical 1 da revisao FINAL de branch (15/09): a guarda de avisos
+// tinha virado `(escalaBuf || romaneioPaoBuf)`, cruzando a escala COMPLETA
+// (Nutry Max + sintetica do pão) contra TODAS as cargas. Com só o Romaneio
+// do Pão enviado, `escalaCompleta` só tinha a escala do pão e toda carga
+// Nutry Max normal voltava a sair falsamente "sem escala" (o bug de 79
+// avisos falsos resolvido em 10/09).
+describe('POST /api/kpi/nutrimax/gerar -- avisos de descasamento por origem', () => {
+  it('só Romaneio do Pão (sem Escala de Rota): nenhuma carga Nutry Max é marcada "sem escala"', async () => {
+    const res = await POST(montarRequest(true) as never)
+    expect(res.status).toBe(200)
+
+    const wb = await abrirXlsx(res)
+    // Aba "Avisos" só existe quando há aviso de verdade (gerador-xlsx.ts).
+    expect(wb.getWorksheet('Avisos')).toBeUndefined()
+  })
+
+  it('com Escala de Rota que não cobre a carga Nutry Max: o aviso volta a disparar, e só pra ela', async () => {
+    // parseEscala está mockado devolvendo [] -- Escala enviada mas sem
+    // nenhuma carga correspondente. O pão continua com a escala sintética
+    // dele, então NÃO pode aparecer nos avisos.
+    const res = await POST(montarRequest(true, true) as never)
+    expect(res.status).toBe(200)
+
+    const wb = await abrirXlsx(res)
+    const wsAvisos = wb.getWorksheet('Avisos')
+    expect(wsAvisos).toBeDefined()
+
+    const avisos: string[][] = []
+    wsAvisos!.eachRow((row, rowNumber) => {
+      if (rowNumber >= 2) avisos.push([String(row.getCell(1).value), String(row.getCell(3).value)])
+    })
+    expect(avisos).toEqual([['97900', 'sem escala']])
+  })
+})
+
+// Achado Important 3 da revisao FINAL de branch (15/09): parsePao lança
+// erros escritos pro operador ("Romaneio do Pão é do dia X..."), mas a
+// chamada estava dentro de um Promise.all sem try/catch -- virava 500
+// "Internal Server Error" no painel.
+describe('POST /api/kpi/nutrimax/gerar -- erro do parser do pão', () => {
+  it('erro do parsePao vira 422 com a mensagem legível, não 500 opaco', async () => {
+    cenario.paoErro = new Error('Romaneio do Pão é do dia 2026-09-14, mas o relatório pedido é de 2026-09-15. Confira se subiu o arquivo certo.')
+
+    const res = await POST(montarRequest(true) as never)
+    expect(res.status).toBe(422)
+    expect(await res.text()).toContain('Romaneio do Pão é do dia 2026-09-14')
+  })
+})
+
+// Achado Important 4 da revisao FINAL de branch (15/09): a guarda de "PDF
+// errado" tinha passado a olhar `romaneioCompleto` -- um Romaneio de Entrega
+// totalmente irreconhecível (0 linhas) passava em silêncio desde que o pão
+// tivesse trazido alguma linha.
+describe('POST /api/kpi/nutrimax/gerar -- guarda de Romaneio de Entrega irreconhecível', () => {
+  it('romaneio principal com 0 linhas ainda dispara o erro mesmo com o pão enviado', async () => {
+    cenario.romaneioVazio = true
+
+    const res = await POST(montarRequest(true) as never)
+    expect(res.status).toBe(422)
+    expect(await res.text()).toContain('Romaneio de Entrega')
   })
 })

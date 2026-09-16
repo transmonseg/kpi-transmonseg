@@ -144,15 +144,33 @@ export async function POST(req: NextRequest) {
     console.warn(`[kpi/nutrimax] data ${data} fora da janela de 48h da Unitrac -- usando paradas derivadas do historico do monitoramento`)
   }
 
-  const [escala, romaneio, resultadoPao] = await Promise.all([
-    escalaBuf ? parseEscala(escalaBuf) : Promise.resolve([]),
-    parseRomaneio(romaneioBuf),
-    romaneioPaoBuf ? parsePao(romaneioPaoBuf, data) : Promise.resolve({ linhas: [], escala: [] }),
-  ])
+  // Fix (revisao final de branch 15/09, Important 3): parsePao lanca erros
+  // com mensagem escrita PRO OPERADOR ("Romaneio do Pão é do dia X, mas o
+  // relatório pedido é de Y") -- sem este try/catch virava 500 generico e o
+  // painel mostrava "Internal Server Error", pior que o padrao 4xx +
+  // err.message usado no resto deste arquivo.
+  let escala: Awaited<ReturnType<typeof parseEscala>>
+  let romaneio: Awaited<ReturnType<typeof parseRomaneio>>
+  let resultadoPao: Awaited<ReturnType<typeof parsePao>>
+  try {
+    ;[escala, romaneio, resultadoPao] = await Promise.all([
+      escalaBuf ? parseEscala(escalaBuf) : Promise.resolve([]),
+      parseRomaneio(romaneioBuf),
+      romaneioPaoBuf ? parsePao(romaneioPaoBuf, data) : Promise.resolve({ linhas: [], escala: [] }),
+    ])
+  } catch (err) {
+    return new NextResponse(err instanceof Error ? err.message : 'Erro ao ler os PDFs enviados.', { status: 422 })
+  }
   const escalaCompleta = [...escala, ...resultadoPao.escala]
   const romaneioCompleto = [...romaneio, ...resultadoPao.linhas]
 
-  if (romaneioCompleto.length === 0) {
+  // Fix (revisao final de branch 15/09, Important 4): esta guarda e' sobre o
+  // Romaneio de Entrega DA NUTRY MAX especificamente (o unico documento
+  // obrigatorio). Checar `romaneioCompleto` deixava um romaneio principal
+  // totalmente irreconhecivel passar em silencio so' porque o pao trouxe
+  // alguma linha -- exatamente o caso em que o operador mais precisa do
+  // aviso. Continua valendo mesmo com o pao enviado.
+  if (romaneio.length === 0) {
     return new NextResponse(
       'Nenhuma linha reconhecida no Romaneio de Entrega — confira se o PDF é o "Romaneio de Entrega" da Nutry Max.',
       { status: 422 },
@@ -327,7 +345,19 @@ export async function POST(req: NextRequest) {
   // carga como "sem_escala" (79 avisos so' porque o documento nao veio, nao
   // porque tem descasamento de verdade entre os dois). So' roda a checagem
   // quando a Escala de fato foi enviada.
-  const avisos = (escalaBuf || romaneioPaoBuf) ? detectarDescasamentos(escalaCompleta, cargasRomaneioList) : []
+  // Fix (revisao final de branch 15/09, Critical 1): os dois documentos tem
+  // escalas INDEPENDENTES -- a Escala de Rota cobre so' as cargas Nutry Max,
+  // a escala sintetica do pao cobre so' as cargas PAO-*. Rodar a checagem
+  // sobre o conjunto misturado reintroduzia o bug de 10/09 ao contrario:
+  // enviando SO' o Romaneio do Pao (sem Escala de Rota), `escalaCompleta`
+  // so' tinha a escala do pao e TODA carga Nutry Max voltava a sair
+  // "sem_escala". Cada escopo roda contra a sua propria fonte, e so' quando
+  // o documento correspondente de fato veio.
+  const ehCargaPao = (carga: string) => carga.startsWith('PAO-')
+  const avisos = [
+    ...(escalaBuf ? detectarDescasamentos(escala, cargasRomaneioList.filter(c => !ehCargaPao(c.carga))) : []),
+    ...(romaneioPaoBuf ? detectarDescasamentos(resultadoPao.escala, cargasRomaneioList.filter(c => ehCargaPao(c.carga))) : []),
+  ].sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
 
   const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpi, data, avisos, detalhe)
 
