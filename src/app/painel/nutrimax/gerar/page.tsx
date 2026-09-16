@@ -108,18 +108,6 @@ export default function NutrimaxGerarPage() {
         </div>
 
         <div className="col-span-1 lg:col-span-3">
-          <FileDropzone
-            eyebrow="Passo 4 · opcional"
-            label="Romaneio do Pão"
-            hint="PDF · PROGRAMAÇÃO JAC (CONGELADO) — serve como escala e romaneio juntos"
-            accept=".pdf"
-            files={romaneioPao}
-            onAdd={files => setRomaneioPao(files.slice(0, 1))}
-            onRemove={() => setRomaneioPao([])}
-          />
-        </div>
-
-        <div className="col-span-1 lg:col-span-3">
           <div className="flex h-full flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
             <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
               <CalendarBlank size={12} weight="bold" />
@@ -139,6 +127,18 @@ export default function NutrimaxGerarPage() {
               </p>
             )}
           </div>
+        </div>
+
+        <div className="col-span-1 lg:col-span-3">
+          <FileDropzone
+            eyebrow="Passo 4 · opcional"
+            label="Romaneio do Pão"
+            hint="PDF · PROGRAMAÇÃO JAC (CONGELADO) — serve como escala e romaneio juntos"
+            accept=".pdf"
+            files={romaneioPao}
+            onAdd={files => setRomaneioPao(files.slice(0, 1))}
+            onRemove={() => setRomaneioPao([])}
+          />
         </div>
       </section>
 
