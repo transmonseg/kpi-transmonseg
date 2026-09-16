@@ -306,6 +306,41 @@ export function montarDetalheEntregas(
     }
   }
 
+  // Fix (revisao final de branch 15/09, Critical 2): carga SEM PLACA (o
+  // Romaneio do Pao pode vir com a coluna CARRO em branco) nao tem paradas
+  // proprias -- `paradasPorOutraPlaca.get('')` e' vazio, `distPropria` fica
+  // null, `propriaPlacaPlausivelmentePerto` fica false e
+  // acharParadaDeOutraPlaca rodava SEM NENHUMA GUARDA, varrendo a frota
+  // inteira e casando qualquer parada a <=500m. A NF saia CONFIRMADA com o
+  // rotulo "CARGA TRANSFERIDA" -- transferencia que nunca existiu, so' a
+  // placa que nao veio no documento. Pior: agregarPorCarga (que so' olha a
+  // placa propria) devolvia INCOMPLETO/0 paradas pra MESMA carga, deixando o
+  // relatorio contraditorio. Sem placa nao ha' como confirmar nada por GPS --
+  // curto-circuita com rotulo de excecao proprio, mesmo espirito de "sem
+  // rastreador"/"sem dado de GPS" acima. Rotulo generico de proposito: esta
+  // funcao tambem serve o Rio Quality (kpi-rioquality/pipeline.ts).
+  const semPlacaNoRomaneio = placaNorm.trim() === ''
+  if (semPlacaNoRomaneio) {
+    return linhasRomaneio.map((linha): LinhaDetalheEntrega => ({
+      carga,
+      placa: placaNorm,
+      motorista: resumoCarga.motorista,
+      clienteCodigo: linha.clienteCodigo,
+      nf: linha.nf,
+      clienteNome: linha.clienteNome,
+      endereco: linha.endereco,
+      saidaCd: resumoCarga.saidaCd,
+      chegadaCd: resumoCarga.chegadaCd,
+      tempoOperacaoMin: resumoCarga.tempoOperacaoMin,
+      chegada: null,
+      saida: null,
+      tempoParadaMin: null,
+      status: 'pendente',
+      temRastreador,
+      observacao: 'CARGA SEM PLACA NO ROMANEIO - CONFERIR COM A OPERAÇÃO',
+    }))
+  }
+
   return linhasRomaneio.map((linha): LinhaDetalheEntrega => {
     const alvo = alvoPorNf.get(linha.nf)
     const visita = visitasPorNf.get(linha.nf)

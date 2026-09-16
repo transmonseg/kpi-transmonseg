@@ -925,3 +925,90 @@ describe('montarDetalheEntregas -- 3b, parada curta compartilhada entre endereco
     expect(detalhes[0].observacao).toBeNull()
   })
 })
+
+// Achado Critical 2 da revisao FINAL de branch (15/09): o Romaneio do Pao
+// pode trazer uma carga com a coluna CARRO em branco (placa ''). Sem placa
+// nao ha' paradas proprias -> distanciaAteParadaPropria devolve null ->
+// propriaPlacaPlausivelmentePerto false -> acharParadaDeOutraPlaca rodava SEM
+// NENHUMA GUARDA, varria a frota inteira e casava qualquer parada a <=500m.
+// A NF saia "CONFIRMADO (GPS)" com o rotulo "CARGA TRANSFERIDA" -- uma
+// transferencia que nunca existiu -- e ainda contradizia agregarPorCarga, que
+// so' olha a placa propria e devolvia INCOMPLETO/0 paradas pra mesma carga.
+describe('montarDetalheEntregas -- carga SEM PLACA no romaneio (Critical 2)', () => {
+  const resumoVazio = { motorista: 'MOTORISTA DO PAO', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+
+  function paradaFrotaAoLadoDoPonto(placa: string): UnitracParadaRow {
+    return parada({
+      id: `p-${placa}`,
+      placa_norm: placa,
+      classificacao: 'FORA_BASE',
+      // Mesma coordenada do ponto de `linha()` -- distancia ~0, dentro de
+      // qualquer raio de confirmacao.
+      lat: -22.9,
+      lng: -43.2,
+      chegada: '2026-09-15T12:00:00.000Z',
+      saida: '2026-09-15T12:30:00.000Z',
+      fim_real: '2026-09-15T12:30:00.000Z',
+    })
+  }
+
+  it('nunca sai como confirmado_gps nem com rotulo de "CARGA TRANSFERIDA"', () => {
+    const linhas = [linha('NF1', { carga: 'PAO-4', placa: '' }), linha('NF2', { carga: 'PAO-4', placa: '' })]
+    // Frota inteira da Nutry Max parada em cima do ponto -- exatamente o
+    // cenario que antes produzia a falsa transferencia.
+    const paradasPorPlaca = new Map<string, UnitracParadaRow[]>([
+      ['', []],
+      ['TTI9B98', [paradaFrotaAoLadoDoPonto('TTI9B98')]],
+      ['TTL5J17', [paradaFrotaAoLadoDoPonto('TTL5J17')]],
+    ])
+
+    const detalhes = montarDetalheEntregas(
+      'PAO-4', '', linhas, [], new Map(), resumoVazio,
+      true, paradasPorPlaca, null, false, true, true,
+    )
+
+    expect(detalhes).toHaveLength(2)
+    for (const d of detalhes) {
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe('CARGA SEM PLACA NO ROMANEIO - CONFERIR COM A OPERAÇÃO')
+      expect(d.observacao).not.toMatch(/CARGA TRANSFERIDA/)
+      expect(d.chegada).toBeNull()
+      expect(d.saida).toBeNull()
+      expect(d.tempoParadaMin).toBeNull()
+    }
+  })
+
+  it('coerente com agregarPorCarga: as duas funcoes concordam que nada foi confirmado', () => {
+    const linhas = [linha('NF1', { carga: 'PAO-4', placa: '' })]
+    const paradasPorPlaca = new Map<string, UnitracParadaRow[]>([
+      ['', []],
+      ['TTI9B98', [paradaFrotaAoLadoDoPonto('TTI9B98')]],
+    ])
+
+    const resumo = agregarPorCarga('PAO-4', '', linhas, null, [], new Map(), [], null, undefined, true)
+    const [d] = montarDetalheEntregas(
+      'PAO-4', '', linhas, [], new Map(), resumoVazio,
+      true, paradasPorPlaca, null, false, true, true,
+    )
+
+    expect(resumo.paradasReais).toBe(0)
+    expect(resumo.status).toBe('INCOMPLETO')
+    expect(d.status).toBe('pendente')
+  })
+
+  it('placa preenchida continua com a deteccao de carga transferida intacta (nao regride)', () => {
+    const linhas = [linha('NF1')]
+    const paradasPorPlaca = new Map<string, UnitracParadaRow[]>([
+      ['TTL7D40', []],
+      ['TTI9B98', [paradaFrotaAoLadoDoPonto('TTI9B98')]],
+    ])
+
+    const [d] = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, [], new Map(), resumoVazio,
+      true, paradasPorPlaca, null, false, true, true,
+    )
+
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toMatch(/CARGA TRANSFERIDA/)
+  })
+})
