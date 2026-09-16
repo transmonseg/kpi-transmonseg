@@ -8,6 +8,7 @@
 import { readFileSync, writeFileSync } from 'fs'
 import { parseEscala } from '../src/lib/kpi-romaneio/parse-escala'
 import { parseRomaneio } from '../src/lib/kpi-romaneio/parse-romaneio'
+import { parsePao } from '../src/lib/kpi-romaneio/parse-pao'
 import { geocodificarEnderecos } from '../src/lib/kpi-romaneio/geocode'
 import { buscarFrota, normPlaca } from '../src/lib/unitrac-api'
 import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '../src/lib/kpi-romaneio/unitrac'
@@ -35,23 +36,27 @@ function agrupar<T>(itens: T[], chave: (item: T) => string): Map<string, T[]> {
 }
 
 async function main() {
-  const [escalaPath, romaneioPath, data, saidaPath] = process.argv.slice(2)
+  const [escalaPath, romaneioPath, data, saidaPath, romaneioPaoPath] = process.argv.slice(2)
   if (!escalaPath || !romaneioPath || !data || !saidaPath) {
-    console.error('Uso: npx tsx --env-file=.env.production scripts/gerar-nutrimax-real-arquivo.ts <escala.pdf> <romaneio.pdf> <data:YYYY-MM-DD> <saida.xlsx>')
+    console.error('Uso: npx tsx --env-file=.env.production scripts/gerar-nutrimax-real-arquivo.ts <escala.pdf> <romaneio.pdf> <data:YYYY-MM-DD> <saida.xlsx> [romaneio-pao.pdf]')
     process.exit(1)
   }
 
   const escalaBuf = Buffer.from(readFileSync(escalaPath))
   const romaneioBuf = Buffer.from(readFileSync(romaneioPath))
+  const romaneioPaoBuf = romaneioPaoPath ? Buffer.from(readFileSync(romaneioPaoPath)) : null
 
   const escala = await parseEscala(escalaBuf)
   const romaneio = await parseRomaneio(romaneioBuf)
-  console.log(`Escala: ${escala.length} linhas, Romaneio: ${romaneio.length} linhas`)
+  const resultadoPao = romaneioPaoBuf ? await parsePao(romaneioPaoBuf, data) : { linhas: [], escala: [] }
+  const escalaCompleta = [...escala, ...resultadoPao.escala]
+  const romaneioCompleto = [...romaneio, ...resultadoPao.linhas]
+  console.log(`Escala: ${escalaCompleta.length} linhas, Romaneio: ${romaneioCompleto.length} linhas (${resultadoPao.linhas.length} do pão)`)
 
-  const enderecosUnicos = [...new Set(romaneio.map(l => l.endereco))]
+  const enderecosUnicos = [...new Set(romaneioCompleto.map(l => l.endereco))]
   const resultadosGeo = await geocodificarEnderecos(enderecosUnicos, { validarTerritorio: true })
   const geoPorEndereco = new Map(enderecosUnicos.map((e, i) => [e, resultadosGeo[i]]))
-  const romaneioGeo: LinhaGeocodificada[] = romaneio.map(l => {
+  const romaneioGeo: LinhaGeocodificada[] = romaneioCompleto.map(l => {
     const g = geoPorEndereco.get(l.endereco) ?? null
     return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: g?.motivo }
   })
@@ -127,7 +132,7 @@ async function main() {
   }
 
   const alvosPorPlaca = agrupar(alvos, a => a.placaNorm)
-  const escalaPorChave = new Map(escala.map(e => [`${e.carga}::${e.placaNorm}`, e]))
+  const escalaPorChave = new Map(escalaCompleta.map(e => [`${e.carga}::${e.placaNorm}`, e]))
   const cargasPorChave = agrupar(romaneioGeo, l => `${l.carga}::${normPlaca(l.placa)}`)
 
   const linhasKpi: LinhaKpiRomaneio[] = [...cargasPorChave.entries()]
@@ -178,7 +183,7 @@ async function main() {
     const [carga, placaNorm] = chave.split('::')
     return { carga, placaNorm }
   })
-  const avisos = detectarDescasamentos(escala, cargasRomaneioList)
+  const avisos = detectarDescasamentos(escalaCompleta, cargasRomaneioList)
 
   console.log(`Total cargas: ${linhasKpi.length}, OK: ${linhasKpi.filter(l => l.status === 'OK').length}, avisos: ${avisos.length}`)
   const negativos = linhasKpi.filter(l => l.tempoOperacaoMin != null && l.tempoOperacaoMin < 0)
