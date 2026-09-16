@@ -9,6 +9,15 @@ import { normPlaca } from '@/lib/unitrac-api'
 const DATA_RE = /^DATA(\d{2})\/(\d{2})\/(\d{4})$/
 const ROMANEIO_RE = /^ROMANEIO(\d+)MOTORISTAAJUDANTE$/
 const CARRO_RE = /^CARRO\d+([A-Z].*)$/
+// Fix (revisao final de branch 15/09, Important 5): quando a coluna CARRO
+// vem com a placa EM BRANCO no documento, o pdf-parse emite so' "CARRO36"
+// (nada pra colar depois do numero) -- CARRO_RE nao casa e, sem esta
+// segunda regex, a linha do CARRO seria consumida como se fosse a linha de
+// motorista, perdendo o motorista de verdade que vem logo abaixo.
+const CARRO_SEM_PLACA_RE = /^CARRO\d*$/
+// Cabecalho de coluna do bloco de entregas -- marca o fim da area de
+// identificacao (CARRO/motorista). Nunca pode ser lido como motorista.
+const ORDEM_HEADER_RE = /^ORDEM/
 // NF sempre 6 digitos nas duas amostras reais (14 e 15/09) -- lookahead
 // negativo evita casar com a linha de totais do fim de cada ROMANEIO
 // (numeros de QTD/PESO/VALOR colados, ex. "3002162,92073 R$..." tem uma
@@ -105,12 +114,40 @@ export function parsePaoTexto(texto: string, data: string): ResultadoParsePao {
 
     const c = line.match(CARRO_RE)
     if (c) {
-      ctx.placaRaw = c[1].trim()
-      ctx.placaNorm = normPlaca(c[1])
+      const resto = c[1].trim()
+      // Fix (revisao final 15/09, Important 5): com a placa em branco o
+      // pdf-parse pode colar a linha de motorista logo depois do numero do
+      // carro ("CARRO36Luis Paulo-"). Placa real NUNCA tem minuscula --
+      // discriminador seguro pra nao gravar um nome de pessoa como placa.
+      if (/[a-zà-ÿ]/.test(resto)) {
+        const ma = splitMotoristaAjudante(resto)
+        ctx.motorista = ma.motorista
+        ctx.ajudante = ma.ajudante
+        ctx.motoristaLido = true
+        console.warn(`[parse-pao] ${ctx.carga}: CARRO sem placa no documento -- motorista lido da propria linha do CARRO: ${JSON.stringify(resto)}`)
+        continue
+      }
+      ctx.placaRaw = resto
+      ctx.placaNorm = normPlaca(resto)
+      continue
+    }
+    if (CARRO_SEM_PLACA_RE.test(line)) {
+      // Placa em branco no documento: segue com placaRaw '' (a carga sai
+      // como "SEM PLACA" no relatorio, ver gerador-xlsx.ts), mas o bloco
+      // continua valido -- o motorista da linha seguinte NAO se perde mais.
+      console.warn(`[parse-pao] ${ctx.carga}: bloco CARRO sem placa preenchida (${JSON.stringify(line)}) -- carga sai sem placa`)
+      continue
+    }
+    if (ORDEM_HEADER_RE.test(line)) {
+      ctx.motoristaLido = true
       continue
     }
 
-    if (ctx.placaRaw && !ctx.motoristaLido) {
+    // Fix (revisao final 15/09, Important 5): a leitura do motorista era
+    // condicionada a `ctx.placaRaw` -- bloco com placa em branco perdia
+    // TAMBEM o motorista, mesmo estando no PDF. Agora so' o flag de posicao
+    // (`motoristaLido`, junto com a guarda de ORDEM acima) decide.
+    if (!ctx.motoristaLido) {
       const ma = splitMotoristaAjudante(line)
       ctx.motorista = ma.motorista
       ctx.ajudante = ma.ajudante
@@ -119,12 +156,30 @@ export function parsePaoTexto(texto: string, data: string): ResultadoParsePao {
     }
 
     const nf = line.match(NF_LINHA_RE)
-    if (!nf) continue // ORDEM isolado, cabecalho de coluna, linha de total -- ignora sem erro
+    if (!nf) {
+      // Fix (revisao final 15/09, Important 4): descarte silencioso. ORDEM
+      // isolado, cabecalho de coluna e linha de total caem aqui legitimamente
+      // (nao geram ruido), mas uma linha que PARECE entrega -- comeca com
+      // numero de documento, tem colunas separadas por 2+ espacos e texto --
+      // e' descarte suspeito e precisa deixar rastro pra diagnostico manual.
+      if (/^\d{4,}/.test(line) && /\s{2,}/.test(line) && /[A-Za-zÀ-ÿ]/.test(line)) {
+        console.warn(`[parse-pao] ${ctx.carga}: linha de entrega descartada -- NF fora do padrao de 6 digitos: ${JSON.stringify(line)}`)
+      }
+      continue
+    }
 
     const partes = nf[2].split(/\s{2,}/).map(s => s.trim()).filter(Boolean)
     // Menos de 3 pedacos, ou primeiro pedaco sem nenhuma letra: e' a linha
     // de total (numeros colados), nao uma entrega de verdade -- ignora.
-    if (partes.length < 3 || !/[A-Za-zÀ-ÿ]/.test(partes[0])) continue
+    if (partes.length < 3 || !/[A-Za-zÀ-ÿ]/.test(partes[0])) {
+      // Fix (revisao final 15/09, Important 4): linha de total comeca por
+      // numero/pontuacao (",99317.799,61R$"); nome de cliente sempre comeca
+      // por letra -- so' esta segunda forma e' descarte suspeito.
+      if (partes.length > 0 && /^[A-Za-zÀ-ÿ]/.test(partes[0])) {
+        console.warn(`[parse-pao] ${ctx.carga}: linha de entrega descartada -- formato inesperado (${partes.length} coluna(s)): ${JSON.stringify(line)}`)
+      }
+      continue
+    }
 
     const [clienteNome, enderecoRua, bairro] = partes
     const municipio = municipioPorBairro(bairro)
