@@ -6,6 +6,7 @@ import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { hojeBR } from '@/lib/data-br'
 import { parseEscala } from '@/lib/kpi-romaneio/parse-escala'
 import { parseRomaneio } from '@/lib/kpi-romaneio/parse-romaneio'
+import { parsePao } from '@/lib/kpi-romaneio/parse-pao'
 import { geocodificarEnderecos } from '@/lib/kpi-romaneio/geocode'
 import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '@/lib/kpi-romaneio/unitrac'
 import { buscarHorariosBase } from '@/lib/kpi-romaneio/base-horarios'
@@ -78,6 +79,12 @@ export async function POST(req: NextRequest) {
   // pro proprio Romaneio -- ver fallback em agregarPorCarga.
   let escalaBuf: Buffer | null
   let romaneioBuf: Buffer
+  // Romaneio do Pão (pedido da Erica 15/09, ver spec
+  // 2026-09-15-motor-confirmacao-romaneio-pao) -- OPCIONAL, igual Escala.
+  // Só existe no branch de upload novo: `regenerarDeId` (baixa PDFs
+  // antigos do Storage) não guarda o pão, então regenerar uma geração
+  // antiga sai igual a antes, sem o pão (fora do escopo desta fase).
+  let romaneioPaoBuf: Buffer | null = null
   let escalaStoragePathExistente: string | null = null
   let romaneioStoragePathExistente: string | null = null
 
@@ -118,6 +125,9 @@ export async function POST(req: NextRequest) {
       escalaFile instanceof File ? escalaFile.arrayBuffer().then(b => Buffer.from(b)) : Promise.resolve(null),
       romaneioFile.arrayBuffer().then(b => Buffer.from(b)),
     ])
+
+    const romaneioPaoFile = form.get('romaneioPao')
+    romaneioPaoBuf = romaneioPaoFile instanceof File ? Buffer.from(await romaneioPaoFile.arrayBuffer()) : null
   }
 
   // Achado real 12/09: esta trava existia porque a UNICA fonte de parada era
@@ -134,12 +144,15 @@ export async function POST(req: NextRequest) {
     console.warn(`[kpi/nutrimax] data ${data} fora da janela de 48h da Unitrac -- usando paradas derivadas do historico do monitoramento`)
   }
 
-  const [escala, romaneio] = await Promise.all([
+  const [escala, romaneio, resultadoPao] = await Promise.all([
     escalaBuf ? parseEscala(escalaBuf) : Promise.resolve([]),
     parseRomaneio(romaneioBuf),
+    romaneioPaoBuf ? parsePao(romaneioPaoBuf, data) : Promise.resolve({ linhas: [], escala: [] }),
   ])
+  const escalaCompleta = [...escala, ...resultadoPao.escala]
+  const romaneioCompleto = [...romaneio, ...resultadoPao.linhas]
 
-  if (romaneio.length === 0) {
+  if (romaneioCompleto.length === 0) {
     return new NextResponse(
       'Nenhuma linha reconhecida no Romaneio de Entrega — confira se o PDF é o "Romaneio de Entrega" da Nutry Max.',
       { status: 422 },
@@ -149,11 +162,11 @@ export async function POST(req: NextRequest) {
   // Geocodifica todos os endereços únicos do dia numa única chamada em
   // lote -- eficiência e respeito ao rate-limit da cascata do lado do
   // monitoramento (ver src/lib/kpi-romaneio/geocode.ts).
-  const enderecosUnicos = [...new Set(romaneio.map(l => l.endereco))]
+  const enderecosUnicos = [...new Set(romaneioCompleto.map(l => l.endereco))]
   const resultadosGeo = await geocodificarEnderecos(enderecosUnicos, { validarTerritorio: true })
   const geoPorEndereco = new Map(enderecosUnicos.map((e, i) => [e, resultadosGeo[i]]))
 
-  const romaneioGeo: LinhaGeocodificada[] = romaneio.map(l => {
+  const romaneioGeo: LinhaGeocodificada[] = romaneioCompleto.map(l => {
     const g = geoPorEndereco.get(l.endereco) ?? null
     return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: narrowGeoMotivo(g?.motivo) }
   })
@@ -234,7 +247,7 @@ export async function POST(req: NextRequest) {
   // Cargas vêm do Romaneio -- é a fonte de verdade de quantas cargas
   // existiram no dia. A Escala só complementa (destino/motorista/peso/
   // planejado) quando há correspondência por carga+placa.
-  const escalaPorChave = new Map(escala.map(e => [`${e.carga}::${e.placaNorm}`, e]))
+  const escalaPorChave = new Map(escalaCompleta.map(e => [`${e.carga}::${e.placaNorm}`, e]))
   const cargasPorChave = agrupar(romaneioGeo, l => `${l.carga}::${normPlaca(l.placa)}`)
 
   const linhasKpi: LinhaKpiRomaneio[] = [...cargasPorChave.entries()]
@@ -314,7 +327,7 @@ export async function POST(req: NextRequest) {
   // carga como "sem_escala" (79 avisos so' porque o documento nao veio, nao
   // porque tem descasamento de verdade entre os dois). So' roda a checagem
   // quando a Escala de fato foi enviada.
-  const avisos = escalaBuf ? detectarDescasamentos(escala, cargasRomaneioList) : []
+  const avisos = (escalaBuf || romaneioPaoBuf) ? detectarDescasamentos(escalaCompleta, cargasRomaneioList) : []
 
   const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpi, data, avisos, detalhe)
 

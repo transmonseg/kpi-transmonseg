@@ -13,6 +13,7 @@ function hoje(): string {
 export default function NutrimaxGerarPage() {
   const [escala, setEscala] = useState<File[]>([])
   const [romaneio, setRomaneio] = useState<File[]>([])
+  const [romaneioPao, setRomaneioPao] = useState<File[]>([])
   const [data, setData] = useState(hoje())
   const [pending, setPending] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -36,6 +37,7 @@ export default function NutrimaxGerarPage() {
       const fd = new FormData()
       if (escala[0]) fd.set('escala', escala[0])
       fd.set('romaneio', romaneio[0])
+      if (romaneioPao[0]) fd.set('romaneioPao', romaneioPao[0])
       fd.set('data', data)
       const res = await fetch('/api/kpi/nutrimax/gerar', { method: 'POST', body: fd })
       if (!res.ok) throw new Error(await res.text())
@@ -81,7 +83,7 @@ export default function NutrimaxGerarPage() {
       </header>
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <div className="col-span-1 lg:col-span-4">
+        <div className="col-span-1 lg:col-span-3">
           <FileDropzone
             eyebrow="Passo 1 · opcional"
             label="Escala de Rota"
@@ -93,7 +95,7 @@ export default function NutrimaxGerarPage() {
           />
         </div>
 
-        <div className="col-span-1 lg:col-span-4">
+        <div className="col-span-1 lg:col-span-3">
           <FileDropzone
             eyebrow="Passo 2"
             label="Romaneio de Entrega"
@@ -105,7 +107,19 @@ export default function NutrimaxGerarPage() {
           />
         </div>
 
-        <div className="col-span-1 lg:col-span-4">
+        <div className="col-span-1 lg:col-span-3">
+          <FileDropzone
+            eyebrow="Passo 4 · opcional"
+            label="Romaneio do Pão"
+            hint="PDF · PROGRAMAÇÃO JAC (CONGELADO) — serve como escala e romaneio juntos"
+            accept=".pdf"
+            files={romaneioPao}
+            onAdd={files => setRomaneioPao(files.slice(0, 1))}
+            onRemove={() => setRomaneioPao([])}
+          />
+        </div>
+
+        <div className="col-span-1 lg:col-span-3">
           <div className="flex h-full flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
             <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
               <CalendarBlank size={12} weight="bold" />
