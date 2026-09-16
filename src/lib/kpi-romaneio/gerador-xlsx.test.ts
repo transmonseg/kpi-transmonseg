@@ -309,6 +309,80 @@ describe('gerador-xlsx', () => {
     })
   })
 
+  describe('aba "SEM PLACA" (fix incidental Task 3 -- romaneio do pão com carga sem placa atribuída no documento, ex. PAO-9/10/12 de 14/09)', () => {
+    it('carga com placa vazia não crasha a geração e cai numa aba nomeada "SEM PLACA" (ExcelJS não aceita nome de aba vazio)', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'PAO-9', placa: '' })]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23')
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+
+      expect(wb.worksheets.map(w => w.name)).toEqual(['KPI 2026-08-23', 'SEM PLACA'])
+    })
+
+    it('2+ cargas sem placa (de romaneios diferentes, sem relação nenhuma entre si) caem juntas na mesma aba "SEM PLACA", sem crashar', async () => {
+      const linhas: LinhaKpiRomaneio[] = [
+        linhaKpi({ carga: 'PAO-9', placa: '', motorista: 'FULANO' }),
+        linhaKpi({ carga: 'PAO-10', placa: '', motorista: 'CICLANO' }),
+        linhaKpi({ carga: 'PAO-12', placa: '', motorista: 'BELTRANO' }),
+      ]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23')
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+
+      // Uma única aba "SEM PLACA" pras 3 cargas -- não uma por carga (não
+      // teriam nome de aba distinto pra usar) e não crasha o addWorksheet.
+      expect(wb.worksheets.map(w => w.name)).toEqual(['KPI 2026-08-23', 'SEM PLACA'])
+    })
+
+    it('achado 1 (code review): com múltiplas cargas não relacionadas, o resumo NÃO atribui motorista/horário de uma carga específica à aba inteira', async () => {
+      const linhas: LinhaKpiRomaneio[] = [
+        linhaKpi({
+          carga: 'PAO-9', placa: '', motorista: 'FULANO',
+          saidaCd: '2026-08-23T08:00:00.000Z', chegadaCd: '2026-08-23T12:00:00.000Z', tempoOperacaoMin: 240, kmPercorrido: 50,
+        }),
+        linhaKpi({
+          carga: 'PAO-10', placa: '', motorista: 'CICLANO',
+          saidaCd: '2026-08-23T09:00:00.000Z', chegadaCd: '2026-08-23T18:00:00.000Z', tempoOperacaoMin: 540, kmPercorrido: 200,
+        }),
+      ]
+      const detalhe: LinhaDetalheEntrega[] = [
+        detalheFixture({ carga: 'PAO-9', placa: '' }),
+        detalheFixture({ carga: 'PAO-10', placa: '', nf: 'NF2' }),
+      ]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const wsPlaca = wb.getWorksheet('SEM PLACA')!
+
+      const resumo = wsPlaca.getCell(2, 1).value as string
+      // Nem o motorista/horário de PAO-9 nem de PAO-10 pode aparecer como
+      // se fosse "o" resumo da aba -- são cargas sem relação nenhuma.
+      expect(resumo).toContain('MOTORISTA: MÚLTIPLOS')
+      expect(resumo).not.toContain('FULANO')
+      expect(resumo).not.toContain('CICLANO')
+      expect(resumo).toContain('SAÍDA CD: -')
+      expect(resumo).toContain('CHEGADA CD: -')
+      expect(resumo).toContain('TEMPO OPERAÇÃO: -')
+      expect(resumo).toContain('KM PERCORRIDO: -')
+      // NOTAS continua contando certo (vem de `detalhe`, não do resumo ambíguo).
+      expect(resumo).toContain('NOTAS: 2')
+    })
+
+    it('com UMA SÓ carga sem placa, o resumo mostra o dado normal dela (não é o caso ambíguo)', async () => {
+      const linhas: LinhaKpiRomaneio[] = [
+        linhaKpi({ carga: 'PAO-9', placa: '', motorista: 'FULANO', tempoOperacaoMin: 240 }),
+      ]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23')
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const wsPlaca = wb.getWorksheet('SEM PLACA')!
+
+      const resumo = wsPlaca.getCell(2, 1).value as string
+      expect(resumo).toContain('MOTORISTA: FULANO')
+      expect(resumo).not.toContain('MÚLTIPLOS')
+    })
+  })
+
   describe('motivoAusencia / observacao (pedido do usuario 25/08: "nada mais no quesito informacoes?" -> nivel Benassi)', () => {
     it('SEM RASTREADOR no lugar de celula vazia quando a placa nunca teve fonte de rastreamento', async () => {
       const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234', temRastreador: false })]

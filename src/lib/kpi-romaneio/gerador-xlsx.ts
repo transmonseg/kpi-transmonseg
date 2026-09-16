@@ -210,9 +210,19 @@ function nomeAbaPlaca(placa: string): string {
 // inteira já é dessa placa. `resumo` pode ser undefined (placa sem nenhuma
 // linha agregada, caso que não deveria acontecer na prática -- toda placa
 // da lista de abas vem de `linhas` -- mas o tipo permite, então trata).
-function escreverResumoPlaca(ws: ExcelJS.Worksheet, linhaResumo: number, qtdColunas: number, resumo: LinhaKpiRomaneio | undefined, data: string, hoje: string, qtdNotas: number): void {
+function escreverResumoPlaca(ws: ExcelJS.Worksheet, linhaResumo: number, qtdColunas: number, resumo: LinhaKpiRomaneio | undefined, data: string, hoje: string, qtdNotas: number, cargasNaoRelacionadas: boolean = false): void {
   const emAndamento = data === hoje
-  const texto = resumo
+  // Fix incidental (code review da Task 3, achado 1): a aba "SEM PLACA"
+  // pode juntar 2+ cargas de romaneios diferentes (ex. PAO-9/PAO-10/PAO-12)
+  // sem NENHUMA relação entre si -- motorista/horário de UMA delas não
+  // descreve a aba inteira, ao contrário do caso legítimo de "mesma placa,
+  // 2 viagens" (mesmo veículo, resumo aproximado ainda é plausível). Quando
+  // `cargasNaoRelacionadas` é true, mostra "MÚLTIPLOS"/"-" em vez de
+  // reusar o dado da primeira carga -- NOTAS continua contando certo,
+  // porque conta entregas de `detalhe`, não depende de `resumo`.
+  const texto = cargasNaoRelacionadas
+    ? `MOTORISTA: MÚLTIPLOS    |    SAÍDA CD: -    |    CHEGADA CD: -    |    TEMPO OPERAÇÃO: -    |    KM PERCORRIDO: -    |    NOTAS: ${qtdNotas}`
+    : resumo
     ? `MOTORISTA: ${resumo.motorista || '-'}    |    SAÍDA CD: ${celulaHora(resumo.saidaCd, resumo.temRastreador, emAndamento) || '-'}    |    CHEGADA CD: ${celulaHora(resumo.chegadaCd, resumo.temRastreador, emAndamento) || '-'}    |    TEMPO OPERAÇÃO: ${formatarMinutos(resumo.tempoOperacaoMin) || '-'}    |    KM PERCORRIDO: ${resumo.kmPercorrido != null ? `${Math.round(resumo.kmPercorrido * 10) / 10} km` : '-'}    |    NOTAS: ${qtdNotas}`
     : ''
   ws.mergeCells(linhaResumo, 1, linhaResumo, qtdColunas)
@@ -323,6 +333,11 @@ export async function gerarKpiRomaneioXlsx(
   for (const l of linhas) {
     if (!resumoPorPlaca.has(l.placa)) resumoPorPlaca.set(l.placa, l)
   }
+  // Achado 1 (code review Task 3): placa vazia ("SEM PLACA") não é "a mesma
+  // placa com 2 viagens" -- é 1+ cargas de romaneios diferentes sem relação
+  // nenhuma entre si. Só nesse caso, e só quando há mais de uma carga,
+  // a linha de resumo não pode fingir que descreve a aba inteira.
+  const qtdCargasSemPlaca = linhas.filter(l => l.placa === '').length
   const detalhePorPlaca = new Map<string, LinhaDetalheEntrega[]>()
   for (const d of detalhe) {
     const lista = detalhePorPlaca.get(d.placa) ?? []
@@ -340,7 +355,8 @@ export async function gerarKpiRomaneioXlsx(
     // no dia junto com o resto do resumo (motorista/saida/chegada/tempo/km),
     // que ja' e' tudo igual em qualquer parte do relatorio -- so' isso
     // faltava.
-    escreverResumoPlaca(wsPlaca, 2, COLUNAS_DETALHE_PLACA.length, resumoPorPlaca.get(placa), data, hoje, linhasDaPlaca.length)
+    const cargasNaoRelacionadas = placa === '' && qtdCargasSemPlaca > 1
+    escreverResumoPlaca(wsPlaca, 2, COLUNAS_DETALHE_PLACA.length, resumoPorPlaca.get(placa), data, hoje, linhasDaPlaca.length, cargasNaoRelacionadas)
     wsPlaca.addRow([...COLUNAS_DETALHE_PLACA])
     estilizarHeader(wsPlaca, 3, COLUNAS_DETALHE_PLACA.length)
     wsPlaca.columns = [
