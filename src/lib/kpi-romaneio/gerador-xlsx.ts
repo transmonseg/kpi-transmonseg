@@ -192,7 +192,15 @@ function estilizarTitulo(ws: ExcelJS.Worksheet, tituloLinha: number, qtdColunas:
 // aqui pra nunca gerar um workbook corrompido se algum dia vier diferente.
 const CARACTERES_PROIBIDOS_ABA = /[:\\/?*[\]]/g
 function nomeAbaPlaca(placa: string): string {
-  return placa.replace(CARACTERES_PROIBIDOS_ABA, '-').slice(0, 31)
+  // Fix incidental (achado ao testar Task 3 com PDF real do romaneio do
+  // pão 14/09): algumas cargas (PAO-9/10/12) não têm placa atribuída no
+  // documento ainda (campo CARRO em branco) -- ExcelJS lança "The name
+  // can't be empty" se a aba receber string vazia, derrubando a geração
+  // inteira do relatório. `placasEmOrdem` já é um Set, então todas as
+  // cargas sem placa caem numa única aba "SEM PLACA" (best-effort, mesmo
+  // espírito de "ajudante colado" documentado como heurística em parse-pao.ts).
+  const nome = placa.replace(CARACTERES_PROIBIDOS_ABA, '-').slice(0, 31)
+  return nome || 'SEM PLACA'
 }
 
 // Linha de resumo do dia da placa (pedido do usuário 25/08: a aba por placa
