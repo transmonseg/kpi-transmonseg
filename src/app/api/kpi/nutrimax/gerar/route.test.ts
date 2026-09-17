@@ -12,6 +12,13 @@ const cenario = vi.hoisted(() => ({
   coordPorEndereco: new Map<string, { lat: number; lng: number }>(),
   paoErro: null as Error | null,
   romaneioVazio: false,
+  // Item 5 (achado real 10-09, resgate por ancora): enderecos aqui voltam
+  // `null` da cascata precisa (sem_candidato), simulando geocodificacao
+  // que falhou de vez -- pra exercitar o resgate via reposicionarPorAncoras.
+  enderecosSemCandidato: new Set<string>(),
+  // resultado que o mock de reposicionarPorAncoras devolve pra cada grupo
+  // (chave = placaNorm), na ordem das "ruas" recebidas.
+  resgateAncoraPorPlaca: new Map<string, ({ lat: number; lng: number } | null)[]>(),
 }))
 
 // Task 2 (romaneio do pão): mocks de TODO módulo com efeito colateral
@@ -79,9 +86,14 @@ vi.mock('@/lib/kpi-romaneio/parse-pao', () => ({
 vi.mock('@/lib/kpi-romaneio/geocode', () => ({
   geocodificarEnderecos: async (enderecos: string[]) =>
     enderecos.map(e => {
+      if (cenario.enderecosSemCandidato.has(e)) return null
       const c = cenario.coordPorEndereco.get(e) ?? { lat: -22.9, lng: -43.2 }
       return { lat: c.lat, lng: c.lng, confiavel: true, motivo: undefined }
     }),
+}))
+vi.mock('@/lib/kpi-romaneio/geocode-ancoras', () => ({
+  reposicionarPorAncoras: async (grupos: { id: string; ruas: string[] }[]) =>
+    new Map(grupos.map(g => [g.id, cenario.resgateAncoraPorPlaca.get(g.id) ?? g.ruas.map(() => null)])),
 }))
 vi.mock('@/lib/kpi-romaneio/unitrac', () => ({
   buscarAlvosDoDia: async () => [],
@@ -161,6 +173,8 @@ beforeEach(() => {
   cenario.coordPorEndereco = new Map()
   cenario.paoErro = null
   cenario.romaneioVazio = false
+  cenario.enderecosSemCandidato = new Set()
+  cenario.resgateAncoraPorPlaca = new Map()
 })
 
 describe('POST /api/kpi/nutrimax/gerar -- romaneioPao opcional', () => {
@@ -326,5 +340,68 @@ describe('POST /api/kpi/nutrimax/gerar -- guarda de Romaneio de Entrega irreconh
     const res = await POST(montarRequest(true) as never)
     expect(res.status).toBe(422)
     expect(await res.text()).toContain('Romaneio de Entrega')
+  })
+})
+
+// Item 5 (achado real 10-09, auditoria com a Ana): a Rio Quality ja' tem o
+// resgate por ancora (Passo 7 do motor de geolocalizacao universal) pra
+// endereco que a cascata precisa nao resolveu de jeito nenhum
+// (sem_candidato) -- usa como ancora as OUTRAS entregas geocodificadas da
+// MESMA placa/dia. Estende o mesmo mecanismo pra Nutry Max: sem ele, um
+// endereco sem_candidato fica com lat/lng null pra sempre e nunca pode ser
+// confirmado por GPS, mesmo com parada bem em cima da coordenada correta.
+describe('POST /api/kpi/nutrimax/gerar -- resgate por âncora (item 5, achado 10-09)', () => {
+  const COORD_ANCORA = { lat: -22.9, lng: -43.2 }
+
+  function paradaForaBase(id: string, coord: { lat: number; lng: number }): UnitracParadaRow {
+    return {
+      id, placa_norm: PLACA, chegada: '2026-09-15T11:00:00.000Z', saida: '2026-09-15T11:30:00.000Z',
+      fim_real: '2026-09-15T11:30:00.000Z', duracao_seg: 1800, local_parada: 'RUA X',
+      codigo_loja: null, nome_loja: null, lat: coord.lat, lng: coord.lng, endereco: null,
+      classificacao: 'FORA_BASE', ordem: 1,
+    }
+  }
+
+  it('endereço sem_candidato é resgatado pela âncora de outra entrega da mesma placa e confirma por GPS', async () => {
+    cenario.frota = [{ placaNorm: PLACA, cv: 'CV-1' }]
+    // NF001 (Nutry Max) fica sem_candidato -- geocodificarEnderecos devolve
+    // null pra ele. NF900 (pão) geocodifica normal em COORD_ANCORA, servindo
+    // de âncora real pra reposicionar NF001 na MESMA coordenada.
+    cenario.enderecosSemCandidato = new Set(['RUA A, 1 - RIO DE JANEIRO'])
+    cenario.coordPorEndereco = new Map([['RUA B, 2 - RIO DE JANEIRO', COORD_ANCORA]])
+    cenario.resgateAncoraPorPlaca = new Map([[PLACA, [COORD_ANCORA]]])
+    cenario.paradas = [paradaForaBase('p1', COORD_ANCORA)]
+
+    const res = await POST(montarRequest(true) as never)
+    expect(res.status).toBe(200)
+
+    const wb = await abrirXlsx(res)
+    const wsPlaca = wb.getWorksheet(PLACA)
+    expect(wsPlaca).toBeDefined()
+
+    const statusPorNf = new Map<string, string>()
+    wsPlaca!.eachRow((row, rowNumber) => {
+      if (rowNumber < 4) return
+      statusPorNf.set(String(row.getCell(2).value), String(row.getCell(8).value))
+    })
+    expect(statusPorNf.get('NF001')).toBe('CONFIRMADO (GPS)')
+  })
+
+  it('endereço sem_candidato sem nenhuma âncora na placa (resgate devolve null): não crasha, fica sem confirmação', async () => {
+    cenario.frota = [{ placaNorm: PLACA, cv: 'CV-1' }]
+    cenario.enderecosSemCandidato = new Set(['RUA A, 1 - RIO DE JANEIRO', 'RUA B, 2 - RIO DE JANEIRO'])
+    // resgateAncoraPorPlaca deixado vazio -- mock devolve null pra ambos.
+
+    const res = await POST(montarRequest(true) as never)
+    expect(res.status).toBe(200)
+
+    const wb = await abrirXlsx(res)
+    const wsPlaca = wb.getWorksheet(PLACA)
+    const statusPorNf = new Map<string, string>()
+    wsPlaca!.eachRow((row, rowNumber) => {
+      if (rowNumber < 4) return
+      statusPorNf.set(String(row.getCell(2).value), String(row.getCell(8).value))
+    })
+    expect(statusPorNf.get('NF001')).not.toBe('CONFIRMADO (GPS)')
   })
 })

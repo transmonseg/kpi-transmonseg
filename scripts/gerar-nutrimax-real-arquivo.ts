@@ -10,6 +10,7 @@ import { parseEscala } from '../src/lib/kpi-romaneio/parse-escala'
 import { parseRomaneio } from '../src/lib/kpi-romaneio/parse-romaneio'
 import { parsePao } from '../src/lib/kpi-romaneio/parse-pao'
 import { geocodificarEnderecos } from '../src/lib/kpi-romaneio/geocode'
+import { reposicionarPorAncoras } from '../src/lib/kpi-romaneio/geocode-ancoras'
 import { buscarFrota, normPlaca } from '../src/lib/unitrac-api'
 import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '../src/lib/kpi-romaneio/unitrac'
 import { buscarHorariosBase } from '../src/lib/kpi-romaneio/base-horarios'
@@ -68,6 +69,36 @@ async function main() {
     const g = geoPorEndereco.get(l.endereco) ?? null
     return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: g?.motivo }
   })
+
+  // Item 5 (achado real 10-09, auditoria com a Ana -- espelha route.ts):
+  // Passo 7 do motor de geolocalizacao universal, endereco sem_candidato
+  // resgatado usando como ancora as outras entregas geocodificadas da
+  // MESMA placa/dia.
+  const indicePorNf = new Map(romaneioGeo.map((l, i) => [l.nf, i]))
+  const semCandidatoPorPlaca = agrupar(romaneioGeo.filter(l => l.lat == null), l => normPlaca(l.placa))
+  if (semCandidatoPorPlaca.size > 0) {
+    const gruposAncoras = [...semCandidatoPorPlaca.entries()].map(([placaNorm, linhas]) => ({
+      id: placaNorm,
+      ruas: linhas.map(l => l.endereco),
+      ancoras: romaneioGeo
+        .filter((o): o is LinhaGeocodificada & { lat: number; lng: number } => normPlaca(o.placa) === placaNorm && o.lat != null && o.lng != null)
+        .map(o => ({ lat: o.lat, lng: o.lng })),
+    }))
+    const resgate = await reposicionarPorAncoras(gruposAncoras)
+    let resgatados = 0
+    for (const [placaNorm, linhas] of semCandidatoPorPlaca) {
+      const resultadosResgate = resgate.get(placaNorm) ?? []
+      linhas.forEach((l, i) => {
+        const r = resultadosResgate[i]
+        if (!r) return
+        const idx = indicePorNf.get(l.nf)!
+        romaneioGeo[idx] = { ...romaneioGeo[idx], lat: r.lat, lng: r.lng }
+        resgatados++
+      })
+    }
+    if (resgatados > 0) console.log(`Resgatados por âncora da rota do caminhão: ${resgatados}`)
+  }
+
   console.log(`Geocodificados: ${romaneioGeo.filter(l => l.lat != null).length}/${romaneioGeo.length}`)
 
   const linhasPorPlaca = agrupar(romaneioGeo, l => normPlaca(l.placa))

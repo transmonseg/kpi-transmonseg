@@ -8,6 +8,7 @@ import { parseEscala } from '@/lib/kpi-romaneio/parse-escala'
 import { parseRomaneio } from '@/lib/kpi-romaneio/parse-romaneio'
 import { parsePao } from '@/lib/kpi-romaneio/parse-pao'
 import { geocodificarEnderecos } from '@/lib/kpi-romaneio/geocode'
+import { reposicionarPorAncoras } from '@/lib/kpi-romaneio/geocode-ancoras'
 import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '@/lib/kpi-romaneio/unitrac'
 import { buscarHorariosBase } from '@/lib/kpi-romaneio/base-horarios'
 import { alvosDaData } from '@/lib/kpi-romaneio/alvos-data'
@@ -188,6 +189,37 @@ export async function POST(req: NextRequest) {
     const g = geoPorEndereco.get(l.endereco) ?? null
     return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: narrowGeoMotivo(g?.motivo) }
   })
+
+  // Item 5 (achado real 10-09, auditoria com a Ana): port do Passo 7 do motor
+  // de geolocalizacao universal (ver kpi-rioquality/pipeline.ts, formato
+  // completo) -- endereco que a cascata precisa nao resolveu de jeito
+  // nenhum (sem_candidato, lat==null) tenta de novo usando como ANCORA as
+  // coordenadas de OUTRAS entregas da MESMA placa/dia que ja' resolveram.
+  // So' entra quem tem pelo menos 1 ancora na propria placa (placa com
+  // TODAS as entregas sem_candidato nao tem com que comparar). Fail-open:
+  // erro na ponte devolve null pra todo mundo (ja' tratado dentro de
+  // reposicionarPorAncoras), o resto do pipeline segue igual a hoje.
+  const indicePorNf = new Map(romaneioGeo.map((l, i) => [l.nf, i]))
+  const semCandidatoPorPlaca = agrupar(romaneioGeo.filter(l => l.lat == null), l => normPlaca(l.placa))
+  if (semCandidatoPorPlaca.size > 0) {
+    const gruposAncoras = [...semCandidatoPorPlaca.entries()].map(([placaNorm, linhas]) => ({
+      id: placaNorm,
+      ruas: linhas.map(l => l.endereco),
+      ancoras: romaneioGeo
+        .filter((o): o is LinhaGeocodificada & { lat: number; lng: number } => normPlaca(o.placa) === placaNorm && o.lat != null && o.lng != null)
+        .map(o => ({ lat: o.lat, lng: o.lng })),
+    }))
+    const resgate = await reposicionarPorAncoras(gruposAncoras)
+    for (const [placaNorm, linhas] of semCandidatoPorPlaca) {
+      const resultadosResgate = resgate.get(placaNorm) ?? []
+      linhas.forEach((l, i) => {
+        const r = resultadosResgate[i]
+        if (!r) return
+        const idx = indicePorNf.get(l.nf)!
+        romaneioGeo[idx] = { ...romaneioGeo[idx], lat: r.lat, lng: r.lng }
+      })
+    }
+  }
 
   const linhasPorPlaca = agrupar(romaneioGeo, l => normPlaca(l.placa))
   const placasNorm = [...linhasPorPlaca.keys()]
