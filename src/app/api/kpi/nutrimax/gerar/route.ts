@@ -195,22 +195,55 @@ export async function POST(req: NextRequest) {
   // completo) -- endereco que a cascata precisa nao resolveu de jeito
   // nenhum (sem_candidato, lat==null) tenta de novo usando como ANCORA as
   // coordenadas de OUTRAS entregas da MESMA placa/dia que ja' resolveram.
-  // So' entra quem tem pelo menos 1 ancora na propria placa (placa com
-  // TODAS as entregas sem_candidato nao tem com que comparar). Fail-open:
-  // erro na ponte devolve null pra todo mundo (ja' tratado dentro de
-  // reposicionarPorAncoras), o resto do pipeline segue igual a hoje.
+  //
+  // Item 5.2 (achado real, colapso de via longa -- Icaraí/RQV3G18/TOS0G53,
+  // mesmo padrao em 3 dias auditados com a Ana): quando o CNEFE nao acha o
+  // numero da casa numa rua longa, ele cai pro CENTRO da rua inteira --
+  // enderecos DIFERENTES (numeros diferentes) geocodificam pro MESMO ponto
+  // exato. Isso nao e' sem_candidato (lat != null, confiavel = true) nem e'
+  // pego pelo guard territorial (bairro/municipio batem, so' a precisao e'
+  // ruim) -- nenhum mecanismo cobria esse caso. Detecta colisao agrupando
+  // enderecos UNICOS por coordenada: 2+ enderecos DIFERENTES no mesmo
+  // lat/lng exato e' assinatura de colapso (coincidencia real exigiria
+  // precisao de ponto flutuante identica, praticamente impossivel), nunca
+  // dois clientes genuinamente vizinhos. Entra no MESMO resgate por ancora
+  // do item 5 -- so' entra quem tem pelo menos 1 ancora na propria placa
+  // (placa com tudo sem_candidato/colidido nao tem com que comparar), e a
+  // ancora nunca pode ser outra linha colidida (ponto colapsado nao serve
+  // de referencia). Fail-open: erro na ponte devolve null pra todo mundo
+  // (ja' tratado dentro de reposicionarPorAncoras), o resto do pipeline
+  // segue igual a hoje se o resgate nao achar nada melhor.
+  const enderecosColididos = new Set<string>()
+  {
+    const enderecosPorCoord = new Map<string, Set<string>>()
+    for (const [endereco, g] of geoPorEndereco) {
+      if (!g) continue
+      const chave = `${g.lat},${g.lng}`
+      const set = enderecosPorCoord.get(chave) ?? new Set<string>()
+      set.add(endereco)
+      enderecosPorCoord.set(chave, set)
+    }
+    for (const enderecos of enderecosPorCoord.values()) {
+      if (enderecos.size > 1) for (const e of enderecos) enderecosColididos.add(e)
+    }
+  }
+
   const indicePorNf = new Map(romaneioGeo.map((l, i) => [l.nf, i]))
-  const semCandidatoPorPlaca = agrupar(romaneioGeo.filter(l => l.lat == null), l => normPlaca(l.placa))
-  if (semCandidatoPorPlaca.size > 0) {
-    const gruposAncoras = [...semCandidatoPorPlaca.entries()].map(([placaNorm, linhas]) => ({
+  const precisaResgatePorPlaca = agrupar(
+    romaneioGeo.filter(l => l.lat == null || enderecosColididos.has(l.endereco)),
+    l => normPlaca(l.placa),
+  )
+  if (precisaResgatePorPlaca.size > 0) {
+    const gruposAncoras = [...precisaResgatePorPlaca.entries()].map(([placaNorm, linhas]) => ({
       id: placaNorm,
       ruas: linhas.map(l => l.endereco),
       ancoras: romaneioGeo
-        .filter((o): o is LinhaGeocodificada & { lat: number; lng: number } => normPlaca(o.placa) === placaNorm && o.lat != null && o.lng != null)
+        .filter((o): o is LinhaGeocodificada & { lat: number; lng: number } =>
+          normPlaca(o.placa) === placaNorm && o.lat != null && o.lng != null && !enderecosColididos.has(o.endereco))
         .map(o => ({ lat: o.lat, lng: o.lng })),
     }))
     const resgate = await reposicionarPorAncoras(gruposAncoras)
-    for (const [placaNorm, linhas] of semCandidatoPorPlaca) {
+    for (const [placaNorm, linhas] of precisaResgatePorPlaca) {
       const resultadosResgate = resgate.get(placaNorm) ?? []
       linhas.forEach((l, i) => {
         const r = resultadosResgate[i]

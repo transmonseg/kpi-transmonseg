@@ -74,19 +74,43 @@ async function main() {
   // Passo 7 do motor de geolocalizacao universal, endereco sem_candidato
   // resgatado usando como ancora as outras entregas geocodificadas da
   // MESMA placa/dia.
+  //
+  // Item 5.2 (achado real, colapso de via longa -- espelha route.ts):
+  // endereco DIFERENTE geocodificado pro MESMO ponto exato de outro
+  // (CNEFE caiu pro centro da rua por nao achar o numero) entra no mesmo
+  // resgate -- nao e' sem_candidato mas tambem precisa de ancora.
+  const enderecosColididos = new Set<string>()
+  {
+    const enderecosPorCoord = new Map<string, Set<string>>()
+    for (const [endereco, g] of geoPorEndereco) {
+      if (!g) continue
+      const chave = `${g.lat},${g.lng}`
+      const set = enderecosPorCoord.get(chave) ?? new Set<string>()
+      set.add(endereco)
+      enderecosPorCoord.set(chave, set)
+    }
+    for (const enderecos of enderecosPorCoord.values()) {
+      if (enderecos.size > 1) for (const e of enderecos) enderecosColididos.add(e)
+    }
+  }
+
   const indicePorNf = new Map(romaneioGeo.map((l, i) => [l.nf, i]))
-  const semCandidatoPorPlaca = agrupar(romaneioGeo.filter(l => l.lat == null), l => normPlaca(l.placa))
-  if (semCandidatoPorPlaca.size > 0) {
-    const gruposAncoras = [...semCandidatoPorPlaca.entries()].map(([placaNorm, linhas]) => ({
+  const precisaResgatePorPlaca = agrupar(
+    romaneioGeo.filter(l => l.lat == null || enderecosColididos.has(l.endereco)),
+    l => normPlaca(l.placa),
+  )
+  if (precisaResgatePorPlaca.size > 0) {
+    const gruposAncoras = [...precisaResgatePorPlaca.entries()].map(([placaNorm, linhas]) => ({
       id: placaNorm,
       ruas: linhas.map(l => l.endereco),
       ancoras: romaneioGeo
-        .filter((o): o is LinhaGeocodificada & { lat: number; lng: number } => normPlaca(o.placa) === placaNorm && o.lat != null && o.lng != null)
+        .filter((o): o is LinhaGeocodificada & { lat: number; lng: number } =>
+          normPlaca(o.placa) === placaNorm && o.lat != null && o.lng != null && !enderecosColididos.has(o.endereco))
         .map(o => ({ lat: o.lat, lng: o.lng })),
     }))
     const resgate = await reposicionarPorAncoras(gruposAncoras)
     let resgatados = 0
-    for (const [placaNorm, linhas] of semCandidatoPorPlaca) {
+    for (const [placaNorm, linhas] of precisaResgatePorPlaca) {
       const resultadosResgate = resgate.get(placaNorm) ?? []
       linhas.forEach((l, i) => {
         const r = resultadosResgate[i]

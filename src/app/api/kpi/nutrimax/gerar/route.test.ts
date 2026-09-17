@@ -19,6 +19,10 @@ const cenario = vi.hoisted(() => ({
   // resultado que o mock de reposicionarPorAncoras devolve pra cada grupo
   // (chave = placaNorm), na ordem das "ruas" recebidas.
   resgateAncoraPorPlaca: new Map<string, ({ lat: number; lng: number } | null)[]>(),
+  // Item 5.2 (achado real, colapso de via longa): linhas Nutry Max extras
+  // além da padrão NF001 -- usado pra dar uma terceira entrega com
+  // coordenada própria e confiável, servindo de âncora real na mesma placa.
+  linhasNutrimaxExtras: [] as LinhaRomaneio[],
 }))
 
 // Task 2 (romaneio do pão): mocks de TODO módulo com efeito colateral
@@ -75,7 +79,7 @@ function escalaSintetica(overrides: Partial<LinhaEscala> = {}): LinhaEscala {
 
 vi.mock('@/lib/kpi-romaneio/parse-escala', () => ({ parseEscala: async () => [] }))
 vi.mock('@/lib/kpi-romaneio/parse-romaneio', () => ({
-  parseRomaneio: async () => (cenario.romaneioVazio ? [] : [linhaNutrimax()]),
+  parseRomaneio: async () => (cenario.romaneioVazio ? [] : [linhaNutrimax(), ...cenario.linhasNutrimaxExtras]),
 }))
 vi.mock('@/lib/kpi-romaneio/parse-pao', () => ({
   parsePao: async () => {
@@ -175,6 +179,7 @@ beforeEach(() => {
   cenario.romaneioVazio = false
   cenario.enderecosSemCandidato = new Set()
   cenario.resgateAncoraPorPlaca = new Map()
+  cenario.linhasNutrimaxExtras = []
 })
 
 describe('POST /api/kpi/nutrimax/gerar -- romaneioPao opcional', () => {
@@ -403,5 +408,83 @@ describe('POST /api/kpi/nutrimax/gerar -- resgate por âncora (item 5, achado 10
       statusPorNf.set(String(row.getCell(2).value), String(row.getCell(8).value))
     })
     expect(statusPorNf.get('NF001')).not.toBe('CONFIRMADO (GPS)')
+  })
+})
+
+// Item 5.2 (achado real, colapso de via longa -- Icaraí/Niterói, RQV3G18,
+// TOS0G53: mesmo padrão em 3 dias diferentes auditados com a Ana). Quando o
+// CNEFE não acha o número da casa numa rua longa, ele cai pro centro da rua
+// inteira -- ENDEREÇOS DIFERENTES (números diferentes) geocodificam pro
+// MESMO ponto exato, e uma parada qualquer perto "confirma" todos ao mesmo
+// tempo. Isso não é sem_candidato (lat != null, confiavel = true) e não é
+// pego pelo guard territorial (bairro/município batem, só a precisão é
+// ruim) -- nenhum mecanismo existente cobria esse caso até agora. Estende o
+// MESMO resgate por âncora (Passo 7) do item 5: quando 2+ endereços
+// DIFERENTES da mesma geração colidem no mesmo lat/lng, tratam como
+// precisando de resgate, com âncora vindo de outra entrega da mesma placa
+// que resolveu num ponto ÚNICO (não colidido).
+describe('POST /api/kpi/nutrimax/gerar -- resgate por âncora quando endereços colidem (item 5.2)', () => {
+  const COORD_COLAPSO = { lat: -22.88, lng: -43.12 } // mesmo ponto pros dois enderecos diferentes
+  const COORD_ANCORA = { lat: -22.90, lng: -43.20 }  // terceira entrega, ponto proprio e confiavel
+  const COORD_REAL_A = { lat: -22.881, lng: -43.121 } // onde NF001 realmente fica
+  const COORD_REAL_B = { lat: -22.882, lng: -43.122 } // onde NF900 (pão) realmente fica
+
+  function paradaForaBase(id: string, coord: { lat: number; lng: number }, chegada: string, saida: string): UnitracParadaRow {
+    return {
+      id, placa_norm: PLACA, chegada, saida, fim_real: saida, duracao_seg: 1800, local_parada: 'RUA X',
+      codigo_loja: null, nome_loja: null, lat: coord.lat, lng: coord.lng, endereco: null,
+      classificacao: 'FORA_BASE', ordem: 1,
+    }
+  }
+
+  it('dois endereços diferentes que colidem na mesma coordenada são resgatados via âncora de terceira entrega da mesma placa', async () => {
+    cenario.frota = [{ placaNorm: PLACA, cv: 'CV-1' }]
+    // NF001 (endereco A) e NF900/pão (endereco B) colidem -- mesmo ponto exato.
+    cenario.coordPorEndereco = new Map([
+      ['RUA A, 1 - RIO DE JANEIRO', COORD_COLAPSO],
+      ['RUA B, 2 - RIO DE JANEIRO', COORD_COLAPSO],
+      ['RUA C, 3 - RIO DE JANEIRO', COORD_ANCORA],
+    ])
+    cenario.linhasNutrimaxExtras = [linhaNutrimax({ nf: 'NF002', clienteNome: 'CLIENTE C', endereco: 'RUA C, 3 - RIO DE JANEIRO' })]
+    // Grupo da placa reune as 2 linhas colididas, na ordem em que aparecem
+    // no romaneio completo: NF001 (romaneio), NF900 (pão) -- NF002 nao entra
+    // por nao estar colidido.
+    cenario.resgateAncoraPorPlaca = new Map([[PLACA, [COORD_REAL_A, COORD_REAL_B]]])
+    cenario.paradas = [
+      paradaForaBase('p1', COORD_REAL_A, '2026-09-15T11:00:00.000Z', '2026-09-15T11:05:00.000Z'),
+      paradaForaBase('p2', COORD_REAL_B, '2026-09-15T13:00:00.000Z', '2026-09-15T13:05:00.000Z'),
+    ]
+
+    const res = await POST(montarRequest(true) as never)
+    expect(res.status).toBe(200)
+
+    const wb = await abrirXlsx(res)
+    const wsPlaca = wb.getWorksheet(PLACA)
+    expect(wsPlaca).toBeDefined()
+
+    const statusPorNf = new Map<string, string>()
+    wsPlaca!.eachRow((row, rowNumber) => {
+      if (rowNumber < 4) return
+      statusPorNf.set(String(row.getCell(2).value), String(row.getCell(8).value))
+    })
+    // Cada um confirmado pela SUA parada, sem o rotulo de "parada curta
+    // confirmou varios enderecos diferentes ao mesmo tempo" que apareceria
+    // se as duas ainda estivessem no mesmo ponto colapsado.
+    expect(statusPorNf.get('NF001')).toBe('CONFIRMADO (GPS)')
+    expect(statusPorNf.get('NF900')).toBe('CONFIRMADO (GPS)')
+  })
+
+  it('sem colisão nenhuma (todo mundo com ponto próprio), resgate por colisão não dispara', async () => {
+    cenario.frota = [{ placaNorm: PLACA, cv: 'CV-1' }]
+    cenario.coordPorEndereco = new Map([
+      ['RUA A, 1 - RIO DE JANEIRO', COORD_REAL_A],
+      ['RUA B, 2 - RIO DE JANEIRO', COORD_REAL_B],
+    ])
+
+    const res = await POST(montarRequest(true) as never)
+    expect(res.status).toBe(200)
+    // Não crasha, comportamento normal preservado (regressão).
+    const wb = await abrirXlsx(res)
+    expect(wb.getWorksheet(PLACA)).toBeDefined()
   })
 })
