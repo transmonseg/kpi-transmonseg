@@ -596,7 +596,7 @@ describe('montarDetalheEntregas', () => {
     // passa a dizer o que o GPS mostra, com criterio medido:
     //   caminhao esteve a <=500m mas sem parada  -> passou e nao parou
     //   caminhao nunca chegou a 2km              -> ai sim, nao foi ao cliente
-    // Entre 500m e 2km fica sem rotulo extra (nao da' pra afirmar nada).
+    //   entre 500m e 2km                         -> CONFERIR (ver abaixo)
     describe('nomenclatura por evidencia de GPS (pedido 05/09)', () => {
       it('caminhao esteve a <=500m do ponto mas nao registrou parada: diz que passou sem parar', () => {
         const perto = parada({ id: 'p', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.9012, lng: -43.2012 }) // ~180m
@@ -613,11 +613,22 @@ describe('montarDetalheEntregas', () => {
         expect(d.observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
       })
 
-      it('entre 500m e 2km: sem rotulo extra (nao afirma o que nao da pra saber)', () => {
+      // Achado real 10-09 (auditoria com a Ana, placa RQU2G47/NF 2364486):
+      // parada real de 5min a 879m do endereco ficava com observacao em
+      // branco -- nem confirma nem explica, o pior resultado possivel pro
+      // operador. A decisao original de 05/09 ("nao afirma o que nao da pra
+      // saber") deixava essa faixa muda por medo de afirmar demais, mas um
+      // rotulo de CONFERIR nao afirma nada (nao diz "foi" nem "nao foi"),
+      // so' levanta a bandeira -- mesmo espirito do rotulo de 500-800m
+      // (RAIO_CONFIRMACAO_AMPLIADO_METROS/viaRaioAmpliado) e do de geoConfiavel
+      // abaixo. Revertida a decisao de ficar em branco por pedido do usuario
+      // apos essa auditoria.
+      it('achado real 10-09 (RQU2G47): entre 500m e 2km vira CONFERIR, nao fica mais em branco', () => {
         const meio = parada({ id: 'p', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.910, lng: -43.200 }) // ~1,1km
         const paradasFrota = new Map([['TTL7D40', [meio]]])
         const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio, true, paradasFrota)
-        expect(d.observacao).toBeNull()
+        expect(d.status).toBe('pendente')
+        expect(d.observacao).toBe('PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR')
       })
 
       it('entrega confirmada nao ganha rotulo de nao-entrega, mesmo com parada longe no dia', () => {

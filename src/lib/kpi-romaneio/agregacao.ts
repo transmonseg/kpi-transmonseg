@@ -460,6 +460,17 @@ export function montarDetalheEntregas(
         observacao = 'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR'
       } else if (dist != null && dist > RAIO_NAO_FOI_AO_CLIENTE_M) {
         observacao = 'NÃO FOI AO CLIENTE (caminhão não esteve na região)'
+      } else if (dist != null) {
+        // Achado real 10-09 (auditoria com a Ana, placa RQU2G47/NF 2364486):
+        // parada real de 5min a 879m ficava com observacao em branco -- nem
+        // confirma nem explica, o pior resultado possivel. A decisao
+        // original de 05/09 deixava essa faixa muda "por nao dar pra
+        // afirmar nada", mas CONFERIR nao afirma nada (nao diz "foi" nem
+        // "nao foi"), so' levanta a bandeira -- mesmo espirito do rotulo de
+        // 500-800m (RAIO_CONFIRMACAO_AMPLIADO_METROS/viaRaioAmpliado)
+        // logo abaixo. Decisao revertida por pedido do usuario apos essa
+        // auditoria.
+        observacao = 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR'
       }
     }
     // Achado real 08/09 (auditoria de todas as placas do dia, placa
