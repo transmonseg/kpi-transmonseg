@@ -23,6 +23,7 @@ import { gerarKpiRomaneioXlsx } from '../src/lib/kpi-romaneio/gerador-xlsx'
 import { COD_USER_NUTRIMAX, foraDoAlcanceApi, PAO_PREFIXO } from '../src/lib/kpi-romaneio/constants'
 import { logarNfDuplicadaNaMesmaPlaca } from '../src/lib/kpi-romaneio/nf-duplicada'
 import { hojeBR } from '../src/lib/data-br'
+import { montarDumpExperimento } from '../src/lib/kpi-romaneio/experimentos/dump'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '../src/lib/kpi-romaneio/types'
 import type { UnitracParadaRow } from '../src/lib/kpi/matcher'
 
@@ -252,6 +253,11 @@ async function main() {
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
+
+  if (process.env.EXPORTAR_DUMP) {
+    writeFileSync(process.env.EXPORTAR_DUMP, JSON.stringify(montarDumpExperimento({ data, romaneioGeo, detalhe, paradasPorPlaca })))
+    console.log(`Dump de experimento salvo em: ${process.env.EXPORTAR_DUMP}`)
+  }
 
   const cargasRomaneioList = [...cargasPorChave.keys()].map(chave => {
     const [carga, placaNorm] = chave.split('::')
