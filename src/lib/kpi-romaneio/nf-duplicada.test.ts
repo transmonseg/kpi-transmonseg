@@ -69,4 +69,22 @@ describe('logarNfDuplicadaNaMesmaPlaca', () => {
 
     errSpy.mockRestore()
   })
+
+  // Achado Minor #2 da revisão final de branch (17/09): placa vazia (carga
+  // do pão sem CARRO no documento) nunca passa por montarVisitas -- colisão
+  // de NF nesse grupo específico não pode misatribuir visita nenhuma, então
+  // não deve gerar log nenhum.
+  it('não loga colisão de NF no grupo de placa vazia (carga do pão sem CARRO)', () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const linhasPorPlaca = new Map<string, LinhaGeocodificada[]>([
+      ['', [linha({ nf: 'NF001', placa: '' }), linha({ nf: 'NF001', placa: '', clienteNome: 'PÃO' })]],
+    ])
+
+    logarNfDuplicadaNaMesmaPlaca(linhasPorPlaca)
+
+    expect(errSpy).not.toHaveBeenCalled()
+
+    errSpy.mockRestore()
+  })
 })

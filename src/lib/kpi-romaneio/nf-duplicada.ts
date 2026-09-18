@@ -8,6 +8,11 @@ import type { LinhaGeocodificada } from './types'
 // de deixar silencioso; nao muda nenhum comportamento do caminho normal.
 export function logarNfDuplicadaNaMesmaPlaca(linhasPorPlaca: Map<string, LinhaGeocodificada[]>): void {
   for (const [placaNorm, linhasDaPlaca] of linhasPorPlaca) {
+    // Achado Minor #2 da revisão final de branch (17/09): placa vazia
+    // (carga do pão sem CARRO no documento) nunca passa por montarVisitas
+    // (ver placasNorm em route.ts) -- colisão de NF nesse grupo não pode
+    // misatribuir visita nenhuma, então logar aqui seria só ruído alarmante.
+    if (placaNorm.trim() === '') continue
     const nfsVistos = new Set<string>()
     for (const l of linhasDaPlaca) {
       if (nfsVistos.has(l.nf)) {

@@ -54,6 +54,15 @@ export const RAIO_CONFIRMACAO_AMPLIADO_METROS = 800
  *  Migrado de kpi-nutrimax/constants.ts. */
 export const DIAS_ALCANCE_API_HOJE_ONTEM = 1
 
+/** Prefixo das cargas sintéticas geradas a partir do Romaneio do Pão (ver
+ *  parse-pao.ts) -- usado tanto pra CRIAR essas cargas (`${PAO_PREFIXO}${n}`)
+ *  quanto pra RECONHECER uma carga como sendo do pão em qualquer ponto
+ *  posterior do pipeline (checagem de escala/histórico). Achado Minor #4 da
+ *  revisão final (17/09): o literal 'PAO-' estava duplicado em 3 lugares
+ *  (parse-pao.ts e duas checagens em route.ts) sem essa constante -- risco de
+ *  um dos pontos divergir se o prefixo mudar. */
+export const PAO_PREFIXO = 'PAO-'
+
 export function foraDoAlcanceApi(data: string, hojeISO: string): boolean {
   const hoje = new Date(`${hojeISO}T00:00:00`).getTime()
   const alvo = new Date(`${data}T00:00:00`).getTime()

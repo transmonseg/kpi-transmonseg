@@ -1,5 +1,6 @@
 import type { LinhaRomaneio, LinhaEscala } from './types'
 import { normPlaca } from '@/lib/unitrac-api'
+import { PAO_PREFIXO } from './constants'
 
 // Formato "PROGRAMAÇÃO JAC (CONGELADO)" (romaneio do pão, pedido da Erica
 // 15/09 no grupo KPI AJUSTES) -- extraido via pdf-parse (mesma lib que
@@ -106,7 +107,7 @@ export function parsePaoTexto(texto: string, data: string): ResultadoParsePao {
     const r = line.match(ROMANEIO_RE)
     if (r) {
       fecharContexto(ctx, destinoPrimeiraEntrega, escala)
-      ctx = { carga: `PAO-${r[1]}`, placaRaw: '', placaNorm: '', motorista: '', ajudante: '', motoristaLido: false }
+      ctx = { carga: `${PAO_PREFIXO}${r[1]}`, placaRaw: '', placaNorm: '', motorista: '', ajudante: '', motoristaLido: false }
       destinoPrimeiraEntrega = null
       continue
     }

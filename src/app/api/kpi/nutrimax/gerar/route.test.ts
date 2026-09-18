@@ -536,6 +536,13 @@ describe('POST /api/kpi/nutrimax/gerar -- placa vazia não é consultada contra 
     cenario.placaPaoOverride = ''
     const buscarAlvosSpy = vi.mocked((await import('@/lib/kpi-romaneio/unitrac')).buscarAlvosDoDia)
     const buscarHorariosSpy = vi.mocked((await import('@/lib/kpi-romaneio/base-horarios')).buscarHorariosBase)
+    // Achado Important da revisão final de branch (17/09): os mocks vivem no
+    // escopo do arquivo inteiro e não são resetados entre testes (sem
+    // clearMocks/restoreMocks no vitest.config.ts) -- sem isso, a asserção
+    // abaixo passaria mesmo revertido, só por causa de chamadas de outros
+    // testes deste arquivo.
+    buscarAlvosSpy.mockClear()
+    buscarHorariosSpy.mockClear()
 
     const fd = new FormData()
     fd.set('data', '2026-09-15')
@@ -556,6 +563,10 @@ describe('POST /api/kpi/nutrimax/gerar -- histórico não conta cargas do pão (
   it('qtdCargas salvo no histórico não inclui cargas PAO-*', async () => {
     const historico = await import('@/lib/kpi-romaneio/historico')
     const salvarSpy = vi.mocked(historico.salvarGeracao)
+    // Achado Important da revisão final de branch (17/09): idem -- limpar o
+    // mock pra garantir que a asserção reflete só a chamada feita por ESTE
+    // teste, não uma chamada equivalente de outro teste no mesmo arquivo.
+    salvarSpy.mockClear()
 
     const res = await POST(montarRequest(true) as never)
     expect(res.status).toBe(200)

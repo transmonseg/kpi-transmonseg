@@ -19,7 +19,7 @@ import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
 import { salvarGeracao, buscarGeracaoParaRegenerar } from '@/lib/kpi-romaneio/historico'
 import { createServiceClient } from '@/lib/supabase/service'
-import { COD_USER_NUTRIMAX, foraDoAlcanceApi } from '@/lib/kpi-romaneio/constants'
+import { COD_USER_NUTRIMAX, foraDoAlcanceApi, PAO_PREFIXO } from '@/lib/kpi-romaneio/constants'
 import { logarNfDuplicadaNaMesmaPlaca } from '@/lib/kpi-romaneio/nf-duplicada'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
 
@@ -257,10 +257,14 @@ export async function POST(req: NextRequest) {
 
   const linhasPorPlaca = agrupar(romaneioGeo, l => normPlaca(l.placa))
   // Achado Minor #10 da revisão final do plano do pão (15/09): carga do pão
-  // sem CARRO no PDF vira placa '' aqui -- montarDetalheEntregas já
-  // curto-circuita incondicionalmente pra essa placa (ver "CARGA SEM PLACA
-  // NO ROMANEIO" em agregacao.ts), então consultar Unitrac/ponte pra ela é
-  // trabalho de rede desperdiçado.
+  // sem CARRO no PDF vira placa '' aqui -- montarDetalheEntregas (linha de
+  // detalhe por NF) já curto-circuita incondicionalmente pra essa placa (ver
+  // "CARGA SEM PLACA NO ROMANEIO" em agregacao.ts). agregarPorCarga (resumo
+  // por carga) NÃO tem essa guarda explícita -- recebe paradasPorPlaca.get('')
+  // / horarioBasePorPlaca.get('') normalmente, e só funciona certo na prática
+  // porque a ponte nunca retorna dado real pra placa vazia (fica tudo vazio
+  // por ausência de dado, não por um curto-circuito dedicado). De qualquer
+  // forma, consultar Unitrac/ponte pra ela é trabalho de rede desperdiçado.
   const placasNorm = [...linhasPorPlaca.keys()].filter(p => p !== '')
   logarNfDuplicadaNaMesmaPlaca(linhasPorPlaca)
 
@@ -425,7 +429,7 @@ export async function POST(req: NextRequest) {
   // so' tinha a escala do pao e TODA carga Nutry Max voltava a sair
   // "sem_escala". Cada escopo roda contra a sua propria fonte, e so' quando
   // o documento correspondente de fato veio.
-  const ehCargaPao = (carga: string) => carga.startsWith('PAO-')
+  const ehCargaPao = (carga: string) => carga.startsWith(PAO_PREFIXO)
   const avisos = [
     ...(escalaBuf ? detectarDescasamentos(escala, cargasRomaneioList.filter(c => !ehCargaPao(c.carga))) : []),
     ...(romaneioPaoBuf ? detectarDescasamentos(resultadoPao.escala, cargasRomaneioList.filter(c => ehCargaPao(c.carga))) : []),
@@ -466,7 +470,7 @@ export async function POST(req: NextRequest) {
       cliente: 'nutrimax',
       dataReferencia: data,
       geradoPor: user?.email ?? null,
-      qtdCargas: linhasKpi.filter(l => !l.carga.startsWith('PAO-')).length,
+      qtdCargas: linhasKpi.filter(l => !l.carga.startsWith(PAO_PREFIXO)).length,
       arquivoStoragePath: null,
       escalaStoragePath,
       romaneioStoragePath,
