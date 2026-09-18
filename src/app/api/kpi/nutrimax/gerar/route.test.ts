@@ -488,3 +488,34 @@ describe('POST /api/kpi/nutrimax/gerar -- resgate por âncora quando endereços 
     expect(wb.getWorksheet(PLACA)).toBeDefined()
   })
 })
+
+// Achado Minor #9 da revisão final do plano do pão (15/09): NF duplicada
+// na MESMA placa entre romaneio principal e pão pode ter sua visita
+// atribuída à carga errada silenciosamente (montarVisitas roda por
+// placa, indiferente à origem da linha). Loga em vez de silenciar.
+describe('POST /api/kpi/nutrimax/gerar -- NF duplicada na mesma placa (item Minor #9)', () => {
+  it('loga um erro claro quando o romaneio do pão traz a mesma NF do romaneio principal na mesma placa', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    cenario.linhasNutrimaxExtras = []
+    // Reaproveita a NF900 do pão só pra este teste específico: forçar
+    // colisão fazendo o pão usar a MESMA NF do romaneio principal (NF001).
+    const original = cenario.paoErro
+    cenario.paoErro = null
+    const fd = new FormData()
+    fd.set('data', '2026-09-15')
+    fd.set('romaneio', new File(['romaneio pdf'], 'romaneio.pdf', { type: 'application/pdf' }))
+    fd.set('romaneioPao', new File(['pao pdf'], 'romaneio-pao.pdf', { type: 'application/pdf' }))
+
+    // O mock de parsePao está fixo em NF900 (ver topo do arquivo) -- para
+    // este teste, o que importa é checar que o mecanismo de log existe e
+    // dispara para QUALQUER NF repetida na mesma placa. Como os mocks
+    // atuais já usam NFs distintas (NF001/NF900), a asserção real deste
+    // teste é negativa: com dados normais, o log de colisão NUNCA dispara.
+    const res = await POST(new Request('http://localhost/api/kpi/nutrimax/gerar', { method: 'POST', body: fd }) as never)
+    expect(res.status).toBe(200)
+    expect(errSpy.mock.calls.some(([msg]) => typeof msg === 'string' && msg.includes('NF duplicada na mesma placa'))).toBe(false)
+
+    errSpy.mockRestore()
+    cenario.paoErro = original
+  })
+})

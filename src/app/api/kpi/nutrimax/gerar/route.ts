@@ -20,6 +20,7 @@ import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
 import { salvarGeracao, buscarGeracaoParaRegenerar } from '@/lib/kpi-romaneio/historico'
 import { createServiceClient } from '@/lib/supabase/service'
 import { COD_USER_NUTRIMAX, foraDoAlcanceApi } from '@/lib/kpi-romaneio/constants'
+import { logarNfDuplicadaNaMesmaPlaca } from '@/lib/kpi-romaneio/nf-duplicada'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
 
 export const runtime = 'nodejs'
@@ -256,6 +257,7 @@ export async function POST(req: NextRequest) {
 
   const linhasPorPlaca = agrupar(romaneioGeo, l => normPlaca(l.placa))
   const placasNorm = [...linhasPorPlaca.keys()]
+  logarNfDuplicadaNaMesmaPlaca(linhasPorPlaca)
 
   // Coordenadas de cada NF geocodificada, pra pedir tambem CHEGADA/SAIDA
   // NA LOJA via a mesma ponte (id = NF, ver base-horarios.ts). Linha sem

@@ -21,6 +21,7 @@ import { calcularKmPercorrido } from '../src/lib/kpi-romaneio/km'
 import { detectarDescasamentos } from '../src/lib/kpi-romaneio/avisos'
 import { gerarKpiRomaneioXlsx } from '../src/lib/kpi-romaneio/gerador-xlsx'
 import { COD_USER_NUTRIMAX, foraDoAlcanceApi } from '../src/lib/kpi-romaneio/constants'
+import { logarNfDuplicadaNaMesmaPlaca } from '../src/lib/kpi-romaneio/nf-duplicada'
 import { hojeBR } from '../src/lib/data-br'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '../src/lib/kpi-romaneio/types'
 import type { UnitracParadaRow } from '../src/lib/kpi/matcher'
@@ -127,6 +128,7 @@ async function main() {
 
   const linhasPorPlaca = agrupar(romaneioGeo, l => normPlaca(l.placa))
   const placasNorm = [...linhasPorPlaca.keys()]
+  logarNfDuplicadaNaMesmaPlaca(linhasPorPlaca)
 
   const pontosPorPlacaBridge = new Map<string, { id: string; lat: number; lng: number }[]>()
   for (const [placaNorm, linhasDaPlaca] of linhasPorPlaca) {
