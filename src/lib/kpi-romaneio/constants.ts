@@ -71,3 +71,9 @@ export function foraDoAlcanceApi(data: string, hojeISO: string): boolean {
   // cobre hoje/ontem), entao e' tao fora de alcance quanto uma data antiga.
   return diffDias < 0 || diffDias > DIAS_ALCANCE_API_HOJE_ONTEM
 }
+
+/** Quantas placas o gerador consulta ao mesmo tempo (paradas da Unitrac + cruzamento
+ *  de velocidade na ponte). O PostgREST do banco `transmonseg` tem pool de 10 conexoes
+ *  e divide com o poller do monitoramento; medido em 18/09: sem limite, ~75 placas em
+ *  paralelo esgotaram o pool 258 vezes em 24h (HTTP 500 em velocidade-parada). */
+export const LIMITE_CONCORRENCIA_PLACAS = 6

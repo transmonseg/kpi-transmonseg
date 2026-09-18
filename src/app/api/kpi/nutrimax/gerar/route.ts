@@ -19,7 +19,8 @@ import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
 import { salvarGeracao, buscarGeracaoParaRegenerar } from '@/lib/kpi-romaneio/historico'
 import { createServiceClient } from '@/lib/supabase/service'
-import { COD_USER_NUTRIMAX, foraDoAlcanceApi, PAO_PREFIXO } from '@/lib/kpi-romaneio/constants'
+import { COD_USER_NUTRIMAX, foraDoAlcanceApi, LIMITE_CONCORRENCIA_PLACAS, PAO_PREFIXO } from '@/lib/kpi-romaneio/constants'
+import { mapComLimite } from '@/lib/kpi-romaneio/concorrencia'
 import { logarNfDuplicadaNaMesmaPlaca } from '@/lib/kpi-romaneio/nf-duplicada'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
 
@@ -304,7 +305,7 @@ export async function POST(req: NextRequest) {
   const visitasPorPlaca = new Map<string, Map<string, Visita>>()
   const kmPorPlaca = new Map<string, number | null>()
 
-  await Promise.all(placasNorm.map(async placaNorm => {
+  await mapComLimite(placasNorm, LIMITE_CONCORRENCIA_PLACAS, async placaNorm => {
     const cv = cvPorPlaca.get(placaNorm)
     const daUnitrac = cv ? await buscarParadasDoDia(cv, placaNorm, data, 48) : []
     // Sem parada nenhuma da Unitrac (dia fora das 48h, ou placa sem cv) mas
@@ -314,7 +315,7 @@ export async function POST(req: NextRequest) {
     paradasPorPlaca.set(placaNorm, paradas)
     visitasPorPlaca.set(placaNorm, montarVisitas(linhasPorPlaca.get(placaNorm) ?? [], paradas, horarioBasePorPlaca.get(placaNorm)?.visitasPorNf))
     kmPorPlaca.set(placaNorm, calcularKmPercorrido(paradas))
-  }))
+  })
 
   // Achado real 06/09 (grupo KPI AJUSTES, placa TTH-3C94): "carga
   // transferida" (acharParadaDeOutraPlaca em agregacao.ts) so' enxerga
@@ -329,12 +330,12 @@ export async function POST(req: NextRequest) {
   // aba de relatorio pra placa que nao tem NF nenhuma no romaneio
   // (placasNorm continua sendo so' quem apareceu nele).
   const placasFrotaExtra = frota.map(v => v.placaNorm).filter(p => !paradasPorPlaca.has(p))
-  await Promise.all(placasFrotaExtra.map(async placaNorm => {
+  await mapComLimite(placasFrotaExtra, LIMITE_CONCORRENCIA_PLACAS, async placaNorm => {
     const cv = cvPorPlaca.get(placaNorm)
     const daUnitrac = cv ? await buscarParadasDoDia(cv, placaNorm, data, 48) : []
     const daPonte = horarioBasePorPlaca.get(placaNorm)?.paradas
     paradasPorPlaca.set(placaNorm, resolverParadas(daUnitrac, daPonte, placaNorm, horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false))
-  }))
+  })
 
   const alvosPorPlaca = agrupar(alvos, a => a.placaNorm)
 
