@@ -114,7 +114,7 @@ vi.mock('@/lib/kpi-romaneio/base-horarios', () => ({
   buscarHorariosBase: vi.fn(async () => new Map()),
 }))
 vi.mock('@/lib/kpi-romaneio/historico', () => ({
-  salvarGeracao: async () => 'geracao-fake-id',
+  salvarGeracao: vi.fn(async () => 'geracao-fake-id'),
   buscarGeracaoParaRegenerar: async () => null,
 }))
 vi.mock('@/lib/supabase/service', () => ({
@@ -546,5 +546,20 @@ describe('POST /api/kpi/nutrimax/gerar -- placa vazia não é consultada contra 
 
     expect(buscarAlvosSpy).toHaveBeenCalledWith(expect.not.arrayContaining(['']))
     expect(buscarHorariosSpy).toHaveBeenCalledWith(expect.not.arrayContaining(['']), expect.anything(), expect.anything(), expect.anything())
+  })
+})
+
+// Achado Minor #8 da revisão final do plano do pão (15/09): qtd_cargas no
+// histórico contava as cargas PAO-* junto com as da Nutry Max, quebrando
+// a comparabilidade entre dias com e sem pão enviado.
+describe('POST /api/kpi/nutrimax/gerar -- histórico não conta cargas do pão (item Minor #8)', () => {
+  it('qtdCargas salvo no histórico não inclui cargas PAO-*', async () => {
+    const historico = await import('@/lib/kpi-romaneio/historico')
+    const salvarSpy = vi.mocked(historico.salvarGeracao)
+
+    const res = await POST(montarRequest(true) as never)
+    expect(res.status).toBe(200)
+
+    expect(salvarSpy).toHaveBeenCalledWith(expect.objectContaining({ qtdCargas: 1 }))
   })
 })

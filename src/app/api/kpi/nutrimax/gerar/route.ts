@@ -466,7 +466,7 @@ export async function POST(req: NextRequest) {
       cliente: 'nutrimax',
       dataReferencia: data,
       geradoPor: user?.email ?? null,
-      qtdCargas: linhasKpi.length,
+      qtdCargas: linhasKpi.filter(l => !l.carga.startsWith('PAO-')).length,
       arquivoStoragePath: null,
       escalaStoragePath,
       romaneioStoragePath,
