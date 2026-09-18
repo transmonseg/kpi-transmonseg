@@ -23,6 +23,10 @@ const cenario = vi.hoisted(() => ({
   // além da padrão NF001 -- usado pra dar uma terceira entrega com
   // coordenada própria e confiável, servindo de âncora real na mesma placa.
   linhasNutrimaxExtras: [] as LinhaRomaneio[],
+  // Achado Minor #10 da revisão final do plano do pão (15/09): sobrescreve
+  // a placa da linha do pão no mock de parsePao (undefined = usa PLACA
+  // padrão), pra simular carga do pão sem CARRO no PDF (placa vazia).
+  placaPaoOverride: undefined as string | undefined,
 }))
 
 // Task 2 (romaneio do pão): mocks de TODO módulo com efeito colateral
@@ -84,7 +88,7 @@ vi.mock('@/lib/kpi-romaneio/parse-romaneio', () => ({
 vi.mock('@/lib/kpi-romaneio/parse-pao', () => ({
   parsePao: async () => {
     if (cenario.paoErro) throw cenario.paoErro
-    return { linhas: [linhaPao()], escala: [escalaSintetica()] }
+    return { linhas: [linhaPao({ placa: cenario.placaPaoOverride ?? PLACA })], escala: [escalaSintetica()] }
   },
 }))
 vi.mock('@/lib/kpi-romaneio/geocode', () => ({
@@ -100,14 +104,14 @@ vi.mock('@/lib/kpi-romaneio/geocode-ancoras', () => ({
     new Map(grupos.map(g => [g.id, cenario.resgateAncoraPorPlaca.get(g.id) ?? g.ruas.map(() => null)])),
 }))
 vi.mock('@/lib/kpi-romaneio/unitrac', () => ({
-  buscarAlvosDoDia: async () => [],
+  buscarAlvosDoDia: vi.fn(async () => []),
   buscarParadasDoDia: async () => cenario.paradas,
   // Passa adiante o que veio da Unitrac (mesmo efeito do caminho real
   // quando nao ha ponte de posicao continua pra placa).
   resolverParadas: (daUnitrac: unknown[]) => daUnitrac,
 }))
 vi.mock('@/lib/kpi-romaneio/base-horarios', () => ({
-  buscarHorariosBase: async () => new Map(),
+  buscarHorariosBase: vi.fn(async () => new Map()),
 }))
 vi.mock('@/lib/kpi-romaneio/historico', () => ({
   salvarGeracao: async () => 'geracao-fake-id',
@@ -180,6 +184,7 @@ beforeEach(() => {
   cenario.enderecosSemCandidato = new Set()
   cenario.resgateAncoraPorPlaca = new Map()
   cenario.linhasNutrimaxExtras = []
+  cenario.placaPaoOverride = undefined
 })
 
 describe('POST /api/kpi/nutrimax/gerar -- romaneioPao opcional', () => {
@@ -517,5 +522,29 @@ describe('POST /api/kpi/nutrimax/gerar -- NF duplicada na mesma placa (item Mino
 
     errSpy.mockRestore()
     cenario.paoErro = original
+  })
+})
+
+// Achado Minor #10 da revisão final do plano do pão (15/09): placa vazia
+// (romaneio do pão sem CARRO) entrava em `placasNorm` e era consultada
+// contra a frota/ponte de GPS à toa -- `montarDetalheEntregas` já
+// curto-circuita incondicionalmente pra placa vazia, então essa consulta
+// nunca influencia o relatório final, só desperdiça uma chamada de rede.
+describe('POST /api/kpi/nutrimax/gerar -- placa vazia não é consultada contra Unitrac/ponte (item Minor #10)', () => {
+  it('carga do pão sem CARRO não aparece na lista de placas consultadas', async () => {
+    cenario.frota = [{ placaNorm: PLACA, cv: 'CV-1' }]
+    cenario.placaPaoOverride = ''
+    const buscarAlvosSpy = vi.mocked((await import('@/lib/kpi-romaneio/unitrac')).buscarAlvosDoDia)
+    const buscarHorariosSpy = vi.mocked((await import('@/lib/kpi-romaneio/base-horarios')).buscarHorariosBase)
+
+    const fd = new FormData()
+    fd.set('data', '2026-09-15')
+    fd.set('romaneio', new File(['romaneio pdf'], 'romaneio.pdf', { type: 'application/pdf' }))
+    fd.set('romaneioPao', new File(['pao pdf'], 'romaneio-pao.pdf', { type: 'application/pdf' }))
+    const res = await POST(new Request('http://localhost/api/kpi/nutrimax/gerar', { method: 'POST', body: fd }) as never)
+    expect(res.status).toBe(200)
+
+    expect(buscarAlvosSpy).toHaveBeenCalledWith(expect.not.arrayContaining(['']))
+    expect(buscarHorariosSpy).toHaveBeenCalledWith(expect.not.arrayContaining(['']), expect.anything(), expect.anything(), expect.anything())
   })
 })

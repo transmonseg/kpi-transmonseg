@@ -127,7 +127,12 @@ async function main() {
   console.log(`Geocodificados: ${romaneioGeo.filter(l => l.lat != null).length}/${romaneioGeo.length}`)
 
   const linhasPorPlaca = agrupar(romaneioGeo, l => normPlaca(l.placa))
-  const placasNorm = [...linhasPorPlaca.keys()]
+  // Achado Minor #10 da revisão final do plano do pão (15/09): carga do pão
+  // sem CARRO no PDF vira placa '' aqui -- montarDetalheEntregas já
+  // curto-circuita incondicionalmente pra essa placa (ver "CARGA SEM PLACA
+  // NO ROMANEIO" em agregacao.ts), então consultar Unitrac/ponte pra ela é
+  // trabalho de rede desperdiçado.
+  const placasNorm = [...linhasPorPlaca.keys()].filter(p => p !== '')
   logarNfDuplicadaNaMesmaPlaca(linhasPorPlaca)
 
   const pontosPorPlacaBridge = new Map<string, { id: string; lat: number; lng: number }[]>()
