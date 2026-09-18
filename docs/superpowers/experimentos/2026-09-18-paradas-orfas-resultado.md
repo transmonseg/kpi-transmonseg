@@ -111,6 +111,14 @@ CSV de candidatas (raio 1500m): /private/tmp/claude-501/-Users-joaquimsalles/43f
 - A categoria "parada 500m-2km" concentra o efeito (26 a 40% com órfã), justamente onde o casamento por distância já é ambíguo.
 - Amostra p/ a Ana: 28 linhas (10 em 15/09, 8 em 16/09 = todas as candidatas do dia, 10 em 17/09), em `amostra-ana.csv` no scratch da sessão; abaixo dos 30 pares exigidos pela condição 4.
 
+## Confundidores e limites da evidência
+
+1. **Regime de dados diferente por dia.** 09, 11 e 15/09 foram reprocessados fora da janela de 48 h da Unitrac (só ponte de GPS); 17/09 foi o único reprocessado com paradas da Unitrac + ponte, que é o regime da produção. 16/09 está na fronteira da janela.
+2. **16/09 é anômalo e não deve entrar como evidência.** No `dump-16` há 186 pendentes "VEÍCULO SEM MOVIMENTO NO DIA" + 36 "SEM DADO DE GPS" (222 de 308 pendentes; a categoria "outra" da saída do CLI), enquanto o KPI em produção nesse dia (`scratchpad/hist/kpi16post.xlsx`) não tem nenhum status "SEM MOVIMENTO". O GPS bruto de 16/09 está completo (`posicoes_historico`: 353-354 veículos reportando em todas as 24 horas). Hipótese, NÃO verificada: paradas parciais da Unitrac na fronteira de 48 h combinadas com o flag de apagão de sinal em `resolverParadas` (`if (apagaoDeSinal && daUnitrac.length > 0) return daUnitrac`).
+3. **Condição 1 sem o dia 16:** com só 15/09 (6,0%) e 17/09 (20,4%) a mediana é 13,2%, ainda abaixo de 30%. O NO-GO provisório se mantém pela regra do plano, mas a evidência é fraca: só 1 dia (17/09) é comparável à produção, o gabarito cobre 6 entregues + 1 sem evidência nesses dias (n minúsculo) e o resultado não mede o regime real.
+4. **Pista para a próxima hipótese (não conclusão):** em 17/09, 97,2% dos "passou sem parar" (35 de 36) têm parada órfã a até 1500 m, e 36,8% das "parada 500m-2km" (21 de 57).
+5. **Recomendação metodológica:** experimentos futuros precisam de dumps do MESMO regime da produção: gerados dentro de 48 h do dia ou, melhor, salvos automaticamente toda noite junto com a foto dos alvos da Unitrac, formando um conjunto histórico comparável e associado aos rótulos da Ana.
+
 ## Decisão
 
 | Condição | Meta | Medido | Status |
@@ -120,7 +128,7 @@ CSV de candidatas (raio 1500m): /private/tmp/claude-501/-Users-joaquimsalles/43f
 | 3. Falso-confirmado gabarito | ≤ 15% | 100% (n=1) | FALHA (amostra mínima) |
 | 4. Precisão da amostra da Ana | ≥ 80% em ≥ 30 pares | AGUARDANDO validação da Ana (o usuário vai trazer as respostas) | pendente |
 
-**Decisão provisória: NO-GO.** As condições 1 e 2 falham por larga margem (6% contra 30%; 17% contra 70%), então mesmo precisão 100% na amostra da Ana não reverte: o teto do ganho seria mediana 6,0% × 100% de precisão × ~300 pendentes / ~2100 NFs, isto é, cerca de +0,9 p.p. na taxa identificada (com precisão 80%, cerca de +0,7 p.p.); no melhor dia (17/09, 20,4%) o teto seria ~+2,7 p.p. (100%) ou ~+2,1 p.p. (80%). Ganho da mediana é pequeno demais para justificar a regra.
+**NO-GO provisório com evidência fraca: reabrir com dumps no regime da produção.** As condições 1 e 2 falham por larga margem (6% contra 30%; 17% contra 70%), então mesmo precisão 100% na amostra da Ana não reverte: o teto do ganho seria mediana 6,0% × 100% de precisão × ~300 pendentes / ~2100 NFs, isto é, cerca de +0,9 p.p. na taxa identificada (com precisão 80%, cerca de +0,7 p.p.); no melhor dia (17/09, 20,4%) o teto seria ~+2,7 p.p. (100%) ou ~+2,1 p.p. (80%). Ganho da mediana é pequeno demais para justificar a regra.
 
 O que falta para fechar: as respostas da Ana à amostra (condição 4), que só mudariam o valor do ganho, não a decisão, a menos que se argumente que o gabarito (n=6) é pequeno demais para valer; nesse caso ampliar o gabarito antes de desistir.
 
