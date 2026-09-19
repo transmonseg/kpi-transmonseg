@@ -11,7 +11,8 @@ export function mesclarAlvos(antigos: AlvoApi[], novos: AlvoApi[]): AlvoApi[] {
     if (atual && atual.situacao === 1 && a.situacao !== 1) continue
     mapa.set(chave(a), a)
   }
-  return [...mapa.values()]
+  // consumidores fazem Map por NF (last-wins): feitos por ultimo para vencerem se `ordem` mudou entre capturas
+  return [...mapa.values()].sort((a, b) => Number(a.situacao === 1) - Number(b.situacao === 1))
 }
 
 export async function lerSnapshotAlvos(cliente: string, data: string): Promise<AlvoApi[] | null> {
@@ -35,11 +36,19 @@ export async function salvarSnapshotAlvos(cliente: string, data: string, alvos: 
 /** Alvos efetivos do dia: hoje → grava a API no snapshot; dia passado → API mesclada com o snapshot. */
 export async function alvosEfetivos(cliente: string, data: string, hoje: string, daApi: AlvoApi[]): Promise<AlvoApi[]> {
   try {
-    if (data >= hoje) {
-      if (daApi.length > 0) await salvarSnapshotAlvos(cliente, data, daApi)
+    if (data >= hoje && daApi.length > 0) {
+      await salvarSnapshotAlvos(cliente, data, daApi)
+      console.log(`snapshot alvos ${data}: 0 do snapshot + ${daApi.length} da API (gravado)`)
       return daApi
     }
-    return mesclarAlvos((await lerSnapshotAlvos(cliente, data)) ?? [], daApi)
+    const snap = await lerSnapshotAlvos(cliente, data)
+    if (!snap) {
+      console.log(`sem snapshot para ${data}`)
+      return daApi
+    }
+    console.log(`snapshot alvos ${data}: ${snap.length} do snapshot + ${daApi.length} da API`)
+    // hoje com API vazia: devolve o snapshot; dia passado: mescla
+    return data >= hoje ? snap : mesclarAlvos(snap, daApi)
   } catch (err) {
     console.error('snapshot de alvos indisponível:', err)
     return daApi

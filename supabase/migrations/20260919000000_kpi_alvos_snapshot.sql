@@ -1,3 +1,6 @@
+-- /mapa_servicos/alvos da Unitrac so devolve o plano do dia corrente. Guardamos um snapshot
+-- por dia (cliente + data_referencia) para que regeracoes de dias passados do KPI continuem
+-- consistentes com o que foi realmente executado.
 create table if not exists kpi_alvos_snapshot (
   cliente text not null,
   data_referencia date not null,

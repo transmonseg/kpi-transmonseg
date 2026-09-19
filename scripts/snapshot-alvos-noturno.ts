@@ -45,7 +45,7 @@ async function main() {
     return
   }
   const { error, count } = await createServiceClient().from('kpi_alvos_snapshot')
-    .delete({ count: 'exact' }).lt('data_referencia', limite)
+    .delete({ count: 'exact' }).eq('cliente', 'nutrimax').lt('data_referencia', limite)
   if (error) falhas.push(`retencao: ${error.message}`)
   else console.log(`snapshots antigos apagados (< ${limite}): ${count ?? 0}`)
   console.log(`dias salvos=${salvos} falhas=${falhas.length}`)

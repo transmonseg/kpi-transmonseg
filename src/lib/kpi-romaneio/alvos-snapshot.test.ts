@@ -32,13 +32,23 @@ describe('mesclarAlvos', () => {
     const r = mesclarAlvos([alvo({ situacao: 0 })], [alvo({ situacao: 1, feitoISO: '2026-09-17T10:00:00' })])
     expect(r[0].situacao).toBe(1)
   })
+  it('ordem mudou entre capturas: o feito fica por ultimo e vence no Map last-wins por NF', () => {
+    const r = mesclarAlvos(
+      [alvo({ situacao: 1, ordem: 1, feitoISO: '2026-09-17T09:00:00' })],
+      [alvo({ situacao: 0, ordem: 2 })],
+    )
+    const alvoPorNf = new Map(r.filter(a => a.documento).map(a => [a.documento, a]))
+    expect(alvoPorNf.get('100')?.situacao).toBe(1)
+  })
   it('une alvos de chaves diferentes', () => {
     expect(mesclarAlvos([alvo({ documento: '1' })], [alvo({ documento: '2' })])).toHaveLength(2)
   })
 })
 
 describe('alvosEfetivos', () => {
+  let log: ReturnType<typeof vi.spyOn>
   beforeEach(() => {
+    log = vi.spyOn(console, 'log').mockImplementation(() => {})
     mocks.upsert.mockClear()
     mocks.maybeSingle.mockClear()
     mocks.upsert.mockResolvedValue({ error: null })
@@ -51,6 +61,30 @@ describe('alvosEfetivos', () => {
     expect(mocks.upsert).toHaveBeenCalledTimes(1)
     expect(mocks.upsert.mock.calls[0][0]).toMatchObject({ cliente: 'nutrimax', data_referencia: '2026-09-18', qtd_alvos: 1 })
     expect(r).toBe(daApi)
+  })
+
+  it('hoje com API vazia: devolve o snapshot em vez de vazio', async () => {
+    const snap = [alvo({ situacao: 1, feitoISO: '2026-09-18T09:00:00' })]
+    mocks.maybeSingle.mockResolvedValue({ data: { alvos: snap }, error: null })
+    const r = await alvosEfetivos('nutrimax', '2026-09-18', '2026-09-18', [])
+    expect(r).toEqual(snap)
+    expect(mocks.upsert).not.toHaveBeenCalled()
+  })
+
+  it('hoje com API vazia e sem snapshot: devolve vazio', async () => {
+    const r = await alvosEfetivos('nutrimax', '2026-09-18', '2026-09-18', [])
+    expect(r).toEqual([])
+  })
+
+  it('loga se usou snapshot', async () => {
+    const snap = [alvo({ situacao: 1, feitoISO: '2026-09-17T09:00:00' })]
+    mocks.maybeSingle.mockResolvedValue({ data: { alvos: snap }, error: null })
+    await alvosEfetivos('nutrimax', '2026-09-17', '2026-09-18', [alvo({ documento: '2' })])
+    expect(log).toHaveBeenCalledWith('snapshot alvos 2026-09-17: 1 do snapshot + 1 da API')
+    log.mockClear()
+    mocks.maybeSingle.mockResolvedValue({ data: null, error: null })
+    await alvosEfetivos('nutrimax', '2026-09-17', '2026-09-18', [])
+    expect(log).toHaveBeenCalledWith('sem snapshot para 2026-09-17')
   })
 
   it('dia passado com API vazia: devolve o snapshot', async () => {
