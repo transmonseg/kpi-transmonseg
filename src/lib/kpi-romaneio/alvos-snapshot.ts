@@ -53,7 +53,9 @@ export function agruparAlvosPorDia(alvos: AlvoApi[]): Map<string, AlvoApi[]> {
     const iso = a.feitoISO ?? a.inicioISO
     if (!iso) continue
     const dia = iso.slice(0, 10)
-    porDia.set(dia, [...(porDia.get(dia) ?? []), a])
+    const lista = porDia.get(dia)
+    if (lista) lista.push(a)
+    else porDia.set(dia, [a])
   }
   return porDia
 }
