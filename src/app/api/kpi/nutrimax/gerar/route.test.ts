@@ -117,6 +117,9 @@ vi.mock('@/lib/kpi-romaneio/historico', () => ({
   salvarGeracao: vi.fn(async () => 'geracao-fake-id'),
   buscarGeracaoParaRegenerar: async () => null,
 }))
+vi.mock('@/lib/kpi-romaneio/alvos-snapshot', () => ({
+  alvosEfetivos: async (_c: string, _d: string, _h: string, daApi: unknown[]) => daApi,
+}))
 vi.mock('@/lib/supabase/service', () => ({
   createServiceClient: () => ({
     storage: {

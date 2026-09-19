@@ -12,6 +12,7 @@ import { reposicionarPorAncoras } from '@/lib/kpi-romaneio/geocode-ancoras'
 import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '@/lib/kpi-romaneio/unitrac'
 import { buscarHorariosBase } from '@/lib/kpi-romaneio/base-horarios'
 import { alvosDaData } from '@/lib/kpi-romaneio/alvos-data'
+import { alvosEfetivos } from '@/lib/kpi-romaneio/alvos-snapshot'
 import { detectarDescasamentos } from '@/lib/kpi-romaneio/avisos'
 import { montarVisitas } from '@/lib/kpi-romaneio/visitas'
 import { agregarPorCarga, montarDetalheEntregas } from '@/lib/kpi-romaneio/agregacao'
@@ -288,7 +289,7 @@ export async function POST(req: NextRequest) {
     // -- a ponte virou fonte primaria (ver resolverParadas em unitrac.ts).
     buscarHorariosBase(placasNorm, data, pontosPorPlacaBridge, true),
   ])
-  const alvos = alvosDaData(alvosBrutos, data)
+  const alvos = await alvosEfetivos('nutrimax', data, hojeBR(), alvosDaData(alvosBrutos, data))
   const cvPorPlaca = new Map(frota.map(v => [v.placaNorm, v.cv]))
   // Pedido do usuário 25/08 (nível Benassi): placa sem cv na Unitrac E sem
   // entrada na ponte do monitoramento (nunca respondeu por ela, nem com

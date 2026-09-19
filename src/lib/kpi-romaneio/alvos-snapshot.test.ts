@@ -1,5 +1,20 @@
-import { describe, it, expect } from 'vitest'
-import { mesclarAlvos } from './alvos-snapshot'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { mesclarAlvos, alvosEfetivos } from './alvos-snapshot'
+
+const mocks = vi.hoisted(() => ({
+  upsert: vi.fn(),
+  maybeSingle: vi.fn(),
+}))
+vi.mock('@/lib/supabase/service', () => ({
+  createServiceClient: () => {
+    const q: Record<string, unknown> = {}
+    q.select = () => q
+    q.eq = () => q
+    q.maybeSingle = mocks.maybeSingle
+    q.upsert = mocks.upsert
+    return { from: () => q }
+  },
+}))
 import type { AlvoApi } from '@/lib/unitrac-api'
 
 const alvo = (o: Partial<AlvoApi>): AlvoApi => ({
@@ -19,5 +34,39 @@ describe('mesclarAlvos', () => {
   })
   it('une alvos de chaves diferentes', () => {
     expect(mesclarAlvos([alvo({ documento: '1' })], [alvo({ documento: '2' })])).toHaveLength(2)
+  })
+})
+
+describe('alvosEfetivos', () => {
+  beforeEach(() => {
+    mocks.upsert.mockClear()
+    mocks.maybeSingle.mockClear()
+    mocks.upsert.mockResolvedValue({ error: null })
+    mocks.maybeSingle.mockResolvedValue({ data: null, error: null })
+  })
+
+  it('data >= hoje com alvos: grava snapshot e devolve a API', async () => {
+    const daApi = [alvo({})]
+    const r = await alvosEfetivos('nutrimax', '2026-09-18', '2026-09-18', daApi)
+    expect(mocks.upsert).toHaveBeenCalledTimes(1)
+    expect(mocks.upsert.mock.calls[0][0]).toMatchObject({ cliente: 'nutrimax', data_referencia: '2026-09-18', qtd_alvos: 1 })
+    expect(r).toBe(daApi)
+  })
+
+  it('dia passado com API vazia: devolve o snapshot', async () => {
+    const snap = [alvo({ situacao: 1, feitoISO: '2026-09-17T09:00:00' })]
+    mocks.maybeSingle.mockResolvedValue({ data: { alvos: snap }, error: null })
+    const r = await alvosEfetivos('nutrimax', '2026-09-17', '2026-09-18', [])
+    expect(r).toEqual(snap)
+    expect(mocks.upsert).not.toHaveBeenCalled()
+  })
+
+  it('erro do Supabase: devolve a API sem lançar', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mocks.maybeSingle.mockResolvedValue({ data: null, error: { message: 'boom' } })
+    const daApi = [alvo({})]
+    await expect(alvosEfetivos('nutrimax', '2026-09-17', '2026-09-18', daApi)).resolves.toBe(daApi)
+    expect(spy).toHaveBeenCalled()
+    spy.mockRestore()
   })
 })

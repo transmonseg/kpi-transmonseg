@@ -15,6 +15,7 @@ import { buscarFrota, normPlaca } from '../src/lib/unitrac-api'
 import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '../src/lib/kpi-romaneio/unitrac'
 import { buscarHorariosBase } from '../src/lib/kpi-romaneio/base-horarios'
 import { alvosDaData } from '../src/lib/kpi-romaneio/alvos-data'
+import { alvosEfetivos } from '../src/lib/kpi-romaneio/alvos-snapshot'
 import { montarVisitas } from '../src/lib/kpi-romaneio/visitas'
 import { agregarPorCarga, montarDetalheEntregas } from '../src/lib/kpi-romaneio/agregacao'
 import { calcularKmPercorrido } from '../src/lib/kpi-romaneio/km'
@@ -161,7 +162,7 @@ async function main() {
   } catch (e) {
     console.log('buscarAlvosDoDia falhou:', e instanceof Error ? e.message : e)
   }
-  const alvos = alvosDaData(alvosBrutos, data)
+  const alvos = await alvosEfetivos('nutrimax', data, hojeBR(), alvosDaData(alvosBrutos, data))
 
   const paradasPorPlaca = new Map<string, UnitracParadaRow[]>()
   const visitasPorPlaca = new Map<string, Map<string, Visita>>()
