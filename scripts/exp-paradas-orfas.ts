@@ -12,7 +12,7 @@ import type { DumpExperimento } from '../src/lib/kpi-romaneio/experimentos/tipos
 
 const RAIOS = [500, 1000, 1500, 2000, 3000]
 const RAIO_CSV = 1500
-const PARAMS = { duracaoMinSeg: 120, raioReivindicadaM: RAIO_CONFIRMACAO_AMPLIADO_METROS }
+const PARAMS = { duracaoMinSeg: 120, raioReivindicadaM: Number(process.env.RAIO_REIVINDICADA_M ?? RAIO_CONFIRMACAO_AMPLIADO_METROS) }
 
 function pct(n: number, d: number): string {
   return d === 0 ? '   - ' : `${((100 * n) / d).toFixed(1)}%`
@@ -31,6 +31,7 @@ function main() {
   const gabarito: RotuloGabarito[] = JSON.parse(readFileSync(gabaritoPath, 'utf-8'))
   const dumps: DumpExperimento[] = dumpPaths.map(p => JSON.parse(readFileSync(p, 'utf-8')))
 
+  console.log(`raioReivindicadaM = ${PARAMS.raioReivindicadaM} m`)
   for (const dump of dumps) {
     const a = analisarParadasOrfas(dump, RAIOS, PARAMS)
     console.log(`\n=== ${a.data}: ${a.totalNfs} NFs | identificadas ${pct(a.identificadas, a.totalNfs)} | pendentes ${a.pendentes} (${a.pendentesSemCoordenada} sem coordenada) | paradas orfas ${a.orfasTotal}`)
@@ -46,7 +47,7 @@ function main() {
   console.log('\n=== Gabarito da Ana (so dias com dump) ===')
   for (const raio of RAIOS) {
     const g = avaliarContraGabarito(dumps, gabarito, PARAMS, raio)
-    console.log(`  raio ${String(raio).padStart(4)}m: recall entregue ${g.entregueComOrfa}/${g.entregueTotal} (${pct(g.entregueComOrfa, g.entregueTotal)}) | falso-confirmado ${g.semEvidenciaComOrfa}/${g.semEvidenciaTotal} (${pct(g.semEvidenciaComOrfa, g.semEvidenciaTotal)}) | ja confirmadas ${g.jaConfirmadas} | nao encontradas ${g.naoEncontradas}`)
+    console.log(`  raio ${String(raio).padStart(4)}m: recall entregue ${g.entregueComOrfa}/${g.entregueTotal} (${pct(g.entregueComOrfa, g.entregueTotal)}) | falso-confirmado ${g.semEvidenciaComOrfa}/${g.semEvidenciaTotal} (${pct(g.semEvidenciaComOrfa, g.semEvidenciaTotal)}) | ja confirmada correta ${g.jaConfirmadaCorreta} | ja confirmada falsa ${g.jaConfirmadaFalsa} | nao encontradas ${g.naoEncontradas}`)
   }
 
   const csv = ['data;placa;carga;nf;cliente;endereco;categoria;distancia_m;parada_chegada;parada_saida;duracao_min']

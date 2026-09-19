@@ -72,9 +72,10 @@ export function descartarParadaAbertaAlemDoDia(paradas: UnitracParadaRow[], data
 //
 // So' FORA_BASE entra na checagem (BASE nunca precisa de confirmacao de
 // entrega). Uma UNICA chamada em lote pra ponte (nao uma por parada) --
-// tipicamente um punhado de paradas por placa/dia, mas o gerador roda
-// Promise.all sobre MUITAS placas por vez, entao chamada sequencial por
-// parada aqui multiplicaria round-trips desnecessariamente.
+// tipicamente um punhado de paradas por placa/dia; o gerador processa varias
+// placas em paralelo (concorrencia limitada por mapComLimite /
+// LIMITE_CONCORRENCIA_PLACAS), entao chamada sequencial por parada aqui
+// multiplicaria round-trips desnecessariamente.
 //
 // Regra fail-open: so' descarta quando ha' CONTRADICAO REAL (cobertura de
 // GPS na janela E nenhuma leitura parada) -- sem cobertura, ou se a

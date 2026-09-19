@@ -36,14 +36,22 @@ describe('avaliarContraGabarito', () => {
     const r = avaliarContraGabarito([dump], [gab('E1', 'entregue'), gab('E2', 'entregue'), gab('S1', 'sem_evidencia')], P, 500)
     expect(r).toEqual({
       raioM: 500, entregueTotal: 2, entregueComOrfa: 1, semEvidenciaTotal: 1, semEvidenciaComOrfa: 1,
-      jaConfirmadas: 0, naoEncontradas: 0,
+      jaConfirmadaCorreta: 0, jaConfirmadaFalsa: 0, naoEncontradas: 0,
     })
   })
 
-  it('separa já confirmadas e NFs não encontradas, e ignora rótulo de dia sem dump', () => {
-    const r = avaliarContraGabarito([dump], [gab('C1', 'entregue'), gab('NAO-EXISTE', 'entregue'), gab('E1', 'entregue', '2026-09-10')], P, 500)
-    expect(r.jaConfirmadas).toBe(1)
+  it('separa já confirmadas em correta/falsa e conta NFs não encontradas', () => {
+    const r = avaliarContraGabarito([dump], [gab('C1', 'entregue'), gab('C1', 'sem_evidencia'), gab('NAO-EXISTE', 'entregue')], P, 500)
+    expect(r.jaConfirmadaCorreta).toBe(1)
+    expect(r.jaConfirmadaFalsa).toBe(1)
     expect(r.naoEncontradas).toBe(1)
     expect(r.entregueTotal).toBe(0)
+  })
+
+  it('casa por NF mesmo quando a data do rótulo difere da do dump', () => {
+    const r = avaliarContraGabarito([dump], [gab('E1', 'entregue', '2026-09-18')], P, 500)
+    expect(r.entregueTotal).toBe(1)
+    expect(r.entregueComOrfa).toBe(1)
+    expect(r.naoEncontradas).toBe(0)
   })
 })

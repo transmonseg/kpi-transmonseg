@@ -93,6 +93,8 @@ describe('categoriaPendente', () => {
     expect(categoriaPendente('NÃO FOI AO CLIENTE (caminhão não esteve na região)')).toBe('não foi ao cliente')
     expect(categoriaPendente('PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR')).toBe('passou sem parar')
     expect(categoriaPendente('CLIENTE SEM ACESSO RODOVIÁRIO (ILHA) - CONFERIR COM A OPERAÇÃO')).toBe('ilha')
+    expect(categoriaPendente('VEÍCULO SEM MOVIMENTO NO DIA')).toBe('sem movimento')
+    expect(categoriaPendente('SEM DADO DE GPS NO PERÍODO')).toBe('sem dado de GPS')
     expect(categoriaPendente('OUTRA COISA')).toBe('outra')
   })
 })
