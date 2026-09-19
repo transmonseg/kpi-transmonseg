@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mesclarAlvos, alvosEfetivos } from './alvos-snapshot'
+import { mesclarAlvos, alvosEfetivos, agruparAlvosPorDia } from './alvos-snapshot'
 
 const mocks = vi.hoisted(() => ({
   upsert: vi.fn(),
@@ -68,5 +68,18 @@ describe('alvosEfetivos', () => {
     await expect(alvosEfetivos('nutrimax', '2026-09-17', '2026-09-18', daApi)).resolves.toBe(daApi)
     expect(spy).toHaveBeenCalled()
     spy.mockRestore()
+  })
+})
+
+describe('agruparAlvosPorDia', () => {
+  it('agrupa por feitoISO ?? inicioISO e ignora alvos sem data', () => {
+    const a = alvo({ documento: '1', feitoISO: '2026-09-17T09:00:00', inicioISO: '2026-09-16T23:00:00' })
+    const b = alvo({ documento: '2', inicioISO: '2026-09-17T06:00:00' })
+    const c = alvo({ documento: '3', inicioISO: '2026-09-18T06:00:00' })
+    const d = alvo({ documento: '4', inicioISO: null })
+    const m = agruparAlvosPorDia([a, b, c, d])
+    expect([...m.keys()].sort()).toEqual(['2026-09-17', '2026-09-18'])
+    expect(m.get('2026-09-17')).toEqual([a, b])
+    expect(m.get('2026-09-18')).toEqual([c])
   })
 })

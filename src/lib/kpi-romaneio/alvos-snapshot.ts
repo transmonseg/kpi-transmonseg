@@ -45,3 +45,15 @@ export async function alvosEfetivos(cliente: string, data: string, hoje: string,
     return daApi
   }
 }
+
+/** Agrupa alvos por dia (feitoISO ?? inicioISO); alvos sem nenhuma data são ignorados. */
+export function agruparAlvosPorDia(alvos: AlvoApi[]): Map<string, AlvoApi[]> {
+  const porDia = new Map<string, AlvoApi[]>()
+  for (const a of alvos) {
+    const iso = a.feitoISO ?? a.inicioISO
+    if (!iso) continue
+    const dia = iso.slice(0, 10)
+    porDia.set(dia, [...(porDia.get(dia) ?? []), a])
+  }
+  return porDia
+}
