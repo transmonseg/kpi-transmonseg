@@ -44,7 +44,7 @@ function main() {
     }
   }
 
-  console.log('\n=== Gabarito da Ana (so dias com dump) ===')
+  console.log('\n=== Gabarito da Ana (NFs achadas em algum dump) ===')
   for (const raio of RAIOS) {
     const g = avaliarContraGabarito(dumps, gabarito, PARAMS, raio)
     console.log(`  raio ${String(raio).padStart(4)}m: recall entregue ${g.entregueComOrfa}/${g.entregueTotal} (${pct(g.entregueComOrfa, g.entregueTotal)}) | falso-confirmado ${g.semEvidenciaComOrfa}/${g.semEvidenciaTotal} (${pct(g.semEvidenciaComOrfa, g.semEvidenciaTotal)}) | ja confirmada correta ${g.jaConfirmadaCorreta} | ja confirmada falsa ${g.jaConfirmadaFalsa} | nao encontradas ${g.naoEncontradas}`)

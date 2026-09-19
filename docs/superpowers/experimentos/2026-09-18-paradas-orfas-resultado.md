@@ -136,11 +136,11 @@ Rodada com `RAIO_REIVINDICADA_M` = 200, 400, 800 (padrão) e 1500 m; % de penden
 | 800 m (padrão) | 10,1% | 10,1% | 7,6% | 2,6% | 24,1% |
 | 1500 m | 5,2% | 6,7% | 5,7% | 1,3% | 19,3% |
 
-Os números conferem com os obtidos pelo revisor. Isso ENFRAQUECE o NO-GO mas não o inverte: a mediana de 15–17/09 sobe de 7,6% (800 m) para 16,1% (200 m), ainda abaixo dos 30%. A métrica de 6,0% da condição 1 (exclusivas a 800 m) é o pior ponto da curva. Viés a ter em mente: com `raioReivindicadaM` fixo em 800 m, a 500 m só pode aparecer órfã para pendente a >300 m de toda NF confirmada, por isso 4 dos 5 dias dão 0,0% a 500 m.
+Os números conferem com os obtidos pelo revisor. Isso ENFRAQUECE o NO-GO mas não o inverte: a mediana de 15–17/09 sobe de 7,6% (800 m) para 16,1% (200 m), ainda abaixo dos 30%. A métrica de 6,0% da condição 1 (exclusivas a 800 m) não é diretamente comparável com a curva, que mede "com órfã" e não "exclusivas"; o que a curva mostra é que, afrouxando o raio de reivindicação, a mediana de "com órfã" de 15–17/09 sobe de 7,6% (800 m) para 16,1% (200 m). Viés a ter em mente: com `raioReivindicadaM` fixo em 800 m, a 500 m só pode aparecer órfã para pendente a >300 m de toda NF confirmada, por isso 4 dos 5 dias dão 0,0% a 500 m.
 
 ## Proposta de reformulação do portão (para congelar ANTES do próximo experimento)
 
-A condição 1 mede todos os pendentes, mas 25–40% deles são categorias que a regra nunca deve tocar ("não foi ao cliente", "ilha", "sem confirmação", "sem movimento", "sem dado de GPS"). Proposta: medir o portão só nas categorias-alvo "parada 500m-2km", "passou sem parar" e "coordenada imprecisa". Números por dia, a 1500 m e raio de reivindicação 800 m (saída do CLI), como `com órfã / pendentes`:
+A condição 1 mede todos os pendentes, mas 17–79% deles (39,6%, 37,4%, 43,2%, 79,2% e 17,4% em 09, 11, 15, 16 e 17/09; o 79,2% é o dia anômalo de 16/09) são categorias que a regra nunca deve tocar ("não foi ao cliente", "ilha", "sem confirmação", "sem movimento", "sem dado de GPS"). Proposta: medir o portão só nas categorias-alvo "parada 500m-2km", "passou sem parar" e "coordenada imprecisa". Números por dia, a 1500 m e raio de reivindicação 800 m (saída do CLI), como `com órfã / pendentes`:
 
 | Dia | parada 500m-2km | passou sem parar | coordenada imprecisa | Total-alvo |
 |---|---|---|---|---|

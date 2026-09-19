@@ -1037,7 +1037,7 @@ Critério: esgotamentos do pool na janela da geração ≈ 0 (baseline: dezenas 
 
 Terceiro critério (efeito colateral na taxa): sem os HTTP 500 da ponte de velocidade, a guarda `validarParadasContraGpsProprio` (em `src/lib/kpi-romaneio/unitrac.ts`), que descarta paradas da Unitrac que o GPS próprio contradiz e hoje é PULADA (fail-open) nas placas em que a ponte responde 500, passa a agir em todas as placas. Isso pode reduzir NFs confirmadas (mais correto, mas muda o número). Comparar a taxa identificada e a distribuição de status da primeira geração real pós-deploy com a série da Ana (e com o KPI do mesmo dia gerado antes, se existir). Queda de mais de 1 ponto percentual bloqueia: reverter o deploy (`git revert` do commit da Task 5, build, restart) e tratar como decisão de produto, não de infra.
 
-O efeito máximo esperado foi medido offline pelo controlador. Medição offline da guarda: ver ledger.
+Medição offline da guarda (controlador, dia 17/09, mesmo romaneio, script sequencial com a guarda ligada contra desligada por uma variável `SEM_GUARDA_VELOCIDADE` numa cópia temporária no VPS, depois restaurada): taxa identificada 86,88% nos dois casos, 0 NFs mudaram de status e a guarda descartou 4 de 2254 paradas. Ou seja, o efeito máximo de religar a guarda na taxa foi ~0 nesse dia — a guarda só age nas paradas da Unitrac, que só são usadas em placas sem paradas da ponte ou em apagão de sinal. O critério 3 continua valendo como salvaguarda.
 
 ---
 
