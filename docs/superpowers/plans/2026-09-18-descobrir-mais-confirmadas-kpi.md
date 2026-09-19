@@ -1035,6 +1035,10 @@ ssh transmonseg-vps 'journalctl -u postgrest --since "<hora de início>" --until
 ```
 Critério: esgotamentos do pool na janela da geração ≈ 0 (baseline: dezenas a centenas por hora) e a geração não pode demorar mais de ~20% que antes. Se o tempo piorar sem melhorar o pool, subir `LIMITE_CONCORRENCIA_PLACAS` para 10 e medir de novo.
 
+Terceiro critério (efeito colateral na taxa): sem os HTTP 500 da ponte de velocidade, a guarda `validarParadasContraGpsProprio` (em `src/lib/kpi-romaneio/unitrac.ts`), que descarta paradas da Unitrac que o GPS próprio contradiz e hoje é PULADA (fail-open) nas placas em que a ponte responde 500, passa a agir em todas as placas. Isso pode reduzir NFs confirmadas (mais correto, mas muda o número). Comparar a taxa identificada e a distribuição de status da primeira geração real pós-deploy com a série da Ana (e com o KPI do mesmo dia gerado antes, se existir). Queda de mais de 1 ponto percentual bloqueia: reverter o deploy (`git revert` do commit da Task 5, build, restart) e tratar como decisão de produto, não de infra.
+
+O efeito máximo esperado foi medido offline pelo controlador. Medição offline da guarda: ver ledger.
+
 ---
 
 ## Fora do escopo deste plano (com o motivo)
