@@ -290,8 +290,11 @@ export async function geocodificarEnderecos(
     // morrer), o que ja foi resolvido nao se perde.
     await geocodificarPorLotes(faltantes, opcoes, async (lote, resultados, confirmado) => {
       lote.forEach((e, i) => porFaltante.set(e, resultados[i]))
-      await salvarNoCache(lote, resultados)
-      if (confirmado) await salvarNegativos(lote.filter((_, i) => resultados[i] === null))
+      if (resultados.some(r => r !== null)) await salvarNoCache(lote, resultados)
+      if (confirmado) {
+        const nulos = lote.filter((_, i) => resultados[i] === null)
+        if (nulos.length > 0) await salvarNegativos(nulos)
+      }
     })
   }
 
@@ -362,5 +365,10 @@ async function geocodificarLote(enderecos: string[], opcoes: { validarTerritorio
 
   if (resultados.every(r => r === null)) avisarSeLoteFalhouTotalmente(resultados.length)
 
-  return { resultados, confirmado: true }
+  // So' certifica "nao resolvi" quando a resposta cobre TODOS os enderecos (resposta
+  // curta e' preenchida com null, mas esses nao foram respondidos) e nao e' um lote
+  // 100% null com mais de 1 endereco (geocoder do outro lado provavelmente fora).
+  const completa = resultadosBrutos.length === enderecos.length
+  const todosNull = resultados.length > 1 && resultados.every(r => r === null)
+  return { resultados, confirmado: completa && !todosNull }
 }

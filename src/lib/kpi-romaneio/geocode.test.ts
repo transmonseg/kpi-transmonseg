@@ -367,6 +367,36 @@ describe('geocodificarEnderecos - cache negativo e gravacao por lote', () => {
     expect(Math.abs(dif - 48 * 3600_000)).toBeLessThan(5000)
   })
 
+  it('resposta curta (1 item pra 2 enderecos) nao certifica: nada vai pro negativo', async () => {
+    const { upsertNegativo } = mockSupabaseTabelas({})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaOk([{ lat: 1, lng: 2 }]))
+    const r = await geocodificarEnderecos(['A', 'B'])
+    expect(semExtras(r)).toEqual([{ lat: 1, lng: 2 }, null])
+    expect(upsertNegativo).not.toHaveBeenCalled()
+  })
+
+  it('lote de 3 100% null em resposta 200 e suspeito: nao grava no negativo', async () => {
+    const { upsertNegativo } = mockSupabaseTabelas({})
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaOk([null, null, null]))
+    await geocodificarEnderecos(['A', 'B', 'C'])
+    expect(upsertNegativo).not.toHaveBeenCalled()
+  })
+
+  it('lote de 1 endereco null em resposta 200 grava no negativo', async () => {
+    const { upsertNegativo } = mockSupabaseTabelas({})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaOk([null]))
+    await geocodificarEnderecos(['Sitio Perdido'])
+    expect((upsertNegativo.mock.calls[0][0] as Array<{ endereco: string }>).map(l => l.endereco)).toEqual(['Sitio Perdido'])
+  })
+
+  it('lote misto grava no negativo so os nulls', async () => {
+    const { upsertNegativo } = mockSupabaseTabelas({})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaOk([{ lat: 1, lng: 2 }, null, { lat: 3, lng: 4 }, null]))
+    await geocodificarEnderecos(['A', 'B', 'C', 'D'])
+    expect((upsertNegativo.mock.calls[0][0] as Array<{ endereco: string }>).map(l => l.endereco)).toEqual(['B', 'D'])
+  })
+
   it('grava o positivo de cada lote antes de chamar o proximo (2o lote falha por transporte)', async () => {
     const { upsertPositivo, upsertNegativo } = mockSupabaseTabelas({})
     const ordem: string[] = []
