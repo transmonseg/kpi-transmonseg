@@ -62,6 +62,12 @@ export type ResultadoGeocode = { lat: number; lng: number; fonte?: string; confi
 // JSON, sem esse limite).
 const LOTE_CACHE_LEITURA = 20
 
+// Cache NEGATIVO: endereco que a ponte respondeu (HTTP 200, resposta valida)
+// como "nao resolvi" fica registrado por 48h pra nao reprocessar toda geracao
+// (~5 min por geracao com os ~15 enderecos rurais que nenhuma fonte resolve).
+// Falha de transporte NUNCA entra aqui -- so' null dentro de resposta valida.
+const TTL_NEGATIVO_HORAS = 48
+
 // A rota do monitoramento rejeita lotes acima de MAX_ENDERECOS_POR_CHAMADA=300
 // (ver route.ts la), mas o teto que a gente manda por chamada e' bem menor
 // que isso de proposito -- ver GEOCODE_TIMEOUT_MS abaixo pro motivo. Achado
@@ -214,6 +220,49 @@ async function salvarNoCache(enderecos: string[], resultados: ResultadoGeocode[]
   }
 }
 
+/** Enderecos que a ponte ja respondeu como "nao resolvi" dentro do TTL.
+ *  Fail-open: qualquer erro devolve conjunto vazio (segue como sem cache). */
+async function buscarNegativosRecentes(enderecos: string[]): Promise<Set<string>> {
+  const negativos = new Set<string>()
+  const limiteISO = new Date(Date.now() - TTL_NEGATIVO_HORAS * 3600_000).toISOString()
+
+  for (let i = 0; i < enderecos.length; i += LOTE_CACHE_LEITURA) {
+    const lote = enderecos.slice(i, i + LOTE_CACHE_LEITURA)
+    try {
+      const supabase = createServiceClient()
+      const { data, error } = await supabase
+        .from('kpi_romaneio_geocode_negativo')
+        .select('endereco')
+        .in('endereco', lote)
+        .gt('tentado_em', limiteISO)
+      if (error) {
+        console.error('[kpi-romaneio/geocode] leitura do cache negativo falhou (segue sem ele):', error.message)
+        continue
+      }
+      for (const row of data ?? []) negativos.add(row.endereco as string)
+    } catch (e) {
+      console.error('[kpi-romaneio/geocode] leitura do cache negativo falhou (segue sem ele):', e instanceof Error ? e.message : String(e))
+    }
+  }
+
+  return negativos
+}
+
+/** Registra enderecos que a ponte confirmou como nao resolvidos. Best-effort. */
+async function salvarNegativos(enderecos: string[]): Promise<void> {
+  if (enderecos.length === 0) return
+  const tentado_em = new Date().toISOString()
+  try {
+    const supabase = createServiceClient()
+    const { error } = await supabase
+      .from('kpi_romaneio_geocode_negativo')
+      .upsert(enderecos.map(endereco => ({ endereco, tentado_em })), { onConflict: 'endereco' })
+    if (error) console.error('[kpi-romaneio/geocode] gravação no cache negativo falhou (sem impacto):', error.message)
+  } catch (e) {
+    console.error('[kpi-romaneio/geocode] gravação no cache negativo falhou (sem impacto):', e instanceof Error ? e.message : String(e))
+  }
+}
+
 /** Geocodifica uma lista de enderecos brasileiros. Falha em um endereco
  *  individual NAO lanca -- devolve null naquela posicao (fail-open, ver
  *  spec: uma linha sem coordenada ainda pode ser confirmada via Unitrac).
@@ -229,34 +278,43 @@ export async function geocodificarEnderecos(
   if (enderecos.length === 0) return []
 
   const doCache = await buscarNoCache(enderecos)
-  const faltantes = enderecos.filter(e => !doCache.has(e))
+  const negativos = await buscarNegativosRecentes(enderecos.filter(e => !doCache.has(e)))
+  if (negativos.size > 0) {
+    console.log(`[kpi-romaneio/geocode] ${negativos.size} endereços pulados por cache negativo (${TTL_NEGATIVO_HORAS}h)`)
+  }
+  const faltantes = enderecos.filter(e => !doCache.has(e) && !negativos.has(e))
 
   const porFaltante = new Map<string, ResultadoGeocode>()
   if (faltantes.length > 0) {
-    const resolvidos = await geocodificarPorLotes(faltantes, opcoes)
-    faltantes.forEach((e, i) => porFaltante.set(e, resolvidos[i]))
-    await salvarNoCache(faltantes, resolvidos)
+    // Grava a cada lote concluido: se um lote posterior falhar (ou a requisicao
+    // morrer), o que ja foi resolvido nao se perde.
+    await geocodificarPorLotes(faltantes, opcoes, async (lote, resultados, confirmado) => {
+      lote.forEach((e, i) => porFaltante.set(e, resultados[i]))
+      await salvarNoCache(lote, resultados)
+      if (confirmado) await salvarNegativos(lote.filter((_, i) => resultados[i] === null))
+    })
   }
 
   return enderecos.map(e => doCache.get(e) ?? porFaltante.get(e) ?? null)
 }
 
-async function geocodificarPorLotes(enderecos: string[], opcoes: { validarTerritorio?: boolean }): Promise<ResultadoGeocode[]> {
-  if (enderecos.length <= LOTE_MAX_ENDERECOS) return geocodificarLote(enderecos, opcoes)
-
-  const resultados: ResultadoGeocode[] = []
+async function geocodificarPorLotes(
+  enderecos: string[],
+  opcoes: { validarTerritorio?: boolean },
+  aoConcluirLote: (lote: string[], resultados: ResultadoGeocode[], confirmado: boolean) => Promise<void>,
+): Promise<void> {
   for (let i = 0; i < enderecos.length; i += LOTE_MAX_ENDERECOS) {
     const lote = enderecos.slice(i, i + LOTE_MAX_ENDERECOS)
-    resultados.push(...await geocodificarLote(lote, opcoes))
+    const { resultados, confirmado } = await geocodificarLote(lote, opcoes)
+    await aoConcluirLote(lote, resultados, confirmado)
   }
-  return resultados
 }
 
-async function geocodificarLote(enderecos: string[], opcoes: { validarTerritorio?: boolean }): Promise<ResultadoGeocode[]> {
+async function geocodificarLote(enderecos: string[], opcoes: { validarTerritorio?: boolean }): Promise<{ resultados: ResultadoGeocode[]; confirmado: boolean }> {
   const chave = process.env.MOTOR_SECRET
   if (!chave) {
     console.error('[kpi-romaneio/geocode] MOTOR_SECRET nao configurada -- geocodificacao pulada')
-    return resultadosVazios(enderecos.length)
+    return { resultados: resultadosVazios(enderecos.length), confirmado: false }
   }
 
   const ctrl = new AbortController()
@@ -272,14 +330,14 @@ async function geocodificarLote(enderecos: string[], opcoes: { validarTerritorio
     })
   } catch (e) {
     console.error('[kpi-romaneio/geocode] chamada ao monitoramento falhou:', e instanceof Error ? e.message : String(e))
-    return resultadosVazios(enderecos.length)
+    return { resultados: resultadosVazios(enderecos.length), confirmado: false }
   } finally {
     clearTimeout(timer)
   }
 
   if (!res.ok) {
     console.error(`[kpi-romaneio/geocode] monitoramento respondeu ${res.status}`)
-    return resultadosVazios(enderecos.length)
+    return { resultados: resultadosVazios(enderecos.length), confirmado: false }
   }
 
   let data: unknown
@@ -287,13 +345,13 @@ async function geocodificarLote(enderecos: string[], opcoes: { validarTerritorio
     data = await res.json()
   } catch (e) {
     console.error('[kpi-romaneio/geocode] resposta nao e JSON valido:', e instanceof Error ? e.message : String(e))
-    return resultadosVazios(enderecos.length)
+    return { resultados: resultadosVazios(enderecos.length), confirmado: false }
   }
 
   const resultadosBrutos = (data as { resultados?: unknown })?.resultados
   if (!Array.isArray(resultadosBrutos)) {
     console.error("[kpi-romaneio/geocode] resposta sem campo 'resultados' valido")
-    return resultadosVazios(enderecos.length)
+    return { resultados: resultadosVazios(enderecos.length), confirmado: false }
   }
 
   // Defensivo: mesmo se o lado de la devolver tamanho diferente (bug/
@@ -304,5 +362,5 @@ async function geocodificarLote(enderecos: string[], opcoes: { validarTerritorio
 
   if (resultados.every(r => r === null)) avisarSeLoteFalhouTotalmente(resultados.length)
 
-  return resultados
+  return { resultados, confirmado: true }
 }

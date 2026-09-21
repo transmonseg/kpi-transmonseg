@@ -239,6 +239,156 @@ describe('geocodificarEnderecos', () => {
   })
 })
 
+/** Mock por tabela: positivo (select.in) e negativo (select.in.gt), com upserts separados. */
+function mockSupabaseTabelas(opts: {
+  positivo?: Array<{ endereco: string; lat: number; lng: number }>
+  negativo?: string[]
+  erroNegativo?: boolean
+}) {
+  const upsertPositivo = vi.fn().mockResolvedValue({ error: null })
+  const upsertNegativo = vi.fn().mockResolvedValue({ error: null })
+  const gtMock = vi.fn().mockImplementation(() =>
+    Promise.resolve(
+      opts.erroNegativo
+        ? { data: null, error: { message: 'negativo indisponivel' } }
+        : { data: (opts.negativo ?? []).map(endereco => ({ endereco })), error: null },
+    ),
+  )
+  const fromMock = vi.fn().mockImplementation((tabela: string) => {
+    if (tabela === 'kpi_romaneio_geocode_negativo') {
+      return { select: () => ({ in: () => ({ gt: gtMock }) }), upsert: upsertNegativo }
+    }
+    return {
+      select: () => ({
+        in: (_c: string, lote: string[]) =>
+          Promise.resolve({ data: (opts.positivo ?? []).filter(l => lote.includes(l.endereco)), error: null }),
+      }),
+      upsert: upsertPositivo,
+    }
+  })
+  vi.mocked(createServiceClient).mockReturnValue({ from: fromMock } as any)
+  return { fromMock, upsertPositivo, upsertNegativo, gtMock }
+}
+
+const respostaOk = (resultados: unknown[]) => new Response(JSON.stringify({ resultados }), { status: 200 })
+
+describe('geocodificarEnderecos - cache negativo e gravacao por lote', () => {
+  beforeEach(() => {
+    vi.mocked(createServiceClient).mockClear()
+  })
+
+  it('null numa resposta 200 grava no negativo e NAO no cache positivo', async () => {
+    const { upsertNegativo, upsertPositivo } = mockSupabaseTabelas({})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaOk([{ lat: 1, lng: 2 }, null]))
+
+    await geocodificarEnderecos(['Rua Ok', 'Sitio Perdido'])
+
+    expect(upsertNegativo).toHaveBeenCalledTimes(1)
+    const linhas = upsertNegativo.mock.calls[0][0] as Array<{ endereco: string }>
+    expect(linhas.map(l => l.endereco)).toEqual(['Sitio Perdido'])
+    expect(upsertNegativo.mock.calls[0][1]).toEqual({ onConflict: 'endereco' })
+    const positivos = upsertPositivo.mock.calls.flatMap(c => (c[0] as Array<{ endereco: string }>).map(l => l.endereco))
+    expect(positivos).not.toContain('Sitio Perdido')
+  })
+
+  it('falha de transporte (fetch rejeita) nao grava no negativo', async () => {
+    const { upsertNegativo } = mockSupabaseTabelas({})
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('ECONNREFUSED'))
+    await geocodificarEnderecos(['A', 'B'])
+    expect(upsertNegativo).not.toHaveBeenCalled()
+  })
+
+  it('HTTP 500 nao grava no negativo', async () => {
+    const { upsertNegativo } = mockSupabaseTabelas({})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('', { status: 500 }))
+    await geocodificarEnderecos(['A', 'B'])
+    expect(upsertNegativo).not.toHaveBeenCalled()
+  })
+
+  it('JSON invalido nao grava no negativo', async () => {
+    const { upsertNegativo } = mockSupabaseTabelas({})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('nao e json', { status: 200 }))
+    await geocodificarEnderecos(['A', 'B'])
+    expect(upsertNegativo).not.toHaveBeenCalled()
+  })
+
+  it("resposta sem 'resultados' nao grava no negativo", async () => {
+    const { upsertNegativo } = mockSupabaseTabelas({})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+    await geocodificarEnderecos(['A', 'B'])
+    expect(upsertNegativo).not.toHaveBeenCalled()
+  })
+
+  it('MOTOR_SECRET ausente nao grava no negativo', async () => {
+    delete process.env.MOTOR_SECRET
+    const { upsertNegativo } = mockSupabaseTabelas({})
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    await geocodificarEnderecos(['A', 'B'])
+    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(upsertNegativo).not.toHaveBeenCalled()
+  })
+
+  it('endereco no negativo recente nao vai pra ponte e devolve null; os demais seguem', async () => {
+    mockSupabaseTabelas({ negativo: ['Sitio Perdido'] })
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaOk([{ lat: 5, lng: 6 }]))
+
+    const r = await geocodificarEnderecos(['Sitio Perdido', 'Rua Nova'])
+
+    expect(semExtras(r)).toEqual([null, { lat: 5, lng: 6 }])
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    expect(JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)).toEqual({ enderecos: ['Rua Nova'] })
+  })
+
+  it('positivo vence o negativo', async () => {
+    mockSupabaseTabelas({ positivo: [{ endereco: 'Rua A', lat: -22.8, lng: -43.2 }], negativo: ['Rua A'] })
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const r = await geocodificarEnderecos(['Rua A'])
+    expect(semExtras(r)).toEqual([{ lat: -22.8, lng: -43.2 }])
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('erro ao ler o negativo e fail-open: chama a ponte pra todos', async () => {
+    mockSupabaseTabelas({ erroNegativo: true })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaOk([{ lat: 1, lng: 2 }, { lat: 3, lng: 4 }]))
+    const r = await geocodificarEnderecos(['A', 'B'])
+    expect(semExtras(r)).toEqual([{ lat: 1, lng: 2 }, { lat: 3, lng: 4 }])
+    expect(JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)).toEqual({ enderecos: ['A', 'B'] })
+  })
+
+  it('negativo usa limite de 48h na leitura', async () => {
+    const { gtMock } = mockSupabaseTabelas({})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaOk([null]))
+    const antes = Date.now()
+    await geocodificarEnderecos(['A'])
+    const [col, limite] = gtMock.mock.calls[0]
+    expect(col).toBe('tentado_em')
+    const dif = antes - new Date(limite as string).getTime()
+    expect(Math.abs(dif - 48 * 3600_000)).toBeLessThan(5000)
+  })
+
+  it('grava o positivo de cada lote antes de chamar o proximo (2o lote falha por transporte)', async () => {
+    const { upsertPositivo, upsertNegativo } = mockSupabaseTabelas({})
+    const ordem: string[] = []
+    upsertPositivo.mockImplementation(async () => { ordem.push('upsert'); return { error: null } })
+    let chamada = 0
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (_u, init) => {
+      chamada += 1
+      ordem.push(`fetch${chamada}`)
+      if (chamada === 2) throw new Error('timeout')
+      const body = JSON.parse((init as RequestInit).body as string) as { enderecos: string[] }
+      return respostaOk(body.enderecos.map(() => ({ lat: 1, lng: 2 })))
+    })
+    const enderecos = Array.from({ length: 30 }, (_, i) => `Endereco ${i}`)
+
+    await geocodificarEnderecos(enderecos)
+
+    expect(ordem.slice(0, 3)).toEqual(['fetch1', 'upsert', 'fetch2'])
+    expect(upsertPositivo).toHaveBeenCalledTimes(1)
+    expect(upsertNegativo).not.toHaveBeenCalled()
+  })
+})
+
 describe('geocodificarEnderecos - cache proprio', () => {
   it('endereco ja no cache nao chama a ponte HTTP', async () => {
     mockSupabaseCache({ linhasNoCache: [{ endereco: 'Rua A', lat: -22.8, lng: -43.2 }] })
