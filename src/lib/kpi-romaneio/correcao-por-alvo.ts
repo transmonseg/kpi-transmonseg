@@ -15,25 +15,38 @@ export const LIMITE_PARADA_ENTREGA_MIN = 120
 export const LIMITE_CADASTRO_DIVERGENTE_M = 500
 export const LIMITE_PARADAS_MESMO_ENDERECO_M = 300
 
-export type EntregaParaCorrigir = { nf: string; placaNorm: string; endereco: string; latAtual: number | null; lngAtual: number | null; confiavelAtual: boolean }
+/** Texto que parseRomaneio grava quando nao acha o endereco da NF. */
+export const ENDERECO_NAO_IDENTIFICADO = '(endereço não identificado)'
+
+// fonteAtual: kpi_romaneio_geocode_cache.fonte da linha atual. 'manual' =
+// correcao feita por humano -- sempre vence, esta rotina nunca sobrescreve.
+export type EntregaParaCorrigir = { nf: string; placaNorm: string; endereco: string; latAtual: number | null; lngAtual: number | null; confiavelAtual: boolean; fonteAtual: string | null }
 export type SugestaoCorrecao = {
   endereco: string; nfs: string[]; placaNorm: string
-  latAtual: number | null; lngAtual: number | null; distAtualM: number | null
+  latAtual: number | null; lngAtual: number | null; distAtualM: number | null; fonteAtual: string | null
   latNova: number; lngNova: number; duracaoParadaMin: number
   codigoUnitrac: string; cadastroLat: number | null; cadastroLng: number | null; distCadastroM: number | null
 }
-export type MotivoRejeicao = 'sem_alvo_feito' | 'feito_fora_de_parada' | 'parada_longa' | 'ilha' | 'coordenada_atual_ok' | 'paradas_conflitantes' | 'parada_compartilhada' | 'alvo_duplicado'
+export type MotivoRejeicao = 'sem_alvo_feito' | 'feito_fora_de_parada' | 'parada_longa' | 'ilha' | 'coordenada_atual_ok' | 'paradas_conflitantes' | 'parada_compartilhada' | 'alvo_duplicado' | 'endereco_nao_identificado' | 'correcao_manual'
 export type Rejeicao = { endereco: string; nf: string; placaNorm: string; motivo: MotivoRejeicao }
 
-/** feitoISO da Unitrac: digitos ja em horario de Brasilia, as vezes com um Z
- *  mentiroso no fim. Converte pra instante real somando -03:00. */
+/** feitoISO da Unitrac: digitos ja em horario de Brasilia, sem fuso (as vezes
+ *  com um Z mentiroso ou offset no fim). Devolve um instante na convencao
+ *  MASCARADA do pipeline -- digitos BRT lidos como se fossem UTC (`${digitos}Z`)
+ *  -- que e' exatamente a forma que buscarHorariosBase (paraBrtMascaradoComoUtc)
+ *  devolve em ParadaBridge.chegada/saida. NAO converte pra instante real
+ *  (-03:00): as paradas tambem nao estao em instante real, e somar -03:00 aqui
+ *  desloca o casamento em 3h (casa a parada errada em silencio). */
 export function instanteDeFeitoISO(feitoISO: string): number {
   const semFuso = feitoISO.replace(/(Z|[+-]\d\d:?\d\d)$/, '')
-  return Date.parse(`${semFuso}-03:00`)
+  return Date.parse(`${semFuso}Z`)
 }
 
 type Casamento = { entrega: EntregaParaCorrigir; alvo: AlvoApi; parada: ParadaBridge }
 
+/** paradasPorPlaca: paradas na forma MASCARADA produzida por buscarHorariosBase
+ *  (digitos BRT + Z falso), nunca a resposta crua da ponte com offset real --
+ *  so' assim chegada/saida ficam na mesma convencao de instanteDeFeitoISO. */
 export function sugerirCorrecoesPorAlvo(
   entregas: EntregaParaCorrigir[],
   alvos: AlvoApi[],
@@ -65,6 +78,8 @@ export function sugerirCorrecoesPorAlvo(
 
   const casamentosValidos: Casamento[] = []
   for (const e of entregas) {
+    if (e.endereco.trim() === ENDERECO_NAO_IDENTIFICADO) { rejeitar(e, 'endereco_nao_identificado'); continue }
+    if (e.fonteAtual === 'manual') { rejeitar(e, 'correcao_manual'); continue }
     const chave = `${e.placaNorm}|${e.nf}`
     if (chavesDuplicadas.has(chave)) { rejeitar(e, 'alvo_duplicado'); continue }
     const a = alvoPorChave.get(chave)
@@ -130,7 +145,7 @@ export function sugerirCorrecoesPorAlvo(
     const cadastroLng = a.pontoLng ?? null
     sugestoes.push({
       endereco, nfs: casamentos.map(c => c.entrega.nf), placaNorm: e.placaNorm,
-      latAtual: e.latAtual, lngAtual: e.lngAtual, distAtualM,
+      latAtual: e.latAtual, lngAtual: e.lngAtual, distAtualM, fonteAtual: e.fonteAtual,
       latNova: p.lat, lngNova: p.lng, duracaoParadaMin: Math.round(p.duracaoSeg / 60),
       codigoUnitrac: a.codigoUnitrac, cadastroLat, cadastroLng,
       distCadastroM: cadastroLat != null && cadastroLng != null ? haversine(cadastroLat, cadastroLng, p.lat, p.lng) : null,

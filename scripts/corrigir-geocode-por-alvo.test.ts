@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { montarUpsertCorrecao, csvCorrecoes, csvCadastrosDivergentes, paradasConfiaveis } from './corrigir-geocode-por-alvo'
+import { montarUpsertCorrecao, csvCorrecoes, csvCadastrosDivergentes, paradasConfiaveis, entregaDoRomaneio } from './corrigir-geocode-por-alvo'
 import type { SugestaoCorrecao } from '../src/lib/kpi-romaneio/correcao-por-alvo'
 import type { HorarioBase, ParadaBridge } from '../src/lib/kpi-romaneio/base-horarios'
 
 const s = (o: Partial<SugestaoCorrecao>): SugestaoCorrecao => ({
   endereco: 'RUA X, 1 - LOTE  28  QUADRA  24', nfs: ['1', '2'], placaNorm: 'AAA1A11',
   latAtual: -22.67, lngAtual: -43.30, distAtualM: 1200, latNova: -22.68, lngNova: -43.29, duracaoParadaMin: 8,
-  codigoUnitrac: '5904', cadastroLat: -22.70, cadastroLng: -43.31, distCadastroM: 2500, ...o,
+  codigoUnitrac: '5904', cadastroLat: -22.70, cadastroLng: -43.31, distCadastroM: 2500, fonteAtual: 'nominatim', ...o,
 })
 
 describe('montarUpsertCorrecao', () => {
@@ -33,6 +33,35 @@ describe('csvCorrecoes', () => {
     expect(linhas).toHaveLength(3)
     expect(linhas[1].split(';').length).toBe(linhas[0].split(';').length)
     expect(linhas[2]).toContain('ilha')
+  })
+
+  it('coluna fonte_atual: preenchida na sugestao, vazia na rejeicao', () => {
+    const csv = csvCorrecoes([s({ fonteAtual: 'nominatim' })], [{ endereco: 'C', nf: '9', placaNorm: 'P', motivo: 'correcao_manual' }])
+    const [cab, sug, rej] = csv.trim().split('\n').map(l => l.split(';'))
+    const i = cab.indexOf('fonte_atual')
+    expect(i).toBeGreaterThan(-1)
+    expect(sug[i]).toBe('nominatim')
+    expect(rej[i]).toBe('')
+    expect(sug.length).toBe(cab.length)
+    expect(rej.length).toBe(cab.length)
+  })
+
+  it('fonte_atual null na sugestao -> coluna vazia', () => {
+    const csv = csvCorrecoes([s({ fonteAtual: null })], [])
+    const [cab, sug] = csv.trim().split('\n').map(l => l.split(';'))
+    expect(sug[cab.indexOf('fonte_atual')]).toBe('')
+  })
+})
+
+describe('entregaDoRomaneio', () => {
+  it('preenche fonteAtual a partir do cache (inclusive manual)', () => {
+    const cache = new Map([['RUA A, 1', { lat: -22.1, lng: -43.1, confiavel: true, fonte: 'manual' }]])
+    expect(entregaDoRomaneio({ nf: '1', placa: 'AAA-1A11', endereco: 'RUA A, 1' }, cache)).toEqual({
+      nf: '1', placaNorm: 'AAA1A11', endereco: 'RUA A, 1', latAtual: -22.1, lngAtual: -43.1, confiavelAtual: true, fonteAtual: 'manual',
+    })
+  })
+  it('endereco fora do cache -> tudo null, fonteAtual null', () => {
+    expect(entregaDoRomaneio({ nf: '2', placa: 'AAA1A11', endereco: 'RUA B, 2' }, new Map())).toMatchObject({ latAtual: null, lngAtual: null, confiavelAtual: false, fonteAtual: null })
   })
 })
 

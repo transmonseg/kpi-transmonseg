@@ -21,11 +21,11 @@ export function montarUpsertCorrecao(s: SugestaoCorrecao) {
 }
 
 export function csvCorrecoes(sugestoes: SugestaoCorrecao[], rejeicoes: Rejeicao[]): string {
-  const cab = 'acao;placa;nfs;endereco;lat_atual;lng_atual;dist_atual_m;lat_nova;lng_nova;duracao_parada_min;motivo'
+  const cab = 'acao;placa;nfs;endereco;lat_atual;lng_atual;dist_atual_m;lat_nova;lng_nova;duracao_parada_min;fonte_atual;motivo'
   const linhas = [
     ...sugestoes.map(s => ['corrigir', s.placaNorm, s.nfs.join(' '), s.endereco, s.latAtual, s.lngAtual,
-      s.distAtualM != null ? Math.round(s.distAtualM) : '', s.latNova, s.lngNova, s.duracaoParadaMin, ''].map(limpa).join(';')),
-    ...rejeicoes.map(r => ['manter', r.placaNorm, r.nf, r.endereco, '', '', '', '', '', '', r.motivo].map(limpa).join(';')),
+      s.distAtualM != null ? Math.round(s.distAtualM) : '', s.latNova, s.lngNova, s.duracaoParadaMin, s.fonteAtual, ''].map(limpa).join(';')),
+    ...rejeicoes.map(r => ['manter', r.placaNorm, r.nf, r.endereco, '', '', '', '', '', '', '', r.motivo].map(limpa).join(';')),
   ]
   return [cab, ...linhas].join('\n') + '\n'
 }
@@ -58,13 +58,23 @@ export function paradasConfiaveis(horarios: Map<string, HorarioBase>): { paradas
   return { paradasPorPlaca, placasEmApagao }
 }
 
+type LinhaCache = { lat: number; lng: number; confiavel: boolean; fonte: string | null }
+
+export function entregaDoRomaneio(l: { nf: string; placa: string; endereco: string }, cache: Map<string, LinhaCache>): EntregaParaCorrigir {
+  const c = cache.get(l.endereco)
+  return {
+    nf: l.nf, placaNorm: normPlaca(l.placa), endereco: l.endereco,
+    latAtual: c?.lat ?? null, lngAtual: c?.lng ?? null, confiavelAtual: c?.confiavel ?? false, fonteAtual: c?.fonte ?? null,
+  }
+}
+
 async function lerCache(enderecos: string[]) {
   const svc = createServiceClient()
-  const mapa = new Map<string, { lat: number; lng: number; confiavel: boolean }>()
+  const mapa = new Map<string, LinhaCache>()
   for (let i = 0; i < enderecos.length; i += 20) {
-    const { data, error } = await svc.from('kpi_romaneio_geocode_cache').select('endereco,lat,lng,confiavel').in('endereco', enderecos.slice(i, i + 20))
+    const { data, error } = await svc.from('kpi_romaneio_geocode_cache').select('endereco,lat,lng,confiavel,fonte').in('endereco', enderecos.slice(i, i + 20))
     if (error) throw new Error(`leitura do cache falhou: ${error.message}`)
-    for (const r of data ?? []) mapa.set(r.endereco, { lat: r.lat, lng: r.lng, confiavel: r.confiavel })
+    for (const r of data ?? []) mapa.set(r.endereco, { lat: r.lat, lng: r.lng, confiavel: r.confiavel, fonte: r.fonte ?? null })
   }
   return mapa
 }
@@ -78,10 +88,7 @@ async function main() {
   const romaneio = await parseRomaneio(Buffer.from(readFileSync(romaneioPath)))
   const placas = [...new Set(romaneio.map(l => normPlaca(l.placa)).filter(p => p !== ''))]
   const cache = await lerCache([...new Set(romaneio.map(l => l.endereco))])
-  const entregas: EntregaParaCorrigir[] = romaneio.map(l => {
-    const c = cache.get(l.endereco)
-    return { nf: l.nf, placaNorm: normPlaca(l.placa), endereco: l.endereco, latAtual: c?.lat ?? null, lngAtual: c?.lng ?? null, confiavelAtual: c?.confiavel ?? false }
-  })
+  const entregas: EntregaParaCorrigir[] = romaneio.map(l => entregaDoRomaneio(l, cache))
   const alvos = (await lerSnapshotAlvos('nutrimax', data)) ?? alvosDaData(await buscarAlvosDoDia(placas), data)
   const horarios = await buscarHorariosBase(placas, data, new Map(), true)
   const { paradasPorPlaca, placasEmApagao } = paradasConfiaveis(horarios)

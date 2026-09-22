@@ -8,29 +8,33 @@ const alvo = (o: Partial<AlvoApi>): AlvoApi => ({
   feitoISO: '2026-09-21T08:35:00', documento: '100', inicioISO: '2026-09-21T06:00:00',
   ordem: 1, rota: 'R1', pontoLat: null, pontoLng: null, ...o,
 })
-// chegada/saida com fuso REAL (+02:00, como a ponte devolve): 12:31+02 = 07:31 BRT
+// chegada/saida na forma MASCARADA que buscarHorariosBase devolve: digitos
+// de Brasilia com um Z falso (a ponte crua manda 13:31+02:00 = 08:31 BRT).
 const parada = (o: Partial<ParadaBridge>): ParadaBridge => ({
-  chegada: '2026-09-21T13:31:00+02:00', saida: '2026-09-21T13:36:00+02:00', duracaoSeg: 300,
+  chegada: '2026-09-21T08:31:00.000Z', saida: '2026-09-21T08:36:00.000Z', duracaoSeg: 300,
   lat: -21.8434, lng: -41.4300, classificacao: 'FORA_BASE', ...o,
 })
 const entrega = (o: Partial<EntregaParaCorrigir>): EntregaParaCorrigir => ({
   nf: '100', placaNorm: 'AAA1A11', endereco: 'EST DORES DE MACABU, 286 - DORES DE MACABU, CAMPOS DOS GOYT',
-  latAtual: -21.88, lngAtual: -41.46, confiavelAtual: false, ...o,
+  latAtual: -21.88, lngAtual: -41.46, confiavelAtual: false, fonteAtual: null, ...o,
 })
 
 describe('instanteDeFeitoISO', () => {
-  it('trata os digitos como horario de Brasilia (-03:00)', () => {
-    expect(instanteDeFeitoISO('2026-09-21T08:35:00')).toBe(Date.parse('2026-09-21T11:35:00Z'))
+  it('le os digitos de Brasilia na MESMA convencao mascarada das paradas (Z falso)', () => {
+    expect(instanteDeFeitoISO('2026-09-21T08:35:00')).toBe(Date.parse('2026-09-21T08:35:00Z'))
   })
-  it('ignora um Z mentiroso no fim (digitos continuam BRT)', () => {
-    expect(instanteDeFeitoISO('2026-09-21T08:35:00Z')).toBe(Date.parse('2026-09-21T11:35:00Z'))
+  it('Z mentiroso no fim vira o mesmo instante', () => {
+    expect(instanteDeFeitoISO('2026-09-21T08:35:00Z')).toBe(Date.parse('2026-09-21T08:35:00Z'))
+  })
+  it('offset explicito no fim e ignorado (digitos continuam BRT)', () => {
+    expect(instanteDeFeitoISO('2026-09-21T08:35:00-03:00')).toBe(Date.parse('2026-09-21T08:35:00Z'))
   })
 })
 
 describe('sugerirCorrecoesPorAlvo', () => {
   const paradas = new Map([['AAA1A11', [parada({})]]])
 
-  it('feitoISO dentro da janela da parada (fusos diferentes) -> sugere a coordenada da PARADA', () => {
+  it('feitoISO dentro da janela da parada (convencao mascarada) -> sugere a coordenada da PARADA', () => {
     const r = sugerirCorrecoesPorAlvo([entrega({})], [alvo({})], paradas)
     expect(r.rejeicoes).toEqual([])
     expect(r.sugestoes).toHaveLength(1)
@@ -38,10 +42,33 @@ describe('sugerirCorrecoesPorAlvo', () => {
     expect(r.sugestoes[0].distAtualM).toBeGreaterThan(800)
   })
 
-  it('sem o ajuste de fuso a parada NAO casaria -- feito 08:35 BRT e parada 08:31-08:36 BRT', () => {
-    const r = sugerirCorrecoesPorAlvo([entrega({})], [alvo({ feitoISO: '2026-09-21T13:33:00' })], paradas)
+  it('parada 3h deslocada (instante UTC real em vez de mascarado) NAO casa com feito 08:35 BRT', () => {
+    const deslocada = parada({ chegada: '2026-09-21T11:31:00.000Z', saida: '2026-09-21T11:36:00.000Z' })
+    const r = sugerirCorrecoesPorAlvo([entrega({})], [alvo({})], new Map([['AAA1A11', [deslocada]]]))
     expect(r.sugestoes).toEqual([])
     expect(r.rejeicoes[0].motivo).toBe('feito_fora_de_parada')
+  })
+
+  it('endereco nao identificado pelo parser -> endereco_nao_identificado, antes de tudo', () => {
+    const r = sugerirCorrecoesPorAlvo([entrega({ endereco: '(endereço não identificado)' })], [alvo({})], paradas)
+    expect(r.sugestoes).toEqual([])
+    expect(r.rejeicoes).toEqual([{ endereco: '(endereço não identificado)', nf: '100', placaNorm: 'AAA1A11', motivo: 'endereco_nao_identificado' }])
+  })
+
+  it('endereco nao identificado ganha ate de alvo_duplicado', () => {
+    const r = sugerirCorrecoesPorAlvo([entrega({ endereco: '(endereço não identificado)' })], [alvo({}), alvo({ feitoISO: '2026-09-21T09:00:00' })], paradas)
+    expect(r.rejeicoes.map(x => x.motivo)).toEqual(['endereco_nao_identificado'])
+  })
+
+  it('coordenada atual com fonte manual -> correcao_manual (correcao humana vence)', () => {
+    const r = sugerirCorrecoesPorAlvo([entrega({ fonteAtual: 'manual' })], [alvo({})], paradas)
+    expect(r.sugestoes).toEqual([])
+    expect(r.rejeicoes[0].motivo).toBe('correcao_manual')
+  })
+
+  it('fonteAtual e copiada pra sugestao', () => {
+    const r = sugerirCorrecoesPorAlvo([entrega({ fonteAtual: 'nominatim' })], [alvo({})], paradas)
+    expect(r.sugestoes[0].fonteAtual).toBe('nominatim')
   })
 
   it('usa a parada, nunca o ponto cadastrado da Unitrac, mas reporta a distancia do cadastro', () => {
@@ -72,7 +99,7 @@ describe('sugerirCorrecoesPorAlvo', () => {
   })
 
   it('parada acima de 120 min -> parada_longa', () => {
-    const longa = parada({ chegada: '2026-09-21T11:00:00+02:00', saida: '2026-09-21T15:00:00+02:00', duracaoSeg: 4 * 3600 })
+    const longa = parada({ chegada: '2026-09-21T06:00:00.000Z', saida: '2026-09-21T10:00:00.000Z', duracaoSeg: 4 * 3600 })
     const r = sugerirCorrecoesPorAlvo([entrega({})], [alvo({})], new Map([['AAA1A11', [longa]]]))
     expect(r.rejeicoes[0].motivo).toBe('parada_longa')
   })
@@ -103,7 +130,7 @@ describe('sugerirCorrecoesPorAlvo', () => {
   })
 
   it('mesmo endereco casado com duas paradas a mais de 300m -> paradas_conflitantes, sem sugestao', () => {
-    const p2 = parada({ chegada: '2026-09-21T15:00:00+02:00', saida: '2026-09-21T15:10:00+02:00', lat: -21.90, lng: -41.50 })
+    const p2 = parada({ chegada: '2026-09-21T10:00:00.000Z', saida: '2026-09-21T10:10:00.000Z', lat: -21.90, lng: -41.50 })
     const r = sugerirCorrecoesPorAlvo(
       [entrega({ nf: '1' }), entrega({ nf: '2' })],
       [alvo({ documento: '1' }), alvo({ documento: '2', feitoISO: '2026-09-21T10:05:00' })],
@@ -115,8 +142,8 @@ describe('sugerirCorrecoesPorAlvo', () => {
 
   it('mesmo endereco em leque: 0m, +250m, -250m (par a par so a extrema bate >300m) -> paradas_conflitantes nas 3', () => {
     const p1 = parada({})
-    const p2 = parada({ chegada: '2026-09-21T14:00:00+02:00', saida: '2026-09-21T14:05:00+02:00', duracaoSeg: 300, lat: -21.8434 + 0.00225 })
-    const p3 = parada({ chegada: '2026-09-21T15:00:00+02:00', saida: '2026-09-21T15:05:00+02:00', duracaoSeg: 300, lat: -21.8434 - 0.00225 })
+    const p2 = parada({ chegada: '2026-09-21T09:00:00.000Z', saida: '2026-09-21T09:05:00.000Z', duracaoSeg: 300, lat: -21.8434 + 0.00225 })
+    const p3 = parada({ chegada: '2026-09-21T10:00:00.000Z', saida: '2026-09-21T10:05:00.000Z', duracaoSeg: 300, lat: -21.8434 - 0.00225 })
     const r = sugerirCorrecoesPorAlvo(
       [entrega({ nf: '1' }), entrega({ nf: '2' }), entrega({ nf: '3' })],
       [alvo({ documento: '1' }), alvo({ documento: '2', feitoISO: '2026-09-21T09:02:00' }), alvo({ documento: '3', feitoISO: '2026-09-21T10:02:00' })],
@@ -147,14 +174,14 @@ describe('sugerirCorrecoesPorAlvo', () => {
   })
 
   it('parada de exatamente 120 min e feitoISO igual a chegada -> aceito (limites inclusivos)', () => {
-    const p = parada({ chegada: '2026-09-21T13:00:00+02:00', saida: '2026-09-21T15:00:00+02:00', duracaoSeg: 120 * 60 })
+    const p = parada({ chegada: '2026-09-21T08:00:00.000Z', saida: '2026-09-21T10:00:00.000Z', duracaoSeg: 120 * 60 })
     const r = sugerirCorrecoesPorAlvo([entrega({})], [alvo({ feitoISO: '2026-09-21T08:00:00' })], new Map([['AAA1A11', [p]]]))
     expect(r.rejeicoes).toEqual([])
     expect(r.sugestoes).toHaveLength(1)
   })
 
   it('feitoISO igual a saida -> aceito', () => {
-    const p = parada({ chegada: '2026-09-21T13:00:00+02:00', saida: '2026-09-21T15:00:00+02:00', duracaoSeg: 120 * 60 })
+    const p = parada({ chegada: '2026-09-21T08:00:00.000Z', saida: '2026-09-21T10:00:00.000Z', duracaoSeg: 120 * 60 })
     const r = sugerirCorrecoesPorAlvo([entrega({})], [alvo({ feitoISO: '2026-09-21T10:00:00' })], new Map([['AAA1A11', [p]]]))
     expect(r.rejeicoes).toEqual([])
     expect(r.sugestoes).toHaveLength(1)
