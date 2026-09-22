@@ -490,7 +490,7 @@ export function montarDetalheEntregas(
     // "essa placa nem foi consultada aqui" (map so' tem OUTRAS placas --
     // acontece em chamador parcial/teste, nao deve disparar as cegas).
     if (observacao == null && status === 'pendente' && temRastreador && paradasPorOutraPlaca.has(placaNorm) && paradasProprias.length === 0) {
-      observacao = 'SEM DADO DE GPS NO DIA - RASTREADOR NÃO REPORTOU NENHUMA POSIÇÃO - CONFERIR EQUIPAMENTO'
+      observacao = 'SEM RASTREADOR - NENHUMA POSIÇÃO REPORTADA NO DIA - CONFERIR EQUIPAMENTO'
     }
     // Achado real 11-12/09: pendente cuja coordenada nao e' confiavel merece
     // rotulo proprio -- o problema esta no CADASTRO do endereco, nao na

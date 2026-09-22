@@ -273,7 +273,7 @@ describe('gerador-xlsx', () => {
       expect(linha1[4]).toBe('10:00') // CHEGADA NA LOJA (sem shift de fuso, ver formatarHora)
       expect(linha1[5]).toBe('10:15') // SAÍDA DA LOJA (sem shift de fuso, ver formatarHora)
       expect(linha1[6]).toBe('0h15min') // TEMPO NA LOJA
-      expect(linha1[7]).toBe('CONFIRMADO (GPS)') // STATUS
+      expect(linha1[7]).toBe('ENTREGUE') // STATUS
 
       const linha2 = (wsPlaca.getRow(5).values as unknown[]).slice(1)
       expect(linha2[4]).toBe('') // CHEGADA NA LOJA
@@ -480,7 +480,7 @@ describe('gerador-xlsx', () => {
 
       expect(values[4]).toBe('') // CHEGADA NA LOJA
       expect(values[5]).toBe('') // SAÍDA NA LOJA
-      expect(values[7]).toBe('CONFIRMADO (UNITRAC)') // STATUS
+      expect(values[7]).toBe('ENTREGUE') // STATUS
     })
 
     it('observacao presente SUBSTITUI o texto de STATUS (mais informativa que o rotulo generico)', async () => {

@@ -41,9 +41,14 @@ const LABEL_MOTIVO: Record<AvisoDescasamento['motivo'], string> = {
   sem_escala: 'sem escala',
 }
 
+// Pedido do usuario (grupo KPI AJUSTES, 22/09): "tirar da nossa kpi as
+// informacoes com nome da unitrac e gps" -- o cliente nao deve ver o nome
+// das ferramentas internas de confirmacao. confirmado_unitrac e
+// confirmado_gps continuam distintos no motor (StatusEntrega, calculo de
+// taxa) -- so' o rotulo exibido no xlsx virou o mesmo "ENTREGUE" pros dois.
 const LABEL_STATUS_ENTREGA: Record<StatusEntrega, string> = {
-  confirmado_unitrac: 'CONFIRMADO (UNITRAC)',
-  confirmado_gps: 'CONFIRMADO (GPS)',
+  confirmado_unitrac: 'ENTREGUE',
+  confirmado_gps: 'ENTREGUE',
   // Pedido do usuario 05/09: "PENDENTE" soa como "o motorista nao entregou",
   // quando na maioria dos casos e' o nosso lado que nao conseguiu confirmar
   // (geocodificacao, raio, rastreador). O rotulo generico fica neutro; quando

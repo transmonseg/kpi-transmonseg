@@ -256,7 +256,7 @@ describe('POST /api/kpi/nutrimax/gerar -- pão e Nutry Max confirmam pelo mesmo 
     }
   }
 
-  it('NF da Nutry Max e NF do pão na mesma placa saem CONFIRMADO (GPS) pelas paradas da própria placa', async () => {
+  it('NF da Nutry Max e NF do pão na mesma placa saem ENTREGUE pelas paradas da própria placa', async () => {
     cenario.frota = [{ placaNorm: PLACA, cv: 'CV-1' }]
     cenario.coordPorEndereco = new Map([
       ['RUA A, 1 - RIO DE JANEIRO', COORD_NUTRIMAX],
@@ -288,8 +288,8 @@ describe('POST /api/kpi/nutrimax/gerar -- pão e Nutry Max confirmam pelo mesmo 
     expect(cargaPorNf.get('NF001')).toBe('97900')
     expect(cargaPorNf.get('NF900')).toBe('PAO-1')
     // ...mas foram confirmadas pelo MESMO conjunto de paradas da placa.
-    expect(statusPorNf.get('NF001')).toBe('CONFIRMADO (GPS)')
-    expect(statusPorNf.get('NF900')).toBe('CONFIRMADO (GPS)')
+    expect(statusPorNf.get('NF001')).toBe('ENTREGUE')
+    expect(statusPorNf.get('NF900')).toBe('ENTREGUE')
   })
 })
 
@@ -397,7 +397,7 @@ describe('POST /api/kpi/nutrimax/gerar -- resgate por âncora (item 5, achado 10
       if (rowNumber < 4) return
       statusPorNf.set(String(row.getCell(2).value), String(row.getCell(8).value))
     })
-    expect(statusPorNf.get('NF001')).toBe('CONFIRMADO (GPS)')
+    expect(statusPorNf.get('NF001')).toBe('ENTREGUE')
   })
 
   it('endereço sem_candidato sem nenhuma âncora na placa (resgate devolve null): não crasha, fica sem confirmação', async () => {
@@ -415,7 +415,7 @@ describe('POST /api/kpi/nutrimax/gerar -- resgate por âncora (item 5, achado 10
       if (rowNumber < 4) return
       statusPorNf.set(String(row.getCell(2).value), String(row.getCell(8).value))
     })
-    expect(statusPorNf.get('NF001')).not.toBe('CONFIRMADO (GPS)')
+    expect(statusPorNf.get('NF001')).not.toBe('ENTREGUE')
   })
 })
 
@@ -478,8 +478,8 @@ describe('POST /api/kpi/nutrimax/gerar -- resgate por âncora quando endereços 
     // Cada um confirmado pela SUA parada, sem o rotulo de "parada curta
     // confirmou varios enderecos diferentes ao mesmo tempo" que apareceria
     // se as duas ainda estivessem no mesmo ponto colapsado.
-    expect(statusPorNf.get('NF001')).toBe('CONFIRMADO (GPS)')
-    expect(statusPorNf.get('NF900')).toBe('CONFIRMADO (GPS)')
+    expect(statusPorNf.get('NF001')).toBe('ENTREGUE')
+    expect(statusPorNf.get('NF900')).toBe('ENTREGUE')
   })
 
   it('sem colisão nenhuma (todo mundo com ponto próprio), resgate por colisão não dispara', async () => {

@@ -827,7 +827,7 @@ describe('montarDetalheEntregas', () => {
 
       const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, paradasFrota, null)
 
-      expect(d.observacao).toBe('SEM DADO DE GPS NO DIA - RASTREADOR NÃO REPORTOU NENHUMA POSIÇÃO - CONFERIR EQUIPAMENTO')
+      expect(d.observacao).toBe('SEM RASTREADOR - NENHUMA POSIÇÃO REPORTADA NO DIA - CONFERIR EQUIPAMENTO')
       expect(d.status).toBe('pendente')
     })
 
@@ -837,7 +837,7 @@ describe('montarDetalheEntregas', () => {
 
       const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, false, paradasFrota, null)
 
-      expect(d.observacao).not.toBe('SEM DADO DE GPS NO DIA - RASTREADOR NÃO REPORTOU NENHUMA POSIÇÃO - CONFERIR EQUIPAMENTO')
+      expect(d.observacao).not.toBe('SEM RASTREADOR - NENHUMA POSIÇÃO REPORTADA NO DIA - CONFERIR EQUIPAMENTO')
     })
   })
 })
@@ -853,7 +853,7 @@ describe('montarDetalheEntregas -- 3b, parada curta compartilhada entre endereco
   const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
   const paradaCurta = { chegada: '2026-09-11T08:00:00.000Z', saida: '2026-09-11T08:01:00.000Z' } // 1min
 
-  it('parada de 1min confirmando 5 enderecos distintos: TODAS as 5 NFs (inclusive a que "ganhou" a visita) levam o rotulo de conferencia, nao CONFIRMADO (GPS)', () => {
+  it('parada de 1min confirmando 5 enderecos distintos: TODAS as 5 NFs (inclusive a que "ganhou" a visita) levam o rotulo de conferencia, nao ENTREGUE', () => {
     const linhas = ['NF1', 'NF2', 'NF3', 'NF4', 'NF5'].map((nf, i) =>
       linha(nf, { endereco: `RODOVIA AMARAL PEIXOTO, KM ${i + 1}` }))
     const visitas = new Map<string, Visita>(
@@ -875,7 +875,7 @@ describe('montarDetalheEntregas -- 3b, parada curta compartilhada entre endereco
     }
   })
 
-  it('flag desligada (default): NAO aplica o rotulo, mesma parada de 1min confirmando 5 enderecos fica CONFIRMADO (GPS) normal', () => {
+  it('flag desligada (default): NAO aplica o rotulo, mesma parada de 1min confirmando 5 enderecos fica ENTREGUE normal', () => {
     const linhas = ['NF1', 'NF2'].map((nf, i) =>
       linha(nf, { endereco: `RODOVIA AMARAL PEIXOTO, KM ${i + 1}` }))
     const visitas = new Map<string, Visita>(
@@ -942,7 +942,7 @@ describe('montarDetalheEntregas -- 3b, parada curta compartilhada entre endereco
 // nao ha' paradas proprias -> distanciaAteParadaPropria devolve null ->
 // propriaPlacaPlausivelmentePerto false -> acharParadaDeOutraPlaca rodava SEM
 // NENHUMA GUARDA, varria a frota inteira e casava qualquer parada a <=500m.
-// A NF saia "CONFIRMADO (GPS)" com o rotulo "CARGA TRANSFERIDA" -- uma
+// A NF saia "ENTREGUE" com o rotulo "CARGA TRANSFERIDA" -- uma
 // transferencia que nunca existiu -- e ainda contradizia agregarPorCarga, que
 // so' olha a placa propria e devolvia INCOMPLETO/0 paradas pra mesma carga.
 describe('montarDetalheEntregas -- carga SEM PLACA no romaneio (Critical 2)', () => {
