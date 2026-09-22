@@ -14,6 +14,7 @@ describe('montarPayloadCadastroManual', () => {
       lng: -43.2,
       confiavel: true,
       motivo: null,
+      fonte: 'manual',
     })
   })
 

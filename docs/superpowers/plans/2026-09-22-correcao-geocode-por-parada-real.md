@@ -16,7 +16,7 @@
 - Espelhar em KPI TEMP (`/Users/joaquimsalles/Projects/Transmonseg/kpi/KPI TEMP`) e push nos dois repos juntos.
 - A coordenada gravada no cache é a da PARADA GPS (`ParadaBridge.lat/lng`), nunca `pontoLat/pontoLng` da Unitrac.
 - Chave do cache = `endereco` CRU do romaneio, sem normalizar espaço (geocode.ts lê a string crua; ver commit de91e19).
-- `feitoISO` da Unitrac vem com os dígitos em horário de Brasília (sem fuso real); `ParadaBridge.chegada/saida` são ISO com fuso real. Converter `feitoISO` para instante somando `-03:00`.
+- `feitoISO` da Unitrac e `ParadaBridge.chegada/saida` (como saem de `buscarHorariosBase`, via `paraBrtMascaradoComoUtc`) usam a MESMA convenção: dígitos de Brasília com Z falso. Comparar os dois assim (`instanteDeFeitoISO` = dígitos + `Z`). Achado da revisão final 22/09: a versão com -03:00 casava a parada 3 h depois.
 - Trava de duração: parada com mais de `LIMITE_PARADA_ENTREGA_MIN = 120` minutos não serve de evidência.
 - Trava de coordenada boa: se a coordenada atual é `confiavel=true` e está a ≤ `RAIO_CONFIRMACAO_AMPLIADO_METROS` (800 m, `constants.ts`) da parada, não troca.
 - Endereço com acesso só por barco (`acessoSomentePorBarco`) nunca é corrigido (o caminhão para no píer).

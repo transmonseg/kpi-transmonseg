@@ -28,7 +28,10 @@ export function normalizarEndereco(enderecoBruto: string): string {
  *  continuava imprimindo "COORDENADA CAIU EM OUTRO BAIRRO - CONFERIR CADASTRO"
  *  sobre um ponto ja correto. */
 export function montarPayloadCadastroManual(enderecoBruto: string, lat: number, lng: number) {
-  return { endereco: normalizarEndereco(enderecoBruto), lat, lng, confiavel: true, motivo: null as null }
+  // fonte: 'manual' -- a auto-correcao de geocode (correcao-por-alvo.ts) rejeita
+  // linhas com fonte === 'manual' como 'correcao_manual', pra NUNCA sobrescrever
+  // uma correcao humana com um resultado automatico.
+  return { endereco: normalizarEndereco(enderecoBruto), lat, lng, confiavel: true, motivo: null as null, fonte: 'manual' as const }
 }
 
 async function main() {

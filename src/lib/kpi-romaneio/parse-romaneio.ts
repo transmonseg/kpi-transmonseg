@@ -1,4 +1,5 @@
 import type { LinhaRomaneio } from './types'
+import { ENDERECO_NAO_IDENTIFICADO } from './correcao-por-alvo'
 
 const HEADER_RE = /^PLACA\/MOTORISTA:(.+?)\s*\/\s*(.+?)CARGA\/DESTINO:(\d+)\s*\/\s*(.+)$/
 const AJUDANTE_RE = /^AJUDANTE\(S\):(.*)$/
@@ -53,7 +54,7 @@ export function parseRomaneioTexto(texto: string): LinhaRomaneio[] {
           nf: pendente.nf,
           clienteCodigo: pendente.codigo,
           clienteNome: pendente.nome,
-          endereco: '(endereço não identificado)',
+          endereco: ENDERECO_NAO_IDENTIFICADO,
         })
       }
       pendente = { nf: nfM[1], codigo: nfM[2], nome: nfM[3].trim() }
