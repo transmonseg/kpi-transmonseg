@@ -510,3 +510,29 @@ if (process.env.VITEST !== 'true') main().catch(e => { console.error(e); process
 - Review Focus coberto: fuso (T1 testes 1–2 e "sem ajuste"), paradas conflitantes (T1), espaço duplo na chave (T3 `montarUpsertCorrecao`), alvo sem documento / placa sem parada (T1), snapshot sem ponto cadastrado (T2 null + T3 filtro `distCadastroM != null`).
 - Nomes consistentes entre tarefas: `sugerirCorrecoesPorAlvo`, `SugestaoCorrecao`, `Rejeicao`, `LIMITE_CADASTRO_DIVERGENTE_M`, `pontoLat/pontoLng`, `montarUpsertCorrecao`.
 - Fora de escopo (fase 2): rodar isso automático no cron noturno depois do dia fechar.
+
+---
+
+### Task 5: Trava "parada de outro cliente" (achado da validação de 21/09)
+
+Achado real 22/09: NF 2382382 (ALBATROZ, RQU8D91) casou com a parada das 14:12–14:21 que o relatório da Unitrac registra como "124073 - LILAS DE MACAE RESTAURANTE" — o motorista marcou o "feito" da Albatroz estando em outro cliente. Com o ponto cadastrado dos clientes (`pontoLat/pontoLng`, Task 2) dá pra detectar isso.
+
+**Files:**
+- Modify: `src/lib/kpi-romaneio/correcao-por-alvo.ts`
+- Test: `src/lib/kpi-romaneio/correcao-por-alvo.test.ts`
+
+**Interfaces:**
+- Produces: `export const RAIO_PONTO_OUTRO_CLIENTE_M = 150` (mesmo raio mínimo de geofence de `src/lib/unitrac-api/pontos.ts`); novo `MotivoRejeicao` `'parada_de_outro_cliente'`.
+
+Regra (depois de achar a parada da entrega `e` pelo alvo `a`, antes de agrupar): considerar os OUTROS alvos do dia da MESMA placa (qualquer `situacao`) com `pontoLat/pontoLng` não nulos e `codigoUnitrac !== a.codigoUnitrac`. Se a parada está a ≤ 150 m do ponto cadastrado de algum desses outros clientes E (o próprio `a` não tem ponto cadastrado OU a parada está a > 150 m do ponto cadastrado de `a`) → rejeitar `'parada_de_outro_cliente'`.
+
+- [ ] **Step 1: Testes falhando** (usar a convenção mascarada dos fixtures atuais do arquivo):
+  1. parada a ~50 m do ponto cadastrado de OUTRO cliente da mesma placa, ponto do próprio cliente a ~5 km → `parada_de_outro_cliente`, sem sugestão.
+  2. parada a ≤150 m do ponto do próprio cliente E de outro cliente (shopping) → aceita (sugestão).
+  3. outro cliente sem ponto cadastrado (`pontoLat: null`) → aceita.
+  4. outro alvo com o MESMO `codigoUnitrac` (outra NF do mesmo cliente) → não conta, aceita.
+  5. ponto de outro cliente de OUTRA placa perto da parada → não conta, aceita.
+- [ ] **Step 2:** `npx vitest run src/lib/kpi-romaneio/correcao-por-alvo.test.ts` → FAIL.
+- [ ] **Step 3:** Implementar a regra com `haversine` e a constante.
+- [ ] **Step 4:** `npx vitest run src/lib/kpi-romaneio scripts/corrigir-geocode-por-alvo.test.ts` → PASS; `npx tsc --noEmit` (só os Buffer conhecidos).
+- [ ] **Step 5: Commit** `feat(kpi): correcao-por-alvo rejeita parada em cima do ponto de outro cliente` (+ trailer).
