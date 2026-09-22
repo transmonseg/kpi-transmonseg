@@ -112,4 +112,51 @@ describe('sugerirCorrecoesPorAlvo', () => {
     expect(r.sugestoes).toEqual([])
     expect(r.rejeicoes.map(x => x.motivo)).toEqual(['paradas_conflitantes', 'paradas_conflitantes'])
   })
+
+  it('mesmo endereco em leque: 0m, +250m, -250m (par a par so a extrema bate >300m) -> paradas_conflitantes nas 3', () => {
+    const p1 = parada({})
+    const p2 = parada({ chegada: '2026-09-21T14:00:00+02:00', saida: '2026-09-21T14:05:00+02:00', duracaoSeg: 300, lat: -21.8434 + 0.00225 })
+    const p3 = parada({ chegada: '2026-09-21T15:00:00+02:00', saida: '2026-09-21T15:05:00+02:00', duracaoSeg: 300, lat: -21.8434 - 0.00225 })
+    const r = sugerirCorrecoesPorAlvo(
+      [entrega({ nf: '1' }), entrega({ nf: '2' }), entrega({ nf: '3' })],
+      [alvo({ documento: '1' }), alvo({ documento: '2', feitoISO: '2026-09-21T09:02:00' }), alvo({ documento: '3', feitoISO: '2026-09-21T10:02:00' })],
+      new Map([['AAA1A11', [p1, p2, p3]]]),
+    )
+    expect(r.sugestoes).toEqual([])
+    expect(r.rejeicoes.map(x => x.motivo)).toEqual(['paradas_conflitantes', 'paradas_conflitantes', 'paradas_conflitantes'])
+  })
+
+  it('mesma parada respondendo por dois enderecos distintos (baixa em lote) -> parada_compartilhada pros dois, sem sugestao', () => {
+    const r = sugerirCorrecoesPorAlvo(
+      [entrega({ nf: '1' }), entrega({ nf: '2', endereco: 'OUTRO ENDERECO, 10 - BAIRRO X, CIDADE Y' })],
+      [alvo({ documento: '1' }), alvo({ documento: '2' })],
+      paradas,
+    )
+    expect(r.sugestoes).toEqual([])
+    expect(r.rejeicoes.map(x => x.motivo)).toEqual(['parada_compartilhada', 'parada_compartilhada'])
+  })
+
+  it('dois alvos feito=1 pra mesma placa|documento com feitoISO diferentes -> alvo_duplicado', () => {
+    const r = sugerirCorrecoesPorAlvo(
+      [entrega({})],
+      [alvo({}), alvo({ feitoISO: '2026-09-21T09:00:00' })],
+      paradas,
+    )
+    expect(r.sugestoes).toEqual([])
+    expect(r.rejeicoes[0].motivo).toBe('alvo_duplicado')
+  })
+
+  it('parada de exatamente 120 min e feitoISO igual a chegada -> aceito (limites inclusivos)', () => {
+    const p = parada({ chegada: '2026-09-21T13:00:00+02:00', saida: '2026-09-21T15:00:00+02:00', duracaoSeg: 120 * 60 })
+    const r = sugerirCorrecoesPorAlvo([entrega({})], [alvo({ feitoISO: '2026-09-21T08:00:00' })], new Map([['AAA1A11', [p]]]))
+    expect(r.rejeicoes).toEqual([])
+    expect(r.sugestoes).toHaveLength(1)
+  })
+
+  it('feitoISO igual a saida -> aceito', () => {
+    const p = parada({ chegada: '2026-09-21T13:00:00+02:00', saida: '2026-09-21T15:00:00+02:00', duracaoSeg: 120 * 60 })
+    const r = sugerirCorrecoesPorAlvo([entrega({})], [alvo({ feitoISO: '2026-09-21T10:00:00' })], new Map([['AAA1A11', [p]]]))
+    expect(r.rejeicoes).toEqual([])
+    expect(r.sugestoes).toHaveLength(1)
+  })
 })

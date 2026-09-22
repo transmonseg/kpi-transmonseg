@@ -22,7 +22,7 @@ export type SugestaoCorrecao = {
   latNova: number; lngNova: number; duracaoParadaMin: number
   codigoUnitrac: string; cadastroLat: number | null; cadastroLng: number | null; distCadastroM: number | null
 }
-export type MotivoRejeicao = 'sem_alvo_feito' | 'feito_fora_de_parada' | 'parada_longa' | 'ilha' | 'coordenada_atual_ok' | 'paradas_conflitantes'
+export type MotivoRejeicao = 'sem_alvo_feito' | 'feito_fora_de_parada' | 'parada_longa' | 'ilha' | 'coordenada_atual_ok' | 'paradas_conflitantes' | 'parada_compartilhada' | 'alvo_duplicado'
 export type Rejeicao = { endereco: string; nf: string; placaNorm: string; motivo: MotivoRejeicao }
 
 /** feitoISO da Unitrac: digitos ja em horario de Brasilia, as vezes com um Z
@@ -43,15 +43,31 @@ export function sugerirCorrecoesPorAlvo(
   const rejeitar = (e: EntregaParaCorrigir, motivo: MotivoRejeicao) =>
     rejeicoes.push({ endereco: e.endereco, nf: e.nf, placaNorm: e.placaNorm, motivo })
 
-  const alvoPorChave = new Map<string, AlvoApi>()
+  // Agrupa alvos feitos por placa|documento. Se duas entregas diferentes (em
+  // instantes diferentes) reivindicam a mesma chave, e' cadastro duplicado na
+  // Unitrac -- nao da' pra saber qual e' o feito de verdade, entao a chave
+  // toda fica invalida (em vez de "last wins").
+  const gruposAlvo = new Map<string, AlvoApi[]>()
   for (const a of alvos) {
     if (a.situacao !== 1 || !a.feitoISO || !a.documento) continue
-    alvoPorChave.set(`${a.placaNorm}|${a.documento}`, a)
+    const chave = `${a.placaNorm}|${a.documento}`
+    const lista = gruposAlvo.get(chave) ?? []
+    lista.push(a)
+    gruposAlvo.set(chave, lista)
+  }
+  const alvoPorChave = new Map<string, AlvoApi>()
+  const chavesDuplicadas = new Set<string>()
+  for (const [chave, lista] of gruposAlvo) {
+    const instantes = new Set(lista.map(a => instanteDeFeitoISO(a.feitoISO as string)))
+    if (instantes.size > 1) { chavesDuplicadas.add(chave); continue }
+    alvoPorChave.set(chave, lista[0])
   }
 
-  const porEndereco = new Map<string, Casamento[]>()
+  const casamentosValidos: Casamento[] = []
   for (const e of entregas) {
-    const a = alvoPorChave.get(`${e.placaNorm}|${e.nf}`)
+    const chave = `${e.placaNorm}|${e.nf}`
+    if (chavesDuplicadas.has(chave)) { rejeitar(e, 'alvo_duplicado'); continue }
+    const a = alvoPorChave.get(chave)
     if (!a) { rejeitar(e, 'sem_alvo_feito'); continue }
     if (acessoSomentePorBarco(e.endereco)) { rejeitar(e, 'ilha'); continue }
     const t = instanteDeFeitoISO(a.feitoISO as string)
@@ -59,18 +75,52 @@ export function sugerirCorrecoesPorAlvo(
       p.classificacao === 'FORA_BASE' && Date.parse(p.chegada) <= t && t <= Date.parse(p.saida))
     if (!parada) { rejeitar(e, 'feito_fora_de_parada'); continue }
     if (parada.duracaoSeg / 60 > LIMITE_PARADA_ENTREGA_MIN) { rejeitar(e, 'parada_longa'); continue }
-    const lista = porEndereco.get(e.endereco) ?? []
-    lista.push({ entrega: e, alvo: a, parada })
-    porEndereco.set(e.endereco, lista)
+    casamentosValidos.push({ entrega: e, alvo: a, parada })
+  }
+
+  // Uma parada pode responder por varios enderecos distintos quando o
+  // motorista da baixa em lote no fim da entrega (mesmo GPS, clientes
+  // diferentes). Nesse caso nao da' pra saber a coordenada real de nenhum
+  // deles -- rejeita todo mundo que compartilhou a parada.
+  const porParada = new Map<string, Casamento[]>()
+  for (const c of casamentosValidos) {
+    const chaveParada = `${c.entrega.placaNorm}|${c.parada.chegada}`
+    const lista = porParada.get(chaveParada) ?? []
+    lista.push(c)
+    porParada.set(chaveParada, lista)
+  }
+  const compartilhados = new Set<Casamento>()
+  for (const lista of porParada.values()) {
+    const enderecos = new Set(lista.map(c => c.entrega.endereco))
+    if (enderecos.size > 1) {
+      for (const c of lista) { rejeitar(c.entrega, 'parada_compartilhada'); compartilhados.add(c) }
+    }
+  }
+
+  const porEndereco = new Map<string, Casamento[]>()
+  for (const c of casamentosValidos) {
+    if (compartilhados.has(c)) continue
+    const lista = porEndereco.get(c.entrega.endereco) ?? []
+    lista.push(c)
+    porEndereco.set(c.entrega.endereco, lista)
+  }
+
+  const maiorDistanciaParDaPar = (casamentos: Casamento[]): number => {
+    let maior = 0
+    for (let i = 0; i < casamentos.length; i++) {
+      for (let j = i + 1; j < casamentos.length; j++) {
+        const d = haversine(casamentos[i].parada.lat, casamentos[i].parada.lng, casamentos[j].parada.lat, casamentos[j].parada.lng)
+        if (d > maior) maior = d
+      }
+    }
+    return maior
   }
 
   const sugestoes: SugestaoCorrecao[] = []
   for (const [endereco, casamentos] of porEndereco) {
-    const ref = casamentos[0]
-    const conflito = casamentos.some(c =>
-      haversine(c.parada.lat, c.parada.lng, ref.parada.lat, ref.parada.lng) > LIMITE_PARADAS_MESMO_ENDERECO_M)
+    const conflito = maiorDistanciaParDaPar(casamentos) > LIMITE_PARADAS_MESMO_ENDERECO_M
     if (conflito) { for (const c of casamentos) rejeitar(c.entrega, 'paradas_conflitantes'); continue }
-    const { entrega: e, alvo: a, parada: p } = ref
+    const { entrega: e, alvo: a, parada: p } = casamentos[0]
     const distAtualM = e.latAtual != null && e.lngAtual != null ? haversine(e.latAtual, e.lngAtual, p.lat, p.lng) : null
     if (e.confiavelAtual && distAtualM != null && distAtualM <= RAIO_CONFIRMACAO_AMPLIADO_METROS) {
       for (const c of casamentos) rejeitar(c.entrega, 'coordenada_atual_ok')
