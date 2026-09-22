@@ -185,6 +185,7 @@ async function buscarLote(
   data: string,
   pontosPorPlaca: Map<string, PontoEntregaBridge[]>,
   incluirParadas: boolean,
+  fimRotaPorPlaca?: Map<string, string>,
 ): Promise<Map<string, HorarioBase>> {
   const mapa = new Map<string, HorarioBase>()
   const chave = process.env.MOTOR_SECRET
@@ -202,6 +203,21 @@ async function buscarLote(
     if (pontos && pontos.length > 0) pontosPorPlacaBody[placa] = pontos
   }
 
+  // fimRotaPorPlaca (achado real 22/09): o chamador guarda tudo na
+  // convencao MASCARADA (mesma que paraBrtMascaradoComoUtc produz), mas a
+  // ponte espera o instante UTC REAL -- inverso da mascara, +3h em vez de
+  // -3h (Brasil sem horario de verao, offset fixo). So' manda a chave no
+  // corpo pras placas DESTE lote que tem entrada, e so' inclui a chave
+  // `fimRotaPorPlaca` no JSON se houver alguma -- sem mudar o contrato da
+  // rota pra quem nao usa esta extensao.
+  const fimRotaBody: Record<string, string> = {}
+  if (fimRotaPorPlaca) {
+    for (const placa of placas) {
+      const fimRotaMascarado = fimRotaPorPlaca.get(placa)
+      if (fimRotaMascarado) fimRotaBody[placa] = new Date(Date.parse(fimRotaMascarado) + 3 * 60 * 60 * 1000).toISOString()
+    }
+  }
+
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), incluirParadas ? TIMEOUT_PARADAS_MS : TIMEOUT_MS)
   let res: Response
@@ -209,7 +225,13 @@ async function buscarLote(
     res = await fetch(urlBaseHorarios(), {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-motor-key': chave },
-      body: JSON.stringify({ placas, data, pontosPorPlaca: pontosPorPlacaBody, incluirParadas }),
+      body: JSON.stringify({
+        placas,
+        data,
+        pontosPorPlaca: pontosPorPlacaBody,
+        incluirParadas,
+        ...(Object.keys(fimRotaBody).length > 0 ? { fimRotaPorPlaca: fimRotaBody } : {}),
+      }),
       signal: ctrl.signal,
     })
   } catch (e) {
@@ -274,12 +296,13 @@ export async function buscarHorariosBase(
   data: string,
   pontosPorPlaca: Map<string, PontoEntregaBridge[]> = new Map(),
   incluirParadas = false,
+  fimRotaPorPlaca?: Map<string, string>,
 ): Promise<Map<string, HorarioBase>> {
   const mapa = new Map<string, HorarioBase>()
   const tamanhoLote = incluirParadas ? MAX_PLACAS_POR_CHAMADA_COM_PARADAS : MAX_PLACAS_POR_CHAMADA
   for (let i = 0; i < placasNorm.length; i += tamanhoLote) {
     const lote = placasNorm.slice(i, i + tamanhoLote)
-    const doLote = await buscarLote(lote, data, pontosPorPlaca, incluirParadas)
+    const doLote = await buscarLote(lote, data, pontosPorPlaca, incluirParadas, fimRotaPorPlaca)
     for (const [placa, horario] of doLote) mapa.set(placa, horario)
   }
   return mapa

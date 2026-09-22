@@ -168,6 +168,25 @@ describe('buscarHorariosBase', () => {
     })
   })
 
+  describe('fimRotaPorPlaca (achado real 22/09: ajuste de CHEGADA CD apos ultima entrega)', () => {
+    it('manda fimRotaPorPlaca convertido de mascarado (+3h) pra UTC real', async () => {
+      const fetchSpy = mockFetchOk([])
+      const fimRota = new Map([['RBG5G18', '2026-09-21T13:59:00.000Z']])
+      await buscarHorariosBase(['RBG5G18'], '2026-09-21', new Map(), false, fimRota)
+
+      const corpo = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
+      expect(corpo.fimRotaPorPlaca).toEqual({ RBG5G18: '2026-09-21T16:59:00.000Z' })
+    })
+
+    it('sem o 5o argumento: corpo nao tem a chave fimRotaPorPlaca', async () => {
+      const fetchSpy = mockFetchOk([])
+      await buscarHorariosBase(['RBG5G18'], '2026-09-21')
+
+      const corpo = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
+      expect(corpo).not.toHaveProperty('fimRotaPorPlaca')
+    })
+  })
+
   describe('apagaoDeSinal (achado real 14/09: leitura com atraso_min acima do limiar de apagao)', () => {
     it('repassa apagaoDeSinal quando a ponte manda true', async () => {
       mockFetchOk([
