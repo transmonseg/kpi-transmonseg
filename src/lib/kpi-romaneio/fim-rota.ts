@@ -31,32 +31,63 @@ export function precisaAjustarChegada(paradas: ParadaBridge[], fimRota: string |
     && (chegada - instanteDeFeitoISO(p.chegada)) / 60_000 > FOLGA_VOLTA_EXTRA_MIN)
 }
 
+/** true se a NF foi confirmada pra essa placa: visita registrada (GPS
+ *  proprio) OU alvo Unitrac com situacao=1 (feito) pra essa NF. */
+function nfConfirmada(nf: string, visitasDaPlaca: Map<string, Visita>, alvosDaPlaca: AlvoApi[]): boolean {
+  return visitasDaPlaca.has(nf) || alvosDaPlaca.some(a => a.situacao === 1 && a.documento === nf)
+}
+
+/** Ruling do controller (revisao final 22/09): so' ajusta a placa quando
+ *  TODAS as NFs do romaneio dela estao confirmadas. Se alguma NF ainda nao
+ *  foi confirmada, uma 2a saida real pode te-la entregue -- nao mexe. */
+function todasNfsConfirmadas(nfs: string[], visitasDaPlaca: Map<string, Visita>, alvosDaPlaca: AlvoApi[]): boolean {
+  return nfs.every(nf => nfConfirmada(nf, visitasDaPlaca, alvosDaPlaca))
+}
+
 /** Liga fimDaRota/precisaAjustarChegada na busca de horarios: pra cada placa
  *  cuja ULTIMA volta a base registrada e' na verdade uma volta extra sem
- *  entrega (fim da rota veio antes dela, com folga > FOLGA_VOLTA_EXTRA_MIN),
- *  repete buscarHorariosBase so' pra ela mandando `fimRotaPorPlaca` -- a
- *  ponte entao devolve a PRIMEIRA volta a base depois do fim da rota, que e'
- *  a CHEGADA CD de verdade. Muta horarioBasePorPlaca in-place (mesmo padrao
- *  de mapComLimite acima na route). Fail-open: ponte falhando na 2a chamada
- *  devolve mapa vazio -- `ajustado` fica vazio, nada muda. */
+ *  entrega (fim da rota veio antes dela, com folga > FOLGA_VOLTA_EXTRA_MIN)
+ *  E cuja TODAS as NFs do romaneio ja' estao confirmadas (ruling do
+ *  controller -- carga transferida de outra placa numa 2a saida nao e'
+ *  detectada, aceito como limitacao), repete buscarHorariosBase so' pra ela
+ *  mandando `fimRotaPorPlaca` -- a ponte entao devolve a PRIMEIRA volta a
+ *  base depois do fim da rota, que e' a CHEGADA CD de verdade. So' copia
+ *  chegadaBase/kmPercorrido da 2a chamada -- saidaBase fica o da 1a. Muta
+ *  horarioBasePorPlaca in-place (mesmo padrao de mapComLimite acima na
+ *  route). Fail-open: ponte falhando ou devolvendo chegadaBase null na 2a
+ *  chamada mantem os valores da 1a, sem mudar nada pra aquela placa. */
 export async function ajustarChegadaAposUltimaEntrega(
   placasNorm: string[],
   data: string,
   horarioBasePorPlaca: Map<string, HorarioBase>,
   visitasPorPlaca: Map<string, Map<string, Visita>>,
   alvosPorPlaca: Map<string, AlvoApi[]>,
+  nfsPorPlaca: Map<string, string[]>,
 ): Promise<void> {
   const fimPorPlaca = new Map<string, string>()
   for (const p of placasNorm) {
     const h = horarioBasePorPlaca.get(p)
-    const fim = fimDaRota((visitasPorPlaca.get(p) ?? new Map()).values(), alvosPorPlaca.get(p) ?? [])
-    if (h && precisaAjustarChegada(h.paradas ?? [], fim, h.chegadaBase)) fimPorPlaca.set(p, fim as string)
+    const visitasDaPlaca = visitasPorPlaca.get(p) ?? new Map()
+    const alvosDaPlaca = alvosPorPlaca.get(p) ?? []
+    const fim = fimDaRota(visitasDaPlaca.values(), alvosDaPlaca)
+    if (h && precisaAjustarChegada(h.paradas ?? [], fim, h.chegadaBase)
+      && todasNfsConfirmadas(nfsPorPlaca.get(p) ?? [], visitasDaPlaca, alvosDaPlaca)) fimPorPlaca.set(p, fim as string)
   }
   if (fimPorPlaca.size === 0) return
   const ajustado = await buscarHorariosBase([...fimPorPlaca.keys()], data, new Map(), false, fimPorPlaca)
-  for (const [p, novo] of ajustado) {
+  const sobrescritas: string[] = []
+  const naoSobrescritas: string[] = []
+  for (const p of fimPorPlaca.keys()) {
+    const novo = ajustado.get(p)
     const atual = horarioBasePorPlaca.get(p)
-    if (atual && novo.chegadaBase) horarioBasePorPlaca.set(p, { ...atual, saidaBase: novo.saidaBase, chegadaBase: novo.chegadaBase, kmPercorrido: novo.kmPercorrido })
+    if (atual && novo && novo.chegadaBase) {
+      const antiga = atual.chegadaBase
+      horarioBasePorPlaca.set(p, { ...atual, chegadaBase: novo.chegadaBase, kmPercorrido: novo.kmPercorrido })
+      sobrescritas.push(`${p}: ${antiga} -> ${novo.chegadaBase}`)
+    } else {
+      naoSobrescritas.push(p)
+    }
   }
-  console.log(`[kpi] chegada CD ajustada apos ultima entrega: ${[...fimPorPlaca.keys()].join(', ')}`)
+  if (sobrescritas.length > 0) console.log(`[kpi] chegada CD ajustada apos ultima entrega: ${sobrescritas.join(', ')}`)
+  if (naoSobrescritas.length > 0) console.log(`[kpi] chegada CD pedida mas nao ajustada (2a chamada sem chegadaBase) apos ultima entrega: ${naoSobrescritas.join(', ')}`)
 }

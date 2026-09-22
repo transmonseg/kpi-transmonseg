@@ -346,7 +346,10 @@ export async function POST(req: NextRequest) {
   // ultima saida com entrega -- veio bem antes dela), CHEGADA CD tem que
   // ser a PRIMEIRA volta a base depois disso, nao a ultima do dia. Muta
   // horarioBasePorPlaca in-place antes de virar chegadaCd em agregarPorCarga.
-  await ajustarChegadaAposUltimaEntrega(placasNorm, data, horarioBasePorPlaca, visitasPorPlaca, alvosPorPlaca)
+  // Ruling do controller (revisao final 22/09): so' ajusta quando TODAS as
+  // NFs do romaneio da placa (linhasPorPlaca) ja' estao confirmadas.
+  const nfsPorPlaca = new Map([...linhasPorPlaca].map(([p, linhas]) => [p, linhas.map(l => l.nf)]))
+  await ajustarChegadaAposUltimaEntrega(placasNorm, data, horarioBasePorPlaca, visitasPorPlaca, alvosPorPlaca, nfsPorPlaca)
 
   // Cargas vêm do Romaneio -- é a fonte de verdade de quantas cargas
   // existiram no dia. A Escala só complementa (destino/motorista/peso/

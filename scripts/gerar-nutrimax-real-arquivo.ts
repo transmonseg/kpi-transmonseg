@@ -212,8 +212,11 @@ async function main() {
 
   // Achado real 22/09 (RBG5G18 21/09, espelha route.ts): CHEGADA CD tem que
   // ser a primeira volta a base depois do fim real da rota, nao a ultima
-  // volta do dia (que pode ser uma saida extra sem entrega).
-  await ajustarChegadaAposUltimaEntrega(placasNorm, data, horarioBasePorPlaca, visitasPorPlaca, alvosPorPlaca)
+  // volta do dia (que pode ser uma saida extra sem entrega). Ruling do
+  // controller: so' ajusta quando TODAS as NFs do romaneio da placa ja'
+  // estao confirmadas.
+  const nfsPorPlaca = new Map([...linhasPorPlaca].map(([p, linhas]) => [p, linhas.map(l => l.nf)]))
+  await ajustarChegadaAposUltimaEntrega(placasNorm, data, horarioBasePorPlaca, visitasPorPlaca, alvosPorPlaca, nfsPorPlaca)
 
   const escalaPorChave = new Map(escalaCompleta.map(e => [`${e.carga}::${e.placaNorm}`, e]))
   const cargasPorChave = agrupar(romaneioGeo, l => `${l.carga}::${normPlaca(l.placa)}`)

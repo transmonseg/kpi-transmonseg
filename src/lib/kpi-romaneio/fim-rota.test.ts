@@ -45,22 +45,24 @@ describe('precisaAjustarChegada', () => {
 describe('ajustarChegadaAposUltimaEntrega', () => {
   const horario = (o: Partial<HorarioBase>): HorarioBase => ({ saidaBase: null, chegadaBase: null, kmPercorrido: null, ...o })
   const paradasBase = [base('2026-09-21T15:02:00.000Z', '2026-09-21T16:07:00.000Z'), base('2026-09-21T19:34:00.000Z', '2026-09-21T22:04:00.000Z')]
+  const nfsUmaNf = new Map([['RBG5G18', ['NF1']]])
 
   beforeEach(() => {
     buscarHorariosBaseMock.mockReset()
   })
 
-  it('placa com volta extra: chama buscarHorariosBase com fimRotaPorPlaca e atualiza saida/chegada/km', async () => {
+  it('placa com volta extra e NF confirmada (via visita): chama buscarHorariosBase com fimRotaPorPlaca e atualiza chegada/km, mantendo saida da 1a chamada', async () => {
     const horarioBasePorPlaca = new Map([
       ['RBG5G18', horario({ saidaBase: '2026-09-21T08:00:00.000Z', chegadaBase: '2026-09-21T19:34:00.000Z', kmPercorrido: 120, paradas: paradasBase })],
     ])
     const visitasPorPlaca = new Map([['RBG5G18', new Map<string, Visita>([['NF1', visita('2026-09-21T13:59:00.000Z')]])]])
     const alvosPorPlaca = new Map<string, AlvoApi[]>([['RBG5G18', []]])
+    // saidaBase da 2a chamada e' diferente de proposito -- deve ser ignorada.
     buscarHorariosBaseMock.mockResolvedValue(new Map([
-      ['RBG5G18', horario({ saidaBase: '2026-09-21T08:00:00.000Z', chegadaBase: '2026-09-21T15:02:00.000Z', kmPercorrido: 80 })],
+      ['RBG5G18', horario({ saidaBase: '2026-09-21T09:00:00.000Z', chegadaBase: '2026-09-21T15:02:00.000Z', kmPercorrido: 80 })],
     ]))
 
-    await ajustarChegadaAposUltimaEntrega(['RBG5G18'], '2026-09-21', horarioBasePorPlaca, visitasPorPlaca, alvosPorPlaca)
+    await ajustarChegadaAposUltimaEntrega(['RBG5G18'], '2026-09-21', horarioBasePorPlaca, visitasPorPlaca, alvosPorPlaca, nfsUmaNf)
 
     expect(buscarHorariosBaseMock).toHaveBeenCalledTimes(1)
     expect(buscarHorariosBaseMock).toHaveBeenCalledWith(
@@ -69,6 +71,41 @@ describe('ajustarChegadaAposUltimaEntrega', () => {
     )
     expect(horarioBasePorPlaca.get('RBG5G18')?.chegadaBase).toBe('2026-09-21T15:02:00.000Z')
     expect(horarioBasePorPlaca.get('RBG5G18')?.kmPercorrido).toBe(80)
+    expect(horarioBasePorPlaca.get('RBG5G18')?.saidaBase).toBe('2026-09-21T08:00:00.000Z')
+  })
+
+  it('placa com 2 NFs, ambas confirmadas (uma via visita, outra via alvo situacao=1): ajusta', async () => {
+    const horarioBasePorPlaca = new Map([
+      ['RBG5G18', horario({ saidaBase: '2026-09-21T08:00:00.000Z', chegadaBase: '2026-09-21T19:34:00.000Z', kmPercorrido: 120, paradas: paradasBase })],
+    ])
+    const visitasPorPlaca = new Map([['RBG5G18', new Map<string, Visita>([['NF1', visita('2026-09-21T13:59:00.000Z')]])]])
+    const alvosPorPlaca = new Map<string, AlvoApi[]>([['RBG5G18', [alvo({ documento: 'NF2', situacao: 1 })]]])
+    const nfsDuasNf = new Map([['RBG5G18', ['NF1', 'NF2']]])
+    buscarHorariosBaseMock.mockResolvedValue(new Map([
+      ['RBG5G18', horario({ saidaBase: '2026-09-21T08:00:00.000Z', chegadaBase: '2026-09-21T15:02:00.000Z', kmPercorrido: 80 })],
+    ]))
+
+    await ajustarChegadaAposUltimaEntrega(['RBG5G18'], '2026-09-21', horarioBasePorPlaca, visitasPorPlaca, alvosPorPlaca, nfsDuasNf)
+
+    expect(buscarHorariosBaseMock).toHaveBeenCalledTimes(1)
+    expect(horarioBasePorPlaca.get('RBG5G18')?.chegadaBase).toBe('2026-09-21T15:02:00.000Z')
+  })
+
+  it('placa com uma NF nao confirmada (nem visita, nem alvo feito): nao ajusta, buscarHorariosBase nao e chamado', async () => {
+    const horarioBasePorPlaca = new Map([
+      ['RBG5G18', horario({ saidaBase: '2026-09-21T08:00:00.000Z', chegadaBase: '2026-09-21T19:34:00.000Z', kmPercorrido: 120, paradas: paradasBase })],
+    ])
+    const visitasPorPlaca = new Map([['RBG5G18', new Map<string, Visita>([['NF1', visita('2026-09-21T13:59:00.000Z')]])]])
+    const alvosPorPlaca = new Map<string, AlvoApi[]>([['RBG5G18', []]])
+    // NF2 nao tem visita nem alvo feito -- uma possivel 2a saida pode
+    // tê-la entregue de verdade; nao mexe na placa.
+    const nfsDuasNfSoUmaConfirmada = new Map([['RBG5G18', ['NF1', 'NF2']]])
+
+    await ajustarChegadaAposUltimaEntrega(['RBG5G18'], '2026-09-21', horarioBasePorPlaca, visitasPorPlaca, alvosPorPlaca, nfsDuasNfSoUmaConfirmada)
+
+    expect(buscarHorariosBaseMock).not.toHaveBeenCalled()
+    expect(horarioBasePorPlaca.get('RBG5G18')?.chegadaBase).toBe('2026-09-21T19:34:00.000Z')
+    expect(horarioBasePorPlaca.get('RBG5G18')?.kmPercorrido).toBe(120)
   })
 
   it('2a chamada devolve mapa vazio (ponte falhou): nao muda nada', async () => {
@@ -79,10 +116,27 @@ describe('ajustarChegadaAposUltimaEntrega', () => {
     const alvosPorPlaca = new Map<string, AlvoApi[]>([['RBG5G18', []]])
     buscarHorariosBaseMock.mockResolvedValue(new Map())
 
-    await ajustarChegadaAposUltimaEntrega(['RBG5G18'], '2026-09-21', horarioBasePorPlaca, visitasPorPlaca, alvosPorPlaca)
+    await ajustarChegadaAposUltimaEntrega(['RBG5G18'], '2026-09-21', horarioBasePorPlaca, visitasPorPlaca, alvosPorPlaca, nfsUmaNf)
 
     expect(buscarHorariosBaseMock).toHaveBeenCalledTimes(1)
     expect(horarioBasePorPlaca.get('RBG5G18')?.chegadaBase).toBe('2026-09-21T19:34:00.000Z')
+  })
+
+  it('2a chamada devolve chegadaBase null: mantem valores da 1a chamada', async () => {
+    const horarioBasePorPlaca = new Map([
+      ['RBG5G18', horario({ saidaBase: '2026-09-21T08:00:00.000Z', chegadaBase: '2026-09-21T19:34:00.000Z', kmPercorrido: 120, paradas: paradasBase })],
+    ])
+    const visitasPorPlaca = new Map([['RBG5G18', new Map<string, Visita>([['NF1', visita('2026-09-21T13:59:00.000Z')]])]])
+    const alvosPorPlaca = new Map<string, AlvoApi[]>([['RBG5G18', []]])
+    buscarHorariosBaseMock.mockResolvedValue(new Map([
+      ['RBG5G18', horario({ saidaBase: '2026-09-21T08:00:00.000Z', chegadaBase: null, kmPercorrido: null })],
+    ]))
+
+    await ajustarChegadaAposUltimaEntrega(['RBG5G18'], '2026-09-21', horarioBasePorPlaca, visitasPorPlaca, alvosPorPlaca, nfsUmaNf)
+
+    expect(horarioBasePorPlaca.get('RBG5G18')?.chegadaBase).toBe('2026-09-21T19:34:00.000Z')
+    expect(horarioBasePorPlaca.get('RBG5G18')?.kmPercorrido).toBe(120)
+    expect(horarioBasePorPlaca.get('RBG5G18')?.saidaBase).toBe('2026-09-21T08:00:00.000Z')
   })
 
   it('placa sem volta extra: buscarHorariosBase nao e chamado de novo', async () => {
@@ -93,9 +147,34 @@ describe('ajustarChegadaAposUltimaEntrega', () => {
     const visitasPorPlaca = new Map([['RBG5G18', new Map<string, Visita>([['NF1', visita('2026-09-21T18:00:00.000Z')]])]])
     const alvosPorPlaca = new Map<string, AlvoApi[]>([['RBG5G18', []]])
 
-    await ajustarChegadaAposUltimaEntrega(['RBG5G18'], '2026-09-21', horarioBasePorPlaca, visitasPorPlaca, alvosPorPlaca)
+    await ajustarChegadaAposUltimaEntrega(['RBG5G18'], '2026-09-21', horarioBasePorPlaca, visitasPorPlaca, alvosPorPlaca, nfsUmaNf)
 
     expect(buscarHorariosBaseMock).not.toHaveBeenCalled()
     expect(horarioBasePorPlaca.get('RBG5G18')?.chegadaBase).toBe('2026-09-21T19:34:00.000Z')
+  })
+
+  it('loga so as placas efetivamente sobrescritas, separado das pedidas mas nao sobrescritas', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const horarioBasePorPlaca = new Map([
+      ['RBG5G18', horario({ saidaBase: '2026-09-21T08:00:00.000Z', chegadaBase: '2026-09-21T19:34:00.000Z', kmPercorrido: 120, paradas: paradasBase })],
+      ['OUTRA999', horario({ saidaBase: '2026-09-21T08:00:00.000Z', chegadaBase: '2026-09-21T19:34:00.000Z', kmPercorrido: 100, paradas: paradasBase })],
+    ])
+    const visitasPorPlaca = new Map([
+      ['RBG5G18', new Map<string, Visita>([['NF1', visita('2026-09-21T13:59:00.000Z')]])],
+      ['OUTRA999', new Map<string, Visita>([['NF9', visita('2026-09-21T13:59:00.000Z')]])],
+    ])
+    const alvosPorPlaca = new Map<string, AlvoApi[]>([['RBG5G18', []], ['OUTRA999', []]])
+    const nfsDuasPlacas = new Map([['RBG5G18', ['NF1']], ['OUTRA999', ['NF9']]])
+    buscarHorariosBaseMock.mockResolvedValue(new Map([
+      ['RBG5G18', horario({ saidaBase: '2026-09-21T08:00:00.000Z', chegadaBase: '2026-09-21T15:02:00.000Z', kmPercorrido: 80 })],
+      ['OUTRA999', horario({ saidaBase: '2026-09-21T08:00:00.000Z', chegadaBase: null, kmPercorrido: null })],
+    ]))
+
+    await ajustarChegadaAposUltimaEntrega(['RBG5G18', 'OUTRA999'], '2026-09-21', horarioBasePorPlaca, visitasPorPlaca, alvosPorPlaca, nfsDuasPlacas)
+
+    const linhas = consoleLogSpy.mock.calls.map(c => c.join(' '))
+    expect(linhas.some(l => l.includes('RBG5G18') && l.includes('2026-09-21T19:34:00.000Z') && l.includes('2026-09-21T15:02:00.000Z'))).toBe(true)
+    expect(linhas.some(l => l.includes('OUTRA999') && !l.includes('RBG5G18'))).toBe(true)
+    consoleLogSpy.mockRestore()
   })
 })
