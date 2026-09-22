@@ -48,6 +48,8 @@ function alvo(documento: string, situacao: number, overrides: Partial<AlvoApi> =
     inicioISO: null,
     ordem: 1,
     rota: 'ROTA1',
+    pontoLat: null,
+    pontoLng: null,
     ...overrides,
   }
 }

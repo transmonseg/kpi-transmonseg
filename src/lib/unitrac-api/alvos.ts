@@ -19,6 +19,10 @@ export type AlvoApi = {
    *  Usados pra distinguir 1ª x 2ª viagem do dia pra mesma loja. */
   ordem: number
   rota: string
+  /** ponto CADASTRADO na Unitrac -- erro conhecido; so' pra relatorio de cadastro
+   *  divergente, nunca como coordenada de entrega */
+  pontoLat: number | null
+  pontoLng: number | null
 }
 
 type AlvoRaw = {
@@ -31,6 +35,8 @@ type AlvoRaw = {
   alvodocumento?: string | number
   alvoordem?: string | number
   alvorota?: string
+  pontolatitude?: number | string
+  pontolongitude?: number | string
 }
 
 /** Converte a resposta crua de /mapa_servicos/alvos em AlvoApi[]. Pura. */
@@ -43,6 +49,9 @@ export function parseAlvos(raw: unknown): AlvoApi[] {
     const feitoISO = dt && !dt.startsWith('0001') ? dt : null
     const ini = String(a.alvodatainicio ?? '')
     const inicioISO = ini && !ini.startsWith('0001') ? ini : null
+    const pLat = Number(a.pontolatitude)
+    const pLng = Number(a.pontolongitude)
+    const pontoValido = Number.isFinite(pLat) && Number.isFinite(pLng) && Math.abs(pLat) >= 1
     return {
       placaNorm: normPlaca(String(a.placa ?? '')),
       codigoUnitrac: String(a.pontoidentificador ?? ''),
@@ -53,6 +62,8 @@ export function parseAlvos(raw: unknown): AlvoApi[] {
       documento: a.alvodocumento != null && String(a.alvodocumento).trim() ? String(a.alvodocumento) : null,
       ordem: Number(a.alvoordem ?? 0) || 0,
       rota: String(a.alvorota ?? ''),
+      pontoLat: pontoValido ? pLat : null,
+      pontoLng: pontoValido ? pLng : null,
     }
   })
 }

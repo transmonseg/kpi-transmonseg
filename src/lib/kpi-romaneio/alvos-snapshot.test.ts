@@ -19,7 +19,8 @@ import type { AlvoApi } from '@/lib/unitrac-api'
 
 const alvo = (o: Partial<AlvoApi>): AlvoApi => ({
   placaNorm: 'AAA1A11', codigoUnitrac: 'L1', nome: 'Loja', situacao: 0,
-  feitoISO: null, documento: '100', inicioISO: '2026-09-17T06:00:00', ordem: 1, rota: 'R1', ...o,
+  feitoISO: null, documento: '100', inicioISO: '2026-09-17T06:00:00', ordem: 1, rota: 'R1',
+  pontoLat: null, pontoLng: null, ...o,
 })
 
 describe('mesclarAlvos', () => {

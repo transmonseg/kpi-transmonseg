@@ -41,6 +41,15 @@ describe('parseAlvos', () => {
     expect(alvos[0].ordem).toBe(3)
     expect(alvos[0].rota).toBe('ROTA 2')
   })
+
+  it('guarda o ponto cadastrado (pontolatitude/pontolongitude) e usa null quando ausente ou zerado', () => {
+    const r = parseAlvos({ alvos: [
+      { placa: 'AAA1A11', pontoidentificador: '1', pontolatitude: -21.84, pontolongitude: -41.43 },
+      { placa: 'AAA1A11', pontoidentificador: '2' },
+      { placa: 'AAA1A11', pontoidentificador: '3', pontolatitude: 0, pontolongitude: 0 },
+    ] })
+    expect(r.map(a => [a.pontoLat, a.pontoLng])).toEqual([[-21.84, -41.43], [null, null], [null, null]])
+  })
 })
 
 describe('confirmaPorAlvo', () => {

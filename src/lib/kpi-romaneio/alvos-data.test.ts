@@ -13,6 +13,8 @@ function alvo(overrides: Partial<AlvoApi> = {}): AlvoApi {
     inicioISO: null,
     ordem: 1,
     rota: 'ROTA1',
+    pontoLat: null,
+    pontoLng: null,
     ...overrides,
   }
 }
