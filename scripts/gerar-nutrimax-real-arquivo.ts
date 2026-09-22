@@ -14,6 +14,7 @@ import { reposicionarPorAncoras } from '../src/lib/kpi-romaneio/geocode-ancoras'
 import { buscarFrota, normPlaca } from '../src/lib/unitrac-api'
 import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '../src/lib/kpi-romaneio/unitrac'
 import { buscarHorariosBase } from '../src/lib/kpi-romaneio/base-horarios'
+import { ajustarChegadaAposUltimaEntrega } from '../src/lib/kpi-romaneio/fim-rota'
 import { alvosDaData } from '../src/lib/kpi-romaneio/alvos-data'
 import { alvosEfetivos } from '../src/lib/kpi-romaneio/alvos-snapshot'
 import { montarVisitas } from '../src/lib/kpi-romaneio/visitas'
@@ -208,6 +209,12 @@ async function main() {
   }
 
   const alvosPorPlaca = agrupar(alvos, a => a.placaNorm)
+
+  // Achado real 22/09 (RBG5G18 21/09, espelha route.ts): CHEGADA CD tem que
+  // ser a primeira volta a base depois do fim real da rota, nao a ultima
+  // volta do dia (que pode ser uma saida extra sem entrega).
+  await ajustarChegadaAposUltimaEntrega(placasNorm, data, horarioBasePorPlaca, visitasPorPlaca, alvosPorPlaca)
+
   const escalaPorChave = new Map(escalaCompleta.map(e => [`${e.carga}::${e.placaNorm}`, e]))
   const cargasPorChave = agrupar(romaneioGeo, l => `${l.carga}::${normPlaca(l.placa)}`)
 

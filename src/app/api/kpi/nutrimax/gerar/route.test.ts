@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import ExcelJS from 'exceljs'
 import type { LinhaRomaneio, LinhaEscala } from '@/lib/kpi-romaneio/types'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
@@ -562,6 +562,114 @@ describe('POST /api/kpi/nutrimax/gerar -- placa vazia não é consultada contra 
 // Achado Minor #8 da revisão final do plano do pão (15/09): qtd_cargas no
 // histórico contava as cargas PAO-* junto com as da Nutry Max, quebrando
 // a comparabilidade entre dias com e sem pão enviado.
+// Task 3 (achado real 22/09, RBG5G18 21/09): CHEGADA CD tem que ser a
+// PRIMEIRA volta a base depois do fim real da rota (última entrega feita),
+// não a última volta do dia -- uma saída extra sem entrega não é rota.
+// ajustarChegadaAposUltimaEntrega (fim-rota.ts) repete buscarHorariosBase
+// só pra placa afetada, mandando fimRotaPorPlaca; a resposta dessa 2ª
+// chamada substitui saidaBase/chegadaBase/kmPercorrido antes de virar
+// CHEGADA CD no resumo da carga.
+describe('POST /api/kpi/nutrimax/gerar -- CHEGADA CD ajustada pela última entrega (Task 3)', () => {
+  function horarioBase(chegadaBase: string, comParadasBase: boolean): {
+    saidaBase: string; chegadaBase: string; kmPercorrido: number
+    paradas?: { chegada: string; saida: string; duracaoSeg: number; lat: number; lng: number; classificacao: 'BASE' | 'FORA_BASE' }[]
+  } {
+    return {
+      saidaBase: '2026-09-15T08:00:00.000Z',
+      chegadaBase,
+      kmPercorrido: 120,
+      ...(comParadasBase ? {
+        paradas: [
+          { chegada: '2026-09-15T15:02:00.000Z', saida: '2026-09-15T16:07:00.000Z', duracaoSeg: 3900, lat: -22.81, lng: -43.27, classificacao: 'BASE' as const },
+          { chegada: '2026-09-15T19:34:00.000Z', saida: '2026-09-15T22:04:00.000Z', duracaoSeg: 9000, lat: -22.81, lng: -43.27, classificacao: 'BASE' as const },
+        ],
+      } : {}),
+    }
+  }
+
+  function alvoFeito(feitoISO: string) {
+    return {
+      placaNorm: PLACA, codigoUnitrac: '1', nome: 'CLIENTE A', situacao: 1, feitoISO,
+      documento: 'NF001', inicioISO: null, ordem: 1, rota: 'r1', pontoLat: null, pontoLng: null,
+    }
+  }
+
+  async function extrairResumo(res: Response): Promise<string> {
+    const wb = await abrirXlsx(res)
+    const ws = wb.getWorksheet(PLACA)!
+    return String(ws.getRow(2).getCell(1).value)
+  }
+
+  beforeEach(async () => {
+    cenario.frota = [{ placaNorm: PLACA, cv: 'CV-1' }]
+    const buscarHorariosSpy = vi.mocked((await import('@/lib/kpi-romaneio/base-horarios')).buscarHorariosBase)
+    buscarHorariosSpy.mockReset()
+  })
+
+  // Achado Important da revisão final de branch (17/09, já documentado mais
+  // abaixo neste arquivo): sem clearMocks/restoreMocks no vitest.config.ts,
+  // um mockImplementation setado aqui vazaria pros describes seguintes --
+  // devolve o comportamento padrão do topo do arquivo (mapa vazio sempre).
+  afterEach(async () => {
+    const buscarHorariosSpy = vi.mocked((await import('@/lib/kpi-romaneio/base-horarios')).buscarHorariosBase)
+    buscarHorariosSpy.mockReset()
+    buscarHorariosSpy.mockImplementation(async () => new Map())
+  })
+
+  it('2ª chamada com fimRotaPorPlaca acontece e o resumo usa a chegada da 2ª resposta (13:59 -> volta extra 19:34 vira 15:02)', async () => {
+    const unitrac = await import('@/lib/kpi-romaneio/unitrac')
+    vi.mocked(unitrac.buscarAlvosDoDia).mockResolvedValueOnce([alvoFeito('2026-09-15T13:59:00')] as never)
+
+    const buscarHorariosSpy = vi.mocked((await import('@/lib/kpi-romaneio/base-horarios')).buscarHorariosBase)
+    buscarHorariosSpy.mockImplementation(async (_placas, _data, _pontos, _incluirParadas, fimRotaPorPlaca) =>
+      fimRotaPorPlaca
+        ? new Map([[PLACA, horarioBase('2026-09-15T15:02:00.000Z', false)]])
+        : new Map([[PLACA, horarioBase('2026-09-15T19:34:00.000Z', true)]]) as never,
+    )
+
+    const res = await POST(montarRequest(false) as never)
+    expect(res.status).toBe(200)
+
+    expect(buscarHorariosSpy).toHaveBeenCalledTimes(2)
+    const [, , , , fimRotaPorPlacaArg] = buscarHorariosSpy.mock.calls[1]
+    expect(fimRotaPorPlacaArg).toEqual(new Map([[PLACA, '2026-09-15T13:59:00.000Z']]))
+
+    expect(await extrairResumo(res)).toContain('CHEGADA CD: 15:02')
+  })
+
+  it('2ª chamada devolve mapa vazio (ponte falhou): resumo continua com a chegada original (19:34)', async () => {
+    const unitrac = await import('@/lib/kpi-romaneio/unitrac')
+    vi.mocked(unitrac.buscarAlvosDoDia).mockResolvedValueOnce([alvoFeito('2026-09-15T13:59:00')] as never)
+
+    const buscarHorariosSpy = vi.mocked((await import('@/lib/kpi-romaneio/base-horarios')).buscarHorariosBase)
+    buscarHorariosSpy.mockImplementation(async (_placas, _data, _pontos, _incluirParadas, fimRotaPorPlaca) =>
+      fimRotaPorPlaca ? new Map() : new Map([[PLACA, horarioBase('2026-09-15T19:34:00.000Z', true)]]) as never,
+    )
+
+    const res = await POST(montarRequest(false) as never)
+    expect(res.status).toBe(200)
+
+    expect(buscarHorariosSpy).toHaveBeenCalledTimes(2)
+    expect(await extrairResumo(res)).toContain('CHEGADA CD: 19:34')
+  })
+
+  it('placa sem volta extra: buscarHorariosBase é chamado só 1 vez', async () => {
+    const unitrac = await import('@/lib/kpi-romaneio/unitrac')
+    // fim da rota 19:34 == a própria última volta a base -- folga 0, não
+    // dispara ajuste (mesmo caso "2ª viagem" de fim-rota.test.ts).
+    vi.mocked(unitrac.buscarAlvosDoDia).mockResolvedValueOnce([alvoFeito('2026-09-15T19:34:00')] as never)
+
+    const buscarHorariosSpy = vi.mocked((await import('@/lib/kpi-romaneio/base-horarios')).buscarHorariosBase)
+    buscarHorariosSpy.mockImplementation(async () => new Map([[PLACA, horarioBase('2026-09-15T19:34:00.000Z', true)]]) as never)
+
+    const res = await POST(montarRequest(false) as never)
+    expect(res.status).toBe(200)
+
+    expect(buscarHorariosSpy).toHaveBeenCalledTimes(1)
+    expect(await extrairResumo(res)).toContain('CHEGADA CD: 19:34')
+  })
+})
+
 describe('POST /api/kpi/nutrimax/gerar -- histórico não conta cargas do pão (item Minor #8)', () => {
   it('qtdCargas salvo no histórico não inclui cargas PAO-*', async () => {
     const historico = await import('@/lib/kpi-romaneio/historico')

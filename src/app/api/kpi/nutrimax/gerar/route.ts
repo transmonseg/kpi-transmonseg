@@ -11,6 +11,7 @@ import { geocodificarEnderecos } from '@/lib/kpi-romaneio/geocode'
 import { reposicionarPorAncoras } from '@/lib/kpi-romaneio/geocode-ancoras'
 import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '@/lib/kpi-romaneio/unitrac'
 import { buscarHorariosBase } from '@/lib/kpi-romaneio/base-horarios'
+import { ajustarChegadaAposUltimaEntrega } from '@/lib/kpi-romaneio/fim-rota'
 import { alvosDaData } from '@/lib/kpi-romaneio/alvos-data'
 import { alvosEfetivos } from '@/lib/kpi-romaneio/alvos-snapshot'
 import { detectarDescasamentos } from '@/lib/kpi-romaneio/avisos'
@@ -339,6 +340,13 @@ export async function POST(req: NextRequest) {
   })
 
   const alvosPorPlaca = agrupar(alvos, a => a.placaNorm)
+
+  // Achado real 22/09 (RBG5G18 21/09): quando a ULTIMA volta a base
+  // registrada e' na verdade uma volta extra sem entrega (fim da rota --
+  // ultima saida com entrega -- veio bem antes dela), CHEGADA CD tem que
+  // ser a PRIMEIRA volta a base depois disso, nao a ultima do dia. Muta
+  // horarioBasePorPlaca in-place antes de virar chegadaCd em agregarPorCarga.
+  await ajustarChegadaAposUltimaEntrega(placasNorm, data, horarioBasePorPlaca, visitasPorPlaca, alvosPorPlaca)
 
   // Cargas vêm do Romaneio -- é a fonte de verdade de quantas cargas
   // existiram no dia. A Escala só complementa (destino/motorista/peso/
