@@ -186,4 +186,58 @@ describe('sugerirCorrecoesPorAlvo', () => {
     expect(r.rejeicoes).toEqual([])
     expect(r.sugestoes).toHaveLength(1)
   })
+
+  describe('parada em cima do ponto de OUTRO cliente', () => {
+    it('parada ~50m do ponto de outro cliente (mesma placa), ponto do proprio a ~5km -> parada_de_outro_cliente, sem sugestao', () => {
+      const outro = alvo({
+        codigoUnitrac: '124073', documento: '200', feitoISO: '2026-09-21T09:00:00',
+        situacao: 1, pontoLat: -21.84385, pontoLng: -41.4300,
+      })
+      const proprio = alvo({ pontoLat: -21.7980, pontoLng: -41.4300 }) // ~5km ao norte
+      const r = sugerirCorrecoesPorAlvo([entrega({})], [proprio, outro], paradas)
+      expect(r.sugestoes).toEqual([])
+      expect(r.rejeicoes).toEqual([{ endereco: entrega({}).endereco, nf: '100', placaNorm: 'AAA1A11', motivo: 'parada_de_outro_cliente' }])
+    })
+
+    it('parada <=150m do proprio E de outro cliente (shopping) -> aceita', () => {
+      const outro = alvo({
+        codigoUnitrac: '124073', documento: '200', feitoISO: '2026-09-21T09:00:00',
+        situacao: 1, pontoLat: -21.84345, pontoLng: -41.4300,
+      })
+      const proprio = alvo({ pontoLat: -21.84345, pontoLng: -41.4302 })
+      const r = sugerirCorrecoesPorAlvo([entrega({})], [proprio, outro], paradas)
+      expect(r.rejeicoes).toEqual([])
+      expect(r.sugestoes).toHaveLength(1)
+    })
+
+    it('outro cliente sem ponto cadastrado (pontoLat null) -> aceita', () => {
+      const outro = alvo({
+        codigoUnitrac: '124073', documento: '200', feitoISO: '2026-09-21T09:00:00',
+        situacao: 1, pontoLat: null, pontoLng: null,
+      })
+      const r = sugerirCorrecoesPorAlvo([entrega({})], [alvo({}), outro], paradas)
+      expect(r.rejeicoes).toEqual([])
+      expect(r.sugestoes).toHaveLength(1)
+    })
+
+    it('outro alvo com o MESMO codigoUnitrac (outra NF do mesmo cliente) -> nao conta, aceita', () => {
+      const mesmoCliente = alvo({
+        documento: '200', feitoISO: '2026-09-21T09:00:00',
+        situacao: 1, pontoLat: -21.84385, pontoLng: -41.4300,
+      })
+      const r = sugerirCorrecoesPorAlvo([entrega({})], [alvo({}), mesmoCliente], paradas)
+      expect(r.rejeicoes).toEqual([])
+      expect(r.sugestoes).toHaveLength(1)
+    })
+
+    it('ponto de outro cliente de OUTRA placa perto da parada -> nao conta, aceita', () => {
+      const outraPlaca = alvo({
+        placaNorm: 'BBB2B22', codigoUnitrac: '124073', documento: '200', feitoISO: '2026-09-21T09:00:00',
+        situacao: 1, pontoLat: -21.84385, pontoLng: -41.4300,
+      })
+      const r = sugerirCorrecoesPorAlvo([entrega({})], [alvo({}), outraPlaca], paradas)
+      expect(r.rejeicoes).toEqual([])
+      expect(r.sugestoes).toHaveLength(1)
+    })
+  })
 })

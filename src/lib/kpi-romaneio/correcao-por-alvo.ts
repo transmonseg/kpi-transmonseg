@@ -14,6 +14,8 @@ import { RAIO_CONFIRMACAO_AMPLIADO_METROS } from './constants'
 export const LIMITE_PARADA_ENTREGA_MIN = 120
 export const LIMITE_CADASTRO_DIVERGENTE_M = 500
 export const LIMITE_PARADAS_MESMO_ENDERECO_M = 300
+/** Mesmo raio minimo de geofence de src/lib/unitrac-api/pontos.ts (RAIO_MIN_M). */
+export const RAIO_PONTO_OUTRO_CLIENTE_M = 150
 
 /** Texto que parseRomaneio grava quando nao acha o endereco da NF. */
 export const ENDERECO_NAO_IDENTIFICADO = '(endereço não identificado)'
@@ -27,7 +29,7 @@ export type SugestaoCorrecao = {
   latNova: number; lngNova: number; duracaoParadaMin: number
   codigoUnitrac: string; cadastroLat: number | null; cadastroLng: number | null; distCadastroM: number | null
 }
-export type MotivoRejeicao = 'sem_alvo_feito' | 'feito_fora_de_parada' | 'parada_longa' | 'ilha' | 'coordenada_atual_ok' | 'paradas_conflitantes' | 'parada_compartilhada' | 'alvo_duplicado' | 'endereco_nao_identificado' | 'correcao_manual'
+export type MotivoRejeicao = 'sem_alvo_feito' | 'feito_fora_de_parada' | 'parada_longa' | 'ilha' | 'coordenada_atual_ok' | 'paradas_conflitantes' | 'parada_compartilhada' | 'alvo_duplicado' | 'endereco_nao_identificado' | 'correcao_manual' | 'parada_de_outro_cliente'
 export type Rejeicao = { endereco: string; nf: string; placaNorm: string; motivo: MotivoRejeicao }
 
 /** feitoISO da Unitrac: digitos ja em horario de Brasilia, sem fuso (as vezes
@@ -90,6 +92,15 @@ export function sugerirCorrecoesPorAlvo(
       p.classificacao === 'FORA_BASE' && Date.parse(p.chegada) <= t && t <= Date.parse(p.saida))
     if (!parada) { rejeitar(e, 'feito_fora_de_parada'); continue }
     if (parada.duracaoSeg / 60 > LIMITE_PARADA_ENTREGA_MIN) { rejeitar(e, 'parada_longa'); continue }
+    const distPontoProprioM = a.pontoLat != null && a.pontoLng != null
+      ? haversine(a.pontoLat, a.pontoLng, parada.lat, parada.lng)
+      : null
+    const naParadaDeOutroCliente = alvos.some(o =>
+      o.placaNorm === a.placaNorm && o.codigoUnitrac !== a.codigoUnitrac &&
+      o.pontoLat != null && o.pontoLng != null &&
+      haversine(o.pontoLat, o.pontoLng, parada.lat, parada.lng) <= RAIO_PONTO_OUTRO_CLIENTE_M &&
+      (distPontoProprioM == null || distPontoProprioM > RAIO_PONTO_OUTRO_CLIENTE_M))
+    if (naParadaDeOutroCliente) { rejeitar(e, 'parada_de_outro_cliente'); continue }
     casamentosValidos.push({ entrega: e, alvo: a, parada })
   }
 
