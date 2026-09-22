@@ -3,8 +3,12 @@
 // Nominatim) nunca vai achar (rua sem CNEFE, endereco corrompido no romaneio
 // de origem, etc) precisa de um jeito de registrar a coordenada certa na mao,
 // pra nao ficar "sem geocode" pra sempre. Chave EXATA (normalizarEndereco:
-// trim+uppercase+colapsa espaco) -- mesma logica de buscarNoCache/
-// salvarNoCache em geocode.ts, so' que escrito por fora da cascata.
+// so' trim+uppercase) -- geocode.ts (buscarNoCache/salvarNoCache) NAO
+// normaliza nada, usa a string crua que parse-romaneio.ts produz (que as
+// vezes tem espaco duplo, ex. campo vazio concatenado). Por isso aqui
+// tambem nao pode colapsar espaco interno: colapsar geraria uma chave
+// diferente da que a geracao real le, e a correcao manual viraria uma
+// linha orfa nunca vista (achado real 22/09).
 //
 // Uso:
 //   npx tsx --env-file=.env.local scripts/cadastrar-endereco-manual.ts \
@@ -12,7 +16,7 @@
 import { createServiceClient } from '../src/lib/supabase/service'
 
 export function normalizarEndereco(enderecoBruto: string): string {
-  return enderecoBruto.trim().toUpperCase().replace(/\s+/g, ' ')
+  return enderecoBruto.trim().toUpperCase()
 }
 
 /** Payload do upsert -- extraido pra funcao pura testavel sem rede.
