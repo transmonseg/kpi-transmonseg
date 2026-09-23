@@ -53,16 +53,18 @@ export function sugerirCadastroUnitrac(
     if (!coordValida(a.pontoLat, a.pontoLng)) { rejeitar(e, 'cadastro_invalido'); continue }
     const t = instanteDeFeitoISO(a.feitoISO as string)
     let melhor = Infinity
+    let paradaMelhor: ParadaBridge | null = null
     for (const p of paradasPorPlaca.get(e.placaNorm) ?? []) {
       if (p.classificacao !== 'FORA_BASE') continue
       if (p.duracaoSeg / 60 > LIMITE_PARADA_ENTREGA_MIN) continue
       if (Date.parse(p.chegada) - TOLERANCIA_FEITO_MS > t || t > Date.parse(p.saida) + TOLERANCIA_FEITO_MS) continue
       const d = haversine(a.pontoLat, a.pontoLng as number, p.lat, p.lng)
-      if (d < melhor) melhor = d
+      if (d < melhor) { melhor = d; paradaMelhor = p }
     }
-    if (melhor > RAIO_CADASTRO_CONFIRMADO_M) { rejeitar(e, 'cadastro_nao_confirmado'); continue }
+    if (melhor > RAIO_CADASTRO_CONFIRMADO_M || !paradaMelhor) { rejeitar(e, 'cadastro_nao_confirmado'); continue }
     const temNossa = coordValida(e.latAtual, e.lngAtual)
-    const distAtual = temNossa ? haversine(e.latAtual as number, e.lngAtual as number, a.pontoLat, a.pontoLng as number) : null
+    // "longe" e' medido ate' a PARADA que confirmou o cadastro (onde a entrega de fato aconteceu).
+    const distAtual = temNossa ? haversine(e.latAtual as number, e.lngAtual as number, paradaMelhor.lat, paradaMelhor.lng) : null
     if (distAtual != null && distAtual <= LIMITE_NOSSA_COORD_LONGE_M) { rejeitar(e, 'coordenada_atual_ok'); continue }
     porEndereco.set(e.endereco, [...(porEndereco.get(e.endereco) ?? []), { e, a, distParadaM: melhor }])
   }

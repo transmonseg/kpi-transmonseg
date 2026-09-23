@@ -54,6 +54,13 @@ describe('sugerirCadastroUnitrac', () => {
     expect(r.rejeicoes[0].motivo).toBe('coordenada_atual_ok')
   })
 
+  it('nossa coord a >500m do cadastro mas <=500m da PARADA que confirmou: ja esta ok, nao mexe', () => {
+    const p = parada({ lat: -22.0025 }) // ~275m do cadastro
+    const r = sugerirCadastroUnitrac([entrega({ latAtual: -22.0064, lngAtual: -43.0 })], [alvo()], paradas([p]))
+    expect(r.sugestoes).toHaveLength(0)
+    expect(r.rejeicoes[0].motivo).toBe('coordenada_atual_ok')
+  })
+
   it('sem coordenada nossa (K1): grava o cadastro', () => {
     const r = sugerirCadastroUnitrac([entrega({ latAtual: null, lngAtual: null, confiavelAtual: false, fonteAtual: null })], [alvo()], paradas())
     expect(r.sugestoes).toHaveLength(1)
