@@ -14,6 +14,7 @@ import {
   sugerirCorrecoesPorAlvo, LIMITE_CADASTRO_DIVERGENTE_M,
   type EntregaParaCorrigir, type Rejeicao, type SugestaoCorrecao,
 } from '../src/lib/kpi-romaneio/correcao-por-alvo'
+import { sugerirCadastroUnitrac, type SugestaoCadastro, type RejeicaoCadastro } from '../src/lib/kpi-romaneio/cadastro-unitrac'
 
 const limpa = (v: unknown) => String(v ?? '').replace(/[;\n\r]/g, ',')
 
@@ -59,6 +60,24 @@ export function paradasConfiaveis(horarios: Map<string, HorarioBase>): { paradas
   return { paradasPorPlaca, placasEmApagao }
 }
 
+export function montarUpsertCadastro(s: SugestaoCadastro) {
+  return { endereco: s.endereco, lat: s.latNova, lng: s.lngNova, confiavel: true as const, motivo: null, fonte: 'cadastro_unitrac' as const }
+}
+
+export function csvCadastroUnitrac(sugestoes: SugestaoCadastro[], rejeicoes: RejeicaoCadastro[]): string {
+  const cab = 'acao;placa;nfs;endereco;lat_atual;lng_atual;dist_atual_m;lat_nova;lng_nova;dist_parada_m;fonte_atual;motivo'
+  const linhas = [
+    ...sugestoes.map(s => ['cadastro', s.placaNorm, s.nfs.join(' '), s.endereco, s.latAtual, s.lngAtual,
+      s.distAtualM != null ? Math.round(s.distAtualM) : '', s.latNova, s.lngNova, Math.round(s.distParadaM), s.fonteAtual, ''].map(limpa).join(';')),
+    ...rejeicoes.map(r => ['manter', r.placaNorm, r.nf, r.endereco, '', '', '', '', '', '', '', r.motivo].map(limpa).join(';')),
+  ]
+  return [cab, ...linhas].join('\n') + '\n'
+}
+
+export function csvBackupCache(linhas: { endereco: string; lat: number | null; lng: number | null; confiavel: boolean | null; fonte: string | null; motivo: string | null }[]): string {
+  return ['endereco;lat;lng;confiavel;fonte;motivo', ...linhas.map(l => [l.endereco, l.lat, l.lng, l.confiavel, l.fonte, l.motivo].map(limpa).join(';'))].join('\n') + '\n'
+}
+
 type LinhaCache = { lat: number; lng: number; confiavel: boolean; fonte: string | null }
 
 export function entregaDoRomaneio(l: { nf: string; placa: string; endereco: string }, cache: Map<string, LinhaCache>): EntregaParaCorrigir {
@@ -99,7 +118,11 @@ export async function rodarCorrecao(
   const { paradasPorPlaca, placasEmApagao } = paradasConfiaveis(horarios)
   console.log(`romaneio=${romaneio.length} NFs, placas=${placas.length}, alvos=${alvos.length}, placas com paradas=${[...paradasPorPlaca.values()].filter(v => v.length).length}, placas em apagao de sinal (excluidas)=${placasEmApagao.length}`)
 
-  const { sugestoes, rejeicoes } = sugerirCorrecoesPorAlvo(entregas, alvos, paradasPorPlaca)
+  // Regra 1 primeiro: cadastro Unitrac confirmado por parada real; o resto cai na regra da coordenada da parada.
+  const cad = sugerirCadastroUnitrac(entregas, alvos, paradasPorPlaca)
+  const enderecosCadastro = new Set(cad.sugestoes.map(x => x.endereco))
+  const { sugestoes, rejeicoes } = sugerirCorrecoesPorAlvo(entregas.filter(e => !enderecosCadastro.has(e.endereco)), alvos, paradasPorPlaca)
+  console.log(`cadastro_unitrac=${cad.sugestoes.length} enderecos`)
   const cont = rejeicoes.reduce<Record<string, number>>((m, r) => ({ ...m, [r.motivo]: (m[r.motivo] ?? 0) + 1 }), {})
   console.log(`sugestoes=${sugestoes.length} enderecos | rejeicoes:`, cont)
 
@@ -108,6 +131,7 @@ export async function rodarCorrecao(
   const caminhoDivergentes = join(opcoes.dirSaida, `cadastros-unitrac-divergentes-${data}.csv`)
   writeFileSync(caminhoCorrecoes, csvCorrecoes(sugestoes, rejeicoes))
   writeFileSync(caminhoDivergentes, csvCadastrosDivergentes(sugestoes))
+  writeFileSync(join(opcoes.dirSaida, `cadastro-unitrac-${data}.csv`), csvCadastroUnitrac(cad.sugestoes, cad.rejeicoes))
   console.log(`CSVs: ${caminhoCorrecoes}, ${caminhoDivergentes}`)
 
   if (!opcoes.aplicar) {
@@ -115,6 +139,23 @@ export async function rodarCorrecao(
     return { sugestoes: sugestoes.length, rejeicoes: cont, arquivos: [caminhoCorrecoes, caminhoDivergentes] }
   }
   const svc = createServiceClient()
+  // Backup ANTES de gravar: estado atual das linhas que serao sobrescritas.
+  const alvosDoUpsert = [...sugestoes.map(x => x.endereco), ...cad.sugestoes.map(x => x.endereco)]
+  const backup: Parameters<typeof csvBackupCache>[0] = []
+  for (let i = 0; i < alvosDoUpsert.length; i += 20) {
+    const { data: rows, error } = await svc.from('kpi_romaneio_geocode_cache').select('endereco,lat,lng,confiavel,fonte,motivo').in('endereco', alvosDoUpsert.slice(i, i + 20))
+    if (error) throw new Error(`backup do cache falhou: ${error.message}`)
+    backup.push(...(rows ?? []))
+  }
+  writeFileSync(join(opcoes.dirSaida, `backup-cache-antes-${data}.csv`), csvBackupCache(backup))
+  console.log(`backup: ${backup.length} linhas em backup-cache-antes-${data}.csv`)
+  let okCad = 0
+  for (const s of cad.sugestoes) {
+    const { error } = await svc.from('kpi_romaneio_geocode_cache').upsert(montarUpsertCadastro(s), { onConflict: 'endereco' })
+    if (error) console.error(`falha ${s.endereco}: ${error.message}`); else okCad++
+  }
+  console.log(`cadastro_unitrac gravados ${okCad}/${cad.sugestoes.length}`)
+  if (okCad < cad.sugestoes.length) throw new Error(`gravados apenas ${okCad}/${cad.sugestoes.length} (cadastro_unitrac)`)
   let ok = 0
   for (const s of sugestoes) {
     const { error } = await svc.from('kpi_romaneio_geocode_cache').upsert(montarUpsertCorrecao(s), { onConflict: 'endereco' })

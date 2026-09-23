@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { montarUpsertCorrecao, csvCorrecoes, csvCadastrosDivergentes, paradasConfiaveis, entregaDoRomaneio } from './corrigir-geocode-por-alvo'
+import { montarUpsertCadastro, csvBackupCache, csvCadastroUnitrac, montarUpsertCorrecao, csvCorrecoes, csvCadastrosDivergentes, paradasConfiaveis, entregaDoRomaneio } from './corrigir-geocode-por-alvo'
 import type { SugestaoCorrecao } from '../src/lib/kpi-romaneio/correcao-por-alvo'
 import type { HorarioBase, ParadaBridge } from '../src/lib/kpi-romaneio/base-horarios'
 
@@ -93,5 +93,21 @@ describe('paradasConfiaveis', () => {
     const { paradasPorPlaca, placasEmApagao } = paradasConfiaveis(horarios)
     expect(paradasPorPlaca.get('CCC3C33')).toEqual([])
     expect(placasEmApagao).toEqual([])
+  })
+})
+
+describe('cadastro_unitrac (regra 1)', () => {
+  const sug = { endereco: 'RUA X, 1', nfs: ['1', '2'], placaNorm: 'AAA1A11', latAtual: -22.5, lngAtual: -43.5, distAtualM: 70000, fonteAtual: 'nominatim', latNova: -22, lngNova: -43, codigoUnitrac: '9', distParadaM: 80 }
+  it('upsert grava fonte cadastro_unitrac, confiavel e sem motivo', () => {
+    expect(montarUpsertCadastro(sug)).toEqual({ endereco: 'RUA X, 1', lat: -22, lng: -43, confiavel: true, motivo: null, fonte: 'cadastro_unitrac' })
+  })
+  it('csv de backup guarda o estado anterior sem quebrar em ; e quebra de linha', () => {
+    const csv = csvBackupCache([{ endereco: 'A;B\nC', lat: 1, lng: 2, confiavel: false, fonte: 'nominatim', motivo: 'bairro' }])
+    expect(csv.split('\n')[1]).toBe('A,B,C;1;2;false;nominatim;bairro')
+  })
+  it('csv do cadastro tem sugestoes e rejeicoes', () => {
+    const csv = csvCadastroUnitrac([sug], [{ endereco: 'Z', nf: '3', placaNorm: 'AAA1A11', motivo: 'cadastro_nao_confirmado' }])
+    expect(csv).toContain('cadastro;AAA1A11;1 2;RUA X, 1;-22.5;-43.5;70000;-22;-43;80;nominatim;')
+    expect(csv).toContain('manter;AAA1A11;3;Z;;;;;;;;cadastro_nao_confirmado')
   })
 })
