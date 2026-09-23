@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { buscarHorariosBase } from './base-horarios'
+import { buscarHorariosBase, anexarCoordenadaCadastro } from './base-horarios'
 
 beforeEach(() => {
   process.env.MOTOR_SECRET = 'segredo-teste'
@@ -201,5 +201,44 @@ describe('buscarHorariosBase', () => {
       const mapa = await buscarHorariosBase(['RQU2G47'], '2026-09-11', new Map(), true)
       expect(mapa.get('RQU2G47')?.apagaoDeSinal).toBe(false)
     })
+  })
+})
+
+describe('latAlt/lngAlt (cadastro Unitrac)', () => {
+  const alvo = (o: Record<string, unknown>) => ({ placaNorm: 'AAA1A11', documento: '100', pontoLat: -22.1, pontoLng: -43.2, ...o })
+  const pontos = () => new Map([['AAA1A11', [{ id: '100', lat: -22, lng: -43 }, { id: '200', lat: -22.5, lng: -43.5 }]]])
+
+  it('anexa latAlt/lngAlt quando o alvo casa por placa+NF e tem cadastro valido', () => {
+    const r = anexarCoordenadaCadastro(pontos(), [alvo({})])
+    expect(r.get('AAA1A11')![0]).toEqual({ id: '100', lat: -22, lng: -43, latAlt: -22.1, lngAlt: -43.2 })
+    expect(r.get('AAA1A11')![1]).toEqual({ id: '200', lat: -22.5, lng: -43.5 })
+  })
+
+  it('alvo sem cadastro (null/0/NaN/so um dos dois) nao anexa nada', () => {
+    for (const o of [{ pontoLat: null, pontoLng: null }, { pontoLat: 0, pontoLng: 0 }, { pontoLat: NaN, pontoLng: -43 }, { pontoLat: -22.1, pontoLng: null }]) {
+      const p = anexarCoordenadaCadastro(pontos(), [alvo(o)]).get('AAA1A11')![0]
+      expect('latAlt' in p).toBe(false)
+      expect('lngAlt' in p).toBe(false)
+    }
+  })
+
+  it('snapshot antigo sem pontoLat/pontoLng e placa diferente nao quebram', () => {
+    const antigo = { placaNorm: 'AAA1A11', documento: '100' }
+    expect(anexarCoordenadaCadastro(pontos(), [antigo]).get('AAA1A11')![0]).toEqual({ id: '100', lat: -22, lng: -43 })
+    expect(anexarCoordenadaCadastro(pontos(), [alvo({ placaNorm: 'ZZZ9Z99' })]).get('AAA1A11')![0]).toEqual({ id: '100', lat: -22, lng: -43 })
+  })
+
+  it('nao muta a entrada', () => {
+    const p = pontos()
+    anexarCoordenadaCadastro(p, [alvo({})])
+    expect('latAlt' in p.get('AAA1A11')![0]).toBe(false)
+  })
+
+  it('body enviado a ponte inclui latAlt/lngAlt quando presentes e omite quando ausentes', async () => {
+    const spy = mockFetchOk([])
+    await buscarHorariosBase(['AAA1A11'], '2026-09-20', anexarCoordenadaCadastro(pontos(), [alvo({})]))
+    const body = JSON.parse((spy.mock.calls[0][1] as RequestInit).body as string)
+    expect(body.pontosPorPlaca.AAA1A11[0]).toMatchObject({ latAlt: -22.1, lngAlt: -43.2 })
+    expect(Object.keys(body.pontosPorPlaca.AAA1A11[1])).toEqual(['id', 'lat', 'lng'])
   })
 })

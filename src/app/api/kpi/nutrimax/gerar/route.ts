@@ -10,7 +10,7 @@ import { parsePao } from '@/lib/kpi-romaneio/parse-pao'
 import { geocodificarEnderecos } from '@/lib/kpi-romaneio/geocode'
 import { reposicionarPorAncoras } from '@/lib/kpi-romaneio/geocode-ancoras'
 import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '@/lib/kpi-romaneio/unitrac'
-import { buscarHorariosBase } from '@/lib/kpi-romaneio/base-horarios'
+import { buscarHorariosBase, anexarCoordenadaCadastro } from '@/lib/kpi-romaneio/base-horarios'
 import { ajustarChegadaAposUltimaEntrega } from '@/lib/kpi-romaneio/fim-rota'
 import { alvosDaData } from '@/lib/kpi-romaneio/alvos-data'
 import { alvosEfetivos } from '@/lib/kpi-romaneio/alvos-snapshot'
@@ -283,14 +283,16 @@ export async function POST(req: NextRequest) {
     if (pontos.length > 0) pontosPorPlacaBridge.set(placaNorm, pontos)
   }
 
-  const [frota, alvosBrutos, horarioBasePorPlaca] = await Promise.all([
+  // Alvos antes da ponte: o cadastro Unitrac (pontoLat/pontoLng) casado por
+  // placa+NF vira latAlt/lngAlt de cada ponto (coordenada alternativa).
+  const [frota, alvosBrutos] = await Promise.all([
     buscarFrota(COD_USER_NUTRIMAX),
     buscarAlvosDoDia(placasNorm),
-    // Achado real 14/09: pede paradas SEMPRE agora, nao so' fora da janela
-    // -- a ponte virou fonte primaria (ver resolverParadas em unitrac.ts).
-    buscarHorariosBase(placasNorm, data, pontosPorPlacaBridge, true),
   ])
   const alvos = await alvosEfetivos('nutrimax', data, hojeBR(), alvosDaData(alvosBrutos, data))
+  // Achado real 14/09: pede paradas SEMPRE agora, nao so' fora da janela
+  // -- a ponte virou fonte primaria (ver resolverParadas em unitrac.ts).
+  const horarioBasePorPlaca = await buscarHorariosBase(placasNorm, data, anexarCoordenadaCadastro(pontosPorPlacaBridge, alvos), true)
   const cvPorPlaca = new Map(frota.map(v => [v.placaNorm, v.cv]))
   // Pedido do usuário 25/08 (nível Benassi): placa sem cv na Unitrac E sem
   // entrada na ponte do monitoramento (nunca respondeu por ela, nem com

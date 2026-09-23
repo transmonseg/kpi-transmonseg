@@ -70,7 +70,35 @@ export type ParadaBridge = {
   classificacao: 'BASE' | 'FORA_BASE'
 }
 
-export type PontoEntregaBridge = { id: string; lat: number; lng: number }
+// latAlt/lngAlt (opcionais): coordenada de CADASTRO do alvo na Unitrac, usada
+// pela ponte como candidata alternativa (raio 300m) a parada real mais
+// proxima. Omitidos quando nao ha cadastro valido -- contrato antigo intacto.
+export type PontoEntregaBridge = { id: string; lat: number; lng: number; latAlt?: number; lngAlt?: number }
+
+type AlvoComCadastro = { placaNorm: string; documento: string | null; pontoLat?: number | null; pontoLng?: number | null }
+
+const coordValida = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && n !== 0
+
+/** Anexa latAlt/lngAlt a cada ponto a partir do alvo Unitrac casado por
+ *  placa + NF (documento). So' anexa quando pontoLat e pontoLng sao numeros
+ *  finitos e != 0; snapshot antigo (sem pontoLat) ou alvo sem cadastro
+ *  deixam o ponto inalterado. Pura, nao muta a entrada. */
+export function anexarCoordenadaCadastro(
+  pontosPorPlaca: Map<string, PontoEntregaBridge[]>,
+  alvos: AlvoComCadastro[],
+): Map<string, PontoEntregaBridge[]> {
+  const porChave = new Map<string, AlvoComCadastro>()
+  for (const a of alvos) if (a.documento) porChave.set(`${a.placaNorm}|${a.documento}`, a)
+  const out = new Map<string, PontoEntregaBridge[]>()
+  for (const [placa, pontos] of pontosPorPlaca) {
+    out.set(placa, pontos.map(pt => {
+      const a = porChave.get(`${placa}|${pt.id}`)
+      if (a && coordValida(a.pontoLat) && coordValida(a.pontoLng)) return { ...pt, latAlt: a.pontoLat, lngAlt: a.pontoLng }
+      return pt
+    }))
+  }
+  return out
+}
 
 // Mesma referência de timeout que geocode.ts usa pra chamada de rede que
 // pode pendurar -- aqui bem menor porque a rota do monitoramento só lê

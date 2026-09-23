@@ -13,7 +13,7 @@ import { geocodificarEnderecos } from '../src/lib/kpi-romaneio/geocode'
 import { reposicionarPorAncoras } from '../src/lib/kpi-romaneio/geocode-ancoras'
 import { buscarFrota, normPlaca } from '../src/lib/unitrac-api'
 import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '../src/lib/kpi-romaneio/unitrac'
-import { buscarHorariosBase } from '../src/lib/kpi-romaneio/base-horarios'
+import { buscarHorariosBase, anexarCoordenadaCadastro } from '../src/lib/kpi-romaneio/base-horarios'
 import { ajustarChegadaAposUltimaEntrega } from '../src/lib/kpi-romaneio/fim-rota'
 import { alvosDaData } from '../src/lib/kpi-romaneio/alvos-data'
 import { alvosEfetivos } from '../src/lib/kpi-romaneio/alvos-snapshot'
@@ -152,11 +152,9 @@ async function main() {
   // Fora da janela de 48h da Unitrac: pede tambem as paradas derivadas do
   // historico permanente (mesma logica da rota /api/kpi/nutrimax/gerar).
   const foraDaJanelaUnitrac = foraDoAlcanceApi(data, hojeBR())
-  const horarioBasePorPlaca = await buscarHorariosBase(placasNorm, data, pontosPorPlacaBridge, true)
 
   const frota = await buscarFrota(COD_USER_NUTRIMAX)
   const cvPorPlaca = new Map(frota.map(v => [v.placaNorm, v.cv]))
-  const temRastreadorPorPlaca = new Map(placasNorm.map(p => [p, cvPorPlaca.has(p) || horarioBasePorPlaca.has(p)]))
   let alvosBrutos: Awaited<ReturnType<typeof buscarAlvosDoDia>> = []
   try {
     alvosBrutos = await buscarAlvosDoDia(placasNorm)
@@ -164,6 +162,8 @@ async function main() {
     console.log('buscarAlvosDoDia falhou:', e instanceof Error ? e.message : e)
   }
   const alvos = await alvosEfetivos('nutrimax', data, hojeBR(), alvosDaData(alvosBrutos, data))
+  const horarioBasePorPlaca = await buscarHorariosBase(placasNorm, data, anexarCoordenadaCadastro(pontosPorPlacaBridge, alvos), true)
+  const temRastreadorPorPlaca = new Map(placasNorm.map(p => [p, cvPorPlaca.has(p) || horarioBasePorPlaca.has(p)]))
 
   const paradasPorPlaca = new Map<string, UnitracParadaRow[]>()
   const visitasPorPlaca = new Map<string, Map<string, Visita>>()

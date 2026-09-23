@@ -110,7 +110,8 @@ vi.mock('@/lib/kpi-romaneio/unitrac', () => ({
   // quando nao ha ponte de posicao continua pra placa).
   resolverParadas: (daUnitrac: unknown[]) => daUnitrac,
 }))
-vi.mock('@/lib/kpi-romaneio/base-horarios', () => ({
+vi.mock('@/lib/kpi-romaneio/base-horarios', async (orig) => ({
+  ...(await orig<typeof import('@/lib/kpi-romaneio/base-horarios')>()),
   buscarHorariosBase: vi.fn(async () => new Map()),
 }))
 vi.mock('@/lib/kpi-romaneio/historico', () => ({
