@@ -135,4 +135,9 @@ async function main() {
   await rodarCorrecao(Buffer.from(readFileSync(romaneioPath)), data, { aplicar, dirSaida: process.cwd() })
 }
 
-if (process.env.VITEST !== 'true') main().catch(e => { console.error(e); process.exit(1) })
+// So' roda o CLI quando este arquivo e' o entrypoint -- o runner noturno
+// (correcao-geocode-noturna.ts) importa rodarCorrecao daqui, e sem essa
+// checagem o main() deste arquivo rodava junto, lia o argv do outro script
+// e saia com a mensagem de uso (achado no 1o teste real, 23/09).
+const ehEntrypoint = (process.argv[1] ?? '').endsWith('corrigir-geocode-por-alvo.ts')
+if (process.env.VITEST !== 'true' && ehEntrypoint) main().catch(e => { console.error(e); process.exit(1) })
