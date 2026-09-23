@@ -73,13 +73,22 @@ export type ParadaBridge = {
 // latAlt/lngAlt (opcionais): coordenada de CADASTRO do alvo na Unitrac, usada
 // pela ponte como candidata alternativa (raio 300m) a parada real mais
 // proxima. Omitidos quando nao ha cadastro valido -- contrato antigo intacto.
-export type PontoEntregaBridge = { id: string; lat: number; lng: number; latAlt?: number; lngAlt?: number }
+// feitoEm (opcional): horario 'feito' do alvo na Unitrac em UTC real (feitoISO sao digitos de Brasilia -> +3h);
+// a ponte usa so' pra desempatar paradas na mesma rua.
+export type PontoEntregaBridge = { id: string; lat: number; lng: number; latAlt?: number; lngAlt?: number; feitoEm?: string }
 
-type AlvoComCadastro = { placaNorm: string; documento: string | null; pontoLat?: number | null; pontoLng?: number | null }
+type AlvoComCadastro = { placaNorm: string; documento: string | null; pontoLat?: number | null; pontoLng?: number | null; feitoISO?: string | null }
+
+const TRES_H_MS = 3 * 60 * 60 * 1000
+function feitoEmUtcReal(feitoISO: unknown): string | null {
+  if (typeof feitoISO !== 'string') return null
+  const t = Date.parse(feitoISO + 'Z')
+  return Number.isNaN(t) ? null : new Date(t + TRES_H_MS).toISOString()
+}
 
 const coordValida = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && n !== 0
 
-/** Anexa latAlt/lngAlt a cada ponto a partir do alvo Unitrac casado por
+/** Anexa latAlt/lngAlt (e feitoEm) a cada ponto a partir do alvo Unitrac casado por
  *  placa + NF (documento). So' anexa quando pontoLat e pontoLng sao numeros
  *  finitos e != 0; snapshot antigo (sem pontoLat) ou alvo sem cadastro
  *  deixam o ponto inalterado. Pura, nao muta a entrada. */
@@ -93,8 +102,13 @@ export function anexarCoordenadaCadastro(
   for (const [placa, pontos] of pontosPorPlaca) {
     out.set(placa, pontos.map(pt => {
       const a = porChave.get(`${placa}|${pt.id}`)
-      if (a && coordValida(a.pontoLat) && coordValida(a.pontoLng)) return { ...pt, latAlt: a.pontoLat, lngAlt: a.pontoLng }
-      return pt
+      if (!a) return pt
+      const feitoEm = feitoEmUtcReal(a.feitoISO)
+      return {
+        ...pt,
+        ...(coordValida(a.pontoLat) && coordValida(a.pontoLng) ? { latAlt: a.pontoLat, lngAlt: a.pontoLng } : {}),
+        ...(feitoEm ? { feitoEm } : {}),
+      }
     }))
   }
   return out

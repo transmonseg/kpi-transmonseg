@@ -228,6 +228,30 @@ describe('latAlt/lngAlt (cadastro Unitrac)', () => {
     expect(anexarCoordenadaCadastro(pontos(), [alvo({ placaNorm: 'ZZZ9Z99' })]).get('AAA1A11')![0]).toEqual({ id: '100', lat: -22, lng: -43 })
   })
 
+  describe('feitoEm (horario feito da Unitrac, UTC real)', () => {
+    it('converte feitoISO (digitos de Brasilia) para UTC real (+3h)', () => {
+      const p = anexarCoordenadaCadastro(pontos(), [alvo({ feitoISO: '2026-09-22T07:04:00' })]).get('AAA1A11')![0]
+      expect(p.feitoEm).toBe('2026-09-22T10:04:00.000Z')
+    })
+    it('anexa feitoEm mesmo sem cadastro valido, e nao anexa latAlt nesse caso', () => {
+      const p = anexarCoordenadaCadastro(pontos(), [alvo({ pontoLat: null, pontoLng: null, feitoISO: '2026-09-22T07:04:00' })]).get('AAA1A11')![0]
+      expect(p.feitoEm).toBe('2026-09-22T10:04:00.000Z')
+      expect('latAlt' in p).toBe(false)
+    })
+    it('feitoISO ausente, null ou invalido: sem feitoEm', () => {
+      for (const feitoISO of [undefined, null, 'lixo', '']) {
+        const p = anexarCoordenadaCadastro(pontos(), [alvo({ feitoISO })]).get('AAA1A11')![0]
+        expect('feitoEm' in p).toBe(false)
+      }
+    })
+    it('body enviado a ponte inclui feitoEm', async () => {
+      const spy = mockFetchOk([])
+      await buscarHorariosBase(['AAA1A11'], '2026-09-22', anexarCoordenadaCadastro(pontos(), [alvo({ feitoISO: '2026-09-22T07:04:00' })]))
+      const body = JSON.parse((spy.mock.calls[0][1] as RequestInit).body as string)
+      expect(body.pontosPorPlaca.AAA1A11[0].feitoEm).toBe('2026-09-22T10:04:00.000Z')
+    })
+  })
+
   it('nao muta a entrada', () => {
     const p = pontos()
     anexarCoordenadaCadastro(p, [alvo({})])
