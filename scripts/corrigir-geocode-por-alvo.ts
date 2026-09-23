@@ -1,7 +1,8 @@
 // Correcao de geocode pela parada real do dia (ver src/lib/kpi-romaneio/correcao-por-alvo.ts).
 // Uso: npx tsx --env-file=.env.production scripts/corrigir-geocode-por-alvo.ts <romaneio.pdf> <AAAA-MM-DD> [--aplicar]
 // Sem --aplicar: so' gera os CSVs. Com --aplicar: grava no kpi_romaneio_geocode_cache (PRODUCAO).
-import { readFileSync, writeFileSync } from 'fs'
+import { readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { join } from 'path'
 import { parseRomaneio } from '../src/lib/kpi-romaneio/parse-romaneio'
 import { lerSnapshotAlvos } from '../src/lib/kpi-romaneio/alvos-snapshot'
 import { alvosDaData } from '../src/lib/kpi-romaneio/alvos-data'
@@ -79,13 +80,17 @@ async function lerCache(enderecos: string[]) {
   return mapa
 }
 
-async function main() {
-  const [romaneioPath, data] = process.argv.slice(2).filter(a => !a.startsWith('--'))
-  const aplicar = process.argv.includes('--aplicar')
-  if (!romaneioPath || !/^\d{4}-\d{2}-\d{2}$/.test(data ?? '')) {
-    console.error('Uso: corrigir-geocode-por-alvo.ts <romaneio.pdf> <AAAA-MM-DD> [--aplicar]'); process.exit(1)
-  }
-  const romaneio = await parseRomaneio(Buffer.from(readFileSync(romaneioPath)))
+/** Corpo de main() extraido pra reuso pelo runner noturno (report-only, ver
+ *  scripts/correcao-geocode-noturna.ts) -- mesma logica, so' recebe o PDF ja
+ *  em memoria (em vez de ler de disco) e escreve os CSVs em `dirSaida` (em
+ *  vez de sempre no cwd). --aplicar continua com a mesma semantica: sem ela,
+ *  nada e' gravado no cache de producao. */
+export async function rodarCorrecao(
+  romaneioBuf: Buffer,
+  data: string,
+  opcoes: { aplicar: boolean; dirSaida: string },
+): Promise<{ sugestoes: number; rejeicoes: Record<string, number>; arquivos: string[] }> {
+  const romaneio = await parseRomaneio(romaneioBuf)
   const placas = [...new Set(romaneio.map(l => normPlaca(l.placa)).filter(p => p !== ''))]
   const cache = await lerCache([...new Set(romaneio.map(l => l.endereco))])
   const entregas: EntregaParaCorrigir[] = romaneio.map(l => entregaDoRomaneio(l, cache))
@@ -97,11 +102,18 @@ async function main() {
   const { sugestoes, rejeicoes } = sugerirCorrecoesPorAlvo(entregas, alvos, paradasPorPlaca)
   const cont = rejeicoes.reduce<Record<string, number>>((m, r) => ({ ...m, [r.motivo]: (m[r.motivo] ?? 0) + 1 }), {})
   console.log(`sugestoes=${sugestoes.length} enderecos | rejeicoes:`, cont)
-  writeFileSync(`correcoes-geocode-${data}.csv`, csvCorrecoes(sugestoes, rejeicoes))
-  writeFileSync(`cadastros-unitrac-divergentes-${data}.csv`, csvCadastrosDivergentes(sugestoes))
-  console.log(`CSVs: correcoes-geocode-${data}.csv, cadastros-unitrac-divergentes-${data}.csv`)
 
-  if (!aplicar) { console.log('(sem --aplicar: nada gravado)'); return }
+  mkdirSync(opcoes.dirSaida, { recursive: true })
+  const caminhoCorrecoes = join(opcoes.dirSaida, `correcoes-geocode-${data}.csv`)
+  const caminhoDivergentes = join(opcoes.dirSaida, `cadastros-unitrac-divergentes-${data}.csv`)
+  writeFileSync(caminhoCorrecoes, csvCorrecoes(sugestoes, rejeicoes))
+  writeFileSync(caminhoDivergentes, csvCadastrosDivergentes(sugestoes))
+  console.log(`CSVs: ${caminhoCorrecoes}, ${caminhoDivergentes}`)
+
+  if (!opcoes.aplicar) {
+    console.log('(sem --aplicar: nada gravado)')
+    return { sugestoes: sugestoes.length, rejeicoes: cont, arquivos: [caminhoCorrecoes, caminhoDivergentes] }
+  }
   const svc = createServiceClient()
   let ok = 0
   for (const s of sugestoes) {
@@ -109,7 +121,18 @@ async function main() {
     if (error) console.error(`falha ${s.endereco}: ${error.message}`); else ok++
   }
   console.log(`gravados ${ok}/${sugestoes.length}`)
-  if (ok < sugestoes.length) process.exit(1)
+  if (ok < sugestoes.length) throw new Error(`gravados apenas ${ok}/${sugestoes.length} no cache`)
+  return { sugestoes: sugestoes.length, rejeicoes: cont, arquivos: [caminhoCorrecoes, caminhoDivergentes] }
+}
+
+async function main() {
+  const [romaneioPath, data] = process.argv.slice(2).filter(a => !a.startsWith('--'))
+  const aplicar = process.argv.includes('--aplicar')
+  if (!romaneioPath || !/^\d{4}-\d{2}-\d{2}$/.test(data ?? '')) {
+    console.error('Uso: corrigir-geocode-por-alvo.ts <romaneio.pdf> <AAAA-MM-DD> [--aplicar]'); process.exit(1)
+    return
+  }
+  await rodarCorrecao(Buffer.from(readFileSync(romaneioPath)), data, { aplicar, dirSaida: process.cwd() })
 }
 
 if (process.env.VITEST !== 'true') main().catch(e => { console.error(e); process.exit(1) })

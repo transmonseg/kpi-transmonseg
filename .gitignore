@@ -55,3 +55,6 @@ _tmp_*.md
 # Electron (app desktop) — build artifacts
 electron/dist/
 release/
+
+# Runner noturno de correcao de geocode (report-only) -- CSVs locais
+relatorios-geocode/
