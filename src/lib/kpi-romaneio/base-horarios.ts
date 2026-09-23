@@ -82,7 +82,7 @@ type AlvoComCadastro = { placaNorm: string; documento: string | null; pontoLat?:
 const TRES_H_MS = 3 * 60 * 60 * 1000
 function feitoEmUtcReal(feitoISO: unknown): string | null {
   if (typeof feitoISO !== 'string') return null
-  const t = Date.parse(feitoISO + 'Z')
+  const t = Date.parse(feitoISO.replace(/(Z|[+-]\d\d:?\d\d)$/, '') + 'Z')
   return Number.isNaN(t) ? null : new Date(t + TRES_H_MS).toISOString()
 }
 
