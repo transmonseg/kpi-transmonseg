@@ -205,7 +205,7 @@ describe('buscarHorariosBase', () => {
 })
 
 describe('latAlt/lngAlt (cadastro Unitrac)', () => {
-  const alvo = (o: Record<string, unknown>) => ({ placaNorm: 'AAA1A11', documento: '100', pontoLat: -22.1, pontoLng: -43.2, ...o })
+  const alvo = (o: Record<string, unknown>) => ({ placaNorm: 'AAA1A11', documento: '100', situacao: 1, pontoLat: -22.1, pontoLng: -43.2, ...o })
   const pontos = () => new Map([['AAA1A11', [{ id: '100', lat: -22, lng: -43 }, { id: '200', lat: -22.5, lng: -43.5 }]]])
 
   it('anexa latAlt/lngAlt quando o alvo casa por placa+NF e tem cadastro valido', () => {
@@ -223,9 +223,24 @@ describe('latAlt/lngAlt (cadastro Unitrac)', () => {
   })
 
   it('snapshot antigo sem pontoLat/pontoLng e placa diferente nao quebram', () => {
-    const antigo = { placaNorm: 'AAA1A11', documento: '100' }
+    const antigo = { placaNorm: 'AAA1A11', documento: '100', situacao: 1 }
     expect(anexarCoordenadaCadastro(pontos(), [antigo]).get('AAA1A11')![0]).toEqual({ id: '100', lat: -22, lng: -43 })
     expect(anexarCoordenadaCadastro(pontos(), [alvo({ placaNorm: 'ZZZ9Z99' })]).get('AAA1A11')![0]).toEqual({ id: '100', lat: -22, lng: -43 })
+  })
+
+  it('ignora alvos nao feitos (situacao !== 1)', () => {
+    const p = anexarCoordenadaCadastro(pontos(), [alvo({ situacao: 0, feitoISO: null })]).get('AAA1A11')![0]
+    expect(p).toEqual({ id: '100', lat: -22, lng: -43 })
+  })
+
+  it('alvo feito + alvo nao feito na mesma NF: usa so o feito', () => {
+    const p = anexarCoordenadaCadastro(pontos(), [alvo({ feitoISO: '2026-09-22T07:04:00' }), alvo({ situacao: 0, pontoLat: -1, pontoLng: -1 })]).get('AAA1A11')![0]
+    expect(p).toMatchObject({ latAlt: -22.1, lngAlt: -43.2 })
+  })
+
+  it('dois alvos feitos com feito divergente (>5 min): nao envia latAlt/lngAlt/feitoEm', () => {
+    const p = anexarCoordenadaCadastro(pontos(), [alvo({ feitoISO: '2026-09-22T07:04:00' }), alvo({ feitoISO: '2026-09-22T08:30:00', pontoLat: -22.3 })]).get('AAA1A11')![0]
+    expect(p).toEqual({ id: '100', lat: -22, lng: -43 })
   })
 
   describe('feitoEm (horario feito da Unitrac, UTC real)', () => {

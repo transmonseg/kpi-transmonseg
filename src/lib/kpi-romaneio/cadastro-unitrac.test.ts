@@ -32,6 +32,18 @@ describe('sugerirCadastroUnitrac', () => {
     expect(r.sugestoes[0]).toMatchObject({ endereco: 'RUA X, 1 - CENTRO, CABO FRIO', latNova: -22.0, lngNova: -43.0, nfs: ['100'] })
   })
 
+  it('NF com alvos feitos em instantes diferentes (>5 min) -> nao gera candidato (alvo_duplicado)', () => {
+    const a = [alvo({ codigoUnitrac: '900' }), alvo({ codigoUnitrac: '901', feitoISO: '2026-09-22T10:40:00', pontoLat: -22.0001 })]
+    const r = sugerirCadastroUnitrac([entrega()], a, paradas([parada({ saida: '2026-09-22T11:00:00.000Z' })]))
+    expect(r.sugestoes).toHaveLength(0)
+    expect(r.rejeicoes[0]).toMatchObject({ nf: '100', motivo: 'alvo_duplicado' })
+  })
+
+  it('NF com alvos duplicados no mesmo instante (<=5 min) segue valendo', () => {
+    const a = [alvo({ codigoUnitrac: '900' }), alvo({ codigoUnitrac: '901', feitoISO: '2026-09-22T10:22:00' })]
+    expect(sugerirCadastroUnitrac([entrega()], a, paradas()).sugestoes).toHaveLength(1)
+  })
+
   it('feito com tolerancia de 10 min fora da janela da parada ainda confirma', () => {
     const p = parada({ chegada: '2026-09-22T10:00:00.000Z', saida: '2026-09-22T10:10:00.000Z' })
     expect(sugerirCadastroUnitrac([entrega()], [alvo({ feitoISO: '2026-09-22T10:18:00' })], paradas([p])).sugestoes).toHaveLength(1)

@@ -11,13 +11,14 @@ import { ENDERECO_NAO_IDENTIFICADO, LIMITE_PARADA_ENTREGA_MIN, LIMITE_PARADAS_ME
 export const RAIO_CADASTRO_CONFIRMADO_M = 300
 export const LIMITE_NOSSA_COORD_LONGE_M = 500
 const TOLERANCIA_FEITO_MS = 10 * 60_000
+const TOLERANCIA_FEITO_DUPLICADO_MS = 5 * 60_000
 
 export type SugestaoCadastro = {
   endereco: string; nfs: string[]; placaNorm: string
   latAtual: number | null; lngAtual: number | null; distAtualM: number | null; fonteAtual: string | null
   latNova: number; lngNova: number; codigoUnitrac: string; distParadaM: number
 }
-export type MotivoRejeicaoCadastro = 'endereco_nao_identificado' | 'correcao_manual' | 'ilha' | 'sem_alvo_feito' | 'cadastro_invalido' | 'cadastro_nao_confirmado' | 'coordenada_atual_ok' | 'cadastros_conflitantes'
+export type MotivoRejeicaoCadastro = 'endereco_nao_identificado' | 'correcao_manual' | 'ilha' | 'sem_alvo_feito' | 'cadastro_invalido' | 'cadastro_nao_confirmado' | 'coordenada_atual_ok' | 'cadastros_conflitantes' | 'alvo_duplicado'
 export type RejeicaoCadastro = { endereco: string; nf: string; placaNorm: string; motivo: MotivoRejeicaoCadastro }
 
 const coordValida = (lat: number | null | undefined, lng: number | null | undefined): lat is number =>
@@ -49,6 +50,10 @@ export function sugerirCadastroUnitrac(
     if (acessoSomentePorBarco(e.endereco)) { rejeitar(e, 'ilha'); continue }
     const alvosNf = alvoPorChave.get(`${e.placaNorm}|${e.nf}`)
     if (!alvosNf) { rejeitar(e, 'sem_alvo_feito'); continue }
+    // Mesma NF com alvos feitos em instantes diferentes = cadastro duplicado na Unitrac
+    // (mesmo tratamento de correcao-por-alvo): nao da' pra saber qual e' o feito real.
+    const instantes = alvosNf.map(x => instanteDeFeitoISO(x.feitoISO as string))
+    if (Math.max(...instantes) - Math.min(...instantes) > TOLERANCIA_FEITO_DUPLICADO_MS) { rejeitar(e, 'alvo_duplicado'); continue }
     const a = alvosNf[0]
     if (!coordValida(a.pontoLat, a.pontoLng)) { rejeitar(e, 'cadastro_invalido'); continue }
     const t = instanteDeFeitoISO(a.feitoISO as string)

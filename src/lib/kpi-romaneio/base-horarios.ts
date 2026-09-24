@@ -77,7 +77,7 @@ export type ParadaBridge = {
 // a ponte usa so' pra desempatar paradas na mesma rua.
 export type PontoEntregaBridge = { id: string; lat: number; lng: number; latAlt?: number; lngAlt?: number; feitoEm?: string }
 
-type AlvoComCadastro = { placaNorm: string; documento: string | null; pontoLat?: number | null; pontoLng?: number | null; feitoISO?: string | null }
+type AlvoComCadastro = { placaNorm: string; documento: string | null; situacao?: number | null; pontoLat?: number | null; pontoLng?: number | null; feitoISO?: string | null }
 
 const TRES_H_MS = 3 * 60 * 60 * 1000
 function feitoEmUtcReal(feitoISO: unknown): string | null {
@@ -96,8 +96,20 @@ export function anexarCoordenadaCadastro(
   pontosPorPlaca: Map<string, PontoEntregaBridge[]>,
   alvos: AlvoComCadastro[],
 ): Map<string, PontoEntregaBridge[]> {
+  // So' alvos feitos (situacao 1). Mais de um feito com horario divergente (>5 min) na mesma
+  // placa|NF = cadastro duplicado na Unitrac: nao envia coordenada/feito (a ponte nao sabe qual vale).
+  const grupos = new Map<string, AlvoComCadastro[]>()
+  for (const a of alvos) {
+    if (a.situacao !== 1 || !a.documento) continue
+    const k = `${a.placaNorm}|${a.documento}`
+    grupos.set(k, [...(grupos.get(k) ?? []), a])
+  }
   const porChave = new Map<string, AlvoComCadastro>()
-  for (const a of alvos) if (a.documento) porChave.set(`${a.placaNorm}|${a.documento}`, a)
+  for (const [k, lista] of grupos) {
+    const ts = lista.map(a => feitoEmUtcReal(a.feitoISO)).filter((x): x is string => x != null).map(x => Date.parse(x))
+    if (ts.length > 1 && Math.max(...ts) - Math.min(...ts) > 5 * 60_000) continue
+    porChave.set(k, lista[lista.length - 1])
+  }
   const out = new Map<string, PontoEntregaBridge[]>()
   for (const [placa, pontos] of pontosPorPlaca) {
     out.set(placa, pontos.map(pt => {
