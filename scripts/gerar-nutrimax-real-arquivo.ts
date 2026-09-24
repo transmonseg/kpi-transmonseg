@@ -24,6 +24,7 @@ import { detectarDescasamentos } from '../src/lib/kpi-romaneio/avisos'
 import { gerarKpiRomaneioXlsx } from '../src/lib/kpi-romaneio/gerador-xlsx'
 import { COD_USER_NUTRIMAX, foraDoAlcanceApi, PAO_PREFIXO } from '../src/lib/kpi-romaneio/constants'
 import { logarNfDuplicadaNaMesmaPlaca } from '../src/lib/kpi-romaneio/nf-duplicada'
+import { semCadastroUnitrac, nfsSoUnitrac } from '../src/lib/kpi-romaneio/sem-cadastro'
 import { hojeBR } from '../src/lib/data-br'
 import { montarDumpExperimento } from '../src/lib/kpi-romaneio/experimentos/dump'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '../src/lib/kpi-romaneio/types'
@@ -69,6 +70,18 @@ async function main() {
   const enderecosUnicos = [...new Set(romaneioCompleto.map(l => l.endereco))]
   const resultadosGeo = await geocodificarEnderecos(enderecosUnicos, { validarTerritorio: true })
   const geoPorEndereco = new Map(enderecosUnicos.map((e, i) => [e, resultadosGeo[i]]))
+  // Variante de teste: OVERRIDE_CACHE_CSV (endereco;lat;lng;confiavel;fonte;motivo)
+  // sobrepoe o geocode SO' EM MEMORIA (nada e' gravado no banco).
+  if (process.env.OVERRIDE_CACHE_CSV) {
+    let n = 0
+    for (const ln of readFileSync(process.env.OVERRIDE_CACHE_CSV, 'utf8').split('\n').slice(1)) {
+      const [endereco, lat, lng, confiavel, , motivo] = ln.split(';')
+      if (!endereco || !geoPorEndereco.has(endereco) || !lat || !lng) continue
+      geoPorEndereco.set(endereco, { ...(geoPorEndereco.get(endereco) as object), lat: Number(lat), lng: Number(lng), confiavel: confiavel === 'true', motivo: motivo || undefined } as never)
+      n++
+    }
+    console.log(`Override de cache em memoria: ${n} enderecos`)
+  }
   const romaneioGeo: LinhaGeocodificada[] = romaneioCompleto.map(l => {
     const g = geoPorEndereco.get(l.endereco) ?? null
     return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: g?.motivo }
@@ -162,7 +175,9 @@ async function main() {
     console.log('buscarAlvosDoDia falhou:', e instanceof Error ? e.message : e)
   }
   const alvos = await alvosEfetivos('nutrimax', data, hojeBR(), alvosDaData(alvosBrutos, data))
-  const horarioBasePorPlaca = await buscarHorariosBase(placasNorm, data, anexarCoordenadaCadastro(pontosPorPlacaBridge, alvos), true)
+  const SEM_CADASTRO = semCadastroUnitrac()
+  if (SEM_CADASTRO) console.log('MODO SEM CADASTRO UNITRAC: sem latAlt/lngAlt/feitoEm na ponte e alvos nao confirmam')
+  const horarioBasePorPlaca = await buscarHorariosBase(placasNorm, data, SEM_CADASTRO ? pontosPorPlacaBridge : anexarCoordenadaCadastro(pontosPorPlacaBridge, alvos), true)
   const temRastreadorPorPlaca = new Map(placasNorm.map(p => [p, cvPorPlaca.has(p) || horarioBasePorPlaca.has(p)]))
 
   const paradasPorPlaca = new Map<string, UnitracParadaRow[]>()
@@ -208,7 +223,13 @@ async function main() {
     paradasPorPlaca.set(placaNorm, paradas)
   }
 
-  const alvosPorPlaca = agrupar(alvos, a => a.placaNorm)
+  if (SEM_CADASTRO) {
+    const nfsRomaneio = new Set(romaneioGeo.map(l => l.nf))
+    const soU = nfsSoUnitrac(alvos, visitasPorPlaca).filter(nf => nfsRomaneio.has(nf))
+    console.log(`NFs que SO' a Unitrac confirmaria (sem visita GPS): ${new Set(soU).size}`)
+    if (process.env.SO_UNITRAC_OUT) writeFileSync(process.env.SO_UNITRAC_OUT, [...new Set(soU)].join('\n'))
+  }
+  const alvosPorPlaca = agrupar(SEM_CADASTRO ? [] : alvos, a => a.placaNorm)
 
   // Achado real 22/09 (RBG5G18 21/09, espelha route.ts): CHEGADA CD tem que
   // ser a primeira volta a base depois do fim real da rota, nao a ultima
