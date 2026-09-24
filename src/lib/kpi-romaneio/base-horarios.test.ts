@@ -228,9 +228,14 @@ describe('latAlt/lngAlt (cadastro Unitrac)', () => {
     expect(anexarCoordenadaCadastro(pontos(), [alvo({ placaNorm: 'ZZZ9Z99' })]).get('AAA1A11')![0]).toEqual({ id: '100', lat: -22, lng: -43 })
   })
 
-  it('ignora alvos nao feitos (situacao !== 1)', () => {
+  it('alvo pendente (situacao 0) com cadastro: envia latAlt/lngAlt mas nunca feitoEm', () => {
     const p = anexarCoordenadaCadastro(pontos(), [alvo({ situacao: 0, feitoISO: null })]).get('AAA1A11')![0]
-    expect(p).toEqual({ id: '100', lat: -22, lng: -43 })
+    expect(p).toEqual({ id: '100', lat: -22, lng: -43, latAlt: -22.1, lngAlt: -43.2 })
+  })
+
+  it('alvo situacao 98 (outro) com feitoISO e cadastro: envia latAlt/lngAlt e feitoEm', () => {
+    const p = anexarCoordenadaCadastro(pontos(), [alvo({ situacao: 98, feitoISO: '2026-09-22T10:03:58.140012' })]).get('AAA1A11')![0]
+    expect(p).toEqual({ id: '100', lat: -22, lng: -43, latAlt: -22.1, lngAlt: -43.2, feitoEm: '2026-09-22T13:03:58.140Z' })
   })
 
   it('alvo feito + alvo nao feito na mesma NF: usa so o feito', () => {

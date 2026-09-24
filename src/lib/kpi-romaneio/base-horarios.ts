@@ -96,19 +96,22 @@ export function anexarCoordenadaCadastro(
   pontosPorPlaca: Map<string, PontoEntregaBridge[]>,
   alvos: AlvoComCadastro[],
 ): Map<string, PontoEntregaBridge[]> {
-  // So' alvos feitos (situacao 1). Mais de um feito com horario divergente (>5 min) na mesma
-  // placa|NF = cadastro duplicado na Unitrac: nao envia coordenada/feito (a ponte nao sabe qual vale).
+  // Agrupa por placa|NF. Alvos com feitoISO (situacao 1 ou 98) sao 'feitos' e tem precedencia sobre
+  // os sem feito (pendentes, situacao 0, tambem tem cadastro valido e mandam latAlt). Mais de um
+  // feito com horario divergente (>5 min) = cadastro duplicado na Unitrac: nao envia nada.
   const grupos = new Map<string, AlvoComCadastro[]>()
   for (const a of alvos) {
-    if (a.situacao !== 1 || !a.documento) continue
+    if (!a.documento) continue
     const k = `${a.placaNorm}|${a.documento}`
     grupos.set(k, [...(grupos.get(k) ?? []), a])
   }
   const porChave = new Map<string, AlvoComCadastro>()
   for (const [k, lista] of grupos) {
-    const ts = lista.map(a => feitoEmUtcReal(a.feitoISO)).filter((x): x is string => x != null).map(x => Date.parse(x))
+    const feitos = lista.filter(a => feitoEmUtcReal(a.feitoISO) != null)
+    const ts = feitos.map(a => Date.parse(feitoEmUtcReal(a.feitoISO)!))
     if (ts.length > 1 && Math.max(...ts) - Math.min(...ts) > 5 * 60_000) continue
-    porChave.set(k, lista[lista.length - 1])
+    const usar = feitos.length > 0 ? feitos : lista
+    porChave.set(k, usar[usar.length - 1])
   }
   const out = new Map<string, PontoEntregaBridge[]>()
   for (const [placa, pontos] of pontosPorPlaca) {
