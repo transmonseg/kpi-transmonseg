@@ -359,6 +359,18 @@ export function montarDetalheEntregas(
     // "carga transferida" a 2 OUTRAS placas so' porque semMovimento nao
     // disparou.
     const paradasProprias = paradasPorOutraPlaca.get(placaNorm) ?? []
+    // Achado real 23/09 (plano 24/09, Task 1 -- Ana, TTL5J17): "sem
+    // rastreador" e' um FATO JA CONHECIDO (nunca vai confirmar, nao importa
+    // quanto o dia ainda tenha pela frente), diferente de "AGUARDANDO"
+    // (pode ser so' atraso do equipamento, so' sabemos depois que o dia
+    // acabar). Por isso so' cai aqui quando: (a) `temRastreador` e' false
+    // (nunca teve cv/fonte nenhuma -- vale o dia inteiro, em andamento ou
+    // nao), OU (b) tem cv mas ZERO posicoes o dia INTEIRO e o dia ja
+    // ENCERROU (`!diaEmAndamento`) -- com o dia ainda em andamento, zero
+    // posicoes ATE AGORA nao e' motivo pra acusar o equipamento cedo demais
+    // (ver `diaEmAndamento` abaixo, que cobre esse caso mantendo AGUARDANDO).
+    const semRastreadorNoDia = !temRastreador
+      || (paradasPorOutraPlaca.has(placaNorm) && paradasProprias.length === 0 && !diaEmAndamento)
     const nuncaSaiuDaBase = paradasProprias.length > 0 && paradasProprias.every(p => p.classificacao === 'BASE')
     const semMovimento = (kmPercorrido != null && kmPercorrido < LIMITE_KM_SEM_MOVIMENTO) || nuncaSaiuDaBase
     // Achado real 06/09 (grupo KPI AJUSTES, placa 5F67): motorista confirmou
@@ -481,16 +493,17 @@ export function montarDetalheEntregas(
     // porque distPropria tambem fica null com 0 paradas). Sem isso, as 34
     // entregas dessa placa ficavam "pendente" com observacao EM BRANCO --
     // pior caso pro operador (nem "sem movimento" nem "nao foi ao cliente"
-    // dizem nada). So' dispara quando ha' rastreador cadastrado mas a
-    // PROPRIA placa nunca apareceu nem uma vez no feed de paradas do dia
-    // (paradasProprias.length===0) -- placa sem rastreador NENHUM ja cai
-    // no `!temRastreador` de outra parte do relatorio, nao precisa disto.
-    // `.has()` (nao so' `.length === 0` do `?? []`) distingue "o produtor
-    // buscou GPS pra essa placa e achou zero eventos" (o caso real) de
-    // "essa placa nem foi consultada aqui" (map so' tem OUTRAS placas --
-    // acontece em chamador parcial/teste, nao deve disparar as cegas).
-    if (observacao == null && status === 'pendente' && temRastreador && paradasPorOutraPlaca.has(placaNorm) && paradasProprias.length === 0) {
-      observacao = 'SEM RASTREADOR - NENHUMA POSIÇÃO REPORTADA NO DIA - CONFERIR EQUIPAMENTO'
+    // dizem nada). `.has()` (nao so' `.length === 0` do `?? []`) distingue
+    // "o produtor buscou GPS pra essa placa e achou zero eventos" (o caso
+    // real) de "essa placa nem foi consultada aqui" (map so' tem OUTRAS
+    // placas -- acontece em chamador parcial/teste, nao deve disparar as
+    // cegas). Task 1 (24/09) unificou esse rotulo com o de `!temRastreador`
+    // (placa sem cv NENHUM) -- ver `semRastreadorNoDia` acima: os dois casos
+    // saem igualmente da taxa de confirmacao (numerador E denominador), e o
+    // texto generico "NAO CONTABILIZADO" nao afirma se o problema e' o
+    // equipamento ou o cadastro.
+    if (observacao == null && status === 'pendente' && semRastreadorNoDia) {
+      observacao = 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO'
     }
     // Achado real 11-12/09: pendente cuja coordenada nao e' confiavel merece
     // rotulo proprio -- o problema esta no CADASTRO do endereco, nao na
@@ -516,7 +529,7 @@ export function montarDetalheEntregas(
     // haver evidencia positiva (confirmado_gps/confirmado_unitrac, carga
     // transferida, raio ampliado, vizinhanca) -- so' pendente sem evidencia
     // vira "aguardando".
-    if (status === 'pendente' && diaEmAndamento) {
+    if (status === 'pendente' && diaEmAndamento && !semRastreadorNoDia) {
       observacao = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
     }
 

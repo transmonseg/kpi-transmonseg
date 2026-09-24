@@ -497,4 +497,42 @@ describe('gerador-xlsx', () => {
       expect(values[7]).toBe('MUDOU DE ROTA - CONFERIR (placa provável: RQV6I51)')
     })
   })
+
+  describe('resumo de confirmacao do dia (Task 1, 24/09: SEM RASTREADOR sai do numerador E do denominador da taxa)', () => {
+    it('10 NFs, 8 confirmadas, 2 sem rastreador: taxa = 8/8 = 100%, com "NFs sem rastreador: 2" a parte', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+      const confirmadas = Array.from({ length: 8 }, (_, i) =>
+        detalheFixture({ nf: `NF${i + 1}`, status: 'confirmado_gps' }))
+      const semRastreador = Array.from({ length: 2 }, (_, i) =>
+        detalheFixture({
+          nf: `NFX${i + 1}`, status: 'pendente', temRastreador: false,
+          observacao: 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO',
+        }))
+      const detalhe: LinhaDetalheEntrega[] = [...confirmadas, ...semRastreador]
+
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const ws = wb.worksheets[0]
+      const resumoTexto = ws.getRow(ws.rowCount).getCell(1).value as string
+
+      expect(resumoTexto).toContain('100%')
+      expect(resumoTexto).toContain('NFs sem rastreador: 2')
+    })
+
+    it('sem nenhuma NF sem rastreador: denominador = total, "NFs sem rastreador: 0"', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+      const detalhe: LinhaDetalheEntrega[] = Array.from({ length: 4 }, (_, i) =>
+        detalheFixture({ nf: `NF${i + 1}`, status: i < 2 ? 'confirmado_gps' : 'pendente' }))
+
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const ws = wb.worksheets[0]
+      const resumoTexto = ws.getRow(ws.rowCount).getCell(1).value as string
+
+      expect(resumoTexto).toContain('50%') // 2 confirmadas / 4 total
+      expect(resumoTexto).toContain('NFs sem rastreador: 0')
+    })
+  })
 })

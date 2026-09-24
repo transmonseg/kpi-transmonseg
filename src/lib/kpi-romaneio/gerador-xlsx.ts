@@ -148,6 +148,30 @@ function textoStatus(d: LinhaDetalheEntrega): string {
   return LABEL_STATUS_ENTREGA[d.status]
 }
 
+// Task 1 (plano 24/09, pedido da Ana 23/09): NF cuja observacao e' "sem
+// rastreador" (placa sem cv NENHUM, ou cv cadastrado mas zero posicoes o dia
+// INTEIRO ja encerrado -- ver agregacao.ts/semRastreadorNoDia) sai do
+// NUMERADOR e do DENOMINADOR da taxa de confirmacao -- caso contrario ela
+// conta como "falha" e derruba a taxa por um problema de EQUIPAMENTO/
+// CADASTRO, nao de entrega. A contagem aparece a parte ("NFs sem
+// rastreador: N") pra nao esconder o problema, so' tira ele do calculo da
+// taxa. Opera sobre `detalhe` (uma linha por NF), nao `linhas` (por carga).
+const PREFIXO_OBS_SEM_RASTREADOR = 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO'
+function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
+  taxaPct: number
+  confirmadas: number
+  denominador: number
+  semRastreador: number
+} {
+  const semRastreador = detalhe.filter(d => d.observacao?.startsWith(PREFIXO_OBS_SEM_RASTREADOR)).length
+  const denominador = detalhe.length - semRastreador
+  // Confirmada = status diferente de 'pendente'; NF sem rastreador SEMPRE
+  // fica pendente (nunca confirma), entao ja sai naturalmente do numerador.
+  const confirmadas = detalhe.filter(d => d.status !== 'pendente').length
+  const taxaPct = denominador > 0 ? Math.round((100 * confirmadas) / denominador) : 0
+  return { taxaPct, confirmadas, denominador, semRastreador }
+}
+
 function formatarMinutos(min: number | null): string {
   // Achado real 24/08: minutos negativos (chegada antes da saída, por bug de
   // dado upstream) geravam "-1h-1min" via Math.floor/`%` com sinal em JS --
@@ -321,6 +345,23 @@ export async function gerarKpiRomaneioXlsx(
   ws.autoFilter = {
     from: { row: 2, column: 1 },
     to: { row: 2 + linhas.length, column: COLUNAS_KPI_ROMANEIO.length },
+  }
+
+  // Linha de resumo geral do dia (Task 1, 24/09): taxa de confirmacao ja
+  // excluindo "sem rastreador" do denominador, com a contagem delas a
+  // parte -- so' escreve quando ha' `detalhe` pra calcular (lista vazia,
+  // default, nao adiciona linha nenhuma -- comportamento antigo intacto pra
+  // quem nao passa o 4o parametro).
+  if (detalhe.length > 0) {
+    const resumo = calcularResumoConfirmacao(detalhe)
+    const linhaResumoGeral = ws.addRow([
+      `TAXA DE CONFIRMAÇÃO: ${resumo.taxaPct}%    |    NFs sem rastreador: ${resumo.semRastreador}`,
+    ])
+    ws.mergeCells(linhaResumoGeral.number, 1, linhaResumoGeral.number, COLUNAS_KPI_ROMANEIO.length)
+    const cell = linhaResumoGeral.getCell(1)
+    cell.font = { name: FONTE, bold: true, size: 11 }
+    cell.alignment = { vertical: 'middle', horizontal: 'center' }
+    linhaResumoGeral.height = 20
   }
 
   // Uma aba por placa (pedido do usuário 25/08) -- ordem = ordem de

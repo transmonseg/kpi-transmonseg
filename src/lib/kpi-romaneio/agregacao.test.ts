@@ -823,23 +823,64 @@ describe('montarDetalheEntregas', () => {
     // as 34 entregas reais dessa placa ficavam pendente com observacao em
     // branco -- pior caso pro operador, nem "sem movimento" nem "nao foi
     // ao cliente" dizem nada.
-    it('rastreador cadastrado mas ZERO eventos de GPS no dia inteiro (produtor buscou e achou nada): marca SEM DADO DE GPS, distinto de sem-movimento', () => {
+    it('rastreador cadastrado mas ZERO eventos de GPS no dia inteiro, dia JA ENCERRADO (produtor buscou e achou nada): marca SEM RASTREADOR/NAO CONTABILIZADO (Task 1, 24/09: unificado com o caso sem cv -- ambos saem da taxa)', () => {
       const linhas = [linha('NF1')]
-      const paradasFrota = new Map<string, UnitracParadaRow[]>([['TTL7D40', []]]) // buscou, achou 0
+      const paradasFrota = new Map<string, UnitracParadaRow[]>([['TTL7D40', []]])
 
       const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, paradasFrota, null)
 
-      expect(d.observacao).toBe('SEM RASTREADOR - NENHUMA POSIÇÃO REPORTADA NO DIA - CONFERIR EQUIPAMENTO')
+      expect(d.observacao).toBe('SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO')
       expect(d.status).toBe('pendente')
     })
 
-    it('sem rastreador (temRastreador=false) e zero eventos: NAO marca "sem dado de GPS" (jeito errado de dizer "sem rastreador mesmo")', () => {
+    it('sem rastreador (temRastreador=false) e zero eventos: recebe o MESMO rotulo unificado (nao mais silencioso, nao mais o rotulo antigo de equipamento)', () => {
       const linhas = [linha('NF1')]
       const paradasFrota = new Map<string, UnitracParadaRow[]>([['TTL7D40', []]])
 
       const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, false, paradasFrota, null)
 
-      expect(d.observacao).not.toBe('SEM RASTREADOR - NENHUMA POSIÇÃO REPORTADA NO DIA - CONFERIR EQUIPAMENTO')
+      expect(d.observacao).toBe('SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO')
+    })
+  })
+
+  // Task 1 (plano 2026-09-24, brief da Ana 23/09): TTL5J17 tinha 22 NFs em
+  // 23/09 sem nenhum rastreador -- o relatorio saiu do MEIO DO DIA
+  // (diaEmAndamento=true), e o ramo AGUARDANDO (que existe pra nunca acusar
+  // falha antes do dia acabar) sobrescrevia CEGAMENTE qualquer observacao,
+  // inclusive "sem rastreador" -- que e' um fato JA CONHECIDO (nao uma
+  // espera por evidencia que ainda pode chegar) e nao devia esperar o dia
+  // terminar pra aparecer. Distincao chave (Review Focus do plano): placa
+  // SEM RASTREADOR (sabemos que nunca vai confirmar) sai na hora; placa COM
+  // rastreador mas ainda sem posicao (pode ser so' atraso do equipamento)
+  // continua esperando o dia acabar antes de acusar.
+  describe('SEM RASTREADOR nao vira AGUARDANDO (Task 1, achado real TTL5J17 23/09)', () => {
+    it('temRastreador=false, dia em andamento, sem nenhuma parada da frota: observacao vira SEM RASTREADOR, nunca AGUARDANDO', () => {
+      const [d] = montarDetalheEntregas(
+        '93758', 'TTL5J17', [linha('NF1')], [], new Map(), resumoCargaVazio,
+        false, new Map(), null, true,
+      )
+
+      expect(d.observacao).toBe('SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO')
+      expect(d.observacao).not.toBe('AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO')
+    })
+
+    it('temRastreador=true, dia em andamento, placa consultada mas zero paradas proprias ATE AGORA: continua AGUARDANDO (nao acusar equipamento cedo demais)', () => {
+      const paradasFrota = new Map<string, UnitracParadaRow[]>([['TTL5J17', []]]) // buscou, zero ate agora
+      const [d] = montarDetalheEntregas(
+        '93758', 'TTL5J17', [linha('NF1')], [], new Map(), resumoCargaVazio,
+        true, paradasFrota, null, true,
+      )
+
+      expect(d.observacao).toBe('AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO')
+    })
+
+    it('temRastreador=false, dia JA ENCERRADO (diaEmAndamento=false): observacao SEM RASTREADOR normalmente', () => {
+      const [d] = montarDetalheEntregas(
+        '93758', 'TTL5J17', [linha('NF1')], [], new Map(), resumoCargaVazio,
+        false, new Map(), null, false,
+      )
+
+      expect(d.observacao).toBe('SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO')
     })
   })
 })
