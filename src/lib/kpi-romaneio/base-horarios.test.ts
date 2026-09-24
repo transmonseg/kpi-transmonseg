@@ -285,7 +285,7 @@ describe('latAlt/lngAlt (cadastro Unitrac)', () => {
 describe('feitoEm (fuso)', () => {
   it('feitoISO com Z mentiroso ou offset vira o MESMO instante real (digitos BRT + 3h)', () => {
     const pontos = new Map([['AAA1A11', [{ id: '100', lat: 1, lng: 2 }]]])
-    const mk = (feitoISO: string) => anexarCoordenadaCadastro(pontos, [{ placaNorm: 'AAA1A11', documento: '100', feitoISO }]).get('AAA1A11')![0].feitoEm
+    const mk = (feitoISO: string) => anexarCoordenadaCadastro(pontos, [{ placaNorm: 'AAA1A11', documento: '100', situacao: 1, feitoISO }]).get('AAA1A11')![0].feitoEm
     expect(mk('2026-09-22T10:20:00')).toBe('2026-09-22T13:20:00.000Z')
     expect(mk('2026-09-22T10:20:00Z')).toBe('2026-09-22T13:20:00.000Z')
     expect(mk('2026-09-22T10:20:00-03:00')).toBe('2026-09-22T13:20:00.000Z')
