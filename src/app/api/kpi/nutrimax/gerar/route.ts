@@ -14,6 +14,7 @@ import { buscarHorariosBase, anexarCoordenadaCadastro } from '@/lib/kpi-romaneio
 import { ajustarChegadaAposUltimaEntrega } from '@/lib/kpi-romaneio/fim-rota'
 import { alvosDaData } from '@/lib/kpi-romaneio/alvos-data'
 import { alvosEfetivos } from '@/lib/kpi-romaneio/alvos-snapshot'
+import { paradasEfetivas } from '@/lib/kpi-romaneio/paradas-snapshot'
 import { detectarDescasamentos } from '@/lib/kpi-romaneio/avisos'
 import { montarVisitas } from '@/lib/kpi-romaneio/visitas'
 import { agregarPorCarga, montarDetalheEntregas } from '@/lib/kpi-romaneio/agregacao'
@@ -310,9 +311,19 @@ export async function POST(req: NextRequest) {
   const visitasPorPlaca = new Map<string, Map<string, Visita>>()
   const kmPorPlaca = new Map<string, number | null>()
 
+  // Task 7 (24/09): /stops da Unitrac so' guarda 48h -- gerar um dia depois
+  // disso traz paradas incompletas (nuncaSaiuDaBase falso-positivo). Busca a
+  // API crua por placa e so' DEPOIS passa pelo snapshot (paradasEfetivas),
+  // que mescla com o que o cron noturno ja capturou daquele dia.
+  const daUnitracPorPlaca = new Map<string, UnitracParadaRow[]>()
   await mapComLimite(placasNorm, LIMITE_CONCORRENCIA_PLACAS, async placaNorm => {
     const cv = cvPorPlaca.get(placaNorm)
-    const daUnitrac = cv ? await buscarParadasDoDia(cv, placaNorm, data, 48) : []
+    daUnitracPorPlaca.set(placaNorm, cv ? await buscarParadasDoDia(cv, placaNorm, data, 48) : [])
+  })
+  const paradasEfetivasPorPlaca = await paradasEfetivas('nutrimax', data, hojeBR(), daUnitracPorPlaca)
+
+  for (const placaNorm of placasNorm) {
+    const daUnitrac = paradasEfetivasPorPlaca.get(placaNorm) ?? []
     // Sem parada nenhuma da Unitrac (dia fora das 48h, ou placa sem cv) mas
     // com parada derivada do historico permanente: usa a da ponte.
     const daPonte = horarioBasePorPlaca.get(placaNorm)?.paradas
@@ -320,7 +331,7 @@ export async function POST(req: NextRequest) {
     paradasPorPlaca.set(placaNorm, paradas)
     visitasPorPlaca.set(placaNorm, montarVisitas(linhasPorPlaca.get(placaNorm) ?? [], paradas, horarioBasePorPlaca.get(placaNorm)?.visitasPorNf))
     kmPorPlaca.set(placaNorm, calcularKmPercorrido(paradas))
-  })
+  }
 
   // Achado real 06/09 (grupo KPI AJUSTES, placa TTH-3C94): "carga
   // transferida" (acharParadaDeOutraPlaca em agregacao.ts) so' enxerga
@@ -335,12 +346,17 @@ export async function POST(req: NextRequest) {
   // aba de relatorio pra placa que nao tem NF nenhuma no romaneio
   // (placasNorm continua sendo so' quem apareceu nele).
   const placasFrotaExtra = frota.map(v => v.placaNorm).filter(p => !paradasPorPlaca.has(p))
+  const daUnitracExtraPorPlaca = new Map<string, UnitracParadaRow[]>()
   await mapComLimite(placasFrotaExtra, LIMITE_CONCORRENCIA_PLACAS, async placaNorm => {
     const cv = cvPorPlaca.get(placaNorm)
-    const daUnitrac = cv ? await buscarParadasDoDia(cv, placaNorm, data, 48) : []
+    daUnitracExtraPorPlaca.set(placaNorm, cv ? await buscarParadasDoDia(cv, placaNorm, data, 48) : [])
+  })
+  const paradasEfetivasExtraPorPlaca = await paradasEfetivas('nutrimax', data, hojeBR(), daUnitracExtraPorPlaca)
+  for (const placaNorm of placasFrotaExtra) {
+    const daUnitrac = paradasEfetivasExtraPorPlaca.get(placaNorm) ?? []
     const daPonte = horarioBasePorPlaca.get(placaNorm)?.paradas
     paradasPorPlaca.set(placaNorm, resolverParadas(daUnitrac, daPonte, placaNorm, horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false))
-  })
+  }
 
   const alvosPorPlaca = agrupar(alvos, a => a.placaNorm)
 

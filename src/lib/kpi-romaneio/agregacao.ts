@@ -25,6 +25,15 @@ const LIMITE_TEMPO_LOJA_MIN = 240
 // de algumas dezenas de metros mesmo em 24h) sem arriscar marcar rota
 // curta de verdade como "sem movimento".
 const LIMITE_KM_SEM_MOVIMENTO = 2
+// Task 7 (24/09): limite SEPARADO (nao o mesmo LIMITE_KM_SEM_MOVIMENTO=2) pra
+// desmentir nuncaSaiuDaBase por km de GPS continuo. Usar o MESMO limite de 2km
+// pra essa checagem reintroduz o bug real do achado 08/09 (TTM2G01, km=2,44 de
+// deriva de GPS parado, teste abaixo) -- viraria "CARGA TRANSFERIDA" outra vez
+// so' por deriva marginal. O caso que a Task 7 resolve e' bem mais grosseiro
+// (17 placas que RODARAM >50km com paradas incompletas por causa da janela de
+// 48h da Unitrac) -- 10km fica confortavelmente acima de deriva parada e
+// abaixo de qualquer rota real.
+const LIMITE_KM_DESMENTE_NUNCA_SAIU_BASE = 10
 
 /** Acha, pra uma NF sem confirmação nenhuma pela placa escalada, se OUTRA
  *  placa da frota passou perto do mesmo ponto no dia -- sinal de troca de
@@ -558,7 +567,15 @@ export function montarDetalheEntregas(
     const semRastreadorNoDia = !temRastreador
       || (paradasPorOutraPlaca.has(placaNorm) && paradasProprias.length === 0 && !diaEmAndamento)
     const nuncaSaiuDaBase = paradasProprias.length > 0 && paradasProprias.every(p => p.classificacao === 'BASE')
-    const semMovimento = (kmPercorrido != null && kmPercorrido < LIMITE_KM_SEM_MOVIMENTO) || nuncaSaiuDaBase
+    // Achado real 22-23/09 (Task 7, plano 24/09): /stops da Unitrac so' guarda
+    // 48h -- gerar um dia depois disso (dia antigo reprocessado) trazia
+    // paradas incompletas, e nuncaSaiuDaBase virava true so' porque faltava
+    // dado (nao porque o caminhao realmente nunca saiu). 54 NFs de 22/09 (17
+    // placas que RODARAM >50km de verdade) saiam "VEICULO SEM MOVIMENTO".
+    // km do GPS continuo (calcularKmPercorrido, fonte independente das
+    // paradas classificadas) ACIMA do limite desmente nuncaSaiuDaBase.
+    const semMovimento = (kmPercorrido != null && kmPercorrido < LIMITE_KM_SEM_MOVIMENTO)
+      || (nuncaSaiuDaBase && (kmPercorrido == null || kmPercorrido < LIMITE_KM_DESMENTE_NUNCA_SAIU_BASE))
     // Achado real 06/09 (grupo KPI AJUSTES, placa 5F67): motorista confirmou
     // que NAO houve troca de carga com 4D17/9B98 -- "o fato de passar perto
     // o sistema ta identificando [como troca]". acharParadaDeOutraPlaca

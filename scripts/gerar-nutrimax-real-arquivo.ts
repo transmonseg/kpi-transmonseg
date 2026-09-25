@@ -17,6 +17,7 @@ import { buscarHorariosBase, anexarCoordenadaCadastro } from '../src/lib/kpi-rom
 import { ajustarChegadaAposUltimaEntrega } from '../src/lib/kpi-romaneio/fim-rota'
 import { alvosDaData } from '../src/lib/kpi-romaneio/alvos-data'
 import { alvosEfetivos } from '../src/lib/kpi-romaneio/alvos-snapshot'
+import { paradasEfetivas } from '../src/lib/kpi-romaneio/paradas-snapshot'
 import { montarVisitas } from '../src/lib/kpi-romaneio/visitas'
 import { agregarPorCarga, montarDetalheEntregas } from '../src/lib/kpi-romaneio/agregacao'
 import { calcularKmPercorrido } from '../src/lib/kpi-romaneio/km'
@@ -185,6 +186,10 @@ async function main() {
   const visitasPorPlaca = new Map<string, Map<string, Visita>>()
   const kmPorPlaca = new Map<string, number | null>()
 
+  // Task 7 (24/09): /stops da Unitrac so' guarda 48h -- gerar um dia depois
+  // disso traz paradas incompletas (nuncaSaiuDaBase falso-positivo). Busca a
+  // API crua por placa e so' DEPOIS passa pelo snapshot (paradasEfetivas).
+  const daUnitracPorPlaca = new Map<string, UnitracParadaRow[]>()
   for (const placaNorm of placasNorm) {
     const cv = cvPorPlaca.get(placaNorm)
     let paradas: UnitracParadaRow[] = []
@@ -195,6 +200,12 @@ async function main() {
         console.log(`buscarParadasDoDia(${placaNorm}) falhou:`, e instanceof Error ? e.message : e)
       }
     }
+    daUnitracPorPlaca.set(placaNorm, paradas)
+  }
+  const paradasEfetivasPorPlaca = await paradasEfetivas('nutrimax', data, hojeBR(), daUnitracPorPlaca)
+
+  for (const placaNorm of placasNorm) {
+    let paradas = paradasEfetivasPorPlaca.get(placaNorm) ?? []
     const daPonte = horarioBasePorPlaca.get(placaNorm)?.paradas
     paradas = resolverParadas(paradas, daPonte, placaNorm, horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false)
     paradasPorPlaca.set(placaNorm, paradas)
@@ -209,6 +220,7 @@ async function main() {
   // direto da Unitrac) so' pra alimentar paradasPorOutraPlaca -- nao cria
   // linha/aba de relatorio pra placa sem NF (placasNorm intocado).
   const placasFrotaExtra = frota.map(v => v.placaNorm).filter(p => !paradasPorPlaca.has(p))
+  const daUnitracExtraPorPlaca = new Map<string, UnitracParadaRow[]>()
   for (const placaNorm of placasFrotaExtra) {
     const cv = cvPorPlaca.get(placaNorm)
     let paradas: UnitracParadaRow[] = []
@@ -219,6 +231,11 @@ async function main() {
         console.log(`buscarParadasDoDia(${placaNorm}) falhou:`, e instanceof Error ? e.message : e)
       }
     }
+    daUnitracExtraPorPlaca.set(placaNorm, paradas)
+  }
+  const paradasEfetivasExtraPorPlaca = await paradasEfetivas('nutrimax', data, hojeBR(), daUnitracExtraPorPlaca)
+  for (const placaNorm of placasFrotaExtra) {
+    let paradas = paradasEfetivasExtraPorPlaca.get(placaNorm) ?? []
     const daPonteExtra = horarioBasePorPlaca.get(placaNorm)?.paradas
     paradas = resolverParadas(paradas, daPonteExtra, placaNorm, horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false)
     paradasPorPlaca.set(placaNorm, paradas)

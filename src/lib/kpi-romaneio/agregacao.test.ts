@@ -592,6 +592,25 @@ describe('montarDetalheEntregas', () => {
       expect(d.status).toBe('pendente')
     })
 
+    // Task 7 (24/09, plano 2026-09-24): achado real 22-23/09 -- placas com
+    // paradas classificadas so' BASE mas que RODARAM de verdade (>50km,
+    // porque a janela de 48h da Unitrac ficou incompleta num dia
+    // reprocessado depois) saiam "VEICULO SEM MOVIMENTO" indevidamente. km do
+    // GPS continuo (independente das paradas) acima do limite desmente
+    // nuncaSaiuDaBase.
+    it('achado real Task 7 (22-23/09): todas as paradas BASE mas km=80 (rodou de verdade) -- NAO e sem movimento', () => {
+      const linhas = [linha('NF1')]
+      const paradasPropriasSoBase = [
+        parada({ id: 'b1', placa_norm: 'TTL7D40', classificacao: 'BASE', lat: -22.8147, lng: -43.2783 }),
+        parada({ id: 'b2', placa_norm: 'TTL7D40', classificacao: 'BASE', lat: -22.8171, lng: -43.2805 }),
+      ]
+      const paradasFrota = new Map([['TTL7D40', paradasPropriasSoBase]])
+
+      const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, paradasFrota, 80)
+
+      expect(d.observacao ?? '').not.toBe('VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA')
+    })
+
     // Pedido do usuario 05/09 ("se a porra foi feita ... umas nomeclaturas
     // melhores"): "PENDENTE" soa como "o motorista nao entregou", mas na
     // maioria das vezes e' o nosso lado que nao conseguiu confirmar. O status
