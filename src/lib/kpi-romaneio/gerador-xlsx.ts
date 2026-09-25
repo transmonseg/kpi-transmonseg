@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs'
-import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega, ResolucaoNf } from './types'
+import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega, ResolucaoNf, EvidenciaNf } from './types'
 // Reusa a MESMA paleta/fonte/logo ja validados no relatorio da Benassi
 // (pedido do usuario 25/08: "deixar esse relatorio nivel o da Benassi") --
 // nunca duplica cor/asset, um unico lugar de verdade pros dois clientes.
@@ -36,10 +36,16 @@ export const COLUNAS_KPI_ROMANEIO = [
 // duas colunas novas no fim com o que a operação registrou por cima
 // (resolucoes.ts/aplicarResolucoes). NF sem nenhuma resolução manual = célula
 // vazia nas duas, igual sempre foi antes desta task.
+// Task 5 (plano 24/09, requisito P0 da Ana: "expor origem, método e
+// distância; não equiparar parada em rua semelhante a entrega"): EVIDÊNCIA
+// (rótulo legível do EvidenciaNf calculado em agregacao.ts) + DIST. PARADA
+// (M) (distância real medida, nunca `Visita.distanciaMetrosDoPonto`) --
+// depois das colunas da Task 4, nunca antes (nenhum índice existente
+// muda de posição).
 export const COLUNAS_DETALHE_PLACA = [
   'CARGA', 'NF', 'CLIENTE', 'ENDEREÇO',
   'CHEGADA NA LOJA', 'SAÍDA DA LOJA', 'TEMPO NA LOJA', 'STATUS AUTOMÁTICO',
-  'RESOLUÇÃO OPERAÇÃO', 'RESPONSÁVEL',
+  'RESOLUÇÃO OPERAÇÃO', 'RESPONSÁVEL', 'EVIDÊNCIA', 'DIST. PARADA (m)',
 ] as const
 
 export const COLUNAS_AVISOS = ['CARGA', 'PLACA', 'PROBLEMA'] as const
@@ -195,6 +201,32 @@ function textoResolucaoManual(d: LinhaDetalheEntrega): string {
   return d.resolucaoManual === 'entregue_outra_placa' && d.placaExecutoraResolucao
     ? `${base} (${d.placaExecutoraResolucao})`
     : base
+}
+
+// Task 5 (plano 24/09): rotulo legivel de cada valor de EvidenciaNf
+// (agregacao.ts) -- MAIUSCULO, mesmo padrao do resto do relatorio (Global
+// Constraint do plano). Ver comentario completo de EvidenciaNf em types.ts
+// pra precedencia/significado de cada valor.
+const LABEL_EVIDENCIA_NF: Record<EvidenciaNf, string> = {
+  parada_no_endereco: 'PARADA NO ENDEREÇO',
+  parada_no_cadastro_unitrac: 'PARADA NO CADASTRO UNITRAC',
+  raio_ampliado: 'RAIO AMPLIADO (500-800m)',
+  vizinhanca: 'PARADA DE ENDEREÇO VIZINHO',
+  parada_curta_compartilhada: 'PARADA CURTA COMPARTILHADA',
+  outra_placa: 'PARADA DE OUTRA PLACA',
+  alvo_feito_unitrac: 'ALVO FEITO NA UNITRAC (SEM GPS)',
+  sem_evidencia: 'SEM EVIDÊNCIA',
+  sem_rastreador: 'SEM RASTREADOR',
+}
+
+function textoEvidencia(d: LinhaDetalheEntrega): string {
+  return LABEL_EVIDENCIA_NF[d.evidencia]
+}
+
+// Task 5: distancia em METROS, arredondada -- `null` (nao medida, nunca
+// inventada) fica em branco, igual ao resto do relatorio quando falta dado.
+function textoDistParada(d: LinhaDetalheEntrega): string | number {
+  return d.distParadaM != null ? Math.round(d.distParadaM) : ''
 }
 
 // Task 4: "após conferência da operação" NUNCA muda o automático (Global
@@ -492,7 +524,7 @@ export async function gerarKpiRomaneioXlsx(
     wsPlaca.columns = [
       { width: 10 }, { width: 14 }, { width: 32 }, { width: 36 },
       { width: 12 }, { width: 12 }, { width: 12 }, { width: 36 },
-      { width: 36 }, { width: 20 },
+      { width: 36 }, { width: 20 }, { width: 28 }, { width: 16 },
     ]
     linhasDaPlaca.forEach((d, i) => {
       // CHEGADA/SAÍDA NA LOJA: motivo só faz sentido quando 'pendente'
@@ -515,6 +547,7 @@ export async function gerarKpiRomaneioXlsx(
         d.carga, d.nf, d.clienteNome, d.endereco,
         chegadaLoja, saidaLoja, formatarMinutos(d.tempoParadaMin),
         textoStatus(d), textoResolucaoManual(d), d.responsavelResolucao ?? '',
+        textoEvidencia(d), textoDistParada(d),
       ])
       estilizarLinhaDado(wsPlaca, 3 + 1 + i, COLUNAS_DETALHE_PLACA.length, i)
     })

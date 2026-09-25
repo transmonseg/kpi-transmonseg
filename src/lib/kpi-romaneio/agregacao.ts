@@ -2,7 +2,7 @@ import type { AlvoApi } from '@/lib/unitrac-api'
 // UnitracParadaRow vem de matcher.ts, não de unitrac-api -- mesma ressalva
 // de unitrac.ts (Task 6).
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
-import type { LinhaEscala, LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega, Visita } from './types'
+import type { LinhaEscala, LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega, Visita, EvidenciaNf } from './types'
 import { haversine } from '@/lib/utils/geo'
 import { RAIO_ENTREGA_METROS } from './constants'
 import { acessoSomentePorBarco } from './acesso-restrito'
@@ -97,6 +97,32 @@ function acharCoordenadaDaParadaPropria(
     }
   }
   return null
+}
+
+const coordValidaCadastro = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && n !== 0
+
+/** Task 5 (plano 24/09, Step 2 do brief): a ponte (base-horarios.ts) já
+ *  escolhe internamente entre geocode e `latAlt`/`lngAlt` (cadastro Unitrac)
+ *  pra achar a parada real -- sem mudar a ponte, distingue aqui, no KPI,
+ *  comparando a distância da parada real (coordenada casada por horário via
+ *  `acharCoordenadaDaParadaPropria`, nunca `Visita.distanciaMetrosDoPonto`)
+ *  até o geocode do endereço E até o cadastro do alvo na Unitrac
+ *  (`AlvoApi.pontoLat/pontoLng`) -- o mais perto vence. `null` em qualquer
+ *  lado quando a coordenada correspondente não existe ou não é confiável
+ *  (nunca inventa). */
+function distanciasGeoECadastro(
+  linha: LinhaGeocodificada,
+  alvo: AlvoApi | undefined,
+  coordParada: { lat: number; lng: number } | null,
+): { distGeo: number | null; distCad: number | null } {
+  if (coordParada == null) return { distGeo: null, distCad: null }
+  const distGeo = linha.geoConfiavel !== false && linha.lat != null && linha.lng != null
+    ? haversine(coordParada.lat, coordParada.lng, linha.lat, linha.lng)
+    : null
+  const distCad = alvo && coordValidaCadastro(alvo.pontoLat) && coordValidaCadastro(alvo.pontoLng)
+    ? haversine(coordParada.lat, coordParada.lng, alvo.pontoLat as number, alvo.pontoLng as number)
+    : null
+  return { distGeo, distCad }
 }
 
 function acharParadaDeOutraPlaca(
@@ -417,6 +443,12 @@ export function montarDetalheEntregas(
       status: 'pendente',
       temRastreador,
       observacao: 'CARGA SEM PLACA NO ROMANEIO - CONFERIR COM A OPERAÇÃO',
+      // Sem placa nao ha' GPS de placa nenhuma pra medir contra -- nunca
+      // sem_rastreador (esse rotulo e' especificamente "a placa existe mas
+      // nao tem fonte de rastreamento", diferente de "nao ha placa
+      // nenhuma pra rastrear").
+      evidencia: 'sem_evidencia',
+      distParadaM: null,
     }))
   }
 
@@ -655,6 +687,66 @@ export function montarDetalheEntregas(
       observacao = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
     }
 
+    // Task 5 (plano 24/09, requisito P0 da Ana: "expor origem, método e
+    // distância; não equiparar parada em rua semelhante a entrega") --
+    // EvidenciaNf: mesma precedência documentada no comentário do tipo
+    // (types.ts), calculada a partir dos MESMOS marcadores já usados acima
+    // pra observacao/status (viaRaioAmpliado, viaVizinhanca, porOutraPlaca,
+    // confirmado_unitrac, perdeuParadaCompartilhada, semRastreadorNoDia) --
+    // nunca lê `Visita.distanciaMetrosDoPonto` (ver acharCoordenadaDaParada
+    // Propria acima: SEMPRE 0 quando a Visita veio da ponte do
+    // monitoramento). distParadaM só vem preenchido quando a distância foi
+    // de fato medida contra uma coordenada real -- `null` nunca é inventado.
+    let evidencia: EvidenciaNf
+    let distParadaM: number | null = null
+    if (status === 'pendente' && semRastreadorNoDia) {
+      evidencia = 'sem_rastreador'
+    } else if (porOutraPlaca) {
+      evidencia = 'outra_placa'
+      distParadaM = linha.lat != null && linha.lng != null && porOutraPlaca.parada.lat != null && porOutraPlaca.parada.lng != null
+        ? haversine(porOutraPlaca.parada.lat, porOutraPlaca.parada.lng, linha.lat, linha.lng)
+        : null
+    } else if (confirmadoUnitrac && !confirmadoGps) {
+      evidencia = 'alvo_feito_unitrac'
+    } else if (perdeuParadaCompartilhada) {
+      // NF que PERDEU: a parada real e' de outro endereco do grupo -- nao e'
+      // evidencia NENHUMA a favor desta NF (mesmo espirito de nao mostrar
+      // horario nenhum pra ela, ver `chegada`/`saida` acima). A distancia
+      // ainda e' MEDIDA (foi ela quem decidiu a perda), so' nao vira uma das
+      // evidencias positivas.
+      evidencia = 'sem_evidencia'
+      distParadaM = chaveParadaCompartilhada != null && visita
+        ? distanciaNaParadaCompartilhada(linha, visita, chaveParadaCompartilhada)
+        : null
+    } else if (visita && grupoParadaCompartilhada != null && grupoParadaCompartilhada.size > 1) {
+      evidencia = 'parada_curta_compartilhada'
+      distParadaM = chaveParadaCompartilhada != null
+        ? distanciaNaParadaCompartilhada(linha, visita, chaveParadaCompartilhada)
+        : null
+    } else if (visita?.viaVizinhanca) {
+      evidencia = 'vizinhanca'
+      distParadaM = distanciasGeoECadastro(
+        linha, alvo, acharCoordenadaDaParadaPropria(placaNorm, visita.chegada, visita.saida, paradasPorOutraPlaca),
+      ).distGeo
+    } else if (visita?.viaRaioAmpliado) {
+      evidencia = 'raio_ampliado'
+      distParadaM = distanciasGeoECadastro(
+        linha, alvo, acharCoordenadaDaParadaPropria(placaNorm, visita.chegada, visita.saida, paradasPorOutraPlaca),
+      ).distGeo
+    } else if (visita) {
+      const coordParada = acharCoordenadaDaParadaPropria(placaNorm, visita.chegada, visita.saida, paradasPorOutraPlaca)
+      const { distGeo, distCad } = distanciasGeoECadastro(linha, alvo, coordParada)
+      if (distCad != null && (distGeo == null || distCad < distGeo)) {
+        evidencia = 'parada_no_cadastro_unitrac'
+        distParadaM = distCad
+      } else {
+        evidencia = 'parada_no_endereco'
+        distParadaM = distGeo
+      }
+    } else {
+      evidencia = 'sem_evidencia'
+    }
+
     return {
       carga,
       placa: placaNorm,
@@ -672,6 +764,8 @@ export function montarDetalheEntregas(
       status,
       temRastreador,
       observacao,
+      evidencia,
+      distParadaM,
     }
   })
 }

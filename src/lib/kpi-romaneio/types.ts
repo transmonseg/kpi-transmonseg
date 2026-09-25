@@ -86,6 +86,50 @@ export type Visita = {
 
 export type StatusEntrega = 'confirmado_unitrac' | 'confirmado_gps' | 'pendente'
 
+/** Task 5 (plano 24/09, requisito P0 da Ana: "expor origem, método e
+ *  distância; não equiparar parada em rua semelhante a entrega") -- ORIGEM
+ *  da confirmação (ou falta dela) de cada NF, além do `status`/`observacao`
+ *  textual já existentes. Um valor por NF, na precedência abaixo (a mais
+ *  forte primeiro; cada NF recebe a PRIMEIRA que se aplicar):
+ *
+ *  1. `sem_rastreador` -- placa sem nenhuma fonte de GPS no dia (ver
+ *     `semRastreadorNoDia` em agregacao.ts) -- nunca teve como confirmar.
+ *  2. `outra_placa` -- confirmada pela parada de OUTRO veículo da frota
+ *     (`acharParadaDeOutraPlaca`), carga transferida.
+ *  3. `alvo_feito_unitrac` -- confirmada só pelo alvo da Unitrac
+ *     (`situacao===1`) SEM nenhuma Visita de GPS pra comparar distância.
+ *  4. `parada_curta_compartilhada` -- confirmada, mas a mesma parada curta
+ *     (≤3min) também "confirmaria" outro endereço distinto (item 3b) --
+ *     ENTREGUE com ressalva.
+ *  5. `vizinhanca` -- emprestou horário de OUTRO ponto do romaneio a
+ *     <=800m (`Visita.viaVizinhanca`).
+ *  6. `raio_ampliado` -- confirmada por dwell no PRÓPRIO endereço, só que
+ *     no raio ampliado (500-800m, `Visita.viaRaioAmpliado`).
+ *  7. `parada_no_cadastro_unitrac` -- a parada física real está mais perto
+ *     do CADASTRO da Unitrac (`AlvoApi.pontoLat/pontoLng`) do que do nosso
+ *     geocode.
+ *  8. `parada_no_endereco` -- a parada física real está mais perto (ou só
+ *     existe) o nosso próprio geocode.
+ *  9. `sem_evidencia` -- nenhuma das anteriores: pendente sem nenhum sinal
+ *     de GPS a favor (inclui a NF que PERDEU uma parada curta
+ *     compartilhada pra outro endereço, `perdeuParadaCompartilhada`).
+ *
+ *  Nunca lido a partir de `Visita.distanciaMetrosDoPonto` (ver comentário
+ *  de `acharCoordenadaDaParadaPropria` em agregacao.ts: esse campo vem
+ *  SEMPRE 0 quando a Visita veio da ponte do monitoramento) -- a distância
+ *  real vem de casar a janela [chegada, saída] da Visita contra as paradas
+ *  cruas (`paradasPorOutraPlaca`), ou fica `null` quando não há como medir. */
+export type EvidenciaNf =
+  | 'parada_no_endereco'
+  | 'parada_no_cadastro_unitrac'
+  | 'raio_ampliado'
+  | 'vizinhanca'
+  | 'parada_curta_compartilhada'
+  | 'outra_placa'
+  | 'alvo_feito_unitrac'
+  | 'sem_evidencia'
+  | 'sem_rastreador'
+
 /** Resolucao manual por NF (Task 4, plano 24/09) -- camada humana em cima do
  *  status automatico, persistida em `kpi_nf_resolucao`. `entregue_outra_placa`
  *  e' o caminho pra transferencia de placa que a Task 3 nao conseguiu
@@ -168,6 +212,16 @@ export type LinhaDetalheEntrega = {
   // no lugar da escalada) ou tempo em loja implausivel (>4h, ver
   // agregacao.ts). `null` = nada de suspeito, STATUS mostra o rotulo normal.
   observacao: string | null
+  // Task 5 (plano 24/09): origem da (não-)confirmação -- ver comentário
+  // completo de EvidenciaNf acima.
+  evidencia: EvidenciaNf
+  // Task 5: distância real (metros, haversine) entre a parada física real
+  // (nunca `Visita.distanciaMetrosDoPonto`, ver EvidenciaNf) e a coordenada
+  // que a evidência usou pra decidir (geocode do endereço, cadastro da
+  // Unitrac, ou a parada da outra placa) -- `null` quando não há como medir
+  // (sem coordenada, sem parada física casada por horário, geocode não
+  // confiável). Nunca inventado.
+  distParadaM: number | null
   // Task 4 (plano 24/09): resolucao manual VIGENTE (mais recente) desta NF,
   // aplicada por cima do automatico via aplicarResolucoes (resolucoes.ts) --
   // NUNCA sobrescreve `status`/`observacao` acima, so' preenche estes campos

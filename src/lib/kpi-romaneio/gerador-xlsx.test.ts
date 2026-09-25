@@ -27,6 +27,7 @@ function detalheFixture(overrides: Partial<LinhaDetalheEntrega> = {}): LinhaDeta
     saidaCd: '2026-08-23T06:00:00.000Z', chegadaCd: '2026-08-23T19:00:00.000Z', tempoOperacaoMin: 780,
     chegada: null, saida: null, tempoParadaMin: null, status: 'pendente',
     temRastreador: true, observacao: null,
+    evidencia: 'sem_evidencia', distParadaM: null,
     ...overrides,
   }
 }
@@ -305,7 +306,7 @@ describe('gerador-xlsx', () => {
       const wb = new ExcelJS.Workbook()
       await wb.xlsx.load(buffer)
       const wsPlaca = wb.getWorksheet('ABC1234')!
-      expect(wsPlaca.autoFilter).toBe('A3:J4') // header linha 3, 1 linha de dado, 10 colunas (A..J, Task 4: +RESOLUÇÃO OPERAÇÃO/RESPONSÁVEL)
+      expect(wsPlaca.autoFilter).toBe('A3:L4') // header linha 3, 1 linha de dado, 12 colunas (A..L, Task 4: +RESOLUÇÃO OPERAÇÃO/RESPONSÁVEL; Task 5: +EVIDÊNCIA/DIST. PARADA (m))
     })
   })
 

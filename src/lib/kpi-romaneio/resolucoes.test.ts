@@ -19,6 +19,7 @@ function detalheFixture(overrides: Partial<LinhaDetalheEntrega> = {}): LinhaDeta
     saidaCd: null, chegadaCd: null, tempoOperacaoMin: null,
     chegada: null, saida: null, tempoParadaMin: null, status: 'pendente',
     temRastreador: true, observacao: null,
+    evidencia: 'sem_evidencia', distParadaM: null,
     ...overrides,
   }
 }

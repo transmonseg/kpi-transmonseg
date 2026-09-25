@@ -1327,3 +1327,186 @@ describe('montarDetalheEntregas -- carga SEM PLACA no romaneio (Critical 2)', ()
     expect(d.observacao).toMatch(/CARGA TRANSFERIDA/)
   })
 })
+
+// Task 5 (plano 24/09, requisito P0 da Ana: "expor origem, método e
+// distância; não equiparar parada em rua semelhante a entrega") -- um teste
+// por valor do enum EvidenciaNf (ver comentário completo em types.ts),
+// nunca lendo `Visita.distanciaMetrosDoPonto` (sempre 0 quando a Visita
+// vem da ponte do monitoramento, ver acharCoordenadaDaParadaPropria em
+// agregacao.ts) -- distParadaM sempre vem de casar a janela [chegada,saida]
+// da Visita contra `paradasPorOutraPlaca` (coordenada real).
+describe('montarDetalheEntregas -- EvidenciaNf e distParadaM (Task 5, plano 24/09)', () => {
+  const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+
+  it('sem_rastreador: placa sem nenhuma fonte de GPS no dia -- distParadaM null (nunca medido)', () => {
+    const [d] = montarDetalheEntregas('93758', 'TTL5J17', [linha('NF1')], [], new Map(), resumoCargaVazio, false)
+
+    expect(d.evidencia).toBe('sem_rastreador')
+    expect(d.distParadaM).toBeNull()
+  })
+
+  it('outra_placa: confirmada pela parada de outro veiculo da frota -- distParadaM = distancia real ate essa parada', () => {
+    const linhas = [linha('NF1')] // lat -22.9, lng -43.2
+    const paradaOutraPlaca = parada({ id: 'p2', placa_norm: 'RQV6I51', classificacao: 'FORA_BASE', lat: -22.9001, lng: -43.2001 })
+    const paradasFrota = new Map([['TTL7D40', []], ['RQV6I51', [paradaOutraPlaca]]])
+
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, paradasFrota)
+
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.evidencia).toBe('outra_placa')
+    expect(d.distParadaM).not.toBeNull()
+    expect(d.distParadaM as number).toBeLessThan(50)
+  })
+
+  it('alvo_feito_unitrac: confirmado so pelo alvo da Unitrac, sem Visita de GPS -- distParadaM null (nada pra comparar)', () => {
+    const alvos = [alvo('NF1', 1)]
+
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], alvos, new Map(), resumoCargaVazio)
+
+    expect(d.status).toBe('confirmado_unitrac')
+    expect(d.evidencia).toBe('alvo_feito_unitrac')
+    expect(d.distParadaM).toBeNull()
+  })
+
+  // Mesmo caso de aceite RQQ5B81/NF 2386225 (23/09, Task 2): grupo de 3
+  // enderecos confirmados pela MESMA parada curta (1min), 1 genuinamente
+  // perto (~45m, vencedor) e 2 longe (>3km, perdedores).
+  it('parada_curta_compartilhada: NF vencedora do grupo (ENTREGUE - PARADA CURTA...) -- distParadaM = distancia real ate a parada, dentro do raio vencedor', () => {
+    const paradaCurta = { chegada: '2026-09-11T08:00:00.000Z', saida: '2026-09-11T08:01:00.000Z' }
+    const paradaReal = parada({
+      chegada: paradaCurta.chegada, saida: paradaCurta.saida, fim_real: paradaCurta.saida,
+      classificacao: 'FORA_BASE', lat: -22.71, lng: -42.628,
+    })
+    const linhas = [
+      linha('NF_A', { endereco: 'ENDERECO A - PERTO (~45m)', lat: -22.7104, lng: -42.628 }),
+      linha('NF_B', { endereco: 'ENDERECO B - LONGE (~4.4km)', lat: -22.75, lng: -42.628 }),
+      linha('NF_C', { endereco: 'ENDERECO C - LONGE (~3.3km)', lat: -22.71, lng: -42.66 }),
+    ]
+    const visitas = new Map<string, Visita>([
+      ['NF_A', { nf: 'NF_A', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 999 }],
+      ['NF_B', { nf: 'NF_B', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 999 }],
+      ['NF_C', { nf: 'NF_C', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 999 }],
+    ])
+    const paradasPorOutraPlaca = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaReal]]])
+
+    const detalhes = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio,
+      true, paradasPorOutraPlaca, null, false, false, true,
+    )
+    const nfA = detalhes.find(d => d.nf === 'NF_A')!
+
+    expect(nfA.status).toBe('confirmado_gps')
+    expect(nfA.evidencia).toBe('parada_curta_compartilhada')
+    expect(nfA.distParadaM).not.toBeNull()
+    expect(nfA.distParadaM as number).toBeLessThan(150)
+  })
+
+  it('sem_evidencia: NF que PERDEU a parada curta compartilhada pra outro endereco -- distancia real ainda medida (foi ela quem decidiu a perda), so nao vira evidencia positiva', () => {
+    const paradaCurta = { chegada: '2026-09-11T08:00:00.000Z', saida: '2026-09-11T08:01:00.000Z' }
+    const paradaReal = parada({
+      chegada: paradaCurta.chegada, saida: paradaCurta.saida, fim_real: paradaCurta.saida,
+      classificacao: 'FORA_BASE', lat: -22.71, lng: -42.628,
+    })
+    const linhas = [
+      linha('NF_A', { endereco: 'ENDERECO A - PERTO (~45m)', lat: -22.7104, lng: -42.628 }),
+      linha('NF_B', { endereco: 'ENDERECO B - LONGE (~4.4km)', lat: -22.75, lng: -42.628 }),
+      linha('NF_C', { endereco: 'ENDERECO C - LONGE (~3.3km)', lat: -22.71, lng: -42.66 }),
+    ]
+    const visitas = new Map<string, Visita>([
+      ['NF_A', { nf: 'NF_A', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 999 }],
+      ['NF_B', { nf: 'NF_B', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 999 }],
+      ['NF_C', { nf: 'NF_C', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 999 }],
+    ])
+    const paradasPorOutraPlaca = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaReal]]])
+
+    const detalhes = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio,
+      true, paradasPorOutraPlaca, null, false, false, true,
+    )
+    const nfB = detalhes.find(d => d.nf === 'NF_B')!
+
+    expect(nfB.status).toBe('pendente')
+    expect(nfB.evidencia).toBe('sem_evidencia')
+    expect(nfB.distParadaM).not.toBeNull()
+    expect(nfB.distParadaM as number).toBeGreaterThan(300)
+  })
+
+  it('vizinhanca: emprestou horario de outro ponto do romaneio a <=800m -- distancia real ate a parada fisica, nunca 0 (valor antigo da ponte)', () => {
+    const linhas = [linha('NF1')] // lat -22.9, lng -43.2
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', chegada: '2026-08-30T10:00:00.000Z', saida: '2026-08-30T10:15:00.000Z', distanciaMetrosDoPonto: 0, viaVizinhanca: true }],
+    ])
+    const paradaReal = parada({
+      chegada: '2026-08-30T10:00:00.000Z', saida: '2026-08-30T10:15:00.000Z', fim_real: '2026-08-30T10:15:00.000Z',
+      classificacao: 'FORA_BASE', lat: -22.905, lng: -43.205,
+    })
+    const paradasPorOutraPlaca = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaReal]]])
+
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio, true, paradasPorOutraPlaca)
+
+    expect(d.evidencia).toBe('vizinhanca')
+    expect(d.distParadaM).not.toBeNull()
+    expect(d.distParadaM as number).toBeGreaterThan(500)
+  })
+
+  it('raio_ampliado: confirmada por dwell no proprio endereco no raio ampliado (500-800m) -- distancia real medida', () => {
+    const linhas = [linha('NF1')] // lat -22.9, lng -43.2
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', chegada: '2026-09-06T10:00:00.000Z', saida: '2026-09-06T10:27:00.000Z', distanciaMetrosDoPonto: 501, viaRaioAmpliado: true }],
+    ])
+    const paradaReal = parada({
+      chegada: '2026-09-06T10:00:00.000Z', saida: '2026-09-06T10:27:00.000Z', fim_real: '2026-09-06T10:27:00.000Z',
+      classificacao: 'FORA_BASE', lat: -22.9045, lng: -43.2,
+    })
+    const paradasPorOutraPlaca = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaReal]]])
+
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio, true, paradasPorOutraPlaca)
+
+    expect(d.evidencia).toBe('raio_ampliado')
+    expect(d.distParadaM).not.toBeNull()
+  })
+
+  it('parada_no_endereco: confirmacao normal sem cadastro Unitrac pra comparar -- vence o geocode do endereco', () => {
+    const linhas = [linha('NF1', { lat: -22.9, lng: -43.2 })]
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', chegada: '2026-09-20T10:00:00.000Z', saida: '2026-09-20T10:10:00.000Z', distanciaMetrosDoPonto: 0 }],
+    ])
+    const paradaReal = parada({
+      chegada: '2026-09-20T10:00:00.000Z', saida: '2026-09-20T10:10:00.000Z', fim_real: '2026-09-20T10:10:00.000Z',
+      classificacao: 'FORA_BASE', lat: -22.9005, lng: -43.2005,
+    })
+    const paradasPorOutraPlaca = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaReal]]])
+
+    // sem alvo -- nenhum cadastro Unitrac pra comparar
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio, true, paradasPorOutraPlaca)
+
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.evidencia).toBe('parada_no_endereco')
+    expect(d.distParadaM).not.toBeNull()
+    expect(d.distParadaM as number).toBeLessThan(150)
+  })
+
+  // Step 2 do brief da Task 5: a ponte ja' escolhe entre geocode e latAlt;
+  // aqui o KPI distingue comparando as duas distancias -- a mais perto
+  // vence. Cadastro (AlvoApi.pontoLat/pontoLng) bem mais perto da parada
+  // real do que o geocode do endereco (proposital, geocode ruim).
+  it('parada_no_cadastro_unitrac: a parada real esta mais perto do cadastro Unitrac do que do nosso geocode -- vence o cadastro', () => {
+    const linhas = [linha('NF1', { lat: -22.9, lng: -43.2 })] // geocode longe da parada real
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', chegada: '2026-09-20T10:00:00.000Z', saida: '2026-09-20T10:10:00.000Z', distanciaMetrosDoPonto: 0 }],
+    ])
+    const paradaReal = parada({
+      chegada: '2026-09-20T10:00:00.000Z', saida: '2026-09-20T10:10:00.000Z', fim_real: '2026-09-20T10:10:00.000Z',
+      classificacao: 'FORA_BASE', lat: -22.905, lng: -43.205,
+    })
+    const paradasPorOutraPlaca = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaReal]]])
+    const alvos = [alvo('NF1', 0, { pontoLat: -22.9051, pontoLng: -43.2051 })] // cadastro bem perto da parada real
+
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, alvos, visitas, resumoCargaVazio, true, paradasPorOutraPlaca)
+
+    expect(d.status).toBe('confirmado_gps') // situacao=0 -- nao confirma via Unitrac, so' via GPS
+    expect(d.evidencia).toBe('parada_no_cadastro_unitrac')
+    expect(d.distParadaM).not.toBeNull()
+    expect(d.distParadaM as number).toBeLessThan(50)
+  })
+})
