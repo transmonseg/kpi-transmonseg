@@ -246,6 +246,13 @@ export function agregarPorCarga(
     if (confirmadoUnitrac || confirmadoGps) confirmadas++
   }
 
+  // Task 9 (plano 24/09): paradas físicas FORA_BASE da placa -- ver
+  // comentário completo de `paradasForaBase` em types.ts. Sem janela por
+  // carga (paradasGps já chega aqui como o dia INTEIRO da placa, ver
+  // chamador em route.ts/pipeline.ts), conta o dia inteiro; placa com mais
+  // de uma carga no dia repete o mesmo número em cada uma.
+  const paradasForaBase = paradasGps.filter(p => p.classificacao === 'FORA_BASE').length
+
   const eventosBase = paradasGps.filter(p => p.classificacao === 'BASE')
   // Achado real 24/08 (dado real da Nutry Max): placa com só UMA permanência
   // na base no dia (ex. parada de meio-dia pra recarregar) fazia
@@ -327,6 +334,7 @@ export function agregarPorCarga(
     clientesPlanejados: escala?.entPlanejado ?? new Set(linhasRomaneio.map(l => l.clienteCodigo)).size,
     nfPlanejado,
     paradasReais: confirmadas,
+    paradasForaBase,
     kmPercorrido,
     saidaCd,
     chegadaCd,
@@ -818,6 +826,24 @@ export function montarDetalheEntregas(
       } else {
         evidencia = 'parada_no_endereco'
         distParadaM = confiavel ? distGeo : null
+      }
+    } else if (distPropria != null) {
+      // Task 9 (plano 24/09, requisito da Ana: rótulos por distância própria
+      // sem evidência/distância expostas -- 69 NFs em 23/09). Mesma
+      // precedência/thresholds já usados na "Nomenclatura por evidencia de
+      // GPS" acima (RAIO_PASSOU_SEM_PARAR_M/RAIO_NAO_FOI_AO_CLIENTE_M) --
+      // nunca duplica regra, só espelha em EvidenciaNf pra expor a
+      // distância junto (`observacao` continua igual, calculado acima).
+      // `distPropria` já vem `null` quando a geo não é confiável (ver
+      // definição de `distPropria` acima), então `distPropria != null` já
+      // garante geo confiável -- não precisa checar `geoConfiavel` de novo.
+      distParadaM = Math.round(distPropria)
+      if (distPropria <= RAIO_PASSOU_SEM_PARAR_M) {
+        evidencia = 'passagem_sem_parada' // "PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA"
+      } else if (distPropria > RAIO_NAO_FOI_AO_CLIENTE_M) {
+        evidencia = 'sem_evidencia' // "NÃO FOI AO CLIENTE"
+      } else {
+        evidencia = 'parada_proxima_fora_raio' // "PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO"
       }
     } else {
       evidencia = 'sem_evidencia'

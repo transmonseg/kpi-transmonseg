@@ -13,7 +13,7 @@ function linhaKpi(overrides: Partial<LinhaKpiRomaneio> = {}): LinhaKpiRomaneio {
   return {
     carga: 'C001', placa: 'ABC1234', destino: 'X', motorista: 'Y',
     ajudante1: null, ajudante2: null, pesoKg: null, clientesPlanejados: null, nfPlanejado: null,
-    paradasReais: 1, kmPercorrido: null, saidaCd: null, chegadaCd: null,
+    paradasReais: 1, paradasForaBase: 0, kmPercorrido: null, saidaCd: null, chegadaCd: null,
     tempoOperacaoMin: null, tempoMedioParadaMin: null, status: 'OK',
     temRastreador: true,
     ...overrides,
@@ -57,7 +57,7 @@ describe('gerador-xlsx', () => {
       linhaKpi({
         carga: 'C001', placa: 'ABC1234', destino: 'SAO PAULO', motorista: 'JOAO SILVA',
         ajudante1: 'MARIA', ajudante2: 'PEDRO', pesoKg: 1500.5, clientesPlanejados: 5,
-        nfPlanejado: 10, paradasReais: 4, kmPercorrido: 125.7,
+        nfPlanejado: 10, paradasReais: 4, paradasForaBase: 3, kmPercorrido: 125.7,
         saidaCd: '2026-08-23T08:30:00.000Z', chegadaCd: '2026-08-23T17:45:00.000Z',
         tempoOperacaoMin: 549, tempoMedioParadaMin: 12, status: 'OK',
       }),
@@ -83,19 +83,20 @@ describe('gerador-xlsx', () => {
     expect(values[6]).toBe(1500.5) // PESO (KG)
     expect(values[7]).toBe(5) // CLIENTES PLANEJADOS
     expect(values[8]).toBe(10) // NF PLANEJADO
-    expect(values[9]).toBe(4) // PARADAS REAIS
-    expect(values[10]).toBe(125.7) // KM PERCORRIDO (arredondado para 1 casa)
+    expect(values[9]).toBe(4) // NF CONFIRMADAS (ex-"PARADAS REAIS", Task 9)
+    expect(values[10]).toBe(3) // PARADAS FORA DA BASE (Task 9)
+    expect(values[11]).toBe(125.7) // KM PERCORRIDO (arredondado para 1 casa)
     // Achado real 25/08: o ISO de saidaCd/chegadaCd já vem em BRT mascarado
     // como UTC (ver comentário de formatarHora em gerador-xlsx.ts) -- os
     // dígitos do horário devem sair EXATAMENTE como vieram, sem conversão
     // de fuso nenhuma (bug anterior aplicava America/Sao_Paulo em cima de
     // um valor que já não precisava, atrasando todo horário exibido em 3h).
-    expect(values[11]).toBe('08:30') // SAÍDA CD (formatado, sem shift de fuso)
-    expect(values[12]).toBe('17:45') // CHEGADA CD (formatado, sem shift de fuso)
-    expect(values[13]).toBe('9h09min') // TEMPO OPERAÇÃO (formatado em XhYYmin)
-    expect(values[14]).toBe('0h12min') // TEMPO MÉDIO POR ENTREGA
+    expect(values[12]).toBe('08:30') // SAÍDA CD (formatado, sem shift de fuso)
+    expect(values[13]).toBe('17:45') // CHEGADA CD (formatado, sem shift de fuso)
+    expect(values[14]).toBe('9h09min') // TEMPO OPERAÇÃO (formatado em XhYYmin)
+    expect(values[15]).toBe('0h12min') // TEMPO MÉDIO POR ENTREGA
     // STATUS (OK/INCOMPLETO) removido da tela principal (pedido 25/08) --
-    // values[15] nao existe mais.
+    // values[16] nao existe mais.
   })
 
   it('campos null viram string vazia', async () => {
@@ -117,11 +118,11 @@ describe('gerador-xlsx', () => {
     expect(values[6]).toBe('') // PESO (KG)
     expect(values[7]).toBe('') // CLIENTES PLANEJADOS
     expect(values[8]).toBe('') // NF PLANEJADO
-    expect(values[10]).toBe('') // KM PERCORRIDO
-    expect(values[11]).toBe('') // SAÍDA CD
-    expect(values[12]).toBe('') // CHEGADA CD
-    expect(values[13]).toBe('') // TEMPO OPERAÇÃO
-    expect(values[14]).toBe('') // TEMPO MÉDIO POR ENTREGA
+    expect(values[11]).toBe('') // KM PERCORRIDO
+    expect(values[12]).toBe('') // SAÍDA CD
+    expect(values[13]).toBe('') // CHEGADA CD
+    expect(values[14]).toBe('') // TEMPO OPERAÇÃO
+    expect(values[15]).toBe('') // TEMPO MÉDIO POR ENTREGA
   })
 
   it('arredonda KM PERCORRIDO para 1 casa decimal', async () => {
@@ -138,7 +139,7 @@ describe('gerador-xlsx', () => {
     const dataValues = dataRow.values as unknown[]
     const values = dataValues.slice(1)
 
-    expect(values[10]).toBe(123.5)
+    expect(values[11]).toBe(123.5)
   })
 
   it('formata tempo em horas e minutos (XhYYmin)', async () => {
@@ -155,7 +156,7 @@ describe('gerador-xlsx', () => {
     const dataValues = dataRow.values as unknown[]
     const values = dataValues.slice(1)
 
-    expect(values[13]).toBe('2h05min')
+    expect(values[14]).toBe('2h05min')
   })
 
   it('achado real 24/08: TEMPO OPERAÇÃO negativo nunca deveria existir na origem, mas o formatador tambem nao inventa "-1h-1min" -- vira vazio', async () => {
@@ -166,7 +167,7 @@ describe('gerador-xlsx', () => {
     const wb = new ExcelJS.Workbook()
     await wb.xlsx.load(buffer)
     const values = (wb.worksheets[0].getRow(LINHA_PRIMEIRO_DADO).values as unknown[]).slice(1)
-    expect(values[13]).toBe('')
+    expect(values[14]).toBe('')
   })
 
   it('pedido do usuário 24/08 ("filtrável por placa"): autoFilter cobre header + todas as linhas de dado na aba principal', async () => {
@@ -179,7 +180,7 @@ describe('gerador-xlsx', () => {
     await wb.xlsx.load(buffer)
 
     const ws = wb.worksheets[0]
-    expect(ws.autoFilter).toBe('A2:O4') // header linha 2, 2 linhas de dado (linha 3 e 4), 15 colunas (A..O, sem STATUS)
+    expect(ws.autoFilter).toBe('A2:P4') // header linha 2, 2 linhas de dado (linha 3 e 4), 16 colunas (A..P, sem STATUS)
   })
 
   it('sem avisos e sem placa nenhuma: nao cria abas extra', async () => {
@@ -392,8 +393,8 @@ describe('gerador-xlsx', () => {
       await wb.xlsx.load(buffer)
       const values = (wb.worksheets[0].getRow(LINHA_PRIMEIRO_DADO).values as unknown[]).slice(1)
 
-      expect(values[11]).toBe('SEM CADASTRO') // SAÍDA CD
-      expect(values[12]).toBe('SEM CADASTRO') // CHEGADA CD
+      expect(values[12]).toBe('SEM CADASTRO') // SAÍDA CD
+      expect(values[13]).toBe('SEM CADASTRO') // CHEGADA CD
     })
 
     it('EM ROTA no lugar de celula vazia quando a data do relatorio e o dia de hoje (rota ainda em andamento)', async () => {
@@ -403,8 +404,8 @@ describe('gerador-xlsx', () => {
       await wb.xlsx.load(buffer)
       const values = (wb.worksheets[0].getRow(LINHA_PRIMEIRO_DADO).values as unknown[]).slice(1)
 
-      expect(values[11]).toBe('EM ROTA') // SAÍDA CD
-      expect(values[12]).toBe('EM ROTA') // CHEGADA CD
+      expect(values[12]).toBe('EM ROTA') // SAÍDA CD
+      expect(values[13]).toBe('EM ROTA') // CHEGADA CD
     })
 
     it('celula vazia continua vazia (nao inventa motivo) quando ha rastreador e a data ja passou', async () => {
@@ -414,8 +415,8 @@ describe('gerador-xlsx', () => {
       await wb.xlsx.load(buffer)
       const values = (wb.worksheets[0].getRow(LINHA_PRIMEIRO_DADO).values as unknown[]).slice(1)
 
-      expect(values[11]).toBe('') // SAÍDA CD
-      expect(values[12]).toBe('') // CHEGADA CD
+      expect(values[12]).toBe('') // SAÍDA CD
+      expect(values[13]).toBe('') // CHEGADA CD
     })
 
     // Achado real 15/09 (grupo KPI AJUSTES): NF que já recebeu veredito

@@ -11,9 +11,15 @@ import { hojeBR } from '@/lib/data-br'
 // 25/08: "tira esse status de concluido ou incompleto") -- o campo `status`
 // continua calculado em LinhaKpiRomaneio (agregacao.ts), so nao aparece
 // mais aqui.
+// Task 9 (plano 24/09, achado da Ana: "PARADAS REAIS" contava NF confirmada,
+// não parada física -- confundiu a operação, "KPI 3 x relatório 4").
+// "PARADAS REAIS" -> "NF CONFIRMADAS" (mesmo valor, `paradasReais` no
+// código -- nome do campo mantido de propósito, ver comentário em
+// types.ts) + nova coluna "PARADAS FORA DA BASE" logo depois, com a
+// contagem de paradas FÍSICAS (`paradasForaBase`).
 export const COLUNAS_KPI_ROMANEIO = [
   'CARGA', 'PLACA', 'DESTINO', 'MOTORISTA', 'AJUDANTE 1', 'AJUDANTE 2', 'PESO (KG)',
-  'CLIENTES PLANEJADOS', 'NF PLANEJADO', 'PARADAS REAIS', 'KM PERCORRIDO',
+  'CLIENTES PLANEJADOS', 'NF PLANEJADO', 'NF CONFIRMADAS', 'PARADAS FORA DA BASE', 'KM PERCORRIDO',
   'SAÍDA CD', 'CHEGADA CD', 'TEMPO OPERAÇÃO', 'TEMPO MÉDIO POR ENTREGA',
 ] as const
 
@@ -217,6 +223,10 @@ const LABEL_EVIDENCIA_NF: Record<EvidenciaNf, string> = {
   alvo_feito_unitrac: 'ALVO FEITO NA UNITRAC (SEM GPS)',
   sem_evidencia: 'SEM EVIDÊNCIA',
   sem_rastreador: 'SEM RASTREADOR',
+  // Task 9 (plano 24/09): rótulos por distância própria (`distPropria`,
+  // agregacao.ts) que antes caiam em SEM EVIDÊNCIA sem distância nenhuma.
+  passagem_sem_parada: 'PASSAGEM SEM PARADA',
+  parada_proxima_fora_raio: 'PARADA PRÓXIMA FORA DO RAIO',
 }
 
 function textoEvidencia(d: LinhaDetalheEntrega): string {
@@ -441,14 +451,14 @@ export async function gerarKpiRomaneioXlsx(
   estilizarHeader(ws, 2, COLUNAS_KPI_ROMANEIO.length)
   ws.columns = [
     { width: 10 }, { width: 12 }, { width: 20 }, { width: 28 }, { width: 22 }, { width: 22 },
-    { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 14 },
+    { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 18 }, { width: 14 },
     { width: 10 }, { width: 10 }, { width: 14 }, { width: 18 },
   ]
 
   linhas.forEach((l, i) => {
     ws.addRow([
       l.carga, l.placa, l.destino, l.motorista, l.ajudante1 ?? '', l.ajudante2 ?? '',
-      l.pesoKg ?? '', l.clientesPlanejados ?? '', l.nfPlanejado ?? '', l.paradasReais,
+      l.pesoKg ?? '', l.clientesPlanejados ?? '', l.nfPlanejado ?? '', l.paradasReais, l.paradasForaBase,
       l.kmPercorrido != null ? Math.round(l.kmPercorrido * 10) / 10 : '',
       celulaHora(l.saidaCd, l.temRastreador, data === hoje), celulaHora(l.chegadaCd, l.temRastreador, data === hoje),
       formatarMinutos(l.tempoOperacaoMin), formatarMinutos(l.tempoMedioParadaMin),

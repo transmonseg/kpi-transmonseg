@@ -149,6 +149,25 @@ describe('agregarPorCarga', () => {
     expect(r.status).toBe('INCOMPLETO')
   })
 
+  // Task 9 (plano 24/09, achado da Ana: "PARADAS REAIS" contava NF, não
+  // parada física -- "KPI 3 x relatório 4"). "NF CONFIRMADAS" (paradasReais)
+  // continua contando NOTA; "PARADAS FORA DA BASE" (paradasForaBase) conta
+  // PARADA FÍSICA classificada FORA_BASE -- uma parada só pode confirmar
+  // várias NFs de uma vez (condomínio, cliente com múltiplas notas).
+  it('3 NFs confirmadas em 2 paradas físicas FORA_BASE: NF CONFIRMADAS=3, PARADAS FORA DA BASE=2', () => {
+    const linhas = [linha('NF1'), linha('NF2'), linha('NF3')]
+    const alvos = [alvo('NF1', 1), alvo('NF2', 1), alvo('NF3', 1)]
+    const paradas: UnitracParadaRow[] = [
+      parada({ id: 'fora1', classificacao: 'FORA_BASE' }),
+      parada({ id: 'fora2', classificacao: 'FORA_BASE' }),
+      parada({ id: 'base1', classificacao: 'BASE' }),
+    ]
+    const r = agregarPorCarga('93758', 'TTL7D40', linhas, escala(), alvos, new Map(), paradas, null)
+
+    expect(r.paradasReais).toBe(3)
+    expect(r.paradasForaBase).toBe(2)
+  })
+
   it('múltiplos ciclos BASE->FORA_BASE->BASE: pega a PRIMEIRA saída e a ÚLTIMA chegada, não o meio', () => {
     const paradas: UnitracParadaRow[] = [
       parada({ id: 'base1', classificacao: 'BASE', chegada: '2026-08-20T05:00:00.000Z', saida: '2026-08-20T06:00:00.000Z', fim_real: '2026-08-20T06:00:00.000Z' }),
@@ -625,6 +644,10 @@ describe('montarDetalheEntregas', () => {
         const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio, true, paradasFrota)
         expect(d.status).toBe('pendente')
         expect(d.observacao).toBe('PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR')
+        // Task 9 (plano 24/09): evidencia/distParadaM expostos pro mesmo caso.
+        expect(d.evidencia).toBe('passagem_sem_parada')
+        expect(d.distParadaM).not.toBeNull()
+        expect(d.distParadaM as number).toBeLessThanOrEqual(500)
       })
 
       it('caminhao nunca chegou a 2km do ponto: NAO FOI AO CLIENTE', () => {
@@ -632,6 +655,10 @@ describe('montarDetalheEntregas', () => {
         const paradasFrota = new Map([['TTL7D40', [longe]]])
         const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio, true, paradasFrota)
         expect(d.observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
+        // Task 9: continua 'sem_evidencia' (Global Constraint: nao muda
+        // precedencia), mas agora com a distancia exposta.
+        expect(d.evidencia).toBe('sem_evidencia')
+        expect(d.distParadaM as number).toBeGreaterThan(2_000)
       })
 
       // Achado real 10-09 (auditoria com a Ana, placa RQU2G47/NF 2364486):
@@ -650,6 +677,10 @@ describe('montarDetalheEntregas', () => {
         const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio, true, paradasFrota)
         expect(d.status).toBe('pendente')
         expect(d.observacao).toBe('PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR')
+        // Task 9: nova evidencia dedicada a essa faixa, com distancia.
+        expect(d.evidencia).toBe('parada_proxima_fora_raio')
+        expect(d.distParadaM as number).toBeGreaterThan(500)
+        expect(d.distParadaM as number).toBeLessThanOrEqual(2_000)
       })
 
       it('entrega confirmada nao ganha rotulo de nao-entrega, mesmo com parada longe no dia', () => {

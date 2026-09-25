@@ -5,7 +5,7 @@ import type { LinhaKpiRomaneio } from './types'
 function linhaKpi(over: Partial<LinhaKpiRomaneio> = {}): LinhaKpiRomaneio {
   return {
     carga: 'C1', placa: 'TOS1H26', destino: 'CAMPOS', motorista: 'EDUARDO', ajudante1: null, ajudante2: null,
-    pesoKg: null, clientesPlanejados: null, nfPlanejado: 37, paradasReais: 30, kmPercorrido: 196.3,
+    pesoKg: null, clientesPlanejados: null, nfPlanejado: 37, paradasReais: 30, paradasForaBase: 0, kmPercorrido: 196.3,
     saidaCd: '2026-09-01T10:59:00Z', chegadaCd: '2026-09-01T23:58:00Z', tempoOperacaoMin: 46740 / 60,
     tempoMedioParadaMin: null, status: 'OK', temRastreador: true,
     ...over,

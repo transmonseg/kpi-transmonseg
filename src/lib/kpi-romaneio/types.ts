@@ -112,7 +112,14 @@ export type StatusEntrega = 'confirmado_unitrac' | 'confirmado_gps' | 'pendente'
  *     existe) o nosso próprio geocode.
  *  9. `sem_evidencia` -- nenhuma das anteriores: pendente sem nenhum sinal
  *     de GPS a favor (inclui a NF que PERDEU uma parada curta
- *     compartilhada pra outro endereço, `perdeuParadaCompartilhada`).
+ *     compartilhada pra outro endereço, `perdeuParadaCompartilhada`, e o
+ *     caso "NÃO FOI AO CLIENTE" abaixo).
+ *  10. `passagem_sem_parada` -- pendente sem visita própria, mas a placa
+ *     esteve a <=500m do endereço sem registrar parada (rótulo "PASSOU NO
+ *     ENDEREÇO MAS NÃO REGISTROU PARADA", Task 9 plano 24/09).
+ *  11. `parada_proxima_fora_raio` -- pendente sem visita própria, placa
+ *     entre 500m-2km do endereço (rótulo "PARADA PRÓXIMA (500m-2km) MAS
+ *     FORA DO ENDEREÇO", Task 9 plano 24/09).
  *
  *  Nunca lido a partir de `Visita.distanciaMetrosDoPonto` (ver comentário
  *  de `acharCoordenadaDaParadaPropria` em agregacao.ts: esse campo vem
@@ -129,6 +136,8 @@ export type EvidenciaNf =
   | 'alvo_feito_unitrac'
   | 'sem_evidencia'
   | 'sem_rastreador'
+  | 'passagem_sem_parada'
+  | 'parada_proxima_fora_raio'
 
 /** Resolucao manual por NF (Task 4, plano 24/09) -- camada humana em cima do
  *  status automatico, persistida em `kpi_nf_resolucao`. `entregue_outra_placa`
@@ -163,7 +172,21 @@ export type LinhaKpiRomaneio = {
   pesoKg: number | null
   clientesPlanejados: number | null
   nfPlanejado: number | null
+  // Renomeado pra "NF CONFIRMADAS" no XLSX (Task 9, plano 24/09) -- o nome
+  // do campo em código não mudou (evita mexer em todo consumidor), só o
+  // rótulo visível: o valor sempre foi contagem de NF confirmadas, nunca
+  // de parada física, e isso confundia a operação ("KPI 3 x relatório 4").
   paradasReais: number
+  // Task 9 (plano 24/09): paradas FÍSICAS da placa classificadas FORA_BASE
+  // pela Unitrac (`UnitracParadaRow.classificacao`) -- complementa
+  // `paradasReais`/NF CONFIRMADAS (que conta NOTAS, não paradas: uma
+  // parada física pode confirmar várias NFs de uma vez, ex. condomínio
+  // com vários clientes). `paradasGps` (parâmetro de `agregarPorCarga`) é
+  // por PLACA/DIA inteiro, não por carga -- quando a mesma placa roda mais
+  // de uma carga no dia, TODAS as cargas dela mostram a mesma contagem
+  // (não há janela [saída, chegada] por carga disponível aqui pra
+  // recortar; documentado também no cálculo, agregacao.ts).
+  paradasForaBase: number
   kmPercorrido: number | null
   saidaCd: string | null // ISO
   chegadaCd: string | null // ISO
