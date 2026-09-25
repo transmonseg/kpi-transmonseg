@@ -25,6 +25,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { COD_USER_NUTRIMAX, EMPRESA_NUTRIMAX, foraDoAlcanceApi, LIMITE_CONCORRENCIA_PLACAS, PAO_PREFIXO } from '@/lib/kpi-romaneio/constants'
 import { mapComLimite } from '@/lib/kpi-romaneio/concorrencia'
 import { buscarResolucoes, aplicarResolucoes } from '@/lib/kpi-romaneio/resolucoes'
+import { buscarPlacasSemRastreador, placasSemRastreadorNoDia, montarTemRastreadorPorPlaca } from '@/lib/kpi-romaneio/placas-sem-rastreador'
 import { logarNfDuplicadaNaMesmaPlaca } from '@/lib/kpi-romaneio/nf-duplicada'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
 
@@ -300,7 +301,11 @@ export async function POST(req: NextRequest) {
   // entrada na ponte do monitoramento (nunca respondeu por ela, nem com
   // null) não teve NENHUMA fonte de rastreamento no dia -- ver
   // gerador-xlsx.ts/motivoAusencia.
-  const temRastreadorPorPlaca = new Map(placasNorm.map(p => [p, cvPorPlaca.has(p) || horarioBasePorPlaca.has(p)]))
+  // Task 8 (24/09): declaração manual da operação (TTL5J17: tem cv e a
+  // ponte respondeu, mas é caminhão sem rastreador de verdade) vence as
+  // duas fontes acima -- ver placas-sem-rastreador.ts.
+  const placasSemRastreador = placasSemRastreadorNoDia(await buscarPlacasSemRastreador(EMPRESA_NUTRIMAX), data)
+  const temRastreadorPorPlaca = montarTemRastreadorPorPlaca(placasNorm, cvPorPlaca, horarioBasePorPlaca, placasSemRastreador)
 
   // Por placa (não por carga -- as paradas GPS do dia cobrem a placa
   // inteira, independente de quantas cargas ela rodou): busca paradas,

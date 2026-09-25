@@ -25,6 +25,7 @@ import { detectarDescasamentos } from '../src/lib/kpi-romaneio/avisos'
 import { gerarKpiRomaneioXlsx } from '../src/lib/kpi-romaneio/gerador-xlsx'
 import { COD_USER_NUTRIMAX, EMPRESA_NUTRIMAX, foraDoAlcanceApi, PAO_PREFIXO } from '../src/lib/kpi-romaneio/constants'
 import { buscarResolucoes, aplicarResolucoes } from '../src/lib/kpi-romaneio/resolucoes'
+import { buscarPlacasSemRastreador, placasSemRastreadorNoDia, montarTemRastreadorPorPlaca } from '../src/lib/kpi-romaneio/placas-sem-rastreador'
 import { logarNfDuplicadaNaMesmaPlaca } from '../src/lib/kpi-romaneio/nf-duplicada'
 import { semCadastroUnitrac, nfsSoUnitrac } from '../src/lib/kpi-romaneio/sem-cadastro'
 import { hojeBR } from '../src/lib/data-br'
@@ -180,7 +181,11 @@ async function main() {
   const SEM_CADASTRO = semCadastroUnitrac()
   if (SEM_CADASTRO) console.log('MODO SEM CADASTRO UNITRAC: sem latAlt/lngAlt/feitoEm na ponte e alvos nao confirmam')
   const horarioBasePorPlaca = await buscarHorariosBase(placasNorm, data, SEM_CADASTRO ? pontosPorPlacaBridge : anexarCoordenadaCadastro(pontosPorPlacaBridge, alvos), true)
-  const temRastreadorPorPlaca = new Map(placasNorm.map(p => [p, cvPorPlaca.has(p) || horarioBasePorPlaca.has(p)]))
+  // Task 8 (24/09): declaração manual da operação (TTL5J17: tem cv e a ponte
+  // respondeu, mas é caminhão sem rastreador de verdade) vence as duas
+  // fontes acima -- ver placas-sem-rastreador.ts.
+  const placasSemRastreador = placasSemRastreadorNoDia(await buscarPlacasSemRastreador(EMPRESA_NUTRIMAX), data)
+  const temRastreadorPorPlaca = montarTemRastreadorPorPlaca(placasNorm, cvPorPlaca, horarioBasePorPlaca, placasSemRastreador)
 
   const paradasPorPlaca = new Map<string, UnitracParadaRow[]>()
   const visitasPorPlaca = new Map<string, Map<string, Visita>>()
