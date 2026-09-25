@@ -16,7 +16,10 @@ import { COD_USER_NUTRIMAX } from '../src/lib/kpi-romaneio/constants'
 const CLIENTE_SNAPSHOT = 'nutrimax'
 import { hojeBR } from '../src/lib/data-br'
 import { salvarSnapshotParadas } from '../src/lib/kpi-romaneio/paradas-snapshot'
+import { createServiceClient } from '../src/lib/supabase/service'
 import type { UnitracParadaRow } from '../src/lib/kpi/matcher'
+
+const RETENCAO_DIAS = 90
 
 function ontemBR(hoje: string): string {
   const d = new Date(`${hoje}T12:00:00Z`) // meio-dia evita virada de dia por fuso
@@ -68,10 +71,23 @@ async function main() {
     }
   }
 
+  // Retenção: mesma cadência do snapshot de alvos (snapshot-alvos-noturno.ts)
+  // -- apaga linhas mais antigas que RETENCAO_DIAS pra não crescer sem limite.
+  const corte = new Date(`${hoje}T12:00:00Z`)
+  corte.setUTCDate(corte.getUTCDate() - RETENCAO_DIAS)
+  const limite = corte.toISOString().slice(0, 10)
+
   if (dry) {
+    console.log(`(dry) apagaria kpi_paradas_snapshot com data < ${limite}`)
     console.log('(dry) nada gravado')
     return
   }
+
+  const { error, count } = await createServiceClient().from('kpi_paradas_snapshot')
+    .delete({ count: 'exact' }).eq('empresa', CLIENTE_SNAPSHOT).lt('data', limite)
+  if (error) falhas.push(`retencao: ${error.message}`)
+  else console.log(`snapshots antigos apagados (< ${limite}): ${count ?? 0}`)
+
   console.log(`dias salvos=${salvos} falhas=${falhas.length}`)
   if (falhas.length > 0) throw new Error(`falhas: ${falhas.join(', ')}`)
 }

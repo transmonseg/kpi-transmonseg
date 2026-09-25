@@ -67,6 +67,44 @@ describe('mesclarParadas', () => {
     const r = mesclarParadas(snapshotGrande, apiIncompleta)
     expect(r).toHaveLength(3)
   })
+
+  // Fix round 1 (revisão): a chave antiga usava `chegada` exata -- numa
+  // captura posterior o 1º evento cru do cluster pode ter saído da janela de
+  // 48h da Unitrac, então a MESMA parada física reaparece com uma `chegada`
+  // mais tardia (o cluster "perdeu a cabeça"). Duas entradas cujas janelas
+  // [chegada, saída] se sobrepõem e cujos centros estão a ≤50m são a mesma
+  // parada -- ao mesclar, o resultado é a UNIÃO das janelas (não a mais
+  // recente, não a mais antiga: a mais longa).
+  it('mesma parada fisica com chegada mais tardia (cluster perdeu a cabeca na janela de 48h) -- funde pela sobreposicao de janela + distancia, nao pela chegada exata', () => {
+    const antiga = parada({
+      id: 'antiga', chegada: '2026-09-22T05:00:00.000Z', saida: '2026-09-22T07:00:00.000Z', fim_real: '2026-09-22T07:00:00.000Z',
+      lat: -22.816007, lng: -43.277827,
+    })
+    // mesmo lugar (~poucos metros), janela sobreposta, mas `chegada` mudou
+    // porque o evento das 05:00 saiu da janela de 48h na nova captura.
+    const nova = parada({
+      id: 'nova', chegada: '2026-09-22T06:00:00.000Z', saida: '2026-09-22T07:30:00.000Z', fim_real: '2026-09-22T07:30:00.000Z',
+      lat: -22.816050, lng: -43.277860, // ~7m de distancia
+    })
+    const r = mesclarParadas([antiga], [nova])
+    expect(r).toHaveLength(1)
+    expect(r[0].chegada).toBe('2026-09-22T05:00:00.000Z') // mantem o inicio mais antigo (antiga)
+    expect(r[0].fim_real).toBe('2026-09-22T07:30:00.000Z') // e o fim mais tardio (nova) -- uniao das janelas
+  })
+
+  it('janelas que NAO se sobrepoem (mesmo perto) continuam separadas', () => {
+    const a = parada({ id: 'a', chegada: '2026-09-22T05:00:00.000Z', saida: '2026-09-22T05:10:00.000Z', fim_real: '2026-09-22T05:10:00.000Z' })
+    const b = parada({ id: 'b', chegada: '2026-09-22T08:00:00.000Z', saida: '2026-09-22T08:10:00.000Z', fim_real: '2026-09-22T08:10:00.000Z' })
+    const r = mesclarParadas([a], [b])
+    expect(r).toHaveLength(2)
+  })
+
+  it('janelas sobrepostas mas centros a mais de 50m continuam separadas', () => {
+    const a = parada({ id: 'a', chegada: '2026-09-22T05:00:00.000Z', saida: '2026-09-22T07:00:00.000Z', fim_real: '2026-09-22T07:00:00.000Z', lat: -22.816007, lng: -43.277827 })
+    const b = parada({ id: 'b', chegada: '2026-09-22T06:00:00.000Z', saida: '2026-09-22T07:30:00.000Z', fim_real: '2026-09-22T07:30:00.000Z', lat: -22.8170, lng: -43.2790 }) // ~150m
+    const r = mesclarParadas([a], [b])
+    expect(r).toHaveLength(2)
+  })
 })
 
 describe('lerSnapshotParadas / salvarSnapshotParadas', () => {

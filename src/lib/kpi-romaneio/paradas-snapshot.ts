@@ -1,22 +1,84 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
+import { haversine } from '@/lib/utils/geo'
 
-// Chave de dedupe: chegada (a "data" da parada, ver comentario do brief da
-// Task 7 -- UnitracParadaRow nao tem campo `_data`, esse e' o raw da Unitrac
-// em StopApiCru; aqui o equivalente pos-consolidacao e' `chegada`) + lat/lng
-// arredondado a 5 casas (~1m, absorve ruido de ponto flutuante entre duas
-// capturas da mesma parada sem fundir paradas realmente diferentes).
-function arred5(v: number | null): string {
-  return v == null ? 'null' : v.toFixed(5)
+// Fix round 1 (revisão da Task 7): dedupe por `chegada` EXATA quebrava quando
+// a mesma parada física reaparecia numa captura posterior com `chegada`
+// diferente -- o 1º evento cru do cluster (consolida.ts) pode ter saído da
+// janela de 48h da Unitrac entre duas capturas, então o cluster "perde a
+// cabeça" e a nova `chegada` é mais tardia que a antiga, mesmo sendo a MESMA
+// parada física. Duas entradas são a mesma parada quando as janelas
+// [chegada, fimEfetivo] se SOBREPÕEM e os centros estão a ≤50m -- ao mesclar,
+// o resultado é a UNIÃO das janelas (início mais antigo, fim mais tardio),
+// não a chegada exata de nenhuma das duas.
+const RAIO_DEDUPE_M = 50
+
+/** Fim "de verdade" da parada pra fins de janela: fim_real > saida > chegada
+ *  (mesma prioridade usada em outros pontos do código pra medir duração real,
+ *  ver comentário de `fim_real` em matcher.ts). */
+function fimEfetivo(p: UnitracParadaRow): string {
+  return p.fim_real ?? p.saida ?? p.chegada
 }
-const chaveParada = (p: UnitracParadaRow) => `${p.chegada}|${arred5(p.lat)}|${arred5(p.lng)}`
 
-/** União deduplicada de duas listas de paradas da mesma placa, ordenada por chegada. */
+function janelasSeSobrepoem(a: UnitracParadaRow, b: UnitracParadaRow): boolean {
+  const aIni = new Date(a.chegada).getTime()
+  const aFim = new Date(fimEfetivo(a)).getTime()
+  const bIni = new Date(b.chegada).getTime()
+  const bFim = new Date(fimEfetivo(b)).getTime()
+  return aIni <= bFim && bIni <= aFim
+}
+
+function centrosPertoDe(a: UnitracParadaRow, b: UnitracParadaRow): boolean {
+  if (a.lat == null || a.lng == null || b.lat == null || b.lng == null) return false
+  return haversine(a.lat, a.lng, b.lat, b.lng) <= RAIO_DEDUPE_M
+}
+
+function mesmaParada(a: UnitracParadaRow, b: UnitracParadaRow): boolean {
+  return janelasSeSobrepoem(a, b) && centrosPertoDe(a, b)
+}
+
+/** União de duas paradas consideradas a mesma: metadados vêm da que tem a
+ *  janela própria mais longa (mais provável de ter o cluster completo), mas
+ *  chegada/saida/fim_real viram a UNIÃO das duas janelas -- nunca encolhe. */
+function unirDuas(a: UnitracParadaRow, b: UnitracParadaRow): UnitracParadaRow {
+  const duracaoMs = (p: UnitracParadaRow) => new Date(fimEfetivo(p)).getTime() - new Date(p.chegada).getTime()
+  const base = duracaoMs(a) >= duracaoMs(b) ? a : b
+  const chegadaUniao = a.chegada <= b.chegada ? a.chegada : b.chegada
+  const fimA = fimEfetivo(a)
+  const fimB = fimEfetivo(b)
+  const fimUniao = fimA >= fimB ? fimA : fimB
+  const saidaUniao = a.saida != null && b.saida != null
+    ? (a.saida >= b.saida ? a.saida : b.saida)
+    : (a.saida ?? b.saida)
+  return {
+    ...base,
+    chegada: chegadaUniao,
+    saida: saidaUniao,
+    fim_real: fimUniao,
+    duracao_seg: Math.round((new Date(fimUniao).getTime() - new Date(chegadaUniao).getTime()) / 1000),
+  }
+}
+
+/** União deduplicada de duas listas de paradas da mesma placa, ordenada por
+ *  chegada. Fecha em ponto fixo (uma fusão pode fazer a janele unida passar a
+ *  sobrepor uma terceira parada que antes não sobrepunha nenhuma das duas). */
 export function mesclarParadas(a: UnitracParadaRow[], b: UnitracParadaRow[]): UnitracParadaRow[] {
-  const mapa = new Map<string, UnitracParadaRow>()
-  for (const p of a) mapa.set(chaveParada(p), p)
-  for (const p of b) mapa.set(chaveParada(p), p)
-  return [...mapa.values()].sort((x, y) => x.chegada.localeCompare(y.chegada))
+  let atual = [...a, ...b]
+  let mudou = true
+  while (mudou) {
+    mudou = false
+    outer: for (let i = 0; i < atual.length; i++) {
+      for (let j = i + 1; j < atual.length; j++) {
+        if (mesmaParada(atual[i], atual[j])) {
+          const unida = unirDuas(atual[i], atual[j])
+          atual = [...atual.slice(0, i), unida, ...atual.slice(i + 1, j), ...atual.slice(j + 1)]
+          mudou = true
+          break outer
+        }
+      }
+    }
+  }
+  return atual.sort((x, y) => x.chegada.localeCompare(y.chegada))
 }
 
 /** Snapshot salvo (todas as placas) pra uma empresa+data. */
