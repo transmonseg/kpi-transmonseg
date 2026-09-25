@@ -1642,3 +1642,123 @@ describe('montarDetalheEntregas -- EvidenciaNf e distParadaM (Task 5, plano 24/0
     expect(d.distParadaM).toBeNull() // mas a distancia nao confiavel some
   })
 })
+
+// Task 10 (plano 24/09): ~27 NFs de 22/09 que a Ana vincula por codigo do
+// cliente saiam "ENTREGUE" (confirmado_unitrac) SEM HORARIO nenhum, porque o
+// feed GPS continuo travou/sumiu bem na parada -- so' o alvo da Unitrac
+// (situacao=1) confirmou. 24 dessas 27 estao no /stops da Unitrac (apos a
+// Task 7, ja mescladas com o snapshot em paradasPorOutraPlaca). Quando a
+// parada da PROPRIA placa contem o `feitoISO` do alvo (tolerancia de 10min
+// antes da chegada / depois da saida da parada) E o centro da parada esta
+// a <=500m do cadastro Unitrac (alvo.pontoLat/pontoLng) OU do geocode
+// confiavel (linha.lat/lng, geoConfiavel !== false), a parada empresta
+// chegada/saida/distParadaM pra essa NF -- evidencia continua
+// 'alvo_feito_unitrac' (nunca vira 'confirmado_gps', a confirmacao em si
+// segue sendo o alvo, so' o horario/distancia passam a vir preenchidos).
+describe('montarDetalheEntregas -- alvo_feito_unitrac herda horario da parada Unitrac quando o GPS continuo falhou (Task 10, plano 24/09)', () => {
+  const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+
+  it('parada contem o feito e esta a ~100m do geocode -- chegada/saida/distParadaM preenchidos, evidencia continua alvo_feito_unitrac', () => {
+    const alvos = [alvo('NF1', 1, { feitoISO: '2026-09-22T10:05:00.000Z' })] // linha() default: lat -22.9, lng -43.2
+    const paradaPropria = parada({
+      chegada: '2026-09-22T10:00:00.000Z', saida: '2026-09-22T10:20:00.000Z', fim_real: '2026-09-22T10:20:00.000Z',
+      classificacao: 'FORA_BASE', lat: -22.9009, lng: -43.2, // ~100m ao sul do geocode
+    })
+    const paradasPorOutraPlaca = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaPropria]]])
+
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], alvos, new Map(), resumoCargaVazio, true, paradasPorOutraPlaca)
+
+    expect(d.status).toBe('confirmado_unitrac')
+    expect(d.evidencia).toBe('alvo_feito_unitrac')
+    expect(d.chegada).toBe('2026-09-22T10:00:00.000Z')
+    expect(d.saida).toBe('2026-09-22T10:20:00.000Z')
+    expect(d.distParadaM).not.toBeNull()
+    expect(d.distParadaM as number).toBeLessThan(150)
+  })
+
+  it('parada contem o feito mas esta a ~2km de qualquer referencia -- sem horario (comportamento atual preservado)', () => {
+    const alvos = [alvo('NF1', 1, { feitoISO: '2026-09-22T10:05:00.000Z' })]
+    const paradaLonge = parada({
+      chegada: '2026-09-22T10:00:00.000Z', saida: '2026-09-22T10:20:00.000Z', fim_real: '2026-09-22T10:20:00.000Z',
+      classificacao: 'FORA_BASE', lat: -22.918, lng: -43.2, // ~2km do geocode
+    })
+    const paradasPorOutraPlaca = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaLonge]]])
+
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], alvos, new Map(), resumoCargaVazio, true, paradasPorOutraPlaca)
+
+    expect(d.status).toBe('confirmado_unitrac')
+    expect(d.evidencia).toBe('alvo_feito_unitrac')
+    expect(d.chegada).toBeNull()
+    expect(d.saida).toBeNull()
+    expect(d.distParadaM).toBeNull()
+  })
+
+  it('feito fora de qualquer parada (mesmo perto) -- sem horario', () => {
+    const alvos = [alvo('NF1', 1, { feitoISO: '2026-09-22T12:00:00.000Z' })] // bem depois da parada abaixo
+    const paradaPerto = parada({
+      chegada: '2026-09-22T10:00:00.000Z', saida: '2026-09-22T10:20:00.000Z', fim_real: '2026-09-22T10:20:00.000Z',
+      classificacao: 'FORA_BASE', lat: -22.9001, lng: -43.2,
+    })
+    const paradasPorOutraPlaca = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaPerto]]])
+
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], alvos, new Map(), resumoCargaVazio, true, paradasPorOutraPlaca)
+
+    expect(d.status).toBe('confirmado_unitrac')
+    expect(d.evidencia).toBe('alvo_feito_unitrac')
+    expect(d.chegada).toBeNull()
+    expect(d.saida).toBeNull()
+    expect(d.distParadaM).toBeNull()
+  })
+
+  // Teste de fuso (bug critico de 3h ja visto neste projeto -- NAO reintroduzir):
+  // feitoISO em digitos BRT ("2026-09-22T10:05:00Z", ja mascarado, mesma
+  // convencao de instanteDeFeitoISO) precisa casar com uma parada cuja
+  // janela [chegada, saida] tambem esta em digitos BRT (10:00-10:20), SEM
+  // somar nem subtrair 3h em nenhum dos lados.
+  it('fuso: feito "2026-09-22T10:05:00Z" (digitos BRT) casa com parada 10:00-10:20 na MESMA convencao -- nunca desloca 3h', () => {
+    const alvos = [alvo('NF1', 1, { feitoISO: '2026-09-22T10:05:00Z' })]
+    const paradaPropria = parada({
+      chegada: '2026-09-22T10:00:00Z', saida: '2026-09-22T10:20:00Z', fim_real: '2026-09-22T10:20:00Z',
+      classificacao: 'FORA_BASE', lat: -22.9005, lng: -43.2,
+    })
+    const paradasPorOutraPlaca = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaPropria]]])
+
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], alvos, new Map(), resumoCargaVazio, true, paradasPorOutraPlaca)
+
+    expect(d.evidencia).toBe('alvo_feito_unitrac')
+    expect(d.chegada).toBe('2026-09-22T10:00:00Z')
+    expect(d.saida).toBe('2026-09-22T10:20:00Z')
+    expect(d.distParadaM).not.toBeNull()
+  })
+
+  it('tolerancia de 10min: feito 9min antes da chegada da parada ainda casa (dentro da janela ampliada)', () => {
+    const alvos = [alvo('NF1', 1, { feitoISO: '2026-09-22T09:51:00.000Z' })] // 9min antes de 10:00
+    const paradaPropria = parada({
+      chegada: '2026-09-22T10:00:00.000Z', saida: '2026-09-22T10:20:00.000Z', fim_real: '2026-09-22T10:20:00.000Z',
+      classificacao: 'FORA_BASE', lat: -22.9005, lng: -43.2,
+    })
+    const paradasPorOutraPlaca = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaPropria]]])
+
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], alvos, new Map(), resumoCargaVazio, true, paradasPorOutraPlaca)
+
+    expect(d.chegada).toBe('2026-09-22T10:00:00.000Z')
+    expect(d.distParadaM).not.toBeNull()
+  })
+
+  it('usa o cadastro Unitrac (pontoLat/pontoLng) quando o geocode nao e confiavel', () => {
+    const alvos = [alvo('NF1', 1, { feitoISO: '2026-09-22T10:05:00.000Z', pontoLat: -22.9009, pontoLng: -43.2 })]
+    const paradaPropria = parada({
+      chegada: '2026-09-22T10:00:00.000Z', saida: '2026-09-22T10:20:00.000Z', fim_real: '2026-09-22T10:20:00.000Z',
+      classificacao: 'FORA_BASE', lat: -22.9009, lng: -43.2, // ~100m do CADASTRO, longe do geocode nao confiavel
+    })
+    const paradasPorOutraPlaca = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaPropria]]])
+    const linhas = [linha('NF1', { geoConfiavel: false, lat: -23.5, lng: -46.6 })] // geocode ruim, longe de tudo
+
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, alvos, new Map(), resumoCargaVazio, true, paradasPorOutraPlaca)
+
+    expect(d.evidencia).toBe('alvo_feito_unitrac')
+    expect(d.chegada).toBe('2026-09-22T10:00:00.000Z')
+    expect(d.distParadaM).not.toBeNull()
+    expect(d.distParadaM as number).toBeLessThan(150)
+  })
+})

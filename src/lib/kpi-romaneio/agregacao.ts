@@ -6,6 +6,7 @@ import type { LinhaEscala, LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEnt
 import { haversine } from '@/lib/utils/geo'
 import { RAIO_ENTREGA_METROS } from './constants'
 import { acessoSomentePorBarco } from './acesso-restrito'
+import { instanteDeFeitoISO } from './correcao-por-alvo'
 
 function minutosEntre(a: string, b: string): number {
   return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 60000)
@@ -202,6 +203,58 @@ function acharParadaDeOutraPlaca(
     }
   }
   return melhor ? { placa: melhor.placa, parada: melhor.parada } : null
+}
+
+// Task 10 (plano 24/09, achado real 22/09: ~27 NFs que a Ana vincula por
+// codigo do cliente saiam "ENTREGUE" (confirmado_unitrac) SEM HORARIO nenhum
+// porque o feed GPS continuo travou/sumiu bem na parada -- so' o alvo da
+// Unitrac (situacao=1) confirmou. 24 das 27 estao no /stops da Unitrac (apos
+// a Task 7, ja mescladas com o snapshot). Tolerancia de 10min alarga a
+// janela [chegada, fim] da parada pra cobrir o atraso tipico entre o
+// motorista dar baixa no app e a Unitrac fechar o cluster da parada.
+const TOLERANCIA_FEITO_UNITRAC_MIN = 10
+const RAIO_PARADA_FEITO_UNITRAC_M = 500
+
+/** feitoISO e chegada/saida das paradas cruas estao na MESMA convencao
+ *  mascarada (digitos BRT lidos como se fossem UTC, ver instanteDeFeitoISO
+ *  em correcao-por-alvo.ts) -- comparar os dois com `new Date(...).getTime()`
+ *  direto, SEM somar/subtrair fuso nenhum (bug critico de 3h ja visto neste
+ *  projeto). Acha, entre as paradas FORA_BASE da propria placa, a que contem
+ *  o `feitoISO` do alvo (com folga de TOLERANCIA_FEITO_UNITRAC_MIN pra
+ *  ambos os lados da janela) E cujo centro esta a <=500m do cadastro
+ *  Unitrac (`alvo.pontoLat/pontoLng`) OU do geocode confiavel da linha
+ *  (`linha.lat/lng`, so' quando `geoConfiavel !== false`) -- o mesmo
+ *  espirito de `distanciasGeoECadastro` acima, mas aqui so' precisa saber
+ *  SE bate (nao qual dos dois vence) pra decidir emprestar o horario.
+ *  `null` quando nao ha' parada nenhuma que satisfaca as duas condicoes --
+ *  comportamento atual (sem horario) preservado. */
+function acharParadaUnitracParaFeito(
+  linha: LinhaGeocodificada,
+  alvo: AlvoApi,
+  placaNorm: string,
+  paradasPorOutraPlaca: Map<string, UnitracParadaRow[]>,
+): { parada: UnitracParadaRow; distParadaM: number } | null {
+  if (!alvo.feitoISO) return null
+  const t = instanteDeFeitoISO(alvo.feitoISO)
+  const toleranciaMs = TOLERANCIA_FEITO_UNITRAC_MIN * 60_000
+  let melhor: { parada: UnitracParadaRow; dist: number } | null = null
+  for (const p of paradasPorOutraPlaca.get(placaNorm) ?? []) {
+    if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
+    const inicioJanela = new Date(p.chegada).getTime() - toleranciaMs
+    const fimJanela = new Date(p.fim_real ?? p.saida ?? p.chegada).getTime() + toleranciaMs
+    if (t < inicioJanela || t > fimJanela) continue
+    const distCad = coordValidaCadastro(alvo.pontoLat) && coordValidaCadastro(alvo.pontoLng)
+      ? haversine(p.lat, p.lng, alvo.pontoLat as number, alvo.pontoLng as number)
+      : null
+    const distGeo = linha.geoConfiavel !== false && linha.lat != null && linha.lng != null
+      ? haversine(p.lat, p.lng, linha.lat, linha.lng)
+      : null
+    const candidatas = [distCad, distGeo].filter((d): d is number => d != null && d <= RAIO_PARADA_FEITO_UNITRAC_M)
+    if (candidatas.length === 0) continue
+    const dist = Math.min(...candidatas)
+    if (!melhor || dist < melhor.dist) melhor = { parada: p, dist }
+  }
+  return melhor ? { parada: melhor.parada, distParadaM: melhor.dist } : null
 }
 
 /** Uma carga = todas as linhas do romaneio com o mesmo `carga`+`placa`.
@@ -613,6 +666,14 @@ export function montarDetalheEntregas(
     const porOutraPlaca = confirmadoUnitrac || confirmadoGps || semMovimento || propriaPlacaPlausivelmentePerto || !geoConfiavel
       ? null
       : acharParadaDeOutraPlaca(linha, placaNorm, paradasPorOutraPlaca)
+    // Task 10 (plano 24/09): confirmado so' pelo alvo da Unitrac, sem Visita
+    // de GPS -- procura na propria placa a parada FORA_BASE que contem o
+    // feitoISO do alvo (ver acharParadaUnitracParaFeito). So' entra quando
+    // ha' alvo de verdade (sempre ha', confirmadoUnitrac exige alvo?.situacao
+    // ===1) e nao ha' Visita (senao o GPS continuo ja' resolveu o horario).
+    const paradaUnitracFeito = confirmadoUnitrac && !confirmadoGps && alvo
+      ? acharParadaUnitracParaFeito(linha, alvo, placaNorm, paradasPorOutraPlaca)
+      : null
 
     const status: StatusEntrega = confirmadoUnitrac
       ? 'confirmado_unitrac'
@@ -628,10 +689,11 @@ export function montarDetalheEntregas(
     // horario, igual aos demais "pendente" sem evidencia propria.
     const chegada = perdeuParadaCompartilhada
       ? null
-      : visita?.chegada ?? porOutraPlaca?.parada.chegada ?? null
+      : visita?.chegada ?? paradaUnitracFeito?.parada.chegada ?? porOutraPlaca?.parada.chegada ?? null
     const saida = perdeuParadaCompartilhada
       ? null
       : visita?.saida
+        ?? (paradaUnitracFeito ? paradaUnitracFeito.parada.fim_real ?? paradaUnitracFeito.parada.saida ?? paradaUnitracFeito.parada.chegada : null)
         ?? porOutraPlaca?.parada.fim_real ?? porOutraPlaca?.parada.saida ?? porOutraPlaca?.parada.chegada
         ?? null
     const tempoParadaMin = chegada && saida ? minutosEntre(chegada, saida) : null
@@ -788,6 +850,11 @@ export function montarDetalheEntregas(
         : null
     } else if (confirmadoUnitrac && !confirmadoGps) {
       evidencia = 'alvo_feito_unitrac'
+      // Task 10: quando a parada Unitrac emprestou chegada/saida (achou o
+      // feitoISO dentro de uma parada FORA_BASE da propria placa perto do
+      // cadastro/geocode), expoe a distancia real -- `null` quando nao
+      // achou (comportamento atual, sem horario, preservado).
+      distParadaM = paradaUnitracFeito ? Math.round(paradaUnitracFeito.distParadaM) : null
     } else if (perdeuParadaCompartilhada) {
       // NF que PERDEU: a parada real e' de outro endereco do grupo -- nao e'
       // evidencia NENHUMA a favor desta NF (mesmo espirito de nao mostrar
