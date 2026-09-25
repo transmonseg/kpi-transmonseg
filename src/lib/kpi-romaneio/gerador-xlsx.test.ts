@@ -305,7 +305,7 @@ describe('gerador-xlsx', () => {
       const wb = new ExcelJS.Workbook()
       await wb.xlsx.load(buffer)
       const wsPlaca = wb.getWorksheet('ABC1234')!
-      expect(wsPlaca.autoFilter).toBe('A3:H4') // header linha 3, 1 linha de dado, 8 colunas (A..H)
+      expect(wsPlaca.autoFilter).toBe('A3:J4') // header linha 3, 1 linha de dado, 10 colunas (A..J, Task 4: +RESOLUÇÃO OPERAÇÃO/RESPONSÁVEL)
     })
   })
 
@@ -533,6 +533,71 @@ describe('gerador-xlsx', () => {
 
       expect(resumoTexto).toContain('50%') // 2 confirmadas / 4 total
       expect(resumoTexto).toContain('NFs sem rastreador: 0')
+    })
+  })
+
+  describe('resolução manual por NF (Task 4, 24/09: colunas novas + segunda taxa "após conferência")', () => {
+    it('header ganha STATUS AUTOMÁTICO, RESOLUÇÃO OPERAÇÃO, RESPONSÁVEL no lugar de STATUS', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], [detalheFixture()])
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const wsPlaca = wb.getWorksheet('ABC1234')!
+      const headerValues = (wsPlaca.getRow(3).values as unknown[]).slice(1)
+      expect(headerValues).toEqual([...COLUNAS_DETALHE_PLACA])
+      expect(headerValues).toContain('STATUS AUTOMÁTICO')
+      expect(headerValues).toContain('RESOLUÇÃO OPERAÇÃO')
+      expect(headerValues).toContain('RESPONSÁVEL')
+    })
+
+    it('NF sem resolução manual: colunas novas ficam vazias, STATUS AUTOMÁTICO igual antes', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], [detalheFixture({ status: 'confirmado_gps' })])
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const wsPlaca = wb.getWorksheet('ABC1234')!
+      const linha1 = (wsPlaca.getRow(4).values as unknown[]).slice(1)
+      expect(linha1[7]).toBe('ENTREGUE') // STATUS AUTOMÁTICO intacto
+      expect(linha1[8]).toBe('') // RESOLUÇÃO OPERAÇÃO
+      expect(linha1[9]).toBe('') // RESPONSÁVEL
+    })
+
+    it('NF com resolução manual "entregue_outra_placa": mostra a placa executora ao lado + responsável, sem mudar o STATUS AUTOMÁTICO pendente', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'RQU5J45' })]
+      const detalhe = [detalheFixture({
+        placa: 'RQU5J45', status: 'pendente', observacao: null,
+        resolucaoManual: 'entregue_outra_placa', placaExecutoraResolucao: 'TUS1B06', responsavelResolucao: 'ANA',
+      })]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const wsPlaca = wb.getWorksheet('RQU5J45')!
+      const linha1 = (wsPlaca.getRow(4).values as unknown[]).slice(1)
+      expect(linha1[7]).toBe('SEM CONFIRMAÇÃO') // automático original preservado
+      expect(linha1[8]).toBe('ENTREGUE POR OUTRA PLACA (TUS1B06)')
+      expect(linha1[9]).toBe('ANA')
+    })
+
+    it('resumo do dia mostra as duas taxas -- automática (sem contar resolução manual) e "após conferência da operação" (conta as confirmatórias)', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+      const detalhe: LinhaDetalheEntrega[] = [
+        detalheFixture({ nf: 'NF1', status: 'pendente', resolucaoManual: 'entregue', responsavelResolucao: 'ANA' }),
+        detalheFixture({ nf: 'NF2', status: 'pendente', resolucaoManual: 'nao_esteve_no_local', responsavelResolucao: 'ANA' }),
+        detalheFixture({ nf: 'NF3', status: 'confirmado_gps' }),
+        detalheFixture({ nf: 'NF4', status: 'pendente' }),
+      ]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const ws = wb.worksheets[0]
+      const resumoTexto = ws.getRow(ws.rowCount).getCell(1).value as string
+
+      // Automatica: so' NF3 confirma de verdade -> 1/4 = 25%. Nunca soma a
+      // resolucao manual no automatico (Global Constraint do plano).
+      expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 25%')
+      // Apos conferencia: NF1 (entregue manual) + NF3 (automatico) confirmam,
+      // NF2 (nao esteve no local) NAO conta mesmo resolvida -> 2/4 = 50%.
+      expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 50%')
     })
   })
 })

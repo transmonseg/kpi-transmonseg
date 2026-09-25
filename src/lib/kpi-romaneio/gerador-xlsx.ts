@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs'
-import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega } from './types'
+import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega, ResolucaoNf } from './types'
 // Reusa a MESMA paleta/fonte/logo ja validados no relatorio da Benassi
 // (pedido do usuario 25/08: "deixar esse relatorio nivel o da Benassi") --
 // nunca duplica cor/asset, um unico lugar de verdade pros dois clientes.
@@ -29,9 +29,17 @@ export const COLUNAS_KPI_ROMANEIO = [
 // endereco, chegada/saida na loja, tempo na loja, status. Ordem
 // confirmada no mesmo audio ("vou deixar apenas a tabela com o endereço,
 // chegar na loja, sair da loja e tempo na loja e a nota fiscal").
+// Task 4 (plano 24/09, requisito P0 da Ana: "persistir status automático
+// ORIGINAL, resolução manual, responsável..."): STATUS virou "STATUS
+// AUTOMÁTICO" (mesmo cálculo de sempre, sem mudar de posição -- continua
+// coluna H, nenhum teste/leitor existente que olha esse índice quebra) +
+// duas colunas novas no fim com o que a operação registrou por cima
+// (resolucoes.ts/aplicarResolucoes). NF sem nenhuma resolução manual = célula
+// vazia nas duas, igual sempre foi antes desta task.
 export const COLUNAS_DETALHE_PLACA = [
   'CARGA', 'NF', 'CLIENTE', 'ENDEREÇO',
-  'CHEGADA NA LOJA', 'SAÍDA DA LOJA', 'TEMPO NA LOJA', 'STATUS',
+  'CHEGADA NA LOJA', 'SAÍDA DA LOJA', 'TEMPO NA LOJA', 'STATUS AUTOMÁTICO',
+  'RESOLUÇÃO OPERAÇÃO', 'RESPONSÁVEL',
 ] as const
 
 export const COLUNAS_AVISOS = ['CARGA', 'PLACA', 'PROBLEMA'] as const
@@ -157,19 +165,66 @@ function textoStatus(d: LinhaDetalheEntrega): string {
 // rastreador: N") pra nao esconder o problema, so' tira ele do calculo da
 // taxa. Opera sobre `detalhe` (uma linha por NF), nao `linhas` (por carga).
 const PREFIXO_OBS_SEM_RASTREADOR = 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO'
+
+// Task 4 (plano 24/09): rotulo exibido pra cada valor do enum de resolucao
+// manual (kpi_nf_resolucao.resolucao) -- MAIUSCULO, mesmo padrao visivel do
+// resto do relatorio (Global Constraint do plano). `entregue_outra_placa`
+// ganha a placa executora ao lado (ver COLUNA_RESOLUCAO abaixo) porque o
+// texto sozinho nao diz QUAL placa entregou de fato.
+const LABEL_RESOLUCAO_NF: Record<ResolucaoNf, string> = {
+  entregue: 'ENTREGUE',
+  entregue_tempo_conferido: 'ENTREGUE - TEMPO DE LOJA CONFERIDO',
+  entregue_rastro_oscilante: 'ENTREGUE - RASTRO OSCILANTE',
+  entregue_outra_placa: 'ENTREGUE POR OUTRA PLACA',
+  nao_esteve_no_local: 'NÃO ESTEVE NO LOCAL',
+  desatualizado: 'DESATUALIZADO',
+}
+
+// Resolucoes que a operacao registra como "de fato aconteceu" -- contam pra
+// taxa "apos conferencia da operacao" mesmo quando o automatico ficou
+// pendente. `nao_esteve_no_local`/`desatualizado` NUNCA contam (mesmo se o
+// automatico tivesse confirmado por engano -- a palavra da operacao vale
+// mais que o GPS/Unitrac nesses dois casos).
+const RESOLUCOES_CONFIRMATORIAS = new Set<ResolucaoNf>([
+  'entregue', 'entregue_tempo_conferido', 'entregue_rastro_oscilante', 'entregue_outra_placa',
+])
+
+function textoResolucaoManual(d: LinhaDetalheEntrega): string {
+  if (!d.resolucaoManual) return ''
+  const base = LABEL_RESOLUCAO_NF[d.resolucaoManual]
+  return d.resolucaoManual === 'entregue_outra_placa' && d.placaExecutoraResolucao
+    ? `${base} (${d.placaExecutoraResolucao})`
+    : base
+}
+
+// Task 4: "após conferência da operação" NUNCA muda o automático (Global
+// Constraint: "Resolução manual NUNCA é sobrescrita por regeração;
+// automático original sempre preservado") -- e' uma segunda leitura, feita
+// so' pro resumo do dia. NF sem resolucao manual continua usando o
+// automatico puro.
+function confirmadaAposConferencia(d: LinhaDetalheEntrega): boolean {
+  if (d.resolucaoManual) return RESOLUCOES_CONFIRMATORIAS.has(d.resolucaoManual)
+  return d.status !== 'pendente'
+}
+
 function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   taxaPct: number
+  taxaPosConferenciaPct: number
   confirmadas: number
+  confirmadasPosConferencia: number
   denominador: number
   semRastreador: number
 } {
   const semRastreador = detalhe.filter(d => d.observacao?.startsWith(PREFIXO_OBS_SEM_RASTREADOR)).length
-  const denominador = detalhe.length - semRastreador
+  const base = detalhe.filter(d => !d.observacao?.startsWith(PREFIXO_OBS_SEM_RASTREADOR))
+  const denominador = base.length
   // Confirmada = status diferente de 'pendente'; NF sem rastreador SEMPRE
   // fica pendente (nunca confirma), entao ja sai naturalmente do numerador.
-  const confirmadas = detalhe.filter(d => d.status !== 'pendente').length
+  const confirmadas = base.filter(d => d.status !== 'pendente').length
+  const confirmadasPosConferencia = base.filter(confirmadaAposConferencia).length
   const taxaPct = denominador > 0 ? Math.round((100 * confirmadas) / denominador) : 0
-  return { taxaPct, confirmadas, denominador, semRastreador }
+  const taxaPosConferenciaPct = denominador > 0 ? Math.round((100 * confirmadasPosConferencia) / denominador) : 0
+  return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, semRastreador }
 }
 
 function formatarMinutos(min: number | null): string {
@@ -355,7 +410,7 @@ export async function gerarKpiRomaneioXlsx(
   if (detalhe.length > 0) {
     const resumo = calcularResumoConfirmacao(detalhe)
     const linhaResumoGeral = ws.addRow([
-      `TAXA DE CONFIRMAÇÃO: ${resumo.taxaPct}%    |    NFs sem rastreador: ${resumo.semRastreador}`,
+      `TAXA DE CONFIRMAÇÃO: ${resumo.taxaPct}%    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${resumo.taxaPosConferenciaPct}%    |    NFs sem rastreador: ${resumo.semRastreador}`,
     ])
     ws.mergeCells(linhaResumoGeral.number, 1, linhaResumoGeral.number, COLUNAS_KPI_ROMANEIO.length)
     const cell = linhaResumoGeral.getCell(1)
@@ -408,6 +463,7 @@ export async function gerarKpiRomaneioXlsx(
     wsPlaca.columns = [
       { width: 10 }, { width: 14 }, { width: 32 }, { width: 36 },
       { width: 12 }, { width: 12 }, { width: 12 }, { width: 36 },
+      { width: 36 }, { width: 20 },
     ]
     linhasDaPlaca.forEach((d, i) => {
       // CHEGADA/SAÍDA NA LOJA: motivo só faz sentido quando 'pendente'
@@ -429,7 +485,7 @@ export async function gerarKpiRomaneioXlsx(
       wsPlaca.addRow([
         d.carga, d.nf, d.clienteNome, d.endereco,
         chegadaLoja, saidaLoja, formatarMinutos(d.tempoParadaMin),
-        textoStatus(d),
+        textoStatus(d), textoResolucaoManual(d), d.responsavelResolucao ?? '',
       ])
       estilizarLinhaDado(wsPlaca, 3 + 1 + i, COLUNAS_DETALHE_PLACA.length, i)
     })

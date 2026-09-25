@@ -86,6 +86,21 @@ export type Visita = {
 
 export type StatusEntrega = 'confirmado_unitrac' | 'confirmado_gps' | 'pendente'
 
+/** Resolucao manual por NF (Task 4, plano 24/09) -- camada humana em cima do
+ *  status automatico, persistida em `kpi_nf_resolucao`. `entregue_outra_placa`
+ *  e' o caminho pra transferencia de placa que a Task 3 nao conseguiu
+ *  automatizar (ex. RQU5J45 -> TUS1B06, NF 215999): a operacao registra QUAL
+ *  placa executou de fato via `placaExecutora`. Valores EXATOS do enum da
+ *  migration (supabase/migrations/20260924000000_kpi_resolucao_nf.sql) --
+ *  nao renomear sem migrar o banco. */
+export type ResolucaoNf =
+  | 'entregue'
+  | 'entregue_tempo_conferido'
+  | 'entregue_rastro_oscilante'
+  | 'entregue_outra_placa'
+  | 'nao_esteve_no_local'
+  | 'desatualizado'
+
 /** Uma linha de saida, cliente dentro de uma carga -- usada internamente
  *  antes da agregacao por carga. */
 export type LinhaConfirmada = LinhaGeocodificada & {
@@ -153,6 +168,17 @@ export type LinhaDetalheEntrega = {
   // no lugar da escalada) ou tempo em loja implausivel (>4h, ver
   // agregacao.ts). `null` = nada de suspeito, STATUS mostra o rotulo normal.
   observacao: string | null
+  // Task 4 (plano 24/09): resolucao manual VIGENTE (mais recente) desta NF,
+  // aplicada por cima do automatico via aplicarResolucoes (resolucoes.ts) --
+  // NUNCA sobrescreve `status`/`observacao` acima, so' preenche estes campos
+  // extra pro gerador desenhar as colunas novas ("RESOLUÇÃO OPERAÇÃO",
+  // "RESPONSÁVEL") e a segunda taxa do resumo. `undefined`/ausente = NF sem
+  // nenhuma resolucao manual registrada (comportamento identico ao de antes
+  // da Task 4).
+  resolucaoManual?: ResolucaoNf | null
+  responsavelResolucao?: string | null
+  placaExecutoraResolucao?: string | null
+  documentoResolucao?: string | null
 }
 
 /** Descasamento entre Escala e Romaneio -- carga que só aparece de um dos
