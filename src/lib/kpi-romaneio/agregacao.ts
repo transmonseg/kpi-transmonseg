@@ -487,8 +487,27 @@ export function montarDetalheEntregas(
   // o comportamento de quem nao passar nada (mesmo espirito dos outros
   // defaults acima).
   paradasUnitracCruasPropriaPlaca: Map<string, UnitracParadaRow[]> = new Map(),
+  // Revisao final pre-deploy (24/09, item 1): `semRastreadorNoDia` e o rotulo
+  // unificado "SEM RASTREADOR - VEICULO SEM RASTREAMENTO NO DIA - NAO
+  // CONTABILIZADO" (Task 1 + fix 7b09c40) sao decisao da Nutry Max -- o Rio
+  // Quality usa esta MESMA funcao (pipeline.ts) e herdou o comportamento
+  // sem decisao (sobrescrevendo "PLACA SEM RASTREADOR CADASTRADO - COMPLETAR
+  // FROTA" do gerador e suprimindo os rotulos de geocode do RQ). Mesmo padrao
+  // opt-in de `verificarAcessoIlha`: default false = comportamento exato de
+  // 108b4bb (placa sem CV fica sem observacao; CV sem posicao nenhuma no dia
+  // leva o rotulo antigo "NENHUMA POSICAO REPORTADA", que AGUARDANDO
+  // sobrescreve). Nutry Max (route.ts + scripts/gerar-nutrimax-real-arquivo.ts)
+  // passa true.
+  tratarSemRastreadorNoDia: boolean = false,
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
+  // Revisao final pre-deploy (24/09, item 3): sinais INDEPENDENTES das
+  // paradas de que a placa rodou no dia -- desmentem o caso (b) de
+  // semRastreadorNoDia ("tem CV mas zero posicoes"). `alvos` chega aqui como
+  // TODOS os alvos da placa no dia (alvosPorPlaca no chamador), nao so' os
+  // desta carga.
+  const placaTemAlvoFeitoNoDia = alvos.some(a => a.situacao === 1)
+  const placaRodouPorKm = kmPercorrido != null && kmPercorrido > 0
 
   // Item 3b: agrupa NFs confirmadas por GPS que compartilham a MESMA
   // parada fisica (mesma chegada+saida da Visita -- e' a chave que
@@ -652,8 +671,14 @@ export function montarDetalheEntregas(
     // ENCERROU (`!diaEmAndamento`) -- com o dia ainda em andamento, zero
     // posicoes ATE AGORA nao e' motivo pra acusar o equipamento cedo demais
     // (ver `diaEmAndamento` abaixo, que cobre esse caso mantendo AGUARDANDO).
-    const semRastreadorNoDia = !temRastreador
-      || (paradasPorOutraPlaca.has(placaNorm) && paradasProprias.length === 0 && !diaEmAndamento)
+    // Revisao final (item 3): o caso (b) tambem exige que nao haja alvo
+    // 'feito' da Unitrac pra placa no dia nem km > 0 -- qualquer um dos dois
+    // prova que o veiculo foi rastreado/rodou, so' as paradas que faltaram.
+    const zeroPosicoesNoDia = paradasPorOutraPlaca.has(placaNorm) && paradasProprias.length === 0
+    const semRastreadorNoDia = tratarSemRastreadorNoDia && (
+      !temRastreador
+      || (zeroPosicoesNoDia && !diaEmAndamento && !placaTemAlvoFeitoNoDia && !placaRodouPorKm)
+    )
     const nuncaSaiuDaBase = paradasProprias.length > 0 && paradasProprias.every(p => p.classificacao === 'BASE')
     // Achado real 22-23/09 (Task 7, plano 24/09): /stops da Unitrac so' guarda
     // 48h -- gerar um dia depois disso (dia antigo reprocessado) trazia
@@ -836,6 +861,12 @@ export function montarDetalheEntregas(
     // rotulo em si agora e' atribuido MAIS ACIMA (logo apos porOutraPlaca,
     // antes de semMovimento) -- ver comentario la' -- pra prevalecer sobre
     // "sem movimento" em vez de ser bloqueado por ele.
+    // Revisao final (item 1): com `tratarSemRastreadorNoDia` desligado (Rio
+    // Quality), o rotulo antigo de 108b4bb continua valendo, na MESMA posicao
+    // da cadeia de antes (e sobrescrito por AGUARDANDO, como antes).
+    if (!tratarSemRastreadorNoDia && observacao == null && status === 'pendente' && temRastreador && zeroPosicoesNoDia) {
+      observacao = 'SEM RASTREADOR - NENHUMA POSIÇÃO REPORTADA NO DIA - CONFERIR EQUIPAMENTO'
+    }
     // Achado real 11-12/09: pendente cuja coordenada nao e' confiavel merece
     // rotulo proprio -- o problema esta no CADASTRO do endereco, nao na
     // entrega. Dizer "nao foi ao cliente" aqui seria acusar o motorista com

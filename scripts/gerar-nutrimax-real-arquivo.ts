@@ -319,6 +319,10 @@ async function main() {
         // (pre-resolverParadas) -- ver comentario de
         // paradasUnitracCruasPorPlaca acima.
         paradasUnitracCruasPorPlaca,
+        // Revisao final pre-deploy (24/09, item 1): semRastreadorNoDia e o
+        // rotulo unificado "SEM RASTREADOR ... NAO CONTABILIZADO" sao so'
+        // desta pipeline -- ver tratarSemRastreadorNoDia em agregacao.ts.
+        true,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
@@ -357,7 +361,11 @@ async function main() {
   }
   const detalheComResolucao = aplicarResolucoes(detalhe, historicoResolucoes)
 
-  const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpi, data, avisos, detalheComResolucao)
+  const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpi, data, avisos, detalheComResolucao, undefined, undefined, {
+    // Linha de resumo (taxa automatica/apos conferencia) so' na Nutry Max --
+    // ver `opcoes.resumoConfirmacao` em gerador-xlsx.ts.
+    resumoConfirmacao: true,
+  })
   writeFileSync(saidaPath, xlsxBuf)
   console.log(`\nArquivo salvo em: ${saidaPath}`)
 }

@@ -512,7 +512,7 @@ describe('gerador-xlsx', () => {
         }))
       const detalhe: LinhaDetalheEntrega[] = [...confirmadas, ...semRastreador]
 
-      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
       const wb = new ExcelJS.Workbook()
       await wb.xlsx.load(buffer)
       const ws = wb.worksheets[0]
@@ -527,7 +527,7 @@ describe('gerador-xlsx', () => {
       const detalhe: LinhaDetalheEntrega[] = Array.from({ length: 4 }, (_, i) =>
         detalheFixture({ nf: `NF${i + 1}`, status: i < 2 ? 'confirmado_gps' : 'pendente' }))
 
-      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
       const wb = new ExcelJS.Workbook()
       await wb.xlsx.load(buffer)
       const ws = wb.worksheets[0]
@@ -570,7 +570,7 @@ describe('gerador-xlsx', () => {
         placa: 'RQU5J45', status: 'pendente', observacao: null,
         resolucaoManual: 'entregue_outra_placa', placaExecutoraResolucao: 'TUS1B06', responsavelResolucao: 'ANA',
       })]
-      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
       const wb = new ExcelJS.Workbook()
       await wb.xlsx.load(buffer)
       const wsPlaca = wb.getWorksheet('RQU5J45')!
@@ -588,7 +588,7 @@ describe('gerador-xlsx', () => {
         detalheFixture({ nf: 'NF3', status: 'confirmado_gps' }),
         detalheFixture({ nf: 'NF4', status: 'pendente' }),
       ]
-      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
       const wb = new ExcelJS.Workbook()
       await wb.xlsx.load(buffer)
       const ws = wb.worksheets[0]
@@ -619,7 +619,7 @@ describe('gerador-xlsx', () => {
           }),
           detalheFixture({ nf: 'NF2', status: 'confirmado_gps' }),
         ]
-        const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+        const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
         const wb = new ExcelJS.Workbook()
         await wb.xlsx.load(buffer)
         const ws = wb.worksheets[0]
@@ -643,7 +643,7 @@ describe('gerador-xlsx', () => {
           }),
           detalheFixture({ nf: 'NF2', status: 'confirmado_gps' }),
         ]
-        const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+        const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
         const wb = new ExcelJS.Workbook()
         await wb.xlsx.load(buffer)
         const ws = wb.worksheets[0]
@@ -664,7 +664,7 @@ describe('gerador-xlsx', () => {
           }),
           detalheFixture({ nf: 'NF2', status: 'confirmado_gps' }),
         ]
-        const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+        const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
         const wb = new ExcelJS.Workbook()
         await wb.xlsx.load(buffer)
         const ws = wb.worksheets[0]
@@ -682,7 +682,7 @@ describe('gerador-xlsx', () => {
           detalheFixture({ nf: 'NF1', status: 'pendente', resolucaoManual: 'desatualizado', responsavelResolucao: 'ANA' }),
           detalheFixture({ nf: 'NF2', status: 'confirmado_gps' }),
         ]
-        const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+        const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
         const wb = new ExcelJS.Workbook()
         await wb.xlsx.load(buffer)
         const ws = wb.worksheets[0]
@@ -707,7 +707,7 @@ describe('gerador-xlsx', () => {
           }),
           detalheFixture({ nf: 'NF2', status: 'confirmado_gps' }),
         ]
-        const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+        const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
         const wb = new ExcelJS.Workbook()
         await wb.xlsx.load(buffer)
         const ws = wb.worksheets[0]
@@ -716,6 +716,80 @@ describe('gerador-xlsx', () => {
         expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 100%')
         expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 100%')
       })
+    })
+  })
+
+  // Revisao final pre-deploy (24/09): a linha de resumo (TAXA DE CONFIRMAÇÃO /
+  // NFs sem rastreador) e' da Nutry Max -- o Rio Quality (pipeline.ts) nao a
+  // tinha em 108b4bb e nao deve ganhar sem decisao. Opt-in via opcoes.
+  describe('resumo de confirmacao -- opt-in e regras finais (revisao final 24/09, itens 1, 2 e 4)', () => {
+    async function textosDaAbaPrincipal(buffer: Buffer): Promise<string[]> {
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const ws = wb.worksheets[0]
+      const out: string[] = []
+      ws.eachRow(r => r.eachCell(c => { if (typeof c.value === 'string') out.push(c.value) }))
+      return out
+    }
+    async function resumo(detalhe: LinhaDetalheEntrega[]): Promise<string> {
+      const buffer = await gerarKpiRomaneioXlsx([linhaKpi()], '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const ws = wb.worksheets[0]
+      return ws.getRow(ws.rowCount).getCell(1).value as string
+    }
+
+    it('item 1: sem a opcao (chamada do Rio Quality) nao escreve linha de TAXA DE CONFIRMAÇÃO nem "NFs sem rastreador"', async () => {
+      const detalhe = [detalheFixture({ status: 'confirmado_gps' }), detalheFixture({ nf: 'NF2', temRastreador: false })]
+      const buffer = await gerarKpiRomaneioXlsx([linhaKpi()], '2026-08-23', [], detalhe, undefined, 'RIO QUALITY')
+      const textos = await textosDaAbaPrincipal(buffer)
+      expect(textos.some(t => t.includes('TAXA DE CONFIRMAÇÃO'))).toBe(false)
+      expect(textos.some(t => t.includes('NFs sem rastreador'))).toBe(false)
+    })
+
+    it('item 2: placa temRastreador=false -> TODAS as NFs dela saem do denominador automatico (inclusive confirmado_unitrac), exceto confirmadas por outra placa', async () => {
+      const detalhe: LinhaDetalheEntrega[] = [
+        detalheFixture({ nf: 'NF1', status: 'confirmado_gps', evidencia: 'parada_no_endereco' }),
+        detalheFixture({ nf: 'NF2', status: 'pendente' }),
+        // placa sem rastreador:
+        detalheFixture({ nf: 'NF3', placa: 'TTL5J17', temRastreador: false, status: 'pendente',
+          observacao: 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO', evidencia: 'sem_rastreador' }),
+        detalheFixture({ nf: 'NF4', placa: 'TTL5J17', temRastreador: false, status: 'confirmado_unitrac', evidencia: 'alvo_feito_unitrac' }),
+        detalheFixture({ nf: 'NF5', placa: 'TTL5J17', temRastreador: false, status: 'confirmado_gps', evidencia: 'outra_placa',
+          observacao: 'ENTREGUE POR OUTRA PLACA (RQV6I51) - CARGA TRANSFERIDA' }),
+      ]
+      const texto = await resumo(detalhe)
+      // denominador = NF1, NF2, NF5 -> confirmadas NF1, NF5 -> 2/3 = 67%
+      expect(texto).toContain('TAXA DE CONFIRMAÇÃO: 67%')
+      expect(texto).toContain('NFs sem rastreador: 2')
+    })
+
+    it('item 4: AGUARDANDO (dia em andamento) sai do denominador das duas taxas e aparece contado a parte', async () => {
+      const AG = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
+      const detalhe: LinhaDetalheEntrega[] = [
+        detalheFixture({ nf: 'NF1', status: 'confirmado_gps' }),
+        detalheFixture({ nf: 'NF2', status: 'confirmado_gps' }),
+        detalheFixture({ nf: 'NF3', status: 'pendente' }),
+        detalheFixture({ nf: 'NF4', status: 'pendente', observacao: AG }),
+        detalheFixture({ nf: 'NF5', status: 'pendente', observacao: AG }),
+      ]
+      const texto = await resumo(detalhe)
+      // 2/3 nas duas taxas (NF4, NF5 fora)
+      expect(texto).toContain('TAXA DE CONFIRMAÇÃO: 67%')
+      expect(texto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 67%')
+      expect(texto).toContain('NFs aguardando fim da rota: 2')
+    })
+
+    it('item 4: AGUARDANDO com resolucao manual confirmatoria entra na taxa apos conferencia (palavra da operacao), mas nunca na automatica', async () => {
+      const detalhe: LinhaDetalheEntrega[] = [
+        detalheFixture({ nf: 'NF1', status: 'confirmado_gps' }),
+        detalheFixture({ nf: 'NF2', status: 'pendente', observacao: 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO',
+          resolucaoManual: 'entregue', responsavelResolucao: 'ANA' }),
+      ]
+      const texto = await resumo(detalhe)
+      expect(texto).toContain('TAXA DE CONFIRMAÇÃO: 100%') // 1/1
+      expect(texto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 100%') // 2/2
+      expect(texto).toContain('NFs aguardando fim da rota: 1')
     })
   })
 })

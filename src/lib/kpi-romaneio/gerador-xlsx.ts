@@ -249,8 +249,28 @@ function confirmadaAposConferencia(d: LinhaDetalheEntrega): boolean {
   return d.status !== 'pendente'
 }
 
+// Revisao final pre-deploy (24/09, item 2): excluir so' a NF PENDENTE com
+// o rotulo SEM RASTREADOR enviesava a taxa -- as NFs da MESMA placa sem
+// rastreador que confirmaram (ex. alvo feito da Unitrac) ficavam no
+// denominador E no numerador, entao a placa so' "contava" quando dava
+// certo. Placa com temRastreador=false no dia -> TODAS as NFs dela saem do
+// denominador, EXCETO as confirmadas por OUTRA placa (`evidencia ===
+// 'outra_placa'`: evidencia independente do rastreador desta placa, conta
+// normalmente). O prefixo continua cobrindo o caso (b) de
+// semRastreadorNoDia (tem CV mas zero posicoes no dia, temRastreador=true).
 function ehSemRastreador(d: LinhaDetalheEntrega): boolean {
-  return d.observacao?.startsWith(PREFIXO_OBS_SEM_RASTREADOR) ?? false
+  if (d.observacao?.startsWith(PREFIXO_OBS_SEM_RASTREADOR)) return true
+  return d.temRastreador === false && d.evidencia !== 'outra_placa'
+}
+
+// Revisao final pre-deploy (24/09, item 4): NF "AGUARDANDO" (relatorio do
+// dia de hoje, rota ainda nao voltou) nao e' sucesso nem falha ainda --
+// contá-la no denominador derrubava a taxa de um dia em andamento. Sai do
+// denominador das duas taxas e aparece contada a parte ("NFs aguardando
+// fim da rota: N"). Mesmo prefixo gravado em agregacao.ts.
+const PREFIXO_OBS_AGUARDANDO = 'AGUARDANDO - ROTA EM ANDAMENTO'
+function ehAguardando(d: LinhaDetalheEntrega): boolean {
+  return (d.observacao?.startsWith(PREFIXO_OBS_AGUARDANDO) ?? false) && !ehSemRastreador(d)
 }
 
 // Fix round 1, item 4 (decisao de negocio da Ana): a taxa "apos conferencia
@@ -269,6 +289,10 @@ function ehSemRastreador(d: LinhaDetalheEntrega): boolean {
 function entraNoDenominadorPosConferencia(d: LinhaDetalheEntrega): boolean {
   if (d.resolucaoManual === 'desatualizado') return false
   if (ehSemRastreador(d) && !d.resolucaoManual) return false
+  // Item 4 (revisao final): AGUARDANDO segue a mesma regra de SEM
+  // RASTREADOR aqui -- fora ate' a operacao registrar uma resolucao (que e'
+  // exatamente a confirmacao que falta); com resolucao, conta conforme ela.
+  if (ehAguardando(d) && !d.resolucaoManual) return false
   return true
 }
 
@@ -280,9 +304,11 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   denominador: number
   denominadorPosConferencia: number
   semRastreador: number
+  aguardando: number
 } {
   const semRastreador = detalhe.filter(ehSemRastreador).length
-  const base = detalhe.filter(d => !ehSemRastreador(d))
+  const aguardando = detalhe.filter(ehAguardando).length
+  const base = detalhe.filter(d => !ehSemRastreador(d) && !ehAguardando(d))
   const denominador = base.length
   // Confirmada = status diferente de 'pendente'; NF sem rastreador SEMPRE
   // fica pendente (nunca confirma), entao ja sai naturalmente do numerador.
@@ -295,7 +321,7 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   const taxaPosConferenciaPct = denominadorPosConferencia > 0
     ? Math.round((100 * confirmadasPosConferencia) / denominadorPosConferencia) : 0
 
-  return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, denominadorPosConferencia, semRastreador }
+  return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, denominadorPosConferencia, semRastreador, aguardando }
 }
 
 function formatarMinutos(min: number | null): string {
@@ -438,6 +464,11 @@ export async function gerarKpiRomaneioXlsx(
   // Nome do cliente no titulo das abas -- o gerador nasceu pra Nutry Max e o
   // KPI Rio Quality (05/09) reaproveita ele inteiro.
   nomeCliente: string = 'NUTRY MAX',
+  // Revisao final pre-deploy (24/09, item 1): a linha de resumo do dia (TAXA
+  // DE CONFIRMAÇÃO / APÓS CONFERÊNCIA / NFs sem rastreador / aguardando) e'
+  // da Nutry Max -- o Rio Quality (pipeline.ts) reusa este gerador e nao a
+  // tinha em 108b4bb. Opt-in, mesmo padrao de `verificarAcessoIlha`.
+  opcoes: { resumoConfirmacao?: boolean } = {},
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
   wb.creator = 'TRANSMONSEG'
@@ -478,10 +509,10 @@ export async function gerarKpiRomaneioXlsx(
   // parte -- so' escreve quando ha' `detalhe` pra calcular (lista vazia,
   // default, nao adiciona linha nenhuma -- comportamento antigo intacto pra
   // quem nao passa o 4o parametro).
-  if (detalhe.length > 0) {
+  if (opcoes.resumoConfirmacao && detalhe.length > 0) {
     const resumo = calcularResumoConfirmacao(detalhe)
     const linhaResumoGeral = ws.addRow([
-      `TAXA DE CONFIRMAÇÃO: ${resumo.taxaPct}%    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${resumo.taxaPosConferenciaPct}%    |    NFs sem rastreador: ${resumo.semRastreador}`,
+      `TAXA DE CONFIRMAÇÃO: ${resumo.taxaPct}%    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${resumo.taxaPosConferenciaPct}%    |    NFs sem rastreador: ${resumo.semRastreador}    |    NFs aguardando fim da rota: ${resumo.aguardando}`,
     ])
     ws.mergeCells(linhaResumoGeral.number, 1, linhaResumoGeral.number, COLUNAS_KPI_ROMANEIO.length)
     const cell = linhaResumoGeral.getCell(1)
