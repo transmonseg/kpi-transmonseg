@@ -136,3 +136,85 @@ Requisito P0: "expor origem, método e distância; não equiparar parada em rua 
 - Chaves da API Fulltrack coladas na DM: guardar no cofre `chaves-apis-joaquim`; integração Fulltrack é plano próprio.
 - P1 "coleta auditável" (persistir intervalo, filtros, paginação da consulta Unitrac) e "estado parcial/final da rota": plano próprio depois deste.
 - Tela no painel para a equipe registrar resolução (Task 4 entrega importação por planilha, que é o fluxo que a equipe já usa).
+
+---
+
+## Adendo (24/09 noite) — achados da Task 6 e da análise de erros restantes
+
+Fontes: `.superpowers/sdd/2026-09-24-melhorias-relatorio-final-ana/task-6-report.md` e `~/ClaudeGerado/kpi-regen-0922/analise-erros-restantes.md`. Mesmas Global Constraints. Medição de não-regressão: gabarito da Ana 22/09 com o código atual = 988 ≤2 min, 1104 ≤10 min, 29 sem horário.
+
+### Task 7: Snapshot noturno das paradas Unitrac (/stops) + "sem movimento" robusto
+
+Problema: `/stops` da Unitrac só guarda 48 h. Gerar um dia depois disso traz paradas incompletas → `nuncaSaiuDaBase` (`agregacao.ts:560`) vira true e 54 NFs de 22/09 (17 placas que rodaram >50 km) saem "VEÍCULO SEM MOVIMENTO"; 3 transferências somem.
+
+**Files:** Create `supabase/migrations/20260924010000_kpi_paradas_snapshot.sql`, `src/lib/kpi-romaneio/paradas-snapshot.ts` (+ test), `scripts/snapshot-paradas-noturno.ts`; Modify `src/app/api/kpi/nutrimax/gerar/route.ts`, `scripts/gerar-nutrimax-real-arquivo.ts`, `src/lib/kpi-romaneio/agregacao.ts:560-561`.
+
+- [ ] Migration:
+```sql
+create table if not exists kpi_paradas_snapshot (
+  empresa text not null,
+  data date not null,
+  placa text not null,
+  paradas jsonb not null,
+  atualizado_em timestamptz not null default now(),
+  primary key (empresa, data, placa)
+);
+alter table kpi_paradas_snapshot enable row level security;
+```
+- [ ] `paradas-snapshot.ts`: `mesclarParadas(a, b)` (união deduplicada pela chave `_data` + lat/lng arredondado a 5 casas, ordenada por `_data`), `lerSnapshotParadas(empresa, data): Map<placa, UnitracParadaRow[]>`, `salvarSnapshotParadas(empresa, data, porPlaca)` (upsert mesclando com o que já existe — nunca encolhe), `paradasEfetivas(empresa, data, daApi)`: se `data` < hoje BR, mescla API + snapshot; se hoje, salva e devolve a API. Testes: mescla sem duplicar; snapshot maior que a API (dia antigo) prevalece; falha de leitura do snapshot não quebra (loga, devolve a API).
+- [ ] `scripts/snapshot-paradas-noturno.ts`: para cada placa da frota Nutry Max (`buscarFrota(COD_USER_NUTRIMAX)`), busca `/stops` de 48 h (`buscarParadasDoDia` com horas=48), agrupa por dia BR (hoje e ontem) e salva mesclando. `--dry` só imprime. Mesmo padrão de erro do `snapshot-alvos-noturno.ts`.
+- [ ] Geração (route + CLI): usar `paradasEfetivas` onde hoje usa o resultado cru de `buscarParadasDoDia`.
+- [ ] `agregacao.ts`: `semMovimento = (kmPercorrido != null && kmPercorrido < LIMITE_KM_SEM_MOVIMENTO) || (nuncaSaiuDaBase && (kmPercorrido == null || kmPercorrido < LIMITE_KM_SEM_MOVIMENTO))` — km do GPS contínuo acima do limite desmente "nunca saiu da base". Teste: placa com todas as paradas BASE mas km=80 → não é "sem movimento".
+- [ ] Cron (só no deploy, com OK): mesma cadência do snapshot de alvos (`50 3` e `50 4` no crontab do transmonseg-vps, servidor em CEST).
+- [ ] Suíte verde; commit `feat(kpi): snapshot noturno das paradas Unitrac e sem-movimento desmentido pelo km`.
+
+### Task 8: Placa declarada sem rastreador pela operação (TTL5J17)
+
+Problema: TTL5J17 tem `cv` na Unitrac e paradas só na BASE → cai em "VEÍCULO SEM MOVIMENTO" e fica na taxa. Pelo dado é indistinguível de caminhão parado; a informação "sem rastreador" vem da operação.
+
+**Files:** Create `supabase/migrations/20260924020000_kpi_placa_sem_rastreador.sql`, `src/lib/kpi-romaneio/placas-sem-rastreador.ts` (+ test); Modify route.ts e CLI (onde monta `temRastreadorPorPlaca`).
+
+- [ ] Migration:
+```sql
+create table if not exists kpi_placa_sem_rastreador (
+  id bigserial primary key,
+  empresa text not null,
+  placa text not null,
+  inicio date not null,
+  fim date,
+  motivo text,
+  responsavel text not null,
+  criado_em timestamptz not null default now()
+);
+alter table kpi_placa_sem_rastreador enable row level security;
+```
+- [ ] `placasSemRastreadorNoDia(linhas, data): Set<placaNorm>` (inicio ≤ data e (fim null ou ≥ data), placa normalizada com `normPlaca`), `buscarPlacasSemRastreador(empresa)` com falha de leitura não quebrando a geração. Testes de vigência (antes do início, dentro, depois do fim, fim null).
+- [ ] Geração: placa no conjunto → `temRastreador=false` (reusa o rótulo da Task 1 `SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO`, fora da taxa automática). Teste de integração no helper que monta o mapa.
+- [ ] Seed de TTL5J17 (inicio 2026-09-23, motivo "informado pela operação 24/09", responsavel "Ana") só no deploy, com OK.
+- [ ] Suíte verde; commit `feat(kpi): placa declarada sem rastreador pela operacao`.
+
+### Task 9: Evidência nos rótulos por distância própria + coluna "PARADAS REAIS"
+
+Problema: rótulos derivados de `distPropria` ("PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA", "NÃO FOI AO CLIENTE", "PARADA PRÓXIMA (500m-2km)") saem sem evidência/distância (69 NFs em 23/09). A coluna "PARADAS REAIS" (`gerador-xlsx.ts:16`, calculada em `agregacao.ts:~320`) conta NFs confirmadas, não paradas físicas — confundiu a operação ("KPI 3 × relatório 4").
+
+**Files:** Modify `src/lib/kpi-romaneio/agregacao.ts`, `src/lib/kpi-romaneio/gerador-xlsx.ts`; tests.
+
+- [ ] Enum `evidencia` ganha `'passagem_sem_parada'` (rótulo PASSOU NO ENDEREÇO…) e `'parada_proxima_fora_raio'` (PARADA PRÓXIMA 500m-2km); "NÃO FOI AO CLIENTE" fica `'sem_evidencia'`. Para os três, `distParadaM = Math.round(distPropria)` quando `distPropria` existe e a geo é confiável; senão null. Texto legível: "PASSAGEM SEM PARADA", "PARADA PRÓXIMA FORA DO RAIO". Testes por rótulo.
+- [ ] Coluna "PARADAS REAIS" → "NF CONFIRMADAS" (mesmo valor) e nova coluna "PARADAS FORA DA BASE" = número de paradas próprias da placa com `classificacao === 'FORA_BASE'` na carga. Teste com 3 NFs confirmadas em 2 paradas físicas → 3 e 2.
+- [ ] Suíte verde; commit `feat(kpi): evidencia nos rotulos por distancia e coluna de paradas fisicas`.
+
+### Task 10: Horário pela parada Unitrac quando o GPS contínuo falhou
+
+Problema: ~27 NFs de 22/09 que a Ana vincula por código do cliente saem "ENTREGUE" sem horário porque o feed GPS contínuo congela/some na parada; 24 delas estão no `/stops` da Unitrac.
+
+**Files:** Modify `src/lib/kpi-romaneio/agregacao.ts` (ou `visitas.ts`, onde `confirmado_unitrac` sem visita é decidido); tests.
+
+- [ ] NF `confirmado_unitrac` sem visita GPS: procurar nas paradas Unitrac da própria placa (após a Task 7, já mescladas com o snapshot) a parada que contém o `feitoISO` (convenção existente: dígitos BRT + 'Z', mesma do restante do arquivo) com tolerância de 10 min antes da chegada / depois da saída, e cujo centro está a ≤500 m do cadastro Unitrac ou do geocode confiável. Achou: chegada/saída = da parada, `distParadaM` preenchida, evidência continua `alvo_feito_unitrac`. Não achou: comportamento atual (sem horário).
+- [ ] Testes: parada contém o feito e está a 100 m → horário preenchido; parada contém o feito mas a 2 km → sem horário; feito fora de qualquer parada → sem horário; fuso: feito "2026-09-22T10:05:00Z" (dígitos BRT) casa com parada 10:00–10:20 na mesma convenção.
+- [ ] Medir com `scripts/medir-contra-gabarito-ana.py`: "sem horário" deve cair (esperado ~29 → ≤10), ≤2/≤10 min não podem piorar.
+- [ ] Suíte verde; commit `feat(kpi): horario pela parada Unitrac quando o GPS continuo falhou`.
+
+### Task 11: Verificação final do adendo
+
+- [ ] Regenerar 22/09 e 23/09 fora de produção (cópia em /tmp no servidor, como na Task 6), medir contra o gabarito, conferir: 0 "VEÍCULO SEM MOVIMENTO" em placa com km > limite; TTL5J17 como sem rastreador (via seed temporário só na cópia — ou teste com override se não puder escrever); 69 NFs com evidência; "sem horário" menor.
+- [ ] Cherry-pick no `../KPI TEMP`, suíte verde, sem push.
