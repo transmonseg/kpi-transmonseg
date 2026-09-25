@@ -599,5 +599,121 @@ describe('gerador-xlsx', () => {
       // NF2 (nao esteve no local) NAO conta mesmo resolvida -> 2/4 = 50%.
       expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 50%')
     })
+
+    // Fix round 1, item 4: decisao de negocio da Ana -- SEM RASTREADOR fica
+    // "aguardando confirmação operacional" na taxa apos conferencia; quando
+    // essa confirmacao chega (qualquer resolucao manual exceto
+    // 'desatualizado'), a NF ENTRA no denominador e conta conforme a
+    // resolucao. A taxa automatica continua excluindo SEM RASTREADOR sempre
+    // (nao mudou).
+    describe('SEM RASTREADOR + resolução manual (Fix round 1, item 4a) e "desatualizado" (item 4b)', () => {
+      it('SEM RASTREADOR com resolução manual confirmatória: entra no denominador da taxa após conferência e conta como confirmada', async () => {
+        const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+        const detalhe: LinhaDetalheEntrega[] = [
+          detalheFixture({
+            nf: 'NF1', status: 'pendente', temRastreador: false,
+            observacao: 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO',
+            resolucaoManual: 'entregue', responsavelResolucao: 'ANA',
+          }),
+          detalheFixture({ nf: 'NF2', status: 'confirmado_gps' }),
+        ]
+        const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+        const wb = new ExcelJS.Workbook()
+        await wb.xlsx.load(buffer)
+        const ws = wb.worksheets[0]
+        const resumoTexto = ws.getRow(ws.rowCount).getCell(1).value as string
+
+        // Automatica: NF1 sai do denominador (sem rastreador, sem confirmação
+        // automática possível) -> 1/1 = 100%, comportamento antigo intacto.
+        expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 100%')
+        // Apos conferencia: NF1 ENTRA (resolução manual confirmatória) e
+        // conta como confirmada + NF2 confirma -> 2/2 = 100%.
+        expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 100%')
+      })
+
+      it('SEM RASTREADOR com resolução manual "não esteve no local": entra no denominador mas NÃO conta como confirmada', async () => {
+        const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+        const detalhe: LinhaDetalheEntrega[] = [
+          detalheFixture({
+            nf: 'NF1', status: 'pendente', temRastreador: false,
+            observacao: 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO',
+            resolucaoManual: 'nao_esteve_no_local', responsavelResolucao: 'ANA',
+          }),
+          detalheFixture({ nf: 'NF2', status: 'confirmado_gps' }),
+        ]
+        const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+        const wb = new ExcelJS.Workbook()
+        await wb.xlsx.load(buffer)
+        const ws = wb.worksheets[0]
+        const resumoTexto = ws.getRow(ws.rowCount).getCell(1).value as string
+
+        expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 100%') // automatica intacta
+        // Apos conferencia: NF1 entra no denominador (tem resolucao manual,
+        // não é 'desatualizado') mas não confirma -> 1/2 = 50%.
+        expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 50%')
+      })
+
+      it('SEM RASTREADOR SEM nenhuma resolução manual: continua fora do denominador da taxa após conferência (aguardando confirmação operacional)', async () => {
+        const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+        const detalhe: LinhaDetalheEntrega[] = [
+          detalheFixture({
+            nf: 'NF1', status: 'pendente', temRastreador: false,
+            observacao: 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO',
+          }),
+          detalheFixture({ nf: 'NF2', status: 'confirmado_gps' }),
+        ]
+        const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+        const wb = new ExcelJS.Workbook()
+        await wb.xlsx.load(buffer)
+        const ws = wb.worksheets[0]
+        const resumoTexto = ws.getRow(ws.rowCount).getCell(1).value as string
+
+        expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 100%')
+        // NF1 continua fora do denominador da taxa apos conferencia tambem
+        // (sem confirmacao operacional ainda) -> 1/1 = 100% (so' NF2 conta).
+        expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 100%')
+      })
+
+      it('"desatualizado" (NF com rastreador normal) sai do denominador da taxa após conferência -- fica pendente de atualização, não conta como falha', async () => {
+        const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+        const detalhe: LinhaDetalheEntrega[] = [
+          detalheFixture({ nf: 'NF1', status: 'pendente', resolucaoManual: 'desatualizado', responsavelResolucao: 'ANA' }),
+          detalheFixture({ nf: 'NF2', status: 'confirmado_gps' }),
+        ]
+        const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+        const wb = new ExcelJS.Workbook()
+        await wb.xlsx.load(buffer)
+        const ws = wb.worksheets[0]
+        const resumoTexto = ws.getRow(ws.rowCount).getCell(1).value as string
+
+        // Automatica: NF1 nao e' sem rastreador, entra normal no denominador
+        // -> 1 confirmada (NF2) / 2 = 50%. Automatica NUNCA muda com Fix
+        // round 1.
+        expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 50%')
+        // Apos conferencia: NF1 sai do denominador (desatualizado) -> so'
+        // NF2 conta -> 1/1 = 100%.
+        expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 100%')
+      })
+
+      it('"desatualizado" + SEM RASTREADOR: sai do denominador (dupla exclusão continua sendo so exclusão)', async () => {
+        const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+        const detalhe: LinhaDetalheEntrega[] = [
+          detalheFixture({
+            nf: 'NF1', status: 'pendente', temRastreador: false,
+            observacao: 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO',
+            resolucaoManual: 'desatualizado', responsavelResolucao: 'ANA',
+          }),
+          detalheFixture({ nf: 'NF2', status: 'confirmado_gps' }),
+        ]
+        const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+        const wb = new ExcelJS.Workbook()
+        await wb.xlsx.load(buffer)
+        const ws = wb.worksheets[0]
+        const resumoTexto = ws.getRow(ws.rowCount).getCell(1).value as string
+
+        expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 100%')
+        expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 100%')
+      })
+    })
   })
 })

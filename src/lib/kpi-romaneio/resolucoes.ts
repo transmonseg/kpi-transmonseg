@@ -43,21 +43,11 @@ export function resolucaoVigente(linhas: ResolucaoNfRow[]): ResolucaoNfRow | nul
     new Date(atual.criado_em).getTime() > new Date(maisRecente.criado_em).getTime() ? atual : maisRecente)
 }
 
-/** Aplica o historico de resolucoes manuais (de UM OU MAIS dias/NFs, ja
- *  filtrado por empresa+data em `buscarResolucoes`) em cima do `detalhe`
- *  automatico do dia. Agrupa por NF, pega a vigente de cada grupo
- *  (`resolucaoVigente`) e so' ENXERTA campos novos (`resolucaoManual`,
- *  `responsavelResolucao`, etc) -- `status`/`observacao` do automatico saem
- *  identicos ao que entraram.
- *
- *  NF com resolucao registrada que nao aparece em `detalhe` (sumiu do
- *  romaneio numa regeracao -- Review Focus do plano) e' simplesmente
- *  ignorada: nenhum erro, a resolucao continua guardada na tabela pra quando
- *  a NF voltar a aparecer. */
-export function aplicarResolucoes(
-  detalhe: LinhaDetalheEntrega[],
-  historicoResolucoes: ResolucaoNfRow[],
-): LinhaDetalheEntrega[] {
+/** Agrupa um historico (varias NFs, varias linhas por NF) e devolve so' a
+ *  vigente de cada NF -- extraido pra reuso tanto em `aplicarResolucoes`
+ *  quanto no importador (idempotencia do `--aplicar`, que precisa saber a
+ *  vigente ATUAL antes de decidir se grava de novo). */
+export function vigentesPorNf(historicoResolucoes: ResolucaoNfRow[]): Map<string, ResolucaoNfRow> {
   const porNf = new Map<string, ResolucaoNfRow[]>()
   for (const linha of historicoResolucoes) {
     const grupo = porNf.get(linha.nf)
@@ -70,6 +60,25 @@ export function aplicarResolucoes(
     const vigente = resolucaoVigente(linhas)
     if (vigente) vigentePorNf.set(nf, vigente)
   }
+  return vigentePorNf
+}
+
+/** Aplica o historico de resolucoes manuais (de UM OU MAIS dias/NFs, ja
+ *  filtrado por empresa+data em `buscarResolucoes`) em cima do `detalhe`
+ *  automatico do dia. Agrupa por NF, pega a vigente de cada grupo
+ *  (`vigentesPorNf`) e so' ENXERTA campos novos (`resolucaoManual`,
+ *  `responsavelResolucao`, etc) -- `status`/`observacao` do automatico saem
+ *  identicos ao que entraram.
+ *
+ *  NF com resolucao registrada que nao aparece em `detalhe` (sumiu do
+ *  romaneio numa regeracao -- Review Focus do plano) e' simplesmente
+ *  ignorada: nenhum erro, a resolucao continua guardada na tabela pra quando
+ *  a NF voltar a aparecer. */
+export function aplicarResolucoes(
+  detalhe: LinhaDetalheEntrega[],
+  historicoResolucoes: ResolucaoNfRow[],
+): LinhaDetalheEntrega[] {
+  const vigentePorNf = vigentesPorNf(historicoResolucoes)
 
   return detalhe.map(d => {
     const vigente = vigentePorNf.get(d.nf)

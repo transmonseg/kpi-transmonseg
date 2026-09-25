@@ -207,24 +207,53 @@ function confirmadaAposConferencia(d: LinhaDetalheEntrega): boolean {
   return d.status !== 'pendente'
 }
 
+function ehSemRastreador(d: LinhaDetalheEntrega): boolean {
+  return d.observacao?.startsWith(PREFIXO_OBS_SEM_RASTREADOR) ?? false
+}
+
+// Fix round 1, item 4 (decisao de negocio da Ana): a taxa "apos conferencia
+// da operacao" tem um denominador PROPRIO, diferente do automatico:
+// - SEM RASTREADOR sem nenhuma resolucao manual ainda fica de fora (a NF
+//   esta' "aguardando confirmacao operacional" -- e' exatamente essa
+//   confirmacao que falta pra ela poder entrar no calculo).
+// - SEM RASTREADOR COM resolucao manual (qualquer uma, EXCETO
+//   'desatualizado') ENTRA no denominador e conta conforme a resolucao --
+//   a palavra da operacao e' a confirmacao que o automatico nao conseguiu
+//   dar.
+// - 'desatualizado' (com ou sem rastreador) SAI do denominador -- fica
+//   pendente de atualizacao, nao e' nem sucesso nem falha ainda.
+// A taxa AUTOMATICA (taxaPct) nunca muda com isso -- continua excluindo so'
+// SEM RASTREADOR, do jeito que a Task 1 (24/09) implementou.
+function entraNoDenominadorPosConferencia(d: LinhaDetalheEntrega): boolean {
+  if (d.resolucaoManual === 'desatualizado') return false
+  if (ehSemRastreador(d) && !d.resolucaoManual) return false
+  return true
+}
+
 function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   taxaPct: number
   taxaPosConferenciaPct: number
   confirmadas: number
   confirmadasPosConferencia: number
   denominador: number
+  denominadorPosConferencia: number
   semRastreador: number
 } {
-  const semRastreador = detalhe.filter(d => d.observacao?.startsWith(PREFIXO_OBS_SEM_RASTREADOR)).length
-  const base = detalhe.filter(d => !d.observacao?.startsWith(PREFIXO_OBS_SEM_RASTREADOR))
+  const semRastreador = detalhe.filter(ehSemRastreador).length
+  const base = detalhe.filter(d => !ehSemRastreador(d))
   const denominador = base.length
   // Confirmada = status diferente de 'pendente'; NF sem rastreador SEMPRE
   // fica pendente (nunca confirma), entao ja sai naturalmente do numerador.
   const confirmadas = base.filter(d => d.status !== 'pendente').length
-  const confirmadasPosConferencia = base.filter(confirmadaAposConferencia).length
   const taxaPct = denominador > 0 ? Math.round((100 * confirmadas) / denominador) : 0
-  const taxaPosConferenciaPct = denominador > 0 ? Math.round((100 * confirmadasPosConferencia) / denominador) : 0
-  return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, semRastreador }
+
+  const basePosConferencia = detalhe.filter(entraNoDenominadorPosConferencia)
+  const denominadorPosConferencia = basePosConferencia.length
+  const confirmadasPosConferencia = basePosConferencia.filter(confirmadaAposConferencia).length
+  const taxaPosConferenciaPct = denominadorPosConferencia > 0
+    ? Math.round((100 * confirmadasPosConferencia) / denominadorPosConferencia) : 0
+
+  return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, denominadorPosConferencia, semRastreador }
 }
 
 function formatarMinutos(min: number | null): string {
