@@ -1991,3 +1991,120 @@ describe('montarDetalheEntregas -- semRastreadorNoDia caso (b) confere alvo feit
     expect(d.observacao).toBe(OBS)
   })
 })
+
+// Task 1 (plano 2026-09-25, brief): `acharParadaDeOutraPlaca` hoje aceita
+// QUALQUER parada de outra placa perto do cliente -- em 24/09, 8 das 31 NFs
+// classificadas assim eram falsas (outra placa parou perto por acaso ou
+// geocode errado), so' 23 eram troca de rota de verdade. `exigirRotaTrocada`
+// (14o parametro posicional, opt-in so' Nutry Max, mesmo padrao de
+// tratarSemRastreadorNoDia) so' aceita "ENTREGUE POR OUTRA PLACA" quando o
+// par (placa propria, outra placa) tem pelo menos MIN_NFS_ROTA_TROCADA=5 NFs
+// nessa condicao no dia -- E a propria placa nao esteve perto (<=1000m,
+// RAIO_PROPRIA_PLACA_DESCARTA_TROCA_M) desse cliente especifico.
+describe('montarDetalheEntregas -- exigirRotaTrocada opt-in (Task 1, plano 2026-09-25)', () => {
+  const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+
+  // 6 clientes bem separados entre si (~3km, bem alem de RAIO_NAO_FOI_AO_
+  // CLIENTE_M=2000) pra nao haver casamento cruzado nem uma parada PROPRIA
+  // perto de UM cliente contaminar a distancia calculada pros outros.
+  function clienteELinha(i: number, overrides: Partial<LinhaGeocodificada> = {}) {
+    const lat = -22.9
+    const lng = -43.2 + i * 0.03
+    return { lat, lng, linhaNf: linha(`NF${i}`, { clienteCodigo: `CLI${i}`, lat, lng, ...overrides }) }
+  }
+
+  function paradaDeB(i: number, placaB = 'RQV6I51') {
+    const { lat, lng } = clienteELinha(i)
+    return parada({ id: `pb${i}`, placa_norm: placaB, classificacao: 'FORA_BASE', lat, lng })
+  }
+
+  it('(a) 6 NFs casadas com B, propria placa nunca perto de nenhum -- as 6 saem ENTREGUE POR OUTRA PLACA (B) - ROTA TROCADA', () => {
+    const linhas = Array.from({ length: 6 }, (_, i) => clienteELinha(i).linhaNf)
+    const paradasB = Array.from({ length: 6 }, (_, i) => paradaDeB(i))
+    const paradasFrota = new Map<string, UnitracParadaRow[]>([
+      ['TTL7D40', []], // propria placa: nenhuma parada -- "inexistente"
+      ['RQV6I51', paradasB],
+    ])
+
+    const detalhes = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio,
+      true, paradasFrota, null, false, false, false, new Map(), false,
+      /* exigirRotaTrocada */ true,
+    )
+
+    expect(detalhes).toHaveLength(6)
+    for (const d of detalhes) {
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.observacao).toBe('ENTREGUE POR OUTRA PLACA (RQV6I51) - ROTA TROCADA')
+      expect(d.evidencia).toBe('outra_placa')
+    }
+  })
+
+  it('(b) so 2 NFs casadas com B (abaixo do minimo de 5) -- nenhuma aceita como outra placa, classificacao normal', () => {
+    const linhas = [clienteELinha(0).linhaNf, clienteELinha(1).linhaNf]
+    const paradasB = [paradaDeB(0), paradaDeB(1)]
+    const paradasFrota = new Map<string, UnitracParadaRow[]>([
+      ['TTL7D40', []],
+      ['RQV6I51', paradasB],
+    ])
+
+    const detalhes = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio,
+      true, paradasFrota, null, false, false, false, new Map(), false,
+      /* exigirRotaTrocada */ true,
+    )
+
+    for (const d of detalhes) {
+      expect(d.observacao ?? '').not.toContain('OUTRA PLACA')
+      expect(d.evidencia).not.toBe('outra_placa')
+    }
+  })
+
+  it('(c) 6 NFs casadas com B, mas a propria A parou a 300m de um dos clientes -- esse nao aceita, os outros 5 continuam (ainda >=5)', () => {
+    const { lat: latPerto, lng: lngPerto } = clienteELinha(0)
+    // ~300m ao norte do cliente 0 (1 grau de latitude ~111.320m).
+    const paradaPropriaPerto = parada({
+      id: 'ppropria', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE',
+      lat: latPerto + 300 / 111_320, lng: lngPerto,
+    })
+    const linhas = Array.from({ length: 6 }, (_, i) => clienteELinha(i).linhaNf)
+    const paradasB = Array.from({ length: 6 }, (_, i) => paradaDeB(i))
+    const paradasFrota = new Map<string, UnitracParadaRow[]>([
+      ['TTL7D40', [paradaPropriaPerto]],
+      ['RQV6I51', paradasB],
+    ])
+
+    const detalhes = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio,
+      true, paradasFrota, null, false, false, false, new Map(), false,
+      /* exigirRotaTrocada */ true,
+    )
+
+    const perto = detalhes.find(d => d.clienteCodigo === 'CLI0')!
+    expect(perto.observacao ?? '').not.toContain('OUTRA PLACA')
+    expect(perto.evidencia).not.toBe('outra_placa')
+
+    const restantes = detalhes.filter(d => d.clienteCodigo !== 'CLI0')
+    expect(restantes).toHaveLength(5)
+    for (const d of restantes) {
+      expect(d.observacao).toBe('ENTREGUE POR OUTRA PLACA (RQV6I51) - ROTA TROCADA')
+      expect(d.evidencia).toBe('outra_placa')
+    }
+  })
+
+  it('(d) opcao desligada (default): comportamento identico ao atual -- rotulo CARGA TRANSFERIDA, sem minimo', () => {
+    const linhas = [clienteELinha(0).linhaNf, clienteELinha(1).linhaNf]
+    const paradasB = [paradaDeB(0), paradaDeB(1)]
+    const paradasFrota = new Map<string, UnitracParadaRow[]>([
+      ['TTL7D40', []],
+      ['RQV6I51', paradasB],
+    ])
+
+    const detalhes = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio, true, paradasFrota)
+
+    for (const d of detalhes) {
+      expect(d.observacao).toBe('ENTREGUE POR OUTRA PLACA (RQV6I51) - CARGA TRANSFERIDA')
+      expect(d.evidencia).toBe('outra_placa')
+    }
+  })
+})

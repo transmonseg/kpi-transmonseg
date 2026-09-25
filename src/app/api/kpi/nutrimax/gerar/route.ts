@@ -462,6 +462,11 @@ export async function POST(req: NextRequest) {
         // rotulo unificado "SEM RASTREADOR ... NAO CONTABILIZADO" sao so'
         // desta pipeline -- ver tratarSemRastreadorNoDia em agregacao.ts.
         true,
+        // Task 1 (plano 2026-09-25): "outra placa" so' vale como confirmacao
+        // quando e' rota trocada de verdade (>=5 NFs no dia, propria placa
+        // nao esteve perto) -- so' desta pipeline, ver exigirRotaTrocada em
+        // agregacao.ts.
+        true,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

@@ -323,6 +323,9 @@ async function main() {
         // rotulo unificado "SEM RASTREADOR ... NAO CONTABILIZADO" sao so'
         // desta pipeline -- ver tratarSemRastreadorNoDia em agregacao.ts.
         true,
+        // Task 1 (plano 2026-09-25): espelha o chamador real de producao
+        // (nutrimax/gerar/route.ts) -- ver exigirRotaTrocada em agregacao.ts.
+        true,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

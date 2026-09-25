@@ -76,6 +76,19 @@ function distanciaAteParadaPropria(
 const RAIO_PASSOU_SEM_PARAR_M = 500
 const RAIO_NAO_FOI_AO_CLIENTE_M = 2_000
 
+// Task 1 (plano 2026-09-25, brief da resolucao automatica): constantes do
+// gate `exigirRotaTrocada` (ver comentario completo na assinatura de
+// montarDetalheEntregas). MIN_NFS_ROTA_TROCADA=5 -- medido contra o dia real
+// de 24/09 (par RBJ2J67<->RQV6I51 com 21 NFs, troca de rota genuina, muito
+// acima do minimo; coincidencias pontuais nunca chegaram nem perto de 5).
+// RAIO_PROPRIA_PLACA_DESCARTA_TROCA_M=1000 -- mais estrito que RAIO_NAO_FOI_
+// AO_CLIENTE_M (2000) de proposito: se a propria placa chegou perto o
+// bastante do cliente (dentro de 1km), a entrega mais provavel e' dela
+// mesma, mesmo que o par (propria, B) tenha volume suficiente pra ser uma
+// troca de rota real em OUTROS clientes do dia.
+const MIN_NFS_ROTA_TROCADA = 5
+const RAIO_PROPRIA_PLACA_DESCARTA_TROCA_M = 1_000
+
 // Task 2 (achado real 24/09, diagnostico com GPS bruto -- posicoes_historico
 // -- e Unitrac, placa RQQ5B81/23-09): `Visita.distanciaMetrosDoPonto` NAO da'
 // pra confiar quando a visita veio da PONTE do monitoramento (base-horarios.ts
@@ -499,8 +512,44 @@ export function montarDetalheEntregas(
   // sobrescreve). Nutry Max (route.ts + scripts/gerar-nutrimax-real-arquivo.ts)
   // passa true.
   tratarSemRastreadorNoDia: boolean = false,
+  // Task 1 (plano 2026-09-25): "outra placa parou perto" hoje confirma
+  // QUALQUER coincidencia de coordenada -- em 24/09, 8 das 31 NFs assim eram
+  // falsas (parada por acaso, geocode errado), so' 23 eram troca de rota de
+  // verdade (mesma placa da frota realmente assumiu a rota). Opt-in (mesmo
+  // padrao de tratarSemRastreadorNoDia acima): so' aceita "ENTREGUE POR
+  // OUTRA PLACA" quando o PAR (placa propria, outra placa) acumula pelo
+  // menos MIN_NFS_ROTA_TROCADA NFs nessa condicao no dia inteiro (rota
+  // trocada de verdade, nao coincidencia pontual) E a propria placa nao
+  // esteve perto (<=RAIO_PROPRIA_PLACA_DESCARTA_TROCA_M) desse cliente
+  // especifico. Default false preserva Rio Quality (que usa esta MESMA
+  // funcao, pipeline.ts) e o comportamento antigo pra quem nao passar nada;
+  // Nutry Max (route.ts + scripts/gerar-nutrimax-real-arquivo.ts) passa true.
+  exigirRotaTrocada: boolean = false,
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
+  // Task 1 (plano 2026-09-25): pre-passo QUE RODA ANTES do loop por NF --
+  // pra cada candidato de "outra placa" (mesmo `acharParadaDeOutraPlaca`
+  // usado abaixo), conta quantas NFs desta carga tem a MESMA outra placa B
+  // como melhor candidato E cuja propria placa (paradas FORA_BASE proprias)
+  // esta a mais de RAIO_PROPRIA_PLACA_DESCARTA_TROCA_M do cliente (ou nao
+  // tem parada propria nenhuma). So' conta pra decidir se o PAR (propria,
+  // B) e' uma troca de rota de verdade -- independente de confirmadoUnitrac/
+  // confirmadoGps/semMovimento (o pre-passo precisa do universo COMPLETO de
+  // candidatos, nao so' dos que sobreviveriam as guardas do loop principal).
+  const placasComRotaTrocadaConfirmada = new Set<string>()
+  if (exigirRotaTrocada) {
+    const contagemPorOutraPlaca = new Map<string, number>()
+    for (const linha of linhasRomaneio) {
+      const candidato = acharParadaDeOutraPlaca(linha, placaNorm, paradasPorOutraPlaca)
+      if (!candidato) continue
+      const distPropriaPreCandidato = distanciaAteParadaPropria(linha, placaNorm, paradasPorOutraPlaca)
+      if (distPropriaPreCandidato != null && distPropriaPreCandidato <= RAIO_PROPRIA_PLACA_DESCARTA_TROCA_M) continue
+      contagemPorOutraPlaca.set(candidato.placa, (contagemPorOutraPlaca.get(candidato.placa) ?? 0) + 1)
+    }
+    for (const [outraPlaca, contagem] of contagemPorOutraPlaca) {
+      if (contagem >= MIN_NFS_ROTA_TROCADA) placasComRotaTrocadaConfirmada.add(outraPlaca)
+    }
+  }
   // Revisao final pre-deploy (24/09, item 3): sinais INDEPENDENTES das
   // paradas de que a placa rodou no dia -- desmentem o caso (b) de
   // semRastreadorNoDia ("tem CV mas zero posicoes"). `alvos` chega aqui como
@@ -715,9 +764,24 @@ export function montarDetalheEntregas(
     const propriaPlacaPlausivelmentePerto = distPropria != null && distPropria <= RAIO_NAO_FOI_AO_CLIENTE_M
     // Carga transferida: so' quando a PROPRIA placa nao confirmou. Rastreador
     // travado (sem movimento) tem outra explicacao e nao vira "transferida".
-    const porOutraPlaca = confirmadoUnitrac || confirmadoGps || semMovimento || propriaPlacaPlausivelmentePerto || !geoConfiavel
+    let porOutraPlaca = confirmadoUnitrac || confirmadoGps || semMovimento || propriaPlacaPlausivelmentePerto || !geoConfiavel
       ? null
       : acharParadaDeOutraPlaca(linha, placaNorm, paradasPorOutraPlaca)
+    // Task 1 (plano 2026-09-25): com o gate ligado, so' vale quando o PAR
+    // (propria, B) e' rota trocada de verdade (pre-passo acima, >= MIN_NFS_
+    // ROTA_TROCADA) E a propria placa nao esteve perto (<=RAIO_PROPRIA_
+    // PLACA_DESCARTA_TROCA_M) DESTE cliente especifico -- reusa `distPropria`
+    // (ja calculado acima com a MESMA fonte/guarda que decide porOutraPlaca
+    // nao-nulo aqui: distPropria so' fica null/>2000 quando chega neste
+    // ponto, entao a checagem de 1000m e' redundante com o raio de 2000m
+    // acima em CADA NF individual, mas necessaria pro raciocinio do gate
+    // ficar explicito e resiliente a mudanca futura dos dois raios.
+    if (porOutraPlaca && exigirRotaTrocada) {
+      const propriaPertoDemaisParaTroca = distPropria != null && distPropria <= RAIO_PROPRIA_PLACA_DESCARTA_TROCA_M
+      if (propriaPertoDemaisParaTroca || !placasComRotaTrocadaConfirmada.has(porOutraPlaca.placa)) {
+        porOutraPlaca = null
+      }
+    }
     // Task 10 (plano 24/09): confirmado so' pelo alvo da Unitrac, sem Visita
     // de GPS -- procura na propria placa a parada FORA_BASE que contem o
     // feitoISO do alvo (ver acharParadaUnitracParaFeito). So' entra quando
@@ -765,7 +829,9 @@ export function montarDetalheEntregas(
     // sendo checado primeiro: se outra placa da frota genuinamente entregou,
     // isso e' fato positivo e nao cede pra sem rastreador nem sem movimento.
     if (observacao == null && porOutraPlaca) {
-      observacao = `ENTREGUE POR OUTRA PLACA (${porOutraPlaca.placa}) - CARGA TRANSFERIDA`
+      observacao = exigirRotaTrocada
+        ? `ENTREGUE POR OUTRA PLACA (${porOutraPlaca.placa}) - ROTA TROCADA`
+        : `ENTREGUE POR OUTRA PLACA (${porOutraPlaca.placa}) - CARGA TRANSFERIDA`
     }
     if (observacao == null && status === 'pendente' && semRastreadorNoDia) {
       observacao = 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO'
