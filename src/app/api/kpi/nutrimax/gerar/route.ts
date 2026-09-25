@@ -21,8 +21,9 @@ import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
 import { salvarGeracao, buscarGeracaoParaRegenerar } from '@/lib/kpi-romaneio/historico'
 import { createServiceClient } from '@/lib/supabase/service'
-import { COD_USER_NUTRIMAX, foraDoAlcanceApi, LIMITE_CONCORRENCIA_PLACAS, PAO_PREFIXO } from '@/lib/kpi-romaneio/constants'
+import { COD_USER_NUTRIMAX, EMPRESA_NUTRIMAX, foraDoAlcanceApi, LIMITE_CONCORRENCIA_PLACAS, PAO_PREFIXO } from '@/lib/kpi-romaneio/constants'
 import { mapComLimite } from '@/lib/kpi-romaneio/concorrencia'
+import { buscarResolucoes, aplicarResolucoes } from '@/lib/kpi-romaneio/resolucoes'
 import { logarNfDuplicadaNaMesmaPlaca } from '@/lib/kpi-romaneio/nf-duplicada'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
 
@@ -450,7 +451,20 @@ export async function POST(req: NextRequest) {
     ...(romaneioPaoBuf ? detectarDescasamentos(resultadoPao.escala, cargasRomaneioList.filter(c => ehCargaPao(c.carga))) : []),
   ].sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
 
-  const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpi, data, avisos, detalhe)
+  // Task 4 (plano 24/09): camada de resolucao manual por NF -- aditiva, nunca
+  // pode quebrar a geracao. `kpi_nf_resolucao` so' existe a partir do deploy
+  // desta task; ate' la', buscarResolucoes lanca (tabela inexistente) e a
+  // geracao segue normalmente sem nenhuma resolucao aplicada (mesmo relatorio
+  // de hoje, so' logando o motivo).
+  let historicoResolucoes: Awaited<ReturnType<typeof buscarResolucoes>> = []
+  try {
+    historicoResolucoes = await buscarResolucoes(EMPRESA_NUTRIMAX, data)
+  } catch (err) {
+    console.error('resolucoes manuais indisponiveis (tabela kpi_nf_resolucao ainda nao existe? ok antes do deploy da Task 4):', err)
+  }
+  const detalheComResolucao = aplicarResolucoes(detalhe, historicoResolucoes)
+
+  const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpi, data, avisos, detalheComResolucao)
 
   // Registra a geração no histórico (auditoria simples) + guarda os PDFs
   // originais no Storage (pedido do usuario 01/09, ver comentario da

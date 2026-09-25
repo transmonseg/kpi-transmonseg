@@ -22,7 +22,8 @@ import { agregarPorCarga, montarDetalheEntregas } from '../src/lib/kpi-romaneio/
 import { calcularKmPercorrido } from '../src/lib/kpi-romaneio/km'
 import { detectarDescasamentos } from '../src/lib/kpi-romaneio/avisos'
 import { gerarKpiRomaneioXlsx } from '../src/lib/kpi-romaneio/gerador-xlsx'
-import { COD_USER_NUTRIMAX, foraDoAlcanceApi, PAO_PREFIXO } from '../src/lib/kpi-romaneio/constants'
+import { COD_USER_NUTRIMAX, EMPRESA_NUTRIMAX, foraDoAlcanceApi, PAO_PREFIXO } from '../src/lib/kpi-romaneio/constants'
+import { buscarResolucoes, aplicarResolucoes } from '../src/lib/kpi-romaneio/resolucoes'
 import { logarNfDuplicadaNaMesmaPlaca } from '../src/lib/kpi-romaneio/nf-duplicada'
 import { semCadastroUnitrac, nfsSoUnitrac } from '../src/lib/kpi-romaneio/sem-cadastro'
 import { hojeBR } from '../src/lib/data-br'
@@ -310,7 +311,17 @@ async function main() {
   const negativos = linhasKpi.filter(l => l.tempoOperacaoMin != null && l.tempoOperacaoMin < 0)
   console.log(`Linhas com TEMPO OPERAÇÃO negativo (deveria ser 0 agora): ${negativos.length}`)
 
-  const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpi, data, avisos, detalhe)
+  // Task 4 (plano 24/09) -- espelha route.ts: falha ao ler resolucoes manuais
+  // (tabela ainda nao existe antes do deploy da Task 4) NAO quebra a geracao.
+  let historicoResolucoes: Awaited<ReturnType<typeof buscarResolucoes>> = []
+  try {
+    historicoResolucoes = await buscarResolucoes(EMPRESA_NUTRIMAX, data)
+  } catch (err) {
+    console.error('resolucoes manuais indisponiveis (tabela kpi_nf_resolucao ainda nao existe? ok antes do deploy da Task 4):', err)
+  }
+  const detalheComResolucao = aplicarResolucoes(detalhe, historicoResolucoes)
+
+  const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpi, data, avisos, detalheComResolucao)
   writeFileSync(saidaPath, xlsxBuf)
   console.log(`\nArquivo salvo em: ${saidaPath}`)
 }

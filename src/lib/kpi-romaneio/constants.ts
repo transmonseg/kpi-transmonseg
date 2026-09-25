@@ -1,6 +1,13 @@
 /** Codigo da conta Nutry Max na Unitrac. */
 export const COD_USER_NUTRIMAX = '4096'
 
+/** Nome da empresa usado como chave em `kpi_nf_resolucao` (Task 4,
+ *  resolucoes.ts) -- mesmo valor default de `nomeCliente` em
+ *  gerarKpiRomaneioXlsx, so' que como constante pra route.ts e o CLI
+ *  passarem o MESMO valor pra buscarResolucoes()/registrarResolucao() sem
+ *  duplicar o literal. */
+export const EMPRESA_NUTRIMAX = 'NUTRY MAX'
+
 /** Nome cadastrado da garagem/CD da Nutry Max no Unitrac -- aparece em
  *  `local_parada` como "BASE - BASE GARAGEM, ...". Diferente do Benassi
  *  ("BASE BENASSI"). Migrado de kpi-nutrimax/constants.ts (destruido na
