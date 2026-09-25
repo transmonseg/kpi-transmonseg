@@ -315,6 +315,17 @@ export async function POST(req: NextRequest) {
   const paradasPorPlaca = new Map<string, UnitracParadaRow[]>()
   const visitasPorPlaca = new Map<string, Map<string, Visita>>()
   const kmPorPlaca = new Map<string, number | null>()
+  // Fix round 1 (revisao 24/09 da Task 10, achado da revisao de codigo):
+  // `paradasPorPlaca` (preenchido abaixo) e' o resultado de `resolverParadas`,
+  // que PREFERE a ponte do monitoramento e descarta as paradas cruas da
+  // Unitrac inteiras sempre que a ponte respondeu e nao houve apagao de sinal
+  // detectado -- mesmo quando a ponte tambem congelou sem disparar esse flag
+  // (o caso exato que a Task 10 resolve). A busca do horario pelo alvo feito
+  // (agregacao.ts, `paradasUnitracCruasPropriaPlaca`) precisa das paradas
+  // CRUAS -- `paradasEfetivasPorPlaca`/`paradasEfetivasExtraPorPlaca` abaixo,
+  // ANTES de resolverParadas escolher -- guardadas aqui à parte, nunca
+  // misturadas com `paradasPorPlaca`.
+  const paradasUnitracCruasPorPlaca = new Map<string, UnitracParadaRow[]>()
 
   // Task 7 (24/09): /stops da Unitrac so' guarda 48h -- gerar um dia depois
   // disso traz paradas incompletas (nuncaSaiuDaBase falso-positivo). Busca a
@@ -329,6 +340,7 @@ export async function POST(req: NextRequest) {
 
   for (const placaNorm of placasNorm) {
     const daUnitrac = paradasEfetivasPorPlaca.get(placaNorm) ?? []
+    paradasUnitracCruasPorPlaca.set(placaNorm, daUnitrac)
     // Sem parada nenhuma da Unitrac (dia fora das 48h, ou placa sem cv) mas
     // com parada derivada do historico permanente: usa a da ponte.
     const daPonte = horarioBasePorPlaca.get(placaNorm)?.paradas
@@ -442,6 +454,10 @@ export async function POST(req: NextRequest) {
         // enderecos distintos e' so' desta pipeline -- ver comentario de
         // detectarParadaCurtaCompartilhada em agregacao.ts.
         true,
+        // Fix round 1 (Task 10): paradas CRUAS da Unitrac da propria placa
+        // (pre-resolverParadas) -- ver comentario de
+        // paradasUnitracCruasPorPlaca acima.
+        paradasUnitracCruasPorPlaca,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

@@ -227,18 +227,29 @@ const RAIO_PARADA_FEITO_UNITRAC_M = 500
  *  espirito de `distanciasGeoECadastro` acima, mas aqui so' precisa saber
  *  SE bate (nao qual dos dois vence) pra decidir emprestar o horario.
  *  `null` quando nao ha' parada nenhuma que satisfaca as duas condicoes --
- *  comportamento atual (sem horario) preservado. */
+ *  comportamento atual (sem horario) preservado.
+ *
+ *  Fix round 1 (revisao 24/09 da Task 10, achado da revisao de codigo):
+ *  `paradasCruasDaPlaca` tem que vir do parametro dedicado
+ *  `paradasUnitracCruasPropriaPlaca` (ver assinatura de
+ *  `montarDetalheEntregas`), NUNCA de `paradasPorOutraPlaca` -- esse ja'
+ *  passou por `resolverParadas` (unitrac.ts), que prefere a ponte do
+ *  monitoramento e DESCARTA as paradas cruas da Unitrac inteiras sempre que
+ *  a ponte respondeu e nao houve apagao de sinal detectado. Como o feed
+ *  continuo da ponte pode congelar SEM disparar o flag de apagao (o caso
+ *  exato que esta funcao resolve), buscar em `paradasPorOutraPlaca` nunca
+ *  achava a parada certa -- o ganho medido offline nunca se realizaria em
+ *  producao. */
 function acharParadaUnitracParaFeito(
   linha: LinhaGeocodificada,
   alvo: AlvoApi,
-  placaNorm: string,
-  paradasPorOutraPlaca: Map<string, UnitracParadaRow[]>,
+  paradasCruasDaPlaca: UnitracParadaRow[],
 ): { parada: UnitracParadaRow; distParadaM: number } | null {
   if (!alvo.feitoISO) return null
   const t = instanteDeFeitoISO(alvo.feitoISO)
   const toleranciaMs = TOLERANCIA_FEITO_UNITRAC_MIN * 60_000
   let melhor: { parada: UnitracParadaRow; dist: number } | null = null
-  for (const p of paradasPorOutraPlaca.get(placaNorm) ?? []) {
+  for (const p of paradasCruasDaPlaca) {
     if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
     const inicioJanela = new Date(p.chegada).getTime() - toleranciaMs
     const fimJanela = new Date(p.fim_real ?? p.saida ?? p.chegada).getTime() + toleranciaMs
@@ -460,6 +471,22 @@ export function montarDetalheEntregas(
   // acima -- especifico da Nutry Max, default false preserva Rio Quality
   // (que usa a MESMA funcao, ver pipeline.ts) intocada.
   detectarParadaCurtaCompartilhada: boolean = false,
+  // Fix round 1 (revisao 24/09 da Task 10, achado da revisao de codigo):
+  // `paradasPorOutraPlaca` (acima) e' o resultado de `resolverParadas`
+  // (unitrac.ts) -- quando a ponte do monitoramento respondeu por essa
+  // placa e NAO houve apagao de sinal detectado, `resolverParadas` prefere
+  // a ponte e DESCARTA as paradas cruas da Unitrac inteiramente (mesmo
+  // quando a ponte tambem congelou sem disparar o flag de apagao -- e'
+  // exatamente o caso das NFs que a Task 10 resolve). Buscar a parada do
+  // `feitoISO` em `paradasPorOutraPlaca` nesse cenario nunca encontra nada,
+  // mesmo quando a Unitrac tem a parada certa. Este parametro recebe as
+  // paradas CRUAS da Unitrac da propria placa (o que `paradasEfetivas`
+  // devolve, ja mescladas com o snapshot da Task 7 -- ANTES de
+  // `resolverParadas` escolher entre ponte/Unitrac), independente do que o
+  // resto do fluxo usa pra chegada/saida/distancia. Default vazio preserva
+  // o comportamento de quem nao passar nada (mesmo espirito dos outros
+  // defaults acima).
+  paradasUnitracCruasPropriaPlaca: Map<string, UnitracParadaRow[]> = new Map(),
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
 
@@ -672,7 +699,7 @@ export function montarDetalheEntregas(
     // ha' alvo de verdade (sempre ha', confirmadoUnitrac exige alvo?.situacao
     // ===1) e nao ha' Visita (senao o GPS continuo ja' resolveu o horario).
     const paradaUnitracFeito = confirmadoUnitrac && !confirmadoGps && alvo
-      ? acharParadaUnitracParaFeito(linha, alvo, placaNorm, paradasPorOutraPlaca)
+      ? acharParadaUnitracParaFeito(linha, alvo, paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? [])
       : null
 
     const status: StatusEntrega = confirmadoUnitrac

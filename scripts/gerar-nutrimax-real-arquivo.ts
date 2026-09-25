@@ -190,6 +190,15 @@ async function main() {
   const paradasPorPlaca = new Map<string, UnitracParadaRow[]>()
   const visitasPorPlaca = new Map<string, Map<string, Visita>>()
   const kmPorPlaca = new Map<string, number | null>()
+  // Fix round 1 (revisao 24/09 da Task 10, achado da revisao de codigo):
+  // `paradasPorPlaca` (preenchido abaixo) e' o resultado de `resolverParadas`,
+  // que descarta as paradas cruas da Unitrac sempre que a ponte respondeu e
+  // nao houve apagao de sinal detectado -- mesmo quando a ponte tambem
+  // congelou sem disparar esse flag. A busca do horario pelo alvo feito
+  // (agregacao.ts, `paradasUnitracCruasPropriaPlaca`) precisa das paradas
+  // CRUAS (`paradasEfetivasPorPlaca` abaixo, ANTES de resolverParadas
+  // escolher) -- guardadas aqui à parte, nunca misturadas com `paradasPorPlaca`.
+  const paradasUnitracCruasPorPlaca = new Map<string, UnitracParadaRow[]>()
 
   // Task 7 (24/09): /stops da Unitrac so' guarda 48h -- gerar um dia depois
   // disso traz paradas incompletas (nuncaSaiuDaBase falso-positivo). Busca a
@@ -210,9 +219,10 @@ async function main() {
   const paradasEfetivasPorPlaca = await paradasEfetivas('nutrimax', data, hojeBR(), daUnitracPorPlaca)
 
   for (const placaNorm of placasNorm) {
-    let paradas = paradasEfetivasPorPlaca.get(placaNorm) ?? []
+    const daUnitracCrua = paradasEfetivasPorPlaca.get(placaNorm) ?? []
+    paradasUnitracCruasPorPlaca.set(placaNorm, daUnitracCrua)
     const daPonte = horarioBasePorPlaca.get(placaNorm)?.paradas
-    paradas = resolverParadas(paradas, daPonte, placaNorm, horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false)
+    const paradas = resolverParadas(daUnitracCrua, daPonte, placaNorm, horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false)
     paradasPorPlaca.set(placaNorm, paradas)
     visitasPorPlaca.set(placaNorm, montarVisitas(linhasPorPlaca.get(placaNorm) ?? [], paradas, horarioBasePorPlaca.get(placaNorm)?.visitasPorNf))
     kmPorPlaca.set(placaNorm, calcularKmPercorrido(paradas))
@@ -305,6 +315,10 @@ async function main() {
         // exercitaria o mesmo comportamento que vai pro relatorio real.
         true,
         true,
+        // Fix round 1 (Task 10): paradas CRUAS da Unitrac da propria placa
+        // (pre-resolverParadas) -- ver comentario de
+        // paradasUnitracCruasPorPlaca acima.
+        paradasUnitracCruasPorPlaca,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
