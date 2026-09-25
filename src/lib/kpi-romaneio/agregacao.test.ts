@@ -1509,4 +1509,86 @@ describe('montarDetalheEntregas -- EvidenciaNf e distParadaM (Task 5, plano 24/0
     expect(d.distParadaM).not.toBeNull()
     expect(d.distParadaM as number).toBeLessThan(50)
   })
+
+  // Fix round 1 (revisao 24/09 da Task 5, achado 1): duas paradas cruas
+  // podem se sobrepor a MESMA janela [chegada,saida] da Visita (ex. um blip
+  // de transito perto do fim de uma parada de verdade, seguido de outra
+  // parada de verdade logo depois) -- devolver a PRIMEIRA por ordem de
+  // array (comportamento antigo) pegava o blip (30s de sobreposicao, longe
+  // do endereco) em vez da parada de verdade (sobreposicao total, perto do
+  // endereco). Critério novo: maior sobreposição temporal vence.
+  it('acharCoordenadaDaParadaPropria escolhe a parada com MAIOR sobreposicao temporal, nao a primeira do array', () => {
+    const linhas = [linha('NF1', { lat: -22.9, lng: -43.2 })]
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', chegada: '2026-09-25T10:00:00.000Z', saida: '2026-09-25T10:10:00.000Z', distanciaMetrosDoPonto: 0 }],
+    ])
+    // Blip listado PRIMEIRO: so' 30s de sobreposicao com a janela da Visita
+    // ([10:00,10:10]), longe do endereco (~5km).
+    const blip = parada({
+      id: 'blip', chegada: '2026-09-25T09:59:00.000Z', saida: '2026-09-25T10:00:30.000Z', fim_real: '2026-09-25T10:00:30.000Z',
+      classificacao: 'FORA_BASE', lat: -22.945, lng: -43.2,
+    })
+    // Parada real listada DEPOIS: sobreposicao TOTAL (600s), perto do
+    // endereco (~50m).
+    const paradaReal = parada({
+      id: 'real', chegada: '2026-09-25T10:00:00.000Z', saida: '2026-09-25T10:10:00.000Z', fim_real: '2026-09-25T10:10:00.000Z',
+      classificacao: 'FORA_BASE', lat: -22.9004, lng: -43.2,
+    })
+    const paradasPorOutraPlaca = new Map<string, UnitracParadaRow[]>([['TTL7D40', [blip, paradaReal]]])
+
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio, true, paradasPorOutraPlaca)
+
+    expect(d.evidencia).toBe('parada_no_endereco')
+    expect(d.distParadaM).not.toBeNull()
+    expect(d.distParadaM as number).toBeLessThan(100) // pegou a parada real (~44m), nao o blip (~5km)
+  })
+
+  it('acharCoordenadaDaParadaPropria em empate de sobreposicao desempata pela mais proxima da referencia (geocode)', () => {
+    const linhas = [linha('NF1', { lat: -22.9, lng: -43.2 })]
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', chegada: '2026-09-25T11:00:00.000Z', saida: '2026-09-25T11:10:00.000Z', distanciaMetrosDoPonto: 0 }],
+    ])
+    // As duas cobrem a janela INTEIRA (mesma sobreposicao, 600s) -- so' a
+    // distancia ate o geocode desempata.
+    const longe = parada({
+      id: 'longe', chegada: '2026-09-25T11:00:00.000Z', saida: '2026-09-25T11:10:00.000Z', fim_real: '2026-09-25T11:10:00.000Z',
+      classificacao: 'FORA_BASE', lat: -22.92, lng: -43.2,
+    })
+    const perto = parada({
+      id: 'perto', chegada: '2026-09-25T11:00:00.000Z', saida: '2026-09-25T11:10:00.000Z', fim_real: '2026-09-25T11:10:00.000Z',
+      classificacao: 'FORA_BASE', lat: -22.9002, lng: -43.2,
+    })
+    const paradasPorOutraPlaca = new Map<string, UnitracParadaRow[]>([['TTL7D40', [longe, perto]]])
+
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio, true, paradasPorOutraPlaca)
+
+    expect(d.evidencia).toBe('parada_no_endereco')
+    expect(d.distParadaM).not.toBeNull()
+    expect(d.distParadaM as number).toBeLessThan(50) // pegou "perto" (~22m), nao "longe" (~2,2km)
+  })
+
+  // Fix round 1 (revisao 24/09 da Task 5, achado 2): casamento por horario e'
+  // independente do raio que a ponte ja validou -- quando a parada achada
+  // fica longe de QUALQUER referencia conhecida, e' coincidencia de
+  // horario, nao a mesma parada fisica. Evidencia continua a mesma; so' a
+  // distancia exposta vira null (nunca mostra um numero que nao bate).
+  it('parada casada por horario a >800m de QUALQUER referencia (geocode e cadastro): distParadaM null, evidencia mantida', () => {
+    const linhas = [linha('NF1', { lat: -22.9, lng: -43.2 })]
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', chegada: '2026-09-20T10:00:00.000Z', saida: '2026-09-20T10:10:00.000Z', distanciaMetrosDoPonto: 0 }],
+    ])
+    // ~3km do geocode -- casamento por horario bateu, mas a coordenada nao
+    // bate com o endereco nem com nenhum cadastro (nenhum alvo passado).
+    const paradaLonge = parada({
+      chegada: '2026-09-20T10:00:00.000Z', saida: '2026-09-20T10:10:00.000Z', fim_real: '2026-09-20T10:10:00.000Z',
+      classificacao: 'FORA_BASE', lat: -22.927, lng: -43.2,
+    })
+    const paradasPorOutraPlaca = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaLonge]]])
+
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio, true, paradasPorOutraPlaca)
+
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.evidencia).toBe('parada_no_endereco') // evidencia nao muda
+    expect(d.distParadaM).toBeNull() // mas a distancia nao confiavel some
+  })
 })

@@ -80,23 +80,43 @@ const RAIO_NAO_FOI_AO_CLIENTE_M = 2_000
 // preencheu a Visita. Confirmado no caso de aceite: parada real (Unitrac)
 // a -22.7100749,-42.62839 -- NF 2386225 (Jacuba) fica a 4.183m dela (Ana:
 // "nao esteve no local"), NF 2386220 (mesma rua da parada) fica a 126m.
+// Fix round 1 (revisao 24/09 da Task 5, achado 1): a placa pode ter MAIS DE
+// UMA parada crua se sobrepondo a janela [chegada,saida] da Visita (ex.
+// blip de transito entrando/saindo perto do fim de uma parada real seguida
+// de outra parada de verdade logo depois) -- devolver cegamente a PRIMEIRA
+// batida escolhia por ordem de array, nao por qual parada de fato EXPLICA
+// a Visita. Critério agora: maior sobreposição temporal (em ms) com a
+// janela da Visita vence; empate (sobreposição igual) desempata pela mais
+// próxima da coordenada de REFERÊNCIA (geocode do endereço, ou cadastro da
+// Unitrac quando o geocode não existir/nao for confiavel -- ver
+// `referenciaParaDesempate` abaixo, cada chamador decide a referencia certa
+// pro seu contexto). `referencia=null` (default, usado pelo desempate de
+// parada curta compartilhada -- Task 2 -- que já valida a coordenada da
+// LINHA antes de chamar) desempata por sobreposição apenas, mantendo o
+// comportamento de antes quando so' uma parada bate.
 function acharCoordenadaDaParadaPropria(
   placaNorm: string,
   chegada: string,
   saida: string,
   paradasPorOutraPlaca: Map<string, UnitracParadaRow[]>,
+  referencia: { lat: number; lng: number } | null = null,
 ): { lat: number; lng: number } | null {
   const inicioJanela = new Date(chegada).getTime()
   const fimJanela = new Date(saida).getTime()
+  let melhor: { lat: number; lng: number; sobreposicaoMs: number; distRef: number } | null = null
   for (const p of paradasPorOutraPlaca.get(placaNorm) ?? []) {
     if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
     const inicioParada = new Date(p.chegada).getTime()
     const fimParada = new Date(p.fim_real ?? p.saida ?? p.chegada).getTime()
-    if (inicioParada <= fimJanela && fimParada >= inicioJanela) {
-      return { lat: p.lat, lng: p.lng }
-    }
+    const sobreposicaoMs = Math.min(fimParada, fimJanela) - Math.max(inicioParada, inicioJanela)
+    if (sobreposicaoMs < 0) continue // sem sobreposicao de verdade (mesmo guard <=/>= de antes)
+    const distRef = referencia ? haversine(referencia.lat, referencia.lng, p.lat, p.lng) : 0
+    const ganha = !melhor
+      || sobreposicaoMs > melhor.sobreposicaoMs
+      || (sobreposicaoMs === melhor.sobreposicaoMs && distRef < melhor.distRef)
+    if (ganha) melhor = { lat: p.lat, lng: p.lng, sobreposicaoMs, distRef }
   }
-  return null
+  return melhor ? { lat: melhor.lat, lng: melhor.lng } : null
 }
 
 const coordValidaCadastro = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && n !== 0
@@ -123,6 +143,37 @@ function distanciasGeoECadastro(
     ? haversine(coordParada.lat, coordParada.lng, alvo.pontoLat as number, alvo.pontoLng as number)
     : null
   return { distGeo, distCad }
+}
+
+/** Fix round 1 (revisao 24/09 da Task 5, achado 1): coordenada de REFERÊNCIA
+ *  usada pra desempatar `acharCoordenadaDaParadaPropria` quando duas paradas
+ *  cruas tem a MESMA sobreposição temporal com a Visita -- geocode do
+ *  endereço quando existe e é confiável; cadastro da Unitrac quando o
+ *  geocode não existir/não for confiável. `null` quando nenhum dos dois
+ *  existe (desempate cai pra ordem de chegada, mesmo comportamento antigo). */
+function referenciaParaDesempate(linha: LinhaGeocodificada, alvo: AlvoApi | undefined): { lat: number; lng: number } | null {
+  if (linha.geoConfiavel !== false && linha.lat != null && linha.lng != null) return { lat: linha.lat, lng: linha.lng }
+  if (alvo && coordValidaCadastro(alvo.pontoLat) && coordValidaCadastro(alvo.pontoLng)) {
+    return { lat: alvo.pontoLat as number, lng: alvo.pontoLng as number }
+  }
+  return null
+}
+
+// Fix round 1 (revisao 24/09 da Task 5, achado 2): a ponte (base-horarios.ts)
+// já valida o raio antes de casar uma parada com um ponto -- mas o casamento
+// POR HORÁRIO feito aqui (acharCoordenadaDaParadaPropria, janela [chegada,
+// saída] da Visita) é um mecanismo INDEPENDENTE, sem raio nenhum. Quando a
+// parada achada por horário fica longe de QUALQUER referência conhecida
+// (geocode E cadastro, quando existem), o casamento não é confiável -- é
+// coincidência de horário, não a mesma parada fisica que a ponte validou.
+// A EVIDÊNCIA em si não muda (a ponte já confirmou a presença dentro do
+// raio dela), só a distância exposta no relatório: melhor não mostrar
+// nenhuma do que mostrar uma que não bate com a parada real.
+const RAIO_CONFIANCA_CASAMENTO_POR_HORARIO_M = 800
+function casamentoPorHorarioConfiavel(distGeo: number | null, distCad: number | null): boolean {
+  const distancias = [distGeo, distCad].filter((d): d is number => d != null)
+  if (distancias.length === 0) return true
+  return distancias.some(d => d <= RAIO_CONFIANCA_CASAMENTO_POR_HORARIO_M)
 }
 
 function acharParadaDeOutraPlaca(
@@ -389,7 +440,11 @@ export function montarDetalheEntregas(
     if (linha.lat == null || linha.lng == null) return null
     let coord = coordenadaDaParadaPorChave.get(chave)
     if (coord === undefined) {
-      coord = acharCoordenadaDaParadaPropria(placaNorm, visitaDaLinha.chegada, visitaDaLinha.saida, paradasPorOutraPlaca)
+      // referencia = geocode desta LINHA (ja validado logo acima -- lat/lng
+      // presentes e geoConfiavel !== false): desempata entre paradas cruas
+      // com a MESMA sobreposicao temporal pela mais perto do endereco que
+      // esta pedindo a coordenada (fix round 1, achado 1).
+      coord = acharCoordenadaDaParadaPropria(placaNorm, visitaDaLinha.chegada, visitaDaLinha.saida, paradasPorOutraPlaca, { lat: linha.lat, lng: linha.lng })
       coordenadaDaParadaPorChave.set(chave, coord)
     }
     if (coord == null) return null
@@ -725,23 +780,27 @@ export function montarDetalheEntregas(
         : null
     } else if (visita?.viaVizinhanca) {
       evidencia = 'vizinhanca'
+      const referencia = referenciaParaDesempate(linha, alvo)
       distParadaM = distanciasGeoECadastro(
-        linha, alvo, acharCoordenadaDaParadaPropria(placaNorm, visita.chegada, visita.saida, paradasPorOutraPlaca),
+        linha, alvo, acharCoordenadaDaParadaPropria(placaNorm, visita.chegada, visita.saida, paradasPorOutraPlaca, referencia),
       ).distGeo
     } else if (visita?.viaRaioAmpliado) {
       evidencia = 'raio_ampliado'
+      const referencia = referenciaParaDesempate(linha, alvo)
       distParadaM = distanciasGeoECadastro(
-        linha, alvo, acharCoordenadaDaParadaPropria(placaNorm, visita.chegada, visita.saida, paradasPorOutraPlaca),
+        linha, alvo, acharCoordenadaDaParadaPropria(placaNorm, visita.chegada, visita.saida, paradasPorOutraPlaca, referencia),
       ).distGeo
     } else if (visita) {
-      const coordParada = acharCoordenadaDaParadaPropria(placaNorm, visita.chegada, visita.saida, paradasPorOutraPlaca)
+      const referencia = referenciaParaDesempate(linha, alvo)
+      const coordParada = acharCoordenadaDaParadaPropria(placaNorm, visita.chegada, visita.saida, paradasPorOutraPlaca, referencia)
       const { distGeo, distCad } = distanciasGeoECadastro(linha, alvo, coordParada)
+      const confiavel = casamentoPorHorarioConfiavel(distGeo, distCad)
       if (distCad != null && (distGeo == null || distCad < distGeo)) {
         evidencia = 'parada_no_cadastro_unitrac'
-        distParadaM = distCad
+        distParadaM = confiavel ? distCad : null
       } else {
         evidencia = 'parada_no_endereco'
-        distParadaM = distGeo
+        distParadaM = confiavel ? distGeo : null
       }
     } else {
       evidencia = 'sem_evidencia'
