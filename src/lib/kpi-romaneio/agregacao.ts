@@ -347,16 +347,26 @@ export function montarDetalheEntregas(
   // por parada compartilhada, nao uma vez por NF do grupo. `undefined` =
   // ainda nao procurado, `null` = procurado e nao achou (fallback abaixo).
   const coordenadaDaParadaPorChave = new Map<string, { lat: number; lng: number } | null>()
-  function distanciaNaParadaCompartilhada(linha: LinhaGeocodificada, visitaDaLinha: Visita, chave: string): number {
+  // Fix round 1 (revisao 24/09 do commit d9ad438, itens 1 e 2): devolve
+  // `null` (distancia DESCONHECIDA) em vez de arriscar um numero -- nunca
+  // mais cai em `Visita.distanciaMetrosDoPonto` (item 2: esse campo vem 0
+  // sempre que a visita e' da ponte do monitoramento, sem relacao nenhuma
+  // com a distancia real -- ver comentario de acharCoordenadaDaParadaPropria)
+  // e nunca decide nada pra um endereco com `geoConfiavel === false` (item
+  // 1: coordenada ja' sabida como ruim -- rua homonima de outro municipio,
+  // centroide de bairro -- nao pode nem "vencer" nem ser "rebaixada" por uma
+  // distancia medida a partir dela). Sem numero confiavel, o chamador trata
+  // como "nem vencedor nem perdedor" (mesmo efeito pratico de antes do fix:
+  // mantem o rotulo de conferencia pro grupo inteiro).
+  function distanciaNaParadaCompartilhada(linha: LinhaGeocodificada, visitaDaLinha: Visita, chave: string): number | null {
+    if (linha.geoConfiavel === false) return null
+    if (linha.lat == null || linha.lng == null) return null
     let coord = coordenadaDaParadaPorChave.get(chave)
     if (coord === undefined) {
       coord = acharCoordenadaDaParadaPropria(placaNorm, visitaDaLinha.chegada, visitaDaLinha.saida, paradasPorOutraPlaca)
       coordenadaDaParadaPorChave.set(chave, coord)
     }
-    // Sem parada propria casando o horario (frota sem paradas cruas
-    // disponiveis, ex. testes) -- fallback pro campo antigo, unico dado que
-    // sobra.
-    if (coord == null || linha.lat == null || linha.lng == null) return visitaDaLinha.distanciaMetrosDoPonto
+    if (coord == null) return null
     return haversine(coord.lat, coord.lng, linha.lat, linha.lng)
   }
   if (detectarParadaCurtaCompartilhada) {
@@ -368,7 +378,8 @@ export function montarDetalheEntregas(
       const set = enderecosPorChaveDeParada.get(chave) ?? new Set<string>()
       set.add(linha.endereco)
       enderecosPorChaveDeParada.set(chave, set)
-      if (distanciaNaParadaCompartilhada(linha, visita, chave) <= RAIO_VENCEDOR_PARADA_COMPARTILHADA_M) {
+      const dist = distanciaNaParadaCompartilhada(linha, visita, chave)
+      if (dist != null && dist <= RAIO_VENCEDOR_PARADA_COMPARTILHADA_M) {
         temVencedorProximoPorChave.set(chave, true)
       }
     }
@@ -430,7 +441,10 @@ export function montarDetalheEntregas(
       && grupoParadaCompartilhada != null
       && grupoParadaCompartilhada.size > 1
       && temVencedorProximoPorChave.get(chaveParadaCompartilhada) === true
-      && distanciaNaParadaCompartilhada(linha, visita, chaveParadaCompartilhada) > RAIO_PERDEDOR_PARADA_COMPARTILHADA_M
+      && (() => {
+        const dist = distanciaNaParadaCompartilhada(linha, visita, chaveParadaCompartilhada)
+        return dist != null && dist > RAIO_PERDEDOR_PARADA_COMPARTILHADA_M
+      })()
     // Achado real 08/09 (auditoria completa pedida pelo usuario): placa
     // TTM2G01 passou o DIA INTEIRO em paradas classificadas BASE (nunca
     // registrou nenhuma FORA_BASE) mas o km acumulado (2,44km, deriva de
@@ -632,8 +646,12 @@ export function montarDetalheEntregas(
     // rodarem, entao continua valendo pro dia estar em andamento MAS ja'
     // haver evidencia positiva (confirmado_gps/confirmado_unitrac, carga
     // transferida, raio ampliado, vizinhanca) -- so' pendente sem evidencia
-    // vira "aguardando".
-    if (status === 'pendente' && diaEmAndamento && !semRastreadorNoDia) {
+    // vira "aguardando". Fix round 1 (item 3, mesmo espirito de
+    // semRastreadorNoDia/Task 1): "parada curta de outro endereco" tambem e'
+    // um fato JA' RESOLVIDO (a parada que confirmaria esta NF e' de outro
+    // cliente, isso nao muda esperando o dia acabar) -- nao pode virar
+    // "aguardando".
+    if (status === 'pendente' && diaEmAndamento && !semRastreadorNoDia && !perdeuParadaCompartilhada) {
       observacao = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
     }
 
