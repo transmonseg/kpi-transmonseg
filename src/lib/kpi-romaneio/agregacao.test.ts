@@ -978,6 +978,111 @@ describe('montarDetalheEntregas -- 3b, parada curta compartilhada entre endereco
 
     expect(detalhes[0].observacao).toBeNull()
   })
+
+  // Task 2 (plano 24/09, brief Ana -- RQQ5B81/NF 2386225 23/09): "confirma
+  // TODO o grupo" era generoso demais -- quando um dos enderecos do grupo
+  // esta genuinamente perto (30m) e os outros longe (600m), so' o perto
+  // fisicamente pode ser a entrega real; os outros a equipe confirma que
+  // "nao esteve no local". Limiar (medido contra o gabarito da Ana, ver
+  // scripts/medir-contra-gabarito-ana.py e o relatorio da task): perde a
+  // confirmacao quem esta a >300m da parada QUANDO existe outro endereco do
+  // MESMO grupo a <=150m (a "vencedora" plausivel). Sem essa vencedora
+  // proxima (todos >150m, ou todos <=150m), mantem o rotulo de conferencia
+  // atual pro grupo inteiro -- nao ha' evidencia de qual endereco (se algum)
+  // e' o certo.
+  it('grupo de 3 com 1 endereco a 30m (vencedor) e 2 a 600m: so o de 30m mantem ENTREGUE, os outros dois viram pendente com rotulo proprio', () => {
+    const linhas = [
+      linha('NF_A', { endereco: 'ENDERECO A - PERTO' }),
+      linha('NF_B', { endereco: 'ENDERECO B - LONGE' }),
+      linha('NF_C', { endereco: 'ENDERECO C - LONGE' }),
+    ]
+    const visitas = new Map<string, Visita>([
+      ['NF_A', { nf: 'NF_A', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 30 }],
+      ['NF_B', { nf: 'NF_B', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 600 }],
+      ['NF_C', { nf: 'NF_C', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 600 }],
+    ])
+
+    const detalhes = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio,
+      true, new Map(), null, false, false, true,
+    )
+
+    const porNf = new Map(detalhes.map(d => [d.nf, d]))
+    expect(porNf.get('NF_A')?.status).toBe('confirmado_gps')
+    expect(porNf.get('NF_A')?.observacao).toBe('ENTREGUE - PARADA CURTA (ATÉ 3MIN) CONFIRMOU VÁRIOS ENDEREÇOS DIFERENTES AO MESMO TEMPO - CONFERIR')
+
+    for (const nf of ['NF_B', 'NF_C']) {
+      expect(porNf.get(nf)?.status).toBe('pendente')
+      expect(porNf.get(nf)?.observacao).toBe('PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR')
+    }
+  })
+
+  it('grupo de 3 todos a <=150m da parada: mantem o rotulo de conferencia atual pros 3 (nenhum fica pendente)', () => {
+    const linhas = [
+      linha('NF_A', { endereco: 'ENDERECO A' }),
+      linha('NF_B', { endereco: 'ENDERECO B' }),
+      linha('NF_C', { endereco: 'ENDERECO C' }),
+    ]
+    const visitas = new Map<string, Visita>([
+      ['NF_A', { nf: 'NF_A', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 20 }],
+      ['NF_B', { nf: 'NF_B', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 80 }],
+      ['NF_C', { nf: 'NF_C', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 150 }],
+    ])
+
+    const detalhes = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio,
+      true, new Map(), null, false, false, true,
+    )
+
+    for (const d of detalhes) {
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.observacao).toBe('ENTREGUE - PARADA CURTA (ATÉ 3MIN) CONFIRMOU VÁRIOS ENDEREÇOS DIFERENTES AO MESMO TEMPO - CONFERIR')
+    }
+  })
+
+  // Achado real 24/09 (diagnostico com GPS bruto pro caso de aceite RQQ5B81/
+  // NF 2386225, 23/09): visita vinda da PONTE do monitoramento grava
+  // distanciaMetrosDoPonto=0 SEMPRE (nunca reflete a distancia real -- ver
+  // comentario de acharCoordenadaDaParadaPropria em agregacao.ts), entao
+  // confiar nela faria a regra nunca disparar pra esse tipo de visita. Este
+  // teste simula exatamente esse cenario (as 3 NFs com distanciaMetrosDoPonto
+  // 0 -- "todas empatadas perto" segundo o campo antigo) e prova que a
+  // parada REAL (`paradasPorOutraPlaca`, casada por horario) desempata do
+  // mesmo jeito que o teste acima com o campo antigo.
+  it('visita da ponte (distanciaMetrosDoPonto sempre 0): usa a coordenada REAL da parada propria pra desempatar', () => {
+    const paradaReal = parada({
+      chegada: '2026-09-11T07:59:00.000Z',
+      saida: '2026-09-11T08:02:00.000Z',
+      fim_real: '2026-09-11T08:02:00.000Z',
+      classificacao: 'FORA_BASE',
+      lat: -22.71,
+      lng: -42.628,
+    })
+    const linhas = [
+      linha('NF_A', { endereco: 'ENDERECO A - PERTO (~45m)', lat: -22.7104, lng: -42.628 }),
+      linha('NF_B', { endereco: 'ENDERECO B - LONGE (~4.4km)', lat: -22.75, lng: -42.628 }),
+      linha('NF_C', { endereco: 'ENDERECO C - LONGE (~3.3km)', lat: -22.71, lng: -42.66 }),
+    ]
+    const visitas = new Map<string, Visita>([
+      ['NF_A', { nf: 'NF_A', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 0 }],
+      ['NF_B', { nf: 'NF_B', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 0 }],
+      ['NF_C', { nf: 'NF_C', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 0 }],
+    ])
+    const paradasPorOutraPlaca = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaReal]]])
+
+    const detalhes = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio,
+      true, paradasPorOutraPlaca, null, false, false, true,
+    )
+
+    const porNf = new Map(detalhes.map(d => [d.nf, d]))
+    expect(porNf.get('NF_A')?.status).toBe('confirmado_gps')
+    expect(porNf.get('NF_A')?.observacao).toBe('ENTREGUE - PARADA CURTA (ATÉ 3MIN) CONFIRMOU VÁRIOS ENDEREÇOS DIFERENTES AO MESMO TEMPO - CONFERIR')
+    for (const nf of ['NF_B', 'NF_C']) {
+      expect(porNf.get(nf)?.status).toBe('pendente')
+      expect(porNf.get(nf)?.observacao).toBe('PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR')
+    }
+  })
 })
 
 // Achado Critical 2 da revisao FINAL de branch (15/09): o Romaneio do Pao

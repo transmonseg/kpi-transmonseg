@@ -66,6 +66,39 @@ function distanciaAteParadaPropria(
 const RAIO_PASSOU_SEM_PARAR_M = 500
 const RAIO_NAO_FOI_AO_CLIENTE_M = 2_000
 
+// Task 2 (achado real 24/09, diagnostico com GPS bruto -- posicoes_historico
+// -- e Unitrac, placa RQQ5B81/23-09): `Visita.distanciaMetrosDoPonto` NAO da'
+// pra confiar quando a visita veio da PONTE do monitoramento (base-horarios.ts
+// passa `visitasPorNfBridge` pra montarVisitas) -- esse caminho grava
+// distanciaMetrosDoPonto=0 SEMPRE (ver comentario em visitas.ts), entao
+// olhar so' pra ele faria a regra de "vencedor a <=150m" nunca disparar (foi
+// exatamente o que aconteceu: 0 mudancas em 2.430 NFs de 22/09 na primeira
+// tentativa). A parada REAL (fisica) continua disponivel em
+// `paradasPorOutraPlaca` (paradas cruas da Unitrac, com lat/lng) -- casando
+// pelo horario (janela [chegada, fim] se sobrepondo a' janela da visita
+// compartilhada) da' a coordenada verdadeira, INDEPENDENTE de qual fonte
+// preencheu a Visita. Confirmado no caso de aceite: parada real (Unitrac)
+// a -22.7100749,-42.62839 -- NF 2386225 (Jacuba) fica a 4.183m dela (Ana:
+// "nao esteve no local"), NF 2386220 (mesma rua da parada) fica a 126m.
+function acharCoordenadaDaParadaPropria(
+  placaNorm: string,
+  chegada: string,
+  saida: string,
+  paradasPorOutraPlaca: Map<string, UnitracParadaRow[]>,
+): { lat: number; lng: number } | null {
+  const inicioJanela = new Date(chegada).getTime()
+  const fimJanela = new Date(saida).getTime()
+  for (const p of paradasPorOutraPlaca.get(placaNorm) ?? []) {
+    if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
+    const inicioParada = new Date(p.chegada).getTime()
+    const fimParada = new Date(p.fim_real ?? p.saida ?? p.chegada).getTime()
+    if (inicioParada <= fimJanela && fimParada >= inicioJanela) {
+      return { lat: p.lat, lng: p.lng }
+    }
+  }
+  return null
+}
+
 function acharParadaDeOutraPlaca(
   linha: LinhaGeocodificada,
   placaEsperada: string,
@@ -293,7 +326,39 @@ export function montarDetalheEntregas(
   // (inclusive a que "ganhou" a visita sem viaVizinhanca), nao so' pras
   // que emprestaram horario.
   const LIMITE_PARADA_COMPARTILHADA_MIN = 3
+  // Task 2 (plano 24/09, brief Ana -- RQQ5B81/NF 2386225 23/09): "confirma
+  // TODO o grupo" e' generoso demais quando um dos enderecos do grupo esta
+  // GENUINAMENTE perto da parada (30m, caso de aceite) e os outros a
+  // centenas de metros -- fisicamente so' o perto pode ser a entrega real.
+  // RAIO_VENCEDOR_PARADA_COMPARTILHADA_M/RAIO_PERDEDOR_PARADA_COMPARTILHADA_M
+  // medidos contra o gabarito da Ana (scripts/medir-contra-gabarito-ana.py,
+  // ver relatorio da task -- limiar escolhido nao piora chegada ≤2min/≤10min
+  // no subconjunto "CÓDIGO DO CLIENTE NA MESMA PLACA" de 22/09). So' perde
+  // confirmacao quem esta a mais de 300m da parada QUANDO ha' um "vencedor"
+  // do MESMO grupo a <=150m -- sem vencedor claro (todos perto, ou todos
+  // longe/sem coordenada), mantem o rotulo de conferencia pro grupo inteiro
+  // como antes (nao ha' evidencia de qual endereco, se algum, e' o certo).
+  const RAIO_VENCEDOR_PARADA_COMPARTILHADA_M = 150
+  const RAIO_PERDEDOR_PARADA_COMPARTILHADA_M = 300
   const enderecosPorChaveDeParada = new Map<string, Set<string>>()
+  const temVencedorProximoPorChave = new Map<string, boolean>()
+  // Cache da coordenada REAL da parada por chave (ver comentario de
+  // acharCoordenadaDaParadaPropria acima) -- so' precisa procurar uma vez
+  // por parada compartilhada, nao uma vez por NF do grupo. `undefined` =
+  // ainda nao procurado, `null` = procurado e nao achou (fallback abaixo).
+  const coordenadaDaParadaPorChave = new Map<string, { lat: number; lng: number } | null>()
+  function distanciaNaParadaCompartilhada(linha: LinhaGeocodificada, visitaDaLinha: Visita, chave: string): number {
+    let coord = coordenadaDaParadaPorChave.get(chave)
+    if (coord === undefined) {
+      coord = acharCoordenadaDaParadaPropria(placaNorm, visitaDaLinha.chegada, visitaDaLinha.saida, paradasPorOutraPlaca)
+      coordenadaDaParadaPorChave.set(chave, coord)
+    }
+    // Sem parada propria casando o horario (frota sem paradas cruas
+    // disponiveis, ex. testes) -- fallback pro campo antigo, unico dado que
+    // sobra.
+    if (coord == null || linha.lat == null || linha.lng == null) return visitaDaLinha.distanciaMetrosDoPonto
+    return haversine(coord.lat, coord.lng, linha.lat, linha.lng)
+  }
   if (detectarParadaCurtaCompartilhada) {
     for (const linha of linhasRomaneio) {
       const visita = visitasPorNf.get(linha.nf)
@@ -303,6 +368,9 @@ export function montarDetalheEntregas(
       const set = enderecosPorChaveDeParada.get(chave) ?? new Set<string>()
       set.add(linha.endereco)
       enderecosPorChaveDeParada.set(chave, set)
+      if (distanciaNaParadaCompartilhada(linha, visita, chave) <= RAIO_VENCEDOR_PARADA_COMPARTILHADA_M) {
+        temVencedorProximoPorChave.set(chave, true)
+      }
     }
   }
 
@@ -346,6 +414,23 @@ export function montarDetalheEntregas(
     const visita = visitasPorNf.get(linha.nf)
     const confirmadoUnitrac = alvo?.situacao === 1
     const confirmadoGps = visita != null
+    // Task 2 (ver comentario de RAIO_VENCEDOR/RAIO_PERDEDOR_PARADA_
+    // COMPARTILHADA_M acima): so' desconfirma quando ESTA NF (nao um
+    // "vencedor" plausivel de outro endereco do grupo) esta longe da parada
+    // E existe um vencedor claro (<=150m) no MESMO grupo -- se ninguem do
+    // grupo esta perto, nao ha' base pra dizer QUAL endereco (se algum) e' o
+    // certo, entao o grupo inteiro continua so' com o rotulo de conferencia.
+    const chaveParadaCompartilhada = visita ? `${visita.chegada}|${visita.saida}` : null
+    const grupoParadaCompartilhada = chaveParadaCompartilhada != null
+      ? enderecosPorChaveDeParada.get(chaveParadaCompartilhada)
+      : undefined
+    const perdeuParadaCompartilhada = detectarParadaCurtaCompartilhada
+      && visita != null
+      && chaveParadaCompartilhada != null
+      && grupoParadaCompartilhada != null
+      && grupoParadaCompartilhada.size > 1
+      && temVencedorProximoPorChave.get(chaveParadaCompartilhada) === true
+      && distanciaNaParadaCompartilhada(linha, visita, chaveParadaCompartilhada) > RAIO_PERDEDOR_PARADA_COMPARTILHADA_M
     // Achado real 08/09 (auditoria completa pedida pelo usuario): placa
     // TTM2G01 passou o DIA INTEIRO em paradas classificadas BASE (nunca
     // registrou nenhuma FORA_BASE) mas o km acumulado (2,44km, deriva de
@@ -405,13 +490,24 @@ export function montarDetalheEntregas(
 
     const status: StatusEntrega = confirmadoUnitrac
       ? 'confirmado_unitrac'
-      : confirmadoGps || porOutraPlaca
-        ? 'confirmado_gps'
-        : 'pendente'
-    const chegada = visita?.chegada ?? porOutraPlaca?.parada.chegada ?? null
-    const saida = visita?.saida
-      ?? porOutraPlaca?.parada.fim_real ?? porOutraPlaca?.parada.saida ?? porOutraPlaca?.parada.chegada
-      ?? null
+      : perdeuParadaCompartilhada
+        ? 'pendente'
+        : confirmadoGps || porOutraPlaca
+          ? 'confirmado_gps'
+          : 'pendente'
+    // Perdedor da parada compartilhada: a parada e' de OUTRO endereco do
+    // grupo (o vencedor a <=150m) -- mostrar o horario dessa parada como se
+    // fosse a chegada/saida DESTE cliente afirmaria uma presenca que a
+    // equipe ja desmentiu (caso de aceite: "nao esteve no local"). Fica sem
+    // horario, igual aos demais "pendente" sem evidencia propria.
+    const chegada = perdeuParadaCompartilhada
+      ? null
+      : visita?.chegada ?? porOutraPlaca?.parada.chegada ?? null
+    const saida = perdeuParadaCompartilhada
+      ? null
+      : visita?.saida
+        ?? porOutraPlaca?.parada.fim_real ?? porOutraPlaca?.parada.saida ?? porOutraPlaca?.parada.chegada
+        ?? null
     const tempoParadaMin = chegada && saida ? minutosEntre(chegada, saida) : null
 
     let observacao: string | null = null
@@ -423,6 +519,14 @@ export function montarDetalheEntregas(
     }
     if (observacao == null && tempoParadaMin != null && tempoParadaMin > LIMITE_TEMPO_LOJA_MIN) {
       observacao = 'TEMPO EM LOJA ACIMA DE 4H - CONFERIR'
+    }
+    // Task 2 (caso de aceite RQQ5B81/NF 2386225, 23/09): roda ANTES do
+    // rotulo generico de "CONFIRMOU VÁRIOS ENDEREÇOS" abaixo -- quando ha'
+    // um vencedor claro (<=150m) no grupo, so' os enderecos genuinamente
+    // longe (>300m) levam este rotulo; o vencedor cai no bloco seguinte
+    // (mantem "ENTREGUE - PARADA CURTA..."), igual antes.
+    if (observacao == null && perdeuParadaCompartilhada) {
+      observacao = 'PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR'
     }
     // Item 3b: roda ANTES de viaVizinhanca/viaRaioAmpliado de proposito --
     // quando a parada curta e' compartilhada por enderecos distintos, TODO
