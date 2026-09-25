@@ -467,6 +467,10 @@ export async function POST(req: NextRequest) {
         // desativa `acharParadaDeOutraPlaca` de vez, so' desta pipeline. Ver
         // desativarOutraPlaca em agregacao.ts.
         true,
+        // Task 2 (plano 2026-09-25, R2): confirma pela parada Unitrac CRUA da
+        // PROPRIA placa quando nada mais confirmou -- so' desta pipeline. Ver
+        // confirmarPorParadaUnitracPropria em agregacao.ts.
+        true,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

@@ -268,6 +268,79 @@ function acharParadaUnitracParaFeito(
   return melhor ? { parada: melhor.parada, distParadaM: melhor.dist } : null
 }
 
+// Task 2 (plano 2026-09-25, regra R2 -- generaliza acharParadaUnitracParaFeito
+// pra NF sem confirmacao nenhuma, nao so' confirmado_unitrac sem visita):
+// duracao/raio medidos contra o gabarito da Ana (mesmo espirito de
+// RAIO_PARADA_FEITO_UNITRAC_M/TOLERANCIA_FEITO_UNITRAC_MIN acima).
+const DURACAO_MIN_PARADA_UNITRAC_PROPRIA_MIN = 2
+const RAIO_PARADA_UNITRAC_PROPRIA_M = 300
+
+/** Ponto de referencia (geocode confiavel OU cadastro Unitrac) de OUTRA NF
+ *  da mesma placa, usado so' pra desempatar `acharParadaUnitracPropria`
+ *  contra o Review Focus do plano (parada perto de um cliente mas AINDA MAIS
+ *  perto de outro cliente da mesma placa nao pode confirmar o errado). */
+type PontoReferenciaPlacaNf = { endereco: string; lat: number; lng: number }
+
+/** Acha, entre as paradas CRUAS da Unitrac da PROPRIA placa, a que confirma
+ *  esta NF por presenca fisica (sem depender de visita GPS nem de alvo
+ *  'feito'): duracao >= DURACAO_MIN_PARADA_UNITRAC_PROPRIA_MIN, centro a
+ *  <= RAIO_PARADA_UNITRAC_PROPRIA_M do geocode confiavel da linha OU do
+ *  cadastro Unitrac do alvo casado, e que nao esteja MAIS PERTO de um ponto
+ *  de referencia de OUTRA NF da mesma placa com endereco diferente (Review
+ *  Focus: parada perto de um cliente mas ainda mais perto de outro cliente
+ *  da mesma placa nao confirma este). Entre as candidatas validas, vence a
+ *  de MAIOR duracao (mais provavel de ser a entrega de verdade, nao um blip
+ *  de transito). `null` quando nenhuma parada satisfaz tudo isso. */
+function acharParadaUnitracPropria(
+  linha: LinhaGeocodificada,
+  cadastro: { lat: number; lng: number } | null,
+  paradasCruas: UnitracParadaRow[],
+  outrosPontosDaPlaca: PontoReferenciaPlacaNf[],
+): { parada: UnitracParadaRow; distParadaM: number } | null {
+  const geo = linha.geoConfiavel !== false && linha.lat != null && linha.lng != null
+    ? { lat: linha.lat, lng: linha.lng }
+    : null
+  if (geo == null && cadastro == null) return null
+  let melhor: { parada: UnitracParadaRow; dist: number; duracaoMin: number } | null = null
+  for (const p of paradasCruas) {
+    if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
+    const inicio = new Date(p.chegada).getTime()
+    const fim = new Date(p.fim_real ?? p.saida ?? p.chegada).getTime()
+    const duracaoMin = (fim - inicio) / 60_000
+    if (duracaoMin < DURACAO_MIN_PARADA_UNITRAC_PROPRIA_MIN) continue
+    const distGeo = geo ? haversine(p.lat, p.lng, geo.lat, geo.lng) : null
+    const distCad = cadastro ? haversine(p.lat, p.lng, cadastro.lat, cadastro.lng) : null
+    const candidatas = [distGeo, distCad].filter((d): d is number => d != null && d <= RAIO_PARADA_UNITRAC_PROPRIA_M)
+    if (candidatas.length === 0) continue
+    const dist = Math.min(...candidatas)
+    const maisPertoDeOutroCliente = outrosPontosDaPlaca
+      .filter(o => o.endereco !== linha.endereco)
+      .some(o => haversine(p.lat as number, p.lng as number, o.lat, o.lng) < dist)
+    if (maisPertoDeOutroCliente) continue
+    if (!melhor || duracaoMin > melhor.duracaoMin) melhor = { parada: p, dist, duracaoMin }
+  }
+  return melhor ? { parada: melhor.parada, distParadaM: melhor.dist } : null
+}
+
+// Task 2 (plano 2026-09-25): rotulos que ja' sao "ENTREGUE" mas com ressalva
+// (confirmado_gps ambiguo) ou "pendente" com observacao de CONFERIR/falha por
+// distancia -- exatamente os listados no brief como elegiveis pra R2
+// sobrescrever com uma confirmacao limpa. Nunca inclui "sem rastreador",
+// "carga transferida"/outra placa, "veiculo sem movimento", "tempo em loja"
+// nem "parada curta de outro endereco" (perdedor) -- nenhum desses e' fato
+// que uma parada da propria placa deva sobrepor.
+const PREFIXO_OBS_COORDENADA_IMPRECISA = 'ENDEREÇO COM COORDENADA IMPRECISA'
+function elegivelParaConfirmarPorParadaPropria(status: StatusEntrega, observacao: string | null): boolean {
+  if (status !== 'pendente' && status !== 'confirmado_gps') return false
+  if (observacao == null) return status === 'pendente'
+  return observacao === 'ENTREGUE - PARADA CURTA (ATÉ 3MIN) CONFIRMOU VÁRIOS ENDEREÇOS DIFERENTES AO MESMO TEMPO - CONFERIR'
+    || observacao === 'ENTREGUE - PARADA PRÓXIMA (500-800m) MAS DENTRO DA ROTA - CONFERIR'
+    || observacao === 'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR'
+    || observacao === 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR'
+    || observacao === 'NÃO FOI AO CLIENTE (caminhão não esteve na região)'
+    || observacao.startsWith(PREFIXO_OBS_COORDENADA_IMPRECISA)
+}
+
 /** Uma carga = todas as linhas do romaneio com o mesmo `carga`+`placa`.
  *  Cruza com a Escala (planejado) e decide status por NF: confirmado se
  *  alvo.situacao===1 (Unitrac) OU se ha Visita (GPS no nosso perimetro) --
@@ -513,8 +586,31 @@ export function montarDetalheEntregas(
   // quem nao passar nada; Nutry Max (route.ts + scripts/gerar-nutrimax-real-
   // arquivo.ts) passa true.
   desativarOutraPlaca: boolean = false,
+  // Task 2 (plano 2026-09-25, R2): generaliza acharParadaUnitracParaFeito --
+  // NF sem confirmacao limpa (pendente, ou confirmado_gps ambiguo, ver
+  // elegivelParaConfirmarPorParadaPropria acima) usa a parada Unitrac CRUA
+  // da PROPRIA placa (paradasUnitracCruasPropriaPlaca, ja existente) pra
+  // confirmar por presenca fisica, sem depender de visita GPS nem de alvo
+  // 'feito'. Mesmo padrao opt-in de desativarOutraPlaca/tratarSemRastreadorNoDia
+  // acima: default false preserva Rio Quality (pipeline.ts) e quem nao
+  // passar nada; Nutry Max (route.ts + gerar-nutrimax-real-arquivo.ts) passa
+  // true. Nunca sobrepoe ENTREGUE limpo da ponte/Unitrac, ENTREGUE POR OUTRA
+  // PLACA nem SEM RASTREADOR (ver elegivelParaConfirmarPorParadaPropria).
+  confirmarPorParadaUnitracPropria: boolean = false,
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
+  // Task 2 (R2): ponto de referencia de CADA NF do romaneio desta carga/placa
+  // (geocode confiavel, senao cadastro Unitrac do alvo casado) -- usado pra
+  // desempatar acharParadaUnitracPropria (Review Focus: parada perto de um
+  // cliente mas ainda mais perto de OUTRO cliente da mesma placa nao pode
+  // confirmar o errado). Calculado uma vez por carga, nao por NF.
+  const pontosReferenciaDaPlaca: PontoReferenciaPlacaNf[] = linhasRomaneio
+    .map((l): PontoReferenciaPlacaNf | null => {
+      const alvoL = alvoPorNf.get(l.nf)
+      const ref = referenciaParaDesempate(l, alvoL)
+      return ref ? { endereco: l.endereco, lat: ref.lat, lng: ref.lng } : null
+    })
+    .filter((x): x is PontoReferenciaPlacaNf => x != null)
   // Revisao final pre-deploy (24/09, item 3): sinais INDEPENDENTES das
   // paradas de que a placa rodou no dia -- desmentem o caso (b) de
   // semRastreadorNoDia ("tem CV mas zero posicoes"). `alvos` chega aqui como
@@ -746,7 +842,7 @@ export function montarDetalheEntregas(
       ? acharParadaUnitracParaFeito(linha, alvo, paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? [])
       : null
 
-    const status: StatusEntrega = confirmadoUnitrac
+    let status: StatusEntrega = confirmadoUnitrac
       ? 'confirmado_unitrac'
       : perdeuParadaCompartilhada
         ? 'pendente'
@@ -758,16 +854,16 @@ export function montarDetalheEntregas(
     // fosse a chegada/saida DESTE cliente afirmaria uma presenca que a
     // equipe ja desmentiu (caso de aceite: "nao esteve no local"). Fica sem
     // horario, igual aos demais "pendente" sem evidencia propria.
-    const chegada = perdeuParadaCompartilhada
+    let chegada = perdeuParadaCompartilhada
       ? null
       : visita?.chegada ?? paradaUnitracFeito?.parada.chegada ?? porOutraPlaca?.parada.chegada ?? null
-    const saida = perdeuParadaCompartilhada
+    let saida = perdeuParadaCompartilhada
       ? null
       : visita?.saida
         ?? (paradaUnitracFeito ? paradaUnitracFeito.parada.fim_real ?? paradaUnitracFeito.parada.saida ?? paradaUnitracFeito.parada.chegada : null)
         ?? porOutraPlaca?.parada.fim_real ?? porOutraPlaca?.parada.saida ?? porOutraPlaca?.parada.chegada
         ?? null
-    const tempoParadaMin = chegada && saida ? minutosEntre(chegada, saida) : null
+    let tempoParadaMin = chegada && saida ? minutosEntre(chegada, saida) : null
 
     let observacao: string | null = null
     // Correcao pontual (achado real 23/09, placa TTL5J17): "sem rastreador"
@@ -902,6 +998,31 @@ export function montarDetalheEntregas(
         ? `ENDEREÇO COM COORDENADA IMPRECISA - ${detalhe} - CONFERIR CADASTRO`
         : 'ENDEREÇO COM COORDENADA IMPRECISA - CONFERIR CADASTRO (não dá pra afirmar se foi ou não)'
     }
+    // Task 2 (plano 2026-09-25, R2 -- caso de aceite: planilha de ocorrencias
+    // rotuladas pela equipe 24/09): NF ainda sem confirmacao limpa (pendente,
+    // ou confirmado_gps ambiguo -- ver elegivelParaConfirmarPorParadaPropria)
+    // usa a parada Unitrac CRUA da PROPRIA placa pra confirmar por presenca
+    // fisica. Roda DEPOIS de R1 (porOutraPlaca) e da visita da ponte (visita/
+    // paradaUnitracFeito ja decidiram status/observacao acima), ANTES do
+    // rotulo de AGUARDANDO -- nunca sobrepoe ENTREGUE limpo da ponte/Unitrac,
+    // ENTREGUE POR OUTRA PLACA nem SEM RASTREADOR (todos ja' saem da whitelist
+    // de elegivelParaConfirmarPorParadaPropria).
+    let paradaPropriaConfirmada: { parada: UnitracParadaRow; distParadaM: number } | null = null
+    if (confirmarPorParadaUnitracPropria && elegivelParaConfirmarPorParadaPropria(status, observacao)) {
+      const cadastro = alvo && coordValidaCadastro(alvo.pontoLat) && coordValidaCadastro(alvo.pontoLng)
+        ? { lat: alvo.pontoLat as number, lng: alvo.pontoLng as number }
+        : null
+      paradaPropriaConfirmada = acharParadaUnitracPropria(
+        linha, cadastro, paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? [], pontosReferenciaDaPlaca,
+      )
+      if (paradaPropriaConfirmada) {
+        status = 'confirmado_gps'
+        chegada = paradaPropriaConfirmada.parada.chegada
+        saida = paradaPropriaConfirmada.parada.fim_real ?? paradaPropriaConfirmada.parada.saida ?? paradaPropriaConfirmada.parada.chegada
+        tempoParadaMin = chegada && saida ? minutosEntre(chegada, saida) : null
+        observacao = null
+      }
+    }
     // Ver comentario de `diaEmAndamento` na assinatura da funcao: rota ainda
     // em andamento nunca declara falha, so' espera -- substitui qualquer
     // observacao negativa (inclusive nenhuma observacao, ainda "pendente"
@@ -930,7 +1051,10 @@ export function montarDetalheEntregas(
     // de fato medida contra uma coordenada real -- `null` nunca é inventado.
     let evidencia: EvidenciaNf
     let distParadaM: number | null = null
-    if (status === 'pendente' && semRastreadorNoDia) {
+    if (paradaPropriaConfirmada) {
+      evidencia = 'parada_unitrac_propria'
+      distParadaM = Math.round(paradaPropriaConfirmada.distParadaM)
+    } else if (status === 'pendente' && semRastreadorNoDia) {
       evidencia = 'sem_rastreador'
     } else if (porOutraPlaca) {
       evidencia = 'outra_placa'

@@ -138,6 +138,12 @@ export type EvidenciaNf =
   | 'sem_rastreador'
   | 'passagem_sem_parada'
   | 'parada_proxima_fora_raio'
+  // Task 2 (plano 2026-09-25, R2): confirmada pela parada Unitrac CRUA da
+  // PRÓPRIA placa (`paradasUnitracCruasPropriaPlaca`), sem visita nem alvo
+  // 'feito' -- generaliza `acharParadaUnitracParaFeito` (que so' roda pra
+  // `confirmado_unitrac` sem visita) pra qualquer NF ainda nao confirmada.
+  // So' Nutry Max (`confirmarPorParadaUnitracPropria`, agregacao.ts).
+  | 'parada_unitrac_propria'
 
 /** Resolucao manual por NF (Task 4, plano 24/09) -- camada humana em cima do
  *  status automatico, persistida em `kpi_nf_resolucao`. `entregue_outra_placa`

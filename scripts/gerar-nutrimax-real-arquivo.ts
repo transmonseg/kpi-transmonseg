@@ -327,6 +327,10 @@ async function main() {
         // chamador real de producao (nutrimax/gerar/route.ts) -- ver
         // desativarOutraPlaca em agregacao.ts.
         true,
+        // Task 2 (plano 2026-09-25, R2): espelha o chamador real de producao
+        // (nutrimax/gerar/route.ts) -- ver confirmarPorParadaUnitracPropria
+        // em agregacao.ts.
+        true,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

@@ -227,6 +227,8 @@ const LABEL_EVIDENCIA_NF: Record<EvidenciaNf, string> = {
   // agregacao.ts) que antes caiam em SEM EVIDÊNCIA sem distância nenhuma.
   passagem_sem_parada: 'PASSAGEM SEM PARADA',
   parada_proxima_fora_raio: 'PARADA PRÓXIMA FORA DO RAIO',
+  // Task 2 (plano 2026-09-25, R2): ver comentario de EvidenciaNf em types.ts.
+  parada_unitrac_propria: 'PARADA UNITRAC DA PRÓPRIA PLACA',
 }
 
 function textoEvidencia(d: LinhaDetalheEntrega): string {
