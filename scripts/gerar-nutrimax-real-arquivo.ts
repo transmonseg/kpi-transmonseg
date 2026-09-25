@@ -323,8 +323,9 @@ async function main() {
         // rotulo unificado "SEM RASTREADOR ... NAO CONTABILIZADO" sao so'
         // desta pipeline -- ver tratarSemRastreadorNoDia em agregacao.ts.
         true,
-        // Task 1 (plano 2026-09-25): espelha o chamador real de producao
-        // (nutrimax/gerar/route.ts) -- ver exigirRotaTrocada em agregacao.ts.
+        // Task 1 (plano 2026-09-25, mudanca de requisito): espelha o
+        // chamador real de producao (nutrimax/gerar/route.ts) -- ver
+        // desativarOutraPlaca em agregacao.ts.
         true,
       )
     })
