@@ -933,6 +933,69 @@ describe('montarDetalheEntregas', () => {
       expect(d.observacao).toBe('SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO')
     })
   })
+
+  // Correcao pontual (achado real 23/09, placa TTL5J17, 23 NFs, pedido da
+  // Ana): temRastreador=false E as paradas da propria placa sao todas BASE
+  // com km baixo (nuncaSaiuDaBase/semMovimento tambem disparam) -- o ramo de
+  // semMovimento (linha ~729, na epoca) rodava ANTES do de semRastreadorNoDia
+  // e travava a observacao com "VEICULO SEM MOVIMENTO", que gerador-xlsx.ts
+  // NAO reconhece como prefixo de exclusao da taxa (so' reconhece o prefixo
+  // "SEM RASTREADOR") -- so' 1 das 23 NFs (a que por algum motivo nao batia
+  // semMovimento) saia corretamente como sem rastreador; as outras 22
+  // ficavam DENTRO da taxa de falha, contando contra a operacao por um
+  // problema de CADASTRO (placa sem rastreador), nao de entrega. Pedido da
+  // operacao: "sem rastreador" e' fato conhecido e deve prevalecer sobre
+  // "sem movimento" (evidencia mais fraca, so' descreve o SINTOMA) e sobre
+  // AGUARDANDO -- excecao unica: se OUTRA placa comprovadamente entregou
+  // (porOutraPlaca), isso e' evidencia POSITIVA de entrega e continua
+  // vencendo (o dado nao mente so' porque o cadastro da placa esta errado).
+  describe('SEM RASTREADOR prevalece sobre SEM MOVIMENTO (achado real TTL5J17 23/09)', () => {
+    it('temRastreador=false + paradas so BASE + km<2 (caso exato TTL5J17): TODAS as NFs saem SEM RASTREADOR, nunca SEM MOVIMENTO, fora da taxa', () => {
+      const linhas = [linha('NF1'), linha('NF2')]
+      const paradasFrota = new Map([['TTL5J17', [parada({ placa_norm: 'TTL5J17', classificacao: 'BASE' })]]])
+
+      const detalhes = montarDetalheEntregas(
+        '93758', 'TTL5J17', linhas, [], new Map(), resumoCargaVazio,
+        false, paradasFrota, 0.5,
+      )
+
+      for (const d of detalhes) {
+        expect(d.observacao).toBe('SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO')
+        expect(d.observacao ?? '').not.toContain('SEM MOVIMENTO')
+        expect(d.evidencia).toBe('sem_rastreador')
+        expect(d.status).toBe('pendente')
+      }
+    })
+
+    it('temRastreador=false mas OUTRA placa comprovadamente entregou (porOutraPlaca): mantem ENTREGUE POR OUTRA PLACA, nao cede pra SEM RASTREADOR', () => {
+      const linhas = [linha('NF1')]
+      const paradaOutraPlaca = parada({ id: 'p2', placa_norm: 'RQV6I51', classificacao: 'FORA_BASE', lat: -22.9001, lng: -43.2001 })
+      const paradasFrota = new Map([
+        ['TTL5J17', []],
+        ['RQV6I51', [paradaOutraPlaca]],
+      ])
+
+      const [d] = montarDetalheEntregas(
+        '93758', 'TTL5J17', linhas, [], new Map(), resumoCargaVazio,
+        false, paradasFrota,
+      )
+
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.observacao).toBe('ENTREGUE POR OUTRA PLACA (RQV6I51) - CARGA TRANSFERIDA')
+    })
+
+    it('placa COM rastreador (temRastreador=true), mesmo cenario de paradas so BASE + km<2: continua VEICULO SEM MOVIMENTO normalmente', () => {
+      const linhas = [linha('NF1')]
+      const paradasFrota = new Map([['TTL7D40', [parada({ classificacao: 'BASE' })]]])
+
+      const [d] = montarDetalheEntregas(
+        '93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio,
+        true, paradasFrota, 0.5,
+      )
+
+      expect(d.observacao).toBe('VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA')
+    })
+  })
 })
 
 // Item 3b (spec 2026-09-12, "Endurecimento da confirmacao"): medido no dia

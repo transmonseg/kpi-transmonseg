@@ -726,11 +726,27 @@ export function montarDetalheEntregas(
     const tempoParadaMin = chegada && saida ? minutosEntre(chegada, saida) : null
 
     let observacao: string | null = null
-    if (status === 'pendente' && semMovimento) {
-      observacao = 'VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA'
-    }
+    // Correcao pontual (achado real 23/09, placa TTL5J17): "sem rastreador"
+    // (placa DECLARADA sem cv pela operacao, Task 8) e "outra placa
+    // comprovadamente entregou" (porOutraPlaca -- evidencia POSITIVA de
+    // entrega) rodam ANTES de "sem movimento" de proposito. semMovimento
+    // so' descreve um SINTOMA do GPS (rastreador travado/parado) -- quando
+    // ja sabemos que a placa nem tem rastreador, o sintoma e' irrelevante e
+    // so' atrapalha: gerador-xlsx.ts exclui da taxa automatica pelo PREFIXO
+    // "SEM RASTREADOR" (ver PREFIXO_OBS_SEM_RASTREADOR), entao deixar
+    // semMovimento vencer aqui travava a observacao e a NF ficava,
+    // incorretamente, DENTRO da taxa de falha (22 das 23 NFs do caso real,
+    // so' 1 escapava por nao bater semMovimento). porOutraPlaca continua
+    // sendo checado primeiro: se outra placa da frota genuinamente entregou,
+    // isso e' fato positivo e nao cede pra sem rastreador nem sem movimento.
     if (observacao == null && porOutraPlaca) {
       observacao = `ENTREGUE POR OUTRA PLACA (${porOutraPlaca.placa}) - CARGA TRANSFERIDA`
+    }
+    if (observacao == null && status === 'pendente' && semRastreadorNoDia) {
+      observacao = 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO'
+    }
+    if (observacao == null && status === 'pendente' && semMovimento) {
+      observacao = 'VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA'
     }
     if (observacao == null && tempoParadaMin != null && tempoParadaMin > LIMITE_TEMPO_LOJA_MIN) {
       observacao = 'TEMPO EM LOJA ACIMA DE 4H - CONFERIR'
@@ -809,21 +825,17 @@ export function montarDetalheEntregas(
     // de GPS o dia inteiro -- diferente de "sem movimento" (que exige km
     // CALCULADO e baixo -- aqui nao ha nem posicao pra calcular km, entao
     // semMovimento fica false e nenhuma das duas branches acima dispara,
-    // porque distPropria tambem fica null com 0 paradas). Sem isso, as 34
-    // entregas dessa placa ficavam "pendente" com observacao EM BRANCO --
-    // pior caso pro operador (nem "sem movimento" nem "nao foi ao cliente"
-    // dizem nada). `.has()` (nao so' `.length === 0` do `?? []`) distingue
-    // "o produtor buscou GPS pra essa placa e achou zero eventos" (o caso
-    // real) de "essa placa nem foi consultada aqui" (map so' tem OUTRAS
-    // placas -- acontece em chamador parcial/teste, nao deve disparar as
-    // cegas). Task 1 (24/09) unificou esse rotulo com o de `!temRastreador`
-    // (placa sem cv NENHUM) -- ver `semRastreadorNoDia` acima: os dois casos
-    // saem igualmente da taxa de confirmacao (numerador E denominador), e o
-    // texto generico "NAO CONTABILIZADO" nao afirma se o problema e' o
-    // equipamento ou o cadastro.
-    if (observacao == null && status === 'pendente' && semRastreadorNoDia) {
-      observacao = 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO'
-    }
+    // porque distPropria tambem fica null com 0 paradas). `.has()` (nao so'
+    // `.length === 0` do `?? []`) distingue "o produtor buscou GPS pra essa
+    // placa e achou zero eventos" (o caso real) de "essa placa nem foi
+    // consultada aqui" (map so' tem OUTRAS placas -- acontece em chamador
+    // parcial/teste, nao deve disparar as cegas). Task 1 (24/09) unificou
+    // esse rotulo com o de `!temRastreador` (placa sem cv NENHUM) -- ver
+    // `semRastreadorNoDia` acima: os dois casos saem igualmente da taxa de
+    // confirmacao (numerador E denominador). Correcao pontual 23/09: o
+    // rotulo em si agora e' atribuido MAIS ACIMA (logo apos porOutraPlaca,
+    // antes de semMovimento) -- ver comentario la' -- pra prevalecer sobre
+    // "sem movimento" em vez de ser bloqueado por ele.
     // Achado real 11-12/09: pendente cuja coordenada nao e' confiavel merece
     // rotulo proprio -- o problema esta no CADASTRO do endereco, nao na
     // entrega. Dizer "nao foi ao cliente" aqui seria acusar o motorista com
