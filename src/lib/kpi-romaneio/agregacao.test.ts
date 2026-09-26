@@ -3288,16 +3288,16 @@ describe('montarDetalheEntregas -- modoPrecisao: proximidade fraca vira REVISAR 
     }
   })
 
-  it('visita da ponte ENTREGUE limpa mas com a parada real a ~400m do endereco: PARADA PRÓXIMA (300-800m) - REVISAR', () => {
+  it('Ajuste 1: visita da ponte ENTREGUE limpa com a parada casada por horario a ~450m continua ENTREGUE (ponte ja validou <=500m)', () => {
     const chegada = '2026-09-25T10:00:00.000Z'
     const saida = '2026-09-25T10:20:00.000Z'
     const visitas = new Map<string, Visita>([['NF1', { nf: 'NF1', chegada, saida, distanciaMetrosDoPonto: 0 }]])
-    const paradas = new Map([['TTL7D40', [paradaPropria(400, chegada, saida)]]])
+    const paradas = new Map([['TTL7D40', [paradaPropria(450, chegada, saida)]]])
     const [d] = chamar([linha('NF1')], { visitasPorNf: visitas, paradasPorOutraPlaca: paradas })
-    expect(d.status).toBe('pendente')
-    expect(d.observacao).toBe('PARADA PRÓXIMA (300-800m) - REVISAR')
-    expect(d.distParadaM as number).toBeGreaterThan(300)
-    expect(d.chegada).toBe(chegada)
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBeNull()
+    expect(d.distParadaM as number).toBeGreaterThan(400)
+    expect(d.distParadaM as number).toBeLessThan(500)
   })
 
   it('Review Focus: entrega com parada longa a <=100m continua ENTREGUE limpo', () => {

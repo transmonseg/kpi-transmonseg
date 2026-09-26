@@ -509,9 +509,11 @@ const REVISAR_POR_ROTULO_FRACO: Record<string, string> = {
   'ENTREGUE - PARADA CURTA (ATÉ 3MIN) CONFIRMOU VÁRIOS ENDEREÇOS DIFERENTES AO MESMO TEMPO - CONFERIR': 'PARADA CURTA - REVISAR',
   'ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)': 'PARADA COMPARTILHADA - REVISAR',
 }
-// Visita da ponte / R2 "ENTREGUE limpo" cuja parada real ficou a mais que
-// isso do endereco/cadastro tambem vira REVISAR (proximidade fraca).
-const RAIO_PRECISAO_ENTREGUE_LIMPO_M = 300
+// Ajuste 1 (decisao do controlador apos medir o custo em 22-25/09): visita
+// da ponte ENTREGUE limpa NAO e' rebaixada por distParadaM > 300m -- a ponte
+// ja' validou <=500m do ponto, e distParadaM vem do casamento por horario
+// (acharCoordenadaDaParadaPropria), medida menos confiavel. R2 ja' tem teto
+// proprio de 300m (RAIO_PARADA_UNITRAC_PROPRIA_M).
 
 // Task 2 (plano 2026-09-25): rotulos que ja' sao "ENTREGUE" mas com ressalva
 // (mesmo quando o STATUS por baixo ja e' confirmado_unitrac/confirmado_gps --
@@ -857,8 +859,8 @@ export function montarDetalheEntregas(
   // Task 1 (plano 2026-09-26, especificacao da Ana 26/09: "90% de cobertura
   // com 99% de precisao e' melhor que 98% com falsos positivos"): nada vira
   // ENTREGUE so' por proximidade fraca. Com `modoPrecisao` ligado:
-  // raio ampliado (500-800m) e visita/R2 limpa com parada a >300m ->
-  // 'PARADA PRÓXIMA (300-800m) - REVISAR'; parada curta compartilhada ->
+  // raio ampliado (500-800m) -> 'PARADA PRÓXIMA (300-800m) - REVISAR' (Ajuste
+  // 1: visita da ponte limpa NAO e' rebaixada por distancia); parada curta compartilhada ->
   // 'PARADA CURTA - REVISAR'; vizinhanca -> 'PARADA COMPARTILHADA - REVISAR';
   // R2 fora do criterio forte -> 'PARADA PRÓXIMA (100-300m) - REVISAR'. Todos
   // saem `pendente` (nao contam na taxa) mas mantem chegada/saida. Mesmo
@@ -1505,20 +1507,13 @@ export function montarDetalheEntregas(
 
     // Task 1 (plano 26/09): roda depois de TUDO (R2, escala divergente,
     // AGUARDANDO e evidencia) -- so' rebaixa o que ainda saiu como "ENTREGUE
-    // com ressalva" ou ENTREGUE limpo com parada real longe demais. Horario,
+    // com ressalva". Horario,
     // evidencia e distancia ficam como estao (informacao util pra conferir).
     if (modoPrecisao) {
       const revisar = observacao != null ? REVISAR_POR_ROTULO_FRACO[observacao] : undefined
       if (revisar) {
         status = 'pendente'
         observacao = revisar
-      } else if (
-        observacao == null && status !== 'pendente'
-        && (evidencia === 'parada_no_endereco' || evidencia === 'parada_no_cadastro_unitrac' || evidencia === 'parada_unitrac_propria')
-        && distParadaM != null && distParadaM > RAIO_PRECISAO_ENTREGUE_LIMPO_M
-      ) {
-        status = 'pendente'
-        observacao = OBS_REVISAR_PROXIMA_300_800
       }
     }
 
