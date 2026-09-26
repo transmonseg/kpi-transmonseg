@@ -28,31 +28,37 @@ verificar_kpi_gabaritos = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(verificar_kpi_gabaritos)  # type: ignore[union-attr]
 
 
-def _escrever_xlsx_kpi(caminho: Path, placas: dict[str, list[tuple]]) -> None:
+def _escrever_xlsx_kpi(
+    caminho: Path, placas: dict[str, list[tuple]], com_confianca: bool = False
+) -> None:
     """placas: {nome_placa: [(carga, nf, cliente, endereco, chegada, saida,
-    tempo, status, resolucao_op, responsavel, evidencia, dist), ...]}"""
+    tempo, status, resolucao_op, responsavel, evidencia, dist[, confianca]),
+    ...]} -- `confianca` (Task 3, plano 2026-09-26) so' quando
+    com_confianca=True, coluna extra no fim (mesmo lugar do xlsx real,
+    MOTIVO/CONFIANÇA depois de EVIDÊNCIA/DIST. PARADA (m))."""
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
     for nome_placa, linhas in placas.items():
         ws = wb.create_sheet(nome_placa)
         ws.append([f"RELATÓRIO KPI - NUTRY MAX - PLACA {nome_placa}"])
         ws.append(["MOTORISTA: TESTE"])
-        ws.append(
-            [
-                "CARGA",
-                "NF",
-                "CLIENTE",
-                "ENDEREÇO",
-                "CHEGADA NA LOJA",
-                "SAÍDA DA LOJA",
-                "TEMPO NA LOJA",
-                "STATUS AUTOMÁTICO",
-                "RESOLUÇÃO OPERAÇÃO",
-                "RESPONSÁVEL",
-                "EVIDÊNCIA",
-                "DIST. PARADA (m)",
-            ]
-        )
+        header = [
+            "CARGA",
+            "NF",
+            "CLIENTE",
+            "ENDEREÇO",
+            "CHEGADA NA LOJA",
+            "SAÍDA DA LOJA",
+            "TEMPO NA LOJA",
+            "STATUS AUTOMÁTICO",
+            "RESOLUÇÃO OPERAÇÃO",
+            "RESPONSÁVEL",
+            "EVIDÊNCIA",
+            "DIST. PARADA (m)",
+        ]
+        if com_confianca:
+            header += ["MOTIVO", "CONFIANÇA"]
+        ws.append(header)
         for linha in linhas:
             ws.append(list(linha))
     wb.save(caminho)
@@ -264,6 +270,110 @@ class TestVerificarKpiGabaritos(unittest.TestCase):
         self.assertEqual(codigo, 0, saida)
         self.assertIn("1/1", saida)
         self.assertIn("100.0%", saida)
+
+    # Task 3 (plano 2026-09-26): rodizio de carga inteira sai "ROTA EXECUTADA
+    # POR OUTRA PLACA (X)" -- nao comeca com "ENTREGUE", mas CONFIANÇA=
+    # CONFIRMADA quando a coluna existe. Precisa contar como "entregue"
+    # (acerto), igual qualquer outro status confirmado.
+    def test_rota_executada_por_outra_placa_conta_como_entregue(self):
+        xlsx_24 = self.tmp / "dia24.xlsx"
+        _escrever_xlsx_kpi(
+            xlsx_24,
+            {
+                "TOS1H26": [
+                    (
+                        "1",
+                        "999003",
+                        "CLIENTE W",
+                        "ENDERECO W",
+                        "10:00",
+                        "10:12",
+                        "0h12min",
+                        "ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)",
+                        "",
+                        "",
+                        "ROTA EXECUTADA POR OUTRA PLACA",
+                        30,
+                        "Rota executada pela TOS1H26 — parada de 12 min a 30 m",
+                        "CONFIRMADA",
+                    )
+                ]
+            },
+            com_confianca=True,
+        )
+        casos = [("2026-09-24", "TOS1H26", "999003", "entregue", "teste")]
+        codigo, saida = self._rodar(xlsx_24, casos)
+        self.assertEqual(codigo, 0, saida)
+        self.assertIn("1/1", saida)
+        self.assertIn("100.0%", saida)
+
+    # "nao_entregue" continua falhando para QUALQUER confirmado (rodizio
+    # inclusive) -- CONFIANÇA=CONFIRMADA e' o mesmo veredito que "ENTREGUE",
+    # so' com rotulo de texto diferente.
+    def test_nao_entregue_com_rota_executada_por_outra_placa_ainda_falha(self):
+        xlsx_24 = self.tmp / "dia24.xlsx"
+        _escrever_xlsx_kpi(
+            xlsx_24,
+            {
+                "TOS1H26": [
+                    (
+                        "1",
+                        "999004",
+                        "CLIENTE V",
+                        "ENDERECO V",
+                        "10:00",
+                        "10:12",
+                        "0h12min",
+                        "ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)",
+                        "",
+                        "",
+                        "ROTA EXECUTADA POR OUTRA PLACA",
+                        30,
+                        "Rota executada pela TOS1H26 — parada de 12 min a 30 m",
+                        "CONFIRMADA",
+                    )
+                ]
+            },
+            com_confianca=True,
+        )
+        casos = [("2026-09-24", "TOS1H26", "999004", "nao_entregue", "teste")]
+        codigo, saida = self._rodar(xlsx_24, casos)
+        self.assertEqual(codigo, 1, saida)
+        self.assertIn("FALHA CRITICA", saida)
+        self.assertIn("999004", saida)
+
+    # Fallback: xlsx SEM coluna CONFIANÇA (formato antigo) continua usando so'
+    # o prefixo "ENTREGUE" -- "ROTA EXECUTADA POR OUTRA PLACA" sem a coluna
+    # nao conta como entregue (comportamento de antes desta task, nunca
+    # quebra quem regenerar um xlsx antigo).
+    def test_rota_executada_por_outra_placa_sem_coluna_confianca_nao_conta(self):
+        xlsx_24 = self.tmp / "dia24.xlsx"
+        _escrever_xlsx_kpi(
+            xlsx_24,
+            {
+                "TOS1H26": [
+                    (
+                        "1",
+                        "999005",
+                        "CLIENTE U",
+                        "ENDERECO U",
+                        "10:00",
+                        "10:12",
+                        "0h12min",
+                        "ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)",
+                        "",
+                        "",
+                        "ROTA EXECUTADA POR OUTRA PLACA",
+                        30,
+                    )
+                ]
+            },
+        )
+        casos = [("2026-09-24", "TOS1H26", "999005", "entregue", "teste")]
+        codigo, saida = self._rodar(xlsx_24, casos)
+        self.assertEqual(codigo, 0, saida)
+        self.assertIn("0/1", saida)
+        self.assertIn("0.0%", saida)
 
 
 if __name__ == "__main__":

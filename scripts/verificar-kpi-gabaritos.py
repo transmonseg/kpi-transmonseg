@@ -9,14 +9,21 @@ dia correspondente (formato: uma aba por placa, cabecalho com 'NF' e uma
 coluna comecando por 'STATUS', ver `medir-contra-gabarito-ana.py`).
 
 Criterios de falha:
-  - nao_entregue que saiu no KPI com status comecando por 'ENTREGUE'
+  - nao_entregue que saiu no KPI como CONFIRMADO (ver "confirmado" abaixo)
     -> FALHA CRITICA (falso positivo).
   - sem_rastreador que NAO saiu com o rotulo 'SEM RASTREADOR - VEICULO SEM
     RASTREAMENTO NO DIA - NAO CONTABILIZADO' (na coluna STATUS ou na
     observacao/EVIDENCIA) -> FALHA.
-  - entregue que saiu 'ENTREGUE' -> acerto (só conta taxa, nunca falha).
+  - entregue que saiu CONFIRMADO -> acerto (só conta taxa, nunca falha).
   - desatualizado: so' e' reportado (nao tem regra de falha definida no
     brief); usado apenas para contexto.
+
+"Confirmado" (Task 3, plano 2026-09-26): quando o xlsx tem a coluna
+CONFIANÇA (LinhaDetalheEntrega.confianca), NF confirmada = CONFIANÇA
+"CONFIRMADA" -- cobre 'ROTA EXECUTADA POR OUTRA PLACA (X)' (rodizio de
+carga inteira) e qualquer status confirmado futuro que nao comece com
+'ENTREGUE'. Xlsx sem a coluna (formato antigo) cai no fallback de sempre:
+status comecando por 'ENTREGUE'.
 
 Casos listados em `scripts/gabaritos/excecoes-conhecidas.csv`
 (`data;placa;nf;motivo;desde`) sao falhas conhecidas/antigas: a trava NAO
@@ -137,6 +144,13 @@ def _achar_linha_cabecalho(ws) -> tuple[int, dict[str, int]] | None:
                 idx["EVIDENCIA"] = i
             elif texto.upper().startswith("RESOLU"):
                 idx["RESOLUCAO"] = i
+            # Task 3 (plano 2026-09-26): CONFIANÇA (LinhaDetalheEntrega.
+            # confianca) -- quando presente, e' o sinal MAIS confiavel de
+            # "isto e' um confirmado" (CONFIRMADA), melhor que o prefixo
+            # ENTREGUE (que "ROTA EXECUTADA POR OUTRA PLACA", rodizio de
+            # carga inteira, nunca teria).
+            elif texto.upper().startswith("CONFIAN"):
+                idx["CONFIANCA"] = i
         if tem_nf and tem_status:
             return r, idx
     return None
@@ -158,6 +172,7 @@ def carregar_kpi_xlsx(caminho: Path) -> dict[str, dict]:
         col_status = idx["STATUS"]
         col_evidencia = idx.get("EVIDENCIA")
         col_resolucao = idx.get("RESOLUCAO")
+        col_confianca = idx.get("CONFIANCA")
         for r in range(linha_hdr + 1, ws.max_row + 1):
             nf = ws.cell(r, col_nf).value
             if nf is None or str(nf).strip() == "":
@@ -170,12 +185,26 @@ def carregar_kpi_xlsx(caminho: Path) -> dict[str, dict]:
             if col_resolucao:
                 observacao_partes.append(ws.cell(r, col_resolucao).value)
             observacao = " ".join(str(p) for p in observacao_partes if p)
+            confianca = ws.cell(r, col_confianca).value if col_confianca else None
             por_nf[nf] = {
                 "placa": nome_aba,
                 "status": status,
                 "observacao": observacao,
+                "confianca": confianca,
             }
     return por_nf
+
+
+def _confirmado(info: dict) -> bool:
+    """Task 3 (plano 2026-09-26): se a coluna CONFIANÇA existe (info["confianca"]
+    nao vazia), ela e' o veredito -- CONFIRMADA cobre "ROTA EXECUTADA POR
+    OUTRA PLACA (X)" (rodizio de carga inteira) e qualquer status confirmado
+    futuro que nao comece com "ENTREGUE". Sem a coluna (xlsx antigo, ou aba
+    sem ela), cai pro prefixo de sempre."""
+    confianca = _norm(info.get("confianca"))
+    if confianca:
+        return confianca == "CONFIRMADA"
+    return _norm(info["status"]).startswith("ENTREGUE")
 
 
 def verificar_caso(caso: dict, kpi_por_nf: dict[str, dict]) -> str | None:
@@ -195,11 +224,11 @@ def verificar_caso(caso: dict, kpi_por_nf: dict[str, dict]) -> str | None:
     observacao = _norm(info["observacao"])
 
     if esperado == "nao_entregue":
-        if status.startswith("ENTREGUE"):
+        if _confirmado(info):
             return (
                 f"FALHA CRITICA: NF {caso['nf']} (placa {caso['placa']}, "
                 f"{caso['data']}) esperado=nao_entregue mas KPI status="
-                f"{info['status']!r}"
+                f"{info['status']!r} (confianca={info.get('confianca')!r})"
             )
         return None
 
@@ -303,7 +332,7 @@ def main() -> int:
         if caso["esperado"] == "entregue":
             total_entregue += 1
             info = kpi_por_nf.get(caso["nf"])
-            if info is not None and _norm(info["status"]).startswith("ENTREGUE"):
+            if info is not None and _confirmado(info):
                 acertos_entregue += 1
 
         falha = verificar_caso(caso, kpi_por_nf)
