@@ -313,18 +313,24 @@ function existeParadaDeOutraPlacaComoSinal(
   return false
 }
 
-/** NF ainda "pendente" (nenhuma confirmacao limpa da propria placa, nenhum
- *  rotulo de fato ja resolvido -- SEM RASTREADOR/SEM MOVIMENTO/parada curta
- *  compartilhada perdida) e' elegivel pro rotulo de escala divergente: so'
- *  as observacoes puramente por distancia (ou nenhuma) da propria placa,
- *  igual ao espirito de `elegivelParaConfirmarPorParadaPropria` acima mas
- *  restrito ao lado "ainda sem nenhuma boa noticia". */
+/** Fix round 1 (revisao de codigo, achado 1 -- 79351d8): precedencia por NF,
+ *  nao so' por carga. A carga pode ser `escalaDivergente` (a MAIORIA dos
+ *  clientes) e ainda assim ESTA NF especifica ter a propria placa
+ *  genuinamente perto (passou a 300m, ou parou a 900m) -- a evidencia
+ *  INDIVIDUAL manda sobre o sinal agregado da carga: 'PASSOU NO ENDERECO...'
+ *  (propria placa <=500m) e 'PARADA PROXIMA (500m-2km)...' (propria placa
+ *  entre 500m-2km) dizem que a PROPRIA placa chegou perto de VERDADE desta
+ *  NF -- nao faz sentido pedir conferencia de escala pra uma entrega que a
+ *  placa escalada comprovadamente visitou. So' NF ainda "pendente" (nenhuma
+ *  confirmacao limpa, nenhum rotulo de fato ja resolvido -- SEM RASTREADOR/
+ *  SEM MOVIMENTO/parada curta compartilhada perdida/ilha) SEM evidencia de
+ *  proximidade da propria placa (observacao null, "NAO FOI" -- >2km -- ou
+ *  coordenada nao confiavel, onde a propria distancia nem pode ser medida)
+ *  e' elegivel. */
 function elegivelParaEscalaDivergente(status: StatusEntrega, observacao: string | null): boolean {
   if (status !== 'pendente') return false
   if (observacao == null) return true
-  return observacao === 'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR'
-    || observacao === 'NÃO FOI AO CLIENTE (caminhão não esteve na região)'
-    || observacao === 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR'
+  return observacao === 'NÃO FOI AO CLIENTE (caminhão não esteve na região)'
     || observacao.startsWith(PREFIXO_OBS_COORDENADA_IMPRECISA)
 }
 
