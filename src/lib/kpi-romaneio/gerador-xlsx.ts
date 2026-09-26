@@ -297,15 +297,34 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   // NF sem rastreador e REVISAR SEMPRE ficam pendente (nunca confirmam),
   // entao ja saem naturalmente do numerador.
   const confirmadas = base.filter(d => d.status !== 'pendente').length
-  const taxaPct = denominador > 0 ? Math.round((100 * confirmadas) / denominador) : 0
+  // Bug real 25/09 (achado da Ana, KPI-Nutry-Max-2026-09-25-TESTE.xlsx):
+  // taxa arredondada pro inteiro escondia a diferença de poucos décimos que
+  // batia contra a conta manual dela -- 1 casa decimal (ver
+  // `formatarPctUmaCasa`) + denominador explícito na própria linha (pedido
+  // do usuário 26/09) deixam a conta auditável sem abrir o xlsx inteiro.
+  const taxaPct = denominador > 0 ? Math.round((1000 * confirmadas) / denominador) / 10 : 0
 
   const basePosConferencia = detalhe.filter(entraNoDenominadorPosConferencia)
   const denominadorPosConferencia = basePosConferencia.length
   const confirmadasPosConferencia = basePosConferencia.filter(confirmadaAposConferencia).length
   const taxaPosConferenciaPct = denominadorPosConferencia > 0
-    ? Math.round((100 * confirmadasPosConferencia) / denominadorPosConferencia) : 0
+    ? Math.round((1000 * confirmadasPosConferencia) / denominadorPosConferencia) / 10 : 0
 
   return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, denominadorPosConferencia, semRastreador, aguardando, revisar }
+}
+
+// Pedido do usuário 26/09 (linha de TAXA auditável): inteiro com separador
+// de milhar PT-BR, sem depender de `toLocaleString`/ICU do ambiente Node
+// (Contabo/Vercel podem rodar build sem full-icu) -- regex pura.
+function formatarInteiroPtBr(n: number): string {
+  return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
+
+// Pedido do usuário 26/09: 1 casa decimal, vírgula PT-BR (ex. "94,7").
+// `n` já vem arredondado a 1 casa em `calcularResumoConfirmacao` -- toFixed
+// aqui é só formatação, nunca um segundo arredondamento.
+function formatarPctUmaCasa(n: number): string {
+  return n.toFixed(1).replace('.', ',')
 }
 
 function formatarMinutos(min: number | null): string {
@@ -500,8 +519,19 @@ export async function gerarKpiRomaneioXlsx(
   // quem nao passa o 4o parametro).
   if (opcoes.resumoConfirmacao && detalhe.length > 0) {
     const resumo = calcularResumoConfirmacao(detalhe)
+    // Pedido do usuário 26/09: denominador explícito ao lado de cada taxa,
+    // pra dar pra auditar a conta sem abrir a aba de Detalhamento. A
+    // automática exclui SEM RASTREADOR do denominador (rótulo literal, ver
+    // `resumo.semRastreador`); AGUARDANDO (dia em andamento) continua
+    // reportado à parte no fim da linha, como já era. Pós-conferência tem
+    // exclusões próprias (SEM RASTREADOR/AGUARDANDO sem resolução,
+    // 'desatualizado' -- ver `entraNoDenominadorPosConferencia`), por isso
+    // usa `total - denominador` genérico em vez do rótulo "sem rastreador".
+    const foraDaContaPosConferencia = detalhe.length - resumo.denominadorPosConferencia
+    const taxaTexto = `${formatarPctUmaCasa(resumo.taxaPct)}% (${formatarInteiroPtBr(resumo.confirmadas)} de ${formatarInteiroPtBr(resumo.denominador)} NFs; ${formatarInteiroPtBr(resumo.semRastreador)} sem rastreador fora da conta)`
+    const taxaPosTexto = `${formatarPctUmaCasa(resumo.taxaPosConferenciaPct)}% (${formatarInteiroPtBr(resumo.confirmadasPosConferencia)} de ${formatarInteiroPtBr(resumo.denominadorPosConferencia)} NFs; ${formatarInteiroPtBr(foraDaContaPosConferencia)} fora da conta)`
     const linhaResumoGeral = ws.addRow([
-      `TAXA DE CONFIRMAÇÃO: ${resumo.taxaPct}%    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${resumo.taxaPosConferenciaPct}%    |    REVISAR: ${resumo.revisar}    |    NFs sem rastreador: ${resumo.semRastreador}    |    NFs aguardando fim da rota: ${resumo.aguardando}`,
+      `TAXA DE CONFIRMAÇÃO: ${taxaTexto}    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${taxaPosTexto}    |    REVISAR: ${resumo.revisar}    |    NFs sem rastreador: ${resumo.semRastreador}    |    NFs aguardando fim da rota: ${resumo.aguardando}`,
     ])
     ws.mergeCells(linhaResumoGeral.number, 1, linhaResumoGeral.number, COLUNAS_KPI_ROMANEIO.length)
     const cell = linhaResumoGeral.getCell(1)

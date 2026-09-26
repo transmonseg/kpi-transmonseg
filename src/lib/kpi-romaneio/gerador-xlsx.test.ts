@@ -519,7 +519,7 @@ describe('gerador-xlsx', () => {
       const ws = wb.worksheets[0]
       const resumoTexto = ws.getRow(ws.rowCount).getCell(1).value as string
 
-      expect(resumoTexto).toContain('100%')
+      expect(resumoTexto).toContain('100,0% (8 de 8 NFs; 2 sem rastreador fora da conta)')
       expect(resumoTexto).toContain('NFs sem rastreador: 2')
     })
 
@@ -534,7 +534,7 @@ describe('gerador-xlsx', () => {
       const ws = wb.worksheets[0]
       const resumoTexto = ws.getRow(ws.rowCount).getCell(1).value as string
 
-      expect(resumoTexto).toContain('50%') // 2 confirmadas / 4 total
+      expect(resumoTexto).toContain('50,0% (2 de 4 NFs; 0 sem rastreador fora da conta)') // 2 confirmadas / 4 total
       expect(resumoTexto).toContain('NFs sem rastreador: 0')
     })
   })
@@ -641,10 +641,10 @@ describe('gerador-xlsx', () => {
 
       // Automatica: so' NF3 confirma de verdade -> 1/4 = 25%. Nunca soma a
       // resolucao manual no automatico (Global Constraint do plano).
-      expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 25%')
+      expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 25,0% (1 de 4 NFs; 0 sem rastreador fora da conta)')
       // Apos conferencia: NF1 (entregue manual) + NF3 (automatico) confirmam,
       // NF2 (nao esteve no local) NAO conta mesmo resolvida -> 2/4 = 50%.
-      expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 50%')
+      expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 50,0% (2 de 4 NFs; 0 fora da conta)')
     })
 
     // Fix round 1, item 4: decisao de negocio da Ana -- SEM RASTREADOR fica
@@ -672,10 +672,10 @@ describe('gerador-xlsx', () => {
 
         // Automatica: NF1 sai do denominador (sem rastreador, sem confirmação
         // automática possível) -> 1/1 = 100%, comportamento antigo intacto.
-        expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 100%')
+        expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 100,0% (1 de 1 NFs; 1 sem rastreador fora da conta)')
         // Apos conferencia: NF1 ENTRA (resolução manual confirmatória) e
         // conta como confirmada + NF2 confirma -> 2/2 = 100%.
-        expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 100%')
+        expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 100,0% (2 de 2 NFs; 0 fora da conta)')
       })
 
       it('SEM RASTREADOR com resolução manual "não esteve no local": entra no denominador mas NÃO conta como confirmada', async () => {
@@ -694,10 +694,10 @@ describe('gerador-xlsx', () => {
         const ws = wb.worksheets[0]
         const resumoTexto = ws.getRow(ws.rowCount).getCell(1).value as string
 
-        expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 100%') // automatica intacta
+        expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 100,0% (1 de 1 NFs; 1 sem rastreador fora da conta)') // automatica intacta
         // Apos conferencia: NF1 entra no denominador (tem resolucao manual,
         // não é 'desatualizado') mas não confirma -> 1/2 = 50%.
-        expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 50%')
+        expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 50,0% (1 de 2 NFs; 0 fora da conta)')
       })
 
       it('SEM RASTREADOR SEM nenhuma resolução manual: continua fora do denominador da taxa após conferência (aguardando confirmação operacional)', async () => {
@@ -715,10 +715,10 @@ describe('gerador-xlsx', () => {
         const ws = wb.worksheets[0]
         const resumoTexto = ws.getRow(ws.rowCount).getCell(1).value as string
 
-        expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 100%')
+        expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 100,0% (1 de 1 NFs; 1 sem rastreador fora da conta)')
         // NF1 continua fora do denominador da taxa apos conferencia tambem
         // (sem confirmacao operacional ainda) -> 1/1 = 100% (so' NF2 conta).
-        expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 100%')
+        expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 100,0% (1 de 1 NFs; 1 fora da conta)')
       })
 
       it('"desatualizado" (NF com rastreador normal) sai do denominador da taxa após conferência -- fica pendente de atualização, não conta como falha', async () => {
@@ -736,10 +736,10 @@ describe('gerador-xlsx', () => {
         // Automatica: NF1 nao e' sem rastreador, entra normal no denominador
         // -> 1 confirmada (NF2) / 2 = 50%. Automatica NUNCA muda com Fix
         // round 1.
-        expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 50%')
+        expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 50,0% (1 de 2 NFs; 0 sem rastreador fora da conta)')
         // Apos conferencia: NF1 sai do denominador (desatualizado) -> so'
         // NF2 conta -> 1/1 = 100%.
-        expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 100%')
+        expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 100,0% (1 de 1 NFs; 1 fora da conta)')
       })
 
       it('"desatualizado" + SEM RASTREADOR: sai do denominador (dupla exclusão continua sendo so exclusão)', async () => {
@@ -758,8 +758,8 @@ describe('gerador-xlsx', () => {
         const ws = wb.worksheets[0]
         const resumoTexto = ws.getRow(ws.rowCount).getCell(1).value as string
 
-        expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 100%')
-        expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 100%')
+        expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 100,0% (1 de 1 NFs; 1 sem rastreador fora da conta)')
+        expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 100,0% (1 de 1 NFs; 1 fora da conta)')
       })
     })
   })
@@ -804,8 +804,8 @@ describe('gerador-xlsx', () => {
           observacao: 'ENTREGUE POR OUTRA PLACA (RQV6I51) - CARGA TRANSFERIDA' }),
       ]
       const texto = await resumo(detalhe)
-      // denominador = NF1, NF2, NF5 -> confirmadas NF1, NF5 -> 2/3 = 67%
-      expect(texto).toContain('TAXA DE CONFIRMAÇÃO: 67%')
+      // denominador = NF1, NF2, NF5 -> confirmadas NF1, NF5 -> 2/3 = 66,7%
+      expect(texto).toContain('TAXA DE CONFIRMAÇÃO: 66,7% (2 de 3 NFs; 2 sem rastreador fora da conta)')
       expect(texto).toContain('NFs sem rastreador: 2')
     })
 
@@ -820,8 +820,8 @@ describe('gerador-xlsx', () => {
       ]
       const texto = await resumo(detalhe)
       // 2/3 nas duas taxas (NF4, NF5 fora)
-      expect(texto).toContain('TAXA DE CONFIRMAÇÃO: 67%')
-      expect(texto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 67%')
+      expect(texto).toContain('TAXA DE CONFIRMAÇÃO: 66,7% (2 de 3 NFs; 0 sem rastreador fora da conta)')
+      expect(texto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 66,7% (2 de 3 NFs; 2 fora da conta)')
       expect(texto).toContain('NFs aguardando fim da rota: 2')
     })
 
@@ -832,8 +832,8 @@ describe('gerador-xlsx', () => {
           resolucaoManual: 'entregue', responsavelResolucao: 'ANA' }),
       ]
       const texto = await resumo(detalhe)
-      expect(texto).toContain('TAXA DE CONFIRMAÇÃO: 100%') // 1/1
-      expect(texto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 100%') // 2/2
+      expect(texto).toContain('TAXA DE CONFIRMAÇÃO: 100,0% (1 de 1 NFs; 0 sem rastreador fora da conta)') // 1/1
+      expect(texto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 100,0% (2 de 2 NFs; 0 fora da conta)') // 2/2
       expect(texto).toContain('NFs aguardando fim da rota: 1')
     })
 
@@ -851,8 +851,8 @@ describe('gerador-xlsx', () => {
         detalheFixture({ nf: 'NF5', status: 'pendente', observacao: 'PARADA PRÓXIMA (100-300m) - REVISAR', evidencia: 'parada_unitrac_propria', confianca: 'REVISAR' }),
       ]
       const texto = await resumo(detalhe)
-      expect(texto).toContain('TAXA DE CONFIRMAÇÃO: 20%') // 1/5
-      expect(texto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 40%') // NF1 + NF3 (manual)
+      expect(texto).toContain('TAXA DE CONFIRMAÇÃO: 20,0% (1 de 5 NFs; 0 sem rastreador fora da conta)') // 1/5
+      expect(texto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 40,0% (2 de 5 NFs; 0 fora da conta)') // NF1 + NF3 (manual)
       expect(texto).toContain('REVISAR: 4')
     })
 
@@ -924,7 +924,7 @@ describe('gerador-xlsx -- rodizio sem coluna dedicada (ajuste 26/09: PLACA EXECU
     const l1 = (wsPlaca.getRow(4).values as unknown[]).slice(1)
     expect(l1[7]).toBe('ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)')
     const resumoTexto = String(wb.worksheets[0].getCell(4, 1).value)
-    expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 50%')
+    expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 50,0% (1 de 2 NFs; 0 sem rastreador fora da conta)')
   })
 
   it('mesmo cabeçalho pro Rio Quality (pipeline.ts, sem nenhuma opção)', async () => {

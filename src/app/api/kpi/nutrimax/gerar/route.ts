@@ -17,7 +17,7 @@ import { alvosEfetivos } from '@/lib/kpi-romaneio/alvos-snapshot'
 import { paradasEfetivas } from '@/lib/kpi-romaneio/paradas-snapshot'
 import { detectarDescasamentos } from '@/lib/kpi-romaneio/avisos'
 import { montarVisitas } from '@/lib/kpi-romaneio/visitas'
-import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento } from '@/lib/kpi-romaneio/agregacao'
+import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, contarConfirmadasPorCarga } from '@/lib/kpi-romaneio/agregacao'
 import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
 import { salvarGeracao, buscarGeracaoParaRegenerar } from '@/lib/kpi-romaneio/historico'
@@ -558,7 +558,25 @@ export async function POST(req: NextRequest) {
   }
   const detalheComResolucao = aplicarResolucoes(detalhe, historicoResolucoes)
 
-  const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpi, data, avisos, detalheComResolucao, undefined, undefined, {
+  // Bug real 25/09 (ver comentário completo de `contarConfirmadasPorCarga`
+  // em agregacao.ts): `agregarPorCarga` (linhasKpi acima) so' enxerga
+  // confirmadoUnitrac/confirmadoGps -- nao rodizio de carga inteira, R2,
+  // parada curta/proxima etc, que `montarDetalheEntregas` (detalhe) decide
+  // depois. `paradasReais`/"NF CONFIRMADAS" do resumo tem que contar
+  // EXATAMENTE as mesmas NFs que saem 'ENTREGUE' nas abas por placa --
+  // sobrescreve com a contagem real (nunca uma segunda regra de
+  // confirmação, so' substitui a simplificada por essa).
+  const confirmadasPorChave = contarConfirmadasPorCarga(detalheComResolucao)
+  const linhasKpiConsistentes: LinhaKpiRomaneio[] = linhasKpi.map(l => {
+    const paradasReais = confirmadasPorChave.get(`${l.carga}::${l.placa}`) ?? 0
+    return {
+      ...l,
+      paradasReais,
+      status: l.nfPlanejado != null && paradasReais < l.nfPlanejado ? 'INCOMPLETO' : 'OK',
+    }
+  })
+
+  const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpiConsistentes, data, avisos, detalheComResolucao, undefined, undefined, {
     // Linha de resumo (taxa automatica/apos conferencia) so' na Nutry Max --
     // ver `opcoes.resumoConfirmacao` em gerador-xlsx.ts.
     resumoConfirmacao: true,

@@ -743,6 +743,39 @@ export function agregarPorCarga(
   }
 }
 
+// Bug real 25/09 (Nutry Max, KPI-Nutry-Max-2026-09-25-TESTE.xlsx): a aba de
+// resumo somava NF CONFIRMADAS (`paradasReais`, calculado acima em
+// `agregarPorCarga`) = 1.987, mas as abas por placa (STATUS 'ENTREGUE',
+// calculado por `montarDetalheEntregas`) somavam 2.073 -- diferença de 86
+// NFs, todas confirmadas so' pelo RODIZIO DE CARGA INTEIRA (evidencia
+// 'rota_outra_placa', Task 2 de 26/09) nas placas RQU2G47/RBJ2J67/TOS1H26.
+// Causa raiz: `agregarPorCarga` decide `confirmadas` (linha 639-645 acima)
+// SO' com `confirmadoUnitrac || confirmadoGps` -- nunca viu rodizio, R2
+// (`confirmarPorParadaUnitracPropria`), parada curta/proxima confirmada
+// nem nenhuma das outras regras que só existem dentro de
+// `montarDetalheEntregas` (chamada DEPOIS de agregarPorCarga, route.ts/
+// script). As duas fontes de verdade nunca podiam bater por construcao.
+// Fix: `contarConfirmadasPorCarga` conta, a partir do `detalhe` (o mesmo
+// array cujo `status` vira o rotulo 'ENTREGUE' nas abas por placa, ver
+// LABEL_STATUS_ENTREGA em gerador-xlsx.ts), exatamente as mesmas NFs --
+// `status !== 'pendente'` é o UNICO criterio, idêntico ao que
+// `calcularResumoConfirmacao` (gerador-xlsx.ts) já usava pra taxa. O
+// chamador (route.ts + gerar-nutrimax-real-arquivo.ts) usa este resultado
+// pra SOBRESCREVER `paradasReais`/`status` de `agregarPorCarga` depois de
+// montar `detalhe` -- nunca inventa uma segunda regra de confirmação, so'
+// substitui a contagem simplificada pela contagem real. Rio Quality
+// (pipeline.ts) nao chama esta funcao -- continua com o `paradasReais` de
+// `agregarPorCarga` sozinho, comportamento intacto.
+export function contarConfirmadasPorCarga(detalhe: LinhaDetalheEntrega[]): Map<string, number> {
+  const porChave = new Map<string, number>()
+  for (const d of detalhe) {
+    if (d.status === 'pendente') continue
+    const chave = `${d.carga}::${d.placa}`
+    porChave.set(chave, (porChave.get(chave) ?? 0) + 1)
+  }
+  return porChave
+}
+
 /** Uma linha por NF (entrega) dentro da carga -- aba "Detalhamento" (pedido
  *  do usuário 24/08: além do resumo por carga, mostrar como ficou CADA
  *  entrega). Mesmo critério de confirmação de agregarPorCarga (alvo Unitrac

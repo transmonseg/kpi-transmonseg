@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, gerarMotivo, calcularConfianca } from './agregacao'
+import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, gerarMotivo, calcularConfianca, contarConfirmadasPorCarga } from './agregacao'
 import { resolverParadas } from './unitrac'
 import type { LinhaEscala, LinhaGeocodificada, Visita, StatusEntrega } from './types'
 import type { AlvoApi } from '@/lib/unitrac-api'
@@ -3611,6 +3611,99 @@ describe('montarDetalheEntregas -- rodizio de carga inteira vira ROTA EXECUTADA 
       expect(d.observacao).toBeNull()
       expect(d.status).toBe('confirmado_gps')
     }
+  })
+})
+
+// Bug real 25/09 (KPI-Nutry-Max-2026-09-25-TESTE.xlsx): resumo somava NF
+// CONFIRMADAS = 1.987 mas as abas por placa (STATUS ENTREGUE) somavam 2.073
+// -- as 86 de diferença eram exatamente as NFs confirmadas so' por rodizio
+// de carga inteira (RQU2G47/RBJ2J67/TOS1H26, evidencia 'rota_outra_placa')
+// em cargas onde `agregarPorCarga` (confirmadoUnitrac||confirmadoGps) nunca
+// via' o rodizio. Reusa a MESMA fixture real das 3 cargas de Campos acima
+// (98669/98673/98678) pra provar: (1) agregarPorCarga sozinho SUBCONTA por
+// construcao (confirma o bug), (2) `contarConfirmadasPorCarga` sobre o
+// `detalhe` bate exatamente com a soma de STATUS !== 'pendente' das abas.
+describe('contarConfirmadasPorCarga -- NF CONFIRMADAS do resumo bate com STATUS ENTREGUE das abas por placa (bug real 25/09)', () => {
+  const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+  const DELTA_M = 1 / 111_195
+  const REGIAO: Record<string, { lat: number; lng: number }> = {
+    '98669': { lat: -21.20, lng: -41.90 },
+    '98673': { lat: -21.50, lng: -41.10 },
+    '98678': { lat: -22.37, lng: -41.78 },
+  }
+  function nfsDaCarga(carga: string, placa: string, qtd: number): LinhaGeocodificada[] {
+    const r = REGIAO[carga]
+    return Array.from({ length: qtd }, (_, i) => linha(`${carga}-${i + 1}`, {
+      carga, placa, endereco: `RUA ${carga} ${i + 1}`, clienteCodigo: `C${carga}${i}`,
+      lat: r.lat + i * 0.01, lng: r.lng,
+    }))
+  }
+  function paradaEm(placa: string, l: LinhaGeocodificada, i: number, distM = 25, durMin = 10): UnitracParadaRow {
+    const inicio = new Date(Date.UTC(2026, 8, 25, 8, 0) + i * 20 * 60_000)
+    const fim = new Date(inicio.getTime() + durMin * 60_000)
+    return parada({
+      id: `${placa}-${l.nf}`, placa_norm: placa, classificacao: 'FORA_BASE',
+      lat: (l.lat as number) + distM * DELTA_M, lng: l.lng as number,
+      chegada: inicio.toISOString(), saida: fim.toISOString(), fim_real: fim.toISOString(),
+    })
+  }
+
+  const c98669 = nfsDaCarga('98669', 'RQU2G47', 30)
+  const c98673 = nfsDaCarga('98673', 'RBJ2J67', 27)
+  const c98678 = nfsDaCarga('98678', 'TOS1H26', 36)
+  const frota25 = new Map<string, UnitracParadaRow[]>([
+    ['TOS1H26', c98669.slice(0, 29).map((l, i) => paradaEm('TOS1H26', l, i))],
+    ['RQU2G47', c98673.map((l, i) => paradaEm('RQU2G47', l, i))],
+    ['RBJ2J67', c98678.map((l, i) => paradaEm('RBJ2J67', l, i, 50))],
+  ])
+
+  function montarDetalheDaCarga(carga: string, placa: string, nfs: LinhaGeocodificada[]) {
+    return montarDetalheEntregas(
+      carga, placa, nfs, [], new Map(), resumoCargaVazio,
+      true, frota25, null, false,
+      true, true, new Map(),
+      true, true, true, undefined, false, new Map(),
+      true, // detectarEscalaDivergente
+      true, // modoPrecisao
+      true, // reconhecerRodizio
+      new Map(),
+    )
+  }
+
+  it('agregarPorCarga sozinho SUBCONTA (confirma a causa raiz do bug): 0 confirmadas onde o rodizio confirma quase tudo', () => {
+    const resumo = agregarPorCarga('98669', 'RQU2G47', c98669, null, [], new Map(), [], null)
+    // Nenhuma das 30 NFs tem alvo.situacao===1 nem Visita GPS na PROPRIA
+    // placa -- so' o rodizio (calculado depois, em montarDetalheEntregas)
+    // confirma. `agregarPorCarga` nunca enxerga isso.
+    expect(resumo.paradasReais).toBe(0)
+  })
+
+  it.each([
+    ['98669', 'RQU2G47', c98669],
+    ['98673', 'RBJ2J67', c98673],
+    ['98678', 'TOS1H26', c98678],
+  ])('carga %s/%s: contarConfirmadasPorCarga bate exatamente com o nº de linhas status !== pendente no detalhe (mesma NF que sai ENTREGUE na aba por placa)', (carga, placa, nfs) => {
+    const detalhe = montarDetalheDaCarga(carga, placa, nfs)
+    const esperado = detalhe.filter(d => d.status !== 'pendente').length
+    expect(esperado).toBeGreaterThan(0) // sanity: o rodizio de fato confirma algo aqui
+    const contagem = contarConfirmadasPorCarga(detalhe)
+    expect(contagem.get(`${carga}::${placa}`)).toBe(esperado)
+  })
+
+  it('teste de consistência: soma de NF CONFIRMADAS (contarConfirmadasPorCarga) === total de linhas ENTREGUE nas 3 cargas reais de 25/09', () => {
+    const detalheTotal = [
+      ...montarDetalheDaCarga('98669', 'RQU2G47', c98669),
+      ...montarDetalheDaCarga('98673', 'RBJ2J67', c98673),
+      ...montarDetalheDaCarga('98678', 'TOS1H26', c98678),
+    ]
+    const totalEntregueNasAbas = detalheTotal.filter(d => d.status !== 'pendente').length
+    const contagem = contarConfirmadasPorCarga(detalheTotal)
+    const somaResumo = [...contagem.values()].reduce((s, n) => s + n, 0)
+    expect(somaResumo).toBe(totalEntregueNasAbas)
+    // As 3 cargas reais confirmam praticamente tudo via rodizio (29+27+36
+    // com pelo menos uma NF sem cobertura em 98669) -- garante que o teste
+    // nao passa "por acaso" com soma zero.
+    expect(totalEntregueNasAbas).toBeGreaterThanOrEqual(29 + 27 + 36 - 1)
   })
 })
 

@@ -19,7 +19,7 @@ import { alvosDaData } from '../src/lib/kpi-romaneio/alvos-data'
 import { alvosEfetivos } from '../src/lib/kpi-romaneio/alvos-snapshot'
 import { paradasEfetivas } from '../src/lib/kpi-romaneio/paradas-snapshot'
 import { montarVisitas } from '../src/lib/kpi-romaneio/visitas'
-import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento } from '../src/lib/kpi-romaneio/agregacao'
+import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, contarConfirmadasPorCarga } from '../src/lib/kpi-romaneio/agregacao'
 import { calcularKmPercorrido } from '../src/lib/kpi-romaneio/km'
 import { detectarDescasamentos } from '../src/lib/kpi-romaneio/avisos'
 import { gerarKpiRomaneioXlsx } from '../src/lib/kpi-romaneio/gerador-xlsx'
@@ -401,7 +401,19 @@ async function main() {
   }
   const detalheComResolucao = aplicarResolucoes(detalhe, historicoResolucoes)
 
-  const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpi, data, avisos, detalheComResolucao, undefined, undefined, {
+  // Bug real 25/09 -- espelha o fix de route.ts, ver comentário completo de
+  // `contarConfirmadasPorCarga` em agregacao.ts.
+  const confirmadasPorChave = contarConfirmadasPorCarga(detalheComResolucao)
+  const linhasKpiConsistentes: LinhaKpiRomaneio[] = linhasKpi.map(l => {
+    const paradasReais = confirmadasPorChave.get(`${l.carga}::${l.placa}`) ?? 0
+    return {
+      ...l,
+      paradasReais,
+      status: l.nfPlanejado != null && paradasReais < l.nfPlanejado ? 'INCOMPLETO' : 'OK',
+    }
+  })
+
+  const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpiConsistentes, data, avisos, detalheComResolucao, undefined, undefined, {
     // Linha de resumo (taxa automatica/apos conferencia) so' na Nutry Max --
     // ver `opcoes.resumoConfirmacao` em gerador-xlsx.ts.
     resumoConfirmacao: true,
