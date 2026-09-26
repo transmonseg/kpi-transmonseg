@@ -60,6 +60,15 @@ export const COLUNAS_DETALHE_PLACA = [
 // gerador e fica com as 12 colunas de sempre.
 export const COLUNA_PLACA_EXECUTORA = 'PLACA EXECUTORA'
 
+// Task 3 (plano 2026-09-26): MOTIVO (frase em PT-BR, `LinhaDetalheEntrega.
+// motivo`) + CONFIANÇA (`LinhaDetalheEntrega.confianca`) -- SEMPRE no fim
+// (depois de PLACA EXECUTORA quando presente), nunca opt-in: os dois campos
+// sao derivados de dado que JA existe pra Rio Quality e Nutry Max (evidencia/
+// distParadaM/observacao/status, todos calculados por montarDetalheEntregas
+// pras duas), entao aparecem pros dois clientes -- append-only, nenhum
+// indice de coluna existente muda de posicao.
+export const COLUNAS_MOTIVO_CONFIANCA = ['MOTIVO', 'CONFIANÇA'] as const
+
 export const COLUNAS_AVISOS = ['CARGA', 'PLACA', 'PROBLEMA'] as const
 
 const LABEL_MOTIVO: Record<AvisoDescasamento['motivo'], string> = {
@@ -574,8 +583,8 @@ export async function gerarKpiRomaneioXlsx(
   }
 
   const colunasDetalhe: readonly string[] = opcoes.placaExecutora
-    ? [...COLUNAS_DETALHE_PLACA, COLUNA_PLACA_EXECUTORA]
-    : COLUNAS_DETALHE_PLACA
+    ? [...COLUNAS_DETALHE_PLACA, COLUNA_PLACA_EXECUTORA, ...COLUNAS_MOTIVO_CONFIANCA]
+    : [...COLUNAS_DETALHE_PLACA, ...COLUNAS_MOTIVO_CONFIANCA]
   for (const placa of placasEmOrdem) {
     const wsPlaca = wb.addWorksheet(nomeAbaPlaca(placa))
     const tituloPlaca = `RELATÓRIO KPI - ${nomeCliente} - PLACA ${placa}\n${formatarTituloData(data)}`
@@ -595,6 +604,7 @@ export async function gerarKpiRomaneioXlsx(
       { width: 12 }, { width: 12 }, { width: 12 }, { width: 36 },
       { width: 36 }, { width: 20 }, { width: 28 }, { width: 16 },
       ...(opcoes.placaExecutora ? [{ width: 16 }] : []),
+      { width: 44 }, { width: 16 },
     ]
     linhasDaPlaca.forEach((d, i) => {
       // CHEGADA/SAÍDA NA LOJA: motivo só faz sentido quando 'pendente'
@@ -619,6 +629,7 @@ export async function gerarKpiRomaneioXlsx(
         textoStatus(d), textoResolucaoManual(d), d.responsavelResolucao ?? '',
         textoEvidencia(d), textoDistParada(d),
         ...(opcoes.placaExecutora ? [d.placaExecutora ?? ''] : []),
+        d.motivo, d.confianca,
       ])
       estilizarLinhaDado(wsPlaca, 3 + 1 + i, colunasDetalhe.length, i)
     })

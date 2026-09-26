@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento } from './agregacao'
+import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, gerarMotivo, calcularConfianca } from './agregacao'
 import { resolverParadas } from './unitrac'
-import type { LinhaEscala, LinhaGeocodificada, Visita } from './types'
+import type { LinhaEscala, LinhaGeocodificada, Visita, StatusEntrega } from './types'
 import type { AlvoApi } from '@/lib/unitrac-api'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 
@@ -3540,5 +3540,129 @@ describe('montarDetalheEntregas -- rodizio de carga inteira vira ROTA EXECUTADA 
       expect(d.observacao ?? '').not.toContain('OUTRA PLACA')
       expect(d.observacao).not.toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
     }
+  })
+})
+
+// Task 3 (plano 2026-09-26): `motivo` (frase PT-BR) e `confianca` (enum) --
+// um teste por tipo dos 8 exemplos do brief + coerencia motivo x status.
+// `gerarMotivo`/`calcularConfianca` sao funcoes puras (recebem o MESMO
+// status/observacao/evidencia/distParadaM/tempoParadaMin/placaExecutora ja
+// calculados por montarDetalheEntregas) -- testadas diretamente aqui evita
+// reconstruir fixtures gigantes de GPS/Unitrac so pra chegar em cada
+// combinacao; a integracao (campos vindo preenchidos de dentro de
+// montarDetalheEntregas) e' coberta pelos 2 testes no fim.
+describe('gerarMotivo/calcularConfianca (Task 3, plano 26/09)', () => {
+  it('confirmado com parada no proprio endereco: "Parada de 17 min a 42 m do cliente", CONFIRMADA', () => {
+    const status: StatusEntrega = 'confirmado_gps'
+    const observacao = null
+    const motivo = gerarMotivo({ status, observacao, evidencia: 'parada_no_endereco', distParadaM: 42, tempoParadaMin: 17 })
+    expect(motivo).toBe('Parada de 17 min a 42 m do cliente')
+    expect(calcularConfianca(status, observacao)).toBe('CONFIRMADA')
+  })
+
+  it('confirmado por parada Unitrac da propria placa (R2 forte): "Parada Unitrac da própria placa de 8 min a 150 m", CONFIRMADA', () => {
+    const status: StatusEntrega = 'confirmado_gps'
+    const observacao = null
+    const motivo = gerarMotivo({ status, observacao, evidencia: 'parada_unitrac_propria', distParadaM: 150, tempoParadaMin: 8 })
+    expect(motivo).toBe('Parada Unitrac da própria placa de 8 min a 150 m')
+    expect(calcularConfianca(status, observacao)).toBe('CONFIRMADA')
+  })
+
+  it('proximidade fraca rebaixada pelo modoPrecisao (R2 fraca, "- REVISAR"): "Parada de 2 min a 450 m — revisar", REVISAR', () => {
+    const status: StatusEntrega = 'pendente'
+    const observacao = 'PARADA PRÓXIMA (100-300m) - REVISAR'
+    const motivo = gerarMotivo({ status, observacao, evidencia: 'parada_unitrac_propria', distParadaM: 450, tempoParadaMin: 2 })
+    expect(motivo).toBe('Parada de 2 min a 450 m — revisar')
+    expect(calcularConfianca(status, observacao)).toBe('REVISAR')
+  })
+
+  it('rodizio de carga inteira: "Rota executada pela TOS1H26 — parada de 12 min a 30 m", CONFIRMADA', () => {
+    const status: StatusEntrega = 'confirmado_gps'
+    const observacao = 'ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)'
+    const motivo = gerarMotivo({
+      status, observacao, evidencia: 'rota_outra_placa', distParadaM: 30, tempoParadaMin: 12, placaExecutora: 'TOS1H26',
+    })
+    expect(motivo).toBe('Rota executada pela TOS1H26 — parada de 12 min a 30 m')
+    expect(calcularConfianca(status, observacao)).toBe('CONFIRMADA')
+  })
+
+  it('passagem sem parada: "Caminhão passou a 140 m sem parar", REVISAR', () => {
+    const status: StatusEntrega = 'pendente'
+    const observacao = 'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR'
+    const motivo = gerarMotivo({ status, observacao, evidencia: 'passagem_sem_parada', distParadaM: 140, tempoParadaMin: null })
+    expect(motivo).toBe('Caminhão passou a 140 m sem parar')
+    expect(calcularConfianca(status, observacao)).toBe('REVISAR')
+  })
+
+  it('nao foi ao cliente (so a distancia do trajeto continuo, sem parada): "Ponto mais próximo do trajeto a 7,8 km", NÃO CONFIRMADO', () => {
+    const status: StatusEntrega = 'pendente'
+    const observacao = 'NÃO FOI AO CLIENTE (caminhão não esteve na região)'
+    const motivo = gerarMotivo({ status, observacao, evidencia: 'sem_evidencia', distParadaM: 7800, tempoParadaMin: null })
+    expect(motivo).toBe('Ponto mais próximo do trajeto a 7,8 km')
+    expect(calcularConfianca(status, observacao)).toBe('NÃO CONFIRMADO')
+  })
+
+  it('placa sem rastreador no dia: "Placa sem rastreamento no dia", SEM BASE', () => {
+    const status: StatusEntrega = 'pendente'
+    const observacao = 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO'
+    const motivo = gerarMotivo({ status, observacao, evidencia: 'sem_rastreador', distParadaM: null, tempoParadaMin: null })
+    expect(motivo).toBe('Placa sem rastreamento no dia')
+    expect(calcularConfianca(status, observacao)).toBe('SEM BASE')
+  })
+
+  it('coordenada do cliente em outro bairro: "Coordenada do cliente em outro bairro — conferir cadastro", REVISAR', () => {
+    const status: StatusEntrega = 'pendente'
+    const observacao = 'ENDEREÇO COM COORDENADA IMPRECISA - COORDENADA CAIU EM OUTRO BAIRRO - CONFERIR CADASTRO'
+    const motivo = gerarMotivo({ status, observacao, evidencia: 'sem_evidencia', distParadaM: null, tempoParadaMin: null })
+    expect(motivo).toBe('Coordenada do cliente em outro bairro — conferir cadastro')
+    expect(calcularConfianca(status, observacao)).toBe('REVISAR')
+  })
+
+  it('AGUARDANDO (rota em andamento): SEM BASE, nunca REVISAR nem NÃO CONFIRMADO', () => {
+    const status: StatusEntrega = 'pendente'
+    const observacao = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
+    expect(gerarMotivo({ status, observacao, evidencia: 'sem_evidencia', distParadaM: null, tempoParadaMin: null }))
+      .toBe('Rota ainda em andamento — aguardando fim do dia')
+    expect(calcularConfianca(status, observacao)).toBe('SEM BASE')
+  })
+
+  it('carga sem placa no romaneio: SEM BASE', () => {
+    const status: StatusEntrega = 'pendente'
+    const observacao = 'CARGA SEM PLACA NO ROMANEIO - CONFERIR COM A OPERAÇÃO'
+    expect(calcularConfianca(status, observacao)).toBe('SEM BASE')
+  })
+
+  it('pendente generico sem nenhum rotulo especial (sem_evidencia, sem distancia): NÃO CONFIRMADO', () => {
+    const status: StatusEntrega = 'pendente'
+    const observacao = null
+    const motivo = gerarMotivo({ status, observacao, evidencia: 'sem_evidencia', distParadaM: null, tempoParadaMin: null })
+    expect(motivo).toBe('Sem confirmação de entrega para este cliente')
+    expect(calcularConfianca(status, observacao)).toBe('NÃO CONFIRMADO')
+  })
+
+  it('coerencia: qualquer status !== pendente e sempre CONFIRMADA, nunca REVISAR/SEM BASE/NAO CONFIRMADO, mesmo com observacao de conferencia', () => {
+    // Achado real: R2 Fix round 1 confirma NF que ja tinha rotulo de
+    // conferencia ("PARADA CURTA DE OUTRO ENDEREÇO...") por cima -- status
+    // muda pra confirmado_gps mas o texto antigo pode sobreviver ate' a
+    // reatribuicao de observacao (nao e' o caso aqui, mas a garantia vale
+    // pro contrato da funcao: status manda, nao o texto).
+    expect(calcularConfianca('confirmado_unitrac', 'ENTREGUE - PARADA CURTA (ATÉ 3MIN) CONFIRMOU VÁRIOS ENDEREÇOS DIFERENTES AO MESMO TEMPO - CONFERIR')).toBe('CONFIRMADA')
+    expect(calcularConfianca('confirmado_gps', null)).toBe('CONFIRMADA')
+  })
+
+  it('integracao: sem_rastreador via montarDetalheEntregas ja vem com motivo/confianca preenchidos', () => {
+    const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+    const [d] = montarDetalheEntregas('93758', 'TTL5J17', [linha('NF1')], [], new Map(), resumoCargaVazio, false, new Map(), null, false, false, false, new Map(), true)
+    expect(d.evidencia).toBe('sem_rastreador')
+    expect(d.confianca).toBe('SEM BASE')
+    expect(d.motivo).toBe('Placa sem rastreamento no dia')
+  })
+
+  it('integracao: carga SEM PLACA no romaneio ja vem com motivo/confianca preenchidos', () => {
+    const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+    const [d] = montarDetalheEntregas('93758', '', [linha('NF1')], [], new Map(), resumoCargaVazio)
+    expect(d.observacao).toBe('CARGA SEM PLACA NO ROMANEIO - CONFERIR COM A OPERAÇÃO')
+    expect(d.confianca).toBe('SEM BASE')
+    expect(d.motivo).toBe('Carga sem placa no romaneio — conferir com a operação')
   })
 })

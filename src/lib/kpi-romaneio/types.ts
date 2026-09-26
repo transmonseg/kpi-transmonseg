@@ -151,6 +151,22 @@ export type EvidenciaNf =
   // So' Nutry Max (`reconhecerRodizio`, agregacao.ts).
   | 'rota_outra_placa'
 
+/** Task 3 (plano 2026-09-26): nivel de confianca de cada NF, derivado do
+ *  MESMO par status/observacao ja calculado em montarDetalheEntregas -- nunca
+ *  uma regra nova, so' uma segunda leitura em texto do que ja existe. Ver
+ *  `calcularConfianca` em agregacao.ts pra precedencia exata:
+ *  - `CONFIRMADA`: `status !== 'pendente'` (ENTREGUE de verdade, incl.
+ *    rodizio de carga inteira -- Task 2).
+ *  - `SEM BASE`: pendente com observacao de SEM RASTREADOR, CARGA SEM PLACA
+ *    NO ROMANEIO ou AGUARDANDO (rota em andamento) -- nao ha' base de dado
+ *    nenhuma pra julgar esta NF ainda.
+ *  - `REVISAR`: pendente com observacao contendo REVISAR/CONFERIR/PASSOU --
+ *    qualquer rotulo que pede conferencia humana (inclui os "- REVISAR" do
+ *    modoPrecisao, Task 1).
+ *  - `NÃO CONFIRMADO`: pendente sem nenhum dos rotulos acima (inclui "NÃO
+ *    FOI AO CLIENTE" e pendente sem observacao nenhuma). */
+export type ConfiancaNf = 'CONFIRMADA' | 'REVISAR' | 'NÃO CONFIRMADO' | 'SEM BASE'
+
 /** Resolucao manual por NF (Task 4, plano 24/09) -- camada humana em cima do
  *  status automatico, persistida em `kpi_nf_resolucao`. `entregue_outra_placa`
  *  e' o caminho pra transferencia de placa que a Task 3 nao conseguiu
@@ -257,6 +273,15 @@ export type LinhaDetalheEntrega = {
   // (sem coordenada, sem parada física casada por horário, geocode não
   // confiável). Nunca inventado.
   distParadaM: number | null
+  // Task 3 (plano 2026-09-26): frase em PT-BR gerada a partir de evidencia/
+  // distParadaM/tempoParadaMin/observacao/placaExecutora -- resumo em
+  // linguagem natural do mesmo veredito que `observacao`/`evidencia`/
+  // `distParadaM` ja' expressam separadamente (nunca uma fonte de verdade
+  // nova). Numeros arredondados (minutos inteiros, metros inteiros, km com
+  // 1 casa acima de 1.000m). Ver `gerarMotivo` em agregacao.ts.
+  motivo: string
+  // Task 3 (plano 2026-09-26): ver comentario completo de ConfiancaNf acima.
+  confianca: ConfiancaNf
   // Task 2 (plano 2026-09-26): placa que de fato executou a rota quando a NF
   // foi confirmada por rodizio de carga inteira (evidencia
   // 'rota_outra_placa'). Ausente/null em qualquer outro caso.

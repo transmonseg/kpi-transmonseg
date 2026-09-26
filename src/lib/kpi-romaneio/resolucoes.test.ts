@@ -20,6 +20,7 @@ function detalheFixture(overrides: Partial<LinhaDetalheEntrega> = {}): LinhaDeta
     chegada: null, saida: null, tempoParadaMin: null, status: 'pendente',
     temRastreador: true, observacao: null,
     evidencia: 'sem_evidencia', distParadaM: null,
+    motivo: 'Sem confirmação de entrega para este cliente', confianca: 'NÃO CONFIRMADO',
     ...overrides,
   }
 }

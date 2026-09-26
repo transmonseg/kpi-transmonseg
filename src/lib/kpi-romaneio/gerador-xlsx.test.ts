@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import ExcelJS from 'exceljs'
-import { gerarKpiRomaneioXlsx, COLUNAS_KPI_ROMANEIO, COLUNAS_DETALHE_PLACA, COLUNAS_AVISOS, COLUNA_PLACA_EXECUTORA } from './gerador-xlsx'
+import { gerarKpiRomaneioXlsx, COLUNAS_KPI_ROMANEIO, COLUNAS_DETALHE_PLACA, COLUNAS_AVISOS, COLUNA_PLACA_EXECUTORA, COLUNAS_MOTIVO_CONFIANCA } from './gerador-xlsx'
 import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega } from './types'
 
 // Achado real 24/08 (pedido do usuário, referência
@@ -28,6 +28,7 @@ function detalheFixture(overrides: Partial<LinhaDetalheEntrega> = {}): LinhaDeta
     chegada: null, saida: null, tempoParadaMin: null, status: 'pendente',
     temRastreador: true, observacao: null,
     evidencia: 'sem_evidencia', distParadaM: null,
+    motivo: 'Sem confirmação de entrega para este cliente', confianca: 'NÃO CONFIRMADO',
     ...overrides,
   }
 }
@@ -245,7 +246,7 @@ describe('gerador-xlsx', () => {
       expect(resumo).toContain('KM PERCORRIDO: 125.7 km')
 
       const headerValues = (wsPlaca.getRow(3).values as unknown[]).slice(1)
-      expect(headerValues).toEqual([...COLUNAS_DETALHE_PLACA])
+      expect(headerValues).toEqual([...COLUNAS_DETALHE_PLACA, ...COLUNAS_MOTIVO_CONFIANCA])
     })
 
     it('uma linha por entrega DESSA placa, na ordem pedida (carga/nf/cliente/endereco/chegada/saida/tempo/status -- achado real 27/08, Tia Erica: motorista/cod/placa/saida-chegada-base ja estao no resumo, tirados daqui)', async () => {
@@ -307,7 +308,7 @@ describe('gerador-xlsx', () => {
       const wb = new ExcelJS.Workbook()
       await wb.xlsx.load(buffer)
       const wsPlaca = wb.getWorksheet('ABC1234')!
-      expect(wsPlaca.autoFilter).toBe('A3:L4') // header linha 3, 1 linha de dado, 12 colunas (A..L, Task 4: +RESOLUÇÃO OPERAÇÃO/RESPONSÁVEL; Task 5: +EVIDÊNCIA/DIST. PARADA (m))
+      expect(wsPlaca.autoFilter).toBe('A3:N4') // header linha 3, 1 linha de dado, 14 colunas (A..N, Task 4: +RESOLUÇÃO OPERAÇÃO/RESPONSÁVEL; Task 5: +EVIDÊNCIA/DIST. PARADA (m); Task 3 26/09: +MOTIVO/CONFIANÇA)
     })
   })
 
@@ -546,7 +547,7 @@ describe('gerador-xlsx', () => {
       await wb.xlsx.load(buffer)
       const wsPlaca = wb.getWorksheet('ABC1234')!
       const headerValues = (wsPlaca.getRow(3).values as unknown[]).slice(1)
-      expect(headerValues).toEqual([...COLUNAS_DETALHE_PLACA])
+      expect(headerValues).toEqual([...COLUNAS_DETALHE_PLACA, ...COLUNAS_MOTIVO_CONFIANCA])
       expect(headerValues).toContain('STATUS AUTOMÁTICO')
       expect(headerValues).toContain('RESOLUÇÃO OPERAÇÃO')
       expect(headerValues).toContain('RESPONSÁVEL')
@@ -851,7 +852,7 @@ describe('gerador-xlsx -- rodizio (PLACA EXECUTORA, Task 2 plano 26/09)', () => 
     const wb = new ExcelJS.Workbook()
     await wb.xlsx.load(buffer)
     const wsPlaca = wb.getWorksheet('ABC1234')!
-    expect((wsPlaca.getRow(3).values as unknown[]).slice(1)).toEqual([...COLUNAS_DETALHE_PLACA, COLUNA_PLACA_EXECUTORA])
+    expect((wsPlaca.getRow(3).values as unknown[]).slice(1)).toEqual([...COLUNAS_DETALHE_PLACA, COLUNA_PLACA_EXECUTORA, ...COLUNAS_MOTIVO_CONFIANCA])
     expect(COLUNA_PLACA_EXECUTORA).toBe('PLACA EXECUTORA')
     const l1 = (wsPlaca.getRow(4).values as unknown[]).slice(1)
     expect(l1[7]).toBe('ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)')
@@ -859,7 +860,7 @@ describe('gerador-xlsx -- rodizio (PLACA EXECUTORA, Task 2 plano 26/09)', () => 
     expect(l1[12]).toBe('TOS1H26')
     const l2 = (wsPlaca.getRow(5).values as unknown[]).slice(1)
     expect(l2[12] ?? '').toBe('')
-    expect(wsPlaca.autoFilter).toBe('A3:M5')
+    expect(wsPlaca.autoFilter).toBe('A3:O5')
     const resumo = String(wb.worksheets[0].getCell(4, 1).value)
     expect(resumo).toContain('TAXA DE CONFIRMAÇÃO: 50%')
   })
@@ -869,6 +870,62 @@ describe('gerador-xlsx -- rodizio (PLACA EXECUTORA, Task 2 plano 26/09)', () => 
     const wb = new ExcelJS.Workbook()
     await wb.xlsx.load(buffer)
     const wsPlaca = wb.getWorksheet('ABC1234')!
-    expect((wsPlaca.getRow(3).values as unknown[]).slice(1)).toEqual([...COLUNAS_DETALHE_PLACA])
+    expect((wsPlaca.getRow(3).values as unknown[]).slice(1)).toEqual([...COLUNAS_DETALHE_PLACA, ...COLUNAS_MOTIVO_CONFIANCA])
+  })
+})
+
+// Task 3 (plano 2026-09-26): colunas MOTIVO/CONFIANÇA sempre no fim (nunca
+// opt-in -- ver comentario de COLUNAS_MOTIVO_CONFIANCA), sem quebrar taxas
+// nem colunas ja existentes (verificado tambem pelo describe acima, que ja
+// espera as colunas novas no header).
+describe('gerador-xlsx -- MOTIVO/CONFIANÇA (Task 3, plano 26/09)', () => {
+  const linhas = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+
+  it('sempre presentes (Rio Quality tambem, nunca opt-in), no fim -- escreve d.motivo/d.confianca literalmente, taxa intacta', async () => {
+    const detalhe: LinhaDetalheEntrega[] = [
+      detalheFixture({
+        nf: 'NF1', status: 'confirmado_gps', evidencia: 'parada_no_endereco',
+        distParadaM: 42, tempoParadaMin: 17,
+        motivo: 'Parada de 17 min a 42 m do cliente', confianca: 'CONFIRMADA',
+      }),
+      detalheFixture({
+        nf: 'NF2', status: 'pendente', observacao: 'NÃO FOI AO CLIENTE (caminhão não esteve na região)',
+        evidencia: 'sem_evidencia', distParadaM: 7800,
+        motivo: 'Ponto mais próximo do trajeto a 7,8 km', confianca: 'NÃO CONFIRMADO',
+      }),
+    ]
+    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    const wsPlaca = wb.getWorksheet('ABC1234')!
+
+    const header = (wsPlaca.getRow(3).values as unknown[]).slice(1)
+    expect(header[header.length - 2]).toBe('MOTIVO')
+    expect(header[header.length - 1]).toBe('CONFIANÇA')
+
+    const l1 = (wsPlaca.getRow(4).values as unknown[]).slice(1)
+    expect(l1[l1.length - 2]).toBe('Parada de 17 min a 42 m do cliente')
+    expect(l1[l1.length - 1]).toBe('CONFIRMADA')
+
+    const l2 = (wsPlaca.getRow(5).values as unknown[]).slice(1)
+    expect(l2[l2.length - 2]).toBe('Ponto mais próximo do trajeto a 7,8 km')
+    expect(l2[l2.length - 1]).toBe('NÃO CONFIRMADO')
+
+    const resumo = String(wb.worksheets[0].getCell(4, 1).value)
+    expect(resumo).toContain('TAXA DE CONFIRMAÇÃO: 50%') // 1/2 -- MOTIVO/CONFIANÇA nao mexe na taxa
+  })
+
+  it('coluna sempre no fim mesmo com opcoes.placaExecutora (depois de PLACA EXECUTORA)', async () => {
+    const detalhe: LinhaDetalheEntrega[] = [
+      detalheFixture({ nf: 'NF1', placaExecutora: 'TOS1H26', motivo: 'Rota executada pela TOS1H26', confianca: 'CONFIRMADA' }),
+    ]
+    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, undefined, { placaExecutora: true })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    const wsPlaca = wb.getWorksheet('ABC1234')!
+    const header = (wsPlaca.getRow(3).values as unknown[]).slice(1)
+    expect(header[header.length - 3]).toBe('PLACA EXECUTORA')
+    expect(header[header.length - 2]).toBe('MOTIVO')
+    expect(header[header.length - 1]).toBe('CONFIANÇA')
   })
 })

@@ -2,7 +2,7 @@ import type { AlvoApi } from '@/lib/unitrac-api'
 // UnitracParadaRow vem de matcher.ts, não de unitrac-api -- mesma ressalva
 // de unitrac.ts (Task 6).
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
-import type { LinhaEscala, LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega, Visita, EvidenciaNf } from './types'
+import type { LinhaEscala, LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega, Visita, EvidenciaNf, ConfiancaNf } from './types'
 import { haversine } from '@/lib/utils/geo'
 import { RAIO_ENTREGA_METROS } from './constants'
 import { acessoSomentePorBarco } from './acesso-restrito'
@@ -738,6 +738,143 @@ export function agregarPorCarga(
  *  LinhaKpiRomaneio ja calculada por agregarPorCarga pra esta carga+placa) --
  *  repetidos em toda linha de NF, pedido do usuario 25/08 (ver comentario de
  *  LinhaDetalheEntrega em types.ts). */
+// Task 3 (plano 2026-09-26): mesma leitura de status/observacao que
+// gerador-xlsx.ts ja faz pra taxa (ehSemRastreador/ehRevisar/ehAguardando),
+// so' que devolvida como um veredito por NF em vez de agregada -- nunca uma
+// regra nova, so' texto em cima do que agregacao.ts ja decidiu. Ver
+// ConfiancaNf em types.ts pra precedencia comentada.
+export function calcularConfianca(status: StatusEntrega, observacao: string | null): ConfiancaNf {
+  if (status !== 'pendente') return 'CONFIRMADA'
+  if (observacao == null) return 'NÃO CONFIRMADO'
+  if (
+    observacao.startsWith('SEM RASTREADOR')
+    || observacao.startsWith('CARGA SEM PLACA')
+    || observacao.startsWith('AGUARDANDO')
+  ) {
+    return 'SEM BASE'
+  }
+  if (/REVISAR|CONFERIR|PASSOU/.test(observacao)) return 'REVISAR'
+  return 'NÃO CONFIRMADO'
+}
+
+// Task 3: metros -> "42 m" (inteiro) ou "7,8 km" (1 casa decimal, PT-BR)
+// acima de 1.000m -- unico formatador de distancia pro `motivo` (nunca
+// duplica a formatacao de gerador-xlsx.ts, que mostra metros crus na coluna
+// DIST. PARADA (m) -- `motivo` e' prosa, a coluna e' dado).
+function formatarDistanciaMotivo(m: number): string {
+  const arredondado = Math.round(m)
+  if (arredondado >= 1000) {
+    const km = Math.round(m / 100) / 10
+    return `${km.toFixed(1).replace('.', ',')} km`
+  }
+  return `${arredondado} m`
+}
+
+// Task 3: minutos sempre inteiros na prosa (tempoParadaMin ja vem
+// arredondado de minutosEntre, Math.round aqui e' so' defesa).
+function formatarMinutosMotivo(min: number): string {
+  return `${Math.round(min)} min`
+}
+
+/** Task 3 (plano 2026-09-26): frase em PT-BR resumindo o veredito de uma NF
+ *  pra quem le o xlsx sem precisar decifrar EVIDÊNCIA + DIST. PARADA (m) +
+ *  STATUS AUTOMÁTICO separadamente -- nunca uma fonte de verdade nova, so'
+ *  narra o que `evidencia`/`distParadaM`/`tempoParadaMin`/`observacao`/
+ *  `placaExecutora` ja decidiram. Ordem de precedencia: rotulos fixos de
+ *  observacao primeiro (mais especificos que a evidencia crua), depois o
+ *  "- REVISAR" generico do modoPrecisao (mesmo texto pra qualquer evidencia
+ *  rebaixada), so' entao a evidencia caso nenhum dos anteriores bata. */
+export function gerarMotivo(d: {
+  status: StatusEntrega
+  observacao: string | null
+  evidencia: EvidenciaNf
+  distParadaM: number | null
+  tempoParadaMin: number | null
+  placaExecutora?: string | null
+}): string {
+  const obs = d.observacao
+  const dist = d.distParadaM != null ? formatarDistanciaMotivo(d.distParadaM) : null
+  const min = d.tempoParadaMin != null ? formatarMinutosMotivo(d.tempoParadaMin) : null
+
+  if (obs?.startsWith('CARGA SEM PLACA')) return 'Carga sem placa no romaneio — conferir com a operação'
+  if (obs?.startsWith('SEM RASTREADOR')) return 'Placa sem rastreamento no dia'
+  if (obs?.startsWith('AGUARDANDO')) return 'Rota ainda em andamento — aguardando fim do dia'
+  if (obs?.startsWith('ENDEREÇO COM COORDENADA IMPRECISA')) {
+    if (obs.includes('OUTRO MUNICÍPIO')) return 'Coordenada do cliente em outro município — conferir cadastro'
+    if (obs.includes('OUTRO BAIRRO')) return 'Coordenada do cliente em outro bairro — conferir cadastro'
+    return 'Coordenada do cliente imprecisa — conferir cadastro'
+  }
+  if (obs?.startsWith('CLIENTE SEM ACESSO RODOVIÁRIO')) return 'Cliente sem acesso rodoviário (ilha) — conferir com a operação'
+  if (obs?.startsWith('VEÍCULO SEM MOVIMENTO')) return 'Veículo sem movimento no dia — conferir rastreador'
+  if (obs?.startsWith('PLACA DA ESCALA NÃO PASSOU')) return 'Placa da escala não passou no cliente — conferir escala'
+  if (obs?.startsWith('PARADA CURTA DE OUTRO ENDEREÇO')) {
+    return dist
+      ? `Parada curta confirmou outro endereço a ${dist} — não confirma este cliente`
+      : 'Parada curta confirmou outro endereço — não confirma este cliente'
+  }
+  if (obs?.startsWith('ENTREGUE POR OUTRA PLACA')) {
+    const placaMatch = obs.match(/\(([^)]+)\)/)
+    const placa = placaMatch ? placaMatch[1] : null
+    if (placa && dist) return `Entregue pela placa ${placa} — carga transferida, a ${dist}`
+    if (placa) return `Entregue pela placa ${placa} — carga transferida`
+    return 'Entregue por outra placa — carga transferida'
+  }
+  if (obs?.startsWith('TEMPO EM LOJA ACIMA')) {
+    return min && dist
+      ? `Parada de ${min} a ${dist} do cliente — tempo em loja acima de 4h, conferir`
+      : 'Tempo em loja acima de 4h — conferir'
+  }
+
+  // Task 1 (modoPrecisao): qualquer evidencia rebaixada pra "- REVISAR" leva
+  // o MESMO texto generico -- a distincao fina (raio ampliado vs parada
+  // curta vs R2 fraca) ja esta na coluna EVIDÊNCIA, o motivo so' resume "tem
+  // sinal fraco, precisa olhar".
+  if (obs != null && obs.endsWith('- REVISAR')) {
+    if (min && dist) return `Parada de ${min} a ${dist} — revisar`
+    if (dist) return `Parada a ${dist} — revisar`
+    return 'Parada próxima — revisar'
+  }
+
+  if (d.evidencia === 'rota_outra_placa') {
+    const placa = d.placaExecutora ?? '?'
+    return min && dist ? `Rota executada pela ${placa} — parada de ${min} a ${dist}` : `Rota executada pela ${placa}`
+  }
+  if (d.evidencia === 'parada_unitrac_propria') {
+    return min && dist ? `Parada Unitrac da própria placa de ${min} a ${dist}` : 'Parada Unitrac da própria placa'
+  }
+  if (
+    d.evidencia === 'parada_no_endereco'
+    || d.evidencia === 'raio_ampliado'
+    || d.evidencia === 'vizinhanca'
+    || d.evidencia === 'parada_curta_compartilhada'
+  ) {
+    return min && dist ? `Parada de ${min} a ${dist} do cliente` : 'Entrega confirmada no endereço do cliente'
+  }
+  if (d.evidencia === 'parada_no_cadastro_unitrac') {
+    return min && dist ? `Parada de ${min} a ${dist} do cadastro Unitrac` : 'Entrega confirmada pelo cadastro Unitrac'
+  }
+  if (d.evidencia === 'alvo_feito_unitrac') {
+    return min && dist
+      ? `Parada de ${min} a ${dist} do cliente (confirmado pela Unitrac)`
+      : 'Confirmado pela Unitrac, sem posição de GPS para medir distância'
+  }
+  if (d.evidencia === 'outra_placa') {
+    return dist ? `Entrega confirmada por outra placa da frota — parada a ${dist}` : 'Entrega confirmada por outra placa da frota'
+  }
+  if (d.evidencia === 'passagem_sem_parada') {
+    return dist ? `Caminhão passou a ${dist} sem parar` : 'Caminhão passou perto sem parar'
+  }
+  if (d.evidencia === 'parada_proxima_fora_raio') {
+    return dist ? `Parada próxima a ${dist}, fora do raio do endereço — conferir` : 'Parada próxima fora do raio do endereço — conferir'
+  }
+  if (d.evidencia === 'sem_rastreador') return 'Placa sem rastreamento no dia'
+  if (d.evidencia === 'sem_evidencia') {
+    if (dist) return `Ponto mais próximo do trajeto a ${dist}`
+    return d.status === 'pendente' ? 'Sem confirmação de entrega para este cliente' : 'Sem evidência registrada'
+  }
+  return 'Sem evidência de entrega para este cliente'
+}
+
 export function montarDetalheEntregas(
   carga: string,
   placaNorm: string,
@@ -1119,6 +1256,14 @@ export function montarDetalheEntregas(
       // nenhuma pra rastrear").
       evidencia: 'sem_evidencia',
       distParadaM: null,
+      motivo: gerarMotivo({
+        status: 'pendente',
+        observacao: 'CARGA SEM PLACA NO ROMANEIO - CONFERIR COM A OPERAÇÃO',
+        evidencia: 'sem_evidencia',
+        distParadaM: null,
+        tempoParadaMin: null,
+      }),
+      confianca: calcularConfianca('pendente', 'CARGA SEM PLACA NO ROMANEIO - CONFERIR COM A OPERAÇÃO'),
     }))
   }
 
@@ -1628,6 +1773,15 @@ export function montarDetalheEntregas(
       observacao,
       evidencia,
       distParadaM,
+      motivo: gerarMotivo({
+        status,
+        observacao,
+        evidencia,
+        distParadaM,
+        tempoParadaMin,
+        placaExecutora: nfRodizio ? placaRodizio : null,
+      }),
+      confianca: calcularConfianca(status, observacao),
       ...(nfRodizio ? { placaExecutora: placaRodizio } : {}),
     }
   })

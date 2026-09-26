@@ -17,7 +17,8 @@ function det(o: Partial<LinhaDetalheEntrega>): LinhaDetalheEntrega {
     clienteNome: 'CLIENTE 1', endereco: 'RUA A, 1 - RJ', saidaCd: null, chegadaCd: null,
     tempoOperacaoMin: null, chegada: null, saida: null, tempoParadaMin: null,
     status: 'pendente', temRastreador: true, observacao: null,
-    evidencia: 'sem_evidencia', distParadaM: null, ...o,
+    evidencia: 'sem_evidencia', distParadaM: null,
+    motivo: 'Sem confirmação de entrega para este cliente', confianca: 'NÃO CONFIRMADO', ...o,
   }
 }
 
