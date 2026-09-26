@@ -20,8 +20,9 @@ export const RAIO_PONTO_OUTRO_CLIENTE_M = 150
 /** Texto que parseRomaneio grava quando nao acha o endereco da NF. */
 export const ENDERECO_NAO_IDENTIFICADO = '(endereço não identificado)'
 
-// fonteAtual: kpi_romaneio_geocode_cache.fonte da linha atual. 'manual' =
-// correcao feita por humano -- sempre vence, esta rotina nunca sobrescreve.
+// fonteAtual: kpi_romaneio_geocode_cache.fonte da linha atual. 'manual' e
+// 'verificacao_manual' = correcao feita por humano -- sempre vencem, esta
+// rotina nunca sobrescreve nenhuma das duas.
 export type EntregaParaCorrigir = { nf: string; placaNorm: string; endereco: string; latAtual: number | null; lngAtual: number | null; confiavelAtual: boolean; fonteAtual: string | null }
 export type SugestaoCorrecao = {
   endereco: string; nfs: string[]; placaNorm: string
@@ -81,7 +82,11 @@ export function sugerirCorrecoesPorAlvo(
   const casamentosValidos: Casamento[] = []
   for (const e of entregas) {
     if (e.endereco.trim() === ENDERECO_NAO_IDENTIFICADO) { rejeitar(e, 'endereco_nao_identificado'); continue }
-    if (e.fonteAtual === 'manual') { rejeitar(e, 'correcao_manual'); continue }
+    // Achado real 26/09 (correcoes finais pre-deploy, item 3): 'verificacao_manual'
+    // (aplicar-correcoes-geocode.ts) e' correcao humana tanto quanto 'manual'
+    // (cadastrar-endereco-manual.ts) -- o upsert automatico nunca sobrescreve
+    // nenhuma das duas.
+    if (e.fonteAtual === 'manual' || e.fonteAtual === 'verificacao_manual') { rejeitar(e, 'correcao_manual'); continue }
     const chave = `${e.placaNorm}|${e.nf}`
     if (chavesDuplicadas.has(chave)) { rejeitar(e, 'alvo_duplicado'); continue }
     const a = alvoPorChave.get(chave)

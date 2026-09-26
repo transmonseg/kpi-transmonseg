@@ -46,7 +46,10 @@ export function sugerirCadastroUnitrac(
   const porEndereco = new Map<string, Ok[]>()
   for (const e of entregas) {
     if (e.endereco.trim() === ENDERECO_NAO_IDENTIFICADO) { rejeitar(e, 'endereco_nao_identificado'); continue }
-    if (e.fonteAtual === 'manual') { rejeitar(e, 'correcao_manual'); continue }
+    // Achado real 26/09 (correcoes finais pre-deploy, item 3): mesmo
+    // tratamento de correcao-por-alvo.ts -- 'verificacao_manual' e' correcao
+    // humana, nunca sobrescrita pelo upsert automatico.
+    if (e.fonteAtual === 'manual' || e.fonteAtual === 'verificacao_manual') { rejeitar(e, 'correcao_manual'); continue }
     if (acessoSomentePorBarco(e.endereco)) { rejeitar(e, 'ilha'); continue }
     const alvosNf = alvoPorChave.get(`${e.placaNorm}|${e.nf}`)
     if (!alvosNf) { rejeitar(e, 'sem_alvo_feito'); continue }

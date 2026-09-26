@@ -66,6 +66,16 @@ describe('sugerirCorrecoesPorAlvo', () => {
     expect(r.rejeicoes[0].motivo).toBe('correcao_manual')
   })
 
+  // Achado real 26/09 (correcoes finais pre-deploy, item 3): fonte
+  // 'verificacao_manual' (aplicar-correcoes-geocode.ts, upsert humano a
+  // partir de CSV verificado) e' TAO humana quanto 'manual' -- o upsert
+  // automatico desta rotina nunca pode sobrescreve-la.
+  it('coordenada atual com fonte verificacao_manual -> correcao_manual (nunca sobrescreve)', () => {
+    const r = sugerirCorrecoesPorAlvo([entrega({ fonteAtual: 'verificacao_manual' })], [alvo({})], paradas)
+    expect(r.sugestoes).toEqual([])
+    expect(r.rejeicoes[0].motivo).toBe('correcao_manual')
+  })
+
   it('fonteAtual e copiada pra sugestao', () => {
     const r = sugerirCorrecoesPorAlvo([entrega({ fonteAtual: 'nominatim' })], [alvo({})], paradas)
     expect(r.sugestoes[0].fonteAtual).toBe('nominatim')

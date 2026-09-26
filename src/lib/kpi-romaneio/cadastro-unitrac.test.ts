@@ -84,6 +84,15 @@ describe('sugerirCadastroUnitrac', () => {
     expect(r.rejeicoes[0].motivo).toBe('correcao_manual')
   })
 
+  // Achado real 26/09 (correcoes finais pre-deploy, item 3): mesmo tratamento
+  // de correcao-por-alvo.ts -- 'verificacao_manual' e' correcao humana
+  // (aplicar-correcoes-geocode.ts), nunca sobrescrita pelo upsert automatico.
+  it('fonte verificacao_manual nunca e sobrescrita', () => {
+    const r = sugerirCadastroUnitrac([entrega({ fonteAtual: 'verificacao_manual' })], [alvo()], paradas())
+    expect(r.sugestoes).toHaveLength(0)
+    expect(r.rejeicoes[0].motivo).toBe('correcao_manual')
+  })
+
   it('parada BASE ou longa demais (>120min) nao confirma', () => {
     expect(sugerirCadastroUnitrac([entrega()], [alvo()], paradas([parada({ classificacao: 'BASE' })])).sugestoes).toHaveLength(0)
     expect(sugerirCadastroUnitrac([entrega()], [alvo()], paradas([parada({ duracaoSeg: 3 * 3600 })])).sugestoes).toHaveLength(0)
