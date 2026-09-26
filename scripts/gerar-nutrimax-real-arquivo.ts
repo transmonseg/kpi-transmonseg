@@ -402,6 +402,10 @@ async function main() {
     // Task 2 (plano 2026-09-26): coluna PLACA EXECUTORA (rodizio) so' na
     // Nutry Max -- ver `opcoes.placaExecutora` em gerador-xlsx.ts.
     placaExecutora: true,
+    // Task 3 (plano 2026-09-26, Fix round 1 -- ruling do controlador: Global
+    // Constraint "Rio Quality idêntico"): colunas MOTIVO/CONFIANÇA so' na
+    // Nutry Max -- ver `opcoes.motivoConfianca` em gerador-xlsx.ts.
+    motivoConfianca: true,
   })
   writeFileSync(saidaPath, xlsxBuf)
   console.log(`\nArquivo salvo em: ${saidaPath}`)

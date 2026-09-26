@@ -3650,6 +3650,16 @@ describe('gerarMotivo/calcularConfianca (Task 3, plano 26/09)', () => {
     expect(calcularConfianca('confirmado_gps', null)).toBe('CONFIRMADA')
   })
 
+  // Fix round 1 (ruling do controlador 26/09): "VEÍCULO SEM MOVIMENTO..."
+  // contem "CONFERIR" mas nao e' sinal fraco pedindo revisao -- e' ausencia
+  // de evidencia (o veiculo nao rodou o suficiente pra confirmar nada).
+  // Confianca correta e' NÃO CONFIRMADO, nunca REVISAR.
+  it('VEÍCULO SEM MOVIMENTO NO DIA: confianca NÃO CONFIRMADO, nao REVISAR (apesar de conter "CONFERIR")', () => {
+    const status: StatusEntrega = 'pendente'
+    const observacao = 'VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA'
+    expect(calcularConfianca(status, observacao)).toBe('NÃO CONFIRMADO')
+  })
+
   it('integracao: sem_rastreador via montarDetalheEntregas ja vem com motivo/confianca preenchidos', () => {
     const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
     const [d] = montarDetalheEntregas('93758', 'TTL5J17', [linha('NF1')], [], new Map(), resumoCargaVazio, false, new Map(), null, false, false, false, new Map(), true)

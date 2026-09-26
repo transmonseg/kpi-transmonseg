@@ -502,7 +502,14 @@ export async function gerarKpiRomaneioXlsx(
   // DE CONFIRMAÇÃO / APÓS CONFERÊNCIA / NFs sem rastreador / aguardando) e'
   // da Nutry Max -- o Rio Quality (pipeline.ts) reusa este gerador e nao a
   // tinha em 108b4bb. Opt-in, mesmo padrao de `verificarAcessoIlha`.
-  opcoes: { resumoConfirmacao?: boolean; placaExecutora?: boolean } = {},
+  // Fix round 1 (ruling do controlador 26/09: Global Constraint "Rio Quality
+  // idêntico"): MOTIVO/CONFIANÇA viram opt-in, mesmo padrao de
+  // `placaExecutora` -- so' ligado no fluxo Nutry Max (route.ts nutrimax +
+  // scripts/gerar-nutrimax-real-arquivo.ts). Default false preserva o xlsx
+  // do Rio Quality (pipeline.ts) byte a byte nas colunas -- os campos
+  // `motivo`/`confianca` continuam SEMPRE calculados em `LinhaDetalheEntrega`
+  // (agregacao.ts), so' a exibicao no xlsx e' condicional.
+  opcoes: { resumoConfirmacao?: boolean; placaExecutora?: boolean; motivoConfianca?: boolean } = {},
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
   wb.creator = 'TRANSMONSEG'
@@ -582,9 +589,11 @@ export async function gerarKpiRomaneioXlsx(
     detalhePorPlaca.set(d.placa, lista)
   }
 
-  const colunasDetalhe: readonly string[] = opcoes.placaExecutora
-    ? [...COLUNAS_DETALHE_PLACA, COLUNA_PLACA_EXECUTORA, ...COLUNAS_MOTIVO_CONFIANCA]
-    : [...COLUNAS_DETALHE_PLACA, ...COLUNAS_MOTIVO_CONFIANCA]
+  const colunasDetalhe: readonly string[] = [
+    ...COLUNAS_DETALHE_PLACA,
+    ...(opcoes.placaExecutora ? [COLUNA_PLACA_EXECUTORA] : []),
+    ...(opcoes.motivoConfianca ? COLUNAS_MOTIVO_CONFIANCA : []),
+  ]
   for (const placa of placasEmOrdem) {
     const wsPlaca = wb.addWorksheet(nomeAbaPlaca(placa))
     const tituloPlaca = `RELATÓRIO KPI - ${nomeCliente} - PLACA ${placa}\n${formatarTituloData(data)}`
@@ -604,7 +613,7 @@ export async function gerarKpiRomaneioXlsx(
       { width: 12 }, { width: 12 }, { width: 12 }, { width: 36 },
       { width: 36 }, { width: 20 }, { width: 28 }, { width: 16 },
       ...(opcoes.placaExecutora ? [{ width: 16 }] : []),
-      { width: 44 }, { width: 16 },
+      ...(opcoes.motivoConfianca ? [{ width: 44 }, { width: 16 }] : []),
     ]
     linhasDaPlaca.forEach((d, i) => {
       // CHEGADA/SAÍDA NA LOJA: motivo só faz sentido quando 'pendente'
@@ -629,7 +638,7 @@ export async function gerarKpiRomaneioXlsx(
         textoStatus(d), textoResolucaoManual(d), d.responsavelResolucao ?? '',
         textoEvidencia(d), textoDistParada(d),
         ...(opcoes.placaExecutora ? [d.placaExecutora ?? ''] : []),
-        d.motivo, d.confianca,
+        ...(opcoes.motivoConfianca ? [d.motivo, d.confianca] : []),
       ])
       estilizarLinhaDado(wsPlaca, 3 + 1 + i, colunasDetalhe.length, i)
     })

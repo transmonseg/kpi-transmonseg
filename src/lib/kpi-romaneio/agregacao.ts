@@ -753,6 +753,12 @@ export function calcularConfianca(status: StatusEntrega, observacao: string | nu
   ) {
     return 'SEM BASE'
   }
+  // Fix round 1 (ruling do controlador 26/09): "VEÍCULO SEM MOVIMENTO..."
+  // contem "CONFERIR" (regra generica abaixo pegaria REVISAR), mas nao e'
+  // um sinal fraco que pede conferencia -- e' ausencia de evidencia (o
+  // veiculo nao rodou o suficiente pra confirmar nada). Roda ANTES da regra
+  // generica de proposito.
+  if (observacao.startsWith('VEÍCULO SEM MOVIMENTO')) return 'NÃO CONFIRMADO'
   if (/REVISAR|CONFERIR|PASSOU/.test(observacao)) return 'REVISAR'
   return 'NÃO CONFIRMADO'
 }
