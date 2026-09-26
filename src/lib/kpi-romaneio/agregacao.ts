@@ -615,20 +615,39 @@ export function montarDetalheEntregas(
   // true. Nunca sobrepoe ENTREGUE limpo da ponte/Unitrac, ENTREGUE POR OUTRA
   // PLACA nem SEM RASTREADOR (ver elegivelParaConfirmarPorParadaPropria).
   confirmarPorParadaUnitracPropria: boolean = false,
+  // Fix round 2 (revisao de codigo, achado MÉDIO agregacao.ts:626-633): as
+  // paradas cruas da Unitrac (`paradasUnitracCruasPropriaPlaca`) sao do DIA
+  // INTEIRO da placa, mas `pontosReferenciaDaPlaca` (abaixo) so' enxergava as
+  // NFs desta CARGA -- uma parada a <=150m de um cliente de OUTRA carga da
+  // MESMA placa no mesmo dia nao era descartada (Review Focus: "explicada
+  // por outro cliente da mesma placa" nao pode se limitar a' carga atual).
+  // Default = `linhasRomaneio` preserva o comportamento antigo pra quem nao
+  // passar nada (Rio Quality, testes existentes com 1 carga so'); Nutry Max
+  // (route.ts + gerar-nutrimax-real-arquivo.ts) passa `linhasPorPlaca.get(
+  // placaNorm)` (TODAS as cargas da placa no dia, ja calculado no chamador).
+  todasLinhasDaPlacaNoDia: LinhaGeocodificada[] = linhasRomaneio,
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
-  // Task 2 (R2): ponto de referencia de CADA NF do romaneio desta carga/placa
-  // (geocode confiavel, senao cadastro Unitrac do alvo casado) -- usado pra
-  // desempatar acharParadaUnitracPropria (Review Focus: parada perto de um
-  // cliente mas ainda mais perto de OUTRO cliente da mesma placa nao pode
-  // confirmar o errado). Calculado uma vez por carga, nao por NF.
-  const pontosReferenciaDaPlaca: PontoReferenciaPlacaNf[] = linhasRomaneio
-    .map((l): PontoReferenciaPlacaNf | null => {
+  // Task 2 (R2): pontos de referencia de CADA NF da placa no DIA INTEIRO
+  // (todas as cargas, Fix round 2) -- usado pra descartar `acharParadaUnitrac
+  // Propria` quando a parada e' "explicada" por OUTRO cliente da mesma placa
+  // (Review Focus). Fix round 2 (achado MENOR): cada NF entra com os DOIS
+  // pontos disponiveis (geocode confiavel E cadastro Unitrac), nao so' um --
+  // `referenciaParaDesempate` escolhe so' o preferido (geocode > cadastro),
+  // que escondia o cadastro sempre que o geocode tambem existisse. Calculado
+  // uma vez por chamada, nao por NF.
+  const pontosReferenciaDaPlaca: PontoReferenciaPlacaNf[] = todasLinhasDaPlacaNoDia
+    .flatMap((l): PontoReferenciaPlacaNf[] => {
       const alvoL = alvoPorNf.get(l.nf)
-      const ref = referenciaParaDesempate(l, alvoL)
-      return ref ? { endereco: l.endereco, lat: ref.lat, lng: ref.lng } : null
+      const pontos: PontoReferenciaPlacaNf[] = []
+      if (l.geoConfiavel !== false && l.lat != null && l.lng != null) {
+        pontos.push({ endereco: l.endereco, lat: l.lat, lng: l.lng })
+      }
+      if (alvoL && coordValidaCadastro(alvoL.pontoLat) && coordValidaCadastro(alvoL.pontoLng)) {
+        pontos.push({ endereco: l.endereco, lat: alvoL.pontoLat as number, lng: alvoL.pontoLng as number })
+      }
+      return pontos
     })
-    .filter((x): x is PontoReferenciaPlacaNf => x != null)
   // Revisao final pre-deploy (24/09, item 3): sinais INDEPENDENTES das
   // paradas de que a placa rodou no dia -- desmentem o caso (b) de
   // semRastreadorNoDia ("tem CV mas zero posicoes"). `alvos` chega aqui como

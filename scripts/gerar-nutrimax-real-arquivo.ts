@@ -331,6 +331,9 @@ async function main() {
         // (nutrimax/gerar/route.ts) -- ver confirmarPorParadaUnitracPropria
         // em agregacao.ts.
         true,
+        // Fix round 2 (revisao de codigo): espelha o chamador real de
+        // producao -- ver todasLinhasDaPlacaNoDia em agregacao.ts.
+        linhasPorPlaca.get(placaNorm) ?? [],
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

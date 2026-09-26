@@ -471,6 +471,10 @@ export async function POST(req: NextRequest) {
         // PROPRIA placa quando nada mais confirmou -- so' desta pipeline. Ver
         // confirmarPorParadaUnitracPropria em agregacao.ts.
         true,
+        // Fix round 2 (revisao de codigo): TODAS as NFs da placa no dia
+        // (todas as cargas), nao so' desta carga -- ver todasLinhasDaPlacaNoDia
+        // em agregacao.ts.
+        linhasPorPlaca.get(placaNorm) ?? [],
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

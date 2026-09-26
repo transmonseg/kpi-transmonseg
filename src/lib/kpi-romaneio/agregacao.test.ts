@@ -2526,3 +2526,102 @@ describe('montarDetalheEntregas -- Fix round 1 (R2 tambem confirma quando o stat
     expect(d1.status).toBe('pendente')
   })
 })
+
+// Fix round 2 (revisao de codigo pos-Fix-round-1): 2 achados na
+// implementacao de `pontosReferenciaDaPlaca`/`acharParadaUnitracPropria`.
+describe('montarDetalheEntregas -- Fix round 2 (pontosReferenciaDaPlaca: dia inteiro + 2 pontos por NF)', () => {
+  const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+  const DELTA_150M = 0.0013491
+
+  // Achado MÉDIO (agregacao.ts:626-633): `pontosReferenciaDaPlaca` so'
+  // enxergava as NFs da CARGA ATUAL (`linhasRomaneio`), mas as paradas cruas
+  // da Unitrac sao do DIA INTEIRO da placa -- uma parada perto de cliente de
+  // OUTRA carga da MESMA placa nao era descartada. `todasLinhasDaPlacaNoDia`
+  // (novo parametro, default = `linhasRomaneio` pra nao quebrar quem nao
+  // passar nada) corrige isso.
+  it('placa com 2 cargas no dia: parada explicada por cliente de OUTRA carga da mesma placa nao confirma', () => {
+    const linhaCarga1 = linha('NF1', { carga: '111', endereco: 'ENDERECO CARGA 1', lat: -22.9, lng: -43.2 })
+    // NF2, de uma carga DIFERENTE (222) da mesma placa, com geocode a ~40m
+    // da parada candidata -- so' aparece em `todasLinhasDaPlacaNoDia`, nao
+    // em `linhasRomaneio` (que so' tem a carga 111 sendo processada agora).
+    const linhaCarga2 = linha('NF2', { carga: '222', endereco: 'ENDERECO CARGA 2', lat: -22.9 + 0.0003598, lng: -43.2 })
+    const paradaPropria = parada({
+      classificacao: 'FORA_BASE',
+      lat: -22.9 + DELTA_150M, lng: -43.2, // ~150m de NF1, ~110m de NF2 (carga 2) -- dentro de 150m
+      chegada: '2026-09-24T10:00:00.000Z', saida: '2026-09-24T10:05:00.000Z', fim_real: '2026-09-24T10:05:00.000Z',
+    })
+    const paradasCruas = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaPropria]]])
+
+    const [d1] = montarDetalheEntregas(
+      '111', 'TTL7D40', [linhaCarga1], [], new Map(), resumoCargaVazio,
+      true, new Map(), null, false, false, false, paradasCruas, true, true, true,
+      [linhaCarga1, linhaCarga2], // todasLinhasDaPlacaNoDia: as 2 cargas
+    )
+
+    expect(d1.evidencia).not.toBe('parada_unitrac_propria')
+    expect(d1.status).toBe('pendente')
+  })
+
+  it('sem passar todasLinhasDaPlacaNoDia (default = so a carga atual): comportamento antigo preservado, confirma normalmente', () => {
+    const linhaCarga1 = linha('NF1', { carga: '111', endereco: 'ENDERECO CARGA 1', lat: -22.9, lng: -43.2 })
+    const paradaPropria = parada({
+      classificacao: 'FORA_BASE',
+      lat: -22.9 + DELTA_150M, lng: -43.2,
+      chegada: '2026-09-24T10:00:00.000Z', saida: '2026-09-24T10:05:00.000Z', fim_real: '2026-09-24T10:05:00.000Z',
+    })
+    const paradasCruas = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaPropria]]])
+
+    const [d1] = montarDetalheEntregas(
+      '111', 'TTL7D40', [linhaCarga1], [], new Map(), resumoCargaVazio,
+      true, new Map(), null, false, false, false, paradasCruas, true, true, true,
+    )
+
+    expect(d1.evidencia).toBe('parada_unitrac_propria')
+    expect(d1.status).toBe('confirmado_gps')
+  })
+
+  // Achado MENOR: cada outra NF entrava com um so' ponto (geocode confiavel
+  // OU cadastro, o que `referenciaParaDesempate` preferisse) -- quando as
+  // duas coordenadas existem e apontam pra lugares diferentes, so' expor o
+  // geocode escondia um cadastro que tambem "explicaria" a parada.
+  it('outra NF com geocode confiavel LONGE mas cadastro Unitrac PERTO da parada -- os DOIS pontos contam, parada nao confirma', () => {
+    const linhaAlvo = linha('NF1', { endereco: 'ENDERECO ALVO', lat: -22.9, lng: -43.2 })
+    // NF2: geocode confiavel a ~5,5km (nao explicaria nada), mas CADASTRO
+    // Unitrac a ~110m da mesma parada (dentro de RAIO_OUTRO_CLIENTE_EXPLICA_M).
+    const linhaOutraNf = linha('NF2', { endereco: 'ENDERECO OUTRO', lat: -22.95, lng: -43.2 })
+    const alvos = [alvo('NF2', 0, { pontoLat: -22.9 + 0.0003598, pontoLng: -43.2 })]
+    const paradaPropria = parada({
+      classificacao: 'FORA_BASE',
+      lat: -22.9 + DELTA_150M, lng: -43.2, // ~150m de NF1, ~110m do CADASTRO de NF2
+      chegada: '2026-09-24T10:00:00.000Z', saida: '2026-09-24T10:05:00.000Z', fim_real: '2026-09-24T10:05:00.000Z',
+    })
+    const paradasCruas = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaPropria]]])
+
+    const [d1] = montarDetalheEntregas(
+      '111', 'TTL7D40', [linhaAlvo, linhaOutraNf], alvos, new Map(), resumoCargaVazio,
+      true, new Map(), null, false, false, false, paradasCruas, true, true, true,
+    )
+
+    expect(d1.evidencia).not.toBe('parada_unitrac_propria')
+    expect(d1.status).toBe('pendente')
+  })
+
+  it('parada BASE a <=300m/>=2min do cliente -- nao confirma (so FORA_BASE conta)', () => {
+    const linhas = [linha('NF1')]
+    const paradaBase = parada({
+      classificacao: 'BASE',
+      lat: -22.9 + DELTA_150M, lng: -43.2,
+      chegada: '2026-09-24T10:00:00.000Z', saida: '2026-09-24T10:05:00.000Z', fim_real: '2026-09-24T10:05:00.000Z',
+    })
+    const paradasCruas = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaBase]]])
+
+    const [d] = montarDetalheEntregas(
+      '111', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio,
+      true, new Map(), null, false, false, false, paradasCruas, true, true, true,
+    )
+
+    expect(d.evidencia).not.toBe('parada_unitrac_propria')
+    expect(d.status).toBe('pendente')
+    expect(d.chegada).toBeNull()
+  })
+})
