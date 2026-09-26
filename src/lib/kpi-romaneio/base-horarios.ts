@@ -40,7 +40,16 @@ export type HorarioBase = {
   // confirmou por dwell no PROPRIO endereco, so' que no raio ampliado
   // (500-800m) -- nem confirmacao normal, nem emprestada de vizinho. Ver
   // acharVisitasPorPonto/RAIO_AMPLIADO_M la.
-  visitasPorNf?: Map<string, { chegada: string | null; saida: string | null; viaVizinhanca?: boolean; viaRaioAmpliado?: boolean }>
+  // menorDistanciaM (Task 3b, verificacao manual 26/09): menor distancia
+  // haversine (metros, arredondada) entre o ponto e QUALQUER leitura do
+  // trajeto continuo da placa no dia, dentro da janela da rota --
+  // independente de ter havido dwell/parada ali (ver comentario do mesmo
+  // campo em VisitaPonto, route.ts do monitoramento). null quando a ponte
+  // nao tinha nenhuma posicao na janela; ausente (undefined) so' quando a
+  // ponte respondeu numa versao antiga sem o campo -- validarVisitaBruta
+  // trata os dois igual (ver validarResultado/melhorDistanciaPropria em
+  // agregacao.ts, que ja tratam null/undefined da mesma forma).
+  visitasPorNf?: Map<string, { chegada: string | null; saida: string | null; viaVizinhanca?: boolean; viaRaioAmpliado?: boolean; menorDistanciaM?: number | null }>
   // Achado real 12/09: o feed de paradas da Unitrac (/mapa_servicos/stops)
   // so' alcanca 48h -- passou disso, nenhum dia pode ser reprocessado. Foi o
   // que impediu de medir o efeito das correcoes de geocode no relatorio de
@@ -174,7 +183,7 @@ function paraBrtMascaradoComoUtc(isoUtcReal: string | null): string | null {
   return comDigitosBrt.toISOString()
 }
 
-type VisitaBrutaResultado = { id: string; chegada: string | null; saida: string | null; viaVizinhanca?: boolean; viaRaioAmpliado?: boolean }
+type VisitaBrutaResultado = { id: string; chegada: string | null; saida: string | null; viaVizinhanca?: boolean; viaRaioAmpliado?: boolean; menorDistanciaM?: number | null }
 
 function validarVisitaBruta(v: unknown): VisitaBrutaResultado | null {
   if (
@@ -184,7 +193,8 @@ function validarVisitaBruta(v: unknown): VisitaBrutaResultado | null {
     ((v as VisitaBrutaResultado).saida === null || typeof (v as VisitaBrutaResultado).saida === 'string')
   ) {
     const obj = v as VisitaBrutaResultado
-    return { id: obj.id, chegada: obj.chegada, saida: obj.saida, viaVizinhanca: obj.viaVizinhanca === true, viaRaioAmpliado: obj.viaRaioAmpliado === true }
+    const menorDistanciaM = typeof obj.menorDistanciaM === 'number' ? obj.menorDistanciaM : null
+    return { id: obj.id, chegada: obj.chegada, saida: obj.saida, viaVizinhanca: obj.viaVizinhanca === true, viaRaioAmpliado: obj.viaRaioAmpliado === true, menorDistanciaM }
   }
   return null
 }
@@ -318,7 +328,7 @@ async function buscarLote(
     const r = validarResultado(bruto)
     if (r) {
       const visitasPorNf = r.visitas
-        ? new Map(r.visitas.map((v) => [v.id, { chegada: paraBrtMascaradoComoUtc(v.chegada), saida: paraBrtMascaradoComoUtc(v.saida), viaVizinhanca: v.viaVizinhanca, viaRaioAmpliado: v.viaRaioAmpliado }]))
+        ? new Map(r.visitas.map((v) => [v.id, { chegada: paraBrtMascaradoComoUtc(v.chegada), saida: paraBrtMascaradoComoUtc(v.saida), viaVizinhanca: v.viaVizinhanca, viaRaioAmpliado: v.viaRaioAmpliado, menorDistanciaM: v.menorDistanciaM ?? null }]))
         : undefined
       const paradas = r.paradas?.map(p => ({
         ...p,
@@ -361,6 +371,30 @@ export async function buscarHorariosBase(
     const lote = placasNorm.slice(i, i + tamanhoLote)
     const doLote = await buscarLote(lote, data, pontosPorPlaca, incluirParadas, fimRotaPorPlaca)
     for (const [placa, horario] of doLote) mapa.set(placa, horario)
+  }
+  return mapa
+}
+
+// Task 3b (verificacao manual 26/09): monta o Map NF -> menorDistanciaM que
+// `montarDetalheEntregas` (agregacao.ts) espera em `menorDistanciaTrajetoPorNf`
+// -- chave e' so' o NF (documento), igual `linha.nf` usado la (`.get(linha.nf)`),
+// NAO placa|NF -- cada NF ja e' unica dentro do romaneio do dia. Fecha o
+// Concern do relatorio da Task 3 (agregacao.ts): agora que a ponte
+// (route.ts do monitoramento) EXPOE menorDistanciaM por visita, este helper
+// vira a ponte entre `buscarHorariosBase` (por placa) e o Map por NF que
+// `montarDetalheEntregas` consome. So' entra no mapa quando a ponte
+// respondeu um numero de verdade (null/undefined -- sem posicao na janela,
+// ou ponte antiga sem o campo -- simplesmente nao entra, `melhorDistancia
+// Propria` ja trata "sem entrada no mapa" e "entrada null" da mesma forma,
+// via `.get(nf) ?? null`). Usado so' pelo fluxo Nutry Max (route.ts +
+// scripts/gerar-nutrimax-real-arquivo.ts) -- Rio Quality nao passa este
+// mapa pra `montarDetalheEntregas`, continua com o default vazio de la.
+export function montarMenorDistanciaTrajetoPorNf(horarioBasePorPlaca: Map<string, HorarioBase>): Map<string, number> {
+  const mapa = new Map<string, number>()
+  for (const horario of horarioBasePorPlaca.values()) {
+    for (const [nf, visita] of horario.visitasPorNf ?? []) {
+      if (typeof visita.menorDistanciaM === 'number') mapa.set(nf, visita.menorDistanciaM)
+    }
   }
   return mapa
 }

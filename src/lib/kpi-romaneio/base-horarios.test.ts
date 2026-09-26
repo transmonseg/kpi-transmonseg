@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { buscarHorariosBase, anexarCoordenadaCadastro } from './base-horarios'
+import { buscarHorariosBase, anexarCoordenadaCadastro, montarMenorDistanciaTrajetoPorNf } from './base-horarios'
+import type { HorarioBase } from './base-horarios'
 
 beforeEach(() => {
   process.env.MOTOR_SECRET = 'segredo-teste'
@@ -126,8 +127,8 @@ describe('buscarHorariosBase', () => {
       ])
       const mapa = await buscarHorariosBase(['ABC1234'], '2026-08-25')
       const visitasPorNf = mapa.get('ABC1234')?.visitasPorNf
-      expect(visitasPorNf?.get('NF1')).toEqual({ chegada: '2026-08-25T10:17:00.000Z', saida: '2026-08-25T10:28:00.000Z', viaVizinhanca: false, viaRaioAmpliado: false })
-      expect(visitasPorNf?.get('NF2')).toEqual({ chegada: null, saida: null, viaVizinhanca: false, viaRaioAmpliado: false })
+      expect(visitasPorNf?.get('NF1')).toEqual({ chegada: '2026-08-25T10:17:00.000Z', saida: '2026-08-25T10:28:00.000Z', viaVizinhanca: false, viaRaioAmpliado: false, menorDistanciaM: null })
+      expect(visitasPorNf?.get('NF2')).toEqual({ chegada: null, saida: null, viaVizinhanca: false, viaRaioAmpliado: false, menorDistanciaM: null })
     })
 
     it('resposta sem campo visitas (placa sem pontos pedidos): visitasPorNf fica undefined', async () => {
@@ -148,7 +149,7 @@ describe('buscarHorariosBase', () => {
       ])
       const mapa = await buscarHorariosBase(['ABC1234'], '2026-08-25')
       const visitasPorNf = mapa.get('ABC1234')?.visitasPorNf
-      expect(visitasPorNf?.get('NF1')).toEqual({ chegada: '2026-08-25T10:00:00.000Z', saida: '2026-08-25T10:10:00.000Z', viaVizinhanca: false, viaRaioAmpliado: true })
+      expect(visitasPorNf?.get('NF1')).toEqual({ chegada: '2026-08-25T10:00:00.000Z', saida: '2026-08-25T10:10:00.000Z', viaVizinhanca: false, viaRaioAmpliado: true, menorDistanciaM: null })
     })
 
     it('item de visita malformado e ignorado, sem derrubar os outros da mesma placa', async () => {
@@ -164,7 +165,38 @@ describe('buscarHorariosBase', () => {
       const mapa = await buscarHorariosBase(['ABC1234'], '2026-08-25')
       const visitasPorNf = mapa.get('ABC1234')?.visitasPorNf
       expect(visitasPorNf?.size).toBe(1)
-      expect(visitasPorNf?.get('NF1')).toEqual({ chegada: '2026-08-25T10:00:00.000Z', saida: '2026-08-25T10:10:00.000Z', viaVizinhanca: false, viaRaioAmpliado: false })
+      expect(visitasPorNf?.get('NF1')).toEqual({ chegada: '2026-08-25T10:00:00.000Z', saida: '2026-08-25T10:10:00.000Z', viaVizinhanca: false, viaRaioAmpliado: false, menorDistanciaM: null })
+    })
+
+    // Task 3b (verificacao manual 26/09): a ponte agora expoe menorDistanciaM
+    // (numero, arredondado) por visita, mesmo quando chegada/saida ficam
+    // null (passou perto sem parar) -- repassado pro Map igual os outros
+    // campos opcionais (viaVizinhanca/viaRaioAmpliado).
+    it('visita com menorDistanciaM na resposta: repassado pro Map como numero', async () => {
+      mockFetchOk([
+        {
+          placa: 'ABC1234', saidaBase: null, chegadaBase: null, kmPercorrido: null,
+          visitas: [
+            { id: 'NF1', chegada: '2026-08-25T13:00:00.000Z', saida: '2026-08-25T13:10:00.000Z', menorDistanciaM: 0 },
+            { id: 'NF2', chegada: null, saida: null, menorDistanciaM: 8 }, // passou perto sem parar
+          ],
+        },
+      ])
+      const mapa = await buscarHorariosBase(['ABC1234'], '2026-08-25')
+      const visitasPorNf = mapa.get('ABC1234')?.visitasPorNf
+      expect(visitasPorNf?.get('NF1')?.menorDistanciaM).toBe(0)
+      expect(visitasPorNf?.get('NF2')?.menorDistanciaM).toBe(8)
+    })
+
+    it('visita sem menorDistanciaM na resposta (ponte antiga ou sem posicao na janela): fica null, nunca undefined nem quebra', async () => {
+      mockFetchOk([
+        {
+          placa: 'ABC1234', saidaBase: null, chegadaBase: null, kmPercorrido: null,
+          visitas: [{ id: 'NF1', chegada: null, saida: null, menorDistanciaM: null }],
+        },
+      ])
+      const mapa = await buscarHorariosBase(['ABC1234'], '2026-08-25')
+      expect(mapa.get('ABC1234')?.visitasPorNf?.get('NF1')?.menorDistanciaM).toBeNull()
     })
   })
 
@@ -294,5 +326,48 @@ describe('feitoEm (fuso)', () => {
     expect(mk('2026-09-22T10:20:00')).toBe('2026-09-22T13:20:00.000Z')
     expect(mk('2026-09-22T10:20:00Z')).toBe('2026-09-22T13:20:00.000Z')
     expect(mk('2026-09-22T10:20:00-03:00')).toBe('2026-09-22T13:20:00.000Z')
+  })
+})
+
+// Task 3b (verificacao manual 26/09): helper que monta o Map NF ->
+// menorDistanciaM que montarDetalheEntregas (agregacao.ts) espera em
+// menorDistanciaTrajetoPorNf -- fecha o Concern do relatorio da Task 3
+// (agora que a ponte expoe o dado, alguem do lado do KPI precisa juntar
+// por placa -> por NF).
+describe('montarMenorDistanciaTrajetoPorNf', () => {
+  function horario(visitasPorNf: HorarioBase['visitasPorNf']): HorarioBase {
+    return { saidaBase: null, chegadaBase: null, kmPercorrido: null, visitasPorNf }
+  }
+
+  it('junta visitas de VARIAS placas num unico Map, chave e so o NF (nao placa|NF)', () => {
+    const horarioBasePorPlaca = new Map<string, HorarioBase>([
+      ['AAA1A11', horario(new Map([['NF1', { chegada: null, saida: null, menorDistanciaM: 8 }]]))],
+      ['BBB2B22', horario(new Map([['NF2', { chegada: '2026-08-25T10:00:00.000Z', saida: '2026-08-25T10:10:00.000Z', menorDistanciaM: 0 }]]))],
+    ])
+    const mapa = montarMenorDistanciaTrajetoPorNf(horarioBasePorPlaca)
+    expect(mapa.get('NF1')).toBe(8)
+    expect(mapa.get('NF2')).toBe(0)
+    expect(mapa.size).toBe(2)
+  })
+
+  it('NF com menorDistanciaM null (sem posicao na janela) nao entra no Map -- .get() cai no undefined, mesmo efeito de "sem entrada"', () => {
+    const horarioBasePorPlaca = new Map<string, HorarioBase>([
+      ['AAA1A11', horario(new Map([['NF1', { chegada: null, saida: null, menorDistanciaM: null }]]))],
+    ])
+    const mapa = montarMenorDistanciaTrajetoPorNf(horarioBasePorPlaca)
+    expect(mapa.has('NF1')).toBe(false)
+  })
+
+  it('placa sem visitasPorNf (nunca pediu pontos) e placa sem horario nenhum: ignoradas, sem lancar', () => {
+    const horarioBasePorPlaca = new Map<string, HorarioBase>([
+      ['AAA1A11', horario(undefined)],
+      ['BBB2B22', horario(new Map())],
+    ])
+    const mapa = montarMenorDistanciaTrajetoPorNf(horarioBasePorPlaca)
+    expect(mapa.size).toBe(0)
+  })
+
+  it('Map vazio de entrada: devolve Map vazio', () => {
+    expect(montarMenorDistanciaTrajetoPorNf(new Map()).size).toBe(0)
   })
 })

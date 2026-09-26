@@ -671,6 +671,48 @@ describe('POST /api/kpi/nutrimax/gerar -- CHEGADA CD ajustada pela última entre
   })
 })
 
+// Task 3b (verificacao manual 26/09, integracao body/resposta): a ponte
+// (route.ts do monitoramento) agora expoe `menorDistanciaM` por visita --
+// este teste fecha o fio inteiro (buscarHorariosBase -> montarMenorDistancia
+// TrajetoPorNf -> montarDetalheEntregas -> xlsx) verificando que uma NF sem
+// dwell confirmado (chegada/saida null, sem alvo Unitrac, sem parada perto)
+// mas com o veiculo passando a poucos metros (menorDistanciaM=8, dentro de
+// RAIO_PASSOU_SEM_PARAR_M=500) sai como "PASSAGEM SEM PARADA" com a
+// distancia certa na coluna DIST. PARADA (m), em vez de SEM EVIDÊNCIA/
+// distancia vazia (comportamento antigo, sem esta task).
+describe('POST /api/kpi/nutrimax/gerar -- menorDistanciaM da ponte vira PASSAGEM SEM PARADA (Task 3b)', () => {
+  beforeEach(async () => {
+    cenario.frota = [{ placaNorm: PLACA, cv: 'CV-1' }]
+    const buscarHorariosSpy = vi.mocked((await import('@/lib/kpi-romaneio/base-horarios')).buscarHorariosBase)
+    buscarHorariosSpy.mockReset()
+  })
+
+  afterEach(async () => {
+    const buscarHorariosSpy = vi.mocked((await import('@/lib/kpi-romaneio/base-horarios')).buscarHorariosBase)
+    buscarHorariosSpy.mockReset()
+    buscarHorariosSpy.mockImplementation(async () => new Map())
+  })
+
+  it('NF001 nunca confirmada, mas trajeto passou a 8m: EVIDÊNCIA=PASSAGEM SEM PARADA, DIST. PARADA (m)=8', async () => {
+    const buscarHorariosSpy = vi.mocked((await import('@/lib/kpi-romaneio/base-horarios')).buscarHorariosBase)
+    buscarHorariosSpy.mockImplementation(async () => new Map([[PLACA, {
+      saidaBase: '2026-09-15T08:00:00.000Z',
+      chegadaBase: '2026-09-15T22:00:00.000Z',
+      kmPercorrido: 120,
+      visitasPorNf: new Map([['NF001', { chegada: null, saida: null, menorDistanciaM: 8 }]]),
+    }]]) as never)
+
+    const res = await POST(montarRequest(false) as never)
+    expect(res.status).toBe(200)
+
+    const wb = await abrirXlsx(res)
+    const ws = wb.getWorksheet(PLACA)!
+    const linhaDados = (ws.getRow(4).values as unknown[]).slice(1)
+    expect(linhaDados[10]).toBe('PASSAGEM SEM PARADA') // coluna 11 (EVIDÊNCIA), indice 10 apos slice
+    expect(linhaDados[11]).toBe(8) // coluna 12 (DIST. PARADA (m))
+  })
+})
+
 describe('POST /api/kpi/nutrimax/gerar -- histórico não conta cargas do pão (item Minor #8)', () => {
   it('qtdCargas salvo no histórico não inclui cargas PAO-*', async () => {
     const historico = await import('@/lib/kpi-romaneio/historico')

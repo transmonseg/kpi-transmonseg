@@ -99,17 +99,21 @@ function distanciaAteParadaPropria(
 //    jamais capturaria) mas nunca DESCARTA uma parada real mais perto (ex.
 //    ruido de amostragem do trajeto).
 //
-// CONCERN (ver relatorio da Task 3): nenhum chamador de producao (route.ts)
-// preenche `menorDistanciaTrajetoPorNf` hoje -- a ponte (base-horarios.ts,
-// projeto irmao "monitoramento") NAO expoe uma distancia minima ao ponto
-// independente de dwell (so' `chegada`/`saida` de uma visita confirmada,
-// null quando nunca parou). Os 4 casos reais do brief (verificados contra
-// posicoes_historico manualmente) EXIGEM esse dado pra sair PASSOU de
-// verdade -- sem ele, so' a melhoria (1) roda em producao (pode reduzir
-// outros falsos "NAO FOI" onde uma parada real ficou de fora por causa do
-// resolverParadas escolher a fonte errada, mas nao resolve os 4 casos
-// exatos, que nao tem parada nenhuma perto em NENHUMA das duas fontes --
-// confirmado pela propria evidencia do CSV, "sem parada >=2min" a 1,1-4,7km).
+// RESOLVIDO (Task 3b, verificacao manual 26/09): o CONCERN original daqui
+// dizia que nenhum chamador de producao preenchia `menorDistanciaTrajetoPorNf`
+// porque a ponte (base-horarios.ts, projeto irmao "monitoramento") nao
+// expunha uma distancia minima ao ponto independente de dwell. A ponte
+// agora devolve `menorDistanciaM` por visita (VisitaPonto, route.ts do
+// monitoramento -- menor distancia haversine a QUALQUER leitura do trajeto
+// na janela da rota, null sem posicao), propagado ate' aqui via
+// `HorarioBase.visitasPorNf[nf].menorDistanciaM` (base-horarios.ts) e
+// montado no Map que este parametro espera por
+// `montarMenorDistanciaTrajetoPorNf` (base-horarios.ts), que os dois
+// chamadores de producao do fluxo Nutry Max (route.ts +
+// scripts/gerar-nutrimax-real-arquivo.ts) ja passam pra
+// `montarDetalheEntregas`. Os 4 casos reais do brief (verificados contra
+// posicoes_historico manualmente) agora tem a melhoria (2) tambem rodando
+// em producao, nao so' a (1).
 function melhorDistanciaPropria(
   linha: LinhaGeocodificada,
   placaNorm: string,
@@ -708,10 +712,13 @@ export function montarDetalheEntregas(
   // inteiro, independente de ter havido dwell/parada ali -- ver
   // comentario de `melhorDistanciaPropria` acima pro raciocinio completo
   // (por que `distanciaAteParadaPropria` sozinha nao pega passagem sem
-  // parar) e o Concern do relatorio da Task 3 (nenhum chamador de producao
-  // preenche este mapa hoje -- precisa de um campo novo na ponte/
-  // monitoramento, fora do escopo desta task). Default vazio preserva o
-  // comportamento de quem nao passar nada.
+  // parar). Task 3b (verificacao manual 26/09): a ponte (route.ts do
+  // monitoramento) agora expoe esse dado (`VisitaPonto.menorDistanciaM`) --
+  // este Map e' construido por `montarMenorDistanciaTrajetoPorNf`
+  // (base-horarios.ts) a partir de `HorarioBase.visitasPorNf`, ja' passado
+  // pelos dois chamadores de producao do fluxo Nutry Max (route.ts +
+  // scripts/gerar-nutrimax-real-arquivo.ts). Default vazio preserva o
+  // comportamento antigo pra quem nao passar nada (Rio Quality, pipeline.ts).
   menorDistanciaTrajetoPorNf: Map<string, number> = new Map(),
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))

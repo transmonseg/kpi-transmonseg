@@ -13,7 +13,7 @@ import { geocodificarEnderecos } from '../src/lib/kpi-romaneio/geocode'
 import { reposicionarPorAncoras } from '../src/lib/kpi-romaneio/geocode-ancoras'
 import { buscarFrota, normPlaca } from '../src/lib/unitrac-api'
 import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '../src/lib/kpi-romaneio/unitrac'
-import { buscarHorariosBase, anexarCoordenadaCadastro } from '../src/lib/kpi-romaneio/base-horarios'
+import { buscarHorariosBase, anexarCoordenadaCadastro, montarMenorDistanciaTrajetoPorNf } from '../src/lib/kpi-romaneio/base-horarios'
 import { ajustarChegadaAposUltimaEntrega } from '../src/lib/kpi-romaneio/fim-rota'
 import { alvosDaData } from '../src/lib/kpi-romaneio/alvos-data'
 import { alvosEfetivos } from '../src/lib/kpi-romaneio/alvos-snapshot'
@@ -297,6 +297,9 @@ async function main() {
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
 
   const resumoPorChave = new Map(linhasKpi.map(l => [`${l.carga}::${l.placa}`, l]))
+  // Task 3b (verificacao manual 26/09): espelha o chamador real de producao
+  // (nutrimax/gerar/route.ts) -- ver menorDistanciaTrajetoPorNf em agregacao.ts.
+  const menorDistanciaTrajetoPorNf = montarMenorDistanciaTrajetoPorNf(horarioBasePorPlaca)
   const detalhe: LinhaDetalheEntrega[] = [...cargasPorChave.entries()]
     .flatMap(([chave, linhasDaCarga]) => {
       const [carga, placaNorm] = chave.split('::')
@@ -342,6 +345,9 @@ async function main() {
         // Task 2 (plano 26/09): espelha o chamador real de producao -- ver
         // apagaoDeSinalPropriaPlaca em agregacao.ts.
         horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false,
+        // Task 3b (verificacao manual 26/09): espelha o chamador real de
+        // producao -- ver menorDistanciaTrajetoPorNf em agregacao.ts.
+        menorDistanciaTrajetoPorNf,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

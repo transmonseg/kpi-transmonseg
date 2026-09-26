@@ -10,7 +10,7 @@ import { parsePao } from '@/lib/kpi-romaneio/parse-pao'
 import { geocodificarEnderecos } from '@/lib/kpi-romaneio/geocode'
 import { reposicionarPorAncoras } from '@/lib/kpi-romaneio/geocode-ancoras'
 import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '@/lib/kpi-romaneio/unitrac'
-import { buscarHorariosBase, anexarCoordenadaCadastro } from '@/lib/kpi-romaneio/base-horarios'
+import { buscarHorariosBase, anexarCoordenadaCadastro, montarMenorDistanciaTrajetoPorNf } from '@/lib/kpi-romaneio/base-horarios'
 import { ajustarChegadaAposUltimaEntrega } from '@/lib/kpi-romaneio/fim-rota'
 import { alvosDaData } from '@/lib/kpi-romaneio/alvos-data'
 import { alvosEfetivos } from '@/lib/kpi-romaneio/alvos-snapshot'
@@ -421,6 +421,13 @@ export async function POST(req: NextRequest) {
   // linha de NF -- mesma chave carga+placa usada pra montar linhasKpi acima.
   const resumoPorChave = new Map(linhasKpi.map(l => [`${l.carga}::${l.placa}`, l]))
 
+  // Task 3b (verificacao manual 26/09): NF -> menor distancia do trajeto
+  // continuo (agora que a ponte expoe `menorDistanciaM` por visita) --
+  // fecha o Concern do relatorio da Task 3 (agregacao.ts). So' o fluxo
+  // Nutry Max passa isto pra `montarDetalheEntregas`; Rio Quality
+  // (pipeline.ts) continua com o default vazio, intocado.
+  const menorDistanciaTrajetoPorNf = montarMenorDistanciaTrajetoPorNf(horarioBasePorPlaca)
+
   // Aba "Detalhamento" (pedido do usuário 24/08): uma linha por NF/entrega,
   // não só o resumo por carga -- mesma fonte de dado (linhasDaCarga/alvos/
   // visitas) já calculada acima pra agregarPorCarga, só que sem agregar.
@@ -485,6 +492,11 @@ export async function POST(req: NextRequest) {
         // unitrac.ts) reaproveitado pra detectar GPS congelado -- so' desta
         // pipeline. Ver apagaoDeSinalPropriaPlaca em agregacao.ts.
         horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false,
+        // Task 3b (verificacao manual 26/09): NF -> menor distancia do
+        // trajeto continuo, ja construido acima (montarMenorDistanciaTrajeto
+        // PorNf) -- so' desta pipeline. Ver menorDistanciaTrajetoPorNf em
+        // agregacao.ts.
+        menorDistanciaTrajetoPorNf,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
