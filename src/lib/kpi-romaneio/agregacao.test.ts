@@ -3110,4 +3110,51 @@ describe('montarDetalheEntregas -- escala divergente vira CONFERIR ESCALA em vez
       expect(d.observacao).not.toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
     }
   })
+
+  // Achado real 26/09 (correcoes finais pre-deploy, item 1): o mesmo cenario
+  // de carga divergente gerado NO MEIO DO DIA (diaEmAndamento=true) nao pode
+  // acusar "CONFERIR ESCALA" -- a placa da escala ainda pode passar nos
+  // clientes que faltam. `elegivelParaEscalaDivergente` e' um fato "ja'
+  // resolvido" so' quando o dia ACABOU pra essa rota; com o dia em
+  // andamento, o correto e' esperar (AGUARDANDO), igual a qualquer outro
+  // pendente sem evidencia (ver comentario de `diaEmAndamento` na
+  // assinatura da funcao).
+  it('mesmo cenario de carga divergente com diaEmAndamento=true vira AGUARDANDO, nao CONFERIR ESCALA', () => {
+    const nfs = nfsLongeDaPropriaPlaca(5, [3_000, 5_000, 8_000, 9_000, 10_000])
+    const paradasFrota = new Map([['RQV6I51', [paradaOutraPlacaPerto(nfs[2], 8), paradaOutraPlacaPerto(nfs[4], 400)]]])
+
+    const detalhe = montarDetalheEntregas(
+      '98593', 'RBJ2J67', nfs, [], new Map(), resumoCargaVazio,
+      true, paradasFrota, null, true, false, false, new Map(),
+      false, true, false, undefined, false,
+      menorDistanciaMap(nfs, [3_000, 5_000, 8_000, 9_000, 10_000]),
+      true, // detectarEscalaDivergente
+    )
+
+    expect(detalhe).toHaveLength(5)
+    for (const d of detalhe) {
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe('AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO')
+      expect(d.observacao).not.toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
+      expect(d.chegada).toBeNull()
+      expect(d.saida).toBeNull()
+    }
+  })
+
+  it('com diaEmAndamento=false (dia encerrado), o mesmo cenario segue vira CONFERIR ESCALA', () => {
+    const nfs = nfsLongeDaPropriaPlaca(5, [3_000, 5_000, 8_000, 9_000, 10_000])
+    const paradasFrota = new Map([['RQV6I51', [paradaOutraPlacaPerto(nfs[2], 8), paradaOutraPlacaPerto(nfs[4], 400)]]])
+
+    const detalhe = montarDetalheEntregas(
+      '98593', 'RBJ2J67', nfs, [], new Map(), resumoCargaVazio,
+      true, paradasFrota, null, false, false, false, new Map(),
+      false, true, false, undefined, false,
+      menorDistanciaMap(nfs, [3_000, 5_000, 8_000, 9_000, 10_000]),
+      true,
+    )
+
+    for (const d of detalhe) {
+      expect(d.observacao).toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
+    }
+  })
 })

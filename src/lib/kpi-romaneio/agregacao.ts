@@ -832,6 +832,15 @@ export function montarDetalheEntregas(
   // CARGA foi posta na placa certa", nao o dia inteiro da placa.
   const escalaDivergente = (() => {
     if (!detectarEscalaDivergente) return false
+    // Achado real 26/09 (correcoes finais pre-deploy, item 1): com o dia
+    // ainda em andamento, NFs que faltam visitar nao podem virar "CONFERIR
+    // ESCALA" -- a placa da escala ainda pode chegar nelas. Sem este corte,
+    // um relatorio gerado no meio do dia acusava a escala/romaneio antes da
+    // rota terminar (mesmo espirito de `diaEmAndamento` no resto da funcao:
+    // nenhum fato negativo e' declarado antes do dia realmente acabar pra
+    // aquele veiculo). Ver uso de `nfEscalaDivergente` mais abaixo, que
+    // agora nunca dispara com `diaEmAndamento` true.
+    if (diaEmAndamento) return false
     if (linhasRomaneio.length < MIN_NFS_ESCALA_DIVERGENTE) return false
     let perto = 0
     let temSinalDeOutraPlaca = false
