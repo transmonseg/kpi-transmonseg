@@ -227,6 +227,108 @@ ORDEMNOTA FISCALCLIENTEENDEREÇOBAIRROQTD CAIXASPESO BRUTO PESO LÍQUIDOVALOR BR
     })
   })
 
+  // Verificacao manual 24/09 (analise-pao-24-09.md): BAIRROS_NITEROI so'
+  // tinha BADU/PENDOTIBA/PIRATININGA/ITAIPU -- bairros reais de
+  // Niteroi/Sao Goncalo/Itaborai/Marica saiam como "RIO DE JANEIRO" e
+  // geocodificavam errado. Linhas abaixo sao texto real extraido via
+  // pdf-parse do PDF "PROGRAMAÇÃO JAC (CONGELADO) 24-09.pdf" (grupo KPI).
+  describe('mapa bairro->municipio ampliado (verificacao manual 24/09)', () => {
+    const romaneioComBairro = (bairroLine: string) => `
+DATA24/09/2026
+ROMANEIO1MOTORISTAAJUDANTE
+CARRO36RBI-1J86
+Luis Paulo-
+ORDEMNOTA FISCALCLIENTEENDEREÇOBAIRROQTD CAIXASPESO BRUTO PESO LÍQUIDOVALOR BRUTO
+1
+${bairroLine}
+`
+
+    it.each([
+      ['216023SUPERPRIX ICARAI II                                                   AVENIDA SETE DE SETEMBRO,62                                                     ICARAI                                  66487,84683.837,77R$                  ', 'AVENIDA SETE DE SETEMBRO,62 - ICARAI, NITEROI - *'],
+      ['216049PEROLA SUPERMERCADOS                                                  RUA TIRADENTES,71                                                               INGA                                    751,1491.379,70R$                  ', 'RUA TIRADENTES,71 - INGA, NITEROI - *'],
+      ['216041HORTIFRUTI SANTA ROSA                                                 RUA NORONHA TERREZAO,43                                                         SANTA ROSA                              74525,8503,65.755,39R$                  ', 'RUA NORONHA TERREZAO,43 - SANTA ROSA, NITEROI - *'],
+      ['216061CASAFRUTI                                                             AVN RUI BARBOSA,87                                                              SAO FRANCISCO                           29210,72022.650,40R$                  ', 'AVN RUI BARBOSA,87 - SAO FRANCISCO, NITEROI - *'],
+      ['216012MISTER TRIGO CAMBOINHAS                                               AV PROFESSOR CARLOS NELSON FERREIRA DOS SANTOS, 125                             CAMBOINHAS                              536,535948,90R$                     ', 'AV PROFESSOR CARLOS NELSON FERREIRA DOS SANTOS, 125 - CAMBOINHAS, NITEROI - *'],
+      ['216063MERCADO MOURA BADU                                                    ESTRADA CAETANO MONTEIRO, 831                                                   PENDOTIBA                               50374,4359,42.837,05R$                  ', 'ESTRADA CAETANO MONTEIRO, 831 - PENDOTIBA, NITEROI - *'],
+      ['216071ACHEI LOJA DE CONVENIENCIAS                                           EST FRANCISCO DA CRUZ NUNES,10397                                               PIRATININGA                             861,4591.017,59R$                  ', 'EST FRANCISCO DA CRUZ NUNES,10397 - PIRATININGA, NITEROI - *'],
+      ['216033HORTIFRUTI ITAIPU                                                     ESTRADA FRANCISCO DA CRUZ NUNES,8758                                            ITAIPU                                  34219,6209,42.521,49R$                  ', 'ESTRADA FRANCISCO DA CRUZ NUNES,8758 - ITAIPU, NITEROI - *'],
+      ['216064BELLA FLOR PANIFICACAO LTDA                                           RUA VICENTE DE LIMA CLETO 744                                                   NOVA CIDADE                             302192101.595,40R$                  ', 'RUA VICENTE DE LIMA CLETO 744 - NOVA CIDADE, SAO GONCALO - *'],
+      ['216059MERCADO ACOUGUE LATICINIOS MOURA DO MUTONDO                           RUA GUILHERME SANTOS ANDRADE 1315                                               MUTONDO                                 45323,53102.653,29R$                  ', 'RUA GUILHERME SANTOS ANDRADE 1315 - MUTONDO, SAO GONCALO - *'],
+      ['216062REDE MOURA SUPERMERCADOS                                              RUA DUQUE DE CAXIAS,86                                                          OUTEIRO DAS PEDRAS                      87629,16034.917,62R$                  ', 'RUA DUQUE DE CAXIAS,86 - OUTEIRO DAS PEDRAS, ITABORAI - *'],
+      ['216053BOM DE PRECO INOA                                                     AVENIDA CARLOS MARIGHELLA 1580                                                  INOA (INOA)                             88655,2628,85.278,51R$                  ', 'AVENIDA CARLOS MARIGHELLA 1580 - INOA (INOA), MARICA - *'],
+      ['216054BOM DE PRECO BARROCO                                                  RUA DAS ORQUIDEAS,878                                                           BARROCO (ITAIPUACU)                     124907869,87.480,42R$                  ', 'RUA DAS ORQUIDEAS,878 - BARROCO (ITAIPUACU), MARICA - *'],
+      ['216008PREZUNIC MARICA                                                       R ABREU SODRE,27                                                                CENTRO                                  705114903.430,00R$                  ', 'R ABREU SODRE,27 - CENTRO, MARICA - *'],
+    ])('%s -> endereco com municipio certo', (linhaEntrega, enderecoEsperado) => {
+      const { linhas } = parsePaoTexto(romaneioComBairro(linhaEntrega), '2026-09-24')
+      expect(linhas).toHaveLength(1)
+      expect(linhas[0].endereco).toBe(enderecoEsperado)
+    })
+
+    it('bairro desconhecido (ex. TIJUCA) mantem o comportamento atual: RIO DE JANEIRO', () => {
+      const linha = '216028HORTIFRUTI CONDE 99                                                   RUA CONDE DE BONFIM,99                                                          TIJUCA                                  28214,42061.747,53R$                  '
+      const { linhas } = parsePaoTexto(romaneioComBairro(linha), '2026-09-24')
+      expect(linhas[0].endereco).toBe('RUA CONDE DE BONFIM,99 - TIJUCA, RIO DE JANEIRO - *')
+    })
+
+    it('"CENTRO" sem cliente de Marica no nome continua Rio de Janeiro (bairro ambiguo, so vira Marica com o nome do cliente)', () => {
+      const linha = '216099MERCADINHO CENTRO RJ                                                  RUA QUALQUER,1                                                                  CENTRO                                  1,001,00R$                            '
+      const { linhas } = parsePaoTexto(romaneioComBairro(linha), '2026-09-24')
+      expect(linhas[0].endereco).toBe('RUA QUALQUER,1 - CENTRO, RIO DE JANEIRO - *')
+    })
+  })
+
+  // Verificacao manual 24/09: linha longa com colunas coladas/quebradas --
+  // o split por 2+ espacos nao rendia as 4 colunas esperadas (CLIENTE,
+  // ENDERECO, BAIRRO, numeros), e o codigo antigo pegava cegamente os 3
+  // primeiros pedacos como [cliente, endereco, bairro].
+  describe('linha longa com colunas coladas/quebradas (verificacao manual 24/09)', () => {
+    const romaneioComEntrega = (linhaEntrega: string) => `
+DATA24/09/2026
+ROMANEIO4MOTORISTAAJUDANTE
+CARRO23RQU-5J45
+-Eduardo Justino
+ORDEMNOTA FISCALCLIENTEENDEREÇOBAIRROQTD CAIXASPESO BRUTO PESO LÍQUIDOVALOR BRUTO
+11
+${linhaEntrega}
+`
+
+    it('nome do cliente colado direto no endereco, sem nenhum separador (NF 216057): endereco recuperado, bairro certo', () => {
+      const linha = '216057PAO DO DIA CPRJRUA SENADOR ALENCAR, 33                                                         SAO CRISTOVAO                           107370265,40R$                     '
+      const { linhas } = parsePaoTexto(romaneioComEntrega(linha), '2026-09-24')
+      expect(linhas).toHaveLength(1)
+      expect(linhas[0].nf).toBe('216057')
+      expect(linhas[0].clienteNome).toBe('PAO DO DIA CPRJ')
+      expect(linhas[0].endereco).toBe('RUA SENADOR ALENCAR, 33 - SAO CRISTOVAO, RIO DE JANEIRO - *')
+    })
+
+    it('nome do cliente colado no endereco com 1 espaco so (NF 216051): endereco e bairro (Icarai/Niteroi) certos', () => {
+      const linha = '216051PAO DO ATLETA INDUSTRIA DE PANIFICACAO RUA LOPES TROVAO,109                                                            ICARAI                                  858,4561.518,24R$                  '
+      const { linhas } = parsePaoTexto(romaneioComEntrega(linha), '2026-09-24')
+      expect(linhas).toHaveLength(1)
+      expect(linhas[0].nf).toBe('216051')
+      expect(linhas[0].clienteNome).toBe('PAO DO ATLETA INDUSTRIA DE PANIFICACAO')
+      expect(linhas[0].endereco).toBe('RUA LOPES TROVAO,109 - ICARAI, NITEROI - *')
+    })
+
+    it('espaco duplo acidental no nome do cliente antes do endereco (NF 216009): endereco e bairro certos, nao quebra em coluna fantasma', () => {
+      const linha = '216009PREZUNIC MEIER  LJ 729                                                RUA DIAS DA CRUZ,579                                                            MEIER                                   524,5823,08897,94R$                     '
+      const { linhas } = parsePaoTexto(romaneioComEntrega(linha), '2026-09-24')
+      expect(linhas).toHaveLength(1)
+      expect(linhas[0].nf).toBe('216009')
+      expect(linhas[0].clienteNome).toBe('PREZUNIC MEIER LJ 729')
+      expect(linhas[0].endereco).toBe('RUA DIAS DA CRUZ,579 - MEIER, RIO DE JANEIRO - *')
+    })
+
+    it('espaco duplo acidental no nome do cliente (NF 216024): endereco e bairro (Tijuca) certos', () => {
+      const linha = '216024SUPERPRIX TIJUCA  USINA                                               RUA CONDE DE BONFIM ,812                                                        TIJUCA                                  102744,4713,86.490,78R$                  '
+      const { linhas } = parsePaoTexto(romaneioComEntrega(linha), '2026-09-24')
+      expect(linhas).toHaveLength(1)
+      expect(linhas[0].nf).toBe('216024')
+      expect(linhas[0].clienteNome).toBe('SUPERPRIX TIJUCA USINA')
+      expect(linhas[0].endereco).toBe('RUA CONDE DE BONFIM ,812 - TIJUCA, RIO DE JANEIRO - *')
+    })
+  })
+
   it('romaneio sem nenhuma entrega valida (so cabecalho): nao gera linha nem escala, nao quebra', () => {
     const texto = `
 DATA15/09/2026

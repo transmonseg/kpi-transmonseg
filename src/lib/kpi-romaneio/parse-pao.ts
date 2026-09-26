@@ -27,12 +27,81 @@ const ORDEM_HEADER_RE = /^ORDEM/
 const NF_LINHA_RE = /^(\d{6})(?!\d)(.*)$/
 
 // Bairros que sabidamente ficam fora do municipio do Rio de Janeiro --
-// lista curta (so' os vistos nas duas amostras reais). Ampliar sob demanda
-// quando aparecer bairro de outro municipio (ver spec, "Fora do escopo").
-const BAIRROS_NITEROI = new Set(['BADU', 'PENDOTIBA', 'PIRATININGA', 'ITAIPU'])
+// lista ampliada com o PDF real de 24/09 (verificacao manual, ver
+// analise-pao-24-09.md). Ampliar sob demanda quando aparecer bairro de
+// outro municipio que ainda nao esteja aqui (ver spec, "Fora do escopo").
+const BAIRROS_NITEROI = new Set([
+  'BADU', 'PENDOTIBA', 'PIRATININGA', 'ITAIPU',
+  'ICARAI', 'INGA', 'SANTA ROSA', 'SAO FRANCISCO', 'CAMBOINHAS',
+])
+const BAIRROS_SAO_GONCALO = new Set(['NOVA CIDADE', 'MUTONDO'])
+const BAIRROS_ITABORAI = new Set(['OUTEIRO DAS PEDRAS'])
+// Inoa e Itaipuacu (bairro "BARROCO" dentro do distrito de Itaipuacu) sao
+// de Marica. O pdf-parse as vezes traz o nome do distrito entre parenteses
+// colado ao bairro ("INOA (INOA)", "BARROCO (ITAIPUACU)") -- normalizarBairro
+// separa essa parte pra podermos casar tanto pelo nome do bairro quanto
+// pelo do distrito.
+const BAIRROS_MARICA = new Set(['INOA', 'ITAIPUACU', 'BARROCO'])
 
-function municipioPorBairro(bairro: string): string {
-  return BAIRROS_NITEROI.has(bairro.toUpperCase().trim()) ? 'NITEROI' : 'RIO DE JANEIRO'
+function normalizarBairro(bairro: string): { base: string; parenteses: string } {
+  const norm = bairro.toUpperCase().trim()
+  const m = norm.match(/^(.*?)\s*\(([^)]*)\)\s*$/)
+  if (m) return { base: m[1].trim(), parenteses: m[2].trim() }
+  return { base: norm, parenteses: '' }
+}
+
+// "CENTRO" sozinho e' ambiguo (existe em varios municipios) -- so' conta
+// como Marica quando o proprio nome do cliente entrega o municipio (ex.
+// "PREZUNIC MARICA" no bairro "CENTRO", visto no PDF real de 24/09).
+function municipioPorBairro(bairro: string, clienteNome: string): string {
+  const { base, parenteses } = normalizarBairro(bairro)
+  if (BAIRROS_NITEROI.has(base)) return 'NITEROI'
+  if (BAIRROS_SAO_GONCALO.has(base)) return 'SAO GONCALO'
+  if (BAIRROS_ITABORAI.has(base)) return 'ITABORAI'
+  if (BAIRROS_MARICA.has(base) || BAIRROS_MARICA.has(parenteses)) return 'MARICA'
+  if (base === 'CENTRO' && clienteNome.toUpperCase().includes('MARICA')) return 'MARICA'
+  return 'RIO DE JANEIRO'
+}
+
+// Prefixos de logradouro conhecidos nas amostras reais (RUA, AVENIDA/AVN/AV,
+// ESTRADA/EST, TRAVESSA, ALAMEDA, LARGO, PRACA/PRAÇA, ROD/RODOVIA) --
+// usados so' como ultimo recurso, quando a coluna de endereco veio colada
+// direto no nome do cliente sem nenhum separador de 2+ espacos (ver
+// `dividirClienteEndereco`).
+const PREFIXO_LOGRADOURO_RE = /(RUA|AVENIDA|AVN|ESTRADA|TRAVESSA|ALAMEDA|LARGO|PRA[CÇ]A|ROD(?:OVIA)?)(?=[ ,.]|$)/
+
+// O layout normal do PDF (via pdf-parse, sem opcao de layout) cola 4
+// colunas por linha de entrega -- CLIENTE, ENDERECO, BAIRRO, numeros de
+// QTD/PESO/VALOR -- separadas por 2+ espacos. Duas quebras reais vistas no
+// PDF de 24/09 (ver analise-pao-24-09.md) bagunçam a contagem de colunas:
+//  (a) o nome do cliente tem um espaco duplo por acidente no proprio
+//      documento ("PREZUNIC MEIER  LJ 729", "SUPERPRIX TIJUCA  USINA") --
+//      o split gera uma coluna extra ANTES do endereco;
+//  (b) o endereco vem colado no nome do cliente sem separador nenhum
+//      ("...PANIFICACAO RUA LOPES TROVAO,109", "...CPRJRUA SENADOR
+//      ALENCAR, 33") -- o split nao separa cliente de endereco.
+// Em ambos os casos o BAIRRO (penultima coluna) e os NUMEROS (ultima) ja'
+// saem certos do split; so' precisamos reconstruir cliente/endereco a
+// partir do que sobrou.
+function dividirClienteEndereco(restante: string[]): { clienteNome: string; enderecoRua: string } {
+  if (restante.length === 0) return { clienteNome: '', enderecoRua: '' }
+  if (restante.length >= 2) {
+    // Caso (a): a ultima coluna que sobrou e' o endereco de verdade; tudo
+    // antes (nome do cliente, mesmo que o split tenha partido em pedacos
+    // por causa do espaco duplo acidental) volta a virar um so' nome.
+    return {
+      clienteNome: restante.slice(0, -1).join(' '),
+      enderecoRua: restante[restante.length - 1],
+    }
+  }
+  // Caso (b): so' sobrou um pedaco (cliente+endereco colados). Acha o
+  // prefixo de logradouro conhecido e corta ali.
+  const glued = restante[0]
+  const m = glued.match(PREFIXO_LOGRADOURO_RE)
+  if (m && m.index !== undefined && m.index > 0) {
+    return { clienteNome: glued.slice(0, m.index).trim(), enderecoRua: glued.slice(m.index).trim() }
+  }
+  return { clienteNome: glued, enderecoRua: '' }
 }
 
 // A linha de motorista+ajudante nunca tem separador confiavel quando os
@@ -182,8 +251,13 @@ export function parsePaoTexto(texto: string, data: string): ResultadoParsePao {
       continue
     }
 
-    const [clienteNome, enderecoRua, bairro] = partes
-    const municipio = municipioPorBairro(bairro)
+    // Colunas de verdade sao sempre as duas ultimas (BAIRRO, numeros) --
+    // o que sobra antes pode estar bem formado (cliente, endereco) ou
+    // bagunçado por uma das duas quebras reais do documento (ver
+    // `dividirClienteEndereco`).
+    const bairro = partes[partes.length - 2]
+    const { clienteNome, enderecoRua } = dividirClienteEndereco(partes.slice(0, -2))
+    const municipio = municipioPorBairro(bairro, clienteNome)
     if (destinoPrimeiraEntrega === null) destinoPrimeiraEntrega = bairro
 
     linhas.push({
