@@ -274,6 +274,15 @@ function acharParadaUnitracParaFeito(
 // RAIO_PARADA_FEITO_UNITRAC_M/TOLERANCIA_FEITO_UNITRAC_MIN acima).
 const DURACAO_MIN_PARADA_UNITRAC_PROPRIA_MIN = 2
 const RAIO_PARADA_UNITRAC_PROPRIA_M = 300
+// Fix round 1 (revisao pos-medicao, achado real: analise-24-09.md media 69
+// NFs com esta regra, so' 31 confirmaram na primeira implementacao) --
+// texto exato da analise: "sem outro cliente da mesma placa a <=150 m".
+// E' um raio FIXO em torno da PARADA (explica-se por outro cliente perto de
+// verdade), nao "mais perto que a distancia desta NF" -- a versao relativa
+// (primeira implementacao) rejeitava candidatas legitimas so' porque outro
+// cliente, mesmo longe de qualquer explicacao plausivel (ex. 280m x 290m),
+// era numericamente "mais perto".
+const RAIO_OUTRO_CLIENTE_EXPLICA_M = 150
 
 /** Ponto de referencia (geocode confiavel OU cadastro Unitrac) de OUTRA NF
  *  da mesma placa, usado so' pra desempatar `acharParadaUnitracPropria`
@@ -285,12 +294,13 @@ type PontoReferenciaPlacaNf = { endereco: string; lat: number; lng: number }
  *  esta NF por presenca fisica (sem depender de visita GPS nem de alvo
  *  'feito'): duracao >= DURACAO_MIN_PARADA_UNITRAC_PROPRIA_MIN, centro a
  *  <= RAIO_PARADA_UNITRAC_PROPRIA_M do geocode confiavel da linha OU do
- *  cadastro Unitrac do alvo casado, e que nao esteja MAIS PERTO de um ponto
- *  de referencia de OUTRA NF da mesma placa com endereco diferente (Review
- *  Focus: parada perto de um cliente mas ainda mais perto de outro cliente
- *  da mesma placa nao confirma este). Entre as candidatas validas, vence a
- *  de MAIOR duracao (mais provavel de ser a entrega de verdade, nao um blip
- *  de transito). `null` quando nenhuma parada satisfaz tudo isso. */
+ *  cadastro Unitrac do alvo casado, e que nao esteja explicada por (a <=
+ *  RAIO_OUTRO_CLIENTE_EXPLICA_M de) OUTRA NF da mesma placa com endereco
+ *  diferente (Review Focus: parada perto de um cliente mas que tambem
+ *  explica genuinamente outro cliente da mesma placa nao confirma este).
+ *  Entre as candidatas validas, vence a de MAIOR duracao (mais provavel de
+ *  ser a entrega de verdade, nao um blip de transito). `null` quando
+ *  nenhuma parada satisfaz tudo isso. */
 function acharParadaUnitracPropria(
   linha: LinhaGeocodificada,
   cadastro: { lat: number; lng: number } | null,
@@ -313,31 +323,39 @@ function acharParadaUnitracPropria(
     const candidatas = [distGeo, distCad].filter((d): d is number => d != null && d <= RAIO_PARADA_UNITRAC_PROPRIA_M)
     if (candidatas.length === 0) continue
     const dist = Math.min(...candidatas)
-    const maisPertoDeOutroCliente = outrosPontosDaPlaca
+    const explicadaPorOutroCliente = outrosPontosDaPlaca
       .filter(o => o.endereco !== linha.endereco)
-      .some(o => haversine(p.lat as number, p.lng as number, o.lat, o.lng) < dist)
-    if (maisPertoDeOutroCliente) continue
+      .some(o => haversine(p.lat as number, p.lng as number, o.lat, o.lng) <= RAIO_OUTRO_CLIENTE_EXPLICA_M)
+    if (explicadaPorOutroCliente) continue
     if (!melhor || duracaoMin > melhor.duracaoMin) melhor = { parada: p, dist, duracaoMin }
   }
   return melhor ? { parada: melhor.parada, distParadaM: melhor.dist } : null
 }
 
 // Task 2 (plano 2026-09-25): rotulos que ja' sao "ENTREGUE" mas com ressalva
-// (confirmado_gps ambiguo) ou "pendente" com observacao de CONFERIR/falha por
-// distancia -- exatamente os listados no brief como elegiveis pra R2
-// sobrescrever com uma confirmacao limpa. Nunca inclui "sem rastreador",
-// "carga transferida"/outra placa, "veiculo sem movimento", "tempo em loja"
-// nem "parada curta de outro endereco" (perdedor) -- nenhum desses e' fato
-// que uma parada da propria placa deva sobrepor.
+// (mesmo quando o STATUS por baixo ja e' confirmado_unitrac/confirmado_gps --
+// ex. situacao=1 da Unitrac + visita com raio ampliado/parada curta
+// compartilhada, achado real TOS0G53/2388187, RQU2G47/2387959: 43 dos 69 da
+// analise tem 'feito' Unitrac batendo, ou seja confirmadoUnitrac=true, e a
+// primeira implementacao os excluia so' por checar o enum de status) ou
+// "pendente" com observacao de CONFERIR/falha por distancia -- os rotulos
+// listados no brief MAIS os dois que a analise mostra que R2 tambem
+// recupera ("compartilhada"/viaVizinhanca e "curta de outro endereco"/
+// perdeuParadaCompartilhada). Nunca inclui "sem rastreador", "carga
+// transferida"/outra placa, "veiculo sem movimento" nem "tempo em loja" --
+// nenhum desses e' fato que uma parada da propria placa deva sobrepor.
 const PREFIXO_OBS_COORDENADA_IMPRECISA = 'ENDEREÇO COM COORDENADA IMPRECISA'
 function elegivelParaConfirmarPorParadaPropria(status: StatusEntrega, observacao: string | null): boolean {
-  if (status !== 'pendente' && status !== 'confirmado_gps') return false
+  // Ja' e' ENTREGUE limpo (nenhuma ressalva, seja o status confirmado_unitrac
+  // ou confirmado_gps) -- nada a fazer, ver caso de aceite (e).
   if (observacao == null) return status === 'pendente'
   return observacao === 'ENTREGUE - PARADA CURTA (ATÉ 3MIN) CONFIRMOU VÁRIOS ENDEREÇOS DIFERENTES AO MESMO TEMPO - CONFERIR'
     || observacao === 'ENTREGUE - PARADA PRÓXIMA (500-800m) MAS DENTRO DA ROTA - CONFERIR'
+    || observacao === 'ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)'
     || observacao === 'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR'
     || observacao === 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR'
     || observacao === 'NÃO FOI AO CLIENTE (caminhão não esteve na região)'
+    || observacao === 'PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR'
     || observacao.startsWith(PREFIXO_OBS_COORDENADA_IMPRECISA)
 }
 

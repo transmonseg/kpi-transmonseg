@@ -2363,3 +2363,166 @@ describe('montarDetalheEntregas -- confirmarPorParadaUnitracPropria opt-in (Task
     expect(d.chegada).toBeNull()
   })
 })
+
+// Fix round 1 (revisao pos-medicao, achado real 24/09): a analise que
+// embasou o plano (~/ClaudeGerado/kpi-regen-0922/analise-24-09.md) media 69
+// NFs com a MESMA regra de R2, mas a primeira implementacao so' confirmou
+// 31. Diagnostico NF a NF (TOS0G53/2388187, RQU2G47/2387959, TOS1H26/2388001
+// -- todos com "Unitrac situacao 1 feito ..." na analise, i.e.
+// confirmadoUnitrac=true) mostrou dois desvios da regra medida:
+// (1) `elegivelParaConfirmarPorParadaPropria` excluia qualquer NF cujo
+//     STATUS ja fosse 'confirmado_unitrac' -- mas a analise nunca olhou pro
+//     enum de status, so' pra "tem ressalva/CONFERIR ou nao" (situacao=1 +
+//     visita com raio ampliado/parada curta compartilhada/vizinhanca ainda
+//     E' ambigua, so' o status por baixo e' confirmado_unitrac). 43 dos 69
+//     tinham 'feito' Unitrac batendo -- a maioria caia nesse buraco.
+// (2) a regra "nao mais perto de outro cliente" usava distancia RELATIVA
+//     (`< dist`), mais agressiva que o texto exato da analise ("sem outro
+//     cliente da mesma placa a <=150 m", raio FIXO).
+// (3) faltavam dois rotulos que a analise mostra que R2 tambem recupera:
+//     "compartilhada" (viaVizinhanca, 3 de 6) e "curta de outro endereco"
+//     (perdeuParadaCompartilhada, 1 de 9).
+describe('montarDetalheEntregas -- Fix round 1 (R2 tambem confirma quando o status ja e confirmado_unitrac com ressalva)', () => {
+  const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+  const DELTA_150M = 0.0013491
+
+  it('achado real TOS0G53/2388187: situacao=1 (confirmado_unitrac) + visita.viaRaioAmpliado -- R2 confirma pelo cadastro', () => {
+    const linhas = [linha('NF1', { lat: -22.9, lng: -43.2 })]
+    const alvos = [alvo('NF1', 1, { pontoLat: -23.0, pontoLng: -43.3 })]
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', chegada: '2026-09-24T09:00:00.000Z', saida: '2026-09-24T09:10:00.000Z', distanciaMetrosDoPonto: 700, viaRaioAmpliado: true }],
+    ])
+    const paradaPropria = parada({
+      classificacao: 'FORA_BASE',
+      lat: -23.0 + DELTA_150M, lng: -43.3,
+      chegada: '2026-09-24T10:00:00.000Z', saida: '2026-09-24T10:05:00.000Z', fim_real: '2026-09-24T10:05:00.000Z',
+    })
+    const paradasCruas = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaPropria]]])
+
+    const [d] = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, alvos, visitas, resumoCargaVazio,
+      true, new Map(), null, false, false, false, paradasCruas, true, true, true,
+    )
+
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBeNull()
+    expect(d.evidencia).toBe('parada_unitrac_propria')
+    expect(d.chegada).toBe('2026-09-24T10:00:00.000Z')
+  })
+
+  it('achado real RQU2G47/2387959: situacao=1 + parada curta compartilhada (grupo>1) -- R2 confirma', () => {
+    const linhas = [
+      linha('NF1', { endereco: 'RUA A' }),
+      linha('NF2', { endereco: 'RUA B', lat: -22.93, lng: -43.2 }),
+    ]
+    const alvos = [alvo('NF1', 1)]
+    const curta = { chegada: '2026-09-24T17:10:00.000Z', saida: '2026-09-24T17:11:00.000Z' }
+    const visitas = new Map<string, Visita>(
+      linhas.map(l => [l.nf, { nf: l.nf, chegada: curta.chegada, saida: curta.saida, distanciaMetrosDoPonto: 10 }]),
+    )
+    const paradaPropria = parada({
+      classificacao: 'FORA_BASE',
+      lat: -22.9 + DELTA_150M, lng: -43.2,
+      chegada: '2026-09-24T10:00:00.000Z', saida: '2026-09-24T10:05:00.000Z', fim_real: '2026-09-24T10:05:00.000Z',
+    })
+    const paradasCruas = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaPropria]]])
+
+    const detalhes = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, alvos, visitas, resumoCargaVazio,
+      true, new Map(), null, false, false, true, paradasCruas, true, true, true,
+    )
+    const d1 = detalhes.find(d => d.nf === 'NF1')!
+
+    expect(d1.status).toBe('confirmado_gps')
+    expect(d1.observacao).toBeNull()
+    expect(d1.evidencia).toBe('parada_unitrac_propria')
+  })
+
+  it('rotulo "ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA" (viaVizinhanca) -- R2 confirma', () => {
+    const linhas = [linha('NF1')]
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', chegada: '2026-09-24T09:00:00.000Z', saida: '2026-09-24T09:10:00.000Z', distanciaMetrosDoPonto: 400, viaVizinhanca: true }],
+    ])
+    const paradaPropria = parada({
+      classificacao: 'FORA_BASE',
+      lat: -22.9 + DELTA_150M, lng: -43.2,
+      chegada: '2026-09-24T10:00:00.000Z', saida: '2026-09-24T10:05:00.000Z', fim_real: '2026-09-24T10:05:00.000Z',
+    })
+    const paradasCruas = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaPropria]]])
+
+    const [d] = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio,
+      true, new Map(), null, false, false, false, paradasCruas, true, true, true,
+    )
+
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBeNull()
+    expect(d.evidencia).toBe('parada_unitrac_propria')
+  })
+
+  it('rotulo "PARADA CURTA DE OUTRO ENDEREÇO" (perdeuParadaCompartilhada) -- R2 confirma o perdedor pela parada propria dele', () => {
+    const paradaCurta = { chegada: '2026-09-11T08:00:00.000Z', saida: '2026-09-11T08:01:00.000Z' }
+    const paradaRealDoGrupo = parada({
+      chegada: paradaCurta.chegada, saida: paradaCurta.saida, fim_real: paradaCurta.saida,
+      classificacao: 'FORA_BASE', lat: -22.71, lng: -42.628,
+    })
+    const linhas = [
+      linha('NF_A', { endereco: 'ENDERECO A - PERTO (~45m)', lat: -22.7104, lng: -42.628 }),
+      linha('NF_B', { endereco: 'ENDERECO B - LONGE (~4.4km)', lat: -22.75, lng: -42.628 }),
+    ]
+    const visitas = new Map<string, Visita>([
+      ['NF_A', { nf: 'NF_A', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 999 }],
+      ['NF_B', { nf: 'NF_B', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 999 }],
+    ])
+    // Parada REAL da propria placa perto de NF_B, em horario DIFERENTE da
+    // parada curta compartilhada (senao a distancia medida vira a mesma
+    // parada de 1min, que ja perdeu por outro motivo) -- 150m/3min, valida
+    // pra R2.
+    const paradaPropriaDeNF_B = parada({
+      classificacao: 'FORA_BASE',
+      lat: -22.75 + DELTA_150M, lng: -42.628,
+      chegada: '2026-09-11T09:00:00.000Z', saida: '2026-09-11T09:03:00.000Z', fim_real: '2026-09-11T09:03:00.000Z',
+    })
+    const paradasPorOutraPlaca = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaRealDoGrupo]]])
+    const paradasCruas = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaRealDoGrupo, paradaPropriaDeNF_B]]])
+
+    const detalhes = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio,
+      true, paradasPorOutraPlaca, null, false, false, true, paradasCruas, true, true, true,
+    )
+    const nfB = detalhes.find(d => d.nf === 'NF_B')!
+
+    expect(nfB.status).toBe('confirmado_gps')
+    expect(nfB.observacao).toBeNull()
+    expect(nfB.evidencia).toBe('parada_unitrac_propria')
+    expect(nfB.chegada).toBe('2026-09-11T09:00:00.000Z')
+  })
+
+  it('raio fixo de 150m (nao relativo): outro cliente a 140m da parada bloqueia mesmo esta NF estando mais perto (100m)', () => {
+    const paradaLat = -22.95
+    const DELTA_100M = 0.0008994
+    const DELTA_140M = 0.0012592
+    const linhas = [
+      linha('NF1', { endereco: 'ENDERECO A', lat: paradaLat + DELTA_100M, lng: -43.25 }),
+      linha('NF2', { endereco: 'ENDERECO B', lat: paradaLat + DELTA_140M, lng: -43.25 }),
+    ]
+    const paradaPropria = parada({
+      classificacao: 'FORA_BASE',
+      lat: paradaLat, lng: -43.25,
+      chegada: '2026-09-24T10:00:00.000Z', saida: '2026-09-24T10:05:00.000Z', fim_real: '2026-09-24T10:05:00.000Z',
+    })
+    const paradasCruas = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaPropria]]])
+
+    const [d1] = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio,
+      true, new Map(), null, false, false, false, paradasCruas, true, true, true,
+    )
+
+    // NF1 esta mais perto (100m) que NF2 (140m) da parada -- pela regra
+    // RELATIVA antiga isso NAO bloquearia (140 > 100). Pela regra fixa
+    // (<=150m explica), NF2 tambem esta "explicada" pela parada -- ela e'
+    // outro cliente da mesma placa a <=150m -- entao NF1 NAO confirma.
+    expect(d1.evidencia).not.toBe('parada_unitrac_propria')
+    expect(d1.status).toBe('pendente')
+  })
+})
