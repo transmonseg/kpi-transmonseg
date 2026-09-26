@@ -174,6 +174,68 @@ class TestVerificarKpiGabaritos(unittest.TestCase):
         self.assertEqual(codigo, 0, saida)
         self.assertIn("conhecida", saida)
 
+    def test_dia_extra_via_flag(self):
+        """--dia AAAA-MM-DD=arquivo.xlsx deve funcionar junto com os 3
+        posicionais antigos, cobrindo um 4o dia (ex.: 25/09)."""
+        xlsx_24 = self.xlsx_vazio
+        xlsx_25 = self.tmp / "dia25.xlsx"
+        _escrever_xlsx_kpi(
+            xlsx_25,
+            {
+                "RQV9D97": [
+                    (
+                        "1",
+                        "2390611",
+                        "CLIENTE Z",
+                        "ENDERECO Z",
+                        "08:50",
+                        "09:13",
+                        "0h23min",
+                        "ENTREGUE - PARADA PROXIMA (500-800m) MAS DENTRO DA ROTA",
+                        "",
+                        "",
+                        "Nao esteve no local",
+                        700,
+                    )
+                ]
+            },
+        )
+        caminho_casos = self.tmp / "casos.csv"
+        caminho_excecoes = self.tmp / "excecoes.csv"
+        _escrever_csv_casos(
+            caminho_casos,
+            [("2026-09-25", "RQV9D97", "2390611", "nao_entregue", "teste")],
+        )
+        _escrever_csv_excecoes(caminho_excecoes, [])
+
+        argv_original = sys.argv
+        stdout_original = sys.stdout
+        import io
+
+        buffer = io.StringIO()
+        sys.argv = [
+            "verificar-kpi-gabaritos.py",
+            str(self.xlsx_vazio),
+            str(self.xlsx_vazio),
+            str(xlsx_24),
+            "--casos",
+            str(caminho_casos),
+            "--excecoes",
+            str(caminho_excecoes),
+            "--dia",
+            f"2026-09-25={xlsx_25}",
+        ]
+        try:
+            sys.stdout = buffer
+            codigo = verificar_kpi_gabaritos.main()
+        finally:
+            sys.argv = argv_original
+            sys.stdout = stdout_original
+
+        self.assertEqual(codigo, 1, buffer.getvalue())
+        self.assertIn("FALHA CRITICA", buffer.getvalue())
+        self.assertIn("2390611", buffer.getvalue())
+
     def test_entregue_conta_acerto(self):
         xlsx_24 = self.tmp / "dia24.xlsx"
         _escrever_xlsx_kpi(

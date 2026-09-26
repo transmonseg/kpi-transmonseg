@@ -5,3 +5,6 @@ data;placa;nf;motivo;desde
 2026-09-24;TTH3C94;2388733;baseline codigo ad01b19: ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PROXIMA, mas ground truth diz "Nao foi ao local";2026-09-25
 2026-09-24;RQU3F71;2388098;baseline codigo ad01b19: ENTREGUE POR OUTRA PLACA (RQU6E83) - CARGA TRANSFERIDA, mas ground truth diz "Nao foi ao local" (caso fixo do brief);2026-09-25
 2026-09-24;RQV9B26;2388278;baseline codigo ad01b19: ENTREGUE POR OUTRA PLACA (RQV9D97) - CARGA TRANSFERIDA, mas ground truth diz "Nao foi ao local" (caso fixo do brief);2026-09-25
+2026-09-25;RQV9D97;2390611;corrigir na Task 1 (modo precisao);2026-09-26
+2026-09-25;RQV9E67;2390481;corrigir na Task 1 (modo precisao);2026-09-26
+2026-09-25;RBG5G18;2390539;corrigir na Task 1 (modo precisao);2026-09-26

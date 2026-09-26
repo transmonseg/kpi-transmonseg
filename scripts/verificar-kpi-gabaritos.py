@@ -33,7 +33,13 @@ Uso:
     python3 verificar-kpi-gabaritos.py <xlsx_22> <xlsx_23> <xlsx_24> \
         [--casos scripts/gabaritos/casos-rotulados.csv] \
         [--excecoes scripts/gabaritos/excecoes-conhecidas.csv] \
-        [--gabarito-ana <xlsx_gabarito_ana>]
+        [--gabarito-ana <xlsx_gabarito_ana>] \
+        [--dia AAAA-MM-DD=arquivo.xlsx ...]
+
+    --dia e' repetivel e aceita dias adicionais alem dos 3 posicionais
+    (22/23/24), sem quebrar a forma antiga. Ex.:
+    python3 verificar-kpi-gabaritos.py 22.xlsx 23.xlsx 24.xlsx \
+        --dia 2026-09-25=25p.xlsx
 
 Sai com codigo 1 se houver qualquer falha NOVA (nao listada nas excecoes).
 Sai com codigo 0 caso contrario (mesmo que existam excecoes conhecidas).
@@ -238,6 +244,14 @@ def main() -> int:
         help="xlsx do gabarito da Ana (Conferencia por NF) -- roda "
         "medir-contra-gabarito-ana.py contra o xlsx de 22/09 se informado.",
     )
+    parser.add_argument(
+        "--dia",
+        action="append",
+        default=[],
+        metavar="AAAA-MM-DD=arquivo.xlsx",
+        help="dia extra alem dos 3 posicionais (22/23/24), repetivel. "
+        "Ex.: --dia 2026-09-25=25p.xlsx",
+    )
     args = parser.parse_args()
 
     xlsx_por_data = {
@@ -245,6 +259,20 @@ def main() -> int:
         "2026-09-23": Path(args.xlsx_23),
         "2026-09-24": Path(args.xlsx_24),
     }
+
+    for entrada in args.dia:
+        if "=" not in entrada:
+            parser.error(
+                f"--dia invalido: {entrada!r} (esperado AAAA-MM-DD=arquivo.xlsx)"
+            )
+        data_str, _, caminho_str = entrada.partition("=")
+        data_str = data_str.strip()
+        caminho_str = caminho_str.strip()
+        if not data_str or not caminho_str:
+            parser.error(
+                f"--dia invalido: {entrada!r} (esperado AAAA-MM-DD=arquivo.xlsx)"
+            )
+        xlsx_por_data[data_str] = Path(caminho_str)
 
     casos = carregar_casos(Path(args.casos))
     excecoes = carregar_excecoes(Path(args.excecoes))
