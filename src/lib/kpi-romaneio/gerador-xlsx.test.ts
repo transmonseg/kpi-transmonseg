@@ -902,7 +902,7 @@ describe('gerador-xlsx', () => {
 // (calculada em cima de `status`, nunca das colunas de exibicao) precisa
 // continuar certa.
 describe('gerador-xlsx -- rodizio sem coluna dedicada (ajuste 26/09: PLACA EXECUTORA removida)', () => {
-  it('NF de rodizio (status confirmado, mesmo com observacao "ROTA EXECUTADA POR OUTRA PLACA") conta na taxa; xlsx nao tem PLACA EXECUTORA/MOTIVO/CONFIANÇA', async () => {
+  it('NF de rodizio (status confirmado) conta na taxa e mostra STATUS comecando com ENTREGUE mesmo com observacao residual "ROTA EXECUTADA POR OUTRA PLACA"; xlsx nao tem PLACA EXECUTORA/MOTIVO/CONFIANÇA', async () => {
     const linhas = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
     const detalhe: LinhaDetalheEntrega[] = [
       detalheFixture({
@@ -922,7 +922,11 @@ describe('gerador-xlsx -- rodizio sem coluna dedicada (ajuste 26/09: PLACA EXECU
     expect(header).not.toContain('MOTIVO')
     expect(header).not.toContain('CONFIANÇA')
     const l1 = (wsPlaca.getRow(4).values as unknown[]).slice(1)
-    expect(l1[7]).toBe('ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)')
+    // Bug real 26/09 (segunda rodada): STATUS de uma NF confirmada tem que
+    // COMEÇAR com "ENTREGUE", sem exceção -- observacao residual vira
+    // sufixo, nunca esconde a confirmação.
+    expect(l1[7]).toBe('ENTREGUE - ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)')
+    expect((l1[7] as string).startsWith('ENTREGUE')).toBe(true)
     const resumoTexto = String(wb.worksheets[0].getCell(4, 1).value)
     expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 50,0% (1 de 2 NFs; 0 sem rastreador fora da conta)')
   })
@@ -936,5 +940,56 @@ describe('gerador-xlsx -- rodizio sem coluna dedicada (ajuste 26/09: PLACA EXECU
     const wsPlaca = wb.getWorksheet('ABC1234')!
     const header = (wsPlaca.getRow(3).values as unknown[]).slice(1)
     expect(header).toEqual([...COLUNAS_DETALHE_PLACA])
+  })
+})
+
+// Bug real 26/09 (segunda rodada, achado da Ana no KPI-Nutry-Max-2026-09-25-
+// TESTE.xlsx): resumo (2.079) != soma de linhas com STATUS iniciando em
+// "ENTREGUE" nas abas (2.073) porque `textoStatus` mostrava a observacao
+// residual (ex. "TEMPO EM LOJA ACIMA DE 4H - CONFERIR") POR CIMA de um
+// status ja' confirmado -- trava agora exigida: toda NF confirmada
+// (status !== 'pendente') tem STATUS comecando com "ENTREGUE", sem excecao.
+describe('gerador-xlsx -- STATUS de NF confirmada sempre comeca com ENTREGUE (bug real 26/09, segunda rodada)', () => {
+  async function statusDaPlaca(detalhe: LinhaDetalheEntrega[]): Promise<string> {
+    const linhas = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    const wsPlaca = wb.getWorksheet('ABC1234')!
+    return (wsPlaca.getRow(4).values as unknown[]).slice(1)[7] as string
+  }
+
+  it('caso real RBI1E10/2391359 e RQV8A12/216127: confirmado + "TEMPO EM LOJA ACIMA DE 4H - CONFERIR" -> "ENTREGUE - TEMPO EM LOJA ACIMA DE 4H"', async () => {
+    const status = await statusDaPlaca([detalheFixture({
+      nf: '2391359', status: 'confirmado_gps', observacao: 'TEMPO EM LOJA ACIMA DE 4H - CONFERIR',
+    })])
+    expect(status).toBe('ENTREGUE - TEMPO EM LOJA ACIMA DE 4H')
+    expect(status.startsWith('ENTREGUE')).toBe(true)
+  })
+
+  it('confirmado + observacao ja comecando com ENTREGUE (ex. "ENTREGUE POR OUTRA PLACA...") passa direto, sem prefixo duplicado', async () => {
+    const status = await statusDaPlaca([detalheFixture({
+      status: 'confirmado_gps', observacao: 'ENTREGUE POR OUTRA PLACA (RQV6I51) - CARGA TRANSFERIDA',
+    })])
+    expect(status).toBe('ENTREGUE POR OUTRA PLACA (RQV6I51) - CARGA TRANSFERIDA')
+  })
+
+  it('confirmado sem observacao -> "ENTREGUE" simples (comportamento antigo preservado)', async () => {
+    const status = await statusDaPlaca([detalheFixture({ status: 'confirmado_unitrac', observacao: null })])
+    expect(status).toBe('ENTREGUE')
+  })
+
+  it('qualquer outra observacao residual coexistindo com status confirmado ganha o mesmo prefixo generico (defesa)', async () => {
+    const status = await statusDaPlaca([detalheFixture({
+      status: 'confirmado_unitrac', observacao: 'ALGUM ROTULO FUTURO NAO PREVISTO - CONFERIR',
+    })])
+    expect(status).toBe('ENTREGUE - ALGUM ROTULO FUTURO NAO PREVISTO - CONFERIR')
+  })
+
+  it('pendente continua mostrando a observacao pura (nenhuma mudanca de comportamento pra nao confirmado)', async () => {
+    const status = await statusDaPlaca([detalheFixture({
+      status: 'pendente', observacao: 'PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR',
+    })])
+    expect(status).toBe('PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR')
   })
 })

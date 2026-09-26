@@ -1555,7 +1555,22 @@ export function montarDetalheEntregas(
     // um vencedor claro (<=150m) no grupo, so' os enderecos genuinamente
     // longe (>300m) levam este rotulo; o vencedor cai no bloco seguinte
     // (mantem "ENTREGUE - PARADA CURTA..."), igual antes.
-    if (observacao == null && perdeuParadaCompartilhada) {
+    //
+    // Bug real 26/09 (segunda rodada, achado da Ana no KPI-Nutry-Max-
+    // 2026-09-25-TESTE.xlsx): `status` ja' e' 'confirmado_unitrac' quando
+    // `confirmadoUnitrac` e' true (ver ternario acima, que checa
+    // confirmadoUnitrac ANTES de perdeuParadaCompartilhada) -- sem o guard
+    // `status === 'pendente'` aqui, este bloco carimbava "...NÃO CONFIRMA
+    // ESTE CLIENTE - CONFERIR" POR CIMA de uma NF que a Unitrac ja' tinha
+    // confirmado por evidencia INDEPENDENTE (alvo.situacao===1), escondendo
+    // o "ENTREGUE" no STATUS exibido (textoStatus em gerador-xlsx.ts mostra
+    // a observacao quando ela existe) e quebrando a trava "STATUS comecando
+    // com ENTREGUE == confirmado" (4 casos reais 25/09: RBJ9I44/2391211,
+    // RQP0G77/2391713, RQU2E34/2391249, TOS4J82/2391148). A regra de
+    // rebaixamento por parada curta de outro endereco so' faz sentido pra
+    // decidir uma NF que AINDA nao tem confirmacao nenhuma -- nunca deve
+    // rebaixar uma que a Unitrac ja' resolveu por conta propria.
+    if (observacao == null && perdeuParadaCompartilhada && status === 'pendente') {
       observacao = 'PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR'
     }
     // Item 3b: roda ANTES de viaVizinhanca/viaRaioAmpliado de proposito --

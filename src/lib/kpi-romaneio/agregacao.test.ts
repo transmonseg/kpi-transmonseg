@@ -1167,6 +1167,52 @@ describe('montarDetalheEntregas -- 3b, parada curta compartilhada entre endereco
     }
   })
 
+  // Bug real 26/09 (segunda rodada, achado da Ana no KPI-Nutry-Max-2026-09-
+  // 25-TESTE.xlsx -- 4 casos: RBJ9I44/2391211, RQP0G77/2391713, RQU2E34/
+  // 2391249, TOS4J82/2391148): quando o "perdedor" da parada curta
+  // compartilhada JA' tem alvo.situacao===1 (Unitrac confirmou por
+  // evidencia INDEPENDENTE), o rebaixamento "NÃO CONFIRMA ESTE CLIENTE" nao
+  // pode se aplicar -- a Unitrac nao sabe nada sobre parada compartilhada de
+  // GPS, sua confirmacao vale por si so'. Sem o guard, este NF saia com
+  // status confirmado_unitrac mas observacao "...NÃO CONFIRMA ESTE CLIENTE"
+  // (contraditorio, escondia o ENTREGUE no xlsx). Com o guard, cai no rotulo
+  // generico do grupo (linha seguinte do codigo, ja' comeca com "ENTREGUE"),
+  // nunca no especifico de "perdedor" -- mesmo cenario do teste acima (NF_B
+  // perde pra NF_A por distancia), so' que agora NF_B tem alvo Unitrac.
+  it('perdedor da parada compartilhada com alvo Unitrac confirmado (situacao=1): confirmado_unitrac, NUNCA o rotulo "...NÃO CONFIRMA ESTE CLIENTE"', () => {
+    const paradaReal = parada({
+      chegada: paradaCurta.chegada,
+      saida: paradaCurta.saida,
+      fim_real: paradaCurta.saida,
+      classificacao: 'FORA_BASE',
+      lat: -22.71,
+      lng: -42.628,
+    })
+    const linhas = [
+      linha('NF_A', { endereco: 'ENDERECO A - PERTO (~45m)', lat: -22.7104, lng: -42.628 }),
+      linha('NF_B', { endereco: 'ENDERECO B - LONGE (~4.4km)', lat: -22.75, lng: -42.628 }),
+    ]
+    const visitas = new Map<string, Visita>([
+      ['NF_A', { nf: 'NF_A', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 999 }],
+      ['NF_B', { nf: 'NF_B', chegada: paradaCurta.chegada, saida: paradaCurta.saida, distanciaMetrosDoPonto: 999 }],
+    ])
+    const paradasPorOutraPlaca = new Map<string, UnitracParadaRow[]>([['TTL7D40', [paradaReal]]])
+    const alvos = [alvo('NF_B', 1)]
+
+    const detalhes = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, alvos, visitas, resumoCargaVazio,
+      true, paradasPorOutraPlaca, null, false, false, true,
+    )
+    const porNf = new Map(detalhes.map(d => [d.nf, d]))
+
+    expect(porNf.get('NF_B')?.status).toBe('confirmado_unitrac')
+    expect(porNf.get('NF_B')?.observacao).not.toBe('PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR')
+    // Cai no rotulo generico do grupo (ja' existente, comeca com ENTREGUE) --
+    // nunca fica sem observacao nenhuma (o grupo real e' compartilhado por 2+
+    // enderecos, isso e' informacao valida mesmo confirmado pela Unitrac).
+    expect(porNf.get('NF_B')?.observacao).toBe('ENTREGUE - PARADA CURTA (ATÉ 3MIN) CONFIRMOU VÁRIOS ENDEREÇOS DIFERENTES AO MESMO TEMPO - CONFERIR')
+  })
+
   it('grupo de 3 todos a <=150m da parada: mantem o rotulo de conferencia atual pros 3 (nenhum fica pendente)', () => {
     const linhas = [
       linha('NF_A', { endereco: 'ENDERECO A' }),

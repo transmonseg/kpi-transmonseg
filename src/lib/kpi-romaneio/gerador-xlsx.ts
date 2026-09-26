@@ -158,8 +158,28 @@ function celulaHora(iso: string | null, temRastreador: boolean, aindaEmAndamento
 
 // STATUS da entrega: observacao concreta (troca de carro/tempo excessivo,
 // ver agregacao.ts) e' sempre mais informativa que o rotulo generico.
+//
+// Bug real 26/09 (segunda rodada, achado da Ana): `status !== 'pendente'`
+// e' SEMPRE fato positivo (Unitrac ou GPS confirmaram independentemente) --
+// nenhuma observacao pode fazer o STATUS exibido deixar de comecar com
+// "ENTREGUE" (trava exigida: nº de linhas com STATUS iniciando em
+// "ENTREGUE" == soma de NF CONFIRMADAS do resumo == numerador da TAXA).
+// "TEMPO EM LOJA ACIMA DE 4H" e' o unico rotulo que por design continua
+// sendo anexado a uma NF JA CONFIRMADA (sinal de dado suspeito que vale a
+// pena conferir mesmo confirmada, ver LIMITE_TEMPO_LOJA_MIN em
+// agregacao.ts) -- vira ressalva com prefixo, nunca esconde o ENTREGUE. Os
+// outros rotulos residuais que hoje coexistem com confirmado (ex.
+// "ENTREGUE POR OUTRA PLACA...") ja' comecam com "ENTREGUE" por conta
+// propria; qualquer outro texto que algum dia colar num status confirmado
+// (defesa, nao esperado -- agregacao.ts guarda status==='pendente' antes de
+// anexar qualquer rotulo de ressalva que nao seja este) ganha o mesmo
+// prefixo generico, nunca aparece sozinho.
 function textoStatus(d: LinhaDetalheEntrega): string {
-  if (d.observacao) return d.observacao
+  if (d.status !== 'pendente') {
+    if (d.observacao == null || d.observacao.startsWith('ENTREGUE')) return d.observacao ?? LABEL_STATUS_ENTREGA[d.status]
+    if (d.observacao.startsWith('TEMPO EM LOJA ACIMA DE 4H')) return 'ENTREGUE - TEMPO EM LOJA ACIMA DE 4H'
+    return `ENTREGUE - ${d.observacao}`
+  }
   // Placa sem CV (codigo de rastreador) no nosso cadastro nunca vai
   // confirmar -- e "SEM CONFIRMACAO" escondia o motivo (achado 05/09: 1294
   // das 3062 entregas da Rio Quality caiam nesse balde). Mas o texto NAO
@@ -167,7 +187,8 @@ function textoStatus(d: LinhaDetalheEntrega): string {
   // portal lista ~102 veiculos e nos so' cadastramos 59, entao a maioria
   // dessas placas provavelmente TEM rastreador e o buraco e' nosso. O rotulo
   // diz o que sabemos de verdade: falta o codigo no cadastro.
-  if (!d.temRastreador && d.status === 'pendente') return 'PLACA SEM RASTREADOR CADASTRADO - COMPLETAR FROTA'
+  if (d.observacao) return d.observacao
+  if (!d.temRastreador) return 'PLACA SEM RASTREADOR CADASTRADO - COMPLETAR FROTA'
   return LABEL_STATUS_ENTREGA[d.status]
 }
 
