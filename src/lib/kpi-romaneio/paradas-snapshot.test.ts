@@ -193,6 +193,17 @@ describe('paradasEfetivas', () => {
     spy.mockRestore()
   })
 
+  it('placasNoSnapshot: marca so\' as placas que o snapshot do dia passado tinha', async () => {
+    mocks.select.mockResolvedValue({
+      data: [{ placa: 'TTL7D40', paradas: [parada({ id: 's1' })] }, { placa: 'VAZIA00', paradas: [] }],
+      error: null,
+    })
+    const daApi = new Map([['TTL7D40', [parada({ id: 'a1' })]], ['RQQ5B81', [parada({ id: 'a2', placa_norm: 'RQQ5B81' })]], ['VAZIA00', []]])
+    const placasNoSnapshot = new Set<string>()
+    await paradasEfetivas('nutrimax', '2026-09-22', '2026-09-24', daApi, placasNoSnapshot)
+    expect([...placasNoSnapshot]).toEqual(['TTL7D40'])
+  })
+
   it('dia passado sem snapshot pra essa placa: devolve a API dela', async () => {
     mocks.select.mockResolvedValue({ data: [], error: null })
     const daApi = new Map([['TTL7D40', [parada({ id: 'a1' })]]])

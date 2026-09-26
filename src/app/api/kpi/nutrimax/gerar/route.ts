@@ -336,7 +336,12 @@ export async function POST(req: NextRequest) {
     const cv = cvPorPlaca.get(placaNorm)
     daUnitracPorPlaca.set(placaNorm, cv ? await buscarParadasDoDia(cv, placaNorm, data, 48) : [])
   })
-  const paradasEfetivasPorPlaca = await paradasEfetivas('nutrimax', data, hojeBR(), daUnitracPorPlaca)
+  // Achado real 25/09 (RQQ5B81/NF 2386225 23/09): fora da janela de 48h, o
+  // feed da Unitrac so' cobre o dia inteiro se o snapshot tinha a placa --
+  // senao e' retalho e nao pode vencer a ponte (ver resolverParadas).
+  const placasNoSnapshot = new Set<string>()
+  const unitracCobreODia = (placaNorm: string) => !foraDaJanelaUnitrac || placasNoSnapshot.has(placaNorm)
+  const paradasEfetivasPorPlaca = await paradasEfetivas('nutrimax', data, hojeBR(), daUnitracPorPlaca, placasNoSnapshot)
 
   for (const placaNorm of placasNorm) {
     const daUnitrac = paradasEfetivasPorPlaca.get(placaNorm) ?? []
@@ -344,7 +349,7 @@ export async function POST(req: NextRequest) {
     // Sem parada nenhuma da Unitrac (dia fora das 48h, ou placa sem cv) mas
     // com parada derivada do historico permanente: usa a da ponte.
     const daPonte = horarioBasePorPlaca.get(placaNorm)?.paradas
-    const paradas = resolverParadas(daUnitrac, daPonte, placaNorm, horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false)
+    const paradas = resolverParadas(daUnitrac, daPonte, placaNorm, horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false, unitracCobreODia(placaNorm))
     paradasPorPlaca.set(placaNorm, paradas)
     visitasPorPlaca.set(placaNorm, montarVisitas(linhasPorPlaca.get(placaNorm) ?? [], paradas, horarioBasePorPlaca.get(placaNorm)?.visitasPorNf))
     kmPorPlaca.set(placaNorm, calcularKmPercorrido(paradas))
@@ -368,11 +373,11 @@ export async function POST(req: NextRequest) {
     const cv = cvPorPlaca.get(placaNorm)
     daUnitracExtraPorPlaca.set(placaNorm, cv ? await buscarParadasDoDia(cv, placaNorm, data, 48) : [])
   })
-  const paradasEfetivasExtraPorPlaca = await paradasEfetivas('nutrimax', data, hojeBR(), daUnitracExtraPorPlaca)
+  const paradasEfetivasExtraPorPlaca = await paradasEfetivas('nutrimax', data, hojeBR(), daUnitracExtraPorPlaca, placasNoSnapshot)
   for (const placaNorm of placasFrotaExtra) {
     const daUnitrac = paradasEfetivasExtraPorPlaca.get(placaNorm) ?? []
     const daPonte = horarioBasePorPlaca.get(placaNorm)?.paradas
-    paradasPorPlaca.set(placaNorm, resolverParadas(daUnitrac, daPonte, placaNorm, horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false))
+    paradasPorPlaca.set(placaNorm, resolverParadas(daUnitrac, daPonte, placaNorm, horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false, unitracCobreODia(placaNorm)))
   }
 
   const alvosPorPlaca = agrupar(alvos, a => a.placaNorm)

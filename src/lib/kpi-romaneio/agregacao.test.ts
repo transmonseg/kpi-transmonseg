@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { agregarPorCarga, montarDetalheEntregas } from './agregacao'
+import { resolverParadas } from './unitrac'
 import type { LinhaEscala, LinhaGeocodificada, Visita } from './types'
 import type { AlvoApi } from '@/lib/unitrac-api'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
@@ -2622,6 +2623,64 @@ describe('montarDetalheEntregas -- Fix round 2 (pontosReferenciaDaPlaca: dia int
 
     expect(d.evidencia).not.toBe('parada_unitrac_propria')
     expect(d.status).toBe('pendente')
+    expect(d.chegada).toBeNull()
+  })
+})
+
+// Achado real 25/09 (trava de regressao antes do deploy): RQQ5B81/NF 2386225
+// de 23/09 (equipe: "nao esteve no local", parada curta a ~4,2 km) voltou a
+// sair ENTREGUE ao regenerar o dia em 26/09 -- mesmo com o codigo de
+// producao. Causa: fora das 48h e sem snapshot de paradas do dia, a Unitrac
+// devolve so' um retalho (1 parada BASE da noite); com apagao de sinal,
+// resolverParadas deixava esse retalho vencer a ponte, o dia ficava sem a
+// parada das 12:53 e sem coordenada o grupo nao tinha "vencedor" -- a regra
+// de perdedor da parada compartilhada nunca disparava. Dados reais do dump
+// da placa (so' o grupo das 12:53 + o retalho + as paradas da ponte ao redor).
+describe('RQQ5B81/NF 2386225 23/09 regenerado fora da janela da Unitrac', () => {
+  const placa = 'RQQ5B81'
+  const l = (nf: string, endereco: string, lat: number, lng: number, extra: Partial<LinhaGeocodificada> = {}) =>
+    linha(nf, { carga: '98522', placa, destino: 'RIO BONITO', endereco, lat, lng, geoConfiavel: true, ...extra })
+  const linhas = [
+    l('2386219', 'RUA  DR MATTOS, 419 - CENTRO, RIO BONITO - *', -22.712282, -42.629991),
+    l('2386220', 'RUA DR MATTOS, 26 - CENTRO, RIO BONITO - LOJA 01', -22.710109, -42.627165),
+    l('2386225', 'RUA 1, S/N - JACUBA, RIO BONITO - LOJA', -22.6951345, -42.5909642),
+    l('2386231', 'RUA GERALDINO VIEIRA DE MORAES, 56 - BOA ESPERANCA, RIO BONITO', -22.703772, -42.625909, { geoConfiavel: false, geoMotivo: 'bairro_divergente' }),
+  ]
+  const chegada = '2026-09-23T12:53:58.203Z'
+  const saida = '2026-09-23T12:56:47.571Z'
+  const visitas = new Map<string, Visita>(linhas.map(x => [x.nf, { nf: x.nf, chegada, saida, distanciaMetrosDoPonto: 0, viaVizinhanca: false }]))
+  const alvo = (documento: string, situacao: number, pontoLat: number, pontoLng: number, feitoISO: string | null): AlvoApi => ({
+    nome: documento, rota: '98522', ordem: 0, feitoISO, pontoLat, pontoLng, situacao, documento,
+    inicioISO: '2026-09-23T07:00:00', placaNorm: placa, codigoUnitrac: documento,
+  } as AlvoApi)
+  const alvos = [
+    alvo('2386220', 98, -22.710059, -42.627188, '2026-09-23T13:01:36.167303'),
+    alvo('2386225', 98, -22.710139, -42.627105, '2026-09-23T13:01:36.167303'),
+    alvo('2386219', 0, -22.711498, -42.627954, null),
+    alvo('2386231', 1, -22.709906, -42.626296, '2026-09-23T13:00:02.152927'),
+  ]
+  // Retalho que a Unitrac ainda devolve em 26/09 pro dia 23/09.
+  const retalhoUnitrac = [parada({
+    id: 'RQQ5B81-api-1', placa_norm: placa,
+    chegada: '2026-09-23T21:45:21.000Z', saida: '2026-09-24T04:40:14.000Z', fim_real: '2026-09-24T04:40:14.000Z',
+    duracao_seg: 24893, local_parada: 'BASE BENASSI - BASE BENASSI', lat: -22.8158316, lng: -43.2778099, classificacao: 'BASE',
+  })]
+  const daPonte = [
+    { chegada: '2026-09-23T12:46:42.915Z', saida: '2026-09-23T12:52:29.401Z', duracaoSeg: 346, lat: -22.710493, lng: -42.630157, classificacao: 'FORA_BASE' as const },
+    { chegada, saida, duracaoSeg: 169, lat: -22.710206999999997, lng: -42.62815125, classificacao: 'FORA_BASE' as const },
+    { chegada: '2026-09-23T13:04:34.297Z', saida: '2026-09-23T13:07:40.252Z', duracaoSeg: 186, lat: -22.714217, lng: -42.636638, classificacao: 'FORA_BASE' as const },
+  ]
+
+  it('Unitrac sem cobrir o dia: a ponte vence mesmo com apagao e a NF 2386225 NAO e\' confirmada pela parada curta de outro endereco', () => {
+    const paradas = resolverParadas(retalhoUnitrac, daPonte, placa, true, false)
+    const detalhes = montarDetalheEntregas(
+      '98522', placa, linhas, alvos, visitas, { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null },
+      true, new Map([[placa, paradas]]), 330.4, false, true, true,
+      new Map([[placa, retalhoUnitrac]]), true, true, true, linhas,
+    )
+    const d = detalhes.find(x => x.nf === '2386225')!
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR')
     expect(d.chegada).toBeNull()
   })
 })

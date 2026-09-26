@@ -172,13 +172,22 @@ async function validarParadasContraGpsProprio(paradas: UnitracParadaRow[], placa
 // posicao) bem na hora em que a Unitrac tem a informacao certa
 // (recebe o trecho em lote ao reconectar) -- teria revertido a fase
 // 3a em vez de completa-la.
+// Achado real 25/09 (trava de regressao, RQQ5B81/NF 2386225 23/09): o
+// gate `daUnitrac.length > 0` volta a ser o bug de 11/09 quando o dia esta
+// FORA da janela de 48h e nao ha' snapshot de paradas dele -- a Unitrac
+// devolve so' o retalho que ainda cabe na janela (ex. 1 parada BASE da
+// noite), e com apagao esse retalho vencia as paradas do dia inteiro da
+// ponte. `unitracCobreODia` (default true = comportamento antigo) diz se o
+// feed da Unitrac e' o dia inteiro (dentro da janela, ou mesclado com
+// snapshot) -- sem isso, a Unitrac nunca vence a ponte.
 export function resolverParadas(
   daUnitrac: UnitracParadaRow[],
   daPonte: { chegada: string; saida: string; duracaoSeg: number; lat: number; lng: number; classificacao: 'BASE' | 'FORA_BASE' }[] | undefined,
   placaNorm: string,
   apagaoDeSinal: boolean,
+  unitracCobreODia: boolean = true,
 ): UnitracParadaRow[] {
-  if (apagaoDeSinal && daUnitrac.length > 0) return daUnitrac
+  if (apagaoDeSinal && unitracCobreODia && daUnitrac.length > 0) return daUnitrac
   return daPonte?.length ? paradasDaPonte(daPonte, placaNorm) : daUnitrac
 }
 

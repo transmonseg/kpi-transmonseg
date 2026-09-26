@@ -330,4 +330,19 @@ describe('resolverParadas', () => {
     const r = resolverParadas([], undefined, 'RQU2G47', true)
     expect(r).toEqual([])
   })
+
+  // Achado real 25/09 (trava de regressao, RQQ5B81/NF 2386225 23/09):
+  // regenerar 23/09 em 26/09 (fora das 48h, sem snapshot do dia) fazia a
+  // Unitrac devolver so' o RETALHO que ainda cabe na janela (1 parada BASE
+  // da noite) -- length>0, entao com apagao ela vencia a ponte (23 paradas
+  // do dia inteiro) e o dia ficava sem nenhuma parada FORA_BASE.
+  it('com apagao mas Unitrac sem cobrir o dia (retalho fora da janela, sem snapshot): usa a ponte', () => {
+    const r = resolverParadas(daUnitracEx, daPonteEx, 'RQU2G47', true, false)
+    expect(r).toEqual(paradasDaPonte(daPonteEx, 'RQU2G47'))
+  })
+
+  it('Unitrac sem cobrir o dia e ponte sem dado: cai pro retalho da Unitrac (fail-open)', () => {
+    const r = resolverParadas(daUnitracEx, undefined, 'RQU2G47', true, false)
+    expect(r).toBe(daUnitracEx)
+  })
 })

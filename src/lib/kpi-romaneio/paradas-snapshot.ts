@@ -122,6 +122,10 @@ export async function paradasEfetivas(
   data: string,
   hoje: string,
   daApiPorPlaca: Map<string, UnitracParadaRow[]>,
+  // Achado real 25/09 (ver `unitracCobreODia` em resolverParadas): recebe
+  // as placas cujo snapshot do dia passado tinha paradas -- so' pra essas o
+  // feed mesclado cobre o dia inteiro fora da janela de 48h da Unitrac.
+  placasNoSnapshot?: Set<string>,
 ): Promise<Map<string, UnitracParadaRow[]>> {
   try {
     if (data >= hoje) {
@@ -132,6 +136,7 @@ export async function paradasEfetivas(
     const resultado = new Map<string, UnitracParadaRow[]>()
     for (const [placa, daApi] of daApiPorPlaca) {
       const doSnapshot = snap.get(placa)
+      if (doSnapshot && doSnapshot.length > 0) placasNoSnapshot?.add(placa)
       resultado.set(placa, doSnapshot && doSnapshot.length > 0 ? mesclarParadas(doSnapshot, daApi) : daApi)
     }
     return resultado
