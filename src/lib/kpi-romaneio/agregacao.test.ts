@@ -3230,25 +3230,25 @@ describe('montarDetalheEntregas -- modoPrecisao: proximidade fraca vira REVISAR 
     return parada({ id, classificacao: 'FORA_BASE', lat: -22.9 + distNorteM * DELTA_M, lng: -43.2, chegada, saida, fim_real: saida })
   }
 
-  it('raio ampliado (500-800m): pendente com PARADA PRÓXIMA (300-800m) - REVISAR, horario preservado', () => {
+  it('mudanca de regra 26/09: raio ampliado (500-800m) confirma ENTREGUE (observacao null), horario preservado', () => {
     const visitas = new Map<string, Visita>([
       ['NF1', { nf: 'NF1', chegada: '2026-09-25T10:00:00.000Z', saida: '2026-09-25T10:20:00.000Z', distanciaMetrosDoPonto: 600, viaRaioAmpliado: true }],
     ])
     const [d] = chamar([linha('NF1')], { visitasPorNf: visitas })
-    expect(d.status).toBe('pendente')
-    expect(d.observacao).toBe('PARADA PRÓXIMA (300-800m) - REVISAR')
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBeNull()
     expect(d.chegada).toBe('2026-09-25T10:00:00.000Z')
     expect(d.saida).toBe('2026-09-25T10:20:00.000Z')
     expect(d.evidencia).toBe('raio_ampliado')
   })
 
-  it('raio ampliado com alvo feito da Unitrac tambem vira REVISAR (o rotulo decide, nao o status)', () => {
+  it('mudanca de regra 26/09: raio ampliado com alvo feito da Unitrac confirma ENTREGUE mantendo o status confirmado_unitrac', () => {
     const visitas = new Map<string, Visita>([
       ['NF1', { nf: 'NF1', chegada: '2026-09-25T10:00:00.000Z', saida: '2026-09-25T10:20:00.000Z', distanciaMetrosDoPonto: 600, viaRaioAmpliado: true }],
     ])
     const [d] = chamar([linha('NF1')], { visitasPorNf: visitas, alvos: [alvo('NF1', 1)] })
-    expect(d.status).toBe('pendente')
-    expect(d.observacao).toBe('PARADA PRÓXIMA (300-800m) - REVISAR')
+    expect(d.status).toBe('confirmado_unitrac')
+    expect(d.observacao).toBeNull()
   })
 
   it('sem modoPrecisao (default) o raio ampliado continua ENTREGUE com o rotulo antigo (Rio Quality intacto)', () => {
@@ -3270,7 +3270,7 @@ describe('montarDetalheEntregas -- modoPrecisao: proximidade fraca vira REVISAR 
     expect(d.chegada).toBe('2026-09-25T10:00:00.000Z')
   })
 
-  it('parada curta que confirmou varios enderecos: todo o grupo vira PARADA CURTA - REVISAR', () => {
+  it('mudanca de regra 26/09: parada curta que confirmou varios enderecos confirma ENTREGUE (observacao null)', () => {
     const curta = { chegada: '2026-09-25T08:00:00.000Z', saida: '2026-09-25T08:01:00.000Z' }
     const linhas = [
       linha('NF1', { endereco: 'RUA A, KM 1' }),
@@ -3282,19 +3282,19 @@ describe('montarDetalheEntregas -- modoPrecisao: proximidade fraca vira REVISAR 
     ])
     const detalhe = chamar(linhas, { visitasPorNf: visitas })
     for (const d of detalhe) {
-      expect(d.status).toBe('pendente')
-      expect(d.observacao).toBe('PARADA CURTA - REVISAR')
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.observacao).toBeNull()
       expect(d.chegada).toBe(curta.chegada)
     }
   })
 
-  it('item 1 (revisao final 26/09): visita fraca (raio ampliado 600m) + tempo em loja acima de 4h -- fraqueza da evidencia vence, REVISAR (nao confirmado)', () => {
+  it('mudanca de regra 26/09: visita fraca (raio ampliado 600m) + tempo em loja acima de 4h -- fraqueza da evidencia ainda bloqueia TEMPO EM LOJA, mas o raio ampliado confirma ENTREGUE', () => {
     const visitas = new Map<string, Visita>([
       ['NF1', { nf: 'NF1', chegada: '2026-09-25T10:00:00.000Z', saida: '2026-09-25T15:00:00.000Z', distanciaMetrosDoPonto: 600, viaRaioAmpliado: true }], // 5h
     ])
     const [d] = chamar([linha('NF1')], { visitasPorNf: visitas })
-    expect(d.status).toBe('pendente')
-    expect(d.observacao).toBe('PARADA PRÓXIMA (300-800m) - REVISAR')
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBeNull()
     expect(d.chegada).toBe('2026-09-25T10:00:00.000Z')
     expect(d.saida).toBe('2026-09-25T15:00:00.000Z')
   })
@@ -3347,11 +3347,11 @@ describe('montarDetalheEntregas -- modoPrecisao: proximidade fraca vira REVISAR 
       expect(d.observacao).toBeNull()
     })
 
-    it('100-300m com menos de 5min: PARADA PRÓXIMA (100-300m) - REVISAR, pendente, horario e distancia preservados', () => {
+    it('mudanca de regra 26/09: 100-300m com menos de 5min (R2 fraca) confirma ENTREGUE (observacao null), horario e distancia preservados', () => {
       const cruas = new Map([['TTL7D40', [paradaPropria(200, '2026-09-25T10:00:00.000Z', '2026-09-25T10:03:00.000Z')]]])
       const [d] = chamar([linha('NF1')], { paradasUnitracCruasPropriaPlaca: cruas })
-      expect(d.status).toBe('pendente')
-      expect(d.observacao).toBe('PARADA PRÓXIMA (100-300m) - REVISAR')
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.observacao).toBeNull()
       expect(d.chegada).toBe('2026-09-25T10:00:00.000Z')
       expect(d.evidencia).toBe('parada_unitrac_propria')
       expect(d.distParadaM as number).toBeGreaterThan(100)
@@ -3373,10 +3373,11 @@ describe('montarDetalheEntregas -- modoPrecisao: proximidade fraca vira REVISAR 
       expect(d.status).toBe('confirmado_gps')
     })
 
-    it('REVISAR de R2 nao vira AGUARDANDO com o dia em andamento (ja e evidencia de hoje)', () => {
+    it('mudanca de regra 26/09: R2 fraca (100-300m) confirmada nao vira AGUARDANDO com o dia em andamento (ja e evidencia de hoje)', () => {
       const cruas = new Map([['TTL7D40', [paradaPropria(200, '2026-09-25T10:00:00.000Z', '2026-09-25T10:03:00.000Z')]]])
       const [d] = chamar([linha('NF1')], { paradasUnitracCruasPropriaPlaca: cruas, diaEmAndamento: true })
-      expect(d.observacao).toBe('PARADA PRÓXIMA (100-300m) - REVISAR')
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.observacao).toBeNull()
     })
 
     it('rotulo fraco (raio ampliado) resgatado por R2 forte vira ENTREGUE limpo', () => {
@@ -3458,13 +3459,13 @@ describe('montarDetalheEntregas -- rodizio de carga inteira vira ROTA EXECUTADA 
     ['98669', 'RQU2G47', c98669, 'TOS1H26', 29],
     ['98673', 'RBJ2J67', c98673, 'RQU2G47', 27],
     ['98678', 'TOS1H26', c98678, 'RBJ2J67', 36],
-  ])('caso real 25/09: carga %s escalada em %s -> ROTA EXECUTADA POR OUTRA PLACA (%s)', (carga, placa, nfs, executora, qtdCobertas) => {
+  ])('caso real 25/09: carga %s escalada em %s -> confirma ENTREGUE via rodizio de %s (mudanca de regra 26/09: sem o texto OUTRA PLACA no xlsx)', (carga, placa, nfs, executora, qtdCobertas) => {
     const detalhe = chamar(carga, placa, nfs, frota25)
-    const confirmadas = detalhe.filter(d => d.observacao === `ROTA EXECUTADA POR OUTRA PLACA (${executora})`)
+    const confirmadas = detalhe.filter(d => d.evidencia === 'rota_outra_placa')
     expect(confirmadas).toHaveLength(qtdCobertas)
     for (const d of confirmadas) {
       expect(d.status).toBe('confirmado_gps')
-      expect(d.evidencia).toBe('rota_outra_placa')
+      expect(d.observacao).toBeNull()
       expect(d.placaExecutora).toBe(executora)
       expect(d.chegada).not.toBeNull()
       expect(d.saida).not.toBeNull()
@@ -3532,7 +3533,7 @@ describe('montarDetalheEntregas -- rodizio de carga inteira vira ROTA EXECUTADA 
     expect(detalhe[0].observacao).toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
     expect(detalhe[0].status).toBe('pendente')
     for (const d of detalhe.slice(1)) {
-      expect(d.observacao).toBe('ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)')
+      expect(d.observacao).toBeNull()
       expect(d.status).toBe('confirmado_gps')
     }
   })
@@ -3589,7 +3590,7 @@ describe('montarDetalheEntregas -- rodizio de carga inteira vira ROTA EXECUTADA 
     expect(detalhe[0].status).toBe('pendente')
     expect(detalhe[0].placaExecutora ?? null).toBeNull()
     for (const d of detalhe.slice(1)) {
-      expect(d.observacao).toBe('ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)')
+      expect(d.observacao).toBeNull()
       expect(d.status).toBe('confirmado_gps')
     }
   })
@@ -3607,7 +3608,7 @@ describe('montarDetalheEntregas -- rodizio de carga inteira vira ROTA EXECUTADA 
     expect(detalhe[0].observacao).toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
     expect(detalhe[0].status).toBe('pendente')
     for (const d of detalhe.slice(1)) {
-      expect(d.observacao).toBe('ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)')
+      expect(d.observacao).toBeNull()
       expect(d.status).toBe('confirmado_gps')
     }
   })

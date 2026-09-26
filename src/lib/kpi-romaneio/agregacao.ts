@@ -544,18 +544,31 @@ function acharParadaUnitracPropria(
 }
 
 // Task 1 (plano 2026-09-26): rotulos de "ENTREGUE com ressalva" que, com
-// `modoPrecisao`, deixam de contar como entregue -- viram REVISAR (status
+// `modoPrecisao`, deixavam de contar como entregue -- viravam REVISAR (status
 // pendente, horario preservado). Aplicado so' no FIM da cadeia (depois de R2
 // e da escala divergente), pra R2 continuar enxergando os rotulos antigos
 // na whitelist de elegivelParaConfirmarPorParadaPropria e poder resgatar a
 // NF com parada forte da propria placa.
-const OBS_REVISAR_PROXIMA_300_800 = 'PARADA PRÓXIMA (300-800m) - REVISAR'
-const OBS_REVISAR_PROXIMA_100_300 = 'PARADA PRÓXIMA (100-300m) - REVISAR'
+//
+// Mudanca de regra por decisao do usuario (dono do produto), 26/09, Nutry
+// Max: "precisao acima de cobertura" (Task 1, 26/09) gerou falso positivo
+// na direcao contraria -- entregas com evidencia boa o bastante (parada
+// curta cujo endereco e' o vencedor a <=150m; raio ampliado 500-800m; R2
+// fraca 100-300m/2min-5min) estavam sumindo do numerador da taxa como
+// REVISAR sem necessidade. So' 'PARADA COMPARTILHADA - REVISAR' (visita
+// viaVizinhanca -- horario emprestado de OUTRO endereco, nao desta parada)
+// continua exigindo conferencia -- as outras tres voltam a confirmar como
+// 'ENTREGUE' (observacao null, status ja confirmado_gps antes deste bloco).
 const REVISAR_POR_ROTULO_FRACO: Record<string, string> = {
-  'ENTREGUE - PARADA PRÓXIMA (500-800m) MAS DENTRO DA ROTA - CONFERIR': OBS_REVISAR_PROXIMA_300_800,
-  'ENTREGUE - PARADA CURTA (ATÉ 3MIN) CONFIRMOU VÁRIOS ENDEREÇOS DIFERENTES AO MESMO TEMPO - CONFERIR': 'PARADA CURTA - REVISAR',
   'ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)': 'PARADA COMPARTILHADA - REVISAR',
 }
+// Rotulos de ressalva que, apesar do "CONFERIR" no texto original, decisao
+// do usuario 26/09 trata como confirmacao plena -- a ressalva e' apagada
+// (observacao null) em vez de virar REVISAR.
+const CONFIRMAR_APESAR_DE_RESSALVA = new Set<string>([
+  'ENTREGUE - PARADA PRÓXIMA (500-800m) MAS DENTRO DA ROTA - CONFERIR',
+  'ENTREGUE - PARADA CURTA (ATÉ 3MIN) CONFIRMOU VÁRIOS ENDEREÇOS DIFERENTES AO MESMO TEMPO - CONFERIR',
+])
 // Ajuste 1 (decisao do controlador apos medir o custo em 22-25/09): visita
 // da ponte ENTREGUE limpa NAO e' rebaixada por distParadaM > 300m -- a ponte
 // ja' validou <=500m do ponto, e distParadaM vem do casamento por horario
@@ -1047,26 +1060,30 @@ export function montarDetalheEntregas(
   // gerar-nutrimax-real-arquivo.ts) passa true.
   detectarEscalaDivergente: boolean = false,
   // Task 1 (plano 2026-09-26, especificacao da Ana 26/09: "90% de cobertura
-  // com 99% de precisao e' melhor que 98% com falsos positivos"): nada vira
-  // ENTREGUE so' por proximidade fraca. Com `modoPrecisao` ligado:
-  // raio ampliado (500-800m) -> 'PARADA PRÓXIMA (300-800m) - REVISAR' (Ajuste
-  // 1: visita da ponte limpa NAO e' rebaixada por distancia); parada curta compartilhada ->
-  // 'PARADA CURTA - REVISAR'; vizinhanca -> 'PARADA COMPARTILHADA - REVISAR';
-  // R2 fora do criterio forte -> 'PARADA PRÓXIMA (100-300m) - REVISAR'. Todos
-  // saem `pendente` (nao contam na taxa) mas mantem chegada/saida. Mesmo
-  // padrao opt-in dos anteriores: default false preserva Rio Quality
-  // (pipeline.ts) e quem nao passar nada; Nutry Max (route.ts +
-  // gerar-nutrimax-real-arquivo.ts) passa true.
+  // com 99% de precisao e' melhor que 98% com falsos positivos") + mudanca
+  // de regra por decisao do usuario 26/09 (mesmo dia, apos medir o custo em
+  // producao): com `modoPrecisao` ligado, so' vizinhanca (horario emprestado
+  // de OUTRO endereco) vira 'PARADA COMPARTILHADA - REVISAR' (`pendente`,
+  // nao conta na taxa, mantem chegada/saida). Raio ampliado (500-800m),
+  // parada curta compartilhada cujo endereco e' o vencedor (<=150m) e R2
+  // fora do criterio forte (100-300m, 2-5min) voltam a CONFIRMAR como
+  // ENTREGUE (ver CONFIRMAR_APESAR_DE_RESSALVA) -- so' a ressalva no texto
+  // some, chegada/saida/evidencia continuam as mesmas. Mesmo padrao opt-in
+  // dos anteriores: default false preserva Rio Quality (pipeline.ts) e quem
+  // nao passar nada; Nutry Max (route.ts + gerar-nutrimax-real-arquivo.ts)
+  // passa true.
   modoPrecisao: boolean = false,
   // Task 2 (plano 2026-09-26, rodizio de carga inteira): carga
   // `escalaDivergente` coberta (>=80% das NFs, parada >=2min a <=300m) por UM
   // unico outro veiculo da frota -> NFs com parada forte desse veiculo saem
-  // confirmadas com 'ROTA EXECUTADA POR OUTRA PLACA (X)' / evidencia
-  // 'rota_outra_placa' / placaExecutora=X. Unica excecao a
-  // desativarOutraPlaca. So' tem efeito com detectarEscalaDivergente ligado
-  // (e portanto nunca com diaEmAndamento). Default false preserva Rio
-  // Quality (pipeline.ts); Nutry Max (route.ts + gerar-nutrimax-real-
-  // arquivo.ts) passa true.
+  // confirmadas com STATUS 'ENTREGUE' (observacao null, mudanca de regra
+  // 26/09 -- o texto 'ROTA EXECUTADA POR OUTRA PLACA (X)' nao pode mais
+  // aparecer no xlsx da Nutry Max) / evidencia 'rota_outra_placa' /
+  // placaExecutora=X (interno, ver comentario no bloco que atribui
+  // observacao=null abaixo). Unica excecao a desativarOutraPlaca. So' tem
+  // efeito com detectarEscalaDivergente ligado (e portanto nunca com
+  // diaEmAndamento). Default false preserva Rio Quality (pipeline.ts);
+  // Nutry Max (route.ts + gerar-nutrimax-real-arquivo.ts) passa true.
   reconhecerRodizio: boolean = false,
   // Item 3 (revisao final 26/09): a parada do EXECUTOR (placaRodizio) usada
   // pra confirmar uma NF nao pode ser, na verdade, a entrega de um cliente
@@ -1617,9 +1634,14 @@ export function montarDetalheEntregas(
     // ENTREGUE POR OUTRA PLACA nem SEM RASTREADOR (todos ja' saem da whitelist
     // de elegivelParaConfirmarPorParadaPropria).
     let paradaPropriaConfirmada: { parada: UnitracParadaRow; distParadaM: number } | null = null
-    // Task 1 (plano 26/09): R2 achou parada da propria placa mas fora do
-    // criterio forte (modoPrecisao) -- REVISAR com o horario dela.
-    let revisarPorR2Fraca = false
+    // Mudanca de regra por decisao do usuario 26/09: R2 fraca (achada mas
+    // fora do criterio forte de modoPrecisao -- 100-300m com 2-5min) voltou
+    // a CONFIRMAR (status confirmado_gps, observacao limpa) em vez de virar
+    // REVISAR -- ver comentario de CONFIRMAR_APESAR_DE_RESSALVA acima pro
+    // raciocinio completo. `preferirForte` (ultimo argumento de
+    // acharParadaUnitracPropria, ainda `modoPrecisao`) continua preferindo a
+    // candidata forte na ESCOLHA entre paradas candidatas -- so' o
+    // desfecho pos-escolha deixou de rebaixar.
     if (confirmarPorParadaUnitracPropria && elegivelParaConfirmarPorParadaPropria(status, observacao)) {
       const cadastro = alvo && coordValidaCadastro(alvo.pontoLat) && coordValidaCadastro(alvo.pontoLng)
         ? { lat: alvo.pontoLat as number, lng: alvo.pontoLng as number }
@@ -1629,12 +1651,11 @@ export function montarDetalheEntregas(
       )
       if (achada) {
         paradaPropriaConfirmada = achada
-        revisarPorR2Fraca = modoPrecisao && !achada.forte
-        status = revisarPorR2Fraca ? 'pendente' : 'confirmado_gps'
+        status = 'confirmado_gps'
         chegada = achada.parada.chegada
         saida = achada.parada.fim_real ?? achada.parada.saida ?? achada.parada.chegada
         tempoParadaMin = chegada && saida ? minutosEntre(chegada, saida) : null
-        observacao = revisarPorR2Fraca ? OBS_REVISAR_PROXIMA_100_300 : null
+        observacao = null
       }
     }
     // Task 4 (plano 26/09): roda DEPOIS de R2 (paradaPropriaConfirmada acima)
@@ -1648,7 +1669,7 @@ export function montarDetalheEntregas(
     // semRastreadorNoDia/perdeuParadaCompartilhada -- "escala/romaneio
     // provavelmente errados" e' um fato ja' resolvido pelos dados de HOJE,
     // nao muda esperando o resto do dia.
-    const nfEscalaDivergente = escalaDivergente && !revisarPorR2Fraca && elegivelParaEscalaDivergente(status, observacao)
+    const nfEscalaDivergente = escalaDivergente && elegivelParaEscalaDivergente(status, observacao)
     // Task 2 (plano 26/09): rodizio de carga inteira -- NF que viraria
     // CONFERIR ESCALA e tem parada FORTE do veiculo executor vira confirmada.
     const paradaRodizioCandidata = nfEscalaDivergente && placaRodizio
@@ -1674,7 +1695,14 @@ export function montarDetalheEntregas(
     const nfRodizio = paradaRodizio != null && paradaRodizio.forte
     if (nfRodizio && paradaRodizio) {
       status = 'confirmado_gps'
-      observacao = `ROTA EXECUTADA POR OUTRA PLACA (${placaRodizio})`
+      // Mudanca de regra por decisao do usuario 26/09: o rotulo 'ROTA
+      // EXECUTADA POR OUTRA PLACA (X)' deixa de existir no xlsx da Nutry
+      // Max -- NF confirmada por rodizio sai com STATUS exatamente
+      // 'ENTREGUE' (observacao null -> textoStatus em gerador-xlsx.ts cai no
+      // LABEL_STATUS_ENTREGA generico). Evidencia interna ('rota_outra_placa',
+      // ver bloco de EvidenciaNf abaixo) e' preservada -- so' o TEXTO exposto
+      // no xlsx muda, nada de "OUTRA PLACA" pode aparecer la'.
+      observacao = null
       chegada = paradaRodizio.parada.chegada
       saida = paradaRodizio.parada.fim_real ?? paradaRodizio.parada.saida ?? paradaRodizio.parada.chegada
       tempoParadaMin = minutosEntre(chegada, saida)
@@ -1697,7 +1725,7 @@ export function montarDetalheEntregas(
     // cliente, isso nao muda esperando o dia acabar) -- nao pode virar
     // "aguardando". Task 4: escala divergente e' o mesmo tipo de fato ja'
     // resolvido.
-    if (status === 'pendente' && diaEmAndamento && !semRastreadorNoDia && !perdeuParadaCompartilhada && !nfEscalaDivergente && !revisarPorR2Fraca) {
+    if (status === 'pendente' && diaEmAndamento && !semRastreadorNoDia && !perdeuParadaCompartilhada && !nfEscalaDivergente) {
       observacao = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
     }
 
@@ -1802,15 +1830,24 @@ export function montarDetalheEntregas(
       evidencia = 'sem_evidencia'
     }
 
-    // Task 1 (plano 26/09): roda depois de TUDO (R2, escala divergente,
-    // AGUARDANDO e evidencia) -- so' rebaixa o que ainda saiu como "ENTREGUE
-    // com ressalva". Horario,
-    // evidencia e distancia ficam como estao (informacao util pra conferir).
-    if (modoPrecisao) {
-      const revisar = observacao != null ? REVISAR_POR_ROTULO_FRACO[observacao] : undefined
-      if (revisar) {
-        status = 'pendente'
-        observacao = revisar
+    // Task 1 (plano 26/09) + mudanca de regra 26/09 (decisao do usuario):
+    // roda depois de TUDO (R2, escala divergente, AGUARDANDO e evidencia).
+    // So' 'PARADA COMPARTILHADA - REVISAR' (viaVizinhanca -- horario
+    // emprestado de OUTRO endereco) continua rebaixando pra REVISAR; os
+    // rotulos em CONFIRMAR_APESAR_DE_RESSALVA (parada curta vencedora, raio
+    // ampliado 500-800m) tem a ressalva apagada e CONFIRMAM como ENTREGUE
+    // (status ja e' confirmado_gps antes deste bloco, so' o texto sai).
+    // Horario, evidencia e distancia ficam como estao nos dois casos
+    // (informacao util pra conferir/registro, mesmo quando confirmado).
+    if (modoPrecisao && observacao != null) {
+      if (CONFIRMAR_APESAR_DE_RESSALVA.has(observacao)) {
+        observacao = null
+      } else {
+        const revisar = REVISAR_POR_ROTULO_FRACO[observacao]
+        if (revisar) {
+          status = 'pendente'
+          observacao = revisar
+        }
       }
     }
 
