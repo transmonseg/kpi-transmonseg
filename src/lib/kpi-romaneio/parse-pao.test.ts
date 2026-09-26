@@ -270,6 +270,19 @@ ${bairroLine}
       expect(linhas[0].endereco).toBe('RUA CONDE DE BONFIM,99 - TIJUCA, RIO DE JANEIRO - *')
     })
 
+    // Fix round 1 (pos-revisao): bairro acentuado tem que casar igual ao
+    // sem acento (NFD + remover diacriticos + caixa alta + espacos
+    // colapsados) -- antes so' "ICARAI" (sem acento) casava.
+    it.each([
+      ['216023SUPERPRIX ICARAI II                                                   AVENIDA SETE DE SETEMBRO,62                                                     ICARAÍ                                  66487,84683.837,77R$                  ', 'AVENIDA SETE DE SETEMBRO,62 - ICARAÍ, NITEROI - *'],
+      ['216049PEROLA SUPERMERCADOS                                                  RUA TIRADENTES,71                                                               INGÁ                                    751,1491.379,70R$                  ', 'RUA TIRADENTES,71 - INGÁ, NITEROI - *'],
+      ['216053BOM DE PRECO INOA                                                     AVENIDA CARLOS MARIGHELLA 1580                                                  INOÃ (INOÃ)                             88655,2628,85.278,51R$                  ', 'AVENIDA CARLOS MARIGHELLA 1580 - INOÃ (INOÃ), MARICA - *'],
+    ])('bairro acentuado %s -> casa igual a versao sem acento', (linhaEntrega, enderecoEsperado) => {
+      const { linhas } = parsePaoTexto(romaneioComBairro(linhaEntrega), '2026-09-24')
+      expect(linhas).toHaveLength(1)
+      expect(linhas[0].endereco).toBe(enderecoEsperado)
+    })
+
     it('"CENTRO" sem cliente de Marica no nome continua Rio de Janeiro (bairro ambiguo, so vira Marica com o nome do cliente)', () => {
       const linha = '216099MERCADINHO CENTRO RJ                                                  RUA QUALQUER,1                                                                  CENTRO                                  1,001,00R$                            '
       const { linhas } = parsePaoTexto(romaneioComBairro(linha), '2026-09-24')

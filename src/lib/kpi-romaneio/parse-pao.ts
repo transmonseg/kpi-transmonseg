@@ -43,8 +43,19 @@ const BAIRROS_ITABORAI = new Set(['OUTEIRO DAS PEDRAS'])
 // pelo do distrito.
 const BAIRROS_MARICA = new Set(['INOA', 'ITAIPUACU', 'BARROCO'])
 
+// Fix round 1 (pos-revisao Task 1): o PDF as vezes traz o bairro acentuado
+// ("ICARAÍ", "INGÁ", "INOÃ", "SÃO FRANCISCO", "SÃO GONÇALO") -- so' as
+// chaves dos Sets acima (sem acento) casavam antes, entao "ICARAÍ" caia no
+// bairro desconhecido (RIO DE JANEIRO) igual ao bug original. Remove
+// diacriticos via NFD antes de comparar, alem de caixa alta e espacos
+// colapsados; o `bairro` original (acentuado ou nao) continua indo pro
+// endereco geocodificavel sem alteracao.
+function semAcento(s: string): string {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '')
+}
+
 function normalizarBairro(bairro: string): { base: string; parenteses: string } {
-  const norm = bairro.toUpperCase().trim()
+  const norm = semAcento(bairro.toUpperCase().trim()).replace(/\s+/g, ' ')
   const m = norm.match(/^(.*?)\s*\(([^)]*)\)\s*$/)
   if (m) return { base: m[1].trim(), parenteses: m[2].trim() }
   return { base: norm, parenteses: '' }
@@ -59,7 +70,7 @@ function municipioPorBairro(bairro: string, clienteNome: string): string {
   if (BAIRROS_SAO_GONCALO.has(base)) return 'SAO GONCALO'
   if (BAIRROS_ITABORAI.has(base)) return 'ITABORAI'
   if (BAIRROS_MARICA.has(base) || BAIRROS_MARICA.has(parenteses)) return 'MARICA'
-  if (base === 'CENTRO' && clienteNome.toUpperCase().includes('MARICA')) return 'MARICA'
+  if (base === 'CENTRO' && semAcento(clienteNome.toUpperCase()).includes('MARICA')) return 'MARICA'
   return 'RIO DE JANEIRO'
 }
 
