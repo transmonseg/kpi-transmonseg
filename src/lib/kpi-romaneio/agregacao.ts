@@ -1068,6 +1068,17 @@ export function montarDetalheEntregas(
   // Quality (pipeline.ts); Nutry Max (route.ts + gerar-nutrimax-real-
   // arquivo.ts) passa true.
   reconhecerRodizio: boolean = false,
+  // Item 3 (revisao final 26/09): a parada do EXECUTOR (placaRodizio) usada
+  // pra confirmar uma NF nao pode ser, na verdade, a entrega de um cliente
+  // do PROPRIO romaneio do executor naquele dia -- mesmo criterio de
+  // `pontosReferenciaDaPlaca`/RAIO_OUTRO_CLIENTE_EXPLICA_M da R2 (<=150m de
+  // outro endereco explica a parada sem confirmar este). So' geocode
+  // confiavel (sem cadastro Unitrac do executor -- este parametro so' traz
+  // `LinhaGeocodificada`, nao alvos, ver route.ts). Default vazio preserva
+  // Rio Quality e quem nao passar nada; Nutry Max (route.ts + gerar-
+  // nutrimax-real-arquivo.ts) passa `linhasPorPlaca` (TODAS as placas do
+  // dia, ja calculado no chamador).
+  linhasPorPlacaNoDia: Map<string, LinhaGeocodificada[]> = new Map(),
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
   // Task 2 (R2): pontos de referencia de CADA NF da placa no DIA INTEIRO
@@ -1143,6 +1154,17 @@ export function montarDetalheEntregas(
     // Mais de um veiculo acima do limiar = ambiguo, nada muda.
     return acimaDoLimiar.length === 1 ? acimaDoLimiar[0] : null
   })()
+  // Item 3 (revisao final 26/09): pontos de referencia dos clientes do
+  // PROPRIO romaneio do executor no dia -- mesmo espirito de
+  // `pontosReferenciaDaPlaca` (linha acima), so' que pra placaRodizio em vez
+  // da placaNorm sendo processada. So' geocode confiavel (linhasPorPlacaNoDia
+  // nao traz alvo/cadastro do executor, ver comentario do parametro).
+  const pontosReferenciaDoExecutor: PontoReferenciaPlacaNf[] = placaRodizio
+    ? (linhasPorPlacaNoDia.get(placaRodizio) ?? [])
+      .filter((l): l is LinhaGeocodificada & { lat: number; lng: number } => l.geoConfiavel !== false && l.lat != null && l.lng != null)
+      .map(l => ({ endereco: l.endereco, lat: l.lat, lng: l.lng }))
+    : []
+  const TETO_PERMANENCIA_RODIZIO_MIN = 240
   // Revisao final pre-deploy (24/09, item 3): sinais INDEPENDENTES das
   // paradas de que a placa rodou no dia -- desmentem o caso (b) de
   // semRastreadorNoDia ("tem CV mas zero posicoes"). `alvos` chega aqui como
@@ -1460,7 +1482,22 @@ export function montarDetalheEntregas(
     if (observacao == null && status === 'pendente' && semMovimento) {
       observacao = 'VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA'
     }
-    if (observacao == null && tempoParadaMin != null && tempoParadaMin > LIMITE_TEMPO_LOJA_MIN) {
+    // Revisao final (item 1, plano 2026-09-26): com `modoPrecisao`, uma
+    // visita FRACA (raio ampliado 500-800m, viaVizinhanca/horario emprestado,
+    // ou parada curta compartilhada por varios enderecos) nao pode virar
+    // "TEMPO EM LOJA ACIMA DE 4H - CONFERIR" confirmada so' por ficar >4h --
+    // a fraqueza da EVIDENCIA tem precedencia sobre a duracao. Deixando
+    // observacao em branco aqui, os blocos abaixo (parada curta/viaVizinhanca/
+    // viaRaioAmpliado) atribuem o rotulo fraco correspondente, que o bloco
+    // final de `modoPrecisao` (mais abaixo) ja' rebaixa pra "- REVISAR" e
+    // `pendente`, preservando o horario. Sem `modoPrecisao` (Rio Quality),
+    // comportamento intacto -- TEMPO EM LOJA continua vencendo sempre.
+    const visitaFracaParaTempoEmLoja = modoPrecisao && visita != null && (
+      visita.viaRaioAmpliado === true
+      || visita.viaVizinhanca === true
+      || (enderecosPorChaveDeParada.get(`${visita.chegada}|${visita.saida}`)?.size ?? 0) > 1
+    )
+    if (observacao == null && !visitaFracaParaTempoEmLoja && tempoParadaMin != null && tempoParadaMin > LIMITE_TEMPO_LOJA_MIN) {
       observacao = 'TEMPO EM LOJA ACIMA DE 4H - CONFERIR'
     }
     // Task 2 (caso de aceite RQQ5B81/NF 2386225, 23/09): roda ANTES do
@@ -1614,8 +1651,25 @@ export function montarDetalheEntregas(
     const nfEscalaDivergente = escalaDivergente && !revisarPorR2Fraca && elegivelParaEscalaDivergente(status, observacao)
     // Task 2 (plano 26/09): rodizio de carga inteira -- NF que viraria
     // CONFERIR ESCALA e tem parada FORTE do veiculo executor vira confirmada.
-    const paradaRodizio = nfEscalaDivergente && placaRodizio
+    const paradaRodizioCandidata = nfEscalaDivergente && placaRodizio
       ? acharParadaDoExecutor(pontosDaNf(linha, alvo), paradasDoVeiculo(placaRodizio))
+      : null
+    // Item 3 (revisao final 26/09): descarta a candidata quando ela e', na
+    // verdade, a parada de um cliente do PROPRIO executor (<=150m de outro
+    // endereco do romaneio dele -- mesmo criterio de
+    // RAIO_OUTRO_CLIENTE_EXPLICA_M da R2) ou quando a permanencia passa de
+    // 4h (teto -- acima disso a "parada" ja nao parece uma entrega rapida do
+    // rodizio, e sim outra coisa; NF fica CONFERIR ESCALA em vez de
+    // confirmar por rodizio).
+    const paradaRodizio = paradaRodizioCandidata && !(() => {
+      const p = paradaRodizioCandidata.parada
+      const explicadaPorClienteDoExecutor = p.lat != null && p.lng != null && pontosReferenciaDoExecutor
+        .filter(o => o.endereco !== linha.endereco)
+        .some(o => haversine(p.lat as number, p.lng as number, o.lat, o.lng) <= RAIO_OUTRO_CLIENTE_EXPLICA_M)
+      const duracaoMin = (new Date(p.fim_real ?? p.saida ?? p.chegada).getTime() - new Date(p.chegada).getTime()) / 60_000
+      return explicadaPorClienteDoExecutor || duracaoMin > TETO_PERMANENCIA_RODIZIO_MIN
+    })()
+      ? paradaRodizioCandidata
       : null
     const nfRodizio = paradaRodizio != null && paradaRodizio.forte
     if (nfRodizio && paradaRodizio) {

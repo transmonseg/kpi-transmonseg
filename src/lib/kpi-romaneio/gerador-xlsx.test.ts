@@ -831,6 +831,35 @@ describe('gerador-xlsx', () => {
       expect(valores[5]).toBe('10:20')
       expect(valores[7]).toBe('PARADA PRÓXIMA (300-800m) - REVISAR')
     })
+
+    // Item 2 (revisao final 26/09): "REVISAR: N" tem que bater com a coluna
+    // CONFIANÇA=REVISAR quando ela esta' visivel -- rotulos pendente com
+    // CONFERIR (ex. "PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO -
+    // CONFERIR") nao terminam em "- REVISAR" (nao sao do modoPrecisao) mas
+    // calcularConfianca ja os classifica como REVISAR -- ver ConfiancaNf.
+    it('item 2: com motivoConfianca=true, REVISAR conta pelo d.confianca (bate com a coluna), nao so o sufixo "- REVISAR"', async () => {
+      const detalhe: LinhaDetalheEntrega[] = [
+        detalheFixture({ nf: 'NF1', status: 'confirmado_gps', confianca: 'CONFIRMADA' }),
+        detalheFixture({ nf: 'NF2', status: 'pendente', observacao: 'PARADA PRÓXIMA (300-800m) - REVISAR', evidencia: 'raio_ampliado', confianca: 'REVISAR' }),
+        detalheFixture({ nf: 'NF3', status: 'pendente', observacao: 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR', evidencia: 'parada_proxima_fora_raio', confianca: 'REVISAR' }),
+      ]
+      const buffer = await gerarKpiRomaneioXlsx([linhaKpi()], '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true, motivoConfianca: true })
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const ws = wb.worksheets[0]
+      const texto = String(ws.getRow(ws.rowCount).getCell(1).value)
+      expect(texto).toContain('REVISAR: 2')
+    })
+
+    it('item 2: sem motivoConfianca (default), REVISAR mantem o criterio antigo (so o sufixo "- REVISAR")', async () => {
+      const detalhe: LinhaDetalheEntrega[] = [
+        detalheFixture({ nf: 'NF1', status: 'confirmado_gps', confianca: 'CONFIRMADA' }),
+        detalheFixture({ nf: 'NF2', status: 'pendente', observacao: 'PARADA PRÓXIMA (300-800m) - REVISAR', evidencia: 'raio_ampliado', confianca: 'REVISAR' }),
+        detalheFixture({ nf: 'NF3', status: 'pendente', observacao: 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR', evidencia: 'parada_proxima_fora_raio', confianca: 'REVISAR' }),
+      ]
+      const texto = await resumo(detalhe)
+      expect(texto).toContain('REVISAR: 1')
+    })
   })
 })
 

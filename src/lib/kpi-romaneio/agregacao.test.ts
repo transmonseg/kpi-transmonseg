@@ -3288,6 +3288,26 @@ describe('montarDetalheEntregas -- modoPrecisao: proximidade fraca vira REVISAR 
     }
   })
 
+  it('item 1 (revisao final 26/09): visita fraca (raio ampliado 600m) + tempo em loja acima de 4h -- fraqueza da evidencia vence, REVISAR (nao confirmado)', () => {
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', chegada: '2026-09-25T10:00:00.000Z', saida: '2026-09-25T15:00:00.000Z', distanciaMetrosDoPonto: 600, viaRaioAmpliado: true }], // 5h
+    ])
+    const [d] = chamar([linha('NF1')], { visitasPorNf: visitas })
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PARADA PRÓXIMA (300-800m) - REVISAR')
+    expect(d.chegada).toBe('2026-09-25T10:00:00.000Z')
+    expect(d.saida).toBe('2026-09-25T15:00:00.000Z')
+  })
+
+  it('item 1 (revisao final 26/09): visita FORTE (40m) + tempo em loja acima de 4h continua "TEMPO EM LOJA ACIMA DE 4H - CONFERIR" confirmado (comportamento atual)', () => {
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', chegada: '2026-09-25T10:00:00.000Z', saida: '2026-09-25T15:00:00.000Z', distanciaMetrosDoPonto: 40 }], // 5h
+    ])
+    const [d] = chamar([linha('NF1')], { visitasPorNf: visitas })
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBe('TEMPO EM LOJA ACIMA DE 4H - CONFERIR')
+  })
+
   it('Ajuste 1: visita da ponte ENTREGUE limpa com a parada casada por horario a ~450m continua ENTREGUE (ponte ja validou <=500m)', () => {
     const chegada = '2026-09-25T10:00:00.000Z'
     const saida = '2026-09-25T10:20:00.000Z'
@@ -3409,7 +3429,7 @@ describe('montarDetalheEntregas -- rodizio de carga inteira vira ROTA EXECUTADA 
 
   function chamar(
     carga: string, placa: string, nfs: LinhaGeocodificada[], frota: Map<string, UnitracParadaRow[]>,
-    opts: { diaEmAndamento?: boolean; reconhecerRodizio?: boolean } = {},
+    opts: { diaEmAndamento?: boolean; reconhecerRodizio?: boolean; linhasPorPlacaNoDia?: Map<string, LinhaGeocodificada[]> } = {},
   ) {
     return montarDetalheEntregas(
       carga, placa, nfs, [], new Map(), resumoCargaVazio,
@@ -3419,6 +3439,7 @@ describe('montarDetalheEntregas -- rodizio de carga inteira vira ROTA EXECUTADA 
       true, // detectarEscalaDivergente
       true, // modoPrecisao
       opts.reconhecerRodizio ?? true,
+      opts.linhasPorPlacaNoDia ?? new Map(),
     )
   }
 
@@ -3539,6 +3560,55 @@ describe('montarDetalheEntregas -- rodizio de carga inteira vira ROTA EXECUTADA 
     for (const d of chamar('98669', 'RQU2G47', nfs, frota)) {
       expect(d.observacao ?? '').not.toContain('OUTRA PLACA')
       expect(d.observacao).not.toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
+    }
+  })
+
+  // Item 3 (revisao final 26/09): a parada do executor usada pra confirmar
+  // uma NF tem que ser DESCARTADA quando, na verdade, e' a entrega de um
+  // cliente do PROPRIO romaneio do executor (<=150m de outro endereco do dia
+  // dele -- mesmo criterio de pontosReferenciaDaPlaca/
+  // RAIO_OUTRO_CLIENTE_EXPLICA_M da R2) ou quando a permanencia passa de 4h.
+  it('item 3: parada do executor a <=150m de um cliente do PROPRIO romaneio dele nao confirma -- NF continua CONFERIR ESCALA', () => {
+    const nfs = nfsDaCarga('98669', 'RQU2G47', 5)
+    const frota = new Map<string, UnitracParadaRow[]>([
+      ['RQU2G47', c98673.slice(0, 5).map((l, i) => paradaEm('RQU2G47', l, i))], // placa da escala longe
+      ['TOS1H26', nfs.map((l, i) => paradaEm('TOS1H26', l, i))], // executor confirmaria todo mundo
+    ])
+    // Cliente PROPRIO de TOS1H26 (romaneio real dele, carga 98678) a ~25m da
+    // parada que confirmaria nfs[0] -- mesmo ponto que a parada, endereco
+    // diferente do cliente da escala.
+    const clienteProprioExecutor = linha('98678-x', {
+      carga: '98678', placa: 'TOS1H26', endereco: 'RUA PROPRIA DO EXECUTOR',
+      lat: (nfs[0].lat as number) + 25 * DELTA_M, lng: nfs[0].lng as number,
+    })
+    const linhasPorPlacaNoDia = new Map<string, LinhaGeocodificada[]>([
+      ['TOS1H26', [...c98678, clienteProprioExecutor]],
+    ])
+    const detalhe = chamar('98669', 'RQU2G47', nfs, frota, { linhasPorPlacaNoDia })
+    expect(detalhe[0].observacao).toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
+    expect(detalhe[0].status).toBe('pendente')
+    expect(detalhe[0].placaExecutora ?? null).toBeNull()
+    for (const d of detalhe.slice(1)) {
+      expect(d.observacao).toBe('ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)')
+      expect(d.status).toBe('confirmado_gps')
+    }
+  })
+
+  it('item 3: parada do executor acima de 4h de permanencia nao confirma -- NF continua CONFERIR ESCALA', () => {
+    const nfs = nfsDaCarga('98669', 'RQU2G47', 5)
+    const frota = new Map<string, UnitracParadaRow[]>([
+      ['RQU2G47', c98673.slice(0, 5).map((l, i) => paradaEm('RQU2G47', l, i))],
+      ['TOS1H26', [
+        paradaEm('TOS1H26', nfs[0], 0, 25, 300), // forte por distancia, 5h de permanencia
+        ...nfs.slice(1).map((l, i) => paradaEm('TOS1H26', l, i + 1)),
+      ]],
+    ])
+    const detalhe = chamar('98669', 'RQU2G47', nfs, frota)
+    expect(detalhe[0].observacao).toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
+    expect(detalhe[0].status).toBe('pendente')
+    for (const d of detalhe.slice(1)) {
+      expect(d.observacao).toBe('ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)')
+      expect(d.status).toBe('confirmado_gps')
     }
   })
 })

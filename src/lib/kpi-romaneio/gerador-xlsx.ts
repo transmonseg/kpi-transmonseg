@@ -327,7 +327,17 @@ function ehRevisar(d: LinhaDetalheEntrega): boolean {
   return d.status === 'pendente' && (d.observacao?.endsWith(SUFIXO_OBS_REVISAR) ?? false)
 }
 
-function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
+// Item 2 (revisao final 26/09): a contagem "REVISAR: N" do resumo tem que
+// bater com a coluna CONFIANÇA=REVISAR quando ela esta' visivel (opcoes.
+// motivoConfianca) -- `ehRevisar` acima so' pega o sufixo "- REVISAR" do
+// modoPrecisao, enquanto `LinhaDetalheEntrega.confianca` (calcularConfianca
+// em agregacao.ts) tambem classifica REVISAR outros rotulos pendente com
+// CONFERIR/PASSOU (ex. "PARADA PRÓXIMA (500m-2km)...CONFERIR", "PLACA DA
+// ESCALA...CONFERIR ESCALA") -- sem isso o numero do resumo ficava menor que
+// a contagem real da coluna que o usuario ve na planilha. Quando a coluna
+// NAO esta' visivel, mantem o criterio antigo (ehRevisar) de proposito --
+// nunca muda comportamento pra quem nao pediu MOTIVO/CONFIANÇA.
+function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[], usarConfianca: boolean): {
   taxaPct: number
   taxaPosConferenciaPct: number
   confirmadas: number
@@ -339,7 +349,9 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   revisar: number
 } {
   const semRastreador = detalhe.filter(ehSemRastreador).length
-  const revisar = detalhe.filter(d => ehRevisar(d) && !ehSemRastreador(d)).length
+  const revisar = usarConfianca
+    ? detalhe.filter(d => d.confianca === 'REVISAR' && !ehSemRastreador(d)).length
+    : detalhe.filter(d => ehRevisar(d) && !ehSemRastreador(d)).length
   const aguardando = detalhe.filter(ehAguardando).length
   const base = detalhe.filter(d => !ehSemRastreador(d) && !ehAguardando(d))
   const denominador = base.length
@@ -551,7 +563,7 @@ export async function gerarKpiRomaneioXlsx(
   // default, nao adiciona linha nenhuma -- comportamento antigo intacto pra
   // quem nao passa o 4o parametro).
   if (opcoes.resumoConfirmacao && detalhe.length > 0) {
-    const resumo = calcularResumoConfirmacao(detalhe)
+    const resumo = calcularResumoConfirmacao(detalhe, opcoes.motivoConfianca ?? false)
     const linhaResumoGeral = ws.addRow([
       `TAXA DE CONFIRMAÇÃO: ${resumo.taxaPct}%    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${resumo.taxaPosConferenciaPct}%    |    REVISAR: ${resumo.revisar}    |    NFs sem rastreador: ${resumo.semRastreador}    |    NFs aguardando fim da rota: ${resumo.aguardando}`,
     ])

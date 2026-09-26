@@ -350,13 +350,19 @@ async function main() {
         menorDistanciaTrajetoPorNf,
         // Task 4 (plano 2026-09-26): espelha o chamador real de producao --
         // ver detectarEscalaDivergente em agregacao.ts.
-        true,        // Task 1 (plano 2026-09-26): proximidade fraca vira REVISAR, nunca
+        true,
+        // Task 1 (plano 2026-09-26): proximidade fraca vira REVISAR, nunca
         // ENTREGUE -- so' desta pipeline. Ver modoPrecisao em agregacao.ts.
         true,
         // Task 2 (plano 2026-09-26): rodizio de carga inteira vira ROTA
         // EXECUTADA POR OUTRA PLACA -- so' desta pipeline. Ver
         // reconhecerRodizio em agregacao.ts.
         true,
+        // Item 3 (revisao final 26/09): pontos de referencia dos clientes do
+        // PROPRIO executor no dia (descarta parada do rodizio explicada por
+        // outro cliente dele, ou acima do teto de 4h de permanencia) -- ver
+        // linhasPorPlacaNoDia em agregacao.ts.
+        linhasPorPlaca,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
