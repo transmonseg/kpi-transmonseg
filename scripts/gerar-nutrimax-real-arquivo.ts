@@ -348,6 +348,9 @@ async function main() {
         // Task 3b (verificacao manual 26/09): espelha o chamador real de
         // producao -- ver menorDistanciaTrajetoPorNf em agregacao.ts.
         menorDistanciaTrajetoPorNf,
+        // Task 4 (plano 2026-09-26): espelha o chamador real de producao --
+        // ver detectarEscalaDivergente em agregacao.ts.
+        true,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

@@ -268,6 +268,66 @@ function acharParadaDeOutraPlaca(
   return melhor ? { placa: melhor.placa, parada: melhor.parada } : null
 }
 
+// Task 4 (plano 26/09, verificacao manual 24/09 -- caso real RBJ2J67/carga
+// 98593, escala e romaneio: 18 clientes cujo GPS da placa escalada ficou a
+// 3-10km enquanto a RQV6I51 parou a 8-400m deles): "na Nutry Max nao existe
+// troca de caminhao" (decisao do usuario 26/09) -- a parada de outro
+// veiculo NUNCA confirma a entrega (isso seria voltar a' "ENTREGUE POR
+// OUTRA PLACA", que `desativarOutraPlaca` ja desliga de proposito). Aqui
+// ela e' usada so' como SINAL, junto com a distancia da PROPRIA placa, pra
+// decidir se a escala/romaneio provavelmente erraram a placa da carga --
+// nesse caso a NF nao pode virar "NAO FOI" (acusaria o motorista errado)
+// nem ficar muda, tem que pedir conferencia da escala. Limiares:
+// RAIO_ESCALA_DIVERGENTE_PROPRIA_M reusa o mesmo teto de "nao foi ao
+// cliente" (RAIO_NAO_FOI_AO_CLIENTE_M) -- mesma nocao de "nunca chegou
+// perto de verdade"; RAIO/DURACAO da parada de outra placa sao mais
+// permissivos que RAIO_ENTREGA_METROS de proposito (aqui e' so' indicio,
+// nao confirmacao -- o caso real tem paradas ate' 400m).
+const MIN_NFS_ESCALA_DIVERGENTE = 5
+const RAIO_ESCALA_DIVERGENTE_PROPRIA_M = RAIO_NAO_FOI_AO_CLIENTE_M
+const PROPORCAO_MIN_ESCALA_DIVERGENTE = 0.5
+const RAIO_ESCALA_DIVERGENTE_OUTRA_PLACA_M = 500
+const DURACAO_MIN_ESCALA_DIVERGENTE_OUTRA_PLACA_MIN = 2
+
+/** true quando alguma placa da frota (que nao a esperada) tem uma parada
+ *  FORA_BASE com dwell >= DURACAO_MIN_ESCALA_DIVERGENTE_OUTRA_PLACA_MIN a
+ *  <= RAIO_ESCALA_DIVERGENTE_OUTRA_PLACA_M do ponto -- SINAL, nunca
+ *  confirmacao (ver comentario acima). Nao devolve qual placa/parada: o
+ *  chamador so' precisa saber SE existe, pra decidir "escala provavelmente
+ *  errada" no nivel da carga. */
+function existeParadaDeOutraPlacaComoSinal(
+  linha: LinhaGeocodificada,
+  placaEsperada: string,
+  paradasPorOutraPlaca: Map<string, UnitracParadaRow[]>,
+): boolean {
+  if (linha.lat == null || linha.lng == null) return false
+  for (const [outraPlaca, paradas] of paradasPorOutraPlaca) {
+    if (outraPlaca === placaEsperada) continue
+    for (const p of paradas) {
+      if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
+      const duracaoMin = minutosEntre(p.chegada, p.fim_real ?? p.saida ?? p.chegada)
+      if (duracaoMin < DURACAO_MIN_ESCALA_DIVERGENTE_OUTRA_PLACA_MIN) continue
+      if (haversine(p.lat, p.lng, linha.lat, linha.lng) <= RAIO_ESCALA_DIVERGENTE_OUTRA_PLACA_M) return true
+    }
+  }
+  return false
+}
+
+/** NF ainda "pendente" (nenhuma confirmacao limpa da propria placa, nenhum
+ *  rotulo de fato ja resolvido -- SEM RASTREADOR/SEM MOVIMENTO/parada curta
+ *  compartilhada perdida) e' elegivel pro rotulo de escala divergente: so'
+ *  as observacoes puramente por distancia (ou nenhuma) da propria placa,
+ *  igual ao espirito de `elegivelParaConfirmarPorParadaPropria` acima mas
+ *  restrito ao lado "ainda sem nenhuma boa noticia". */
+function elegivelParaEscalaDivergente(status: StatusEntrega, observacao: string | null): boolean {
+  if (status !== 'pendente') return false
+  if (observacao == null) return true
+  return observacao === 'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR'
+    || observacao === 'NÃO FOI AO CLIENTE (caminhão não esteve na região)'
+    || observacao === 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR'
+    || observacao.startsWith(PREFIXO_OBS_COORDENADA_IMPRECISA)
+}
+
 // Task 10 (plano 24/09, achado real 22/09: ~27 NFs que a Ana vincula por
 // codigo do cliente saiam "ENTREGUE" (confirmado_unitrac) SEM HORARIO nenhum
 // porque o feed GPS continuo travou/sumiu bem na parada -- so' o alvo da
@@ -720,6 +780,22 @@ export function montarDetalheEntregas(
   // scripts/gerar-nutrimax-real-arquivo.ts). Default vazio preserva o
   // comportamento antigo pra quem nao passar nada (Rio Quality, pipeline.ts).
   menorDistanciaTrajetoPorNf: Map<string, number> = new Map(),
+  // Task 4 (plano 26/09, verificacao manual 24/09 -- "na Nutry Max NAO
+  // EXISTE troca de caminhao", decisao do usuario 26/09): quando a placa da
+  // ESCALA nunca chegou perto de verdade da MAIORIA dos clientes da carga E
+  // ha' sinal (nunca confirmacao -- ver existeParadaDeOutraPlacaComoSinal)
+  // de que outro veiculo da frota parou perto deles, o problema mais
+  // provavel e' a ESCALA/ROMANEIO terem posto a carga na placa errada, nao
+  // o motorista ter faltado -- "NAO FOI AO CLIENTE" acusaria a placa
+  // errada, e "ENTREGUE POR OUTRA PLACA" (que `desativarOutraPlaca` ja
+  // proibe) inventaria uma troca que nao existe. As NFs elegiveis (ver
+  // `elegivelParaEscalaDivergente`) saem `pendente` com rotulo proprio
+  // pedindo conferencia da escala, sem horario (nenhuma das duas placas foi
+  // confirmada pra ESTE cliente) -- ver `escalaDivergente`/
+  // `elegivelParaEscalaDivergente` abaixo. Default false preserva Rio
+  // Quality (pipeline.ts) e quem nao passar nada; Nutry Max (route.ts +
+  // gerar-nutrimax-real-arquivo.ts) passa true.
+  detectarEscalaDivergente: boolean = false,
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
   // Task 2 (R2): pontos de referencia de CADA NF da placa no DIA INTEIRO
@@ -742,6 +818,30 @@ export function montarDetalheEntregas(
       }
       return pontos
     })
+  // Task 4 (plano 26/09): decisao de nivel de CARGA (nao por NF) -- calculada
+  // uma vez, usando o MESMO `melhorDistanciaPropria` ja usado abaixo pra
+  // "NAO FOI"/"PASSOU" (mesma fonte de distancia, sem inventar uma segunda
+  // nocao de "perto"). `linhasRomaneio` (so' desta carga+placa, nao
+  // `todasLinhasDaPlacaNoDia`) e' o universo certo: a pergunta e' "essa
+  // CARGA foi posta na placa certa", nao o dia inteiro da placa.
+  const escalaDivergente = (() => {
+    if (!detectarEscalaDivergente) return false
+    if (linhasRomaneio.length < MIN_NFS_ESCALA_DIVERGENTE) return false
+    let perto = 0
+    let temSinalDeOutraPlaca = false
+    for (const l of linhasRomaneio) {
+      const dist = melhorDistanciaPropria(
+        l, placaNorm, paradasPorOutraPlaca, paradasUnitracCruasPropriaPlaca,
+        menorDistanciaTrajetoPorNf.get(l.nf) ?? null,
+      )
+      if (dist != null && dist <= RAIO_ESCALA_DIVERGENTE_PROPRIA_M) perto++
+      if (!temSinalDeOutraPlaca && existeParadaDeOutraPlacaComoSinal(l, placaNorm, paradasPorOutraPlaca)) {
+        temSinalDeOutraPlaca = true
+      }
+    }
+    const proporcaoPerto = perto / linhasRomaneio.length
+    return proporcaoPerto < PROPORCAO_MIN_ESCALA_DIVERGENTE && temSinalDeOutraPlaca
+  })()
   // Revisao final pre-deploy (24/09, item 3): sinais INDEPENDENTES das
   // paradas de que a placa rodou no dia -- desmentem o caso (b) de
   // semRastreadorNoDia ("tem CV mas zero posicoes"). `alvos` chega aqui como
@@ -1186,6 +1286,24 @@ export function montarDetalheEntregas(
         observacao = null
       }
     }
+    // Task 4 (plano 26/09): roda DEPOIS de R2 (paradaPropriaConfirmada acima)
+    // de proposito -- se a PROPRIA placa acabou de ser confirmada por uma
+    // parada real dela, nao ha' divergencia nenhuma pra esta NF especifica
+    // (a carga pode continuar `escalaDivergente` pras OUTRAS NFs que a
+    // propria placa realmente nao confirmou). `elegivelParaEscalaDivergente`
+    // ja' garante status==='pendente' -- confirmado_unitrac/confirmado_gps/
+    // porOutraPlaca (sempre null na Nutry Max, ver desativarOutraPlaca) nunca
+    // chegam aqui. Roda ANTES de diaEmAndamento (abaixo): mesmo espirito de
+    // semRastreadorNoDia/perdeuParadaCompartilhada -- "escala/romaneio
+    // provavelmente errados" e' um fato ja' resolvido pelos dados de HOJE,
+    // nao muda esperando o resto do dia.
+    const nfEscalaDivergente = escalaDivergente && elegivelParaEscalaDivergente(status, observacao)
+    if (nfEscalaDivergente) {
+      observacao = 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA'
+      chegada = null
+      saida = null
+      tempoParadaMin = null
+    }
     // Ver comentario de `diaEmAndamento` na assinatura da funcao: rota ainda
     // em andamento nunca declara falha, so' espera -- substitui qualquer
     // observacao negativa (inclusive nenhuma observacao, ainda "pendente"
@@ -1197,8 +1315,9 @@ export function montarDetalheEntregas(
     // semRastreadorNoDia/Task 1): "parada curta de outro endereco" tambem e'
     // um fato JA' RESOLVIDO (a parada que confirmaria esta NF e' de outro
     // cliente, isso nao muda esperando o dia acabar) -- nao pode virar
-    // "aguardando".
-    if (status === 'pendente' && diaEmAndamento && !semRastreadorNoDia && !perdeuParadaCompartilhada) {
+    // "aguardando". Task 4: escala divergente e' o mesmo tipo de fato ja'
+    // resolvido.
+    if (status === 'pendente' && diaEmAndamento && !semRastreadorNoDia && !perdeuParadaCompartilhada && !nfEscalaDivergente) {
       observacao = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
     }
 
@@ -1217,6 +1336,14 @@ export function montarDetalheEntregas(
     if (paradaPropriaConfirmada) {
       evidencia = 'parada_unitrac_propria'
       distParadaM = Math.round(paradaPropriaConfirmada.distParadaM)
+    } else if (nfEscalaDivergente) {
+      // Task 4: nem confirmacao nem "nao foi" -- a evidencia que temos e' de
+      // que a ESCALA errou a placa, nao sobre esta entrega em si. Sem
+      // distancia exposta de proposito (nao e' distancia da PROPRIA placa
+      // que decidiu nada aqui, e' a parada de OUTRA placa, que nunca vira
+      // numero no relatorio pra nao parecer confirmacao -- ver
+      // existeParadaDeOutraPlacaComoSinal).
+      evidencia = 'sem_evidencia'
     } else if (status === 'pendente' && semRastreadorNoDia) {
       evidencia = 'sem_rastreador'
     } else if (porOutraPlaca) {

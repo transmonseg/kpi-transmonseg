@@ -497,6 +497,12 @@ export async function POST(req: NextRequest) {
         // PorNf) -- so' desta pipeline. Ver menorDistanciaTrajetoPorNf em
         // agregacao.ts.
         menorDistanciaTrajetoPorNf,
+        // Task 4 (plano 2026-09-26, verificacao manual 24/09): "na Nutry Max
+        // nao existe troca de caminhao" -- escala/romaneio com placa
+        // provavelmente errada viram pedido de conferencia, nao "NAO FOI"
+        // nem "ENTREGUE POR OUTRA PLACA" -- so' desta pipeline. Ver
+        // detectarEscalaDivergente em agregacao.ts.
+        true,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

@@ -2873,3 +2873,156 @@ describe('montarDetalheEntregas -- NAO FOI so quando a placa nao passou perto (T
     expect(d.distParadaM as number).toBeLessThanOrEqual(500)
   })
 })
+
+// Task 4 (plano 26/09, verificacao manual 24/09): caso real RBJ2J67/carga
+// 98593 -- escala e romaneio poem a carga na RBJ2J67, o GPS dela ficou a
+// 3-10km dos 18 clientes enquanto a RQV6I51 (outro veiculo da frota) parou a
+// 8-400m deles. "Na Nutry Max nao existe troca de caminhao" (decisao do
+// usuario 26/09): a parada da RQV6I51 e' so' SINAL de que a escala/romaneio
+// erraram a placa, nunca confirmacao -- nunca "ENTREGUE POR OUTRA PLACA" nem
+// "NAO FOI AO CLIENTE" (acusaria a placa errada de nao ter ido).
+describe('montarDetalheEntregas -- escala divergente vira CONFERIR ESCALA em vez de acusar (Task 4, plano 26/09)', () => {
+  const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+
+  // 5 NFs (mesmo espirito do caso real com 18): coordenadas distintas, GPS
+  // continuo da placa da escala a 3-10km de cada uma (menorDistanciaTrajetoPorNf).
+  function nfsLongeDaPropriaPlaca(qtd: number, distanciasM: number[]): LinhaGeocodificada[] {
+    return Array.from({ length: qtd }, (_, i) => linha(`NF${i + 1}`, { lat: -22.90 + i * 0.01, lng: -43.20 + i * 0.01 }))
+  }
+
+  function menorDistanciaMap(linhas: LinhaGeocodificada[], distanciasM: number[]): Map<string, number> {
+    return new Map(linhas.map((l, i) => [l.nf, distanciasM[i]]))
+  }
+
+  // Parada real da OUTRA placa da frota (RQV6I51), 8m do 3o cliente, dwell 5min.
+  function paradaOutraPlacaPerto(linhaAlvo: LinhaGeocodificada, distM = 8): UnitracParadaRow {
+    // ~8m ao norte (1m de lat ~= 0.000009 grau)
+    return parada({
+      id: 'rqv6i51-1', placa_norm: 'RQV6I51', classificacao: 'FORA_BASE',
+      lat: (linhaAlvo.lat as number) + distM * 0.000009, lng: linhaAlvo.lng as number,
+      chegada: '2026-09-24T10:00:00.000Z', saida: '2026-09-24T10:05:00.000Z', fim_real: '2026-09-24T10:05:00.000Z',
+    })
+  }
+
+  it('caso real 24/09: carga com 5 NFs, placa da escala nunca a <=2km, outro veiculo da frota parou perto -- vira CONFERIR ESCALA, pendente, sem_evidencia, sem horario', () => {
+    const nfs = nfsLongeDaPropriaPlaca(5, [3_000, 5_000, 8_000, 9_000, 10_000])
+    const paradasFrota = new Map([['RQV6I51', [paradaOutraPlacaPerto(nfs[2], 8), paradaOutraPlacaPerto(nfs[4], 400)]]])
+
+    const detalhe = montarDetalheEntregas(
+      '98593', 'RBJ2J67', nfs, [], new Map(), resumoCargaVazio,
+      true, paradasFrota, null, false, false, false, new Map(),
+      false, true, false, undefined, false,
+      menorDistanciaMap(nfs, [3_000, 5_000, 8_000, 9_000, 10_000]),
+      true, // detectarEscalaDivergente
+    )
+
+    expect(detalhe).toHaveLength(5)
+    for (const d of detalhe) {
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
+      expect(d.evidencia).toBe('sem_evidencia')
+      expect(d.chegada).toBeNull()
+      expect(d.saida).toBeNull()
+      // Regra de negocio inegociavel: nunca rotular como troca de caminhao,
+      // nem como confirmacao, nem como falha do motorista.
+      expect(d.observacao).not.toContain('OUTRA PLACA')
+      expect(d.observacao).not.toContain('NÃO FOI')
+      expect(d.status).not.toBe('confirmado_gps')
+      expect(d.status).not.toBe('confirmado_unitrac')
+    }
+  })
+
+  it('abaixo do limiar (>=50% dos clientes com a propria placa a <=2km): classificacao normal, sem o rotulo de escala', () => {
+    // 3 de 5 clientes com a propria placa a <=2km (perto) -- so' 2 longe.
+    const nfs = nfsLongeDaPropriaPlaca(5, [500, 1_000, 1_500, 8_000, 9_000])
+    const paradasFrota = new Map([['RQV6I51', [paradaOutraPlacaPerto(nfs[3], 8), paradaOutraPlacaPerto(nfs[4], 8)]]])
+
+    const detalhe = montarDetalheEntregas(
+      '98593', 'RBJ2J67', nfs, [], new Map(), resumoCargaVazio,
+      true, paradasFrota, null, false, false, false, new Map(),
+      false, true, false, undefined, false,
+      menorDistanciaMap(nfs, [500, 1_000, 1_500, 8_000, 9_000]),
+      true,
+    )
+
+    for (const d of detalhe) {
+      expect(d.observacao).not.toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
+    }
+  })
+
+  it('abaixo do limiar (sem sinal de parada de outra placa a <=500m/>=2min): classificacao normal (continua NAO FOI)', () => {
+    const nfs = nfsLongeDaPropriaPlaca(5, [3_000, 5_000, 8_000, 9_000, 10_000])
+    // Nenhuma parada de outra placa perto -- frota vazia.
+    const detalhe = montarDetalheEntregas(
+      '98593', 'RBJ2J67', nfs, [], new Map(), resumoCargaVazio,
+      true, new Map(), null, false, false, false, new Map(),
+      false, true, false, undefined, false,
+      menorDistanciaMap(nfs, [3_000, 5_000, 8_000, 9_000, 10_000]),
+      true,
+    )
+
+    for (const d of detalhe) {
+      expect(d.observacao).not.toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
+      expect(d.observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
+    }
+  })
+
+  it('carga com menos de 5 NFs: classificacao normal mesmo com todos os sinais presentes', () => {
+    const nfs = nfsLongeDaPropriaPlaca(4, [3_000, 5_000, 8_000, 9_000])
+    const paradasFrota = new Map([['RQV6I51', [paradaOutraPlacaPerto(nfs[0], 8)]]])
+
+    const detalhe = montarDetalheEntregas(
+      '98593', 'RBJ2J67', nfs, [], new Map(), resumoCargaVazio,
+      true, paradasFrota, null, false, false, false, new Map(),
+      false, true, false, undefined, false,
+      menorDistanciaMap(nfs, [3_000, 5_000, 8_000, 9_000]),
+      true,
+    )
+
+    for (const d of detalhe) {
+      expect(d.observacao).not.toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
+    }
+  })
+
+  it('opcao desligada (default false): nada muda mesmo com todos os sinais presentes -- continua NAO FOI', () => {
+    const nfs = nfsLongeDaPropriaPlaca(5, [3_000, 5_000, 8_000, 9_000, 10_000])
+    const paradasFrota = new Map([['RQV6I51', [paradaOutraPlacaPerto(nfs[2], 8)]]])
+
+    const detalhe = montarDetalheEntregas(
+      '98593', 'RBJ2J67', nfs, [], new Map(), resumoCargaVazio,
+      true, paradasFrota, null, false, false, false, new Map(),
+      false, true, false, undefined, false,
+      menorDistanciaMap(nfs, [3_000, 5_000, 8_000, 9_000, 10_000]),
+      // detectarEscalaDivergente nao passado -- default false
+    )
+
+    for (const d of detalhe) {
+      expect(d.observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
+    }
+  })
+
+  it('se a PROPRIA placa confirmou uma NF especifica (Unitrac), nao e\' divergencia PRA ELA -- as outras da carga continuam com o rotulo de escala', () => {
+    const nfs = nfsLongeDaPropriaPlaca(5, [3_000, 5_000, 8_000, 9_000, 10_000])
+    const paradasFrota = new Map([['RQV6I51', [paradaOutraPlacaPerto(nfs[2], 8)]]])
+    // NF3 confirmada pela propria placa (Unitrac, situacao=1) -- apesar da
+    // carga inteira ter o sinal de divergencia, esta NF tem prova positiva.
+    const alvos = [alvo(nfs[2].nf, 1)]
+
+    const detalhe = montarDetalheEntregas(
+      '98593', 'RBJ2J67', nfs, alvos, new Map(), resumoCargaVazio,
+      true, paradasFrota, null, false, false, false, new Map(),
+      false, true, false, undefined, false,
+      menorDistanciaMap(nfs, [3_000, 5_000, 8_000, 9_000, 10_000]),
+      true,
+    )
+
+    const nf3 = detalhe.find(d => d.nf === nfs[2].nf)!
+    expect(nf3.status).toBe('confirmado_unitrac')
+    expect(nf3.observacao).not.toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
+
+    const outras = detalhe.filter(d => d.nf !== nfs[2].nf)
+    for (const d of outras) {
+      expect(d.observacao).toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
+    }
+  })
+})
