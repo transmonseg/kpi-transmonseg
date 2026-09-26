@@ -339,6 +339,9 @@ async function main() {
         // Fix round 2 (revisao de codigo): espelha o chamador real de
         // producao -- ver todasLinhasDaPlacaNoDia em agregacao.ts.
         linhasPorPlaca.get(placaNorm) ?? [],
+        // Task 2 (plano 26/09): espelha o chamador real de producao -- ver
+        // apagaoDeSinalPropriaPlaca em agregacao.ts.
+        horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

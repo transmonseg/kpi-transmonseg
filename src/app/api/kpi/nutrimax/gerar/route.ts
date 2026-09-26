@@ -480,6 +480,11 @@ export async function POST(req: NextRequest) {
         // (todas as cargas), nao so' desta carga -- ver todasLinhasDaPlacaNoDia
         // em agregacao.ts.
         linhasPorPlaca.get(placaNorm) ?? [],
+        // Task 2 (plano 2026-09-26, verificacao manual 24/09): sinal da ponte
+        // (HorarioBase.apagaoDeSinal, ja usado por resolverParadas em
+        // unitrac.ts) reaproveitado pra detectar GPS congelado -- so' desta
+        // pipeline. Ver apagaoDeSinalPropriaPlaca em agregacao.ts.
+        horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

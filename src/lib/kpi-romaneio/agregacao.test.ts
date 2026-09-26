@@ -2684,3 +2684,106 @@ describe('RQQ5B81/NF 2386225 23/09 regenerado fora da janela da Unitrac', () => 
     expect(d.chegada).toBeNull()
   })
 })
+
+// Task 2 (plano 2026-09-26, verificacao manual 24/09): GPS congelado e placa
+// declarada sem rastreador nao podem gerar visita/NF falsa. Achado real
+// TTL5J17 23-24/09: placa em kpi_placa_sem_rastreador (temRastreador=false)
+// mas com cv/ponte respondendo -- a ponte devolvia uma "visita" (GPS
+// congelado num unico ponto o dia inteiro, atraso medio ~40.000min) cobrindo
+// 00:00-23:59, e o rotulo unificado de sem rastreador (Task 1, 24/09) so'
+// disparava quando `status === 'pendente'` -- a visita da ponte fazia
+// `confirmadoGps` ficar true, empurrando status pra 'confirmado_gps' ANTES
+// da checagem de semRastreadorNoDia rodar, e o `tempoParadaMin` de quase 24h
+// batia o limiar de LIMITE_TEMPO_LOJA_MIN -- a NF saia "TEMPO EM LOJA ACIMA
+// DE 4H" com visita 00:00-23:59, DENTRO da taxa de falha, em vez de "SEM
+// RASTREADOR ... NAO CONTABILIZADO" fora da taxa.
+describe('montarDetalheEntregas -- GPS congelado e sem rastreador nao geram visita falsa (Task 2, plano 26/09)', () => {
+  const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+  const OBS = 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO'
+
+  it('(a) temRastreador=false com visita da ponte cobrindo o dia inteiro (GPS congelado, caso TTL5J17): SEM RASTREADOR, sem chegada/saida/tempo, evidencia sem_rastreador -- nunca TEMPO EM LOJA', () => {
+    const linhas = [linha('NF1'), linha('NF2')]
+    const visitaCongelada: Visita = {
+      nf: 'NF1', chegada: '2026-09-24T03:00:00.000Z', saida: '2026-09-25T02:59:00.000Z', distanciaMetrosDoPonto: 0,
+    }
+    const visitas = new Map<string, Visita>([
+      ['NF1', visitaCongelada],
+      ['NF2', { ...visitaCongelada, nf: 'NF2' }],
+    ])
+
+    const detalhes = montarDetalheEntregas(
+      '93758', 'TTL5J17', linhas, [], visitas, resumoCargaVazio,
+      /* temRastreador */ false, new Map(), null, false, false, false, new Map(),
+      /* tratarSemRastreadorNoDia */ true,
+    )
+
+    for (const d of detalhes) {
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe(OBS)
+      expect(d.observacao).not.toContain('TEMPO EM LOJA')
+      expect(d.evidencia).toBe('sem_rastreador')
+      expect(d.chegada).toBeNull()
+      expect(d.saida).toBeNull()
+      expect(d.tempoParadaMin).toBeNull()
+    }
+  })
+
+  it('(b) placa com cv (temRastreador=true) e GPS congelado o dia todo (todas as paradas da propria placa no mesmo ponto, sinal de apagao da ponte): SEM RASTREADOR/NAO CONTABILIZADO, fora da taxa, nao VEICULO SEM MOVIMENTO', () => {
+    const linhas = [linha('NF1')]
+    // Mesmo ponto (delta bem menor que 50m) o dia inteiro -- classificacao
+    // BASE ou FORA_BASE tanto faz, o sinal e' "nunca se moveu de verdade".
+    const paradasCongeladas = [
+      parada({ placa_norm: 'TTL5J17', classificacao: 'BASE', lat: -22.816007, lng: -43.277827, chegada: '2026-09-24T03:00:00.000Z', saida: '2026-09-24T12:00:00.000Z' }),
+      parada({ placa_norm: 'TTL5J17', classificacao: 'BASE', lat: -22.816008, lng: -43.277828, chegada: '2026-09-24T12:00:00.000Z', saida: '2026-09-25T02:59:00.000Z' }),
+    ]
+    const paradasFrota = new Map([['TTL5J17', paradasCongeladas]])
+
+    const [d] = montarDetalheEntregas(
+      '93758', 'TTL5J17', linhas, [], new Map(), resumoCargaVazio,
+      /* temRastreador */ true, paradasFrota, 0.3, false, false, false, new Map(),
+      /* tratarSemRastreadorNoDia */ true, false, false, linhas,
+      /* apagaoDeSinalPropriaPlaca (sinal da ponte de leitura atrasada -- GPS travado na ultima posicao) */ true,
+    )
+
+    expect(d.observacao).toBe(OBS)
+    expect(d.observacao).not.toContain('SEM MOVIMENTO')
+    expect(d.evidencia).toBe('sem_rastreador')
+    expect(d.status).toBe('pendente')
+  })
+
+  it('(c) placa realmente parada na base com GPS vivo (sem sinal de apagao): continua VEICULO SEM MOVIMENTO normalmente, nao vira sem rastreador', () => {
+    const linhas = [linha('NF1')]
+    const paradasNaBase = [
+      parada({ placa_norm: 'TTL5J17', classificacao: 'BASE', lat: -22.816007, lng: -43.277827, chegada: '2026-09-24T03:00:00.000Z', saida: '2026-09-24T12:00:00.000Z' }),
+      parada({ placa_norm: 'TTL5J17', classificacao: 'BASE', lat: -22.816008, lng: -43.277828, chegada: '2026-09-24T12:00:00.000Z', saida: '2026-09-25T02:59:00.000Z' }),
+    ]
+    const paradasFrota = new Map([['TTL5J17', paradasNaBase]])
+
+    const [d] = montarDetalheEntregas(
+      '93758', 'TTL5J17', linhas, [], new Map(), resumoCargaVazio,
+      /* temRastreador */ true, paradasFrota, 0.3, false, false, false, new Map(),
+      /* tratarSemRastreadorNoDia */ true, false, false, linhas,
+      /* apagaoDeSinalPropriaPlaca */ false,
+    )
+
+    expect(d.observacao).toBe('VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA')
+    expect(d.evidencia).not.toBe('sem_rastreador')
+  })
+
+  it('R2 (confirmarPorParadaUnitracPropria) nunca confirma quando a placa e\' sem rastreador -- trava TTL5J17 continua sem_rastreador', () => {
+    const linhas = [linha('NF1')]
+    const paradaPropria = [parada({ placa_norm: 'TTL5J17', classificacao: 'FORA_BASE', lat: -22.9, lng: -43.2 })]
+
+    const [d] = montarDetalheEntregas(
+      '93758', 'TTL5J17', linhas, [], new Map(), resumoCargaVazio,
+      /* temRastreador */ false, new Map(), null, false, false, false,
+      new Map([['TTL5J17', paradaPropria]]),
+      /* tratarSemRastreadorNoDia */ true, /* desativarOutraPlaca */ true,
+      /* confirmarPorParadaUnitracPropria */ true,
+    )
+
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe(OBS)
+    expect(d.evidencia).toBe('sem_rastreador')
+  })
+})

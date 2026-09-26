@@ -626,6 +626,24 @@ export function montarDetalheEntregas(
   // (route.ts + gerar-nutrimax-real-arquivo.ts) passa `linhasPorPlaca.get(
   // placaNorm)` (TODAS as cargas da placa no dia, ja calculado no chamador).
   todasLinhasDaPlacaNoDia: LinhaGeocodificada[] = linhasRomaneio,
+  // Task 2 (plano 2026-09-26, verificacao manual 24/09 -- caso real TTL5J17
+  // 23-24/09): sinal da ponte de que a leitura de posicao desta placa ficou
+  // ATRASADA (mesmo `apagaoDeSinal` de HorarioBase/base-horarios.ts, ja
+  // usado por resolverParadas em unitrac.ts pra decidir Unitrac-vs-ponte) --
+  // aqui reaproveitado como indicio de GPS CONGELADO (ultima posicao
+  // conhecida repetida, nao permanencia real). Sozinho nao basta (apagao de
+  // sinal tambem acontece com o veiculo se movendo entre leituras) -- so'
+  // vira `gpsCongelado` combinado com "todas as paradas da PROPRIA placa no
+  // mesmo ponto" (ver RAIO_GPS_CONGELADO_M abaixo), o que descarta o caso
+  // (c) de aceite (placa genuinamente parada na base, GPS vivo, sem atraso
+  // -- continua VEICULO SEM MOVIMENTO). Sem mudanca nenhuma na ponte: so'
+  // repassa o campo que ja existe em HorarioBase.apagaoDeSinal. Default
+  // false preserva Rio Quality e quem nao passar nada; Nutry Max (route.ts +
+  // gerar-nutrimax-real-arquivo.ts) passa horarioBasePorPlaca.get(placaNorm)
+  // ?.apagaoDeSinal ?? false. Mesmo padrao opt-in de tratarSemRastreadorNoDia
+  // acima -- so' entra em jogo quando tratarSemRastreadorNoDia tambem esta
+  // ligado (gate unico, ver `semRastreadorNoDia` abaixo).
+  apagaoDeSinalPropriaPlaca: boolean = false,
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
   // Task 2 (R2): pontos de referencia de CADA NF da placa no DIA INTEIRO
@@ -822,9 +840,23 @@ export function montarDetalheEntregas(
     // 'feito' da Unitrac pra placa no dia nem km > 0 -- qualquer um dos dois
     // prova que o veiculo foi rastreado/rodou, so' as paradas que faltaram.
     const zeroPosicoesNoDia = paradasPorOutraPlaca.has(placaNorm) && paradasProprias.length === 0
+    // Task 2 (plano 26/09, caso (b) de aceite -- TTL5J17 GPS congelado o dia
+    // todo com cv cadastrado, temRastreador ainda true): "congelado" e'
+    // TODAS as paradas do dia da PROPRIA placa dentro do MESMO raio de 50m
+    // (posicao nunca mudou de verdade) E a ponte sinalizou atraso de leitura
+    // nessa janela (apagaoDeSinalPropriaPlaca) -- as duas condicoes juntas
+    // descartam o caso (c) de aceite (parada real na base, GPS vivo: sem
+    // atraso, `apagaoDeSinalPropriaPlaca` fica false e essa placa continua
+    // caindo em `semMovimento` normalmente, abaixo).
+    const RAIO_GPS_CONGELADO_M = 50
+    const paradasComCoord = paradasProprias.filter((p): p is UnitracParadaRow & { lat: number; lng: number } => p.lat != null && p.lng != null)
+    const todasParadasNoMesmoPonto = paradasComCoord.length > 0 && paradasComCoord.every(p =>
+      haversine(paradasComCoord[0].lat, paradasComCoord[0].lng, p.lat, p.lng) <= RAIO_GPS_CONGELADO_M)
+    const gpsCongelado = apagaoDeSinalPropriaPlaca && todasParadasNoMesmoPonto
     const semRastreadorNoDia = tratarSemRastreadorNoDia && (
       !temRastreador
       || (zeroPosicoesNoDia && !diaEmAndamento && !placaTemAlvoFeitoNoDia && !placaRodouPorKm)
+      || gpsCongelado
     )
     const nuncaSaiuDaBase = paradasProprias.length > 0 && paradasProprias.every(p => p.classificacao === 'BASE')
     // Achado real 22-23/09 (Task 7, plano 24/09): /stops da Unitrac so' guarda
@@ -879,22 +911,37 @@ export function montarDetalheEntregas(
       ? acharParadaUnitracParaFeito(linha, alvo, paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? [])
       : null
 
+    // Task 2 (plano 26/09, caso (a) de aceite -- TTL5J17): placa SEM
+    // RASTREADOR (`semRastreadorNoDia`, incl. o novo `gpsCongelado` acima) e'
+    // um FATO JA CONHECIDO que nao pode ser desmentido por uma Visita/
+    // paradaUnitracFeito -- a ponte pode devolver uma "visita" de GPS
+    // congelado (posicao presa o dia inteiro) que, sem esta guarda, virava
+    // `confirmadoGps`/'confirmado_gps' com chegada/saida 00:00-23:59 (~24h
+    // de "tempo em loja", disparando LIMITE_TEMPO_LOJA_MIN em vez do rotulo
+    // de sem rastreador). Excecao unica (mesmo espirito do bloco de
+    // observacao/evidencia abaixo): `porOutraPlaca` e' evidencia POSITIVA
+    // (outro veiculo da frota comprovadamente entregou) e continua vencendo
+    // -- so' bloqueia quando NADA alem da propria placa confirmou.
+    const bloqueiaHorarioSemRastreador = semRastreadorNoDia && !porOutraPlaca
     let status: StatusEntrega = confirmadoUnitrac
       ? 'confirmado_unitrac'
       : perdeuParadaCompartilhada
         ? 'pendente'
-        : confirmadoGps || porOutraPlaca
-          ? 'confirmado_gps'
-          : 'pendente'
+        : bloqueiaHorarioSemRastreador
+          ? 'pendente'
+          : confirmadoGps || porOutraPlaca
+            ? 'confirmado_gps'
+            : 'pendente'
     // Perdedor da parada compartilhada: a parada e' de OUTRO endereco do
     // grupo (o vencedor a <=150m) -- mostrar o horario dessa parada como se
     // fosse a chegada/saida DESTE cliente afirmaria uma presenca que a
     // equipe ja desmentiu (caso de aceite: "nao esteve no local"). Fica sem
-    // horario, igual aos demais "pendente" sem evidencia propria.
-    let chegada = perdeuParadaCompartilhada
+    // horario, igual aos demais "pendente" sem evidencia propria. Mesma logica
+    // pra `bloqueiaHorarioSemRastreador` (Task 2 acima).
+    let chegada = perdeuParadaCompartilhada || bloqueiaHorarioSemRastreador
       ? null
       : visita?.chegada ?? paradaUnitracFeito?.parada.chegada ?? porOutraPlaca?.parada.chegada ?? null
-    let saida = perdeuParadaCompartilhada
+    let saida = perdeuParadaCompartilhada || bloqueiaHorarioSemRastreador
       ? null
       : visita?.saida
         ?? (paradaUnitracFeito ? paradaUnitracFeito.parada.fim_real ?? paradaUnitracFeito.parada.saida ?? paradaUnitracFeito.parada.chegada : null)
