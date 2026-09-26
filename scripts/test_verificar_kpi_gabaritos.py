@@ -29,13 +29,19 @@ spec.loader.exec_module(verificar_kpi_gabaritos)  # type: ignore[union-attr]
 
 
 def _escrever_xlsx_kpi(
-    caminho: Path, placas: dict[str, list[tuple]], com_confianca: bool = False
+    caminho: Path,
+    placas: dict[str, list[tuple]],
+    com_resolucao: bool = False,
+    com_confianca: bool = False,
 ) -> None:
     """placas: {nome_placa: [(carga, nf, cliente, endereco, chegada, saida,
-    tempo, status, resolucao_op, responsavel, evidencia, dist[, confianca]),
-    ...]} -- `confianca` (Task 3, plano 2026-09-26) so' quando
-    com_confianca=True, coluna extra no fim (mesmo lugar do xlsx real,
-    MOTIVO/CONFIANÇA depois de EVIDÊNCIA/DIST. PARADA (m))."""
+    tempo, status[, resolucao_op, responsavel][, confianca]), ...]} --
+    mesmo layout real de gerador-xlsx.ts pos ajuste 26/09: 8 colunas fixas
+    (STATUS, nao "STATUS AUTOMÁTICO"), RESOLUÇÃO OPERAÇÃO/RESPONSÁVEL so'
+    quando com_resolucao=True, e CONFIANÇA (formato antigo, pre-ajuste) so'
+    quando com_confianca=True -- EVIDÊNCIA/DIST. PARADA (m)/PLACA
+    EXECUTORA/MOTIVO nao existem mais em nenhum xlsx gerado a partir de
+    26/09, entao nem entram aqui."""
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
     for nome_placa, linhas in placas.items():
@@ -50,14 +56,12 @@ def _escrever_xlsx_kpi(
             "CHEGADA NA LOJA",
             "SAÍDA DA LOJA",
             "TEMPO NA LOJA",
-            "STATUS AUTOMÁTICO",
-            "RESOLUÇÃO OPERAÇÃO",
-            "RESPONSÁVEL",
-            "EVIDÊNCIA",
-            "DIST. PARADA (m)",
+            "STATUS",
         ]
+        if com_resolucao:
+            header += ["RESOLUÇÃO OPERAÇÃO", "RESPONSÁVEL"]
         if com_confianca:
-            header += ["MOTIVO", "CONFIANÇA"]
+            header += ["CONFIANÇA"]
         ws.append(header)
         for linha in linhas:
             ws.append(list(linha))
@@ -137,10 +141,6 @@ class TestVerificarKpiGabaritos(unittest.TestCase):
                         "10:10",
                         "0h10min",
                         "ENTREGUE",
-                        "",
-                        "",
-                        "PARADA NO ENDEREÇO",
-                        10,
                     )
                 ]
             },
@@ -166,10 +166,6 @@ class TestVerificarKpiGabaritos(unittest.TestCase):
                         "10:10",
                         "0h10min",
                         "ENTREGUE",
-                        "",
-                        "",
-                        "PARADA NO ENDEREÇO",
-                        10,
                     )
                 ]
             },
@@ -198,10 +194,6 @@ class TestVerificarKpiGabaritos(unittest.TestCase):
                         "09:13",
                         "0h23min",
                         "ENTREGUE - PARADA PROXIMA (500-800m) MAS DENTRO DA ROTA",
-                        "",
-                        "",
-                        "Nao esteve no local",
-                        700,
                     )
                 ]
             },
@@ -257,10 +249,6 @@ class TestVerificarKpiGabaritos(unittest.TestCase):
                         "11:10",
                         "0h10min",
                         "ENTREGUE",
-                        "",
-                        "",
-                        "PARADA NO ENDEREÇO",
-                        10,
                     )
                 ]
             },
@@ -273,9 +261,10 @@ class TestVerificarKpiGabaritos(unittest.TestCase):
 
     # Task 3 (plano 2026-09-26): rodizio de carga inteira sai "ROTA EXECUTADA
     # POR OUTRA PLACA (X)" -- nao comeca com "ENTREGUE", mas CONFIANÇA=
-    # CONFIRMADA quando a coluna existe. Precisa contar como "entregue"
-    # (acerto), igual qualquer outro status confirmado.
-    def test_rota_executada_por_outra_placa_conta_como_entregue(self):
+    # CONFIRMADA quando a coluna existe (xlsx do formato ANTIGO, pre-ajuste
+    # de layout 26/09). Precisa contar como "entregue" (acerto), igual
+    # qualquer outro status confirmado.
+    def test_rota_executada_por_outra_placa_com_coluna_confianca_legado_conta_como_entregue(self):
         xlsx_24 = self.tmp / "dia24.xlsx"
         _escrever_xlsx_kpi(
             xlsx_24,
@@ -290,11 +279,6 @@ class TestVerificarKpiGabaritos(unittest.TestCase):
                         "10:12",
                         "0h12min",
                         "ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)",
-                        "",
-                        "",
-                        "ROTA EXECUTADA POR OUTRA PLACA",
-                        30,
-                        "Rota executada pela TOS1H26 — parada de 12 min a 30 m",
                         "CONFIRMADA",
                     )
                 ]
@@ -310,7 +294,7 @@ class TestVerificarKpiGabaritos(unittest.TestCase):
     # "nao_entregue" continua falhando para QUALQUER confirmado (rodizio
     # inclusive) -- CONFIANÇA=CONFIRMADA e' o mesmo veredito que "ENTREGUE",
     # so' com rotulo de texto diferente.
-    def test_nao_entregue_com_rota_executada_por_outra_placa_ainda_falha(self):
+    def test_nao_entregue_com_rota_executada_por_outra_placa_coluna_confianca_legado_ainda_falha(self):
         xlsx_24 = self.tmp / "dia24.xlsx"
         _escrever_xlsx_kpi(
             xlsx_24,
@@ -325,11 +309,6 @@ class TestVerificarKpiGabaritos(unittest.TestCase):
                         "10:12",
                         "0h12min",
                         "ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)",
-                        "",
-                        "",
-                        "ROTA EXECUTADA POR OUTRA PLACA",
-                        30,
-                        "Rota executada pela TOS1H26 — parada de 12 min a 30 m",
                         "CONFIRMADA",
                     )
                 ]
@@ -342,11 +321,12 @@ class TestVerificarKpiGabaritos(unittest.TestCase):
         self.assertIn("FALHA CRITICA", saida)
         self.assertIn("999004", saida)
 
-    # Fallback: xlsx SEM coluna CONFIANÇA (formato antigo) continua usando so'
-    # o prefixo "ENTREGUE" -- "ROTA EXECUTADA POR OUTRA PLACA" sem a coluna
-    # nao conta como entregue (comportamento de antes desta task, nunca
-    # quebra quem regenerar um xlsx antigo).
-    def test_rota_executada_por_outra_placa_sem_coluna_confianca_nao_conta(self):
+    # Ajuste de layout 26/09 (pedido do usuario): xlsx atual NUNCA tem a
+    # coluna CONFIANÇA -- o fallback (so' pelo texto de STATUS) precisa
+    # continuar contando "ROTA EXECUTADA POR OUTRA PLACA (X)" como entregue
+    # (comportamento ANTES desta task contava so' "ENTREGUE"; a trava tinha
+    # ficado cega pro rodizio sem a coluna -- corrigido aqui).
+    def test_rota_executada_por_outra_placa_sem_coluna_confianca_conta_como_entregue(self):
         xlsx_24 = self.tmp / "dia24.xlsx"
         _escrever_xlsx_kpi(
             xlsx_24,
@@ -361,10 +341,6 @@ class TestVerificarKpiGabaritos(unittest.TestCase):
                         "10:12",
                         "0h12min",
                         "ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)",
-                        "",
-                        "",
-                        "ROTA EXECUTADA POR OUTRA PLACA",
-                        30,
                     )
                 ]
             },
@@ -372,6 +348,157 @@ class TestVerificarKpiGabaritos(unittest.TestCase):
         casos = [("2026-09-24", "TOS1H26", "999005", "entregue", "teste")]
         codigo, saida = self._rodar(xlsx_24, casos)
         self.assertEqual(codigo, 0, saida)
+        self.assertIn("1/1", saida)
+        self.assertIn("100.0%", saida)
+
+    # Mesmo fallback: ENTREGUE simples (sem CONFIANÇA) tambem continua
+    # contando -- garante que "STATUS comeca por ENTREGUE" nao quebrou junto
+    # com o novo ramo "ROTA EXECUTADA POR OUTRA PLACA".
+    def test_entregue_sem_coluna_confianca_conta_como_entregue(self):
+        xlsx_24 = self.tmp / "dia24.xlsx"
+        _escrever_xlsx_kpi(
+            xlsx_24,
+            {"RQU3F71": [("1", "999006", "CLIENTE T", "ENDERECO T", "10:00", "10:10", "0h10min", "ENTREGUE")]},
+        )
+        casos = [("2026-09-24", "RQU3F71", "999006", "entregue", "teste")]
+        codigo, saida = self._rodar(xlsx_24, casos)
+        self.assertEqual(codigo, 0, saida)
+        self.assertIn("1/1", saida)
+        self.assertIn("100.0%", saida)
+
+    # Fallback sem coluna CONFIANÇA: qualquer rotulo pendente que termine em
+    # ressalva NUNCA conta como entregue, mesmo cobrindo os 4 casos citados
+    # explicitamente na revisao de layout 26/09.
+    def test_revisar_sem_coluna_confianca_nao_conta_como_entregue(self):
+        xlsx_24 = self.tmp / "dia24.xlsx"
+        _escrever_xlsx_kpi(
+            xlsx_24,
+            {
+                "RQU3F71": [
+                    (
+                        "1",
+                        "999007",
+                        "CLIENTE S",
+                        "ENDERECO S",
+                        "",
+                        "",
+                        "",
+                        "PARADA PRÓXIMA (300-800m) - REVISAR",
+                    )
+                ]
+            },
+        )
+        casos = [("2026-09-24", "RQU3F71", "999007", "entregue", "teste")]
+        codigo, saida = self._rodar(xlsx_24, casos)
+        self.assertEqual(codigo, 0, saida)
+        self.assertIn("0/1", saida)
+        self.assertIn("0.0%", saida)
+
+    def test_conferir_sem_coluna_confianca_nao_conta_como_entregue(self):
+        xlsx_24 = self.tmp / "dia24.xlsx"
+        _escrever_xlsx_kpi(
+            xlsx_24,
+            {
+                "RQU3F71": [
+                    (
+                        "1",
+                        "999008",
+                        "CLIENTE R",
+                        "ENDERECO R",
+                        "",
+                        "",
+                        "",
+                        "PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR",
+                    )
+                ]
+            },
+        )
+        casos = [("2026-09-24", "RQU3F71", "999008", "entregue", "teste")]
+        codigo, saida = self._rodar(xlsx_24, casos)
+        self.assertEqual(codigo, 0, saida)
+        self.assertIn("0/1", saida)
+        self.assertIn("0.0%", saida)
+
+    def test_nao_foi_sem_coluna_confianca_nao_conta_como_entregue(self):
+        xlsx_24 = self.tmp / "dia24.xlsx"
+        _escrever_xlsx_kpi(
+            xlsx_24,
+            {
+                "RQU3F71": [
+                    (
+                        "1",
+                        "999009",
+                        "CLIENTE Q",
+                        "ENDERECO Q",
+                        "",
+                        "",
+                        "",
+                        "NÃO FOI AO CLIENTE (caminhão não esteve na região)",
+                    )
+                ]
+            },
+        )
+        casos = [("2026-09-24", "RQU3F71", "999009", "entregue", "teste")]
+        codigo, saida = self._rodar(xlsx_24, casos)
+        self.assertEqual(codigo, 0, saida)
+        self.assertIn("0/1", saida)
+        self.assertIn("0.0%", saida)
+
+    def test_sem_rastreador_sem_coluna_confianca_nao_conta_como_entregue(self):
+        xlsx_24 = self.tmp / "dia24.xlsx"
+        _escrever_xlsx_kpi(
+            xlsx_24,
+            {
+                "RQU3F71": [
+                    (
+                        "1",
+                        "999010",
+                        "CLIENTE P",
+                        "ENDERECO P",
+                        "",
+                        "",
+                        "",
+                        "PLACA SEM RASTREADOR CADASTRADO - COMPLETAR FROTA",
+                    )
+                ]
+            },
+        )
+        casos = [("2026-09-24", "RQU3F71", "999010", "entregue", "teste")]
+        codigo, saida = self._rodar(xlsx_24, casos)
+        self.assertEqual(codigo, 0, saida)
+        self.assertIn("0/1", saida)
+        self.assertIn("0.0%", saida)
+
+    # RESOLUÇÃO OPERAÇÃO/RESPONSÁVEL (quando o dia tem resolução manual) nao
+    # atrapalham o parsing nem o fallback -- o veredito continua vindo so'
+    # de STATUS.
+    def test_header_com_resolucao_operacao_nao_atrapalha_o_parsing(self):
+        xlsx_24 = self.tmp / "dia24.xlsx"
+        _escrever_xlsx_kpi(
+            xlsx_24,
+            {
+                "RQU3F71": [
+                    (
+                        "1",
+                        "999011",
+                        "CLIENTE O",
+                        "ENDERECO O",
+                        "10:00",
+                        "10:10",
+                        "0h10min",
+                        "SEM CONFIRMAÇÃO",
+                        "ENTREGUE",
+                        "ANA",
+                    )
+                ]
+            },
+            com_resolucao=True,
+        )
+        casos = [("2026-09-24", "RQU3F71", "999011", "entregue", "teste")]
+        codigo, saida = self._rodar(xlsx_24, casos)
+        self.assertEqual(codigo, 0, saida)
+        # STATUS automático (não a resolução manual) é o único veredito
+        # considerado pelo fallback -- "SEM CONFIRMAÇÃO" não conta.
         self.assertIn("0/1", saida)
         self.assertIn("0.0%", saida)
 

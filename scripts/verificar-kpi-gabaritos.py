@@ -18,12 +18,19 @@ Criterios de falha:
   - desatualizado: so' e' reportado (nao tem regra de falha definida no
     brief); usado apenas para contexto.
 
-"Confirmado" (Task 3, plano 2026-09-26): quando o xlsx tem a coluna
-CONFIANÇA (LinhaDetalheEntrega.confianca), NF confirmada = CONFIANÇA
-"CONFIRMADA" -- cobre 'ROTA EXECUTADA POR OUTRA PLACA (X)' (rodizio de
-carga inteira) e qualquer status confirmado futuro que nao comece com
-'ENTREGUE'. Xlsx sem a coluna (formato antigo) cai no fallback de sempre:
-status comecando por 'ENTREGUE'.
+"Confirmado" (Task 3, plano 2026-09-26; fallback revisto no ajuste de layout
+26/09 -- coluna CONFIANÇA saiu do xlsx atual, PLACA EXECUTORA/MOTIVO
+tambem): quando o xlsx tem a coluna CONFIANÇA (formato antigo, gerado antes
+do ajuste), NF confirmada = CONFIANÇA "CONFIRMADA" -- cobre 'ROTA EXECUTADA
+POR OUTRA PLACA (X)' (rodizio de carga inteira) e qualquer status confirmado
+futuro que nao comece com 'ENTREGUE'. Xlsx sem a coluna (formato atual,
+sempre) cai no fallback: STATUS comecando por 'ENTREGUE' ou por 'ROTA
+EXECUTADA POR OUTRA PLACA' conta como confirmado, EXCETO se tiver qualquer
+marcador de "nao e' um veredito de sucesso" (REVISAR, CONFERIR, NÃO FOI,
+SEM RASTREADOR) -- necessario porque alguns rotulos pendentes começam com
+um prefixo parecido mas terminam em ressalva (ex. "PASSOU NO ENDEREÇO MAS
+NÃO REGISTROU PARADA - CONFERIR", "PLACA SEM RASTREADOR CADASTRADO -
+COMPLETAR FROTA").
 
 Casos listados em `scripts/gabaritos/excecoes-conhecidas.csv`
 (`data;placa;nf;motivo;desde`) sao falhas conhecidas/antigas: a trava NAO
@@ -195,16 +202,31 @@ def carregar_kpi_xlsx(caminho: Path) -> dict[str, dict]:
     return por_nf
 
 
+_NUNCA_CONFIRMADO_NO_STATUS = ("REVISAR", "CONFERIR", "NÃO FOI", "NAO FOI", "SEM RASTREADOR")
+
+
 def _confirmado(info: dict) -> bool:
-    """Task 3 (plano 2026-09-26): se a coluna CONFIANÇA existe (info["confianca"]
-    nao vazia), ela e' o veredito -- CONFIRMADA cobre "ROTA EXECUTADA POR
-    OUTRA PLACA (X)" (rodizio de carga inteira) e qualquer status confirmado
-    futuro que nao comece com "ENTREGUE". Sem a coluna (xlsx antigo, ou aba
-    sem ela), cai pro prefixo de sempre."""
+    """Task 3 (plano 2026-09-26); fallback revisto no ajuste de layout 26/09
+    (coluna CONFIANÇA saiu do xlsx atual): se a coluna CONFIANÇA existe
+    (info["confianca"] nao vazia -- só em xlsx do formato antigo), ela e' o
+    veredito -- CONFIRMADA cobre "ROTA EXECUTADA POR OUTRA PLACA (X)"
+    (rodizio de carga inteira) e qualquer status confirmado futuro que nao
+    comece com "ENTREGUE". Sem a coluna (xlsx do formato atual, sempre):
+    STATUS comecando por "ENTREGUE" ou "ROTA EXECUTADA POR OUTRA PLACA"
+    conta como confirmado, EXCETO se tiver qualquer marcador de "isto NAO e'
+    um veredito de sucesso" (REVISAR/CONFERIR/NÃO FOI/SEM RASTREADOR) --
+    alguns rotulos pendente comecam com um prefixo parecido mas terminam em
+    ressalva (ex. "PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR",
+    "PLACA SEM RASTREADOR CADASTRADO - COMPLETAR FROTA")."""
     confianca = _norm(info.get("confianca"))
     if confianca:
         return confianca == "CONFIRMADA"
-    return _norm(info["status"]).startswith("ENTREGUE")
+    status = _norm(info["status"])
+    if not status:
+        return False
+    if any(marcador in status for marcador in _NUNCA_CONFIRMADO_NO_STATUS):
+        return False
+    return status.startswith("ENTREGUE") or status.startswith("ROTA EXECUTADA POR OUTRA PLACA")
 
 
 def verificar_caso(caso: dict, kpi_por_nf: dict[str, dict]) -> str | None:

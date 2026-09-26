@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import ExcelJS from 'exceljs'
-import { gerarKpiRomaneioXlsx, COLUNAS_KPI_ROMANEIO, COLUNAS_DETALHE_PLACA, COLUNAS_AVISOS, COLUNA_PLACA_EXECUTORA } from './gerador-xlsx'
+import { gerarKpiRomaneioXlsx, COLUNAS_KPI_ROMANEIO, COLUNAS_DETALHE_PLACA, COLUNAS_RESOLUCAO, COLUNAS_AVISOS } from './gerador-xlsx'
 import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega } from './types'
 
 // Achado real 24/08 (pedido do usuário, referência
@@ -308,7 +308,7 @@ describe('gerador-xlsx', () => {
       const wb = new ExcelJS.Workbook()
       await wb.xlsx.load(buffer)
       const wsPlaca = wb.getWorksheet('ABC1234')!
-      expect(wsPlaca.autoFilter).toBe('A3:L4') // header linha 3, 1 linha de dado, 12 colunas (A..L, Task 4: +RESOLUÇÃO OPERAÇÃO/RESPONSÁVEL; Task 5: +EVIDÊNCIA/DIST. PARADA (m); MOTIVO/CONFIANÇA opt-in, nao usado aqui)
+      expect(wsPlaca.autoFilter).toBe('A3:H4') // header linha 3, 1 linha de dado, 8 colunas (A..H -- sem resolução manual no dia, RESOLUÇÃO OPERAÇÃO/RESPONSÁVEL não existem)
     })
   })
 
@@ -539,33 +539,77 @@ describe('gerador-xlsx', () => {
     })
   })
 
-  describe('resolução manual por NF (Task 4, 24/09: colunas novas + segunda taxa "após conferência")', () => {
-    it('header ganha STATUS AUTOMÁTICO, RESOLUÇÃO OPERAÇÃO, RESPONSÁVEL no lugar de STATUS', async () => {
+  describe('resolução manual por NF (Task 4, 24/09) + RESOLUÇÃO OPERAÇÃO/RESPONSÁVEL condicionais (ajuste 26/09: layout volta a STATUS, colunas só existem com resolução no dia)', () => {
+    // TDD do ajuste 26/09: cabeçalho tem EXATAMENTE 8 colunas quando nenhuma
+    // NF do dia tem resolução manual -- RESOLUÇÃO OPERAÇÃO/RESPONSÁVEL nem
+    // existem (não é célula vazia, é a coluna toda ausente).
+    it('sem nenhuma resolução manual no dia: header sai com as 8 colunas exatas de COLUNAS_DETALHE_PLACA (STATUS, não STATUS AUTOMÁTICO)', async () => {
       const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
       const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], [detalheFixture()])
       const wb = new ExcelJS.Workbook()
       await wb.xlsx.load(buffer)
       const wsPlaca = wb.getWorksheet('ABC1234')!
       const headerValues = (wsPlaca.getRow(3).values as unknown[]).slice(1)
+      expect(headerValues).toHaveLength(8)
       expect(headerValues).toEqual([...COLUNAS_DETALHE_PLACA])
-      expect(headerValues).toContain('STATUS AUTOMÁTICO')
-      expect(headerValues).toContain('RESOLUÇÃO OPERAÇÃO')
-      expect(headerValues).toContain('RESPONSÁVEL')
+      expect(headerValues).toContain('STATUS')
+      expect(headerValues).not.toContain('STATUS AUTOMÁTICO')
+      expect(headerValues).not.toContain('RESOLUÇÃO OPERAÇÃO')
+      expect(headerValues).not.toContain('RESPONSÁVEL')
     })
 
-    it('NF sem resolução manual: colunas novas ficam vazias, STATUS AUTOMÁTICO igual antes', async () => {
+    // TDD do ajuste 26/09: com PELO MENOS uma resolução manual no dia, as
+    // duas colunas aparecem no fim -- 10 colunas ao todo.
+    it('com pelo menos uma resolução manual no dia: header ganha RESOLUÇÃO OPERAÇÃO e RESPONSÁVEL no fim (10 colunas)', async () => {
       const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
-      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], [detalheFixture({ status: 'confirmado_gps' })])
+      const detalhe = [detalheFixture({ resolucaoManual: 'entregue', responsavelResolucao: 'ANA' })]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const wsPlaca = wb.getWorksheet('ABC1234')!
+      const headerValues = (wsPlaca.getRow(3).values as unknown[]).slice(1)
+      expect(headerValues).toHaveLength(10)
+      expect(headerValues).toEqual([...COLUNAS_DETALHE_PLACA, ...COLUNAS_RESOLUCAO])
+    })
+
+    it('resolução manual em UMA placa liga as colunas em TODAS as abas do dia (mesmo header em qualquer placa)', async () => {
+      const linhas: LinhaKpiRomaneio[] = [
+        linhaKpi({ carga: 'C001', placa: 'ABC1234' }),
+        linhaKpi({ carga: 'C002', placa: 'DEF5678' }),
+      ]
+      const detalhe: LinhaDetalheEntrega[] = [
+        detalheFixture({ resolucaoManual: 'entregue', responsavelResolucao: 'ANA' }),
+        detalheFixture({ carga: 'C002', placa: 'DEF5678', nf: 'NF2' }),
+      ]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const wsOutraPlaca = wb.getWorksheet('DEF5678')!
+      const headerValues = (wsOutraPlaca.getRow(3).values as unknown[]).slice(1)
+      expect(headerValues).toEqual([...COLUNAS_DETALHE_PLACA, ...COLUNAS_RESOLUCAO])
+      // linha dessa placa sem resolução própria fica com as células vazias
+      const linha = (wsOutraPlaca.getRow(4).values as unknown[]).slice(1)
+      expect(linha[8] ?? '').toBe('')
+      expect(linha[9] ?? '').toBe('')
+    })
+
+    it('NF sem resolução manual (mas outra NF do dia tem): colunas ficam vazias, STATUS igual antes', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+      const detalhe: LinhaDetalheEntrega[] = [
+        detalheFixture({ nf: 'NF1', status: 'confirmado_gps' }),
+        detalheFixture({ nf: 'NF2', resolucaoManual: 'entregue', responsavelResolucao: 'ANA' }),
+      ]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
       const wb = new ExcelJS.Workbook()
       await wb.xlsx.load(buffer)
       const wsPlaca = wb.getWorksheet('ABC1234')!
       const linha1 = (wsPlaca.getRow(4).values as unknown[]).slice(1)
-      expect(linha1[7]).toBe('ENTREGUE') // STATUS AUTOMÁTICO intacto
+      expect(linha1[7]).toBe('ENTREGUE') // STATUS intacto
       expect(linha1[8]).toBe('') // RESOLUÇÃO OPERAÇÃO
       expect(linha1[9]).toBe('') // RESPONSÁVEL
     })
 
-    it('NF com resolução manual "entregue_outra_placa": mostra a placa executora ao lado + responsável, sem mudar o STATUS AUTOMÁTICO pendente', async () => {
+    it('NF com resolução manual "entregue_outra_placa": mostra a placa executora ao lado + responsável, sem mudar o STATUS pendente', async () => {
       const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'RQU5J45' })]
       const detalhe = [detalheFixture({
         placa: 'RQU5J45', status: 'pendente', observacao: null,
@@ -800,11 +844,11 @@ describe('gerador-xlsx', () => {
     it('Task 1: REVISAR fica fora do numerador da taxa automatica, contado a parte, e a resolucao manual confirma na pos-conferencia', async () => {
       const detalhe: LinhaDetalheEntrega[] = [
         detalheFixture({ nf: 'NF1', status: 'confirmado_gps' }),
-        detalheFixture({ nf: 'NF2', status: 'pendente', observacao: 'PARADA PRÓXIMA (300-800m) - REVISAR', evidencia: 'raio_ampliado' }),
-        detalheFixture({ nf: 'NF3', status: 'pendente', observacao: 'PARADA CURTA - REVISAR', evidencia: 'parada_curta_compartilhada',
+        detalheFixture({ nf: 'NF2', status: 'pendente', observacao: 'PARADA PRÓXIMA (300-800m) - REVISAR', evidencia: 'raio_ampliado', confianca: 'REVISAR' }),
+        detalheFixture({ nf: 'NF3', status: 'pendente', observacao: 'PARADA CURTA - REVISAR', evidencia: 'parada_curta_compartilhada', confianca: 'REVISAR',
           resolucaoManual: 'entregue', responsavelResolucao: 'ANA' }),
-        detalheFixture({ nf: 'NF4', status: 'pendente', observacao: 'PARADA COMPARTILHADA - REVISAR', evidencia: 'vizinhanca' }),
-        detalheFixture({ nf: 'NF5', status: 'pendente', observacao: 'PARADA PRÓXIMA (100-300m) - REVISAR', evidencia: 'parada_unitrac_propria' }),
+        detalheFixture({ nf: 'NF4', status: 'pendente', observacao: 'PARADA COMPARTILHADA - REVISAR', evidencia: 'vizinhanca', confianca: 'REVISAR' }),
+        detalheFixture({ nf: 'NF5', status: 'pendente', observacao: 'PARADA PRÓXIMA (100-300m) - REVISAR', evidencia: 'parada_unitrac_propria', confianca: 'REVISAR' }),
       ]
       const texto = await resumo(detalhe)
       expect(texto).toContain('TAXA DE CONFIRMAÇÃO: 20%') // 1/5
@@ -832,148 +876,65 @@ describe('gerador-xlsx', () => {
       expect(valores[7]).toBe('PARADA PRÓXIMA (300-800m) - REVISAR')
     })
 
-    // Item 2 (revisao final 26/09): "REVISAR: N" tem que bater com a coluna
-    // CONFIANÇA=REVISAR quando ela esta' visivel -- rotulos pendente com
-    // CONFERIR (ex. "PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO -
-    // CONFERIR") nao terminam em "- REVISAR" (nao sao do modoPrecisao) mas
-    // calcularConfianca ja os classifica como REVISAR -- ver ConfiancaNf.
-    it('item 2: com motivoConfianca=true, REVISAR conta pelo d.confianca (bate com a coluna), nao so o sufixo "- REVISAR"', async () => {
-      const detalhe: LinhaDetalheEntrega[] = [
-        detalheFixture({ nf: 'NF1', status: 'confirmado_gps', confianca: 'CONFIRMADA' }),
-        detalheFixture({ nf: 'NF2', status: 'pendente', observacao: 'PARADA PRÓXIMA (300-800m) - REVISAR', evidencia: 'raio_ampliado', confianca: 'REVISAR' }),
-        detalheFixture({ nf: 'NF3', status: 'pendente', observacao: 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR', evidencia: 'parada_proxima_fora_raio', confianca: 'REVISAR' }),
-      ]
-      const buffer = await gerarKpiRomaneioXlsx([linhaKpi()], '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true, motivoConfianca: true })
-      const wb = new ExcelJS.Workbook()
-      await wb.xlsx.load(buffer)
-      const ws = wb.worksheets[0]
-      const texto = String(ws.getRow(ws.rowCount).getCell(1).value)
-      expect(texto).toContain('REVISAR: 2')
-    })
-
-    it('item 2: sem motivoConfianca (default), REVISAR mantem o criterio antigo (so o sufixo "- REVISAR")', async () => {
+    // Item 2 (revisao final 26/09; ajuste 26/09: REVISAR sempre conta por
+    // d.confianca, `opcoes.motivoConfianca` removida junto com a coluna
+    // CONFIANÇA) -- cobre tanto o sufixo "- REVISAR" quanto outros rotulos
+    // pendente com CONFERIR (ex. "PARADA PRÓXIMA (500m-2km) MAS FORA DO
+    // ENDEREÇO - CONFERIR") que calcularConfianca ja classifica como REVISAR.
+    it('REVISAR conta pelo d.confianca, cobrindo tanto o sufixo "- REVISAR" quanto CONFERIR', async () => {
       const detalhe: LinhaDetalheEntrega[] = [
         detalheFixture({ nf: 'NF1', status: 'confirmado_gps', confianca: 'CONFIRMADA' }),
         detalheFixture({ nf: 'NF2', status: 'pendente', observacao: 'PARADA PRÓXIMA (300-800m) - REVISAR', evidencia: 'raio_ampliado', confianca: 'REVISAR' }),
         detalheFixture({ nf: 'NF3', status: 'pendente', observacao: 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR', evidencia: 'parada_proxima_fora_raio', confianca: 'REVISAR' }),
       ]
       const texto = await resumo(detalhe)
-      expect(texto).toContain('REVISAR: 1')
+      expect(texto).toContain('REVISAR: 2')
     })
   })
 })
 
-// Task 2 (plano 2026-09-26, rodizio de carga inteira): coluna PLACA EXECUTORA
-// opt-in (Nutry Max) e taxa contando a NF de rodizio como confirmada.
-describe('gerador-xlsx -- rodizio (PLACA EXECUTORA, Task 2 plano 26/09)', () => {
-  const linhas = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
-  const detalhe: LinhaDetalheEntrega[] = [
-    detalheFixture({
-      nf: 'NF1', status: 'confirmado_gps', observacao: 'ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)',
-      evidencia: 'rota_outra_placa', distParadaM: 25, placaExecutora: 'TOS1H26',
-      chegada: '2026-08-23T10:00:00.000Z', saida: '2026-08-23T10:10:00.000Z', tempoParadaMin: 10,
-    }),
-    detalheFixture({ nf: 'NF2', observacao: 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA' }),
-  ]
-
-  it('com opcoes.placaExecutora: coluna PLACA EXECUTORA no fim, preenchida so na NF de rodizio; evidencia legivel', async () => {
-    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true, placaExecutora: true })
+// Ajuste de layout (pedido do usuario, 26/09): PLACA EXECUTORA, MOTIVO e
+// CONFIANÇA saem do xlsx pros dois clientes -- as opcoes `placaExecutora`/
+// `motivoConfianca` (Task 2/3, plano 26/09) foram removidas do gerador
+// inteiro (sem deixar opcao morta), entao esta rota confirma que o rodizio
+// (NF de "ROTA EXECUTADA POR OUTRA PLACA") continua sendo contado como
+// confirmado na taxa mesmo sem nenhuma coluna dedicada -- so' a taxa
+// (calculada em cima de `status`, nunca das colunas de exibicao) precisa
+// continuar certa.
+describe('gerador-xlsx -- rodizio sem coluna dedicada (ajuste 26/09: PLACA EXECUTORA removida)', () => {
+  it('NF de rodizio (status confirmado, mesmo com observacao "ROTA EXECUTADA POR OUTRA PLACA") conta na taxa; xlsx nao tem PLACA EXECUTORA/MOTIVO/CONFIANÇA', async () => {
+    const linhas = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+    const detalhe: LinhaDetalheEntrega[] = [
+      detalheFixture({
+        nf: 'NF1', status: 'confirmado_gps', observacao: 'ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)',
+        evidencia: 'rota_outra_placa', distParadaM: 25, placaExecutora: 'TOS1H26',
+        chegada: '2026-08-23T10:00:00.000Z', saida: '2026-08-23T10:10:00.000Z', tempoParadaMin: 10,
+      }),
+      detalheFixture({ nf: 'NF2', observacao: 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA' }),
+    ]
+    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
     const wb = new ExcelJS.Workbook()
     await wb.xlsx.load(buffer)
     const wsPlaca = wb.getWorksheet('ABC1234')!
-    expect((wsPlaca.getRow(3).values as unknown[]).slice(1)).toEqual([...COLUNAS_DETALHE_PLACA, COLUNA_PLACA_EXECUTORA])
-    expect(COLUNA_PLACA_EXECUTORA).toBe('PLACA EXECUTORA')
+    const header = (wsPlaca.getRow(3).values as unknown[]).slice(1)
+    expect(header).toEqual([...COLUNAS_DETALHE_PLACA])
+    expect(header).not.toContain('PLACA EXECUTORA')
+    expect(header).not.toContain('MOTIVO')
+    expect(header).not.toContain('CONFIANÇA')
     const l1 = (wsPlaca.getRow(4).values as unknown[]).slice(1)
     expect(l1[7]).toBe('ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)')
-    expect(l1[10]).toBe('ROTA EXECUTADA POR OUTRA PLACA')
-    expect(l1[12]).toBe('TOS1H26')
-    const l2 = (wsPlaca.getRow(5).values as unknown[]).slice(1)
-    expect(l2[12] ?? '').toBe('')
-    expect(wsPlaca.autoFilter).toBe('A3:M5')
-    const resumo = String(wb.worksheets[0].getCell(4, 1).value)
-    expect(resumo).toContain('TAXA DE CONFIRMAÇÃO: 50%')
+    const resumoTexto = String(wb.worksheets[0].getCell(4, 1).value)
+    expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 50%')
   })
 
-  it('sem a opcao (Rio Quality): colunas intactas', async () => {
-    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
-    const wb = new ExcelJS.Workbook()
-    await wb.xlsx.load(buffer)
-    const wsPlaca = wb.getWorksheet('ABC1234')!
-    expect((wsPlaca.getRow(3).values as unknown[]).slice(1)).toEqual([...COLUNAS_DETALHE_PLACA])
-  })
-})
-
-// Fix round 1 (ruling do controlador 26/09: Global Constraint "Rio Quality
-// idêntico"): colunas MOTIVO/CONFIANÇA viram opt-in (`opcoes.motivoConfianca`,
-// mesmo padrao de `placaExecutora`) -- so' aparecem quando pedidas
-// explicitamente (Nutry Max); sem a opcao, o xlsx sai com as MESMAS colunas
-// de antes (Rio Quality intacto, ver ultimo teste). Os campos `motivo`/
-// `confianca` continuam SEMPRE calculados em LinhaDetalheEntrega.
-describe('gerador-xlsx -- MOTIVO/CONFIANÇA (Task 3, plano 26/09; opt-in desde Fix round 1)', () => {
-  const linhas = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
-
-  it('opcoes.motivoConfianca=true: colunas no fim, escreve d.motivo/d.confianca literalmente, taxa intacta', async () => {
-    const detalhe: LinhaDetalheEntrega[] = [
-      detalheFixture({
-        nf: 'NF1', status: 'confirmado_gps', evidencia: 'parada_no_endereco',
-        distParadaM: 42, tempoParadaMin: 17,
-        motivo: 'Parada de 17 min a 42 m do cliente', confianca: 'CONFIRMADA',
-      }),
-      detalheFixture({
-        nf: 'NF2', status: 'pendente', observacao: 'NÃO FOI AO CLIENTE (caminhão não esteve na região)',
-        evidencia: 'sem_evidencia', distParadaM: 7800,
-        motivo: 'Ponto mais próximo do trajeto a 7,8 km', confianca: 'NÃO CONFIRMADO',
-      }),
-    ]
-    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true, motivoConfianca: true })
-    const wb = new ExcelJS.Workbook()
-    await wb.xlsx.load(buffer)
-    const wsPlaca = wb.getWorksheet('ABC1234')!
-
-    const header = (wsPlaca.getRow(3).values as unknown[]).slice(1)
-    expect(header[header.length - 2]).toBe('MOTIVO')
-    expect(header[header.length - 1]).toBe('CONFIANÇA')
-
-    const l1 = (wsPlaca.getRow(4).values as unknown[]).slice(1)
-    expect(l1[l1.length - 2]).toBe('Parada de 17 min a 42 m do cliente')
-    expect(l1[l1.length - 1]).toBe('CONFIRMADA')
-
-    const l2 = (wsPlaca.getRow(5).values as unknown[]).slice(1)
-    expect(l2[l2.length - 2]).toBe('Ponto mais próximo do trajeto a 7,8 km')
-    expect(l2[l2.length - 1]).toBe('NÃO CONFIRMADO')
-
-    const resumo = String(wb.worksheets[0].getCell(4, 1).value)
-    expect(resumo).toContain('TAXA DE CONFIRMAÇÃO: 50%') // 1/2 -- MOTIVO/CONFIANÇA nao mexe na taxa
-  })
-
-  it('coluna no fim mesmo com opcoes.placaExecutora (depois de PLACA EXECUTORA)', async () => {
-    const detalhe: LinhaDetalheEntrega[] = [
-      detalheFixture({ nf: 'NF1', placaExecutora: 'TOS1H26', motivo: 'Rota executada pela TOS1H26', confianca: 'CONFIRMADA' }),
-    ]
-    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, undefined, { placaExecutora: true, motivoConfianca: true })
-    const wb = new ExcelJS.Workbook()
-    await wb.xlsx.load(buffer)
-    const wsPlaca = wb.getWorksheet('ABC1234')!
-    const header = (wsPlaca.getRow(3).values as unknown[]).slice(1)
-    expect(header[header.length - 3]).toBe('PLACA EXECUTORA')
-    expect(header[header.length - 2]).toBe('MOTIVO')
-    expect(header[header.length - 1]).toBe('CONFIANÇA')
-  })
-
-  // Fix round 1: teste explicito do ruling -- gerar o xlsx do Rio Quality
-  // (nenhuma opcao passada, igual pipeline.ts faz) nunca tem MOTIVO/
-  // CONFIANÇA, mesmo com `detalhe` tendo os campos calculados.
-  it('sem a opcao (fluxo Rio Quality, pipeline.ts): xlsx sai SEM MOTIVO/CONFIANÇA, mesmas colunas de antes', async () => {
-    const detalhe: LinhaDetalheEntrega[] = [
-      detalheFixture({ nf: 'NF1', motivo: 'Parada de 17 min a 42 m do cliente', confianca: 'CONFIRMADA' }),
-    ]
+  it('mesmo cabeçalho pro Rio Quality (pipeline.ts, sem nenhuma opção)', async () => {
+    const linhas = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+    const detalhe: LinhaDetalheEntrega[] = [detalheFixture({ nf: 'NF1' })]
     const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, 'RIO QUALITY')
     const wb = new ExcelJS.Workbook()
     await wb.xlsx.load(buffer)
     const wsPlaca = wb.getWorksheet('ABC1234')!
     const header = (wsPlaca.getRow(3).values as unknown[]).slice(1)
     expect(header).toEqual([...COLUNAS_DETALHE_PLACA])
-    expect(header).not.toContain('MOTIVO')
-    expect(header).not.toContain('CONFIANÇA')
   })
 })

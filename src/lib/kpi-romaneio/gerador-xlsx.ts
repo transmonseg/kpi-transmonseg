@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs'
-import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega, ResolucaoNf, EvidenciaNf } from './types'
+import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega, ResolucaoNf } from './types'
 // Reusa a MESMA paleta/fonte/logo ja validados no relatorio da Benassi
 // (pedido do usuario 25/08: "deixar esse relatorio nivel o da Benassi") --
 // nunca duplica cor/asset, um unico lugar de verdade pros dois clientes.
@@ -35,39 +35,27 @@ export const COLUNAS_KPI_ROMANEIO = [
 // endereco, chegada/saida na loja, tempo na loja, status. Ordem
 // confirmada no mesmo audio ("vou deixar apenas a tabela com o endereço,
 // chegar na loja, sair da loja e tempo na loja e a nota fiscal").
-// Task 4 (plano 24/09, requisito P0 da Ana: "persistir status automático
-// ORIGINAL, resolução manual, responsável..."): STATUS virou "STATUS
-// AUTOMÁTICO" (mesmo cálculo de sempre, sem mudar de posição -- continua
-// coluna H, nenhum teste/leitor existente que olha esse índice quebra) +
-// duas colunas novas no fim com o que a operação registrou por cima
-// (resolucoes.ts/aplicarResolucoes). NF sem nenhuma resolução manual = célula
-// vazia nas duas, igual sempre foi antes desta task.
-// Task 5 (plano 24/09, requisito P0 da Ana: "expor origem, método e
-// distância; não equiparar parada em rua semelhante a entrega"): EVIDÊNCIA
-// (rótulo legível do EvidenciaNf calculado em agregacao.ts) + DIST. PARADA
-// (M) (distância real medida, nunca `Visita.distanciaMetrosDoPonto`) --
-// depois das colunas da Task 4, nunca antes (nenhum índice existente
-// muda de posição).
+// Ajuste de layout (pedido do usuario, 26/09): volta ao layout original
+// (ver be2739f, antes da Task 4/5 de 24/09 e do rodizio/MOTIVO-CONFIANÇA de
+// 26/09) -- 8 colunas fixas, STATUS (nao "STATUS AUTOMÁTICO"). EVIDÊNCIA,
+// DIST. PARADA (m), PLACA EXECUTORA, MOTIVO e CONFIANÇA saem do xlsx (pros
+// dois clientes, Nutry Max E Rio Quality) -- os campos continuam SEMPRE
+// calculados em LinhaDetalheEntrega (agregacao.ts), so' pararam de virar
+// coluna.
 export const COLUNAS_DETALHE_PLACA = [
   'CARGA', 'NF', 'CLIENTE', 'ENDEREÇO',
-  'CHEGADA NA LOJA', 'SAÍDA DA LOJA', 'TEMPO NA LOJA', 'STATUS AUTOMÁTICO',
-  'RESOLUÇÃO OPERAÇÃO', 'RESPONSÁVEL', 'EVIDÊNCIA', 'DIST. PARADA (m)',
+  'CHEGADA NA LOJA', 'SAÍDA DA LOJA', 'TEMPO NA LOJA', 'STATUS',
 ] as const
 
-// Task 2 (plano 2026-09-26, rodizio de carga inteira): placa que de fato
-// executou a rota (LinhaDetalheEntrega.placaExecutora) -- coluna no FIM,
-// opt-in (`opcoes.placaExecutora`, so' Nutry Max): Rio Quality reusa este
-// gerador e fica com as 12 colunas de sempre.
-export const COLUNA_PLACA_EXECUTORA = 'PLACA EXECUTORA'
-
-// Task 3 (plano 2026-09-26): MOTIVO (frase em PT-BR, `LinhaDetalheEntrega.
-// motivo`) + CONFIANÇA (`LinhaDetalheEntrega.confianca`) -- SEMPRE no fim
-// (depois de PLACA EXECUTORA quando presente), nunca opt-in: os dois campos
-// sao derivados de dado que JA existe pra Rio Quality e Nutry Max (evidencia/
-// distParadaM/observacao/status, todos calculados por montarDetalheEntregas
-// pras duas), entao aparecem pros dois clientes -- append-only, nenhum
-// indice de coluna existente muda de posicao.
-export const COLUNAS_MOTIVO_CONFIANCA = ['MOTIVO', 'CONFIANÇA'] as const
+// Task 4 (plano 24/09, requisito P0 da Ana: "persistir status automático
+// ORIGINAL, resolução manual, responsável..."): duas colunas com o que a
+// operação registrou por cima (resolucoes.ts/aplicarResolucoes). Ajuste
+// 26/09 (pedido do usuario): deixaram de ser sempre presentes -- so' entram
+// no header (e em TODAS as abas do dia, pra manter o mesmo cabecalho em
+// qualquer placa) quando pelo menos uma NF do dia tem resolucaoManual
+// registrada; NF sem resolução manual = célula vazia nas duas colunas
+// quando elas existem.
+export const COLUNAS_RESOLUCAO = ['RESOLUÇÃO OPERAÇÃO', 'RESPONSÁVEL'] as const
 
 export const COLUNAS_AVISOS = ['CARGA', 'PLACA', 'PROBLEMA'] as const
 
@@ -224,40 +212,6 @@ function textoResolucaoManual(d: LinhaDetalheEntrega): string {
     : base
 }
 
-// Task 5 (plano 24/09): rotulo legivel de cada valor de EvidenciaNf
-// (agregacao.ts) -- MAIUSCULO, mesmo padrao do resto do relatorio (Global
-// Constraint do plano). Ver comentario completo de EvidenciaNf em types.ts
-// pra precedencia/significado de cada valor.
-const LABEL_EVIDENCIA_NF: Record<EvidenciaNf, string> = {
-  parada_no_endereco: 'PARADA NO ENDEREÇO',
-  parada_no_cadastro_unitrac: 'PARADA NO CADASTRO UNITRAC',
-  raio_ampliado: 'RAIO AMPLIADO (500-800m)',
-  vizinhanca: 'PARADA DE ENDEREÇO VIZINHO',
-  parada_curta_compartilhada: 'PARADA CURTA COMPARTILHADA',
-  outra_placa: 'PARADA DE OUTRA PLACA',
-  alvo_feito_unitrac: 'ALVO FEITO NA UNITRAC (SEM GPS)',
-  sem_evidencia: 'SEM EVIDÊNCIA',
-  sem_rastreador: 'SEM RASTREADOR',
-  // Task 9 (plano 24/09): rótulos por distância própria (`distPropria`,
-  // agregacao.ts) que antes caiam em SEM EVIDÊNCIA sem distância nenhuma.
-  passagem_sem_parada: 'PASSAGEM SEM PARADA',
-  parada_proxima_fora_raio: 'PARADA PRÓXIMA FORA DO RAIO',
-  // Task 2 (plano 2026-09-25, R2): ver comentario de EvidenciaNf em types.ts.
-  parada_unitrac_propria: 'PARADA UNITRAC DA PRÓPRIA PLACA',
-  // Task 2 (plano 2026-09-26): rodizio de carga inteira.
-  rota_outra_placa: 'ROTA EXECUTADA POR OUTRA PLACA',
-}
-
-function textoEvidencia(d: LinhaDetalheEntrega): string {
-  return LABEL_EVIDENCIA_NF[d.evidencia]
-}
-
-// Task 5: distancia em METROS, arredondada -- `null` (nao medida, nunca
-// inventada) fica em branco, igual ao resto do relatorio quando falta dado.
-function textoDistParada(d: LinhaDetalheEntrega): string | number {
-  return d.distParadaM != null ? Math.round(d.distParadaM) : ''
-}
-
 // Task 4: "após conferência da operação" NUNCA muda o automático (Global
 // Constraint: "Resolução manual NUNCA é sobrescrita por regeração;
 // automático original sempre preservado") -- e' uma segunda leitura, feita
@@ -315,29 +269,15 @@ function entraNoDenominadorPosConferencia(d: LinhaDetalheEntrega): boolean {
   return true
 }
 
-// Task 1 (plano 2026-09-26, modoPrecisao em agregacao.ts): proximidade fraca
-// (300-800m, parada curta, parada compartilhada, R2 fora do criterio forte)
-// sai `pendente` com rotulo terminando em "- REVISAR" -- fica no denominador
-// da taxa automatica (nao e' sem rastreador nem aguardando) mas NUNCA no
-// numerador; aparece contado a parte ("REVISAR: N"). Na taxa apos
-// conferencia, uma resolucao manual confirmatoria o confirma normalmente
-// (confirmadaAposConferencia ja' da' prioridade a' resolucao).
-const SUFIXO_OBS_REVISAR = '- REVISAR'
-function ehRevisar(d: LinhaDetalheEntrega): boolean {
-  return d.status === 'pendente' && (d.observacao?.endsWith(SUFIXO_OBS_REVISAR) ?? false)
-}
-
-// Item 2 (revisao final 26/09): a contagem "REVISAR: N" do resumo tem que
-// bater com a coluna CONFIANÇA=REVISAR quando ela esta' visivel (opcoes.
-// motivoConfianca) -- `ehRevisar` acima so' pega o sufixo "- REVISAR" do
-// modoPrecisao, enquanto `LinhaDetalheEntrega.confianca` (calcularConfianca
-// em agregacao.ts) tambem classifica REVISAR outros rotulos pendente com
-// CONFERIR/PASSOU (ex. "PARADA PRÓXIMA (500m-2km)...CONFERIR", "PLACA DA
-// ESCALA...CONFERIR ESCALA") -- sem isso o numero do resumo ficava menor que
-// a contagem real da coluna que o usuario ve na planilha. Quando a coluna
-// NAO esta' visivel, mantem o criterio antigo (ehRevisar) de proposito --
-// nunca muda comportamento pra quem nao pediu MOTIVO/CONFIANÇA.
-function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[], usarConfianca: boolean): {
+// Item 2 (revisao final 26/09): a contagem "REVISAR: N" do resumo bate com
+// `LinhaDetalheEntrega.confianca` (calcularConfianca em agregacao.ts, ja'
+// classifica REVISAR tanto o sufixo "- REVISAR" do modoPrecisao quanto
+// outros rotulos pendente com CONFERIR/PASSOU, ex. "PARADA PRÓXIMA
+// (500m-2km)...CONFERIR", "PLACA DA ESCALA...CONFERIR ESCALA") -- unico
+// criterio desde que a coluna CONFIANÇA deixou de ser opt-in (ajuste 26/09,
+// antes so' valia quando `opcoes.motivoConfianca` estava ligado, que era
+// sempre o caso na Nutry Max, unico chamador de resumoConfirmacao).
+function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   taxaPct: number
   taxaPosConferenciaPct: number
   confirmadas: number
@@ -349,9 +289,7 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[], usarConfianca
   revisar: number
 } {
   const semRastreador = detalhe.filter(ehSemRastreador).length
-  const revisar = usarConfianca
-    ? detalhe.filter(d => d.confianca === 'REVISAR' && !ehSemRastreador(d)).length
-    : detalhe.filter(d => ehRevisar(d) && !ehSemRastreador(d)).length
+  const revisar = detalhe.filter(d => d.confianca === 'REVISAR' && !ehSemRastreador(d)).length
   const aguardando = detalhe.filter(ehAguardando).length
   const base = detalhe.filter(d => !ehSemRastreador(d) && !ehAguardando(d))
   const denominador = base.length
@@ -514,14 +452,12 @@ export async function gerarKpiRomaneioXlsx(
   // DE CONFIRMAÇÃO / APÓS CONFERÊNCIA / NFs sem rastreador / aguardando) e'
   // da Nutry Max -- o Rio Quality (pipeline.ts) reusa este gerador e nao a
   // tinha em 108b4bb. Opt-in, mesmo padrao de `verificarAcessoIlha`.
-  // Fix round 1 (ruling do controlador 26/09: Global Constraint "Rio Quality
-  // idêntico"): MOTIVO/CONFIANÇA viram opt-in, mesmo padrao de
-  // `placaExecutora` -- so' ligado no fluxo Nutry Max (route.ts nutrimax +
-  // scripts/gerar-nutrimax-real-arquivo.ts). Default false preserva o xlsx
-  // do Rio Quality (pipeline.ts) byte a byte nas colunas -- os campos
-  // `motivo`/`confianca` continuam SEMPRE calculados em `LinhaDetalheEntrega`
-  // (agregacao.ts), so' a exibicao no xlsx e' condicional.
-  opcoes: { resumoConfirmacao?: boolean; placaExecutora?: boolean; motivoConfianca?: boolean } = {},
+  // Ajuste 26/09 (pedido do usuario): `placaExecutora` e `motivoConfianca`
+  // removidas -- as colunas PLACA EXECUTORA/MOTIVO/CONFIANÇA que elas
+  // ligavam saíram do xlsx (pros dois clientes). Os campos correspondentes
+  // (`placaExecutora`/`motivo`/`confianca` em LinhaDetalheEntrega) continuam
+  // sempre calculados em agregacao.ts, so' pararam de ter opcao de exibicao.
+  opcoes: { resumoConfirmacao?: boolean } = {},
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
   wb.creator = 'TRANSMONSEG'
@@ -563,7 +499,7 @@ export async function gerarKpiRomaneioXlsx(
   // default, nao adiciona linha nenhuma -- comportamento antigo intacto pra
   // quem nao passa o 4o parametro).
   if (opcoes.resumoConfirmacao && detalhe.length > 0) {
-    const resumo = calcularResumoConfirmacao(detalhe, opcoes.motivoConfianca ?? false)
+    const resumo = calcularResumoConfirmacao(detalhe)
     const linhaResumoGeral = ws.addRow([
       `TAXA DE CONFIRMAÇÃO: ${resumo.taxaPct}%    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${resumo.taxaPosConferenciaPct}%    |    REVISAR: ${resumo.revisar}    |    NFs sem rastreador: ${resumo.semRastreador}    |    NFs aguardando fim da rota: ${resumo.aguardando}`,
     ])
@@ -601,10 +537,15 @@ export async function gerarKpiRomaneioXlsx(
     detalhePorPlaca.set(d.placa, lista)
   }
 
+  // Ajuste 26/09 (pedido do usuario): RESOLUÇÃO OPERAÇÃO/RESPONSÁVEL so'
+  // entram no header quando pelo menos uma NF do DIA INTEIRO (todas as
+  // placas, nao so' a desta aba) tem resolucaoManual registrada -- garante o
+  // MESMO cabecalho em toda aba do arquivo (nenhuma placa fica com 8
+  // colunas enquanto outra tem 10 no mesmo dia).
+  const temResolucaoManual = detalhe.some(d => d.resolucaoManual != null)
   const colunasDetalhe: readonly string[] = [
     ...COLUNAS_DETALHE_PLACA,
-    ...(opcoes.placaExecutora ? [COLUNA_PLACA_EXECUTORA] : []),
-    ...(opcoes.motivoConfianca ? COLUNAS_MOTIVO_CONFIANCA : []),
+    ...(temResolucaoManual ? COLUNAS_RESOLUCAO : []),
   ]
   for (const placa of placasEmOrdem) {
     const wsPlaca = wb.addWorksheet(nomeAbaPlaca(placa))
@@ -623,9 +564,7 @@ export async function gerarKpiRomaneioXlsx(
     wsPlaca.columns = [
       { width: 10 }, { width: 14 }, { width: 32 }, { width: 36 },
       { width: 12 }, { width: 12 }, { width: 12 }, { width: 36 },
-      { width: 36 }, { width: 20 }, { width: 28 }, { width: 16 },
-      ...(opcoes.placaExecutora ? [{ width: 16 }] : []),
-      ...(opcoes.motivoConfianca ? [{ width: 44 }, { width: 16 }] : []),
+      ...(temResolucaoManual ? [{ width: 36 }, { width: 20 }] : []),
     ]
     linhasDaPlaca.forEach((d, i) => {
       // CHEGADA/SAÍDA NA LOJA: motivo só faz sentido quando 'pendente'
@@ -647,10 +586,8 @@ export async function gerarKpiRomaneioXlsx(
       wsPlaca.addRow([
         d.carga, d.nf, d.clienteNome, d.endereco,
         chegadaLoja, saidaLoja, formatarMinutos(d.tempoParadaMin),
-        textoStatus(d), textoResolucaoManual(d), d.responsavelResolucao ?? '',
-        textoEvidencia(d), textoDistParada(d),
-        ...(opcoes.placaExecutora ? [d.placaExecutora ?? ''] : []),
-        ...(opcoes.motivoConfianca ? [d.motivo, d.confianca] : []),
+        textoStatus(d),
+        ...(temResolucaoManual ? [textoResolucaoManual(d), d.responsavelResolucao ?? ''] : []),
       ])
       estilizarLinhaDado(wsPlaca, 3 + 1 + i, colunasDetalhe.length, i)
     })

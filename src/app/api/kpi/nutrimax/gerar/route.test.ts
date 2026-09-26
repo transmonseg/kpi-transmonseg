@@ -677,9 +677,13 @@ describe('POST /api/kpi/nutrimax/gerar -- CHEGADA CD ajustada pela última entre
 // TrajetoPorNf -> montarDetalheEntregas -> xlsx) verificando que uma NF sem
 // dwell confirmado (chegada/saida null, sem alvo Unitrac, sem parada perto)
 // mas com o veiculo passando a poucos metros (menorDistanciaM=8, dentro de
-// RAIO_PASSOU_SEM_PARAR_M=500) sai como "PASSAGEM SEM PARADA" com a
-// distancia certa na coluna DIST. PARADA (m), em vez de SEM EVIDÊNCIA/
-// distancia vazia (comportamento antigo, sem esta task).
+// RAIO_PASSOU_SEM_PARAR_M=500) sai como "PASSOU NO ENDEREÇO MAS NÃO
+// REGISTROU PARADA - CONFERIR" no STATUS (evidencia 'passagem_sem_parada'),
+// em vez de SEM EVIDÊNCIA (comportamento antigo, sem esta task). Ajuste
+// 26/09 (pedido do usuario): EVIDÊNCIA/DIST. PARADA (m) saíram do xlsx --
+// `evidencia`/`distParadaM` continuam calculados em LinhaDetalheEntrega
+// (agregacao.ts), so' pararam de virar coluna, então o teste verifica o
+// efeito visível (STATUS) em vez das colunas removidas.
 describe('POST /api/kpi/nutrimax/gerar -- menorDistanciaM da ponte vira PASSAGEM SEM PARADA (Task 3b)', () => {
   beforeEach(async () => {
     cenario.frota = [{ placaNorm: PLACA, cv: 'CV-1' }]
@@ -693,7 +697,7 @@ describe('POST /api/kpi/nutrimax/gerar -- menorDistanciaM da ponte vira PASSAGEM
     buscarHorariosSpy.mockImplementation(async () => new Map())
   })
 
-  it('NF001 nunca confirmada, mas trajeto passou a 8m: EVIDÊNCIA=PASSAGEM SEM PARADA, DIST. PARADA (m)=8', async () => {
+  it('NF001 nunca confirmada, mas trajeto passou a 8m: STATUS mostra "PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR"', async () => {
     const buscarHorariosSpy = vi.mocked((await import('@/lib/kpi-romaneio/base-horarios')).buscarHorariosBase)
     buscarHorariosSpy.mockImplementation(async () => new Map([[PLACA, {
       saidaBase: '2026-09-15T08:00:00.000Z',
@@ -708,8 +712,7 @@ describe('POST /api/kpi/nutrimax/gerar -- menorDistanciaM da ponte vira PASSAGEM
     const wb = await abrirXlsx(res)
     const ws = wb.getWorksheet(PLACA)!
     const linhaDados = (ws.getRow(4).values as unknown[]).slice(1)
-    expect(linhaDados[10]).toBe('PASSAGEM SEM PARADA') // coluna 11 (EVIDÊNCIA), indice 10 apos slice
-    expect(linhaDados[11]).toBe(8) // coluna 12 (DIST. PARADA (m))
+    expect(linhaDados[7]).toBe('PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR') // coluna 8 (STATUS), indice 7 apos slice
   })
 })
 
