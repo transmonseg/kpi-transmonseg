@@ -61,6 +61,47 @@ describe('montarUpserts', () => {
     expect(gravar.map(g => g.endereco)).toEqual([correcao.endereco])
     expect(pulados.map(p => p.endereco)).toEqual([manual.endereco])
   })
+
+  // Achado real 26/09 (correcoes finais pre-deploy, item 2): CSV de correcao
+  // pode vir com lat/lng quebrado (NaN de parse, celula vazia, digitacao
+  // trocada tipo -43,1 lido como -431, ou coordenada de outro estado por
+  // engano). Nunca grava essas linhas -- so' pula e lista.
+  it('lat/lng nao numerico (NaN de parse) -> pulado, nunca grava', () => {
+    const invalida = { endereco: 'RUA NAN, 1', lat: NaN, lng: -43.1, fonte: 'x', evidencia: 'ev' }
+    const { gravar, pulados } = montarUpserts([invalida], new Map())
+    expect(gravar).toEqual([])
+    expect(pulados).toEqual([{ endereco: 'RUA NAN, 1', motivo: 'coordenada_invalida' }])
+  })
+
+  it('lat/lng infinito -> pulado, nunca grava', () => {
+    const invalida = { endereco: 'RUA INF, 1', lat: Infinity, lng: -43.1, fonte: 'x', evidencia: 'ev' }
+    const { gravar, pulados } = montarUpserts([invalida], new Map())
+    expect(gravar).toEqual([])
+    expect(pulados).toEqual([{ endereco: 'RUA INF, 1', motivo: 'coordenada_invalida' }])
+  })
+
+  it('coordenada fora da caixa do RJ (lat/lng validos mas de outro estado) -> pulado', () => {
+    // Ex.: digitacao trocada, coordenada de SP.
+    const foraDoRj = { endereco: 'RUA SP, 1', lat: -23.55, lng: -46.63, fonte: 'x', evidencia: 'ev' }
+    const { gravar, pulados } = montarUpserts([foraDoRj], new Map())
+    expect(gravar).toEqual([])
+    expect(pulados).toEqual([{ endereco: 'RUA SP, 1', motivo: 'coordenada_invalida' }])
+  })
+
+  it('coordenada nos limites da caixa do RJ -> grava normalmente', () => {
+    const limite = { endereco: 'RUA LIMITE, 1', lat: -23.5, lng: -40.9, fonte: 'x', evidencia: 'ev' }
+    const { gravar, pulados } = montarUpserts([limite], new Map())
+    expect(gravar).toEqual([{ endereco: 'RUA LIMITE, 1', lat: -23.5, lng: -40.9, confiavel: true, motivo: null, fonte: 'verificacao_manual' }])
+    expect(pulados).toEqual([])
+  })
+
+  it('fonte manual tem precedencia sobre validacao de coordenada (pulado continua fonte_manual)', () => {
+    const invalida = { endereco: 'RUA X, 1 - CENTRO', lat: NaN, lng: -43.1, fonte: 'x', evidencia: 'ev' }
+    const cache = new Map<string, LinhaCacheAtual>([[invalida.endereco, { endereco: invalida.endereco, lat: -22.1, lng: -43.1, confiavel: true, fonte: 'manual', motivo: null }]])
+    const { gravar, pulados } = montarUpserts([invalida], cache)
+    expect(gravar).toEqual([])
+    expect(pulados).toEqual([{ endereco: invalida.endereco, motivo: 'fonte_manual' }])
+  })
 })
 
 describe('csvBackup', () => {

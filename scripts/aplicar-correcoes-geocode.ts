@@ -76,12 +76,31 @@ export type LinhaCacheAtual = { endereco: string; lat: number | null; lng: numbe
 
 export type ResultadoMontagem = {
   gravar: { endereco: string; lat: number; lng: number; confiavel: true; motivo: null; fonte: 'verificacao_manual' }[]
-  pulados: { endereco: string; motivo: 'fonte_manual' }[]
+  pulados: { endereco: string; motivo: 'fonte_manual' | 'coordenada_invalida' }[]
+}
+
+// Achado real 26/09 (correcoes finais pre-deploy, item 2): caixa aproximada
+// do estado do RJ -- barra coordenada de outro estado/pais entrando por
+// digitacao trocada ou parse quebrado do CSV (NaN, celula vazia, Infinity).
+// Nao e' um poligono exato (nao precisa ser -- so' precisa pegar erro grosso
+// de mao), so' uma faixa generosa que cobre todo o territorio do RJ.
+const LAT_MIN_RJ = -23.5
+const LAT_MAX_RJ = -20.7
+const LNG_MIN_RJ = -45.0
+const LNG_MAX_RJ = -40.9
+
+function coordenadaValidaRj(lat: number, lng: number): boolean {
+  return Number.isFinite(lat) && Number.isFinite(lng)
+    && lat >= LAT_MIN_RJ && lat <= LAT_MAX_RJ
+    && lng >= LNG_MIN_RJ && lng <= LNG_MAX_RJ
 }
 
 /** Monta os upserts a partir das correcoes + estado atual do cache.
- *  Regra: NUNCA sobrescreve uma linha com fonte === 'manual' (correcao
- *  humana anterior). Endereco sem linha no cache (ausente) entra normalmente. */
+ *  Regras: NUNCA sobrescreve uma linha com fonte === 'manual' (correcao
+ *  humana anterior); NUNCA grava lat/lng nao numerico/nao finito ou fora da
+ *  caixa aproximada do RJ (achado real 26/09 -- CSV pode vir com coordenada
+ *  quebrada ou de outro estado). Endereco sem linha no cache (ausente) entra
+ *  normalmente quando a coordenada e' valida. */
 export function montarUpserts(correcoes: LinhaCorrecao[], cacheAtual: Map<string, LinhaCacheAtual>): ResultadoMontagem {
   const gravar: ResultadoMontagem['gravar'] = []
   const pulados: ResultadoMontagem['pulados'] = []
@@ -89,6 +108,10 @@ export function montarUpserts(correcoes: LinhaCorrecao[], cacheAtual: Map<string
     const atual = cacheAtual.get(c.endereco)
     if (atual?.fonte === 'manual') {
       pulados.push({ endereco: c.endereco, motivo: 'fonte_manual' })
+      continue
+    }
+    if (!coordenadaValidaRj(c.lat, c.lng)) {
+      pulados.push({ endereco: c.endereco, motivo: 'coordenada_invalida' })
       continue
     }
     gravar.push({ endereco: c.endereco, lat: c.lat, lng: c.lng, confiavel: true, motivo: null, fonte: 'verificacao_manual' })
@@ -125,8 +148,8 @@ export async function rodar(csvPath: string, opcoes: { aplicar: boolean; dirSaid
   const svc = createServiceClient()
   const cacheAtual = await lerCacheAtual(svc, correcoes.map(c => c.endereco))
   const { gravar, pulados } = montarUpserts(correcoes, cacheAtual)
-  console.log(`gravar=${gravar.length}, pulados_fonte_manual=${pulados.length}`)
-  for (const p of pulados) console.log(`  pulado (fonte=manual): ${p.endereco}`)
+  console.log(`gravar=${gravar.length}, pulados=${pulados.length}`)
+  for (const p of pulados) console.log(`  pulado (${p.motivo}): ${p.endereco}`)
 
   // Backup ANTES de gravar: estado atual das linhas que serao sobrescritas.
   const backup = gravar.map(g => cacheAtual.get(g.endereco) ?? { endereco: g.endereco, lat: null, lng: null, confiavel: null, fonte: null, motivo: null })
