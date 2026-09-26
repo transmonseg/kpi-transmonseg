@@ -350,6 +350,8 @@ async function main() {
         menorDistanciaTrajetoPorNf,
         // Task 4 (plano 2026-09-26): espelha o chamador real de producao --
         // ver detectarEscalaDivergente em agregacao.ts.
+        true,        // Task 1 (plano 2026-09-26): proximidade fraca vira REVISAR, nunca
+        // ENTREGUE -- so' desta pipeline. Ver modoPrecisao em agregacao.ts.
         true,
       )
     })

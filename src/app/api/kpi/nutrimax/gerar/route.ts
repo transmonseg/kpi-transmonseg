@@ -502,6 +502,8 @@ export async function POST(req: NextRequest) {
         // provavelmente errada viram pedido de conferencia, nao "NAO FOI"
         // nem "ENTREGUE POR OUTRA PLACA" -- so' desta pipeline. Ver
         // detectarEscalaDivergente em agregacao.ts.
+        true,        // Task 1 (plano 2026-09-26): proximidade fraca vira REVISAR, nunca
+        // ENTREGUE -- so' desta pipeline. Ver modoPrecisao em agregacao.ts.
         true,
       )
     })

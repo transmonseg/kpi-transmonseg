@@ -3181,3 +3181,193 @@ describe('montarDetalheEntregas -- escala divergente vira CONFERIR ESCALA em vez
     }
   })
 })
+
+// Task 1 (plano 2026-09-26, "precisao acima de cobertura" -- especificacao da
+// Ana 26/09): com `modoPrecisao` (21o parametro posicional, opt-in Nutry Max),
+// nada vira ENTREGUE so' por proximidade fraca -- 300-800m, parada curta
+// compartilhada, parada compartilhada/vizinhanca e R2 fora do criterio
+// forte viram REVISAR (status pendente, horario preservado).
+describe('montarDetalheEntregas -- modoPrecisao: proximidade fraca vira REVISAR (Task 1, plano 26/09)', () => {
+  const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+  const DELTA_M = 1 / 111_195 // graus de latitude por metro
+
+  function chamar(
+    linhas: LinhaGeocodificada[],
+    opts: {
+      alvos?: AlvoApi[]
+      visitasPorNf?: Map<string, Visita>
+      paradasPorOutraPlaca?: Map<string, UnitracParadaRow[]>
+      paradasUnitracCruasPropriaPlaca?: Map<string, UnitracParadaRow[]>
+      detectarParadaCurtaCompartilhada?: boolean
+      diaEmAndamento?: boolean
+      modoPrecisao?: boolean
+    } = {},
+  ) {
+    return montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas,
+      opts.alvos ?? [],
+      opts.visitasPorNf ?? new Map(),
+      resumoCargaVazio,
+      true,
+      opts.paradasPorOutraPlaca ?? new Map(),
+      null,
+      opts.diaEmAndamento ?? false,
+      true, // verificarAcessoIlha
+      opts.detectarParadaCurtaCompartilhada ?? true,
+      opts.paradasUnitracCruasPropriaPlaca ?? new Map(),
+      true, // tratarSemRastreadorNoDia
+      true, // desativarOutraPlaca
+      true, // confirmarPorParadaUnitracPropria
+      undefined, // todasLinhasDaPlacaNoDia
+      false, // apagaoDeSinalPropriaPlaca
+      new Map(), // menorDistanciaTrajetoPorNf
+      true, // detectarEscalaDivergente
+      opts.modoPrecisao ?? true,
+    )
+  }
+
+  function paradaPropria(distNorteM: number, chegada: string, saida: string, id = 'pp1'): UnitracParadaRow {
+    return parada({ id, classificacao: 'FORA_BASE', lat: -22.9 + distNorteM * DELTA_M, lng: -43.2, chegada, saida, fim_real: saida })
+  }
+
+  it('raio ampliado (500-800m): pendente com PARADA PRÓXIMA (300-800m) - REVISAR, horario preservado', () => {
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', chegada: '2026-09-25T10:00:00.000Z', saida: '2026-09-25T10:20:00.000Z', distanciaMetrosDoPonto: 600, viaRaioAmpliado: true }],
+    ])
+    const [d] = chamar([linha('NF1')], { visitasPorNf: visitas })
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PARADA PRÓXIMA (300-800m) - REVISAR')
+    expect(d.chegada).toBe('2026-09-25T10:00:00.000Z')
+    expect(d.saida).toBe('2026-09-25T10:20:00.000Z')
+    expect(d.evidencia).toBe('raio_ampliado')
+  })
+
+  it('raio ampliado com alvo feito da Unitrac tambem vira REVISAR (o rotulo decide, nao o status)', () => {
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', chegada: '2026-09-25T10:00:00.000Z', saida: '2026-09-25T10:20:00.000Z', distanciaMetrosDoPonto: 600, viaRaioAmpliado: true }],
+    ])
+    const [d] = chamar([linha('NF1')], { visitasPorNf: visitas, alvos: [alvo('NF1', 1)] })
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PARADA PRÓXIMA (300-800m) - REVISAR')
+  })
+
+  it('sem modoPrecisao (default) o raio ampliado continua ENTREGUE com o rotulo antigo (Rio Quality intacto)', () => {
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', chegada: '2026-09-25T10:00:00.000Z', saida: '2026-09-25T10:20:00.000Z', distanciaMetrosDoPonto: 600, viaRaioAmpliado: true }],
+    ])
+    const [d] = chamar([linha('NF1')], { visitasPorNf: visitas, modoPrecisao: false })
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBe('ENTREGUE - PARADA PRÓXIMA (500-800m) MAS DENTRO DA ROTA - CONFERIR')
+  })
+
+  it('parada compartilhada (vizinhanca): pendente com PARADA COMPARTILHADA - REVISAR, horario preservado', () => {
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', chegada: '2026-09-25T10:00:00.000Z', saida: '2026-09-25T10:20:00.000Z', distanciaMetrosDoPonto: 0, viaVizinhanca: true }],
+    ])
+    const [d] = chamar([linha('NF1')], { visitasPorNf: visitas })
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PARADA COMPARTILHADA - REVISAR')
+    expect(d.chegada).toBe('2026-09-25T10:00:00.000Z')
+  })
+
+  it('parada curta que confirmou varios enderecos: todo o grupo vira PARADA CURTA - REVISAR', () => {
+    const curta = { chegada: '2026-09-25T08:00:00.000Z', saida: '2026-09-25T08:01:00.000Z' }
+    const linhas = [
+      linha('NF1', { endereco: 'RUA A, KM 1' }),
+      linha('NF2', { endereco: 'RUA A, KM 2', lat: -22.93, lng: -43.2 }),
+    ]
+    const visitas = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', ...curta, distanciaMetrosDoPonto: 0 }],
+      ['NF2', { nf: 'NF2', ...curta, distanciaMetrosDoPonto: 0 }],
+    ])
+    const detalhe = chamar(linhas, { visitasPorNf: visitas })
+    for (const d of detalhe) {
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe('PARADA CURTA - REVISAR')
+      expect(d.chegada).toBe(curta.chegada)
+    }
+  })
+
+  it('visita da ponte ENTREGUE limpa mas com a parada real a ~400m do endereco: PARADA PRÓXIMA (300-800m) - REVISAR', () => {
+    const chegada = '2026-09-25T10:00:00.000Z'
+    const saida = '2026-09-25T10:20:00.000Z'
+    const visitas = new Map<string, Visita>([['NF1', { nf: 'NF1', chegada, saida, distanciaMetrosDoPonto: 0 }]])
+    const paradas = new Map([['TTL7D40', [paradaPropria(400, chegada, saida)]]])
+    const [d] = chamar([linha('NF1')], { visitasPorNf: visitas, paradasPorOutraPlaca: paradas })
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PARADA PRÓXIMA (300-800m) - REVISAR')
+    expect(d.distParadaM as number).toBeGreaterThan(300)
+    expect(d.chegada).toBe(chegada)
+  })
+
+  it('Review Focus: entrega com parada longa a <=100m continua ENTREGUE limpo', () => {
+    const chegada = '2026-09-25T10:00:00.000Z'
+    const saida = '2026-09-25T10:25:00.000Z'
+    const visitas = new Map<string, Visita>([['NF1', { nf: 'NF1', chegada, saida, distanciaMetrosDoPonto: 0 }]])
+    const paradas = new Map([['TTL7D40', [paradaPropria(60, chegada, saida)]]])
+    const [d] = chamar([linha('NF1')], { visitasPorNf: visitas, paradasPorOutraPlaca: paradas })
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBeNull()
+    expect(d.evidencia).toBe('parada_no_endereco')
+  })
+
+  describe('R2 (parada Unitrac da propria placa) com criterio forte', () => {
+    it('<=100m com >=2min confirma', () => {
+      const cruas = new Map([['TTL7D40', [paradaPropria(60, '2026-09-25T10:00:00.000Z', '2026-09-25T10:03:00.000Z')]]])
+      const [d] = chamar([linha('NF1')], { paradasUnitracCruasPropriaPlaca: cruas })
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.observacao).toBeNull()
+      expect(d.evidencia).toBe('parada_unitrac_propria')
+    })
+
+    it('100-300m com >=5min confirma', () => {
+      const cruas = new Map([['TTL7D40', [paradaPropria(200, '2026-09-25T10:00:00.000Z', '2026-09-25T10:06:00.000Z')]]])
+      const [d] = chamar([linha('NF1')], { paradasUnitracCruasPropriaPlaca: cruas })
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.observacao).toBeNull()
+    })
+
+    it('100-300m com menos de 5min: PARADA PRÓXIMA (100-300m) - REVISAR, pendente, horario e distancia preservados', () => {
+      const cruas = new Map([['TTL7D40', [paradaPropria(200, '2026-09-25T10:00:00.000Z', '2026-09-25T10:03:00.000Z')]]])
+      const [d] = chamar([linha('NF1')], { paradasUnitracCruasPropriaPlaca: cruas })
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe('PARADA PRÓXIMA (100-300m) - REVISAR')
+      expect(d.chegada).toBe('2026-09-25T10:00:00.000Z')
+      expect(d.evidencia).toBe('parada_unitrac_propria')
+      expect(d.distParadaM as number).toBeGreaterThan(100)
+    })
+
+    it('prefere a parada forte quando existe uma fraca mais longa', () => {
+      const cruas = new Map([['TTL7D40', [
+        paradaPropria(250, '2026-09-25T09:00:00.000Z', '2026-09-25T09:04:30.000Z', 'fraca'),
+        paradaPropria(50, '2026-09-25T10:00:00.000Z', '2026-09-25T10:02:30.000Z', 'forte'),
+      ]]])
+      const [d] = chamar([linha('NF1')], { paradasUnitracCruasPropriaPlaca: cruas })
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.chegada).toBe('2026-09-25T10:00:00.000Z')
+    })
+
+    it('sem modoPrecisao, 100-300m com 3min continua confirmando (comportamento antigo)', () => {
+      const cruas = new Map([['TTL7D40', [paradaPropria(200, '2026-09-25T10:00:00.000Z', '2026-09-25T10:03:00.000Z')]]])
+      const [d] = chamar([linha('NF1')], { paradasUnitracCruasPropriaPlaca: cruas, modoPrecisao: false })
+      expect(d.status).toBe('confirmado_gps')
+    })
+
+    it('REVISAR de R2 nao vira AGUARDANDO com o dia em andamento (ja e evidencia de hoje)', () => {
+      const cruas = new Map([['TTL7D40', [paradaPropria(200, '2026-09-25T10:00:00.000Z', '2026-09-25T10:03:00.000Z')]]])
+      const [d] = chamar([linha('NF1')], { paradasUnitracCruasPropriaPlaca: cruas, diaEmAndamento: true })
+      expect(d.observacao).toBe('PARADA PRÓXIMA (100-300m) - REVISAR')
+    })
+
+    it('rotulo fraco (raio ampliado) resgatado por R2 forte vira ENTREGUE limpo', () => {
+      const visitas = new Map<string, Visita>([
+        ['NF1', { nf: 'NF1', chegada: '2026-09-25T09:00:00.000Z', saida: '2026-09-25T09:10:00.000Z', distanciaMetrosDoPonto: 600, viaRaioAmpliado: true }],
+      ])
+      const cruas = new Map([['TTL7D40', [paradaPropria(40, '2026-09-25T11:00:00.000Z', '2026-09-25T11:08:00.000Z')]]])
+      const [d] = chamar([linha('NF1')], { visitasPorNf: visitas, paradasUnitracCruasPropriaPlaca: cruas })
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.observacao).toBeNull()
+      expect(d.chegada).toBe('2026-09-25T11:00:00.000Z')
+    })
+  })
+})

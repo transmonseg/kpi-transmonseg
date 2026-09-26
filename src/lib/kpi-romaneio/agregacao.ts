@@ -430,6 +430,12 @@ const RAIO_PARADA_UNITRAC_PROPRIA_M = 300
 // cliente, mesmo longe de qualquer explicacao plausivel (ex. 280m x 290m),
 // era numericamente "mais perto".
 const RAIO_OUTRO_CLIENTE_EXPLICA_M = 150
+// Task 1 (plano 2026-09-26, especificacao da Ana 26/09 -- "precisao acima de
+// cobertura"): com `modoPrecisao`, R2 so' CONFIRMA com criterio forte --
+// <=100m com >=2min, ou 100-300m com >=5min. Candidata que so' passa no
+// criterio antigo (100-300m, 2-5min) vira REVISAR, nunca ENTREGUE.
+const RAIO_R2_FORTE_CURTO_M = 100
+const DURACAO_R2_FORTE_LONGE_MIN = 5
 
 /** Ponto de referencia (geocode confiavel OU cadastro Unitrac) de OUTRA NF
  *  da mesma placa, usado so' pra desempatar `acharParadaUnitracPropria`
@@ -447,18 +453,25 @@ type PontoReferenciaPlacaNf = { endereco: string; lat: number; lng: number }
  *  explica genuinamente outro cliente da mesma placa nao confirma este).
  *  Entre as candidatas validas, vence a de MAIOR duracao (mais provavel de
  *  ser a entrega de verdade, nao um blip de transito). `null` quando
- *  nenhuma parada satisfaz tudo isso. */
+ *  nenhuma parada satisfaz tudo isso.
+ *
+ *  Task 1 (plano 26/09): `forte` diz se a parada escolhida passa no criterio
+ *  forte (ver RAIO_R2_FORTE_CURTO_M/DURACAO_R2_FORTE_LONGE_MIN). Com
+ *  `preferirForte` (modoPrecisao), uma candidata forte sempre vence uma
+ *  fraca, mesmo mais curta; sem ele, a escolha e' exatamente a antiga (maior
+ *  duracao) e `forte` e' so' informativo. */
 function acharParadaUnitracPropria(
   linha: LinhaGeocodificada,
   cadastro: { lat: number; lng: number } | null,
   paradasCruas: UnitracParadaRow[],
   outrosPontosDaPlaca: PontoReferenciaPlacaNf[],
-): { parada: UnitracParadaRow; distParadaM: number } | null {
+  preferirForte: boolean = false,
+): { parada: UnitracParadaRow; distParadaM: number; forte: boolean } | null {
   const geo = linha.geoConfiavel !== false && linha.lat != null && linha.lng != null
     ? { lat: linha.lat, lng: linha.lng }
     : null
   if (geo == null && cadastro == null) return null
-  let melhor: { parada: UnitracParadaRow; dist: number; duracaoMin: number } | null = null
+  let melhor: { parada: UnitracParadaRow; dist: number; duracaoMin: number; forte: boolean } | null = null
   for (const p of paradasCruas) {
     if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
     const inicio = new Date(p.chegada).getTime()
@@ -474,10 +487,31 @@ function acharParadaUnitracPropria(
       .filter(o => o.endereco !== linha.endereco)
       .some(o => haversine(p.lat as number, p.lng as number, o.lat, o.lng) <= RAIO_OUTRO_CLIENTE_EXPLICA_M)
     if (explicadaPorOutroCliente) continue
-    if (!melhor || duracaoMin > melhor.duracaoMin) melhor = { parada: p, dist, duracaoMin }
+    const forte = dist <= RAIO_R2_FORTE_CURTO_M || duracaoMin >= DURACAO_R2_FORTE_LONGE_MIN
+    const ganha = !melhor
+      || (preferirForte && forte && !melhor.forte)
+      || ((!preferirForte || forte === melhor.forte) && duracaoMin > melhor.duracaoMin)
+    if (ganha) melhor = { parada: p, dist, duracaoMin, forte }
   }
-  return melhor ? { parada: melhor.parada, distParadaM: melhor.dist } : null
+  return melhor ? { parada: melhor.parada, distParadaM: melhor.dist, forte: melhor.forte } : null
 }
+
+// Task 1 (plano 2026-09-26): rotulos de "ENTREGUE com ressalva" que, com
+// `modoPrecisao`, deixam de contar como entregue -- viram REVISAR (status
+// pendente, horario preservado). Aplicado so' no FIM da cadeia (depois de R2
+// e da escala divergente), pra R2 continuar enxergando os rotulos antigos
+// na whitelist de elegivelParaConfirmarPorParadaPropria e poder resgatar a
+// NF com parada forte da propria placa.
+const OBS_REVISAR_PROXIMA_300_800 = 'PARADA PRÓXIMA (300-800m) - REVISAR'
+const OBS_REVISAR_PROXIMA_100_300 = 'PARADA PRÓXIMA (100-300m) - REVISAR'
+const REVISAR_POR_ROTULO_FRACO: Record<string, string> = {
+  'ENTREGUE - PARADA PRÓXIMA (500-800m) MAS DENTRO DA ROTA - CONFERIR': OBS_REVISAR_PROXIMA_300_800,
+  'ENTREGUE - PARADA CURTA (ATÉ 3MIN) CONFIRMOU VÁRIOS ENDEREÇOS DIFERENTES AO MESMO TEMPO - CONFERIR': 'PARADA CURTA - REVISAR',
+  'ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)': 'PARADA COMPARTILHADA - REVISAR',
+}
+// Visita da ponte / R2 "ENTREGUE limpo" cuja parada real ficou a mais que
+// isso do endereco/cadastro tambem vira REVISAR (proximidade fraca).
+const RAIO_PRECISAO_ENTREGUE_LIMPO_M = 300
 
 // Task 2 (plano 2026-09-25): rotulos que ja' sao "ENTREGUE" mas com ressalva
 // (mesmo quando o STATUS por baixo ja e' confirmado_unitrac/confirmado_gps --
@@ -820,6 +854,18 @@ export function montarDetalheEntregas(
   // Quality (pipeline.ts) e quem nao passar nada; Nutry Max (route.ts +
   // gerar-nutrimax-real-arquivo.ts) passa true.
   detectarEscalaDivergente: boolean = false,
+  // Task 1 (plano 2026-09-26, especificacao da Ana 26/09: "90% de cobertura
+  // com 99% de precisao e' melhor que 98% com falsos positivos"): nada vira
+  // ENTREGUE so' por proximidade fraca. Com `modoPrecisao` ligado:
+  // raio ampliado (500-800m) e visita/R2 limpa com parada a >300m ->
+  // 'PARADA PRÓXIMA (300-800m) - REVISAR'; parada curta compartilhada ->
+  // 'PARADA CURTA - REVISAR'; vizinhanca -> 'PARADA COMPARTILHADA - REVISAR';
+  // R2 fora do criterio forte -> 'PARADA PRÓXIMA (100-300m) - REVISAR'. Todos
+  // saem `pendente` (nao contam na taxa) mas mantem chegada/saida. Mesmo
+  // padrao opt-in dos anteriores: default false preserva Rio Quality
+  // (pipeline.ts) e quem nao passar nada; Nutry Max (route.ts +
+  // gerar-nutrimax-real-arquivo.ts) passa true.
+  modoPrecisao: boolean = false,
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
   // Task 2 (R2): pontos de referencia de CADA NF da placa no DIA INTEIRO
@@ -1304,19 +1350,24 @@ export function montarDetalheEntregas(
     // ENTREGUE POR OUTRA PLACA nem SEM RASTREADOR (todos ja' saem da whitelist
     // de elegivelParaConfirmarPorParadaPropria).
     let paradaPropriaConfirmada: { parada: UnitracParadaRow; distParadaM: number } | null = null
+    // Task 1 (plano 26/09): R2 achou parada da propria placa mas fora do
+    // criterio forte (modoPrecisao) -- REVISAR com o horario dela.
+    let revisarPorR2Fraca = false
     if (confirmarPorParadaUnitracPropria && elegivelParaConfirmarPorParadaPropria(status, observacao)) {
       const cadastro = alvo && coordValidaCadastro(alvo.pontoLat) && coordValidaCadastro(alvo.pontoLng)
         ? { lat: alvo.pontoLat as number, lng: alvo.pontoLng as number }
         : null
-      paradaPropriaConfirmada = acharParadaUnitracPropria(
-        linha, cadastro, paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? [], pontosReferenciaDaPlaca,
+      const achada = acharParadaUnitracPropria(
+        linha, cadastro, paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? [], pontosReferenciaDaPlaca, modoPrecisao,
       )
-      if (paradaPropriaConfirmada) {
-        status = 'confirmado_gps'
-        chegada = paradaPropriaConfirmada.parada.chegada
-        saida = paradaPropriaConfirmada.parada.fim_real ?? paradaPropriaConfirmada.parada.saida ?? paradaPropriaConfirmada.parada.chegada
+      if (achada) {
+        paradaPropriaConfirmada = achada
+        revisarPorR2Fraca = modoPrecisao && !achada.forte
+        status = revisarPorR2Fraca ? 'pendente' : 'confirmado_gps'
+        chegada = achada.parada.chegada
+        saida = achada.parada.fim_real ?? achada.parada.saida ?? achada.parada.chegada
         tempoParadaMin = chegada && saida ? minutosEntre(chegada, saida) : null
-        observacao = null
+        observacao = revisarPorR2Fraca ? OBS_REVISAR_PROXIMA_100_300 : null
       }
     }
     // Task 4 (plano 26/09): roda DEPOIS de R2 (paradaPropriaConfirmada acima)
@@ -1330,7 +1381,7 @@ export function montarDetalheEntregas(
     // semRastreadorNoDia/perdeuParadaCompartilhada -- "escala/romaneio
     // provavelmente errados" e' um fato ja' resolvido pelos dados de HOJE,
     // nao muda esperando o resto do dia.
-    const nfEscalaDivergente = escalaDivergente && elegivelParaEscalaDivergente(status, observacao)
+    const nfEscalaDivergente = escalaDivergente && !revisarPorR2Fraca && elegivelParaEscalaDivergente(status, observacao)
     if (nfEscalaDivergente) {
       observacao = 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA'
       chegada = null
@@ -1350,7 +1401,7 @@ export function montarDetalheEntregas(
     // cliente, isso nao muda esperando o dia acabar) -- nao pode virar
     // "aguardando". Task 4: escala divergente e' o mesmo tipo de fato ja'
     // resolvido.
-    if (status === 'pendente' && diaEmAndamento && !semRastreadorNoDia && !perdeuParadaCompartilhada && !nfEscalaDivergente) {
+    if (status === 'pendente' && diaEmAndamento && !semRastreadorNoDia && !perdeuParadaCompartilhada && !nfEscalaDivergente && !revisarPorR2Fraca) {
       observacao = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
     }
 
@@ -1450,6 +1501,25 @@ export function montarDetalheEntregas(
       }
     } else {
       evidencia = 'sem_evidencia'
+    }
+
+    // Task 1 (plano 26/09): roda depois de TUDO (R2, escala divergente,
+    // AGUARDANDO e evidencia) -- so' rebaixa o que ainda saiu como "ENTREGUE
+    // com ressalva" ou ENTREGUE limpo com parada real longe demais. Horario,
+    // evidencia e distancia ficam como estao (informacao util pra conferir).
+    if (modoPrecisao) {
+      const revisar = observacao != null ? REVISAR_POR_ROTULO_FRACO[observacao] : undefined
+      if (revisar) {
+        status = 'pendente'
+        observacao = revisar
+      } else if (
+        observacao == null && status !== 'pendente'
+        && (evidencia === 'parada_no_endereco' || evidencia === 'parada_no_cadastro_unitrac' || evidencia === 'parada_unitrac_propria')
+        && distParadaM != null && distParadaM > RAIO_PRECISAO_ENTREGUE_LIMPO_M
+      ) {
+        status = 'pendente'
+        observacao = OBS_REVISAR_PROXIMA_300_800
+      }
     }
 
     return {

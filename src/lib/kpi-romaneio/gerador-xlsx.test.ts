@@ -791,5 +791,44 @@ describe('gerador-xlsx', () => {
       expect(texto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 100%') // 2/2
       expect(texto).toContain('NFs aguardando fim da rota: 1')
     })
+
+    // Task 1 (plano 2026-09-26, modoPrecisao): REVISAR (proximidade fraca)
+    // sai pendente -- fica no denominador, nunca no numerador da taxa
+    // automatica; aparece contado a parte. A resolucao manual da operacao
+    // pode confirma-lo na taxa apos conferencia.
+    it('Task 1: REVISAR fica fora do numerador da taxa automatica, contado a parte, e a resolucao manual confirma na pos-conferencia', async () => {
+      const detalhe: LinhaDetalheEntrega[] = [
+        detalheFixture({ nf: 'NF1', status: 'confirmado_gps' }),
+        detalheFixture({ nf: 'NF2', status: 'pendente', observacao: 'PARADA PRÓXIMA (300-800m) - REVISAR', evidencia: 'raio_ampliado' }),
+        detalheFixture({ nf: 'NF3', status: 'pendente', observacao: 'PARADA CURTA - REVISAR', evidencia: 'parada_curta_compartilhada',
+          resolucaoManual: 'entregue', responsavelResolucao: 'ANA' }),
+        detalheFixture({ nf: 'NF4', status: 'pendente', observacao: 'PARADA COMPARTILHADA - REVISAR', evidencia: 'vizinhanca' }),
+        detalheFixture({ nf: 'NF5', status: 'pendente', observacao: 'PARADA PRÓXIMA (100-300m) - REVISAR', evidencia: 'parada_unitrac_propria' }),
+      ]
+      const texto = await resumo(detalhe)
+      expect(texto).toContain('TAXA DE CONFIRMAÇÃO: 20%') // 1/5
+      expect(texto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 40%') // NF1 + NF3 (manual)
+      expect(texto).toContain('REVISAR: 4')
+    })
+
+    it('Task 1: REVISAR aparece mesmo zerado (linha sempre presente no resumo)', async () => {
+      const texto = await resumo([detalheFixture({ nf: 'NF1', status: 'confirmado_gps' })])
+      expect(texto).toContain('REVISAR: 0')
+    })
+
+    it('Task 1: REVISAR mostra o horario da parada no detalhe da placa (informacao util, nao conta como entregue)', async () => {
+      const detalhe: LinhaDetalheEntrega[] = [
+        detalheFixture({ nf: 'NF1', status: 'pendente', observacao: 'PARADA PRÓXIMA (300-800m) - REVISAR', evidencia: 'raio_ampliado',
+          chegada: '2026-08-23T10:00:00.000Z', saida: '2026-08-23T10:20:00.000Z', tempoParadaMin: 20 }),
+      ]
+      const buffer = await gerarKpiRomaneioXlsx([linhaKpi()], '2026-08-23', [], detalhe, '2026-09-26', undefined, { resumoConfirmacao: true })
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const wsPlaca = wb.worksheets[1]
+      const valores = (wsPlaca.getRow(4).values as unknown[]).slice(1)
+      expect(valores[4]).toBe('10:00')
+      expect(valores[5]).toBe('10:20')
+      expect(valores[7]).toBe('PARADA PRÓXIMA (300-800m) - REVISAR')
+    })
   })
 })

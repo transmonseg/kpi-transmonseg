@@ -298,6 +298,18 @@ function entraNoDenominadorPosConferencia(d: LinhaDetalheEntrega): boolean {
   return true
 }
 
+// Task 1 (plano 2026-09-26, modoPrecisao em agregacao.ts): proximidade fraca
+// (300-800m, parada curta, parada compartilhada, R2 fora do criterio forte)
+// sai `pendente` com rotulo terminando em "- REVISAR" -- fica no denominador
+// da taxa automatica (nao e' sem rastreador nem aguardando) mas NUNCA no
+// numerador; aparece contado a parte ("REVISAR: N"). Na taxa apos
+// conferencia, uma resolucao manual confirmatoria o confirma normalmente
+// (confirmadaAposConferencia ja' da' prioridade a' resolucao).
+const SUFIXO_OBS_REVISAR = '- REVISAR'
+function ehRevisar(d: LinhaDetalheEntrega): boolean {
+  return d.status === 'pendente' && (d.observacao?.endsWith(SUFIXO_OBS_REVISAR) ?? false)
+}
+
 function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   taxaPct: number
   taxaPosConferenciaPct: number
@@ -307,13 +319,16 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   denominadorPosConferencia: number
   semRastreador: number
   aguardando: number
+  revisar: number
 } {
   const semRastreador = detalhe.filter(ehSemRastreador).length
+  const revisar = detalhe.filter(d => ehRevisar(d) && !ehSemRastreador(d)).length
   const aguardando = detalhe.filter(ehAguardando).length
   const base = detalhe.filter(d => !ehSemRastreador(d) && !ehAguardando(d))
   const denominador = base.length
-  // Confirmada = status diferente de 'pendente'; NF sem rastreador SEMPRE
-  // fica pendente (nunca confirma), entao ja sai naturalmente do numerador.
+  // Confirmada = status diferente de 'pendente' (so' ENTREGUE confirmado);
+  // NF sem rastreador e REVISAR SEMPRE ficam pendente (nunca confirmam),
+  // entao ja saem naturalmente do numerador.
   const confirmadas = base.filter(d => d.status !== 'pendente').length
   const taxaPct = denominador > 0 ? Math.round((100 * confirmadas) / denominador) : 0
 
@@ -323,7 +338,7 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   const taxaPosConferenciaPct = denominadorPosConferencia > 0
     ? Math.round((100 * confirmadasPosConferencia) / denominadorPosConferencia) : 0
 
-  return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, denominadorPosConferencia, semRastreador, aguardando }
+  return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, denominadorPosConferencia, semRastreador, aguardando, revisar }
 }
 
 function formatarMinutos(min: number | null): string {
@@ -514,7 +529,7 @@ export async function gerarKpiRomaneioXlsx(
   if (opcoes.resumoConfirmacao && detalhe.length > 0) {
     const resumo = calcularResumoConfirmacao(detalhe)
     const linhaResumoGeral = ws.addRow([
-      `TAXA DE CONFIRMAÇÃO: ${resumo.taxaPct}%    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${resumo.taxaPosConferenciaPct}%    |    NFs sem rastreador: ${resumo.semRastreador}    |    NFs aguardando fim da rota: ${resumo.aguardando}`,
+      `TAXA DE CONFIRMAÇÃO: ${resumo.taxaPct}%    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${resumo.taxaPosConferenciaPct}%    |    REVISAR: ${resumo.revisar}    |    NFs sem rastreador: ${resumo.semRastreador}    |    NFs aguardando fim da rota: ${resumo.aguardando}`,
     ])
     ws.mergeCells(linhaResumoGeral.number, 1, linhaResumoGeral.number, COLUNAS_KPI_ROMANEIO.length)
     const cell = linhaResumoGeral.getCell(1)
