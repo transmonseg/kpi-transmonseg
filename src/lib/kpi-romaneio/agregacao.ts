@@ -68,6 +68,65 @@ function distanciaAteParadaPropria(
   return menor
 }
 
+// Task 3 (plano 26/09, verificacao manual 24-09 -- 4 casos reais RQV9E37/
+// 2388069 (GPS a 8m), TUO1D10/2388557 (340m), RBJ7H78/2389720 (143m),
+// RQU2E34/2389291 (400m) saindo "NAO FOI AO CLIENTE" quando o GPS BRUTO
+// (posicoes_historico, cruzado manualmente pela operacao) mostra o
+// caminhao a poucos metros/centenas de metros do endereco). Diagnostico:
+// `distanciaAteParadaPropria` (acima) so' enxerga PARADAS reais (dwell
+// classificado FORA_BASE) -- se o caminhao passou perto SEM parar, nao ha'
+// parada nenhuma ali pra medir contra, entao a distancia cai pra' a parada
+// real mais proxima que existir no dia (a proxima entrega, tipicamente a
+// km de distancia) e o caso vira falsamente "NAO FOI" (>2km) em vez de
+// "PASSOU...". Os thresholds (RAIO_PASSOU_SEM_PARAR_M=500,
+// RAIO_NAO_FOI_AO_CLIENTE_M=2000) NAO sao o problema -- os 4 casos reais
+// (8-400m) ja cairiam certinho em PASSOU se `distPropria` refletisse a
+// distancia real do trajeto.
+//
+// Duas melhorias com dado que JA' chega neste arquivo (nenhuma consulta
+// nova, nenhuma mudanca na ponte):
+// 1) `paradasPorOutraPlaca` (passado pro chamador, ja' escolhido por
+//    resolverParadas entre Unitrac/ponte) e `paradasUnitracCruasPropriaPlaca`
+//    (paradas CRUAS da Unitrac, sempre buscadas independente de quem
+//    "ganhou") podem discordar -- uma delas pode ter um cluster que a
+//    outra descartou. Usa a MENOR das duas, nunca ignora uma parada real
+//    so' porque a outra fonte "venceu" o resolverParadas.
+// 2) Quando o CHAMADOR tiver a distancia real do trajeto continuo pra essa
+//    NF (`menorDistanciaTrajetoM`, ver comentario em
+//    `menorDistanciaTrajetoPorNf` na assinatura de `montarDetalheEntregas`),
+//    usa a MENOR entre ela e a distancia por parada -- o trajeto continuo
+//    e' estritamente mais fino (pega passagem sem parar que nenhuma parada
+//    jamais capturaria) mas nunca DESCARTA uma parada real mais perto (ex.
+//    ruido de amostragem do trajeto).
+//
+// CONCERN (ver relatorio da Task 3): nenhum chamador de producao (route.ts)
+// preenche `menorDistanciaTrajetoPorNf` hoje -- a ponte (base-horarios.ts,
+// projeto irmao "monitoramento") NAO expoe uma distancia minima ao ponto
+// independente de dwell (so' `chegada`/`saida` de uma visita confirmada,
+// null quando nunca parou). Os 4 casos reais do brief (verificados contra
+// posicoes_historico manualmente) EXIGEM esse dado pra sair PASSOU de
+// verdade -- sem ele, so' a melhoria (1) roda em producao (pode reduzir
+// outros falsos "NAO FOI" onde uma parada real ficou de fora por causa do
+// resolverParadas escolher a fonte errada, mas nao resolve os 4 casos
+// exatos, que nao tem parada nenhuma perto em NENHUMA das duas fontes --
+// confirmado pela propria evidencia do CSV, "sem parada >=2min" a 1,1-4,7km).
+function melhorDistanciaPropria(
+  linha: LinhaGeocodificada,
+  placaNorm: string,
+  paradasPorOutraPlaca: Map<string, UnitracParadaRow[]>,
+  paradasUnitracCruasPropriaPlaca: Map<string, UnitracParadaRow[]>,
+  menorDistanciaTrajetoM: number | null,
+): number | null {
+  const distParadaResolvida = distanciaAteParadaPropria(linha, placaNorm, paradasPorOutraPlaca)
+  const distParadaCrua = distanciaAteParadaPropria(linha, placaNorm, paradasUnitracCruasPropriaPlaca)
+  const distParadas = distParadaResolvida != null && (distParadaCrua == null || distParadaResolvida <= distParadaCrua)
+    ? distParadaResolvida
+    : distParadaCrua
+  if (menorDistanciaTrajetoM == null) return distParadas
+  if (distParadas == null) return menorDistanciaTrajetoM
+  return Math.min(distParadas, menorDistanciaTrajetoM)
+}
+
 // Pedido do usuario 05/09 ("se a porra foi feita ... umas nomeclaturas
 // melhores"): "PENDENTE" soa como "o motorista nao entregou", quando na
 // maioria das vezes e' o nosso lado que nao confirmou. Estes rotulos dizem o
@@ -644,6 +703,16 @@ export function montarDetalheEntregas(
   // acima -- so' entra em jogo quando tratarSemRastreadorNoDia tambem esta
   // ligado (gate unico, ver `semRastreadorNoDia` abaixo).
   apagaoDeSinalPropriaPlaca: boolean = false,
+  // Task 3 (plano 26/09, verificacao manual 24/09): NF -> menor distancia
+  // (metros) do TRAJETO CONTINUO da propria placa ate' o ponto no dia
+  // inteiro, independente de ter havido dwell/parada ali -- ver
+  // comentario de `melhorDistanciaPropria` acima pro raciocinio completo
+  // (por que `distanciaAteParadaPropria` sozinha nao pega passagem sem
+  // parar) e o Concern do relatorio da Task 3 (nenhum chamador de producao
+  // preenche este mapa hoje -- precisa de um campo novo na ponte/
+  // monitoramento, fora do escopo desta task). Default vazio preserva o
+  // comportamento de quem nao passar nada.
+  menorDistanciaTrajetoPorNf: Map<string, number> = new Map(),
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
   // Task 2 (R2): pontos de referencia de CADA NF da placa no DIA INTEIRO
@@ -890,7 +959,10 @@ export function montarDetalheEntregas(
     const geoConfiavel = linha.geoConfiavel !== false
     const distPropria = confirmadoUnitrac || confirmadoGps || semMovimento || !geoConfiavel
       ? null
-      : distanciaAteParadaPropria(linha, placaNorm, paradasPorOutraPlaca)
+      : melhorDistanciaPropria(
+          linha, placaNorm, paradasPorOutraPlaca, paradasUnitracCruasPropriaPlaca,
+          menorDistanciaTrajetoPorNf.get(linha.nf) ?? null,
+        )
     const propriaPlacaPlausivelmentePerto = distPropria != null && distPropria <= RAIO_NAO_FOI_AO_CLIENTE_M
     // Carga transferida: so' quando a PROPRIA placa nao confirmou. Rastreador
     // travado (sem movimento) tem outra explicacao e nao vira "transferida".

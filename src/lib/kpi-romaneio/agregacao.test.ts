@@ -2787,3 +2787,89 @@ describe('montarDetalheEntregas -- GPS congelado e sem rastreador nao geram visi
     expect(d.evidencia).toBe('sem_rastreador')
   })
 })
+
+// Task 3 (plano 26/09, verificacao manual 24/09): casos reais RQV9E37/2388069
+// (GPS a 8m), TUO1D10/2388557 (340m), RBJ7H78/2389720 (143m), RQU2E34/2389291
+// (400m) saiam "NAO FOI AO CLIENTE" -- o GPS bruto (posicoes_historico,
+// cruzado manualmente pela operacao) mostra o caminhao a poucos metros/
+// centenas de metros do endereco, so' que sem PARAR la' (nenhuma parada, nem
+// da Unitrac nem da ponte, existe perto o bastante -- ver comentario de
+// `melhorDistanciaPropria`/`menorDistanciaTrajetoPorNf` em agregacao.ts).
+describe('montarDetalheEntregas -- NAO FOI so quando a placa nao passou perto (Task 3, plano 26/09)', () => {
+  const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+
+  it.each([
+    ['RQV9E37/2388069', 8],
+    ['RBJ7H78/2389720', 143],
+    ['TUO1D10/2388557', 340],
+    ['RQU2E34/2389291', 400],
+  ])('%s: trajeto continuo a %dm (sem parada registrada) -> PASSOU NO ENDERECO, evidencia passagem_sem_parada, distancia preenchida', (_rotulo, distM) => {
+    const [d] = montarDetalheEntregas(
+      '93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio,
+      /* temRastreador */ true, new Map(), null, false, false, false, new Map(),
+      false, false, false, undefined,
+      /* apagaoDeSinalPropriaPlaca */ false,
+      /* menorDistanciaTrajetoPorNf */ new Map([['NF1', distM]]),
+    )
+
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR')
+    expect(d.evidencia).toBe('passagem_sem_parada')
+    expect(d.distParadaM).toBe(distM)
+  })
+
+  it('trajeto continuo a mais de 2km (nunca chegou perto de verdade): continua NAO FOI AO CLIENTE', () => {
+    const [d] = montarDetalheEntregas(
+      '93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio,
+      true, new Map(), null, false, false, false, new Map(),
+      false, false, false, undefined, false,
+      new Map([['NF1', 4_700]]), // achado real (RQU2E34/2389291): parada mais perto a 4,7km
+    )
+
+    expect(d.observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
+    expect(d.evidencia).toBe('sem_evidencia')
+    expect(d.distParadaM as number).toBeGreaterThan(2_000)
+  })
+
+  it('trajeto continuo nunca ignora uma parada real MAIS PERTO (usa a menor das duas distancias, nao so\' o trajeto)', () => {
+    const paradaBemPerto = parada({ id: 'p', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.9001, lng: -43.2001 }) // ~15m
+    const paradasFrota = new Map([['TTL7D40', [paradaBemPerto]]])
+
+    const [d] = montarDetalheEntregas(
+      '93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio,
+      true, paradasFrota, null, false, false, false, new Map(),
+      false, false, false, undefined, false,
+      new Map([['NF1', 1_500]]), // trajeto "mediria" 1,5km -- a parada real (15m) e' mais confiavel
+    )
+
+    expect(d.observacao).toBe('PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR')
+    expect(d.distParadaM as number).toBeLessThan(20)
+  })
+
+  it('sem menorDistanciaTrajetoPorNf (default, comportamento de producao hoje): so\' a distancia por parada decide, igual antes da Task 3', () => {
+    const longe = parada({ id: 'p', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.95, lng: -43.30 }) // ~11km
+    const paradasFrota = new Map([['TTL7D40', [longe]]])
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio, true, paradasFrota)
+
+    expect(d.observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
+  })
+
+  it('paradas cruas da Unitrac (paradasUnitracCruasPropriaPlaca) com um cluster mais perto do que o que resolverParadas escolheu: usa a MENOR das duas fontes, nunca ignora a parada real que a outra fonte tinha', () => {
+    // resolverParadas escolheu (paradasPorOutraPlaca) uma parada longe --
+    // ex. a ponte venceu naquele dia mas nao formou dwell perto do cliente.
+    const paradaLongeResolvida = parada({ id: 'ponte', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.95, lng: -43.30 }) // ~11km
+    // A Unitrac crua (sempre buscada, independente de quem "ganhou") tinha
+    // um cluster real bem mais perto do cliente que a ponte descartou.
+    const paradaPertoCrua = parada({ id: 'unitrac', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.9012, lng: -43.2012 }) // ~180m
+
+    const [d] = montarDetalheEntregas(
+      '93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio,
+      true, new Map([['TTL7D40', [paradaLongeResolvida]]]), null, false, false, false,
+      new Map([['TTL7D40', [paradaPertoCrua]]]),
+    )
+
+    expect(d.observacao).toBe('PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR')
+    expect(d.evidencia).toBe('passagem_sem_parada')
+    expect(d.distParadaM as number).toBeLessThanOrEqual(500)
+  })
+})
