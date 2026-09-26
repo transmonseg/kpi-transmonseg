@@ -352,6 +352,53 @@ function elegivelParaEscalaDivergente(status: StatusEntrega, observacao: string 
     || observacao.startsWith(PREFIXO_OBS_COORDENADA_IMPRECISA)
 }
 
+// Task 2 (plano 2026-09-26, rodizio de carga inteira -- analise-escala-25-09.md:
+// em 25/09 as 3 cargas de Campos rodaram trocadas entre 3 placas, cada placa a
+// dezenas de km da propria carga e cobrindo 100% da carga de outra; 24/09
+// RBJ2J67 <-> RQV6I51). E' a UNICA excecao a `desativarOutraPlaca`: so' vale
+// numa carga ja' `escalaDivergente` e coberta por UM unico outro veiculo em
+// >=80% das NFs (parada >=2min a <=300m). Carro que parou perto de um ou
+// outro cliente por acaso nunca chega perto desse limiar. Confirmacao por NF
+// usa o mesmo criterio forte da R2 em modoPrecisao (<=100m, ou 100-300m com
+// >=5min) -- parada fraca do executor nao confirma (NF segue CONFERIR ESCALA).
+const PROPORCAO_MIN_RODIZIO = 0.8
+const RAIO_RODIZIO_M = 300
+const DURACAO_MIN_RODIZIO_MIN = 2
+
+/** Pontos de referencia de UMA NF (geocode confiavel e/ou cadastro Unitrac),
+ *  mesma nocao da R2 (`acharParadaUnitracPropria`). */
+function pontosDaNf(linha: LinhaGeocodificada, alvo: AlvoApi | undefined): { lat: number; lng: number }[] {
+  const pontos: { lat: number; lng: number }[] = []
+  if (linha.geoConfiavel !== false && linha.lat != null && linha.lng != null) pontos.push({ lat: linha.lat, lng: linha.lng })
+  if (alvo && coordValidaCadastro(alvo.pontoLat) && coordValidaCadastro(alvo.pontoLng)) {
+    pontos.push({ lat: alvo.pontoLat as number, lng: alvo.pontoLng as number })
+  }
+  return pontos
+}
+
+/** Melhor parada FORA_BASE (>=2min, <=300m de algum ponto da NF) de um
+ *  veiculo -- forte vence fraca; entre iguais, a mais perto. */
+function acharParadaDoExecutor(
+  pontos: { lat: number; lng: number }[],
+  paradas: UnitracParadaRow[],
+): { parada: UnitracParadaRow; distM: number; forte: boolean } | null {
+  if (pontos.length === 0) return null
+  let melhor: { parada: UnitracParadaRow; distM: number; forte: boolean } | null = null
+  for (const p of paradas) {
+    if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
+    const duracaoMin = (new Date(p.fim_real ?? p.saida ?? p.chegada).getTime() - new Date(p.chegada).getTime()) / 60_000
+    if (duracaoMin < DURACAO_MIN_RODIZIO_MIN) continue
+    const distM = Math.min(...pontos.map(o => haversine(p.lat as number, p.lng as number, o.lat, o.lng)))
+    if (distM > RAIO_RODIZIO_M) continue
+    const forte = distM <= RAIO_R2_FORTE_CURTO_M || duracaoMin >= DURACAO_R2_FORTE_LONGE_MIN
+    const ganha = !melhor
+      || (forte && !melhor.forte)
+      || (forte === melhor.forte && distM < melhor.distM)
+    if (ganha) melhor = { parada: p, distM, forte }
+  }
+  return melhor
+}
+
 // Task 10 (plano 24/09, achado real 22/09: ~27 NFs que a Ana vincula por
 // codigo do cliente saiam "ENTREGUE" (confirmado_unitrac) SEM HORARIO nenhum
 // porque o feed GPS continuo travou/sumiu bem na parada -- so' o alvo da
@@ -868,6 +915,16 @@ export function montarDetalheEntregas(
   // (pipeline.ts) e quem nao passar nada; Nutry Max (route.ts +
   // gerar-nutrimax-real-arquivo.ts) passa true.
   modoPrecisao: boolean = false,
+  // Task 2 (plano 2026-09-26, rodizio de carga inteira): carga
+  // `escalaDivergente` coberta (>=80% das NFs, parada >=2min a <=300m) por UM
+  // unico outro veiculo da frota -> NFs com parada forte desse veiculo saem
+  // confirmadas com 'ROTA EXECUTADA POR OUTRA PLACA (X)' / evidencia
+  // 'rota_outra_placa' / placaExecutora=X. Unica excecao a
+  // desativarOutraPlaca. So' tem efeito com detectarEscalaDivergente ligado
+  // (e portanto nunca com diaEmAndamento). Default false preserva Rio
+  // Quality (pipeline.ts); Nutry Max (route.ts + gerar-nutrimax-real-
+  // arquivo.ts) passa true.
+  reconhecerRodizio: boolean = false,
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
   // Task 2 (R2): pontos de referencia de CADA NF da placa no DIA INTEIRO
@@ -922,6 +979,26 @@ export function montarDetalheEntregas(
     }
     const proporcaoPerto = perto / linhasRomaneio.length
     return proporcaoPerto < PROPORCAO_MIN_ESCALA_DIVERGENTE && temSinalDeOutraPlaca
+  })()
+  // Task 2 (plano 26/09): paradas de cada veiculo candidato a executor --
+  // resolvidas (ponte/Unitrac) + cruas da Unitrac, sem descartar nenhuma.
+  function paradasDoVeiculo(placa: string): UnitracParadaRow[] {
+    return [...(paradasPorOutraPlaca.get(placa) ?? []), ...(paradasUnitracCruasPropriaPlaca.get(placa) ?? [])]
+  }
+  const placaRodizio = (() => {
+    if (!reconhecerRodizio || !escalaDivergente) return null
+    const pontosPorNf = linhasRomaneio.map(l => pontosDaNf(l, alvoPorNf.get(l.nf)))
+    const candidatas = new Set([...paradasPorOutraPlaca.keys(), ...paradasUnitracCruasPropriaPlaca.keys()])
+    candidatas.delete(placaNorm)
+    candidatas.delete('')
+    const acimaDoLimiar: string[] = []
+    for (const x of candidatas) {
+      const paradasX = paradasDoVeiculo(x)
+      const cobertas = pontosPorNf.filter(pts => acharParadaDoExecutor(pts, paradasX) != null).length
+      if (cobertas / linhasRomaneio.length >= PROPORCAO_MIN_RODIZIO) acimaDoLimiar.push(x)
+    }
+    // Mais de um veiculo acima do limiar = ambiguo, nada muda.
+    return acimaDoLimiar.length === 1 ? acimaDoLimiar[0] : null
   })()
   // Revisao final pre-deploy (24/09, item 3): sinais INDEPENDENTES das
   // paradas de que a placa rodou no dia -- desmentem o caso (b) de
@@ -1384,7 +1461,19 @@ export function montarDetalheEntregas(
     // provavelmente errados" e' um fato ja' resolvido pelos dados de HOJE,
     // nao muda esperando o resto do dia.
     const nfEscalaDivergente = escalaDivergente && !revisarPorR2Fraca && elegivelParaEscalaDivergente(status, observacao)
-    if (nfEscalaDivergente) {
+    // Task 2 (plano 26/09): rodizio de carga inteira -- NF que viraria
+    // CONFERIR ESCALA e tem parada FORTE do veiculo executor vira confirmada.
+    const paradaRodizio = nfEscalaDivergente && placaRodizio
+      ? acharParadaDoExecutor(pontosDaNf(linha, alvo), paradasDoVeiculo(placaRodizio))
+      : null
+    const nfRodizio = paradaRodizio != null && paradaRodizio.forte
+    if (nfRodizio && paradaRodizio) {
+      status = 'confirmado_gps'
+      observacao = `ROTA EXECUTADA POR OUTRA PLACA (${placaRodizio})`
+      chegada = paradaRodizio.parada.chegada
+      saida = paradaRodizio.parada.fim_real ?? paradaRodizio.parada.saida ?? paradaRodizio.parada.chegada
+      tempoParadaMin = minutosEntre(chegada, saida)
+    } else if (nfEscalaDivergente) {
       observacao = 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA'
       chegada = null
       saida = null
@@ -1419,7 +1508,10 @@ export function montarDetalheEntregas(
     // de fato medida contra uma coordenada real -- `null` nunca é inventado.
     let evidencia: EvidenciaNf
     let distParadaM: number | null = null
-    if (paradaPropriaConfirmada) {
+    if (nfRodizio && paradaRodizio) {
+      evidencia = 'rota_outra_placa'
+      distParadaM = Math.round(paradaRodizio.distM)
+    } else if (paradaPropriaConfirmada) {
       evidencia = 'parada_unitrac_propria'
       distParadaM = Math.round(paradaPropriaConfirmada.distParadaM)
     } else if (nfEscalaDivergente) {
@@ -1536,6 +1628,7 @@ export function montarDetalheEntregas(
       observacao,
       evidencia,
       distParadaM,
+      ...(nfRodizio ? { placaExecutora: placaRodizio } : {}),
     }
   })
 }

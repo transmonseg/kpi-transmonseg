@@ -54,6 +54,12 @@ export const COLUNAS_DETALHE_PLACA = [
   'RESOLUÇÃO OPERAÇÃO', 'RESPONSÁVEL', 'EVIDÊNCIA', 'DIST. PARADA (m)',
 ] as const
 
+// Task 2 (plano 2026-09-26, rodizio de carga inteira): placa que de fato
+// executou a rota (LinhaDetalheEntrega.placaExecutora) -- coluna no FIM,
+// opt-in (`opcoes.placaExecutora`, so' Nutry Max): Rio Quality reusa este
+// gerador e fica com as 12 colunas de sempre.
+export const COLUNA_PLACA_EXECUTORA = 'PLACA EXECUTORA'
+
 export const COLUNAS_AVISOS = ['CARGA', 'PLACA', 'PROBLEMA'] as const
 
 const LABEL_MOTIVO: Record<AvisoDescasamento['motivo'], string> = {
@@ -229,6 +235,8 @@ const LABEL_EVIDENCIA_NF: Record<EvidenciaNf, string> = {
   parada_proxima_fora_raio: 'PARADA PRÓXIMA FORA DO RAIO',
   // Task 2 (plano 2026-09-25, R2): ver comentario de EvidenciaNf em types.ts.
   parada_unitrac_propria: 'PARADA UNITRAC DA PRÓPRIA PLACA',
+  // Task 2 (plano 2026-09-26): rodizio de carga inteira.
+  rota_outra_placa: 'ROTA EXECUTADA POR OUTRA PLACA',
 }
 
 function textoEvidencia(d: LinhaDetalheEntrega): string {
@@ -262,7 +270,7 @@ function confirmadaAposConferencia(d: LinhaDetalheEntrega): boolean {
 // semRastreadorNoDia (tem CV mas zero posicoes no dia, temRastreador=true).
 function ehSemRastreador(d: LinhaDetalheEntrega): boolean {
   if (d.observacao?.startsWith(PREFIXO_OBS_SEM_RASTREADOR)) return true
-  return d.temRastreador === false && d.evidencia !== 'outra_placa'
+  return d.temRastreador === false && d.evidencia !== 'outra_placa' && d.evidencia !== 'rota_outra_placa'
 }
 
 // Revisao final pre-deploy (24/09, item 4): NF "AGUARDANDO" (relatorio do
@@ -485,7 +493,7 @@ export async function gerarKpiRomaneioXlsx(
   // DE CONFIRMAÇÃO / APÓS CONFERÊNCIA / NFs sem rastreador / aguardando) e'
   // da Nutry Max -- o Rio Quality (pipeline.ts) reusa este gerador e nao a
   // tinha em 108b4bb. Opt-in, mesmo padrao de `verificarAcessoIlha`.
-  opcoes: { resumoConfirmacao?: boolean } = {},
+  opcoes: { resumoConfirmacao?: boolean; placaExecutora?: boolean } = {},
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
   wb.creator = 'TRANSMONSEG'
@@ -565,10 +573,13 @@ export async function gerarKpiRomaneioXlsx(
     detalhePorPlaca.set(d.placa, lista)
   }
 
+  const colunasDetalhe: readonly string[] = opcoes.placaExecutora
+    ? [...COLUNAS_DETALHE_PLACA, COLUNA_PLACA_EXECUTORA]
+    : COLUNAS_DETALHE_PLACA
   for (const placa of placasEmOrdem) {
     const wsPlaca = wb.addWorksheet(nomeAbaPlaca(placa))
     const tituloPlaca = `RELATÓRIO KPI - ${nomeCliente} - PLACA ${placa}\n${formatarTituloData(data)}`
-    estilizarTitulo(wsPlaca, 1, COLUNAS_DETALHE_PLACA.length, tituloPlaca)
+    estilizarTitulo(wsPlaca, 1, colunasDetalhe.length, tituloPlaca)
     await adicionarLogo(wb, wsPlaca, 1)
     const linhasDaPlaca = detalhePorPlaca.get(placa) ?? []
     // Pedido do usuario 06/09: mostrar quantas notas (NFs) a placa levou
@@ -576,13 +587,14 @@ export async function gerarKpiRomaneioXlsx(
     // que ja' e' tudo igual em qualquer parte do relatorio -- so' isso
     // faltava.
     const cargasNaoRelacionadas = placa === '' && qtdCargasSemPlaca > 1
-    escreverResumoPlaca(wsPlaca, 2, COLUNAS_DETALHE_PLACA.length, resumoPorPlaca.get(placa), data, hoje, linhasDaPlaca.length, cargasNaoRelacionadas)
-    wsPlaca.addRow([...COLUNAS_DETALHE_PLACA])
-    estilizarHeader(wsPlaca, 3, COLUNAS_DETALHE_PLACA.length)
+    escreverResumoPlaca(wsPlaca, 2, colunasDetalhe.length, resumoPorPlaca.get(placa), data, hoje, linhasDaPlaca.length, cargasNaoRelacionadas)
+    wsPlaca.addRow([...colunasDetalhe])
+    estilizarHeader(wsPlaca, 3, colunasDetalhe.length)
     wsPlaca.columns = [
       { width: 10 }, { width: 14 }, { width: 32 }, { width: 36 },
       { width: 12 }, { width: 12 }, { width: 12 }, { width: 36 },
       { width: 36 }, { width: 20 }, { width: 28 }, { width: 16 },
+      ...(opcoes.placaExecutora ? [{ width: 16 }] : []),
     ]
     linhasDaPlaca.forEach((d, i) => {
       // CHEGADA/SAÍDA NA LOJA: motivo só faz sentido quando 'pendente'
@@ -606,12 +618,13 @@ export async function gerarKpiRomaneioXlsx(
         chegadaLoja, saidaLoja, formatarMinutos(d.tempoParadaMin),
         textoStatus(d), textoResolucaoManual(d), d.responsavelResolucao ?? '',
         textoEvidencia(d), textoDistParada(d),
+        ...(opcoes.placaExecutora ? [d.placaExecutora ?? ''] : []),
       ])
-      estilizarLinhaDado(wsPlaca, 3 + 1 + i, COLUNAS_DETALHE_PLACA.length, i)
+      estilizarLinhaDado(wsPlaca, 3 + 1 + i, colunasDetalhe.length, i)
     })
     wsPlaca.autoFilter = {
       from: { row: 3, column: 1 },
-      to: { row: 3 + linhasDaPlaca.length, column: COLUNAS_DETALHE_PLACA.length },
+      to: { row: 3 + linhasDaPlaca.length, column: colunasDetalhe.length },
     }
   }
 

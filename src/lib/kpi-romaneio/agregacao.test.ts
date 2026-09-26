@@ -3371,3 +3371,174 @@ describe('montarDetalheEntregas -- modoPrecisao: proximidade fraca vira REVISAR 
     })
   })
 })
+
+// Task 2 (plano 2026-09-26, rodizio de carga inteira -- analise-escala-25-09.md):
+// em 25/09 as 3 cargas de Campos rodaram em rodizio de 3 placas (98669
+// RQU2G47->TOS1H26 29/30, 98673 RBJ2J67->RQU2G47 27/27, 98678 TOS1H26->RBJ2J67
+// 36/36). Com `reconhecerRodizio` (22o parametro posicional, opt-in Nutry
+// Max), carga divergente coberta >=80% por UM unico outro veiculo vira "ROTA
+// EXECUTADA POR OUTRA PLACA (X)" nas NFs com parada forte de X. Carro que so'
+// passou perto de 1 cliente continua nao confirmando nada (desativarOutraPlaca).
+describe('montarDetalheEntregas -- rodizio de carga inteira vira ROTA EXECUTADA POR OUTRA PLACA (Task 2, plano 26/09)', () => {
+  const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+  const DELTA_M = 1 / 111_195 // graus de latitude por metro
+
+  // Fixture resumida das 3 cargas: cada carga numa regiao (dezenas de km
+  // entre elas), clientes a ~1,1km um do outro.
+  const REGIAO: Record<string, { lat: number; lng: number }> = {
+    '98669': { lat: -21.20, lng: -41.90 }, // Itaperuna
+    '98673': { lat: -21.50, lng: -41.10 }, // S.F. do Itabapoana
+    '98678': { lat: -22.37, lng: -41.78 }, // Macae
+  }
+  function nfsDaCarga(carga: string, placa: string, qtd: number): LinhaGeocodificada[] {
+    const r = REGIAO[carga]
+    return Array.from({ length: qtd }, (_, i) => linha(`${carga}-${i + 1}`, {
+      carga, placa, endereco: `RUA ${carga} ${i + 1}`, clienteCodigo: `C${carga}${i}`,
+      lat: r.lat + i * 0.01, lng: r.lng,
+    }))
+  }
+  function paradaEm(placa: string, l: LinhaGeocodificada, i: number, distM = 25, durMin = 10): UnitracParadaRow {
+    const inicio = new Date(Date.UTC(2026, 8, 25, 8, 0) + i * 20 * 60_000)
+    const fim = new Date(inicio.getTime() + durMin * 60_000)
+    return parada({
+      id: `${placa}-${l.nf}`, placa_norm: placa, classificacao: 'FORA_BASE',
+      lat: (l.lat as number) + distM * DELTA_M, lng: l.lng as number,
+      chegada: inicio.toISOString(), saida: fim.toISOString(), fim_real: fim.toISOString(),
+    })
+  }
+
+  function chamar(
+    carga: string, placa: string, nfs: LinhaGeocodificada[], frota: Map<string, UnitracParadaRow[]>,
+    opts: { diaEmAndamento?: boolean; reconhecerRodizio?: boolean } = {},
+  ) {
+    return montarDetalheEntregas(
+      carga, placa, nfs, [], new Map(), resumoCargaVazio,
+      true, frota, null, opts.diaEmAndamento ?? false,
+      true, true, new Map(),
+      true, true, true, undefined, false, new Map(),
+      true, // detectarEscalaDivergente
+      true, // modoPrecisao
+      opts.reconhecerRodizio ?? true,
+    )
+  }
+
+  // As 3 cargas reais de 25/09 e a frota do dia (cada placa parou nos
+  // clientes da carga de OUTRA placa -- nunca perto da propria).
+  const c98669 = nfsDaCarga('98669', 'RQU2G47', 30)
+  const c98673 = nfsDaCarga('98673', 'RBJ2J67', 27)
+  const c98678 = nfsDaCarga('98678', 'TOS1H26', 36)
+  const frota25 = new Map<string, UnitracParadaRow[]>([
+    ['TOS1H26', c98669.slice(0, 29).map((l, i) => paradaEm('TOS1H26', l, i))],
+    ['RQU2G47', c98673.map((l, i) => paradaEm('RQU2G47', l, i))],
+    ['RBJ2J67', c98678.map((l, i) => paradaEm('RBJ2J67', l, i, 50))],
+  ])
+
+  it.each([
+    ['98669', 'RQU2G47', c98669, 'TOS1H26', 29],
+    ['98673', 'RBJ2J67', c98673, 'RQU2G47', 27],
+    ['98678', 'TOS1H26', c98678, 'RBJ2J67', 36],
+  ])('caso real 25/09: carga %s escalada em %s -> ROTA EXECUTADA POR OUTRA PLACA (%s)', (carga, placa, nfs, executora, qtdCobertas) => {
+    const detalhe = chamar(carga, placa, nfs, frota25)
+    const confirmadas = detalhe.filter(d => d.observacao === `ROTA EXECUTADA POR OUTRA PLACA (${executora})`)
+    expect(confirmadas).toHaveLength(qtdCobertas)
+    for (const d of confirmadas) {
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.evidencia).toBe('rota_outra_placa')
+      expect(d.placaExecutora).toBe(executora)
+      expect(d.chegada).not.toBeNull()
+      expect(d.saida).not.toBeNull()
+      expect(d.tempoParadaMin).toBe(10)
+      expect(d.distParadaM as number).toBeLessThanOrEqual(100)
+    }
+  })
+
+  it('caso real 98669: a NF sem parada de TOS1H26 continua CONFERIR ESCALA, sem placa executora', () => {
+    const detalhe = chamar('98669', 'RQU2G47', c98669, frota25)
+    const ultima = detalhe.find(d => d.nf === '98669-30')!
+    expect(ultima.status).toBe('pendente')
+    expect(ultima.observacao).toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
+    expect(ultima.placaExecutora ?? null).toBeNull()
+    expect(ultima.chegada).toBeNull()
+  })
+
+  it('carro que so parou perto de 1 cliente de outra carga: nada muda (continua CONFERIR ESCALA)', () => {
+    const nfs = nfsDaCarga('98669', 'RQU2G47', 6)
+    const frota = new Map<string, UnitracParadaRow[]>([
+      ['RQU2G47', c98673.slice(0, 5).map((l, i) => paradaEm('RQU2G47', l, i))], // placa da escala longe
+      ['TTX1A11', [paradaEm('TTX1A11', nfs[2], 0)]],
+    ])
+    for (const d of chamar('98669', 'RQU2G47', nfs, frota)) {
+      expect(d.observacao).toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
+      expect(d.status).toBe('pendente')
+      expect(d.placaExecutora ?? null).toBeNull()
+    }
+  })
+
+  it('dois veiculos dividindo a carga (nenhum com >=80%): nada muda', () => {
+    const nfs = nfsDaCarga('98669', 'RQU2G47', 10)
+    const frota = new Map<string, UnitracParadaRow[]>([
+      ['RQU2G47', c98673.slice(0, 5).map((l, i) => paradaEm('RQU2G47', l, i))],
+      ['TOS1H26', nfs.slice(0, 5).map((l, i) => paradaEm('TOS1H26', l, i))],
+      ['RBJ2J67', nfs.slice(5).map((l, i) => paradaEm('RBJ2J67', l, i))],
+    ])
+    for (const d of chamar('98669', 'RQU2G47', nfs, frota)) {
+      expect(d.observacao).toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
+    }
+  })
+
+  it('cobertura abaixo de 80% (7 de 10) por um unico veiculo: nada muda', () => {
+    const nfs = nfsDaCarga('98669', 'RQU2G47', 10)
+    const frota = new Map<string, UnitracParadaRow[]>([
+      ['RQU2G47', c98673.slice(0, 5).map((l, i) => paradaEm('RQU2G47', l, i))],
+      ['TOS1H26', nfs.slice(0, 7).map((l, i) => paradaEm('TOS1H26', l, i))],
+    ])
+    for (const d of chamar('98669', 'RQU2G47', nfs, frota)) {
+      expect(d.observacao).toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
+    }
+  })
+
+  it('parada fraca do executor (150m, 3min) nao confirma a NF -- continua CONFERIR ESCALA; forte a 150m com >=5min confirma', () => {
+    const nfs = nfsDaCarga('98669', 'RQU2G47', 5)
+    const frota = new Map<string, UnitracParadaRow[]>([
+      ['RQU2G47', c98673.slice(0, 5).map((l, i) => paradaEm('RQU2G47', l, i))],
+      ['TOS1H26', [
+        paradaEm('TOS1H26', nfs[0], 0, 150, 3), // fraca
+        paradaEm('TOS1H26', nfs[1], 1, 150, 6), // forte (100-300m, >=5min)
+        ...nfs.slice(2).map((l, i) => paradaEm('TOS1H26', l, i + 2)),
+      ]],
+    ])
+    const detalhe = chamar('98669', 'RQU2G47', nfs, frota)
+    expect(detalhe[0].observacao).toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
+    expect(detalhe[0].status).toBe('pendente')
+    for (const d of detalhe.slice(1)) {
+      expect(d.observacao).toBe('ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)')
+      expect(d.status).toBe('confirmado_gps')
+    }
+  })
+
+  it('dia em andamento: AGUARDANDO (nem CONFERIR ESCALA nem rodizio)', () => {
+    for (const d of chamar('98673', 'RBJ2J67', c98673, frota25, { diaEmAndamento: true })) {
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe('AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO')
+      expect(d.placaExecutora ?? null).toBeNull()
+    }
+  })
+
+  it('opcao desligada (default false): carga continua CONFERIR ESCALA', () => {
+    for (const d of chamar('98673', 'RBJ2J67', c98673, frota25, { reconhecerRodizio: false })) {
+      expect(d.observacao).toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
+    }
+  })
+
+  it('carga NAO divergente (propria placa passou nos clientes) coberta 100% por outro veiculo: nada muda', () => {
+    const nfs = nfsDaCarga('98669', 'RQU2G47', 5)
+    const frota = new Map<string, UnitracParadaRow[]>([
+      ['RQU2G47', nfs.map((l, i) => paradaEm('RQU2G47', l, i, 400, 1))], // propria placa perto (sem parada forte)
+      ['TOS1H26', nfs.map((l, i) => paradaEm('TOS1H26', l, i))],
+    ])
+    for (const d of chamar('98669', 'RQU2G47', nfs, frota)) {
+      expect(d.observacao ?? '').not.toContain('OUTRA PLACA')
+      expect(d.observacao).not.toBe('PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA')
+    }
+  })
+})

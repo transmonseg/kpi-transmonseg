@@ -505,6 +505,10 @@ export async function POST(req: NextRequest) {
         true,        // Task 1 (plano 2026-09-26): proximidade fraca vira REVISAR, nunca
         // ENTREGUE -- so' desta pipeline. Ver modoPrecisao em agregacao.ts.
         true,
+        // Task 2 (plano 2026-09-26): rodizio de carga inteira vira ROTA
+        // EXECUTADA POR OUTRA PLACA -- so' desta pipeline. Ver
+        // reconhecerRodizio em agregacao.ts.
+        true,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
@@ -552,6 +556,9 @@ export async function POST(req: NextRequest) {
     // Linha de resumo (taxa automatica/apos conferencia) so' na Nutry Max --
     // ver `opcoes.resumoConfirmacao` em gerador-xlsx.ts.
     resumoConfirmacao: true,
+    // Task 2 (plano 2026-09-26): coluna PLACA EXECUTORA (rodizio) so' na
+    // Nutry Max -- ver `opcoes.placaExecutora` em gerador-xlsx.ts.
+    placaExecutora: true,
   })
 
   // Registra a geração no histórico (auditoria simples) + guarda os PDFs

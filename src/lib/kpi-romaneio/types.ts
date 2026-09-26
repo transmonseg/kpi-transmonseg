@@ -144,6 +144,12 @@ export type EvidenciaNf =
   // `confirmado_unitrac` sem visita) pra qualquer NF ainda nao confirmada.
   // So' Nutry Max (`confirmarPorParadaUnitracPropria`, agregacao.ts).
   | 'parada_unitrac_propria'
+  // Task 2 (plano 2026-09-26, rodizio de carga inteira): carga com escala
+  // divergente coberta (>=80%) por UM unico outro veiculo da frota -- a NF
+  // e' confirmada pela parada forte desse veiculo executor (mesma regra de
+  // confirmacao da R2 em modoPrecisao). Unica excecao a desativarOutraPlaca.
+  // So' Nutry Max (`reconhecerRodizio`, agregacao.ts).
+  | 'rota_outra_placa'
 
 /** Resolucao manual por NF (Task 4, plano 24/09) -- camada humana em cima do
  *  status automatico, persistida em `kpi_nf_resolucao`. `entregue_outra_placa`
@@ -251,6 +257,10 @@ export type LinhaDetalheEntrega = {
   // (sem coordenada, sem parada física casada por horário, geocode não
   // confiável). Nunca inventado.
   distParadaM: number | null
+  // Task 2 (plano 2026-09-26): placa que de fato executou a rota quando a NF
+  // foi confirmada por rodizio de carga inteira (evidencia
+  // 'rota_outra_placa'). Ausente/null em qualquer outro caso.
+  placaExecutora?: string | null
   // Task 4 (plano 24/09): resolucao manual VIGENTE (mais recente) desta NF,
   // aplicada por cima do automatico via aplicarResolucoes (resolucoes.ts) --
   // NUNCA sobrescreve `status`/`observacao` acima, so' preenche estes campos

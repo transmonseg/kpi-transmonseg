@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import ExcelJS from 'exceljs'
-import { gerarKpiRomaneioXlsx, COLUNAS_KPI_ROMANEIO, COLUNAS_DETALHE_PLACA, COLUNAS_AVISOS } from './gerador-xlsx'
+import { gerarKpiRomaneioXlsx, COLUNAS_KPI_ROMANEIO, COLUNAS_DETALHE_PLACA, COLUNAS_AVISOS, COLUNA_PLACA_EXECUTORA } from './gerador-xlsx'
 import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega } from './types'
 
 // Achado real 24/08 (pedido do usuário, referência
@@ -830,5 +830,45 @@ describe('gerador-xlsx', () => {
       expect(valores[5]).toBe('10:20')
       expect(valores[7]).toBe('PARADA PRÓXIMA (300-800m) - REVISAR')
     })
+  })
+})
+
+// Task 2 (plano 2026-09-26, rodizio de carga inteira): coluna PLACA EXECUTORA
+// opt-in (Nutry Max) e taxa contando a NF de rodizio como confirmada.
+describe('gerador-xlsx -- rodizio (PLACA EXECUTORA, Task 2 plano 26/09)', () => {
+  const linhas = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+  const detalhe: LinhaDetalheEntrega[] = [
+    detalheFixture({
+      nf: 'NF1', status: 'confirmado_gps', observacao: 'ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)',
+      evidencia: 'rota_outra_placa', distParadaM: 25, placaExecutora: 'TOS1H26',
+      chegada: '2026-08-23T10:00:00.000Z', saida: '2026-08-23T10:10:00.000Z', tempoParadaMin: 10,
+    }),
+    detalheFixture({ nf: 'NF2', observacao: 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA' }),
+  ]
+
+  it('com opcoes.placaExecutora: coluna PLACA EXECUTORA no fim, preenchida so na NF de rodizio; evidencia legivel', async () => {
+    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true, placaExecutora: true })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    const wsPlaca = wb.getWorksheet('ABC1234')!
+    expect((wsPlaca.getRow(3).values as unknown[]).slice(1)).toEqual([...COLUNAS_DETALHE_PLACA, COLUNA_PLACA_EXECUTORA])
+    expect(COLUNA_PLACA_EXECUTORA).toBe('PLACA EXECUTORA')
+    const l1 = (wsPlaca.getRow(4).values as unknown[]).slice(1)
+    expect(l1[7]).toBe('ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)')
+    expect(l1[10]).toBe('ROTA EXECUTADA POR OUTRA PLACA')
+    expect(l1[12]).toBe('TOS1H26')
+    const l2 = (wsPlaca.getRow(5).values as unknown[]).slice(1)
+    expect(l2[12] ?? '').toBe('')
+    expect(wsPlaca.autoFilter).toBe('A3:M5')
+    const resumo = String(wb.worksheets[0].getCell(4, 1).value)
+    expect(resumo).toContain('TAXA DE CONFIRMAÇÃO: 50%')
+  })
+
+  it('sem a opcao (Rio Quality): colunas intactas', async () => {
+    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe)
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    const wsPlaca = wb.getWorksheet('ABC1234')!
+    expect((wsPlaca.getRow(3).values as unknown[]).slice(1)).toEqual([...COLUNAS_DETALHE_PLACA])
   })
 })
