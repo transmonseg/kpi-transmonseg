@@ -94,4 +94,17 @@ describe('montarTemRastreadorPorPlaca', () => {
     expect(r.get('AAA1A11')).toBe(true)
     expect(r.get('BBB2B22')).toBe(false)
   })
+
+  // Achado real 26/09 (grupo, KPI de 25/09): XXX0000 e' a placa
+  // PROVISORIA/generica da Escala/Romaneio da Nutry Max quando a carga ainda
+  // nao tem caminhao definido -- nao e' um veiculo de verdade, nunca teve
+  // rastreador. Mesmo com cv/ponte respondendo por acidente (texto casando
+  // por coincidencia), tem que sair sem rastreador sempre -- ver
+  // PLACA_GENERICA_SEM_RASTREADOR em constants.ts.
+  it('XXX0000 (placa generica/provisoria): sempre sem rastreador, mesmo com cv E ponte respondendo', () => {
+    const cvPorPlaca = new Map([['XXX0000', 'cv-9']])
+    const horarioBasePorPlaca = new Map([['XXX0000', { paradas: [] }]])
+    const r = montarTemRastreadorPorPlaca(['XXX0000'], cvPorPlaca, horarioBasePorPlaca, new Set())
+    expect(r.get('XXX0000')).toBe(false)
+  })
 })

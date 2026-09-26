@@ -11,6 +11,7 @@
 // (`SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO`).
 import { createServiceClient } from '@/lib/supabase/service'
 import { normPlaca } from '@/lib/unitrac-api'
+import { PLACA_GENERICA_SEM_RASTREADOR } from './constants'
 
 /** Formato exato da linha em `kpi_placa_sem_rastreador` (colunas da migration,
  *  snake_case -- o que o PostgREST devolve de `select('*')`). */
@@ -71,6 +72,12 @@ export function montarTemRastreadorPorPlaca(
 ): Map<string, boolean> {
   return new Map(placasNorm.map(p => [
     p,
-    placasSemRastreador.has(p) ? false : (cvPorPlaca.has(p) || horarioBasePorPlaca.has(p)),
+    // Achado real 26/09 (grupo, KPI de 25/09): XXX0000 nao e' veiculo -- vence
+    // qualquer fonte de dado, mesmo padrao da declaracao manual acima (e
+    // roda ANTES dela: nao precisa de cadastro em kpi_placa_sem_rastreador
+    // pra uma placa que nunca vai ser real).
+    p === PLACA_GENERICA_SEM_RASTREADOR || placasSemRastreador.has(p)
+      ? false
+      : (cvPorPlaca.has(p) || horarioBasePorPlaca.has(p)),
   ]))
 }

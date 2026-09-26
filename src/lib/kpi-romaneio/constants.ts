@@ -8,6 +8,17 @@ export const COD_USER_NUTRIMAX = '4096'
  *  duplicar o literal. */
 export const EMPRESA_NUTRIMAX = 'NUTRY MAX'
 
+/** Placa PROVISORIA/generica que a Escala/Romaneio da Nutry Max usa quando a
+ *  carga ainda nao tem caminhao definido de verdade ("rota generica") --
+ *  achado real 26/09 (grupo, KPI de 25/09): XXX0000 saiu com as 8 NFs em
+ *  AGUARDANDO - ROTA EM ANDAMENTO porque, pro resto do pipeline, e' uma placa
+ *  igual a qualquer outra (pode ganhar `temRastreador=true` se a Unitrac ou a
+ *  ponte devolverem QUALQUER registro casado por esse texto literal). Nao e'
+ *  um veiculo -- nunca teve e nunca vai ter rastreador de verdade. Ja
+ *  normalizada (normPlaca so' maiuscula e tira nao-alfanumerico, sem
+ *  efeito aqui). */
+export const PLACA_GENERICA_SEM_RASTREADOR = 'XXX0000'
+
 /** Nome cadastrado da garagem/CD da Nutry Max no Unitrac -- aparece em
  *  `local_parada` como "BASE - BASE GARAGEM, ...". Diferente do Benassi
  *  ("BASE BENASSI"). Migrado de kpi-nutrimax/constants.ts (destruido na

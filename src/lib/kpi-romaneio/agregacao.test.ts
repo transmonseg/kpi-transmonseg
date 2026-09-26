@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { agregarPorCarga, montarDetalheEntregas } from './agregacao'
+import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento } from './agregacao'
 import { resolverParadas } from './unitrac'
 import type { LinhaEscala, LinhaGeocodificada, Visita } from './types'
 import type { AlvoApi } from '@/lib/unitrac-api'
@@ -740,6 +740,29 @@ describe('montarDetalheEntregas', () => {
         const paradasFrota = new Map([['TTL7D40', [longe]]])
         const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio, true, paradasFrota)
         expect(d.observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
+      })
+    })
+
+    // Achado real 26/09 (grupo, KPI de 25/09 entregue as 06:17 de 26/09):
+    // route.ts e o CLI (scripts/gerar-nutrimax-real-arquivo.ts) cada um
+    // calculava `data === hojeBR() && chegadaCd == null` por conta propria --
+    // `calcularDiaEmAndamento` e' agora a UNICA fonte de verdade dos dois,
+    // pra nao poder um chamador divergir do outro.
+    describe('calcularDiaEmAndamento (fonte unica pros dois chamadores de producao)', () => {
+      it('data === hoje e chegadaCd null: true (rota pode genuinamente estar em andamento)', () => {
+        expect(calcularDiaEmAndamento('2026-09-26', null, '2026-09-26')).toBe(true)
+      })
+
+      it('data === hoje mas chegadaCd ja preenchido: false (rota ja voltou pra base)', () => {
+        expect(calcularDiaEmAndamento('2026-09-26', '2026-09-26T12:00:00.000Z', '2026-09-26')).toBe(false)
+      })
+
+      it('data de um dia PASSADO (dia ja encerrado), mesmo com chegadaCd null: false -- nunca "aguardando" pra relatorio de dia que ja acabou', () => {
+        expect(calcularDiaEmAndamento('2026-09-25', null, '2026-09-26')).toBe(false)
+      })
+
+      it('data no FUTURO (relatorio adiantado por engano): false', () => {
+        expect(calcularDiaEmAndamento('2026-09-27', null, '2026-09-26')).toBe(false)
       })
     })
 

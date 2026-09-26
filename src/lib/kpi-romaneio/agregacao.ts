@@ -7,6 +7,24 @@ import { haversine } from '@/lib/utils/geo'
 import { RAIO_ENTREGA_METROS } from './constants'
 import { acessoSomentePorBarco } from './acesso-restrito'
 import { instanteDeFeitoISO } from './correcao-por-alvo'
+import { hojeBR } from '@/lib/data-br'
+
+// Achado real 26/09 (grupo, KPI de 25/09 entregue as 06:17 de 26/09): os dois
+// chamadores de producao (route.ts + scripts/gerar-nutrimax-real-arquivo.ts)
+// duplicavam `data === hojeBR() && chegadaCd == null` cada um por conta
+// propria -- unica fonte de verdade agora, pra nao poder um dos dois divergir
+// (copiar/colar errado, esquecer o `&& chegadaCd`, etc) e deixar
+// `diaEmAndamento` true pra um relatorio de um DIA JA ENCERRADO (o `hoje`
+// injetavel e' so' pra teste deterministico, producao sempre usa o default
+// real). Ver comentario de `diaEmAndamento` nas assinaturas abaixo pro
+// raciocinio completo de "por que so' isso nao basta pra acusar falha".
+export function calcularDiaEmAndamento(
+  data: string,
+  chegadaCd: string | null,
+  hoje: string = hojeBR(),
+): boolean {
+  return data === hoje && chegadaCd == null
+}
 
 function minutosEntre(a: string, b: string): number {
   return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 60000)

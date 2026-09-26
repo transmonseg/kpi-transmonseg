@@ -19,7 +19,7 @@ import { alvosDaData } from '../src/lib/kpi-romaneio/alvos-data'
 import { alvosEfetivos } from '../src/lib/kpi-romaneio/alvos-snapshot'
 import { paradasEfetivas } from '../src/lib/kpi-romaneio/paradas-snapshot'
 import { montarVisitas } from '../src/lib/kpi-romaneio/visitas'
-import { agregarPorCarga, montarDetalheEntregas } from '../src/lib/kpi-romaneio/agregacao'
+import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento } from '../src/lib/kpi-romaneio/agregacao'
 import { calcularKmPercorrido } from '../src/lib/kpi-romaneio/km'
 import { detectarDescasamentos } from '../src/lib/kpi-romaneio/avisos'
 import { gerarKpiRomaneioXlsx } from '../src/lib/kpi-romaneio/gerador-xlsx'
@@ -315,7 +315,7 @@ async function main() {
         temRastreadorPorPlaca.get(placaNorm) ?? false,
         paradasPorPlaca,
         resumo?.kmPercorrido ?? null,
-        data === hojeBR() && (resumo?.chegadaCd ?? null) == null,
+        calcularDiaEmAndamento(data, resumo?.chegadaCd ?? null),
         // Espelha o chamador real de producao (nutrimax/gerar/route.ts):
         // rotulo de ilha (verificarAcessoIlha) e parada curta compartilhada
         // (item 3b, detectarParadaCurtaCompartilhada) sao so' desta

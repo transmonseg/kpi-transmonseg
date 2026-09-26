@@ -17,7 +17,7 @@ import { alvosEfetivos } from '@/lib/kpi-romaneio/alvos-snapshot'
 import { paradasEfetivas } from '@/lib/kpi-romaneio/paradas-snapshot'
 import { detectarDescasamentos } from '@/lib/kpi-romaneio/avisos'
 import { montarVisitas } from '@/lib/kpi-romaneio/visitas'
-import { agregarPorCarga, montarDetalheEntregas } from '@/lib/kpi-romaneio/agregacao'
+import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento } from '@/lib/kpi-romaneio/agregacao'
 import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
 import { salvarGeracao, buscarGeracaoParaRegenerar } from '@/lib/kpi-romaneio/historico'
@@ -453,12 +453,12 @@ export async function POST(req: NextRequest) {
         // ponte de posicao continua real -- ver agregarPorCarga -- em vez
         // do fallback baseado so' em paradas da Unitrac).
         resumo?.kmPercorrido ?? null,
-        // Ver comentario de diaEmAndamento em agregacao.ts: so' "em
-        // andamento" quando o relatorio e' de HOJE e essa rota especifica
-        // ainda nao retornou pra base (chegadaCd null) -- dia passado com
-        // chegadaCd null e' outra coisa (rota que genuinamente nunca voltou),
-        // nao deve virar "aguardando".
-        data === hojeBR() && (resumo?.chegadaCd ?? null) == null,
+        // Ver comentario de diaEmAndamento/calcularDiaEmAndamento em
+        // agregacao.ts: so' "em andamento" quando o relatorio e' de HOJE e
+        // essa rota especifica ainda nao retornou pra base (chegadaCd null)
+        // -- dia passado com chegadaCd null e' outra coisa (rota que
+        // genuinamente nunca voltou), nao deve virar "aguardando".
+        calcularDiaEmAndamento(data, resumo?.chegadaCd ?? null),
         // Fix 12/09 (Finding 3): rotulo de ilha (Vila do Abraao) e' so' desta
         // pipeline -- ver comentario de verificarAcessoIlha em agregacao.ts.
         true,
