@@ -1,0 +1,71 @@
+data;placa;nf;esperado;fonte
+2026-09-23;RBG2D21;2386872;entregue;ocorrencias-24-09:Entregue no local
+2026-09-23;RBG8J72;2387832;entregue;ocorrencias-24-09:Entregue no local
+2026-09-23;RBI0J25;2385838;nao_entregue;ocorrencias-24-09:Não esteve no local
+2026-09-23;RBI1E10;2387602;nao_entregue;ocorrencias-24-09:Não esteve no local
+2026-09-23;RBI1J86;215996;entregue;ocorrencias-24-09:Entregue no local
+2026-09-23;RBJ2J67;2385766;entregue;ocorrencias-24-09:Entregue no local
+2026-09-23;RQM0C38;2387217;entregue;ocorrencias-24-09:Entregue no local
+2026-09-23;RQP0G77;2387295;entregue;ocorrencias-24-09:Entregue no local
+2026-09-23;RQP4A68;2387485;entregue;ocorrencias-24-09:Entregue no local, tempo em loja igual do relatorio
+2026-09-23;RQS2F79;2387015;nao_entregue;ocorrencias-24-09:Não esteve no local
+2026-09-23;RQS7H76;2387340;nao_entregue;ocorrencias-24-09:Não esteve no local
+2026-09-23;RQU0B47;2386999;entregue;ocorrencias-24-09:Entregue no local
+2026-09-23;RQU1B50;2387652;entregue;ocorrencias-24-09:Entregue no local
+2026-09-23;RQU1G17;2386278;entregue;ocorrencias-24-09:Entregue no local
+2026-09-23;RQU2E34;2386930;entregue;ocorrencias-24-09:Entregue no local, rastro oscilante
+2026-09-23;RQU3F71;2385889;nao_entregue;ocorrencias-24-09:Não esteve no local
+2026-09-23;RQU4B93;2386096;entregue;ocorrencias-24-09:Entregue no local
+2026-09-23;RQU5J45;215999;entregue;ocorrencias-24-09:Entregue pela Placa (TUS1B06)
+2026-09-23;RQV3G18;2385999;nao_entregue;ocorrencias-24-09:Não esteve no local
+2026-09-23;RQV6G75;2386024;entregue;ocorrencias-24-09:Entregue no local
+2026-09-23;RQV8A12;215995;nao_entregue;ocorrencias-24-09:Não esteve no local
+2026-09-23;TOS0F89;2386339;entregue;ocorrencias-24-09:Entregue no local
+2026-09-23;TOS4G92;2386477;nao_entregue;ocorrencias-24-09:Não esteve no local
+2026-09-23;TOS4J82;2386859;nao_entregue;ocorrencias-24-09:Não esteve no local
+2026-09-23;TTI6E43;2386481;entregue;ocorrencias-24-09:Entregue no local, tempo em loja igual do relatorio
+2026-09-23;TTI6E43;2386483;entregue;ocorrencias-24-09:Entregue no local, tempo em loja igual do relatorio
+2026-09-23;TTI6E43;2386492;entregue;ocorrencias-24-09:Entregue no local, tempo em loja igual do relatorio
+2026-09-24;RBF5G63;2388915;entregue;ocorrencias-24-09:Entregue no local
+2026-09-24;RBG2D21;2389318;nao_entregue;ocorrencias-24-09:Não foi ao local
+2026-09-24;RBG5G18;2388403;nao_entregue;ocorrencias-24-09:Não foi ao local
+2026-09-24;RBI0J25;2387949;nao_entregue;ocorrencias-24-09:Não foi ao local
+2026-09-24;RBI1E10;2389120;entregue;ocorrencias-24-09:Entregue no local
+2026-09-24;RQQ5B81;2388424;entregue;ocorrencias-24-09:Entregue no local
+2026-09-24;RQS7H76;2389481;entregue;ocorrencias-24-09:Entregue no local
+2026-09-24;RQU2G47;2387959;entregue;ocorrencias-24-09:entregue no local, parada de 10 minutos
+2026-09-24;RQU4B93;2388375;entregue;ocorrencias-24-09:Entregue no local
+2026-09-24;RQU6E83;2388060;entregue;ocorrencias-24-09:Entregue no local
+2026-09-24;RQV3G18;2388183;entregue;ocorrencias-24-09:Entregue no local
+2026-09-24;RQV6C22;2388435;entregue;ocorrencias-24-09:Entregue no local
+2026-09-24;RQV9E37;2388087;nao_entregue;ocorrencias-24-09:Não foi ao local
+2026-09-24;TOS0G53;2388202;entregue;ocorrencias-24-09:Entregue no local
+2026-09-24;TOS1H26;2387984;entregue;ocorrencias-24-09:Entregue no local
+2026-09-24;TOS4J82;2389452;nao_entregue;ocorrencias-24-09:Não foi ao local
+2026-09-24;TTH3C94;2388733;nao_entregue;ocorrencias-24-09:Não foi ao local
+2026-09-24;TTL5J17;216015;desatualizado;ocorrencias-24-09:Desatualizado
+2026-09-23;TTL5J17;2387462;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387463;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387464;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387465;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387466;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387467;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387468;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387469;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387470;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387471;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387472;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387473;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387474;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387475;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387476;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387477;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387478;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387479;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387480;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387481;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387482;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;TTL5J17;2387483;sem_rastreador;brief-fixo:TTL5J17 sem rastreador 23-09
+2026-09-23;RQQ5B81;2386225;nao_entregue;brief-fixo
+2026-09-24;RQU3F71;2388098;nao_entregue;brief-fixo
+2026-09-24;RQV9B26;2388278;nao_entregue;brief-fixo

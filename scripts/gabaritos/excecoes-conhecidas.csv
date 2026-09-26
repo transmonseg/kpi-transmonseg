@@ -1,0 +1,7 @@
+data;placa;nf;motivo;desde
+2026-09-23;RQV8A12;215995;placa RQV8A12 nao aparece no xlsx pos-deploy-23.xlsx (baseline codigo ad01b19) -- nao da pra checar status;2026-09-25
+2026-09-24;RBG2D21;2389318;baseline codigo ad01b19: ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PROXIMA, mas ground truth (grupo Ocorrencias 24-09) diz "Nao foi ao local";2026-09-25
+2026-09-24;RBG5G18;2388403;baseline codigo ad01b19: ENTREGUE - PARADA PROXIMA (500-800m) MAS DENTRO DA ROTA, mas ground truth diz "Nao foi ao local";2026-09-25
+2026-09-24;TTH3C94;2388733;baseline codigo ad01b19: ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PROXIMA, mas ground truth diz "Nao foi ao local";2026-09-25
+2026-09-24;RQU3F71;2388098;baseline codigo ad01b19: ENTREGUE POR OUTRA PLACA (RQU6E83) - CARGA TRANSFERIDA, mas ground truth diz "Nao foi ao local" (caso fixo do brief);2026-09-25
+2026-09-24;RQV9B26;2388278;baseline codigo ad01b19: ENTREGUE POR OUTRA PLACA (RQV9D97) - CARGA TRANSFERIDA, mas ground truth diz "Nao foi ao local" (caso fixo do brief);2026-09-25
