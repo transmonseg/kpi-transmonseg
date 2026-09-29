@@ -13,6 +13,8 @@ export async function salvarGeracao(params: {
   // mudanca) e' esperado -- so' nao oferece "regenerar" nesse caso.
   escalaStoragePath: string | null
   romaneioStoragePath: string | null
+  // PDF do Romaneio do Pao (opcional; null quando nao veio ou geracao antiga).
+  paoStoragePath?: string | null
 }): Promise<string> {
   const supabase = createServiceClient()
   const { data, error } = await supabase
@@ -25,6 +27,7 @@ export async function salvarGeracao(params: {
       arquivo_storage_path: params.arquivoStoragePath,
       escala_storage_path: params.escalaStoragePath,
       romaneio_storage_path: params.romaneioStoragePath,
+      pao_storage_path: params.paoStoragePath ?? null,
     })
     .select('id')
     .single()
@@ -37,6 +40,7 @@ export type GeracaoParaRegenerar = {
   dataReferencia: string
   escalaStoragePath: string | null
   romaneioStoragePath: string | null
+  paoStoragePath: string | null
 }
 
 /** Busca os dados minimos pra regenerar uma geracao passada -- so' o que
@@ -47,7 +51,7 @@ export async function buscarGeracaoParaRegenerar(id: string): Promise<GeracaoPar
   const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('kpi_romaneio_geracoes')
-    .select('id, data_referencia, escala_storage_path, romaneio_storage_path')
+    .select('id, data_referencia, escala_storage_path, romaneio_storage_path, pao_storage_path')
     .eq('id', id)
     .maybeSingle()
   if (error || !data) return null
@@ -56,5 +60,6 @@ export async function buscarGeracaoParaRegenerar(id: string): Promise<GeracaoPar
     dataReferencia: data.data_referencia,
     escalaStoragePath: data.escala_storage_path,
     romaneioStoragePath: data.romaneio_storage_path,
+    paoStoragePath: data.pao_storage_path ?? null,
   }
 }

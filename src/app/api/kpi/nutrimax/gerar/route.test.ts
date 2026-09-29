@@ -27,6 +27,14 @@ const cenario = vi.hoisted(() => ({
   // a placa da linha do pão no mock de parsePao (undefined = usa PLACA
   // padrão), pra simular carga do pão sem CARRO no PDF (placa vazia).
   placaPaoOverride: undefined as string | undefined,
+  // Task 2 (Pão guardado): geração devolvida por buscarGeracaoParaRegenerar,
+  // arquivos "no Storage" (path -> conteúdo; ausente = download falha),
+  // uploads feitos e último buffer que chegou ao parsePao.
+  geracao: null as null | Record<string, string | null>,
+  storage: new Map<string, string>(),
+  uploads: [] as string[],
+  uploadPaoErro: false,
+  paoBufRecebido: null as string | null,
 }))
 
 // Task 2 (romaneio do pão): mocks de TODO módulo com efeito colateral
@@ -86,7 +94,8 @@ vi.mock('@/lib/kpi-romaneio/parse-romaneio', () => ({
   parseRomaneio: async () => (cenario.romaneioVazio ? [] : [linhaNutrimax(), ...cenario.linhasNutrimaxExtras]),
 }))
 vi.mock('@/lib/kpi-romaneio/parse-pao', () => ({
-  parsePao: async () => {
+  parsePao: async (buf: Buffer) => {
+    cenario.paoBufRecebido = buf.toString()
     if (cenario.paoErro) throw cenario.paoErro
     return { linhas: [linhaPao({ placa: cenario.placaPaoOverride ?? PLACA })], escala: [escalaSintetica()] }
   },
@@ -116,7 +125,7 @@ vi.mock('@/lib/kpi-romaneio/base-horarios', async (orig) => ({
 }))
 vi.mock('@/lib/kpi-romaneio/historico', () => ({
   salvarGeracao: vi.fn(async () => 'geracao-fake-id'),
-  buscarGeracaoParaRegenerar: async () => null,
+  buscarGeracaoParaRegenerar: async () => cenario.geracao,
 }))
 vi.mock('@/lib/kpi-romaneio/alvos-snapshot', () => ({
   alvosEfetivos: async (_c: string, _d: string, _h: string, daApi: unknown[]) => daApi,
@@ -125,14 +134,23 @@ vi.mock('@/lib/supabase/service', () => ({
   createServiceClient: () => ({
     storage: {
       from: () => ({
-        upload: async () => ({ error: null }),
-        download: async () => ({ data: null, error: null }),
+        upload: async (path: string) => {
+          if (cenario.uploadPaoErro && path.endsWith('-pao.pdf')) return { error: { message: 'boom' } }
+          cenario.uploads.push(path)
+          return { error: null }
+        },
+        download: async (path: string) => {
+          const c = cenario.storage.get(path)
+          if (c === undefined) return { data: null, error: { message: 'nao achou' } }
+          return { data: new Blob([c]), error: null }
+        },
       }),
     },
   }),
 }))
 
 const { POST, narrowGeoMotivo } = await import('./route')
+const { salvarGeracao: salvarGeracaoMock } = await import('@/lib/kpi-romaneio/historico')
 
 // Finding 8 (fix wave 12/09): geoMotivo em types.ts foi estreitado pra union
 // de 2 literais -- este helper e' o ponto onde o `motivo` (string solto,
@@ -729,5 +747,76 @@ describe('POST /api/kpi/nutrimax/gerar -- histórico não conta cargas do pão (
     expect(res.status).toBe(200)
 
     expect(salvarSpy).toHaveBeenCalledWith(expect.objectContaining({ qtdCargas: 1 }))
+  })
+})
+
+
+describe('POST /api/kpi/nutrimax/gerar -- guarda e regenera o PDF do Pão', () => {
+  beforeEach(() => {
+    cenario.geracao = null
+    cenario.storage = new Map()
+    cenario.uploads = []
+    cenario.uploadPaoErro = false
+    cenario.paoBufRecebido = null
+    cenario.paoErro = null
+    vi.mocked(salvarGeracaoMock).mockClear()
+  })
+  const req = (fd: FormData) => new Request('http://localhost/api/kpi/nutrimax/gerar', { method: 'POST', body: fd }) as never
+  const geracaoBase = { id: 'g1', dataReferencia: '2026-09-15', escalaStoragePath: null, romaneioStoragePath: 'p-romaneio.pdf', paoStoragePath: null }
+  const regen = () => { const fd = new FormData(); fd.set('regenerarDeId', 'g1'); return req(fd) }
+
+  it('upload novo com Pão grava -pao.pdf e passa paoStoragePath ao salvarGeracao', async () => {
+    const res = await POST(montarRequest(true) as never)
+    expect(res.status).toBe(200)
+    const pao = cenario.uploads.find(p => p.endsWith('-pao.pdf'))
+    expect(pao).toBeDefined()
+    expect(vi.mocked(salvarGeracaoMock).mock.calls[0][0]).toMatchObject({ paoStoragePath: pao })
+  })
+
+  it('falha no upload do Pão só loga: geração segue, escala/romaneio guardados, paoStoragePath null', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    cenario.uploadPaoErro = true
+    const res = await POST(montarRequest(true) as never)
+    expect(res.status).toBe(200)
+    const arg = vi.mocked(salvarGeracaoMock).mock.calls[0][0]
+    expect(arg.paoStoragePath).toBeNull()
+    expect(arg.romaneioStoragePath).toMatch(/-romaneio\.pdf$/)
+    errSpy.mockRestore()
+  })
+
+  it('sem Pão no upload: paoStoragePath null', async () => {
+    await POST(montarRequest(false) as never)
+    expect(vi.mocked(salvarGeracaoMock).mock.calls[0][0].paoStoragePath).toBeNull()
+  })
+
+  it('regenerar geração antiga (sem pao_storage_path) segue sem Pão', async () => {
+    cenario.geracao = { ...geracaoBase }
+    cenario.storage.set('p-romaneio.pdf', 'romaneio')
+    const res = await POST(regen())
+    expect(res.status).toBe(200)
+    expect(cenario.paoBufRecebido).toBeNull()
+    expect(vi.mocked(salvarGeracaoMock).mock.calls[0][0].paoStoragePath).toBeNull()
+  })
+
+  it('regenerar geração nova baixa o Pão, passa ao parsePao e reaproveita o path', async () => {
+    cenario.geracao = { ...geracaoBase, paoStoragePath: 'p-pao.pdf' }
+    cenario.storage.set('p-romaneio.pdf', 'romaneio')
+    cenario.storage.set('p-pao.pdf', 'conteudo-do-pao')
+    const res = await POST(regen())
+    expect(res.status).toBe(200)
+    expect(cenario.paoBufRecebido).toBe('conteudo-do-pao')
+    expect(cenario.uploads).toHaveLength(0)
+    expect(vi.mocked(salvarGeracaoMock).mock.calls[0][0].paoStoragePath).toBe('p-pao.pdf')
+  })
+
+  it('download do Pão falha na regeneração: regenera sem Pão e loga aviso', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    cenario.geracao = { ...geracaoBase, paoStoragePath: 'p-pao.pdf' }
+    cenario.storage.set('p-romaneio.pdf', 'romaneio')
+    const res = await POST(regen())
+    expect(res.status).toBe(200)
+    expect(cenario.paoBufRecebido).toBeNull()
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
   })
 })

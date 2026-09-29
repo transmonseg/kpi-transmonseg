@@ -91,10 +91,12 @@ export async function POST(req: NextRequest) {
   // 2026-09-15-motor-confirmacao-romaneio-pao) -- OPCIONAL, igual Escala.
   // Só existe no branch de upload novo: `regenerarDeId` (baixa PDFs
   // antigos do Storage) não guarda o pão, então regenerar uma geração
-  // antiga sai igual a antes, sem o pão (fora do escopo desta fase).
+  // antiga sai igual a antes, sem o pão; gerações novas guardam o Pão
+  // (pao_storage_path) e regeneram completas.
   let romaneioPaoBuf: Buffer | null = null
   let escalaStoragePathExistente: string | null = null
   let romaneioStoragePathExistente: string | null = null
+  let paoStoragePathExistente: string | null = null
 
   if (typeof regenerarDeId === 'string' && regenerarDeId) {
     const geracao = await buscarGeracaoParaRegenerar(regenerarDeId)
@@ -117,6 +119,21 @@ export async function POST(req: NextRequest) {
     romaneioBuf = Buffer.from(await romaneioDl.data.arrayBuffer())
     escalaStoragePathExistente = geracao.escalaStoragePath
     romaneioStoragePathExistente = geracao.romaneioStoragePath
+    // Pão guardado (migration 20260929000000): baixa e usa. Falha no
+    // download regenera sem Pão, com aviso -- nunca derruba a regeneração.
+    if (geracao.paoStoragePath) {
+      try {
+        const paoDl = await svc.storage.from('kpi-romaneio-inputs').download(geracao.paoStoragePath)
+        if (paoDl.error || !paoDl.data) {
+          console.warn(`Aviso: PDF do Pão guardado não pôde ser baixado (${geracao.paoStoragePath}); regenerando sem o Pão.`, paoDl.error?.message ?? 'sem dados')
+        } else {
+          romaneioPaoBuf = Buffer.from(await paoDl.data.arrayBuffer())
+          paoStoragePathExistente = geracao.paoStoragePath
+        }
+      } catch (err) {
+        console.warn(`Aviso: erro ao baixar o PDF do Pão (${geracao.paoStoragePath}); regenerando sem o Pão.`, err)
+      }
+    }
   } else {
     data = String(form.get('data') ?? '')
     const escalaFile = form.get('escala')
@@ -594,6 +611,7 @@ export async function POST(req: NextRequest) {
     const svc = createServiceClient()
     let escalaStoragePath = escalaStoragePathExistente
     let romaneioStoragePath = romaneioStoragePathExistente
+    let paoStoragePath = paoStoragePathExistente
     if (!romaneioStoragePath) {
       const prefixo = `nutrimax/${data}/${crypto.randomUUID()}`
       romaneioStoragePath = `${prefixo}-romaneio.pdf`
@@ -609,6 +627,17 @@ export async function POST(req: NextRequest) {
         escalaStoragePath = null
         romaneioStoragePath = null
       }
+      // Pão: falha só loga e segue (não invalida escala/romaneio guardados).
+      if (romaneioPaoBuf) {
+        try {
+          const caminhoPao = `${prefixo}-pao.pdf`
+          const r = await svc.storage.from('kpi-romaneio-inputs').upload(caminhoPao, romaneioPaoBuf, { contentType: 'application/pdf' })
+          if (r.error) console.error('Erro ao guardar PDF do Pão no Storage:', r.error.message)
+          else paoStoragePath = caminhoPao
+        } catch (err) {
+          console.error('Erro ao guardar PDF do Pão no Storage:', err)
+        }
+      }
     }
 
     await salvarGeracao({
@@ -619,6 +648,7 @@ export async function POST(req: NextRequest) {
       arquivoStoragePath: null,
       escalaStoragePath,
       romaneioStoragePath,
+      paoStoragePath,
     })
   } catch (err) {
     console.error('Erro ao salvar histórico de geração:', err)

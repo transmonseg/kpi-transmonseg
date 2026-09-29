@@ -42,7 +42,19 @@ describe('salvarGeracao', () => {
       arquivo_storage_path: null,
       escala_storage_path: 'nutrimax/2026-08-23/abc/escala.pdf',
       romaneio_storage_path: 'nutrimax/2026-08-23/abc/romaneio.pdf',
+      pao_storage_path: null,
     })
+  })
+
+  it('grava pao_storage_path quando existe', async () => {
+    const mockSingle = vi.fn().mockResolvedValue({ data: { id: 'g3' }, error: null })
+    const mockInsert = vi.fn().mockReturnValue({ select: vi.fn().mockReturnValue({ single: mockSingle }) })
+    vi.mocked(createServiceClient).mockReturnValue({ from: vi.fn().mockReturnValue({ insert: mockInsert }) } as any)
+    await salvarGeracao({
+      cliente: 'nutrimax', dataReferencia: '2026-09-29', geradoPor: null, qtdCargas: 1,
+      arquivoStoragePath: null, escalaStoragePath: null, romaneioStoragePath: 'r.pdf', paoStoragePath: 'x-pao.pdf',
+    })
+    expect(mockInsert.mock.calls[0][0].pao_storage_path).toBe('x-pao.pdf')
   })
 
   it('lança erro quando inserção falha', async () => {
@@ -95,6 +107,7 @@ describe('salvarGeracao', () => {
       arquivo_storage_path: null,
       escala_storage_path: null,
       romaneio_storage_path: null,
+      pao_storage_path: null,
     })
   })
 })
@@ -111,6 +124,7 @@ describe('buscarGeracaoParaRegenerar', () => {
         data_referencia: '2026-08-23',
         escala_storage_path: 'nutrimax/2026-08-23/abc/escala.pdf',
         romaneio_storage_path: 'nutrimax/2026-08-23/abc/romaneio.pdf',
+        pao_storage_path: 'nutrimax/2026-08-23/abc-pao.pdf',
       },
       error: null,
     })
@@ -126,6 +140,7 @@ describe('buscarGeracaoParaRegenerar', () => {
       dataReferencia: '2026-08-23',
       escalaStoragePath: 'nutrimax/2026-08-23/abc/escala.pdf',
       romaneioStoragePath: 'nutrimax/2026-08-23/abc/romaneio.pdf',
+      paoStoragePath: 'nutrimax/2026-08-23/abc-pao.pdf',
     })
   })
 
@@ -152,5 +167,6 @@ describe('buscarGeracaoParaRegenerar', () => {
     const r = await buscarGeracaoParaRegenerar('geracao-antiga')
     expect(r?.escalaStoragePath).toBeNull()
     expect(r?.romaneioStoragePath).toBeNull()
+    expect(r?.paoStoragePath).toBeNull()
   })
 })
