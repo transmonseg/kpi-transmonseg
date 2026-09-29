@@ -543,6 +543,67 @@ function acharParadaUnitracPropria(
   return melhor ? { parada: melhor.parada, distParadaM: melhor.dist, forte: melhor.forte } : null
 }
 
+// Plano 2026-09-28 (recuperar pendentes com prova forte, estudo 26/09 secao
+// 5): parada da PROPRIA placa -- crua da Unitrac OU da ponte (GPS continuo),
+// as duas listas juntas -- perto o bastante de um ponto da NF (geocode
+// confiavel ou cadastro Unitrac) e longa o bastante pra valer como prova de
+// presenca. `ref` diz qual ponto da NF ficou mais perto (vira a EVIDÊNCIA).
+type ParadaProvada = { parada: UnitracParadaRow; distM: number; ref: 'geo' | 'cad' }
+
+function cadastroDoAlvo(alvo: AlvoApi | undefined): { lat: number; lng: number } | null {
+  return alvo && coordValidaCadastro(alvo.pontoLat) && coordValidaCadastro(alvo.pontoLng)
+    ? { lat: alvo.pontoLat as number, lng: alvo.pontoLng as number }
+    : null
+}
+
+function duracaoParadaMin(p: UnitracParadaRow): number {
+  return (new Date(p.fim_real ?? p.saida ?? p.chegada).getTime() - new Date(p.chegada).getTime()) / 60_000
+}
+
+/** Melhor parada FORA_BASE com duracao >= `duracaoMinMin` e centro a <=
+ *  `raioM` do geocode confiavel ou do cadastro -- a mais perto vence (empate:
+ *  a mais longa). `outrosPontosDaPlaca` != null descarta parada a <=
+ *  RAIO_OUTRO_CLIENTE_EXPLICA_M de outro cliente (endereco diferente) da
+ *  placa, mesmo criterio da R2; null = sem esse descarte. */
+function acharParadaPropriaProvada(
+  linha: LinhaGeocodificada,
+  cadastro: { lat: number; lng: number } | null,
+  paradas: UnitracParadaRow[],
+  raioM: number,
+  duracaoMinMin: number,
+  outrosPontosDaPlaca: PontoReferenciaPlacaNf[] | null,
+): ParadaProvada | null {
+  const geo = linha.geoConfiavel !== false && linha.lat != null && linha.lng != null
+    ? { lat: linha.lat, lng: linha.lng }
+    : null
+  if (geo == null && cadastro == null) return null
+  let melhor: (ParadaProvada & { duracaoMin: number }) | null = null
+  for (const p of paradas) {
+    if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
+    const duracaoMin = duracaoParadaMin(p)
+    if (duracaoMin < duracaoMinMin) continue
+    const distGeo = geo ? haversine(p.lat, p.lng, geo.lat, geo.lng) : Infinity
+    const distCad = cadastro ? haversine(p.lat, p.lng, cadastro.lat, cadastro.lng) : Infinity
+    const distM = Math.min(distGeo, distCad)
+    if (distM > raioM) continue
+    if (outrosPontosDaPlaca && outrosPontosDaPlaca
+      .filter(o => o.endereco !== linha.endereco)
+      .some(o => haversine(p.lat as number, p.lng as number, o.lat, o.lng) <= RAIO_OUTRO_CLIENTE_EXPLICA_M)) continue
+    const ganha = !melhor || distM < melhor.distM || (distM === melhor.distM && duracaoMin > melhor.duracaoMin)
+    if (ganha) melhor = { parada: p, distM, ref: distCad < distGeo ? 'cad' : 'geo', duracaoMin }
+  }
+  return melhor ? { parada: melhor.parada, distM: melhor.distM, ref: melhor.ref } : null
+}
+
+// Task 1 (plano 28/09): 'PARADA COMPARTILHADA - REVISAR' (horario emprestado
+// do vizinho) vira ENTREGUE quando ha' prova forte -- alvo Unitrac feito, ou
+// parada da propria placa >=3 min a <=100 m. SEM o descarte de "outro cliente
+// a <=150 m": na parada compartilhada o vizinho esta' perto por definicao (e'
+// exatamente o que fazia a R2 descartar RQV3J99/2393491, 10 min a 9 m).
+const DURACAO_MIN_COMPARTILHADA_PROVADA_MIN = 3
+const RAIO_COMPARTILHADA_PROVADA_M = 100
+const OBS_COMPARTILHADA_APROXIMADA = 'ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)'
+
 // Task 1 (plano 2026-09-26): rotulos de "ENTREGUE com ressalva" que, com
 // `modoPrecisao`, deixavam de contar como entregue -- viravam REVISAR (status
 // pendente, horario preservado). Aplicado so' no FIM da cadeia (depois de R2
@@ -1777,6 +1838,36 @@ export function montarDetalheEntregas(
       observacao = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
     }
 
+    // Task 1 (plano 28/09): parada compartilhada que o bloco final de
+    // `modoPrecisao` rebaixaria pra REVISAR -- com prova forte confirma. Status
+    // ja' e' confirmado (unitrac ou gps) aqui; limpar a observacao basta pra
+    // nao rebaixar. (b) parada propria vence (a): da' o horario real.
+    let paradaProvada: ParadaProvada | null = null
+    let paradaFeitoCompartilhada: { parada: UnitracParadaRow; distParadaM: number } | null = null
+    if (modoPrecisao && observacao === OBS_COMPARTILHADA_APROXIMADA) {
+      const cruasDaPlaca = paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []
+      const provada = acharParadaPropriaProvada(
+        linha, cadastroDoAlvo(alvo), [...cruasDaPlaca, ...paradasProprias],
+        RAIO_COMPARTILHADA_PROVADA_M, DURACAO_MIN_COMPARTILHADA_PROVADA_MIN, null,
+      )
+      if (provada) {
+        paradaProvada = provada
+        observacao = null
+        chegada = provada.parada.chegada
+        saida = provada.parada.fim_real ?? provada.parada.saida ?? provada.parada.chegada
+        tempoParadaMin = minutosEntre(chegada, saida)
+      } else if (confirmadoUnitrac && alvo) {
+        observacao = null
+        paradaFeitoCompartilhada = acharParadaUnitracParaFeito(linha, alvo, cruasDaPlaca)
+        if (paradaFeitoCompartilhada) {
+          const p = paradaFeitoCompartilhada.parada
+          chegada = p.chegada
+          saida = p.fim_real ?? p.saida ?? p.chegada
+          tempoParadaMin = minutosEntre(chegada, saida)
+        }
+      }
+    }
+
     // Task 5 (plano 24/09, requisito P0 da Ana: "expor origem, método e
     // distância; não equiparar parada em rua semelhante a entrega") --
     // EvidenciaNf: mesma precedência documentada no comentário do tipo
@@ -1795,6 +1886,12 @@ export function montarDetalheEntregas(
     } else if (paradaPropriaConfirmada) {
       evidencia = 'parada_unitrac_propria'
       distParadaM = Math.round(paradaPropriaConfirmada.distParadaM)
+    } else if (paradaProvada) {
+      evidencia = paradaProvada.ref === 'cad' ? 'parada_no_cadastro_unitrac' : 'parada_no_endereco'
+      distParadaM = Math.round(paradaProvada.distM)
+    } else if (paradaFeitoCompartilhada) {
+      evidencia = 'alvo_feito_unitrac'
+      distParadaM = Math.round(paradaFeitoCompartilhada.distParadaM)
     } else if (nfEscalaDivergente) {
       // Task 4: nem confirmacao nem "nao foi" -- a evidencia que temos e' de
       // que a ESCALA errou a placa, nao sobre esta entrega em si. Sem

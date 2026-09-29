@@ -3886,3 +3886,142 @@ describe('gerarMotivo/calcularConfianca (Task 3, plano 26/09)', () => {
     expect(d.motivo).toBe('Carga sem placa no romaneio — conferir com a operação')
   })
 })
+
+// Plano 2026-09-28 (recuperar pendentes com prova forte). Chamada com TODAS
+// as flags da Nutry Max ligadas (mesmos posicionais de route.ts).
+function chamarNutryMax(
+  linhas: LinhaGeocodificada[],
+  opts: {
+    placa?: string
+    alvos?: AlvoApi[]
+    visitasPorNf?: Map<string, Visita>
+    paradasPorOutraPlaca?: Map<string, UnitracParadaRow[]>
+    paradasUnitracCruasPropriaPlaca?: Map<string, UnitracParadaRow[]>
+    todasLinhasDaPlacaNoDia?: LinhaGeocodificada[]
+    kmPercorrido?: number | null
+    modoPrecisao?: boolean
+  } = {},
+) {
+  return montarDetalheEntregas(
+    linhas[0]?.carga ?? '93758', opts.placa ?? 'TTL7D40', linhas,
+    opts.alvos ?? [],
+    opts.visitasPorNf ?? new Map(),
+    { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null },
+    true,
+    opts.paradasPorOutraPlaca ?? new Map(),
+    opts.kmPercorrido ?? null,
+    false, // diaEmAndamento
+    true, // verificarAcessoIlha
+    true, // detectarParadaCurtaCompartilhada
+    opts.paradasUnitracCruasPropriaPlaca ?? new Map(),
+    true, // tratarSemRastreadorNoDia
+    true, // desativarOutraPlaca
+    true, // confirmarPorParadaUnitracPropria
+    opts.todasLinhasDaPlacaNoDia,
+    false, // apagaoDeSinalPropriaPlaca
+    new Map(), // menorDistanciaTrajetoPorNf
+    true, // detectarEscalaDivergente
+    opts.modoPrecisao ?? true,
+    true, // reconhecerRodizio
+    new Map(), // linhasPorPlacaNoDia
+  )
+}
+const M_LAT = 1 / 111_195 // graus de latitude por metro
+
+function paradaForaBase(id: string, lat: number, lng: number, chegada: string, saida: string, placa = 'TTL7D40'): UnitracParadaRow {
+  return parada({ id, placa_norm: placa, classificacao: 'FORA_BASE', lat, lng, chegada, saida, fim_real: saida })
+}
+
+// Task 1: 'PARADA COMPARTILHADA - REVISAR' (viaVizinhanca) com prova forte
+// vira ENTREGUE. Casos reais: RQV3J99/2393491 26/09 (parada de 10 min a 9 m,
+// vizinho 2393490 a ~60 m -- por isso a R2 descarta, "explicada por outro
+// cliente"), RQU8D91/2383464 22/09 (alvo feito, 30 m), RBG2D21/2389318 (Ilha
+// Grande, equipe "nao foi" -- continua REVISAR).
+describe('Task 1 (plano 28/09) -- parada compartilhada com prova forte vira ENTREGUE', () => {
+  const vizinhanca = { chegada: '2026-09-26T10:00:00.000Z', saida: '2026-09-26T10:20:00.000Z' }
+  // NF1 (alvo) e NF2 (vizinho, a ~60 m) -- NF1 pegou o horario de NF2.
+  const nf1 = linha('NF1', { endereco: 'PC PADRE SEBASTIAO GASTALDI, 17', lat: -22.2, lng: -42.4 })
+  const nf2 = linha('NF2', { endereco: 'RUA LEVY JOSE TORRES, 10', lat: -22.2 + 60 * M_LAT, lng: -42.4 })
+  const visitas = () => new Map<string, Visita>([
+    ['NF1', { nf: 'NF1', ...vizinhanca, distanciaMetrosDoPonto: 0, viaVizinhanca: true }],
+    ['NF2', { nf: 'NF2', ...vizinhanca, distanciaMetrosDoPonto: 0 }],
+  ])
+
+  it('sem prova nenhuma continua PARADA COMPARTILHADA - REVISAR (comportamento atual)', () => {
+    const [d] = chamarNutryMax([nf1, nf2], { visitasPorNf: visitas() })
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PARADA COMPARTILHADA - REVISAR')
+  })
+
+  it('(a) alvo Unitrac da NF com situacao 1 (feito) -> ENTREGUE (caso RQU8D91/2383464)', () => {
+    const [d] = chamarNutryMax([nf1, nf2], { visitasPorNf: visitas(), alvos: [alvo('NF1', 1)] })
+    expect(d.status).toBe('confirmado_unitrac')
+    expect(d.observacao).toBeNull()
+  })
+
+  it('(b) parada crua da Unitrac da propria placa, 10 min a 9 m do geocode -> ENTREGUE com o horario DESSA parada (caso RQV3J99/2393491)', () => {
+    const cruas = new Map([['TTL7D40', [paradaForaBase('u1', -22.2 + 9 * M_LAT, -42.4, '2026-09-26T11:00:00.000Z', '2026-09-26T11:10:16.000Z')]]])
+    const [d] = chamarNutryMax([nf1, nf2], { visitasPorNf: visitas(), paradasUnitracCruasPropriaPlaca: cruas })
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBeNull()
+    expect(d.chegada).toBe('2026-09-26T11:00:00.000Z')
+    expect(d.saida).toBe('2026-09-26T11:10:16.000Z')
+    expect(d.tempoParadaMin).toBe(10)
+    expect(d.distParadaM).toBe(9)
+  })
+
+  it('(b) parada da PONTE da propria placa, 4 min a 80 m do cadastro Unitrac (geocode nao confiavel) -> ENTREGUE com o horario dessa parada', () => {
+    const nf1Ruim = { ...nf1, geoConfiavel: false, lat: -22.5, lng: -42.4 }
+    const alvos = [alvo('NF1', 0, { pontoLat: -22.2, pontoLng: -42.4 })]
+    const ponte = new Map([['TTL7D40', [paradaForaBase('b1', -22.2 + 80 * M_LAT, -42.4, '2026-09-26T12:00:00.000Z', '2026-09-26T12:04:00.000Z')]]])
+    const [d] = chamarNutryMax([nf1Ruim, nf2], { visitasPorNf: visitas(), alvos, paradasPorOutraPlaca: ponte })
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBeNull()
+    expect(d.chegada).toBe('2026-09-26T12:00:00.000Z')
+    expect(d.evidencia).toBe('parada_no_cadastro_unitrac')
+    expect(d.distParadaM).toBe(80)
+  })
+
+  it('(c) parada curta demais (2 min a 9 m) ou longe demais (10 min a 150 m) nao prova -- continua REVISAR', () => {
+    const cruas = new Map([['TTL7D40', [
+      paradaForaBase('curta', -22.2 + 9 * M_LAT, -42.4, '2026-09-26T11:00:00.000Z', '2026-09-26T11:02:00.000Z'),
+      paradaForaBase('longe', -22.2 + 150 * M_LAT, -42.4, '2026-09-26T12:00:00.000Z', '2026-09-26T12:10:00.000Z'),
+    ]]])
+    const [d] = chamarNutryMax([nf1, nf2], { visitasPorNf: visitas(), paradasUnitracCruasPropriaPlaca: cruas, alvos: [alvo('NF1', 0)] })
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PARADA COMPARTILHADA - REVISAR')
+    expect(d.chegada).toBe(vizinhanca.chegada)
+  })
+
+  it('(c) Review Focus RBG2D21/2389318 (Ilha Grande, "nao foi"): parada longa a ~450 m do cadastro e alvo situacao 98 -- continua REVISAR', () => {
+    const ilha = linha('2393163', { placa: 'RBG2D21', endereco: 'PRAIA DAS FLECHAS, S/N - GIPOIA, ANGRA DOS REIS', lat: -23.141088, lng: -44.167272, geoConfiavel: true })
+    const vizinho = linha('2393164', { placa: 'RBG2D21', endereco: 'R PROFESSORA ALICE KURI DA SILVA, 101 - ABRAO', lat: -23.140543, lng: -44.169382, geoConfiavel: true })
+    const alvos = [alvo('2393163', 98, { placaNorm: 'RBG2D21', pontoLat: -23.0, pontoLng: -44.3 })]
+    const vis = new Map<string, Visita>([
+      ['2393163', { nf: '2393163', ...vizinhanca, distanciaMetrosDoPonto: 0, viaVizinhanca: true }],
+      ['2393164', { nf: '2393164', ...vizinhanca, distanciaMetrosDoPonto: 0, viaVizinhanca: true }],
+    ])
+    const cruas = new Map([['RBG2D21', [paradaForaBase('cais', -23.0 + 451 * M_LAT, -44.3, '2026-09-26T09:00:00.000Z', '2026-09-26T09:35:00.000Z', 'RBG2D21')]]])
+    const detalhe = chamarNutryMax([ilha, vizinho], { placa: 'RBG2D21', visitasPorNf: vis, alvos, paradasUnitracCruasPropriaPlaca: cruas })
+    for (const d of detalhe) {
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe('PARADA COMPARTILHADA - REVISAR')
+    }
+  })
+
+  it('(d) modoPrecisao desligado: nada muda (rotulo antigo, horario do vizinho)', () => {
+    const cruas = new Map([['TTL7D40', [paradaForaBase('u1', -22.2 + 9 * M_LAT, -42.4, '2026-09-26T11:00:00.000Z', '2026-09-26T11:10:16.000Z')]]])
+    const [d] = chamarNutryMax([nf1, nf2], { visitasPorNf: visitas(), paradasUnitracCruasPropriaPlaca: cruas, modoPrecisao: false })
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBe('ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)')
+    expect(d.chegada).toBe(vizinhanca.chegada)
+  })
+
+  it('invariante: NF confirmada pela prova forte entra em contarConfirmadasPorCarga', () => {
+    const cruas = new Map([['TTL7D40', [paradaForaBase('u1', -22.2 + 9 * M_LAT, -42.4, '2026-09-26T11:00:00.000Z', '2026-09-26T11:10:16.000Z')]]])
+    const detalhe = chamarNutryMax([nf1, nf2], { visitasPorNf: visitas(), paradasUnitracCruasPropriaPlaca: cruas })
+    const confirmadas = detalhe.filter(d => d.status !== 'pendente')
+    expect(confirmadas.every(d => d.observacao == null || d.observacao.startsWith('ENTREGUE') || d.observacao.startsWith('TEMPO EM LOJA'))).toBe(true)
+    expect(contarConfirmadasPorCarga(detalhe).get('93758::TTL7D40')).toBe(confirmadas.length)
+  })
+})
