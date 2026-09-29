@@ -179,6 +179,15 @@ describe('aplicarCadastroNoturno', () => {
     expect((ups[0].arg as { o: unknown }).o).toEqual({ onConflict: 'endereco' })
   })
 
+  it('2a execucao no mesmo dia nao apaga o backup da 1a (append sem novo cabecalho)', async () => {
+    const caminho = join(dir, 'backup-antes-aplicar.csv')
+    const a = mockSvc({ cache: [linha({ endereco: 'RUA A, 1', lat: -22.6, lng: -43.2, confiavel: false, fonte: 'nominatim', motivo: 'longe' })] })
+    await aplicarCadastroNoturno(a.svc, [sug({})], { dirSaida: dir, log })
+    const b = mockSvc({ cache: [linha({ endereco: 'RUA B, 9', lat: -22.7, lng: -43.3, confiavel: false, fonte: 'nominatim', motivo: 'longe' })] })
+    await aplicarCadastroNoturno(b.svc, [sug({ endereco: 'RUA B, 9' })], { dirSaida: dir, log })
+    expect(readFileSync(caminho, 'utf-8')).toBe('endereco;lat;lng;confiavel;fonte;motivo\nRUA A, 1;-22.6;-43.2;false;nominatim;longe\nRUA B, 9;-22.7;-43.3;false;nominatim;longe\n')
+  })
+
   it('acima do teto: nenhum upsert, nenhum backup, loga excedeu o teto', async () => {
     const { svc, chamadas } = mockSvc()
     const r = await aplicarCadastroNoturno(svc, nSug(31), { dirSaida: dir, log })

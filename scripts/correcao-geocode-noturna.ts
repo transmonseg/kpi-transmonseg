@@ -27,7 +27,7 @@
 // nao rodou o KPI naquele dia). Qualquer outra falha (download, parse,
 // etc.) sai com codigo 1.
 import path from 'path'
-import { mkdirSync, writeFileSync } from 'fs'
+import { appendFileSync, existsSync, mkdirSync, writeFileSync } from 'fs'
 import { createServiceClient } from '../src/lib/supabase/service'
 import { hojeBR } from '../src/lib/data-br'
 import { rodarCorrecao, montarUpsertCadastro, csvBackupCache } from './corrigir-geocode-por-alvo'
@@ -134,7 +134,11 @@ export async function aplicarCadastroNoturno(
   mkdirSync(opcoes.dirSaida, { recursive: true })
   const caminhoBackup = path.join(opcoes.dirSaida, ARQUIVO_BACKUP)
   const backup = gravar.map(g => cacheAtual.get(g.endereco) ?? { endereco: g.endereco, lat: null, lng: null, confiavel: null, fonte: null, motivo: null })
-  writeFileSync(caminhoBackup, csvBackupCache(backup))
+  // Append: uma 2a execucao no mesmo dia (cron 03h50 e 04h50) nao pode apagar os
+  // valores anteriores guardados pela 1a. Cabecalho so' quando o arquivo e' novo.
+  const csv = csvBackupCache(backup)
+  if (existsSync(caminhoBackup)) appendFileSync(caminhoBackup, csv.split('\n').slice(1).join('\n'))
+  else writeFileSync(caminhoBackup, csv)
   log(`backup: ${backup.length} linhas em ${caminhoBackup}`)
 
   const gravados: string[] = []
