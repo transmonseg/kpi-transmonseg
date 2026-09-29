@@ -4406,6 +4406,34 @@ describe('montarDetalheEntregas -- rodizio prevalece sobre VEÍCULO SEM MOVIMENT
     }
   })
 
+  it('placa com pouco km mas alvo Unitrac feito em OUTRA NF do dia (operou): irmas pendentes NAO ganham NÃO SAIU DA BASE', () => {
+    const l = nfs(4)
+    const detalhe = montarDetalheEntregas(
+      '98837', 'RQU6E83', l, [alvo('DOC-OUTRA-NF', 1, { placaNorm: 'RQU6E83' })], new Map(), resumoCargaVazio,
+      true, new Map([['RQU6E83', [paradaNaBase]]]), 0.01, false,
+      true, true, new Map(), true, true, true, undefined, false, new Map(),
+      true, true, true, new Map(),
+    )
+    for (const d of detalhe) {
+      expect(d.observacao ?? '').not.toContain('NÃO SAIU DA BASE')
+      expect(d.evidencia).not.toBe('nao_saiu_da_base')
+    }
+  })
+
+  it('km desconhecido (null): mantem texto antigo SEM MOVIMENTO (conta na taxa), nunca NÃO SAIU DA BASE', () => {
+    const l = nfs(4)
+    const detalhe = montarDetalheEntregas(
+      '98837', 'RQU6E83', l, [], new Map(), resumoCargaVazio,
+      true, new Map([['RQU6E83', [paradaNaBase]]]), null, false,
+      true, true, new Map(), true, true, true, undefined, false, new Map(),
+      true, true, true, new Map(),
+    )
+    for (const d of detalhe) {
+      expect(d.observacao).toBe('VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA')
+      expect(d.evidencia).not.toBe('nao_saiu_da_base')
+    }
+  })
+
   it('placa que SAIU e rodou outra rota (km alto, parada fora da base): NAO e nao-saiu-da-base', () => {
     const l = nfs(4)
     const fora = parada({

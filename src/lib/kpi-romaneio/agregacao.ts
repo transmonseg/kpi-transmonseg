@@ -1660,9 +1660,20 @@ export function montarDetalheEntregas(
     if (observacao == null && status === 'pendente' && semMovimento && !placaRodizio) {
       // 29/09 (pedido Ana/dono): so' modoPrecisao (Nutry Max) troca o texto e
       // tira a NF da taxa; Rio Quality/Porte Frio mantem o texto antigo.
-      observacao = modoPrecisao
-        ? OBS_NAO_SAIU_DA_BASE
-        : 'VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA'
+      // Revisao final: 'nao saiu da base' (fora da taxa) so' com km CONHECIDO
+      // do GPS continuo e baixo; km nulo (dia fora das 48h, paradas
+      // incompletas) mantem o texto antigo, que CONTA na taxa. Placa com alvo
+      // Unitrac 'feito' no dia OPEROU: irmas seguem a classificacao normal.
+      const kmConhecidoBaixo = kmPercorrido != null
+        && (kmPercorrido < LIMITE_KM_SEM_MOVIMENTO
+          || (nuncaSaiuDaBase && kmPercorrido < LIMITE_KM_DESMENTE_NUNCA_SAIU_BASE))
+      if (modoPrecisao && placaTemAlvoFeitoNoDia) {
+        // operou: sem observacao, cai na classificacao normal abaixo
+      } else {
+        observacao = modoPrecisao && kmConhecidoBaixo
+          ? OBS_NAO_SAIU_DA_BASE
+          : 'VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA'
+      }
     }
     // Revisao final (item 1, plano 2026-09-26): com `modoPrecisao`, uma
     // visita FRACA (raio ampliado 500-800m, viaVizinhanca/horario emprestado,
