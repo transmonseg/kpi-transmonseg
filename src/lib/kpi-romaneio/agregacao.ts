@@ -532,9 +532,16 @@ function acharParadaUnitracPropria(
     : null
   if (geo == null && cadastro == null) return null
   let melhor: { parada: UnitracParadaRow; dist: number; duracaoMin: number; forte: boolean } | null = null
+  // Fix round 1 (medicao real 28/09): so' conta como PONTE a parada que nao e'
+  // o mesmo objeto de uma crua (quando resolverParadas escolhe a Unitrac, as
+  // "paradas da ponte" sao as proprias cruas -- nao ha' fonte independente).
+  // (mesmo objeto, ou mesmo id -- ids da Unitrac sao '<placa>-api-N', da ponte '<placa>-ponte-N').
+  const cruasSet = new Set(paradasCruas)
+  const cruasIds = new Set(paradasCruas.map(p => p.id))
+  const ponteIndependente = paradasPonte.filter(p => !cruasSet.has(p) && !cruasIds.has(p.id))
   const candidatasTodas = [
     ...paradasCruas.map(p => ({ p, daPonte: false })),
-    ...paradasPonte.map(p => ({ p, daPonte: true })),
+    ...ponteIndependente.map(p => ({ p, daPonte: true })),
   ]
   for (const { p, daPonte } of candidatasTodas) {
     if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
@@ -547,6 +554,17 @@ function acharParadaUnitracPropria(
       ? RAIO_R2_FORTE_CURTO_M
       : duracaoMin >= DURACAO_MIN_PARADA_FUNDIDA_MIN ? RAIO_PARADA_FUNDIDA_M : RAIO_PARADA_UNITRAC_PROPRIA_M
     if (dist > raio) continue
+    // Fix round 1 (FP real RQQ5B81/2386225 23/09, equipe "nao esteve no
+    // local"): parada da ponte so' vale quando a crua da Unitrac de fato
+    // FUNDIU paradas ali (crua sobreposta no tempo, mais longa e com centro
+    // deslocado) -- sem crua nenhuma nao ha' fusao pra corrigir.
+    if (daPonte && !paradasCruas.some(c => cruaFundiuEstaParada(c, p))) continue
+    // Fix round 1 (FP real RQV9B26/2392758 26/09, relatorio Unitrac: nunca
+    // parou no cliente): a tolerancia 300-350 m so' existe pra parada FUNDIDA.
+    // Se a ponte (fonte independente) viu a MESMA parada no mesmo lugar, nao
+    // houve fusao -- o centro esta' longe de verdade.
+    if (!daPonte && dist > RAIO_PARADA_UNITRAC_PROPRIA_M
+      && ponteIndependente.some(q => mesmaParadaFisica(p, q))) continue
     const explicadaPorOutroCliente = outrosPontosDaPlaca
       .filter(o => o.endereco !== linha.endereco)
       .some(o => haversine(p.lat as number, p.lng as number, o.lat, o.lng) <= RAIO_OUTRO_CLIENTE_EXPLICA_M)
@@ -558,6 +576,23 @@ function acharParadaUnitracPropria(
     if (ganha) melhor = { parada: p, dist, duracaoMin, forte }
   }
   return melhor ? { parada: melhor.parada, distParadaM: melhor.dist, forte: melhor.forte } : null
+}
+
+function sobrepoeNoTempo(a: UnitracParadaRow, b: UnitracParadaRow): boolean {
+  const ini = Math.max(new Date(a.chegada).getTime(), new Date(b.chegada).getTime())
+  const fim = Math.min(new Date(a.fim_real ?? a.saida ?? a.chegada).getTime(), new Date(b.fim_real ?? b.saida ?? b.chegada).getTime())
+  return fim > ini
+}
+// Mesmo raio curto da R2 forte: centros a <=100 m = mesmo lugar.
+function mesmaParadaFisica(a: UnitracParadaRow, b: UnitracParadaRow): boolean {
+  if (b.classificacao !== 'FORA_BASE' || a.lat == null || a.lng == null || b.lat == null || b.lng == null) return false
+  return sobrepoeNoTempo(a, b) && haversine(a.lat, a.lng, b.lat, b.lng) <= RAIO_R2_FORTE_CURTO_M
+}
+function cruaFundiuEstaParada(crua: UnitracParadaRow, ponte: UnitracParadaRow): boolean {
+  if (crua.classificacao !== 'FORA_BASE' || crua.lat == null || crua.lng == null || ponte.lat == null || ponte.lng == null) return false
+  return sobrepoeNoTempo(crua, ponte)
+    && duracaoParadaMin(crua) > duracaoParadaMin(ponte)
+    && haversine(crua.lat, crua.lng, ponte.lat, ponte.lng) > RAIO_R2_FORTE_CURTO_M
 }
 
 // Plano 2026-09-28 (recuperar pendentes com prova forte, estudo 26/09 secao
@@ -1799,8 +1834,14 @@ export function montarDetalheEntregas(
       confirmarPorParadaUnitracPropria && !paradaPropriaConfirmada && perdeuParadaCompartilhada
       && status === 'pendente' && observacao === OBS_PARADA_CURTA_OUTRO_ENDERECO
     ) {
+      // Fix round 1 (FP real RQQ5B81/2386225 23/09): com cadastro Unitrac, a
+      // distancia e' medida SO' contra ele (estudo 26/09, ranking 2: "a <=300
+      // m do cadastro") -- o geocode entra so' quando nao ha' cadastro. O caso
+      // real tinha parada da ponte a 23 m do geocode e a 4,2 km do cadastro.
+      const cadastroNf = cadastroDoAlvo(alvo)
       paradaProvadaOutroEndereco = acharParadaPropriaProvada(
-        linha, cadastroDoAlvo(alvo), [...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []), ...paradasProprias],
+        cadastroNf ? { ...linha, geoConfiavel: false } : linha, cadastroNf,
+        [...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []), ...paradasProprias],
         RAIO_PARADA_UNITRAC_PROPRIA_M, DURACAO_MIN_OUTRO_ENDERECO_PROVADO_MIN, pontosReferenciaDaPlaca,
       )
       if (paradaProvadaOutroEndereco) {

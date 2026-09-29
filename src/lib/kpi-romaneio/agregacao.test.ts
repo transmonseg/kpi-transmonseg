@@ -4214,3 +4214,59 @@ describe('Task 3 (plano 28/09) -- R2 tolera parada fundida da Unitrac e usa para
     expect(d.status).toBe('pendente')
   })
 })
+
+// Fix round 1 (medicao com dado real 22-26/09, plano 28/09): dados REAIS das
+// placas dumpados do pipeline (gerar-nutrimax-real-arquivo.ts) -- linhas,
+// alvos, visitas, paradas resolvidas (ponte/Unitrac) e paradas cruas.
+// Rejogados com as MESMAS flags do chamador de producao.
+import fixturePendentes from './agregacao.fixture-pendentes-2026-09.json'
+
+function rejogarPlacaReal(placa: keyof typeof fixturePendentes) {
+  const f = fixturePendentes[placa] as unknown as {
+    linhas: LinhaGeocodificada[]; alvos: AlvoApi[]; visitas: [string, Visita][]
+    paradas: UnitracParadaRow[]; cruas: UnitracParadaRow[]; temRastreador: boolean; apagao: boolean
+    menorDist: [string, number][]
+    resumos: Record<string, { motorista: string; saidaCd: string | null; chegadaCd: string | null; tempoOperacaoMin: number | null; kmPercorrido: number | null }>
+  }
+  const cargas = new Map<string, LinhaGeocodificada[]>()
+  for (const l of f.linhas) cargas.set(l.carga, [...(cargas.get(l.carga) ?? []), l])
+  const visitas = new Map(f.visitas)
+  return [...cargas.entries()].flatMap(([carga, linhas]) => {
+    const r = f.resumos[carga]
+    return montarDetalheEntregas(
+      carga, placa, linhas, f.alvos, visitas,
+      { motorista: r?.motorista ?? '', saidaCd: r?.saidaCd ?? null, chegadaCd: r?.chegadaCd ?? null, tempoOperacaoMin: r?.tempoOperacaoMin ?? null },
+      f.temRastreador, new Map([[placa, f.paradas]]), r?.kmPercorrido ?? null, false,
+      true, true, new Map([[placa, f.cruas]]), true, true, true, f.linhas, f.apagao, new Map(f.menorDist),
+      true, true, true, new Map([[placa, f.linhas]]),
+    )
+  })
+}
+
+describe('Fix round 1 (plano 28/09) -- casos reais da medicao 22-26/09', () => {
+  const nf = (placa: keyof typeof fixturePendentes, n: string) => rejogarPlacaReal(placa).find(d => d.nf === n)!
+
+  it('FP RQQ5B81/2386225 23/09 (equipe: "nao esteve no local"): parada da ponte a 23 m do geocode (cadastro a 4,2 km, nenhuma parada crua) NAO confirma', () => {
+    const d = nf('RQQ5B81', '2386225')
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR')
+  })
+
+  it('FP RQV9B26/2392758 26/09 (relatorio Unitrac: nunca parou no cliente): parada de 9 min a 326 m do cadastro que a PONTE viu no mesmo lugar (nao e fundida) NAO confirma', () => {
+    const d = nf('RQV9B26', '2392758')
+    expect(d.status).toBe('pendente')
+    expect(d.evidencia).not.toBe('parada_unitrac_propria')
+  })
+
+  it('TP TOS5E38/2393419 26/09 (relatorio Unitrac confirma): parada fundida a 310 m do cadastro, sem ponte independente -> ENTREGUE', () => {
+    const d = nf('TOS5E38', '2393419')
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBeNull()
+  })
+
+  it.each(['2393490', '2393491'])('TP RQV3J99/%s 26/09 (relatorio Unitrac confirma): parada compartilhada com prova forte -> ENTREGUE', (n) => {
+    const d = nf('RQV3J99', n)
+    expect(d.status).not.toBe('pendente')
+    expect(d.observacao).toBeNull()
+  })
+})
