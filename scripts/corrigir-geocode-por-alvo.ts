@@ -108,7 +108,7 @@ export async function rodarCorrecao(
   romaneioBuf: Buffer,
   data: string,
   opcoes: { aplicar: boolean; dirSaida: string },
-): Promise<{ sugestoes: number; rejeicoes: Record<string, number>; arquivos: string[] }> {
+): Promise<{ sugestoes: number; rejeicoes: Record<string, number>; arquivos: string[]; cadastro: SugestaoCadastro[] }> {
   const romaneio = await parseRomaneio(romaneioBuf)
   const placas = [...new Set(romaneio.map(l => normPlaca(l.placa)).filter(p => p !== ''))]
   const cache = await lerCache([...new Set(romaneio.map(l => l.endereco))])
@@ -136,7 +136,7 @@ export async function rodarCorrecao(
 
   if (!opcoes.aplicar) {
     console.log('(sem --aplicar: nada gravado)')
-    return { sugestoes: sugestoes.length, rejeicoes: cont, arquivos: [caminhoCorrecoes, caminhoDivergentes] }
+    return { sugestoes: sugestoes.length, rejeicoes: cont, arquivos: [caminhoCorrecoes, caminhoDivergentes], cadastro: cad.sugestoes }
   }
   const svc = createServiceClient()
   // Backup ANTES de gravar: estado atual das linhas que serao sobrescritas.
@@ -163,7 +163,7 @@ export async function rodarCorrecao(
   }
   console.log(`gravados ${ok}/${sugestoes.length}`)
   if (ok < sugestoes.length) throw new Error(`gravados apenas ${ok}/${sugestoes.length} no cache`)
-  return { sugestoes: sugestoes.length, rejeicoes: cont, arquivos: [caminhoCorrecoes, caminhoDivergentes] }
+  return { sugestoes: sugestoes.length, rejeicoes: cont, arquivos: [caminhoCorrecoes, caminhoDivergentes], cadastro: cad.sugestoes }
 }
 
 async function main() {

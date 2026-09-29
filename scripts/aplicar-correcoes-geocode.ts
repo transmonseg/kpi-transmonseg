@@ -89,7 +89,7 @@ const LAT_MAX_RJ = -20.7
 const LNG_MIN_RJ = -45.0
 const LNG_MAX_RJ = -40.9
 
-function coordenadaValidaRj(lat: number, lng: number): boolean {
+export function coordenadaValidaRj(lat: number, lng: number): boolean {
   return Number.isFinite(lat) && Number.isFinite(lng)
     && lat >= LAT_MIN_RJ && lat <= LAT_MAX_RJ
     && lng >= LNG_MIN_RJ && lng <= LNG_MAX_RJ
