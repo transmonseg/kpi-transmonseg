@@ -1646,7 +1646,15 @@ export function montarDetalheEntregas(
     if (observacao == null && status === 'pendente' && semRastreadorNoDia) {
       observacao = 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO'
     }
-    if (observacao == null && status === 'pendente' && semMovimento) {
+    // Task 1 (plano 2026-09-29, medicao-28-09 secao 3 -- RQU6E83 parada o dia
+    // todo, carga 98837 rodada pela RBI0J25): quando a carga ja' foi
+    // reconhecida como rodizio (`placaRodizio` -- escalaDivergente + >=5 NFs +
+    // UM unico veiculo cobrindo >=80%, mesmos criterios de sempre), o sintoma
+    // "sem movimento" da placa da escala nao descreve a entrega: a NF segue
+    // sem observacao e cai no bloco de rodizio/CONFERIR ESCALA mais abaixo
+    // (parada forte do executor por NF, teto de 4h, descarte por cliente do
+    // executor). Sem rodizio reconhecido, "sem movimento" continua igual.
+    if (observacao == null && status === 'pendente' && semMovimento && !placaRodizio) {
       observacao = 'VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA'
     }
     // Revisao final (item 1, plano 2026-09-26): com `modoPrecisao`, uma

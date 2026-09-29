@@ -4270,3 +4270,111 @@ describe('Fix round 1 (plano 28/09) -- casos reais da medicao 22-26/09', () => {
     expect(d.observacao).toBeNull()
   })
 })
+
+// Task 1 (plano 2026-09-29, medicao-28-09 secao 3): 28/09 a carga 98837 da
+// RQU6E83 (30 NFs) foi rodada pela RBI0J25 (parou perto de 29 dos 30
+// clientes) enquanto a RQU6E83 ficou parada o dia todo com rastreador vivo.
+// "VEÍCULO SEM MOVIMENTO" passava na frente do rodizio e as 30 NFs contavam
+// como erro. Rodizio (mesmos criterios: >=5 NFs, UM unico veiculo cobrindo
+// >=80%, parada forte por NF) agora prevalece; sem cobertura, continua sem
+// movimento.
+describe('montarDetalheEntregas -- rodizio prevalece sobre VEÍCULO SEM MOVIMENTO (Task 1, plano 29/09)', () => {
+  const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+  const DELTA_M = 1 / 111_195
+  const BASE = { lat: -22.80, lng: -43.30 }
+  const OBS_SEM_MOV = 'VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA'
+  const OBS_ESCALA = 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA'
+
+  function nfs(qtd: number): LinhaGeocodificada[] {
+    return Array.from({ length: qtd }, (_, i) => linha(`98837-${i + 1}`, {
+      carga: '98837', placa: 'RQU6E83', endereco: `RUA 98837 ${i + 1}`, clienteCodigo: `C98837${i}`,
+      lat: -22.40 + i * 0.01, lng: -42.90,
+    }))
+  }
+  function paradaEm(placa: string, l: LinhaGeocodificada, i: number, distM = 25, durMin = 10): UnitracParadaRow {
+    const inicio = new Date(Date.UTC(2026, 8, 28, 8, 0) + i * 20 * 60_000)
+    const fim = new Date(inicio.getTime() + durMin * 60_000)
+    return parada({
+      id: `${placa}-${l.nf}`, placa_norm: placa, classificacao: 'FORA_BASE',
+      lat: (l.lat as number) + distM * DELTA_M, lng: l.lng as number,
+      chegada: inicio.toISOString(), saida: fim.toISOString(), fim_real: fim.toISOString(),
+    })
+  }
+  const paradaNaBase = parada({
+    id: 'RQU6E83-base', placa_norm: 'RQU6E83', classificacao: 'BASE', lat: BASE.lat, lng: BASE.lng,
+    chegada: '2026-09-28T03:00:00.000Z', saida: '2026-09-28T23:00:00.000Z', fim_real: '2026-09-28T23:00:00.000Z',
+  })
+
+  function chamar(
+    linhas: LinhaGeocodificada[], outras: [string, UnitracParadaRow[]][],
+    opts: { reconhecerRodizio?: boolean; propriaSemParadas?: boolean } = {},
+  ) {
+    const frota = new Map<string, UnitracParadaRow[]>(outras)
+    if (!opts.propriaSemParadas) frota.set('RQU6E83', [paradaNaBase])
+    return montarDetalheEntregas(
+      '98837', 'RQU6E83', linhas, [], new Map(), resumoCargaVazio,
+      true, frota, 0.01, false,
+      true, true, new Map(),
+      true, true, true, undefined, false, new Map(),
+      true, // detectarEscalaDivergente
+      true, // modoPrecisao
+      opts.reconhecerRodizio ?? true,
+      new Map(),
+    )
+  }
+
+  it.each([
+    ['parada so na base', false],
+    ['sem parada nenhuma', true],
+  ])('(a) placa da escala parada (%s), RBI0J25 cobre 5 de 6: 5 ENTREGUE, a sem parada CONFERIR ESCALA', (_rot, propriaSemParadas) => {
+    const l = nfs(6)
+    const detalhe = chamar(l, [['RBI0J25', l.slice(0, 5).map((x, i) => paradaEm('RBI0J25', x, i))]], { propriaSemParadas })
+    for (const d of detalhe.slice(0, 5)) {
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.observacao).toBeNull()
+      expect(d.evidencia).toBe('rota_outra_placa')
+      expect(d.placaExecutora).toBe('RBI0J25')
+      expect(d.chegada).not.toBeNull()
+    }
+    expect(detalhe[5].status).toBe('pendente')
+    expect(detalhe[5].observacao).toBe(OBS_ESCALA)
+    expect(detalhe[5].placaExecutora ?? null).toBeNull()
+  })
+
+  it('(b) placa parada e nenhum veiculo cobre >=80% (3 de 6): todas VEÍCULO SEM MOVIMENTO', () => {
+    const l = nfs(6)
+    for (const d of chamar(l, [['RBI0J25', l.slice(0, 3).map((x, i) => paradaEm('RBI0J25', x, i))]])) {
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe(OBS_SEM_MOV)
+    }
+  })
+
+  it('(c) dois veiculos dividem a carga (50% cada): todas VEÍCULO SEM MOVIMENTO', () => {
+    const l = nfs(6)
+    const detalhe = chamar(l, [
+      ['RBI0J25', l.slice(0, 3).map((x, i) => paradaEm('RBI0J25', x, i))],
+      ['RQU2G47', l.slice(3).map((x, i) => paradaEm('RQU2G47', x, i))],
+    ])
+    for (const d of detalhe) {
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe(OBS_SEM_MOV)
+    }
+  })
+
+  it('(d) carga pequena (4 NFs) coberta 100%: nao reconhece, continua VEÍCULO SEM MOVIMENTO', () => {
+    const l = nfs(4)
+    for (const d of chamar(l, [['RBI0J25', l.map((x, i) => paradaEm('RBI0J25', x, i))]])) {
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe(OBS_SEM_MOV)
+    }
+  })
+
+  it('(e) opcao desligada: nada muda, todas VEÍCULO SEM MOVIMENTO', () => {
+    const l = nfs(6)
+    const detalhe = chamar(l, [['RBI0J25', l.slice(0, 5).map((x, i) => paradaEm('RBI0J25', x, i))]], { reconhecerRodizio: false })
+    for (const d of detalhe) {
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe(OBS_SEM_MOV)
+    }
+  })
+})
