@@ -603,6 +603,10 @@ function acharParadaPropriaProvada(
 const DURACAO_MIN_COMPARTILHADA_PROVADA_MIN = 3
 const RAIO_COMPARTILHADA_PROVADA_M = 100
 const OBS_COMPARTILHADA_APROXIMADA = 'ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)'
+// Task 2 (plano 28/09): perdedor da parada curta compartilhada com OUTRA
+// parada da propria placa perto (raio = teto da R2, RAIO_PARADA_UNITRAC_PROPRIA_M).
+const DURACAO_MIN_OUTRO_ENDERECO_PROVADO_MIN = 3
+const OBS_PARADA_CURTA_OUTRO_ENDERECO = 'PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR'
 
 // Task 1 (plano 2026-09-26): rotulos de "ENTREGUE com ressalva" que, com
 // `modoPrecisao`, deixavam de contar como entregue -- viravam REVISAR (status
@@ -1767,6 +1771,29 @@ export function montarDetalheEntregas(
         observacao = null
       }
     }
+    // Task 2 (plano 28/09): perdedor da parada curta compartilhada que a R2
+    // (so' paradas cruas da Unitrac) nao resgatou -- procura tambem nas
+    // paradas da PONTE da propria placa: >=3 min a <=300 m do cadastro/geocode
+    // e nao explicada por outro cliente da placa a <=150 m. A parada curta que
+    // o fez perder fica fora sozinha (>300 m dele, por definicao do perdedor).
+    let paradaProvadaOutroEndereco: ParadaProvada | null = null
+    if (
+      confirmarPorParadaUnitracPropria && !paradaPropriaConfirmada && perdeuParadaCompartilhada
+      && status === 'pendente' && observacao === OBS_PARADA_CURTA_OUTRO_ENDERECO
+    ) {
+      paradaProvadaOutroEndereco = acharParadaPropriaProvada(
+        linha, cadastroDoAlvo(alvo), [...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []), ...paradasProprias],
+        RAIO_PARADA_UNITRAC_PROPRIA_M, DURACAO_MIN_OUTRO_ENDERECO_PROVADO_MIN, pontosReferenciaDaPlaca,
+      )
+      if (paradaProvadaOutroEndereco) {
+        const p = paradaProvadaOutroEndereco.parada
+        status = 'confirmado_gps'
+        observacao = null
+        chegada = p.chegada
+        saida = p.fim_real ?? p.saida ?? p.chegada
+        tempoParadaMin = minutosEntre(chegada, saida)
+      }
+    }
     // Task 4 (plano 26/09): roda DEPOIS de R2 (paradaPropriaConfirmada acima)
     // de proposito -- se a PROPRIA placa acabou de ser confirmada por uma
     // parada real dela, nao ha' divergencia nenhuma pra esta NF especifica
@@ -1842,7 +1869,7 @@ export function montarDetalheEntregas(
     // `modoPrecisao` rebaixaria pra REVISAR -- com prova forte confirma. Status
     // ja' e' confirmado (unitrac ou gps) aqui; limpar a observacao basta pra
     // nao rebaixar. (b) parada propria vence (a): da' o horario real.
-    let paradaProvada: ParadaProvada | null = null
+    let paradaProvada: ParadaProvada | null = paradaProvadaOutroEndereco
     let paradaFeitoCompartilhada: { parada: UnitracParadaRow; distParadaM: number } | null = null
     if (modoPrecisao && observacao === OBS_COMPARTILHADA_APROXIMADA) {
       const cruasDaPlaca = paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []

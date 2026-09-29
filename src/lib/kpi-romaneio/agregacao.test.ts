@@ -4025,3 +4025,113 @@ describe('Task 1 (plano 28/09) -- parada compartilhada com prova forte vira ENTR
     expect(contarConfirmadasPorCarga(detalhe).get('93758::TTL7D40')).toBe(confirmadas.length)
   })
 })
+
+// Task 2: 'PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE' com
+// OUTRA parada da propria placa (crua ou da PONTE) >=3 min a <=300 m do
+// cadastro/geocode, nao explicada por outro cliente a <=150 m -> ENTREGUE.
+// A R2 ja' cobria a parada crua; o que faltava era a parada da ponte (estudo
+// 26/09: 7 pendentes de 22/09 tinham parada do KPI perto, bloqueados pelo
+// rotulo). RQQ5B81/2386225 (nenhuma parada propria perto) continua.
+describe('Task 2 (plano 28/09) -- parada curta de outro endereco com parada propria perto vira ENTREGUE', () => {
+  const curta = { chegada: '2026-09-11T08:00:00.000Z', saida: '2026-09-11T08:01:00.000Z' }
+  const paradaDoGrupo = paradaForaBase('grupo', -22.71, -42.628, curta.chegada, curta.saida)
+  const nfA = linha('NF_A', { endereco: 'ENDERECO A - PERTO (~45m)', lat: -22.7104, lng: -42.628 })
+  const nfB = linha('NF_B', { endereco: 'ENDERECO B - LONGE (~4.4km)', lat: -22.75, lng: -42.628 })
+  const visitas = () => new Map<string, Visita>([
+    ['NF_A', { nf: 'NF_A', ...curta, distanciaMetrosDoPonto: 999 }],
+    ['NF_B', { nf: 'NF_B', ...curta, distanciaMetrosDoPonto: 999 }],
+  ])
+  const pontePerto = (durMin: number, distM = 250) => paradaForaBase(
+    'ponteB', -22.75 + distM * M_LAT, -42.628,
+    '2026-09-11T09:00:00.000Z', new Date(Date.parse('2026-09-11T09:00:00.000Z') + durMin * 60_000).toISOString(),
+  )
+  const nfB_ = (d: ReturnType<typeof chamarNutryMax>) => d.find(x => x.nf === 'NF_B')!
+
+  it('sem parada propria perto continua rebaixada (comportamento atual)', () => {
+    const d = nfB_(chamarNutryMax([nfA, nfB], { visitasPorNf: visitas(), paradasPorOutraPlaca: new Map([['TTL7D40', [paradaDoGrupo]]]) }))
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR')
+    expect(d.chegada).toBeNull()
+  })
+
+  it('parada da PONTE de 4 min a 250 m do geocode -> ENTREGUE com o horario dessa parada', () => {
+    const ponte = new Map([['TTL7D40', [paradaDoGrupo, pontePerto(4)]]])
+    const d = nfB_(chamarNutryMax([nfA, nfB], { visitasPorNf: visitas(), paradasPorOutraPlaca: ponte }))
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBeNull()
+    expect(d.chegada).toBe('2026-09-11T09:00:00.000Z')
+    expect(d.saida).toBe('2026-09-11T09:04:00.000Z')
+    expect(d.evidencia).toBe('parada_no_endereco')
+    expect(d.distParadaM).toBe(250)
+  })
+
+  it('parada da ponte de 3 min a 280 m do CADASTRO Unitrac (e a 680 m do geocode) -> ENTREGUE', () => {
+    const alvos = [alvo('NF_B', 0, { pontoLat: -22.75 - 400 * M_LAT, pontoLng: -42.628 })]
+    const ponte = new Map([['TTL7D40', [paradaDoGrupo, pontePerto(3, -680)]]])
+    const d = nfB_(chamarNutryMax([nfA, nfB], { visitasPorNf: visitas(), paradasPorOutraPlaca: ponte, alvos }))
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBeNull()
+    expect(d.evidencia).toBe('parada_no_cadastro_unitrac')
+  })
+
+  it('parada curta demais (2 min) nao prova -- continua rebaixada', () => {
+    const ponte = new Map([['TTL7D40', [paradaDoGrupo, pontePerto(2)]]])
+    const d = nfB_(chamarNutryMax([nfA, nfB], { visitasPorNf: visitas(), paradasPorOutraPlaca: ponte }))
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR')
+  })
+
+  it('parada mais perto (<=150 m) de OUTRO cliente da placa nao prova -- continua rebaixada', () => {
+    const nfC = linha('NF_C', { endereco: 'ENDERECO C', lat: -22.75 + 350 * M_LAT, lng: -42.628 })
+    const ponte = new Map([['TTL7D40', [paradaDoGrupo, pontePerto(6)]]])
+    const d = nfB_(chamarNutryMax([nfA, nfB, nfC], { visitasPorNf: visitas(), paradasPorOutraPlaca: ponte }))
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR')
+  })
+
+  it('RQQ5B81/2386225 23/09 (dados reais, flags completas da Nutry Max): nenhuma parada propria perto -- continua nao confirmada', () => {
+    const placa = 'RQQ5B81'
+    const l = (nf: string, endereco: string, lat: number, lng: number, extra: Partial<LinhaGeocodificada> = {}) =>
+      linha(nf, { carga: '98522', placa, destino: 'RIO BONITO', endereco, lat, lng, geoConfiavel: true, ...extra })
+    const linhas = [
+      l('2386219', 'RUA  DR MATTOS, 419 - CENTRO, RIO BONITO - *', -22.712282, -42.629991),
+      l('2386220', 'RUA DR MATTOS, 26 - CENTRO, RIO BONITO - LOJA 01', -22.710109, -42.627165),
+      l('2386225', 'RUA 1, S/N - JACUBA, RIO BONITO - LOJA', -22.6951345, -42.5909642),
+      l('2386231', 'RUA GERALDINO VIEIRA DE MORAES, 56 - BOA ESPERANCA, RIO BONITO', -22.703772, -42.625909, { geoConfiavel: false, geoMotivo: 'bairro_divergente' }),
+    ]
+    const chegada = '2026-09-23T12:53:58.203Z'
+    const saida = '2026-09-23T12:56:47.571Z'
+    const vis = new Map<string, Visita>(linhas.map(x => [x.nf, { nf: x.nf, chegada, saida, distanciaMetrosDoPonto: 0, viaVizinhanca: false }]))
+    const mkAlvo = (documento: string, situacao: number, pontoLat: number, pontoLng: number, feitoISO: string | null): AlvoApi => ({
+      nome: documento, rota: '98522', ordem: 0, feitoISO, pontoLat, pontoLng, situacao, documento,
+      inicioISO: '2026-09-23T07:00:00', placaNorm: placa, codigoUnitrac: documento,
+    } as AlvoApi)
+    const alvos = [
+      mkAlvo('2386220', 98, -22.710059, -42.627188, '2026-09-23T13:01:36.167303'),
+      mkAlvo('2386225', 98, -22.710139, -42.627105, '2026-09-23T13:01:36.167303'),
+      mkAlvo('2386219', 0, -22.711498, -42.627954, null),
+      mkAlvo('2386231', 1, -22.709906, -42.626296, '2026-09-23T13:00:02.152927'),
+    ]
+    const retalho = [parada({
+      id: 'RQQ5B81-api-1', placa_norm: placa,
+      chegada: '2026-09-23T21:45:21.000Z', saida: '2026-09-24T04:40:14.000Z', fim_real: '2026-09-24T04:40:14.000Z',
+      duracao_seg: 24893, local_parada: 'BASE BENASSI - BASE BENASSI', lat: -22.8158316, lng: -43.2778099, classificacao: 'BASE',
+    })]
+    const daPonte = [
+      { chegada: '2026-09-23T12:46:42.915Z', saida: '2026-09-23T12:52:29.401Z', duracaoSeg: 346, lat: -22.710493, lng: -42.630157, classificacao: 'FORA_BASE' as const },
+      { chegada, saida, duracaoSeg: 169, lat: -22.710206999999997, lng: -42.62815125, classificacao: 'FORA_BASE' as const },
+      { chegada: '2026-09-23T13:04:34.297Z', saida: '2026-09-23T13:07:40.252Z', duracaoSeg: 186, lat: -22.714217, lng: -42.636638, classificacao: 'FORA_BASE' as const },
+    ]
+    const paradas = resolverParadas(retalho, daPonte, placa, true, false)
+    const detalhe = chamarNutryMax(linhas, {
+      placa, alvos, visitasPorNf: vis, kmPercorrido: 330.4,
+      paradasPorOutraPlaca: new Map([[placa, paradas]]),
+      paradasUnitracCruasPropriaPlaca: new Map([[placa, retalho]]),
+      todasLinhasDaPlacaNoDia: linhas,
+    })
+    const d = detalhe.find(x => x.nf === '2386225')!
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR')
+    expect(d.chegada).toBeNull()
+  })
+})
