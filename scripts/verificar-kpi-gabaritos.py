@@ -74,6 +74,7 @@ except ImportError:
 
 ESPERADOS_VALIDOS = {"entregue", "nao_entregue", "sem_rastreador", "desatualizado"}
 
+ROTULO_NAO_SAIU_DA_BASE = "VEÍCULO NÃO SAIU DA BASE"
 ROTULO_SEM_RASTREADOR = (
     "SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO"
 )
@@ -266,7 +267,16 @@ def verificar_caso(caso: dict, kpi_por_nf: dict[str, dict]) -> str | None:
         return None
 
     if esperado == "entregue":
-        # Nunca falha -- so' conta acerto/erro na taxa.
+        # 29/09: 'VEÍCULO NÃO SAIU DA BASE' (Nutry Max) nao e' entregue nem
+        # falha de casos nao_entregue, mas um caso rotulado 'entregue' que
+        # caia nele e' falha (placa que fez a entrega nao pode sair "nao saiu").
+        if _norm(ROTULO_NAO_SAIU_DA_BASE) in status or _norm(ROTULO_NAO_SAIU_DA_BASE) in observacao:
+            return (
+                f"FALHA: NF {caso['nf']} (placa {caso['placa']}, {caso['data']}) "
+                f"esperado=entregue mas KPI diz '{ROTULO_NAO_SAIU_DA_BASE}' "
+                f"(status={info['status']!r})"
+            )
+        # Fora isso, nunca falha -- so' conta acerto/erro na taxa.
         return None
 
     if esperado == "desatualizado":

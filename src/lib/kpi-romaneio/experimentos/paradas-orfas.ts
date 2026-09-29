@@ -34,7 +34,7 @@ export function categoriaPendente(observacao: string | null): string {
   if (observacao.startsWith('NÃO FOI AO CLIENTE')) return 'não foi ao cliente'
   if (observacao.startsWith('PASSOU NO ENDEREÇO')) return 'passou sem parar'
   if (observacao.startsWith('CLIENTE SEM ACESSO')) return 'ilha'
-  if (observacao.startsWith('VEÍCULO SEM MOVIMENTO')) return 'sem movimento'
+  if (observacao.startsWith('VEÍCULO SEM MOVIMENTO') || observacao.startsWith('VEÍCULO NÃO SAIU DA BASE')) return 'sem movimento'
   if (observacao.startsWith('SEM DADO DE GPS')) return 'sem dado de GPS'
   return 'outra'
 }

@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs'
+import { OBS_NAO_SAIU_DA_BASE } from './types'
 import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega, ResolucaoNf } from './types'
 // Reusa a MESMA paleta/fonte/logo ja validados no relatorio da Benassi
 // (pedido do usuario 25/08: "deixar esse relatorio nivel o da Benassi") --
@@ -257,6 +258,14 @@ function ehSemRastreador(d: LinhaDetalheEntrega): boolean {
   return d.temRastreador === false && d.evidencia !== 'outra_placa' && d.evidencia !== 'rota_outra_placa'
 }
 
+// 29/09 (pedido Ana/dono, Nutry Max): NF de placa que nao saiu da base o dia
+// todo ('VEÍCULO NÃO SAIU DA BASE') sai da taxa como a sem rastreador (num e
+// denom); com resolucao manual conta pela resolucao (ver
+// entraNoDenominadorPosConferencia). Sem rastreador prevalece na contagem.
+function ehNaoSaiuDaBase(d: LinhaDetalheEntrega): boolean {
+  return (d.observacao?.startsWith(OBS_NAO_SAIU_DA_BASE) ?? false) && !ehSemRastreador(d)
+}
+
 // Revisao final pre-deploy (24/09, item 4): NF "AGUARDANDO" (relatorio do
 // dia de hoje, rota ainda nao voltou) nao e' sucesso nem falha ainda --
 // contá-la no denominador derrubava a taxa de um dia em andamento. Sai do
@@ -264,7 +273,7 @@ function ehSemRastreador(d: LinhaDetalheEntrega): boolean {
 // fim da rota: N"). Mesmo prefixo gravado em agregacao.ts.
 const PREFIXO_OBS_AGUARDANDO = 'AGUARDANDO - ROTA EM ANDAMENTO'
 function ehAguardando(d: LinhaDetalheEntrega): boolean {
-  return (d.observacao?.startsWith(PREFIXO_OBS_AGUARDANDO) ?? false) && !ehSemRastreador(d)
+  return (d.observacao?.startsWith(PREFIXO_OBS_AGUARDANDO) ?? false) && !ehSemRastreador(d) && !ehNaoSaiuDaBase(d)
 }
 
 // Fix round 1, item 4 (decisao de negocio da Ana): a taxa "apos conferencia
@@ -283,6 +292,7 @@ function ehAguardando(d: LinhaDetalheEntrega): boolean {
 function entraNoDenominadorPosConferencia(d: LinhaDetalheEntrega): boolean {
   if (d.resolucaoManual === 'desatualizado') return false
   if (ehSemRastreador(d) && !d.resolucaoManual) return false
+  if (ehNaoSaiuDaBase(d) && !d.resolucaoManual) return false
   // Item 4 (revisao final): AGUARDANDO segue a mesma regra de SEM
   // RASTREADOR aqui -- fora ate' a operacao registrar uma resolucao (que e'
   // exatamente a confirmacao que falta); com resolucao, conta conforme ela.
@@ -306,13 +316,15 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   denominador: number
   denominadorPosConferencia: number
   semRastreador: number
+  naoSaiuDaBase: number
   aguardando: number
   revisar: number
 } {
   const semRastreador = detalhe.filter(ehSemRastreador).length
+  const naoSaiuDaBase = detalhe.filter(ehNaoSaiuDaBase).length
   const revisar = detalhe.filter(d => d.confianca === 'REVISAR' && !ehSemRastreador(d)).length
   const aguardando = detalhe.filter(ehAguardando).length
-  const base = detalhe.filter(d => !ehSemRastreador(d) && !ehAguardando(d))
+  const base = detalhe.filter(d => !ehSemRastreador(d) && !ehNaoSaiuDaBase(d) && !ehAguardando(d))
   const denominador = base.length
   // Confirmada = status diferente de 'pendente' (so' ENTREGUE confirmado);
   // NF sem rastreador e REVISAR SEMPRE ficam pendente (nunca confirmam),
@@ -331,7 +343,7 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   const taxaPosConferenciaPct = denominadorPosConferencia > 0
     ? Math.round((1000 * confirmadasPosConferencia) / denominadorPosConferencia) / 10 : 0
 
-  return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, denominadorPosConferencia, semRastreador, aguardando, revisar }
+  return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, denominadorPosConferencia, semRastreador, naoSaiuDaBase, aguardando, revisar }
 }
 
 // Pedido do usuário 26/09 (linha de TAXA auditável): inteiro com separador
@@ -549,10 +561,14 @@ export async function gerarKpiRomaneioXlsx(
     // 'desatualizado' -- ver `entraNoDenominadorPosConferencia`), por isso
     // usa `total - denominador` genérico em vez do rótulo "sem rastreador".
     const foraDaContaPosConferencia = detalhe.length - resumo.denominadorPosConferencia
-    const taxaTexto = `${formatarPctUmaCasa(resumo.taxaPct)}% (${formatarInteiroPtBr(resumo.confirmadas)} de ${formatarInteiroPtBr(resumo.denominador)} NFs; ${formatarInteiroPtBr(resumo.semRastreador)} sem rastreador fora da conta)`
+    const foraTexto = resumo.naoSaiuDaBase > 0
+      ? `${formatarInteiroPtBr(resumo.semRastreador)} sem rastreador e ${formatarInteiroPtBr(resumo.naoSaiuDaBase)} que não saíram da base fora da conta`
+      : `${formatarInteiroPtBr(resumo.semRastreador)} sem rastreador fora da conta`
+    const taxaTexto = `${formatarPctUmaCasa(resumo.taxaPct)}% (${formatarInteiroPtBr(resumo.confirmadas)} de ${formatarInteiroPtBr(resumo.denominador)} NFs; ${foraTexto})`
+    const naoSaiuTexto = resumo.naoSaiuDaBase > 0 ? `    |    NFs sem saída da base: ${resumo.naoSaiuDaBase} (fora da conta)` : ''
     const taxaPosTexto = `${formatarPctUmaCasa(resumo.taxaPosConferenciaPct)}% (${formatarInteiroPtBr(resumo.confirmadasPosConferencia)} de ${formatarInteiroPtBr(resumo.denominadorPosConferencia)} NFs; ${formatarInteiroPtBr(foraDaContaPosConferencia)} fora da conta)`
     const linhaResumoGeral = ws.addRow([
-      `TAXA DE CONFIRMAÇÃO: ${taxaTexto}    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${taxaPosTexto}    |    REVISAR: ${resumo.revisar}    |    NFs sem rastreador: ${resumo.semRastreador}    |    NFs aguardando fim da rota: ${resumo.aguardando}`,
+      `TAXA DE CONFIRMAÇÃO: ${taxaTexto}    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${taxaPosTexto}    |    REVISAR: ${resumo.revisar}    |    NFs sem rastreador: ${resumo.semRastreador}${naoSaiuTexto}    |    NFs aguardando fim da rota: ${resumo.aguardando}`,
     ])
     ws.mergeCells(linhaResumoGeral.number, 1, linhaResumoGeral.number, COLUNAS_KPI_ROMANEIO.length)
     const cell = linhaResumoGeral.getCell(1)

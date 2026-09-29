@@ -523,6 +523,49 @@ describe('gerador-xlsx', () => {
       expect(resumoTexto).toContain('NFs sem rastreador: 2')
     })
 
+    it('NFs VEÍCULO NÃO SAIU DA BASE ficam fora da taxa (num e denom), contadas a parte', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+      const confirmadas = Array.from({ length: 3 }, (_, i) => detalheFixture({ nf: `NF${i + 1}`, status: 'confirmado_gps' }))
+      const pend = detalheFixture({ nf: 'NFP', status: 'pendente' })
+      const naoSaiu = Array.from({ length: 2 }, (_, i) => detalheFixture({
+        nf: `NFB${i + 1}`, status: 'pendente', observacao: 'VEÍCULO NÃO SAIU DA BASE',
+        evidencia: 'nao_saiu_da_base', confianca: 'SEM BASE',
+      }))
+      const semRastr = detalheFixture({
+        nf: 'NFR', status: 'pendente', temRastreador: false,
+        observacao: 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO',
+      })
+      const detalhe = [...confirmadas, pend, ...naoSaiu, semRastr]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const ws = wb.worksheets[0]
+      const t = ws.getRow(ws.rowCount).getCell(1).value as string
+      expect(t).toContain('75,0% (3 de 4 NFs; 1 sem rastreador e 2 que não saíram da base fora da conta)')
+      expect(t).toContain('NFs sem saída da base: 2 (fora da conta)')
+      expect(t).toContain('NFs sem rastreador: 1')
+      // pos-conferencia: sem resolucao fica fora; com resolucao conta pela resolucao
+      expect(t).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 75,0% (3 de 4 NFs; 3 fora da conta)')
+    })
+
+    it('NF NÃO SAIU DA BASE com resolucao manual entra pos-conferencia pela resolucao', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+      const detalhe = [
+        detalheFixture({ nf: 'NF1', status: 'confirmado_gps' }),
+        detalheFixture({
+          nf: 'NFB', status: 'pendente', observacao: 'VEÍCULO NÃO SAIU DA BASE', evidencia: 'nao_saiu_da_base',
+          confianca: 'SEM BASE', resolucaoManual: 'entregue', responsavelResolucao: 'ANA',
+        }),
+      ]
+      const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const ws = wb.worksheets[0]
+      const t = ws.getRow(ws.rowCount).getCell(1).value as string
+      expect(t).toContain('100,0% (1 de 1 NFs;')
+      expect(t).toContain('APÓS CONFERÊNCIA DA OPERAÇÃO: 100,0% (2 de 2 NFs; 0 fora da conta)')
+    })
+
     it('sem nenhuma NF sem rastreador: denominador = total, "NFs sem rastreador: 0"', async () => {
       const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
       const detalhe: LinhaDetalheEntrega[] = Array.from({ length: 4 }, (_, i) =>

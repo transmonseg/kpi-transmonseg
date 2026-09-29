@@ -234,6 +234,24 @@ class TestVerificarKpiGabaritos(unittest.TestCase):
         self.assertIn("FALHA CRITICA", buffer.getvalue())
         self.assertIn("2390611", buffer.getvalue())
 
+    def _xlsx_nao_saiu(self, nome):
+        xlsx = self.tmp / nome
+        _escrever_xlsx_kpi(xlsx, {"RQU3F71": [(
+            "1", "999003", "CLIENTE Z", "ENDERECO Z", "", "", "", "VEÍCULO NÃO SAIU DA BASE",
+        )]})
+        return xlsx
+
+    def test_nao_saiu_da_base_em_caso_nao_entregue_nao_e_falha(self):
+        xlsx_24 = self._xlsx_nao_saiu("dia24nsb.xlsx")
+        codigo, saida = self._rodar(xlsx_24, [("2026-09-24", "RQU3F71", "999003", "nao_entregue", "teste")])
+        self.assertEqual(codigo, 0, saida)
+
+    def test_nao_saiu_da_base_em_caso_entregue_falha(self):
+        xlsx_24 = self._xlsx_nao_saiu("dia24nsb2.xlsx")
+        codigo, saida = self._rodar(xlsx_24, [("2026-09-24", "RQU3F71", "999003", "entregue", "teste")])
+        self.assertEqual(codigo, 1, saida)
+        self.assertIn("NÃO SAIU DA BASE", saida)
+
     def test_entregue_conta_acerto(self):
         xlsx_24 = self.tmp / "dia24.xlsx"
         _escrever_xlsx_kpi(

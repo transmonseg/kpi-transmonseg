@@ -3870,6 +3870,10 @@ describe('gerarMotivo/calcularConfianca (Task 3, plano 26/09)', () => {
     expect(calcularConfianca(status, observacao)).toBe('NÃO CONFIRMADO')
   })
 
+  it('VEÍCULO NÃO SAIU DA BASE: confianca SEM BASE', () => {
+    expect(calcularConfianca('pendente', 'VEÍCULO NÃO SAIU DA BASE')).toBe('SEM BASE')
+  })
+
   it('integracao: sem_rastreador via montarDetalheEntregas ja vem com motivo/confianca preenchidos', () => {
     const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
     const [d] = montarDetalheEntregas('93758', 'TTL5J17', [linha('NF1')], [], new Map(), resumoCargaVazio, false, new Map(), null, false, false, false, new Map(), true)
@@ -4282,7 +4286,7 @@ describe('montarDetalheEntregas -- rodizio prevalece sobre VEÍCULO SEM MOVIMENT
   const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
   const DELTA_M = 1 / 111_195
   const BASE = { lat: -22.80, lng: -43.30 }
-  const OBS_SEM_MOV = 'VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA'
+  const OBS_SEM_MOV = 'VEÍCULO NÃO SAIU DA BASE' // modoPrecisao (Nutry Max): novo rotulo, 29/09
   const OBS_ESCALA = 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA'
 
   function nfs(qtd: number): LinhaGeocodificada[] {
@@ -4341,7 +4345,7 @@ describe('montarDetalheEntregas -- rodizio prevalece sobre VEÍCULO SEM MOVIMENT
     expect(detalhe[5].placaExecutora ?? null).toBeNull()
   })
 
-  it('(b) placa parada e nenhum veiculo cobre >=80% (3 de 6): todas VEÍCULO SEM MOVIMENTO', () => {
+  it('(b) placa parada e nenhum veiculo cobre >=80% (3 de 6): todas VEÍCULO NÃO SAIU DA BASE', () => {
     const l = nfs(6)
     for (const d of chamar(l, [['RBI0J25', l.slice(0, 3).map((x, i) => paradaEm('RBI0J25', x, i))]])) {
       expect(d.status).toBe('pendente')
@@ -4349,7 +4353,7 @@ describe('montarDetalheEntregas -- rodizio prevalece sobre VEÍCULO SEM MOVIMENT
     }
   })
 
-  it('(c) dois veiculos dividem a carga (50% cada): todas VEÍCULO SEM MOVIMENTO', () => {
+  it('(c) dois veiculos dividem a carga (50% cada): todas VEÍCULO NÃO SAIU DA BASE', () => {
     const l = nfs(6)
     const detalhe = chamar(l, [
       ['RBI0J25', l.slice(0, 3).map((x, i) => paradaEm('RBI0J25', x, i))],
@@ -4361,7 +4365,7 @@ describe('montarDetalheEntregas -- rodizio prevalece sobre VEÍCULO SEM MOVIMENT
     }
   })
 
-  it('(d) carga pequena (4 NFs) coberta 100%: nao reconhece, continua VEÍCULO SEM MOVIMENTO', () => {
+  it('(d) carga pequena (4 NFs) coberta 100%: nao reconhece, continua VEÍCULO NÃO SAIU DA BASE', () => {
     const l = nfs(4)
     for (const d of chamar(l, [['RBI0J25', l.map((x, i) => paradaEm('RBI0J25', x, i))]])) {
       expect(d.status).toBe('pendente')
@@ -4369,12 +4373,51 @@ describe('montarDetalheEntregas -- rodizio prevalece sobre VEÍCULO SEM MOVIMENT
     }
   })
 
-  it('(e) opcao desligada: nada muda, todas VEÍCULO SEM MOVIMENTO', () => {
+  it('(e) opcao desligada: nada muda, todas VEÍCULO NÃO SAIU DA BASE', () => {
     const l = nfs(6)
     const detalhe = chamar(l, [['RBI0J25', l.slice(0, 5).map((x, i) => paradaEm('RBI0J25', x, i))]], { reconhecerRodizio: false })
     for (const d of detalhe) {
       expect(d.status).toBe('pendente')
       expect(d.observacao).toBe(OBS_SEM_MOV)
     }
+  })
+  it('modoPrecisao: rotulo exato, evidencia nao_saiu_da_base, confianca SEM BASE, motivo coerente', () => {
+    const l = nfs(4)
+    for (const d of chamar(l, [])) {
+      expect(d.observacao).toBe('VEÍCULO NÃO SAIU DA BASE')
+      expect(d.evidencia).toBe('nao_saiu_da_base')
+      expect(d.confianca).toBe('SEM BASE')
+      expect(d.motivo).toBe('Veículo não saiu da base no dia')
+      expect(d.status).toBe('pendente')
+    }
+  })
+
+  it('modoPrecisao DESLIGADO (Rio Quality/Porte Frio): texto antigo intacto', () => {
+    const l = nfs(4)
+    const detalhe = montarDetalheEntregas(
+      '98837', 'RQU6E83', l, [], new Map(), resumoCargaVazio,
+      true, new Map([['RQU6E83', [paradaNaBase]]]), 0.01, false,
+      true, true, new Map(), true, true, true, undefined, false, new Map(),
+      true, false, true, new Map(),
+    )
+    for (const d of detalhe) {
+      expect(d.observacao).toBe('VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA')
+      expect(d.evidencia).not.toBe('nao_saiu_da_base')
+    }
+  })
+
+  it('placa que SAIU e rodou outra rota (km alto, parada fora da base): NAO e nao-saiu-da-base', () => {
+    const l = nfs(4)
+    const fora = parada({
+      id: 'RQU6E83-fora', placa_norm: 'RQU6E83', classificacao: 'FORA_BASE', lat: -21.0, lng: -41.0,
+      chegada: '2026-09-28T10:00:00.000Z', saida: '2026-09-28T10:30:00.000Z', fim_real: '2026-09-28T10:30:00.000Z',
+    })
+    const detalhe = montarDetalheEntregas(
+      '98837', 'RQU6E83', l, [], new Map(), resumoCargaVazio,
+      true, new Map([['RQU6E83', [paradaNaBase, fora]]]), 80, false,
+      true, true, new Map(), true, true, true, undefined, false, new Map(),
+      true, true, true, new Map(),
+    )
+    for (const d of detalhe) expect(d.observacao ?? '').not.toContain('NÃO SAIU DA BASE')
   })
 })

@@ -3,6 +3,7 @@ import type { AlvoApi } from '@/lib/unitrac-api'
 // de unitrac.ts (Task 6).
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import type { LinhaEscala, LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega, Visita, EvidenciaNf, ConfiancaNf } from './types'
+import { OBS_NAO_SAIU_DA_BASE } from './types'
 import { haversine } from '@/lib/utils/geo'
 import { RAIO_ENTREGA_METROS } from './constants'
 import { acessoSomentePorBarco } from './acesso-restrito'
@@ -913,6 +914,7 @@ export function calcularConfianca(status: StatusEntrega, observacao: string | nu
     observacao.startsWith('SEM RASTREADOR')
     || observacao.startsWith('CARGA SEM PLACA')
     || observacao.startsWith('AGUARDANDO')
+    || observacao.startsWith(OBS_NAO_SAIU_DA_BASE)
   ) {
     return 'SEM BASE'
   }
@@ -974,6 +976,7 @@ export function gerarMotivo(d: {
     return 'Coordenada do cliente imprecisa — conferir cadastro'
   }
   if (obs?.startsWith('CLIENTE SEM ACESSO RODOVIÁRIO')) return 'Cliente sem acesso rodoviário (ilha) — conferir com a operação'
+  if (obs?.startsWith(OBS_NAO_SAIU_DA_BASE)) return 'Veículo não saiu da base no dia'
   if (obs?.startsWith('VEÍCULO SEM MOVIMENTO')) return 'Veículo sem movimento no dia — conferir rastreador'
   if (obs?.startsWith('PLACA DA ESCALA NÃO PASSOU')) return 'Placa da escala não passou no cliente — conferir escala'
   if (obs?.startsWith('PARADA CURTA DE OUTRO ENDEREÇO')) {
@@ -1655,7 +1658,11 @@ export function montarDetalheEntregas(
     // (parada forte do executor por NF, teto de 4h, descarte por cliente do
     // executor). Sem rodizio reconhecido, "sem movimento" continua igual.
     if (observacao == null && status === 'pendente' && semMovimento && !placaRodizio) {
-      observacao = 'VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA'
+      // 29/09 (pedido Ana/dono): so' modoPrecisao (Nutry Max) troca o texto e
+      // tira a NF da taxa; Rio Quality/Porte Frio mantem o texto antigo.
+      observacao = modoPrecisao
+        ? OBS_NAO_SAIU_DA_BASE
+        : 'VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA'
     }
     // Revisao final (item 1, plano 2026-09-26): com `modoPrecisao`, uma
     // visita FRACA (raio ampliado 500-800m, viaVizinhanca/horario emprestado,
@@ -1996,6 +2003,8 @@ export function montarDetalheEntregas(
       evidencia = 'sem_evidencia'
     } else if (status === 'pendente' && semRastreadorNoDia) {
       evidencia = 'sem_rastreador'
+    } else if (status === 'pendente' && observacao === OBS_NAO_SAIU_DA_BASE) {
+      evidencia = 'nao_saiu_da_base'
     } else if (porOutraPlaca) {
       evidencia = 'outra_placa'
       distParadaM = linha.lat != null && linha.lng != null && porOutraPlaca.parada.lat != null && porOutraPlaca.parada.lng != null

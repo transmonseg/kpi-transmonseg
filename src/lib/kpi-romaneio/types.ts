@@ -136,6 +136,9 @@ export type EvidenciaNf =
   | 'alvo_feito_unitrac'
   | 'sem_evidencia'
   | 'sem_rastreador'
+  // 29/09 (pedido Ana/dono, so' modoPrecisao/Nutry Max): placa que ficou o dia
+  // todo na base -- rotulo 'VEÍCULO NÃO SAIU DA BASE', fora da taxa.
+  | 'nao_saiu_da_base'
   | 'passagem_sem_parada'
   | 'parada_proxima_fora_raio'
   // Task 2 (plano 2026-09-25, R2): confirmada pela parada Unitrac CRUA da
@@ -313,3 +316,7 @@ export type AvisoDescasamento = {
   placa: string
   motivo: 'sem_romaneio' | 'sem_escala'
 }
+
+/** Rotulo exato (Nutry Max/modoPrecisao) de NF de placa que nao saiu da base o dia todo.
+ *  Prefixo usado por gerador-xlsx.ts pra excluir da taxa (como SEM RASTREADOR). */
+export const OBS_NAO_SAIU_DA_BASE = 'VEÍCULO NÃO SAIU DA BASE'
