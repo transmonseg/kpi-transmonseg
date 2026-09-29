@@ -660,6 +660,18 @@ const OBS_COMPARTILHADA_APROXIMADA = 'ENTREGUE - PARADA COMPARTILHADA COM ENTREG
 // parada da propria placa perto (raio = teto da R2, RAIO_PARADA_UNITRAC_PROPRIA_M).
 const DURACAO_MIN_OUTRO_ENDERECO_PROVADO_MIN = 3
 const OBS_PARADA_CURTA_OUTRO_ENDERECO = 'PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR'
+// Task 1 (plano 2026-09-29): rotulo neutro pra NF pendente de placa com
+// apagao de sinal no dia (ver bloco em montarDetalheEntregas). Contem
+// 'CONFERIR' -> calcularConfianca devolve 'REVISAR'.
+export const OBS_SINAL_RASTREADOR_FALHA = 'SINAL DO RASTREADOR COM FALHA NO DIA - CONFERIR'
+// Rotulos de pendente que so' dizem "a posicao nao mostrou o caminhao perto"
+// (sem evidencia POSITIVA de posicao) -- os unicos que o apagao de sinal
+// (Task 1) e a placa com duas cargas (Task 2) podem trocar. `null` (SEM
+// CONFIRMAÇÃO) e' tratado a' parte pelos chamadores.
+const ROTULOS_SEM_EVIDENCIA_DE_POSICAO = [
+  'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR',
+  'NÃO FOI AO CLIENTE',
+] as const
 
 // Task 1 (plano 2026-09-26): rotulos de "ENTREGUE com ressalva" que, com
 // `modoPrecisao`, deixavam de contar como entregue -- viravam REVISAR (status
@@ -979,6 +991,7 @@ export function gerarMotivo(d: {
   if (obs?.startsWith(OBS_NAO_SAIU_DA_BASE)) return 'Veículo não saiu da base no dia'
   if (obs?.startsWith('VEÍCULO SEM MOVIMENTO')) return 'Veículo sem movimento no dia — conferir rastreador'
   if (obs?.startsWith('PLACA DA ESCALA NÃO PASSOU')) return 'Placa da escala não passou no cliente — conferir escala'
+  if (obs?.startsWith('SINAL DO RASTREADOR COM FALHA')) return 'Sinal do rastreador com falha no dia — conferir'
   if (obs?.startsWith('PARADA CURTA DE OUTRO ENDEREÇO')) {
     return dist
       ? `Parada curta confirmou outro endereço a ${dist} — não confirma este cliente`
@@ -1948,6 +1961,26 @@ export function montarDetalheEntregas(
     // resolvido.
     if (status === 'pendente' && diaEmAndamento && !semRastreadorNoDia && !perdeuParadaCompartilhada && !nfEscalaDivergente) {
       observacao = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
+    }
+
+    // Task 1 (plano 2026-09-29, caso real RQU4B93 28/09: 282 posicoes com
+    // atraso >15 min, NFs 'PASSOU NO ENDEREÇO...' que a equipe confirma como
+    // entregues): com a ponte sinalizando apagao de sinal da PROPRIA placa no
+    // dia, a AUSENCIA de parada/posicao perto do cliente nao prova nada contra
+    // o caminhao -- 'PASSOU', 'NÃO FOI' e o 'SEM CONFIRMAÇÃO' mudo viram um
+    // rotulo neutro de conferencia. Continua pendente (dentro da taxa, nao
+    // confirma), sem horario. Nao mexe em rotulos com evidencia de posicao
+    // (PARADA PRÓXIMA, COORDENADA IMPRECISA) nem nos de precedencia maior
+    // (SEM RASTREADOR, NÃO SAIU DA BASE, AGUARDANDO -- todos ja' atribuiram
+    // `observacao` acima, fora da whitelist). So' `modoPrecisao` (Nutry Max).
+    if (
+      modoPrecisao && apagaoDeSinalPropriaPlaca && status === 'pendente'
+      && (observacao == null || ROTULOS_SEM_EVIDENCIA_DE_POSICAO.some(r => observacao!.startsWith(r)))
+    ) {
+      observacao = OBS_SINAL_RASTREADOR_FALHA
+      chegada = null
+      saida = null
+      tempoParadaMin = null
     }
 
     // Task 1 (plano 28/09): parada compartilhada que o bloco final de

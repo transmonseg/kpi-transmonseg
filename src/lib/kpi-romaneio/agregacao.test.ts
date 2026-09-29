@@ -4449,3 +4449,87 @@ describe('montarDetalheEntregas -- rodizio prevalece sobre VEÍCULO SEM MOVIMENT
     for (const d of detalhe) expect(d.observacao ?? '').not.toContain('NÃO SAIU DA BASE')
   })
 })
+
+// Task 1 (plano 2026-09-29): caso real RQU4B93 28/09 -- 282 posicoes com
+// atraso >15 min (max 145 min), apagaoDeSinal=true na ponte; NFs 2394173 etc.
+// sairam 'PASSOU NO ENDEREÇO...' e a equipe diz entregue. Com o sinal falhando
+// no dia, a ausencia de parada/posicao nao prova nada contra o caminhao.
+describe('montarDetalheEntregas -- SINAL DO RASTREADOR COM FALHA NO DIA (Task 1, plano 29/09)', () => {
+  const OBS_SINAL = 'SINAL DO RASTREADOR COM FALHA NO DIA - CONFERIR'
+  const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+  function chamar(
+    linhas: LinhaGeocodificada[],
+    opts: {
+      apagao?: boolean; modoPrecisao?: boolean; distTrajeto?: [string, number][]; visitas?: Map<string, Visita>
+      temRastreador?: boolean; paradasFrota?: Map<string, UnitracParadaRow[]>; km?: number | null; diaEmAndamento?: boolean
+    } = {},
+  ) {
+    return montarDetalheEntregas(
+      '98800', 'RQU4B93', linhas, [], opts.visitas ?? new Map(), resumoCargaVazio,
+      opts.temRastreador ?? true, opts.paradasFrota ?? new Map(), opts.km ?? null, opts.diaEmAndamento ?? false,
+      true, true, new Map(), true, true, true, undefined,
+      opts.apagao ?? true,
+      new Map(opts.distTrajeto ?? []),
+      true, // detectarEscalaDivergente
+      opts.modoPrecisao ?? true,
+      false, // reconhecerRodizio (desligado em producao)
+      new Map(),
+    )
+  }
+  const l = (nf: string, o: Partial<LinhaGeocodificada> = {}) => linha(nf, { carga: '98800', placa: 'RQU4B93', endereco: `RUA ${nf}`, clienteCodigo: `C${nf}`, lat: -22.9 + Number(nf.slice(-2)) * 0.01, ...o })
+
+  it.each([
+    ['PASSOU NO ENDEREÇO (RQU4B93/2394173)', 300, 'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR'],
+    ['NÃO FOI AO CLIENTE', 5_000, 'NÃO FOI AO CLIENTE (caminhão não esteve na região)'],
+    ['SEM CONFIRMAÇÃO', null, null],
+  ])('apagao + modoPrecisao: %s vira SINAL DO RASTREADOR COM FALHA, pendente, sem horario, REVISAR', (_rot, dist, obsSemApagao) => {
+    const dt: [string, number][] = dist == null ? [] : [['2394173', dist]]
+    const [semApagao] = chamar([l('2394173')], { apagao: false, distTrajeto: dt })
+    expect(semApagao.observacao).toBe(obsSemApagao)
+    const [d] = chamar([l('2394173')], { distTrajeto: dt })
+    expect(d.observacao).toBe(OBS_SINAL)
+    expect(d.status).toBe('pendente')
+    expect(d.chegada).toBeNull()
+    expect(d.saida).toBeNull()
+    expect(d.tempoParadaMin).toBeNull()
+    expect(d.confianca).toBe('REVISAR')
+    expect(d.motivo).toBe('Sinal do rastreador com falha no dia — conferir')
+  })
+
+  it('PARADA PRÓXIMA (500m-2km) e COORDENADA IMPRECISA nao mudam (tem evidencia de posicao)', () => {
+    const [proxima, imprecisa] = chamar(
+      [l('2394101'), l('2394102', { geoConfiavel: false, geoMotivo: 'municipio_divergente' })],
+      { distTrajeto: [['2394101', 1_000]] },
+    )
+    expect(proxima.observacao).toBe('PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR')
+    expect(imprecisa.observacao).toBe('ENDEREÇO COM COORDENADA IMPRECISA - COORDENADA CAIU EM OUTRO MUNICÍPIO - CONFERIR CADASTRO')
+  })
+
+  it('NF ja ENTREGUE de placa com falha de sinal continua ENTREGUE', () => {
+    const visitas = new Map<string, Visita>([['2394103', { chegada: '2026-09-28T10:00:00.000Z', saida: '2026-09-28T10:15:00.000Z', distanciaMetrosDoPonto: 0 } as Visita]])
+    const [d] = chamar([l('2394103')], { visitas })
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBeNull()
+  })
+
+  it('placa com sinal normal e NÃO FOI real (RQU1G17/2394872): continua NÃO FOI AO CLIENTE', () => {
+    const [d] = chamar([l('2394872')], { apagao: false, distTrajeto: [['2394872', 9_000]] })
+    expect(d.observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
+  })
+
+  it('sem modoPrecisao (Rio Quality): nada muda', () => {
+    const [d] = chamar([l('2394173')], { modoPrecisao: false, distTrajeto: [['2394173', 300]] })
+    expect(d.observacao).toBe('PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR')
+  })
+
+  it('SEM RASTREADOR, NÃO SAIU DA BASE e AGUARDANDO mantem precedencia', () => {
+    const [semRastreador] = chamar([l('2394173')], { temRastreador: false, distTrajeto: [['2394173', 300]] })
+    expect(semRastreador.observacao).toBe('SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO')
+    const base1 = parada({ id: 'b1', placa_norm: 'RQU4B93', classificacao: 'BASE', lat: -22.80, lng: -43.30 })
+    const base2 = parada({ id: 'b2', placa_norm: 'RQU4B93', classificacao: 'BASE', lat: -22.801, lng: -43.30 }) // ~110m: nao e' GPS congelado
+    const [naoSaiu] = chamar([l('2394173')], { paradasFrota: new Map([['RQU4B93', [base1, base2]]]), km: 0.01 })
+    expect(naoSaiu.observacao).toBe('VEÍCULO NÃO SAIU DA BASE')
+    const [aguardando] = chamar([l('2394173')], { diaEmAndamento: true, distTrajeto: [['2394173', 300]] })
+    expect(aguardando.observacao).toBe('AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO')
+  })
+})
