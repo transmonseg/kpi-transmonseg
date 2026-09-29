@@ -4533,3 +4533,117 @@ describe('montarDetalheEntregas -- SINAL DO RASTREADOR COM FALHA NO DIA (Task 1,
     expect(aguardando.observacao).toBe('AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO')
   })
 })
+
+// Task 2 (plano 2026-09-29): caso real TOS5E38 28/09 -- carga 98861 (Volta
+// Redonda, 21 NFs, 19 confirmadas) + carga PAO-14 (Niteroi, 3 NFs, ~100 km
+// dali). O caminhao fez Volta Redonda e nunca foi a Niteroi; a equipe diz
+// "nao foi" -- o problema e' de PROGRAMACAO (duas cargas em regioes diferentes
+// na mesma placa), nao do motorista: NF 216155 sai CONFERIR PROGRAMACAO.
+describe('montarDetalheEntregas -- placa com duas cargas em regioes diferentes (Task 2, plano 29/09)', () => {
+  const OBS_DUAS = 'PLACA COM DUAS CARGAS EM REGIÕES DIFERENTES - CONFERIR PROGRAMAÇÃO'
+  const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+  const VR = { lat: -22.52, lng: -44.10 } // Volta Redonda
+  const NIT = { lat: -22.90, lng: -43.10 } // Niteroi (~110 km)
+
+  function cargaA(qtd = 21, centro = VR): LinhaGeocodificada[] {
+    return Array.from({ length: qtd }, (_, i) => linha(`98861-${i + 1}`, {
+      carga: '98861', placa: 'TOS5E38', endereco: `RUA VR ${i + 1}`, clienteCodigo: `CVR${i}`,
+      lat: centro.lat + i * 0.001, lng: centro.lng,
+    }))
+  }
+  function cargaB(centro = NIT): LinhaGeocodificada[] {
+    return ['216155', '216156', '216157'].map((nf, i) => linha(nf, {
+      carga: 'PAO-14', placa: 'TOS5E38', endereco: `RUA NIT ${i + 1}`, clienteCodigo: `CNIT${i}`,
+      lat: centro.lat + i * 0.001, lng: centro.lng,
+    }))
+  }
+  function visitasDe(nfs: string[]): Map<string, Visita> {
+    return new Map(nfs.map((nf, i) => [nf, {
+      chegada: `2026-09-28T${String(8 + Math.floor(i / 4)).padStart(2, '0')}:${String((i % 4) * 15).padStart(2, '0')}:00.000Z`,
+      saida: `2026-09-28T${String(8 + Math.floor(i / 4)).padStart(2, '0')}:${String((i % 4) * 15 + 10).padStart(2, '0')}:00.000Z`,
+      distanciaMetrosDoPonto: 0,
+    } as Visita]))
+  }
+  // 216155 -> NÃO FOI (trajeto a ~100 km), 216156 sem distancia (SEM
+  // CONFIRMAÇÃO), 216157 -> NÃO FOI.
+  const distB: [string, number][] = [['216155', 100_000], ['216157', 98_000]]
+
+  function chamar(opts: {
+    a?: LinhaGeocodificada[]; b?: LinhaGeocodificada[]; confirmadasA?: number; visitasExtra?: Map<string, Visita>
+    dist?: [string, number][]; modoPrecisao?: boolean; apagao?: boolean; processar?: 'A' | 'B'
+  } = {}) {
+    const a = opts.a ?? cargaA()
+    const b = opts.b ?? cargaB()
+    const visitas = new Map([...visitasDe(a.slice(0, opts.confirmadasA ?? 19).map(x => x.nf)), ...(opts.visitasExtra ?? new Map())])
+    const alvo = opts.processar === 'A' ? a : b
+    return montarDetalheEntregas(
+      alvo[0].carga, 'TOS5E38', alvo, [], visitas, resumoCargaVazio,
+      true, new Map(), 180, false,
+      true, true, new Map(), true, true, true,
+      [...a, ...b], // todasLinhasDaPlacaNoDia
+      opts.apagao ?? false,
+      new Map(opts.dist ?? distB),
+      true, // detectarEscalaDivergente
+      opts.modoPrecisao ?? true,
+      false, // reconhecerRodizio (desligado em producao)
+      new Map(),
+    )
+  }
+
+  it('caso real TOS5E38: as 3 NFs da PAO-14 (NÃO FOI / SEM CONFIRMAÇÃO) viram CONFERIR PROGRAMAÇÃO, pendentes, sem horario', () => {
+    const antes = chamar({ modoPrecisao: false })
+    expect(antes.map(d => d.observacao)).toEqual([
+      'NÃO FOI AO CLIENTE (caminhão não esteve na região)', null, 'NÃO FOI AO CLIENTE (caminhão não esteve na região)',
+    ])
+    const detalhe = chamar()
+    for (const d of detalhe) {
+      expect(d.observacao).toBe(OBS_DUAS)
+      expect(d.status).toBe('pendente')
+      expect(d.chegada).toBeNull()
+      expect(d.confianca).toBe('REVISAR')
+      expect(d.motivo).toBe('Placa com duas cargas em regiões diferentes — conferir programação')
+    }
+    expect(detalhe[0].nf).toBe('216155')
+  })
+
+  it('processando a carga grande (98861): nada muda nas pendentes dela', () => {
+    const detalhe = chamar({ processar: 'A' })
+    expect(detalhe.filter(d => d.status !== 'pendente')).toHaveLength(19)
+    for (const d of detalhe) expect(d.observacao ?? '').not.toContain('DUAS CARGAS')
+  })
+
+  it('placa visitou as duas regioes (uma NF da PAO-14 confirmada): nada muda', () => {
+    const detalhe = chamar({ visitasExtra: visitasDe(['216156']) })
+    expect(detalhe[1].status).toBe('confirmado_gps')
+    expect(detalhe[0].observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
+    expect(detalhe[2].observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
+  })
+
+  it('cargas a menos de 60 km uma da outra: nada muda', () => {
+    const detalhe = chamar({ b: cargaB({ lat: -22.52, lng: -44.50 }) }) // ~41 km
+    expect(detalhe[0].observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
+    expect(detalhe[1].observacao).toBeNull()
+  })
+
+  it('sem modoPrecisao (Rio Quality): nada muda', () => {
+    for (const d of chamar({ modoPrecisao: false })) expect(d.observacao ?? '').not.toContain('DUAS CARGAS')
+  })
+
+  it('carga grande com menos de 50% confirmada: nada muda', () => {
+    for (const d of chamar({ confirmadasA: 9 })) expect(d.observacao ?? '').not.toContain('DUAS CARGAS')
+  })
+
+  it('carga grande com menos de 10 NFs: nada muda', () => {
+    for (const d of chamar({ a: cargaA(8), confirmadasA: 8 })) expect(d.observacao ?? '').not.toContain('DUAS CARGAS')
+  })
+
+  it('trajeto da placa passou a <=2 km de uma NF da carga pequena: nada muda', () => {
+    const detalhe = chamar({ dist: [['216155', 100_000], ['216157', 1_500]] })
+    expect(detalhe[0].observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
+    expect(detalhe[2].observacao).toBe('PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR')
+  })
+
+  it('placa com apagao de sinal: SINAL DO RASTREADOR (Task 1) prevalece', () => {
+    for (const d of chamar({ apagao: true })) expect(d.observacao).toBe('SINAL DO RASTREADOR COM FALHA NO DIA - CONFERIR')
+  })
+})

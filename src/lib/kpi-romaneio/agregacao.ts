@@ -992,6 +992,7 @@ export function gerarMotivo(d: {
   if (obs?.startsWith('VEÍCULO SEM MOVIMENTO')) return 'Veículo sem movimento no dia — conferir rastreador'
   if (obs?.startsWith('PLACA DA ESCALA NÃO PASSOU')) return 'Placa da escala não passou no cliente — conferir escala'
   if (obs?.startsWith('SINAL DO RASTREADOR COM FALHA')) return 'Sinal do rastreador com falha no dia — conferir'
+  if (obs?.startsWith('PLACA COM DUAS CARGAS')) return 'Placa com duas cargas em regiões diferentes — conferir programação'
   if (obs?.startsWith('PARADA CURTA DE OUTRO ENDEREÇO')) {
     return dist
       ? `Parada curta confirmou outro endereço a ${dist} — não confirma este cliente`
@@ -1478,7 +1479,7 @@ export function montarDetalheEntregas(
     }))
   }
 
-  return linhasRomaneio.map((linha): LinhaDetalheEntrega => {
+  const resultado = linhasRomaneio.map((linha): LinhaDetalheEntrega => {
     const alvo = alvoPorNf.get(linha.nf)
     const visita = visitasPorNf.get(linha.nf)
     const confirmadoUnitrac = alvo?.situacao === 1
@@ -2174,4 +2175,105 @@ export function montarDetalheEntregas(
       ...(nfRodizio ? { placaExecutora: placaRodizio } : {}),
     }
   })
+
+  // Task 2 (plano 2026-09-29, caso real TOS5E38 28/09: carga 98861 Volta
+  // Redonda 21 NFs/19 confirmadas + PAO-14 Niteroi 3 NFs, ~100 km dali, NF
+  // 216155 'NÃO FOI'): quando a MESMA placa tem no dia uma carga principal
+  // feita (>=10 NFs, >=50% confirmadas) e ESTA carga e' pequena, a >60 km da
+  // principal, sem nenhuma NF confirmada e o trajeto da placa nunca chegou a
+  // <=2 km de nenhum cliente dela, o problema provavel e' a PROGRAMACAO (duas
+  // cargas incompativeis na mesma placa), nao o motorista. Troca so' os
+  // rotulos sem evidencia de posicao (NÃO FOI / PASSOU / SEM CONFIRMAÇÃO);
+  // continua pendente (dentro da taxa), sem horario. Roda DEPOIS da cadeia por
+  // NF: precisa do desfecho final das NFs desta carga, e rotulos de
+  // precedencia maior (SEM RASTREADOR, NÃO SAIU DA BASE, AGUARDANDO, SINAL DO
+  // RASTREADOR da Task 1, CONFERIR ESCALA) ja' ficaram fora da whitelist. So'
+  // `modoPrecisao` (Nutry Max), sem nova opcao posicional.
+  if (modoPrecisao && placaComDuasCargasEmRegioesDiferentes(
+    carga, placaNorm, linhasRomaneio, todasLinhasDaPlacaNoDia, alvoPorNf, visitasPorNf,
+    paradasPorOutraPlaca, paradasUnitracCruasPropriaPlaca, menorDistanciaTrajetoPorNf, resultado,
+  )) {
+    return resultado.map(d => {
+      if (d.status !== 'pendente') return d
+      if (d.observacao != null && !ROTULOS_SEM_EVIDENCIA_DE_POSICAO.some(r => d.observacao!.startsWith(r))) return d
+      const observacao = OBS_DUAS_CARGAS_REGIOES_DIFERENTES
+      return {
+        ...d,
+        chegada: null,
+        saida: null,
+        tempoParadaMin: null,
+        observacao,
+        motivo: gerarMotivo({ status: d.status, observacao, evidencia: d.evidencia, distParadaM: d.distParadaM, tempoParadaMin: null }),
+        confianca: calcularConfianca(d.status, observacao),
+      }
+    })
+  }
+  return resultado
+}
+
+// Task 2 (plano 2026-09-29): limiares da regra "placa com duas cargas em
+// regioes diferentes" -- ver bloco no fim de montarDetalheEntregas.
+export const OBS_DUAS_CARGAS_REGIOES_DIFERENTES = 'PLACA COM DUAS CARGAS EM REGIÕES DIFERENTES - CONFERIR PROGRAMAÇÃO'
+const MIN_NFS_CARGA_PRINCIPAL = 10
+const MAX_NFS_CARGA_SECUNDARIA = 5
+const PROPORCAO_MIN_CONFIRMADAS_CARGA_PRINCIPAL = 0.5
+const DISTANCIA_MIN_ENTRE_CARGAS_M = 60_000
+
+function centroideConfiavel(linhas: LinhaGeocodificada[]): { lat: number; lng: number; n: number } | null {
+  const ok = linhas.filter((l): l is LinhaGeocodificada & { lat: number; lng: number } =>
+    l.geoConfiavel !== false && l.lat != null && l.lng != null)
+  if (ok.length === 0) return null
+  return {
+    lat: ok.reduce((s, l) => s + l.lat, 0) / ok.length,
+    lng: ok.reduce((s, l) => s + l.lng, 0) / ok.length,
+    n: ok.length,
+  }
+}
+
+function placaComDuasCargasEmRegioesDiferentes(
+  carga: string,
+  placaNorm: string,
+  linhasRomaneio: LinhaGeocodificada[],
+  todasLinhasDaPlacaNoDia: LinhaGeocodificada[],
+  alvoPorNf: Map<string, AlvoApi>,
+  visitasPorNf: Map<string, Visita>,
+  paradasPorOutraPlaca: Map<string, UnitracParadaRow[]>,
+  paradasUnitracCruasPropriaPlaca: Map<string, UnitracParadaRow[]>,
+  menorDistanciaTrajetoPorNf: Map<string, number>,
+  resultado: LinhaDetalheEntrega[],
+): boolean {
+  if (placaNorm.trim() === '') return false
+  // Carga secundaria (esta): pequena e sem NENHUMA NF confirmada no desfecho final.
+  if (linhasRomaneio.length === 0 || linhasRomaneio.length > MAX_NFS_CARGA_SECUNDARIA) return false
+  if (resultado.some(d => d.status !== 'pendente')) return false
+  const centroSecundaria = centroideConfiavel(linhasRomaneio)
+  if (!centroSecundaria) return false
+  // Trajeto da placa: distancia conhecida a pelo menos um cliente desta carga
+  // e NENHUM a <=2 km (mesmo limiar de 'NÃO FOI AO CLIENTE').
+  const distancias = linhasRomaneio
+    .filter(l => l.geoConfiavel !== false)
+    .map(l => melhorDistanciaPropria(l, placaNorm, paradasPorOutraPlaca, paradasUnitracCruasPropriaPlaca, menorDistanciaTrajetoPorNf.get(l.nf) ?? null))
+    .filter((d): d is number => d != null)
+  if (distancias.length === 0 || distancias.some(d => d <= RAIO_NAO_FOI_AO_CLIENTE_M)) return false
+  // Carga principal: outra carga da mesma placa no dia, grande, com geocode
+  // confiavel na maioria das NFs, >=50% confirmadas (alvo Unitrac feito ou
+  // visita GPS -- mesma base de confirmacao da cadeia por NF) e com centroide
+  // a >60 km desta.
+  const nfsDestaCarga = new Set(linhasRomaneio.map(l => l.nf))
+  const porCarga = new Map<string, LinhaGeocodificada[]>()
+  for (const l of todasLinhasDaPlacaNoDia) {
+    if (l.carga === carga || nfsDestaCarga.has(l.nf)) continue
+    const arr = porCarga.get(l.carga)
+    if (arr) arr.push(l)
+    else porCarga.set(l.carga, [l])
+  }
+  for (const linhasPrincipal of porCarga.values()) {
+    if (linhasPrincipal.length < MIN_NFS_CARGA_PRINCIPAL || linhasPrincipal.length <= linhasRomaneio.length) continue
+    const centro = centroideConfiavel(linhasPrincipal)
+    if (!centro || centro.n < linhasPrincipal.length / 2) continue
+    const confirmadas = linhasPrincipal.filter(l => alvoPorNf.get(l.nf)?.situacao === 1 || visitasPorNf.has(l.nf)).length
+    if (confirmadas / linhasPrincipal.length < PROPORCAO_MIN_CONFIRMADAS_CARGA_PRINCIPAL) continue
+    if (haversine(centro.lat, centro.lng, centroSecundaria.lat, centroSecundaria.lng) > DISTANCIA_MIN_ENTRE_CARGAS_M) return true
+  }
+  return false
 }
