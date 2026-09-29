@@ -4135,3 +4135,82 @@ describe('Task 2 (plano 28/09) -- parada curta de outro endereco com parada prop
     expect(d.chegada).toBeNull()
   })
 })
+
+// Task 3: R2 tolera parada fundida pela API /stops da Unitrac. Caso real
+// TOS5E38/2393419 26/09 ("NAO FOI"): geocode 9,3 km errado, cadastro Unitrac a
+// 32 m da parada real, mas a /stops fundiu duas paradas e o centro ficou a
+// ~310 m do cadastro (10 m acima do teto de 300 m da R2), 9,9 min.
+describe('Task 3 (plano 28/09) -- R2 tolera parada fundida da Unitrac e usa paradas da ponte', () => {
+  const placa = 'TOS5E38'
+  const cad = { lat: -22.284, lng: -43.5 }
+  // geocode confiavel, mas 9,3 km errado (como no caso real)
+  const nf = linha('2393419', { placa, endereco: 'R SAO JOSE, 11 - TABOAS 3 DISTRITO, RIO DAS FLORES', lat: cad.lat + 9300 * M_LAT, lng: cad.lng, geoConfiavel: true })
+  const alvos = [alvo('2393419', 0, { placaNorm: placa, pontoLat: cad.lat, pontoLng: cad.lng })]
+  const crua = (id: string, distM: number, durMin: number, inicio = '2026-09-26T14:00:00.000Z') =>
+    paradaForaBase(id, cad.lat - distM * M_LAT, cad.lng, inicio, new Date(Date.parse(inicio) + durMin * 60_000).toISOString(), placa)
+
+  it('(a) parada Unitrac de 10 min com centro a 310 m do cadastro, sem outro cliente perto -> ENTREGUE', () => {
+    const [d] = chamarNutryMax([nf], { placa, alvos, paradasUnitracCruasPropriaPlaca: new Map([[placa, [crua('fundida', 310, 10)]]]) })
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBeNull()
+    expect(d.evidencia).toBe('parada_unitrac_propria')
+    expect(d.chegada).toBe('2026-09-26T14:00:00.000Z')
+    expect(d.distParadaM).toBe(310)
+  })
+
+  it('(a) limite: 8 min a 350 m confirma; 8 min a 360 m nao', () => {
+    const [ok] = chamarNutryMax([nf], { placa, alvos, paradasUnitracCruasPropriaPlaca: new Map([[placa, [crua('f', 349, 8)]]]) })
+    expect(ok.status).toBe('confirmado_gps')
+    const [nao] = chamarNutryMax([nf], { placa, alvos, paradasUnitracCruasPropriaPlaca: new Map([[placa, [crua('f', 360, 8)]]]) })
+    expect(nao.status).toBe('pendente')
+  })
+
+  it('(b) mesma parada com 5 min a 320 m -> nao confirma', () => {
+    const [d] = chamarNutryMax([nf], { placa, alvos, paradasUnitracCruasPropriaPlaca: new Map([[placa, [crua('f', 320, 5)]]]) })
+    expect(d.status).toBe('pendente')
+    expect(d.evidencia).not.toBe('parada_unitrac_propria')
+  })
+
+  it('(a) parada fundida de 10 min a 310 m mas a <=150 m de OUTRO cliente da placa -> nao confirma', () => {
+    const outro = linha('OUTRA', { placa, endereco: 'OUTRO CLIENTE', lat: cad.lat - 400 * M_LAT, lng: cad.lng })
+    const detalhe = chamarNutryMax([nf, outro], { placa, alvos, paradasUnitracCruasPropriaPlaca: new Map([[placa, [crua('f', 310, 10)]]]) })
+    const d = detalhe.find(x => x.nf === '2393419')!
+    expect(d.status).toBe('pendente')
+  })
+
+  it('(c) crua da Unitrac fundiu duas paradas (centro a 420 m), a PONTE separou: parada de 2 min a 60 m conta pra R2 -> ENTREGUE com o horario da ponte', () => {
+    const cruas = new Map([[placa, [crua('fundida', 420, 25, '2026-09-26T13:50:00.000Z')]]])
+    const ponte = new Map([[placa, [
+      paradaForaBase('ponte1', cad.lat - 60 * M_LAT, cad.lng, '2026-09-26T13:52:00.000Z', '2026-09-26T13:54:00.000Z', placa),
+      paradaForaBase('ponte2', cad.lat - 800 * M_LAT, cad.lng, '2026-09-26T14:00:00.000Z', '2026-09-26T14:15:00.000Z', placa),
+    ]]])
+    const [d] = chamarNutryMax([nf], { placa, alvos, paradasUnitracCruasPropriaPlaca: cruas, paradasPorOutraPlaca: ponte })
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBeNull()
+    expect(d.chegada).toBe('2026-09-26T13:52:00.000Z')
+    expect(d.saida).toBe('2026-09-26T13:54:00.000Z')
+    expect(d.distParadaM).toBe(60)
+  })
+
+  it('(c) parada da ponte fora do criterio curto (2 min a 150 m) nao conta', () => {
+    const ponte = new Map([[placa, [paradaForaBase('ponte1', cad.lat - 150 * M_LAT, cad.lng, '2026-09-26T13:52:00.000Z', '2026-09-26T13:54:00.000Z', placa)]]])
+    const [d] = chamarNutryMax([nf], { placa, alvos, paradasPorOutraPlaca: ponte })
+    expect(d.status).toBe('pendente')
+  })
+
+  it('(d) parada de 2 min a 280 m que esta a <=150 m de outro cliente -> nao confirma', () => {
+    const outro = linha('OUTRA', { placa, endereco: 'OUTRO CLIENTE', lat: cad.lat - 380 * M_LAT, lng: cad.lng })
+    const detalhe = chamarNutryMax([nf, outro], { placa, alvos, paradasUnitracCruasPropriaPlaca: new Map([[placa, [crua('f', 280, 2)]]]) })
+    const d = detalhe.find(x => x.nf === '2393419')!
+    expect(d.status).toBe('pendente')
+    expect(d.evidencia).not.toBe('parada_unitrac_propria')
+  })
+
+  it('opcao desligada (confirmarPorParadaUnitracPropria=false, Rio Quality): parada fundida a 310 m nao confirma', () => {
+    const [d] = montarDetalheEntregas(
+      '93758', placa, [nf], alvos, new Map(), { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null },
+      true, new Map(), null, false, false, false, new Map([[placa, [crua('f', 310, 10)]]]),
+    )
+    expect(d.status).toBe('pendente')
+  })
+})

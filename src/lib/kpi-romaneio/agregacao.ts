@@ -507,29 +507,46 @@ type PontoReferenciaPlacaNf = { endereco: string; lat: number; lng: number }
  *  `preferirForte` (modoPrecisao), uma candidata forte sempre vence uma
  *  fraca, mesmo mais curta; sem ele, a escolha e' exatamente a antiga (maior
  *  duracao) e `forte` e' so' informativo. */
+// Task 3 (plano 28/09, caso real TOS5E38/2393419 26/09): a API /stops da
+// Unitrac as vezes FUNDE duas paradas vizinhas numa so' -- o centro da fundida
+// cai entre as duas (310 m do cadastro, parada real a 32 m). Parada longa
+// (>=8 min) ganha tolerancia ate' 350 m; curta continua no teto de 300 m
+// (raio maior sem parada longa = FP comprovado no estudo 26/09).
+const RAIO_PARADA_FUNDIDA_M = 350
+const DURACAO_MIN_PARADA_FUNDIDA_MIN = 8
+
 function acharParadaUnitracPropria(
   linha: LinhaGeocodificada,
   cadastro: { lat: number; lng: number } | null,
   paradasCruas: UnitracParadaRow[],
   outrosPontosDaPlaca: PontoReferenciaPlacaNf[],
   preferirForte: boolean = false,
+  // Task 3 (plano 28/09): paradas da PONTE (GPS continuo, separa melhor o que
+  // a /stops fundiu) da propria placa -- so' entram como candidatas no
+  // criterio curto forte (<=RAIO_R2_FORTE_CURTO_M com >=2 min), com o mesmo
+  // descarte de outro cliente a <=150 m. Default vazio = comportamento antigo.
+  paradasPonte: UnitracParadaRow[] = [],
 ): { parada: UnitracParadaRow; distParadaM: number; forte: boolean } | null {
   const geo = linha.geoConfiavel !== false && linha.lat != null && linha.lng != null
     ? { lat: linha.lat, lng: linha.lng }
     : null
   if (geo == null && cadastro == null) return null
   let melhor: { parada: UnitracParadaRow; dist: number; duracaoMin: number; forte: boolean } | null = null
-  for (const p of paradasCruas) {
+  const candidatasTodas = [
+    ...paradasCruas.map(p => ({ p, daPonte: false })),
+    ...paradasPonte.map(p => ({ p, daPonte: true })),
+  ]
+  for (const { p, daPonte } of candidatasTodas) {
     if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
-    const inicio = new Date(p.chegada).getTime()
-    const fim = new Date(p.fim_real ?? p.saida ?? p.chegada).getTime()
-    const duracaoMin = (fim - inicio) / 60_000
+    const duracaoMin = duracaoParadaMin(p)
     if (duracaoMin < DURACAO_MIN_PARADA_UNITRAC_PROPRIA_MIN) continue
-    const distGeo = geo ? haversine(p.lat, p.lng, geo.lat, geo.lng) : null
-    const distCad = cadastro ? haversine(p.lat, p.lng, cadastro.lat, cadastro.lng) : null
-    const candidatas = [distGeo, distCad].filter((d): d is number => d != null && d <= RAIO_PARADA_UNITRAC_PROPRIA_M)
-    if (candidatas.length === 0) continue
-    const dist = Math.min(...candidatas)
+    const distGeo = geo ? haversine(p.lat, p.lng, geo.lat, geo.lng) : Infinity
+    const distCad = cadastro ? haversine(p.lat, p.lng, cadastro.lat, cadastro.lng) : Infinity
+    const dist = Math.min(distGeo, distCad)
+    const raio = daPonte
+      ? RAIO_R2_FORTE_CURTO_M
+      : duracaoMin >= DURACAO_MIN_PARADA_FUNDIDA_MIN ? RAIO_PARADA_FUNDIDA_M : RAIO_PARADA_UNITRAC_PROPRIA_M
+    if (dist > raio) continue
     const explicadaPorOutroCliente = outrosPontosDaPlaca
       .filter(o => o.endereco !== linha.endereco)
       .some(o => haversine(p.lat as number, p.lng as number, o.lat, o.lng) <= RAIO_OUTRO_CLIENTE_EXPLICA_M)
@@ -1761,6 +1778,7 @@ export function montarDetalheEntregas(
         : null
       const achada = acharParadaUnitracPropria(
         linha, cadastro, paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? [], pontosReferenciaDaPlaca, modoPrecisao,
+        paradasProprias,
       )
       if (achada) {
         paradaPropriaConfirmada = achada
