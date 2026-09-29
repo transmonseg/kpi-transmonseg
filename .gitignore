@@ -58,3 +58,6 @@ release/
 
 # Runner noturno de correcao de geocode (report-only) -- CSVs locais
 relatorios-geocode/
+
+__pycache__/
+*.pyc
