@@ -663,7 +663,8 @@ const OBS_PARADA_CURTA_OUTRO_ENDERECO = 'PARADA CURTA DE OUTRO ENDEREÇO - NÃO 
 // Task 1 (plano 2026-09-29): rotulo neutro pra NF pendente de placa com
 // apagao de sinal no dia (ver bloco em montarDetalheEntregas). Contem
 // 'CONFERIR' -> calcularConfianca devolve 'REVISAR'.
-export const OBS_SINAL_RASTREADOR_FALHA = 'SINAL DO RASTREADOR COM FALHA NO DIA - CONFERIR'
+export const SINAL_FALHA_LIGADO = false
+const OBS_SINAL_RASTREADOR_FALHA = 'SINAL DO RASTREADOR COM FALHA NO DIA - CONFERIR'
 // Rotulos de pendente que so' dizem "a posicao nao mostrou o caminhao perto"
 // (sem evidencia POSITIVA de posicao) -- os unicos que o apagao de sinal
 // (Task 1) e a placa com duas cargas (Task 2) podem trocar. `null` (SEM
@@ -1974,8 +1975,11 @@ export function montarDetalheEntregas(
     // (PARADA PRÓXIMA, COORDENADA IMPRECISA) nem nos de precedencia maior
     // (SEM RASTREADOR, NÃO SAIU DA BASE, AGUARDANDO -- todos ja' atribuiram
     // `observacao` acima, fora da whitelist). So' `modoPrecisao` (Nutry Max).
+    // DESLIGADO (29/09): medido em 22-28/09, 11 NFs que a equipe marcou 'nao foi'
+    // viraram 'sinal com falha' porque a ponte marca apagao com UMA posicao
+    // atrasada >15 min. Religar so' com criterio de apagao mais estrito.
     if (
-      modoPrecisao && apagaoDeSinalPropriaPlaca && status === 'pendente'
+      SINAL_FALHA_LIGADO && modoPrecisao && apagaoDeSinalPropriaPlaca && status === 'pendente'
       && (observacao == null || ROTULOS_SEM_EVIDENCIA_DE_POSICAO.some(r => observacao!.startsWith(r)))
     ) {
       observacao = OBS_SINAL_RASTREADOR_FALHA
