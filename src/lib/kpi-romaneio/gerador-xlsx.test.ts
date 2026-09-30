@@ -1177,3 +1177,44 @@ describe('aviso NFs da Escala x Romaneio (Task 2, item 2)', () => {
     expect(totais).toContain('AVISO: 1 carga com NFs da Escala ≠ Romaneio (Escala 34 × Romaneio 32; 2 NFs a menos no romaneio, fora da conta) — ver aba Avisos')
   })
 })
+
+// Task 2 (plano 2026-09-30, item 3 -- PAO-11 29/09): 2 NFs de carga SEM PLACA
+// entravam no rodape "NFs sem rastreador: 21" (19 reais + 2). Carga sem placa
+// e' categoria propria: fora da taxa, contada a parte no rodape, e o STATUS
+// do detalhe diz "CARGA SEM PLACA" (nunca "SEM RASTREADOR").
+describe('carga sem placa fora do "NFs sem rastreador" (Task 2, item 3)', () => {
+  const OBS_SR = 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO'
+  const HOJE = '2026-09-30'
+  const linhas: LinhaKpiRomaneio[] = [
+    linhaKpi({ carga: 'PAO-11', placa: '', nfPlanejado: 2, temRastreador: false }),
+    linhaKpi({ carga: '98970', placa: 'RQO9H37', nfPlanejado: 1, temRastreador: true }),
+    linhaKpi({ carga: '98971', placa: 'ABC1234', nfPlanejado: 2, temRastreador: true }),
+  ]
+  const detalhe: LinhaDetalheEntrega[] = [
+    detalheFixture({ carga: 'PAO-11', placa: '', nf: '216274', temRastreador: false, observacao: OBS_SR, evidencia: 'sem_rastreador' }),
+    detalheFixture({ carga: 'PAO-11', placa: '', nf: '216275', temRastreador: false, observacao: OBS_SR, evidencia: 'sem_rastreador' }),
+    detalheFixture({ carga: '98970', placa: 'RQO9H37', nf: 'A1', observacao: OBS_SR, evidencia: 'sem_rastreador' }),
+    detalheFixture({ carga: '98971', placa: 'ABC1234', nf: 'C1', status: 'confirmado_gps' }),
+    detalheFixture({ carga: '98971', placa: 'ABC1234', nf: 'C2', observacao: 'NÃO FOI AO CLIENTE' }),
+  ]
+
+  it('rodape: 1 sem rastreador + 2 de carga sem placa, ambos fora da conta; taxa 1 de 2', async () => {
+    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-09-29', [], detalhe, HOJE, undefined, { resumoConfirmacao: true })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    const ws = wb.worksheets[0]
+    const totais = ws.getRow(ws.rowCount).getCell(1).value as string
+    expect(totais).toContain('50,0% (1 de 2 NFs; 1 sem rastreador e 2 de carga sem placa fora da conta)')
+    expect(totais).toContain('NFs sem rastreador: 1')
+    expect(totais).toContain('NFs de carga sem placa: 2 (fora da conta)')
+  })
+
+  it('STATUS das NFs da carga sem placa diz CARGA SEM PLACA (nunca SEM RASTREADOR)', async () => {
+    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-09-29', [], detalhe, HOJE, undefined, { resumoConfirmacao: true })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    const vals = wb.getWorksheet('SEM PLACA')!.getSheetValues().slice(4) as unknown[][]
+    const status = vals.filter(Array.isArray).map(v => String(v[8]))
+    expect(status).toEqual(['CARGA SEM PLACA - NÃO CONTABILIZADO', 'CARGA SEM PLACA - NÃO CONTABILIZADO'])
+  })
+})

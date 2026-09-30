@@ -211,6 +211,8 @@ function textoStatus(d: LinhaDetalheEntrega): string {
   // portal lista ~102 veiculos e nos so' cadastramos 59, entao a maioria
   // dessas placas provavelmente TEM rastreador e o buraco e' nosso. O rotulo
   // diz o que sabemos de verdade: falta o codigo no cadastro.
+  // Task 2 (item 3): carga sem placa nunca e' rotulada "sem rastreador".
+  if (ehCargaSemPlaca(d) && (d.observacao == null || d.observacao.startsWith(PREFIXO_OBS_SEM_RASTREADOR))) return ROTULO_CARGA_SEM_PLACA
   if (d.observacao) return d.observacao
   if (!d.temRastreador) return 'PLACA SEM RASTREADOR CADASTRADO - COMPLETAR FROTA'
   return LABEL_STATUS_ENTREGA[d.status]
@@ -225,6 +227,7 @@ function textoStatus(d: LinhaDetalheEntrega): string {
 // rastreador: N") pra nao esconder o problema, so' tira ele do calculo da
 // taxa. Opera sobre `detalhe` (uma linha por NF), nao `linhas` (por carga).
 const PREFIXO_OBS_SEM_RASTREADOR = 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO'
+const ROTULO_CARGA_SEM_PLACA = 'CARGA SEM PLACA - NÃO CONTABILIZADO'
 
 // Task 4 (plano 24/09): rotulo exibido pra cada valor do enum de resolucao
 // manual (kpi_nf_resolucao.resolucao) -- MAIUSCULO, mesmo padrao visivel do
@@ -276,7 +279,16 @@ function confirmadaAposConferencia(d: LinhaDetalheEntrega): boolean {
 // 'outra_placa'`: evidencia independente do rastreador desta placa, conta
 // normalmente). O prefixo continua cobrindo o caso (b) de
 // semRastreadorNoDia (tem CV mas zero posicoes no dia, temRastreador=true).
+// Task 2 (plano 2026-09-30, item 3 -- PAO-11 29/09): carga SEM PLACA no
+// documento (romaneio do pao com CARRO em branco/"-") nao e' veiculo sem
+// rastreador -- nao ha' veiculo identificado. Categoria propria, fora da
+// taxa (num e denom), contada a parte no rodape.
+function ehCargaSemPlaca(d: LinhaDetalheEntrega): boolean {
+  return d.placa === ''
+}
+
 function ehSemRastreador(d: LinhaDetalheEntrega): boolean {
+  if (ehCargaSemPlaca(d)) return false
   if (d.observacao?.startsWith(PREFIXO_OBS_SEM_RASTREADOR)) return true
   return d.temRastreador === false && d.evidencia !== 'outra_placa' && d.evidencia !== 'rota_outra_placa'
 }
@@ -286,7 +298,7 @@ function ehSemRastreador(d: LinhaDetalheEntrega): boolean {
 // denom); com resolucao manual conta pela resolucao (ver
 // entraNoDenominadorPosConferencia). Sem rastreador prevalece na contagem.
 function ehNaoSaiuDaBase(d: LinhaDetalheEntrega): boolean {
-  return (d.observacao?.startsWith(OBS_NAO_SAIU_DA_BASE) ?? false) && !ehSemRastreador(d)
+  return (d.observacao?.startsWith(OBS_NAO_SAIU_DA_BASE) ?? false) && !ehSemRastreador(d) && !ehCargaSemPlaca(d)
 }
 
 // 29/09 (P0 da Ana): rotulo do resumo (aba 1 + cabecalho da aba da placa)
@@ -313,7 +325,7 @@ function placasSemRastreadorNoDetalhe(detalhe: LinhaDetalheEntrega[]): Set<strin
 // fim da rota: N"). Mesmo prefixo gravado em agregacao.ts.
 const PREFIXO_OBS_AGUARDANDO = 'AGUARDANDO - ROTA EM ANDAMENTO'
 function ehAguardando(d: LinhaDetalheEntrega): boolean {
-  return (d.observacao?.startsWith(PREFIXO_OBS_AGUARDANDO) ?? false) && !ehSemRastreador(d) && !ehNaoSaiuDaBase(d)
+  return (d.observacao?.startsWith(PREFIXO_OBS_AGUARDANDO) ?? false) && !ehSemRastreador(d) && !ehNaoSaiuDaBase(d) && !ehCargaSemPlaca(d)
 }
 
 // Fix round 1, item 4 (decisao de negocio da Ana): a taxa "apos conferencia
@@ -332,6 +344,7 @@ function ehAguardando(d: LinhaDetalheEntrega): boolean {
 function entraNoDenominadorPosConferencia(d: LinhaDetalheEntrega): boolean {
   if (d.resolucaoManual === 'desatualizado') return false
   if (ehSemRastreador(d) && !d.resolucaoManual) return false
+  if (ehCargaSemPlaca(d) && !d.resolucaoManual) return false
   if (ehNaoSaiuDaBase(d) && !d.resolucaoManual) return false
   // Item 4 (revisao final): AGUARDANDO segue a mesma regra de SEM
   // RASTREADOR aqui -- fora ate' a operacao registrar uma resolucao (que e'
@@ -357,14 +370,16 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   denominadorPosConferencia: number
   semRastreador: number
   naoSaiuDaBase: number
+  cargaSemPlaca: number
   aguardando: number
   revisar: number
 } {
   const semRastreador = detalhe.filter(ehSemRastreador).length
   const naoSaiuDaBase = detalhe.filter(ehNaoSaiuDaBase).length
-  const revisar = detalhe.filter(d => d.confianca === 'REVISAR' && !ehSemRastreador(d)).length
+  const cargaSemPlaca = detalhe.filter(ehCargaSemPlaca).length
+  const revisar = detalhe.filter(d => d.confianca === 'REVISAR' && !ehSemRastreador(d) && !ehCargaSemPlaca(d)).length
   const aguardando = detalhe.filter(ehAguardando).length
-  const base = detalhe.filter(d => !ehSemRastreador(d) && !ehNaoSaiuDaBase(d) && !ehAguardando(d))
+  const base = detalhe.filter(d => !ehSemRastreador(d) && !ehNaoSaiuDaBase(d) && !ehAguardando(d) && !ehCargaSemPlaca(d))
   const denominador = base.length
   // Confirmada = status diferente de 'pendente' (so' ENTREGUE confirmado);
   // NF sem rastreador e REVISAR SEMPRE ficam pendente (nunca confirmam),
@@ -383,7 +398,7 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   const taxaPosConferenciaPct = denominadorPosConferencia > 0
     ? Math.round((1000 * confirmadasPosConferencia) / denominadorPosConferencia) / 10 : 0
 
-  return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, denominadorPosConferencia, semRastreador, naoSaiuDaBase, aguardando, revisar }
+  return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, denominadorPosConferencia, semRastreador, naoSaiuDaBase, cargaSemPlaca, aguardando, revisar }
 }
 
 // Pedido do usuário 26/09 (linha de TAXA auditável): inteiro com separador
@@ -614,11 +629,15 @@ export async function gerarKpiRomaneioXlsx(
     // 'desatualizado' -- ver `entraNoDenominadorPosConferencia`), por isso
     // usa `total - denominador` genérico em vez do rótulo "sem rastreador".
     const foraDaContaPosConferencia = detalhe.length - resumo.denominadorPosConferencia
-    const foraTexto = resumo.naoSaiuDaBase > 0
-      ? `${formatarInteiroPtBr(resumo.semRastreador)} sem rastreador e ${formatarInteiroPtBr(resumo.naoSaiuDaBase)} que não saíram da base fora da conta`
-      : `${formatarInteiroPtBr(resumo.semRastreador)} sem rastreador fora da conta`
+    const partesFora = [
+      `${formatarInteiroPtBr(resumo.semRastreador)} sem rastreador`,
+      ...(resumo.naoSaiuDaBase > 0 ? [`${formatarInteiroPtBr(resumo.naoSaiuDaBase)} que não saíram da base`] : []),
+      ...(resumo.cargaSemPlaca > 0 ? [`${formatarInteiroPtBr(resumo.cargaSemPlaca)} de carga sem placa`] : []),
+    ]
+    const foraTexto = `${partesFora.length > 1 ? `${partesFora.slice(0, -1).join(', ')} e ${partesFora[partesFora.length - 1]}` : partesFora[0]} fora da conta`
     const taxaTexto = `${formatarPctUmaCasa(resumo.taxaPct)}% (${formatarInteiroPtBr(resumo.confirmadas)} de ${formatarInteiroPtBr(resumo.denominador)} NFs; ${foraTexto})`
-    const naoSaiuTexto = resumo.naoSaiuDaBase > 0 ? `    |    NFs sem saída da base: ${resumo.naoSaiuDaBase} (fora da conta)` : ''
+    const naoSaiuTexto = (resumo.naoSaiuDaBase > 0 ? `    |    NFs sem saída da base: ${resumo.naoSaiuDaBase} (fora da conta)` : '')
+      + (resumo.cargaSemPlaca > 0 ? `    |    NFs de carga sem placa: ${resumo.cargaSemPlaca} (fora da conta)` : '')
     const taxaPosTexto = `${formatarPctUmaCasa(resumo.taxaPosConferenciaPct)}% (${formatarInteiroPtBr(resumo.confirmadasPosConferencia)} de ${formatarInteiroPtBr(resumo.denominadorPosConferencia)} NFs; ${formatarInteiroPtBr(foraDaContaPosConferencia)} fora da conta)`
     const linhaResumoGeral = ws.addRow([
       `TAXA DE CONFIRMAÇÃO: ${taxaTexto}    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${taxaPosTexto}    |    REVISAR: ${resumo.revisar}    |    NFs sem rastreador: ${resumo.semRastreador}${naoSaiuTexto}    |    NFs aguardando fim da rota: ${resumo.aguardando}${notaAvisoNfDivergente(avisos)}`,

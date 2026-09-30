@@ -15,7 +15,9 @@ const CARRO_RE = /^CARRO\d+([A-Z].*)$/
 // (nada pra colar depois do numero) -- CARRO_RE nao casa e, sem esta
 // segunda regex, a linha do CARRO seria consumida como se fosse a linha de
 // motorista, perdendo o motorista de verdade que vem logo abaixo.
-const CARRO_SEM_PLACA_RE = /^CARRO\d*$/
+// Task 2 (plano 2026-09-30, item 3 -- PAO-11 29/09): placa "-" no documento
+// sai "CARRO0-" no pdf-parse; sem o "-?" a linha virava motorista "CARRO0".
+const CARRO_SEM_PLACA_RE = /^CARRO\d*-?$/
 // Cabecalho de coluna do bloco de entregas -- marca o fim da area de
 // identificacao (CARRO/motorista). Nunca pode ser lido como motorista.
 const ORDEM_HEADER_RE = /^ORDEM/

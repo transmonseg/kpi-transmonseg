@@ -354,4 +354,35 @@ ORDEMNOTA FISCALCLIENTEENDEREÇOBAIRROQTD CAIXASPESO BRUTO PESO LÍQUIDOVALOR BR
     expect(linhas).toEqual([])
     expect(escala).toEqual([])
   })
+
+  // Task 2 (plano 2026-09-30, item 3 -- PAO-11 de 29/09): texto REAL do
+  // pdf-parse do "PROGRAMAÇÃO JAC (CONGELADO)" de 29/09 (geracao 115cf03e):
+  // CARRO 0 com placa "-" sai "CARRO0-", e "--" e' a linha de motorista/
+  // ajudante vazios. Antes o "CARRO0-" era lido como motorista "CARRO0".
+  it('PAO-11 29/09: "CARRO0-" e\' carro sem placa (motorista nunca vira "CARRO0")', () => {
+    const texto = `
+DATA29/09/2026
+ROMANEIO11MOTORISTAAJUDANTE
+CARRO0-
+--
+ORDEMNOTA FISCALCLIENTEENDEREÇOBAIRROQTD CAIXASPESO BRUTO PESO LÍQUIDOVALOR BRUTO
+4
+2
+216274REDE SUPERMARKET PEDRA DE GUARATIBA                                   ESTRADA DA MATRIZ 00055                                                         PEDRA DE GUARATIBA                      536,5351.184,05R$                  
+1
+216275REDE SUPERMARKET PEDRA DE GUARATIBA                                   ESTRADA DA MATRIZ 00055                                                         PEDRA DE GUARATIBA                      17,37236,81R$                     
+643,8421.420,86R$                  
+`
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { linhas, escala } = parsePaoTexto(texto, '2026-09-29')
+    warn.mockRestore()
+    expect(linhas.map(l => l.nf)).toEqual(['216274', '216275'])
+    for (const l of linhas) {
+      expect(l.carga).toBe('PAO-11')
+      expect(l.placa).toBe('')
+      expect(l.motorista).toBe('')
+    }
+    expect(escala).toHaveLength(1)
+    expect(escala[0]).toMatchObject({ carga: 'PAO-11', placaNorm: '', motorista: '' })
+  })
 })
