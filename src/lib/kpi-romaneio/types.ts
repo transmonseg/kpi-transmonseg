@@ -153,6 +153,11 @@ export type EvidenciaNf =
   // confirmacao da R2 em modoPrecisao). Unica excecao a desativarOutraPlaca.
   // So' Nutry Max (`reconhecerRodizio`, agregacao.ts).
   | 'rota_outra_placa'
+  // Parada proxima propria (122e390 + guardas 29/09, so' modoPrecisao): NF
+  // 'PARADA PRÓXIMA (500m-2km)' confirmada por parada da PROPRIA placa >=3 min
+  // a 500 m-2 km, isolada. Distinta de 'parada_no_endereco' de proposito: nao
+  // e' entrega medida no endereco, e' inferencia por parada vizinha.
+  | 'parada_proxima_propria'
 
 /** Task 3 (plano 2026-09-26): nivel de confianca de cada NF, derivado do
  *  MESMO par status/observacao ja calculado em montarDetalheEntregas -- nunca

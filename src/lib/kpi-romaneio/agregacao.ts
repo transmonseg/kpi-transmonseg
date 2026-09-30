@@ -674,24 +674,58 @@ const RAIO_MIN_PARADA_PROXIMA_PROPRIA_M = 500
 const RAIO_MAX_PARADA_PROXIMA_PROPRIA_M = 2_000
 const OBS_PARADA_PROXIMA_FORA = 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR'
 
+// Guardas (verificacao-20-parada-proxima.md, 29/09 -- 4 FPs em 20 NFs):
+// (2) geocode confiavel x cadastro Unitrac a mais de DIVERGENCIA_GEO_CADASTRO_M
+// -> um dos dois esta' errado; mede SO' pelo geocode (RQU3F71: cadastro a 27 km
+// deixava um posto no centro "mais perto" que Morangaba).
+const DIVERGENCIA_GEO_CADASTRO_M = 2_000
+function ehParadaDaPonte(p: UnitracParadaRow): boolean {
+  return p.id.includes('-ponte-')
+}
+function fimParadaMs(p: UnitracParadaRow): number {
+  return new Date(p.fim_real ?? p.saida ?? p.chegada).getTime()
+}
+/** Janela [ini, fim] (ms) que ja' serviu de prova pra OUTRA NF da placa. */
+type JanelaProvaOutraNf = { endereco: string; iniMs: number; fimMs: number }
+
 /** Parada propria isolada perto da NF (ver constantes acima). Entre as
- *  validas vence a mais perto da NF (empate: a mais longa). */
+ *  validas vence a mais perto da NF (empate: a mais longa). Guardas 29/09:
+ *  (1) descarta parada cuja janela ja' e' prova de outra NF da placa
+ *  (`janelasProvaOutrasNfs`) e o isolamento conta tambem vizinhos com
+ *  coordenada NAO confiavel (`outrosPontosDaPlaca` ja' vem com eles);
+ *  (2) ver DIVERGENCIA_GEO_CADASTRO_M; (3) com `ponteComSinal` (GPS bruto da
+ *  ponte sem apagao), parada crua da Unitrac so' vale se uma parada da ponte
+ *  sobreposta no tempo tiver >= DURACAO_MIN tambem (a Unitrac infla a duracao:
+ *  TUS1A47, "3 min" com 1 min parado e 64 km/h depois). */
 function acharParadaProximaPropriaIsolada(
   linha: LinhaGeocodificada,
   cadastro: { lat: number; lng: number } | null,
   paradas: UnitracParadaRow[],
   outrosPontosDaPlaca: PontoReferenciaPlacaNf[],
+  janelasProvaOutrasNfs: JanelaProvaOutraNf[],
+  ponteComSinal: boolean,
 ): ParadaProvada | null {
   const geo = linha.geoConfiavel !== false && linha.lat != null && linha.lng != null
     ? { lat: linha.lat, lng: linha.lng }
     : null
+  if (geo && cadastro && haversine(geo.lat, geo.lng, cadastro.lat, cadastro.lng) > DIVERGENCIA_GEO_CADASTRO_M) {
+    cadastro = null
+  }
   if (geo == null && cadastro == null) return null
   const outros = outrosPontosDaPlaca.filter(o => o.endereco !== linha.endereco)
+  const janelasOutras = janelasProvaOutrasNfs.filter(j => j.endereco !== linha.endereco)
+  const paradasPonte = paradas.filter(ehParadaDaPonte)
   let melhor: (ParadaProvada & { duracaoMin: number }) | null = null
   for (const p of paradas) {
     if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
     const duracaoMin = duracaoParadaMin(p)
     if (duracaoMin < DURACAO_MIN_PARADA_PROXIMA_PROPRIA_MIN) continue
+    if (ponteComSinal && !ehParadaDaPonte(p) && !paradasPonte.some(q =>
+      q.classificacao === 'FORA_BASE' && sobrepoeNoTempo(p, q) && duracaoParadaMin(q) >= DURACAO_MIN_PARADA_PROXIMA_PROPRIA_MIN,
+    )) continue
+    const iniMs = new Date(p.chegada).getTime()
+    const fimMs = fimParadaMs(p)
+    if (janelasOutras.some(j => j.fimMs >= iniMs && j.iniMs <= fimMs)) continue
     const distGeo = geo ? haversine(p.lat, p.lng, geo.lat, geo.lng) : Infinity
     const distCad = cadastro ? haversine(p.lat, p.lng, cadastro.lat, cadastro.lng) : Infinity
     const distM = Math.min(distGeo, distCad)
@@ -1073,6 +1107,11 @@ export function gerarMotivo(d: {
     const placa = d.placaExecutora ?? '?'
     return min && dist ? `Rota executada pela ${placa} — parada de ${min} a ${dist}` : `Rota executada pela ${placa}`
   }
+  if (d.evidencia === 'parada_proxima_propria') {
+    return min && dist
+      ? `Parada própria de ${min} a ${dist} do cliente, fora do endereço`
+      : 'Parada própria próxima, fora do endereço'
+  }
   if (d.evidencia === 'parada_unitrac_propria') {
     return min && dist ? `Parada Unitrac da própria placa de ${min} a ${dist}` : 'Parada Unitrac da própria placa'
   }
@@ -1333,6 +1372,28 @@ export function montarDetalheEntregas(
       }
       return pontos
     })
+  // Guarda 1 da parada proxima propria (29/09, RQM0C38/2393499): o
+  // isolamento conta TAMBEM vizinho com geocode nao confiavel (usa a
+  // coordenada mesmo assim -- o Maycao, confiavel=false, estava a 33 m da
+  // parada) e descarta parada cuja janela ja' e' prova de outra NF da placa no
+  // dia (visita dela, ou alvo Unitrac feito dentro da janela).
+  const pontosIsolamentoParadaProxima: PontoReferenciaPlacaNf[] = [
+    ...pontosReferenciaDaPlaca,
+    ...todasLinhasDaPlacaNoDia
+      .filter(l => l.geoConfiavel === false && l.lat != null && l.lng != null)
+      .map(l => ({ endereco: l.endereco, lat: l.lat as number, lng: l.lng as number })),
+  ]
+  const janelasProvaOutrasNfs: JanelaProvaOutraNf[] = todasLinhasDaPlacaNoDia.flatMap((l): JanelaProvaOutraNf[] => {
+    const janelas: JanelaProvaOutraNf[] = []
+    const v = visitasPorNf.get(l.nf)
+    if (v) janelas.push({ endereco: l.endereco, iniMs: new Date(v.chegada).getTime(), fimMs: new Date(v.saida).getTime() })
+    const a = alvoPorNf.get(l.nf)
+    if (a?.situacao === 1 && a.feitoISO) {
+      const ms = new Date(a.feitoISO).getTime()
+      janelas.push({ endereco: l.endereco, iniMs: ms, fimMs: ms })
+    }
+    return janelas
+  })
   // Task 4 (plano 26/09): decisao de nivel de CARGA (nao por NF) -- calculada
   // uma vez, usando o MESMO `melhorDistanciaPropria` ja usado abaixo pra
   // "NAO FOI"/"PASSOU" (mesma fonte de distancia, sem inventar uma segunda
@@ -1947,10 +2008,14 @@ export function montarDetalheEntregas(
     // usa parada de outro veiculo (so' cruas + ponte da propria placa).
     let paradaProximaPropria: ParadaProvada | null = null
     if (modoPrecisao && status === 'pendente' && observacao === OBS_PARADA_PROXIMA_FORA) {
+      // Guarda 3: "sinal" = a ponte (GPS bruto) respondeu por esta placa e nao
+      // houve apagao -- ai' a duracao da Unitrac precisa bater no GPS. Em
+      // apagao vale a duracao da Unitrac.
+      const ponteComSinal = !apagaoDeSinalPropriaPlaca && paradasProprias.some(ehParadaDaPonte)
       paradaProximaPropria = acharParadaProximaPropriaIsolada(
         linha, cadastroDoAlvo(alvo),
         [...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []), ...paradasProprias],
-        pontosReferenciaDaPlaca,
+        pontosIsolamentoParadaProxima, janelasProvaOutrasNfs, ponteComSinal,
       )
       if (paradaProximaPropria) {
         const p = paradaProximaPropria.parada
@@ -2103,6 +2168,10 @@ export function montarDetalheEntregas(
     } else if (paradaPropriaConfirmada) {
       evidencia = 'parada_unitrac_propria'
       distParadaM = Math.round(paradaPropriaConfirmada.distParadaM)
+    } else if (paradaProvada && paradaProvada === paradaProximaPropria) {
+      // Nao equipara a entrega no endereco (review 29/09).
+      evidencia = 'parada_proxima_propria'
+      distParadaM = Math.round(paradaProvada.distM)
     } else if (paradaProvada) {
       evidencia = paradaProvada.ref === 'cad' ? 'parada_no_cadastro_unitrac' : 'parada_no_endereco'
       distParadaM = Math.round(paradaProvada.distM)

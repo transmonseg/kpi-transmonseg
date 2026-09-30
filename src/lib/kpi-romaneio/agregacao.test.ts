@@ -3904,6 +3904,7 @@ function chamarNutryMax(
     todasLinhasDaPlacaNoDia?: LinhaGeocodificada[]
     kmPercorrido?: number | null
     modoPrecisao?: boolean
+    apagaoDeSinalPropriaPlaca?: boolean
   } = {},
 ) {
   return montarDetalheEntregas(
@@ -3922,7 +3923,7 @@ function chamarNutryMax(
     true, // desativarOutraPlaca
     true, // confirmarPorParadaUnitracPropria
     opts.todasLinhasDaPlacaNoDia,
-    false, // apagaoDeSinalPropriaPlaca
+    opts.apagaoDeSinalPropriaPlaca ?? false,
     new Map(), // menorDistanciaTrajetoPorNf
     true, // detectarEscalaDivergente
     opts.modoPrecisao ?? true,
@@ -4685,7 +4686,7 @@ describe('Plano 29/09 -- PARADA PRÓXIMA propria e isolada vira ENTREGUE', () =>
     expect(d.observacao).toBeNull()
     expect(d.chegada).toBe(t('12:59'))
     expect(d.saida).toBe(t('13:10'))
-    expect(d.evidencia).toBe('parada_no_endereco')
+    expect(d.evidencia).toBe('parada_proxima_propria')
     expect(d.distParadaM).toBe(1000)
   })
 
@@ -4707,7 +4708,7 @@ describe('Plano 29/09 -- PARADA PRÓXIMA propria e isolada vira ENTREGUE', () =>
     expect(d.status).toBe('confirmado_gps')
     expect(d.observacao).toBeNull()
     expect(d.chegada).toBe(t('12:59'))
-    expect(d.evidencia).toBe('parada_no_cadastro_unitrac')
+    expect(d.evidencia).toBe('parada_proxima_propria')
     expect(d.distParadaM).toBe(1200)
   })
 
@@ -4798,5 +4799,237 @@ describe('Plano 29/09 -- PARADA PRÓXIMA propria e isolada vira ENTREGUE', () =>
       expect(d.status).toBe('pendente')
       expect(d.observacao).toBe(OBS_PROXIMA)
     }
+  })
+})
+
+// Guardas da parada proxima propria (verificacao-20-parada-proxima.md, review
+// NAO PRONTO 29/09): 20 NFs conferidas com GPS -- 15 entregas provaveis, 4
+// falsos positivos. (1) parada que ja' e' prova de outra NF da placa nao vale,
+// e o isolamento conta vizinho com coordenada NAO confiavel; (2) geocode x
+// cadastro divergindo >2 km -> mede so' pelo geocode; (3) com a ponte (GPS
+// bruto) com sinal, a parada precisa de >=3 min tambem no GPS. Fixtures
+// resumidas dos casos reais (distancias da tabela do relatorio).
+describe('Parada proxima propria -- guardas (ja confirmou outra NF, geo confiavel, GPS >=3 min)', () => {
+  const OBS_PROXIMA = 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR'
+  const LAT0 = -22.0
+  const LNG0 = -42.0
+  const M_LNG = 1 / (111_195 * Math.cos(LAT0 * Math.PI / 180))
+  const em = (norteM: number, lesteM = 0) => ({ lat: LAT0 + norteM * M_LAT, lng: LNG0 + lesteM * M_LNG })
+  const cliente = (nf: string, endereco: string, pos: { lat: number; lng: number }, geoConfiavel = true) =>
+    linha(nf, { endereco, ...pos, geoConfiavel })
+  const doNf = (d: ReturnType<typeof chamarNutryMax>, n: string) => d.find(x => x.nf === n)!
+  const confirmada = (d: ReturnType<typeof doNf>, chegadaEsperada: string) => {
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBeNull()
+    expect(d.chegada).toBe(chegadaEsperada)
+    expect(d.evidencia).toBe('parada_proxima_propria')
+  }
+  const conferir = (d: ReturnType<typeof doNf>) => {
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe(OBS_PROXIMA)
+  }
+
+  describe('guarda 2: geocode x cadastro divergem >2 km -> so geocode', () => {
+    // RQU3F71 2390362/63 25/09: cadastro errado no centro de Campos (27 km do
+    // geo) deixava o Posto Lider 3 (770 m do cadastro) "mais perto". A entrega
+    // real provavel e' a parada Unitrac 12:14-12:43 a 864 m do geo (apagao).
+    const t = (hhmm: string) => `2026-09-25T${hhmm}:00.000Z`
+    const P = 'RQU3F71'
+    const nfs = [cliente('2390362', 'SUPERMERCADO DA FAMILIA', em(0)), cliente('2390363', 'SUPERMERCADO DA FAMILIA', em(0))]
+    const alvos = nfs.map(l => alvo(l.nf, 0, { placaNorm: P, pontoLat: em(26_900, 770).lat, pontoLng: em(26_900, 770).lng }))
+    const posto = paradaForaBase(`${P}-api-2`, em(26_900).lat, em(26_900).lng, t('08:01'), t('08:08'), P)
+    const morangaba = paradaForaBase(`${P}-api-5`, em(864).lat, em(864).lng, t('12:14'), t('12:43'), P)
+
+    it('RQU3F71: posto a 27 km do geo (770 m do cadastro errado) nao prova; vale a parada de Morangaba a 864 m do geo', () => {
+      const detalhe = chamarNutryMax(nfs, {
+        placa: P, alvos, apagaoDeSinalPropriaPlaca: true,
+        paradasPorOutraPlaca: new Map([[P, [posto, morangaba]]]),
+        paradasUnitracCruasPropriaPlaca: new Map([[P, [posto, morangaba]]]),
+      })
+      for (const n of ['2390362', '2390363']) {
+        const d = doNf(detalhe, n)
+        confirmada(d, t('12:14'))
+        expect(d.distParadaM).toBe(864)
+      }
+    })
+
+    it('RQU3F71 sem a parada de Morangaba (so o posto + passagem a 900 m) -> continua CONFERIR', () => {
+      const passagem = paradaForaBase(`${P}-api-4`, em(900).lat, em(900).lng, t('12:10'), t('12:11'), P)
+      const detalhe = chamarNutryMax(nfs, {
+        placa: P, alvos, apagaoDeSinalPropriaPlaca: true,
+        paradasPorOutraPlaca: new Map([[P, [posto, passagem]]]),
+        paradasUnitracCruasPropriaPlaca: new Map([[P, [posto, passagem]]]),
+      })
+      for (const n of ['2390362', '2390363']) conferir(doNf(detalhe, n))
+    })
+  })
+
+  describe('guarda 1: parada que ja e prova de outra NF / vizinho com coordenada nao confiavel', () => {
+    // RQM0C38 2393499 26/09: parada 08:22-08:30 a 1,82 km do cliente e' a
+    // mesma que confirmou o Hortifruti Maycao (33 m, geo confiavel=false,
+    // cadastro dele a 2,4 km).
+    const t = (hhmm: string) => `2026-09-26T${hhmm}:00.000Z`
+    const P = 'RQM0C38'
+    const nf = cliente('2393499', 'RESTAURANTE E LANCHONETE', em(0))
+    const alvosNf = [alvo('2393499', 0, { placaNorm: P, pontoLat: em(0, 30).lat, pontoLng: em(0, 30).lng })]
+    const pMaycao = paradaForaBase(`${P}-api-3`, em(1820).lat, em(1820).lng, t('08:22'), t('08:30'), P)
+
+    it('RQM0C38: vizinho (Maycao) com coordenada NAO confiavel a 33 m da parada conta no isolamento -> CONFERIR', () => {
+      const maycao = cliente('MAYCAO', 'HORTIFRUTI MAYCAO', em(1853), false)
+      const d = doNf(chamarNutryMax([nf, maycao], {
+        placa: P, alvos: alvosNf,
+        paradasPorOutraPlaca: new Map([[P, [pMaycao]]]),
+      }), '2393499')
+      conferir(d)
+    })
+
+    it('RQM0C38: parada cuja janela ja confirmou outra NF (visita do Maycao 08:22-08:29) nao vale -> CONFERIR', () => {
+      // Maycao sem coordenada nenhuma utilizavel -- so' a visita prova que a
+      // parada ja' foi usada por ele.
+      const maycao = cliente('MAYCAO', 'HORTIFRUTI MAYCAO', { lat: null as unknown as number, lng: null as unknown as number })
+      const visitas = new Map<string, Visita>([
+        ['MAYCAO', { nf: 'MAYCAO', chegada: t('08:22'), saida: t('08:29'), distanciaMetrosDoPonto: 0 }],
+      ])
+      const d = doNf(chamarNutryMax([nf, maycao], {
+        placa: P, alvos: alvosNf, visitasPorNf: visitas,
+        paradasPorOutraPlaca: new Map([[P, [pMaycao]]]),
+      }), '2393499')
+      conferir(d)
+    })
+
+    it('RQM0C38: alvo Unitrac feito de outra NF dentro da janela da parada tambem a torna prova usada -> CONFERIR', () => {
+      const maycao = cliente('MAYCAO', 'HORTIFRUTI MAYCAO', { lat: null as unknown as number, lng: null as unknown as number })
+      const alvos = [...alvosNf, alvo('MAYCAO', 1, { placaNorm: P, feitoISO: t('08:25') })]
+      const d = doNf(chamarNutryMax([nf, maycao], {
+        placa: P, alvos,
+        paradasPorOutraPlaca: new Map([[P, [pMaycao]]]),
+      }), '2393499')
+      conferir(d)
+    })
+
+    it('controle: mesma parada sem nenhum outro cliente usando-a -> ENTREGUE', () => {
+      const d = doNf(chamarNutryMax([nf], {
+        placa: P, alvos: alvosNf,
+        paradasPorOutraPlaca: new Map([[P, [pMaycao]]]),
+      }), '2393499')
+      confirmada(d, t('08:22'))
+    })
+  })
+
+  describe('guarda 3: com sinal na ponte, >=3 min tambem no GPS bruto', () => {
+    // TUS1A47 2394754 28/09: Unitrac 19:27-19:30 ("3 min"); GPS v=0 so' ~1 min
+    // as 19:26 e 64 km/h logo depois (Trevo das Margaridas).
+    const t = (hhmm: string) => `2026-09-28T${hhmm}:00.000Z`
+    const P = 'TUS1A47'
+    const willians = cliente('2394754', 'WILLIANS CANDIDO', em(0))
+    const avm = cliente('2394759', 'AVM SOLUCOES', em(0, 620))
+    const cruaTrevo = paradaForaBase(`${P}-api-7`, em(-1170).lat, em(-1170).lng, t('19:27'), t('19:30'), P)
+    const ponteTrevo = paradaForaBase(`${P}-ponte-9`, em(-1170).lat, em(-1170).lng, t('19:26'), t('19:27'), P)
+    const ponteAntes = paradaForaBase(`${P}-ponte-8`, em(-9000).lat, em(-9000).lng, t('18:30'), t('18:50'), P)
+
+    it('TUS1A47/2394754: Unitrac 3 min, GPS 1 min parado -> CONFERIR (e 2394759 tambem)', () => {
+      const detalhe = chamarNutryMax([willians, avm], {
+        placa: P,
+        paradasPorOutraPlaca: new Map([[P, [ponteAntes, ponteTrevo]]]),
+        paradasUnitracCruasPropriaPlaca: new Map([[P, [cruaTrevo]]]),
+      })
+      conferir(doNf(detalhe, '2394754'))
+      conferir(doNf(detalhe, '2394759'))
+    })
+
+    it('mesma crua com o GPS mostrando >=3 min parado no mesmo intervalo -> ENTREGUE', () => {
+      const ponteLonga = paradaForaBase(`${P}-ponte-9`, em(-1170).lat, em(-1170).lng, t('19:26'), t('19:30'), P)
+      const d = doNf(chamarNutryMax([willians, avm], {
+        placa: P,
+        paradasPorOutraPlaca: new Map([[P, [ponteAntes, ponteLonga]]]),
+        paradasUnitracCruasPropriaPlaca: new Map([[P, [cruaTrevo]]]),
+      }), '2394754')
+      expect(d.status).toBe('confirmado_gps')
+      expect(d.evidencia).toBe('parada_proxima_propria')
+    })
+
+    it('em apagao de sinal vale a duracao da Unitrac', () => {
+      // (uma 2a parada longe: com apagao e TODAS as paradas no mesmo ponto
+      // vira GPS congelado, outro ramo)
+      const cruaAntes = paradaForaBase(`${P}-api-6`, em(-9000).lat, em(-9000).lng, t('18:30'), t('18:50'), P)
+      const d = doNf(chamarNutryMax([willians, avm], {
+        placa: P, apagaoDeSinalPropriaPlaca: true,
+        paradasPorOutraPlaca: new Map([[P, [cruaAntes, cruaTrevo]]]),
+        paradasUnitracCruasPropriaPlaca: new Map([[P, [cruaAntes, cruaTrevo]]]),
+      }), '2394754')
+      confirmada(d, t('19:27'))
+    })
+  })
+
+  describe('verdadeiros do relatorio continuam ENTREGUE', () => {
+    it('RQV3G18 2383485/86 22/09: 16 min no GPS, 955 m do cadastro / 1,42 km do geo, vizinho a 8,9 km', () => {
+      const t = (hhmm: string) => `2026-09-22T${hhmm}:00.000Z`
+      const P = 'RQV3G18'
+      const nfs = [cliente('2383485', 'SUPERMERCADO AVENIDA', em(0)), cliente('2383486', 'SUPERMERCADO AVENIDA', em(0))]
+      const shopping = cliente('SHOPRURAL', 'SHOPPING RURAL', em(1420 + 8900))
+      const alvos = nfs.map(l => alvo(l.nf, 0, { placaNorm: P, pontoLat: em(465).lat, pontoLng: em(465).lng }))
+      const ponte = paradaForaBase(`${P}-ponte-3`, em(1420).lat, em(1420).lng, t('11:29'), t('11:45'), P)
+      const ponteShop = paradaForaBase(`${P}-ponte-4`, em(1420 + 8900).lat, em(1420 + 8900).lng, t('11:57'), t('12:10'), P)
+      const detalhe = chamarNutryMax([...nfs, shopping], {
+        placa: P, alvos, paradasPorOutraPlaca: new Map([[P, [ponte, ponteShop]]]),
+      })
+      for (const n of ['2383485', '2383486']) {
+        const d = doNf(detalhe, n)
+        confirmada(d, t('11:29'))
+        expect(d.distParadaM).toBe(955)
+      }
+    })
+
+    it('TOS4J82 2384335 22/09: 36 min parado, 1,36 km do geo, parada anterior (Dom Zelitos) a 2,08 km', () => {
+      const t = (hhmm: string) => `2026-09-22T${hhmm}:00.000Z`
+      const P = 'TOS4J82'
+      const nf = cliente('2384335', 'J B RESTAURANTE', em(0))
+      const zelitos = cliente('ZELITOS', 'DOM ZELITOS', em(1360 + 2080))
+      const pZel = paradaForaBase(`${P}-ponte-5`, em(1360 + 2080).lat, em(1360 + 2080).lng, t('13:39'), t('13:45'), P)
+      const pJb = paradaForaBase(`${P}-ponte-6`, em(1360).lat, em(1360).lng, t('13:51'), t('14:27'), P)
+      const d = doNf(chamarNutryMax([nf, zelitos], {
+        placa: P, paradasPorOutraPlaca: new Map([[P, [pZel, pJb]]]),
+      }), '2384335')
+      confirmada(d, t('13:51'))
+      expect(d.distParadaM).toBe(1360)
+    })
+
+    it('RBI0J25 2390240 25/09: Unitrac 3 min em apagao do GPS, 690 m do cadastro, vizinho a 2,96 km', () => {
+      const t = (hhmm: string) => `2026-09-25T${hhmm}:00.000Z`
+      const P = 'RBI0J25'
+      const nf = cliente('2390240', 'MONICA MARIANO', em(0))
+      const viz = cliente('VIZ', 'OUTRO CLIENTE', em(890 + 2960))
+      const alvos = [alvo('2390240', 0, { placaNorm: P, pontoLat: em(200).lat, pontoLng: em(200).lng })]
+      const crua = paradaForaBase(`${P}-api-9`, em(890).lat, em(890).lng, t('17:14'), t('17:17'), P)
+      const cruaViz = paradaForaBase(`${P}-api-8`, em(890 + 2960).lat, em(890 + 2960).lng, t('16:40'), t('16:52'), P)
+      const d = doNf(chamarNutryMax([nf, viz], {
+        placa: P, alvos, apagaoDeSinalPropriaPlaca: true,
+        paradasPorOutraPlaca: new Map([[P, [cruaViz, crua]]]),
+        paradasUnitracCruasPropriaPlaca: new Map([[P, [cruaViz, crua]]]),
+      }), '2390240')
+      confirmada(d, t('17:14'))
+      expect(d.distParadaM).toBe(690)
+    })
+
+    it('RQQ1B52 2390638 25/09: 13 min a 1,20 km do geo, cadastro errado a 12 km (so geocode), proximas entregas 3,6 km adiante', () => {
+      const t = (hhmm: string) => `2026-09-25T${hhmm}:00.000Z`
+      const P = 'RQQ1B52'
+      const nf = cliente('2390638', 'AGNOL PADARIA', em(0))
+      const praiaSeca = cliente('PSECA', 'MERCADO PRAIA SECA', em(1200 + 3600))
+      const alvos = [alvo('2390638', 0, { placaNorm: P, pontoLat: em(-12_000).lat, pontoLng: em(-12_000).lng })]
+      const pAgnol = paradaForaBase(`${P}-ponte-4`, em(1200).lat, em(1200).lng, t('14:59'), t('15:13'), P)
+      const pSeca = paradaForaBase(`${P}-ponte-5`, em(1200 + 3600).lat, em(1200 + 3600).lng, t('15:34'), t('15:45'), P)
+      const d = doNf(chamarNutryMax([nf, praiaSeca], {
+        placa: P, alvos, paradasPorOutraPlaca: new Map([[P, [pAgnol, pSeca]]]),
+      }), '2390638')
+      confirmada(d, t('14:59'))
+      expect(d.distParadaM).toBe(1200)
+    })
+  })
+
+  it('motivo da NF confirmada pela regra nao a equipara a entrega no endereco', () => {
+    const m = gerarMotivo({ status: 'confirmado_gps', observacao: null, evidencia: 'parada_proxima_propria', distParadaM: 1200, tempoParadaMin: 13 })
+    expect(m).toContain('fora do endereço')
+    expect(m).not.toBe('Parada de 13 min a 1,2 km do cliente')
   })
 })
