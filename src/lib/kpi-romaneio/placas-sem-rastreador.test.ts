@@ -118,7 +118,12 @@ describe('montarTemRastreadorPorPlaca', () => {
 // SEM SINAL NO DIA (ponte com <2 posicoes no dia inteiro, nenhuma parada fora
 // da base na Unitrac, nenhum alvo 'feito') vira SEM RASTREADOR automatico --
 // nunca "aguardando", mesmo com o dia em andamento.
-const HORARIO_SEM_POSICAO: HorarioBase = { saidaBase: null, chegadaBase: null, kmPercorrido: null }
+// consultaPosicoesOk: a ponte CONSULTOU as posicoes da placa com sucesso
+// (resposta trouxe `paradas`, mesmo vazia) -- ver base-horarios.ts.
+const HORARIO_SEM_POSICAO: HorarioBase = { saidaBase: null, chegadaBase: null, kmPercorrido: null, paradas: [], apagaoDeSinal: false, consultaPosicoesOk: true }
+// Erro/timeout na consulta de posicoes da placa do lado da ponte (erroPosicoes
+// em base-horarios/route.ts do monitoramento): resposta tudo null, SEM paradas.
+const HORARIO_CONSULTA_FALHOU: HorarioBase = { saidaBase: null, chegadaBase: null, kmPercorrido: null }
 const paradaU = (o: Partial<UnitracParadaRow>): UnitracParadaRow => ({
   id: 'p1', placa_norm: 'X', chegada: '2026-09-29T08:00:00.000Z', saida: '2026-09-29T08:30:00.000Z',
   duracao_seg: 1800, local_parada: '', codigo_loja: null, nome_loja: null, lat: -22.9, lng: -43.2,
@@ -126,12 +131,20 @@ const paradaU = (o: Partial<UnitracParadaRow>): UnitracParadaRow => ({
 })
 
 describe('placaSemSinalNoDia (detecao automatica, SEM SINAL NO DIA)', () => {
-  it('RQV8J31 (fora da frota do monitoramento: ponte responde tudo null, sem paradas): sem sinal', () => {
-    expect(placaSemSinalNoDia(HORARIO_SEM_POSICAO, [], [])).toBe(true)
+  it('consulta de posicoes da placa falhou (erro/timeout: ponte responde tudo null, sem paradas): NAO conclui sem sinal', () => {
+    expect(placaSemSinalNoDia(HORARIO_CONSULTA_FALHOU, [], [])).toBe(false)
+  })
+
+  it('RQV8J31 (fora da frota do monitoramento): mesma resposta do erro de consulta, indistinguivel -- NAO conclui (Falha de consulta nunca conclui)', () => {
+    expect(placaSemSinalNoDia(HORARIO_CONSULTA_FALHOU, [], [])).toBe(false)
+  })
+
+  it('consulta com marca explicita de falha, mesmo com paradas vazias: NAO conclui', () => {
+    expect(placaSemSinalNoDia({ ...HORARIO_SEM_POSICAO, consultaPosicoesOk: false }, [], [])).toBe(false)
   })
 
   it('RQU5J45 (na frota, nunca transmitiu: paradas da ponte vazias): sem sinal', () => {
-    expect(placaSemSinalNoDia({ ...HORARIO_SEM_POSICAO, paradas: [], apagaoDeSinal: false }, [], [])).toBe(true)
+    expect(placaSemSinalNoDia(HORARIO_SEM_POSICAO, [], [])).toBe(true)
   })
 
   it('RQO9H37 29/09 (0 posicoes; Unitrac so\' devolve a parada na BASE do dia anterior): sem sinal', () => {

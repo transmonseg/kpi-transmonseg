@@ -219,6 +219,32 @@ describe('buscarHorariosBase', () => {
     })
   })
 
+  describe('consultaPosicoesOk (29/09: erro na consulta de posicoes nunca vira "sem sinal")', () => {
+    it('placa com paradas (mesmo vazias) na resposta com incluirParadas: consultaPosicoesOk=true', async () => {
+      mockFetchOk([{ placa: 'RQU5J45', saidaBase: null, chegadaBase: null, kmPercorrido: null, paradas: [], apagaoDeSinal: false }])
+      const mapa = await buscarHorariosBase(['RQU5J45'], '2026-09-29', new Map(), true)
+      expect(mapa.get('RQU5J45')?.consultaPosicoesOk).toBe(true)
+    })
+
+    it('placa cuja consulta de posicoes falhou na ponte (tudo null, SEM paradas) com incluirParadas: consultaPosicoesOk=false', async () => {
+      mockFetchOk([{ placa: 'RQO9H37', saidaBase: null, chegadaBase: null, kmPercorrido: null }])
+      const mapa = await buscarHorariosBase(['RQO9H37'], '2026-09-29', new Map(), true)
+      expect(mapa.get('RQO9H37')?.consultaPosicoesOk).toBe(false)
+    })
+
+    it('sem incluirParadas nao ha como saber: consultaPosicoesOk nunca true', async () => {
+      mockFetchOk([{ placa: 'ABC1234', saidaBase: null, chegadaBase: null, kmPercorrido: null, paradas: [] }])
+      const mapa = await buscarHorariosBase(['ABC1234'], '2026-09-29')
+      expect(mapa.get('ABC1234')?.consultaPosicoesOk).not.toBe(true)
+    })
+
+    it('fetch inteiro falha (ponte fora do ar): nenhuma placa no mapa', async () => {
+      vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('timeout'))
+      const mapa = await buscarHorariosBase(['RQO9H37', 'RQU5J45'], '2026-09-29', new Map(), true)
+      expect(mapa.size).toBe(0)
+    })
+  })
+
   describe('apagaoDeSinal (achado real 14/09: leitura com atraso_min acima do limiar de apagao)', () => {
     it('repassa apagaoDeSinal quando a ponte manda true', async () => {
       mockFetchOk([

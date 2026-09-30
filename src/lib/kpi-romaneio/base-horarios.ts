@@ -65,6 +65,15 @@ export type HorarioBase = {
   // ultima posicao conhecida, nao permanencia real). resolverParadas usa
   // este campo pra decidir se prefere esta ponte ou a Unitrac.
   apagaoDeSinal?: boolean
+  // 29/09 (Task 1, fechamento KPI 29/09): true SO' quando a ponte comprovadamente
+  // CONSULTOU as posicoes da placa no dia -- no modo `incluirParadas`, toda
+  // consulta bem-sucedida devolve `paradas` (array, mesmo vazio). Erro/timeout
+  // na query de posicoes da placa do lado do monitoramento (`erroPosicoes` em
+  // api/kpi/base-horarios/route.ts la) devolve `{placa, nulls}` SEM `paradas`
+  // -- identico a "placa fora da frota" e, sem esta marca, indistinguivel de
+  // "0 posicoes no dia". placaSemSinalNoDia exige true: falha de consulta
+  // nunca conclui "sem sinal". Sem `incluirParadas` nao ha como saber: ausente.
+  consultaPosicoesOk?: boolean
 }
 
 /** Parada derivada do historico continuo do monitoramento -- mesma forma
@@ -342,6 +351,7 @@ async function buscarLote(
         visitasPorNf,
         paradas,
         apagaoDeSinal: r.apagaoDeSinal === true,
+        ...(incluirParadas ? { consultaPosicoesOk: r.paradas !== undefined } : {}),
       })
     }
   }

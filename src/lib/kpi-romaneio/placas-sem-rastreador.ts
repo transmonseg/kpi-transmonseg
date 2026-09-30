@@ -94,7 +94,9 @@ export function montarTemRastreadorPorPlaca(
  *  posicoes; nada mudou no monitoramento):
  *
  *  - a ponte RESPONDEU pela placa (sem entrada = ponte fora do ar/erro: nao
- *    conclui nada, fail-safe), E
+ *    conclui nada, fail-safe) E comprovadamente consultou as posicoes
+ *    (`consultaPosicoesOk`, ver base-horarios.ts: erro/timeout por placa do
+ *    lado da ponte volta tudo null sem `paradas` e NAO conclui), E
  *  - `kmPercorrido === null` -- a ponte so' devolve null com MENOS DE 2
  *    posicoes no dia (calcularKmContinuo; com >=2 leituras, mesmo paradas no
  *    mesmo ponto, devolve numero, ex. 0 km da RQU6E83 = NAO SAIU DA BASE), E
@@ -114,6 +116,9 @@ export function placaSemSinalNoDia(
   alvosDaPlaca: { situacao?: number | null }[],
 ): boolean {
   if (!horario) return false
+  // Consulta de posicoes da placa sem sucesso comprovado (erro/timeout na
+  // ponte, ou placa fora da frota -- mesma resposta): nao conclui nada.
+  if (horario.consultaPosicoesOk !== true) return false
   if (horario.kmPercorrido !== null) return false
   if (horario.saidaBase != null || horario.chegadaBase != null) return false
   if ((horario.paradas?.length ?? 0) > 0) return false
