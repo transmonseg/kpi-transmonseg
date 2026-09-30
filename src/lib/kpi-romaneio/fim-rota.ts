@@ -63,6 +63,9 @@ export async function ajustarChegadaAposUltimaEntrega(
   visitasPorPlaca: Map<string, Map<string, Visita>>,
   alvosPorPlaca: Map<string, AlvoApi[]>,
   nfsPorPlaca: Map<string, string[]>,
+  // Achado 30/09 (alias-placa.ts): placa da escala -> grafia da frota que a
+  // ponte deve consultar (RQO9H37 -> RQ09H37). Ausente = consulta a propria.
+  placaConsulta: Map<string, string> = new Map(),
 ): Promise<void> {
   const fimPorPlaca = new Map<string, string>()
   for (const p of placasNorm) {
@@ -74,7 +77,13 @@ export async function ajustarChegadaAposUltimaEntrega(
       && todasNfsConfirmadas(nfsPorPlaca.get(p) ?? [], visitasDaPlaca, alvosDaPlaca)) fimPorPlaca.set(p, fim as string)
   }
   if (fimPorPlaca.size === 0) return
-  const ajustado = await buscarHorariosBase([...fimPorPlaca.keys()], data, new Map(), false, fimPorPlaca)
+  const consultar = (p: string) => placaConsulta.get(p) ?? p
+  const fimConsulta = new Map([...fimPorPlaca].map(([p, fim]) => [consultar(p), fim]))
+  const ajustadoBruto = await buscarHorariosBase([...fimConsulta.keys()], data, new Map(), false, fimConsulta)
+  const ajustado = new Map([...fimPorPlaca.keys()].flatMap(p => {
+    const h = ajustadoBruto.get(consultar(p))
+    return h ? [[p, h] as const] : []
+  }))
   const sobrescritas: string[] = []
   const naoSobrescritas: string[] = []
   for (const p of fimPorPlaca.keys()) {

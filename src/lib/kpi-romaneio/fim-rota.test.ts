@@ -74,6 +74,25 @@ describe('ajustarChegadaAposUltimaEntrega', () => {
     expect(horarioBasePorPlaca.get('RBG5G18')?.saidaBase).toBe('2026-09-21T08:00:00.000Z')
   })
 
+  it('alias (RQO9H37 consultada como RQ09H37): 2a chamada vai na grafia da frota e volta pra placa do romaneio', async () => {
+    const horarioBasePorPlaca = new Map([
+      ['RQO9H37', horario({ saidaBase: '2026-09-21T08:00:00.000Z', chegadaBase: '2026-09-21T19:34:00.000Z', kmPercorrido: 120, paradas: paradasBase })],
+    ])
+    const visitasPorPlaca = new Map([['RQO9H37', new Map<string, Visita>([['NF1', visita('2026-09-21T13:59:00.000Z')]])]])
+    buscarHorariosBaseMock.mockResolvedValue(new Map([
+      ['RQ09H37', horario({ chegadaBase: '2026-09-21T15:02:00.000Z', kmPercorrido: 80 })],
+    ]))
+
+    await ajustarChegadaAposUltimaEntrega(['RQO9H37'], '2026-09-21', horarioBasePorPlaca, visitasPorPlaca, new Map(), new Map([['RQO9H37', ['NF1']]]), new Map([['RQO9H37', 'RQ09H37']]))
+
+    expect(buscarHorariosBaseMock).toHaveBeenCalledWith(
+      ['RQ09H37'], '2026-09-21', expect.any(Map), false,
+      new Map([['RQ09H37', '2026-09-21T13:59:00.000Z']]),
+    )
+    expect(horarioBasePorPlaca.get('RQO9H37')?.chegadaBase).toBe('2026-09-21T15:02:00.000Z')
+    expect(horarioBasePorPlaca.has('RQ09H37')).toBe(false)
+  })
+
   it('placa com 2 NFs, ambas confirmadas (uma via visita, outra via alvo situacao=1): ajusta', async () => {
     const horarioBasePorPlaca = new Map([
       ['RBG5G18', horario({ saidaBase: '2026-09-21T08:00:00.000Z', chegadaBase: '2026-09-21T19:34:00.000Z', kmPercorrido: 120, paradas: paradasBase })],

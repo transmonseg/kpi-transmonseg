@@ -10,15 +10,24 @@ import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { COD_USER_NUTRIMAX, BASES_COORD_NUTRIMAX } from './constants'
 import { consultarVelocidadeNaParada } from './velocidade-parada'
 import { hojeBR } from '@/lib/data-br'
+import { resolverAliasPlacas } from './alias-placa'
 
 /** Alvos (plano de entregas) do dia pras placas da escala. Resolve placa → cv
  *  via frota da conta Nutrimax; placa sem correspondência na frota é ignorada
  *  (best-effort, nunca lança). */
-export async function buscarAlvosDoDia(placas: string[]): Promise<AlvoApi[]> {
+export async function buscarAlvosDoDia(placas: string[], opts: { comAlias?: boolean } = {}): Promise<AlvoApi[]> {
   const frota = await buscarFrota(COD_USER_NUTRIMAX)
-  const cvs = frota.filter(v => placas.includes(v.placaNorm)).map(v => v.cv)
+  // Achado 30/09 (RQO9H37 = RQ0-9H37, ver alias-placa.ts): com comAlias, o
+  // cv da variante da frota tambem e' consultado e o alvo volta chaveado pela
+  // placa da escala.
+  const alias = opts.comAlias ? resolverAliasPlacas(placas, frota.map(v => v.placaNorm)) : new Map<string, string[]>()
+  const paraEscala = new Map<string, string>()
+  for (const [p, variantes] of alias) for (const v of variantes) paraEscala.set(v, p)
+  const cvs = frota.filter(v => placas.includes(v.placaNorm) || paraEscala.has(v.placaNorm)).map(v => v.cv)
   if (cvs.length === 0) return []
-  return buscarAlvos(cvs)
+  const alvos = await buscarAlvos(cvs)
+  if (paraEscala.size === 0) return alvos
+  return alvos.map(a => (paraEscala.has(a.placaNorm) ? { ...a, placaNorm: paraEscala.get(a.placaNorm) as string } : a))
 }
 
 /** GPS real do dia pra uma placa, classificado só em BASE/FORA_BASE --

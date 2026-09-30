@@ -573,7 +573,7 @@ describe('POST /api/kpi/nutrimax/gerar -- placa vazia não é consultada contra 
     const res = await POST(new Request('http://localhost/api/kpi/nutrimax/gerar', { method: 'POST', body: fd }) as never)
     expect(res.status).toBe(200)
 
-    expect(buscarAlvosSpy).toHaveBeenCalledWith(expect.not.arrayContaining(['']))
+    expect(buscarAlvosSpy).toHaveBeenCalledWith(expect.not.arrayContaining(['']), { comAlias: true })
     expect(buscarHorariosSpy).toHaveBeenCalledWith(expect.not.arrayContaining(['']), expect.anything(), expect.anything(), expect.anything())
   })
 })
@@ -818,5 +818,44 @@ describe('POST /api/kpi/nutrimax/gerar -- guarda e regenera o PDF do Pão', () =
     expect(cenario.paoBufRecebido).toBeNull()
     expect(warn).toHaveBeenCalled()
     warn.mockRestore()
+  })
+})
+
+// Achado 30/09 (relatorio PXS 53707, KPI 29/09): RQO9H37 do romaneio tinha
+// cadastro duplicado na frota -- 'RQO-9H37' (rastreador antigo, parado) e
+// 'RQ0-9H37' (zero no lugar do O, rastreador vivo) -- e saiu SEM RASTREADOR.
+// Mesmo cenario com I/1 na placa sintetica: ABC1234 (cv morto) e ABCI234
+// (cv vivo, grafia invalida). Ver alias-placa.ts.
+describe('POST /api/kpi/nutrimax/gerar -- placa com O/0 ou I/1 trocado casa com a frota', () => {
+  afterEach(async () => {
+    const buscarHorariosSpy = vi.mocked((await import('@/lib/kpi-romaneio/base-horarios')).buscarHorariosBase)
+    buscarHorariosSpy.mockReset()
+    buscarHorariosSpy.mockImplementation(async () => new Map())
+  })
+
+  it('ponte responde pela grafia da frota (ABCI234): NF sai entregue na aba da placa do romaneio, sem aba extra', async () => {
+    cenario.frota = [{ placaNorm: PLACA, cv: 'CV-MORTO' }, { placaNorm: 'ABCI234', cv: 'CV-VIVO' }]
+    const buscarHorariosSpy = vi.mocked((await import('@/lib/kpi-romaneio/base-horarios')).buscarHorariosBase)
+    buscarHorariosSpy.mockReset()
+    buscarHorariosSpy.mockImplementation(async (placas: string[]) => new Map(placas.flatMap((p): [string, unknown][] => {
+      if (p === 'ABCI234') return [[p, {
+        saidaBase: '2026-09-15T08:00:00.000Z', chegadaBase: '2026-09-15T18:00:00.000Z', kmPercorrido: 60,
+        visitasPorNf: new Map([['NF001', { chegada: '2026-09-15T10:00:00.000Z', saida: '2026-09-15T10:20:00.000Z', menorDistanciaM: 5 }]]),
+        paradas: [], consultaPosicoesOk: true,
+      }]]
+      if (p === PLACA) return [[p, { saidaBase: null, chegadaBase: null, kmPercorrido: null, paradas: [], consultaPosicoesOk: true }]]
+      return []
+    })) as never)
+
+    const res = await POST(montarRequest(false) as never)
+    expect(res.status).toBe(200)
+    expect(buscarHorariosSpy.mock.calls[0][0]).toEqual(expect.arrayContaining([PLACA, 'ABCI234']))
+
+    const wb = await abrirXlsx(res)
+    expect(wb.getWorksheet('ABCI234')).toBeUndefined()
+    const ws = wb.getWorksheet(PLACA)!
+    const linhaDados = (ws.getRow(4).values as unknown[]).slice(1)
+    expect(String(linhaDados[7])).not.toContain('SEM RASTREADOR')
+    expect(String(linhaDados[7])).toMatch(/ENTREGUE/)
   })
 })

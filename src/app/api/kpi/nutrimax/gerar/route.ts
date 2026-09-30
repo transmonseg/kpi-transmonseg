@@ -10,7 +10,7 @@ import { parsePao } from '@/lib/kpi-romaneio/parse-pao'
 import { geocodificarEnderecos } from '@/lib/kpi-romaneio/geocode'
 import { reposicionarPorAncoras } from '@/lib/kpi-romaneio/geocode-ancoras'
 import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '@/lib/kpi-romaneio/unitrac'
-import { buscarHorariosBase, anexarCoordenadaCadastro, montarMenorDistanciaTrajetoPorNf } from '@/lib/kpi-romaneio/base-horarios'
+import { anexarCoordenadaCadastro, montarMenorDistanciaTrajetoPorNf } from '@/lib/kpi-romaneio/base-horarios'
 import { ajustarChegadaAposUltimaEntrega } from '@/lib/kpi-romaneio/fim-rota'
 import { alvosDaData } from '@/lib/kpi-romaneio/alvos-data'
 import { alvosEfetivos } from '@/lib/kpi-romaneio/alvos-snapshot'
@@ -25,6 +25,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { COD_USER_NUTRIMAX, EMPRESA_NUTRIMAX, foraDoAlcanceApi, LIMITE_CONCORRENCIA_PLACAS, PAO_PREFIXO } from '@/lib/kpi-romaneio/constants'
 import { mapComLimite } from '@/lib/kpi-romaneio/concorrencia'
 import { buscarResolucoes, aplicarResolucoes } from '@/lib/kpi-romaneio/resolucoes'
+import { resolverAliasPlacas, buscarHorariosBaseComAlias, montarCvPorPlaca, aplicarAliasEmConjunto, placasAliasDaFrota } from '@/lib/kpi-romaneio/alias-placa'
 import { buscarPlacasSemRastreador, placasSemRastreadorNoDia, montarTemRastreadorPorPlaca, placasSemSinalComTrava } from '@/lib/kpi-romaneio/placas-sem-rastreador'
 import { logarNfDuplicadaNaMesmaPlaca } from '@/lib/kpi-romaneio/nf-duplicada'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
@@ -308,13 +309,17 @@ export async function POST(req: NextRequest) {
   // placa+NF vira latAlt/lngAlt de cada ponto (coordenada alternativa).
   const [frota, alvosBrutos] = await Promise.all([
     buscarFrota(COD_USER_NUTRIMAX),
-    buscarAlvosDoDia(placasNorm),
+    buscarAlvosDoDia(placasNorm, { comAlias: true }),
   ])
   const alvos = await alvosEfetivos('nutrimax', data, hojeBR(), alvosDaData(alvosBrutos, data))
   // Achado real 14/09: pede paradas SEMPRE agora, nao so' fora da janela
   // -- a ponte virou fonte primaria (ver resolverParadas em unitrac.ts).
-  const horarioBasePorPlaca = await buscarHorariosBase(placasNorm, data, anexarCoordenadaCadastro(pontosPorPlacaBridge, alvos), true)
-  const cvPorPlaca = new Map(frota.map(v => [v.placaNorm, v.cv]))
+  // Achado 30/09 (RQO9H37 = RQ0-9H37 na frota, ver alias-placa.ts): placa
+  // da escala com variante O/0 ou I/1 na frota consulta as duas grafias e
+  // fica com a que tem sinal no dia; tudo segue chaveado pela do romaneio.
+  const aliasPlacas = resolverAliasPlacas(placasNorm, frota.map(v => v.placaNorm))
+  const { horarios: horarioBasePorPlaca, consulta: placaConsulta } = await buscarHorariosBaseComAlias(placasNorm, data, anexarCoordenadaCadastro(pontosPorPlacaBridge, alvos), true, aliasPlacas)
+  const cvPorPlaca = montarCvPorPlaca(frota, placaConsulta)
   // Pedido do usuário 25/08 (nível Benassi): placa sem cv na Unitrac E sem
   // entrada na ponte do monitoramento (nunca respondeu por ela, nem com
   // null) não teve NENHUMA fonte de rastreamento no dia -- ver
@@ -322,7 +327,7 @@ export async function POST(req: NextRequest) {
   // Task 8 (24/09): declaração manual da operação (TTL5J17: tem cv e a
   // ponte respondeu, mas é caminhão sem rastreador de verdade) vence as
   // duas fontes acima -- ver placas-sem-rastreador.ts.
-  const placasSemRastreador = placasSemRastreadorNoDia(await buscarPlacasSemRastreador(EMPRESA_NUTRIMAX), data)
+  const placasSemRastreador = aplicarAliasEmConjunto(placasSemRastreadorNoDia(await buscarPlacasSemRastreador(EMPRESA_NUTRIMAX), data), aliasPlacas)
   // temRastreadorPorPlaca: montado mais abaixo (depois das paradas/alvos), ver placasSemSinal.
 
   // Por placa (não por carga -- as paradas GPS do dia cobrem a placa
@@ -385,7 +390,10 @@ export async function POST(req: NextRequest) {
   // manual nosso) so' pra alimentar paradasPorOutraPlaca -- nao cria linha/
   // aba de relatorio pra placa que nao tem NF nenhuma no romaneio
   // (placasNorm continua sendo so' quem apareceu nele).
-  const placasFrotaExtra = frota.map(v => v.placaNorm).filter(p => !paradasPorPlaca.has(p))
+  // Grafia da frota absorvida por placa da escala (alias) e' o MESMO
+  // caminhao -- nunca vira "outra placa" (carga transferida falsa).
+  const grafiasAlias = placasAliasDaFrota(aliasPlacas)
+  const placasFrotaExtra = frota.map(v => v.placaNorm).filter(p => !paradasPorPlaca.has(p) && !grafiasAlias.has(p))
   const daUnitracExtraPorPlaca = new Map<string, UnitracParadaRow[]>()
   await mapComLimite(placasFrotaExtra, LIMITE_CONCORRENCIA_PLACAS, async placaNorm => {
     const cv = cvPorPlaca.get(placaNorm)
@@ -421,7 +429,7 @@ export async function POST(req: NextRequest) {
   // Ruling do controller (revisao final 22/09): so' ajusta quando TODAS as
   // NFs do romaneio da placa (linhasPorPlaca) ja' estao confirmadas.
   const nfsPorPlaca = new Map([...linhasPorPlaca].map(([p, linhas]) => [p, linhas.map(l => l.nf)]))
-  await ajustarChegadaAposUltimaEntrega(placasNorm, data, horarioBasePorPlaca, visitasPorPlaca, alvosPorPlaca, nfsPorPlaca)
+  await ajustarChegadaAposUltimaEntrega(placasNorm, data, horarioBasePorPlaca, visitasPorPlaca, alvosPorPlaca, nfsPorPlaca, placaConsulta)
 
   // Cargas vêm do Romaneio -- é a fonte de verdade de quantas cargas
   // existiram no dia. A Escala só complementa (destino/motorista/peso/

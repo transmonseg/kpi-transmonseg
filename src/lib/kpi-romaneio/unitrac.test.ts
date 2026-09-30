@@ -36,6 +36,27 @@ beforeEach(() => {
 })
 
 describe('buscarAlvosDoDia', () => {
+  it('com alias (Nutry Max): alvos do cv da grafia RQ0-9H37 voltam chaveados pela placa do romaneio RQO9H37', async () => {
+    buscarFrotaMock.mockResolvedValue([
+      { cv: '24138', placa: 'RQO-9H37', placaNorm: 'RQO9H37' },
+      { cv: '24343', placa: 'RQ0-9H37', placaNorm: 'RQ09H37' },
+      { cv: '111', placa: 'TUL-1C38', placaNorm: 'TUL1C38' },
+    ])
+    buscarAlvosMock.mockResolvedValue([{ placaNorm: 'RQ09H37', documento: '1' }, { placaNorm: 'TUL1C38', documento: '2' }])
+
+    const r = await buscarAlvosDoDia(['RQO9H37', 'TUL1C38'], { comAlias: true })
+
+    expect(buscarAlvosMock).toHaveBeenCalledWith(expect.arrayContaining(['24138', '24343', '111']))
+    expect(r).toEqual([{ placaNorm: 'RQO9H37', documento: '1' }, { placaNorm: 'TUL1C38', documento: '2' }])
+  })
+
+  it('sem alias (default): grafia diferente continua sem casar', async () => {
+    buscarFrotaMock.mockResolvedValue([{ cv: '24343', placa: 'RQ0-9H37', placaNorm: 'RQ09H37' }])
+    const r = await buscarAlvosDoDia(['RQO9H37'])
+    expect(buscarAlvosMock).not.toHaveBeenCalled()
+    expect(r).toEqual([])
+  })
+
   it('filtra a frota certa pelas placas pedidas e busca alvos só dos cv correspondentes', async () => {
     buscarFrotaMock.mockResolvedValue([
       { cv: '111', placa: 'TUL-1C38', placaNorm: 'TUL1C38' },
