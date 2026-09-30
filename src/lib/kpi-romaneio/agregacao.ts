@@ -2294,11 +2294,15 @@ export function montarDetalheEntregas(
     }
 
     // Item 1 (auditoria 30/09): ENTREGUE so' pela baixa da Unitrac que
-    // chegou ate' aqui sem horario (baixa em lote fora da janela da Task 10,
-    // ou perdedora de parada compartilhada) -- horario da parada da propria
-    // placa antes da baixa (ver acharParadaAntesDaBaixa). Nao mexe em status.
+    // chegou ate' aqui sem horario (baixa em lote fora da janela da Task 10)
+    // -- horario da parada da propria placa antes da baixa (ver
+    // acharParadaAntesDaBaixa). Nao mexe em status. A2 (revisao 30/09):
+    // nunca repoe horario apagado de proposito -- perdedora de parada
+    // compartilhada (a equipe desmentiu a presenca) e placa sem rastreador
+    // declarada/GPS congelado (bloqueiaHorarioSemRastreador).
     let paradaAntesDaBaixa: { parada: UnitracParadaRow; distParadaM: number } | null = null
-    if (modoPrecisao && status === 'confirmado_unitrac' && chegada == null && alvo) {
+    if (modoPrecisao && status === 'confirmado_unitrac' && chegada == null && alvo
+      && !perdeuParadaCompartilhada && !bloqueiaHorarioSemRastreador) {
       paradaAntesDaBaixa = acharParadaAntesDaBaixa(
         linha, alvo,
         [...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []), ...paradasProprias],

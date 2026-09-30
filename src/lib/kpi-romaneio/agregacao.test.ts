@@ -5349,6 +5349,36 @@ describe('Item 1 (auditoria 30/09) -- ENTREGUE so pela baixa em lote herda horar
     })
   })
 
+  describe('A2 (revisao 30/09): horario apagado de proposito nao volta pela parada antes da baixa', () => {
+    it('perdeuParadaCompartilhada (equipe desmentiu) -> continua sem horario', () => {
+      // Geocode a 600 m do cadastro (sem conflito >1 km) e a >300 m da
+      // parada; Tudao a 20 m vence. Tudao sem baixa, entao nao disputa (A1).
+      const perdedor = nfCom('NFPERD', 600)
+      const tudao = nfCom('TUDAO', 20, { endereco: 'END TUDAO' })
+      const vis = { chegada: t('09:26'), saida: t('09:29'), distanciaMetrosDoPonto: 0 }
+      const pStop = stop('1', em(26), '09:25', '09:29')
+      const d = chamarNutryMax([perdedor, tudao], {
+        placa: P,
+        alvos: [alvoFeito('NFPERD', baixa('10:05:02')), alvo('TUDAO', 0, { placaNorm: P, codigoUnitrac: 'COD-TUDAO' })],
+        visitasPorNf: new Map([['NFPERD', { nf: 'NFPERD', ...vis }], ['TUDAO', { nf: 'TUDAO', ...vis }]]),
+        paradasPorOutraPlaca: new Map([[P, [pStop]]]),
+        paradasUnitracCruasPropriaPlaca: cruas(pStop),
+      }).find(x => x.nf === 'NFPERD')!
+      semHorario(d)
+    })
+
+    it('bloqueiaHorarioSemRastreador (GPS congelado) -> continua sem horario', () => {
+      const pStop = stop('1', em(12), '08:35', '08:43')
+      const [d] = chamarNutryMax([nfCom('2395082', 22)], {
+        placa: P, alvos: [alvoFeito('2395082', baixa('08:55:55'))],
+        paradasPorOutraPlaca: new Map([[P, [pStop]]]),
+        paradasUnitracCruasPropriaPlaca: cruas(pStop),
+        apagaoDeSinalPropriaPlaca: true,
+      })
+      semHorario(d)
+    })
+  })
+
   it('RQV3J99 Emporio da Vila x2 (mesmo cliente): a mesma parada preenche as duas NFs', () => {
     const b = baixa('16:43:35')
     const ds = chamarNutryMax([nfCom('2396533', 180), nfCom('2396534', 180, { endereco: 'END 2396533' })], {
