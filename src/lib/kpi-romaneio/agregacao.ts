@@ -679,6 +679,37 @@ const OBS_PARADA_PROXIMA_FORA = 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇ
 // -> um dos dois esta' errado; mede SO' pelo geocode (RQU3F71: cadastro a 27 km
 // deixava um posto no centro "mais perto" que Morangaba).
 const DIVERGENCIA_GEO_CADASTRO_M = 2_000
+// Guarda 4 (Task 2 plano 2026-09-30, item 4 -- RQV3G18 2395214 29/09, Alto
+// Grande: 3 min a 1,97 km, em transito sem desvio, localidade inexistente no
+// mapa): medindo pelo geocode SEM fonte conhecida (`geoSemFonte`), a parada
+// precisa ter >= DURACAO_MIN_PARADA_PROXIMA_GEO_SEM_FONTE_MIN ou ser um desvio
+// dedicado (vai e volta fora do sentido da rota -- TOS6H57/Fonseca 29/09):
+// o trajeto parada-anterior -> esta -> proxima e' >= RAZAO_DESVIO_DEDICADO x
+// o direto e acrescenta >= EXTRA_MIN_DESVIO_DEDICADO_M.
+const DURACAO_MIN_PARADA_PROXIMA_GEO_SEM_FONTE_MIN = 5
+const RAZAO_DESVIO_DEDICADO = 1.5
+const EXTRA_MIN_DESVIO_DEDICADO_M = 1_000
+type ParadaComCoord = UnitracParadaRow & { lat: number; lng: number }
+function ehDesvioDedicado(p: ParadaComCoord, paradas: UnitracParadaRow[]): boolean {
+  const iniMs = new Date(p.chegada).getTime()
+  const fimMs = fimParadaMs(p)
+  let antes: ParadaComCoord | null = null
+  let depois: ParadaComCoord | null = null
+  for (const q of paradas) {
+    if (q.lat == null || q.lng == null) continue
+    const qc = q as ParadaComCoord
+    if (fimParadaMs(qc) < iniMs) {
+      if (!antes || fimParadaMs(qc) > fimParadaMs(antes)) antes = qc
+    } else if (new Date(qc.chegada).getTime() > fimMs) {
+      if (!depois || new Date(qc.chegada).getTime() < new Date(depois.chegada).getTime()) depois = qc
+    }
+  }
+  if (!antes || !depois) return false
+  const ida = haversine(antes.lat, antes.lng, p.lat, p.lng)
+  const volta = haversine(p.lat, p.lng, depois.lat, depois.lng)
+  const direto = haversine(antes.lat, antes.lng, depois.lat, depois.lng)
+  return ida + volta - direto >= EXTRA_MIN_DESVIO_DEDICADO_M && ida + volta >= RAZAO_DESVIO_DEDICADO * direto
+}
 function ehParadaDaPonte(p: UnitracParadaRow): boolean {
   return p.id.includes('-ponte-')
 }
@@ -735,8 +766,11 @@ function acharParadaProximaPropriaIsolada(
       return d <= RAIO_OUTRO_CLIENTE_EXPLICA_M || d <= distM
     })
     if (explicadaPorOutro) continue
+    const ref: 'cad' | 'geo' = distCad < distGeo ? 'cad' : 'geo'
+    if (ref === 'geo' && linha.geoSemFonte && duracaoMin < DURACAO_MIN_PARADA_PROXIMA_GEO_SEM_FONTE_MIN
+      && !ehDesvioDedicado(p as ParadaComCoord, paradas)) continue
     const ganha = !melhor || distM < melhor.distM || (distM === melhor.distM && duracaoMin > melhor.duracaoMin)
-    if (ganha) melhor = { parada: p, distM, ref: distCad < distGeo ? 'cad' : 'geo', duracaoMin }
+    if (ganha) melhor = { parada: p, distM, ref, duracaoMin }
   }
   return melhor ? { parada: melhor.parada, distM: melhor.distM, ref: melhor.ref } : null
 }

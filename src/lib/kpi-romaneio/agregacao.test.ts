@@ -4961,6 +4961,59 @@ describe('Parada proxima propria -- guardas (ja confirmou outra NF, geo confiave
     })
   })
 
+  describe('guarda 4: geocode sem fonte conhecida -> >=5 min ou desvio dedicado (Task 2 plano 2026-09-30, item 4)', () => {
+    // RQV3G18 2395214 29/09 (Mercearia Alto Grande, Quissama): parada 13:19-13:22
+    // (U 3 / GPS ~3) a 1,97 km do geo, isolada, mas EM TRANSITO sem desvio
+    // (Quissama -> Carapebus); cadastro 16,8 km errado; "Alto Grande" nao
+    // existe no OSM e o geo nao tem fonte no cache.
+    const t = (hhmm: string) => `2026-09-29T${hhmm}:00.000Z`
+    const P = 'RQV3G18'
+    const alvosAg = [alvo('2395214', 0, { placaNorm: P, pontoLat: em(0, 16_800).lat, pontoLng: em(0, 16_800).lng })]
+    const agSemFonte = linha('2395214', { endereco: 'ESTRADA DO ALTO GRANDE, S/N', ...em(0), geoConfiavel: true, geoSemFonte: true })
+    const agComFonte = linha('2395214', { endereco: 'ESTRADA DO ALTO GRANDE, S/N', ...em(0), geoConfiavel: true })
+    const carapebus = cliente('CARAPEBUS', 'CLIENTE CARAPEBUS', em(1970, 9000))
+    const antes = paradaForaBase(`${P}-ponte-1`, em(1970, -2700).lat, em(1970, -2700).lng, t('13:12'), t('13:17'), P)
+    const depois = paradaForaBase(`${P}-ponte-3`, em(1970, 9000).lat, em(1970, 9000).lng, t('13:30'), t('13:45'), P)
+    const noCaminho = (ini: string, fim: string) => [
+      antes,
+      paradaForaBase(`${P}-ponte-2`, em(1970).lat, em(1970).lng, t(ini), t(fim), P),
+      depois,
+    ]
+
+    it('Alto Grande: 3 min no caminho, geo sem fonte -> CONFERIR', () => {
+      const d = doNf(chamarNutryMax([agSemFonte, carapebus], {
+        placa: P, alvos: alvosAg, paradasPorOutraPlaca: new Map([[P, noCaminho('13:19', '13:22')]]),
+      }), '2395214')
+      conferir(d)
+    })
+
+    it('controle: mesmo caso com geo de fonte conhecida continua ENTREGUE (regra de 6484a4a)', () => {
+      const d = doNf(chamarNutryMax([agComFonte, carapebus], {
+        placa: P, alvos: alvosAg, paradasPorOutraPlaca: new Map([[P, noCaminho('13:19', '13:22')]]),
+      }), '2395214')
+      confirmada(d, t('13:19'))
+    })
+
+    it('geo sem fonte com parada >=5 min -> ENTREGUE', () => {
+      const d = doNf(chamarNutryMax([agSemFonte, carapebus], {
+        placa: P, alvos: alvosAg, paradasPorOutraPlaca: new Map([[P, noCaminho('13:19', '13:24')]]),
+      }), '2395214')
+      confirmada(d, t('13:19'))
+    })
+
+    it('geo sem fonte, 3 min mas desvio dedicado (vai e volta fora do sentido da rota) -> ENTREGUE', () => {
+      // TOS6H57 2395543 29/09 (Fonseca): saiu da Ribel, foi ~700 m pro oeste,
+      // parou e voltou pro leste ate' o Tinoco.
+      const ribel = paradaForaBase(`${P}-ponte-1`, em(1970, 1500).lat, em(1970, 1500).lng, t('13:05'), t('13:15'), P)
+      const tinoco = paradaForaBase(`${P}-ponte-3`, em(1970, 1800).lat, em(1970, 1800).lng, t('13:30'), t('13:45'), P)
+      const desvio = paradaForaBase(`${P}-ponte-2`, em(1970).lat, em(1970).lng, t('13:19'), t('13:22'), P)
+      const d = doNf(chamarNutryMax([agSemFonte, carapebus], {
+        placa: P, alvos: alvosAg, paradasPorOutraPlaca: new Map([[P, [ribel, desvio, tinoco]]]),
+      }), '2395214')
+      confirmada(d, t('13:19'))
+    })
+  })
+
   describe('verdadeiros do relatorio continuam ENTREGUE', () => {
     it('RQV3G18 2383485/86 22/09: 16 min no GPS, 955 m do cadastro / 1,42 km do geo, vizinho a 8,9 km', () => {
       const t = (hhmm: string) => `2026-09-22T${hhmm}:00.000Z`

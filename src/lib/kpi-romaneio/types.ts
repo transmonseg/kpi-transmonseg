@@ -49,6 +49,10 @@ export type LinhaGeocodificada = LinhaRomaneio & {
    *  repositorios nao se importam entre si, entao o literal e' duplicado
    *  aqui de proposito -- manter os dois em sincronia manualmente. */
   geoMotivo?: 'municipio_divergente' | 'bairro_divergente'
+  /** Task 2 (plano 2026-09-30, item 4 -- Alto Grande 29/09): coordenada do
+   *  cache sem `fonte` registrada (origem desconhecida). Ausente/false =
+   *  fonte conhecida ou produtor que nao informa (comportamento anterior). */
+  geoSemFonte?: boolean
   // So' preenchido pela coerencia de grupo (Rio Quality): outros pontos da
   // MESMA rua na zona, alem do escolhido -- pedido 06/09, ver visitas.ts.
   pontosAlternativos?: { lat: number; lng: number }[]

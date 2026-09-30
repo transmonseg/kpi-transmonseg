@@ -209,9 +209,10 @@ export async function POST(req: NextRequest) {
   const resultadosGeo = await geocodificarEnderecos(enderecosUnicos, { validarTerritorio: true })
   const geoPorEndereco = new Map(enderecosUnicos.map((e, i) => [e, resultadosGeo[i]]))
 
+  // Task 2 (plano 2026-09-30, item 4): geoSemFonte = cache sem `fonte` (ver guarda 4 da parada proxima em agregacao.ts).
   const romaneioGeo: LinhaGeocodificada[] = romaneioCompleto.map(l => {
     const g = geoPorEndereco.get(l.endereco) ?? null
-    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: narrowGeoMotivo(g?.motivo) }
+    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: narrowGeoMotivo(g?.motivo), geoSemFonte: g != null && !g.fonte }
   })
 
   // Item 5 (achado real 10-09, auditoria com a Ana): port do Passo 7 do motor

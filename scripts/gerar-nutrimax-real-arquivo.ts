@@ -85,9 +85,10 @@ async function main() {
     }
     console.log(`Override de cache em memoria: ${n} enderecos`)
   }
+  // Task 2 (plano 2026-09-30, item 4): geoSemFonte = cache sem `fonte` (ver guarda 4 da parada proxima em agregacao.ts).
   const romaneioGeo: LinhaGeocodificada[] = romaneioCompleto.map(l => {
     const g = geoPorEndereco.get(l.endereco) ?? null
-    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: g?.motivo }
+    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: g?.motivo, geoSemFonte: g != null && !g.fonte }
   })
 
   // Item 5 (achado real 10-09, auditoria com a Ana -- espelha route.ts):
