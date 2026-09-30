@@ -319,7 +319,10 @@ export type LinhaDetalheEntrega = {
 export type AvisoDescasamento = {
   carga: string
   placa: string
-  motivo: 'sem_romaneio' | 'sem_escala'
+  motivo: 'sem_romaneio' | 'sem_escala' | 'nf_divergente'
+  /** So' em 'nf_divergente' (Task 2 plano 2026-09-30): NF PLANEJADO da Escala x NFs do Romaneio da carga. */
+  nfEscala?: number
+  nfRomaneio?: number
 }
 
 /** Rotulo exato (Nutry Max/modoPrecisao) de NF de placa que nao saiu da base o dia todo.

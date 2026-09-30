@@ -1146,3 +1146,34 @@ describe('consistencia resumo x detalhe: rastreador congelado com NF confirmada 
     expect(nfsDetalhe).toBe(2)
   })
 })
+
+// Task 2 (plano 2026-09-30, item 2): aviso NF Escala x Romaneio visivel e nao
+// invasivo -- linha na aba Avisos + nota no fim da linha de totais; taxa e
+// denominador intocados.
+describe('aviso NFs da Escala x Romaneio (Task 2, item 2)', () => {
+  const HOJE = '2026-09-30'
+  const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: '98969', placa: 'RQS7H76', nfPlanejado: 34, temRastreador: true })]
+  const detalhe: LinhaDetalheEntrega[] = [
+    detalheFixture({ carga: '98969', placa: 'RQS7H76', nf: '2397192', status: 'confirmado_gps' }),
+    detalheFixture({ carga: '98969', placa: 'RQS7H76', nf: '2397193', status: 'pendente', observacao: 'NÃO FOI AO CLIENTE' }),
+  ]
+  const avisos: AvisoDescasamento[] = [{ carga: '98969', placa: 'RQS7H76', motivo: 'nf_divergente', nfEscala: 34, nfRomaneio: 32 }]
+
+  it('aba Avisos descreve "Escala 34 × Romaneio 32 (2 NFs a menos no romaneio)"', async () => {
+    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-09-29', avisos, detalhe, HOJE, undefined, { resumoConfirmacao: true })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    const row = wb.getWorksheet('Avisos')!.getRow(2)
+    expect(row.getCell(3).value).toBe('NFs: Escala 34 × Romaneio 32 (2 NFs a menos no romaneio)')
+  })
+
+  it('linha de totais ganha nota de aviso e a taxa nao muda (1 de 2)', async () => {
+    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-09-29', avisos, detalhe, HOJE, undefined, { resumoConfirmacao: true })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    const ws = wb.worksheets[0]
+    const totais = ws.getRow(ws.rowCount).getCell(1).value as string
+    expect(totais).toContain('50,0% (1 de 2 NFs')
+    expect(totais).toContain('AVISO: 1 carga com NFs da Escala ≠ Romaneio (Escala 34 × Romaneio 32; 2 NFs a menos no romaneio, fora da conta) — ver aba Avisos')
+  })
+})

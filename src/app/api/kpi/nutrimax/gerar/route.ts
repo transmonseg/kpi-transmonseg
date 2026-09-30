@@ -548,9 +548,11 @@ export async function POST(req: NextRequest) {
   // Aviso agregado de descasamento Escala<->Romaneio (ver spec, secao
   // "Tratamento de erro/ambiguidade") -- aditivo, nunca bloqueia o resto do
   // relatorio. Usa a MESMA chave carga+placa ja calculada acima.
-  const cargasRomaneioList = [...cargasPorChave.keys()].map(chave => {
+  const cargasRomaneioList = [...cargasPorChave.entries()].map(([chave, linhasDaCarga]) => {
     const [carga, placaNorm] = chave.split('::')
-    return { carga, placaNorm }
+    // Task 2 (plano 2026-09-30, item 2): NFs distintas do Romaneio da carga,
+    // comparadas com NF PLANEJADO da Escala -> aviso 'nf_divergente'.
+    return { carga, placaNorm, nfsRomaneio: new Set(linhasDaCarga.map(l => l.nf)).size }
   })
   // Achado 10/09: sem Escala nenhuma (escalaBuf null), `escala` fica [] --
   // detectarDescasamentos compararia isso com o Romaneio e marcaria TODA

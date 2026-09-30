@@ -63,4 +63,29 @@ describe('detectarDescasamentos', () => {
     expect(r).toContainEqual({ carga: '111', placa: 'AAA1111', motivo: 'sem_romaneio' })
     expect(r).toContainEqual({ carga: '111', placa: 'ZZZ9999', motivo: 'sem_escala' })
   })
+
+  // Task 2 (plano 2026-09-30, item 2 -- RQS7H76 29/09: Escala 34 x Romaneio 32):
+  // NF PLANEJADO vem da Escala e o detalhe/taxa do Romaneio; a divergencia de
+  // quantidade tem que virar aviso visivel (sem mexer em taxa/denominador).
+  it('mesma carga+placa com NFs da Escala != NFs do Romaneio -- motivo nf_divergente com as duas contagens', () => {
+    const escalas = [escala({ carga: '98969', placaNorm: 'RQS7H76', nfPlanejado: 34 })]
+    const romaneio = [{ carga: '98969', placaNorm: 'RQS7H76', nfsRomaneio: 32 }]
+    expect(detectarDescasamentos(escalas, romaneio)).toEqual([
+      { carga: '98969', placa: 'RQS7H76', motivo: 'nf_divergente', nfEscala: 34, nfRomaneio: 32 },
+    ])
+  })
+
+  it('contagens iguais, nfPlanejado nulo ou nfsRomaneio ausente -- sem aviso de NF', () => {
+    const escalas = [
+      escala({ carga: '1', placaNorm: 'AAA1111', nfPlanejado: 10 }),
+      escala({ carga: '2', placaNorm: 'BBB2222', nfPlanejado: null }),
+      escala({ carga: '3', placaNorm: 'CCC3333', nfPlanejado: 5 }),
+    ]
+    const romaneio = [
+      { carga: '1', placaNorm: 'AAA1111', nfsRomaneio: 10 },
+      { carga: '2', placaNorm: 'BBB2222', nfsRomaneio: 7 },
+      { carga: '3', placaNorm: 'CCC3333' },
+    ]
+    expect(detectarDescasamentos(escalas, romaneio)).toEqual([])
+  })
 })

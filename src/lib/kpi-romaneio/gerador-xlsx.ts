@@ -63,6 +63,29 @@ export const COLUNAS_AVISOS = ['CARGA', 'PLACA', 'PROBLEMA'] as const
 const LABEL_MOTIVO: Record<AvisoDescasamento['motivo'], string> = {
   sem_romaneio: 'sem romaneio',
   sem_escala: 'sem escala',
+  nf_divergente: 'NFs da Escala diferentes do Romaneio',
+}
+
+// Task 2 (plano 2026-09-30, item 2): "Escala X × Romaneio Y (Z NFs a
+// menos/mais no romaneio)" -- so' texto, nao mexe em taxa nem denominador.
+function textoDiferencaNf(nfEscala: number, nfRomaneio: number): string {
+  const diff = nfEscala - nfRomaneio
+  const n = Math.abs(diff)
+  return `${n} NF${n === 1 ? '' : 's'} a ${diff > 0 ? 'menos' : 'mais'} no romaneio`
+}
+function textoAviso(a: AvisoDescasamento): string {
+  if (a.motivo === 'nf_divergente' && a.nfEscala != null && a.nfRomaneio != null) {
+    return `NFs: Escala ${a.nfEscala} × Romaneio ${a.nfRomaneio} (${textoDiferencaNf(a.nfEscala, a.nfRomaneio)})`
+  }
+  return LABEL_MOTIVO[a.motivo]
+}
+function notaAvisoNfDivergente(avisos: AvisoDescasamento[]): string {
+  const div = avisos.filter(a => a.motivo === 'nf_divergente' && a.nfEscala != null && a.nfRomaneio != null)
+  if (div.length === 0) return ''
+  const escalaTotal = div.reduce((s, a) => s + (a.nfEscala as number), 0)
+  const romaneioTotal = div.reduce((s, a) => s + (a.nfRomaneio as number), 0)
+  const cargas = `${div.length} carga${div.length === 1 ? '' : 's'}`
+  return `    |    AVISO: ${cargas} com NFs da Escala ≠ Romaneio (Escala ${formatarInteiroPtBr(escalaTotal)} × Romaneio ${formatarInteiroPtBr(romaneioTotal)}; ${textoDiferencaNf(escalaTotal, romaneioTotal)}${escalaTotal > romaneioTotal ? ', fora da conta' : ''}) — ver aba Avisos`
 }
 
 // Pedido do usuario (grupo KPI AJUSTES, 22/09): "tirar da nossa kpi as
@@ -598,7 +621,7 @@ export async function gerarKpiRomaneioXlsx(
     const naoSaiuTexto = resumo.naoSaiuDaBase > 0 ? `    |    NFs sem saída da base: ${resumo.naoSaiuDaBase} (fora da conta)` : ''
     const taxaPosTexto = `${formatarPctUmaCasa(resumo.taxaPosConferenciaPct)}% (${formatarInteiroPtBr(resumo.confirmadasPosConferencia)} de ${formatarInteiroPtBr(resumo.denominadorPosConferencia)} NFs; ${formatarInteiroPtBr(foraDaContaPosConferencia)} fora da conta)`
     const linhaResumoGeral = ws.addRow([
-      `TAXA DE CONFIRMAÇÃO: ${taxaTexto}    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${taxaPosTexto}    |    REVISAR: ${resumo.revisar}    |    NFs sem rastreador: ${resumo.semRastreador}${naoSaiuTexto}    |    NFs aguardando fim da rota: ${resumo.aguardando}`,
+      `TAXA DE CONFIRMAÇÃO: ${taxaTexto}    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${taxaPosTexto}    |    REVISAR: ${resumo.revisar}    |    NFs sem rastreador: ${resumo.semRastreador}${naoSaiuTexto}    |    NFs aguardando fim da rota: ${resumo.aguardando}${notaAvisoNfDivergente(avisos)}`,
     ])
     ws.mergeCells(linhaResumoGeral.number, 1, linhaResumoGeral.number, COLUNAS_KPI_ROMANEIO.length)
     const cell = linhaResumoGeral.getCell(1)
@@ -698,7 +721,7 @@ export async function gerarKpiRomaneioXlsx(
     const wsAvisos = wb.addWorksheet('Avisos')
     wsAvisos.addRow([...COLUNAS_AVISOS])
     for (const a of avisos) {
-      wsAvisos.addRow([a.carga, a.placa, LABEL_MOTIVO[a.motivo]])
+      wsAvisos.addRow([a.carga, a.placa, textoAviso(a)])
     }
   }
 

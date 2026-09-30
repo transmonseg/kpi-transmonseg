@@ -381,9 +381,11 @@ async function main() {
     console.log(`Dump de experimento salvo em: ${process.env.EXPORTAR_DUMP}`)
   }
 
-  const cargasRomaneioList = [...cargasPorChave.keys()].map(chave => {
+  const cargasRomaneioList = [...cargasPorChave.entries()].map(([chave, linhasDaCarga]) => {
     const [carga, placaNorm] = chave.split('::')
-    return { carga, placaNorm }
+    // Task 2 (plano 2026-09-30, item 2): NFs distintas do Romaneio da carga,
+    // comparadas com NF PLANEJADO da Escala -> aviso 'nf_divergente'.
+    return { carga, placaNorm, nfsRomaneio: new Set(linhasDaCarga.map(l => l.nf)).size }
   })
   // Fix (revisao final de branch 15/09, Critical 1 -- espelha route.ts): as
   // duas escalas sao INDEPENDENTES. A Escala de Rota so' cobre cargas Nutry
