@@ -4276,6 +4276,84 @@ describe('Fix round 1 (plano 28/09) -- casos reais da medicao 22-26/09', () => {
   })
 })
 
+// Estudo 30/09 (taxa-por-endereco-29-09.md, "ganhos potenciais"): 16 NFs de
+// 29/09 que o endereco (texto/CNEFE) sustenta e o KPI nao confirmava. Regra
+// candidata avaliada: parada da PROPRIA placa >=3 min a <=100 m do geocode
+// confiavel/cadastro, isolada (nenhum outro cliente da placa a <=150 m nem mais
+// perto) e fora da janela de outra NF confirmada. Rejogada em memoria sobre
+// 22-29/09 ela confirmava 0 das 16 (2 ja' confirmam hoje por geocode corrigido;
+// 8 nao tem parada a <=300 m de ponto confiavel -- o casamento era so' textual,
+// pede correcao de coordenada, nao regra; 2 tem a parada numa janela de outra NF
+// confirmada; 2 sao "nao foi") e as 2 restantes (So File' 2396532, Denilson
+// 2396917) caem no isolamento, que a R2 ja' aplica -- e a unica NF nova que ela
+// confirmava nos 5 dias era o FP rotulado RQQ5B81/2386225 23/09 (ponte a 23 m
+// do geocode, cadastro a 4,2 km). Nao implementada. Estes testes travam os
+// casos reais de 29/09 contra afrouxar isolamento/posse da parada.
+import fixturePendentes29 from './agregacao.fixture-pendentes-2026-09-29.json'
+
+function rejogarPlacaReal29(placa: keyof typeof fixturePendentes29) {
+  const f = fixturePendentes29[placa] as unknown as {
+    linhas: LinhaGeocodificada[]; alvos: AlvoApi[]; visitas: [string, Visita][]
+    paradas: UnitracParadaRow[]; cruas: UnitracParadaRow[]; temRastreador: boolean; apagao: boolean
+    menorDist: [string, number][]
+    resumos: Record<string, { motorista: string; saidaCd: string | null; chegadaCd: string | null; tempoOperacaoMin: number | null; kmPercorrido: number | null }>
+  }
+  const cargas = new Map<string, LinhaGeocodificada[]>()
+  for (const l of f.linhas) cargas.set(l.carga, [...(cargas.get(l.carga) ?? []), l])
+  const visitas = new Map(f.visitas)
+  return [...cargas.entries()].flatMap(([carga, linhas]) => {
+    const r = f.resumos[carga]
+    return montarDetalheEntregas(
+      carga, placa, linhas, f.alvos, visitas,
+      { motorista: r?.motorista ?? '', saidaCd: r?.saidaCd ?? null, chegadaCd: r?.chegadaCd ?? null, tempoOperacaoMin: r?.tempoOperacaoMin ?? null },
+      f.temRastreador, new Map([[placa, f.paradas]]), r?.kmPercorrido ?? null, false,
+      true, true, new Map([[placa, f.cruas]]), true, true, true, f.linhas, f.apagao, new Map(f.menorDist),
+      true, true, false, new Map([[placa, f.linhas]]),
+    )
+  })
+}
+
+describe('Estudo 30/09 -- NFs de 29/09 que o endereco sustenta mas a parada nao prova (trava)', () => {
+  const nf = (placa: keyof typeof fixturePendentes29, n: string) => {
+    const d = rejogarPlacaReal29(placa).find(x => x.nf === n)
+    if (!d) throw new Error(`NF ${n} nao achada na placa ${placa}`)
+    return d
+  }
+
+  it('RQV3J99/2396532 (So File): parada propria de 5 min a 12 m do geocode, mas Bar do Junior (cadastro a 118 m) e Pro Pao (125 m) sao da mesma placa -> NAO confirma', () => {
+    const d = nf('RQV3J99', '2396532')
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR')
+  })
+
+  it('RQP0G77/2396917 (Denilson): parada propria de 5 min a 72 m, com a Padaria Pais a 72 m da mesma parada -> NAO confirma', () => {
+    expect(nf('RQP0G77', '2396917').status).toBe('pendente')
+  })
+
+  it('RBI1E10/2395356 (Deia): parada de 20 min a 42 m que ja e a entrega confirmada do Mercado Virgem Santa (11 m) -> NAO confirma', () => {
+    expect(nf('RBI1E10', '2395356').status).toBe('pendente')
+  })
+
+  // NAO FOI verificado NF a NF (pxs-26/pxs-44-nfs-29-09.md, hoje-29/verificacao-*.md).
+  it.each([
+    ['TOS0G94', '2396762', 'Raquel'],
+    ['RQV5F67', '2397372', 'Royal Nuts'],
+    ['RQV6C22', '2395454', 'Di Mare'],
+    ['RQV3J99', '2396525', 'Pais e Filhos'],
+    ['RQP2G33', '2395513', 'Cabana Biruta'],
+    ['RQQ5B81', '2396680', 'Restaurante da Praca'],
+    ['RQU5G33', '2396842', 'Hortifruti do Caleme'],
+    ['RQU3F71', '2395255', 'Burger do Bavar'],
+    ['RQM0C38', '2396723', 'Penedo'],
+    ['RQV9D97', '2395585', 'Rede Loirinho'],
+    ['RQS2F79', '2396625', 'Distribuidora Castro'],
+  ] as [keyof typeof fixturePendentes29, string, string][])('NAO FOI %s/%s (%s) continua sem confirmacao', (placa, n) => {
+    const d = nf(placa, n)
+    expect(d.status).toBe('pendente')
+    expect(d.chegada == null || d.observacao != null).toBe(true)
+  })
+})
+
 // Task 1 (plano 2026-09-29, medicao-28-09 secao 3): 28/09 a carga 98837 da
 // RQU6E83 (30 NFs) foi rodada pela RBI0J25 (parou perto de 29 dos 30
 // clientes) enquanto a RQU6E83 ficou parada o dia todo com rastreador vivo.
