@@ -9,6 +9,8 @@ import { RAIO_ENTREGA_METROS } from './constants'
 import { acessoSomentePorBarco } from './acesso-restrito'
 import { instanteDeFeitoISO } from './correcao-por-alvo'
 import { hojeBR } from '@/lib/data-br'
+import { extraiLojaLocal } from '@/lib/parsers/extrai-loja-local'
+import { isRotaGigante } from '@/lib/kpi/rotas-gigantes'
 
 // Achado real 26/09 (grupo, KPI de 25/09 entregue as 06:17 de 26/09): os dois
 // chamadores de producao (route.ts + scripts/gerar-nutrimax-real-arquivo.ts)
@@ -485,6 +487,19 @@ const CONFLITO_GEO_CADASTRO_BAIXA_M = 1_000
 const RAIO_CADASTRO_IDENTICO_M = 10
 const RAIO_GEO_CORROBORA_CADASTRO_M = 300
 
+/** Revisao 30/09 (A1): codigos de cliente que a parada traz -- `codigo_loja`
+ *  e cada geofence "CODIGO - NOME" do `local_parada` (sem ROTA generica nem
+ *  rota gigante, que nao identificam cliente). Vazio = parada sem codigo. */
+function codigosDeClienteDaParada(p: UnitracParadaRow): Set<string> {
+  const out = new Set<string>()
+  if (p.codigo_loja && !isRotaGigante(p.codigo_loja)) out.add(p.codigo_loja)
+  for (const seg of (p.local_parada ?? '').split(',')) {
+    const { codigo_loja } = extraiLojaLocal(seg)
+    if (codigo_loja && !isRotaGigante(codigo_loja)) out.add(codigo_loja)
+  }
+  return out
+}
+
 /** Parada FORA_BASE da propria placa (crua ou ponte) >= 2 min, centro a <=
  *  150 m do cadastro Unitrac, que comeca antes da baixa (`feitoISO`) e termina
  *  no maximo 2 h antes dela -- entre as validas, as a <= 100 m do cadastro
@@ -514,7 +529,11 @@ function acharParadaAntesDaBaixa(
     if (iniMs >= t || fimParadaMs(p) < t - JANELA_MAX_FIM_ANTES_DA_BAIXA_MIN * 60_000) continue
     const dist = haversine(p.lat, p.lng, cadastro.lat, cadastro.lng)
     if (dist > RAIO_PARADA_ANTES_DA_BAIXA_CADASTRO_M) continue
-    if (cadastroSuspeito && p.codigo_loja !== alvo.codigoUnitrac) continue
+    // A1 (revisao 30/09): parada que traz codigo(s) de cliente e nenhum e' o
+    // desta NF e' de OUTRO cliente, mesmo a <=100 m -- nunca da' horario.
+    const codigos = codigosDeClienteDaParada(p)
+    if (codigos.size > 0 && !codigos.has(alvo.codigoUnitrac)) continue
+    if (cadastroSuspeito && !codigos.has(alvo.codigoUnitrac)) continue
     const forte = dist <= RAIO_PARADA_ANTES_DA_BAIXA_FORTE_M
     const ganha = !melhor || (forte && !melhor.forte) || (forte === melhor.forte && iniMs > melhor.iniMs)
     if (ganha) melhor = { parada: p, dist, iniMs, forte }
@@ -1473,6 +1492,29 @@ export function montarDetalheEntregas(
     return a && c ? [{ codigo: a.codigoUnitrac, ...c }] : []
   })
   const cadastrosOutrosClientes = (codigo: string) => cadastrosDaPlaca.filter(c => c.codigo !== codigo)
+  // A1 (revisao 30/09): uma parada so' preenche varias NFs do MESMO codigo de
+  // cliente. Pre-passe: para cada NF da placa no DIA (todas as cargas) com baixa Unitrac (situacao 1 +
+  // hora da baixa), a parada que acharParadaAntesDaBaixa escolheria; parada
+  // SEM codigo reivindicada por >=2 codigos de cliente diferentes nao decide
+  // de quem e' -> ninguem herda dela (Sonho x Coqueiro, mesmo cadastro).
+  // Parada COM codigo ja' so' serve a quem ela lista (filtro na propria
+  // acharParadaAntesDaBaixa), entao pode servir varios clientes listados.
+  const paradasAntesDaBaixaCandidatas = (): UnitracParadaRow[] =>
+    [...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []), ...(paradasPorOutraPlaca.get(placaNorm) ?? [])]
+  const codigosPorParadaAntesDaBaixa = new Map<UnitracParadaRow, Set<string>>()
+  if (modoPrecisao) {
+    for (const l of todasLinhasDaPlacaNoDia) {
+      const a = alvoPorNf.get(l.nf)
+      if (!a || a.situacao !== 1 || !a.feitoISO) continue
+      const r = acharParadaAntesDaBaixa(l, a, paradasAntesDaBaixaCandidatas(), cadastrosOutrosClientes(a.codigoUnitrac))
+      if (!r) continue
+      const set = codigosPorParadaAntesDaBaixa.get(r.parada) ?? new Set<string>()
+      set.add(a.codigoUnitrac)
+      codigosPorParadaAntesDaBaixa.set(r.parada, set)
+    }
+  }
+  const paradaAntesDaBaixaDisputada = (p: UnitracParadaRow) =>
+    codigosDeClienteDaParada(p).size === 0 && (codigosPorParadaAntesDaBaixa.get(p)?.size ?? 0) > 1
   // Guarda 1 da parada proxima propria (29/09, RQM0C38/2393499): o
   // isolamento conta TAMBEM vizinho com geocode nao confiavel (usa a
   // coordenada mesmo assim -- o Maycao, confiavel=false, estava a 33 m da
@@ -2262,6 +2304,7 @@ export function montarDetalheEntregas(
         [...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []), ...paradasProprias],
         cadastrosOutrosClientes(alvo.codigoUnitrac),
       )
+      if (paradaAntesDaBaixa && paradaAntesDaBaixaDisputada(paradaAntesDaBaixa.parada)) paradaAntesDaBaixa = null
       if (paradaAntesDaBaixa) {
         const p = paradaAntesDaBaixa.parada
         chegada = p.chegada

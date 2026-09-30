@@ -5281,20 +5281,71 @@ describe('Item 1 (auditoria 30/09) -- ENTREGUE so pela baixa em lote herda horar
     ]
     const doNf = (ds: ReturnType<typeof chamarNutryMax>, nf: string) => ds.find(x => x.nf === nf)!
 
-    it('parada sem codigo de cliente: Sonho e Coqueiro (geocode confirma o cadastro) herdam; Pinheiro (geocode nao confirma) nao', () => {
+    // Revisao 30/09 (A1): uma parada so' preenche varias NFs do MESMO codigo
+    // de cliente. Sonho (147453) e Coqueiro (148717) sao clientes diferentes
+    // com o mesmo cadastro -> parada sem codigo nao decide de quem e'.
+    it('parada sem codigo de cliente disputada por Sonho e Coqueiro (clientes diferentes) -> ninguem herda', () => {
       const ds = chamarNutryMax([sonho, pinheiro, coqueiro], {
         placa: P, alvos, paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(42), '15:34', '15:41')),
+      })
+      semHorario(doNf(ds, '2396614'))
+      semHorario(doNf(ds, '2396623'))
+      semHorario(doNf(ds, '2396615'))
+    })
+
+    it('parada que lista os codigos de Sonho E Coqueiro -> os dois herdam; Pinheiro (codigo ausente) nao', () => {
+      const ds = chamarNutryMax([sonho, pinheiro, coqueiro], {
+        placa: P, alvos, paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(42), '15:34', '15:41', {
+          local_parada: '147453 - PADARIA E CONFEITARIA SONHO DA MANHA, 148717 - BAR E RESTAURANTE COQUEIRO',
+        })),
       })
       expect(doNf(ds, '2396614').chegada).toBe(t('15:34'))
       expect(doNf(ds, '2396623').chegada).toBe(t('15:34'))
       semHorario(doNf(ds, '2396615'))
     })
 
-    it('parada marcada com o codigo do proprio Pinheiro -> Pinheiro herda', () => {
+    it('parada marcada com o codigo do proprio Pinheiro -> Pinheiro herda; Sonho e Coqueiro (codigo de outro cliente) nao', () => {
       const ds = chamarNutryMax([sonho, pinheiro, coqueiro], {
         placa: P, alvos, paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(42), '15:34', '15:41', { codigo_loja: '147571' })),
       })
       expect(doNf(ds, '2396615').chegada).toBe(t('15:34'))
+      semHorario(doNf(ds, '2396614'))
+      semHorario(doNf(ds, '2396623'))
+    })
+  })
+
+  describe('A1 (revisao 30/09): parada com codigo de OUTRO cliente nao da horario', () => {
+    it('parada a 20 m do cadastro marcada com o codigo de outro cliente -> sem horario', () => {
+      const [d] = chamarNutryMax([nfCom('2395082', 22)], {
+        placa: P, alvos: [alvoFeito('2395082', baixa('08:55:55'), cad, '130001')],
+        paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(20), '08:35', '08:43', { codigo_loja: '999999' })),
+      })
+      semHorario(d)
+    })
+
+    it('codigo de outro cliente listado so no local_parada -> sem horario', () => {
+      const [d] = chamarNutryMax([nfCom('2395082', 22)], {
+        placa: P, alvos: [alvoFeito('2395082', baixa('08:55:55'), cad, '130001')],
+        paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(20), '08:35', '08:43', { local_parada: '999999 - OUTRO MERCADO' })),
+      })
+      semHorario(d)
+    })
+
+    it('parada que traz o codigo da NF (entre outros) -> herda', () => {
+      const [d] = chamarNutryMax([nfCom('2395082', 22)], {
+        placa: P, alvos: [alvoFeito('2395082', baixa('08:55:55'), cad, '130001')],
+        paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(20), '08:35', '08:43', { local_parada: '999999 - OUTRO MERCADO, 130001 - MERCADO RAFAEL' })),
+      })
+      expect(d.chegada).toBe(t('08:35'))
+    })
+
+    it('RQV3J99 Pro Pao x Bar do Junior (clientes diferentes) disputando a mesma parada sem codigo -> nenhum herda', () => {
+      const b = baixa('09:18:25')
+      const ds = chamarNutryMax([nfCom('2396516', 52), nfCom('2396526', 60)], {
+        placa: P, alvos: [alvoFeito('2396516', b, cad, '140001'), alvoFeito('2396526', b, em(30), '140002')],
+        paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(28), '08:20', '08:34')),
+      })
+      for (const d of ds) semHorario(d)
     })
   })
 
