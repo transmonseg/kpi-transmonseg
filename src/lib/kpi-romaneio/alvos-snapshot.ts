@@ -1,9 +1,35 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import type { AlvoApi } from '@/lib/unitrac-api'
+import { placaCanonicaAlias } from './alias-placa'
+
+// Revisao 30/09 (B2): o cron noturno grava com a grafia da FROTA (RQ09H37) e
+// o KPI consulta pela da escala (RQO9H37). Snapshot e mescla usam a placa
+// canonica do alias da Nutry Max (placaCanonicaAlias) -- chave unica por
+// dia, sem reescrever snapshots antigos (canoniza tambem na leitura).
+export function canonizarPlacasDosAlvos(alvos: AlvoApi[]): AlvoApi[] {
+  return alvos.map(a => {
+    const c = placaCanonicaAlias(a.placaNorm)
+    return c === a.placaNorm ? a : { ...a, placaNorm: c }
+  })
+}
+
+/** Alvos na grafia da escala: placa fora da escala cuja canonica bate com a
+ *  de uma placa da escala passa a usar a grafia da escala. */
+export function alvosNaGrafiaDaEscala(alvos: AlvoApi[], placasEscala: string[]): AlvoApi[] {
+  const escala = new Set(placasEscala)
+  const porCanonica = new Map(placasEscala.map(p => [placaCanonicaAlias(p), p]))
+  return alvos.map(a => {
+    if (escala.has(a.placaNorm)) return a
+    const p = porCanonica.get(placaCanonicaAlias(a.placaNorm))
+    return p ? { ...a, placaNorm: p } : a
+  })
+}
 
 const chave = (a: AlvoApi) => `${a.placaNorm}|${a.codigoUnitrac}|${a.documento ?? ''}|${a.ordem}`
 
-export function mesclarAlvos(antigos: AlvoApi[], novos: AlvoApi[]): AlvoApi[] {
+export function mesclarAlvos(antigosBrutos: AlvoApi[], novosBrutos: AlvoApi[]): AlvoApi[] {
+  const antigos = canonizarPlacasDosAlvos(antigosBrutos)
+  const novos = canonizarPlacasDosAlvos(novosBrutos)
   const mapa = new Map<string, AlvoApi>()
   for (const a of antigos) mapa.set(chave(a), a)
   for (const a of novos) {
@@ -20,7 +46,7 @@ export async function lerSnapshotAlvos(cliente: string, data: string): Promise<A
     .from('kpi_alvos_snapshot').select('alvos')
     .eq('cliente', cliente).eq('data_referencia', data).maybeSingle()
   if (error) throw new Error(error.message)
-  return row ? (row.alvos as AlvoApi[]) : null
+  return row ? canonizarPlacasDosAlvos(row.alvos as AlvoApi[]) : null
 }
 
 export async function salvarSnapshotAlvos(cliente: string, data: string, alvos: AlvoApi[]): Promise<void> {
@@ -33,25 +59,27 @@ export async function salvarSnapshotAlvos(cliente: string, data: string, alvos: 
   if (error) throw new Error(error.message)
 }
 
-/** Alvos efetivos do dia: hoje → grava a API no snapshot; dia passado → API mesclada com o snapshot. */
-export async function alvosEfetivos(cliente: string, data: string, hoje: string, daApi: AlvoApi[]): Promise<AlvoApi[]> {
+/** Alvos efetivos do dia: hoje → grava a API no snapshot; dia passado → API mesclada com o snapshot.
+ *  `placasEscala` (opcional): devolve os alvos na grafia da escala (ver alvosNaGrafiaDaEscala). */
+export async function alvosEfetivos(cliente: string, data: string, hoje: string, daApi: AlvoApi[], placasEscala?: string[]): Promise<AlvoApi[]> {
+  const naEscala = (alvos: AlvoApi[]) => (placasEscala ? alvosNaGrafiaDaEscala(alvos, placasEscala) : alvos)
   try {
     if (data >= hoje && daApi.length > 0) {
       await salvarSnapshotAlvos(cliente, data, daApi)
       console.log(`snapshot alvos ${data}: 0 do snapshot + ${daApi.length} da API (gravado)`)
-      return daApi
+      return naEscala(daApi)
     }
     const snap = await lerSnapshotAlvos(cliente, data)
     if (!snap) {
       console.log(`sem snapshot para ${data}`)
-      return daApi
+      return naEscala(daApi)
     }
     console.log(`snapshot alvos ${data}: ${snap.length} do snapshot + ${daApi.length} da API`)
     // hoje com API vazia: devolve o snapshot; dia passado: mescla
-    return data >= hoje ? snap : mesclarAlvos(snap, daApi)
+    return naEscala(data >= hoje ? snap : mesclarAlvos(snap, daApi))
   } catch (err) {
     console.error('snapshot de alvos indisponível:', err)
-    return daApi
+    return naEscala(daApi)
   }
 }
 

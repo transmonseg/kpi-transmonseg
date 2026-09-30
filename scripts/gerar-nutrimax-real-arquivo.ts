@@ -180,7 +180,7 @@ async function main() {
   } catch (e) {
     console.log('buscarAlvosDoDia falhou:', e instanceof Error ? e.message : e)
   }
-  const alvos = await alvosEfetivos('nutrimax', data, hojeBR(), alvosDaData(alvosBrutos, data))
+  const alvos = await alvosEfetivos('nutrimax', data, hojeBR(), alvosDaData(alvosBrutos, data), placasNorm)
   const SEM_CADASTRO = semCadastroUnitrac()
   if (SEM_CADASTRO) console.log('MODO SEM CADASTRO UNITRAC: sem latAlt/lngAlt/feitoEm na ponte e alvos nao confirmam')
   const { horarios: horarioBasePorPlaca, consulta: placaConsulta } = await buscarHorariosBaseComAlias(placasNorm, data, SEM_CADASTRO ? pontosPorPlacaBridge : anexarCoordenadaCadastro(pontosPorPlacaBridge, alvos), true, aliasPlacas)

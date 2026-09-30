@@ -45,6 +45,16 @@ export function placaCanonicaVisual(p: string): string {
   return c.join('')
 }
 
+/** Chave unica da placa independente da grafia (revisao 30/09, B2 --
+ *  snapshot de alvos): grafia INVALIDA cuja canonizacao visual e' valida
+ *  vira a valida (RQ09H37 -> RQO9H37); placa valida fica como esta' (duas
+ *  placas validas distintas nunca colidem, mesma regra de resolverAliasPlacas). */
+export function placaCanonicaAlias(p: string): string {
+  if (placaValida(p)) return p
+  const c = placaCanonicaVisual(p)
+  return placaValida(c) ? c : p
+}
+
 export function resolverAliasPlacas(placasEscala: string[], frotaNorm: string[]): AliasPlacas {
   const alias: AliasPlacas = new Map()
   const escala = new Set(placasEscala)

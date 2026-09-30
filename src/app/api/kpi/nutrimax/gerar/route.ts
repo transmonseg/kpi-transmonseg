@@ -311,7 +311,7 @@ export async function POST(req: NextRequest) {
     buscarFrota(COD_USER_NUTRIMAX),
     buscarAlvosDoDia(placasNorm, { comAlias: true }),
   ])
-  const alvos = await alvosEfetivos('nutrimax', data, hojeBR(), alvosDaData(alvosBrutos, data))
+  const alvos = await alvosEfetivos('nutrimax', data, hojeBR(), alvosDaData(alvosBrutos, data), placasNorm)
   // Achado real 14/09: pede paradas SEMPRE agora, nao so' fora da janela
   // -- a ponte virou fonte primaria (ver resolverParadas em unitrac.ts).
   // Achado 30/09 (RQO9H37 = RQ0-9H37 na frota, ver alias-placa.ts): placa

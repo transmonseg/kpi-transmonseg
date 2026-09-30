@@ -118,3 +118,51 @@ describe('agruparAlvosPorDia', () => {
     expect(m.get('2026-09-18')).toEqual([c])
   })
 })
+
+// Revisao 30/09 (B2): o cron noturno grava os alvos com a grafia da FROTA
+// (RQ09H37, zero no lugar do O) e o KPI consulta pela da escala (RQO9H37) --
+// dia passado ficava com duas chaves pro mesmo alvo. Canoniza pelo alias da
+// Nutry Max (so' grafia invalida vira a valida) na gravacao e na leitura.
+describe('alias de placa no snapshot (RQO9H37 = RQ09H37)', () => {
+  beforeEach(() => {
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+    mocks.upsert.mockClear()
+    mocks.maybeSingle.mockClear()
+    mocks.upsert.mockResolvedValue({ error: null })
+    mocks.maybeSingle.mockResolvedValue({ data: null, error: null })
+  })
+
+  it('mesclarAlvos: snapshot antigo na grafia da frota + API na da escala -> uma chave so', () => {
+    const r = mesclarAlvos(
+      [alvo({ placaNorm: 'RQ09H37', situacao: 1, feitoISO: '2026-09-29T09:00:00' })],
+      [alvo({ placaNorm: 'RQO9H37', situacao: 0 })],
+    )
+    expect(r).toHaveLength(1)
+    expect(r[0]).toMatchObject({ placaNorm: 'RQO9H37', situacao: 1 })
+  })
+
+  it('placas validas distintas nunca se juntam (RQO9O37 x RQO9037)', () => {
+    const r = mesclarAlvos([alvo({ placaNorm: 'RQO9O37' })], [alvo({ placaNorm: 'RQO9037' })])
+    expect(r.map(a => a.placaNorm).sort()).toEqual(['RQO9037', 'RQO9O37'])
+  })
+
+  it('gravacao: salva na grafia canonica', async () => {
+    await alvosEfetivos('nutrimax', '2026-09-30', '2026-09-30', [alvo({ placaNorm: 'RQ09H37' })])
+    expect(mocks.upsert.mock.calls[0][0].alvos.map((a: AlvoApi) => a.placaNorm)).toEqual(['RQO9H37'])
+  })
+
+  it('leitura de dia passado com snapshot antigo (nao reescrito) na grafia da frota -> chave unica da escala', async () => {
+    mocks.maybeSingle.mockResolvedValue({ data: { alvos: [alvo({ placaNorm: 'RQ09H37', documento: '1', situacao: 1, feitoISO: '2026-09-29T09:00:00' })] }, error: null })
+    const r = await alvosEfetivos('nutrimax', '2026-09-29', '2026-09-30',
+      [alvo({ placaNorm: 'RQO9H37', documento: '1' }), alvo({ placaNorm: 'RQO9H37', documento: '2' })], ['RQO9H37'])
+    expect(r.map(a => a.placaNorm)).toEqual(['RQO9H37', 'RQO9H37'])
+    expect(r.find(a => a.documento === '1')?.situacao).toBe(1)
+    expect(mocks.upsert).not.toHaveBeenCalled()
+  })
+
+  it('escala com a grafia invalida: alvos voltam na grafia da escala', async () => {
+    mocks.maybeSingle.mockResolvedValue({ data: { alvos: [alvo({ placaNorm: 'RQO9H37', documento: '1' })] }, error: null })
+    const r = await alvosEfetivos('nutrimax', '2026-09-29', '2026-09-30', [], ['RQ09H37'])
+    expect(r.map(a => a.placaNorm)).toEqual(['RQ09H37'])
+  })
+})

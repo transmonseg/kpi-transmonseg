@@ -7,7 +7,7 @@
 import { buscarAlvos, buscarFrota } from '../src/lib/unitrac-api'
 import { COD_USER_NUTRIMAX } from '../src/lib/kpi-romaneio/constants'
 import { hojeBR } from '../src/lib/data-br'
-import { agruparAlvosPorDia, salvarSnapshotAlvos } from '../src/lib/kpi-romaneio/alvos-snapshot'
+import { agruparAlvosPorDia, canonizarPlacasDosAlvos, salvarSnapshotAlvos } from '../src/lib/kpi-romaneio/alvos-snapshot'
 import { createServiceClient } from '../src/lib/supabase/service'
 
 const RETENCAO_DIAS = 90
@@ -17,7 +17,10 @@ async function main() {
   const frota = await buscarFrota(COD_USER_NUTRIMAX)
   // buscarFrota/buscarAlvos engolem erro de rede e devolvem vazio: frota vazia = API falhou.
   if (frota.length === 0) throw new Error('frota vazia (API Unitrac falhou ou sem credenciais)')
-  const alvos = await buscarAlvos(frota.map(v => v.cv))
+  // Revisao 30/09 (B2): buscarAlvos devolve a grafia da FROTA (RQ09H37);
+  // grava na placa canonica do alias Nutry Max (RQO9H37) -- mesma chave que o
+  // KPI usa na leitura. salvarSnapshotAlvos/mesclarAlvos tambem canonizam.
+  const alvos = canonizarPlacasDosAlvos(await buscarAlvos(frota.map(v => v.cv)))
   const porDia = agruparAlvosPorDia(alvos)
   console.log(`frota=${frota.length} alvos=${alvos.length} dias=${porDia.size}`)
   if (alvos.length === 0) {
