@@ -17,6 +17,10 @@
 
 const BAIRROS_SEM_ACESSO_RODOVIARIO: { bairro: RegExp; cidade: RegExp }[] = [
   { bairro: /\b(VILA DO ABRAAO|ABRAAO|ILHA GRANDE)\b/, cidade: /\bANGRA DOS REIS\b/ },
+  // Achado real 30/09 (verificacao das sugestoes cadastro_unitrac de 29/09,
+  // caso #66): cliente na Ilha da Gipoia -- a "confirmacao" do cadastro era o
+  // pier de onde sai o barco, a coordenada sugerida caia no continente.
+  { bairro: /\bILHA DA GIPOIA\b/, cidade: /\bANGRA DOS REIS\b/ },
 ];
 
 function normalizar(s: string): string {

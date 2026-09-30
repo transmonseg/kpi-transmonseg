@@ -24,4 +24,8 @@ describe("acessoSomentePorBarco", () => {
     // presenca da palavra "ilha" no endereco.
     expect(acessoSomentePorBarco("ESTRADA DA ILHA, 4528 - GUARATIBA, RIO DE JANEIRO - *")).toBe(false);
   });
+  it("reconhece a Ilha da Gipoia (Angra) -- caso real #66 de 29/09, sugestao caia no pier", () => {
+    expect(acessoSomentePorBarco("RUA PROJETADA, SN - ILHA DA GIPOIA, ANGRA DOS REIS - PRAIA DO VITORINO")).toBe(true);
+    expect(acessoSomentePorBarco("RUA PROJETADA, SN - ILHA DA GIPÓIA, ANGRA DOS REIS - *")).toBe(true);
+  });
 });

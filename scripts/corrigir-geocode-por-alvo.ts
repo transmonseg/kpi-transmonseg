@@ -14,7 +14,7 @@ import {
   sugerirCorrecoesPorAlvo, LIMITE_CADASTRO_DIVERGENTE_M,
   type EntregaParaCorrigir, type Rejeicao, type SugestaoCorrecao,
 } from '../src/lib/kpi-romaneio/correcao-por-alvo'
-import { sugerirCadastroUnitrac, type SugestaoCadastro, type RejeicaoCadastro } from '../src/lib/kpi-romaneio/cadastro-unitrac'
+import { sugerirCadastroUnitrac, type SugestaoCadastro, type RejeicaoCadastro, type PontoCnefe } from '../src/lib/kpi-romaneio/cadastro-unitrac'
 
 const limpa = (v: unknown) => String(v ?? '').replace(/[;\n\r]/g, ',')
 
@@ -107,7 +107,10 @@ async function lerCache(enderecos: string[]) {
 export async function rodarCorrecao(
   romaneioBuf: Buffer,
   data: string,
-  opcoes: { aplicar: boolean; dirSaida: string },
+  // cnefeRuaNumero: pontos CNEFE rua+numero exato por endereco (filtro (b) de
+  // sugerirCadastroUnitrac). O CNEFE mora no banco do monitoramento, sem rota de
+  // ponte pra match exato ainda -- sem o mapa o filtro (b) nao roda (loga).
+  opcoes: { aplicar: boolean; dirSaida: string; cnefeRuaNumero?: Map<string, PontoCnefe[]> },
 ): Promise<{ sugestoes: number; rejeicoes: Record<string, number>; arquivos: string[]; cadastro: SugestaoCadastro[] }> {
   const romaneio = await parseRomaneio(romaneioBuf)
   const placas = [...new Set(romaneio.map(l => normPlaca(l.placa)).filter(p => p !== ''))]
@@ -119,7 +122,8 @@ export async function rodarCorrecao(
   console.log(`romaneio=${romaneio.length} NFs, placas=${placas.length}, alvos=${alvos.length}, placas com paradas=${[...paradasPorPlaca.values()].filter(v => v.length).length}, placas em apagao de sinal (excluidas)=${placasEmApagao.length}`)
 
   // Regra 1 primeiro: cadastro Unitrac confirmado por parada real; o resto cai na regra da coordenada da parada.
-  const cad = sugerirCadastroUnitrac(entregas, alvos, paradasPorPlaca)
+  if (!opcoes.cnefeRuaNumero) console.log('cadastro_unitrac: sem pontos CNEFE rua+numero -- filtro cnefe_confirma_atual nao roda')
+  const cad = sugerirCadastroUnitrac(entregas, alvos, paradasPorPlaca, { cnefeRuaNumero: opcoes.cnefeRuaNumero })
   const enderecosCadastro = new Set(cad.sugestoes.map(x => x.endereco))
   const { sugestoes, rejeicoes } = sugerirCorrecoesPorAlvo(entregas.filter(e => !enderecosCadastro.has(e.endereco)), alvos, paradasPorPlaca)
   console.log(`cadastro_unitrac=${cad.sugestoes.length} enderecos`)
