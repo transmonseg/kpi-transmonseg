@@ -660,6 +660,53 @@ const OBS_COMPARTILHADA_APROXIMADA = 'ENTREGUE - PARADA COMPARTILHADA COM ENTREG
 // parada da propria placa perto (raio = teto da R2, RAIO_PARADA_UNITRAC_PROPRIA_M).
 const DURACAO_MIN_OUTRO_ENDERECO_PROVADO_MIN = 3
 const OBS_PARADA_CURTA_OUTRO_ENDERECO = 'PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR'
+// Plano 29/09 (verificacao-pendentes-28-09-completa.md): 'PARADA PRÓXIMA
+// (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR' vira ENTREGUE so' com parada da
+// PROPRIA placa (crua Unitrac ou ponte) >= DURACAO_MIN_PARADA_PROXIMA_PROPRIA_MIN
+// a RAIO_MIN..RAIO_MAX_PARADA_PROXIMA_PROPRIA_M do cadastro/geocode confiavel da
+// NF, e ISOLADA: nenhum outro cliente (endereco diferente) da placa no dia a
+// <= RAIO_OUTRO_CLIENTE_EXPLICA_M dela nem mais perto dela que esta NF. 4 de 5
+// casos reais de 28/09 eram passagem (1 leitura v=0), transito ou parada de
+// outro cliente -- a duracao minima corta a passagem/transito (leitura unica
+// no trevo, ~1 min) e o isolamento corta a parada de outro cliente.
+const DURACAO_MIN_PARADA_PROXIMA_PROPRIA_MIN = 3
+const RAIO_MIN_PARADA_PROXIMA_PROPRIA_M = 500
+const RAIO_MAX_PARADA_PROXIMA_PROPRIA_M = 2_000
+const OBS_PARADA_PROXIMA_FORA = 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR'
+
+/** Parada propria isolada perto da NF (ver constantes acima). Entre as
+ *  validas vence a mais perto da NF (empate: a mais longa). */
+function acharParadaProximaPropriaIsolada(
+  linha: LinhaGeocodificada,
+  cadastro: { lat: number; lng: number } | null,
+  paradas: UnitracParadaRow[],
+  outrosPontosDaPlaca: PontoReferenciaPlacaNf[],
+): ParadaProvada | null {
+  const geo = linha.geoConfiavel !== false && linha.lat != null && linha.lng != null
+    ? { lat: linha.lat, lng: linha.lng }
+    : null
+  if (geo == null && cadastro == null) return null
+  const outros = outrosPontosDaPlaca.filter(o => o.endereco !== linha.endereco)
+  let melhor: (ParadaProvada & { duracaoMin: number }) | null = null
+  for (const p of paradas) {
+    if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
+    const duracaoMin = duracaoParadaMin(p)
+    if (duracaoMin < DURACAO_MIN_PARADA_PROXIMA_PROPRIA_MIN) continue
+    const distGeo = geo ? haversine(p.lat, p.lng, geo.lat, geo.lng) : Infinity
+    const distCad = cadastro ? haversine(p.lat, p.lng, cadastro.lat, cadastro.lng) : Infinity
+    const distM = Math.min(distGeo, distCad)
+    if (distM < RAIO_MIN_PARADA_PROXIMA_PROPRIA_M || distM > RAIO_MAX_PARADA_PROXIMA_PROPRIA_M) continue
+    const explicadaPorOutro = outros.some(o => {
+      const d = haversine(p.lat as number, p.lng as number, o.lat, o.lng)
+      return d <= RAIO_OUTRO_CLIENTE_EXPLICA_M || d <= distM
+    })
+    if (explicadaPorOutro) continue
+    const ganha = !melhor || distM < melhor.distM || (distM === melhor.distM && duracaoMin > melhor.duracaoMin)
+    if (ganha) melhor = { parada: p, distM, ref: distCad < distGeo ? 'cad' : 'geo', duracaoMin }
+  }
+  return melhor ? { parada: melhor.parada, distM: melhor.distM, ref: melhor.ref } : null
+}
+
 // Task 1 (plano 2026-09-29): rotulo neutro pra NF pendente de placa com
 // apagao de sinal no dia (ver bloco em montarDetalheEntregas). Contem
 // 'CONFERIR' -> calcularConfianca devolve 'REVISAR'.
@@ -1894,6 +1941,26 @@ export function montarDetalheEntregas(
         tempoParadaMin = minutosEntre(chegada, saida)
       }
     }
+    // Plano 29/09: PARADA PRÓXIMA (500m-2km) com parada propria >=3 min
+    // isolada vira ENTREGUE com o horario dessa parada (ver
+    // acharParadaProximaPropriaIsolada). So' `modoPrecisao` (Nutry Max); nunca
+    // usa parada de outro veiculo (so' cruas + ponte da propria placa).
+    let paradaProximaPropria: ParadaProvada | null = null
+    if (modoPrecisao && status === 'pendente' && observacao === OBS_PARADA_PROXIMA_FORA) {
+      paradaProximaPropria = acharParadaProximaPropriaIsolada(
+        linha, cadastroDoAlvo(alvo),
+        [...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []), ...paradasProprias],
+        pontosReferenciaDaPlaca,
+      )
+      if (paradaProximaPropria) {
+        const p = paradaProximaPropria.parada
+        status = 'confirmado_gps'
+        observacao = null
+        chegada = p.chegada
+        saida = p.fim_real ?? p.saida ?? p.chegada
+        tempoParadaMin = minutosEntre(chegada, saida)
+      }
+    }
     // Task 4 (plano 26/09): roda DEPOIS de R2 (paradaPropriaConfirmada acima)
     // de proposito -- se a PROPRIA placa acabou de ser confirmada por uma
     // parada real dela, nao ha' divergencia nenhuma pra esta NF especifica
@@ -1992,7 +2059,7 @@ export function montarDetalheEntregas(
     // `modoPrecisao` rebaixaria pra REVISAR -- com prova forte confirma. Status
     // ja' e' confirmado (unitrac ou gps) aqui; limpar a observacao basta pra
     // nao rebaixar. (b) parada propria vence (a): da' o horario real.
-    let paradaProvada: ParadaProvada | null = paradaProvadaOutroEndereco
+    let paradaProvada: ParadaProvada | null = paradaProvadaOutroEndereco ?? paradaProximaPropria
     let paradaFeitoCompartilhada: { parada: UnitracParadaRow; distParadaM: number } | null = null
     if (modoPrecisao && observacao === OBS_COMPARTILHADA_APROXIMADA) {
       const cruasDaPlaca = paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []

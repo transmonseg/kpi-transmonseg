@@ -4647,3 +4647,156 @@ describe('montarDetalheEntregas -- placa com duas cargas em regioes diferentes (
     for (const d of chamar({ apagao: true })) expect(d.observacao).toBe('SINAL DO RASTREADOR COM FALHA NO DIA - CONFERIR')
   })
 })
+
+// Plano 29/09 (verificacao-pendentes-28-09-completa.md): 'PARADA PRÓXIMA
+// (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR' vira ENTREGUE so' com parada
+// PROPRIA >=3 min a 500 m-2 km da NF, isolada (nenhum outro cliente da placa
+// mais perto dela que esta NF, nem a <=150 m). 4 de 5 casos reais de 28/09 sao
+// NAO FOI (passagem, transito, parada de outro cliente) -- continuam CONFERIR.
+describe('Plano 29/09 -- PARADA PRÓXIMA propria e isolada vira ENTREGUE', () => {
+  const OBS_PROXIMA = 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR'
+  const LAT0 = -22.98
+  const LNG0 = -43.21
+  const M_LNG = 1 / (111_195 * Math.cos(LAT0 * Math.PI / 180))
+  const em = (norteM: number, lesteM = 0) => ({ lat: LAT0 + norteM * M_LAT, lng: LNG0 + lesteM * M_LNG })
+  const t = (hhmm: string) => `2026-09-28T${hhmm}:00.000Z`
+  const stop = (id: string, pos: { lat: number; lng: number }, ini: string, fim: string, placa = 'TTL7D40') =>
+    paradaForaBase(id, pos.lat, pos.lng, t(ini), t(fim), placa)
+  const cliente = (nf: string, endereco: string, pos: { lat: number; lng: number }) =>
+    linha(nf, { endereco, ...pos, geoConfiavel: true })
+
+  // TTM2G02/2394312 (Rancho Inn): a NF recebera' correcao de coordenada em
+  // paralelo (a parada real fica a 136 m do endereco certo -> R2). Aqui a regra
+  // nova com a parada de 10 min a ~1 km, sem outro cliente mais perto dela; a
+  // parada de 25 min a ~813 m e' do Cris Mar (143 m dele) e NAO pode ser usada.
+  const nf = cliente('2394312', 'RANCHO INN', em(0))
+  const crisMar = cliente('CRISMAR', 'CRIS MAR MERCADO', em(-956))
+  const pazEAmor = cliente('PAZEAMOR', 'PAZ E AMOR', em(-2600))
+  const pPropria = stop('propria', em(1000), '12:59', '13:10')
+  const pCrisMar = stop('crismar', em(-813), '13:45', '14:10')
+  const pPaz = stop('paz', em(-2548), '12:51', '12:58')
+  const doNf = (d: ReturnType<typeof chamarNutryMax>, n = '2394312') => d.find(x => x.nf === n)!
+
+  it('TTM2G02/2394312: parada propria de 10 min a ~1 km, isolada -> ENTREGUE com o horario dela', () => {
+    const d = doNf(chamarNutryMax([nf, crisMar, pazEAmor], {
+      placa: 'TTL7D40', paradasPorOutraPlaca: new Map([['TTL7D40', [pPaz, pPropria, pCrisMar]]]),
+    }))
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBeNull()
+    expect(d.chegada).toBe(t('12:59'))
+    expect(d.saida).toBe(t('13:10'))
+    expect(d.evidencia).toBe('parada_no_endereco')
+    expect(d.distParadaM).toBe(1000)
+  })
+
+  it('sem a parada propria isolada, so a do Cris Mar (<=150 m de outro cliente) -> continua CONFERIR', () => {
+    const d = doNf(chamarNutryMax([nf, crisMar, pazEAmor], {
+      paradasPorOutraPlaca: new Map([['TTL7D40', [pPaz, pCrisMar]]]),
+    }))
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe(OBS_PROXIMA)
+  })
+
+  it('parada crua da Unitrac da propria placa tambem vale, medida contra o cadastro', () => {
+    const alvos = [alvo('2394312', 0, { pontoLat: em(400).lat, pontoLng: em(400).lng })]
+    const d = doNf(chamarNutryMax([nf, crisMar, pazEAmor], {
+      alvos,
+      paradasPorOutraPlaca: new Map([['TTL7D40', [pPaz, pCrisMar]]]),
+      paradasUnitracCruasPropriaPlaca: new Map([['TTL7D40', [stop('TTL7D40-api-1', em(1600), '12:59', '13:05')]]]),
+    }))
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBeNull()
+    expect(d.chegada).toBe(t('12:59'))
+    expect(d.evidencia).toBe('parada_no_cadastro_unitrac')
+    expect(d.distParadaM).toBe(1200)
+  })
+
+  it('parada de 2 min (menos de 3) nao prova -> continua CONFERIR', () => {
+    const d = doNf(chamarNutryMax([nf, crisMar, pazEAmor], {
+      paradasPorOutraPlaca: new Map([['TTL7D40', [pPaz, stop('curta', em(1000), '12:59', '13:01'), pCrisMar]]]),
+    }))
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe(OBS_PROXIMA)
+  })
+
+  it('parada longa mas mais perto de OUTRO cliente da placa que desta NF -> continua CONFERIR', () => {
+    const vizinho = cliente('VIZ', 'OUTRO CLIENTE', em(1000, 700))
+    const d = doNf(chamarNutryMax([nf, crisMar, vizinho], {
+      paradasPorOutraPlaca: new Map([['TTL7D40', [pPropria, pCrisMar]]]),
+    }))
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe(OBS_PROXIMA)
+  })
+
+  it('outro cliente de OUTRA carga da mesma placa (dia inteiro) tambem conta', () => {
+    const vizinho = linha('VIZ', { carga: '99999', endereco: 'OUTRA CARGA', ...em(1100), geoConfiavel: true })
+    const d = doNf(chamarNutryMax([nf, crisMar], {
+      paradasPorOutraPlaca: new Map([['TTL7D40', [pPropria, pCrisMar]]]),
+      todasLinhasDaPlacaNoDia: [nf, crisMar, vizinho],
+    }))
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe(OBS_PROXIMA)
+  })
+
+  it('parada longa de OUTRO veiculo a ~1 km nunca confirma', () => {
+    const d = doNf(chamarNutryMax([nf, crisMar, pazEAmor], {
+      paradasPorOutraPlaca: new Map([
+        ['TTL7D40', [pPaz, pCrisMar]],
+        ['OUT1A11', [stop('outra', em(1000), '12:59', '13:20', 'OUT1A11')]],
+      ]),
+    }))
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe(OBS_PROXIMA)
+  })
+
+  it('sem modoPrecisao (Rio Quality) nada muda', () => {
+    const d = doNf(chamarNutryMax([nf, crisMar, pazEAmor], {
+      modoPrecisao: false,
+      paradasPorOutraPlaca: new Map([['TTL7D40', [pPaz, pPropria, pCrisMar]]]),
+    }))
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe(OBS_PROXIMA)
+  })
+
+  it('RQQ1B52/2394199: so passagem (leitura parada de 1 min) e parada do Mercado Ideal a 3,35 km -> continua CONFERIR', () => {
+    const pastelaria = cliente('2394199', 'PASTELARIA RIO CAPIXABA', em(0))
+    const mercadoIdeal = cliente('MIDEAL', 'MERCADO IDEAL', em(3350))
+    const d = doNf(chamarNutryMax([pastelaria, mercadoIdeal], {
+      placa: 'RQQ1B52',
+      paradasPorOutraPlaca: new Map([['RQQ1B52', [
+        stop('passagem', em(700), '08:53', '08:54', 'RQQ1B52'),
+        stop('ideal', em(3338), '08:59', '09:06', 'RQQ1B52'),
+      ]]]),
+    }), '2394199')
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe(OBS_PROXIMA)
+  })
+
+  it('RQP2G33/2394494: passou a 554 m a 74 km/h, parada seguinte a 3,4 km -> continua CONFERIR', () => {
+    const sitio = cliente('2394494', 'SITIO SAO JOSE', em(0))
+    const montanhas = cliente('MMAR', 'MONTANHAS MAR', em(-3450))
+    const d = doNf(chamarNutryMax([sitio, montanhas], {
+      placa: 'RQP2G33',
+      paradasPorOutraPlaca: new Map([['RQP2G33', [
+        stop('passagem', em(554), '07:20', '07:21', 'RQP2G33'),
+        stop('espera', em(-3400), '07:25', '07:40', 'RQP2G33'),
+      ]]]),
+    }), '2394494')
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe(OBS_PROXIMA)
+  })
+
+  it('TUS1A47/2394754 e 2394759: uma leitura v=0 no Trevo das Margaridas (transito) -> as duas continuam CONFERIR', () => {
+    const willians = cliente('2394754', 'WILLIANS CANDIDO', em(0))
+    const avm = cliente('2394759', 'AVM SOLUCOES', em(0, 620))
+    const detalhe = chamarNutryMax([willians, avm], {
+      placa: 'TUS1A47',
+      paradasPorOutraPlaca: new Map([['TUS1A47', [stop('trevo', em(-1170), '19:26', '19:26', 'TUS1A47')]]]),
+    })
+    for (const n of ['2394754', '2394759']) {
+      const d = doNf(detalhe, n)
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe(OBS_PROXIMA)
+    }
+  })
+})
