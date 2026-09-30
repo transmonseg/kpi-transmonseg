@@ -25,7 +25,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { COD_USER_NUTRIMAX, EMPRESA_NUTRIMAX, foraDoAlcanceApi, LIMITE_CONCORRENCIA_PLACAS, PAO_PREFIXO } from '@/lib/kpi-romaneio/constants'
 import { mapComLimite } from '@/lib/kpi-romaneio/concorrencia'
 import { buscarResolucoes, aplicarResolucoes } from '@/lib/kpi-romaneio/resolucoes'
-import { buscarPlacasSemRastreador, placasSemRastreadorNoDia, montarTemRastreadorPorPlaca } from '@/lib/kpi-romaneio/placas-sem-rastreador'
+import { buscarPlacasSemRastreador, placasSemRastreadorNoDia, montarTemRastreadorPorPlaca, placasSemSinalNoDia } from '@/lib/kpi-romaneio/placas-sem-rastreador'
 import { logarNfDuplicadaNaMesmaPlaca } from '@/lib/kpi-romaneio/nf-duplicada'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
 
@@ -322,7 +322,7 @@ export async function POST(req: NextRequest) {
   // ponte respondeu, mas é caminhão sem rastreador de verdade) vence as
   // duas fontes acima -- ver placas-sem-rastreador.ts.
   const placasSemRastreador = placasSemRastreadorNoDia(await buscarPlacasSemRastreador(EMPRESA_NUTRIMAX), data)
-  const temRastreadorPorPlaca = montarTemRastreadorPorPlaca(placasNorm, cvPorPlaca, horarioBasePorPlaca, placasSemRastreador)
+  // temRastreadorPorPlaca: montado mais abaixo (depois das paradas/alvos), ver placasSemSinal.
 
   // Por placa (não por carga -- as paradas GPS do dia cobrem a placa
   // inteira, independente de quantas cargas ela rodou): busca paradas,
@@ -398,6 +398,13 @@ export async function POST(req: NextRequest) {
   }
 
   const alvosPorPlaca = agrupar(alvos, a => a.placaNorm)
+  // 29/09 (ordem direta do usuario): placa da escala SEM SINAL NO DIA (ponte
+  // com <2 posicoes, nenhuma parada fora da base na Unitrac, nenhum alvo
+  // feito) vira SEM RASTREADOR automatico, com o dia encerrado ou em
+  // andamento -- nunca "aguardando". Ver placaSemSinalNoDia. Mesmo calculo
+  // em route.ts e scripts/gerar-nutrimax-real-arquivo.ts (paridade).
+  const placasSemSinal = placasSemSinalNoDia(placasNorm, horarioBasePorPlaca, paradasUnitracCruasPorPlaca, alvosPorPlaca)
+  const temRastreadorPorPlaca = montarTemRastreadorPorPlaca(placasNorm, cvPorPlaca, horarioBasePorPlaca, placasSemRastreador, placasSemSinal)
 
   // Achado real 22/09 (RBG5G18 21/09): quando a ULTIMA volta a base
   // registrada e' na verdade uma volta extra sem entrega (fim da rota --

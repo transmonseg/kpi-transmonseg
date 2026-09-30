@@ -266,6 +266,18 @@ function ehNaoSaiuDaBase(d: LinhaDetalheEntrega): boolean {
   return (d.observacao?.startsWith(OBS_NAO_SAIU_DA_BASE) ?? false) && !ehSemRastreador(d)
 }
 
+// 29/09 (P0 da Ana): rotulo do resumo (aba 1 + cabecalho da aba da placa)
+// pra placa sem rastreador no dia -- mesma familia do STATUS do detalhe.
+const ROTULO_RESUMO_SEM_RASTREADOR = 'SEM RASTREADOR'
+function placasTodasSemRastreador(detalhe: LinhaDetalheEntrega[]): Set<string> {
+  const todas = new Map<string, boolean>()
+  for (const d of detalhe) {
+    if (d.placa === '') continue
+    todas.set(d.placa, (todas.get(d.placa) ?? true) && ehSemRastreador(d))
+  }
+  return new Set([...todas].filter(([, v]) => v).map(([p]) => p))
+}
+
 // Revisao final pre-deploy (24/09, item 4): NF "AGUARDANDO" (relatorio do
 // dia de hoje, rota ainda nao voltou) nao e' sucesso nem falha ainda --
 // contá-la no denominador derrubava a taxa de um dia em andamento. Sai do
@@ -427,8 +439,10 @@ function nomeAbaPlaca(placa: string): string {
 // inteira já é dessa placa. `resumo` pode ser undefined (placa sem nenhuma
 // linha agregada, caso que não deveria acontecer na prática -- toda placa
 // da lista de abas vem de `linhas` -- mas o tipo permite, então trata).
-function escreverResumoPlaca(ws: ExcelJS.Worksheet, linhaResumo: number, qtdColunas: number, resumo: LinhaKpiRomaneio | undefined, data: string, hoje: string, qtdNotas: number, cargasNaoRelacionadas: boolean = false): void {
+function escreverResumoPlaca(ws: ExcelJS.Worksheet, linhaResumo: number, qtdColunas: number, resumo: LinhaKpiRomaneio | undefined, data: string, hoje: string, qtdNotas: number, cargasNaoRelacionadas: boolean = false, semRastreador: boolean = false): void {
   const emAndamento = data === hoje
+  const horaCd = (iso: string | null, temRastreador: boolean) =>
+    semRastreador ? ROTULO_RESUMO_SEM_RASTREADOR : celulaHora(iso, temRastreador, emAndamento)
   // Fix incidental (code review da Task 3, achado 1): a aba "SEM PLACA"
   // pode juntar 2+ cargas de romaneios diferentes (ex. PAO-9/PAO-10/PAO-12)
   // sem NENHUMA relação entre si -- motorista/horário de UMA delas não
@@ -440,7 +454,7 @@ function escreverResumoPlaca(ws: ExcelJS.Worksheet, linhaResumo: number, qtdColu
   const texto = cargasNaoRelacionadas
     ? `MOTORISTA: MÚLTIPLOS    |    SAÍDA CD: -    |    CHEGADA CD: -    |    TEMPO OPERAÇÃO: -    |    KM PERCORRIDO: -    |    NOTAS: ${qtdNotas}`
     : resumo
-    ? `MOTORISTA: ${resumo.motorista || '-'}    |    SAÍDA CD: ${celulaHora(resumo.saidaCd, resumo.temRastreador, emAndamento) || '-'}    |    CHEGADA CD: ${celulaHora(resumo.chegadaCd, resumo.temRastreador, emAndamento) || '-'}    |    TEMPO OPERAÇÃO: ${formatarMinutos(resumo.tempoOperacaoMin) || '-'}    |    KM PERCORRIDO: ${resumo.kmPercorrido != null ? `${Math.round(resumo.kmPercorrido * 10) / 10} km` : '-'}    |    NOTAS: ${qtdNotas}`
+    ? `MOTORISTA: ${resumo.motorista || '-'}    |    SAÍDA CD: ${horaCd(resumo.saidaCd, resumo.temRastreador) || '-'}    |    CHEGADA CD: ${horaCd(resumo.chegadaCd, resumo.temRastreador) || '-'}    |    TEMPO OPERAÇÃO: ${formatarMinutos(resumo.tempoOperacaoMin) || '-'}    |    KM PERCORRIDO: ${resumo.kmPercorrido != null ? `${Math.round(resumo.kmPercorrido * 10) / 10} km` : '-'}    |    NOTAS: ${qtdNotas}`
     : ''
   ws.mergeCells(linhaResumo, 1, linhaResumo, qtdColunas)
   const cell = ws.getCell(linhaResumo, 1)
@@ -527,12 +541,23 @@ export async function gerarKpiRomaneioXlsx(
     { width: 10 }, { width: 10 }, { width: 14 }, { width: 18 },
   ]
 
+  // 29/09 (P0 da Ana, RQO9H37: "SEM RASTREADOR" no detalhe e "EM ROTA" no
+  // resumo): placa cujas NFs sao TODAS sem rastreador no detalhe (mesmo
+  // criterio de "NFs sem rastreador: N", `ehSemRastreador`) mostra o MESMO
+  // rotulo nas celulas SAIDA/CHEGADA CD da aba 1 e no cabecalho da aba da
+  // placa -- nunca "EM ROTA"/"SEM CADASTRO". So' com `resumoConfirmacao`
+  // (Nutry Max); Rio Quality segue com "SEM CADASTRO".
+  const placasSemRastreadorNoResumo = opcoes.resumoConfirmacao
+    ? placasTodasSemRastreador(detalhe)
+    : new Set<string>()
+
   linhas.forEach((l, i) => {
     ws.addRow([
       l.carga, l.placa, l.destino, l.motorista, l.ajudante1 ?? '', l.ajudante2 ?? '',
       l.pesoKg ?? '', l.clientesPlanejados ?? '', l.nfPlanejado ?? '', l.paradasReais, l.paradasForaBase,
       l.kmPercorrido != null ? Math.round(l.kmPercorrido * 10) / 10 : '',
-      celulaHora(l.saidaCd, l.temRastreador, data === hoje), celulaHora(l.chegadaCd, l.temRastreador, data === hoje),
+      placasSemRastreadorNoResumo.has(l.placa) ? ROTULO_RESUMO_SEM_RASTREADOR : celulaHora(l.saidaCd, l.temRastreador, data === hoje),
+      placasSemRastreadorNoResumo.has(l.placa) ? ROTULO_RESUMO_SEM_RASTREADOR : celulaHora(l.chegadaCd, l.temRastreador, data === hoje),
       formatarMinutos(l.tempoOperacaoMin), formatarMinutos(l.tempoMedioParadaMin),
     ])
     estilizarLinhaDado(ws, 2 + 1 + i, COLUNAS_KPI_ROMANEIO.length, i)
@@ -625,7 +650,7 @@ export async function gerarKpiRomaneioXlsx(
     // que ja' e' tudo igual em qualquer parte do relatorio -- so' isso
     // faltava.
     const cargasNaoRelacionadas = placa === '' && qtdCargasSemPlaca > 1
-    escreverResumoPlaca(wsPlaca, 2, colunasDetalhe.length, resumoPorPlaca.get(placa), data, hoje, linhasDaPlaca.length, cargasNaoRelacionadas)
+    escreverResumoPlaca(wsPlaca, 2, colunasDetalhe.length, resumoPorPlaca.get(placa), data, hoje, linhasDaPlaca.length, cargasNaoRelacionadas, placasSemRastreadorNoResumo.has(placa))
     wsPlaca.addRow([...colunasDetalhe])
     estilizarHeader(wsPlaca, 3, colunasDetalhe.length)
     wsPlaca.columns = [

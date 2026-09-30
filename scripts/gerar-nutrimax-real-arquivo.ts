@@ -25,7 +25,7 @@ import { detectarDescasamentos } from '../src/lib/kpi-romaneio/avisos'
 import { gerarKpiRomaneioXlsx } from '../src/lib/kpi-romaneio/gerador-xlsx'
 import { COD_USER_NUTRIMAX, EMPRESA_NUTRIMAX, foraDoAlcanceApi, PAO_PREFIXO } from '../src/lib/kpi-romaneio/constants'
 import { buscarResolucoes, aplicarResolucoes } from '../src/lib/kpi-romaneio/resolucoes'
-import { buscarPlacasSemRastreador, placasSemRastreadorNoDia, montarTemRastreadorPorPlaca } from '../src/lib/kpi-romaneio/placas-sem-rastreador'
+import { buscarPlacasSemRastreador, placasSemRastreadorNoDia, montarTemRastreadorPorPlaca, placasSemSinalNoDia } from '../src/lib/kpi-romaneio/placas-sem-rastreador'
 import { logarNfDuplicadaNaMesmaPlaca } from '../src/lib/kpi-romaneio/nf-duplicada'
 import { semCadastroUnitrac, nfsSoUnitrac } from '../src/lib/kpi-romaneio/sem-cadastro'
 import { hojeBR } from '../src/lib/data-br'
@@ -185,7 +185,7 @@ async function main() {
   // respondeu, mas é caminhão sem rastreador de verdade) vence as duas
   // fontes acima -- ver placas-sem-rastreador.ts.
   const placasSemRastreador = placasSemRastreadorNoDia(await buscarPlacasSemRastreador(EMPRESA_NUTRIMAX), data)
-  const temRastreadorPorPlaca = montarTemRastreadorPorPlaca(placasNorm, cvPorPlaca, horarioBasePorPlaca, placasSemRastreador)
+  // temRastreadorPorPlaca: montado mais abaixo (depois das paradas/alvos), ver placasSemSinal.
 
   const paradasPorPlaca = new Map<string, UnitracParadaRow[]>()
   const visitasPorPlaca = new Map<string, Map<string, Visita>>()
@@ -268,6 +268,13 @@ async function main() {
     if (process.env.SO_UNITRAC_OUT) writeFileSync(process.env.SO_UNITRAC_OUT, [...new Set(soU)].join('\n'))
   }
   const alvosPorPlaca = agrupar(SEM_CADASTRO ? [] : alvos, a => a.placaNorm)
+  // 29/09 (ordem direta do usuario): placa da escala SEM SINAL NO DIA (ponte
+  // com <2 posicoes, nenhuma parada fora da base na Unitrac, nenhum alvo
+  // feito) vira SEM RASTREADOR automatico, com o dia encerrado ou em
+  // andamento -- nunca "aguardando". Ver placaSemSinalNoDia. Mesmo calculo
+  // em route.ts e scripts/gerar-nutrimax-real-arquivo.ts (paridade).
+  const placasSemSinal = placasSemSinalNoDia(placasNorm, horarioBasePorPlaca, paradasUnitracCruasPorPlaca, alvosPorPlaca)
+  const temRastreadorPorPlaca = montarTemRastreadorPorPlaca(placasNorm, cvPorPlaca, horarioBasePorPlaca, placasSemRastreador, placasSemSinal)
 
   // Achado real 22/09 (RBG5G18 21/09, espelha route.ts): CHEGADA CD tem que
   // ser a primeira volta a base depois do fim real da rota, nao a ultima

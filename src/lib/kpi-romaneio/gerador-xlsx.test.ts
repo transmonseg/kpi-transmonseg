@@ -1036,3 +1036,71 @@ describe('gerador-xlsx -- STATUS de NF confirmada sempre comeca com ENTREGUE (bu
     expect(status).toBe('PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR')
   })
 })
+
+// 29/09 (P0 da Ana, KPI-Nutry-Max-2026-09-29): RQO9H37 saia "SEM RASTREADOR"
+// no detalhe e "EM ROTA" no resumo (aba 1 + cabecalho da aba da placa). O
+// rotulo do resumo tem que ser o MESMO do detalhe, e as contagens batem.
+describe('consistencia resumo x detalhe: SEM RASTREADOR (29/09)', () => {
+  const OBS_SR = 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO'
+  const HOJE = '2026-09-29'
+  const montar = () => {
+    const linhas: LinhaKpiRomaneio[] = [
+      // cv + ponte (temRastreador true), 0 posicoes no dia: detalhe ja' sai SEM RASTREADOR
+      linhaKpi({ carga: 'PAO-4', placa: 'RQO9H37', nfPlanejado: 3, paradasReais: 0, temRastreador: true, kmPercorrido: 0 }),
+      // sem sinal detectado automaticamente (temRastreador false)
+      linhaKpi({ carga: 'PAO-1', placa: 'RQV8J31', nfPlanejado: 2, paradasReais: 0, temRastreador: false }),
+      // rota normal em andamento: continua EM ROTA
+      linhaKpi({ carga: 'C010', placa: 'ABC1234', nfPlanejado: 2, paradasReais: 1, temRastreador: true, saidaCd: '2026-09-29T06:00:00.000Z' }),
+    ]
+    const detalhe: LinhaDetalheEntrega[] = [
+      ...['1', '2', '3'].map(n => detalheFixture({ carga: 'PAO-4', placa: 'RQO9H37', nf: `A${n}`, observacao: OBS_SR, saidaCd: null, chegadaCd: null })),
+      ...['1', '2'].map(n => detalheFixture({ carga: 'PAO-1', placa: 'RQV8J31', nf: `B${n}`, temRastreador: false, observacao: OBS_SR, saidaCd: null, chegadaCd: null })),
+      detalheFixture({ carga: 'C010', placa: 'ABC1234', nf: 'C1', status: 'confirmado_gps' }),
+      detalheFixture({ carga: 'C010', placa: 'ABC1234', nf: 'C2', observacao: 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO' }),
+    ]
+    return { linhas, detalhe }
+  }
+
+  it('aba 1: SAIDA/CHEGADA CD = "SEM RASTREADOR" (nunca EM ROTA/SEM CADASTRO) e soma de NFs = "NFs sem rastreador: N" = linhas do detalhe', async () => {
+    const { linhas, detalhe } = montar()
+    const buffer = await gerarKpiRomaneioXlsx(linhas, HOJE, [], detalhe, HOJE, undefined, { resumoConfirmacao: true })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    const ws = wb.worksheets[0]
+    const idxSaida = COLUNAS_KPI_ROMANEIO.indexOf('SAÍDA CD') + 1
+    const idxChegada = COLUNAS_KPI_ROMANEIO.indexOf('CHEGADA CD') + 1
+    const idxPlaca = COLUNAS_KPI_ROMANEIO.indexOf('PLACA') + 1
+    const idxNfPlan = COLUNAS_KPI_ROMANEIO.indexOf('NF PLANEJADO') + 1
+    const porPlaca = new Map<string, { saida: unknown; chegada: unknown; nfs: number }>()
+    for (let r = LINHA_PRIMEIRO_DADO; r < LINHA_PRIMEIRO_DADO + linhas.length; r++) {
+      const row = ws.getRow(r)
+      porPlaca.set(String(row.getCell(idxPlaca).value), { saida: row.getCell(idxSaida).value, chegada: row.getCell(idxChegada).value, nfs: Number(row.getCell(idxNfPlan).value) })
+    }
+    expect(porPlaca.get('RQO9H37')).toMatchObject({ saida: 'SEM RASTREADOR', chegada: 'SEM RASTREADOR' })
+    expect(porPlaca.get('RQV8J31')).toMatchObject({ saida: 'SEM RASTREADOR', chegada: 'SEM RASTREADOR' })
+    expect(porPlaca.get('ABC1234')?.chegada).toBe('EM ROTA')
+
+    const nfsResumoSemRastreador = [...porPlaca.values()].filter(v => v.saida === 'SEM RASTREADOR').reduce((a, v) => a + v.nfs, 0)
+    const totais = ws.getRow(ws.rowCount).getCell(1).value as string
+    const n = Number(/NFs sem rastreador: (\d+)/.exec(totais)?.[1])
+    const nfsDetalheSemRastreador = wb.worksheets.slice(1)
+      .flatMap(w => w.getSheetValues().slice(4) as unknown[][])
+      .filter(v => Array.isArray(v) && String(v[8] ?? '').startsWith('SEM RASTREADOR')).length
+    expect(nfsResumoSemRastreador).toBe(5)
+    expect(n).toBe(5)
+    expect(nfsDetalheSemRastreador).toBe(5)
+    expect(totais).toContain('NFs aguardando fim da rota: 1')
+  })
+
+  it('cabecalho da aba da placa usa o mesmo rotulo (RQO9H37: SAIDA CD: SEM RASTREADOR)', async () => {
+    const { linhas, detalhe } = montar()
+    const buffer = await gerarKpiRomaneioXlsx(linhas, HOJE, [], detalhe, HOJE, undefined, { resumoConfirmacao: true })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    const cab = wb.getWorksheet('RQO9H37')!.getRow(2).getCell(1).value as string
+    expect(cab).toContain('SAÍDA CD: SEM RASTREADOR')
+    expect(cab).toContain('CHEGADA CD: SEM RASTREADOR')
+    const cabAbc = wb.getWorksheet('ABC1234')!.getRow(2).getCell(1).value as string
+    expect(cabAbc).toContain('CHEGADA CD: EM ROTA')
+  })
+})
