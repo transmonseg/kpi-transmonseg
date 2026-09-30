@@ -463,6 +463,65 @@ function acharParadaUnitracParaFeito(
   return melhor ? { parada: melhor.parada, distParadaM: melhor.dist } : null
 }
 
+// Item 1 (auditoria Ana 30/09, Parte B -- 24 ENTREGUE sem horario de 29/09):
+// o motorista da' a baixa na Unitrac ATRASADO e em LOTE, 12-97 min depois da
+// parada -- a janela +-10 min acima descartava 21 paradas que existiam. So'
+// modoPrecisao e so' preenche chegada/saida/tempo (status/taxa intactos).
+const DURACAO_MIN_PARADA_ANTES_DA_BAIXA_MIN = 2
+const RAIO_PARADA_ANTES_DA_BAIXA_CADASTRO_M = 150
+const JANELA_MAX_FIM_ANTES_DA_BAIXA_MIN = 120
+// Entre candidatas, parada a <= este raio do cadastro vence as de 100-150 m;
+// so' depois vale a mais perto da baixa. Caso real RQV3J99 29/09 (Pro Pao e
+// Bar do Junior): a "ultima antes da baixa" pura pegava 08:42-08:47 a 118-145
+// m (parada de outro cliente) em vez da propria 08:20-08:34 a 28-40 m.
+const RAIO_PARADA_ANTES_DA_BAIXA_FORTE_M = 100
+// Conflito: geocode confiavel longe do cadastro -> um dos dois esta' errado
+// (Xavier 1,8 km, Sabor do Campo 1,8 km, Super Massas 3,3 km, Marvila 28,9 km).
+const CONFLITO_GEO_CADASTRO_BAIXA_M = 1_000
+// Cadastro identico (<= RAIO_CADASTRO_IDENTICO_M) ao de OUTRO cliente da placa
+// e sem geocode confiavel que o corrobore (<= RAIO_GEO_CORROBORA_CADASTRO_M):
+// cadastro suspeito (RQS2F79 Mercadinho Pinheiro, mesmo ponto de 2 outros
+// clientes, NF em outra estrada) -- so' com parada marcada com o codigo dele.
+const RAIO_CADASTRO_IDENTICO_M = 10
+const RAIO_GEO_CORROBORA_CADASTRO_M = 300
+
+/** Parada FORA_BASE da propria placa (crua ou ponte) >= 2 min, centro a <=
+ *  150 m do cadastro Unitrac, que comeca antes da baixa (`feitoISO`) e termina
+ *  no maximo 2 h antes dela -- entre as validas, as a <= 100 m do cadastro
+ *  primeiro e, dentro disso, a que comeca mais perto da baixa. `outrosCadastros` = cadastros de OUTROS clientes (codigo Unitrac
+ *  diferente) da placa no dia. Uma parada pode servir varias NFs. */
+function acharParadaAntesDaBaixa(
+  linha: LinhaGeocodificada,
+  alvo: AlvoApi,
+  paradasDaPlaca: UnitracParadaRow[],
+  outrosCadastros: { lat: number; lng: number }[],
+): { parada: UnitracParadaRow; distParadaM: number } | null {
+  if (!alvo.feitoISO) return null
+  const cadastro = cadastroDoAlvo(alvo)
+  if (!cadastro) return null
+  const geo = linha.geoConfiavel !== false && linha.lat != null && linha.lng != null
+    ? haversine(linha.lat, linha.lng, cadastro.lat, cadastro.lng)
+    : null
+  if (geo != null && geo > CONFLITO_GEO_CADASTRO_BAIXA_M) return null
+  const cadastroSuspeito = (geo == null || geo > RAIO_GEO_CORROBORA_CADASTRO_M)
+    && outrosCadastros.some(o => haversine(o.lat, o.lng, cadastro.lat, cadastro.lng) <= RAIO_CADASTRO_IDENTICO_M)
+  const t = instanteDeFeitoISO(alvo.feitoISO)
+  let melhor: { parada: UnitracParadaRow; dist: number; iniMs: number; forte: boolean } | null = null
+  for (const p of paradasDaPlaca) {
+    if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
+    if (duracaoParadaMin(p) < DURACAO_MIN_PARADA_ANTES_DA_BAIXA_MIN) continue
+    const iniMs = new Date(p.chegada).getTime()
+    if (iniMs >= t || fimParadaMs(p) < t - JANELA_MAX_FIM_ANTES_DA_BAIXA_MIN * 60_000) continue
+    const dist = haversine(p.lat, p.lng, cadastro.lat, cadastro.lng)
+    if (dist > RAIO_PARADA_ANTES_DA_BAIXA_CADASTRO_M) continue
+    if (cadastroSuspeito && p.codigo_loja !== alvo.codigoUnitrac) continue
+    const forte = dist <= RAIO_PARADA_ANTES_DA_BAIXA_FORTE_M
+    const ganha = !melhor || (forte && !melhor.forte) || (forte === melhor.forte && iniMs > melhor.iniMs)
+    if (ganha) melhor = { parada: p, dist, iniMs, forte }
+  }
+  return melhor ? { parada: melhor.parada, distParadaM: melhor.dist } : null
+}
+
 // Task 2 (plano 2026-09-25, regra R2 -- generaliza acharParadaUnitracParaFeito
 // pra NF sem confirmacao nenhuma, nao so' confirmado_unitrac sem visita):
 // duracao/raio medidos contra o gabarito da Ana (mesmo espirito de
@@ -1406,6 +1465,14 @@ export function montarDetalheEntregas(
       }
       return pontos
     })
+  // Item 1 (auditoria 30/09): cadastros Unitrac dos clientes da placa no dia,
+  // pra achar cadastro identico ao de OUTRO cliente (codigo diferente).
+  const cadastrosDaPlaca = todasLinhasDaPlacaNoDia.flatMap(l => {
+    const a = alvoPorNf.get(l.nf)
+    const c = cadastroDoAlvo(a)
+    return a && c ? [{ codigo: a.codigoUnitrac, ...c }] : []
+  })
+  const cadastrosOutrosClientes = (codigo: string) => cadastrosDaPlaca.filter(c => c.codigo !== codigo)
   // Guarda 1 da parada proxima propria (29/09, RQM0C38/2393499): o
   // isolamento conta TAMBEM vizinho com geocode nao confiavel (usa a
   // coordenada mesmo assim -- o Maycao, confiavel=false, estava a 33 m da
@@ -2184,6 +2251,25 @@ export function montarDetalheEntregas(
       }
     }
 
+    // Item 1 (auditoria 30/09): ENTREGUE so' pela baixa da Unitrac que
+    // chegou ate' aqui sem horario (baixa em lote fora da janela da Task 10,
+    // ou perdedora de parada compartilhada) -- horario da parada da propria
+    // placa antes da baixa (ver acharParadaAntesDaBaixa). Nao mexe em status.
+    let paradaAntesDaBaixa: { parada: UnitracParadaRow; distParadaM: number } | null = null
+    if (modoPrecisao && status === 'confirmado_unitrac' && chegada == null && alvo) {
+      paradaAntesDaBaixa = acharParadaAntesDaBaixa(
+        linha, alvo,
+        [...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []), ...paradasProprias],
+        cadastrosOutrosClientes(alvo.codigoUnitrac),
+      )
+      if (paradaAntesDaBaixa) {
+        const p = paradaAntesDaBaixa.parada
+        chegada = p.chegada
+        saida = p.fim_real ?? p.saida ?? p.chegada
+        tempoParadaMin = minutosEntre(chegada, saida)
+      }
+    }
+
     // Task 5 (plano 24/09, requisito P0 da Ana: "expor origem, método e
     // distância; não equiparar parada em rua semelhante a entrega") --
     // EvidenciaNf: mesma precedência documentada no comentário do tipo
@@ -2209,6 +2295,9 @@ export function montarDetalheEntregas(
     } else if (paradaProvada) {
       evidencia = paradaProvada.ref === 'cad' ? 'parada_no_cadastro_unitrac' : 'parada_no_endereco'
       distParadaM = Math.round(paradaProvada.distM)
+    } else if (paradaAntesDaBaixa) {
+      evidencia = 'alvo_feito_unitrac'
+      distParadaM = Math.round(paradaAntesDaBaixa.distParadaM)
     } else if (paradaFeitoCompartilhada) {
       evidencia = 'alvo_feito_unitrac'
       distParadaM = Math.round(paradaFeitoCompartilhada.distParadaM)

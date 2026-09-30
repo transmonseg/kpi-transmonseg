@@ -5086,3 +5086,224 @@ describe('Parada proxima propria -- guardas (ja confirmou outra NF, geo confiave
     expect(m).not.toBe('Parada de 13 min a 1,2 km do cliente')
   })
 })
+
+// Item 1 (auditoria Ana 30/09, Parte B -- 24 ENTREGUE sem horario de 29/09):
+// NF confirmada so' pela baixa do motorista na Unitrac (situacao 1, sem
+// visita) com a baixa feita em LOTE, 12-97 min depois da parada. A regra da
+// Task 10 (baixa dentro da parada +-10 min) descartava. Nova regra, so'
+// modoPrecisao, so' preenche chegada/saida/tempo (status/taxa intactos):
+// parada da PROPRIA placa >=2 min a <=150 m do cadastro Unitrac, que comeca
+// antes da baixa e termina ate' 2 h antes dela; guarda de conflito (geocode
+// confiavel a >1 km do cadastro); cadastro identico ao de outro cliente sem
+// geocode que o corrobore so' com parada marcada com o codigo do cliente.
+describe('Item 1 (auditoria 30/09) -- ENTREGUE so pela baixa em lote herda horario da parada antes da baixa', () => {
+  const LAT0 = -21.6
+  const LNG0 = -42.0
+  const M_LNG = 1 / (111_195 * Math.cos(LAT0 * Math.PI / 180))
+  const em = (norteM: number, lesteM = 0) => ({ lat: LAT0 + norteM * M_LAT, lng: LNG0 + lesteM * M_LNG })
+  const t = (hhmm: string) => `2026-09-29T${hhmm}:00.000Z`
+  const baixa = (hhmmss: string) => `2026-09-29T${hhmmss}.397942`
+  const P = 'TOS0G53'
+  const cad = em(0)
+  const nfCom = (nf: string, geoNorteM: number | null, over: Partial<LinhaGeocodificada> = {}) =>
+    linha(nf, {
+      placa: P, endereco: `END ${nf}`,
+      ...(geoNorteM == null ? { lat: null, lng: null } : { ...em(geoNorteM), geoConfiavel: true }),
+      ...over,
+    })
+  const alvoFeito = (nf: string, feito: string | null, pos = cad, codigo = `COD-${nf}`) =>
+    alvo(nf, 1, { placaNorm: P, feitoISO: feito, pontoLat: pos.lat, pontoLng: pos.lng, codigoUnitrac: codigo })
+  const stop = (id: string, pos: { lat: number; lng: number }, ini: string, fim: string, over: Partial<UnitracParadaRow> = {}) =>
+    ({ ...paradaForaBase(`${P}-api-${id}`, pos.lat, pos.lng, t(ini), t(fim), P), ...over })
+  const cruas = (...ps: UnitracParadaRow[]) => new Map([[P, ps]])
+  const semHorario = (d: { status: StatusEntrega; chegada: string | null; saida: string | null }) => {
+    expect(d.status).toBe('confirmado_unitrac')
+    expect(d.chegada).toBeNull()
+    expect(d.saida).toBeNull()
+  }
+
+  it('TOS0G53/2395128 Tres Irmaos: parada 13:08-13:33 a 23 m do cadastro, baixa 13:44:12 (perdeu por 1 min) -> herda 13:08-13:33, status intacto', () => {
+    const [d] = chamarNutryMax([nfCom('2395128', 466)], {
+      placa: P, alvos: [alvoFeito('2395128', baixa('13:44:12'))],
+      paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(23), '13:08', '13:33')),
+    })
+    expect(d.status).toBe('confirmado_unitrac')
+    expect(d.evidencia).toBe('alvo_feito_unitrac')
+    expect(d.observacao).toBeNull()
+    expect(d.chegada).toBe(t('13:08'))
+    expect(d.saida).toBe(t('13:33'))
+    expect(d.tempoParadaMin).toBe(25)
+    expect(d.distParadaM).toBe(23)
+  })
+
+  it('sem modoPrecisao (Rio Quality) nada muda', () => {
+    const [d] = chamarNutryMax([nfCom('2395128', 466)], {
+      placa: P, alvos: [alvoFeito('2395128', baixa('13:44:12'))], modoPrecisao: false,
+      paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(23), '13:08', '13:33')),
+    })
+    semHorario(d)
+  })
+
+  it('RQU2G47/2395082 Mercado Rafael: parada 08:35-08:43 a 12 m, baixa 08:55:55 -> herda', () => {
+    const [d] = chamarNutryMax([nfCom('2395082', 22)], {
+      placa: P, alvos: [alvoFeito('2395082', baixa('08:55:55'))],
+      paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(12), '08:35', '08:43')),
+    })
+    expect(d.chegada).toBe(t('08:35'))
+    expect(d.saida).toBe(t('08:43'))
+  })
+
+  it('RQV6I51/2395031 Lino: baixa 97 min depois do fim -> herda; 2h05 depois -> nao', () => {
+    const p = stop('1', em(2), '12:17', '12:22')
+    const [d] = chamarNutryMax([nfCom('2395031', 263)], {
+      placa: P, alvos: [alvoFeito('2395031', baixa('13:59:32'))], paradasUnitracCruasPropriaPlaca: cruas(p),
+    })
+    expect(d.chegada).toBe(t('12:17'))
+    const [d2] = chamarNutryMax([nfCom('2395031', 263)], {
+      placa: P, alvos: [alvoFeito('2395031', baixa('14:27:00'))], paradasUnitracCruasPropriaPlaca: cruas(p),
+    })
+    semHorario(d2)
+  })
+
+  it('parada da ponte da propria placa tambem vale', () => {
+    const [d] = chamarNutryMax([nfCom('2395082', 22)], {
+      placa: P, alvos: [alvoFeito('2395082', baixa('08:55:55'))],
+      paradasPorOutraPlaca: new Map([[P, [paradaForaBase(`${P}-ponte-3`, em(12).lat, em(12).lng, t('08:35'), t('08:43'), P)]]]),
+    })
+    expect(d.chegada).toBe(t('08:35'))
+  })
+
+  it('nunca parada de outro veiculo', () => {
+    const [d] = chamarNutryMax([nfCom('2395082', 22)], {
+      placa: P, alvos: [alvoFeito('2395082', baixa('08:55:55'))],
+      paradasPorOutraPlaca: new Map([[P, []], ['RQU2G47', [paradaForaBase('RQU2G47-api-1', em(12).lat, em(12).lng, t('08:35'), t('08:43'), 'RQU2G47')]]]),
+    })
+    semHorario(d)
+  })
+
+  it('RQU8D91/2395154 Campestre: a parada a 144 m comeca DEPOIS da baixa -> sem horario', () => {
+    const [d] = chamarNutryMax([nfCom('2395154', null)], {
+      placa: P, alvos: [alvoFeito('2395154', baixa('13:03:10'))],
+      paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(144), '13:15', '13:35')),
+    })
+    semHorario(d)
+  })
+
+  it('RQU8D91/2395164 Felipe Klayn: situacao 1 sem hora de baixa -> sem horario', () => {
+    const [d] = chamarNutryMax([nfCom('2395164', null)], {
+      placa: P, alvos: [alvoFeito('2395164', null)],
+      paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(20), '10:59', '11:08')),
+    })
+    semHorario(d)
+  })
+
+  it('TTI9B97/2396315 EGB Quintino: Unitrac nao registrou parada -> sem horario', () => {
+    const [d] = chamarNutryMax([nfCom('2396315', 23)], {
+      placa: P, alvos: [alvoFeito('2396315', baixa('14:19:48'))], paradasUnitracCruasPropriaPlaca: cruas(),
+    })
+    semHorario(d)
+  })
+
+  it('parada de menos de 2 min ou a mais de 150 m do cadastro nao vale', () => {
+    const [d] = chamarNutryMax([nfCom('NFX', 10)], {
+      placa: P, alvos: [alvoFeito('NFX', baixa('09:18:25'))],
+      paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(5), '08:30', '08:31'), stop('2', em(226), '08:20', '08:34')),
+    })
+    semHorario(d)
+  })
+
+  it('duas candidatas: fica a mais proxima da baixa, antes dela', () => {
+    const [d] = chamarNutryMax([nfCom('NFX', 10)], {
+      placa: P, alvos: [alvoFeito('NFX', baixa('15:59:14'))],
+      paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(21), '15:16', '15:20'), stop('2', em(80), '15:34', '15:41')),
+    })
+    expect(d.chegada).toBe(t('15:34'))
+    expect(d.saida).toBe(t('15:41'))
+  })
+
+  it('RQV3J99/2396516 Pro Pao: parada propria 08:20-08:34 a 28 m vence a 08:42-08:47 a 145 m (de outro cliente), mesmo mais longe da baixa', () => {
+    const [d] = chamarNutryMax([nfCom('2396516', 52)], {
+      placa: P, alvos: [alvoFeito('2396516', baixa('09:18:25'))],
+      paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(28), '08:20', '08:34'), stop('2', em(145), '08:42', '08:47')),
+    })
+    expect(d.chegada).toBe(t('08:20'))
+    expect(d.saida).toBe(t('08:34'))
+  })
+
+  describe('guarda de conflito: geocode confiavel a >1 km do cadastro Unitrac', () => {
+    const casos: [string, string, number, string, string, string][] = [
+      ['RBI1E10/2395341 Xavier', '2395341', 1781, '15:35', '15:40', '16:03:36'],
+      ['RQS2F79/2396624 Sabor do Campo', '2396624', 1835, '15:16', '15:20', '15:59:33'],
+      ['RQQ5B81/2396702 Super Massas (cadastro colado no Big Bife)', '2396702', 3250, '11:50', '11:53', '12:15:00'],
+    ]
+    for (const [nome, nf, geoM, ini, fim, b] of casos) {
+      it(`${nome}: geocode a ${geoM} m do cadastro -> sem horario`, () => {
+        const [d] = chamarNutryMax([nfCom(nf, geoM)], {
+          placa: P, alvos: [alvoFeito(nf, baixa(b))], paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(20), ini, fim)),
+        })
+        semHorario(d)
+      })
+    }
+
+    it('geocode NAO confiavel longe (Batata Lanches, cache NC a 9,5 km) nao bloqueia', () => {
+      const [d] = chamarNutryMax([nfCom('2396954', 9555, { geoConfiavel: false })], {
+        placa: P, alvos: [alvoFeito('2396954', baixa('16:01:42'))],
+        paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(11), '15:28', '15:33')),
+      })
+      expect(d.chegada).toBe(t('15:28'))
+    })
+
+    it('RBG5G18/2395449 Marvila: perdeu a parada compartilhada pro Tudao e o cnefe esta 28,9 km errado -> continua sem horario', () => {
+      const marvila = nfCom('2395449', 28_865)
+      const tudao = nfCom('TUDAO', 20, { endereco: 'END TUDAO' })
+      const vis = { chegada: t('09:26'), saida: t('09:29'), distanciaMetrosDoPonto: 0 }
+      const pStop = stop('1', em(26), '09:25', '09:29')
+      const d = chamarNutryMax([marvila, tudao], {
+        placa: P,
+        alvos: [alvoFeito('2395449', baixa('09:30:02')), alvoFeito('TUDAO', baixa('09:30:02'), em(42), 'COD-TUDAO')],
+        visitasPorNf: new Map([['2395449', { nf: '2395449', ...vis }], ['TUDAO', { nf: 'TUDAO', ...vis }]]),
+        paradasPorOutraPlaca: new Map([[P, [pStop]]]),
+        paradasUnitracCruasPropriaPlaca: cruas(pStop),
+      }).find(x => x.nf === '2395449')!
+      semHorario(d)
+    })
+  })
+
+  describe('RQS2F79: Mercadinho Pinheiro com cadastro identico ao de outros 2 clientes', () => {
+    const sonho = nfCom('2396614', 135)
+    const pinheiro = nfCom('2396615', 3851, { geoConfiavel: false })
+    const coqueiro = nfCom('2396623', 135, { endereco: 'END 2396623' })
+    const b = baixa('15:59:14')
+    const alvos = [
+      alvoFeito('2396614', b, cad, '147453'),
+      alvoFeito('2396615', b, cad, '147571'),
+      alvoFeito('2396623', b, cad, '148717'),
+    ]
+    const doNf = (ds: ReturnType<typeof chamarNutryMax>, nf: string) => ds.find(x => x.nf === nf)!
+
+    it('parada sem codigo de cliente: Sonho e Coqueiro (geocode confirma o cadastro) herdam; Pinheiro (geocode nao confirma) nao', () => {
+      const ds = chamarNutryMax([sonho, pinheiro, coqueiro], {
+        placa: P, alvos, paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(42), '15:34', '15:41')),
+      })
+      expect(doNf(ds, '2396614').chegada).toBe(t('15:34'))
+      expect(doNf(ds, '2396623').chegada).toBe(t('15:34'))
+      semHorario(doNf(ds, '2396615'))
+    })
+
+    it('parada marcada com o codigo do proprio Pinheiro -> Pinheiro herda', () => {
+      const ds = chamarNutryMax([sonho, pinheiro, coqueiro], {
+        placa: P, alvos, paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(42), '15:34', '15:41', { codigo_loja: '147571' })),
+      })
+      expect(doNf(ds, '2396615').chegada).toBe(t('15:34'))
+    })
+  })
+
+  it('RQV3J99 Emporio da Vila x2 (mesmo cliente): a mesma parada preenche as duas NFs', () => {
+    const b = baixa('16:43:35')
+    const ds = chamarNutryMax([nfCom('2396533', 180), nfCom('2396534', 180, { endereco: 'END 2396533' })], {
+      placa: P, alvos: [alvoFeito('2396533', b, cad, '166727'), alvoFeito('2396534', b, cad, '166727')],
+      paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(12), '15:23', '15:48')),
+    })
+    expect(ds.map(d => d.chegada)).toEqual([t('15:23'), t('15:23')])
+  })
+})
