@@ -374,15 +374,37 @@ export async function buscarHorariosBase(
   pontosPorPlaca: Map<string, PontoEntregaBridge[]> = new Map(),
   incluirParadas = false,
   fimRotaPorPlaca?: Map<string, string>,
+  juntasCom?: Map<string, string[]>,
 ): Promise<Map<string, HorarioBase>> {
   const mapa = new Map<string, HorarioBase>()
   const tamanhoLote = incluirParadas ? MAX_PLACAS_POR_CHAMADA_COM_PARADAS : MAX_PLACAS_POR_CHAMADA
-  for (let i = 0; i < placasNorm.length; i += tamanhoLote) {
-    const lote = placasNorm.slice(i, i + tamanhoLote)
+  for (const lote of montarLotes(placasNorm, tamanhoLote, juntasCom)) {
     const doLote = await buscarLote(lote, data, pontosPorPlaca, incluirParadas, fimRotaPorPlaca)
     for (const [placa, horario] of doLote) mapa.set(placa, horario)
   }
   return mapa
+}
+
+/** Revisao 30/09 (B1, alias de placa): `juntasCom` (placa -> placas que vao
+ *  no MESMO lote, ex. grafias variantes da frota) -- o grupo nunca e'
+ *  partido na borda do lote, entao falha/timeout de um lote atinge a placa
+ *  e as variantes juntas (nunca so' uma das grafias). */
+export function montarLotes(placasNorm: string[], tamanhoLote: number, juntasCom?: Map<string, string[]>): string[][] {
+  const lotes: string[][] = []
+  let atual: string[] = []
+  const vistas = new Set<string>()
+  for (const p of placasNorm) {
+    if (vistas.has(p)) continue
+    const grupo = [p, ...(juntasCom?.get(p) ?? [])].filter(x => !vistas.has(x))
+    for (const x of grupo) vistas.add(x)
+    if (atual.length > 0 && atual.length + grupo.length > tamanhoLote) {
+      lotes.push(atual)
+      atual = []
+    }
+    atual.push(...grupo)
+  }
+  if (atual.length > 0) lotes.push(atual)
+  return lotes
 }
 
 // Task 3b (verificacao manual 26/09): monta o Map NF -> menorDistanciaM que

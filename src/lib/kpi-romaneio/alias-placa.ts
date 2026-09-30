@@ -93,9 +93,26 @@ function sinal(h: HorarioBase | undefined): [number, number] {
   return [h.kmPercorrido ?? -1, h.paradas?.length ?? 0]
 }
 
+/** Revisao 30/09 (B1): a grafia foi consultada com sucesso? So' da' pra
+ *  saber no modo `incluirParadas` (consultaPosicoesOk); ausente do mapa =
+ *  lote com erro/timeout (buscarLote devolve vazio) ou placa sem resposta. */
+function consultaFalhou(h: HorarioBase | undefined, incluirParadas: boolean): boolean {
+  if (!h) return true
+  return incluirParadas && h.consultaPosicoesOk !== true
+}
+
+function descreverSinal(g: string, h: HorarioBase | undefined, incluirParadas: boolean): string {
+  if (consultaFalhou(h, incluirParadas)) return `${g} consulta falhou`
+  return `${g} km ${h!.kmPercorrido ?? '-'}, ${h!.paradas?.length ?? 0} paradas`
+}
+
 /** buscarHorariosBase consultando tambem as variantes da frota; devolve o
  *  mapa chaveado SO' pela placa da escala (grafia com sinal no dia vence) e
- *  `consulta` (placa da escala -> grafia escolhida, so' pras que tem alias). */
+ *  `consulta` (placa da escala -> grafia escolhida, so' pras que tem alias).
+ *  Revisao 30/09 (B1): as variantes vao no MESMO lote da placa (falha de
+ *  lote nunca atinge so' uma grafia) e, se a consulta de QUALQUER grafia do
+ *  grupo falhou, o resultado fica `consultaPosicoesOk=false` (nunca conclui
+ *  "sem sinal" escolhendo o cv morto por falta de resposta do outro). */
 export async function buscarHorariosBaseComAlias(
   placasNorm: string[],
   data: string,
@@ -104,17 +121,19 @@ export async function buscarHorariosBaseComAlias(
   alias: AliasPlacas,
 ): Promise<{ horarios: Map<string, HorarioBase>; consulta: Map<string, string> }> {
   const pontos = new Map(pontosPorPlaca)
-  const extras: string[] = []
   for (const [p, variantes] of alias) {
-    for (const v of variantes) {
-      extras.push(v)
-      const pts = pontosPorPlaca.get(p)
-      if (pts) pontos.set(v, pts)
-    }
+    const pts = pontosPorPlaca.get(p)
+    if (pts) for (const v of variantes) pontos.set(v, pts)
   }
-  const bruto = await buscarHorariosBase([...placasNorm, ...extras], data, pontos, incluirParadas)
+  // Cada variante logo depois da placa dela; `juntasCom` (alias) garante que
+  // a borda do lote nunca separa as grafias.
+  const ordem = [...placasNorm.flatMap(p => [p, ...(alias.get(p) ?? [])]), ...[...alias].filter(([p]) => !placasNorm.includes(p)).flatMap(([, vs]) => vs)]
+  const bruto = alias.size > 0
+    ? await buscarHorariosBase([...new Set(ordem)], data, pontos, incluirParadas, undefined, alias)
+    : await buscarHorariosBase(placasNorm, data, pontos, incluirParadas)
   const consulta = new Map<string, string>()
   for (const [p, variantes] of alias) {
+    const grafias = [p, ...variantes]
     let melhor = p
     for (const v of variantes) {
       const [kmV, parV] = sinal(bruto.get(v))
@@ -122,9 +141,21 @@ export async function buscarHorariosBaseComAlias(
       if (kmV > kmM || (kmV === kmM && parV > parM)) melhor = v
     }
     consulta.set(p, melhor)
+    const falhas = grafias.filter(g => consultaFalhou(bruto.get(g), incluirParadas))
+    const resumo = grafias.map(g => descreverSinal(g, bruto.get(g), incluirParadas)).join(' | ')
     const h = bruto.get(melhor)
-    if (h) bruto.set(p, h)
-    else bruto.delete(p)
+    if (h) {
+      if (falhas.length > 0) {
+        bruto.set(p, { ...h, ...(incluirParadas ? { consultaPosicoesOk: false } : {}) })
+        console.warn(`[alias-placa] ${p}: consulta de ${falhas.join(', ')} falhou -- usando ${melhor} so' com o que respondeu, consulta NAO ok (nunca conclui sem sinal) [${resumo}]`)
+      } else {
+        bruto.set(p, h)
+        console.warn(`[alias-placa] ${p}: consulta ${melhor} (${melhor === p ? 'empate ou mais sinal: grafia do romaneio' : 'mais sinal no dia'}) [${resumo}]`)
+      }
+    } else {
+      bruto.delete(p)
+      console.warn(`[alias-placa] ${p}: consulta de todas as grafias falhou [${resumo}]`)
+    }
     for (const v of variantes) bruto.delete(v)
   }
   return { horarios: bruto, consulta }

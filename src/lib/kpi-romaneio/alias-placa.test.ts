@@ -117,6 +117,65 @@ describe('buscarHorariosBaseComAlias', () => {
     expect(consulta.get('RQO9H37')).toBe('RQO9H37')
   })
 
+  // Revisao 30/09 (B1): falha na consulta da variante nao pode cair
+  // silenciosamente no cv morto (grafia do romaneio parada na base).
+  it('lote da variante falhou (variante ausente da resposta) -> resultado da placa com consultaPosicoesOk=false e log', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true, status: 200,
+      json: async () => ({ resultados: [
+        { placa: 'RQO9H37', saidaBase: null, chegadaBase: null, kmPercorrido: 0.3, paradas: [{ ...parada, classificacao: 'BASE' }] },
+      ] }),
+    } as Response)
+    const { horarios } = await buscarHorariosBaseComAlias(['RQO9H37'], '2026-09-29', new Map(), true, new Map([['RQO9H37', ['RQ09H37']]]))
+    expect(horarios.get('RQO9H37')?.consultaPosicoesOk).toBe(false)
+    const log = warn.mock.calls.map(c => c.join(' ')).join('\n')
+    expect(log).toMatch(/RQ09H37/)
+    expect(log).toMatch(/falhou/)
+  })
+
+  it('variante respondeu sem paradas (erro de posicoes do lado do monitoramento) -> consultaPosicoesOk=false', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true, status: 200,
+      json: async () => ({ resultados: [
+        { placa: 'RQO9H37', saidaBase: null, chegadaBase: null, kmPercorrido: 0.3, paradas: [] },
+        { placa: 'RQ09H37', saidaBase: null, chegadaBase: null, kmPercorrido: null },
+      ] }),
+    } as Response)
+    const { horarios } = await buscarHorariosBaseComAlias(['RQO9H37'], '2026-09-29', new Map(), true, new Map([['RQO9H37', ['RQ09H37']]]))
+    expect(horarios.get('RQO9H37')?.consultaPosicoesOk).toBe(false)
+  })
+
+  it('as duas grafias ok -> consultaPosicoesOk=true e loga a grafia escolhida e o porque', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true, status: 200,
+      json: async () => ({ resultados: [
+        { placa: 'RQO9H37', saidaBase: null, chegadaBase: null, kmPercorrido: 0, paradas: [] },
+        { placa: 'RQ09H37', saidaBase: null, chegadaBase: null, kmPercorrido: 41.2, paradas: [parada] },
+      ] }),
+    } as Response)
+    const { horarios } = await buscarHorariosBaseComAlias(['RQO9H37'], '2026-09-29', new Map(), true, new Map([['RQO9H37', ['RQ09H37']]]))
+    expect(horarios.get('RQO9H37')?.consultaPosicoesOk).toBe(true)
+    expect(warn.mock.calls.map(c => c.join(' ')).join('\n')).toMatch(/RQO9H37.*RQ09H37.*41\.2/)
+  })
+
+  it('variante vai no MESMO lote da placa canonica, mesmo na borda do lote (20 com paradas)', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true, status: 200, json: async () => ({ resultados: [] }),
+    } as Response)
+    const outras = Array.from({ length: 24 }, (_, i) => `AAA${String(1000 + i)}`)
+    const placas = [...outras.slice(0, 19), 'RQO9H37', ...outras.slice(19)]
+    await buscarHorariosBaseComAlias(placas, '2026-09-29', new Map(), true, new Map([['RQO9H37', ['RQ09H37']]]))
+    const lotes = fetchSpy.mock.calls.map(c => JSON.parse((c[1] as RequestInit).body as string).placas as string[])
+    expect(lotes.every(l => l.length <= 20)).toBe(true)
+    expect(lotes.flat().sort()).toEqual([...placas, 'RQ09H37'].sort())
+    const doCanonico = lotes.find(l => l.includes('RQO9H37'))!
+    expect(doCanonico).toContain('RQ09H37')
+  })
+
   it('sem alias: identico a buscarHorariosBase (consulta vazia)', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true, status: 200,
