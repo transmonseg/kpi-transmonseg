@@ -25,7 +25,7 @@ import { detectarDescasamentos } from '../src/lib/kpi-romaneio/avisos'
 import { gerarKpiRomaneioXlsx } from '../src/lib/kpi-romaneio/gerador-xlsx'
 import { COD_USER_NUTRIMAX, EMPRESA_NUTRIMAX, foraDoAlcanceApi, PAO_PREFIXO } from '../src/lib/kpi-romaneio/constants'
 import { buscarResolucoes, aplicarResolucoes } from '../src/lib/kpi-romaneio/resolucoes'
-import { buscarPlacasSemRastreador, placasSemRastreadorNoDia, montarTemRastreadorPorPlaca, placasSemSinalNoDia } from '../src/lib/kpi-romaneio/placas-sem-rastreador'
+import { buscarPlacasSemRastreador, placasSemRastreadorNoDia, montarTemRastreadorPorPlaca, placasSemSinalComTrava } from '../src/lib/kpi-romaneio/placas-sem-rastreador'
 import { logarNfDuplicadaNaMesmaPlaca } from '../src/lib/kpi-romaneio/nf-duplicada'
 import { semCadastroUnitrac, nfsSoUnitrac } from '../src/lib/kpi-romaneio/sem-cadastro'
 import { hojeBR } from '../src/lib/data-br'
@@ -274,7 +274,13 @@ async function main() {
   // feito) vira SEM RASTREADOR automatico, com o dia encerrado ou em
   // andamento -- nunca "aguardando". Ver placaSemSinalNoDia. Mesmo calculo
   // em route.ts e scripts/gerar-nutrimax-real-arquivo.ts (paridade).
-  const placasSemSinal = placasSemSinalNoDia(placasNorm, horarioBasePorPlaca, paradasUnitracCruasPorPlaca, alvosPorPlaca)
+  // Trava (revisao independente 29/09): coletor do monitoramento fora do ar
+  // devolve consulta 'ok' porem vazia pra TODA placa -- acima de
+  // LIMITE_FRACAO_SEM_SINAL_AUTOMATICO da escala ninguem e' concluido sem
+  // sinal (tabela manual segue valendo) e o aviso vai pro log e aba Avisos.
+  const travaSemSinal = placasSemSinalComTrava(placasNorm, horarioBasePorPlaca, paradasUnitracCruasPorPlaca, alvosPorPlaca)
+  if (travaSemSinal.aviso) console.warn(`[KPI ${data}] ${travaSemSinal.aviso}`)
+  const placasSemSinal = travaSemSinal.placas
   const temRastreadorPorPlaca = montarTemRastreadorPorPlaca(placasNorm, cvPorPlaca, horarioBasePorPlaca, placasSemRastreador, placasSemSinal)
 
   // Achado real 22/09 (RBG5G18 21/09, espelha route.ts): CHEGADA CD tem que
@@ -398,6 +404,9 @@ async function main() {
     ...detectarDescasamentos(escala, cargasRomaneioList.filter(c => !ehCargaPao(c.carga))),
     ...(romaneioPaoBuf ? detectarDescasamentos(resultadoPao.escala, cargasRomaneioList.filter(c => ehCargaPao(c.carga))) : []),
   ].sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
+  if (travaSemSinal.aviso) {
+    avisos.push({ carga: '—', placa: '—', motivo: 'consulta_posicoes_suspeita', semSinal: travaSemSinal.semSinal, totalPlacas: travaSemSinal.totalPlacas })
+  }
 
   console.log(`Total cargas: ${linhasKpi.length}, OK: ${linhasKpi.filter(l => l.status === 'OK').length}, avisos: ${avisos.length}`)
   const negativos = linhasKpi.filter(l => l.tempoOperacaoMin != null && l.tempoOperacaoMin < 0)

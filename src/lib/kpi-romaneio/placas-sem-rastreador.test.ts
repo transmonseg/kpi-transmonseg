@@ -18,6 +18,9 @@ import {
   montarTemRastreadorPorPlaca,
   placaSemSinalNoDia,
   placasSemSinalNoDia,
+  placasSemSinalComTrava,
+  LIMITE_FRACAO_SEM_SINAL_AUTOMATICO,
+  MINIMO_PLACAS_TRAVA_SEM_SINAL,
   type PlacaSemRastreadorRow,
 } from './placas-sem-rastreador'
 import type { HorarioBase } from './base-horarios'
@@ -190,14 +193,23 @@ describe('placaSemSinalNoDia (detecao automatica, SEM SINAL NO DIA)', () => {
 describe('placasSemSinalNoDia + montarTemRastreadorPorPlaca', () => {
   it('placa sem sinal sai temRastreador=false mesmo com cv e ponte respondendo', () => {
     const horarios = new Map<string, HorarioBase>([
-      ['RQV8J31', HORARIO_SEM_POSICAO],
+      ['RQU5J45', HORARIO_SEM_POSICAO],
       ['RQU6E83', { saidaBase: null, chegadaBase: null, kmPercorrido: 0, paradas: [] }],
     ])
-    const semSinal = placasSemSinalNoDia(['RQV8J31', 'RQU6E83'], horarios, new Map(), new Map())
-    expect([...semSinal]).toEqual(['RQV8J31'])
-    const r = montarTemRastreadorPorPlaca(['RQV8J31', 'RQU6E83'], new Map([['RQV8J31', 'cv'], ['RQU6E83', 'cv']]), horarios, new Set(), semSinal)
-    expect(r.get('RQV8J31')).toBe(false)
+    const semSinal = placasSemSinalNoDia(['RQU5J45', 'RQU6E83'], horarios, new Map(), new Map())
+    expect([...semSinal]).toEqual(['RQU5J45'])
+    const r = montarTemRastreadorPorPlaca(['RQU5J45', 'RQU6E83'], new Map([['RQU5J45', 'cv'], ['RQU6E83', 'cv']]), horarios, new Set(), semSinal)
+    expect(r.get('RQU5J45')).toBe(false)
     expect(r.get('RQU6E83')).toBe(true)
+  })
+
+  it('RQV8J31 (fora da frota): a ponte devolve tudo null e SEM paradas -- NAO conclui sem sinal; fica SEM RASTREADOR so\' pela tabela manual', () => {
+    const horarios = new Map<string, HorarioBase>([['RQV8J31', HORARIO_CONSULTA_FALHOU]])
+    const semSinal = placasSemSinalNoDia(['RQV8J31'], horarios, new Map(), new Map())
+    expect(semSinal.size).toBe(0)
+    const cv = new Map([['RQV8J31', 'cv']])
+    expect(montarTemRastreadorPorPlaca(['RQV8J31'], cv, horarios, new Set(), semSinal).get('RQV8J31')).toBe(true)
+    expect(montarTemRastreadorPorPlaca(['RQV8J31'], cv, horarios, new Set(['RQV8J31']), semSinal).get('RQV8J31')).toBe(false)
   })
 
   it('dia EM ANDAMENTO: NF da placa sem sinal sai SEM RASTREADOR, nunca AGUARDANDO', () => {
@@ -208,5 +220,60 @@ describe('placasSemSinalNoDia + montarTemRastreadorPorPlaca', () => {
       false, new Map([['RQV8J31', []]]), null, true, true, true, new Map(), true, true, true,
     )
     expect(det[0].observacao).toBe('SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO')
+  })
+})
+
+// Revisao independente 29/09: coletor do monitoramento fora do ar num dia ->
+// consulta 'ok' porem vazia pra TODA placa -> todas "sem sinal". Trava: acima
+// de LIMITE_FRACAO_SEM_SINAL_AUTOMATICO da escala, ninguem e' concluido.
+describe('placasSemSinalComTrava (coletor fora do ar)', () => {
+  const placas = (n: number) => Array.from({ length: n }, (_, i) => `PLC${String(i).padStart(4, '0')}`)
+  const montar = (total: number, semSinal: number) => {
+    const ps = placas(total)
+    const comPosicao: HorarioBase = { saidaBase: '2026-09-29T06:00:00.000Z', chegadaBase: null, kmPercorrido: 80, paradas: [], consultaPosicoesOk: true }
+    const horarios = new Map<string, HorarioBase>(ps.map((p, i) => [p, i < semSinal ? HORARIO_SEM_POSICAO : comPosicao]))
+    return { ps, horarios }
+  }
+
+  it('limites nomeados: 25% e minimo de 10 placas', () => {
+    expect(LIMITE_FRACAO_SEM_SINAL_AUTOMATICO).toBe(0.25)
+    expect(MINIMO_PLACAS_TRAVA_SEM_SINAL).toBe(10)
+  })
+
+  it('fracao baixa (2 de 40): conclui normalmente, sem aviso', () => {
+    const { ps, horarios } = montar(40, 2)
+    const r = placasSemSinalComTrava(ps, horarios, new Map(), new Map())
+    expect([...r.placas].sort()).toEqual([ps[0], ps[1]])
+    expect(r.aviso).toBeNull()
+  })
+
+  it('fracao alta (20 de 40): ninguem concluido + aviso claro', () => {
+    const { ps, horarios } = montar(40, 20)
+    const r = placasSemSinalComTrava(ps, horarios, new Map(), new Map())
+    expect(r.placas.size).toBe(0)
+    expect(r.aviso).toBe('Consulta de posições suspeita: 20 de 40 placas sem sinal — não concluído')
+  })
+
+  it('exatamente no limite (10 de 40 = 25%): ainda conclui (trava so\' ACIMA do limite)', () => {
+    const { ps, horarios } = montar(40, 10)
+    const r = placasSemSinalComTrava(ps, horarios, new Map(), new Map())
+    expect(r.placas.size).toBe(10)
+    expect(r.aviso).toBeNull()
+  })
+
+  it('escala pequena (3 placas, 1 sem sinal = 33%): abaixo do minimo de 10, trava nao se aplica -- conclui', () => {
+    const { ps, horarios } = montar(3, 1)
+    const r = placasSemSinalComTrava(ps, horarios, new Map(), new Map())
+    expect([...r.placas]).toEqual([ps[0]])
+    expect(r.aviso).toBeNull()
+  })
+
+  it('trava ligada: tabela manual continua valendo em montarTemRastreadorPorPlaca', () => {
+    const { ps, horarios } = montar(40, 20)
+    const r = placasSemSinalComTrava(ps, horarios, new Map(), new Map())
+    const cv = new Map(ps.map(p => [p, 'cv']))
+    const tem = montarTemRastreadorPorPlaca(ps, cv, horarios, new Set([ps[0]]), r.placas)
+    expect(tem.get(ps[0])).toBe(false)
+    expect(tem.get(ps[1])).toBe(true)
   })
 })

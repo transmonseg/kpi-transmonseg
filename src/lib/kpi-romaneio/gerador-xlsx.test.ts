@@ -191,6 +191,15 @@ describe('gerador-xlsx', () => {
     expect(wb.worksheets.map(w => w.name)).toEqual(['KPI 2026-08-23'])
   })
 
+  it('aviso de consulta de posicoes suspeita (coletor fora do ar) sai na aba Avisos com o texto claro', async () => {
+    const avisos: AvisoDescasamento[] = [{ carga: '—', placa: '—', motivo: 'consulta_posicoes_suspeita', semSinal: 20, totalPlacas: 40 }]
+    const buffer = await gerarKpiRomaneioXlsx([], '2026-08-23', avisos)
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    const row1 = (wb.getWorksheet('Avisos')!.getRow(2).values as unknown[]).slice(1)
+    expect(row1).toEqual(['—', '—', 'Consulta de posições suspeita: 20 de 40 placas sem sinal — não concluído'])
+  })
+
   it('com avisos: cria a aba Avisos com header e uma linha por descasamento', async () => {
     const avisos: AvisoDescasamento[] = [
       { carga: '111', placa: 'AAA1111', motivo: 'sem_romaneio' },

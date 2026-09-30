@@ -12,6 +12,7 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { normPlaca } from '@/lib/unitrac-api'
 import { PLACA_GENERICA_SEM_RASTREADOR } from './constants'
+import { textoConsultaPosicoesSuspeita } from './types'
 import type { HorarioBase } from './base-horarios'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 
@@ -140,4 +141,39 @@ export function placasSemSinalNoDia(
   return new Set(placasNorm.filter(p => placaSemSinalNoDia(
     horarioBasePorPlaca.get(p), paradasUnitracCruasPorPlaca.get(p) ?? [], alvosPorPlaca.get(p) ?? [],
   )))
+}
+
+/** Revisao independente 29/09 (falha silenciosa): se o coletor do
+ *  monitoramento cai num dia, a ponte responde `consultaPosicoesOk` com
+ *  paradas vazias pra TODA placa e todas virariam "sem sinal" (so' escapam as
+ *  com parada fora da base na Unitrac ou alvo feito; em regeneracao >48h sem
+ *  snapshot, so' o alvo feito protege). Dados reais (KPIs 22-29/09): placas
+ *  REALMENTE sem rastreador/sem sinal por dia = 0 a 3 de 36-86 na escala
+ *  (TTL5J17, RQU5J45, TTI9B98, RQO9H37, XXX0000) -- no maximo ~5%. 25% e'
+ *  5x o pior dia real e ainda pega com folga um coletor fora do ar (que
+ *  derruba a maioria das placas). */
+export const LIMITE_FRACAO_SEM_SINAL_AUTOMATICO = 0.25
+/** Com poucas placas a fracao e' ruido (1 de 3 = 33%): abaixo disso a trava
+ *  nao se aplica e a deteccao conclui normalmente. Menor escala real
+ *  observada: 36 placas (28/09). */
+export const MINIMO_PLACAS_TRAVA_SEM_SINAL = 10
+
+/** placasSemSinalNoDia + trava contra "sem sinal" em massa: se a fracao da
+ *  escala detectada sem sinal passa de LIMITE_FRACAO_SEM_SINAL_AUTOMATICO (e a
+ *  escala tem >= MINIMO_PLACAS_TRAVA_SEM_SINAL placas), NENHUMA placa e'
+ *  concluida automaticamente e volta o aviso (log + aba Avisos). A tabela
+ *  manual `kpi_placa_sem_rastreador` nao passa por aqui -- continua valendo. */
+export function placasSemSinalComTrava(
+  placasNorm: string[],
+  horarioBasePorPlaca: Map<string, HorarioBase>,
+  paradasUnitracCruasPorPlaca: Map<string, UnitracParadaRow[]>,
+  alvosPorPlaca: Map<string, { situacao?: number | null }[]>,
+): { placas: Set<string>; aviso: string | null; semSinal: number; totalPlacas: number } {
+  const detectadas = placasSemSinalNoDia(placasNorm, horarioBasePorPlaca, paradasUnitracCruasPorPlaca, alvosPorPlaca)
+  const total = new Set(placasNorm).size
+  const semSinal = detectadas.size
+  if (total >= MINIMO_PLACAS_TRAVA_SEM_SINAL && semSinal / total > LIMITE_FRACAO_SEM_SINAL_AUTOMATICO) {
+    return { placas: new Set(), aviso: textoConsultaPosicoesSuspeita(semSinal, total), semSinal, totalPlacas: total }
+  }
+  return { placas: detectadas, aviso: null, semSinal, totalPlacas: total }
 }

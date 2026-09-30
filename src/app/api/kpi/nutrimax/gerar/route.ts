@@ -25,7 +25,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { COD_USER_NUTRIMAX, EMPRESA_NUTRIMAX, foraDoAlcanceApi, LIMITE_CONCORRENCIA_PLACAS, PAO_PREFIXO } from '@/lib/kpi-romaneio/constants'
 import { mapComLimite } from '@/lib/kpi-romaneio/concorrencia'
 import { buscarResolucoes, aplicarResolucoes } from '@/lib/kpi-romaneio/resolucoes'
-import { buscarPlacasSemRastreador, placasSemRastreadorNoDia, montarTemRastreadorPorPlaca, placasSemSinalNoDia } from '@/lib/kpi-romaneio/placas-sem-rastreador'
+import { buscarPlacasSemRastreador, placasSemRastreadorNoDia, montarTemRastreadorPorPlaca, placasSemSinalComTrava } from '@/lib/kpi-romaneio/placas-sem-rastreador'
 import { logarNfDuplicadaNaMesmaPlaca } from '@/lib/kpi-romaneio/nf-duplicada'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
 
@@ -404,7 +404,13 @@ export async function POST(req: NextRequest) {
   // feito) vira SEM RASTREADOR automatico, com o dia encerrado ou em
   // andamento -- nunca "aguardando". Ver placaSemSinalNoDia. Mesmo calculo
   // em route.ts e scripts/gerar-nutrimax-real-arquivo.ts (paridade).
-  const placasSemSinal = placasSemSinalNoDia(placasNorm, horarioBasePorPlaca, paradasUnitracCruasPorPlaca, alvosPorPlaca)
+  // Trava (revisao independente 29/09): coletor do monitoramento fora do ar
+  // devolve consulta 'ok' porem vazia pra TODA placa -- acima de
+  // LIMITE_FRACAO_SEM_SINAL_AUTOMATICO da escala ninguem e' concluido sem
+  // sinal (tabela manual segue valendo) e o aviso vai pro log e aba Avisos.
+  const travaSemSinal = placasSemSinalComTrava(placasNorm, horarioBasePorPlaca, paradasUnitracCruasPorPlaca, alvosPorPlaca)
+  if (travaSemSinal.aviso) console.warn(`[KPI ${data}] ${travaSemSinal.aviso}`)
+  const placasSemSinal = travaSemSinal.placas
   const temRastreadorPorPlaca = montarTemRastreadorPorPlaca(placasNorm, cvPorPlaca, horarioBasePorPlaca, placasSemRastreador, placasSemSinal)
 
   // Achado real 22/09 (RBG5G18 21/09): quando a ULTIMA volta a base
@@ -573,6 +579,9 @@ export async function POST(req: NextRequest) {
     ...(escalaBuf ? detectarDescasamentos(escala, cargasRomaneioList.filter(c => !ehCargaPao(c.carga))) : []),
     ...(romaneioPaoBuf ? detectarDescasamentos(resultadoPao.escala, cargasRomaneioList.filter(c => ehCargaPao(c.carga))) : []),
   ].sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
+  if (travaSemSinal.aviso) {
+    avisos.push({ carga: '—', placa: '—', motivo: 'consulta_posicoes_suspeita', semSinal: travaSemSinal.semSinal, totalPlacas: travaSemSinal.totalPlacas })
+  }
 
   // Task 4 (plano 24/09): camada de resolucao manual por NF -- aditiva, nunca
   // pode quebrar a geracao. `kpi_nf_resolucao` so' existe a partir do deploy

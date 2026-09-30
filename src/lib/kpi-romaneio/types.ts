@@ -323,10 +323,19 @@ export type LinhaDetalheEntrega = {
 export type AvisoDescasamento = {
   carga: string
   placa: string
-  motivo: 'sem_romaneio' | 'sem_escala' | 'nf_divergente'
+  motivo: 'sem_romaneio' | 'sem_escala' | 'nf_divergente' | 'consulta_posicoes_suspeita'
+  /** So' em 'consulta_posicoes_suspeita' (trava 29/09, coletor fora do ar): placas detectadas sem sinal x placas da escala. */
+  semSinal?: number
+  totalPlacas?: number
   /** So' em 'nf_divergente' (Task 2 plano 2026-09-30): NF PLANEJADO da Escala x NFs do Romaneio da carga. */
   nfEscala?: number
   nfRomaneio?: number
+}
+
+/** Texto do aviso da trava contra "sem sinal" em massa (coletor do
+ *  monitoramento fora do ar) -- log e aba Avisos. Ver placasSemSinalComTrava. */
+export function textoConsultaPosicoesSuspeita(semSinal: number, totalPlacas: number): string {
+  return `Consulta de posições suspeita: ${semSinal} de ${totalPlacas} placas sem sinal — não concluído`
 }
 
 /** Rotulo exato (Nutry Max/modoPrecisao) de NF de placa que nao saiu da base o dia todo.

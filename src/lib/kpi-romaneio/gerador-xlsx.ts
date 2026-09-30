@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs'
-import { OBS_NAO_SAIU_DA_BASE } from './types'
+import { OBS_NAO_SAIU_DA_BASE, textoConsultaPosicoesSuspeita } from './types'
 import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega, ResolucaoNf } from './types'
 // Reusa a MESMA paleta/fonte/logo ja validados no relatorio da Benassi
 // (pedido do usuario 25/08: "deixar esse relatorio nivel o da Benassi") --
@@ -64,6 +64,7 @@ const LABEL_MOTIVO: Record<AvisoDescasamento['motivo'], string> = {
   sem_romaneio: 'sem romaneio',
   sem_escala: 'sem escala',
   nf_divergente: 'NFs da Escala diferentes do Romaneio',
+  consulta_posicoes_suspeita: 'Consulta de posições suspeita — não concluído',
 }
 
 // Task 2 (plano 2026-09-30, item 2): "Escala X × Romaneio Y (Z NFs a
@@ -76,6 +77,9 @@ function textoDiferencaNf(nfEscala: number, nfRomaneio: number): string {
 function textoAviso(a: AvisoDescasamento): string {
   if (a.motivo === 'nf_divergente' && a.nfEscala != null && a.nfRomaneio != null) {
     return `NFs: Escala ${a.nfEscala} × Romaneio ${a.nfRomaneio} (${textoDiferencaNf(a.nfEscala, a.nfRomaneio)})`
+  }
+  if (a.motivo === 'consulta_posicoes_suspeita' && a.semSinal != null && a.totalPlacas != null) {
+    return textoConsultaPosicoesSuspeita(a.semSinal, a.totalPlacas)
   }
   return LABEL_MOTIVO[a.motivo]
 }
