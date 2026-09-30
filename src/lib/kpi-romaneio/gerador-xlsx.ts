@@ -269,13 +269,18 @@ function ehNaoSaiuDaBase(d: LinhaDetalheEntrega): boolean {
 // 29/09 (P0 da Ana): rotulo do resumo (aba 1 + cabecalho da aba da placa)
 // pra placa sem rastreador no dia -- mesma familia do STATUS do detalhe.
 const ROTULO_RESUMO_SEM_RASTREADOR = 'SEM RASTREADOR'
-function placasTodasSemRastreador(detalhe: LinhaDetalheEntrega[]): Set<string> {
-  const todas = new Map<string, boolean>()
+// Task 2 (plano 2026-09-30, item 1 -- RQO9H37 rastreador congelado): fonte
+// unica = `ehSemRastreador` do detalhe (a mesma do total "NFs sem
+// rastreador: N"). A marca e' da PLACA (semRastreadorNoDia/temRastreador em
+// agregacao.ts), entao basta UMA NF marcada: exigir TODAS fazia uma NF
+// confirmada pela Unitrac na mesma placa derrubar o resumo pra "EM ROTA".
+function placasSemRastreadorNoDetalhe(detalhe: LinhaDetalheEntrega[]): Set<string> {
+  const placas = new Set<string>()
   for (const d of detalhe) {
     if (d.placa === '') continue
-    todas.set(d.placa, (todas.get(d.placa) ?? true) && ehSemRastreador(d))
+    if (ehSemRastreador(d)) placas.add(d.placa)
   }
-  return new Set([...todas].filter(([, v]) => v).map(([p]) => p))
+  return placas
 }
 
 // Revisao final pre-deploy (24/09, item 4): NF "AGUARDANDO" (relatorio do
@@ -542,13 +547,13 @@ export async function gerarKpiRomaneioXlsx(
   ]
 
   // 29/09 (P0 da Ana, RQO9H37: "SEM RASTREADOR" no detalhe e "EM ROTA" no
-  // resumo): placa cujas NFs sao TODAS sem rastreador no detalhe (mesmo
+  // resumo): placa com NF sem rastreador no detalhe (mesmo
   // criterio de "NFs sem rastreador: N", `ehSemRastreador`) mostra o MESMO
   // rotulo nas celulas SAIDA/CHEGADA CD da aba 1 e no cabecalho da aba da
   // placa -- nunca "EM ROTA"/"SEM CADASTRO". So' com `resumoConfirmacao`
   // (Nutry Max); Rio Quality segue com "SEM CADASTRO".
   const placasSemRastreadorNoResumo = opcoes.resumoConfirmacao
-    ? placasTodasSemRastreador(detalhe)
+    ? placasSemRastreadorNoDetalhe(detalhe)
     : new Set<string>()
 
   linhas.forEach((l, i) => {

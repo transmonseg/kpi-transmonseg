@@ -1104,3 +1104,45 @@ describe('consistencia resumo x detalhe: SEM RASTREADOR (29/09)', () => {
     expect(cabAbc).toContain('CHEGADA CD: EM ROTA')
   })
 })
+
+// Task 2 (plano 2026-09-30, item 1 -- RQO9H37, rastreador congelado com dado
+// de 13-36 h atras): o detalhe marca SEM RASTREADOR (gpsCongelado, placa
+// inteira) mas uma NF da mesma placa confirmada pela Unitrac fazia o resumo
+// cair em "EM ROTA" (criterio antigo exigia TODAS as NFs sem rastreador).
+// Fonte unica: a placa e' SEM RASTREADOR no resumo se o detalhe marca
+// qualquer NF dela assim; o total "NFs sem rastreador: N" conta as mesmas.
+describe('consistencia resumo x detalhe: rastreador congelado com NF confirmada pela Unitrac (Task 2, item 1)', () => {
+  const OBS_SR = 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO'
+  const HOJE = '2026-09-29'
+  const montar = () => {
+    const linhas: LinhaKpiRomaneio[] = [
+      linhaKpi({ carga: '98970', placa: 'RQO9H37', nfPlanejado: 3, paradasReais: 1, temRastreador: true, kmPercorrido: 0 }),
+    ]
+    const detalhe: LinhaDetalheEntrega[] = [
+      detalheFixture({ carga: '98970', placa: 'RQO9H37', nf: 'A1', observacao: OBS_SR, evidencia: 'sem_rastreador' }),
+      detalheFixture({ carga: '98970', placa: 'RQO9H37', nf: 'A2', observacao: OBS_SR, evidencia: 'sem_rastreador' }),
+      detalheFixture({ carga: '98970', placa: 'RQO9H37', nf: 'A3', status: 'confirmado_unitrac', evidencia: 'alvo_feito_unitrac' }),
+    ]
+    return { linhas, detalhe }
+  }
+
+  it('aba 1 e cabecalho da aba mostram SEM RASTREADOR (nunca EM ROTA) e o total bate com o detalhe', async () => {
+    const { linhas, detalhe } = montar()
+    const buffer = await gerarKpiRomaneioXlsx(linhas, HOJE, [], detalhe, HOJE, undefined, { resumoConfirmacao: true })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    const ws = wb.worksheets[0]
+    const row = ws.getRow(LINHA_PRIMEIRO_DADO)
+    expect(row.getCell(COLUNAS_KPI_ROMANEIO.indexOf('SAÍDA CD') + 1).value).toBe('SEM RASTREADOR')
+    expect(row.getCell(COLUNAS_KPI_ROMANEIO.indexOf('CHEGADA CD') + 1).value).toBe('SEM RASTREADOR')
+    const cab = wb.getWorksheet('RQO9H37')!.getRow(2).getCell(1).value as string
+    expect(cab).toContain('SAÍDA CD: SEM RASTREADOR')
+    expect(cab).toContain('CHEGADA CD: SEM RASTREADOR')
+    const totais = ws.getRow(ws.rowCount).getCell(1).value as string
+    const n = Number(/NFs sem rastreador: (\d+)/.exec(totais)?.[1])
+    const nfsDetalhe = (wb.getWorksheet('RQO9H37')!.getSheetValues().slice(4) as unknown[][])
+      .filter(v => Array.isArray(v) && String(v[8] ?? '').startsWith('SEM RASTREADOR')).length
+    expect(n).toBe(2)
+    expect(nfsDetalhe).toBe(2)
+  })
+})
