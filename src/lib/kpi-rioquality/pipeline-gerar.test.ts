@@ -334,3 +334,30 @@ describe('gerarKpiRioQuality -- avisos e snapshot de paradas (Task 4)', () => {
     expect(leu).toBe(false)
   })
 })
+
+describe('gerarKpiRioQuality -- guarda territorial no formato novo (Task 5)', () => {
+  it('chama geocodificarEnderecos com validarTerritorio e propaga confiavel/motivo/fonte: endereco em outro municipio vira COORDENADA IMPRECISA, nunca NAO FOI', async () => {
+    const { geocodificarEnderecos } = await import('@/lib/kpi-romaneio/geocode')
+    const LONGE = { lat: -22.5, lng: -43.9 } // ~70 km do ponto onde a placa parou
+    vi.mocked(geocodificarEnderecos).mockImplementation(async enderecos => enderecos.map(e => e.startsWith('RUA LONGE')
+      ? { ...LONGE, confiavel: false, motivo: 'municipio_divergente', fonte: 'nominatim' }
+      : { ...PONTO, confiavel: true, fonte: 'cnefe' }))
+    const completa = planilha([
+      ['Razão Social', 'Cidade', 'UF', 'Destino', 'Motorista', 'Placa', 'Endereço', 'Bairro'],
+      ['MERCADO A', 'RIO DE JANEIRO', 'RJ', 'NORTE 1', 'JOAO', 'CCC3C33', 'RUA PERTO', 'CENTRO'],
+      ['MERCADO B', 'MESQUITA', 'RJ', 'NORTE 1', 'JOAO', 'CCC3C33', 'RUA LONGE', 'CENTRO'],
+    ])
+    const r = await gerarKpiRioQuality({
+      completaBuf: completa, data: DATA,
+      cvPorPlaca: new Map([['CCC3C33', '3']]),
+      buscarParadas: async (_cv, placa) => [parada(placa, '10:00', 15)],
+      medirRastro: async () => ({ km: 40, pontosNoDia: 900 }),
+    })
+    expect(vi.mocked(geocodificarEnderecos)).toHaveBeenCalledWith(expect.any(Array), { validarTerritorio: true })
+    const longe = r.detalhe.find(d => d.clienteNome === 'MERCADO B')!
+    expect(longe.status).toBe('pendente')
+    expect(longe.observacao).toBe('ENDEREÇO COM COORDENADA IMPRECISA - COORDENADA CAIU EM OUTRO MUNICÍPIO - CONFERIR CADASTRO')
+    const perto = r.detalhe.find(d => d.clienteNome === 'MERCADO A')!
+    expect(perto.status).not.toBe('pendente')
+  })
+})

@@ -173,14 +173,23 @@ export async function gerarKpiRioQuality(params: {
     // so' devolve lat/lng, sem nivel de confianca proprio: 'alta' quando
     // achou, 'sem_candidato' quando nao (mesmo criterio da Nutry Max).
     const enderecosUnicos = [...new Set(romaneio.map(l => enderecoBrutoPorNf.get(l.nf)!))]
-    const resultados = await geocodificarEnderecos(enderecosUnicos)
+    // Task 5 (plano 2026-09-30, estudo item 3c): guarda territorial (municipio
+    // por poligono, bairro por hull) -- o formato novo tem cidade/bairro.
+    // Endereco em outro municipio vira "COORDENADA IMPRECISA", nunca "NAO FOI
+    // AO CLIENTE" falso. Mesmo procedimento da Nutry Max (nutrimax/gerar).
+    const resultados = await geocodificarEnderecos(enderecosUnicos, { validarTerritorio: true })
     const geoPorEndereco = new Map(enderecosUnicos.map((e, i) => [e, resultados[i]]))
     for (const l of romaneio) {
       const r = geoPorEndereco.get(enderecoBrutoPorNf.get(l.nf)!) ?? null
       const conf: ConfiancaCoerencia = r ? 'alta' : 'sem_candidato'
       confiancaPorNf.set(l.nf, conf)
       contConf[conf]++
-      romaneioGeo.push({ ...l, lat: r?.lat ?? null, lng: r?.lng ?? null })
+      romaneioGeo.push({
+        ...l, lat: r?.lat ?? null, lng: r?.lng ?? null,
+        geoConfiavel: r?.confiavel ?? true,
+        geoMotivo: r?.motivo === 'municipio_divergente' || r?.motivo === 'bairro_divergente' ? r.motivo : undefined,
+        geoSemFonte: r != null && !r.fonte,
+      })
     }
 
     // Passo 7 do motor de geolocalizacao universal (achado real 06/09, ver
