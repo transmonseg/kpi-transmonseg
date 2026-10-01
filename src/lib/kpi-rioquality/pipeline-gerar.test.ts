@@ -13,7 +13,14 @@ vi.setSystemTime(new Date('2026-09-30T12:00:00-03:00'))
 afterAll(() => { vi.useRealTimers() })
 
 vi.mock('./geocode-coerencia', () => ({ geocodificarPorCoerencia: vi.fn() }))
-vi.mock('@/lib/kpi-romaneio/geocode', () => ({ geocodificarEnderecos: vi.fn() }))
+const geoParciais = vi.hoisted(() => ({ n: 0 }))
+vi.mock('@/lib/kpi-romaneio/geocode', () => {
+  const geocodificarEnderecos = vi.fn()
+  return {
+    geocodificarEnderecos,
+    geocodificarEnderecosComInfo: vi.fn(async (e: string[], o: unknown) => ({ resultados: await geocodificarEnderecos(e, o), parciais: geoParciais.n })),
+  }
+})
 vi.mock('@/lib/kpi-romaneio/geocode-ancoras', () => ({ reposicionarPorAncoras: vi.fn(async () => new Map()) }))
 
 import { geocodificarPorCoerencia } from './geocode-coerencia'
@@ -413,6 +420,31 @@ describe('gerarKpiRioQuality -- guarda territorial no formato novo (Task 5)', ()
     expect(longe.observacao).toBe('ENDEREÇO COM COORDENADA IMPRECISA - COORDENADA CAIU EM OUTRO MUNICÍPIO - CONFERIR CADASTRO')
     const perto = r.detalhe.find(d => d.clienteNome === 'MERCADO A')!
     expect(perto.status).not.toBe('pendente')
+  })
+})
+
+describe('gerarKpiRioQuality -- geocode parcial (incidente 01/10)', () => {
+  it('parciais > 0 na cascata vira aviso "geocode parcial -- gere novamente" na aba Avisos', async () => {
+    const { geocodificarEnderecos } = await import('@/lib/kpi-romaneio/geocode')
+    vi.mocked(geocodificarEnderecos).mockImplementation(async enderecos => enderecos.map(() => ({ ...PONTO, confiavel: true, fonte: 'cnefe' })))
+    geoParciais.n = 3
+    try {
+      const completa = planilha([
+        ['Razão Social', 'Cidade', 'UF', 'Destino', 'Motorista', 'Placa', 'Endereço', 'Bairro'],
+        ['MERCADO A', 'RIO DE JANEIRO', 'RJ', 'NORTE 1', 'JOAO', 'CCC3C33', 'RUA PERTO', 'CENTRO'],
+      ])
+      const r = await gerarKpiRioQuality({
+        completaBuf: completa, data: DATA,
+        cvPorPlaca: new Map([['CCC3C33', '3']]),
+        buscarParadas: async (_cv, placa) => [parada(placa, '10:00', 15)],
+        medirRastro: async () => ({ km: 40, pontosNoDia: 900 }),
+      })
+      expect(r.avisos).toContainEqual(expect.objectContaining({ motivo: 'geocode_parcial', enderecosParciais: 3 }))
+      const wb = await abrir(r.xlsx)
+      expect(textos(wb.getWorksheet('Avisos')!).some(t => /geocode parcial: 3 endereços/i.test(t))).toBe(true)
+    } finally {
+      geoParciais.n = 0
+    }
   })
 })
 

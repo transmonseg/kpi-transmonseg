@@ -113,6 +113,17 @@ const LOTE_MAX_ENDERECOS = 15
 // dobro de folga sem deixar travado pra sempre se o monitoramento cair.
 const GEOCODE_TIMEOUT_MS = 300_000
 
+// Incidente 01/10: geracao Rio Quality com ~1.800 enderecos novos deixou o
+// Postgres a 100% por ~1h30 com buscas por similaridade CNEFE (pg_trgm, 5-15s
+// cada) e travou a Nutry Max. A ponte agora limita isso a 2 simultaneas por
+// processo + timeout por busca (ver src/lib/cnefe-similaridade-limitada.ts no
+// monitoramento) e conta quantas fez (`buscasSimilaridade`). Aqui, passado
+// este teto SOMADO na geracao, os lotes seguintes vao com `semSimilaridade`
+// -- esses enderecos ficam sem esse passo nesta geracao (voltam em
+// `incompletos`, viram aviso "geocode parcial"); o cache positivo ja' salvo
+// acelera a proxima geracao, que tenta de novo.
+export const TETO_BUSCAS_SIMILARIDADE_POR_GERACAO = 600
+
 function urlGeocode(): string {
   const base = process.env.MONITORAMENTO_URL ?? 'http://127.0.0.1:3010'
   return `${base}/api/romaneio/geocode`
@@ -275,7 +286,17 @@ export async function geocodificarEnderecos(
   enderecos: string[],
   opcoes: { validarTerritorio?: boolean } = {},
 ): Promise<ResultadoGeocode[]> {
-  if (enderecos.length === 0) return []
+  return (await geocodificarEnderecosComInfo(enderecos, opcoes)).resultados
+}
+
+/** Igual a `geocodificarEnderecos`, mais `parciais`: quantos enderecos
+ *  ficaram sem resultado porque a busca por similaridade estourou o timeout
+ *  ou foi pulada pelo teto da geracao (gerar de novo pode resolver). */
+export async function geocodificarEnderecosComInfo(
+  enderecos: string[],
+  opcoes: { validarTerritorio?: boolean } = {},
+): Promise<{ resultados: ResultadoGeocode[]; parciais: number }> {
+  if (enderecos.length === 0) return { resultados: [], parciais: 0 }
 
   const doCache = await buscarNoCache(enderecos)
   const negativos = await buscarNegativosRecentes(enderecos.filter(e => !doCache.has(e)))
@@ -285,39 +306,51 @@ export async function geocodificarEnderecos(
   const faltantes = enderecos.filter(e => !doCache.has(e) && !negativos.has(e))
 
   const porFaltante = new Map<string, ResultadoGeocode>()
+  let parciais = 0
   if (faltantes.length > 0) {
     // Grava a cada lote concluido: se um lote posterior falhar (ou a requisicao
     // morrer), o que ja foi resolvido nao se perde.
-    await geocodificarPorLotes(faltantes, opcoes, async (lote, resultados, confirmado) => {
+    await geocodificarPorLotes(faltantes, opcoes, async (lote, resultados, confirmado, incompletos) => {
       lote.forEach((e, i) => porFaltante.set(e, resultados[i]))
+      parciais += incompletos.size
       if (resultados.some(r => r !== null)) await salvarNoCache(lote, resultados)
       if (confirmado) {
-        const nulos = lote.filter((_, i) => resultados[i] === null)
+        // Incompleto (timeout/pulo da similaridade) nao foi tentado por
+        // inteiro -- nunca vira cache negativo.
+        const nulos = lote.filter((_, i) => resultados[i] === null && !incompletos.has(i))
         if (nulos.length > 0) await salvarNegativos(nulos)
       }
     })
   }
+  if (parciais > 0) {
+    console.warn(`[kpi-romaneio/geocode] geocode parcial -- ${parciais} endereço(s) sem a busca por similaridade (timeout ou teto de ${TETO_BUSCAS_SIMILARIDADE_POR_GERACAO} por geração) -- gere novamente`)
+  }
 
-  return enderecos.map(e => doCache.get(e) ?? porFaltante.get(e) ?? null)
+  return { resultados: enderecos.map(e => doCache.get(e) ?? porFaltante.get(e) ?? null), parciais }
 }
 
 async function geocodificarPorLotes(
   enderecos: string[],
   opcoes: { validarTerritorio?: boolean },
-  aoConcluirLote: (lote: string[], resultados: ResultadoGeocode[], confirmado: boolean) => Promise<void>,
+  aoConcluirLote: (lote: string[], resultados: ResultadoGeocode[], confirmado: boolean, incompletos: Set<number>) => Promise<void>,
 ): Promise<void> {
+  let buscasSimilaridade = 0
   for (let i = 0; i < enderecos.length; i += LOTE_MAX_ENDERECOS) {
     const lote = enderecos.slice(i, i + LOTE_MAX_ENDERECOS)
-    const { resultados, confirmado } = await geocodificarLote(lote, opcoes)
-    await aoConcluirLote(lote, resultados, confirmado)
+    const semSimilaridade = buscasSimilaridade >= TETO_BUSCAS_SIMILARIDADE_POR_GERACAO
+    const r = await geocodificarLote(lote, { ...opcoes, semSimilaridade })
+    buscasSimilaridade += r.buscasSimilaridade
+    await aoConcluirLote(lote, r.resultados, r.confirmado, r.incompletos)
   }
 }
 
-async function geocodificarLote(enderecos: string[], opcoes: { validarTerritorio?: boolean }): Promise<{ resultados: ResultadoGeocode[]; confirmado: boolean }> {
+type RespostaLote = { resultados: ResultadoGeocode[]; confirmado: boolean; incompletos: Set<number>; buscasSimilaridade: number }
+
+async function geocodificarLote(enderecos: string[], opcoes: { validarTerritorio?: boolean; semSimilaridade?: boolean }): Promise<RespostaLote> {
   const chave = process.env.MOTOR_SECRET
   if (!chave) {
     console.error('[kpi-romaneio/geocode] MOTOR_SECRET nao configurada -- geocodificacao pulada')
-    return { resultados: resultadosVazios(enderecos.length), confirmado: false }
+    return { resultados: resultadosVazios(enderecos.length), confirmado: false, incompletos: new Set(), buscasSimilaridade: 0 }
   }
 
   const ctrl = new AbortController()
@@ -328,19 +361,23 @@ async function geocodificarLote(enderecos: string[], opcoes: { validarTerritorio
     res = await fetch(urlGeocode(), {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-motor-key': chave },
-      body: JSON.stringify(opcoes.validarTerritorio ? { enderecos, validarTerritorio: true } : { enderecos }),
+      body: JSON.stringify({
+        enderecos,
+        ...(opcoes.validarTerritorio ? { validarTerritorio: true } : {}),
+        ...(opcoes.semSimilaridade ? { semSimilaridade: true } : {}),
+      }),
       signal: ctrl.signal,
     })
   } catch (e) {
     console.error('[kpi-romaneio/geocode] chamada ao monitoramento falhou:', e instanceof Error ? e.message : String(e))
-    return { resultados: resultadosVazios(enderecos.length), confirmado: false }
+    return { resultados: resultadosVazios(enderecos.length), confirmado: false, incompletos: new Set(), buscasSimilaridade: 0 }
   } finally {
     clearTimeout(timer)
   }
 
   if (!res.ok) {
     console.error(`[kpi-romaneio/geocode] monitoramento respondeu ${res.status}`)
-    return { resultados: resultadosVazios(enderecos.length), confirmado: false }
+    return { resultados: resultadosVazios(enderecos.length), confirmado: false, incompletos: new Set(), buscasSimilaridade: 0 }
   }
 
   let data: unknown
@@ -348,13 +385,13 @@ async function geocodificarLote(enderecos: string[], opcoes: { validarTerritorio
     data = await res.json()
   } catch (e) {
     console.error('[kpi-romaneio/geocode] resposta nao e JSON valido:', e instanceof Error ? e.message : String(e))
-    return { resultados: resultadosVazios(enderecos.length), confirmado: false }
+    return { resultados: resultadosVazios(enderecos.length), confirmado: false, incompletos: new Set(), buscasSimilaridade: 0 }
   }
 
   const resultadosBrutos = (data as { resultados?: unknown })?.resultados
   if (!Array.isArray(resultadosBrutos)) {
     console.error("[kpi-romaneio/geocode] resposta sem campo 'resultados' valido")
-    return { resultados: resultadosVazios(enderecos.length), confirmado: false }
+    return { resultados: resultadosVazios(enderecos.length), confirmado: false, incompletos: new Set(), buscasSimilaridade: 0 }
   }
 
   // Defensivo: mesmo se o lado de la devolver tamanho diferente (bug/
@@ -370,5 +407,12 @@ async function geocodificarLote(enderecos: string[], opcoes: { validarTerritorio
   // 100% null com mais de 1 endereco (geocoder do outro lado provavelmente fora).
   const completa = resultadosBrutos.length === enderecos.length
   const todosNull = resultados.length > 1 && resultados.every(r => r === null)
-  return { resultados, confirmado: completa && !todosNull }
+  // Campos da ponte nova (incidente 01/10); ponte antiga sem eles => vazio/0.
+  const brutoIncompletos = (data as { incompletos?: unknown }).incompletos
+  const incompletos = new Set<number>(
+    Array.isArray(brutoIncompletos) ? brutoIncompletos.filter((i): i is number => Number.isInteger(i) && i >= 0 && i < enderecos.length) : [],
+  )
+  const brutoBuscas = (data as { buscasSimilaridade?: unknown }).buscasSimilaridade
+  const buscasSimilaridade = typeof brutoBuscas === 'number' && Number.isFinite(brutoBuscas) ? brutoBuscas : 0
+  return { resultados, confirmado: completa && !todosNull, incompletos, buscasSimilaridade }
 }

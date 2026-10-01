@@ -8,6 +8,7 @@ import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 // se a placa tem GPS/frota, sem duplicar o arquivo de mocks inteiro.
 const cenario = vi.hoisted(() => ({
   paradas: [] as unknown[],
+  geocodeParciais: 0,
   frota: [] as unknown[],
   coordPorEndereco: new Map<string, { lat: number; lng: number }>(),
   paoErro: null as Error | null,
@@ -100,14 +101,18 @@ vi.mock('@/lib/kpi-romaneio/parse-pao', () => ({
     return { linhas: [linhaPao({ placa: cenario.placaPaoOverride ?? PLACA })], escala: [escalaSintetica()] }
   },
 }))
-vi.mock('@/lib/kpi-romaneio/geocode', () => ({
-  geocodificarEnderecos: async (enderecos: string[]) =>
+vi.mock('@/lib/kpi-romaneio/geocode', () => {
+  const geocodificarEnderecos = async (enderecos: string[]) =>
     enderecos.map(e => {
       if (cenario.enderecosSemCandidato.has(e)) return null
       const c = cenario.coordPorEndereco.get(e) ?? { lat: -22.9, lng: -43.2 }
       return { lat: c.lat, lng: c.lng, confiavel: true, motivo: undefined }
-    }),
-}))
+    })
+  return {
+    geocodificarEnderecos,
+    geocodificarEnderecosComInfo: async (enderecos: string[]) => ({ resultados: await geocodificarEnderecos(enderecos), parciais: cenario.geocodeParciais ?? 0 }),
+  }
+})
 vi.mock('@/lib/kpi-romaneio/geocode-ancoras', () => ({
   reposicionarPorAncoras: async (grupos: { id: string; ruas: string[] }[]) =>
     new Map(grupos.map(g => [g.id, cenario.resgateAncoraPorPlaca.get(g.id) ?? g.ruas.map(() => null)])),
@@ -344,6 +349,20 @@ describe('POST /api/kpi/nutrimax/gerar -- avisos de descasamento por origem', ()
       if (rowNumber >= 2) avisos.push([String(row.getCell(1).value), String(row.getCell(3).value)])
     })
     expect(avisos).toEqual([['97900', 'sem escala']])
+  })
+
+  it('geocode parcial (busca por similaridade limitada, incidente 01/10): vira aviso "gere novamente" na aba Avisos', async () => {
+    cenario.geocodeParciais = 5
+    try {
+      const res = await POST(montarRequest(true) as never)
+      expect(res.status).toBe(200)
+      const wb = await abrirXlsx(res)
+      const textos: string[] = []
+      wb.getWorksheet('Avisos')?.eachRow((row, n) => { if (n >= 2) textos.push(String(row.getCell(3).value)) })
+      expect(textos.some(t => /geocode parcial: 5 endereços/i.test(t))).toBe(true)
+    } finally {
+      cenario.geocodeParciais = 0
+    }
   })
 })
 

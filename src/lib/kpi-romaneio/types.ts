@@ -327,6 +327,10 @@ export type AvisoDescasamento = {
   // 2026-09-30) -- Custos x Entregas e frota, analogos do Escala x Romaneio.
   motivo: 'sem_romaneio' | 'sem_escala' | 'nf_divergente' | 'consulta_posicoes_suspeita' | 'consulta_unitrac_falhou'
     | 'rq_sem_rota_custos' | 'rq_rota_sem_entregas' | 'rq_placa_sem_cv' | 'rq_sem_snapshot'
+    | 'geocode_parcial'
+  /** So' em 'geocode_parcial' (incidente 01/10): enderecos sem resultado porque a
+   *  busca por similaridade CNEFE estourou o timeout ou passou do teto da geracao. */
+  enderecosParciais?: number
   /** So' em 'rq_sem_snapshot' (Rio Quality, dia fora das 48h): placas sem dado no snapshot de paradas. */
   placasSemSnapshot?: number
   /** So' em 'consulta_posicoes_suspeita' (trava 29/09, coletor fora do ar): placas detectadas sem sinal x placas da escala. */

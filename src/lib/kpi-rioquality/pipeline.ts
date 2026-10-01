@@ -19,7 +19,7 @@ import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita, AvisoDescasamento } from '@/lib/kpi-romaneio/types'
 import { parseCustos, parseEntregas, montarLinhasRomaneio, rotaParaZona, parseEntregasCompletas, montarLinhasRomaneioCompleto, CARGA_SEM_ROTA } from './parse-planilhas'
 import { geocodificarPorCoerencia, type ConfiancaCoerencia } from './geocode-coerencia'
-import { geocodificarEnderecos } from '@/lib/kpi-romaneio/geocode'
+import { geocodificarEnderecosComInfo } from '@/lib/kpi-romaneio/geocode'
 import { reposicionarPorAncoras } from '@/lib/kpi-romaneio/geocode-ancoras'
 
 // Nucleo do KPI Rio Quality -- usado pela rota /api/kpi/rioquality/gerar e
@@ -183,7 +183,8 @@ export async function gerarKpiRioQuality(params: {
     // por poligono, bairro por hull) -- o formato novo tem cidade/bairro.
     // Endereco em outro municipio vira "COORDENADA IMPRECISA", nunca "NAO FOI
     // AO CLIENTE" falso. Mesmo procedimento da Nutry Max (nutrimax/gerar).
-    const resultados = await geocodificarEnderecos(enderecosUnicos, { validarTerritorio: true })
+    const { resultados, parciais } = await geocodificarEnderecosComInfo(enderecosUnicos, { validarTerritorio: true })
+    if (parciais > 0) avisosEntrada.push({ carga: '—', placa: '—', motivo: 'geocode_parcial', enderecosParciais: parciais })
     const geoPorEndereco = new Map(enderecosUnicos.map((e, i) => [e, resultados[i]]))
     for (const l of romaneio) {
       const r = geoPorEndereco.get(enderecoBrutoPorNf.get(l.nf)!) ?? null

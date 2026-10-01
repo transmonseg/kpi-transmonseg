@@ -191,6 +191,15 @@ describe('gerador-xlsx', () => {
     expect(wb.worksheets.map(w => w.name)).toEqual(['KPI 2026-08-23'])
   })
 
+  it('aviso de geocode parcial (incidente 01/10, busca por similaridade limitada) sai na aba Avisos pedindo pra gerar de novo', async () => {
+    const avisos: AvisoDescasamento[] = [{ carga: '—', placa: '—', motivo: 'geocode_parcial', enderecosParciais: 37 }]
+    const buffer = await gerarKpiRomaneioXlsx([], '2026-08-23', avisos)
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    const row1 = (wb.getWorksheet('Avisos')!.getRow(2).values as unknown[]).slice(1)
+    expect(row1).toEqual(['—', '—', 'Geocode parcial: 37 endereços sem a busca completa (banco sobrecarregado) — gere novamente'])
+  })
+
   it('aviso de consulta de posicoes suspeita (coletor fora do ar) sai na aba Avisos com o texto claro', async () => {
     const avisos: AvisoDescasamento[] = [{ carga: '—', placa: '—', motivo: 'consulta_posicoes_suspeita', semSinal: 20, totalPlacas: 40 }]
     const buffer = await gerarKpiRomaneioXlsx([], '2026-08-23', avisos)

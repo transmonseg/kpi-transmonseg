@@ -70,6 +70,7 @@ const LABEL_MOTIVO: Record<AvisoDescasamento['motivo'], string> = {
   rq_rota_sem_entregas: 'Rota sem nenhuma entrega no Relatório de Entregas',
   rq_placa_sem_cv: 'Placa sem CV (rastreador) na frota cadastrada — completar frota',
   rq_sem_snapshot: 'Sem dado do snapshot de paradas — consulta ao rastreador falhou, conferir',
+  geocode_parcial: 'Geocode parcial — gere novamente',
 }
 
 // Task 2 (plano 2026-09-30, item 2): "Escala X × Romaneio Y (Z NFs a
@@ -89,6 +90,10 @@ function textoAviso(a: AvisoDescasamento): string {
   if (a.motivo === 'rq_sem_snapshot' && a.placasSemSnapshot != null) {
     const n = a.placasSemSnapshot
     return `Sem dado do snapshot para ${n} placa${n === 1 ? '' : 's'} — consulta ao rastreador falhou, fora da taxa, conferir`
+  }
+  if (a.motivo === 'geocode_parcial' && a.enderecosParciais != null) {
+    const n = a.enderecosParciais
+    return `Geocode parcial: ${n} endereço${n === 1 ? '' : 's'} sem a busca completa (banco sobrecarregado) — gere novamente`
   }
   return LABEL_MOTIVO[a.motivo]
 }

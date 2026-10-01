@@ -7,7 +7,7 @@ import { hojeBR } from '@/lib/data-br'
 import { parseEscala } from '@/lib/kpi-romaneio/parse-escala'
 import { parseRomaneio } from '@/lib/kpi-romaneio/parse-romaneio'
 import { parsePao } from '@/lib/kpi-romaneio/parse-pao'
-import { geocodificarEnderecos } from '@/lib/kpi-romaneio/geocode'
+import { geocodificarEnderecosComInfo } from '@/lib/kpi-romaneio/geocode'
 import { reposicionarPorAncoras } from '@/lib/kpi-romaneio/geocode-ancoras'
 import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '@/lib/kpi-romaneio/unitrac'
 import { anexarCoordenadaCadastro, montarMenorDistanciaTrajetoPorNf } from '@/lib/kpi-romaneio/base-horarios'
@@ -207,7 +207,7 @@ export async function POST(req: NextRequest) {
   // lote -- eficiência e respeito ao rate-limit da cascata do lado do
   // monitoramento (ver src/lib/kpi-romaneio/geocode.ts).
   const enderecosUnicos = [...new Set(romaneioCompleto.map(l => l.endereco))]
-  const resultadosGeo = await geocodificarEnderecos(enderecosUnicos, { validarTerritorio: true })
+  const { resultados: resultadosGeo, parciais: geocodeParciais } = await geocodificarEnderecosComInfo(enderecosUnicos, { validarTerritorio: true })
   const geoPorEndereco = new Map(enderecosUnicos.map((e, i) => [e, resultadosGeo[i]]))
 
   // Task 2 (plano 2026-09-30, item 4): geoSemFonte = cache sem `fonte` (ver guarda 4 da parada proxima em agregacao.ts).
@@ -589,6 +589,9 @@ export async function POST(req: NextRequest) {
   ].sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
   if (travaSemSinal.aviso) {
     avisos.push({ carga: '—', placa: '—', motivo: 'consulta_posicoes_suspeita', semSinal: travaSemSinal.semSinal, totalPlacas: travaSemSinal.totalPlacas })
+  }
+  if (geocodeParciais > 0) {
+    avisos.push({ carga: '—', placa: '—', motivo: 'geocode_parcial', enderecosParciais: geocodeParciais })
   }
 
   // Task 4 (plano 24/09): camada de resolucao manual por NF -- aditiva, nunca

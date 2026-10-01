@@ -5,7 +5,7 @@ vi.mock('@/lib/supabase/service', () => ({
 }))
 
 import { createServiceClient } from '@/lib/supabase/service'
-import { geocodificarEnderecos } from './geocode'
+import { geocodificarEnderecos, geocodificarEnderecosComInfo, TETO_BUSCAS_SIMILARIDADE_POR_GERACAO } from './geocode'
 
 // Achado 12/09: ResultadoGeocode ganhou `fonte`/`confiavel` (ver migration
 // 20260912000000). Os testes abaixo se importam com lat/lng -- normaliza pra
@@ -517,5 +517,61 @@ describe('geocodificarEnderecos - cache proprio', () => {
     const { upsertMock } = mockSupabaseCache({ linhasNoCache: [{ endereco: 'Rua A', lat: 1, lng: 2 }] })
     await geocodificarEnderecos(['Rua A'])
     expect(upsertMock).not.toHaveBeenCalled()
+  })
+})
+
+// Incidente 01/10 (CPU 100% no Postgres por buscas de similaridade CNEFE
+// simultaneas -- ver src/lib/cnefe-similaridade-limitada.ts no monitoramento):
+// a ponte devolve `incompletos` (endereco sem resultado porque a busca por
+// similaridade estourou o timeout ou foi pulada) e `buscasSimilaridade`.
+describe('geocodificarEnderecos - geocode parcial (busca por similaridade limitada)', () => {
+  beforeEach(() => {
+    vi.mocked(createServiceClient).mockClear()
+  })
+
+  const respostaPonte = (resultados: unknown[], extras: Record<string, unknown>) =>
+    new Response(JSON.stringify({ resultados, ...extras }), { status: 200 })
+
+  it('endereco em `incompletos` (timeout na similaridade) NAO grava cache negativo; os outros nulls gravam', async () => {
+    const { upsertNegativo } = mockSupabaseTabelas({})
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaPonte([{ lat: 1, lng: 2 }, null, null], { incompletos: [1], buscasSimilaridade: 3 }))
+    await geocodificarEnderecos(['A', 'Timeout', 'Sitio Perdido'])
+    expect(upsertNegativo).toHaveBeenCalledTimes(1)
+    expect((upsertNegativo.mock.calls[0][0] as Array<{ endereco: string }>).map(l => l.endereco)).toEqual(['Sitio Perdido'])
+  })
+
+  it('resultado identico quando nada estoura (sem incompletos): mesmo retorno e mesmo negativo de antes', async () => {
+    const { upsertNegativo } = mockSupabaseTabelas({})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaPonte([{ lat: 1, lng: 2 }, null], { incompletos: [], buscasSimilaridade: 2 }))
+    const { resultados, parciais } = await geocodificarEnderecosComInfo(['A', 'B'])
+    expect(semExtras(resultados)).toEqual([{ lat: 1, lng: 2 }, null])
+    expect(parciais).toBe(0)
+    expect((upsertNegativo.mock.calls[0][0] as Array<{ endereco: string }>).map(l => l.endereco)).toEqual(['B'])
+  })
+
+  it('conta os parciais e avisa "geocode parcial -- gere novamente"', async () => {
+    mockSupabaseTabelas({})
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaPonte([null, null, { lat: 1, lng: 2 }], { incompletos: [0, 1], buscasSimilaridade: 3 }))
+    const { parciais } = await geocodificarEnderecosComInfo(['A', 'B', 'C'])
+    expect(parciais).toBe(2)
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('geocode parcial'))
+  })
+
+  it('teto por geracao: atingido o teto de buscas por similaridade somadas, os proximos lotes vao com semSimilaridade', async () => {
+    expect(TETO_BUSCAS_SIMILARIDADE_POR_GERACAO).toBe(600)
+    mockSupabaseTabelas({})
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const corpos: Array<Record<string, unknown>> = []
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (_u, init) => {
+      const body = JSON.parse((init as RequestInit).body as string) as { enderecos: string[] }
+      corpos.push(body)
+      // cada lote "gasta" metade do teto
+      return respostaPonte(body.enderecos.map(() => ({ lat: 1, lng: 2 })), { incompletos: [], buscasSimilaridade: TETO_BUSCAS_SIMILARIDADE_POR_GERACAO / 2 })
+    })
+    await geocodificarEnderecos(Array.from({ length: 60 }, (_, i) => `E${i}`), { validarTerritorio: true })
+    expect(corpos.map(c => c.semSimilaridade === true)).toEqual([false, false, true, true])
+    expect(corpos.every(c => c.validarTerritorio === true)).toBe(true)
   })
 })
