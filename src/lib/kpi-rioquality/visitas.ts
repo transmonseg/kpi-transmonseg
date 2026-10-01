@@ -1,7 +1,7 @@
 import type { LinhaGeocodificada, Visita } from '@/lib/kpi-romaneio/types'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { RAIO_ENTREGA_METROS } from '@/lib/kpi-romaneio/constants'
-import { RAIO_VIZINHANCA_METROS, RAIO_CONFIRMACAO_AMPLIADO_METROS } from './constants'
+import { RAIO_VIZINHANCA_METROS, RAIO_CONFIRMACAO_AMPLIADO_METROS, RAIO_PARADA_CORREDOR_M, PERMANENCIA_MIN_CORREDOR_MIN } from './constants'
 
 // Casamento INCLUSIVO entrega x parada GPS -- achado real 05/09 (primeira
 // geracao Rio Quality): montarVisitas da Nutry Max casa cada parada com UMA
@@ -100,6 +100,37 @@ export function montarVisitasInclusivas(linhas: LinhaGeocodificada[], paradas: U
     if (!melhor) continue
     const v = visitas.get(melhor.irma.nf)!
     visitas.set(linha.nf, { nf: linha.nf, chegada: v.chegada, saida: v.saida, distanciaMetrosDoPonto: melhor.dist, viaVizinhanca: true, viaRaioAmpliado: false })
+  }
+
+  // 3) corredor da rua (endereco sem numero, relatorio 01/10): so' quem
+  //    sobrou depois da vizinhanca (que segue como esta'). Parada PROPRIA
+  //    (FORA_BASE) de >= PERMANENCIA_MIN_CORREDOR_MIN a <= RAIO_PARADA_
+  //    CORREDOR_M de QUALQUER ponto da rua; ganha a de maior permanencia.
+  //    Roda por ultimo de proposito: confirmada assim nao empresta horario
+  //    por vizinhanca (a coordenada continua aproximada).
+  for (const linha of comCoord) {
+    if (visitas.has(linha.nf)) continue
+    const corredor = linha.pontosCorredorRua ?? []
+    if (corredor.length === 0) continue
+    let melhorCorr: { parada: UnitracParadaRow; dist: number; dur: number } | null = null
+    for (const parada of foraBase) {
+      const fim = parada.fim_real ?? parada.saida ?? parada.chegada
+      const dur = new Date(fim).getTime() - new Date(parada.chegada).getTime()
+      if (!(dur >= PERMANENCIA_MIN_CORREDOR_MIN * 60_000)) continue
+      const dist = Math.min(...corredor.map(p => haversine(parada.lat, parada.lng, p.lat, p.lng)))
+      if (dist > RAIO_PARADA_CORREDOR_M) continue
+      if (!melhorCorr || dur > melhorCorr.dur) melhorCorr = { parada, dist, dur }
+    }
+    if (!melhorCorr) continue
+    visitas.set(linha.nf, {
+      nf: linha.nf,
+      chegada: melhorCorr.parada.chegada,
+      saida: melhorCorr.parada.fim_real ?? melhorCorr.parada.saida ?? melhorCorr.parada.chegada,
+      distanciaMetrosDoPonto: melhorCorr.dist,
+      viaVizinhanca: false,
+      viaRaioAmpliado: false,
+      viaCorredorDaRua: true,
+    })
   }
   return visitas
 }

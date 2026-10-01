@@ -19,3 +19,21 @@ export const RAIO_VIZINHANCA_METROS = 800
 // estava a 607m e 547m. Entre RAIO_ENTREGA_METROS e este valor a entrega
 // confirma, mas sai MARCADA no relatorio (nunca como confirmacao normal).
 export const RAIO_CONFIRMACAO_AMPLIADO_METROS = 800
+
+// Corredor da rua (relatorio rq-mesmo-lugar-e-sem-rastreador.md, 01/10): a RQ
+// nao manda NUMERO, entao todos os clientes de uma rua caem num ponto so'
+// (o da ponta mais perto do centro). Entrega pendente confirma quando a
+// PROPRIA placa parou >= PERMANENCIA_MIN_CORREDOR_MIN a <= RAIO_PARADA_
+// CORREDOR_M de QUALQUER ponto CNEFE da mesma rua no mesmo municipio (ate'
+// RAIO_MAX_CORREDOR_M do ponto aproximado). Medido no relatorio: recupera
+// 123 de 209 falsos negativos, placebo (paradas de outra placa) 2,4%.
+export const RAIO_PARADA_CORREDOR_M = 200
+export const PERMANENCIA_MIN_CORREDOR_MIN = 2
+export const RAIO_MAX_CORREDOR_M = 8_000
+// O ponto aproximado precisa estar perto de algum ponto da rua (senao o
+// geocode nao e' desta rua/municipio e o corredor nao vale).
+export const RAIO_ANCORAGEM_CORREDOR_M = 2_000
+// Rua "longa": pontos CNEFE espalhados por mais que isto -- sem parada na
+// rua, o pendente sai 'COORDENADA APROXIMADA (RUA SEM NUMERO) - CONFERIR'
+// em vez de 'NAO FOI AO CLIENTE' (o ponto pode estar longe do cliente).
+export const EXTENSAO_RUA_LONGA_M = 1_000

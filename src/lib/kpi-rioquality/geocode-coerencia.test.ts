@@ -64,6 +64,20 @@ describe('geocodificarPorCoerencia', () => {
     expect(r.get('SRL9A58')![0].lat).toBe(-23)
   })
 
+  it('pontosZona preserva o municipioCodigo de cada ponto (corredor da rua filtra pelo municipio)', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({
+      grupos: [{ id: 'SRL9A58', resultados: [{ lat: -23, lng: -43.37, municipioCodigo: '3304557', confianca: 'alta', candidatos: 2, ancora: true,
+        pontosZona: [{ lat: -23, lng: -43.37, municipioCodigo: '3304557' }, { lat: -22.7, lng: -43.3, municipioCodigo: '3301702' }, { lat: -22.8, lng: -43.1 }] }] },
+        { id: 'RJM5B51', resultados: [] }],
+    }), { status: 200 }))
+    const r = await geocodificarPorCoerencia([grupos[1]])
+    expect(r.get('SRL9A58')![0].pontosZona).toEqual([
+      { lat: -23, lng: -43.37, municipioCodigo: '3304557' },
+      { lat: -22.7, lng: -43.3, municipioCodigo: '3301702' },
+      { lat: -22.8, lng: -43.1, municipioCodigo: null },
+    ])
+  })
+
   it('sem grupos => Map vazio, sem chamar a ponte', async () => {
     const r = await geocodificarPorCoerencia([])
     expect(r.size).toBe(0)

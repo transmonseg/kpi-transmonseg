@@ -465,3 +465,91 @@ describe('gerarKpiRioQuality -- terceiro formato (55 colunas, NF real)', () => {
     expect(r.detalhe.find(d => d.nf === '5512949')).toMatchObject({ carga: '1158583', placa: 'LAT9F36' })
   })
 })
+
+// Corredor da rua (relatorio rq-mesmo-lugar-e-sem-rastreador.md, 01/10): RQ
+// manda rua SEM numero; os 61 clientes da AV. DAS AMERICAS (Barra) cairam no
+// mesmo ponto (-23.00075,-43.37481). Pontos CNEFE da rua vem da ponte de
+// coerencia (pontosZona), so' pras NFs que sobraram pendentes.
+describe('gerarKpiRioQuality -- corredor da rua (endereco sem numero, formatos com cidade)', () => {
+  const RIO = '3304557'
+  const PONTO_BARRA = { lat: -23.00075, lng: -43.37481 }
+  const C1 = { lat: -23.0003, lng: -43.3650, municipioCodigo: RIO }
+  const C2 = { lat: -23.0005, lng: -43.3950, municipioCodigo: RIO } // ~2 km a oeste do ponto
+  const HOMONIMA_CAXIAS = { lat: -22.7000, lng: -43.3000, municipioCodigo: '3301702' }
+  const PERTO_C2 = { lat: C2.lat + 0.00135, lng: C2.lng } // ~150 m de C2
+  const PERTO_HOMONIMA = { lat: HOMONIMA_CAXIAS.lat + 0.0005, lng: HOMONIMA_CAXIAS.lng }
+  const OBS_CORREDOR = 'ENTREGUE - PARADA NA MESMA RUA (endereço sem número, horário aproximado)'
+
+  async function preparar() {
+    const { geocodificarEnderecos } = await import('@/lib/kpi-romaneio/geocode')
+    vi.mocked(geocodificarEnderecos).mockImplementation(async enderecos => enderecos.map(e => e.startsWith('AV. DAS AMERICAS')
+      ? { ...PONTO_BARRA, confiavel: true, fonte: undefined }
+      : { ...PONTO, confiavel: true, fonte: 'cnefe' }))
+    vi.mocked(geocodificarPorCoerencia).mockImplementation(async grupos => new Map(grupos.map(g => [
+      g.id, g.ruas.map(rua => rua === 'AV. DAS AMERICAS'
+        ? { ...PONTO_BARRA, municipioCodigo: RIO, confianca: 'media' as const, candidatos: 4, ancora: false, pontosZona: [{ ...PONTO_BARRA, municipioCodigo: RIO }, C1, C2, HOMONIMA_CAXIAS] }
+        : { lat: null, lng: null, municipioCodigo: null, confianca: 'sem_candidato' as const, candidatos: 0, ancora: false, pontosZona: [] }),
+    ])))
+    return planilha([
+      ['Razão Social', 'Cidade', 'UF', 'Destino', 'Motorista', 'Placa', 'Endereço', 'Bairro'],
+      ['MERCADO A', 'RIO DE JANEIRO', 'RJ', 'SUDOESTE 1', 'JOAO', 'CCC3C33', 'AV. DAS AMERICAS', 'BARRA DA TIJUCA'],
+      ['MERCADO B', 'RIO DE JANEIRO', 'RJ', 'SUDOESTE 1', 'JOAO', 'CCC3C33', 'AV. DAS AMERICAS', 'BARRA DA TIJUCA'],
+      ['MERCADO C', 'RIO DE JANEIRO', 'RJ', 'SUDOESTE 1', 'JOAO', 'CCC3C33', 'RUA PERTO', 'CENTRO'],
+      ['MERCADO D', 'RIO DE JANEIRO', 'RJ', 'SUDOESTE 2', 'PEDRO', 'DDD4D44', 'AV. DAS AMERICAS', 'BARRA DA TIJUCA'],
+    ])
+  }
+
+  it('parada PROPRIA >= 2 min a <= 200 m de outro ponto da mesma rua/municipio: ENTREGUE com o horario da parada', async () => {
+    const completa = await preparar()
+    const r = await gerarKpiRioQuality({
+      completaBuf: completa, data: DATA,
+      cvPorPlaca: new Map([['CCC3C33', '3'], ['DDD4D44', '4']]),
+      buscarParadas: async (_cv, placa) => placa === 'CCC3C33'
+        ? [parada(placa, '10:00', 15), parada(placa, '13:05', 12, 'FORA_BASE', PERTO_C2)]
+        : [parada(placa, '09:00', 20, 'FORA_BASE', { lat: -22.9, lng: -43.5 })],
+      medirRastro: async () => ({ km: 40, pontosNoDia: 900 }),
+    })
+    for (const cliente of ['MERCADO A', 'MERCADO B']) {
+      const d = r.detalhe.find(x => x.clienteNome === cliente)!
+      expect(d.status).not.toBe('pendente')
+      expect(d.observacao).toBe(OBS_CORREDOR)
+      expect(d.chegada).toBe(`${DATA}T13:05:00.000Z`)
+    }
+    // nunca parada de OUTRO veiculo: DDD4D44 nao parou na rua (CCC3C33 sim)
+    const outra = r.detalhe.find(x => x.clienteNome === 'MERCADO D')!
+    expect(outra.status).toBe('pendente')
+    // a ponte so' e' consultada pelas ruas que sobraram pendentes
+    const ruasPedidas = vi.mocked(geocodificarPorCoerencia).mock.calls.flatMap(([gs]) => gs.flatMap(g => g.ruas))
+    expect(ruasPedidas).toContain('AV. DAS AMERICAS')
+    expect(ruasPedidas).not.toContain('RUA PERTO')
+  })
+
+  it('parada curta (< 2 min) na rua, ou parada na rua homonima de OUTRO municipio: nao confirma', async () => {
+    const completa = await preparar()
+    const r = await gerarKpiRioQuality({
+      completaBuf: completa, data: DATA,
+      cvPorPlaca: new Map([['CCC3C33', '3'], ['DDD4D44', '4']]),
+      buscarParadas: async (_cv, placa) => placa === 'CCC3C33'
+        ? [parada(placa, '10:00', 15), parada(placa, '13:05', 1, 'FORA_BASE', PERTO_C2)]
+        : [parada(placa, '09:00', 20, 'FORA_BASE', PERTO_HOMONIMA)],
+      medirRastro: async () => ({ km: 40, pontosNoDia: 900 }),
+    })
+    for (const cliente of ['MERCADO A', 'MERCADO B', 'MERCADO D']) {
+      const d = r.detalhe.find(x => x.clienteNome === cliente)!
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).not.toBe(OBS_CORREDOR)
+    }
+  })
+
+  it('formato antigo (sem cidade) nao usa o corredor novo (coerencia so' + "'" + ' na geocodificacao)', async () => {
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(['AAA1A11']),
+      data: DATA,
+      cvPorPlaca: new Map([['AAA1A11', '1']]),
+      buscarParadas: async (_cv, placa) => [parada(placa, '10:00', 15)],
+      medirRastro: async () => ({ km: 40, pontosNoDia: 900 }),
+    })
+    expect(vi.mocked(geocodificarPorCoerencia)).toHaveBeenCalledTimes(1)
+    expect(r.detalhe.every(d => d.observacao !== OBS_CORREDOR)).toBe(true)
+  })
+})

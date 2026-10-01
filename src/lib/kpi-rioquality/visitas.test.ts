@@ -139,4 +139,65 @@ describe('montarVisitasInclusivas', () => {
     const paradas = [parada('b', AUTOMOVEL.lat, AUTOMOVEL.lng, '2026-09-04T06:00:00Z', '2026-09-04T06:30:00Z', 'BASE')]
     expect(montarVisitasInclusivas(linhas, paradas).size).toBe(0)
   })
+  // Corredor da rua (relatorio rq-mesmo-lugar-e-sem-rastreador.md, 01/10):
+  // endereco sem numero -> 61 clientes da AV. DAS AMERICAS no mesmo ponto
+  // (-23.00075,-43.37481). Confirma quando a PROPRIA placa parou >= 2 min a
+  // <= 200 m de QUALQUER ponto CNEFE da mesma rua/municipio.
+  describe('corredor da rua (endereco sem numero)', () => {
+    const PONTO = { lat: -23.00075, lng: -43.37481 }
+    const C1 = { lat: -23.0003, lng: -43.3650 }
+    const C2 = { lat: -23.0005, lng: -43.3950 } // ~2 km a oeste do ponto
+    const corredor = [PONTO, C1, C2]
+    const comCorredor = (nf: string, p = PONTO, pontos = corredor): LinhaGeocodificada => ({ ...linha(nf, p.lat, p.lng), pontosCorredorRua: pontos })
+
+    it('parada propria de 12 min a ~150 m de outro ponto da rua (2 km do ponto aproximado) confirma, marcada viaCorredorDaRua, com o horario da parada', () => {
+      const paradas = [parada('p1', C2.lat + 0.00135, C2.lng, '2026-09-30T13:05:00Z', '2026-09-30T13:17:00Z')]
+      const v = montarVisitasInclusivas([comCorredor('NF-1')], paradas)
+      expect(v.get('NF-1')).toMatchObject({ chegada: '2026-09-30T13:05:00Z', saida: '2026-09-30T13:17:00Z', viaCorredorDaRua: true, viaVizinhanca: false, viaRaioAmpliado: false })
+      expect(v.get('NF-1')!.distanciaMetrosDoPonto).toBeLessThan(200)
+    })
+
+    it('parada de menos de 2 min no corredor nao confirma', () => {
+      const paradas = [parada('p1', C2.lat + 0.00135, C2.lng, '2026-09-30T13:05:00Z', '2026-09-30T13:06:30Z')]
+      expect(montarVisitasInclusivas([comCorredor('NF-1')], paradas).size).toBe(0)
+    })
+
+    it('parada a ~300 m do ponto da rua mais proximo nao confirma (raio do corredor e 200 m)', () => {
+      const paradas = [parada('p1', C2.lat + 0.0027, C2.lng, '2026-09-30T13:05:00Z', '2026-09-30T13:25:00Z')]
+      expect(montarVisitasInclusivas([comCorredor('NF-1')], paradas).size).toBe(0)
+    })
+
+    it('parada BASE no corredor nao confirma', () => {
+      const paradas = [parada('b', C2.lat, C2.lng, '2026-09-30T13:05:00Z', '2026-09-30T13:25:00Z', 'BASE')]
+      expect(montarVisitasInclusivas([comCorredor('NF-1')], paradas).size).toBe(0)
+    })
+
+    it('rua longa sem parada da placa em nenhum ponto: nao confirma', () => {
+      const paradas = [parada('p1', LONGE.lat, LONGE.lng, '2026-09-30T13:05:00Z', '2026-09-30T13:25:00Z')]
+      expect(montarVisitasInclusivas([comCorredor('NF-1')], paradas).size).toBe(0)
+    })
+
+    it('vizinhanca <= 800 m segue como esta: quem herdaria da irma continua viaVizinhanca (corredor so pega o que sobrou)', () => {
+      // irma A-1 confirmada direto; NF-1 a ~700 m dela -> vizinhanca,
+      // mesmo havendo parada propria no corredor
+      const irma = linha('A-1', PONTO.lat, PONTO.lng)
+      const nf = comCorredor('NF-1', { lat: PONTO.lat + 0.0063, lng: PONTO.lng })
+      const paradas = [
+        parada('p0', PONTO.lat - 0.0063, PONTO.lng, '2026-09-30T10:00:00Z', '2026-09-30T10:10:00Z'), // ~700 m ao sul da irma, ~1,4 km de NF-1
+        parada('p1', C2.lat + 0.00135, C2.lng, '2026-09-30T13:05:00Z', '2026-09-30T13:17:00Z'),
+      ]
+      const v = montarVisitasInclusivas([irma, nf], paradas)
+      expect(v.get('NF-1')).toMatchObject({ viaVizinhanca: true })
+      expect(v.get('NF-1')?.viaCorredorDaRua).toBeFalsy()
+    })
+
+    it('entrega confirmada pelo corredor nao empresta horario por vizinhanca (sem encadear)', () => {
+      const nf = comCorredor('NF-1')
+      const irmaSemCorredor = linha('N-1', PONTO.lat + 0.0063, PONTO.lng) // ~700 m, sem parada propria
+      const paradas = [parada('p1', C2.lat + 0.00135, C2.lng, '2026-09-30T13:05:00Z', '2026-09-30T13:17:00Z')]
+      const v = montarVisitasInclusivas([nf, irmaSemCorredor], paradas)
+      expect(v.get('NF-1')?.viaCorredorDaRua).toBe(true)
+      expect(v.has('N-1')).toBe(false)
+    })
+  })
 })

@@ -56,6 +56,10 @@ export type LinhaGeocodificada = LinhaRomaneio & {
   // So' preenchido pela coerencia de grupo (Rio Quality): outros pontos da
   // MESMA rua na zona, alem do escolhido -- pedido 06/09, ver visitas.ts.
   pontosAlternativos?: { lat: number; lng: number }[]
+  /** So' Rio Quality, formatos com cidade (endereco SEM numero): pontos CNEFE
+   *  da mesma rua no mesmo municipio -- corredor da rua, ver
+   *  kpi-rioquality/corredor-rua.ts e visitas.ts. */
+  pontosCorredorRua?: { lat: number; lng: number }[]
 }
 
 /** Uma visita confirmada por GPS dentro do perimetro PROPRIO (nunca o raio
@@ -86,6 +90,10 @@ export type Visita = {
    *  varios trechos no CNEFE e o caminhao parar longe do trecho escolhido.
    *  So' Rio Quality. Ver kpi-rioquality/visitas.ts. */
   viaOutroPontoDaRua?: boolean
+  /** Corredor da rua (RQ, endereco sem numero, relatorio 01/10): parada
+   *  PROPRIA >= 2 min a <= 200 m de qualquer ponto CNEFE da mesma rua/
+   *  municipio. Horario e' o da parada (aproximado pro cliente). */
+  viaCorredorDaRua?: boolean
 }
 
 export type StatusEntrega = 'confirmado_unitrac' | 'confirmado_gps' | 'pendente'

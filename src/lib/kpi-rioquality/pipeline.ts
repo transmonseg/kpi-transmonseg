@@ -18,9 +18,10 @@ import { EMPRESA_SNAPSHOT_RIOQUALITY } from './snapshot-paradas'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita, AvisoDescasamento } from '@/lib/kpi-romaneio/types'
 import { parseCustos, parseEntregas, montarLinhasRomaneio, rotaParaZona, parseEntregasCompletas, montarLinhasRomaneioCompleto, CARGA_SEM_ROTA } from './parse-planilhas'
-import { geocodificarPorCoerencia, type ConfiancaCoerencia } from './geocode-coerencia'
+import { geocodificarPorCoerencia, type ConfiancaCoerencia, type PontoZona } from './geocode-coerencia'
 import { geocodificarEnderecosComInfo } from '@/lib/kpi-romaneio/geocode'
 import { reposicionarPorAncoras } from '@/lib/kpi-romaneio/geocode-ancoras'
+import { montarCorredorDaRua, extensaoCorredorM } from './corredor-rua'
 
 // Nucleo do KPI Rio Quality -- usado pela rota /api/kpi/rioquality/gerar e
 // pelo script scripts/gerar-rioquality-real-arquivo.ts (mesma pipeline, sem
@@ -52,6 +53,12 @@ export const OBS_CONSULTA_FALHOU = 'CONSULTA AO RASTREADOR FALHOU - CONFERIR'
 // FORA da taxa (mesma regra de consulta falhou, ver gerador-xlsx.ts). Antes
 // saiam pendente NAO CONFIRMADO dentro da taxa.
 export const OBS_CONSULTA_SUSPEITA = 'CONSULTA AO RASTREADOR SUSPEITA - CONFERIR'
+// Corredor da rua (relatorio 01/10, ver corredor-rua.ts/visitas.ts): parada
+// PROPRIA na mesma rua/municipio, endereco sem numero.
+export const OBS_CORREDOR_DA_RUA = 'ENTREGUE - PARADA NA MESMA RUA (endereço sem número, horário aproximado)'
+/** Teto de ruas por chamada a ponte de coerencia (o limite de la e' 4000). */
+const MAX_RUAS_CORREDOR_POR_CHAMADA = 3_000
+const MAX_RUAS_CORREDOR_POR_GRUPO = 500
 /** Concorrencia maxima de consultas a Unitrac (mesmo valor da Nutry Max). */
 export const LIMITE_CONCORRENCIA_PLACAS_RQ = 6
 /** Tentativas por placa antes de concluir erro (1 + 1 retry). */
@@ -164,6 +171,8 @@ export async function gerarKpiRioQuality(params: {
   const contConf: Record<ConfiancaCoerencia, number> = { alta: 0, media: 0, baixa: 0, sem_candidato: 0, isolado: 0 }
   const romaneioGeo: LinhaGeocodificada[] = []
   const formatoCompleto = completaBuf != null
+  // formatos com cidade: rua crua por NF (corredor da rua, mais abaixo)
+  let ruaPorNfCompleto = new Map<string, string>()
 
   if (completaBuf) {
     const entregasCompletas = parseEntregasCompletas(completaBuf)
@@ -173,6 +182,7 @@ export async function gerarKpiRioQuality(params: {
       )
     }
     const { linhas: romaneio, enderecoBrutoPorNf, ruaPorNf } = montarLinhasRomaneioCompleto(entregasCompletas)
+    ruaPorNfCompleto = ruaPorNf
     log(`Entregas: ${romaneio.length} linhas (arquivo unico, com cidade)`)
     // cascata PRECISA (rua+bairro+cidade+UF descarta rua homonima em
     // municipio errado sozinha, sem precisar de ancora de outra parada) --
@@ -352,6 +362,47 @@ export async function gerarKpiRioQuality(params: {
   if (placasSemDadoNoDia.size > 0) log(`Sem dado do snapshot para ${placasSemDadoNoDia.size} placa(s): ${[...placasSemDadoNoDia].sort().join(', ')}`)
   if (placasConsultaFalhou.size > 0) log(`Consulta Unitrac falhou em ${placasConsultaFalhou.size} placa(s): ${[...placasConsultaFalhou].join(', ')}`)
 
+  // Corredor da rua (relatorio rq-mesmo-lugar-e-sem-rastreador.md, 01/10) --
+  // so' formatos com cidade (endereco SEM numero: montarEnderecoBrutoCompleto
+  // nunca tem numero). Pros pendentes com coordenada confiavel, busca os
+  // pontos CNEFE da rua na ponte de coerencia que ja' existe (pontosZona),
+  // fica com os do mesmo municipio e refaz as visitas da placa (so' paradas
+  // da PROPRIA placa). Falha da ponte = sem corredor (fail-open).
+  const extensaoCorredorPorNf = new Map<string, number>()
+  if (formatoCompleto) {
+    const pendentes = romaneioGeo.filter(l => {
+      const p = normPlaca(l.placa)
+      return l.lat != null && l.lng != null && l.geoConfiavel !== false && ruaPorNfCompleto.has(l.nf)
+        && !placasConsultaFalhou.has(p) && !placasSemDadoNoDia.has(p) && !visitasPorPlaca.get(p)?.has(l.nf)
+    })
+    const ruasUnicas = [...new Set(pendentes.map(l => ruaPorNfCompleto.get(l.nf)!))]
+    const pontosPorRua = new Map<string, PontoZona[]>()
+    for (let i = 0; i < ruasUnicas.length; i += MAX_RUAS_CORREDOR_POR_CHAMADA) {
+      const lote = ruasUnicas.slice(i, i + MAX_RUAS_CORREDOR_POR_CHAMADA)
+      const grupos = []
+      for (let j = 0; j < lote.length; j += MAX_RUAS_CORREDOR_POR_GRUPO) {
+        grupos.push({ id: `corredor-${i + j}`, zona: null, ruas: lote.slice(j, j + MAX_RUAS_CORREDOR_POR_GRUPO) })
+      }
+      const res = await geocodificarPorCoerencia(grupos)
+      for (const g of grupos) {
+        const rs = res.get(g.id) ?? []
+        g.ruas.forEach((rua, k) => pontosPorRua.set(rua, rs[k]?.pontosZona ?? []))
+      }
+    }
+    const placasAfetadas = new Set<string>()
+    for (const l of pendentes) {
+      const corredor = montarCorredorDaRua({ lat: l.lat!, lng: l.lng! }, pontosPorRua.get(ruaPorNfCompleto.get(l.nf)!) ?? [])
+      if (corredor.length === 0) continue
+      l.pontosCorredorRua = corredor.map(p => ({ lat: p.lat, lng: p.lng }))
+      extensaoCorredorPorNf.set(l.nf, extensaoCorredorM(corredor))
+      placasAfetadas.add(normPlaca(l.placa))
+    }
+    for (const p of placasAfetadas) {
+      visitasPorPlaca.set(p, montarVisitasInclusivas(linhasGeoPorPlaca.get(p) ?? [], paradasPorPlaca.get(p) ?? []))
+    }
+    if (extensaoCorredorPorNf.size > 0) log(`Corredor da rua: ${extensaoCorredorPorNf.size} NF(s) pendente(s) com pontos da rua`)
+  }
+
   // Task 3 (plano 2026-09-30, estudo item 1b): SEM SINAL NO DIA pela Unitrac
   // (a RQ nao esta' na ponte) + trava de sem sinal em massa (>25% das placas
   // do dia, com >=10 placas -> ninguem concluido + aviso). Placa sem sinal =
@@ -465,6 +516,9 @@ export async function gerarKpiRioQuality(params: {
       // varios pontos): sai marcada, mesma logica da faixa ampliada acima
       if (visita?.viaOutroPontoDaRua) {
         return { ...d, observacao: 'ENTREGUE - PARADA EM OUTRO TRECHO DA MESMA RUA (romaneio sem número, horário aproximado)' }
+      }
+      if (visita?.viaCorredorDaRua) {
+        return { ...d, observacao: OBS_CORREDOR_DA_RUA }
       }
       if (d.status !== 'pendente') return d
       const conf = confiancaPorNf.get(d.nf) ?? 'sem_candidato'

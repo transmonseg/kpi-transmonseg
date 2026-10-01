@@ -11,7 +11,9 @@
 
 export type ConfiancaCoerencia = 'alta' | 'media' | 'baixa' | 'sem_candidato' | 'isolado'
 
-export type PontoZona = { lat: number; lng: number }
+// municipioCodigo (IBGE) vem da ponte -- o corredor da rua (corredor-rua.ts)
+// usa pra ficar so' no municipio do endereco. null quando a ponte nao manda.
+export type PontoZona = { lat: number; lng: number; municipioCodigo?: string | null }
 
 export type ResultadoCoerencia = {
   lat: number | null
@@ -41,7 +43,7 @@ function validarPontosZona(v: unknown): PontoZona[] {
   if (!Array.isArray(v)) return []
   return v
     .filter((p): p is Record<string, unknown> => typeof p === 'object' && p !== null)
-    .map(p => ({ lat: Number(p.lat), lng: Number(p.lng) }))
+    .map(p => ({ lat: Number(p.lat), lng: Number(p.lng), municipioCodigo: typeof p.municipioCodigo === 'string' ? p.municipioCodigo : null }))
     .filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lng))
 }
 
