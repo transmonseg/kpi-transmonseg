@@ -345,9 +345,13 @@ function ehAguardando(d: LinhaDetalheEntrega): boolean {
 // FALHOU (erro/timeout, ver OBS_CONSULTA_FALHOU em kpi-rioquality/pipeline.ts)
 // nao e' sucesso nem falha -- sai das duas taxas (num e denom) e aparece
 // contada a parte. A Nutry Max nunca gera esse rotulo (nada muda nela).
+// Revisao 30/09: 'CONSULTA AO RASTREADOR SUSPEITA' (RQ, trava de sem sinal em
+// massa disparou) segue a mesma regra -- tambem nunca gerado pela Nutry Max.
 const PREFIXO_OBS_CONSULTA_FALHOU = 'CONSULTA AO RASTREADOR FALHOU'
+const PREFIXO_OBS_CONSULTA_SUSPEITA = 'CONSULTA AO RASTREADOR SUSPEITA'
 function ehConsultaFalhou(d: LinhaDetalheEntrega): boolean {
-  return (d.observacao?.startsWith(PREFIXO_OBS_CONSULTA_FALHOU) ?? false) && !ehCargaSemPlaca(d) && d.status === 'pendente'
+  const obs = d.observacao ?? ''
+  return (obs.startsWith(PREFIXO_OBS_CONSULTA_FALHOU) || obs.startsWith(PREFIXO_OBS_CONSULTA_SUSPEITA)) && !ehCargaSemPlaca(d) && d.status === 'pendente'
 }
 
 // Fix round 1, item 4 (decisao de negocio da Ana): a taxa "apos conferencia

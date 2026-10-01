@@ -46,6 +46,12 @@ export const OBS_POR_CONFIANCA: Partial<Record<ConfiancaCoerencia, string>> = {
 // erro/timeout (mesmo apos 1 retry) -- nao da' pra concluir nada sobre ela:
 // nem ENTREGUE nem SEM RASTREADOR. Rotulo neutro, pede conferencia.
 export const OBS_CONSULTA_FALHOU = 'CONSULTA AO RASTREADOR FALHOU - CONFERIR'
+// Revisao independente 30/09 (decisao do usuario/coordenador): se a trava de
+// sem sinal em massa disparou, a consulta do dia esta' suspeita -- as placas
+// que seriam "sem sinal" e foram seguradas pela trava saem com este rotulo,
+// FORA da taxa (mesma regra de consulta falhou, ver gerador-xlsx.ts). Antes
+// saiam pendente NAO CONFIRMADO dentro da taxa.
+export const OBS_CONSULTA_SUSPEITA = 'CONSULTA AO RASTREADOR SUSPEITA - CONFERIR'
 /** Concorrencia maxima de consultas a Unitrac (mesmo valor da Nutry Max). */
 export const LIMITE_CONCORRENCIA_PLACAS_RQ = 6
 /** Tentativas por placa antes de concluir erro (1 + 1 retry). */
@@ -350,12 +356,16 @@ export async function gerarKpiRioQuality(params: {
   // do dia, com >=10 placas -> ninguem concluido + aviso). Placa sem sinal =
   // sem rastreador no dia (temRastreador=false), mesmo efeito da Nutry Max.
   const placasDoDia = placasNorm.filter(p => p !== '')
-  const travaSemSinal = aplicarTravaSemSinal(placasDoDia, new Set(placasDoDia.filter(p => cvPorPlaca.has(p) && placaSemSinalPelaUnitrac({
+  const detectadasSemSinal = new Set(placasDoDia.filter(p => cvPorPlaca.has(p) && placaSemSinalPelaUnitrac({
     consultaOk: !placasConsultaFalhou.has(p) && !placasSemDadoNoDia.has(p),
     paradas: paradasPorPlaca.get(p) ?? [],
     pontosRastroNoDia: pontosRastroPorPlaca.get(p) ?? null,
-  }))))
-  if (travaSemSinal.aviso) log(travaSemSinal.aviso)
+  })))
+  const travaSemSinal = aplicarTravaSemSinal(placasDoDia, detectadasSemSinal)
+  // So' as placas seguradas pela trava (as que seriam "sem sinal"); placas
+  // com paradas nunca entram aqui e seguem normais.
+  const placasConsultaSuspeita = travaSemSinal.aviso ? detectadasSemSinal : new Set<string>()
+  if (travaSemSinal.aviso) log(`${travaSemSinal.aviso} (${placasConsultaSuspeita.size} placa(s) fora da taxa como consulta suspeita)`)
   const temRastreadorPorPlaca = new Map(placasNorm.map(p => [p, cvPorPlaca.has(p) && !travaSemSinal.placas.has(p)]))
 
   // 4) agregacao por carga (= rota) x placa -- sem escala, sem alvos
@@ -437,7 +447,9 @@ export async function gerarKpiRioQuality(params: {
     // SEM RASTREADOR); vence qualquer outro rotulo.
     .map(d => placasConsultaFalhou.has(normPlaca(d.placa)) || placasSemDadoNoDia.has(normPlaca(d.placa))
       ? { ...d, status: 'pendente' as const, chegada: null, saida: null, tempoParadaMin: null, observacao: OBS_CONSULTA_FALHOU, evidencia: 'sem_evidencia' as const, distParadaM: null, motivo: 'Consulta ao rastreador falhou — conferir', confianca: calcularConfianca('pendente', OBS_CONSULTA_FALHOU) }
-      : d)
+      : placasConsultaSuspeita.has(normPlaca(d.placa))
+        ? { ...d, status: 'pendente' as const, chegada: null, saida: null, tempoParadaMin: null, observacao: OBS_CONSULTA_SUSPEITA, evidencia: 'sem_evidencia' as const, distParadaM: null, motivo: 'Consulta ao rastreador suspeita (sem sinal em massa) — conferir', confianca: calcularConfianca('pendente', OBS_CONSULTA_SUSPEITA) }
+        : d)
     .map(d => {
       contStatus[d.status] = (contStatus[d.status] ?? 0) + 1
       if (d.observacao) return d

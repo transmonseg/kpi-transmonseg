@@ -10,7 +10,7 @@ vi.mock('@/lib/kpi-romaneio/geocode', () => ({ geocodificarEnderecos: vi.fn() })
 vi.mock('@/lib/kpi-romaneio/geocode-ancoras', () => ({ reposicionarPorAncoras: vi.fn(async () => new Map()) }))
 
 import { geocodificarPorCoerencia } from './geocode-coerencia'
-import { gerarKpiRioQuality, OBS_CONSULTA_FALHOU } from './pipeline'
+import { gerarKpiRioQuality, OBS_CONSULTA_FALHOU, OBS_CONSULTA_SUSPEITA } from './pipeline'
 
 const PONTO = { lat: -22.9, lng: -43.2 }
 const DATA = '2026-09-29'
@@ -230,6 +230,29 @@ describe('gerarKpiRioQuality -- sem sinal pela Unitrac e NAO SAIU DA BASE (Task 
     })
     for (const d of r.detalhe.filter(x => semSinal.has(x.placa))) expect(d.observacao ?? '').not.toMatch(/^SEM RASTREADOR/)
     expect(r.avisos).toContainEqual(expect.objectContaining({ motivo: 'consulta_posicoes_suspeita', semSinal: 20, totalPlacas: 40 }))
+  })
+
+  it('trava disparou (6 de 12 sem sinal): as 6 seguradas saem CONSULTA SUSPEITA fora da taxa; as com paradas seguem normais; aviso cita 6', async () => {
+    const placas = Array.from({ length: 12 }, (_, i) => `PLC${String(i).padStart(4, '0')}`)
+    const semSinal = new Set(placas.slice(0, 6))
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(placas, 1),
+      data: DATA,
+      cvPorPlaca: new Map(placas.map(p => [p, p])),
+      buscarParadas: async (_cv, placa) => semSinal.has(placa) ? [] : [parada(placa, '10:00', 15)],
+      medirRastro: async cv => semSinal.has(cv) ? { km: null, pontosNoDia: 0 } : { km: 40, pontosNoDia: 900 },
+    })
+    expect(OBS_CONSULTA_SUSPEITA).toBe('CONSULTA AO RASTREADOR SUSPEITA - CONFERIR')
+    for (const d of r.detalhe.filter(x => semSinal.has(x.placa))) {
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe(OBS_CONSULTA_SUSPEITA)
+    }
+    for (const d of r.detalhe.filter(x => !semSinal.has(x.placa))) expect(d.status).not.toBe('pendente')
+    expect(r.avisos).toContainEqual(expect.objectContaining({ motivo: 'consulta_posicoes_suspeita', semSinal: 6, totalPlacas: 12 }))
+    const wb = await abrir(r.xlsx)
+    expect(textos(wb.getWorksheet('Avisos')!).some(t => t.includes('6 de 12 placas'))).toBe(true)
+    // 6 de 6: as 6 NFs das placas seguradas fora da conta
+    expect(textos(wb.worksheets[0]).some(t => t.includes('TAXA DE CONFIRMAÇÃO: 100,0% (6 de 6 NFs;'))).toBe(true)
   })
 
   it('consulta falhou nunca vira sem sinal (mesmo com rastro vazio)', async () => {
