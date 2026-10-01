@@ -18,15 +18,17 @@ describe('planejarLimpezaCep', () => {
     ['verificacao_manual', 'cnefe'],
     ['manual', 'cadastro_unitrac'],
     ['cadastro_unitrac', 'cnefe'],
+    ['verificacao_manual', 'manual'],
+    ['cadastro_unitrac', 'cadastro_unitrac'],
   ])('com CEP %s e sem CEP %s: propoe migrar (a com CEP vence na leitura)', (fonteCom, fonteSem) => {
     const p = planejarLimpezaCep([l({ fonte: fonteCom }), l({ endereco: SEM, fonte: fonteSem })])
     expect(p.map(x => x.acao)).toEqual(['migrar'])
   })
 
   it.each([
-    ['verificacao_manual', 'manual'],
     ['cnefe', 'verificacao_manual'],
-    ['cadastro_unitrac', 'cadastro_unitrac'],
+    ['cnefe', 'cnefe'],
+    ['cadastro_unitrac', 'manual'],
   ])('com CEP %s e sem CEP %s: apaga (a sem CEP ja vence)', (fonteCom, fonteSem) => {
     expect(planejarLimpezaCep([l({ fonte: fonteCom }), l({ endereco: SEM, fonte: fonteSem })]).map(x => x.acao)).toEqual(['apagar'])
   })

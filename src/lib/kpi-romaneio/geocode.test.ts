@@ -722,9 +722,18 @@ describe('escolherLinhaCache', () => {
     expect(escolherLinhaCache(undefined, linha('cnefe'))?.fonte).toBe('cnefe')
     expect(escolherLinhaCache(undefined, undefined)).toBeUndefined()
   })
-  it('empate de prioridade: a da chave sem CEP vence', () => {
+  it('empate entre fontes automaticas: a da chave sem CEP (aprendida antes de 01/10) vence', () => {
     expect(escolherLinhaCache({ ...linha('cnefe'), lat: 1 }, { ...linha('cnefe'), lat: 2 })?.lat).toBe(1)
-    expect(escolherLinhaCache({ ...linha('manual'), lat: 1 }, { ...linha('verificacao_manual'), lat: 2 })?.lat).toBe(1)
+    expect(escolherLinhaCache({ ...linha(null), lat: 1 }, { ...linha('cnefe_bairro'), lat: 2 })?.lat).toBe(1)
+  })
+  // Medicao 01/10: a linha com CEP so' existe desde 01/10 (depois do fix nada
+  // mais grava chave com CEP), entao uma correcao humana / cadastro Unitrac nela
+  // e' a mais NOVA -- ex. ROD BR 393 - KM 210 (VASSOURAS): verificacao_manual de
+  // 04/09 na chave sem CEP e outra de 01/10 (a 400 m) na linha com CEP.
+  it('empate entre correcoes (humana ou cadastro_unitrac): a linha com CEP, mais nova, vence', () => {
+    expect(escolherLinhaCache({ ...linha('verificacao_manual'), lat: 1 }, { ...linha('verificacao_manual'), lat: 2 })?.lat).toBe(2)
+    expect(escolherLinhaCache({ ...linha('manual'), lat: 1 }, { ...linha('verificacao_manual'), lat: 2 })?.lat).toBe(2)
+    expect(escolherLinhaCache({ ...linha('cadastro_unitrac'), lat: 1 }, { ...linha('cadastro_unitrac'), lat: 2 })?.lat).toBe(2)
   })
   it('manual > cadastro_unitrac > resto', () => {
     expect(escolherLinhaCache({ ...linha('cadastro_unitrac'), lat: 1 }, { ...linha('verificacao_manual'), lat: 2 })?.lat).toBe(2)

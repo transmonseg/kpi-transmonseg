@@ -181,7 +181,10 @@ export { separarCep, chaveCacheEndereco } from './endereco-cep'
 
 // Prioridade entre a linha da chave sem CEP e a linha gravada com CEP
 // (01/10): correcao humana vence, depois cadastro Unitrac confirmado, depois
-// o resto. Empate -> a da chave sem CEP (a aprendida antes de 01/10).
+// o resto. Empate entre fontes automaticas -> a da chave sem CEP (a aprendida
+// antes de 01/10). Empate entre correcoes (humana/cadastro_unitrac) -> a com
+// CEP: ela so' pode ter sido gravada a partir de 01/10 (depois do fix nada
+// mais grava chave com CEP), entao e' a correcao mais nova.
 function prioridadeFonte(fonte: string | null | undefined): number {
   if (fonte === 'manual' || fonte === 'verificacao_manual') return 2
   if (fonte === 'cadastro_unitrac') return 1
@@ -191,7 +194,10 @@ function prioridadeFonte(fonte: string | null | undefined): number {
 export function escolherLinhaCache<T extends { fonte?: string | null }>(daChave: T | undefined, doBruto: T | undefined): T | undefined {
   if (!daChave) return doBruto
   if (!doBruto) return daChave
-  return prioridadeFonte(doBruto.fonte) > prioridadeFonte(daChave.fonte) ? doBruto : daChave
+  const pBruto = prioridadeFonte(doBruto.fonte)
+  const pChave = prioridadeFonte(daChave.fonte)
+  if (pBruto !== pChave) return pBruto > pChave ? doBruto : daChave
+  return pBruto > 0 ? doBruto : daChave
 }
 
 /** Junta as linhas lidas do cache (consultado pela chave sem CEP E pelo texto
