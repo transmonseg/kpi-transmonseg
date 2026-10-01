@@ -1,6 +1,8 @@
-import { normPlaca, buscarStopsCru, consolidaParadasApi } from '@/lib/unitrac-api'
+import { normPlaca, consolidaParadasApi } from '@/lib/unitrac-api'
+import { buscarStopsCruOuErro } from './unitrac'
+import { mapComLimite } from '@/lib/kpi-romaneio/concorrencia'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
-import { agregarPorCarga, montarDetalheEntregas } from '@/lib/kpi-romaneio/agregacao'
+import { agregarPorCarga, montarDetalheEntregas, calcularConfianca } from '@/lib/kpi-romaneio/agregacao'
 import { montarVisitasInclusivas } from './visitas'
 import { BASES_COORD_RIOQUALITY } from './constants'
 // calcularKmPercorrido (soma da reta entre paradas) NAO e' usado aqui de
@@ -9,7 +11,7 @@ import { calcularKmPorRastro } from './km-rastro'
 import { buscarHorariosBase } from '@/lib/kpi-romaneio/base-horarios'
 import { resolverParadas, descartarParadaAbertaAlemDoDia } from '@/lib/kpi-romaneio/unitrac'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
-import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
+import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita, AvisoDescasamento } from '@/lib/kpi-romaneio/types'
 import { parseCustos, parseEntregas, montarLinhasRomaneio, rotaParaZona, parseEntregasCompletas, montarLinhasRomaneioCompleto } from './parse-planilhas'
 import { geocodificarPorCoerencia, type ConfiancaCoerencia } from './geocode-coerencia'
 import { geocodificarEnderecos } from '@/lib/kpi-romaneio/geocode'
@@ -35,10 +37,22 @@ export const OBS_POR_CONFIANCA: Partial<Record<ConfiancaCoerencia, string>> = {
   sem_candidato: 'ENDEREÇO NÃO LOCALIZADO (RUA SEM CIDADE NO ROMANEIO)',
 }
 
+// Task 1 (plano 2026-09-30): placa cuja consulta de paradas da Unitrac deu
+// erro/timeout (mesmo apos 1 retry) -- nao da' pra concluir nada sobre ela:
+// nem ENTREGUE nem SEM RASTREADOR. Rotulo neutro, pede conferencia.
+export const OBS_CONSULTA_FALHOU = 'CONSULTA AO RASTREADOR FALHOU - CONFERIR'
+/** Concorrencia maxima de consultas a Unitrac (mesmo valor da Nutry Max). */
+export const LIMITE_CONCORRENCIA_PLACAS_RQ = 6
+/** Tentativas por placa antes de concluir erro (1 + 1 retry). */
+const TENTATIVAS_CONSULTA = 2
+
 export type ResultadoPipelineRioQuality = {
   xlsx: Buffer
   linhasKpi: LinhaKpiRomaneio[]
   detalhe: LinhaDetalheEntrega[]
+  /** Placas cuja consulta de paradas falhou (erro/timeout apos retry). */
+  placasConsultaFalhou: string[]
+  avisos: AvisoDescasamento[]
   estatisticas: {
     entregas: number
     placas: number
@@ -71,7 +85,7 @@ export async function buscarParadasPadraoRioQuality(
   data: string,
 ): Promise<UnitracParadaRow[]> {
   const [daUnitracEventos, horarioBasePorPlaca] = await Promise.all([
-    buscarStopsCru(cv, 48),
+    buscarStopsCruOuErro(cv, 48),
     buscarHorariosBase([placaNorm], data, new Map(), true),
   ])
   // base propria da Rio Quality (descoberta pelo GPS, ver constants.ts) --
@@ -109,11 +123,14 @@ export async function gerarKpiRioQuality(params: {
    *  monitoramento primeiro, Unitrac como sinal secundario -- ver
    *  resolverParadas) */
   buscarParadas?: (cv: string, placaNorm: string, data: string) => Promise<UnitracParadaRow[]>
+  /** injetavel pra teste; padrao = calcularKmPorRastro (rastro da Unitrac) */
+  calcularKm?: (cv: string, data: string) => Promise<number | null>
   log?: (msg: string) => void
 }): Promise<ResultadoPipelineRioQuality> {
   const { custosBuf, entregasBuf, completaBuf, data, cvPorPlaca } = params
   const log = params.log ?? (() => {})
   const buscarParadas = params.buscarParadas ?? buscarParadasPadraoRioQuality
+  const calcularKm = params.calcularKm ?? ((cv: string, d: string) => calcularKmPorRastro(cv, d))
 
   // 1) parse + 2) geocodificacao -- dois formatos de entrada, mesma saida
   // (romaneioGeo: LinhaGeocodificada[], confiancaPorNf, contConf).
@@ -228,14 +245,32 @@ export async function gerarKpiRioQuality(params: {
   const visitasPorPlaca = new Map<string, Map<string, Visita>>()
   const kmPorPlaca = new Map<string, number | null>()
   const temRastreadorPorPlaca = new Map(placasNorm.map(p => [p, cvPorPlaca.has(p)]))
-  await Promise.all(placasNorm.map(async placaNorm => {
+  // Task 1 (plano 2026-09-30, estudo item 4b): antes era Promise.all em TODAS
+  // as placas de uma vez (~100, timeout de 6 s cada) e erro virava [] calado.
+  // Agora: no maximo 6 em paralelo, 1 retry, e erro marca a placa como
+  // "consulta falhou" (fora das conclusoes) em vez de "sem posicao".
+  const placasConsultaFalhou = new Set<string>()
+  await mapComLimite(placasNorm, LIMITE_CONCORRENCIA_PLACAS_RQ, async placaNorm => {
     const cv = cvPorPlaca.get(placaNorm)
-    const paradas = cv ? await buscarParadas(cv, placaNorm, data) : []
+    let paradas: UnitracParadaRow[] = []
+    if (cv) {
+      let ok = false
+      for (let tentativa = 1; tentativa <= TENTATIVAS_CONSULTA && !ok; tentativa++) {
+        try {
+          paradas = await buscarParadas(cv, placaNorm, data)
+          ok = true
+        } catch (e) {
+          log(`Consulta Unitrac falhou (${placaNorm}, tentativa ${tentativa}): ${e instanceof Error ? e.message : String(e)}`)
+        }
+      }
+      if (!ok) placasConsultaFalhou.add(placaNorm)
+    }
     paradasPorPlaca.set(placaNorm, paradas)
     visitasPorPlaca.set(placaNorm, montarVisitasInclusivas(linhasGeoPorPlaca.get(placaNorm) ?? [], paradas))
-    kmPorPlaca.set(placaNorm, cv ? await calcularKmPorRastro(cv, data) : null)
-  }))
+    kmPorPlaca.set(placaNorm, cv && !placasConsultaFalhou.has(placaNorm) ? await calcularKm(cv, data) : null)
+  })
   log(`Placas: ${placasNorm.length}, com CV: ${placasNorm.filter(p => cvPorPlaca.has(p)).length}`)
+  if (placasConsultaFalhou.size > 0) log(`Consulta Unitrac falhou em ${placasConsultaFalhou.size} placa(s): ${[...placasConsultaFalhou].join(', ')}`)
 
   // 4) agregacao por carga (= rota) x placa -- sem escala, sem alvos
   const cargasPorChave = agrupar(romaneioGeo, l => `${l.carga}::${normPlaca(l.placa)}`)
@@ -280,13 +315,20 @@ export async function gerarKpiRioQuality(params: {
         // pendente com GPS de OUTRA placa) foi feita pra Nutry Max; na Rio
         // Quality -- 100 caminhoes na mesma regiao, rua sem numero -- disparou
         // em ~400 entregas na primeira geracao real (05/09), puro ruido.
-        new Map([[placaNorm, paradasPorPlaca.get(placaNorm) ?? []]]),
+        // Consulta falhou: mapa SEM a placa -- "zero posicoes no dia" so'
+        // vale quando a Unitrac respondeu de verdade.
+        placasConsultaFalhou.has(placaNorm) ? new Map() : new Map([[placaNorm, paradasPorPlaca.get(placaNorm) ?? []]]),
         resumo?.kmPercorrido ?? null,
       )
     })
     // confianca da geocodificacao vira observacao -- so' quando pendente (se o
     // GPS confirmou, a coordenada estava boa o bastante) e sem sobrescrever
     // observacao mais grave ja' posta por montarDetalheEntregas
+    // Task 1: placa com consulta falha -- nenhuma conclusao (nem ENTREGUE nem
+    // SEM RASTREADOR); vence qualquer outro rotulo.
+    .map(d => placasConsultaFalhou.has(normPlaca(d.placa))
+      ? { ...d, status: 'pendente' as const, chegada: null, saida: null, tempoParadaMin: null, observacao: OBS_CONSULTA_FALHOU, evidencia: 'sem_evidencia' as const, distParadaM: null, motivo: 'Consulta ao rastreador falhou — conferir', confianca: calcularConfianca('pendente', OBS_CONSULTA_FALHOU) }
+      : d)
     .map(d => {
       contStatus[d.status] = (contStatus[d.status] ?? 0) + 1
       if (d.observacao) return d
@@ -320,10 +362,17 @@ export async function gerarKpiRioQuality(params: {
   log(`Status: ${JSON.stringify(contStatus)}`)
 
   const xlsx = await gerarKpiRomaneioXlsx(linhasKpi, data, [], detalhe, undefined, 'RIO QUALITY')
+  const avisos: AvisoDescasamento[] = [...placasConsultaFalhou].sort().map(placa => ({
+    carga: linhasKpi.find(l => l.placa === placa)?.carga ?? '—',
+    placa,
+    motivo: 'consulta_unitrac_falhou' as const,
+  }))
   return {
     xlsx,
     linhasKpi,
     detalhe,
+    placasConsultaFalhou: [...placasConsultaFalhou].sort(),
+    avisos,
     estatisticas: {
       entregas: romaneioGeo.length,
       placas: placasNorm.length,

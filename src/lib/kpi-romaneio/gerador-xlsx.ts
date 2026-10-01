@@ -65,6 +65,7 @@ const LABEL_MOTIVO: Record<AvisoDescasamento['motivo'], string> = {
   sem_escala: 'sem escala',
   nf_divergente: 'NFs da Escala diferentes do Romaneio',
   consulta_posicoes_suspeita: 'Consulta de posições suspeita — não concluído',
+  consulta_unitrac_falhou: 'Consulta ao rastreador falhou — placa não concluída, conferir',
 }
 
 // Task 2 (plano 2026-09-30, item 2): "Escala X × Romaneio Y (Z NFs a

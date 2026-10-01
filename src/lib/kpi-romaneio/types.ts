@@ -323,7 +323,8 @@ export type LinhaDetalheEntrega = {
 export type AvisoDescasamento = {
   carga: string
   placa: string
-  motivo: 'sem_romaneio' | 'sem_escala' | 'nf_divergente' | 'consulta_posicoes_suspeita'
+  // 'consulta_unitrac_falhou': so' Rio Quality (Task 1, plano 2026-09-30).
+  motivo: 'sem_romaneio' | 'sem_escala' | 'nf_divergente' | 'consulta_posicoes_suspeita' | 'consulta_unitrac_falhou'
   /** So' em 'consulta_posicoes_suspeita' (trava 29/09, coletor fora do ar): placas detectadas sem sinal x placas da escala. */
   semSinal?: number
   totalPlacas?: number

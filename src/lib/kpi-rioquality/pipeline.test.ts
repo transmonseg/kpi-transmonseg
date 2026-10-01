@@ -2,14 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('@/lib/unitrac-api', () => ({
   normPlaca: (p: string) => p.toUpperCase().replace(/[^A-Z0-9]/g, ''),
-  buscarStopsCru: vi.fn(),
   consolidaParadasApi: vi.fn(),
+}))
+vi.mock('./unitrac', () => ({
+  buscarStopsCruOuErro: vi.fn(),
 }))
 vi.mock('@/lib/kpi-romaneio/base-horarios', () => ({
   buscarHorariosBase: vi.fn(),
 }))
 
-import { buscarStopsCru, consolidaParadasApi } from '@/lib/unitrac-api'
+import { consolidaParadasApi } from '@/lib/unitrac-api'
+import { buscarStopsCruOuErro as buscarStopsCru } from './unitrac'
 import { buscarHorariosBase } from '@/lib/kpi-romaneio/base-horarios'
 import { buscarParadasPadraoRioQuality } from './pipeline'
 import { hojeBR } from '@/lib/data-br'
@@ -78,5 +81,13 @@ describe('buscarParadasPadraoRioQuality', () => {
 
     const r = await buscarParadasPadraoRioQuality('12345', 'RQU2G47', diaPassado)
     expect(r).toEqual([])
+  })
+
+  // Task 1 (plano 2026-09-30): erro/timeout do /stops nao vira [] calado --
+  // propaga pro pipeline marcar a placa como CONSULTA FALHOU.
+  it('erro no /stops da Unitrac propaga (nao vira lista vazia)', async () => {
+    vi.mocked(buscarHorariosBase).mockResolvedValue(new Map())
+    vi.mocked(buscarStopsCru).mockRejectedValue(new Error('stops falhou'))
+    await expect(buscarParadasPadraoRioQuality('12345', 'RQU2G47', '2026-09-11')).rejects.toThrow('stops falhou')
   })
 })
