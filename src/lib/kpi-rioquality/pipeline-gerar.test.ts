@@ -320,6 +320,30 @@ describe('gerarKpiRioQuality -- avisos e snapshot de paradas (Task 4)', () => {
     for (const d of r.detalhe) expect(d.observacao ?? '').not.toMatch(/^SEM RASTREADOR/)
   })
 
+  it('dia fora das 48h, snapshot existe mas sem a placa (ou gravada []): CONSULTA FALHOU fora da taxa + aviso sem dado do snapshot', async () => {
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(['AAA1A11', 'BBB2B22', 'CCC3C33']),
+      data: DATA,
+      hoje: '2026-10-05',
+      cvPorPlaca: new Map([['AAA1A11', '1'], ['BBB2B22', '2'], ['CCC3C33', '3']]),
+      buscarParadas: async () => [],
+      medirRastro: async () => ({ km: 30, pontosNoDia: 500 }),
+      // AAA1A11 com paradas; BBB2B22 gravada []; CCC3C33 ausente
+      lerSnapshot: async () => new Map([['AAA1A11', [parada('AAA1A11', '10:00', 15)]], ['BBB2B22', []]]),
+    })
+    for (const d of r.detalhe.filter(x => x.placa === 'AAA1A11')) expect(d.status).not.toBe('pendente')
+    for (const d of r.detalhe.filter(x => x.placa === 'BBB2B22' || x.placa === 'CCC3C33')) {
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe(OBS_CONSULTA_FALHOU)
+    }
+    expect(r.avisos).toContainEqual(expect.objectContaining({ motivo: 'rq_sem_snapshot', placasSemSnapshot: 2 }))
+    const wb = await abrir(r.xlsx)
+    expect(textos(wb.getWorksheet('Avisos')!).some(t => /sem dado do snapshot para 2 placas/i.test(t))).toBe(true)
+    // 2 de 2 NFs confirmadas (as 4 NFs sem dado do snapshot fora da conta)
+    const principal = textos(wb.worksheets[0])
+    expect(principal.some(t => t.includes('TAXA DE CONFIRMAÇÃO: 100,0% (2 de 2 NFs;'))).toBe(true)
+  })
+
   it('dia dentro das 48h: nao le snapshot', async () => {
     let leu = false
     await gerarKpiRioQuality({

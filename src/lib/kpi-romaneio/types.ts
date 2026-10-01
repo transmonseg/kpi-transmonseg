@@ -326,7 +326,9 @@ export type AvisoDescasamento = {
   // 'consulta_unitrac_falhou' e 'rq_*': so' Rio Quality (Tasks 1 e 4, plano
   // 2026-09-30) -- Custos x Entregas e frota, analogos do Escala x Romaneio.
   motivo: 'sem_romaneio' | 'sem_escala' | 'nf_divergente' | 'consulta_posicoes_suspeita' | 'consulta_unitrac_falhou'
-    | 'rq_sem_rota_custos' | 'rq_rota_sem_entregas' | 'rq_placa_sem_cv'
+    | 'rq_sem_rota_custos' | 'rq_rota_sem_entregas' | 'rq_placa_sem_cv' | 'rq_sem_snapshot'
+  /** So' em 'rq_sem_snapshot' (Rio Quality, dia fora das 48h): placas sem dado no snapshot de paradas. */
+  placasSemSnapshot?: number
   /** So' em 'consulta_posicoes_suspeita' (trava 29/09, coletor fora do ar): placas detectadas sem sinal x placas da escala. */
   semSinal?: number
   totalPlacas?: number

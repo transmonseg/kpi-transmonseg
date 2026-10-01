@@ -329,13 +329,20 @@ export async function gerarKpiRioQuality(params: {
       }
       if (!ok) placasConsultaFalhou.add(placaNorm)
     }
+    // Revisao independente 30/09 (falha silenciosa): dia fora das 48h e a
+    // placa ausente do snapshot (ou gravada []) -- a consulta de agora nao
+    // alcanca o dia, entao "zero paradas" aqui e' FALTA DE DADO, nao "nao
+    // foi". Antes saia pendente NAO CONFIRMADO dentro da taxa, sem aviso.
+    // Agora: mesmo tratamento de consulta falhou (fora da taxa) + aviso.
+    const semDado = placasSemDadoNoDia.has(placaNorm) || placasConsultaFalhou.has(placaNorm)
     paradasPorPlaca.set(placaNorm, paradas)
     visitasPorPlaca.set(placaNorm, montarVisitasInclusivas(linhasGeoPorPlaca.get(placaNorm) ?? [], paradas))
-    const rastro = cv && !placasConsultaFalhou.has(placaNorm) ? await medirRastro(cv, data) : { km: null, pontosNoDia: null }
+    const rastro = cv && !semDado ? await medirRastro(cv, data) : { km: null, pontosNoDia: null }
     kmPorPlaca.set(placaNorm, rastro.km)
     pontosRastroPorPlaca.set(placaNorm, rastro.pontosNoDia)
   })
   log(`Placas: ${placasNorm.length}, com CV: ${placasNorm.filter(p => cvPorPlaca.has(p)).length}`)
+  if (placasSemDadoNoDia.size > 0) log(`Sem dado do snapshot para ${placasSemDadoNoDia.size} placa(s): ${[...placasSemDadoNoDia].sort().join(', ')}`)
   if (placasConsultaFalhou.size > 0) log(`Consulta Unitrac falhou em ${placasConsultaFalhou.size} placa(s): ${[...placasConsultaFalhou].join(', ')}`)
 
   // Task 3 (plano 2026-09-30, estudo item 1b): SEM SINAL NO DIA pela Unitrac
@@ -428,7 +435,7 @@ export async function gerarKpiRioQuality(params: {
     // observacao mais grave ja' posta por montarDetalheEntregas
     // Task 1: placa com consulta falha -- nenhuma conclusao (nem ENTREGUE nem
     // SEM RASTREADOR); vence qualquer outro rotulo.
-    .map(d => placasConsultaFalhou.has(normPlaca(d.placa))
+    .map(d => placasConsultaFalhou.has(normPlaca(d.placa)) || placasSemDadoNoDia.has(normPlaca(d.placa))
       ? { ...d, status: 'pendente' as const, chegada: null, saida: null, tempoParadaMin: null, observacao: OBS_CONSULTA_FALHOU, evidencia: 'sem_evidencia' as const, distParadaM: null, motivo: 'Consulta ao rastreador falhou — conferir', confianca: calcularConfianca('pendente', OBS_CONSULTA_FALHOU) }
       : d)
     .map(d => {
@@ -478,6 +485,9 @@ export async function gerarKpiRioQuality(params: {
     placa,
     motivo: 'consulta_unitrac_falhou' as const,
   }))]
+  if (placasSemDadoNoDia.size > 0) {
+    avisos.push({ carga: '—', placa: '—', motivo: 'rq_sem_snapshot', placasSemSnapshot: placasSemDadoNoDia.size })
+  }
   if (travaSemSinal.aviso) {
     avisos.push({ carga: '—', placa: '—', motivo: 'consulta_posicoes_suspeita', semSinal: travaSemSinal.semSinal, totalPlacas: travaSemSinal.totalPlacas })
   }

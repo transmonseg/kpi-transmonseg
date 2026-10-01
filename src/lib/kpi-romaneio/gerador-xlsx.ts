@@ -69,6 +69,7 @@ const LABEL_MOTIVO: Record<AvisoDescasamento['motivo'], string> = {
   rq_sem_rota_custos: 'Placa sem rota no Relatório de Custos',
   rq_rota_sem_entregas: 'Rota sem nenhuma entrega no Relatório de Entregas',
   rq_placa_sem_cv: 'Placa sem CV (rastreador) na frota cadastrada — completar frota',
+  rq_sem_snapshot: 'Sem dado do snapshot de paradas — consulta ao rastreador falhou, conferir',
 }
 
 // Task 2 (plano 2026-09-30, item 2): "Escala X × Romaneio Y (Z NFs a
@@ -84,6 +85,10 @@ function textoAviso(a: AvisoDescasamento): string {
   }
   if (a.motivo === 'consulta_posicoes_suspeita' && a.semSinal != null && a.totalPlacas != null) {
     return textoConsultaPosicoesSuspeita(a.semSinal, a.totalPlacas)
+  }
+  if (a.motivo === 'rq_sem_snapshot' && a.placasSemSnapshot != null) {
+    const n = a.placasSemSnapshot
+    return `Sem dado do snapshot para ${n} placa${n === 1 ? '' : 's'} — consulta ao rastreador falhou, fora da taxa, conferir`
   }
   return LABEL_MOTIVO[a.motivo]
 }
