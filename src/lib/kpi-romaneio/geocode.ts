@@ -49,6 +49,8 @@ import { createServiceClient } from '@/lib/supabase/service'
 // vimos 131km de erro), ou a precisao e' de bairro (fonte cnefe_bairro).
 // Coordenada assim ainda serve como pista fraca, mas NAO pode sustentar
 // "nao foi ao cliente" nem atribuir a entrega a outra placa.
+import { chaveCacheEndereco } from './endereco-cep'
+
 export type ResultadoGeocode = { lat: number; lng: number; fonte?: string; confiavel: boolean; motivo?: string } | null
 
 // Teto de itens por filtro `.in()` na leitura do cache -- request GET,
@@ -175,6 +177,47 @@ function validarResultado(r: unknown): ResultadoGeocode {
   return null
 }
 
+export { separarCep, chaveCacheEndereco } from './endereco-cep'
+
+// Prioridade entre a linha da chave sem CEP e a linha gravada com CEP
+// (01/10): correcao humana vence, depois cadastro Unitrac confirmado, depois
+// o resto. Empate -> a da chave sem CEP (a aprendida antes de 01/10).
+function prioridadeFonte(fonte: string | null | undefined): number {
+  if (fonte === 'manual' || fonte === 'verificacao_manual') return 2
+  if (fonte === 'cadastro_unitrac') return 1
+  return 0
+}
+
+export function escolherLinhaCache<T extends { fonte?: string | null }>(daChave: T | undefined, doBruto: T | undefined): T | undefined {
+  if (!daChave) return doBruto
+  if (!doBruto) return daChave
+  return prioridadeFonte(doBruto.fonte) > prioridadeFonte(daChave.fonte) ? doBruto : daChave
+}
+
+/** Junta as linhas lidas do cache (consultado pela chave sem CEP E pelo texto
+ *  bruto) numa linha por endereco bruto, via `escolherLinhaCache`. */
+export function mesclarLinhasCache<T extends { endereco: string; fonte?: string | null }>(enderecosBrutos: string[], linhas: T[]): Map<string, T> {
+  const porEndereco = new Map(linhas.map(l => [l.endereco, l]))
+  const saida = new Map<string, T>()
+  for (const bruto of enderecosBrutos) {
+    const chave = chaveCacheEndereco(bruto)
+    const escolhida = escolherLinhaCache(porEndereco.get(chave), chave === bruto ? undefined : porEndereco.get(bruto))
+    if (escolhida) saida.set(bruto, escolhida)
+  }
+  return saida
+}
+
+/** Enderecos a consultar no cache pra uma lista de brutos: a chave sem CEP e,
+ *  quando diferente, o proprio bruto (linhas gravadas com CEP em 01/10). */
+export function enderecosParaLerCache(enderecosBrutos: string[]): string[] {
+  const set = new Set<string>()
+  for (const b of enderecosBrutos) {
+    set.add(chaveCacheEndereco(b))
+    set.add(b)
+  }
+  return [...set]
+}
+
 /** Le o que ja tiver no cache proprio pros enderecos pedidos. Fail-open:
  *  qualquer erro (conexao, tabela ausente) devolve mapa vazio -- endereco
  *  vira "faltante" e segue pro caminho lento normal, nunca trava aqui. */
@@ -298,12 +341,18 @@ export async function geocodificarEnderecosComInfo(
 ): Promise<{ resultados: ResultadoGeocode[]; parciais: number }> {
   if (enderecos.length === 0) return { resultados: [], parciais: 0 }
 
-  const doCache = await buscarNoCache(enderecos)
-  const negativos = await buscarNegativosRecentes(enderecos.filter(e => !doCache.has(e)))
+  // Chave do cache = endereco sem o sufixo de CEP (ver separarCep). A ponte
+  // tambem recebe o texto sem CEP (mesmo formato de ate' 30/09); o CEP segue
+  // na linha do romaneio (LinhaRomaneio.cep).
+  const brutosUnicos = [...new Set(enderecos)]
+  const lidos = await buscarNoCache(enderecosParaLerCache(brutosUnicos))
+  const doCache = mesclarLinhasCache(brutosUnicos, [...lidos].map(([endereco, l]) => ({ endereco, ...l })))
+  const chavesSemCache = [...new Set(brutosUnicos.filter(b => !doCache.has(b)).map(chaveCacheEndereco))]
+  const negativos = await buscarNegativosRecentes(chavesSemCache)
   if (negativos.size > 0) {
     console.log(`[kpi-romaneio/geocode] ${negativos.size} endereços pulados por cache negativo (${TTL_NEGATIVO_HORAS}h)`)
   }
-  const faltantes = enderecos.filter(e => !doCache.has(e) && !negativos.has(e))
+  const faltantes = chavesSemCache.filter(c => !negativos.has(c))
 
   const porFaltante = new Map<string, ResultadoGeocode>()
   let parciais = 0
@@ -326,7 +375,15 @@ export async function geocodificarEnderecosComInfo(
     console.warn(`[kpi-romaneio/geocode] geocode parcial -- ${parciais} endereço(s) sem a busca por similaridade (timeout ou teto de ${TETO_BUSCAS_SIMILARIDADE_POR_GERACAO} por geração) -- gere novamente`)
   }
 
-  return { resultados: enderecos.map(e => doCache.get(e) ?? porFaltante.get(e) ?? null), parciais }
+  const semEndereco = (l: { endereco: string; lat: number; lng: number; fonte?: string; confiavel: boolean; motivo?: string }) =>
+    ({ lat: l.lat, lng: l.lng, fonte: l.fonte, confiavel: l.confiavel, motivo: l.motivo })
+  return {
+    resultados: enderecos.map(e => {
+      const c = doCache.get(e)
+      return c ? semEndereco(c) : porFaltante.get(chaveCacheEndereco(e)) ?? null
+    }),
+    parciais,
+  }
 }
 
 /** Cascata ATUAL da ponte, SEM ler nem gravar cache (positivo ou negativo).

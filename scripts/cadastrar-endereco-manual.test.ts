@@ -34,3 +34,11 @@ describe('montarPayloadCadastroManual', () => {
       .toBe('AVENIDA MASCARENHAS DE MORAIS, SN - CHACARA RIO PETROPOLIS, DUQUE DE CAXIAS - LOTE  28  QUADRA  24')
   })
 })
+
+describe('normalizarEndereco - sufixo de CEP (regressao 01/10)', () => {
+  it('tira o sufixo de CEP (mesma chave que geocode.ts le), sem colapsar espaco', () => {
+    expect(normalizarEndereco(' rua antonio cunha, 502 - frigorifico, itaperuna - ** - 28300000 ')).toBe('RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - **')
+    expect(normalizarEndereco('rua x,  10 - centro, italva - * - 28250-000')).toBe('RUA X,  10 - CENTRO, ITALVA - *')
+  })
+})
+

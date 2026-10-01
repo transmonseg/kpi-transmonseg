@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { reposicionarPorAncoras, type GrupoAncoras } from './geocode-ancoras'
+import { enderecosColididosPorCoordenada } from './endereco-cep'
 
 const fetchMock = vi.fn()
 
@@ -62,5 +63,38 @@ describe('reposicionarPorAncoras', () => {
     const r = await reposicionarPorAncoras([])
     expect(r.size).toBe(0)
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('enderecosColididosPorCoordenada', () => {
+  it('2+ enderecos diferentes no mesmo ponto exato: todos colididos', () => {
+    const geo = new Map([
+      ['RUA A, 1 - X, Y - *', { lat: -22.1, lng: -43.1 }],
+      ['RUA A, 99 - X, Y - *', { lat: -22.1, lng: -43.1 }],
+      ['RUA B, 2 - X, Y - *', { lat: -22.2, lng: -43.2 }],
+      ['RUA C, 3 - X, Y - *', null],
+    ])
+    expect([...enderecosColididosPorCoordenada(geo)].sort()).toEqual(['RUA A, 1 - X, Y - *', 'RUA A, 99 - X, Y - *'])
+  })
+
+  // Regressao 01/10: o mesmo endereco com e sem sufixo de CEP (romaneio com
+  // CEP + pao sem CEP, ou CEP com/sem hifen) recebe a MESMA coordenada da mesma
+  // linha do cache -- e' o mesmo endereco, nao colapso de via longa.
+  it('mesmo endereco com e sem CEP no mesmo ponto NAO e colisao', () => {
+    const geo = new Map([
+      ['RUA A, 1 - X, Y - * - 28300000', { lat: -22.1, lng: -43.1 }],
+      ['RUA A, 1 - X, Y - *', { lat: -22.1, lng: -43.1 }],
+      ['RUA A, 1 - X, Y - * - 28300-000', { lat: -22.1, lng: -43.1 }],
+    ])
+    expect(enderecosColididosPorCoordenada(geo).size).toBe(0)
+  })
+
+  it('com CEP e endereco realmente diferente no mesmo ponto: colide (todas as variantes)', () => {
+    const geo = new Map([
+      ['RUA A, 1 - X, Y - * - 28300000', { lat: -22.1, lng: -43.1 }],
+      ['RUA A, 1 - X, Y - *', { lat: -22.1, lng: -43.1 }],
+      ['RUA A, 50 - X, Y - * - 28300000', { lat: -22.1, lng: -43.1 }],
+    ])
+    expect(enderecosColididosPorCoordenada(geo).size).toBe(3)
   })
 })

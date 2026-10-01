@@ -115,3 +115,33 @@ describe('csvBackup', () => {
     expect(csv.split('\n')[1]).toBe('RUA SEM CACHE;;;;;')
   })
 })
+
+// Regressao 01/10/2026: endereco com sufixo de CEP grava/le pela chave sem CEP
+// (src/lib/kpi-romaneio/endereco-cep.ts), igual ao geocode.ts.
+describe('montarUpserts - chave sem o sufixo de CEP', () => {
+  const SEM = 'RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - **'
+  const COM = 'RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - ** - 28300000'
+  const corr = { endereco: COM, lat: -21.2, lng: -41.9, fonte: 'verificacao', evidencia: 'ev' }
+
+  it('correcao com CEP grava na chave sem CEP', () => {
+    const { gravar } = montarUpserts([corr], new Map())
+    expect(gravar.map(g => g.endereco)).toEqual([SEM])
+  })
+
+  it('fonte manual na linha sem CEP bloqueia', () => {
+    const cache = new Map<string, LinhaCacheAtual>([[SEM, { endereco: SEM, lat: 0, lng: 0, confiavel: true, fonte: 'manual', motivo: null }]])
+    const { gravar, pulados } = montarUpserts([corr], cache)
+    expect(gravar).toEqual([])
+    expect(pulados).toEqual([{ endereco: SEM, motivo: 'fonte_manual' }])
+  })
+
+  it('fonte manual na linha antiga COM CEP tambem bloqueia', () => {
+    const cache = new Map<string, LinhaCacheAtual>([[COM, { endereco: COM, lat: 0, lng: 0, confiavel: true, fonte: 'manual', motivo: null }]])
+    expect(montarUpserts([corr], cache).gravar).toEqual([])
+  })
+
+  it('endereco sem CEP: chave identica a de sempre', () => {
+    expect(montarUpserts([{ ...corr, endereco: SEM }], new Map()).gravar.map(g => g.endereco)).toEqual([SEM])
+  })
+})
+

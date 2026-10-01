@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseRomaneioTexto } from './parse-romaneio'
+import { chaveCacheEndereco } from './endereco-cep'
 
 const TEXTO_EXEMPLO = `
 PLACA/MOTORISTA:  RQU6E83 / JOBERTO DA MATA REIS          CARGA/DESTINO:96149 / ITAPERUNA
@@ -88,4 +89,33 @@ Total de 2 clientes
       endereco: 'RUA OLIVIA FARIA, 29 - CENTRO, ITALVA - *',
     })
   })
+
+  // Formato do PDF a partir de 01/10/2026: CEP no fim do endereco (trecho
+  // literal do Romaneio real nutrimax/2026-10-01/b51b33ae...). O parse mantem a
+  // linha como veio (CEP disponivel na linha); quem tira o CEP pra montar a
+  // chave do cache de geocode e' chaveCacheEndereco (geocode.ts).
+  it('formato de 01/10: endereco vem com o sufixo de CEP e a chave do cache sai sem ele', () => {
+    const texto = `
+8012 - Romaneio de Entrega
+01/10/2026 06:40
+PLACA/MOTORISTA:TOS1H26 / ROGERIO BESSA COSTA JUNIOR(CAMPOS)CARGA/DESTINO:99087 / ITAPERUNA
+AJUDANTE(S):,
+2399979 / 5778 - VIVACE  EMPREENDIMENTOS
+RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - ** - 28300000
+NF / CLIENTE:
+2399963 / 136409 - MERCADINHO DO BIGODE
+R JOSE MIRANDA, 101 - CATARINO, CARDOSO MOREIRA - LOJA C LOJA D - 28180-000
+NF / CLIENTE:
+`
+    const linhas = parseRomaneioTexto(texto)
+    expect(linhas.map(l => l.endereco)).toEqual([
+      'RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - ** - 28300000',
+      'R JOSE MIRANDA, 101 - CATARINO, CARDOSO MOREIRA - LOJA C LOJA D - 28180-000',
+    ])
+    expect(linhas.map(l => chaveCacheEndereco(l.endereco))).toEqual([
+      'RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - **',
+      'R JOSE MIRANDA, 101 - CATARINO, CARDOSO MOREIRA - LOJA C LOJA D',
+    ])
+  })
 })
+

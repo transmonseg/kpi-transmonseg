@@ -33,6 +33,8 @@ import { hojeBR } from '../src/lib/data-br'
 import { rodarCorrecao, montarUpsertCadastro, csvBackupCache } from './corrigir-geocode-por-alvo'
 import { coordenadaValidaRj, type LinhaCacheAtual } from './aplicar-correcoes-geocode'
 import type { SugestaoCadastro } from '../src/lib/kpi-romaneio/cadastro-unitrac'
+import { chaveCacheEndereco } from '../src/lib/kpi-romaneio/endereco-cep'
+import { enderecosParaLerCache } from '../src/lib/kpi-romaneio/geocode'
 
 const CLIENTE = 'nutrimax'
 const BUCKET = 'kpi-romaneio-inputs'
@@ -82,9 +84,14 @@ export function montarLoteNoturno(
 ): { gravar: UpsertCadastro[]; pulados: PuladoNoturno[]; candidatos: number; excedeuTeto: boolean } {
   const gravar: UpsertCadastro[] = []
   const pulados: PuladoNoturno[] = []
+  const protegida = (endereco: string) => {
+    const fonte = cacheAtual.get(endereco)?.fonte
+    return fonte != null && FONTES_PROTEGIDAS.has(fonte)
+  }
   for (const s of sugestoes) {
-    const fonte = cacheAtual.get(s.endereco)?.fonte
-    if (fonte != null && FONTES_PROTEGIDAS.has(fonte)) { pulados.push({ endereco: s.endereco, motivo: 'fonte_protegida' }); continue }
+    // Chave sem o sufixo de CEP (regressao 01/10); fonte protegida tanto na
+    // chave quanto na linha antiga gravada com CEP bloqueia.
+    if (protegida(chaveCacheEndereco(s.endereco)) || protegida(s.endereco)) { pulados.push({ endereco: s.endereco, motivo: 'fonte_protegida' }); continue }
     if (!coordenadaValidaRj(s.latNova, s.lngNova)) { pulados.push({ endereco: s.endereco, motivo: 'fora_do_rj' }); continue }
     gravar.push(montarUpsertCadastro(s))
   }
@@ -110,7 +117,7 @@ export async function aplicarCadastroNoturno(
   opcoes: OpcoesAplicar,
 ): Promise<{ gravados: string[]; pulados: PuladoNoturno[]; excedeuTeto: boolean; caminhoBackup: string | null }> {
   const log = opcoes.log ?? ((m: string) => console.log(`[correcao-geocode-noturna] ${m}`))
-  const enderecos = [...new Set(sugestoes.map(s => s.endereco))]
+  const enderecos = enderecosParaLerCache([...new Set(sugestoes.map(s => s.endereco))])
   const cacheAtual = new Map<string, LinhaCacheAtual>()
   for (let i = 0; i < enderecos.length; i += 20) {
     const { data, error } = await svc.from(TABELA_CACHE).select('endereco,lat,lng,confiavel,fonte,motivo').in('endereco', enderecos.slice(i, i + 20))

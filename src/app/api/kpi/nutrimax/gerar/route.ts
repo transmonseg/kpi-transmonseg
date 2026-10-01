@@ -9,6 +9,7 @@ import { parseRomaneio } from '@/lib/kpi-romaneio/parse-romaneio'
 import { parsePao } from '@/lib/kpi-romaneio/parse-pao'
 import { geocodificarEnderecosComInfo } from '@/lib/kpi-romaneio/geocode'
 import { reposicionarPorAncoras } from '@/lib/kpi-romaneio/geocode-ancoras'
+import { chaveCacheEndereco, enderecosColididosPorCoordenada } from '@/lib/kpi-romaneio/endereco-cep'
 import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '@/lib/kpi-romaneio/unitrac'
 import { anexarCoordenadaCadastro, montarMenorDistanciaTrajetoPorNf } from '@/lib/kpi-romaneio/base-horarios'
 import { ajustarChegadaAposUltimaEntrega } from '@/lib/kpi-romaneio/fim-rota'
@@ -240,20 +241,7 @@ export async function POST(req: NextRequest) {
   // de referencia). Fail-open: erro na ponte devolve null pra todo mundo
   // (ja' tratado dentro de reposicionarPorAncoras), o resto do pipeline
   // segue igual a hoje se o resgate nao achar nada melhor.
-  const enderecosColididos = new Set<string>()
-  {
-    const enderecosPorCoord = new Map<string, Set<string>>()
-    for (const [endereco, g] of geoPorEndereco) {
-      if (!g) continue
-      const chave = `${g.lat},${g.lng}`
-      const set = enderecosPorCoord.get(chave) ?? new Set<string>()
-      set.add(endereco)
-      enderecosPorCoord.set(chave, set)
-    }
-    for (const enderecos of enderecosPorCoord.values()) {
-      if (enderecos.size > 1) for (const e of enderecos) enderecosColididos.add(e)
-    }
-  }
+  const enderecosColididos = enderecosColididosPorCoordenada(geoPorEndereco)
 
   const indicePorNf = new Map(romaneioGeo.map((l, i) => [l.nf, i]))
   const precisaResgatePorPlaca = agrupar(
@@ -263,7 +251,7 @@ export async function POST(req: NextRequest) {
   if (precisaResgatePorPlaca.size > 0) {
     const gruposAncoras = [...precisaResgatePorPlaca.entries()].map(([placaNorm, linhas]) => ({
       id: placaNorm,
-      ruas: linhas.map(l => l.endereco),
+      ruas: linhas.map(l => chaveCacheEndereco(l.endereco)),
       ancoras: romaneioGeo
         .filter((o): o is LinhaGeocodificada & { lat: number; lng: number } =>
           normPlaca(o.placa) === placaNorm && o.lat != null && o.lng != null && !enderecosColididos.has(o.endereco))

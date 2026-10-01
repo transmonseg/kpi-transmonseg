@@ -14,9 +14,11 @@
 //   npx tsx --env-file=.env.local scripts/cadastrar-endereco-manual.ts \
 //     "ENDERECO EXATO COMO APARECE NO ROMANEIO" <lat> <lng>
 import { createServiceClient } from '../src/lib/supabase/service'
+import { chaveCacheEndereco } from '../src/lib/kpi-romaneio/endereco-cep'
 
 export function normalizarEndereco(enderecoBruto: string): string {
-  return enderecoBruto.trim().toUpperCase()
+  // Sufixo de CEP fora (regressao 01/10): mesma chave que geocode.ts le/grava.
+  return chaveCacheEndereco(enderecoBruto.trim().toUpperCase())
 }
 
 /** Payload do upsert -- extraido pra funcao pura testavel sem rede.

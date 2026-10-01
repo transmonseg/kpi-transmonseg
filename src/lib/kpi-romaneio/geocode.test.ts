@@ -5,7 +5,7 @@ vi.mock('@/lib/supabase/service', () => ({
 }))
 
 import { createServiceClient } from '@/lib/supabase/service'
-import { geocodificarEnderecos, geocodificarEnderecosComInfo, TETO_BUSCAS_SIMILARIDADE_POR_GERACAO } from './geocode'
+import { geocodificarEnderecos, geocodificarEnderecosComInfo, TETO_BUSCAS_SIMILARIDADE_POR_GERACAO, separarCep, chaveCacheEndereco, escolherLinhaCache } from './geocode'
 
 // Achado 12/09: ResultadoGeocode ganhou `fonte`/`confiavel` (ver migration
 // 20260912000000). Os testes abaixo se importam com lat/lng -- normaliza pra
@@ -241,22 +241,24 @@ describe('geocodificarEnderecos', () => {
 
 /** Mock por tabela: positivo (select.in) e negativo (select.in.gt), com upserts separados. */
 function mockSupabaseTabelas(opts: {
-  positivo?: Array<{ endereco: string; lat: number; lng: number }>
+  positivo?: Array<{ endereco: string; lat: number; lng: number; fonte?: string }>
   negativo?: string[]
   erroNegativo?: boolean
 }) {
   const upsertPositivo = vi.fn().mockResolvedValue({ error: null })
   const upsertNegativo = vi.fn().mockResolvedValue({ error: null })
-  const gtMock = vi.fn().mockImplementation(() =>
-    Promise.resolve(
+  const gtMock = vi.fn()
+  const negativoDoLote = (lote: string[]) => (..._args: unknown[]) => {
+    gtMock(..._args)
+    return Promise.resolve(
       opts.erroNegativo
         ? { data: null, error: { message: 'negativo indisponivel' } }
-        : { data: (opts.negativo ?? []).map(endereco => ({ endereco })), error: null },
-    ),
-  )
+        : { data: (opts.negativo ?? []).filter(e => lote.includes(e)).map(endereco => ({ endereco })), error: null },
+    )
+  }
   const fromMock = vi.fn().mockImplementation((tabela: string) => {
     if (tabela === 'kpi_romaneio_geocode_negativo') {
-      return { select: () => ({ in: () => ({ gt: gtMock }) }), upsert: upsertNegativo }
+      return { select: () => ({ in: (_c: string, lote: string[]) => ({ gt: negativoDoLote(lote) }) }), upsert: upsertNegativo }
     }
     return {
       select: () => ({
@@ -590,5 +592,143 @@ describe('geocodificarSemCache', () => {
     expect(r).toEqual([{ lat: -22.90, lng: -43.56, fonte: 'cnefe', confiavel: true, motivo: undefined }])
     expect(JSON.parse(String((fetchSpy.mock.calls[0][1] as RequestInit).body))).toMatchObject({ validarTerritorio: true })
     expect(fromMock).not.toHaveBeenCalled()
+  })
+})
+
+// Regressao 01/10/2026: o Romaneio de Entrega da Nutry Max passou a trazer o
+// CEP no fim do endereco (" - 28300000", " - 28180-000", " - 2895-0000").
+// A chave do cache era o endereco bruto: 1.883 linhas novas no cache e 218
+// enderecos perderam a coordenada ja' aprendida (60 curadas a mao). Linhas
+// abaixo sao do PDF real de 01/10 (nutrimax/2026-10-01/b51b33ae...).
+describe('separarCep / chaveCacheEndereco', () => {
+  it.each([
+    ['RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - ** - 28300000', 'RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - **', '28300000'],
+    ['R JOSE MIRANDA, 101 - CATARINO, CARDOSO MOREIRA - LOJA C LOJA D - 28180-000', 'R JOSE MIRANDA, 101 - CATARINO, CARDOSO MOREIRA - LOJA C LOJA D', '28180-000'],
+    ['AV JOSE BENTO RIBEIRO DANTAS, 534 - CENTRO, ARMACAO DOS BUZ - B - 2895-0000', 'AV JOSE BENTO RIBEIRO DANTAS, 534 - CENTRO, ARMACAO DOS BUZ - B', '2895-0000'],
+    ['RUA OLIVIA FARIA, 29 - CENTRO, ITALVA - * - 28250000', 'RUA OLIVIA FARIA, 29 - CENTRO, ITALVA - *', '28250000'],
+    ['RUA X, 10 - CENTRO, ITALVA, 28250000', 'RUA X, 10 - CENTRO, ITALVA', '28250000'],
+    ['RUA X, 10 - CENTRO, ITALVA - *  -  28250000 ', 'RUA X, 10 - CENTRO, ITALVA - *', '28250000'],
+  ])('tira o sufixo de CEP: %s', (bruto, chave, cep) => {
+    expect(separarCep(bruto)).toEqual({ chave, cep })
+    expect(chaveCacheEndereco(bruto)).toBe(chave)
+  })
+
+  it.each([
+    'RUA OLIVIA FARIA, 29 - CENTRO, ITALVA - *',
+    // complemento numerico curto do formato antigo (30/09) -- numero de loja/sala, nao CEP
+    'RUA  SEVERINO COUTINHO, 329 - PARQUE PRAZERES, CAMPOS DOS GOYT - 331',
+    'AVENIDA ABILIO AUGUSTO TAVORA, 1111 - DA LUZ, NOVA IGUACU - 4044',
+    // 8 digitos sem separador antes (lote/PLT) nao e' sufixo de CEP
+    'ESTRADA DA BOCA DO MATO, S/N - VARGEM PEQUENA, RIO DE JANEIRO - PLT 50623227',
+    'AV CARLOS MARIGHELLA, 3989 - CHACARAS DE INOA, MARICA - LOJA 02 QUADRA0015 LOTE 0000000001',
+    'ALM JOAO LUIZ ALVES, S/N - URCA, RIO DE JANEIRO - -',
+    'AV. SAQUAREMA, - BACAXA, SAQUAREMA - RJ',
+    // sobraria so' a rua (sem " - bairro") -- nao arrisca cortar
+    'AV BRASIL, 21941570',
+  ])('endereco sem sufixo de CEP fica identico: %s', bruto => {
+    expect(separarCep(bruto)).toEqual({ chave: bruto, cep: null })
+    expect(chaveCacheEndereco(bruto)).toBe(bruto)
+  })
+})
+
+describe('geocodificarEnderecos - chave do cache sem o sufixo de CEP', () => {
+  const SEM = 'RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - **'
+  const COM = `${SEM} - 28300000`
+
+  it('endereco com CEP casa a linha antiga sem CEP: usa a coordenada aprendida, sem chamar a ponte', async () => {
+    mockSupabaseTabelas({ positivo: [{ endereco: SEM, lat: -21.2, lng: -41.9, fonte: 'verificacao_manual' }] })
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const r = await geocodificarEnderecos([COM])
+    expect(r).toEqual([expect.objectContaining({ lat: -21.2, lng: -41.9, fonte: 'verificacao_manual' })])
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('linha com CEP (gravada em 01/10) e linha antiga sem CEP: a antiga vence', async () => {
+    mockSupabaseTabelas({ positivo: [
+      { endereco: COM, lat: -21.0, lng: -41.0, fonte: 'cnefe' },
+      { endereco: SEM, lat: -21.2, lng: -41.9, fonte: 'cnefe' },
+    ] })
+    const r = await geocodificarEnderecos([COM])
+    expect(semExtras(r)).toEqual([{ lat: -21.2, lng: -41.9 }])
+  })
+
+  it.each([
+    ['verificacao_manual', 'cnefe'],
+    ['manual', 'cadastro_unitrac'],
+    ['verificacao_manual', 'parada_alvo'],
+  ])('correcao manual (%s) na linha com CEP vence a linha sem CEP (%s)', async (fonteCom, fonteSem) => {
+    mockSupabaseTabelas({ positivo: [
+      { endereco: COM, lat: -21.0, lng: -41.0, fonte: fonteCom },
+      { endereco: SEM, lat: -21.2, lng: -41.9, fonte: fonteSem },
+    ] })
+    const r = await geocodificarEnderecos([COM])
+    expect(semExtras(r)).toEqual([{ lat: -21.0, lng: -41.0 }])
+  })
+
+  it('linha com CEP so' + "'" + ' existe ela (manual de 01/10, ex. VASSOURAS): continua sendo usada', async () => {
+    mockSupabaseTabelas({ positivo: [{ endereco: COM, lat: -21.0, lng: -41.0, fonte: 'verificacao_manual' }] })
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const r = await geocodificarEnderecos([COM])
+    expect(semExtras(r)).toEqual([{ lat: -21.0, lng: -41.0 }])
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('endereco novo com CEP: a ponte recebe o texto sem CEP e o cache grava a chave sem CEP', async () => {
+    const { upsertPositivo } = mockSupabaseTabelas({})
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaOk([{ lat: 1, lng: 2 }]))
+    const r = await geocodificarEnderecos([COM])
+    expect(semExtras(r)).toEqual([{ lat: 1, lng: 2 }])
+    expect(JSON.parse(fetchSpy.mock.calls[0][1]?.body as string)).toEqual({ enderecos: [SEM] })
+    const gravados = upsertPositivo.mock.calls.flatMap(c => (c[0] as Array<{ endereco: string }>).map(l => l.endereco))
+    expect(gravados).toEqual([SEM])
+  })
+
+  it('mesmo endereco com e sem CEP no mesmo dia: UMA busca na ponte, os dois recebem o resultado', async () => {
+    mockSupabaseTabelas({})
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaOk([{ lat: 1, lng: 2 }]))
+    const r = await geocodificarEnderecos([COM, SEM, `${SEM} - 28300-000`])
+    expect(semExtras(r)).toEqual([{ lat: 1, lng: 2 }, { lat: 1, lng: 2 }, { lat: 1, lng: 2 }])
+    expect(JSON.parse(fetchSpy.mock.calls[0][1]?.body as string)).toEqual({ enderecos: [SEM] })
+  })
+
+  it('cache negativo le pela chave sem CEP', async () => {
+    mockSupabaseTabelas({ negativo: [SEM] })
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    expect(await geocodificarEnderecos([COM])).toEqual([null])
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('cache negativo grava a chave sem CEP', async () => {
+    const outroSem = 'SITIO PERDIDO, S/N - ZONA RURAL, ITALVA - *'
+    const { upsertNegativo } = mockSupabaseTabelas({})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaOk([null]))
+    await geocodificarEnderecos([`${outroSem} - 28250000`])
+    expect((upsertNegativo.mock.calls[0][0] as Array<{ endereco: string }>).map(l => l.endereco)).toEqual([outroSem])
+  })
+
+  it('endereco antigo sem CEP: mesma chave de sempre', async () => {
+    const { upsertPositivo } = mockSupabaseTabelas({})
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaOk([{ lat: 1, lng: 2 }]))
+    await geocodificarEnderecos([SEM])
+    expect(JSON.parse(fetchSpy.mock.calls[0][1]?.body as string)).toEqual({ enderecos: [SEM] })
+    expect((upsertPositivo.mock.calls[0][0] as Array<{ endereco: string }>)[0].endereco).toBe(SEM)
+  })
+})
+
+describe('escolherLinhaCache', () => {
+  const linha = (fonte: string | null) => ({ lat: 0, lng: 0, fonte: fonte ?? undefined, confiavel: true })
+  it('so uma das duas existe: usa ela', () => {
+    expect(escolherLinhaCache(linha('cnefe'), undefined)?.fonte).toBe('cnefe')
+    expect(escolherLinhaCache(undefined, linha('cnefe'))?.fonte).toBe('cnefe')
+    expect(escolherLinhaCache(undefined, undefined)).toBeUndefined()
+  })
+  it('empate de prioridade: a da chave sem CEP vence', () => {
+    expect(escolherLinhaCache({ ...linha('cnefe'), lat: 1 }, { ...linha('cnefe'), lat: 2 })?.lat).toBe(1)
+    expect(escolherLinhaCache({ ...linha('manual'), lat: 1 }, { ...linha('verificacao_manual'), lat: 2 })?.lat).toBe(1)
+  })
+  it('manual > cadastro_unitrac > resto', () => {
+    expect(escolherLinhaCache({ ...linha('cadastro_unitrac'), lat: 1 }, { ...linha('verificacao_manual'), lat: 2 })?.lat).toBe(2)
+    expect(escolherLinhaCache({ ...linha('cnefe'), lat: 1 }, { ...linha('cadastro_unitrac'), lat: 2 })?.lat).toBe(2)
+    expect(escolherLinhaCache({ ...linha('cadastro_unitrac'), lat: 1 }, { ...linha('gps_dwell'), lat: 2 })?.lat).toBe(1)
   })
 })

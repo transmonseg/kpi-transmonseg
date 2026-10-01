@@ -17,6 +17,8 @@
 // verificacao, mesmo mesmo indicando coordenada diferente).
 import { readFileSync, writeFileSync } from 'fs'
 import { createServiceClient } from '../src/lib/supabase/service'
+import { chaveCacheEndereco } from '../src/lib/kpi-romaneio/endereco-cep'
+import { enderecosParaLerCache } from '../src/lib/kpi-romaneio/geocode'
 
 export type LinhaCorrecao = { endereco: string; lat: number; lng: number; fonte: string; evidencia: string }
 
@@ -105,16 +107,18 @@ export function montarUpserts(correcoes: LinhaCorrecao[], cacheAtual: Map<string
   const gravar: ResultadoMontagem['gravar'] = []
   const pulados: ResultadoMontagem['pulados'] = []
   for (const c of correcoes) {
-    const atual = cacheAtual.get(c.endereco)
-    if (atual?.fonte === 'manual') {
-      pulados.push({ endereco: c.endereco, motivo: 'fonte_manual' })
+    // Chave sem o sufixo de CEP (regressao 01/10, ver endereco-cep.ts). Linha
+    // manual tanto na chave quanto na linha antiga gravada com CEP bloqueia.
+    const chave = chaveCacheEndereco(c.endereco)
+    if (cacheAtual.get(chave)?.fonte === 'manual' || cacheAtual.get(c.endereco)?.fonte === 'manual') {
+      pulados.push({ endereco: chave, motivo: 'fonte_manual' })
       continue
     }
     if (!coordenadaValidaRj(c.lat, c.lng)) {
-      pulados.push({ endereco: c.endereco, motivo: 'coordenada_invalida' })
+      pulados.push({ endereco: chave, motivo: 'coordenada_invalida' })
       continue
     }
-    gravar.push({ endereco: c.endereco, lat: c.lat, lng: c.lng, confiavel: true, motivo: null, fonte: 'verificacao_manual' })
+    gravar.push({ endereco: chave, lat: c.lat, lng: c.lng, confiavel: true, motivo: null, fonte: 'verificacao_manual' })
   }
   return { gravar, pulados }
 }
@@ -146,7 +150,7 @@ export async function rodar(csvPath: string, opcoes: { aplicar: boolean; dirSaid
   }
 
   const svc = createServiceClient()
-  const cacheAtual = await lerCacheAtual(svc, correcoes.map(c => c.endereco))
+  const cacheAtual = await lerCacheAtual(svc, enderecosParaLerCache(correcoes.map(c => c.endereco)))
   const { gravar, pulados } = montarUpserts(correcoes, cacheAtual)
   console.log(`gravar=${gravar.length}, pulados=${pulados.length}`)
   for (const p of pulados) console.log(`  pulado (${p.motivo}): ${p.endereco}`)

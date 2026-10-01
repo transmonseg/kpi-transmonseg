@@ -10,6 +10,8 @@ import { buscarAlvosDoDia } from '../src/lib/kpi-romaneio/unitrac'
 import { buscarHorariosBase, type HorarioBase, type ParadaBridge } from '../src/lib/kpi-romaneio/base-horarios'
 import { normPlaca } from '../src/lib/unitrac-api'
 import { createServiceClient } from '../src/lib/supabase/service'
+import { chaveCacheEndereco } from '../src/lib/kpi-romaneio/endereco-cep'
+import { enderecosParaLerCache, mesclarLinhasCache } from '../src/lib/kpi-romaneio/geocode'
 import {
   sugerirCorrecoesPorAlvo, LIMITE_CADASTRO_DIVERGENTE_M,
   type EntregaParaCorrigir, type Rejeicao, type SugestaoCorrecao,
@@ -19,7 +21,7 @@ import { sugerirCadastroUnitrac, type SugestaoCadastro, type RejeicaoCadastro, t
 const limpa = (v: unknown) => String(v ?? '').replace(/[;\n\r]/g, ',')
 
 export function montarUpsertCorrecao(s: SugestaoCorrecao) {
-  return { endereco: s.endereco, lat: s.latNova, lng: s.lngNova, confiavel: true as const, motivo: null, fonte: 'parada_alvo' as const }
+  return { endereco: chaveCacheEndereco(s.endereco), lat: s.latNova, lng: s.lngNova, confiavel: true as const, motivo: null, fonte: 'parada_alvo' as const }
 }
 
 export function csvCorrecoes(sugestoes: SugestaoCorrecao[], rejeicoes: Rejeicao[]): string {
@@ -61,7 +63,7 @@ export function paradasConfiaveis(horarios: Map<string, HorarioBase>): { paradas
 }
 
 export function montarUpsertCadastro(s: SugestaoCadastro) {
-  return { endereco: s.endereco, lat: s.latNova, lng: s.lngNova, confiavel: true as const, motivo: null, fonte: 'cadastro_unitrac' as const }
+  return { endereco: chaveCacheEndereco(s.endereco), lat: s.latNova, lng: s.lngNova, confiavel: true as const, motivo: null, fonte: 'cadastro_unitrac' as const }
 }
 
 export function csvCadastroUnitrac(sugestoes: SugestaoCadastro[], rejeicoes: RejeicaoCadastro[]): string {
@@ -88,15 +90,18 @@ export function entregaDoRomaneio(l: { nf: string; placa: string; endereco: stri
   }
 }
 
+/** Mapa por endereco BRUTO do romaneio. Le pela chave sem CEP e pela linha
+ *  antiga gravada com CEP (01/10) e escolhe igual ao geocode.ts. */
 async function lerCache(enderecos: string[]) {
   const svc = createServiceClient()
-  const mapa = new Map<string, LinhaCache>()
-  for (let i = 0; i < enderecos.length; i += 20) {
-    const { data, error } = await svc.from('kpi_romaneio_geocode_cache').select('endereco,lat,lng,confiavel,fonte').in('endereco', enderecos.slice(i, i + 20))
+  const linhas: (LinhaCache & { endereco: string })[] = []
+  const consultar = enderecosParaLerCache(enderecos)
+  for (let i = 0; i < consultar.length; i += 20) {
+    const { data, error } = await svc.from('kpi_romaneio_geocode_cache').select('endereco,lat,lng,confiavel,fonte').in('endereco', consultar.slice(i, i + 20))
     if (error) throw new Error(`leitura do cache falhou: ${error.message}`)
-    for (const r of data ?? []) mapa.set(r.endereco, { lat: r.lat, lng: r.lng, confiavel: r.confiavel, fonte: r.fonte ?? null })
+    for (const r of data ?? []) linhas.push({ endereco: r.endereco, lat: r.lat, lng: r.lng, confiavel: r.confiavel, fonte: r.fonte ?? null })
   }
-  return mapa
+  return new Map<string, LinhaCache>(mesclarLinhasCache(enderecos, linhas))
 }
 
 /** Corpo de main() extraido pra reuso pelo runner noturno (report-only, ver
@@ -144,7 +149,7 @@ export async function rodarCorrecao(
   }
   const svc = createServiceClient()
   // Backup ANTES de gravar: estado atual das linhas que serao sobrescritas.
-  const alvosDoUpsert = [...sugestoes.map(x => x.endereco), ...cad.sugestoes.map(x => x.endereco)]
+  const alvosDoUpsert = [...new Set([...sugestoes.map(x => x.endereco), ...cad.sugestoes.map(x => x.endereco)].map(chaveCacheEndereco))]
   const backup: Parameters<typeof csvBackupCache>[0] = []
   for (let i = 0; i < alvosDoUpsert.length; i += 20) {
     const { data: rows, error } = await svc.from('kpi_romaneio_geocode_cache').select('endereco,lat,lng,confiavel,fonte,motivo').in('endereco', alvosDoUpsert.slice(i, i + 20))
