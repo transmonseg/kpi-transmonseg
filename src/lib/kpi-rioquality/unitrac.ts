@@ -8,7 +8,10 @@ import type { StopApiCru } from '@/lib/unitrac-api/consolida'
 // sem aviso (falha silenciosa). Variante propria: erro LANCA, vazio e' [].
 // Mesmo endpoint e mesmo filtro de coordenada de buscarStopsCru.
 export async function buscarStopsCruOuErro(cv: string, horas: number): Promise<StopApiCru[]> {
-  const d = (await apiGet(`/mapa_servicos/stops/${cv}/${horas}`)) as { paradas?: StopApiCru[] } | null
-  if (d == null) throw new Error(`consulta /stops da Unitrac falhou (cv ${cv})`)
-  return (d.paradas ?? []).filter(p => p.latitude != null && p.longitude != null && Math.abs(p.latitude) > 1)
+  // Revisao 30/09: 200 sem `paradas` array (corpo de erro) tambem e' ERRO --
+  // conferido ao vivo em 30/09: resposta vazia de verdade vem
+  // {"result":true,"paradas":[]}, inclusive pra CV inexistente.
+  const d = (await apiGet(`/mapa_servicos/stops/${cv}/${horas}`)) as { paradas?: unknown } | null
+  if (d == null || !Array.isArray(d.paradas)) throw new Error(`consulta /stops da Unitrac falhou (cv ${cv})`)
+  return (d.paradas as StopApiCru[]).filter(p => p.latitude != null && p.longitude != null && Math.abs(p.latitude) > 1)
 }

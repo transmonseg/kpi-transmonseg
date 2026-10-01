@@ -89,9 +89,11 @@ export async function calcularKmPorRastro(
  *  "rastro vazio" e "consulta falhou" precisam ser distinguiveis pra
  *  detectar SEM SINAL NO DIA (Task 3, plano 2026-09-30). */
 export async function buscarRastroOuErro(cv: string, horas: number): Promise<PontoRastro[]> {
-  const d = (await apiGet(`/mapa_servicos/rastro/${cv}/${horas}`)) as { posicoes?: PontoRastro[] } | null
-  if (d == null) throw new Error(`consulta /rastro da Unitrac falhou (cv ${cv})`)
-  return d.posicoes ?? []
+  // Revisao 30/09: 200 sem `posicoes` array (corpo de erro) tambem e' ERRO --
+  // rastro vazio de verdade vem {"posicoes":[]} (conferido ao vivo em 30/09).
+  const d = (await apiGet(`/mapa_servicos/rastro/${cv}/${horas}`)) as { posicoes?: unknown } | null
+  if (d == null || !Array.isArray(d.posicoes)) throw new Error(`consulta /rastro da Unitrac falhou (cv ${cv})`)
+  return d.posicoes as PontoRastro[]
 }
 
 export type MedicaoRastro = {
