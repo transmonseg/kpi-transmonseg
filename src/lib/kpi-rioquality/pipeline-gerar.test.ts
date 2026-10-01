@@ -1,10 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest'
 import * as XLSX from 'xlsx'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 
 // Ponta a ponta de gerarKpiRioQuality (formato antigo e novo) com geocode e
 // GPS falsos -- lacuna apontada no estudo de 30/09 (secao 2). Geocode
 // mockado; paradas e km injetados (nada de rede).
+// Relogio fixo: DATA (29/09) precisa ficar dentro da janela de 48h da Unitrac
+// nos testes que nao passam `hoje` (senao o resultado muda conforme o dia em
+// que a suite roda). So' Date e' falso; timers seguem reais.
+vi.useFakeTimers({ toFake: ['Date'] })
+vi.setSystemTime(new Date('2026-09-30T12:00:00-03:00'))
+afterAll(() => { vi.useRealTimers() })
+
 vi.mock('./geocode-coerencia', () => ({ geocodificarPorCoerencia: vi.fn() }))
 vi.mock('@/lib/kpi-romaneio/geocode', () => ({ geocodificarEnderecos: vi.fn() }))
 vi.mock('@/lib/kpi-romaneio/geocode-ancoras', () => ({ reposicionarPorAncoras: vi.fn(async () => new Map()) }))
