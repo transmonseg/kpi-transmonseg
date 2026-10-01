@@ -575,3 +575,20 @@ describe('geocodificarEnderecos - geocode parcial (busca por similaridade limita
     expect(corpos.every(c => c.validarTerritorio === true)).toBe(true)
   })
 })
+
+// Reprocessamento do cache antigo sem fonte (scripts/reprocessar-cache-rq.ts,
+// relatorio 01/10): precisa da cascata ATUAL sem passar pelo cache (o cache e'
+// justamente o que se quer revalidar) e sem gravar nada.
+import { geocodificarSemCache } from './geocode'
+describe('geocodificarSemCache', () => {
+  it('chama a ponte com validarTerritorio, nunca le nem grava o cache', async () => {
+    const { fromMock } = mockSupabaseCache({ linhasNoCache: [{ endereco: 'RUA A, - B, RIO DE JANEIRO - RJ', lat: -22.86, lng: -43.24 }] })
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ resultados: [{ lat: -22.90, lng: -43.56, fonte: 'cnefe', validado: true }] }), { status: 200 }),
+    )
+    const r = await geocodificarSemCache(['RUA A, - B, RIO DE JANEIRO - RJ'], { validarTerritorio: true })
+    expect(r).toEqual([{ lat: -22.90, lng: -43.56, fonte: 'cnefe', confiavel: true, motivo: undefined }])
+    expect(JSON.parse(String((fetchSpy.mock.calls[0][1] as RequestInit).body))).toMatchObject({ validarTerritorio: true })
+    expect(fromMock).not.toHaveBeenCalled()
+  })
+})

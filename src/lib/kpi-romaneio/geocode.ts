@@ -329,6 +329,20 @@ export async function geocodificarEnderecosComInfo(
   return { resultados: enderecos.map(e => doCache.get(e) ?? porFaltante.get(e) ?? null), parciais }
 }
 
+/** Cascata ATUAL da ponte, SEM ler nem gravar cache (positivo ou negativo).
+ *  So' pro reprocessamento do cache antigo (scripts/reprocessar-cache-rq.ts):
+ *  a geracao continua usando geocodificarEnderecosComInfo. */
+export async function geocodificarSemCache(
+  enderecos: string[],
+  opcoes: { validarTerritorio?: boolean } = {},
+): Promise<ResultadoGeocode[]> {
+  const porEndereco = new Map<string, ResultadoGeocode>()
+  await geocodificarPorLotes(enderecos, opcoes, async (lote, resultados) => {
+    lote.forEach((e, i) => porEndereco.set(e, resultados[i]))
+  })
+  return enderecos.map(e => porEndereco.get(e) ?? null)
+}
+
 async function geocodificarPorLotes(
   enderecos: string[],
   opcoes: { validarTerritorio?: boolean },
