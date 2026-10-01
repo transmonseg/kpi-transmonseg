@@ -158,3 +158,24 @@ describe('montarLinhasRomaneioCompleto', () => {
     expect(ruaPorNf.get('LRT6H89-1')).toBe('AVENIDA MARACANA')
   })
 })
+
+// Task 2 (plano 2026-09-30, estudo item 5c): linha de Entregas SEM placa era
+// descartada (`continue`) e a entrega sumia calada do relatorio. Agora fica
+// com placa '' -> CARGA SEM PLACA (fora da taxa) no pipeline.
+describe('linha sem placa (CARGA SEM PLACA)', () => {
+  it('formato antigo: entrega sem placa e mantida com placaNorm vazia', () => {
+    const e = parseEntregas(planilha([['Relatório de Entregas', null], ['Placa', 'Endereço'], ['RJM5B51', 'RUA NOVE'], [null, 'RUA SEM DONO']]))
+    expect(e).toEqual([{ placaNorm: 'RJM5B51', rua: 'RUA NOVE' }, { placaNorm: '', rua: 'RUA SEM DONO' }])
+  })
+  it('formato novo: entrega sem placa e mantida com placaNorm vazia', () => {
+    const e = parseEntregasCompletas(planilha([
+      ['Razão Social', 'Cidade', 'UF', 'Destino', 'Motorista', 'Placa', 'Endereço', 'Bairro'],
+      ['MERCADO X', 'NITEROI', 'RJ', 'NIT 1', 'JOAO', '', 'RUA A', 'CENTRO'],
+    ]))
+    expect(e).toHaveLength(1)
+    expect(e[0].placaNorm).toBe('')
+  })
+  it('linha totalmente vazia continua ignorada', () => {
+    expect(parseEntregas(planilha([['Relatório de Entregas', null], ['Placa', 'Endereço'], [null, null]]))).toEqual([])
+  })
+})

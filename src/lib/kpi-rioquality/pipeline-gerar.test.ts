@@ -113,3 +113,83 @@ describe('gerarKpiRioQuality -- consulta Unitrac (Task 1: erro != vazio)', () =>
     expect(pico).toBeGreaterThan(1)
   })
 })
+
+async function abrir(xlsx: Buffer) {
+  const ExcelJS = (await import('exceljs')).default
+  const wb = new ExcelJS.Workbook()
+  await wb.xlsx.load(xlsx as never)
+  return wb
+}
+function textos(ws: import('exceljs').Worksheet): string[] {
+  const out: string[] = []
+  ws.eachRow(r => r.eachCell(c => { if (typeof c.value === 'string') out.push(c.value) }))
+  return out
+}
+
+describe('gerarKpiRioQuality -- pacote de relatorio (Task 2)', () => {
+  it('placa sem CV sai SEM RASTREADOR (NAO CONTABILIZADO) e fica fora da taxa; linha de TAXA com denominador', async () => {
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(['CCC3C33', 'SEM0C00']),
+      data: DATA,
+      cvPorPlaca: new Map([['CCC3C33', '3']]),
+      buscarParadas: async (_cv, placa) => [parada(placa, '10:00', 15)],
+      calcularKm: async () => 30,
+    })
+    for (const d of r.detalhe.filter(x => x.placa === 'SEM0C00')) {
+      expect(d.observacao).toBe('SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO')
+    }
+    const wb = await abrir(r.xlsx)
+    const principal = textos(wb.worksheets[0])
+    // 2 confirmadas de 2 (as 2 NFs da placa sem CV fora da conta)
+    expect(principal.some(t => t.includes('TAXA DE CONFIRMAÇÃO: 100,0% (2 de 2 NFs; 2 sem rastreador fora da conta)'))).toBe(true)
+  })
+
+  it('resumo (NF CONFIRMADAS) == linhas ENTREGUE do detalhe em toda placa', async () => {
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(['AAA1A11', 'BBB2B22', 'CCC3C33', 'SEM0C00'], 3),
+      data: DATA,
+      cvPorPlaca: new Map([['AAA1A11', '1'], ['BBB2B22', '2'], ['CCC3C33', '3']]),
+      buscarParadas: async (_cv, placa) => {
+        if (placa === 'AAA1A11') throw new Error('x')
+        if (placa === 'BBB2B22') return []
+        return [parada(placa, '10:00', 15)]
+      },
+      calcularKm: async () => 0,
+    })
+    for (const l of r.linhasKpi) {
+      const entregues = r.detalhe.filter(d => d.placa === l.placa && d.carga === l.carga && d.status !== 'pendente').length
+      expect(l.paradasReais).toBe(entregues)
+    }
+  })
+
+  it('linha sem placa vira CARGA SEM PLACA, fora da taxa, sem sumir do relatorio', async () => {
+    const custos = planilha([['Relatório de Custos', null], ['Veículo', 'Rota'], ['CCC3C33', 'NORTE 1']])
+    const entregas = planilha([['Relatório de Entregas', null], ['Placa', 'Endereço'], ['CCC3C33', 'RUA A'], [null, 'RUA SEM DONO']])
+    const r = await gerarKpiRioQuality({
+      custosBuf: custos, entregasBuf: entregas, data: DATA,
+      cvPorPlaca: new Map([['CCC3C33', '3']]),
+      buscarParadas: async (_cv, placa) => [parada(placa, '10:00', 15)],
+      calcularKm: async () => 30,
+    })
+    const semPlaca = r.detalhe.filter(d => d.placa === '')
+    expect(semPlaca).toHaveLength(1)
+    expect(semPlaca[0].observacao).toMatch(/^CARGA SEM PLACA/)
+    const principal = textos((await abrir(r.xlsx)).worksheets[0])
+    expect(principal.some(t => t.includes('(1 de 1 NFs;') && t.includes('1 de carga sem placa'))).toBe(true)
+  })
+
+  it('consulta falhou fica fora da taxa (nem sucesso nem falha)', async () => {
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(['AAA1A11', 'CCC3C33']),
+      data: DATA,
+      cvPorPlaca: new Map([['AAA1A11', '1'], ['CCC3C33', '3']]),
+      buscarParadas: async (_cv, placa) => {
+        if (placa === 'AAA1A11') throw new Error('x')
+        return [parada(placa, '10:00', 15)]
+      },
+      calcularKm: async () => 30,
+    })
+    const principal = textos((await abrir(r.xlsx)).worksheets[0])
+    expect(principal.some(t => t.includes('TAXA DE CONFIRMAÇÃO: 100,0% (2 de 2 NFs;') && t.includes('2 com consulta ao rastreador falha'))).toBe(true)
+  })
+})

@@ -6,11 +6,18 @@ import type { LinhaGeocodificada } from '@/lib/kpi-romaneio/types'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 
 // Revisao final pre-deploy (24/09, item 1): regressao do Rio Quality com
-// placa sem CV. Reproduz EXATAMENTE a forma como kpi-rioquality/pipeline.ts
-// chama agregarPorCarga/montarDetalheEntregas/gerarKpiRomaneioXlsx (sem
-// alvos, so' as paradas da propria placa, sem os parametros opt-in da Nutry
-// Max) e fixa o resultado de 108b4bb: observacao nula, STATUS "PLACA SEM
-// RASTREADOR CADASTRADO - COMPLETAR FROTA" e nenhuma linha de TAXA.
+// placa sem CV. Reproduz a forma como kpi-rioquality/pipeline.ts chama
+// agregarPorCarga/montarDetalheEntregas/gerarKpiRomaneioXlsx (sem alvos, so'
+// as paradas da propria placa).
+//
+// MUDANCA INTENCIONAL (Task 2, plano 2026-09-30-rioquality-aprendizados):
+// decisao do usuario -- "se no dia nao teve rastreador, coloque sem sinal ou
+// nao saiu da base". Antes (108b4bb) a placa sem CV saia "PLACA SEM
+// RASTREADOR CADASTRADO - COMPLETAR FROTA" e o xlsx nao tinha linha de TAXA.
+// Agora a RQ liga `tratarSemRastreadorNoDia` (rotulo da Nutry Max, fora da
+// taxa) e `resumoConfirmacao` (linha de TAXA com denominador). O resto dos
+// opt-ins da Nutry Max (modoPrecisao, rodizio, outra placa, R2, ilha...)
+// continua desligado.
 
 function linha(nf: string, placa: string): LinhaGeocodificada {
   return {
@@ -29,8 +36,10 @@ async function gerarComoRioQuality(placa: string, temRastreador: boolean, parada
     temRastreador,
     new Map([[placa, paradas]]),
     resumo.kmPercorrido ?? null,
+    false, false, false, new Map(),
+    true, // tratarSemRastreadorNoDia (Task 2)
   )
-  const xlsx = await gerarKpiRomaneioXlsx([resumo], '2026-09-20', [], detalhe, undefined, 'RIO QUALITY')
+  const xlsx = await gerarKpiRomaneioXlsx([resumo], '2026-09-20', [], detalhe, undefined, 'RIO QUALITY', { resumoConfirmacao: true })
   const wb = new ExcelJS.Workbook()
   await wb.xlsx.load(xlsx as never)
   return { detalhe, wb }
@@ -42,30 +51,29 @@ function textos(ws: ExcelJS.Worksheet): string[] {
   return out
 }
 
-describe('Rio Quality -- regressao placa sem CV (revisao final 24/09, item 1)', () => {
-  it('placa sem CV: observacao nula, STATUS "PLACA SEM RASTREADOR CADASTRADO - COMPLETAR FROTA", sem linha de TAXA', async () => {
+describe('Rio Quality -- regressao placa sem CV (Task 2, plano 2026-09-30)', () => {
+  it('placa sem CV: STATUS "SEM RASTREADOR - ... NÃO CONTABILIZADO", fora da taxa, linha de TAXA presente', async () => {
     const { detalhe, wb } = await gerarComoRioQuality('RQX1A11', false, [])
 
     for (const d of detalhe) {
       expect(d.status).toBe('pendente')
-      expect(d.observacao).toBeNull()
+      expect(d.observacao).toBe('SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO')
     }
     const aba = wb.getWorksheet('RQX1A11')!
     const status = [4, 5].map(r => aba.getRow(r).getCell(8).value)
     expect(status).toEqual([
-      'PLACA SEM RASTREADOR CADASTRADO - COMPLETAR FROTA',
-      'PLACA SEM RASTREADOR CADASTRADO - COMPLETAR FROTA',
+      'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO',
+      'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO',
     ])
     const principal = textos(wb.worksheets[0])
-    expect(principal.some(t => t.includes('TAXA DE CONFIRMAÇÃO'))).toBe(false)
-    expect(principal.some(t => t.includes('NFs sem rastreador'))).toBe(false)
-    expect(principal.some(t => t.includes('NFs aguardando'))).toBe(false)
+    expect(principal.some(t => t.includes('TAXA DE CONFIRMAÇÃO: 0,0% (0 de 0 NFs; 2 sem rastreador fora da conta)'))).toBe(true)
+    expect(principal.some(t => t.includes('NFs sem rastreador: 2'))).toBe(true)
   })
 
-  it('placa COM CV mas nenhuma posicao no dia: rotulo antigo "NENHUMA POSIÇÃO REPORTADA" (108b4bb), nunca o "NÃO CONTABILIZADO" da Nutry Max', async () => {
+  it('placa COM CV, consulta OK e nenhuma posicao no dia (km desconhecido): SEM RASTREADOR fora da taxa (a trava de sem sinal em massa fica no pipeline, Task 3)', async () => {
     const { detalhe } = await gerarComoRioQuality('RQX2B22', true, [])
     for (const d of detalhe) {
-      expect(d.observacao).toBe('SEM RASTREADOR - NENHUMA POSIÇÃO REPORTADA NO DIA - CONFERIR EQUIPAMENTO')
+      expect(d.observacao).toBe('SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO')
     }
   })
 })

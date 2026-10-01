@@ -333,6 +333,15 @@ function ehAguardando(d: LinhaDetalheEntrega): boolean {
   return (d.observacao?.startsWith(PREFIXO_OBS_AGUARDANDO) ?? false) && !ehSemRastreador(d) && !ehNaoSaiuDaBase(d) && !ehCargaSemPlaca(d)
 }
 
+// Task 2 (plano 2026-09-30, Rio Quality): placa cuja consulta ao rastreador
+// FALHOU (erro/timeout, ver OBS_CONSULTA_FALHOU em kpi-rioquality/pipeline.ts)
+// nao e' sucesso nem falha -- sai das duas taxas (num e denom) e aparece
+// contada a parte. A Nutry Max nunca gera esse rotulo (nada muda nela).
+const PREFIXO_OBS_CONSULTA_FALHOU = 'CONSULTA AO RASTREADOR FALHOU'
+function ehConsultaFalhou(d: LinhaDetalheEntrega): boolean {
+  return (d.observacao?.startsWith(PREFIXO_OBS_CONSULTA_FALHOU) ?? false) && !ehCargaSemPlaca(d) && d.status === 'pendente'
+}
+
 // Fix round 1, item 4 (decisao de negocio da Ana): a taxa "apos conferencia
 // da operacao" tem um denominador PROPRIO, diferente do automatico:
 // - SEM RASTREADOR sem nenhuma resolucao manual ainda fica de fora (a NF
@@ -355,6 +364,7 @@ function entraNoDenominadorPosConferencia(d: LinhaDetalheEntrega): boolean {
   // RASTREADOR aqui -- fora ate' a operacao registrar uma resolucao (que e'
   // exatamente a confirmacao que falta); com resolucao, conta conforme ela.
   if (ehAguardando(d) && !d.resolucaoManual) return false
+  if (ehConsultaFalhou(d) && !d.resolucaoManual) return false
   return true
 }
 
@@ -376,15 +386,17 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   semRastreador: number
   naoSaiuDaBase: number
   cargaSemPlaca: number
+  consultaFalhou: number
   aguardando: number
   revisar: number
 } {
   const semRastreador = detalhe.filter(ehSemRastreador).length
   const naoSaiuDaBase = detalhe.filter(ehNaoSaiuDaBase).length
   const cargaSemPlaca = detalhe.filter(ehCargaSemPlaca).length
-  const revisar = detalhe.filter(d => d.confianca === 'REVISAR' && !ehSemRastreador(d) && !ehCargaSemPlaca(d)).length
+  const revisar = detalhe.filter(d => d.confianca === 'REVISAR' && !ehSemRastreador(d) && !ehCargaSemPlaca(d) && !ehConsultaFalhou(d)).length
   const aguardando = detalhe.filter(ehAguardando).length
-  const base = detalhe.filter(d => !ehSemRastreador(d) && !ehNaoSaiuDaBase(d) && !ehAguardando(d) && !ehCargaSemPlaca(d))
+  const consultaFalhou = detalhe.filter(d => ehConsultaFalhou(d) && !ehSemRastreador(d)).length
+  const base = detalhe.filter(d => !ehSemRastreador(d) && !ehNaoSaiuDaBase(d) && !ehAguardando(d) && !ehCargaSemPlaca(d) && !ehConsultaFalhou(d))
   const denominador = base.length
   // Confirmada = status diferente de 'pendente' (so' ENTREGUE confirmado);
   // NF sem rastreador e REVISAR SEMPRE ficam pendente (nunca confirmam),
@@ -403,7 +415,7 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   const taxaPosConferenciaPct = denominadorPosConferencia > 0
     ? Math.round((1000 * confirmadasPosConferencia) / denominadorPosConferencia) / 10 : 0
 
-  return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, denominadorPosConferencia, semRastreador, naoSaiuDaBase, cargaSemPlaca, aguardando, revisar }
+  return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, denominadorPosConferencia, semRastreador, naoSaiuDaBase, cargaSemPlaca, consultaFalhou, aguardando, revisar }
 }
 
 // Pedido do usuário 26/09 (linha de TAXA auditável): inteiro com separador
@@ -638,6 +650,7 @@ export async function gerarKpiRomaneioXlsx(
       `${formatarInteiroPtBr(resumo.semRastreador)} sem rastreador`,
       ...(resumo.naoSaiuDaBase > 0 ? [`${formatarInteiroPtBr(resumo.naoSaiuDaBase)} que não saíram da base`] : []),
       ...(resumo.cargaSemPlaca > 0 ? [`${formatarInteiroPtBr(resumo.cargaSemPlaca)} de carga sem placa`] : []),
+      ...(resumo.consultaFalhou > 0 ? [`${formatarInteiroPtBr(resumo.consultaFalhou)} com consulta ao rastreador falha`] : []),
     ]
     const foraTexto = `${partesFora.length > 1 ? `${partesFora.slice(0, -1).join(', ')} e ${partesFora[partesFora.length - 1]}` : partesFora[0]} fora da conta`
     const taxaTexto = `${formatarPctUmaCasa(resumo.taxaPct)}% (${formatarInteiroPtBr(resumo.confirmadas)} de ${formatarInteiroPtBr(resumo.denominador)} NFs; ${foraTexto})`

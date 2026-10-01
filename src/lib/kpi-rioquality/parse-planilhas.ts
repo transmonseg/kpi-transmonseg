@@ -69,7 +69,10 @@ export function parseEntregas(buf: Buffer): EntregaRioQuality[] {
   for (const r of rows.slice(h + 1)) {
     const placaNorm = normPlaca(norm(r?.[0]))
     const rua = norm(r?.[1]).toUpperCase()
-    if (!placaNorm || !rua) continue
+    // Task 2 (plano 2026-09-30): linha com rua e SEM placa e' mantida com
+    // placaNorm '' (vira CARGA SEM PLACA, fora da taxa) -- antes era
+    // descartada e a entrega sumia calada do relatorio.
+    if (!rua) continue
     out.push({ placaNorm, rua })
   }
   return out
@@ -175,7 +178,8 @@ export function parseEntregasCompletas(buf: Buffer): EntregaRioQualityCompleta[]
   for (const r of rows.slice(h + 1)) {
     const placaNorm = normPlaca(norm(r?.[iPlaca]))
     const rua = norm(r?.[iEndereco]).toUpperCase()
-    if (!placaNorm || !rua) continue
+    // Task 2: sem placa fica com placaNorm '' (CARGA SEM PLACA), ver parseEntregas.
+    if (!rua) continue
     out.push({
       placaNorm,
       clienteNome: iRazao >= 0 ? norm(r?.[iRazao]) : '',

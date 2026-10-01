@@ -2,7 +2,7 @@ import { normPlaca, consolidaParadasApi } from '@/lib/unitrac-api'
 import { buscarStopsCruOuErro } from './unitrac'
 import { mapComLimite } from '@/lib/kpi-romaneio/concorrencia'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
-import { agregarPorCarga, montarDetalheEntregas, calcularConfianca } from '@/lib/kpi-romaneio/agregacao'
+import { agregarPorCarga, montarDetalheEntregas, calcularConfianca, contarConfirmadasPorCarga } from '@/lib/kpi-romaneio/agregacao'
 import { montarVisitasInclusivas } from './visitas'
 import { BASES_COORD_RIOQUALITY } from './constants'
 // calcularKmPercorrido (soma da reta entre paradas) NAO e' usado aqui de
@@ -274,7 +274,7 @@ export async function gerarKpiRioQuality(params: {
 
   // 4) agregacao por carga (= rota) x placa -- sem escala, sem alvos
   const cargasPorChave = agrupar(romaneioGeo, l => `${l.carga}::${normPlaca(l.placa)}`)
-  const linhasKpi: LinhaKpiRomaneio[] = [...cargasPorChave.entries()]
+  const linhasKpiAgregadas: LinhaKpiRomaneio[] = [...cargasPorChave.entries()]
     .map(([chave, linhasDaCarga]) => {
       const [carga, placaNorm] = chave.split('::')
       return agregarPorCarga(
@@ -291,7 +291,7 @@ export async function gerarKpiRioQuality(params: {
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
-  const resumoPorChave = new Map(linhasKpi.map(l => [`${l.carga}::${l.placa}`, l]))
+  const resumoPorChave = new Map(linhasKpiAgregadas.map(l => [`${l.carga}::${l.placa}`, l]))
 
   const contStatus: Record<string, number> = {}
   const detalhe: LinhaDetalheEntrega[] = [...cargasPorChave.entries()]
@@ -319,6 +319,15 @@ export async function gerarKpiRioQuality(params: {
         // vale quando a Unitrac respondeu de verdade.
         placasConsultaFalhou.has(placaNorm) ? new Map() : new Map([[placaNorm, paradasPorPlaca.get(placaNorm) ?? []]]),
         resumo?.kmPercorrido ?? null,
+        false, // diaEmAndamento
+        false, // verificarAcessoIlha (so' Nutry Max)
+        false, // detectarParadaCurtaCompartilhada (so' Nutry Max)
+        new Map(), // paradasUnitracCruasPropriaPlaca (R2 desligada na RQ)
+        // Task 2 (plano 2026-09-30, decisao do usuario: "se no dia nao teve
+        // rastreador, coloque sem sinal ou nao saiu da base"): placa sem
+        // rastreador no dia sai "SEM RASTREADOR - ... NAO CONTABILIZADO",
+        // fora da taxa (mesmo rotulo/regra da Nutry Max).
+        true, // tratarSemRastreadorNoDia
       )
     })
     // confianca da geocodificacao vira observacao -- so' quando pendente (se o
@@ -361,7 +370,18 @@ export async function gerarKpiRioQuality(params: {
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
   log(`Status: ${JSON.stringify(contStatus)}`)
 
-  const xlsx = await gerarKpiRomaneioXlsx(linhasKpi, data, [], detalhe, undefined, 'RIO QUALITY')
+  // Task 2 (plano 2026-09-30, estudo item 5a): resumo = detalhe. NF
+  // CONFIRMADAS do resumo conta EXATAMENTE as NFs 'ENTREGUE' das abas por
+  // placa (mesmo procedimento da Nutry Max, ver contarConfirmadasPorCarga) --
+  // qualquer regra que confirme/rebaixe no detalhe nunca descasa do resumo.
+  const confirmadasPorChave = contarConfirmadasPorCarga(detalhe)
+  const linhasKpi: LinhaKpiRomaneio[] = linhasKpiAgregadas.map(l => {
+    const paradasReais = confirmadasPorChave.get(`${l.carga}::${l.placa}`) ?? 0
+    return { ...l, paradasReais, status: l.nfPlanejado != null && paradasReais < l.nfPlanejado ? 'INCOMPLETO' : 'OK' }
+  })
+
+  // Task 2 (estudo item 5b): linha de TAXA com denominador escrito.
+  const xlsx = await gerarKpiRomaneioXlsx(linhasKpi, data, [], detalhe, undefined, 'RIO QUALITY', { resumoConfirmacao: true })
   const avisos: AvisoDescasamento[] = [...placasConsultaFalhou].sort().map(placa => ({
     carga: linhasKpi.find(l => l.placa === placa)?.carga ?? '—',
     placa,
