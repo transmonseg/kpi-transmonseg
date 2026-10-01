@@ -4,6 +4,13 @@
 // traz paradas incompletas (ver Task 7, plano 2026-09-24). Mesmo padrão de
 // erro do snapshot-alvos-noturno.ts.
 //
+// Task 4 (plano 2026-09-30-rioquality-aprendizados): tambem captura a Rio
+// Quality -- por CV da tabela kpi_rioquality_frota (a RQ nao tem frota pela
+// API), gravado com empresa 'rioquality'. Consolidacao com a base PROPRIA da
+// RQ (buscarParadasUnitracRioQuality), nunca as bases da Nutry Max. Placa com
+// erro de consulta nao e' gravada (nunca [] por falha). Falha da RQ nao
+// impede a Nutry Max de ser gravada (roda depois dela).
+//
 // Uso: npx tsx --env-file=.env.local scripts/snapshot-paradas-noturno.ts [--dry]
 // --dry: só imprime contagens (sem gravar). Sai com código 1 se a API falhar.
 
@@ -18,6 +25,9 @@ import { hojeBR } from '../src/lib/data-br'
 import { salvarSnapshotParadas } from '../src/lib/kpi-romaneio/paradas-snapshot'
 import { createServiceClient } from '../src/lib/supabase/service'
 import type { UnitracParadaRow } from '../src/lib/kpi/matcher'
+import { buscarFrotaRioQuality } from '../src/lib/kpi-rioquality/frota'
+import { buscarParadasUnitracRioQuality } from '../src/lib/kpi-rioquality/pipeline'
+import { capturarParadasRioQuality, EMPRESA_SNAPSHOT_RIOQUALITY } from '../src/lib/kpi-rioquality/snapshot-paradas'
 
 const RETENCAO_DIAS = 90
 
@@ -71,6 +81,28 @@ async function main() {
     }
   }
 
+  // Rio Quality (Task 4): mesma janela hoje/ontem, empresa 'rioquality'.
+  const frotaRq = await buscarFrotaRioQuality()
+  // buscarFrotaRioQuality engole erro de banco e devolve vazio.
+  if (frotaRq.size === 0) {
+    falhas.push('rioquality: frota vazia (kpi_rioquality_frota)')
+  } else {
+    const rq = await capturarParadasRioQuality(frotaRq, [hoje, ontem], buscarParadasUnitracRioQuality)
+    falhas.push(...rq.falhas.map(f => `rioquality ${f}`))
+    for (const [dia, porPlaca] of rq.porDia) {
+      const comParadas = [...porPlaca].filter(([, ps]) => ps.length > 0).length
+      console.log(`rioquality ${dia}: ${porPlaca.size} de ${frotaRq.size} placas consultadas, ${comParadas} com paradas`)
+      if (dry) continue
+      try {
+        await salvarSnapshotParadas(EMPRESA_SNAPSHOT_RIOQUALITY, dia, porPlaca)
+        salvos++
+      } catch (err) {
+        falhas.push(`salvar rioquality ${dia}`)
+        console.error(`  falha ao salvar snapshot rioquality ${dia}:`, err instanceof Error ? err.message : err)
+      }
+    }
+  }
+
   // Retenção: mesma cadência do snapshot de alvos (snapshot-alvos-noturno.ts)
   // -- apaga linhas mais antigas que RETENCAO_DIAS pra não crescer sem limite.
   const corte = new Date(`${hoje}T12:00:00Z`)
@@ -83,10 +115,12 @@ async function main() {
     return
   }
 
-  const { error, count } = await createServiceClient().from('kpi_paradas_snapshot')
-    .delete({ count: 'exact' }).eq('empresa', CLIENTE_SNAPSHOT).lt('data', limite)
-  if (error) falhas.push(`retencao: ${error.message}`)
-  else console.log(`snapshots antigos apagados (< ${limite}): ${count ?? 0}`)
+  for (const empresa of [CLIENTE_SNAPSHOT, EMPRESA_SNAPSHOT_RIOQUALITY]) {
+    const { error, count } = await createServiceClient().from('kpi_paradas_snapshot')
+      .delete({ count: 'exact' }).eq('empresa', empresa).lt('data', limite)
+    if (error) falhas.push(`retencao ${empresa}: ${error.message}`)
+    else console.log(`snapshots antigos apagados ${empresa} (< ${limite}): ${count ?? 0}`)
+  }
 
   console.log(`dias salvos=${salvos} falhas=${falhas.length}`)
   if (falhas.length > 0) throw new Error(`falhas: ${falhas.join(', ')}`)

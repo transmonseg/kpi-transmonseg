@@ -256,3 +256,81 @@ describe('gerarKpiRioQuality -- sem sinal pela Unitrac e NAO SAIU DA BASE (Task 
     expect(principal.some(t => t.includes('(2 de 2 NFs;') && t.includes('2 que não saíram da base'))).toBe(true)
   })
 })
+
+describe('gerarKpiRioQuality -- avisos e snapshot de paradas (Task 4)', () => {
+  it('aba Avisos: placa sem rota no Custos, rota sem entregas, placa sem CV, consulta falhou e trava sem sinal', async () => {
+    const placas = Array.from({ length: 12 }, (_, i) => `PLC${String(i).padStart(4, '0')}`)
+    const custos = planilha([['Relatório de Custos', null], ['Veículo', 'Rota'], ...placas.map(p => [p, 'NORTE 1']), ['VAZ1A11', 'SUL 9']])
+    const entregas = planilha([['Relatório de Entregas', null], ['Placa', 'Endereço'], ...placas.map(p => [p, `RUA ${p}`]), ['SEM0C00', 'RUA X'], ['ERR1E11', 'RUA Y']])
+    const semSinal = new Set(placas.slice(0, 6))
+    const r = await gerarKpiRioQuality({
+      custosBuf: custos, entregasBuf: entregas, data: DATA,
+      cvPorPlaca: new Map([...placas.map(p => [p, p] as [string, string]), ['ERR1E11', 'E']]),
+      buscarParadas: async (_cv, placa) => {
+        if (placa === 'ERR1E11') throw new Error('x')
+        return semSinal.has(placa) ? [] : [parada(placa, '10:00', 15)]
+      },
+      medirRastro: async cv => semSinal.has(cv) ? { km: null, pontosNoDia: 0 } : { km: 40, pontosNoDia: 900 },
+    })
+    const wb = await abrir(r.xlsx)
+    const avisos = wb.getWorksheet('Avisos')
+    expect(avisos).toBeDefined()
+    const t = textos(avisos!)
+    const linhaCom = (placa: string) => {
+      const out: string[] = []
+      avisos!.eachRow(row => { if (row.getCell(2).value === placa) out.push(String(row.getCell(3).value)) })
+      return out
+    }
+    expect(linhaCom('ERR1E11').join(' ')).toMatch(/Placa sem rota no Relatório de Custos/)
+    expect(linhaCom('SEM0C00').join(' ')).toMatch(/Placa sem rota no Relatório de Custos/)
+    expect(linhaCom('SEM0C00').join(' ')).toMatch(/sem CV/)
+    expect(linhaCom('VAZ1A11').join(' ')).toMatch(/Rota sem nenhuma entrega/)
+    expect(linhaCom('ERR1E11').join(' ')).toMatch(/Consulta ao rastreador falhou/)
+    expect(t.some(x => /sem sinal|posições/i.test(x) && x.includes('6'))).toBe(true)
+  })
+
+  it('dia fora das 48h: usa o snapshot noturno da RQ (empresa rioquality) e confirma pelas paradas guardadas', async () => {
+    const lidos: string[] = []
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(['CCC3C33']),
+      data: DATA,
+      hoje: '2026-10-05',
+      cvPorPlaca: new Map([['CCC3C33', '3']]),
+      buscarParadas: async () => [],
+      medirRastro: async () => ({ km: null, pontosNoDia: null }),
+      lerSnapshot: async (empresa, data) => {
+        lidos.push(`${empresa}/${data}`)
+        return new Map([['CCC3C33', [parada('CCC3C33', '10:00', 15)]]])
+      },
+    })
+    expect(lidos).toEqual([`rioquality/${DATA}`])
+    for (const d of r.detalhe) expect(d.status).not.toBe('pendente')
+  })
+
+  it('dia fora das 48h sem a placa no snapshot: nao conclui sem sinal (falta de dado nao e sem sinal)', async () => {
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(['CCC3C33']),
+      data: DATA,
+      hoje: '2026-10-05',
+      cvPorPlaca: new Map([['CCC3C33', '3']]),
+      buscarParadas: async () => [],
+      medirRastro: async () => ({ km: null, pontosNoDia: 0 }),
+      lerSnapshot: async () => new Map(),
+    })
+    for (const d of r.detalhe) expect(d.observacao ?? '').not.toMatch(/^SEM RASTREADOR/)
+  })
+
+  it('dia dentro das 48h: nao le snapshot', async () => {
+    let leu = false
+    await gerarKpiRioQuality({
+      ...formatoAntigo(['CCC3C33']),
+      data: DATA,
+      hoje: '2026-09-30',
+      cvPorPlaca: new Map([['CCC3C33', '3']]),
+      buscarParadas: async (_cv, placa) => [parada(placa, '10:00', 15)],
+      medirRastro: async () => ({ km: 30, pontosNoDia: 500 }),
+      lerSnapshot: async () => { leu = true; return new Map() },
+    })
+    expect(leu).toBe(false)
+  })
+})

@@ -11,9 +11,13 @@ import { medirRastroDoDia, type MedicaoRastro } from './km-rastro'
 import { placaSemSinalPelaUnitrac, aplicarTravaSemSinal } from '@/lib/kpi-romaneio/placas-sem-rastreador'
 import { buscarHorariosBase } from '@/lib/kpi-romaneio/base-horarios'
 import { resolverParadas, descartarParadaAbertaAlemDoDia } from '@/lib/kpi-romaneio/unitrac'
+import { lerSnapshotParadas, mesclarParadas } from '@/lib/kpi-romaneio/paradas-snapshot'
+import { foraDoAlcanceApi } from '@/lib/kpi-romaneio/constants'
+import { hojeBR } from '@/lib/data-br'
+import { EMPRESA_SNAPSHOT_RIOQUALITY } from './snapshot-paradas'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita, AvisoDescasamento } from '@/lib/kpi-romaneio/types'
-import { parseCustos, parseEntregas, montarLinhasRomaneio, rotaParaZona, parseEntregasCompletas, montarLinhasRomaneioCompleto } from './parse-planilhas'
+import { parseCustos, parseEntregas, montarLinhasRomaneio, rotaParaZona, parseEntregasCompletas, montarLinhasRomaneioCompleto, CARGA_SEM_ROTA } from './parse-planilhas'
 import { geocodificarPorCoerencia, type ConfiancaCoerencia } from './geocode-coerencia'
 import { geocodificarEnderecos } from '@/lib/kpi-romaneio/geocode'
 import { reposicionarPorAncoras } from '@/lib/kpi-romaneio/geocode-ancoras'
@@ -80,21 +84,27 @@ export class EntradaInvalidaError extends Error {}
 // medicao real, agrupar como a Nutry Max ja faz (buscarHorariosBase
 // aceita array de placas). Decisao de nao otimizar cedo: YAGNI ate
 // medir.
+/** So' a parte Unitrac (/stops 48h, consolidado com a base propria da RQ) --
+ *  e' o que o snapshot noturno grava (Task 4, scripts/snapshot-paradas-
+ *  noturno.ts). Erro/timeout lanca (ver buscarStopsCruOuErro). */
+export async function buscarParadasUnitracRioQuality(cv: string, placaNorm: string, data: string): Promise<UnitracParadaRow[]> {
+  // base propria da Rio Quality (descoberta pelo GPS, ver constants.ts) --
+  // NAO usar buscarParadasDoDia, que classifica pelas bases da Nutry Max.
+  // descartarParadaAbertaAlemDoDia: mesmo conserto do achado real 14/09 em
+  // unitrac.ts (parada BASE degenerada que nunca fecha num dia passado).
+  const daUnitracBruto = consolidaParadasApi(await buscarStopsCruOuErro(cv, 48), {}, data, placaNorm, BASES_COORD_RIOQUALITY)
+  return descartarParadaAbertaAlemDoDia(daUnitracBruto, data)
+}
+
 export async function buscarParadasPadraoRioQuality(
   cv: string,
   placaNorm: string,
   data: string,
 ): Promise<UnitracParadaRow[]> {
-  const [daUnitracEventos, horarioBasePorPlaca] = await Promise.all([
-    buscarStopsCruOuErro(cv, 48),
+  const [daUnitrac, horarioBasePorPlaca] = await Promise.all([
+    buscarParadasUnitracRioQuality(cv, placaNorm, data),
     buscarHorariosBase([placaNorm], data, new Map(), true),
   ])
-  // base propria da Rio Quality (descoberta pelo GPS, ver constants.ts) --
-  // NAO usar buscarParadasDoDia, que classifica pelas bases da Nutry Max.
-  // descartarParadaAbertaAlemDoDia: mesmo conserto do achado real 14/09 em
-  // unitrac.ts (parada BASE degenerada que nunca fecha num dia passado).
-  const daUnitracBruto = consolidaParadasApi(daUnitracEventos, {}, data, placaNorm, BASES_COORD_RIOQUALITY)
-  const daUnitrac = descartarParadaAbertaAlemDoDia(daUnitracBruto, data)
   const horario = horarioBasePorPlaca.get(placaNorm)
   return resolverParadas(daUnitrac, horario?.paradas, placaNorm, horario?.apagaoDeSinal ?? false)
 }
@@ -127,12 +137,20 @@ export async function gerarKpiRioQuality(params: {
   /** injetavel pra teste; padrao = medirRastroDoDia (rastro da Unitrac:
    *  km do dia + pontos do dia, null = desconhecido) */
   medirRastro?: (cv: string, data: string) => Promise<MedicaoRastro>
+  /** injetavel pra teste; padrao = lerSnapshotParadas (kpi_paradas_snapshot) */
+  lerSnapshot?: (empresa: string, data: string) => Promise<Map<string, UnitracParadaRow[]>>
+  /** injetavel pra teste; padrao = hojeBR() */
+  hoje?: string
   log?: (msg: string) => void
 }): Promise<ResultadoPipelineRioQuality> {
   const { custosBuf, entregasBuf, completaBuf, data, cvPorPlaca } = params
   const log = params.log ?? (() => {})
   const buscarParadas = params.buscarParadas ?? buscarParadasPadraoRioQuality
   const medirRastro = params.medirRastro ?? ((cv: string, d: string) => medirRastroDoDia(cv, d))
+  const lerSnapshot = params.lerSnapshot ?? lerSnapshotParadas
+  const hoje = params.hoje ?? hojeBR()
+  // Task 4 (avisos, estudo item 5d): Custos x Entregas e frota.
+  const avisosEntrada: AvisoDescasamento[] = []
 
   // 1) parse + 2) geocodificacao -- dois formatos de entrada, mesma saida
   // (romaneioGeo: LinhaGeocodificada[], confiancaPorNf, contConf).
@@ -215,6 +233,13 @@ export async function gerarKpiRioQuality(params: {
     }
     const romaneio = montarLinhasRomaneio(custos, entregas)
     log(`Custos: ${custos.size} placas com rota; Entregas: ${entregas.length} linhas`)
+    const placasComEntrega = new Set(entregas.map(e => e.placaNorm))
+    for (const p of [...placasComEntrega].filter(p => p !== '' && !custos.has(p)).sort()) {
+      avisosEntrada.push({ carga: CARGA_SEM_ROTA, placa: p, motivo: 'rq_sem_rota_custos' })
+    }
+    for (const [p, rota] of [...custos].filter(([p]) => !placasComEntrega.has(p)).sort()) {
+      avisosEntrada.push({ carga: rota, placa: p, motivo: 'rq_rota_sem_entregas' })
+    }
 
     // geocodificacao por coerencia: um grupo por placa, zona pela rota
     const linhasPorPlaca = agrupar(romaneio, l => normPlaca(l.placa))
@@ -241,6 +266,25 @@ export async function gerarKpiRioQuality(params: {
   log(`Geocodificacao: ${JSON.stringify(contConf)}`)
   const placasNorm = [...new Set(romaneioGeo.map(l => normPlaca(l.placa)))]
   const linhasGeoPorPlaca = agrupar(romaneioGeo, l => normPlaca(l.placa))
+  for (const p of placasNorm.filter(p => p !== '' && !cvPorPlaca.has(p)).sort()) {
+    avisosEntrada.push({ carga: linhasGeoPorPlaca.get(p)?.[0]?.carga ?? '—', placa: p, motivo: 'rq_placa_sem_cv' })
+  }
+
+  // Task 4 (estudo item 10): dia fora da janela de 48h do /stops -> paradas do
+  // snapshot noturno da RQ (empresa 'rioquality'), mescladas com a API. Placa
+  // sem snapshot nesse caso = SEM DADO (nunca "sem sinal"). Falha ao ler o
+  // snapshot nunca quebra a geracao (todas ficam sem dado).
+  const foraDaJanelaUnitrac = foraDoAlcanceApi(data, hoje)
+  let snapshotParadas = new Map<string, UnitracParadaRow[]>()
+  if (foraDaJanelaUnitrac) {
+    try {
+      snapshotParadas = await lerSnapshot(EMPRESA_SNAPSHOT_RIOQUALITY, data)
+      log(`Dia fora das 48h da Unitrac: snapshot de paradas com ${snapshotParadas.size} placa(s)`)
+    } catch (e) {
+      log(`Snapshot de paradas indisponivel: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+  const placasSemDadoNoDia = new Set<string>()
 
   // 3) GPS do dia por CV
   const paradasPorPlaca = new Map<string, UnitracParadaRow[]>()
@@ -265,6 +309,15 @@ export async function gerarKpiRioQuality(params: {
           log(`Consulta Unitrac falhou (${placaNorm}, tentativa ${tentativa}): ${e instanceof Error ? e.message : String(e)}`)
         }
       }
+      if (foraDaJanelaUnitrac) {
+        const doSnapshot = snapshotParadas.get(placaNorm) ?? []
+        if (doSnapshot.length > 0) {
+          paradas = mesclarParadas(doSnapshot, paradas)
+          ok = true // o snapshot cobre o dia: a consulta de agora e' dispensavel
+        } else {
+          placasSemDadoNoDia.add(placaNorm)
+        }
+      }
       if (!ok) placasConsultaFalhou.add(placaNorm)
     }
     paradasPorPlaca.set(placaNorm, paradas)
@@ -282,7 +335,7 @@ export async function gerarKpiRioQuality(params: {
   // sem rastreador no dia (temRastreador=false), mesmo efeito da Nutry Max.
   const placasDoDia = placasNorm.filter(p => p !== '')
   const travaSemSinal = aplicarTravaSemSinal(placasDoDia, new Set(placasDoDia.filter(p => cvPorPlaca.has(p) && placaSemSinalPelaUnitrac({
-    consultaOk: !placasConsultaFalhou.has(p),
+    consultaOk: !placasConsultaFalhou.has(p) && !placasSemDadoNoDia.has(p),
     paradas: paradasPorPlaca.get(p) ?? [],
     pontosRastroNoDia: pontosRastroPorPlaca.get(p) ?? null,
   }))))
@@ -411,16 +464,17 @@ export async function gerarKpiRioQuality(params: {
     return { ...l, paradasReais, status: l.nfPlanejado != null && paradasReais < l.nfPlanejado ? 'INCOMPLETO' : 'OK' }
   })
 
-  // Task 2 (estudo item 5b): linha de TAXA com denominador escrito.
-  const xlsx = await gerarKpiRomaneioXlsx(linhasKpi, data, [], detalhe, undefined, 'RIO QUALITY', { resumoConfirmacao: true })
-  const avisos: AvisoDescasamento[] = [...placasConsultaFalhou].sort().map(placa => ({
+  const avisos: AvisoDescasamento[] = [...avisosEntrada, ...[...placasConsultaFalhou].sort().map(placa => ({
     carga: linhasKpi.find(l => l.placa === placa)?.carga ?? '—',
     placa,
     motivo: 'consulta_unitrac_falhou' as const,
-  }))
+  }))]
   if (travaSemSinal.aviso) {
     avisos.push({ carga: '—', placa: '—', motivo: 'consulta_posicoes_suspeita', semSinal: travaSemSinal.semSinal, totalPlacas: travaSemSinal.totalPlacas })
   }
+  // Task 2 (estudo item 5b): linha de TAXA com denominador escrito.
+  // Task 4: avisos (Custos x Entregas, frota, consulta, trava) -> aba Avisos.
+  const xlsx = await gerarKpiRomaneioXlsx(linhasKpi, data, avisos, detalhe, undefined, 'RIO QUALITY', { resumoConfirmacao: true })
   return {
     xlsx,
     linhasKpi,
