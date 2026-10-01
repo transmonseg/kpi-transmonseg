@@ -340,6 +340,28 @@ ${linhaEntrega}
       expect(linhas[0].clienteNome).toBe('SUPERPRIX TIJUCA USINA')
       expect(linhas[0].endereco).toBe('RUA CONDE DE BONFIM ,812 - TIJUCA, RIO DE JANEIRO - *')
     })
+
+    it('PAO 01/10 (NF 216382): NF colada no nome, endereco+bairro colados e numeros colados no fim -- entra, sem aviso', () => {
+      const linha = '216382DEMONSTRACAO MULTIMARKET CAMBAUBA                                     RUA CAMBAUBA, 404JARDIM GUANABARA325,925,9141,62R$'
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const { linhas } = parsePaoTexto(romaneioComEntrega(linha), '2026-09-24')
+      expect(warn).not.toHaveBeenCalled()
+      warn.mockRestore()
+      expect(linhas).toHaveLength(1)
+      expect(linhas[0].nf).toBe('216382')
+      expect(linhas[0].clienteNome).toBe('DEMONSTRACAO MULTIMARKET CAMBAUBA')
+      expect(linhas[0].destino).toBe('JARDIM GUANABARA')
+      expect(linhas[0].endereco).toBe('RUA CAMBAUBA, 404 - JARDIM GUANABARA, RIO DE JANEIRO - *')
+    })
+
+    it('2 colunas sem numero de endereco pra ancorar o corte endereco|bairro: continua descartando com aviso (nao chuta)', () => {
+      const linha = '216383CLIENTE QUALQUER                                     RUA SEM NUMERO JARDIM GUANABARA325,925,9141,62R$'
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const { linhas } = parsePaoTexto(romaneioComEntrega(linha), '2026-09-24')
+      expect(linhas).toHaveLength(0)
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('formato inesperado (2 coluna(s))'))
+      warn.mockRestore()
+    })
   })
 
   it('romaneio sem nenhuma entrega valida (so cabecalho): nao gera linha nem escala, nao quebra', () => {

@@ -117,6 +117,24 @@ function dividirClienteEndereco(restante: string[]): { clienteNome: string; ende
   return { clienteNome: glued, enderecoRua: '' }
 }
 
+// Quebra real do PDF de 01/10 (NF 216382, "...CAMBAUBA      RUA CAMBAUBA,
+// 404JARDIM GUANABARA325,925,9141,62R$"): o split por 2+ espacos so' acha
+// 2 colunas porque ENDERECO, BAIRRO e numeros vieram colados sem espaco.
+// Recupera as 3 colunas so' quando os dois cortes sao inequivocos:
+//  - numeros: sufixo que comeca em digito e termina em "R$", colado logo
+//    depois de uma letra/")" (fim do nome do bairro);
+//  - endereco|bairro: o ULTIMO digito (numero do endereco) seguido de um
+//    trecho so' de letras/espacos/parenteses (o bairro).
+// Endereco sem numero (S/N) nao tem ancora pro corte -- devolve null e a
+// linha segue descartada com aviso, como antes (nunca chuta onde cortar).
+function separarEnderecoBairroNumeros(colado: string): { enderecoRua: string; bairro: string; numeros: string } | null {
+  const n = colado.match(/^(.*[A-Za-zÀ-ÿ)])(\d[\d.,]*\s*R\$)$/)
+  if (!n) return null
+  const eb = n[1].match(/^(.*\d)\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ ()]*)$/)
+  if (!eb) return null
+  return { enderecoRua: eb[1].trim(), bairro: eb[2].trim(), numeros: n[2] }
+}
+
 // A linha de motorista+ajudante nunca tem separador confiavel quando os
 // dois vem preenchidos ("Ednilson RicaldoniLucas Rafael") -- so' "-"
 // isolado (vazio) tem delimitador claro. Ajudante e' informacao de apoio
@@ -252,6 +270,10 @@ export function parsePaoTexto(texto: string, data: string): ResultadoParsePao {
     }
 
     const partes = nf[2].split(/\s{2,}/).map(s => s.trim()).filter(Boolean)
+    if (partes.length === 2 && /^[A-Za-zÀ-ÿ]/.test(partes[0])) {
+      const sep = separarEnderecoBairroNumeros(partes[1])
+      if (sep) partes.splice(1, 1, sep.enderecoRua, sep.bairro, sep.numeros)
+    }
     // Menos de 3 pedacos, ou primeiro pedaco sem nenhuma letra: e' a linha
     // de total (numeros colados), nao uma entrega de verdade -- ignora.
     if (partes.length < 3 || !/[A-Za-zÀ-ÿ]/.test(partes[0])) {
