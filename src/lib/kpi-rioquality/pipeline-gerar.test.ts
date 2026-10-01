@@ -322,7 +322,7 @@ describe('gerarKpiRioQuality -- avisos e snapshot de paradas (Task 4)', () => {
     }
     expect(linhaCom('ERR1E11').join(' ')).toMatch(/Placa sem rota no Relatório de Custos/)
     expect(linhaCom('SEM0C00').join(' ')).toMatch(/Placa sem rota no Relatório de Custos/)
-    expect(linhaCom('SEM0C00').join(' ')).toMatch(/sem CV/)
+    expect(linhaCom('SEM0C00').join(' ')).toMatch(/placa sem CV — rode descobrir-cv/i)
     expect(linhaCom('VAZ1A11').join(' ')).toMatch(/Rota sem nenhuma entrega/)
     expect(linhaCom('ERR1E11').join(' ')).toMatch(/Consulta ao rastreador falhou/)
     expect(t.some(x => /sem sinal|posições/i.test(x) && x.includes('6'))).toBe(true)

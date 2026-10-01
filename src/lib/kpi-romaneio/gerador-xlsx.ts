@@ -68,7 +68,7 @@ const LABEL_MOTIVO: Record<AvisoDescasamento['motivo'], string> = {
   consulta_unitrac_falhou: 'Consulta ao rastreador falhou — placa não concluída, conferir',
   rq_sem_rota_custos: 'Placa sem rota no Relatório de Custos',
   rq_rota_sem_entregas: 'Rota sem nenhuma entrega no Relatório de Entregas',
-  rq_placa_sem_cv: 'Placa sem CV (rastreador) na frota cadastrada — completar frota',
+  rq_placa_sem_cv: 'Placa sem CV — rode descobrir-cv (scripts/descobrir-cv-rq.ts) e confira a frota',
   rq_sem_snapshot: 'Sem dado do snapshot de paradas — consulta ao rastreador falhou, conferir',
   geocode_parcial: 'Geocode parcial — gere novamente',
 }
