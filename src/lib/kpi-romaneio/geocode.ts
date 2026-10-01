@@ -202,6 +202,9 @@ export function escolherLinhaCache<T extends { fonte?: string | null; confiavel?
   if (pBruto !== pChave) return pBruto > pChave ? doBruto : daChave
   if (pBruto > 0) return doBruto
   if (daChave.confiavel === false && doBruto.confiavel !== false) return doBruto
+  // Decisao do coordenador (01/10): linha antiga com fonte NULL e' legado
+  // nunca validado; a linha nova de 01/10 com fonte e confiavel=true vence.
+  if (daChave.fonte == null && doBruto.fonte != null && doBruto.confiavel !== false) return doBruto
   return daChave
 }
 

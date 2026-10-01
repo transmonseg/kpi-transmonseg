@@ -724,7 +724,22 @@ describe('escolherLinhaCache', () => {
   })
   it('empate entre fontes automaticas: a da chave sem CEP (aprendida antes de 01/10) vence', () => {
     expect(escolherLinhaCache({ ...linha('cnefe'), lat: 1 }, { ...linha('cnefe'), lat: 2 })?.lat).toBe(1)
-    expect(escolherLinhaCache({ ...linha(null), lat: 1 }, { ...linha('cnefe_bairro'), lat: 2 })?.lat).toBe(1)
+    expect(escolherLinhaCache({ ...linha('cnefe_bairro'), lat: 1 }, { ...linha('cnefe'), lat: 2 })?.lat).toBe(1)
+  })
+  // Decisao do coordenador (01/10): linha antiga com fonte NULL e' legado nunca
+  // validado (mesmo problema dos ~6.500 "confiaveis sem fonte"); a linha nova
+  // de 01/10 com fonte e confiavel=true vence. Correcao curada nunca perde.
+  it('linha antiga sem fonte (legado) perde pra linha com CEP com fonte e confiavel', () => {
+    expect(escolherLinhaCache({ ...linha(null), lat: 1 }, { ...linha('cnefe'), lat: 2 })?.lat).toBe(2)
+    expect(escolherLinhaCache({ ...linha(null), lat: 1 }, { ...linha('cnefe_bairro'), lat: 2 })?.lat).toBe(2)
+  })
+  it('linha antiga sem fonte fica quando a nova nao tem fonte ou nao e confiavel', () => {
+    expect(escolherLinhaCache({ ...linha(null), lat: 1 }, { ...linha(null), lat: 2 })?.lat).toBe(1)
+    expect(escolherLinhaCache({ ...linha(null), lat: 1 }, { ...linha('cnefe'), confiavel: false, lat: 2 })?.lat).toBe(1)
+  })
+  it.each(['manual', 'verificacao_manual', 'cadastro_unitrac'])('correcao curada (%s) sem CEP nunca perde pra linha nova automatica', fonte => {
+    expect(escolherLinhaCache({ ...linha(fonte), lat: 1 }, { ...linha('cnefe'), lat: 2 })?.lat).toBe(1)
+    expect(escolherLinhaCache({ ...linha(fonte), confiavel: false, lat: 1 }, { ...linha('cnefe'), lat: 2 })?.lat).toBe(1)
   })
   // Medicao 01/10: a linha com CEP so' existe desde 01/10 (depois do fix nada
   // mais grava chave com CEP), entao uma correcao humana / cadastro Unitrac nela
