@@ -361,3 +361,21 @@ describe('gerarKpiRioQuality -- guarda territorial no formato novo (Task 5)', ()
     expect(perto.status).not.toBe('pendente')
   })
 })
+
+describe('gerarKpiRioQuality -- terceiro formato (55 colunas, NF real)', () => {
+  it('detecta pelo cabecalho e gera o KPI com NF real, carga = romaneio, cascata com validarTerritorio', async () => {
+    const { CABECALHO_55, LINHAS_55 } = await import('./entregas-55col.fixture')
+    const { geocodificarEnderecos } = await import('@/lib/kpi-romaneio/geocode')
+    vi.mocked(geocodificarEnderecos).mockImplementation(async enderecos => enderecos.map(() => ({ ...PONTO, confiavel: true, fonte: 'cnefe' })))
+    const r = await gerarKpiRioQuality({
+      completaBuf: planilha([['Relatório de Entregas'], CABECALHO_55, ...LINHAS_55]), data: DATA,
+      cvPorPlaca: new Map([['LAT9F36', '1'], ['LJI4I52', '2'], ['SRJ9H01', '3']]),
+      buscarParadas: async (_cv, placa) => [parada(placa, '10:00', 15)],
+      medirRastro: async () => ({ km: 40, pontosNoDia: 900 }),
+    })
+    expect(vi.mocked(geocodificarEnderecos)).toHaveBeenCalledWith(
+      expect.arrayContaining(['AVENIDA DAS AMERICAS, - BARRA DA TIJUCA, RIO DE JANEIRO - RJ']), { validarTerritorio: true })
+    expect(r.detalhe.map(d => d.nf).sort()).toEqual(['5511706', '5512088', '5512934', '5512949'])
+    expect(r.detalhe.find(d => d.nf === '5512949')).toMatchObject({ carga: '1158583', placa: 'LAT9F36' })
+  })
+})

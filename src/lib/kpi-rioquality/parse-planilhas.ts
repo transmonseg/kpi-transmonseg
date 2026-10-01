@@ -145,6 +145,13 @@ export function montarLinhasRomaneio(custos: Map<string, string>, entregas: Entr
 // ancora de outra parada), CLIENTE de verdade (Razao Social) e MOTORISTA de
 // verdade. Destino ja' vem por linha (evento/rota do dia), sem precisar de
 // planilha de Custos separada.
+//
+// TERCEIRO formato, achado real 30/09 ("Relatório de Entregas (14)", 55
+// colunas): mesmo cabecalho-base (Razão Social/Cidade/Placa) + Nota Fiscal,
+// Cod ERP Cliente, Romaneio, Rota, Check-In/Check-Out, Data Check-In/Out e
+// Status da Entrega. Detectado pela coluna Nota Fiscal: NF REAL, carga =
+// Romaneio, destino = Rota; check-in/status vao pra `gabarito` (nao mexem
+// no KPI). Endereco continua SEM numero (so' logradouro) nesse formato.
 export type EntregaRioQualityCompleta = {
   placaNorm: string
   clienteNome: string
@@ -154,6 +161,31 @@ export type EntregaRioQualityCompleta = {
   motorista: string
   rua: string
   bairro: string
+  // TERCEIRO formato (achado real 30/09, "Relatório de Entregas (14)", 55
+  // colunas): so' preenchidos quando o arquivo tem a coluna -- ausentes no
+  // formato de 8 colunas (ai' a NF continua sintetica).
+  /** Nota Fiscal REAL */
+  nf?: string
+  /** Cod ERP Cliente */
+  clienteCodigo?: string
+  /** Romaneio (1 por placa no dia, 92/92 em 30/09) -> carga */
+  romaneio?: string
+  /** Rota (zona, ex. "SUDOESTE 1") -> destino */
+  rota?: string
+  /** O que a propria RQ registrou (app do motorista). NAO entra no KPI --
+   *  so' gabarito pra medir o KPI (scripts/medir-rioquality-gabarito.ts). */
+  gabarito?: GabaritoEntregaRioQuality
+}
+
+export type GabaritoEntregaRioQuality = {
+  /** "Status da Entrega": Entregue | Faturado | Devolvido | Devolvido Parcial | Entrega Em Andamento */
+  status: string
+  checkIn: boolean
+  checkOut: boolean
+  /** "Data Check-In" cru, "DD/MM/AAAA HH:MM:SS" (horario local) */
+  dataCheckIn: string | null
+  dataCheckOut: string | null
+  motivoDevolucao: string | null
 }
 
 export function parseEntregasCompletas(buf: Buffer): EntregaRioQualityCompleta[] {
@@ -174,6 +206,19 @@ export function parseEntregasCompletas(buf: Buffer): EntregaRioQualityCompleta[]
   const iEndereco = idx(['ENDERECO'])
   const iBairro = idx(['BAIRRO'])
   if (iPlaca < 0 || iEndereco < 0) return []
+  // Terceiro formato: detectado pela coluna Nota Fiscal (o de 8 colunas nao tem).
+  const iNf = idx(['NOTA FISCAL'])
+  const iCodCliente = idx(['COD ERP CLIENTE'])
+  const iRomaneio = idx(['ROMANEIO'])
+  const iRota = idx(['ROTA'])
+  const iStatus = idx(['STATUS DA ENTREGA'])
+  const iCheckIn = idx(['CHECK-IN'])
+  const iCheckOut = idx(['CHECK-OUT'])
+  const iDataCheckIn = idx(['DATA CHECK-IN'])
+  const iDataCheckOut = idx(['DATA CHECK-OUT'])
+  const iMotivo = idx(['MOTIVO DEVOLUCAO/REENTREGA'])
+  const celula = (r: unknown[], i: number) => (i >= 0 ? norm(r?.[i]) : '')
+  const simNao = (r: unknown[], i: number) => semAcentoMaiusculo(celula(r, i)) === 'SIM'
   const out: EntregaRioQualityCompleta[] = []
   for (const r of rows.slice(h + 1)) {
     const placaNorm = normPlaca(norm(r?.[iPlaca]))
@@ -189,6 +234,22 @@ export function parseEntregasCompletas(buf: Buffer): EntregaRioQualityCompleta[]
       motorista: iMotorista >= 0 ? norm(r?.[iMotorista]) : '',
       rua,
       bairro: iBairro >= 0 ? norm(r?.[iBairro]).toUpperCase() : '',
+      ...(iNf >= 0 && celula(r, iNf) ? { nf: celula(r, iNf) } : {}),
+      ...(iCodCliente >= 0 ? { clienteCodigo: celula(r, iCodCliente) } : {}),
+      ...(iNf >= 0 && iRomaneio >= 0 && celula(r, iRomaneio) ? { romaneio: celula(r, iRomaneio) } : {}),
+      ...(iNf >= 0 && iRota >= 0 && celula(r, iRota) ? { rota: celula(r, iRota) } : {}),
+      ...(iStatus >= 0
+        ? {
+            gabarito: {
+              status: celula(r, iStatus),
+              checkIn: simNao(r, iCheckIn),
+              checkOut: simNao(r, iCheckOut),
+              dataCheckIn: celula(r, iDataCheckIn) || null,
+              dataCheckOut: celula(r, iDataCheckOut) || null,
+              motivoDevolucao: celula(r, iMotivo) || null,
+            },
+          }
+        : {}),
     })
   }
   return out
@@ -219,21 +280,31 @@ export function montarLinhasRomaneioCompleto(entregas: EntregaRioQualityCompleta
   const seq = new Map<string, number>()
   const enderecoBrutoPorNf = new Map<string, string>()
   const ruaPorNf = new Map<string, string>()
+  const nfsUsadas = new Map<string, number>()
   const linhas = entregas.map(e => {
     const n = (seq.get(e.placaNorm) ?? 0) + 1
     seq.set(e.placaNorm, n)
-    const nf = `${e.placaNorm}-${n}`
+    // Terceiro formato: NF REAL. Repetida (nao aconteceu em 30/09, mas um
+    // pedido partido em duas linhas seria isso) ganha sufixo -- visitas e
+    // confianca sao indexadas por NF, colisao fundiria duas entregas.
+    let nf = `${e.placaNorm}-${n}`
+    if (e.nf) {
+      const k = (nfsUsadas.get(e.nf) ?? 0) + 1
+      nfsUsadas.set(e.nf, k)
+      nf = k === 1 ? e.nf : `${e.nf}-${k}`
+    }
     enderecoBrutoPorNf.set(nf, montarEnderecoBrutoCompleto(e.rua, e.bairro, e.cidade, e.uf))
     ruaPorNf.set(nf, e.rua)
     const rota = e.destino || CARGA_SEM_ROTA
+    // Terceiro formato: carga = Romaneio (1 por placa), destino = Rota (zona).
     return {
-      carga: rota,
-      destino: rota,
+      carga: e.romaneio || rota,
+      destino: e.rota || rota,
       placa: e.placaNorm,
       motorista: e.motorista,
       ajudantes: [],
       nf,
-      clienteCodigo: '',
+      clienteCodigo: e.clienteCodigo ?? '',
       clienteNome: e.clienteNome || e.rua,
       endereco: enderecoParaExibir(e),
     }

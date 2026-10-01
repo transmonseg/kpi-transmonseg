@@ -179,3 +179,65 @@ describe('linha sem placa (CARGA SEM PLACA)', () => {
     expect(parseEntregas(planilha([['Relatório de Entregas', null], ['Placa', 'Endereço'], [null, null]]))).toEqual([])
   })
 })
+
+// TERCEIRO formato (achado real 30/09, "Relatório de Entregas (14)"): 55
+// colunas com NF real, codigo do cliente, romaneio, rota, check-in/out e
+// status da entrega. Detectado pelo cabecalho; sai nas MESMAS linhas do
+// formato novo, mas com NF real e gabarito (check-in/status) opcional.
+import { CABECALHO_55, LINHAS_55, colunaIdx } from './entregas-55col.fixture'
+
+const ARQ_55 = planilha([['Relatório de Entregas'], CABECALHO_55, ...LINHAS_55])
+
+describe('formato 55 colunas (NF real + check-in)', () => {
+  it('detecta pelo cabeçalho e lê NF real, código do cliente, romaneio, rota e gabarito', () => {
+    const e = parseEntregasCompletas(ARQ_55)
+    expect(e).toHaveLength(4)
+    expect(e[0]).toMatchObject({
+      placaNorm: 'LAT9F36', clienteNome: 'BUCANEIROS RECREIO LTDA', cidade: 'RIO DE JANEIRO', uf: 'RJ',
+      destino: 'TROVAO -  RECREIO - 30/09', motorista: 'LUIZ EDUARDO RIBEIRO',
+      rua: 'AVENIDA DAS AMERICAS', bairro: 'BARRA DA TIJUCA',
+      nf: '5512949', clienteCodigo: '99419', romaneio: '1158583', rota: 'SUDOESTE 1',
+      gabarito: {
+        status: 'Entregue', checkIn: true, checkOut: true,
+        dataCheckIn: '30/09/2026 10:30:43', dataCheckOut: '30/09/2026 10:31:06', motivoDevolucao: null,
+      },
+    })
+    expect(e[1].gabarito).toMatchObject({ status: 'Faturado', checkIn: false, checkOut: false, dataCheckIn: null })
+    expect(e[2].gabarito).toMatchObject({ status: 'Devolvido', checkIn: true, motivoDevolucao: 'PEDIDO EM DESACORDO' })
+  })
+  it('apara espaços de cidade/bairro/cliente (o arquivo real tem padding)', () => {
+    const linha = [...LINHAS_55[0]]
+    linha[colunaIdx('Cidade')] = 'RIO DE JANEIRO      '
+    linha[colunaIdx('Bairro')] = 'RECREIO DOS BANDEIRANTES  '
+    const e = parseEntregasCompletas(planilha([['Relatório de Entregas'], CABECALHO_55, linha]))
+    expect(e[0].cidade).toBe('RIO DE JANEIRO')
+    expect(e[0].bairro).toBe('RECREIO DOS BANDEIRANTES')
+  })
+  it('vira LinhaRomaneio com NF REAL, carga = romaneio, destino = rota, código do cliente, endereço bruto com cidade/UF', () => {
+    const { linhas, enderecoBrutoPorNf, ruaPorNf } = montarLinhasRomaneioCompleto(parseEntregasCompletas(ARQ_55))
+    expect(linhas[0]).toMatchObject({
+      carga: '1158583', destino: 'SUDOESTE 1', placa: 'LAT9F36', nf: '5512949',
+      clienteCodigo: '99419', clienteNome: 'BUCANEIROS RECREIO LTDA', motorista: 'LUIZ EDUARDO RIBEIRO',
+      endereco: 'AVENIDA DAS AMERICAS - BARRA DA TIJUCA, RIO DE JANEIRO',
+    })
+    expect(linhas.map(l => l.nf)).toEqual(['5512949', '5512934', '5511706', '5512088'])
+    expect(enderecoBrutoPorNf.get('5512088')).toBe('10 R EZER TEIXEIRA DE MELLO, - PRAIA DOS ANJOS, ARRAIAL DO CABO - RJ')
+    expect(ruaPorNf.get('5511706')).toBe('RUA CUSTODIO NUNES')
+  })
+  it('linha sem placa fica com placa vazia (CARGA SEM PLACA no pipeline)', () => {
+    const linha = [...LINHAS_55[0]]
+    linha[colunaIdx('Placa')] = null
+    const { linhas } = montarLinhasRomaneioCompleto(parseEntregasCompletas(planilha([['Relatório de Entregas'], CABECALHO_55, linha])))
+    expect(linhas).toHaveLength(1)
+    expect(linhas[0]).toMatchObject({ placa: '', nf: '5512949' })
+  })
+  it('NF repetida no arquivo não colide (sufixo), para não fundir visitas', () => {
+    const { linhas } = montarLinhasRomaneioCompleto(parseEntregasCompletas(planilha([['Relatório de Entregas'], CABECALHO_55, LINHAS_55[0], LINHAS_55[0]])))
+    expect(linhas.map(l => l.nf)).toEqual(['5512949', '5512949-2'])
+  })
+  it('formato novo de 8 colunas continua sem NF real nem gabarito', () => {
+    const e = parseEntregasCompletas(COMPLETA)
+    expect(e[0].nf).toBeUndefined()
+    expect(e[0].gabarito).toBeUndefined()
+  })
+})
