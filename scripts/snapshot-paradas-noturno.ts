@@ -11,6 +11,15 @@
 // erro de consulta nao e' gravada (nunca [] por falha). Falha da RQ nao
 // impede a Nutry Max de ser gravada (roda depois dela).
 //
+// Revisao independente 30/09: cada consulta /stops (placa x dia) tem 1 retry
+// com pequena espera (comUmRetry) -- Nutry Max e Rio Quality. Falha numa
+// placa nunca derruba a gravacao das outras. Nutry Max: fora o retry, nada
+// muda (qualquer falha restante ainda sai com codigo 1). Rio Quality: falha
+// por placa fica no log; so' sai com codigo 1 se mais de
+// LIMITE_FRACAO_FALHAS_SNAPSHOT_RQ (20%) das consultas RQ falharem (ver
+// snapshot-paradas.ts). Frota vazia, erro ao salvar e retencao seguem
+// saindo com codigo 1.
+//
 // Uso: npx tsx --env-file=.env.local scripts/snapshot-paradas-noturno.ts [--dry]
 // --dry: só imprime contagens (sem gravar). Sai com código 1 se a API falhar.
 
@@ -27,7 +36,10 @@ import { createServiceClient } from '../src/lib/supabase/service'
 import type { UnitracParadaRow } from '../src/lib/kpi/matcher'
 import { buscarFrotaRioQuality } from '../src/lib/kpi-rioquality/frota'
 import { buscarParadasUnitracRioQuality } from '../src/lib/kpi-rioquality/pipeline'
-import { capturarParadasRioQuality, EMPRESA_SNAPSHOT_RIOQUALITY } from '../src/lib/kpi-rioquality/snapshot-paradas'
+import {
+  capturarParadasRioQuality, EMPRESA_SNAPSHOT_RIOQUALITY, comUmRetry,
+  falhasSnapshotRqExcedemLimite, LIMITE_FRACAO_FALHAS_SNAPSHOT_RQ,
+} from '../src/lib/kpi-rioquality/snapshot-paradas'
 
 const RETENCAO_DIAS = 90
 
@@ -58,7 +70,7 @@ async function main() {
     // ONTEM (cobre o que ainda sobra da janela de 48h daquele dia).
     for (const dia of [hoje, ontem]) {
       try {
-        const paradas = await buscarParadasDoDia(veiculo.cv, veiculo.placaNorm, dia, 48)
+        const paradas = await comUmRetry(() => buscarParadasDoDia(veiculo.cv, veiculo.placaNorm, dia, 48))
         porDia.get(dia)!.set(veiculo.placaNorm, paradas)
       } catch (err) {
         falhas.push(`${veiculo.placaNorm}/${dia}`)
@@ -88,7 +100,13 @@ async function main() {
     falhas.push('rioquality: frota vazia (kpi_rioquality_frota)')
   } else {
     const rq = await capturarParadasRioQuality(frotaRq, [hoje, ontem], buscarParadasUnitracRioQuality)
-    falhas.push(...rq.falhas.map(f => `rioquality ${f}`))
+    if (rq.falhas.length > 0) {
+      const pct = Math.round((100 * rq.falhas.length) / rq.totalConsultas)
+      console.error(`rioquality: ${rq.falhas.length} de ${rq.totalConsultas} consultas falharam apos retry (${pct}%): ${rq.falhas.join(', ')}`)
+      if (falhasSnapshotRqExcedemLimite(rq.falhas.length, rq.totalConsultas)) {
+        falhas.push(`rioquality: ${rq.falhas.length} de ${rq.totalConsultas} consultas falharam (> ${LIMITE_FRACAO_FALHAS_SNAPSHOT_RQ * 100}%)`)
+      }
+    }
     for (const [dia, porPlaca] of rq.porDia) {
       const comParadas = [...porPlaca].filter(([, ps]) => ps.length > 0).length
       console.log(`rioquality ${dia}: ${porPlaca.size} de ${frotaRq.size} placas consultadas, ${comParadas} com paradas`)
