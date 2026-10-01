@@ -4,7 +4,7 @@ import { mapComLimite } from '@/lib/kpi-romaneio/concorrencia'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { agregarPorCarga, montarDetalheEntregas, calcularConfianca, contarConfirmadasPorCarga } from '@/lib/kpi-romaneio/agregacao'
 import { montarVisitasInclusivas } from './visitas'
-import { BASES_COORD_RIOQUALITY } from './constants'
+import { BASES_COORD_RIOQUALITY, EXTENSAO_RUA_LONGA_M } from './constants'
 // calcularKmPercorrido (soma da reta entre paradas) NAO e' usado aqui de
 // proposito -- subestima 43% a 65%. Ver km-rastro.ts.
 import { medirRastroDoDia, type MedicaoRastro } from './km-rastro'
@@ -57,6 +57,11 @@ export const OBS_CONSULTA_SUSPEITA = 'CONSULTA AO RASTREADOR SUSPEITA - CONFERIR
 // PROPRIA na mesma rua/municipio, endereco sem numero.
 export const OBS_CORREDOR_DA_RUA = 'ENTREGUE - PARADA NA MESMA RUA (endereço sem número, horário aproximado)'
 /** Teto de ruas por chamada a ponte de coerencia (o limite de la e' 4000). */
+// Item 2 (relatorio 01/10): rua longa sem numero e nenhuma parada da placa na
+// rua -- o ponto e' de UM trecho e pode estar longe do cliente: nunca "NAO
+// FOI AO CLIENTE". Continua pendente, dentro da taxa.
+export const OBS_COORDENADA_APROXIMADA_RUA = 'COORDENADA APROXIMADA (RUA SEM NÚMERO) - CONFERIR'
+const OBS_NAO_FOI_AO_CLIENTE = 'NÃO FOI AO CLIENTE (caminhão não esteve na região)'
 const MAX_RUAS_CORREDOR_POR_CHAMADA = 3_000
 const MAX_RUAS_CORREDOR_POR_GRUPO = 500
 /** Concorrencia maxima de consultas a Unitrac (mesmo valor da Nutry Max). */
@@ -502,6 +507,9 @@ export async function gerarKpiRioQuality(params: {
       : placasConsultaSuspeita.has(normPlaca(d.placa))
         ? { ...d, status: 'pendente' as const, chegada: null, saida: null, tempoParadaMin: null, observacao: OBS_CONSULTA_SUSPEITA, evidencia: 'sem_evidencia' as const, distParadaM: null, motivo: 'Consulta ao rastreador suspeita (sem sinal em massa) — conferir', confianca: calcularConfianca('pendente', OBS_CONSULTA_SUSPEITA) }
         : d)
+    .map(d => d.status === 'pendente' && d.observacao === OBS_NAO_FOI_AO_CLIENTE && (extensaoCorredorPorNf.get(d.nf) ?? 0) > EXTENSAO_RUA_LONGA_M
+      ? { ...d, observacao: OBS_COORDENADA_APROXIMADA_RUA, motivo: `Endereço sem número em rua longa (mais de ${EXTENSAO_RUA_LONGA_M / 1000} km): coordenada é de um trecho da rua e a placa não parou na rua — conferir`, confianca: calcularConfianca('pendente', OBS_COORDENADA_APROXIMADA_RUA) }
+      : d)
     .map(d => {
       contStatus[d.status] = (contStatus[d.status] ?? 0) + 1
       if (d.observacao) return d

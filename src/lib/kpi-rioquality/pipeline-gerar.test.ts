@@ -541,6 +541,42 @@ describe('gerarKpiRioQuality -- corredor da rua (endereco sem numero, formatos c
     }
   })
 
+  // Item 2: rua longa (pontos CNEFE espalhados por > 1 km) e nenhuma parada
+  // da placa na rua -> o ponto pode estar longe do cliente: rotulo honesto em
+  // vez de 'NAO FOI AO CLIENTE'. Continua pendente, DENTRO da taxa.
+  it('rua longa sem parada da placa na rua: COORDENADA APROXIMADA (RUA SEM NUMERO) - CONFERIR, pendente e dentro da taxa', async () => {
+    const completa = await preparar()
+    const r = await gerarKpiRioQuality({
+      completaBuf: completa, data: DATA,
+      cvPorPlaca: new Map([['CCC3C33', '3'], ['DDD4D44', '4']]),
+      // so' paradas a ~20 km (PONTO) -> 'NAO FOI' pela distancia
+      buscarParadas: async (_cv, placa) => [parada(placa, '10:00', 15)],
+      medirRastro: async () => ({ km: 40, pontosNoDia: 900 }),
+    })
+    for (const cliente of ['MERCADO A', 'MERCADO B', 'MERCADO D']) {
+      const d = r.detalhe.find(x => x.clienteNome === cliente)!
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe('COORDENADA APROXIMADA (RUA SEM NÚMERO) - CONFERIR')
+    }
+    const wb = await abrir(r.xlsx)
+    // 1 confirmada (RUA PERTO) de 4: as 3 da rua longa contam no denominador
+    expect(textos(wb.worksheets[0]).some(t => t.includes('TAXA DE CONFIRMAÇÃO: 25,0% (1 de 4 NFs'))).toBe(true)
+  })
+
+  it('rua curta (um ponto CNEFE so) sem parada: continua NAO FOI AO CLIENTE', async () => {
+    const completa = await preparar()
+    vi.mocked(geocodificarPorCoerencia).mockImplementation(async grupos => new Map(grupos.map(g => [
+      g.id, g.ruas.map(() => ({ ...PONTO_BARRA, municipioCodigo: RIO, confianca: 'alta' as const, candidatos: 1, ancora: true, pontosZona: [{ ...PONTO_BARRA, municipioCodigo: RIO }] })),
+    ])))
+    const r = await gerarKpiRioQuality({
+      completaBuf: completa, data: DATA,
+      cvPorPlaca: new Map([['CCC3C33', '3'], ['DDD4D44', '4']]),
+      buscarParadas: async (_cv, placa) => [parada(placa, '10:00', 15)],
+      medirRastro: async () => ({ km: 40, pontosNoDia: 900 }),
+    })
+    expect(r.detalhe.find(x => x.clienteNome === 'MERCADO A')!.observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
+  })
+
   it('formato antigo (sem cidade) nao usa o corredor novo (coerencia so' + "'" + ' na geocodificacao)', async () => {
     const r = await gerarKpiRioQuality({
       ...formatoAntigo(['AAA1A11']),
