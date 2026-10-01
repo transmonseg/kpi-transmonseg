@@ -102,6 +102,23 @@ export type MedicaoRastro = {
   /** Pontos de rastro no dia; null = desconhecido (consulta falhou ou data
    *  fora do alcance) -- nunca usar null como "zero pontos". */
   pontosNoDia: number | null
+  /** Item 3 (relatorio 01/10, LNH8A80): todos os pontos do dia (>=
+   *  MIN_PONTOS_COORDENADA_UNICA) na MESMA coordenada (<= TOLERANCIA_
+   *  COORDENADA_UNICA_M do primeiro). Ausente = rodou, poucos pontos ou
+   *  desconhecido. Quem decide "GPS congelado" e' rastreador-status.ts (um
+   *  caminhao parado na base tambem repete a coordenada). */
+  coordenadaUnicaNoDia?: { lat: number; lng: number }
+}
+
+export const MIN_PONTOS_COORDENADA_UNICA = 50
+export const TOLERANCIA_COORDENADA_UNICA_M = 15
+
+/** Coordenada comum a todos os pontos (ou null). */
+export function coordenadaUnica(pontos: PontoRastro[]): { lat: number; lng: number } | null {
+  const validos = pontos.filter(p => Number.isFinite(p?.lat) && Number.isFinite(p?.long) && Math.abs(p.lat) > 1 && Math.abs(p.long) > 1)
+  if (validos.length < MIN_PONTOS_COORDENADA_UNICA) return null
+  const [a] = validos
+  return validos.every(p => haversine(a.lat, a.long, p.lat, p.long) <= TOLERANCIA_COORDENADA_UNICA_M) ? { lat: a.lat, lng: a.long } : null
 }
 
 /** Km + quantidade de pontos de rastro do dia (Task 3, plano 2026-09-30). O
@@ -118,13 +135,17 @@ export async function medirRastroDoDia(
   try {
     const pontosInicio = await buscar(cv, janelas.horasInicio)
     if (janelas.horasFim === 0) {
-      return { km: pontosInicio.length < 2 ? null : somarKmDoRastro(pontosInicio), pontosNoDia: pontosInicio.length }
+      const unica = coordenadaUnica(pontosInicio)
+      return { km: pontosInicio.length < 2 ? null : somarKmDoRastro(pontosInicio), pontosNoDia: pontosInicio.length, ...(unica ? { coordenadaUnicaNoDia: unica } : {}) }
     }
     const pontosFim = await buscar(cv, janelas.horasFim)
     const pontosNoDia = Math.max(0, pontosInicio.length - pontosFim.length)
-    if (pontosInicio.length < 2) return { km: null, pontosNoDia }
+    // rastro em ordem cronologica: os pontos do dia sao os PRIMEIROS da janela
+    const unica = coordenadaUnica(pontosInicio.slice(0, pontosNoDia))
+    const extra = unica ? { coordenadaUnicaNoDia: unica } : {}
+    if (pontosInicio.length < 2) return { km: null, pontosNoDia, ...extra }
     const km = somarKmDoRastro(pontosInicio) - somarKmDoRastro(pontosFim)
-    return { km: km < 0 ? null : km, pontosNoDia }
+    return { km: km < 0 ? null : km, pontosNoDia, ...extra }
   } catch (e) {
     console.error('[kpi-rioquality/km-rastro] falha ao buscar rastro:', e instanceof Error ? e.message : String(e))
     return { km: null, pontosNoDia: null }

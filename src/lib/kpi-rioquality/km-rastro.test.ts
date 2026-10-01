@@ -125,3 +125,28 @@ describe('medirRastroDoDia', () => {
     expect(r).toEqual({ km: null, pontosNoDia: null })
   })
 })
+
+// Item 3 (relatorio 01/10, LNH8A80): rastro do dia com 590 pontos IDENTICOS
+// (-22.675800,-43.271062) -- GPS sem fix, posicao congelada. medirRastroDoDia
+// devolve a coordenada unica do dia (o detector decide se e' congelado).
+describe('medirRastroDoDia -- coordenada unica no dia', () => {
+  const agora = new Date('2026-10-01T22:00:00Z')
+  const LNH = { lat: -22.6758, long: -43.271062 }
+  const rep = (p: { lat: number; long: number }, n: number) => Array.from({ length: n }, () => ({ ...p }))
+  it('todos os pontos do dia na mesma coordenada (>= 50): devolve a coordenada', async () => {
+    // dia passado (30/09): janela do inicio do dia = dia + depois; os pontos do
+    // dia sao os PRIMEIROS (ordem cronologica)
+    const r = await medirRastroDoDia('19381', '2026-09-30', async (_cv, horas) => (horas > 30 ? rep(LNH, 590 + 288) : rep(LNH, 288)), agora)
+    expect(r.pontosNoDia).toBe(590)
+    expect(r.coordenadaUnicaNoDia).toEqual({ lat: -22.6758, lng: -43.271062 })
+  })
+  it('pontos do dia variam (caminhao rodou), mesmo com os dias seguintes parados: sem coordenada unica', async () => {
+    const dia = Array.from({ length: 100 }, (_, i) => ({ lat: -22.8 + i * 0.001, long: -43.3 }))
+    const r = await medirRastroDoDia('1', '2026-09-30', async (_cv, horas) => (horas > 30 ? [...dia, ...rep(LNH, 50)] : rep(LNH, 50)), agora)
+    expect(r.coordenadaUnicaNoDia ?? null).toBeNull()
+  })
+  it('poucos pontos no dia (< 50): nao afirma coordenada unica', async () => {
+    const r = await medirRastroDoDia('1', '2026-10-01', async () => rep(LNH, 10), agora)
+    expect(r.coordenadaUnicaNoDia ?? null).toBeNull()
+  })
+})

@@ -22,6 +22,8 @@ vi.mock('@/lib/kpi-romaneio/geocode', () => {
   }
 })
 vi.mock('@/lib/kpi-romaneio/geocode-ancoras', () => ({ reposicionarPorAncoras: vi.fn(async () => new Map()) }))
+// ultima comunicacao (posicoes/N/N): nada de rede nos testes; sem dado = sem rotulo novo
+vi.mock('@/lib/unitrac-api/posicoes', () => ({ buscarPosicoesPorCv: vi.fn(async () => new Map()) }))
 
 import { geocodificarPorCoerencia } from './geocode-coerencia'
 import { gerarKpiRioQuality, OBS_CONSULTA_FALHOU, OBS_CONSULTA_SUSPEITA } from './pipeline'
@@ -587,5 +589,82 @@ describe('gerarKpiRioQuality -- corredor da rua (endereco sem numero, formatos c
     })
     expect(vi.mocked(geocodificarPorCoerencia)).toHaveBeenCalledTimes(1)
     expect(r.detalhe.every(d => d.observacao !== OBS_CORREDOR)).toBe(true)
+  })
+})
+
+// Item 3 (relatorio rq-mesmo-lugar-e-sem-rastreador.md, PARTE B): rotulos de
+// rastreador fora da taxa, nunca 'NAO SAIU DA BASE'.
+describe('gerarKpiRioQuality -- GPS congelado e rastreador sem comunicar (item 3)', () => {
+  const LNH_CONGELADO = { lat: -22.6758, lng: -43.271062 } // Duque de Caxias, ~17 km da base
+  const BASE_RQ = { lat: -22.814171, lng: -43.344751 }
+
+  it('LNH8A80: rastro do dia todo na mesma coordenada longe da base -> SEM RASTREADOR - GPS CONGELADO, fora da taxa, nem a parada falsa confirma', async () => {
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(['LNH8A80', 'CCC3C33']),
+      data: DATA,
+      cvPorPlaca: new Map([['LNH8A80', '19381'], ['CCC3C33', '3']]),
+      // a "parada" unica do GPS congelado (2.871 min) cai em cima do PONTO das
+      // entregas no teste -- mesmo assim nao pode confirmar
+      buscarParadas: async (_cv, placa) => placa === 'LNH8A80'
+        ? [parada(placa, '00:00', 1439, 'FORA_BASE', PONTO)]
+        : [parada(placa, '10:00', 15)],
+      medirRastro: async cv => cv === '19381'
+        ? { km: 0, pontosNoDia: 590, coordenadaUnicaNoDia: LNH_CONGELADO }
+        : { km: 40, pontosNoDia: 900 },
+      buscarUltimaComunicacao: async () => new Map([['19381', '01/10/2026 19:22:00']]),
+    })
+    for (const d of r.detalhe.filter(x => x.placa === 'LNH8A80')) {
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe('SEM RASTREADOR - GPS CONGELADO')
+      expect(d.chegada).toBeNull()
+    }
+    const principal = textos((await abrir(r.xlsx)).worksheets[0])
+    expect(principal.some(t => t.includes('TAXA DE CONFIRMAÇÃO: 100,0% (2 de 2 NFs; 2 sem rastreador fora da conta)'))).toBe(true)
+  })
+
+  it('RJM5B51: ultimo GPS 20/08 -> SEM RASTREADOR - SEM COMUNICAR DESDE 20/08, fora da taxa', async () => {
+    const pedidos: string[][] = []
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(['RJM5B51', 'CCC3C33']),
+      data: DATA,
+      cvPorPlaca: new Map([['RJM5B51', '15277'], ['CCC3C33', '3']]),
+      buscarParadas: async (_cv, placa) => placa === 'RJM5B51' ? [] : [parada(placa, '10:00', 15)],
+      medirRastro: async cv => cv === '15277' ? { km: null, pontosNoDia: 0 } : { km: 40, pontosNoDia: 900 },
+      buscarUltimaComunicacao: async cvs => { pedidos.push(cvs); return new Map([['15277', '20/08/2026 11:54:21']]) },
+    })
+    for (const d of r.detalhe.filter(x => x.placa === 'RJM5B51')) {
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe('SEM RASTREADOR - SEM COMUNICAR DESDE 20/08')
+    }
+    // so' pergunta a ultima comunicacao de quem nao teve parada fora da base
+    expect(pedidos.flat()).toEqual(['15277'])
+    const principal = textos((await abrir(r.xlsx)).worksheets[0])
+    expect(principal.some(t => t.includes('(2 de 2 NFs; 2 sem rastreador fora da conta)'))).toBe(true)
+  })
+
+  it('caminhao normal parado NA BASE o dia todo (comunicando) continua VEÍCULO NÃO SAIU DA BASE', async () => {
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(['BBB2B22', 'CCC3C33']),
+      data: DATA,
+      cvPorPlaca: new Map([['BBB2B22', '2'], ['CCC3C33', '3']]),
+      buscarParadas: async (_cv, placa) => placa === 'BBB2B22' ? [] : [parada(placa, '10:00', 15)],
+      medirRastro: async cv => cv === '2' ? { km: 0.3, pontosNoDia: 300, coordenadaUnicaNoDia: BASE_RQ } : { km: 40, pontosNoDia: 900 },
+      buscarUltimaComunicacao: async () => new Map([['2', '29/09/2026 21:40:00']]),
+    })
+    for (const d of r.detalhe.filter(x => x.placa === 'BBB2B22')) expect(d.observacao).toBe('VEÍCULO NÃO SAIU DA BASE')
+  })
+
+  it('falha ao consultar a ultima comunicacao nao derruba a geracao (segue o rotulo de antes)', async () => {
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(['RJM5B51', 'CCC3C33']),
+      data: DATA,
+      cvPorPlaca: new Map([['RJM5B51', '15277'], ['CCC3C33', '3']]),
+      buscarParadas: async (_cv, placa) => placa === 'RJM5B51' ? [] : [parada(placa, '10:00', 15)],
+      medirRastro: async cv => cv === '15277' ? { km: null, pontosNoDia: 0 } : { km: 40, pontosNoDia: 900 },
+      buscarUltimaComunicacao: async () => { throw new Error('timeout') },
+    })
+    for (const d of r.detalhe.filter(x => x.placa === 'RJM5B51')) {
+      expect(d.observacao).toBe('SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO')
+    }
   })
 })

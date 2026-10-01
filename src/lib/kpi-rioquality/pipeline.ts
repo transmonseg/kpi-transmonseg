@@ -22,6 +22,8 @@ import { geocodificarPorCoerencia, type ConfiancaCoerencia, type PontoZona } fro
 import { geocodificarEnderecosComInfo } from '@/lib/kpi-romaneio/geocode'
 import { reposicionarPorAncoras } from '@/lib/kpi-romaneio/geocode-ancoras'
 import { montarCorredorDaRua, extensaoCorredorM } from './corredor-rua'
+import { gpsCongelado, semComunicarDesde, OBS_GPS_CONGELADO, obsSemComunicarDesde } from './rastreador-status'
+import { buscarPosicoesPorCv } from '@/lib/unitrac-api/posicoes'
 
 // Nucleo do KPI Rio Quality -- usado pela rota /api/kpi/rioquality/gerar e
 // pelo script scripts/gerar-rioquality-real-arquivo.ts (mesma pipeline, sem
@@ -155,6 +157,9 @@ export async function gerarKpiRioQuality(params: {
   /** injetavel pra teste; padrao = medirRastroDoDia (rastro da Unitrac:
    *  km do dia + pontos do dia, null = desconhecido) */
   medirRastro?: (cv: string, data: string) => Promise<MedicaoRastro>
+  /** injetavel pra teste; padrao = posicoes/N/N da Unitrac (cv -> datagps do
+   *  ultimo GPS). Item 3: rotulo "SEM COMUNICAR DESDE DD/MM". */
+  buscarUltimaComunicacao?: (cvs: string[]) => Promise<Map<string, string | null>>
   /** injetavel pra teste; padrao = lerSnapshotParadas (kpi_paradas_snapshot) */
   lerSnapshot?: (empresa: string, data: string) => Promise<Map<string, UnitracParadaRow[]>>
   /** injetavel pra teste; padrao = hojeBR() */
@@ -166,6 +171,8 @@ export async function gerarKpiRioQuality(params: {
   const buscarParadas = params.buscarParadas ?? buscarParadasPadraoRioQuality
   const medirRastro = params.medirRastro ?? ((cv: string, d: string) => medirRastroDoDia(cv, d))
   const lerSnapshot = params.lerSnapshot ?? lerSnapshotParadas
+  const buscarUltimaComunicacao = params.buscarUltimaComunicacao
+    ?? (async (cvs: string[]) => new Map([...(await buscarPosicoesPorCv(cvs))].map(([cv, p]) => [cv, p.datagps] as [string, string | null])))
   const hoje = params.hoje ?? hojeBR()
   // Task 4 (avisos, estudo item 5d): Custos x Entregas e frota.
   const avisosEntrada: AvisoDescasamento[] = []
@@ -322,6 +329,7 @@ export async function gerarKpiRioQuality(params: {
   const visitasPorPlaca = new Map<string, Map<string, Visita>>()
   const kmPorPlaca = new Map<string, number | null>()
   const pontosRastroPorPlaca = new Map<string, number | null>()
+  const medicaoRastroPorPlaca = new Map<string, MedicaoRastro>()
   // Task 1 (plano 2026-09-30, estudo item 4b): antes era Promise.all em TODAS
   // as placas de uma vez (~100, timeout de 6 s cada) e erro virava [] calado.
   // Agora: no maximo 6 em paralelo, 1 retry, e erro marca a placa como
@@ -362,10 +370,45 @@ export async function gerarKpiRioQuality(params: {
     const rastro = cv && !semDado ? await medirRastro(cv, data) : { km: null, pontosNoDia: null }
     kmPorPlaca.set(placaNorm, rastro.km)
     pontosRastroPorPlaca.set(placaNorm, rastro.pontosNoDia)
+    medicaoRastroPorPlaca.set(placaNorm, rastro)
   })
   log(`Placas: ${placasNorm.length}, com CV: ${placasNorm.filter(p => cvPorPlaca.has(p)).length}`)
   if (placasSemDadoNoDia.size > 0) log(`Sem dado do snapshot para ${placasSemDadoNoDia.size} placa(s): ${[...placasSemDadoNoDia].sort().join(', ')}`)
   if (placasConsultaFalhou.size > 0) log(`Consulta Unitrac falhou em ${placasConsultaFalhou.size} placa(s): ${[...placasConsultaFalhou].join(', ')}`)
+
+  // Item 3 (relatorio 01/10, PARTE B): rastreador que nao reflete o dia --
+  // GPS CONGELADO (LNH8A80: rastro do dia todo na mesma coordenada, longe da
+  // base) e SEM COMUNICAR DESDE DD/MM (RJM5B51: ultimo GPS antes do dia, via
+  // posicoes/N/N). Placa assim: sem rastreador no dia (fora da taxa), nenhuma
+  // parada dela vale (a "parada" do GPS congelado e' falsa), nunca "NAO SAIU
+  // DA BASE". Falha ao consultar a ultima comunicacao = segue sem o rotulo.
+  const obsRastreadorPorPlaca = new Map<string, string>()
+  for (const p of placasNorm) {
+    const m = medicaoRastroPorPlaca.get(p)
+    if (cvPorPlaca.has(p) && m && !placasConsultaFalhou.has(p) && !placasSemDadoNoDia.has(p) && gpsCongelado(m)) {
+      obsRastreadorPorPlaca.set(p, OBS_GPS_CONGELADO)
+    }
+  }
+  const candidatasSemComunicar = placasNorm.filter(p => cvPorPlaca.has(p) && !obsRastreadorPorPlaca.has(p)
+    && !placasConsultaFalhou.has(p) && !placasSemDadoNoDia.has(p)
+    && !(paradasPorPlaca.get(p) ?? []).some(x => x.classificacao === 'FORA_BASE'))
+  if (candidatasSemComunicar.length > 0) {
+    try {
+      const ultima = await buscarUltimaComunicacao(candidatasSemComunicar.map(p => cvPorPlaca.get(p)!))
+      for (const p of candidatasSemComunicar) {
+        const desde = semComunicarDesde(ultima.get(cvPorPlaca.get(p)!) ?? null, data)
+        if (desde) obsRastreadorPorPlaca.set(p, obsSemComunicarDesde(desde))
+      }
+    } catch (e) {
+      log(`Ultima comunicacao dos rastreadores indisponivel: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+  for (const p of obsRastreadorPorPlaca.keys()) {
+    paradasPorPlaca.set(p, [])
+    visitasPorPlaca.set(p, new Map())
+    kmPorPlaca.set(p, null)
+  }
+  if (obsRastreadorPorPlaca.size > 0) log(`Rastreador sem refletir o dia: ${[...obsRastreadorPorPlaca].map(([p, o]) => `${p} (${o})`).join(', ')}`)
 
   // Corredor da rua (relatorio rq-mesmo-lugar-e-sem-rastreador.md, 01/10) --
   // so' formatos com cidade (endereco SEM numero: montarEnderecoBrutoCompleto
@@ -378,7 +421,7 @@ export async function gerarKpiRioQuality(params: {
     const pendentes = romaneioGeo.filter(l => {
       const p = normPlaca(l.placa)
       return l.lat != null && l.lng != null && l.geoConfiavel !== false && ruaPorNfCompleto.has(l.nf)
-        && !placasConsultaFalhou.has(p) && !placasSemDadoNoDia.has(p) && !visitasPorPlaca.get(p)?.has(l.nf)
+        && !placasConsultaFalhou.has(p) && !placasSemDadoNoDia.has(p) && !obsRastreadorPorPlaca.has(p) && !visitasPorPlaca.get(p)?.has(l.nf)
     })
     const ruasUnicas = [...new Set(pendentes.map(l => ruaPorNfCompleto.get(l.nf)!))]
     const pontosPorRua = new Map<string, PontoZona[]>()
@@ -423,7 +466,7 @@ export async function gerarKpiRioQuality(params: {
   // com paradas nunca entram aqui e seguem normais.
   const placasConsultaSuspeita = travaSemSinal.aviso ? detectadasSemSinal : new Set<string>()
   if (travaSemSinal.aviso) log(`${travaSemSinal.aviso} (${placasConsultaSuspeita.size} placa(s) fora da taxa como consulta suspeita)`)
-  const temRastreadorPorPlaca = new Map(placasNorm.map(p => [p, cvPorPlaca.has(p) && !travaSemSinal.placas.has(p)]))
+  const temRastreadorPorPlaca = new Map(placasNorm.map(p => [p, cvPorPlaca.has(p) && !travaSemSinal.placas.has(p) && !obsRastreadorPorPlaca.has(p)]))
 
   // 4) agregacao por carga (= rota) x placa -- sem escala, sem alvos
   const cargasPorChave = agrupar(romaneioGeo, l => `${l.carga}::${normPlaca(l.placa)}`)
@@ -502,7 +545,13 @@ export async function gerarKpiRioQuality(params: {
     // observacao mais grave ja' posta por montarDetalheEntregas
     // Task 1: placa com consulta falha -- nenhuma conclusao (nem ENTREGUE nem
     // SEM RASTREADOR); vence qualquer outro rotulo.
-    .map(d => placasConsultaFalhou.has(normPlaca(d.placa)) || placasSemDadoNoDia.has(normPlaca(d.placa))
+    .map(d => {
+      const obs = obsRastreadorPorPlaca.get(normPlaca(d.placa))
+      return obs
+        ? { ...d, status: 'pendente' as const, chegada: null, saida: null, tempoParadaMin: null, observacao: obs, evidencia: 'sem_rastreador' as const, distParadaM: null, temRastreador: false, motivo: obs === OBS_GPS_CONGELADO ? 'Rastreador com posição congelada no dia (GPS sem fix) — não contabilizado' : 'Rastreador sem comunicar no dia — não contabilizado', confianca: calcularConfianca('pendente', obs) }
+        : d
+    })
+    .map(d => obsRastreadorPorPlaca.has(normPlaca(d.placa)) ? d : placasConsultaFalhou.has(normPlaca(d.placa)) || placasSemDadoNoDia.has(normPlaca(d.placa))
       ? { ...d, status: 'pendente' as const, chegada: null, saida: null, tempoParadaMin: null, observacao: OBS_CONSULTA_FALHOU, evidencia: 'sem_evidencia' as const, distParadaM: null, motivo: 'Consulta ao rastreador falhou — conferir', confianca: calcularConfianca('pendente', OBS_CONSULTA_FALHOU) }
       : placasConsultaSuspeita.has(normPlaca(d.placa))
         ? { ...d, status: 'pendente' as const, chegada: null, saida: null, tempoParadaMin: null, observacao: OBS_CONSULTA_SUSPEITA, evidencia: 'sem_evidencia' as const, distParadaM: null, motivo: 'Consulta ao rastreador suspeita (sem sinal em massa) — conferir', confianca: calcularConfianca('pendente', OBS_CONSULTA_SUSPEITA) }
