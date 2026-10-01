@@ -191,18 +191,23 @@ function prioridadeFonte(fonte: string | null | undefined): number {
   return 0
 }
 
-export function escolherLinhaCache<T extends { fonte?: string | null }>(daChave: T | undefined, doBruto: T | undefined): T | undefined {
+// Entre fontes automaticas, a confiavel vence a marcada confiavel=false pela
+// guarda territorial (medicao 01/10: linhas antigas sem fonte a 10-40 km,
+// marcadas nao confiaveis, perdiam pra cascata nova de 01/10).
+export function escolherLinhaCache<T extends { fonte?: string | null; confiavel?: boolean }>(daChave: T | undefined, doBruto: T | undefined): T | undefined {
   if (!daChave) return doBruto
   if (!doBruto) return daChave
   const pBruto = prioridadeFonte(doBruto.fonte)
   const pChave = prioridadeFonte(daChave.fonte)
   if (pBruto !== pChave) return pBruto > pChave ? doBruto : daChave
-  return pBruto > 0 ? doBruto : daChave
+  if (pBruto > 0) return doBruto
+  if (daChave.confiavel === false && doBruto.confiavel !== false) return doBruto
+  return daChave
 }
 
 /** Junta as linhas lidas do cache (consultado pela chave sem CEP E pelo texto
  *  bruto) numa linha por endereco bruto, via `escolherLinhaCache`. */
-export function mesclarLinhasCache<T extends { endereco: string; fonte?: string | null }>(enderecosBrutos: string[], linhas: T[]): Map<string, T> {
+export function mesclarLinhasCache<T extends { endereco: string; fonte?: string | null; confiavel?: boolean }>(enderecosBrutos: string[], linhas: T[]): Map<string, T> {
   const porEndereco = new Map(linhas.map(l => [l.endereco, l]))
   const saida = new Map<string, T>()
   for (const bruto of enderecosBrutos) {

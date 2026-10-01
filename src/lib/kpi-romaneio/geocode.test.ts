@@ -730,6 +730,17 @@ describe('escolherLinhaCache', () => {
   // mais grava chave com CEP), entao uma correcao humana / cadastro Unitrac nela
   // e' a mais NOVA -- ex. ROD BR 393 - KM 210 (VASSOURAS): verificacao_manual de
   // 04/09 na chave sem CEP e outra de 01/10 (a 400 m) na linha com CEP.
+  // Medicao 01/10: linhas antigas sem fonte marcadas confiavel=false pela
+  // guarda territorial (ex. RUA SAO JOSE, ITAOCARA a 15 km; AVENIDA ANTARES,
+  // SANTA CRUZ a 40 km) perdiam pra cascata nova (cnefe confiavel) de 01/10.
+  it('entre fontes automaticas, a confiavel vence a nao confiavel (qualquer lado)', () => {
+    expect(escolherLinhaCache({ ...linha(null), confiavel: false, lat: 1 }, { ...linha('cnefe'), lat: 2 })?.lat).toBe(2)
+    expect(escolherLinhaCache({ ...linha(null), lat: 1 }, { ...linha('cnefe'), confiavel: false, lat: 2 })?.lat).toBe(1)
+    expect(escolherLinhaCache({ ...linha(null), confiavel: false, lat: 1 }, { ...linha('cnefe'), confiavel: false, lat: 2 })?.lat).toBe(1)
+  })
+  it('correcao vence fonte automatica mesmo se a automatica for confiavel e a correcao nao', () => {
+    expect(escolherLinhaCache({ ...linha('verificacao_manual'), confiavel: false, lat: 1 }, { ...linha('cnefe'), lat: 2 })?.lat).toBe(1)
+  })
   it('empate entre correcoes (humana ou cadastro_unitrac): a linha com CEP, mais nova, vence', () => {
     expect(escolherLinhaCache({ ...linha('verificacao_manual'), lat: 1 }, { ...linha('verificacao_manual'), lat: 2 })?.lat).toBe(2)
     expect(escolherLinhaCache({ ...linha('manual'), lat: 1 }, { ...linha('verificacao_manual'), lat: 2 })?.lat).toBe(2)
