@@ -2,6 +2,7 @@ import { ClockCounterClockwise, FileMagnifyingGlass } from '@phosphor-icons/reac
 import { createServiceClient } from '@/lib/supabase/service'
 import { fmtInstanteBR } from '@/lib/data-br'
 import { RegenerarBotao } from './regenerar-botao'
+import { podeRegerar } from './pode-regerar'
 import { BaixarXlsxSalvo } from '@/components/kpi/baixar-xlsx-salvo'
 
 type GeracaoRow = {
@@ -51,7 +52,7 @@ export default async function RioQualityHistoricoPage() {
         </h1>
         <p className="mt-1 max-w-[55ch] text-[14px] leading-relaxed text-[var(--color-fg-muted)]">
           Registro de auditoria — quem gerou, quando e quantas rotas. As planilhas originais (Custos +
-          Entregas) ficam guardadas: use &quot;Regerar&quot; pra rodar o KPI de novo com qualquer melhoria
+          Entregas, ou o arquivo único) ficam guardadas: use &quot;Regerar&quot; pra rodar o KPI de novo com qualquer melhoria
           aplicada desde a geração.
         </p>
       </header>
@@ -90,7 +91,7 @@ export default async function RioQualityHistoricoPage() {
                   <Td align="right">
                     <div className="flex items-start justify-end gap-2">
                       {g.arquivo_storage_path && <BaixarXlsxSalvo geracaoId={g.id} />}
-                      {g.escala_storage_path && g.romaneio_storage_path ? (
+                      {podeRegerar(g) ? (
                         <RegenerarBotao geracaoId={g.id} dataReferencia={g.data_referencia} />
                       ) : !g.arquivo_storage_path ? (
                         <span className="text-[11px] text-[var(--color-fg-subtle)]">—</span>
