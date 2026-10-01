@@ -9,6 +9,9 @@ const cenario = vi.hoisted(() => ({
   snapshotErro: null as Error | null,
   leituras: [] as string[],
   chamadasPipeline: [] as Record<string, unknown>[],
+  uploads: [] as string[],
+  uploadKpiErro: false,
+  geracao: null as null | Record<string, string | null>,
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -16,9 +19,16 @@ vi.mock('@/lib/supabase/server', () => ({
 }))
 vi.mock('@/lib/perfil', () => ({ getPerfil: async () => ({ papel: 'admin' }), empresaLiberada: () => true }))
 vi.mock('@/lib/data-br', () => ({ hojeBR: () => '2026-09-30' }))
-vi.mock('@/lib/kpi-romaneio/historico', () => ({ salvarGeracao: vi.fn(async () => 'id'), buscarGeracaoParaRegenerar: async () => null }))
+vi.mock('@/lib/kpi-romaneio/historico', () => ({ salvarGeracao: vi.fn(async () => 'id'), buscarGeracaoParaRegenerar: async () => cenario.geracao }))
 vi.mock('@/lib/supabase/service', () => ({
-  createServiceClient: () => ({ storage: { from: () => ({ upload: async () => ({ error: null }) }) } }),
+  createServiceClient: () => ({ storage: { from: () => ({
+    upload: async (path: string) => {
+      if (cenario.uploadKpiErro && path.endsWith('-kpi.xlsx')) return { error: { message: 'boom' } }
+      cenario.uploads.push(path)
+      return { error: null }
+    },
+    download: async () => ({ data: new Blob(['x']), error: null }),
+  }) } }),
 }))
 vi.mock('@/lib/kpi-rioquality/frota', () => ({ buscarFrotaRioQuality: async () => new Map([['AAA1A11', '1']]) }))
 vi.mock('@/lib/kpi-romaneio/paradas-snapshot', () => ({
@@ -37,6 +47,7 @@ vi.mock('@/lib/kpi-rioquality/pipeline', () => ({
 }))
 
 const { POST } = await import('./route')
+const { salvarGeracao: salvarGeracaoMock } = await import('@/lib/kpi-romaneio/historico')
 
 function req(data: string) {
   const fd = new FormData()
@@ -50,6 +61,10 @@ beforeEach(() => {
   cenario.snapshotErro = null
   cenario.leituras = []
   cenario.chamadasPipeline = []
+  cenario.uploads = []
+  cenario.uploadKpiErro = false
+  cenario.geracao = null
+  vi.mocked(salvarGeracaoMock).mockClear()
 })
 
 describe('POST /api/kpi/rioquality/gerar -- dia fora das 48h', () => {
@@ -81,5 +96,36 @@ describe('POST /api/kpi/rioquality/gerar -- dia fora das 48h', () => {
     const res = await POST(req('2026-09-29') as never)
     expect(res.status).toBe(200)
     expect(cenario.leituras).toHaveLength(0)
+  })
+})
+
+// Item 1 (auditoria 01/10): o xlsx gerado tambem vai pro Storage.
+describe('POST /api/kpi/rioquality/gerar -- guarda o xlsx gerado', () => {
+  it('geracao nova: <prefixo>-kpi.xlsx ao lado do -completo.xlsx, gravado em arquivoStoragePath', async () => {
+    const res = await POST(req('2026-09-29') as never)
+    expect(res.status).toBe(200)
+    const arg = vi.mocked(salvarGeracaoMock).mock.calls[0][0]
+    const prefixo = String(arg.romaneioStoragePath).replace(/-completo\.xlsx$/, '')
+    expect(arg.arquivoStoragePath).toBe(`${prefixo}-kpi.xlsx`)
+    expect(cenario.uploads).toContain(`${prefixo}-kpi.xlsx`)
+  })
+
+  it('falha no upload do xlsx: 200, arquivoStoragePath null', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    cenario.uploadKpiErro = true
+    const res = await POST(req('2026-09-29') as never)
+    expect(res.status).toBe(200)
+    expect(vi.mocked(salvarGeracaoMock).mock.calls[0][0].arquivoStoragePath).toBeNull()
+    err.mockRestore()
+  })
+
+  it('regeneracao tambem salva o xlsx', async () => {
+    cenario.geracao = { id: 'g', dataReferencia: '2026-09-29', escalaStoragePath: null, romaneioStoragePath: 'rioquality/2026-09-29/a-completo.xlsx', paoStoragePath: null }
+    const fd = new FormData(); fd.set('regenerarDeId', 'g')
+    const res = await POST(new Request('http://localhost/api/kpi/rioquality/gerar', { method: 'POST', body: fd }) as never)
+    expect(res.status).toBe(200)
+    const arg = vi.mocked(salvarGeracaoMock).mock.calls[0][0]
+    expect(arg.arquivoStoragePath).toMatch(/^rioquality\/2026-09-29\/.+-kpi\.xlsx$/)
+    expect(cenario.uploads).toEqual([arg.arquivoStoragePath])
   })
 })

@@ -1,6 +1,7 @@
 import { ClockCounterClockwise, FileMagnifyingGlass } from '@phosphor-icons/react/dist/ssr'
 import { createServiceClient } from '@/lib/supabase/service'
 import { fmtInstanteBR } from '@/lib/data-br'
+import { BaixarXlsxSalvo } from '@/components/kpi/baixar-xlsx-salvo'
 
 type GeracaoRow = {
   id: string
@@ -8,6 +9,7 @@ type GeracaoRow = {
   gerado_em: string
   gerado_por: string | null
   qtd_cargas: number
+  arquivo_storage_path: string | null
 }
 
 const PER_PAGE = 30
@@ -24,7 +26,7 @@ export default async function PortefrioHistoricoPage() {
   const svc = createServiceClient()
   const { data: rows, error } = await svc
     .from('kpi_romaneio_geracoes')
-    .select('id, data_referencia, gerado_em, gerado_por, qtd_cargas')
+    .select('id, data_referencia, gerado_em, gerado_por, qtd_cargas, arquivo_storage_path')
     .eq('cliente', 'portefrio')
     .order('gerado_em', { ascending: false })
     .limit(PER_PAGE)
@@ -43,9 +45,8 @@ export default async function PortefrioHistoricoPage() {
           Gerações salvas
         </h1>
         <p className="mt-1 max-w-[55ch] text-[14px] leading-relaxed text-[var(--color-fg-muted)]">
-          Registro simples de auditoria — quem gerou, quando e quantos clientes. Ainda não
-          guarda o arquivo XLSX pra reabrir; baixe de novo gerando o KPI do mesmo dia se
-          precisar.
+          Registro simples de auditoria — quem gerou, quando e quantos clientes. A partir de
+          01/10 o XLSX gerado fica guardado: use &quot;Baixar salvo&quot; pra reabrir o mesmo arquivo.
         </p>
       </header>
 
@@ -63,6 +64,7 @@ export default async function PortefrioHistoricoPage() {
                 <Th align="right">Clientes</Th>
                 <Th>Gerado por</Th>
                 <Th>Gerado em</Th>
+                <Th align="right">Ação</Th>
               </tr>
             </thead>
             <tbody>
@@ -78,6 +80,13 @@ export default async function PortefrioHistoricoPage() {
                   <Td>{g.gerado_por ?? '—'}</Td>
                   <Td>
                     <span className="text-numeric text-[12px] text-[var(--color-fg-muted)]">{fmtInstanteBR(g.gerado_em)}</span>
+                  </Td>
+                  <Td align="right">
+                    {g.arquivo_storage_path ? (
+                      <BaixarXlsxSalvo geracaoId={g.id} />
+                    ) : (
+                      <span className="text-[11px] text-[var(--color-fg-subtle)]">—</span>
+                    )}
                   </Td>
                 </tr>
               ))}

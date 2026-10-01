@@ -4,6 +4,7 @@ import { getPerfil, empresaLiberada } from '@/lib/perfil'
 import { hojeBR } from '@/lib/data-br'
 import { salvarGeracao, buscarGeracaoParaRegenerar } from '@/lib/kpi-romaneio/historico'
 import { createServiceClient } from '@/lib/supabase/service'
+import { guardarXlsxGerado, novoPrefixoGeracao } from '@/lib/kpi-romaneio/xlsx-gerado'
 import { foraDoAlcanceApi } from '@/lib/kpi-romaneio/constants'
 import { gerarKpiRioQuality, EntradaInvalidaError } from '@/lib/kpi-rioquality/pipeline'
 import { buscarFrotaRioQuality } from '@/lib/kpi-rioquality/frota'
@@ -129,8 +130,10 @@ export async function POST(req: NextRequest) {
     const svc = createServiceClient()
     let custosStoragePath = custosStoragePathExistente
     let entregasStoragePath = entregasStoragePathExistente
+    // Mesmo prefixo dos inputs na geracao original; na regeneracao um
+    // prefixo novo (nao sobrescreve o xlsx da geracao antiga).
+    const prefixo = novoPrefixoGeracao(CLIENTE, data)
     if (!entregasStoragePath) {
-      const prefixo = `${CLIENTE}/${data}/${crypto.randomUUID()}`
       if (completaBuf) {
         entregasStoragePath = `${prefixo}-completo.xlsx`
         const up = await svc.storage.from(BUCKET).upload(entregasStoragePath, completaBuf, { contentType: TIPO_XLSX })
@@ -152,12 +155,14 @@ export async function POST(req: NextRequest) {
         }
       }
     }
+    // Item 1 (auditoria 01/10): guarda o xlsx gerado (falha so' loga).
+    const arquivoStoragePath = await guardarXlsxGerado(svc, prefixo, resultado.xlsx)
     await salvarGeracao({
       cliente: CLIENTE,
       dataReferencia: data,
       geradoPor: user?.email ?? null,
       qtdCargas: resultado.linhasKpi.length,
-      arquivoStoragePath: null,
+      arquivoStoragePath,
       escalaStoragePath: custosStoragePath,
       romaneioStoragePath: entregasStoragePath,
     })

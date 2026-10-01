@@ -21,6 +21,7 @@ import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, contarC
 import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
 import { salvarGeracao, buscarGeracaoParaRegenerar } from '@/lib/kpi-romaneio/historico'
+import { guardarXlsxGerado, novoPrefixoGeracao } from '@/lib/kpi-romaneio/xlsx-gerado'
 import { createServiceClient } from '@/lib/supabase/service'
 import { COD_USER_NUTRIMAX, EMPRESA_NUTRIMAX, foraDoAlcanceApi, LIMITE_CONCORRENCIA_PLACAS, PAO_PREFIXO } from '@/lib/kpi-romaneio/constants'
 import { mapComLimite } from '@/lib/kpi-romaneio/concorrencia'
@@ -644,8 +645,10 @@ export async function POST(req: NextRequest) {
     let escalaStoragePath = escalaStoragePathExistente
     let romaneioStoragePath = romaneioStoragePathExistente
     let paoStoragePath = paoStoragePathExistente
+    // Mesmo prefixo dos inputs na geracao original; na regeneracao (inputs
+    // reaproveitados) um prefixo novo, pra nao sobrescrever o xlsx antigo.
+    const prefixo = novoPrefixoGeracao('nutrimax', data)
     if (!romaneioStoragePath) {
-      const prefixo = `nutrimax/${data}/${crypto.randomUUID()}`
       romaneioStoragePath = `${prefixo}-romaneio.pdf`
       const uploads = [svc.storage.from('kpi-romaneio-inputs').upload(romaneioStoragePath, romaneioBuf, { contentType: 'application/pdf' })]
       // Escala e' opcional -- so' faz upload dela se de fato veio.
@@ -672,12 +675,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Item 1 (auditoria 01/10): guarda o xlsx gerado (falha so' loga).
+    const arquivoStoragePath = await guardarXlsxGerado(svc, prefixo, xlsxBuf)
+
     await salvarGeracao({
       cliente: 'nutrimax',
       dataReferencia: data,
       geradoPor: user?.email ?? null,
       qtdCargas: linhasKpi.filter(l => !l.carga.startsWith(PAO_PREFIXO)).length,
-      arquivoStoragePath: null,
+      arquivoStoragePath,
       escalaStoragePath,
       romaneioStoragePath,
       paoStoragePath,

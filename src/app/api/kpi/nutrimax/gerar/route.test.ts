@@ -35,6 +35,9 @@ const cenario = vi.hoisted(() => ({
   storage: new Map<string, string>(),
   uploads: [] as string[],
   uploadPaoErro: false,
+  // Item 1 (auditoria 01/10): xlsx gerado tambem vai pro Storage.
+  uploadKpiErro: false,
+  uploadBodies: new Map<string, unknown>(),
   paoBufRecebido: null as string | null,
 }))
 
@@ -139,9 +142,11 @@ vi.mock('@/lib/supabase/service', () => ({
   createServiceClient: () => ({
     storage: {
       from: () => ({
-        upload: async (path: string) => {
+        upload: async (path: string, body?: unknown) => {
           if (cenario.uploadPaoErro && path.endsWith('-pao.pdf')) return { error: { message: 'boom' } }
+          if (cenario.uploadKpiErro && path.endsWith('-kpi.xlsx')) return { error: { message: 'boom-kpi' } }
           cenario.uploads.push(path)
+          cenario.uploadBodies.set(path, body)
           return { error: null }
         },
         download: async (path: string) => {
@@ -824,7 +829,8 @@ describe('POST /api/kpi/nutrimax/gerar -- guarda e regenera o PDF do Pão', () =
     const res = await POST(regen())
     expect(res.status).toBe(200)
     expect(cenario.paoBufRecebido).toBe('conteudo-do-pao')
-    expect(cenario.uploads).toHaveLength(0)
+    // nenhum PDF de entrada re-enviado (so' o xlsx gerado, item 1 01/10)
+    expect(cenario.uploads.filter(p => !p.endsWith('-kpi.xlsx'))).toHaveLength(0)
     expect(vi.mocked(salvarGeracaoMock).mock.calls[0][0].paoStoragePath).toBe('p-pao.pdf')
   })
 
@@ -876,5 +882,54 @@ describe('POST /api/kpi/nutrimax/gerar -- placa com O/0 ou I/1 trocado casa com 
     const linhaDados = (ws.getRow(4).values as unknown[]).slice(1)
     expect(String(linhaDados[7])).not.toContain('SEM RASTREADOR')
     expect(String(linhaDados[7])).toMatch(/ENTREGUE/)
+  })
+})
+
+// Item 1 (auditoria 01/10): arquivo_storage_path era sempre NULL -- o xlsx
+// GERADO nunca era guardado. Agora sobe pro mesmo bucket dos inputs, com o
+// mesmo prefixo da geracao (`<prefixo>-kpi.xlsx`); falha no upload so' loga.
+describe('POST /api/kpi/nutrimax/gerar -- guarda o xlsx gerado (item 1, 01/10)', () => {
+  beforeEach(() => {
+    cenario.geracao = null
+    cenario.storage = new Map()
+    cenario.uploads = []
+    cenario.uploadBodies = new Map()
+    cenario.uploadPaoErro = false
+    cenario.uploadKpiErro = false
+    vi.mocked(salvarGeracaoMock).mockClear()
+  })
+
+  it('geracao nova: sobe <prefixo>-kpi.xlsx com o MESMO conteudo devolvido e grava em arquivoStoragePath', async () => {
+    const res = await POST(montarRequest(false) as never)
+    expect(res.status).toBe(200)
+    const devolvido = Buffer.from(await res.arrayBuffer())
+    const arg = vi.mocked(salvarGeracaoMock).mock.calls[0][0]
+    const prefixo = String(arg.romaneioStoragePath).replace(/-romaneio\.pdf$/, '')
+    expect(arg.arquivoStoragePath).toBe(`${prefixo}-kpi.xlsx`)
+    expect(cenario.uploads).toContain(`${prefixo}-kpi.xlsx`)
+    expect(Buffer.from(cenario.uploadBodies.get(`${prefixo}-kpi.xlsx`) as Buffer).equals(devolvido)).toBe(true)
+  })
+
+  it('falha no upload do xlsx: geracao segue (200), arquivoStoragePath null, inputs guardados', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    cenario.uploadKpiErro = true
+    const res = await POST(montarRequest(false) as never)
+    expect(res.status).toBe(200)
+    const arg = vi.mocked(salvarGeracaoMock).mock.calls[0][0]
+    expect(arg.arquivoStoragePath).toBeNull()
+    expect(arg.romaneioStoragePath).toMatch(/-romaneio\.pdf$/)
+    expect(errSpy).toHaveBeenCalled()
+    errSpy.mockRestore()
+  })
+
+  it('regeneracao tambem salva o xlsx (caminho novo, nao sobrescreve o original)', async () => {
+    cenario.geracao = { id: 'g1', dataReferencia: '2026-09-15', escalaStoragePath: null, romaneioStoragePath: 'nutrimax/2026-09-15/abc-romaneio.pdf', paoStoragePath: null }
+    cenario.storage.set('nutrimax/2026-09-15/abc-romaneio.pdf', 'romaneio')
+    const fd = new FormData(); fd.set('regenerarDeId', 'g1')
+    const res = await POST(new Request('http://localhost/api/kpi/nutrimax/gerar', { method: 'POST', body: fd }) as never)
+    expect(res.status).toBe(200)
+    const arg = vi.mocked(salvarGeracaoMock).mock.calls[0][0]
+    expect(arg.arquivoStoragePath).toMatch(/^nutrimax\/2026-09-15\/.+-kpi\.xlsx$/)
+    expect(cenario.uploads).toEqual([arg.arquivoStoragePath])
   })
 })

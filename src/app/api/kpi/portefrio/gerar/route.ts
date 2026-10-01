@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getPerfil, empresaLiberada } from '@/lib/perfil'
 import { geocodificarEnderecos } from '@/lib/kpi-romaneio/geocode'
 import { salvarGeracao } from '@/lib/kpi-romaneio/historico'
+import { createServiceClient } from '@/lib/supabase/service'
+import { guardarXlsxGerado, novoPrefixoGeracao } from '@/lib/kpi-romaneio/xlsx-gerado'
 import { parseRomaneioPortefrio } from '@/lib/kpi-portefrio/parse-romaneio'
 import { resolverIdVeiculo, buscarHistoricoVeiculo } from '@/lib/kpi-portefrio/ravex-api'
 import { montarVisitas } from '@/lib/kpi-portefrio/visitas'
@@ -103,12 +105,14 @@ export async function POST(req: NextRequest) {
   const xlsxBuf = await gerarKpiPortefrioXlsx(linhasKpi, data)
 
   try {
+    // Item 1 (auditoria 01/10): guarda o xlsx gerado (falha so' loga).
+    const arquivoStoragePath = await guardarXlsxGerado(createServiceClient(), novoPrefixoGeracao('portefrio', data), xlsxBuf)
     await salvarGeracao({
       cliente: 'portefrio',
       dataReferencia: data,
       geradoPor: user.email ?? null,
       qtdCargas: linhasKpi.length,
-      arquivoStoragePath: null,
+      arquivoStoragePath,
       // Portefrio ainda nao guarda os PDFs originais nem oferece
       // "regenerar" (pedido do usuario 01/09 foi so' pra Nutry Max) --
       // null aqui so' pra bater com a assinatura nova.

@@ -2,6 +2,7 @@ import { ClockCounterClockwise, FileMagnifyingGlass } from '@phosphor-icons/reac
 import { createServiceClient } from '@/lib/supabase/service'
 import { fmtInstanteBR } from '@/lib/data-br'
 import { RegenerarBotao } from './regenerar-botao'
+import { BaixarXlsxSalvo } from '@/components/kpi/baixar-xlsx-salvo'
 
 type GeracaoRow = {
   id: string
@@ -11,6 +12,7 @@ type GeracaoRow = {
   qtd_cargas: number
   escala_storage_path: string | null
   romaneio_storage_path: string | null
+  arquivo_storage_path: string | null
 }
 
 const PER_PAGE = 30
@@ -27,7 +29,7 @@ export default async function NutrimaxHistoricoPage() {
   const svc = createServiceClient()
   const { data: rows, error } = await svc
     .from('kpi_romaneio_geracoes')
-    .select('id, data_referencia, gerado_em, gerado_por, qtd_cargas, escala_storage_path, romaneio_storage_path')
+    .select('id, data_referencia, gerado_em, gerado_por, qtd_cargas, escala_storage_path, romaneio_storage_path, arquivo_storage_path')
     .eq('cliente', 'nutrimax')
     .order('gerado_em', { ascending: false })
     .limit(PER_PAGE)
@@ -85,11 +87,14 @@ export default async function NutrimaxHistoricoPage() {
                     <span className="text-numeric text-[12px] text-[var(--color-fg-muted)]">{fmtInstanteBR(g.gerado_em)}</span>
                   </Td>
                   <Td align="right">
-                    {g.escala_storage_path && g.romaneio_storage_path ? (
-                      <RegenerarBotao geracaoId={g.id} dataReferencia={g.data_referencia} />
-                    ) : (
-                      <span className="text-[11px] text-[var(--color-fg-subtle)]">—</span>
-                    )}
+                    <div className="flex items-start justify-end gap-2">
+                      {g.arquivo_storage_path && <BaixarXlsxSalvo geracaoId={g.id} />}
+                      {g.escala_storage_path && g.romaneio_storage_path ? (
+                        <RegenerarBotao geracaoId={g.id} dataReferencia={g.data_referencia} />
+                      ) : !g.arquivo_storage_path ? (
+                        <span className="text-[11px] text-[var(--color-fg-subtle)]">—</span>
+                      ) : null}
+                    </div>
                   </Td>
                 </tr>
               ))}
