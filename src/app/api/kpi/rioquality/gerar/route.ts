@@ -7,6 +7,9 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { foraDoAlcanceApi } from '@/lib/kpi-romaneio/constants'
 import { gerarKpiRioQuality, EntradaInvalidaError } from '@/lib/kpi-rioquality/pipeline'
 import { buscarFrotaRioQuality } from '@/lib/kpi-rioquality/frota'
+import { lerSnapshotParadas } from '@/lib/kpi-romaneio/paradas-snapshot'
+import { EMPRESA_SNAPSHOT_RIOQUALITY } from '@/lib/kpi-rioquality/snapshot-paradas'
+import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 
 // KPI Rio Quality -- entrada (2 planilhas xlsx) + auth + historico. A pipeline
 // em si esta' em src/lib/kpi-rioquality/pipeline.ts (compartilhada com o
@@ -89,18 +92,34 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Tarefa C (30/09): fora das 48h da Unitrac so' recusa quando NAO ha
+  // snapshot noturno de paradas da RQ pro dia (Task 4) -- com snapshot a
+  // pipeline ja' gera certo. O snapshot lido aqui e' o MESMO entregue a
+  // pipeline (sem segunda leitura). Erro de leitura = sem snapshot (422),
+  // nunca gera um dia antigo sem dado.
+  let snapshotForaDaJanela: Map<string, UnitracParadaRow[]> | null = null
   if (foraDoAlcanceApi(data, hojeBR())) {
-    return new NextResponse(
-      'A API do Unitrac só alcança as últimas 48h (hoje/ontem) — não dá pra gerar KPI de uma data mais antiga.',
-      { status: 422 },
-    )
+    try {
+      const snap = await lerSnapshotParadas(EMPRESA_SNAPSHOT_RIOQUALITY, data)
+      if (snap.size > 0) snapshotForaDaJanela = snap
+    } catch (e) {
+      console.error('Erro ao ler snapshot de paradas RQ:', e instanceof Error ? e.message : e)
+    }
+    if (!snapshotForaDaJanela) {
+      return new NextResponse(
+        'A API do Unitrac só alcança as últimas 48h (hoje/ontem) e não há snapshot noturno de paradas da Rio Quality para essa data — não dá pra gerar o KPI.',
+        { status: 422 },
+      )
+    }
   }
+  const snapshot = snapshotForaDaJanela
+  const lerSnapshot = snapshot ? async () => snapshot : undefined
 
   let resultado
   try {
     resultado = completaBuf
-      ? await gerarKpiRioQuality({ completaBuf, data, cvPorPlaca: await buscarFrotaRioQuality() })
-      : await gerarKpiRioQuality({ custosBuf: custosBuf!, entregasBuf: entregasBuf!, data, cvPorPlaca: await buscarFrotaRioQuality() })
+      ? await gerarKpiRioQuality({ completaBuf, data, cvPorPlaca: await buscarFrotaRioQuality(), lerSnapshot })
+      : await gerarKpiRioQuality({ custosBuf: custosBuf!, entregasBuf: entregasBuf!, data, cvPorPlaca: await buscarFrotaRioQuality(), lerSnapshot })
   } catch (e) {
     if (e instanceof EntradaInvalidaError) return new NextResponse(e.message, { status: 422 })
     throw e
