@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs'
-import { OBS_NAO_SAIU_DA_BASE, textoConsultaPosicoesSuspeita } from './types'
+import { OBS_NAO_SAIU_DA_BASE, textoConsultaPosicoesSuspeita, chegadaCdExibivel } from './types'
 import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega, ResolucaoNf } from './types'
 // Reusa a MESMA paleta/fonte/logo ja validados no relatorio da Benassi
 // (pedido do usuario 25/08: "deixar esse relatorio nivel o da Benassi") --
@@ -531,7 +531,7 @@ function escreverResumoPlaca(ws: ExcelJS.Worksheet, linhaResumo: number, qtdColu
   const texto = cargasNaoRelacionadas
     ? `MOTORISTA: MÚLTIPLOS    |    SAÍDA CD: -    |    CHEGADA CD: -    |    TEMPO OPERAÇÃO: -    |    KM PERCORRIDO: -    |    NOTAS: ${qtdNotas}`
     : resumo
-    ? `MOTORISTA: ${resumo.motorista || '-'}    |    SAÍDA CD: ${horaCd(resumo.saidaCd, resumo.temRastreador) || '-'}    |    CHEGADA CD: ${horaCd(resumo.chegadaCd, resumo.temRastreador) || '-'}    |    TEMPO OPERAÇÃO: ${formatarMinutos(resumo.tempoOperacaoMin) || '-'}    |    KM PERCORRIDO: ${resumo.kmPercorrido != null ? `${Math.round(resumo.kmPercorrido * 10) / 10} km` : '-'}    |    NOTAS: ${qtdNotas}`
+    ? `MOTORISTA: ${resumo.motorista || '-'}    |    SAÍDA CD: ${horaCd(resumo.saidaCd, resumo.temRastreador) || '-'}    |    CHEGADA CD: ${horaCd(chegadaCdExibivel(resumo), resumo.temRastreador) || '-'}    |    TEMPO OPERAÇÃO: ${formatarMinutos(resumo.tempoOperacaoMin) || '-'}    |    KM PERCORRIDO: ${resumo.kmPercorrido != null ? `${Math.round(resumo.kmPercorrido * 10) / 10} km` : '-'}    |    NOTAS: ${qtdNotas}`
     : ''
   ws.mergeCells(linhaResumo, 1, linhaResumo, qtdColunas)
   const cell = ws.getCell(linhaResumo, 1)
@@ -634,7 +634,7 @@ export async function gerarKpiRomaneioXlsx(
       l.pesoKg ?? '', l.clientesPlanejados ?? '', l.nfPlanejado ?? '', l.paradasReais, l.paradasForaBase,
       l.kmPercorrido != null ? Math.round(l.kmPercorrido * 10) / 10 : '',
       placasSemRastreadorNoResumo.has(l.placa) ? ROTULO_RESUMO_SEM_RASTREADOR : celulaHora(l.saidaCd, l.temRastreador, data === hoje),
-      placasSemRastreadorNoResumo.has(l.placa) ? ROTULO_RESUMO_SEM_RASTREADOR : celulaHora(l.chegadaCd, l.temRastreador, data === hoje),
+      placasSemRastreadorNoResumo.has(l.placa) ? ROTULO_RESUMO_SEM_RASTREADOR : celulaHora(chegadaCdExibivel(l), l.temRastreador, data === hoje),
       formatarMinutos(l.tempoOperacaoMin), formatarMinutos(l.tempoMedioParadaMin),
     ])
     estilizarLinhaDado(ws, 2 + 1 + i, COLUNAS_KPI_ROMANEIO.length, i)

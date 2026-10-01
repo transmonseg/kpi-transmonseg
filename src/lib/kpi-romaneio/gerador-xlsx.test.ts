@@ -427,6 +427,25 @@ describe('gerador-xlsx', () => {
       expect(values[13]).toBe('EM ROTA') // CHEGADA CD
     })
 
+    // Bug real 01/10 (RQO1B27, Pao PAO-2): veiculo passou o dia parado fora
+    // de qualquer base e so' entrou na base as 17:42 -- a ponte devolve
+    // saida null + chegada 17:42 e o xlsx mostrava SAIDA CD "EM ROTA" com
+    // CHEGADA CD 17:42. Chegada sem saida nunca aparece (aba 1 + aba da placa).
+    it('chegada SEM saida nunca aparece: aba 1 e cabecalho da aba da placa mostram o mesmo motivo da saida', async () => {
+      const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'PAO-2', placa: 'RQO1B27', saidaCd: null, chegadaCd: '2026-10-01T17:42:35.000Z', kmPercorrido: 20.6 })]
+      for (const [hoje, esperado] of [['2026-10-01', 'EM ROTA'], ['2026-10-02', '']] as const) {
+        const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-10-01', [], [], hoje)
+        const wb = new ExcelJS.Workbook()
+        await wb.xlsx.load(buffer as never)
+        const values = (wb.worksheets[0].getRow(LINHA_PRIMEIRO_DADO).values as unknown[]).slice(1)
+        expect(values[12]).toBe(esperado) // SAÍDA CD
+        expect(values[13]).toBe(esperado) // CHEGADA CD -- nunca '17:42'
+        const resumo = wb.getWorksheet('RQO1B27')!.getCell(2, 1).value as string
+        expect(resumo).not.toContain('17:42')
+        expect(resumo).toContain(`CHEGADA CD: ${esperado || '-'}`)
+      }
+    })
+
     it('celula vazia continua vazia (nao inventa motivo) quando ha rastreador e a data ja passou', async () => {
       const linhas: LinhaKpiRomaneio[] = [linhaKpi({ carga: 'C001', placa: 'ABC1234', temRastreador: true })]
       const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], [], '2026-08-25')

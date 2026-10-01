@@ -350,3 +350,15 @@ export function textoConsultaPosicoesSuspeita(semSinal: number, totalPlacas: num
 /** Rotulo exato (Nutry Max/modoPrecisao) de NF de placa que nao saiu da base o dia todo.
  *  Prefixo usado por gerador-xlsx.ts pra excluir da taxa (como SEM RASTREADOR). */
 export const OBS_NAO_SAIU_DA_BASE = 'VEÍCULO NÃO SAIU DA BASE'
+
+/** Bug real 01/10 (RQO1B27, Pao PAO-2): veiculo passou o dia parado fora de
+ *  qualquer base e so' entrou na base as 17:42 -- a ponte devolveu saida
+ *  null + chegada 17:42 e o xlsx mostrava SAIDA CD "EM ROTA" com CHEGADA CD
+ *  preenchida. Sem saida observada, a entrada na base nao e' "volta da
+ *  rota": chegada sem saida nunca e' EXIBIDA (xlsx/dashboard). O valor
+ *  bruto continua em `chegadaCd` de proposito -- `calcularDiaEmAndamento`
+ *  precisa saber que o veiculo ja' esta' na base (com null, as NFs da carga
+ *  virariam AGUARDANDO e sairiam da taxa num relatorio do mesmo dia). */
+export function chegadaCdExibivel(l: { saidaCd: string | null; chegadaCd: string | null }): string | null {
+  return l.saidaCd ? l.chegadaCd : null
+}

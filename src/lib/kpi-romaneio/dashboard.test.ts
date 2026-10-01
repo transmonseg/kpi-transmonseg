@@ -40,6 +40,14 @@ describe('montarLinhaDashboardDiaria', () => {
     expect(l.notasPorHora).toBeCloseTo(2.8498074454428757, 6)
   })
 
+  // Bug real 01/10 (RQO1B27): chegada na base sem saida observada nao e'
+  // volta de rota -- nao entra no dashboard (nem na media de chegada).
+  it('chegada sem saida: chegadaBase null', () => {
+    const l = montarLinhaDashboardDiaria(linhaKpi({ saidaCd: null, chegadaCd: '2026-10-01T17:42:00Z', tempoOperacaoMin: null }), '2026-10-01')
+    expect(l.saidaBase).toBeNull()
+    expect(l.chegadaBase).toBeNull()
+  })
+
   // "ERRO DE CADASTRO" no romaneio real (RGU5G33, 01/09): sem saida/chegada
   // de base, sem km, sem tempo em rota -- notas/hora fica null (SEM DADO),
   // nunca inventa.
