@@ -84,3 +84,47 @@ export async function calcularKmPorRastro(
     return null
   }
 }
+
+/** Igual a buscarRastro, mas erro/timeout LANCA em vez de virar [] --
+ *  "rastro vazio" e "consulta falhou" precisam ser distinguiveis pra
+ *  detectar SEM SINAL NO DIA (Task 3, plano 2026-09-30). */
+export async function buscarRastroOuErro(cv: string, horas: number): Promise<PontoRastro[]> {
+  const d = (await apiGet(`/mapa_servicos/rastro/${cv}/${horas}`)) as { posicoes?: PontoRastro[] } | null
+  if (d == null) throw new Error(`consulta /rastro da Unitrac falhou (cv ${cv})`)
+  return d.posicoes ?? []
+}
+
+export type MedicaoRastro = {
+  /** Mesmo criterio de calcularKmPorRastro: null quando nao da' pra afirmar. */
+  km: number | null
+  /** Pontos de rastro no dia; null = desconhecido (consulta falhou ou data
+   *  fora do alcance) -- nunca usar null como "zero pontos". */
+  pontosNoDia: number | null
+}
+
+/** Km + quantidade de pontos de rastro do dia (Task 3, plano 2026-09-30). O
+ *  rastro nao tem timestamp: pontos do dia = pontos desde o inicio do dia -
+ *  pontos desde o inicio do dia seguinte (mesma subtracao do km). */
+export async function medirRastroDoDia(
+  cv: string,
+  data: string,
+  buscar: (cv: string, horas: number) => Promise<PontoRastro[]> = buscarRastroOuErro,
+  agora: Date = new Date(),
+): Promise<MedicaoRastro> {
+  const janelas = janelasDoDia(data, agora)
+  if (!janelas) return { km: null, pontosNoDia: null }
+  try {
+    const pontosInicio = await buscar(cv, janelas.horasInicio)
+    if (janelas.horasFim === 0) {
+      return { km: pontosInicio.length < 2 ? null : somarKmDoRastro(pontosInicio), pontosNoDia: pontosInicio.length }
+    }
+    const pontosFim = await buscar(cv, janelas.horasFim)
+    const pontosNoDia = Math.max(0, pontosInicio.length - pontosFim.length)
+    if (pontosInicio.length < 2) return { km: null, pontosNoDia }
+    const km = somarKmDoRastro(pontosInicio) - somarKmDoRastro(pontosFim)
+    return { km: km < 0 ? null : km, pontosNoDia }
+  } catch (e) {
+    console.error('[kpi-rioquality/km-rastro] falha ao buscar rastro:', e instanceof Error ? e.message : String(e))
+    return { km: null, pontosNoDia: null }
+  }
+}

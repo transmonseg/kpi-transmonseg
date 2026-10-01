@@ -59,7 +59,7 @@ describe('gerarKpiRioQuality -- consulta Unitrac (Task 1: erro != vazio)', () =>
         if (placa === 'BBB2B22') return []
         return [parada(placa, '10:00', 15)]
       },
-      calcularKm: async () => 30,
+      medirRastro: async () => ({ km: 30, pontosNoDia: 500 }),
     })
     const por = (p: string) => r.detalhe.filter(d => d.placa === p)
     for (const d of por('AAA1A11')) {
@@ -86,7 +86,7 @@ describe('gerarKpiRioQuality -- consulta Unitrac (Task 1: erro != vazio)', () =>
         if (n === 1) throw new Error('503')
         return [parada('CCC3C33', '10:00', 15)]
       },
-      calcularKm: async () => 30,
+      medirRastro: async () => ({ km: 30, pontosNoDia: 500 }),
     })
     expect(r.placasConsultaFalhou).toEqual([])
     for (const d of r.detalhe) expect(d.status).not.toBe('pendente')
@@ -107,7 +107,7 @@ describe('gerarKpiRioQuality -- consulta Unitrac (Task 1: erro != vazio)', () =>
         emAndamento--
         return []
       },
-      calcularKm: async () => null,
+      medirRastro: async () => ({ km: null, pontosNoDia: null }),
     })
     expect(pico).toBeLessThanOrEqual(6)
     expect(pico).toBeGreaterThan(1)
@@ -133,7 +133,7 @@ describe('gerarKpiRioQuality -- pacote de relatorio (Task 2)', () => {
       data: DATA,
       cvPorPlaca: new Map([['CCC3C33', '3']]),
       buscarParadas: async (_cv, placa) => [parada(placa, '10:00', 15)],
-      calcularKm: async () => 30,
+      medirRastro: async () => ({ km: 30, pontosNoDia: 500 }),
     })
     for (const d of r.detalhe.filter(x => x.placa === 'SEM0C00')) {
       expect(d.observacao).toBe('SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO')
@@ -154,7 +154,7 @@ describe('gerarKpiRioQuality -- pacote de relatorio (Task 2)', () => {
         if (placa === 'BBB2B22') return []
         return [parada(placa, '10:00', 15)]
       },
-      calcularKm: async () => 0,
+      medirRastro: async () => ({ km: 0, pontosNoDia: 500 }),
     })
     for (const l of r.linhasKpi) {
       const entregues = r.detalhe.filter(d => d.placa === l.placa && d.carga === l.carga && d.status !== 'pendente').length
@@ -169,7 +169,7 @@ describe('gerarKpiRioQuality -- pacote de relatorio (Task 2)', () => {
       custosBuf: custos, entregasBuf: entregas, data: DATA,
       cvPorPlaca: new Map([['CCC3C33', '3']]),
       buscarParadas: async (_cv, placa) => [parada(placa, '10:00', 15)],
-      calcularKm: async () => 30,
+      medirRastro: async () => ({ km: 30, pontosNoDia: 500 }),
     })
     const semPlaca = r.detalhe.filter(d => d.placa === '')
     expect(semPlaca).toHaveLength(1)
@@ -187,9 +187,72 @@ describe('gerarKpiRioQuality -- pacote de relatorio (Task 2)', () => {
         if (placa === 'AAA1A11') throw new Error('x')
         return [parada(placa, '10:00', 15)]
       },
-      calcularKm: async () => 30,
+      medirRastro: async () => ({ km: 30, pontosNoDia: 500 }),
     })
     const principal = textos((await abrir(r.xlsx)).worksheets[0])
     expect(principal.some(t => t.includes('TAXA DE CONFIRMAÇÃO: 100,0% (2 de 2 NFs;') && t.includes('2 com consulta ao rastreador falha'))).toBe(true)
+  })
+})
+
+describe('gerarKpiRioQuality -- sem sinal pela Unitrac e NAO SAIU DA BASE (Task 3)', () => {
+  const SEM_RASTREADOR = 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO'
+  it('CV com consulta OK, so parada na base e rastro <2 pontos: SEM RASTREADOR (sem sinal), fora da taxa', async () => {
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(['SSS1S11', 'CCC3C33']),
+      data: DATA,
+      cvPorPlaca: new Map([['SSS1S11', '1'], ['CCC3C33', '3']]),
+      buscarParadas: async (_cv, placa) => placa === 'SSS1S11' ? [parada(placa, '06:00', 600, 'BASE', { lat: -22.7, lng: -43.0 })] : [parada(placa, '10:00', 15)],
+      medirRastro: async cv => cv === '1' ? { km: null, pontosNoDia: 1 } : { km: 40, pontosNoDia: 900 },
+    })
+    for (const d of r.detalhe.filter(x => x.placa === 'SSS1S11')) expect(d.observacao).toBe(SEM_RASTREADOR)
+  })
+
+  it('rastro desconhecido (consulta do rastro falhou) e 0 paradas: nao conclui sem rastreador', async () => {
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(['SSS1S11']),
+      data: DATA,
+      cvPorPlaca: new Map([['SSS1S11', '1']]),
+      buscarParadas: async () => [],
+      medirRastro: async () => ({ km: null, pontosNoDia: null }),
+    })
+    for (const d of r.detalhe) expect(d.observacao ?? '').not.toMatch(/^SEM RASTREADOR/)
+  })
+
+  it('20 de 40 placas sem sinal: nenhuma concluida + aviso da trava', async () => {
+    const placas = Array.from({ length: 40 }, (_, i) => `PLC${String(i).padStart(4, '0')}`)
+    const semSinal = new Set(placas.slice(0, 20))
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(placas, 1),
+      data: DATA,
+      cvPorPlaca: new Map(placas.map(p => [p, p])),
+      buscarParadas: async (_cv, placa) => semSinal.has(placa) ? [] : [parada(placa, '10:00', 15)],
+      medirRastro: async cv => semSinal.has(cv) ? { km: null, pontosNoDia: 0 } : { km: 40, pontosNoDia: 900 },
+    })
+    for (const d of r.detalhe.filter(x => semSinal.has(x.placa))) expect(d.observacao ?? '').not.toMatch(/^SEM RASTREADOR/)
+    expect(r.avisos).toContainEqual(expect.objectContaining({ motivo: 'consulta_posicoes_suspeita', semSinal: 20, totalPlacas: 40 }))
+  })
+
+  it('consulta falhou nunca vira sem sinal (mesmo com rastro vazio)', async () => {
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(['AAA1A11']),
+      data: DATA,
+      cvPorPlaca: new Map([['AAA1A11', '1']]),
+      buscarParadas: async () => { throw new Error('x') },
+      medirRastro: async () => ({ km: null, pontosNoDia: 0 }),
+    })
+    for (const d of r.detalhe) expect(d.observacao).toBe(OBS_CONSULTA_FALHOU)
+  })
+
+  it('km conhecido <2, rastro com pontos e sem parada fora da base: VEÍCULO NÃO SAIU DA BASE, fora da taxa', async () => {
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(['BBB2B22', 'CCC3C33']),
+      data: DATA,
+      cvPorPlaca: new Map([['BBB2B22', '2'], ['CCC3C33', '3']]),
+      buscarParadas: async (_cv, placa) => placa === 'BBB2B22' ? [] : [parada(placa, '10:00', 15)],
+      medirRastro: async cv => cv === '2' ? { km: 0.3, pontosNoDia: 300 } : { km: 40, pontosNoDia: 900 },
+    })
+    for (const d of r.detalhe.filter(x => x.placa === 'BBB2B22')) expect(d.observacao).toBe('VEÍCULO NÃO SAIU DA BASE')
+    const principal = textos((await abrir(r.xlsx)).worksheets[0])
+    expect(principal.some(t => t.includes('(2 de 2 NFs;') && t.includes('2 que não saíram da base'))).toBe(true)
   })
 })

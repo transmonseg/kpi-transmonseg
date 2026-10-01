@@ -169,11 +169,42 @@ export function placasSemSinalComTrava(
   paradasUnitracCruasPorPlaca: Map<string, UnitracParadaRow[]>,
   alvosPorPlaca: Map<string, { situacao?: number | null }[]>,
 ): { placas: Set<string>; aviso: string | null; semSinal: number; totalPlacas: number } {
-  const detectadas = placasSemSinalNoDia(placasNorm, horarioBasePorPlaca, paradasUnitracCruasPorPlaca, alvosPorPlaca)
+  return aplicarTravaSemSinal(placasNorm, placasSemSinalNoDia(placasNorm, horarioBasePorPlaca, paradasUnitracCruasPorPlaca, alvosPorPlaca))
+}
+
+/** Trava de sem sinal em massa (mesmos limiares acima), sobre um conjunto ja'
+ *  detectado -- extraida de placasSemSinalComTrava (Nutry Max, comportamento
+ *  identico) pra Rio Quality reusar com o detector proprio
+ *  (placaSemSinalPelaUnitrac). */
+export function aplicarTravaSemSinal(
+  placasNorm: string[],
+  detectadas: Set<string>,
+): { placas: Set<string>; aviso: string | null; semSinal: number; totalPlacas: number } {
   const total = new Set(placasNorm).size
   const semSinal = detectadas.size
   if (total >= MINIMO_PLACAS_TRAVA_SEM_SINAL && semSinal / total > LIMITE_FRACAO_SEM_SINAL_AUTOMATICO) {
     return { placas: new Set(), aviso: textoConsultaPosicoesSuspeita(semSinal, total), semSinal, totalPlacas: total }
   }
   return { placas: detectadas, aviso: null, semSinal, totalPlacas: total }
+}
+
+/** Task 3 (plano 2026-09-30-rioquality-aprendizados, estudo item 1b): SEM
+ *  SINAL NO DIA pra Rio Quality, que nao esta' na ponte do monitoramento
+ *  (`consultaPosicoesOk` nunca vem, entao placaSemSinalNoDia nunca dispara).
+ *  So' com o que a Unitrac responde:
+ *  - consulta de paradas (/stops) respondeu de verdade (erro/timeout = nao
+ *    conclui nada), E
+ *  - nenhuma parada FORA_BASE no dia (so' na BASE e' irrelevante, mesmo caso
+ *    RQO9H37 da Nutry Max), E
+ *  - rastro do dia CONHECIDO com menos de 2 pontos (null = consulta do rastro
+ *    falhou ou fora do alcance -> nao conclui).
+ *  Sempre passar pelo aplicarTravaSemSinal antes de usar. */
+export function placaSemSinalPelaUnitrac(p: {
+  consultaOk: boolean
+  paradas: { classificacao: string }[]
+  pontosRastroNoDia: number | null
+}): boolean {
+  if (!p.consultaOk) return false
+  if (p.pontosRastroNoDia == null || p.pontosRastroNoDia >= 2) return false
+  return !p.paradas.some(x => x.classificacao !== 'BASE')
 }

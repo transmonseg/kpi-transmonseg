@@ -277,3 +277,46 @@ describe('placasSemSinalComTrava (coletor fora do ar)', () => {
     expect(tem.get(ps[1])).toBe(true)
   })
 })
+
+// Task 3 (plano 2026-09-30-rioquality-aprendizados): a Rio Quality nao esta
+// na ponte do monitoramento (consultaPosicoesOk nunca vem) -- detector
+// proprio pela Unitrac + a mesma trava de 25% / >=10 placas.
+import { placaSemSinalPelaUnitrac, aplicarTravaSemSinal } from './placas-sem-rastreador'
+
+describe('placaSemSinalPelaUnitrac (Rio Quality, sem ponte)', () => {
+  const p = (classificacao: string) => ({ classificacao }) as never
+  it('consulta OK, 0 paradas fora da base e rastro com <2 pontos: sem sinal', () => {
+    expect(placaSemSinalPelaUnitrac({ consultaOk: true, paradas: [], pontosRastroNoDia: 1 })).toBe(true)
+    expect(placaSemSinalPelaUnitrac({ consultaOk: true, paradas: [p('BASE')], pontosRastroNoDia: 0 })).toBe(true)
+  })
+  it('consulta falhou: nunca sem sinal', () => {
+    expect(placaSemSinalPelaUnitrac({ consultaOk: false, paradas: [], pontosRastroNoDia: 0 })).toBe(false)
+  })
+  it('rastro desconhecido (erro/fora do alcance): nao conclui', () => {
+    expect(placaSemSinalPelaUnitrac({ consultaOk: true, paradas: [], pontosRastroNoDia: null })).toBe(false)
+  })
+  it('rastro com >=2 pontos ou parada fora da base: tem sinal', () => {
+    expect(placaSemSinalPelaUnitrac({ consultaOk: true, paradas: [], pontosRastroNoDia: 2 })).toBe(false)
+    expect(placaSemSinalPelaUnitrac({ consultaOk: true, paradas: [p('FORA_BASE')], pontosRastroNoDia: 0 })).toBe(false)
+  })
+})
+
+describe('aplicarTravaSemSinal', () => {
+  const placas = Array.from({ length: 40 }, (_, i) => `P${i}`)
+  it('20 de 40 sem sinal: ninguem concluido + aviso', () => {
+    const r = aplicarTravaSemSinal(placas, new Set(placas.slice(0, 20)))
+    expect(r.placas.size).toBe(0)
+    expect(r.aviso).not.toBeNull()
+    expect(r.semSinal).toBe(20)
+    expect(r.totalPlacas).toBe(40)
+  })
+  it('3 de 40: conclui as 3, sem aviso', () => {
+    const r = aplicarTravaSemSinal(placas, new Set(placas.slice(0, 3)))
+    expect(r.placas.size).toBe(3)
+    expect(r.aviso).toBeNull()
+  })
+  it('menos de 10 placas: trava nao se aplica', () => {
+    const r = aplicarTravaSemSinal(placas.slice(0, 4), new Set(placas.slice(0, 2)))
+    expect(r.placas.size).toBe(2)
+  })
+})

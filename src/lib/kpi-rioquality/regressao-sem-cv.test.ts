@@ -70,7 +70,10 @@ describe('Rio Quality -- regressao placa sem CV (Task 2, plano 2026-09-30)', () 
     expect(principal.some(t => t.includes('NFs sem rastreador: 2'))).toBe(true)
   })
 
-  it('placa COM CV, consulta OK e nenhuma posicao no dia (km desconhecido): SEM RASTREADOR fora da taxa (a trava de sem sinal em massa fica no pipeline, Task 3)', async () => {
+  // No pipeline (Task 3) a placa sem parada nenhuma sai do mapa de paradas e
+  // so' o detector placaSemSinalPelaUnitrac + trava concluem sem sinal; aqui
+  // fica travado o comportamento da agregacao chamada direto.
+  it('agregacao direto: placa COM CV e nenhuma posicao no dia (km desconhecido) -> SEM RASTREADOR fora da taxa', async () => {
     const { detalhe } = await gerarComoRioQuality('RQX2B22', true, [])
     for (const d of detalhe) {
       expect(d.observacao).toBe('SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO')

@@ -5466,3 +5466,53 @@ describe('Item 1 (auditoria 30/09) -- ENTREGUE so pela baixa em lote herda horar
     expect(ds.map(d => d.chegada)).toEqual([t('15:23'), t('15:23')])
   })
 })
+
+// Task 3 (plano 2026-09-30-rioquality-aprendizados, estudo item 1c): 'VEÍCULO
+// NÃO SAIU DA BASE' (km CONHECIDO baixo, fora da taxa) era amarrado a
+// `modoPrecisao`. Nova opcao `naoSaiuDaBase` (24o parametro) liga SO' esse
+// ramo, sem o resto do modoPrecisao -- Rio Quality usa. Default = valor de
+// `modoPrecisao`: a Nutry Max (que passa modoPrecisao=true e nao passa o 24o)
+// fica identica.
+describe('montarDetalheEntregas -- opcao naoSaiuDaBase separada de modoPrecisao (Task 3, plano 30/09)', () => {
+  const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+  const paradaBase = parada({ id: 'b1', placa_norm: 'RQX3C33', classificacao: 'BASE', lat: -22.8, lng: -43.3 })
+  function chamarRq(km: number | null, opts: { naoSaiuDaBase?: boolean; modoPrecisao?: boolean } = {}) {
+    const args: unknown[] = [
+      'R1', 'RQX3C33', [linha('1', { placa: 'RQX3C33' }), linha('2', { placa: 'RQX3C33' })], [], new Map(), resumoCargaVazio,
+      true, new Map([['RQX3C33', [paradaBase]]]), km, false,
+      false, false, new Map(),
+      true, false, false, undefined, false, new Map(),
+      false, // detectarEscalaDivergente
+      opts.modoPrecisao ?? false,
+      false, // reconhecerRodizio
+      new Map(),
+    ]
+    if (opts.naoSaiuDaBase !== undefined) args.push(opts.naoSaiuDaBase)
+    return (montarDetalheEntregas as (...a: unknown[]) => ReturnType<typeof montarDetalheEntregas>)(...args)
+  }
+
+  it('Rio Quality (modoPrecisao=false, naoSaiuDaBase=true) com km conhecido baixo: VEÍCULO NÃO SAIU DA BASE', () => {
+    for (const d of chamarRq(0.4, { naoSaiuDaBase: true })) {
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe('VEÍCULO NÃO SAIU DA BASE')
+    }
+  })
+
+  it('naoSaiuDaBase=true com km DESCONHECIDO (null): mantem texto antigo (conta na taxa)', () => {
+    for (const d of chamarRq(null, { naoSaiuDaBase: true })) {
+      expect(d.observacao).toBe('VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA')
+    }
+  })
+
+  it('sem a opcao (default) e sem modoPrecisao: texto antigo', () => {
+    for (const d of chamarRq(0.4)) {
+      expect(d.observacao).toBe('VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA')
+    }
+  })
+
+  it('Nutry Max (modoPrecisao=true, sem passar a opcao): continua NÃO SAIU DA BASE -- default segue modoPrecisao', () => {
+    for (const d of chamarRq(0.4, { modoPrecisao: true })) {
+      expect(d.observacao).toBe('VEÍCULO NÃO SAIU DA BASE')
+    }
+  })
+})

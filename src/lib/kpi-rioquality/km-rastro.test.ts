@@ -94,3 +94,34 @@ describe('calcularKmPorRastro', () => {
     expect(await calcularKmPorRastro('123', '2026-09-05', buscar, agora)).toBeNull()
   })
 })
+
+// Task 3 (plano 2026-09-30): sem sinal pela Unitrac precisa saber quantos
+// pontos de rastro o dia teve -- e distinguir "rastro vazio" de "consulta do
+// rastro falhou" (que nao conclui nada).
+import { medirRastroDoDia } from './km-rastro'
+
+describe('medirRastroDoDia', () => {
+  const agora = new Date('2026-09-30T15:00:00Z') // 12:00 BRT
+  it('dia de hoje: km e pontos da janela inicial', async () => {
+    const r = await medirRastroDoDia('1', '2026-09-30', async () => [{ lat: -22.9, long: -43.2 }, { lat: -22.91, long: -43.2 }], agora)
+    expect(r.pontosNoDia).toBe(2)
+    expect(r.km).toBeGreaterThan(1)
+  })
+  it('dia passado: pontos = janela do inicio do dia - janela do dia seguinte', async () => {
+    const pts = (n: number) => Array.from({ length: n }, () => ({ lat: -22.9, long: -43.2 }))
+    const r = await medirRastroDoDia('1', '2026-09-29', async (_cv, horas) => (horas > 24 ? pts(5) : pts(4)), agora)
+    expect(r.pontosNoDia).toBe(1)
+  })
+  it('rastro vazio confirmado: 0 pontos, km null', async () => {
+    const r = await medirRastroDoDia('1', '2026-09-30', async () => [], agora)
+    expect(r).toEqual({ km: null, pontosNoDia: 0 })
+  })
+  it('consulta do rastro falhou: pontos desconhecidos (null), km null', async () => {
+    const r = await medirRastroDoDia('1', '2026-09-30', async () => { throw new Error('x') }, agora)
+    expect(r).toEqual({ km: null, pontosNoDia: null })
+  })
+  it('fora do alcance do rastro: desconhecido', async () => {
+    const r = await medirRastroDoDia('1', '2026-09-20', async () => [], agora)
+    expect(r).toEqual({ km: null, pontosNoDia: null })
+  })
+})

@@ -7,7 +7,8 @@ import { montarVisitasInclusivas } from './visitas'
 import { BASES_COORD_RIOQUALITY } from './constants'
 // calcularKmPercorrido (soma da reta entre paradas) NAO e' usado aqui de
 // proposito -- subestima 43% a 65%. Ver km-rastro.ts.
-import { calcularKmPorRastro } from './km-rastro'
+import { medirRastroDoDia, type MedicaoRastro } from './km-rastro'
+import { placaSemSinalPelaUnitrac, aplicarTravaSemSinal } from '@/lib/kpi-romaneio/placas-sem-rastreador'
 import { buscarHorariosBase } from '@/lib/kpi-romaneio/base-horarios'
 import { resolverParadas, descartarParadaAbertaAlemDoDia } from '@/lib/kpi-romaneio/unitrac'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
@@ -123,14 +124,15 @@ export async function gerarKpiRioQuality(params: {
    *  monitoramento primeiro, Unitrac como sinal secundario -- ver
    *  resolverParadas) */
   buscarParadas?: (cv: string, placaNorm: string, data: string) => Promise<UnitracParadaRow[]>
-  /** injetavel pra teste; padrao = calcularKmPorRastro (rastro da Unitrac) */
-  calcularKm?: (cv: string, data: string) => Promise<number | null>
+  /** injetavel pra teste; padrao = medirRastroDoDia (rastro da Unitrac:
+   *  km do dia + pontos do dia, null = desconhecido) */
+  medirRastro?: (cv: string, data: string) => Promise<MedicaoRastro>
   log?: (msg: string) => void
 }): Promise<ResultadoPipelineRioQuality> {
   const { custosBuf, entregasBuf, completaBuf, data, cvPorPlaca } = params
   const log = params.log ?? (() => {})
   const buscarParadas = params.buscarParadas ?? buscarParadasPadraoRioQuality
-  const calcularKm = params.calcularKm ?? ((cv: string, d: string) => calcularKmPorRastro(cv, d))
+  const medirRastro = params.medirRastro ?? ((cv: string, d: string) => medirRastroDoDia(cv, d))
 
   // 1) parse + 2) geocodificacao -- dois formatos de entrada, mesma saida
   // (romaneioGeo: LinhaGeocodificada[], confiancaPorNf, contConf).
@@ -244,7 +246,7 @@ export async function gerarKpiRioQuality(params: {
   const paradasPorPlaca = new Map<string, UnitracParadaRow[]>()
   const visitasPorPlaca = new Map<string, Map<string, Visita>>()
   const kmPorPlaca = new Map<string, number | null>()
-  const temRastreadorPorPlaca = new Map(placasNorm.map(p => [p, cvPorPlaca.has(p)]))
+  const pontosRastroPorPlaca = new Map<string, number | null>()
   // Task 1 (plano 2026-09-30, estudo item 4b): antes era Promise.all em TODAS
   // as placas de uma vez (~100, timeout de 6 s cada) e erro virava [] calado.
   // Agora: no maximo 6 em paralelo, 1 retry, e erro marca a placa como
@@ -267,10 +269,25 @@ export async function gerarKpiRioQuality(params: {
     }
     paradasPorPlaca.set(placaNorm, paradas)
     visitasPorPlaca.set(placaNorm, montarVisitasInclusivas(linhasGeoPorPlaca.get(placaNorm) ?? [], paradas))
-    kmPorPlaca.set(placaNorm, cv && !placasConsultaFalhou.has(placaNorm) ? await calcularKm(cv, data) : null)
+    const rastro = cv && !placasConsultaFalhou.has(placaNorm) ? await medirRastro(cv, data) : { km: null, pontosNoDia: null }
+    kmPorPlaca.set(placaNorm, rastro.km)
+    pontosRastroPorPlaca.set(placaNorm, rastro.pontosNoDia)
   })
   log(`Placas: ${placasNorm.length}, com CV: ${placasNorm.filter(p => cvPorPlaca.has(p)).length}`)
   if (placasConsultaFalhou.size > 0) log(`Consulta Unitrac falhou em ${placasConsultaFalhou.size} placa(s): ${[...placasConsultaFalhou].join(', ')}`)
+
+  // Task 3 (plano 2026-09-30, estudo item 1b): SEM SINAL NO DIA pela Unitrac
+  // (a RQ nao esta' na ponte) + trava de sem sinal em massa (>25% das placas
+  // do dia, com >=10 placas -> ninguem concluido + aviso). Placa sem sinal =
+  // sem rastreador no dia (temRastreador=false), mesmo efeito da Nutry Max.
+  const placasDoDia = placasNorm.filter(p => p !== '')
+  const travaSemSinal = aplicarTravaSemSinal(placasDoDia, new Set(placasDoDia.filter(p => cvPorPlaca.has(p) && placaSemSinalPelaUnitrac({
+    consultaOk: !placasConsultaFalhou.has(p),
+    paradas: paradasPorPlaca.get(p) ?? [],
+    pontosRastroNoDia: pontosRastroPorPlaca.get(p) ?? null,
+  }))))
+  if (travaSemSinal.aviso) log(travaSemSinal.aviso)
+  const temRastreadorPorPlaca = new Map(placasNorm.map(p => [p, cvPorPlaca.has(p) && !travaSemSinal.placas.has(p)]))
 
   // 4) agregacao por carga (= rota) x placa -- sem escala, sem alvos
   const cargasPorChave = agrupar(romaneioGeo, l => `${l.carga}::${normPlaca(l.placa)}`)
@@ -315,9 +332,11 @@ export async function gerarKpiRioQuality(params: {
         // pendente com GPS de OUTRA placa) foi feita pra Nutry Max; na Rio
         // Quality -- 100 caminhoes na mesma regiao, rua sem numero -- disparou
         // em ~400 entregas na primeira geracao real (05/09), puro ruido.
-        // Consulta falhou: mapa SEM a placa -- "zero posicoes no dia" so'
-        // vale quando a Unitrac respondeu de verdade.
-        placasConsultaFalhou.has(placaNorm) ? new Map() : new Map([[placaNorm, paradasPorPlaca.get(placaNorm) ?? []]]),
+        // Mapa SEM a placa quando ela nao tem parada nenhuma (inclui consulta
+        // falha): o "zero posicoes no dia" de agregacao.ts concluiria SEM
+        // RASTREADOR sem a trava de sem sinal em massa nem a checagem do
+        // rastro -- na RQ, sem sinal so' sai do detector acima (Task 3).
+        (paradasPorPlaca.get(placaNorm) ?? []).length === 0 ? new Map() : new Map([[placaNorm, paradasPorPlaca.get(placaNorm) ?? []]]),
         resumo?.kmPercorrido ?? null,
         false, // diaEmAndamento
         false, // verificarAcessoIlha (so' Nutry Max)
@@ -328,6 +347,18 @@ export async function gerarKpiRioQuality(params: {
         // rastreador no dia sai "SEM RASTREADOR - ... NAO CONTABILIZADO",
         // fora da taxa (mesmo rotulo/regra da Nutry Max).
         true, // tratarSemRastreadorNoDia
+        false, // desativarOutraPlaca (mapa so' tem a propria placa)
+        false, // confirmarPorParadaUnitracPropria (R2 so' Nutry Max)
+        undefined, // todasLinhasDaPlacaNoDia
+        false, // apagaoDeSinalPropriaPlaca (sem ponte)
+        new Map(), // menorDistanciaTrajetoPorNf (sem ponte)
+        false, // detectarEscalaDivergente (sem escala)
+        false, // modoPrecisao: NAO ligado na RQ (vizinhanca <=800m segue ENTREGUE)
+        false, // reconhecerRodizio
+        new Map(), // linhasPorPlacaNoDia
+        // Task 3 (estudo item 1c): km CONHECIDO baixo (rastro) e sem parada
+        // fora da base -> 'VEÍCULO NÃO SAIU DA BASE', fora da taxa.
+        true, // naoSaiuDaBase
       )
     })
     // confianca da geocodificacao vira observacao -- so' quando pendente (se o
@@ -387,6 +418,9 @@ export async function gerarKpiRioQuality(params: {
     placa,
     motivo: 'consulta_unitrac_falhou' as const,
   }))
+  if (travaSemSinal.aviso) {
+    avisos.push({ carga: '—', placa: '—', motivo: 'consulta_posicoes_suspeita', semSinal: travaSemSinal.semSinal, totalPlacas: travaSemSinal.totalPlacas })
+  }
   return {
     xlsx,
     linhasKpi,

@@ -1462,6 +1462,12 @@ export function montarDetalheEntregas(
   // nutrimax-real-arquivo.ts) passa `linhasPorPlaca` (TODAS as placas do
   // dia, ja calculado no chamador).
   linhasPorPlacaNoDia: Map<string, LinhaGeocodificada[]> = new Map(),
+  // Task 3 (plano 2026-09-30-rioquality-aprendizados): 'VEÍCULO NÃO SAIU DA
+  // BASE' (km CONHECIDO baixo, fora da taxa) separado de `modoPrecisao` --
+  // Rio Quality liga so' isto, sem o resto do modoPrecisao. Default = valor
+  // de `modoPrecisao`: a Nutry Max (modoPrecisao=true, nao passa este
+  // parametro) fica identica; quem nao passa nenhum dos dois, tambem.
+  naoSaiuDaBase: boolean = modoPrecisao,
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
   // Task 2 (R2): pontos de referencia de CADA NF da placa no DIA INTEIRO
@@ -1936,7 +1942,7 @@ export function montarDetalheEntregas(
       if (modoPrecisao && placaTemAlvoFeitoNoDia) {
         // operou: sem observacao, cai na classificacao normal abaixo
       } else {
-        observacao = modoPrecisao && kmConhecidoBaixo
+        observacao = naoSaiuDaBase && kmConhecidoBaixo
           ? OBS_NAO_SAIU_DA_BASE
           : 'VEÍCULO SEM MOVIMENTO NO DIA - CONFERIR RASTREADOR OU SE SAIU PRA RUA'
       }
