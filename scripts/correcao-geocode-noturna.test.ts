@@ -249,14 +249,15 @@ describe('aplicarSeHabilitado', () => {
 })
 
 describe('noturno - chave sem o sufixo de CEP (regressao 01/10)', () => {
-  const SEM = 'RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - **'
+  const SEM_BRUTO = 'RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - **'
+  const CHAVE_NORM = 'RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA'
   const COM = 'RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - ** - 28300000'
 
   it('sugestao com CEP grava na chave sem CEP', () => {
-    expect(montarLoteNoturno([sug({ endereco: COM })], new Map()).gravar.map(g => g.endereco)).toEqual([SEM])
+    expect(montarLoteNoturno([sug({ endereco: COM })], new Map()).gravar.map(g => g.endereco)).toEqual([CHAVE_NORM])
   })
 
-  it.each([SEM, COM])('fonte protegida na linha %s bloqueia a sugestao com CEP', chaveProtegida => {
+  it.each([CHAVE_NORM, COM])('fonte protegida na linha %s bloqueia a sugestao com CEP', chaveProtegida => {
     const r = montarLoteNoturno([sug({ endereco: COM })], new Map([[chaveProtegida, linha({ endereco: chaveProtegida, fonte: 'verificacao_manual' })]]))
     expect(r.gravar).toEqual([])
     expect(r.pulados.map(p => p.motivo)).toEqual(['fonte_protegida'])
@@ -265,12 +266,12 @@ describe('noturno - chave sem o sufixo de CEP (regressao 01/10)', () => {
   it('aplicar: le as duas chaves, faz backup da linha sem CEP e grava nela', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'noturno-cep-'))
     try {
-      const { svc, chamadas } = mockSvc({ cache: [linha({ endereco: SEM, fonte: 'cnefe', motivo: null }), linha({ endereco: COM, fonte: 'cnefe', lat: -21, lng: -41, motivo: null })] })
+      const { svc, chamadas } = mockSvc({ cache: [linha({ endereco: CHAVE_NORM, fonte: 'cnefe', motivo: null }), linha({ endereco: COM, fonte: 'cnefe', lat: -21, lng: -41, motivo: null })] })
       const r = await aplicarCadastroNoturno(svc, [sug({ endereco: COM })], { dirSaida: dir, log: () => {} })
       const lidos = chamadas.filter(c => c.op === 'select').flatMap(c => c.arg as string[])
-      expect(lidos.sort()).toEqual([COM, SEM].sort())
-      expect(r.gravados).toEqual([SEM])
-      expect(readFileSync(join(dir, 'backup-antes-aplicar.csv'), 'utf-8').split('\n')[1]).toBe(`${SEM};-22.6;-43.2;false;cnefe;`)
+      expect(lidos.sort()).toEqual([COM, CHAVE_NORM].sort())
+      expect(r.gravados).toEqual([CHAVE_NORM])
+      expect(readFileSync(join(dir, 'backup-antes-aplicar.csv'), 'utf-8').split('\n')[1]).toBe(`${CHAVE_NORM};-22.6;-43.2;false;cnefe;`)
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

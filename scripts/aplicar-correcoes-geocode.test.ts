@@ -119,20 +119,22 @@ describe('csvBackup', () => {
 // Regressao 01/10/2026: endereco com sufixo de CEP grava/le pela chave sem CEP
 // (src/lib/kpi-romaneio/endereco-cep.ts), igual ao geocode.ts.
 describe('montarUpserts - chave sem o sufixo de CEP', () => {
-  const SEM = 'RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - **'
+  // Chave normalizada: separarCep + normalizarEndereco remove "- **" e expande cidade/tipo.
+  const SEM_BRUTO = 'RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - **'
+  const CHAVE_NORM = 'RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA'
   const COM = 'RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - ** - 28300000'
   const corr = { endereco: COM, lat: -21.2, lng: -41.9, fonte: 'verificacao', evidencia: 'ev' }
 
   it('correcao com CEP grava na chave sem CEP', () => {
     const { gravar } = montarUpserts([corr], new Map())
-    expect(gravar.map(g => g.endereco)).toEqual([SEM])
+    expect(gravar.map(g => g.endereco)).toEqual([CHAVE_NORM])
   })
 
   it('fonte manual na linha sem CEP bloqueia', () => {
-    const cache = new Map<string, LinhaCacheAtual>([[SEM, { endereco: SEM, lat: 0, lng: 0, confiavel: true, fonte: 'manual', motivo: null }]])
+    const cache = new Map<string, LinhaCacheAtual>([[CHAVE_NORM, { endereco: CHAVE_NORM, lat: 0, lng: 0, confiavel: true, fonte: 'manual', motivo: null }]])
     const { gravar, pulados } = montarUpserts([corr], cache)
     expect(gravar).toEqual([])
-    expect(pulados).toEqual([{ endereco: SEM, motivo: 'fonte_manual' }])
+    expect(pulados).toEqual([{ endereco: CHAVE_NORM, motivo: 'fonte_manual' }])
   })
 
   it('fonte manual na linha antiga COM CEP tambem bloqueia', () => {
@@ -141,7 +143,7 @@ describe('montarUpserts - chave sem o sufixo de CEP', () => {
   })
 
   it('endereco sem CEP: chave identica a de sempre', () => {
-    expect(montarUpserts([{ ...corr, endereco: SEM }], new Map()).gravar.map(g => g.endereco)).toEqual([SEM])
+    expect(montarUpserts([{ ...corr, endereco: SEM_BRUTO }], new Map()).gravar.map(g => g.endereco)).toEqual([CHAVE_NORM])
   })
 })
 

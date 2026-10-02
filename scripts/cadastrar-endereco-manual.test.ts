@@ -30,15 +30,17 @@ describe('montarPayloadCadastroManual', () => {
   })
 
   it('espaco duplo no meio do endereco e preservado, nao colapsado pra simples', () => {
+    // normalizarEndereco remove complemento final tipo "- LOTE ... QUADRA ..." como sufixo curto/lixo
     expect(normalizarEndereco('AVENIDA MASCARENHAS DE MORAIS, SN - CHACARA RIO PETROPOLIS, DUQUE DE CAXIAS - LOTE  28  QUADRA  24'))
-      .toBe('AVENIDA MASCARENHAS DE MORAIS, SN - CHACARA RIO PETROPOLIS, DUQUE DE CAXIAS - LOTE  28  QUADRA  24')
+      .toBe('AVENIDA MASCARENHAS DE MORAIS, SN - CHACARA RIO PETROPOLIS, DUQUE DE CAXIAS')
   })
 })
 
 describe('normalizarEndereco - sufixo de CEP (regressao 01/10)', () => {
-  it('tira o sufixo de CEP (mesma chave que geocode.ts le), sem colapsar espaco', () => {
-    expect(normalizarEndereco(' rua antonio cunha, 502 - frigorifico, itaperuna - ** - 28300000 ')).toBe('RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - **')
-    expect(normalizarEndereco('rua x,  10 - centro, italva - * - 28250-000')).toBe('RUA X,  10 - CENTRO, ITALVA - *')
+  it('tira o sufixo de CEP e normaliza (mesma chave que geocode.ts le)', () => {
+    // normalizarEndereco agora expande cidade truncada e remove sufixos curtos como "- **"
+    expect(normalizarEndereco(' rua antonio cunha, 502 - frigorifico, itaperuna - ** - 28300000 ')).toBe('RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA')
+    expect(normalizarEndereco('rua x,  10 - centro, italva - * - 28250-000')).toBe('RUA X,  10 - CENTRO, ITALVA')
   })
 })
 

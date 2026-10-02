@@ -113,9 +113,9 @@ describe('cadastro_unitrac (regra 1)', () => {
 })
 
 describe('upserts da correcao - chave sem o sufixo de CEP (regressao 01/10)', () => {
-  it('montarUpsertCorrecao e montarUpsertCadastro gravam na chave sem CEP', () => {
-    expect(montarUpsertCorrecao(s({ endereco: 'RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - ** - 28300000' })).endereco).toBe('RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - **')
-    expect(montarUpsertCadastro({ ...s({}), endereco: 'RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - ** - 28300000', distParadaM: 50 } as never).endereco).toBe('RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - **')
+  it('montarUpsertCorrecao e montarUpsertCadastro gravam na chave normalizada (sem sufixo curto)', () => {
+    expect(montarUpsertCorrecao(s({ endereco: 'RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - ** - 28300000' })).endereco).toBe('RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA')
+    expect(montarUpsertCadastro({ ...s({}), endereco: 'RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA - ** - 28300000', distParadaM: 50 } as never).endereco).toBe('RUA ANTONIO CUNHA, 502 - FRIGORIFICO, ITAPERUNA')
   })
 })
 
