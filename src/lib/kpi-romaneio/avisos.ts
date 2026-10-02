@@ -1,4 +1,5 @@
-import type { AvisoDescasamento, LinhaEscala } from './types'
+import type { AvisoDescasamento, LinhaEscala, LinhaGeocodificada } from './types'
+import { haversine } from '@/lib/utils/geo'
 
 /** Uma carga do lado do Romaneio, so' com o que basta pra cruzar com a
  *  Escala por carga+placa -- evita acoplar esta funcao ao tipo completo de
@@ -43,4 +44,77 @@ export function detectarDescasamentos(
   }
 
   return avisos.sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
+}
+
+/** Alerta operacional (02/10): motorista que aparece em 2+ placas DIFERENTES
+ *  no mesmo dia -- sinal de escala trocada ou erro de cadastro. Caso real
+ *  30/09: CARLOS SILVA na TUO1D10 e na RBJ2J67. Nao muda taxa nem
+ *  confirmacao -- so' informa na aba Avisos pra operacao conferir. */
+export function detectarMotoristaMultiplasPlacas(
+  escala: LinhaEscala[],
+): AvisoDescasamento[] {
+  const placasPorMotorista = new Map<string, Set<string>>()
+  const nomeOriginal = new Map<string, string>()
+  for (const e of escala) {
+    if (!e.motorista) continue
+    const chave = e.motorista.trim().toUpperCase()
+    if (!placasPorMotorista.has(chave)) {
+      placasPorMotorista.set(chave, new Set())
+      nomeOriginal.set(chave, e.motorista.trim())
+    }
+    placasPorMotorista.get(chave)!.add(e.placaNorm)
+  }
+  const avisos: AvisoDescasamento[] = []
+  for (const [chave, placas] of placasPorMotorista) {
+    if (placas.size < 2) continue
+    const lista = [...placas].sort()
+    avisos.push({
+      carga: '—',
+      placa: lista.join(', '),
+      motivo: 'motorista_multiplas_placas',
+      motorista: nomeOriginal.get(chave),
+      placas: lista,
+    })
+  }
+  return avisos.sort((a, b) => (a.motorista ?? '').localeCompare(b.motorista ?? ''))
+}
+
+/** Limiar de distancia entre centroides de NFs da MESMA carga pra considerar
+ *  "regioes diferentes" (pedido 02/10). 60km cobre o caso real Campos x Rio
+ *  (~220km) sem pegar variacao normal dentro de uma mesma regiao metropolitana. */
+const DISTANCIA_MIN_MULTIREGIAO_KM = 60
+
+/** Alerta operacional (02/10): carga com NFs espalhadas em regioes distantes
+ *  (>60km entre centroides) -- sinal de que a escala juntou entregas que nao
+ *  sao da mesma rota. Nao muda taxa -- so' informa. */
+export function detectarCargaMultiRegiao(
+  linhas: LinhaGeocodificada[],
+): AvisoDescasamento[] {
+  const porCarga = new Map<string, { lat: number; lng: number }[]>()
+  for (const l of linhas) {
+    if (l.lat == null || l.lng == null) continue
+    const arr = porCarga.get(l.carga)
+    if (arr) arr.push({ lat: l.lat, lng: l.lng })
+    else porCarga.set(l.carga, [{ lat: l.lat, lng: l.lng }])
+  }
+  const avisos: AvisoDescasamento[] = []
+  for (const [carga, pontos] of porCarga) {
+    if (pontos.length < 2) continue
+    let maxDist = 0
+    for (let i = 0; i < pontos.length; i++) {
+      for (let j = i + 1; j < pontos.length; j++) {
+        const d = haversine(pontos[i].lat, pontos[i].lng, pontos[j].lat, pontos[j].lng) / 1000
+        if (d > maxDist) maxDist = d
+      }
+    }
+    if (maxDist > DISTANCIA_MIN_MULTIREGIAO_KM) {
+      avisos.push({
+        carga,
+        placa: '—',
+        motivo: 'carga_multiregiao',
+        distanciaKm: Math.round(maxDist),
+      })
+    }
+  }
+  return avisos.sort((a, b) => a.carga.localeCompare(b.carga))
 }

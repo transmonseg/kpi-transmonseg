@@ -71,6 +71,8 @@ const LABEL_MOTIVO: Record<AvisoDescasamento['motivo'], string> = {
   rq_placa_sem_cv: 'Placa sem CV — rode descobrir-cv (scripts/descobrir-cv-rq.ts) e confira a frota',
   rq_sem_snapshot: 'Sem dado do snapshot de paradas — consulta ao rastreador falhou, conferir',
   geocode_parcial: 'Geocode parcial — gere novamente',
+  motorista_multiplas_placas: 'Motorista em múltiplas placas',
+  carga_multiregiao: 'Carga com NFs em regiões distantes',
 }
 
 // Task 2 (plano 2026-09-30, item 2): "Escala X × Romaneio Y (Z NFs a
@@ -94,6 +96,12 @@ function textoAviso(a: AvisoDescasamento): string {
   if (a.motivo === 'geocode_parcial' && a.enderecosParciais != null) {
     const n = a.enderecosParciais
     return `Geocode parcial: ${n} endereço${n === 1 ? '' : 's'} sem a busca completa (banco sobrecarregado) — gere novamente`
+  }
+  if (a.motivo === 'motorista_multiplas_placas' && a.motorista && a.placas) {
+    return `MOTORISTA EM MÚLTIPLAS PLACAS: ${a.motorista} aparece nas placas ${a.placas.join(', ')} — conferir escala`
+  }
+  if (a.motivo === 'carga_multiregiao' && a.distanciaKm != null) {
+    return `CARGA COM NFs EM REGIÕES DISTANTES: carga ${a.carga} tem entregas separadas por ${a.distanciaKm} km — conferir rota`
   }
   return LABEL_MOTIVO[a.motivo]
 }

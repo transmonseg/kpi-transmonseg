@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { detectarDescasamentos } from './avisos'
-import type { LinhaEscala } from './types'
+import { detectarDescasamentos, detectarMotoristaMultiplasPlacas, detectarCargaMultiRegiao } from './avisos'
+import type { LinhaEscala, LinhaGeocodificada } from './types'
 
 function escala(overrides: Partial<LinhaEscala> = {}): LinhaEscala {
   return {
@@ -87,5 +87,127 @@ describe('detectarDescasamentos', () => {
       { carga: '3', placaNorm: 'CCC3333' },
     ]
     expect(detectarDescasamentos(escalas, romaneio)).toEqual([])
+  })
+})
+
+describe('detectarMotoristaMultiplasPlacas', () => {
+  it('motorista em uma só placa -- sem aviso', () => {
+    const escalas = [
+      escala({ carga: '1', placaNorm: 'AAA1111', motorista: 'JOAO' }),
+      escala({ carga: '2', placaNorm: 'BBB2222', motorista: 'MARIA' }),
+    ]
+    expect(detectarMotoristaMultiplasPlacas(escalas)).toEqual([])
+  })
+
+  it('motorista aparece em 2 placas diferentes no mesmo dia -- aviso com as placas', () => {
+    const escalas = [
+      escala({ carga: '98593', placaNorm: 'TUO1D10', motorista: 'CARLOS SILVA' }),
+      escala({ carga: '98700', placaNorm: 'RBJ2J67', motorista: 'CARLOS SILVA' }),
+    ]
+    const r = detectarMotoristaMultiplasPlacas(escalas)
+    expect(r).toHaveLength(1)
+    expect(r[0].motivo).toBe('motorista_multiplas_placas')
+    expect(r[0].motorista).toBe('CARLOS SILVA')
+    expect(r[0].placas).toEqual(['RBJ2J67', 'TUO1D10'])
+  })
+
+  it('motorista em 3+ placas -- todas listadas', () => {
+    const escalas = [
+      escala({ carga: '1', placaNorm: 'AAA1111', motorista: 'PEDRO' }),
+      escala({ carga: '2', placaNorm: 'BBB2222', motorista: 'PEDRO' }),
+      escala({ carga: '3', placaNorm: 'CCC3333', motorista: 'PEDRO' }),
+    ]
+    const r = detectarMotoristaMultiplasPlacas(escalas)
+    expect(r).toHaveLength(1)
+    expect(r[0].placas).toEqual(['AAA1111', 'BBB2222', 'CCC3333'])
+  })
+
+  it('mesmo motorista na MESMA placa (cargas diferentes) -- sem aviso', () => {
+    const escalas = [
+      escala({ carga: '1', placaNorm: 'AAA1111', motorista: 'JOAO' }),
+      escala({ carga: '2', placaNorm: 'AAA1111', motorista: 'JOAO' }),
+    ]
+    expect(detectarMotoristaMultiplasPlacas(escalas)).toEqual([])
+  })
+
+  it('normaliza nome do motorista (trim/case) pra agrupar', () => {
+    const escalas = [
+      escala({ carga: '1', placaNorm: 'AAA1111', motorista: '  carlos silva  ' }),
+      escala({ carga: '2', placaNorm: 'BBB2222', motorista: 'Carlos Silva' }),
+    ]
+    const r = detectarMotoristaMultiplasPlacas(escalas)
+    expect(r).toHaveLength(1)
+    expect(r[0].motorista?.toUpperCase()).toBe('CARLOS SILVA')
+  })
+})
+
+describe('detectarCargaMultiRegiao', () => {
+  function linhaGeo(overrides: Partial<LinhaGeocodificada> & Pick<LinhaGeocodificada, 'carga' | 'nf'>): LinhaGeocodificada {
+    return {
+      destino: 'DESTINO',
+      placa: 'AAA1111',
+      motorista: 'MOTORISTA',
+      ajudantes: [],
+      clienteCodigo: 'CLI1',
+      clienteNome: 'CLIENTE',
+      endereco: 'ENDEREÇO',
+      lat: null,
+      lng: null,
+      ...overrides,
+    }
+  }
+
+  it('carga com NFs em uma só região -- sem aviso', () => {
+    // Todos os pontos próximos (~0 km entre si)
+    const linhas = [
+      linhaGeo({ carga: '1', nf: 'NF1', lat: -22.9, lng: -43.2 }),
+      linhaGeo({ carga: '1', nf: 'NF2', lat: -22.901, lng: -43.201 }),
+    ]
+    expect(detectarCargaMultiRegiao(linhas)).toEqual([])
+  })
+
+  it('carga com NFs em 2 regiões >60km -- aviso com distâncias', () => {
+    // Campos dos Goytacazes ~ -21.75,-41.32 e Rio ~ -22.9,-43.2 => ~220km
+    const linhas = [
+      linhaGeo({ carga: '98593', nf: 'NF1', lat: -21.75, lng: -41.32 }),
+      linhaGeo({ carga: '98593', nf: 'NF2', lat: -21.76, lng: -41.33 }),
+      linhaGeo({ carga: '98593', nf: 'NF3', lat: -22.9, lng: -43.2 }),
+    ]
+    const r = detectarCargaMultiRegiao(linhas)
+    expect(r).toHaveLength(1)
+    expect(r[0].motivo).toBe('carga_multiregiao')
+    expect(r[0].carga).toBe('98593')
+    expect(r[0].distanciaKm).toBeGreaterThan(60)
+  })
+
+  it('carga com pontos <60km entre si -- sem aviso', () => {
+    // Pontos a ~5km de distância
+    const linhas = [
+      linhaGeo({ carga: '1', nf: 'NF1', lat: -22.9, lng: -43.2 }),
+      linhaGeo({ carga: '1', nf: 'NF2', lat: -22.94, lng: -43.24 }),
+    ]
+    expect(detectarCargaMultiRegiao(linhas)).toEqual([])
+  })
+
+  it('linhas sem coordenada são ignoradas', () => {
+    const linhas = [
+      linhaGeo({ carga: '1', nf: 'NF1', lat: -22.9, lng: -43.2 }),
+      linhaGeo({ carga: '1', nf: 'NF2', lat: null, lng: null }),
+    ]
+    expect(detectarCargaMultiRegiao(linhas)).toEqual([])
+  })
+
+  it('múltiplas cargas -- cada uma avaliada independentemente', () => {
+    const linhas = [
+      // Carga 1: próxima, sem aviso
+      linhaGeo({ carga: '1', nf: 'NF1', lat: -22.9, lng: -43.2 }),
+      linhaGeo({ carga: '1', nf: 'NF2', lat: -22.901, lng: -43.201 }),
+      // Carga 2: distante, com aviso
+      linhaGeo({ carga: '2', nf: 'NF3', lat: -21.75, lng: -41.32 }),
+      linhaGeo({ carga: '2', nf: 'NF4', lat: -22.9, lng: -43.2 }),
+    ]
+    const r = detectarCargaMultiRegiao(linhas)
+    expect(r).toHaveLength(1)
+    expect(r[0].carga).toBe('2')
   })
 })

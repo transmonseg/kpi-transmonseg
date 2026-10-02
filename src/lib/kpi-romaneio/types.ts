@@ -333,9 +333,11 @@ export type AvisoDescasamento = {
   placa: string
   // 'consulta_unitrac_falhou' e 'rq_*': so' Rio Quality (Tasks 1 e 4, plano
   // 2026-09-30) -- Custos x Entregas e frota, analogos do Escala x Romaneio.
+  // 'motorista_multiplas_placas' e 'carga_multiregiao': alertas operacionais
+  // Nutry Max (02/10) -- nao bloqueiam, so' informam na aba Avisos.
   motivo: 'sem_romaneio' | 'sem_escala' | 'nf_divergente' | 'consulta_posicoes_suspeita' | 'consulta_unitrac_falhou'
     | 'rq_sem_rota_custos' | 'rq_rota_sem_entregas' | 'rq_placa_sem_cv' | 'rq_sem_snapshot'
-    | 'geocode_parcial'
+    | 'geocode_parcial' | 'motorista_multiplas_placas' | 'carga_multiregiao'
   /** So' em 'geocode_parcial' (incidente 01/10): enderecos sem resultado porque a
    *  busca por similaridade CNEFE estourou o timeout ou passou do teto da geracao. */
   enderecosParciais?: number
@@ -347,6 +349,12 @@ export type AvisoDescasamento = {
   /** So' em 'nf_divergente' (Task 2 plano 2026-09-30): NF PLANEJADO da Escala x NFs do Romaneio da carga. */
   nfEscala?: number
   nfRomaneio?: number
+  /** So' em 'motorista_multiplas_placas' (02/10): nome normalizado do motorista que aparece em 2+ placas. */
+  motorista?: string
+  /** So' em 'motorista_multiplas_placas' (02/10): lista de placas distintas onde o motorista aparece. */
+  placas?: string[]
+  /** So' em 'carga_multiregiao' (02/10): distancia maxima entre centróides das NFs da carga (km). */
+  distanciaKm?: number
 }
 
 /** Texto do aviso da trava contra "sem sinal" em massa (coletor do
