@@ -17,9 +17,18 @@ export function separarCep(endereco: string): { chave: string; cep: string | nul
   return { chave, cep: m[1] }
 }
 
-/** Chave de kpi_romaneio_geocode_cache / kpi_romaneio_geocode_negativo. */
+import { normalizarEndereco } from './normalizar-endereco'
+
+/** Chave de kpi_romaneio_geocode_cache / kpi_romaneio_geocode_negativo.
+ *  Separa o CEP PRIMEIRO (remove sufixo numerico/mascara), DEPOIS normaliza
+ *  o endereco restante: grafias diferentes pro mesmo endereco (cidade
+ *  truncada vs completa, tipo abreviado vs expandido) colidem na mesma
+ *  chave e o cache funciona. Normalizar antes de separar o CEP quebrava
+ *  testes porque a expansao de cidade consumia sufixos como "- *", "- B".
+ *  Regressao 02/10/2026. */
 export function chaveCacheEndereco(endereco: string): string {
-  return separarCep(endereco).chave
+  const { chave } = separarCep(endereco)
+  return normalizarEndereco(chave)
 }
 
 /** Item 5.2 (colapso de via longa): enderecos DIFERENTES geocodificados pro
