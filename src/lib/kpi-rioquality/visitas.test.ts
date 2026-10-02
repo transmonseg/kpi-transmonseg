@@ -148,7 +148,9 @@ describe('montarVisitasInclusivas', () => {
     const C1 = { lat: -23.0003, lng: -43.3650 }
     const C2 = { lat: -23.0005, lng: -43.3950 } // ~2 km a oeste do ponto
     const corredor = [PONTO, C1, C2]
-    const comCorredor = (nf: string, p = PONTO, pontos = corredor): LinhaGeocodificada => ({ ...linha(nf, p.lat, p.lng), pontosCorredorRua: pontos })
+    // Correcao 02/10: endereco SEM NUMERO e' requisito pro corredor; a fixture
+    // precisa passar um endereco sem numero pra simular o cenario real da RQ.
+    const comCorredor = (nf: string, p = PONTO, pontos = corredor, endereco = 'AVENIDA DAS AMERICAS - BARRA DA TIJUCA, RIO DE JANEIRO'): LinhaGeocodificada => ({ ...linha(nf, p.lat, p.lng), pontosCorredorRua: pontos, endereco })
 
     it('parada propria de 12 min a ~150 m de outro ponto da rua (2 km do ponto aproximado) confirma, marcada viaCorredorDaRua, com o horario da parada', () => {
       const paradas = [parada('p1', C2.lat + 0.00135, C2.lng, '2026-09-30T13:05:00Z', '2026-09-30T13:17:00Z')]
@@ -199,5 +201,87 @@ describe('montarVisitasInclusivas', () => {
       expect(v.get('NF-1')?.viaCorredorDaRua).toBe(true)
       expect(v.has('N-1')).toBe(false)
     })
+
+    // Correcao 02/10: endereco COM NUMERO nao usa corredor (cluster falso em via longa).
+    it('endereco COM numero + parada propria: NAO confirma pelo corredor (regressao)', () => {
+      const nf = comCorredor('NF-1', PONTO, corredor, 'AVENIDA DAS AMERICAS, 3000 - BARRA DA TIJUCA, RIO DE JANEIRO')
+      const paradas = [parada('p1', C2.lat + 0.00135, C2.lng, '2026-09-30T13:05:00Z', '2026-09-30T13:17:00Z')]
+      const v = montarVisitasInclusivas([nf], paradas)
+      expect(v.get('NF-1')?.viaCorredorDaRua).toBeFalsy()
+    })
+
+    // Correcao 02/10: limite proporcional de NFs por parada (1 NF / 3 min).
+    it('parada de 5 min com 8 NFs candidatas: confirma so 2 (as mais proximas)', () => {
+      // O corredor confirma quando a PARADA esta' a <=200m de um ponto CNEFE
+      // (independente da posicao da NF). As NFs precisam estar FORA do raio
+      // ampliado (800m) pra nao serem confirmadas no passo 1. Criamos um
+      // ponto CNEFE proximo da parada (~100m) e colocamos as NFs a ~900m.
+      const pontoCnefeProxParada = { lat: C2.lat + 0.0009, lng: C2.lng } // ~100m da parada
+      const pontoParada = { lat: C2.lat, lng: C2.lng }
+      // NFs a ~900m da parada (fora do raio ampliado de 800m)
+      const pontoNfs = { lat: C2.lat - 0.0081, lng: C2.lng }
+      // Corredor inclui o ponto proximo da parada
+      const corredorLocal = [pontoCnefeProxParada, PONTO, C1]
+      const nfs = Array.from({ length: 8 }, (_, i) =>
+        comCorredor(`NF-${i}`, pontoNfs, corredorLocal, 'AVENIDA DAS AMERICAS - BARRA DA TIJUCA, RIO DE JANEIRO'),
+      )
+      const paradas = [parada('p1', pontoParada.lat, pontoParada.lng, '2026-09-30T13:05:00Z', '2026-09-30T13:10:00Z')] // 5 min -> max 2
+      const v = montarVisitasInclusivas(nfs, paradas)
+      const confirmadas = nfs.filter(nf => v.get(nf.nf)?.viaCorredorDaRua)
+      expect(confirmadas).toHaveLength(2)
+      // Mesma distancia (todas no mesmo ponto); desempate por NF (ordem lexicografica)
+      expect(confirmadas.map(c => c.nf)).toEqual(['NF-0', 'NF-1'])
+    })
+
+    // Correcao 02/10: shopping/condominio com mesmo endereco exato confirma todas.
+    it('shopping com mesmo endereco exato: confirma todas (mesmo endereco = legitimo)', () => {
+      const shoppingEndereco = 'SHOPPING BARRA SQUARE - AVENIDA DAS AMERICAS, 4666'
+      const nfs = Array.from({ length: 5 }, (_, i) =>
+        comCorredor(`NF-SHOP-${i}`, PONTO, corredor, shoppingEndereco),
+      )
+      const paradas = [parada('p1', C2.lat + 0.00135, C2.lng, '2026-09-30T13:05:00Z', '2026-09-30T13:17:00Z')]
+      const v = montarVisitasInclusivas(nfs, paradas)
+      // endereco COM numero -> nenhuma confirma pelo corredor (todas tem numero)
+      for (const nf of nfs) expect(v.get(nf.nf)?.viaCorredorDaRua).toBeFalsy()
+    })
+  })
+})
+
+// Helpers unitarios dos filtros do corredor (correcao 02/10)
+import { enderecoTemNumero, limiteNfsPorParadaNoCorredor } from './visitas'
+
+describe('enderecoTemNumero (correcao 02/10)', () => {
+  it('endereco sem numero (RQ padrao): false', () => {
+    expect(enderecoTemNumero('AVENIDA DAS AMERICAS - BARRA DA TIJUCA, RIO DE JANEIRO')).toBe(false)
+    expect(enderecoTemNumero('RUA COPACABANA, RIO DE JANEIRO')).toBe(false)
+    expect(enderecoTemNumero(null)).toBe(false)
+    expect(enderecoTemNumero('')).toBe(false)
+  })
+  it('S/N e SN: false', () => {
+    expect(enderecoTemNumero('RUA X, S/N')).toBe(false)
+    expect(enderecoTemNumero('RUA Y SN')).toBe(false)
+    expect(enderecoTemNumero('RUA Z, S.N.')).toBe(false)
+  })
+  it('endereco com numero: true', () => {
+    expect(enderecoTemNumero('AVENIDA DAS AMERICAS, 3000')).toBe(true)
+    expect(enderecoTemNumero('RUA X, 123 - BAIRRO')).toBe(true)
+    expect(enderecoTemNumero('RUA X - 456, CIDADE')).toBe(true)
+  })
+  it('nomes proprios numericos (25 DE MARCO) nao contam como numero', () => {
+    expect(enderecoTemNumero('RUA 25 DE MARCO, SAO PAULO')).toBe(false)
+    expect(enderecoTemNumero('AVENIDA 7 DE SETEMBRO')).toBe(false)
+  })
+})
+
+describe('limiteNfsPorParadaNoCorredor (correcao 02/10)', () => {
+  it('5 min -> 2 NFs; 30 min -> 10 NFs; 2 min -> 1 NF', () => {
+    expect(limiteNfsPorParadaNoCorredor(5 * 60_000)).toBe(2)
+    expect(limiteNfsPorParadaNoCorredor(30 * 60_000)).toBe(10)
+    expect(limiteNfsPorParadaNoCorredor(2 * 60_000)).toBe(1)
+  })
+  it('duracao invalida ou zero -> 0', () => {
+    expect(limiteNfsPorParadaNoCorredor(0)).toBe(0)
+    expect(limiteNfsPorParadaNoCorredor(-1000)).toBe(0)
+    expect(limiteNfsPorParadaNoCorredor(NaN)).toBe(0)
   })
 })

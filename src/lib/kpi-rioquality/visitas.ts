@@ -3,6 +3,52 @@ import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { RAIO_ENTREGA_METROS } from '@/lib/kpi-romaneio/constants'
 import { RAIO_VIZINHANCA_METROS, RAIO_CONFIRMACAO_AMPLIADO_METROS, RAIO_PARADA_CORREDOR_M, PERMANENCIA_MIN_CORREDOR_MIN } from './constants'
 
+// Correcao 02/10 (falso positivo massivo no corredor): endereco SEM NUMERO em
+// via longa geocodifica para o MESMO ponto generico e uma unica parada confirma
+// dezenas de NFs em locais distintos. Endereco com numero (ou padrao de
+// shopping/condominio) = legitimo; sem numero = NAO usar corredor.
+// Formato do endereco exibido (parse-planilhas.ts): "RUA - BAIRRO, CIDADE" ou
+// "RUA, CIDADE". Numero aparece como "RUA, 123" ou "RUA 123". S/N e SN sao
+// tratados como sem numero.
+export function enderecoTemNumero(endereco: string | undefined | null): boolean {
+  if (!endereco) return false
+  const s = endereco.trim()
+  if (!s) return false
+  // "S/N", "SN", "S.N." => sem numero
+  if (/\bS[./]?\s*N\b/i.test(s)) return false
+  // Numero apos virgula/traco: "RUA, 123", "RUA - 123", "RUA,123"
+  if (/[,–\-]\s*\d+/.test(s)) return true
+  // Numero no inicio: "123 RUA" (raro mas possivel)
+  if (/^\d+\s/.test(s)) return true
+  // Numero solto entre palavras: "RUA 123 X" -- evita falso positivo com
+  // nomes proprios numericos ("RUA 25 DE MARCO", "AVENIDA 7 DE SETEMBRO")
+  // verificando se o numeral e' seguido de " DE " (data/nome proprio).
+  const m = s.match(/\b(\d+)\b/g)
+  if (!m) return false
+  for (let i = 0; i < m.length; i++) {
+    const tok = m[i]
+    const n = Number(tok)
+    if (n >= 1 && n <= 99999) {
+      // descarta tokens que parecem ano (19xx/20xx)
+      if (n >= 1900 && n <= 2100) continue
+      // descarta numeral seguido de " DE " (nome proprio: "25 DE MARCO")
+      const apos = s.indexOf(tok) + tok.length
+      const resto = s.slice(apos)
+      if (/^\s+DE\s/i.test(resto)) continue
+      return true
+    }
+  }
+  return false
+}
+
+/** Limite proporcional de NFs por parada no corredor (correcao 02/10):
+ *  max(1, ceil(duracaoMin / 3)). Parada de 5 min -> 2 NFs; 30 min -> 10 NFs. */
+export function limiteNfsPorParadaNoCorredor(duracaoMs: number): number {
+  const min = duracaoMs / 60_000
+  if (!Number.isFinite(min) || min <= 0) return 0
+  return Math.max(1, Math.ceil(min / 3))
+}
+
 // Casamento INCLUSIVO entrega x parada GPS -- achado real 05/09 (primeira
 // geracao Rio Quality): montarVisitas da Nutry Max casa cada parada com UMA
 // entrega (a mais proxima); na Rio Quality varias entregas da mesma placa
@@ -108,10 +154,21 @@ export function montarVisitasInclusivas(linhas: LinhaGeocodificada[], paradas: U
   //    CORREDOR_M de QUALQUER ponto da rua; ganha a de maior permanencia.
   //    Roda por ultimo de proposito: confirmada assim nao empresta horario
   //    por vizinhanca (a coordenada continua aproximada).
-  for (const linha of comCoord) {
-    if (visitas.has(linha.nf)) continue
-    const corredor = linha.pontosCorredorRua ?? []
-    if (corredor.length === 0) continue
+  //    Correcao 02/10: (a) endereco COM NUMERO nao usa corredor (cluster
+  //    falso em via longa -- Av. das Americas etc.); (b) limite proporcional
+  //    de NFs por parada (1 NF / 3 min), as mais proximas ganham quando
+  //    excede. Shopping/condominio com mesmo endereco exato segue confirmando
+  //    todas (mesmo endereco = legitimo, tratado no passo 1 direto).
+  const candidatasCorredor = comCoord.filter(l => !visitas.has(l.nf) && (l.pontosCorredorRua?.length ?? 0) > 0)
+  // Agrupa candidatas por parada: cada parada confirma ate' limiteNfsPorParadaNoCorredor(dur)
+  // NFs, as mais proximas primeiro. Endereco com numero NAO entra aqui.
+  type CandidataCorr = { linha: typeof candidatasCorredor[number]; melhorDist: number; melhorParada: UnitracParadaRow; dur: number }
+  const candidatasPorParada = new Map<string, CandidataCorr[]>()
+  for (const linha of candidatasCorredor) {
+    // Endereco com numero: NAO usar corredor (correcao 02/10). O endereco
+    // exibido vem de parse-planilhas.ts ("RUA - BAIRRO, CIDADE" ou "RUA, CIDADE").
+    if (enderecoTemNumero(linha.endereco)) continue
+    const corredor = linha.pontosCorredorRua!
     let melhorCorr: { parada: UnitracParadaRow; dist: number; dur: number } | null = null
     for (const parada of foraBase) {
       const fim = parada.fim_real ?? parada.saida ?? parada.chegada
@@ -122,15 +179,28 @@ export function montarVisitasInclusivas(linhas: LinhaGeocodificada[], paradas: U
       if (!melhorCorr || dur > melhorCorr.dur) melhorCorr = { parada, dist, dur }
     }
     if (!melhorCorr) continue
-    visitas.set(linha.nf, {
-      nf: linha.nf,
-      chegada: melhorCorr.parada.chegada,
-      saida: melhorCorr.parada.fim_real ?? melhorCorr.parada.saida ?? melhorCorr.parada.chegada,
-      distanciaMetrosDoPonto: melhorCorr.dist,
-      viaVizinhanca: false,
-      viaRaioAmpliado: false,
-      viaCorredorDaRua: true,
-    })
+    const arr = candidatasPorParada.get(melhorCorr.parada.id) ?? []
+    arr.push({ linha, melhorDist: melhorCorr.dist, melhorParada: melhorCorr.parada, dur: melhorCorr.dur })
+    candidatasPorParada.set(melhorCorr.parada.id, arr)
+  }
+  for (const [, cands] of candidatasPorParada) {
+    // Limite proporcional: 1 NF por 3 min de parada (ceil). Parada de 5 min -> 2; 30 min -> 10.
+    const durRef = cands[0]?.dur ?? 0
+    const limite = limiteNfsPorParadaNoCorredor(durRef)
+    // Ordena por distancia (mais proximas primeiro); desempate por NF pra estabilidade.
+    cands.sort((a, b) => a.melhorDist - b.melhorDist || a.linha.nf.localeCompare(b.linha.nf))
+    for (let i = 0; i < Math.min(cands.length, limite); i++) {
+      const c = cands[i]
+      visitas.set(c.linha.nf, {
+        nf: c.linha.nf,
+        chegada: c.melhorParada.chegada,
+        saida: c.melhorParada.fim_real ?? c.melhorParada.saida ?? c.melhorParada.chegada,
+        distanciaMetrosDoPonto: c.melhorDist,
+        viaVizinhanca: false,
+        viaRaioAmpliado: false,
+        viaCorredorDaRua: true,
+      })
+    }
   }
   return visitas
 }
