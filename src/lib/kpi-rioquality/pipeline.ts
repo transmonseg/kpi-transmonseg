@@ -535,6 +535,7 @@ export async function gerarKpiRioQuality(params: {
         false, // modoPrecisao: NAO ligado na RQ (vizinhanca <=800m segue ENTREGUE)
         false, // reconhecerRodizio
         new Map(), // linhasPorPlacaNoDia
+        false, // placaSemRastriNaEscala (so' Nutry Max tem escala)
         // Task 3 (estudo item 1c): km CONHECIDO baixo (rastro) e sem parada
         // fora da base -> 'VEÍCULO NÃO SAIU DA BASE', fora da taxa.
         true, // naoSaiuDaBase
