@@ -5068,11 +5068,14 @@ describe('Parada proxima propria -- guardas (ja confirmou outra NF, geo confiave
       depois,
     ]
 
-    it('Alto Grande: 3 min no caminho, geo sem fonte -> CONFERIR', () => {
+    it('Alto Grande: 3 min isolada no caminho, geo sem fonte -> ENTREGUE (threshold reduzido de 5 para 3 min)', () => {
+      // Com a reducao de DURACAO_MIN_PARADA_PROXIMA_GEO_SEM_FONTE_MIN para 3 min,
+      // paradas isoladas de 3 min agora confirmam. O caso real de FP (Alto Grande)
+      // so e bloqueado quando ha outro cliente a <=150m da parada (guarda de isolamento).
       const d = doNf(chamarNutryMax([agSemFonte, carapebus], {
         placa: P, alvos: alvosAg, paradasPorOutraPlaca: new Map([[P, noCaminho('13:19', '13:22')]]),
       }), '2395214')
-      conferir(d)
+      confirmada(d, t('13:19'))
     })
 
     it('controle: mesmo caso com geo de fonte conhecida continua ENTREGUE (regra de 6484a4a)', () => {
@@ -5099,6 +5102,48 @@ describe('Parada proxima propria -- guardas (ja confirmou outra NF, geo confiave
         placa: P, alvos: alvosAg, paradasPorOutraPlaca: new Map([[P, [ribel, desvio, tinoco]]]),
       }), '2395214')
       confirmada(d, t('13:19'))
+    })
+  })
+
+  describe('parada próxima geo sem fonte 3 min (Task 2 plano 2026-10-03)', () => {
+    // Reducao de DURACAO_MIN_PARADA_PROXIMA_GEO_SEM_FONTE_MIN de 5 para 3 min.
+    // Recupera casos onde geocode esta deslocado mas a parada e real (3-4 min).
+    // A guarda de isolamento (outro cliente a <=150m) continua bloqueando FPs.
+    const t = (hhmm: string) => `2026-09-29T${hhmm}:00.000Z`
+    const P = 'RQV3G18'
+    const alvosAg = [alvo('2395214', 0, { placaNorm: P, pontoLat: em(0, 16_800).lat, pontoLng: em(0, 16_800).lng })]
+    const agSemFonte = linha('2395214', { endereco: 'ESTRADA DO ALTO GRANDE, S/N', ...em(0), geoConfiavel: true, geoSemFonte: true })
+    const carapebus = cliente('CARAPEBUS', 'CLIENTE CARAPEBUS', em(1970, 9000))
+    const antes = paradaForaBase(`${P}-ponte-1`, em(1970, -2700).lat, em(1970, -2700).lng, t('13:12'), t('13:17'), P)
+    const depois = paradaForaBase(`${P}-ponte-3`, em(1970, 9000).lat, em(1970, 9000).lng, t('13:30'), t('13:45'), P)
+
+    it('confirma ENTREGUE quando geoSemFonte=true e parada tem 3 min isolada', () => {
+      // Parada de 3 min a ~1,97 km do geo, sem outro cliente perto -> confirma.
+      const paradaIsolada = paradaForaBase(`${P}-ponte-2`, em(1970).lat, em(1970).lng, t('13:19'), t('13:22'), P)
+      const d = doNf(chamarNutryMax([agSemFonte, carapebus], {
+        placa: P, alvos: alvosAg, paradasPorOutraPlaca: new Map([[P, [antes, paradaIsolada, depois]]]),
+      }), '2395214')
+      confirmada(d, t('13:19'))
+    })
+
+    it('nao confirma quando geoSemFonte=true e parada tem 2 min', () => {
+      // Parada de 2 min (< 3 min novo threshold) -> continua CONFERIR.
+      const paradaCurta = paradaForaBase(`${P}-ponte-2`, em(1970).lat, em(1970).lng, t('13:19'), t('13:21'), P)
+      const d = doNf(chamarNutryMax([agSemFonte, carapebus], {
+        placa: P, alvos: alvosAg, paradasPorOutraPlaca: new Map([[P, [antes, paradaCurta, depois]]]),
+      }), '2395214')
+      conferir(d)
+    })
+
+    it('Alto Grande (RQV3G18) continua bloqueado com outro cliente a <=150m da parada', () => {
+      // Mesmo com threshold de 3 min, a guarda de isolamento (RAIO_OUTRO_CLIENTE_EXPLICA_M=150m)
+      // impede confirmacao quando outro cliente da mesma placa esta proximo da parada.
+      const vizinhoProximo = cliente('VIZINHO', 'OUTRO CLIENTE PROXIMO', em(1970, 100))
+      const paradaComVizinho = paradaForaBase(`${P}-ponte-2`, em(1970).lat, em(1970).lng, t('13:19'), t('13:22'), P)
+      const d = doNf(chamarNutryMax([agSemFonte, carapebus, vizinhoProximo], {
+        placa: P, alvos: alvosAg, paradasPorOutraPlaca: new Map([[P, [antes, paradaComVizinho, depois]]]),
+      }), '2395214')
+      conferir(d)
     })
   })
 

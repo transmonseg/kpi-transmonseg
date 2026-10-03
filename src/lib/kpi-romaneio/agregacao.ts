@@ -764,7 +764,7 @@ const DIVERGENCIA_GEO_CADASTRO_M = 2_000
 // dedicado (vai e volta fora do sentido da rota -- TOS6H57/Fonseca 29/09):
 // o trajeto parada-anterior -> esta -> proxima e' >= RAZAO_DESVIO_DEDICADO x
 // o direto e acrescenta >= EXTRA_MIN_DESVIO_DEDICADO_M.
-const DURACAO_MIN_PARADA_PROXIMA_GEO_SEM_FONTE_MIN = 5
+const DURACAO_MIN_PARADA_PROXIMA_GEO_SEM_FONTE_MIN = 3
 const RAZAO_DESVIO_DEDICADO = 1.5
 const EXTRA_MIN_DESVIO_DEDICADO_M = 1_000
 type ParadaComCoord = UnitracParadaRow & { lat: number; lng: number }
