@@ -327,6 +327,57 @@ function ehNaoSaiuDaBase(d: LinhaDetalheEntrega): boolean {
   return (d.observacao?.startsWith(OBS_NAO_SAIU_DA_BASE) ?? false) && !ehSemRastreador(d) && !ehCargaSemPlaca(d)
 }
 
+// Auditoria Ana 02/10 (RQO1B27 01/10, "SUBSTITUICAO NAO INFORMADA, VEICULO
+// EM OFICINA"): a placa da escala nao passou em NENHUM cliente e outra placa
+// fez a carga -- falha de associacao escala/carga, nao de entrega. Sai da
+// taxa (num e denom) como a sem rastreador, contada a parte; com resolucao
+// manual conta pela resolucao. Nunca confirma a NF (so' separa).
+// Medicao 25/09: o rotulo aparece em NFs soltas de cargas que rodaram
+// normalmente (93 NFs) -- so' sai da taxa a carga+placa em que TODAS as NFs
+// tem o rotulo (a placa da escala nao passou em cliente nenhum = troca de
+// veiculo); NF solta continua contando como falha.
+const PREFIXO_OBS_ESCALA_DIVERGENTE = 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE'
+function temRotuloEscalaDivergente(d: LinhaDetalheEntrega): boolean {
+  return d.status === 'pendente'
+    && (d.observacao?.startsWith(PREFIXO_OBS_ESCALA_DIVERGENTE) ?? false)
+    && !ehSemRastreador(d) && !ehCargaSemPlaca(d) && !ehNaoSaiuDaBase(d)
+}
+function cargasEscalaDivergenteInteira(detalhe: LinhaDetalheEntrega[]): Set<string> {
+  const total = new Map<string, number>()
+  const comRotulo = new Map<string, number>()
+  for (const d of detalhe) {
+    const chave = `${d.carga}::${d.placa}`
+    total.set(chave, (total.get(chave) ?? 0) + 1)
+    if (temRotuloEscalaDivergente(d)) comRotulo.set(chave, (comRotulo.get(chave) ?? 0) + 1)
+  }
+  return new Set([...comRotulo].filter(([k, n]) => n === total.get(k)).map(([k]) => k))
+}
+function ehEscalaDivergente(d: LinhaDetalheEntrega, inteiras: Set<string>): boolean {
+  return temRotuloEscalaDivergente(d) && inteiras.has(`${d.carga}::${d.placa}`)
+}
+
+function avisosDeFrota(detalhe: LinhaDetalheEntrega[]): { carga: string; placa: string; texto: string }[] {
+  const inteiras = cargasEscalaDivergenteInteira(detalhe)
+  const grupos = new Map<string, { carga: string; placa: string; semRastreador: number; escalaDivergente: number }>()
+  for (const d of detalhe) {
+    if (ehCargaSemPlaca(d)) continue
+    const semRastreador = ehSemRastreador(d)
+    const escalaDivergente = ehEscalaDivergente(d, inteiras)
+    if (!semRastreador && !escalaDivergente) continue
+    const chave = `${d.carga}::${d.placa}`
+    const g = grupos.get(chave) ?? { carga: d.carga, placa: d.placa, semRastreador: 0, escalaDivergente: 0 }
+    if (semRastreador) g.semRastreador++
+    else g.escalaDivergente++
+    grupos.set(chave, g)
+  }
+  const out: { carga: string; placa: string; texto: string }[] = []
+  for (const g of grupos.values()) {
+    if (g.semRastreador > 0) out.push({ carga: g.carga, placa: g.placa, texto: `veículo sem rastreamento no dia -- ${g.semRastreador} NF(s) fora da taxa (conferir equipamento/placa da escala)` })
+    if (g.escalaDivergente > 0) out.push({ carga: g.carga, placa: g.placa, texto: `placa da escala não passou nos clientes -- ${g.escalaDivergente} NF(s) fora da taxa (substituição de veículo não informada?)` })
+  }
+  return out.sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
+}
+
 // 29/09 (P0 da Ana): rotulo do resumo (aba 1 + cabecalho da aba da placa)
 // pra placa sem rastreador no dia -- mesma familia do STATUS do detalhe.
 const ROTULO_RESUMO_SEM_RASTREADOR = 'SEM RASTREADOR'
@@ -380,11 +431,12 @@ function ehConsultaFalhou(d: LinhaDetalheEntrega): boolean {
 //   pendente de atualizacao, nao e' nem sucesso nem falha ainda.
 // A taxa AUTOMATICA (taxaPct) nunca muda com isso -- continua excluindo so'
 // SEM RASTREADOR, do jeito que a Task 1 (24/09) implementou.
-function entraNoDenominadorPosConferencia(d: LinhaDetalheEntrega): boolean {
+function entraNoDenominadorPosConferencia(d: LinhaDetalheEntrega, inteiras: Set<string>): boolean {
   if (d.resolucaoManual === 'desatualizado') return false
   if (ehSemRastreador(d) && !d.resolucaoManual) return false
   if (ehCargaSemPlaca(d) && !d.resolucaoManual) return false
   if (ehNaoSaiuDaBase(d) && !d.resolucaoManual) return false
+  if (ehEscalaDivergente(d, inteiras) && !d.resolucaoManual) return false
   // Item 4 (revisao final): AGUARDANDO segue a mesma regra de SEM
   // RASTREADOR aqui -- fora ate' a operacao registrar uma resolucao (que e'
   // exatamente a confirmacao que falta); com resolucao, conta conforme ela.
@@ -410,6 +462,7 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   denominadorPosConferencia: number
   semRastreador: number
   naoSaiuDaBase: number
+  escalaDivergente: number
   cargaSemPlaca: number
   consultaFalhou: number
   aguardando: number
@@ -417,11 +470,13 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
 } {
   const semRastreador = detalhe.filter(ehSemRastreador).length
   const naoSaiuDaBase = detalhe.filter(ehNaoSaiuDaBase).length
+  const inteiras = cargasEscalaDivergenteInteira(detalhe)
+  const escalaDivergente = detalhe.filter(d => ehEscalaDivergente(d, inteiras)).length
   const cargaSemPlaca = detalhe.filter(ehCargaSemPlaca).length
   const revisar = detalhe.filter(d => d.confianca === 'REVISAR' && !ehSemRastreador(d) && !ehCargaSemPlaca(d) && !ehConsultaFalhou(d)).length
   const aguardando = detalhe.filter(ehAguardando).length
   const consultaFalhou = detalhe.filter(d => ehConsultaFalhou(d) && !ehSemRastreador(d)).length
-  const base = detalhe.filter(d => !ehSemRastreador(d) && !ehNaoSaiuDaBase(d) && !ehAguardando(d) && !ehCargaSemPlaca(d) && !ehConsultaFalhou(d))
+  const base = detalhe.filter(d => !ehSemRastreador(d) && !ehNaoSaiuDaBase(d) && !ehEscalaDivergente(d, inteiras) && !ehAguardando(d) && !ehCargaSemPlaca(d) && !ehConsultaFalhou(d))
   const denominador = base.length
   // Confirmada = status diferente de 'pendente' (so' ENTREGUE confirmado);
   // NF sem rastreador e REVISAR SEMPRE ficam pendente (nunca confirmam),
@@ -434,13 +489,13 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   // do usuário 26/09) deixam a conta auditável sem abrir o xlsx inteiro.
   const taxaPct = denominador > 0 ? Math.round((1000 * confirmadas) / denominador) / 10 : 0
 
-  const basePosConferencia = detalhe.filter(entraNoDenominadorPosConferencia)
+  const basePosConferencia = detalhe.filter(d => entraNoDenominadorPosConferencia(d, inteiras))
   const denominadorPosConferencia = basePosConferencia.length
   const confirmadasPosConferencia = basePosConferencia.filter(confirmadaAposConferencia).length
   const taxaPosConferenciaPct = denominadorPosConferencia > 0
     ? Math.round((1000 * confirmadasPosConferencia) / denominadorPosConferencia) / 10 : 0
 
-  return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, denominadorPosConferencia, semRastreador, naoSaiuDaBase, cargaSemPlaca, consultaFalhou, aguardando, revisar }
+  return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, denominadorPosConferencia, semRastreador, naoSaiuDaBase, escalaDivergente, cargaSemPlaca, consultaFalhou, aguardando, revisar }
 }
 
 // Pedido do usuário 26/09 (linha de TAXA auditável): inteiro com separador
@@ -674,12 +729,14 @@ export async function gerarKpiRomaneioXlsx(
     const partesFora = [
       `${formatarInteiroPtBr(resumo.semRastreador)} sem rastreador`,
       ...(resumo.naoSaiuDaBase > 0 ? [`${formatarInteiroPtBr(resumo.naoSaiuDaBase)} que não saíram da base`] : []),
+      ...(resumo.escalaDivergente > 0 ? [`${formatarInteiroPtBr(resumo.escalaDivergente)} de placa da escala divergente`] : []),
       ...(resumo.cargaSemPlaca > 0 ? [`${formatarInteiroPtBr(resumo.cargaSemPlaca)} de carga sem placa`] : []),
       ...(resumo.consultaFalhou > 0 ? [`${formatarInteiroPtBr(resumo.consultaFalhou)} com consulta ao rastreador falha`] : []),
     ]
     const foraTexto = `${partesFora.length > 1 ? `${partesFora.slice(0, -1).join(', ')} e ${partesFora[partesFora.length - 1]}` : partesFora[0]} fora da conta`
     const taxaTexto = `${formatarPctUmaCasa(resumo.taxaPct)}% (${formatarInteiroPtBr(resumo.confirmadas)} de ${formatarInteiroPtBr(resumo.denominador)} NFs; ${foraTexto})`
     const naoSaiuTexto = (resumo.naoSaiuDaBase > 0 ? `    |    NFs sem saída da base: ${resumo.naoSaiuDaBase} (fora da conta)` : '')
+      + (resumo.escalaDivergente > 0 ? `    |    NFs com placa da escala divergente: ${resumo.escalaDivergente} (fora da conta)` : '')
       + (resumo.cargaSemPlaca > 0 ? `    |    NFs de carga sem placa: ${resumo.cargaSemPlaca} (fora da conta)` : '')
     const taxaPosTexto = `${formatarPctUmaCasa(resumo.taxaPosConferenciaPct)}% (${formatarInteiroPtBr(resumo.confirmadasPosConferencia)} de ${formatarInteiroPtBr(resumo.denominadorPosConferencia)} NFs; ${formatarInteiroPtBr(foraDaContaPosConferencia)} fora da conta)`
     const linhaResumoGeral = ws.addRow([
@@ -779,11 +836,19 @@ export async function gerarKpiRomaneioXlsx(
     }
   }
 
-  if (avisos.length > 0) {
+  // Pedido da Ana 03/10: "preciso saber diario veiculos desatualizados e sem
+  // rastreador na escala" -- uma linha por carga+placa com NFs fora da taxa
+  // por falta de rastreamento ou por placa da escala divergente (substituicao
+  // nao informada), so' quando ha' `detalhe` (Nutry Max).
+  const avisosFrota = opcoes.resumoConfirmacao ? avisosDeFrota(detalhe) : []
+  if (avisos.length > 0 || avisosFrota.length > 0) {
     const wsAvisos = wb.addWorksheet('Avisos')
     wsAvisos.addRow([...COLUNAS_AVISOS])
     for (const a of avisos) {
       wsAvisos.addRow([a.carga, a.placa, textoAviso(a)])
+    }
+    for (const a of avisosFrota) {
+      wsAvisos.addRow([a.carga, a.placa, a.texto])
     }
   }
 

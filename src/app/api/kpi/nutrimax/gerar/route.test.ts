@@ -334,8 +334,14 @@ describe('POST /api/kpi/nutrimax/gerar -- avisos de descasamento por origem', ()
     expect(res.status).toBe(200)
 
     const wb = await abrirXlsx(res)
-    // Aba "Avisos" só existe quando há aviso de verdade (gerador-xlsx.ts).
-    expect(wb.getWorksheet('Avisos')).toBeUndefined()
+    // Nenhum aviso de descasamento (sem escala/sem romaneio); a aba pode
+    // existir pelos avisos de frota (sem rastreador, pedido Ana 03/10).
+    const descasamentos: string[] = []
+    wb.getWorksheet('Avisos')?.eachRow((row, n) => {
+      const t = String(row.getCell(3).value)
+      if (n >= 2 && (t === 'sem escala' || t === 'sem romaneio')) descasamentos.push(t)
+    })
+    expect(descasamentos).toEqual([])
   })
 
   it('com Escala de Rota que não cobre a carga Nutry Max: o aviso volta a disparar, e só pra ela', async () => {
@@ -351,7 +357,8 @@ describe('POST /api/kpi/nutrimax/gerar -- avisos de descasamento por origem', ()
 
     const avisos: string[][] = []
     wsAvisos!.eachRow((row, rowNumber) => {
-      if (rowNumber >= 2) avisos.push([String(row.getCell(1).value), String(row.getCell(3).value)])
+      const t = String(row.getCell(3).value)
+      if (rowNumber >= 2 && !t.includes('fora da taxa')) avisos.push([String(row.getCell(1).value), t])
     })
     expect(avisos).toEqual([['97900', 'sem escala']])
   })

@@ -806,6 +806,49 @@ type JanelaProvaOutraNf = { endereco: string; iniMs: number; fimMs: number }
  *  ponte sem apagao), parada crua da Unitrac so' vale se uma parada da ponte
  *  sobreposta no tempo tiver >= DURACAO_MIN tambem (a Unitrac infla a duracao:
  *  TUS1A47, "3 min" com 1 min parado e 64 km/h depois). */
+// Auditoria visual da Ana 03/10 (NM 02/10): entrega real em que a PROPRIA
+// placa parou UMA vez e atendeu dois clientes vizinhos (TOPS a 62 m da
+// parada e o vizinho a 13 m; VENYR a 76 m e o vizinho a 77 m; HOTEL PATROPI
+// a 247 m com 7 min). A R2 descarta essas paradas porque "outro cliente da
+// placa explica" (RAIO_OUTRO_CLIENTE_EXPLICA_M) -- aqui a parada E' do
+// vizinho e tambem desta NF. Criterio: parada da propria placa de 2 a 60 min
+// a <=100 m do CADASTRO Unitrac do cliente. So' vale quando outro cliente da
+// placa esta' de fato a <=150 m da parada (senao a R2 ja' teria decidido).
+const RAIO_COMPARTILHADA_VIZINHO_M = 100
+const DURACAO_MAX_COMPARTILHADA_VIZINHO_MIN = 60
+export const OBS_COMPARTILHADA_VIZINHO = 'ENTREGUE - PARADA COMPARTILHADA COM CLIENTE VIZINHO DA MESMA PLACA'
+
+function acharParadaCompartilhadaComVizinho(
+  linha: LinhaGeocodificada,
+  cadastro: { lat: number; lng: number } | null,
+  paradas: UnitracParadaRow[],
+  outrosPontosDaPlaca: PontoReferenciaPlacaNf[],
+): ParadaProvada | null {
+  // So' o CADASTRO Unitrac (ponto do codigo do cliente) prova aqui: os
+  // falsos positivos ja' auditados com parada dividida (RQQ5B81/2386225 "nao
+  // esteve no local", RQV9D97/2395585 "nao foi", estudo 30/09) batiam so'
+  // com o geocode do endereco; os 4 da Ana batiam com o cadastro.
+  if (cadastro == null) return null
+  let melhor: { parada: UnitracParadaRow; distM: number; ref: 'geo' | 'cad'; duracaoMin: number } | null = null
+  for (const p of paradas) {
+    if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
+    const duracaoMin = duracaoParadaMin(p)
+    if (duracaoMin < DURACAO_MIN_PARADA_UNITRAC_PROPRIA_MIN) continue
+    // Teto de duracao: parada de horas (almoco/pernoite) perto do cadastro
+    // nao e' entrega -- FP RQQ5B81/2386225 23/09 era uma parada de 159 min.
+    if (duracaoMin > DURACAO_MAX_COMPARTILHADA_VIZINHO_MIN) continue
+    const distM = haversine(p.lat, p.lng, cadastro.lat, cadastro.lng)
+    if (distM > RAIO_COMPARTILHADA_VIZINHO_M) continue
+    const temVizinho = outrosPontosDaPlaca
+      .filter(o => o.endereco !== linha.endereco)
+      .some(o => haversine(p.lat as number, p.lng as number, o.lat, o.lng) <= RAIO_OUTRO_CLIENTE_EXPLICA_M)
+    if (!temVizinho) continue
+    const ganha = !melhor || duracaoMin > melhor.duracaoMin
+    if (ganha) melhor = { parada: p, distM, ref: 'cad', duracaoMin }
+  }
+  return melhor ? { parada: melhor.parada, distM: melhor.distM, ref: melhor.ref } : null
+}
+
 function acharParadaProximaPropriaIsolada(
   linha: LinhaGeocodificada,
   cadastro: { lat: number; lng: number } | null,
@@ -883,9 +926,19 @@ const ROTULOS_SEM_EVIDENCIA_DE_POSICAO = [
 // viaVizinhanca -- horario emprestado de OUTRO endereco, nao desta parada)
 // continua exigindo conferencia -- as outras tres voltam a confirmar como
 // 'ENTREGUE' (observacao null, status ja confirmado_gps antes deste bloco).
+// Auditoria visual da Ana 03/10 (02/10, 28 NFs): as 11 'PARADA
+// COMPARTILHADA - REVISAR' do dia eram entrega real (9 conferidas no mapa,
+// 9 de 9 confirmadas). Pedido explicito dela: "permitir que uma mesma parada
+// valide mais de uma NF quando os clientes/endereco forem compativeis". A
+// compartilhada volta a CONFIRMAR com o rotulo de ressalva visivel (horario
+// aproximado), sem rebaixar pra pendente -- EXCETO quando a Unitrac fechou o
+// alvo com situacao 98 ("outro" desfecho, nao "feito"): os dois "nao foi"
+// verificados de compartilhada (RQV9D97/2395585 Rede Loirinho 29/09,
+// RBG2D21/2389318 Ilha Grande) tinham 98 e continuam REVISAR.
 const REVISAR_POR_ROTULO_FRACO: Record<string, string> = {
   'ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)': 'PARADA COMPARTILHADA - REVISAR',
 }
+const SITUACAO_ALVO_OUTRO_DESFECHO = 98
 // Rotulos de ressalva que, apesar do "CONFERIR" no texto original, decisao
 // do usuario 26/09 trata como confirmacao plena -- a ressalva e' apagada
 // (observacao null) em vez de virar REVISAR.
@@ -2304,7 +2357,28 @@ export function montarDetalheEntregas(
     // `modoPrecisao` rebaixaria pra REVISAR -- com prova forte confirma. Status
     // ja' e' confirmado (unitrac ou gps) aqui; limpar a observacao basta pra
     // nao rebaixar. (b) parada propria vence (a): da' o horario real.
-    let paradaProvada: ParadaProvada | null = paradaProvadaOutroEndereco ?? paradaProximaPropria
+    // Auditoria Ana 03/10: parada unica atendendo esta NF e um cliente
+    // vizinho da mesma placa (ver acharParadaCompartilhadaComVizinho).
+    let paradaCompartilhadaVizinho: ParadaProvada | null = null
+    if (
+      modoPrecisao && confirmarPorParadaUnitracPropria && status === 'pendente'
+      && elegivelParaConfirmarPorParadaPropria(status, observacao)
+    ) {
+      paradaCompartilhadaVizinho = acharParadaCompartilhadaComVizinho(
+        linha, cadastroDoAlvo(alvo),
+        [...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []), ...paradasProprias],
+        pontosReferenciaDaPlaca,
+      )
+      if (paradaCompartilhadaVizinho) {
+        const p = paradaCompartilhadaVizinho.parada
+        status = 'confirmado_gps'
+        observacao = OBS_COMPARTILHADA_VIZINHO
+        chegada = p.chegada
+        saida = p.fim_real ?? p.saida ?? p.chegada
+        tempoParadaMin = minutosEntre(chegada, saida)
+      }
+    }
+    let paradaProvada: ParadaProvada | null = paradaProvadaOutroEndereco ?? paradaProximaPropria ?? paradaCompartilhadaVizinho
     let paradaFeitoCompartilhada: { parada: UnitracParadaRow; distParadaM: number } | null = null
     if (modoPrecisao && observacao === OBS_COMPARTILHADA_APROXIMADA) {
       const cruasDaPlaca = paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []
@@ -2484,7 +2558,7 @@ export function montarDetalheEntregas(
         observacao = null
       } else {
         const revisar = REVISAR_POR_ROTULO_FRACO[observacao]
-        if (revisar) {
+        if (revisar && alvo?.situacao === SITUACAO_ALVO_OUTRO_DESFECHO) {
           status = 'pendente'
           observacao = revisar
         }

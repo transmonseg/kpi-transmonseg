@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, gerarMotivo, calcularConfianca, contarConfirmadasPorCarga } from './agregacao'
+import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, gerarMotivo, calcularConfianca, contarConfirmadasPorCarga, OBS_COMPARTILHADA_VIZINHO } from './agregacao'
 import { resolverParadas } from './unitrac'
 import type { LinhaEscala, LinhaGeocodificada, Visita, StatusEntrega } from './types'
 import type { AlvoApi } from '@/lib/unitrac-api'
@@ -3306,13 +3306,14 @@ describe('montarDetalheEntregas -- modoPrecisao: proximidade fraca vira REVISAR 
     expect(d.observacao).toBe('ENTREGUE - PARADA PRÓXIMA (500-800m) MAS DENTRO DA ROTA - CONFERIR')
   })
 
-  it('parada compartilhada (vizinhanca): pendente com PARADA COMPARTILHADA - REVISAR, horario preservado', () => {
+  // Auditoria visual Ana 03/10 (02/10): compartilhada era entrega real (9 de 9).
+  it('parada compartilhada (vizinhanca): confirma com o rotulo de horario aproximado, horario preservado', () => {
     const visitas = new Map<string, Visita>([
       ['NF1', { nf: 'NF1', chegada: '2026-09-25T10:00:00.000Z', saida: '2026-09-25T10:20:00.000Z', distanciaMetrosDoPonto: 0, viaVizinhanca: true }],
     ])
     const [d] = chamar([linha('NF1')], { visitasPorNf: visitas })
-    expect(d.status).toBe('pendente')
-    expect(d.observacao).toBe('PARADA COMPARTILHADA - REVISAR')
+    expect(d.status).not.toBe('pendente')
+    expect(d.observacao).toBe('ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)')
     expect(d.chegada).toBe('2026-09-25T10:00:00.000Z')
   })
 
@@ -3952,8 +3953,14 @@ describe('Task 1 (plano 28/09) -- parada compartilhada com prova forte vira ENTR
     ['NF2', { nf: 'NF2', ...vizinhanca, distanciaMetrosDoPonto: 0 }],
   ])
 
-  it('sem prova nenhuma continua PARADA COMPARTILHADA - REVISAR (comportamento atual)', () => {
+  it('sem prova extra confirma com o rotulo de horario aproximado (auditoria Ana 03/10)', () => {
     const [d] = chamarNutryMax([nf1, nf2], { visitasPorNf: visitas() })
+    expect(d.status).not.toBe('pendente')
+    expect(d.observacao).toBe('ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)')
+  })
+
+  it('alvo Unitrac fechado com situacao 98 (outro desfecho) continua PARADA COMPARTILHADA - REVISAR (Rede Loirinho 29/09)', () => {
+    const [d] = chamarNutryMax([nf1, nf2], { visitasPorNf: visitas(), alvos: [alvo('NF1', 98)] })
     expect(d.status).toBe('pendente')
     expect(d.observacao).toBe('PARADA COMPARTILHADA - REVISAR')
   })
@@ -3987,14 +3994,15 @@ describe('Task 1 (plano 28/09) -- parada compartilhada com prova forte vira ENTR
     expect(d.distParadaM).toBe(80)
   })
 
-  it('(c) parada curta demais (2 min a 9 m) ou longe demais (10 min a 150 m) nao prova -- continua REVISAR', () => {
+  it('(c) parada curta demais (2 min a 9 m) ou longe demais (10 min a 150 m) nao prova -- fica a ressalva de horario aproximado', () => {
     const cruas = new Map([['TTL7D40', [
       paradaForaBase('curta', -22.2 + 9 * M_LAT, -42.4, '2026-09-26T11:00:00.000Z', '2026-09-26T11:02:00.000Z'),
       paradaForaBase('longe', -22.2 + 150 * M_LAT, -42.4, '2026-09-26T12:00:00.000Z', '2026-09-26T12:10:00.000Z'),
     ]]])
     const [d] = chamarNutryMax([nf1, nf2], { visitasPorNf: visitas(), paradasUnitracCruasPropriaPlaca: cruas, alvos: [alvo('NF1', 0)] })
-    expect(d.status).toBe('pendente')
-    expect(d.observacao).toBe('PARADA COMPARTILHADA - REVISAR')
+    // Sem prova propria a ressalva fica (horario do vizinho), mas confirma.
+    expect(d.status).not.toBe('pendente')
+    expect(d.observacao).toBe('ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)')
     expect(d.chegada).toBe(vizinhanca.chegada)
   })
 
@@ -4008,10 +4016,9 @@ describe('Task 1 (plano 28/09) -- parada compartilhada com prova forte vira ENTR
     ])
     const cruas = new Map([['RBG2D21', [paradaForaBase('cais', -23.0 + 451 * M_LAT, -44.3, '2026-09-26T09:00:00.000Z', '2026-09-26T09:35:00.000Z', 'RBG2D21')]]])
     const detalhe = chamarNutryMax([ilha, vizinho], { placa: 'RBG2D21', visitasPorNf: vis, alvos, paradasUnitracCruasPropriaPlaca: cruas })
-    for (const d of detalhe) {
-      expect(d.status).toBe('pendente')
-      expect(d.observacao).toBe('PARADA COMPARTILHADA - REVISAR')
-    }
+    const d = detalhe.find(x => x.nf === '2393163')!
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PARADA COMPARTILHADA - REVISAR')
   })
 
   it('(d) modoPrecisao desligado: nada muda (rotulo antigo, horario do vizinho)', () => {
@@ -4326,12 +4333,19 @@ describe('Estudo 30/09 -- NFs de 29/09 que o endereco sustenta mas a parada nao 
     expect(d.observacao).toBe('PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR')
   })
 
-  it('RQP0G77/2396917 (Denilson): parada propria de 5 min a 72 m, com a Padaria Pais a 72 m da mesma parada -> NAO confirma', () => {
-    expect(nf('RQP0G77', '2396917').status).toBe('pendente')
+  // Auditoria visual Ana 03/10: parada unica atendendo dois clientes vizinhos
+  // da mesma placa e' entrega (TOPS 2402141, VENYR 2402751) -- estes dois tem
+  // o mesmo padrao, a <=100 m do CADASTRO Unitrac, e passam a confirmar.
+  it('RQP0G77/2396917 (Denilson): parada propria de 5 min a 75 m do cadastro, dividida com a Padaria Pais -> ENTREGUE (compartilhada com vizinho)', () => {
+    const d = nf('RQP0G77', '2396917')
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBe(OBS_COMPARTILHADA_VIZINHO)
   })
 
-  it('RBI1E10/2395356 (Deia): parada de 20 min a 42 m que ja e a entrega confirmada do Mercado Virgem Santa (11 m) -> NAO confirma', () => {
-    expect(nf('RBI1E10', '2395356').status).toBe('pendente')
+  it('RBI1E10/2395356 (Deia): parada de 20 min a 83 m do cadastro, dividida com o Mercado Virgem Santa -> ENTREGUE (compartilhada com vizinho)', () => {
+    const d = nf('RBI1E10', '2395356')
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBe(OBS_COMPARTILHADA_VIZINHO)
   })
 
   // NAO FOI verificado NF a NF (pxs-26/pxs-44-nfs-29-09.md, hoje-29/verificacao-*.md).
@@ -5809,5 +5823,41 @@ describe('inferencia temporal SEM CONFIRMACAO (Task 4, plano 2026-10-03)', () =>
     expect(nfB.status).toBe('confirmado_unitrac')
     // Nao deve sobrescrever com o rotulo de inferencia temporal
     expect(nfB.observacao).not.toBe('ENTREGUE - CONFIRMADO POR PROXIMIDADE TEMPORAL COM OUTRA NF NO MESMO ENDEREÇO')
+  })
+})
+
+// Auditoria visual Ana 03/10 (NM 02/10, TOPS RESTAURANTE 2402141): a placa
+// parou 3 min a 62 m do CADASTRO Unitrac do cliente, parada que tambem serve
+// um vizinho da mesma placa a 13 m -- a R2 descartava ("outro cliente explica").
+describe('compartilhada com cliente vizinho da mesma placa (auditoria Ana 03/10)', () => {
+  const nf1 = linha('NF1', { endereco: 'RUA JOSE GOMES PARDAL, 151', lat: -22.0 + 567 * M_LAT, lng: -42.0 })
+  const nf2 = linha('NF2', { endereco: 'RUA VIZINHA, 10', lat: -22.0 + 75 * M_LAT, lng: -42.0 })
+  const alvos = [alvo('NF1', 0, { pontoLat: -22.0, pontoLng: -42.0 })]
+  const cruasCom = (min: number, distCadM: number) => new Map([['TTL7D40', [
+    paradaForaBase('p1', -22.0 + distCadM * M_LAT, -42.0, '2026-10-02T11:24:00.000Z', new Date(Date.parse('2026-10-02T11:24:00.000Z') + min * 60_000).toISOString()),
+  ]]])
+
+  it('parada de 3 min a 62 m do cadastro, dividida com vizinho -> ENTREGUE com o horario dela', () => {
+    const [d] = chamarNutryMax([nf1, nf2], { alvos, paradasUnitracCruasPropriaPlaca: cruasCom(3, 62) })
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBe(OBS_COMPARTILHADA_VIZINHO)
+    expect(d.chegada).toBe('2026-10-02T11:24:00.000Z')
+    expect(d.evidencia).toBe('parada_no_cadastro_unitrac')
+  })
+
+  it('parada longa (159 min, almoco) perto do cadastro nao prova (FP RQQ5B81/2386225)', () => {
+    const [d] = chamarNutryMax([nf1, nf2], { alvos, paradasUnitracCruasPropriaPlaca: cruasCom(159, 62) })
+    expect(d.observacao).not.toBe(OBS_COMPARTILHADA_VIZINHO)
+  })
+
+  it('parada a mais de 100 m do cadastro nao prova', () => {
+    const [d] = chamarNutryMax([nf1, nf2], { alvos, paradasUnitracCruasPropriaPlaca: cruasCom(10, 140) })
+    expect(d.observacao).not.toBe(OBS_COMPARTILHADA_VIZINHO)
+  })
+
+  it('sem cadastro Unitrac (so geocode) nao usa esta regra', () => {
+    const perto = { ...nf1, lat: -22.0 + 40 * M_LAT }
+    const [d] = chamarNutryMax([perto, nf2], { paradasUnitracCruasPropriaPlaca: cruasCom(3, 0) })
+    expect(d.observacao).not.toBe(OBS_COMPARTILHADA_VIZINHO)
   })
 })

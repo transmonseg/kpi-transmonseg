@@ -1008,7 +1008,55 @@ describe('gerador-xlsx -- rodizio sem coluna dedicada (ajuste 26/09: PLACA EXECU
     expect(l1[7]).toBe('ENTREGUE - ROTA EXECUTADA POR OUTRA PLACA (TOS1H26)')
     expect((l1[7] as string).startsWith('ENTREGUE')).toBe(true)
     const resumoTexto = String(wb.worksheets[0].getCell(4, 1).value)
+    // NF solta com placa da escala divergente numa carga que rodou continua
+    // na taxa (so' a carga inteira divergente sai -- medicao 25/09).
     expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 50,0% (1 de 2 NFs; 0 sem rastreador fora da conta)')
+  })
+
+  it('carga em que a placa da escala nao passou em NENHUM cliente sai da taxa, contada a parte (RQO1B27 01/10)', async () => {
+    const linhas = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+    const detalhe: LinhaDetalheEntrega[] = [
+      detalheFixture({ nf: 'NF1', carga: 'C001', placa: 'ABC1234', status: 'confirmado_gps', observacao: null }),
+      detalheFixture({ nf: 'NF2', carga: 'C002', placa: 'RQO1B27', observacao: 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA' }),
+      detalheFixture({ nf: 'NF3', carga: 'C002', placa: 'RQO1B27', observacao: 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA' }),
+    ]
+    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-10-01', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    const resumoTexto = String(wb.worksheets[0].getCell(4, 1).value)
+    expect(resumoTexto).toContain('TAXA DE CONFIRMAÇÃO: 100,0% (1 de 1 NFs; 0 sem rastreador e 2 de placa da escala divergente fora da conta)')
+    expect(resumoTexto).toContain('NFs com placa da escala divergente: 2 (fora da conta)')
+  })
+
+  it('aba Avisos lista por placa as NFs fora da taxa por falta de rastreador e por placa da escala divergente (pedido Ana 03/10)', async () => {
+    const linhas = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+    const detalhe: LinhaDetalheEntrega[] = [
+      detalheFixture({ nf: 'NF1', carga: '99261', placa: 'LLD4202', observacao: 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO' }),
+      detalheFixture({ nf: 'NF2', carga: '99261', placa: 'LLD4202', observacao: 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO' }),
+      detalheFixture({ nf: 'NF3', carga: '99100', placa: 'RQO1B27', observacao: 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA' }),
+    ]
+    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-10-02', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    const ws = wb.getWorksheet('Avisos')!
+    const textos = [2, 3].map(r => (ws.getRow(r).values as unknown[]).slice(1).join(' | '))
+    expect(textos).toEqual([
+      '99100 | RQO1B27 | placa da escala não passou nos clientes -- 1 NF(s) fora da taxa (substituição de veículo não informada?)',
+      '99261 | LLD4202 | veículo sem rastreamento no dia -- 2 NF(s) fora da taxa (conferir equipamento/placa da escala)',
+    ])
+  })
+
+  it('placa da escala divergente com resolucao manual volta pra taxa apos conferencia', async () => {
+    const linhas = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+    const detalhe: LinhaDetalheEntrega[] = [
+      detalheFixture({ nf: 'NF1', carga: 'C001', placa: 'ABC1234', status: 'confirmado_gps', observacao: null }),
+      detalheFixture({ nf: 'NF2', carga: 'C002', placa: 'RQO1B27', observacao: 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA', resolucaoManual: 'nao_esteve_no_local' }),
+    ]
+    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-08-23', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    const resumoTexto = String(wb.worksheets[0].getCell(4, 1).value)
+    expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 50,0% (1 de 2 NFs; 0 fora da conta)')
   })
 
   it('mesmo cabeçalho pro Rio Quality (pipeline.ts, sem nenhuma opção)', async () => {
