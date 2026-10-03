@@ -2523,6 +2523,116 @@ export function montarDetalheEntregas(
     }
   })
 
+  // Task 4 (plano 2026-10-03): inferencia temporal para SEM CONFIRMAÇÃO no
+  // mesmo endereco. Quando uma NF esta pendente (sem evidencia de posicao) mas
+  // outra NF no MESMO endereco (ou <=50m) foi confirmada com horario ±30min,
+  // herda a confirmacao. Ganho estimado +0,4 pp na taxa. Roda DEPOIS da cadeia
+  // por NF e ANTES de "duas cargas em regioes diferentes": precisa do desfecho
+  // final das NFs desta carga, e rotulos de precedencia maior (SEM RASTREADOR,
+  // NÃO SAIU DA BASE, AGUARDANDO, escala divergente) ja' ficaram fora da
+  // whitelist de elegibilidade. So' `modoPrecisao` (Nutry Max), sem nova opcao
+  // posicional -- mesmo padrao dos outros pos-processamentos.
+  const JANELA_INFERENCIA_TEMPORAL_MIN = 30
+  const DISTANCIA_MAX_INFERENCIA_M = 50
+  const OBS_INFERENCIA_TEMPORAL = 'ENTREGUE - CONFIRMADO POR PROXIMIDADE TEMPORAL COM OUTRA NF NO MESMO ENDEREÇO'
+  if (modoPrecisao) {
+    // Agrupa NFs por endereco normalizado (mesma string exata do romaneio --
+    // geocode ja' usou essa chave; enderecos distintos no texto sao entregas
+    // distintas mesmo que o geocode tenha colapsado). So' grupos com >=1
+    // ENTREGUE (confirmado_gps ou confirmado_unitrac) E >=1 pendente elegivel
+    // produzem inferencia.
+    const porEndereco = new Map<string, number[]>()
+    for (let i = 0; i < resultado.length; i++) {
+      const chave = resultado[i].endereco
+      const arr = porEndereco.get(chave)
+      if (arr) arr.push(i)
+      else porEndereco.set(chave, [i])
+    }
+    for (const indices of porEndereco.values()) {
+      if (indices.length < 2) continue
+      const entregues: { idx: number; chegadaMs: number }[] = []
+      const pendentes: number[] = []
+      for (const i of indices) {
+        const d = resultado[i]
+        if (d.status === 'confirmado_gps' || d.status === 'confirmado_unitrac') {
+          // Horario da entrega: chegada da visita GPS, ou feitoISO do alvo
+          // Unitrac (quando confirmado so' por ele), ou null se nenhum dos
+          // dois existir (caso raro de confirmado_unitrac sem horario -- nao
+          // participa como ancora temporal).
+          const linhaRef = linhasRomaneio[i]
+          const visitaRef = visitasPorNf.get(linhaRef.nf)
+          const alvoRef = alvoPorNf.get(linhaRef.nf)
+          let chegadaMs: number | null = null
+          if (visitaRef) {
+            chegadaMs = new Date(visitaRef.chegada).getTime()
+          } else if (alvoRef?.feitoISO) {
+            chegadaMs = new Date(alvoRef.feitoISO).getTime()
+          }
+          if (chegadaMs != null) entregues.push({ idx: i, chegadaMs })
+        } else if (d.status === 'pendente') {
+          // Elegibilidade: NFs sem evidencia forte de posicao. Rotulos de
+          // precedencia maior (SEM RASTREADOR, NÃO SAIU DA BASE, AGUARDANDO,
+          // CONFERIR ESCALA, DUAS CARGAS) NUNCA sao sobrescritos. "PASSOU NO
+          // ENDEREÇO MAS NÃO REGISTROU PARADA" E' elegivel porque indica que
+          // o caminhao esteve la' mas a parada nao foi registrada -- exatamente
+          // o cenario que a inferencia temporal resolve quando outra NF no
+          // mesmo endereco confirma. observacao null tambem e' elegivel.
+          if (d.observacao == null || d.evidencia === 'passagem_sem_parada') pendentes.push(i)
+        }
+      }
+      if (entregues.length === 0 || pendentes.length === 0) continue
+      for (const iPendente of pendentes) {
+        const linhaPend = linhasRomaneio[iPendente]
+        // A NF pendente precisa ter ALGUM horario estimado pra comparar --
+        // sem coordenada propria nem parada proxima, nao ha' base temporal.
+        // Usa a melhor estimativa disponivel: chegada/saida de parada da
+        // propria placa perto do ponto (melhorDistanciaPropria ja mediu),
+        // ou o centro da janela de uma visita por vizinhanca/raio ampliado.
+        // Na pratica, a maioria dos "SEM CONFIRMAÇÃO" sem visita propria
+        // ainda tem uma parada FORA_BASE da propria placa a poucos metros
+        // (que nao confirmou por duracao/raio insuficientes) -- esse e' o
+        // horario que importa aqui.
+        let horarioEstimadoMs: number | null = null
+        // Tenta achar parada da propria placa proxima ao ponto da NF pendente
+        if (linhaPend.lat != null && linhaPend.lng != null) {
+          const distParada = melhorDistanciaPropria(
+            linhaPend, placaNorm, paradasPorOutraPlaca, paradasUnitracCruasPropriaPlaca,
+            menorDistanciaTrajetoPorNf.get(linhaPend.nf) ?? null,
+          )
+          if (distParada != null && distParada <= DISTANCIA_MAX_INFERENCIA_M) {
+            // Acha a parada mais proxima dentro do raio de inferencia
+            const todasParadas = [...(paradasPorOutraPlaca.get(placaNorm) ?? []), ...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? [])]
+            let melhorParada: { ms: number; dist: number } | null = null
+            for (const p of todasParadas) {
+              if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
+              const dist = haversine(p.lat, p.lng, linhaPend.lat, linhaPend.lng)
+              if (dist > DISTANCIA_MAX_INFERENCIA_M) continue
+              const centroMs = (new Date(p.chegada).getTime() + new Date(p.fim_real ?? p.saida ?? p.chegada).getTime()) / 2
+              if (!melhorParada || dist < melhorParada.dist) {
+                melhorParada = { ms: centroMs, dist }
+              }
+            }
+            if (melhorParada) horarioEstimadoMs = melhorParada.ms
+          }
+        }
+        if (horarioEstimadoMs == null) continue
+        // Compara contra TODAS as entregas confirmadas do grupo: basta UMA
+        // dentro da janela de ±30min pra confirmar.
+        const dentroDaJanela = entregues.some(e => Math.abs(horarioEstimadoMs! - e.chegadaMs) <= JANELA_INFERENCIA_TEMPORAL_MIN * 60_000)
+        if (!dentroDaJanela) continue
+        // Confirma por inferencia temporal
+        const d = resultado[iPendente]
+        resultado[iPendente] = {
+          ...d,
+          status: 'confirmado_gps',
+          observacao: OBS_INFERENCIA_TEMPORAL,
+          motivo: gerarMotivo({ status: 'confirmado_gps', observacao: OBS_INFERENCIA_TEMPORAL, evidencia: d.evidencia, distParadaM: d.distParadaM, tempoParadaMin: d.tempoParadaMin }),
+          confianca: calcularConfianca('confirmado_gps', OBS_INFERENCIA_TEMPORAL),
+        }
+      }
+    }
+  }
+
   // Task 2 (plano 2026-09-29, caso real TOS5E38 28/09: carga 98861 Volta
   // Redonda 21 NFs/19 confirmadas + PAO-14 Niteroi 3 NFs, ~100 km dali, NF
   // 216155 'NÃO FOI'): quando a MESMA placa tem no dia uma carga principal

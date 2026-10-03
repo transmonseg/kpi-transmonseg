@@ -5674,3 +5674,140 @@ describe('Task 3 (plano 2026-10-03) -- placa SEM RASTRI na escala', () => {
     }
   })
 })
+
+// Task 4 (plano 2026-10-03): inferencia temporal para SEM CONFIRMAÇÃO no mesmo
+// endereco. Quando uma NF esta pendente mas outra NF no MESMO endereco (ou
+// <=50m) foi confirmada com horario ±30min, herda a confirmacao. Ganho
+// estimado +0,4 pp na taxa.
+describe('inferencia temporal SEM CONFIRMACAO (Task 4, plano 2026-10-03)', () => {
+  const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+
+  function chamar(
+    linhas: LinhaGeocodificada[],
+    opts: {
+      alvos?: AlvoApi[]
+      visitasPorNf?: Map<string, Visita>
+      paradasPorOutraPlaca?: Map<string, UnitracParadaRow[]>
+      modoPrecisao?: boolean
+    } = {},
+  ) {
+    return montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas,
+      opts.alvos ?? [],
+      opts.visitasPorNf ?? new Map(),
+      resumoCargaVazio,
+      true,
+      opts.paradasPorOutraPlaca ?? new Map(),
+      null, false, false, false, new Map(),
+      false, false, false, undefined, false, new Map(),
+      false,
+      opts.modoPrecisao ?? false,
+    )
+  }
+
+  it('herda ENTREGUE quando outra NF no mesmo endereco foi confirmada ±30min', () => {
+    // NF A = ENTREGUE com horario 10:00 (visita GPS)
+    // NF B = SEM CONFIRMAÇÃO, mesmo endereco, com parada proxima as 10:20
+    // expected: NF B vira ENTREGUE por proximidade temporal (modoPrecisao)
+    const linhas = [
+      linha('NF_A', { endereco: 'RUA DAS FLORES, 100 - CENTRO', lat: -22.9, lng: -43.2 }),
+      linha('NF_B', { endereco: 'RUA DAS FLORES, 100 - CENTRO', lat: -22.9, lng: -43.2 }),
+    ]
+    const visitas = new Map<string, Visita>([
+      ['NF_A', { nf: 'NF_A', chegada: '2026-10-03T10:00:00.000Z', saida: '2026-10-03T10:15:00.000Z', distanciaMetrosDoPonto: 30 }],
+    ])
+    // Parada da propria placa perto de NF_B dentro da janela de 30min
+    const paradaProxima = parada({
+      id: 'p_prox', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE',
+      lat: -22.9, lng: -43.2,
+      chegada: '2026-10-03T10:20:00.000Z', saida: '2026-10-03T10:25:00.000Z', fim_real: '2026-10-03T10:25:00.000Z',
+    })
+
+    const detalhe = chamar(linhas, { visitasPorNf: visitas, paradasPorOutraPlaca: new Map([['TTL7D40', [paradaProxima]]]), modoPrecisao: true })
+
+    const nfB = detalhe.find(d => d.nf === 'NF_B')!
+    expect(nfB.status).toBe('confirmado_gps')
+    expect(nfB.observacao).toBe('ENTREGUE - CONFIRMADO POR PROXIMIDADE TEMPORAL COM OUTRA NF NO MESMO ENDEREÇO')
+  })
+
+  it('nao herda quando horarios distantes >30min', () => {
+    // NF A = ENTREGUE 10:00, NF B = SEM CONFIRMAÇÃO com parada estimada as 11:00
+    // >30min de diferenca -> nao herda
+    const linhas = [
+      linha('NF_A', { endereco: 'RUA DAS FLORES, 100 - CENTRO', lat: -22.9, lng: -43.2 }),
+      linha('NF_B', { endereco: 'RUA DAS FLORES, 100 - CENTRO', lat: -22.9, lng: -43.2 }),
+    ]
+    const visitas = new Map<string, Visita>([
+      ['NF_A', { nf: 'NF_A', chegada: '2026-10-03T10:00:00.000Z', saida: '2026-10-03T10:15:00.000Z', distanciaMetrosDoPonto: 30 }],
+    ])
+    // Parada da propria placa perto de NF_B mas em horario distante (>30min)
+    const paradaLonge = parada({
+      id: 'p_longe', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE',
+      lat: -22.9, lng: -43.2,
+      chegada: '2026-10-03T11:00:00.000Z', saida: '2026-10-03T11:10:00.000Z', fim_real: '2026-10-03T11:10:00.000Z',
+    })
+
+    const detalhe = chamar(linhas, { visitasPorNf: visitas, paradasPorOutraPlaca: new Map([['TTL7D40', [paradaLonge]]]) })
+
+    const nfB = detalhe.find(d => d.nf === 'NF_B')!
+    expect(nfB.observacao).not.toBe('ENTREGUE - CONFIRMADO POR PROXIMIDADE TEMPORAL COM OUTRA NF NO MESMO ENDEREÇO')
+  })
+
+  it('nao herda quando enderecos diferentes', () => {
+    // NF A = ENTREGUE endereco X, NF B = SEM CONFIRMAÇÃO endereco Y
+    // enderecos distintos -> nao herda mesmo com horario proximo
+    const linhas = [
+      linha('NF_A', { endereco: 'RUA DAS FLORES, 100 - CENTRO', lat: -22.9, lng: -43.2 }),
+      linha('NF_B', { endereco: 'AVENIDA BRASIL, 500 - JARDIM', lat: -22.91, lng: -43.21 }),
+    ]
+    const visitas = new Map<string, Visita>([
+      ['NF_A', { nf: 'NF_A', chegada: '2026-10-03T10:00:00.000Z', saida: '2026-10-03T10:15:00.000Z', distanciaMetrosDoPonto: 30 }],
+    ])
+
+    const detalhe = chamar(linhas, { visitasPorNf: visitas })
+
+    const nfB = detalhe.find(d => d.nf === 'NF_B')!
+    expect(nfB.observacao).not.toBe('ENTREGUE - CONFIRMADO POR PROXIMIDADE TEMPORAL COM OUTRA NF NO MESMO ENDEREÇO')
+  })
+
+  it('nao herda quando NF ja tem rotulo de precedencia maior (SEM RASTREADOR)', () => {
+    const linhas = [
+      linha('NF_A', { endereco: 'RUA DAS FLORES, 100 - CENTRO', lat: -22.9, lng: -43.2 }),
+      linha('NF_B', { endereco: 'RUA DAS FLORES, 100 - CENTRO', lat: -22.9, lng: -43.2 }),
+    ]
+    const visitas = new Map<string, Visita>([
+      ['NF_A', { nf: 'NF_A', chegada: '2026-10-03T10:00:00.000Z', saida: '2026-10-03T10:15:00.000Z', distanciaMetrosDoPonto: 30 }],
+    ])
+
+    // tratarSemRastreadorNoDia=true + temRastreador=false -> NF_B fica SEM RASTREADOR
+    const detalhe = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, [], visitas, resumoCargaVazio,
+      false, // temRastreador=false
+      new Map(), null, false, false, false, new Map(),
+      true, // tratarSemRastreadorNoDia
+      false, false, undefined, false, new Map(), false, false,
+    )
+
+    const nfB = detalhe.find(d => d.nf === 'NF_B')!
+    expect(nfB.observacao).toContain('SEM RASTREADOR')
+    expect(nfB.observacao).not.toBe('ENTREGUE - CONFIRMADO POR PROXIMIDADE TEMPORAL COM OUTRA NF NO MESMO ENDEREÇO')
+  })
+
+  it('nao herda quando NF ja e ENTREGUE por outro mecanismo (confirmado_unitrac)', () => {
+    const linhas = [
+      linha('NF_A', { endereco: 'RUA DAS FLORES, 100 - CENTRO', lat: -22.9, lng: -43.2 }),
+      linha('NF_B', { endereco: 'RUA DAS FLORES, 100 - CENTRO', lat: -22.9, lng: -43.2 }),
+    ]
+    const visitas = new Map<string, Visita>([
+      ['NF_A', { nf: 'NF_A', chegada: '2026-10-03T10:00:00.000Z', saida: '2026-10-03T10:15:00.000Z', distanciaMetrosDoPonto: 30 }],
+    ])
+    const alvos = [alvo('NF_B', 1)] // NF_B ja confirmada via Unitrac
+
+    const detalhe = chamar(linhas, { visitasPorNf: visitas, alvos })
+
+    const nfB = detalhe.find(d => d.nf === 'NF_B')!
+    expect(nfB.status).toBe('confirmado_unitrac')
+    // Nao deve sobrescrever com o rotulo de inferencia temporal
+    expect(nfB.observacao).not.toBe('ENTREGUE - CONFIRMADO POR PROXIMIDADE TEMPORAL COM OUTRA NF NO MESMO ENDEREÇO')
+  })
+})
