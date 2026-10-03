@@ -26,6 +26,11 @@ import { chaveCacheEndereco } from '../src/lib/kpi-romaneio/endereco-cep'
 import { geocodificarSemCache } from '../src/lib/kpi-romaneio/geocode'
 import { csvBackupCache } from './corrigir-geocode-por-alvo'
 import { diaAnterior } from './correcao-geocode-noturna'
+import { lerSnapshotAlvos } from '../src/lib/kpi-romaneio/alvos-snapshot'
+import { enderecosParaLerCache } from '../src/lib/kpi-romaneio/geocode'
+import type { AlvoApi } from '../src/lib/unitrac-api'
+
+const CLIENTE = 'nutrimax'
 
 export const TETO_REGEOCODE_NOITE = 30
 export const FONTES_PROTEGIDAS: ReadonlySet<string> = new Set(['manual', 'verificacao_manual', 'cadastro_unitrac'])
@@ -180,12 +185,13 @@ export async function aplicarRegeocodeNoturno(
 }
 
 async function buscarCandidatos(svc: ReturnType<typeof createServiceClient>): Promise<CandidatoRegeocode[]> {
-  // Busca entradas imprecisas: confiavel=false OR motivo contendo 'imprecisa' OR fonte vazia/null
-  // Exclui fontes protegidas na propria query
+  // Busca entradas imprecisas: confiavel=false OR motivo contendo 'imprecisa'
+  // OR fonte vazia/null OR fonte='auto' OR fonte='' (auto-generated).
+  // Exclui fontes protegidas na propria query.
   const { data, error } = await svc
     .from(TABELA_CACHE)
     .select('endereco,lat,lng,fonte,confiavel,motivo')
-    .or('confiavel.eq.false,motivo.like.%imprecisa%,fonte.is.null')
+    .or('confiavel.eq.false,motivo.like.%imprecisa%,fonte.is.null,fonte.eq.auto,fonte.eq.')
 
   if (error) throw new Error(`busca de candidatos falhou: ${error.message}`)
 
@@ -196,26 +202,55 @@ async function buscarCandidatos(svc: ReturnType<typeof createServiceClient>): Pr
     if (fonte != null && FONTES_PROTEGIDAS.has(fonte)) continue
     // So considera se tem coordenada atual (senao nao ha o que melhorar)
     if (row.lat == null || row.lng == null) continue
+
+    // Extrai cidade do endereco (ultimo segmento apos virgula ou ultima palavra em maiusculo)
+    const enderecoStr = (row.endereco as string) ?? ''
+    const partesEndereco = enderecoStr.split(',').map(s => s.trim())
+    const cidadeExtraida = partesEndereco.length > 1 ? partesEndereco[partesEndereco.length - 1] : null
+    // Tenta extrair CEP do endereco (padrao XXXXX-XXX ou XXXXXXXX)
+    const cepMatch = enderecoStr.match(/(\d{5}-?\d{3})/)
+    const cepExtraido = cepMatch ? cepMatch[1] : null
+
     candidatos.push({
-      endereco: row.endereco as string,
+      endereco: enderecoStr,
       lat: row.lat as number,
       lng: row.lng as number,
       fonte,
       confiavel: (row.confiavel as boolean) ?? false,
       motivo: (row.motivo as string) ?? null,
-      nomeCliente: null, // Sera preenchido pelo contexto do romaneio se disponivel
-      cidade: null,
-      cep: null,
+      nomeCliente: null, // Preenchido via join com alvos se disponivel
+      cidade: cidadeExtraida,
+      cep: cepExtraido,
     })
   }
   return candidatos
 }
 
-async function tentarGeocode(endereco: string): Promise<{ lat: number; lng: number } | null> {
-  const resultados = await geocodificarSemCache([endereco], { validarTerritorio: true })
-  const r = resultados[0]
-  if (!r) return null
-  return { lat: r.lat, lng: r.lng }
+/** Estrategia de dois estagios: (1) nomeCliente + cidade (fuzzy), (2) endereco parcial + CEP.
+ *  Se nenhum contexto extra estiver disponivel, cai pro endereco bruto como fallback. */
+async function tentarGeocode(c: CandidatoRegeocode): Promise<{ lat: number; lng: number } | null> {
+  // Estagio 1: nomeCliente + cidade (fuzzy) -- so se ambos existirem
+  if (c.nomeCliente && c.cidade) {
+    const query1 = `${c.nomeCliente}, ${c.cidade}`
+    const r1 = await geocodificarSemCache([query1], { validarTerritorio: true })
+    if (r1[0]) return { lat: r1[0].lat, lng: r1[0].lng }
+  }
+
+  // Estagio 2: endereco parcial + CEP
+  if (c.cep) {
+    // Endereco parcial: remove numero e complemento, fica com rua + bairro/cidade
+    const partes = c.endereco.split(',').map(s => s.trim())
+    const enderecoParcial = partes.length > 1 ? partes.slice(0, -1).join(', ') : c.endereco
+    const query2 = `${enderecoParcial}, ${c.cep}`
+    const r2 = await geocodificarSemCache([query2], { validarTerritorio: true })
+    if (r2[0]) return { lat: r2[0].lat, lng: r2[0].lng }
+  }
+
+  // Fallback: endereco bruto
+  const r3 = await geocodificarSemCache([c.endereco], { validarTerritorio: true })
+  if (r3[0]) return { lat: r3[0].lat, lng: r3[0].lng }
+
+  return null
 }
 
 async function main() {
@@ -236,13 +271,51 @@ async function main() {
     return
   }
 
-  // Tenta geocodificar cada candidato individualmente
+  // Carrega estado atual do cache para os candidatos (necessario para comparacao de distancia)
+  const enderecosConsulta = enderecosParaLerCache(candidatos.map(c => c.endereco))
+  const cacheAtual = new Map<string, LinhaCacheAtual>()
+  for (let i = 0; i < enderecosConsulta.length; i += 20) {
+    const { data: rows, error } = await svc
+      .from(TABELA_CACHE)
+      .select('endereco,lat,lng,confiavel,fonte,motivo')
+      .in('endereco', enderecosConsulta.slice(i, i + 20))
+    if (error) throw new Error(`leitura do cache falhou: ${error.message}`)
+    for (const r of rows ?? []) cacheAtual.set(r.endereco, r)
+  }
+
+  // Carrega alvos Unitrac do snapshot para obter coordenadas de referencia
+  let alvosPorEndereco = new Map<string, { lat: number; lng: number }>()
+  try {
+    const alvos = await lerSnapshotAlvos(CLIENTE, data)
+    if (alvos) {
+      for (const a of alvos) {
+        if (a.codigoUnitrac && a.lat != null && a.lng != null) {
+          // Mapeia por endereco do alvo se disponivel, senao por codigoUnitrac
+          const chave = (a as { endereco?: string }).endereco ?? a.codigoUnitrac
+          alvosPorEndereco.set(chave, { lat: a.lat, lng: a.lng })
+        }
+      }
+      console.log(`[regeocode-noturno-imprecisos] ${alvosPorEndereco.size} alvos carregados do snapshot`)
+    }
+  } catch (e) {
+    console.error('[regeocode-noturno-imprecisos] falha ao carregar snapshot de alvos (segue sem comparacao):', e instanceof Error ? e.message : String(e))
+  }
+
+  // Tenta geocodificar cada candidato individualmente com estrategia de dois estagios
   const upserts: UpsertRegeocode[] = []
   const pulados: PuladoRegeocode[] = []
 
   for (const c of candidatos) {
-    const novaCoord = await tentarGeocode(c.endereco)
-    const lote = montarLoteRegeocode([c], new Map(), novaCoord)
+    const novaCoord = await tentarGeocode(c)
+    // Busca alvo correspondente para comparacao de distancia
+    const alvo = alvosPorEndereco.get(c.endereco) ?? alvosPorEndereco.get(chaveCacheEndereco(c.endereco))
+    const lote = montarLoteRegeocode(
+      [c],
+      cacheAtual,
+      novaCoord,
+      alvo?.lat,
+      alvo?.lng,
+    )
     if (lote.gravar.length > 0) {
       upserts.push(lote.gravar[0])
     } else {
