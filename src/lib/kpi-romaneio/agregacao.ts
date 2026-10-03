@@ -747,7 +747,7 @@ const OBS_PARADA_CURTA_OUTRO_ENDERECO = 'PARADA CURTA DE OUTRO ENDEREÇO - NÃO 
 // casos reais de 28/09 eram passagem (1 leitura v=0), transito ou parada de
 // outro cliente -- a duracao minima corta a passagem/transito (leitura unica
 // no trevo, ~1 min) e o isolamento corta a parada de outro cliente.
-const DURACAO_MIN_PARADA_PROXIMA_PROPRIA_MIN = 3
+const DURACAO_MIN_PARADA_PROXIMA_PROPRIA_MIN = 2
 const RAIO_MIN_PARADA_PROXIMA_PROPRIA_M = 500
 const RAIO_MAX_PARADA_PROXIMA_PROPRIA_M = 2_000
 const OBS_PARADA_PROXIMA_FORA = 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR'

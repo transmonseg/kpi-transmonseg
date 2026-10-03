@@ -4790,9 +4790,19 @@ describe('Plano 29/09 -- PARADA PRÓXIMA propria e isolada vira ENTREGUE', () =>
     expect(d.distParadaM).toBe(1200)
   })
 
-  it('parada de 2 min (menos de 3) nao prova -> continua CONFERIR', () => {
+  // Task 1 (2026-10-03): threshold reduzido de 3 para 2 min -- 2 min agora confirma
+  it('parada de 2 min a ~1 km, isolada -> ENTREGUE (threshold 2 min)', () => {
     const d = doNf(chamarNutryMax([nf, crisMar, pazEAmor], {
-      paradasPorOutraPlaca: new Map([['TTL7D40', [pPaz, stop('curta', em(1000), '12:59', '13:01'), pCrisMar]]]),
+      paradasPorOutraPlaca: new Map([['TTL7D40', [pPaz, stop('doismin', em(1000), '12:59', '13:01'), pCrisMar]]]),
+    }))
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBeNull()
+    expect(d.evidencia).toBe('parada_proxima_propria')
+  })
+
+  it('parada de 1 min (menos de 2) nao prova -> continua CONFERIR', () => {
+    const d = doNf(chamarNutryMax([nf, crisMar, pazEAmor], {
+      paradasPorOutraPlaca: new Map([['TTL7D40', [pPaz, stop('ummin', em(1000), '12:59', '13:00'), pCrisMar]]]),
     }))
     expect(d.status).toBe('pendente')
     expect(d.observacao).toBe(OBS_PROXIMA)
