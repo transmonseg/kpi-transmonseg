@@ -429,17 +429,22 @@ export async function POST(req: NextRequest) {
   const linhasKpi: LinhaKpiRomaneio[] = [...cargasPorChave.entries()]
     .map(([chave, linhasDaCarga]) => {
       const [carga, placaNorm] = chave.split('::')
+      const escalaDaCarga = escalaPorChave.get(chave) ?? null
       return agregarPorCarga(
         carga,
         placaNorm,
         linhasDaCarga,
-        escalaPorChave.get(chave) ?? null,
+        escalaDaCarga,
         alvosPorPlaca.get(placaNorm) ?? [],
         visitasPorPlaca.get(placaNorm) ?? new Map(),
         paradasPorPlaca.get(placaNorm) ?? [],
         kmPorPlaca.get(placaNorm) ?? null,
         horarioBasePorPlaca.get(placaNorm),
         temRastreadorPorPlaca.get(placaNorm) ?? false,
+        // Task 3 (plano 2026-10-03): status do rastreador declarado na escala.
+        // "SEM RASTRI" na escala vence qualquer fonte de dado e exclui a placa
+        // inteira do denominador da TAXA.
+        escalaDaCarga?.statusRastreador ?? null,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
@@ -545,6 +550,10 @@ export async function POST(req: NextRequest) {
         // outro cliente dele, ou acima do teto de 4h de permanencia) -- ver
         // linhasPorPlacaNoDia em agregacao.ts.
         linhasPorPlaca,
+        // Task 3 (plano 2026-10-03): placa marcada "SEM RASTRI" na escala ->
+        // todas as NFs dessa placa recebem rotulo especifico e sao excluidas
+        // do denominador da TAXA. Ver placaSemRastriNaEscala em agregacao.ts.
+        escalaPorChave.get(chave)?.statusRastreador?.trim().toUpperCase() === 'SEM RASTRI',
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

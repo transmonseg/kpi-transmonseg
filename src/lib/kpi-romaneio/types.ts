@@ -23,6 +23,11 @@ export type LinhaEscala = {
   pesoKg: number | null
   entPlanejado: number | null
   nfPlanejado: number | null
+  /** Task 3 (plano 2026-10-03): status do rastreador na escala (ex: "SEM RASTRI").
+   *  Quando presente e igual a "SEM RASTRI" (case-insensitive, trimmed), todas as
+   *  NFs dessa placa recebem rotulo especifico e sao excluidas do denominador da
+   *  TAXA. Null quando a coluna nao existe ou esta vazia no PDF. */
+  statusRastreador: string | null
 }
 
 /** LinhaRomaneio + coordenada, quando a geocodificacao deu certo. Ausencia

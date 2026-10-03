@@ -957,7 +957,20 @@ export function agregarPorCarga(
   // (a maioria assume veículo rastreado); route.ts/script sempre passam o
   // valor real calculado.
   temRastreador: boolean = true,
+  // Task 3 (plano 2026-10-03): status do rastreador declarado na ESCALA
+  // (ex: "SEM RASTRI"). Quando presente e igual a "SEM RASTRI"
+  // (case-insensitive, trimmed), a placa inteira é tratada como sem
+  // rastreador independente de cv/ponte/GPS -- falha de infraestrutura
+  // declarada no planejamento, não no dado. Todas as NFs da carga recebem
+  // rótulo específico e saem do denominador da TAXA. Null/vazio = sem
+  // declaração na escala, comportamento normal.
+  statusRastreadorEscala: string | null = null,
 ): LinhaKpiRomaneio {
+  // Task 3: SEM RASTRI na escala VENCE qualquer fonte de dado (mesmo
+  // espírito de placasSemRastreador/placasSemSinal em placas-sem-rastreador.ts).
+  const placaSemRastriNaEscala = statusRastreadorEscala != null
+    && statusRastreadorEscala.trim().toUpperCase() === 'SEM RASTRI'
+  if (placaSemRastriNaEscala) temRastreador = false
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
 
   let confirmadas = 0
@@ -1462,6 +1475,16 @@ export function montarDetalheEntregas(
   // nutrimax-real-arquivo.ts) passa `linhasPorPlaca` (TODAS as placas do
   // dia, ja calculado no chamador).
   linhasPorPlacaNoDia: Map<string, LinhaGeocodificada[]> = new Map(),
+  // Task 3 (plano 2026-10-03): placa marcada "SEM RASTRI" na escala -> todas
+  // as NFs dessa placa recebem rotulo especifico e sao excluidas do
+  // denominador da TAXA. Diferente de `semRastreadorNoDia` (detectado por
+  // GPS/ponte/declaracao manual), este e' declarado na propria escala
+  // (infraestrutura, nao dado). Quando true, sobrepoe qualquer outra
+  // classificacao e seta observacao='SEM RASTREADOR - PLACA SEM
+  // RASTREAMENTO NA ESCALA - NÃO CONTABILIZADO'. Default false preserva
+  // Rio Quality e comportamento antigo; Nutry Max (route.ts) passa true
+  // quando escala.statusRastreador === 'SEM RASTRI'.
+  placaSemRastriNaEscala: boolean = false,
   // Task 3 (plano 2026-09-30-rioquality-aprendizados): 'VEÍCULO NÃO SAIU DA
   // BASE' (km CONHECIDO baixo, fora da taxa) separado de `modoPrecisao` --
   // Rio Quality liga so' isto, sem o resto do modoPrecisao. Default = valor
@@ -1917,6 +1940,14 @@ export function montarDetalheEntregas(
     // isso e' fato positivo e nao cede pra sem rastreador nem sem movimento.
     if (observacao == null && porOutraPlaca) {
       observacao = `ENTREGUE POR OUTRA PLACA (${porOutraPlaca.placa}) - CARGA TRANSFERIDA`
+    }
+    // Task 3 (plano 2026-10-03): placa marcada "SEM RASTRI" na escala ->
+    // rotulo especifico, fora da taxa. Roda ANTES de semRastreadorNoDia
+    // porque a declaracao na escala e' mais especifica (infraestrutura
+    // declarada no planejamento, nao detectada por GPS/ponte). O label
+    // NAO contem "OUTRA PLACA" nem "CARGA TRANSFERIDA" (global constraint).
+    if (observacao == null && placaSemRastriNaEscala) {
+      observacao = 'SEM RASTREADOR - PLACA SEM RASTREAMENTO NA ESCALA - NÃO CONTABILIZADO'
     }
     if (observacao == null && status === 'pendente' && semRastreadorNoDia) {
       observacao = 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO'

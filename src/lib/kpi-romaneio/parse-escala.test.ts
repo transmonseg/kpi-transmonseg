@@ -26,6 +26,7 @@ describe('linhaParaEscala', () => {
       pesoKg: 1200,
       entPlanejado: 8,
       nfPlanejado: 12,
+      statusRastreador: null,
     })
   })
 

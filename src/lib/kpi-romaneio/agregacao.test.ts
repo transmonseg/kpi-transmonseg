@@ -5540,7 +5540,8 @@ describe('montarDetalheEntregas -- opcao naoSaiuDaBase separada de modoPrecisao 
       false, // detectarEscalaDivergente
       opts.modoPrecisao ?? false,
       false, // reconhecerRodizio
-      new Map(),
+      new Map(), // linhasPorPlacaNoDia
+      false, // placaSemRastriNaEscala (Task 3 -- default false, Rio Quality nao usa)
     ]
     if (opts.naoSaiuDaBase !== undefined) args.push(opts.naoSaiuDaBase)
     return (montarDetalheEntregas as (...a: unknown[]) => ReturnType<typeof montarDetalheEntregas>)(...args)
@@ -5568,6 +5569,108 @@ describe('montarDetalheEntregas -- opcao naoSaiuDaBase separada de modoPrecisao 
   it('Nutry Max (modoPrecisao=true, sem passar a opcao): continua NÃO SAIU DA BASE -- default segue modoPrecisao', () => {
     for (const d of chamarRq(0.4, { modoPrecisao: true })) {
       expect(d.observacao).toBe('VEÍCULO NÃO SAIU DA BASE')
+    }
+  })
+})
+
+// Task 3 (plano 2026-10-03): placa marcada "SEM RASTRI" na escala -> todas as
+// NFs dessa placa recebem rotulo especifico e sao excluidas do denominador da
+// TAXA. Evita penalizar performance por falha de infraestrutura declarada na
+// propria escala (diferente de "sem rastreador no dia", que e' detectado pelo
+// GPS/ponte/declaracao manual).
+describe('Task 3 (plano 2026-10-03) -- placa SEM RASTRI na escala', () => {
+  const resumoCargaVazio = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+
+  it('NFs de placa com SEM RASTRI na escala ficam fora da taxa (observacao especifica, temRastreador=false)', () => {
+    const linhas = [linha('NF1'), linha('NF2')]
+    const escalaComSemRastri: LinhaEscala = {
+      carga: '93758',
+      placaRaw: 'TTL7D40',
+      placaNorm: 'TTL7D40',
+      destino: 'CAMPOS',
+      motorista: 'MOTORISTA TESTE',
+      ajudante1: null,
+      ajudante2: null,
+      pesoKg: null,
+      entPlanejado: null,
+      nfPlanejado: 2,
+      statusRastreador: 'SEM RASTRI',
+    }
+    const r = agregarPorCarga('93758', 'TTL7D40', linhas, escalaComSemRastri, [], new Map(), [], null, undefined, true, 'SEM RASTRI')
+    // A carga inteira deve ser marcada como sem rastreador pela escala
+    expect(r.temRastreador).toBe(false)
+
+    // E no detalhe, cada NF deve receber o rotulo especifico
+    const detalhe = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio,
+      false, // temRastreador=false porque a escala disse SEM RASTRI
+      new Map(), null, false, false, false, new Map(),
+      true, // tratarSemRastreadorNoDia
+      true, // desativarOutraPlaca
+      false, // confirmarPorParadaUnitracPropria
+      linhas, // todasLinhasDaPlacaNoDia
+      false, // apagaoDeSinalPropriaPlaca
+      new Map(), // menorDistanciaTrajetoPorNf
+      false, false, false, new Map(), // detectarEscalaDivergente, modoPrecisao, reconhecerRodizio, linhasPorPlacaNoDia
+      true, // placaSemRastriNaEscala
+      false, // naoSaiuDaBase
+    )
+    for (const d of detalhe) {
+      expect(d.observacao).toBe('SEM RASTREADOR - PLACA SEM RASTREAMENTO NA ESCALA - NÃO CONTABILIZADO')
+      expect(d.temRastreador).toBe(false)
+      expect(d.observacao ?? '').not.toContain('OUTRA PLACA')
+      expect(d.observacao ?? '').not.toContain('CARGA TRANSFERIDA')
+    }
+  })
+
+  it('placa normal na escala (statusRastreador=null) nao e afetada', () => {
+    const linhas = [linha('NF1')]
+    const escalaNormal: LinhaEscala = {
+      carga: '93758',
+      placaRaw: 'TTL7D40',
+      placaNorm: 'TTL7D40',
+      destino: 'CAMPOS',
+      motorista: 'MOTORISTA TESTE',
+      ajudante1: null,
+      ajudante2: null,
+      pesoKg: null,
+      entPlanejado: null,
+      nfPlanejado: 1,
+      statusRastreador: null,
+    }
+    const r = agregarPorCarga('93758', 'TTL7D40', linhas, escalaNormal, [], new Map(), [], null)
+    // Sem marcação na escala, temRastreador segue o default (true quando ha cv/ponte)
+    // Como nao passamos cv nem ponte aqui, fica false pelo calculo normal --
+    // mas o importante e' que NAO ganhou o rotulo de escala.
+    const detalhe = montarDetalheEntregas(
+      '93758', 'TTL7D40', linhas, [], new Map(), resumoCargaVazio,
+      true, // temRastreador=true (placa normal)
+      new Map(), null, false, false, false, new Map(),
+      true, // tratarSemRastreadorNoDia
+      true, // desativarOutraPlaca
+      false, // confirmarPorParadaUnitracPropria
+      linhas, // todasLinhasDaPlacaNoDia
+      false, // apagaoDeSinalPropriaPlaca
+      new Map(), // menorDistanciaTrajetoPorNf
+      false, false, false, new Map(), // detectarEscalaDivergente, modoPrecisao, reconhecerRodizio, linhasPorPlacaNoDia
+      false, // placaSemRastriNaEscala=false (placa normal)
+      false, // naoSaiuDaBase
+    )
+    for (const d of detalhe) {
+      expect(d.observacao ?? '').not.toContain('PLACA SEM RASTREAMENTO NA ESCALA')
+    }
+  })
+
+  it('statusRastreador case-insensitive e trimmed: "sem rastri" / " Sem Rastri " funcionam', () => {
+    for (const valor of ['sem rastri', ' Sem Rastri ', 'SEM RASTRI']) {
+      const escala: LinhaEscala = {
+        carga: '93758', placaRaw: 'TTL7D40', placaNorm: 'TTL7D40',
+        destino: 'CAMPOS', motorista: 'M', ajudante1: null, ajudante2: null,
+        pesoKg: null, entPlanejado: null, nfPlanejado: 1,
+        statusRastreador: valor,
+      }
+      const r = agregarPorCarga('93758', 'TTL7D40', [linha('NF1')], escala, [], new Map(), [], null, undefined, true, valor)
+      expect(r.temRastreador).toBe(false)
     }
   })
 })
