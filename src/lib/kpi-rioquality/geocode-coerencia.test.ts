@@ -43,16 +43,36 @@ describe('geocodificarPorCoerencia', () => {
 
   it('falha graciosa: ponte fora do ar => todo mundo sem_candidato, mesmo tamanho das ruas, nunca lança', async () => {
     fetchMock.mockRejectedValue(new Error('ECONNREFUSED'))
-    const r = await geocodificarPorCoerencia(grupos)
+    const r = await geocodificarPorCoerencia(grupos, { esperaMs: 0 })
     expect(r.get('RJM5B51')).toHaveLength(2)
     expect(r.get('RJM5B51')![0]).toMatchObject({ lat: null, lng: null, confianca: 'sem_candidato' })
     expect(r.get('SRL9A58')).toHaveLength(1)
   })
 
   it('resposta HTTP != 200 ou sem campo grupos => falha graciosa igual', async () => {
-    fetchMock.mockResolvedValue(new Response('erro', { status: 500 }))
-    const r = await geocodificarPorCoerencia(grupos)
+    fetchMock.mockImplementation(async () => new Response('erro', { status: 500 }))
+    const r = await geocodificarPorCoerencia(grupos, { esperaMs: 0 })
     expect(r.get('SRL9A58')![0].confianca).toBe('sem_candidato')
+  })
+
+  // Achado 03/10: um 500 isolado derrubou a RQ de 02/10 de 90,4% pra 88,5%.
+  it('500 na 1a tentativa e sucesso na 2a: devolve o resultado, sem avisar falha', async () => {
+    const ok = { grupos: [{ id: 'RJM5B51', resultados: [{ lat: -22.7, lng: -43.3, confianca: 'alta', candidatos: 1 }, { lat: -22.7, lng: -43.3, confianca: 'alta', candidatos: 1 }] }, { id: 'SRL9A58', resultados: [{ lat: -23, lng: -43.3, confianca: 'alta', candidatos: 1 }] }] }
+    fetchMock.mockResolvedValueOnce(new Response('erro', { status: 500 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(ok), { status: 200 }))
+    const aoFalhar = vi.fn()
+    const r = await geocodificarPorCoerencia(grupos, { aoFalhar, esperaMs: 0 })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(r.get('SRL9A58')![0].confianca).toBe('alta')
+    expect(aoFalhar).not.toHaveBeenCalled()
+  })
+
+  it('falha nas 3 tentativas: chama aoFalhar (vira aviso "gere novamente" na RQ)', async () => {
+    fetchMock.mockImplementation(async () => new Response('erro', { status: 500 }))
+    const aoFalhar = vi.fn()
+    await geocodificarPorCoerencia(grupos, { aoFalhar, esperaMs: 0 })
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(aoFalhar).toHaveBeenCalledTimes(1)
   })
 
   it('grupo que a ponte não devolveu (ou devolveu com tamanho errado) vira sem_candidato só pra ele', async () => {

@@ -34,6 +34,7 @@ import { hojeBR } from '../src/lib/data-br'
 import { montarDumpExperimento } from '../src/lib/kpi-romaneio/experimentos/dump'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '../src/lib/kpi-romaneio/types'
 import type { UnitracParadaRow } from '../src/lib/kpi/matcher'
+import { consumirFalhasPonte } from '../src/lib/kpi-romaneio/base-horarios'
 
 const FONTES_VERIFICADAS = new Set(['manual', 'verificacao_manual', 'cadastro_unitrac'])
 
@@ -402,6 +403,8 @@ async function main() {
     avisos.push({ carga: '—', placa: '—', motivo: 'consulta_posicoes_suspeita', semSinal: travaSemSinal.semSinal, totalPlacas: travaSemSinal.totalPlacas })
   }
 
+  const falhasPonte = consumirFalhasPonte()
+  if (falhasPonte > 0) avisos.push({ carga: '—', placa: '—', motivo: 'ponte_falhou', placasSemPonte: falhasPonte })
   console.log(`Total cargas: ${linhasKpi.length}, OK: ${linhasKpi.filter(l => l.status === 'OK').length}, avisos: ${avisos.length}`)
   const negativos = linhasKpi.filter(l => l.tempoOperacaoMin != null && l.tempoOperacaoMin < 0)
   console.log(`Linhas com TEMPO OPERAÇÃO negativo (deveria ser 0 agora): ${negativos.length}`)

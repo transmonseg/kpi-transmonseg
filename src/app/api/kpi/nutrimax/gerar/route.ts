@@ -11,7 +11,7 @@ import { geocodificarEnderecosComInfo } from '@/lib/kpi-romaneio/geocode'
 import { reposicionarPorAncoras } from '@/lib/kpi-romaneio/geocode-ancoras'
 import { chaveCacheEndereco, enderecosColididosPorCoordenada } from '@/lib/kpi-romaneio/endereco-cep'
 import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '@/lib/kpi-romaneio/unitrac'
-import { anexarCoordenadaCadastro, montarMenorDistanciaTrajetoPorNf } from '@/lib/kpi-romaneio/base-horarios'
+import { anexarCoordenadaCadastro, montarMenorDistanciaTrajetoPorNf, consumirFalhasPonte } from '@/lib/kpi-romaneio/base-horarios'
 import { ajustarChegadaAposUltimaEntrega } from '@/lib/kpi-romaneio/fim-rota'
 import { alvosDaData } from '@/lib/kpi-romaneio/alvos-data'
 import { alvosEfetivos } from '@/lib/kpi-romaneio/alvos-snapshot'
@@ -592,6 +592,8 @@ export async function POST(req: NextRequest) {
   if (travaSemSinal.aviso) {
     avisos.push({ carga: '—', placa: '—', motivo: 'consulta_posicoes_suspeita', semSinal: travaSemSinal.semSinal, totalPlacas: travaSemSinal.totalPlacas })
   }
+  const falhasPonte = consumirFalhasPonte()
+  if (falhasPonte > 0) avisos.push({ carga: '—', placa: '—', motivo: 'ponte_falhou', placasSemPonte: falhasPonte })
   if (geocodeParciais > 0) {
     avisos.push({ carga: '—', placa: '—', motivo: 'geocode_parcial', enderecosParciais: geocodeParciais })
   }

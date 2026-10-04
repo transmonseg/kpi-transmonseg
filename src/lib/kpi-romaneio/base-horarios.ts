@@ -256,6 +256,24 @@ function validarResultado(r: unknown): ResultadoBruto | null {
   return null
 }
 
+// Achado 03/10 (RQ 02/10 perdeu 55 entregas com um 500 isolado da ponte):
+// lote que falha e' tentado de novo; se ainda falhar, as placas dele contam
+// aqui e o chamador vira aviso "gere novamente" (consumirFalhasPonte).
+const TENTATIVAS_LOTE = 3
+const ESPERA_ENTRE_TENTATIVAS_LOTE_MS = 2_000
+let falhasPonte = 0
+let esperaEntreTentativasMs = ESPERA_ENTRE_TENTATIVAS_LOTE_MS
+/** Placas sem resposta da ponte desde a ultima chamada (e zera o contador). */
+export function consumirFalhasPonte(): number {
+  const n = falhasPonte
+  falhasPonte = 0
+  return n
+}
+/** So' testes: espera entre tentativas. */
+export function definirEsperaEntreTentativasPonte(ms: number): void {
+  esperaEntreTentativasMs = ms
+}
+
 async function buscarLote(
   placas: string[],
   data: string,
@@ -263,6 +281,23 @@ async function buscarLote(
   incluirParadas: boolean,
   fimRotaPorPlaca?: Map<string, string>,
 ): Promise<Map<string, HorarioBase>> {
+  for (let t = 1; t <= TENTATIVAS_LOTE; t++) {
+    const r = await tentarLote(placas, data, pontosPorPlaca, incluirParadas, fimRotaPorPlaca)
+    if (r) return r
+    if (t < TENTATIVAS_LOTE) await new Promise(ok => setTimeout(ok, esperaEntreTentativasMs))
+  }
+  falhasPonte += placas.length
+  return new Map()
+}
+
+/** Uma chamada; `null` = falhou (rede, status, JSON) e vale tentar de novo. */
+async function tentarLote(
+  placas: string[],
+  data: string,
+  pontosPorPlaca: Map<string, PontoEntregaBridge[]>,
+  incluirParadas: boolean,
+  fimRotaPorPlaca?: Map<string, string>,
+): Promise<Map<string, HorarioBase> | null> {
   const mapa = new Map<string, HorarioBase>()
   const chave = process.env.MOTOR_SECRET
   if (!chave) {
@@ -312,14 +347,14 @@ async function buscarLote(
     })
   } catch (e) {
     console.error('[kpi-romaneio/base-horarios] chamada ao monitoramento falhou:', e instanceof Error ? e.message : String(e))
-    return mapa
+    return null
   } finally {
     clearTimeout(timer)
   }
 
   if (!res.ok) {
     console.error(`[kpi-romaneio/base-horarios] monitoramento respondeu ${res.status}`)
-    return mapa
+    return null
   }
 
   let json: unknown
@@ -327,7 +362,7 @@ async function buscarLote(
     json = await res.json()
   } catch (e) {
     console.error('[kpi-romaneio/base-horarios] resposta nao e JSON valido:', e instanceof Error ? e.message : String(e))
-    return mapa
+    return null
   }
 
   const resultados = (json as { resultados?: unknown })?.resultados

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { buscarHorariosBase, anexarCoordenadaCadastro, montarMenorDistanciaTrajetoPorNf } from './base-horarios'
+import { buscarHorariosBase, anexarCoordenadaCadastro, montarMenorDistanciaTrajetoPorNf, consumirFalhasPonte, definirEsperaEntreTentativasPonte } from './base-horarios'
 import type { HorarioBase } from './base-horarios'
 
 beforeEach(() => {
@@ -56,6 +56,28 @@ describe('buscarHorariosBase', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: false, status: 500 } as Response)
     const mapa = await buscarHorariosBase(['ABC1234'], '2026-08-25')
     expect(mapa.size).toBe(0)
+  })
+
+  // Achado 03/10: 500 isolado da ponte perdia as visitas do lote em silencio.
+  it('500 na 1a tentativa e sucesso na 2a: devolve os dados e nao conta falha', async () => {
+    definirEsperaEntreTentativasPonte(0)
+    consumirFalhasPonte()
+    const ok = { ok: true, status: 200, json: async () => ({ resultados: [{ placa: 'ABC1234', saidaBase: null, chegadaBase: null, kmPercorrido: 10 }] }) } as Response
+    const spy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({ ok: false, status: 500 } as Response).mockResolvedValueOnce(ok)
+    const mapa = await buscarHorariosBase(['ABC1234'], '2026-08-25')
+    expect(spy).toHaveBeenCalledTimes(2)
+    expect(mapa.get('ABC1234')?.kmPercorrido).toBe(10)
+    expect(consumirFalhasPonte()).toBe(0)
+  })
+
+  it('falha nas 3 tentativas: conta as placas do lote em consumirFalhasPonte (vira aviso)', async () => {
+    definirEsperaEntreTentativasPonte(0)
+    consumirFalhasPonte()
+    const spy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: false, status: 500 } as Response)
+    await buscarHorariosBase(['ABC1234', 'XYZ5678'], '2026-08-25')
+    expect(spy).toHaveBeenCalledTimes(3)
+    expect(consumirFalhasPonte()).toBe(2)
+    expect(consumirFalhasPonte()).toBe(0)
   })
 
   it('fetch rejeita (timeout/rede): mapa vazio, nunca lanca', async () => {

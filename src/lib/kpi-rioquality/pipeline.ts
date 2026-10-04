@@ -9,7 +9,7 @@ import { BASES_COORD_RIOQUALITY, EXTENSAO_RUA_LONGA_M } from './constants'
 // proposito -- subestima 43% a 65%. Ver km-rastro.ts.
 import { medirRastroDoDia, type MedicaoRastro } from './km-rastro'
 import { placaSemSinalPelaUnitrac, aplicarTravaSemSinal } from '@/lib/kpi-romaneio/placas-sem-rastreador'
-import { buscarHorariosBase } from '@/lib/kpi-romaneio/base-horarios'
+import { buscarHorariosBase, consumirFalhasPonte } from '@/lib/kpi-romaneio/base-horarios'
 import { resolverParadas, descartarParadaAbertaAlemDoDia } from '@/lib/kpi-romaneio/unitrac'
 import { lerSnapshotParadas, mesclarParadas } from '@/lib/kpi-romaneio/paradas-snapshot'
 import { foraDoAlcanceApi } from '@/lib/kpi-romaneio/constants'
@@ -176,6 +176,8 @@ export async function gerarKpiRioQuality(params: {
   const hoje = params.hoje ?? hojeBR()
   // Task 4 (avisos, estudo item 5d): Custos x Entregas e frota.
   const avisosEntrada: AvisoDescasamento[] = []
+  // Ruas sem resposta da coerencia do monitoramento (apos as tentativas).
+  let coerenciaFalhou = 0
 
   // 1) parse + 2) geocodificacao -- dois formatos de entrada, mesma saida
   // (romaneioGeo: LinhaGeocodificada[], confiancaPorNf, contConf).
@@ -294,7 +296,7 @@ export async function gerarKpiRioQuality(params: {
       zona: rotaParaZona(custos.get(placaNorm) ?? null),
       ruas: (linhasPorPlaca.get(placaNorm) ?? []).map(l => l.endereco),
     }))
-    const geo = await geocodificarPorCoerencia(grupos)
+    const geo = await geocodificarPorCoerencia(grupos, { aoFalhar: () => { coerenciaFalhou += grupos.reduce((n, g) => n + g.ruas.length, 0) } })
 
     for (const placaNorm of placasNormGeo) {
       const linhas = linhasPorPlaca.get(placaNorm) ?? []
@@ -438,7 +440,7 @@ export async function gerarKpiRioQuality(params: {
       for (let j = 0; j < lote.length; j += MAX_RUAS_CORREDOR_POR_GRUPO) {
         grupos.push({ id: `corredor-${i + j}`, zona: null, ruas: lote.slice(j, j + MAX_RUAS_CORREDOR_POR_GRUPO) })
       }
-      const res = await geocodificarPorCoerencia(grupos)
+      const res = await geocodificarPorCoerencia(grupos, { aoFalhar: () => { coerenciaFalhou += lote.length } })
       for (const g of grupos) {
         const rs = res.get(g.id) ?? []
         g.ruas.forEach((rua, k) => pontosPorRua.set(rua, rs[k]?.pontosZona ?? []))
@@ -612,6 +614,9 @@ export async function gerarKpiRioQuality(params: {
     return { ...l, paradasReais, status: l.nfPlanejado != null && paradasReais < l.nfPlanejado ? 'INCOMPLETO' : 'OK' }
   })
 
+  const falhasPonteRq = consumirFalhasPonte()
+  if (falhasPonteRq > 0) avisosEntrada.push({ carga: '—', placa: '—', motivo: 'ponte_falhou', placasSemPonte: falhasPonteRq })
+  if (coerenciaFalhou > 0) avisosEntrada.push({ carga: '—', placa: '—', motivo: 'geocode_parcial', enderecosParciais: coerenciaFalhou })
   const avisos: AvisoDescasamento[] = [...avisosEntrada, ...[...placasConsultaFalhou].sort().map(placa => ({
     carga: linhasKpi.find(l => l.placa === placa)?.carga ?? '—',
     placa,

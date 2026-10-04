@@ -72,12 +72,32 @@ function validar(r: unknown): ResultadoCoerencia {
   }
 }
 
-export async function geocodificarPorCoerencia(grupos: GrupoCoerencia[]): Promise<Map<string, ResultadoCoerencia[]>> {
+// Achado 03/10: um 500 isolado do monitoramento zerava os pontos da rua e a
+// RQ de 02/10 caiu de 90,4% pra 88,5% (55 entregas de corredor perdidas) sem
+// aviso nenhum. Agora tenta de novo e, se ainda falhar, avisa o chamador.
+const TENTATIVAS_COERENCIA = 3
+const ESPERA_ENTRE_TENTATIVAS_MS = 2_000
+
+export async function geocodificarPorCoerencia(
+  grupos: GrupoCoerencia[],
+  opcoes: { aoFalhar?: () => void; esperaMs?: number } = {},
+): Promise<Map<string, ResultadoCoerencia[]>> {
   if (grupos.length === 0) return new Map()
+  for (let t = 1; t <= TENTATIVAS_COERENCIA; t++) {
+    const r = await tentarCoerencia(grupos)
+    if (r) return r
+    if (t < TENTATIVAS_COERENCIA) await new Promise(ok => setTimeout(ok, opcoes.esperaMs ?? ESPERA_ENTRE_TENTATIVAS_MS))
+  }
+  opcoes.aoFalhar?.()
+  return tudoSemCandidato(grupos)
+}
+
+/** Uma chamada; `null` = falhou (rede, status, JSON) e vale tentar de novo. */
+async function tentarCoerencia(grupos: GrupoCoerencia[]): Promise<Map<string, ResultadoCoerencia[]> | null> {
   const chave = process.env.MOTOR_SECRET
   if (!chave) {
     console.error('[kpi-rioquality/geocode-coerencia] MOTOR_SECRET nao configurado')
-    return tudoSemCandidato(grupos)
+    return null
   }
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
@@ -91,25 +111,25 @@ export async function geocodificarPorCoerencia(grupos: GrupoCoerencia[]): Promis
     })
   } catch (e) {
     console.error('[kpi-rioquality/geocode-coerencia] chamada ao monitoramento falhou:', e instanceof Error ? e.message : String(e))
-    return tudoSemCandidato(grupos)
+    return null
   } finally {
     clearTimeout(timer)
   }
   if (!res.ok) {
     console.error(`[kpi-rioquality/geocode-coerencia] monitoramento respondeu ${res.status}`)
-    return tudoSemCandidato(grupos)
+    return null
   }
   let data: unknown
   try {
     data = await res.json()
   } catch (e) {
     console.error('[kpi-rioquality/geocode-coerencia] resposta nao e JSON valido:', e instanceof Error ? e.message : String(e))
-    return tudoSemCandidato(grupos)
+    return null
   }
   const brutos = (data as { grupos?: unknown })?.grupos
   if (!Array.isArray(brutos)) {
     console.error("[kpi-rioquality/geocode-coerencia] resposta sem campo 'grupos' valido")
-    return tudoSemCandidato(grupos)
+    return null
   }
   const porId = new Map<string, unknown[]>()
   for (const g of brutos as { id?: unknown; resultados?: unknown }[]) {
