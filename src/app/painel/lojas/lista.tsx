@@ -188,7 +188,7 @@ export function LojasList() {
                 className={
                   active
                     ? 'rounded-md border border-[var(--color-accent)] bg-[var(--color-accent-soft)] px-2.5 py-1 text-[12px] font-medium text-[var(--color-accent-soft-fg)] transition'
-                    : 'rounded-md border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2.5 py-1 text-[12px] font-medium text-[var(--color-fg-muted)] transition hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-fg)]'
+                    : 'rounded-md bg-[var(--color-bg-elevated)] shadow-soft px-2.5 py-1 text-[12px] font-medium text-[var(--color-fg-muted)] transition hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-fg)]'
                 }
               >
                 {c.label}
@@ -285,7 +285,7 @@ export function LojasList() {
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
-              <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] text-[10px] uppercase tracking-[0.08em] text-[var(--color-fg-muted)]">
+              <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] text-[10px] text-[var(--color-fg-muted)]">
                 <th className="px-4 py-2.5 text-left font-semibold">Rede</th>
                 <th className="px-4 py-2.5 text-left font-semibold">Nome</th>
                 <th className="px-4 py-2.5 text-left font-semibold">Cód. Escala</th>

@@ -1,23 +1,10 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
 import { ThemeProvider, THEME_INIT_SCRIPT } from '@/lib/theme/ThemeProvider'
 import 'react-data-grid/lib/styles.css'
 import './globals.css'
 
-const geistSans = Geist({
-  variable: '--font-sans',
-  subsets: ['latin'],
-  display: 'swap',
-})
-
-const geistMono = Geist_Mono({
-  variable: '--font-mono',
-  subsets: ['latin'],
-  display: 'swap',
-})
-
 export const metadata: Metadata = {
-  title: 'KPI TRANSMONSEG',
+  title: 'KPI Transmonseg',
   description: 'Sistema de gestão de escalas e KPI da TRANSMONSEG',
 }
 
@@ -30,7 +17,7 @@ export default function RootLayout({
     <html
       lang="pt-BR"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className="h-full antialiased"
     >
       <head>
         <script

@@ -15,8 +15,8 @@ export function subTour(l: () => void): () => void {
 export function iniciarTutorial(): void { setTour({ ativo: true, cap: 0 }) }
 export function encerrarTutorial(): void {
   setTour({ ativo: false, cap: 0 })
-  try { localStorage.setItem('kpi-tutorial-v2', 'done') } catch { /* ignore */ }
+  try { localStorage.setItem('kpi-tutorial-v3', 'done') } catch { /* ignore */ }
 }
 export function tourJaVisto(): boolean {
-  try { return !!localStorage.getItem('kpi-tutorial-v2') } catch { return true }
+  try { return !!localStorage.getItem('kpi-tutorial-v3') } catch { return true }
 }

@@ -1,5 +1,7 @@
 // Capítulos do tutorial guiado (tour custom com motion — sem driver.js).
 // Cada capítulo é uma TELA; ao trocar de capítulo o tour navega sozinho.
+// Redesign 04/10/2026: tour curto das telas novas (Dashboard por cliente,
+// Gerar KPI, Histórico, Usuários). A Benassi saiu (cadeado no menu).
 export type Side = 'top' | 'bottom' | 'left' | 'right'
 
 export interface Passo {
@@ -20,93 +22,41 @@ const s = (element: string, title: string, description: string, side: Side = 'bo
   ({ element, title, description, side })
 
 export const CAPITULOS: Capitulo[] = [
-  // 0 ─ Dashboard: o sistema inteiro num lugar
   {
-    href: '/painel', tab: 'geral', pathname: '/painel',
+    href: '/painel?cliente=nutrimax', pathname: '/painel',
     steps: [
-      s('[data-tour="titulo"]', 'Bem-vindo! 👋', 'Vou te mostrar o sistema inteiro: ver os números, subir e gerar os KPIs, consultar o histórico e os cadastros. Pode fechar no ✕ a qualquer momento.'),
-      s('[data-tour="relatorio"]', 'Relatório em PDF', 'Gera um relatório completo do período, com gráficos e análise, pra baixar ou enviar.'),
-      s('[data-tour="abas"]', 'As três abas', 'Visão geral (os números), Inserir KPIs (subir as planilhas) e Histórico (gerações salvas). Já passo por todas.'),
-      s('[data-tour="periodo"]', 'Escolha o período', 'Dia, semana, mês, ano — ou "Período" pra um intervalo personalizado (de–até). Por padrão abre no mês. Tudo no dashboard se ajusta ao que você marcar aqui; no modo "Dia" use as setinhas ‹ › pra pular de um dia pro outro.'),
-      s('[data-tour="filtro-redes"]', 'Filtrar por rede', 'Por padrão mostra todas as redes. Abra aqui pra ver só as que te interessam — o dashboard inteiro recalcula só com elas.', 'left'),
-      s('[data-tour="resumo-exec"]', 'O resumo em 1 frase', 'O período inteiro numa linha, com o semáforo de meta (🟢 na meta · 🟡 atenção · 🔴 abaixo). É o "como estamos" de 3 segundos.'),
-      s('[data-tour="alertas"]', 'Alertas automáticos', 'O sistema acha sozinho os pontos mais críticos do período (taxa abaixo da meta, queda, rede ruim) e destaca aqui. Se estiver tudo dentro da meta, ele também te diz.'),
-      s('[data-tour="resumo-taxa"]', 'Taxa de entrega', 'O número que manda na tela: quantas das entregas programadas foram concluídas. A seta compara com o período anterior.', 'right'),
-      s('[data-tour="resumo-secundarios"]', 'O resto do status', 'Quanto não foi ao cliente, a cobertura de GPS e o total de entregas no período.'),
-      s('[data-tour="resumo-tempos"]', 'Tempos médios', 'Tempo de rota (do CD até a loja), tempo parado na loja e o tempo total da operação.', 'top'),
-      s('[data-tour="agir-tabela"]', 'Lojas com mais problema', 'As lojas que mais tiveram falha de GPS ou entrega não realizada. Clique no nome de uma loja pra abrir a evolução dela ao longo do tempo.', 'top'),
-      s('[data-tour="agir-paineis"]', 'Sem rastreador e não foi', 'Os dois números que mais doem, em destaque, com o percentual sobre o total.', 'left'),
-      s('[data-tour="agir-lentos"]', 'Rotas e lojas mais lentas', 'Onde atacar: as rotas que mais demoram do CD até a loja e os clientes onde o caminhão fica mais tempo parado.', 'top'),
-      s('[data-tour="risco"]', 'Segurança da carga', 'As paradas indevidas do período: veículo parado 10min ou mais fora de loja e da base — o principal sinal de risco da carga. O mapa mostra onde aconteceram, com a cor pela gravidade (amarelo, laranja, vermelho) e a bolha maior quanto mais tempo parado. Clique num ponto pra ver placa, tempo e horário. E no ⓘ ao lado dos números abre a explicação de cada um.', 'top'),
-      s('[data-tour="tendencias-serie"]', 'Entregas por dia', 'O volume diário no período, separado por entregue, não foi e sem rastreador.', 'top'),
-      s('[data-tour="tendencias-tempos"]', 'Evolução e horários', 'Como os tempos médios evoluíram dia a dia e em que horas os caminhões saem do CD.', 'top'),
-      s('[data-tour="tendencias-comparativo"]', 'Tempo médio por rede', 'Compare as redes por tempo de rota, em loja ou total (use os botões pra trocar a métrica).', 'top'),
-      s('[data-tour="tendencias-rede"]', 'Desempenho e turnos', 'A taxa de entrega de cada rede e o volume distribuído por turno do dia.', 'top'),
-      s('[data-tour="tendencias-motoristas"]', 'Visão por motorista', 'Os motoristas com mais entregas no período e seus tempos médios de rota e de loja.', 'top'),
-      s('[data-tour="tendencias-export"]', 'Baixar KPI mensal', 'Um atalho pra baixar a planilha de KPI do mês, por rede.', 'top'),
+      s('[data-tour="dash-clientes"]', 'Escolha o cliente', 'Nutry Max, Rio Quality ou Portefrio. O painel de baixo troca na hora para o cliente escolhido.'),
+      s('[data-tour="dash-periodo"]', 'Período', 'Últimos 7, 14 ou 30 dias. As médias e os gráficos seguem o que você marcar.', 'left'),
+      s('[data-tour="dash-dia"]', 'O dia em destaque', 'Taxa de confirmação do dia, a variação contra o dia anterior, pendentes, sem rastreador, cargas e KM rodados.'),
+      s('[data-tour="dash-grafico"]', 'Dia a dia', 'A linha verde tracejada é a meta de 95%. Clique em qualquer dia para ver os detalhes dele.', 'top'),
+      s('[data-tour="dash-placas"]', 'Placas do dia', 'Cada caminhão: NFs confirmadas, KM, saída e volta ao CD, tempo de operação e tempo por entrega. Clique no cabeçalho para ordenar.', 'top'),
+      s('[data-tour="dash-gerar"]', 'Gerar o KPI', 'Daqui você sobe os arquivos do dia. Cada KPI gerado alimenta este dashboard sozinho.', 'left'),
     ],
   },
-  // 1 ─ Inserir KPIs (planilhas mensais da Tia)
   {
-    href: '/painel?tab=inserir', tab: 'inserir', pathname: '/painel',
+    href: '/painel/nutrimax/gerar', pathname: '/painel/nutrimax/gerar',
     steps: [
-      s('[data-tour="ins-modo"]', 'Inserir os KPIs', 'Aqui você sobe as planilhas de KPI. Em "Mês inteiro" o sistema lê todas as abas-dia da planilha de uma vez.'),
-      s('[data-tour="ins-periodo"]', 'Escolha o mês', 'Selecione o mês das planilhas. É a data que vai carimbar os dados.'),
-      s('[data-tour="ins-grid"]', 'Suba por rede', 'Cada rede tem seu botão Enviar. Subir de novo a mesma rede regera aquele mês (substitui o anterior). No modo "Dia específico" aparece também o "Fechar revisão" por rede.', 'top'),
+      s('[data-tour="nm-arquivos"]', 'Os arquivos do dia', 'Escala de Rota (opcional), Romaneio de Entrega, a data e, se tiver, o Romaneio do Pão. Arraste ou clique para escolher.'),
+      s('[data-tour="nm-gerar"]', 'Gerar', 'Com os arquivos no lugar, é só gerar. A planilha baixa sozinha e fica salva no histórico.', 'top'),
     ],
   },
-  // 2 ─ Gerar KPI (escala + Unitrac)
   {
-    href: '/painel/kpi/simples', pathname: '/painel/kpi/simples',
+    href: '/painel/nutrimax/historico', pathname: '/painel/nutrimax/historico',
     steps: [
-      s('[data-tour="gk-escala"]', 'Gerar o KPI do zero', 'Esta tela cruza a escala com o relatório do Unitrac. Comece subindo a(s) escala(s) aqui.'),
-      s('[data-tour="gk-unitrac"]', 'Suba o Unitrac', 'O relatório do rastreador (PDF). É ele que dá os horários reais de cada parada.', 'top'),
-      s('[data-tour="gk-alteracoes"]', 'Alterações da escala', 'As mudanças que chegaram por texto e não estão na planilha (troca de motorista, de veículo, etc). Cole o texto ou adicione manualmente aqui pra elas entrarem no KPI antes de gerar.', 'top'),
-      s('[data-tour="gk-gerar"]', 'Gere', 'Com escala, Unitrac, alterações e data, clique pra gerar. O sistema cruza tudo e monta o KPI por rede.', 'top'),
-      s('[data-tour="gk-resultado"]', 'Confira e baixe', 'O resultado sai por rede (XLSX e PDF). Antes de baixar, a prévia mostra cada linha em 3 níveis: ✅ confirmado (pode confiar), 🟡 conferir (2ª rota, idas e vindas) e ❌ não entregou — sempre com o motivo do lado, e como casou (código/nome/geo). Se aparecer um código novo do Unitrac sem cadastro, um aviso azul te avisa pra cadastrar. Pra regerar, suba os arquivos de novo ou use o "Re-gerar".', 'top'),
+      s('[data-tour="hist-tabela"]', 'Histórico', 'Cada geração com a taxa do dia. "Parcial" é KPI gerado com a rota ainda em andamento. Baixe a planilha salva ou regere com as correções mais recentes.', 'top'),
     ],
   },
-  // 3 ─ Histórico de gerações
   {
-    href: '/painel/historico', pathname: '/painel/historico',
+    href: '/painel/usuarios', pathname: '/painel/usuarios',
     steps: [
-      s('[data-tour="hist-filtro"]', 'Gerações salvas', 'Todo KPI gerado fica guardado aqui. Use os filtros de data pra encontrar uma geração específica.'),
-      s('[data-tour="hist-tabela"]', 'A lista', 'Cada linha é uma geração, com o resumo de redes, rotas, falhas de GPS e anomalias.', 'top'),
-      s('[data-tour="hist-regerar"]', 'Regerar', 'Por aqui você reabre uma geração antiga pra gerar de novo, caso tenha feito correções.', 'bottom'),
+      s('[data-tour="usr-novo"]', 'Novo acesso', 'Escolha o tipo de login e a empresa e gere o link de convite. A pessoa entra direto no dashboard dela.', 'right'),
+      s('[data-tour="usr-lista"]', 'Quem tem acesso', 'Os acessos de cada empresa. Dá pra revogar quando quiser.', 'left'),
     ],
   },
-  // 4 ─ Catálogo de lojas
   {
-    href: '/painel/lojas', pathname: '/painel/lojas',
+    href: '/painel?cliente=nutrimax', pathname: '/painel',
     steps: [
-      s('[data-tour="lojas-busca"]', 'Catálogo de lojas', 'Todas as lojas cadastradas. Busque pelo nome pra achar rápido.'),
-      s('[data-tour="lojas-nova"]', 'Nova loja', 'Cadastre uma loja nova com rede, nome e os códigos da escala e do Unitrac.', 'bottom'),
-      s('[data-tour="lojas-tabela"]', 'A tabela', 'Edite ou exclua qualquer loja. Os códigos daqui são o que ligam a loja à escala e ao rastreador.', 'top'),
-    ],
-  },
-  // 5 ─ Cozinha (escala e rotas)
-  {
-    href: '/painel/cozinha', pathname: '/painel/cozinha',
-    steps: [
-      s('[data-tour="coz-upload"]', 'Cozinha: a escala', 'Suba aqui a planilha da escala da cozinha pra processar as rotas do dia.'),
-      s('[data-tour="coz-processar"]', 'Processar a escala', 'Escolha o arquivo e a data, clique aqui e o sistema monta as rotas do dia. Aí aparece a tabela de rotas, onde você altera o motorista e a placa de cada uma e exporta em XLSX ou PDF.', 'top'),
-      s('[data-tour="coz-rotas"]', 'As rotas e as alterações', 'Cada linha é uma rota. Edite o motorista e a placa direto na tabela e clique em "Salvar edições" antes de exportar.', 'top'),
-    ],
-  },
-  // 6 ─ Clientes da cozinha
-  {
-    href: '/painel/cozinha/clientes', pathname: '/painel/cozinha/clientes',
-    steps: [
-      s('[data-tour="cli-busca"]', 'Clientes da cozinha', 'O cadastro de clientes que abastece a escala da cozinha. Busque por empresa, nome ou código.'),
-      s('[data-tour="cli-novo"]', 'Novo cliente', 'Cadastre um cliente novo, com endereço, pra geração correta das rotas.', 'bottom'),
-      s('[data-tour="cli-tabela"]', 'A tabela', 'Edite endereço, CEP e complemento direto na linha, ou importe vários de uma vez por XLSX.', 'top'),
-    ],
-  },
-  // 7 ─ Fim: de volta ao dashboard
-  {
-    href: '/painel', tab: 'geral', pathname: '/painel',
-    steps: [
-      s('[data-tour="titulo"]', 'Pronto! 🎉', 'Esse é o sistema inteiro. Você pode rever este tutorial quando quiser no botão "Ver tutorial". Bom trabalho!'),
+      s('[data-tour="dash-clientes"]', 'Pronto!', 'Esse é o sistema. Para rever este tutorial, use o botão "Tutorial" no topo do dashboard.'),
     ],
   },
 ]

@@ -81,10 +81,10 @@ const tomFalha = (p: number) => p <= 5 ? 'ok' : p <= 10 ? 'warn' : 'bad'
 const tomGps   = (p: number) => p >= 90 ? 'ok' : p >= 50 ? 'warn' : 'bad'
 
 // botão secundário canônico (h-9), sem text-white hardcoded
-const BTN_SEC = 'inline-flex h-9 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3.5 text-[13px] font-medium text-[var(--color-fg)] shadow-soft transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-hover)]'
+const BTN_SEC = 'inline-flex h-9 items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-bg-elevated)] shadow-soft px-3.5 text-[13px] font-medium text-[var(--color-fg)] shadow-soft transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-hover)]'
 // link-chip compacto (download)
 const CHIP_LINK = 'rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2.5 py-1 text-[11px] text-[var(--color-fg-muted)] transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]'
-const CARD = 'rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-soft kpi-quad'
+const CARD = 'rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft shadow-soft kpi-quad'
 
 const fmtMin = (n: number | null | undefined) => {
   if (n == null) return '—'
@@ -292,7 +292,7 @@ function VisaoGeral(props: {
       {/* Barra de controle ENXUTA — uma linha: período + data + intervalo + filtro de redes.
           Sticky logo abaixo do header do shell, sem sobrepor. */}
       <div className="sticky top-14 z-20 -mx-5 flex flex-wrap items-center gap-2.5 border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 px-5 py-2.5 backdrop-blur sm:-mx-8 sm:px-8">
-        <div data-tour="periodo" className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-0.5 shadow-soft">
+        <div data-tour="periodo" className="inline-flex h-9 items-center rounded-[var(--radius-md)] bg-[var(--color-bg-elevated)] shadow-soft p-0.5 shadow-soft">
           {(['dia', 'semana', 'mes', 'ano', 'custom'] as Periodo[]).map(p => (
             <button
               key={p} onClick={() => setPeriodo(p)}
@@ -318,7 +318,7 @@ function VisaoGeral(props: {
         ) : periodo === 'ano' ? (
           <select
             value={data.slice(0, 4)} onChange={e => setData(`${e.target.value}-01-01`)}
-            className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
+            className="h-9 rounded-[var(--radius-md)] bg-[var(--color-bg-elevated)] shadow-soft px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
           >
             {ANOS.map(a => <option key={a} value={a}>{a}</option>)}
           </select>
@@ -328,7 +328,7 @@ function VisaoGeral(props: {
           ) : (
             <select
               value={data.slice(0, 7)} onChange={e => setData(`${e.target.value}-01`)}
-              className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
+              className="h-9 rounded-[var(--radius-md)] bg-[var(--color-bg-elevated)] shadow-soft px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
             >
               {mesesPermitidos.map(mesOpcao => <option key={mesOpcao} value={mesOpcao}>{formatMes(mesOpcao)}</option>)}
             </select>
@@ -342,7 +342,7 @@ function VisaoGeral(props: {
           <div className="flex items-center gap-1">
             <button
               onClick={() => setData(stepDay(data, -1))} aria-label="Dia anterior"
-              className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[16px] leading-none text-[var(--color-fg-muted)] shadow-soft transition-[background-color,border-color,transform] duration-150 active:scale-[0.95] hover:border-[var(--color-border-strong)] hover:text-[var(--color-fg)]"
+              className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-bg-elevated)] shadow-soft text-[16px] leading-none text-[var(--color-fg-muted)] shadow-soft transition-[background-color,border-color,transform] duration-150 active:scale-[0.95] hover:border-[var(--color-border-strong)] hover:text-[var(--color-fg)]"
             >‹</button>
             <input
               type="date" value={data} max={hoje()} onChange={e => setData(e.target.value)}
@@ -350,7 +350,7 @@ function VisaoGeral(props: {
             />
             <button
               onClick={() => setData(stepDay(data, 1))} aria-label="Próximo dia" disabled={data >= hoje()}
-              className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[16px] leading-none text-[var(--color-fg-muted)] shadow-soft transition-[background-color,border-color,transform] duration-150 active:scale-[0.95] hover:border-[var(--color-border-strong)] hover:text-[var(--color-fg)] disabled:pointer-events-none disabled:opacity-40"
+              className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-bg-elevated)] shadow-soft text-[16px] leading-none text-[var(--color-fg-muted)] shadow-soft transition-[background-color,border-color,transform] duration-150 active:scale-[0.95] hover:border-[var(--color-border-strong)] hover:text-[var(--color-fg)] disabled:pointer-events-none disabled:opacity-40"
             >›</button>
           </div>
         )}
@@ -380,7 +380,7 @@ function RedesFiltro({ redes, setRedes, opcoes }: { redes: string[]; setRedes: (
     <div className="relative">
       <button
         onClick={() => setAberto(v => !v)}
-        className="inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[12px] font-medium text-[var(--color-fg)] shadow-soft transition-[background-color,border-color] duration-150 hover:border-[var(--color-border-strong)]"
+        className="inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-bg-elevated)] shadow-soft px-3 text-[12px] font-medium text-[var(--color-fg)] shadow-soft transition-[background-color,border-color] duration-150 hover:border-[var(--color-border-strong)]"
       >
         <span className="text-[var(--color-fg-subtle)]">Redes:</span> {label}
         <span className={`transition-transform duration-150 ${aberto ? 'rotate-180' : ''}`}>▾</span>
@@ -388,7 +388,7 @@ function RedesFiltro({ redes, setRedes, opcoes }: { redes: string[]; setRedes: (
       {aberto && (
         <>
           <button aria-label="Fechar" className="fixed inset-0 z-30 cursor-default" onClick={() => setAberto(false)} />
-          <div className="absolute right-0 z-40 mt-1.5 w-[min(92vw,360px)] rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3 shadow-diffusion">
+          <div className="absolute right-0 z-40 mt-1.5 w-[min(92vw,360px)] rounded-[var(--radius-md)] bg-[var(--color-bg-elevated)] shadow-soft p-3 shadow-diffusion">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-overline">Filtrar por rede</span>
               {redes.length > 0 && (
@@ -435,14 +435,14 @@ function Skeleton() {
         ))}
       </div>
       <div className="h-2.5 w-full rounded-full animate-shimmer" />
-      <div className="h-[240px] rounded-[var(--radius-card)] animate-shimmer" />
+      <div className="h-[240px] rounded-[var(--radius-lg)] animate-shimmer" />
     </div>
   )
 }
 
 function Vazio() {
   return (
-    <div className="flex flex-col items-center justify-center rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] py-20 text-center animate-fade-up">
+    <div className="flex flex-col items-center justify-center rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border)] py-20 text-center animate-fade-up">
       <WarningCircle size={28} weight="bold" className="text-[var(--color-fg-subtle)]" />
       <div className="mt-3 text-[14px] font-semibold text-[var(--color-fg)]">Sem dados neste período</div>
       <p className="mt-1 max-w-sm text-[13px] leading-relaxed text-[var(--color-fg-muted)]">
@@ -454,7 +454,7 @@ function Vazio() {
 
 function Erro({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] py-20 text-center animate-fade-up">
+    <div className="flex flex-col items-center justify-center rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border)] py-20 text-center animate-fade-up">
       <WarningCircle size={28} weight="fill" style={{ color: 'var(--color-danger)' }} />
       <div className="mt-3 text-[14px] font-semibold text-[var(--color-fg)]">Não foi possível carregar</div>
       <p className="mt-1 max-w-sm text-[13px] leading-relaxed text-[var(--color-fg-muted)]">Houve uma falha ao buscar as métricas. Tente novamente.</p>
@@ -620,7 +620,7 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, f
           <div data-tour="agir-tabela" className={`overflow-hidden lg:col-span-3 ${CARD}`}>
             <table className="w-full text-[13px]">
               <thead>
-                <tr className="border-b border-[var(--color-border)] text-left text-[10px] uppercase tracking-[0.1em] text-[var(--color-fg-subtle)]">
+                <tr className="border-b border-[var(--color-border)] text-left text-[10px] tracking-[0.1em] text-[var(--color-fg-subtle)]">
                   <th className="px-5 py-3 font-semibold">Loja com mais problema</th>
                   <th className="px-3 py-3 text-right font-semibold">Sem GPS</th>
                   <th className="px-3 py-3 text-right font-semibold">Não foi</th>
@@ -749,7 +749,7 @@ function Tip({ label, children }: { label: string; children: React.ReactNode }) 
   return (
     <div className="group/tip relative h-full">
       {children}
-      <span className="pointer-events-none absolute -top-7 left-1/2 z-10 -translate-x-1/2 scale-95 whitespace-nowrap rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2 py-1 text-numeric text-[10px] text-[var(--color-fg)] opacity-0 shadow-soft transition-[opacity,transform] duration-150 group-hover/tip:scale-100 group-hover/tip:opacity-100">
+      <span className="pointer-events-none absolute -top-7 left-1/2 z-10 -translate-x-1/2 scale-95 whitespace-nowrap rounded-[var(--radius-sm)] bg-[var(--color-bg-elevated)] shadow-soft px-2 py-1 text-numeric text-[10px] text-[var(--color-fg)] opacity-0 shadow-soft transition-[opacity,transform] duration-150 group-hover/tip:scale-100 group-hover/tip:opacity-100">
         {label}
       </span>
     </div>
@@ -790,7 +790,7 @@ function Alertas({ m, mAnt, lojaHref }: { m: Metricas; mAnt: Metricas | null; lo
   }
   return (
     <div className="flex flex-wrap items-center gap-2 animate-fade-up">
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-fg-subtle)]">
+      <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--color-fg-muted)]">
         <WarningCircle size={13} weight="fill" style={{ color: COR.warn }} /> Atenção
       </span>
       {top.map((a, i) => {
@@ -820,7 +820,7 @@ function ResumoExecutivo({ m, mAnt, periodo }: { m: Metricas; mAnt: Metricas | n
   const pior = [...m.porRede].filter(r => r.total >= 5).sort((a, b) => a.pctEntregue - b.pctEntregue)[0]
   const tom = tomTaxa(m.pctEntregue)
   return (
-    <div className="flex items-start gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-5 py-4 shadow-soft animate-fade-up sm:px-6">
+    <div className="flex items-start gap-3 rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft px-5 py-4 shadow-soft animate-fade-up sm:px-6">
       <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: COR[tom] }} />
       <p className="text-[14px] leading-relaxed text-[var(--color-fg-muted)] sm:text-[15px]">
         {periodoLabel}, <strong style={{ color: COR[tom] }}>{m.pctEntregue}% das conferíveis</strong> foram concluídas <span className="text-numeric">({m.entregue} de {conferiveis})</span>
@@ -911,7 +911,7 @@ function InfoTip({ children, titulo }: { children: React.ReactNode; titulo?: str
         className="flex h-[15px] w-[15px] items-center justify-center rounded-full border border-[var(--color-border)] text-[10px] font-bold italic leading-none text-[var(--color-fg-subtle)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
       >i</button>
       {open && (
-        <span className="absolute left-1/2 top-[22px] z-40 w-64 -translate-x-1/2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3 text-left text-[11.5px] font-normal normal-case leading-relaxed tracking-normal text-[var(--color-fg-muted)] shadow-soft">
+        <span className="absolute left-1/2 top-[22px] z-40 w-64 -translate-x-1/2 rounded-[var(--radius-md)] bg-[var(--color-bg-elevated)] shadow-soft p-3 text-left text-[11.5px] font-normal normal-case leading-relaxed tracking-normal text-[var(--color-fg-muted)] shadow-soft">
           {titulo && <span className="mb-1 block text-[11px] font-semibold text-[var(--color-fg)]">{titulo}</span>}
           {children}
         </span>
@@ -1018,14 +1018,14 @@ function SecaoRiscoMapa({ resumo, carregando, n, onVerAnalise, fonte }: { resumo
               </div>
               {pior && (
                 <div className="border-t border-[var(--color-border)] pt-3">
-                  <div className="text-[10px] uppercase tracking-[0.1em] text-[var(--color-fg-subtle)]">Pior caso</div>
+                  <div className="text-[10px] tracking-[0.1em] text-[var(--color-fg-subtle)]">Pior caso</div>
                   <div className="mt-1 text-numeric text-[15px] font-semibold text-[var(--color-fg)]">{pior.placa}</div>
                   <div className="text-[11px] text-[var(--color-fg-subtle)]">{fmtMin(pior.duracaoMin)} parada, às {pior.hora}</div>
                 </div>
               )}
               {temRede && (
                 <div className="border-t border-[var(--color-border)] pt-3">
-                  <div className="mb-2 text-[10px] uppercase tracking-[0.1em] text-[var(--color-fg-subtle)]">Por rede</div>
+                  <div className="mb-2 text-[10px] tracking-[0.1em] text-[var(--color-fg-subtle)]">Por rede</div>
                   <div className="flex flex-wrap gap-1.5">
                     {porRedeOrd.filter(([r]) => r !== '—').slice(0, 8).map(([r, q]) => (
                       <span key={r} className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-2 py-0.5 text-[11px] text-[var(--color-fg-muted)]">
@@ -1438,7 +1438,7 @@ function TopMotoristas({ m, onVerTodos }: { m: Metricas; onVerTodos: () => void 
       <div className="overflow-auto">
         <table className="w-full text-[13px]">
           <thead>
-            <tr className="border-b border-[var(--color-border)] text-left text-[10px] uppercase tracking-[0.1em] text-[var(--color-fg-subtle)]">
+            <tr className="border-b border-[var(--color-border)] text-left text-[10px] tracking-[0.1em] text-[var(--color-fg-subtle)]">
               <th className="px-5 py-2.5 font-semibold">#</th>
               <th className="px-3 py-2.5 font-semibold">Motorista</th>
               <th className="px-3 py-2.5 font-semibold">Entregas</th>
@@ -1532,7 +1532,7 @@ function JornadaOperacional({ m }: { m: Metricas }) {
               <div key={`s${i}`} className="flex min-w-[78px] flex-1 flex-col items-center pt-1.5">
                 <span className="mb-1.5 text-numeric text-[13px] font-semibold text-[var(--color-fg)]">{fmtMin(s.valor)}</span>
                 <div className="h-px w-full bg-gradient-to-r from-transparent via-[var(--color-border-strong)] to-transparent" />
-                <span className="mt-1.5 text-[10px] uppercase tracking-wide text-[var(--color-fg-subtle)]">{s.label}</span>
+                <span className="mt-1.5 text-[10px] tracking-wide text-[var(--color-fg-subtle)]">{s.label}</span>
               </div>,
             )
           }

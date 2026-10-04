@@ -1,34 +1,44 @@
-import { Suspense } from 'react'
 import { usuarioAtual } from '@/lib/supabase/usuario-atual'
 import { getPerfil } from '@/lib/perfil'
-import DashboardClient from './dashboard/dashboard-client'
-import { fetchResumo } from './dashboard/fetch-resumo'
-import { EmpresaSwitcher } from './empresa-switcher'
+import {
+  CLIENTES_DASHBOARD,
+  NOME_CLIENTE,
+  buscarSerieDashboard,
+  type ClienteDashboard,
+} from '@/lib/kpi-romaneio/dashboard-dados'
+import { DashboardClientes } from './dashboard-clientes'
 
-export default async function PainelHome({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+// Redesign 04/10/2026: o Dashboard escolhe o CLIENTE no topo (segmentado) e o
+// painel de performance dele aparece embaixo. O dashboard antigo (Benassi)
+// saiu junto com a Benassi (cadeado no menu).
+export default async function PainelHome({ searchParams }: { searchParams: Promise<{ cliente?: string }> }) {
   const sp = await searchParams
-
   const user = await usuarioAtual()
-  const perfil = user && process.env.DESKTOP_APP !== '1' ? await getPerfil(user.id) : { papel: 'admin' as const, redes: [], meses: [], empresas: [] }
-  const redesPermitidas = perfil.papel === 'admin' ? undefined : perfil.redes
-  const mesesPermitidos = perfil.papel === 'admin' ? undefined : perfil.meses
-  // Resumo do topo mistura números de TODAS as redes (contagem global de gerações) —
-  // não faz sentido pra quem só pode ver uma rede específica.
-  const resumo = redesPermitidas ? undefined : await fetchResumo()
+  const perfil = user && process.env.DESKTOP_APP !== '1'
+    ? await getPerfil(user.id)
+    : { papel: 'admin' as const, redes: [], meses: [], empresas: [] }
+
+  const visiveis = CLIENTES_DASHBOARD.filter(c => perfil.papel === 'admin' || perfil.empresas.includes(c))
+  const cliente: ClienteDashboard | undefined =
+    visiveis.find(c => c === sp.cliente) ?? visiveis[0]
+
+  if (!cliente) {
+    return (
+      <div className="u-card mx-auto mt-10 max-w-lg px-6 py-14 text-center">
+        <p className="text-[20px] font-semibold tracking-[-0.01em]">Nenhum dashboard liberado</p>
+        <p className="mt-2 text-[15px] text-[var(--color-fg-muted)]">Peça ao administrador para liberar o acesso à sua empresa.</p>
+      </div>
+    )
+  }
+
+  const serie = await buscarSerieDashboard(cliente)
 
   return (
-    <>
-      <div className="mb-4">
-        <EmpresaSwitcher papel={perfil.papel} empresas={perfil.empresas} />
-      </div>
-      <Suspense fallback={null}>
-        <DashboardClient
-          resumo={resumo}
-          tabInicial={sp.tab === 'inserir' || sp.tab === 'historico' ? sp.tab : 'geral'}
-          redesPermitidas={redesPermitidas}
-          mesesPermitidos={mesesPermitidos}
-        />
-      </Suspense>
-    </>
+    <DashboardClientes
+      cliente={cliente}
+      clientesVisiveis={visiveis.map(c => ({ value: c, label: NOME_CLIENTE[c] }))}
+      serie={serie}
+      podeGerar={perfil.papel === 'admin'}
+    />
   )
 }

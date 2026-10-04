@@ -29,7 +29,7 @@ export function KpiManualCards({
         return (
           <div
             key={rede.rede_id}
-            className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)]"
+            className="overflow-hidden rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft"
           >
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] px-5 py-3">
               <div className="flex items-center gap-3">
@@ -65,15 +65,15 @@ export function KpiManualCards({
               <table className="w-full text-[12.5px]">
                 <thead>
                   <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] text-left">
-                    <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)]">Loja</th>
-                    <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden sm:table-cell">Motorista</th>
-                    <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)]">Placa</th>
-                    <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)]">Status</th>
-                    <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Saída CD</th>
-                    <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Chegada Loja</th>
-                    <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Saída Loja</th>
+                    <th className="px-4 py-2.5 text-[13px] font-semibold text-[var(--color-fg-muted)]">Loja</th>
+                    <th className="px-4 py-2.5 text-[13px] font-semibold text-[var(--color-fg-muted)] hidden sm:table-cell">Motorista</th>
+                    <th className="px-4 py-2.5 text-[13px] font-semibold text-[var(--color-fg-muted)]">Placa</th>
+                    <th className="px-4 py-2.5 text-[13px] font-semibold text-[var(--color-fg-muted)]">Status</th>
+                    <th className="px-4 py-2.5 text-[13px] font-semibold text-[var(--color-fg-muted)] hidden md:table-cell">Saída CD</th>
+                    <th className="px-4 py-2.5 text-[13px] font-semibold text-[var(--color-fg-muted)] hidden md:table-cell">Chegada Loja</th>
+                    <th className="px-4 py-2.5 text-[13px] font-semibold text-[var(--color-fg-muted)] hidden md:table-cell">Saída Loja</th>
                     {temVoltaBase && (
-                      <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Chegada CD</th>
+                      <th className="px-4 py-2.5 text-[13px] font-semibold text-[var(--color-fg-muted)] hidden md:table-cell">Chegada CD</th>
                     )}
                   </tr>
                 </thead>

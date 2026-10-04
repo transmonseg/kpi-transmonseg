@@ -95,7 +95,7 @@ export function Donut({
           <span className="text-display text-numeric text-[26px] leading-none text-[var(--color-fg)]">
             {hv ? format(hv.value) : centerValue ?? format(total)}
           </span>
-          <span className="mt-1 max-w-[80%] text-[10px] uppercase tracking-[0.08em] text-[var(--color-fg-subtle)]">
+          <span className="mt-1 max-w-[80%] text-[10px] text-[var(--color-fg-subtle)]">
             {hv ? hv.label : centerLabel ?? 'total'}
           </span>
         </div>
@@ -500,7 +500,7 @@ export function LineChart({
         {/* tooltip flutuante */}
         {active != null && w > 0 && (
           <div
-            className="pointer-events-none absolute top-2 z-10 min-w-[140px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-2.5 text-[11px] shadow-diffusion"
+            className="pointer-events-none absolute top-2 z-10 min-w-[140px] rounded-lg bg-[var(--color-bg-elevated)] shadow-soft p-2.5 text-[11px] shadow-diffusion"
             style={{
               left: Math.min(Math.max(x(active) - 70, 4), Math.max(w - 148, 4)),
             }}

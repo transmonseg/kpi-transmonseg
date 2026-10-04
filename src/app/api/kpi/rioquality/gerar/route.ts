@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getPerfil, empresaLiberada } from '@/lib/perfil'
 import { hojeBR } from '@/lib/data-br'
+import { extrairResumoKpiXlsx } from '@/lib/kpi-romaneio/resumo-dashboard'
 import { salvarGeracao, buscarGeracaoParaRegenerar } from '@/lib/kpi-romaneio/historico'
 import { createServiceClient } from '@/lib/supabase/service'
 import { guardarXlsxGerado, novoPrefixoGeracao } from '@/lib/kpi-romaneio/xlsx-gerado'
@@ -157,6 +158,9 @@ export async function POST(req: NextRequest) {
     }
     // Item 1 (auditoria 01/10): guarda o xlsx gerado (falha so' loga).
     const arquivoStoragePath = await guardarXlsxGerado(svc, prefixo, resultado.xlsx)
+    // Dashboard: resumo lido da propria planilha (falha so' loga).
+    let resumo = null
+    try { resumo = await extrairResumoKpiXlsx(resultado.xlsx) } catch (err) { console.error('resumo do dashboard falhou:', err) }
     await salvarGeracao({
       cliente: CLIENTE,
       dataReferencia: data,
@@ -165,6 +169,7 @@ export async function POST(req: NextRequest) {
       arquivoStoragePath,
       escalaStoragePath: custosStoragePath,
       romaneioStoragePath: entregasStoragePath,
+      resumo,
     })
   } catch (err) {
     console.error('Erro ao salvar histórico de geração:', err)

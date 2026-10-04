@@ -6,11 +6,12 @@ export interface InputProps
   invalid?: boolean
 }
 
+// Estilo Apple: campo preenchido (cinza), sem borda, anel da marca no foco.
 const INPUT_BASE =
-  'h-10 w-full rounded-lg border bg-[var(--color-bg-elevated)] ' +
-  'px-3 text-[13px] text-[var(--color-fg)] placeholder:text-[var(--color-fg-subtle)] ' +
-  'transition-[border-color,box-shadow] duration-150 ' +
-  'focus-visible:outline-none focus-visible:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/15 ' +
+  'h-11 w-full rounded-[12px] border bg-[var(--color-bg-subtle)] ' +
+  'px-3.5 text-[15px] text-[var(--color-fg)] placeholder:text-[var(--color-fg-subtle)] ' +
+  'transition-[border-color,box-shadow,background-color] duration-200 ' +
+  'focus-visible:outline-none focus-visible:bg-[var(--color-bg-elevated)] focus-visible:border-[var(--color-accent)] focus-visible:ring-4 focus-visible:ring-[var(--color-accent)]/15 ' +
   'disabled:cursor-not-allowed disabled:opacity-50'
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
@@ -25,7 +26,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         INPUT_BASE,
         invalid
           ? 'border-[var(--color-danger)]'
-          : 'border-[var(--color-border)] hover:border-[var(--color-border-strong)]',
+          : 'border-transparent',
         className,
       )}
       {...props}
@@ -68,8 +69,8 @@ export function Label({
   return (
     <label
       className={cn(
-        // Editorial uppercase — Rule 6 do skill (Label sit above input)
-        'block text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--color-fg-subtle)]',
+        // Editorial — Rule 6 do skill (Label sit above input)
+        'block text-[13px] font-medium text-[var(--color-fg-muted)]',
         className,
       )}
       {...props}

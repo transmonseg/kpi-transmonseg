@@ -13,7 +13,7 @@ export const Card = forwardRef<HTMLDivElement, DivProps>(function Card(
       className={cn(
         // radius card (1.5rem) + border 1px sutil + shadow-soft tinted (skill section 9)
         // kpi-quad = luz navy em volta (acende no hover), definida em globals.css
-        'rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-soft kpi-quad',
+        'rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft shadow-soft kpi-quad',
         className,
       )}
       {...props}
@@ -86,7 +86,7 @@ export const CardFooter = forwardRef<HTMLDivElement, DivProps>(
   },
 )
 
-/** Eyebrow editorial — uppercase tracking 0.18em, padrão do redesign */
+/** Eyebrow editorial — tracking 0.18em, padrão do redesign */
 export function Eyebrow({
   children,
   className,
@@ -97,7 +97,7 @@ export function Eyebrow({
   return (
     <span
       className={cn(
-        'text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]',
+        'text-[13px] font-medium text-[var(--color-fg-muted)]',
         className,
       )}
     >

@@ -38,8 +38,8 @@ interface LojaData {
   serie: PontoDia[]
 }
 
-const CARD = 'rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-soft'
-const BTN_SEC = 'inline-flex h-9 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3.5 text-[13px] font-medium text-[var(--color-fg)] shadow-soft transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-hover)]'
+const CARD = 'rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft shadow-soft'
+const BTN_SEC = 'inline-flex h-9 items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-bg-elevated)] shadow-soft px-3.5 text-[13px] font-medium text-[var(--color-fg)] shadow-soft transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-hover)]'
 
 const ANO_ATUAL = Number(new Date().getFullYear())
 const ANOS = [ANO_ATUAL, ANO_ATUAL - 1, ANO_ATUAL - 2].map(String)
@@ -98,7 +98,7 @@ export default function LojaClient({
 
       {/* Filtro de período */}
       <div className="mt-8 flex flex-wrap items-center gap-3">
-        <div className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-0.5 shadow-soft">
+        <div className="inline-flex h-9 items-center rounded-[var(--radius-md)] bg-[var(--color-bg-elevated)] shadow-soft p-0.5 shadow-soft">
           {(['dia', 'semana', 'mes', 'ano'] as Periodo[]).map(p => (
             <button
               key={p} onClick={() => setPeriodo(p)}
@@ -112,7 +112,7 @@ export default function LojaClient({
         {periodo === 'ano' ? (
           <select
             value={data.slice(0, 4)} onChange={e => setData(`${e.target.value}-01-01`)}
-            className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
+            className="h-9 rounded-[var(--radius-md)] bg-[var(--color-bg-elevated)] shadow-soft px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30"
           >
             {ANOS.map(a => <option key={a} value={a}>{a}</option>)}
           </select>
@@ -217,7 +217,7 @@ function Conteudo({ d }: { d: LojaData }) {
         <div className="overflow-auto">
           <table className="w-full text-[13px]">
             <thead>
-              <tr className="border-b border-[var(--color-border)] text-left text-[10px] uppercase tracking-[0.1em] text-[var(--color-fg-subtle)]">
+              <tr className="border-b border-[var(--color-border)] text-left text-[10px] tracking-[0.1em] text-[var(--color-fg-subtle)]">
                 <th className="px-5 py-2.5 font-semibold">Dia</th>
                 <th className="px-3 py-2.5 text-right font-semibold">Entregues / Total</th>
                 <th className="px-3 py-2.5 text-right font-semibold">Sem GPS</th>
@@ -258,14 +258,14 @@ function Skeleton() {
           </div>
         ))}
       </div>
-      <div className="h-[240px] rounded-[var(--radius-card)] animate-shimmer" />
+      <div className="h-[240px] rounded-[var(--radius-lg)] animate-shimmer" />
     </div>
   )
 }
 
 function Vazio() {
   return (
-    <div className="flex flex-col items-center justify-center rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] py-20 text-center animate-fade-up">
+    <div className="flex flex-col items-center justify-center rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border)] py-20 text-center animate-fade-up">
       <WarningCircle size={28} weight="bold" className="text-[var(--color-fg-subtle)]" />
       <div className="mt-3 text-[14px] font-semibold text-[var(--color-fg)]">Sem dados neste período</div>
       <p className="mt-1 max-w-sm text-[13px] leading-relaxed text-[var(--color-fg-muted)]">
@@ -277,7 +277,7 @@ function Vazio() {
 
 function SemParametros() {
   return (
-    <div className="flex flex-col items-center justify-center rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] py-20 text-center animate-fade-up">
+    <div className="flex flex-col items-center justify-center rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border)] py-20 text-center animate-fade-up">
       <WarningCircle size={28} weight="bold" className="text-[var(--color-fg-subtle)]" />
       <div className="mt-3 text-[14px] font-semibold text-[var(--color-fg)]">Loja não informada</div>
       <p className="mt-1 max-w-sm text-[13px] leading-relaxed text-[var(--color-fg-muted)]">
@@ -289,7 +289,7 @@ function SemParametros() {
 
 function Erro({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] py-20 text-center animate-fade-up">
+    <div className="flex flex-col items-center justify-center rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border)] py-20 text-center animate-fade-up">
       <WarningCircle size={28} weight="fill" style={{ color: 'var(--color-danger)' }} />
       <div className="mt-3 text-[14px] font-semibold text-[var(--color-fg)]">Não foi possível carregar</div>
       <p className="mt-1 max-w-sm text-[13px] leading-relaxed text-[var(--color-fg-muted)]">Houve uma falha ao buscar os dados da loja. Tente novamente.</p>

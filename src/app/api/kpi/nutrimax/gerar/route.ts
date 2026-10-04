@@ -21,6 +21,7 @@ import { montarVisitas } from '@/lib/kpi-romaneio/visitas'
 import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, contarConfirmadasPorCarga } from '@/lib/kpi-romaneio/agregacao'
 import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
+import { extrairResumoKpiXlsx } from '@/lib/kpi-romaneio/resumo-dashboard'
 import { salvarGeracao, buscarGeracaoParaRegenerar } from '@/lib/kpi-romaneio/historico'
 import { guardarXlsxGerado, novoPrefixoGeracao } from '@/lib/kpi-romaneio/xlsx-gerado'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -681,6 +682,9 @@ export async function POST(req: NextRequest) {
     // Item 1 (auditoria 01/10): guarda o xlsx gerado (falha so' loga).
     const arquivoStoragePath = await guardarXlsxGerado(svc, prefixo, xlsxBuf)
 
+    // Dashboard: resumo lido da propria planilha (falha so' loga).
+    let resumo = null
+    try { resumo = await extrairResumoKpiXlsx(xlsxBuf) } catch (err) { console.error('resumo do dashboard falhou:', err) }
     await salvarGeracao({
       cliente: 'nutrimax',
       dataReferencia: data,
@@ -690,6 +694,7 @@ export async function POST(req: NextRequest) {
       escalaStoragePath,
       romaneioStoragePath,
       paoStoragePath,
+      resumo,
     })
   } catch (err) {
     console.error('Erro ao salvar histórico de geração:', err)

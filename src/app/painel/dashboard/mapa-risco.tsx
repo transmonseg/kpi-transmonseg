@@ -82,7 +82,7 @@ export default function MapaRisco({ pontos }: { pontos: PontoRisco[] }) {
       </MapContainer>
 
       {/* Legenda — explica a cor (severidade) e o tamanho (duração) das bolhas. */}
-      <div className="pointer-events-none absolute bottom-3 left-3 z-[1000] rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)]/90 px-3 py-2 text-[11px] shadow-soft backdrop-blur">
+      <div className="pointer-events-none absolute bottom-3 left-3 z-[1000] rounded-[var(--radius-md)] bg-[var(--color-bg-elevated)] shadow-soft/90 px-3 py-2 text-[11px] shadow-soft backdrop-blur">
         <div className="mb-1 font-semibold text-[var(--color-fg)]">Tempo parado</div>
         <div className="flex items-center gap-1.5 text-[var(--color-fg-muted)]"><span className="h-2.5 w-2.5 rounded-full" style={{ background: '#eab308' }} /> menos de 30min</div>
         <div className="flex items-center gap-1.5 text-[var(--color-fg-muted)]"><span className="h-2.5 w-2.5 rounded-full" style={{ background: '#f97316' }} /> 30min a 1h30</div>

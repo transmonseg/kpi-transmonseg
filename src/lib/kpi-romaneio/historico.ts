@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/service'
+import type { ResumoGeracao } from './resumo-dashboard'
 
 export async function salvarGeracao(params: {
   cliente: string
@@ -15,6 +16,8 @@ export async function salvarGeracao(params: {
   romaneioStoragePath: string | null
   // PDF do Romaneio do Pao (opcional; null quando nao veio ou geracao antiga).
   paoStoragePath?: string | null
+  // Dashboard (04/10/2026): numeros da planilha entregue (ver resumo-dashboard.ts).
+  resumo?: ResumoGeracao | null
 }): Promise<string> {
   const supabase = createServiceClient()
   const { data, error } = await supabase
@@ -28,6 +31,7 @@ export async function salvarGeracao(params: {
       escala_storage_path: params.escalaStoragePath,
       romaneio_storage_path: params.romaneioStoragePath,
       pao_storage_path: params.paoStoragePath ?? null,
+      ...(params.resumo ? { resumo: params.resumo } : {}),
     })
     .select('id')
     .single()

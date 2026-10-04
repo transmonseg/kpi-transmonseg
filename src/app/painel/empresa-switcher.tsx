@@ -33,7 +33,7 @@ export function EmpresaSwitcher({
   const atual = visiveis.find(e => pathname.startsWith(homeMap[e]))
 
   return (
-    <div className="hidden items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-1 sm:flex">
+    <div className="hidden items-center gap-1 rounded-lg bg-[var(--color-bg-elevated)] shadow-soft p-1 sm:flex">
       {visiveis.map(e => (
         <Link
           key={e}
