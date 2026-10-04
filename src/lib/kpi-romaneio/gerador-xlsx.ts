@@ -358,21 +358,26 @@ function ehEscalaDivergente(d: LinhaDetalheEntrega, inteiras: Set<string>): bool
 
 function avisosDeFrota(detalhe: LinhaDetalheEntrega[]): { carga: string; placa: string; texto: string }[] {
   const inteiras = cargasEscalaDivergenteInteira(detalhe)
-  const grupos = new Map<string, { carga: string; placa: string; semRastreador: number; escalaDivergente: number }>()
+  const grupos = new Map<string, { carga: string; placa: string; semRastreador: number; escalaDivergente: number; foraDaFrota: boolean }>()
   for (const d of detalhe) {
     if (ehCargaSemPlaca(d)) continue
     const semRastreador = ehSemRastreador(d)
     const escalaDivergente = ehEscalaDivergente(d, inteiras)
     if (!semRastreador && !escalaDivergente) continue
     const chave = `${d.carga}::${d.placa}`
-    const g = grupos.get(chave) ?? { carga: d.carga, placa: d.placa, semRastreador: 0, escalaDivergente: 0 }
+    const g = grupos.get(chave) ?? { carga: d.carga, placa: d.placa, semRastreador: 0, escalaDivergente: 0, foraDaFrota: false }
+    // temRastreador=false = placa sem CV na frota rastreada (LLD4202 02/10:
+    // placa provisoria que o Nelson poe quando ainda nao sabe o carro).
+    if (semRastreador && d.temRastreador === false) g.foraDaFrota = true
     if (semRastreador) g.semRastreador++
     else g.escalaDivergente++
     grupos.set(chave, g)
   }
   const out: { carga: string; placa: string; texto: string }[] = []
   for (const g of grupos.values()) {
-    if (g.semRastreador > 0) out.push({ carga: g.carga, placa: g.placa, texto: `veículo sem rastreamento no dia -- ${g.semRastreador} NF(s) fora da taxa (conferir equipamento/placa da escala)` })
+    if (g.semRastreador > 0) out.push({ carga: g.carga, placa: g.placa, texto: g.foraDaFrota
+      ? `placa não cadastrada na frota rastreada (placa provisória ou veículo novo?) -- ${g.semRastreador} NF(s) fora da taxa (informar a placa real que fez a carga)`
+      : `veículo sem rastreamento no dia -- ${g.semRastreador} NF(s) fora da taxa (conferir equipamento/placa da escala)` })
     if (g.escalaDivergente > 0) out.push({ carga: g.carga, placa: g.placa, texto: `placa da escala não passou nos clientes -- ${g.escalaDivergente} NF(s) fora da taxa (substituição de veículo não informada?)` })
   }
   // Pedido da Ana 03/10: cadastro do cliente divergente do romaneio vira

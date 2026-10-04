@@ -1031,18 +1031,20 @@ describe('gerador-xlsx -- rodizio sem coluna dedicada (ajuste 26/09: PLACA EXECU
   it('aba Avisos lista por placa as NFs fora da taxa por falta de rastreador e por placa da escala divergente (pedido Ana 03/10)', async () => {
     const linhas = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
     const detalhe: LinhaDetalheEntrega[] = [
-      detalheFixture({ nf: 'NF1', carga: '99261', placa: 'LLD4202', observacao: 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO' }),
-      detalheFixture({ nf: 'NF2', carga: '99261', placa: 'LLD4202', observacao: 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO' }),
+      detalheFixture({ nf: 'NF1', carga: '99261', placa: 'LLD4202', temRastreador: false, observacao: 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO' }),
+      detalheFixture({ nf: 'NF2', carga: '99261', placa: 'LLD4202', temRastreador: false, observacao: 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO' }),
+      detalheFixture({ nf: 'NF4', carga: '99300', placa: 'TTL5J17', temRastreador: true, observacao: 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO' }),
       detalheFixture({ nf: 'NF3', carga: '99100', placa: 'RQO1B27', observacao: 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA' }),
     ]
     const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-10-02', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
     const wb = new ExcelJS.Workbook()
     await wb.xlsx.load(buffer)
     const ws = wb.getWorksheet('Avisos')!
-    const textos = [2, 3].map(r => (ws.getRow(r).values as unknown[]).slice(1).join(' | '))
+    const textos = [2, 3, 4].map(r => (ws.getRow(r).values as unknown[]).slice(1).join(' | '))
     expect(textos).toEqual([
       '99100 | RQO1B27 | placa da escala não passou nos clientes -- 1 NF(s) fora da taxa (substituição de veículo não informada?)',
-      '99261 | LLD4202 | veículo sem rastreamento no dia -- 2 NF(s) fora da taxa (conferir equipamento/placa da escala)',
+      '99261 | LLD4202 | placa não cadastrada na frota rastreada (placa provisória ou veículo novo?) -- 2 NF(s) fora da taxa (informar a placa real que fez a carga)',
+      '99300 | TTL5J17 | veículo sem rastreamento no dia -- 1 NF(s) fora da taxa (conferir equipamento/placa da escala)',
     ])
   })
 
