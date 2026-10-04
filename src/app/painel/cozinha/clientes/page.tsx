@@ -9,10 +9,11 @@ export default function ClientesCozinhaPage() {
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6">
       <div>
-        <h1 className="text-lg font-semibold text-[var(--color-fg)]">
+        <span className="text-overline">Cozinha</span>
+        <h1 className="mt-1 text-display text-[34px] leading-none text-[var(--color-fg)] md:text-[40px]">
           Clientes da Cozinha
         </h1>
-        <p className="mt-1 text-[13px] text-[var(--color-fg-muted)]">
+        <p className="mt-2 text-[13px] text-[var(--color-fg-muted)]">
           Gerencie a matriz de clientes usada para gerar os romaneios.
         </p>
       </div>

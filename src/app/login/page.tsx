@@ -57,10 +57,9 @@ export default async function LoginPage({
         </div>
 
         {/* Double-bezel card */}
-        <div className="rounded-[var(--radius-display)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-1.5 shadow-soft">
+        <div className="dash-card p-1.5">
           <div
-            className="rounded-[calc(var(--radius-display)-0.375rem)] bg-[var(--color-bg)] p-7"
-            style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6)' }}
+            className="rounded-[16px] p-6"
           >
             <form action={login} className="flex flex-col gap-5">
               <div className="flex flex-col gap-2">

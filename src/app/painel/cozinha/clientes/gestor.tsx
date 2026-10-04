@@ -200,18 +200,16 @@ export function GestorClientes() {
     <div className="space-y-4">
       {lista && (
         <div className="flex flex-wrap gap-3">
-          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-4 py-3">
-            <div className="text-[22px] font-semibold leading-tight">{lista.total}</div>
-            <div className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">Total</div>
+          <div className="dash-card min-w-[140px] px-5 py-4">
+            <div className="text-[28px] font-semibold leading-tight tracking-[-0.02em] tabular-nums">{lista.total}</div>
+            <div className="mt-0.5 text-[12px] font-medium text-[var(--color-fg-muted)]">Total de clientes</div>
           </div>
           <div className={cn(
-            'rounded-xl border px-4 py-3',
-            lista.semEndereco > 0
-              ? 'border-transparent bg-[var(--color-warning-soft)] text-[var(--color-warning-soft-fg)]'
-              : 'border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-fg-muted)]',
+            'dash-card min-w-[140px] px-5 py-4',
+            lista.semEndereco > 0 ? '!border-[var(--color-warning)]/40 text-[var(--color-warning-soft-fg)]' : 'text-[var(--color-fg-muted)]',
           )}>
-            <div className="text-[22px] font-semibold leading-tight">{lista.semEndereco}</div>
-            <div className="mt-1 text-[10px] font-semibold uppercase tracking-wider opacity-80">Sem endereço</div>
+            <div className="text-[28px] font-semibold leading-tight tracking-[-0.02em] tabular-nums">{lista.semEndereco}</div>
+            <div className="mt-0.5 text-[12px] font-medium opacity-80">Sem endereço</div>
           </div>
         </div>
       )}
@@ -269,7 +267,7 @@ export function GestorClientes() {
                 <thead>
                   <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] text-left">
                     {['Nome da Empresa', 'Código', 'CEP', 'Endereço', 'Nº', 'Comp.', ''].map(h => (
-                      <th key={h} className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">{h}</th>
+                      <th key={h} className="px-4 py-2.5 text-[12px] font-medium text-[var(--color-fg-muted)]">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -325,7 +323,7 @@ export function GestorClientes() {
                         )}
                       >
                         <td className="max-w-[200px] truncate px-4 py-1.5 font-medium text-[var(--color-fg)]">{c.fantasia || c.nome}</td>
-                        <td className="px-4 py-1.5 font-mono text-[12px] text-[var(--color-fg-muted)]">{c.codigo}</td>
+                        <td className="whitespace-nowrap px-4 py-1.5 text-[12px] tabular-nums text-[var(--color-fg-muted)]">{c.codigo}</td>
                         {editing ? (
                           <>
                             <td className="px-2 py-1">
@@ -355,7 +353,7 @@ export function GestorClientes() {
                           </>
                         ) : (
                           <>
-                            <td className="px-4 py-1.5 font-mono text-[12px] text-[var(--color-fg-muted)]">
+                            <td className="whitespace-nowrap px-4 py-1.5 text-[12px] tabular-nums text-[var(--color-fg-muted)]">
                               {c.cep || <span className="italic text-[var(--color-fg-subtle)]">—</span>}
                             </td>
                             <td className="max-w-[180px] truncate px-4 py-1.5 text-[var(--color-fg)]">

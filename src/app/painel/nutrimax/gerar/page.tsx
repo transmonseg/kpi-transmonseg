@@ -68,13 +68,13 @@ export default function NutrimaxGerarPage() {
   return (
     <div className="mx-auto w-full max-w-[1200px]">
       <header className="mb-10 flex flex-col gap-1.5">
-        <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
+        <span className="text-overline">
           KPI Nutry Max
         </span>
-        <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.02em] text-[var(--color-fg)] md:text-[34px]">
+        <h1 className="text-display text-[34px] leading-none text-[var(--color-fg)] md:text-[40px]">
           Gerar KPI
         </h1>
-        <p className="mt-1 max-w-[65ch] text-[14px] leading-relaxed text-[var(--color-fg-muted)]">
+        <p className="mt-2 max-w-[65ch] text-[13px] leading-relaxed text-[var(--color-fg-muted)]">
           Suba a Escala de Rota e o Romaneio de Entrega do dia. O sistema geocodifica os
           endereços, cruza com a confirmação de entrega e o GPS ao vivo do Unitrac, e monta
           o KPI por carga — paradas confirmadas, km percorrido, saída/chegada do CD e tempo
@@ -108,8 +108,8 @@ export default function NutrimaxGerarPage() {
         </div>
 
         <div className="col-span-1 lg:col-span-3">
-          <div className="flex h-full flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-            <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
+          <div className="dash-card flex h-full min-h-[176px] flex-col gap-2 p-5">
+            <div className="flex items-center gap-2 text-overline">
               <CalendarBlank size={12} weight="bold" />
               Passo 3 · Data de referência
             </div>
@@ -118,8 +118,8 @@ export default function NutrimaxGerarPage() {
               type="date"
               value={data}
               onChange={e => setData(e.target.value)}
-              className="mt-1 w-full bg-transparent text-[24px] font-medium tracking-tight text-[var(--color-fg)] outline-none [color-scheme:light] dark:[color-scheme:dark]"
-              style={{ fontFamily: 'var(--font-mono)' }}
+              className="mt-1 w-full bg-transparent text-[24px] font-semibold tracking-[-0.02em] tabular-nums text-[var(--color-fg)] outline-none [color-scheme:light] dark:[color-scheme:dark]"
+             
             />
             {dataForaDoAlcance && (
               <p className="mt-2 text-[12px] leading-relaxed text-[var(--color-danger)]">
@@ -143,14 +143,14 @@ export default function NutrimaxGerarPage() {
       </section>
 
       {erro && (
-        <div className="mt-6 flex items-start gap-3 rounded-[var(--radius-card)] border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-5 py-4">
+        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-5 py-4">
           <WarningCircle size={18} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-danger)]" />
           <p className="text-[13px] leading-relaxed text-[var(--color-danger-soft-fg)]">{erro}</p>
         </div>
       )}
 
       {arquivoPronto && !erro && (
-        <div className="mt-6 flex items-center justify-between gap-3 rounded-[var(--radius-card)] border border-[var(--color-success)]/30 bg-[var(--color-success-soft)] px-5 py-4">
+        <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-[var(--color-success)]/30 bg-[var(--color-success-soft)] px-5 py-4">
           <p className="flex items-center gap-2 text-[13px] leading-relaxed text-[var(--color-success-soft-fg)]">
             <CheckCircle size={18} weight="fill" className="shrink-0 text-[var(--color-success)]" />
             {arquivoPronto.filename} pronto{baixado ? ' (baixado)' : ''}.
@@ -171,12 +171,12 @@ export default function NutrimaxGerarPage() {
         onClick={gerar}
         disabled={pending || !pronto}
         className={cn(
-          'group relative mt-8 flex w-full items-center justify-between gap-4 overflow-hidden rounded-[var(--radius-card)] px-7 py-5 text-left transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.99]',
+          'group relative mt-8 flex w-full items-center justify-between gap-4 overflow-hidden rounded-[22px] px-7 py-6 text-left transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.99]',
           pronto && !pending
-            ? 'bg-[var(--color-navy-700)] text-white shadow-soft hover:-translate-y-0.5 hover:shadow-[0_14px_34px_-10px_rgba(31,56,100,0.55)]'
+            ? 'dash-hero hover:-translate-y-0.5'
             : pending
-              ? 'bg-[var(--color-navy-700)] text-white'
-              : 'cursor-not-allowed bg-[var(--color-bg-subtle)] border border-[var(--color-border)] text-[var(--color-fg-muted)]'
+              ? 'dash-hero'
+              : 'dash-card cursor-not-allowed text-[var(--color-fg-muted)]'
         )}
       >
         {pending && (
@@ -187,10 +187,10 @@ export default function NutrimaxGerarPage() {
           />
         )}
         <div className="flex flex-col gap-1">
-          <span className={cn('text-[11px] font-medium uppercase tracking-[0.18em]', pronto || pending ? 'text-white/60' : 'text-[var(--color-fg-muted)]')}>
+          <span className={cn('text-[11px] font-semibold uppercase tracking-[0.14em]', pronto || pending ? 'text-white/65' : 'text-[var(--color-fg-subtle)]')}>
             {pending ? 'Processando' : 'Gerar KPI'}
           </span>
-          <span className="text-[18px] font-semibold tracking-tight">
+          <span className="text-[20px] font-semibold tracking-[-0.015em]">
             {pending ? 'Geocodificando e cruzando com o Unitrac…' : pronto ? 'Gerar agora' : 'Aguardando arquivos'}
           </span>
         </div>

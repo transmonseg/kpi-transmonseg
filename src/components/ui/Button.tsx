@@ -22,9 +22,10 @@ const BASE =
 const VARIANTS: Record<Variant, string> = {
   // Brand acento — usar com parcimônia (skill: 1 accent só)
   primary:
-    'bg-[var(--color-accent)] text-[var(--color-accent-fg)] shadow-soft ' +
-    'hover:bg-[var(--color-accent-hover)] hover:-translate-y-px hover:shadow-[0_8px_20px_-6px_rgba(31,56,100,0.45)] ' +
-    'focus-visible:ring-[var(--color-accent)]',
+    // Mesmo azul-marinho dos botões do dashboard, nos dois temas.
+    'bg-[var(--color-navy-700)] text-white shadow-[0_8px_20px_-10px_rgba(31,56,100,0.9)] ' +
+    'hover:bg-[var(--color-navy-800)] hover:-translate-y-px ' +
+    'focus-visible:ring-[var(--color-navy-700)]',
   // CTA escuro invariante — navy funciona em light e dark
   invert:
     'bg-[var(--color-navy-700)] text-white shadow-soft ' +

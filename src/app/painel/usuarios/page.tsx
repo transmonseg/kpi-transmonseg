@@ -51,10 +51,10 @@ export default async function UsuariosPage({
   const empresasDisponiveis = perfil.papel === 'gerente' ? perfil.empresas : (EMPRESAS as readonly string[])
 
   return (
-    <div className="mx-auto w-full max-w-[1180px] space-y-8 px-5 sm:px-8">
+    <div className="mx-auto w-full max-w-[1180px] space-y-6 px-5 sm:px-8">
       <header>
         <span className="text-overline">Acesso</span>
-        <h1 className="mt-1 text-display text-[30px] leading-none text-[var(--color-fg)]">Usuários</h1>
+        <h1 className="mt-1 text-display text-[34px] leading-none text-[var(--color-fg)] md:text-[40px]">Usuários</h1>
         <p className="mt-2 max-w-[60ch] text-[13px] leading-relaxed text-[var(--color-fg-muted)]">
           Gere links de convite pra logins que só enxergam o Dashboard, restritos às redes escolhidas.
         </p>
@@ -96,7 +96,7 @@ export default async function UsuariosPage({
                 <Label htmlFor="papel">Papel</Label>
                 <select
                   id="papel" name="papel" defaultValue="visualizador"
-                  className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)]"
+                  className="h-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)]"
                 >
                   <option value="visualizador">Visualizador (só vê)</option>
                   <option value="gerente">Gerente (vê + convida)</option>
@@ -124,7 +124,7 @@ export default async function UsuariosPage({
           </CardHeader>
           <CardContent className="space-y-3">
             {convites.map(c => (
-              <div key={c.token as string} className="flex flex-wrap items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] px-4 py-3">
+              <div key={c.token as string} className="flex flex-wrap items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)]/40 px-4 py-3.5">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-fg)]">
                     <Badge>{PAPEL_LABEL[c.papel as 'gerente' | 'visualizador']}</Badge>
@@ -164,8 +164,11 @@ export default async function UsuariosPage({
             <p className="text-[13px] text-[var(--color-fg-muted)]">Nenhum login restrito ainda.</p>
           )}
           {logins.map(p => (
-            <div key={p.user_id as string} className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] px-4 py-3">
+            <div key={p.user_id as string} className="flex flex-col gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)]/40 px-4 py-3.5 transition-colors hover:border-[var(--color-border-strong)]">
               <div className="flex flex-wrap items-center gap-3">
+                <span className="dash-icone !h-10 !w-10 !rounded-full text-[14px] font-semibold" style={{ ['--dash-tom' as string]: '#1f3864' }}>
+                  {String(p.email ?? '?').slice(0, 1).toUpperCase()}
+                </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-fg)]">
                     {p.email}
@@ -179,7 +182,7 @@ export default async function UsuariosPage({
                   </div>
                 </div>
                 <form action={revogarAcesso.bind(null, p.user_id as string)}>
-                  <Button type="submit" variant="danger" size="sm">Revogar</Button>
+                  <Button type="submit" variant="ghost" size="sm" className="!text-[var(--color-danger)] hover:!bg-[var(--color-danger-soft)]">Revogar</Button>
                 </form>
               </div>
               <form action={atualizarMeses.bind(null, p.user_id as string)} className="flex flex-wrap items-end gap-3 border-t border-[var(--color-border)] pt-3">

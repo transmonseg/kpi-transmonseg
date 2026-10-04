@@ -4,11 +4,15 @@ import { usePathname } from 'next/navigation'
 
 const TITLES: Record<string, string> = {
   '/painel': 'Dashboard',
+  '/painel/usuarios': 'Usuários',
   '/painel/cozinha': 'Cozinha',
-  '/painel/cozinha/clientes': 'Clientes',
-  '/painel/kpi/simples': 'Gerar KPI',
-  '/painel/historico': 'Histórico',
-  '/painel/lojas': 'Lojas',
+  '/painel/cozinha/clientes': 'Clientes da cozinha',
+  '/painel/nutrimax/gerar': 'Nutry Max · Gerar KPI',
+  '/painel/nutrimax/historico': 'Nutry Max · Histórico',
+  '/painel/rioquality/gerar': 'Rio Quality · Gerar KPI',
+  '/painel/rioquality/historico': 'Rio Quality · Histórico',
+  '/painel/portefrio/gerar': 'Portefrio · Gerar KPI',
+  '/painel/portefrio/historico': 'Portefrio · Histórico',
 }
 
 function resolveTitle(pathname: string): string {

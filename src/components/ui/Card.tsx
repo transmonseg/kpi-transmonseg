@@ -11,9 +11,9 @@ export const Card = forwardRef<HTMLDivElement, DivProps>(function Card(
     <div
       ref={ref}
       className={cn(
-        // radius card (1.5rem) + border 1px sutil + shadow-soft tinted (skill section 9)
-        // kpi-quad = luz navy em volta (acende no hover), definida em globals.css
-        'rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-soft kpi-quad',
+        // dash-card (globals.css): mesmo cartão com profundidade do dashboard
+        // por cliente (04/10/2026) — luz no topo, borda fina, sombra navy.
+        'dash-card',
         className,
       )}
       {...props}

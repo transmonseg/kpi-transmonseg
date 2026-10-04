@@ -37,10 +37,12 @@ export function FileDropzone({ className, eyebrow, label, hint, accept, multiple
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
         className={cn(
-          'group relative flex min-h-[170px] cursor-pointer flex-col justify-between gap-4 overflow-hidden rounded-[var(--radius-card)] border border-dashed bg-[var(--color-bg-elevated)] p-5 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
+          'dash-card group relative flex min-h-[176px] cursor-pointer flex-col justify-between gap-4 overflow-hidden p-5',
           dragging
-            ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)]/40 scale-[1.01] shadow-[0_0_0_3px_rgba(31,56,100,0.16),0_16px_42px_-12px_rgba(31,56,100,0.5)]'
-            : 'border-[var(--color-border-strong)] hover:-translate-y-0.5 hover:border-[var(--color-accent)] hover:shadow-soft'
+            ? '!border-[var(--color-accent)] scale-[1.015]'
+            : hasFiles
+              ? '!border-[var(--color-success)]/60'
+              : 'dash-card-hover'
         )}
       >
         <input
@@ -58,23 +60,20 @@ export function FileDropzone({ className, eyebrow, label, hint, accept, multiple
 
         <div className="flex items-start justify-between">
           <div>
-            <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
-              <UploadSimple size={12} weight="bold" />
-              {eyebrow}
-            </div>
+            <div className="text-overline">{eyebrow}</div>
             <h3 className="mt-2 text-[18px] font-semibold tracking-tight text-[var(--color-fg)]">{label}</h3>
             <p className="mt-0.5 text-[12px] text-[var(--color-fg-muted)]">{hint}</p>
           </div>
           {!hasFiles && (
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-fg-muted)] transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:text-[var(--color-fg)]">
-              <UploadSimple size={16} weight="bold" />
+            <span className="dash-icone shrink-0 transition-transform duration-300 group-hover:-translate-y-0.5" style={{ ['--dash-tom' as string]: '#1f3864' }}>
+              <UploadSimple size={17} weight="bold" />
             </span>
           )}
         </div>
 
         {!hasFiles && (
-          <p className="text-[12px] italic text-[var(--color-fg-subtle)]">
-            Arraste o arquivo aqui ou clique para escolher
+          <p className="text-[12px] text-[var(--color-fg-subtle)]">
+            Arraste o arquivo aqui ou <b className="font-semibold text-[var(--color-accent)]">clique para escolher</b>
           </p>
         )}
 
