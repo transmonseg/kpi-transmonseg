@@ -12,7 +12,7 @@ git pull -q --ff-only
 rm -rf "$B" && mkdir -p "$B"
 git archive HEAD | tar -x -C "$B"
 cp "$APP"/.env* "$B"/ 2>/dev/null || true
-ln -s "$APP/node_modules" "$B/node_modules"
+cp -al "$APP/node_modules" "$B/node_modules"  # hardlinks: Turbopack recusa symlink
 cd "$B"
 if ! npm run build > "$LOG" 2>&1; then echo "BUILD FALHOU -- producao intacta (ver $LOG)"; exit 1; fi
 sed -i "s#$B#$APP#g" .next/required-server-files.json .next/required-server-files.js 2>/dev/null || true
