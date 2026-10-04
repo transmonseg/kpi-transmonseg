@@ -165,7 +165,7 @@ function Conteudo({ ag, agAnt, periodo, onPlaca }: { ag: Agregado; agAnt: Agrega
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Tile i={0} Icone={Package} cor="#2a78d6" rotulo="NFs entregues" valor={fmtInt(ag.entregues)} sub={`de ${fmtInt(ag.nfsNaConta)} na conta`} delta={<Delta atual={ag.entregues} anterior={agAnt?.entregues} suf="" casas={0} />} />
-        <Tile i={1} Icone={Warning} cor="#e08a00" rotulo="Pendentes" valor={fmtInt(ag.pendentes)} sub="Não confirmadas" delta={<Delta atual={ag.pendentes} anterior={agAnt?.pendentes} inverso suf="" casas={0} />} />
+        <Tile i={1} Icone={Warning} cor="#e08a00" rotulo="A validar" valor={fmtInt(Math.max(0, ag.pendentes - (ag.motivos['Não foi ao cliente'] ?? 0)))} sub="Confirmação com a operação" />
         <Tile i={2} Icone={Path} cor="#1baf7a" rotulo="KM rodados" valor={fmtKm(ag.km)} sub={umDia ? `${fmtInt(ag.cargas)} cargas` : `${fmtKm(ag.km / Math.max(1, ag.diasCompletos))} por dia`} delta={<Delta atual={ag.km} anterior={agAnt?.km} suf=" km" casas={0} />} />
         <Tile i={3} Icone={Timer} cor="#7a5af0" rotulo="Operação média" valor={fmtDur(ag.operacaoMedia)} sub="Saída até a volta ao CD" delta={<Delta atual={ag.operacaoMedia} anterior={agAnt?.operacaoMedia} inverso suf=" min" casas={0} />} />
         <Tile i={4} Icone={Clock} cor="#d05a8a" rotulo="Tempo por entrega" valor={fmtDur(ag.porEntregaMedia)} sub="Média das cargas" delta={<Delta atual={ag.porEntregaMedia} anterior={agAnt?.porEntregaMedia} inverso suf=" min" casas={0} />} />
@@ -196,8 +196,8 @@ function Conteudo({ ag, agAnt, periodo, onPlaca }: { ag: Agregado; agAnt: Agrega
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Painel titulo="Pendências por motivo" sub="Por que a NF não confirmou">
-          <Motivos motivos={ag.motivos} />
+        <Painel titulo="Resultado das entregas" sub="Como terminou cada NF">
+          <Resultado ag={ag} />
         </Painel>
         <Painel titulo={umDia ? 'Piores placas do dia' : 'Piores placas do período'} sub="Menor taxa de confirmação — clique para abrir">
           <PioresPlacas placas={ag.placas} onPlaca={onPlaca} />
@@ -291,17 +291,6 @@ function Painel({ titulo, sub, children, className = '', semPadding }: { titulo:
   )
 }
 
-const TOM_MOTIVO: Record<string, BarItem['tone']> = {
-  'Não foi ao cliente': 'danger',
-  'Cadastro divergente': 'warning',
-  'Coordenada imprecisa': 'warning',
-  'Endereço não localizado': 'warning',
-  'Parada próxima': 'info',
-  'Passou sem registrar': 'info',
-  'Parada compartilhada (revisar)': 'info',
-  'Sem confirmação': 'muted',
-}
-
 function PioresPlacas({ placas, onPlaca }: { placas: PlacaAgg[]; onPlaca: (p: PlacaAgg) => void }) {
   const lista = placas.filter(p => p.taxa != null && p.nfPlanejado > 0).sort((a, b) => (a.taxa ?? 0) - (b.taxa ?? 0)).slice(0, 8)
   if (!lista.length) return <p className="py-10 text-center text-[13px] text-[var(--color-fg-muted)]">Sem placas.</p>
@@ -327,12 +316,17 @@ function PioresPlacas({ placas, onPlaca }: { placas: PlacaAgg[]; onPlaca: (p: Pl
   )
 }
 
-function Motivos({ motivos }: { motivos: Record<string, number> }) {
-  const itens: BarItem[] = Object.entries(motivos)
-    .filter(([m]) => m !== 'Sem rastreador' && m !== 'Aguardando fim da rota')
-    .sort((a, b) => b[1] - a[1])
-    .map(([m, n]) => ({ key: m, label: m, value: n, tone: TOM_MOTIVO[m] ?? 'accent' }))
-  if (!itens.length) return <p className="py-10 text-center text-[13px] text-[var(--color-fg-muted)]">Nenhuma pendência. 🎉</p>
+function Resultado({ ag }: { ag: Agregado }) {
+  const naoFoi = ag.motivos['Não foi ao cliente'] ?? 0
+  const aValidar = Math.max(0, ag.pendentes - naoFoi)
+  const entregues = Math.max(0, ag.entregues - ag.semRastreador)
+  const itens: BarItem[] = ([
+    { key: 'e', label: 'Entregues', value: entregues, tone: 'success' },
+    { key: 'r', label: 'Sem rastreador', value: ag.semRastreador, tone: 'muted' },
+    { key: 'n', label: 'Não foi ao cliente', value: naoFoi, tone: 'danger' },
+    { key: 'v', label: 'A validar', value: aValidar, tone: 'warning' },
+  ] as BarItem[]).filter(x => x.value > 0)
+  if (!itens.length) return <p className="py-10 text-center text-[13px] text-[var(--color-fg-muted)]">Sem NFs no período.</p>
   return <BarList items={itens} format={n => n.toLocaleString('pt-BR')} />
 }
 
@@ -403,20 +397,15 @@ function TabelaPlacas({ placas, umDia, onPlaca }: { placas: PlacaAgg[]; umDia: b
                     <div className="max-w-[220px] truncate text-[12px] text-[var(--color-fg-muted)]">{p.motorista || '—'} · {p.destino || '—'}</div>
                   </td>
                   <td className="px-4 py-3">
-                    {p.taxa == null && p.nfForaDaConta > 0 ? (
-                      <span title="Placa trocada na escala ou carga sem placa — não entra na taxa" className="inline-flex rounded-full bg-[var(--color-bg-subtle)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--color-fg-muted)]">fora da conta</span>
-                    ) : (
                       <div className="flex items-center gap-2.5">
                         <span className="w-14 text-right font-semibold tabular-nums" style={{ color: COR_TOM[t] }}>{fmtPct(p.taxa)}</span>
                         <span className="h-1.5 w-20 overflow-hidden rounded-full bg-[var(--color-bg-subtle)]">
                           <span className="block h-full rounded-full" style={{ width: `${Math.min(100, p.taxa ?? 0)}%`, background: COR_TOM[t] }} />
                         </span>
                       </div>
-                    )}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
                     {fmtInt(p.nfConfirmadas)}<span className="text-[var(--color-fg-subtle)]">/{fmtInt(p.nfPlanejado - p.nfForaDaConta)}</span>
-                    {p.nfForaDaConta > 0 && <span className="ml-1 text-[11px] text-[var(--color-fg-subtle)]">+{p.nfForaDaConta} fora</span>}
                     {p.nfSemRastreador > 0 && <span title="Sem rastreador: contam como corretas na taxa" className="ml-1 text-[11px] text-[var(--color-fg-subtle)]">({p.nfSemRastreador} sem rastreador)</span>}
                   </td>
                   {!umDia && <td className="px-4 py-3 text-right tabular-nums">{p.dias}</td>}
