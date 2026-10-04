@@ -58,6 +58,9 @@ export type LinhaGeocodificada = LinhaRomaneio & {
    *  cache sem `fonte` registrada (origem desconhecida). Ausente/false =
    *  fonte conhecida ou produtor que nao informa (comportamento anterior). */
   geoSemFonte?: boolean
+  /** Auditoria Ana 03/10: coordenada do cache conferida por pessoa (fonte
+   *  manual / verificacao_manual / cadastro_unitrac). */
+  geoVerificadoManual?: boolean
   // So' preenchido pela coerencia de grupo (Rio Quality): outros pontos da
   // MESMA rua na zona, alem do escolhido -- pedido 06/09, ver visitas.ts.
   pontosAlternativos?: { lat: number; lng: number }[]

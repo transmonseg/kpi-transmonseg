@@ -35,6 +35,8 @@ import { montarDumpExperimento } from '../src/lib/kpi-romaneio/experimentos/dump
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '../src/lib/kpi-romaneio/types'
 import type { UnitracParadaRow } from '../src/lib/kpi/matcher'
 
+const FONTES_VERIFICADAS = new Set(['manual', 'verificacao_manual', 'cadastro_unitrac'])
+
 function agrupar<T>(itens: T[], chave: (item: T) => string): Map<string, T[]> {
   const mapa = new Map<string, T[]>()
   for (const item of itens) {
@@ -90,7 +92,7 @@ async function main() {
   // Task 2 (plano 2026-09-30, item 4): geoSemFonte = cache sem `fonte` (ver guarda 4 da parada proxima em agregacao.ts).
   const romaneioGeo: LinhaGeocodificada[] = romaneioCompleto.map(l => {
     const g = geoPorEndereco.get(l.endereco) ?? null
-    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: g?.motivo, geoSemFonte: g != null && !g.fonte }
+    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: g?.motivo, geoSemFonte: g != null && !g.fonte, geoVerificadoManual: g != null && FONTES_VERIFICADAS.has(g.fonte ?? '') }
   })
 
   // Item 5 (achado real 10-09, auditoria com a Ana -- espelha route.ts):

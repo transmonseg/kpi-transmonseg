@@ -32,6 +32,8 @@ import { buscarPlacasSemRastreador, placasSemRastreadorNoDia, montarTemRastreado
 import { logarNfDuplicadaNaMesmaPlaca } from '@/lib/kpi-romaneio/nf-duplicada'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
 
+const FONTES_VERIFICADAS = new Set(['manual', 'verificacao_manual', 'cadastro_unitrac'])
+
 export const runtime = 'nodejs'
 // A busca de paradas GPS é sequencial por placa (buscarStopsCru + geocode em
 // lote) -- um dia com muitas placas pode passar do default de 10s da Vercel.
@@ -215,7 +217,7 @@ export async function POST(req: NextRequest) {
   // Task 2 (plano 2026-09-30, item 4): geoSemFonte = cache sem `fonte` (ver guarda 4 da parada proxima em agregacao.ts).
   const romaneioGeo: LinhaGeocodificada[] = romaneioCompleto.map(l => {
     const g = geoPorEndereco.get(l.endereco) ?? null
-    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: narrowGeoMotivo(g?.motivo), geoSemFonte: g != null && !g.fonte }
+    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: narrowGeoMotivo(g?.motivo), geoSemFonte: g != null && !g.fonte, geoVerificadoManual: g != null && FONTES_VERIFICADAS.has(g.fonte ?? '') }
   })
 
   // Item 5 (achado real 10-09, auditoria com a Ana): port do Passo 7 do motor

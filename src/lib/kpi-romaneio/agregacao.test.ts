@@ -5879,3 +5879,22 @@ describe('cadastro Unitrac divergente do romaneio (auditoria Ana 03/10)', () => 
     expect(d.observacao ?? '').not.toContain('CADASTRO DO CLIENTE')
   })
 })
+
+describe('compartilhada com vizinho: coordenada verificada por pessoa vale como cadastro (2403636, Ana 03/10)', () => {
+  it('parada de 23 min a 0 m do ponto verificado, com vizinho a 46 m -> ENTREGUE', () => {
+    const nf1 = linha('NF1', { endereco: 'RUA JOSE ESTEBANES, S/N', lat: -21.88, lng: -42.46, geoVerificadoManual: true })
+    const nf2 = linha('NF2', { endereco: 'RUA VIZINHA, 5', lat: -21.88 + 46 * M_LAT, lng: -42.46 })
+    const cruas = new Map([['TTL7D40', [paradaForaBase('p1', -21.88, -42.46, '2026-10-02T10:43:00.000Z', '2026-10-02T11:06:00.000Z')]]])
+    const [d] = chamarNutryMax([nf1, nf2], { paradasUnitracCruasPropriaPlaca: cruas })
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBe(OBS_COMPARTILHADA_VIZINHO)
+  })
+
+  it('mesma situacao sem coordenada verificada nem cadastro nao usa a regra', () => {
+    const nf1 = linha('NF1', { endereco: 'RUA JOSE ESTEBANES, S/N', lat: -21.88, lng: -42.46 })
+    const nf2 = linha('NF2', { endereco: 'RUA VIZINHA, 5', lat: -21.88 + 46 * M_LAT, lng: -42.46 })
+    const cruas = new Map([['TTL7D40', [paradaForaBase('p1', -21.88, -42.46, '2026-10-02T10:43:00.000Z', '2026-10-02T11:06:00.000Z')]]])
+    const [d] = chamarNutryMax([nf1, nf2], { paradasUnitracCruasPropriaPlaca: cruas })
+    expect(d.observacao).not.toBe(OBS_COMPARTILHADA_VIZINHO)
+  })
+})

@@ -837,7 +837,12 @@ function acharParadaCompartilhadaComVizinho(
   // falsos positivos ja' auditados com parada dividida (RQQ5B81/2386225 "nao
   // esteve no local", RQV9D97/2395585 "nao foi", estudo 30/09) batiam so'
   // com o geocode do endereco; os 4 da Ana batiam com o cadastro.
-  if (cadastro == null) return null
+  // Auditoria Ana 03/10 (2403636 MERCADO DO ERALDO): coordenada do endereco
+  // conferida por pessoa vale como o cadastro (parada de 23 min a 0 m do
+  // ponto corrigido, com 3 vizinhos a <50 m).
+  const geoVerificado = linha.geoVerificadoManual && linha.lat != null && linha.lng != null
+    ? { lat: linha.lat, lng: linha.lng } : null
+  if (cadastro == null && geoVerificado == null) return null
   let melhor: { parada: UnitracParadaRow; distM: number; ref: 'geo' | 'cad'; duracaoMin: number } | null = null
   for (const p of paradas) {
     if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
@@ -846,14 +851,16 @@ function acharParadaCompartilhadaComVizinho(
     // Teto de duracao: parada de horas (almoco/pernoite) perto do cadastro
     // nao e' entrega -- FP RQQ5B81/2386225 23/09 era uma parada de 159 min.
     if (duracaoMin > DURACAO_MAX_COMPARTILHADA_VIZINHO_MIN) continue
-    const distM = haversine(p.lat, p.lng, cadastro.lat, cadastro.lng)
+    const distCad = cadastro ? haversine(p.lat, p.lng, cadastro.lat, cadastro.lng) : Infinity
+    const distGeo = geoVerificado ? haversine(p.lat, p.lng, geoVerificado.lat, geoVerificado.lng) : Infinity
+    const distM = Math.min(distCad, distGeo)
     if (distM > RAIO_COMPARTILHADA_VIZINHO_M) continue
     const temVizinho = outrosPontosDaPlaca
       .filter(o => o.endereco !== linha.endereco)
       .some(o => haversine(p.lat as number, p.lng as number, o.lat, o.lng) <= RAIO_OUTRO_CLIENTE_EXPLICA_M)
     if (!temVizinho) continue
     const ganha = !melhor || duracaoMin > melhor.duracaoMin
-    if (ganha) melhor = { parada: p, distM, ref: 'cad', duracaoMin }
+    if (ganha) melhor = { parada: p, distM, ref: distCad <= distGeo ? 'cad' : 'geo', duracaoMin }
   }
   return melhor ? { parada: melhor.parada, distM: melhor.distM, ref: melhor.ref } : null
 }
