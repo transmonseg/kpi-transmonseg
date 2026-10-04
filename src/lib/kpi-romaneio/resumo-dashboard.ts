@@ -17,6 +17,9 @@ export type CargaResumo = {
   chegada: string | null
   tempoOperacaoMin: number | null
   tempoMedioMin: number | null
+  /** NFs da carga que ficaram FORA da taxa (sem rastreador, carga inteira com
+   *  placa da escala divergente, carga sem placa) -- a taxa por placa ignora. */
+  nfForaDaConta?: number
 }
 
 export type NfResumo = {
@@ -190,6 +193,17 @@ export async function extrairKpiCompleto(buf: Buffer | ArrayBuffer): Promise<{ d
       else pendentes++
       motivos[cat] = (motivos[cat] ?? 0) + 1
     })
+  }
+
+  // Fora da conta por carga+placa: mesma regra da linha de taxa da planilha
+  // (sem rastreador e carga sem placa sempre; placa da escala divergente só
+  // quando a carga INTEIRA tem o rótulo).
+  const porCarga = new Map<string, NfResumo[]>()
+  for (const n of nfs) porCarga.set(`${n.carga}::${n.placa}`, [...(porCarga.get(`${n.carga}::${n.placa}`) ?? []), n])
+  for (const c of cargas) {
+    const lista = porCarga.get(`${c.carga}::${c.placa}`) ?? []
+    const inteiraDivergente = lista.length > 0 && lista.every(n => n.categoria === 'Placa da escala divergente')
+    c.nfForaDaConta = lista.filter(n => n.categoria === 'Sem rastreador' || n.categoria === 'Carga sem placa' || (inteiraDivergente && n.categoria === 'Placa da escala divergente')).length
   }
 
   const resumo: ResumoGeracao = {

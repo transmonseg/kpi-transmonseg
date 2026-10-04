@@ -47,11 +47,13 @@ export type PlacaAgg = {
   dias: number
   nfPlanejado: number
   nfConfirmadas: number
+  /** NFs fora da taxa (sem rastreador / placa trocada) -- não contam na taxa da placa. */
+  nfForaDaConta: number
   taxa: number | null
   km: number
   operacaoMedia: number | null
   porEntregaMedia: number | null
-  porDia: { data: string; nfPlanejado: number; nfConfirmadas: number; km: number | null; saida: string | null; chegada: string | null; operacao: number | null }[]
+  porDia: { data: string; nfPlanejado: number; nfConfirmadas: number; nfForaDaConta: number; km: number | null; saida: string | null; chegada: string | null; operacao: number | null }[]
 }
 
 export type Agregado = {
@@ -99,16 +101,17 @@ export function agregar(dias: DiaKpi[]): Agregado {
       }
       const p = placas.get(c.placa) ?? {
         placa: c.placa, motorista: c.motorista, destino: c.destino, dias: 0,
-        nfPlanejado: 0, nfConfirmadas: 0, taxa: null, km: 0,
+        nfPlanejado: 0, nfConfirmadas: 0, nfForaDaConta: 0, taxa: null, km: 0,
         operacaoMedia: null, porEntregaMedia: null, porDia: [],
       }
       p.dias += 1
       p.nfPlanejado += c.nfPlanejado ?? 0
       p.nfConfirmadas += c.nfConfirmadas ?? 0
+      p.nfForaDaConta += c.nfForaDaConta ?? 0
       p.km += c.km ?? 0
       if (c.motorista) p.motorista = c.motorista
       if (c.destino) p.destino = c.destino
-      p.porDia.push({ data: d.data, nfPlanejado: c.nfPlanejado ?? 0, nfConfirmadas: c.nfConfirmadas ?? 0, km: c.km, saida: c.saida, chegada: c.chegada, operacao: c.tempoOperacaoMin })
+      p.porDia.push({ data: d.data, nfPlanejado: c.nfPlanejado ?? 0, nfConfirmadas: c.nfConfirmadas ?? 0, nfForaDaConta: c.nfForaDaConta ?? 0, km: c.km, saida: c.saida, chegada: c.chegada, operacao: c.tempoOperacaoMin })
       placas.set(c.placa, p)
     }
   }
@@ -117,7 +120,10 @@ export function agregar(dias: DiaKpi[]): Agregado {
     p.operacaoMedia = media(p.porDia.map(x => x.operacao).filter((v): v is number => v != null && v > 0))
     p.porEntregaMedia = media((porEntregaPorPlaca.get(p.placa) ?? []))
   }
-  for (const p of placas.values()) p.taxa = p.nfPlanejado > 0 ? (p.nfConfirmadas / p.nfPlanejado) * 100 : null
+  for (const p of placas.values()) {
+    const naConta = p.nfPlanejado - p.nfForaDaConta
+    p.taxa = naConta > 0 ? Math.min(100, (p.nfConfirmadas / naConta) * 100) : null
+  }
 
   return {
     dias,

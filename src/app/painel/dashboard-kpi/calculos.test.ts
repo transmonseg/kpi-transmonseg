@@ -33,4 +33,17 @@ describe('dashboard por cliente: calculos', () => {
     expect(a.placas[0]).toMatchObject({ placa: 'AAA', dias: 2, nfPlanejado: 110, nfConfirmadas: 105, operacaoMedia: 550, porEntregaMedia: 15 })
     expect(a.motivos).toEqual({ 'Não foi ao cliente': 10 })
   })
+
+  it('placa com NFs fora da conta (sem rastreador / troca) nao derruba a taxa da placa', () => {
+    const a = agregar([
+      dia('2026-10-03', { taxa: 100, entregues: 10, nfsNaConta: 10, cargas: [
+        { ...carga('TTL5J17', 14, 0, 15, 0, 0), nfForaDaConta: 14 },
+        { ...carga('RBG4F53', 30, 10, 100, 500, 15), carga: '2', nfForaDaConta: 20 },
+      ] }),
+    ])
+    const ttl = a.placas.find(p => p.placa === 'TTL5J17')!
+    const rbg = a.placas.find(p => p.placa === 'RBG4F53')!
+    expect(ttl.taxa).toBeNull()
+    expect(rbg.taxa).toBe(100) // 10 de 10 na conta
+  })
 })

@@ -66,7 +66,7 @@ export function PlacaDrawer({ cliente, placa, dias, onFechar }: {
           </div>
           <div className="mt-5 grid grid-cols-4 gap-3">
             <Mini rotulo="Taxa" valor={fmtPct(placa.taxa)} cor={COR_TOM[t]} />
-            <Mini rotulo="NFs" valor={`${fmtInt(placa.nfConfirmadas)}/${fmtInt(placa.nfPlanejado)}`} />
+            <Mini rotulo="NFs" valor={`${fmtInt(placa.nfConfirmadas)}/${fmtInt(placa.nfPlanejado - placa.nfForaDaConta)}`} />
             <Mini rotulo="KM" valor={fmtKm(placa.km)} />
             <Mini rotulo="Operação" valor={fmtDur(placa.operacaoMedia)} />
           </div>
@@ -79,7 +79,8 @@ export function PlacaDrawer({ cliente, placa, dias, onFechar }: {
               <p className="px-1 pb-2 text-[12px] font-medium text-[var(--color-fg-muted)]">Dias no período</p>
               <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
                 {diasDaPlaca.map(d => {
-                  const tx = d.nfPlanejado ? (d.nfConfirmadas / d.nfPlanejado) * 100 : null
+                  const naConta = d.nfPlanejado - d.nfForaDaConta
+                  const tx = naConta > 0 ? Math.min(100, (d.nfConfirmadas / naConta) * 100) : null
                   const sel = d.data === diaSel
                   return (
                     <button key={d.data} type="button" onClick={() => setDiaSel(d.data)}

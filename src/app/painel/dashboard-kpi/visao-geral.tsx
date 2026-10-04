@@ -314,7 +314,7 @@ function PioresPlacas({ placas, onPlaca }: { placas: PlacaAgg[]; onPlaca: (p: Pl
             <button type="button" onClick={() => onPlaca(p)} className="group w-full text-left">
               <div className="mb-1 flex items-baseline justify-between gap-3 text-[13px]">
                 <span className="min-w-0 truncate"><b className="font-semibold text-[var(--color-fg)]">{p.placa}</b> <span className="text-[var(--color-fg-muted)]">· {p.motorista || p.destino || '—'}</span></span>
-                <span className="shrink-0 font-semibold tabular-nums" style={{ color: COR_TOM[t] }}>{fmtPct(p.taxa)} <span className="font-normal text-[var(--color-fg-subtle)]">{p.nfConfirmadas}/{p.nfPlanejado}</span></span>
+                <span className="shrink-0 font-semibold tabular-nums" style={{ color: COR_TOM[t] }}>{fmtPct(p.taxa)} <span className="font-normal text-[var(--color-fg-subtle)]">{p.nfConfirmadas}/{p.nfPlanejado - p.nfForaDaConta}</span></span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-[var(--color-bg-subtle)]">
                 <div className="h-full rounded-full transition-[filter] group-hover:brightness-110" style={{ width: `${Math.min(100, p.taxa ?? 0)}%`, background: COR_TOM[t] }} />
@@ -403,14 +403,21 @@ function TabelaPlacas({ placas, umDia, onPlaca }: { placas: PlacaAgg[]; umDia: b
                     <div className="max-w-[220px] truncate text-[12px] text-[var(--color-fg-muted)]">{p.motorista || '—'} · {p.destino || '—'}</div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-14 text-right font-semibold tabular-nums" style={{ color: COR_TOM[t] }}>{fmtPct(p.taxa)}</span>
-                      <span className="h-1.5 w-20 overflow-hidden rounded-full bg-[var(--color-bg-subtle)]">
-                        <span className="block h-full rounded-full" style={{ width: `${Math.min(100, p.taxa ?? 0)}%`, background: COR_TOM[t] }} />
-                      </span>
-                    </div>
+                    {p.taxa == null && p.nfForaDaConta > 0 ? (
+                      <span title="Sem rastreador ou placa trocada na escala — não entra na taxa" className="inline-flex rounded-full bg-[var(--color-bg-subtle)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--color-fg-muted)]">fora da conta</span>
+                    ) : (
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-14 text-right font-semibold tabular-nums" style={{ color: COR_TOM[t] }}>{fmtPct(p.taxa)}</span>
+                        <span className="h-1.5 w-20 overflow-hidden rounded-full bg-[var(--color-bg-subtle)]">
+                          <span className="block h-full rounded-full" style={{ width: `${Math.min(100, p.taxa ?? 0)}%`, background: COR_TOM[t] }} />
+                        </span>
+                      </div>
+                    )}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums">{fmtInt(p.nfConfirmadas)}<span className="text-[var(--color-fg-subtle)]">/{fmtInt(p.nfPlanejado)}</span></td>
+                  <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
+                    {fmtInt(p.nfConfirmadas)}<span className="text-[var(--color-fg-subtle)]">/{fmtInt(p.nfPlanejado - p.nfForaDaConta)}</span>
+                    {p.nfForaDaConta > 0 && <span className="ml-1 text-[11px] text-[var(--color-fg-subtle)]">+{p.nfForaDaConta} fora</span>}
+                  </td>
                   {!umDia && <td className="px-4 py-3 text-right tabular-nums">{p.dias}</td>}
                   <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">{fmtKm(p.km)}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{fmtDur(p.operacaoMedia)}</td>
