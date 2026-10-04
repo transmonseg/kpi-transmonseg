@@ -1046,6 +1046,22 @@ describe('gerador-xlsx -- rodizio sem coluna dedicada (ajuste 26/09: PLACA EXECU
     ])
   })
 
+  it('aba Auditoria tem uma linha por NF com status final e regra/evidencia (pedido Ana 03/10)', async () => {
+    const linhas = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
+    const detalhe: LinhaDetalheEntrega[] = [
+      detalheFixture({ nf: 'NF1', status: 'confirmado_gps', observacao: null, motivo: 'Parada de 5 min a 40 m do cadastro Unitrac', distParadaM: 40, tempoParadaMin: 5 }),
+      detalheFixture({ nf: 'NF2', observacao: 'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR', motivo: 'Passou no endereço sem parar' }),
+    ]
+    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-10-02', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    const ws = wb.getWorksheet('Auditoria')!
+    expect((ws.getRow(1).values as unknown[]).slice(1)).toEqual(['CARGA', 'PLACA', 'NF', 'CLIENTE', 'STATUS FINAL', 'REGRA / EVIDÊNCIA', 'DISTÂNCIA DA PARADA (m)', 'TEMPO PARADO', 'CONFERÊNCIA DA OPERAÇÃO'])
+    expect(ws.rowCount).toBe(3)
+    expect(String(ws.getRow(2).getCell(6).value)).toBe('Parada de 5 min a 40 m do cadastro Unitrac')
+    expect(ws.getRow(2).getCell(7).value).toBe(40)
+  })
+
   it('placa da escala divergente com resolucao manual volta pra taxa apos conferencia', async () => {
     const linhas = [linhaKpi({ carga: 'C001', placa: 'ABC1234' })]
     const detalhe: LinhaDetalheEntrega[] = [

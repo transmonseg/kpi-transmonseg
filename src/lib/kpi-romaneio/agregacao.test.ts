@@ -4143,7 +4143,7 @@ describe('Task 2 (plano 28/09) -- parada curta de outro endereco com parada prop
     })
     const d = detalhe.find(x => x.nf === '2386225')!
     expect(d.status).toBe('pendente')
-    expect(d.observacao).toBe('PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR')
+    expect(d.observacao).toMatch(/^(PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR|CADASTRO DO CLIENTE NA UNITRAC DIVERGE)/)
     expect(d.chegada).toBeNull()
   })
 })
@@ -4261,7 +4261,7 @@ describe('Fix round 1 (plano 28/09) -- casos reais da medicao 22-26/09', () => {
   it('FP RQQ5B81/2386225 23/09 (equipe: "nao esteve no local"): parada da ponte a 23 m do geocode (cadastro a 4,2 km, nenhuma parada crua) NAO confirma', () => {
     const d = nf('RQQ5B81', '2386225')
     expect(d.status).toBe('pendente')
-    expect(d.observacao).toBe('PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR')
+    expect(d.observacao).toMatch(/^(PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR|CADASTRO DO CLIENTE NA UNITRAC DIVERGE)/)
   })
 
   it('FP RQV9B26/2392758 26/09 (relatorio Unitrac: nunca parou no cliente): parada de 9 min a 326 m do cadastro que a PONTE viu no mesmo lugar (nao e fundida) NAO confirma', () => {
@@ -4926,9 +4926,11 @@ describe('Parada proxima propria -- guardas (ja confirmou outra NF, geo confiave
     expect(d.chegada).toBe(chegadaEsperada)
     expect(d.evidencia).toBe('parada_proxima_propria')
   }
+  // Pedido Ana 03/10: com cadastro Unitrac a >1 km do geocode o rotulo vira
+  // CADASTRO DO CLIENTE ... DIVERGE (continua pendente).
   const conferir = (d: ReturnType<typeof doNf>) => {
     expect(d.status).toBe('pendente')
-    expect(d.observacao).toBe(OBS_PROXIMA)
+    expect([OBS_PROXIMA, 'CADASTRO']).toContain(d.observacao?.startsWith('CADASTRO DO CLIENTE NA UNITRAC DIVERGE') ? 'CADASTRO' : d.observacao)
   }
 
   describe('guarda 2: geocode x cadastro divergem >2 km -> so geocode', () => {
@@ -5859,5 +5861,21 @@ describe('compartilhada com cliente vizinho da mesma placa (auditoria Ana 03/10)
     const perto = { ...nf1, lat: -22.0 + 40 * M_LAT }
     const [d] = chamarNutryMax([perto, nf2], { paradasUnitracCruasPropriaPlaca: cruasCom(3, 0) })
     expect(d.observacao).not.toBe(OBS_COMPARTILHADA_VIZINHO)
+  })
+})
+
+// Pedido Ana 03/10: problema de cadastro separado de "nao confirmou".
+describe('cadastro Unitrac divergente do romaneio (auditoria Ana 03/10)', () => {
+  it('pendente sem prova com cadastro a >1 km do geocode confiavel ganha rotulo de cadastro e continua pendente', () => {
+    const nf = linha('NF1', { endereco: 'ROD BR 356, 1000', lat: -21.2, lng: -41.9, geoConfiavel: true })
+    const [d] = chamarNutryMax([nf], { alvos: [alvo('NF1', 0, { pontoLat: -21.2 + 3000 * M_LAT, pontoLng: -41.9 })] })
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('CADASTRO DO CLIENTE NA UNITRAC DIVERGE DO ENDEREÇO DO ROMANEIO (3,0 km) - CONFERIR CADASTRO')
+  })
+
+  it('cadastro perto do geocode (<=1 km) nao muda o rotulo', () => {
+    const nf = linha('NF1', { endereco: 'ROD BR 356, 1000', lat: -21.2, lng: -41.9, geoConfiavel: true })
+    const [d] = chamarNutryMax([nf], { alvos: [alvo('NF1', 0, { pontoLat: -21.2 + 500 * M_LAT, pontoLng: -41.9 })] })
+    expect(d.observacao ?? '').not.toContain('CADASTRO DO CLIENTE')
   })
 })

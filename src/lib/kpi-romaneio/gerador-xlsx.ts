@@ -375,6 +375,14 @@ function avisosDeFrota(detalhe: LinhaDetalheEntrega[]): { carga: string; placa: 
     if (g.semRastreador > 0) out.push({ carga: g.carga, placa: g.placa, texto: `veículo sem rastreamento no dia -- ${g.semRastreador} NF(s) fora da taxa (conferir equipamento/placa da escala)` })
     if (g.escalaDivergente > 0) out.push({ carga: g.carga, placa: g.placa, texto: `placa da escala não passou nos clientes -- ${g.escalaDivergente} NF(s) fora da taxa (substituição de veículo não informada?)` })
   }
+  // Pedido da Ana 03/10: cadastro do cliente divergente do romaneio vira
+  // lista pra correcao (uma linha por NF, com o cliente).
+  for (const d of detalhe) {
+    if (d.status === 'pendente' && d.observacao?.startsWith('CADASTRO DO CLIENTE NA UNITRAC DIVERGE')) {
+      const km = d.observacao.match(/\(([^)]+ km)\)/)?.[1] ?? ''
+      out.push({ carga: d.carga, placa: d.placa, texto: `NF ${d.nf} ${d.clienteNome}: cadastro na Unitrac a ${km} do endereço do romaneio -- corrigir cadastro` })
+    }
+  }
   return out.sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
 }
 
@@ -840,6 +848,25 @@ export async function gerarKpiRomaneioXlsx(
   // rastreador na escala" -- uma linha por carga+placa com NFs fora da taxa
   // por falta de rastreamento ou por placa da escala divergente (substituicao
   // nao informada), so' quando ha' `detalhe` (Nutry Max).
+  // Pedido da Ana 03/10: "historico de auditoria contendo status original,
+  // regra utilizada para validacao, evidencia encontrada e status final da
+  // NF". Uma linha por NF com a regra/evidencia que decidiu (motivo),
+  // distancia da parada usada e a resolucao manual, quando houver -- so'
+  // Nutry Max (resumoConfirmacao).
+  if (opcoes.resumoConfirmacao && detalhe.length > 0) {
+    const wsAud = wb.addWorksheet('Auditoria')
+    wsAud.addRow(['CARGA', 'PLACA', 'NF', 'CLIENTE', 'STATUS FINAL', 'REGRA / EVIDÊNCIA', 'DISTÂNCIA DA PARADA (m)', 'TEMPO PARADO', 'CONFERÊNCIA DA OPERAÇÃO'])
+    for (const d of detalhe) {
+      wsAud.addRow([
+        d.carga, d.placa, d.nf, d.clienteNome, textoStatus(d), d.motivo,
+        d.distParadaM ?? '', formatarMinutos(d.tempoParadaMin), textoResolucaoManual(d),
+      ])
+    }
+    wsAud.getRow(1).font = { name: FONTE, bold: true }
+    wsAud.columns.forEach((c, i) => { c.width = [8, 10, 10, 34, 46, 60, 14, 12, 24][i] })
+    wsAud.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1 + detalhe.length, column: 9 } }
+  }
+
   const avisosFrota = opcoes.resumoConfirmacao ? avisosDeFrota(detalhe) : []
   if (avisos.length > 0 || avisosFrota.length > 0) {
     const wsAvisos = wb.addWorksheet('Avisos')

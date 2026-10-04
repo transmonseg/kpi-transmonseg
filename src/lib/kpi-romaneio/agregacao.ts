@@ -816,6 +816,15 @@ type JanelaProvaOutraNf = { endereco: string; iniMs: number; fimMs: number }
 // placa esta' de fato a <=150 m da parada (senao a R2 ja' teria decidido).
 const RAIO_COMPARTILHADA_VIZINHO_M = 100
 const DURACAO_MAX_COMPARTILHADA_VIZINHO_MIN = 60
+export const PREFIXO_OBS_CADASTRO_DIVERGENTE = 'CADASTRO DO CLIENTE NA UNITRAC DIVERGE DO ENDEREÇO DO ROMANEIO'
+const DIVERGENCIA_CADASTRO_ROMANEIO_M = 1_000
+const ROTULOS_SEM_PROVA_CADASTRO = new Set<string>([
+  'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR',
+  'NÃO FOI AO CLIENTE (caminhão não esteve na região)',
+  'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR',
+  'PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR',
+  '',
+])
 export const OBS_COMPARTILHADA_VIZINHO = 'ENTREGUE - PARADA COMPARTILHADA COM CLIENTE VIZINHO DA MESMA PLACA'
 
 function acharParadaCompartilhadaComVizinho(
@@ -1251,6 +1260,7 @@ export function gerarMotivo(d: {
   if (obs?.startsWith(OBS_NAO_SAIU_DA_BASE)) return 'Veículo não saiu da base no dia'
   if (obs?.startsWith('VEÍCULO SEM MOVIMENTO')) return 'Veículo sem movimento no dia — conferir rastreador'
   if (obs?.startsWith('PLACA DA ESCALA NÃO PASSOU')) return 'Placa da escala não passou no cliente — conferir escala'
+  if (obs?.startsWith(PREFIXO_OBS_CADASTRO_DIVERGENTE)) return 'Cadastro do cliente na Unitrac diverge do endereço do romaneio — corrigir cadastro'
   if (obs?.startsWith('SINAL DO RASTREADOR COM FALHA')) return 'Sinal do rastreador com falha no dia — conferir'
   if (obs?.startsWith('PLACA COM DUAS CARGAS')) return 'Placa com duas cargas em regiões diferentes — conferir programação'
   if (obs?.startsWith('PARADA CURTA DE OUTRO ENDEREÇO')) {
@@ -2542,6 +2552,22 @@ export function montarDetalheEntregas(
       }
     } else {
       evidencia = 'sem_evidencia'
+    }
+
+    // Pedido da Ana 03/10 ("COORDENADA INCORRETA: separar como problema
+    // cadastral, e nao simplesmente como entrega nao confirmada"; 6 das 9 NFs
+    // de ERROS_CADASTRO 02/10 tinham o cadastro Unitrac a >1 km do endereco
+    // do romaneio). Pendente sem prova com geocode confiavel e cadastro
+    // divergente ganha rotulo proprio -- continua pendente e na taxa, so' o
+    // diagnostico muda (vai pra aba Avisos pra corrigirem o cadastro).
+    if (modoPrecisao && status === 'pendente' && ROTULOS_SEM_PROVA_CADASTRO.has(observacao ?? '')) {
+      const cad = cadastroDoAlvo(alvo)
+      if (cad && geoConfiavel && linha.lat != null && linha.lng != null) {
+        const dist = haversine(linha.lat, linha.lng, cad.lat, cad.lng)
+        if (dist > DIVERGENCIA_CADASTRO_ROMANEIO_M) {
+          observacao = `${PREFIXO_OBS_CADASTRO_DIVERGENTE} (${(dist / 1000).toFixed(1).replace('.', ',')} km) - CONFERIR CADASTRO`
+        }
+      }
     }
 
     // Task 1 (plano 26/09) + mudanca de regra 26/09 (decisao do usuario):
