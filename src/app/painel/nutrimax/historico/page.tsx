@@ -13,7 +13,6 @@ type GeracaoRow = {
   escala_storage_path: string | null
   romaneio_storage_path: string | null
   arquivo_storage_path: string | null
-  resumo: { taxa: number | null; aguardando?: number } | null
 }
 
 const PER_PAGE = 30
@@ -30,7 +29,7 @@ export default async function NutrimaxHistoricoPage() {
   const svc = createServiceClient()
   const { data: rows, error } = await svc
     .from('kpi_romaneio_geracoes')
-    .select('id, data_referencia, gerado_em, gerado_por, qtd_cargas, escala_storage_path, romaneio_storage_path, arquivo_storage_path, resumo')
+    .select('id, data_referencia, gerado_em, gerado_por, qtd_cargas, escala_storage_path, romaneio_storage_path, arquivo_storage_path')
     .eq('cliente', 'nutrimax')
     .order('gerado_em', { ascending: false })
     .limit(PER_PAGE)
@@ -40,26 +39,34 @@ export default async function NutrimaxHistoricoPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1000px]">
-      <header className="mb-8">
-        <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.022em] text-[var(--color-fg)] sm:text-[34px]">Histórico</h1>
-        <p className="mt-1.5 max-w-[60ch] text-[15px] text-[var(--color-fg-muted)]">
-          Cada KPI gerado da Nutry Max: quem gerou, quando e o resultado. Baixe a planilha salva ou regere com as correções mais recentes.
+      <header className="mb-10 flex flex-col gap-1.5">
+        <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
+          <ClockCounterClockwise size={11} weight="bold" className="inline mr-1" />
+          Nutry Max · Histórico
+        </span>
+        <h1 className="text-display text-[36px] leading-[1.02] tracking-[-0.025em] text-[var(--color-fg)] md:text-[44px]">
+          Gerações salvas
+        </h1>
+        <p className="mt-1 max-w-[55ch] text-[14px] leading-relaxed text-[var(--color-fg-muted)]">
+          Registro de auditoria — quem gerou, quando e quantas cargas. A partir de 01/09 os PDFs
+          originais (Escala + Romaneio) ficam guardados: use &quot;Regerar&quot; pra rodar o KPI de novo
+          com qualquer correção aplicada desde a geração. Geração anterior a essa data não guardou
+          os PDFs — baixe de novo gerando o KPI do mesmo dia se precisar.
         </p>
       </header>
 
       {geracoes.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft px-6 py-16 text-center">
+        <div className="flex flex-col items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-6 py-16 text-center">
           <FileMagnifyingGlass size={28} weight="bold" className="text-[var(--color-fg-subtle)]" />
           <p className="text-[14px] text-[var(--color-fg-muted)]">Nenhuma geração registrada ainda.</p>
         </div>
       ) : (
-        <div data-tour="hist-tabela" className="overflow-x-auto rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft">
+        <div className="overflow-x-auto border-y border-[var(--color-border)]">
           <table className="w-full text-[13px]">
             <thead>
               <tr className="text-left">
                 <Th>Data</Th>
                 <Th align="right">Cargas</Th>
-                <Th align="right">Taxa</Th>
                 <Th>Gerado por</Th>
                 <Th>Gerado em</Th>
                 <Th align="right">Ação</Th>
@@ -67,25 +74,13 @@ export default async function NutrimaxHistoricoPage() {
             </thead>
             <tbody>
               {geracoes.map(g => (
-                <tr key={g.id} className="border-t border-[var(--color-border)] u-motion hover:bg-[var(--color-bg-subtle)]">
+                <tr key={g.id} className="border-t border-[var(--color-border)]">
                   <Td>
                     <span className="font-medium text-[var(--color-fg)]">{formatarData(g.data_referencia)}</span>
-                    
+                    <span className="ml-2 text-numeric text-[11px] text-[var(--color-fg-subtle)]">{g.data_referencia}</span>
                   </Td>
                   <Td align="right">
                     <span className="text-numeric text-[14px] font-medium text-[var(--color-fg)]">{g.qtd_cargas}</span>
-                  </Td>
-                  <Td align="right">
-                    {g.resumo?.taxa != null ? (
-                      <span className="inline-flex items-center justify-end gap-1.5">
-                        {g.resumo.aguardando ? (
-                          <span className="rounded-full bg-[var(--color-warning-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-warning)]">Parcial</span>
-                        ) : (
-                          <span className={`size-2 rounded-full ${g.resumo.taxa >= 95 ? 'bg-[var(--color-success)]' : 'bg-[var(--color-warning)]'}`} />
-                        )}
-                        <span className="num text-[14px] font-semibold text-[var(--color-fg)]">{g.resumo.taxa.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%</span>
-                      </span>
-                    ) : <span className="text-[var(--color-fg-subtle)]">—</span>}
                   </Td>
                   <Td>{g.gerado_por ?? '—'}</Td>
                   <Td>
@@ -113,7 +108,7 @@ export default async function NutrimaxHistoricoPage() {
 
 function Th({ children, align = 'left' }: { children: React.ReactNode; align?: 'left' | 'right' }) {
   return (
-    <th className={`px-4 py-3 text-[13px] font-medium text-[var(--color-fg-muted)] ${align === 'right' ? 'text-right' : ''}`}>
+    <th className={`px-4 py-3 text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--color-fg-subtle)] ${align === 'right' ? 'text-right' : ''}`}>
       {children}
     </th>
   )

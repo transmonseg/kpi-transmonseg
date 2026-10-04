@@ -30,8 +30,8 @@ export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(function Badge(
     <span
       ref={ref}
       className={cn(
-        // Skill: pill shape, micro tracking 0.05em pra parecer editorial
-        'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-medium leading-4 tracking-[0.05em]',
+        // Skill: pill shape, micro uppercase tracking 0.05em pra parecer editorial
+        'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-medium uppercase leading-4 tracking-[0.05em]',
         VARIANTS[variant],
         className,
       )}

@@ -55,7 +55,7 @@ export default async function ConvitePage({
           <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-navy-700)] text-[16px] font-semibold tracking-tight text-white">
             T
           </span>
-          <span className="mt-6 text-[10px] font-medium tracking-[0.2em] text-[var(--color-fg-subtle)]">
+          <span className="mt-6 text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--color-fg-subtle)]">
             Convite
           </span>
           <h1 className="mt-3 text-[28px] font-semibold leading-tight tracking-[-0.025em] text-[var(--color-fg)] md:text-[32px]">

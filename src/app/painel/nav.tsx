@@ -1,61 +1,54 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
 import {
-  ChartPieSlice,
+  ChartBar,
   ForkKnife,
+  TableIcon,
   UsersThree,
+  Storefront,
   ClockCounterClockwise,
   ClipboardText,
   CaretRight,
-  Lock,
-  FileArrowUp,
-  Truck,
-  Snowflake,
-  Package,
-  Buildings,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
-import { SPRING_UI } from '@/lib/motion'
 
 type Leaf = { href: string; label: string; Icon: PhosphorIcon; exact?: boolean }
-type Group = { label: string; Icon: PhosphorIcon; children: Leaf[]; bloqueado?: boolean }
+type Group = { label: string; Icon: PhosphorIcon; href?: string; children: Leaf[] }
 type Papel = 'admin' | 'gerente' | 'visualizador'
 
-const DASHBOARD: Leaf = { href: '/painel', label: 'Dashboard', Icon: ChartPieSlice, exact: true }
+const DASHBOARD: Leaf = { href: '/painel', label: 'Dashboard', Icon: ChartBar }
 const USUARIOS: Leaf = { href: '/painel/usuarios', label: 'Usuários', Icon: UsersThree }
+const VER_KPIS: Leaf = { href: '/painel/kpi/visualizar', label: 'Ver KPIs', Icon: ClockCounterClockwise }
 
-// Benassi saiu da operação (pedido do usuário 04/10/2026): fica no menu com
-// cadeado, sem clique. As rotas continuam no código, bloqueadas no middleware.
-const GRUPO_BENASSI: Group = { label: 'Benassi', Icon: Buildings, children: [], bloqueado: true }
+const GRUPO_BENASSI: Group = {
+  label: 'Benassi',
+  Icon: TableIcon,
+  children: [
+    { href: '/painel/kpi/simples', label: 'Gerar KPI', Icon: TableIcon },
+    { href: '/painel/dashboard/beta', label: 'Dashboard (API Beta)', Icon: ChartBar },
+    { href: '/painel/historico', label: 'Histórico', Icon: ClockCounterClockwise },
+    { href: '/painel/lojas', label: 'Lojas', Icon: Storefront },
+  ],
+}
 
 const GRUPO_NUTRIMAX: Group = {
   label: 'Nutry Max',
-  Icon: Truck,
+  Icon: TableIcon,
   children: [
-    { href: '/painel/nutrimax/gerar', label: 'Gerar KPI', Icon: FileArrowUp },
+    { href: '/painel/nutrimax/gerar', label: 'Gerar KPI', Icon: TableIcon },
     { href: '/painel/nutrimax/historico', label: 'Histórico', Icon: ClockCounterClockwise },
   ],
 }
 
 const GRUPO_PORTEFRIO: Group = {
   label: 'Portefrio',
-  Icon: Snowflake,
+  Icon: TableIcon,
   children: [
-    { href: '/painel/portefrio/gerar', label: 'Gerar KPI', Icon: FileArrowUp },
+    { href: '/painel/portefrio/gerar', label: 'Gerar KPI', Icon: TableIcon },
     { href: '/painel/portefrio/historico', label: 'Histórico', Icon: ClockCounterClockwise },
-  ],
-}
-
-const GRUPO_RIOQUALITY: Group = {
-  label: 'Rio Quality',
-  Icon: Package,
-  children: [
-    { href: '/painel/rioquality/gerar', label: 'Gerar KPI', Icon: FileArrowUp },
-    { href: '/painel/rioquality/historico', label: 'Histórico', Icon: ClockCounterClockwise },
   ],
 }
 
@@ -63,8 +56,17 @@ const GRUPO_COZINHA: Group = {
   label: 'Cozinha',
   Icon: ForkKnife,
   children: [
-    { href: '/painel/cozinha', label: 'Gerar romaneio', Icon: ClipboardText, exact: true },
+    { href: '/painel/cozinha', label: 'Gerar Romaneio', Icon: ClipboardText, exact: true },
     { href: '/painel/cozinha/clientes', label: 'Clientes', Icon: UsersThree },
+  ],
+}
+
+const GRUPO_RIOQUALITY: Group = {
+  label: 'Rio Quality',
+  Icon: TableIcon,
+  children: [
+    { href: '/painel/rioquality/gerar', label: 'Gerar KPI', Icon: TableIcon },
+    { href: '/painel/rioquality/historico', label: 'Histórico', Icon: ClockCounterClockwise },
   ],
 }
 
@@ -76,118 +78,107 @@ function leafActive(pathname: string, href: string, exact?: boolean) {
 }
 
 function groupHasActive(pathname: string, g: Group) {
+  if (g.href && pathname === g.href) return true
   return g.children.some(c => leafActive(pathname, c.href, c.exact))
 }
 
-// Pílula branca translúcida que desliza entre os itens (layoutId único).
-function PilulaAtiva() {
-  return (
-    <motion.span
-      layoutId="nav-pilula"
-      transition={SPRING_UI}
-      className="absolute inset-0 rounded-[10px] bg-[var(--color-sidebar-active)]"
-    />
-  )
-}
-
-const ITEM =
-  'group relative flex items-center gap-2.5 rounded-[10px] py-[7px] text-[14px] font-medium u-motion u-press outline-none'
+const ITEM_BASE =
+  'group relative flex items-center gap-2.5 rounded-lg py-2 text-[13px] font-medium ' +
+  'transition-[background-color,color] duration-150 active:scale-[0.98]'
 
 function LeafLink({ item, active, nested }: { item: Leaf; active: boolean; nested?: boolean }) {
   const { Icon } = item
   return (
     <Link
       href={item.href}
-      data-tour={`nav-${item.href}`}
-      aria-current={active ? 'page' : undefined}
       className={
-        ITEM + ' ' + (nested ? 'pl-[38px] pr-2.5 ' : 'px-2.5 ') +
+        ITEM_BASE + ' ' + (nested ? 'pl-9 pr-2.5 ' : 'px-2.5 ') +
         (active
-          ? 'text-[var(--color-sidebar-fg-strong)]'
+          ? 'bg-[var(--color-sidebar-active)] text-[var(--color-sidebar-fg-strong)]'
           : 'text-[var(--color-sidebar-fg-muted)] hover:bg-[var(--color-sidebar-hover)] hover:text-[var(--color-sidebar-fg)]')
       }
     >
-      {active && <PilulaAtiva />}
-      {!nested && <Icon size={18} weight={active ? 'fill' : 'regular'} className="relative shrink-0" />}
-      <span className="relative truncate">{item.label}</span>
+      {active && (
+        <span
+          aria-hidden
+          className="absolute -left-2 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full bg-[var(--color-sidebar-accent)]"
+        />
+      )}
+      <Icon
+        size={16}
+        weight={active ? 'fill' : 'regular'}
+        className={active ? 'text-[var(--color-sidebar-accent)]' : 'text-[var(--color-sidebar-fg-muted)] group-hover:text-[var(--color-sidebar-fg)]'}
+      />
+      <span>{item.label}</span>
     </Link>
   )
 }
 
 function GroupBlock({ group, pathname }: { group: Group; pathname: string }) {
+  const router = useRouter()
   const ativo = groupHasActive(pathname, group)
   const [open, setOpen] = useState(ativo)
   const { Icon } = group
-
-  if (group.bloqueado) {
-    return (
-      <div
-        aria-disabled
-        title={`${group.label} — desativada`}
-        className={ITEM + ' cursor-not-allowed px-2.5 text-[var(--color-sidebar-fg-muted)] opacity-55'}
-      >
-        <Icon size={18} className="shrink-0" />
-        <span className="flex-1 truncate">{group.label}</span>
-        <Lock size={14} weight="fill" className="shrink-0" />
-      </div>
-    )
-  }
+  const headerAtivo = !!group.href && pathname === group.href
 
   return (
     <div>
       <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        aria-expanded={open}
-        data-tour={`grupo-${group.label}`}
+        onClick={() => {
+          if (group.href) { router.push(group.href); setOpen(true) }
+          else setOpen(o => !o)
+        }}
         className={
-          ITEM + ' w-full px-2.5 ' +
-          (ativo ? 'text-[var(--color-sidebar-fg-strong)]' : 'text-[var(--color-sidebar-fg)] hover:bg-[var(--color-sidebar-hover)]')
+          'group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium ' +
+          'transition-[background-color,color] duration-150 active:scale-[0.98] ' +
+          (headerAtivo
+            ? 'bg-[var(--color-sidebar-active)] text-[var(--color-sidebar-fg-strong)]'
+            : 'text-[var(--color-sidebar-fg)] hover:bg-[var(--color-sidebar-hover)]')
         }
       >
-        <Icon size={18} weight={ativo ? 'fill' : 'regular'} className="shrink-0" />
-        <span className="flex-1 truncate text-left">{group.label}</span>
+        <Icon
+          size={16}
+          weight={headerAtivo ? 'fill' : 'regular'}
+          className={headerAtivo ? 'text-[var(--color-sidebar-accent)]' : 'text-[var(--color-sidebar-fg-muted)] group-hover:text-[var(--color-sidebar-fg)]'}
+        />
+        <span className="flex-1 text-left">{group.label}</span>
         <CaretRight
-          size={12}
+          size={13}
           weight="bold"
-          className={'shrink-0 text-[var(--color-sidebar-fg-muted)] transition-transform duration-300 ' + (open ? 'rotate-90' : '')}
+          className={'text-[var(--color-sidebar-fg-muted)] transition-transform duration-200 ' + (open ? 'rotate-90' : '')}
         />
       </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            key="filhos"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={SPRING_UI}
-            className="overflow-hidden"
-          >
-            <div className="flex flex-col gap-0.5 pb-1 pt-0.5">
-              {group.children.map(c => (
-                <LeafLink key={c.href} item={c} active={leafActive(pathname, c.href, c.exact)} nested />
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+      <div
+        className="grid transition-[grid-template-rows] duration-200 ease-out"
+        style={{ gridTemplateRows: open ? '1fr' : '0fr' }}
+      >
+        <div className="overflow-hidden">
+          <div className="mt-px flex flex-col gap-px pt-px">
+            {group.children.map(c => (
+              <LeafLink key={c.href} item={c} active={leafActive(pathname, c.href, c.exact)} nested />
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
 
-function Secao({ children }: { children: React.ReactNode }) {
-  return <div className="px-2.5 pb-1 pt-4 text-[12px] font-semibold text-[var(--color-sidebar-fg-muted)]">{children}</div>
-}
-
-export function PainelNav({ papel }: { papel: Papel; empresas: string[] }) {
+export function PainelNav({ papel, empresas }: { papel: Papel; empresas: string[] }) {
   const pathname = usePathname()
 
-  // Login restrito (gerente/visualizador): Dashboard e, pro gerente, Usuários
-  // (convidar visualizadores). Gerar/editar KPI e Cozinha ficam só pro admin.
+  // Login restrito (gerente/visualizador): Dashboard, Ver KPIs (só se a empresa
+  // Benassi estiver liberada — read-only, já filtrado pelas redes do perfil) e
+  // Usuários pro gerente (convidar visualizadores). Sem acesso ao resto
+  // (gerar/editar KPI, Cozinha etc).
   if (papel !== 'admin') {
     return (
-      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-3">
-        <LeafLink item={DASHBOARD} active={leafActive(pathname, DASHBOARD.href, true)} />
+      <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
+        <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
+        {empresas.includes('benassi') && (
+          <LeafLink item={VER_KPIS} active={pathname.startsWith('/painel/kpi/visualizar')} />
+        )}
         {papel === 'gerente' && (
           <LeafLink item={USUARIOS} active={pathname.startsWith('/painel/usuarios')} />
         )}
@@ -196,16 +187,19 @@ export function PainelNav({ papel }: { papel: Papel; empresas: string[] }) {
   }
 
   return (
-    <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-3">
-      <LeafLink item={DASHBOARD} active={leafActive(pathname, DASHBOARD.href, true)} />
+    <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
+      <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
       <LeafLink item={USUARIOS} active={pathname.startsWith('/painel/usuarios')} />
 
-      <Secao>Empresas</Secao>
+      <div className="my-2 h-px bg-[var(--color-sidebar-border)]" />
+      <span className="px-2.5 pb-1 text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--color-sidebar-fg-muted)]">
+        Empresas
+      </span>
       {GRUPOS_EMPRESA.map(g => (
         <GroupBlock key={g.label} group={g} pathname={pathname} />
       ))}
 
-      <Secao>Operação</Secao>
+      <div className="my-2 h-px bg-[var(--color-sidebar-border)]" />
       <GroupBlock group={GRUPO_COZINHA} pathname={pathname} />
     </nav>
   )

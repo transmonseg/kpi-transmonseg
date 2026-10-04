@@ -41,7 +41,7 @@ export default function ResumoOperacao({ r }: { r: ResumoOperacaoData }) {
         {/* Última geração */}
         <Link
           href="/painel/historico"
-          className="group flex flex-col justify-between rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft p-5 sm:p-6 shadow-soft transition-[background-color,border-color,transform] duration-200 active:scale-[0.98] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-hover)] lg:col-span-4"
+          className="group flex flex-col justify-between rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5 sm:p-6 shadow-soft transition-[background-color,border-color,transform] duration-200 active:scale-[0.98] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-hover)] lg:col-span-4"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-overline">
@@ -53,7 +53,7 @@ export default function ResumoOperacao({ r }: { r: ResumoOperacaoData }) {
             <div className="mt-4">
               <div className="flex items-baseline gap-1.5">
                 <span className="text-display text-numeric text-[30px] leading-none text-[var(--color-fg)]">{r.ultimaGeracao.totalRotas}</span>
-                <span className="text-[10px] font-medium tracking-[0.1em] text-[var(--color-fg-muted)]">
+                <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-[var(--color-fg-muted)]">
                   rotas · {r.ultimaGeracao.redes} rede{r.ultimaGeracao.redes === 1 ? '' : 's'}
                 </span>
               </div>
@@ -105,7 +105,7 @@ function CoberturaSparkline({ serie }: { serie: SerieDiaria[] }) {
   const cor = ultima === null ? 'var(--color-fg-subtle)' : ultima >= 80 ? 'var(--color-success)' : ultima >= 50 ? 'var(--color-warning)' : 'var(--color-danger)'
 
   return (
-    <div className="h-full rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft p-5 sm:p-6 shadow-soft">
+    <div className="h-full rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5 sm:p-6 shadow-soft">
       <div className="mb-3 flex items-baseline justify-between gap-4">
         <span className="text-overline">Cobertura GPS · 14 dias</span>
         <div className="flex items-baseline gap-2.5">

@@ -57,25 +57,10 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Benassi saiu da operação (pedido do usuário 04/10/2026): telas travadas
-  // com cadeado no menu pra todo mundo, admin inclusive. Código e dados ficam
-  // (reversível: tirar o prefixo daqui e o `bloqueado` do grupo em nav.tsx).
-  const BENASSI_BLOQUEADO = [
-    '/painel/kpi/simples', '/painel/kpi/visualizar', '/painel/kpi/revisar',
-    '/painel/dashboard/beta', '/painel/dashboard/print', '/painel/historico',
-    '/painel/lojas', '/painel/loja', '/painel/rankings',
-  ]
-  if (user && BENASSI_BLOQUEADO.some(p => path === p || path.startsWith(p + '/'))) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/painel'
-    url.search = ''
-    return NextResponse.redirect(url)
-  }
-
   if (user && isAuthPage) {
     const url = request.nextUrl.clone()
     // Desktop cai na tela offline (Gerar KPI); site vai pro painel (dashboard).
-    url.pathname = '/painel'
+    url.pathname = process.env.DESKTOP_APP === '1' ? '/painel/kpi/simples' : '/painel'
     return NextResponse.redirect(url)
   }
 

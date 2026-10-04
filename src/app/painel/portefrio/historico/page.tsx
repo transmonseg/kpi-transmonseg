@@ -36,20 +36,27 @@ export default async function PortefrioHistoricoPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1000px]">
-      <header className="mb-8">
-        <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.022em] text-[var(--color-fg)] sm:text-[34px]">Histórico</h1>
-        <p className="mt-1.5 max-w-[60ch] text-[15px] text-[var(--color-fg-muted)]">
-          Cada KPI gerado da Portefrio: quem gerou, quando e o resultado. Baixe a planilha salva ou regere com as correções mais recentes.
+      <header className="mb-10 flex flex-col gap-1.5">
+        <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
+          <ClockCounterClockwise size={11} weight="bold" className="inline mr-1" />
+          Portefrio · Histórico
+        </span>
+        <h1 className="text-display text-[36px] leading-[1.02] tracking-[-0.025em] text-[var(--color-fg)] md:text-[44px]">
+          Gerações salvas
+        </h1>
+        <p className="mt-1 max-w-[55ch] text-[14px] leading-relaxed text-[var(--color-fg-muted)]">
+          Registro simples de auditoria — quem gerou, quando e quantos clientes. A partir de
+          01/10 o XLSX gerado fica guardado: use &quot;Baixar salvo&quot; pra reabrir o mesmo arquivo.
         </p>
       </header>
 
       {geracoes.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft px-6 py-16 text-center">
+        <div className="flex flex-col items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-6 py-16 text-center">
           <FileMagnifyingGlass size={28} weight="bold" className="text-[var(--color-fg-subtle)]" />
           <p className="text-[14px] text-[var(--color-fg-muted)]">Nenhuma geração registrada ainda.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft">
+        <div className="overflow-x-auto border-y border-[var(--color-border)]">
           <table className="w-full text-[13px]">
             <thead>
               <tr className="text-left">
@@ -62,10 +69,10 @@ export default async function PortefrioHistoricoPage() {
             </thead>
             <tbody>
               {geracoes.map(g => (
-                <tr key={g.id} className="border-t border-[var(--color-border)] u-motion hover:bg-[var(--color-bg-subtle)]">
+                <tr key={g.id} className="border-t border-[var(--color-border)]">
                   <Td>
                     <span className="font-medium text-[var(--color-fg)]">{formatarData(g.data_referencia)}</span>
-                    
+                    <span className="ml-2 text-numeric text-[11px] text-[var(--color-fg-subtle)]">{g.data_referencia}</span>
                   </Td>
                   <Td align="right">
                     <span className="text-numeric text-[14px] font-medium text-[var(--color-fg)]">{g.qtd_cargas}</span>
@@ -93,7 +100,7 @@ export default async function PortefrioHistoricoPage() {
 
 function Th({ children, align = 'left' }: { children: React.ReactNode; align?: 'left' | 'right' }) {
   return (
-    <th className={`px-4 py-3 text-[13px] font-medium text-[var(--color-fg-muted)] ${align === 'right' ? 'text-right' : ''}`}>
+    <th className={`px-4 py-3 text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--color-fg-subtle)] ${align === 'right' ? 'text-right' : ''}`}>
       {children}
     </th>
   )

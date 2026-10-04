@@ -235,19 +235,19 @@ function AlteracaoDiff({ a }: { a: AlteracaoParsed }) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-2">
-        <span className={cn('text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full', st.cls)}>{st.label}</span>
+        <span className={cn('text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full', st.cls)}>{st.label}</span>
         {(a.loja_nome_raw || a.rede_id) && (
           <span className="text-[11px] text-[var(--color-fg-subtle)] truncate">{a.loja_nome_raw ?? a.rede_id}</span>
         )}
       </div>
       {temSai && (
         <div className="flex items-baseline gap-2">
-          <span className="w-11 shrink-0 text-[13px] font-medium text-[var(--color-fg-muted)]">SAI</span>
+          <span className="w-11 shrink-0 text-[10px] font-medium text-[var(--color-fg-subtle)]">SAI</span>
           <SlotView slot={a.sai} tone="sai" />
         </div>
       )}
       <div className="flex items-baseline gap-2">
-        <span className="w-11 shrink-0 text-[13px] font-medium text-[var(--color-fg-muted)]">ENTRA</span>
+        <span className="w-11 shrink-0 text-[10px] font-medium text-[var(--color-fg-subtle)]">ENTRA</span>
         <SlotView slot={a.entra} tone="entra" hlMotorista={m.mudouMotorista} hlPlaca={m.mudouPlaca} />
         {hint && <span className="text-[10px] text-[var(--color-fg-subtle)]">({hint})</span>}
       </div>
@@ -487,7 +487,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data, escalas = [], 
         className="w-full flex items-center justify-between px-5 py-3 cursor-pointer text-left hover:bg-[var(--color-bg-hover)] transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-[var(--color-fg-muted)]">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">
             Alterações de Escala
           </span>
           {count > 0 && (
@@ -603,7 +603,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data, escalas = [], 
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 <label className="flex flex-col gap-1">
-                  <span className="text-[13px] font-semibold text-[var(--color-fg-muted)]">Tipo</span>
+                  <span className="text-[10px] uppercase font-semibold text-[var(--color-fg-subtle)]">Tipo</span>
                   <select
                     value={manualTipo}
                     onChange={e => setManualTipo(e.target.value as AlteracaoParsed['tipo'])}
@@ -617,7 +617,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data, escalas = [], 
                   </select>
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-[13px] font-semibold text-[var(--color-fg-muted)]">Rede</span>
+                  <span className="text-[10px] uppercase font-semibold text-[var(--color-fg-subtle)]">Rede</span>
                   <select
                     value={manualRede}
                     onChange={e => setManualRede(e.target.value)}
@@ -630,7 +630,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data, escalas = [], 
               </div>
 
               <label className="flex flex-col gap-1">
-                <span className="text-[13px] font-semibold text-[var(--color-fg-muted)]">Loja / Filial (opcional)</span>
+                <span className="text-[10px] uppercase font-semibold text-[var(--color-fg-subtle)]">Loja / Filial (opcional)</span>
                 <Input
                   value={manualLoja}
                   onChange={e => setManualLoja(e.target.value)}
@@ -640,7 +640,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data, escalas = [], 
               </label>
 
               <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-danger-soft)]/30 p-2 space-y-2">
-                <span className="text-[10px] font-semibold text-[var(--color-danger)]">Sai (opcional)</span>
+                <span className="text-[10px] uppercase font-semibold text-[var(--color-danger)]">Sai (opcional)</span>
                 <div className="grid grid-cols-2 gap-2">
                   <Input
                     value={manualSaiPlaca}
@@ -659,7 +659,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data, escalas = [], 
               </div>
 
               <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-success-soft)]/30 p-2 space-y-2">
-                <span className="text-[10px] font-semibold text-[var(--color-success)]">Entra (pelo menos placa OU motorista)</span>
+                <span className="text-[10px] uppercase font-semibold text-[var(--color-success)]">Entra (pelo menos placa OU motorista)</span>
                 <div className="grid grid-cols-2 gap-2">
                   <Input
                     value={manualEntraPlaca}
@@ -685,7 +685,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data, escalas = [], 
               </div>
 
               <label className="flex flex-col gap-1">
-                <span className="text-[13px] font-semibold text-[var(--color-fg-muted)]">Motivo (opcional)</span>
+                <span className="text-[10px] uppercase font-semibold text-[var(--color-fg-subtle)]">Motivo (opcional)</span>
                 <Input
                   value={manualMotivo}
                   onChange={e => setManualMotivo(e.target.value)}
@@ -715,7 +715,7 @@ function AlteracoesCard({ confirmadas, onConfirm, onRemove, data, escalas = [], 
                 <span className="text-[var(--color-fg-subtle)]"> · {resumoMudancas(previews)}</span> — confirme antes de gerar
               </p>
               {previews.map((a, i) => (
-                <div key={i} className="rounded-md bg-[var(--color-bg-elevated)] shadow-soft">
+                <div key={i} className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
                   <div className="px-3 py-2.5">
                     <AlteracaoDiff a={a} />
                     {a.motivo && (
@@ -779,7 +779,7 @@ function PlacarGeral({ redes }: { redes: RedeResult[] }) {
     { tier: 'nao_entregou' as const, n: c.naoEntregou },
   ]
   return (
-    <div className="grid grid-cols-3 divide-x divide-[var(--color-border)] overflow-hidden rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft">
+    <div className="grid grid-cols-3 divide-x divide-[var(--color-border)] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
       {metrics.map(m => {
         const st = TIER_STYLE[m.tier]
         const pct = Math.round((m.n / total) * 100)
@@ -787,7 +787,7 @@ function PlacarGeral({ redes }: { redes: RedeResult[] }) {
           <div key={m.tier} className="flex flex-col gap-1.5 px-5 py-4">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: st.dot }} />
-              <span className="text-[10px] font-semibold" style={{ color: st.dot }}>{st.label}</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: st.dot }}>{st.label}</span>
             </span>
             <span className="flex items-baseline gap-2">
               <span className="text-numeric text-[30px] font-semibold leading-none tracking-tight text-[var(--color-fg)]">{m.n}</span>
@@ -1009,7 +1009,7 @@ export default function KpiSimplesPage() {
     <div className="mx-auto w-full max-w-[1200px]">
       {/* Saudação editorial */}
       <header className="mb-10 flex flex-col gap-1.5">
-        <span className="text-[13px] font-medium text-[var(--color-fg-muted)]">
+        <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
           KPI Benassi
         </span>
         <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.02em] text-[var(--color-fg)] md:text-[34px]">
@@ -1023,7 +1023,7 @@ export default function KpiSimplesPage() {
 
       {/* Banner — quando reabrindo geração salva via ?geracao=ID */}
       {reabrindoGeracaoId && (
-        <div className="mb-6 flex items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--color-navy-700)]/30 bg-[var(--color-navy-700)]/5 px-5 py-4 animate-fade-up">
+        <div className="mb-6 flex items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-navy-700)]/30 bg-[var(--color-navy-700)]/5 px-5 py-4 animate-fade-up">
           <span className="relative flex h-2 w-2 shrink-0">
             <span className="absolute inset-0 rounded-full bg-[var(--color-navy-700)] animate-pulse-dot" />
             <span className="relative h-2 w-2 rounded-full bg-[var(--color-navy-700)]" />
@@ -1060,7 +1060,7 @@ export default function KpiSimplesPage() {
         </button>
         <div className="flex items-baseline gap-2">
           <span className="text-[13px] font-semibold text-[var(--color-fg)]">Modo API</span>
-          <span className="text-[10px] font-semibold rounded-full px-1.5 py-0.5 bg-[var(--color-info-soft)] text-[var(--color-info-soft-fg)]">Beta</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider rounded-full px-1.5 py-0.5 bg-[var(--color-info-soft)] text-[var(--color-info-soft-fg)]">Beta</span>
           <span className="text-[12px] text-[var(--color-fg-muted)]">
             {modoApi ? 'Paradas puxadas direto da API Unitrac — sem PDF necessario' : 'Ativar para gerar KPI so com a escala (sem PDF do Unitrac)'}
           </span>
@@ -1085,10 +1085,10 @@ export default function KpiSimplesPage() {
         <div className="col-span-1 flex flex-col gap-4 lg:col-span-5">
           <div data-tour="gk-unitrac">
             {modoApi ? (
-              <div className="flex flex-col gap-2 rounded-[var(--radius-lg)] border border-[var(--color-success)]/40 bg-[var(--color-success)]/5 p-5">
+              <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-success)]/40 bg-[var(--color-success)]/5 p-5">
                 <div className="flex items-center gap-2">
                   <WifiHigh size={16} weight="bold" className="text-[var(--color-success)]" />
-                  <span className="text-[11px] font-semibold text-[var(--color-success)]">API Unitrac · Passo 2 automatico</span>
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-success)]">API Unitrac · Passo 2 automatico</span>
                 </div>
                 <p className="text-[13px] text-[var(--color-fg-muted)]">
                   As paradas serao puxadas direto da API Unitrac em tempo real. Nenhum arquivo necessario.
@@ -1107,8 +1107,8 @@ export default function KpiSimplesPage() {
             )}
           </div>
 
-          <div className="flex flex-col gap-2 rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft p-5">
-            <div className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-fg-muted)]">
+          <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
+            <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
               <CalendarBlank size={12} weight="bold" />
               Passo 3 · Data de referência
             </div>
@@ -1117,8 +1117,8 @@ export default function KpiSimplesPage() {
               type="date"
               value={data}
               onChange={e => setData(e.target.value)}
-              className="mt-1 w-full bg-transparent text-[22px] font-semibold tracking-[-0.02em] num text-[var(--color-fg)] outline-none [color-scheme:light] dark:[color-scheme:dark]"
-             
+              className="mt-1 w-full bg-transparent text-[24px] font-medium tracking-tight text-[var(--color-fg)] outline-none [color-scheme:light] dark:[color-scheme:dark]"
+              style={{ fontFamily: 'var(--font-mono)' }}
             />
           </div>
         </div>
@@ -1135,7 +1135,7 @@ export default function KpiSimplesPage() {
       <div data-tour="gk-resultado">
       {/* Error inline */}
       {erro && (
-        <div className="mt-6 flex items-start gap-3 rounded-[var(--radius-lg)] border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-5 py-4">
+        <div className="mt-6 flex items-start gap-3 rounded-[var(--radius-card)] border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-5 py-4">
           <WarningCircle size={18} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-danger)]" />
           <p className="text-[13px] leading-relaxed text-[var(--color-danger-soft-fg)]">{erro}</p>
         </div>
@@ -1148,7 +1148,7 @@ export default function KpiSimplesPage() {
         onClick={processar}
         disabled={pending || !pronto}
         className={cn(
-          'group relative mt-8 flex w-full items-center justify-between gap-4 overflow-hidden rounded-[var(--radius-lg)] px-7 py-5 text-left transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.99]',
+          'group relative mt-8 flex w-full items-center justify-between gap-4 overflow-hidden rounded-[var(--radius-card)] px-7 py-5 text-left transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.99]',
           pronto && !pending
             ? 'bg-[var(--color-navy-700)] text-white shadow-soft hover:-translate-y-0.5 hover:shadow-[0_14px_34px_-10px_rgba(31,56,100,0.55)]'
             : pending
@@ -1167,7 +1167,7 @@ export default function KpiSimplesPage() {
         <div className="flex flex-col gap-1">
           <span
             className={cn(
-              'text-[11px] font-medium',
+              'text-[11px] font-medium uppercase tracking-[0.18em]',
               pronto || pending
                 ? 'text-white/60'
                 : 'text-[var(--color-fg-muted)]'
@@ -1205,7 +1205,7 @@ export default function KpiSimplesPage() {
           {[0, 1, 2].map(i => (
             <div
               key={i}
-              className="rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft p-5"
+              className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5"
               style={{ animationDelay: `${i * 120}ms` }}
             >
               <div className="flex items-center justify-between">
@@ -1228,7 +1228,7 @@ export default function KpiSimplesPage() {
 
       {/* Empty result */}
       {redes && redes.length === 0 && redesComErro.length === 0 && (
-        <div className="mt-8 flex flex-col items-center gap-3 rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft px-6 py-12 text-center">
+        <div className="mt-8 flex flex-col items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-6 py-12 text-center">
           <ChartBarHorizontal size={28} weight="bold" className="text-[var(--color-fg-subtle)]" />
           <p className="text-[14px] text-[var(--color-fg-muted)]">
             Nenhuma rede encontrada. Verifique os arquivos enviados.
@@ -1238,7 +1238,7 @@ export default function KpiSimplesPage() {
 
       {/* Todas as redes falharam — não é "sem dado", é erro de verdade */}
       {redes && redes.length === 0 && redesComErro.length > 0 && (
-        <div className="mt-8 flex items-start gap-3 rounded-[var(--radius-lg)] border-2 border-[var(--color-danger)] bg-[var(--color-danger-soft)] px-5 py-4">
+        <div className="mt-8 flex items-start gap-3 rounded-[var(--radius-card)] border-2 border-[var(--color-danger)] bg-[var(--color-danger-soft)] px-5 py-4">
           <WarningCircle size={24} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-danger)]" />
           <div className="text-sm">
             <p className="text-[15px] font-bold text-[var(--color-danger-soft-fg)]">
@@ -1271,7 +1271,7 @@ export default function KpiSimplesPage() {
                 <ul className="mt-1.5 flex flex-col gap-0.5 text-[12.5px] text-[var(--color-fg)]">
                   {lojasNovas.map(l => (
                     <li key={l.codigo} className="flex items-baseline gap-2">
-                      <span className="text-numeric font-semibold">{l.codigo}</span>
+                      <span className="text-numeric font-semibold tracking-wider">{l.codigo}</span>
                       <span className="text-[var(--color-fg-muted)]">{l.nome || '(sem nome no relatório)'}</span>
                       <span className="text-[11px] text-[var(--color-fg-subtle)]">· {l.vezes}× · ex. {l.placa}</span>
                     </li>
@@ -1281,7 +1281,7 @@ export default function KpiSimplesPage() {
             </div>
           )}
           {redesComErro.length > 0 && (
-            <div className="flex items-start gap-3 rounded-[var(--radius-lg)] border-2 border-[var(--color-danger)] bg-[var(--color-danger-soft)] px-5 py-4">
+            <div className="flex items-start gap-3 rounded-[var(--radius-card)] border-2 border-[var(--color-danger)] bg-[var(--color-danger-soft)] px-5 py-4">
               <WarningCircle size={24} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-danger)]" />
               <div className="text-sm">
                 <p className="text-[15px] font-bold text-[var(--color-danger-soft-fg)]">
@@ -1299,7 +1299,7 @@ export default function KpiSimplesPage() {
             </div>
           )}
           {avisosEscala.length > 0 && (
-            <div className="flex items-start gap-3 rounded-[var(--radius-lg)] border-2 border-[var(--color-danger)] bg-[var(--color-danger-soft)] px-5 py-4">
+            <div className="flex items-start gap-3 rounded-[var(--radius-card)] border-2 border-[var(--color-danger)] bg-[var(--color-danger-soft)] px-5 py-4">
               <WarningCircle size={24} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-danger)]" />
               <div className="text-sm">
                 <p className="text-[15px] font-bold text-[var(--color-danger-soft-fg)]">⚠ A escala pode ter sido lida errada — confira antes de mandar pro cliente</p>
@@ -1310,7 +1310,7 @@ export default function KpiSimplesPage() {
             </div>
           )}
           {redes.some(r => r.avisoParcial) && (
-            <div className="flex items-start gap-3 rounded-[var(--radius-lg)] border-2 border-[var(--color-warning)] bg-[var(--color-warning-soft)] px-5 py-4">
+            <div className="flex items-start gap-3 rounded-[var(--radius-card)] border-2 border-[var(--color-warning)] bg-[var(--color-warning-soft)] px-5 py-4">
               <WarningCircle size={24} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-warning)]" />
               <div className="text-sm">
                 <p className="text-[15px] font-bold text-[var(--color-warning-soft-fg)]">
@@ -1322,7 +1322,7 @@ export default function KpiSimplesPage() {
           )}
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex flex-col gap-1">
-              <span className="text-[13px] font-medium text-[var(--color-fg-muted)]">
+              <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
                 Pré-visualização KPI
               </span>
               <h2 className="text-[20px] font-semibold tracking-tight text-[var(--color-fg)]">
@@ -1484,7 +1484,7 @@ function RedePreviewSection({
   const [pdfMenu, setPdfMenu] = useState(false)
 
   return (
-    <div className="overflow-hidden rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft">
+    <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
       {/* Header da rede */}
       <div className="flex items-center justify-between gap-4 border-b border-[var(--color-border)] px-5 py-4">
         <div className="flex min-w-0 items-center gap-3">
@@ -1492,7 +1492,7 @@ function RedePreviewSection({
             <h3 className="truncate text-[15px] font-semibold tracking-tight text-[var(--color-fg)]">
               {rede.rede_nome}
             </h3>
-            <p className="text-[11px] font-medium tracking-[0.1em] text-[var(--color-fg-subtle)]">
+            <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--color-fg-subtle)]">
               {rede.qtd_rotas} rota{rede.qtd_rotas !== 1 ? 's' : ''} · GPS{' '}
               <span
                 className={cn(
@@ -1535,8 +1535,8 @@ function RedePreviewSection({
               <>
                 {/* backdrop pra fechar ao clicar fora */}
                 <button type="button" aria-label="Fechar" className="fixed inset-0 z-40 cursor-default" onClick={() => setXlsxMenu(false)} />
-                <div className="absolute right-0 z-50 mt-1 w-56 overflow-hidden rounded-md bg-[var(--color-bg-elevated)] shadow-soft shadow-lg">
-                  <div className="px-3 py-2 text-[13px] font-semibold text-[var(--color-fg-muted)]">Baixar planilha</div>
+                <div className="absolute right-0 z-50 mt-1 w-56 overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-lg">
+                  <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)]">Baixar planilha</div>
                   <button
                     type="button"
                     onClick={() => { downloadBase64(rede.xlsxBase64, `KPI-${rede.rede_id}-${data}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); setXlsxMenu(false) }}
@@ -1571,8 +1571,8 @@ function RedePreviewSection({
             {pdfMenu && (
               <>
                 <button type="button" aria-label="Fechar" className="fixed inset-0 z-40 cursor-default" onClick={() => setPdfMenu(false)} />
-                <div className="absolute right-0 z-50 mt-1 w-56 overflow-hidden rounded-md bg-[var(--color-bg-elevated)] shadow-soft shadow-lg">
-                  <div className="px-3 py-2 text-[13px] font-semibold text-[var(--color-fg-muted)]">Baixar PDF</div>
+                <div className="absolute right-0 z-50 mt-1 w-56 overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-lg">
+                  <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)]">Baixar PDF</div>
                   <button
                     type="button"
                     onClick={() => { downloadBase64(rede.pdfBase64, `KPI-${rede.rede_id}-${data}.pdf`, 'application/pdf'); setPdfMenu(false) }}
@@ -1625,18 +1625,18 @@ function RedePreviewSection({
         <table className="w-full text-[12.5px]">
           <thead>
             <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)]">
-              <th className="px-4 py-2.5 text-left text-[13px] font-semibold text-[var(--color-fg-muted)] w-8">#</th>
-              <th className="px-4 py-2.5 text-left text-[13px] font-semibold text-[var(--color-fg-muted)]">Loja</th>
-              <th className="px-4 py-2.5 text-left text-[13px] font-semibold text-[var(--color-fg-muted)]">Status</th>
-              <th className="px-4 py-2.5 text-left text-[13px] font-semibold text-[var(--color-fg-muted)]">Placa</th>
-              <th className="px-4 py-2.5 text-left text-[13px] font-semibold text-[var(--color-fg-muted)] hidden sm:table-cell">Motorista</th>
-              <th className="px-4 py-2.5 text-left text-[13px] font-semibold text-[var(--color-fg-muted)] hidden lg:table-cell w-20">Turno</th>
-              <th className="px-4 py-2.5 text-center text-[13px] font-semibold text-[var(--color-fg-muted)] w-14">GPS</th>
-              <th className="px-4 py-2.5 text-left text-[13px] font-semibold text-[var(--color-fg-muted)] hidden md:table-cell">Saída CD</th>
-              <th className="px-4 py-2.5 text-left text-[13px] font-semibold text-[var(--color-fg-muted)] hidden md:table-cell">Ch. Loja</th>
-              <th className="px-4 py-2.5 text-left text-[13px] font-semibold text-[var(--color-fg-muted)] hidden md:table-cell">Saída Loja</th>
-              <th className="px-4 py-2.5 text-left text-[13px] font-semibold text-[var(--color-fg-muted)] hidden md:table-cell">Chegada CD</th>
-              <th className="px-4 py-2.5 text-right text-[13px] font-semibold text-[var(--color-fg-muted)] hidden lg:table-cell w-20">Tempo</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] w-8">#</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)]">Loja</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)]">Status</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)]">Placa</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden sm:table-cell">Motorista</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden lg:table-cell w-20">Turno</th>
+              <th className="px-4 py-2.5 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] w-14">GPS</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Saída CD</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Ch. Loja</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Saída Loja</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden md:table-cell">Chegada CD</th>
+              <th className="px-4 py-2.5 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)] hidden lg:table-cell w-20">Tempo</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border)]">
@@ -1710,7 +1710,7 @@ function PreviewRow({
 
   const cellInput =
     'w-full bg-transparent text-[12px] outline-none border-b border-transparent hover:border-[var(--color-border)] focus:border-[var(--color-navy-700)] transition-colors duration-100 rounded-none placeholder:text-[var(--color-fg-subtle)]'
-  const monoCell = cellInput + ' text-numeric'
+  const monoCell = cellInput + ' text-numeric tracking-wider'
 
   // Cor da linha pelo NÍVEL DE CERTEZA real (confirmado/conferir/não entregou), não
   // pelo status cru. Sem isso, "mudou de rota"/"não saiu da base"/"desatualizado"
@@ -1873,7 +1873,7 @@ function PreviewRow({
           value={editValues.turno ?? linha.turno}
           onChange={e => onEdit({ turno: e.target.value })}
           placeholder="—"
-          className={cn(cellInput, 'w-[72px] text-[var(--color-fg-muted)]')}
+          className={cn(cellInput, 'w-[72px] text-[var(--color-fg-muted)] uppercase tracking-wider')}
         />
       </td>
       <td className="px-4 py-2 text-center">

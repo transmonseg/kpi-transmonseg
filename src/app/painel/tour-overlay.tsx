@@ -95,7 +95,7 @@ export function TourOverlay({ passo, idxGlobal, total, ehUltimoCap, ehFinal, onN
           style={{ boxShadow: '0 0 0 9999px rgba(8,10,18,0.74)' }}
         />
       ) : (
-        <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.5)' }} />
+        <div className="absolute inset-0" style={{ background: 'rgba(8,10,18,0.74)' }} />
       )}
 
       {/* Anel de destaque que respira (glow accent) */}
@@ -143,7 +143,7 @@ export function TourOverlay({ passo, idxGlobal, total, ehUltimoCap, ehFinal, onN
       <AnimatePresence mode="wait">
         <motion.div
           key={idxGlobal}
-          className="absolute z-20 rounded-[18px] bg-[var(--color-bg-elevated)] p-5 shadow-[0_20px_60px_-12px_rgba(0,0,0,0.45)]"
+          className="absolute z-20 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-4"
           style={{ left: px, top: py, width: PW, pointerEvents: 'auto', boxShadow: 'var(--shadow-diffusion)' }}
           initial={reduz ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 8 }}
           animate={reduz ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
@@ -151,7 +151,7 @@ export function TourOverlay({ passo, idxGlobal, total, ehUltimoCap, ehFinal, onN
           transition={reduz ? { duration: 0.12 } : { type: 'spring', stiffness: 320, damping: 26 }}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-semibold text-[var(--color-fg-muted)]">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-fg-subtle)]">
               Passo {idxGlobal + 1} de {total}
             </span>
             <button
@@ -159,19 +159,19 @@ export function TourOverlay({ passo, idxGlobal, total, ehUltimoCap, ehFinal, onN
               className="cursor-pointer rounded text-[13px] text-[var(--color-fg-subtle)] transition-colors hover:text-[var(--color-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/40"
             >✕</button>
           </div>
-          <h3 className="mt-2 text-[17px] font-semibold tracking-[-0.015em] text-[var(--color-fg)]">{passo.title}</h3>
-          <p className="mt-1.5 text-[14px] leading-relaxed text-[var(--color-fg-muted)]">{passo.description}</p>
+          <h3 className="mt-2 text-[15px] font-semibold tracking-[-0.01em] text-[var(--color-fg)]">{passo.title}</h3>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--color-fg-muted)]">{passo.description}</p>
 
           <div className="mt-4 flex items-center justify-between gap-3">
             <button
               onClick={onPrev} disabled={idxGlobal === 0}
-              className="cursor-pointer rounded text-[14px] font-medium text-[var(--color-fg-muted)] transition-colors hover:text-[var(--color-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/40 disabled:cursor-not-allowed disabled:opacity-35"
+              className="cursor-pointer rounded text-[12px] font-medium text-[var(--color-fg-muted)] transition-colors hover:text-[var(--color-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/40 disabled:cursor-not-allowed disabled:opacity-35"
             >
               Voltar
             </button>
             <button
               onClick={onNext}
-              className="cursor-pointer rounded-full bg-[var(--color-navy-700)] px-4 py-2 text-[14px] font-semibold text-white transition-[transform,background-color] duration-200 hover:bg-[var(--color-navy-800)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/50 active:scale-[0.96]"
+              className="cursor-pointer rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 py-1.5 text-[12px] font-semibold text-[var(--color-accent-fg)] shadow-soft transition-[transform,opacity] duration-150 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/50 active:scale-[0.96]"
             >
               {ehFinal ? 'Concluir' : ehUltimoCap ? 'Próxima tela →' : 'Próximo'}
             </button>
@@ -179,7 +179,7 @@ export function TourOverlay({ passo, idxGlobal, total, ehUltimoCap, ehFinal, onN
 
           <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-[var(--color-bg-subtle)]">
             <motion.div
-              className="h-full rounded-full bg-[var(--color-navy-700)]"
+              className="h-full rounded-full bg-[var(--color-accent)]"
               initial={false}
               animate={{ width: `${((idxGlobal + 1) / total) * 100}%` }}
               transition={reduz ? { duration: 0 } : { type: 'spring', stiffness: 200, damping: 30 }}

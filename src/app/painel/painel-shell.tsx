@@ -53,7 +53,7 @@ export function PainelShell({ userEmail, papel, empresas, sairAction, children }
 
       {/* Desktop sidebar — always dark, regardless of app theme. */}
       <aside
-        className="sidebar-navy sticky top-0 hidden h-[100dvh] w-[232px] shrink-0 flex-col md:flex"
+        className="sticky top-0 hidden h-[100dvh] w-[196px] shrink-0 flex-col border-r border-white/[0.06] bg-[#0a0a0a] md:flex"
         style={{ colorScheme: 'dark' }}
       >
         <SidebarBrand />
@@ -73,7 +73,7 @@ export function PainelShell({ userEmail, papel, empresas, sairAction, children }
         <div
           onClick={() => setOpen(false)}
           className={
-            'absolute inset-0 bg-black/40 backdrop-blur-[3px] transition-opacity duration-300 ' +
+            'absolute inset-0 bg-black/50 backdrop-blur-[2px] transition-opacity duration-200 ' +
             (open ? 'opacity-100' : 'opacity-0')
           }
         />
@@ -84,7 +84,7 @@ export function PainelShell({ userEmail, papel, empresas, sairAction, children }
           aria-label="Menu de navegação"
           style={{ colorScheme: 'dark' }}
           className={
-            'sidebar-navy absolute left-0 top-0 flex h-full w-[272px] max-w-[84vw] flex-col shadow-2xl transition-transform duration-[400ms] ease-[cubic-bezier(0.32,0.72,0,1)] ' +
+            'absolute left-0 top-0 flex h-full w-[260px] max-w-[80vw] flex-col border-r border-white/[0.06] bg-[#0a0a0a] shadow-2xl transition-transform duration-200 ease-out ' +
             (open ? 'translate-x-0' : '-translate-x-full')
           }
         >
@@ -96,14 +96,14 @@ export function PainelShell({ userEmail, papel, empresas, sairAction, children }
 
       {/* Main column. */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex h-[52px] items-center justify-between border-b border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-bg)_78%,transparent)] px-4 backdrop-blur-xl backdrop-saturate-150 md:px-8">
+        <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-[var(--color-bg)]/70 md:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
               onClick={() => setOpen(true)}
               aria-label="Abrir menu"
               aria-expanded={open}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg-subtle)] text-[var(--color-fg)] u-motion u-press hover:bg-[var(--color-bg-hover)] md:hidden"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-fg-muted)] transition active:scale-[0.96] hover:border-[var(--color-border-strong)] hover:text-[var(--color-fg)] md:hidden"
             >
               <List size={18} weight="bold" />
             </button>
@@ -111,16 +111,13 @@ export function PainelShell({ userEmail, papel, empresas, sairAction, children }
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <div className="hidden items-center gap-2 sm:flex">
-              <span className="inline-flex size-7 items-center justify-center rounded-full bg-[var(--color-navy-700)] text-[12px] font-semibold text-white">
-                {(userEmail ?? '?').slice(0, 1).toUpperCase()}
-              </span>
-              <span className="max-w-[220px] truncate text-[13px] text-[var(--color-fg-muted)]">{userEmail}</span>
+            <div className="hidden h-8 items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[12px] font-medium text-[var(--color-fg-muted)] sm:flex">
+              {userEmail}
             </div>
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 md:px-10 md:py-9">{children}</main>
+        <main className="flex-1 px-4 py-6 md:px-10 md:py-10">{children}</main>
       </div>
     </div>
   )
@@ -128,14 +125,22 @@ export function PainelShell({ userEmail, papel, empresas, sairAction, children }
 
 function SidebarBrand({ onCloseHint }: { onCloseHint?: () => void }) {
   return (
-    <div className="flex h-[60px] items-center justify-between px-4">
-      <Link href="/painel" className="group flex items-center gap-2.5 outline-none" onClick={onCloseHint}>
-        <span className="inline-flex size-8 items-center justify-center rounded-[9px] bg-white text-[15px] font-bold text-[#1F3864] shadow-[0_1px_2px_rgba(0,0,0,0.25)] u-motion group-active:scale-95">
+    <div className="flex h-16 items-center justify-between border-b border-white/[0.06] px-4">
+      <Link
+        href="/painel"
+        className="group flex items-center gap-3 outline-none"
+        onClick={onCloseHint}
+      >
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#1F3864] text-[12px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_1px_3px_rgba(0,0,0,0.5)] transition group-hover:bg-[#2a4773]">
           T
         </span>
-        <span className="flex flex-col leading-tight">
-          <span className="text-[15px] font-semibold tracking-[-0.01em] text-white">Transmonseg</span>
-          <span className="text-[12px] text-[var(--color-sidebar-fg-muted)]">KPI de entregas</span>
+        <span className="flex flex-col leading-none">
+          <span className="text-[14px] font-medium tracking-tight text-[var(--color-sidebar-fg-strong)]">
+            Transmonseg
+          </span>
+          <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--color-sidebar-fg-muted)]">
+            KPI
+          </span>
         </span>
       </Link>
       {onCloseHint && (
@@ -143,7 +148,7 @@ function SidebarBrand({ onCloseHint }: { onCloseHint?: () => void }) {
           type="button"
           onClick={onCloseHint}
           aria-label="Fechar menu"
-          className="inline-flex size-8 items-center justify-center rounded-full text-[var(--color-sidebar-fg-muted)] u-motion u-press hover:bg-white/10 hover:text-white md:hidden"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-sidebar-fg-muted)] transition active:scale-[0.96] hover:bg-white/[0.06] hover:text-[var(--color-sidebar-fg-strong)] md:hidden"
         >
           <X size={16} weight="bold" />
         </button>
@@ -160,19 +165,16 @@ function SidebarFooter({
   sairAction: () => void | Promise<void>
 }) {
   return (
-    <div className="mt-auto border-t border-[var(--color-sidebar-border)] p-3">
-      <div className="flex items-center gap-2.5 px-2 pb-2">
-        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-white/15 text-[13px] font-semibold text-white">
-          {(userEmail ?? '?').slice(0, 1).toUpperCase()}
-        </span>
-        <span className="min-w-0 truncate text-[13px] text-[var(--color-sidebar-fg)]">{userEmail}</span>
+    <div className="mt-auto border-t border-white/[0.06] p-3">
+      <div className="truncate px-2.5 pb-2 text-[11px] text-[var(--color-sidebar-fg-muted)]">
+        {userEmail}
       </div>
       <form action={sairAction}>
         <button
           type="submit"
-          className="flex w-full items-center gap-2.5 rounded-[10px] px-2.5 py-[7px] text-left text-[14px] font-medium text-[var(--color-sidebar-fg-muted)] u-motion u-press hover:bg-[var(--color-sidebar-hover)] hover:text-white"
+          className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium text-[var(--color-sidebar-fg-muted)] transition-all duration-150 active:scale-[0.98] hover:bg-white/[0.04] hover:text-[var(--color-sidebar-fg-strong)]"
         >
-          <SignOut size={17} />
+          <SignOut size={15} weight="bold" />
           Sair
         </button>
       </form>

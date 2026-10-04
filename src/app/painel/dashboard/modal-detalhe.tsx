@@ -215,7 +215,7 @@ export function ModalDetalhe({ tipo, m, resumo, lojaHref, onClose }: {
         <div className="mb-3 flex justify-end">
           <button
             type="button" onClick={onClose} aria-label="Fechar"
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-[var(--color-bg-elevated)] shadow-soft text-[var(--color-fg-muted)] shadow-soft transition-colors hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-fg)] active:scale-95"
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-fg-muted)] shadow-soft transition-colors hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-fg)] active:scale-95"
           >
             <X size={18} weight="bold" />
           </button>

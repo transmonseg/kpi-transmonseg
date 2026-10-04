@@ -21,13 +21,13 @@ export default function Historico({ onAbrirDia }: { onAbrirDia: (d: string) => v
   if (dias === null) {
     return (
       <div className="space-y-4">
-        {[0, 1, 2].map(i => <div key={i} className="h-[92px] animate-shimmer rounded-[var(--radius-lg)]" style={{ animationDelay: `${i * 80}ms` }} />)}
+        {[0, 1, 2].map(i => <div key={i} className="h-[92px] animate-shimmer rounded-[var(--radius-card)]" style={{ animationDelay: `${i * 80}ms` }} />)}
       </div>
     )
   }
   if (dias.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border)] py-20 text-center animate-fade-up">
+      <div className="flex flex-col items-center justify-center rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] py-20 text-center animate-fade-up">
         <ClockCounterClockwise size={28} weight="bold" className="text-[var(--color-fg-subtle)]" />
         <div className="mt-3 text-[14px] font-semibold text-[var(--color-fg)]">Nenhum KPI inserido ainda</div>
         <div className="mt-1 text-[13px] text-[var(--color-fg-muted)]">Vá na aba <span className="font-medium text-[var(--color-fg)]">Inserir KPIs</span> e suba as planilhas do dia.</div>
@@ -40,7 +40,7 @@ export default function Historico({ onAbrirDia }: { onAbrirDia: (d: string) => v
       {dias.map((dia, i) => (
         <div
           key={dia.data}
-          className="rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft p-5 sm:p-6 shadow-soft animate-fade-up"
+          className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5 sm:p-6 shadow-soft animate-fade-up"
           style={{ animationDelay: `${i * 50}ms` }}
         >
           <div className="flex items-center justify-between gap-3">
@@ -50,7 +50,7 @@ export default function Historico({ onAbrirDia }: { onAbrirDia: (d: string) => v
             </div>
             <button
               onClick={() => onAbrirDia(dia.data)}
-              className="h-9 rounded-[var(--radius-md)] bg-[var(--color-bg-elevated)] shadow-soft px-3.5 text-[12px] font-medium text-[var(--color-fg)] transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-hover)]"
+              className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3.5 text-[12px] font-medium text-[var(--color-fg)] transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-hover)]"
             >
               Ver no dashboard
             </button>

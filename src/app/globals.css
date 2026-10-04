@@ -5,27 +5,26 @@
 
 @theme {
   /* Fonts — Geist via next/font (Inter está banido em dashboards). */
-  /* Fonte do sistema (SF Pro no Mac/iPhone), como a apple.com. Mono so' em codigo. */
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text",
-    "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, "JetBrains Mono",
+    "Menlo", "Consolas", monospace;
 
   /* Tracking scales (anti-slop: hierarquia por peso/letter-spacing, não só tamanho). */
-  --tracking-display: -0.022em;
-  --tracking-tight: -0.012em;
+  --tracking-display: -0.04em;
+  --tracking-tight: -0.018em;
 
   /* Radii — bento 2.0 generoso (Section 9 do design-taste-frontend). */
-  /* Raios 8/12/18, janela 22 (mesmos do Vendas/Estoque). */
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
-  --radius-lg: 1.125rem;
-  --radius-card: 1.125rem;
-  --radius-display: 1.375rem;
+  --radius-lg: 1rem;
+  --radius-card: 1.5rem;
+  --radius-display: 2rem;
 
   /* Diffusion shadow (tinted, não puro preto). */
-  /* Cartao Apple: sem borda, sombra leve. */
-  --shadow-diffusion: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 28px rgba(0, 0, 0, 0.06);
-  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 12px rgba(0, 0, 0, 0.04);
+  --shadow-diffusion: 0 20px 40px -15px rgba(15, 23, 42, 0.06);
+  --shadow-soft: 0 1px 0 0 rgba(15, 23, 42, 0.04),
+    0 4px 12px -2px rgba(15, 23, 42, 0.04);
   --shadow-inner-edge: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 
   /* Brand — NAVY KPI (#1F3864 = mesma cor dos cabeçalhos das planilhas geradas).
@@ -54,62 +53,57 @@
   --color-brand-800: var(--color-navy-800);
   --color-brand-900: var(--color-navy-900);
 
-  /* Estilo Apple (redesign 2026-10-04, mesma linguagem do Norte Vendas/Estoque,
-     marca azul-marinho Transmonseg). Referencia: apple.com (texto #1d1d1f,
-     secundario #6e6e73, superficies #fff/#f5f5f7). */
-  --color-bg: #f5f5f7;
+  /* Semantic surface/foreground tokens (LIGHT defaults).
+     Off-white de fundo, off-black (zinc-950) de texto — pure black/white banidos. */
+  /* Superfícies em azul navy claro — casa com o #1F3864 das planilhas. */
+  --color-bg: #eef2fb;
   --color-bg-elevated: #ffffff;
-  --color-bg-subtle: #f2f2f7;
-  --color-bg-hover: #e8e8ed;
+  --color-bg-subtle: #e3eaf6;
+  --color-bg-hover: #dbe4f4;
 
-  /* Separador fino (cartao nao tem borda; borda so' em divisoria/input). */
-  --color-border: rgba(60, 60, 67, 0.12);
-  --color-border-strong: rgba(60, 60, 67, 0.22);
+  /* Bordas azuladas, dão definição sobre o fundo azul claro. */
+  --color-border: #d2ddef;
+  --color-border-strong: #b9c8e4;
 
-  --color-fg: #1d1d1f;
-  --color-fg-muted: #6e6e73;
-  --color-fg-subtle: #86868b;
+  --color-fg: #0b1220;        /* quase preto, levemente azulado */
+  --color-fg-muted: #3a4659;  /* slate — ~9:1 em bg light, sólido pra body */
+  --color-fg-subtle: #51607a; /* slate — contraste real (>5:1) sobre o bg azul claro */
 
-  /* Marca: navy das planilhas (#1F3864) so' em acao/selecao. */
+  /* Acento = navy KPI #1F3864 (alinha UI com cor do XLSX gerado). */
   --color-accent: var(--color-navy-700);
   --color-accent-fg: #ffffff;
   --color-accent-hover: var(--color-navy-800);
-  --color-accent-soft: #e6ecf6;
-  --color-accent-soft-fg: var(--color-navy-700);
+  --color-accent-soft: #dde8f8;
+  --color-accent-soft-fg: var(--color-navy-800);
 
-  --color-success: #248a3d;
-  --color-success-soft: #e3f4e8;
-  --color-success-soft-fg: #1b6b2f;
+  --color-success: #16a34a;
+  --color-success-soft: #dcfce7;
+  --color-success-soft-fg: #166534;
 
-  --color-warning: #b25000;
-  --color-warning-soft: #fdf0e1;
-  --color-warning-soft-fg: #8a3e00;
+  --color-warning: #d97706;
+  --color-warning-soft: #fef3c7;
+  --color-warning-soft-fg: #92400e;
 
-  --color-danger: #d70015;
-  --color-danger-soft: #fde8ea;
-  --color-danger-soft-fg: #a30010;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fee2e2;
+  --color-danger-soft-fg: #991b1b;
 
-  --color-info: #0066cc;
-  --color-info-soft: #e5f0fb;
-  --color-info-soft-fg: #004f9e;
+  --color-info: #2563eb;
+  --color-info-soft: #dbeafe;
+  --color-info-soft-fg: #1d4ed8;
 
-  /* Menu lateral na cor da marca (gradiente marinho), texto branco. */
-  --color-sidebar-bg: #22406f;
-  --color-sidebar-bg-2: #142a4d;
-  --color-sidebar-border: rgba(255, 255, 255, 0.12);
-  --color-sidebar-fg: rgba(255, 255, 255, 0.86);
-  --color-sidebar-fg-muted: rgba(255, 255, 255, 0.62);
-  --color-sidebar-fg-strong: #ffffff;
-  --color-sidebar-hover: rgba(255, 255, 255, 0.08);
-  --color-sidebar-active: rgba(255, 255, 255, 0.16);
-  --color-sidebar-accent: #ffffff;
-
-  /* Paleta categorica de graficos (mesma da skill dataviz usada no Estoque). */
-  --color-series-1: #2a78d6;
-  --color-series-2: #eb6834;
-  --color-series-3: #1baf7a;
-  --color-series-4: #eda100;
-  --color-series-5: #e87ba4;
+  /* Sidebar (always-dark, independent of theme). */
+  --color-sidebar-bg: #09090b;
+  --color-sidebar-bg-2: #0c0c0e;
+  --color-sidebar-border: #1f1f23;
+  --color-sidebar-fg: #d4d4d8;
+  --color-sidebar-fg-muted: #71717a;
+  --color-sidebar-fg-strong: #fafafa;
+  --color-sidebar-hover: #18181b;
+  --color-sidebar-active: #1f1f23;
+  /* Acento do sidebar: navy claro pra contrastar com o fundo always-dark
+     (var(--color-accent) = navy-700 escuro some sobre #09090b). */
+  --color-sidebar-accent: var(--color-navy-300);
 
   /* Legacy aliases — keep existing pages (text-ink, bg-surface, brand-*, etc.)
      working without touching every component. These resolve to semantic
@@ -125,57 +119,47 @@
 /* DARK theme overrides — applied when <html class="dark">.
    Zinc-950 puro (não black puro) com tons quentes pra equilibrar o blue accent. */
 .dark {
-  --color-bg: #000000;
-  --color-bg-elevated: #1c1c1e;
-  --color-bg-subtle: #2c2c2e;
-  --color-bg-hover: #3a3a3c;
+  /* Preto puro (o usuário gosta do dark assim). Azul fica só nos detalhes. */
+  --color-bg: #0a0a0a;
+  --color-bg-elevated: #141414;
+  --color-bg-subtle: #1c1c1c;
+  --color-bg-hover: #232323;
 
-  --color-border: rgba(84, 84, 88, 0.42);
-  --color-border-strong: rgba(120, 120, 128, 0.5);
+  --color-border: #242424;
+  --color-border-strong: #333333;
 
-  --color-fg: #f5f5f7;
-  --color-fg-muted: #98989d;
-  --color-fg-subtle: #7c7c80;
+  --color-fg: #fafaf9;
+  --color-fg-muted: #d6d3d1;   /* stone-300 — alto contraste em bg dark */
+  --color-fg-subtle: #a8a29e;  /* stone-400 — captions em bg dark */
 
-  --shadow-diffusion: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
-  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-diffusion: 0 20px 40px -15px rgba(0, 0, 0, 0.4);
+  --shadow-soft: 0 1px 0 0 rgba(0, 0, 0, 0.4),
+    0 4px 12px -2px rgba(0, 0, 0, 0.3);
   --shadow-inner-edge: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 
-  /* Acento no escuro: texto/realce em azul claro; preenchimento segue navy. */
-  --color-accent: #8fb0e0;
-  --color-accent-fg: #0b1a33;
-  --color-accent-hover: #b0c8ec;
-  --color-accent-soft: rgba(143, 176, 224, 0.16);
-  --color-accent-soft-fg: #b0c8ec;
+  /* Acento dark: navy invertido (mais claro pra contrastar com bg dark). */
+  --color-accent: var(--color-navy-300);
+  --color-accent-fg: var(--color-navy-900);
+  --color-accent-hover: var(--color-navy-200);
+  --color-accent-soft: var(--color-navy-800);
+  --color-accent-soft-fg: var(--color-navy-200);
 
-  --color-success: #30d158;
-  --color-success-soft: rgba(48, 209, 88, 0.16);
-  --color-success-soft-fg: #6fe08f;
+  --color-success: #22c55e;
+  --color-success-soft: #052e16;
+  --color-success-soft-fg: #86efac;
 
-  --color-warning: #ffb340;
-  --color-warning-soft: rgba(255, 179, 64, 0.16);
-  --color-warning-soft-fg: #ffc871;
+  --color-warning: #f59e0b;
+  --color-warning-soft: #451a03;
+  --color-warning-soft-fg: #fcd34d;
 
-  --color-danger: #ff6961;
-  --color-danger-soft: rgba(255, 105, 97, 0.16);
-  --color-danger-soft-fg: #ff8f89;
+  --color-danger: #ef4444;
+  --color-danger-soft: #450a0a;
+  --color-danger-soft-fg: #fca5a5;
 
-  --color-info: #409cff;
-  --color-info-soft: rgba(64, 156, 255, 0.16);
-  --color-info-soft-fg: #7ab8ff;
-
-  --color-sidebar-bg: #132746;
-  --color-sidebar-bg-2: #0a1629;
-
-  --color-series-1: #3987e5;
-  --color-series-2: #d95926;
-  --color-series-3: #199e70;
-  --color-series-4: #c98500;
-  --color-series-5: #d55181;
+  --color-info: #3b82f6;
+  --color-info-soft: #172554;
+  --color-info-soft-fg: #93c5fd;
 }
-
-:root { color-scheme: light; }
-.dark { color-scheme: dark; }
 
 /* Semantic utility classes — shortcuts for the design tokens above.
    Use these instead of the verbose `bg-[var(--color-bg)]` form:
@@ -227,8 +211,8 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv11", "ss01", "ss03";
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.006em;
 }
 
 /* Hierarquia tipográfica — controla pelo peso/letter-spacing, não só pelo size. */
@@ -249,20 +233,19 @@ h1 {
 
 /* Numeric class: pra horários/placas/IDs operacionais (mono tabular). */
 @utility text-numeric {
-  /* Numeros na fonte do sistema com algarismos tabulares (sem mono). */
-  font-family: var(--font-sans);
-  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums slashed-zero;
   letter-spacing: -0.01em;
 }
 
 /* Overline: rótulo de seção maiúsculo. Unifica o tracking/peso/cor que estavam
    espalhados (0.08/0.1/0.12/0.14em) em vários componentes. */
 @utility text-overline {
-  /* Estilo Apple: rotulo de secao em frase normal, 13px, cinza. */
-  font-size: 0.8125rem;
+  font-size: 0.6875rem; /* 11px */
   font-weight: 600;
-  letter-spacing: -0.005em;
-  color: var(--color-fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-fg-subtle);
 }
 
 /* Shadow utilities (Section 9 — diffusion shadow). */
@@ -400,45 +383,26 @@ table {
   border-collapse: collapse;
 }
 
-/* Cartao estilo Apple: sem borda, sombra leve; no hover so' sobe a sombra. */
+/* Detalhe azul: uma luz navy em volta dos quadrantes (cards). No dark, um
+   anel sutil aparece sempre sobre o fundo preto; em ambos os modos a luz
+   acende mais forte no hover. É o azul como acento, não como fundo. */
 .kpi-quad {
-  border-color: transparent !important;
-  box-shadow: var(--shadow-soft);
-  transition: box-shadow 0.3s cubic-bezier(0.32, 0.72, 0, 1), transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.28s ease;
 }
 .kpi-quad:hover {
-  box-shadow: var(--shadow-diffusion);
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-border));
+  box-shadow: var(--shadow-soft),
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 30%, transparent),
+    0 12px 34px -12px rgba(31, 56, 100, 0.5);
 }
-
-@utility u-card {
-  background-color: var(--color-bg-elevated);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-soft);
+.dark .kpi-quad {
+  box-shadow: var(--shadow-soft), 0 0 0 1px rgba(120, 150, 190, 0.1);
 }
-@utility u-motion {
-  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
-  transition-duration: 200ms;
-  transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
-}
-@utility u-press {
-  &:active { transform: scale(0.97); transition-duration: 80ms; }
-}
-@utility num {
-  font-variant-numeric: tabular-nums;
-}
-
-/* Menu lateral marinho: dentro dele os tokens viram branco/translucido. */
-.sidebar-navy {
-  background: linear-gradient(180deg, var(--color-sidebar-bg) 0%, var(--color-sidebar-bg-2) 100%);
-  color: #fff;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+.dark .kpi-quad:hover {
+  border-color: rgba(159, 179, 206, 0.55);
+  box-shadow: var(--shadow-soft),
+    0 0 0 1px rgba(159, 179, 206, 0.22),
+    0 0 32px -6px rgba(80, 120, 170, 0.6);
 }
 
 /* O tutorial guiado agora é 100% custom (motion) em src/app/painel/tour-overlay.tsx. */

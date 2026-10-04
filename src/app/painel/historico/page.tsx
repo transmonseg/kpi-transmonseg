@@ -92,10 +92,10 @@ function formatarData(iso: string): string {
 }
 
 const INPUT_CLS =
-  'h-10 rounded-lg bg-[var(--color-bg-elevated)] shadow-soft px-3 text-[13px] text-[var(--color-fg)] cursor-pointer transition-[border-color,box-shadow] duration-150 hover:border-[var(--color-border-strong)] focus-visible:outline-none focus-visible:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/15'
+  'h-10 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] text-[var(--color-fg)] cursor-pointer transition-[border-color,box-shadow] duration-150 hover:border-[var(--color-border-strong)] focus-visible:outline-none focus-visible:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/15'
 
 const LABEL_CLS =
-  'text-[13px] font-medium text-[var(--color-fg-muted)]'
+  'text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--color-fg-subtle)]'
 
 export default async function HistoricoPage({
   searchParams,
@@ -135,7 +135,7 @@ export default async function HistoricoPage({
   return (
     <div className="mx-auto w-full max-w-[1200px]">
       <header className="mb-10 flex flex-col gap-1.5">
-        <span className="text-[13px] font-medium text-[var(--color-fg-muted)]">
+        <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
           <ClockCounterClockwise size={11} weight="bold" className="inline mr-1" />
           Histórico
         </span>
@@ -172,7 +172,7 @@ export default async function HistoricoPage({
         {(dataInicio || dataFim) && (
           <Link
             href="/painel/historico"
-            className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[var(--color-bg-elevated)] shadow-soft px-4 text-[12px] font-medium text-[var(--color-fg-muted)] transition-all duration-150 hover:border-[var(--color-fg-muted)] hover:text-[var(--color-fg)] active:scale-[0.97]"
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-4 text-[12px] font-medium text-[var(--color-fg-muted)] transition-all duration-150 hover:border-[var(--color-fg-muted)] hover:text-[var(--color-fg)] active:scale-[0.97]"
           >
             <span aria-hidden className="text-[14px] leading-none">×</span>
             Limpar
@@ -181,7 +181,7 @@ export default async function HistoricoPage({
       </form>
 
       {geracoes.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft px-6 py-16 text-center">
+        <div className="flex flex-col items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-6 py-16 text-center">
           <FileMagnifyingGlass size={28} weight="bold" className="text-[var(--color-fg-subtle)]" />
           <p className="text-[14px] text-[var(--color-fg-muted)]">
             Nenhuma geração registrada para os filtros selecionados.
@@ -229,7 +229,7 @@ export default async function HistoricoPage({
                         {g.redes.map(r => (
                           <span
                             key={r.rede_id}
-                            className="inline-flex items-center gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-fg-muted)]"
+                            className="inline-flex items-center gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[var(--color-fg-muted)]"
                           >
                             {r.rede_nome}
                             <span className="text-numeric text-[var(--color-fg-subtle)]">
@@ -319,7 +319,7 @@ export default async function HistoricoPage({
             {page > 1 ? (
               <Link
                 href={buildHref({ page: page - 1 })}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--color-bg-elevated)] shadow-soft px-3 text-[12px] font-medium text-[var(--color-fg)] transition-colors active:scale-[0.97] hover:border-[var(--color-fg)]"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[12px] font-medium text-[var(--color-fg)] transition-colors active:scale-[0.97] hover:border-[var(--color-fg)]"
               >
                 <CaretLeft size={12} weight="bold" />
                 Anterior
@@ -333,7 +333,7 @@ export default async function HistoricoPage({
             {page < totalPages ? (
               <Link
                 href={buildHref({ page: page + 1 })}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--color-bg-elevated)] shadow-soft px-3 text-[12px] font-medium text-[var(--color-fg)] transition-colors active:scale-[0.97] hover:border-[var(--color-fg)]"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[12px] font-medium text-[var(--color-fg)] transition-colors active:scale-[0.97] hover:border-[var(--color-fg)]"
               >
                 Próxima
                 <CaretRight size={12} weight="bold" />
@@ -364,7 +364,7 @@ function Th({
     <th
       data-tour={dataTour}
       className={cn(
-        'px-4 py-3 text-[13px] font-medium text-[var(--color-fg-muted)]',
+        'px-4 py-3 text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--color-fg-subtle)]',
         align === 'right' && 'text-right'
       )}
     >

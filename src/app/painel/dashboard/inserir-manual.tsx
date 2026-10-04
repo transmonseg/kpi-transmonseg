@@ -140,7 +140,7 @@ export default function InserirManual({ data, onChange }: { data: string; onChan
           {/* toggle modo */}
           <div data-tour="ins-modo" className="flex flex-col gap-2">
             <label className="text-overline">Como enviar</label>
-            <div className="inline-flex h-9 items-center rounded-[var(--radius-md)] bg-[var(--color-bg-elevated)] shadow-soft p-0.5 shadow-soft">
+            <div className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-0.5 shadow-soft">
               {(['mes', 'dia'] as Modo[]).map(mo => (
                 <button
                   key={mo} onClick={() => setModo(mo)}
@@ -248,12 +248,12 @@ export default function InserirManual({ data, onChange }: { data: string; onChan
                   <div className="flex shrink-0 items-center gap-1.5">
                     <a
                       href={modo === 'mes' ? `/api/dashboard/export-mensal?rede=${rede}&mes=${mes}` : `/api/kpi-manual/export?rede=${rede}&data=${data}`}
-                      className="inline-flex h-7 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-bg-elevated)] shadow-soft px-2.5 text-[11px] font-medium text-[var(--color-fg-muted)] transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+                      className="inline-flex h-7 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2.5 text-[11px] font-medium text-[var(--color-fg-muted)] transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
                       title="Baixar XLSX desta rede"
                     ><DownloadSimple size={12} weight="bold" /> Baixar</a>
                     <button
                       onClick={() => excluir(rede)}
-                      className="h-7 cursor-pointer rounded-[var(--radius-md)] bg-[var(--color-bg-elevated)] shadow-soft px-2.5 text-[11px] font-medium text-[var(--color-fg-muted)] transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-danger)] hover:text-[var(--color-danger)]"
+                      className="h-7 cursor-pointer rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2.5 text-[11px] font-medium text-[var(--color-fg-muted)] transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:border-[var(--color-danger)] hover:text-[var(--color-danger)]"
                     >{modo === 'mes' ? 'Limpar' : 'Excluir'}</button>
                   </div>
                 ) : (

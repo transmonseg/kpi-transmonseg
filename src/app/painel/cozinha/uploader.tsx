@@ -235,9 +235,9 @@ export function CozinhaUploader() {
                 data-tour="coz-upload"
                 htmlFor="cozinha-arquivo"
                 className={cn(
-                  'flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-[14px] px-4 text-center u-motion',
-                  'bg-[var(--color-bg-subtle)]',
-                  'hover:bg-[var(--color-accent-soft)]',
+                  'flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed px-4 text-center transition-colors',
+                  'border-[var(--color-border-strong)] bg-[var(--color-bg-subtle)]',
+                  'hover:border-[var(--color-accent)] hover:bg-[var(--color-bg-hover)]',
                 )}
               >
                 <IconUpload className="mb-2 h-6 w-6 text-[var(--color-fg-subtle)]" />
@@ -453,22 +453,22 @@ export function CozinhaUploader() {
               <table className="w-full text-[13px]">
                 <thead>
                   <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] text-left">
-                    <th className="w-12 px-4 py-2 text-[11px] font-semibold text-[var(--color-fg-muted)]">
+                    <th className="w-12 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">
                       #
                     </th>
-                    <th className="px-4 py-2 text-[11px] font-semibold text-[var(--color-fg-muted)]">
+                    <th className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">
                       Rota
                     </th>
-                    <th className="px-4 py-2 text-[11px] font-semibold text-[var(--color-fg-muted)]">
+                    <th className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">
                       Motorista
                     </th>
-                    <th className="w-32 px-4 py-2 text-[11px] font-semibold text-[var(--color-fg-muted)]">
+                    <th className="w-32 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">
                       Placa
                     </th>
-                    <th className="w-28 px-4 py-2 text-[11px] font-semibold text-[var(--color-fg-muted)]">
+                    <th className="w-28 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">
                       Veículo
                     </th>
-                    <th className="w-32 px-4 py-2 text-center text-[11px] font-semibold text-[var(--color-fg-muted)]">
+                    <th className="w-32 px-4 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg-muted)]">
                       Status
                     </th>
                   </tr>
@@ -655,7 +655,7 @@ function AlertasResumo({
             <div className="text-[22px] font-semibold leading-tight tracking-tight">
               {it.valor}
             </div>
-            <div className="mt-1 text-[10px] font-semibold opacity-80">
+            <div className="mt-1 text-[10px] font-semibold uppercase tracking-wider opacity-80">
               {it.label}
             </div>
           </div>

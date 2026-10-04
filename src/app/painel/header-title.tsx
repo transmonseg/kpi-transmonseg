@@ -4,15 +4,11 @@ import { usePathname } from 'next/navigation'
 
 const TITLES: Record<string, string> = {
   '/painel': 'Dashboard',
-  '/painel/usuarios': 'Usuários',
   '/painel/cozinha': 'Cozinha',
-  '/painel/cozinha/clientes': 'Clientes da cozinha',
-  '/painel/nutrimax/gerar': 'Nutry Max · Gerar KPI',
-  '/painel/nutrimax/historico': 'Nutry Max · Histórico',
-  '/painel/rioquality/gerar': 'Rio Quality · Gerar KPI',
-  '/painel/rioquality/historico': 'Rio Quality · Histórico',
-  '/painel/portefrio/gerar': 'Portefrio · Gerar KPI',
-  '/painel/portefrio/historico': 'Portefrio · Histórico',
+  '/painel/cozinha/clientes': 'Clientes',
+  '/painel/kpi/simples': 'Gerar KPI',
+  '/painel/historico': 'Histórico',
+  '/painel/lojas': 'Lojas',
 }
 
 function resolveTitle(pathname: string): string {
@@ -30,7 +26,7 @@ function resolveTitle(pathname: string): string {
 export function HeaderTitle() {
   const pathname = usePathname()
   return (
-    <h1 className="truncate text-[15px] font-semibold tracking-[-0.01em] text-[var(--color-fg)]">
+    <h1 className="text-sm font-semibold tracking-tight text-[var(--color-fg)]">
       {resolveTitle(pathname)}
     </h1>
   )

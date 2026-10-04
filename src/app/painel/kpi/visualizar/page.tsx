@@ -156,7 +156,7 @@ export default function VisualizarKpiPage() {
     <div className="mx-auto w-full max-w-[1200px]">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1.5">
-          <span className="text-[13px] font-medium text-[var(--color-fg-muted)]">
+          <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-fg-subtle)]">
             KPI Transmonseg
           </span>
           <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.02em] text-[var(--color-fg)] md:text-[34px]">
@@ -164,7 +164,7 @@ export default function VisualizarKpiPage() {
           </h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft px-3 py-2">
+          <div className="flex items-center gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 py-2">
             <CalendarBlank size={14} weight="bold" className="text-[var(--color-fg-subtle)]" />
             <input
               type="date"
@@ -191,9 +191,9 @@ export default function VisualizarKpiPage() {
               {filtroAberto && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setFiltroAberto(false)} />
-                  <div className="absolute right-0 z-40 mt-2 w-64 rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft p-2 shadow-lg">
+                  <div className="absolute right-0 z-40 mt-2 w-64 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-2 shadow-lg">
                     <div className="mb-1 flex items-center justify-between px-1.5 py-1">
-                      <span className="text-[13px] font-semibold text-[var(--color-fg-muted)]">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-fg-subtle)]">
                         Mostrar redes
                       </span>
                       {filtroAtivo && (
@@ -229,7 +229,7 @@ export default function VisualizarKpiPage() {
           <button
             type="button"
             onClick={copiarLink}
-            className="flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--color-bg-elevated)] shadow-soft px-3.5 py-2 text-[12.5px] font-medium text-[var(--color-fg)] transition-colors hover:bg-[var(--color-bg-hover)]"
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3.5 py-2 text-[12.5px] font-medium text-[var(--color-fg)] transition-colors hover:bg-[var(--color-bg-hover)]"
           >
             {linkCopiado ? <Check size={14} weight="bold" className="text-[var(--color-success)]" /> : <LinkIcon size={14} weight="bold" />}
             {linkCopiado ? 'Link copiado' : 'Copiar link'}
@@ -248,7 +248,7 @@ export default function VisualizarKpiPage() {
               {(linkPublico || erroLinkPublico) && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={resetarLinkPublico} />
-                  <div className="absolute right-0 z-40 mt-2 w-80 rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft p-3 shadow-lg">
+                  <div className="absolute right-0 z-40 mt-2 w-80 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3 shadow-lg">
                     {erroLinkPublico ? (
                       <p className="text-[12.5px] text-[var(--color-danger)]">{erroLinkPublico}</p>
                     ) : (
@@ -289,7 +289,7 @@ export default function VisualizarKpiPage() {
           {redesParaExibir.map(r => (
             <span
               key={r.rede_id}
-              className="inline-flex items-center gap-1 rounded-full bg-[var(--color-bg-elevated)] shadow-soft py-1 pl-2.5 pr-1.5 text-[11.5px] font-medium text-[var(--color-fg-muted)]"
+              className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] py-1 pl-2.5 pr-1.5 text-[11.5px] font-medium text-[var(--color-fg-muted)]"
             >
               {r.rede_nome}
               <button type="button" onClick={() => alternarRede(r.rede_id)} className="rounded-full p-0.5 hover:bg-[var(--color-bg-hover)]">
@@ -304,21 +304,21 @@ export default function VisualizarKpiPage() {
       )}
 
       {carregando && (
-        <div className="flex items-center gap-3 rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft px-5 py-4">
+        <div className="flex items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-5 py-4">
           <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-[var(--color-fg-subtle)] border-t-transparent" />
           <p className="text-[13px] text-[var(--color-fg-muted)]">Carregando…</p>
         </div>
       )}
 
       {erro && (
-        <div className="flex items-start gap-3 rounded-[var(--radius-lg)] border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-5 py-4">
+        <div className="flex items-start gap-3 rounded-[var(--radius-card)] border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-5 py-4">
           <WarningCircle size={18} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-danger)]" />
           <p className="text-[13px] leading-relaxed text-[var(--color-danger-soft-fg)]">{erro}</p>
         </div>
       )}
 
       {!carregando && !erro && redes && redes.length === 0 && (
-        <div className="flex flex-col items-center gap-2 rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft px-6 py-16 text-center">
+        <div className="flex flex-col items-center gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-6 py-16 text-center">
           <p className="text-[14px] text-[var(--color-fg-muted)]">
             Nenhum KPI inserido nesse dia (ou nenhuma rede do seu acesso tem dado nele).
           </p>

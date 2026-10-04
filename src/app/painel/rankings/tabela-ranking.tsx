@@ -15,7 +15,7 @@ export type ColunaRanking<T> = {
   busca?: (linha: T) => string
 }
 
-const CARD = 'rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated)] shadow-soft shadow-soft'
+const CARD = 'rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-soft'
 
 export function TabelaRanking<T>({ titulo, ancora, colunas, linhas, sub, buscaPlaceholder, href }: {
   titulo: string
@@ -86,7 +86,7 @@ export function TabelaRanking<T>({ titulo, ancora, colunas, linhas, sub, buscaPl
         <div className="max-h-[560px] overflow-auto">
           <table className="w-full text-[13px]">
             <thead className="sticky top-0 z-10 bg-[var(--color-bg-elevated)]">
-              <tr className="border-b border-[var(--color-border)] text-left text-[10px] tracking-[0.1em] text-[var(--color-fg-subtle)]">
+              <tr className="border-b border-[var(--color-border)] text-left text-[10px] uppercase tracking-[0.1em] text-[var(--color-fg-subtle)]">
                 <th className="px-4 py-3 font-semibold">#</th>
                 {colunas.map(c => {
                   const ativo = ordCol === c.chave

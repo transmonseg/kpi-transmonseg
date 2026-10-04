@@ -2,15 +2,16 @@
 
 import { useState } from 'react'
 import { Copy, Check } from '@phosphor-icons/react/dist/ssr'
-import { botao } from '@/components/apple/botao'
+import { Button } from '@/components/ui'
 
 export function CopiarLink({ texto }: { texto: string }) {
   const [copiado, setCopiado] = useState(false)
 
   return (
-    <button
+    <Button
       type="button"
-      className={botao(copiado ? 'primario' : 'secundario', 'sm')}
+      variant={copiado ? 'primary' : 'secondary'}
+      size="sm"
       onClick={() => {
         navigator.clipboard.writeText(texto).then(() => {
           setCopiado(true)
@@ -27,6 +28,6 @@ export function CopiarLink({ texto }: { texto: string }) {
           <Copy size={13} weight="bold" /> Copiar link
         </>
       )}
-    </button>
+    </Button>
   )
 }
