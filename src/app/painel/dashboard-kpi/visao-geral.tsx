@@ -165,7 +165,7 @@ function Conteudo({ ag, agAnt, periodo, onPlaca }: { ag: Agregado; agAnt: Agrega
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Tile i={0} Icone={Package} cor="#2a78d6" rotulo="NFs entregues" valor={fmtInt(ag.entregues)} sub={`de ${fmtInt(ag.nfsNaConta)} na conta`} delta={<Delta atual={ag.entregues} anterior={agAnt?.entregues} suf="" casas={0} />} />
-        <Tile i={1} Icone={Warning} cor="#e08a00" rotulo="A validar" valor={fmtInt(Math.max(0, ag.pendentes - (ag.motivos['Não foi ao cliente'] ?? 0)))} sub="Confirmação com a operação" />
+        <Tile i={1} Icone={Warning} cor="#e08a00" rotulo="A revisar" valor={fmtInt(Math.max(0, ag.pendentes - (ag.motivos['Não foi ao cliente'] ?? 0)))} sub="Coordenada ou conferência" />
         <Tile i={2} Icone={Path} cor="#1baf7a" rotulo="KM rodados" valor={fmtKm(ag.km)} sub={umDia ? `${fmtInt(ag.cargas)} cargas` : `${fmtKm(ag.km / Math.max(1, ag.diasCompletos))} por dia`} delta={<Delta atual={ag.km} anterior={agAnt?.km} suf=" km" casas={0} />} />
         <Tile i={3} Icone={Timer} cor="#7a5af0" rotulo="Operação média" valor={fmtDur(ag.operacaoMedia)} sub="Saída até a volta ao CD" delta={<Delta atual={ag.operacaoMedia} anterior={agAnt?.operacaoMedia} inverso suf=" min" casas={0} />} />
         <Tile i={4} Icone={Clock} cor="#d05a8a" rotulo="Tempo por entrega" valor={fmtDur(ag.porEntregaMedia)} sub="Média das cargas" delta={<Delta atual={ag.porEntregaMedia} anterior={agAnt?.porEntregaMedia} inverso suf=" min" casas={0} />} />
@@ -318,13 +318,15 @@ function PioresPlacas({ placas, onPlaca }: { placas: PlacaAgg[]; onPlaca: (p: Pl
 
 function Resultado({ ag }: { ag: Agregado }) {
   const naoFoi = ag.motivos['Não foi ao cliente'] ?? 0
-  const aValidar = Math.max(0, ag.pendentes - naoFoi)
+  const coord = (ag.motivos['Coordenada imprecisa'] ?? 0) + (ag.motivos['Endereço não localizado'] ?? 0)
+  const aRevisar = Math.max(0, ag.pendentes - naoFoi - coord)
   const entregues = Math.max(0, ag.entregues - ag.semRastreador)
   const itens: BarItem[] = ([
     { key: 'e', label: 'Entregues', value: entregues, tone: 'success' },
     { key: 'r', label: 'Sem rastreador', value: ag.semRastreador, tone: 'muted' },
     { key: 'n', label: 'Não foi ao cliente', value: naoFoi, tone: 'danger' },
-    { key: 'v', label: 'A validar', value: aValidar, tone: 'warning' },
+    { key: 'c', label: 'Coordenada não puxou', value: coord, tone: 'warning' },
+    { key: 'v', label: 'A revisar', value: aRevisar, tone: 'info' },
   ] as BarItem[]).filter(x => x.value > 0)
   if (!itens.length) return <p className="py-10 text-center text-[13px] text-[var(--color-fg-muted)]">Sem NFs no período.</p>
   return <BarList items={itens} format={n => n.toLocaleString('pt-BR')} />
