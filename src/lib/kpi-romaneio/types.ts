@@ -27,7 +27,7 @@ export type LinhaEscala = {
    *  Quando presente e igual a "SEM RASTRI" (case-insensitive, trimmed), todas as
    *  NFs dessa placa recebem rotulo especifico e sao excluidas do denominador da
    *  TAXA. Null quando a coluna nao existe ou esta vazia no PDF. */
-  statusRastreador: string | null
+  statusRastreador?: string | null
 }
 
 /** LinhaRomaneio + coordenada, quando a geocodificacao deu certo. Ausencia
