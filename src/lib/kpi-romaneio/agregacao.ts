@@ -816,6 +816,14 @@ type JanelaProvaOutraNf = { endereco: string; iniMs: number; fimMs: number }
 // placa esta' de fato a <=150 m da parada (senao a R2 ja' teria decidido).
 const RAIO_COMPARTILHADA_VIZINHO_M = 100
 const DURACAO_MAX_COMPARTILHADA_VIZINHO_MIN = 60
+// Achado real 02/10 (RQV3J99/2403633 Panificadora Pratense): parada propria
+// de 23 min a 46 m do geocode saia "PASSOU NO ENDEREÇO MAS NÃO REGISTROU
+// PARADA" -- a parada existe, so' foi atribuida ao vizinho (Mercearia do Ze
+// Romeu, cadastro a 7 m). Continua pendente (sem cadastro Unitrac que prove),
+// so' o texto passa a dizer o que o GPS mostra.
+export const PREFIXO_OBS_PAROU_COM_VIZINHO = 'PAROU NO ENDEREÇO JUNTO COM OUTRO CLIENTE DA MESMA PLACA'
+const RAIO_PAROU_COM_VIZINHO_M = 100
+const DURACAO_MIN_PAROU_COM_VIZINHO_MIN = 2
 export const PREFIXO_OBS_CADASTRO_DIVERGENTE = 'CADASTRO DO CLIENTE NA UNITRAC DIVERGE DO ENDEREÇO DO ROMANEIO'
 const DIVERGENCIA_CADASTRO_ROMANEIO_M = 1_000
 const ROTULOS_SEM_PROVA_CADASTRO = new Set<string>([
@@ -1267,6 +1275,7 @@ export function gerarMotivo(d: {
   if (obs?.startsWith(OBS_NAO_SAIU_DA_BASE)) return 'Veículo não saiu da base no dia'
   if (obs?.startsWith('VEÍCULO SEM MOVIMENTO')) return 'Veículo sem movimento no dia — conferir rastreador'
   if (obs?.startsWith('PLACA DA ESCALA NÃO PASSOU')) return 'Placa da escala não passou no cliente — conferir escala'
+  if (obs?.startsWith(PREFIXO_OBS_PAROU_COM_VIZINHO)) return 'Caminhão parou no endereço, mas a parada foi atribuída a um cliente vizinho — conferir'
   if (obs?.startsWith(PREFIXO_OBS_CADASTRO_DIVERGENTE)) return 'Cadastro do cliente na Unitrac diverge do endereço do romaneio — corrigir cadastro'
   if (obs?.startsWith('SINAL DO RASTREADOR COM FALHA')) return 'Sinal do rastreador com falha no dia — conferir'
   if (obs?.startsWith('PLACA COM DUAS CARGAS')) return 'Placa com duas cargas em regiões diferentes — conferir programação'
@@ -1601,6 +1610,11 @@ export function montarDetalheEntregas(
   const paradasAntesDaBaixaCandidatas = (): UnitracParadaRow[] =>
     [...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []), ...(paradasPorOutraPlaca.get(placaNorm) ?? [])]
   const codigosPorParadaAntesDaBaixa = new Map<UnitracParadaRow, Set<string>>()
+  // Achado real 02/10 (RQV6C75 Pacotao/Nilzieli/Bar da Marli): 3 clientes
+  // vizinhos, cada um com cadastro PROPRIO a 18-119 m de uma parada de 33 min
+  // -- a parada atendeu os tres. So' e' ambigua quando dois reivindicantes tem
+  // o MESMO cadastro (Sonho x Coqueiro, <= RAIO_CADASTRO_IDENTICO_M).
+  const cadastrosPorParadaAntesDaBaixa = new Map<UnitracParadaRow, { lat: number; lng: number }[]>()
   if (modoPrecisao) {
     for (const l of todasLinhasDaPlacaNoDia) {
       const a = alvoPorNf.get(l.nf)
@@ -1608,12 +1622,19 @@ export function montarDetalheEntregas(
       const r = acharParadaAntesDaBaixa(l, a, paradasAntesDaBaixaCandidatas(), cadastrosOutrosClientes(a.codigoUnitrac))
       if (!r) continue
       const set = codigosPorParadaAntesDaBaixa.get(r.parada) ?? new Set<string>()
+      if (!set.has(a.codigoUnitrac)) {
+        const c = cadastroDoAlvo(a)
+        if (c) cadastrosPorParadaAntesDaBaixa.set(r.parada, [...(cadastrosPorParadaAntesDaBaixa.get(r.parada) ?? []), c])
+      }
       set.add(a.codigoUnitrac)
       codigosPorParadaAntesDaBaixa.set(r.parada, set)
     }
   }
-  const paradaAntesDaBaixaDisputada = (p: UnitracParadaRow) =>
-    codigosDeClienteDaParada(p).size === 0 && (codigosPorParadaAntesDaBaixa.get(p)?.size ?? 0) > 1
+  const paradaAntesDaBaixaDisputada = (p: UnitracParadaRow) => {
+    if (codigosDeClienteDaParada(p).size !== 0 || (codigosPorParadaAntesDaBaixa.get(p)?.size ?? 0) <= 1) return false
+    const cads = cadastrosPorParadaAntesDaBaixa.get(p) ?? []
+    return cads.some((c, i) => cads.some((o, j) => j > i && haversine(c.lat, c.lng, o.lat, o.lng) <= RAIO_CADASTRO_IDENTICO_M))
+  }
   // Guarda 1 da parada proxima propria (29/09, RQM0C38/2393499): o
   // isolamento conta TAMBEM vizinho com geocode nao confiavel (usa a
   // coordenada mesmo assim -- o Maycao, confiavel=false, estava a 33 m da
@@ -2574,6 +2595,21 @@ export function montarDetalheEntregas(
         if (dist > DIVERGENCIA_CADASTRO_ROMANEIO_M) {
           observacao = `${PREFIXO_OBS_CADASTRO_DIVERGENTE} (${(dist / 1000).toFixed(1).replace('.', ',')} km) - CONFERIR CADASTRO`
         }
+      }
+    }
+
+    if (modoPrecisao && status === 'pendente' && observacao === 'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR'
+      && geoConfiavel && linha.lat != null && linha.lng != null) {
+      let maisLongaMin = 0
+      for (const p of [...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []), ...paradasProprias]) {
+        if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
+        const dur = duracaoParadaMin(p)
+        if (dur < DURACAO_MIN_PAROU_COM_VIZINHO_MIN) continue
+        if (haversine(p.lat, p.lng, linha.lat, linha.lng) > RAIO_PAROU_COM_VIZINHO_M) continue
+        maisLongaMin = Math.max(maisLongaMin, dur)
+      }
+      if (maisLongaMin > 0) {
+        observacao = `${PREFIXO_OBS_PAROU_COM_VIZINHO} (${Math.round(maisLongaMin)} MIN) - CONFERIR`
       }
     }
 

@@ -4330,7 +4330,8 @@ describe('Estudo 30/09 -- NFs de 29/09 que o endereco sustenta mas a parada nao 
   it('RQV3J99/2396532 (So File): parada propria de 5 min a 12 m do geocode, mas Bar do Junior (cadastro a 118 m) e Pro Pao (125 m) sao da mesma placa -> NAO confirma', () => {
     const d = nf('RQV3J99', '2396532')
     expect(d.status).toBe('pendente')
-    expect(d.observacao).toBe('PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR')
+    // 02/10: o texto diz que o caminhao parou ali (5 min) mas a parada e' do vizinho -- segue pendente.
+    expect(d.observacao).toBe('PAROU NO ENDEREÇO JUNTO COM OUTRO CLIENTE DA MESMA PLACA (5 MIN) - CONFERIR')
   })
 
   // Auditoria visual Ana 03/10: parada unica atendendo dois clientes vizinhos
@@ -5314,6 +5315,55 @@ describe('Item 1 (auditoria 30/09) -- ENTREGUE so pela baixa em lote herda horar
     semHorario(d2)
   })
 
+  it('RQV6C75 (02/10): parada de 33 min serve 3 clientes vizinhos com cadastros PROPRIOS (18-119 m) -> os tres herdam o horario', () => {
+    const p = stop('1', em(0), '15:42', '16:15')
+    const ds = chamarNutryMax([
+      nfCom('2403648', 94, { endereco: 'END PACOTAO' }),
+      nfCom('2403650', 30, { endereco: 'END NILZIELI' }),
+      nfCom('2403651', -23, { endereco: 'END MARLI' }),
+    ], {
+      placa: P,
+      alvos: [
+        alvoFeito('2403648', baixa('16:34:10'), em(119), 'C-PACOTAO'),
+        alvoFeito('2403650', baixa('16:33:05'), em(21), 'C-NILZIELI'),
+        alvoFeito('2403651', baixa('16:33:40'), em(-18), 'C-MARLI'),
+      ],
+      paradasUnitracCruasPropriaPlaca: cruas(p),
+    })
+    for (const d of ds) {
+      expect(d.status).toBe('confirmado_unitrac')
+      expect(d.chegada).toBe(t('15:42'))
+      expect(d.saida).toBe(t('16:15'))
+    }
+  })
+
+  it('RQV3J99/2403633 Pratense (02/10): parada propria de 23 min a 46 m, atribuida ao vizinho -> continua pendente com rotulo PAROU NO ENDEREÇO (nao "PASSOU... NÃO REGISTROU PARADA")', () => {
+    const p = stop('1', em(7), '07:43', '08:06')
+    const vizinho = nfCom('2403630', 0, { endereco: 'RUA THOME PINTO DE AZEVEDO, S/N - ZE ROMEU' })
+    const pratense = nfCom('2403633', -39, { endereco: 'RUA THOME PINTO DE AZEVEDO, S/N - PRATENSE' })
+    const ds = chamarNutryMax([vizinho, pratense], {
+      placa: P,
+      alvos: [alvoFeito('2403630', baixa('08:05:00'), em(0)), alvo('2403633', 0, { placaNorm: P, pontoLat: null, pontoLng: null, codigoUnitrac: 'COD-P' })],
+      paradasUnitracCruasPropriaPlaca: cruas(p),
+    })
+    const d = ds.find(x => x.nf === '2403633')!
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PAROU NO ENDEREÇO JUNTO COM OUTRO CLIENTE DA MESMA PLACA (23 MIN) - CONFERIR')
+  })
+
+  it('parada de 1 min perto do endereco nao troca o rotulo PASSOU', () => {
+    const vizinho = nfCom('2403630', 0, { endereco: 'RUA THOME PINTO DE AZEVEDO, S/N - ZE ROMEU' })
+    const pratense = nfCom('2403633', -39, { endereco: 'RUA THOME PINTO DE AZEVEDO, S/N - PRATENSE' })
+    const ds = chamarNutryMax([vizinho, pratense], {
+      placa: P,
+      alvos: [alvoFeito('2403630', baixa('08:05:00'), em(0)), alvo('2403633', 0, { placaNorm: P, pontoLat: null, pontoLng: null, codigoUnitrac: 'COD-P' })],
+      paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(7), '07:43', '07:44')),
+    })
+    const d = ds.find(x => x.nf === '2403633')!
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).not.toMatch(/^PAROU NO ENDEREÇO/)
+  })
+
   it('parada da ponte da propria placa tambem vale', () => {
     const [d] = chamarNutryMax([nfCom('2395082', 22)], {
       placa: P, alvos: [alvoFeito('2395082', baixa('08:55:55'))],
@@ -5488,10 +5538,22 @@ describe('Item 1 (auditoria 30/09) -- ENTREGUE so pela baixa em lote herda horar
       expect(d.chegada).toBe(t('08:35'))
     })
 
-    it('RQV3J99 Pro Pao x Bar do Junior (clientes diferentes) disputando a mesma parada sem codigo -> nenhum herda', () => {
+    // 02/10 (RQV6C75): a A1 so' vale com cadastro IDENTICO. Pro Pao e Bar do
+    // Junior tem cadastros proprios a 30 m um do outro -- uma parada atendeu
+    // os dois, o horario e' dos dois.
+    it('RQV3J99 Pro Pao x Bar do Junior (cadastros PROPRIOS a 30 m) na mesma parada sem codigo -> os dois herdam', () => {
       const b = baixa('09:18:25')
       const ds = chamarNutryMax([nfCom('2396516', 52), nfCom('2396526', 60)], {
         placa: P, alvos: [alvoFeito('2396516', b, cad, '140001'), alvoFeito('2396526', b, em(30), '140002')],
+        paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(28), '08:20', '08:34')),
+      })
+      for (const d of ds) expect(d.chegada).toBe(t('08:20'))
+    })
+
+    it('mesma parada, dois clientes com cadastro IDENTICO (<=10 m) -> nenhum herda', () => {
+      const b = baixa('09:18:25')
+      const ds = chamarNutryMax([nfCom('2396516', 52), nfCom('2396526', 60)], {
+        placa: P, alvos: [alvoFeito('2396516', b, cad, '140001'), alvoFeito('2396526', b, em(5), '140002')],
         paradasUnitracCruasPropriaPlaca: cruas(stop('1', em(28), '08:20', '08:34')),
       })
       for (const d of ds) semHorario(d)
