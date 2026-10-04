@@ -193,6 +193,13 @@ export async function gerarKpiRioQuality(params: {
         'Nenhuma linha reconhecida no arquivo — confira se tem as colunas Razão Social, Cidade, UF, Destino, Motorista, Placa, Endereço e Bairro.',
       )
     }
+    // Achado 02/10 (09:01, taxa 32%): arquivo com 29 placas e NENHUM check-in
+    // -- exportado antes do fim do dia ou filtrado. So' o formato de 55
+    // colunas traz check-in (gabarito); dia ja' encerrado sem nenhum = aviso.
+    const comGabarito = entregasCompletas.filter(e => e.gabarito)
+    if (comGabarito.length > 0 && data < hoje && !comGabarito.some(e => e.gabarito!.checkIn)) {
+      avisosEntrada.push({ carga: '—', placa: '—', motivo: 'rq_relatorio_sem_checkin', placasNoArquivo: new Set(entregasCompletas.map(e => e.placaNorm)).size })
+    }
     const { linhas: romaneio, enderecoBrutoPorNf, ruaPorNf } = montarLinhasRomaneioCompleto(entregasCompletas)
     ruaPorNfCompleto = ruaPorNf
     log(`Entregas: ${romaneio.length} linhas (arquivo unico, com cidade)`)

@@ -345,10 +345,12 @@ export type AvisoDescasamento = {
   // Nutry Max (02/10) -- nao bloqueiam, so' informam na aba Avisos.
   motivo: 'sem_romaneio' | 'sem_escala' | 'nf_divergente' | 'consulta_posicoes_suspeita' | 'consulta_unitrac_falhou'
     | 'rq_sem_rota_custos' | 'rq_rota_sem_entregas' | 'rq_placa_sem_cv' | 'rq_sem_snapshot'
-    | 'geocode_parcial' | 'motorista_multiplas_placas' | 'carga_multiregiao'
+    | 'geocode_parcial' | 'motorista_multiplas_placas' | 'carga_multiregiao' | 'rq_relatorio_sem_checkin'
   /** So' em 'geocode_parcial' (incidente 01/10): enderecos sem resultado porque a
    *  busca por similaridade CNEFE estourou o timeout ou passou do teto da geracao. */
   enderecosParciais?: number
+  /** So' em 'rq_relatorio_sem_checkin' (RQ 02/10 09:01: 29 placas, 0 check-in -> taxa 32%). */
+  placasNoArquivo?: number
   /** So' em 'rq_sem_snapshot' (Rio Quality, dia fora das 48h): placas sem dado no snapshot de paradas. */
   placasSemSnapshot?: number
   /** So' em 'consulta_posicoes_suspeita' (trava 29/09, coletor fora do ar): placas detectadas sem sinal x placas da escala. */

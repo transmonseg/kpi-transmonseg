@@ -68,6 +68,7 @@ const LABEL_MOTIVO: Record<AvisoDescasamento['motivo'], string> = {
   consulta_unitrac_falhou: 'Consulta ao rastreador falhou — placa não concluída, conferir',
   rq_sem_rota_custos: 'Placa sem rota no Relatório de Custos',
   rq_rota_sem_entregas: 'Rota sem nenhuma entrega no Relatório de Entregas',
+  rq_relatorio_sem_checkin: 'Relatório de Entregas sem nenhum check-in — gere com o relatório completo do dia',
   rq_placa_sem_cv: 'Placa sem CV — rode descobrir-cv (scripts/descobrir-cv-rq.ts) e confira a frota',
   rq_sem_snapshot: 'Sem dado do snapshot de paradas — consulta ao rastreador falhou, conferir',
   geocode_parcial: 'Geocode parcial — gere novamente',
@@ -83,6 +84,9 @@ function textoDiferencaNf(nfEscala: number, nfRomaneio: number): string {
   return `${n} NF${n === 1 ? '' : 's'} a ${diff > 0 ? 'menos' : 'mais'} no romaneio`
 }
 function textoAviso(a: AvisoDescasamento): string {
+  if (a.motivo === 'rq_relatorio_sem_checkin') {
+    return `Relatório de Entregas com ${a.placasNoArquivo ?? '?'} placa(s) e nenhum check-in — provavelmente exportado antes do fim do dia ou filtrado; a taxa sai errada. Gere de novo com o relatório completo do dia (modelo combinado)`
+  }
   if (a.motivo === 'nf_divergente' && a.nfEscala != null && a.nfRomaneio != null) {
     return `NFs: Escala ${a.nfEscala} × Romaneio ${a.nfRomaneio} (${textoDiferencaNf(a.nfEscala, a.nfRomaneio)})`
   }

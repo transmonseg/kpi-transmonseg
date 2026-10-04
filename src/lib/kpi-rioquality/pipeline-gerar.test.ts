@@ -466,6 +466,21 @@ describe('gerarKpiRioQuality -- terceiro formato (55 colunas, NF real)', () => {
     expect(r.detalhe.map(d => d.nf).sort()).toEqual(['5511706', '5512088', '5512934', '5512949'])
     expect(r.detalhe.find(d => d.nf === '5512949')).toMatchObject({ carga: '1158583', placa: 'LAT9F36' })
   })
+
+  it('arquivo de dia encerrado sem NENHUM check-in vira aviso de relatorio incompleto (RQ 02/10 09:01, taxa 32%)', async () => {
+    const { CABECALHO_55, LINHAS_55 } = await import('./entregas-55col.fixture')
+    const { geocodificarEnderecos } = await import('@/lib/kpi-romaneio/geocode')
+    vi.mocked(geocodificarEnderecos).mockImplementation(async enderecos => enderecos.map(() => ({ ...PONTO, confiavel: true, fonte: 'cnefe' })))
+    const iCheck = (CABECALHO_55 as string[]).indexOf('Check-In')
+    const semCheckin = (LINHAS_55 as unknown[][]).map(l => l.map((c, i) => (i === iCheck ? 'NÃO' : c)))
+    const r = await gerarKpiRioQuality({
+      completaBuf: planilha([['Relatório de Entregas'], CABECALHO_55, ...semCheckin]), data: DATA, hoje: '2099-01-01',
+      cvPorPlaca: new Map([['LAT9F36', '1'], ['LJI4I52', '2'], ['SRJ9H01', '3']]),
+      buscarParadas: async (_cv, placa) => [parada(placa, '10:00', 15)],
+      medirRastro: async () => ({ km: 40, pontosNoDia: 900 }),
+    })
+    expect(r.avisos.some(a => a.motivo === 'rq_relatorio_sem_checkin')).toBe(true)
+  })
 })
 
 // Corredor da rua (relatorio rq-mesmo-lugar-e-sem-rastreador.md, 01/10): RQ
