@@ -4,7 +4,7 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import {
   diaAnterior, escolherGeracao, type GeracaoRow,
-  aplicarHabilitado, montarLoteNoturno, aplicarCadastroNoturno, aplicarSeHabilitado, TETO_CORRECOES_NOITE,
+  aplicarHabilitado, montarLoteNoturno, aplicarCadastroNoturno, aplicarSeHabilitado, TETO_CORRECOES_NOITE, LIMITE_ANOMALIA_NOITE,
 } from './correcao-geocode-noturna'
 import type { SugestaoCadastro } from '../src/lib/kpi-romaneio/cadastro-unitrac'
 import type { LinhaCacheAtual } from './aplicar-correcoes-geocode'
@@ -115,11 +115,23 @@ describe('montarLoteNoturno', () => {
     expect(r.gravar).toHaveLength(30)
   })
 
-  it('acima do teto nao grava NADA', () => {
-    const r = montarLoteNoturno(nSug(31), new Map())
+  it('acima do teto grava so\' as mais fortes (menor distancia da parada)', () => {
+    const sugs = Array.from({ length: 35 }, (_, i) => sug({ endereco: `RUA ${i}, 1`, distParadaM: 200 - i }))
+    const r = montarLoteNoturno(sugs, new Map())
+    expect(r.excedeuTeto).toBe(false)
+    expect(r.gravar).toHaveLength(30)
+    expect(r.adiados).toBe(5)
+    expect(r.candidatos).toBe(35)
+    expect(r.gravar.map(g => g.endereco)).not.toContain('RUA 0, 1')
+    expect(r.gravar.map(g => g.endereco)).toContain('RUA 34, 1')
+  })
+
+  it('acima do limite de anomalia nao grava NADA', () => {
+    expect(LIMITE_ANOMALIA_NOITE).toBe(300)
+    const r = montarLoteNoturno(nSug(301), new Map())
     expect(r.excedeuTeto).toBe(true)
     expect(r.gravar).toEqual([])
-    expect(r.candidatos).toBe(31)
+    expect(r.candidatos).toBe(301)
   })
 
   it('teto conta so\' o que sobra depois das protecoes', () => {
@@ -188,9 +200,9 @@ describe('aplicarCadastroNoturno', () => {
     expect(readFileSync(caminho, 'utf-8')).toBe('endereco;lat;lng;confiavel;fonte;motivo\nRUA A, 1;-22.6;-43.2;false;nominatim;longe\nRUA B, 9;-22.7;-43.3;false;nominatim;longe\n')
   })
 
-  it('acima do teto: nenhum upsert, nenhum backup, loga excedeu o teto', async () => {
+  it('acima do limite de anomalia: nenhum upsert, nenhum backup, loga excedeu o teto', async () => {
     const { svc, chamadas } = mockSvc()
-    const r = await aplicarCadastroNoturno(svc, nSug(31), { dirSaida: dir, log })
+    const r = await aplicarCadastroNoturno(svc, nSug(31), { dirSaida: dir, log, limiteAnomalia: 30 })
     expect(chamadas.filter(c => c.op === 'upsert')).toHaveLength(0)
     expect(existsSync(join(dir, 'backup-antes-aplicar.csv'))).toBe(false)
     expect(r.excedeuTeto).toBe(true)

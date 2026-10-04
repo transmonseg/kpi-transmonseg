@@ -16,7 +16,9 @@
 // confirmado por parada GPS da propria placa -- sugerirCadastroUnitrac, a
 // mesma aplicada a mao em 22-23/09), fonte 'cadastro_unitrac'. A regra
 // 'parada_alvo' continua so' no CSV. Guardas (aplicarCadastroNoturno):
-//   - teto de TETO_CORRECOES_NOITE por noite: acima disso nao grava NADA;
+//   - teto de TETO_CORRECOES_NOITE por noite: grava so' as mais fortes (menor
+//     distancia da parada GPS); o resto volta nas noites seguintes;
+//   - acima de LIMITE_ANOMALIA_NOITE candidatos nao grava NADA (sinal de bug);
 //   - nunca sobrescreve fonte manual / verificacao_manual / cadastro_unitrac
 //     (conferido no estado ATUAL do cache, relido na hora de gravar);
 //   - coordenada fora da caixa do RJ -> pula e loga;
@@ -63,6 +65,7 @@ export function escolherGeracao(rows: GeracaoRow[]): GeracaoRow | null {
 }
 
 export const TETO_CORRECOES_NOITE = 30
+export const LIMITE_ANOMALIA_NOITE = 300
 export const FONTES_PROTEGIDAS: ReadonlySet<string> = new Set(['manual', 'verificacao_manual', 'cadastro_unitrac'])
 const TABELA_CACHE = 'kpi_romaneio_geocode_cache'
 const ARQUIVO_BACKUP = 'backup-antes-aplicar.csv'
@@ -75,14 +78,17 @@ type UpsertCadastro = ReturnType<typeof montarUpsertCadastro>
 export type PuladoNoturno = { endereco: string; motivo: 'fonte_protegida' | 'fora_do_rj' }
 
 /** Filtra as sugestoes da regra forte contra o estado ATUAL do cache e aplica o
- *  teto. O teto conta o lote que de fato seria gravado (depois das protecoes);
- *  acima dele o lote volta vazio -- nao grava nada, revisao manual. */
+ *  teto. O teto conta o lote que de fato seria gravado (depois das protecoes):
+ *  acima dele grava so' as `teto` mais fortes (menor distParadaM) -- as outras
+ *  continuam sugeridas e entram nas noites seguintes. Acima de `limiteAnomalia`
+ *  o lote volta vazio (volume anormal = provavel bug, revisao manual). */
 export function montarLoteNoturno(
   sugestoes: SugestaoCadastro[],
   cacheAtual: Map<string, LinhaCacheAtual>,
   teto = TETO_CORRECOES_NOITE,
-): { gravar: UpsertCadastro[]; pulados: PuladoNoturno[]; candidatos: number; excedeuTeto: boolean } {
-  const gravar: UpsertCadastro[] = []
+  limiteAnomalia = LIMITE_ANOMALIA_NOITE,
+): { gravar: UpsertCadastro[]; pulados: PuladoNoturno[]; candidatos: number; excedeuTeto: boolean; adiados: number } {
+  const aceitas: SugestaoCadastro[] = []
   const pulados: PuladoNoturno[] = []
   const protegida = (endereco: string) => {
     const fonte = cacheAtual.get(endereco)?.fonte
@@ -93,11 +99,12 @@ export function montarLoteNoturno(
     // chave quanto na linha antiga gravada com CEP bloqueia.
     if (protegida(chaveCacheEndereco(s.endereco)) || protegida(s.endereco)) { pulados.push({ endereco: s.endereco, motivo: 'fonte_protegida' }); continue }
     if (!coordenadaValidaRj(s.latNova, s.lngNova)) { pulados.push({ endereco: s.endereco, motivo: 'fora_do_rj' }); continue }
-    gravar.push(montarUpsertCadastro(s))
+    aceitas.push(s)
   }
-  const candidatos = gravar.length
-  if (candidatos > teto) return { gravar: [], pulados, candidatos, excedeuTeto: true }
-  return { gravar, pulados, candidatos, excedeuTeto: false }
+  const candidatos = aceitas.length
+  if (candidatos > limiteAnomalia) return { gravar: [], pulados, candidatos, excedeuTeto: true, adiados: 0 }
+  const fortes = [...aceitas].sort((a, b) => a.distParadaM - b.distParadaM).slice(0, teto)
+  return { gravar: fortes.map(montarUpsertCadastro), pulados, candidatos, excedeuTeto: false, adiados: candidatos - fortes.length }
 }
 
 // Cliente minimo (Supabase service client ou mock de teste).
@@ -109,7 +116,7 @@ export type ClienteCache = {
   }
 }
 
-type OpcoesAplicar = { dirSaida: string; teto?: number; log?: (m: string) => void }
+type OpcoesAplicar = { dirSaida: string; teto?: number; limiteAnomalia?: number; log?: (m: string) => void }
 
 export async function aplicarCadastroNoturno(
   svc: ClienteCache,
@@ -125,10 +132,10 @@ export async function aplicarCadastroNoturno(
     for (const r of data ?? []) cacheAtual.set(r.endereco, r)
   }
 
-  const { gravar, pulados, candidatos, excedeuTeto } = montarLoteNoturno(sugestoes, cacheAtual, opcoes.teto)
+  const { gravar, pulados, candidatos, excedeuTeto, adiados } = montarLoteNoturno(sugestoes, cacheAtual, opcoes.teto, opcoes.limiteAnomalia)
   for (const p of pulados) log(`pulado (${p.motivo}): ${p.endereco}`)
   if (excedeuTeto) {
-    log(`aplicar: ${candidatos} correcoes cadastro_unitrac > teto ${opcoes.teto ?? TETO_CORRECOES_NOITE} -- excedeu o teto — revisão manual (nada gravado)`)
+    log(`aplicar: ${candidatos} correcoes cadastro_unitrac > limite ${opcoes.limiteAnomalia ?? LIMITE_ANOMALIA_NOITE} -- excedeu o teto — revisão manual (nada gravado)`)
     return { gravados: [], pulados, excedeuTeto: true, caminhoBackup: null }
   }
   if (gravar.length === 0) {
@@ -147,6 +154,7 @@ export async function aplicarCadastroNoturno(
   if (existsSync(caminhoBackup)) appendFileSync(caminhoBackup, csv.split('\n').slice(1).join('\n'))
   else writeFileSync(caminhoBackup, csv)
   log(`backup: ${backup.length} linhas em ${caminhoBackup}`)
+  if (adiados > 0) log(`teto ${gravar.length}/noite: ${adiados} correcao(oes) mais fracas ficam pras proximas noites`)
 
   const gravados: string[] = []
   for (const g of gravar) {
