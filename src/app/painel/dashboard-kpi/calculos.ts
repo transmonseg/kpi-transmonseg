@@ -49,6 +49,7 @@ export type PlacaAgg = {
   nfConfirmadas: number
   /** NFs fora da taxa (sem rastreador / placa trocada) -- não contam na taxa da placa. */
   nfForaDaConta: number
+  nfSemRastreador: number
   taxa: number | null
   km: number
   operacaoMedia: number | null
@@ -103,13 +104,14 @@ export function agregar(dias: DiaKpi[]): Agregado {
       }
       const p = placas.get(c.placa) ?? {
         placa: c.placa, motorista: c.motorista, destino: c.destino, dias: 0,
-        nfPlanejado: 0, nfConfirmadas: 0, nfForaDaConta: 0, taxa: null, km: 0,
+        nfPlanejado: 0, nfConfirmadas: 0, nfForaDaConta: 0, nfSemRastreador: 0, taxa: null, km: 0,
         operacaoMedia: null, porEntregaMedia: null, porDia: [],
       }
       p.dias += 1
       p.nfPlanejado += c.nfPlanejado ?? 0
       p.nfConfirmadas += c.nfConfirmadas ?? 0
       p.nfForaDaConta += c.nfForaDaConta ?? 0
+      p.nfSemRastreador += c.nfSemRastreador ?? 0
       p.km += c.km ?? 0
       if (c.motorista) p.motorista = c.motorista
       if (c.destino) p.destino = c.destino

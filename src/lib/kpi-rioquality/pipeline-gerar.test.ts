@@ -156,8 +156,8 @@ describe('gerarKpiRioQuality -- pacote de relatorio (Task 2)', () => {
     }
     const wb = await abrir(r.xlsx)
     const principal = textos(wb.worksheets[0])
-    // 2 confirmadas de 2 (as 2 NFs da placa sem CV fora da conta)
-    expect(principal.some(t => t.includes('TAXA DE CONFIRMAÇÃO: 100,0% (2 de 2 NFs; 2 sem rastreador fora da conta)'))).toBe(true)
+    // 2 confirmadas + 2 da placa sem CV (contam como corretas, 04/10) = 4 de 4
+    expect(principal.some(t => t.includes('TAXA DE CONFIRMAÇÃO: 100,0% (4 de 4 NFs; 0 fora da conta; 2 sem rastreador contadas como corretas)'))).toBe(true)
   })
 
   it('resumo (NF CONFIRMADAS) == linhas ENTREGUE do detalhe em toda placa', async () => {
@@ -634,7 +634,7 @@ describe('gerarKpiRioQuality -- GPS congelado e rastreador sem comunicar (item 3
       expect(d.chegada).toBeNull()
     }
     const principal = textos((await abrir(r.xlsx)).worksheets[0])
-    expect(principal.some(t => t.includes('TAXA DE CONFIRMAÇÃO: 100,0% (2 de 2 NFs; 2 sem rastreador fora da conta)'))).toBe(true)
+    expect(principal.some(t => t.includes('TAXA DE CONFIRMAÇÃO: 100,0% (4 de 4 NFs; 0 fora da conta; 2 sem rastreador contadas como corretas)'))).toBe(true)
   })
 
   it('RJM5B51: ultimo GPS 20/08 -> SEM RASTREADOR - SEM COMUNICAR DESDE 20/08, fora da taxa', async () => {
@@ -654,7 +654,7 @@ describe('gerarKpiRioQuality -- GPS congelado e rastreador sem comunicar (item 3
     // so' pergunta a ultima comunicacao de quem nao teve parada fora da base
     expect(pedidos.flat()).toEqual(['15277'])
     const principal = textos((await abrir(r.xlsx)).worksheets[0])
-    expect(principal.some(t => t.includes('(2 de 2 NFs; 2 sem rastreador fora da conta)'))).toBe(true)
+    expect(principal.some(t => t.includes('(4 de 4 NFs; 0 fora da conta; 2 sem rastreador contadas como corretas)'))).toBe(true)
   })
 
   it('caminhao normal parado NA BASE o dia todo (comunicando) continua VEÍCULO NÃO SAIU DA BASE', async () => {

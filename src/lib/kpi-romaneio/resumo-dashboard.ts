@@ -20,6 +20,9 @@ export type CargaResumo = {
   /** NFs da carga que ficaram FORA da taxa (sem rastreador, carga inteira com
    *  placa da escala divergente, carga sem placa) -- a taxa por placa ignora. */
   nfForaDaConta?: number
+  /** NFs da carga de placa sem rastreador: CONTAM como corretas na taxa
+   *  (já somadas em nfConfirmadas) e seguem marcadas "sem rastreador". */
+  nfSemRastreador?: number
 }
 
 export type NfResumo = {
@@ -156,7 +159,7 @@ export async function extrairKpiCompleto(buf: Buffer | ArrayBuffer): Promise<{ d
   })
 
   const mTaxa = /TAXA DE CONFIRMAÇÃO:\s*([\d,]+)%\s*\(([\d.]+) de ([\d.]+) NFs/.exec(linhaTaxa)
-  const mFora = /([\d.]+) fora da conta\)/.exec(linhaTaxa.split('|')[1] ?? linhaTaxa)
+  const mFora = /([\d.]+) fora da conta[);]/.exec(linhaTaxa.split('|')[1] ?? linhaTaxa)
   const taxa = mTaxa ? Number(mTaxa[1].replace(',', '.')) : null
   const entregues = mTaxa ? inteiroBr(mTaxa[2]) : null
   const nfsNaConta = mTaxa ? inteiroBr(mTaxa[3]) : null
@@ -203,7 +206,12 @@ export async function extrairKpiCompleto(buf: Buffer | ArrayBuffer): Promise<{ d
   for (const c of cargas) {
     const lista = porCarga.get(`${c.carga}::${c.placa}`) ?? []
     const inteiraDivergente = lista.length > 0 && lista.every(n => n.categoria === 'Placa da escala divergente')
-    c.nfForaDaConta = lista.filter(n => n.categoria === 'Sem rastreador' || n.categoria === 'Carga sem placa' || (inteiraDivergente && n.categoria === 'Placa da escala divergente')).length
+    // Sem rastreador conta como CORRETA (04/10): soma em nfConfirmadas e fica
+    // dentro da conta; nfSemRastreador guarda quantas foram.
+    const semRast = lista.filter(n => n.categoria === 'Sem rastreador').length
+    c.nfSemRastreador = semRast
+    c.nfConfirmadas = (c.nfConfirmadas ?? 0) + semRast
+    c.nfForaDaConta = lista.filter(n => n.categoria === 'Carga sem placa' || (inteiraDivergente && n.categoria === 'Placa da escala divergente')).length
     // Carga inteira trocada está FORA da taxa: não é pendência (04/10).
     if (inteiraDivergente) {
       const resto = (motivos['Placa da escala divergente'] ?? 0) - lista.length
@@ -212,6 +220,8 @@ export async function extrairKpiCompleto(buf: Buffer | ArrayBuffer): Promise<{ d
     }
   }
   if (motivos['Carga sem placa']) delete motivos['Carga sem placa']
+  // Sem rastreador não é pendência (conta como correta): sai do gráfico de motivos.
+  delete motivos['Sem rastreador']
 
   const resumo: ResumoGeracao = {
     versao: 1,

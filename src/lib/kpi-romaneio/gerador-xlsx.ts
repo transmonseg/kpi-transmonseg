@@ -302,7 +302,9 @@ function textoResolucaoManual(d: LinhaDetalheEntrega): string {
 // automatico puro.
 function confirmadaAposConferencia(d: LinhaDetalheEntrega): boolean {
   if (d.resolucaoManual) return RESOLUCOES_CONFIRMATORIAS.has(d.resolucaoManual)
-  return d.status !== 'pendente'
+  // 04/10: placa sem rastreador conta como entrega correta (nao ha' dado pra
+  // contestar; a NF segue marcada SEM RASTREADOR na aba da placa).
+  return d.status !== 'pendente' || ehSemRastreador(d)
 }
 
 // Revisao final pre-deploy (24/09, item 2): excluir so' a NF PENDENTE com
@@ -385,8 +387,8 @@ function avisosDeFrota(detalhe: LinhaDetalheEntrega[], trocas: Map<string, Troca
   const out: { carga: string; placa: string; texto: string }[] = []
   for (const g of grupos.values()) {
     if (g.semRastreador > 0) out.push({ carga: g.carga, placa: g.placa, texto: g.foraDaFrota
-      ? `placa não cadastrada na frota rastreada (placa provisória ou veículo novo?) -- ${g.semRastreador} NF(s) fora da taxa (informar a placa real que fez a carga)`
-      : `veículo sem rastreamento no dia -- ${g.semRastreador} NF(s) fora da taxa (conferir equipamento/placa da escala)` })
+      ? `placa não cadastrada na frota rastreada (placa provisória ou veículo novo?) -- ${g.semRastreador} NF(s) contadas como corretas (informar a placa real que fez a carga)`
+      : `veículo sem rastreamento no dia -- ${g.semRastreador} NF(s) contadas como corretas na taxa (conferir equipamento/placa da escala)` })
     if (g.escalaDivergente > 0) {
       const t = trocas.get(`${g.carga}::${g.placa}`)
       out.push({ carga: g.carga, placa: g.placa, texto: t
@@ -460,7 +462,9 @@ function ehConsultaFalhou(d: LinhaDetalheEntrega): boolean {
 // SEM RASTREADOR, do jeito que a Task 1 (24/09) implementou.
 function entraNoDenominadorPosConferencia(d: LinhaDetalheEntrega, inteiras: Set<string>): boolean {
   if (d.resolucaoManual === 'desatualizado') return false
-  if (ehSemRastreador(d) && !d.resolucaoManual) return false
+  // 04/10 (ordem do usuario): sem rastreador CONTA COMO CORRETA -- entra no
+  // denominador e no numerador (ver confirmadaAposConferencia).
+  if (ehSemRastreador(d)) return true
   if (ehCargaSemPlaca(d) && !d.resolucaoManual) return false
   if (ehNaoSaiuDaBase(d) && !d.resolucaoManual) return false
   if (ehEscalaDivergente(d, inteiras) && !d.resolucaoManual) return false
@@ -503,12 +507,13 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   const revisar = detalhe.filter(d => d.confianca === 'REVISAR' && !ehSemRastreador(d) && !ehCargaSemPlaca(d) && !ehConsultaFalhou(d)).length
   const aguardando = detalhe.filter(ehAguardando).length
   const consultaFalhou = detalhe.filter(d => ehConsultaFalhou(d) && !ehSemRastreador(d)).length
-  const base = detalhe.filter(d => !ehSemRastreador(d) && !ehNaoSaiuDaBase(d) && !ehEscalaDivergente(d, inteiras) && !ehAguardando(d) && !ehCargaSemPlaca(d) && !ehConsultaFalhou(d))
+  // 04/10 (ordem do usuario): SEM RASTREADOR conta como CORRETA -- entra no
+  // denominador E no numerador; so' segue marcada como sem rastreador.
+  const base = detalhe.filter(d => ehSemRastreador(d) || (!ehNaoSaiuDaBase(d) && !ehEscalaDivergente(d, inteiras) && !ehAguardando(d) && !ehCargaSemPlaca(d) && !ehConsultaFalhou(d)))
   const denominador = base.length
   // Confirmada = status diferente de 'pendente' (so' ENTREGUE confirmado);
-  // NF sem rastreador e REVISAR SEMPRE ficam pendente (nunca confirmam),
-  // entao ja saem naturalmente do numerador.
-  const confirmadas = base.filter(d => d.status !== 'pendente').length
+  // REVISAR fica pendente (nunca confirma). SEM RASTREADOR conta como correta.
+  const confirmadas = base.filter(d => d.status !== 'pendente' || ehSemRastreador(d)).length
   // Bug real 25/09 (achado da Ana, KPI-Nutry-Max-2026-09-25-TESTE.xlsx):
   // taxa arredondada pro inteiro escondia a diferença de poucos décimos que
   // batia contra a conta manual dela -- 1 casa decimal (ver
@@ -754,13 +759,12 @@ export async function gerarKpiRomaneioXlsx(
     // usa `total - denominador` genérico em vez do rótulo "sem rastreador".
     const foraDaContaPosConferencia = detalhe.length - resumo.denominadorPosConferencia
     const partesFora = [
-      `${formatarInteiroPtBr(resumo.semRastreador)} sem rastreador`,
       ...(resumo.naoSaiuDaBase > 0 ? [`${formatarInteiroPtBr(resumo.naoSaiuDaBase)} que não saíram da base`] : []),
       ...(resumo.escalaDivergente > 0 ? [`${formatarInteiroPtBr(resumo.escalaDivergente)} de placa da escala divergente`] : []),
       ...(resumo.cargaSemPlaca > 0 ? [`${formatarInteiroPtBr(resumo.cargaSemPlaca)} de carga sem placa`] : []),
       ...(resumo.consultaFalhou > 0 ? [`${formatarInteiroPtBr(resumo.consultaFalhou)} com consulta ao rastreador falha`] : []),
     ]
-    const foraTexto = `${partesFora.length > 1 ? `${partesFora.slice(0, -1).join(', ')} e ${partesFora[partesFora.length - 1]}` : partesFora[0]} fora da conta`
+    const foraTexto = `${partesFora.length === 0 ? '0' : partesFora.length > 1 ? `${partesFora.slice(0, -1).join(', ')} e ${partesFora[partesFora.length - 1]}` : partesFora[0]} fora da conta; ${formatarInteiroPtBr(resumo.semRastreador)} sem rastreador contadas como corretas`
     const taxaTexto = `${formatarPctUmaCasa(resumo.taxaPct)}% (${formatarInteiroPtBr(resumo.confirmadas)} de ${formatarInteiroPtBr(resumo.denominador)} NFs; ${foraTexto})`
     const naoSaiuTexto = (resumo.naoSaiuDaBase > 0 ? `    |    NFs sem saída da base: ${resumo.naoSaiuDaBase} (fora da conta)` : '')
       + (resumo.escalaDivergente > 0 ? `    |    NFs com placa da escala divergente: ${resumo.escalaDivergente} (fora da conta)` : '')
@@ -772,7 +776,7 @@ export async function gerarKpiRomaneioXlsx(
     const pendenteAuditoria = resumo.denominadorPosConferencia - resumo.confirmadasPosConferencia - naoEntregueConfirmado
     const niveisTexto = `    |    ENTREGUE: ${formatarInteiroPtBr(resumo.confirmadasPosConferencia)} / PENDENTE DE AUDITORIA: ${formatarInteiroPtBr(Math.max(0, pendenteAuditoria))} / NÃO ENTREGUE CONFIRMADO: ${formatarInteiroPtBr(naoEntregueConfirmado)}`
     const linhaResumoGeral = ws.addRow([
-      `TAXA DE CONFIRMAÇÃO: ${taxaTexto}    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${taxaPosTexto}    |    REVISAR: ${resumo.revisar}    |    NFs sem rastreador: ${resumo.semRastreador}${naoSaiuTexto}    |    NFs aguardando fim da rota: ${resumo.aguardando}${niveisTexto}${notaAvisoNfDivergente(avisos)}`,
+      `TAXA DE CONFIRMAÇÃO: ${taxaTexto}    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${taxaPosTexto}    |    REVISAR: ${resumo.revisar}    |    NFs sem rastreador: ${resumo.semRastreador} (contadas como corretas)${naoSaiuTexto}    |    NFs aguardando fim da rota: ${resumo.aguardando}${niveisTexto}${notaAvisoNfDivergente(avisos)}`,
     ])
     ws.mergeCells(linhaResumoGeral.number, 1, linhaResumoGeral.number, COLUNAS_KPI_ROMANEIO.length)
     const cell = linhaResumoGeral.getCell(1)

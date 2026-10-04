@@ -66,7 +66,7 @@ describe('Rio Quality -- regressao placa sem CV (Task 2, plano 2026-09-30)', () 
       'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO',
     ])
     const principal = textos(wb.worksheets[0])
-    expect(principal.some(t => t.includes('TAXA DE CONFIRMAÇÃO: 0,0% (0 de 0 NFs; 2 sem rastreador fora da conta)'))).toBe(true)
+    expect(principal.some(t => t.includes('TAXA DE CONFIRMAÇÃO: 100,0% (2 de 2 NFs; 0 fora da conta; 2 sem rastreador contadas como corretas)'))).toBe(true)
     expect(principal.some(t => t.includes('NFs sem rastreador: 2'))).toBe(true)
   })
 

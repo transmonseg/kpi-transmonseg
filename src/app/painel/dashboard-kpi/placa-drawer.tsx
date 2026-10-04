@@ -41,8 +41,8 @@ export function PlacaDrawer({ cliente, placa, dias, onFechar }: {
     return () => { vivo = false }
   }, [cliente, diaSel, placa.placa])
 
-  const lista = (nfs ?? []).filter(n => filtro === 'todas' || n.categoria)
-  const pendentes = (nfs ?? []).filter(n => n.categoria).length
+  const lista = (nfs ?? []).filter(n => filtro === 'todas' || (n.categoria && n.categoria !== 'Sem rastreador'))
+  const pendentes = (nfs ?? []).filter(n => n.categoria && n.categoria !== 'Sem rastreador').length
   const t = tom(placa.taxa)
   const diaInfo = placa.porDia.find(d => d.data === diaSel)
   const parcial = (dias.find(d => d.data === diaSel)?.resumo.aguardando ?? 0) > 0
@@ -132,9 +132,9 @@ export function PlacaDrawer({ cliente, placa, dias, onFechar }: {
                         {n.chegada ? <>{n.chegada}–{n.saida ?? '?'}<br /><span className="text-[var(--color-fg-subtle)]">{fmtDur(n.tempoMin)} no cliente</span></> : '—'}
                       </div>
                     </div>
-                    <p className={`mt-1.5 inline-flex items-start gap-1.5 text-[12px] font-medium ${n.categoria ? 'text-[var(--color-warning-soft-fg)]' : 'text-[var(--color-success)]'}`}>
-                      {n.categoria ? <WarningCircle size={14} weight="fill" className="mt-px shrink-0 text-[var(--color-warning)]" /> : <CheckCircle size={14} weight="fill" className="mt-px shrink-0" />}
-                      <span>{n.categoria ? n.status.charAt(0) + n.status.slice(1).toLowerCase() : 'Entregue'}</span>
+                    <p className={`mt-1.5 inline-flex items-start gap-1.5 text-[12px] font-medium ${n.categoria === 'Sem rastreador' ? 'text-[var(--color-fg-muted)]' : n.categoria ? 'text-[var(--color-warning-soft-fg)]' : 'text-[var(--color-success)]'}`}>
+                      {n.categoria === 'Sem rastreador' ? <CheckCircle size={14} weight="fill" className="mt-px shrink-0" /> : n.categoria ? <WarningCircle size={14} weight="fill" className="mt-px shrink-0 text-[var(--color-warning)]" /> : <CheckCircle size={14} weight="fill" className="mt-px shrink-0" />}
+                      <span>{n.categoria === 'Sem rastreador' ? 'Sem rastreador — conta como correta' : n.categoria ? n.status.charAt(0) + n.status.slice(1).toLowerCase() : 'Entregue'}</span>
                     </p>
                   </li>
                 ))}

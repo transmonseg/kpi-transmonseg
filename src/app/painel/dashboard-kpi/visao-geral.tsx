@@ -170,7 +170,7 @@ function Conteudo({ ag, agAnt, periodo, onPlaca }: { ag: Agregado; agAnt: Agrega
         <Tile i={3} Icone={Timer} cor="#7a5af0" rotulo="Operação média" valor={fmtDur(ag.operacaoMedia)} sub="Saída até a volta ao CD" delta={<Delta atual={ag.operacaoMedia} anterior={agAnt?.operacaoMedia} inverso suf=" min" casas={0} />} />
         <Tile i={4} Icone={Clock} cor="#d05a8a" rotulo="Tempo por entrega" valor={fmtDur(ag.porEntregaMedia)} sub="Média das cargas" delta={<Delta atual={ag.porEntregaMedia} anterior={agAnt?.porEntregaMedia} inverso suf=" min" casas={0} />} />
         <Tile i={5} Icone={Truck} cor="#1f3864" rotulo="Cargas" valor={fmtInt(ag.cargas)} sub={`${ag.placas.length} placas`} />
-        <Tile i={6} Icone={CellSignalSlash} cor="#6b7280" rotulo="Sem rastreador" valor={fmtInt(ag.semRastreador)} sub="Fora da conta" />
+        <Tile i={6} Icone={CellSignalSlash} cor="#6b7280" rotulo="Sem rastreador" valor={fmtInt(ag.semRastreador)} sub="Contam como corretas" />
         <Tile i={7} Icone={MapPinLine} cor="#d70015" rotulo="Não foi ao cliente" valor={fmtInt(ag.motivos['Não foi ao cliente'] ?? 0)} sub="Caminhão longe do endereço" />
       </div>
 
@@ -404,7 +404,7 @@ function TabelaPlacas({ placas, umDia, onPlaca }: { placas: PlacaAgg[]; umDia: b
                   </td>
                   <td className="px-4 py-3">
                     {p.taxa == null && p.nfForaDaConta > 0 ? (
-                      <span title="Sem rastreador ou placa trocada na escala — não entra na taxa" className="inline-flex rounded-full bg-[var(--color-bg-subtle)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--color-fg-muted)]">fora da conta</span>
+                      <span title="Placa trocada na escala ou carga sem placa — não entra na taxa" className="inline-flex rounded-full bg-[var(--color-bg-subtle)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--color-fg-muted)]">fora da conta</span>
                     ) : (
                       <div className="flex items-center gap-2.5">
                         <span className="w-14 text-right font-semibold tabular-nums" style={{ color: COR_TOM[t] }}>{fmtPct(p.taxa)}</span>
@@ -417,6 +417,7 @@ function TabelaPlacas({ placas, umDia, onPlaca }: { placas: PlacaAgg[]; umDia: b
                   <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
                     {fmtInt(p.nfConfirmadas)}<span className="text-[var(--color-fg-subtle)]">/{fmtInt(p.nfPlanejado - p.nfForaDaConta)}</span>
                     {p.nfForaDaConta > 0 && <span className="ml-1 text-[11px] text-[var(--color-fg-subtle)]">+{p.nfForaDaConta} fora</span>}
+                    {p.nfSemRastreador > 0 && <span title="Sem rastreador: contam como corretas na taxa" className="ml-1 text-[11px] text-[var(--color-fg-subtle)]">({p.nfSemRastreador} sem rastreador)</span>}
                   </td>
                   {!umDia && <td className="px-4 py-3 text-right tabular-nums">{p.dias}</td>}
                   <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">{fmtKm(p.km)}</td>

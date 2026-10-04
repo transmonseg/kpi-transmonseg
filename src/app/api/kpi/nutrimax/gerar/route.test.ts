@@ -358,7 +358,7 @@ describe('POST /api/kpi/nutrimax/gerar -- avisos de descasamento por origem', ()
     const avisos: string[][] = []
     wsAvisos!.eachRow((row, rowNumber) => {
       const t = String(row.getCell(3).value)
-      if (rowNumber >= 2 && !t.includes('fora da taxa')) avisos.push([String(row.getCell(1).value), t])
+      if (rowNumber >= 2 && !t.includes('fora da taxa') && !t.includes('contadas como corretas')) avisos.push([String(row.getCell(1).value), t])
     })
     expect(avisos).toEqual([['97900', 'sem escala']])
   })
