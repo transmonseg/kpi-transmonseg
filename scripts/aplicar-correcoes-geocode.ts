@@ -157,7 +157,8 @@ export async function rodar(csvPath: string, opcoes: { aplicar: boolean; dirSaid
 
   // Backup ANTES de gravar: estado atual das linhas que serao sobrescritas.
   const backup = gravar.map(g => cacheAtual.get(g.endereco) ?? { endereco: g.endereco, lat: null, lng: null, confiavel: null, fonte: null, motivo: null })
-  const caminhoBackup = `${opcoes.dirSaida}/backup-cache-antes-aplicar-correcoes.csv`
+  // Nome com data/hora (04/10: nome fixo fazia um backup sobrescrever o anterior).
+  const caminhoBackup = `${opcoes.dirSaida}/backup-cache-antes-aplicar-correcoes-${new Date().toISOString().replace(/[:.]/g, '-')}.csv`
   writeFileSync(caminhoBackup, csvBackup(backup))
   console.log(`backup: ${backup.length} linhas em ${caminhoBackup}`)
 
