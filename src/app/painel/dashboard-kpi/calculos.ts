@@ -95,7 +95,9 @@ export function agregar(dias: DiaKpi[]): Agregado {
     for (const c of r.cargas) {
       km += c.km ?? 0
       if (c.tempoOperacaoMin && c.tempoOperacaoMin > 0) ops.push(c.tempoOperacaoMin)
-      if (c.tempoMedioMin && c.tempoMedioMin > 0) {
+      // Carga sem nenhuma NF confirmada (sem rastreador / fora da conta) nao
+      // tem tempo por entrega real -- o valor da planilha e' lixo (ex.: 9h24).
+      if (c.tempoMedioMin && c.tempoMedioMin > 0 && (c.nfConfirmadas ?? 0) > 0) {
         porEnt.push(c.tempoMedioMin)
         porEntregaPorPlaca.set(c.placa, [...(porEntregaPorPlaca.get(c.placa) ?? []), c.tempoMedioMin])
       }

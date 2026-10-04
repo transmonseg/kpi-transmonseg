@@ -46,4 +46,10 @@ describe('dashboard por cliente: calculos', () => {
     expect(ttl.taxa).toBeNull()
     expect(rbg.taxa).toBe(100) // 10 de 10 na conta
   })
+
+  it('carga sem NF confirmada nao entra no tempo por entrega', () => {
+    const a = agregar([dia('2026-10-01', { cargas: [carga('AAA', 10, 0, 15, 0, 564), carga('BBB', 10, 10, 100, 500, 20)] })])
+    expect(a.porEntregaMedia).toBe(20)
+    expect(a.placas.find(p => p.placa === 'AAA')?.porEntregaMedia).toBeNull()
+  })
 })
