@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs'
 import { OBS_NAO_SAIU_DA_BASE, textoConsultaPosicoesSuspeita, chegadaCdExibivel } from './types'
+import type { TrocaProvavel } from './troca-placa'
 import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega, ResolucaoNf } from './types'
 // Reusa a MESMA paleta/fonte/logo ja validados no relatorio da Benassi
 // (pedido do usuario 25/08: "deixar esse relatorio nivel o da Benassi") --
@@ -350,7 +351,7 @@ function temRotuloEscalaDivergente(d: LinhaDetalheEntrega): boolean {
     && (d.observacao?.startsWith(PREFIXO_OBS_ESCALA_DIVERGENTE) ?? false)
     && !ehSemRastreador(d) && !ehCargaSemPlaca(d) && !ehNaoSaiuDaBase(d)
 }
-function cargasEscalaDivergenteInteira(detalhe: LinhaDetalheEntrega[]): Set<string> {
+export function cargasEscalaDivergenteInteira(detalhe: LinhaDetalheEntrega[]): Set<string> {
   const total = new Map<string, number>()
   const comRotulo = new Map<string, number>()
   for (const d of detalhe) {
@@ -364,7 +365,7 @@ function ehEscalaDivergente(d: LinhaDetalheEntrega, inteiras: Set<string>): bool
   return temRotuloEscalaDivergente(d) && inteiras.has(`${d.carga}::${d.placa}`)
 }
 
-function avisosDeFrota(detalhe: LinhaDetalheEntrega[]): { carga: string; placa: string; texto: string }[] {
+function avisosDeFrota(detalhe: LinhaDetalheEntrega[], trocas: Map<string, TrocaProvavel> = new Map()): { carga: string; placa: string; texto: string }[] {
   const inteiras = cargasEscalaDivergenteInteira(detalhe)
   const grupos = new Map<string, { carga: string; placa: string; semRastreador: number; escalaDivergente: number; foraDaFrota: boolean }>()
   for (const d of detalhe) {
@@ -386,7 +387,12 @@ function avisosDeFrota(detalhe: LinhaDetalheEntrega[]): { carga: string; placa: 
     if (g.semRastreador > 0) out.push({ carga: g.carga, placa: g.placa, texto: g.foraDaFrota
       ? `placa não cadastrada na frota rastreada (placa provisória ou veículo novo?) -- ${g.semRastreador} NF(s) fora da taxa (informar a placa real que fez a carga)`
       : `veículo sem rastreamento no dia -- ${g.semRastreador} NF(s) fora da taxa (conferir equipamento/placa da escala)` })
-    if (g.escalaDivergente > 0) out.push({ carga: g.carga, placa: g.placa, texto: `placa da escala não passou nos clientes -- ${g.escalaDivergente} NF(s) fora da taxa (substituição de veículo não informada?)` })
+    if (g.escalaDivergente > 0) {
+      const t = trocas.get(`${g.carga}::${g.placa}`)
+      out.push({ carga: g.carga, placa: g.placa, texto: t
+        ? `PROVÁVEL TROCA DE VEÍCULO: a placa ${t.outraPlaca} parou em ${t.nfsPerto} de ${t.nfsComCoord} clientes desta carga e a ${g.placa} (da escala) em nenhum -- ${g.escalaDivergente} NF(s) fora da taxa; corrigir a placa na escala e gerar de novo`
+        : `placa da escala não passou nos clientes -- ${g.escalaDivergente} NF(s) fora da taxa (substituição de veículo não informada?)` })
+    }
   }
   // Pedido da Ana 03/10: cadastro do cliente divergente do romaneio vira
   // lista pra correcao (uma linha por NF, com o cliente).
@@ -684,7 +690,7 @@ export async function gerarKpiRomaneioXlsx(
   // ligavam saíram do xlsx (pros dois clientes). Os campos correspondentes
   // (`placaExecutora`/`motivo`/`confianca` em LinhaDetalheEntrega) continuam
   // sempre calculados em agregacao.ts, so' pararam de ter opcao de exibicao.
-  opcoes: { resumoConfirmacao?: boolean } = {},
+  opcoes: { resumoConfirmacao?: boolean; trocasProvaveis?: Map<string, TrocaProvavel> } = {},
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
   wb.creator = 'TRANSMONSEG'
@@ -885,7 +891,7 @@ export async function gerarKpiRomaneioXlsx(
     wsAud.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1 + detalhe.length, column: 9 } }
   }
 
-  const avisosFrota = opcoes.resumoConfirmacao ? avisosDeFrota(detalhe) : []
+  const avisosFrota = opcoes.resumoConfirmacao ? avisosDeFrota(detalhe, opcoes.trocasProvaveis) : []
   if (avisos.length > 0 || avisosFrota.length > 0) {
     const wsAvisos = wb.addWorksheet('Avisos')
     wsAvisos.addRow([...COLUNAS_AVISOS])

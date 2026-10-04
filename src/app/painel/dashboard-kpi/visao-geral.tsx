@@ -269,7 +269,7 @@ function Tile({ i, Icone, cor, rotulo, valor, sub, delta }: { i: number; Icone: 
   return (
     <div className="dash-card dash-card-hover animate-fade-up p-4 sm:p-5" style={{ animationDelay: `${60 + i * 40}ms` }}>
       <div className="flex items-start justify-between gap-2">
-        <span className="dash-icone" style={{ ['--dash-tom' as string]: cor }}><Icone size={18} weight="fill" /></span>
+        <span className="dash-icone" data-cor={cor}><Icone size={19} /></span>
         {delta}
       </div>
       <p className="mt-4 text-[13px] font-medium text-[var(--color-fg-muted)]">{rotulo}</p>

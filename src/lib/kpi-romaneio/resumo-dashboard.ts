@@ -204,7 +204,14 @@ export async function extrairKpiCompleto(buf: Buffer | ArrayBuffer): Promise<{ d
     const lista = porCarga.get(`${c.carga}::${c.placa}`) ?? []
     const inteiraDivergente = lista.length > 0 && lista.every(n => n.categoria === 'Placa da escala divergente')
     c.nfForaDaConta = lista.filter(n => n.categoria === 'Sem rastreador' || n.categoria === 'Carga sem placa' || (inteiraDivergente && n.categoria === 'Placa da escala divergente')).length
+    // Carga inteira trocada está FORA da taxa: não é pendência (04/10).
+    if (inteiraDivergente) {
+      const resto = (motivos['Placa da escala divergente'] ?? 0) - lista.length
+      if (resto > 0) motivos['Placa da escala divergente'] = resto
+      else delete motivos['Placa da escala divergente']
+    }
   }
+  if (motivos['Carga sem placa']) delete motivos['Carga sem placa']
 
   const resumo: ResumoGeracao = {
     versao: 1,

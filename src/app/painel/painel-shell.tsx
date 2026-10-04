@@ -127,7 +127,7 @@ function SidebarBrand({ onCloseHint }: { onCloseHint?: () => void }) {
   return (
     <div className="flex h-16 items-center justify-between px-4">
       <Link href="/painel" className="group flex items-center gap-3 outline-none" onClick={onCloseHint}>
-        <span className="dash-icone !h-9 !w-9 !rounded-[11px] text-[14px] font-bold transition-transform duration-300 group-hover:scale-105" style={{ ['--dash-tom' as string]: '#2a4d86' }}>
+        <span className="inline-flex h-9 w-9 items-center justify-center rounded-[11px] bg-[#1f3864] text-[14px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] transition-transform duration-300 group-hover:scale-105">
           T
         </span>
         <span className="flex flex-col leading-none">
@@ -159,7 +159,7 @@ function SidebarFooter({
   return (
     <div className="mt-auto p-3">
       <div className="flex items-center gap-2.5 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-2.5">
-        <span className="dash-icone !h-8 !w-8 shrink-0 !rounded-full text-[12px] font-semibold" style={{ ['--dash-tom' as string]: '#2a4d86' }}>
+        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-[12px] font-semibold text-white">
           {(userEmail ?? '?').slice(0, 1).toUpperCase()}
         </span>
         <span className="min-w-0 flex-1 truncate text-[12px] text-[var(--color-sidebar-fg)]">{userEmail}</span>

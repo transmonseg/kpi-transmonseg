@@ -20,7 +20,8 @@ import { detectarDescasamentos, detectarMotoristaMultiplasPlacas, detectarCargaM
 import { montarVisitas } from '@/lib/kpi-romaneio/visitas'
 import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, contarConfirmadasPorCarga } from '@/lib/kpi-romaneio/agregacao'
 import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
-import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
+import { gerarKpiRomaneioXlsx, cargasEscalaDivergenteInteira } from '@/lib/kpi-romaneio/gerador-xlsx'
+import { detectarTrocasProvaveis } from '@/lib/kpi-romaneio/troca-placa'
 import { extrairResumoKpiXlsx } from '@/lib/kpi-romaneio/resumo-dashboard'
 import { salvarGeracao, buscarGeracaoParaRegenerar } from '@/lib/kpi-romaneio/historico'
 import { guardarXlsxGerado, novoPrefixoGeracao } from '@/lib/kpi-romaneio/xlsx-gerado'
@@ -630,7 +631,11 @@ export async function POST(req: NextRequest) {
     }
   })
 
+  // Aviso de troca de placa (04/10): so' informa qual placa fez a carga.
+  const trocasProvaveis = detectarTrocasProvaveis(cargasPorChave, cargasEscalaDivergenteInteira(detalheComResolucao), paradasPorPlaca)
+
   const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpiConsistentes, data, avisos, detalheComResolucao, undefined, undefined, {
+    trocasProvaveis,
     // Linha de resumo (taxa automatica/apos conferencia) so' na Nutry Max --
     // ver `opcoes.resumoConfirmacao` em gerador-xlsx.ts.
     resumoConfirmacao: true,

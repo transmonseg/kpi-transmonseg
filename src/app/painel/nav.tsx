@@ -125,20 +125,9 @@ function LeafLink({ item, active, nested }: { item: Leaf; active: boolean; neste
   )
 }
 
-function IconeGrupo({ Icon, cor, ativo }: { Icon: PhosphorIcon; cor?: string; ativo?: boolean }) {
-  if (!cor) return <Icon size={17} className="text-[var(--color-sidebar-fg-muted)]" />
-  return (
-    <span
-      className="inline-flex size-[26px] shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105"
-      style={{
-        background: `linear-gradient(145deg, color-mix(in oklab, ${cor} ${ativo ? 80 : 55}%, white 0%), color-mix(in oklab, ${cor} ${ativo ? 100 : 70}%, black))`,
-        boxShadow: ativo ? `inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 12px -4px ${cor}` : 'inset 0 1px 0 rgba(255,255,255,0.15)',
-        opacity: ativo ? 1 : 0.85,
-      }}
-    >
-      <Icon size={14} weight="fill" className="text-white" />
-    </span>
-  )
+function IconeGrupo({ Icon, ativo }: { Icon: PhosphorIcon; cor?: string; ativo?: boolean }) {
+  // Uma cor só, como os outros itens do menu (sem bolha colorida por empresa).
+  return <Icon size={17} weight={ativo ? 'fill' : 'regular'} className={ativo ? 'text-white' : 'text-[var(--color-sidebar-fg-muted)] transition-colors group-hover:text-white'} />
 }
 
 function GroupBlock({ group, pathname }: { group: Group; pathname: string }) {
@@ -147,7 +136,7 @@ function GroupBlock({ group, pathname }: { group: Group; pathname: string }) {
     const { Icon } = group
     return (
       <div title="Benassi — desativada" aria-disabled className="flex cursor-not-allowed items-center gap-2.5 rounded-xl px-2.5 py-2 text-[13px] font-medium text-[var(--color-sidebar-fg-muted)] opacity-45">
-        <span className="inline-flex size-[26px] items-center justify-center rounded-lg bg-white/[0.06]"><Icon size={14} /></span>
+        <Icon size={17} />
         <span className="flex-1">Benassi</span>
         <Lock size={12} weight="fill" />
       </div>
