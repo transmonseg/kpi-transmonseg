@@ -143,8 +143,11 @@ describe('geocodificarEnderecos', () => {
     )).toBe(true)
   })
 
-  it('lote com mais de um endereco 100% null (resposta ok mas todos os itens invalidos) loga aviso explicito', async () => {
+  // 04/10: resposta valida com tudo null = enderecos que nenhuma fonte acha,
+  // NAO falha de conexao -- aviso proprio, sem o alarme de MONITORAMENTO_URL.
+  it('lote com mais de um endereco 100% null em resposta ok avisa "nenhum localizado", sem o alarme de conexao', async () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ resultados: [null, null] }), { status: 200 }),
     )
@@ -152,7 +155,8 @@ describe('geocodificarEnderecos', () => {
     expect(semExtras(r)).toEqual([null, null])
     expect(errorSpy.mock.calls.some(args =>
       String(args[0]).includes('geocodificação falhou para 100% do lote'),
-    )).toBe(true)
+    )).toBe(false)
+    expect(warnSpy.mock.calls.some(args => String(args[0]).includes('nenhum dos 2 endereços do lote foi localizado'))).toBe(true)
   })
 
   it('lote de um unico endereco que falha NAO dispara o aviso de lote (sinal fraco demais)', async () => {

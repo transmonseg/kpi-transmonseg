@@ -485,7 +485,13 @@ async function geocodificarLote(enderecos: string[], opcoes: { validarTerritorio
   // a lista original de enderecos.
   const resultados = enderecos.map((_, i) => validarResultado(resultadosBrutos[i]))
 
-  if (resultados.every(r => r === null)) avisarSeLoteFalhouTotalmente(resultados.length)
+  // Resposta VALIDA com tudo null nao e' falha de conexao (achado 04/10: lote
+  // de 15 enderecos rurais "S/N" que nenhuma fonte acha disparava o aviso de
+  // conectividade e parecia queda) -- mensagem propria, pra o aviso de
+  // MONITORAMENTO_URL so' aparecer quando a chamada de fato falhou.
+  if (resultados.length > 1 && resultados.every(r => r === null)) {
+    console.warn(`[kpi-romaneio/geocode] nenhum dos ${resultados.length} endereços do lote foi localizado (ponte respondeu normalmente)`)
+  }
 
   // So' certifica "nao resolvi" quando a resposta cobre TODOS os enderecos (resposta
   // curta e' preenchida com null, mas esses nao foram respondidos) e nao e' um lote
