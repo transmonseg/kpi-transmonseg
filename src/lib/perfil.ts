@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createServiceClient } from '@/lib/supabase/service'
 import { REDES } from '@/lib/kpi/redes'
 import { EMPRESAS } from '@/lib/kpi/empresas'
@@ -10,7 +11,8 @@ export type Perfil = { papel: Papel; redes: string[]; meses: string[]; empresas:
 // que já grava a linha junto). Trata como zero acesso, nunca como admin.
 const SEM_ACESSO: Perfil = { papel: 'visualizador', redes: [], meses: [], empresas: [] }
 
-export async function getPerfil(userId: string): Promise<Perfil> {
+// cache(): layouts aninhados + pagina pediam o mesmo perfil 2-3x por clique.
+export const getPerfil = cache(async function getPerfil(userId: string): Promise<Perfil> {
   const svc = createServiceClient()
   const { data } = await svc.from('perfis').select('papel, redes, meses, empresas').eq('user_id', userId).maybeSingle()
   if (!data) return SEM_ACESSO
@@ -20,7 +22,7 @@ export async function getPerfil(userId: string): Promise<Perfil> {
     meses: (data.meses as string[] | null) ?? [],
     empresas: (data.empresas as string[] | null) ?? [],
   }
-}
+})
 
 /** Redes efetivas de uma consulta: admin passa livre; gerente/visualizador só
  *  enxergam a interseção do que pediram com o que o perfil permite (pediu nada =

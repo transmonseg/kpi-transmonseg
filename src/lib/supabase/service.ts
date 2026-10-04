@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { urlSupabaseServidor } from './url'
 
 /** Erro tipado pro app desktop: telas da nuvem que dependem da service key (não
  *  embutida no .exe por segurança). O error boundary do /painel mostra um aviso. */
@@ -13,7 +14,7 @@ export function createServiceClient() {
     throw new Error(ERRO_SERVICE_KEY_DESKTOP)
   }
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    urlSupabaseServidor(),
     key!,
     { auth: { persistSession: false } }
   )

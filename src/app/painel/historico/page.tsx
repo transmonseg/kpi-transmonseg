@@ -8,9 +8,8 @@ import {
   ArrowClockwise,
 } from '@phosphor-icons/react/dist/ssr'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { resolveUserDesktopAware } from '@/lib/supabase/desktop-auth'
+import { usuarioAtual } from '@/lib/supabase/usuario-atual'
 import { getPerfil, redesEfetivas, empresaLiberada, type Perfil } from '@/lib/perfil'
 import { fmtInstanteBR } from '@/lib/data-br'
 import { cn } from '@/components/ui'
@@ -112,8 +111,7 @@ export default async function HistoricoPage({
   const dataInicio = sp.inicio ?? ''
   const dataFim = sp.fim ?? ''
 
-  const supabase = await createClient()
-  const user = await resolveUserDesktopAware(supabase)
+  const user = await usuarioAtual()
   if (!user) redirect('/login')
   const perfil = process.env.DESKTOP_APP === '1'
     ? { papel: 'admin' as const, redes: [], meses: [], empresas: [] }

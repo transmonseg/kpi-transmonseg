@@ -2,14 +2,16 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { resolveUserDesktopAware } from './desktop-auth'
 import { getPerfil } from '@/lib/perfil'
+import { urlSupabaseServidor, nomeCookieSessao } from './url'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    urlSupabaseServidor(),
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: { name: nomeCookieSessao() },
       cookies: {
         getAll() {
           return request.cookies.getAll()

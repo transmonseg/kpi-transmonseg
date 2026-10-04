@@ -1,6 +1,5 @@
 import { Suspense } from 'react'
-import { createClient } from '@/lib/supabase/server'
-import { resolveUserDesktopAware } from '@/lib/supabase/desktop-auth'
+import { usuarioAtual } from '@/lib/supabase/usuario-atual'
 import { getPerfil } from '@/lib/perfil'
 import DashboardClient from './dashboard/dashboard-client'
 import { fetchResumo } from './dashboard/fetch-resumo'
@@ -9,8 +8,7 @@ import { EmpresaSwitcher } from './empresa-switcher'
 export default async function PainelHome({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const sp = await searchParams
 
-  const supabase = await createClient()
-  const user = await resolveUserDesktopAware(supabase)
+  const user = await usuarioAtual()
   const perfil = user && process.env.DESKTOP_APP !== '1' ? await getPerfil(user.id) : { papel: 'admin' as const, redes: [], meses: [], empresas: [] }
   const redesPermitidas = perfil.papel === 'admin' ? undefined : perfil.redes
   const mesesPermitidos = perfil.papel === 'admin' ? undefined : perfil.meses

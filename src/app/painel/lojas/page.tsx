@@ -1,14 +1,12 @@
 import { redirect } from 'next/navigation'
 import { Badge } from '@/components/ui'
-import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { resolveUserDesktopAware } from '@/lib/supabase/desktop-auth'
+import { usuarioAtual } from '@/lib/supabase/usuario-atual'
 import { getPerfil } from '@/lib/perfil'
 import { LojasList } from './lista'
 
 export default async function LojasPage() {
-  const supabase = await createClient()
-  const user = await resolveUserDesktopAware(supabase)
+  const user = await usuarioAtual()
   if (!user) redirect('/login')
   if (process.env.DESKTOP_APP !== '1') {
     const perfil = await getPerfil(user.id)

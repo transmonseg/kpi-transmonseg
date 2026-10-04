@@ -1,11 +1,9 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { resolveUserDesktopAware } from '@/lib/supabase/desktop-auth'
+import { usuarioAtual } from '@/lib/supabase/usuario-atual'
 import { getPerfil } from '@/lib/perfil'
 
 export default async function SimplesLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient()
-  const user = await resolveUserDesktopAware(supabase)
+  const user = await usuarioAtual()
   if (!user) redirect('/login')
 
   // Mesmo bypass do layout pai (src/app/painel/layout.tsx): app desktop não
