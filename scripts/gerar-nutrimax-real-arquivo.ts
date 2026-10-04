@@ -23,7 +23,8 @@ import { montarVisitas } from '../src/lib/kpi-romaneio/visitas'
 import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, contarConfirmadasPorCarga } from '../src/lib/kpi-romaneio/agregacao'
 import { calcularKmPercorrido } from '../src/lib/kpi-romaneio/km'
 import { detectarDescasamentos } from '../src/lib/kpi-romaneio/avisos'
-import { gerarKpiRomaneioXlsx } from '../src/lib/kpi-romaneio/gerador-xlsx'
+import { gerarKpiRomaneioXlsx, cargasEscalaDivergenteInteira } from '../src/lib/kpi-romaneio/gerador-xlsx'
+import { detectarTrocasProvaveis } from '../src/lib/kpi-romaneio/troca-placa'
 import { COD_USER_NUTRIMAX, EMPRESA_NUTRIMAX, foraDoAlcanceApi, PAO_PREFIXO } from '../src/lib/kpi-romaneio/constants'
 import { buscarResolucoes, aplicarResolucoes } from '../src/lib/kpi-romaneio/resolucoes'
 import { resolverAliasPlacas, buscarHorariosBaseComAlias, montarCvPorPlaca, aplicarAliasEmConjunto, placasAliasDaFrota } from '../src/lib/kpi-romaneio/alias-placa'
@@ -431,7 +432,11 @@ async function main() {
     }
   })
 
+  // Mesmo aviso de troca de placa da rota (04/10).
+  const trocasProvaveis = detectarTrocasProvaveis(cargasPorChave, cargasEscalaDivergenteInteira(detalheComResolucao), paradasPorPlaca)
+
   const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpiConsistentes, data, avisos, detalheComResolucao, undefined, undefined, {
+    trocasProvaveis,
     // Linha de resumo (taxa automatica/apos conferencia) so' na Nutry Max --
     // ver `opcoes.resumoConfirmacao` em gerador-xlsx.ts.
     resumoConfirmacao: true,
