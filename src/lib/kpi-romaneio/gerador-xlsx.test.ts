@@ -1058,10 +1058,11 @@ describe('gerador-xlsx -- rodizio sem coluna dedicada (ajuste 26/09: PLACA EXECU
     const wb = new ExcelJS.Workbook()
     await wb.xlsx.load(buffer)
     const ws = wb.getWorksheet('Auditoria')!
-    expect((ws.getRow(1).values as unknown[]).slice(1)).toEqual(['CARGA', 'PLACA', 'NF', 'CLIENTE', 'STATUS FINAL', 'REGRA / EVIDÊNCIA', 'DISTÂNCIA DA PARADA (m)', 'TEMPO PARADO', 'CONFERÊNCIA DA OPERAÇÃO'])
+    expect((ws.getRow(1).values as unknown[]).slice(1)).toEqual(['CARGA', 'PLACA', 'NF', 'CLIENTE', 'STATUS ORIGINAL (KPI)', 'REGRA / EVIDÊNCIA', 'DISTÂNCIA DA PARADA (m)', 'TEMPO PARADO', 'STATUS FINAL (APÓS CONFERÊNCIA)'])
     expect(ws.rowCount).toBe(3)
     expect(String(ws.getRow(2).getCell(6).value)).toBe('Parada de 5 min a 40 m do cadastro Unitrac')
     expect(ws.getRow(2).getCell(7).value).toBe(40)
+    expect(String(ws.getRow(2).getCell(9).value)).toBe(String(ws.getRow(2).getCell(5).value))
   })
 
   it('placa da escala divergente com resolucao manual volta pra taxa apos conferencia', async () => {

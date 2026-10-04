@@ -869,11 +869,11 @@ export async function gerarKpiRomaneioXlsx(
   // Nutry Max (resumoConfirmacao).
   if (opcoes.resumoConfirmacao && detalhe.length > 0) {
     const wsAud = wb.addWorksheet('Auditoria')
-    wsAud.addRow(['CARGA', 'PLACA', 'NF', 'CLIENTE', 'STATUS FINAL', 'REGRA / EVIDÊNCIA', 'DISTÂNCIA DA PARADA (m)', 'TEMPO PARADO', 'CONFERÊNCIA DA OPERAÇÃO'])
+    wsAud.addRow(['CARGA', 'PLACA', 'NF', 'CLIENTE', 'STATUS ORIGINAL (KPI)', 'REGRA / EVIDÊNCIA', 'DISTÂNCIA DA PARADA (m)', 'TEMPO PARADO', 'STATUS FINAL (APÓS CONFERÊNCIA)'])
     for (const d of detalhe) {
       wsAud.addRow([
         d.carga, d.placa, d.nf, d.clienteNome, textoStatus(d), d.motivo,
-        d.distParadaM ?? '', formatarMinutos(d.tempoParadaMin), textoResolucaoManual(d),
+        d.distParadaM ?? '', formatarMinutos(d.tempoParadaMin), textoResolucaoManual(d) || textoStatus(d),
       ])
     }
     wsAud.getRow(1).font = { name: FONTE, bold: true }
