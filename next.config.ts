@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   // Build standalone (server.js auto-contido) APENAS para empacotar o app desktop
   // (Electron). Inerte na Vercel — só liga quando NEXT_OUTPUT=standalone.
   output: process.env.NEXT_OUTPUT === 'standalone' ? 'standalone' : undefined,
+  // Deploy sem queda (scripts/deploy-sem-queda.sh): compila em .next-build
+  // enquanto o servidor segue servindo .next; troca as pastas no fim.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   turbopack: {
     root: path.resolve(__dirname),
   },
