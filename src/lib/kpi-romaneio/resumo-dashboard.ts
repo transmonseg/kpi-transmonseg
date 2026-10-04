@@ -19,6 +19,19 @@ export type CargaResumo = {
   tempoMedioMin: number | null
 }
 
+export type NfResumo = {
+  placa: string
+  carga: string
+  nf: string
+  cliente: string
+  endereco: string
+  chegada: string | null
+  saida: string | null
+  tempoMin: number | null
+  status: string
+  categoria: string | null // null = ENTREGUE
+}
+
 export type ResumoGeracao = {
   versao: 1
   taxa: number | null
@@ -74,20 +87,45 @@ export function categoriaPendencia(status: string): string {
   if (s.startsWith('PARADA COMPARTILHADA')) return 'Parada compartilhada (revisar)'
   if (s.startsWith('PARADA CURTA DE OUTRO ENDEREÇO')) return 'Parada de outro endereço'
   if (s.startsWith('CADASTRO DO CLIENTE NA UNITRAC DIVERGE')) return 'Cadastro divergente'
-  if (s.startsWith('ENDEREÇO COM COORDENADA IMPRECISA')) return 'Coordenada imprecisa'
+  if (s.startsWith('ENDEREÇO COM COORDENADA IMPRECISA') || s.startsWith('COORDENADA APROXIMADA')) return 'Coordenada imprecisa'
+  if (s.startsWith('ENDEREÇO NÃO LOCALIZADO')) return 'Endereço não localizado'
   if (s.startsWith('NÃO FOI AO CLIENTE')) return 'Não foi ao cliente'
   if (s.startsWith('PARADA PRÓXIMA')) return 'Parada próxima'
   if (s.startsWith('PASSOU NO ENDEREÇO') || s.startsWith('PAROU NO ENDEREÇO')) return 'Passou sem registrar'
   if (s.startsWith('CLIENTE SEM ACESSO RODOVIÁRIO')) return 'Ilha (sem estrada)'
   if (s.startsWith('CARGA SEM PLACA')) return 'Carga sem placa'
+  if (s.startsWith('PLACA DA ESCALA NÃO PASSOU')) return 'Placa da escala divergente'
   if (s.startsWith('SEM CONFIRMAÇÃO') || s === '') return 'Sem confirmação'
   return 'Outros'
 }
 
 export async function extrairResumoKpiXlsx(buf: Buffer | ArrayBuffer): Promise<ResumoGeracao> {
+  return (await extrairKpiCompleto(buf)).resumo
+}
+
+/** Data do KPI: nome da aba principal ("KPI 2026-10-02") ou o título
+ *  ("..., 02 de Outubro de 2026"). null quando não dá pra saber. */
+function dataDoKpi(wb: ExcelJS.Workbook): string | null {
+  const nome = wb.worksheets[0]?.name ?? ''
+  const m = /(\d{4}-\d{2}-\d{2})/.exec(nome)
+  if (m) return m[1]
+  const titulo = texto(wb.worksheets[0]?.getCell(1, 1).value ?? null)
+  const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
+  const t = /(\d{1,2}) de ([a-zç]+) de (\d{4})/i.exec(titulo)
+  if (t) {
+    const mi = meses.indexOf(t[2].toLowerCase())
+    if (mi >= 0) return `${t[3]}-${String(mi + 1).padStart(2, '0')}-${t[1].padStart(2, '0')}`
+  }
+  return null
+}
+
+const hhmm = (s: string) => (/^\d{1,2}:\d{2}$/.test(s.trim()) ? s.trim() : null)
+
+export async function extrairKpiCompleto(buf: Buffer | ArrayBuffer): Promise<{ data: string | null; resumo: ResumoGeracao; nfs: NfResumo[] }> {
   const wb = new ExcelJS.Workbook()
   await wb.xlsx.load(buf as ArrayBuffer)
   const principal = wb.worksheets[0]
+  const nfs: NfResumo[] = []
 
   const cargas: CargaResumo[] = []
   let linhaTaxa = ''
@@ -106,8 +144,9 @@ export async function extrairResumoKpiXlsx(buf: Buffer | ArrayBuffer): Promise<R
       nfPlanejado: numero(v[9]),
       nfConfirmadas: numero(v[10]),
       km: numero(v[12]),
-      saida: texto(v[13]) || null,
-      chegada: texto(v[14]) || null,
+      // Só horário (a planilha põe "SEM RASTREADOR" nessas colunas às vezes).
+      saida: /^\d{1,2}:\d{2}$/.test(texto(v[13]).trim()) ? texto(v[13]).trim() : null,
+      chegada: /^\d{1,2}:\d{2}$/.test(texto(v[14]).trim()) ? texto(v[14]).trim() : null,
       tempoOperacaoMin: minutosDeDuracao(texto(v[15])),
       tempoMedioMin: minutosDeDuracao(texto(v[16])),
     })
@@ -131,7 +170,20 @@ export async function extrairResumoKpiXlsx(buf: Buffer | ArrayBuffer): Promise<R
       const nf = texto(v[2])
       if (!/^\d+$/.test(nf)) return
       const status = texto(v[8]).trim()
-      if (status.startsWith('ENTREGUE')) return
+      const entregue = status.startsWith('ENTREGUE')
+      nfs.push({
+        placa: ws.name,
+        carga: texto(v[1]),
+        nf,
+        cliente: texto(v[3]),
+        endereco: texto(v[4]),
+        chegada: hhmm(texto(v[5])),
+        saida: hhmm(texto(v[6])),
+        tempoMin: minutosDeDuracao(texto(v[7])),
+        status,
+        categoria: entregue ? null : categoriaPendencia(status),
+      })
+      if (entregue) return
       const cat = categoriaPendencia(status)
       if (cat === 'Sem rastreador') semRastreador++
       else if (cat === 'Aguardando fim da rota') aguardando++
@@ -140,7 +192,7 @@ export async function extrairResumoKpiXlsx(buf: Buffer | ArrayBuffer): Promise<R
     })
   }
 
-  return {
+  const resumo: ResumoGeracao = {
     versao: 1,
     taxa,
     nfsNaConta,
@@ -154,4 +206,5 @@ export async function extrairResumoKpiXlsx(buf: Buffer | ArrayBuffer): Promise<R
     cargas,
     motivos,
   }
+  return { data: dataDoKpi(wb), resumo, nfs }
 }

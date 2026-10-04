@@ -17,6 +17,8 @@ describe('resumo do dashboard', () => {
     expect(categoriaPendencia('AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO')).toBe('Aguardando fim da rota')
     expect(categoriaPendencia('PARADA COMPARTILHADA - REVISAR')).toBe('Parada compartilhada (revisar)')
     expect(categoriaPendencia('VEÍCULO NÃO SAIU DA BASE')).toBe('Não saiu da base')
+    expect(categoriaPendencia('COORDENADA APROXIMADA (RUA SEM NÚMERO) - CONFERIR')).toBe('Coordenada imprecisa')
+    expect(categoriaPendencia('ENDEREÇO NÃO LOCALIZADO')).toBe('Endereço não localizado')
   })
 
   it('le a planilha: taxa, cargas com KM decimal e pendencias por motivo', async () => {

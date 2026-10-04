@@ -12,6 +12,7 @@ import {
   ClockCounterClockwise,
   ClipboardText,
   CaretRight,
+  Lock,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 
@@ -21,7 +22,6 @@ type Papel = 'admin' | 'gerente' | 'visualizador'
 
 const DASHBOARD: Leaf = { href: '/painel', label: 'Dashboard', Icon: ChartBar }
 const USUARIOS: Leaf = { href: '/painel/usuarios', label: 'Usuários', Icon: UsersThree }
-const VER_KPIS: Leaf = { href: '/painel/kpi/visualizar', label: 'Ver KPIs', Icon: ClockCounterClockwise }
 
 const GRUPO_BENASSI: Group = {
   label: 'Benassi',
@@ -115,6 +115,21 @@ function LeafLink({ item, active, nested }: { item: Leaf; active: boolean; neste
 }
 
 function GroupBlock({ group, pathname }: { group: Group; pathname: string }) {
+  // Benassi saiu da operação (04/10/2026): cadeado, sem clique.
+  if (group.label === 'Benassi') {
+    const { Icon } = group
+    return (
+      <div title="Benassi — desativada" aria-disabled className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium text-[var(--color-sidebar-fg-muted)] opacity-60">
+        <Icon size={16} />
+        <span className="flex-1">Benassi</span>
+        <Lock size={12} weight="fill" />
+      </div>
+    )
+  }
+  return <GroupBlockAtivo group={group} pathname={pathname} />
+}
+
+function GroupBlockAtivo({ group, pathname }: { group: Group; pathname: string }) {
   const router = useRouter()
   const ativo = groupHasActive(pathname, group)
   const [open, setOpen] = useState(ativo)
@@ -165,7 +180,7 @@ function GroupBlock({ group, pathname }: { group: Group; pathname: string }) {
   )
 }
 
-export function PainelNav({ papel, empresas }: { papel: Papel; empresas: string[] }) {
+export function PainelNav({ papel }: { papel: Papel; empresas: string[] }) {
   const pathname = usePathname()
 
   // Login restrito (gerente/visualizador): Dashboard, Ver KPIs (só se a empresa
@@ -176,9 +191,6 @@ export function PainelNav({ papel, empresas }: { papel: Papel; empresas: string[
     return (
       <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
         <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
-        {empresas.includes('benassi') && (
-          <LeafLink item={VER_KPIS} active={pathname.startsWith('/painel/kpi/visualizar')} />
-        )}
         {papel === 'gerente' && (
           <LeafLink item={USUARIOS} active={pathname.startsWith('/painel/usuarios')} />
         )}

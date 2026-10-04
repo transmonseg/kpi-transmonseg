@@ -57,6 +57,21 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Benassi saiu da operação (pedido do usuário 04/10/2026): telas travadas
+  // com cadeado no menu pra todo mundo. Código e dados ficam (reversível:
+  // tirar o prefixo daqui e o cadeado em nav.tsx / dashboard-kpi.tsx).
+  const BENASSI_BLOQUEADO = [
+    '/painel/kpi/simples', '/painel/kpi/visualizar', '/painel/kpi/revisar',
+    '/painel/dashboard/beta', '/painel/dashboard/print', '/painel/historico',
+    '/painel/lojas', '/painel/loja', '/painel/rankings',
+  ]
+  if (user && BENASSI_BLOQUEADO.some(p => path === p || path.startsWith(p + '/'))) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/painel'
+    url.search = ''
+    return NextResponse.redirect(url)
+  }
+
   if (user && isAuthPage) {
     const url = request.nextUrl.clone()
     // Desktop cai na tela offline (Gerar KPI); site vai pro painel (dashboard).
@@ -74,6 +89,9 @@ export async function updateSession(request: NextRequest) {
       const podeBenassi = perfil.empresas.includes('benassi')
       const permitido =
         path === '/painel' ||
+        // Dashboard por cliente: a rota confere empresa liberada e bloqueia
+        // escrita (inserir/excluir) pra quem não é admin.
+        path === '/api/dashboard-kpi' || path.startsWith('/api/dashboard-kpi/') ||
         (podeBenassi && (
           path === '/api/dashboard' ||
           path === '/api/dashboard/beta' ||

@@ -1,34 +1,31 @@
-import { Suspense } from 'react'
 import { usuarioAtual } from '@/lib/supabase/usuario-atual'
 import { getPerfil } from '@/lib/perfil'
-import DashboardClient from './dashboard/dashboard-client'
-import { fetchResumo } from './dashboard/fetch-resumo'
-import { EmpresaSwitcher } from './empresa-switcher'
+import { CLIENTES_DASH, type ClienteDash } from '@/lib/kpi-romaneio/dashboard-kpis'
+import { DashboardKpi, type Aba } from './dashboard-kpi/dashboard-kpi'
 
-export default async function PainelHome({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+// Dashboard por cliente (04/10/2026): escolhe a empresa no topo; mesmo
+// funcionamento do antigo dashboard da Benassi (Visão geral / Inserir KPI /
+// Histórico). A Benassi saiu da operação e fica com cadeado.
+export default async function PainelHome({ searchParams }: { searchParams: Promise<{ empresa?: string; tab?: string; data?: string }> }) {
   const sp = await searchParams
-
   const user = await usuarioAtual()
-  const perfil = user && process.env.DESKTOP_APP !== '1' ? await getPerfil(user.id) : { papel: 'admin' as const, redes: [], meses: [], empresas: [] }
-  const redesPermitidas = perfil.papel === 'admin' ? undefined : perfil.redes
-  const mesesPermitidos = perfil.papel === 'admin' ? undefined : perfil.meses
-  // Resumo do topo mistura números de TODAS as redes (contagem global de gerações) —
-  // não faz sentido pra quem só pode ver uma rede específica.
-  const resumo = redesPermitidas ? undefined : await fetchResumo()
+  const perfil = user && process.env.DESKTOP_APP !== '1'
+    ? await getPerfil(user.id)
+    : { papel: 'admin' as const, redes: [], meses: [], empresas: [] }
 
-  return (
-    <>
-      <div className="mb-4">
-        <EmpresaSwitcher papel={perfil.papel} empresas={perfil.empresas} />
+  const clientes = CLIENTES_DASH.filter(c => perfil.papel === 'admin' || perfil.empresas.includes(c))
+  const cliente: ClienteDash | undefined = clientes.find(c => c === sp.empresa) ?? clientes[0]
+  if (!cliente) {
+    return (
+      <div className="dash-card mx-auto mt-10 max-w-lg px-6 py-14 text-center">
+        <p className="text-[17px] font-semibold text-[var(--color-fg)]">Nenhum dashboard liberado</p>
+        <p className="mt-2 text-[13px] text-[var(--color-fg-muted)]">Peça ao administrador para liberar o acesso à sua empresa.</p>
       </div>
-      <Suspense fallback={null}>
-        <DashboardClient
-          resumo={resumo}
-          tabInicial={sp.tab === 'inserir' || sp.tab === 'historico' ? sp.tab : 'geral'}
-          redesPermitidas={redesPermitidas}
-          mesesPermitidos={mesesPermitidos}
-        />
-      </Suspense>
-    </>
-  )
+    )
+  }
+  const podeInserir = perfil.papel === 'admin'
+  const aba: Aba = sp.tab === 'inserir' && podeInserir ? 'inserir' : sp.tab === 'historico' ? 'historico' : 'geral'
+  const dataInicial = sp.data && /^\d{4}-\d{2}-\d{2}$/.test(sp.data) ? sp.data : undefined
+
+  return <DashboardKpi key={`${cliente}-${dataInicial ?? ''}`} cliente={cliente} clientes={clientes} aba={aba} podeInserir={podeInserir} dataInicial={dataInicial} />
 }
