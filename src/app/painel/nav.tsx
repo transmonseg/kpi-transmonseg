@@ -13,11 +13,16 @@ import {
   ClipboardText,
   CaretRight,
   Lock,
+  Truck,
+  Snowflake,
+  Package,
+  Buildings,
+  FileArrowUp,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 
 type Leaf = { href: string; label: string; Icon: PhosphorIcon; exact?: boolean }
-type Group = { label: string; Icon: PhosphorIcon; href?: string; children: Leaf[] }
+type Group = { label: string; Icon: PhosphorIcon; href?: string; children: Leaf[]; cor?: string }
 type Papel = 'admin' | 'gerente' | 'visualizador'
 
 const DASHBOARD: Leaf = { href: '/painel', label: 'Dashboard', Icon: ChartBar }
@@ -25,7 +30,7 @@ const USUARIOS: Leaf = { href: '/painel/usuarios', label: 'Usuários', Icon: Use
 
 const GRUPO_BENASSI: Group = {
   label: 'Benassi',
-  Icon: TableIcon,
+  Icon: Buildings,
   children: [
     { href: '/painel/kpi/simples', label: 'Gerar KPI', Icon: TableIcon },
     { href: '/painel/dashboard/beta', label: 'Dashboard (API Beta)', Icon: ChartBar },
@@ -36,18 +41,20 @@ const GRUPO_BENASSI: Group = {
 
 const GRUPO_NUTRIMAX: Group = {
   label: 'Nutry Max',
-  Icon: TableIcon,
+  Icon: Truck,
+  cor: '#1baf7a',
   children: [
-    { href: '/painel/nutrimax/gerar', label: 'Gerar KPI', Icon: TableIcon },
+    { href: '/painel/nutrimax/gerar', label: 'Gerar KPI', Icon: FileArrowUp },
     { href: '/painel/nutrimax/historico', label: 'Histórico', Icon: ClockCounterClockwise },
   ],
 }
 
 const GRUPO_PORTEFRIO: Group = {
   label: 'Portefrio',
-  Icon: TableIcon,
+  Icon: Snowflake,
+  cor: '#2a78d6',
   children: [
-    { href: '/painel/portefrio/gerar', label: 'Gerar KPI', Icon: TableIcon },
+    { href: '/painel/portefrio/gerar', label: 'Gerar KPI', Icon: FileArrowUp },
     { href: '/painel/portefrio/historico', label: 'Histórico', Icon: ClockCounterClockwise },
   ],
 }
@@ -55,6 +62,7 @@ const GRUPO_PORTEFRIO: Group = {
 const GRUPO_COZINHA: Group = {
   label: 'Cozinha',
   Icon: ForkKnife,
+  cor: '#d05a8a',
   children: [
     { href: '/painel/cozinha', label: 'Gerar Romaneio', Icon: ClipboardText, exact: true },
     { href: '/painel/cozinha/clientes', label: 'Clientes', Icon: UsersThree },
@@ -63,9 +71,10 @@ const GRUPO_COZINHA: Group = {
 
 const GRUPO_RIOQUALITY: Group = {
   label: 'Rio Quality',
-  Icon: TableIcon,
+  Icon: Package,
+  cor: '#e08a00',
   children: [
-    { href: '/painel/rioquality/gerar', label: 'Gerar KPI', Icon: TableIcon },
+    { href: '/painel/rioquality/gerar', label: 'Gerar KPI', Icon: FileArrowUp },
     { href: '/painel/rioquality/historico', label: 'Histórico', Icon: ClockCounterClockwise },
   ],
 }
@@ -82,35 +91,53 @@ function groupHasActive(pathname: string, g: Group) {
   return g.children.some(c => leafActive(pathname, c.href, c.exact))
 }
 
+// Menu lateral (04/10/2026): preto mantido, com o acabamento do dashboard —
+// item ativo em pílula azul com brilho, subpáginas ligadas por uma linha-guia.
 const ITEM_BASE =
-  'group relative flex items-center gap-2.5 rounded-lg py-2 text-[13px] font-medium ' +
-  'transition-[background-color,color] duration-150 active:scale-[0.98]'
+  'group relative flex items-center gap-2.5 rounded-xl py-2 text-[13px] font-medium ' +
+  'transition-[background-color,color,transform] duration-200 active:scale-[0.98]'
+
+const ATIVO = 'nav-ativo text-white'
 
 function LeafLink({ item, active, nested }: { item: Leaf; active: boolean; nested?: boolean }) {
   const { Icon } = item
   return (
     <Link
       href={item.href}
+      aria-current={active ? 'page' : undefined}
       className={
-        ITEM_BASE + ' ' + (nested ? 'pl-9 pr-2.5 ' : 'px-2.5 ') +
+        ITEM_BASE + ' ' + (nested ? 'ml-[22px] pl-3.5 pr-2.5 ' : 'px-2.5 ') +
         (active
-          ? 'bg-[var(--color-sidebar-active)] text-[var(--color-sidebar-fg-strong)]'
-          : 'text-[var(--color-sidebar-fg-muted)] hover:bg-[var(--color-sidebar-hover)] hover:text-[var(--color-sidebar-fg)]')
+          ? ATIVO
+          : 'text-[var(--color-sidebar-fg-muted)] hover:bg-white/[0.045] hover:text-[var(--color-sidebar-fg-strong)]')
       }
     >
-      {active && (
-        <span
-          aria-hidden
-          className="absolute -left-2 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full bg-[var(--color-sidebar-accent)]"
-        />
+      {nested && (
+        <span aria-hidden className={`absolute -left-px top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full transition-colors ${active ? 'bg-[#8fb0e0]' : 'bg-transparent'}`} />
       )}
       <Icon
-        size={16}
+        size={nested ? 15 : 17}
         weight={active ? 'fill' : 'regular'}
-        className={active ? 'text-[var(--color-sidebar-accent)]' : 'text-[var(--color-sidebar-fg-muted)] group-hover:text-[var(--color-sidebar-fg)]'}
+        className={active ? 'text-white' : 'text-[var(--color-sidebar-fg-muted)] transition-colors group-hover:text-[var(--color-sidebar-fg-strong)]'}
       />
       <span>{item.label}</span>
     </Link>
+  )
+}
+
+function IconeGrupo({ Icon, cor, ativo }: { Icon: PhosphorIcon; cor?: string; ativo?: boolean }) {
+  if (!cor) return <Icon size={17} className="text-[var(--color-sidebar-fg-muted)]" />
+  return (
+    <span
+      className="inline-flex size-[26px] shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105"
+      style={{
+        background: `linear-gradient(145deg, color-mix(in oklab, ${cor} ${ativo ? 80 : 55}%, white 0%), color-mix(in oklab, ${cor} ${ativo ? 100 : 70}%, black))`,
+        boxShadow: ativo ? `inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 12px -4px ${cor}` : 'inset 0 1px 0 rgba(255,255,255,0.15)',
+        opacity: ativo ? 1 : 0.85,
+      }}
+    >
+      <Icon size={14} weight="fill" className="text-white" />
+    </span>
   )
 }
 
@@ -119,8 +146,8 @@ function GroupBlock({ group, pathname }: { group: Group; pathname: string }) {
   if (group.label === 'Benassi') {
     const { Icon } = group
     return (
-      <div title="Benassi — desativada" aria-disabled className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium text-[var(--color-sidebar-fg-muted)] opacity-60">
-        <Icon size={16} />
+      <div title="Benassi — desativada" aria-disabled className="flex cursor-not-allowed items-center gap-2.5 rounded-xl px-2.5 py-2 text-[13px] font-medium text-[var(--color-sidebar-fg-muted)] opacity-45">
+        <span className="inline-flex size-[26px] items-center justify-center rounded-lg bg-white/[0.06]"><Icon size={14} /></span>
         <span className="flex-1">Benassi</span>
         <Lock size={12} weight="fill" />
       </div>
@@ -144,18 +171,16 @@ function GroupBlockAtivo({ group, pathname }: { group: Group; pathname: string }
           else setOpen(o => !o)
         }}
         className={
-          'group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium ' +
-          'transition-[background-color,color] duration-150 active:scale-[0.98] ' +
+          'group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-[7px] text-[13px] font-medium ' +
+          'transition-[background-color,color,transform] duration-200 active:scale-[0.98] ' +
           (headerAtivo
-            ? 'bg-[var(--color-sidebar-active)] text-[var(--color-sidebar-fg-strong)]'
-            : 'text-[var(--color-sidebar-fg)] hover:bg-[var(--color-sidebar-hover)]')
+            ? ATIVO
+            : ativo
+              ? 'text-white'
+              : 'text-[var(--color-sidebar-fg)] hover:bg-white/[0.045] hover:text-white')
         }
       >
-        <Icon
-          size={16}
-          weight={headerAtivo ? 'fill' : 'regular'}
-          className={headerAtivo ? 'text-[var(--color-sidebar-accent)]' : 'text-[var(--color-sidebar-fg-muted)] group-hover:text-[var(--color-sidebar-fg)]'}
-        />
+        <IconeGrupo Icon={Icon} cor={group.cor} ativo={ativo || open} />
         <span className="flex-1 text-left">{group.label}</span>
         <CaretRight
           size={13}
@@ -165,11 +190,11 @@ function GroupBlockAtivo({ group, pathname }: { group: Group; pathname: string }
       </button>
 
       <div
-        className="grid transition-[grid-template-rows] duration-200 ease-out"
-        style={{ gridTemplateRows: open ? '1fr' : '0fr' }}
+        className="grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
+        style={{ gridTemplateRows: open ? '1fr' : '0fr', opacity: open ? 1 : 0 }}
       >
         <div className="overflow-hidden">
-          <div className="mt-px flex flex-col gap-px pt-px">
+          <div className="relative mb-1 mt-0.5 flex flex-col gap-0.5 before:absolute before:bottom-1.5 before:left-[22px] before:top-1.5 before:w-px before:bg-white/[0.08]">
             {group.children.map(c => (
               <LeafLink key={c.href} item={c} active={leafActive(pathname, c.href, c.exact)} nested />
             ))}
@@ -189,7 +214,7 @@ export function PainelNav({ papel }: { papel: Papel; empresas: string[] }) {
   // (gerar/editar KPI, Cozinha etc).
   if (papel !== 'admin') {
     return (
-      <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
         <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
         {papel === 'gerente' && (
           <LeafLink item={USUARIOS} active={pathname.startsWith('/painel/usuarios')} />
@@ -199,19 +224,20 @@ export function PainelNav({ papel }: { papel: Papel; empresas: string[] }) {
   }
 
   return (
-    <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
+    <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
       <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
       <LeafLink item={USUARIOS} active={pathname.startsWith('/painel/usuarios')} />
 
-      <div className="my-2 h-px bg-[var(--color-sidebar-border)]" />
-      <span className="px-2.5 pb-1 text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--color-sidebar-fg-muted)]">
+      <span className="px-2.5 pb-1 pt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">
         Empresas
       </span>
       {GRUPOS_EMPRESA.map(g => (
         <GroupBlock key={g.label} group={g} pathname={pathname} />
       ))}
 
-      <div className="my-2 h-px bg-[var(--color-sidebar-border)]" />
+      <span className="px-2.5 pb-1 pt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">
+        Operação
+      </span>
       <GroupBlock group={GRUPO_COZINHA} pathname={pathname} />
     </nav>
   )

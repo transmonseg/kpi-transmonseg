@@ -53,7 +53,7 @@ export function PainelShell({ userEmail, papel, empresas, sairAction, children }
 
       {/* Desktop sidebar — always dark, regardless of app theme. */}
       <aside
-        className="sticky top-0 hidden h-[100dvh] w-[196px] shrink-0 flex-col border-r border-white/[0.06] bg-[#0a0a0a] md:flex"
+        className="sidebar-kpi sticky top-0 hidden h-[100dvh] w-[220px] shrink-0 flex-col md:flex"
         style={{ colorScheme: 'dark' }}
       >
         <SidebarBrand />
@@ -84,7 +84,7 @@ export function PainelShell({ userEmail, papel, empresas, sairAction, children }
           aria-label="Menu de navegação"
           style={{ colorScheme: 'dark' }}
           className={
-            'absolute left-0 top-0 flex h-full w-[260px] max-w-[80vw] flex-col border-r border-white/[0.06] bg-[#0a0a0a] shadow-2xl transition-transform duration-200 ease-out ' +
+            'sidebar-kpi absolute left-0 top-0 flex h-full w-[272px] max-w-[84vw] flex-col shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ' +
             (open ? 'translate-x-0' : '-translate-x-full')
           }
         >
@@ -125,22 +125,14 @@ export function PainelShell({ userEmail, papel, empresas, sairAction, children }
 
 function SidebarBrand({ onCloseHint }: { onCloseHint?: () => void }) {
   return (
-    <div className="flex h-16 items-center justify-between border-b border-white/[0.06] px-4">
-      <Link
-        href="/painel"
-        className="group flex items-center gap-3 outline-none"
-        onClick={onCloseHint}
-      >
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#1F3864] text-[12px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_1px_3px_rgba(0,0,0,0.5)] transition group-hover:bg-[#2a4773]">
+    <div className="flex h-16 items-center justify-between px-4">
+      <Link href="/painel" className="group flex items-center gap-3 outline-none" onClick={onCloseHint}>
+        <span className="dash-icone !h-9 !w-9 !rounded-[11px] text-[14px] font-bold transition-transform duration-300 group-hover:scale-105" style={{ ['--dash-tom' as string]: '#2a4d86' }}>
           T
         </span>
         <span className="flex flex-col leading-none">
-          <span className="text-[14px] font-medium tracking-tight text-[var(--color-sidebar-fg-strong)]">
-            Transmonseg
-          </span>
-          <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--color-sidebar-fg-muted)]">
-            KPI
-          </span>
+          <span className="text-[15px] font-semibold tracking-[-0.01em] text-white">Transmonseg</span>
+          <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8fb0e0]/70">KPI</span>
         </span>
       </Link>
       {onCloseHint && (
@@ -148,7 +140,7 @@ function SidebarBrand({ onCloseHint }: { onCloseHint?: () => void }) {
           type="button"
           onClick={onCloseHint}
           aria-label="Fechar menu"
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-sidebar-fg-muted)] transition active:scale-[0.96] hover:bg-white/[0.06] hover:text-[var(--color-sidebar-fg-strong)] md:hidden"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-sidebar-fg-muted)] transition active:scale-[0.96] hover:bg-white/[0.06] hover:text-white md:hidden"
         >
           <X size={16} weight="bold" />
         </button>
@@ -165,19 +157,23 @@ function SidebarFooter({
   sairAction: () => void | Promise<void>
 }) {
   return (
-    <div className="mt-auto border-t border-white/[0.06] p-3">
-      <div className="truncate px-2.5 pb-2 text-[11px] text-[var(--color-sidebar-fg-muted)]">
-        {userEmail}
+    <div className="mt-auto p-3">
+      <div className="flex items-center gap-2.5 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-2.5">
+        <span className="dash-icone !h-8 !w-8 shrink-0 !rounded-full text-[12px] font-semibold" style={{ ['--dash-tom' as string]: '#2a4d86' }}>
+          {(userEmail ?? '?').slice(0, 1).toUpperCase()}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-[12px] text-[var(--color-sidebar-fg)]">{userEmail}</span>
+        <form action={sairAction}>
+          <button
+            type="submit"
+            title="Sair"
+            aria-label="Sair"
+            className="inline-flex size-8 items-center justify-center rounded-full text-[var(--color-sidebar-fg-muted)] transition-[background-color,color,transform] duration-200 active:scale-95 hover:bg-white/[0.08] hover:text-white"
+          >
+            <SignOut size={15} weight="bold" />
+          </button>
+        </form>
       </div>
-      <form action={sairAction}>
-        <button
-          type="submit"
-          className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium text-[var(--color-sidebar-fg-muted)] transition-all duration-150 active:scale-[0.98] hover:bg-white/[0.04] hover:text-[var(--color-sidebar-fg-strong)]"
-        >
-          <SignOut size={15} weight="bold" />
-          Sair
-        </button>
-      </form>
     </div>
   )
 }
