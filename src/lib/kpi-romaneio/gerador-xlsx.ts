@@ -747,8 +747,13 @@ export async function gerarKpiRomaneioXlsx(
       + (resumo.escalaDivergente > 0 ? `    |    NFs com placa da escala divergente: ${resumo.escalaDivergente} (fora da conta)` : '')
       + (resumo.cargaSemPlaca > 0 ? `    |    NFs de carga sem placa: ${resumo.cargaSemPlaca} (fora da conta)` : '')
     const taxaPosTexto = `${formatarPctUmaCasa(resumo.taxaPosConferenciaPct)}% (${formatarInteiroPtBr(resumo.confirmadasPosConferencia)} de ${formatarInteiroPtBr(resumo.denominadorPosConferencia)} NFs; ${formatarInteiroPtBr(foraDaContaPosConferencia)} fora da conta)`
+    // Pedido da Ana 02/10: tres niveis -- ENTREGUE confirmado, PENDENTE pra
+    // auditoria e NAO ENTREGUE confirmado pela conferencia da operacao.
+    const naoEntregueConfirmado = detalhe.filter(d => d.resolucaoManual === 'nao_esteve_no_local').length
+    const pendenteAuditoria = resumo.denominadorPosConferencia - resumo.confirmadasPosConferencia - naoEntregueConfirmado
+    const niveisTexto = `    |    ENTREGUE: ${formatarInteiroPtBr(resumo.confirmadasPosConferencia)} / PENDENTE DE AUDITORIA: ${formatarInteiroPtBr(Math.max(0, pendenteAuditoria))} / NÃO ENTREGUE CONFIRMADO: ${formatarInteiroPtBr(naoEntregueConfirmado)}`
     const linhaResumoGeral = ws.addRow([
-      `TAXA DE CONFIRMAÇÃO: ${taxaTexto}    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${taxaPosTexto}    |    REVISAR: ${resumo.revisar}    |    NFs sem rastreador: ${resumo.semRastreador}${naoSaiuTexto}    |    NFs aguardando fim da rota: ${resumo.aguardando}${notaAvisoNfDivergente(avisos)}`,
+      `TAXA DE CONFIRMAÇÃO: ${taxaTexto}    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${taxaPosTexto}    |    REVISAR: ${resumo.revisar}    |    NFs sem rastreador: ${resumo.semRastreador}${naoSaiuTexto}    |    NFs aguardando fim da rota: ${resumo.aguardando}${niveisTexto}${notaAvisoNfDivergente(avisos)}`,
     ])
     ws.mergeCells(linhaResumoGeral.number, 1, linhaResumoGeral.number, COLUNAS_KPI_ROMANEIO.length)
     const cell = linhaResumoGeral.getCell(1)

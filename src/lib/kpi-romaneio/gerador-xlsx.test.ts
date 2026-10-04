@@ -1073,6 +1073,7 @@ describe('gerador-xlsx -- rodizio sem coluna dedicada (ajuste 26/09: PLACA EXECU
     await wb.xlsx.load(buffer)
     const resumoTexto = String(wb.worksheets[0].getCell(4, 1).value)
     expect(resumoTexto).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 50,0% (1 de 2 NFs; 0 fora da conta)')
+    expect(resumoTexto).toContain('ENTREGUE: 1 / PENDENTE DE AUDITORIA: 0 / NÃO ENTREGUE CONFIRMADO: 1')
   })
 
   it('mesmo cabeçalho pro Rio Quality (pipeline.ts, sem nenhuma opção)', async () => {
