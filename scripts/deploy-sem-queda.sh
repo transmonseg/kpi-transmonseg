@@ -5,6 +5,9 @@
 # so' troca depois do build OK. Se o site nao responder 200 apos o restart,
 # volta o .next anterior.
 set -euo pipefail
+# Trava (04/10): dois deploys ao mesmo tempo apagavam o .next-build um do outro.
+exec 9>/tmp/kpi-deploy.lock
+if ! flock -n 9; then echo "OUTRO DEPLOY EM ANDAMENTO -- nada feito"; exit 1; fi
 APP=/srv/kpi-transmonseg
 LOG=/tmp/kpi-build.log
 cd "$APP"
