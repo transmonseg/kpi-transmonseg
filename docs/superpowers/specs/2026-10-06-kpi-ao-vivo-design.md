@@ -1,4 +1,4 @@
-# KPI ao vivo (Nutry Max) — Design
+# KPI ao vivo (Nutry Max e Rio Quality) — Design
 
 Data: 06/10/2026. Status: aprovado em conversa, aguardando revisão desta spec.
 
@@ -18,9 +18,15 @@ Uma tela no **sistema KPI** (não no monitoramento) onde, de manhã, a operaçã
 8. Gerar o KPI quando quiser; no fim do dia = mesmo resultado de gerar do jeito normal.
 9. Seguro: não pode pesar no banco nem atrapalhar a operação.
 
+## Clientes
+
+- **Nutry Max** e **Rio Quality** (pedido do usuário em 06/10). A Nutry Max vai primeiro (fases 1-3); a Rio Quality entra na fase 4 com a mesma tela e o mesmo mecanismo, usando o pipeline dela (`gerarKpiRioQuality`, que já é uma função de biblioteca).
+- Rio Quality: o arquivo é a planilha "Relatório de Entregas" (formato de 55 colunas). Guardar o resultado de `parseEntregasCompletas` (linhas), não o xlsx. `gerarKpiRioQuality` passa a aceitar as linhas já lidas além do buffer. Se a planilha da manhã ainda não trouxer check-in/status, tudo bem: o KPI da RQ classifica pelo GPS; subir de novo no mesmo dia substitui.
+- Fonte de GPS da RQ é a Unitrac direta (não está na ponte do monitoramento); no dia corrente isso está dentro da janela de 48 h, então funciona igual à geração normal.
+
 ## Fora do escopo (primeira versão)
 
-- Rio Quality e Portefrio (outra fonte de dado; vem depois).
+- Portefrio.
 - Notificações (WhatsApp/apito). A tela só mostra.
 - Link público pro cliente. Quem vê é login com a Nutry liberada (admin ou operador).
 
@@ -51,7 +57,7 @@ A rota (upload de PDF), o script de regeração e o ao vivo passam a chamar essa
 
 ### 2. Dados guardados (sem arquivo)
 
-Tabela `kpi_ao_vivo_dia`: `cliente text`, `data date`, `romaneio jsonb` (LinhaRomaneio[]), `escala jsonb`, `pao jsonb`, `enviado_por text`, `enviado_em timestamptz`, PK `(cliente, data)`. Subir de novo no mesmo dia substitui (o romaneio pode chegar em partes; a tela mostra quantas NFs/placas foram lidas antes de confirmar).
+Tabela `kpi_ao_vivo_dia`: `cliente text`, `data date`, `romaneio jsonb` (LinhaRomaneio[] na Nutry; linhas de `parseEntregasCompletas` na RQ), `escala jsonb`, `pao jsonb`, `enviado_por text`, `enviado_em timestamptz`, PK `(cliente, data)`. Subir de novo no mesmo dia substitui (o romaneio pode chegar em partes; a tela mostra quantas NFs/placas foram lidas antes de confirmar).
 
 Tabela `kpi_ao_vivo_calculo`: `cliente`, `data`, `calculado_em`, `duracao_ms`, `status` ('ok' | 'erro'), `resultado jsonb` (por placa: NFs com status/rótulo/chegada/saída/tempo no cliente/coordenada; resumo), `erro text`. Guarda o último cálculo ok (substitui) e o último erro. Sem histórico intra-dia: tamanho fixo (~1–2 MB/dia).
 
@@ -93,7 +99,8 @@ Antes de liberar, para um dia fechado (03/10/2026, PDFs em `/tmp/kpi-teste/in/`)
 
 - O cálculo de 10 em 10 min faz as mesmas consultas de uma geração manual (Unitrac + ponte do monitoramento): ~6×/h em vez de 1–3×/dia. Medir duração e consultas no primeiro dia; se a duração passar de 5 min, alongar o intervalo.
 - Camada "agora": 1 consulta de posição por placa aberta a cada 30 s, com cache.
-- Pré-requisito no banco do monitoramento (o KPI depende da ponte dele): a limpeza de `posicoes_historico` hoje roda ~12×/h varrendo 11 GB inteiros. Corrigir (índice BRIN em `criado_em` + limpeza 1×/h) **antes** de ligar o cálculo de 10 min. Mudança separada, com OK do usuário.
+- Pré-requisito no banco (feito em 06/10): índice BRIN em `posicoes_historico(criado_em)` + limpeza do motor 1×/h (rodava ~12×/h varrendo 11 GB), ajuste do Postgres (cache 3 GB, parâmetros de SSD, log de consulta > 2 s), backup diário dos dois bancos, swap 4 GB, limite de logs.
+- O tick de 10 min da RQ e o da Nutry rodam em sequência no mesmo processo/lock, nunca em paralelo.
 - Nada roda fora de 05h–21h; nada grava no histórico oficial sem o clique.
 
 ## Testes
@@ -105,6 +112,7 @@ Antes de liberar, para um dia fechado (03/10/2026, PDFs em `/tmp/kpi-teste/in/`)
 
 ## Entrega em fases
 
-1. Função única + teste de equivalência (sem tela). Nada muda pro usuário.
-2. Tabelas + subir romaneio do dia + tick de 10 min + tela (lista/placa/NF) + gerar agora.
+1. Função única da Nutry Max + teste de equivalência (sem tela). Nada muda pro usuário.
+2. Tabelas + subir romaneio do dia + tick de 10 min + tela (lista/placa/NF) + gerar agora — Nutry Max.
 3. Camada "agora" (cronômetro ao vivo, posição).
+4. Rio Quality na mesma tela (seletor de cliente), com teste de equivalência próprio (02/10/2026: 90,5%, 2.578 de 2.848).
