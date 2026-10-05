@@ -79,8 +79,11 @@ export default function PlacasDoDiaPage() {
             e.preventDefault()
             if (await enviar('POST', { tipo: 'sem_rastreador', placa: fSem.placa, inicio: data, fim: fSem.fim || null, motivo: fSem.motivo })) setFSem({ placa: '', fim: '', motivo: '' })
           }}>
-            <input required placeholder="Placa (ex.: TTL5J17)" value={fSem.placa} onChange={e => setFSem({ ...fSem, placa: e.target.value })} className={`${campo} uppercase`} />
-            <input type="date" title="Até (opcional)" value={fSem.fim} min={data} onChange={e => setFSem({ ...fSem, fim: e.target.value })} className={campo} />
+            <input required placeholder="Placa (ex.: TTL5J17)" value={fSem.placa} onChange={e => setFSem({ ...fSem, placa: e.target.value })} className={`${campo} [&:not(:placeholder-shown)]:uppercase`} />
+            <label className="relative">
+              <span className="pointer-events-none absolute -top-2 left-3 bg-[var(--color-bg-elevated)] px-1 text-[10px] font-medium text-[var(--color-fg-muted)]">Até (opcional)</span>
+              <input type="date" value={fSem.fim} min={data} onChange={e => setFSem({ ...fSem, fim: e.target.value })} className={`${campo} w-full`} />
+            </label>
             <input placeholder="Motivo (opcional)" value={fSem.motivo} onChange={e => setFSem({ ...fSem, motivo: e.target.value })} className={`${campo} col-span-2`} />
             <button disabled={enviando} className={`${botao} col-span-2`}>Marcar sem rastreador a partir de {br(data)}</button>
           </form>
@@ -118,8 +121,8 @@ export default function PlacasDoDiaPage() {
             e.preventDefault()
             if (await enviar('POST', { tipo: 'troca', data, ...fTroca })) setFTroca({ placaEscala: '', placaReal: '', carga: '' })
           }}>
-            <input required placeholder="Placa da escala" value={fTroca.placaEscala} onChange={e => setFTroca({ ...fTroca, placaEscala: e.target.value })} className={`${campo} uppercase`} />
-            <input required placeholder="Placa que rodou" value={fTroca.placaReal} onChange={e => setFTroca({ ...fTroca, placaReal: e.target.value })} className={`${campo} uppercase`} />
+            <input required placeholder="Placa da escala" value={fTroca.placaEscala} onChange={e => setFTroca({ ...fTroca, placaEscala: e.target.value })} className={`${campo} [&:not(:placeholder-shown)]:uppercase`} />
+            <input required placeholder="Placa que rodou" value={fTroca.placaReal} onChange={e => setFTroca({ ...fTroca, placaReal: e.target.value })} className={`${campo} [&:not(:placeholder-shown)]:uppercase`} />
             <input placeholder="Carga (opcional)" value={fTroca.carga} onChange={e => setFTroca({ ...fTroca, carga: e.target.value })} className={`${campo} col-span-2`} />
             <button disabled={enviando} className={`${botao} col-span-2`}>Registrar troca em {br(data)}</button>
           </form>
