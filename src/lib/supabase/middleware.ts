@@ -92,7 +92,7 @@ export async function updateSession(request: NextRequest) {
       // e API liberadas pra operador.
       const operadorNutry = perfil.papel === 'operador' && perfil.empresas.includes('nutrimax') && (
         path === '/painel/nutrimax' || path.startsWith('/painel/nutrimax/') ||
-        path === '/api/kpi/nutrimax/gerar' ||
+        path.startsWith('/api/kpi/nutrimax/') ||
         path.startsWith('/api/kpi/historico/')
       )
       const permitido =

@@ -9,6 +9,7 @@ const TITLES: Record<string, string> = {
   '/painel/cozinha/clientes': 'Clientes da cozinha',
   '/painel/nutrimax/gerar': 'Nutry Max · Gerar KPI',
   '/painel/nutrimax/historico': 'Nutry Max · Histórico',
+  '/painel/nutrimax/placas': 'Nutry Max · Placas do dia',
   '/painel/rioquality/gerar': 'Rio Quality · Gerar KPI',
   '/painel/rioquality/historico': 'Rio Quality · Histórico',
   '/painel/portefrio/gerar': 'Portefrio · Gerar KPI',

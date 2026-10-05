@@ -18,6 +18,7 @@ import {
   Package,
   Buildings,
   FileArrowUp,
+  ArrowsLeftRight,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 
@@ -46,6 +47,7 @@ const GRUPO_NUTRIMAX: Group = {
   children: [
     { href: '/painel/nutrimax/gerar', label: 'Gerar KPI', Icon: FileArrowUp },
     { href: '/painel/nutrimax/historico', label: 'Histórico', Icon: ClockCounterClockwise },
+    { href: '/painel/nutrimax/placas', label: 'Placas do dia', Icon: ArrowsLeftRight },
   ],
 }
 
