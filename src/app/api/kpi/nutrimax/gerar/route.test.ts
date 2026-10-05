@@ -39,6 +39,7 @@ const cenario = vi.hoisted(() => ({
   uploadKpiErro: false,
   uploadBodies: new Map<string, unknown>(),
   paoBufRecebido: null as string | null,
+  trocas: [] as { carga: string | null; placaEscala: string; placaReal: string }[],
 }))
 
 // Task 2 (romaneio do pão): mocks de TODO módulo com efeito colateral
@@ -48,6 +49,11 @@ const cenario = vi.hoisted(() => ({
 // primeiro e define o padrão. Módulos de cálculo puro (agregacao, visitas,
 // km, avisos, alvos-data, gerador-xlsx) ficam REAIS -- só a borda de
 // I/O é substituída, pra validar o pipeline de verdade produzindo o xlsx.
+vi.mock('@/lib/kpi-romaneio/trocas-placa', async importOriginal => {
+  const real = await importOriginal<typeof import('@/lib/kpi-romaneio/trocas-placa')>()
+  return { ...real, buscarTrocasDoDia: async () => cenario.trocas }
+})
+
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     auth: { getUser: async () => ({ data: { user: { id: 'user-1', email: 'admin@teste.com' } } }) },
@@ -218,6 +224,18 @@ beforeEach(() => {
   cenario.resgateAncoraPorPlaca = new Map()
   cenario.linhasNutrimaxExtras = []
   cenario.placaPaoOverride = undefined
+  cenario.trocas = []
+})
+
+describe('POST /api/kpi/nutrimax/gerar -- troca de placa da tela Placas do dia', () => {
+  it('troca registrada: a carga sai na aba da placa que rodou, não na da escala', async () => {
+    cenario.trocas = [{ carga: null, placaEscala: PLACA, placaReal: 'ZZZ9Z99' }]
+    const res = await POST(montarRequest(false) as never)
+    expect(res.status).toBe(200)
+    const wb = await abrirXlsx(res)
+    expect(wb.getWorksheet('ZZZ9Z99')).toBeDefined()
+    expect(wb.getWorksheet(PLACA)).toBeUndefined()
+  })
 })
 
 describe('POST /api/kpi/nutrimax/gerar -- romaneioPao opcional', () => {

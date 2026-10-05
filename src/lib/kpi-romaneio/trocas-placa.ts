@@ -40,3 +40,22 @@ export function aplicarTrocasDePlaca<
   })
   return { romaneio: novoRomaneio, escala: novaEscala, aplicadas }
 }
+
+/** Trocas registradas pra empresa/dia. Falha de leitura NÃO quebra a geração
+ *  (devolve vazio) -- mesmo padrão fail-open de buscarPlacasSemRastreador. */
+export async function buscarTrocasDoDia(empresa: string, data: string): Promise<TrocaPlaca[]> {
+  try {
+    const { createServiceClient } = await import('@/lib/supabase/service')
+    const { data: linhas, error } = await createServiceClient()
+      .from('kpi_troca_placa')
+      .select('carga, placa_escala, placa_real')
+      .eq('empresa', empresa)
+      .eq('data', data)
+      .order('criado_em', { ascending: true })
+    if (error) throw new Error(error.message)
+    return (linhas ?? []).map(l => ({ carga: l.carga as string | null, placaEscala: l.placa_escala as string, placaReal: l.placa_real as string }))
+  } catch (err) {
+    console.error('trocas de placa indisponivel:', err)
+    return []
+  }
+}

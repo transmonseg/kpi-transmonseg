@@ -25,6 +25,7 @@ import { calcularKmPercorrido } from '../src/lib/kpi-romaneio/km'
 import { detectarDescasamentos } from '../src/lib/kpi-romaneio/avisos'
 import { gerarKpiRomaneioXlsx, cargasEscalaDivergenteInteira } from '../src/lib/kpi-romaneio/gerador-xlsx'
 import { detectarTrocasProvaveis } from '../src/lib/kpi-romaneio/troca-placa'
+import { aplicarTrocasDePlaca, buscarTrocasDoDia } from '../src/lib/kpi-romaneio/trocas-placa'
 import { COD_USER_NUTRIMAX, EMPRESA_NUTRIMAX, foraDoAlcanceApi, PAO_PREFIXO } from '../src/lib/kpi-romaneio/constants'
 import { buscarResolucoes, aplicarResolucoes } from '../src/lib/kpi-romaneio/resolucoes'
 import { resolverAliasPlacas, buscarHorariosBaseComAlias, montarCvPorPlaca, aplicarAliasEmConjunto, placasAliasDaFrota } from '../src/lib/kpi-romaneio/alias-placa'
@@ -61,9 +62,17 @@ async function main() {
   const romaneioBuf = Buffer.from(readFileSync(romaneioPath))
   const romaneioPaoBuf = romaneioPaoPath ? Buffer.from(readFileSync(romaneioPaoPath)) : null
 
-  const escala = await parseEscala(escalaBuf)
-  const romaneio = await parseRomaneio(romaneioBuf)
-  const resultadoPao = romaneioPaoBuf ? await parsePao(romaneioPaoBuf, data) : { linhas: [], escala: [] }
+  let escala = await parseEscala(escalaBuf)
+  let romaneio = await parseRomaneio(romaneioBuf)
+  let resultadoPao = romaneioPaoBuf ? await parsePao(romaneioPaoBuf, data) : { linhas: [], escala: [] }
+  // Mesma troca de placa da rota (tela Placas do dia, 05/10).
+  const trocas = await buscarTrocasDoDia(EMPRESA_NUTRIMAX, data)
+  if (trocas.length > 0) {
+    ;({ romaneio, escala } = aplicarTrocasDePlaca(romaneio, escala, trocas))
+    const pao = aplicarTrocasDePlaca(resultadoPao.linhas, resultadoPao.escala, trocas)
+    resultadoPao = { ...resultadoPao, linhas: pao.romaneio, escala: pao.escala }
+    console.log(`Trocas de placa aplicadas: ${trocas.length}`)
+  }
   const escalaCompleta = [...escala, ...resultadoPao.escala]
   const romaneioCompleto = [...romaneio, ...resultadoPao.linhas]
   console.log(`Escala: ${escalaCompleta.length} linhas, Romaneio: ${romaneioCompleto.length} linhas (${resultadoPao.linhas.length} do pão)`)

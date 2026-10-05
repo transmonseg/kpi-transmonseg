@@ -22,6 +22,7 @@ import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, contarC
 import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
 import { gerarKpiRomaneioXlsx, cargasEscalaDivergenteInteira } from '@/lib/kpi-romaneio/gerador-xlsx'
 import { detectarTrocasProvaveis } from '@/lib/kpi-romaneio/troca-placa'
+import { aplicarTrocasDePlaca, buscarTrocasDoDia } from '@/lib/kpi-romaneio/trocas-placa'
 import { extrairResumoKpiXlsx } from '@/lib/kpi-romaneio/resumo-dashboard'
 import { salvarGeracao, buscarGeracaoParaRegenerar } from '@/lib/kpi-romaneio/historico'
 import { guardarXlsxGerado, novoPrefixoGeracao } from '@/lib/kpi-romaneio/xlsx-gerado'
@@ -190,6 +191,13 @@ export async function POST(req: NextRequest) {
     ])
   } catch (err) {
     return new NextResponse(err instanceof Error ? err.message : 'Erro ao ler os PDFs enviados.', { status: 422 })
+  }
+  // Troca de placa informada pela operação (tela Placas do dia, 05/10).
+  const trocas = await buscarTrocasDoDia(EMPRESA_NUTRIMAX, data)
+  if (trocas.length > 0) {
+    ;({ romaneio, escala } = aplicarTrocasDePlaca(romaneio, escala, trocas))
+    const pao = aplicarTrocasDePlaca(resultadoPao.linhas, resultadoPao.escala, trocas)
+    resultadoPao = { ...resultadoPao, linhas: pao.romaneio, escala: pao.escala }
   }
   const escalaCompleta = [...escala, ...resultadoPao.escala]
   const romaneioCompleto = [...romaneio, ...resultadoPao.linhas]
