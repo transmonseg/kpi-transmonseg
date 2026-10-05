@@ -57,6 +57,7 @@ vi.mock('@/lib/supabase/server', () => ({
 vi.mock('@/lib/perfil', () => ({
   getPerfil: async () => ({ papel: 'admin' }),
   empresaLiberada: () => true,
+  podeOperarEmpresa: () => true,
 }))
 
 vi.mock('@/lib/unitrac-api', async importOriginal => {

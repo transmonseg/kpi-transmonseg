@@ -6,7 +6,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { REDE_LABEL } from '@/lib/kpi/redes'
 import { resgatar } from './actions'
 
-const PAPEL_LABEL = { gerente: 'Gerente', visualizador: 'Visualizador' } as const
+const PAPEL_LABEL = { gerente: 'Gerente', visualizador: 'Visualizador', operador: 'Operador' } as const
 
 export default async function AcessoPage({
   params,
@@ -60,7 +60,7 @@ export default async function AcessoPage({
           </h1>
           {!bloqueado && (
             <p className="mt-2 max-w-[36ch] text-[13px] leading-relaxed text-[var(--color-fg-muted)]">
-              Acesso de <strong>{PAPEL_LABEL[link.papel as 'gerente' | 'visualizador']}</strong> — só a tela de
+              Acesso de <strong>{PAPEL_LABEL[link.papel as 'gerente' | 'visualizador' | 'operador']}</strong> — só a tela de
               Dashboard, redes: {(link.redes as string[]).map(r => REDE_LABEL[r] ?? r).join(', ') || '—'}.
             </p>
           )}

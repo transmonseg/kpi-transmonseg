@@ -20,7 +20,7 @@ function lerParamsAtual() {
 export default function VisualizarKpiPage() {
   const [data, setData] = useState('')
   const [redes, setRedes] = useState<RedeManual[] | null>(null)
-  const [papel, setPapel] = useState<'admin' | 'gerente' | 'visualizador' | null>(null)
+  const [papel, setPapel] = useState<'admin' | 'gerente' | 'visualizador' | 'operador' | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [linkCopiado, setLinkCopiado] = useState(false)
@@ -53,7 +53,7 @@ export default function VisualizarKpiPage() {
       try {
         const res = await fetch(`/api/kpi-manual/dia?data=${dataParam}`)
         if (!res.ok) throw new Error(await res.text())
-        const json = await res.json() as { redes: RedeManual[]; data: string; papel: 'admin' | 'gerente' | 'visualizador' }
+        const json = await res.json() as { redes: RedeManual[]; data: string; papel: 'admin' | 'gerente' | 'visualizador' | 'operador' }
         setRedes(json.redes)
         setPapel(json.papel)
       } catch (e) {

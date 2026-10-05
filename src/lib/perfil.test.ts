@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { conviteExpirado, empresaValida, empresaLiberada, type Perfil } from './perfil'
+import { conviteExpirado, empresaValida, empresaLiberada, podeOperarEmpresa, type Perfil } from './perfil'
 
 describe('conviteExpirado', () => {
   it('null (nunca expira) → false', () => {
@@ -41,5 +41,19 @@ describe('empresaLiberada', () => {
   it('visualizador sem a empresa na lista → bloqueado', () => {
     const perfil: Perfil = { papel: 'visualizador', redes: [], meses: [], empresas: ['nutrimax'] }
     expect(empresaLiberada(perfil, 'benassi')).toBe(false)
+  })
+})
+
+describe('podeOperarEmpresa', () => {
+  const p = (papel: Perfil['papel'], empresas: string[]): Perfil => ({ papel, redes: [], meses: [], empresas })
+  it('admin opera qualquer empresa', () => expect(podeOperarEmpresa(p('admin', []), 'nutrimax')).toBe(true))
+  it('operador só nas empresas liberadas', () => {
+    expect(podeOperarEmpresa(p('operador', ['nutrimax']), 'nutrimax')).toBe(true)
+    expect(podeOperarEmpresa(p('operador', ['nutrimax']), 'rioquality')).toBe(false)
+    expect(podeOperarEmpresa(p('operador', ['nutrimax']), 'benassi')).toBe(false)
+  })
+  it('gerente e visualizador nunca operam', () => {
+    expect(podeOperarEmpresa(p('gerente', ['nutrimax']), 'nutrimax')).toBe(false)
+    expect(podeOperarEmpresa(p('visualizador', ['nutrimax']), 'nutrimax')).toBe(false)
   })
 })

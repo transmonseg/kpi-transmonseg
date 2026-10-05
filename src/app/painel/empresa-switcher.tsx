@@ -20,7 +20,7 @@ export function EmpresaSwitcher({
   papel,
   empresas,
 }: {
-  papel: 'admin' | 'gerente' | 'visualizador'
+  papel: 'admin' | 'gerente' | 'visualizador' | 'operador'
   empresas: string[]
 }) {
   const pathname = usePathname()

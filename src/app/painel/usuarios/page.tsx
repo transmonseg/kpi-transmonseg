@@ -14,7 +14,7 @@ import { RedesCheckboxes } from './redes-checkboxes'
 import { MesesCheckboxes } from './meses-checkboxes'
 import { EmpresasCheckboxes } from './empresas-checkboxes'
 
-const PAPEL_LABEL = { gerente: 'Gerente', visualizador: 'Visualizador' } as const
+const PAPEL_LABEL = { gerente: 'Gerente', visualizador: 'Visualizador', operador: 'Operador' } as const
 
 export default async function UsuariosPage({
   searchParams,
@@ -27,7 +27,7 @@ export default async function UsuariosPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
   const perfil = await getPerfil(user.id)
-  if (perfil.papel === 'visualizador') redirect('/painel')
+  if (perfil.papel === 'visualizador' || perfil.papel === 'operador') redirect('/painel')
 
   const svc = createServiceClient()
   const [{ data: perfisRows }, { data: convitesRows }] = await Promise.all([
@@ -100,6 +100,7 @@ export default async function UsuariosPage({
                 >
                   <option value="visualizador">Visualizador (só vê)</option>
                   <option value="gerente">Gerente (vê + convida)</option>
+                  <option value="operador">Operador (vê + gera KPI das empresas marcadas)</option>
                 </select>
               </div>
             ) : (
@@ -127,7 +128,7 @@ export default async function UsuariosPage({
               <div key={c.token as string} className="flex flex-wrap items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)]/40 px-4 py-3.5">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-fg)]">
-                    <Badge>{PAPEL_LABEL[c.papel as 'gerente' | 'visualizador']}</Badge>
+                    <Badge>{PAPEL_LABEL[c.papel as 'gerente' | 'visualizador' | 'operador']}</Badge>
                   </div>
                   <div className="mt-1 text-[11px] font-medium text-[var(--color-fg)]">
                     {((c.empresas as string[] | null) ?? []).map(e => EMPRESA_LABEL[e] ?? e).join(', ') || 'sem empresa'}
@@ -172,7 +173,7 @@ export default async function UsuariosPage({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-fg)]">
                     {p.email}
-                    <Badge>{PAPEL_LABEL[p.papel as 'gerente' | 'visualizador']}</Badge>
+                    <Badge>{PAPEL_LABEL[p.papel as 'gerente' | 'visualizador' | 'operador']}</Badge>
                   </div>
                   <div className="mt-1 text-[11px] font-medium text-[var(--color-fg)]">
                     {((p.empresas as string[] | null) ?? []).map(e => EMPRESA_LABEL[e] ?? e).join(', ') || 'sem empresa'}

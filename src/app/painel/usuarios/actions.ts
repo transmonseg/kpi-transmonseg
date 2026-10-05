@@ -11,7 +11,7 @@ async function perfilAtual(): Promise<{ userId: string; perfil: Perfil }> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
   const perfil = await getPerfil(user.id)
-  if (perfil.papel === 'visualizador') redirect('/painel')
+  if (perfil.papel === 'visualizador' || perfil.papel === 'operador') redirect('/painel')
   return { userId: user.id, perfil }
 }
 
@@ -25,8 +25,8 @@ export async function criarConvite(formData: FormData) {
 
   // Gerente só cria Visualizador, e só dentro das próprias redes/meses/empresas —
   // nunca confia no que vier do form (poderia ser adulterado).
-  const papel: 'gerente' | 'visualizador' =
-    perfil.papel === 'gerente' ? 'visualizador' : (papelPedido === 'gerente' ? 'gerente' : 'visualizador')
+  const papel: 'gerente' | 'visualizador' | 'operador' =
+    perfil.papel === 'gerente' ? 'visualizador' : (papelPedido === 'gerente' ? 'gerente' : papelPedido === 'operador' ? 'operador' : 'visualizador')
   const redes = perfil.papel === 'gerente' ? redesPedidas.filter(r => perfil.redes.includes(r)) : redesPedidas
   const meses = perfil.papel === 'gerente' ? mesesPedidos.filter(m => perfil.meses.includes(m)) : mesesPedidos
   const empresas = perfil.papel === 'gerente' ? empresasPedidas.filter(e => perfil.empresas.includes(e)) : empresasPedidas

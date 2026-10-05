@@ -1,5 +1,5 @@
 import { usuarioAtual } from '@/lib/supabase/usuario-atual'
-import { getPerfil } from '@/lib/perfil'
+import { getPerfil, podeOperarEmpresa } from '@/lib/perfil'
 import { CLIENTES_DASH, type ClienteDash } from '@/lib/kpi-romaneio/dashboard-kpis'
 import { DashboardKpi, type Aba } from './dashboard-kpi/dashboard-kpi'
 
@@ -23,7 +23,7 @@ export default async function PainelHome({ searchParams }: { searchParams: Promi
       </div>
     )
   }
-  const podeInserir = perfil.papel === 'admin'
+  const podeInserir = podeOperarEmpresa(perfil, cliente)
   const aba: Aba = sp.tab === 'inserir' && podeInserir ? 'inserir' : sp.tab === 'historico' ? 'historico' : 'geral'
   const dataInicial = sp.data && /^\d{4}-\d{2}-\d{2}$/.test(sp.data) ? sp.data : undefined
 

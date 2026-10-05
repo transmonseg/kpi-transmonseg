@@ -87,7 +87,16 @@ export async function updateSession(request: NextRequest) {
     const perfil = await getPerfil(user.id)
     if (perfil.papel !== 'admin') {
       const podeBenassi = perfil.empresas.includes('benassi')
+      // Operador: gera/vê só as empresas liberadas no perfil (rotas por empresa;
+      // cada rota/layout rechecha empresa liberada). Hoje só Nutry Max tem tela
+      // e API liberadas pra operador.
+      const operadorNutry = perfil.papel === 'operador' && perfil.empresas.includes('nutrimax') && (
+        path === '/painel/nutrimax' || path.startsWith('/painel/nutrimax/') ||
+        path === '/api/kpi/nutrimax/gerar' ||
+        path.startsWith('/api/kpi/historico/')
+      )
       const permitido =
+        operadorNutry ||
         path === '/painel' ||
         // Dashboard por cliente: a rota confere empresa liberada e bloqueia
         // escrita (inserir/excluir) pra quem não é admin.

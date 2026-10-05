@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
 
   const perfil = await getPerfil(user.id)
-  if (perfil.papel === 'visualizador') {
+  if (perfil.papel === 'visualizador' || perfil.papel === 'operador') {
     return new NextResponse('Sem permissão para gerar link público.', { status: 403 })
   }
   if (!empresaLiberada(perfil, 'benassi')) return new NextResponse('Sem permissão.', { status: 403 })

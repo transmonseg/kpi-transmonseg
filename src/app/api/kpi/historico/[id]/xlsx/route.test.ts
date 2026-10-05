@@ -16,6 +16,7 @@ vi.mock('@/lib/supabase/server', () => ({
 vi.mock('@/lib/perfil', () => ({
   getPerfil: async () => cenario.perfil,
   empresaLiberada: (p: { papel: string; empresas: string[] }, e: string) => p.papel === 'admin' || p.empresas.includes(e),
+  podeOperarEmpresa: (p: { papel: string; empresas: string[] }, e: string) => p.papel === 'admin' || (p.papel === 'operador' && p.empresas.includes(e)),
 }))
 vi.mock('@/lib/supabase/service', () => ({
   createServiceClient: () => ({

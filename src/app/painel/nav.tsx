@@ -23,7 +23,7 @@ import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 
 type Leaf = { href: string; label: string; Icon: PhosphorIcon; exact?: boolean }
 type Group = { label: string; Icon: PhosphorIcon; href?: string; children: Leaf[]; cor?: string }
-type Papel = 'admin' | 'gerente' | 'visualizador'
+type Papel = 'admin' | 'gerente' | 'visualizador' | 'operador'
 
 const DASHBOARD: Leaf = { href: '/painel', label: 'Dashboard', Icon: ChartBar }
 const USUARIOS: Leaf = { href: '/painel/usuarios', label: 'Usuários', Icon: UsersThree }
@@ -80,6 +80,7 @@ const GRUPO_RIOQUALITY: Group = {
 }
 
 const GRUPOS_EMPRESA: Group[] = [GRUPO_BENASSI, GRUPO_NUTRIMAX, GRUPO_PORTEFRIO, GRUPO_RIOQUALITY]
+const NOME_PARA_EMPRESA: Record<string, string> = { 'Nutry Max': 'nutrimax', Portefrio: 'portefrio', 'Rio Quality': 'rioquality' }
 
 function leafActive(pathname: string, href: string, exact?: boolean) {
   if (exact) return pathname === href
@@ -194,13 +195,26 @@ function GroupBlockAtivo({ group, pathname }: { group: Group; pathname: string }
   )
 }
 
-export function PainelNav({ papel }: { papel: Papel; empresas: string[] }) {
+export function PainelNav({ papel, empresas }: { papel: Papel; empresas: string[] }) {
   const pathname = usePathname()
 
   // Login restrito (gerente/visualizador): Dashboard, Ver KPIs (só se a empresa
   // Benassi estiver liberada — read-only, já filtrado pelas redes do perfil) e
   // Usuários pro gerente (convidar visualizadores). Sem acesso ao resto
   // (gerar/editar KPI, Cozinha etc).
+  if (papel === 'operador') {
+    const grupos = GRUPOS_EMPRESA.filter(g => g.label !== 'Benassi' && empresas.includes(NOME_PARA_EMPRESA[g.label] ?? ''))
+    return (
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
+        <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
+        {grupos.length > 0 && (
+          <span className="px-2.5 pb-1 pt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">Empresas</span>
+        )}
+        {grupos.map(g => <GroupBlock key={g.label} group={g} pathname={pathname} />)}
+      </nav>
+    )
+  }
+
   if (papel !== 'admin') {
     return (
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">

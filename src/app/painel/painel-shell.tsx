@@ -11,7 +11,7 @@ import { TourRunner } from './tour-runner'
 
 type Props = {
   userEmail: string | null | undefined
-  papel: 'admin' | 'gerente' | 'visualizador'
+  papel: 'admin' | 'gerente' | 'visualizador' | 'operador'
   empresas: string[]
   sairAction: () => void | Promise<void>
   children: React.ReactNode

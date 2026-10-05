@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { REDES } from '@/lib/kpi/redes'
 import { EMPRESAS } from '@/lib/kpi/empresas'
 
-export type Papel = 'admin' | 'gerente' | 'visualizador'
+export type Papel = 'admin' | 'gerente' | 'visualizador' | 'operador'
 export type Perfil = { papel: Papel; redes: string[]; meses: string[]; empresas: string[] }
 
 // Sem linha em `perfis` fora do backfill inicial é estado defensivo (não deveria
@@ -55,6 +55,12 @@ export function empresaValida(e: string): e is (typeof EMPRESAS)[number] {
 
 export function empresaLiberada(perfil: Perfil, empresa: string): boolean {
   return perfil.papel === 'admin' || perfil.empresas.includes(empresa)
+}
+
+/** Pode GERAR/inserir KPI da empresa: admin sempre; operador só nas empresas
+ *  liberadas no perfil. Gerente/visualizador nunca (só leitura). */
+export function podeOperarEmpresa(perfil: Perfil, empresa: string): boolean {
+  return perfil.papel === 'admin' || (perfil.papel === 'operador' && perfil.empresas.includes(empresa))
 }
 
 /** null = convite sem prazo (nunca expira). Só é expirado se tiver uma

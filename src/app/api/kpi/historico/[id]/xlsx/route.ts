@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getPerfil, empresaLiberada } from '@/lib/perfil'
+import { getPerfil, podeOperarEmpresa } from '@/lib/perfil'
 import { createServiceClient } from '@/lib/supabase/service'
 import { BUCKET_KPI_ROMANEIO, TIPO_XLSX } from '@/lib/kpi-romaneio/xlsx-gerado'
 
@@ -31,7 +31,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (error || !row) return new NextResponse('Geração não encontrada.', { status: 404 })
 
   const perfil = await getPerfil(user.id)
-  if (perfil.papel !== 'admin' || !empresaLiberada(perfil, row.cliente)) {
+  if (!podeOperarEmpresa(perfil, row.cliente)) {
     return new NextResponse('Sem permissão.', { status: 403 })
   }
   if (!row.arquivo_storage_path) {
