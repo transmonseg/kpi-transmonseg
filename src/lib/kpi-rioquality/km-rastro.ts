@@ -24,7 +24,10 @@ import { apiGet } from '@/lib/unitrac-api/client'
 
 export type PontoRastro = { lat: number; long: number }
 
-const HORAS_MAX_RASTRO = 96 // alem disso a API fica pouco confiavel
+// 05/10: era 96 -- com ~89h a Unitrac devolveu rastro incompleto e a RQ de
+// 02/10 saiu com 247 NAO SAIU DA BASE + GPS CONGELADO falsos (taxa 99,5%).
+// Alem de 48h: sem rastro (null), nao conclui nada -- o snapshot cobre paradas.
+const HORAS_MAX_RASTRO = 48
 
 export function somarKmDoRastro(pontos: PontoRastro[]): number {
   const validos = pontos.filter(

@@ -48,6 +48,13 @@ describe('janelasDoDia', () => {
     expect(janelasDoDia('2026-09-06', agora)).toBeNull()
     expect(janelasDoDia('2026-08-20', agora)).toBeNull()
   })
+
+  it('dia que começou há mais de 48h: null (achado 05/10 -- rastro de ~89h voltava incompleto e virava NÃO SAIU DA BASE/GPS CONGELADO falsos)', () => {
+    const agora = new Date('2026-10-05T20:00:00Z')
+    expect(janelasDoDia('2026-10-02', agora)).toBeNull()
+    expect(janelasDoDia('2026-10-03', agora)).toBeNull() // 65h
+    expect(janelasDoDia('2026-10-04', agora)).toEqual({ horasInicio: 41, horasFim: 17 })
+  })
 })
 
 describe('calcularKmPorRastro', () => {
