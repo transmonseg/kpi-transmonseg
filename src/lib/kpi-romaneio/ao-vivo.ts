@@ -109,10 +109,11 @@ export function paradaDaChegada(paradas: UnitracParadaRow[], chegadaIso: string 
   const comCoord = paradas
     .map(p => ({ p, lat: (p as UnitracParadaRow & { lat?: number | null }).lat, lng: (p as UnitracParadaRow & { lng?: number | null }).lng }))
     .filter((x): x is { p: UnitracParadaRow; lat: number; lng: number } => x.lat != null && x.lng != null)
-  const dentro = comCoord.find(({ p }) => {
-    const ini = Date.parse(p.chegada), fim = Date.parse(p.fim_real ?? p.saida ?? p.chegada)
-    return t >= ini - 60_000 && t <= fim
-  })
+  // Na virada entre duas paradas (uma termina quando a outra começa), vale a
+  // que começou mais tarde -- é a do cliente, não a anterior.
+  const dentro = comCoord
+    .filter(({ p }) => { const ini = Date.parse(p.chegada), fim = Date.parse(p.fim_real ?? p.saida ?? p.chegada); return t >= ini - 60_000 && t <= fim })
+    .sort((a, b) => Date.parse(b.p.chegada) - Date.parse(a.p.chegada))[0]
   if (dentro) return { lat: dentro.lat, lng: dentro.lng }
   let melhor: { lat: number; lng: number } | null = null, dt = Infinity
   for (const x of comCoord) { const d = Math.abs(Date.parse(x.p.chegada) - t); if (d < dt) { dt = d; melhor = { lat: x.lat, lng: x.lng } } }

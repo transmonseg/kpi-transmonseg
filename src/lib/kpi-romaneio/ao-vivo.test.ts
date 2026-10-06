@@ -78,6 +78,13 @@ describe('paradaDaChegada (ponto da parada que o KPI contou como entrega)', () =
   it('a parada em que a chegada da NF cai dentro', () => {
     expect(paradaDaChegada(ps, '2026-10-05T10:13:00Z')).toEqual({ lat: -22.918, lng: -43.212 })
   })
+  it('chegada na virada entre duas paradas: a que começa nela, não a que termina nela', () => {
+    const v = [
+      parada({ chegada: '2026-10-05T08:20:00Z', fim_real: '2026-10-05T08:34:00Z', lat: -22.30, lng: -42.55 }),
+      parada({ chegada: '2026-10-05T08:34:00Z', fim_real: '2026-10-05T10:29:00Z', lat: -22.27, lng: -42.53 }),
+    ]
+    expect(paradaDaChegada(v, '2026-10-05T08:34:00Z')).toEqual({ lat: -22.27, lng: -42.53 })
+  })
   it('chegada fora de qualquer parada: a que começa mais perto, até 5 min', () => {
     expect(paradaDaChegada(ps, '2026-10-05T10:05:00Z')).toEqual({ lat: -22.918, lng: -43.212 })
     expect(paradaDaChegada(ps, '2026-10-05T12:00:00Z')).toBeNull()
