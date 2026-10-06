@@ -234,6 +234,18 @@ function situacaoAgora(p: PlacaAoVivo, a: Agora | undefined, agoraMs: number): {
 
 const COR_TOM = { cliente: 'text-[#1d4fa8]', longe: 'text-[#b45309]', rota: 'text-[var(--color-fg-muted)]', fim: 'text-[var(--color-fg-muted)]' }
 
+/** Carga do pão vem do Romaneio do Pão como "PAO-<n>". */
+const ehCargaPao = (c: string) => /^PAO-/i.test(c)
+function rotuloPao(p: PlacaAoVivo): string | null {
+  const pao = p.cargas.filter(ehCargaPao).length
+  if (!pao) return null
+  return pao === p.cargas.length ? 'Carro do pão' : 'Também leva pão'
+}
+
+function SeloPao({ texto }: { texto: string }) {
+  return <span className="shrink-0 rounded-full bg-[#fdf3e3] px-2 py-0.5 text-[11px] font-semibold text-[#8a4b08]">{texto}</span>
+}
+
 function LinhaPlaca({ p, ativa, agora, agoraMs, onClick }: { p: PlacaAoVivo; ativa: boolean; agora: Agora | undefined; agoraMs: number; onClick: () => void }) {
   const s = situacaoAgora(p, agora, agoraMs)
   return (
@@ -241,7 +253,10 @@ function LinhaPlaca({ p, ativa, agora, agoraMs, onClick }: { p: PlacaAoVivo; ati
       <button type="button" onClick={onClick} aria-current={ativa ? 'true' : undefined}
         className={`block w-full border-b border-[var(--color-border)] px-4 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-[var(--color-navy-700)] ${ativa ? 'bg-[var(--color-bg-subtle)] shadow-[inset_3px_0_0_var(--color-navy-700)]' : 'hover:bg-[var(--color-bg-subtle)]'}`}>
         <span className="flex items-baseline justify-between gap-2">
-          <span className="text-[14px] font-semibold text-[var(--color-fg)]">{p.placa === 'SEM PLACA' || !p.placa ? 'Carga sem placa' : p.placa}</span>
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="text-[14px] font-semibold text-[var(--color-fg)]">{p.placa === 'SEM PLACA' || !p.placa ? 'Carga sem placa' : p.placa}</span>
+            {rotuloPao(p) && <SeloPao texto={rotuloPao(p)!} />}
+          </span>
           <span className="text-[15px] font-semibold tabular-nums text-[var(--color-fg)]">{p.pct}%</span>
         </span>
         <span className="mt-2 block h-1 overflow-hidden rounded-full bg-[var(--color-border)]">
@@ -264,7 +279,10 @@ function DetalhePlaca({ p, agora, agoraMs, nfAberta, onNf, calculadoEm }: { p: P
     <section className="flex min-w-0 flex-col gap-4">
       <div className="dash-card grid gap-5 p-5 sm:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,1fr))]">
         <div className="min-w-0">
-          <h2 className="text-[24px] font-semibold tracking-[-0.02em] text-[var(--color-fg)]">{p.placa}</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-[24px] font-semibold tracking-[-0.02em] text-[var(--color-fg)]">{p.placa}</h2>
+            {rotuloPao(p) && <SeloPao texto={rotuloPao(p)!} />}
+          </div>
           <p className="line-clamp-2 text-[13px] leading-snug text-[var(--color-fg-muted)]">{p.motorista || 'Motorista não informado'}, {p.destino}</p>
         </div>
         <Dado rotulo="Entregas" valor={`${p.pct}%`} extra={`${p.feitas} de ${p.total}`} />
