@@ -1,4 +1,5 @@
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
+import { sugerirTrocas, type SugestaoTroca } from './sugerir-trocas'
 // KPI ao vivo: leitura/gravação no banco e o cálculo. O cálculo é a MESMA
 // função da geração normal (gerarKpiNutrimax); a tela lê só o resultado
 // gravado aqui, nunca recalcula por conta própria.
@@ -57,6 +58,8 @@ export type ResultadoAoVivo = {
   calculadoEm: string
   resumo: { taxa: number | null; entregues: number | null; nfsNaConta: number | null; aguardando: number; totalNfs: number; feitas: number; pct: number }
   placas: PlacaAoVivo[]
+  /** Carro trocado sem aviso (06/10): sugestões pra operação confirmar. */
+  sugestoesTroca?: SugestaoTroca[]
 }
 
 export type DiaAoVivo = {
@@ -212,6 +215,7 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     const paradasNf = new Map<string, { lat: number; lng: number }>()
     // Parada em andamento por placa (aviso de +1 h no cliente, 06/10).
     const paradaAtualPorPlaca = new Map<string, { inicio: string; lat: number | null; lng: number | null }>()
+    let sugestoesTroca: SugestaoTroca[] = []
     const ehHoje = data === hojeBR()
     const r = await gerarKpiDoDia(cliente, data, log, {
       aoMontarDetalhe: ({ romaneioGeo, detalhe, paradasPorPlaca }) => {
@@ -224,6 +228,11 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
         if (ehHoje) for (const [placaNorm, ps] of paradasPorPlaca) {
           const pa = paradaEmAndamento(ps, Date.now())
           if (pa) paradaAtualPorPlaca.set(placaNorm, pa)
+        }
+        if (ehHoje) {
+          const pontos = romaneioGeo.filter(l => l.lat != null && l.lng != null)
+            .map(l => ({ carga: l.carga, placa: normPlaca(l.placa), endereco: l.endereco, lat: l.lat as number, lng: l.lng as number }))
+          sugestoesTroca = sugerirTrocas(pontos, paradasPorPlaca)
         }
       },
     }, paradasRq => {
@@ -240,12 +249,18 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     })
     if (up.error) log(`ao vivo ${cliente} ${data}: planilha não guardada (${up.error.message})`)
     const resultado = montarResultadoAoVivo(data, await extrairKpiCompleto(r.xlsx), coords, new Date().toISOString(), paradasNf)
+    if (sugestoesTroca.length > 0) resultado.sugestoesTroca = sugestoesTroca
     for (const p of resultado.placas) {
       const pa = paradaAtualPorPlaca.get(normPlaca(p.placa))
       if (!pa) continue
       // Sem rastreador no dia (06/10, TOS0H81: GPS parado havia 23 h): a
       // "parada" e' a ultima posicao velha, nao o carro no cliente agora.
       if (p.nfs.length > 0 && p.nfs.every(n => n.situacao === 'sem_rastreador')) continue
+      // Rota acabou (06/10: RQM4C16 6/6 parado em casa, RBJ7H78 parado no patio
+      // depois de voltar): sem nota pendente, ou a parada comecou depois da
+      // volta a base -- nao e' "no cliente".
+      if (!p.nfs.some(n => n.situacao === 'pendente')) continue
+      if (p.chegadaBase && Date.parse(pa.inicio) >= Date.parse(p.chegadaBase)) continue
       const n = pa.lat != null && pa.lng != null ? nfProxima(p.nfs, { lat: pa.lat, lng: pa.lng }) : null
       p.paradaAtual = { inicio: pa.inicio, nf: n?.nf ?? null, cliente: n?.cliente ?? null }
     }

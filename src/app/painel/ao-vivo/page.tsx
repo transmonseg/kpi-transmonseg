@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { MagnifyingGlass, DownloadSimple, UploadSimple, MapPin, WarningCircle, CaretDown, CaretLeft, MapTrifold } from '@phosphor-icons/react/dist/ssr'
+import { MagnifyingGlass, DownloadSimple, UploadSimple, MapPin, WarningCircle, CaretDown, CaretLeft, MapTrifold, ArrowsLeftRight } from '@phosphor-icons/react/dist/ssr'
 import type { EstadoAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
+import type { SugestaoTroca } from '@/lib/kpi-romaneio/sugerir-trocas'
 import type { PlacaAoVivo, NfAoVivo, SituacaoNf } from '@/lib/kpi-romaneio/ao-vivo'
 import { SubirRomaneio, type EnvioRomaneio } from './subir-romaneio'
 
@@ -252,6 +253,9 @@ export default function AoVivoPage() {
           </section>
         )
       })()}
+      {!historico && cliente === 'nutrimax' && r?.sugestoesTroca && r.sugestoesTroca.length > 0 && (
+        <TrocasSugeridas sugestoes={r.sugestoesTroca} onConfirmada={carregar} />
+      )}
       {ultimoEnvio?.monitoramento && ultimoEnvio.monitoramento.length > 0 && (
         <p className={`inline-flex flex-wrap items-center gap-2 rounded-2xl px-4 py-2.5 text-[13px] ${ultimoEnvio.monitoramento.every(m => m.ok) ? 'bg-[var(--color-bg-subtle)] text-[var(--color-fg-muted)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-soft-fg)]'}`}>
           {ultimoEnvio.monitoramento.map(m => (m.ok
@@ -546,5 +550,42 @@ function Mini({ rotulo, valor, destaque, longe, titulo }: { rotulo: string; valo
       <p className="text-[12px] text-[var(--color-fg-muted)]">{rotulo}</p>
       <p title={titulo} className={`truncate font-semibold tabular-nums ${destaque ? (longe ? 'text-[#b45309]' : 'text-[#1d4fa8]') : 'text-[var(--color-fg)]'}`}>{valor}</p>
     </div>
+  )
+}
+
+/** Carro trocado sem aviso (06/10): o carro da escala não passou na carga e
+ *  outro, sem carga no dia, parou na maioria dos endereços. A operação
+ *  confirma; nada é trocado sozinho. */
+function TrocasSugeridas({ sugestoes, onConfirmada }: { sugestoes: SugestaoTroca[]; onConfirmada: () => void }) {
+  const [enviando, setEnviando] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
+  async function confirmar(s: SugestaoTroca) {
+    setEnviando(s.carga); setAviso(null)
+    try {
+      const r = await fetch('/api/kpi/ao-vivo/troca', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ carga: s.carga, placaEscala: s.placaEscala, placaReal: s.placaSugerida }) })
+      if (!r.ok) { setAviso(`Não deu pra trocar: ${await r.text()}`); return }
+      const j = (await r.json()) as { monitoramento?: { ok: boolean; erro?: string } }
+      setAviso(`Troca registrada: carga ${s.carga} agora é do ${s.placaSugerida}. O KPI recalcula em instantes.${j.monitoramento && !j.monitoramento.ok ? ` Monitoramento não atualizou (${j.monitoramento.erro}).` : ''}`)
+      onConfirmada()
+    } finally { setEnviando(null) }
+  }
+  return (
+    <section className="flex flex-col gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-4 py-3">
+      <p className="inline-flex items-center gap-2 text-[13px] font-semibold text-[var(--color-fg)]">
+        <ArrowsLeftRight size={16} weight="bold" />{sugestoes.length === 1 ? 'Carro trocado?' : `${sugestoes.length} cargas com carro trocado?`}
+      </p>
+      <ul className="flex flex-col gap-1.5">
+        {sugestoes.map(s => (
+          <li key={s.carga} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-[var(--color-fg-muted)]">
+            <span>Carga <strong className="text-[var(--color-fg)]">{s.carga}</strong>: o <strong className="text-[var(--color-fg)]">{s.placaEscala}</strong> da escala não passou nos clientes; o <strong className="text-[var(--color-fg)]">{s.placaSugerida}</strong> parou em {s.enderecosVisitados} de {s.enderecosDaCarga} endereços.</span>
+            <button type="button" disabled={enviando != null} onClick={() => confirmar(s)}
+              className="inline-flex h-8 items-center rounded-full bg-[var(--color-navy-700)] px-3.5 text-[12.5px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] disabled:opacity-50">
+              {enviando === s.carga ? 'Trocando…' : `Confirmar ${s.placaSugerida}`}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {aviso && <p className="text-[12.5px] text-[var(--color-fg-muted)]">{aviso}</p>}
+    </section>
   )
 }

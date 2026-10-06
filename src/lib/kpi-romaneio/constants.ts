@@ -35,7 +35,12 @@ export const BASE_COORD_NUTRIMAX = { lat: -22.816007, lng: -43.277827 }
  *  Campos nunca e reconhecida como BASE. */
 export const BASE_COORD_NUTRIMAX_CAMPOS = { lat: -21.6886, lng: -41.3113 }
 
-export const BASES_COORD_NUTRIMAX = [BASE_COORD_NUTRIMAX, BASE_COORD_NUTRIMAX_CAMPOS]
+/** Terceira garagem, patio de Lagos (Sao Pedro da Aldeia) -- 06/10: 9 carros
+ *  de motoristas "(LAGOS)" pernoitando no mesmo ponto; mesma coordenada
+ *  cadastrada como base no monitoramento. Nenhum cliente a menos de 1,2 km. */
+export const BASE_COORD_NUTRIMAX_LAGOS = { lat: -22.79255, lng: -42.0915 }
+
+export const BASES_COORD_NUTRIMAX = [BASE_COORD_NUTRIMAX, BASE_COORD_NUTRIMAX_CAMPOS, BASE_COORD_NUTRIMAX_LAGOS]
 
 /** Raio de deteccao de base -- documentacional/cross-reference. O valor
  *  que REALMENTE vale em runtime e' RAIO_BASE_M em
