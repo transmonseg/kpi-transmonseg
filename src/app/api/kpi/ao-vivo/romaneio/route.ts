@@ -4,6 +4,7 @@ import { parseEscala } from '@/lib/kpi-romaneio/parse-escala'
 import { parseRomaneio } from '@/lib/kpi-romaneio/parse-romaneio'
 import { parsePao } from '@/lib/kpi-romaneio/parse-pao'
 import { guardarDiaAoVivo, calcularAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
+import { parseEntregasCompletas } from '@/lib/kpi-rioquality/parse-planilhas'
 import { acessoAoVivo } from '../acesso'
 
 export const runtime = 'nodejs'
@@ -16,6 +17,19 @@ export async function POST(req: NextRequest) {
   const a = await acessoAoVivo(String(form.get('cliente') ?? ''))
   if (!a.ok) return a.resp
   const data = hojeBR()
+  // Rio Quality: um arquivo só, o Relatório de Entregas (xlsx) do dia.
+  if (a.cliente === 'rioquality') {
+    const arq = form.get('completo')
+    if (!(arq instanceof File)) return new NextResponse('Envie o Relatório de Entregas (xlsx).', { status: 400 })
+    let entregas: ReturnType<typeof parseEntregasCompletas>
+    try { entregas = parseEntregasCompletas(Buffer.from(await arq.arrayBuffer())) } catch (err) {
+      return new NextResponse(err instanceof Error ? err.message : 'Não consegui ler a planilha.', { status: 422 })
+    }
+    if (entregas.length === 0) return new NextResponse('Nenhuma entrega reconhecida — confira se é o Relatório de Entregas da Rio Quality (colunas Razão Social, Cidade, Placa, Endereço…).', { status: 422 })
+    await guardarDiaAoVivo({ cliente: a.cliente, data, escala: [], romaneio: entregas, pao: { linhas: [], escala: [] }, escalaEnviada: false, paoEnviado: false, enviadoPor: a.email })
+    void calcularAoVivo(a.cliente, data, m => console.log(`[kpi/ao-vivo] ${m}`)).catch(err => console.error('[kpi/ao-vivo] calculo falhou:', err))
+    return NextResponse.json({ ok: true, nfs: entregas.length, placas: new Set(entregas.map(e => e.placaNorm)).size })
+  }
   const romaneioFile = form.get('romaneio')
   const escalaFile = form.get('escala')
   const paoFile = form.get('romaneioPao')

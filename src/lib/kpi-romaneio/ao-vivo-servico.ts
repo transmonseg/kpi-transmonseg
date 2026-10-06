@@ -7,8 +7,16 @@ import { extrairKpiCompleto } from './resumo-dashboard'
 import { resumirPlacas, paradaDaChegada, type PlacaAoVivo } from './ao-vivo'
 import { normPlaca } from '@/lib/unitrac-api'
 import type { LinhaEscala, LinhaRomaneio } from './types'
+import { gerarKpiRioQuality } from '@/lib/kpi-rioquality/pipeline'
+import { buscarFrotaRioQuality } from '@/lib/kpi-rioquality/frota'
+import { foraDoAlcanceApi } from './constants'
+import { lerSnapshotParadas } from './paradas-snapshot'
+import { EMPRESA_SNAPSHOT_RIOQUALITY } from '@/lib/kpi-rioquality/snapshot-paradas'
+import { hojeBR } from '@/lib/data-br'
+import type { EntregaRioQualityCompleta } from '@/lib/kpi-rioquality/parse-planilhas'
 
-export const CLIENTES_AO_VIVO = ['nutrimax'] as const
+export const CLIENTES_AO_VIVO = ['nutrimax', 'rioquality'] as const
+export const NOME_CLIENTE_AO_VIVO: Record<ClienteAoVivo, string> = { nutrimax: 'Nutry Max', rioquality: 'Rio Quality' }
 export type ClienteAoVivo = (typeof CLIENTES_AO_VIVO)[number]
 export const clienteAoVivoValido = (c: string | null): c is ClienteAoVivo => (CLIENTES_AO_VIVO as readonly string[]).includes(c ?? '')
 
@@ -41,7 +49,9 @@ export async function guardarDiaAoVivo(p: {
   cliente: ClienteAoVivo
   data: string
   escala: LinhaEscala[]
-  romaneio: LinhaRomaneio[]
+  /** Nutry Max: LinhaRomaneio[] lido dos PDFs. Rio Quality: as entregas lidas
+   *  do Relatório de Entregas (EntregaRioQualityCompleta[]). */
+  romaneio: LinhaRomaneio[] | EntregaRioQualityCompleta[]
   pao: { linhas: LinhaRomaneio[]; escala: LinhaEscala[] }
   escalaEnviada: boolean
   paoEnviado: boolean
@@ -64,12 +74,12 @@ export async function lerEstadoAoVivo(cliente: ClienteAoVivo, data: string): Pro
   if (c.error) throw new Error(c.error.message)
   let dia: DiaAoVivo | null = null
   if (d.data) {
-    const linhas = [...(d.data.romaneio as LinhaRomaneio[]), ...((d.data.pao as { linhas: LinhaRomaneio[] }).linhas ?? [])]
+    const linhas: { placa?: string; placaNorm?: string }[] = [...(d.data.romaneio as { placa?: string; placaNorm?: string }[]), ...((d.data.pao as { linhas: LinhaRomaneio[] }).linhas ?? [])]
     dia = {
       enviadoEm: d.data.enviado_em as string,
       enviadoPor: (d.data.enviado_por as string | null) ?? null,
       nfs: linhas.length,
-      placas: new Set(linhas.map(l => l.placa)).size,
+      placas: new Set(linhas.map(l => l.placa ?? l.placaNorm)).size,
       escalaEnviada: !!d.data.escala_enviada,
       paoEnviado: !!d.data.pao_enviado,
     }
@@ -112,6 +122,36 @@ export async function entradaDoDia(cliente: ClienteAoVivo, data: string): Promis
   }
 }
 
+/** Rio Quality: as entregas lidas de manhã (Relatório de Entregas). */
+export async function entradaRioQualityDoDia(data: string): Promise<EntregaRioQualityCompleta[] | null> {
+  const { data: d, error } = await createServiceClient().from('kpi_ao_vivo_dia').select('romaneio').eq('cliente', 'rioquality').eq('data', data).maybeSingle()
+  if (error) throw new Error(error.message)
+  return d ? (d.romaneio as EntregaRioQualityCompleta[]) : null
+}
+
+/** KPI do dia com o que foi guardado de manhã (mesma geração da tela
+ *  "Gerar KPI" de cada cliente). null = romaneio do dia não subido. */
+export async function gerarKpiDoDia(cliente: ClienteAoVivo, data: string, log: (m: string) => void = () => {},
+  aoMontarDetalheNutry?: Parameters<typeof gerarKpiNutrimax>[1]): Promise<{ xlsx: Buffer; qtdCargas: number } | null> {
+  if (cliente === 'rioquality') {
+    const entregas = await entradaRioQualityDoDia(data)
+    if (!entregas) return null
+    // Mesma regra da rota rioquality/gerar: dia fora das 48h da Unitrac usa o
+    // snapshot noturno de paradas.
+    let lerSnapshot: (() => Promise<Awaited<ReturnType<typeof lerSnapshotParadas>>>) | undefined
+    if (foraDoAlcanceApi(data, hojeBR())) {
+      const snap = await lerSnapshotParadas(EMPRESA_SNAPSHOT_RIOQUALITY, data)
+      if (snap.size > 0) lerSnapshot = async () => snap
+    }
+    const r = await gerarKpiRioQuality({ entregasCompletas: entregas, data, cvPorPlaca: await buscarFrotaRioQuality(), log, lerSnapshot })
+    return { xlsx: r.xlsx, qtdCargas: r.linhasKpi.length }
+  }
+  const entrada = await entradaDoDia(cliente, data)
+  if (!entrada) return null
+  const r = await gerarKpiNutrimax(entrada, aoMontarDetalheNutry)
+  return { xlsx: r.xlsx, qtdCargas: r.qtdCargasNutry }
+}
+
 /** Resultado da tela a partir da planilha do KPI lida (extrairKpiCompleto).
  *  Usado pelo cálculo ao vivo e pelo histórico (planilha guardada). */
 export function montarResultadoAoVivo(data: string, lido: Awaited<ReturnType<typeof extrairKpiCompleto>>, coords: Map<string, { lat: number; lng: number }>, calculadoEm: string, paradas?: Map<string, { lat: number; lng: number }>): ResultadoAoVivo {
@@ -131,15 +171,15 @@ export function montarResultadoAoVivo(data: string, lido: Awaited<ReturnType<typ
 /** Roda o KPI com o romaneio guardado e grava o resultado da tela.
  *  Outro cálculo rodando: não faz nada ('ocupado'). Sem romaneio: 'sem_romaneio'. */
 export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: (m: string) => void = () => {}): Promise<'ok' | 'ocupado' | 'sem_romaneio' | 'erro'> {
-  const entrada = await entradaDoDia(cliente, data)
-  if (!entrada) return 'sem_romaneio'
+  const temDia = cliente === 'rioquality' ? await entradaRioQualityDoDia(data) : await entradaDoDia(cliente, data)
+  if (!temDia) return 'sem_romaneio'
   if (!(await travar(cliente, data))) return 'ocupado'
   const svc = createServiceClient()
   const t0 = Date.now()
   try {
     const coords = new Map<string, { lat: number; lng: number }>()
     const paradasNf = new Map<string, { lat: number; lng: number }>()
-    const r = await gerarKpiNutrimax(entrada, {
+    const r = await gerarKpiDoDia(cliente, data, log, {
       aoMontarDetalhe: ({ romaneioGeo, detalhe, paradasPorPlaca }) => {
         for (const l of romaneioGeo) if (l.lat != null && l.lng != null) coords.set(l.nf, { lat: l.lat, lng: l.lng })
         // Ponto da parada que o KPI contou como entrega ("Ver no monitoramento").
@@ -149,6 +189,7 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
         }
       },
     })
+    if (!r) throw new Error('romaneio do dia sumiu durante o cálculo')
     const resultado = montarResultadoAoVivo(data, await extrairKpiCompleto(r.xlsx), coords, new Date().toISOString(), paradasNf)
     const { error } = await svc.from('kpi_ao_vivo_calculo').update({
       resultado, calculado_em: resultado.calculadoEm, duracao_ms: Date.now() - t0, rodando_desde: null,

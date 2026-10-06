@@ -7,6 +7,8 @@ import { buscarParadasDoDia } from '@/lib/kpi-romaneio/unitrac'
 import { COD_USER_NUTRIMAX } from '@/lib/kpi-romaneio/constants'
 import { paradaEmAndamento, nfProxima } from '@/lib/kpi-romaneio/ao-vivo'
 import type { ResultadoAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
+import { buscarFrotaRioQuality } from '@/lib/kpi-rioquality/frota'
+import type { ClienteAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
 import { acessoAoVivo } from '../acesso'
 
 export const runtime = 'nodejs'
@@ -23,14 +25,17 @@ type Agora = {
   consultadoEm: string
 }
 const cache = new Map<string, { em: number; valor: Agora }>()
-let frotaCache: { em: number; cvPorPlaca: Map<string, string> } | null = null
+const frotaCache = new Map<ClienteAoVivo, { em: number; cvPorPlaca: Map<string, string> }>()
 
-async function cvDaPlaca(placa: string): Promise<string | null> {
-  if (!frotaCache || Date.now() - frotaCache.em > 10 * 60_000) {
-    const frota = await buscarFrota(COD_USER_NUTRIMAX)
-    frotaCache = { em: Date.now(), cvPorPlaca: new Map(frota.map(v => [v.placaNorm, v.cv])) }
+async function cvDaPlaca(cliente: ClienteAoVivo, placa: string): Promise<string | null> {
+  const c = frotaCache.get(cliente)
+  if (!c || Date.now() - c.em > 10 * 60_000) {
+    const cvPorPlaca = cliente === 'rioquality'
+      ? await buscarFrotaRioQuality()
+      : new Map((await buscarFrota(COD_USER_NUTRIMAX)).map(v => [v.placaNorm, v.cv] as [string, string]))
+    frotaCache.set(cliente, { em: Date.now(), cvPorPlaca })
   }
-  return frotaCache.cvPorPlaca.get(placa) ?? null
+  return frotaCache.get(cliente)!.cvPorPlaca.get(placa) ?? null
 }
 
 export async function GET(req: NextRequest) {
@@ -43,7 +48,7 @@ export async function GET(req: NextRequest) {
   if (emCache && Date.now() - emCache.em < 30_000) return NextResponse.json(emCache.valor)
 
   const data = hojeBR()
-  const cv = await cvDaPlaca(placa)
+  const cv = await cvDaPlaca(a.cliente, placa)
   const valor: Agora = { posicao: null, parada: null, nf: null, consultadoEm: new Date().toISOString() }
   if (cv) {
     const [posicoes, paradas, calculo] = await Promise.all([

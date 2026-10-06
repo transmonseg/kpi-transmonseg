@@ -17,7 +17,7 @@ import { hojeBR } from '@/lib/data-br'
 import { EMPRESA_SNAPSHOT_RIOQUALITY } from './snapshot-paradas'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita, AvisoDescasamento } from '@/lib/kpi-romaneio/types'
-import { parseCustos, parseEntregas, montarLinhasRomaneio, rotaParaZona, parseEntregasCompletas, montarLinhasRomaneioCompleto, CARGA_SEM_ROTA } from './parse-planilhas'
+import { parseCustos, parseEntregas, montarLinhasRomaneio, rotaParaZona, parseEntregasCompletas, montarLinhasRomaneioCompleto, CARGA_SEM_ROTA, type EntregaRioQualityCompleta } from './parse-planilhas'
 import { geocodificarPorCoerencia, type ConfiancaCoerencia, type PontoZona } from './geocode-coerencia'
 import { geocodificarEnderecosComInfo } from '@/lib/kpi-romaneio/geocode'
 import { reposicionarPorAncoras } from '@/lib/kpi-romaneio/geocode-ancoras'
@@ -148,6 +148,9 @@ export async function gerarKpiRioQuality(params: {
   // cliente/motorista -- cascata PRECISA de geocodificacao (mesma da Nutry
   // Max), sem precisar de coerencia de grupo. Ver parse-planilhas.ts.
   completaBuf?: Buffer
+  /** O mesmo arquivo único JÁ LIDO (parseEntregasCompletas) -- KPI ao vivo
+   *  (05/10) guarda só os dados lidos de manhã, não o arquivo. */
+  entregasCompletas?: EntregaRioQualityCompleta[]
   data: string
   cvPorPlaca: Map<string, string>
   /** injetavel pra teste; padrao = buscarParadasPadraoRioQuality (ponte do
@@ -184,12 +187,12 @@ export async function gerarKpiRioQuality(params: {
   const confiancaPorNf = new Map<string, ConfiancaCoerencia>()
   const contConf: Record<ConfiancaCoerencia, number> = { alta: 0, media: 0, baixa: 0, sem_candidato: 0, isolado: 0 }
   const romaneioGeo: LinhaGeocodificada[] = []
-  const formatoCompleto = completaBuf != null
+  const formatoCompleto = completaBuf != null || params.entregasCompletas != null
   // formatos com cidade: rua crua por NF (corredor da rua, mais abaixo)
   let ruaPorNfCompleto = new Map<string, string>()
 
-  if (completaBuf) {
-    const entregasCompletas = parseEntregasCompletas(completaBuf)
+  if (completaBuf || params.entregasCompletas) {
+    const entregasCompletas = params.entregasCompletas ?? parseEntregasCompletas(completaBuf!)
     if (entregasCompletas.length === 0) {
       throw new EntradaInvalidaError(
         'Nenhuma linha reconhecida no arquivo — confira se tem as colunas Razão Social, Cidade, UF, Destino, Motorista, Placa, Endereço e Bairro.',

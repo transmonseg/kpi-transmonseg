@@ -245,7 +245,7 @@ export function PainelNav({ papel, empresas }: { papel: Papel; empresas: string[
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
         <SeletorSistema pathname={pathname} />
         {emMonitoramento(pathname) ? null : (<>
-        {empresas.includes('nutrimax') && <LeafLink item={AO_VIVO} active={pathname.startsWith('/painel/ao-vivo')} />}
+        {(empresas.includes('nutrimax') || empresas.includes('rioquality')) && <LeafLink item={AO_VIVO} active={pathname.startsWith('/painel/ao-vivo')} />}
         <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
         {grupos.length > 0 && (
           <span className="so-aberto px-2.5 pb-1 pt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">Empresas</span>

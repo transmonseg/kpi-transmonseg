@@ -97,9 +97,11 @@ export async function updateSession(request: NextRequest) {
         path.startsWith('/api/kpi/historico/')
       )
       // Monitoramento dentro da Central (05/10): equipe toda (o layout confere o papel).
+      // Ao vivo da Rio Quality (05/10): operador com a Rio Quality liberada (a rota confere o cliente).
+      const operadorAoVivoRq = perfil.papel === 'operador' && perfil.empresas.includes('rioquality') && (path === '/painel/ao-vivo' || path.startsWith('/api/kpi/ao-vivo') || path.startsWith('/api/kpi/historico/'))
       const operadorMonitoramento = perfil.papel === 'operador' && (path === '/painel/monitoramento' || path.startsWith('/painel/monitoramento/'))
       const permitido =
-        operadorNutry || operadorMonitoramento ||
+        operadorNutry || operadorAoVivoRq || operadorMonitoramento ||
         path === '/painel' ||
         // Dashboard por cliente: a rota confere empresa liberada e bloqueia
         // escrita (inserir/excluir) pra quem não é admin.

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { hojeBR } from '@/lib/data-br'
 import { createServiceClient } from '@/lib/supabase/service'
-import { gerarKpiNutrimax } from '@/lib/kpi-romaneio/gerar-nutrimax'
-import { entradaDoDia } from '@/lib/kpi-romaneio/ao-vivo-servico'
+import { gerarKpiDoDia } from '@/lib/kpi-romaneio/ao-vivo-servico'
 import { extrairResumoKpiXlsx } from '@/lib/kpi-romaneio/resumo-dashboard'
 import { salvarGeracao } from '@/lib/kpi-romaneio/historico'
 import { guardarXlsxGerado, novoPrefixoGeracao } from '@/lib/kpi-romaneio/xlsx-gerado'
@@ -17,22 +16,21 @@ export async function POST(req: NextRequest) {
   const a = await acessoAoVivo(req.nextUrl.searchParams.get('cliente'))
   if (!a.ok) return a.resp
   const data = hojeBR()
-  const entrada = await entradaDoDia(a.cliente, data)
-  if (!entrada) return new NextResponse('Suba o romaneio do dia primeiro.', { status: 409 })
-  const r = await gerarKpiNutrimax(entrada)
+  const r = await gerarKpiDoDia(a.cliente, data)
+  if (!r) return new NextResponse('Suba o romaneio do dia primeiro.', { status: 409 })
   try {
     const svc = createServiceClient()
-    const arquivoStoragePath = await guardarXlsxGerado(svc, novoPrefixoGeracao('nutrimax', data), r.xlsx)
+    const arquivoStoragePath = await guardarXlsxGerado(svc, novoPrefixoGeracao(a.cliente, data), r.xlsx)
     let resumo = null
     try { resumo = await extrairResumoKpiXlsx(r.xlsx) } catch (err) { console.error('resumo do dashboard falhou:', err) }
-    await salvarGeracao({ cliente: 'nutrimax', dataReferencia: data, geradoPor: a.email, qtdCargas: r.qtdCargasNutry, arquivoStoragePath, escalaStoragePath: null, romaneioStoragePath: null, resumo })
+    await salvarGeracao({ cliente: a.cliente, dataReferencia: data, geradoPor: a.email, qtdCargas: r.qtdCargas, arquivoStoragePath, escalaStoragePath: null, romaneioStoragePath: null, resumo })
   } catch (err) {
     console.error('Erro ao salvar histórico da geração ao vivo:', err)
   }
   return new NextResponse(r.xlsx as unknown as BodyInit, {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': `attachment; filename="KPI-Nutry-Max-${data}.xlsx"`,
+      'Content-Disposition': `attachment; filename="KPI-${a.cliente === 'rioquality' ? 'Rio-Quality' : 'Nutry-Max'}-${data}.xlsx"`,
     },
   })
 }

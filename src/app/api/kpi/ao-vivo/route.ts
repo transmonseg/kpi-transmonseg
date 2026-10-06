@@ -19,10 +19,10 @@ export async function GET(req: NextRequest) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(pedida) || pedida > hoje) return new NextResponse('Data inválida.', { status: 400 })
     const h = await lerDiaHistorico(a.cliente, pedida)
     return NextResponse.json({
-      data: pedida, hoje, historico: true, dias,
+      data: pedida, hoje, historico: true, dias, clientes: a.clientes,
       dia: null, calculando: false, ultimoErro: null,
       resultado: h?.resultado ?? null, fonte: h?.fonte ?? null, geracaoId: h?.geracaoId ?? null,
     })
   }
-  return NextResponse.json({ data: hoje, hoje, historico: false, dias, ...(await lerEstadoAoVivo(a.cliente, hoje)) })
+  return NextResponse.json({ data: hoje, hoje, historico: false, dias, clientes: a.clientes, ...(await lerEstadoAoVivo(a.cliente, hoje)) })
 }

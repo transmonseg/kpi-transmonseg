@@ -11,9 +11,10 @@ import { SubirRomaneio } from './subir-romaneio'
 // NF vem do último cálculo do KPI (a mesma regra da planilha); o cronômetro e
 // a posição vêm da camada "agora" e só mostram — nunca mudam o resultado.
 
-const CLIENTE = 'nutrimax'
+type Cliente = 'nutrimax' | 'rioquality'
+const NOME_CLIENTE: Record<Cliente, string> = { nutrimax: 'Nutry Max', rioquality: 'Rio Quality' }
 type Agora = { posicao: { lat: number | null; lng: number | null; datagps: string | null } | null; parada: { inicio: string } | null; nf: { nf: string; cliente: string } | null; consultadoEm: string }
-type Estado = EstadoAoVivo & { data: string; hoje: string; historico: boolean; dias: string[]; fonte?: 'ao_vivo' | 'geracao' | null; geracaoId?: string | null }
+type Estado = EstadoAoVivo & { data: string; hoje: string; historico: boolean; dias: string[]; clientes: Cliente[]; fonte?: 'ao_vivo' | 'geracao' | null; geracaoId?: string | null }
 
 /** "2026-10-03" -> "sex, 03/10". */
 function rotuloDia(d: string): string {
@@ -68,17 +69,22 @@ export default function AoVivoPage() {
   const [vendoDetalhe, setVendoDetalhe] = useState(() => !!daUrl().get('placa'))
   // Dia escolhido (null = hoje, ao vivo). Dia passado = histórico guardado.
   const [dataSel, setDataSel] = useState<string | null>(() => daUrl().get('data'))
+  // Nutry Max ou Rio Quality (05/10). ?cliente= na URL (volta do monitoramento).
+  const [cliente, setCliente] = useState<Cliente>(() => (daUrl().get('cliente') === 'rioquality' ? 'rioquality' : 'nutrimax'))
+  const CLIENTE = cliente
 
   const carregar = useCallback(async () => {
     try {
       const r = await fetch(`/api/kpi/ao-vivo?cliente=${CLIENTE}${dataSel ? `&data=${dataSel}` : ''}`, { cache: 'no-store' })
+      // Login só da Rio Quality: abre direto nela.
+      if (r.status === 403 && CLIENTE === 'nutrimax') { setCliente('rioquality'); return }
       if (!r.ok) throw new Error(await r.text())
       setEstado(await r.json())
       setErroCarga(null)
     } catch (e) {
       setErroCarga(e instanceof Error ? e.message : 'Não consegui carregar.')
     }
-  }, [dataSel])
+  }, [dataSel, cliente]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Estado: a cada 60 s (10 s enquanto o primeiro cálculo ainda não saiu).
   // Depende só de um booleano: depender do objeto `resultado` recarregaria
@@ -130,7 +136,7 @@ export default function AoVivoPage() {
       const blob = await r.blob()
       const a = document.createElement('a')
       a.href = URL.createObjectURL(blob)
-      a.download = `KPI-Nutry-Max-${estado?.data ?? ''}.xlsx`
+      a.download = `KPI-${cliente === 'rioquality' ? 'Rio-Quality' : 'Nutry-Max'}-${estado?.data ?? ''}.xlsx`
       a.click()
       URL.revokeObjectURL(a.href)
     } catch (e) {
@@ -146,6 +152,7 @@ export default function AoVivoPage() {
 
   const r = estado.resultado
   const historico = estado.historico
+  const trocarCliente = (c: Cliente) => { setCliente(c); setDataSel(null); setPlacaSel(null); setNfAberta(null); setVendoDetalhe(false); setAgora({}); setBusca(''); setEstado(null) }
   const trocarDia = (d: string) => { setDataSel(d === estado.hoje ? null : d); setPlacaSel(null); setNfAberta(null); setVendoDetalhe(false); setAgora({}); setBusca('') }
 
   return (
@@ -159,7 +166,7 @@ export default function AoVivoPage() {
                 <span className="relative inline-flex size-2.5 rounded-full bg-[var(--color-success)]" />
               </span>
             )}
-            <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-[var(--color-fg)]">{historico ? `Nutry Max em ${rotuloDia(estado.data).split(', ')[1]}` : 'Nutry Max ao vivo'}</h1>
+            <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-[var(--color-fg)]">{historico ? `${NOME_CLIENTE[cliente]} em ${rotuloDia(estado.data).split(', ')[1]}` : `${NOME_CLIENTE[cliente]} ao vivo`}</h1>
           </div>
           {historico ? (
             <p className="text-[14px] text-[var(--color-fg-muted)]">
@@ -173,10 +180,20 @@ export default function AoVivoPage() {
           ) : estado.dia ? (
             <p className="text-[14px] text-[var(--color-fg-muted)]">Romaneio recebido às {hhmm(estado.dia.enviadoEm)}: {estado.dia.nfs} notas em {estado.dia.placas} placas. Calculando o KPI pela primeira vez — leva uns 3 minutos.</p>
           ) : (
-            <p className="text-[14px] text-[var(--color-fg-muted)]">Suba o romaneio de hoje para começar a acompanhar as entregas.</p>
+            <p className="text-[14px] text-[var(--color-fg-muted)]">{cliente === 'rioquality' ? 'Suba o relatório de entregas de hoje' : 'Suba o romaneio de hoje'} para começar a acompanhar as entregas.</p>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {estado.clientes.length > 1 && (
+            <div role="tablist" aria-label="Cliente" className="flex h-10 items-center gap-1 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-1">
+              {estado.clientes.map(c => (
+                <button key={c} type="button" role="tab" aria-selected={c === cliente} onClick={() => trocarCliente(c)}
+                  className={`h-8 rounded-full px-3.5 text-[13px] font-semibold transition-colors ${c === cliente ? 'bg-[var(--color-navy-700)] text-white' : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]'}`}>
+                  {NOME_CLIENTE[c]}
+                </button>
+              ))}
+            </div>
+          )}
           <label className="relative inline-flex h-10 items-center rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] pl-4 pr-9 text-[13px] font-semibold text-[var(--color-fg)] transition hover:border-[var(--color-border-strong)]">
             <span className="sr-only">Dia</span>
             <select value={estado.data} onChange={e => trocarDia(e.target.value)} className="appearance-none bg-transparent outline-none">
@@ -212,8 +229,8 @@ export default function AoVivoPage() {
 
       {!historico && (!estado.dia || subindo) && (
         <section className="dash-card p-6">
-          <h2 className="mb-1 text-[16px] font-semibold text-[var(--color-fg)]">{estado.dia ? 'Trocar o romaneio de hoje' : 'Romaneio de hoje'}</h2>
-          <p className="mb-5 text-[13px] text-[var(--color-fg-muted)]">Os mesmos PDFs da tela Gerar KPI. O sistema guarda só o que leu deles e recalcula o KPI a cada 10 minutos.</p>
+          <h2 className="mb-1 text-[16px] font-semibold text-[var(--color-fg)]">{cliente === 'rioquality' ? (estado.dia ? 'Trocar o relatório de entregas de hoje' : 'Relatório de entregas de hoje') : (estado.dia ? 'Trocar o romaneio de hoje' : 'Romaneio de hoje')}</h2>
+          <p className="mb-5 text-[13px] text-[var(--color-fg-muted)]">{cliente === 'rioquality' ? 'A mesma planilha da tela Gerar KPI da Rio Quality.' : 'Os mesmos PDFs da tela Gerar KPI.'} O sistema guarda só o que leu e recalcula o KPI a cada 10 minutos.</p>
           <SubirRomaneio cliente={CLIENTE} compacto={!!estado.dia} onEnviado={() => { setSubindo(false); carregar() }} />
         </section>
       )}
@@ -246,7 +263,7 @@ export default function AoVivoPage() {
             <button type="button" onClick={() => setVendoDetalhe(false)} className="mb-3 inline-flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-4 text-[13px] font-semibold text-[var(--color-fg)] lg:hidden">
               <CaretLeft size={14} weight="bold" />Todas as placas
             </button>
-          <DetalhePlaca p={placa} data={estado.data} agora={historico ? undefined : agora[placa.placa]} agoraMs={agoraMs} historico={historico} nfAberta={nfAberta} onNf={nf => setNfAberta(a => (a === nf ? null : nf))} />
+          <DetalhePlaca p={placa} data={estado.data} cliente={cliente} agora={historico ? undefined : agora[placa.placa]} agoraMs={agoraMs} historico={historico} nfAberta={nfAberta} onNf={nf => setNfAberta(a => (a === nf ? null : nf))} />
           </div>
         </div>
       )}
@@ -321,7 +338,7 @@ function LinhaPlaca({ p, ativa, agora, agoraMs, historico, onClick }: { p: Placa
   )
 }
 
-function DetalhePlaca({ p, data, agora, agoraMs, historico, nfAberta, onNf }: { p: PlacaAoVivo; data: string; agora: Agora | undefined; agoraMs: number; historico: boolean; nfAberta: string | null; onNf: (nf: string) => void }) {
+function DetalhePlaca({ p, data, cliente, agora, agoraMs, historico, nfAberta, onNf }: { p: PlacaAoVivo; data: string; cliente: Cliente; agora: Agora | undefined; agoraMs: number; historico: boolean; nfAberta: string | null; onNf: (nf: string) => void }) {
   const s = situacaoAgora(p, agora, agoraMs, historico)
   const nfAgora = agora?.nf?.nf ?? null
   const contagem = (sit: SituacaoNf) => p.nfs.filter(n => n.situacao === sit).length
@@ -358,7 +375,7 @@ function DetalhePlaca({ p, data, agora, agoraMs, historico, nfAberta, onNf }: { 
         </div>
         <ul>
           {p.nfs.map((n, i) => (
-            <LinhaNf key={`${n.carga}-${n.nf}`} n={n} todas={p.nfs} placa={p.placa} data={data} historico={historico} ordem={i + 1} aberta={nfAberta === n.nf} noClienteAgora={nfAgora === n.nf ? agora?.parada?.inicio ?? null : null} agoraMs={agoraMs} onClick={() => onNf(n.nf)} posicao={agora?.posicao ?? null} />
+            <LinhaNf key={`${n.carga}-${n.nf}`} n={n} todas={p.nfs} placa={p.placa} data={data} historico={historico} cliente={cliente} ordem={i + 1} aberta={nfAberta === n.nf} noClienteAgora={nfAgora === n.nf ? agora?.parada?.inicio ?? null : null} agoraMs={agoraMs} onClick={() => onNf(n.nf)} posicao={agora?.posicao ?? null} />
           ))}
         </ul>
       </div>
@@ -383,7 +400,7 @@ function Dado({ rotulo, valor, extra }: { rotulo: string; valor: string; extra?:
   )
 }
 
-function LinhaNf({ n, todas, placa, data, historico, ordem, aberta, noClienteAgora, agoraMs, onClick, posicao }: { n: NfAoVivo; todas: NfAoVivo[]; placa: string; data: string; historico: boolean; ordem: number; aberta: boolean; noClienteAgora: string | null; agoraMs: number; onClick: () => void; posicao: Agora['posicao'] }) {
+function LinhaNf({ n, todas, placa, data, historico, cliente, ordem, aberta, noClienteAgora, agoraMs, onClick, posicao }: { n: NfAoVivo; todas: NfAoVivo[]; placa: string; data: string; historico: boolean; cliente: Cliente; ordem: number; aberta: boolean; noClienteAgora: string | null; agoraMs: number; onClick: () => void; posicao: Agora['posicao'] }) {
   const segAgora = noClienteAgora ? desde(noClienteAgora, agoraMs) : null
   const longe = segAgora != null && segAgora >= UMA_HORA
   const corPonto = segAgora != null ? (longe ? 'var(--color-warning)' : '#2a6fdb') : COR_SITUACAO[n.situacao]
@@ -424,7 +441,7 @@ function LinhaNf({ n, todas, placa, data, historico, ordem, aberta, noClienteAgo
                 <Mini rotulo="Tempo no cliente" valor={segAgora != null ? relogio(segAgora) : n.tempoMin != null ? `${n.tempoMin} min` : '—'} destaque={segAgora != null} longe={longe} />
               </div>
             )}
-            {placa && placa !== 'SEM PLACA' && (
+            {placa && placa !== 'SEM PLACA' && cliente === 'nutrimax' && (
               <div>
                 <Link href={linkMonitoramento(n, todas, placa, data, historico)}
                   className="inline-flex h-9 items-center gap-2 rounded-full bg-[var(--color-navy-700)] px-4 text-[12.5px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] active:scale-[0.98]">

@@ -467,6 +467,24 @@ describe('gerarKpiRioQuality -- terceiro formato (55 colunas, NF real)', () => {
     expect(r.detalhe.find(d => d.nf === '5512949')).toMatchObject({ carga: '1158583', placa: 'LAT9F36' })
   })
 
+  it('KPI ao vivo: as entregas ja lidas dao exatamente o mesmo resultado que o arquivo', async () => {
+    const { CABECALHO_55, LINHAS_55 } = await import('./entregas-55col.fixture')
+    const { parseEntregasCompletas } = await import('./parse-planilhas')
+    const { geocodificarEnderecos } = await import('@/lib/kpi-romaneio/geocode')
+    vi.mocked(geocodificarEnderecos).mockImplementation(async enderecos => enderecos.map(() => ({ ...PONTO, confiavel: true, fonte: 'cnefe' })))
+    const arquivo = planilha([['Relatório de Entregas'], CABECALHO_55, ...LINHAS_55])
+    const comum = {
+      data: DATA, cvPorPlaca: new Map([['LAT9F36', '1'], ['LJI4I52', '2'], ['SRJ9H01', '3']]),
+      buscarParadas: async (_cv: string, placa: string) => [parada(placa, '10:00', 15)],
+      medirRastro: async () => ({ km: 40, pontosNoDia: 900 }),
+    }
+    const doArquivo = await gerarKpiRioQuality({ ...comum, completaBuf: arquivo })
+    const lidas = JSON.parse(JSON.stringify(parseEntregasCompletas(arquivo)))
+    const dosDados = await gerarKpiRioQuality({ ...comum, entregasCompletas: lidas })
+    expect(dosDados.detalhe).toEqual(doArquivo.detalhe)
+    expect(dosDados.linhasKpi).toEqual(doArquivo.linhasKpi)
+  })
+
   it('arquivo de dia encerrado sem NENHUM check-in vira aviso de relatorio incompleto (RQ 02/10 09:01, taxa 32%)', async () => {
     const { CABECALHO_55, LINHAS_55 } = await import('./entregas-55col.fixture')
     const { geocodificarEnderecos } = await import('@/lib/kpi-romaneio/geocode')

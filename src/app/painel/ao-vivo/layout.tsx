@@ -6,6 +6,6 @@ export default async function AoVivoLayout({ children }: { children: React.React
   const user = await usuarioAtual()
   if (!user) redirect('/login')
   const perfil = await getPerfil(user.id)
-  if (!podeOperarEmpresa(perfil, 'nutrimax')) redirect('/painel')
+  if (!podeOperarEmpresa(perfil, 'nutrimax') && !podeOperarEmpresa(perfil, 'rioquality')) redirect('/painel')
   return <>{children}</>
 }
