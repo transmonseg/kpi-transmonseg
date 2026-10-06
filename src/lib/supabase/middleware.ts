@@ -96,8 +96,10 @@ export async function updateSession(request: NextRequest) {
         path.startsWith('/api/kpi/nutrimax/') ||
         path.startsWith('/api/kpi/historico/')
       )
+      // Monitoramento dentro da Central (05/10): equipe toda (o layout confere o papel).
+      const operadorMonitoramento = perfil.papel === 'operador' && (path === '/painel/monitoramento' || path.startsWith('/painel/monitoramento/'))
       const permitido =
-        operadorNutry ||
+        operadorNutry || operadorMonitoramento ||
         path === '/painel' ||
         // Dashboard por cliente: a rota confere empresa liberada e bloqueia
         // escrita (inserir/excluir) pra quem não é admin.

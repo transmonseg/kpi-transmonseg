@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 const TITLES: Record<string, string> = {
   '/painel': 'Dashboard',
   '/painel/ao-vivo': 'Ao vivo',
+  '/painel/monitoramento': 'Monitoramento',
   '/painel/usuarios': 'Usuários',
   '/painel/cozinha': 'Cozinha',
   '/painel/cozinha/clientes': 'Clientes da cozinha',

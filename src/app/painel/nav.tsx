@@ -21,9 +21,12 @@ import {
   Broadcast,
   ArrowsLeftRight,
   MapTrifold,
-  ArrowUpRight,
+  Path,
+  GearSix,
+  CalendarBlank,
+  ChartLineUp,
 } from '@phosphor-icons/react/dist/ssr'
-import { URL_MONITORAMENTO } from '@/lib/sistema-transmonseg'
+import { TELAS_MONITORAMENTO, rotaPainelMonitoramento } from '@/lib/sistema-transmonseg'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 
 type Leaf = { href: string; label: string; Icon: PhosphorIcon; exact?: boolean }
@@ -133,22 +136,34 @@ function LeafLink({ item, active, nested }: { item: Leaf; active: boolean; neste
   )
 }
 
-/** Outro sistema da Transmonseg (endereço próprio, mesma aba). */
-function LinkMonitoramento() {
+// Central Transmonseg (05/10): o mesmo menu serve os dois sistemas. O
+// seletor no topo escolhe KPI ou Monitoramento; o Monitoramento abre dentro
+// do painel (/painel/monitoramento/...).
+const ICONE_MONITORAMENTO: Record<string, PhosphorIcon> = {
+  '/central-romaneio': Path, '/': MapTrifold, '/romaneio': GearSix, '/escala': CalendarBlank, '/veiculos': Truck, '/analise': ChartLineUp,
+}
+const ITENS_MONITORAMENTO: Leaf[] = TELAS_MONITORAMENTO.map(t => ({
+  href: rotaPainelMonitoramento(t.caminho), label: t.rotulo, Icon: ICONE_MONITORAMENTO[t.caminho] ?? MapTrifold, exact: t.caminho === '/',
+}))
+const emMonitoramento = (pathname: string) => pathname === '/painel/monitoramento' || pathname.startsWith('/painel/monitoramento/')
+
+function SeletorSistema({ pathname }: { pathname: string }) {
+  const mon = emMonitoramento(pathname)
+  const opcao = (ativo: boolean) =>
+    'flex h-8 flex-1 items-center justify-center rounded-[10px] text-[12.5px] font-semibold transition-[background-color,color] duration-200 ' +
+    (ativo ? 'nav-ativo text-white' : 'text-[var(--color-sidebar-fg-muted)] hover:text-white')
   return (
-    <a href={URL_MONITORAMENTO} className={ITEM_BASE + ' px-2.5 text-[var(--color-sidebar-fg-muted)] hover:bg-white/[0.045] hover:text-[var(--color-sidebar-fg-strong)]'}>
-      <MapTrifold size={17} className="text-[var(--color-sidebar-fg-muted)] transition-colors group-hover:text-[var(--color-sidebar-fg-strong)]" />
-      <span className="flex-1">Monitoramento</span>
-      <ArrowUpRight size={13} className="text-white/30 transition-colors group-hover:text-white/70" />
-    </a>
+    <div role="tablist" aria-label="Sistema" className="mb-3 flex gap-1 rounded-xl bg-white/[0.05] p-1">
+      <Link role="tab" aria-selected={!mon} href="/painel" className={opcao(!mon)}>KPI</Link>
+      <Link role="tab" aria-selected={mon} href={ITENS_MONITORAMENTO[0].href} className={opcao(mon)}>Monitoramento</Link>
+    </div>
   )
 }
 
-function SecaoSistemas() {
+function MenuMonitoramento({ pathname }: { pathname: string }) {
   return (
     <>
-      <span className="px-2.5 pb-1 pt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">Sistemas</span>
-      <LinkMonitoramento />
+      {ITENS_MONITORAMENTO.map(i => <LeafLink key={i.href} item={i} active={leafActive(pathname, i.href, i.exact)} />)}
     </>
   )
 }
@@ -233,13 +248,15 @@ export function PainelNav({ papel, empresas }: { papel: Papel; empresas: string[
     const grupos = GRUPOS_EMPRESA.filter(g => g.label !== 'Benassi' && empresas.includes(NOME_PARA_EMPRESA[g.label] ?? ''))
     return (
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
+        <SeletorSistema pathname={pathname} />
+        {emMonitoramento(pathname) ? <MenuMonitoramento pathname={pathname} /> : (<>
         {empresas.includes('nutrimax') && <LeafLink item={AO_VIVO} active={pathname.startsWith('/painel/ao-vivo')} />}
         <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
         {grupos.length > 0 && (
           <span className="px-2.5 pb-1 pt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">Empresas</span>
         )}
         {grupos.map(g => <GroupBlock key={g.label} group={g} pathname={pathname} />)}
-        <SecaoSistemas />
+        </>)}
       </nav>
     )
   }
@@ -257,6 +274,8 @@ export function PainelNav({ papel, empresas }: { papel: Papel; empresas: string[
 
   return (
     <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
+      <SeletorSistema pathname={pathname} />
+      {emMonitoramento(pathname) ? <MenuMonitoramento pathname={pathname} /> : (<>
       <LeafLink item={AO_VIVO} active={pathname.startsWith('/painel/ao-vivo')} />
       <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
       <LeafLink item={USUARIOS} active={pathname.startsWith('/painel/usuarios')} />
@@ -272,7 +291,7 @@ export function PainelNav({ papel, empresas }: { papel: Papel; empresas: string[
         Operação
       </span>
       <GroupBlock group={GRUPO_COZINHA} pathname={pathname} />
-      <SecaoSistemas />
+      </>)}
     </nav>
   )
 }
