@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, gerarMotivo, calcularConfianca, contarConfirmadasPorCarga, OBS_COMPARTILHADA_VIZINHO, pontoAproximadoPorEndereco } from './agregacao'
+import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, gerarMotivo, calcularConfianca, contarConfirmadasPorCarga, OBS_COMPARTILHADA_VIZINHO, pontoAproximadoPorEndereco, chaveEndereco } from './agregacao'
 import { resolverParadas } from './unitrac'
 import type { LinhaEscala, LinhaGeocodificada, Visita, StatusEntrega } from './types'
 import type { AlvoApi } from '@/lib/unitrac-api'
@@ -6111,5 +6111,33 @@ describe('rota em andamento: parada longe (>300 m) ainda nao confirma (06/10)', 
   it('mesma parada a 420 m com o dia encerrado: regra de sempre (confirma)', () => {
     const [d] = chamarNutryMax([nf], { visitasPorNf: vis(), paradasPorOutraPlaca: ponte(420) })
     expect(d.status).toBe('confirmado_gps')
+  })
+})
+
+// 06/10, Shopping Nova America (RQV6G75): 2 NFs do MESMO predio caiam em
+// "PARADA DE OUTRO CLIENTE" -- "AV" x "AVENIDA", complemento "BL 10", e uma
+// NF com geocode a 500 m das outras.
+describe('mesmo endereco escrito diferente nao e outro cliente (06/10)', () => {
+  const janela = { chegada: '2026-10-06T15:11:00.000Z', saida: '2026-10-06T15:40:00.000Z' }
+  const esta = linha('NF1', { endereco: 'AVENIDA PASTOR MARTIN  LUTHER KING JR, 126 - DEL CASTILHO, RIO DE JANEIRO - ', lat: -22.88 + 700 * M_LAT, lng: -43.27 })
+  const outra = linha('NF2', { endereco: 'AV PASTOR MARTIN LUTHER KING JR, 0126 - DEL CASTILHO, RIO DE JANEIRO - BL 10', lat: -22.88, lng: -43.27 })
+  it('nao rebaixa por "parada de outro cliente"', () => {
+    const vis = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', ...janela, distanciaMetrosDoPonto: 700, viaRaioAmpliado: true }],
+      ['NF2', { nf: 'NF2', ...janela, distanciaMetrosDoPonto: 10 }],
+    ])
+    const ponte = new Map([['TTL7D40', [paradaForaBase('shop', -22.88 + 10 * M_LAT, -43.27, janela.chegada, janela.saida)]]])
+    const d = chamarNutryMax([esta, outra], { visitasPorNf: vis, paradasPorOutraPlaca: ponte }).find(x => x.nf === 'NF1')!
+    expect(d.observacao).not.toBe('PARADA DE OUTRO CLIENTE - NÃO CONFIRMA ESTE CLIENTE - CONFERIR')
+    expect(d.status).not.toBe('pendente')
+  })
+})
+
+describe('chaveEndereco', () => {
+  it('AV/AVENIDA, espacos, zeros a esquerda e complemento viram a mesma chave', () => {
+    expect(chaveEndereco('AV PASTOR MARTIN LUTHER KING JR, 0126 - DEL CASTILHO, RIO - BL 10'))
+      .toBe(chaveEndereco('AVENIDA PASTOR MARTIN  LUTHER KING JR, 126 - DEL CASTILHO, RIO - '))
+    expect(chaveEndereco('R ANTONIO RODOLFO, 09 - CENTRO')).toBe(chaveEndereco('RUA ANTONIO RODOLFO, 9 - CENTRO'))
+    expect(chaveEndereco('RUA A, 10 - X')).not.toBe(chaveEndereco('RUA A, 12 - X'))
   })
 })

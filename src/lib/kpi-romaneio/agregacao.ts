@@ -7,6 +7,7 @@ import { OBS_NAO_SAIU_DA_BASE } from './types'
 import { haversine } from '@/lib/utils/geo'
 import { RAIO_ENTREGA_METROS } from './constants'
 import { acessoSomentePorBarco } from './acesso-restrito'
+import { expandirTipoLogradouro, limparLixoInicio } from './normalizar-endereco'
 import { instanteDeFeitoISO } from './correcao-por-alvo'
 import { hojeBR } from '@/lib/data-br'
 import { extraiLojaLocal } from '@/lib/parsers/extrai-loja-local'
@@ -959,6 +960,15 @@ const ROTULOS_SEM_EVIDENCIA_DE_POSICAO = [
 // alvo com situacao 98 ("outro" desfecho, nao "feito"): os dois "nao foi"
 // verificados de compartilhada (RQV9D97/2395585 Rede Loirinho 29/09,
 // RBG2D21/2389318 Ilha Grande) tinham 98 e continuam REVISAR.
+/** Rua + numero normalizados (sem complemento, AV=AVENIDA, R=RUA, espacos e
+ *  zeros a esquerda) -- 06/10: notas do MESMO predio escritas diferente
+ *  ("AV ..., 0126 - ... - BL 10" x "AVENIDA ..., 126") eram "outro cliente". */
+export function chaveEndereco(endereco: string): string {
+  const base = expandirTipoLogradouro(limparLixoInicio(endereco.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')))
+    .split(' - ')[0]
+  return base.replace(/\s+/g, ' ').replace(/,\s*0*(\d)/, ', $1').trim()
+}
+
 /** Endereco cujo ponto no mapa e' aproximado por natureza: estrada/rodovia,
  *  sem numero (S/N, SN, 0) ou ilha sem acesso rodoviario. Nesses, parada a
  *  km do nosso ponto nao prova que o caminhao nao foi (casos de 02/10 que a
@@ -2672,7 +2682,7 @@ export function montarDetalheEntregas(
           alvo && coordValidaCadastro(alvo.pontoLat) && coordValidaCadastro(alvo.pontoLng) ? { lat: alvo.pontoLat as number, lng: alvo.pontoLng as number } : null,
         ].filter((p): p is { lat: number; lng: number } => p != null)
         const longeDestaNf = proprios.length > 0 && proprios.every(p => haversine(coord.lat, coord.lng, p.lat, p.lng) > DIST_MIN_PARADA_DE_OUTRO_CLIENTE_M)
-        const deOutroCliente = pontosReferenciaDaPlaca.some(o => o.endereco !== linha.endereco
+        const deOutroCliente = pontosReferenciaDaPlaca.some(o => chaveEndereco(o.endereco) !== chaveEndereco(linha.endereco)
           && haversine(coord.lat, coord.lng, o.lat, o.lng) <= RAIO_OUTRO_CLIENTE_EXPLICA_M)
         if (longeDestaNf && deOutroCliente) {
           status = 'pendente'
@@ -2792,7 +2802,7 @@ export function montarDetalheEntregas(
       return ds.length ? Math.min(...ds) : null
     }
     for (const g of grupos.values()) {
-      const enderecos = new Set(g.map(d => d.endereco.split(' - ')[0]))
+      const enderecos = new Set(g.map(d => chaveEndereco(d.endereco)))
       if (enderecos.size < 2) continue
       if (!g.every(d => { const dist = distanciaReal(d); return dist != null && dist > RAIO_ENTREGA_METROS })) continue
       for (const d of g) {
