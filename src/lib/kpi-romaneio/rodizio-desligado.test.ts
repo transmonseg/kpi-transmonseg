@@ -25,7 +25,9 @@ describe('reconhecerRodizio desligado em producao', () => {
     expect(src).toContain('gerarKpiNutrimax(')
     expect(src).not.toContain('montarDetalheEntregas(')
   })
-  it('CLI passa false', () => {
-    expect(argRodizio('scripts/gerar-nutrimax-real-arquivo.ts')).toBe('false')
+  it('o script de regeracao tambem usa gerarKpiNutrimax (sem copia do calculo)', () => {
+    const src = readFileSync(join(process.cwd(), 'scripts/gerar-nutrimax-real-arquivo.ts'), 'utf8')
+    expect(src).toContain('gerarKpiNutrimax(')
+    expect(src).not.toContain('montarDetalheEntregas(')
   })
 })

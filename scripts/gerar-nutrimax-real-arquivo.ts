@@ -1,54 +1,36 @@
-// Script avulso (não faz parte do app) — roda o pipeline completo de KPI da
-// Nutry Max com Escala+Romaneio reais e ESCREVE o xlsx em disco, sem passar
-// pela rota HTTP (sem auth, sem upload). Espelha exatamente a lógica de
-// src/app/api/kpi/nutrimax/gerar/route.ts.
+// Script avulso (não faz parte do app) — gera o KPI da Nutry Max com Escala+
+// Romaneio reais e ESCREVE o xlsx em disco, sem passar pela rota HTTP (sem
+// auth, sem upload). Desde 06/10 usa a MESMA função da rota
+// (gerarKpiNutrimax, src/lib/kpi-romaneio/gerar-nutrimax.ts) -- antes era uma
+// cópia que tinha divergido (escala "SEM RASTRI", avisos de motorista/região/
+// geocode parcial).
 //
-// Uso: npx tsx --env-file=.env.production scripts/gerar-nutrimax-real-arquivo.ts <escala.pdf> <romaneio.pdf> <data:YYYY-MM-DD> <saida.xlsx>
+// Uso: npx tsx --env-file=.env.production scripts/gerar-nutrimax-real-arquivo.ts <escala.pdf> <romaneio.pdf> <data:YYYY-MM-DD> <saida.xlsx> [romaneio-pao.pdf]
+//
+// Variáveis de experimento (só neste script, nunca na rota):
+//   OVERRIDE_CACHE_CSV=<endereco;lat;lng;confiavel;fonte;motivo>  sobrepõe o geocode só em memória
+//   EXPORTAR_DUMP=<arquivo.json>                                   salva o dump de experimento
+//   SEM_CADASTRO_UNITRAC=1                                          ver sem-cadastro.ts
 
 import { readFileSync, writeFileSync } from 'fs'
 import { parseEscala } from '../src/lib/kpi-romaneio/parse-escala'
 import { parseRomaneio } from '../src/lib/kpi-romaneio/parse-romaneio'
 import { parsePao } from '../src/lib/kpi-romaneio/parse-pao'
-import { geocodificarEnderecos } from '../src/lib/kpi-romaneio/geocode'
-import { reposicionarPorAncoras } from '../src/lib/kpi-romaneio/geocode-ancoras'
-import { chaveCacheEndereco, enderecosColididosPorCoordenada } from '../src/lib/kpi-romaneio/endereco-cep'
-import { buscarFrota, normPlaca } from '../src/lib/unitrac-api'
-import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '../src/lib/kpi-romaneio/unitrac'
-import { anexarCoordenadaCadastro, montarMenorDistanciaTrajetoPorNf } from '../src/lib/kpi-romaneio/base-horarios'
-import { ajustarChegadaAposUltimaEntrega } from '../src/lib/kpi-romaneio/fim-rota'
-import { alvosDaData } from '../src/lib/kpi-romaneio/alvos-data'
-import { alvosEfetivos } from '../src/lib/kpi-romaneio/alvos-snapshot'
-import { paradasEfetivas } from '../src/lib/kpi-romaneio/paradas-snapshot'
-import { montarVisitas } from '../src/lib/kpi-romaneio/visitas'
-import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, contarConfirmadasPorCarga } from '../src/lib/kpi-romaneio/agregacao'
-import { calcularKmPercorrido } from '../src/lib/kpi-romaneio/km'
-import { detectarDescasamentos } from '../src/lib/kpi-romaneio/avisos'
-import { gerarKpiRomaneioXlsx, cargasEscalaDivergenteInteira } from '../src/lib/kpi-romaneio/gerador-xlsx'
-import { detectarTrocasProvaveis } from '../src/lib/kpi-romaneio/troca-placa'
-import { aplicarTrocasDePlaca, buscarTrocasDoDia } from '../src/lib/kpi-romaneio/trocas-placa'
-import { COD_USER_NUTRIMAX, EMPRESA_NUTRIMAX, foraDoAlcanceApi, PAO_PREFIXO } from '../src/lib/kpi-romaneio/constants'
-import { buscarResolucoes, aplicarResolucoes } from '../src/lib/kpi-romaneio/resolucoes'
-import { resolverAliasPlacas, buscarHorariosBaseComAlias, montarCvPorPlaca, aplicarAliasEmConjunto, placasAliasDaFrota } from '../src/lib/kpi-romaneio/alias-placa'
-import { buscarPlacasSemRastreador, placasSemRastreadorNoDia, montarTemRastreadorPorPlaca, placasSemSinalComTrava } from '../src/lib/kpi-romaneio/placas-sem-rastreador'
-import { logarNfDuplicadaNaMesmaPlaca } from '../src/lib/kpi-romaneio/nf-duplicada'
-import { semCadastroUnitrac, nfsSoUnitrac } from '../src/lib/kpi-romaneio/sem-cadastro'
-import { hojeBR } from '../src/lib/data-br'
+import { gerarKpiNutrimax, ErroEntradaKpi, type OpcoesKpiNutrimax } from '../src/lib/kpi-romaneio/gerar-nutrimax'
+import { semCadastroUnitrac } from '../src/lib/kpi-romaneio/sem-cadastro'
 import { montarDumpExperimento } from '../src/lib/kpi-romaneio/experimentos/dump'
-import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '../src/lib/kpi-romaneio/types'
-import type { UnitracParadaRow } from '../src/lib/kpi/matcher'
-import { consumirFalhasPonte } from '../src/lib/kpi-romaneio/base-horarios'
+import type { ResultadoGeocode } from '../src/lib/kpi-romaneio/geocode'
 
-const FONTES_VERIFICADAS = new Set(['manual', 'verificacao_manual', 'cadastro_unitrac'])
-
-function agrupar<T>(itens: T[], chave: (item: T) => string): Map<string, T[]> {
-  const mapa = new Map<string, T[]>()
-  for (const item of itens) {
-    const k = chave(item)
-    const arr = mapa.get(k)
-    if (arr) arr.push(item)
-    else mapa.set(k, [item])
+/** OVERRIDE_CACHE_CSV: sobrepõe o geocode SO' EM MEMORIA (nada é gravado no banco). */
+function aplicarOverrideCsv(geoPorEndereco: Map<string, ResultadoGeocode>, caminho: string) {
+  let n = 0
+  for (const ln of readFileSync(caminho, 'utf8').split('\n').slice(1)) {
+    const [endereco, lat, lng, confiavel, , motivo] = ln.split(';')
+    if (!endereco || !geoPorEndereco.has(endereco) || !lat || !lng) continue
+    geoPorEndereco.set(endereco, { ...(geoPorEndereco.get(endereco) as object), lat: Number(lat), lng: Number(lng), confiavel: confiavel === 'true', motivo: motivo || undefined } as ResultadoGeocode)
+    n++
   }
-  return mapa
+  console.log(`Override de cache em memoria: ${n} enderecos`)
 }
 
 async function main() {
@@ -57,400 +39,36 @@ async function main() {
     console.error('Uso: npx tsx --env-file=.env.production scripts/gerar-nutrimax-real-arquivo.ts <escala.pdf> <romaneio.pdf> <data:YYYY-MM-DD> <saida.xlsx> [romaneio-pao.pdf]')
     process.exit(1)
   }
+  const escala = await parseEscala(Buffer.from(readFileSync(escalaPath)))
+  const romaneio = await parseRomaneio(Buffer.from(readFileSync(romaneioPath)))
+  const pao = romaneioPaoPath ? await parsePao(Buffer.from(readFileSync(romaneioPaoPath)), data) : { linhas: [], escala: [] }
+  console.log(`Escala: ${escala.length + pao.escala.length} linhas, Romaneio: ${romaneio.length + pao.linhas.length} linhas (${pao.linhas.length} do pão)`)
 
-  const escalaBuf = Buffer.from(readFileSync(escalaPath))
-  const romaneioBuf = Buffer.from(readFileSync(romaneioPath))
-  const romaneioPaoBuf = romaneioPaoPath ? Buffer.from(readFileSync(romaneioPaoPath)) : null
-
-  let escala = await parseEscala(escalaBuf)
-  let romaneio = await parseRomaneio(romaneioBuf)
-  let resultadoPao = romaneioPaoBuf ? await parsePao(romaneioPaoBuf, data) : { linhas: [], escala: [] }
-  // Mesma troca de placa da rota (tela Placas do dia, 05/10).
-  const trocas = await buscarTrocasDoDia(EMPRESA_NUTRIMAX, data)
-  if (trocas.length > 0) {
-    ;({ romaneio, escala } = aplicarTrocasDePlaca(romaneio, escala, trocas))
-    const pao = aplicarTrocasDePlaca(resultadoPao.linhas, resultadoPao.escala, trocas)
-    resultadoPao = { ...resultadoPao, linhas: pao.romaneio, escala: pao.escala }
-    console.log(`Trocas de placa aplicadas: ${trocas.length}`)
-  }
-  const escalaCompleta = [...escala, ...resultadoPao.escala]
-  const romaneioCompleto = [...romaneio, ...resultadoPao.linhas]
-  console.log(`Escala: ${escalaCompleta.length} linhas, Romaneio: ${romaneioCompleto.length} linhas (${resultadoPao.linhas.length} do pão)`)
-  // Fix (revisao final de branch 15/09, Important 4 -- espelha route.ts): o
-  // Romaneio de Entrega da Nutry Max e' o documento obrigatorio. Linha
-  // nenhuma reconhecida nele e' PDF errado, mesmo que o pao tenha trazido
-  // linhas -- nao pode passar em silencio so' porque o total ficou > 0.
-  if (romaneio.length === 0) {
-    console.error('ERRO: nenhuma linha reconhecida no Romaneio de Entrega — confira se o PDF é o "Romaneio de Entrega" da Nutry Max.')
-    process.exit(1)
-  }
-
-  const enderecosUnicos = [...new Set(romaneioCompleto.map(l => l.endereco))]
-  const resultadosGeo = await geocodificarEnderecos(enderecosUnicos, { validarTerritorio: true })
-  const geoPorEndereco = new Map(enderecosUnicos.map((e, i) => [e, resultadosGeo[i]]))
-  // Variante de teste: OVERRIDE_CACHE_CSV (endereco;lat;lng;confiavel;fonte;motivo)
-  // sobrepoe o geocode SO' EM MEMORIA (nada e' gravado no banco).
-  if (process.env.OVERRIDE_CACHE_CSV) {
-    let n = 0
-    for (const ln of readFileSync(process.env.OVERRIDE_CACHE_CSV, 'utf8').split('\n').slice(1)) {
-      const [endereco, lat, lng, confiavel, , motivo] = ln.split(';')
-      if (!endereco || !geoPorEndereco.has(endereco) || !lat || !lng) continue
-      geoPorEndereco.set(endereco, { ...(geoPorEndereco.get(endereco) as object), lat: Number(lat), lng: Number(lng), confiavel: confiavel === 'true', motivo: motivo || undefined } as never)
-      n++
-    }
-    console.log(`Override de cache em memoria: ${n} enderecos`)
-  }
-  // Task 2 (plano 2026-09-30, item 4): geoSemFonte = cache sem `fonte` (ver guarda 4 da parada proxima em agregacao.ts).
-  const romaneioGeo: LinhaGeocodificada[] = romaneioCompleto.map(l => {
-    const g = geoPorEndereco.get(l.endereco) ?? null
-    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: g?.motivo, geoSemFonte: g != null && !g.fonte, geoVerificadoManual: g != null && FONTES_VERIFICADAS.has(g.fonte ?? '') }
-  })
-
-  // Item 5 (achado real 10-09, auditoria com a Ana -- espelha route.ts):
-  // Passo 7 do motor de geolocalizacao universal, endereco sem_candidato
-  // resgatado usando como ancora as outras entregas geocodificadas da
-  // MESMA placa/dia.
-  //
-  // Item 5.2 (achado real, colapso de via longa -- espelha route.ts):
-  // endereco DIFERENTE geocodificado pro MESMO ponto exato de outro
-  // (CNEFE caiu pro centro da rua por nao achar o numero) entra no mesmo
-  // resgate -- nao e' sem_candidato mas tambem precisa de ancora.
-  const enderecosColididos = enderecosColididosPorCoordenada(geoPorEndereco)
-
-  const indicePorNf = new Map(romaneioGeo.map((l, i) => [l.nf, i]))
-  const precisaResgatePorPlaca = agrupar(
-    romaneioGeo.filter(l => l.lat == null || enderecosColididos.has(l.endereco)),
-    l => normPlaca(l.placa),
-  )
-  if (precisaResgatePorPlaca.size > 0) {
-    const gruposAncoras = [...precisaResgatePorPlaca.entries()].map(([placaNorm, linhas]) => ({
-      id: placaNorm,
-      ruas: linhas.map(l => chaveCacheEndereco(l.endereco)),
-      ancoras: romaneioGeo
-        .filter((o): o is LinhaGeocodificada & { lat: number; lng: number } =>
-          normPlaca(o.placa) === placaNorm && o.lat != null && o.lng != null && !enderecosColididos.has(o.endereco))
-        .map(o => ({ lat: o.lat, lng: o.lng })),
-    }))
-    const resgate = await reposicionarPorAncoras(gruposAncoras)
-    let resgatados = 0
-    for (const [placaNorm, linhas] of precisaResgatePorPlaca) {
-      const resultadosResgate = resgate.get(placaNorm) ?? []
-      linhas.forEach((l, i) => {
-        const r = resultadosResgate[i]
-        if (!r) return
-        const idx = indicePorNf.get(l.nf)!
-        romaneioGeo[idx] = { ...romaneioGeo[idx], lat: r.lat, lng: r.lng }
-        resgatados++
-      })
-    }
-    if (resgatados > 0) console.log(`Resgatados por âncora da rota do caminhão: ${resgatados}`)
-  }
-
-  console.log(`Geocodificados: ${romaneioGeo.filter(l => l.lat != null).length}/${romaneioGeo.length}`)
-
-  const linhasPorPlaca = agrupar(romaneioGeo, l => normPlaca(l.placa))
-  // Achado Minor #10 da revisão final do plano do pão (15/09): carga do pão
-  // sem CARRO no PDF vira placa '' aqui -- montarDetalheEntregas (linha de
-  // detalhe por NF) já curto-circuita incondicionalmente pra essa placa (ver
-  // "CARGA SEM PLACA NO ROMANEIO" em agregacao.ts). agregarPorCarga (resumo
-  // por carga) NÃO tem essa guarda explícita -- recebe paradasPorPlaca.get('')
-  // / horarioBasePorPlaca.get('') normalmente, e só funciona certo na prática
-  // porque a ponte nunca retorna dado real pra placa vazia (fica tudo vazio
-  // por ausência de dado, não por um curto-circuito dedicado). De qualquer
-  // forma, consultar Unitrac/ponte pra ela é trabalho de rede desperdiçado.
-  const placasNorm = [...linhasPorPlaca.keys()].filter(p => p !== '')
-  logarNfDuplicadaNaMesmaPlaca(linhasPorPlaca)
-
-  const pontosPorPlacaBridge = new Map<string, { id: string; lat: number; lng: number }[]>()
-  for (const [placaNorm, linhasDaPlaca] of linhasPorPlaca) {
-    const pontos = linhasDaPlaca
-      .filter((l): l is LinhaGeocodificada & { lat: number; lng: number } => l.lat != null && l.lng != null)
-      .map(l => ({ id: l.nf, lat: l.lat, lng: l.lng }))
-    if (pontos.length > 0) pontosPorPlacaBridge.set(placaNorm, pontos)
-  }
-  // Fora da janela de 48h da Unitrac: pede tambem as paradas derivadas do
-  // historico permanente (mesma logica da rota /api/kpi/nutrimax/gerar).
-  const foraDaJanelaUnitrac = foraDoAlcanceApi(data, hojeBR())
-
-  const frota = await buscarFrota(COD_USER_NUTRIMAX)
-  // Achado 30/09 (RQO9H37 = RQ0-9H37, espelha route.ts): ver alias-placa.ts.
-  const aliasPlacas = resolverAliasPlacas(placasNorm, frota.map(v => v.placaNorm))
-  let alvosBrutos: Awaited<ReturnType<typeof buscarAlvosDoDia>> = []
-  try {
-    alvosBrutos = await buscarAlvosDoDia(placasNorm, { comAlias: true })
-  } catch (e) {
-    console.log('buscarAlvosDoDia falhou:', e instanceof Error ? e.message : e)
-  }
-  const alvos = await alvosEfetivos('nutrimax', data, hojeBR(), alvosDaData(alvosBrutos, data), placasNorm)
-  const SEM_CADASTRO = semCadastroUnitrac()
-  if (SEM_CADASTRO) console.log('MODO SEM CADASTRO UNITRAC: sem latAlt/lngAlt/feitoEm na ponte e alvos nao confirmam')
-  const { horarios: horarioBasePorPlaca, consulta: placaConsulta } = await buscarHorariosBaseComAlias(placasNorm, data, SEM_CADASTRO ? pontosPorPlacaBridge : anexarCoordenadaCadastro(pontosPorPlacaBridge, alvos), true, aliasPlacas)
-  const cvPorPlaca = montarCvPorPlaca(frota, placaConsulta)
-  // Task 8 (24/09): declaração manual da operação (TTL5J17: tem cv e a ponte
-  // respondeu, mas é caminhão sem rastreador de verdade) vence as duas
-  // fontes acima -- ver placas-sem-rastreador.ts.
-  const placasSemRastreador = aplicarAliasEmConjunto(placasSemRastreadorNoDia(await buscarPlacasSemRastreador(EMPRESA_NUTRIMAX), data), aliasPlacas)
-  // temRastreadorPorPlaca: montado mais abaixo (depois das paradas/alvos), ver placasSemSinal.
-
-  const paradasPorPlaca = new Map<string, UnitracParadaRow[]>()
-  const visitasPorPlaca = new Map<string, Map<string, Visita>>()
-  const kmPorPlaca = new Map<string, number | null>()
-  // Fix round 1 (revisao 24/09 da Task 10, achado da revisao de codigo):
-  // `paradasPorPlaca` (preenchido abaixo) e' o resultado de `resolverParadas`,
-  // que descarta as paradas cruas da Unitrac sempre que a ponte respondeu e
-  // nao houve apagao de sinal detectado -- mesmo quando a ponte tambem
-  // congelou sem disparar esse flag. A busca do horario pelo alvo feito
-  // (agregacao.ts, `paradasUnitracCruasPropriaPlaca`) precisa das paradas
-  // CRUAS (`paradasEfetivasPorPlaca` abaixo, ANTES de resolverParadas
-  // escolher) -- guardadas aqui à parte, nunca misturadas com `paradasPorPlaca`.
-  const paradasUnitracCruasPorPlaca = new Map<string, UnitracParadaRow[]>()
-
-  // Task 7 (24/09): /stops da Unitrac so' guarda 48h -- gerar um dia depois
-  // disso traz paradas incompletas (nuncaSaiuDaBase falso-positivo). Busca a
-  // API crua por placa e so' DEPOIS passa pelo snapshot (paradasEfetivas).
-  const daUnitracPorPlaca = new Map<string, UnitracParadaRow[]>()
-  for (const placaNorm of placasNorm) {
-    const cv = cvPorPlaca.get(placaNorm)
-    let paradas: UnitracParadaRow[] = []
-    if (cv) {
-      try {
-        paradas = await buscarParadasDoDia(cv, placaNorm, data, 48)
-      } catch (e) {
-        console.log(`buscarParadasDoDia(${placaNorm}) falhou:`, e instanceof Error ? e.message : e)
+  const caminhoOverride = process.env.OVERRIDE_CACHE_CSV
+  const caminhoDump = process.env.EXPORTAR_DUMP
+  const opcoes: OpcoesKpiNutrimax = {
+    semCadastroUnitrac: semCadastroUnitrac(),
+    sobreporGeo: caminhoOverride ? geo => aplicarOverrideCsv(geo, caminhoOverride) : undefined,
+    aoMontarDetalhe: caminhoDump
+      ? x => {
+        writeFileSync(caminhoDump, JSON.stringify(montarDumpExperimento({ data, ...x })))
+        console.log(`Dump de experimento salvo em: ${caminhoDump}`)
       }
-    }
-    daUnitracPorPlaca.set(placaNorm, paradas)
-  }
-  // Achado real 25/09 (RQQ5B81/NF 2386225 23/09): fora da janela de 48h, o
-  // feed da Unitrac so' cobre o dia inteiro se o snapshot tinha a placa --
-  // senao e' retalho e nao pode vencer a ponte (ver resolverParadas).
-  const placasNoSnapshot = new Set<string>()
-  const unitracCobreODia = (placaNorm: string) => !foraDaJanelaUnitrac || placasNoSnapshot.has(placaNorm)
-  const paradasEfetivasPorPlaca = await paradasEfetivas('nutrimax', data, hojeBR(), daUnitracPorPlaca, placasNoSnapshot)
-
-  for (const placaNorm of placasNorm) {
-    const daUnitracCrua = paradasEfetivasPorPlaca.get(placaNorm) ?? []
-    paradasUnitracCruasPorPlaca.set(placaNorm, daUnitracCrua)
-    const daPonte = horarioBasePorPlaca.get(placaNorm)?.paradas
-    const paradas = resolverParadas(daUnitracCrua, daPonte, placaNorm, horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false, unitracCobreODia(placaNorm))
-    paradasPorPlaca.set(placaNorm, paradas)
-    visitasPorPlaca.set(placaNorm, montarVisitas(linhasPorPlaca.get(placaNorm) ?? [], paradas, horarioBasePorPlaca.get(placaNorm)?.visitasPorNf))
-    kmPorPlaca.set(placaNorm, calcularKmPercorrido(paradas))
+      : undefined,
   }
 
-  // Achado real 06/09 (grupo KPI AJUSTES, placa TTH-3C94): "carga
-  // transferida" so' enxerga placa que aparece no romaneio -- caminhao
-  // reserva sem NF nenhuma sua no romaneio fica invisivel pra deteccao de
-  // troca. Busca GPS tambem da frota inteira (buscarFrota ja' devolve isso
-  // direto da Unitrac) so' pra alimentar paradasPorOutraPlaca -- nao cria
-  // linha/aba de relatorio pra placa sem NF (placasNorm intocado).
-  const grafiasAlias = placasAliasDaFrota(aliasPlacas)
-  const placasFrotaExtra = frota.map(v => v.placaNorm).filter(p => !paradasPorPlaca.has(p) && !grafiasAlias.has(p))
-  const daUnitracExtraPorPlaca = new Map<string, UnitracParadaRow[]>()
-  for (const placaNorm of placasFrotaExtra) {
-    const cv = cvPorPlaca.get(placaNorm)
-    let paradas: UnitracParadaRow[] = []
-    if (cv) {
-      try {
-        paradas = await buscarParadasDoDia(cv, placaNorm, data, 48)
-      } catch (e) {
-        console.log(`buscarParadasDoDia(${placaNorm}) falhou:`, e instanceof Error ? e.message : e)
-      }
-    }
-    daUnitracExtraPorPlaca.set(placaNorm, paradas)
-  }
-  const paradasEfetivasExtraPorPlaca = await paradasEfetivas('nutrimax', data, hojeBR(), daUnitracExtraPorPlaca, placasNoSnapshot)
-  for (const placaNorm of placasFrotaExtra) {
-    let paradas = paradasEfetivasExtraPorPlaca.get(placaNorm) ?? []
-    const daPonteExtra = horarioBasePorPlaca.get(placaNorm)?.paradas
-    paradas = resolverParadas(paradas, daPonteExtra, placaNorm, horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false, unitracCobreODia(placaNorm))
-    paradasPorPlaca.set(placaNorm, paradas)
-  }
-
-  if (SEM_CADASTRO) {
-    const nfsRomaneio = new Set(romaneioGeo.map(l => l.nf))
-    const soU = nfsSoUnitrac(alvos, visitasPorPlaca).filter(nf => nfsRomaneio.has(nf))
-    console.log(`NFs que SO' a Unitrac confirmaria (sem visita GPS): ${new Set(soU).size}`)
-    if (process.env.SO_UNITRAC_OUT) writeFileSync(process.env.SO_UNITRAC_OUT, [...new Set(soU)].join('\n'))
-  }
-  const alvosPorPlaca = agrupar(SEM_CADASTRO ? [] : alvos, a => a.placaNorm)
-  // 29/09 (ordem direta do usuario): placa da escala SEM SINAL NO DIA (ponte
-  // com <2 posicoes, nenhuma parada fora da base na Unitrac, nenhum alvo
-  // feito) vira SEM RASTREADOR automatico, com o dia encerrado ou em
-  // andamento -- nunca "aguardando". Ver placaSemSinalNoDia. Mesmo calculo
-  // em route.ts e scripts/gerar-nutrimax-real-arquivo.ts (paridade).
-  // Trava (revisao independente 29/09): coletor do monitoramento fora do ar
-  // devolve consulta 'ok' porem vazia pra TODA placa -- acima de
-  // LIMITE_FRACAO_SEM_SINAL_AUTOMATICO da escala ninguem e' concluido sem
-  // sinal (tabela manual segue valendo) e o aviso vai pro log e aba Avisos.
-  const travaSemSinal = placasSemSinalComTrava(placasNorm, horarioBasePorPlaca, paradasUnitracCruasPorPlaca, alvosPorPlaca)
-  if (travaSemSinal.aviso) console.warn(`[KPI ${data}] ${travaSemSinal.aviso}`)
-  const placasSemSinal = travaSemSinal.placas
-  const temRastreadorPorPlaca = montarTemRastreadorPorPlaca(placasNorm, cvPorPlaca, horarioBasePorPlaca, placasSemRastreador, placasSemSinal)
-
-  // Achado real 22/09 (RBG5G18 21/09, espelha route.ts): CHEGADA CD tem que
-  // ser a primeira volta a base depois do fim real da rota, nao a ultima
-  // volta do dia (que pode ser uma saida extra sem entrega). Ruling do
-  // controller: so' ajusta quando TODAS as NFs do romaneio da placa ja'
-  // estao confirmadas.
-  const nfsPorPlaca = new Map([...linhasPorPlaca].map(([p, linhas]) => [p, linhas.map(l => l.nf)]))
-  await ajustarChegadaAposUltimaEntrega(placasNorm, data, horarioBasePorPlaca, visitasPorPlaca, alvosPorPlaca, nfsPorPlaca, placaConsulta)
-
-  const escalaPorChave = new Map(escalaCompleta.map(e => [`${e.carga}::${e.placaNorm}`, e]))
-  const cargasPorChave = agrupar(romaneioGeo, l => `${l.carga}::${normPlaca(l.placa)}`)
-
-  const linhasKpi: LinhaKpiRomaneio[] = [...cargasPorChave.entries()]
-    .map(([chave, linhasDaCarga]) => {
-      const [carga, placaNorm] = chave.split('::')
-      return agregarPorCarga(
-        carga, placaNorm, linhasDaCarga,
-        escalaPorChave.get(chave) ?? null,
-        alvosPorPlaca.get(placaNorm) ?? [],
-        visitasPorPlaca.get(placaNorm) ?? new Map(),
-        paradasPorPlaca.get(placaNorm) ?? [],
-        kmPorPlaca.get(placaNorm) ?? null,
-        horarioBasePorPlaca.get(placaNorm),
-        temRastreadorPorPlaca.get(placaNorm) ?? false,
-      )
-    })
-    .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
-
-  const resumoPorChave = new Map(linhasKpi.map(l => [`${l.carga}::${l.placa}`, l]))
-  // Task 3b (verificacao manual 26/09): espelha o chamador real de producao
-  // (nutrimax/gerar/route.ts) -- ver menorDistanciaTrajetoPorNf em agregacao.ts.
-  const menorDistanciaTrajetoPorNf = montarMenorDistanciaTrajetoPorNf(horarioBasePorPlaca)
-  const detalhe: LinhaDetalheEntrega[] = [...cargasPorChave.entries()]
-    .flatMap(([chave, linhasDaCarga]) => {
-      const [carga, placaNorm] = chave.split('::')
-      const resumo = resumoPorChave.get(chave)
-      return montarDetalheEntregas(
-        carga, placaNorm, linhasDaCarga, alvosPorPlaca.get(placaNorm) ?? [], visitasPorPlaca.get(placaNorm) ?? new Map(),
-        {
-          motorista: resumo?.motorista ?? '',
-          saidaCd: resumo?.saidaCd ?? null,
-          chegadaCd: resumo?.chegadaCd ?? null,
-          tempoOperacaoMin: resumo?.tempoOperacaoMin ?? null,
-        },
-        temRastreadorPorPlaca.get(placaNorm) ?? false,
-        paradasPorPlaca,
-        resumo?.kmPercorrido ?? null,
-        calcularDiaEmAndamento(data, resumo?.chegadaCd ?? null),
-        // Espelha o chamador real de producao (nutrimax/gerar/route.ts):
-        // rotulo de ilha (verificarAcessoIlha) e parada curta compartilhada
-        // (item 3b, detectarParadaCurtaCompartilhada) sao so' desta
-        // pipeline -- sem os dois, este script de verificacao nao
-        // exercitaria o mesmo comportamento que vai pro relatorio real.
-        true,
-        true,
-        // Fix round 1 (Task 10): paradas CRUAS da Unitrac da propria placa
-        // (pre-resolverParadas) -- ver comentario de
-        // paradasUnitracCruasPorPlaca acima.
-        paradasUnitracCruasPorPlaca,
-        // Revisao final pre-deploy (24/09, item 1): semRastreadorNoDia e o
-        // rotulo unificado "SEM RASTREADOR ... NAO CONTABILIZADO" sao so'
-        // desta pipeline -- ver tratarSemRastreadorNoDia em agregacao.ts.
-        true,
-        // Task 1 (plano 2026-09-25, mudanca de requisito): espelha o
-        // chamador real de producao (nutrimax/gerar/route.ts) -- ver
-        // desativarOutraPlaca em agregacao.ts.
-        true,
-        // Task 2 (plano 2026-09-25, R2): espelha o chamador real de producao
-        // (nutrimax/gerar/route.ts) -- ver confirmarPorParadaUnitracPropria
-        // em agregacao.ts.
-        true,
-        // Fix round 2 (revisao de codigo): espelha o chamador real de
-        // producao -- ver todasLinhasDaPlacaNoDia em agregacao.ts.
-        linhasPorPlaca.get(placaNorm) ?? [],
-        // Task 2 (plano 26/09): espelha o chamador real de producao -- ver
-        // apagaoDeSinalPropriaPlaca em agregacao.ts.
-        horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinal ?? false,
-        // Task 3b (verificacao manual 26/09): espelha o chamador real de
-        // producao -- ver menorDistanciaTrajetoPorNf em agregacao.ts.
-        menorDistanciaTrajetoPorNf,
-        // Task 4 (plano 2026-09-26): espelha o chamador real de producao --
-        // ver detectarEscalaDivergente em agregacao.ts.
-        true,
-        // Task 1 (plano 2026-09-26): proximidade fraca vira REVISAR, nunca
-        // ENTREGUE -- so' desta pipeline. Ver modoPrecisao em agregacao.ts.
-        true,
-        // Task 2 (plano 2026-09-26): rodizio de carga inteira vira ROTA
-        // EXECUTADA POR OUTRA PLACA -- so' desta pipeline. Ver
-        // reconhecerRodizio em agregacao.ts.
-        // Desligado 29/09: decisao do usuario/Ana -- nenhuma NF e' confirmada
-        // por parada de outro veiculo.
-        false,
-        // Item 3 (revisao final 26/09): pontos de referencia dos clientes do
-        // PROPRIO executor no dia (descarta parada do rodizio explicada por
-        // outro cliente dele, ou acima do teto de 4h de permanencia) -- ver
-        // linhasPorPlacaNoDia em agregacao.ts.
-        linhasPorPlaca,
-      )
-    })
-    .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
-
-  if (process.env.EXPORTAR_DUMP) {
-    writeFileSync(process.env.EXPORTAR_DUMP, JSON.stringify(montarDumpExperimento({ data, romaneioGeo, detalhe, paradasPorPlaca })))
-    console.log(`Dump de experimento salvo em: ${process.env.EXPORTAR_DUMP}`)
-  }
-
-  const cargasRomaneioList = [...cargasPorChave.entries()].map(([chave, linhasDaCarga]) => {
-    const [carga, placaNorm] = chave.split('::')
-    // Task 2 (plano 2026-09-30, item 2): NFs distintas do Romaneio da carga,
-    // comparadas com NF PLANEJADO da Escala -> aviso 'nf_divergente'.
-    return { carga, placaNorm, nfsRomaneio: new Set(linhasDaCarga.map(l => l.nf)).size }
-  })
-  // Fix (revisao final de branch 15/09, Critical 1 -- espelha route.ts): as
-  // duas escalas sao INDEPENDENTES. A Escala de Rota so' cobre cargas Nutry
-  // Max; a escala sintetica do pao so' cobre cargas PAO-*. Cruzar o conjunto
-  // misturado marcava falsamente "sem_escala" no lado que nao tinha o
-  // documento correspondente.
-  const ehCargaPao = (carga: string) => carga.startsWith(PAO_PREFIXO)
-  const avisos = [
-    ...detectarDescasamentos(escala, cargasRomaneioList.filter(c => !ehCargaPao(c.carga))),
-    ...(romaneioPaoBuf ? detectarDescasamentos(resultadoPao.escala, cargasRomaneioList.filter(c => ehCargaPao(c.carga))) : []),
-  ].sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
-  if (travaSemSinal.aviso) {
-    avisos.push({ carga: '—', placa: '—', motivo: 'consulta_posicoes_suspeita', semSinal: travaSemSinal.semSinal, totalPlacas: travaSemSinal.totalPlacas })
-  }
-
-  const falhasPonte = consumirFalhasPonte()
-  if (falhasPonte > 0) avisos.push({ carga: '—', placa: '—', motivo: 'ponte_falhou', placasSemPonte: falhasPonte })
-  console.log(`Total cargas: ${linhasKpi.length}, OK: ${linhasKpi.filter(l => l.status === 'OK').length}, avisos: ${avisos.length}`)
-  const negativos = linhasKpi.filter(l => l.tempoOperacaoMin != null && l.tempoOperacaoMin < 0)
-  console.log(`Linhas com TEMPO OPERAÇÃO negativo (deveria ser 0 agora): ${negativos.length}`)
-
-  // Task 4 (plano 24/09) -- espelha route.ts: falha ao ler resolucoes manuais
-  // (tabela ainda nao existe antes do deploy da Task 4) NAO quebra a geracao.
-  let historicoResolucoes: Awaited<ReturnType<typeof buscarResolucoes>> = []
+  let r: Awaited<ReturnType<typeof gerarKpiNutrimax>>
   try {
-    historicoResolucoes = await buscarResolucoes(EMPRESA_NUTRIMAX, data)
+    r = await gerarKpiNutrimax({ data, escala, romaneio, pao, escalaEnviada: true, paoEnviado: romaneioPaoPath != null }, opcoes)
   } catch (err) {
-    console.error('resolucoes manuais indisponiveis (tabela kpi_nf_resolucao ainda nao existe? ok antes do deploy da Task 4):', err)
-  }
-  const detalheComResolucao = aplicarResolucoes(detalhe, historicoResolucoes)
-
-  // Bug real 25/09 -- espelha o fix de route.ts, ver comentário completo de
-  // `contarConfirmadasPorCarga` em agregacao.ts.
-  const confirmadasPorChave = contarConfirmadasPorCarga(detalheComResolucao)
-  const linhasKpiConsistentes: LinhaKpiRomaneio[] = linhasKpi.map(l => {
-    const paradasReais = confirmadasPorChave.get(`${l.carga}::${l.placa}`) ?? 0
-    return {
-      ...l,
-      paradasReais,
-      status: l.nfPlanejado != null && paradasReais < l.nfPlanejado ? 'INCOMPLETO' : 'OK',
+    if (err instanceof ErroEntradaKpi) {
+      console.error(`ERRO: ${err.message}`)
+      process.exit(1)
     }
-  })
-
-  // Mesmo aviso de troca de placa da rota (04/10).
-  const trocasProvaveis = detectarTrocasProvaveis(cargasPorChave, cargasEscalaDivergenteInteira(detalheComResolucao), paradasPorPlaca)
-
-  const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpiConsistentes, data, avisos, detalheComResolucao, undefined, undefined, {
-    trocasProvaveis,
-    // Linha de resumo (taxa automatica/apos conferencia) so' na Nutry Max --
-    // ver `opcoes.resumoConfirmacao` em gerador-xlsx.ts.
-    resumoConfirmacao: true,
-  })
-  writeFileSync(saidaPath, xlsxBuf)
+    throw err
+  }
+  console.log(`Total cargas: ${r.linhasKpi.length}, OK: ${r.linhasKpi.filter(l => l.status === 'OK').length}, avisos: ${r.avisos.length}`)
+  writeFileSync(saidaPath, r.xlsx)
   console.log(`\nArquivo salvo em: ${saidaPath}`)
 }
 
