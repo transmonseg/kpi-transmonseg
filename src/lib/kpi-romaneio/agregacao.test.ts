@@ -3906,6 +3906,7 @@ function chamarNutryMax(
     kmPercorrido?: number | null
     modoPrecisao?: boolean
     apagaoDeSinalPropriaPlaca?: boolean
+    diaEmAndamento?: boolean
   } = {},
 ) {
   return montarDetalheEntregas(
@@ -3916,7 +3917,7 @@ function chamarNutryMax(
     true,
     opts.paradasPorOutraPlaca ?? new Map(),
     opts.kmPercorrido ?? null,
-    false, // diaEmAndamento
+    opts.diaEmAndamento ?? false,
     true, // verificarAcessoIlha
     true, // detectarParadaCurtaCompartilhada
     opts.paradasUnitracCruasPropriaPlaca ?? new Map(),
@@ -4031,6 +4032,14 @@ describe('Task 1 (plano 28/09) -- parada compartilhada com prova forte vira ENTR
     expect(d.distParadaM).toBeGreaterThan(1000)
     expect(d.status).toBe('pendente')
     expect(d.observacao).toBe('PARADA COMPARTILHADA - REVISAR')
+  })
+
+  it('rota em andamento: parada a 500 m-2 km nao confirma nem acusa -- fica AGUARDANDO, sem horario emprestado (ao vivo 06/10)', () => {
+    const ponte = new Map([['TTL7D40', [paradaForaBase('centro', -22.2 + 1200 * M_LAT, -42.4, vizinhanca.chegada, vizinhanca.saida)]]])
+    const [d] = chamarNutryMax([nf1, nf2], { visitasPorNf: visitas(), paradasPorOutraPlaca: ponte, diaEmAndamento: true })
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO')
+    expect(d.chegada).toBeNull()
   })
 
   it('parada real a mais de 2 km (nosso ponto errado: ilha/estrada S/N, casos validados pela Ana 02/10) continua ENTREGUE com horario aproximado', () => {

@@ -2638,6 +2638,15 @@ export function montarDetalheEntregas(
         if (revisar && (alvo?.situacao === SITUACAO_ALVO_OUTRO_DESFECHO || paradaLongeDaNf)) {
           status = 'pendente'
           observacao = revisar
+          // Rota em andamento: o caminhao ainda pode passar no endereco --
+          // nao acusa nem mostra o horario emprestado, so' espera (mesmo
+          // espirito do AGUARDANDO acima).
+          if (diaEmAndamento && alvo?.situacao !== SITUACAO_ALVO_OUTRO_DESFECHO) {
+            observacao = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
+            chegada = null
+            saida = null
+            tempoParadaMin = null
+          }
         }
       }
     }
