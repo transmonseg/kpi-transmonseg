@@ -111,6 +111,22 @@ export async function entradaDoDia(cliente: ClienteAoVivo, data: string): Promis
   }
 }
 
+/** Resultado da tela a partir da planilha do KPI lida (extrairKpiCompleto).
+ *  Usado pelo cálculo ao vivo e pelo histórico (planilha guardada). */
+export function montarResultadoAoVivo(data: string, lido: Awaited<ReturnType<typeof extrairKpiCompleto>>, coords: Map<string, { lat: number; lng: number }>, calculadoEm: string): ResultadoAoVivo {
+  const placas = resumirPlacas(data, lido.nfs, lido.resumo.cargas, coords)
+  const totalNfs = placas.reduce((s, p) => s + p.total, 0)
+  const feitas = placas.reduce((s, p) => s + p.feitas, 0)
+  return {
+    calculadoEm,
+    resumo: {
+      taxa: lido.resumo.taxa, entregues: lido.resumo.entregues, nfsNaConta: lido.resumo.nfsNaConta,
+      aguardando: lido.resumo.aguardando ?? 0, totalNfs, feitas, pct: totalNfs ? Math.round((100 * feitas) / totalNfs) : 0,
+    },
+    placas,
+  }
+}
+
 /** Roda o KPI com o romaneio guardado e grava o resultado da tela.
  *  Outro cálculo rodando: não faz nada ('ocupado'). Sem romaneio: 'sem_romaneio'. */
 export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: (m: string) => void = () => {}): Promise<'ok' | 'ocupado' | 'sem_romaneio' | 'erro'> {
@@ -126,23 +142,12 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
         for (const l of romaneioGeo) if (l.lat != null && l.lng != null) coords.set(l.nf, { lat: l.lat, lng: l.lng })
       },
     })
-    const lido = await extrairKpiCompleto(r.xlsx)
-    const placas = resumirPlacas(data, lido.nfs, lido.resumo.cargas, coords)
-    const totalNfs = placas.reduce((s, p) => s + p.total, 0)
-    const feitas = placas.reduce((s, p) => s + p.feitas, 0)
-    const resultado: ResultadoAoVivo = {
-      calculadoEm: new Date().toISOString(),
-      resumo: {
-        taxa: lido.resumo.taxa, entregues: lido.resumo.entregues, nfsNaConta: lido.resumo.nfsNaConta,
-        aguardando: lido.resumo.aguardando ?? 0, totalNfs, feitas, pct: totalNfs ? Math.round((100 * feitas) / totalNfs) : 0,
-      },
-      placas,
-    }
+    const resultado = montarResultadoAoVivo(data, await extrairKpiCompleto(r.xlsx), coords, new Date().toISOString())
     const { error } = await svc.from('kpi_ao_vivo_calculo').update({
       resultado, calculado_em: resultado.calculadoEm, duracao_ms: Date.now() - t0, rodando_desde: null,
     }).eq('cliente', cliente).eq('data', data)
     if (error) throw new Error(error.message)
-    log(`ao vivo ${cliente} ${data}: ok em ${Math.round((Date.now() - t0) / 1000)}s (${feitas}/${totalNfs})`)
+    log(`ao vivo ${cliente} ${data}: ok em ${Math.round((Date.now() - t0) / 1000)}s (${resultado.resumo.feitas}/${resultado.resumo.totalNfs})`)
     return 'ok'
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)

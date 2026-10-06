@@ -12,7 +12,14 @@ import { SubirRomaneio } from './subir-romaneio'
 
 const CLIENTE = 'nutrimax'
 type Agora = { posicao: { lat: number | null; lng: number | null; datagps: string | null } | null; parada: { inicio: string } | null; nf: { nf: string; cliente: string } | null; consultadoEm: string }
-type Estado = EstadoAoVivo & { data: string }
+type Estado = EstadoAoVivo & { data: string; hoje: string; historico: boolean; dias: string[]; fonte?: 'ao_vivo' | 'geracao' | null; geracaoId?: string | null }
+
+/** "2026-10-03" -> "sex, 03/10". */
+function rotuloDia(d: string): string {
+  const [a, m, dia] = d.split('-').map(Number)
+  const sem = new Date(Date.UTC(a, m - 1, dia, 12)).toLocaleDateString('pt-BR', { weekday: 'short', timeZone: 'UTC' }).replace('.', '')
+  return `${sem}, ${String(dia).padStart(2, '0')}/${String(m).padStart(2, '0')}`
+}
 
 const UMA_HORA = 3600
 
@@ -54,17 +61,19 @@ export default function AoVivoPage() {
   const [subindo, setSubindo] = useState(false)
   // Celular: lista de placas OU detalhe (no computador, os dois lado a lado).
   const [vendoDetalhe, setVendoDetalhe] = useState(false)
+  // Dia escolhido (null = hoje, ao vivo). Dia passado = histórico guardado.
+  const [dataSel, setDataSel] = useState<string | null>(null)
 
   const carregar = useCallback(async () => {
     try {
-      const r = await fetch(`/api/kpi/ao-vivo?cliente=${CLIENTE}`, { cache: 'no-store' })
+      const r = await fetch(`/api/kpi/ao-vivo?cliente=${CLIENTE}${dataSel ? `&data=${dataSel}` : ''}`, { cache: 'no-store' })
       if (!r.ok) throw new Error(await r.text())
       setEstado(await r.json())
       setErroCarga(null)
     } catch (e) {
       setErroCarga(e instanceof Error ? e.message : 'Não consegui carregar.')
     }
-  }, [])
+  }, [dataSel])
 
   // Estado: a cada 60 s (10 s enquanto o primeiro cálculo ainda não saiu).
   // Depende só de um booleano: depender do objeto `resultado` recarregaria
@@ -72,9 +81,10 @@ export default function AoVivoPage() {
   const esperandoPrimeiro = !!estado?.dia && !estado?.resultado
   useEffect(() => {
     void carregar()
+    if (dataSel) return // dia passado não muda
     const t = setInterval(carregar, esperandoPrimeiro ? 10_000 : 60_000)
     return () => clearInterval(t)
-  }, [carregar, esperandoPrimeiro])
+  }, [carregar, esperandoPrimeiro, dataSel])
 
   // Relógio da tela: 1 s.
   useEffect(() => {
@@ -88,7 +98,7 @@ export default function AoVivoPage() {
 
   // Camada "agora" da placa aberta: a cada 30 s.
   useEffect(() => {
-    if (!placa) return
+    if (!placa || dataSel) return
     const alvo = placa.placa
     let vivo = true
     const buscar = () => fetch(`/api/kpi/ao-vivo/agora?cliente=${CLIENTE}&placa=${alvo}`, { cache: 'no-store' })
@@ -98,7 +108,7 @@ export default function AoVivoPage() {
     buscar()
     const t = setInterval(buscar, 30_000)
     return () => { vivo = false; clearInterval(t) }
-  }, [placa?.placa]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [placa?.placa, dataSel]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtradas = useMemo(() => {
     const b = busca.trim().toUpperCase()
@@ -128,19 +138,28 @@ export default function AoVivoPage() {
   }
 
   const r = estado.resultado
+  const historico = estado.historico
+  const trocarDia = (d: string) => { setDataSel(d === estado.hoje ? null : d); setPlacaSel(null); setNfAberta(null); setVendoDetalhe(false); setAgora({}) }
 
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2.5">
-            <span className="relative flex size-2.5">
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-[var(--color-success)] opacity-60 motion-reduce:hidden" />
-              <span className="relative inline-flex size-2.5 rounded-full bg-[var(--color-success)]" />
-            </span>
-            <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-[var(--color-fg)]">Nutry Max ao vivo</h1>
+            {!historico && (
+              <span className="relative flex size-2.5">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-[var(--color-success)] opacity-60 motion-reduce:hidden" />
+                <span className="relative inline-flex size-2.5 rounded-full bg-[var(--color-success)]" />
+              </span>
+            )}
+            <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-[var(--color-fg)]">{historico ? `Nutry Max em ${rotuloDia(estado.data).split(', ')[1]}` : 'Nutry Max ao vivo'}</h1>
           </div>
-          {r ? (
+          {historico ? (
+            <p className="text-[14px] text-[var(--color-fg-muted)]">
+              {r ? (<><strong className="text-[var(--color-fg)] tabular-nums">{r.resumo.pct}% entregue</strong>, {r.resumo.feitas.toLocaleString('pt-BR')} de {r.resumo.totalNfs.toLocaleString('pt-BR')} notas. {estado.fonte === 'geracao' ? 'KPI gerado' : 'Último cálculo'} em {new Date(r.calculadoEm).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', ' às')}.</>)
+                : 'Nada guardado deste dia.'}
+            </p>
+          ) : r ? (
             <p className="text-[14px] text-[var(--color-fg-muted)]">
               <strong className="text-[var(--color-fg)] tabular-nums">{r.resumo.pct}% entregue</strong>, {r.resumo.feitas.toLocaleString('pt-BR')} de {r.resumo.totalNfs.toLocaleString('pt-BR')} notas. Atualizado às {hhmm(r.calculadoEm)}{estado.calculando ? ', recalculando agora' : ''}.
             </p>
@@ -150,16 +169,31 @@ export default function AoVivoPage() {
             <p className="text-[14px] text-[var(--color-fg-muted)]">Suba o romaneio de hoje para começar a acompanhar as entregas.</p>
           )}
         </div>
-        {estado.dia && (
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="relative inline-flex h-10 items-center rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] pl-4 pr-9 text-[13px] font-semibold text-[var(--color-fg)] transition hover:border-[var(--color-border-strong)]">
+            <span className="sr-only">Dia</span>
+            <select value={estado.data} onChange={e => trocarDia(e.target.value)} className="appearance-none bg-transparent outline-none">
+              <option value={estado.hoje}>Hoje, ao vivo</option>
+              {estado.dias.map(d => <option key={d} value={d}>{rotuloDia(d)}</option>)}
+            </select>
+            <CaretDown size={13} className="pointer-events-none absolute right-3.5 text-[var(--color-fg-subtle)]" />
+          </label>
+          {historico && estado.geracaoId && (
+            <a href={`/api/kpi/historico/${estado.geracaoId}/xlsx`} className="inline-flex h-10 items-center gap-2 rounded-full bg-[var(--color-navy-700)] px-5 text-[13px] font-semibold text-white transition hover:bg-[var(--color-navy-800)]">
+              <DownloadSimple size={15} weight="bold" />Baixar planilha
+            </a>
+          )}
+        {!historico && estado.dia && (
+          <>
             <button type="button" onClick={() => setSubindo(s => !s)} className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-4 text-[13px] font-semibold text-[var(--color-fg)] transition hover:border-[var(--color-border-strong)]">
               <UploadSimple size={15} weight="bold" />Trocar romaneio
             </button>
             <button type="button" onClick={gerarAgora} disabled={gerando} className="inline-flex h-10 items-center gap-2 rounded-full bg-[var(--color-navy-700)] px-5 text-[13px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] active:scale-[0.98] disabled:opacity-50">
               <DownloadSimple size={15} weight="bold" />{gerando ? 'Gerando… (uns 3 min)' : 'Gerar KPI agora'}
             </button>
-          </div>
+          </>
         )}
+        </div>
       </header>
 
       {estado.ultimoErro && (!r || Date.parse(estado.ultimoErro.em) > Date.parse(r.calculadoEm)) && (
@@ -169,7 +203,7 @@ export default function AoVivoPage() {
       )}
       {erroCarga && <p className="text-[13px] text-[var(--color-danger)]">{erroCarga}</p>}
 
-      {(!estado.dia || subindo) && (
+      {!historico && (!estado.dia || subindo) && (
         <section className="dash-card p-6">
           <h2 className="mb-1 text-[16px] font-semibold text-[var(--color-fg)]">{estado.dia ? 'Trocar o romaneio de hoje' : 'Romaneio de hoje'}</h2>
           <p className="mb-5 text-[13px] text-[var(--color-fg-muted)]">Os mesmos PDFs da tela Gerar KPI. O sistema guarda só o que leu deles e recalcula o KPI a cada 10 minutos.</p>
@@ -177,7 +211,7 @@ export default function AoVivoPage() {
         </section>
       )}
 
-      {estado.dia && !r && !subindo && (
+      {!historico && estado.dia && !r && !subindo && (
         <section className="dash-card flex items-center gap-4 p-6">
           <span className="size-5 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-navy-700)]" />
           <p className="text-[14px] text-[var(--color-fg-muted)]">Calculando o KPI de hoje com as mesmas regras da planilha…</p>
@@ -195,7 +229,7 @@ export default function AoVivoPage() {
             </div>
             <ul className="min-h-0 flex-1 overflow-y-auto">
               {filtradas.map(p => (
-                <LinhaPlaca key={p.placa} p={p} ativa={p.placa === placa.placa} agora={agora[p.placa]} agoraMs={agoraMs} onClick={() => { setPlacaSel(p.placa); setNfAberta(null); setVendoDetalhe(true) }} />
+                <LinhaPlaca key={p.placa} p={p} ativa={p.placa === placa.placa} agora={historico ? undefined : agora[p.placa]} agoraMs={agoraMs} historico={historico} onClick={() => { setPlacaSel(p.placa); setNfAberta(null); setVendoDetalhe(true) }} />
               ))}
               {filtradas.length === 0 && <li className="px-4 py-10 text-center text-[13px] text-[var(--color-fg-muted)]">Nenhuma placa com “{busca}”.</li>}
             </ul>
@@ -205,7 +239,7 @@ export default function AoVivoPage() {
             <button type="button" onClick={() => setVendoDetalhe(false)} className="mb-3 inline-flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-4 text-[13px] font-semibold text-[var(--color-fg)] lg:hidden">
               <CaretLeft size={14} weight="bold" />Todas as placas
             </button>
-          <DetalhePlaca p={placa} agora={agora[placa.placa]} agoraMs={agoraMs} nfAberta={nfAberta} onNf={nf => setNfAberta(a => (a === nf ? null : nf))} calculadoEm={r.calculadoEm} />
+          <DetalhePlaca p={placa} agora={historico ? undefined : agora[placa.placa]} agoraMs={agoraMs} historico={historico} nfAberta={nfAberta} onNf={nf => setNfAberta(a => (a === nf ? null : nf))} />
           </div>
         </div>
       )}
@@ -222,13 +256,13 @@ function voltouABase(p: PlacaAoVivo): boolean {
   return !!ultimaSaida && hhmm(p.chegadaBase) >= ultimaSaida
 }
 
-function situacaoAgora(p: PlacaAoVivo, a: Agora | undefined, agoraMs: number): { texto: string; tempo: string | null; tom: 'cliente' | 'longe' | 'rota' | 'fim' } {
+function situacaoAgora(p: PlacaAoVivo, a: Agora | undefined, agoraMs: number, historico = false): { texto: string; tempo: string | null; tom: 'cliente' | 'longe' | 'rota' | 'fim' } {
   if (a?.parada) {
     const s = desde(a.parada.inicio, agoraMs)
     return { texto: 'No cliente', tempo: relogio(s), tom: s >= UMA_HORA ? 'longe' : 'cliente' }
   }
   if (voltouABase(p)) return { texto: `Voltou à base às ${hhmm(p.chegadaBase)}`, tempo: null, tom: 'fim' }
-  if (p.saidaBase) return { texto: `Saiu às ${hhmm(p.saidaBase)}`, tempo: relogio(desde(p.saidaBase, agoraMs)), tom: 'rota' }
+  if (p.saidaBase) return { texto: historico ? `Saiu às ${hhmm(p.saidaBase)}, sem volta registrada` : `Saiu às ${hhmm(p.saidaBase)}`, tempo: historico ? null : relogio(desde(p.saidaBase, agoraMs)), tom: historico ? 'fim' : 'rota' }
   return { texto: p.feitas > 0 ? 'Sem horário de saída' : 'Ainda não saiu da base', tempo: null, tom: 'fim' }
 }
 
@@ -246,8 +280,8 @@ function SeloPao({ texto }: { texto: string }) {
   return <span className="shrink-0 rounded-full bg-[#fdf3e3] px-2 py-0.5 text-[11px] font-semibold text-[#8a4b08]">{texto}</span>
 }
 
-function LinhaPlaca({ p, ativa, agora, agoraMs, onClick }: { p: PlacaAoVivo; ativa: boolean; agora: Agora | undefined; agoraMs: number; onClick: () => void }) {
-  const s = situacaoAgora(p, agora, agoraMs)
+function LinhaPlaca({ p, ativa, agora, agoraMs, historico, onClick }: { p: PlacaAoVivo; ativa: boolean; agora: Agora | undefined; agoraMs: number; historico: boolean; onClick: () => void }) {
+  const s = situacaoAgora(p, agora, agoraMs, historico)
   return (
     <li>
       <button type="button" onClick={onClick} aria-current={ativa ? 'true' : undefined}
@@ -271,8 +305,8 @@ function LinhaPlaca({ p, ativa, agora, agoraMs, onClick }: { p: PlacaAoVivo; ati
   )
 }
 
-function DetalhePlaca({ p, agora, agoraMs, nfAberta, onNf, calculadoEm }: { p: PlacaAoVivo; agora: Agora | undefined; agoraMs: number; nfAberta: string | null; onNf: (nf: string) => void; calculadoEm: string }) {
-  const s = situacaoAgora(p, agora, agoraMs)
+function DetalhePlaca({ p, agora, agoraMs, historico, nfAberta, onNf }: { p: PlacaAoVivo; agora: Agora | undefined; agoraMs: number; historico: boolean; nfAberta: string | null; onNf: (nf: string) => void }) {
+  const s = situacaoAgora(p, agora, agoraMs, historico)
   const nfAgora = agora?.nf?.nf ?? null
   const contagem = (sit: SituacaoNf) => p.nfs.filter(n => n.situacao === sit).length
   return (
@@ -286,7 +320,7 @@ function DetalhePlaca({ p, agora, agoraMs, nfAberta, onNf, calculadoEm }: { p: P
           <p className="line-clamp-2 text-[13px] leading-snug text-[var(--color-fg-muted)]">{p.motorista || 'Motorista não informado'}, {p.destino}</p>
         </div>
         <Dado rotulo="Entregas" valor={`${p.pct}%`} extra={`${p.feitas} de ${p.total}`} />
-        <Dado rotulo={p.saidaBase ? `Saiu da base às ${hhmm(p.saidaBase)}` : 'Saída da base'} valor={tempoDesdeSaida(p, agoraMs)} />
+        <Dado rotulo={p.saidaBase ? `Saiu da base às ${hhmm(p.saidaBase)}` : 'Saída da base'} valor={tempoDesdeSaida(p, agoraMs, historico)} />
         {s.tom === 'cliente' || s.tom === 'longe' ? (
           <div className={`rounded-2xl px-4 py-3 ${s.tom === 'longe' ? 'bg-[#fff4e5]' : 'bg-[#eef4fe]'}`}>
             <p className={`truncate text-[12px] font-medium ${COR_TOM[s.tom]}`}>{s.tom === 'longe' ? 'No cliente há mais de 1 hora' : 'No cliente agora'}{agora?.nf ? ` · ${agora.nf.cliente}` : ''}</p>
@@ -308,7 +342,7 @@ function DetalhePlaca({ p, agora, agoraMs, nfAberta, onNf, calculadoEm }: { p: P
         </div>
         <ul>
           {p.nfs.map((n, i) => (
-            <LinhaNf key={`${n.carga}-${n.nf}`} n={n} ordem={i + 1} aberta={nfAberta === n.nf} noClienteAgora={nfAgora === n.nf ? agora?.parada?.inicio ?? null : null} agoraMs={agoraMs} onClick={() => onNf(n.nf)} calculadoEm={calculadoEm} posicao={agora?.posicao ?? null} />
+            <LinhaNf key={`${n.carga}-${n.nf}`} n={n} ordem={i + 1} aberta={nfAberta === n.nf} noClienteAgora={nfAgora === n.nf ? agora?.parada?.inicio ?? null : null} agoraMs={agoraMs} onClick={() => onNf(n.nf)} posicao={agora?.posicao ?? null} />
           ))}
         </ul>
       </div>
@@ -317,9 +351,10 @@ function DetalhePlaca({ p, agora, agoraMs, nfAberta, onNf, calculadoEm }: { p: P
 }
 
 /** Tempo desde a saída da base; para de contar quando a rota terminou. */
-function tempoDesdeSaida(p: PlacaAoVivo, agoraMs: number): string {
+function tempoDesdeSaida(p: PlacaAoVivo, agoraMs: number, historico = false): string {
   if (!p.saidaBase) return '—'
-  const fim = voltouABase(p) && p.chegadaBase ? Date.parse(p.chegadaBase) : agoraMs
+  if (historico && !p.chegadaBase) return '—'
+  const fim = (voltouABase(p) || historico) && p.chegadaBase ? Date.parse(p.chegadaBase) : agoraMs
   return relogio((fim - Date.parse(p.saidaBase)) / 1000)
 }
 
@@ -332,7 +367,7 @@ function Dado({ rotulo, valor, extra }: { rotulo: string; valor: string; extra?:
   )
 }
 
-function LinhaNf({ n, ordem, aberta, noClienteAgora, agoraMs, onClick, posicao }: { n: NfAoVivo; ordem: number; aberta: boolean; noClienteAgora: string | null; agoraMs: number; onClick: () => void; calculadoEm: string; posicao: Agora['posicao'] }) {
+function LinhaNf({ n, ordem, aberta, noClienteAgora, agoraMs, onClick, posicao }: { n: NfAoVivo; ordem: number; aberta: boolean; noClienteAgora: string | null; agoraMs: number; onClick: () => void; posicao: Agora['posicao'] }) {
   const segAgora = noClienteAgora ? desde(noClienteAgora, agoraMs) : null
   const longe = segAgora != null && segAgora >= UMA_HORA
   const corPonto = segAgora != null ? (longe ? 'var(--color-warning)' : '#2a6fdb') : COR_SITUACAO[n.situacao]
