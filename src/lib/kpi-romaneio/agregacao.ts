@@ -980,6 +980,9 @@ export function pontoAproximadoPorEndereco(endereco: string): boolean {
 // Ver bloco "Revisao de falso positivo 06/10" em montarDetalheEntregas.
 const EVIDENCIAS_FRACAS_DE_PARADA = new Set<EvidenciaNf>(['raio_ampliado', 'vizinhanca', 'parada_curta_compartilhada'])
 const DIST_MIN_PARADA_DE_OUTRO_CLIENTE_M = 400
+const EVIDENCIAS_FRACAS_PARADA_CURTA = new Set<EvidenciaNf>(['raio_ampliado', 'vizinhanca', 'parada_curta_compartilhada', 'parada_proxima_propria'])
+const DURACAO_MAX_PARADA_CURTA_VARIOS_MIN = 5
+export const OBS_PARADA_CURTA_VARIOS_LONGE = 'PARADA CURTA PARA VÁRIOS ENDEREÇOS A MAIS DE 500 M - CONFERIR'
 export const OBS_PARADA_DE_OUTRO_CLIENTE = 'PARADA DE OUTRO CLIENTE - NÃO CONFIRMA ESTE CLIENTE - CONFERIR'
 
 const REVISAR_POR_ROTULO_FRACO: Record<string, string> = {
@@ -2740,6 +2743,56 @@ export function montarDetalheEntregas(
       ...(nfRodizio ? { placaExecutora: placaRodizio } : {}),
     }
   })
+
+  // Revisao 06/10 (TTY0J84: 1 parada de 4 min confirmou 4 clientes a 670-1090
+  // m; RQV5F67: parada de 1 min confirmou 3 a 1-2 km): parada curta (<=
+  // DURACAO_MAX_PARADA_CURTA_VARIOS_MIN) com evidencia fraca confirmando 2+
+  // enderecos diferentes, todos a mais de RAIO_ENTREGA_METROS, nao confirma
+  // nenhum -- nao da' tempo de entregar a pe' em varios lugares longe.
+  if (modoPrecisao) {
+    const grupos = new Map<string, LinhaDetalheEntrega[]>()
+    for (const d of resultado) {
+      if (d.status !== 'confirmado_gps' || !d.chegada || !EVIDENCIAS_FRACAS_PARADA_CURTA.has(d.evidencia)) continue
+      if ((d.tempoParadaMin ?? 0) > DURACAO_MAX_PARADA_CURTA_VARIOS_MIN) continue
+      const k = d.chegada.slice(0, 16)
+      grupos.set(k, [...(grupos.get(k) ?? []), d])
+    }
+    const linhaPorNf = new Map(linhasRomaneio.map(l => [l.nf, l]))
+    // Distancia medida da parada real ate' a NF (geocode/cadastro, o mais
+    // perto); sem coordenada da parada, null -- nao da' pra provar longe.
+    const distanciaReal = (d: LinhaDetalheEntrega): number | null => {
+      if (d.distParadaM != null) return d.distParadaM
+      const l = linhaPorNf.get(d.nf)
+      if (!l || !d.chegada || !d.saida) return null
+      const alvoL = alvoPorNf.get(d.nf)
+      const ref = referenciaParaDesempate(l, alvoL)
+      // Parada curta (1-4 min) costuma nao estar nas paradas da ponte -- tenta
+      // tambem as paradas cruas da Unitrac da propria placa.
+      const coord = acharCoordenadaDaParadaPropria(placaNorm, d.chegada, d.saida, paradasPorOutraPlaca, ref)
+        ?? acharCoordenadaDaParadaPropria(placaNorm, d.chegada, d.saida, paradasUnitracCruasPropriaPlaca, ref)
+      if (!coord) return null
+      const { distGeo, distCad } = distanciasGeoECadastro(l, alvoL, coord)
+      const ds = [distGeo, distCad].filter((x): x is number => x != null)
+      return ds.length ? Math.min(...ds) : null
+    }
+    for (const g of grupos.values()) {
+      const enderecos = new Set(g.map(d => d.endereco.split(' - ')[0]))
+      if (enderecos.size < 2) continue
+      if (!g.every(d => { const dist = distanciaReal(d); return dist != null && dist > RAIO_ENTREGA_METROS })) continue
+      for (const d of g) {
+        d.status = 'pendente'
+        if (diaEmAndamento) {
+          d.observacao = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
+          d.chegada = null
+          d.saida = null
+          d.tempoParadaMin = null
+        } else {
+          d.observacao = OBS_PARADA_CURTA_VARIOS_LONGE
+        }
+        d.confianca = calcularConfianca(d.status, d.observacao)
+      }
+    }
+  }
 
   // Task 4 (plano 2026-10-03): inferencia temporal para SEM CONFIRMAÇÃO no
   // mesmo endereco. Quando uma NF esta pendente (sem evidencia de posicao) mas

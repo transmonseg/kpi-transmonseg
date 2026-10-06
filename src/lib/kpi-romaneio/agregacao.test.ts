@@ -6059,3 +6059,29 @@ describe('parada que era de outro cliente da rota nao confirma (raio ampliado / 
     expect(d.status).not.toBe('pendente')
   })
 })
+
+// Revisao 06/10 (TTY0J84 Laranjeiras: 1 parada de 4 min confirmou 4 clientes a
+// 670-1090 m; RQV5F67 Macae: parada de 1 min confirmou 3 a 1-2 km).
+describe('parada curta nao confirma varios enderecos longe (06/10)', () => {
+  const janela = { chegada: '2026-10-06T11:20:00.000Z', saida: '2026-10-06T11:24:00.000Z' }
+  const a = linha('NF1', { endereco: 'RUA DAS LARANJEIRAS, 539 - LARANJEIRAS, RIO DE JANEIRO', lat: -22.93, lng: -43.19 })
+  const b = linha('NF2', { endereco: 'RUA GENERAL GLICERIO, 15 - LARANJEIRAS, RIO DE JANEIRO', lat: -22.93, lng: -43.19 + 0.002 })
+  const vis = (extra = {}) => new Map<string, Visita>([
+    ['NF1', { nf: 'NF1', ...janela, distanciaMetrosDoPonto: 900, viaRaioAmpliado: true, ...extra }],
+    ['NF2', { nf: 'NF2', ...janela, distanciaMetrosDoPonto: 700, viaRaioAmpliado: true, ...extra }],
+  ])
+  const ponte = new Map([['TTL7D40', [paradaForaBase('p', -22.93 + 800 * M_LAT, -43.19, janela.chegada, janela.saida)]]])
+
+  it('parada de 4 min a mais de 500 m de 2 enderecos diferentes: nenhum confirma', () => {
+    const d = chamarNutryMax([a, b], { visitasPorNf: vis(), paradasPorOutraPlaca: ponte })
+    expect(d.map(x => x.status)).toEqual(['pendente', 'pendente'])
+    expect(d[0].observacao).toBe('PARADA CURTA PARA VÁRIOS ENDEREÇOS A MAIS DE 500 M - CONFERIR')
+  })
+
+  it('parada longa (30 min) continua confirmando por raio ampliado', () => {
+    const longa = { chegada: '2026-10-06T11:20:00.000Z', saida: '2026-10-06T11:50:00.000Z' }
+    const p2 = new Map([['TTL7D40', [paradaForaBase('p', -22.93 + 800 * M_LAT, -43.19, longa.chegada, longa.saida)]]])
+    const d = chamarNutryMax([a, b], { visitasPorNf: vis(longa), paradasPorOutraPlaca: p2 })
+    expect(d.every(x => x.status !== 'pendente')).toBe(true)
+  })
+})
