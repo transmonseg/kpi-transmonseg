@@ -20,7 +20,10 @@ import {
   FileArrowUp,
   Broadcast,
   ArrowsLeftRight,
+  MapTrifold,
+  ArrowUpRight,
 } from '@phosphor-icons/react/dist/ssr'
+import { URL_MONITORAMENTO } from '@/lib/sistema-transmonseg'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 
 type Leaf = { href: string; label: string; Icon: PhosphorIcon; exact?: boolean }
@@ -130,6 +133,26 @@ function LeafLink({ item, active, nested }: { item: Leaf; active: boolean; neste
   )
 }
 
+/** Outro sistema da Transmonseg (endereço próprio, mesma aba). */
+function LinkMonitoramento() {
+  return (
+    <a href={URL_MONITORAMENTO} className={ITEM_BASE + ' px-2.5 text-[var(--color-sidebar-fg-muted)] hover:bg-white/[0.045] hover:text-[var(--color-sidebar-fg-strong)]'}>
+      <MapTrifold size={17} className="text-[var(--color-sidebar-fg-muted)] transition-colors group-hover:text-[var(--color-sidebar-fg-strong)]" />
+      <span className="flex-1">Monitoramento</span>
+      <ArrowUpRight size={13} className="text-white/30 transition-colors group-hover:text-white/70" />
+    </a>
+  )
+}
+
+function SecaoSistemas() {
+  return (
+    <>
+      <span className="px-2.5 pb-1 pt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">Sistemas</span>
+      <LinkMonitoramento />
+    </>
+  )
+}
+
 function IconeGrupo({ Icon, ativo }: { Icon: PhosphorIcon; cor?: string; ativo?: boolean }) {
   // Uma cor só, como os outros itens do menu (sem bolha colorida por empresa).
   return <Icon size={17} weight={ativo ? 'fill' : 'regular'} className={ativo ? 'text-white' : 'text-[var(--color-sidebar-fg-muted)] transition-colors group-hover:text-white'} />
@@ -216,6 +239,7 @@ export function PainelNav({ papel, empresas }: { papel: Papel; empresas: string[
           <span className="px-2.5 pb-1 pt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">Empresas</span>
         )}
         {grupos.map(g => <GroupBlock key={g.label} group={g} pathname={pathname} />)}
+        <SecaoSistemas />
       </nav>
     )
   }
@@ -248,6 +272,7 @@ export function PainelNav({ papel, empresas }: { papel: Papel; empresas: string[
         Operação
       </span>
       <GroupBlock group={GRUPO_COZINHA} pathname={pathname} />
+      <SecaoSistemas />
     </nav>
   )
 }

@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { List, X, SignOut } from '@phosphor-icons/react/dist/ssr'
+import { List, X, SignOut, CaretLeft } from '@phosphor-icons/react/dist/ssr'
+import { URL_CENTRAL } from '@/lib/sistema-transmonseg'
 import { ThemeToggle } from '@/lib/theme/ThemeToggle'
 import { HeaderTitle } from './header-title'
 import { PainelNav } from './nav'
@@ -56,7 +57,7 @@ export function PainelShell({ userEmail, papel, empresas, sairAction, children }
         className="sidebar-kpi sticky top-0 hidden h-[100dvh] w-[220px] shrink-0 flex-col md:flex"
         style={{ colorScheme: 'dark' }}
       >
-        <SidebarBrand />
+        <SidebarBrand central={papel === 'admin' || papel === 'operador'} />
         <PainelNav papel={papel} empresas={empresas} />
         <SidebarFooter userEmail={userEmail} sairAction={sairAction} />
       </aside>
@@ -88,7 +89,7 @@ export function PainelShell({ userEmail, papel, empresas, sairAction, children }
             (open ? 'translate-x-0' : '-translate-x-full')
           }
         >
-          <SidebarBrand onCloseHint={() => setOpen(false)} />
+          <SidebarBrand central={papel === 'admin' || papel === 'operador'} onCloseHint={() => setOpen(false)} />
           <PainelNav papel={papel} empresas={empresas} />
           <SidebarFooter userEmail={userEmail} sairAction={sairAction} />
         </aside>
@@ -123,9 +124,14 @@ export function PainelShell({ userEmail, papel, empresas, sairAction, children }
   )
 }
 
-function SidebarBrand({ onCloseHint }: { onCloseHint?: () => void }) {
+function SidebarBrand({ onCloseHint, central }: { onCloseHint?: () => void; central?: boolean }) {
   return (
     <div className="flex h-16 items-center justify-between px-4">
+      <div className="flex items-center gap-1.5">
+      {central && <a href={URL_CENTRAL} title="Voltar para a Central Transmonseg" aria-label="Voltar para a Central Transmonseg"
+        className="-ml-1.5 inline-flex h-8 w-6 items-center justify-center rounded-lg text-white/40 transition hover:bg-white/[0.06] hover:text-white">
+        <CaretLeft size={15} weight="bold" />
+      </a>}
       <Link href="/painel" className="group flex items-center gap-3 outline-none" onClick={onCloseHint}>
         <span className="inline-flex h-9 w-9 items-center justify-center rounded-[11px] bg-[#1f3864] text-[14px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] transition-transform duration-300 group-hover:scale-105">
           T
@@ -135,6 +141,7 @@ function SidebarBrand({ onCloseHint }: { onCloseHint?: () => void }) {
           <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8fb0e0]/70">KPI</span>
         </span>
       </Link>
+      </div>
       {onCloseHint && (
         <button
           type="button"

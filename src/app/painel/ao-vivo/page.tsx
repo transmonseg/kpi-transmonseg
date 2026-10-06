@@ -156,12 +156,12 @@ export default function AoVivoPage() {
           </div>
           {historico ? (
             <p className="text-[14px] text-[var(--color-fg-muted)]">
-              {r ? (<><strong className="text-[var(--color-fg)] tabular-nums">{r.resumo.pct}% entregue</strong>, {r.resumo.feitas.toLocaleString('pt-BR')} de {r.resumo.totalNfs.toLocaleString('pt-BR')} notas. {estado.fonte === 'geracao' ? 'KPI gerado' : 'Último cálculo'} em {new Date(r.calculadoEm).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', ' às')}.</>)
+              {r ? (<><FraseResumo r={r} /> {estado.fonte === 'geracao' ? 'KPI gerado' : 'Último cálculo'} em {new Date(r.calculadoEm).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', ' às')}.</>)
                 : 'Nada guardado deste dia.'}
             </p>
           ) : r ? (
             <p className="text-[14px] text-[var(--color-fg-muted)]">
-              <strong className="text-[var(--color-fg)] tabular-nums">{r.resumo.pct}% entregue</strong>, {r.resumo.feitas.toLocaleString('pt-BR')} de {r.resumo.totalNfs.toLocaleString('pt-BR')} notas. Atualizado às {hhmm(r.calculadoEm)}{estado.calculando ? ', recalculando agora' : ''}.
+              <FraseResumo r={r} /> Atualizado às {hhmm(r.calculadoEm)}{estado.calculando ? ', recalculando agora' : ''}.
             </p>
           ) : estado.dia ? (
             <p className="text-[14px] text-[var(--color-fg-muted)]">Romaneio recebido às {hhmm(estado.dia.enviadoEm)}: {estado.dia.nfs} notas em {estado.dia.placas} placas. Calculando o KPI pela primeira vez — leva uns 3 minutos.</p>
@@ -245,6 +245,15 @@ export default function AoVivoPage() {
       )}
     </div>
   )
+}
+
+/** Taxa do KPI (a mesma da planilha: fora da conta não entra) e as notas. */
+function FraseResumo({ r }: { r: NonNullable<Estado['resultado']> }) {
+  const n = (x: number) => x.toLocaleString('pt-BR')
+  if (r.resumo.taxa != null && r.resumo.entregues != null && r.resumo.nfsNaConta != null) {
+    return <><strong className="text-[var(--color-fg)] tabular-nums">{r.resumo.taxa.toLocaleString('pt-BR')}% no KPI</strong>, {n(r.resumo.entregues)} de {n(r.resumo.nfsNaConta)} notas na conta entregues.</>
+  }
+  return <><strong className="text-[var(--color-fg)] tabular-nums">{r.resumo.pct}% entregue</strong>, {n(r.resumo.feitas)} de {n(r.resumo.totalNfs)} notas.</>
 }
 
 /** Voltou à base de vez: chegada à base registrada e nenhuma NF pendente,

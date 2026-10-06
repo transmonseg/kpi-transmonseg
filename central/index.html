@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Central Transmonseg</title>
+<meta name="description" content="Central da Transmonseg: KPI de entregas e Monitoramento de rotas.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%231f3864'/%3E%3Ctext x='16' y='22' font-family='Arial' font-weight='700' font-size='16' fill='white' text-anchor='middle'%3ET%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#1f3864; --navy-escuro:#162a4d; --azul-claro:#8fb0e0;
+  --lateral:#0a0a0b; --lateral-texto:#a1a1aa;
+  --fundo:#f4f6fa; --cartao:#ffffff; --texto:#0f172a; --texto-2:#5b6576; --borda:#e3e8f0;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --fundo:#0f1218; --cartao:#161b24; --texto:#eef1f6; --texto-2:#98a2b3; --borda:#252c38; }
+}
+:root[data-theme="dark"]{ --fundo:#0f1218; --cartao:#161b24; --texto:#eef1f6; --texto-2:#98a2b3; --borda:#252c38; }
+*{box-sizing:border-box;margin:0}
+body{font-family:Geist,system-ui,sans-serif;background:var(--fundo);color:var(--texto);min-height:100dvh;display:grid;grid-template-columns:300px 1fr;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+a:focus-visible{outline:2px solid var(--azul-claro);outline-offset:3px;border-radius:12px}
+.lateral{background:var(--lateral);color:#fff;padding:28px 24px;display:flex;flex-direction:column;gap:40px}
+.marca{display:flex;align-items:center;gap:12px}
+.marca i{font-style:normal;display:inline-flex;width:40px;height:40px;border-radius:12px;background:var(--navy);align-items:center;justify-content:center;font-weight:700;font-size:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.15)}
+.marca b{display:block;font-size:16px;font-weight:600;letter-spacing:-.01em}
+.marca small{display:block;margin-top:3px;font-size:12px;color:var(--azul-claro);opacity:.8}
+.lateral p{font-size:14px;line-height:1.6;color:var(--lateral-texto);max-width:30ch}
+.lateral footer{margin-top:auto;font-size:12px;line-height:1.7;color:#71717a}
+.lateral footer span{color:#a1a1aa}
+main{padding:56px clamp(16px,5vw,72px);display:flex;flex-direction:column;gap:32px;max-width:1100px}
+h1{font-size:clamp(28px,4vw,40px);font-weight:600;letter-spacing:-.03em;line-height:1.1}
+.sub{margin-top:10px;font-size:15px;color:var(--texto-2);max-width:56ch;line-height:1.55}
+.sistemas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.sistema{background:var(--cartao);border:1px solid var(--borda);border-radius:24px;padding:28px;display:flex;flex-direction:column;gap:20px}
+.sistema header{display:flex;align-items:center;gap:14px}
+.icone{width:44px;height:44px;border-radius:14px;background:color-mix(in srgb,var(--navy) 10%,transparent);color:var(--navy);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .icone{color:var(--azul-claro);background:color-mix(in srgb,var(--azul-claro) 12%,transparent)}}
+:root[data-theme="dark"] .icone{color:var(--azul-claro);background:color-mix(in srgb,var(--azul-claro) 12%,transparent)}
+.sistema h2{font-size:20px;font-weight:600;letter-spacing:-.02em}
+.sistema .end{font-size:12px;color:var(--texto-2);margin-top:2px}
+.sistema>p{font-size:14px;line-height:1.6;color:var(--texto-2)}
+.abrir{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:46px;border-radius:999px;background:var(--navy);color:#fff;font-size:14px;font-weight:600;transition:background-color .2s,transform .1s}
+.abrir:hover{background:var(--navy-escuro)}
+.abrir:active{transform:scale(.98)}
+.atalhos{list-style:none;padding:0;border-top:1px solid var(--borda)}
+.atalhos li{border-bottom:1px solid var(--borda)}
+.atalhos a{display:flex;align-items:center;justify-content:space-between;padding:12px 2px;font-size:14px;font-weight:500}
+.atalhos a span{font-size:13px;font-weight:400;color:var(--texto-2)}
+.atalhos a:hover{color:var(--navy)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .atalhos a:hover{color:var(--azul-claro)}}
+@media (max-width:900px){
+  body{grid-template-columns:1fr}
+  .lateral{padding:20px 16px;gap:16px}
+  .lateral footer{display:none}
+  main{padding:28px 16px 40px}
+  .sistemas{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<aside class="lateral">
+  <div class="marca"><i>T</i><div><b>Transmonseg</b><small>Central</small></div></div>
+  <p>Entregas e rotas da operação num lugar só. Cada sistema continua no seu endereço; daqui você entra em qualquer um.</p>
+  <footer>
+    KPI: <span>kpi.transmonseg.com.br</span><br>
+    Monitoramento: <span>monitoramento.transmonseg.com.br</span>
+  </footer>
+</aside>
+<main>
+  <div>
+    <h1>Sistema Transmonseg</h1>
+    <p class="sub">O KPI mostra se as notas chegaram ao cliente. O Monitoramento mostra se o caminhão saiu da rota. Os dois usam o mesmo romaneio do dia.</p>
+  </div>
+  <div class="sistemas">
+    <section class="sistema" aria-labelledby="t-kpi">
+      <header>
+        <span class="icone" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>
+        <div><h2 id="t-kpi">KPI de entregas</h2><div class="end">kpi.transmonseg.com.br</div></div>
+      </header>
+      <p>Taxa de entrega por cliente, acompanhamento das placas ao vivo e a planilha do KPI do dia.</p>
+      <a class="abrir" href="https://kpi.transmonseg.com.br/painel">Abrir o KPI</a>
+      <ul class="atalhos">
+        <li><a href="https://kpi.transmonseg.com.br/painel/ao-vivo">Ao vivo <span>Nutry Max agora</span></a></li>
+        <li><a href="https://kpi.transmonseg.com.br/painel">Dashboard <span>Taxa por dia</span></a></li>
+        <li><a href="https://kpi.transmonseg.com.br/painel/nutrimax/gerar">Gerar KPI <span>Nutry Max</span></a></li>
+      </ul>
+    </section>
+    <section class="sistema" aria-labelledby="t-mon">
+      <header>
+        <span class="icone" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg></span>
+        <div><h2 id="t-mon">Monitoramento</h2><div class="end">monitoramento.transmonseg.com.br</div></div>
+      </header>
+      <p>Desvio de rota e paradas fora do previsto, comparando o rastreador com o romaneio do dia.</p>
+      <a class="abrir" href="https://monitoramento.transmonseg.com.br/">Abrir o Monitoramento</a>
+      <ul class="atalhos">
+        <li><a href="https://monitoramento.transmonseg.com.br/central-romaneio">Central Romaneio <span>Desvios do dia</span></a></li>
+        <li><a href="https://monitoramento.transmonseg.com.br/">Central <span>Frota ao vivo</span></a></li>
+        <li><a href="https://monitoramento.transmonseg.com.br/veiculos">Veículos <span>Placas da frota</span></a></li>
+      </ul>
+    </section>
+  </div>
+</main>
+</body>
+</html>
