@@ -3953,6 +3953,12 @@ describe('pontoAproximadoPorEndereco', () => {
     ['RUA CAMPOS DA PAZ, 95 - RIO COMPRIDO, RIO DE JANEIRO - * -', false],
     ['AVENIDA AFRANIO DE MELO FRANCO, 330 - LEBLON, RIO DE JANEIRO', false],
     ['RUA DA ALFANDEGA, 0 - CENTRO, RIO DE JANEIRO', true],
+    ['RUA PROJETADA H (VL PINHEIRO), 10 - MARÉ, RIO DE JANEIRO', true],
+    ['RUA PRINCIPAL, 210 - SANTA ISABEL, BOM JESUS DO IT', true],
+    ['RUA C (LOT M DO BOSQUE), 201 - ÁGUA LIMPA, VOLTA REDONDA', true],
+    ['RUA 12, 45 - JARDIM, MACAE', true],
+    ['RUA CANDIDO MENDES, 10 - GLORIA, RIO DE JANEIRO', false],
+    ['AV N SRA DE COPACABANA, 898 - COPACABANA, RIO DE JANEIRO', false],
   ])('%s -> %s', (end, esperado) => {
     expect(pontoAproximadoPorEndereco(end)).toBe(esperado)
   })
@@ -6016,5 +6022,40 @@ describe('compartilhada com vizinho: coordenada verificada por pessoa vale como 
     const cruas = new Map([['TTL7D40', [paradaForaBase('p1', -21.88, -42.46, '2026-10-02T10:43:00.000Z', '2026-10-02T11:06:00.000Z')]]])
     const [d] = chamarNutryMax([nf1, nf2], { paradasUnitracCruasPropriaPlaca: cruas })
     expect(d.observacao).not.toBe(OBS_COMPARTILHADA_VIZINHO)
+  })
+})
+
+// Revisao de falso positivo 06/10 (TTM2G02, Botafogo): uma parada no GALETO
+// SAT'S confirmou 9 outras NFs a 600-770 m por raio ampliado -- a parada era
+// a entrega do vizinho da propria rota, nao destes clientes.
+describe('parada que era de outro cliente da rota nao confirma (raio ampliado / compartilhada, 06/10)', () => {
+  const janela = { chegada: '2026-10-06T10:00:00.000Z', saida: '2026-10-06T10:20:00.000Z' }
+  const alvoNf = linha('NF1', { endereco: 'RUA VOLUNTARIOS DA PATRIA, 10 - BOTAFOGO, RIO DE JANEIRO', lat: -22.95, lng: -43.19 })
+  const vizinho = linha('NF2', { endereco: 'RUA SAO CLEMENTE, 500 - BOTAFOGO, RIO DE JANEIRO', lat: -22.95 + 700 * M_LAT, lng: -43.19 })
+  const visitas = () => new Map<string, Visita>([
+    ['NF1', { nf: 'NF1', ...janela, distanciaMetrosDoPonto: 700, viaRaioAmpliado: true }],
+    ['NF2', { nf: 'NF2', ...janela, distanciaMetrosDoPonto: 20 }],
+  ])
+
+  it('parada a 20 m de outro cliente e a 700 m desta NF: nao confirma', () => {
+    const ponte = new Map([['TTL7D40', [paradaForaBase('galeto', -22.95 + 680 * M_LAT, -43.19, janela.chegada, janela.saida)]]])
+    const d = chamarNutryMax([alvoNf, vizinho], { visitasPorNf: visitas(), paradasPorOutraPlaca: ponte }).find(x => x.nf === 'NF1')!
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PARADA DE OUTRO CLIENTE - NÃO CONFIRMA ESTE CLIENTE - CONFERIR')
+  })
+
+  it('com a rota em andamento fica AGUARDANDO, sem horario', () => {
+    const ponte = new Map([['TTL7D40', [paradaForaBase('galeto', -22.95 + 680 * M_LAT, -43.19, janela.chegada, janela.saida)]]])
+    const d = chamarNutryMax([alvoNf, vizinho], { visitasPorNf: visitas(), paradasPorOutraPlaca: ponte, diaEmAndamento: true }).find(x => x.nf === 'NF1')!
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO')
+    expect(d.chegada).toBeNull()
+  })
+
+  it('parada a 600 m sem outro cliente da rota por perto: raio ampliado continua confirmando', () => {
+    const longe = linha('NF2', { endereco: 'RUA SAO CLEMENTE, 500 - BOTAFOGO, RIO DE JANEIRO', lat: -22.95 + 3000 * M_LAT, lng: -43.19 })
+    const ponte = new Map([['TTL7D40', [paradaForaBase('so', -22.95 + 600 * M_LAT, -43.19, janela.chegada, janela.saida)]]])
+    const d = chamarNutryMax([alvoNf, longe], { visitasPorNf: visitas(), paradasPorOutraPlaca: ponte }).find(x => x.nf === 'NF1')!
+    expect(d.status).not.toBe('pendente')
   })
 })

@@ -969,9 +969,18 @@ export function pontoAproximadoPorEndereco(endereco: string): boolean {
   if (acessoSomentePorBarco(endereco)) return true
   const e = endereco.toUpperCase().replace(/^\s*-?\s*/, '')
   if (/^(ROD|RODOVIA|EST|ESTR|ESTRADA|BR|RJ)\b/.test(e)) return true
+  // Logradouro generico (06/10, gabarito 23-28/09: entregas reais na RUA
+  // PROJETADA H, RUA PRINCIPAL, RUA C (LOT ...)) -- o mapa nao sabe onde fica.
+  if (/^(R|RUA|AV|AVENIDA|TV|TRAVESSA)\.?\s+(PROJETADA|PRINCIPAL)\b/.test(e)) return true
+  if (/^(R|RUA|AV|AVENIDA|TV|TRAVESSA)\.?\s+([A-Z]|\d+)\s*[,(]/.test(e)) return true
   const numero = e.match(/^[^,]*,\s*([^-]*?)\s*-/)?.[1]?.trim() ?? ''
   return numero === '' || /^(S\/?N|SN|0+)$/.test(numero)
 }
+
+// Ver bloco "Revisao de falso positivo 06/10" em montarDetalheEntregas.
+const EVIDENCIAS_FRACAS_DE_PARADA = new Set<EvidenciaNf>(['raio_ampliado', 'vizinhanca', 'parada_curta_compartilhada'])
+const DIST_MIN_PARADA_DE_OUTRO_CLIENTE_M = 400
+export const OBS_PARADA_DE_OUTRO_CLIENTE = 'PARADA DE OUTRO CLIENTE - NÃO CONFIRMA ESTE CLIENTE - CONFERIR'
 
 const REVISAR_POR_ROTULO_FRACO: Record<string, string> = {
   'ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)': 'PARADA COMPARTILHADA - REVISAR',
@@ -2624,6 +2633,39 @@ export function montarDetalheEntregas(
       }
       if (maisLongaMin > 0) {
         observacao = `${PREFIXO_OBS_PAROU_COM_VIZINHO} (${Math.round(maisLongaMin)} MIN) - CONFERIR`
+      }
+    }
+
+    // Revisao de falso positivo 06/10 (TTM2G02, Botafogo: 1 parada no GALETO
+    // SAT'S confirmou 9 outras NFs a 600-770 m por raio ampliado): evidencia
+    // fraca (raio ampliado, horario do vizinho, parada curta compartilhada)
+    // cuja parada real fica a <= RAIO_OUTRO_CLIENTE_EXPLICA_M de OUTRO cliente
+    // da placa e a mais de DIST_MIN_PARADA_DE_OUTRO_CLIENTE_M desta NF (geocode
+    // e cadastro) era a entrega do vizinho -- nao confirma esta.
+    // So' com endereco de ponto preciso: no gabarito 23-28/09 as 6 entregas
+    // reais que esta regra derrubaria eram todas de ponto aproximado.
+    if (modoPrecisao && status === 'confirmado_gps' && visita && EVIDENCIAS_FRACAS_DE_PARADA.has(evidencia)
+      && !pontoAproximadoPorEndereco(linha.endereco)) {
+      const coord = acharCoordenadaDaParadaPropria(placaNorm, visita.chegada, visita.saida, paradasPorOutraPlaca, referenciaParaDesempate(linha, alvo))
+      if (coord) {
+        const proprios = [
+          linha.geoConfiavel !== false && linha.lat != null && linha.lng != null ? { lat: linha.lat, lng: linha.lng } : null,
+          alvo && coordValidaCadastro(alvo.pontoLat) && coordValidaCadastro(alvo.pontoLng) ? { lat: alvo.pontoLat as number, lng: alvo.pontoLng as number } : null,
+        ].filter((p): p is { lat: number; lng: number } => p != null)
+        const longeDestaNf = proprios.length > 0 && proprios.every(p => haversine(coord.lat, coord.lng, p.lat, p.lng) > DIST_MIN_PARADA_DE_OUTRO_CLIENTE_M)
+        const deOutroCliente = pontosReferenciaDaPlaca.some(o => o.endereco !== linha.endereco
+          && haversine(coord.lat, coord.lng, o.lat, o.lng) <= RAIO_OUTRO_CLIENTE_EXPLICA_M)
+        if (longeDestaNf && deOutroCliente) {
+          status = 'pendente'
+          if (diaEmAndamento) {
+            observacao = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
+            chegada = null
+            saida = null
+            tempoParadaMin = null
+          } else {
+            observacao = OBS_PARADA_DE_OUTRO_CLIENTE
+          }
+        }
       }
     }
 

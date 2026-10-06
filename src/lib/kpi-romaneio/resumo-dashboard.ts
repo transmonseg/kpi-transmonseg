@@ -92,6 +92,7 @@ export function categoriaPendencia(status: string): string {
   if (s.startsWith('VEÍCULO NÃO SAIU DA BASE') || s.startsWith('VEÍCULO SEM MOVIMENTO')) return 'Não saiu da base'
   if (s.startsWith('PARADA COMPARTILHADA')) return 'Parada compartilhada (revisar)'
   if (s.startsWith('PARADA CURTA DE OUTRO ENDEREÇO')) return 'Parada de outro endereço'
+  if (s.startsWith('PARADA DE OUTRO CLIENTE')) return 'Parada de outro endereço'
   if (s.startsWith('CADASTRO DO CLIENTE NA UNITRAC DIVERGE')) return 'Cadastro divergente'
   if (s.startsWith('ENDEREÇO COM COORDENADA IMPRECISA') || s.startsWith('COORDENADA APROXIMADA')) return 'Coordenada imprecisa'
   if (s.startsWith('ENDEREÇO NÃO LOCALIZADO')) return 'Endereço não localizado'
