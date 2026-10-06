@@ -408,3 +408,49 @@ ORDEMNOTA FISCALCLIENTEENDEREÇOBAIRROQTD CAIXASPESO BRUTO PESO LÍQUIDOVALOR BR
     expect(escala[0]).toMatchObject({ carga: 'PAO-11', placaNorm: '', motorista: '' })
   })
 })
+
+// Achado real 05/10 (KPI ao vivo): cargas do pão fora da região
+// metropolitana saíam com cidade "RIO DE JANEIRO" e geocodificavam no Rio
+// -- Macaé, Rio das Ostras, Campos, Bom Jesus, Volta Redonda. A cidade
+// vem do nome do cliente ("HORTIFRUTI MACAÉ"), de bairro inequívoco
+// (ATERRADO, CAVALEIROS) e, pros clientes sem pista, da cidade das outras
+// entregas da mesma carga quando todas apontam pra uma só.
+describe('cidade do pão fora do Rio (achado 05/10)', () => {
+  const romaneio = (corpo: string) => `
+DATA05/10/2026
+ROMANEIO9MOTORISTAAJUDANTE
+CARRO36
+ORDEMNOTA FISCALCLIENTEENDEREÇOBAIRROQTD CAIXASPESO BRUTO PESO LÍQUIDOVALOR BRUTO
+${corpo}
+`
+  const cidades = (corpo: string) => parsePaoTexto(romaneio(corpo), '2026-10-05').linhas.map(l => l.endereco.replace(/^.* - [^,]*, (.*) - \*$/, '$1'))
+
+  it('pista no nome do cliente e cidade da carga pros clientes sem pista (Macaé)', () => {
+    expect(cidades(`1
+216571HORTIFRUTI MACAÉ                                                      RUA VEREADOR MANOEL BRAGA,83                                                    CENTRO                                  100,00100.000,00R$                  
+2
+216579DURVAL RESTAURANTE                                                    AVENIDA ATLANTICA,2534                                                          PRAIA DOS CAVALEIROS                    100,00100.000,00R$                  
+3
+216578BREEZE SERVICES                                                       R ABILIO FERNANDES BANDEIRA,205                                                 VALE ENCANTADO                          100,00100.000,00R$                  
+4
+216586MERCADO MACHADO                                                       RUA ALCIDES MOURAO 314                                                          AROEIRA                                 100,00100.000,00R$                  `)).toEqual(['MACAE', 'MACAE', 'MACAE', 'MACAE'])
+  })
+  it('bairro inequívoco puxa a carga (Aterrado = Volta Redonda; bairro "NITEROI" de Volta Redonda)', () => {
+    expect(cidades(`1
+216543HORTIFRUTI ATERRADO                                                   AVENIDA PAULO FRONTIN,874                                                       ATERRADO                                100,00100.000,00R$                  
+2
+216592MERCADO COLHEITA LTDA                                                 RUA SÃO BENEDITO, 18                                                            NITEROI                                 100,00100.000,00R$                  `)).toEqual(['VOLTA REDONDA', 'VOLTA REDONDA'])
+  })
+  it('carga com duas cidades explícitas: cada NF fica com a sua', () => {
+    expect(cidades(`1
+216531SUPERMERCADO SERRA AZUL BOM JESUS                                     ARISTIDES FIGUEIREDO N 59                                                       CENTRO                                  100,00100.000,00R$                  
+2
+216547HORTIFRUTI CAMPOS                                                     RUA TENENTE CORONEL CARDOSO,668                                                 CENTRO                                  100,00100.000,00R$                  `)).toEqual(['BOM JESUS DO ITABAPOANA', 'CAMPOS DOS GOYTACAZES'])
+  })
+  it('carga só do Rio continua Rio de Janeiro', () => {
+    expect(cidades(`1
+216565HORTIFRUTI CONDE 99                                                   RUA CONDE DE BONFIM,99                                                          TIJUCA                                  100,00100.000,00R$                  
+2
+216544SUPERPRIX ESTACIO                                                     RUA HADDOCK LOBO 5A                                                             ESTACIO                                 100,00100.000,00R$                  `)).toEqual(['RIO DE JANEIRO', 'RIO DE JANEIRO'])
+  })
+})

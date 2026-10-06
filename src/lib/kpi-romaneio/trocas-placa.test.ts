@@ -42,6 +42,14 @@ describe('aplicarTrocasDePlaca', () => {
   })
 })
 
+describe('carga sem placa no romaneio (pão 05/10)', () => {
+  it('troca com placa da escala vazia e carga: põe a placa só naquela carga', () => {
+    const r = aplicarTrocasDePlaca([rom('PAO-9', '', '1'), rom('PAO-11', '', '2')], [], [{ carga: 'PAO-9', placaEscala: '', placaReal: 'TOS1H26' }])
+    expect(r.romaneio.map(l => l.placa)).toEqual(['TOS1H26', ''])
+    expect(r.aplicadas).toBe(1)
+  })
+})
+
 describe('normalizarPlacaDigitada', () => {
   it('tira hífen/espaço e põe maiúscula', () => {
     expect(normalizarPlacaDigitada(' rqv-5f67 ')).toBe('RQV5F67')

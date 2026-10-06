@@ -66,14 +66,71 @@ function normalizarBairro(bairro: string): { base: string; parenteses: string } 
 // "CENTRO" sozinho e' ambiguo (existe em varios municipios) -- so' conta
 // como Marica quando o proprio nome do cliente entrega o municipio (ex.
 // "PREZUNIC MARICA" no bairro "CENTRO", visto no PDF real de 24/09).
-function municipioPorBairro(bairro: string, clienteNome: string): string {
+//
+// Achado 05/10 (KPI ao vivo): cargas do pao do interior (Macae, Rio das
+// Ostras, Campos, Bom Jesus, Volta Redonda) saiam "RIO DE JANEIRO" e
+// geocodificavam no Rio. Pista no nome do cliente vem primeiro; bairro
+// inequivoco depois. `explicito` diz se a cidade veio de evidencia (pista ou
+// bairro conhecido) ou do padrao -- so' os do padrao herdam a cidade da carga.
+const PISTAS_CLIENTE: [RegExp, string][] = [
+  [/\bBUZIOS\b/, 'ARMACAO DOS BUZIOS'],
+  [/\bARARUAMA\b/, 'ARARUAMA'],
+  [/\bBOM JESUS\b/, 'BOM JESUS DO ITABAPOANA'],
+  [/\bMARICA\b/, 'MARICA'],
+  [/\bCABO FRIO\b/, 'CABO FRIO'],
+  [/\bNITEROI\b/, 'NITEROI'],
+  [/\bSAO GONCALO\b/, 'SAO GONCALO'],
+  [/\bMACAE\b/, 'MACAE'],
+  [/\bRIO DAS OSTRAS\b/, 'RIO DAS OSTRAS'],
+  [/\bCAMPOS\b/, 'CAMPOS DOS GOYTACAZES'],
+  [/\bITABORAI\b/, 'ITABORAI'],
+  [/\bRIO BONITO\b/, 'RIO BONITO'],
+  [/\bSAQUAREMA\b/, 'SAQUAREMA'],
+  [/\bVOLTA REDONDA\b/, 'VOLTA REDONDA'],
+  [/\bBARRA MANSA\b/, 'BARRA MANSA'],
+  [/\bPETROPOLIS\b/, 'PETROPOLIS'],
+  [/\bTERESOPOLIS\b/, 'TERESOPOLIS'],
+  [/\bNOVA FRIBURGO\b/, 'NOVA FRIBURGO'],
+]
+// Bairros que so' existem fora do Rio (nada de MANGUINHOS, VALE ENCANTADO,
+// AROEIRA: tambem existem no Rio).
+const BAIRROS_INTERIOR: Record<string, string> = {
+  ATERRADO: 'VOLTA REDONDA',
+  CAVALEIROS: 'MACAE', 'PRAIA DOS CAVALEIROS': 'MACAE', 'NOVO CAVALEIROS': 'MACAE',
+  'EXTENSAO DO BOSQUE': 'RIO DAS OSTRAS',
+  BRAGA: 'CABO FRIO',
+}
+const CIDADE_PADRAO = 'RIO DE JANEIRO'
+
+function municipioPorBairro(bairro: string, clienteNome: string): { cidade: string; explicito: boolean } {
   const { base, parenteses } = normalizarBairro(bairro)
-  if (BAIRROS_NITEROI.has(base)) return 'NITEROI'
-  if (BAIRROS_SAO_GONCALO.has(base)) return 'SAO GONCALO'
-  if (BAIRROS_ITABORAI.has(base)) return 'ITABORAI'
-  if (BAIRROS_MARICA.has(base) || BAIRROS_MARICA.has(parenteses)) return 'MARICA'
-  if (base === 'CENTRO' && semAcento(clienteNome.toUpperCase()).includes('MARICA')) return 'MARICA'
-  return 'RIO DE JANEIRO'
+  const cliente = semAcento(clienteNome.toUpperCase())
+  if (BAIRROS_NITEROI.has(base)) return { cidade: 'NITEROI', explicito: true }
+  if (BAIRROS_SAO_GONCALO.has(base)) return { cidade: 'SAO GONCALO', explicito: true }
+  if (BAIRROS_ITABORAI.has(base)) return { cidade: 'ITABORAI', explicito: true }
+  if (BAIRROS_MARICA.has(base) || BAIRROS_MARICA.has(parenteses)) return { cidade: 'MARICA', explicito: true }
+  for (const [re, cidade] of PISTAS_CLIENTE) if (re.test(cliente)) return { cidade, explicito: true }
+  if (BAIRROS_INTERIOR[base]) return { cidade: BAIRROS_INTERIOR[base], explicito: true }
+  return { cidade: CIDADE_PADRAO, explicito: false }
+}
+
+/** Cliente sem pista de cidade herda a cidade da carga quando as entregas
+ *  com cidade explicita da mesma carga apontam pra uma so' (fora do Rio). */
+function herdarCidadeDaCarga(linhas: LinhaRomaneio[], explicitos: boolean[]): void {
+  const cidadeDe = (l: LinhaRomaneio) => l.endereco.replace(/^.* - [^,]*, (.*) - \*$/, '$1')
+  const porCarga = new Map<string, number[]>()
+  linhas.forEach((l, i) => porCarga.set(l.carga, [...(porCarga.get(l.carga) ?? []), i]))
+  for (const idx of porCarga.values()) {
+    const cidades = new Set(idx.filter(i => explicitos[i]).map(i => cidadeDe(linhas[i])))
+    if (cidades.size !== 1) continue
+    const [cidade] = cidades
+    if (cidade === CIDADE_PADRAO) continue
+    for (const i of idx) {
+      if (explicitos[i]) continue
+      const l = linhas[i]
+      l.endereco = l.endereco.replace(new RegExp(`, ${CIDADE_PADRAO} - \\*$`), `, ${cidade} - *`)
+    }
+  }
 }
 
 // Prefixos de logradouro conhecidos nas amostras reais (RUA, AVENIDA/AVN/AV,
@@ -185,6 +242,7 @@ function fecharContexto(ctx: ContextoPao | null, destino: string | null, escala:
  *  nenhum de DATA (PDF errado). */
 export function parsePaoTexto(texto: string, data: string): ResultadoParsePao {
   const linhas: LinhaRomaneio[] = []
+  const cidadeExplicita: boolean[] = []
   const escala: LinhaEscala[] = []
   let ctx: ContextoPao | null = null
   let destinoPrimeiraEntrega: string | null = null
@@ -292,7 +350,8 @@ export function parsePaoTexto(texto: string, data: string): ResultadoParsePao {
     // `dividirClienteEndereco`).
     const bairro = partes[partes.length - 2]
     const { clienteNome, enderecoRua } = dividirClienteEndereco(partes.slice(0, -2))
-    const municipio = municipioPorBairro(bairro, clienteNome)
+    const { cidade: municipio, explicito } = municipioPorBairro(bairro, clienteNome)
+    cidadeExplicita.push(explicito)
     if (destinoPrimeiraEntrega === null) destinoPrimeiraEntrega = bairro
 
     linhas.push({
@@ -314,6 +373,7 @@ export function parsePaoTexto(texto: string, data: string): ResultadoParsePao {
     })
   }
   fecharContexto(ctx, destinoPrimeiraEntrega, escala)
+  herdarCidadeDaCarga(linhas, cidadeExplicita)
 
   if (!dataConfirmada) {
     throw new Error('Romaneio do Pão sem cabeçalho de data (linha "DATA dd/mm/aaaa") -- confira se é o PDF certo.')

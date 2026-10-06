@@ -115,13 +115,13 @@ export default function PlacasDoDiaPage() {
             <span className="dash-icone inline-flex size-8 items-center justify-center rounded-xl"><ArrowsLeftRight size={16} weight="bold" /></span>
             <h2 className="text-[15px] font-semibold text-[var(--color-fg)]">Troca de placa</h2>
           </div>
-          <p className="mb-4 text-[12px] text-[var(--color-fg-muted)]">Quando a carga saiu em outro veículo que não o da escala. Vale só para o dia escolhido. Sem carga, troca todas as cargas da placa nesse dia.</p>
+          <p className="mb-4 text-[12px] text-[var(--color-fg-muted)]">Quando a carga saiu em outro veículo que não o da escala. Vale só para o dia escolhido. Sem carga, troca todas as cargas da placa nesse dia. Carga que veio sem placa no romaneio (ex.: PAO-9, o romaneio 9 do pão): deixe a placa da escala vazia e informe a carga.</p>
 
           <form className="mb-5 grid grid-cols-2 gap-2" onSubmit={async e => {
             e.preventDefault()
             if (await enviar('POST', { tipo: 'troca', data, ...fTroca })) setFTroca({ placaEscala: '', placaReal: '', carga: '' })
           }}>
-            <input required placeholder="Placa da escala" value={fTroca.placaEscala} onChange={e => setFTroca({ ...fTroca, placaEscala: e.target.value })} className={`${campo} [&:not(:placeholder-shown)]:uppercase`} />
+            <input placeholder="Placa da escala (vazia se veio sem)" value={fTroca.placaEscala} onChange={e => setFTroca({ ...fTroca, placaEscala: e.target.value })} className={`${campo} [&:not(:placeholder-shown)]:uppercase`} />
             <input required placeholder="Placa que rodou" value={fTroca.placaReal} onChange={e => setFTroca({ ...fTroca, placaReal: e.target.value })} className={`${campo} [&:not(:placeholder-shown)]:uppercase`} />
             <input placeholder="Carga (opcional)" value={fTroca.carga} onChange={e => setFTroca({ ...fTroca, carga: e.target.value })} className={`${campo} col-span-2`} />
             <button disabled={enviando} className={`${botao} col-span-2`}>Registrar troca em {br(data)}</button>
@@ -134,7 +134,7 @@ export default function PlacasDoDiaPage() {
               {trocas.map(t => (
                 <li key={t.id} className="flex items-center justify-between gap-3 py-2.5">
                   <div className="min-w-0">
-                    <p className="text-[14px] font-semibold text-[var(--color-fg)]">{t.placa_escala} <span className="font-normal text-[var(--color-fg-muted)]">→</span> {t.placa_real}</p>
+                    <p className="text-[14px] font-semibold text-[var(--color-fg)]">{t.placa_escala || 'Sem placa'} <span className="font-normal text-[var(--color-fg-muted)]">→</span> {t.placa_real}</p>
                     <p className="truncate text-[12px] text-[var(--color-fg-muted)]">{t.carga ? `carga ${t.carga}` : 'todas as cargas da placa'} · {t.responsavel}</p>
                   </div>
                   <button type="button" title="Remover" disabled={enviando} onClick={() => enviar('DELETE', undefined, `?id=${t.id}`)}

@@ -63,10 +63,13 @@ export async function POST(req: NextRequest) {
   if (b.tipo === 'troca') {
     const placaEscala = normalizarPlacaDigitada(String(b.placaEscala ?? ''))
     const placaReal = normalizarPlacaDigitada(String(b.placaReal ?? ''))
-    if (!placaOk(placaEscala) || !placaOk(placaReal)) return new NextResponse('Placa inválida.', { status: 400 })
+    const carga = typeof b.carga === 'string' && b.carga.trim() !== '' ? b.carga.trim().toUpperCase() : null
+    // Placa da escala vazia = carga que veio SEM PLACA no romaneio (pão 05/10):
+    // só vale com a carga informada, senão pegaria toda carga sem placa do dia.
+    if (placaEscala === '' && !carga) return new NextResponse('Carga sem placa: informe o número da carga.', { status: 400 })
+    if ((placaEscala !== '' && !placaOk(placaEscala)) || !placaOk(placaReal)) return new NextResponse('Placa inválida.', { status: 400 })
     if (placaEscala === placaReal) return new NextResponse('A placa que rodou é igual à da escala.', { status: 400 })
     if (!dataOk(b.data)) return new NextResponse('Data inválida.', { status: 400 })
-    const carga = typeof b.carga === 'string' && b.carga.trim() !== '' ? b.carga.trim() : null
     const { data, error } = await svc.from('kpi_troca_placa').insert({
       empresa: EMPRESA_NUTRIMAX, data: b.data, carga, placa_escala: placaEscala, placa_real: placaReal, responsavel: a.email,
     }).select().single()
