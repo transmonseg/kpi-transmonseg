@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { MagnifyingGlass, DownloadSimple, UploadSimple, MapPin, WarningCircle, CaretDown, CaretLeft } from '@phosphor-icons/react/dist/ssr'
+import Link from 'next/link'
+import { MagnifyingGlass, DownloadSimple, UploadSimple, MapPin, WarningCircle, CaretDown, CaretLeft, MapTrifold } from '@phosphor-icons/react/dist/ssr'
 import type { EstadoAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
 import type { PlacaAoVivo, NfAoVivo, SituacaoNf } from '@/lib/kpi-romaneio/ao-vivo'
 import { SubirRomaneio } from './subir-romaneio'
@@ -241,7 +242,7 @@ export default function AoVivoPage() {
             <button type="button" onClick={() => setVendoDetalhe(false)} className="mb-3 inline-flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-4 text-[13px] font-semibold text-[var(--color-fg)] lg:hidden">
               <CaretLeft size={14} weight="bold" />Todas as placas
             </button>
-          <DetalhePlaca p={placa} agora={historico ? undefined : agora[placa.placa]} agoraMs={agoraMs} historico={historico} nfAberta={nfAberta} onNf={nf => setNfAberta(a => (a === nf ? null : nf))} />
+          <DetalhePlaca p={placa} data={estado.data} agora={historico ? undefined : agora[placa.placa]} agoraMs={agoraMs} historico={historico} nfAberta={nfAberta} onNf={nf => setNfAberta(a => (a === nf ? null : nf))} />
           </div>
         </div>
       )}
@@ -316,7 +317,7 @@ function LinhaPlaca({ p, ativa, agora, agoraMs, historico, onClick }: { p: Placa
   )
 }
 
-function DetalhePlaca({ p, agora, agoraMs, historico, nfAberta, onNf }: { p: PlacaAoVivo; agora: Agora | undefined; agoraMs: number; historico: boolean; nfAberta: string | null; onNf: (nf: string) => void }) {
+function DetalhePlaca({ p, data, agora, agoraMs, historico, nfAberta, onNf }: { p: PlacaAoVivo; data: string; agora: Agora | undefined; agoraMs: number; historico: boolean; nfAberta: string | null; onNf: (nf: string) => void }) {
   const s = situacaoAgora(p, agora, agoraMs, historico)
   const nfAgora = agora?.nf?.nf ?? null
   const contagem = (sit: SituacaoNf) => p.nfs.filter(n => n.situacao === sit).length
@@ -353,7 +354,7 @@ function DetalhePlaca({ p, agora, agoraMs, historico, nfAberta, onNf }: { p: Pla
         </div>
         <ul>
           {p.nfs.map((n, i) => (
-            <LinhaNf key={`${n.carga}-${n.nf}`} n={n} ordem={i + 1} aberta={nfAberta === n.nf} noClienteAgora={nfAgora === n.nf ? agora?.parada?.inicio ?? null : null} agoraMs={agoraMs} onClick={() => onNf(n.nf)} posicao={agora?.posicao ?? null} />
+            <LinhaNf key={`${n.carga}-${n.nf}`} n={n} placa={p.placa} data={data} ordem={i + 1} aberta={nfAberta === n.nf} noClienteAgora={nfAgora === n.nf ? agora?.parada?.inicio ?? null : null} agoraMs={agoraMs} onClick={() => onNf(n.nf)} posicao={agora?.posicao ?? null} />
           ))}
         </ul>
       </div>
@@ -378,7 +379,7 @@ function Dado({ rotulo, valor, extra }: { rotulo: string; valor: string; extra?:
   )
 }
 
-function LinhaNf({ n, ordem, aberta, noClienteAgora, agoraMs, onClick, posicao }: { n: NfAoVivo; ordem: number; aberta: boolean; noClienteAgora: string | null; agoraMs: number; onClick: () => void; posicao: Agora['posicao'] }) {
+function LinhaNf({ n, placa, data, ordem, aberta, noClienteAgora, agoraMs, onClick, posicao }: { n: NfAoVivo; placa: string; data: string; ordem: number; aberta: boolean; noClienteAgora: string | null; agoraMs: number; onClick: () => void; posicao: Agora['posicao'] }) {
   const segAgora = noClienteAgora ? desde(noClienteAgora, agoraMs) : null
   const longe = segAgora != null && segAgora >= UMA_HORA
   const corPonto = segAgora != null ? (longe ? 'var(--color-warning)' : '#2a6fdb') : COR_SITUACAO[n.situacao]
@@ -419,6 +420,14 @@ function LinhaNf({ n, ordem, aberta, noClienteAgora, agoraMs, onClick, posicao }
                 <Mini rotulo="Tempo no cliente" valor={segAgora != null ? relogio(segAgora) : n.tempoMin != null ? `${n.tempoMin} min` : '—'} destaque={segAgora != null} longe={longe} />
               </div>
             )}
+            {placa && placa !== 'SEM PLACA' && (
+              <div>
+                <Link href={linkMonitoramento(n, placa, data)}
+                  className="inline-flex h-9 items-center gap-2 rounded-full bg-[var(--color-navy-700)] px-4 text-[12.5px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] active:scale-[0.98]">
+                  <MapTrifold size={15} weight="bold" />Ver no monitoramento
+                </Link>
+              </div>
+            )}
             {(segAgora != null || mapa) && (
               <p className="text-[12px] text-[var(--color-fg-muted)]">
                 {segAgora != null && 'Chegou agora. Entra como entregue no próximo cálculo do KPI se a parada se confirmar.'}
@@ -445,6 +454,16 @@ function motivoLegivel(status: string): { motivo: string; acao: string | null } 
   const i = partes.findIndex((p, k) => k > 0 && /^(CONFERIR|PERGUNTAR|VERIFICAR)/i.test(p))
   if (i > 0) return { motivo: frase(partes.slice(0, i).join(', ')), acao: frase(partes.slice(i).join(', ')) }
   return { motivo: frase(partes.join(', ')), acao: null }
+}
+
+/** Tela "Entrega no mapa" do monitoramento, aberta dentro da Central: rastro
+ *  do dia, ponto do cliente e a parada que o KPI contou como entrega. */
+function linkMonitoramento(n: NfAoVivo, placa: string, data: string): string {
+  const q = new URLSearchParams({ placa, data, nf: n.nf, cliente: n.cliente, endereco: enderecoLimpo(n.endereco), situacao: n.situacao, status: n.status })
+  if (n.lat != null && n.lng != null) { q.set('lat', String(n.lat)); q.set('lng', String(n.lng)) }
+  if (n.chegada) q.set('chegada', n.chegada)
+  if (n.saida) q.set('saida', n.saida)
+  return `/painel/monitoramento/entrega?${q.toString()}`
 }
 
 /** Tira os "- *" (complemento vazio do romaneio) do endereço. */
