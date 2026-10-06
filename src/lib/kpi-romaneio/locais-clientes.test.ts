@@ -26,24 +26,31 @@ describe('local utilizável', () => {
 })
 
 describe('aplicarLocaisClientes', () => {
-  it('troca a coordenada pela do cliente e marca como verificada', () => {
-    const { linhas, aplicados } = aplicarLocaisClientes([linha({})], new Map([['5778', local({})]]))
+  const geoBom = { geoConfiavel: true }
+  it('manual, mesmo endereço: troca e marca como verificada', () => {
+    const { linhas, aplicados } = aplicarLocaisClientes([linha({ ...geoBom })], new Map([['5778', local({})]]))
     expect(linhas[0]).toMatchObject({ lat: -22.95, lng: -43.25, geoConfiavel: true, geoMotivo: undefined, geoVerificadoManual: true })
     expect(aplicados).toEqual(['1'])
   })
-  it('cliente mudou de endereço (texto diferente e geocode confiável a mais de 2 km): não troca', () => {
-    const l = linha({ endereco: 'AV NOVA, 500 - BARRA, RIO DE JANEIRO - * - 22000000', lat: -23.0, lng: -43.4, geoConfiavel: true })
-    const { linhas, aplicados } = aplicarLocaisClientes([l], new Map([['5778', local({})]]))
-    expect(linhas[0].lat).toBe(-23.0)
-    expect(aplicados).toEqual([])
+  it('cliente com vários endereços (texto diferente) e geocode do dia bom: não troca, nem manual', () => {
+    const l = linha({ endereco: 'AV NOVA, 500 - BARRA, RIO DE JANEIRO - * - 22000000', lat: -23.0, lng: -43.4, ...geoBom })
+    expect(aplicarLocaisClientes([l], new Map([['5778', local({})]])).aplicados).toEqual([])
+    expect(aplicarLocaisClientes([l], new Map([['5778', local({ fonte: 'parada_orfa', confirmacoes: 2 })]])).aplicados).toEqual([])
   })
-  it('texto diferente mas geocode ruim (ou perto): troca', () => {
-    const l = linha({ endereco: 'R A 10 - CENTRO, RIO DE JANEIRO - * - 20000000', geoConfiavel: false })
-    expect(aplicarLocaisClientes([l], new Map([['5778', local({})]])).aplicados).toEqual(['1'])
+  it('geocode do dia ruim ou sem coordenada: usa o local (qualquer fonte utilizável)', () => {
+    const ruim = linha({ endereco: 'R A 10 - CENTRO, RIO DE JANEIRO - * - 20000000', geoConfiavel: false })
+    expect(aplicarLocaisClientes([ruim], new Map([['5778', local({ fonte: 'entrega_confirmada', confirmacoes: 3 })]])).aplicados).toEqual(['1'])
+    expect(aplicarLocaisClientes([linha({ lat: null, lng: null })], new Map([['5778', local({ fonte: 'entrega_confirmada', confirmacoes: 2 })]])).aplicados).toEqual(['1'])
+  })
+  it('aprendido por entrega confirmada nunca troca geocode bom (o geocode pode ter sido corrigido depois)', () => {
+    expect(aplicarLocaisClientes([linha({ ...geoBom })], new Map([['5778', local({ fonte: 'entrega_confirmada', confirmacoes: 5 })]])).aplicados).toEqual([])
+  })
+  it('parada órfã confirmada 2x, mesmo endereço: troca mesmo com geocode "bom" (era justamente o geocode errado)', () => {
+    expect(aplicarLocaisClientes([linha({ ...geoBom })], new Map([['5778', local({ fonte: 'parada_orfa', confirmacoes: 2 })]])).aplicados).toEqual(['1'])
   })
   it('sem local, ou local ainda não confirmado: deixa como está', () => {
     expect(aplicarLocaisClientes([linha({})], new Map()).aplicados).toEqual([])
-    expect(aplicarLocaisClientes([linha({})], new Map([['5778', local({ fonte: 'entrega_confirmada', confirmacoes: 1 })]])).aplicados).toEqual([])
+    expect(aplicarLocaisClientes([linha({ geoConfiavel: false })], new Map([['5778', local({ fonte: 'entrega_confirmada', confirmacoes: 1 })]])).aplicados).toEqual([])
   })
 })
 

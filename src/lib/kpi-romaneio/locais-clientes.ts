@@ -20,8 +20,6 @@ export type LocalCliente = {
   enderecoRef: string | null
 }
 
-const DIST_MUDOU_ENDERECO_M = 2000
-
 function distanciaM(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371000
   const rad = (x: number) => (x * Math.PI) / 180
@@ -44,17 +42,27 @@ export function localUtilizavel(l: LocalCliente): boolean {
   return l.fonte === 'manual' || l.confirmacoes >= 2
 }
 
-/** Troca a coordenada das NFs cujo cliente tem local utilizável. Não troca
- *  quando o texto do endereço mudou e o geocode novo é confiável e longe
- *  (> 2 km): provável cliente que mudou de endereço. */
+/** Troca a coordenada das NFs cujo cliente tem local utilizável.
+ *  Medido 06/10 (01-05/10, com x sem cadastro): trocar geocode BOM piorava
+ *  NFs em dois casos -- cliente que entrega em vários endereços (buffet de
+ *  evento, rede; mesmo código, outro lugar) e local aprendido de entrega
+ *  confirmada "atrasado" (média de geocodes antigos, já corrigidos depois).
+ *  Por isso:
+ *   - geocode do dia ruim/ausente: usa o local (qualquer fonte utilizável);
+ *   - geocode do dia bom: só manual ou parada órfã, e só no MESMO endereço;
+ *     entrega confirmada nunca troca geocode bom. */
 export function aplicarLocaisClientes(linhas: LinhaGeocodificada[], locais: Map<string, LocalCliente>): { linhas: LinhaGeocodificada[]; aplicados: string[] } {
   const aplicados: string[] = []
   const novas = linhas.map(l => {
     const chave = chaveClienteLocal(l)
     const local = chave ? locais.get(chave) : undefined
     if (!local || !localUtilizavel(local)) return l
-    const mesmoEndereco = local.enderecoRef != null && chaveCacheEndereco(l.endereco.trim().toUpperCase()) === chaveCacheEndereco(local.enderecoRef.trim().toUpperCase())
-    if (!mesmoEndereco && l.geoConfiavel !== false && l.lat != null && l.lng != null && distanciaM(l as { lat: number; lng: number }, local) > DIST_MUDOU_ENDERECO_M) return l
+    const geoBom = l.lat != null && l.lng != null && l.geoConfiavel !== false
+    if (geoBom) {
+      if (local.fonte === 'entrega_confirmada') return l
+      const mesmoEndereco = local.enderecoRef != null && chaveCacheEndereco(l.endereco.trim().toUpperCase()) === chaveCacheEndereco(local.enderecoRef.trim().toUpperCase())
+      if (!mesmoEndereco) return l
+    }
     aplicados.push(l.nf)
     return { ...l, lat: local.lat, lng: local.lng, geoConfiavel: true, geoMotivo: undefined, geoSemFonte: false, geoVerificadoManual: true }
   })
