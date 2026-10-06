@@ -21,6 +21,9 @@ export type NfAoVivo = {
   tempoMin: number | null
   lat: number | null
   lng: number | null
+  /** Onde o caminhão parou na entrega (parada da Unitrac). Opcional: o
+   *  histórico lido da planilha guardada não tem. */
+  parada?: { lat: number; lng: number } | null
 }
 
 export type PlacaAoVivo = {
@@ -54,7 +57,7 @@ function situacaoDe(n: NfResumo): SituacaoNf {
 
 /** Uma entrada por placa, com as NFs na ordem da planilha. "Feitas" segue a
  *  regra da taxa: entregue + sem rastreador (conta como correta, 04/10). */
-export function resumirPlacas(data: string, nfs: NfResumo[], cargas: CargaResumo[], coords: Map<string, { lat: number; lng: number }>): PlacaAoVivo[] {
+export function resumirPlacas(data: string, nfs: NfResumo[], cargas: CargaResumo[], coords: Map<string, { lat: number; lng: number }>, paradas: Map<string, { lat: number; lng: number }> = new Map()): PlacaAoVivo[] {
   const porPlaca = new Map<string, NfResumo[]>()
   for (const n of nfs) porPlaca.set(n.placa, [...(porPlaca.get(n.placa) ?? []), n])
   const placas: PlacaAoVivo[] = []
@@ -64,7 +67,7 @@ export function resumirPlacas(data: string, nfs: NfResumo[], cargas: CargaResumo
     const chegadas = cs.map(c => c.chegada).filter((s): s is string => !!s).sort()
     const nfsAoVivo: NfAoVivo[] = lista.map(n => {
       const c = coords.get(n.nf)
-      return { nf: n.nf, carga: n.carga, cliente: n.cliente, endereco: n.endereco, status: n.status, situacao: situacaoDe(n), chegada: n.chegada, saida: n.saida, tempoMin: n.tempoMin, lat: c?.lat ?? null, lng: c?.lng ?? null }
+      return { nf: n.nf, carga: n.carga, cliente: n.cliente, endereco: n.endereco, status: n.status, situacao: situacaoDe(n), chegada: n.chegada, saida: n.saida, tempoMin: n.tempoMin, lat: c?.lat ?? null, lng: c?.lng ?? null, parada: paradas.get(n.nf) ?? null }
     })
     const feitas = nfsAoVivo.filter(n => n.situacao === 'entregue' || n.situacao === 'sem_rastreador').length
     const kms = cs.map(c => c.km).filter((k): k is number => k != null)
@@ -94,6 +97,26 @@ export function paradaEmAndamento(paradas: UnitracParadaRow[], agoraMs: number):
   if (!Number.isFinite(fim) || agoraMs - fim > 5 * 60_000) return null
   const p = ultima as UnitracParadaRow & { lat?: number | null; lng?: number | null }
   return { inicio: ultima.chegada, lat: p.lat ?? null, lng: p.lng ?? null }
+}
+
+/** Ponto da parada da Unitrac em que a chegada da NF (ISO) cai -- é a parada
+ *  que o KPI contou como entrega. Fora de qualquer parada: a que começa mais
+ *  perto da chegada, até 5 min. */
+export function paradaDaChegada(paradas: UnitracParadaRow[], chegadaIso: string | null): { lat: number; lng: number } | null {
+  if (!chegadaIso) return null
+  const t = Date.parse(chegadaIso)
+  if (!Number.isFinite(t)) return null
+  const comCoord = paradas
+    .map(p => ({ p, lat: (p as UnitracParadaRow & { lat?: number | null }).lat, lng: (p as UnitracParadaRow & { lng?: number | null }).lng }))
+    .filter((x): x is { p: UnitracParadaRow; lat: number; lng: number } => x.lat != null && x.lng != null)
+  const dentro = comCoord.find(({ p }) => {
+    const ini = Date.parse(p.chegada), fim = Date.parse(p.fim_real ?? p.saida ?? p.chegada)
+    return t >= ini - 60_000 && t <= fim
+  })
+  if (dentro) return { lat: dentro.lat, lng: dentro.lng }
+  let melhor: { lat: number; lng: number } | null = null, dt = Infinity
+  for (const x of comCoord) { const d = Math.abs(Date.parse(x.p.chegada) - t); if (d < dt) { dt = d; melhor = { lat: x.lat, lng: x.lng } } }
+  return melhor && dt <= 5 * 60_000 ? melhor : null
 }
 
 function distanciaM(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {

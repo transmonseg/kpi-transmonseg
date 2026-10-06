@@ -53,17 +53,19 @@ const ROTULO_SITUACAO: Record<SituacaoNf, string> = {
 export default function AoVivoPage() {
   const [estado, setEstado] = useState<Estado | null>(null)
   const [erroCarga, setErroCarga] = useState<string | null>(null)
-  const [placaSel, setPlacaSel] = useState<string | null>(null)
-  const [nfAberta, setNfAberta] = useState<string | null>(null)
+  // ?placa=&nf=&data= (volta da tela "Entrega no mapa"): abre direto nelas.
+  const daUrl = () => (typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search))
+  const [placaSel, setPlacaSel] = useState<string | null>(() => daUrl().get('placa'))
+  const [nfAberta, setNfAberta] = useState<string | null>(() => daUrl().get('nf'))
   const [agora, setAgora] = useState<Record<string, Agora>>({})
   const [agoraMs, setAgoraMs] = useState(() => Date.now())
   const [busca, setBusca] = useState('')
   const [gerando, setGerando] = useState(false)
   const [subindo, setSubindo] = useState(false)
   // Celular: lista de placas OU detalhe (no computador, os dois lado a lado).
-  const [vendoDetalhe, setVendoDetalhe] = useState(false)
+  const [vendoDetalhe, setVendoDetalhe] = useState(() => !!daUrl().get('placa'))
   // Dia escolhido (null = hoje, ao vivo). Dia passado = histórico guardado.
-  const [dataSel, setDataSel] = useState<string | null>(null)
+  const [dataSel, setDataSel] = useState<string | null>(() => daUrl().get('data'))
 
   const carregar = useCallback(async () => {
     try {
@@ -354,7 +356,7 @@ function DetalhePlaca({ p, data, agora, agoraMs, historico, nfAberta, onNf }: { 
         </div>
         <ul>
           {p.nfs.map((n, i) => (
-            <LinhaNf key={`${n.carga}-${n.nf}`} n={n} placa={p.placa} data={data} ordem={i + 1} aberta={nfAberta === n.nf} noClienteAgora={nfAgora === n.nf ? agora?.parada?.inicio ?? null : null} agoraMs={agoraMs} onClick={() => onNf(n.nf)} posicao={agora?.posicao ?? null} />
+            <LinhaNf key={`${n.carga}-${n.nf}`} n={n} todas={p.nfs} placa={p.placa} data={data} historico={historico} ordem={i + 1} aberta={nfAberta === n.nf} noClienteAgora={nfAgora === n.nf ? agora?.parada?.inicio ?? null : null} agoraMs={agoraMs} onClick={() => onNf(n.nf)} posicao={agora?.posicao ?? null} />
           ))}
         </ul>
       </div>
@@ -379,7 +381,7 @@ function Dado({ rotulo, valor, extra }: { rotulo: string; valor: string; extra?:
   )
 }
 
-function LinhaNf({ n, placa, data, ordem, aberta, noClienteAgora, agoraMs, onClick, posicao }: { n: NfAoVivo; placa: string; data: string; ordem: number; aberta: boolean; noClienteAgora: string | null; agoraMs: number; onClick: () => void; posicao: Agora['posicao'] }) {
+function LinhaNf({ n, todas, placa, data, historico, ordem, aberta, noClienteAgora, agoraMs, onClick, posicao }: { n: NfAoVivo; todas: NfAoVivo[]; placa: string; data: string; historico: boolean; ordem: number; aberta: boolean; noClienteAgora: string | null; agoraMs: number; onClick: () => void; posicao: Agora['posicao'] }) {
   const segAgora = noClienteAgora ? desde(noClienteAgora, agoraMs) : null
   const longe = segAgora != null && segAgora >= UMA_HORA
   const corPonto = segAgora != null ? (longe ? 'var(--color-warning)' : '#2a6fdb') : COR_SITUACAO[n.situacao]
@@ -422,7 +424,7 @@ function LinhaNf({ n, placa, data, ordem, aberta, noClienteAgora, agoraMs, onCli
             )}
             {placa && placa !== 'SEM PLACA' && (
               <div>
-                <Link href={linkMonitoramento(n, placa, data)}
+                <Link href={linkMonitoramento(n, todas, placa, data, historico)}
                   className="inline-flex h-9 items-center gap-2 rounded-full bg-[var(--color-navy-700)] px-4 text-[12.5px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] active:scale-[0.98]">
                   <MapTrifold size={15} weight="bold" />Ver no monitoramento
                 </Link>
@@ -458,11 +460,16 @@ function motivoLegivel(status: string): { motivo: string; acao: string | null } 
 
 /** Tela "Entrega no mapa" do monitoramento, aberta dentro da Central: rastro
  *  do dia, ponto do cliente e a parada que o KPI contou como entrega. */
-function linkMonitoramento(n: NfAoVivo, placa: string, data: string): string {
+function linkMonitoramento(n: NfAoVivo, todas: NfAoVivo[], placa: string, data: string, historico: boolean): string {
   const q = new URLSearchParams({ placa, data, nf: n.nf, cliente: n.cliente, endereco: enderecoLimpo(n.endereco), situacao: n.situacao, status: n.status })
   if (n.lat != null && n.lng != null) { q.set('lat', String(n.lat)); q.set('lng', String(n.lng)) }
+  if (n.parada) { q.set('plat', n.parada.lat.toFixed(6)); q.set('plng', n.parada.lng.toFixed(6)) }
   if (n.chegada) q.set('chegada', n.chegada)
   if (n.saida) q.set('saida', n.saida)
+  // A rota inteira da placa: ordem, NF, situação e ponto de cada entrega.
+  q.set('pts', todas.map((t, i) => `${i + 1}|${t.nf}|${t.situacao}|${t.lat != null ? t.lat.toFixed(5) : ''}|${t.lng != null ? t.lng.toFixed(5) : ''}|${t.cliente.slice(0, 40).replace(/[|;]/g, ' ')}`).join(';'))
+  // Botão X da tela de entrega volta pra cá, na mesma placa e NF.
+  q.set('volta', `/painel/ao-vivo?${new URLSearchParams({ placa, nf: n.nf, ...(historico ? { data } : {}) }).toString()}`)
   return `/painel/monitoramento/entrega?${q.toString()}`
 }
 

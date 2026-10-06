@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resumirPlacas, paradaEmAndamento, nfProxima, horaParaIso } from './ao-vivo'
+import { resumirPlacas, paradaEmAndamento, nfProxima, horaParaIso, paradaDaChegada } from './ao-vivo'
 import type { NfResumo, CargaResumo } from './resumo-dashboard'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 
@@ -67,5 +67,20 @@ describe('nfProxima', () => {
   })
   it('nenhuma dentro de 800 m: null', () => {
     expect(nfProxima(nfs, { lat: -23.5, lng: -43.9 })).toBeNull()
+  })
+})
+
+describe('paradaDaChegada (ponto da parada que o KPI contou como entrega)', () => {
+  const ps = [
+    parada({ chegada: '2026-10-05T09:15:00Z', fim_real: '2026-10-05T09:41:00Z', lat: -22.92, lng: -43.23 }),
+    parada({ chegada: '2026-10-05T10:08:00Z', fim_real: '2026-10-05T10:58:00Z', lat: -22.918, lng: -43.212 }),
+  ]
+  it('a parada em que a chegada da NF cai dentro', () => {
+    expect(paradaDaChegada(ps, '2026-10-05T10:13:00Z')).toEqual({ lat: -22.918, lng: -43.212 })
+  })
+  it('chegada fora de qualquer parada: a que começa mais perto, até 5 min', () => {
+    expect(paradaDaChegada(ps, '2026-10-05T10:05:00Z')).toEqual({ lat: -22.918, lng: -43.212 })
+    expect(paradaDaChegada(ps, '2026-10-05T12:00:00Z')).toBeNull()
+    expect(paradaDaChegada(ps, null)).toBeNull()
   })
 })

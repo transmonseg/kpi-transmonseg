@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useEffect, useRef, useState } from 'react'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { URL_MONITORAMENTO, caminhoMonitoramento, rotaPainelMonitoramento } from '@/lib/sistema-transmonseg'
 
 // Monitoramento aberto dentro da Central (05/10). O sistema continua o mesmo
@@ -14,6 +14,7 @@ export default function Pagina() {
 
 function MonitoramentoEmbutido() {
   const pathname = usePathname()
+  const router = useRouter()
   const busca = useSearchParams().toString()
   const alvo = caminhoMonitoramento(pathname) + (busca ? `?${busca}` : '')
   const [src, setSrc] = useState(() => URL_MONITORAMENTO + alvo)
@@ -32,14 +33,20 @@ function MonitoramentoEmbutido() {
     function aoReceber(e: MessageEvent) {
       if (e.origin !== URL_MONITORAMENTO) return
       const m = e.data as { fonte?: string; tipo?: string; caminho?: string; titulo?: string }
-      if (m?.fonte !== 'monitoramento' || m.tipo !== 'rota' || typeof m.caminho !== 'string') return
+      if (m?.fonte !== 'monitoramento' || typeof m.caminho !== 'string') return
+      // X da tela "Entrega no mapa": volta pra uma tela do painel (ex. o Ao vivo).
+      if (m.tipo === 'navegar-central') {
+        if (m.caminho.startsWith('/painel/') && !m.caminho.startsWith('//')) router.push(m.caminho)
+        return
+      }
+      if (m.tipo !== 'rota') return
       informado.current = m.caminho
       const rota = rotaPainelMonitoramento(m.caminho.split('?')[0]) + (m.caminho.includes('?') ? '?' + m.caminho.split('?')[1] : '')
       if (rota !== window.location.pathname + window.location.search) window.history.replaceState(null, '', rota)
     }
     window.addEventListener('message', aoReceber)
     return () => window.removeEventListener('message', aoReceber)
-  }, [])
+  }, [router])
 
   return (
     <div className="relative -mx-4 -my-6 h-[calc(100dvh-3.5rem)] md:-mx-10 md:-my-10 md:h-[100dvh]">

@@ -4,7 +4,8 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { gerarKpiNutrimax, type EntradaKpiNutrimax } from './gerar-nutrimax'
 import { extrairKpiCompleto } from './resumo-dashboard'
-import { resumirPlacas, type PlacaAoVivo } from './ao-vivo'
+import { resumirPlacas, paradaDaChegada, type PlacaAoVivo } from './ao-vivo'
+import { normPlaca } from '@/lib/unitrac-api'
 import type { LinhaEscala, LinhaRomaneio } from './types'
 
 export const CLIENTES_AO_VIVO = ['nutrimax'] as const
@@ -113,8 +114,8 @@ export async function entradaDoDia(cliente: ClienteAoVivo, data: string): Promis
 
 /** Resultado da tela a partir da planilha do KPI lida (extrairKpiCompleto).
  *  Usado pelo cálculo ao vivo e pelo histórico (planilha guardada). */
-export function montarResultadoAoVivo(data: string, lido: Awaited<ReturnType<typeof extrairKpiCompleto>>, coords: Map<string, { lat: number; lng: number }>, calculadoEm: string): ResultadoAoVivo {
-  const placas = resumirPlacas(data, lido.nfs, lido.resumo.cargas, coords)
+export function montarResultadoAoVivo(data: string, lido: Awaited<ReturnType<typeof extrairKpiCompleto>>, coords: Map<string, { lat: number; lng: number }>, calculadoEm: string, paradas?: Map<string, { lat: number; lng: number }>): ResultadoAoVivo {
+  const placas = resumirPlacas(data, lido.nfs, lido.resumo.cargas, coords, paradas)
   const totalNfs = placas.reduce((s, p) => s + p.total, 0)
   const feitas = placas.reduce((s, p) => s + p.feitas, 0)
   return {
@@ -137,12 +138,18 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
   const t0 = Date.now()
   try {
     const coords = new Map<string, { lat: number; lng: number }>()
+    const paradasNf = new Map<string, { lat: number; lng: number }>()
     const r = await gerarKpiNutrimax(entrada, {
-      aoMontarDetalhe: ({ romaneioGeo }) => {
+      aoMontarDetalhe: ({ romaneioGeo, detalhe, paradasPorPlaca }) => {
         for (const l of romaneioGeo) if (l.lat != null && l.lng != null) coords.set(l.nf, { lat: l.lat, lng: l.lng })
+        // Ponto da parada que o KPI contou como entrega ("Ver no monitoramento").
+        for (const d of detalhe) {
+          const p = paradaDaChegada(paradasPorPlaca.get(normPlaca(d.placa)) ?? [], d.chegada)
+          if (p) paradasNf.set(d.nf, p)
+        }
       },
     })
-    const resultado = montarResultadoAoVivo(data, await extrairKpiCompleto(r.xlsx), coords, new Date().toISOString())
+    const resultado = montarResultadoAoVivo(data, await extrairKpiCompleto(r.xlsx), coords, new Date().toISOString(), paradasNf)
     const { error } = await svc.from('kpi_ao_vivo_calculo').update({
       resultado, calculado_em: resultado.calculadoEm, duracao_ms: Date.now() - t0, rodando_desde: null,
     }).eq('cliente', cliente).eq('data', data)
