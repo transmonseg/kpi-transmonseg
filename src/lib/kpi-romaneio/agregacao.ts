@@ -2627,7 +2627,15 @@ export function montarDetalheEntregas(
         observacao = null
       } else {
         const revisar = REVISAR_POR_ROTULO_FRACO[observacao]
-        if (revisar && alvo?.situacao === SITUACAO_ALVO_OUTRO_DESFECHO) {
+        // Achado 06/10 (TTH6G37, Centro): horario do vizinho com a parada real
+        // a 500 m-2 km desta NF nao confirma -- regra da Ana (plano 03/10):
+        // parada a 500 m-2 km nao vira entrega automatica. Acima de 2 km e' o
+        // nosso ponto que esta' errado (ilha, estrada S/N -- os casos de 02/10
+        // que a Ana validou como entregue), fica como estava. Distancia nao
+        // medida (null) nao rebaixa: sem prova contra.
+        const paradaLongeDaNf = evidencia === 'vizinhanca' && distParadaM != null
+          && distParadaM > RAIO_ENTREGA_METROS && distParadaM <= RAIO_NAO_FOI_AO_CLIENTE_M
+        if (revisar && (alvo?.situacao === SITUACAO_ALVO_OUTRO_DESFECHO || paradaLongeDaNf)) {
           status = 'pendente'
           observacao = revisar
         }

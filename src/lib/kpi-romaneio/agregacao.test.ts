@@ -4021,6 +4021,32 @@ describe('Task 1 (plano 28/09) -- parada compartilhada com prova forte vira ENTR
     expect(d.observacao).toBe('PARADA COMPARTILHADA - REVISAR')
   })
 
+  // Achado 06/10 (tia Erica, TTH6G37 no Centro): 1 parada de 2 h na Av. Nilo
+  // Peçanha confirmou 24 NFs, 14 delas por vizinhanca a 840-1515 m da parada
+  // real -- a Unitrac mostrava os pontos como nao visitados. Regra da Ana
+  // (plano 03/10): parada a 500 m-2 km nao vira entrega automatica.
+  it('parada real a mais de 500 m da NF (horario do vizinho) -> PARADA COMPARTILHADA - REVISAR', () => {
+    const ponte = new Map([['TTL7D40', [paradaForaBase('centro', -22.2 + 1200 * M_LAT, -42.4, vizinhanca.chegada, vizinhanca.saida)]]])
+    const [d] = chamarNutryMax([nf1, nf2], { visitasPorNf: visitas(), paradasPorOutraPlaca: ponte })
+    expect(d.distParadaM).toBeGreaterThan(1000)
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PARADA COMPARTILHADA - REVISAR')
+  })
+
+  it('parada real a mais de 2 km (nosso ponto errado: ilha/estrada S/N, casos validados pela Ana 02/10) continua ENTREGUE com horario aproximado', () => {
+    const ponte = new Map([['TTL7D40', [paradaForaBase('longe', -22.2 + 4500 * M_LAT, -42.4, vizinhanca.chegada, vizinhanca.saida)]]])
+    const [d] = chamarNutryMax([nf1, nf2], { visitasPorNf: visitas(), paradasPorOutraPlaca: ponte })
+    expect(d.status).not.toBe('pendente')
+    expect(d.observacao).toBe('ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)')
+  })
+
+  it('parada real a ate 500 m da NF (horario do vizinho) continua ENTREGUE com horario aproximado', () => {
+    const ponte = new Map([['TTL7D40', [paradaForaBase('perto', -22.2 + 300 * M_LAT, -42.4, vizinhanca.chegada, vizinhanca.saida)]]])
+    const [d] = chamarNutryMax([nf1, nf2], { visitasPorNf: visitas(), paradasPorOutraPlaca: ponte })
+    expect(d.status).not.toBe('pendente')
+    expect(d.observacao).toBe('ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)')
+  })
+
   it('(d) modoPrecisao desligado: nada muda (rotulo antigo, horario do vizinho)', () => {
     const cruas = new Map([['TTL7D40', [paradaForaBase('u1', -22.2 + 9 * M_LAT, -42.4, '2026-09-26T11:00:00.000Z', '2026-09-26T11:10:16.000Z')]]])
     const [d] = chamarNutryMax([nf1, nf2], { visitasPorNf: visitas(), paradasUnitracCruasPropriaPlaca: cruas, modoPrecisao: false })

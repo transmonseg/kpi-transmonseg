@@ -322,6 +322,8 @@ function voltouABase(p: PlacaAoVivo): boolean {
   return !!ultimaSaida && hhmm(p.chegadaBase) >= ultimaSaida
 }
 
+const KM_JA_EM_ROTA = 3
+
 function situacaoAgora(p: PlacaAoVivo, a: Agora | undefined, agoraMs: number, historico = false): { texto: string; tempo: string | null; tom: 'cliente' | 'longe' | 'rota' | 'fim' } {
   // Parada em andamento: a da consulta "agora" da placa aberta (30 s) ou, pras
   // outras, a do último cálculo (10 min).
@@ -332,6 +334,9 @@ function situacaoAgora(p: PlacaAoVivo, a: Agora | undefined, agoraMs: number, hi
   }
   if (voltouABase(p)) return { texto: `Voltou à base às ${hhmm(p.chegadaBase)}`, tempo: null, tom: 'fim' }
   if (p.saidaBase) return { texto: historico ? `Saiu às ${hhmm(p.saidaBase)}, sem volta registrada` : `Saiu às ${hhmm(p.saidaBase)}`, tempo: historico ? null : relogio(desde(p.saidaBase, agoraMs)), tom: historico ? 'fim' : 'rota' }
+  // Carro que dorme fora da base (motoristas da região dos Lagos, achado 06/10
+  // RQV5F67): nunca registra saída, mas já está rodando.
+  if (p.km != null && p.km >= KM_JA_EM_ROTA) return { texto: historico ? 'Rodou sem saída da base registrada' : 'Em rota (saída da base não registrada)', tempo: null, tom: historico ? 'fim' : 'rota' }
   return { texto: p.feitas > 0 ? 'Sem horário de saída' : 'Ainda não saiu da base', tempo: null, tom: 'fim' }
 }
 
