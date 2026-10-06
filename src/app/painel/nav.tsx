@@ -149,13 +149,14 @@ const emMonitoramento = (pathname: string) => pathname === '/painel/monitorament
 
 function SeletorSistema({ pathname }: { pathname: string }) {
   const mon = emMonitoramento(pathname)
+  // "Monitoramento" é bem mais largo que "KPI": cada pílula do tamanho do texto.
   const opcao = (ativo: boolean) =>
-    'flex h-8 flex-1 items-center justify-center rounded-[10px] text-[12.5px] font-semibold transition-[background-color,color] duration-200 ' +
+    'flex h-8 items-center justify-center rounded-[10px] px-3 text-[12.5px] font-semibold transition-[background-color,color] duration-200 ' +
     (ativo ? 'nav-ativo text-white' : 'text-[var(--color-sidebar-fg-muted)] hover:text-white')
   return (
     <div role="tablist" aria-label="Sistema" className="mb-3 flex gap-1 rounded-xl bg-white/[0.05] p-1">
-      <Link role="tab" aria-selected={!mon} href="/painel" className={opcao(!mon)}>KPI</Link>
-      <Link role="tab" aria-selected={mon} href={ITENS_MONITORAMENTO[0].href} className={opcao(mon)}>Monitoramento</Link>
+      <Link role="tab" aria-selected={!mon} href="/painel" className={opcao(!mon) + ' w-[64px] shrink-0'}>KPI</Link>
+      <Link role="tab" aria-selected={mon} href={ITENS_MONITORAMENTO[0].href} className={opcao(mon) + ' flex-1'}>Monitoramento</Link>
     </div>
   )
 }
