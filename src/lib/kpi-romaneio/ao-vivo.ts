@@ -7,7 +7,9 @@ import type { NfResumo, CargaResumo } from './resumo-dashboard'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { RAIO_CONFIRMACAO_AMPLIADO_METROS } from './constants'
 
-export type SituacaoNf = 'entregue' | 'sem_rastreador' | 'pendente' | 'nao_foi' | 'revisar'
+/** pendente = rota ainda rodando; nao_confirmada = a rota acabou e a NF não
+ *  foi confirmada (conta como não entregue na taxa). */
+export type SituacaoNf = 'entregue' | 'sem_rastreador' | 'pendente' | 'nao_confirmada' | 'nao_foi' | 'revisar'
 
 export type NfAoVivo = {
   nf: string
@@ -47,11 +49,29 @@ export function horaParaIso(data: string, hhmm: string | null): string | null {
   return `${data}T${h.padStart(2, '0')}:${m}:00-03:00`
 }
 
+/** "2026-10-06" -> "2026-10-05". */
+export function diaAnterior(data: string): string {
+  const d = new Date(`${data}T12:00:00Z`)
+  d.setUTCDate(d.getUTCDate() - 1)
+  return d.toISOString().slice(0, 10)
+}
+
+/** O último cálculo do dia `data` foi feito com a rota ainda rodando e o dia
+ *  já acabou (00:30 do dia seguinte, folga pro rastreador fechar a última
+ *  parada): é hora do cálculo final, igual à geração normal do dia. */
+export function precisaFecharDia(calculadoEm: string | null, data: string, agoraMs: number): boolean {
+  if (!calculadoEm) return false
+  const [a, m, d] = data.split('-').map(Number)
+  const fechamento = Date.parse(`${new Date(Date.UTC(a, m - 1, d + 1)).toISOString().slice(0, 10)}T00:30:00-03:00`)
+  return agoraMs >= fechamento && Date.parse(calculadoEm) < fechamento
+}
+
 function situacaoDe(n: NfResumo): SituacaoNf {
   if (n.categoria == null) return 'entregue'
   if (n.categoria === 'Sem rastreador') return 'sem_rastreador'
   if (n.categoria === 'Não foi ao cliente') return 'nao_foi'
-  if (n.categoria === 'Aguardando fim da rota' || n.categoria === 'Sem confirmação') return 'pendente'
+  if (n.categoria === 'Aguardando fim da rota') return 'pendente'
+  if (n.categoria === 'Sem confirmação') return 'nao_confirmada'
   return 'revisar'
 }
 

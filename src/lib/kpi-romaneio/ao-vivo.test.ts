@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resumirPlacas, paradaEmAndamento, nfProxima, horaParaIso, paradaDaChegada } from './ao-vivo'
+import { resumirPlacas, paradaEmAndamento, nfProxima, horaParaIso, paradaDaChegada, diaAnterior, precisaFecharDia } from './ao-vivo'
 import type { NfResumo, CargaResumo } from './resumo-dashboard'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 
@@ -26,7 +26,7 @@ describe('resumirPlacas', () => {
     const [p] = resumirPlacas('2026-10-06', nfs, [carga({ nfPlanejado: 4 })], new Map([['1', { lat: -22.9, lng: -43.2 }]]))
     expect(p).toMatchObject({ placa: 'AAA1A11', motorista: 'José', destino: 'Macaé', total: 4, feitas: 3, pct: 75, saidaBase: '2026-10-06T06:30:00-03:00', km: 120.5 })
     expect(p.nfs[0]).toMatchObject({ nf: '1', lat: -22.9, lng: -43.2, situacao: 'entregue' })
-    expect(p.nfs.map(n => n.situacao)).toEqual(['entregue', 'sem_rastreador', 'pendente', 'entregue'])
+    expect(p.nfs.map(n => n.situacao)).toEqual(['entregue', 'sem_rastreador', 'nao_confirmada', 'entregue'])
   })
   it('ordena placas por % crescente (quem precisa de atenção primeiro) e depois placa', () => {
     const r = resumirPlacas('2026-10-06', [nf({ placa: 'BBB', nf: '1' }), nf({ placa: 'AAA', nf: '2', status: 'PENDENTE', categoria: 'Sem confirmação' })], [carga({ placa: 'BBB' }), carga({ placa: 'AAA' })], new Map())
@@ -37,8 +37,11 @@ describe('resumirPlacas', () => {
       nf({ nf: '1', status: 'NÃO FOI AO CLIENTE', categoria: 'Não foi ao cliente' }),
       nf({ nf: '2', status: 'AGUARDANDO - ROTA EM ANDAMENTO', categoria: 'Aguardando fim da rota' }),
       nf({ nf: '3', status: 'COORDENADA APROXIMADA', categoria: 'Coordenada imprecisa' }),
+      nf({ nf: '4', status: 'SEM CONFIRMAÇÃO', categoria: 'Sem confirmação' }),
     ], [carga({})], new Map())
-    expect(r[0].nfs.map(n => n.situacao)).toEqual(['nao_foi', 'pendente', 'revisar'])
+    // "Sem confirmação" = a rota acabou e a NF não foi confirmada: não é
+    // pendente (pedido 05/10: "como tá pendente se acabou o dia").
+    expect(r[0].nfs.map(n => n.situacao)).toEqual(['nao_foi', 'pendente', 'revisar', 'nao_confirmada'])
   })
 })
 
@@ -89,5 +92,19 @@ describe('paradaDaChegada (ponto da parada que o KPI contou como entrega)', () =
     expect(paradaDaChegada(ps, '2026-10-05T10:05:00Z')).toEqual({ lat: -22.918, lng: -43.212 })
     expect(paradaDaChegada(ps, '2026-10-05T12:00:00Z')).toBeNull()
     expect(paradaDaChegada(ps, null)).toBeNull()
+  })
+})
+
+describe('fechamento do dia (último cálculo depois que o dia acabou)', () => {
+  it('dia anterior', () => {
+    expect(diaAnterior('2026-10-06')).toBe('2026-10-05')
+    expect(diaAnterior('2026-11-01')).toBe('2026-10-31')
+  })
+  it('recalcula só se o último cálculo foi antes de 00:30 do dia seguinte e já passou disso', () => {
+    const agora = Date.parse('2026-10-06T00:40:00-03:00')
+    expect(precisaFecharDia('2026-10-05T23:39:00-03:00', '2026-10-05', agora)).toBe(true)
+    expect(precisaFecharDia('2026-10-06T00:35:00-03:00', '2026-10-05', agora)).toBe(false)
+    expect(precisaFecharDia('2026-10-05T23:39:00-03:00', '2026-10-05', Date.parse('2026-10-06T00:10:00-03:00'))).toBe(false)
+    expect(precisaFecharDia(null, '2026-10-05', agora)).toBe(false)
   })
 })

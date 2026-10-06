@@ -39,6 +39,7 @@ const COR_SITUACAO: Record<SituacaoNf, string> = {
   entregue: 'var(--color-success)',
   sem_rastreador: '#64748b',
   pendente: 'transparent',
+  nao_confirmada: 'var(--color-danger)',
   nao_foi: 'var(--color-danger)',
   revisar: 'var(--color-warning)',
 }
@@ -46,6 +47,7 @@ const ROTULO_SITUACAO: Record<SituacaoNf, string> = {
   entregue: 'Entregue',
   sem_rastreador: 'Sem rastreador',
   pendente: 'Pendente',
+  nao_confirmada: 'Não confirmada',
   nao_foi: 'Não foi ao cliente',
   revisar: 'A revisar',
 }
@@ -351,7 +353,7 @@ function DetalhePlaca({ p, data, agora, agoraMs, historico, nfAberta, onNf }: { 
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border)] px-5 py-3.5">
           <h3 className="text-[14px] font-semibold text-[var(--color-fg)]">Notas fiscais</h3>
           <p className="text-[12px] text-[var(--color-fg-muted)]">
-            {contagem('entregue')} entregues, {contagem('pendente')} pendentes{contagem('revisar') ? `, ${contagem('revisar')} a revisar` : ''}{contagem('nao_foi') ? `, ${contagem('nao_foi')} não foi` : ''}{contagem('sem_rastreador') ? `, ${contagem('sem_rastreador')} sem rastreador` : ''}
+            {contagem('entregue')} entregues{contagem('pendente') ? `, ${contagem('pendente')} pendentes` : ''}{contagem('nao_confirmada') ? `, ${contagem('nao_confirmada')} não confirmadas` : ''}{contagem('revisar') ? `, ${contagem('revisar')} a revisar` : ''}{contagem('nao_foi') ? `, ${contagem('nao_foi')} não foi` : ''}{contagem('sem_rastreador') ? `, ${contagem('sem_rastreador')} sem rastreador` : ''}
           </p>
         </div>
         <ul>
@@ -386,7 +388,7 @@ function LinhaNf({ n, todas, placa, data, historico, ordem, aberta, noClienteAgo
   const longe = segAgora != null && segAgora >= UMA_HORA
   const corPonto = segAgora != null ? (longe ? 'var(--color-warning)' : '#2a6fdb') : COR_SITUACAO[n.situacao]
   const rotulo = segAgora != null ? (longe ? 'No cliente há +1 h' : 'No cliente agora') : ROTULO_SITUACAO[n.situacao]
-  const corRotulo = segAgora != null ? (longe ? 'text-[#b45309]' : 'text-[#1d4fa8]') : n.situacao === 'entregue' ? 'text-[var(--color-success)]' : n.situacao === 'nao_foi' ? 'text-[var(--color-danger)]' : n.situacao === 'revisar' ? 'text-[#b45309]' : 'text-[var(--color-fg-muted)]'
+  const corRotulo = segAgora != null ? (longe ? 'text-[#b45309]' : 'text-[#1d4fa8]') : n.situacao === 'entregue' ? 'text-[var(--color-success)]' : n.situacao === 'nao_foi' || n.situacao === 'nao_confirmada' ? 'text-[var(--color-danger)]' : n.situacao === 'revisar' ? 'text-[#b45309]' : 'text-[var(--color-fg-muted)]'
   return (
     <li className="border-b border-[var(--color-border)] last:border-b-0">
       <button type="button" onClick={onClick} aria-expanded={aberta}
@@ -409,7 +411,7 @@ function LinhaNf({ n, todas, placa, data, historico, ordem, aberta, noClienteAgo
         return (
           <div className="flex flex-col gap-3 px-5 pb-4 pl-[60px] text-[13px]">
             {motivo && (
-              <div className={`rounded-xl px-3.5 py-2.5 ${n.situacao === 'nao_foi' ? 'bg-[#fdecec] text-[#a61b1b]' : n.situacao === 'revisar' ? 'bg-[#fdf3e3] text-[#8a4b08]' : 'bg-[var(--color-bg-subtle)] text-[var(--color-fg)]'}`}>
+              <div className={`rounded-xl px-3.5 py-2.5 ${n.situacao === 'nao_foi' || n.situacao === 'nao_confirmada' ? 'bg-[#fdecec] text-[#a61b1b]' : n.situacao === 'revisar' ? 'bg-[#fdf3e3] text-[#8a4b08]' : 'bg-[var(--color-bg-subtle)] text-[var(--color-fg)]'}`}>
                 <p className="font-semibold leading-snug">{motivo.motivo}</p>
                 {motivo.acao && <p className="mt-0.5 text-[12px] opacity-80">{motivo.acao}</p>}
               </div>
