@@ -18,6 +18,7 @@ import {
   Package,
   Buildings,
   FileArrowUp,
+  Broadcast,
   ArrowsLeftRight,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
@@ -26,6 +27,7 @@ type Leaf = { href: string; label: string; Icon: PhosphorIcon; exact?: boolean }
 type Group = { label: string; Icon: PhosphorIcon; href?: string; children: Leaf[]; cor?: string }
 type Papel = 'admin' | 'gerente' | 'visualizador' | 'operador'
 
+const AO_VIVO: Leaf = { href: '/painel/ao-vivo', label: 'Ao vivo', Icon: Broadcast }
 const DASHBOARD: Leaf = { href: '/painel', label: 'Dashboard', Icon: ChartBar }
 const USUARIOS: Leaf = { href: '/painel/usuarios', label: 'Usuários', Icon: UsersThree }
 
@@ -208,6 +210,7 @@ export function PainelNav({ papel, empresas }: { papel: Papel; empresas: string[
     const grupos = GRUPOS_EMPRESA.filter(g => g.label !== 'Benassi' && empresas.includes(NOME_PARA_EMPRESA[g.label] ?? ''))
     return (
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
+        {empresas.includes('nutrimax') && <LeafLink item={AO_VIVO} active={pathname.startsWith('/painel/ao-vivo')} />}
         <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
         {grupos.length > 0 && (
           <span className="px-2.5 pb-1 pt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">Empresas</span>
@@ -230,6 +233,7 @@ export function PainelNav({ papel, empresas }: { papel: Papel; empresas: string[
 
   return (
     <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
+      <LeafLink item={AO_VIVO} active={pathname.startsWith('/painel/ao-vivo')} />
       <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
       <LeafLink item={USUARIOS} active={pathname.startsWith('/painel/usuarios')} />
 
