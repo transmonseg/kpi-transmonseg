@@ -178,7 +178,7 @@ export default function AoVivoPage() {
             </p>
           ) : r ? (
             <p className="text-[14px] text-[var(--color-fg-muted)]">
-              <FraseResumo r={r} /> Atualizado às {hhmm(r.calculadoEm)}{estado.calculando ? ', recalculando agora' : ''}.
+              <FraseResumo r={r} aoVivo /> Atualizado às {hhmm(r.calculadoEm)}{estado.calculando ? ', recalculando agora' : ''}.
             </p>
           ) : estado.dia ? (
             <p className="text-[14px] text-[var(--color-fg-muted)]">Romaneio recebido às {hhmm(estado.dia.enviadoEm)}: {estado.dia.nfs} notas em {estado.dia.placas} placas. Calculando o KPI pela primeira vez — leva uns 3 minutos.</p>
@@ -309,8 +309,15 @@ export default function AoVivoPage() {
 }
 
 /** Taxa do KPI (a mesma da planilha: fora da conta não entra) e as notas. */
-function FraseResumo({ r }: { r: NonNullable<Estado['resultado']> }) {
+function FraseResumo({ r, aoVivo = false }: { r: NonNullable<Estado['resultado']>; aoVivo?: boolean }) {
   const n = (x: number) => x.toLocaleString('pt-BR')
+  // Dia em andamento (06/10, "97% às 9h é impossível"): a taxa do KPI só conta
+  // as notas já resolvidas -- de manhã quase tudo está aguardando e ela fica
+  // perto de 100%. O que importa ao vivo é quanto do dia já foi entregue.
+  const entregues = r.placas.reduce((s, p) => s + p.nfs.filter(x => x.situacao === 'entregue').length, 0)
+  if (aoVivo && r.resumo.aguardando > 0) {
+    return <><strong className="text-[var(--color-fg)] tabular-nums">{n(entregues)} de {n(r.resumo.totalNfs)} notas entregues ({Math.round((100 * entregues) / Math.max(1, r.resumo.totalNfs))}%)</strong>, {n(r.resumo.aguardando)} aguardando.{r.resumo.taxa != null ? ` Taxa do KPI até agora (só as já resolvidas): ${r.resumo.taxa.toLocaleString('pt-BR')}%.` : ''}</>
+  }
   if (r.resumo.taxa != null && r.resumo.entregues != null && r.resumo.nfsNaConta != null) {
     return <><strong className="text-[var(--color-fg)] tabular-nums">{r.resumo.taxa.toLocaleString('pt-BR')}% no KPI</strong>, {n(r.resumo.entregues)} de {n(r.resumo.nfsNaConta)} notas na conta entregues.</>
   }

@@ -6085,3 +6085,31 @@ describe('parada curta nao confirma varios enderecos longe (06/10)', () => {
     expect(d.every(x => x.status !== 'pendente')).toBe(true)
   })
 })
+
+// Ao vivo 06/10 as 9h: 420 NFs dadas como entregues antes da entrega real
+// (RBI1A49 parado as 08:49 "confirmava" 4 clientes visitados as 09:19-09:52):
+// parada a ate' 500 m do vizinho. 75% dessas estavam a >300 m; das certas, 81%
+// a <=150 m.
+describe('rota em andamento: parada longe (>300 m) ainda nao confirma (06/10)', () => {
+  const janela = { chegada: '2026-10-06T08:49:00.000Z', saida: '2026-10-06T08:58:00.000Z' }
+  const nf = linha('NF1', { endereco: 'RUA A, 10 - CENTRO, RIO DAS OSTRAS', lat: -22.5, lng: -41.9 })
+  const vis = () => new Map<string, Visita>([['NF1', { nf: 'NF1', ...janela, distanciaMetrosDoPonto: 420 }]])
+  const ponte = (m: number) => new Map([['TTL7D40', [paradaForaBase('p', -22.5 + m * M_LAT, -41.9, janela.chegada, janela.saida)]]])
+
+  it('parada a 420 m com a rota em andamento: AGUARDANDO, sem horario', () => {
+    const [d] = chamarNutryMax([nf], { visitasPorNf: vis(), paradasPorOutraPlaca: ponte(420), diaEmAndamento: true })
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO')
+    expect(d.chegada).toBeNull()
+  })
+
+  it('parada a 80 m com a rota em andamento: confirma', () => {
+    const [d] = chamarNutryMax([nf], { visitasPorNf: vis(), paradasPorOutraPlaca: ponte(80), diaEmAndamento: true })
+    expect(d.status).toBe('confirmado_gps')
+  })
+
+  it('mesma parada a 420 m com o dia encerrado: regra de sempre (confirma)', () => {
+    const [d] = chamarNutryMax([nf], { visitasPorNf: vis(), paradasPorOutraPlaca: ponte(420) })
+    expect(d.status).toBe('confirmado_gps')
+  })
+})

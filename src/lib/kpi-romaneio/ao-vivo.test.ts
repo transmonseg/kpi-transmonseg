@@ -16,7 +16,7 @@ describe('horaParaIso', () => {
 })
 
 describe('resumirPlacas', () => {
-  it('feitas = entregues + sem rastreador; % sobre o total; saída da base em ISO', () => {
+  it('feitas = só entregues (sem rastreador não é feito); % sobre o total; saída da base em ISO', () => {
     const nfs = [
       nf({ nf: '1' }),
       nf({ nf: '2', status: 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO', categoria: 'Sem rastreador' }),
@@ -24,7 +24,7 @@ describe('resumirPlacas', () => {
       nf({ nf: '4', status: 'ENTREGUE - PARADA NA MESMA RUA', categoria: null }),
     ]
     const [p] = resumirPlacas('2026-10-06', nfs, [carga({ nfPlanejado: 4 })], new Map([['1', { lat: -22.9, lng: -43.2 }]]))
-    expect(p).toMatchObject({ placa: 'AAA1A11', motorista: 'José', destino: 'Macaé', total: 4, feitas: 3, pct: 75, saidaBase: '2026-10-06T06:30:00-03:00', km: 120.5 })
+    expect(p).toMatchObject({ placa: 'AAA1A11', motorista: 'José', destino: 'Macaé', total: 4, feitas: 2, pct: 50, saidaBase: '2026-10-06T06:30:00-03:00', km: 120.5 })
     expect(p.nfs[0]).toMatchObject({ nf: '1', lat: -22.9, lng: -43.2, situacao: 'entregue' })
     expect(p.nfs.map(n => n.situacao)).toEqual(['entregue', 'sem_rastreador', 'nao_confirmada', 'entregue'])
   })

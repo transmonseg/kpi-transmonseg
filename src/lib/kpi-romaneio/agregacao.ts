@@ -980,6 +980,7 @@ export function pontoAproximadoPorEndereco(endereco: string): boolean {
 // Ver bloco "Revisao de falso positivo 06/10" em montarDetalheEntregas.
 const EVIDENCIAS_FRACAS_DE_PARADA = new Set<EvidenciaNf>(['raio_ampliado', 'vizinhanca', 'parada_curta_compartilhada'])
 const DIST_MIN_PARADA_DE_OUTRO_CLIENTE_M = 400
+const DIST_MAX_CONFIRMA_ROTA_ANDAMENTO_M = 300
 const EVIDENCIAS_FRACAS_PARADA_CURTA = new Set<EvidenciaNf>(['raio_ampliado', 'vizinhanca', 'parada_curta_compartilhada', 'parada_proxima_propria'])
 const DURACAO_MAX_PARADA_CURTA_VARIOS_MIN = 5
 export const OBS_PARADA_CURTA_VARIOS_LONGE = 'PARADA CURTA PARA VÁRIOS ENDEREÇOS A MAIS DE 500 M - CONFERIR'
@@ -2637,6 +2638,21 @@ export function montarDetalheEntregas(
       if (maisLongaMin > 0) {
         observacao = `${PREFIXO_OBS_PAROU_COM_VIZINHO} (${Math.round(maisLongaMin)} MIN) - CONFERIR`
       }
+    }
+
+    // Ao vivo 06/10 as 9h: 420 NFs "entregues" antes da entrega real -- a
+    // parada a ate' 500 m de um VIZINHO confirmava clientes que o caminhao ainda
+    // ia visitar (75% dessas a >300 m; das confirmacoes certas, 81% a <=150 m).
+    // Com a rota em andamento, parada a mais de DIST_MAX_CONFIRMA_ROTA_ANDAMENTO_M
+    // espera: se ele parar mais perto depois, confirma com o horario certo; no
+    // fim do dia vale a regra de sempre (KPI final igual).
+    if (modoPrecisao && diaEmAndamento && status === 'confirmado_gps' && distParadaM != null
+      && distParadaM > DIST_MAX_CONFIRMA_ROTA_ANDAMENTO_M) {
+      status = 'pendente'
+      observacao = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
+      chegada = null
+      saida = null
+      tempoParadaMin = null
     }
 
     // Revisao de falso positivo 06/10 (TTM2G02, Botafogo: 1 parada no GALETO

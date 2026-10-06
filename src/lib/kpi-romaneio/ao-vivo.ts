@@ -78,8 +78,7 @@ function situacaoDe(n: NfResumo): SituacaoNf {
   return 'revisar'
 }
 
-/** Uma entrada por placa, com as NFs na ordem da planilha. "Feitas" segue a
- *  regra da taxa: entregue + sem rastreador (conta como correta, 04/10). */
+/** Uma entrada por placa, com as NFs na ordem da planilha. "Feitas" = entregues. */
 export function resumirPlacas(data: string, nfs: NfResumo[], cargas: CargaResumo[], coords: Map<string, { lat: number; lng: number }>, paradas: Map<string, { lat: number; lng: number }> = new Map()): PlacaAoVivo[] {
   const porPlaca = new Map<string, NfResumo[]>()
   for (const n of nfs) porPlaca.set(n.placa, [...(porPlaca.get(n.placa) ?? []), n])
@@ -92,7 +91,9 @@ export function resumirPlacas(data: string, nfs: NfResumo[], cargas: CargaResumo
       const c = coords.get(n.nf)
       return { nf: n.nf, carga: n.carga, cliente: n.cliente, endereco: n.endereco, status: n.status, situacao: situacaoDe(n), chegada: n.chegada, saida: n.saida, tempoMin: n.tempoMin, lat: c?.lat ?? null, lng: c?.lng ?? null, parada: paradas.get(n.nf) ?? null }
     })
-    const feitas = nfsAoVivo.filter(n => n.situacao === 'entregue' || n.situacao === 'sem_rastreador').length
+    // Progresso = só entregue (06/10: sem rastreador somava como feito e a placa
+    // sem GPS aparecia 100%; a taxa do KPI tem conta própria na planilha).
+    const feitas = nfsAoVivo.filter(n => n.situacao === 'entregue').length
     const kms = cs.map(c => c.km).filter((k): k is number => k != null)
     placas.push({
       placa,
