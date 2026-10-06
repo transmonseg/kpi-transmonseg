@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { MagnifyingGlass, DownloadSimple, UploadSimple, MapPin, WarningCircle, CaretDown, CaretLeft, MapTrifold } from '@phosphor-icons/react/dist/ssr'
 import type { EstadoAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
 import type { PlacaAoVivo, NfAoVivo, SituacaoNf } from '@/lib/kpi-romaneio/ao-vivo'
-import { SubirRomaneio } from './subir-romaneio'
+import { SubirRomaneio, type EnvioRomaneio } from './subir-romaneio'
 
 // Tela "Ao vivo" (spec 2026-10-06-kpi-ao-vivo-design.md). Cor/status de cada
 // NF vem do último cálculo do KPI (a mesma regra da planilha); o cronômetro e
@@ -65,6 +65,8 @@ export default function AoVivoPage() {
   const [busca, setBusca] = useState('')
   const [gerando, setGerando] = useState(false)
   const [subindo, setSubindo] = useState(false)
+  // Resultado do último envio: romaneio/pão também foram pro Monitoramento?
+  const [ultimoEnvio, setUltimoEnvio] = useState<EnvioRomaneio | null>(null)
   // Celular: lista de placas OU detalhe (no computador, os dois lado a lado).
   const [vendoDetalhe, setVendoDetalhe] = useState(() => !!daUrl().get('placa'))
   // Dia escolhido (null = hoje, ao vivo). Dia passado = histórico guardado.
@@ -226,12 +228,43 @@ export default function AoVivoPage() {
         </p>
       )}
       {erroCarga && <p className="text-[13px] text-[var(--color-danger)]">{erroCarga}</p>}
+      {!historico && (() => {
+        const longas = placas
+          .map(p => ({ p, inicio: agora[p.placa]?.parada?.inicio ?? p.paradaAtual?.inicio ?? null, cliente: agora[p.placa]?.nf?.cliente ?? p.paradaAtual?.cliente ?? null }))
+          .filter((x): x is { p: PlacaAoVivo; inicio: string; cliente: string | null } => !!x.inicio && desde(x.inicio, agoraMs) >= UMA_HORA)
+          .sort((a, b) => Date.parse(a.inicio) - Date.parse(b.inicio))
+        if (!longas.length) return null
+        return (
+          <section role="alert" className="flex flex-col gap-2 rounded-2xl border border-[#f3d9b1] bg-[#fff7ec] px-4 py-3">
+            <p className="inline-flex items-center gap-2 text-[13px] font-semibold text-[#8a4b08]">
+              <WarningCircle size={16} weight="fill" />{longas.length === 1 ? '1 placa parada há mais de 1 hora no cliente' : `${longas.length} placas paradas há mais de 1 hora no cliente`}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {longas.map(({ p, inicio, cliente }) => (
+                <button key={p.placa} type="button" onClick={() => { setPlacaSel(p.placa); setNfAberta(null); setVendoDetalhe(true) }}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#f3d9b1] bg-white px-3 py-1.5 text-[12.5px] text-[#8a4b08] transition hover:border-[#e8b874]">
+                  <span className="font-semibold">{p.placa}</span>
+                  {cliente && <span className="max-w-[220px] truncate">{cliente}</span>}
+                  <span className="font-semibold tabular-nums">{relogio(desde(inicio, agoraMs))}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )
+      })()}
+      {ultimoEnvio?.monitoramento && ultimoEnvio.monitoramento.length > 0 && (
+        <p className={`inline-flex flex-wrap items-center gap-2 rounded-2xl px-4 py-2.5 text-[13px] ${ultimoEnvio.monitoramento.every(m => m.ok) ? 'bg-[var(--color-bg-subtle)] text-[var(--color-fg-muted)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-soft-fg)]'}`}>
+          {ultimoEnvio.monitoramento.map(m => (m.ok
+            ? `${m.origem === 'romaneio' ? 'Romaneio' : 'Pão'} enviado também ao Monitoramento${m.linhas != null ? ` (${m.linhas} linhas)` : ''}.`
+            : `${m.origem === 'romaneio' ? 'Romaneio' : 'Pão'} não foi pro Monitoramento: ${m.erro}. Suba lá em Configurar Romaneio.`)).join(' ')}
+        </p>
+      )}
 
       {!historico && (!estado.dia || subindo) && (
         <section className="dash-card p-6">
           <h2 className="mb-1 text-[16px] font-semibold text-[var(--color-fg)]">{cliente === 'rioquality' ? (estado.dia ? 'Trocar o relatório de entregas de hoje' : 'Relatório de entregas de hoje') : (estado.dia ? 'Trocar o romaneio de hoje' : 'Romaneio de hoje')}</h2>
           <p className="mb-5 text-[13px] text-[var(--color-fg-muted)]">{cliente === 'rioquality' ? 'A mesma planilha da tela Gerar KPI da Rio Quality.' : 'Os mesmos PDFs da tela Gerar KPI.'} O sistema guarda só o que leu e recalcula o KPI a cada 10 minutos.</p>
-          <SubirRomaneio cliente={CLIENTE} compacto={!!estado.dia} onEnviado={() => { setSubindo(false); carregar() }} />
+          <SubirRomaneio cliente={CLIENTE} compacto={!!estado.dia} onEnviado={r => { setSubindo(false); setUltimoEnvio(r); carregar() }} />
         </section>
       )}
 
@@ -290,8 +323,11 @@ function voltouABase(p: PlacaAoVivo): boolean {
 }
 
 function situacaoAgora(p: PlacaAoVivo, a: Agora | undefined, agoraMs: number, historico = false): { texto: string; tempo: string | null; tom: 'cliente' | 'longe' | 'rota' | 'fim' } {
-  if (a?.parada) {
-    const s = desde(a.parada.inicio, agoraMs)
+  // Parada em andamento: a da consulta "agora" da placa aberta (30 s) ou, pras
+  // outras, a do último cálculo (10 min).
+  const inicioParada = a?.parada?.inicio ?? (!historico ? p.paradaAtual?.inicio : null)
+  if (inicioParada) {
+    const s = desde(inicioParada, agoraMs)
     return { texto: 'No cliente', tempo: relogio(s), tom: s >= UMA_HORA ? 'longe' : 'cliente' }
   }
   if (voltouABase(p)) return { texto: `Voltou à base às ${hhmm(p.chegadaBase)}`, tempo: null, tom: 'fim' }
@@ -340,7 +376,9 @@ function LinhaPlaca({ p, ativa, agora, agoraMs, historico, onClick }: { p: Placa
 
 function DetalhePlaca({ p, data, cliente, agora, agoraMs, historico, nfAberta, onNf }: { p: PlacaAoVivo; data: string; cliente: Cliente; agora: Agora | undefined; agoraMs: number; historico: boolean; nfAberta: string | null; onNf: (nf: string) => void }) {
   const s = situacaoAgora(p, agora, agoraMs, historico)
-  const nfAgora = agora?.nf?.nf ?? null
+  const nfAgora = agora?.nf?.nf ?? (!historico ? p.paradaAtual?.nf ?? null : null)
+  const clienteAgora = agora?.nf?.cliente ?? (!historico ? p.paradaAtual?.cliente ?? null : null)
+  const inicioAgora = agora?.parada?.inicio ?? (!historico ? p.paradaAtual?.inicio ?? null : null)
   const contagem = (sit: SituacaoNf) => p.nfs.filter(n => n.situacao === sit).length
   return (
     <section className="flex min-w-0 flex-col gap-4">
@@ -356,7 +394,7 @@ function DetalhePlaca({ p, data, cliente, agora, agoraMs, historico, nfAberta, o
         <Dado rotulo={p.saidaBase ? `Saiu da base às ${hhmm(p.saidaBase)}` : 'Saída da base'} valor={tempoDesdeSaida(p, agoraMs, historico)} />
         {s.tom === 'cliente' || s.tom === 'longe' ? (
           <div className={`rounded-2xl px-4 py-3 ${s.tom === 'longe' ? 'bg-[#fff4e5]' : 'bg-[#eef4fe]'}`}>
-            <p className={`truncate text-[12px] font-medium ${COR_TOM[s.tom]}`}>{s.tom === 'longe' ? 'No cliente há mais de 1 hora' : 'No cliente agora'}{agora?.nf ? ` · ${agora.nf.cliente}` : ''}</p>
+            <p className={`truncate text-[12px] font-medium ${COR_TOM[s.tom]}`}>{s.tom === 'longe' ? 'No cliente há mais de 1 hora' : 'No cliente agora'}{clienteAgora ? ` · ${clienteAgora}` : ''}</p>
             <p className={`text-[22px] font-semibold tabular-nums ${COR_TOM[s.tom]}`}>{s.tempo}</p>
           </div>
         ) : (
@@ -375,7 +413,7 @@ function DetalhePlaca({ p, data, cliente, agora, agoraMs, historico, nfAberta, o
         </div>
         <ul>
           {p.nfs.map((n, i) => (
-            <LinhaNf key={`${n.carga}-${n.nf}`} n={n} todas={p.nfs} placa={p.placa} data={data} historico={historico} cliente={cliente} ordem={i + 1} aberta={nfAberta === n.nf} noClienteAgora={nfAgora === n.nf ? agora?.parada?.inicio ?? null : null} agoraMs={agoraMs} onClick={() => onNf(n.nf)} posicao={agora?.posicao ?? null} />
+            <LinhaNf key={`${n.carga}-${n.nf}`} n={n} todas={p.nfs} placa={p.placa} data={data} historico={historico} cliente={cliente} ordem={i + 1} aberta={nfAberta === n.nf} noClienteAgora={nfAgora === n.nf ? inicioAgora : null} agoraMs={agoraMs} onClick={() => onNf(n.nf)} posicao={agora?.posicao ?? null} />
           ))}
         </ul>
       </div>

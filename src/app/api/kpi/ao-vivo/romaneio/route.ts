@@ -5,6 +5,7 @@ import { parseRomaneio } from '@/lib/kpi-romaneio/parse-romaneio'
 import { parsePao } from '@/lib/kpi-romaneio/parse-pao'
 import { guardarDiaAoVivo, calcularAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
 import { parseEntregasCompletas } from '@/lib/kpi-rioquality/parse-planilhas'
+import { enviarAoMonitoramento } from '@/lib/kpi-romaneio/enviar-monitoramento'
 import { acessoAoVivo } from '../acesso'
 
 export const runtime = 'nodejs'
@@ -34,14 +35,16 @@ export async function POST(req: NextRequest) {
   const escalaFile = form.get('escala')
   const paoFile = form.get('romaneioPao')
   if (!(romaneioFile instanceof File)) return new NextResponse('Envie o Romaneio de Entrega (PDF).', { status: 400 })
+  const romaneioBuf = Buffer.from(await romaneioFile.arrayBuffer())
+  const paoBuf = paoFile instanceof File ? Buffer.from(await paoFile.arrayBuffer()) : null
   let escala: Awaited<ReturnType<typeof parseEscala>>
   let romaneio: Awaited<ReturnType<typeof parseRomaneio>>
   let pao: Awaited<ReturnType<typeof parsePao>>
   try {
     ;[escala, romaneio, pao] = await Promise.all([
       escalaFile instanceof File ? parseEscala(Buffer.from(await escalaFile.arrayBuffer())) : Promise.resolve([]),
-      parseRomaneio(Buffer.from(await romaneioFile.arrayBuffer())),
-      paoFile instanceof File ? parsePao(Buffer.from(await paoFile.arrayBuffer()), data) : Promise.resolve({ linhas: [], escala: [] }),
+      parseRomaneio(romaneioBuf),
+      paoBuf ? parsePao(paoBuf, data) : Promise.resolve({ linhas: [], escala: [] }),
     ])
   } catch (err) {
     return new NextResponse(err instanceof Error ? err.message : 'Não consegui ler os PDFs.', { status: 422 })
@@ -51,7 +54,14 @@ export async function POST(req: NextRequest) {
   }
   await guardarDiaAoVivo({ cliente: a.cliente, data, escala, romaneio, pao, escalaEnviada: escalaFile instanceof File, paoEnviado: paoFile instanceof File, enviadoPor: a.email })
   void calcularAoVivo(a.cliente, data, m => console.log(`[kpi/ao-vivo] ${m}`)).catch(err => console.error('[kpi/ao-vivo] calculo falhou:', err))
+  // Mesmo romaneio (e o pão, se veio) vai pro Monitoramento -- a operação não
+  // sobe duas vezes.
+  const monitoramento = await enviarAoMonitoramento([
+    { buf: romaneioBuf, nome: romaneioFile.name || 'romaneio.pdf', origem: 'romaneio' },
+    ...(paoBuf && paoFile instanceof File ? [{ buf: paoBuf, nome: paoFile.name || 'pao.pdf', origem: 'escala_pao' as const }] : []),
+  ], a.email)
+  for (const m of monitoramento) if (!m.ok) console.error(`[kpi/ao-vivo] envio ao monitoramento (${m.origem}) falhou: ${m.erro}`)
   const nfs = romaneio.length + pao.linhas.length
   const placas = new Set([...romaneio, ...pao.linhas].map(l => l.placa)).size
-  return NextResponse.json({ ok: true, nfs, placas })
+  return NextResponse.json({ ok: true, nfs, placas, monitoramento })
 }

@@ -4,7 +4,7 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { gerarKpiNutrimax, type EntradaKpiNutrimax } from './gerar-nutrimax'
 import { extrairKpiCompleto } from './resumo-dashboard'
-import { resumirPlacas, paradaDaChegada, type PlacaAoVivo } from './ao-vivo'
+import { resumirPlacas, paradaDaChegada, paradaEmAndamento, nfProxima, type PlacaAoVivo } from './ao-vivo'
 import { normPlaca } from '@/lib/unitrac-api'
 import type { LinhaEscala, LinhaRomaneio } from './types'
 import { gerarKpiRioQuality } from '@/lib/kpi-rioquality/pipeline'
@@ -208,6 +208,9 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
   try {
     const coords = new Map<string, { lat: number; lng: number }>()
     const paradasNf = new Map<string, { lat: number; lng: number }>()
+    // Parada em andamento por placa (aviso de +1 h no cliente, 06/10).
+    const paradaAtualPorPlaca = new Map<string, { inicio: string; lat: number | null; lng: number | null }>()
+    const ehHoje = data === hojeBR()
     const r = await gerarKpiDoDia(cliente, data, log, {
       aoMontarDetalhe: ({ romaneioGeo, detalhe, paradasPorPlaca }) => {
         for (const l of romaneioGeo) if (l.lat != null && l.lng != null) coords.set(l.nf, { lat: l.lat, lng: l.lng })
@@ -215,6 +218,10 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
         for (const d of detalhe) {
           const p = paradaDaChegada(paradasPorPlaca.get(normPlaca(d.placa)) ?? [], d.chegada)
           if (p) paradasNf.set(d.nf, p)
+        }
+        if (ehHoje) for (const [placaNorm, ps] of paradasPorPlaca) {
+          const pa = paradaEmAndamento(ps, Date.now())
+          if (pa) paradaAtualPorPlaca.set(placaNorm, pa)
         }
       },
     })
@@ -225,6 +232,12 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     })
     if (up.error) log(`ao vivo ${cliente} ${data}: planilha não guardada (${up.error.message})`)
     const resultado = montarResultadoAoVivo(data, await extrairKpiCompleto(r.xlsx), coords, new Date().toISOString(), paradasNf)
+    for (const p of resultado.placas) {
+      const pa = paradaAtualPorPlaca.get(normPlaca(p.placa))
+      if (!pa) continue
+      const n = pa.lat != null && pa.lng != null ? nfProxima(p.nfs, { lat: pa.lat, lng: pa.lng }) : null
+      p.paradaAtual = { inicio: pa.inicio, nf: n?.nf ?? null, cliente: n?.cliente ?? null }
+    }
     const { error } = await svc.from('kpi_ao_vivo_calculo').update({
       resultado, calculado_em: resultado.calculadoEm, duracao_ms: Date.now() - t0, rodando_desde: null,
     }).eq('cliente', cliente).eq('data', data)

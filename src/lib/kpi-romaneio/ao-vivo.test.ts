@@ -46,10 +46,13 @@ describe('resumirPlacas', () => {
 })
 
 describe('paradaEmAndamento', () => {
-  const agora = Date.parse('2026-10-06T10:30:00Z')
-  it('última parada fora da base que ainda não terminou (fim há < 5 min)', () => {
+  // Horário da Unitrac vem em Brasília MASCARADO como UTC (consolida.ts):
+  // "10:07Z" é 10:07 de Brasília = 13:07Z de verdade. Achado 06/10: a
+  // comparação com o relógio real dava 3 h de diferença e nunca disparava.
+  const agora = Date.parse('2026-10-06T13:30:00Z') // 10:30 em Brasília
+  it('última parada fora da base que ainda não terminou (fim há < 5 min); início devolvido em UTC real', () => {
     const p = paradaEmAndamento([parada({ chegada: '2026-10-06T09:00:00Z', fim_real: '2026-10-06T09:20:00Z' }), parada({ chegada: '2026-10-06T10:07:00Z', fim_real: '2026-10-06T10:28:00Z' })], agora)
-    expect(p).toMatchObject({ inicio: '2026-10-06T10:07:00Z' })
+    expect(p).toMatchObject({ inicio: '2026-10-06T13:07:00.000Z' })
   })
   it('última parada já terminou há mais de 5 min: em trânsito (null)', () => {
     expect(paradaEmAndamento([parada({ chegada: '2026-10-06T09:00:00Z', fim_real: '2026-10-06T10:10:00Z' })], agora)).toBeNull()

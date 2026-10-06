@@ -40,6 +40,9 @@ export type PlacaAoVivo = {
   feitas: number
   pct: number
   nfs: NfAoVivo[]
+  /** Parada fora da base em andamento no último cálculo (só no dia de hoje):
+   *  início em UTC real e a NF mais perto (até 800 m). Aviso de +1 h no cliente. */
+  paradaAtual?: { inicio: string; nf: string | null; cliente: string | null } | null
 }
 
 /** "06:30" do dia AAAA-MM-DD (BRT) -> "2026-10-06T06:30:00-03:00". */
@@ -110,13 +113,20 @@ export function resumirPlacas(data: string, nfs: NfResumo[], cargas: CargaResumo
 
 /** Parada fora da base que ainda está acontecendo: a última do dia, com fim
  *  há menos de 5 min (o feed da Unitrac fecha a parada atual no último evento). */
+// Horário das paradas (Unitrac e ponte) vem em Brasília MASCARADO como UTC
+// (ver consolida.ts / base-horarios.ts): "10:07Z" = 10:07 BRT = 13:07Z real.
+const MASCARA_BRT_MS = 3 * 3600_000
+
+/** Parada em andamento agora. Devolve o início em UTC REAL (pro cronômetro).
+ *  Achado 06/10: comparar o horário mascarado com o relógio real dava 3 h de
+ *  diferença -- "No cliente agora" nunca disparava. */
 export function paradaEmAndamento(paradas: UnitracParadaRow[], agoraMs: number): { inicio: string; lat: number | null; lng: number | null } | null {
   const ultima = [...paradas].sort((a, b) => a.chegada.localeCompare(b.chegada)).pop()
   if (!ultima || ultima.classificacao === 'BASE') return null
-  const fim = Date.parse(ultima.fim_real ?? ultima.saida ?? ultima.chegada)
+  const fim = Date.parse(ultima.fim_real ?? ultima.saida ?? ultima.chegada) + MASCARA_BRT_MS
   if (!Number.isFinite(fim) || agoraMs - fim > 5 * 60_000) return null
   const p = ultima as UnitracParadaRow & { lat?: number | null; lng?: number | null }
-  return { inicio: ultima.chegada, lat: p.lat ?? null, lng: p.lng ?? null }
+  return { inicio: new Date(Date.parse(ultima.chegada) + MASCARA_BRT_MS).toISOString(), lat: p.lat ?? null, lng: p.lng ?? null }
 }
 
 /** Ponto da parada da Unitrac em que a chegada da NF (ISO) cai -- é a parada

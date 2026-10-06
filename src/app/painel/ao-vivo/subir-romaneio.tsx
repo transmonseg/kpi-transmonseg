@@ -6,7 +6,9 @@ import { FileDropzone } from '@/app/painel/file-dropzone'
 
 // Romaneio do dia: os mesmos PDFs da tela Gerar KPI, subidos de manhã.
 // O KPI guarda só o que leu deles (não o arquivo) e começa a calcular.
-export function SubirRomaneio({ cliente, compacto, onEnviado }: { cliente: string; compacto?: boolean; onEnviado: () => void }) {
+export type EnvioRomaneio = { nfs: number; placas: number; monitoramento?: { origem: 'romaneio' | 'escala_pao'; ok: boolean; linhas?: number; erro?: string }[] }
+
+export function SubirRomaneio({ cliente, compacto, onEnviado }: { cliente: string; compacto?: boolean; onEnviado: (r: EnvioRomaneio) => void }) {
   const [romaneio, setRomaneio] = useState<File[]>([])
   const [escala, setEscala] = useState<File[]>([])
   const [pao, setPao] = useState<File[]>([])
@@ -26,8 +28,9 @@ export function SubirRomaneio({ cliente, compacto, onEnviado }: { cliente: strin
     const r = await fetch('/api/kpi/ao-vivo/romaneio', { method: 'POST', body: fd })
     setEnviando(false)
     if (!r.ok) { setErro(await r.text()); return }
+    const resp = (await r.json()) as EnvioRomaneio
     setRomaneio([]); setEscala([]); setPao([])
-    onEnviado()
+    onEnviado(resp)
   }
 
   return (
