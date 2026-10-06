@@ -22,6 +22,7 @@ import { gerarKpiRomaneioXlsx, cargasEscalaDivergenteInteira } from '@/lib/kpi-r
 import { detectarTrocasProvaveis } from '@/lib/kpi-romaneio/troca-placa'
 import { aplicarTrocasDePlaca, buscarTrocasDoDia } from '@/lib/kpi-romaneio/trocas-placa'
 import { aplicarLocaisClientes, buscarLocaisClientes } from '@/lib/kpi-romaneio/locais-clientes'
+import { lerCacheDia, gravarCacheDia } from '@/lib/kpi-romaneio/cache-dia'
 import { COD_USER_NUTRIMAX, EMPRESA_NUTRIMAX, foraDoAlcanceApi, LIMITE_CONCORRENCIA_PLACAS, PAO_PREFIXO } from '@/lib/kpi-romaneio/constants'
 import { mapComLimite } from '@/lib/kpi-romaneio/concorrencia'
 import { buscarResolucoes, aplicarResolucoes } from '@/lib/kpi-romaneio/resolucoes'
@@ -287,10 +288,22 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   // disso traz paradas incompletas (nuncaSaiuDaBase falso-positivo). Busca a
   // API crua por placa e so' DEPOIS passa pelo snapshot (paradasEfetivas),
   // que mescla com o que o cron noturno ja capturou daquele dia.
+  // Cache do dia (06/10): paradas da Unitrac por placa reaproveitadas entre
+  // gerações (4 min hoje, 6 h dia passado) -- era metade do tempo da geração.
+  const cacheParadas = await lerCacheDia<UnitracParadaRow[]>('paradas', data, hojeBR())
+  const paradasNovas = new Map<string, UnitracParadaRow[]>()
+  const paradasDaPlaca = async (cv: string, placaNorm: string): Promise<UnitracParadaRow[]> => {
+    const k = `${cv}|${placaNorm}`
+    const c = cacheParadas.get(k)
+    if (c) return c
+    const p = await buscarParadasDoDia(cv, placaNorm, data, 48)
+    paradasNovas.set(k, p)
+    return p
+  }
   const daUnitracPorPlaca = new Map<string, UnitracParadaRow[]>()
   await mapComLimite(placasNorm, LIMITE_CONCORRENCIA_PLACAS, async placaNorm => {
     const cv = cvPorPlaca.get(placaNorm)
-    daUnitracPorPlaca.set(placaNorm, cv ? await buscarParadasDoDia(cv, placaNorm, data, 48) : [])
+    daUnitracPorPlaca.set(placaNorm, cv ? await paradasDaPlaca(cv, placaNorm) : [])
   })
   // Achado real 25/09 (RQQ5B81/NF 2386225 23/09): fora da janela de 48h, o
   // feed da Unitrac so' cobre o dia inteiro se o snapshot tinha a placa --
@@ -331,8 +344,9 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   const daUnitracExtraPorPlaca = new Map<string, UnitracParadaRow[]>()
   await mapComLimite(placasFrotaExtra, LIMITE_CONCORRENCIA_PLACAS, async placaNorm => {
     const cv = cvPorPlaca.get(placaNorm)
-    daUnitracExtraPorPlaca.set(placaNorm, cv ? await buscarParadasDoDia(cv, placaNorm, data, 48) : [])
+    daUnitracExtraPorPlaca.set(placaNorm, cv ? await paradasDaPlaca(cv, placaNorm) : [])
   })
+  await gravarCacheDia('paradas', data, paradasNovas)
   marcar('paradas unitrac (frota extra)')
   const paradasEfetivasExtraPorPlaca = await paradasEfetivas('nutrimax', data, hojeBR(), daUnitracExtraPorPlaca, placasNoSnapshot)
   for (const placaNorm of placasFrotaExtra) {

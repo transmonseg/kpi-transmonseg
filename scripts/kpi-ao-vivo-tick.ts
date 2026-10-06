@@ -10,6 +10,8 @@ import { hojeBR } from '../src/lib/data-br'
 import { createServiceClient } from '../src/lib/supabase/service'
 import { CLIENTES_AO_VIVO, calcularAoVivo } from '../src/lib/kpi-romaneio/ao-vivo-servico'
 import { diaAnterior, precisaFecharDia } from '../src/lib/kpi-romaneio/ao-vivo'
+import { limparCacheDia } from '../src/lib/kpi-romaneio/cache-dia'
+import { limparXlsxAoVivo } from '../src/lib/kpi-romaneio/ao-vivo-servico'
 
 const log = (m: string) => console.log(`${new Date().toISOString()} ${m}`)
 
@@ -27,6 +29,13 @@ async function fecharDiaAnterior() {
 async function main() {
   await fecharDiaAnterior()
   const horaBR = Number(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }))
+  // Limpeza 1x por dia (04h BRT, 1o tick da hora): cache do dia e planilhas
+  // do ao vivo com mais de 7 dias -- nada acumula no servidor.
+  if (horaBR === 4 && new Date().getMinutes() < 10) {
+    await limparCacheDia(hojeBR()).catch(err => log(`limpeza cache: ${err}`))
+    await limparXlsxAoVivo(hojeBR()).catch(err => log(`limpeza planilhas ao vivo: ${err}`))
+    log('limpeza diaria feita')
+  }
   if (horaBR < 5 || horaBR >= 21) return
   const data = hojeBR()
   for (const cliente of CLIENTES_AO_VIVO) {

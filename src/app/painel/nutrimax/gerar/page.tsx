@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowRight, CalendarBlank, WarningCircle, FileArrowDown, CheckCircle } from '@phosphor-icons/react/dist/ssr'
 import { cn } from '@/components/ui'
 import { FileDropzone } from '@/app/painel/file-dropzone'
@@ -19,6 +19,34 @@ export default function NutrimaxGerarPage() {
   const [erro, setErro] = useState<string | null>(null)
   const [arquivoPronto, setArquivoPronto] = useState<{ blob: Blob; filename: string } | null>(null)
   const [baixado, setBaixado] = useState(false)
+
+  // Romaneio desse dia já guardado (Ao vivo ou geração anterior, 06/10): gera
+  // sem subir os PDFs de novo.
+  type Guardado = { enviadoEm: string; origem: 'ao_vivo' | 'geracao'; nfs: number; placas: number; escala: boolean; pao: boolean }
+  const [guardado, setGuardado] = useState<Guardado | null>(null)
+  useEffect(() => {
+    let vivo = true
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return
+    fetch(`/api/kpi/nutrimax/entrada-guardada?data=${data}`, { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null)).then((g: Guardado | null) => { if (vivo) setGuardado(g) }).catch(() => {})
+    return () => { vivo = false }
+  }, [data])
+
+  async function gerarComGuardado() {
+    setPending(true); setErro(null); setArquivoPronto(null); setBaixado(false)
+    try {
+      const fd = new FormData()
+      fd.set('usarGuardado', '1')
+      fd.set('data', data)
+      const res = await fetch('/api/kpi/nutrimax/gerar', { method: 'POST', body: fd })
+      if (!res.ok) throw new Error(await res.text())
+      setArquivoPronto({ blob: await res.blob(), filename: `KPI-Nutry-Max-${data}.xlsx` })
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Erro inesperado.')
+    } finally {
+      setPending(false)
+    }
+  }
 
   const dataForaDoAlcance = !!data && foraDoAlcanceApi(data, hoje())
   // Achado 10/09 (pedido do usuario "so com romaneio da pra fazer o kpi?"):
@@ -81,6 +109,22 @@ export default function NutrimaxGerarPage() {
           de operação.
         </p>
       </header>
+
+      {guardado && romaneio.length === 0 && (
+        <div className="dash-card mb-4 flex flex-wrap items-center justify-between gap-4 p-5">
+          <div className="min-w-0">
+            <p className="text-[14px] font-semibold text-[var(--color-fg)]">O romaneio de {data.split('-').reverse().slice(0, 2).join('/')} já está guardado</p>
+            <p className="mt-0.5 text-[13px] text-[var(--color-fg-muted)]">
+              {guardado.origem === 'ao_vivo' ? 'Enviado no Ao vivo' : 'Enviado numa geração anterior'}
+              {guardado.enviadoEm ? ` às ${new Date(guardado.enviadoEm).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })}` : ''}: {guardado.nfs} notas em {guardado.placas} placas{guardado.pao ? ', com o pão' : ''}{guardado.escala ? ', com a escala' : ''}. Não precisa subir os PDFs de novo.
+            </p>
+          </div>
+          <button type="button" onClick={gerarComGuardado} disabled={pending}
+            className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-[var(--color-navy-700)] px-5 text-[13px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] active:scale-[0.98] disabled:opacity-50">
+            {pending ? 'Gerando…' : 'Gerar com o romaneio guardado'}
+          </button>
+        </div>
+      )}
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="col-span-1 lg:col-span-3">

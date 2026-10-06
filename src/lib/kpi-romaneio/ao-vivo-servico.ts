@@ -20,6 +20,35 @@ export const NOME_CLIENTE_AO_VIVO: Record<ClienteAoVivo, string> = { nutrimax: '
 export type ClienteAoVivo = (typeof CLIENTES_AO_VIVO)[number]
 export const clienteAoVivoValido = (c: string | null): c is ClienteAoVivo => (CLIENTES_AO_VIVO as readonly string[]).includes(c ?? '')
 
+/** Planilha do último cálculo (uma por cliente/dia, sobrescrita a cada 10
+ *  min): "Gerar KPI agora" devolve ela na hora. Apagada depois de 7 dias. */
+const BUCKET_AO_VIVO = 'kpi-romaneio-inputs'
+export const caminhoXlsxAoVivo = (cliente: ClienteAoVivo, data: string) => `ao-vivo/${cliente}/${data}.xlsx`
+const XLSX_AO_VIVO_VALIDO_MS = 10 * 60_000
+
+/** Planilha do último cálculo se ele tem menos de 10 min; senão null. */
+export async function xlsxRecenteAoVivo(cliente: ClienteAoVivo, data: string): Promise<{ xlsx: Buffer; calculadoEm: string } | null> {
+  const svc = createServiceClient()
+  const { data: c } = await svc.from('kpi_ao_vivo_calculo').select('calculado_em').eq('cliente', cliente).eq('data', data).maybeSingle()
+  const em = c?.calculado_em as string | undefined
+  if (!em || Date.now() - Date.parse(em) > XLSX_AO_VIVO_VALIDO_MS) return null
+  const { data: arq, error } = await svc.storage.from(BUCKET_AO_VIVO).download(caminhoXlsxAoVivo(cliente, data))
+  if (error || !arq) return null
+  return { xlsx: Buffer.from(await arq.arrayBuffer()), calculadoEm: em }
+}
+
+/** Apaga planilhas do ao vivo com mais de 7 dias. */
+export async function limparXlsxAoVivo(hoje: string): Promise<void> {
+  const svc = createServiceClient()
+  const d = new Date(`${hoje}T12:00:00Z`); d.setUTCDate(d.getUTCDate() - 7)
+  const limite = d.toISOString().slice(0, 10)
+  for (const cliente of CLIENTES_AO_VIVO) {
+    const { data: arqs } = await svc.storage.from(BUCKET_AO_VIVO).list(`ao-vivo/${cliente}`, { limit: 1000 })
+    const velhos = (arqs ?? []).filter(a => a.name.slice(0, 10) < limite).map(a => `ao-vivo/${cliente}/${a.name}`)
+    if (velhos.length) await svc.storage.from(BUCKET_AO_VIVO).remove(velhos)
+  }
+}
+
 /** Cálculo travado há mais que isso é considerado morto (processo caiu). */
 const TRAVA_EXPIRA_MIN = 15
 
@@ -190,6 +219,11 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
       },
     })
     if (!r) throw new Error('romaneio do dia sumiu durante o cálculo')
+    // Planilha do cálculo guardada (sobrescreve a anterior do dia).
+    const up = await svc.storage.from(BUCKET_AO_VIVO).upload(caminhoXlsxAoVivo(cliente, data), r.xlsx, {
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', upsert: true,
+    })
+    if (up.error) log(`ao vivo ${cliente} ${data}: planilha não guardada (${up.error.message})`)
     const resultado = montarResultadoAoVivo(data, await extrairKpiCompleto(r.xlsx), coords, new Date().toISOString(), paradasNf)
     const { error } = await svc.from('kpi_ao_vivo_calculo').update({
       resultado, calculado_em: resultado.calculadoEm, duracao_ms: Date.now() - t0, rodando_desde: null,

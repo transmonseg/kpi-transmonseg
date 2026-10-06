@@ -9,6 +9,31 @@ import { salvarGeracao, buscarGeracaoParaRegenerar } from '@/lib/kpi-romaneio/hi
 import { guardarXlsxGerado, novoPrefixoGeracao } from '@/lib/kpi-romaneio/xlsx-gerado'
 import { createServiceClient } from '@/lib/supabase/service'
 import { gerarKpiNutrimax, ErroEntradaKpi } from '@/lib/kpi-romaneio/gerar-nutrimax'
+import { createHash } from 'node:crypto'
+import { lerCacheDia, gravarCacheDia } from '@/lib/kpi-romaneio/cache-dia'
+import { guardarEntradaNutrimax, lerEntradaGuardadaNutrimax } from '@/lib/kpi-romaneio/entrada-guardada'
+import { hojeBR } from '@/lib/data-br'
+
+// Leitura de PDF guardada pelo conteúdo (06/10): mesmo arquivo de novo não é
+// lido de novo. Trocar VERSAO_LEITURA quando um parser mudar.
+const VERSAO_LEITURA = '2026-10-06'
+const sha = (b: Buffer) => createHash('sha256').update(b).digest('hex').slice(0, 24)
+async function lerComCache<T>(data: string, tipo: string, buf: Buffer, ler: () => Promise<T>): Promise<T> {
+  const chave = `${tipo}:${sha(buf)}:${VERSAO_LEITURA}`
+  const c = (await lerCacheDia<T>('pdf', data, hojeBR(), 24 * 3600_000)).get(chave)
+  if (c) return c
+  const v = await ler()
+  await gravarCacheDia('pdf', data, new Map([[chave, v]]))
+  return v
+}
+/** PDF guardado uma vez só por conteúdo (06/10): gerar de novo com o mesmo
+ *  arquivo não ocupa mais espaço. */
+async function guardarPdf(svc: ReturnType<typeof createServiceClient>, data: string, tipo: string, buf: Buffer): Promise<string | null> {
+  const caminho = `nutrimax/${data}/entrada-${sha(buf)}-${tipo}.pdf`
+  const r = await svc.storage.from('kpi-romaneio-inputs').upload(caminho, buf, { contentType: 'application/pdf', upsert: true })
+  if (r.error) { console.error(`Erro ao guardar PDF ${tipo}:`, r.error.message); return null }
+  return caminho
+}
 
 
 export const runtime = 'nodejs'
@@ -32,6 +57,31 @@ export async function POST(req: NextRequest) {
   }
 
   const form = await req.formData()
+
+  // Romaneio do dia já guardado (Ao vivo ou geração anterior): sem subir nem
+  // ler os PDFs de novo (06/10).
+  if (form.get('usarGuardado') === '1') {
+    const dataG = String(form.get('data') ?? '')
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dataG)) return new NextResponse('Data inválida (YYYY-MM-DD)', { status: 400 })
+    const g = await lerEntradaGuardadaNutrimax(dataG)
+    if (!g) return new NextResponse('Não há romaneio guardado desse dia — suba os PDFs.', { status: 404 })
+    let r: Awaited<ReturnType<typeof gerarKpiNutrimax>>
+    try { r = await gerarKpiNutrimax(g.entrada) } catch (err) {
+      if (err instanceof ErroEntradaKpi) return new NextResponse(err.message, { status: 422 })
+      throw err
+    }
+    try {
+      const svc = createServiceClient()
+      const arquivoStoragePath = await guardarXlsxGerado(svc, novoPrefixoGeracao('nutrimax', dataG), r.xlsx)
+      let resumo = null
+      try { resumo = await extrairResumoKpiXlsx(r.xlsx) } catch (err) { console.error('resumo do dashboard falhou:', err) }
+      await salvarGeracao({ cliente: 'nutrimax', dataReferencia: dataG, geradoPor: user?.email ?? null, qtdCargas: r.qtdCargasNutry, arquivoStoragePath, escalaStoragePath: null, romaneioStoragePath: null, paoStoragePath: null, resumo })
+    } catch (err) { console.error('Erro ao salvar histórico de geração:', err) }
+    return new NextResponse(r.xlsx as unknown as BodyInit, { headers: {
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="KPI-Nutry-Max-${dataG}.xlsx"`,
+    } })
+  }
   // Pedido do usuario 01/09 ("quero um historico das geracoes... pra
   // gente poder sempre regerar"): regenerarDeId pula o upload de arquivo
   // -- baixa os PDFs originais (Escala + Romaneio) ja guardados no
@@ -129,13 +179,18 @@ export async function POST(req: NextRequest) {
   let resultadoPao: Awaited<ReturnType<typeof parsePao>>
   try {
     ;[escala, romaneio, resultadoPao] = await Promise.all([
-      escalaBuf ? parseEscala(escalaBuf) : Promise.resolve([]),
-      parseRomaneio(romaneioBuf),
-      romaneioPaoBuf ? parsePao(romaneioPaoBuf, data) : Promise.resolve({ linhas: [], escala: [] }),
+      escalaBuf ? lerComCache(data, 'escala', escalaBuf, () => parseEscala(escalaBuf!)) : Promise.resolve([]),
+      lerComCache(data, 'romaneio', romaneioBuf, () => parseRomaneio(romaneioBuf)),
+      romaneioPaoBuf ? lerComCache(data, `pao-${data}`, romaneioPaoBuf, () => parsePao(romaneioPaoBuf!, data)) : Promise.resolve({ linhas: [], escala: [] }),
     ])
   } catch (err) {
     return new NextResponse(err instanceof Error ? err.message : 'Erro ao ler os PDFs enviados.', { status: 422 })
   }
+
+  // O que foi lido fica guardado 7 dias: a próxima geração do dia não precisa
+  // subir os PDFs (tela Gerar KPI mostra "já guardado").
+  await guardarEntradaNutrimax({ data, escala, romaneio, pao: resultadoPao, escalaEnviada: escalaBuf != null, paoEnviado: romaneioPaoBuf != null })
+    .catch(err => console.error('guardar entrada do dia falhou:', err))
 
   let resultado: Awaited<ReturnType<typeof gerarKpiNutrimax>>
   try {
@@ -170,33 +225,11 @@ export async function POST(req: NextRequest) {
     // reaproveitados) um prefixo novo, pra nao sobrescrever o xlsx antigo.
     const prefixo = novoPrefixoGeracao('nutrimax', data)
     if (!romaneioStoragePath) {
-      romaneioStoragePath = `${prefixo}-romaneio.pdf`
-      const uploads = [svc.storage.from('kpi-romaneio-inputs').upload(romaneioStoragePath, romaneioBuf, { contentType: 'application/pdf' })]
-      // Escala e' opcional -- so' faz upload dela se de fato veio.
-      if (escalaBuf && !escalaStoragePath) {
-        escalaStoragePath = `${prefixo}-escala.pdf`
-        uploads.push(svc.storage.from('kpi-romaneio-inputs').upload(escalaStoragePath, escalaBuf, { contentType: 'application/pdf' }))
-      }
-      const resultados = await Promise.all(uploads)
-      if (resultados.some(r => r.error)) {
-        console.error('Erro ao guardar PDFs originais no Storage:', resultados.map(r => r.error?.message).filter(Boolean).join('; '))
-        escalaStoragePath = null
-        romaneioStoragePath = null
-      }
-      // Pão: falha só loga e segue (não invalida escala/romaneio guardados).
-      if (romaneioPaoBuf) {
-        try {
-          const caminhoPao = `${prefixo}-pao.pdf`
-          const r = await svc.storage.from('kpi-romaneio-inputs').upload(caminhoPao, romaneioPaoBuf, { contentType: 'application/pdf' })
-          if (r.error) console.error('Erro ao guardar PDF do Pão no Storage:', r.error.message)
-          else paoStoragePath = caminhoPao
-        } catch (err) {
-          console.error('Erro ao guardar PDF do Pão no Storage:', err)
-        }
-      }
+      romaneioStoragePath = await guardarPdf(svc, data, 'romaneio', romaneioBuf)
+      if (escalaBuf && !escalaStoragePath) escalaStoragePath = await guardarPdf(svc, data, 'escala', escalaBuf)
+      if (romaneioPaoBuf && !paoStoragePath) paoStoragePath = await guardarPdf(svc, data, 'pao', romaneioPaoBuf)
     }
 
-    // Item 1 (auditoria 01/10): guarda o xlsx gerado (falha so' loga).
     const arquivoStoragePath = await guardarXlsxGerado(svc, prefixo, xlsxBuf)
 
     // Dashboard: resumo lido da propria planilha (falha so' loga).

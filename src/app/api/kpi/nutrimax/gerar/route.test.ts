@@ -930,10 +930,11 @@ describe('POST /api/kpi/nutrimax/gerar -- guarda o xlsx gerado (item 1, 01/10)',
     expect(res.status).toBe(200)
     const devolvido = Buffer.from(await res.arrayBuffer())
     const arg = vi.mocked(salvarGeracaoMock).mock.calls[0][0]
-    const prefixo = String(arg.romaneioStoragePath).replace(/-romaneio\.pdf$/, '')
-    expect(arg.arquivoStoragePath).toBe(`${prefixo}-kpi.xlsx`)
-    expect(cenario.uploads).toContain(`${prefixo}-kpi.xlsx`)
-    expect(Buffer.from(cenario.uploadBodies.get(`${prefixo}-kpi.xlsx`) as Buffer).equals(devolvido)).toBe(true)
+    // 06/10: PDF guardado pelo conteúdo (entrada-<hash>-romaneio.pdf); a planilha tem prefixo próprio.
+    const kpi = String(arg.arquivoStoragePath)
+    expect(kpi).toMatch(/^nutrimax\/2026-09-15\/.+-kpi\.xlsx$/)
+    expect(cenario.uploads).toContain(kpi)
+    expect(Buffer.from(cenario.uploadBodies.get(kpi) as Buffer).equals(devolvido)).toBe(true)
   })
 
   it('falha no upload do xlsx: geracao segue (200), arquivoStoragePath null, inputs guardados', async () => {
