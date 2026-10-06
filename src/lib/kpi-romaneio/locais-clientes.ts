@@ -73,7 +73,11 @@ export function aplicarLocaisClientes(linhas: LinhaGeocodificada[], locais: Map<
     // "Verificada" (regra de parada compartilhada com vizinho) só pra correção
     // manual: com o aprendido, em centro de cidade com clientes a <300 m, a NF
     // passava a "explicar" a parada das vizinhas (RQV9B26 01/10, 3 NFs).
-    return { ...l, lat: local.lat, lng: local.lng, geoConfiavel: true, geoMotivo: undefined, geoSemFonte: false, geoVerificadoManual: local.fonte === 'manual' }
+    // Confiabilidade: só a correção manual vira confiável. O aprendido mantém a
+    // da coordenada do dia -- marcar confiável deixava a NF tirar conclusão
+    // negativa e "explicar" parada das vizinhas (RQV9B26 01/10, -4 NFs).
+    if (local.fonte !== 'manual') return { ...l, lat: local.lat, lng: local.lng }
+    return { ...l, lat: local.lat, lng: local.lng, geoConfiavel: true, geoMotivo: undefined, geoSemFonte: false, geoVerificadoManual: true }
   })
   return { linhas: novas, aplicados }
 }
