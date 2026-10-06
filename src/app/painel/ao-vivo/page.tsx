@@ -94,7 +94,13 @@ export default function AoVivoPage() {
 
   // Carga sem placa (pão sem carro no PDF) vai pro fim, não pro topo.
   const placas = useMemo(() => [...(estado?.resultado?.placas ?? [])].sort((a, b) => Number(a.placa === 'SEM PLACA' || a.placa === '') - Number(b.placa === 'SEM PLACA' || b.placa === '')), [estado])
-  const placa = placas.find(p => p.placa === placaSel) ?? placas[0] ?? null
+
+  const filtradas = useMemo(() => {
+    const b = busca.trim().toUpperCase()
+    return b ? placas.filter(p => p.placa.includes(b) || p.motorista.toUpperCase().includes(b) || p.destino.toUpperCase().includes(b)) : placas
+  }, [placas, busca])
+
+  const placa = placas.find(p => p.placa === placaSel) ?? filtradas[0] ?? placas[0] ?? null
 
   // Camada "agora" da placa aberta: a cada 30 s.
   useEffect(() => {
@@ -110,10 +116,6 @@ export default function AoVivoPage() {
     return () => { vivo = false; clearInterval(t) }
   }, [placa?.placa, dataSel]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const filtradas = useMemo(() => {
-    const b = busca.trim().toUpperCase()
-    return b ? placas.filter(p => p.placa.includes(b) || p.motorista.toUpperCase().includes(b) || p.destino.toUpperCase().includes(b)) : placas
-  }, [placas, busca])
 
   async function gerarAgora() {
     setGerando(true)
@@ -139,7 +141,7 @@ export default function AoVivoPage() {
 
   const r = estado.resultado
   const historico = estado.historico
-  const trocarDia = (d: string) => { setDataSel(d === estado.hoje ? null : d); setPlacaSel(null); setNfAberta(null); setVendoDetalhe(false); setAgora({}) }
+  const trocarDia = (d: string) => { setDataSel(d === estado.hoje ? null : d); setPlacaSel(null); setNfAberta(null); setVendoDetalhe(false); setAgora({}); setBusca('') }
 
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-5">
@@ -280,9 +282,9 @@ const COR_TOM = { cliente: 'text-[#1d4fa8]', longe: 'text-[#b45309]', rota: 'tex
 /** Carga do pão vem do Romaneio do Pão como "PAO-<n>". */
 const ehCargaPao = (c: string) => /^PAO-/i.test(c)
 function rotuloPao(p: PlacaAoVivo): string | null {
-  const pao = p.cargas.filter(ehCargaPao).length
+  const pao = p.nfs.filter(n => ehCargaPao(n.carga)).length
   if (!pao) return null
-  return pao === p.cargas.length ? 'Carro do pão' : 'Também leva pão'
+  return pao === p.nfs.length ? 'Carro do pão' : 'Também leva pão'
 }
 
 function SeloPao({ texto }: { texto: string }) {
@@ -338,7 +340,7 @@ function DetalhePlaca({ p, agora, agoraMs, historico, nfAberta, onNf }: { p: Pla
         ) : (
           s.tom === 'fim' && p.chegadaBase
             ? <Dado rotulo="Voltou à base às" valor={hhmm(p.chegadaBase)} />
-            : <Dado rotulo="Agora" valor={s.tom === 'rota' ? 'Em trânsito' : s.texto} />
+            : <Dado rotulo={historico ? 'Situação' : 'Agora'} valor={s.tom === 'rota' ? 'Em trânsito' : s.texto} />
         )}
       </div>
 
