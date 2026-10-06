@@ -91,6 +91,10 @@ export type ResultadoKpiNutrimax = {
 
 export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: OpcoesKpiNutrimax): Promise<ResultadoKpiNutrimax> {
   const data = entrada.data
+  // Tempo por etapa (06/10, "a geração demora" é a maior reclamação): vai pro log.
+  const tempos: [string, number][] = []
+  let t0 = Date.now()
+  const marcar = (etapa: string) => { const agora = Date.now(); tempos.push([etapa, agora - t0]); t0 = agora }
   let { escala, romaneio } = entrada
   let resultadoPao = entrada.pao
   // Achado real 12/09: esta trava existia porque a UNICA fonte de parada era
@@ -114,6 +118,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
     const pao = aplicarTrocasDePlaca(resultadoPao.linhas, resultadoPao.escala, trocas)
     resultadoPao = { ...resultadoPao, linhas: pao.romaneio, escala: pao.escala }
   }
+  marcar('trocas')
   const escalaCompleta = [...escala, ...resultadoPao.escala]
   const romaneioCompleto = [...romaneio, ...resultadoPao.linhas]
 
@@ -132,6 +137,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   // monitoramento (ver src/lib/kpi-romaneio/geocode.ts).
   const enderecosUnicos = [...new Set(romaneioCompleto.map(l => l.endereco))]
   const { resultados: resultadosGeo, parciais: geocodeParciais } = await geocodificarEnderecosComInfo(enderecosUnicos, { validarTerritorio: true })
+  marcar('geocode')
   const geoPorEndereco = new Map(enderecosUnicos.map((e, i) => [e, resultadosGeo[i]]))
   opcoes?.sobreporGeo?.(geoPorEndereco)
 
@@ -175,6 +181,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   // de referencia). Fail-open: erro na ponte devolve null pra todo mundo
   // (ja' tratado dentro de reposicionarPorAncoras), o resto do pipeline
   // segue igual a hoje se o resgate nao achar nada melhor.
+  marcar('locais')
   const enderecosColididos = enderecosColididosPorCoordenada(geoPorEndereco)
 
   const indicePorNf = new Map(romaneioGeo.map((l, i) => [l.nf, i]))
@@ -203,6 +210,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
     }
   }
 
+  marcar('resgate')
   const linhasPorPlaca = agrupar(romaneioGeo, l => normPlaca(l.placa))
   // Achado Minor #10 da revisão final do plano do pão (15/09): carga do pão
   // sem CARRO no PDF vira placa '' aqui -- montarDetalheEntregas (linha de
@@ -234,6 +242,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
     buscarFrota(COD_USER_NUTRIMAX),
     buscarAlvosDoDia(placasNorm, { comAlias: true }),
   ])
+  marcar('frota+alvos')
   const alvos = await alvosEfetivos('nutrimax', data, hojeBR(), alvosDaData(alvosBrutos, data), placasNorm)
   // Achado real 14/09: pede paradas SEMPRE agora, nao so' fora da janela
   // -- a ponte virou fonte primaria (ver resolverParadas em unitrac.ts).
@@ -250,6 +259,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   // Task 8 (24/09): declaração manual da operação (TTL5J17: tem cv e a
   // ponte respondeu, mas é caminhão sem rastreador de verdade) vence as
   // duas fontes acima -- ver placas-sem-rastreador.ts.
+  marcar('ponte monitoramento')
   const placasSemRastreador = aplicarAliasEmConjunto(placasSemRastreadorNoDia(await buscarPlacasSemRastreador(EMPRESA_NUTRIMAX), data), aliasPlacas)
   // temRastreadorPorPlaca: montado mais abaixo (depois das paradas/alvos), ver placasSemSinal.
 
@@ -287,6 +297,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   // senao e' retalho e nao pode vencer a ponte (ver resolverParadas).
   const placasNoSnapshot = new Set<string>()
   const unitracCobreODia = (placaNorm: string) => !foraDaJanelaUnitrac || placasNoSnapshot.has(placaNorm)
+  marcar('paradas unitrac (romaneio)')
   const paradasEfetivasPorPlaca = await paradasEfetivas('nutrimax', data, hojeBR(), daUnitracPorPlaca, placasNoSnapshot)
 
   for (const placaNorm of placasNorm) {
@@ -322,6 +333,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
     const cv = cvPorPlaca.get(placaNorm)
     daUnitracExtraPorPlaca.set(placaNorm, cv ? await buscarParadasDoDia(cv, placaNorm, data, 48) : [])
   })
+  marcar('paradas unitrac (frota extra)')
   const paradasEfetivasExtraPorPlaca = await paradasEfetivas('nutrimax', data, hojeBR(), daUnitracExtraPorPlaca, placasNoSnapshot)
   for (const placaNorm of placasFrotaExtra) {
     const daUnitrac = paradasEfetivasExtraPorPlaca.get(placaNorm) ?? []
@@ -565,12 +577,15 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   // Aviso de troca de placa (04/10): so' informa qual placa fez a carga.
   const trocasProvaveis = detectarTrocasProvaveis(cargasPorChave, cargasEscalaDivergenteInteira(detalheComResolucao), paradasPorPlaca)
 
+  marcar('agregacao')
   const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpiConsistentes, data, avisos, detalheComResolucao, undefined, undefined, {
     trocasProvaveis,
     // Linha de resumo (taxa automatica/apos conferencia) so' na Nutry Max --
     // ver `opcoes.resumoConfirmacao` em gerador-xlsx.ts.
     resumoConfirmacao: true,
   })
+  marcar('xlsx')
+  console.log(`[kpi tempo] ${data} total ${Math.round(tempos.reduce((a, [, ms]) => a + ms, 0) / 1000)}s | ` + tempos.map(([e, ms]) => `${e} ${(ms / 1000).toFixed(1)}s`).join(' | '))
 
   return {
     xlsx: xlsxBuf,
