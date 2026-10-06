@@ -959,6 +959,20 @@ const ROTULOS_SEM_EVIDENCIA_DE_POSICAO = [
 // alvo com situacao 98 ("outro" desfecho, nao "feito"): os dois "nao foi"
 // verificados de compartilhada (RQV9D97/2395585 Rede Loirinho 29/09,
 // RBG2D21/2389318 Ilha Grande) tinham 98 e continuam REVISAR.
+/** Endereco cujo ponto no mapa e' aproximado por natureza: estrada/rodovia,
+ *  sem numero (S/N, SN, 0) ou ilha sem acesso rodoviario. Nesses, parada a
+ *  km do nosso ponto nao prova que o caminhao nao foi (casos de 02/10 que a
+ *  Ana validou como entregue: EST ESTREITO S/N, ROD MARIO COVAS SN, ESTRADA
+ *  137, Ilha Grande). Rua urbana com numero nao entra (06/10, TOS0F89: parada
+ *  no Centro "confirmando" Rio Comprido a 3,8 km). */
+export function pontoAproximadoPorEndereco(endereco: string): boolean {
+  if (acessoSomentePorBarco(endereco)) return true
+  const e = endereco.toUpperCase().replace(/^\s*-?\s*/, '')
+  if (/^(ROD|RODOVIA|EST|ESTR|ESTRADA|BR|RJ)\b/.test(e)) return true
+  const numero = e.match(/^[^,]*,\s*([^-]*?)\s*-/)?.[1]?.trim() ?? ''
+  return numero === '' || /^(S\/?N|SN|0+)$/.test(numero)
+}
+
 const REVISAR_POR_ROTULO_FRACO: Record<string, string> = {
   'ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)': 'PARADA COMPARTILHADA - REVISAR',
 }
@@ -2629,12 +2643,14 @@ export function montarDetalheEntregas(
         const revisar = REVISAR_POR_ROTULO_FRACO[observacao]
         // Achado 06/10 (TTH6G37, Centro): horario do vizinho com a parada real
         // a 500 m-2 km desta NF nao confirma -- regra da Ana (plano 03/10):
-        // parada a 500 m-2 km nao vira entrega automatica. Acima de 2 km e' o
-        // nosso ponto que esta' errado (ilha, estrada S/N -- os casos de 02/10
-        // que a Ana validou como entregue), fica como estava. Distancia nao
+        // parada a 500 m-2 km nao vira entrega automatica. Acima de 2 km so'
+        // fica como estava quando o nosso ponto e' aproximado por natureza
+        // (ilha, estrada S/N -- os casos de 02/10 que a Ana validou como
+        // entregue, ver pontoAproximadoPorEndereco). Distancia nao
         // medida (null) nao rebaixa: sem prova contra.
         const paradaLongeDaNf = evidencia === 'vizinhanca' && distParadaM != null
-          && distParadaM > RAIO_ENTREGA_METROS && distParadaM <= RAIO_NAO_FOI_AO_CLIENTE_M
+          && distParadaM > RAIO_ENTREGA_METROS
+          && (distParadaM <= RAIO_NAO_FOI_AO_CLIENTE_M || !pontoAproximadoPorEndereco(linha.endereco))
         if (revisar && (alvo?.situacao === SITUACAO_ALVO_OUTRO_DESFECHO || paradaLongeDaNf)) {
           status = 'pendente'
           observacao = revisar

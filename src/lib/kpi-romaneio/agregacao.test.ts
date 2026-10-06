@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, gerarMotivo, calcularConfianca, contarConfirmadasPorCarga, OBS_COMPARTILHADA_VIZINHO } from './agregacao'
+import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, gerarMotivo, calcularConfianca, contarConfirmadasPorCarga, OBS_COMPARTILHADA_VIZINHO, pontoAproximadoPorEndereco } from './agregacao'
 import { resolverParadas } from './unitrac'
 import type { LinhaEscala, LinhaGeocodificada, Visita, StatusEntrega } from './types'
 import type { AlvoApi } from '@/lib/unitrac-api'
@@ -3944,6 +3944,20 @@ function paradaForaBase(id: string, lat: number, lng: number, chegada: string, s
 // vizinho 2393490 a ~60 m -- por isso a R2 descarta, "explicada por outro
 // cliente"), RQU8D91/2383464 22/09 (alvo feito, 30 m), RBG2D21/2389318 (Ilha
 // Grande, equipe "nao foi" -- continua REVISAR).
+describe('pontoAproximadoPorEndereco', () => {
+  it.each([
+    ['EST ESTREITO, S/N - 3º DISTRITO, CACHOEIRAS DE M - * - 28680', true],
+    ['ROD RODOVIA GOVERNADOR MARIO COVAS BR 10, SN - BASILIO, RIO', true],
+    ['ESTRADA 137, 13102 - CONSERVATORIA, VALENCA - * - 27655000', true],
+    ['AV NACIB MONTEIRO DE QUEIROZ, 20 - ILHA GRANDE, ANGRA DOS REIS - * -', true],
+    ['RUA CAMPOS DA PAZ, 95 - RIO COMPRIDO, RIO DE JANEIRO - * -', false],
+    ['AVENIDA AFRANIO DE MELO FRANCO, 330 - LEBLON, RIO DE JANEIRO', false],
+    ['RUA DA ALFANDEGA, 0 - CENTRO, RIO DE JANEIRO', true],
+  ])('%s -> %s', (end, esperado) => {
+    expect(pontoAproximadoPorEndereco(end)).toBe(esperado)
+  })
+})
+
 describe('Task 1 (plano 28/09) -- parada compartilhada com prova forte vira ENTREGUE', () => {
   const vizinhanca = { chegada: '2026-09-26T10:00:00.000Z', saida: '2026-09-26T10:20:00.000Z' }
   // NF1 (alvo) e NF2 (vizinho, a ~60 m) -- NF1 pegou o horario de NF2.
@@ -4042,9 +4056,18 @@ describe('Task 1 (plano 28/09) -- parada compartilhada com prova forte vira ENTR
     expect(d.chegada).toBeNull()
   })
 
-  it('parada real a mais de 2 km (nosso ponto errado: ilha/estrada S/N, casos validados pela Ana 02/10) continua ENTREGUE com horario aproximado', () => {
-    const ponte = new Map([['TTL7D40', [paradaForaBase('longe', -22.2 + 4500 * M_LAT, -42.4, vizinhanca.chegada, vizinhanca.saida)]]])
-    const [d] = chamarNutryMax([nf1, nf2], { visitasPorNf: visitas(), paradasPorOutraPlaca: ponte })
+  it('rua urbana com numero e parada a 3,8 km (TOS0F89 06/10: Centro confirmando Rio Comprido) -> PARADA COMPARTILHADA - REVISAR', () => {
+    const urbana = { ...nf1, endereco: 'RUA CAMPOS DA PAZ, 95 - RIO COMPRIDO, RIO DE JANEIRO - * - 20250000' }
+    const ponte = new Map([['TTL7D40', [paradaForaBase('longe', -22.2 + 3800 * M_LAT, -42.4, vizinhanca.chegada, vizinhanca.saida)]]])
+    const [d] = chamarNutryMax([urbana, nf2], { visitasPorNf: visitas(), paradasPorOutraPlaca: ponte })
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PARADA COMPARTILHADA - REVISAR')
+  })
+
+  it('parada real a mais de 2 km com ponto aproximado (estrada S/N, casos validados pela Ana 02/10) continua ENTREGUE com horario aproximado', () => {
+    const estrada = { ...nf1, endereco: 'EST ESTREITO, S/N - 3º DISTRITO, CACHOEIRAS DE M - * - 28680000' }
+    const ponte = new Map([['TTL7D40', [paradaForaBase('longe', -22.2 + 14000 * M_LAT, -42.4, vizinhanca.chegada, vizinhanca.saida)]]])
+    const [d] = chamarNutryMax([estrada, nf2], { visitasPorNf: visitas(), paradasPorOutraPlaca: ponte })
     expect(d.status).not.toBe('pendente')
     expect(d.observacao).toBe('ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)')
   })
