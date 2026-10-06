@@ -21,6 +21,7 @@ import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
 import { gerarKpiRomaneioXlsx, cargasEscalaDivergenteInteira } from '@/lib/kpi-romaneio/gerador-xlsx'
 import { detectarTrocasProvaveis } from '@/lib/kpi-romaneio/troca-placa'
 import { aplicarTrocasDePlaca, buscarTrocasDoDia } from '@/lib/kpi-romaneio/trocas-placa'
+import { aplicarLocaisClientes, buscarLocaisClientes } from '@/lib/kpi-romaneio/locais-clientes'
 import { COD_USER_NUTRIMAX, EMPRESA_NUTRIMAX, foraDoAlcanceApi, LIMITE_CONCORRENCIA_PLACAS, PAO_PREFIXO } from '@/lib/kpi-romaneio/constants'
 import { mapComLimite } from '@/lib/kpi-romaneio/concorrencia'
 import { buscarResolucoes, aplicarResolucoes } from '@/lib/kpi-romaneio/resolucoes'
@@ -32,6 +33,7 @@ import type { LinhaEscala, LinhaRomaneio, AvisoDescasamento } from '@/lib/kpi-ro
 import type { ResultadoGeocode } from '@/lib/kpi-romaneio/geocode'
 
 const FONTES_VERIFICADAS = new Set(['manual', 'verificacao_manual', 'cadastro_unitrac'])
+const CLIENTE_LOCAIS = 'nutrimax'
 
 // Fix 12/09 (Finding 8): `motivo` chega da ponte HTTP/cache como `string`
 // solto (ResultadoGeocode em geocode.ts) -- narrow explicito pro union real
@@ -72,6 +74,8 @@ export type EntradaKpiNutrimax = {
 export type OpcoesKpiNutrimax = {
   sobreporGeo?: (geoPorEndereco: Map<string, ResultadoGeocode>) => void
   semCadastroUnitrac?: boolean
+  /** Ignora o cadastro de locais dos clientes (comparação antes/depois). */
+  semLocaisClientes?: boolean
   aoMontarDetalhe?: (x: { romaneioGeo: LinhaGeocodificada[]; detalhe: LinhaDetalheEntrega[]; paradasPorPlaca: Map<string, UnitracParadaRow[]> }) => void
 }
 
@@ -137,6 +141,17 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
     return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: narrowGeoMotivo(g?.motivo), geoSemFonte: g != null && !g.fonte, geoVerificadoManual: g != null && FONTES_VERIFICADAS.has(g.fonte ?? '') }
   })
 
+  // Cadastro de locais dos clientes (05/10, scripts/aprender-locais-clientes.ts):
+  // cliente com coordenada aprendida/corrigida usa ela, nao o geocode do texto
+  // (que muda quando o endereco vem escrito diferente). Quem recebeu local fica
+  // fora do resgate por ancora abaixo -- ja' esta' no lugar certo.
+  const nfsComLocal = new Set<string>()
+  if (!opcoes?.semLocaisClientes) {
+    const { linhas, aplicados } = aplicarLocaisClientes(romaneioGeo, await buscarLocaisClientes(CLIENTE_LOCAIS))
+    romaneioGeo.splice(0, romaneioGeo.length, ...linhas)
+    aplicados.forEach(nf => nfsComLocal.add(nf))
+  }
+
   // Item 5 (achado real 10-09, auditoria com a Ana): port do Passo 7 do motor
   // de geolocalizacao universal (ver kpi-rioquality/pipeline.ts, formato
   // completo) -- endereco que a cascata precisa nao resolveu de jeito
@@ -164,7 +179,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
 
   const indicePorNf = new Map(romaneioGeo.map((l, i) => [l.nf, i]))
   const precisaResgatePorPlaca = agrupar(
-    romaneioGeo.filter(l => l.lat == null || enderecosColididos.has(l.endereco)),
+    romaneioGeo.filter(l => !nfsComLocal.has(l.nf) && (l.lat == null || enderecosColididos.has(l.endereco))),
     l => normPlaca(l.placa),
   )
   if (precisaResgatePorPlaca.size > 0) {
