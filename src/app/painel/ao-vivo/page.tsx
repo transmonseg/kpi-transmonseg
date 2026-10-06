@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { MagnifyingGlass, DownloadSimple, UploadSimple, MapPin, WarningCircle, CaretDown } from '@phosphor-icons/react/dist/ssr'
+import { MagnifyingGlass, DownloadSimple, UploadSimple, MapPin, WarningCircle, CaretDown, CaretLeft } from '@phosphor-icons/react/dist/ssr'
 import type { EstadoAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
 import type { PlacaAoVivo, NfAoVivo, SituacaoNf } from '@/lib/kpi-romaneio/ao-vivo'
 import { SubirRomaneio } from './subir-romaneio'
@@ -52,6 +52,8 @@ export default function AoVivoPage() {
   const [busca, setBusca] = useState('')
   const [gerando, setGerando] = useState(false)
   const [subindo, setSubindo] = useState(false)
+  // Celular: lista de placas OU detalhe (no computador, os dois lado a lado).
+  const [vendoDetalhe, setVendoDetalhe] = useState(false)
 
   const carregar = useCallback(async () => {
     try {
@@ -80,7 +82,8 @@ export default function AoVivoPage() {
     return () => clearInterval(t)
   }, [])
 
-  const placas = useMemo(() => estado?.resultado?.placas ?? [], [estado])
+  // Carga sem placa (pão sem carro no PDF) vai pro fim, não pro topo.
+  const placas = useMemo(() => [...(estado?.resultado?.placas ?? [])].sort((a, b) => Number(a.placa === 'SEM PLACA' || a.placa === '') - Number(b.placa === 'SEM PLACA' || b.placa === '')), [estado])
   const placa = placas.find(p => p.placa === placaSel) ?? placas[0] ?? null
 
   // Camada "agora" da placa aberta: a cada 30 s.
@@ -183,7 +186,7 @@ export default function AoVivoPage() {
 
       {r && placa && (
         <div className="grid items-start gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
-          <aside aria-label="Placas" className="dash-card flex flex-col overflow-hidden lg:sticky lg:top-[72px] lg:max-h-[calc(100dvh-96px)]">
+          <aside aria-label="Placas" className={`dash-card flex-col overflow-hidden lg:flex lg:h-[calc(100dvh-190px)] lg:min-h-[420px] ${vendoDetalhe ? 'hidden' : 'flex'}`}>
             <div className="border-b border-[var(--color-border)] p-3">
               <label className="flex h-10 items-center gap-2 rounded-xl bg-[var(--color-bg-subtle)] px-3 text-[var(--color-fg-muted)]">
                 <MagnifyingGlass size={15} />
@@ -192,17 +195,31 @@ export default function AoVivoPage() {
             </div>
             <ul className="min-h-0 flex-1 overflow-y-auto">
               {filtradas.map(p => (
-                <LinhaPlaca key={p.placa} p={p} ativa={p.placa === placa.placa} agora={agora[p.placa]} agoraMs={agoraMs} onClick={() => { setPlacaSel(p.placa); setNfAberta(null) }} />
+                <LinhaPlaca key={p.placa} p={p} ativa={p.placa === placa.placa} agora={agora[p.placa]} agoraMs={agoraMs} onClick={() => { setPlacaSel(p.placa); setNfAberta(null); setVendoDetalhe(true) }} />
               ))}
               {filtradas.length === 0 && <li className="px-4 py-10 text-center text-[13px] text-[var(--color-fg-muted)]">Nenhuma placa com “{busca}”.</li>}
             </ul>
           </aside>
 
+          <div className={vendoDetalhe ? 'block' : 'hidden lg:block'}>
+            <button type="button" onClick={() => setVendoDetalhe(false)} className="mb-3 inline-flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-4 text-[13px] font-semibold text-[var(--color-fg)] lg:hidden">
+              <CaretLeft size={14} weight="bold" />Todas as placas
+            </button>
           <DetalhePlaca p={placa} agora={agora[placa.placa]} agoraMs={agoraMs} nfAberta={nfAberta} onNf={nf => setNfAberta(a => (a === nf ? null : nf))} calculadoEm={r.calculadoEm} />
+          </div>
         </div>
       )}
     </div>
   )
+}
+
+/** Voltou à base de vez: chegada à base registrada e nenhuma NF pendente,
+ *  ou a chegada é depois da última saída de cliente (rota encerrada). */
+function voltouABase(p: PlacaAoVivo): boolean {
+  if (!p.chegadaBase) return false
+  if (!p.nfs.some(n => n.situacao === 'pendente')) return true
+  const ultimaSaida = p.nfs.map(n => n.saida).filter((x): x is string => !!x).sort().pop()
+  return !!ultimaSaida && hhmm(p.chegadaBase) >= ultimaSaida
 }
 
 function situacaoAgora(p: PlacaAoVivo, a: Agora | undefined, agoraMs: number): { texto: string; tempo: string | null; tom: 'cliente' | 'longe' | 'rota' | 'fim' } {
@@ -210,9 +227,9 @@ function situacaoAgora(p: PlacaAoVivo, a: Agora | undefined, agoraMs: number): {
     const s = desde(a.parada.inicio, agoraMs)
     return { texto: 'No cliente', tempo: relogio(s), tom: s >= UMA_HORA ? 'longe' : 'cliente' }
   }
-  if (p.chegadaBase && p.feitas === p.total) return { texto: `Voltou à base às ${hhmm(p.chegadaBase)}`, tempo: null, tom: 'fim' }
+  if (voltouABase(p)) return { texto: `Voltou à base às ${hhmm(p.chegadaBase)}`, tempo: null, tom: 'fim' }
   if (p.saidaBase) return { texto: `Saiu às ${hhmm(p.saidaBase)}`, tempo: relogio(desde(p.saidaBase, agoraMs)), tom: 'rota' }
-  return { texto: 'Ainda não saiu da base', tempo: null, tom: 'fim' }
+  return { texto: p.feitas > 0 ? 'Sem horário de saída' : 'Ainda não saiu da base', tempo: null, tom: 'fim' }
 }
 
 const COR_TOM = { cliente: 'text-[#1d4fa8]', longe: 'text-[#b45309]', rota: 'text-[var(--color-fg-muted)]', fim: 'text-[var(--color-fg-muted)]' }
@@ -224,7 +241,7 @@ function LinhaPlaca({ p, ativa, agora, agoraMs, onClick }: { p: PlacaAoVivo; ati
       <button type="button" onClick={onClick} aria-current={ativa ? 'true' : undefined}
         className={`block w-full border-b border-[var(--color-border)] px-4 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-[var(--color-navy-700)] ${ativa ? 'bg-[var(--color-bg-subtle)] shadow-[inset_3px_0_0_var(--color-navy-700)]' : 'hover:bg-[var(--color-bg-subtle)]'}`}>
         <span className="flex items-baseline justify-between gap-2">
-          <span className="text-[14px] font-semibold text-[var(--color-fg)]">{p.placa}</span>
+          <span className="text-[14px] font-semibold text-[var(--color-fg)]">{p.placa === 'SEM PLACA' || !p.placa ? 'Carga sem placa' : p.placa}</span>
           <span className="text-[15px] font-semibold tabular-nums text-[var(--color-fg)]">{p.pct}%</span>
         </span>
         <span className="mt-2 block h-1 overflow-hidden rounded-full bg-[var(--color-border)]">
@@ -282,7 +299,7 @@ function DetalhePlaca({ p, agora, agoraMs, nfAberta, onNf, calculadoEm }: { p: P
 /** Tempo desde a saída da base; para de contar quando a rota terminou. */
 function tempoDesdeSaida(p: PlacaAoVivo, agoraMs: number): string {
   if (!p.saidaBase) return '—'
-  const fim = p.chegadaBase && p.feitas === p.total ? Date.parse(p.chegadaBase) : agoraMs
+  const fim = voltouABase(p) && p.chegadaBase ? Date.parse(p.chegadaBase) : agoraMs
   return relogio((fim - Date.parse(p.saidaBase)) / 1000)
 }
 
