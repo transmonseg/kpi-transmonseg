@@ -265,7 +265,7 @@ function DetalhePlaca({ p, agora, agoraMs, nfAberta, onNf, calculadoEm }: { p: P
       <div className="dash-card grid gap-5 p-5 sm:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,1fr))]">
         <div className="min-w-0">
           <h2 className="text-[24px] font-semibold tracking-[-0.02em] text-[var(--color-fg)]">{p.placa}</h2>
-          <p className="truncate text-[13px] text-[var(--color-fg-muted)]">{p.motorista || 'Motorista não informado'}, {p.destino}</p>
+          <p className="line-clamp-2 text-[13px] leading-snug text-[var(--color-fg-muted)]">{p.motorista || 'Motorista não informado'}, {p.destino}</p>
         </div>
         <Dado rotulo="Entregas" valor={`${p.pct}%`} extra={`${p.feitas} de ${p.total}`} />
         <Dado rotulo={p.saidaBase ? `Saiu da base às ${hhmm(p.saidaBase)}` : 'Saída da base'} valor={tempoDesdeSaida(p, agoraMs)} />
@@ -275,7 +275,9 @@ function DetalhePlaca({ p, agora, agoraMs, nfAberta, onNf, calculadoEm }: { p: P
             <p className={`text-[22px] font-semibold tabular-nums ${COR_TOM[s.tom]}`}>{s.tempo}</p>
           </div>
         ) : (
-          <Dado rotulo="Agora" valor={s.tom === 'rota' ? 'Em trânsito' : s.texto} />
+          s.tom === 'fim' && p.chegadaBase
+            ? <Dado rotulo="Voltou à base às" valor={hhmm(p.chegadaBase)} />
+            : <Dado rotulo="Agora" valor={s.tom === 'rota' ? 'Em trânsito' : s.texto} />
         )}
       </div>
 
@@ -312,7 +314,7 @@ function Dado({ rotulo, valor, extra }: { rotulo: string; valor: string; extra?:
   )
 }
 
-function LinhaNf({ n, ordem, aberta, noClienteAgora, agoraMs, onClick, calculadoEm, posicao }: { n: NfAoVivo; ordem: number; aberta: boolean; noClienteAgora: string | null; agoraMs: number; onClick: () => void; calculadoEm: string; posicao: Agora['posicao'] }) {
+function LinhaNf({ n, ordem, aberta, noClienteAgora, agoraMs, onClick, posicao }: { n: NfAoVivo; ordem: number; aberta: boolean; noClienteAgora: string | null; agoraMs: number; onClick: () => void; calculadoEm: string; posicao: Agora['posicao'] }) {
   const segAgora = noClienteAgora ? desde(noClienteAgora, agoraMs) : null
   const longe = segAgora != null && segAgora >= UMA_HORA
   const corPonto = segAgora != null ? (longe ? 'var(--color-warning)' : '#2a6fdb') : COR_SITUACAO[n.situacao]
@@ -331,25 +333,59 @@ function LinhaNf({ n, ordem, aberta, noClienteAgora, agoraMs, onClick, calculado
         </span>
         <CaretDown size={13} className={`shrink-0 text-[var(--color-fg-subtle)] transition-transform ${aberta ? 'rotate-180' : ''}`} />
       </button>
-      {aberta && (
-        <div className="grid gap-x-6 gap-y-3 px-5 pb-4 pl-[60px] text-[13px] sm:grid-cols-4">
-          <p className="text-[var(--color-fg-muted)] sm:col-span-4">NF {n.nf}, carga {n.carga}. {n.endereco}</p>
-          <Mini rotulo="Chegou" valor={segAgora != null ? hhmm(noClienteAgora) : n.chegada ?? '—'} />
-          <Mini rotulo="Saiu" valor={segAgora != null ? 'Ainda está lá' : n.saida ?? '—'} />
-          <Mini rotulo="Tempo no cliente" valor={segAgora != null ? relogio(segAgora) : n.tempoMin != null ? `${n.tempoMin} min` : '—'} destaque={segAgora != null} longe={longe} />
-          <Mini rotulo="Na planilha" valor={n.status.length > 42 ? `${n.status.slice(0, 42)}…` : n.status} titulo={n.status} />
-          <p className="text-[12px] text-[var(--color-fg-muted)] sm:col-span-4">
-            {segAgora != null
-              ? `Chegou agora. Entra como entregue no próximo cálculo do KPI se a parada se confirmar.`
-              : `Situação do cálculo do KPI das ${hhmm(calculadoEm)}, com as mesmas regras da planilha.`}
-            {segAgora != null && posicao?.lat != null && posicao.lng != null && (
-              <a className="ml-2 inline-flex items-center gap-1 font-medium text-[var(--color-navy-700)] underline-offset-2 hover:underline" href={`https://www.google.com/maps?q=${posicao.lat},${posicao.lng}`} target="_blank" rel="noreferrer"><MapPin size={13} />Ver no mapa</a>
+      {aberta && (() => {
+        const motivo = segAgora == null && n.situacao !== 'entregue' ? motivoLegivel(n.status) : null
+        const temHorario = segAgora != null || n.chegada != null
+        const mapa = segAgora != null && posicao?.lat != null && posicao.lng != null
+          ? { lat: posicao.lat, lng: posicao.lng, texto: 'Ver o caminhão no mapa' }
+          : n.lat != null && n.lng != null ? { lat: n.lat, lng: n.lng, texto: 'Ver endereço no mapa' } : null
+        return (
+          <div className="flex flex-col gap-3 px-5 pb-4 pl-[60px] text-[13px]">
+            {motivo && (
+              <div className={`rounded-xl px-3.5 py-2.5 ${n.situacao === 'nao_foi' ? 'bg-[#fdecec] text-[#a61b1b]' : n.situacao === 'revisar' ? 'bg-[#fdf3e3] text-[#8a4b08]' : 'bg-[var(--color-bg-subtle)] text-[var(--color-fg)]'}`}>
+                <p className="font-semibold leading-snug">{motivo.motivo}</p>
+                {motivo.acao && <p className="mt-0.5 text-[12px] opacity-80">{motivo.acao}</p>}
+              </div>
             )}
-          </p>
-        </div>
-      )}
+            <p className="leading-relaxed text-[var(--color-fg-muted)]">NF {n.nf}, carga {n.carga}. {enderecoLimpo(n.endereco)}</p>
+            {temHorario && (
+              <div className="grid grid-cols-3 gap-x-6">
+                <Mini rotulo="Chegou" valor={segAgora != null ? hhmm(noClienteAgora) : n.chegada ?? '—'} />
+                <Mini rotulo="Saiu" valor={segAgora != null ? 'Ainda está lá' : n.saida ?? '—'} />
+                <Mini rotulo="Tempo no cliente" valor={segAgora != null ? relogio(segAgora) : n.tempoMin != null ? `${n.tempoMin} min` : '—'} destaque={segAgora != null} longe={longe} />
+              </div>
+            )}
+            {(segAgora != null || mapa) && (
+              <p className="text-[12px] text-[var(--color-fg-muted)]">
+                {segAgora != null && 'Chegou agora. Entra como entregue no próximo cálculo do KPI se a parada se confirmar.'}
+                {mapa && (
+                  <a className={`${segAgora != null ? 'ml-2 ' : ''}inline-flex items-center gap-1 font-medium text-[var(--color-navy-700)] underline-offset-2 hover:underline`} href={`https://www.google.com/maps?q=${mapa.lat},${mapa.lng}`} target="_blank" rel="noreferrer"><MapPin size={13} />{mapa.texto}</a>
+                )}
+              </p>
+            )}
+          </div>
+        )
+      })()}
     </li>
   )
+}
+
+/** "PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR" ->
+ *  { motivo: "Passou no endereço mas não registrou parada", acao: "Conferir" }. */
+function motivoLegivel(status: string): { motivo: string; acao: string | null } {
+  const frase = (s: string) => {
+    const t = s.trim().toLowerCase().replace(/\bunitrac\b/g, 'Unitrac').replace(/\bkpi\b/g, 'KPI')
+    return t.charAt(0).toUpperCase() + t.slice(1)
+  }
+  const partes = status.split(/\s+-\s+/).filter(Boolean)
+  const i = partes.findIndex((p, k) => k > 0 && /^(CONFERIR|PERGUNTAR|VERIFICAR)/i.test(p))
+  if (i > 0) return { motivo: frase(partes.slice(0, i).join(', ')), acao: frase(partes.slice(i).join(', ')) }
+  return { motivo: frase(partes.join(', ')), acao: null }
+}
+
+/** Tira os "- *" (complemento vazio do romaneio) do endereço. */
+function enderecoLimpo(e: string): string {
+  return e.replace(/\s+-\s+\*(?=\s+-|\s*$)/g, '').replace(/\s{2,}/g, ' ').trim()
 }
 
 function Mini({ rotulo, valor, destaque, longe, titulo }: { rotulo: string; valor: string; destaque?: boolean; longe?: boolean; titulo?: string }) {
