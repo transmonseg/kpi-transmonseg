@@ -235,6 +235,9 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     for (const p of resultado.placas) {
       const pa = paradaAtualPorPlaca.get(normPlaca(p.placa))
       if (!pa) continue
+      // Sem rastreador no dia (06/10, TOS0H81: GPS parado havia 23 h): a
+      // "parada" e' a ultima posicao velha, nao o carro no cliente agora.
+      if (p.nfs.length > 0 && p.nfs.every(n => n.situacao === 'sem_rastreador')) continue
       const n = pa.lat != null && pa.lng != null ? nfProxima(p.nfs, { lat: pa.lat, lng: pa.lng }) : null
       p.paradaAtual = { inicio: pa.inicio, nf: n?.nf ?? null, cliente: n?.cliente ?? null }
     }
