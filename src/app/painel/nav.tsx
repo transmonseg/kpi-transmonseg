@@ -21,12 +21,7 @@ import {
   Broadcast,
   ArrowsLeftRight,
   MapTrifold,
-  Path,
-  GearSix,
-  CalendarBlank,
-  ChartLineUp,
 } from '@phosphor-icons/react/dist/ssr'
-import { TELAS_MONITORAMENTO, rotaPainelMonitoramento } from '@/lib/sistema-transmonseg'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 
 type Leaf = { href: string; label: string; Icon: PhosphorIcon; exact?: boolean }
@@ -115,9 +110,10 @@ function LeafLink({ item, active, nested }: { item: Leaf; active: boolean; neste
   return (
     <Link
       href={item.href}
+      title={item.label}
       aria-current={active ? 'page' : undefined}
       className={
-        ITEM_BASE + ' ' + (nested ? 'ml-[22px] pl-3.5 pr-2.5 ' : 'px-2.5 ') +
+        'item-menu ' + ITEM_BASE + ' ' + (nested ? 'ml-[22px] pl-3.5 pr-2.5 ' : 'px-2.5 ') +
         (active
           ? ATIVO
           : 'text-[var(--color-sidebar-fg-muted)] hover:bg-white/[0.045] hover:text-[var(--color-sidebar-fg-strong)]')
@@ -131,20 +127,15 @@ function LeafLink({ item, active, nested }: { item: Leaf; active: boolean; neste
         weight={active ? 'fill' : 'regular'}
         className={active ? 'text-white' : 'text-[var(--color-sidebar-fg-muted)] transition-colors group-hover:text-[var(--color-sidebar-fg-strong)]'}
       />
-      <span>{item.label}</span>
+      <span className="so-aberto">{item.label}</span>
     </Link>
   )
 }
 
-// Central Transmonseg (05/10): o mesmo menu serve os dois sistemas. O
-// seletor no topo escolhe KPI ou Monitoramento; o Monitoramento abre dentro
-// do painel (/painel/monitoramento/...).
-const ICONE_MONITORAMENTO: Record<string, PhosphorIcon> = {
-  '/central-romaneio': Path, '/': MapTrifold, '/romaneio': GearSix, '/escala': CalendarBlank, '/veiculos': Truck, '/analise': ChartLineUp,
-}
-const ITENS_MONITORAMENTO: Leaf[] = TELAS_MONITORAMENTO.map(t => ({
-  href: rotaPainelMonitoramento(t.caminho), label: t.rotulo, Icon: ICONE_MONITORAMENTO[t.caminho] ?? MapTrifold, exact: t.caminho === '/',
-}))
+// Central Transmonseg (05/10): o seletor no topo escolhe KPI ou
+// Monitoramento; o Monitoramento abre dentro do painel
+// (/painel/monitoramento/...) com a navegação DELE no topo, como sempre foi
+// (abas + engrenagem) -- o menu lateral não repete as telas dele.
 const emMonitoramento = (pathname: string) => pathname === '/painel/monitoramento' || pathname.startsWith('/painel/monitoramento/')
 
 function SeletorSistema({ pathname }: { pathname: string }) {
@@ -153,18 +144,20 @@ function SeletorSistema({ pathname }: { pathname: string }) {
   const opcao = (ativo: boolean) =>
     'flex h-8 items-center justify-center rounded-[10px] px-3 text-[12.5px] font-semibold transition-[background-color,color] duration-200 ' +
     (ativo ? 'nav-ativo text-white' : 'text-[var(--color-sidebar-fg-muted)] hover:text-white')
-  return (
-    <div role="tablist" aria-label="Sistema" className="mb-3 flex gap-1 rounded-xl bg-white/[0.05] p-1">
-      <Link role="tab" aria-selected={!mon} href="/painel" className={opcao(!mon) + ' w-[64px] shrink-0'}>KPI</Link>
-      <Link role="tab" aria-selected={mon} href={ITENS_MONITORAMENTO[0].href} className={opcao(mon) + ' flex-1'}>Monitoramento</Link>
-    </div>
-  )
-}
-
-function MenuMonitoramento({ pathname }: { pathname: string }) {
+  const icone = (ativo: boolean) =>
+    'flex size-10 items-center justify-center rounded-[10px] transition-[background-color,color] duration-200 ' +
+    (ativo ? 'nav-ativo text-white' : 'text-[var(--color-sidebar-fg-muted)] hover:text-white')
   return (
     <>
-      {ITENS_MONITORAMENTO.map(i => <LeafLink key={i.href} item={i} active={leafActive(pathname, i.href, i.exact)} />)}
+    {/* Menu recolhido: só os ícones dos dois sistemas, um embaixo do outro. */}
+    <div aria-label="Sistema" className="so-recolhido mb-3 flex-col items-center gap-1 rounded-xl bg-white/[0.05] p-1">
+      <Link href="/painel" title="KPI" aria-current={!mon ? 'true' : undefined} className={icone(!mon)}><ChartBar size={18} weight={!mon ? 'fill' : 'regular'} /></Link>
+      <Link href="/painel/monitoramento" title="Monitoramento" aria-current={mon ? 'true' : undefined} className={icone(mon)}><MapTrifold size={18} weight={mon ? 'fill' : 'regular'} /></Link>
+    </div>
+    <div role="tablist" aria-label="Sistema" className="so-aberto mb-3 flex gap-1 rounded-xl bg-white/[0.05] p-1">
+      <Link role="tab" aria-selected={!mon} href="/painel" className={opcao(!mon) + ' w-[64px] shrink-0'}>KPI</Link>
+      <Link role="tab" aria-selected={mon} href="/painel/monitoramento" className={opcao(mon) + ' flex-1'}>Monitoramento</Link>
+    </div>
     </>
   )
 }
@@ -179,10 +172,10 @@ function GroupBlock({ group, pathname }: { group: Group; pathname: string }) {
   if (group.label === 'Benassi') {
     const { Icon } = group
     return (
-      <div title="Benassi — desativada" aria-disabled className="flex cursor-not-allowed items-center gap-2.5 rounded-xl px-2.5 py-2 text-[13px] font-medium text-[var(--color-sidebar-fg-muted)] opacity-45">
+      <div title="Benassi — desativada" aria-disabled className="item-menu flex cursor-not-allowed items-center gap-2.5 rounded-xl px-2.5 py-2 text-[13px] font-medium text-[var(--color-sidebar-fg-muted)] opacity-45">
         <Icon size={17} />
-        <span className="flex-1">Benassi</span>
-        <Lock size={12} weight="fill" />
+        <span className="so-aberto flex-1">Benassi</span>
+        <Lock size={12} weight="fill" className="so-aberto" />
       </div>
     )
   }
@@ -199,12 +192,13 @@ function GroupBlockAtivo({ group, pathname }: { group: Group; pathname: string }
   return (
     <div>
       <button
+        title={group.label}
         onClick={() => {
           if (group.href) { router.push(group.href); setOpen(true) }
           else setOpen(o => !o)
         }}
         className={
-          'group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-[7px] text-[13px] font-medium ' +
+          'item-menu group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-[7px] text-[13px] font-medium ' +
           'transition-[background-color,color,transform] duration-200 active:scale-[0.98] ' +
           (headerAtivo
             ? ATIVO
@@ -214,11 +208,11 @@ function GroupBlockAtivo({ group, pathname }: { group: Group; pathname: string }
         }
       >
         <IconeGrupo Icon={Icon} cor={group.cor} ativo={ativo || open} />
-        <span className="flex-1 text-left">{group.label}</span>
+        <span className="so-aberto flex-1 text-left">{group.label}</span>
         <CaretRight
           size={13}
           weight="bold"
-          className={'text-[var(--color-sidebar-fg-muted)] transition-transform duration-200 ' + (open ? 'rotate-90' : '')}
+          className={'so-aberto text-[var(--color-sidebar-fg-muted)] transition-transform duration-200 ' + (open ? 'rotate-90' : '')}
         />
       </button>
 
@@ -227,7 +221,7 @@ function GroupBlockAtivo({ group, pathname }: { group: Group; pathname: string }
         style={{ gridTemplateRows: open ? '1fr' : '0fr', opacity: open ? 1 : 0 }}
       >
         <div className="overflow-hidden">
-          <div className="relative mb-1 mt-0.5 flex flex-col gap-0.5 before:absolute before:bottom-1.5 before:left-[22px] before:top-1.5 before:w-px before:bg-white/[0.08]">
+          <div className="guia-menu relative mb-1 mt-0.5 flex flex-col gap-0.5 before:absolute before:bottom-1.5 before:left-[22px] before:top-1.5 before:w-px before:bg-white/[0.08]">
             {group.children.map(c => (
               <LeafLink key={c.href} item={c} active={leafActive(pathname, c.href, c.exact)} nested />
             ))}
@@ -250,11 +244,11 @@ export function PainelNav({ papel, empresas }: { papel: Papel; empresas: string[
     return (
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
         <SeletorSistema pathname={pathname} />
-        {emMonitoramento(pathname) ? <MenuMonitoramento pathname={pathname} /> : (<>
+        {emMonitoramento(pathname) ? null : (<>
         {empresas.includes('nutrimax') && <LeafLink item={AO_VIVO} active={pathname.startsWith('/painel/ao-vivo')} />}
         <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
         {grupos.length > 0 && (
-          <span className="px-2.5 pb-1 pt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">Empresas</span>
+          <span className="so-aberto px-2.5 pb-1 pt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">Empresas</span>
         )}
         {grupos.map(g => <GroupBlock key={g.label} group={g} pathname={pathname} />)}
         </>)}
@@ -276,19 +270,19 @@ export function PainelNav({ papel, empresas }: { papel: Papel; empresas: string[
   return (
     <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
       <SeletorSistema pathname={pathname} />
-      {emMonitoramento(pathname) ? <MenuMonitoramento pathname={pathname} /> : (<>
+      {emMonitoramento(pathname) ? null : (<>
       <LeafLink item={AO_VIVO} active={pathname.startsWith('/painel/ao-vivo')} />
       <LeafLink item={DASHBOARD} active={pathname === '/painel'} />
       <LeafLink item={USUARIOS} active={pathname.startsWith('/painel/usuarios')} />
 
-      <span className="px-2.5 pb-1 pt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">
+      <span className="so-aberto px-2.5 pb-1 pt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">
         Empresas
       </span>
       {GRUPOS_EMPRESA.map(g => (
         <GroupBlock key={g.label} group={g} pathname={pathname} />
       ))}
 
-      <span className="px-2.5 pb-1 pt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">
+      <span className="so-aberto px-2.5 pb-1 pt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">
         Operação
       </span>
       <GroupBlock group={GRUPO_COZINHA} pathname={pathname} />

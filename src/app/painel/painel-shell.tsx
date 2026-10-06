@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { List, X, SignOut } from '@phosphor-icons/react/dist/ssr'
+import { useEffect, useState, useSyncExternalStore } from 'react'
+import { List, X, SignOut, SidebarSimple } from '@phosphor-icons/react/dist/ssr'
 import { ThemeToggle } from '@/lib/theme/ThemeToggle'
 import { HeaderTitle } from './header-title'
 import { PainelNav } from './nav'
@@ -17,9 +17,35 @@ type Props = {
   children: React.ReactNode
 }
 
+// Menu recolhido (05/10, pedido pro Monitoramento, que precisa de tela):
+// só ícones. Lembrado por sistema no navegador; no Monitoramento começa
+// recolhido, no KPI aberto.
+const EVENTO_MENU = 'kpi-menu-recolhido'
+function chaveMenu(sistema: 'kpi' | 'mon') { return `kpi-menu-recolhido-${sistema}` }
+function lerRecolhido(sistema: 'kpi' | 'mon'): boolean {
+  try {
+    const v = localStorage.getItem(chaveMenu(sistema))
+    return v == null ? sistema === 'mon' : v === '1'
+  } catch { return sistema === 'mon' }
+}
+function useMenuRecolhido(sistema: 'kpi' | 'mon'): [boolean, () => void] {
+  const recolhido = useSyncExternalStore(
+    cb => { window.addEventListener(EVENTO_MENU, cb); window.addEventListener('storage', cb); return () => { window.removeEventListener(EVENTO_MENU, cb); window.removeEventListener('storage', cb) } },
+    () => lerRecolhido(sistema),
+    () => sistema === 'mon',
+  )
+  const alternar = () => {
+    try { localStorage.setItem(chaveMenu(sistema), recolhido ? '0' : '1') } catch {}
+    window.dispatchEvent(new Event(EVENTO_MENU))
+  }
+  return [recolhido, alternar]
+}
+
 export function PainelShell({ userEmail, papel, empresas, sairAction, children }: Props) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
+  const sistema = pathname === '/painel/monitoramento' || pathname.startsWith('/painel/monitoramento/') ? 'mon' : 'kpi'
+  const [recolhido, alternarMenu] = useMenuRecolhido(sistema)
 
   // Close drawer on route change.
   useEffect(() => {
@@ -53,11 +79,19 @@ export function PainelShell({ userEmail, papel, empresas, sairAction, children }
 
       {/* Desktop sidebar — always dark, regardless of app theme. */}
       <aside
-        className="sidebar-kpi sticky top-0 hidden h-[100dvh] w-[220px] shrink-0 flex-col md:flex"
+        data-recolhido={recolhido ? '1' : undefined}
+        className={`sidebar-kpi sticky top-0 hidden h-[100dvh] shrink-0 flex-col transition-[width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] md:flex ${recolhido ? 'w-[68px]' : 'w-[220px]'}`}
         style={{ colorScheme: 'dark' }}
       >
         <SidebarBrand central={papel === 'admin' || papel === 'operador'} />
         <PainelNav papel={papel} empresas={empresas} />
+        <div className="px-3 pt-2">
+          <button type="button" onClick={alternarMenu} title={recolhido ? 'Abrir o menu' : 'Recolher o menu'} aria-label={recolhido ? 'Abrir o menu' : 'Recolher o menu'} aria-expanded={!recolhido}
+            className="item-menu group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-[13px] font-medium text-[var(--color-sidebar-fg-muted)] transition-colors hover:bg-white/[0.045] hover:text-white">
+            <SidebarSimple size={17} weight={recolhido ? 'fill' : 'regular'} />
+            <span className="so-aberto">Recolher menu</span>
+          </button>
+        </div>
         <SidebarFooter userEmail={userEmail} sairAction={sairAction} />
       </aside>
 
@@ -132,7 +166,7 @@ function SidebarBrand({ onCloseHint, central }: { onCloseHint?: () => void; cent
         <span className="inline-flex h-9 w-9 items-center justify-center rounded-[11px] bg-[#1f3864] text-[14px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] transition-transform duration-300 group-hover:scale-105">
           T
         </span>
-        <span className="flex flex-col leading-none">
+        <span className="so-aberto flex flex-col leading-none">
           <span className="text-[15px] font-semibold tracking-[-0.01em] text-white">Transmonseg</span>
           <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8fb0e0]/70">{central ? 'Central' : 'KPI'}</span>
         </span>
@@ -161,11 +195,11 @@ function SidebarFooter({
 }) {
   return (
     <div className="mt-auto p-3">
-      <div className="flex items-center gap-2.5 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-2.5">
-        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-[12px] font-semibold text-white">
+      <div className="rodape-menu flex items-center gap-2.5 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-2.5">
+        <span className="so-aberto inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-[12px] font-semibold text-white">
           {(userEmail ?? '?').slice(0, 1).toUpperCase()}
         </span>
-        <span className="min-w-0 flex-1 truncate text-[12px] text-[var(--color-sidebar-fg)]">{userEmail}</span>
+        <span className="so-aberto min-w-0 flex-1 truncate text-[12px] text-[var(--color-sidebar-fg)]">{userEmail}</span>
         <form action={sairAction}>
           <button
             type="submit"

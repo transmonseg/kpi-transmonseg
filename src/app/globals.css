@@ -544,3 +544,11 @@ table {
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     0 8px 20px -10px rgba(64, 110, 190, 0.85);
 }
+
+/* Menu lateral recolhido (05/10): só ícones, centralizados. */
+.so-recolhido { display: none !important; }
+[data-recolhido] .so-recolhido { display: flex !important; }
+[data-recolhido] .so-aberto { display: none !important; }
+[data-recolhido] .item-menu { justify-content: center; margin-left: 0; padding-left: 0; padding-right: 0; }
+[data-recolhido] .guia-menu::before { display: none; }
+[data-recolhido] .rodape-menu { justify-content: center; padding: 4px; border-color: transparent; background: transparent; }
