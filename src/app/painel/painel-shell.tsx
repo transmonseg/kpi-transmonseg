@@ -130,7 +130,7 @@ export function PainelShell({ userEmail, papel, empresas, sairAction, children }
 
       {/* Main column. */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-[var(--color-bg)]/70 md:px-8">
+        <header className={`sticky top-0 z-10 flex h-14 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-[var(--color-bg)]/70 md:px-8 ${sistema === 'mon' ? 'md:hidden' : ''}`}>
           <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"

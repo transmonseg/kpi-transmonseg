@@ -6,7 +6,8 @@ import { URL_MONITORAMENTO, caminhoMonitoramento, rotaPainelMonitoramento } from
 
 // Monitoramento aberto dentro da Central (05/10). O sistema continua o mesmo
 // (monitoramento.transmonseg.com.br); aqui ele aparece sem a moldura dele e
-// avisa a página em que está, pra barra de endereço acompanhar.
+// avisa a página em que está, pra barra de endereço acompanhar. No
+// computador a barra de cima do painel some aqui (tela inteira pro mapa).
 export default function Pagina() {
   return <Suspense><MonitoramentoEmbutido /></Suspense>
 }
@@ -41,7 +42,7 @@ function MonitoramentoEmbutido() {
   }, [])
 
   return (
-    <div className="relative -mx-4 -my-6 h-[calc(100dvh-3.5rem)] md:-mx-10 md:-my-10">
+    <div className="relative -mx-4 -my-6 h-[calc(100dvh-3.5rem)] md:-mx-10 md:-my-10 md:h-[100dvh]">
       {carregando && (
         <div className="absolute inset-0 flex items-center justify-center bg-[var(--color-bg)]">
           <span className="size-5 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-navy-700)]" />
