@@ -6141,3 +6141,20 @@ describe('chaveEndereco', () => {
     expect(chaveEndereco('RUA A, 10 - X')).not.toBe(chaveEndereco('RUA A, 12 - X'))
   })
 })
+
+describe('mesmo endereco ja feito na Unitrac: parada nao e de outro cliente (06/10, Nova America)', () => {
+  const janela = { chegada: '2026-10-06T15:11:00.000Z', saida: '2026-10-06T15:40:00.000Z' }
+  const esta = linha('NF1', { endereco: 'AVENIDA PASTOR MARTIN LUTHER KING JR, 126 - DEL CASTILHO, RIO DE JANEIRO - ', lat: -22.88, lng: -43.27 })
+  const irma = linha('NF3', { endereco: 'AV PASTOR MARTIN LUTHER KING JR, 126 - DEL CASTILHO, RIO DE JANEIRO - BL 1', lat: -22.88, lng: -43.27 })
+  const vizinho = linha('NF2', { endereco: 'RUA DO VIZINHO, 50 - DEL CASTILHO, RIO DE JANEIRO', lat: -22.88 + 600 * M_LAT, lng: -43.27 })
+  it('nao rebaixa a NF quando outra NF do mesmo endereco tem alvo Unitrac feito', () => {
+    const vis = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', ...janela, distanciaMetrosDoPonto: 600, viaRaioAmpliado: true }],
+      ['NF2', { nf: 'NF2', ...janela, distanciaMetrosDoPonto: 10 }],
+      ['NF3', { nf: 'NF3', ...janela, distanciaMetrosDoPonto: 600, viaRaioAmpliado: true }],
+    ])
+    const ponte = new Map([['TTL7D40', [paradaForaBase('doca', -22.88 + 590 * M_LAT, -43.27, janela.chegada, janela.saida)]]])
+    const d = chamarNutryMax([esta, vizinho, irma], { visitasPorNf: vis, paradasPorOutraPlaca: ponte, alvos: [alvo('NF3', 1)] }).find(x => x.nf === 'NF1')!
+    expect(d.status).not.toBe('pendente')
+  })
+})

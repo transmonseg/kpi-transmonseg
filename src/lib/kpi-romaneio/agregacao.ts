@@ -2684,7 +2684,11 @@ export function montarDetalheEntregas(
         const longeDestaNf = proprios.length > 0 && proprios.every(p => haversine(coord.lat, coord.lng, p.lat, p.lng) > DIST_MIN_PARADA_DE_OUTRO_CLIENTE_M)
         const deOutroCliente = pontosReferenciaDaPlaca.some(o => chaveEndereco(o.endereco) !== chaveEndereco(linha.endereco)
           && haversine(coord.lat, coord.lng, o.lat, o.lng) <= RAIO_OUTRO_CLIENTE_EXPLICA_M)
-        if (longeDestaNf && deOutroCliente) {
+        // Outra NF do MESMO endereco ja' feita na Unitrac (06/10, Shopping Nova
+        // America: doca a >400 m do ponto do endereco): a parada e' deste predio.
+        const mesmoEnderecoFeito = todasLinhasDaPlacaNoDia.some(l => l.nf !== linha.nf
+          && chaveEndereco(l.endereco) === chaveEndereco(linha.endereco) && alvoPorNf.get(l.nf)?.situacao === 1)
+        if (longeDestaNf && deOutroCliente && !mesmoEnderecoFeito) {
           status = 'pendente'
           if (diaEmAndamento) {
             observacao = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
