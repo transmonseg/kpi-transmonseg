@@ -20,6 +20,8 @@ export type LocalCliente = {
   enderecoRef: string | null
 }
 
+const DIST_MAX_DO_GEO_M = 15_000
+
 function distanciaM(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371000
   const rad = (x: number) => (x * Math.PI) / 180
@@ -57,14 +59,21 @@ export function aplicarLocaisClientes(linhas: LinhaGeocodificada[], locais: Map<
     const chave = chaveClienteLocal(l)
     const local = chave ? locais.get(chave) : undefined
     if (!local || !localUtilizavel(local)) return l
-    const geoBom = l.lat != null && l.lng != null && l.geoConfiavel !== false
+    const temGeo = l.lat != null && l.lng != null
+    // Coordenada ruim erra por poucos km, não de cidade: local muito longe é
+    // de outro endereço do cliente (VIVACE: Rio x Campos, 156 km).
+    if (temGeo && distanciaM(l as { lat: number; lng: number }, local) > DIST_MAX_DO_GEO_M) return l
+    const geoBom = temGeo && l.geoConfiavel !== false
     if (geoBom) {
       if (local.fonte === 'entrega_confirmada') return l
       const mesmoEndereco = local.enderecoRef != null && chaveCacheEndereco(l.endereco.trim().toUpperCase()) === chaveCacheEndereco(local.enderecoRef.trim().toUpperCase())
       if (!mesmoEndereco) return l
     }
     aplicados.push(l.nf)
-    return { ...l, lat: local.lat, lng: local.lng, geoConfiavel: true, geoMotivo: undefined, geoSemFonte: false, geoVerificadoManual: true }
+    // "Verificada" (regra de parada compartilhada com vizinho) só pra correção
+    // manual: com o aprendido, em centro de cidade com clientes a <300 m, a NF
+    // passava a "explicar" a parada das vizinhas (RQV9B26 01/10, 3 NFs).
+    return { ...l, lat: local.lat, lng: local.lng, geoConfiavel: true, geoMotivo: undefined, geoSemFonte: false, geoVerificadoManual: local.fonte === 'manual' }
   })
   return { linhas: novas, aplicados }
 }

@@ -48,6 +48,14 @@ describe('aplicarLocaisClientes', () => {
   it('parada órfã confirmada 2x, mesmo endereço: troca mesmo com geocode "bom" (era justamente o geocode errado)', () => {
     expect(aplicarLocaisClientes([linha({ ...geoBom })], new Map([['5778', local({ fonte: 'parada_orfa', confirmacoes: 2 })]])).aplicados).toEqual(['1'])
   })
+  it('local aprendido corrige a coordenada mas não vira "verificada" (só manual entra na regra de parada compartilhada)', () => {
+    const r = aplicarLocaisClientes([linha({ geoConfiavel: false })], new Map([['5778', local({ fonte: 'entrega_confirmada', confirmacoes: 3 })]]))
+    expect(r.linhas[0]).toMatchObject({ lat: -22.95, lng: -43.25, geoVerificadoManual: false })
+  })
+  it('local a mais de 15 km da coordenada do dia (cliente com endereço em outra cidade): não troca, nem com geocode ruim', () => {
+    const longe = linha({ geoConfiavel: false, lat: -21.75, lng: -41.33 })
+    expect(aplicarLocaisClientes([longe], new Map([['5778', local({ fonte: 'entrega_confirmada', confirmacoes: 3 })]])).aplicados).toEqual([])
+  })
   it('sem local, ou local ainda não confirmado: deixa como está', () => {
     expect(aplicarLocaisClientes([linha({})], new Map()).aplicados).toEqual([])
     expect(aplicarLocaisClientes([linha({ geoConfiavel: false })], new Map([['5778', local({ fonte: 'entrega_confirmada', confirmacoes: 1 })]])).aplicados).toEqual([])
