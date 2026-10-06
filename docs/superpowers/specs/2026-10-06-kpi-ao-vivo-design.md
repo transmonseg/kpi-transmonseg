@@ -83,6 +83,13 @@ Tabela `kpi_ao_vivo_calculo`: `cliente`, `data`, `calculado_em`, `duracao_ms`, `
 - Atualização: lista relê o cálculo a cada 60 s; placa aberta consulta "agora" a cada 30 s.
 - Acesso: `podeOperarEmpresa(perfil, 'nutrimax')`; item "Ao vivo" no menu da Nutry Max.
 
+### Design (requisito do usuário: "um designer lindo")
+
+- Mesma identidade do dashboard do KPI (04/10): menu preto, navy, cards `dash-card`, ícones de uma cor só (sem bolhas coloridas), sem trocar cor de marca.
+- Animações suaves (entrada das listas, NF mudando de cor, cronômetro), nada piscando.
+- Antes de codar a tela (fase 2): protótipo visual pra o usuário escolher/aprovar; depois de codar, print em produção antes de mostrar.
+- Funciona bem no celular (a operação acompanha pelo telefone).
+
 ### 6. Gerar KPI agora
 
 Botão chama `gerarKpiNutrimax` na hora (não reaproveita o cálculo de até 10 min atrás, pra ser exato), gera o xlsx, salva em `kpi_romaneio_geracoes` como as gerações de hoje (com `resumo`) e baixa. NFs ainda não visitadas saem como hoje saem num dia em andamento ("AGUARDANDO - ROTA EM ANDAMENTO"). Não insere no dashboard sozinho (continua sendo "Inserir KPI", como combinado).
