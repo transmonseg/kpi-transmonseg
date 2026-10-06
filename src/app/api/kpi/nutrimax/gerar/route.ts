@@ -16,7 +16,7 @@ import { hojeBR } from '@/lib/data-br'
 
 // Leitura de PDF guardada pelo conteúdo (06/10): mesmo arquivo de novo não é
 // lido de novo. Trocar VERSAO_LEITURA quando um parser mudar.
-const VERSAO_LEITURA = '2026-10-06'
+const VERSAO_LEITURA = '2026-10-06b' // b: cidade do pão (bairro do Rio vence pista no nome)
 const sha = (b: Buffer) => createHash('sha256').update(b).digest('hex').slice(0, 24)
 async function lerComCache<T>(data: string, tipo: string, buf: Buffer, ler: () => Promise<T>): Promise<T> {
   const chave = `${tipo}:${sha(buf)}:${VERSAO_LEITURA}`

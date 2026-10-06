@@ -447,6 +447,12 @@ ${corpo}
 2
 216547HORTIFRUTI CAMPOS                                                     RUA TENENTE CORONEL CARDOSO,668                                                 CENTRO                                  100,00100.000,00R$                  `)).toEqual(['BOM JESUS DO ITABAPOANA', 'CAMPOS DOS GOYTACAZES'])
   })
+  it('pista no nome mas bairro do Rio: continua Rio (PAO-4 06/10, HORTIFRUTI SIQUEIRA CAMPOS em Copacabana caía em Campos)', () => {
+    expect(cidades(`1
+216652HORTIFRUTI SIQUEIRA CAMPOS                                            RUA SIQUEIRA CAMPOS,74                                                          COPACABANA                              100,00100.000,00R$                  
+2
+216629HORTIFRUTI VISCONDE DE PIRAJA                                         RUA VISCONDE DE PIRAJA,22                                                       IPANEMA                                 100,00100.000,00R$                  `)).toEqual(['RIO DE JANEIRO', 'RIO DE JANEIRO'])
+  })
   it('carga só do Rio continua Rio de Janeiro', () => {
     expect(cidades(`1
 216565HORTIFRUTI CONDE 99                                                   RUA CONDE DE BONFIM,99                                                          TIJUCA                                  100,00100.000,00R$                  

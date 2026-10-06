@@ -101,6 +101,33 @@ const BAIRROS_INTERIOR: Record<string, string> = {
   BRAGA: 'CABO FRIO',
 }
 const CIDADE_PADRAO = 'RIO DE JANEIRO'
+// Bairros do município do Rio com nome que nao se repete nas cidades do pão
+// (fora CENTRO, SANTA CRUZ etc.). Bairro aqui vence a pista no nome do
+// cliente -- achado 06/10, PAO-4: "HORTIFRUTI SIQUEIRA CAMPOS" (rua de
+// Copacabana) puxava a carga inteira de Ipanema pra Campos dos Goytacazes.
+const BAIRROS_RIO = new Set([
+  'COPACABANA', 'IPANEMA', 'LEBLON', 'LEME', 'GAVEA', 'LAGOA', 'JARDIM BOTANICO', 'HUMAITA', 'BOTAFOGO', 'URCA',
+  'FLAMENGO', 'LARANJEIRAS', 'CATETE', 'GLORIA', 'COSME VELHO', 'SANTA TERESA', 'LAPA', 'SAUDE', 'GAMBOA',
+  'SANTO CRISTO', 'CIDADE NOVA', 'ESTACIO', 'CATUMBI', 'RIO COMPRIDO', 'TIJUCA', 'GRAJAU', 'VILA ISABEL',
+  'ANDARAI', 'MARACANA', 'PRACA DA BANDEIRA', 'ALTO DA BOA VISTA', 'SAO CONRADO', 'VIDIGAL', 'ROCINHA',
+  'BARRA DA TIJUCA', 'RECREIO DOS BANDEIRANTES', 'JACAREPAGUA', 'FREGUESIA (JACAREPAGUA)', 'TAQUARA', 'PECHINCHA',
+  'ANIL', 'CURICICA', 'TANQUE', 'PRACA SECA', 'VILA VALQUEIRE', 'VARGEM GRANDE', 'VARGEM PEQUENA',
+  'CAMORIM', 'ITANHANGA', 'JOA', 'GARDENIA AZUL', 'CIDADE DE DEUS', 'GRUMARI', 'MEIER', 'ENGENHO NOVO',
+  'MANGUEIRA', 'SAO CRISTOVAO', 'BENFICA', 'CAJU', 'MARE', 'BONSUCESSO', 'RAMOS', 'OLARIA', 'PENHA',
+  'PENHA CIRCULAR', 'BRAS DE PINA', 'CORDOVIL', 'PARADA DE LUCAS', 'VIGARIO GERAL', 'IRAJA', 'VISTA ALEGRE',
+  'VILA DA PENHA', 'VILA KOSMOS', 'VICENTE DE CARVALHO', 'MADUREIRA', 'CASCADURA', 'CAMPINHO', 'QUINTINO BOCAIUVA',
+  'CAVALCANTI', 'ENGENHEIRO LEAL', 'OSWALDO CRUZ', 'BENTO RIBEIRO', 'MARECHAL HERMES', 'ROCHA MIRANDA',
+  'HONORIO GURGEL', 'COLEGIO', 'PAVUNA', 'ANCHIETA', 'GUADALUPE', 'RICARDO DE ALBUQUERQUE', 'DEODORO',
+  'REALENGO', 'PADRE MIGUEL', 'BANGU', 'SENADOR CAMARA', 'CAMPO GRANDE', 'SANTISSIMO', 'SENADOR VASCONCELOS',
+  'COSMOS', 'INHOAIBA', 'PACIENCIA', 'SEPETIBA', 'GUARATIBA', 'BARRA DE GUARATIBA', 'PEDRA DE GUARATIBA',
+  'ILHA DO GOVERNADOR', 'GALEAO', 'JARDIM GUANABARA', 'PORTUGUESA', 'TAUA', 'CACUIA', 'PITANGUEIRAS',
+  'ABOLICAO', 'PIEDADE', 'ENCANTADO', 'AGUA SANTA', 'LINS DE VASCONCELOS', 'TODOS OS SANTOS', 'CACHAMBI',
+  'ENGENHO DE DENTRO', 'MARIA DA GRACA', 'DEL CASTILHO', 'INHAUMA', 'HIGIENOPOLIS', 'TOMAS COELHO',
+  'PILARES', 'ENGENHO DA RAINHA', 'MANGUINHOS', 'JACARE', 'JACAREZINHO', 'RIACHUELO', 'SAMPAIO', 'ROCHA',
+  'SAO FRANCISCO XAVIER', 'TURIANO', 'MAGALHAES BASTOS', 'VILA MILITAR', 'JARDIM SULACAP', 'GERICINO',
+  'COELHO NETO', 'ACARI', 'BARROS FILHO', 'COSTA BARROS', 'PARQUE COLUMBIA', 'JARDIM AMERICA', 'VAZ LOBO',
+  'TURIACU', 'ZUMBI', 'FREGUESIA (ILHA)', 'MONERO', 'BANCARIOS', 'COCOTA', 'PRAIA DA BANDEIRA', 'TUBIACANGA',
+])
 
 function municipioPorBairro(bairro: string, clienteNome: string): { cidade: string; explicito: boolean } {
   const { base, parenteses } = normalizarBairro(bairro)
@@ -109,7 +136,7 @@ function municipioPorBairro(bairro: string, clienteNome: string): { cidade: stri
   if (BAIRROS_SAO_GONCALO.has(base)) return { cidade: 'SAO GONCALO', explicito: true }
   if (BAIRROS_ITABORAI.has(base)) return { cidade: 'ITABORAI', explicito: true }
   if (BAIRROS_MARICA.has(base) || BAIRROS_MARICA.has(parenteses)) return { cidade: 'MARICA', explicito: true }
-  for (const [re, cidade] of PISTAS_CLIENTE) if (re.test(cliente)) return { cidade, explicito: true }
+  if (!BAIRROS_RIO.has(base)) for (const [re, cidade] of PISTAS_CLIENTE) if (re.test(cliente)) return { cidade, explicito: true }
   if (BAIRROS_INTERIOR[base]) return { cidade: BAIRROS_INTERIOR[base], explicito: true }
   return { cidade: CIDADE_PADRAO, explicito: false }
 }
