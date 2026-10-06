@@ -153,6 +153,8 @@ export async function gerarKpiRioQuality(params: {
   entregasCompletas?: EntregaRioQualityCompleta[]
   data: string
   cvPorPlaca: Map<string, string>
+  /** KPI ao vivo (06/10): paradas por placa do dia, pro aviso de +1 h no cliente. */
+  aoParadas?: (paradasPorPlaca: Map<string, UnitracParadaRow[]>) => void
   /** injetavel pra teste; padrao = buscarParadasPadraoRioQuality (ponte do
    *  monitoramento primeiro, Unitrac como sinal secundario -- ver
    *  resolverParadas) */
@@ -421,6 +423,7 @@ export async function gerarKpiRioQuality(params: {
     kmPorPlaca.set(p, null)
   }
   if (obsRastreadorPorPlaca.size > 0) log(`Rastreador sem refletir o dia: ${[...obsRastreadorPorPlaca].map(([p, o]) => `${p} (${o})`).join(', ')}`)
+  params.aoParadas?.(paradasPorPlaca)
 
   // Corredor da rua (relatorio rq-mesmo-lugar-e-sem-rastreador.md, 01/10) --
   // so' formatos com cidade (endereco SEM numero: montarEnderecoBrutoCompleto

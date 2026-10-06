@@ -1,3 +1,4 @@
+import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 // KPI ao vivo: leitura/gravação no banco e o cálculo. O cálculo é a MESMA
 // função da geração normal (gerarKpiNutrimax); a tela lê só o resultado
 // gravado aqui, nunca recalcula por conta própria.
@@ -161,7 +162,8 @@ export async function entradaRioQualityDoDia(data: string): Promise<EntregaRioQu
 /** KPI do dia com o que foi guardado de manhã (mesma geração da tela
  *  "Gerar KPI" de cada cliente). null = romaneio do dia não subido. */
 export async function gerarKpiDoDia(cliente: ClienteAoVivo, data: string, log: (m: string) => void = () => {},
-  aoMontarDetalheNutry?: Parameters<typeof gerarKpiNutrimax>[1]): Promise<{ xlsx: Buffer; qtdCargas: number } | null> {
+  aoMontarDetalheNutry?: Parameters<typeof gerarKpiNutrimax>[1],
+  aoParadasRq?: (paradasPorPlaca: Map<string, UnitracParadaRow[]>) => void): Promise<{ xlsx: Buffer; qtdCargas: number } | null> {
   if (cliente === 'rioquality') {
     const entregas = await entradaRioQualityDoDia(data)
     if (!entregas) return null
@@ -172,7 +174,7 @@ export async function gerarKpiDoDia(cliente: ClienteAoVivo, data: string, log: (
       const snap = await lerSnapshotParadas(EMPRESA_SNAPSHOT_RIOQUALITY, data)
       if (snap.size > 0) lerSnapshot = async () => snap
     }
-    const r = await gerarKpiRioQuality({ entregasCompletas: entregas, data, cvPorPlaca: await buscarFrotaRioQuality(), log, lerSnapshot })
+    const r = await gerarKpiRioQuality({ entregasCompletas: entregas, data, cvPorPlaca: await buscarFrotaRioQuality(), log, lerSnapshot, aoParadas: aoParadasRq })
     return { xlsx: r.xlsx, qtdCargas: r.linhasKpi.length }
   }
   const entrada = await entradaDoDia(cliente, data)
@@ -224,6 +226,12 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
           if (pa) paradaAtualPorPlaca.set(placaNorm, pa)
         }
       },
+    }, paradasRq => {
+      // Rio Quality (06/10, pedido da tia Érica): mesmo aviso de +1 h no cliente.
+      if (ehHoje) for (const [placaNorm, ps] of paradasRq) {
+        const pa = paradaEmAndamento(ps, Date.now())
+        if (pa) paradaAtualPorPlaca.set(placaNorm, pa)
+      }
     })
     if (!r) throw new Error('romaneio do dia sumiu durante o cálculo')
     // Planilha do cálculo guardada (sobrescreve a anterior do dia).

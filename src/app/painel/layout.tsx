@@ -20,7 +20,8 @@ export default async function PainelLayout({
     : await getPerfil(user.id)
 
   return (
-    <PainelShell userEmail={user.email} papel={perfil.papel} empresas={perfil.empresas} sairAction={sair}>
+    // Nome cadastrado aparece no lugar do e-mail (06/10, tia Érica: "quero tirar sku").
+    <PainelShell userEmail={(typeof user.user_metadata?.nome === 'string' && user.user_metadata.nome.trim()) || user.email} papel={perfil.papel} empresas={perfil.empresas} sairAction={sair}>
       {children}
     </PainelShell>
   )
