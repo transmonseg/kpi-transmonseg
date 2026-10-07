@@ -6,6 +6,8 @@ import { MagnifyingGlass, DownloadSimple, UploadSimple, MapPin, WarningCircle, C
 import type { EstadoAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
 import type { SugestaoTroca } from '@/lib/kpi-romaneio/sugerir-trocas'
 import type { PlacaAoVivo, NfAoVivo, SituacaoNf } from '@/lib/kpi-romaneio/ao-vivo'
+import { resumirInvestigacao } from '@/lib/kpi-romaneio/investigacao-resumo'
+import { CATEGORIAS_INVESTIGACAO, ROTULO_INVESTIGACAO, fraseInvestigacao } from '@/lib/kpi-romaneio/investigacao-rotulos'
 import { SubirRomaneio, type EnvioRomaneio } from './subir-romaneio'
 
 // Tela "Ao vivo" (spec 2026-10-06-kpi-ao-vivo-design.md). Cor/status de cada
@@ -256,6 +258,7 @@ export default function AoVivoPage() {
       {!historico && cliente === 'nutrimax' && r?.sugestoesTroca && r.sugestoesTroca.length > 0 && (
         <TrocasSugeridas sugestoes={r.sugestoesTroca} onConfirmada={carregar} />
       )}
+      {r && <InvestigacaoNaoEntregues placas={placas} onPlaca={pl => { setPlacaSel(pl); setNfAberta(null); setVendoDetalhe(true) }} />}
       {ultimoEnvio?.monitoramento && ultimoEnvio.monitoramento.length > 0 && (
         <p className={`inline-flex flex-wrap items-center gap-2 rounded-2xl px-4 py-2.5 text-[13px] ${ultimoEnvio.monitoramento.every(m => m.ok) ? 'bg-[var(--color-bg-subtle)] text-[var(--color-fg-muted)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-soft-fg)]'}`}>
           {ultimoEnvio.monitoramento.map(m => (m.ok
@@ -487,6 +490,9 @@ function LinhaNf({ n, todas, placa, data, historico, cliente, ordem, aberta, noC
                 {motivo.acao && <p className="mt-0.5 text-[12px] opacity-80">{motivo.acao}</p>}
               </div>
             )}
+            {n.investigacao && segAgora == null && (
+              <p className="leading-relaxed text-[var(--color-fg)]"><span className="font-semibold">GPS: {ROTULO_INVESTIGACAO[n.investigacao.categoria].titulo.toLowerCase()}.</span> {fraseInvestigacao(n.investigacao)}{n.investigacao.distM != null ? ` ${ROTULO_INVESTIGACAO[n.investigacao.categoria].dica}` : ''}</p>
+            )}
             <p className="leading-relaxed text-[var(--color-fg-muted)]">NF {n.nf}, carga {n.carga}. {enderecoLimpo(n.endereco)}</p>
             {temHorario && (
               <div className="grid grid-cols-3 gap-x-6">
@@ -594,5 +600,48 @@ function TrocasSugeridas({ sugestoes, onConfirmada }: { sugestoes: SugestaoTroca
       </ul>
       {aviso && <p className="text-[12.5px] text-[var(--color-fg-muted)]">{aviso}</p>}
     </section>
+  )
+}
+
+/** Investigação das não entregues (06/10): a parada mais perto de cada cliente
+ *  no dia, agrupada. Pendentes (rota rodando) ficam de fora até fechar. */
+function InvestigacaoNaoEntregues({ placas, onPlaca }: { placas: PlacaAoVivo[]; onPlaca: (placa: string) => void }) {
+  const r = resumirInvestigacao(placas)
+  if (r.total === 0) return null
+  const cats = CATEGORIAS_INVESTIGACAO.filter(c => r.porCategoria[c])
+  return (
+    <details className="group rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
+      <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-[13px] text-[var(--color-fg-muted)] [&::-webkit-details-marker]:hidden">
+        <span className="inline-flex items-center gap-2 font-semibold text-[var(--color-fg)]"><MagnifyingGlass size={16} weight="bold" />{r.total === 1 ? '1 nota não entregue' : `${r.total.toLocaleString('pt-BR')} notas não entregues`}: o que o GPS mostra</span>
+        <span>{cats.map(c => `${r.porCategoria[c]} ${ROTULO_INVESTIGACAO[c].titulo.replace(/ \(.*\)$/, '').toLowerCase()}`).join(', ')}{r.aguardando ? `. ${r.aguardando} ainda aguardando` : ''}</span>
+        <CaretDown size={13} className="ml-auto shrink-0 transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="flex flex-col gap-4 border-t border-[var(--color-border)] px-4 py-4">
+        <ul className="grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
+          {cats.map(c => (
+            <li key={c} className="text-[13px]">
+              <p className="font-semibold text-[var(--color-fg)]"><span className="tabular-nums">{r.porCategoria[c]}</span> {ROTULO_INVESTIGACAO[c].titulo}</p>
+              <p className="text-[12px] text-[var(--color-fg-muted)]">{ROTULO_INVESTIGACAO[c].dica}</p>
+            </li>
+          ))}
+        </ul>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[560px] text-left text-[12.5px]">
+            <thead className="text-[12px] text-[var(--color-fg-muted)]">
+              <tr><th className="py-1.5 pr-3 font-medium">Placa</th><th className="py-1.5 pr-3 text-right font-medium">Não entregues</th>{cats.map(c => <th key={c} className="py-1.5 pr-3 text-right font-medium">{ROTULO_INVESTIGACAO[c].titulo.replace(/ \(.*\)$/, '')}</th>)}</tr>
+            </thead>
+            <tbody>
+              {r.placas.map(p => (
+                <tr key={p.placa} className="border-t border-[var(--color-border)]">
+                  <td className="py-1.5 pr-3"><button type="button" onClick={() => onPlaca(p.placa)} className="font-semibold text-[var(--color-navy-700)] underline-offset-2 hover:underline">{p.placa}</button></td>
+                  <td className="py-1.5 pr-3 text-right font-semibold tabular-nums text-[var(--color-fg)]">{p.naoEntregues}</td>
+                  {cats.map(c => <td key={c} className="py-1.5 pr-3 text-right tabular-nums text-[var(--color-fg-muted)]">{p.porCategoria[c] ?? ''}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </details>
   )
 }

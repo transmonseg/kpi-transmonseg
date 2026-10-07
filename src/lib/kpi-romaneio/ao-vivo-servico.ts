@@ -7,6 +7,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { gerarKpiNutrimax, type EntradaKpiNutrimax } from './gerar-nutrimax'
 import { extrairKpiCompleto } from './resumo-dashboard'
 import { resumirPlacas, paradaDaChegada, paradaEmAndamento, nfProxima, type PlacaAoVivo } from './ao-vivo'
+import { investigarPlacas } from './investigacao'
 import { normPlaca } from '@/lib/unitrac-api'
 import type { LinhaEscala, LinhaRomaneio } from './types'
 import { gerarKpiRioQuality } from '@/lib/kpi-rioquality/pipeline'
@@ -216,9 +217,12 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     // Parada em andamento por placa (aviso de +1 h no cliente, 06/10).
     const paradaAtualPorPlaca = new Map<string, { inicio: string; lat: number | null; lng: number | null }>()
     let sugestoesTroca: SugestaoTroca[] = []
+    // Paradas do dia por placa (investigação das não entregues, 06/10).
+    let paradasDoDia = new Map<string, UnitracParadaRow[]>()
     const ehHoje = data === hojeBR()
     const r = await gerarKpiDoDia(cliente, data, log, {
       aoMontarDetalhe: ({ romaneioGeo, detalhe, paradasPorPlaca }) => {
+        paradasDoDia = paradasPorPlaca
         for (const l of romaneioGeo) if (l.lat != null && l.lng != null) coords.set(l.nf, { lat: l.lat, lng: l.lng })
         // Ponto da parada que o KPI contou como entrega ("Ver no monitoramento").
         for (const d of detalhe) {
@@ -236,6 +240,7 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
         }
       },
     }, paradasRq => {
+      paradasDoDia = paradasRq
       // Rio Quality (06/10, pedido da tia Érica): mesmo aviso de +1 h no cliente.
       if (ehHoje) for (const [placaNorm, ps] of paradasRq) {
         const pa = paradaEmAndamento(ps, Date.now())
@@ -250,6 +255,7 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     if (up.error) log(`ao vivo ${cliente} ${data}: planilha não guardada (${up.error.message})`)
     const resultado = montarResultadoAoVivo(data, await extrairKpiCompleto(r.xlsx), coords, new Date().toISOString(), paradasNf)
     if (sugestoesTroca.length > 0) resultado.sugestoesTroca = sugestoesTroca
+    investigarPlacas(resultado.placas, paradasDoDia)
     for (const p of resultado.placas) {
       const pa = paradaAtualPorPlaca.get(normPlaca(p.placa))
       if (!pa) continue

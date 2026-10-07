@@ -6,6 +6,7 @@
 import type { NfResumo, CargaResumo } from './resumo-dashboard'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { RAIO_CONFIRMACAO_AMPLIADO_METROS } from './constants'
+import type { Investigacao } from './investigacao'
 
 /** pendente = rota ainda rodando; nao_confirmada = a rota acabou e a NF não
  *  foi confirmada (conta como não entregue na taxa). */
@@ -26,6 +27,8 @@ export type NfAoVivo = {
   /** Onde o caminhão parou na entrega (parada da Unitrac). Opcional: o
    *  histórico lido da planilha guardada não tem. */
   parada?: { lat: number; lng: number } | null
+  /** Só nas não entregues: parada mais perto do cliente no dia (investigacao.ts). */
+  investigacao?: Investigacao
 }
 
 export type PlacaAoVivo = {
