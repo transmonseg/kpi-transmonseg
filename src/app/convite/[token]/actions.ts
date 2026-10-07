@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { conviteExpirado } from '@/lib/perfil'
+import { criarContaMonitoramento } from '@/lib/acessos-monitoramento'
 
 export async function resgatar(token: string, formData: FormData) {
   const email = String(formData.get('email') ?? '').trim().toLowerCase()
@@ -48,6 +49,9 @@ export async function resgatar(token: string, formData: FormData) {
   await svc.from('convites')
     .update({ usado_em: new Date().toISOString(), usado_por: created.user.id })
     .eq('token', token)
+  // Mesma conta no monitoramento (06/10: lá não tem mais cadastro aberto).
+  const mon = await criarContaMonitoramento({ email, senha, papel: convite.papel as string, empresas: (convite.empresas as string[] | null) ?? [] })
+  console.log(`[convite] ${email}: monitoramento ${mon}`)
 
   // Quem resgata o convite pode já estar logado (o próprio admin/gerente testando
   // o link no mesmo navegador) — sem isso, o /login barra a entrada de volta pra

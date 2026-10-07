@@ -28,3 +28,26 @@ export async function sincronizarAcessosMonitoramento(): Promise<string> {
   if (!j.ok) return `monitoramento: ${j.erro ?? r.status}`
   return j.alterados?.length ? `alterados: ${j.alterados.join(', ')}` : 'sem mudança'
 }
+
+const EMPRESAS_MONITORAMENTO = ['nutrimax', 'rioquality']
+
+/** Convite resgatado (06/10): cria a mesma conta (mesma senha) no
+ *  monitoramento, já presa ao cliente -- lá o cadastro aberto foi fechado.
+ *  Nunca lança: a conta do KPI vale mesmo se o monitoramento falhar. */
+export async function criarContaMonitoramento(c: { email: string; senha: string; papel: string; empresas: string[] }): Promise<string> {
+  const chave = process.env.MOTOR_SECRET
+  if (!chave) return 'MOTOR_SECRET ausente'
+  const admin = c.papel === 'admin'
+  if (!admin && c.empresas.filter(e => EMPRESAS_MONITORAMENTO.includes(e)).length !== 1) return 'sem cliente do monitoramento'
+  try {
+    const r = await fetch(`${process.env.MONITORAMENTO_URL ?? 'http://127.0.0.1:3010'}/api/acessos/criar-conta`, {
+      method: 'POST', headers: { 'x-motor-key': chave, 'content-type': 'application/json' },
+      body: JSON.stringify({ email: c.email, senha: c.senha, admin, empresas: c.empresas }), signal: AbortSignal.timeout(15_000),
+    })
+    const j = (await r.json().catch(() => ({}))) as { ok?: boolean; existente?: boolean; cliente?: string; erro?: string }
+    if (!j.ok) return `erro: ${j.erro ?? r.status}`
+    return j.existente ? 'já existia' : `criada (${j.cliente})`
+  } catch (err) {
+    return `erro: ${err instanceof Error ? err.message : String(err)}`
+  }
+}
