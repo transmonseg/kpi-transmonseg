@@ -1330,6 +1330,18 @@ export function gerarMotivo(d: {
       ? `Parada curta confirmou outro endereço a ${dist} — não confirma este cliente`
       : 'Parada curta confirmou outro endereço — não confirma este cliente'
   }
+  // Regras de conferencia de 06/10: a evidencia crua ("parada no endereco")
+  // continuava saindo como "Entrega confirmada" com a NF pendente.
+  if (obs === OBS_PARADA_DE_OUTRO_CLIENTE) {
+    return min && dist
+      ? `Parada de ${min} a ${dist} deste cliente, ao lado de outro cliente da placa — era a entrega do outro, conferir`
+      : 'A parada foi no endereço de outro cliente da placa — conferir'
+  }
+  if (obs === OBS_PARADA_CURTA_VARIOS_LONGE) {
+    return min
+      ? `Uma parada curta (${min}) contada para vários endereços a mais de 500 m — conferir`
+      : 'Uma parada curta contada para vários endereços a mais de 500 m — conferir'
+  }
   if (obs?.startsWith('ENTREGUE POR OUTRA PLACA')) {
     const placaMatch = obs.match(/\(([^)]+)\)/)
     const placa = placaMatch ? placaMatch[1] : null
@@ -2865,6 +2877,7 @@ export function montarDetalheEntregas(
           d.observacao = OBS_PARADA_CURTA_VARIOS_LONGE
         }
         d.confianca = calcularConfianca(d.status, d.observacao)
+        d.motivo = gerarMotivo({ status: d.status, observacao: d.observacao, evidencia: d.evidencia, distParadaM: d.distParadaM, tempoParadaMin: d.tempoParadaMin })
       }
     }
   }

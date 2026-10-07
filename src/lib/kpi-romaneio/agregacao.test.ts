@@ -6175,3 +6175,17 @@ describe('rota em andamento: vale a parada mais perto da janela (PACIFIC 06/10)'
     expect(d.status).toBe('confirmado_gps')
   })
 })
+
+describe('gerarMotivo das regras de conferencia de 06/10 (tia Erica: "evidencia diz entrega confirmada mas esta pendente")', () => {
+  it('parada de outro cliente: explica, nunca "entrega confirmada"', () => {
+    const m = gerarMotivo({ status: 'pendente', observacao: 'PARADA DE OUTRO CLIENTE - NÃO CONFIRMA ESTE CLIENTE - CONFERIR', evidencia: 'raio_ampliado', distParadaM: 640, tempoParadaMin: 7 })
+    expect(m).not.toMatch(/confirmada/i)
+    expect(m).toMatch(/outro cliente/i)
+    expect(m).toMatch(/640/)
+  })
+  it('parada curta para varios enderecos: explica, nunca "entrega confirmada"', () => {
+    const m = gerarMotivo({ status: 'pendente', observacao: 'PARADA CURTA PARA VÁRIOS ENDEREÇOS A MAIS DE 500 M - CONFERIR', evidencia: 'parada_no_endereco', distParadaM: null, tempoParadaMin: 4 })
+    expect(m).not.toMatch(/confirmada/i)
+    expect(m).toMatch(/vários endereços/i)
+  })
+})
