@@ -100,6 +100,7 @@ export function categoriaPendencia(status: string): string {
   if (s.startsWith('NÃO FOI AO CLIENTE')) return 'Não foi ao cliente'
   if (s.startsWith('PARADA PRÓXIMA')) return 'Parada próxima'
   if (s.startsWith('PASSOU NO ENDEREÇO') || s.startsWith('PAROU NO ENDEREÇO')) return 'Passou sem registrar'
+  if (s.startsWith('PASSOU A 500m-2km')) return 'Passou perto sem parar'
   if (s.startsWith('CLIENTE SEM ACESSO RODOVIÁRIO')) return 'Ilha (sem estrada)'
   if (s.startsWith('CARGA SEM PLACA')) return 'Carga sem placa'
   if (s.startsWith('PLACA DA ESCALA NÃO PASSOU')) return 'Placa da escala divergente'

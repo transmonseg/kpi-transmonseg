@@ -752,6 +752,9 @@ const DURACAO_MIN_PARADA_PROXIMA_PROPRIA_MIN = 2
 const RAIO_MIN_PARADA_PROXIMA_PROPRIA_M = 500
 const RAIO_MAX_PARADA_PROXIMA_PROPRIA_M = 2_000
 const OBS_PARADA_PROXIMA_FORA = 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR'
+// 06/10: o rotulo acima saia so' pela distancia do TRAJETO -- carro que so'
+// passou a 1 km virava "parada proxima" (6 das 25 NFs da revisao da tia Erica).
+export const OBS_PASSOU_PERTO_SEM_PARAR = 'PASSOU A 500m-2km SEM PARAR - CONFERIR'
 export const OBS_ENTREGUE_PARADA_PROXIMA = 'ENTREGUE - PARADA PRÓXIMA (500m-2km)'
 
 // Guardas (verificacao-20-parada-proxima.md, 29/09 -- 4 FPs em 20 NFs):
@@ -832,6 +835,7 @@ const ROTULOS_SEM_PROVA_CADASTRO = new Set<string>([
   'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR',
   'NÃO FOI AO CLIENTE (caminhão não esteve na região)',
   'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR',
+  OBS_PASSOU_PERTO_SEM_PARAR,
   'PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR',
   '',
 ])
@@ -1047,6 +1051,7 @@ function elegivelParaConfirmarPorParadaPropria(status: StatusEntrega, observacao
     || observacao === 'ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PRÓXIMA (horário aproximado)'
     || observacao === 'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR'
     || observacao === 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR'
+    || observacao === OBS_PASSOU_PERTO_SEM_PARAR
     || observacao === 'NÃO FOI AO CLIENTE (caminhão não esteve na região)'
     || observacao === 'PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR'
     || observacao.startsWith(PREFIXO_OBS_COORDENADA_IMPRECISA)
@@ -1332,6 +1337,9 @@ export function gerarMotivo(d: {
     return dist
       ? `Parada curta confirmou outro endereço a ${dist} — não confirma este cliente`
       : 'Parada curta confirmou outro endereço — não confirma este cliente'
+  }
+  if (obs === OBS_PASSOU_PERTO_SEM_PARAR) {
+    return dist ? `Passou a ${dist} do cliente sem parar — nenhuma parada a menos de 2 km` : 'Passou perto do cliente sem parar — nenhuma parada a menos de 2 km'
   }
   // Regras de conferencia de 06/10: a evidencia crua ("parada no endereco")
   // continuava saindo como "Entrega confirmada" com a NF pendente.
@@ -2229,7 +2237,16 @@ export function montarDetalheEntregas(
         // 500-800m (RAIO_CONFIRMACAO_AMPLIADO_METROS/viaRaioAmpliado)
         // logo abaixo. Decisao revertida por pedido do usuario apos essa
         // auditoria.
-        observacao = 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR'
+        // So' e' "parada" se o carro PAROU a ate' 2 km (geo ou cadastro);
+        // senao foi so' passagem (06/10).
+        const refs = [
+          linha.lat != null && linha.lng != null ? { lat: linha.lat, lng: linha.lng } : null,
+          alvo && coordValidaCadastro(alvo.pontoLat) && coordValidaCadastro(alvo.pontoLng) ? { lat: alvo.pontoLat as number, lng: alvo.pontoLng as number } : null,
+        ].filter((r): r is { lat: number; lng: number } => r != null)
+        const parouAte2km = [...paradasProprias, ...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? [])].some(p =>
+          p.classificacao === 'FORA_BASE' && p.lat != null && p.lng != null
+          && refs.some(r => haversine(r.lat, r.lng, p.lat as number, p.lng as number) <= RAIO_NAO_FOI_AO_CLIENTE_M))
+        observacao = parouAte2km || refs.length === 0 ? OBS_PARADA_PROXIMA_FORA : OBS_PASSOU_PERTO_SEM_PARAR
       }
     }
     // Achado real 08/09 (auditoria de todas as placas do dia, placa

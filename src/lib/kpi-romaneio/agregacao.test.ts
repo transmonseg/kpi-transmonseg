@@ -3138,7 +3138,7 @@ describe('montarDetalheEntregas -- escala divergente vira CONFERIR ESCALA em vez
     )
 
     const nf1 = detalhe.find(d => d.nf === nfs[0].nf)!
-    expect(nf1.observacao).toBe('PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR')
+    expect(nf1.observacao).toBe('PASSOU A 500m-2km SEM PARAR - CONFERIR' /* so' trajeto, sem parada (06/10) */)
 
     const outras = detalhe.filter(d => d.nf !== nfs[0].nf)
     for (const d of outras) {
@@ -4659,7 +4659,7 @@ describe('montarDetalheEntregas -- SINAL DO RASTREADOR COM FALHA NO DIA (Task 1,
       [l('2394101'), l('2394102', { geoConfiavel: false, geoMotivo: 'municipio_divergente' })],
       { distTrajeto: [['2394101', 1_000]] },
     )
-    expect(proxima.observacao).toBe('PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR')
+    expect(proxima.observacao).toBe('PASSOU A 500m-2km SEM PARAR - CONFERIR' /* so' trajeto, sem parada (06/10) */)
     expect(imprecisa.observacao).toBe('ENDEREÇO COM COORDENADA IMPRECISA - COORDENADA CAIU EM OUTRO MUNICÍPIO - CONFERIR CADASTRO')
   })
 
@@ -4798,7 +4798,7 @@ describe('montarDetalheEntregas -- placa com duas cargas em regioes diferentes (
   it('trajeto da placa passou a <=2 km de uma NF da carga pequena: nada muda', () => {
     const detalhe = chamar({ dist: [['216155', 100_000], ['216157', 1_500]] })
     expect(detalhe[0].observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
-    expect(detalhe[2].observacao).toBe('PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR')
+    expect(detalhe[2].observacao).toBe('PASSOU A 500m-2km SEM PARAR - CONFERIR' /* so' trajeto, sem parada (06/10) */)
   })
 
   it.skip('placa com apagao de sinal: SINAL DO RASTREADOR (Task 1) prevalece', () => {
@@ -6196,5 +6196,13 @@ describe('gerarMotivo das regras de conferencia de 06/10 (tia Erica: "evidencia 
     const m = gerarMotivo({ status: 'pendente', observacao: 'PARADA CURTA PARA VÁRIOS ENDEREÇOS A MAIS DE 500 M - CONFERIR', evidencia: 'parada_no_endereco', distParadaM: null, tempoParadaMin: 4 })
     expect(m).not.toMatch(/confirmada/i)
     expect(m).toMatch(/vários endereços/i)
+  })
+})
+
+describe('passou perto sem parar x parada proxima (06/10)', () => {
+  it('gerarMotivo do passou-sem-parar explica que nao houve parada', () => {
+    const m = gerarMotivo({ status: 'pendente', observacao: 'PASSOU A 500m-2km SEM PARAR - CONFERIR', evidencia: 'parada_proxima_fora_raio', distParadaM: 1200, tempoParadaMin: null })
+    expect(m).toMatch(/sem parar/)
+    expect(m).toMatch(/1,2 km|1200|1.200/)
   })
 })
