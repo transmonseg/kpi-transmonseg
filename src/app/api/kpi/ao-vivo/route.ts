@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { hojeBR } from '@/lib/data-br'
 import { lerEstadoAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
 import { lerDiaHistorico, listarDiasHistorico } from '@/lib/kpi-romaneio/ao-vivo-historico'
+import { semResultadoSeIgual } from '@/lib/kpi-romaneio/ao-vivo-carga'
 import { acessoAoVivo } from './acesso'
 
 export const runtime = 'nodejs'
@@ -24,5 +25,7 @@ export async function GET(req: NextRequest) {
       resultado: h?.resultado ?? null, fonte: h?.fonte ?? null, geracaoId: h?.geracaoId ?? null,
     })
   }
-  return NextResponse.json({ data: hoje, hoje, historico: false, dias, clientes: a.clientes, ...(await lerEstadoAoVivo(a.cliente, hoje)) })
+  // ?tenho=<calculadoEm>: a tela já tem esse cálculo -> não manda os ~900 KB de novo.
+  const estado = semResultadoSeIgual(await lerEstadoAoVivo(a.cliente, hoje), req.nextUrl.searchParams.get('tenho'))
+  return NextResponse.json({ data: hoje, hoje, historico: false, dias, clientes: a.clientes, ...estado })
 }

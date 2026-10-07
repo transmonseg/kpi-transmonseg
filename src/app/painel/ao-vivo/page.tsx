@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { MagnifyingGlass, DownloadSimple, UploadSimple, MapPin, WarningCircle, CaretDown, CaretLeft, MapTrifold, ArrowsLeftRight } from '@phosphor-icons/react/dist/ssr'
 import type { EstadoAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
@@ -9,6 +9,7 @@ import type { PlacaAoVivo, NfAoVivo, SituacaoNf } from '@/lib/kpi-romaneio/ao-vi
 import { resumirInvestigacao } from '@/lib/kpi-romaneio/investigacao-resumo'
 import { buscarNfs, filtrarNfs, type FiltroNf } from '@/lib/kpi-romaneio/ao-vivo-busca'
 import { CATEGORIAS_INVESTIGACAO, ROTULO_INVESTIGACAO, fraseInvestigacao } from '@/lib/kpi-romaneio/investigacao-rotulos'
+import { juntarEstado, mensagemFalhaCarga } from '@/lib/kpi-romaneio/ao-vivo-carga'
 import { SubirRomaneio, type EnvioRomaneio } from './subir-romaneio'
 
 // Tela "Ao vivo" (spec 2026-10-06-kpi-ao-vivo-design.md). Cor/status de cada
@@ -81,18 +82,37 @@ export default function AoVivoPage() {
   const [cliente, setCliente] = useState<Cliente>(() => (daUrl().get('cliente') === 'rioquality' ? 'rioquality' : 'nutrimax'))
   const CLIENTE = cliente
 
+  // Cálculo que a tela já tem (do mesmo cliente/dia): o servidor só reenvia se mudou.
+  const estadoRef = useRef<Estado | null>(null)
+  estadoRef.current = estado
+  const clienteDoEstado = useRef<string | null>(null)
+  const [falhaSeguida, setFalhaSeguida] = useState(0)
   const carregar = useCallback(async () => {
+    const ant = estadoRef.current
+    const mesmoDia = !!ant && !ant.historico && !dataSel && ant.data === ant.hoje && clienteDoEstado.current === CLIENTE
+    const tenho = mesmoDia && ant?.resultado ? `&tenho=${encodeURIComponent(ant.resultado.calculadoEm)}` : ''
     try {
-      const r = await fetch(`/api/kpi/ao-vivo?cliente=${CLIENTE}${dataSel ? `&data=${dataSel}` : ''}`, { cache: 'no-store' })
+      const r = await fetch(`/api/kpi/ao-vivo?cliente=${CLIENTE}${dataSel ? `&data=${dataSel}` : ''}${tenho}`, { cache: 'no-store' })
       // Login só da Rio Quality: abre direto nela.
       if (r.status === 403 && CLIENTE === 'nutrimax') { setCliente('rioquality'); return }
       if (!r.ok) throw new Error(await r.text())
-      setEstado(await r.json())
+      const novo = await r.json()
+      setEstado(prev => juntarEstado(mesmoDia ? prev : null, novo))
+      clienteDoEstado.current = CLIENTE
       setErroCarga(null)
+      setFalhaSeguida(0)
     } catch (e) {
-      setErroCarga(e instanceof Error ? e.message : 'Não consegui carregar.')
+      // Falha de rede não apaga a tela: mantém os últimos dados e tenta de novo em 10 s.
+      setErroCarga(mensagemFalhaCarga(e, !!estadoRef.current))
+      setFalhaSeguida(n => n + 1)
     }
   }, [dataSel, cliente]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (falhaSeguida === 0) return
+    const t = setTimeout(carregar, 10_000)
+    return () => clearTimeout(t)
+  }, [falhaSeguida, carregar])
 
   // Estado: a cada 60 s (10 s enquanto o primeiro cálculo ainda não saiu).
   // Depende só de um booleano: depender do objeto `resultado` recarregaria
