@@ -4840,7 +4840,7 @@ describe('Plano 29/09 -- PARADA PRÓXIMA propria e isolada vira ENTREGUE', () =>
       placa: 'TTL7D40', paradasPorOutraPlaca: new Map([['TTL7D40', [pPaz, pPropria, pCrisMar]]]),
     }))
     expect(d.status).toBe('confirmado_gps')
-    expect(d.observacao).toBeNull()
+    expect(d.observacao).toBe('ENTREGUE - PARADA PRÓXIMA (500m-2km)')
     expect(d.chegada).toBe(t('12:59'))
     expect(d.saida).toBe(t('13:10'))
     expect(d.evidencia).toBe('parada_proxima_propria')
@@ -4863,7 +4863,7 @@ describe('Plano 29/09 -- PARADA PRÓXIMA propria e isolada vira ENTREGUE', () =>
       paradasUnitracCruasPropriaPlaca: new Map([['TTL7D40', [stop('TTL7D40-api-1', em(1600), '12:59', '13:05')]]]),
     }))
     expect(d.status).toBe('confirmado_gps')
-    expect(d.observacao).toBeNull()
+    expect(d.observacao).toBe('ENTREGUE - PARADA PRÓXIMA (500m-2km)')
     expect(d.chegada).toBe(t('12:59'))
     expect(d.evidencia).toBe('parada_proxima_propria')
     expect(d.distParadaM).toBe(1200)
@@ -4875,7 +4875,7 @@ describe('Plano 29/09 -- PARADA PRÓXIMA propria e isolada vira ENTREGUE', () =>
       paradasPorOutraPlaca: new Map([['TTL7D40', [pPaz, stop('doismin', em(1000), '12:59', '13:01'), pCrisMar]]]),
     }))
     expect(d.status).toBe('confirmado_gps')
-    expect(d.observacao).toBeNull()
+    expect(d.observacao).toBe('ENTREGUE - PARADA PRÓXIMA (500m-2km)')
     expect(d.evidencia).toBe('parada_proxima_propria')
   })
 
@@ -4887,8 +4887,17 @@ describe('Plano 29/09 -- PARADA PRÓXIMA propria e isolada vira ENTREGUE', () =>
     expect(d.observacao).toBe(OBS_PROXIMA)
   })
 
-  it('parada longa mas mais perto de OUTRO cliente da placa que desta NF -> continua CONFERIR', () => {
+  it('parada longa mais perto de OUTRO cliente da placa que desta NF, mas nao NO endereco dele -> ENTREGUE (decisao 06/10)', () => {
     const vizinho = cliente('VIZ', 'OUTRO CLIENTE', em(1000, 700))
+    const d = doNf(chamarNutryMax([nf, crisMar, vizinho], {
+      paradasPorOutraPlaca: new Map([['TTL7D40', [pPropria, pCrisMar]]]),
+    }))
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBe('ENTREGUE - PARADA PRÓXIMA (500m-2km)')
+  })
+
+  it('parada NO endereco de outro cliente da placa (<= 150 m) -> continua CONFERIR (regra 6 da tia Erica)', () => {
+    const vizinho = cliente('VIZ', 'OUTRO CLIENTE', em(1000, 100))
     const d = doNf(chamarNutryMax([nf, crisMar, vizinho], {
       paradasPorOutraPlaca: new Map([['TTL7D40', [pPropria, pCrisMar]]]),
     }))
@@ -4987,7 +4996,7 @@ describe('Parada proxima propria -- guardas (ja confirmou outra NF, geo confiave
   const doNf = (d: ReturnType<typeof chamarNutryMax>, n: string) => d.find(x => x.nf === n)!
   const confirmada = (d: ReturnType<typeof doNf>, chegadaEsperada: string) => {
     expect(d.status).toBe('confirmado_gps')
-    expect(d.observacao).toBeNull()
+    expect(d.observacao).toBe('ENTREGUE - PARADA PRÓXIMA (500m-2km)')
     expect(d.chegada).toBe(chegadaEsperada)
     expect(d.evidencia).toBe('parada_proxima_propria')
   }

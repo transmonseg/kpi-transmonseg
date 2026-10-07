@@ -752,6 +752,7 @@ const DURACAO_MIN_PARADA_PROXIMA_PROPRIA_MIN = 2
 const RAIO_MIN_PARADA_PROXIMA_PROPRIA_M = 500
 const RAIO_MAX_PARADA_PROXIMA_PROPRIA_M = 2_000
 const OBS_PARADA_PROXIMA_FORA = 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR'
+export const OBS_ENTREGUE_PARADA_PROXIMA = 'ENTREGUE - PARADA PRÓXIMA (500m-2km)'
 
 // Guardas (verificacao-20-parada-proxima.md, 29/09 -- 4 FPs em 20 NFs):
 // (2) geocode confiavel x cadastro Unitrac a mais de DIVERGENCIA_GEO_CADASTRO_M
@@ -907,10 +908,12 @@ function acharParadaProximaPropriaIsolada(
     const distCad = cadastro ? haversine(p.lat, p.lng, cadastro.lat, cadastro.lng) : Infinity
     const distM = Math.min(distGeo, distCad)
     if (distM < RAIO_MIN_PARADA_PROXIMA_PROPRIA_M || distM > RAIO_MAX_PARADA_PROXIMA_PROPRIA_M) continue
-    const explicadaPorOutro = outros.some(o => {
-      const d = haversine(p.lat as number, p.lng as number, o.lat, o.lng)
-      return d <= RAIO_OUTRO_CLIENTE_EXPLICA_M || d <= distM
-    })
+    // Decisao 06/10 (usuario + tia Erica, "parada entre 500 m e 2 km vale como
+    // entregue"): so' a parada NO endereco de outro cliente da placa (<= 150 m)
+    // fica de fora. Antes tambem barrava "mais perto de outro cliente do que
+    // deste" -- em rota densa isso barrava quase toda parada proxima.
+    const explicadaPorOutro = outros.some(o =>
+      haversine(p.lat as number, p.lng as number, o.lat, o.lng) <= RAIO_OUTRO_CLIENTE_EXPLICA_M)
     if (explicadaPorOutro) continue
     const ref: 'cad' | 'geo' = distCad < distGeo ? 'cad' : 'geo'
     if (ref === 'geo' && linha.geoSemFonte && duracaoMin < DURACAO_MIN_PARADA_PROXIMA_GEO_SEM_FONTE_MIN
@@ -2349,7 +2352,7 @@ export function montarDetalheEntregas(
       if (paradaProximaPropria) {
         const p = paradaProximaPropria.parada
         status = 'confirmado_gps'
-        observacao = null
+        observacao = OBS_ENTREGUE_PARADA_PROXIMA
         chegada = p.chegada
         saida = p.fim_real ?? p.saida ?? p.chegada
         tempoParadaMin = minutosEntre(chegada, saida)
