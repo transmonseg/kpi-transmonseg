@@ -27,19 +27,31 @@ export async function POST(req: NextRequest) {
     const { error } = await svc.from('kpi_troca_placa').insert({ empresa: EMPRESA_NUTRIMAX, data, carga, placa_escala: placaEscala, placa_real: placaReal, responsavel: `${a.email ?? 'operador'} (Ao vivo)` })
     if (error) return new NextResponse(error.message, { status: 500 })
   }
-  const monitoramento = await trocarNoMonitoramento(data, placaEscala, placaReal)
+  const monitoramento = await trocarNoMonitoramento(data, placaEscala, placaReal, await nfsDaCarga(data, carga))
   // Recalcula em segundo plano; a tela pega no próximo GET.
   void calcularAoVivo('nutrimax', data).catch(() => {})
   return NextResponse.json({ ok: true, monitoramento })
 }
 
-async function trocarNoMonitoramento(data: string, placaDe: string, placaPara: string): Promise<{ ok: boolean; pontos?: number; erro?: string }> {
+/** NFs da carga no romaneio do dia (normal + pão). Troca mútua entre dois carros
+ *  escalados (07/10) precisa mover só as notas desta carga no monitoramento. */
+async function nfsDaCarga(data: string, carga: string): Promise<string[]> {
+  const { data: d } = await createServiceClient().from('kpi_ao_vivo_dia').select('romaneio, pao')
+    .eq('cliente', 'nutrimax').eq('data', data).maybeSingle()
+  if (!d) return []
+  type L = { nf?: string; carga?: string }
+  const linhas: L[] = [...((d.romaneio as L[] | null) ?? []), ...(((d.pao as { linhas?: L[] } | null)?.linhas) ?? [])]
+  return [...new Set(linhas.filter(l => l.carga === carga && l.nf).map(l => l.nf as string))]
+}
+
+async function trocarNoMonitoramento(data: string, placaDe: string, placaPara: string, nfs: string[]): Promise<{ ok: boolean; pontos?: number; erro?: string }> {
   const chave = process.env.MOTOR_SECRET
   if (!chave) return { ok: false, erro: 'MOTOR_SECRET ausente' }
   try {
     const r = await fetch(`${process.env.MONITORAMENTO_URL ?? 'http://127.0.0.1:3010'}/api/romaneio/trocar-veiculo`, {
       method: 'POST', headers: { 'x-motor-key': chave, 'content-type': 'application/json' },
-      body: JSON.stringify({ data, placaDe, placaPara }), signal: AbortSignal.timeout(20_000),
+      // Sem as NFs da carga (romaneio não achado) cai no comportamento antigo: a placa inteira.
+      body: JSON.stringify({ data, placaDe, placaPara, ...(nfs.length ? { nfs } : {}) }), signal: AbortSignal.timeout(20_000),
     })
     const j = (await r.json().catch(() => ({}))) as { ok?: boolean; pontos?: number; erro?: string }
     return j.ok ? { ok: true, pontos: j.pontos } : { ok: false, erro: j.erro ?? `HTTP ${r.status}` }

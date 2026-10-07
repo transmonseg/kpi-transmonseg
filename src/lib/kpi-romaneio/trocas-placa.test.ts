@@ -70,3 +70,22 @@ describe('completarPlaca (06/10: a operação escreve só o final, "5J17 vira 9C
     expect(completarPlaca('X', frota)).toEqual({ erro: 'Placa inválida.' })
   })
 })
+
+describe('troca mútua entre dois carros escalados (07/10, RQV5F67 x RBG4F53)', () => {
+  it('cada carga vai pro outro carro, sem encadear', () => {
+    const romaneio = [
+      { carga: '99518', placa: 'RQV5F67', nf: 'a' },
+      { carga: '99516', placa: 'RBG4F53', nf: 'b' },
+    ]
+    const escala = [
+      { carga: '99518', placaRaw: 'RQV5F67', placaNorm: 'RQV5F67' },
+      { carga: '99516', placaRaw: 'RBG4F53', placaNorm: 'RBG4F53' },
+    ]
+    const r = aplicarTrocasDePlaca(romaneio, escala, [
+      { carga: '99518', placaEscala: 'RQV5F67', placaReal: 'RBG4F53' },
+      { carga: '99516', placaEscala: 'RBG4F53', placaReal: 'RQV5F67' },
+    ])
+    expect(r.romaneio.map(l => l.placa)).toEqual(['RBG4F53', 'RQV5F67'])
+    expect(r.escala.map(e => e.placaNorm)).toEqual(['RBG4F53', 'RQV5F67'])
+  })
+})
