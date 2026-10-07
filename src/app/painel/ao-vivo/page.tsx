@@ -7,6 +7,7 @@ import type { EstadoAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
 import type { SugestaoTroca } from '@/lib/kpi-romaneio/sugerir-trocas'
 import type { PlacaAoVivo, NfAoVivo, SituacaoNf } from '@/lib/kpi-romaneio/ao-vivo'
 import { resumirInvestigacao } from '@/lib/kpi-romaneio/investigacao-resumo'
+import { buscarNfs, filtrarNfs, type FiltroNf } from '@/lib/kpi-romaneio/ao-vivo-busca'
 import { CATEGORIAS_INVESTIGACAO, ROTULO_INVESTIGACAO, fraseInvestigacao } from '@/lib/kpi-romaneio/investigacao-rotulos'
 import { SubirRomaneio, type EnvioRomaneio } from './subir-romaneio'
 
@@ -66,6 +67,8 @@ export default function AoVivoPage() {
   const [agora, setAgora] = useState<Record<string, Agora>>({})
   const [agoraMs, setAgoraMs] = useState(() => Date.now())
   const [busca, setBusca] = useState('')
+  // Notas da placa aberta: todas, só pendentes ou só entregues (pedido 06/10).
+  const [filtroNf, setFiltroNf] = useState<FiltroNf>('todas')
   const [gerando, setGerando] = useState(false)
   const [subindo, setSubindo] = useState(false)
   // Resultado do último envio: romaneio/pão também foram pro Monitoramento?
@@ -111,10 +114,14 @@ export default function AoVivoPage() {
   // Carga sem placa (pão sem carro no PDF) vai pro fim, não pro topo.
   const placas = useMemo(() => [...(estado?.resultado?.placas ?? [])].sort((a, b) => Number(a.placa === 'SEM PLACA' || a.placa === '') - Number(b.placa === 'SEM PLACA' || b.placa === '')), [estado])
 
+  // Busca também por cliente e número da nota (06/10, tia Érica).
+  const achados = useMemo(() => buscarNfs(placas, busca), [placas, busca])
   const filtradas = useMemo(() => {
     const b = busca.trim().toUpperCase()
-    return b ? placas.filter(p => p.placa.includes(b) || p.motorista.toUpperCase().includes(b) || p.destino.toUpperCase().includes(b)) : placas
-  }, [placas, busca])
+    if (!b) return placas
+    const comNota = new Set(achados.map(a => a.placa))
+    return placas.filter(p => p.placa.includes(b) || p.motorista.toUpperCase().includes(b) || p.destino.toUpperCase().includes(b) || comNota.has(p.placa))
+  }, [placas, busca, achados])
 
   const placa = placas.find(p => p.placa === placaSel) ?? filtradas[0] ?? placas[0] ?? null
 
@@ -288,10 +295,30 @@ export default function AoVivoPage() {
             <div className="border-b border-[var(--color-border)] p-3">
               <label className="flex h-10 items-center gap-2 rounded-xl bg-[var(--color-bg-subtle)] px-3 text-[var(--color-fg-muted)]">
                 <MagnifyingGlass size={15} />
-                <input aria-label="Buscar placa, motorista ou destino" value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar placa, motorista ou destino" className="min-w-0 flex-1 bg-transparent text-[13px] text-[var(--color-fg)] outline-none" />
+                <input aria-label="Buscar placa, cliente ou nota" value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar placa, cliente ou nota" className="min-w-0 flex-1 bg-transparent text-[13px] text-[var(--color-fg)] outline-none" />
               </label>
             </div>
             <ul className="min-h-0 flex-1 overflow-y-auto">
+              {achados.length > 0 && (
+                <li className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-4 py-2 text-[12px] font-semibold text-[var(--color-fg-muted)]">
+                  {achados.length === 1 ? '1 nota encontrada' : `${achados.length}${achados.length >= 30 ? '+' : ''} notas encontradas`}
+                </li>
+              )}
+              {achados.map(({ placa: pl, nf: n }) => (
+                <li key={`achado-${pl}-${n.carga}-${n.nf}`}>
+                  <button type="button" onClick={() => { setPlacaSel(pl); setNfAberta(n.nf); setFiltroNf('todas'); setVendoDetalhe(true); setTimeout(() => document.getElementById(`nf-${n.carga}-${n.nf}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 120) }}
+                    className="block w-full border-b border-[var(--color-border)] px-4 py-2.5 text-left transition-colors hover:bg-[var(--color-bg-subtle)] focus-visible:outline-2 focus-visible:outline-[var(--color-navy-700)]">
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className="truncate text-[13px] font-medium text-[var(--color-fg)]">{n.cliente || 'Cliente sem nome'}</span>
+                      <span className="shrink-0 text-[12px] font-semibold" style={{ color: n.situacao === 'entregue' ? 'var(--color-success)' : undefined }}>{ROTULO_SITUACAO[n.situacao]}</span>
+                    </span>
+                    <span className="mt-0.5 block text-[12px] tabular-nums text-[var(--color-fg-muted)]">NF {n.nf} · {pl}{n.chegada ? ` · chegou ${n.chegada}` : ''}</span>
+                  </button>
+                </li>
+              ))}
+              {achados.length > 0 && filtradas.length > 0 && (
+                <li className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-4 py-2 text-[12px] font-semibold text-[var(--color-fg-muted)]">Placas</li>
+              )}
               {filtradas.map(p => (
                 <LinhaPlaca key={p.placa} p={p} ativa={p.placa === placa.placa} agora={historico ? undefined : agora[p.placa]} agoraMs={agoraMs} historico={historico} onClick={() => { setPlacaSel(p.placa); setNfAberta(null); setVendoDetalhe(true) }} />
               ))}
@@ -303,7 +330,7 @@ export default function AoVivoPage() {
             <button type="button" onClick={() => setVendoDetalhe(false)} className="mb-3 inline-flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-4 text-[13px] font-semibold text-[var(--color-fg)] lg:hidden">
               <CaretLeft size={14} weight="bold" />Todas as placas
             </button>
-          <DetalhePlaca p={placa} data={estado.data} cliente={cliente} agora={historico ? undefined : agora[placa.placa]} agoraMs={agoraMs} historico={historico} nfAberta={nfAberta} onNf={nf => setNfAberta(a => (a === nf ? null : nf))} />
+          <DetalhePlaca p={placa} data={estado.data} cliente={cliente} agora={historico ? undefined : agora[placa.placa]} agoraMs={agoraMs} historico={historico} nfAberta={nfAberta} onNf={nf => setNfAberta(a => (a === nf ? null : nf))} filtroNf={filtroNf} onFiltroNf={setFiltroNf} />
           </div>
         </div>
       )}
@@ -393,7 +420,7 @@ function LinhaPlaca({ p, ativa, agora, agoraMs, historico, onClick }: { p: Placa
   )
 }
 
-function DetalhePlaca({ p, data, cliente, agora, agoraMs, historico, nfAberta, onNf }: { p: PlacaAoVivo; data: string; cliente: Cliente; agora: Agora | undefined; agoraMs: number; historico: boolean; nfAberta: string | null; onNf: (nf: string) => void }) {
+function DetalhePlaca({ p, data, cliente, agora, agoraMs, historico, nfAberta, onNf, filtroNf, onFiltroNf }: { p: PlacaAoVivo; data: string; cliente: Cliente; agora: Agora | undefined; agoraMs: number; historico: boolean; nfAberta: string | null; onNf: (nf: string) => void; filtroNf: FiltroNf; onFiltroNf: (f: FiltroNf) => void }) {
   const s = situacaoAgora(p, agora, agoraMs, historico)
   const nfAgora = agora?.nf?.nf ?? (!historico ? p.paradaAtual?.nf ?? null : null)
   const clienteAgora = agora?.nf?.cliente ?? (!historico ? p.paradaAtual?.cliente ?? null : null)
@@ -425,15 +452,28 @@ function DetalhePlaca({ p, data, cliente, agora, agoraMs, historico, nfAberta, o
 
       <div className="dash-card overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border)] px-5 py-3.5">
-          <h3 className="text-[14px] font-semibold text-[var(--color-fg)]">Notas fiscais</h3>
+          <div className="flex flex-wrap items-center gap-3">
+            <h3 className="text-[14px] font-semibold text-[var(--color-fg)]">Notas fiscais</h3>
+            <div role="radiogroup" aria-label="Mostrar notas" className="inline-flex rounded-full bg-[var(--color-bg-subtle)] p-0.5">
+              {(['todas', 'pendentes', 'entregues'] as const).map(f => (
+                <button key={f} type="button" role="radio" aria-checked={filtroNf === f} onClick={() => onFiltroNf(f)}
+                  className={`h-7 rounded-full px-3 text-[12px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-[var(--color-navy-700)] ${filtroNf === f ? 'bg-[var(--color-bg-elevated)] text-[var(--color-fg)] shadow-sm' : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]'}`}>
+                  {f === 'todas' ? 'Todas' : f === 'pendentes' ? 'Pendentes' : 'Entregues'}
+                </button>
+              ))}
+            </div>
+          </div>
           <p className="text-[12px] text-[var(--color-fg-muted)]">
             {contagem('entregue')} entregues{contagem('pendente') ? `, ${contagem('pendente')} pendentes` : ''}{contagem('nao_confirmada') ? `, ${contagem('nao_confirmada')} não confirmadas` : ''}{contagem('revisar') ? `, ${contagem('revisar')} a revisar` : ''}{contagem('nao_foi') ? `, ${contagem('nao_foi')} não foi` : ''}{contagem('sem_rastreador') ? `, ${contagem('sem_rastreador')} sem rastreador` : ''}
           </p>
         </div>
         <ul>
-          {p.nfs.map((n, i) => (
-            <LinhaNf key={`${n.carga}-${n.nf}`} n={n} todas={p.nfs} placa={p.placa} data={data} historico={historico} cliente={cliente} ordem={i + 1} aberta={nfAberta === n.nf} noClienteAgora={nfAgora === n.nf ? inicioAgora : null} agoraMs={agoraMs} onClick={() => onNf(n.nf)} posicao={agora?.posicao ?? null} />
+          {filtrarNfs(p.nfs, filtroNf).map(n => (
+            <LinhaNf key={`${n.carga}-${n.nf}`} n={n} todas={p.nfs} placa={p.placa} data={data} historico={historico} cliente={cliente} ordem={p.nfs.indexOf(n) + 1} aberta={nfAberta === n.nf} noClienteAgora={nfAgora === n.nf ? inicioAgora : null} agoraMs={agoraMs} onClick={() => onNf(n.nf)} posicao={agora?.posicao ?? null} />
           ))}
+          {filtrarNfs(p.nfs, filtroNf).length === 0 && (
+            <li className="px-5 py-8 text-center text-[13px] text-[var(--color-fg-muted)]">{filtroNf === 'pendentes' ? 'Nenhuma nota pendente nesta placa.' : 'Nenhuma nota entregue ainda nesta placa.'}</li>
+          )}
         </ul>
       </div>
     </section>
@@ -464,7 +504,7 @@ function LinhaNf({ n, todas, placa, data, historico, cliente, ordem, aberta, noC
   const rotulo = segAgora != null ? (longe ? 'No cliente há +1 h' : 'No cliente agora') : ROTULO_SITUACAO[n.situacao]
   const corRotulo = segAgora != null ? (longe ? 'text-[#b45309]' : 'text-[#1d4fa8]') : n.situacao === 'entregue' ? 'text-[var(--color-success)]' : n.situacao === 'nao_foi' || n.situacao === 'nao_confirmada' ? 'text-[var(--color-danger)]' : n.situacao === 'revisar' ? 'text-[#b45309]' : 'text-[var(--color-fg-muted)]'
   return (
-    <li className="border-b border-[var(--color-border)] last:border-b-0">
+    <li id={`nf-${n.carga}-${n.nf}`} className="scroll-mt-24 border-b border-[var(--color-border)] last:border-b-0">
       <button type="button" onClick={onClick} aria-expanded={aberta}
         className={`flex w-full items-center gap-3 px-5 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-[var(--color-navy-700)] ${aberta ? 'bg-[var(--color-bg-subtle)]' : 'hover:bg-[var(--color-bg-subtle)]'}`}>
         <span className="w-6 shrink-0 text-right text-[12px] tabular-nums text-[var(--color-fg-subtle)]">{ordem}</span>
