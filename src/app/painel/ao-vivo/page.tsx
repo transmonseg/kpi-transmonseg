@@ -633,7 +633,7 @@ function InvestigacaoNaoEntregues({ placas, onPlaca }: { placas: PlacaAoVivo[]; 
             <tbody>
               {r.placas.map(p => (
                 <tr key={p.placa} className="border-t border-[var(--color-border)]">
-                  <td className="py-1.5 pr-3"><button type="button" onClick={() => onPlaca(p.placa)} className="font-semibold text-[var(--color-navy-700)] underline-offset-2 hover:underline">{p.placa}</button></td>
+                  <td className="py-1.5 pr-3"><button type="button" onClick={() => onPlaca(p.placa)} className="font-semibold text-[var(--color-fg)] underline decoration-[var(--color-border-strong)] underline-offset-2 hover:decoration-[var(--color-fg)]">{p.placa}</button></td>
                   <td className="py-1.5 pr-3 text-right font-semibold tabular-nums text-[var(--color-fg)]">{p.naoEntregues}</td>
                   {cats.map(c => <td key={c} className="py-1.5 pr-3 text-right tabular-nums text-[var(--color-fg-muted)]">{p.porCategoria[c] ?? ''}</td>)}
                 </tr>
