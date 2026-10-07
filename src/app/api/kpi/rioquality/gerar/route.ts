@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getPerfil, empresaLiberada } from '@/lib/perfil'
+import { getPerfil, podeOperarEmpresa } from '@/lib/perfil'
 import { hojeBR } from '@/lib/data-br'
 import { extrairResumoKpiXlsx } from '@/lib/kpi-romaneio/resumo-dashboard'
 import { salvarGeracao, buscarGeracaoParaRegenerar } from '@/lib/kpi-romaneio/historico'
@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Não autenticado', { status: 401 })
   const perfil = await getPerfil(user.id)
-  if (perfil.papel !== 'admin' || !empresaLiberada(perfil, CLIENTE)) {
+  // Operador com a Rio Quality liberada também gera (06/10, login da Rio Quality igual ao da Nutry).
+  if (!podeOperarEmpresa(perfil, CLIENTE)) {
     return new NextResponse('Sem permissão.', { status: 403 })
   }
 

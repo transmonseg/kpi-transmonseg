@@ -31,7 +31,9 @@ export function DashboardKpi({ cliente, clientes, aba, podeInserir, dataInicial 
 
   return (
     <div className="mx-auto w-full max-w-[1320px]">
-      {/* Empresa */}
+      {/* Empresa -- conta de uma empresa só (login da Nutry, da Rio Quality) não vê
+          as outras nem a Benassi travada (06/10, logins separados). */}
+      {clientes.length > 1 && (
       <div className="mb-6 flex flex-wrap items-center gap-1 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-1 shadow-soft sm:w-fit">
         {clientes.map(c => (
           <button
@@ -51,6 +53,7 @@ export function DashboardKpi({ cliente, clientes, aba, podeInserir, dataInicial 
           <Lock size={12} weight="fill" /> Benassi
         </span>
       </div>
+      )}
 
       {/* Cabeçalho */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

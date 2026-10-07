@@ -12,6 +12,7 @@ import { CLIENTES_AO_VIVO, calcularAoVivo } from '../src/lib/kpi-romaneio/ao-viv
 import { diaAnterior, precisaFecharDia } from '../src/lib/kpi-romaneio/ao-vivo'
 import { limparCacheDia } from '../src/lib/kpi-romaneio/cache-dia'
 import { limparXlsxAoVivo } from '../src/lib/kpi-romaneio/ao-vivo-servico'
+import { sincronizarAcessosMonitoramento } from '../src/lib/acessos-monitoramento'
 
 const log = (m: string) => console.log(`${new Date().toISOString()} ${m}`)
 
@@ -27,6 +28,9 @@ async function fecharDiaAnterior() {
 }
 
 async function main() {
+  // Logins separados (06/10): o monitoramento segue os perfis do KPI.
+  const acessos = await sincronizarAcessosMonitoramento().catch(err => `erro: ${err}`)
+  if (acessos !== 'sem mudança') log(`acessos monitoramento: ${acessos}`)
   await fecharDiaAnterior()
   const horaBR = Number(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }))
   // Limpeza 1x por dia (04h BRT, 1o tick da hora): cache do dia e planilhas

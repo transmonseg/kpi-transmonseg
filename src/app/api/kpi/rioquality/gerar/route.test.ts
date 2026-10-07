@@ -17,7 +17,7 @@ const cenario = vi.hoisted(() => ({
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({ auth: { getUser: async () => ({ data: { user: { id: 'u', email: 'a@b.c' } } }) } }),
 }))
-vi.mock('@/lib/perfil', () => ({ getPerfil: async () => ({ papel: 'admin' }), empresaLiberada: () => true }))
+vi.mock('@/lib/perfil', () => ({ getPerfil: async () => ({ papel: 'admin' }), empresaLiberada: () => true, podeOperarEmpresa: () => true }))
 vi.mock('@/lib/data-br', () => ({ hojeBR: () => '2026-09-30' }))
 vi.mock('@/lib/kpi-romaneio/historico', () => ({ salvarGeracao: vi.fn(async () => 'id'), buscarGeracaoParaRegenerar: async () => cenario.geracao }))
 vi.mock('@/lib/supabase/service', () => ({

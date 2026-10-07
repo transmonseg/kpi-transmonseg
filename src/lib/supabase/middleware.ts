@@ -98,7 +98,12 @@ export async function updateSession(request: NextRequest) {
       )
       // Monitoramento dentro da Central (05/10): equipe toda (o layout confere o papel).
       // Ao vivo da Rio Quality (05/10): operador com a Rio Quality liberada (a rota confere o cliente).
-      const operadorAoVivoRq = perfil.papel === 'operador' && perfil.empresas.includes('rioquality') && (path === '/painel/ao-vivo' || path.startsWith('/api/kpi/ao-vivo') || path.startsWith('/api/kpi/historico/'))
+      // Rio Quality (06/10): mesmo acesso do operador da Nutry -- ao vivo, Gerar
+      // KPI e Histórico da Rio Quality (cada rota/layout rechecha a empresa).
+      const operadorAoVivoRq = perfil.papel === 'operador' && perfil.empresas.includes('rioquality') && (
+        path === '/painel/ao-vivo' || path.startsWith('/api/kpi/ao-vivo') || path.startsWith('/api/kpi/historico/') ||
+        path === '/painel/rioquality' || path.startsWith('/painel/rioquality/') || path.startsWith('/api/kpi/rioquality/')
+      )
       const operadorMonitoramento = perfil.papel === 'operador' && (path === '/painel/monitoramento' || path.startsWith('/painel/monitoramento/'))
       const permitido =
         operadorNutry || operadorAoVivoRq || operadorMonitoramento ||
