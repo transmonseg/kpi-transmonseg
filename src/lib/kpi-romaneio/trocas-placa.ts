@@ -10,6 +10,20 @@ export function normalizarPlacaDigitada(s: string): string {
   return normPlaca(s.trim())
 }
 
+const PLACA_INTEIRA = /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/
+
+/** Placa digitada inteira ou só o final ("9C84", como a operação escreve no
+ *  grupo): completa pela frota quando o final é único. */
+export function completarPlaca(digitada: string, frota: string[]): { placa: string } | { erro: string } {
+  const p = normalizarPlacaDigitada(digitada)
+  if (PLACA_INTEIRA.test(p)) return { placa: p }
+  if (p.length < 3 || p.length > 6) return { erro: 'Placa inválida.' }
+  const achadas = [...new Set(frota.map(normPlaca))].filter(f => PLACA_INTEIRA.test(f) && f.endsWith(p))
+  if (achadas.length === 1) return { placa: achadas[0] }
+  if (achadas.length === 0) return { erro: `Nenhuma placa da frota termina em ${p}.` }
+  return { erro: `Mais de uma placa termina em ${p} (${achadas.slice(0, 4).join(', ')}). Digite a placa inteira.` }
+}
+
 /** Substitui placaEscala -> placaReal no romaneio e na escala. Troca com
  *  `carga` só vale pra aquela carga; sem carga, pra todas da placa no dia.
  *  Várias trocas pra mesma placa/carga: a última da lista vence. */

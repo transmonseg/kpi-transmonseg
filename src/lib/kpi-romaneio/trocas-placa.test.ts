@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { aplicarTrocasDePlaca, normalizarPlacaDigitada } from './trocas-placa'
+import { aplicarTrocasDePlaca, normalizarPlacaDigitada, completarPlaca } from './trocas-placa'
 
 const rom = (carga: string, placa: string, nf: string) => ({ carga, placa, nf })
 const esc = (carga: string, placa: string) => ({ carga, placaRaw: placa, placaNorm: placa.replace('-', '') })
@@ -53,5 +53,20 @@ describe('carga sem placa no romaneio (pão 05/10)', () => {
 describe('normalizarPlacaDigitada', () => {
   it('tira hífen/espaço e põe maiúscula', () => {
     expect(normalizarPlacaDigitada(' rqv-5f67 ')).toBe('RQV5F67')
+  })
+})
+
+describe('completarPlaca (06/10: a operação escreve só o final, "5J17 vira 9C84")', () => {
+  const frota = ['TTL5J17', 'RBJ9C84', 'RQU2H61', 'TTH2H61']
+  it('placa inteira passa direto (com ou sem traço)', () => expect(completarPlaca('rbj-9c84', frota)).toEqual({ placa: 'RBJ9C84' }))
+  it('só o final, único na frota: completa', () => {
+    expect(completarPlaca('9c84', frota)).toEqual({ placa: 'RBJ9C84' })
+    expect(completarPlaca('5J17', frota)).toEqual({ placa: 'TTL5J17' })
+  })
+  it('final repetido: pede a placa inteira, dizendo quais', () =>
+    expect(completarPlaca('2H61', frota)).toEqual({ erro: 'Mais de uma placa termina em 2H61 (RQU2H61, TTH2H61). Digite a placa inteira.' }))
+  it('final que não existe / texto inválido', () => {
+    expect(completarPlaca('0000', frota)).toEqual({ erro: 'Nenhuma placa da frota termina em 0000.' })
+    expect(completarPlaca('X', frota)).toEqual({ erro: 'Placa inválida.' })
   })
 })

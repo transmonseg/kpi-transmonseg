@@ -3,7 +3,9 @@ import { usuarioAtual } from '@/lib/supabase/usuario-atual'
 import { getPerfil, podeOperarEmpresa } from '@/lib/perfil'
 import { createServiceClient } from '@/lib/supabase/service'
 import { EMPRESA_NUTRIMAX } from '@/lib/kpi-romaneio/constants'
-import { normalizarPlacaDigitada } from '@/lib/kpi-romaneio/trocas-placa'
+import { normalizarPlacaDigitada, completarPlaca } from '@/lib/kpi-romaneio/trocas-placa'
+import { buscarFrota } from '@/lib/unitrac-api'
+import { COD_USER_NUTRIMAX } from '@/lib/kpi-romaneio/constants'
 import type { PlacaSemRastreadorRow } from '@/lib/kpi-romaneio/placas-sem-rastreador'
 
 // Tela "Placas do dia" (05/10, pedido da operação: "KPI ainda não tem espaço
@@ -12,6 +14,16 @@ import type { PlacaSemRastreadorRow } from '@/lib/kpi-romaneio/placas-sem-rastre
 
 const dataOk = (s: unknown): s is string => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s)
 const placaOk = (p: string) => /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(p)
+
+// Placa digitada só pelo final ("9C84", 06/10): completa pela frota da Unitrac.
+// Placa inteira não consulta nada.
+async function placaDaFrota(digitada: string): Promise<{ placa: string } | { erro: string }> {
+  const direta = completarPlaca(digitada, [])
+  if ('placa' in direta || direta.erro === 'Placa inválida.') return direta
+  const frota = await buscarFrota(COD_USER_NUTRIMAX).catch(() => [])
+  if (frota.length === 0) return { erro: 'Não consegui consultar a frota agora. Digite a placa inteira.' }
+  return completarPlaca(digitada, frota.map(v => v.placaNorm))
+}
 
 async function acesso(): Promise<{ ok: true; email: string } | { ok: false; resp: NextResponse }> {
   const user = await usuarioAtual()
@@ -48,8 +60,9 @@ export async function POST(req: NextRequest) {
   const svc = createServiceClient()
 
   if (b.tipo === 'sem_rastreador') {
-    const placa = normalizarPlacaDigitada(String(b.placa ?? ''))
-    if (!placaOk(placa)) return new NextResponse('Placa inválida.', { status: 400 })
+    const pl = await placaDaFrota(String(b.placa ?? ''))
+    if ('erro' in pl) return new NextResponse(pl.erro, { status: 400 })
+    const placa = pl.placa
     if (!dataOk(b.inicio) || (b.fim != null && b.fim !== '' && !dataOk(b.fim))) return new NextResponse('Data inválida.', { status: 400 })
     const fim = b.fim ? String(b.fim) : null
     if (fim && fim < String(b.inicio)) return new NextResponse('A data final é antes da inicial.', { status: 400 })
@@ -61,8 +74,13 @@ export async function POST(req: NextRequest) {
   }
 
   if (b.tipo === 'troca') {
-    const placaEscala = normalizarPlacaDigitada(String(b.placaEscala ?? ''))
-    const placaReal = normalizarPlacaDigitada(String(b.placaReal ?? ''))
+    const escalaDigitada = normalizarPlacaDigitada(String(b.placaEscala ?? ''))
+    const pe = escalaDigitada === '' ? { placa: '' } : await placaDaFrota(escalaDigitada)
+    if ('erro' in pe) return new NextResponse(`Placa da escala: ${pe.erro}`, { status: 400 })
+    const pr = await placaDaFrota(String(b.placaReal ?? ''))
+    if ('erro' in pr) return new NextResponse(`Placa que rodou: ${pr.erro}`, { status: 400 })
+    const placaEscala = pe.placa
+    const placaReal = pr.placa
     const carga = typeof b.carga === 'string' && b.carga.trim() !== '' ? b.carga.trim().toUpperCase() : null
     // Placa da escala vazia = carga que veio SEM PLACA no romaneio (pão 05/10):
     // só vale com a carga informada, senão pegaria toda carga sem placa do dia.
