@@ -6031,7 +6031,7 @@ describe('compartilhada com vizinho: coordenada verificada por pessoa vale como 
 describe('parada que era de outro cliente da rota nao confirma (raio ampliado / compartilhada, 06/10)', () => {
   const janela = { chegada: '2026-10-06T10:00:00.000Z', saida: '2026-10-06T10:20:00.000Z' }
   const alvoNf = linha('NF1', { endereco: 'RUA VOLUNTARIOS DA PATRIA, 10 - BOTAFOGO, RIO DE JANEIRO', lat: -22.95, lng: -43.19 })
-  const vizinho = linha('NF2', { endereco: 'RUA SAO CLEMENTE, 500 - BOTAFOGO, RIO DE JANEIRO', lat: -22.95 + 700 * M_LAT, lng: -43.19 })
+  const vizinho = linha('NF2', { clienteCodigo: 'CLI2', endereco: 'RUA SAO CLEMENTE, 500 - BOTAFOGO, RIO DE JANEIRO', lat: -22.95 + 700 * M_LAT, lng: -43.19 })
   const visitas = () => new Map<string, Visita>([
     ['NF1', { nf: 'NF1', ...janela, distanciaMetrosDoPonto: 700, viaRaioAmpliado: true }],
     ['NF2', { nf: 'NF2', ...janela, distanciaMetrosDoPonto: 20 }],
@@ -6053,7 +6053,7 @@ describe('parada que era de outro cliente da rota nao confirma (raio ampliado / 
   })
 
   it('parada a 600 m sem outro cliente da rota por perto: raio ampliado continua confirmando', () => {
-    const longe = linha('NF2', { endereco: 'RUA SAO CLEMENTE, 500 - BOTAFOGO, RIO DE JANEIRO', lat: -22.95 + 3000 * M_LAT, lng: -43.19 })
+    const longe = linha('NF2', { clienteCodigo: 'CLI2', endereco: 'RUA SAO CLEMENTE, 500 - BOTAFOGO, RIO DE JANEIRO', lat: -22.95 + 3000 * M_LAT, lng: -43.19 })
     const ponte = new Map([['TTL7D40', [paradaForaBase('so', -22.95 + 600 * M_LAT, -43.19, janela.chegada, janela.saida)]]])
     const d = chamarNutryMax([alvoNf, longe], { visitasPorNf: visitas(), paradasPorOutraPlaca: ponte }).find(x => x.nf === 'NF1')!
     expect(d.status).not.toBe('pendente')
@@ -6065,7 +6065,7 @@ describe('parada que era de outro cliente da rota nao confirma (raio ampliado / 
 describe('parada curta nao confirma varios enderecos longe (06/10)', () => {
   const janela = { chegada: '2026-10-06T11:20:00.000Z', saida: '2026-10-06T11:24:00.000Z' }
   const a = linha('NF1', { endereco: 'RUA DAS LARANJEIRAS, 539 - LARANJEIRAS, RIO DE JANEIRO', lat: -22.93, lng: -43.19 })
-  const b = linha('NF2', { endereco: 'RUA GENERAL GLICERIO, 15 - LARANJEIRAS, RIO DE JANEIRO', lat: -22.93, lng: -43.19 + 0.002 })
+  const b = linha('NF2', { clienteCodigo: 'CLI2', endereco: 'RUA GENERAL GLICERIO, 15 - LARANJEIRAS, RIO DE JANEIRO', lat: -22.93, lng: -43.19 + 0.002 })
   const vis = (extra = {}) => new Map<string, Visita>([
     ['NF1', { nf: 'NF1', ...janela, distanciaMetrosDoPonto: 900, viaRaioAmpliado: true, ...extra }],
     ['NF2', { nf: 'NF2', ...janela, distanciaMetrosDoPonto: 700, viaRaioAmpliado: true, ...extra }],
@@ -6133,6 +6133,21 @@ describe('mesmo endereco escrito diferente nao e outro cliente (06/10)', () => {
   })
 })
 
+describe('shopping: lojas diferentes no mesmo predio sao outro cliente (gabarito 24/09 GIGANTE NORDESTINO)', () => {
+  const janela = { chegada: '2026-09-24T15:11:00.000Z', saida: '2026-09-24T15:40:00.000Z' }
+  const gigante = linha('NF1', { clienteCodigo: 'GIGANTE', endereco: 'AVENIDA PASTOR MARTIN LUTHER KING JR, 126 - DEL CASTILHO, RIO DE JANEIRO - LOJA 1', lat: -22.88 + 700 * M_LAT, lng: -43.27 })
+  const outraLoja = linha('NF2', { clienteCodigo: 'OUTRA', endereco: 'AV PASTOR MARTIN LUTHER KING JR, 126 - DEL CASTILHO, RIO DE JANEIRO - LOJA 2', lat: -22.88, lng: -43.27 })
+  it('parada na outra loja (rua+numero iguais, codigo diferente) nao confirma o Gigante', () => {
+    const vis = new Map<string, Visita>([
+      ['NF1', { nf: 'NF1', ...janela, distanciaMetrosDoPonto: 700, viaRaioAmpliado: true }],
+      ['NF2', { nf: 'NF2', ...janela, distanciaMetrosDoPonto: 10 }],
+    ])
+    const ponte = new Map([['TTL7D40', [paradaForaBase('loja2', -22.88 + 10 * M_LAT, -43.27, janela.chegada, janela.saida)]]])
+    const d = chamarNutryMax([gigante, outraLoja], { visitasPorNf: vis, paradasPorOutraPlaca: ponte }).find(x => x.nf === 'NF1')!
+    expect(d.status).toBe('pendente')
+  })
+})
+
 describe('chaveEndereco', () => {
   it('AV/AVENIDA, espacos, zeros a esquerda e complemento viram a mesma chave', () => {
     expect(chaveEndereco('AV PASTOR MARTIN LUTHER KING JR, 0126 - DEL CASTILHO, RIO - BL 10'))
@@ -6142,19 +6157,21 @@ describe('chaveEndereco', () => {
   })
 })
 
-describe('mesmo endereco ja feito na Unitrac: parada nao e de outro cliente (06/10, Nova America)', () => {
-  const janela = { chegada: '2026-10-06T15:11:00.000Z', saida: '2026-10-06T15:40:00.000Z' }
-  const esta = linha('NF1', { endereco: 'AVENIDA PASTOR MARTIN LUTHER KING JR, 126 - DEL CASTILHO, RIO DE JANEIRO - ', lat: -22.88, lng: -43.27 })
-  const irma = linha('NF3', { endereco: 'AV PASTOR MARTIN LUTHER KING JR, 126 - DEL CASTILHO, RIO DE JANEIRO - BL 1', lat: -22.88, lng: -43.27 })
-  const vizinho = linha('NF2', { endereco: 'RUA DO VIZINHO, 50 - DEL CASTILHO, RIO DE JANEIRO', lat: -22.88 + 600 * M_LAT, lng: -43.27 })
-  it('nao rebaixa a NF quando outra NF do mesmo endereco tem alvo Unitrac feito', () => {
-    const vis = new Map<string, Visita>([
-      ['NF1', { nf: 'NF1', ...janela, distanciaMetrosDoPonto: 600, viaRaioAmpliado: true }],
-      ['NF2', { nf: 'NF2', ...janela, distanciaMetrosDoPonto: 10 }],
-      ['NF3', { nf: 'NF3', ...janela, distanciaMetrosDoPonto: 600, viaRaioAmpliado: true }],
-    ])
-    const ponte = new Map([['TTL7D40', [paradaForaBase('doca', -22.88 + 590 * M_LAT, -43.27, janela.chegada, janela.saida)]]])
-    const d = chamarNutryMax([esta, vizinho, irma], { visitasPorNf: vis, paradasPorOutraPlaca: ponte, alvos: [alvo('NF3', 1)] }).find(x => x.nf === 'NF1')!
-    expect(d.status).not.toBe('pendente')
+
+// Regressao 06/10 (UNN6G81 / PACIFIC): parada a 9 m as 09:56, mas o
+// casamento por horario pegou outra parada da janela, a 541 m -- a regra da
+// rota em andamento segurava uma entrega real. Vale a MENOR distancia entre
+// as paradas da janela.
+describe('rota em andamento: vale a parada mais perto da janela (PACIFIC 06/10)', () => {
+  const janela = { chegada: '2026-10-06T09:40:00.000Z', saida: '2026-10-06T10:10:00.000Z' }
+  const nf = linha('NF1', { endereco: 'RUA CORCOVADO, 432 - CABIUNAS, MACAE', lat: -22.3, lng: -41.7 })
+  it('janela com parada longa a 541 m e parada curta a 9 m: confirma', () => {
+    const ponte = new Map([['TTL7D40', [
+      paradaForaBase('longe', -22.3 + 541 * M_LAT, -41.7, '2026-10-06T09:40:00.000Z', '2026-10-06T09:55:00.000Z'),
+      paradaForaBase('perto', -22.3 + 9 * M_LAT, -41.7, '2026-10-06T09:56:00.000Z', '2026-10-06T10:00:00.000Z'),
+    ]]])
+    const vis = new Map<string, Visita>([['NF1', { nf: 'NF1', ...janela, distanciaMetrosDoPonto: 0 }]])
+    const [d] = chamarNutryMax([nf], { visitasPorNf: vis, paradasPorOutraPlaca: ponte, diaEmAndamento: true })
+    expect(d.status).toBe('confirmado_gps')
   })
 })

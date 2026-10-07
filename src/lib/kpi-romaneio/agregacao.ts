@@ -969,6 +969,14 @@ export function chaveEndereco(endereco: string): string {
   return base.replace(/\s+/g, ' ').replace(/,\s*0*(\d)/, ', $1').trim()
 }
 
+/** Mesmo cliente? Pelo codigo do cliente quando os dois tem; sem codigo, pela
+ *  rua+numero normalizados. */
+function mesmoClienteOuEndereco(a: { clienteCodigo?: string | null; endereco: string }, b: { clienteCodigo?: string | null; endereco: string }): boolean {
+  const ca = a.clienteCodigo?.trim(), cb = b.clienteCodigo?.trim()
+  if (ca && cb) return ca === cb
+  return chaveEndereco(a.endereco) === chaveEndereco(b.endereco)
+}
+
 /** Endereco cujo ponto no mapa e' aproximado por natureza: estrada/rodovia,
  *  sem numero (S/N, SN, 0) ou ilha sem acesso rodoviario. Nesses, parada a
  *  km do nosso ponto nao prova que o caminhao nao foi (casos de 02/10 que a
@@ -991,6 +999,7 @@ export function pontoAproximadoPorEndereco(endereco: string): boolean {
 const EVIDENCIAS_FRACAS_DE_PARADA = new Set<EvidenciaNf>(['raio_ampliado', 'vizinhanca', 'parada_curta_compartilhada'])
 const DIST_MIN_PARADA_DE_OUTRO_CLIENTE_M = 400
 const DIST_MAX_CONFIRMA_ROTA_ANDAMENTO_M = 300
+const RAIO_PARADA_NO_PROPRIO_CLIENTE_M = 150
 const EVIDENCIAS_FRACAS_PARADA_CURTA = new Set<EvidenciaNf>(['raio_ampliado', 'vizinhanca', 'parada_curta_compartilhada', 'parada_proxima_propria'])
 const DURACAO_MAX_PARADA_CURTA_VARIOS_MIN = 5
 export const OBS_PARADA_CURTA_VARIOS_LONGE = 'PARADA CURTA PARA VÁRIOS ENDEREÇOS A MAIS DE 500 M - CONFERIR'
@@ -2656,8 +2665,36 @@ export function montarDetalheEntregas(
     // Com a rota em andamento, parada a mais de DIST_MAX_CONFIRMA_ROTA_ANDAMENTO_M
     // espera: se ele parar mais perto depois, confirma com o horario certo; no
     // fim do dia vale a regra de sempre (KPI final igual).
-    if (modoPrecisao && diaEmAndamento && status === 'confirmado_gps' && distParadaM != null
-      && distParadaM > DIST_MAX_CONFIRMA_ROTA_ANDAMENTO_M) {
+    // Regressao 06/10 (UNN6G81/PACIFIC): `distParadaM` vem do casamento por
+    // horario (UMA parada, a de maior sobreposicao) e pegava outra parada da
+    // janela a 541 m com o carro tendo parado a 9 m. Mede a MENOR distancia
+    // entre o cliente (geocode/cadastro) e qualquer parada da propria placa na
+    // janela da visita; sem parada achada, nao segura.
+    const distMaisPerto = (soNaJanela: boolean): number | null => {
+      if (!visita && soNaJanela) return null
+      const ini = visita ? Date.parse(visita.chegada) : -Infinity, fim = visita ? Date.parse(visita.saida) : Infinity
+      const proprios = [
+        linha.geoConfiavel !== false && linha.lat != null && linha.lng != null ? { lat: linha.lat, lng: linha.lng } : null,
+        alvo && coordValidaCadastro(alvo.pontoLat) && coordValidaCadastro(alvo.pontoLng) ? { lat: alvo.pontoLat as number, lng: alvo.pontoLng as number } : null,
+      ].filter((p): p is { lat: number; lng: number } => p != null)
+      let melhor: number | null = null
+      for (const p of [...(paradasPorOutraPlaca.get(placaNorm) ?? []), ...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? [])]) {
+        if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) continue
+        const pi = Date.parse(p.chegada), pf = Date.parse(p.fim_real ?? p.saida ?? p.chegada)
+        if (soNaJanela && (pf < ini || pi > fim)) continue
+        for (const q of proprios) {
+          const dd = haversine(p.lat, p.lng, q.lat, q.lng)
+          if (melhor == null || dd < melhor) melhor = dd
+        }
+      }
+      return melhor
+    }
+    const distMaisPertoNaJanela = distMaisPerto(true)
+    // Parada no proprio cliente em qualquer hora do dia (06/10: Cantinho Sabor
+    // e Paulo S, carro parado a 24-25 m fora da janela da visita casada).
+    const paradaNoClienteNoDia = (() => { const dd = distMaisPerto(false); return dd != null && dd <= RAIO_PARADA_NO_PROPRIO_CLIENTE_M })()
+    if (modoPrecisao && diaEmAndamento && status === 'confirmado_gps' && distMaisPertoNaJanela != null
+      && distMaisPertoNaJanela > DIST_MAX_CONFIRMA_ROTA_ANDAMENTO_M && !paradaNoClienteNoDia) {
       status = 'pendente'
       observacao = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
       chegada = null
@@ -2682,13 +2719,18 @@ export function montarDetalheEntregas(
           alvo && coordValidaCadastro(alvo.pontoLat) && coordValidaCadastro(alvo.pontoLng) ? { lat: alvo.pontoLat as number, lng: alvo.pontoLng as number } : null,
         ].filter((p): p is { lat: number; lng: number } => p != null)
         const longeDestaNf = proprios.length > 0 && proprios.every(p => haversine(coord.lat, coord.lng, p.lat, p.lng) > DIST_MIN_PARADA_DE_OUTRO_CLIENTE_M)
-        const deOutroCliente = pontosReferenciaDaPlaca.some(o => chaveEndereco(o.endereco) !== chaveEndereco(linha.endereco)
-          && haversine(coord.lat, coord.lng, o.lat, o.lng) <= RAIO_OUTRO_CLIENTE_EXPLICA_M)
-        // Outra NF do MESMO endereco ja' feita na Unitrac (06/10, Shopping Nova
-        // America: doca a >400 m do ponto do endereco): a parada e' deste predio.
-        const mesmoEnderecoFeito = todasLinhasDaPlacaNoDia.some(l => l.nf !== linha.nf
-          && chaveEndereco(l.endereco) === chaveEndereco(linha.endereco) && alvoPorNf.get(l.nf)?.situacao === 1)
-        if (longeDestaNf && deOutroCliente && !mesmoEnderecoFeito) {
+        // "Outro cliente" pelo CODIGO do cliente, nao pelo texto do endereco:
+        // shopping (Nova America) tem varias lojas na mesma rua+numero (gabarito
+        // 24/09 GIGANTE NORDESTINO 'nao foi'), e o mesmo cliente aparece com o
+        // endereco escrito diferente.
+        const deOutroCliente = todasLinhasDaPlacaNoDia.some(l => mesmoClienteOuEndereco(l, linha) === false
+          && pontosDaNf(l, alvoPorNf.get(l.nf)).some(o => haversine(coord.lat, coord.lng, o.lat, o.lng) <= RAIO_OUTRO_CLIENTE_EXPLICA_M))
+        // NAO dispensa por "outra NF do mesmo endereco feita na Unitrac": no
+        // gabarito da Ana (24/09, GIGANTE NORDESTINO, 'nao foi') o Shopping Nova
+        // America tem varias lojas e a Unitrac fechar uma nao entrega as outras.
+        // Sem dispensa por "parada perto na janela": em shopping (Nova America,
+        // gabarito 24/09 GIGANTE NORDESTINO 'nao foi') o GPS nao separa as lojas.
+        if (longeDestaNf && deOutroCliente) {
           status = 'pendente'
           if (diaEmAndamento) {
             observacao = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
@@ -2723,9 +2765,12 @@ export function montarDetalheEntregas(
         // (ilha, estrada S/N -- os casos de 02/10 que a Ana validou como
         // entregue, ver pontoAproximadoPorEndereco). Distancia nao
         // medida (null) nao rebaixa: sem prova contra.
-        const paradaLongeDaNf = evidencia === 'vizinhanca' && distParadaM != null
-          && distParadaM > RAIO_ENTREGA_METROS
-          && (distParadaM <= RAIO_NAO_FOI_AO_CLIENTE_M || !pontoAproximadoPorEndereco(linha.endereco))
+        // Distancia: a menor entre o cliente e as paradas da janela quando der
+        // pra medir (o casamento por horario pega UMA parada e erra -- PACIFIC).
+        const distVizinhanca = distMaisPertoNaJanela ?? distParadaM
+        const paradaLongeDaNf = evidencia === 'vizinhanca' && distVizinhanca != null
+          && distVizinhanca > RAIO_ENTREGA_METROS
+          && (distVizinhanca <= RAIO_NAO_FOI_AO_CLIENTE_M || !pontoAproximadoPorEndereco(linha.endereco))
         if (revisar && (alvo?.situacao === SITUACAO_ALVO_OUTRO_DESFECHO || paradaLongeDaNf)) {
           status = 'pendente'
           observacao = revisar
@@ -2806,8 +2851,8 @@ export function montarDetalheEntregas(
       return ds.length ? Math.min(...ds) : null
     }
     for (const g of grupos.values()) {
-      const enderecos = new Set(g.map(d => chaveEndereco(d.endereco)))
-      if (enderecos.size < 2) continue
+      const clientes = new Set(g.map(d => d.clienteCodigo?.trim() || chaveEndereco(d.endereco)))
+      if (clientes.size < 2) continue
       if (!g.every(d => { const dist = distanciaReal(d); return dist != null && dist > RAIO_ENTREGA_METROS })) continue
       for (const d of g) {
         d.status = 'pendente'
