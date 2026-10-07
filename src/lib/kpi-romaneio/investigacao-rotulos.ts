@@ -7,7 +7,7 @@ export const CATEGORIAS_INVESTIGACAO: CategoriaInvestigacao[] = ['parou_no_clien
 export const ROTULO_INVESTIGACAO: Record<CategoriaInvestigacao, { titulo: string; dica: string }> = {
   parou_no_cliente: { titulo: 'Parou no cliente (até 150 m)', dica: 'Pode ser entrega que o KPI não contou. Conferir.' },
   parou_perto: { titulo: 'Parou perto (150 a 500 m)', dica: 'Endereço ou ponto do cliente pode estar errado.' },
-  parou_na_regiao: { titulo: 'Parou na região (500 m a 2 km)', dica: 'Coordenada do cliente pode estar errada, ou o carro não foi.' },
+  parou_na_regiao: { titulo: 'Parou na região (500 m a 2 km)', dica: 'Passou pela região, mas não parou no endereço.' },
   nao_chegou_perto: { titulo: 'Não chegou perto (mais de 2 km)', dica: 'O carro não passou no cliente.' },
   sem_gps: { titulo: 'Sem GPS no dia', dica: 'Rastreador sem paradas registradas.' },
   sem_coordenada: { titulo: 'Cliente sem coordenada', dica: 'Endereço não localizado no mapa.' },
