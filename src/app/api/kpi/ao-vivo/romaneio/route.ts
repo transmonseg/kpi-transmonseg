@@ -6,6 +6,8 @@ import { parsePao } from '@/lib/kpi-romaneio/parse-pao'
 import { guardarDiaAoVivo, calcularAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
 import { parseEntregasCompletas } from '@/lib/kpi-rioquality/parse-planilhas'
 import { enviarAoMonitoramento } from '@/lib/kpi-romaneio/enviar-monitoramento'
+import { mesclarEnvio, type DiaGuardado, type EnvioNovo } from '@/lib/kpi-romaneio/mesclar-envio'
+import { createServiceClient } from '@/lib/supabase/service'
 import { acessoAoVivo } from '../acesso'
 
 export const runtime = 'nodejs'
@@ -34,34 +36,41 @@ export async function POST(req: NextRequest) {
   const romaneioFile = form.get('romaneio')
   const escalaFile = form.get('escala')
   const paoFile = form.get('romaneioPao')
-  if (!(romaneioFile instanceof File)) return new NextResponse('Envie o Romaneio de Entrega (PDF).', { status: 400 })
-  const romaneioBuf = Buffer.from(await romaneioFile.arrayBuffer())
+  // Mesclagem (08/10): so' o que veio troca; o resto do dia fica (ver mesclar-envio.ts).
+  const svc = createServiceClient()
+  const { data: ja } = await svc.from('kpi_ao_vivo_dia').select('romaneio, escala, pao, escala_enviada, pao_enviado').eq('cliente', a.cliente).eq('data', data).maybeSingle()
+  const guardado: DiaGuardado | null = ja ? {
+    romaneio: ja.romaneio as DiaGuardado['romaneio'], escala: (ja.escala as DiaGuardado['escala']) ?? [],
+    pao: (ja.pao as DiaGuardado['pao']) ?? { linhas: [], escala: [] }, escalaEnviada: !!ja.escala_enviada, paoEnviado: !!ja.pao_enviado,
+  } : null
+  const romaneioBuf = romaneioFile instanceof File ? Buffer.from(await romaneioFile.arrayBuffer()) : null
   const paoBuf = paoFile instanceof File ? Buffer.from(await paoFile.arrayBuffer()) : null
-  let escala: Awaited<ReturnType<typeof parseEscala>>
-  let romaneio: Awaited<ReturnType<typeof parseRomaneio>>
-  let pao: Awaited<ReturnType<typeof parsePao>>
+  let novo: EnvioNovo = {}
   try {
-    ;[escala, romaneio, pao] = await Promise.all([
-      escalaFile instanceof File ? parseEscala(Buffer.from(await escalaFile.arrayBuffer())) : Promise.resolve([]),
-      parseRomaneio(romaneioBuf),
-      paoBuf ? parsePao(paoBuf, data) : Promise.resolve({ linhas: [], escala: [] }),
+    const [escala, romaneio, pao] = await Promise.all([
+      escalaFile instanceof File ? parseEscala(Buffer.from(await escalaFile.arrayBuffer())) : Promise.resolve(undefined),
+      romaneioBuf ? parseRomaneio(romaneioBuf) : Promise.resolve(undefined),
+      paoBuf ? parsePao(paoBuf, data) : Promise.resolve(undefined),
     ])
+    novo = { escala, romaneio, pao }
   } catch (err) {
     return new NextResponse(err instanceof Error ? err.message : 'Não consegui ler os PDFs.', { status: 422 })
   }
-  if (romaneio.length === 0) {
+  if (novo.romaneio && novo.romaneio.length === 0) {
     return new NextResponse('Nenhuma linha reconhecida no Romaneio de Entrega — confira se o PDF é o "Romaneio de Entrega" da Nutry Max.', { status: 422 })
   }
-  await guardarDiaAoVivo({ cliente: a.cliente, data, escala, romaneio, pao, escalaEnviada: escalaFile instanceof File, paoEnviado: paoFile instanceof File, enviadoPor: a.email })
+  const dia = mesclarEnvio(guardado, novo)
+  if ('erro' in dia) return new NextResponse(dia.erro, { status: 400 })
+  await guardarDiaAoVivo({ cliente: a.cliente, data, escala: dia.escala, romaneio: dia.romaneio, pao: dia.pao, escalaEnviada: dia.escalaEnviada, paoEnviado: dia.paoEnviado, enviadoPor: a.email })
   void calcularAoVivo(a.cliente, data, m => console.log(`[kpi/ao-vivo] ${m}`)).catch(err => console.error('[kpi/ao-vivo] calculo falhou:', err))
-  // Mesmo romaneio (e o pão, se veio) vai pro Monitoramento -- a operação não
-  // sobe duas vezes.
+  // O que foi enviado agora vai pro Monitoramento -- a operação não sobe duas vezes.
   const monitoramento = await enviarAoMonitoramento([
-    { buf: romaneioBuf, nome: romaneioFile.name || 'romaneio.pdf', origem: 'romaneio' },
+    ...(romaneioBuf && romaneioFile instanceof File ? [{ buf: romaneioBuf, nome: romaneioFile.name || 'romaneio.pdf', origem: 'romaneio' as const }] : []),
     ...(paoBuf && paoFile instanceof File ? [{ buf: paoBuf, nome: paoFile.name || 'pao.pdf', origem: 'escala_pao' as const }] : []),
   ], a.email)
   for (const m of monitoramento) if (!m.ok) console.error(`[kpi/ao-vivo] envio ao monitoramento (${m.origem}) falhou: ${m.erro}`)
-  const nfs = romaneio.length + pao.linhas.length
-  const placas = new Set([...romaneio, ...pao.linhas].map(l => l.placa)).size
+  const linhasDia = [...(dia.romaneio as { placa: string }[]), ...dia.pao.linhas]
+  const nfs = linhasDia.length
+  const placas = new Set(linhasDia.map(l => l.placa)).size
   return NextResponse.json({ ok: true, nfs, placas, monitoramento })
 }
