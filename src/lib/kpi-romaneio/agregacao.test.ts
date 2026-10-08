@@ -3907,6 +3907,7 @@ function chamarNutryMax(
     modoPrecisao?: boolean
     apagaoDeSinalPropriaPlaca?: boolean
     diaEmAndamento?: boolean
+    menorDistanciaTrajetoPorNf?: Map<string, number>
   } = {},
 ) {
   return montarDetalheEntregas(
@@ -3926,7 +3927,7 @@ function chamarNutryMax(
     true, // confirmarPorParadaUnitracPropria
     opts.todasLinhasDaPlacaNoDia,
     opts.apagaoDeSinalPropriaPlaca ?? false,
-    new Map(), // menorDistanciaTrajetoPorNf
+    opts.menorDistanciaTrajetoPorNf ?? new Map(),
     true, // detectarEscalaDivergente
     opts.modoPrecisao ?? true,
     true, // reconhecerRodizio
@@ -6166,6 +6167,34 @@ describe('chaveEndereco', () => {
   })
 })
 
+
+// Ao vivo 08/10 (Erica, TTI6E49 Penha: "ele nao fez os clientes de 09:15"):
+// parada de 9 min na I B Refeicoes confirmou 3 vizinhos da Rua Conde de
+// Agrolongo a 300-420 m pelo horario do vizinho; a parada da Unitrac ainda nao
+// tinha chegado (atrasa), entao a distancia nao dava pra medir e a regra acima
+// deixava passar. O caminhao so' foi neles as 10:26-10:36.
+describe('rota em andamento: horario do vizinho sem a parada medida nao confirma se o carro nao passou perto (08/10)', () => {
+  const janela = { chegada: '2026-10-08T12:15:00.000Z', saida: '2026-10-08T12:24:00.000Z' }
+  const nf = linha('NF1', { endereco: 'RUA CONDE DE AGROLONGO, 420 - PENHA, RIO DE JANEIRO', lat: -22.8315, lng: -43.2756 })
+  const vis = () => new Map<string, Visita>([['NF1', { nf: 'NF1', ...janela, distanciaMetrosDoPonto: 0, viaVizinhanca: true }]])
+
+  it('trajeto passou a 380 m: AGUARDANDO, sem horario', () => {
+    const [d] = chamarNutryMax([nf], { visitasPorNf: vis(), diaEmAndamento: true, menorDistanciaTrajetoPorNf: new Map([['NF1', 380]]) })
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO')
+    expect(d.chegada).toBeNull()
+  })
+
+  it('trajeto passou a 60 m do cliente: confirma', () => {
+    const [d] = chamarNutryMax([nf], { visitasPorNf: vis(), diaEmAndamento: true, menorDistanciaTrajetoPorNf: new Map([['NF1', 60]]) })
+    expect(d.status).toBe('confirmado_gps')
+  })
+
+  it('dia encerrado: regra de sempre (nao segura)', () => {
+    const [d] = chamarNutryMax([nf], { visitasPorNf: vis(), menorDistanciaTrajetoPorNf: new Map([['NF1', 380]]) })
+    expect(d.observacao).not.toBe('AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO')
+  })
+})
 
 // Regressao 06/10 (UNN6G81 / PACIFIC): parada a 9 m as 09:56, mas o
 // casamento por horario pegou outra parada da janela, a 541 m -- a regra da

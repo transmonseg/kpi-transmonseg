@@ -2739,6 +2739,21 @@ export function montarDetalheEntregas(
       saida = null
       tempoParadaMin = null
     }
+    // Ao vivo 08/10 (Erica, TTI6E49 Penha): horario do vizinho confirmou 3
+    // clientes a 300-420 m de uma parada; a parada da Unitrac ainda nao tinha
+    // chegado (atrasa), entao a regra acima nao media nada. Com a rota em
+    // andamento, evidencia fraca so' confirma se o TRAJETO do carro (ponte, ao
+    // vivo) passou a ate' RAIO_PARADA_NO_PROPRIO_CLIENTE_M do cliente; sem
+    // trajeto nem parada medida, espera. Fim do dia: regra de sempre.
+    const trajetoM = menorDistanciaTrajetoPorNf.get(linha.nf)
+    if (modoPrecisao && diaEmAndamento && status === 'confirmado_gps' && EVIDENCIAS_FRACAS_DE_PARADA.has(evidencia) && !paradaNoClienteNoDia
+      && ((trajetoM != null && trajetoM > RAIO_PARADA_NO_PROPRIO_CLIENTE_M) || (trajetoM == null && distMaisPertoNaJanela == null))) {
+      status = 'pendente'
+      observacao = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
+      chegada = null
+      saida = null
+      tempoParadaMin = null
+    }
 
     // Revisao de falso positivo 06/10 (TTM2G02, Botafogo: 1 parada no GALETO
     // SAT'S confirmou 9 outras NFs a 600-770 m por raio ampliado): evidencia
