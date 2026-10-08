@@ -17,17 +17,30 @@ function MonitoramentoEmbutido() {
   const router = useRouter()
   const busca = useSearchParams().toString()
   const alvo = caminhoMonitoramento(pathname) + (busca ? `?${busca}` : '')
-  const [src, setSrc] = useState(() => URL_MONITORAMENTO + alvo)
+  const [src, setSrc] = useState<string | null>(null)
   const [carregando, setCarregando] = useState(true)
+  const [erro, setErro] = useState(false)
+  const [tentativa, setTentativa] = useState(0)
   // Último caminho que o próprio monitoramento informou: quando a barra de
   // endereço muda por causa dele, não recarrega o quadro.
   const informado = useRef<string | null>(null)
 
+  // Login único (08/10): o quadro entra pela rota de entrada do monitoramento
+  // com um passe de quem está logado aqui -- antes valia qualquer sessão que já
+  // estivesse aberta no navegador (conta da Érica mostrando a Rio Quality).
   useEffect(() => {
     if (informado.current === alvo) return
-    setSrc(URL_MONITORAMENTO + alvo)
+    let cancelado = false
     setCarregando(true)
-  }, [alvo])
+    setErro(false)
+    fetch('/api/monitoramento/passe', { cache: 'no-store' })
+      .then(r => r.ok ? r.json() as Promise<{ passe: string }> : Promise.reject(new Error(String(r.status))))
+      .then(({ passe }) => {
+        if (!cancelado) setSrc(`${URL_MONITORAMENTO}/api/acessos/entrar-central?p=${encodeURIComponent(passe)}&para=${encodeURIComponent(alvo)}`)
+      })
+      .catch(() => { if (!cancelado) { setErro(true); setCarregando(false) } })
+    return () => { cancelado = true }
+  }, [alvo, tentativa])
 
   useEffect(() => {
     function aoReceber(e: MessageEvent) {
@@ -50,19 +63,25 @@ function MonitoramentoEmbutido() {
 
   return (
     <div className="relative -mx-4 -my-6 h-[calc(100dvh-3.5rem)] md:-mx-10 md:-my-10 md:h-[100dvh]">
+      {erro && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[var(--color-bg)] text-sm text-[var(--color-fg-muted)]">
+          Não foi possível abrir o monitoramento.
+          <button type="button" onClick={() => setTentativa(t => t + 1)} className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-[var(--color-fg)]">Tentar de novo</button>
+        </div>
+      )}
       {carregando && (
         <div className="absolute inset-0 flex items-center justify-center bg-[var(--color-bg)]">
           <span className="size-5 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-navy-700)]" />
         </div>
       )}
-      <iframe
+      {src && <iframe
         key={src}
         src={src}
         title="Monitoramento"
         onLoad={() => setCarregando(false)}
         className="block h-full w-full border-0"
         allow="clipboard-write; fullscreen"
-      />
+      />}
     </div>
   )
 }
