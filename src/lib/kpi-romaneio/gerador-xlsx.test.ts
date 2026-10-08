@@ -200,6 +200,17 @@ describe('gerador-xlsx', () => {
     expect(row1).toEqual(['—', '—', 'Geocode parcial: 37 endereços sem a busca completa (banco sobrecarregado) — gere novamente'])
   })
 
+  it('entregue fora do bairro do endereco (auditoria 07/10): STATUS continua ENTREGUE e a NF vai pra aba Avisos pra corrigir o cadastro', async () => {
+    const d = detalheFixture({ status: 'confirmado_gps', confianca: 'CONFIRMADA', evidencia: 'parada_no_cadastro_unitrac',
+      observacao: 'ENTREGUE - LOCAL DA ENTREGA FORA DO ENDEREÇO DO ROMANEIO (7,3 km, OUTRO BAIRRO) - CORRIGIR CADASTRO' })
+    const buffer = await gerarKpiRomaneioXlsx([linhaKpi()], '2026-08-23', [], [d], undefined, undefined, { resumoConfirmacao: true })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    const avisos = wb.getWorksheet('Avisos')!
+    const textos = [2, 3, 4].map(i => String((avisos.getRow(i).values as unknown[])[3] ?? ''))
+    expect(textos).toContain('NF NF1 CLIENTE A: entregue a 7,3 km, outro bairro do endereço do romaneio -- corrigir endereço/cadastro do cliente')
+  })
+
   it('aviso de consulta de posicoes suspeita (coletor fora do ar) sai na aba Avisos com o texto claro', async () => {
     const avisos: AvisoDescasamento[] = [{ carga: '—', placa: '—', motivo: 'consulta_posicoes_suspeita', semSinal: 20, totalPlacas: 40 }]
     const buffer = await gerarKpiRomaneioXlsx([], '2026-08-23', avisos)

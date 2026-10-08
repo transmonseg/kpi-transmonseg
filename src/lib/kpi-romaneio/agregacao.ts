@@ -830,6 +830,11 @@ export const PREFIXO_OBS_PAROU_COM_VIZINHO = 'PAROU NO ENDEREÇO JUNTO COM OUTRO
 const RAIO_PAROU_COM_VIZINHO_M = 100
 const DURACAO_MIN_PAROU_COM_VIZINHO_MIN = 2
 export const PREFIXO_OBS_CADASTRO_DIVERGENTE = 'CADASTRO DO CLIENTE NA UNITRAC DIVERGE DO ENDEREÇO DO ROMANEIO'
+// Auditoria 07/10: entregue por parada a >1 km do endereco e fora do bairro/
+// municipio dele. Continua ENTREGUE (o carro volta no mesmo ponto dia apos dia:
+// o cliente fica la', o endereco do romaneio/cadastro e' que esta' errado) --
+// so' vira aviso de cadastro. Ver parada-fora-do-endereco.ts.
+export const PREFIXO_OBS_PARADA_FORA_DO_ENDERECO = 'ENTREGUE - LOCAL DA ENTREGA FORA DO ENDEREÇO DO ROMANEIO'
 const DIVERGENCIA_CADASTRO_ROMANEIO_M = 1_000
 const ROTULOS_SEM_PROVA_CADASTRO = new Set<string>([
   'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR',
@@ -1331,6 +1336,7 @@ export function gerarMotivo(d: {
   if (obs?.startsWith('PLACA DA ESCALA NÃO PASSOU')) return 'Placa da escala não passou no cliente — conferir escala'
   if (obs?.startsWith(PREFIXO_OBS_PAROU_COM_VIZINHO)) return 'Caminhão parou no endereço, mas a parada foi atribuída a um cliente vizinho — conferir'
   if (obs?.startsWith(PREFIXO_OBS_CADASTRO_DIVERGENTE)) return 'Cadastro do cliente na Unitrac diverge do endereço do romaneio — corrigir cadastro'
+  if (obs?.startsWith(PREFIXO_OBS_PARADA_FORA_DO_ENDERECO)) return 'Entregue num local fora do bairro do endereço do romaneio — corrigir cadastro'
   if (obs?.startsWith('SINAL DO RASTREADOR COM FALHA')) return 'Sinal do rastreador com falha no dia — conferir'
   if (obs?.startsWith('PLACA COM DUAS CARGAS')) return 'Placa com duas cargas em regiões diferentes — conferir programação'
   if (obs?.startsWith('PARADA CURTA DE OUTRO ENDEREÇO')) {

@@ -403,6 +403,11 @@ function avisosDeFrota(detalhe: LinhaDetalheEntrega[], trocas: Map<string, Troca
       const km = d.observacao.match(/\(([^)]+ km)\)/)?.[1] ?? ''
       out.push({ carga: d.carga, placa: d.placa, texto: `NF ${d.nf} ${d.clienteNome}: cadastro na Unitrac a ${km} do endereço do romaneio -- corrigir cadastro` })
     }
+    // Auditoria 07/10: entregue num ponto fora do bairro/municipio do endereco.
+    if (d.status !== 'pendente' && d.observacao?.startsWith('ENTREGUE - LOCAL DA ENTREGA FORA DO ENDEREÇO DO ROMANEIO')) {
+      const onde = d.observacao.match(/\(([^)]+)\)/)?.[1] ?? ''
+      out.push({ carga: d.carga, placa: d.placa, texto: `NF ${d.nf} ${d.clienteNome}: entregue a ${onde.toLowerCase()} do endereço do romaneio -- corrigir endereço/cadastro do cliente` })
+    }
   }
   return out.sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
 }

@@ -26,6 +26,7 @@ import { lerCacheDia, gravarCacheDia } from '@/lib/kpi-romaneio/cache-dia'
 import { COD_USER_NUTRIMAX, EMPRESA_NUTRIMAX, foraDoAlcanceApi, LIMITE_CONCORRENCIA_PLACAS, PAO_PREFIXO } from '@/lib/kpi-romaneio/constants'
 import { mapComLimite } from '@/lib/kpi-romaneio/concorrencia'
 import { buscarResolucoes, aplicarResolucoes } from '@/lib/kpi-romaneio/resolucoes'
+import { conferirParadaForaDoEndereco, verificarTerritorioNaPonte } from '@/lib/kpi-romaneio/parada-fora-do-endereco'
 import { resolverAliasPlacas, buscarHorariosBaseComAlias, montarCvPorPlaca, aplicarAliasEmConjunto, placasAliasDaFrota } from '@/lib/kpi-romaneio/alias-placa'
 import { buscarPlacasSemRastreador, placasSemRastreadorNoDia, montarTemRastreadorPorPlaca, placasSemSinalComTrava } from '@/lib/kpi-romaneio/placas-sem-rastreador'
 import { logarNfDuplicadaNaMesmaPlaca } from '@/lib/kpi-romaneio/nf-duplicada'
@@ -424,7 +425,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   // Aba "Detalhamento" (pedido do usuário 24/08): uma linha por NF/entrega,
   // não só o resumo por carga -- mesma fonte de dado (linhasDaCarga/alvos/
   // visitas) já calculada acima pra agregarPorCarga, só que sem agregar.
-  const detalhe: LinhaDetalheEntrega[] = [...cargasPorChave.entries()]
+  const detalheMontado: LinhaDetalheEntrega[] = [...cargasPorChave.entries()]
     .flatMap(([chave, linhasDaCarga]) => {
       const [carga, placaNorm] = chave.split('::')
       const resumo = resumoPorChave.get(chave)
@@ -517,6 +518,16 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
+  // Auditoria 07/10: entregue por parada fora do bairro/municipio do endereco
+  // (cadastro Unitrac errado) vira "conferir" -- ver parada-fora-do-endereco.ts.
+  const detalheConferido = await conferirParadaForaDoEndereco(detalheMontado, {
+    linhaPorNf: new Map(romaneioGeo.map(l => [l.nf, l])),
+    alvoPorNf: new Map((opcoes?.semCadastroUnitrac ? [] : alvos).filter(a => a.documento).map(a => [a.documento as string, a])),
+    paradasPorPlaca,
+    paradasCruasPorPlaca: paradasUnitracCruasPorPlaca,
+    data,
+  }, verificarTerritorioNaPonte)
+  const detalhe: LinhaDetalheEntrega[] = detalheConferido
   opcoes?.aoMontarDetalhe?.({ romaneioGeo, detalhe, paradasPorPlaca })
 
   // Aviso agregado de descasamento Escala<->Romaneio (ver spec, secao
