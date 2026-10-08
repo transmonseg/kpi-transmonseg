@@ -7,7 +7,7 @@ vi.mock('@/lib/perfil', () => ({ getPerfil: async () => ({ papel: est.papel }) }
 import { GET } from './route'
 
 describe('GET /api/monitoramento/passe', () => {
-  beforeEach(() => { process.env.MOTOR_SECRET = 'seg'; est.user = { id: 'u1', email: 'Erica@x.com' }; est.papel = 'operador' })
+  beforeEach(() => { process.env.PASSE_CENTRAL_SECRET = 'seg'; est.user = { id: 'u1', email: 'Erica@x.com' }; est.papel = 'operador' })
   it('equipe (admin/operador) recebe um passe com o proprio email', async () => {
     const r = await GET()
     const { passe } = await r.json()

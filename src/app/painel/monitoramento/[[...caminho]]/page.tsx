@@ -24,6 +24,7 @@ function MonitoramentoEmbutido() {
   // Último caminho que o próprio monitoramento informou: quando a barra de
   // endereço muda por causa dele, não recarrega o quadro.
   const informado = useRef<string | null>(null)
+  const quadro = useRef<HTMLIFrameElement>(null)
 
   // Login único (08/10): o quadro entra pela rota de entrada do monitoramento
   // com um passe de quem está logado aqui -- antes valia qualquer sessão que já
@@ -34,17 +35,23 @@ function MonitoramentoEmbutido() {
     setCarregando(true)
     setErro(false)
     fetch('/api/monitoramento/passe', { cache: 'no-store' })
-      .then(r => r.ok ? r.json() as Promise<{ passe: string }> : Promise.reject(new Error(String(r.status))))
-      .then(({ passe }) => {
-        if (!cancelado) setSrc(`${URL_MONITORAMENTO}/api/acessos/entrar-central?p=${encodeURIComponent(passe)}&para=${encodeURIComponent(alvo)}`)
+      .then(r => {
+        // Sessão do painel vencida: login; conta sem monitoramento: painel.
+        if (r.status === 401) { window.location.href = '/login'; return null }
+        if (r.status === 403) { router.push('/painel'); return null }
+        return r.ok ? r.json() as Promise<{ passe: string }> : Promise.reject(new Error(String(r.status)))
+      })
+      .then(j => {
+        if (j && !cancelado) setSrc(`${URL_MONITORAMENTO}/api/acessos/entrar-central?p=${encodeURIComponent(j.passe)}&para=${encodeURIComponent(alvo)}`)
       })
       .catch(() => { if (!cancelado) { setErro(true); setCarregando(false) } })
     return () => { cancelado = true }
-  }, [alvo, tentativa])
+  }, [alvo, tentativa, router])
 
   useEffect(() => {
     function aoReceber(e: MessageEvent) {
-      if (e.origin !== URL_MONITORAMENTO) return
+      // Só o quadro atual (um antigo ainda montado durante a troca não manda).
+      if (e.origin !== URL_MONITORAMENTO || e.source !== quadro.current?.contentWindow) return
       const m = e.data as { fonte?: string; tipo?: string; caminho?: string; titulo?: string }
       if (m?.fonte !== 'monitoramento' || typeof m.caminho !== 'string') return
       // X da tela "Entrega no mapa": volta pra uma tela do painel (ex. o Ao vivo).
@@ -75,6 +82,7 @@ function MonitoramentoEmbutido() {
         </div>
       )}
       {src && <iframe
+        ref={quadro}
         key={src}
         src={src}
         title="Monitoramento"

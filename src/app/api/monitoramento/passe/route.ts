@@ -13,7 +13,7 @@ export async function GET() {
   if (!user?.email) return new NextResponse('Não autenticado', { status: 401 })
   const perfil = await getPerfil(user.id)
   if (perfil.papel !== 'admin' && perfil.papel !== 'operador') return new NextResponse('Sem permissão.', { status: 403 })
-  const segredo = process.env.MOTOR_SECRET
-  if (!segredo) return new NextResponse('MOTOR_SECRET ausente', { status: 500 })
+  const segredo = process.env.PASSE_CENTRAL_SECRET
+  if (!segredo) return new NextResponse('PASSE_CENTRAL_SECRET ausente', { status: 500 })
   return NextResponse.json({ passe: assinarPasse(user.email, segredo, Math.floor(Date.now() / 1000)) }, { headers: { 'Cache-Control': 'no-store' } })
 }
