@@ -6,20 +6,20 @@
 // Depois do detalhe montado: ENTREGUE cuja parada fica a > LIMIAR_M do
 // geocode confiavel, sem nenhuma parada da placa no endereco no dia inteiro,
 // pergunta ao monitoramento se a parada cai no municipio/bairro do endereco
-// (mesma guarda territorial do geocode). Fora do territorio:
-//  - a parada e' o ponto de OUTRO cliente entregue no mesmo horario -> nao
-//    confirma este (5 dos 26 em 07/10);
-//  - senao continua ENTREGUE com aviso pra corrigir o cadastro: medido em
-//    14 dias (22/09-07/10), 32 clientes caem aqui em dias diferentes sempre no
-//    MESMO ponto -- o cliente fica la', o endereco do romaneio e' que esta'
-//    errado; e o gabarito da equipe tem entrega real nesse grupo (24/09).
+// (mesma guarda territorial do geocode). Fora do territorio: continua ENTREGUE
+// com aviso pra corrigir o cadastro (e a NF na aba Avisos), dizendo quando a
+// parada e' o endereco de OUTRO cliente no mesmo horario. Nunca derruba:
+// medido em 14 dias (22/09-07/10), 32 clientes caem aqui em dias diferentes
+// sempre no MESMO ponto (o cliente fica la', o endereco do romaneio e' que esta'
+// errado), o gabarito da equipe tem entrega real nesse grupo (24/09) e ate' o
+// "ponto de outro cliente" pega vizinho recorrente (PARME, BAR DA ELA).
 // Distancia sozinha nao serve: na auditoria, 69 entregas reais tinham a parada
 // a >1 km do nosso ponto, mas dentro do bairro certo (ponto impreciso).
 import { haversine } from '@/lib/utils/geo'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import type { AlvoApi } from '@/lib/unitrac-api/alvos'
 import { acessoSomentePorBarco } from './acesso-restrito'
-import { calcularConfianca, calcularDiaEmAndamento, gerarMotivo, OBS_PARADA_DE_OUTRO_CLIENTE, PREFIXO_OBS_PARADA_FORA_DO_ENDERECO } from './agregacao'
+import { calcularConfianca, gerarMotivo, PREFIXO_OBS_PARADA_FORA_DO_ENDERECO } from './agregacao'
 import type { LinhaDetalheEntrega, LinhaGeocodificada } from './types'
 
 /** Parada a mais que isso do geocode e' candidata (abaixo, outras regras ja' cuidam). */
@@ -40,7 +40,6 @@ export type ContextoParadaForaDoEndereco = {
   paradasPorPlaca: Map<string, UnitracParadaRow[]>
   paradasCruasPorPlaca: Map<string, UnitracParadaRow[]>
   data: string
-  hoje?: string
 }
 
 export type CandidatoParadaFora = { id: string; nf: string; lat: number; lng: number; endereco: string; distM: number; janela: [number, number] | null }
@@ -126,47 +125,37 @@ export async function conferirParadaForaDoEndereco(
     return detalhe
   }
   const porNf = new Map(candidatos.map(c => [c.nf, c]))
-  // A parada e' o ponto de outro cliente (codigo e endereco diferentes) da mesma
-  // placa, entregue numa janela que cruza a desta NF?
+  // A parada e' o ENDERECO (geocode confiavel) de outro cliente (codigo e
+  // endereco diferentes) da mesma placa, entregue numa janela que cruza a desta
+  // NF? So' o geocode do outro vale: o cadastro Unitrac dele no ponto seria
+  // circular (22/09: dois clientes "se explicando" pelo cadastro, os dois com
+  // endereco a 14 km) -- e o outro nao pode estar na mesma situacao.
   const deOutroCliente = (d: LinhaDetalheEntrega, c: CandidatoParadaFora): boolean => {
     if (!c.janela) return false
     const [ini, fim] = c.janela
     return detalhe.some(o => {
-      if (o.nf === d.nf || o.placa !== d.placa || o.status === 'pendente' || !o.chegada || !o.saida) return false
+      if (o.nf === d.nf || o.placa !== d.placa || o.status === 'pendente' || !o.chegada || !o.saida || porNf.has(o.nf)) return false
       if ((o.clienteCodigo?.trim() && o.clienteCodigo.trim() === d.clienteCodigo?.trim()) || o.endereco === d.endereco) return false
       if (Date.parse(o.saida) < ini || Date.parse(o.chegada) > fim) return false
-      const l = ctx.linhaPorNf.get(o.nf), a = ctx.alvoPorNf.get(o.nf)
-      const pontos = [
-        l && l.geoConfiavel !== false && valida(l.lat) && valida(l.lng) ? { lat: l.lat, lng: l.lng } : null,
-        a && valida(a.pontoLat) && valida(a.pontoLng) ? { lat: a.pontoLat, lng: a.pontoLng } : null,
-      ]
-      return pontos.some(p => p != null && haversine(p.lat, p.lng, c.lat, c.lng) <= RAIO_OUTRO_CLIENTE_M)
+      const l = ctx.linhaPorNf.get(o.nf)
+      return !!l && l.geoConfiavel !== false && valida(l.lat) && valida(l.lng) && haversine(l.lat, l.lng, c.lat, c.lng) <= RAIO_OUTRO_CLIENTE_M
     })
   }
-  let rebaixadas = 0, avisadas = 0
+  let avisadas = 0, deOutro = 0
   const out = detalhe.map(d => {
     const c = porNf.get(d.nf)
     const v = c ? vereditos.get(c.id) : undefined
-    if (!c || !v || v.ok) return d
-    let n: LinhaDetalheEntrega
-    if (deOutroCliente(d, c)) {
-      rebaixadas++
-      // Rota de hoje ainda sem voltar a base: o caminhao ainda pode passar no
-      // endereco -- espera (mesmo espirito do AGUARDANDO em agregacao.ts).
-      n = calcularDiaEmAndamento(ctx.data, d.chegadaCd, ctx.hoje)
-        ? { ...d, status: 'pendente', observacao: 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO', chegada: null, saida: null, tempoParadaMin: null }
-        : { ...d, status: 'pendente', observacao: OBS_PARADA_DE_OUTRO_CLIENTE, distParadaM: Math.round(c.distM) }
-    } else {
-      if (d.observacao != null) return d
-      avisadas++
-      const km = (c.distM / 1000).toFixed(1).replace('.', ',')
-      const onde = v.motivo === 'municipio_divergente' ? 'OUTRO MUNICÍPIO' : 'OUTRO BAIRRO'
-      n = { ...d, observacao: `${PREFIXO_OBS_PARADA_FORA_DO_ENDERECO} (${km} km, ${onde}) - CORRIGIR CADASTRO`, distParadaM: Math.round(c.distM) }
-    }
+    if (!c || !v || v.ok || d.observacao != null) return d
+    avisadas++
+    const km = (c.distM / 1000).toFixed(1).replace('.', ',')
+    const onde = v.motivo === 'municipio_divergente' ? 'OUTRO MUNICÍPIO' : 'OUTRO BAIRRO'
+    const outro = deOutroCliente(d, c)
+    if (outro) deOutro++
+    const n: LinhaDetalheEntrega = { ...d, observacao: `${PREFIXO_OBS_PARADA_FORA_DO_ENDERECO} (${km} km, ${onde}${outro ? ', NO PONTO DE OUTRO CLIENTE' : ''}) - CORRIGIR CADASTRO`, distParadaM: Math.round(c.distM) }
     n.confianca = calcularConfianca(n.status, n.observacao)
     n.motivo = gerarMotivo({ status: n.status, observacao: n.observacao, evidencia: n.evidencia, distParadaM: n.distParadaM, tempoParadaMin: n.tempoParadaMin })
     return n
   })
-  if (rebaixadas + avisadas > 0) console.log(`[kpi] ${ctx.data}: parada fora do bairro/municipio do endereco -- ${rebaixadas} era(m) ponto de outro cliente (nao confirma), ${avisadas} aviso(s) de cadastro`)
+  if (avisadas > 0) console.log(`[kpi] ${ctx.data}: ${avisadas} entregue(s) fora do bairro/municipio do endereco -> aviso de cadastro (${deOutro} no ponto de outro cliente)`)
   return out
 }

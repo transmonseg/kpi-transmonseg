@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { conferirParadaForaDoEndereco, candidatosParadaForaDoEndereco } from './parada-fora-do-endereco'
-import { OBS_PARADA_DE_OUTRO_CLIENTE, PREFIXO_OBS_PARADA_FORA_DO_ENDERECO } from './agregacao'
+import { PREFIXO_OBS_PARADA_FORA_DO_ENDERECO } from './agregacao'
 import type { LinhaDetalheEntrega, LinhaGeocodificada } from './types'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import type { AlvoApi } from '@/lib/unitrac-api/alvos'
@@ -33,7 +33,6 @@ const ctx = (linhas: LinhaGeocodificada[], paradas: UnitracParadaRow[], alvos: A
   paradasPorPlaca: new Map([['AAA1A11', paradas]]),
   paradasCruasPorPlaca: new Map<string, UnitracParadaRow[]>(),
   data: '2026-10-07',
-  hoje: '2026-10-08',
 })
 
 describe('candidatosParadaForaDoEndereco', () => {
@@ -79,24 +78,21 @@ describe('conferirParadaForaDoEndereco', () => {
     // Parada no mesmo bairro (nosso ponto e' que e' impreciso): nada muda.
     expect(r[1].observacao).toBeNull()
   })
-  it('a parada e\' o ponto de OUTRO cliente entregue no mesmo horario: deixa de contar', async () => {
-    // Cliente 9 (outro codigo/endereco) fica exatamente onde o carro parou.
+  it('a parada e\' o endereco de OUTRO cliente entregue no mesmo horario: continua entregue, aviso diz isso', async () => {
     const l9 = linha('9', { clienteCodigo: '9', endereco: 'RUA Y, 1 - CENTRO, NITEROI - 24000000', lat: -22.90, lng: -43.146 })
     const r = await conferirParadaForaDoEndereco(
       [det('1'), det('9', { endereco: l9.endereco, evidencia: 'parada_no_endereco' })],
       ctx([linha('1'), l9], [LONGE]), fora)
-    expect(r[0].status).toBe('pendente')
-    expect(r[0].observacao).toBe(OBS_PARADA_DE_OUTRO_CLIENTE)
-    expect(r[0].confianca).toBe('REVISAR')
-    expect(r[1].status).toBe('confirmado_gps')
+    expect(r[0].status).toBe('confirmado_gps')
+    expect(r[0].observacao).toBe(`${PREFIXO_OBS_PARADA_FORA_DO_ENDERECO} (5,5 km, OUTRO MUNICÍPIO, NO PONTO DE OUTRO CLIENTE) - CORRIGIR CADASTRO`)
+    expect(r[1].observacao).toBeNull()
   })
-  it('rota de hoje em andamento com parada de outro cliente: espera em vez de acusar', async () => {
-    const l9 = linha('9', { clienteCodigo: '9', endereco: 'RUA Y, 1 - CENTRO, NITEROI - 24000000', lat: -22.90, lng: -43.146 })
-    const c = { ...ctx([linha('1'), l9], [LONGE]), hoje: '2026-10-07' }
-    const r = await conferirParadaForaDoEndereco([det('1', { chegadaCd: null }), det('9', { endereco: l9.endereco, chegadaCd: null })], c, fora)
-    expect(r[0].status).toBe('pendente')
-    expect(r[0].observacao).toMatch(/^AGUARDANDO/)
-    expect(r[0].chegada).toBeNull()
+  it('outro cliente "no ponto" so\' pelo cadastro da Unitrac nao conta como ponto de outro cliente', async () => {
+    const l9 = linha('9', { clienteCodigo: '9', endereco: 'RUA Y, 1 - CENTRO, NITEROI - 24000000', lat: -22.95, lng: -43.25 })
+    const r = await conferirParadaForaDoEndereco(
+      [det('1'), det('9', { endereco: l9.endereco })],
+      ctx([linha('1'), l9], [LONGE], [alvo('1', -22.90, -43.146), alvo('9', -22.90, -43.146)]), fora)
+    expect(r[0].observacao).not.toMatch(/OUTRO CLIENTE/)
   })
   it('nao sobrescreve outra observacao ja\' existente', async () => {
     const r = await conferirParadaForaDoEndereco([det('1', { observacao: 'ENTREGUE - PARADA PRÓXIMA (500m-2km)' })], ctx([linha('1')], [LONGE]), fora)
