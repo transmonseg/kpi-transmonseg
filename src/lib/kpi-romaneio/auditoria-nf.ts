@@ -10,8 +10,8 @@ export type EntradaAuditoria = {
   gpsParadoMin: number
   /** Chegada que o KPI mostra, em minutos desde 00:00 (null = sem horário). */
   kpiChegadaMin: number | null
-  /** Início da 1ª parada do GPS no endereço, em minutos desde 00:00. */
-  gpsParadoIniMin: number | null
+  /** Início de cada parada do GPS no endereço (geocode ou cadastro), em minutos desde 00:00. */
+  gpsParadoInisMin: number[]
 }
 export type Veredito = 'OK' | 'HORARIO_DIVERGE' | 'SUSPEITA_FALSO_POSITIVO' | 'SEM_GPS'
   | 'SUSPEITA_FALSO_NEGATIVO' | 'EM_ROTA' | 'NAO_ENTREGUE_OK'
@@ -27,7 +27,8 @@ export function classificarNf(e: EntradaAuditoria): Veredito {
   }
   if (e.gpsMinM == null) return 'SEM_GPS'
   if (e.gpsParadoMin >= PARADO_MIN) {
-    const diverge = e.kpiChegadaMin != null && e.gpsParadoIniMin != null && Math.abs(e.kpiChegadaMin - e.gpsParadoIniMin) > HORARIO_TOLERANCIA_MIN
+    const k = e.kpiChegadaMin
+    const diverge = k != null && e.gpsParadoInisMin.length > 0 && e.gpsParadoInisMin.every(i => Math.abs(k - i) > HORARIO_TOLERANCIA_MIN)
     return diverge ? 'HORARIO_DIVERGE' : 'OK'
   }
   return e.gpsMinM > PERTO_M ? 'SUSPEITA_FALSO_POSITIVO' : 'OK'
