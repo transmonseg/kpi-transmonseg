@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { classificarNf, type EntradaAuditoria } from './auditoria-nf'
 
-const base: EntradaAuditoria = { status: 'entregue', emRota: false, gpsMinM: 20, gpsParadoMin: 8, kpiChegadaMin: 600, gpsParadoInisMin: [598] }
+const base: EntradaAuditoria = { status: 'entregue', emRota: false, gpsMinM: 20, gpsParadoMin: 8, kpiChegadaMin: 600, gpsParadoInisMin: [598], feitoMin: null }
 const com = (x: Partial<EntradaAuditoria>) => ({ ...base, ...x })
 
 describe('classificarNf', () => {
@@ -10,6 +10,12 @@ describe('classificarNf', () => {
   })
   it('entregue mas o GPS so parou la 70 min depois: horario diverge (TTI6E49 08/10)', () => {
     expect(classificarNf(com({ kpiChegadaMin: 555, gpsParadoInisMin: [626] }))).toBe('HORARIO_DIVERGE')
+  })
+  it('GPS parou la em outra hora, mas o KPI bate com o feito da Unitrac: OK (TOS3C21 08/10, duas visitas ao mesmo lugar)', () => {
+    expect(classificarNf(com({ kpiChegadaMin: 439, gpsParadoInisMin: [559], feitoMin: 438 }))).toBe('OK')
+  })
+  it('KPI contradiz o feito da Unitrac e o GPS nao ajuda: horario diverge (CITTA 08/10: feito 13:33, KPI 15:07)', () => {
+    expect(classificarNf(com({ kpiChegadaMin: 907, gpsParadoInisMin: [], gpsParadoMin: 8, feitoMin: 813 }))).toBe('HORARIO_DIVERGE')
   })
   it('o carro parou no endereco em DUAS vezes e o KPI bate com a segunda: OK (nao compara so com a primeira)', () => {
     expect(classificarNf(com({ kpiChegadaMin: 840, gpsParadoInisMin: [300, 838] }))).toBe('OK')

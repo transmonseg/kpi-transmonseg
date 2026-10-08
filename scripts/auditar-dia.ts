@@ -23,6 +23,10 @@ async function main() {
   const psql = (db: string, sql: string) => execFileSync('sudo', ['-u', 'postgres', 'psql', '-d', db, '-At', '-F', '|', '-f', '-'], { input: sql, maxBuffer: 128 * 1024 * 1024 }).toString().trim().split('\n').filter(Boolean)
   // Cadastro da Unitrac por NF (o KPI muitas vezes confirma ali, onde o geocode do romaneio e' impreciso).
   const cad = new Map<string, { lat: number; lng: number }>()
+  const feito = new Map<string, number>()
+  for (const l of psql('kpi_transmonseg', `select a->>'documento', substr(a->>'feitoISO',12,5) from (select alvos from kpi_alvos_snapshot where cliente='nutrimax' and data_referencia='${data}' order by capturado_em desc limit 1) s, jsonb_array_elements(s.alvos) a where a->>'feitoISO' is not null and a->>'feitoISO' not like '0001%'`)) {
+    const [nf, hm] = l.split('|'); if (/^\d\d:\d\d$/.test(hm ?? '')) feito.set(nf, Number(hm.slice(0, 2)) * 60 + Number(hm.slice(3)))
+  }
   for (const l of psql('kpi_transmonseg', `select a->>'documento', a->>'pontoLat', a->>'pontoLng' from (select alvos from kpi_alvos_snapshot where cliente='nutrimax' and data_referencia='${data}' order by capturado_em desc limit 1) s, jsonb_array_elements(s.alvos) a where a->>'pontoLat' is not null and a->>'pontoLat' <> '0'`)) {
     const [nf, la, ln] = l.split('|'); cad.set(nf, { lat: Number(la), lng: Number(ln) })
   }
@@ -55,7 +59,7 @@ async function main() {
     const g = gps.get(d.nf) ?? { parado: 0, minM: null, inis: [] }
     const v = classificarNf({
       status: d.status === 'pendente' ? 'pendente' : 'entregue', emRota: (d.observacao ?? '').startsWith('AGUARDANDO'),
-      gpsMinM: g.minM, gpsParadoMin: g.parado, kpiChegadaMin: min(d.chegada), gpsParadoInisMin: g.inis,
+      gpsMinM: g.minM, gpsParadoMin: g.parado, kpiChegadaMin: min(d.chegada), gpsParadoInisMin: g.inis, feitoMin: feito.get(d.nf) ?? null,
     })
     contagem.set(v, (contagem.get(v) ?? 0) + 1)
     linhas.push([d.nf, d.placa, d.clienteNome.replace(/;/g, ','), d.status, v, d.chegada?.slice(11, 16) ?? '', g.inis.map(i => `${String(Math.floor(i / 60)).padStart(2, '0')}:${String(i % 60).padStart(2, '0')}`).join('/'), g.parado, g.minM == null ? '' : Math.round(g.minM), d.evidencia, (d.observacao ?? '').replace(/;/g, ',')].join(';'))
