@@ -104,7 +104,8 @@ export async function updateSession(request: NextRequest) {
         path === '/painel/ao-vivo' || path.startsWith('/api/kpi/ao-vivo') || path.startsWith('/api/kpi/historico/') ||
         path === '/painel/rioquality' || path.startsWith('/painel/rioquality/') || path.startsWith('/api/kpi/rioquality/')
       )
-      const operadorMonitoramento = perfil.papel === 'operador' && (path === '/painel/monitoramento' || path.startsWith('/painel/monitoramento/'))
+      // Login unico (08/10): o passe do quadro tambem (a rota confere o papel).
+      const operadorMonitoramento = perfil.papel === 'operador' && (path === '/painel/monitoramento' || path.startsWith('/painel/monitoramento/') || path === '/api/monitoramento/passe')
       const permitido =
         operadorNutry || operadorAoVivoRq || operadorMonitoramento ||
         path === '/painel' ||
