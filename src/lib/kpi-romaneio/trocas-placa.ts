@@ -73,3 +73,24 @@ export async function buscarTrocasDoDia(empresa: string, data: string): Promise<
     return []
   }
 }
+
+export type DecisaoTrocaManual =
+  | { acao: 'inserir' | 'atualizar' | 'desfazer'; placaEscala: string; placaReal: string; moverNoMonitoramentoDe: string }
+  | { erro: string }
+
+/** Campo "redirecionar carga pra outra placa" (08/10, ideia do cliente): a
+ *  operação escolhe a carga e digita a placa que de fato rodou. A tela mostra
+ *  a placa JÁ trocada, então com troca existente a escala é a original dela e
+ *  voltar pra ela desfaz. `moverNoMonitoramentoDe` = placa que tem as NFs hoje. */
+export function decidirTrocaManual(
+  existente: { placaEscala: string; placaReal: string } | null,
+  placaDaTela: string,
+  placaNova: string,
+): DecisaoTrocaManual {
+  const nova = normalizarPlacaDigitada(placaNova)
+  const atual = existente ? normalizarPlacaDigitada(existente.placaReal) : normalizarPlacaDigitada(placaDaTela)
+  if (!nova || nova === atual) return { erro: 'A placa nova é a mesma da carga.' }
+  if (!existente) return { acao: 'inserir', placaEscala: atual, placaReal: nova, moverNoMonitoramentoDe: atual }
+  const escala = normalizarPlacaDigitada(existente.placaEscala)
+  return { acao: nova === escala ? 'desfazer' : 'atualizar', placaEscala: escala, placaReal: nova, moverNoMonitoramentoDe: atual }
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { aplicarTrocasDePlaca, normalizarPlacaDigitada, completarPlaca } from './trocas-placa'
+import { aplicarTrocasDePlaca, normalizarPlacaDigitada, completarPlaca, decidirTrocaManual } from './trocas-placa'
 
 const rom = (carga: string, placa: string, nf: string) => ({ carga, placa, nf })
 const esc = (carga: string, placa: string) => ({ carga, placaRaw: placa, placaNorm: placa.replace('-', '') })
@@ -87,5 +87,26 @@ describe('troca mútua entre dois carros escalados (07/10, RQV5F67 x RBG4F53)', 
     ])
     expect(r.romaneio.map(l => l.placa)).toEqual(['RBG4F53', 'RQV5F67'])
     expect(r.escala.map(e => e.placaNorm)).toEqual(['RBG4F53', 'RQV5F67'])
+  })
+})
+
+describe('decidirTrocaManual (campo "redirecionar carga", 08/10)', () => {
+  it('carga sem troca: registra escala -> real', () => {
+    expect(decidirTrocaManual(null, 'TTI9B98', 'rbi1j86')).toEqual({ acao: 'inserir', placaEscala: 'TTI9B98', placaReal: 'RBI1J86', moverNoMonitoramentoDe: 'TTI9B98' })
+  })
+  it('carga ja trocada: a escala continua a original, a placa real e a placa nova; o monitoramento sai da real anterior', () => {
+    // a tela mostra a placa real (RBI1J86) como se fosse a da carga
+    expect(decidirTrocaManual({ placaEscala: 'TTI9B98', placaReal: 'RBI1J86' }, 'RBI1J86', 'RBJ9C84'))
+      .toEqual({ acao: 'atualizar', placaEscala: 'TTI9B98', placaReal: 'RBJ9C84', moverNoMonitoramentoDe: 'RBI1J86' })
+  })
+  it('voltar pra placa da escala desfaz a troca', () => {
+    expect(decidirTrocaManual({ placaEscala: 'TTI9B98', placaReal: 'RBI1J86' }, 'RBI1J86', 'TTI9B98'))
+      .toEqual({ acao: 'desfazer', placaEscala: 'TTI9B98', placaReal: 'TTI9B98', moverNoMonitoramentoDe: 'RBI1J86' })
+  })
+  it('mesma placa, sem troca registrada: invalido', () => {
+    expect(decidirTrocaManual(null, 'TTI9B98', 'TTI9B98')).toEqual({ erro: 'A placa nova é a mesma da carga.' })
+  })
+  it('placa nova igual a que ja esta na troca: nada a fazer', () => {
+    expect(decidirTrocaManual({ placaEscala: 'TTI9B98', placaReal: 'RBI1J86' }, 'RBI1J86', 'RBI1J86')).toEqual({ erro: 'A placa nova é a mesma da carga.' })
   })
 })

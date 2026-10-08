@@ -285,6 +285,7 @@ export default function AoVivoPage() {
       {!historico && cliente === 'nutrimax' && r?.sugestoesTroca && r.sugestoesTroca.length > 0 && (
         <TrocasSugeridas sugestoes={r.sugestoesTroca} onConfirmada={carregar} />
       )}
+      {!historico && cliente === 'nutrimax' && r && <RedirecionarCarga placas={placas} onConfirmada={carregar} />}
       {r && <InvestigacaoNaoEntregues placas={placas} onPlaca={pl => { setPlacaSel(pl); setNfAberta(null); setVendoDetalhe(true) }} />}
       {ultimoEnvio?.monitoramento && ultimoEnvio.monitoramento.length > 0 && (
         <p className={`inline-flex flex-wrap items-center gap-2 rounded-2xl px-4 py-2.5 text-[13px] ${ultimoEnvio.monitoramento.every(m => m.ok) ? 'bg-[var(--color-bg-subtle)] text-[var(--color-fg-muted)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-soft-fg)]'}`}>
@@ -660,6 +661,59 @@ function TrocasSugeridas({ sugestoes, onConfirmada }: { sugestoes: SugestaoTroca
       </ul>
       {aviso && <p className="text-[12.5px] text-[var(--color-fg-muted)]">{aviso}</p>}
     </section>
+  )
+}
+
+/** Campo manual "redirecionar carga pra outra placa" (08/10, ideia do cliente):
+ *  a operação escolhe a carga e digita a placa que de fato rodou -- pode ser um
+ *  carro fora da escala. A placa de antes fica sem as notas e a nova aparece com
+ *  elas, no KPI e no Ao vivo. Voltar pra placa da escala desfaz. */
+function RedirecionarCarga({ placas, onConfirmada }: { placas: PlacaAoVivo[]; onConfirmada: () => void }) {
+  const opcoes = placas.flatMap(p => p.cargas.map(c => ({ carga: c, placa: p.placa })))
+  const [carga, setCarga] = useState('')
+  const [nova, setNova] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const [aviso, setAviso] = useState<string | null>(null)
+  const sel = opcoes.find(o => o.carga === carga)
+  async function redirecionar() {
+    if (!sel || !nova.trim()) return
+    setEnviando(true); setAviso(null)
+    try {
+      const r = await fetch('/api/kpi/ao-vivo/troca', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ carga: sel.carga, placaEscala: sel.placa, placaReal: nova }) })
+      if (!r.ok) { setAviso(`Não deu pra redirecionar: ${await r.text()}`); return }
+      const j = (await r.json()) as { acao?: string; monitoramento?: { ok: boolean; erro?: string } }
+      setAviso(`${j.acao === 'desfazer' ? 'Troca desfeita' : 'Carga redirecionada'}: carga ${sel.carga} agora é do ${nova.trim().toUpperCase()}. O KPI recalcula em instantes.${j.monitoramento && !j.monitoramento.ok ? ` Monitoramento não atualizou (${j.monitoramento.erro}).` : ''}`)
+      setNova(''); setCarga('')
+      onConfirmada()
+    } finally { setEnviando(false) }
+  }
+  return (
+    <details className="group rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
+      <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-[13px] font-semibold text-[var(--color-fg)] [&::-webkit-details-marker]:hidden">
+        <ArrowsLeftRight size={16} weight="bold" />Redirecionar uma carga pra outra placa
+        <CaretDown size={13} className="ml-auto shrink-0 text-[var(--color-fg-muted)] transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="flex flex-col gap-3 border-t border-[var(--color-border)] px-4 py-4">
+        <p className="text-[12.5px] text-[var(--color-fg-muted)]">A placa de antes fica sem as notas desta carga e a nova aparece com elas. Pode ser um carro que não estava na escala. Para desfazer, escolha a carga e digite a placa original.</p>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">Carga
+            <select value={carga} onChange={e => setCarga(e.target.value)} className="h-9 min-w-[220px] rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[13px] text-[var(--color-fg)]">
+              <option value="">Escolha a carga</option>
+              {opcoes.map(o => <option key={`${o.carga}-${o.placa}`} value={o.carga}>Carga {o.carga} — {o.placa}</option>)}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">Placa que fez a carga
+            <input value={nova} onChange={e => setNova(e.target.value)} placeholder="ex.: RBI1J86" maxLength={8} onKeyDown={e => { if (e.key === 'Enter') void redirecionar() }}
+              className="h-9 w-[150px] rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[13px] uppercase text-[var(--color-fg)]" />
+          </label>
+          <button type="button" disabled={enviando || !sel || !nova.trim()} onClick={() => void redirecionar()}
+            className="inline-flex h-9 items-center rounded-full bg-[var(--color-navy-700)] px-4 text-[13px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] disabled:opacity-50">
+            {enviando ? 'Redirecionando…' : 'Redirecionar'}
+          </button>
+        </div>
+        {aviso && <p className="text-[12.5px] text-[var(--color-fg-muted)]">{aviso}</p>}
+      </div>
+    </details>
   )
 }
 
