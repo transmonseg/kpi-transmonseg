@@ -5,7 +5,7 @@ import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import type { LinhaEscala, LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega, Visita, EvidenciaNf, ConfiancaNf } from './types'
 import { OBS_NAO_SAIU_DA_BASE } from './types'
 import { haversine } from '@/lib/utils/geo'
-import { RAIO_ENTREGA_METROS } from './constants'
+import { RAIO_ENTREGA_METROS, BASES_COORD_NUTRIMAX } from './constants'
 import { acessoSomentePorBarco } from './acesso-restrito'
 import { expandirTipoLogradouro, limparLixoInicio } from './normalizar-endereco'
 import { instanteDeFeitoISO } from './correcao-por-alvo'
@@ -1015,6 +1015,8 @@ const RAIO_PARADA_NO_PROPRIO_CLIENTE_M = 150
 const EVIDENCIAS_FRACAS_PARADA_CURTA = new Set<EvidenciaNf>(['raio_ampliado', 'vizinhanca', 'parada_curta_compartilhada', 'parada_proxima_propria'])
 const DURACAO_MAX_PARADA_CURTA_VARIOS_MIN = 5
 export const OBS_PARADA_CURTA_VARIOS_LONGE = 'PARADA CURTA PARA VÁRIOS ENDEREÇOS A MAIS DE 500 M - CONFERIR'
+const RAIO_CLIENTE_NA_BASE_M = 300
+export const OBS_CLIENTE_NA_BASE = 'CLIENTE NA BASE - SÓ ESTADIA NA GARAGEM, SEM FEITO DA UNITRAC - CONFERIR'
 export const OBS_PARADA_DE_OUTRO_CLIENTE = 'PARADA DE OUTRO CLIENTE - NÃO CONFIRMA ESTE CLIENTE - CONFERIR'
 
 const REVISAR_POR_ROTULO_FRACO: Record<string, string> = {
@@ -2738,6 +2740,30 @@ export function montarDetalheEntregas(
       chegada = null
       saida = null
       tempoParadaMin = null
+    }
+    // ORION REFEICOES (TTI6E49 07/10 e 08/10): cliente a 49 m da base da Penha
+    // confirmado so' porque o caminhao ficou na garagem (parada de BASE de 95 min)
+    // e a Unitrac nunca marcou feito. Estadia na base nao e' entrega: sem feito e
+    // sem NENHUMA parada fora da base a <= RAIO_PARADA_NO_PROPRIO_CLIENTE_M do
+    // cliente (geocode ou cadastro) no dia, nao confirma.
+    // So' cliente a <= RAIO_CLIENTE_NA_BASE_M de uma base conhecida: a classificacao
+    // "BASE" da Unitrac tambem aparece em hortifruti do pao em Tijuca (RQO9H37,
+    // medido em 14 dias: ~10 NFs/dia derrubadas por engano).
+    const pts = pontosDaNf(linha, alvo)
+    const pertoDeBaseConhecida = pts.some(q => BASES_COORD_NUTRIMAX.some(b => haversine(q.lat, q.lng, b.lat, b.lng) <= RAIO_CLIENTE_NA_BASE_M))
+    if (modoPrecisao && status === 'confirmado_gps' && visita && alvo?.situacao !== 1 && pertoDeBaseConhecida) {
+      const doDia = [...(paradasPorOutraPlaca.get(placaNorm) ?? []), ...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? [])]
+        .filter(p => p.lat != null && p.lng != null)
+      const perto = (p: UnitracParadaRow) => pts.some(q => haversine(p.lat as number, p.lng as number, q.lat, q.lng) <= RAIO_PARADA_NO_PROPRIO_CLIENTE_M)
+      const ini = Date.parse(visita.chegada), fim = Date.parse(visita.saida)
+      const naBaseNaJanela = doDia.some(p => p.classificacao === 'BASE' && perto(p) && Date.parse(p.fim_real ?? p.saida ?? p.chegada) >= ini && Date.parse(p.chegada) <= fim)
+      if (naBaseNaJanela && !doDia.some(p => p.classificacao === 'FORA_BASE' && perto(p))) {
+        status = 'pendente'
+        observacao = OBS_CLIENTE_NA_BASE
+        chegada = null
+        saida = null
+        tempoParadaMin = null
+      }
     }
     // Ao vivo 08/10 (Erica, TTI6E49 Penha): horario do vizinho confirmou 3
     // clientes a 300-420 m de uma parada; a parada da Unitrac ainda nao tinha

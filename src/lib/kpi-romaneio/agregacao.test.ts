@@ -6196,6 +6196,37 @@ describe('rota em andamento: horario do vizinho sem a parada medida nao confirma
   })
 })
 
+// ORION REFEICOES (TTI6E49 07/10 e 08/10): cliente a 49 m da base da Penha. O
+// KPI deu ENTREGUE so' porque o caminhao dormiu/ficou na garagem (parada de
+// BASE 05:09-07:37), e a Unitrac nunca marcou feito.
+describe('cliente colado na base: so\' a estadia na garagem nao confirma (08/10)', () => {
+  const janela = { chegada: '2026-10-08T08:09:00.000Z', saida: '2026-10-08T09:43:00.000Z' }
+  const orion = linha('NF1', { endereco: 'RUA DO FEIJAO, 760 - PENHA CIRCULAR, RIO DE JANEIRO', lat: -22.8154, lng: -43.2779 })
+  const vis = () => new Map<string, Visita>([['NF1', { nf: 'NF1', ...janela, distanciaMetrosDoPonto: 0 }]])
+  const base = () => new Map([['TTL7D40', [{ ...paradaForaBase('base', -22.8154 + 40 * M_LAT, -43.2779, janela.chegada, janela.saida), classificacao: 'BASE' }]]])
+
+  it('estadia na base + sem feito + nenhuma parada fora da base ali: nao confirma', () => {
+    const [d] = chamarNutryMax([orion], { visitasPorNf: vis(), paradasPorOutraPlaca: base() })
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('CLIENTE NA BASE - SÓ ESTADIA NA GARAGEM, SEM FEITO DA UNITRAC - CONFERIR')
+  })
+  it('a Unitrac marcou feito: confirma', () => {
+    const [d] = chamarNutryMax([orion], { visitasPorNf: vis(), paradasPorOutraPlaca: base(), alvos: [alvo('NF1', 1)] })
+    expect(d.status).not.toBe('pendente')
+  })
+  it('"BASE" da Unitrac longe das bases conhecidas (hortifruti do pao em Tijuca, RQO9H37): nao e garagem, confirma', () => {
+    const longe = linha('NF1', { endereco: 'RUA CONDE DE BONFIM, 648 - TIJUCA, RIO DE JANEIRO', lat: -22.9250, lng: -43.2330 })
+    const p = new Map([['TTL7D40', [{ ...paradaForaBase('pao', -22.9250, -43.2330, janela.chegada, janela.saida), classificacao: 'BASE' }]]])
+    const [d] = chamarNutryMax([longe], { visitasPorNf: vis(), paradasPorOutraPlaca: p })
+    expect(d.status).not.toBe('pendente')
+  })
+  it('o carro tambem parou FORA da base nesse endereco: confirma', () => {
+    const p = new Map([['TTL7D40', [...base().get('TTL7D40')!, paradaForaBase('fora', -22.8154 + 30 * M_LAT, -43.2779, '2026-10-08T21:00:00.000Z', '2026-10-08T21:20:00.000Z')]]])
+    const [d] = chamarNutryMax([orion], { visitasPorNf: vis(), paradasPorOutraPlaca: p })
+    expect(d.status).not.toBe('pendente')
+  })
+})
+
 // Regressao 06/10 (UNN6G81 / PACIFIC): parada a 9 m as 09:56, mas o
 // casamento por horario pegou outra parada da janela, a 541 m -- a regra da
 // rota em andamento segurava uma entrega real. Vale a MENOR distancia entre
