@@ -19,17 +19,23 @@ const RAIO_ENDERECO_M = 400 // 250 perdia PAO-5 06/10 (RQM4C16 a 260-400 m de 3 
 const MIN_ENDERECOS = 2
 const FRACAO_MIN = 0.5
 const FRACAO_MAX_ESCALADO = 0.2
+// Carro com carga propria so' e' candidato se ela e' pequena perto da carga que
+// teria rodado (08/10: RQV5F67 com 1 NF rodou as 21 do UNN6G81, mesmo motorista).
+const MAX_ENDERECOS_PROPRIOS_ABS = 2
+const FRACAO_MAX_PROPRIA = 0.25
 
 const paradasForaDaBase = (ps: UnitracParadaRow[]) =>
   ps.filter((p): p is UnitracParadaRow & { lat: number; lng: number } => p.classificacao === 'FORA_BASE' && p.lat != null && p.lng != null)
 
 /** Para cada carga em que o carro da escala passou em no máximo 20% dos
- *  endereços, procura entre os carros SEM carga no dia o que parou em mais endereços
- *  da carga (<= RAIO_ENDERECO_M). Sugere só com >= MIN_ENDERECOS e >= metade
+ *  endereços, procura entre os carros SEM carga no dia (ou com carga própria bem
+ *  pequena) o que parou em mais endereços da carga (<= RAIO_ENDERECO_M). Sugere só com >= MIN_ENDERECOS e >= metade
  *  dos endereços, e quando o 2º colocado não empata. */
 export function sugerirTrocas(pontos: PontoCarga[], paradasPorPlaca: Map<string, UnitracParadaRow[]>): SugestaoTroca[] {
   const placasComCarga = new Set(pontos.map(p => p.placa))
   const livres = [...paradasPorPlaca.keys()].filter(p => !placasComCarga.has(p))
+  const enderecosProprios = new Map<string, Set<string>>()
+  for (const p of pontos) enderecosProprios.set(p.placa, (enderecosProprios.get(p.placa) ?? new Set()).add(p.endereco))
   const porCarga = new Map<string, PontoCarga[]>()
   for (const p of pontos) porCarga.set(p.carga, [...(porCarga.get(p.carga) ?? []), p])
 
@@ -49,7 +55,12 @@ export function sugerirTrocas(pontos: PontoCarga[], paradasPorPlaca: Map<string,
     // ate' a rua da base -- "sem parada fora da base" nao pegava).
     const doEscalado = visitou(placaEscala)
     if (doEscalado > FRACAO_MAX_ESCALADO * total) continue
-    const ranking = livres.map(placa => ({ placa, visitados: visitou(placa) })).sort((a, b) => b.visitados - a.visitados)
+    const candidatas = [
+      ...livres,
+      ...[...enderecosProprios].filter(([placa, e]) => placa && placa !== placaEscala && paradasPorPlaca.has(placa)
+        && e.size <= Math.max(MAX_ENDERECOS_PROPRIOS_ABS, FRACAO_MAX_PROPRIA * total)).map(([placa]) => placa),
+    ]
+    const ranking = candidatas.map(placa => ({ placa, visitados: visitou(placa) })).sort((a, b) => b.visitados - a.visitados)
     const [melhor, segundo] = ranking
     if (!melhor || melhor.visitados < MIN_ENDERECOS || melhor.visitados < FRACAO_MIN * total) continue
     if (melhor.visitados < doEscalado + MIN_ENDERECOS) continue
