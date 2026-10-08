@@ -89,10 +89,17 @@ async function main() {
   const naoConfirmadas = detalhe.filter(d => d.status === 'pendente' && chaveClienteLocal(d) && d.evidencia !== 'sem_rastreador' && d.evidencia !== 'nao_saiu_da_base' && !/^(CARGA SEM PLACA|AGUARDANDO)/.test(d.observacao ?? ''))
   for (const d of naoConfirmadas) indep.set(d.nf, await geocodeIndependente(d.endereco))
 
-  const evs: EvidenciaLocal[] = evidenciasDoDia({ detalhe, geo, paradasPorPlaca, indep })
+  // Cadastro da Unitrac por NF (snapshot dos alvos do dia) -- evidencia "feito + parada no cadastro".
+  const cadastro = new Map<string, { lat: number; lng: number }>()
+  const { data: snap } = await createServiceClient().from('kpi_alvos_snapshot').select('alvos').eq('cliente', EMPRESA).eq('data_referencia', data).order('capturado_em', { ascending: false }).limit(1).maybeSingle()
+  for (const a of (snap?.alvos as { documento?: string | null; pontoLat?: number | null; pontoLng?: number | null }[] | null) ?? []) {
+    if (a.documento && a.pontoLat && a.pontoLng) cadastro.set(a.documento, { lat: a.pontoLat, lng: a.pontoLng })
+  }
+  const evs: EvidenciaLocal[] = evidenciasDoDia({ detalhe, geo, paradasPorPlaca, indep, cadastro })
   const conf = evs.filter(e => e.origem === 'entrega_confirmada'), orfas = evs.filter(e => e.origem === 'parada_orfa')
   console.log(`[locais] ${data}: ${detalhe.length} NFs, ${naoConfirmadas.length} não confirmadas olhadas, ${paradasPorPlaca.size} placas com paradas do monitoramento`)
   console.log(`[locais] evidências: ${conf.length} entregas confirmadas, ${orfas.length} paradas órfãs`)
+  console.log(`[locais] das órfãs, ${orfas.filter(e => /cadastro/.test(e.detalhe)).length} vêm do cadastro da Unitrac (feito + parada)`)
   for (const e of orfas) console.log(`  órfã  NF ${e.nf} cliente ${e.chave} ${e.nome}: ${e.detalhe}; nosso ponto a ${e.distGeocodeM ?? '?'} m -> ${e.lat.toFixed(6)},${e.lng.toFixed(6)}`)
   if (!aplicar) { console.log('[locais] sem --aplicar: nada gravado'); return }
 

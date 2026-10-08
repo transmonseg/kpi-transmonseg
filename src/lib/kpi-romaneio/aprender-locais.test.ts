@@ -58,3 +58,35 @@ describe('escolherLocal', () => {
     expect(escolherLocal([])).toBeNull()
   })
 })
+
+// 09/10 (auditoria da geocodificacao): ~300 NFs/dia so' confirmam pelo cadastro da
+// Unitrac porque o geocode do romaneio esta' errado; o cliente repete o erro todo dia.
+describe('evidenciasDoDia -- entrega confirmada pelo cadastro da Unitrac', () => {
+  const geo = new Map([['1', { lat: -22.9, lng: -43.2, confiavel: true }]])
+  const M = 1 / 111_195
+  const cadastro = (m: number) => new Map([['1', { lat: -22.9 + m * M, lng: -43.2 }]])
+  const forte: Partial<LinhaDetalheEntrega> = { evidencia: 'parada_no_cadastro_unitrac', status: 'confirmado_unitrac', distParadaM: 40 }
+  const run = (d: Partial<LinhaDetalheEntrega>, cad = cadastro(900)) => evidenciasDoDia({ detalhe: [det(d)], geo, paradasPorPlaca: new Map(), indep: new Map(), cadastro: cad })
+
+  it('feito da Unitrac + parada no cadastro + geocode a 900 m: ensina o ponto do cadastro (origem que vale so\' no mesmo endereco)', () => {
+    const ev = run(forte)
+    expect(ev).toHaveLength(1)
+    expect(ev[0]).toMatchObject({ chave: '100', origem: 'parada_orfa' })
+    expect(ev[0].lat).toBeCloseTo(-22.9 + 900 * M, 6)
+    expect(ev[0].distGeocodeM).toBeGreaterThan(850)
+    expect(ev[0].detalhe).toMatch(/cadastro/)
+  })
+  it('sem feito (confirmado so\' pelo GPS): nao ensina', () => {
+    expect(run({ ...forte, status: 'confirmado_gps' })).toEqual([])
+  })
+  it('parada a mais de 150 m do cadastro: nao ensina', () => {
+    expect(run({ ...forte, distParadaM: 220 })).toEqual([])
+  })
+  it('geocode a menos de 300 m do cadastro (impreciso, nao errado) ou a mais de 3 km (suspeito demais): nao ensina', () => {
+    expect(run(forte, cadastro(200))).toEqual([])
+    expect(run(forte, cadastro(3500))).toEqual([])
+  })
+  it('sem cadastro da NF: nao ensina', () => {
+    expect(run(forte, new Map())).toEqual([])
+  })
+})

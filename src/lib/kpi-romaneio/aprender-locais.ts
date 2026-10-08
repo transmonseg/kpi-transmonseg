@@ -25,6 +25,13 @@ const MIN_PARADA_ORFA_S = 8 * 60
 const RAIO_CANDIDATA_M = 400 // parada até aqui do endereço achado por fora
 const LONGE_DE_OUTRA_ENTREGA_M = 250
 const PERTO_DO_NOSSO_PONTO_M = 300 // parada aqui não é problema de endereço
+// Entrega confirmada pelo CADASTRO da Unitrac (09/10, auditoria da geocodificação):
+// feito da Unitrac + parada a <= CAD_PARADA_MAX_M do cadastro + nosso geocode entre
+// CAD_GEO_MIN_M e CAD_GEO_MAX_M do cadastro. Menos de 300 m é imprecisão, mais de 3 km
+// é suspeito demais pra aprender sozinho (vira lista pra revisão humana).
+const CAD_PARADA_MAX_M = 150
+const CAD_GEO_MIN_M = 300
+const CAD_GEO_MAX_M = 3000
 
 function distanciaM(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371000
@@ -39,6 +46,8 @@ export function evidenciasDoDia(p: {
   geo: Map<string, { lat: number; lng: number; confiavel: boolean }>
   paradasPorPlaca: Map<string, { apagao: boolean; paradas: ParadaBridge[] }>
   indep: Map<string, { lat: number; lng: number } | null>
+  /** Ponto do cadastro do cliente na Unitrac, por NF (opcional). */
+  cadastro?: Map<string, { lat: number; lng: number }>
 }): EvidenciaLocal[] {
   const out: EvidenciaLocal[] = []
   const confirmada = (d: LinhaDetalheEntrega) => d.status !== 'pendente'
@@ -58,6 +67,13 @@ export function evidenciasDoDia(p: {
     if (confirmada(d)) {
       if (d.evidencia === 'parada_no_endereco' && d.distParadaM != null && d.distParadaM <= DIST_CONFIRMACAO_FORTE_M && g?.confiavel) {
         out.push({ ...base, origem: 'entrega_confirmada', lat: g.lat, lng: g.lng, distGeocodeM: 0, detalhe: `confirmada, parada a ${d.distParadaM} m` })
+      }
+      const cad = p.cadastro?.get(d.nf)
+      if (d.evidencia === 'parada_no_cadastro_unitrac' && d.status === 'confirmado_unitrac' && d.distParadaM != null && d.distParadaM <= CAD_PARADA_MAX_M && cad && g) {
+        const dGeo = Math.round(distanciaM(cad, g))
+        if (dGeo >= CAD_GEO_MIN_M && dGeo <= CAD_GEO_MAX_M) {
+          out.push({ ...base, origem: 'parada_orfa', lat: cad.lat, lng: cad.lng, distGeocodeM: dGeo, detalhe: `feito da Unitrac + parada a ${Math.round(d.distParadaM)} m do cadastro; nosso ponto a ${dGeo} m do cadastro` })
+        }
       }
       continue
     }
