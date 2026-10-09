@@ -2300,11 +2300,12 @@ export function montarDetalheEntregas(
         ? `ENDEREÇO COM COORDENADA IMPRECISA - ${detalhe} - CONFERIR CADASTRO`
         : 'ENDEREÇO COM COORDENADA IMPRECISA - CONFERIR CADASTRO (não dá pra afirmar se foi ou não)'
     }
-    // 09/10: pendente sem coordenada alguma (geocode do romaneio falhou e o
-    // alvo da Unitrac nao tem ponto): ficava com observacao em branco, sem
-    // explicar. Nao acusa o motorista nem afirma nada -- so' aponta o cadastro.
-    if (observacao == null && status === 'pendente' && linha.lat == null
-      && !(alvo && coordValidaCadastro(alvo.pontoLat) && coordValidaCadastro(alvo.pontoLng))) {
+    // 09/10: pendente sem coordenada do romaneio (geocode falhou) ficava com
+    // observacao em branco, sem explicar -- inclusive quando a Unitrac tem um
+    // ponto, porque a distancia propria so' e' medida pelo geocode. Nao acusa
+    // o motorista nem afirma nada -- so' aponta o cadastro; a parada propria
+    // (R2, abaixo) ainda pode confirmar pelo ponto da Unitrac.
+    if (observacao == null && status === 'pendente' && linha.lat == null) {
       observacao = OBS_ENDERECO_NAO_LOCALIZADO
     }
     // Task 2 (plano 2026-09-25, R2 -- caso de aceite: planilha de ocorrencias

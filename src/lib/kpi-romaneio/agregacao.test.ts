@@ -2284,9 +2284,18 @@ describe('montarDetalheEntregas -- confirmarPorParadaUnitracPropria opt-in (Task
       expect(d.status).toBe('pendente')
       expect(d.observacao).toBe('ENDEREÇO NÃO LOCALIZADO - CONFERIR CADASTRO (não dá pra afirmar se foi ou não)')
     })
-    it('sem coordenada no romaneio mas com ponto no cadastro da Unitrac -- nao usa o rotulo', () => {
+    it('sem coordenada no romaneio mas com ponto no cadastro e sem parada nenhuma -- tambem rotulado', () => {
       const [d] = chamar([linha('NF1', { lat: null, lng: null, geoConfiavel: false })], { alvos: [alvo('NF1', 0, { pontoLat: -22.9, pontoLng: -43.2 })] })
-      expect(d.observacao).not.toBe('ENDEREÇO NÃO LOCALIZADO - CONFERIR CADASTRO (não dá pra afirmar se foi ou não)')
+      expect(d.observacao).toMatch(/^ENDEREÇO NÃO LOCALIZADO/)
+    })
+    it('sem coordenada no romaneio mas parada propria no ponto da Unitrac -- confirma e perde o rotulo', () => {
+      const p = parada({ classificacao: 'FORA_BASE', lat: -22.9, lng: -43.2, chegada: '2026-10-09T14:00:00.000Z', saida: '2026-10-09T14:06:00.000Z', fim_real: '2026-10-09T14:06:00.000Z' })
+      const [d] = chamar([linha('NF1', { lat: null, lng: null, geoConfiavel: false })], {
+        alvos: [alvo('NF1', 0, { pontoLat: -22.9, pontoLng: -43.2 })],
+        paradasUnitracCruasPropriaPlaca: new Map([['TTL7D40', [p]]]),
+      })
+      expect(d.status).not.toBe('pendente')
+      expect(d.observacao).toBeNull()
     })
   })
 
