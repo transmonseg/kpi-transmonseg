@@ -694,10 +694,11 @@ describe('montarDetalheEntregas', () => {
         expect(d.observacao).toBeNull()
       })
 
-      it('sem coordenada ou sem parada nenhuma da propria placa: nao inventa rotulo', () => {
+      it('sem coordenada ou sem parada nenhuma da propria placa: nao inventa rotulo de nao-entrega', () => {
         const semCoord = [linha('NF1', { lat: null, lng: null })]
         const paradasFrota = new Map([['TTL7D40', [parada({ id: 'p', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.95, lng: -43.30 })]]])
-        expect(montarDetalheEntregas('93758', 'TTL7D40', semCoord, [], new Map(), resumoCargaVazio, true, paradasFrota)[0].observacao).toBeNull()
+        // 09/10: sem coordenada ganha o rotulo de cadastro (nao de "nao foi ao cliente").
+        expect(montarDetalheEntregas('93758', 'TTL7D40', semCoord, [], new Map(), resumoCargaVazio, true, paradasFrota)[0].observacao).toMatch(/^ENDEREÇO NÃO LOCALIZADO/)
         expect(montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio, true, new Map())[0].observacao).toBeNull()
       })
     })
@@ -2275,6 +2276,18 @@ describe('montarDetalheEntregas -- confirmarPorParadaUnitracPropria opt-in (Task
     expect(d.observacao).toBeNull()
     expect(d.chegada).toBe('2026-09-24T09:00:00.000Z')
     expect(d.evidencia).not.toBe('parada_unitrac_propria')
+  })
+
+  describe('(h) endereco sem coordenada (09/10)', () => {
+    it('pendente sem lat/lng e sem ponto no cadastro -- rotulo ENDEREÇO NÃO LOCALIZADO, nunca em branco', () => {
+      const [d] = chamar([linha('NF1', { lat: null, lng: null, geoConfiavel: false })])
+      expect(d.status).toBe('pendente')
+      expect(d.observacao).toBe('ENDEREÇO NÃO LOCALIZADO - CONFERIR CADASTRO (não dá pra afirmar se foi ou não)')
+    })
+    it('sem coordenada no romaneio mas com ponto no cadastro da Unitrac -- nao usa o rotulo', () => {
+      const [d] = chamar([linha('NF1', { lat: null, lng: null, geoConfiavel: false })], { alvos: [alvo('NF1', 0, { pontoLat: -22.9, pontoLng: -43.2 })] })
+      expect(d.observacao).not.toBe('ENDEREÇO NÃO LOCALIZADO - CONFERIR CADASTRO (não dá pra afirmar se foi ou não)')
+    })
   })
 
   describe('(f) rotulos de ressalva/pendente listados no brief -- viram ENTREGUE limpo com parada propria valida', () => {

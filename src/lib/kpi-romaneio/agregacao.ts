@@ -354,6 +354,7 @@ function elegivelParaEscalaDivergente(status: StatusEntrega, observacao: string 
   if (observacao == null) return true
   return observacao === 'NÃO FOI AO CLIENTE (caminhão não esteve na região)'
     || observacao.startsWith(PREFIXO_OBS_COORDENADA_IMPRECISA)
+    || observacao === OBS_ENDERECO_NAO_LOCALIZADO
 }
 
 // Task 2 (plano 2026-09-26, rodizio de carga inteira -- analise-escala-25-09.md:
@@ -1049,6 +1050,8 @@ const CONFIRMAR_APESAR_DE_RESSALVA = new Set<string>([
 // transferida"/outra placa, "veiculo sem movimento" nem "tempo em loja" --
 // nenhum desses e' fato que uma parada da propria placa deva sobrepor.
 const PREFIXO_OBS_COORDENADA_IMPRECISA = 'ENDEREÇO COM COORDENADA IMPRECISA'
+/** 09/10: romaneio sem coordenada nenhuma (geocode falhou, nem cadastro da Unitrac): ficava pendente em branco. */
+export const OBS_ENDERECO_NAO_LOCALIZADO = 'ENDEREÇO NÃO LOCALIZADO - CONFERIR CADASTRO (não dá pra afirmar se foi ou não)'
 function elegivelParaConfirmarPorParadaPropria(status: StatusEntrega, observacao: string | null): boolean {
   // Ja' e' ENTREGUE limpo (nenhuma ressalva, seja o status confirmado_unitrac
   // ou confirmado_gps) -- nada a fazer, ver caso de aceite (e).
@@ -1062,6 +1065,7 @@ function elegivelParaConfirmarPorParadaPropria(status: StatusEntrega, observacao
     || observacao === 'NÃO FOI AO CLIENTE (caminhão não esteve na região)'
     || observacao === 'PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR'
     || observacao.startsWith(PREFIXO_OBS_COORDENADA_IMPRECISA)
+    || observacao === OBS_ENDERECO_NAO_LOCALIZADO
 }
 
 /** Uma carga = todas as linhas do romaneio com o mesmo `carga`+`placa`.
@@ -1332,6 +1336,7 @@ export function gerarMotivo(d: {
     if (obs.includes('OUTRO BAIRRO')) return 'Coordenada do cliente em outro bairro — conferir cadastro'
     return 'Coordenada do cliente imprecisa — conferir cadastro'
   }
+  if (obs?.startsWith('ENDEREÇO NÃO LOCALIZADO')) return 'Endereço do romaneio não foi localizado no mapa — conferir cadastro'
   if (obs?.startsWith('CLIENTE SEM ACESSO RODOVIÁRIO')) return 'Cliente sem acesso rodoviário (ilha) — conferir com a operação'
   if (obs?.startsWith(OBS_NAO_SAIU_DA_BASE)) return 'Veículo não saiu da base no dia'
   if (obs?.startsWith('VEÍCULO SEM MOVIMENTO')) return 'Veículo sem movimento no dia — conferir rastreador'
@@ -2294,6 +2299,13 @@ export function montarDetalheEntregas(
       observacao = detalhe
         ? `ENDEREÇO COM COORDENADA IMPRECISA - ${detalhe} - CONFERIR CADASTRO`
         : 'ENDEREÇO COM COORDENADA IMPRECISA - CONFERIR CADASTRO (não dá pra afirmar se foi ou não)'
+    }
+    // 09/10: pendente sem coordenada alguma (geocode do romaneio falhou e o
+    // alvo da Unitrac nao tem ponto): ficava com observacao em branco, sem
+    // explicar. Nao acusa o motorista nem afirma nada -- so' aponta o cadastro.
+    if (observacao == null && status === 'pendente' && linha.lat == null
+      && !(alvo && coordValidaCadastro(alvo.pontoLat) && coordValidaCadastro(alvo.pontoLng))) {
+      observacao = OBS_ENDERECO_NAO_LOCALIZADO
     }
     // Task 2 (plano 2026-09-25, R2 -- caso de aceite: planilha de ocorrencias
     // rotuladas pela equipe 24/09): NF ainda sem confirmacao limpa (pendente,
