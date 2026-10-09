@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process'
 import { writeFileSync } from 'node:fs'
 import { gerarKpiNutrimax } from '../src/lib/kpi-romaneio/gerar-nutrimax'
 import { entradaDoDia } from '../src/lib/kpi-romaneio/ao-vivo-servico'
+import { entradaDaGeracao } from '../src/lib/kpi-romaneio/entrada-geracao'
 import { classificarNf, type Veredito } from '../src/lib/kpi-romaneio/auditoria-nf'
 
 const data = process.argv[2]
@@ -13,7 +14,7 @@ if (!/^\d{4}-\d{2}-\d{2}$/.test(data ?? '')) throw new Error('uso: auditar-dia.t
 const min = (iso: string | null) => (iso ? Number(iso.slice(11, 13)) * 60 + Number(iso.slice(14, 16)) : null)
 
 async function main() {
-  const entrada = await entradaDoDia('nutrimax', data)
+  const entrada = (await entradaDoDia('nutrimax', data)) ?? (await entradaDaGeracao(data))
   if (!entrada) throw new Error('sem entrada do dia')
   const coords = new Map<string, { lat: number; lng: number }>()
   const res = await gerarKpiNutrimax(entrada, { aoMontarDetalhe: ({ romaneioGeo }: { romaneioGeo: { nf: string; lat: number | null; lng: number | null }[] }) => {

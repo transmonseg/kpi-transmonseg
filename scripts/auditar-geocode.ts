@@ -15,6 +15,7 @@ import { execFileSync } from 'node:child_process'
 import { writeFileSync } from 'node:fs'
 import { gerarKpiNutrimax } from '../src/lib/kpi-romaneio/gerar-nutrimax'
 import { entradaDoDia } from '../src/lib/kpi-romaneio/ao-vivo-servico'
+import { entradaDaGeracao } from '../src/lib/kpi-romaneio/entrada-geracao'
 import { chaveCacheEndereco } from '../src/lib/kpi-romaneio/endereco-cep'
 
 const data = process.argv[2]
@@ -25,7 +26,7 @@ const hav = (a: number, b: number, c: number, d: number) => 6371000 * Math.acos(
 const q = (s: string) => s.replace(/'/g, "''")
 
 async function main() {
-  const entrada = await entradaDoDia('nutrimax', data)
+  const entrada = (await entradaDoDia('nutrimax', data)) ?? (await entradaDaGeracao(data))
   if (!entrada) throw new Error('sem entrada do dia')
   let geo: any[] = []
   const res = await gerarKpiNutrimax(entrada, { semLocaisClientes: !!process.env.SEM_LOCAIS, aoMontarDetalhe: (a: any) => { geo = a.romaneioGeo } })
