@@ -28,7 +28,7 @@ async function main() {
   const entrada = await entradaDoDia('nutrimax', data)
   if (!entrada) throw new Error('sem entrada do dia')
   let geo: any[] = []
-  const res = await gerarKpiNutrimax(entrada, { aoMontarDetalhe: (a: any) => { geo = a.romaneioGeo } })
+  const res = await gerarKpiNutrimax(entrada, { semLocaisClientes: !!process.env.SEM_LOCAIS, aoMontarDetalhe: (a: any) => { geo = a.romaneioGeo } })
   const geoPorNf = new Map(geo.map(g => [g.nf, g]))
   const det = res.detalhe.filter((d: any) => geoPorNf.get(d.nf)?.lat != null)
 
@@ -76,7 +76,7 @@ async function main() {
     const pf = porFonte.get(f.fonte) ?? {}; pf[classe.split(' ')[0]] = (pf[classe.split(' ')[0]] ?? 0) + 1; porFonte.set(f.fonte, pf)
     linhas.push([d.nf, d.placa, d.clienteNome.replace(/;/g, ','), d.endereco.replace(/;/g, ','), d.status, d.evidencia, classe, f.fonte, g.geoConfiavel === false ? 'nao' : 'sim', g.geoMotivo ?? f.motivo, dGC ?? '', gg.parado, c ? gc.parado : '', d.distParadaM == null ? '' : Math.round(d.distParadaM), c?.sit ?? ''].join(';'))
   }
-  writeFileSync(`/tmp/geocode-${data}.csv`, '﻿' + linhas.join('\n'))
+  writeFileSync(`/tmp/geocode-${data}${process.env.SEM_LOCAIS ? '-sem-locais' : ''}.csv`, '﻿' + linhas.join('\n'))
   console.log(`NFs com geocode: ${det.length} de ${res.detalhe.length}`)
   for (const [k, n] of [...cont].sort((a, b) => b[1] - a[1])) console.log(String(n).padStart(5), k)
   console.log('--- por fonte do geocode (classe x fonte)')
