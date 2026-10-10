@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { aplicarTrocasDePlaca, normalizarPlacaDigitada, completarPlaca, decidirTrocaManual } from './trocas-placa'
+import { aplicarTrocasDePlaca, normalizarPlacaDigitada, completarPlaca, decidirTrocaManual, resolverPlacaDigitada } from './trocas-placa'
 
 const rom = (carga: string, placa: string, nf: string) => ({ carga, placa, nf })
 const esc = (carga: string, placa: string) => ({ carga, placaRaw: placa, placaNorm: placa.replace('-', '') })
@@ -108,5 +108,27 @@ describe('decidirTrocaManual (campo "redirecionar carga", 08/10)', () => {
   })
   it('placa nova igual a que ja esta na troca: nada a fazer', () => {
     expect(decidirTrocaManual({ placaEscala: 'TTI9B98', placaReal: 'RBI1J86' }, 'RBI1J86', 'RBI1J86')).toEqual({ erro: 'A placa nova é a mesma da carga.' })
+  })
+})
+
+describe('resolverPlacaDigitada (Ao vivo: digitar a placa na troca, 10/10)', () => {
+  const frota = ['RBJ9C84', 'TTL5J17']
+  it('placa inteira não consulta a frota', async () => {
+    let chamou = 0
+    expect(await resolverPlacaDigitada('rbj-9c84', async () => { chamou++; return frota })).toEqual({ placa: 'RBJ9C84' })
+    expect(chamou).toBe(0)
+  })
+  it('final de placa completa pela frota', async () => {
+    expect(await resolverPlacaDigitada('9c84', async () => frota)).toEqual({ placa: 'RBJ9C84' })
+  })
+  it('final inexistente devolve o erro do completarPlaca', async () => {
+    expect(await resolverPlacaDigitada('0000', async () => frota)).toEqual({ erro: 'Nenhuma placa da frota termina em 0000.' })
+  })
+  it('lixo curto não consulta a frota', async () => {
+    expect(await resolverPlacaDigitada('9', async () => { throw new Error('não devia') })).toEqual({ erro: 'Placa inválida.' })
+  })
+  it('frota indisponível pede a placa inteira', async () => {
+    expect(await resolverPlacaDigitada('9C84', async () => { throw new Error('x') })).toEqual({ erro: 'Não consegui consultar a frota agora. Digite a placa inteira.' })
+    expect(await resolverPlacaDigitada('9C84', async () => [])).toEqual({ erro: 'Não consegui consultar a frota agora. Digite a placa inteira.' })
   })
 })

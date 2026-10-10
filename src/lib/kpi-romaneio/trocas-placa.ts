@@ -24,6 +24,19 @@ export function completarPlaca(digitada: string, frota: string[]): { placa: stri
   return { erro: `Mais de uma placa termina em ${p} (${achadas.slice(0, 4).join(', ')}). Digite a placa inteira.` }
 }
 
+/** Placa digitada na tela -> placa inteira. Inteira não consulta a frota; só o
+ *  final consulta (fail-open: frota fora do ar vira pedido de placa inteira). */
+export async function resolverPlacaDigitada(
+  digitada: string,
+  buscarFrota: () => Promise<string[]>,
+): Promise<{ placa: string } | { erro: string }> {
+  const direta = completarPlaca(digitada, [])
+  if ('placa' in direta || direta.erro === 'Placa inválida.') return direta
+  const frota = await buscarFrota().catch(() => [] as string[])
+  if (frota.length === 0) return { erro: 'Não consegui consultar a frota agora. Digite a placa inteira.' }
+  return completarPlaca(digitada, frota)
+}
+
 /** Substitui placaEscala -> placaReal no romaneio e na escala. Troca com
  *  `carga` só vale pra aquela carga; sem carga, pra todas da placa no dia.
  *  Várias trocas pra mesma placa/carga: a última da lista vence. */

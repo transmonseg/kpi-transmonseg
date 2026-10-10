@@ -2,6 +2,7 @@
 // Cron a cada 10 min; só calcula das 05h às 21h (BRT) e só se o romaneio do
 // dia foi subido. A trava no banco (calcularAoVivo) impede dois cálculos ao
 // mesmo tempo, inclusive com o disparado pela tela ao subir o romaneio.
+// Reparo do dia (10/10): ver src/lib/kpi-romaneio/reparar-dia.ts.
 // Fechamento (05/10): depois da meia-noite, o dia anterior ganha um último
 // cálculo já com o dia encerrado -- sem isso as NFs que estavam "aguardando
 // fim da rota" no último cálculo do dia ficavam pendentes pra sempre.
@@ -12,6 +13,7 @@ import { CLIENTES_AO_VIVO, calcularAoVivo } from '../src/lib/kpi-romaneio/ao-viv
 import { diaAnterior, precisaFecharDia } from '../src/lib/kpi-romaneio/ao-vivo'
 import { limparCacheDia } from '../src/lib/kpi-romaneio/cache-dia'
 import { limparXlsxAoVivo } from '../src/lib/kpi-romaneio/ao-vivo-servico'
+import { repararDia, depsReaisReparo } from '../src/lib/kpi-romaneio/reparar-dia'
 import { sincronizarAcessosMonitoramento } from '../src/lib/acessos-monitoramento'
 
 const log = (m: string) => console.log(`${new Date().toISOString()} ${m}`)
@@ -42,6 +44,9 @@ async function main() {
   }
   if (horaBR < 5 || horaBR >= 21) return
   const data = hojeBR()
+  // Reparo (10/10): preenche o Ao vivo a partir da geracao do dia e reenvia o
+  // romaneio ao monitoramento se ele estiver sem. Nunca lanca (fail-open).
+  await repararDia(depsReaisReparo, data, log)
   for (const cliente of CLIENTES_AO_VIVO) {
     const r = await calcularAoVivo(cliente, data, log)
     if (r !== 'ok') log(`ao vivo ${cliente} ${data}: ${r}`)

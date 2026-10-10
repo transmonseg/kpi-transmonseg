@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { hojeBR } from '@/lib/data-br'
 import { createServiceClient } from '@/lib/supabase/service'
 import { EMPRESA_NUTRIMAX } from '@/lib/kpi-romaneio/constants'
-import { normalizarPlacaDigitada, decidirTrocaManual } from '@/lib/kpi-romaneio/trocas-placa'
+import { normalizarPlacaDigitada, decidirTrocaManual, resolverPlacaDigitada } from '@/lib/kpi-romaneio/trocas-placa'
+import { buscarFrota } from '@/lib/unitrac-api'
+import { COD_USER_NUTRIMAX } from '@/lib/kpi-romaneio/constants'
 import { calcularAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
 import { acessoAoVivo } from '../acesso'
 
@@ -18,8 +20,12 @@ export async function POST(req: NextRequest) {
   const b = (await req.json().catch(() => ({}))) as { carga?: unknown; placaEscala?: unknown; placaReal?: unknown }
   const carga = typeof b.carga === 'string' ? b.carga.trim() : ''
   const placaTela = typeof b.placaEscala === 'string' ? normalizarPlacaDigitada(b.placaEscala) : ''
-  const placaReal = typeof b.placaReal === 'string' ? normalizarPlacaDigitada(b.placaReal) : ''
-  if (!carga || !placaTela || !placaReal) return new NextResponse('Troca inválida.', { status: 400 })
+  const digitada = typeof b.placaReal === 'string' ? normalizarPlacaDigitada(b.placaReal) : ''
+  if (!carga || !placaTela || !digitada) return new NextResponse('Troca inválida.', { status: 400 })
+  // Placa digitada pode vir inteira ou só o final ("9C84"); completa pela frota.
+  const rp = await resolverPlacaDigitada(digitada, async () => (await buscarFrota(COD_USER_NUTRIMAX)).map(v => v.placaNorm))
+  if ('erro' in rp) return new NextResponse(rp.erro, { status: 400 })
+  const placaReal = rp.placa
   const data = hojeBR()
   const svc = createServiceClient()
   const { data: ja } = await svc.from('kpi_troca_placa').select('id, placa_escala, placa_real').eq('empresa', EMPRESA_NUTRIMAX).eq('data', data).eq('carga', carga).order('id', { ascending: false }).limit(1)
@@ -41,7 +47,7 @@ export async function POST(req: NextRequest) {
   const monitoramento = await trocarNoMonitoramento(data, d.moverNoMonitoramentoDe, d.placaReal, await nfsDaCarga(data, carga))
   // Recalcula em segundo plano; a tela pega no próximo GET.
   void calcularAoVivo('nutrimax', data).catch(() => {})
-  return NextResponse.json({ ok: true, acao: d.acao, monitoramento })
+  return NextResponse.json({ ok: true, acao: d.acao, placaReal: d.placaReal, monitoramento })
 }
 
 /** NFs da carga no romaneio do dia (normal + pão). Troca mútua entre dois carros

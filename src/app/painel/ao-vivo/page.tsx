@@ -633,13 +633,16 @@ function Mini({ rotulo, valor, destaque, longe, titulo }: { rotulo: string; valo
 function TrocasSugeridas({ sugestoes, onConfirmada }: { sugestoes: SugestaoTroca[]; onConfirmada: () => void }) {
   const [enviando, setEnviando] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
+  // Placa digitada por carga (opcional): vale no lugar da sugerida; vazio mantém a sugestão.
+  const [digitadas, setDigitadas] = useState<Record<string, string>>({})
   async function confirmar(s: SugestaoTroca) {
+    const alvo = (digitadas[s.carga] ?? '').trim() || s.placaSugerida
     setEnviando(s.carga); setAviso(null)
     try {
-      const r = await fetch('/api/kpi/ao-vivo/troca', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ carga: s.carga, placaEscala: s.placaEscala, placaReal: s.placaSugerida }) })
+      const r = await fetch('/api/kpi/ao-vivo/troca', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ carga: s.carga, placaEscala: s.placaEscala, placaReal: alvo }) })
       if (!r.ok) { setAviso(`Não deu pra trocar: ${await r.text()}`); return }
-      const j = (await r.json()) as { monitoramento?: { ok: boolean; erro?: string } }
-      setAviso(`Troca registrada: carga ${s.carga} agora é do ${s.placaSugerida}. O KPI recalcula em instantes.${j.monitoramento && !j.monitoramento.ok ? ` Monitoramento não atualizou (${j.monitoramento.erro}).` : ''}`)
+      const j = (await r.json()) as { placaReal?: string; monitoramento?: { ok: boolean; erro?: string } }
+      setAviso(`Troca registrada: carga ${s.carga} agora é do ${j.placaReal ?? alvo.toUpperCase()}. O KPI recalcula em instantes.${j.monitoramento && !j.monitoramento.ok ? ` Monitoramento não atualizou (${j.monitoramento.erro}).` : ''}`)
       onConfirmada()
     } finally { setEnviando(null) }
   }
@@ -652,9 +655,12 @@ function TrocasSugeridas({ sugestoes, onConfirmada }: { sugestoes: SugestaoTroca
         {sugestoes.map(s => (
           <li key={s.carga} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-[var(--color-fg-muted)]">
             <span>Carga <strong className="text-[var(--color-fg)]">{s.carga}</strong>: o <strong className="text-[var(--color-fg)]">{s.placaEscala}</strong> da escala não passou nos clientes; o <strong className="text-[var(--color-fg)]">{s.placaSugerida}</strong> parou em {s.enderecosVisitados} de {s.enderecosDaCarga} endereços.</span>
+            <input value={digitadas[s.carga] ?? ''} onChange={e => setDigitadas(d => ({ ...d, [s.carga]: e.target.value }))} placeholder="ou digite a placa" maxLength={8} aria-label={`Outra placa para a carga ${s.carga}`}
+              onKeyDown={e => { if (e.key === 'Enter' && enviando == null) void confirmar(s) }}
+              className="h-8 w-[130px] rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[12.5px] uppercase text-[var(--color-fg)]" />
             <button type="button" disabled={enviando != null} onClick={() => confirmar(s)}
               className="inline-flex h-8 items-center rounded-full bg-[var(--color-navy-700)] px-3.5 text-[12.5px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] disabled:opacity-50">
-              {enviando === s.carga ? 'Trocando…' : `Confirmar ${s.placaSugerida}`}
+              {enviando === s.carga ? 'Trocando…' : `Confirmar ${(digitadas[s.carga] ?? '').trim().toUpperCase() || s.placaSugerida}`}
             </button>
           </li>
         ))}
@@ -681,8 +687,8 @@ function RedirecionarCarga({ placas, onConfirmada }: { placas: PlacaAoVivo[]; on
     try {
       const r = await fetch('/api/kpi/ao-vivo/troca', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ carga: sel.carga, placaEscala: sel.placa, placaReal: nova }) })
       if (!r.ok) { setAviso(`Não deu pra redirecionar: ${await r.text()}`); return }
-      const j = (await r.json()) as { acao?: string; monitoramento?: { ok: boolean; erro?: string } }
-      setAviso(`${j.acao === 'desfazer' ? 'Troca desfeita' : 'Carga redirecionada'}: carga ${sel.carga} agora é do ${nova.trim().toUpperCase()}. O KPI recalcula em instantes.${j.monitoramento && !j.monitoramento.ok ? ` Monitoramento não atualizou (${j.monitoramento.erro}).` : ''}`)
+      const j = (await r.json()) as { acao?: string; placaReal?: string; monitoramento?: { ok: boolean; erro?: string } }
+      setAviso(`${j.acao === 'desfazer' ? 'Troca desfeita' : 'Carga redirecionada'}: carga ${sel.carga} agora é do ${j.placaReal ?? nova.trim().toUpperCase()}. O KPI recalcula em instantes.${j.monitoramento && !j.monitoramento.ok ? ` Monitoramento não atualizou (${j.monitoramento.erro}).` : ''}`)
       setNova(''); setCarga('')
       onConfirmada()
     } finally { setEnviando(false) }
@@ -703,7 +709,7 @@ function RedirecionarCarga({ placas, onConfirmada }: { placas: PlacaAoVivo[]; on
             </select>
           </label>
           <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">Placa que fez a carga
-            <input value={nova} onChange={e => setNova(e.target.value)} placeholder="ex.: RBI1J86" maxLength={8} onKeyDown={e => { if (e.key === 'Enter') void redirecionar() }}
+            <input value={nova} onChange={e => setNova(e.target.value)} placeholder="ex.: RBI1J86 ou 1J86" maxLength={8} onKeyDown={e => { if (e.key === 'Enter') void redirecionar() }}
               className="h-9 w-[150px] rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[13px] uppercase text-[var(--color-fg)]" />
           </label>
           <button type="button" disabled={enviando || !sel || !nova.trim()} onClick={() => void redirecionar()}
