@@ -27,5 +27,5 @@ export default async function PainelHome({ searchParams }: { searchParams: Promi
   const aba: Aba = sp.tab === 'inserir' && podeInserir ? 'inserir' : sp.tab === 'historico' ? 'historico' : 'geral'
   const dataInicial = sp.data && /^\d{4}-\d{2}-\d{2}$/.test(sp.data) ? sp.data : undefined
 
-  return <DashboardKpi key={`${cliente}-${dataInicial ?? ''}`} cliente={cliente} clientes={clientes} aba={aba} podeInserir={podeInserir} dataInicial={dataInicial} />
+  return <DashboardKpi key={`${cliente}-${dataInicial ?? ''}`} cliente={cliente} clientes={clientes} aba={aba} podeInserir={podeInserir} visaoCliente={perfil.papel === 'operador'} dataInicial={dataInicial} />
 }

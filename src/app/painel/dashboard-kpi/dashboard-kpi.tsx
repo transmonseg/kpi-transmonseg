@@ -14,11 +14,13 @@ const NOMES: Record<ClienteDash, string> = { nutrimax: 'Nutry Max', rioquality: 
 // Dashboard por cliente (04/10/2026): mesmo funcionamento do da Benassi --
 // Visão geral (período livre), Inserir KPI (só analisa o que for inserido) e
 // Histórico (baixar qualquer dia).
-export function DashboardKpi({ cliente, clientes, aba, podeInserir, dataInicial }: {
+export function DashboardKpi({ cliente, clientes, aba, podeInserir, visaoCliente = false, dataInicial }: {
   cliente: ClienteDash
   clientes: ClienteDash[]
   aba: Aba
   podeInserir: boolean
+  /** Visao do cliente (nao admin): sem os cartoes de problema (A revisar, Sem rastreador, Nao foi ao cliente). */
+  visaoCliente?: boolean
   dataInicial?: string
 }) {
   const router = useRouter()
@@ -92,7 +94,7 @@ export function DashboardKpi({ cliente, clientes, aba, podeInserir, dataInicial 
 
       {aba === 'geral' && (
         <div key={`g-${cliente}`} className="animate-fade-up">
-          <VisaoGeral cliente={cliente} dataInicial={dataInicial} podeInserir={podeInserir} onInserir={() => ir(cliente, 'inserir')} />
+          <VisaoGeral cliente={cliente} dataInicial={dataInicial} podeInserir={podeInserir} visaoCliente={visaoCliente} onInserir={() => ir(cliente, 'inserir')} />
         </div>
       )}
       {aba === 'inserir' && podeInserir && (

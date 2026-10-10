@@ -21,10 +21,11 @@ const META = 95
 
 const CTRL = 'h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] [color-scheme:light] dark:[color-scheme:dark]'
 
-export function VisaoGeral({ cliente, dataInicial, podeInserir, onInserir }: {
+export function VisaoGeral({ cliente, dataInicial, podeInserir, visaoCliente = false, onInserir }: {
   cliente: ClienteDash
   dataInicial?: string
   podeInserir: boolean
+  visaoCliente?: boolean
   onInserir: () => void
 }) {
   const [periodo, setPeriodo] = useState<Periodo>(dataInicial ? 'dia' : 'mes')
@@ -114,7 +115,7 @@ export function VisaoGeral({ cliente, dataInicial, podeInserir, onInserir }: {
           )}
         </div>
       ) : (
-        <Conteudo ag={ag} agAnt={agAnt} periodo={periodo} onPlaca={setPlacaAberta} />
+        <Conteudo ag={ag} agAnt={agAnt} periodo={periodo} onPlaca={setPlacaAberta} visaoCliente={visaoCliente} />
       )}
 
       {placaAberta && ag && (
@@ -149,7 +150,7 @@ function Delta({ atual, anterior, inverso, suf = ' pts', casas = 1 }: { atual: n
   )
 }
 
-function Conteudo({ ag, agAnt, periodo, onPlaca }: { ag: Agregado; agAnt: Agregado | null; periodo: Periodo; onPlaca: (p: PlacaAgg) => void }) {
+function Conteudo({ ag, agAnt, periodo, onPlaca, visaoCliente }: { ag: Agregado; agAnt: Agregado | null; periodo: Periodo; onPlaca: (p: PlacaAgg) => void; visaoCliente: boolean }) {
   const umDia = periodo === 'dia'
   const serieComp = ag.serie.filter(s => !s.parcial)
   return (
@@ -165,13 +166,13 @@ function Conteudo({ ag, agAnt, periodo, onPlaca }: { ag: Agregado; agAnt: Agrega
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Tile i={0} Icone={Package} cor="#2a78d6" rotulo="NFs entregues" valor={fmtInt(ag.entregues)} sub={`de ${fmtInt(ag.nfsNaConta)} na conta`} delta={<Delta atual={ag.entregues} anterior={agAnt?.entregues} suf="" casas={0} />} />
-        <Tile i={1} Icone={Warning} cor="#e08a00" rotulo="A revisar" valor={fmtInt(Math.max(0, ag.pendentes - (ag.motivos['Não foi ao cliente'] ?? 0)))} sub="Coordenada ou conferência" />
+        {!visaoCliente && <Tile i={1} Icone={Warning} cor="#e08a00" rotulo="A revisar" valor={fmtInt(Math.max(0, ag.pendentes - (ag.motivos['Não foi ao cliente'] ?? 0)))} sub="Coordenada ou conferência" />}
         <Tile i={2} Icone={Path} cor="#1baf7a" rotulo="KM rodados" valor={fmtKm(ag.km)} sub={umDia ? `${fmtInt(ag.cargas)} cargas` : `${fmtKm(ag.km / Math.max(1, ag.diasCompletos))} por dia`} delta={<Delta atual={ag.km} anterior={agAnt?.km} suf=" km" casas={0} />} />
         <Tile i={3} Icone={Timer} cor="#7a5af0" rotulo="Operação média" valor={fmtDur(ag.operacaoMedia)} sub="Saída até a volta ao CD" delta={<Delta atual={ag.operacaoMedia} anterior={agAnt?.operacaoMedia} inverso suf=" min" casas={0} />} />
         <Tile i={4} Icone={Clock} cor="#d05a8a" rotulo="Tempo por entrega" valor={fmtDur(ag.porEntregaMedia)} sub="Média das cargas" delta={<Delta atual={ag.porEntregaMedia} anterior={agAnt?.porEntregaMedia} inverso suf=" min" casas={0} />} />
         <Tile i={5} Icone={Truck} cor="#1f3864" rotulo="Cargas" valor={fmtInt(ag.cargas)} sub={`${ag.placas.length} placas`} />
-        <Tile i={6} Icone={CellSignalSlash} cor="#6b7280" rotulo="Sem rastreador" valor={fmtInt(ag.semRastreador)} sub="Contam como corretas" />
-        <Tile i={7} Icone={MapPinLine} cor="#d70015" rotulo="Não foi ao cliente" valor={fmtInt(ag.motivos['Não foi ao cliente'] ?? 0)} sub="Caminhão longe do endereço" />
+        {!visaoCliente && <Tile i={6} Icone={CellSignalSlash} cor="#6b7280" rotulo="Sem rastreador" valor={fmtInt(ag.semRastreador)} sub="Contam como corretas" />}
+        {!visaoCliente && <Tile i={7} Icone={MapPinLine} cor="#d70015" rotulo="Não foi ao cliente" valor={fmtInt(ag.motivos['Não foi ao cliente'] ?? 0)} sub="Caminhão longe do endereço" />}
       </div>
 
       {!umDia && (
@@ -195,10 +196,12 @@ function Conteudo({ ag, agAnt, periodo, onPlaca }: { ag: Agregado; agAnt: Agrega
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Painel titulo="Resultado das entregas" sub="Como terminou cada NF">
-          <Resultado ag={ag} />
-        </Painel>
+      <div className={`grid gap-4 ${visaoCliente ? '' : 'lg:grid-cols-2'}`}>
+        {!visaoCliente && (
+          <Painel titulo="Resultado das entregas" sub="Como terminou cada NF">
+            <Resultado ag={ag} />
+          </Painel>
+        )}
         <Painel titulo={umDia ? 'Piores placas do dia' : 'Piores placas do período'} sub="Menor taxa de confirmação — clique para abrir">
           <PioresPlacas placas={ag.placas} onPlaca={onPlaca} />
         </Painel>
