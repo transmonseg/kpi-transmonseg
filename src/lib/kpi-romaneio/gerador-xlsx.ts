@@ -590,7 +590,7 @@ function estilizarTitulo(ws: ExcelJS.Worksheet, tituloLinha: number, qtdColunas:
   cell.font = { name: FONTE, bold: true, size: 14, color: { argb: COR_TITULO_TEXTO } }
   cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_TITULO_FUNDO } }
   cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }
-  ws.getRow(tituloLinha).height = 32
+  ws.getRow(tituloLinha).height = titulo.split('\n').length > 2 ? 52 : 32
 }
 
 // Nome de aba do Excel: máx 31 caracteres, proíbe : \ / ? * [ ]. Placa
@@ -705,7 +705,16 @@ export async function gerarKpiRomaneioXlsx(
   const wb = new ExcelJS.Workbook()
   wb.creator = 'TRANSMONSEG'
   wb.created = new Date()
-  const titulo = `RELATÓRIO KPI - ${nomeCliente}\n${formatarTituloData(data)}`
+  // 09/10: KPI gerado com o dia aberto (rota em andamento) mostrava 99,5% sobre
+  // menos da metade das NFs, sem aviso -- risco de ser postado como taxa do dia.
+  // So' o dia de hoje e so' Nutry Max (resumoConfirmacao); dia fechado nao muda.
+  const aguardandoNoDia = opcoes.resumoConfirmacao && data === hoje && detalhe.length > 0
+    ? calcularResumoConfirmacao(detalhe).aguardando
+    : 0
+  const faixaParcial = aguardandoNoDia > 0
+    ? `\nPARCIAL — DIA EM ANDAMENTO: ${formatarInteiroPtBr(aguardandoNoDia)} de ${formatarInteiroPtBr(detalhe.length)} NFs ainda aguardam o fim da rota; a taxa vale só para o que já fechou`
+    : ''
+  const titulo = `RELATÓRIO KPI - ${nomeCliente}\n${formatarTituloData(data)}${faixaParcial}`
 
   const ws = wb.addWorksheet(`KPI ${data}`)
   estilizarTitulo(ws, 1, COLUNAS_KPI_ROMANEIO.length, titulo)

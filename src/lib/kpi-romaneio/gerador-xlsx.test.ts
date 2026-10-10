@@ -900,6 +900,30 @@ describe('gerador-xlsx', () => {
       expect(texto).toContain('NFs sem rastreador: 2')
     })
 
+    describe('faixa PARCIAL no titulo (09/10)', () => {
+      const AG = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
+      const detalhe = [
+        detalheFixture({ nf: 'NF1', status: 'confirmado_gps' }),
+        detalheFixture({ nf: 'NF2', status: 'pendente', observacao: AG }),
+        detalheFixture({ nf: 'NF3', status: 'pendente', observacao: AG }),
+      ]
+      async function titulo(data: string, hoje: string, d: LinhaDetalheEntrega[], resumoConfirmacao = true): Promise<string> {
+        const buffer = await gerarKpiRomaneioXlsx([linhaKpi()], data, [], d, hoje, undefined, { resumoConfirmacao })
+        const wb = new ExcelJS.Workbook()
+        await wb.xlsx.load(buffer)
+        return wb.worksheets[0].getCell(1, 1).value as string
+      }
+      it('hoje, com NFs aguardando: titulo avisa PARCIAL com X de Y', async () => {
+        const t = await titulo('2026-10-09', '2026-10-09', detalhe)
+        expect(t).toContain('PARCIAL — DIA EM ANDAMENTO: 2 de 3 NFs ainda aguardam o fim da rota')
+      })
+      it('dia passado, ou sem NF aguardando, ou sem resumoConfirmacao: titulo igual ao de sempre', async () => {
+        expect(await titulo('2026-10-08', '2026-10-09', detalhe)).not.toContain('PARCIAL')
+        expect(await titulo('2026-10-09', '2026-10-09', [detalheFixture({ nf: 'NF1', status: 'confirmado_gps' })])).not.toContain('PARCIAL')
+        expect(await titulo('2026-10-09', '2026-10-09', detalhe, false)).not.toContain('PARCIAL')
+      })
+    })
+
     it('item 4: AGUARDANDO (dia em andamento) sai do denominador das duas taxas e aparece contado a parte', async () => {
       const AG = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
       const detalhe: LinhaDetalheEntrega[] = [
