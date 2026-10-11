@@ -1,5 +1,6 @@
 import type { RomaneioFusion, EntregaFusionRaw } from '../fusion/tipos'
 import type { EntregaRioQualityCompleta, GabaritoEntregaRioQuality } from './parse-planilhas'
+import { buscarEntregasDoDia } from '../fusion/entregas'
 
 const normPlaca = (p: string) => (p ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '')
 
@@ -36,4 +37,10 @@ export function mapearEntregasFusion(romaneios: RomaneioFusion[], entregas: Entr
       gabarito: gabaritoFusion(e),
     }
   })
+}
+
+export async function buscarDiaRioQualityFusion(data: string): Promise<EntregaRioQualityCompleta[]> {
+  const { romaneios, entregas } = await buscarEntregasDoDia(data)
+  if (romaneios.length === 0) return []
+  return mapearEntregasFusion(romaneios, entregas)
 }

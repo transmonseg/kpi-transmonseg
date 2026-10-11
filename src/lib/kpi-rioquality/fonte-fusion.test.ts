@@ -1,8 +1,10 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import romaneios from '../fusion/__fixtures__/romaneios.json'
 import entregas from '../fusion/__fixtures__/entregas.json'
-import { mapearEntregasFusion } from './fonte-fusion'
+import { mapearEntregasFusion, buscarDiaRioQualityFusion } from './fonte-fusion'
 import type { RomaneioFusion, EntregaFusionRaw } from '../fusion/tipos'
+
+vi.mock('../fusion/entregas', () => ({ buscarEntregasDoDia: vi.fn(async () => ({ romaneios: [], entregas: [] })) }))
 
 describe('mapearEntregasFusion', () => {
   const linhas = mapearEntregasFusion(romaneios.rows as RomaneioFusion[], entregas.rows as EntregaFusionRaw[])
@@ -34,5 +36,11 @@ describe('mapearEntregasFusion', () => {
     const dev = linhas.find(l => l.clienteNome.includes('DEVOLVIDO'))!
     expect(dev.gabarito!.status).toBe('Devolvido')
     expect(dev.gabarito!.checkOut).toBe(false)
+  })
+})
+
+describe('buscarDiaRioQualityFusion', () => {
+  it('dia sem romaneios devolve lista vazia', async () => {
+    expect(await buscarDiaRioQualityFusion('2026-10-10')).toEqual([])
   })
 })
