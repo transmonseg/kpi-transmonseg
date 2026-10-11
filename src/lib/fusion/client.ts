@@ -1,27 +1,34 @@
 // src/lib/fusion/client.ts
-import { loginFusion, invalidarSessaoFusion } from './auth'
+import { loginFusion, invalidarSessaoFusion, cookieHeaderFusion, absorveCookiesFusion } from './auth'
 const BASE = () => process.env.FUSION_BASE ?? 'https://fusiondms.com.br'
 
 function pareceLogin(texto: string): boolean {
-  return /id="login"|name="senha"|login\.html/i.test(texto) && !texto.trimStart().startsWith('{') && !texto.trimStart().startsWith('[')
+  const t = texto.trimStart()
+  if (t.startsWith('{') || t.startsWith('[')) return false
+  // Tela de login, ou o redirect de sessão morta que a Fusion devolve nos
+  // endpoints internos: <script>document.location.href='../../index.html'</script>
+  return /id="login"|name="senha"|login\.html|index\.html|document\.location/i.test(texto)
 }
 
 interface Resposta { texto: string; morta: boolean }
 
 async function chamar(path: string, init: RequestInit): Promise<Resposta> {
-  const sess = await loginFusion()
+  await loginFusion()
   const res = await fetch(`${BASE()}${path}`, {
     ...init,
     redirect: 'manual',
     headers: {
       ...(init.headers ?? {}),
       'x-requested-with': 'XMLHttpRequest',
-      cookie: `PHPSESSID=${sess}`,
+      cookie: cookieHeaderFusion(),
     },
   })
+  absorveCookiesFusion(res)
+  const redirectLogin = res.status >= 300 && res.status < 400 && /login|index/i.test(res.headers.get('location') ?? '')
   const texto = await res.text()
-  const redirectLogin = res.status >= 300 && res.status < 400 && /login/i.test(res.headers.get('location') ?? '')
-  return { texto, morta: redirectLogin || pareceLogin(texto) }
+  // 500 com corpo vazio costuma ser sessão perdida no backend errado do ALB.
+  const quebrou = res.status >= 500 && texto.length === 0
+  return { texto, morta: redirectLogin || quebrou || pareceLogin(texto) }
 }
 
 async function comRetry<T>(path: string, init: RequestInit): Promise<T> {
@@ -31,8 +38,7 @@ async function comRetry<T>(path: string, init: RequestInit): Promise<T> {
     r = await chamar(path, init)
     if (r.morta) throw new Error(`Fusion: sessão inválida após re-login em ${path}`)
   }
-  const texto = r.texto
-  try { return JSON.parse(texto) as T } catch { throw new Error(`Fusion: resposta não-JSON em ${path}`) }
+  try { return JSON.parse(r.texto) as T } catch { throw new Error(`Fusion: resposta não-JSON em ${path}`) }
 }
 
 export function fusionPost<T>(path: string, body: Record<string, string> = {}): Promise<T> {
