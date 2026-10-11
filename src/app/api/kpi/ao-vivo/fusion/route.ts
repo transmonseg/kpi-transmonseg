@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { acessoAoVivo } from '../acesso'
 import { buscarDiaRioQualityFusion } from '@/lib/kpi-rioquality/fonte-fusion'
+import { hojeBR } from '@/lib/data-br'
 import { guardarDiaAoVivo, calcularAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
 
 export const runtime = 'nodejs'
@@ -8,7 +9,7 @@ export const runtime = 'nodejs'
 export async function POST(request: Request) {
   const url = new URL(request.url)
   const cliente = url.searchParams.get('cliente')
-  const data = url.searchParams.get('data') ?? new Date().toISOString().slice(0, 10)
+  const data = url.searchParams.get('data') ?? hojeBR()
   const acc = await acessoAoVivo(cliente)
   if (!acc.ok) return acc.resp
   if (acc.cliente !== 'rioquality') {
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
     enviadoPor: acc.email,
     fonte: 'fusion',
   })
-  void calcularAoVivo(acc.cliente, data)
+  void calcularAoVivo(acc.cliente, data).catch(err => console.error('calcularAoVivo fusion', err))
   const placas = new Set(linhas.map(l => l.placaNorm)).size
   return NextResponse.json({ ok: true, nfs: linhas.length, placas, fonte: 'fusion' })
 }
