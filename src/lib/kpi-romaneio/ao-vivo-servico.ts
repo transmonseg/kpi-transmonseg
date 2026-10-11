@@ -90,10 +90,12 @@ export async function guardarDiaAoVivo(p: {
   escalaEnviada: boolean
   paoEnviado: boolean
   enviadoPor: string | null
+  fonte?: 'manual' | 'fusion'
 }): Promise<void> {
   const { error } = await createServiceClient().from('kpi_ao_vivo_dia').upsert({
     cliente: p.cliente, data: p.data, romaneio: p.romaneio, escala: p.escala, pao: p.pao,
     escala_enviada: p.escalaEnviada, pao_enviado: p.paoEnviado, enviado_por: p.enviadoPor, enviado_em: new Date().toISOString(),
+    fonte: p.fonte ?? 'manual',
   }, { onConflict: 'cliente,data' })
   if (error) throw new Error(`guardar romaneio do dia: ${error.message}`)
 }
