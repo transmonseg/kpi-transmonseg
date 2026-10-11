@@ -33,10 +33,34 @@ export function SubirRomaneio({ cliente, compacto, onEnviado }: { cliente: strin
     onEnviado(resp)
   }
 
+  async function puxarFusion() {
+    setEnviando(true)
+    setErro(null)
+    try {
+      const r = await fetch('/api/kpi/ao-vivo/fusion?cliente=rioquality', { method: 'POST' })
+      const j = (await r.json().catch(() => ({}))) as { ok?: boolean; motivo?: string; nfs?: number; placas?: number }
+      if (!r.ok) {
+        setErro(j.motivo === 'sem_dados_fusion'
+          ? 'A Fusion ainda não tem romaneio do dia — use o upload da planilha.'
+          : `Não deu pra puxar da Fusion (${j.motivo ?? r.status}).`)
+        return
+      }
+      onEnviado({ nfs: j.nfs ?? 0, placas: j.placas ?? 0 })
+    } catch {
+      setErro('Falha ao falar com a Fusion. Use o upload da planilha.')
+    } finally {
+      setEnviando(false)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {rq ? (
         <div className="grid gap-4 md:max-w-md">
+          <button type="button" disabled={enviando} onClick={puxarFusion}
+            className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--color-navy-700)] px-6 text-[14px] font-semibold text-[var(--color-navy-700)] transition hover:bg-[var(--color-navy-50)] active:scale-[0.98] disabled:opacity-40">
+            {enviando ? 'Aguarde…' : 'Puxar da Fusion'}
+          </button>
           <FileDropzone eyebrow="Obrigatório" label="Relatório de Entregas" hint="Planilha (xlsx) do dia exportada do sistema da Rio Quality" accept=".xlsx,.xls" files={romaneio} onAdd={f => setRomaneio(f.slice(0, 1))} onRemove={() => setRomaneio([])} />
         </div>
       ) : (
