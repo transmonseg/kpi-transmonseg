@@ -9,7 +9,8 @@
 // Uso: npx tsx --env-file=.env.production scripts/kpi-ao-vivo-tick.ts
 import { hojeBR } from '../src/lib/data-br'
 import { createServiceClient } from '../src/lib/supabase/service'
-import { CLIENTES_AO_VIVO, calcularAoVivo } from '../src/lib/kpi-romaneio/ao-vivo-servico'
+import { CLIENTES_AO_VIVO, calcularAoVivo, guardarDiaAoVivo } from '../src/lib/kpi-romaneio/ao-vivo-servico'
+import { buscarDiaRioQualityFusion } from '../src/lib/kpi-rioquality/fonte-fusion'
 import { diaAnterior, precisaFecharDia } from '../src/lib/kpi-romaneio/ao-vivo'
 import { limparCacheDia } from '../src/lib/kpi-romaneio/cache-dia'
 import { limparXlsxAoVivo } from '../src/lib/kpi-romaneio/ao-vivo-servico'
@@ -17,6 +18,23 @@ import { repararDia, depsReaisReparo } from '../src/lib/kpi-romaneio/reparar-dia
 import { sincronizarAcessosMonitoramento } from '../src/lib/acessos-monitoramento'
 
 const log = (m: string) => console.log(`${new Date().toISOString()} ${m}`)
+
+// Puxa o dia da Fusion e grava no Ao vivo. Nunca lanca (fail-open): o tick segue pro calculo.
+export async function sincronizarFusionRioQuality(data: string): Promise<'ok' | 'sem_dados' | 'erro'> {
+  try {
+    const linhas = await buscarDiaRioQualityFusion(data)
+    if (linhas.length === 0) return 'sem_dados'
+    await guardarDiaAoVivo({
+      cliente: 'rioquality', data, escala: [], romaneio: linhas,
+      pao: { linhas: [], escala: [] }, escalaEnviada: false, paoEnviado: false,
+      enviadoPor: 'cron-fusion', fonte: 'fusion',
+    })
+    return 'ok'
+  } catch (e) {
+    log(`Fusion RQ ${data}: ${e}`)
+    return 'erro'
+  }
+}
 
 async function fecharDiaAnterior() {
   const ontem = diaAnterior(hojeBR())
@@ -48,12 +66,18 @@ async function main() {
   // romaneio ao monitoramento se ele estiver sem. Nunca lanca (fail-open).
   await repararDia(depsReaisReparo, data, log)
   for (const cliente of CLIENTES_AO_VIVO) {
+    if (cliente === 'rioquality') {
+      const s = await sincronizarFusionRioQuality(data)
+      if (s !== 'ok') log(`fusion rioquality ${data}: ${s}`)
+    }
     const r = await calcularAoVivo(cliente, data, log)
     if (r !== 'ok') log(`ao vivo ${cliente} ${data}: ${r}`)
   }
 }
 
-main().catch(err => {
-  console.error(`${new Date().toISOString()} ERRO FATAL`, err)
-  process.exit(1)
-})
+if (!process.env.VITEST) {
+  main().catch(err => {
+    console.error(`${new Date().toISOString()} ERRO FATAL`, err)
+    process.exit(1)
+  })
+}
