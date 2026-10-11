@@ -1,0 +1,38 @@
+import type { RomaneioFusion, EntregaFusionRaw } from '../fusion/tipos'
+import type { EntregaRioQualityCompleta, GabaritoEntregaRioQuality } from './parse-planilhas'
+
+const normPlaca = (p: string) => (p ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+
+function gabaritoFusion(e: EntregaFusionRaw): GabaritoEntregaRioQuality {
+  const entregue = !e.data_devolucao && !e.data_adiado && (!!e.data_entrega || e.t32_status === '7')
+  const status = e.data_devolucao ? 'Devolvido' : e.data_adiado ? 'Entrega Em Andamento' : entregue ? 'Entregue' : 'Faturado'
+  return {
+    status,
+    checkIn: !!e.data_chegada,
+    checkOut: !!(e.data_entrega ?? e.t12_data_real_entrega),
+    dataCheckIn: e.data_chegada ?? null,
+    dataCheckOut: e.data_entrega ?? e.t12_data_real_entrega ?? null,
+    motivoDevolucao: e.data_devolucao ? 'DEVOLUCAO' : null,
+  }
+}
+
+export function mapearEntregasFusion(romaneios: RomaneioFusion[], entregas: EntregaFusionRaw[]): EntregaRioQualityCompleta[] {
+  const porId = new Map(romaneios.map(r => [r.t10_id, r]))
+  return entregas.map(e => {
+    const rom = porId.get(e.t10_id)
+    return {
+      placaNorm: normPlaca(rom?.t06_placa ?? ''),
+      clienteNome: e.t16_razSocial,
+      cidade: e.t32_cidade,
+      uf: 'RJ',
+      destino: rom?.t10_destino ?? '',
+      motorista: rom?.t05_nome ?? '',
+      rua: e.t32_endereco,
+      bairro: '',
+      clienteCodigo: e.t32_seq_pedido_erp,
+      romaneio: e.t10_id,
+      rota: rom?.t10_destino ?? '',
+      gabarito: gabaritoFusion(e),
+    }
+  })
+}
