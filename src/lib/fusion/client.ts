@@ -6,7 +6,9 @@ function pareceLogin(texto: string): boolean {
   return /id="login"|name="senha"|login\.html/i.test(texto) && !texto.trimStart().startsWith('{') && !texto.trimStart().startsWith('[')
 }
 
-async function chamar(path: string, init: RequestInit): Promise<string> {
+interface Resposta { texto: string; morta: boolean }
+
+async function chamar(path: string, init: RequestInit): Promise<Resposta> {
   const sess = await loginFusion()
   const res = await fetch(`${BASE()}${path}`, {
     ...init,
@@ -17,16 +19,19 @@ async function chamar(path: string, init: RequestInit): Promise<string> {
       cookie: `PHPSESSID=${sess}`,
     },
   })
-  return await res.text()
+  const texto = await res.text()
+  const redirectLogin = res.status >= 300 && res.status < 400 && /login/i.test(res.headers.get('location') ?? '')
+  return { texto, morta: redirectLogin || pareceLogin(texto) }
 }
 
 async function comRetry<T>(path: string, init: RequestInit): Promise<T> {
-  let texto = await chamar(path, init)
-  if (pareceLogin(texto)) {
+  let r = await chamar(path, init)
+  if (r.morta) {
     invalidarSessaoFusion()
-    texto = await chamar(path, init)
-    if (pareceLogin(texto)) throw new Error(`Fusion: sessão inválida após re-login em ${path}`)
+    r = await chamar(path, init)
+    if (r.morta) throw new Error(`Fusion: sessão inválida após re-login em ${path}`)
   }
+  const texto = r.texto
   try { return JSON.parse(texto) as T } catch { throw new Error(`Fusion: resposta não-JSON em ${path}`) }
 }
 
