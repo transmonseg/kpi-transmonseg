@@ -29,6 +29,7 @@ export function mapearEntregasFusion(romaneios: RomaneioFusion[], entregas: Entr
       motorista: rom?.t05_nome ?? '',
       rua: e.t32_endereco,
       bairro: '',
+      nf: e.t32_seq_pedido_erp,
       clienteCodigo: e.t32_seq_pedido_erp,
       romaneio: e.t10_id,
       rota: rom?.t10_destino ?? '',

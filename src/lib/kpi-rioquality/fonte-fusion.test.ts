@@ -17,6 +17,11 @@ describe('mapearEntregasFusion', () => {
     expect(l.cidade).toBe('RIO DE JANEIRO')
   })
 
+  it('nf = pedido ERP (id estavel)', () => {
+    expect(linhas[0].nf).toBe('6052562')
+    expect(linhas.find(l => l.clienteNome.includes('DEVOLVIDO'))!.nf).toBe('6059999')
+  })
+
   it('entregue -> gabarito Entregue com check-in/out', () => {
     const g = linhas[0].gabarito!
     expect(g.status).toBe('Entregue')
