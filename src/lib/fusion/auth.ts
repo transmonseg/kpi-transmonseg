@@ -4,6 +4,7 @@
 // se os cookies AWSALB* viajarem junto. Por isso guardamos um JAR com TODOS os
 // cookies, não só o PHPSESSID — mandar só o PHPSESSID cai noutro backend e a
 // sessão aparece deslogada (500 / perfil vazio).
+import { fusionFetch } from './http'
 const BASE = () => process.env.FUSION_BASE ?? 'https://fusiondms.com.br'
 
 let jar: Record<string, string> = {}
@@ -35,7 +36,7 @@ export async function loginFusion(): Promise<string> {
   if (jar.PHPSESSID) return cookieHeaderFusion()
   const user = process.env.FUSION_USER, pass = process.env.FUSION_PASS
   if (!user || !pass) throw new Error('FUSION_USER/FUSION_PASS ausentes')
-  const res = await fetch(`${BASE()}/php/util/login.php`, {
+  const res = await fusionFetch(`${BASE()}/php/util/login.php`, {
     method: 'POST', redirect: 'manual',
     headers: { 'content-type': 'application/x-www-form-urlencoded; charset=UTF-8', 'x-requested-with': 'XMLHttpRequest' },
     body: new URLSearchParams({ user_login: user, user_pass: pass, cc_login_modulo: '4' }).toString(),

@@ -1,5 +1,6 @@
 // src/lib/fusion/client.ts
 import { loginFusion, invalidarSessaoFusion, cookieHeaderFusion, absorveCookiesFusion } from './auth'
+import { fusionFetch } from './http'
 const BASE = () => process.env.FUSION_BASE ?? 'https://fusiondms.com.br'
 
 function pareceLogin(texto: string): boolean {
@@ -14,7 +15,7 @@ interface Resposta { texto: string; morta: boolean }
 
 async function chamar(path: string, init: RequestInit): Promise<Resposta> {
   await loginFusion()
-  const res = await fetch(`${BASE()}${path}`, {
+  const res = await fusionFetch(`${BASE()}${path}`, {
     ...init,
     redirect: 'manual',
     headers: {
