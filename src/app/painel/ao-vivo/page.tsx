@@ -11,6 +11,8 @@ import { buscarNfs, filtrarNfs, type FiltroNf } from '@/lib/kpi-romaneio/ao-vivo
 import { CATEGORIAS_INVESTIGACAO, ROTULO_INVESTIGACAO, fraseInvestigacao } from '@/lib/kpi-romaneio/investigacao-rotulos'
 import { juntarEstado, mensagemFalhaCarga } from '@/lib/kpi-romaneio/ao-vivo-carga'
 import { SubirRomaneio, type EnvioRomaneio } from './subir-romaneio'
+import { montarPayloadTroca } from './troca-payload'
+import type { ModoTroca } from '@/lib/kpi-romaneio/trocas-placa'
 
 // Tela "Ao vivo" (spec 2026-10-06-kpi-ao-vivo-design.md). Cor/status de cada
 // NF vem do último cálculo do KPI (a mesma regra da planilha); o cronômetro e
@@ -674,47 +676,84 @@ function TrocasSugeridas({ sugestoes, onConfirmada }: { sugestoes: SugestaoTroca
  *  a operação escolhe a carga e digita a placa que de fato rodou -- pode ser um
  *  carro fora da escala. A placa de antes fica sem as notas e a nova aparece com
  *  elas, no KPI e no Ao vivo. Voltar pra placa da escala desfaz. */
+const MODOS_TROCA: { modo: ModoTroca; rotulo: string; dica: string }[] = [
+  { modo: 'redirecionar', rotulo: 'Redirecionar carga', dica: 'Uma carga da placa escolhida passa a ser de outra placa. Pra desfazer, escolha a carga e digite a placa original.' },
+  { modo: 'mutua', rotulo: 'Troca mútua (A↔B)', dica: 'Dois carros trocaram a carga entre si: tudo da placa A vai pra B e tudo da B vai pra A, de uma vez.' },
+  { modo: 'substituir', rotulo: 'Substituir placa', dica: 'A placa A não saiu: toda a carga dela passa pra placa B.' },
+]
+
 function RedirecionarCarga({ placas, onConfirmada }: { placas: PlacaAoVivo[]; onConfirmada: () => void }) {
   const opcoes = placas.flatMap(p => p.cargas.map(c => ({ carga: c, placa: p.placa })))
+  const listaPlacas = [...new Set(placas.map(p => p.placa))]
+  const [modo, setModo] = useState<ModoTroca>('redirecionar')
   const [carga, setCarga] = useState('')
-  const [nova, setNova] = useState('')
+  const [placaA, setPlacaA] = useState('')
+  const [placaB, setPlacaB] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
   const sel = opcoes.find(o => o.carga === carga)
-  async function redirecionar() {
-    if (!sel || !nova.trim()) return
+  const dica = MODOS_TROCA.find(m => m.modo === modo)?.dica ?? ''
+
+  async function trocar() {
+    const entrada = modo === 'redirecionar'
+      ? { carga, placaA: sel?.placa, placaB }
+      : { placaA, placaB }
+    const payload = montarPayloadTroca(modo, entrada)
+    if ('erro' in payload) { setAviso(payload.erro); return }
     setEnviando(true); setAviso(null)
     try {
-      const r = await fetch('/api/kpi/ao-vivo/troca', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ carga: sel.carga, placaEscala: sel.placa, placaReal: nova }) })
-      if (!r.ok) { setAviso(`Não deu pra redirecionar: ${await r.text()}`); return }
-      const j = (await r.json()) as { acao?: string; placaReal?: string; monitoramento?: { ok: boolean; erro?: string } }
-      setAviso(`${j.acao === 'desfazer' ? 'Troca desfeita' : 'Carga redirecionada'}: carga ${sel.carga} agora é do ${j.placaReal ?? nova.trim().toUpperCase()}. O KPI recalcula em instantes.${j.monitoramento && !j.monitoramento.ok ? ` Monitoramento não atualizou (${j.monitoramento.erro}).` : ''}`)
-      setNova(''); setCarga('')
+      const r = await fetch('/api/kpi/ao-vivo/troca', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
+      if (!r.ok) { setAviso(`Não deu pra trocar: ${await r.text()}`); return }
+      const j = (await r.json()) as { acao?: string; placaReal?: string; monitoramento?: { ok: boolean; erro?: string }; movimentos?: { de: string; para: string; semNotas?: boolean; monitoramento: { ok: boolean; erro?: string } }[] }
+      if (modo === 'redirecionar') {
+        setAviso(`${j.acao === 'desfazer' ? 'Troca desfeita' : 'Carga redirecionada'}: carga ${carga} agora é do ${j.placaReal ?? placaB.trim().toUpperCase()}. O KPI recalcula em instantes.${j.monitoramento && !j.monitoramento.ok ? ` Monitoramento não atualizou (${j.monitoramento.erro}).` : ''}`)
+      } else {
+        const falhas = (j.movimentos ?? []).filter(m => !m.monitoramento.ok || m.semNotas)
+        setAviso(`${modo === 'mutua' ? 'Troca mútua feita' : 'Placa substituída'}. O KPI recalcula em instantes.${falhas.length ? ` Atenção no monitoramento: ${falhas.map(m => `${m.de}→${m.para}${m.semNotas ? ' (sem notas no romaneio)' : ` (${m.monitoramento.erro})`}`).join(', ')}.` : ''}`)
+      }
+      setCarga(''); setPlacaA(''); setPlacaB('')
       onConfirmada()
     } finally { setEnviando(false) }
   }
   return (
     <details className="group rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
       <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-[13px] font-semibold text-[var(--color-fg)] [&::-webkit-details-marker]:hidden">
-        <ArrowsLeftRight size={16} weight="bold" />Redirecionar uma carga pra outra placa
+        <ArrowsLeftRight size={16} weight="bold" />Trocar carga entre placas
         <CaretDown size={13} className="ml-auto shrink-0 text-[var(--color-fg-muted)] transition-transform group-open:rotate-180" />
       </summary>
       <div className="flex flex-col gap-3 border-t border-[var(--color-border)] px-4 py-4">
-        <p className="text-[12.5px] text-[var(--color-fg-muted)]">A placa de antes fica sem as notas desta carga e a nova aparece com elas. Pode ser um carro que não estava na escala. Para desfazer, escolha a carga e digite a placa original.</p>
+        <div className="flex flex-wrap gap-2">
+          {MODOS_TROCA.map(m => (
+            <button key={m.modo} type="button" onClick={() => { setModo(m.modo); setAviso(null) }}
+              className={`inline-flex h-8 items-center rounded-full px-3 text-[12.5px] font-semibold transition ${modo === m.modo ? 'bg-[var(--color-navy-700)] text-white' : 'border border-[var(--color-border)] bg-white text-[var(--color-fg)] hover:bg-[var(--color-bg-elevated)]'}`}>
+              {m.rotulo}
+            </button>
+          ))}
+        </div>
+        <p className="text-[12.5px] text-[var(--color-fg-muted)]">{dica}</p>
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">Carga
-            <select value={carga} onChange={e => setCarga(e.target.value)} className="h-9 min-w-[220px] rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[13px] text-[var(--color-fg)]">
-              <option value="">Escolha a carga</option>
-              {opcoes.map(o => <option key={`${o.carga}-${o.placa}`} value={o.carga}>Carga {o.carga} — {o.placa}</option>)}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">Placa que fez a carga
-            <input value={nova} onChange={e => setNova(e.target.value)} placeholder="ex.: RBI1J86 ou 1J86" maxLength={8} onKeyDown={e => { if (e.key === 'Enter') void redirecionar() }}
+          {modo === 'redirecionar' ? (
+            <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">Carga
+              <select value={carga} onChange={e => setCarga(e.target.value)} className="h-9 min-w-[220px] rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[13px] text-[var(--color-fg)]">
+                <option value="">Escolha a carga</option>
+                {opcoes.map(o => <option key={`${o.carga}-${o.placa}`} value={o.carga}>Carga {o.carga} — {o.placa}</option>)}
+              </select>
+            </label>
+          ) : (
+            <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">Placa A (da escala)
+              <select value={placaA} onChange={e => setPlacaA(e.target.value)} className="h-9 min-w-[160px] rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[13px] text-[var(--color-fg)]">
+                <option value="">Escolha a placa</option>
+                {listaPlacas.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </label>
+          )}
+          <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">{modo === 'redirecionar' ? 'Placa que fez a carga' : 'Placa B'}
+            <input value={placaB} onChange={e => setPlacaB(e.target.value)} placeholder="ex.: RBI1J86 ou 1J86" maxLength={8} onKeyDown={e => { if (e.key === 'Enter') void trocar() }}
               className="h-9 w-[150px] rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[13px] uppercase text-[var(--color-fg)]" />
           </label>
-          <button type="button" disabled={enviando || !sel || !nova.trim()} onClick={() => void redirecionar()}
+          <button type="button" disabled={enviando} onClick={() => void trocar()}
             className="inline-flex h-9 items-center rounded-full bg-[var(--color-navy-700)] px-4 text-[13px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] disabled:opacity-50">
-            {enviando ? 'Redirecionando…' : 'Redirecionar'}
+            {enviando ? 'Trocando…' : 'Confirmar'}
           </button>
         </div>
         {aviso && <p className="text-[12.5px] text-[var(--color-fg-muted)]">{aviso}</p>}
