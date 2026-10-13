@@ -87,6 +87,41 @@ export async function buscarTrocasDoDia(empresa: string, data: string): Promise<
   }
 }
 
+// Troca com modo (13/10): a operação escolhe COMO trocar. Sempre ancorado nas
+// placas de ESCALA ORIGINAL (A e B que ela digita), nunca no estado já
+// recalculado -- é o que destrava a troca mútua (antes, depois do 1º lado a
+// placa de destino re-rotulava e o 2º lado ficava ambíguo).
+export type ModoTroca = 'redirecionar' | 'mutua' | 'substituir'
+export type MovimentoTroca = { de: string; para: string; carga: string | null }
+export type DecisaoTroca = { linhas: TrocaPlaca[]; movimentos: MovimentoTroca[] } | { erro: string }
+
+/** Monta as linhas a gravar em kpi_troca_placa e os movimentos a mandar ao
+ *  monitoramento, por modo:
+ *  - redirecionar: 1 carga de A -> B (carga obrigatória).
+ *  - substituir: a placa A inteira -> B (todas as cargas, carga nula).
+ *  - mutua: A <-> B, placa inteira, ancorado na escala original. */
+export function decidirTroca(
+  modo: ModoTroca,
+  params: { placaA: string; placaB: string; carga?: string | null },
+): DecisaoTroca {
+  const A = normalizarPlacaDigitada(params.placaA)
+  const B = normalizarPlacaDigitada(params.placaB)
+  if (!A || !B || A === B) return { erro: 'Escolha duas placas diferentes.' }
+  const carga = params.carga?.trim() || null
+  if (modo === 'redirecionar') {
+    if (!carga) return { erro: 'Escolha a carga a redirecionar.' }
+    return { linhas: [{ carga, placaEscala: A, placaReal: B }], movimentos: [{ de: A, para: B, carga }] }
+  }
+  if (modo === 'substituir') {
+    return { linhas: [{ carga: null, placaEscala: A, placaReal: B }], movimentos: [{ de: A, para: B, carga: null }] }
+  }
+  // mutua
+  return {
+    linhas: [{ carga: null, placaEscala: A, placaReal: B }, { carga: null, placaEscala: B, placaReal: A }],
+    movimentos: [{ de: A, para: B, carga: null }, { de: B, para: A, carga: null }],
+  }
+}
+
 export type DecisaoTrocaManual =
   | { acao: 'inserir' | 'atualizar' | 'desfazer'; placaEscala: string; placaReal: string; moverNoMonitoramentoDe: string }
   | { erro: string }

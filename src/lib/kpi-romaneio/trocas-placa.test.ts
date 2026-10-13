@@ -1,5 +1,46 @@
 import { describe, it, expect } from 'vitest'
-import { aplicarTrocasDePlaca, normalizarPlacaDigitada, completarPlaca, decidirTrocaManual, resolverPlacaDigitada } from './trocas-placa'
+import { aplicarTrocasDePlaca, normalizarPlacaDigitada, completarPlaca, decidirTrocaManual, resolverPlacaDigitada, decidirTroca } from './trocas-placa'
+
+describe('decidirTroca (3 modos)', () => {
+  it('redirecionar: 1 carga A->B', () => {
+    expect(decidirTroca('redirecionar', { placaA: 'AAA1A11', placaB: 'BBB2B22', carga: 'PAO-2' })).toEqual({
+      linhas: [{ carga: 'PAO-2', placaEscala: 'AAA1A11', placaReal: 'BBB2B22' }],
+      movimentos: [{ de: 'AAA1A11', para: 'BBB2B22', carga: 'PAO-2' }],
+    })
+  })
+  it('redirecionar sem carga -> erro', () => {
+    expect(decidirTroca('redirecionar', { placaA: 'AAA1A11', placaB: 'BBB2B22' })).toEqual({ erro: 'Escolha a carga a redirecionar.' })
+  })
+  it('substituir: placa toda A->B (carga nula)', () => {
+    expect(decidirTroca('substituir', { placaA: 'AAA1A11', placaB: 'BBB2B22' })).toEqual({
+      linhas: [{ carga: null, placaEscala: 'AAA1A11', placaReal: 'BBB2B22' }],
+      movimentos: [{ de: 'AAA1A11', para: 'BBB2B22', carga: null }],
+    })
+  })
+  it('mutua: A<->B, placa toda, ancorado na escala original', () => {
+    expect(decidirTroca('mutua', { placaA: 'AAA1A11', placaB: 'BBB2B22' })).toEqual({
+      linhas: [
+        { carga: null, placaEscala: 'AAA1A11', placaReal: 'BBB2B22' },
+        { carga: null, placaEscala: 'BBB2B22', placaReal: 'AAA1A11' },
+      ],
+      movimentos: [
+        { de: 'AAA1A11', para: 'BBB2B22', carga: null },
+        { de: 'BBB2B22', para: 'AAA1A11', carga: null },
+      ],
+    })
+  })
+  it('placas iguais ou vazias -> erro', () => {
+    expect(decidirTroca('mutua', { placaA: 'AAA1A11', placaB: 'AAA1A11' })).toEqual({ erro: 'Escolha duas placas diferentes.' })
+    expect(decidirTroca('substituir', { placaA: '', placaB: 'BBB2B22' })).toEqual({ erro: 'Escolha duas placas diferentes.' })
+  })
+  it('a mútua aplicada ao romaneio troca os dois sentidos sem embolar', () => {
+    const d = decidirTroca('mutua', { placaA: 'AAA1A11', placaB: 'BBB2B22' })
+    if ('erro' in d) throw new Error('inesperado')
+    const rom = [{ carga: 'C1', placa: 'AAA1A11' }, { carga: 'C2', placa: 'BBB2B22' }]
+    const { romaneio } = aplicarTrocasDePlaca(rom, [], d.linhas)
+    expect(romaneio).toEqual([{ carga: 'C1', placa: 'BBB2B22' }, { carga: 'C2', placa: 'AAA1A11' }])
+  })
+})
 
 const rom = (carga: string, placa: string, nf: string) => ({ carga, placa, nf })
 const esc = (carga: string, placa: string) => ({ carga, placaRaw: placa, placaNorm: placa.replace('-', '') })
