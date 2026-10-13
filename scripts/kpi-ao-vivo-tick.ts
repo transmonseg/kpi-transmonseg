@@ -11,6 +11,7 @@ import { hojeBR } from '../src/lib/data-br'
 import { createServiceClient } from '../src/lib/supabase/service'
 import { CLIENTES_AO_VIVO, calcularAoVivo, guardarDiaAoVivo } from '../src/lib/kpi-romaneio/ao-vivo-servico'
 import { buscarDiaRioQualityFusion } from '../src/lib/kpi-rioquality/fonte-fusion'
+import { linhasParaMonitoramentoRQ, enviarRioQualityAoMonitoramento } from '../src/lib/kpi-rioquality/enviar-monitoramento-rq'
 import { diaAnterior, precisaFecharDia } from '../src/lib/kpi-romaneio/ao-vivo'
 import { limparCacheDia } from '../src/lib/kpi-romaneio/cache-dia'
 import { limparXlsxAoVivo } from '../src/lib/kpi-romaneio/ao-vivo-servico'
@@ -29,6 +30,10 @@ export async function sincronizarFusionRioQuality(data: string): Promise<'ok' | 
       pao: { linhas: [], escala: [] }, escalaEnviada: false, paoEnviado: false,
       enviadoPor: 'cron-fusion', fonte: 'fusion',
     })
+    // Ponte pro Monitoramento: os carros da RQ aparecem no mapa (modo Romaneio)
+    // com a data do dia fixa. Fail-open -- não derruba a sincronização.
+    const mon = await enviarRioQualityAoMonitoramento(data, linhasParaMonitoramentoRQ(linhas))
+    if (!mon.ok) log(`monitoramento RQ ${data}: erro ${mon.erro}`)
     return 'ok'
   } catch (e) {
     log(`Fusion RQ ${data}: ${e}`)
