@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { linhasParaMonitoramentoRQ, enviarRioQualityAoMonitoramento } from './enviar-monitoramento-rq'
+import { linhasParaMonitoramentoRQ, enviarRioQualityAoMonitoramento, buscarCoordenadasMonitoramentoRQ } from './enviar-monitoramento-rq'
 import type { EntregaRioQualityCompleta } from './parse-planilhas'
 
 const entrega = (over: Partial<EntregaRioQualityCompleta>): EntregaRioQualityCompleta => ({
@@ -44,5 +44,26 @@ describe('enviarRioQualityAoMonitoramento', () => {
     const r = await enviarRioQualityAoMonitoramento('2026-10-13', [])
     expect(r.ok).toBe(false)
     expect(r.erro).toContain('rede')
+  })
+})
+
+describe('buscarCoordenadasMonitoramentoRQ', () => {
+  beforeEach(() => { process.env.MOTOR_SECRET = 's'; process.env.MONITORAMENTO_URL = 'http://mon' })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('devolve mapa placaNorm|nf -> coord e ignora pontos sem lat', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ pontos: [
+      { placa: 'rqu8a12', nf: '123', lat: -22.9, lng: -43.1 },
+      { placa: 'RQV9Z99', nf: '9', lat: null, lng: -43 },
+    ] }))))
+    const m = await buscarCoordenadasMonitoramentoRQ('2026-10-13')
+    expect(m.get('RQU8A12|123')).toEqual({ lat: -22.9, lng: -43.1 })
+    expect(m.size).toBe(1)
+  })
+
+  it('fail-open: mapa vazio se o fetch falha', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('rede')))
+    const m = await buscarCoordenadasMonitoramentoRQ('2026-10-13')
+    expect(m.size).toBe(0)
   })
 })

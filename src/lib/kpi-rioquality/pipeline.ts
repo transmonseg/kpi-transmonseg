@@ -20,6 +20,7 @@ import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita,
 import { parseCustos, parseEntregas, montarLinhasRomaneio, rotaParaZona, parseEntregasCompletas, montarLinhasRomaneioCompleto, CARGA_SEM_ROTA, type EntregaRioQualityCompleta } from './parse-planilhas'
 import { geocodificarPorCoerencia, type ConfiancaCoerencia, type PontoZona } from './geocode-coerencia'
 import { geocodificarEnderecosComInfo } from '@/lib/kpi-romaneio/geocode'
+import { buscarCoordenadasMonitoramentoRQ } from './enviar-monitoramento-rq'
 import { reposicionarPorAncoras } from '@/lib/kpi-romaneio/geocode-ancoras'
 import { montarCorredorDaRua, extensaoCorredorM } from './corredor-rua'
 import { gpsCongelado, semComunicarDesde, OBS_GPS_CONGELADO, obsSemComunicarDesde } from './rastreador-status'
@@ -271,6 +272,27 @@ export async function gerarKpiRioQuality(params: {
         })
       }
       if (resgatados > 0) log(`Resgatados por ancora da rota do caminhao: ${resgatados}`)
+    }
+
+    // Fallback final (13/10): coordenadas que o Monitoramento ja' resolveu
+    // (cascata completa + fallback Unitrac). O geocoder do KPI e' mais fraco e
+    // deixava ~359 NFs da RQ "sem coordenada"; o monitoramento (pra quem o KPI
+    // ja' envia a RQ) resolve o grosso. Usa a MESMA coordenada do mapa. Fail-open.
+    const aindaSemCoord = romaneioGeo.filter(l => l.lat == null)
+    if (aindaSemCoord.length > 0) {
+      const coordsMon = await buscarCoordenadasMonitoramentoRQ(data)
+      let doMonitoramento = 0
+      for (const l of aindaSemCoord) {
+        const c = coordsMon.get(`${normPlaca(l.placa)}|${l.nf}`)
+        if (!c) continue
+        const idx = indicePorNf.get(l.nf)!
+        romaneioGeo[idx] = { ...romaneioGeo[idx], lat: c.lat, lng: c.lng }
+        confiancaPorNf.set(l.nf, 'baixa')
+        contConf.sem_candidato--
+        contConf.baixa++
+        doMonitoramento++
+      }
+      if (doMonitoramento > 0) log(`Coordenadas do monitoramento (RQ): ${doMonitoramento}`)
     }
   } else {
     if (!custosBuf || !entregasBuf) {
