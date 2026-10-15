@@ -18,7 +18,15 @@ if [ -z "${ROM_N+x}" ]; then
 fi
 case "$ROM_N" in ''|*[!0-9]*) ROM_N="";; esac
 echo "romaneio no monitoramento: ${ROM_N:-?}"
-TEXTO=$(DIA="$DIA" SAIDA="$SAIDA" ROM_N="$ROM_N" python3 - <<'PY'
+# 15/10 (DR-05): linhas do romaneio sem veiculo no cadastro ficam invisiveis ao
+# motor (sem desvio, sem parada). Lista as placas pra alguem cadastrar/corrigir.
+# ORF=<n>|<placas> no ambiente pula a consulta (teste em DRY). Fail-open.
+if [ -z "${ORF+x}" ]; then
+  ORF=$(sudo -n -u postgres psql -d transmonseg -tAc "SELECT count(*) || '|' || coalesce(string_agg(DISTINCT placa, ','), '') FROM romaneio_pontos WHERE romaneio_data = '$DIA' AND modo_teste = false AND origem = 'romaneio' AND veiculo_id IS NULL" 2>/dev/null | tr -d '[:space:]')
+fi
+case "$ORF" in [0-9]*\|*) ;; *) ORF="";; esac
+echo "romaneio sem veiculo no cadastro: ${ORF:-?}"
+TEXTO=$(DIA="$DIA" SAIDA="$SAIDA" ROM_N="$ROM_N" ORF="$ORF" python3 - <<'PY'
 import os,re
 d={}
 for l in os.environ["SAIDA"].splitlines():
@@ -28,6 +36,11 @@ fn=d.get("SUSPEITA_FALSO_NEGATIVO",0); fp=d.get("SUSPEITA_FALSO_POSITIVO",0); hd
 tot=sum(d.values())
 motivos=[]
 if os.environ.get("ROM_N")=="0": motivos.append("o monitoramento ficou SEM romaneio nesse dia (o motor de desvio ficou cego)")
+orf=os.environ.get("ORF","")
+if "|" in orf:
+    n,placas=orf.split("|",1)
+    if n.isdigit() and int(n)>0:
+        motivos.append(f"{n} linhas do romaneio estao sem veiculo no cadastro (placas: {placas}) -- o motor de desvio nao enxerga essas rotas")
 if tot==0: motivos.append("a auditoria nao leu nenhuma nota")
 if fn>=10: motivos.append(f"{fn} notas NAO entregues mas o GPS parou no cliente")
 if fp>=15: motivos.append(f"{fp} notas entregues sem o caminhao chegar perto")
