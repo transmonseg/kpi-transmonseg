@@ -1652,6 +1652,14 @@ export function montarDetalheEntregas(
   // de `modoPrecisao`: a Nutry Max (modoPrecisao=true, nao passa este
   // parametro) fica identica; quem nao passa nenhum dos dois, tambem.
   naoSaiuDaBase: boolean = modoPrecisao,
+  // KM-01 (auditoria 15/10): `apagaoDeSinalPropriaPlaca` dispara com UMA leitura
+  // >15 min (544 de 2150 placa-dias). Em 11/10 isso transformou 12 caminhoes
+  // PARADOS COM RASTREADOR VIVO (2.880 leituras cada) em 'SEM RASTREADOR'
+  // (334 NFs contadas como corretas). A ponte ja expoe o criterio estrito
+  // (HorarioBase.apagaoDeSinalForte: >=40 min de silencio e >=500 m de
+  // deslocamento). Quando informado, SO' ele conclui 'GPS congelado'; ponte
+  // antiga sem o campo (undefined) mantem o comportamento anterior.
+  apagaoDeSinalForte?: boolean,
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
   // Task 2 (R2): pontos de referencia de CADA NF da placa no DIA INTEIRO
@@ -1997,7 +2005,7 @@ export function montarDetalheEntregas(
     const paradasComCoord = paradasProprias.filter((p): p is UnitracParadaRow & { lat: number; lng: number } => p.lat != null && p.lng != null)
     const todasParadasNoMesmoPonto = paradasComCoord.length > 0 && paradasComCoord.every(p =>
       haversine(paradasComCoord[0].lat, paradasComCoord[0].lng, p.lat, p.lng) <= RAIO_GPS_CONGELADO_M)
-    const gpsCongelado = apagaoDeSinalPropriaPlaca && todasParadasNoMesmoPonto
+    const gpsCongelado = (apagaoDeSinalForte ?? apagaoDeSinalPropriaPlaca) && todasParadasNoMesmoPonto
     const semRastreadorNoDia = tratarSemRastreadorNoDia && (
       !temRastreador
       || (zeroPosicoesNoDia && !diaEmAndamento && !placaTemAlvoFeitoNoDia && !placaRodouPorKm)

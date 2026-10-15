@@ -515,6 +515,12 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
         // todas as NFs dessa placa recebem rotulo especifico e sao excluidas
         // do denominador da TAXA. Ver placaSemRastriNaEscala em agregacao.ts.
         escalaPorChave.get(chave)?.statusRastreador?.trim().toUpperCase() === 'SEM RASTRI',
+        // naoSaiuDaBase: na Nutry Max e' o default (= modoPrecisao = true); passado
+        // explicito so' pra poder informar o parametro seguinte.
+        true,
+        // KM-01 (auditoria 15/10): so' o silencio FORTE da ponte conclui GPS
+        // congelado / sem rastreador. Ver apagaoDeSinalForte em agregacao.ts.
+        horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinalForte,
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
