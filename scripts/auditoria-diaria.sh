@@ -9,11 +9,12 @@ DIA=${1:-$(TZ=America/Sao_Paulo date -d yesterday +%F)}
 SAIDA=$(nice -n 10 npx tsx --env-file=.env.production --tsconfig tsconfig.json scripts/auditar-dia.ts "$DIA" 2>&1 | grep -E '^ *[0-9]+ [A-Z_]+$|^NFs com') 
 echo "[auditoria $DIA]"; echo "$SAIDA"
 # 10/10: dia sem romaneio carregado no monitoramento = motor de desvio cego (aconteceu
-# em 09/10 e 10/10). Conta romaneio_pontos real (modo_teste=false, origem romaneio).
+# em 09/10 e 10/10). Conta romaneio_pontos real (modo_teste=false, origem romaneio)
+# SO' DA NUTRY (15/10, KP-04: somada com a Rio Quality nunca dava zero).
 # Fail-open: se a consulta falhar, ROM_N fica vazio e o aviso e' so' pulado.
 # ROM_N=<n> no ambiente pula a consulta (teste em DRY).
 if [ -z "${ROM_N+x}" ]; then
-  ROM_N=$(sudo -n -u postgres psql -d transmonseg -tAc "SELECT count(*) FROM romaneio_pontos WHERE romaneio_data = '$DIA' AND modo_teste = false AND origem = 'romaneio'" 2>/dev/null | tr -d '[:space:]')
+  ROM_N=$(sudo -n -u postgres psql -d transmonseg -tAc "SELECT count(*) FROM romaneio_pontos r JOIN veiculos v ON v.id = r.veiculo_id JOIN clientes c ON c.id = v.cliente_id WHERE r.romaneio_data = '$DIA' AND r.modo_teste = false AND r.origem = 'romaneio' AND c.cod_user_unitrac = '4096'" 2>/dev/null | tr -d '[:space:]')
 fi
 case "$ROM_N" in ''|*[!0-9]*) ROM_N="";; esac
 echo "romaneio no monitoramento: ${ROM_N:-?}"

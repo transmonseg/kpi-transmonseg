@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { decidirReparo, repararDia, type DepsReparo } from './reparar-dia'
+import { decidirReparo, repararDia, urlContagem, COD_MONITORAMENTO_NUTRY, type DepsReparo } from './reparar-dia'
 
 describe('decidirReparo', () => {
   it('Ao vivo sem o dia e geração com romaneio: preenche o Ao vivo', () => {
@@ -95,5 +95,17 @@ describe('repararDia', () => {
     const d = deps({ aoVivo: true, linhas: null })
     expect(await repararDia(d, DIA, () => {})).toEqual([])
     expect(d.reenviarAoMonitoramento).not.toHaveBeenCalled()
+  })
+})
+
+// KP-04 (auditoria 15/10): a contagem do monitoramento somava a Rio Quality, entao
+// "monitoramento tem romaneio" nunca ficava falso mesmo com a Nutry sem nada.
+describe('urlContagem', () => {
+  it('pede a contagem so da Nutry quando recebe o cod', () => {
+    expect(urlContagem('http://127.0.0.1:3010', '2026-10-15', COD_MONITORAMENTO_NUTRY))
+      .toBe('http://127.0.0.1:3010/api/romaneio/contagem?data=2026-10-15&cod=4096')
+  })
+  it('sem cod mantem a consulta do dia inteiro', () => {
+    expect(urlContagem('http://x', '2026-10-15')).toBe('http://x/api/romaneio/contagem?data=2026-10-15')
   })
 })

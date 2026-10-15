@@ -14,6 +14,13 @@ import { enviarAoMonitoramento, type ArquivoMonitoramento } from './enviar-monit
 
 const BUCKET = 'kpi-romaneio-inputs'
 const CLIENTE = 'nutrimax' as const
+/** cod_user_unitrac da Nutry Max no monitoramento (clientes.cod_user_unitrac). */
+export const COD_MONITORAMENTO_NUTRY = '4096'
+
+/** KP-04: a contagem tem que ser DA NUTRY -- somada com a Rio Quality ela nunca era zero. */
+export function urlContagem(base: string, data: string, cod?: string): string {
+  return `${base}/api/romaneio/contagem?data=${encodeURIComponent(data)}${cod ? `&cod=${encodeURIComponent(cod)}` : ''}`
+}
 
 export type AcaoReparo = 'preencher_ao_vivo' | 'enviar_monitoramento' | 'nada'
 
@@ -110,7 +117,7 @@ async function linhasNoMonitoramento(data: string): Promise<number | null> {
   if (!chave) return null
   const base = process.env.MONITORAMENTO_URL ?? 'http://127.0.0.1:3010'
   try {
-    const r = await fetch(`${base}/api/romaneio/contagem?data=${encodeURIComponent(data)}`, {
+    const r = await fetch(urlContagem(base, data, COD_MONITORAMENTO_NUTRY), {
       headers: { 'x-motor-key': chave }, signal: AbortSignal.timeout(15_000),
     })
     if (!r.ok) return null
