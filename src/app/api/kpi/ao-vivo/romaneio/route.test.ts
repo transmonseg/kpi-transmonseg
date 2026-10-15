@@ -1,10 +1,10 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
-const est = vi.hoisted(() => ({ guardado: null as null | Record<string, unknown>, gravou: null as null | Record<string, unknown>, monitoramento: [] as string[] }))
+const est = vi.hoisted(() => ({ guardado: null as null | Record<string, unknown>, gravou: null as null | Record<string, unknown>, monitoramento: [] as string[], dataPdf: null as null | string }))
 vi.mock('../acesso', () => ({ acessoAoVivo: async () => ({ ok: true, cliente: 'nutrimax', email: 'erica@x.com' }) }))
 vi.mock('@/lib/data-br', () => ({ hojeBR: () => '2026-10-09' }))
 vi.mock('@/lib/supabase/service', () => ({ createServiceClient: () => ({ from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: est.guardado }) }) }) }) }) }) }))
-vi.mock('@/lib/kpi-romaneio/parse-romaneio', () => ({ parseRomaneio: async () => [{ nf: 'NOVA', placa: 'AAA1A11' }] }))
+vi.mock('@/lib/kpi-romaneio/parse-romaneio', () => ({ parseRomaneioComData: async () => ({ linhas: [{ nf: 'NOVA', placa: 'AAA1A11' }], data: est.dataPdf }) }))
 vi.mock('@/lib/kpi-romaneio/parse-escala', () => ({ parseEscala: async () => [{ carga: 'ESC' }] }))
 vi.mock('@/lib/kpi-romaneio/parse-pao', () => ({ parsePao: async () => ({ linhas: [{ nf: 'PAO', placa: 'BBB2B22' }], escala: [{ carga: 'PAO-1' }] }) }))
 vi.mock('@/lib/kpi-romaneio/ao-vivo-servico', () => ({
@@ -21,7 +21,7 @@ const req = (arq: Record<string, File>) => { const fd = new FormData(); fd.set('
 const DIA = { romaneio: [{ nf: 'R1', placa: 'AAA1A11' }], escala: [{ carga: 'E1' }], pao: { linhas: [{ nf: 'P1', placa: 'BBB2B22' }], escala: [] }, escala_enviada: true, pao_enviado: false }
 
 describe('POST /api/kpi/ao-vivo/romaneio (arquivo esquecido, 08/10)', () => {
-  beforeEach(() => { est.guardado = null; est.gravou = null; est.monitoramento = [] })
+  beforeEach(() => { est.guardado = null; est.gravou = null; est.monitoramento = []; est.dataPdf = null })
 
   it('esqueceu o pao: manda so\' o pao depois -- romaneio e escala do dia continuam', async () => {
     est.guardado = DIA
@@ -51,5 +51,26 @@ describe('POST /api/kpi/ao-vivo/romaneio (arquivo esquecido, 08/10)', () => {
   it('sem arquivo nenhum: 400', async () => {
     est.guardado = DIA
     expect((await POST(req({}))).status).toBe(400)
+  })
+  // KP-03 (auditoria 15/10): 11/10 subiu o PDF de 10/10 e virou KPI oficial.
+  it('romaneio com data de OUTRO dia no cabecalho: 422, nada e gravado nem enviado ao monitoramento', async () => {
+    est.dataPdf = '2026-10-08'
+    const r = await POST(req({ romaneio: pdf('rom.pdf') }))
+    expect(r.status).toBe(422)
+    expect(await r.text()).toMatch(/08\/10\/2026.*09\/10\/2026/)
+    expect(est.gravou).toBeNull()
+    expect(est.monitoramento).toEqual([])
+  })
+
+  it('romaneio com a data de hoje: aceito', async () => {
+    est.dataPdf = '2026-10-09'
+    const r = await POST(req({ romaneio: pdf('rom.pdf') }))
+    expect(r.status).toBe(200)
+  })
+
+  it('PDF sem data legivel continua aceito (nao bloqueia)', async () => {
+    est.dataPdf = null
+    const r = await POST(req({ romaneio: pdf('rom.pdf') }))
+    expect(r.status).toBe(200)
   })
 })

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { hojeBR } from '@/lib/data-br'
 import { parseEscala } from '@/lib/kpi-romaneio/parse-escala'
-import { parseRomaneio } from '@/lib/kpi-romaneio/parse-romaneio'
+import { parseRomaneioComData } from '@/lib/kpi-romaneio/parse-romaneio'
 import { parsePao } from '@/lib/kpi-romaneio/parse-pao'
 import { guardarDiaAoVivo, calcularAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
 import { parseEntregasCompletas } from '@/lib/kpi-rioquality/parse-planilhas'
@@ -47,12 +47,19 @@ export async function POST(req: NextRequest) {
   const paoBuf = paoFile instanceof File ? Buffer.from(await paoFile.arrayBuffer()) : null
   let novo: EnvioNovo = {}
   try {
-    const [escala, romaneio, pao] = await Promise.all([
+    const [escala, romaneioLido, pao] = await Promise.all([
       escalaFile instanceof File ? parseEscala(Buffer.from(await escalaFile.arrayBuffer())) : Promise.resolve(undefined),
-      romaneioBuf ? parseRomaneio(romaneioBuf) : Promise.resolve(undefined),
+      romaneioBuf ? parseRomaneioComData(romaneioBuf) : Promise.resolve(undefined),
       paoBuf ? parsePao(paoBuf, data) : Promise.resolve(undefined),
     ])
-    novo = { escala, romaneio, pao }
+    // KP-03 (auditoria 15/10): romaneio de OUTRO dia nao vira o de hoje. Em
+    // 11/10 (domingo) a copia do PDF de 10/10 gerou taxa oficial de 93% sobre
+    // 359 de 2094 NFs. Sem data legivel no PDF continua aceito (nao bloqueia).
+    if (romaneioLido?.data && romaneioLido.data !== data) {
+      const br = (iso: string) => iso.split('-').reverse().join('/')
+      return new NextResponse(`O Romaneio de Entrega enviado é do dia ${br(romaneioLido.data)}, mas hoje é ${br(data)}. Confira se subiu o arquivo certo.`, { status: 422 })
+    }
+    novo = { escala, romaneio: romaneioLido?.linhas, pao }
   } catch (err) {
     return new NextResponse(err instanceof Error ? err.message : 'Não consegui ler os PDFs.', { status: 422 })
   }

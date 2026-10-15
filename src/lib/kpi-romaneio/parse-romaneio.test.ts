@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseRomaneioTexto } from './parse-romaneio'
+import { parseRomaneioTexto, extrairDataCabecalhoRomaneio } from './parse-romaneio'
 import { chaveCacheEndereco } from './endereco-cep'
 
 const TEXTO_EXEMPLO = `
@@ -119,3 +119,16 @@ NF / CLIENTE:
   })
 })
 
+// KP-03 (auditoria 15/10): 11/10 (domingo) subiu o PDF de 10/10 e virou KPI
+// oficial. O PDF traz a data de impressao em toda pagina ("15/10/2026 07:53").
+describe('extrairDataCabecalhoRomaneio', () => {
+  it('le a data do cabecalho impresso', () => {
+    expect(extrairDataCabecalhoRomaneio('ROMANEIO DE ENTREGA   15/10/2026 07:53\nPLACA/MOTORISTA: X / Y CARGA/DESTINO:1 / Z')).toBe('2026-10-15')
+  })
+  it('pega a primeira ocorrencia', () => {
+    expect(extrairDataCabecalhoRomaneio('10/10/2026 06:00 ... 11/10/2026 07:00')).toBe('2026-10-10')
+  })
+  it('sem data no texto devolve null (nao bloqueia PDF diferente)', () => {
+    expect(extrairDataCabecalhoRomaneio('PLACA/MOTORISTA: X')).toBeNull()
+  })
+})

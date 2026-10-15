@@ -78,9 +78,21 @@ export function parseRomaneioTexto(texto: string): LinhaRomaneio[] {
   return linhas
 }
 
-export async function parseRomaneio(buffer: Buffer): Promise<LinhaRomaneio[]> {
+/** Data de impressao do cabecalho do PDF ("15/10/2026 07:53", repetida em toda
+ *  pagina) como YYYY-MM-DD; null se nao achar. Mesma regra do monitoramento
+ *  (extrairDataRomaneio) pra os dois sistemas concordarem sobre o dia. */
+export function extrairDataCabecalhoRomaneio(texto: string): string | null {
+  const m = texto.match(/(\d{2})\/(\d{2})\/(\d{4})\s+\d{2}:\d{2}/)
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : null
+}
+
+export async function parseRomaneioComData(buffer: Buffer): Promise<{ linhas: LinhaRomaneio[]; data: string | null }> {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
   const { text } = await pdfParse(buffer)
-  return parseRomaneioTexto(text)
+  return { linhas: parseRomaneioTexto(text), data: extrairDataCabecalhoRomaneio(text) }
+}
+
+export async function parseRomaneio(buffer: Buffer): Promise<LinhaRomaneio[]> {
+  return (await parseRomaneioComData(buffer)).linhas
 }
