@@ -1742,7 +1742,7 @@ export function montarDetalheEntregas(
     if (v) janelas.push({ endereco: l.endereco, iniMs: new Date(v.chegada).getTime(), fimMs: new Date(v.saida).getTime() })
     const a = alvoPorNf.get(l.nf)
     if (a?.situacao === 1 && a.feitoISO) {
-      const ms = new Date(a.feitoISO).getTime()
+      const ms = instanteDeFeitoISO(a.feitoISO)
       janelas.push({ endereco: l.endereco, iniMs: ms, fimMs: ms })
     }
     return janelas
@@ -3013,7 +3013,7 @@ export function montarDetalheEntregas(
           if (visitaRef) {
             chegadaMs = new Date(visitaRef.chegada).getTime()
           } else if (alvoRef?.feitoISO) {
-            chegadaMs = new Date(alvoRef.feitoISO).getTime()
+            chegadaMs = instanteDeFeitoISO(alvoRef.feitoISO)
           }
           if (chegadaMs != null) entregues.push({ idx: i, chegadaMs })
         } else if (d.status === 'pendente') {
