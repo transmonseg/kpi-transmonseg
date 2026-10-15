@@ -39,7 +39,8 @@ if os.environ.get("ROM_N")=="0": motivos.append("o monitoramento ficou SEM roman
 orf=os.environ.get("ORF","")
 if "|" in orf:
     n,placas=orf.split("|",1)
-    if n.isdigit() and int(n)>0:
+    # >=20 linhas: placas sem cadastro da Rio Quality aparecem quase todo dia e nao viram alerta diario
+    if n.isdigit() and int(n)>=20:
         motivos.append(f"{n} linhas do romaneio estao sem veiculo no cadastro (placas: {placas}) -- o motor de desvio nao enxerga essas rotas")
 if tot==0: motivos.append("a auditoria nao leu nenhuma nota")
 if fn>=10: motivos.append(f"{fn} notas NAO entregues mas o GPS parou no cliente")

@@ -518,9 +518,12 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
         // naoSaiuDaBase: na Nutry Max e' o default (= modoPrecisao = true); passado
         // explicito so' pra poder informar o parametro seguinte.
         true,
-        // KM-01 (auditoria 15/10): so' o silencio FORTE da ponte conclui GPS
-        // congelado / sem rastreador. Ver apagaoDeSinalForte em agregacao.ts.
-        horarioBasePorPlaca.get(placaNorm)?.apagaoDeSinalForte,
+        // KM-01 (auditoria 15/10): fracao de leituras atrasadas decide se o
+        // rastreador estava vivo. Ver fracaoLeiturasAtrasadas em agregacao.ts.
+        (() => {
+          const h = horarioBasePorPlaca.get(placaNorm)
+          return h?.leiturasTotal && h.leiturasAtrasadas !== undefined ? h.leiturasAtrasadas / h.leiturasTotal : undefined
+        })(),
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))

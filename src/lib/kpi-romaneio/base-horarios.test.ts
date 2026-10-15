@@ -282,6 +282,26 @@ describe('buscarHorariosBase', () => {
       expect(mapa.get('RQU2G47')?.apagaoDeSinal).toBe(false)
     })
   })
+
+  // KM-01 (15/10): se este repasse se perder, a correcao do SEM RASTREADOR fica
+  // inerte sem nenhum aviso.
+  describe('contagem de leituras atrasadas (KM-01)', () => {
+    it('repassa leiturasTotal e leiturasAtrasadas quando a ponte manda', async () => {
+      mockFetchOk([
+        { placa: 'RQU2G47', saidaBase: null, chegadaBase: null, kmPercorrido: 0.1, paradas: [], apagaoDeSinal: true, leiturasTotal: 2880, leiturasAtrasadas: 1 },
+      ])
+      const mapa = await buscarHorariosBase(['RQU2G47'], '2026-10-11', new Map(), true)
+      expect(mapa.get('RQU2G47')?.leiturasTotal).toBe(2880)
+      expect(mapa.get('RQU2G47')?.leiturasAtrasadas).toBe(1)
+    })
+
+    it('ponte antiga sem os campos: ficam ausentes (nunca zero inventado)', async () => {
+      mockFetchOk([{ placa: 'RQU2G47', saidaBase: null, chegadaBase: null, kmPercorrido: null, paradas: [] }])
+      const mapa = await buscarHorariosBase(['RQU2G47'], '2026-10-11', new Map(), true)
+      expect(mapa.get('RQU2G47')?.leiturasTotal).toBeUndefined()
+      expect(mapa.get('RQU2G47')?.leiturasAtrasadas).toBeUndefined()
+    })
+  })
 })
 
 describe('latAlt/lngAlt (cadastro Unitrac)', () => {

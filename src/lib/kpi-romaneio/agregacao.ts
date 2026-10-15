@@ -1434,6 +1434,9 @@ export function gerarMotivo(d: {
   return 'Sem evidência de entrega para este cliente'
 }
 
+/** KM-01: a partir de que fracao de leituras atrasadas (>15 min) o rastreador conta como morto/congelado. */
+export const FRACAO_ATRASADA_RASTREADOR_MORTO = 0.5
+
 export function montarDetalheEntregas(
   carga: string,
   placaNorm: string,
@@ -1655,11 +1658,12 @@ export function montarDetalheEntregas(
   // KM-01 (auditoria 15/10): `apagaoDeSinalPropriaPlaca` dispara com UMA leitura
   // >15 min (544 de 2150 placa-dias). Em 11/10 isso transformou 12 caminhoes
   // PARADOS COM RASTREADOR VIVO (2.880 leituras cada) em 'SEM RASTREADOR'
-  // (334 NFs contadas como corretas). A ponte ja expoe o criterio estrito
-  // (HorarioBase.apagaoDeSinalForte: >=40 min de silencio e >=500 m de
-  // deslocamento). Quando informado, SO' ele conclui 'GPS congelado'; ponte
-  // antiga sem o campo (undefined) mantem o comportamento anterior.
-  apagaoDeSinalForte?: boolean,
+  // (334 NFs contadas como corretas). `apagaoDeSinalForte` da ponte NAO serve
+  // (exige voltar a transmitir >=500 m depois; rastreador morto o dia todo
+  // daria false). Aqui: fracao de leituras do dia com atraso >15 min (0..1).
+  // Rastreador vivo = quase todas frescas; morto/congelado = maioria atrasada.
+  // undefined (ponte antiga / sem leituras) mantem o comportamento anterior.
+  fracaoLeiturasAtrasadas?: number,
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
   // Task 2 (R2): pontos de referencia de CADA NF da placa no DIA INTEIRO
@@ -2005,7 +2009,8 @@ export function montarDetalheEntregas(
     const paradasComCoord = paradasProprias.filter((p): p is UnitracParadaRow & { lat: number; lng: number } => p.lat != null && p.lng != null)
     const todasParadasNoMesmoPonto = paradasComCoord.length > 0 && paradasComCoord.every(p =>
       haversine(paradasComCoord[0].lat, paradasComCoord[0].lng, p.lat, p.lng) <= RAIO_GPS_CONGELADO_M)
-    const gpsCongelado = (apagaoDeSinalForte ?? apagaoDeSinalPropriaPlaca) && todasParadasNoMesmoPonto
+    const rastreadorVivo = fracaoLeiturasAtrasadas !== undefined && fracaoLeiturasAtrasadas < FRACAO_ATRASADA_RASTREADOR_MORTO
+    const gpsCongelado = apagaoDeSinalPropriaPlaca && !rastreadorVivo && todasParadasNoMesmoPonto
     const semRastreadorNoDia = tratarSemRastreadorNoDia && (
       !temRastreador
       || (zeroPosicoesNoDia && !diaEmAndamento && !placaTemAlvoFeitoNoDia && !placaRodouPorKm)

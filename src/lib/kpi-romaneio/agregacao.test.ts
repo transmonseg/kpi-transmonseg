@@ -3928,7 +3928,7 @@ function chamarNutryMax(
     kmPercorrido?: number | null
     modoPrecisao?: boolean
     apagaoDeSinalPropriaPlaca?: boolean
-    apagaoDeSinalForte?: boolean
+    fracaoLeiturasAtrasadas?: number
     diaEmAndamento?: boolean
     menorDistanciaTrajetoPorNf?: Map<string, number>
   } = {},
@@ -3957,7 +3957,7 @@ function chamarNutryMax(
     new Map(), // linhasPorPlacaNoDia
     false, // placaSemRastriNaEscala
     true, // naoSaiuDaBase (= modoPrecisao na Nutry Max)
-    opts.apagaoDeSinalForte,
+    opts.fracaoLeiturasAtrasadas,
   )
 }
 const M_LAT = 1 / 111_195 // graus de latitude por metro
@@ -6295,33 +6295,34 @@ describe('passou perto sem parar x parada proxima (06/10)', () => {
 
 // KM-01 (auditoria 15/10): 11/10 -- 12 placas com rastreador VIVO (2.880 leituras,
 // paradas no patio) viraram 'SEM RASTREADOR' (334 NFs contadas como corretas)
-// porque 'GPS congelado' usava QUALQUER leitura >15 min como apagao. So' o
-// silencio forte da ponte (>=40 min e deslocamento) pode concluir isso.
-describe('KM-01 -- GPS congelado so\' com apagaoDeSinalForte', () => {
+// porque 'GPS congelado' usava QUALQUER leitura >15 min como apagao. Rastreador
+// vivo = quase todas as leituras frescas; morto o dia todo = maioria atrasada
+// (apagaoDeSinalForte da ponte nao serve: exige voltar a transmitir >=500 m).
+describe('KM-01 -- GPS congelado so\' com rastreador sem leituras frescas', () => {
   const paradasNoPatio = () => new Map([['TTL7D40', [
     parada({ placa_norm: 'TTL7D40', classificacao: 'BASE', lat: -22.816007, lng: -43.277827, chegada: '2026-10-11T03:00:00.000Z', saida: '2026-10-11T12:00:00.000Z' }),
     parada({ placa_norm: 'TTL7D40', classificacao: 'BASE', lat: -22.816008, lng: -43.277828, chegada: '2026-10-11T12:00:00.000Z', saida: '2026-10-12T02:59:00.000Z' }),
   ]]])
 
-  it('rastreador vivo (so\' uma leitura >15 min, apagao fraco) e parado no patio: NAO vira SEM RASTREADOR', () => {
+  it('rastreador vivo (1 leitura atrasada em 2880) e parado no patio: NAO vira SEM RASTREADOR', () => {
     const [d] = chamarNutryMax([linha('NF1')], {
       paradasPorOutraPlaca: paradasNoPatio(), kmPercorrido: 0.1,
-      apagaoDeSinalPropriaPlaca: true, apagaoDeSinalForte: false,
+      apagaoDeSinalPropriaPlaca: true, fracaoLeiturasAtrasadas: 1 / 2880,
     })
     expect(d.observacao ?? '').not.toContain('SEM RASTREADOR')
     expect(d.evidencia).not.toBe('sem_rastreador')
   })
 
-  it('silencio forte da ponte (>=40 min) com GPS parado no mesmo ponto: continua SEM RASTREADOR (TTL5J17 de 26/09)', () => {
+  it('rastreador morto o dia todo (maioria das leituras atrasadas, nunca voltou a transmitir): continua SEM RASTREADOR (TTL5J17 de 26/09)', () => {
     const [d] = chamarNutryMax([linha('NF1')], {
       paradasPorOutraPlaca: paradasNoPatio(), kmPercorrido: 0.1,
-      apagaoDeSinalPropriaPlaca: true, apagaoDeSinalForte: true,
+      apagaoDeSinalPropriaPlaca: true, fracaoLeiturasAtrasadas: 0.9,
     })
     expect(d.observacao).toContain('SEM RASTREADOR')
     expect(d.evidencia).toBe('sem_rastreador')
   })
 
-  it('ponte antiga sem o campo forte: comportamento anterior preservado', () => {
+  it('ponte antiga sem as contagens: comportamento anterior preservado', () => {
     const [d] = chamarNutryMax([linha('NF1')], {
       paradasPorOutraPlaca: paradasNoPatio(), kmPercorrido: 0.1,
       apagaoDeSinalPropriaPlaca: true,
