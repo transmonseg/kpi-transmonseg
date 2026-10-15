@@ -12,6 +12,8 @@ import { CATEGORIAS_INVESTIGACAO, ROTULO_INVESTIGACAO, fraseInvestigacao } from 
 import { juntarEstado, mensagemFalhaCarga } from '@/lib/kpi-romaneio/ao-vivo-carga'
 import { SubirRomaneio, type EnvioRomaneio } from './subir-romaneio'
 import { montarPayloadTroca } from './troca-payload'
+import { baixarPendentes } from './baixar-pendentes'
+import { linhasPendentes } from '@/lib/kpi-romaneio/relatorio-pendentes'
 import type { ModoTroca } from '@/lib/kpi-romaneio/trocas-placa'
 
 // Tela "Ao vivo" (spec 2026-10-06-kpi-ao-vivo-design.md). Cor/status de cada
@@ -137,6 +139,7 @@ export default function AoVivoPage() {
   const placas = useMemo(() => [...(estado?.resultado?.placas ?? [])].sort((a, b) => Number(a.placa === 'SEM PLACA' || a.placa === '') - Number(b.placa === 'SEM PLACA' || b.placa === '')), [estado])
 
   // Busca também por cliente e número da nota (06/10, tia Érica).
+  const qtdPendentes = useMemo(() => linhasPendentes(placas).length, [placas])
   const achados = useMemo(() => buscarNfs(placas, busca), [placas, busca])
   const filtradas = useMemo(() => {
     const b = busca.trim().toUpperCase()
@@ -177,6 +180,16 @@ export default function AoVivoPage() {
       setErroCarga(e instanceof Error ? e.message : 'Não consegui gerar o KPI.')
     } finally {
       setGerando(false)
+    }
+  }
+
+  async function baixarRelatorioPendentes() {
+    if (!estado) return
+    try {
+      const n = await baixarPendentes(placas, NOME_CLIENTE[cliente], estado.data)
+      if (n === 0) setErroCarga('Nenhuma nota pendente ou não entregue para baixar.')
+    } catch (e) {
+      setErroCarga(e instanceof Error ? e.message : 'Não consegui gerar o relatório de pendentes.')
     }
   }
 
@@ -236,6 +249,11 @@ export default function AoVivoPage() {
             </select>
             <CaretDown size={13} className="pointer-events-none absolute right-3.5 text-[var(--color-fg-subtle)]" />
           </label>
+          {r && qtdPendentes > 0 && (
+            <button type="button" onClick={baixarRelatorioPendentes} className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-4 text-[13px] font-semibold text-[var(--color-fg)] transition hover:border-[var(--color-border-strong)] active:scale-[0.98]">
+              <DownloadSimple size={15} weight="bold" />Baixar pendentes ({qtdPendentes.toLocaleString('pt-BR')})
+            </button>
+          )}
           {historico && estado.geracaoId && (
             <a href={`/api/kpi/historico/${estado.geracaoId}/xlsx`} className="inline-flex h-10 items-center gap-2 rounded-full bg-[var(--color-navy-700)] px-5 text-[13px] font-semibold text-white transition hover:bg-[var(--color-navy-800)]">
               <DownloadSimple size={15} weight="bold" />Baixar planilha
