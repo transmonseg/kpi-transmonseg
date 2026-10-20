@@ -141,8 +141,14 @@ export function montarVisitasInclusivas(linhas: LinhaGeocodificada[], paradas: U
     })
   }
 
-  // 2) vizinhanca: so' irmas confirmadas DIRETAMENTE emprestam (sem encadear)
-  const diretas = comCoord.filter(l => visitas.has(l.nf))
+  // 2) vizinhanca: so' irmas confirmadas DIRETAMENTE emprestam (sem encadear).
+  //    RQ-06 (auditoria 20/10): e so' as confirmadas no raio normal (<=500 m)
+  //    -- irma pelo raio ampliado ou por outro trecho da rua levava a heranca
+  //    a 1,6 km da parada (52% a >800 m do ponto validado de 02/10).
+  const diretas = comCoord.filter(l => {
+    const v = visitas.get(l.nf)
+    return v != null && !v.viaRaioAmpliado && !v.viaOutroPontoDaRua
+  })
   for (const linha of comCoord) {
     if (visitas.has(linha.nf)) continue
     let melhor: { irma: LinhaGeocodificada & { lat: number; lng: number }; dist: number } | null = null
