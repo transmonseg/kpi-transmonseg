@@ -17,12 +17,20 @@ function gabaritoFusion(e: EntregaFusionRaw): GabaritoEntregaRioQuality {
   }
 }
 
+/** Auditoria 20/10 (RQ-04): a Fusion aceita placa de preenchimento (XXX5678,
+ *  108 NFs em 15/10). Nao e' veiculo nenhum: a regra "sem rastreador conta
+ *  como correto" (04/10) e' pra caminhao real sem rastreador. Vira carga sem
+ *  placa -- fora da taxa, com aviso pra operacao. */
+export function placaFicticia(placaNorm: string): boolean {
+  return /^XXX/.test(placaNorm)
+}
+
 export function mapearEntregasFusion(romaneios: RomaneioFusion[], entregas: EntregaFusionRaw[]): EntregaRioQualityCompleta[] {
   const porId = new Map(romaneios.map(r => [r.t10_id, r]))
   return entregas.map(e => {
     const rom = porId.get(e.t10_id)
     return {
-      placaNorm: normPlaca(rom?.t06_placa ?? ''),
+      placaNorm: placaFicticia(normPlaca(rom?.t06_placa ?? '')) ? '' : normPlaca(rom?.t06_placa ?? ''),
       clienteNome: e.t16_razSocial,
       cidade: e.t32_cidade,
       uf: 'RJ',
