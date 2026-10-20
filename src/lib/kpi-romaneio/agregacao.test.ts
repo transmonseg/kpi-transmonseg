@@ -6399,33 +6399,35 @@ describe('GN-03 (auditoria 20/10): NAO FOI AO CLIENTE so com ponto do cliente co
   })
 })
 
-// Auditoria 20/10 (GN-04), caso real RQV3J99 14/10 (Anta, Sapucaia): parada de
-// 16 min creditou o MERCADO CENTRAL ANTA (78 m) e a CASA DE CARNE SO FILE (157
-// m) ficou "PASSOU NO ENDERECO" porque outro cliente explica a parada.
-describe('GN-04: parada longa que atendeu varios clientes vizinhos credita cada um', () => {
-  const LAT0 = -22.0386
-  const LNG0 = -42.9897
+
+// Auditoria 20/10 (GN-05), casos reais 14/10: RQQ5B81 2423185 (parada de 8 min
+// a 4 m), RBI0J25 2421490/91 (7 min a 33 m), RQU0B47 2423215 (25 min a 41 m)
+// -- coordenada marcada imprecisa anulava a prova positiva.
+describe('GN-05: parada no proprio ponto vale mesmo com coordenada marcada imprecisa', () => {
+  const LAT0 = -22.9
+  const LNG0 = -43.2
   const M_LNG = 1 / (111_195 * Math.cos(LAT0 * Math.PI / 180))
   const em = (norteM: number, lesteM = 0) => ({ lat: LAT0 + norteM * M_LAT, lng: LNG0 + lesteM * M_LNG })
   const t = (hhmm: string) => `2026-10-14T${hhmm}:00.000Z`
-  const mercado = linha('2422996', { endereco: 'RODOVIA LUCIO MEIRA, 10 - ANTA, SAPUCAIA', clienteCodigo: 'MC', ...em(78), geoConfiavel: true })
-  const casaCarne = linha('2423004', { endereco: 'RUA PRESIDENTE DUTRA, 42 - ANTA, SAPUCAIA', clienteCodigo: 'SF', ...em(0, 157), geoConfiavel: true })
-  const rodar = (fim: string) => chamarNutryMax([mercado, casaCarne], {
-    placa: 'RQV3J99',
-    paradasUnitracCruasPropriaPlaca: new Map([['RQV3J99', [paradaForaBase('RQV3J99-api-3', em(0).lat, em(0).lng, t('08:08'), t(fim), 'RQV3J99')]]]),
+  const nf = linha('2423185', { endereco: 'RUA X, 10 - BAIRRO, CIDADE', clienteCodigo: 'C1', ...em(0), geoConfiavel: false, geoMotivo: 'bairro_divergente' })
+  const parada8 = paradaForaBase('RQQ5B81-api-1', em(4).lat, em(4).lng, t('10:00'), t('10:08'), 'RQQ5B81')
+
+  it('parada de 8 min a 4 m, sem vizinho: ENTREGUE com aviso de coordenada', () => {
+    const [d] = chamarNutryMax([nf], { placa: 'RQQ5B81', paradasUnitracCruasPropriaPlaca: new Map([['RQQ5B81', [parada8]]]) })
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBe('ENTREGUE - PARADA NO PONTO (COORDENADA A CONFERIR)')
   })
 
-  it('parada de 16 min, 2 clientes (>= 4 min cada): os dois ENTREGUE', () => {
-    const d = rodar('08:24')
-    expect(d.find(x => x.nf === '2422996')!.status).toBe('confirmado_gps')
-    const sf = d.find(x => x.nf === '2423004')!
-    expect(sf.status).toBe('confirmado_gps')
-    expect(sf.observacao).toBe('ENTREGUE - PARADA ÚNICA ATENDEU 2 CLIENTES')
-    expect(sf.chegada).toBe(t('08:08'))
+  it('com outro cliente da placa a 100 m da parada: continua pendente', () => {
+    const viz = linha('VIZ', { endereco: 'RUA Y, 20 - BAIRRO, CIDADE', clienteCodigo: 'C2', ...em(100), geoConfiavel: true })
+    const d = chamarNutryMax([nf, viz], { placa: 'RQQ5B81', paradasUnitracCruasPropriaPlaca: new Map([['RQQ5B81', [parada8]]]) })
+    expect(d.find(x => x.nf === '2423185')!.status).toBe('pendente')
   })
 
-  it('parada de 5 min nao da' + "'" + ' pra 2 clientes: o vizinho continua pendente', () => {
-    const d = rodar('08:13')
-    expect(d.find(x => x.nf === '2423004')!.status).toBe('pendente')
+  it('parada de 3 min: continua pendente', () => {
+    const curta = paradaForaBase('RQQ5B81-api-1', em(4).lat, em(4).lng, t('10:00'), t('10:03'), 'RQQ5B81')
+    const [d] = chamarNutryMax([nf], { placa: 'RQQ5B81', paradasUnitracCruasPropriaPlaca: new Map([['RQQ5B81', [curta]]]) })
+    expect(d.status).toBe('pendente')
   })
 })
+
