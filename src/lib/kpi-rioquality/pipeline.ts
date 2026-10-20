@@ -2,7 +2,7 @@ import { normPlaca, consolidaParadasApi } from '@/lib/unitrac-api'
 import { buscarStopsCruOuErro } from './unitrac'
 import { mapComLimite } from '@/lib/kpi-romaneio/concorrencia'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
-import { agregarPorCarga, montarDetalheEntregas, calcularConfianca, contarConfirmadasPorCarga, OBS_LONGE_DO_PONTO_NAO_CONFIRMADO } from '@/lib/kpi-romaneio/agregacao'
+import { agregarPorCarga, montarDetalheEntregas, calcularConfianca, contarConfirmadasPorCarga, calcularDiaEmAndamento, OBS_LONGE_DO_PONTO_NAO_CONFIRMADO } from '@/lib/kpi-romaneio/agregacao'
 import { montarVisitasInclusivas } from './visitas'
 import { BASES_COORD_RIOQUALITY, EXTENSAO_RUA_LONGA_M } from './constants'
 // calcularKmPercorrido (soma da reta entre paradas) NAO e' usado aqui de
@@ -554,7 +554,10 @@ export async function gerarKpiRioQuality(params: {
         // rastro -- na RQ, sem sinal so' sai do detector acima (Task 3).
         (paradasPorPlaca.get(placaNorm) ?? []).length === 0 ? new Map() : new Map([[placaNorm, paradasPorPlaca.get(placaNorm) ?? []]]),
         resumo?.kmPercorrido ?? null,
-        false, // diaEmAndamento
+        // Auditoria 20/10 (RQ-07): igual a Nutry Max -- hoje, placa sem chegada
+        // na base ainda esta' na rua; NF sem evidencia vira AGUARDANDO (fora da
+        // taxa), nao NAO FOI (118 falsos as 15h22 de 20/10).
+        calcularDiaEmAndamento(params.data, resumo?.chegadaCd ?? null),
         false, // verificarAcessoIlha (so' Nutry Max)
         false, // detectarParadaCurtaCompartilhada (so' Nutry Max)
         new Map(), // paradasUnitracCruasPropriaPlaca (R2 desligada na RQ)

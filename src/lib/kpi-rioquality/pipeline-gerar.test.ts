@@ -702,3 +702,19 @@ describe('gerarKpiRioQuality -- GPS congelado e rastreador sem comunicar (item 3
     }
   })
 })
+
+describe('RQ-07 (auditoria 20/10): Ao vivo da RQ tem "aguardando" enquanto a rota nao terminou', () => {
+  it('hoje, placa sem chegada na base e NF sem parada: AGUARDANDO (fora da taxa), nao NAO FOI', async () => {
+    const { hojeBR } = await import('@/lib/data-br')
+    const hoje = hojeBR()
+    const longe = { ...parada('CCC3C33', '10:00', 15, 'FORA_BASE', { lat: -22.5, lng: -43.9 }), chegada: `${hoje}T10:00:00.000Z`, saida: `${hoje}T10:15:00.000Z`, fim_real: `${hoje}T10:15:00.000Z` }
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(['CCC3C33'], 2),
+      data: hoje,
+      cvPorPlaca: new Map([['CCC3C33', '3']]),
+      buscarParadas: async () => [longe],
+      medirRastro: async () => ({ km: 40, pontosNoDia: 900 }),
+    })
+    for (const d of r.detalhe) expect(d.observacao ?? '').toMatch(/^AGUARDANDO/)
+  })
+})
