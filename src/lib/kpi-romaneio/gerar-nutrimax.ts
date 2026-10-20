@@ -21,7 +21,7 @@ import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
 import { gerarKpiRomaneioXlsx, cargasEscalaDivergenteInteira } from '@/lib/kpi-romaneio/gerador-xlsx'
 import { detectarTrocasProvaveis } from '@/lib/kpi-romaneio/troca-placa'
 import { aplicarTrocasDePlaca, buscarTrocasDoDia } from '@/lib/kpi-romaneio/trocas-placa'
-import { aplicarLocaisClientes, buscarLocaisClientes } from '@/lib/kpi-romaneio/locais-clientes'
+import { aplicarLocaisClientes, buscarLocaisClientes, marcarPontosCorroborados } from '@/lib/kpi-romaneio/locais-clientes'
 import { lerCacheDia, gravarCacheDia } from '@/lib/kpi-romaneio/cache-dia'
 import { COD_USER_NUTRIMAX, EMPRESA_NUTRIMAX, foraDoAlcanceApi, LIMITE_CONCORRENCIA_PLACAS, PAO_PREFIXO } from '@/lib/kpi-romaneio/constants'
 import { mapComLimite } from '@/lib/kpi-romaneio/concorrencia'
@@ -155,8 +155,9 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   // fora do resgate por ancora abaixo -- ja' esta' no lugar certo.
   const nfsComLocal = new Set<string>()
   if (!opcoes?.semLocaisClientes) {
-    const { linhas, aplicados } = aplicarLocaisClientes(romaneioGeo, await buscarLocaisClientes(CLIENTE_LOCAIS))
-    romaneioGeo.splice(0, romaneioGeo.length, ...linhas)
+    const locais = await buscarLocaisClientes(CLIENTE_LOCAIS)
+    const { linhas, aplicados } = aplicarLocaisClientes(romaneioGeo, locais)
+    romaneioGeo.splice(0, romaneioGeo.length, ...marcarPontosCorroborados(linhas, locais))
     aplicados.forEach(nf => nfsComLocal.add(nf))
   }
 

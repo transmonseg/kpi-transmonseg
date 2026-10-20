@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { chaveClienteLocal, localUtilizavel, aplicarLocaisClientes, consolidarEvidencias, type LocalCliente } from './locais-clientes'
+import { chaveClienteLocal, localUtilizavel, aplicarLocaisClientes, consolidarEvidencias, marcarPontosCorroborados, type LocalCliente } from './locais-clientes'
 import type { LinhaGeocodificada } from './types'
 
 const linha = (o: Partial<LinhaGeocodificada>): LinhaGeocodificada => ({
@@ -74,5 +74,19 @@ describe('consolidarEvidencias (aprendizado)', () => {
   })
   it('sem evidência: null', () => {
     expect(consolidarEvidencias([])).toBeNull()
+  })
+})
+
+describe('marcarPontosCorroborados (GN-01, auditoria 20/10)', () => {
+  const nf = (o: Partial<LinhaGeocodificada>) => ({ ...linha({ lat: -22.95, lng: -43.25 }), ...o }) as LinhaGeocodificada
+  it('local utilizavel a <= 150 m do ponto do dia marca o ponto como confirmado', () => {
+    const [l] = marcarPontosCorroborados([nf({})], new Map([['5778', local({ fonte: 'entrega_confirmada', confirmacoes: 3, lat: -22.9505 })]]))
+    expect(l.pontoCorroborado).toBe(true)
+  })
+  it('local com 1 confirmacao, longe (> 150 m) ou sem coordenada no dia nao marca', () => {
+    const umaSo = marcarPontosCorroborados([nf({})], new Map([['5778', local({ fonte: 'entrega_confirmada', confirmacoes: 1 })]]))
+    const longe = marcarPontosCorroborados([nf({})], new Map([['5778', local({ lat: -22.96 })]]))
+    const semGeo = marcarPontosCorroborados([nf({ lat: null, lng: null })], new Map([['5778', local({})]]))
+    expect([umaSo[0].pontoCorroborado, longe[0].pontoCorroborado, semGeo[0].pontoCorroborado]).toEqual([undefined, undefined, undefined])
   })
 })

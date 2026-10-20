@@ -61,6 +61,10 @@ export type LinhaGeocodificada = LinhaRomaneio & {
   /** Auditoria Ana 03/10: coordenada do cache conferida por pessoa (fonte
    *  manual / verificacao_manual / cadastro_unitrac). */
   geoVerificadoManual?: boolean
+  /** Auditoria 20/10 (GN-01): o ponto deste cliente ja' foi confirmado por
+   *  outra fonte -- local do cliente utilizavel (manual ou aprendido com 2+
+   *  confirmacoes) a <= 150 m. Preenchido em gerar-nutrimax. */
+  pontoCorroborado?: boolean
   // So' preenchido pela coerencia de grupo (Rio Quality): outros pontos da
   // MESMA rua na zona, alem do escolhido -- pedido 06/09, ver visitas.ts.
   pontosAlternativos?: { lat: number; lng: number }[]

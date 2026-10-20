@@ -82,6 +82,22 @@ export function aplicarLocaisClientes(linhas: LinhaGeocodificada[], locais: Map<
   return { linhas: novas, aplicados }
 }
 
+const DIST_MAX_CORROBORA_M = 150
+
+/** Auditoria 20/10 (GN-01): marca as NFs cujo ponto do dia bate (<= 150 m)
+ *  com um local utilizável do cliente -- o ponto foi confirmado por outra
+ *  fonte, então parada a 500 m-2 km dele não é este cliente. */
+export function marcarPontosCorroborados(linhas: LinhaGeocodificada[], locais: Map<string, LocalCliente>): LinhaGeocodificada[] {
+  return linhas.map(l => {
+    if (l.lat == null || l.lng == null) return l
+    const chave = chaveClienteLocal(l)
+    const local = chave ? locais.get(chave) : undefined
+    if (!local || !localUtilizavel(local)) return l
+    if (distanciaM(l as { lat: number; lng: number }, local) > DIST_MAX_CORROBORA_M) return l
+    return { ...l, pontoCorroborado: true }
+  })
+}
+
 /** Local aprendido a partir das evidências (uma por dia): mediana das que
  *  concordam entre si (até 200 m da mediana geral). */
 export function consolidarEvidencias(evs: { lat: number; lng: number }[]): { lat: number; lng: number; confirmacoes: number } | null {

@@ -885,6 +885,15 @@ function acharParadaCompartilhadaComVizinho(
   return melhor ? { parada: melhor.parada, distM: melhor.distM, ref: melhor.ref } : null
 }
 
+const RAIO_CADASTRO_CONFIRMA_PONTO_M = 300
+
+/** Ponto do cliente confirmado por fonte independente do geocode: correcao
+ *  manual, local aprendido (pontoCorroborado) ou cadastro Unitrac a <= 300 m. */
+function pontoConfirmado(linha: LinhaGeocodificada, geo: { lat: number; lng: number } | null, cadastro: { lat: number; lng: number } | null): boolean {
+  if (linha.geoVerificadoManual || linha.pontoCorroborado) return true
+  return geo != null && cadastro != null && haversine(geo.lat, geo.lng, cadastro.lat, cadastro.lng) <= RAIO_CADASTRO_CONFIRMA_PONTO_M
+}
+
 function acharParadaProximaPropriaIsolada(
   linha: LinhaGeocodificada,
   cadastro: { lat: number; lng: number } | null,
@@ -900,6 +909,13 @@ function acharParadaProximaPropriaIsolada(
     cadastro = null
   }
   if (geo == null && cadastro == null) return null
+  // Auditoria 20/10 (GN-01, caso RQP2G33 14/10: 3 entregas creditadas na orla
+  // sem o carro ir la'): a decisao de 06/10 ("500 m-2 km vale como entregue")
+  // existe porque o PONTO costuma estar errado. Em rua urbana com numero e
+  // ponto confirmado por outra fonte, parada a 500 m-2 km e' outro lugar.
+  // Medido 05-20/10: nos 13 casos assim o caminhao nunca passou a menos de
+  // 700 m do ponto.
+  if (!pontoAproximadoPorEndereco(linha.endereco) && pontoConfirmado(linha, geo, cadastro)) return null
   const outros = outrosPontosDaPlaca.filter(o => o.endereco !== linha.endereco)
   const janelasOutras = janelasProvaOutrasNfs.filter(j => j.endereco !== linha.endereco)
   const paradasPonte = paradas.filter(ehParadaDaPonte)

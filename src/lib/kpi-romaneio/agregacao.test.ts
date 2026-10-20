@@ -5012,6 +5012,47 @@ describe('Plano 29/09 -- PARADA PRÓXIMA propria e isolada vira ENTREGUE', () =>
 // cadastro divergindo >2 km -> mede so' pelo geocode; (3) com a ponte (GPS
 // bruto) com sinal, a parada precisa de >=3 min tambem no GPS. Fixtures
 // resumidas dos casos reais (distancias da tabela do relatorio).
+describe('GN-01 (auditoria 20/10): parada proxima nao credita cliente urbano com ponto confirmado', () => {
+  const LAT0 = -23.0
+  const LNG0 = -43.35
+  const M_LNG = 1 / (111_195 * Math.cos(LAT0 * Math.PI / 180))
+  const em = (norteM: number, lesteM = 0) => ({ lat: LAT0 + norteM * M_LAT, lng: LNG0 + lesteM * M_LNG })
+  const t = (hhmm: string) => `2026-10-14T${hhmm}:00.000Z`
+  const URBANO = 'AVENIDA LUCIO COSTA, 5400 - BARRA DA TIJUCA, RIO DE JANEIRO'
+  const pLonge = paradaForaBase('ponte-1', em(1600).lat, em(1600).lng, t('18:06'), t('18:09'), 'RQP2G33')
+  const doNf = (d: ReturnType<typeof chamarNutryMax>) => d.find(x => x.nf === '2423430')!
+
+  it('Windsor Marapendi 14/10: cadastro Unitrac a 100 m do geocode (ponto confirmado) -> parada de 3 min a 1,6 km NAO credita', () => {
+    const nf = linha('2423430', { endereco: URBANO, ...em(0), geoConfiavel: true })
+    const d = doNf(chamarNutryMax([nf], {
+      placa: 'RQP2G33',
+      alvos: [alvo('2423430', 0, { pontoLat: em(100).lat, pontoLng: em(100).lng })],
+      paradasPorOutraPlaca: new Map([['RQP2G33', [pLonge]]]),
+    }))
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR')
+  })
+
+  it('ponto confirmado por local aprendido (pontoCorroborado) -> nao credita', () => {
+    const nf = linha('2423430', { endereco: URBANO, ...em(0), geoConfiavel: true, pontoCorroborado: true })
+    const d = doNf(chamarNutryMax([nf], { placa: 'RQP2G33', paradasPorOutraPlaca: new Map([['RQP2G33', [pLonge]]]) }))
+    expect(d.status).toBe('pendente')
+  })
+
+  it('urbano SEM confirmacao do ponto -> continua valendo a decisao de 06/10 (ENTREGUE)', () => {
+    const nf = linha('2423430', { endereco: URBANO, ...em(0), geoConfiavel: true })
+    const d = doNf(chamarNutryMax([nf], { placa: 'RQP2G33', paradasPorOutraPlaca: new Map([['RQP2G33', [pLonge]]]) }))
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBe('ENTREGUE - PARADA PRÓXIMA (500m-2km)')
+  })
+
+  it('estrada (ponto aproximado por natureza) com ponto confirmado -> continua valendo', () => {
+    const nf = linha('2423430', { endereco: 'ESTRADA DO CABUCU, 4356 - CAMPO GRANDE, RIO DE JANEIRO', ...em(0), geoConfiavel: true, pontoCorroborado: true })
+    const d = doNf(chamarNutryMax([nf], { placa: 'RQP2G33', paradasPorOutraPlaca: new Map([['RQP2G33', [pLonge]]]) }))
+    expect(d.status).toBe('confirmado_gps')
+  })
+})
+
 describe('Parada proxima propria -- guardas (ja confirmou outra NF, geo confiavel, GPS >=3 min)', () => {
   const OBS_PROXIMA = 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR'
   const LAT0 = -22.0
