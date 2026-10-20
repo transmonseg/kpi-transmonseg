@@ -1,3 +1,4 @@
+import { OBS_LONGE_DO_PONTO_NAO_CONFIRMADO } from '@/lib/kpi-romaneio/agregacao'
 import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest'
 import * as XLSX from 'xlsx'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
@@ -598,7 +599,7 @@ describe('gerarKpiRioQuality -- corredor da rua (endereco sem numero, formatos c
     expect(textos(wb.worksheets[0]).some(t => t.includes('TAXA DE CONFIRMAÇÃO: 25,0% (1 de 4 NFs'))).toBe(true)
   })
 
-  it('rua curta (um ponto CNEFE so) sem parada: continua NAO FOI AO CLIENTE', async () => {
+  it('rua curta (um ponto CNEFE so) sem parada: ponto nao confirmado -> COORDENADA IMPRECISA, nao afirma NAO FOI (auditoria 20/10)', async () => {
     const completa = await preparar()
     vi.mocked(geocodificarPorCoerencia).mockImplementation(async grupos => new Map(grupos.map(g => [
       g.id, g.ruas.map(() => ({ ...PONTO_BARRA, municipioCodigo: RIO, confianca: 'alta' as const, candidatos: 1, ancora: true, pontosZona: [{ ...PONTO_BARRA, municipioCodigo: RIO }] })),
@@ -609,7 +610,7 @@ describe('gerarKpiRioQuality -- corredor da rua (endereco sem numero, formatos c
       buscarParadas: async (_cv, placa) => [parada(placa, '10:00', 15)],
       medirRastro: async () => ({ km: 40, pontosNoDia: 900 }),
     })
-    expect(r.detalhe.find(x => x.clienteNome === 'MERCADO A')!.observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
+    expect(r.detalhe.find(x => x.clienteNome === 'MERCADO A')!.observacao).toBe(OBS_LONGE_DO_PONTO_NAO_CONFIRMADO)
   })
 
   it('formato antigo (sem cidade) nao usa o corredor novo (coerencia so' + "'" + ' na geocodificacao)', async () => {

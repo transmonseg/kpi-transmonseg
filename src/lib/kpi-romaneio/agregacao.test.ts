@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, gerarMotivo, calcularConfianca, contarConfirmadasPorCarga, OBS_COMPARTILHADA_VIZINHO, pontoAproximadoPorEndereco, chaveEndereco } from './agregacao'
+import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, gerarMotivo, calcularConfianca, contarConfirmadasPorCarga, OBS_COMPARTILHADA_VIZINHO, pontoAproximadoPorEndereco, chaveEndereco, OBS_LONGE_DO_PONTO_NAO_CONFIRMADO } from './agregacao'
 import { resolverParadas } from './unitrac'
 import type { LinhaEscala, LinhaGeocodificada, Visita, StatusEntrega } from './types'
 import type { AlvoApi } from '@/lib/unitrac-api'
@@ -654,7 +654,7 @@ describe('montarDetalheEntregas', () => {
       it('caminhao nunca chegou a 2km do ponto: NAO FOI AO CLIENTE', () => {
         const longe = parada({ id: 'p', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.95, lng: -43.30 }) // ~11km
         const paradasFrota = new Map([['TTL7D40', [longe]]])
-        const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio, true, paradasFrota)
+        const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1', { pontoCorroborado: true })], [], new Map(), resumoCargaVazio, true, paradasFrota)
         expect(d.observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
         // Task 9: continua 'sem_evidencia' (Global Constraint: nao muda
         // precedencia), mas agora com a distancia exposta.
@@ -739,7 +739,7 @@ describe('montarDetalheEntregas', () => {
       it('diaEmAndamento=false (default, dia passado ou rota ja finalizada): comportamento antigo preservado, declara NAO FOI AO CLIENTE normalmente', () => {
         const longe = parada({ id: 'p', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.95, lng: -43.30 })
         const paradasFrota = new Map([['TTL7D40', [longe]]])
-        const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio, true, paradasFrota)
+        const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1', { pontoCorroborado: true })], [], new Map(), resumoCargaVazio, true, paradasFrota)
         expect(d.observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
       })
     })
@@ -2911,7 +2911,7 @@ describe('montarDetalheEntregas -- NAO FOI so quando a placa nao passou perto (T
 
   it('trajeto continuo a mais de 2km (nunca chegou perto de verdade): continua NAO FOI AO CLIENTE', () => {
     const [d] = montarDetalheEntregas(
-      '93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio,
+      '93758', 'TTL7D40', [linha('NF1', { pontoCorroborado: true })], [], new Map(), resumoCargaVazio,
       true, new Map(), null, false, false, false, new Map(),
       false, false, false, undefined, false,
       new Map([['NF1', 4_700]]), // achado real (RQU2E34/2389291): parada mais perto a 4,7km
@@ -2927,7 +2927,7 @@ describe('montarDetalheEntregas -- NAO FOI so quando a placa nao passou perto (T
     const paradasFrota = new Map([['TTL7D40', [paradaBemPerto]]])
 
     const [d] = montarDetalheEntregas(
-      '93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio,
+      '93758', 'TTL7D40', [linha('NF1', { pontoCorroborado: true })], [], new Map(), resumoCargaVazio,
       true, paradasFrota, null, false, false, false, new Map(),
       false, false, false, undefined, false,
       new Map([['NF1', 1_500]]), // trajeto "mediria" 1,5km -- a parada real (15m) e' mais confiavel
@@ -2940,7 +2940,7 @@ describe('montarDetalheEntregas -- NAO FOI so quando a placa nao passou perto (T
   it('sem menorDistanciaTrajetoPorNf (default, comportamento de producao hoje): so\' a distancia por parada decide, igual antes da Task 3', () => {
     const longe = parada({ id: 'p', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.95, lng: -43.30 }) // ~11km
     const paradasFrota = new Map([['TTL7D40', [longe]]])
-    const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1')], [], new Map(), resumoCargaVazio, true, paradasFrota)
+    const [d] = montarDetalheEntregas('93758', 'TTL7D40', [linha('NF1', { pontoCorroborado: true })], [], new Map(), resumoCargaVazio, true, paradasFrota)
 
     expect(d.observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
   })
@@ -2978,7 +2978,7 @@ describe('montarDetalheEntregas -- escala divergente vira CONFERIR ESCALA em vez
   // 5 NFs (mesmo espirito do caso real com 18): coordenadas distintas, GPS
   // continuo da placa da escala a 3-10km de cada uma (menorDistanciaTrajetoPorNf).
   function nfsLongeDaPropriaPlaca(qtd: number, distanciasM: number[]): LinhaGeocodificada[] {
-    return Array.from({ length: qtd }, (_, i) => linha(`NF${i + 1}`, { lat: -22.90 + i * 0.01, lng: -43.20 + i * 0.01 }))
+    return Array.from({ length: qtd }, (_, i) => linha(`NF${i + 1}`, { lat: -22.90 + i * 0.01, lng: -43.20 + i * 0.01, pontoCorroborado: true }))
   }
 
   function menorDistanciaMap(linhas: LinhaGeocodificada[], distanciasM: number[]): Map<string, number> {
@@ -4698,7 +4698,7 @@ describe('montarDetalheEntregas -- SINAL DO RASTREADOR COM FALHA NO DIA (Task 1,
   })
 
   it('placa com sinal normal e NÃO FOI real (RQU1G17/2394872): continua NÃO FOI AO CLIENTE', () => {
-    const [d] = chamar([l('2394872')], { apagao: false, distTrajeto: [['2394872', 9_000]] })
+    const [d] = chamar([l('2394872', { pontoCorroborado: true })], { apagao: false, distTrajeto: [['2394872', 9_000]] })
     expect(d.observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
   })
 
@@ -4733,13 +4733,13 @@ describe('montarDetalheEntregas -- placa com duas cargas em regioes diferentes (
   function cargaA(qtd = 21, centro = VR): LinhaGeocodificada[] {
     return Array.from({ length: qtd }, (_, i) => linha(`98861-${i + 1}`, {
       carga: '98861', placa: 'TOS5E38', endereco: `RUA VR ${i + 1}`, clienteCodigo: `CVR${i}`,
-      lat: centro.lat + i * 0.001, lng: centro.lng,
+      lat: centro.lat + i * 0.001, lng: centro.lng, pontoCorroborado: true,
     }))
   }
   function cargaB(centro = NIT): LinhaGeocodificada[] {
     return ['216155', '216156', '216157'].map((nf, i) => linha(nf, {
       carga: 'PAO-14', placa: 'TOS5E38', endereco: `RUA NIT ${i + 1}`, clienteCodigo: `CNIT${i}`,
-      lat: centro.lat + i * 0.001, lng: centro.lng,
+      lat: centro.lat + i * 0.001, lng: centro.lng, pontoCorroborado: true,
     }))
   }
   function visitasDe(nfs: string[]): Map<string, Visita> {
@@ -6369,5 +6369,24 @@ describe('KM-01 -- GPS congelado so\' com rastreador sem leituras frescas', () =
       apagaoDeSinalPropriaPlaca: true,
     })
     expect(d.observacao).toContain('SEM RASTREADOR')
+  })
+})
+
+describe('GN-03 (auditoria 20/10): NAO FOI AO CLIENTE so com ponto do cliente confirmado', () => {
+  const resumo = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+  const longe = parada({ id: 'p', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: -22.95, lng: -43.30 })
+  const rodar = (l: LinhaGeocodificada, alvos: AlvoApi[] = []) =>
+    montarDetalheEntregas('93758', 'TTL7D40', [l], alvos, new Map(), resumo, true, new Map([['TTL7D40', [longe]]]))[0]
+
+  it('ponto sem confirmacao (so geocode): nao afirma NAO FOI -- vira coordenada a conferir, pendente', () => {
+    const d = rodar(linha('NF1'))
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe(OBS_LONGE_DO_PONTO_NAO_CONFIRMADO)
+  })
+
+  it('cadastro Unitrac a <=300 m do geocode confirma o ponto: NAO FOI AO CLIENTE', () => {
+    const l = linha('NF1')
+    const d = rodar(l, [alvo('NF1', 0, { pontoLat: (l.lat as number) + 0.001, pontoLng: l.lng as number })])
+    expect(d.observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
   })
 })

@@ -837,9 +837,18 @@ export const PREFIXO_OBS_CADASTRO_DIVERGENTE = 'CADASTRO DO CLIENTE NA UNITRAC D
 // so' vira aviso de cadastro. Ver parada-fora-do-endereco.ts.
 export const PREFIXO_OBS_PARADA_FORA_DO_ENDERECO = 'ENTREGUE - LOCAL DA ENTREGA FORA DO ENDEREÇO DO ROMANEIO'
 const DIVERGENCIA_CADASTRO_ROMANEIO_M = 1_000
+// Auditoria 20/10 (GN-03/GEO-01): "NAO FOI AO CLIENTE (caminhao nao esteve na
+// regiao)" so' com o ponto do cliente confirmado por outra fonte (ver
+// pontoConfirmado). Sem isso o trajeto a >2 km do NOSSO ponto nao prova nada
+// -- 46 de 68 "nao foi" de 05-20/10 estavam sobre ponto aproximado (estrada,
+// S/N, numero ausente no CNEFE); na Rio Quality o ponto da Fusion fica a
+// 14,9 km do real na mediana. Continua pendente (a taxa nao muda), so' para
+// de afirmar o que nao sabe.
+export const OBS_LONGE_DO_PONTO_NAO_CONFIRMADO = 'ENDEREÇO COM COORDENADA IMPRECISA - CAMINHÃO A MAIS DE 2 KM DO PONTO, QUE NÃO FOI CONFIRMADO - CONFERIR CADASTRO'
 const ROTULOS_SEM_PROVA_CADASTRO = new Set<string>([
   'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR',
   'NÃO FOI AO CLIENTE (caminhão não esteve na região)',
+  OBS_LONGE_DO_PONTO_NAO_CONFIRMADO,
   'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR',
   OBS_PASSOU_PERTO_SEM_PARAR,
   'PARADA CURTA DE OUTRO ENDEREÇO - NÃO CONFIRMA ESTE CLIENTE - CONFERIR',
@@ -962,6 +971,7 @@ const OBS_SINAL_RASTREADOR_FALHA = 'SINAL DO RASTREADOR COM FALHA NO DIA - CONFE
 const ROTULOS_SEM_EVIDENCIA_DE_POSICAO = [
   'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR',
   'NÃO FOI AO CLIENTE',
+  OBS_LONGE_DO_PONTO_NAO_CONFIRMADO,
 ] as const
 
 // Task 1 (plano 2026-09-26): rotulos de "ENTREGUE com ressalva" que, com
@@ -2268,7 +2278,10 @@ export function montarDetalheEntregas(
       if (dist != null && dist <= RAIO_PASSOU_SEM_PARAR_M) {
         observacao = 'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR'
       } else if (dist != null && dist > RAIO_NAO_FOI_AO_CLIENTE_M) {
-        observacao = 'NÃO FOI AO CLIENTE (caminhão não esteve na região)'
+        const geoNf = linha.geoConfiavel !== false && linha.lat != null && linha.lng != null ? { lat: linha.lat, lng: linha.lng } : null
+        observacao = pontoConfirmado(linha, geoNf, cadastroDoAlvo(alvo))
+          ? 'NÃO FOI AO CLIENTE (caminhão não esteve na região)'
+          : OBS_LONGE_DO_PONTO_NAO_CONFIRMADO
       } else if (dist != null) {
         // Achado real 10-09 (auditoria com a Ana, placa RQU2G47/NF 2364486):
         // parada real de 5min a 879m ficava com observacao em branco -- nem
