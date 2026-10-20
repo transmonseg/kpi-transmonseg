@@ -9,7 +9,7 @@
 // Uso: npx tsx --env-file=.env.production scripts/kpi-ao-vivo-tick.ts
 import { hojeBR } from '../src/lib/data-br'
 import { createServiceClient } from '../src/lib/supabase/service'
-import { CLIENTES_AO_VIVO, calcularAoVivo, guardarDiaAoVivo } from '../src/lib/kpi-romaneio/ao-vivo-servico'
+import { CLIENTES_AO_VIVO, calcularAoVivo, guardarDiaAoVivo, fonteDoDiaAoVivo } from '../src/lib/kpi-romaneio/ao-vivo-servico'
 import { buscarDiaRioQualityFusion } from '../src/lib/kpi-rioquality/fonte-fusion'
 import { linhasParaMonitoramentoRQ, enviarRioQualityAoMonitoramento } from '../src/lib/kpi-rioquality/enviar-monitoramento-rq'
 import { diaAnterior, precisaFecharDia } from '../src/lib/kpi-romaneio/ao-vivo'
@@ -21,8 +21,11 @@ import { sincronizarAcessosMonitoramento } from '../src/lib/acessos-monitorament
 const log = (m: string) => console.log(`${new Date().toISOString()} ${m}`)
 
 // Puxa o dia da Fusion e grava no Ao vivo. Nunca lanca (fail-open): o tick segue pro calculo.
-export async function sincronizarFusionRioQuality(data: string): Promise<'ok' | 'sem_dados' | 'erro'> {
+export async function sincronizarFusionRioQuality(data: string): Promise<'ok' | 'sem_dados' | 'manual' | 'erro'> {
   try {
+    // Auditoria 20/10 (RQ-10): romaneio subido a mao (planilha com bairro e NF
+    // real) vale mais que o da Fusion (sem bairro) -- nao sobrescreve.
+    if ((await fonteDoDiaAoVivo('rioquality', data)) === 'manual') return 'manual'
     const linhas = await buscarDiaRioQualityFusion(data)
     if (linhas.length === 0) return 'sem_dados'
     await guardarDiaAoVivo({
@@ -73,7 +76,7 @@ async function main() {
   for (const cliente of CLIENTES_AO_VIVO) {
     if (cliente === 'rioquality') {
       const s = await sincronizarFusionRioQuality(data)
-      if (s !== 'ok') log(`fusion rioquality ${data}: ${s}`)
+      if (s !== 'ok' && s !== 'manual') log(`fusion rioquality ${data}: ${s}`)
     }
     const r = await calcularAoVivo(cliente, data, log)
     if (r !== 'ok') log(`ao vivo ${cliente} ${data}: ${r}`)

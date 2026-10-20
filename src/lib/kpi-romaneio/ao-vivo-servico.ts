@@ -79,6 +79,13 @@ export type EstadoAoVivo = {
   ultimoErro: { mensagem: string; em: string } | null
 }
 
+/** Fonte do romaneio gravado do dia ('manual', 'fusion'...) ou null se nao ha'. */
+export async function fonteDoDiaAoVivo(cliente: ClienteAoVivo, data: string): Promise<string | null> {
+  const { data: row, error } = await createServiceClient().from('kpi_ao_vivo_dia').select('fonte').eq('cliente', cliente).eq('data', data).maybeSingle()
+  if (error) throw new Error(`leitura do dia ao vivo falhou: ${error.message}`)
+  return (row?.fonte as string | undefined) ?? null
+}
+
 export async function guardarDiaAoVivo(p: {
   cliente: ClienteAoVivo
   data: string
