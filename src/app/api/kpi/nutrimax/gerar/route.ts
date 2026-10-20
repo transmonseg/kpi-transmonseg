@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getPerfil, podeOperarEmpresa } from '@/lib/perfil'
 import { parseEscala } from '@/lib/kpi-romaneio/parse-escala'
-import { parseRomaneio } from '@/lib/kpi-romaneio/parse-romaneio'
+import { parseRomaneio, parseRomaneioComData } from '@/lib/kpi-romaneio/parse-romaneio'
 import { parsePao } from '@/lib/kpi-romaneio/parse-pao'
 import { extrairResumoKpiXlsx } from '@/lib/kpi-romaneio/resumo-dashboard'
 import { salvarGeracao, buscarGeracaoParaRegenerar } from '@/lib/kpi-romaneio/historico'
@@ -183,6 +183,14 @@ export async function POST(req: NextRequest) {
       lerComCache(data, 'romaneio', romaneioBuf, () => parseRomaneio(romaneioBuf)),
       romaneioPaoBuf ? lerComCache(data, `pao-${data}`, romaneioPaoBuf, () => parsePao(romaneioPaoBuf!, data)) : Promise.resolve({ linhas: [], escala: [] }),
     ])
+    // KP-03 (auditoria 15/10 e 20/10): mesma trava do Ao vivo -- romaneio de
+    // OUTRO dia nao vira o deste dia (11/10: copia do PDF de 10/10 gerou taxa
+    // oficial de 93%). Sem data legivel no PDF continua aceito.
+    const { data: dataPdf } = await parseRomaneioComData(romaneioBuf)
+    if (dataPdf && dataPdf !== data) {
+      const br = (iso: string) => iso.split('-').reverse().join('/')
+      return new NextResponse(`O Romaneio de Entrega enviado é do dia ${br(dataPdf)}, mas a geração é do dia ${br(data)}. Confira se subiu o arquivo certo.`, { status: 422 })
+    }
   } catch (err) {
     return new NextResponse(err instanceof Error ? err.message : 'Erro ao ler os PDFs enviados.', { status: 422 })
   }

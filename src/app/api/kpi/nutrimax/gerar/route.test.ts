@@ -13,6 +13,8 @@ const cenario = vi.hoisted(() => ({
   coordPorEndereco: new Map<string, { lat: number; lng: number }>(),
   paoErro: null as Error | null,
   romaneioVazio: false,
+  // KP-03 (auditoria 20/10): data no cabecalho do PDF do romaneio (null = sem data).
+  dataPdfRomaneio: null as string | null,
   // Item 5 (achado real 10-09, resgate por ancora): enderecos aqui voltam
   // `null` da cascata precisa (sem_candidato), simulando geocodificacao
   // que falhou de vez -- pra exercitar o resgate via reposicionarPorAncoras.
@@ -103,6 +105,7 @@ function escalaSintetica(overrides: Partial<LinhaEscala> = {}): LinhaEscala {
 vi.mock('@/lib/kpi-romaneio/parse-escala', () => ({ parseEscala: async () => [] }))
 vi.mock('@/lib/kpi-romaneio/parse-romaneio', () => ({
   parseRomaneio: async () => (cenario.romaneioVazio ? [] : [linhaNutrimax(), ...cenario.linhasNutrimaxExtras]),
+  parseRomaneioComData: async () => ({ linhas: cenario.romaneioVazio ? [] : [linhaNutrimax(), ...cenario.linhasNutrimaxExtras], data: cenario.dataPdfRomaneio }),
 }))
 vi.mock('@/lib/kpi-romaneio/parse-pao', () => ({
   parsePao: async (buf: Buffer) => {
@@ -235,6 +238,20 @@ describe('POST /api/kpi/nutrimax/gerar -- troca de placa da tela Placas do dia',
     const wb = await abrirXlsx(res)
     expect(wb.getWorksheet('ZZZ9Z99')).toBeDefined()
     expect(wb.getWorksheet(PLACA)).toBeUndefined()
+  })
+})
+
+describe('POST /api/kpi/nutrimax/gerar -- KP-03 (auditoria 20/10): romaneio de outro dia', () => {
+  it('PDF com cabecalho de 14/09 gerando 15/09 -> 422, nao gera', async () => {
+    cenario.dataPdfRomaneio = '2026-09-14'
+    const res = await POST(montarRequest(false) as never)
+    cenario.dataPdfRomaneio = null
+    expect(res.status).toBe(422)
+    expect(await res.text()).toContain('14/09/2026')
+  })
+  it('PDF sem data no cabecalho: aceita', async () => {
+    const res = await POST(montarRequest(false) as never)
+    expect(res.status).toBe(200)
   })
 })
 
