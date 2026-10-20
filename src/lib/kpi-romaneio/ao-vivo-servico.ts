@@ -176,7 +176,7 @@ export async function entradaRioQualityDoDia(data: string): Promise<EntregaRioQu
  *  "Gerar KPI" de cada cliente). null = romaneio do dia não subido. */
 export async function gerarKpiDoDia(cliente: ClienteAoVivo, data: string, log: (m: string) => void = () => {},
   aoMontarDetalheNutry?: Parameters<typeof gerarKpiNutrimax>[1],
-  aoParadasRq?: (paradasPorPlaca: Map<string, UnitracParadaRow[]>) => void): Promise<{ xlsx: Buffer; qtdCargas: number } | null> {
+  aoParadasRq?: (paradasPorPlaca: Map<string, UnitracParadaRow[]>) => void): Promise<{ xlsx: Buffer; qtdCargas: number; degradado?: string } | null> {
   if (cliente === 'rioquality') {
     const entregas = await entradaRioQualityDoDia(data)
     if (!entregas) return null
@@ -188,7 +188,10 @@ export async function gerarKpiDoDia(cliente: ClienteAoVivo, data: string, log: (
       if (snap.size > 0) lerSnapshot = async () => snap
     }
     const r = await gerarKpiRioQuality({ entregasCompletas: entregas, data, cvPorPlaca: await buscarFrotaRioQuality(), log, lerSnapshot, aoParadas: aoParadasRq })
-    return { xlsx: r.xlsx, qtdCargas: r.linhasKpi.length }
+    return {
+      xlsx: r.xlsx, qtdCargas: r.linhasKpi.length,
+      ...(r.coerenciaFalhou > 0 ? { degradado: `ponte de coerência do monitoramento falhou em ${r.coerenciaFalhou} rua(s)` } : {}),
+    }
   }
   const entrada = await entradaDoDia(cliente, data)
   if (!entrada) return null
@@ -257,6 +260,17 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
       }
     })
     if (!r) throw new Error('romaneio do dia sumiu durante o cálculo')
+    // RQ-08 (auditoria 20/10): cálculo degradado (ponte de coerência fora --
+    // o corredor da rua some e 80-100 entregues caíam entre ticks) não
+    // sobrescreve um resultado bom do dia; fica o anterior e o erro registrado.
+    if (r.degradado) {
+      const { data: atual } = await svc.from('kpi_ao_vivo_calculo').select('resultado').eq('cliente', cliente).eq('data', data).maybeSingle()
+      if (atual?.resultado) {
+        await svc.from('kpi_ao_vivo_calculo').update({ ultimo_erro: r.degradado, ultimo_erro_em: new Date().toISOString(), rodando_desde: null }).eq('cliente', cliente).eq('data', data)
+        log(`ao vivo ${cliente} ${data}: resultado anterior mantido (${r.degradado})`)
+        return 'erro'
+      }
+    }
     // Planilha do cálculo guardada (sobrescreve a anterior do dia).
     const up = await svc.storage.from(BUCKET_AO_VIVO).upload(caminhoXlsxAoVivo(cliente, data), r.xlsx, {
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', upsert: true,

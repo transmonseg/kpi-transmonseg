@@ -80,6 +80,8 @@ export type ResultadoPipelineRioQuality = {
   /** Placas cuja consulta de paradas falhou (erro/timeout apos retry). */
   placasConsultaFalhou: string[]
   avisos: AvisoDescasamento[]
+  /** RQ-08: ruas sem resposta da ponte de coerencia (0 = tudo respondeu). */
+  coerenciaFalhou: number
   estatisticas: {
     entregas: number
     placas: number
@@ -675,6 +677,8 @@ export async function gerarKpiRioQuality(params: {
     detalhe,
     placasConsultaFalhou: [...placasConsultaFalhou].sort(),
     avisos,
+    // RQ-08 (auditoria 20/10): ruas sem resposta da ponte de coerencia.
+    coerenciaFalhou,
     estatisticas: {
       entregas: romaneioGeo.length,
       placas: placasNorm.length,
