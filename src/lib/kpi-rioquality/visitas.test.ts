@@ -40,6 +40,24 @@ describe('montarVisitasInclusivas', () => {
     expect(montarVisitasInclusivas(linhas, paradas).get('A-1')!.chegada).toBe('2026-09-04T11:00:00Z')
   })
 
+  it('RQ-05 (auditoria 20/10): P1 a 40 m com 8 min e P2 a 450 m com 70 min -> visita usa P1 (nao a mais longa)', () => {
+    const linhas = [linha('A-1', AUTOMOVEL.lat, AUTOMOVEL.lng)]
+    const paradas = [
+      parada('perto', AUTOMOVEL.lat + 0.00036, AUTOMOVEL.lng, '2026-09-04T09:00:00Z', '2026-09-04T09:08:00Z'),
+      parada('almoco', AUTOMOVEL.lat + 0.00405, AUTOMOVEL.lng, '2026-09-04T12:00:00Z', '2026-09-04T13:10:00Z'),
+    ]
+    expect(montarVisitasInclusivas(linhas, paradas).get('A-1')!.chegada).toBe('2026-09-04T09:00:00Z')
+  })
+
+  it('RQ-05: paradas so a >150 m -> continua a de maior permanencia', () => {
+    const linhas = [linha('A-1', AUTOMOVEL.lat, AUTOMOVEL.lng)]
+    const paradas = [
+      parada('a', AUTOMOVEL.lat + 0.0018, AUTOMOVEL.lng, '2026-09-04T09:00:00Z', '2026-09-04T09:08:00Z'),
+      parada('b', AUTOMOVEL.lat + 0.0036, AUTOMOVEL.lng, '2026-09-04T12:00:00Z', '2026-09-04T13:10:00Z'),
+    ]
+    expect(montarVisitasInclusivas(linhas, paradas).get('A-1')!.chegada).toBe('2026-09-04T12:00:00Z')
+  })
+
   // Geometria numa linha norte-sul (0.001 de lat ~ 111m): a parada fica ~700m
   // ao SUL de A-1 (confirma A-1 pela faixa ampliada) e N-1 fica ~700m ao
   // NORTE de A-1 -- ou seja ~1,4km da parada (longe demais pra confirmar

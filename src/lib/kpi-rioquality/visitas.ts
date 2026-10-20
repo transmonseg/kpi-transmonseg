@@ -69,6 +69,9 @@ function haversine(lat1: number, lng1: number, lat2: number, lng2: number): numb
   return 2 * R * Math.asin(Math.sqrt(x))
 }
 
+const RAIO_PARADA_COLADA_M = 150
+const PERMANENCIA_MIN_COLADA_MS = 3 * 60_000
+
 export function montarVisitasInclusivas(linhas: LinhaGeocodificada[], paradas: UnitracParadaRow[]): Map<string, Visita> {
   const visitas = new Map<string, Visita>()
   const comCoord = linhas.filter((l): l is LinhaGeocodificada & { lat: number; lng: number } => l.lat != null && l.lng != null)
@@ -82,17 +85,22 @@ export function montarVisitasInclusivas(linhas: LinhaGeocodificada[], paradas: U
   //    47m e 107m alem do raio). A faixa de dentro sempre ganha da de fora,
   //    mesmo que a de fora tenha permanencia maior.
   for (const linha of comCoord) {
-    let melhor: { parada: UnitracParadaRow; dist: number; dur: number; ampliado: boolean } | null = null
+    let melhor: { parada: UnitracParadaRow; dist: number; dur: number; ampliado: boolean; colada: boolean } | null = null
     for (const parada of foraBase) {
       const dist = haversine(parada.lat, parada.lng, linha.lat, linha.lng)
       if (dist > RAIO_CONFIRMACAO_AMPLIADO_METROS) continue
       const ampliado = dist > RAIO_ENTREGA_METROS
       const fim = parada.fim_real ?? parada.saida ?? parada.chegada
       const dur = new Date(fim).getTime() - new Date(parada.chegada).getTime()
+      // RQ-05 (auditoria 20/10): parada >= 3 min a <= 150 m do ponto ganha de
+      // qualquer outra mais longe (almoco/pernoite a 400 m levava o horario e
+      // o "tempo em loja" -- 12,5% das entregas); entre elas, maior permanencia.
+      const colada = dist <= RAIO_PARADA_COLADA_M && dur >= PERMANENCIA_MIN_COLADA_MS
       const ganha = !melhor
         || (melhor.ampliado && !ampliado)
-        || (melhor.ampliado === ampliado && dur > melhor.dur)
-      if (ganha) melhor = { parada, dist, dur, ampliado }
+        || (melhor.ampliado === ampliado && colada && !melhor.colada)
+        || (melhor.ampliado === ampliado && colada === melhor.colada && dur > melhor.dur)
+      if (ganha) melhor = { parada, dist, dur, ampliado, colada }
     }
     if (melhor) {
       visitas.set(linha.nf, {
