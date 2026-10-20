@@ -718,3 +718,16 @@ describe('RQ-07 (auditoria 20/10): Ao vivo da RQ tem "aguardando" enquanto a rot
     for (const d of r.detalhe) expect(d.observacao ?? '').toMatch(/^AGUARDANDO/)
   })
 })
+
+describe('RQ-04 no calculo (auditoria 20/10)', () => {
+  it('dia ja gravado com placa XXX5678: NFs viram CARGA SEM PLACA, fora da taxa', async () => {
+    const { geocodificarEnderecos } = await import('@/lib/kpi-romaneio/geocode')
+    vi.mocked(geocodificarEnderecos).mockImplementation(async e => e.map(() => ({ ...PONTO, confiavel: true })))
+    const r = await gerarKpiRioQuality({
+      entregasCompletas: [{ placaNorm: 'XXX5678', clienteNome: 'C', cidade: 'RIO DE JANEIRO', uf: 'RJ', destino: '', motorista: '', rua: 'RUA A', bairro: '', nf: '1', clienteCodigo: '1', romaneio: '9', rota: '' }] as never,
+      data: DATA, cvPorPlaca: new Map(),
+      buscarParadas: async () => [], medirRastro: async () => ({ km: 0, pontosNoDia: 0 }),
+    })
+    expect(r.detalhe.every(d => (d.observacao ?? '').startsWith('CARGA SEM PLACA'))).toBe(true)
+  })
+})

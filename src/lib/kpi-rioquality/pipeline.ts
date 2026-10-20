@@ -2,6 +2,7 @@ import { normPlaca, consolidaParadasApi } from '@/lib/unitrac-api'
 import { buscarStopsCruOuErro } from './unitrac'
 import { mapComLimite } from '@/lib/kpi-romaneio/concorrencia'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
+import { placaFicticia } from './fonte-fusion'
 import { agregarPorCarga, montarDetalheEntregas, calcularConfianca, contarConfirmadasPorCarga, calcularDiaEmAndamento, OBS_LONGE_DO_PONTO_NAO_CONFIRMADO } from '@/lib/kpi-romaneio/agregacao'
 import { montarVisitasInclusivas } from './visitas'
 import { BASES_COORD_RIOQUALITY, EXTENSAO_RUA_LONGA_M } from './constants'
@@ -195,7 +196,10 @@ export async function gerarKpiRioQuality(params: {
   let ruaPorNfCompleto = new Map<string, string>()
 
   if (completaBuf || params.entregasCompletas) {
-    const entregasCompletas = params.entregasCompletas ?? parseEntregasCompletas(completaBuf!)
+    // RQ-04 (auditoria 20/10): placa de preenchimento tambem nos dias ja'
+    // gravados (a sincronizacao so' limpa dali pra frente).
+    const entregasCompletas = (params.entregasCompletas ?? parseEntregasCompletas(completaBuf!))
+      .map(e => (placaFicticia(e.placaNorm) ? { ...e, placaNorm: '' } : e))
     if (entregasCompletas.length === 0) {
       throw new EntradaInvalidaError(
         'Nenhuma linha reconhecida no arquivo — confira se tem as colunas Razão Social, Cidade, UF, Destino, Motorista, Placa, Endereço e Bairro.',
