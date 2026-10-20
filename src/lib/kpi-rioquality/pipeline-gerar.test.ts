@@ -731,3 +731,19 @@ describe('RQ-04 no calculo (auditoria 20/10)', () => {
     expect(r.detalhe.every(d => (d.observacao ?? '').startsWith('CARGA SEM PLACA'))).toBe(true)
   })
 })
+
+describe('RQ-01 (auditoria 20/10): dia fora das 48h, rastreador mudo fora do snapshot', () => {
+  it('RJM5B51 sem parada no snapshot e ultimo GPS 20/08 -> SEM COMUNICAR DESDE 20/08 (nao "consulta falhou")', async () => {
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(['RJM5B51', 'CCC3C33']),
+      data: DATA,
+      hoje: '2026-10-20',
+      cvPorPlaca: new Map([['RJM5B51', '15277'], ['CCC3C33', '3']]),
+      buscarParadas: async () => [],
+      lerSnapshot: async () => new Map([['CCC3C33', [parada('CCC3C33', '10:00', 15)]]]),
+      medirRastro: async cv => cv === '15277' ? { km: null, pontosNoDia: 0 } : { km: 40, pontosNoDia: 900 },
+      buscarUltimaComunicacao: async () => new Map([['15277', '20/08/2026 11:54:21']]),
+    })
+    for (const d of r.detalhe.filter(x => x.placa === 'RJM5B51')) expect(d.observacao).toBe('SEM RASTREADOR - SEM COMUNICAR DESDE 20/08')
+  })
+})

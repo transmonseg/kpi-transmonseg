@@ -429,8 +429,11 @@ export async function gerarKpiRioQuality(params: {
       obsRastreadorPorPlaca.set(p, OBS_GPS_CONGELADO)
     }
   }
+  // Auditoria 20/10 (RQ-01): placa fora do snapshot (dia fora das 48h)
+  // tambem e' candidata -- rastreador mudo ha' dias nao entra no snapshot e
+  // saia "CONSULTA AO RASTREADOR FALHOU" (RJM5B51 55 dias, LTZ7I72 11 dias).
   const candidatasSemComunicar = placasNorm.filter(p => cvPorPlaca.has(p) && !obsRastreadorPorPlaca.has(p)
-    && !placasConsultaFalhou.has(p) && !placasSemDadoNoDia.has(p)
+    && !placasConsultaFalhou.has(p)
     && !(paradasPorPlaca.get(p) ?? []).some(x => x.classificacao === 'FORA_BASE'))
   if (candidatasSemComunicar.length > 0) {
     try {
