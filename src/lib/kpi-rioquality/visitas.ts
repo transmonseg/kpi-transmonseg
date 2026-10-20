@@ -70,6 +70,14 @@ function haversine(lat1: number, lng1: number, lat2: number, lng2: number): numb
 }
 
 const RAIO_PARADA_COLADA_M = 150
+// RQ-02 (auditoria 20/10)
+const RAIO_MAX_CORREDOR_SEM_BAIRRO_M = 2_000
+const RUA_GENERICA = /^(RUA|R|AV|AVENIDA|TRAVESSA|TV|ESTRADA|EST)\.?\s+([A-Z]|\d+)$/
+
+/** Rua do endereco de exibicao da RQ ("RUA - BAIRRO, CIDADE" ou "RUA, CIDADE"). */
+function ruaDoEnderecoRQ(endereco: string): string {
+  return endereco.split(/ - |,/)[0].trim().toUpperCase()
+}
 const PERMANENCIA_MIN_COLADA_MS = 3 * 60_000
 
 export function montarVisitasInclusivas(linhas: LinhaGeocodificada[], paradas: UnitracParadaRow[]): Map<string, Visita> {
@@ -84,6 +92,8 @@ export function montarVisitasInclusivas(linhas: LinhaGeocodificada[], paradas: U
   //    romaneio sem numero, entregas com geocode certo ficavam pendentes por
   //    47m e 107m alem do raio). A faixa de dentro sempre ganha da de fora,
   //    mesmo que a de fora tenha permanencia maior.
+  // RQ-02: parada que confirmou DIRETO uma NF -> ruas dessas NFs.
+  const ruasPorParadaDireta = new Map<string, Set<string>>()
   for (const linha of comCoord) {
     let melhor: { parada: UnitracParadaRow; dist: number; dur: number; ampliado: boolean; colada: boolean } | null = null
     for (const parada of foraBase) {
@@ -103,6 +113,9 @@ export function montarVisitasInclusivas(linhas: LinhaGeocodificada[], paradas: U
       if (ganha) melhor = { parada, dist, dur, ampliado, colada }
     }
     if (melhor) {
+      const usadas = ruasPorParadaDireta.get(melhor.parada.id) ?? new Set<string>()
+      usadas.add(ruaDoEnderecoRQ(linha.endereco))
+      ruasPorParadaDireta.set(melhor.parada.id, usadas)
       visitas.set(linha.nf, {
         nf: linha.nf,
         chegada: melhor.parada.chegada,
@@ -182,12 +195,21 @@ export function montarVisitasInclusivas(linhas: LinhaGeocodificada[], paradas: U
     // Endereco com numero: NAO usar corredor (correcao 02/10). O endereco
     // exibido vem de parse-planilhas.ts ("RUA - BAIRRO, CIDADE" ou "RUA, CIDADE").
     if (enderecoTemNumero(linha.endereco)) continue
-    const corredor = linha.pontosCorredorRua!
+    // RQ-02 (auditoria 20/10): rua generica ("RUA A", "AVENIDA 2") junta vias
+    // de bairros diferentes; sem bairro, o corredor vai so' ate' 2 km.
+    const rua = ruaDoEnderecoRQ(linha.endereco)
+    if (RUA_GENERICA.test(rua)) continue
+    const semBairro = !linha.endereco.includes(' - ')
+    const corredor = linha.pontosCorredorRua!.filter(p => !semBairro || haversine(p.lat, p.lng, linha.lat, linha.lng) <= RAIO_MAX_CORREDOR_SEM_BAIRRO_M)
+    if (corredor.length === 0) continue
     let melhorCorr: { parada: UnitracParadaRow; dist: number; dur: number } | null = null
     for (const parada of foraBase) {
       const fim = parada.fim_real ?? parada.saida ?? parada.chegada
       const dur = new Date(fim).getTime() - new Date(parada.chegada).getTime()
       if (!(dur >= PERMANENCIA_MIN_CORREDOR_MIN * 60_000)) continue
+      // Parada que ja' foi entrega direta de cliente de OUTRA rua nao e' desta.
+      const ruasDaParada = ruasPorParadaDireta.get(parada.id)
+      if (ruasDaParada && [...ruasDaParada].some(r => r !== rua)) continue
       const dist = Math.min(...corredor.map(p => haversine(parada.lat, parada.lng, p.lat, p.lng)))
       if (dist > RAIO_PARADA_CORREDOR_M) continue
       if (!melhorCorr || dur > melhorCorr.dur) melhorCorr = { parada, dist, dur }

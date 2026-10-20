@@ -181,6 +181,28 @@ describe('montarVisitasInclusivas', () => {
       expect(v.get('NF-1')!.distanciaMetrosDoPonto).toBeLessThan(200)
     })
 
+    // RQ-02 (auditoria 20/10): 603 NFs pelo corredor, 91% sem parada a <=800 m,
+    // 44% com parada que era entrega de cliente de OUTRA rua.
+    it('RQ-02: parada que confirmou direto NF de outra rua nao serve ao corredor', () => {
+      const parada1 = parada('p1', C2.lat + 0.00135, C2.lng, '2026-09-30T13:05:00Z', '2026-09-30T13:17:00Z')
+      const outraRua = { ...linha('Y-1', C2.lat + 0.00135, C2.lng), endereco: 'RUA DO OUTRO CLIENTE - BARRA DA TIJUCA, RIO DE JANEIRO' }
+      const v = montarVisitasInclusivas([comCorredor('NF-1'), outraRua], [parada1])
+      expect(v.get('Y-1')).toBeTruthy()
+      expect(v.has('NF-1')).toBe(false)
+    })
+
+    it('RQ-02: rua generica ("RUA A") nao usa corredor', () => {
+      const paradas = [parada('p1', C2.lat + 0.00135, C2.lng, '2026-09-30T13:05:00Z', '2026-09-30T13:17:00Z')]
+      expect(montarVisitasInclusivas([comCorredor('NF-1', PONTO, corredor, 'RUA A - CENTRO, VOLTA REDONDA')], paradas).size).toBe(0)
+    })
+
+    it('RQ-02: endereco sem bairro so usa ponto do corredor a <=2 km do ponto', () => {
+      const longe = { lat: -23.0005, lng: -43.4000 } // ~2,6 km a oeste
+      const paradas = [parada('p1', longe.lat + 0.00135, longe.lng, '2026-09-30T13:05:00Z', '2026-09-30T13:17:00Z')]
+      expect(montarVisitasInclusivas([comCorredor('NF-1', PONTO, [PONTO, longe], 'AVENIDA DAS AMERICAS, RIO DE JANEIRO')], paradas).size).toBe(0)
+      expect(montarVisitasInclusivas([comCorredor('NF-1', PONTO, [PONTO, longe])], paradas).get('NF-1')?.viaCorredorDaRua).toBe(true)
+    })
+
     it('parada de menos de 2 min no corredor nao confirma', () => {
       const paradas = [parada('p1', C2.lat + 0.00135, C2.lng, '2026-09-30T13:05:00Z', '2026-09-30T13:06:30Z')]
       expect(montarVisitasInclusivas([comCorredor('NF-1')], paradas).size).toBe(0)
