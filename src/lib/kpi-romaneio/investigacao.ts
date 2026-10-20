@@ -9,7 +9,7 @@ import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { haversine } from '@/lib/utils/geo'
 import { normPlaca } from '@/lib/unitrac-api/frota'
 
-export type CategoriaInvestigacao = 'parou_no_cliente' | 'parou_perto' | 'parou_na_regiao' | 'nao_chegou_perto' | 'sem_gps' | 'sem_coordenada'
+export type CategoriaInvestigacao = 'parou_no_cliente' | 'parou_perto' | 'passou_sem_parar' | 'parou_na_regiao' | 'nao_chegou_perto' | 'sem_gps' | 'sem_coordenada'
 
 export type Investigacao = {
   categoria: CategoriaInvestigacao
@@ -25,7 +25,10 @@ const REGIAO_M = 2000
 
 const VAZIA = (categoria: CategoriaInvestigacao): Investigacao => ({ categoria, distM: null, hora: null, minutos: null })
 
-export function investigarNf(n: NfAoVivo, paradas: UnitracParadaRow[]): Investigacao {
+// GN-07/KM-11 (auditoria 20/10): so' paradas nao bastam -- o carro que passou
+// a 191 m sem parar saia "nao chegou perto 3.242 m", contradizendo o KPI
+// ("PASSOU NO ENDERECO"). `trajetoM` = menor distancia do GPS continuo.
+export function investigarNf(n: NfAoVivo, paradas: UnitracParadaRow[], trajetoM?: number | null): Investigacao {
   if (n.situacao === 'sem_rastreador') return VAZIA('sem_gps')
   if (n.lat == null || n.lng == null) return VAZIA('sem_coordenada')
   let melhor: { d: number; p: UnitracParadaRow } | null = null
@@ -35,6 +38,8 @@ export function investigarNf(n: NfAoVivo, paradas: UnitracParadaRow[]): Investig
     const d = haversine(n.lat, n.lng, q.lat, q.lng)
     if (!melhor || d < melhor.d) melhor = { d, p }
   }
+  const passou = trajetoM != null && trajetoM <= PERTO_M && (!melhor || melhor.d > PERTO_M)
+  if (passou) return { categoria: 'passou_sem_parar', distM: Math.round(trajetoM), hora: null, minutos: null }
   if (!melhor) return VAZIA('sem_gps')
   const d = Math.round(melhor.d)
   // Horário da Unitrac é Brasília mascarado como UTC: o HH:MM do ISO já é o de Brasília.
@@ -46,9 +51,9 @@ export function investigarNf(n: NfAoVivo, paradas: UnitracParadaRow[]): Investig
 
 /** Preenche `investigacao` em toda NF não entregue (pendente também: mostra
  *  no detalhe se o carro já passou por lá). */
-export function investigarPlacas(placas: PlacaAoVivo[], paradasPorPlaca: Map<string, UnitracParadaRow[]>): void {
+export function investigarPlacas(placas: PlacaAoVivo[], paradasPorPlaca: Map<string, UnitracParadaRow[]>, trajetoPorNf: Map<string, number> = new Map()): void {
   for (const p of placas) {
     const paradas = paradasPorPlaca.get(normPlaca(p.placa)) ?? []
-    for (const n of p.nfs) if (n.situacao !== 'entregue') n.investigacao = investigarNf(n, paradas)
+    for (const n of p.nfs) if (n.situacao !== 'entregue') n.investigacao = investigarNf(n, paradas, trajetoPorNf.get(n.nf))
   }
 }

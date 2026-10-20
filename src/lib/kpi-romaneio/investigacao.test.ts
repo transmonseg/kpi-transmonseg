@@ -27,6 +27,17 @@ describe('investigarNf', () => {
   it('parada na base não conta (carro parado no pátio do lado do cliente)', () => {
     expect(investigarNf(nf(), [parada(50, undefined, undefined, 'BASE')])).toEqual({ categoria: 'sem_gps', distM: null, hora: null, minutos: null })
   })
+  // GN-07/KM-11 (auditoria 20/10, caso TTI6E43 2422645): o carro passou a
+  // 191 m sem parar e a investigacao dizia "nao chegou perto 3.242 m".
+  it('trajeto a 191 m e parada mais perto a 3.242 m: passou sem parar, distancia do trajeto', () => {
+    expect(investigarNf(nf(), [parada(3242)], 191)).toEqual({ categoria: 'passou_sem_parar', distM: 191, hora: null, minutos: null })
+  })
+  it('parada a 120 m vence o trajeto (parou no cliente)', () => {
+    expect(investigarNf(nf(), [parada(120)], 30).categoria).toBe('parou_no_cliente')
+  })
+  it('trajeto a mais de 500 m nao muda nada', () => {
+    expect(investigarNf(nf(), [parada(5000)], 900).categoria).toBe('nao_chegou_perto')
+  })
   it('sem coordenada do cliente / sem rastreador', () => {
     expect(investigarNf(nf({ lat: null, lng: null }), [parada(100)]).categoria).toBe('sem_coordenada')
     expect(investigarNf(nf({ situacao: 'sem_rastreador' }), [parada(100)]).categoria).toBe('sem_gps')

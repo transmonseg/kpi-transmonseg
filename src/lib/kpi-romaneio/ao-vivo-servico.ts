@@ -231,10 +231,12 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     let sugestoesTroca: SugestaoTroca[] = []
     // Paradas do dia por placa (investigação das não entregues, 06/10).
     let paradasDoDia = new Map<string, UnitracParadaRow[]>()
+    let trajetoPorNf = new Map<string, number>()
     const ehHoje = data === hojeBR()
     const r = await gerarKpiDoDia(cliente, data, log, {
-      aoMontarDetalhe: ({ romaneioGeo, detalhe, paradasPorPlaca }) => {
+      aoMontarDetalhe: ({ romaneioGeo, detalhe, paradasPorPlaca, menorDistanciaTrajetoPorNf }) => {
         paradasDoDia = paradasPorPlaca
+        trajetoPorNf = menorDistanciaTrajetoPorNf
         for (const l of romaneioGeo) if (l.lat != null && l.lng != null) coords.set(l.nf, { lat: l.lat, lng: l.lng })
         // Ponto da parada que o KPI contou como entrega ("Ver no monitoramento").
         for (const d of detalhe) {
@@ -278,7 +280,7 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     if (up.error) log(`ao vivo ${cliente} ${data}: planilha não guardada (${up.error.message})`)
     const resultado = montarResultadoAoVivo(data, await extrairKpiCompleto(r.xlsx), coords, new Date().toISOString(), paradasNf)
     if (sugestoesTroca.length > 0) resultado.sugestoesTroca = sugestoesTroca
-    investigarPlacas(resultado.placas, paradasDoDia)
+    investigarPlacas(resultado.placas, paradasDoDia, trajetoPorNf)
     for (const p of resultado.placas) {
       const pa = paradaAtualPorPlaca.get(normPlaca(p.placa))
       if (!pa) continue

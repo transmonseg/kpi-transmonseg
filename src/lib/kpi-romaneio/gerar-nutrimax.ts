@@ -78,7 +78,7 @@ export type OpcoesKpiNutrimax = {
   semCadastroUnitrac?: boolean
   /** Ignora o cadastro de locais dos clientes (comparação antes/depois). */
   semLocaisClientes?: boolean
-  aoMontarDetalhe?: (x: { romaneioGeo: LinhaGeocodificada[]; detalhe: LinhaDetalheEntrega[]; paradasPorPlaca: Map<string, UnitracParadaRow[]> }) => void
+  aoMontarDetalhe?: (x: { romaneioGeo: LinhaGeocodificada[]; detalhe: LinhaDetalheEntrega[]; paradasPorPlaca: Map<string, UnitracParadaRow[]>; menorDistanciaTrajetoPorNf: Map<string, number> }) => void
 }
 
 export type ResultadoKpiNutrimax = {
@@ -538,7 +538,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
     data,
   }, verificarTerritorioNaPonte)
   const detalhe: LinhaDetalheEntrega[] = detalheConferido
-  opcoes?.aoMontarDetalhe?.({ romaneioGeo, detalhe, paradasPorPlaca })
+  opcoes?.aoMontarDetalhe?.({ romaneioGeo, detalhe, paradasPorPlaca, menorDistanciaTrajetoPorNf })
 
   // Aviso agregado de descasamento Escala<->Romaneio (ver spec, secao
   // "Tratamento de erro/ambiguidade") -- aditivo, nunca bloqueia o resto do
