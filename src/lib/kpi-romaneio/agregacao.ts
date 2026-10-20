@@ -3018,8 +3018,8 @@ export function montarDetalheEntregas(
   // coordenada marcada imprecisa (bairro/municipio divergente) anulava a prova
   // POSITIVA -- parada propria de 7-25 min a 4-41 m do ponto ficava pendente,
   // e no mesmo ponto em dias diferentes. Parada >= 5 min a <= 50 m do ponto,
-  // sem outro cliente da placa a <= 150 m dela e sem cadastro Unitrac a > 1 km
-  // contradizendo: ENTREGUE com aviso pra conferir a coordenada.
+  // sem outro cliente da placa a <= 150 m dela e sem parada perto de um
+  // cadastro Unitrac divergente: ENTREGUE com aviso pra conferir a coordenada.
   if (modoPrecisao && !diaEmAndamento) {
     const paradasProprias = [
       ...(paradasPorOutraPlaca.get(placaNorm) ?? []),
@@ -3030,8 +3030,14 @@ export function montarDetalheEntregas(
       if (d.status !== 'pendente' || !d.observacao?.startsWith(PREFIXO_OBS_COORDENADA_IMPRECISA)) continue
       const l = linhaPorNfPonto.get(d.nf)
       if (!l || l.lat == null || l.lng == null) continue
+      // Cadastro Unitrac longe so' contradiz se o caminhao TAMBEM parou perto
+      // dele no dia (ai' ha' duas candidatas). Nos 3 casos reais o cadastro
+      // estava a 2-10 km e o caminhao nunca foi la' -- o cadastro e' que esta'
+      // errado (RBI0J25 e RQU0B47 pararam no mesmo ponto em outros dias).
       const cadastro = cadastroDoAlvo(alvoPorNf.get(d.nf))
-      if (cadastro && haversine(cadastro.lat, cadastro.lng, l.lat, l.lng) > DIVERGENCIA_CADASTRO_ROMANEIO_M) continue
+      if (cadastro && haversine(cadastro.lat, cadastro.lng, l.lat, l.lng) > DIVERGENCIA_CADASTRO_ROMANEIO_M
+        && paradasProprias.some(q => duracaoParadaMin(q) >= DURACAO_MIN_PARADA_UNITRAC_PROPRIA_MIN
+          && haversine(cadastro.lat, cadastro.lng, q.lat as number, q.lng as number) <= RAIO_OUTRO_CLIENTE_EXPLICA_M)) continue
       const vizinhos = linhasRomaneio.filter(o => o.endereco !== l.endereco && o.lat != null && o.lng != null)
       const p = paradasProprias
         .filter(q => duracaoParadaMin(q) >= DURACAO_MIN_PARADA_NO_PONTO_MIN)

@@ -6424,6 +6424,20 @@ describe('GN-05: parada no proprio ponto vale mesmo com coordenada marcada impre
     expect(d.find(x => x.nf === '2423185')!.status).toBe('pendente')
   })
 
+  it('cadastro Unitrac a 2,2 km mas o caminhao nunca parou la' + "'" + ' (caso real): ENTREGUE', () => {
+    const alvos = [alvo('2423185', 0, { placaNorm: 'RQQ5B81', pontoLat: em(-2200).lat, pontoLng: em(-2200).lng })]
+    const [d] = chamarNutryMax([nf], { placa: 'RQQ5B81', alvos, paradasUnitracCruasPropriaPlaca: new Map([['RQQ5B81', [parada8]]]) })
+    expect(d.status).toBe('confirmado_gps')
+  })
+
+  it('cadastro a 2,2 km e o caminhao TAMBEM parou no cadastro: vale a regra normal (parada no cadastro), nao a do ponto', () => {
+    const alvos = [alvo('2423185', 0, { placaNorm: 'RQQ5B81', pontoLat: em(-2200).lat, pontoLng: em(-2200).lng })]
+    const noCadastro = paradaForaBase('RQQ5B81-api-2', em(-2200).lat, em(-2200).lng, t('11:00'), t('11:10'), 'RQQ5B81')
+    const [d] = chamarNutryMax([nf], { placa: 'RQQ5B81', alvos, paradasUnitracCruasPropriaPlaca: new Map([['RQQ5B81', [parada8, noCadastro]]]) })
+    expect(d.observacao).not.toBe('ENTREGUE - PARADA NO PONTO (COORDENADA A CONFERIR)')
+    expect(d.chegada).toBe(t('11:00'))
+  })
+
   it('parada de 3 min: continua pendente', () => {
     const curta = paradaForaBase('RQQ5B81-api-1', em(4).lat, em(4).lng, t('10:00'), t('10:03'), 'RQQ5B81')
     const [d] = chamarNutryMax([nf], { placa: 'RQQ5B81', paradasUnitracCruasPropriaPlaca: new Map([['RQQ5B81', [curta]]]) })
