@@ -49,9 +49,14 @@ import { createServiceClient } from '@/lib/supabase/service'
 // vimos 131km de erro), ou a precisao e' de bairro (fonte cnefe_bairro).
 // Coordenada assim ainda serve como pista fraca, mas NAO pode sustentar
 // "nao foi ao cliente" nem atribuir a entrega a outra placa.
-import { chaveCacheEndereco } from './endereco-cep'
+import { chaveCacheEndereco, separarCep } from './endereco-cep'
 
-export type ResultadoGeocode = { lat: number; lng: number; fonte?: string; confiavel: boolean; motivo?: string } | null
+// `precisao` (auditoria 20/10, GEO-01): exato | interpolado | trecho | rua,
+// vinda da escolha por CEP/bairro do Censo no monitoramento. Ausente = nao
+// informada (cache antigo, outra fonte) -- nunca sustenta "nao foi".
+export type PrecisaoGeocode = 'exato' | 'interpolado' | 'trecho' | 'rua'
+export type ResultadoGeocode = { lat: number; lng: number; fonte?: string; confiavel: boolean; motivo?: string; precisao?: PrecisaoGeocode } | null
+const PRECISOES = new Set<string>(['exato', 'interpolado', 'trecho', 'rua'])
 
 // Teto de itens por filtro `.in()` na leitura do cache -- request GET,
 // endereco vai na URL; lote grande demais estoura tamanho de URL e o
@@ -166,12 +171,14 @@ function validarResultado(r: unknown): ResultadoGeocode {
     // da coluna: nunca reclassifica em massa o que ja existia.
     const validado = (r as { validado?: unknown }).validado
     const motivo = typeof (r as { motivo?: unknown }).motivo === 'string' ? (r as { motivo: string }).motivo : undefined
+    const precisao = (r as { precisao?: unknown }).precisao
     return {
       lat: (r as { lat: number }).lat,
       lng: (r as { lng: number }).lng,
       fonte,
       confiavel: typeof validado === 'boolean' ? validado : true,
       motivo,
+      ...(typeof precisao === 'string' && PRECISOES.has(precisao) ? { precisao: precisao as PrecisaoGeocode } : {}),
     }
   }
   return null
@@ -235,8 +242,8 @@ export function enderecosParaLerCache(enderecosBrutos: string[]): string[] {
 /** Le o que ja tiver no cache proprio pros enderecos pedidos. Fail-open:
  *  qualquer erro (conexao, tabela ausente) devolve mapa vazio -- endereco
  *  vira "faltante" e segue pro caminho lento normal, nunca trava aqui. */
-async function buscarNoCache(enderecos: string[]): Promise<Map<string, { lat: number; lng: number; fonte?: string; confiavel: boolean; motivo?: string }>> {
-  const encontrados = new Map<string, { lat: number; lng: number; fonte?: string; confiavel: boolean; motivo?: string }>()
+async function buscarNoCache(enderecos: string[]): Promise<Map<string, { lat: number; lng: number; fonte?: string; confiavel: boolean; motivo?: string; precisao?: PrecisaoGeocode }>> {
+  const encontrados = new Map<string, { lat: number; lng: number; fonte?: string; confiavel: boolean; motivo?: string; precisao?: PrecisaoGeocode }>()
 
   for (let i = 0; i < enderecos.length; i += LOTE_CACHE_LEITURA) {
     const lote = enderecos.slice(i, i + LOTE_CACHE_LEITURA)
@@ -244,7 +251,7 @@ async function buscarNoCache(enderecos: string[]): Promise<Map<string, { lat: nu
       const supabase = createServiceClient()
       const { data, error } = await supabase
         .from('kpi_romaneio_geocode_cache')
-        .select('endereco, lat, lng, fonte, confiavel, motivo')
+        .select('endereco, lat, lng, fonte, confiavel, motivo, precisao')
         .in('endereco', lote)
       if (error) {
         console.error('[kpi-romaneio/geocode] leitura do cache falhou (segue sem cache):', error.message)
@@ -257,6 +264,7 @@ async function buscarNoCache(enderecos: string[]): Promise<Map<string, { lat: nu
           fonte: (row as { fonte?: string | null }).fonte ?? undefined,
           confiavel: (row as { confiavel?: boolean }).confiavel ?? true,
           motivo: (row as { motivo?: string | null }).motivo ?? undefined,
+          ...(PRECISOES.has(String((row as { precisao?: string | null }).precisao)) ? { precisao: (row as { precisao: PrecisaoGeocode }).precisao } : {}),
         })
       }
     } catch (e) {
@@ -275,7 +283,7 @@ async function salvarNoCache(enderecos: string[], resultados: ResultadoGeocode[]
   const linhas = enderecos
     .map((endereco, i) => ({ endereco, resultado: resultados[i] }))
     .filter((x): x is { endereco: string; resultado: NonNullable<ResultadoGeocode> } => x.resultado !== null)
-    .map(x => ({ endereco: x.endereco, lat: x.resultado.lat, lng: x.resultado.lng, fonte: x.resultado.fonte ?? null, confiavel: x.resultado.confiavel, motivo: x.resultado.motivo ?? null }))
+    .map(x => ({ endereco: x.endereco, lat: x.resultado.lat, lng: x.resultado.lng, fonte: x.resultado.fonte ?? null, confiavel: x.resultado.confiavel, motivo: x.resultado.motivo ?? null, precisao: x.resultado.precisao ?? null }))
 
   if (linhas.length === 0) return
 
@@ -367,13 +375,23 @@ export async function geocodificarEnderecosComInfo(
     console.log(`[kpi-romaneio/geocode] ${negativos.size} endereços pulados por cache negativo (${TTL_NEGATIVO_HORAS}h)`)
   }
   const faltantes = chavesSemCache.filter(c => !negativos.has(c))
+  // Auditoria 20/10 (GEO-02): o CEP volta a viajar pra ponte (a escolha do
+  // ponto no CNEFE usa o CEP antes do bairro). A chave do cache continua
+  // sem CEP; so' o texto enviado ganha " - <CEP>" no fim (mesmo formato do
+  // romaneio que o motor ja' processa).
+  const textoPonte = new Map<string, string>()
+  for (const b of brutosUnicos) {
+    const chave = chaveCacheEndereco(b)
+    const { cep } = separarCep(b.trim())
+    if (cep && !textoPonte.has(chave)) textoPonte.set(chave, `${chave} - ${cep.replace(/\D/g, '')}`)
+  }
 
   const porFaltante = new Map<string, ResultadoGeocode>()
   let parciais = 0
   if (faltantes.length > 0) {
     // Grava a cada lote concluido: se um lote posterior falhar (ou a requisicao
     // morrer), o que ja foi resolvido nao se perde.
-    await geocodificarPorLotes(faltantes, opcoes, async (lote, resultados, confirmado, incompletos) => {
+    await geocodificarPorLotes(faltantes, { ...opcoes, textoPonte }, async (lote, resultados, confirmado, incompletos) => {
       lote.forEach((e, i) => porFaltante.set(e, resultados[i]))
       parciais += incompletos.size
       if (resultados.some(r => r !== null)) await salvarNoCache(lote, resultados)
@@ -389,8 +407,8 @@ export async function geocodificarEnderecosComInfo(
     console.warn(`[kpi-romaneio/geocode] geocode parcial -- ${parciais} endereço(s) sem a busca por similaridade (timeout ou teto de ${TETO_BUSCAS_SIMILARIDADE_POR_GERACAO} por geração) -- gere novamente`)
   }
 
-  const semEndereco = (l: { endereco: string; lat: number; lng: number; fonte?: string; confiavel: boolean; motivo?: string }) =>
-    ({ lat: l.lat, lng: l.lng, fonte: l.fonte, confiavel: l.confiavel, motivo: l.motivo })
+  const semEndereco = (l: { endereco: string; lat: number; lng: number; fonte?: string; confiavel: boolean; motivo?: string; precisao?: PrecisaoGeocode }) =>
+    ({ lat: l.lat, lng: l.lng, fonte: l.fonte, confiavel: l.confiavel, motivo: l.motivo, ...(l.precisao ? { precisao: l.precisao } : {}) })
   return {
     resultados: enderecos.map(e => {
       const c = doCache.get(e)
@@ -416,7 +434,7 @@ export async function geocodificarSemCache(
 
 async function geocodificarPorLotes(
   enderecos: string[],
-  opcoes: { validarTerritorio?: boolean },
+  opcoes: { validarTerritorio?: boolean; textoPonte?: Map<string, string> },
   aoConcluirLote: (lote: string[], resultados: ResultadoGeocode[], confirmado: boolean, incompletos: Set<number>) => Promise<void>,
 ): Promise<void> {
   let buscasSimilaridade = 0
@@ -431,7 +449,7 @@ async function geocodificarPorLotes(
 
 type RespostaLote = { resultados: ResultadoGeocode[]; confirmado: boolean; incompletos: Set<number>; buscasSimilaridade: number }
 
-async function geocodificarLote(enderecos: string[], opcoes: { validarTerritorio?: boolean; semSimilaridade?: boolean }): Promise<RespostaLote> {
+async function geocodificarLote(enderecos: string[], opcoes: { validarTerritorio?: boolean; semSimilaridade?: boolean; textoPonte?: Map<string, string> }): Promise<RespostaLote> {
   const chave = process.env.MOTOR_SECRET
   if (!chave) {
     console.error('[kpi-romaneio/geocode] MOTOR_SECRET nao configurada -- geocodificacao pulada')
@@ -447,7 +465,7 @@ async function geocodificarLote(enderecos: string[], opcoes: { validarTerritorio
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-motor-key': chave },
       body: JSON.stringify({
-        enderecos,
+        enderecos: enderecos.map(e => opcoes.textoPonte?.get(e) ?? e),
         ...(opcoes.validarTerritorio ? { validarTerritorio: true } : {}),
         ...(opcoes.semSimilaridade ? { semSimilaridade: true } : {}),
       }),

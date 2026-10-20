@@ -65,6 +65,9 @@ export type LinhaGeocodificada = LinhaRomaneio & {
    *  outra fonte -- local do cliente utilizavel (manual ou aprendido com 2+
    *  confirmacoes) a <= 150 m. Preenchido em gerar-nutrimax. */
   pontoCorroborado?: boolean
+  /** Auditoria 20/10 (GEO-01): precisao do ponto informada pela ponte
+   *  (exato | interpolado | trecho | rua). Ausente = desconhecida. */
+  geoPrecisao?: 'exato' | 'interpolado' | 'trecho' | 'rua'
   // So' preenchido pela coerencia de grupo (Rio Quality): outros pontos da
   // MESMA rua na zona, alem do escolhido -- pedido 06/09, ver visitas.ts.
   pontosAlternativos?: { lat: number; lng: number }[]

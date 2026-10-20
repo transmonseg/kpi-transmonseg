@@ -896,10 +896,15 @@ function acharParadaCompartilhadaComVizinho(
 
 const RAIO_CADASTRO_CONFIRMA_PONTO_M = 300
 
-/** Ponto do cliente confirmado por fonte independente do geocode: correcao
- *  manual, local aprendido (pontoCorroborado) ou cadastro Unitrac a <= 300 m. */
+/** Ponto do cliente confirmado: correcao manual, local aprendido
+ *  (pontoCorroborado), numero exato/interpolado no CNEFE ou cadastro
+ *  Unitrac a <= 300 m. */
 function pontoConfirmado(linha: LinhaGeocodificada, geo: { lat: number; lng: number } | null, cadastro: { lat: number; lng: number } | null): boolean {
   if (linha.geoVerificadoManual || linha.pontoCorroborado) return true
+  // Numero exato (ou interpolado entre vizinhos) no CNEFE, escolhido pelo
+  // CEP/bairro do Censo (auditoria 20/10, GEO-01). Na medicao de 6.711
+  // enderecos, 100% dos que tinham numero+CEP no IBGE ficaram a <30 m.
+  if (geo != null && (linha.geoPrecisao === 'exato' || linha.geoPrecisao === 'interpolado')) return true
   return geo != null && cadastro != null && haversine(geo.lat, geo.lng, cadastro.lat, cadastro.lng) <= RAIO_CADASTRO_CONFIRMA_PONTO_M
 }
 

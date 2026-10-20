@@ -6384,6 +6384,14 @@ describe('GN-03 (auditoria 20/10): NAO FOI AO CLIENTE so com ponto do cliente co
     expect(d.observacao).toBe(OBS_LONGE_DO_PONTO_NAO_CONFIRMADO)
   })
 
+  it('numero exato no CNEFE (geoPrecisao exato) confirma o ponto: NAO FOI AO CLIENTE', () => {
+    expect(rodar(linha('NF1', { geoPrecisao: 'exato' })).observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
+  })
+
+  it('ponto de rua/trecho (S/N, numero longe) nao confirma: continua coordenada a conferir', () => {
+    expect(rodar(linha('NF1', { geoPrecisao: 'rua' })).observacao).toBe(OBS_LONGE_DO_PONTO_NAO_CONFIRMADO)
+  })
+
   it('cadastro Unitrac a <=300 m do geocode confirma o ponto: NAO FOI AO CLIENTE', () => {
     const l = linha('NF1')
     const d = rodar(l, [alvo('NF1', 0, { pontoLat: (l.lat as number) + 0.001, pontoLng: l.lng as number })])

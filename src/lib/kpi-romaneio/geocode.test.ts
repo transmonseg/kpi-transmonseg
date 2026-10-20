@@ -680,12 +680,14 @@ describe('geocodificarEnderecos - chave do cache sem o sufixo de CEP', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it('endereco novo com CEP: a ponte recebe o texto sem CEP e o cache grava a chave sem CEP', async () => {
+  // Auditoria 20/10 (GEO-02): a ponte recebe a chave + " - <CEP>" (a escolha
+  // do ponto no CNEFE usa o CEP); o cache continua gravando a chave sem CEP.
+  it('endereco novo com CEP: a ponte recebe a chave com o CEP no fim e o cache grava a chave sem CEP', async () => {
     const { upsertPositivo } = mockSupabaseTabelas({})
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaOk([{ lat: 1, lng: 2 }]))
     const r = await geocodificarEnderecos([COM])
     expect(semExtras(r)).toEqual([{ lat: 1, lng: 2 }])
-    expect(JSON.parse(fetchSpy.mock.calls[0][1]?.body as string)).toEqual({ enderecos: [CHAVE_NORM] })
+    expect(JSON.parse(fetchSpy.mock.calls[0][1]?.body as string)).toEqual({ enderecos: [`${CHAVE_NORM} - 28300000`] })
     const gravados = upsertPositivo.mock.calls.flatMap(c => (c[0] as Array<{ endereco: string }>).map(l => l.endereco))
     expect(gravados).toEqual([CHAVE_NORM])
   })
@@ -695,7 +697,23 @@ describe('geocodificarEnderecos - chave do cache sem o sufixo de CEP', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaOk([{ lat: 1, lng: 2 }]))
     const r = await geocodificarEnderecos([COM, SEM_BRUTO, `${SEM_BRUTO} - 28300-000`])
     expect(semExtras(r)).toEqual([{ lat: 1, lng: 2 }, { lat: 1, lng: 2 }, { lat: 1, lng: 2 }])
-    expect(JSON.parse(fetchSpy.mock.calls[0][1]?.body as string)).toEqual({ enderecos: [CHAVE_NORM] })
+    expect(JSON.parse(fetchSpy.mock.calls[0][1]?.body as string)).toEqual({ enderecos: [`${CHAVE_NORM} - 28300000`] })
+  })
+
+  it('precisao vinda da ponte (auditoria 20/10, GEO-01) chega no resultado e vai pro cache', async () => {
+    const { upsertPositivo } = mockSupabaseTabelas({})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaOk([{ lat: 1, lng: 2, precisao: 'exato' }]))
+    const [r] = await geocodificarEnderecos([COM])
+    expect(r?.precisao).toBe('exato')
+    const gravado = upsertPositivo.mock.calls.flatMap(c => c[0] as Array<{ precisao?: string | null }>)[0]
+    expect(gravado.precisao).toBe('exato')
+  })
+
+  it('precisao desconhecida da ponte e' + "'" + ' ignorada', async () => {
+    mockSupabaseTabelas({})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaOk([{ lat: 1, lng: 2, precisao: 'chute' }]))
+    const [r] = await geocodificarEnderecos([COM])
+    expect(r?.precisao).toBeUndefined()
   })
 
   it('cache negativo le pela chave sem CEP', async () => {
