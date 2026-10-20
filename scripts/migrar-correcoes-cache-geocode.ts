@@ -24,11 +24,18 @@ async function main() {
     if (!data || data.length < 1000) break
   }
   const porEndereco = new Map(todas.map(l => [l.endereco, l]))
-  const migrar: { de: Linha; para: string; atual: Linha | undefined }[] = []
+  // Varias chaves antigas podem cair na mesma chave nova: entre elas vale a
+  // mesma regra de prioridade da leitura.
+  const porNova = new Map<string, Linha>()
   for (const l of todas) {
     if (prioridadeFonte(l.fonte ?? undefined) <= 0) continue
     const nova = chaveCacheEndereco(l.endereco)
     if (nova === l.endereco) continue
+    const ja = porNova.get(nova)
+    porNova.set(nova, ja ? escolherLinhaCache(ja, l)! : l)
+  }
+  const migrar: { de: Linha; para: string; atual: Linha | undefined }[] = []
+  for (const [nova, l] of porNova) {
     const atual = porEndereco.get(nova)
     if (escolherLinhaCache(atual, l) !== l) continue
     if (atual && atual.lat === l.lat && atual.lng === l.lng) continue
