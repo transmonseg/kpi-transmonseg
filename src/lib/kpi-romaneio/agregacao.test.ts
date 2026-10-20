@@ -6398,3 +6398,34 @@ describe('GN-03 (auditoria 20/10): NAO FOI AO CLIENTE so com ponto do cliente co
     expect(d.observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
   })
 })
+
+// Auditoria 20/10 (GN-04), caso real RQV3J99 14/10 (Anta, Sapucaia): parada de
+// 16 min creditou o MERCADO CENTRAL ANTA (78 m) e a CASA DE CARNE SO FILE (157
+// m) ficou "PASSOU NO ENDERECO" porque outro cliente explica a parada.
+describe('GN-04: parada longa que atendeu varios clientes vizinhos credita cada um', () => {
+  const LAT0 = -22.0386
+  const LNG0 = -42.9897
+  const M_LNG = 1 / (111_195 * Math.cos(LAT0 * Math.PI / 180))
+  const em = (norteM: number, lesteM = 0) => ({ lat: LAT0 + norteM * M_LAT, lng: LNG0 + lesteM * M_LNG })
+  const t = (hhmm: string) => `2026-10-14T${hhmm}:00.000Z`
+  const mercado = linha('2422996', { endereco: 'RODOVIA LUCIO MEIRA, 10 - ANTA, SAPUCAIA', clienteCodigo: 'MC', ...em(78), geoConfiavel: true })
+  const casaCarne = linha('2423004', { endereco: 'RUA PRESIDENTE DUTRA, 42 - ANTA, SAPUCAIA', clienteCodigo: 'SF', ...em(0, 157), geoConfiavel: true })
+  const rodar = (fim: string) => chamarNutryMax([mercado, casaCarne], {
+    placa: 'RQV3J99',
+    paradasUnitracCruasPropriaPlaca: new Map([['RQV3J99', [paradaForaBase('RQV3J99-api-3', em(0).lat, em(0).lng, t('08:08'), t(fim), 'RQV3J99')]]]),
+  })
+
+  it('parada de 16 min, 2 clientes (>= 4 min cada): os dois ENTREGUE', () => {
+    const d = rodar('08:24')
+    expect(d.find(x => x.nf === '2422996')!.status).toBe('confirmado_gps')
+    const sf = d.find(x => x.nf === '2423004')!
+    expect(sf.status).toBe('confirmado_gps')
+    expect(sf.observacao).toBe('ENTREGUE - PARADA ÚNICA ATENDEU 2 CLIENTES')
+    expect(sf.chegada).toBe(t('08:08'))
+  })
+
+  it('parada de 5 min nao da' + "'" + ' pra 2 clientes: o vizinho continua pendente', () => {
+    const d = rodar('08:13')
+    expect(d.find(x => x.nf === '2423004')!.status).toBe('pendente')
+  })
+})

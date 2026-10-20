@@ -1047,6 +1047,24 @@ const RAIO_PARADA_NO_PROPRIO_CLIENTE_M = 150
 const EVIDENCIAS_FRACAS_PARADA_CURTA = new Set<EvidenciaNf>(['raio_ampliado', 'vizinhanca', 'parada_curta_compartilhada', 'parada_proxima_propria'])
 const DURACAO_MAX_PARADA_CURTA_VARIOS_MIN = 5
 export const OBS_PARADA_CURTA_VARIOS_LONGE = 'PARADA CURTA PARA VÁRIOS ENDEREÇOS A MAIS DE 500 M - CONFERIR'
+
+// GN-04 (auditoria 20/10): parada longa que atendeu varios clientes vizinhos.
+const MIN_POR_CLIENTE_PARADA_MULTI = 4
+const DURACAO_MAX_PARADA_MULTI_CLIENTE_MIN = 240
+const RAIO_PARADA_MULTI_CLIENTE_GEO_M = 200
+const RAIO_PARADA_MULTI_CLIENTE_CAD_M = 150
+const RAIO_PARADA_PROPRIA_COLADA_M = 100
+// So' pendentes por falta de prova de parada (nunca os de precedencia maior:
+// sem rastreador, nao saiu da base, escala, duas cargas, ilha, carga sem placa).
+function elegivelParadaMultiCliente(obs: string | null): boolean {
+  if (obs == null) return true
+  return obs.startsWith('PASSOU NO ENDEREÇO')
+    || obs.startsWith('PAROU NO ENDEREÇO')
+    || obs.startsWith('CADASTRO DO CLIENTE NA UNITRAC DIVERGE')
+    || obs.startsWith('PARADA PRÓXIMA')
+    || obs.startsWith('PARADA CURTA DE OUTRO ENDEREÇO')
+    || obs.startsWith('PARADA DE OUTRO CLIENTE')
+}
 const RAIO_CLIENTE_NA_BASE_M = 300
 export const OBS_CLIENTE_NA_BASE = 'CLIENTE NA BASE - SÓ ESTADIA NA GARAGEM, SEM FEITO DA UNITRAC - CONFERIR'
 export const OBS_PARADA_DE_OUTRO_CLIENTE = 'PARADA DE OUTRO CLIENTE - NÃO CONFIRMA ESTE CLIENTE - CONFERIR'
@@ -3006,6 +3024,63 @@ export function montarDetalheEntregas(
         d.confianca = calcularConfianca(d.status, d.observacao)
         d.motivo = gerarMotivo({ status: d.status, observacao: d.observacao, evidencia: d.evidencia, distParadaM: d.distParadaM, tempoParadaMin: d.tempoParadaMin })
       }
+    }
+  }
+
+  // Auditoria 20/10 (GN-04, caso real RQV3J99 14/10 em Anta/Sapucaia): parada
+  // longa numa rua com varios clientes creditava so' um deles -- "outro
+  // cliente a <=150 m explica a parada" e' geografico, nao de uso. Uma parada
+  // propria (crua da Unitrac ou da ponte) de D min, a <=200 m do geocode
+  // confiavel ou <=150 m do cadastro, que ja' confirmou k outros clientes,
+  // tambem confirma esta NF quando D >= 4 min x (k+1) e nao ha' outra parada
+  // propria a <=100 m dela (que seria a dela). Medido 05-17/10: +16 NFs.
+  if (modoPrecisao && !diaEmAndamento) {
+    const paradasProprias = [
+      ...(paradasPorOutraPlaca.get(placaNorm) ?? []),
+      ...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []),
+    ].filter(p => p.classificacao === 'FORA_BASE' && p.lat != null && p.lng != null)
+    const linhaPorNfMulti = new Map(linhasRomaneio.map(l => [l.nf, l]))
+    const clienteDe = (d: LinhaDetalheEntrega) => d.clienteCodigo?.trim() || chaveEndereco(d.endereco)
+    const confirmadas = resultado.filter(d => d.status !== 'pendente' && d.chegada)
+    for (const d of resultado) {
+      if (d.status !== 'pendente' || !elegivelParadaMultiCliente(d.observacao)) continue
+      const l = linhaPorNfMulti.get(d.nf)
+      if (!l) continue
+      const cadastro = cadastroDoAlvo(alvoPorNf.get(d.nf))
+      const geo = l.geoConfiavel !== false && l.lat != null && l.lng != null ? { lat: l.lat, lng: l.lng } : null
+      if (!geo && !cadastro) continue
+      const dist = (p: UnitracParadaRow) => Math.min(
+        geo ? haversine(geo.lat, geo.lng, p.lat as number, p.lng as number) : Infinity,
+        cadastro ? haversine(cadastro.lat, cadastro.lng, p.lat as number, p.lng as number) : Infinity,
+      )
+      if (paradasProprias.some(p => dist(p) <= RAIO_PARADA_PROPRIA_COLADA_M)) continue
+      let melhor: { p: UnitracParadaRow; distM: number; k: number; durMin: number } | null = null
+      for (const p of paradasProprias) {
+        const durMin = duracaoParadaMin(p)
+        if (durMin < DURACAO_MIN_PARADA_UNITRAC_PROPRIA_MIN || durMin > DURACAO_MAX_PARADA_MULTI_CLIENTE_MIN) continue
+        const dg = geo ? haversine(geo.lat, geo.lng, p.lat as number, p.lng as number) : Infinity
+        const dc = cadastro ? haversine(cadastro.lat, cadastro.lng, p.lat as number, p.lng as number) : Infinity
+        if (dg > RAIO_PARADA_MULTI_CLIENTE_GEO_M && dc > RAIO_PARADA_MULTI_CLIENTE_CAD_M) continue
+        const ini = new Date(p.chegada).getTime() - 60_000
+        const fim = fimParadaMs(p)
+        const outros = new Set(confirmadas
+          .filter(c => clienteDe(c) !== clienteDe(d) && new Date(c.chegada!).getTime() >= ini && new Date(c.chegada!).getTime() <= fim)
+          .map(clienteDe))
+        const k = outros.size
+        if (durMin < MIN_POR_CLIENTE_PARADA_MULTI * (k + 1)) continue
+        const distM = Math.round(Math.min(dg, dc))
+        if (!melhor || distM < melhor.distM) melhor = { p, distM, k, durMin }
+      }
+      if (!melhor) continue
+      d.status = 'confirmado_gps'
+      d.observacao = `ENTREGUE - PARADA ÚNICA ATENDEU ${melhor.k + 1} CLIENTES`
+      d.chegada = melhor.p.chegada
+      d.saida = melhor.p.fim_real ?? melhor.p.saida ?? melhor.p.chegada
+      d.tempoParadaMin = minutosEntre(d.chegada, d.saida)
+      d.distParadaM = melhor.distM
+      d.evidencia = 'parada_unitrac_propria'
+      d.confianca = calcularConfianca(d.status, d.observacao)
+      d.motivo = gerarMotivo({ status: d.status, observacao: d.observacao, evidencia: d.evidencia, distParadaM: d.distParadaM, tempoParadaMin: d.tempoParadaMin })
     }
   }
 
