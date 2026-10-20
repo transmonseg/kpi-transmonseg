@@ -114,7 +114,9 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   }
 
   // Troca de placa informada pela operação (tela Placas do dia, 05/10).
-  const trocas = await buscarTrocasDoDia(EMPRESA_NUTRIMAX, data)
+  // GN-06 (auditoria 20/10): leitura que falha nao some calada -- vira aviso.
+  const fontesIndisponiveis: NonNullable<AvisoDescasamento['fonte']>[] = []
+  const trocas = await buscarTrocasDoDia(EMPRESA_NUTRIMAX, data, () => fontesIndisponiveis.push('trocas_placa'))
   if (trocas.length > 0) {
     ;({ romaneio, escala } = aplicarTrocasDePlaca(romaneio, escala, trocas))
     const pao = aplicarTrocasDePlaca(resultadoPao.linhas, resultadoPao.escala, trocas)
@@ -155,7 +157,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   // fora do resgate por ancora abaixo -- ja' esta' no lugar certo.
   const nfsComLocal = new Set<string>()
   if (!opcoes?.semLocaisClientes) {
-    const locais = await buscarLocaisClientes(CLIENTE_LOCAIS)
+    const locais = await buscarLocaisClientes(CLIENTE_LOCAIS, () => fontesIndisponiveis.push('locais_clientes'))
     const { linhas, aplicados } = aplicarLocaisClientes(romaneioGeo, locais)
     romaneioGeo.splice(0, romaneioGeo.length, ...marcarPontosCorroborados(linhas, locais))
     aplicados.forEach(nf => nfsComLocal.add(nf))
@@ -263,7 +265,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   // ponte respondeu, mas é caminhão sem rastreador de verdade) vence as
   // duas fontes acima -- ver placas-sem-rastreador.ts.
   marcar('ponte monitoramento')
-  const placasSemRastreador = aplicarAliasEmConjunto(placasSemRastreadorNoDia(await buscarPlacasSemRastreador(EMPRESA_NUTRIMAX), data), aliasPlacas)
+  const placasSemRastreador = aplicarAliasEmConjunto(placasSemRastreadorNoDia(await buscarPlacasSemRastreador(EMPRESA_NUTRIMAX, () => fontesIndisponiveis.push('sem_rastreador')), data), aliasPlacas)
   // temRastreadorPorPlaca: montado mais abaixo (depois das paradas/alvos), ver placasSemSinal.
 
   // Por placa (não por carga -- as paradas GPS do dia cobrem a placa
@@ -588,7 +590,9 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
     historicoResolucoes = await buscarResolucoes(EMPRESA_NUTRIMAX, data)
   } catch (err) {
     console.error('resolucoes manuais indisponiveis (tabela kpi_nf_resolucao ainda nao existe? ok antes do deploy da Task 4):', err)
+    fontesIndisponiveis.push('resolucoes')
   }
+  for (const fonte of fontesIndisponiveis) avisos.push({ carga: '—', placa: '—', motivo: 'fonte_indisponivel', fonte })
   const detalheComResolucao = aplicarResolucoes(detalhe, historicoResolucoes)
 
   // Bug real 25/09 (ver comentário completo de `contarConfirmadasPorCarga`

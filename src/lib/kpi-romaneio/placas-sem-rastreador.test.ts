@@ -74,6 +74,15 @@ describe('buscarPlacasSemRastreador', () => {
     expect(r[0].placa).toBe('TTL5J17')
   })
 
+  it('GN-06 (auditoria 20/10): erro de leitura avisa quem chamou (aoFalhar)', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mocks.eq.mockResolvedValue({ data: null, error: { message: 'fora do ar' } })
+    const aoFalhar = vi.fn()
+    await buscarPlacasSemRastreador('NUTRY MAX', aoFalhar)
+    expect(aoFalhar).toHaveBeenCalledTimes(1)
+    spy.mockRestore()
+  })
+
   it('erro de leitura nao quebra: devolve vazio', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     mocks.eq.mockResolvedValue({ data: null, error: { message: 'tabela nao existe' } })

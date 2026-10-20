@@ -76,6 +76,7 @@ const LABEL_MOTIVO: Record<AvisoDescasamento['motivo'], string> = {
   geocode_parcial: 'Geocode parcial — gere novamente',
   motorista_multiplas_placas: 'Motorista em múltiplas placas',
   carga_multiregiao: 'Carga com NFs em regiões distantes',
+  fonte_indisponivel: 'Fonte de dados indisponível — gere novamente',
 }
 
 // Task 2 (plano 2026-09-30, item 2): "Escala X × Romaneio Y (Z NFs a
@@ -85,7 +86,17 @@ function textoDiferencaNf(nfEscala: number, nfRomaneio: number): string {
   const n = Math.abs(diff)
   return `${n} NF${n === 1 ? '' : 's'} a ${diff > 0 ? 'menos' : 'mais'} no romaneio`
 }
-function textoAviso(a: AvisoDescasamento): string {
+const NOME_FONTE: Record<NonNullable<AvisoDescasamento['fonte']>, string> = {
+  resolucoes: 'resoluções manuais do operador',
+  sem_rastreador: 'cadastro de placas sem rastreador',
+  trocas_placa: 'trocas de placa',
+  locais_clientes: 'locais dos clientes',
+}
+export function textoAviso(a: AvisoDescasamento): string {
+  // GN-06 (auditoria 20/10): fonte que falhou nao some calada do relatorio.
+  if (a.motivo === 'fonte_indisponivel') {
+    return `Não consegui ler ${a.fonte ? NOME_FONTE[a.fonte] : 'uma fonte de dados'} nesta geração — o relatório pode estar incompleto. Gere novamente`
+  }
   if (a.motivo === 'ponte_falhou') {
     return `Monitoramento não respondeu para ${a.placasSemPonte ?? '?'} placa(s) mesmo após novas tentativas — entregas dessas placas podem estar faltando. Gere novamente`
   }

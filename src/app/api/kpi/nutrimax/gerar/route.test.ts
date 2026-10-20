@@ -150,6 +150,16 @@ vi.mock('@/lib/kpi-romaneio/alvos-snapshot', () => ({
 }))
 vi.mock('@/lib/supabase/service', () => ({
   createServiceClient: () => ({
+    // Tabelas lidas pela geracao (trocas, locais, sem rastreador, resolucoes):
+    // vazias e sem erro, como em producao num dia sem cadastro -- erro de
+    // leitura agora vira aviso na planilha (GN-06, auditoria 20/10).
+    from: () => {
+      const q: Record<string, unknown> = {}
+      for (const m of ['select', 'eq', 'in', 'order', 'gte', 'lte', 'lt', 'limit']) q[m] = () => q
+      q.maybeSingle = async () => ({ data: null, error: null })
+      q.then = (res: (v: unknown) => void) => res({ data: [], error: null })
+      return q
+    },
     storage: {
       from: () => ({
         upload: async (path: string, body?: unknown) => {

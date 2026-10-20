@@ -46,7 +46,7 @@ export function placasSemRastreadorNoDia(linhas: PlacaSemRastreadorRow[], data: 
  *  ainda nao existe ate' o deploy da migration, Supabase fora do ar, etc) NAO
  *  quebra a geracao -- devolve vazio (nenhuma placa declarada), mesmo padrao
  *  fail-open de `alvosEfetivos` (alvos-snapshot.ts). */
-export async function buscarPlacasSemRastreador(empresa: string): Promise<PlacaSemRastreadorRow[]> {
+export async function buscarPlacasSemRastreador(empresa: string, aoFalhar?: () => void): Promise<PlacaSemRastreadorRow[]> {
   try {
     const { data: linhas, error } = await createServiceClient()
       .from('kpi_placa_sem_rastreador')
@@ -56,6 +56,7 @@ export async function buscarPlacasSemRastreador(empresa: string): Promise<PlacaS
     return (linhas ?? []) as PlacaSemRastreadorRow[]
   } catch (err) {
     console.error('placas sem rastreador indisponivel:', err)
+    aoFalhar?.()
     return []
   }
 }

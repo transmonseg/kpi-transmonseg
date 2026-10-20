@@ -70,7 +70,7 @@ export function aplicarTrocasDePlaca<
 
 /** Trocas registradas pra empresa/dia. Falha de leitura NÃO quebra a geração
  *  (devolve vazio) -- mesmo padrão fail-open de buscarPlacasSemRastreador. */
-export async function buscarTrocasDoDia(empresa: string, data: string): Promise<TrocaPlaca[]> {
+export async function buscarTrocasDoDia(empresa: string, data: string, aoFalhar?: () => void): Promise<TrocaPlaca[]> {
   try {
     const { createServiceClient } = await import('@/lib/supabase/service')
     const { data: linhas, error } = await createServiceClient()
@@ -83,6 +83,7 @@ export async function buscarTrocasDoDia(empresa: string, data: string): Promise<
     return (linhas ?? []).map(l => ({ carga: l.carga as string | null, placaEscala: l.placa_escala as string, placaReal: l.placa_real as string }))
   } catch (err) {
     console.error('trocas de placa indisponivel:', err)
+    aoFalhar?.()
     return []
   }
 }

@@ -353,6 +353,9 @@ export type AvisoDescasamento = {
   motivo: 'sem_romaneio' | 'sem_escala' | 'nf_divergente' | 'consulta_posicoes_suspeita' | 'consulta_unitrac_falhou'
     | 'rq_sem_rota_custos' | 'rq_rota_sem_entregas' | 'rq_placa_sem_cv' | 'rq_sem_snapshot'
     | 'geocode_parcial' | 'motorista_multiplas_placas' | 'carga_multiregiao' | 'rq_relatorio_sem_checkin' | 'ponte_falhou'
+    | 'fonte_indisponivel'
+  /** So' em 'fonte_indisponivel' (GN-06, auditoria 20/10): leitura que falhou nesta geracao. */
+  fonte?: 'resolucoes' | 'sem_rastreador' | 'trocas_placa' | 'locais_clientes'
   /** So' em 'geocode_parcial' (incidente 01/10): enderecos sem resultado porque a
    *  busca por similaridade CNEFE estourou o timeout ou passou do teto da geracao. */
   enderecosParciais?: number

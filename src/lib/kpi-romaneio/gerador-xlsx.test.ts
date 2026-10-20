@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import ExcelJS from 'exceljs'
-import { gerarKpiRomaneioXlsx, COLUNAS_KPI_ROMANEIO, COLUNAS_DETALHE_PLACA, COLUNAS_RESOLUCAO, COLUNAS_AVISOS } from './gerador-xlsx'
+import { gerarKpiRomaneioXlsx, COLUNAS_KPI_ROMANEIO, COLUNAS_DETALHE_PLACA, COLUNAS_RESOLUCAO, COLUNAS_AVISOS, textoAviso } from './gerador-xlsx'
 import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega } from './types'
 
 // Achado real 24/08 (pedido do usuário, referência
@@ -1356,5 +1356,14 @@ describe('carga sem placa fora do "NFs sem rastreador" (Task 2, item 3)', () => 
     const vals = wb.getWorksheet('SEM PLACA')!.getSheetValues().slice(4) as unknown[][]
     const status = vals.filter(Array.isArray).map(v => String(v[8]))
     expect(status).toEqual(['CARGA SEM PLACA - NÃO CONTABILIZADO', 'CARGA SEM PLACA - NÃO CONTABILIZADO'])
+  })
+})
+
+
+describe('GN-06 (auditoria 20/10): aviso de fonte indisponivel', () => {
+  it('diz qual fonte faltou e pede pra gerar de novo', () => {
+    const t = textoAviso({ carga: '—', placa: '—', motivo: 'fonte_indisponivel', fonte: 'trocas_placa' })
+    expect(t).toContain('trocas de placa')
+    expect(t).toContain('Gere novamente')
   })
 })

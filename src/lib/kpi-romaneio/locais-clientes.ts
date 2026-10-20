@@ -110,7 +110,7 @@ export function consolidarEvidencias(evs: { lat: number; lng: number }[]): { lat
 }
 
 /** Locais da empresa. Falha de leitura não quebra a geração (fail-open). */
-export async function buscarLocaisClientes(empresa: string): Promise<Map<string, LocalCliente>> {
+export async function buscarLocaisClientes(empresa: string, aoFalhar?: () => void): Promise<Map<string, LocalCliente>> {
   try {
     const { data, error } = await createServiceClient().from('kpi_cliente_local')
       .select('cliente_codigo, lat, lng, raio_m, fonte, confirmacoes, endereco_ref').eq('empresa', empresa)
@@ -121,6 +121,7 @@ export async function buscarLocaisClientes(empresa: string): Promise<Map<string,
     }]))
   } catch (err) {
     console.error('cadastro de locais dos clientes indisponivel:', err)
+    aoFalhar?.()
     return new Map()
   }
 }
