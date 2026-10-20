@@ -197,7 +197,9 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   if (precisaResgatePorPlaca.size > 0) {
     const gruposAncoras = [...precisaResgatePorPlaca.entries()].map(([placaNorm, linhas]) => ({
       id: placaNorm,
-      ruas: linhas.map(l => chaveCacheEndereco(l.endereco)),
+      // GEO-13 (auditoria 20/10): so' o nome da rua -- o endereco inteiro
+      // ("RUA A, 1 - BAIRRO, CIDADE") nunca casava com o CNEFE (0 candidatos).
+      ruas: linhas.map(l => chaveCacheEndereco(l.endereco).split(',')[0].trim()),
       ancoras: romaneioGeo
         .filter((o): o is LinhaGeocodificada & { lat: number; lng: number } =>
           normPlaca(o.placa) === placaNorm && o.lat != null && o.lng != null && !enderecosColididos.has(o.endereco))

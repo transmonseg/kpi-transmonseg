@@ -15,6 +15,8 @@ const cenario = vi.hoisted(() => ({
   romaneioVazio: false,
   // KP-03 (auditoria 20/10): data no cabecalho do PDF do romaneio (null = sem data).
   dataPdfRomaneio: null as string | null,
+  // GEO-13 (auditoria 20/10): o que o resgate por ancora recebeu como "rua".
+  ruasEnviadasAncora: [] as string[],
   // Item 5 (achado real 10-09, resgate por ancora): enderecos aqui voltam
   // `null` da cascata precisa (sem_candidato), simulando geocodificacao
   // que falhou de vez -- pra exercitar o resgate via reposicionarPorAncoras.
@@ -127,8 +129,10 @@ vi.mock('@/lib/kpi-romaneio/geocode', () => {
   }
 })
 vi.mock('@/lib/kpi-romaneio/geocode-ancoras', () => ({
-  reposicionarPorAncoras: async (grupos: { id: string; ruas: string[] }[]) =>
-    new Map(grupos.map(g => [g.id, cenario.resgateAncoraPorPlaca.get(g.id) ?? g.ruas.map(() => null)])),
+  reposicionarPorAncoras: async (grupos: { id: string; ruas: string[] }[]) => {
+    cenario.ruasEnviadasAncora.push(...grupos.flatMap(g => g.ruas))
+    return new Map(grupos.map(g => [g.id, cenario.resgateAncoraPorPlaca.get(g.id) ?? g.ruas.map(() => null)]))
+  },
 }))
 vi.mock('@/lib/kpi-romaneio/unitrac', () => ({
   buscarAlvosDoDia: vi.fn(async () => []),
@@ -235,6 +239,7 @@ beforeEach(() => {
   cenario.romaneioVazio = false
   cenario.enderecosSemCandidato = new Set()
   cenario.resgateAncoraPorPlaca = new Map()
+  cenario.ruasEnviadasAncora = []
   cenario.linhasNutrimaxExtras = []
   cenario.placaPaoOverride = undefined
   cenario.trocas = []
@@ -470,6 +475,14 @@ describe('POST /api/kpi/nutrimax/gerar -- resgate por âncora (item 5, achado 10
       classificacao: 'FORA_BASE', ordem: 1,
     }
   }
+
+  it('GEO-13 (auditoria 20/10): o resgate por ancora recebe apenas o nome da rua, nao o endereco inteiro', async () => {
+    cenario.frota = [{ placaNorm: PLACA, cv: 'CV-1' }]
+    cenario.enderecosSemCandidato = new Set(['RUA A, 1 - RIO DE JANEIRO'])
+    cenario.coordPorEndereco = new Map([['RUA B, 2 - RIO DE JANEIRO', COORD_ANCORA]])
+    await POST(montarRequest(true) as never)
+    expect(cenario.ruasEnviadasAncora).toEqual(['RUA A'])
+  })
 
   it('endereço sem_candidato é resgatado pela âncora de outra entrega da mesma placa e confirma por GPS', async () => {
     cenario.frota = [{ placaNorm: PLACA, cv: 'CV-1' }]
