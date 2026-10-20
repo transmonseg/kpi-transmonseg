@@ -192,7 +192,7 @@ export { separarCep, chaveCacheEndereco } from './endereco-cep'
 // antes de 01/10). Empate entre correcoes (humana/cadastro_unitrac) -> a com
 // CEP: ela so' pode ter sido gravada a partir de 01/10 (depois do fix nada
 // mais grava chave com CEP), entao e' a correcao mais nova.
-function prioridadeFonte(fonte: string | null | undefined): number {
+export function prioridadeFonte(fonte: string | null | undefined): number {
   if (fonte === 'manual' || fonte === 'verificacao_manual') return 2
   if (fonte === 'cadastro_unitrac') return 1
   return 0
