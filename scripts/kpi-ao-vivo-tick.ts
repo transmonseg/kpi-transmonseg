@@ -44,12 +44,18 @@ export async function sincronizarFusionRioQuality(data: string): Promise<'ok' | 
   }
 }
 
-async function fecharDiaAnterior() {
+export async function fecharDiaAnterior() {
   const ontem = diaAnterior(hojeBR())
   for (const cliente of CLIENTES_AO_VIVO) {
     const { data } = await createServiceClient().from('kpi_ao_vivo_calculo').select('calculado_em').eq('cliente', cliente).eq('data', ontem).maybeSingle()
     if (!precisaFecharDia((data?.calculado_em as string | null) ?? null, ontem, Date.now())) continue
     log(`ao vivo ${cliente} ${ontem}: fechamento do dia`)
+    // RQ-09 (auditoria 20/10): a sync para as 21h (e falha com o tunel caido);
+    // o calculo final usa o romaneio completo do dia. Respeita upload manual.
+    if (cliente === 'rioquality') {
+      const s = await sincronizarFusionRioQuality(ontem)
+      log(`fusion rioquality ${ontem} (fechamento): ${s}`)
+    }
     const r = await calcularAoVivo(cliente, ontem, log)
     if (r !== 'ok') log(`ao vivo ${cliente} ${ontem} (fechamento): ${r}`)
   }
