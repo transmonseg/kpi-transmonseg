@@ -4,6 +4,7 @@
 // nem dava pra mandar so' o arquivo esquecido, e mandar o romaneio de novo apagava o
 // pao. Agora so' o que veio troca; o resto do dia fica.
 import type { LinhaEscala, LinhaRomaneio } from './types'
+import { conferirEscala, mensagemEscalaRecusada, type EscalaRecusada } from './validar-escala'
 
 export type DiaGuardado = {
   romaneio: LinhaRomaneio[]
@@ -14,10 +15,16 @@ export type DiaGuardado = {
 }
 export type EnvioNovo = { romaneio?: LinhaRomaneio[]; escala?: LinhaEscala[]; pao?: { linhas: LinhaRomaneio[]; escala: LinhaEscala[] } }
 
-export function mesclarEnvio(guardado: DiaGuardado | null, novo: EnvioNovo): DiaGuardado | { erro: string } {
+export function mesclarEnvio(guardado: DiaGuardado | null, novo: EnvioNovo): DiaGuardado | { erro: string; escalaRecusada?: EscalaRecusada } {
   if (!novo.romaneio && !novo.escala && !novo.pao) return { erro: 'Escolha pelo menos um arquivo.' }
   if (!guardado && !novo.romaneio) return { erro: 'Envie o Romaneio de Entrega (PDF).' }
   const base: DiaGuardado = guardado ?? { romaneio: [], escala: [], pao: { linhas: [], escala: [] }, escalaEnviada: false, paoEnviado: false }
+  // F1-13 (ING-07): escala vazia ou de outro dia nao troca a do dia (confere
+  // com o romaneio que vai valer: o novo, se veio junto, senao o guardado).
+  if (novo.escala) {
+    const recusa = conferirEscala(novo.escala, novo.romaneio ?? base.romaneio)
+    if (recusa) return { erro: mensagemEscalaRecusada(recusa, null), escalaRecusada: recusa }
+  }
   return {
     romaneio: novo.romaneio ?? base.romaneio,
     escala: novo.escala ?? base.escala,

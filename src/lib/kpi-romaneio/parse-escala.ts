@@ -1,5 +1,6 @@
 import { getDocument } from 'pdfjs-serverless'
 import type { LinhaEscala } from './types'
+import { dataImpressaDoTexto } from './validar-escala'
 
 export type ItemTexto = { str: string; x: number }
 type ItemComLinha = ItemTexto & { y: number; page: number }
@@ -95,4 +96,15 @@ export async function parseEscala(buffer: Buffer): Promise<LinhaEscala[]> {
   }
   const linhas = agruparPorLinha(items)
   return linhas.map(l => linhaParaEscala(l.items)).filter((l): l is LinhaEscala => l !== null)
+}
+
+/** F1-13: data impressa no topo da 1a pagina (so' pra mensagem de escala recusada). */
+export async function dataImpressaEscala(buffer: Buffer): Promise<string | null> {
+  try {
+    const pdf = await getDocument({ data: new Uint8Array(buffer), useSystemFonts: true }).promise
+    const content = await (await pdf.getPage(1)).getTextContent()
+    return dataImpressaDoTexto(content.items.filter(i => 'str' in i).map(i => (i as { str: string }).str))
+  } catch {
+    return null
+  }
 }

@@ -36,3 +36,28 @@ describe('mesclarEnvio (arquivo esquecido, 08/10)', () => {
     expect(mesclarEnvio(antes, {})).toEqual({ erro: 'Escolha pelo menos um arquivo.' })
   })
 })
+
+// F1-13 (ING-07): escala vazia ou de outro dia nao troca mais a do dia.
+describe('mesclarEnvio: escala conferida com o romaneio do dia (F1-13)', () => {
+  const romDia = (cs: string[]) => cs.map(carga => ({ carga, nf: carga }) as never)
+  const escDia = (cs: string[]) => cs.map(carga => ({ carga }) as never)
+  const dia17: DiaGuardado = { romaneio: romDia(['100297', '100299', '100300', '100301']), escala: escDia(['100297', '100299', '100300', '100301']), pao: { linhas: [], escala: [] }, escalaEnviada: true, paoEnviado: false }
+  it('escala com 0 cargas (PDF da Porto Frio): erro, a escala do dia fica', () => {
+    const r = mesclarEnvio(dia17, { escala: [] })
+    expect(r).toMatchObject({ escalaRecusada: { motivo: 'vazia' } })
+    expect('erro' in r && r.erro).toMatch(/nenhuma carga/)
+  })
+  it('so\' a escala de 16/10 com o romaneio de 17/10 guardado: erro', () => {
+    expect(mesclarEnvio(dia17, { escala: escDia(['100208', '100213', '100211']) })).toMatchObject({ escalaRecusada: { motivo: 'nao_casa', casam: 0, total: 3 } })
+  })
+  it('romaneio e escala novos juntos: confere a escala com o romaneio NOVO', () => {
+    const r = mesclarEnvio(dia17, { romaneio: romDia(['100208', '100213']), escala: escDia(['100208', '100213', '100211']) }) as DiaGuardado
+    expect(r.escala).toHaveLength(3)
+    expect(r.escalaEnviada).toBe(true)
+  })
+  it('escala certa do dia: troca normalmente', () => {
+    const r = mesclarEnvio(dia17, { escala: escDia(['100297', '100299', '100300']) }) as DiaGuardado
+    expect(r.escala).toHaveLength(3)
+  })
+})
+

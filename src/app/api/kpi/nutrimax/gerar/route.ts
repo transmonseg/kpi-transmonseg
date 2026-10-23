@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getPerfil, podeOperarEmpresa } from '@/lib/perfil'
-import { parseEscala } from '@/lib/kpi-romaneio/parse-escala'
+import { parseEscala, dataImpressaEscala } from '@/lib/kpi-romaneio/parse-escala'
+import { conferirEscala, mensagemEscalaRecusada } from '@/lib/kpi-romaneio/validar-escala'
 import { parseRomaneio, parseRomaneioComData } from '@/lib/kpi-romaneio/parse-romaneio'
 import { parsePao } from '@/lib/kpi-romaneio/parse-pao'
 import { extrairResumoKpiXlsx } from '@/lib/kpi-romaneio/resumo-dashboard'
@@ -190,6 +191,12 @@ export async function POST(req: NextRequest) {
     if (dataPdf && dataPdf !== data) {
       const br = (iso: string) => iso.split('-').reverse().join('/')
       return new NextResponse(`O Romaneio de Entrega enviado é do dia ${br(dataPdf)}, mas a geração é do dia ${br(data)}. Confira se subiu o arquivo certo.`, { status: 422 })
+    }
+    // F1-13 (ING-07): mesma conferencia do Ao vivo -- escala vazia ou de
+    // outro dia (menos da metade das cargas no romaneio) nao entra.
+    if (escalaBuf) {
+      const recusa = conferirEscala(escala, romaneio)
+      if (recusa) return new NextResponse(mensagemEscalaRecusada(recusa, await dataImpressaEscala(escalaBuf)), { status: 422 })
     }
   } catch (err) {
     return new NextResponse(err instanceof Error ? err.message : 'Erro ao ler os PDFs enviados.', { status: 422 })

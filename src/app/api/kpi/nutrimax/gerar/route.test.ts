@@ -44,6 +44,8 @@ const cenario = vi.hoisted(() => ({
   uploadBodies: new Map<string, unknown>(),
   paoBufRecebido: null as string | null,
   trocas: [] as { carga: string | null; placaEscala: string; placaReal: string }[],
+  // F1-13 (ING-07): o que parseEscala devolve (escala enviada).
+  escala: [] as LinhaEscala[],
 }))
 
 // Task 2 (romaneio do pão): mocks de TODO módulo com efeito colateral
@@ -104,7 +106,7 @@ function escalaSintetica(overrides: Partial<LinhaEscala> = {}): LinhaEscala {
   }
 }
 
-vi.mock('@/lib/kpi-romaneio/parse-escala', () => ({ parseEscala: async () => [] }))
+vi.mock('@/lib/kpi-romaneio/parse-escala', () => ({ parseEscala: async () => cenario.escala, dataImpressaEscala: async () => '2026-10-16' }))
 vi.mock('@/lib/kpi-romaneio/parse-romaneio', () => ({
   parseRomaneio: async () => (cenario.romaneioVazio ? [] : [linhaNutrimax(), ...cenario.linhasNutrimaxExtras]),
   parseRomaneioComData: async () => ({ linhas: cenario.romaneioVazio ? [] : [linhaNutrimax(), ...cenario.linhasNutrimaxExtras], data: cenario.dataPdfRomaneio }),
@@ -243,6 +245,7 @@ beforeEach(() => {
   cenario.linhasNutrimaxExtras = []
   cenario.placaPaoOverride = undefined
   cenario.trocas = []
+  cenario.escala = []
 })
 
 describe('POST /api/kpi/nutrimax/gerar -- troca de placa da tela Placas do dia', () => {
@@ -396,9 +399,11 @@ describe('POST /api/kpi/nutrimax/gerar -- avisos de descasamento por origem', ()
   })
 
   it('com Escala de Rota que não cobre a carga Nutry Max: o aviso volta a disparar, e só pra ela', async () => {
-    // parseEscala está mockado devolvendo [] -- Escala enviada mas sem
-    // nenhuma carga correspondente. O pão continua com a escala sintética
-    // dele, então NÃO pode aparecer nos avisos.
+    // Escala enviada cobrindo so' a 97901 (F1-13: escala vazia agora e'
+    // recusada) -- a 97900 fica sem escala. O pão continua com a escala
+    // sintética dele, então NÃO pode aparecer nos avisos.
+    cenario.linhasNutrimaxExtras = [linhaNutrimax({ carga: '97901', nf: 'NF901' })]
+    cenario.escala = [escalaSintetica({ carga: '97901' })]
     const res = await POST(montarRequest(true, true) as never)
     expect(res.status).toBe(200)
 
@@ -1000,3 +1005,34 @@ describe('POST /api/kpi/nutrimax/gerar -- guarda o xlsx gerado (item 1, 01/10)',
     expect(cenario.uploads).toEqual([arg.arquivoStoragePath])
   })
 })
+
+// F1-13 (ING-07): escala vazia ou de outro dia era aceita calada (17/10 com a
+// escala de 16/10; PDF da Porto Frio na caixa de escala = 0 linhas).
+describe('POST /api/kpi/nutrimax/gerar -- Escala de Rota conferida (F1-13)', () => {
+  beforeEach(async () => { vi.mocked((await import('@/lib/kpi-romaneio/historico')).salvarGeracao).mockClear() })
+  it('escala com 0 cargas (PDF da Porto Frio): 422 com a mesma mensagem do Ao vivo, nada gerado', async () => {
+    cenario.escala = []
+    const res = await POST(montarRequest(false, true) as never)
+    expect(res.status).toBe(422)
+    expect(await res.text()).toMatch(/nenhuma carga reconhecida/)
+    expect(vi.mocked((await import('@/lib/kpi-romaneio/historico')).salvarGeracao)).not.toHaveBeenCalled()
+  })
+  it('escala de outro dia (nenhuma carga no romaneio): 422 com a data impressa', async () => {
+    cenario.escala = ['100208', '100213', '100211'].map(carga => escalaSintetica({ carga }))
+    const res = await POST(montarRequest(false, true) as never)
+    expect(res.status).toBe(422)
+    const t = await res.text()
+    expect(t).toContain('0 de 3')
+    expect(t).toContain('16/10/2026')
+  })
+  it('escala do dia: gera normalmente', async () => {
+    cenario.escala = [escalaSintetica({ carga: '97900' })]
+    const res = await POST(montarRequest(false, true) as never)
+    expect(res.status).toBe(200)
+  })
+  it('sem escala: continua opcional', async () => {
+    const res = await POST(montarRequest(false, false) as never)
+    expect(res.status).toBe(200)
+  })
+})
+

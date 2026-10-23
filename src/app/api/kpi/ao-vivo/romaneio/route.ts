@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { hojeBR } from '@/lib/data-br'
-import { parseEscala } from '@/lib/kpi-romaneio/parse-escala'
+import { parseEscala, dataImpressaEscala } from '@/lib/kpi-romaneio/parse-escala'
+import { mensagemEscalaRecusada } from '@/lib/kpi-romaneio/validar-escala'
 import { parseRomaneioComData } from '@/lib/kpi-romaneio/parse-romaneio'
 import { parsePao } from '@/lib/kpi-romaneio/parse-pao'
 import { guardarDiaAoVivo, calcularAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
@@ -43,12 +44,13 @@ export async function POST(req: NextRequest) {
     romaneio: ja.romaneio as DiaGuardado['romaneio'], escala: (ja.escala as DiaGuardado['escala']) ?? [],
     pao: (ja.pao as DiaGuardado['pao']) ?? { linhas: [], escala: [] }, escalaEnviada: !!ja.escala_enviada, paoEnviado: !!ja.pao_enviado,
   } : null
+  const escalaBuf = escalaFile instanceof File ? Buffer.from(await escalaFile.arrayBuffer()) : null
   const romaneioBuf = romaneioFile instanceof File ? Buffer.from(await romaneioFile.arrayBuffer()) : null
   const paoBuf = paoFile instanceof File ? Buffer.from(await paoFile.arrayBuffer()) : null
   let novo: EnvioNovo = {}
   try {
     const [escala, romaneioLido, pao] = await Promise.all([
-      escalaFile instanceof File ? parseEscala(Buffer.from(await escalaFile.arrayBuffer())) : Promise.resolve(undefined),
+      escalaBuf ? parseEscala(escalaBuf) : Promise.resolve(undefined),
       romaneioBuf ? parseRomaneioComData(romaneioBuf) : Promise.resolve(undefined),
       paoBuf ? parsePao(paoBuf, data) : Promise.resolve(undefined),
     ])
@@ -67,7 +69,11 @@ export async function POST(req: NextRequest) {
     return new NextResponse('Nenhuma linha reconhecida no Romaneio de Entrega — confira se o PDF é o "Romaneio de Entrega" da Nutry Max.', { status: 422 })
   }
   const dia = mesclarEnvio(guardado, novo)
-  if ('erro' in dia) return new NextResponse(dia.erro, { status: 400 })
+  if ('erro' in dia) {
+    // F1-13 (ING-07): escala recusada -> 422 com a data impressa no PDF.
+    if (dia.escalaRecusada) return new NextResponse(mensagemEscalaRecusada(dia.escalaRecusada, escalaBuf ? await dataImpressaEscala(escalaBuf) : null), { status: 422 })
+    return new NextResponse(dia.erro, { status: 400 })
+  }
   await guardarDiaAoVivo({ cliente: a.cliente, data, escala: dia.escala, romaneio: dia.romaneio, pao: dia.pao, escalaEnviada: dia.escalaEnviada, paoEnviado: dia.paoEnviado, enviadoPor: a.email })
   void calcularAoVivo(a.cliente, data, m => console.log(`[kpi/ao-vivo] ${m}`)).catch(err => console.error('[kpi/ao-vivo] calculo falhou:', err))
   // O que foi enviado agora vai pro Monitoramento -- a operação não sobe duas vezes.
