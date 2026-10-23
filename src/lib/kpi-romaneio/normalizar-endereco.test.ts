@@ -4,7 +4,10 @@ import {
   limparLixoInicio,
   expandirTipoLogradouro,
   normalizarEndereco,
+  expandirSegmentoCidade,
 } from './normalizar-endereco'
+import { chaveCacheEndereco } from './endereco-cep'
+import fixture from './normalizar-endereco.fixture-nfs-2026-10.json'
 
 describe('expandirCidadeTruncada', () => {
   // Casos reais das auditorias terco1/2/3
@@ -60,8 +63,8 @@ describe('expandirCidadeTruncada', () => {
     expect(expandirCidadeTruncada('SANTA MARIA MAD')).toBe('SANTA MARIA MADALENA')
   })
 
-  it('expande TRAJANO DE MORA → TRAJANO DE MORAIS', () => {
-    expect(expandirCidadeTruncada('TRAJANO DE MORA')).toBe('TRAJANO DE MORAIS')
+  it('expande TRAJANO DE MORA → TRAJANO DE MORAES (F1-14: grafia do IBGE)', () => {
+    expect(expandirCidadeTruncada('TRAJANO DE MORA')).toBe('TRAJANO DE MORAES')
   })
 
   it('devolve original quando cidade não está truncada', () => {
@@ -172,5 +175,60 @@ describe('normalizarEndereco', () => {
 
   it('devolve original para string vazia', () => {
     expect(normalizarEndereco('')).toBe('')
+  })
+})
+// F1-14 (GEO-25, auditoria 23/10): bairro com nome de municipio trocava a
+// cidade real -- "SAO FRANCISCO DE ASSIS, BARRA MANSA" virava Sao Francisco de
+// Itabapoana. 148 NFs em 9 dias, chaves de cidades diferentes colidindo.
+describe('normalizarEndereco / chaveCacheEndereco: cidade real (F1-14, GEO-25)', () => {
+  it('casos reais: o bairro com nome de cidade nao troca a cidade', () => {
+    expect(chaveCacheEndereco('RUA SAO JOSE, 211 - SAO FRANCISCO DE ASSIS, BARRA MANSA - * - 27323790')).toBe('RUA SAO JOSE, 211 - SAO FRANCISCO DE ASSIS, BARRA MANSA')
+    expect(chaveCacheEndereco('ROD WASHINGTON LUIZ - DE 19002/19003 AO, S/N - SANTO ANTONIO DA SERRA, DUQUE DE CAXIAS - * - 25251745')).toBe('RODOVIA WASHINGTON LUIZ - DE 19002/19003 AO, S/N - SANTO ANTONIO DA SERRA, DUQUE DE CAXIAS')
+    expect(chaveCacheEndereco('ESTRADA CALIFORNIA, S/N - CANTAGALO, RIO DAS OSTRAS - KM 7,5 - 28890001')).toBe('ESTRADA CALIFORNIA, S/N - CANTAGALO, RIO DAS OSTRAS - KM 7,5')
+    expect(chaveCacheEndereco('RUA JOAO GOMES RIBEIRO, S/N - CANTAGALO, ANGRA DOS REIS - * - 23919-520')).toBe('RUA JOAO GOMES RIBEIRO, S/N - CANTAGALO, ANGRA DOS REIS')
+    expect(chaveCacheEndereco('AV ARTHUR SEBASTIAO DE TOLEDO RIBAS, 365 - CANTAGALO, TRES RIOS - * - 25803060')).toBe('AVENIDA ARTHUR SEBASTIAO DE TOLEDO RIBAS, 365 - CANTAGALO, TRÊS RIOS')
+  })
+  it('Sao Francisco de Assis, bairro de Cachoeiras de Macacu (truncada): vira Cachoeiras, nao Sao Francisco de Itabapoana', () => {
+    expect(chaveCacheEndereco('10A RUA JOAO CARLOS FARIA, 1 - SAO FRANCISCO DE ASSIS, CACHOEIRAS DE M - LOJA 1 - 28680-000')).toBe('A RUA JOAO CARLOS FARIA, 1 - SAO FRANCISCO DE ASSIS, CACHOEIRAS DE MACACU')
+  })
+  it('MAGEMIRIM, MAGE: a cidade fica Mage e o bairro nao some', () => {
+    expect(chaveCacheEndereco('AVENIDA SIMAO DA MOTA, 42 - MAGEMIRIM, MAGE - LOJA 2 3 4 - 25901-028')).toBe('AVENIDA SIMAO DA MOTA, 42 - MAGEMIRIM, MAGÉ')
+  })
+  it('TRAJANO DE MORA vira TRAJANO DE MORAES (grafia do IBGE, a que o monitoramento reconhece)', () => {
+    expect(expandirCidadeTruncada('TRAJANO DE MORA')).toBe('TRAJANO DE MORAES')
+    expect(chaveCacheEndereco('AVENIDA CASTELO BRANCO, 49 - CENTRO, TRAJANO DE MORA - * - 28750-000')).toBe('AVENIDA CASTELO BRANCO, 49 - CENTRO, TRAJANO DE MORAES')
+  })
+  it('chave que ja estava certa nao muda (o cache continua valendo)', () => {
+    // bairro com o nome da propria cidade: a chave antiga (so' a cidade) fica
+    expect(chaveCacheEndereco('RODOVIA PRESIDENTE JOAO GOULART, S/N - APERIBÉ, APERIBE - ANEXO - 28495521')).toBe('RODOVIA PRESIDENTE JOAO GOULART, S/N - APERIBÉ')
+    expect(chaveCacheEndereco('AVENIDA ATLANTICA, 2534 - CAVALEIROS, MACAE - * - 27920390')).toBe('AVENIDA ATLANTICA, 2534 - CAVALEIROS, MACAÉ')
+    expect(normalizarEndereco('RUA DAS FLORES, 10 - CENTRO - SAO FRANCISCO D - *')).toBe('RUA DAS FLORES, 10 - CENTRO - SÃO FRANCISCO DE ITABAPOANA - *')
+  })
+  it('rua com nome de cidade antes do "bairro, cidade" nao vira cidade', () => {
+    expect(normalizarEndereco('ESTRADA RIO - TERESOPOLIS - SERRA DE TERESOPOLIS, GUAPIMIRIM')).toBe('ESTRADA RIO - TERESOPOLIS - SERRA DE TERESOPOLIS, GUAPIMIRIM')
+  })
+  it('expandirSegmentoCidade: so segmento inteiro (nome ou truncagem), nunca prefixo de texto maior', () => {
+    expect(expandirSegmentoCidade('SAO FRANCISCO D')).toBe('SÃO FRANCISCO DE ITABAPOANA')
+    expect(expandirSegmentoCidade('SAO FRANCISCO DE')).toBe('SÃO FRANCISCO DE ITABAPOANA')
+    expect(expandirSegmentoCidade('SAO FRANCISCO DE ASSIS')).toBeNull()
+    expect(expandirSegmentoCidade('MAGEMIRIM')).toBeNull()
+    expect(expandirSegmentoCidade('CANTAGALO, RIO DAS OSTRAS')).toBeNull()
+    expect(expandirSegmentoCidade('Petropolis')).toBe('PETRÓPOLIS')
+  })
+})
+
+// Propriedade sobre as NFs reais de 13-23/10 (Nutry + RQ): em todo endereco
+// cuja chave mudou, a chave nova traz a cidade do romaneio; nos demais
+// (amostra, incluindo todo "CIDADE, CIDADE"), a chave e' identica a antiga.
+describe('propriedade municipio(raw) == municipio(chave) nas NFs de 13-23/10 (F1-14)', () => {
+  const semAcento = (s: string) => s.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  it('chave que mudou traz a cidade real', () => {
+    expect(fixture.mudam.length).toBeGreaterThan(70)
+    const erradas = fixture.mudam.filter(m => !semAcento(chaveCacheEndereco(m.endereco)).endsWith(m.municipio) && !semAcento(chaveCacheEndereco(m.endereco)).includes(`, ${m.municipio}`))
+    expect(erradas).toEqual([])
+  })
+  it('chave que estava certa continua igual', () => {
+    const mudaram = fixture.estaveis.filter(e => chaveCacheEndereco(e.endereco) !== e.chave)
+    expect(mudaram).toEqual([])
   })
 })

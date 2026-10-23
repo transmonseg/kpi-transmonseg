@@ -89,7 +89,8 @@ const CIDADES_TRUNCADAS: Record<string, string> = {
   'SANTO ANTONIO DE': 'SANTO ANTONIO DE PÁDUA',
   'SAO SEBASTIAO D': 'SÃO SEBASTIÃO DO ALTO',
   'SANTA MARIA MAD': 'SANTA MARIA MADALENA',
-  'TRAJANO DE MORA': 'TRAJANO DE MORAIS',
+  // F1-14 (GEO-25): grafia do IBGE, a que o monitoramento reconhece.
+  'TRAJANO DE MORA': 'TRAJANO DE MORAES',
   'MACUCO': 'MACUCO',
   'AREAL': 'AREAL',
   'COMENDADOR LEVY G': 'COMENDADOR LEVY GASPARIAN',
@@ -132,6 +133,39 @@ export function expandirCidadeTruncada(cidade: string): string {
     if (expandido) return expandido
   }
   return cidade
+}
+
+const semAcento = (s: string) => s.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+
+/** F1-14 (GEO-25): expande um SEGMENTO INTEIRO de cidade -- so' quando ele e'
+ *  igual a um prefixo conhecido, ou e' o proprio nome (com ou sem acento), ou
+ *  e' uma truncagem dele (comeca pelo prefixo conhecido e e' prefixo do nome
+ *  completo: "SAO FRANCISCO DE" -> SAO FRANCISCO DE ITABAPOANA). Nunca por
+ *  prefixo de um texto maior: "SAO FRANCISCO DE ASSIS" (bairro de Barra
+ *  Mansa) e "MAGEMIRIM" (bairro de Mage) nao sao cidade. Sem match: null. */
+export function expandirSegmentoCidade(segmento: string): string | null {
+  const seg = semAcento(segmento.trim())
+  if (seg.length < 3) return null
+  if (CIDADES_TRUNCADAS[seg]) return CIDADES_TRUNCADAS[seg]
+  // Mesma busca de antes (prefixo do dicionario, do mais longo ao mais curto),
+  // so' que o segmento tem de ser o nome completo ou uma truncagem dele.
+  for (let len = Math.min(seg.length, 18); len >= 3; len--) {
+    const nome = CIDADES_TRUNCADAS[seg.slice(0, len)]
+    if (nome) return semAcento(nome).startsWith(seg) ? nome : null
+  }
+  return null
+}
+
+/** Segmento "BAIRRO, CIDADE" em que o bairro tem o nome da propria cidade
+ *  ("QUATIS, QUATIS", "APERIBÉ, APERIBE"): a chave antiga (so' a cidade)
+ *  estava certa -- mantida igual pra nao perder o cache. Bairro com nome de
+ *  OUTRA cidade ("CANTAGALO, RIO DAS OSTRAS") nunca entra aqui. */
+function cidadeRepetidaNoBairro(segmento: string): string | null {
+  const i = segmento.lastIndexOf(', ')
+  if (i < 0) return null
+  const bairro = expandirSegmentoCidade(segmento.slice(0, i))
+  const cidade = expandirSegmentoCidade(segmento.slice(i + 2))
+  return bairro != null && bairro === cidade ? cidade : null
 }
 
 /** Remove numeros/simbolos antes do tipo de logradouro no inicio do texto. */
@@ -199,12 +233,22 @@ export function normalizarEndereco(endereco: string): string {
         busca = idx
         continue
       }
-      const expandida = expandirCidadeTruncada(candidata)
+      // F1-14 (GEO-25): a cidade e' o segmento INTEIRO ate' o proximo " - "
+      // (o resto e' complemento: "- *", "- LOJA 1"). Antes casava prefixo do
+      // texto todo, e "SAO FRANCISCO DE ASSIS, BARRA MANSA" virava Sao
+      // Francisco de Itabapoana; "CANTAGALO, RIO DAS OSTRAS" virava Cantagalo.
+      const fimSegmento = candidata.search(/\s-(\s|$)/)
+      const segmento = fimSegmento >= 0 ? candidata.slice(0, fimSegmento) : candidata
+      const expandida = expandirSegmentoCidade(segmento) ?? (sep === ' - ' ? cidadeRepetidaNoBairro(segmento) : null) ?? candidata
       if (expandida !== candidata) {
         corpo = corpo.slice(0, idx + sep.length) + expandida + (sufixoCurto ?? '')
         expandiu = true
         break
       }
+      // F1-14: o segmento "BAIRRO, CIDADE" e' o ultimo lugar onde a cidade pode
+      // estar -- a esquerda dele e' rua ("ESTRADA RIO - TERESOPOLIS - SERRA DE
+      // TERESOPOLIS, GUAPIMIRIM" nao e' Teresopolis). A cidade sai no ", ".
+      if (sep === ' - ' && segmento.includes(', ')) break
       busca = idx
     }
     if (expandiu) break
@@ -213,7 +257,7 @@ export function normalizarEndereco(endereco: string): string {
     // Sem separador: texto inteiro pode ser cidade pura (so' se 3+ chars).
     const trimCorpo = corpo.trim()
     if (trimCorpo.length >= 3) {
-      const expandida = expandirCidadeTruncada(trimCorpo)
+      const expandida = expandirSegmentoCidade(trimCorpo) ?? trimCorpo
       if (expandida !== trimCorpo) {
         corpo = expandida
       }
