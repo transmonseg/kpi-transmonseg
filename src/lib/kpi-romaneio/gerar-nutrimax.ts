@@ -42,6 +42,17 @@ const CLIENTE_LOCAIS = 'nutrimax'
 // de LinhaGeocodificada['geoMotivo'] em vez de crashar o build ou usar `as`
 // as cegas. Qualquer valor fora dos dois conhecidos vira undefined (mesmo
 // fail-open do resto do arquivo: motivo desconhecido nao sustenta rotulo).
+/** GEO-13 (auditoria 20/10; revisao final 23/10): a ancora busca a rua pelo
+ *  nome, sem municipio/bairro -- o ponto resgatado e' uma aproximacao e nunca
+ *  pode sair confiavel (senao vira ENTREGUE/NAO FOI por coincidencia de nome).
+ *  Linha colidida (varios enderecos no mesmo ponto) sem resgate mantem o
+ *  ponto, mas nunca como exato/interpolado (pontoConfirmado). */
+export function aplicarResgateAncora(linha: LinhaGeocodificada, resgate: { lat: number; lng: number } | null, colidida: boolean): LinhaGeocodificada {
+  if (resgate) return { ...linha, lat: resgate.lat, lng: resgate.lng, geoConfiavel: false, geoPrecisao: 'rua' }
+  if (colidida && linha.lat != null) return { ...linha, geoPrecisao: 'rua' }
+  return linha
+}
+
 export function narrowGeoMotivo(motivo: string | undefined): 'municipio_divergente' | 'bairro_divergente' | undefined {
   return motivo === 'municipio_divergente' || motivo === 'bairro_divergente' ? motivo : undefined
 }
@@ -209,10 +220,8 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
     for (const [placaNorm, linhas] of precisaResgatePorPlaca) {
       const resultadosResgate = resgate.get(placaNorm) ?? []
       linhas.forEach((l, i) => {
-        const r = resultadosResgate[i]
-        if (!r) return
         const idx = indicePorNf.get(l.nf)!
-        romaneioGeo[idx] = { ...romaneioGeo[idx], lat: r.lat, lng: r.lng }
+        romaneioGeo[idx] = aplicarResgateAncora(romaneioGeo[idx], resultadosResgate[i] ?? null, enderecosColididos.has(l.endereco))
       })
     }
   }

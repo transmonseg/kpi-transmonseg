@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // RQ-08 (auditoria 20/10): a ponte de coerencia do monitoramento respondendo
 // 500 derrubava 80-100 entregues entre um calculo e outro do Ao vivo da RQ.
@@ -38,7 +38,10 @@ vi.mock('./resumo-dashboard', () => ({ extrairKpiCompleto: async () => ({ data: 
 
 import { calcularAoVivo } from './ao-vivo-servico'
 
-beforeEach(() => { c.updates = []; c.resultadoAnterior = null; c.coerenciaFalhou = 0 })
+// Data fixa: '2026-10-20' fora das 48h fazia o calculo ir pelo snapshot
+// (foraDoAlcanceApi) e o teste quebrou sozinho em 23/10.
+beforeEach(() => { c.updates = []; c.resultadoAnterior = null; c.coerenciaFalhou = 0; vi.setSystemTime(new Date('2026-10-20T15:00:00Z')) })
+afterEach(() => { vi.useRealTimers() })
 
 describe('RQ-08: ponte de coerencia fora nao publica resultado degradado', () => {
   it('com resultado anterior do dia: mantem o anterior e grava o erro', async () => {

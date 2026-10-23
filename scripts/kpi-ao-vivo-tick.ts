@@ -19,6 +19,7 @@ import { repararDia, depsReaisReparo } from '../src/lib/kpi-romaneio/reparar-dia
 import { sincronizarAcessosMonitoramento } from '../src/lib/acessos-monitoramento'
 
 const log = (m: string) => console.log(`${new Date().toISOString()} ${m}`)
+const horaBRAgora = () => Number(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false })) % 24
 
 // Puxa o dia da Fusion e grava no Ao vivo. Nunca lanca (fail-open): o tick segue pro calculo.
 export async function sincronizarFusionRioQuality(data: string): Promise<'ok' | 'sem_dados' | 'manual' | 'erro'> {
@@ -55,6 +56,10 @@ export async function fecharDiaAnterior() {
     if (cliente === 'rioquality') {
       const s = await sincronizarFusionRioQuality(ontem)
       log(`fusion rioquality ${ontem} (fechamento): ${s}`)
+      // Revisao final 23/10: com o tunel caido, fechar agora gravava
+      // calculado_em e o dia nunca mais era refeito com o romaneio completo.
+      // Ate' as 06h BRT espera o proximo tick; depois fecha com o que tem.
+      if (s === 'erro' && horaBRAgora() < 6) { log(`ao vivo ${cliente} ${ontem}: fechamento adiado (Fusion fora)`); continue }
     }
     const r = await calcularAoVivo(cliente, ontem, log)
     if (r !== 'ok') log(`ao vivo ${cliente} ${ontem} (fechamento): ${r}`)
@@ -66,7 +71,7 @@ async function main() {
   const acessos = await sincronizarAcessosMonitoramento().catch(err => `erro: ${err}`)
   if (acessos !== 'sem mudança') log(`acessos monitoramento: ${acessos}`)
   await fecharDiaAnterior()
-  const horaBR = Number(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }))
+  const horaBR = horaBRAgora()
   // Limpeza 1x por dia (04h BRT, 1o tick da hora): cache do dia e planilhas
   // do ao vivo com mais de 7 dias -- nada acumula no servidor.
   if (horaBR === 4 && new Date().getMinutes() < 10) {
