@@ -1108,6 +1108,45 @@ function elegivelParaConfirmarPorParadaPropria(status: StatusEntrega, observacao
  *  Cruza com a Escala (planejado) e decide status por NF: confirmado se
  *  alvo.situacao===1 (Unitrac) OU se ha Visita (GPS no nosso perimetro) --
  *  nunca por coordenada do alvo (ver spec). */
+const PERMANENCIA_MIN_CHEGADA_CD_MS = 20 * 60_000
+
+/** F1-08 (KRQ-07, 23/10: SQY3C65 sai 06:49 e "chega" 06:51 com entregas ate
+ *  16:05). Chegada no CD = entrada na base DEPOIS da ultima parada FORA_BASE,
+ *  na primeira permanencia de >= 20 min -- ou na ultima parada do dia, se o
+ *  dia ja acabou (fim do dia); nunca a primeira permanencia (a da saida).
+ *  Hoje, passagem curta que ainda pode ser seguida de mais entregas nao fecha
+ *  a rota (fica AGUARDANDO). Dia passado sem volta depois da ultima parada
+ *  fora da base (parada que nao e' entrega depois da volta, ex. QUR3F92 21/10):
+ *  vale a primeira entrada na base depois da ultima entrega confirmada
+ *  (`ultimaEntrega`), de qualquer duracao -- a passagem curta da manha nunca
+ *  fica depois da ultima entrega. Sem volta nenhuma: null (nunca inventa). */
+export function chegadaCdPorParadas(paradas: UnitracParadaRow[], hoje: string = hojeBR(), ultimaEntrega: string | null = null): string | null {
+  const ordenadas = [...paradas].sort((a, b) => a.chegada.localeCompare(b.chegada))
+  if (ordenadas.length === 0) return null
+  // A primeira permanencia na base e' a da SAIDA (saidaCd), nunca a chegada.
+  const primeiraBase = ordenadas.findIndex(p => p.classificacao === 'BASE')
+  const diaPassado = ordenadas[0].chegada.slice(0, 10) < hoje
+  const procurarDepois = (inicio: number, qualquerPermanencia = false): string | null => {
+    for (let i = Math.max(inicio, primeiraBase + 1); i < ordenadas.length; i++) {
+      const p = ordenadas[i]
+      if (p.classificacao !== 'BASE') continue
+      if (qualquerPermanencia) return p.chegada
+      const fim = p.fim_real ?? p.saida ?? p.chegada
+      const durMs = new Date(fim).getTime() - new Date(p.chegada).getTime()
+      if (durMs >= PERMANENCIA_MIN_CHEGADA_CD_MS) return p.chegada
+      if (i === ordenadas.length - 1 && diaPassado) return p.chegada
+    }
+    return null
+  }
+  let ultimaFora = -1
+  ordenadas.forEach((p, i) => { if (p.classificacao === 'FORA_BASE') ultimaFora = i })
+  const estrita = procurarDepois(ultimaFora + 1)
+  if (estrita || !diaPassado || !ultimaEntrega) return estrita
+  const tEntrega = Date.parse(ultimaEntrega)
+  const depoisDaEntrega = ordenadas.findIndex(p => Date.parse(p.chegada) >= tEntrega)
+  return depoisDaEntrega < 0 ? null : procurarDepois(depoisDaEntrega, true)
+}
+
 export function agregarPorCarga(
   carga: string,
   placaNorm: string,
@@ -1184,7 +1223,10 @@ export function agregarPorCarga(
   // volta no fim do dia). Placa que nunca aparece em BASE (ou só aparece
   // uma vez) fica com os dois vazios -- nao inventa horario.
   const saidaCdFallback = primeiraBase ? (primeiraBase.fim_real ?? primeiraBase.saida) : null
-  const chegadaCdFallback = ultimaBase ? ultimaBase.chegada : null
+  // F1-08 (KRQ-07): a chegada sai de chegadaCdPorParadas (volta DEPOIS da
+  // ultima parada fora da base), nao mais do inicio da ultima permanencia.
+  const ultimaEntrega = [...visitasPorNf.values()].map(v => v.saida).filter(Boolean).sort((a, b) => Date.parse(a) - Date.parse(b)).pop() ?? null
+  const chegadaCdFallback = ultimaBase ? chegadaCdPorParadas(paradasGps, hojeBR(), ultimaEntrega) : null
   // horarioBaseBridge presente (mesmo com campo null) = a ponte respondeu
   // por essa placa -- CONFIA no null dela em vez de cair pro calculo
   // antigo, porque um null da ponte e' "nunca observado dentro da base

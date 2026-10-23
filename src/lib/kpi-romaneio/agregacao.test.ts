@@ -4,6 +4,7 @@ import { resolverParadas } from './unitrac'
 import type { LinhaEscala, LinhaGeocodificada, Visita, StatusEntrega } from './types'
 import type { AlvoApi } from '@/lib/unitrac-api'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
+import { hojeBR } from '@/lib/data-br'
 
 function linha(nf: string, overrides: Partial<LinhaGeocodificada> = {}): LinhaGeocodificada {
   return {
@@ -259,6 +260,83 @@ describe('agregarPorCarga', () => {
       // sem ponte nenhuma, km cai pro fallback (calcularKmPercorrido, ja
       // calculado pelo chamador).
       expect(r.kmPercorrido).toBe(140.2)
+    })
+  })
+
+  // F1-08 (KRQ-07, 23/10): o fallback pegava o INICIO da ultima permanencia
+  // BASE -- uma passagem curta logo depois da saida virava "chegada no CD".
+  // SQY3C65 23/10: saida 06:49, "chegada" 06:51, entregas ate 16:05 -> 14
+  // NFs "revisar" em vez de AGUARDANDO. Mesmo fallback da Nutry com a ponte fora.
+  describe('chegada no CD pelo fallback (F1-08, KRQ-07)', () => {
+    const hoje = hojeBR()
+    const t = (hhmm: string, dia = hoje) => `${dia}T${hhmm}:00.000Z`
+    const base = (id: string, ini: string, fim: string, dia = hoje) =>
+      parada({ id, classificacao: 'BASE', chegada: t(ini, dia), saida: t(fim, dia), fim_real: t(fim, dia), duracao_seg: undefined as unknown as number })
+    const fora = (id: string, ini: string, fim: string, dia = hoje) =>
+      parada({ id, classificacao: 'FORA_BASE', chegada: t(ini, dia), saida: t(fim, dia), fim_real: t(fim, dia), duracao_seg: undefined as unknown as number, lat: -22.95, lng: -43.30 })
+    // SQY3C65 23/10: noite na base, sai 06:49, passa 2 min na base 06:51,
+    // entregas ate 16:05 (ainda em rota).
+    const sqy = (dia = hoje) => [
+      base('b1', '00:00', '06:49', dia), base('b2', '06:51', '06:53', dia),
+      fora('f1', '07:30', '07:45', dia), fora('f2', '11:00', '11:20', dia), fora('f3', '15:50', '16:05', dia),
+    ]
+
+    it('SQY3C65 (RQ, sem ponte): passagem de 2 min na base antes das entregas nao e chegada; NFs ficam AGUARDANDO', () => {
+      const r = agregarPorCarga('1168700', 'SQY3C65', [linha('NF1', { placa: 'SQY3C65' })], null, [], new Map(), sqy(), null, undefined)
+      expect(r.saidaCd).toBe(t('06:49'))
+      expect(r.chegadaCd).toBeNull()
+      expect(calcularDiaEmAndamento(hoje, r.chegadaCd)).toBe(true)
+      const longe = parada({ id: 'p', placa_norm: 'SQY3C65', classificacao: 'FORA_BASE', lat: -22.95, lng: -43.30 })
+      const resumo = { motorista: '', saidaCd: r.saidaCd, chegadaCd: r.chegadaCd, tempoOperacaoMin: r.tempoOperacaoMin }
+      const [d] = montarDetalheEntregas('1168700', 'SQY3C65', [linha('NF1', { placa: 'SQY3C65' })], [], new Map(), resumo, true, new Map([['SQY3C65', [longe]]]), null, calcularDiaEmAndamento(hoje, r.chegadaCd))
+      expect(d.observacao).toBe('AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO')
+    })
+    it('Nutry com a ponte fora (horarioBaseBridge undefined): mesma regra', () => {
+      const r = agregarPorCarga('93758', 'TTL7D40', [linha('NF1')], escala(), [], new Map(), sqy(), null, undefined)
+      expect(r.chegadaCd).toBeNull()
+    })
+    it('volta pra base depois da ultima entrega e fica >= 20 min: chegada = entrada nessa permanencia', () => {
+      const ps = [...sqy(), base('b3', '17:10', '17:40')]
+      expect(agregarPorCarga('1168700', 'SQY3C65', [linha('NF1')], null, [], new Map(), ps, null, undefined).chegadaCd).toBe(t('17:10'))
+    })
+    it('hoje: passagem curta (< 20 min) na base depois de uma entrega nao fecha o dia; a permanencia seguinte >= 20 min fecha', () => {
+      const curta = [...sqy(), base('b3', '16:30', '16:40')]
+      expect(agregarPorCarga('1168700', 'SQY3C65', [linha('NF1')], null, [], new Map(), curta, null, undefined).chegadaCd).toBeNull()
+      const depois = [...curta, base('b4', '16:45', '18:00')]
+      expect(agregarPorCarga('1168700', 'SQY3C65', [linha('NF1')], null, [], new Map(), depois, null, undefined).chegadaCd).toBe(t('16:45'))
+    })
+    it('dia passado: permanencia curta que e a ultima parada do dia vale como chegada (fim do dia)', () => {
+      const dia = '2026-10-22'
+      const ps = [...sqy(dia), base('b3', '16:40', '16:50', dia)]
+      expect(agregarPorCarga('1168700', 'SQY3C65', [linha('NF1')], null, [], new Map(), ps, null, undefined).chegadaCd).toBe(t('16:40', dia))
+    })
+    // A seco RQ 21/10 (QUR3F92): volta a base 11:21 depois da ultima entrega
+    // (10:37) e, mais tarde, uma parada fora da base que nao e' entrega. Dia
+    // passado: a chegada continua sendo a volta depois da ultima ENTREGUE
+    // confirmada (nao some). Hoje: so' a regra estrita (fica AGUARDANDO).
+    it('dia passado: parada fora da base depois da volta, sem entrega, nao apaga a chegada (vale a volta depois da ultima entrega)', () => {
+      const dia = '2026-10-21'
+      const ps = [base('b1', '00:00', '06:19', dia), fora('f1', '10:30', '10:37', dia), base('b2', '11:21', '11:50', dia), fora('f2', '12:10', '12:40', dia)]
+      const visitas = new Map<string, Visita>([['NF1', { nf: 'NF1', chegada: t('10:30', dia), saida: t('10:37', dia), distanciaMetrosDoPonto: 20 }]])
+      expect(agregarPorCarga('1', 'QUR3F92', [linha('NF1')], null, [], visitas, ps, null, undefined).chegadaCd).toBe(t('11:21', dia))
+    })
+    it('dia passado: volta curta (< 20 min) depois da ultima entrega, seguida de parada fora da base, tambem e chegada', () => {
+      const dia = '2026-10-21'
+      const ps = [base('b1', '00:00', '06:19', dia), fora('f1', '10:30', '10:37', dia), base('b2', '11:21', '11:30', dia), fora('f2', '12:10', '12:40', dia)]
+      const visitas = new Map<string, Visita>([['NF1', { nf: 'NF1', chegada: t('10:30', dia), saida: t('10:37', dia), distanciaMetrosDoPonto: 20 }]])
+      expect(agregarPorCarga('1', 'QUR3F92', [linha('NF1')], null, [], visitas, ps, null, undefined).chegadaCd).toBe(t('11:21', dia))
+    })
+    it('hoje, mesma situacao: chegada vazia (a rota pode ter mais entregas)', () => {
+      const ps = [base('b1', '00:00', '06:19'), fora('f1', '10:30', '10:37'), base('b2', '11:21', '11:50'), fora('f2', '12:10', '12:40')]
+      const visitas = new Map<string, Visita>([['NF1', { nf: 'NF1', chegada: t('10:30'), saida: t('10:37'), distanciaMetrosDoPonto: 20 }]])
+      expect(agregarPorCarga('1', 'QUR3F92', [linha('NF1')], null, [], visitas, ps, null, undefined).chegadaCd).toBeNull()
+    })
+    it('dia passado sem volta a base depois da ultima entrega (TUP1J16 22/10): chegada vazia, nunca antes da ultima entrega', () => {
+      const dia = '2026-10-22'
+      const ps = [base('b1', '00:00', '04:44', dia), base('b2', '04:48', '05:23', dia), fora('f1', '05:50', '05:54', dia), fora('f2', '21:23', '23:59', dia)]
+      const r = agregarPorCarga('1168655', 'TUP1J16', [linha('NF1')], null, [], new Map(), ps, null, undefined)
+      expect(r.saidaCd).toBe(t('04:44', dia))
+      expect(r.chegadaCd).toBeNull()
     })
   })
 
