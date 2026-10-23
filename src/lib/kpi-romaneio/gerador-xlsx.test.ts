@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import ExcelJS from 'exceljs'
 import { gerarKpiRomaneioXlsx, COLUNAS_KPI_ROMANEIO, COLUNAS_DETALHE_PLACA, COLUNAS_RESOLUCAO, COLUNAS_AVISOS, textoAviso } from './gerador-xlsx'
 import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega } from './types'
+import { extrairKpiCompleto } from './resumo-dashboard'
 
 // Achado real 24/08 (pedido do usuário, referência
 // KPI-GUANABARA-2026-08-23-com-chegada-cd.xlsx): banner de título mesclado
@@ -1365,5 +1366,97 @@ describe('GN-06 (auditoria 20/10): aviso de fonte indisponivel', () => {
     const t = textoAviso({ carga: '—', placa: '—', motivo: 'fonte_indisponivel', fonte: 'trocas_placa' })
     expect(t).toContain('trocas de placa')
     expect(t).toContain('Gere novamente')
+  })
+})
+
+// F1-09 (KN-10, plano mestre 23/10): a planilha de 22/10 nao fechava com a
+// propria taxa. NF PLANEJADO somava 2.273 (a carga 100676 vinha da escala, 34,
+// e o romaneio tem 33), NF CONFIRMADAS somava 2.182 e o numerador da taxa era
+// 2.183 (o LLD4202 sem rastreador conta como correto, mas dizia "NAO
+// CONTABILIZADO"). A Erica calculou 96,00% e 96,85%, numeros que o sistema
+// nunca mostrou. Miniatura do mesmo dia: carga com escala divergente, placa
+// sem rastreador, carga do pao sem placa e carga normal.
+describe('F1-09 (KN-10): planilha que fecha com a propria taxa (caso 22/10)', () => {
+  const DATA = '2026-10-22'
+  const OBS_SR = 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO'
+  const linhas: LinhaKpiRomaneio[] = [
+    linhaKpi({ carga: '100676', placa: 'RQU8D91', nfPlanejado: 3, nfEscala: 4, paradasReais: 2 }),
+    linhaKpi({ carga: '100689', placa: 'LLD4202', nfPlanejado: 1, paradasReais: 0, temRastreador: false }),
+    linhaKpi({ carga: 'PAO-1', placa: '', nfPlanejado: 2, paradasReais: 0, temRastreador: false }),
+    linhaKpi({ carga: '100700', placa: 'ABC1234', nfPlanejado: 2, paradasReais: 1 }),
+  ]
+  const detalhe: LinhaDetalheEntrega[] = [
+    detalheFixture({ carga: '100676', placa: 'RQU8D91', nf: '1', status: 'confirmado_gps' }),
+    detalheFixture({ carga: '100676', placa: 'RQU8D91', nf: '2', status: 'confirmado_unitrac' }),
+    detalheFixture({ carga: '100676', placa: 'RQU8D91', nf: '3', observacao: 'CLIENTE NA BASE - SÓ ESTADIA NA GARAGEM, SEM FEITO DA UNITRAC - CONFERIR' }),
+    detalheFixture({ carga: '100689', placa: 'LLD4202', nf: '4', temRastreador: false, observacao: OBS_SR, evidencia: 'sem_rastreador' }),
+    detalheFixture({ carga: 'PAO-1', placa: '', nf: '5', temRastreador: false, observacao: 'CARGA SEM PLACA NO ROMANEIO - CONFERIR COM A OPERAÇÃO' }),
+    detalheFixture({ carga: 'PAO-1', placa: '', nf: '6', temRastreador: false, observacao: 'CARGA SEM PLACA NO ROMANEIO - CONFERIR COM A OPERAÇÃO' }),
+    detalheFixture({ carga: '100700', placa: 'ABC1234', nf: '7', status: 'confirmado_gps' }),
+    detalheFixture({ carga: '100700', placa: 'ABC1234', nf: '8', observacao: 'NÃO FOI AO CLIENTE (caminhão não esteve a menos de 2 km)' }),
+  ]
+  const gerar = async (d = DATA, det = detalhe, hoje = '2026-10-23') => {
+    const buffer = await gerarKpiRomaneioXlsx(linhas, d, [], det, hoje, undefined, { resumoConfirmacao: true })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    return { buffer, wb }
+  }
+  const colunas = (ws: ExcelJS.Worksheet, titulo: string) => {
+    const idx = COLUNAS_KPI_ROMANEIO.indexOf(titulo as typeof COLUNAS_KPI_ROMANEIO[number]) + 1
+    const out: ExcelJS.Cell[] = []
+    for (let r = LINHA_PRIMEIRO_DADO; r < LINHA_PRIMEIRO_DADO + linhas.length; r++) out.push(ws.getRow(r).getCell(idx))
+    return out
+  }
+
+  it('NF PLANEJADO = romaneio (numero, soma no Excel) com a escala entre parenteses quando diverge', async () => {
+    const { wb } = await gerar()
+    const plan = colunas(wb.worksheets[0], 'NF PLANEJADO')
+    expect(plan.map(c => c.value)).toEqual([3, 1, 2, 2])
+    expect(plan[0].numFmt).toContain('(escala 4)')
+    expect(plan[3].numFmt ?? '').not.toContain('escala')
+  })
+
+  it('soma de NF CONFIRMADAS = numerador; soma de NF PLANEJADO - fora da conta = denominador', async () => {
+    const { wb } = await gerar()
+    const ws = wb.worksheets[0]
+    const soma = (t: string) => colunas(ws, t).reduce((s, c) => s + Number(c.value), 0)
+    const totais = ws.getRow(ws.rowCount).getCell(1).value as string
+    const m = /TAXA DE CONFIRMAÇÃO: ([\d,]+)% \((\d+) de (\d+) NFs/.exec(totais)!
+    expect(m[1]).toBe('66,7')
+    expect(soma('NF CONFIRMADAS')).toBe(Number(m[2]))
+    expect(soma('NF CONFIRMADAS')).toBe(4)
+    expect(soma('NF PLANEJADO') - 2).toBe(Number(m[3]))
+    expect(totais).toContain('CONTA: 4 / (8 do romaneio − 2 fora da conta) = 66,7%')
+  })
+
+  it('sem rastreador diz CONTADA COMO CORRETA (nunca NAO CONTABILIZADO) e ENTREGUE + contadas = numerador', async () => {
+    const { wb } = await gerar()
+    const status = wb.worksheets.slice(1).filter(w => !['Auditoria', 'Avisos'].includes(w.name))
+      .flatMap(w => (w.getSheetValues().slice(4) as unknown[][]).filter(Array.isArray).map(v => String(v[8])))
+    const lld = (wb.getWorksheet('LLD4202')!.getSheetValues()[4] as unknown[])[8]
+    expect(lld).toBe('SEM RASTREADOR - CONTADA COMO CORRETA - VEÍCULO SEM RASTREAMENTO NO DIA')
+    expect(status.some(s => s.startsWith('SEM RASTREADOR') && s.includes('NÃO CONTABILIZADO'))).toBe(false)
+    const corretas = status.filter(s => s.startsWith('ENTREGUE') || s.startsWith('SEM RASTREADOR - CONTADA COMO CORRETA')).length
+    expect(corretas).toBe(4)
+  })
+
+  it('o resumo lido da planilha (Dashboard/Ao vivo) nao conta o sem rastreador duas vezes e PLANEJADO e o romaneio', async () => {
+    const { buffer } = await gerar()
+    const { resumo, nfs } = await extrairKpiCompleto(buffer)
+    expect(resumo.entregues).toBe(4)
+    expect(resumo.nfsNaConta).toBe(6)
+    expect(resumo.cargas.reduce((s, c) => s + (c.nfConfirmadas ?? 0), 0)).toBe(4)
+    expect(resumo.cargas.find(c => c.carga === '100676')?.nfPlanejado).toBe(3)
+    expect(resumo.cargas.find(c => c.placa === 'LLD4202')).toMatchObject({ nfConfirmadas: 1, nfSemRastreador: 1 })
+    expect(nfs.find(n => n.nf === '4')?.categoria).toBe('Sem rastreador')
+  })
+
+  it('dia em andamento: a conta pronta desconta tambem o que aguarda o fim da rota', async () => {
+    const det = detalhe.map(d => d.nf === '8' ? { ...d, observacao: 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO' } : d)
+    const { wb } = await gerar(DATA, det, DATA)
+    const ws = wb.worksheets[0]
+    const totais = ws.getRow(ws.rowCount).getCell(1).value as string
+    expect(totais).toContain('80,0% (4 de 5 NFs')
+    expect(totais).toContain('CONTA: 4 / (8 do romaneio − 2 fora da conta − 1 aguardando fim da rota) = 80,0%')
   })
 })

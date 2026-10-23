@@ -52,7 +52,7 @@ function textos(ws: ExcelJS.Worksheet): string[] {
 }
 
 describe('Rio Quality -- regressao placa sem CV (Task 2, plano 2026-09-30)', () => {
-  it('placa sem CV: STATUS "SEM RASTREADOR - ... NÃO CONTABILIZADO", fora da taxa, linha de TAXA presente', async () => {
+  it('placa sem CV: STATUS "SEM RASTREADOR - CONTADA COMO CORRETA - ...", linha de TAXA presente', async () => {
     const { detalhe, wb } = await gerarComoRioQuality('RQX1A11', false, [])
 
     for (const d of detalhe) {
@@ -61,9 +61,10 @@ describe('Rio Quality -- regressao placa sem CV (Task 2, plano 2026-09-30)', () 
     }
     const aba = wb.getWorksheet('RQX1A11')!
     const status = [4, 5].map(r => aba.getRow(r).getCell(8).value)
+    // F1-09 (KN-10): na planilha o rotulo diz o que a taxa faz (conta como correta).
     expect(status).toEqual([
-      'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO',
-      'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO',
+      'SEM RASTREADOR - CONTADA COMO CORRETA - VEÍCULO SEM RASTREAMENTO NO DIA',
+      'SEM RASTREADOR - CONTADA COMO CORRETA - VEÍCULO SEM RASTREAMENTO NO DIA',
     ])
     const principal = textos(wb.worksheets[0])
     expect(principal.some(t => t.includes('TAXA DE CONFIRMAÇÃO: 100,0% (2 de 2 NFs; 0 fora da conta; 2 sem rastreador contadas como corretas)'))).toBe(true)

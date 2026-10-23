@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resumirPlacas, paradaEmAndamento, nfProxima, horaParaIso, paradaDaChegada, diaAnterior, precisaFecharDia } from './ao-vivo'
+import { resumirPlacas, contarCorretas, paradaEmAndamento, nfProxima, horaParaIso, paradaDaChegada, diaAnterior, precisaFecharDia } from './ao-vivo'
 import type { NfResumo, CargaResumo } from './resumo-dashboard'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 
@@ -109,5 +109,18 @@ describe('fechamento do dia (último cálculo depois que o dia acabou)', () => {
     expect(precisaFecharDia('2026-10-06T00:35:00-03:00', '2026-10-05', agora)).toBe(false)
     expect(precisaFecharDia('2026-10-05T23:39:00-03:00', '2026-10-05', Date.parse('2026-10-06T00:10:00-03:00'))).toBe(false)
     expect(precisaFecharDia(null, '2026-10-05', agora)).toBe(false)
+  })
+})
+
+// F1-09 (KN-10): em 22/10 o Ao vivo tinha resumo.feitas 2.182 e
+// resumo.entregues 2.183 para a mesma coisa (o LLD4202 sem rastreador conta
+// como correto na taxa). Um numero so' de entregues.
+describe('F1-09: um numero so de entregues (caso real 22/10)', () => {
+  it('contarCorretas = numerador da taxa gravada (2.183), nunca 2.182', async () => {
+    const { nfsDe2210 } = await import('./ao-vivo.fixture-2026-10-22')
+    const { nfs, cargas } = nfsDe2210()
+    const placas = resumirPlacas('2026-10-22', nfs, cargas, new Map())
+    expect(placas.reduce((s, p) => s + p.total, 0)).toBe(2272)
+    expect(contarCorretas(placas)).toBe(2183)
   })
 })

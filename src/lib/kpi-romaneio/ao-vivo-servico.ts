@@ -6,7 +6,7 @@ import { sugerirTrocas, type SugestaoTroca } from './sugerir-trocas'
 import { createServiceClient } from '@/lib/supabase/service'
 import { gerarKpiNutrimax, type EntradaKpiNutrimax } from './gerar-nutrimax'
 import { extrairKpiCompleto } from './resumo-dashboard'
-import { resumirPlacas, paradaDaChegada, paradaEmAndamento, nfProxima, type PlacaAoVivo } from './ao-vivo'
+import { resumirPlacas, contarCorretas, paradaDaChegada, paradaEmAndamento, nfProxima, type PlacaAoVivo } from './ao-vivo'
 import { investigarPlacas } from './investigacao'
 import { normPlaca } from '@/lib/unitrac-api'
 import type { LinhaEscala, LinhaRomaneio } from './types'
@@ -204,7 +204,8 @@ export async function gerarKpiDoDia(cliente: ClienteAoVivo, data: string, log: (
 export function montarResultadoAoVivo(data: string, lido: Awaited<ReturnType<typeof extrairKpiCompleto>>, coords: Map<string, { lat: number; lng: number }>, calculadoEm: string, paradas?: Map<string, { lat: number; lng: number }>): ResultadoAoVivo {
   const placas = resumirPlacas(data, lido.nfs, lido.resumo.cargas, coords, paradas)
   const totalNfs = placas.reduce((s, p) => s + p.total, 0)
-  const feitas = placas.reduce((s, p) => s + p.feitas, 0)
+  // F1-09: o mesmo número de entregues da taxa (entregue + sem rastreador).
+  const feitas = contarCorretas(placas)
   return {
     calculadoEm,
     resumo: {

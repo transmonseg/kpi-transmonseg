@@ -204,16 +204,19 @@ export async function extrairKpiCompleto(buf: Buffer | ArrayBuffer): Promise<{ d
   // Fora da conta por carga+placa: mesma regra da linha de taxa da planilha
   // (sem rastreador e carga sem placa sempre; placa da escala divergente só
   // quando a carga INTEIRA tem o rótulo).
+  const confirmadasJaSomamSemRastreador = linhaTaxa.includes(' · CONTA: ')
   const porCarga = new Map<string, NfResumo[]>()
   for (const n of nfs) porCarga.set(`${n.carga}::${n.placa}`, [...(porCarga.get(`${n.carga}::${n.placa}`) ?? []), n])
   for (const c of cargas) {
     const lista = porCarga.get(`${c.carga}::${c.placa}`) ?? []
     const inteiraDivergente = lista.length > 0 && lista.every(n => n.categoria === 'Placa da escala divergente')
     // Sem rastreador conta como CORRETA (04/10): soma em nfConfirmadas e fica
-    // dentro da conta; nfSemRastreador guarda quantas foram.
+    // dentro da conta; nfSemRastreador guarda quantas foram. F1-09 (23/10): a
+    // planilha com " · CONTA:" na linha de taxa ja' traz NF CONFIRMADAS com o
+    // sem rastreador somado -- so' as antigas precisam da soma aqui.
     const semRast = lista.filter(n => n.categoria === 'Sem rastreador').length
     c.nfSemRastreador = semRast
-    c.nfConfirmadas = (c.nfConfirmadas ?? 0) + semRast
+    if (!confirmadasJaSomamSemRastreador) c.nfConfirmadas = (c.nfConfirmadas ?? 0) + semRast
     c.nfForaDaConta = lista.filter(n => n.categoria === 'Carga sem placa' || (inteiraDivergente && n.categoria === 'Placa da escala divergente')).length
     // Carga inteira trocada está FORA da taxa: não é pendência (04/10).
     if (inteiraDivergente) {

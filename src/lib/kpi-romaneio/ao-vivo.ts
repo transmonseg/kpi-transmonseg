@@ -115,6 +115,13 @@ export function resumirPlacas(data: string, nfs: NfResumo[], cargas: CargaResumo
   return placas.sort((a, b) => a.pct - b.pct || a.placa.localeCompare(b.placa))
 }
 
+/** F1-09 (KN-10): NFs que a taxa conta como corretas -- entregues + sem
+ *  rastreador (regra do dono 04/10). É o "entregues" do resumo do dia: em
+ *  22/10 a tela tinha 2.182 (só entregue) contra 2.183 na taxa. */
+export function contarCorretas(placas: PlacaAoVivo[]): number {
+  return placas.reduce((s, p) => s + p.nfs.filter(n => n.situacao === 'entregue' || n.situacao === 'sem_rastreador').length, 0)
+}
+
 /** Parada fora da base que ainda está acontecendo: a última do dia, com fim
  *  há menos de 5 min (o feed da Unitrac fecha a parada atual no último evento). */
 // Horário das paradas (Unitrac e ponte) vem em Brasília MASCARADO como UTC

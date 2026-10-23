@@ -235,6 +235,11 @@ export type LinhaKpiRomaneio = {
   pesoKg: number | null
   clientesPlanejados: number | null
   nfPlanejado: number | null
+  // F1-09 (KN-10): NFs da carga segundo a ESCALA, so' pra mostrar entre
+  // parenteses quando diverge do romaneio ("33 (escala 34)"). NF PLANEJADO
+  // e' sempre o romaneio, a mesma base da taxa. Opcional: Rio Quality e
+  // carga sem escala nao tem.
+  nfEscala?: number | null
   // Renomeado pra "NF CONFIRMADAS" no XLSX (Task 9, plano 24/09) -- o nome
   // do campo em código não mudou (evita mexer em todo consumidor), só o
   // rótulo visível: o valor sempre foi contagem de NF confirmadas, nunca

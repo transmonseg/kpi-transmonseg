@@ -1207,7 +1207,11 @@ export function agregarPorCarga(
   // decide o status OK/INCOMPLETO (linha seguinte), entao sem fallback pro
   // tamanho do proprio romaneio, toda carga sem Escala virava falsamente
   // "OK" mesmo faltando confirmar entrega -- pior que so' perder uma coluna.
-  const nfPlanejado = escala?.nfPlanejado ?? (linhasRomaneio.length || null)
+  // F1-09 (KN-10, 22/10): NF PLANEJADO vinha da escala (carga 100676: 34 na
+  // escala, 33 no romaneio) e a planilha nao fechava com a taxa, que conta o
+  // romaneio. Agora e' o romaneio; a escala fica em `nfEscala` (mostrada entre
+  // parenteses quando diverge). Escala so' quando a carga nao tem romaneio.
+  const nfPlanejado = linhasRomaneio.length || escala?.nfPlanejado || null
   const status: 'OK' | 'INCOMPLETO' = nfPlanejado != null && confirmadas < nfPlanejado ? 'INCOMPLETO' : 'OK'
 
   // Tempo médio por entrega (pedido do usuário 24/08): média da duração real
@@ -1246,6 +1250,7 @@ export function agregarPorCarga(
     // Escala nunca teve um numero "mais realista" que o Romaneio pra isso).
     clientesPlanejados: escala?.entPlanejado ?? new Set(linhasRomaneio.map(l => l.clienteCodigo)).size,
     nfPlanejado,
+    nfEscala: escala?.nfPlanejado ?? null,
     paradasReais: confirmadas,
     paradasForaBase,
     kmPercorrido,

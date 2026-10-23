@@ -233,7 +233,8 @@ function celulaHora(iso: string | null, temRastreador: boolean, aindaEmAndamento
 // e' SEMPRE fato positivo (Unitrac ou GPS confirmaram independentemente) --
 // nenhuma observacao pode fazer o STATUS exibido deixar de comecar com
 // "ENTREGUE" (trava exigida: nº de linhas com STATUS iniciando em
-// "ENTREGUE" == soma de NF CONFIRMADAS do resumo == numerador da TAXA).
+// "ENTREGUE" == soma de NF CONFIRMADAS do resumo == numerador da TAXA; desde
+// o F1-09, 23/10, somando as "SEM RASTREADOR - CONTADA COMO CORRETA").
 // "TEMPO EM LOJA ACIMA DE 4H" e' o unico rotulo que por design continua
 // sendo anexado a uma NF JA CONFIRMADA (sinal de dado suspeito que vale a
 // pena conferir mesmo confirmada, ver LIMITE_TEMPO_LOJA_MIN em
@@ -259,6 +260,9 @@ function textoStatus(d: LinhaDetalheEntrega): string {
   // diz o que sabemos de verdade: falta o codigo no cadastro.
   // Task 2 (item 3): carga sem placa nunca e' rotulada "sem rastreador".
   if (ehCargaSemPlaca(d) && (d.observacao == null || d.observacao.startsWith(PREFIXO_OBS_SEM_RASTREADOR))) return ROTULO_CARGA_SEM_PLACA
+  // F1-09 (KN-10, 22/10): o LLD4202 dizia "NÃO CONTABILIZADO" e a taxa o
+  // contava como correto (regra do dono 04/10). O rotulo diz o que a taxa faz.
+  if (ehSemRastreador(d)) return textoSemRastreadorContada(d)
   if (d.observacao) return d.observacao
   if (!d.temRastreador) return 'PLACA SEM RASTREADOR CADASTRADO - COMPLETAR FROTA'
   return LABEL_STATUS_ENTREGA[d.status]
@@ -274,6 +278,17 @@ function textoStatus(d: LinhaDetalheEntrega): string {
 // taxa. Opera sobre `detalhe` (uma linha por NF), nao `linhas` (por carga).
 const PREFIXO_OBS_SEM_RASTREADOR = 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO'
 const ROTULO_CARGA_SEM_PLACA = 'CARGA SEM PLACA - NÃO CONTABILIZADO'
+// F1-09: NF pendente de placa sem rastreador (mesmo criterio da taxa,
+// `ehSemRastreador`) -- "SEM RASTREADOR - CONTADA COMO CORRETA - <motivo>".
+// O prefixo "SEM RASTREADOR" continua (categoriaPendencia/resumo-dashboard).
+const ROTULO_SEM_RASTREADOR_CONTADA = 'SEM RASTREADOR - CONTADA COMO CORRETA'
+function textoSemRastreadorContada(d: LinhaDetalheEntrega): string {
+  const obs = d.observacao ?? ''
+  const motivo = obs.startsWith('SEM RASTREADOR - ')
+    ? obs.slice('SEM RASTREADOR - '.length).replace(/\s+-\s+NÃO CONTABILIZADO$/, '')
+    : obs || 'PLACA SEM RASTREADOR CADASTRADO, COMPLETAR FROTA'
+  return `${ROTULO_SEM_RASTREADOR_CONTADA} - ${motivo}`
+}
 
 // Task 4 (plano 24/09): rotulo exibido pra cada valor do enum de resolucao
 // manual (kpi_nf_resolucao.resolucao) -- MAIUSCULO, mesmo padrao visivel do
@@ -492,6 +507,35 @@ function entraNoDenominadorPosConferencia(d: LinhaDetalheEntrega, inteiras: Set<
   return true
 }
 
+// 04/10 (ordem do usuario): SEM RASTREADOR conta como CORRETA -- entra no
+// denominador E no numerador; so' segue marcada como sem rastreador.
+function entraNaTaxa(d: LinhaDetalheEntrega, inteiras: Set<string>): boolean {
+  return ehSemRastreador(d) || (!ehNaoSaiuDaBase(d) && !ehEscalaDivergente(d, inteiras) && !ehAguardando(d) && !ehCargaSemPlaca(d) && !ehConsultaFalhou(d))
+}
+// Confirmada = status diferente de 'pendente' (so' ENTREGUE confirmado);
+// REVISAR fica pendente (nunca confirma). SEM RASTREADOR conta como correta.
+function contaComoCorreta(d: LinhaDetalheEntrega): boolean {
+  return d.status !== 'pendente' || ehSemRastreador(d)
+}
+
+// F1-09 (KN-10, 22/10): NF PLANEJADO e NF CONFIRMADAS da aba 1 por
+// carga+placa, contados no MESMO `detalhe` e com os MESMOS criterios da taxa:
+// soma de CONFIRMADAS = numerador; soma de PLANEJADO - fora da conta -
+// aguardando = denominador. Antes PLANEJADO vinha da escala e CONFIRMADAS nao
+// somava o sem rastreador (2.273 e 2.182 contra 2.183/2.253).
+function contagemDaTaxaPorCarga(detalhe: LinhaDetalheEntrega[]): Map<string, { romaneio: number; corretas: number }> {
+  const inteiras = cargasEscalaDivergenteInteira(detalhe)
+  const out = new Map<string, { romaneio: number; corretas: number }>()
+  for (const d of detalhe) {
+    const chave = `${d.carga}::${d.placa}`
+    const c = out.get(chave) ?? { romaneio: 0, corretas: 0 }
+    c.romaneio++
+    if (entraNaTaxa(d, inteiras) && contaComoCorreta(d)) c.corretas++
+    out.set(chave, c)
+  }
+  return out
+}
+
 // Item 2 (revisao final 26/09): a contagem "REVISAR: N" do resumo bate com
 // `LinhaDetalheEntrega.confianca` (calcularConfianca em agregacao.ts, ja'
 // classifica REVISAR tanto o sufixo "- REVISAR" do modoPrecisao quanto
@@ -523,13 +567,9 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   const revisar = detalhe.filter(d => d.confianca === 'REVISAR' && !ehSemRastreador(d) && !ehCargaSemPlaca(d) && !ehConsultaFalhou(d)).length
   const aguardando = detalhe.filter(ehAguardando).length
   const consultaFalhou = detalhe.filter(d => ehConsultaFalhou(d) && !ehSemRastreador(d)).length
-  // 04/10 (ordem do usuario): SEM RASTREADOR conta como CORRETA -- entra no
-  // denominador E no numerador; so' segue marcada como sem rastreador.
-  const base = detalhe.filter(d => ehSemRastreador(d) || (!ehNaoSaiuDaBase(d) && !ehEscalaDivergente(d, inteiras) && !ehAguardando(d) && !ehCargaSemPlaca(d) && !ehConsultaFalhou(d)))
+  const base = detalhe.filter(d => entraNaTaxa(d, inteiras))
   const denominador = base.length
-  // Confirmada = status diferente de 'pendente' (so' ENTREGUE confirmado);
-  // REVISAR fica pendente (nunca confirma). SEM RASTREADOR conta como correta.
-  const confirmadas = base.filter(d => d.status !== 'pendente' || ehSemRastreador(d)).length
+  const confirmadas = base.filter(contaComoCorreta).length
   // Bug real 25/09 (achado da Ana, KPI-Nutry-Max-2026-09-25-TESTE.xlsx):
   // taxa arredondada pro inteiro escondia a diferença de poucos décimos que
   // batia contra a conta manual dela -- 1 casa decimal (ver
@@ -748,16 +788,25 @@ export async function gerarKpiRomaneioXlsx(
     ? placasSemRastreadorNoDetalhe(detalhe)
     : new Set<string>()
 
+  const contagemTaxa = opcoes.resumoConfirmacao && detalhe.length > 0 ? contagemDaTaxaPorCarga(detalhe) : null
+  const idxNfPlanejado = COLUNAS_KPI_ROMANEIO.indexOf('NF PLANEJADO') + 1
   linhas.forEach((l, i) => {
-    ws.addRow([
+    const cont = contagemTaxa?.get(`${l.carga}::${l.placa}`)
+    const nfPlanejado = cont ? cont.romaneio : l.nfPlanejado
+    const row = ws.addRow([
       l.carga, l.placa, l.destino, l.motorista, l.ajudante1 ?? '', l.ajudante2 ?? '',
-      l.pesoKg ?? '', l.clientesPlanejados ?? '', l.nfPlanejado ?? '', l.paradasReais, l.paradasForaBase,
+      l.pesoKg ?? '', l.clientesPlanejados ?? '', nfPlanejado ?? '', cont ? cont.corretas : l.paradasReais, l.paradasForaBase,
       l.kmPercorrido != null ? Math.round(l.kmPercorrido * 10) / 10 : '',
       placasSemRastreadorNoResumo.has(l.placa) ? ROTULO_RESUMO_SEM_RASTREADOR : celulaHora(l.saidaCd, l.temRastreador, data === hoje),
       placasSemRastreadorNoResumo.has(l.placa) ? ROTULO_RESUMO_SEM_RASTREADOR : celulaHora(chegadaCdExibivel(l), l.temRastreador, data === hoje),
       formatarMinutos(l.tempoOperacaoMin), formatarMinutos(l.tempoMedioParadaMin),
     ])
     estilizarLinhaDado(ws, 2 + 1 + i, COLUNAS_KPI_ROMANEIO.length, i)
+    // "33 (escala 34)": o valor continua numero (a soma do Excel fecha com a
+    // taxa); a escala so' aparece no formato da celula.
+    if (l.nfEscala != null && nfPlanejado != null && l.nfEscala !== nfPlanejado) {
+      row.getCell(idxNfPlanejado).numFmt = `0" (escala ${l.nfEscala})"`
+    }
   })
   // Filtro nativo do Excel (pedido do usuário 24/08: "filtrável por placa")
   // -- dropdown em toda coluna, não só PLACA, é o comportamento padrão do
@@ -790,7 +839,13 @@ export async function gerarKpiRomaneioXlsx(
       ...(resumo.consultaFalhou > 0 ? [`${formatarInteiroPtBr(resumo.consultaFalhou)} com consulta ao rastreador falha`] : []),
     ]
     const foraTexto = `${partesFora.length === 0 ? '0' : partesFora.length > 1 ? `${partesFora.slice(0, -1).join(', ')} e ${partesFora[partesFora.length - 1]}` : partesFora[0]} fora da conta; ${formatarInteiroPtBr(resumo.semRastreador)} sem rastreador contadas como corretas`
-    const taxaTexto = `${formatarPctUmaCasa(resumo.taxaPct)}% (${formatarInteiroPtBr(resumo.confirmadas)} de ${formatarInteiroPtBr(resumo.denominador)} NFs; ${foraTexto})`
+    // F1-09 (KN-10): a conta pronta, que fecha com as colunas da aba 1
+    // ("X / (romaneio − fora da conta) = Z%"). Separada por " · " (nao "|"):
+    // resumo-dashboard le o 2o segmento "|" e usa o " · CONTA:" como marca de
+    // que NF CONFIRMADAS ja' inclui o sem rastreador.
+    const foraDaContaTaxa = detalhe.length - resumo.denominador - resumo.aguardando
+    const contaTexto = ` · CONTA: ${formatarInteiroPtBr(resumo.confirmadas)} / (${formatarInteiroPtBr(detalhe.length)} do romaneio − ${formatarInteiroPtBr(foraDaContaTaxa)} fora da conta${resumo.aguardando > 0 ? ` − ${formatarInteiroPtBr(resumo.aguardando)} aguardando fim da rota` : ''}) = ${formatarPctUmaCasa(resumo.taxaPct)}%`
+    const taxaTexto = `${formatarPctUmaCasa(resumo.taxaPct)}% (${formatarInteiroPtBr(resumo.confirmadas)} de ${formatarInteiroPtBr(resumo.denominador)} NFs; ${foraTexto})${contaTexto}`
     const naoSaiuTexto = (resumo.naoSaiuDaBase > 0 ? `    |    NFs sem saída da base: ${resumo.naoSaiuDaBase} (fora da conta)` : '')
       + (resumo.escalaDivergente > 0 ? `    |    NFs com placa da escala divergente: ${resumo.escalaDivergente} (fora da conta)` : '')
       + (resumo.cargaSemPlaca > 0 ? `    |    NFs de carga sem placa: ${resumo.cargaSemPlaca} (fora da conta)` : '')
