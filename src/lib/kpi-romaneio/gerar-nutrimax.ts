@@ -100,6 +100,9 @@ export type ResultadoKpiNutrimax = {
   linhasKpi: LinhaKpiRomaneio[]
   avisos: AvisoDescasamento[]
   qtdCargasNutry: number
+  /** F1-11 (KN-08): a conferencia de territorio nao respondeu (rotulos
+   *  "CORRIGIR CADASTRO" podem faltar; a taxa nao muda). */
+  territorioIndisponivel?: boolean
 }
 
 export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: OpcoesKpiNutrimax): Promise<ResultadoKpiNutrimax> {
@@ -541,6 +544,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
+  let territorioIndisponivel = false
   // Auditoria 07/10: entregue por parada fora do bairro/municipio do endereco
   // (cadastro Unitrac errado) vira "conferir" -- ver parada-fora-do-endereco.ts.
   const detalheConferido = await conferirParadaForaDoEndereco(detalheMontado, {
@@ -549,7 +553,11 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
     paradasPorPlaca,
     paradasCruasPorPlaca: paradasUnitracCruasPorPlaca,
     data,
-  }, verificarTerritorioNaPonte)
+  }, verificarTerritorioNaPonte, {
+    // F1-11 (KN-08): sem veredito apos as tentativas -> aviso na planilha
+    // e no Ao vivo (antes so' console.error, calado).
+    aoIndisponivel: () => { territorioIndisponivel = true; fontesIndisponiveis.push('territorio') },
+  })
   const detalhe: LinhaDetalheEntrega[] = detalheConferido
   opcoes?.aoMontarDetalhe?.({ romaneioGeo, detalhe, paradasPorPlaca, menorDistanciaTrajetoPorNf })
 
@@ -643,5 +651,6 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
     linhasKpi: linhasKpiConsistentes,
     avisos,
     qtdCargasNutry: linhasKpi.filter(l => !l.carga.startsWith(PAO_PREFIXO)).length,
+    ...(territorioIndisponivel ? { territorioIndisponivel: true } : {}),
   }
 }

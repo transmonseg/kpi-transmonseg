@@ -110,18 +110,41 @@ export const verificarTerritorioNaPonte: VerificarTerritorio = async pontos => {
   return m
 }
 
+/** F1-11 (KN-08): tentativas da conferencia e espera entre elas. Em 20/10 e
+ *  22/10 a ponte caiu bem no fechamento das 00:30 ("other side closed"). */
+export const TENTATIVAS_TERRITORIO = 3
+export const ESPERA_TERRITORIO_MS = 30_000
+
+export type OpcoesConferenciaTerritorio = {
+  /** injetavel pra teste; padrao = setTimeout */
+  esperar?: (ms: number) => Promise<void>
+  /** Chamado quando as tentativas acabaram sem resposta (aviso na planilha/Ao vivo). */
+  aoIndisponivel?: (err: unknown) => void
+}
+
 /** Nunca derruba a geracao: erro/sem resposta da ponte = nada muda (fail-open,
- *  igual a guarda territorial do geocode). */
+ *  igual a guarda territorial do geocode), mas quem chamou e' avisado. */
 export async function conferirParadaForaDoEndereco(
   detalhe: LinhaDetalheEntrega[], ctx: ContextoParadaForaDoEndereco, verificar: VerificarTerritorio,
+  opcoes: OpcoesConferenciaTerritorio = {},
 ): Promise<LinhaDetalheEntrega[]> {
   const candidatos = candidatosParadaForaDoEndereco(detalhe, ctx)
   if (candidatos.length === 0) return detalhe
-  let vereditos: Map<string, VereditoTerritorio>
-  try {
-    vereditos = await verificar(candidatos)
-  } catch (err) {
-    console.error('[kpi] conferencia de parada fora do endereco indisponivel -- nada rebaixado', err)
+  const esperar = opcoes.esperar ?? (ms => new Promise<void>(res => setTimeout(res, ms)))
+  let vereditos: Map<string, VereditoTerritorio> | null = null
+  let ultimoErro: unknown = null
+  for (let t = 1; t <= TENTATIVAS_TERRITORIO && !vereditos; t++) {
+    try {
+      vereditos = await verificar(candidatos)
+    } catch (err) {
+      ultimoErro = err
+      console.error(`[kpi] ${ctx.data}: conferencia de parada fora do endereco falhou (tentativa ${t}/${TENTATIVAS_TERRITORIO})`, err instanceof Error ? err.message : err)
+      if (t < TENTATIVAS_TERRITORIO) await esperar(ESPERA_TERRITORIO_MS)
+    }
+  }
+  if (!vereditos) {
+    console.error(`[kpi] ${ctx.data}: conferencia de parada fora do endereco indisponivel -- nada rebaixado (${candidatos.length} candidata(s) sem veredito)`)
+    opcoes.aoIndisponivel?.(ultimoErro)
     return detalhe
   }
   const porNf = new Map(candidatos.map(c => [c.nf, c]))

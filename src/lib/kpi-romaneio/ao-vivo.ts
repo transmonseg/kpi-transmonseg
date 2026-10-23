@@ -75,6 +75,30 @@ export function precisaFecharDia(calculadoEm: string | null, data: string, agora
   return agoraMs >= fechamento && Date.parse(calculadoEm) < fechamento
 }
 
+/** F1-11 (KN-08): inicio de ultimo_erro quando o calculo saiu sem a
+ *  conferencia de territorio (o resultado e' publicado; a taxa nao muda). */
+export const AVISO_TERRITORIO_AO_VIVO = 'Conferência de endereço indisponível'
+
+const instanteBR = (dataMaisUm: string, hhmm: string) => {
+  const [a, m, d] = dataMaisUm.split('-').map(Number)
+  return Date.parse(`${new Date(Date.UTC(a, m - 1, d + 1)).toISOString().slice(0, 10)}T${hhmm}:00-03:00`)
+}
+
+/** F1-11 (KN-08): o fechamento do dia `data` (00:30 do dia seguinte) saiu
+ *  sem a conferencia de territorio e ainda nao foi repetido: repete uma vez,
+ *  a partir das 05:30 BRT do dia seguinte. O aviso so' vale se foi gravado
+ *  pelo proprio ultimo calculo (ultimo_erro_em >= calculado_em). */
+export function precisaReconferirTerritorio(
+  row: { calculado_em: string | null; ultimo_erro: string | null; ultimo_erro_em: string | null },
+  data: string, agoraMs: number,
+): boolean {
+  if (!row.calculado_em || !row.ultimo_erro_em || !row.ultimo_erro?.startsWith(AVISO_TERRITORIO_AO_VIVO)) return false
+  const calc = Date.parse(row.calculado_em)
+  if (Date.parse(row.ultimo_erro_em) < calc) return false
+  const fechamento = instanteBR(data, '00:30'), repetir = instanteBR(data, '05:30')
+  return calc >= fechamento && calc < repetir && agoraMs >= repetir
+}
+
 function situacaoDe(n: NfResumo): SituacaoNf {
   if (n.categoria == null) return 'entregue'
   if (n.categoria === 'Sem rastreador') return 'sem_rastreador'

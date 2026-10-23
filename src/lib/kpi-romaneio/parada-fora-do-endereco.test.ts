@@ -100,7 +100,47 @@ describe('conferirParadaForaDoEndereco', () => {
   })
   it('ponte fora do ar (erro) ou sem veredito: nada muda', async () => {
     const d = [det('1')]
-    expect((await conferirParadaForaDoEndereco(d, ctx([linha('1')], [LONGE]), async () => { throw new Error('caiu') }))[0]).toEqual(d[0])
+    expect((await conferirParadaForaDoEndereco(d, ctx([linha('1')], [LONGE]), async () => { throw new Error('caiu') }, { esperar: async () => {} }))[0]).toEqual(d[0])
     expect((await conferirParadaForaDoEndereco(d, ctx([linha('1')], [LONGE]), async () => new Map()))[0]).toEqual(d[0])
   })
 })
+
+// F1-11 (KN-08, plano mestre 23/10): no fechamento de 20/10 e 22/10 a ponte
+// respondeu "fetch failed / other side closed" e o dia fechou sem os 12
+// rotulos "CORRIGIR CADASTRO" (TOS8J97 2437026 a 5,9 km, TOS4G92 2437088,
+// RQU3B36 2438081), calado. Agora: 3 tentativas com 30 s, e se nao houver
+// veredito, quem chamou fica sabendo (aviso na planilha e no Ao vivo).
+describe('conferirParadaForaDoEndereco: ponte do territorio instavel (F1-11)', () => {
+  const fora = async (pts: { id: string }[]) => new Map(pts.map(p => [p.id, { ok: false as const, motivo: 'bairro_divergente' as const }]))
+  it('falha 2 vezes (other side closed) e responde na 3a: rotulo preenchido, espera de 30 s entre tentativas', async () => {
+    let chamadas = 0
+    const esperas: number[] = []
+    let avisou = false
+    const r = await conferirParadaForaDoEndereco([det('2437026')], ctx([linha('2437026')], [LONGE]), async pts => {
+      chamadas++
+      if (chamadas < 3) throw new TypeError('fetch failed', { cause: new Error('other side closed') })
+      return fora(pts)
+    }, { esperar: async ms => { esperas.push(ms) }, aoIndisponivel: () => { avisou = true } })
+    expect(chamadas).toBe(3)
+    expect(esperas).toEqual([30_000, 30_000])
+    expect(r[0].observacao).toMatch(/OUTRO BAIRRO\) - CORRIGIR CADASTRO$/)
+    expect(avisou).toBe(false)
+  })
+  it('falha nas 3 tentativas: nada rebaixado e aoIndisponivel chamado uma vez', async () => {
+    let chamadas = 0
+    const avisos: unknown[] = []
+    const d = [det('2437026')]
+    const r = await conferirParadaForaDoEndereco(d, ctx([linha('2437026')], [LONGE]), async () => { chamadas++; throw new Error('fetch failed') },
+      { esperar: async () => {}, aoIndisponivel: err => avisos.push(err) })
+    expect(chamadas).toBe(3)
+    expect(r[0]).toEqual(d[0])
+    expect(avisos).toHaveLength(1)
+  })
+  it('sem candidato: nao chama a ponte nem avisa', async () => {
+    let avisou = false
+    const perto = parada(-22.9005, -43.2005, '2026-10-07T12:00:00Z', '2026-10-07T12:20:00Z')
+    await conferirParadaForaDoEndereco([det('1')], ctx([linha('1')], [perto]), async () => { throw new Error('x') }, { esperar: async () => {}, aoIndisponivel: () => { avisou = true } })
+    expect(avisou).toBe(false)
+  })
+})
+

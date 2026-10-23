@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resumirPlacas, contarCorretas, paradaEmAndamento, nfProxima, horaParaIso, paradaDaChegada, diaAnterior, precisaFecharDia } from './ao-vivo'
+import { resumirPlacas, contarCorretas, paradaEmAndamento, nfProxima, horaParaIso, paradaDaChegada, diaAnterior, precisaFecharDia, precisaReconferirTerritorio, AVISO_TERRITORIO_AO_VIVO } from './ao-vivo'
 import type { NfResumo, CargaResumo } from './resumo-dashboard'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 
@@ -153,3 +153,31 @@ describe('F1-10: situação fora_da_conta', () => {
     expect(Object.fromEntries(conta)).toEqual({ entregue: 2182, sem_rastreador: 1, fora_da_conta: 19, revisar: 59, nao_foi: 11 })
   })
 })
+
+// F1-11 (KN-08): o fechamento das 00:30 de 22/10 ficou sem a conferencia de
+// territorio. A etapa e' repetida uma vez a partir das 05:30 BRT, pelo tick.
+describe('precisaReconferirTerritorio (F1-11)', () => {
+  const fechado = '2026-10-23T00:31:10-03:00'
+  const marca = `${AVISO_TERRITORIO_AO_VIVO} no fechamento`
+  const as = (h: string) => Date.parse(`2026-10-23T${h}:00-03:00`)
+  it('fechamento com o aviso: repete a partir das 05:30, nao antes', () => {
+    const row = { calculado_em: fechado, ultimo_erro: marca, ultimo_erro_em: fechado }
+    expect(precisaReconferirTerritorio(row, '2026-10-22', as('05:29'))).toBe(false)
+    expect(precisaReconferirTerritorio(row, '2026-10-22', as('05:30'))).toBe(true)
+    expect(precisaReconferirTerritorio(row, '2026-10-22', as('09:00'))).toBe(true)
+  })
+  it('ja\' repetido depois das 05:30 (de novo sem ponte): nao repete mais', () => {
+    const r = '2026-10-23T05:33:00-03:00'
+    expect(precisaReconferirTerritorio({ calculado_em: r, ultimo_erro: marca, ultimo_erro_em: r }, '2026-10-22', as('05:40'))).toBe(false)
+  })
+  it('fechamento sem o aviso, ou aviso antigo (de um calculo anterior): nao repete', () => {
+    expect(precisaReconferirTerritorio({ calculado_em: fechado, ultimo_erro: null, ultimo_erro_em: null }, '2026-10-22', as('05:40'))).toBe(false)
+    expect(precisaReconferirTerritorio({ calculado_em: fechado, ultimo_erro: marca, ultimo_erro_em: '2026-10-22T18:00:00-03:00' }, '2026-10-22', as('05:40'))).toBe(false)
+    expect(precisaReconferirTerritorio({ calculado_em: fechado, ultimo_erro: 'territorio HTTP 500', ultimo_erro_em: fechado }, '2026-10-22', as('05:40'))).toBe(false)
+  })
+  it('dia ainda nao fechado (ultimo calculo antes das 00:30): nao e\' com esta regra', () => {
+    const tarde = '2026-10-22T20:50:00-03:00'
+    expect(precisaReconferirTerritorio({ calculado_em: tarde, ultimo_erro: marca, ultimo_erro_em: tarde }, '2026-10-22', as('05:40'))).toBe(false)
+  })
+})
+

@@ -6,7 +6,7 @@ import { sugerirTrocas, type SugestaoTroca } from './sugerir-trocas'
 import { createServiceClient } from '@/lib/supabase/service'
 import { gerarKpiNutrimax, type EntradaKpiNutrimax } from './gerar-nutrimax'
 import { extrairKpiCompleto } from './resumo-dashboard'
-import { resumirPlacas, contarCorretas, paradaDaChegada, paradaEmAndamento, nfProxima, type PlacaAoVivo } from './ao-vivo'
+import { resumirPlacas, contarCorretas, paradaDaChegada, paradaEmAndamento, nfProxima, AVISO_TERRITORIO_AO_VIVO, type PlacaAoVivo } from './ao-vivo'
 import { investigarPlacas } from './investigacao'
 import { normPlaca } from '@/lib/unitrac-api'
 import type { LinhaEscala, LinhaRomaneio } from './types'
@@ -61,6 +61,8 @@ export type ResultadoAoVivo = {
   placas: PlacaAoVivo[]
   /** Carro trocado sem aviso (06/10): sugestões pra operação confirmar. */
   sugestoesTroca?: SugestaoTroca[]
+  /** F1-11: avisos do cálculo que não mudam a taxa (ex.: conferência de endereço indisponível). */
+  avisos?: string[]
 }
 
 export type DiaAoVivo = {
@@ -176,7 +178,7 @@ export async function entradaRioQualityDoDia(data: string): Promise<EntregaRioQu
  *  "Gerar KPI" de cada cliente). null = romaneio do dia não subido. */
 export async function gerarKpiDoDia(cliente: ClienteAoVivo, data: string, log: (m: string) => void = () => {},
   aoMontarDetalheNutry?: Parameters<typeof gerarKpiNutrimax>[1],
-  aoParadasRq?: (paradasPorPlaca: Map<string, UnitracParadaRow[]>) => void): Promise<{ xlsx: Buffer; qtdCargas: number; degradado?: string } | null> {
+  aoParadasRq?: (paradasPorPlaca: Map<string, UnitracParadaRow[]>) => void): Promise<{ xlsx: Buffer; qtdCargas: number; degradado?: string; aviso?: string } | null> {
   if (cliente === 'rioquality') {
     const entregas = await entradaRioQualityDoDia(data)
     if (!entregas) return null
@@ -196,7 +198,12 @@ export async function gerarKpiDoDia(cliente: ClienteAoVivo, data: string, log: (
   const entrada = await entradaDoDia(cliente, data)
   if (!entrada) return null
   const r = await gerarKpiNutrimax(entrada, aoMontarDetalheNutry)
-  return { xlsx: r.xlsx, qtdCargas: r.qtdCargasNutry }
+  return {
+    xlsx: r.xlsx, qtdCargas: r.qtdCargasNutry,
+    // F1-11 (KN-08): resultado vale (a taxa nao muda), mas sem os rotulos
+    // "CORRIGIR CADASTRO" -- aviso na tela e marca pro tick repetir.
+    ...(r.territorioIndisponivel ? { aviso: `${AVISO_TERRITORIO_AO_VIVO}: o monitoramento não respondeu à conferência de território; entregas em outro bairro/município podem estar sem "CORRIGIR CADASTRO" (a taxa não muda). O dia fechado é refeito às 05:30.` } : {}),
+  }
 }
 
 /** Resultado da tela a partir da planilha do KPI lida (extrairKpiCompleto).
@@ -281,6 +288,7 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     if (up.error) log(`ao vivo ${cliente} ${data}: planilha não guardada (${up.error.message})`)
     const resultado = montarResultadoAoVivo(data, await extrairKpiCompleto(r.xlsx), coords, new Date().toISOString(), paradasNf)
     if (sugestoesTroca.length > 0) resultado.sugestoesTroca = sugestoesTroca
+    if (r.aviso) resultado.avisos = [r.aviso]
     investigarPlacas(resultado.placas, paradasDoDia, trajetoPorNf)
     for (const p of resultado.placas) {
       const pa = paradaAtualPorPlaca.get(normPlaca(p.placa))
@@ -298,6 +306,9 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     }
     const { error } = await svc.from('kpi_ao_vivo_calculo').update({
       resultado, calculado_em: resultado.calculadoEm, duracao_ms: Date.now() - t0, rodando_desde: null,
+      // F1-11: mesmo instante do calculo (a tela nao mostra "o calculo falhou"
+      // e o tick sabe que ESTE calculo saiu sem a conferencia).
+      ...(r.aviso ? { ultimo_erro: r.aviso.slice(0, 500), ultimo_erro_em: resultado.calculadoEm } : {}),
     }).eq('cliente', cliente).eq('data', data)
     if (error) throw new Error(error.message)
     log(`ao vivo ${cliente} ${data}: ok em ${Math.round((Date.now() - t0) / 1000)}s (${resultado.resumo.feitas}/${resultado.resumo.totalNfs})`)

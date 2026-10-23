@@ -91,9 +91,15 @@ const NOME_FONTE: Record<NonNullable<AvisoDescasamento['fonte']>, string> = {
   sem_rastreador: 'cadastro de placas sem rastreador',
   trocas_placa: 'trocas de placa',
   locais_clientes: 'locais dos clientes',
+  territorio: 'a conferência de endereço',
 }
+/** F1-11 (KN-08): texto do aviso quando a conferencia de territorio nao respondeu. */
+export const AVISO_TERRITORIO_INDISPONIVEL = 'Conferência de endereço indisponível'
 export function textoAviso(a: AvisoDescasamento): string {
   // GN-06 (auditoria 20/10): fonte que falhou nao some calada do relatorio.
+  if (a.motivo === 'fonte_indisponivel' && a.fonte === 'territorio') {
+    return `${AVISO_TERRITORIO_INDISPONIVEL} nesta geração (monitoramento não respondeu após 3 tentativas) — entregas em outro bairro/município podem estar sem o rótulo "CORRIGIR CADASTRO". A taxa não muda. Gere novamente`
+  }
   if (a.motivo === 'fonte_indisponivel') {
     return `Não consegui ler ${a.fonte ? NOME_FONTE[a.fonte] : 'uma fonte de dados'} nesta geração — o relatório pode estar incompleto. Gere novamente`
   }

@@ -1362,6 +1362,11 @@ describe('carga sem placa fora do "NFs sem rastreador" (Task 2, item 3)', () => 
 
 
 describe('GN-06 (auditoria 20/10): aviso de fonte indisponivel', () => {
+  it('F1-11: conferencia de endereco (territorio) indisponivel diz que rotulos CORRIGIR CADASTRO podem faltar', () => {
+    const t = textoAviso({ carga: '—', placa: '—', motivo: 'fonte_indisponivel', fonte: 'territorio' })
+    expect(t).toContain('Conferência de endereço indisponível')
+    expect(t).toContain('CORRIGIR CADASTRO')
+  })
   it('diz qual fonte faltou e pede pra gerar de novo', () => {
     const t = textoAviso({ carga: '—', placa: '—', motivo: 'fonte_indisponivel', fonte: 'trocas_placa' })
     expect(t).toContain('trocas de placa')

@@ -46,6 +46,8 @@ const cenario = vi.hoisted(() => ({
   trocas: [] as { carga: string | null; placaEscala: string; placaReal: string }[],
   // F1-13 (ING-07): o que parseEscala devolve (escala enviada).
   escala: [] as LinhaEscala[],
+  // F1-11 (KN-08): conferencia de territorio sem resposta nas 3 tentativas.
+  territorioFora: false,
 }))
 
 // Task 2 (romaneio do pão): mocks de TODO módulo com efeito colateral
@@ -106,6 +108,16 @@ function escalaSintetica(overrides: Partial<LinhaEscala> = {}): LinhaEscala {
   }
 }
 
+vi.mock('@/lib/kpi-romaneio/parada-fora-do-endereco', async importOriginal => {
+  const orig = await importOriginal<typeof import('@/lib/kpi-romaneio/parada-fora-do-endereco')>()
+  return {
+    ...orig,
+    conferirParadaForaDoEndereco: async (...a: Parameters<typeof orig.conferirParadaForaDoEndereco>) => {
+      if (cenario.territorioFora) { a[3]?.aoIndisponivel?.(new Error('fetch failed')); return a[0] }
+      return orig.conferirParadaForaDoEndereco(...a)
+    },
+  }
+})
 vi.mock('@/lib/kpi-romaneio/parse-escala', () => ({ parseEscala: async () => cenario.escala, dataImpressaEscala: async () => '2026-10-16' }))
 vi.mock('@/lib/kpi-romaneio/parse-romaneio', () => ({
   parseRomaneio: async () => (cenario.romaneioVazio ? [] : [linhaNutrimax(), ...cenario.linhasNutrimaxExtras]),
@@ -246,6 +258,7 @@ beforeEach(() => {
   cenario.placaPaoOverride = undefined
   cenario.trocas = []
   cenario.escala = []
+  cenario.territorioFora = false
 })
 
 describe('POST /api/kpi/nutrimax/gerar -- troca de placa da tela Placas do dia', () => {
@@ -1033,6 +1046,27 @@ describe('POST /api/kpi/nutrimax/gerar -- Escala de Rota conferida (F1-13)', () 
   it('sem escala: continua opcional', async () => {
     const res = await POST(montarRequest(false, false) as never)
     expect(res.status).toBe(200)
+  })
+})
+
+// F1-11 (KN-08): fechamento de 22/10 perdeu 12 rotulos "CORRIGIR CADASTRO"
+// calado (aba Avisos com 24 linhas em vez de 36).
+describe('POST /api/kpi/nutrimax/gerar -- conferencia de endereco indisponivel (F1-11)', () => {
+  it('a aba Avisos diz que a conferencia de endereco ficou indisponivel', async () => {
+    cenario.territorioFora = true
+    const res = await POST(montarRequest(false) as never)
+    expect(res.status).toBe(200)
+    const wb = await abrirXlsx(res)
+    const textos: string[] = []
+    wb.getWorksheet('Avisos')?.eachRow(row => { textos.push(String(row.getCell(3).value)) })
+    expect(textos.some(t => /Conferência de endereço indisponível/.test(t))).toBe(true)
+  })
+  it('com a conferencia respondendo: sem esse aviso', async () => {
+    const res = await POST(montarRequest(false) as never)
+    const wb = await abrirXlsx(res)
+    const textos: string[] = []
+    wb.getWorksheet('Avisos')?.eachRow(row => { textos.push(String(row.getCell(3).value)) })
+    expect(textos.some(t => /Conferência de endereço indisponível/.test(t))).toBe(false)
   })
 })
 

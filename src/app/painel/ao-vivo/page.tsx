@@ -279,6 +279,12 @@ export default function AoVivoPage() {
           <WarningCircle size={16} weight="fill" />O último cálculo falhou às {hhmm(estado.ultimoErro.em)}. A tela mostra os dados de {hhmm(r?.calculadoEm)}; o próximo cálculo tenta de novo.
         </p>
       )}
+      {/* F1-11 (KN-08): aviso do cálculo que não muda a taxa (ex.: conferência de endereço indisponível). */}
+      {r?.avisos?.map(a => (
+        <p key={a} className="inline-flex items-center gap-2 rounded-2xl bg-[var(--color-warning-soft)] px-4 py-2.5 text-[13px] text-[var(--color-warning-soft-fg)]">
+          <WarningCircle size={16} weight="fill" />{a}
+        </p>
+      ))}
       {erroCarga && <p className="text-[13px] text-[var(--color-danger)]">{erroCarga}</p>}
       {!historico && (() => {
         const longas = placas

@@ -12,7 +12,7 @@ import { createServiceClient } from '../src/lib/supabase/service'
 import { CLIENTES_AO_VIVO, calcularAoVivo, guardarDiaAoVivo, fonteDoDiaAoVivo } from '../src/lib/kpi-romaneio/ao-vivo-servico'
 import { buscarDiaRioQualityFusion } from '../src/lib/kpi-rioquality/fonte-fusion'
 import { linhasParaMonitoramentoRQ, enviarRioQualityAoMonitoramento } from '../src/lib/kpi-rioquality/enviar-monitoramento-rq'
-import { diaAnterior, precisaFecharDia } from '../src/lib/kpi-romaneio/ao-vivo'
+import { diaAnterior, precisaFecharDia, precisaReconferirTerritorio } from '../src/lib/kpi-romaneio/ao-vivo'
 import { limparCacheDia } from '../src/lib/kpi-romaneio/cache-dia'
 import { repararDia, depsReaisReparo } from '../src/lib/kpi-romaneio/reparar-dia'
 import { sincronizarAcessosMonitoramento } from '../src/lib/acessos-monitoramento'
@@ -65,11 +65,27 @@ export async function fecharDiaAnterior() {
   }
 }
 
+// F1-11 (KN-08): fechamento das 00:30 sem a conferencia de territorio (ponte
+// do monitoramento fora) -> o dia fechado e' refeito uma vez a partir das
+// 05:30 BRT, decidido pelo estado gravado (nao por horario fixo do cron).
+export async function reconferirTerritorioDiaAnterior() {
+  const ontem = diaAnterior(hojeBR())
+  for (const cliente of CLIENTES_AO_VIVO) {
+    const { data } = await createServiceClient().from('kpi_ao_vivo_calculo').select('calculado_em, ultimo_erro, ultimo_erro_em').eq('cliente', cliente).eq('data', ontem).maybeSingle()
+    const row = { calculado_em: (data?.calculado_em as string | null) ?? null, ultimo_erro: (data?.ultimo_erro as string | null) ?? null, ultimo_erro_em: (data?.ultimo_erro_em as string | null) ?? null }
+    if (!precisaReconferirTerritorio(row, ontem, Date.now())) continue
+    log(`ao vivo ${cliente} ${ontem}: fechamento saiu sem a conferencia de endereco -- refazendo`)
+    const r = await calcularAoVivo(cliente, ontem, log)
+    log(`ao vivo ${cliente} ${ontem} (reconferencia de territorio): ${r}`)
+  }
+}
+
 async function main() {
   // Logins separados (06/10): o monitoramento segue os perfis do KPI.
   const acessos = await sincronizarAcessosMonitoramento().catch(err => `erro: ${err}`)
   if (acessos !== 'sem mudança') log(`acessos monitoramento: ${acessos}`)
   await fecharDiaAnterior()
+  await reconferirTerritorioDiaAnterior().catch(err => log(`reconferencia de territorio: ${err}`))
   const horaBR = horaBRAgora()
   // Limpeza 1x por dia (04h BRT, 1o tick da hora): cache do dia e planilhas
   // do ao vivo ficam (F0-11, ver abaixo).
