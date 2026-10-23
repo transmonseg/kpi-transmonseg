@@ -7,10 +7,13 @@ import type { NfResumo, CargaResumo } from './resumo-dashboard'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { RAIO_CONFIRMACAO_AMPLIADO_METROS } from './constants'
 import type { Investigacao } from './investigacao'
+import { OBS_NAO_SAIU_DA_BASE } from './types'
 
 /** pendente = rota ainda rodando; nao_confirmada = a rota acabou e a NF não
- *  foi confirmada (conta como não entregue na taxa). */
-export type SituacaoNf = 'entregue' | 'sem_rastreador' | 'pendente' | 'nao_confirmada' | 'nao_foi' | 'revisar'
+ *  foi confirmada (conta como não entregue na taxa). fora_da_conta (F1-10) =
+ *  a taxa não conta a NF (carga sem placa, veículo que não saiu da base,
+ *  consulta ao rastreador falha, carga inteira com placa da escala divergente). */
+export type SituacaoNf = 'entregue' | 'sem_rastreador' | 'pendente' | 'nao_confirmada' | 'nao_foi' | 'revisar' | 'fora_da_conta'
 
 export type NfAoVivo = {
   nf: string
@@ -81,6 +84,27 @@ function situacaoDe(n: NfResumo): SituacaoNf {
   return 'revisar'
 }
 
+// F1-10 (ACH-06): mesma regra de fora da conta da taxa (gerador-xlsx.ts:
+// ehCargaSemPlaca, ehNaoSaiuDaBase, ehConsultaFalhou, ehEscalaDivergente),
+// lida do STATUS da planilha -- serve também pra situação antiga já gravada.
+const PREFIXOS_FORA_DA_CONTA = ['CARGA SEM PLACA', OBS_NAO_SAIU_DA_BASE, 'CONSULTA AO RASTREADOR FALHOU', 'CONSULTA AO RASTREADOR SUSPEITA']
+const PREFIXO_ESCALA_DIVERGENTE = 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE'
+
+/** NFs (carga::nf) de UMA placa que ficam fora da taxa. Escala divergente só
+ *  quando a carga inteira tem o rótulo (NF solta conta como falha). */
+export function nfsForaDaConta(nfs: { carga: string; nf: string; status: string }[]): Set<string> {
+  const fora = new Set<string>()
+  const porCarga = new Map<string, { carga: string; nf: string; status: string }[]>()
+  for (const n of nfs) {
+    if (PREFIXOS_FORA_DA_CONTA.some(p => n.status.startsWith(p))) fora.add(`${n.carga}::${n.nf}`)
+    porCarga.set(n.carga, [...(porCarga.get(n.carga) ?? []), n])
+  }
+  for (const lista of porCarga.values()) {
+    if (lista.every(n => n.status.startsWith(PREFIXO_ESCALA_DIVERGENTE))) for (const n of lista) fora.add(`${n.carga}::${n.nf}`)
+  }
+  return fora
+}
+
 /** Uma entrada por placa, com as NFs na ordem da planilha. "Feitas" = entregues. */
 export function resumirPlacas(data: string, nfs: NfResumo[], cargas: CargaResumo[], coords: Map<string, { lat: number; lng: number }>, paradas: Map<string, { lat: number; lng: number }> = new Map()): PlacaAoVivo[] {
   const porPlaca = new Map<string, NfResumo[]>()
@@ -90,9 +114,11 @@ export function resumirPlacas(data: string, nfs: NfResumo[], cargas: CargaResumo
     const cs = cargas.filter(c => c.placa === placa)
     const saidas = cs.map(c => c.saida).filter((s): s is string => !!s).sort()
     const chegadas = cs.map(c => c.chegada).filter((s): s is string => !!s).sort()
+    const fora = nfsForaDaConta(lista)
     const nfsAoVivo: NfAoVivo[] = lista.map(n => {
       const c = coords.get(n.nf)
-      return { nf: n.nf, carga: n.carga, cliente: n.cliente, endereco: n.endereco, status: n.status, situacao: situacaoDe(n), chegada: n.chegada, saida: n.saida, tempoMin: n.tempoMin, lat: c?.lat ?? null, lng: c?.lng ?? null, parada: paradas.get(n.nf) ?? null }
+      const situacao: SituacaoNf = n.categoria != null && fora.has(`${n.carga}::${n.nf}`) ? 'fora_da_conta' : situacaoDe(n)
+      return { nf: n.nf, carga: n.carga, cliente: n.cliente, endereco: n.endereco, status: n.status, situacao, chegada: n.chegada, saida: n.saida, tempoMin: n.tempoMin, lat: c?.lat ?? null, lng: c?.lng ?? null, parada: paradas.get(n.nf) ?? null }
     })
     // Progresso = só entregue (06/10: sem rastreador somava como feito e a placa
     // sem GPS aparecia 100%; a taxa do KPI tem conta própria na planilha).

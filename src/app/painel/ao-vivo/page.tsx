@@ -52,6 +52,7 @@ const COR_SITUACAO: Record<SituacaoNf, string> = {
   nao_confirmada: 'var(--color-danger)',
   nao_foi: 'var(--color-danger)',
   revisar: 'var(--color-warning)',
+  fora_da_conta: '#cbd5e1',
 }
 const ROTULO_SITUACAO: Record<SituacaoNf, string> = {
   entregue: 'Entregue',
@@ -60,6 +61,7 @@ const ROTULO_SITUACAO: Record<SituacaoNf, string> = {
   nao_confirmada: 'Não confirmada',
   nao_foi: 'Não foi ao cliente',
   revisar: 'A revisar',
+  fora_da_conta: 'Fora da conta',
 }
 
 export default function AoVivoPage() {
@@ -186,7 +188,7 @@ export default function AoVivoPage() {
   async function baixarRelatorioPendentes() {
     if (!estado) return
     try {
-      const n = await baixarPendentes(placas, NOME_CLIENTE[cliente], estado.data)
+      const n = await baixarPendentes(placas, NOME_CLIENTE[cliente], estado.data, cliente)
       if (n === 0) setErroCarga('Nenhuma nota pendente ou não entregue para baixar.')
     } catch (e) {
       setErroCarga(e instanceof Error ? e.message : 'Não consegui gerar o relatório de pendentes.')
@@ -505,7 +507,7 @@ function DetalhePlaca({ p, data, cliente, agora, agoraMs, historico, nfAberta, o
             </div>
           </div>
           <p className="text-[12px] text-[var(--color-fg-muted)]">
-            {contagem('entregue')} entregues{contagem('pendente') ? `, ${contagem('pendente')} pendentes` : ''}{contagem('nao_confirmada') ? `, ${contagem('nao_confirmada')} não confirmadas` : ''}{contagem('revisar') ? `, ${contagem('revisar')} a revisar` : ''}{contagem('nao_foi') ? `, ${contagem('nao_foi')} não foi` : ''}{contagem('sem_rastreador') ? `, ${contagem('sem_rastreador')} sem rastreador` : ''}
+            {contagem('entregue')} entregues{contagem('pendente') ? `, ${contagem('pendente')} pendentes` : ''}{contagem('nao_confirmada') ? `, ${contagem('nao_confirmada')} não confirmadas` : ''}{contagem('revisar') ? `, ${contagem('revisar')} a revisar` : ''}{contagem('nao_foi') ? `, ${contagem('nao_foi')} não foi` : ''}{contagem('sem_rastreador') ? `, ${contagem('sem_rastreador')} sem rastreador` : ''}{contagem('fora_da_conta') ? `, ${contagem('fora_da_conta')} fora da conta` : ''}
           </p>
         </div>
         <ul>

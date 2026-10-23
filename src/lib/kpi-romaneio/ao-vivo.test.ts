@@ -124,3 +124,32 @@ describe('F1-09: um numero so de entregues (caso real 22/10)', () => {
     expect(contarCorretas(placas)).toBe(2183)
   })
 })
+
+// F1-10 (ACH-06): carga sem placa saia como "A revisar", igual às pendências
+// reais. Fora da conta é situação própria (cinza), com a mesma regra da taxa.
+describe('F1-10: situação fora_da_conta', () => {
+  it('carga sem placa, veículo que não saiu da base, consulta falha e carga inteira com placa da escala divergente', () => {
+    const r = resumirPlacas('2026-10-22', [
+      nf({ placa: 'SEM PLACA', carga: 'PAO-1', nf: '1', status: 'CARGA SEM PLACA NO ROMANEIO - CONFERIR COM A OPERAÇÃO', categoria: 'Carga sem placa' }),
+      nf({ placa: 'AAA1A11', carga: '2', nf: '2', status: 'VEÍCULO NÃO SAIU DA BASE - CONFERIR', categoria: 'Não saiu da base' }),
+      nf({ placa: 'AAA1A11', carga: '2', nf: '3', status: 'VEÍCULO SEM MOVIMENTO - CONFERIR', categoria: 'Não saiu da base' }),
+      nf({ placa: 'BBB2B22', carga: '3', nf: '4', status: 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA', categoria: 'Placa da escala divergente' }),
+      nf({ placa: 'BBB2B22', carga: '3', nf: '5', status: 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA', categoria: 'Placa da escala divergente' }),
+      nf({ placa: 'CCC3C33', carga: '4', nf: '6', status: 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE - CONFERIR ESCALA', categoria: 'Placa da escala divergente' }),
+      nf({ placa: 'CCC3C33', carga: '4', nf: '7' }),
+      nf({ placa: 'DDD4D44', carga: '5', nf: '8', status: 'CONSULTA AO RASTREADOR FALHOU - GERAR DE NOVO', categoria: 'Outros' }),
+    ], [], new Map())
+    const sit = new Map(r.flatMap(p => p.nfs.map(n => [n.nf, n.situacao] as const)))
+    expect(Object.fromEntries(sit)).toEqual({
+      1: 'fora_da_conta', 2: 'fora_da_conta', 3: 'revisar', 4: 'fora_da_conta', 5: 'fora_da_conta', 6: 'revisar', 7: 'entregue', 8: 'fora_da_conta',
+    })
+  })
+
+  it('22/10 real: 19 fora da conta (carga sem placa), 1 sem rastreador e o resto pesa na taxa', async () => {
+    const { nfsDe2210 } = await import('./ao-vivo.fixture-2026-10-22')
+    const { nfs, cargas } = nfsDe2210()
+    const conta = new Map<string, number>()
+    for (const p of resumirPlacas('2026-10-22', nfs, cargas, new Map())) for (const n of p.nfs) conta.set(n.situacao, (conta.get(n.situacao) ?? 0) + 1)
+    expect(Object.fromEntries(conta)).toEqual({ entregue: 2182, sem_rastreador: 1, fora_da_conta: 19, revisar: 59, nao_foi: 11 })
+  })
+})
