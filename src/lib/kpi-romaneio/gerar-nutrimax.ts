@@ -13,7 +13,7 @@ import { anexarCoordenadaCadastro, montarMenorDistanciaTrajetoPorNf, consumirFal
 import { ajustarChegadaAposUltimaEntrega } from '@/lib/kpi-romaneio/fim-rota'
 import { alvosDaData } from '@/lib/kpi-romaneio/alvos-data'
 import { alvosEfetivos } from '@/lib/kpi-romaneio/alvos-snapshot'
-import { paradasEfetivas } from '@/lib/kpi-romaneio/paradas-snapshot'
+import { paradasEfetivas, lerSnapshotParadas, mesclarParadas } from '@/lib/kpi-romaneio/paradas-snapshot'
 import { detectarDescasamentos, detectarMotoristaMultiplasPlacas, detectarCargaMultiRegiao } from '@/lib/kpi-romaneio/avisos'
 import { montarVisitas } from '@/lib/kpi-romaneio/visitas'
 import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, contarConfirmadasPorCarga } from '@/lib/kpi-romaneio/agregacao'
@@ -21,7 +21,7 @@ import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
 import { gerarKpiRomaneioXlsx, cargasEscalaDivergenteInteira } from '@/lib/kpi-romaneio/gerador-xlsx'
 import { detectarTrocasProvaveis } from '@/lib/kpi-romaneio/troca-placa'
 import { aplicarTrocasDePlaca, buscarTrocasDoDia } from '@/lib/kpi-romaneio/trocas-placa'
-import { aplicarLocaisClientes, buscarLocaisClientes, marcarPontosCorroborados } from '@/lib/kpi-romaneio/locais-clientes'
+import { aplicarLocaisClientes, buscarLocaisClientes, marcarPontosCorroborados, nfsBarradasPelaTrava } from '@/lib/kpi-romaneio/locais-clientes'
 import { lerCacheDia, gravarCacheDia } from '@/lib/kpi-romaneio/cache-dia'
 import { COD_USER_NUTRIMAX, EMPRESA_NUTRIMAX, foraDoAlcanceApi, LIMITE_CONCORRENCIA_PLACAS, PAO_PREFIXO } from '@/lib/kpi-romaneio/constants'
 import { mapComLimite } from '@/lib/kpi-romaneio/concorrencia'
@@ -105,6 +105,30 @@ export type ResultadoKpiNutrimax = {
   territorioIndisponivel?: boolean
 }
 
+/** F1-07: paradas cruas da Unitrac (API, mais o snapshot quando o dia já
+ *  passou) só das placas com NF barrada pela trava de 15 km. Nunca grava: o
+ *  snapshot é lido, não salvo. Placa com grafia O/0 ou I/1 na frota consulta
+ *  todas as grafias (mesma regra de resolverAliasPlacas). */
+async function paradasCruasParaTrava(
+  placas: string[],
+  todasPlacas: string[],
+  frota: { cv: string; placaNorm: string }[],
+  data: string,
+  paradasDaPlaca: (cv: string, placaNorm: string) => Promise<UnitracParadaRow[]>,
+): Promise<Map<string, UnitracParadaRow[]>> {
+  const alias = resolverAliasPlacas(todasPlacas, frota.map(v => v.placaNorm))
+  const snap = data < hojeBR() ? await lerSnapshotParadas('nutrimax', data) : new Map<string, UnitracParadaRow[]>()
+  const out = new Map<string, UnitracParadaRow[]>()
+  for (const p of placas) {
+    const grafias = new Set([p, ...(alias.get(p) ?? [])])
+    const cvs = [...new Set(frota.filter(v => grafias.has(v.placaNorm)).map(v => v.cv))]
+    const daApi = (await Promise.all(cvs.map(cv => paradasDaPlaca(cv, p)))).flat()
+    const doSnap = snap.get(p) ?? []
+    out.set(p, doSnap.length ? mesclarParadas(doSnap, daApi) : daApi)
+  }
+  return out
+}
+
 export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: OpcoesKpiNutrimax): Promise<ResultadoKpiNutrimax> {
   const data = entrada.data
   // Tempo por etapa (06/10, "a geração demora" é a maior reclamação): vai pro log.
@@ -165,6 +189,24 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
     return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: narrowGeoMotivo(g?.motivo), geoSemFonte: g != null && !g.fonte, geoVerificadoManual: g != null && FONTES_VERIFICADAS.has(g.fonte ?? ''), ...(g?.precisao ? { geoPrecisao: g.precisao } : {}) }
   })
 
+  // Cache do dia (06/10): paradas da Unitrac por placa reaproveitadas entre
+  // gerações (4 min hoje, 6 h dia passado) -- era metade do tempo da geração.
+  // F1-07: definido aqui (antes era depois da ponte) porque a trava de 15 km
+  // do local aprendido pode precisar das paradas da placa antes da ponte; o
+  // que for buscado aqui é reaproveitado no laço das paradas, sem 2a chamada.
+  const cacheParadas = await lerCacheDia<UnitracParadaRow[]>('paradas', data, hojeBR())
+  const paradasNovas = new Map<string, UnitracParadaRow[]>()
+  const paradasDaPlaca = async (cv: string, placaNorm: string): Promise<UnitracParadaRow[]> => {
+    const k = `${cv}|${placaNorm}`
+    const c = cacheParadas.get(k) ?? paradasNovas.get(k)
+    if (c) return c
+    const p = await buscarParadasDoDia(cv, placaNorm, data, 48)
+    paradasNovas.set(k, p)
+    return p
+  }
+  let frotaPromise: ReturnType<typeof buscarFrota> | null = null
+  const obterFrota = () => (frotaPromise ??= buscarFrota(COD_USER_NUTRIMAX))
+
   // Cadastro de locais dos clientes (05/10, scripts/aprender-locais-clientes.ts):
   // cliente com coordenada aprendida/corrigida usa ela, nao o geocode do texto
   // (que muda quando o endereco vem escrito diferente). Quem recebeu local fica
@@ -172,7 +214,26 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   const nfsComLocal = new Set<string>()
   if (!opcoes?.semLocaisClientes) {
     const locais = await buscarLocaisClientes(CLIENTE_LOCAIS, () => fontesIndisponiveis.push('locais_clientes'))
-    const { linhas, aplicados } = aplicarLocaisClientes(romaneioGeo, locais)
+    // F1-07 (KN-04 parte 1): NF com geocode NAO confiavel barrada pela trava
+    // de 15 km -- busca as paradas cruas da propria placa (API + snapshot, sem
+    // gravar nada) pra ver se ela parou no ponto aprendido. Falha aqui so'
+    // mantem a trava (comportamento antigo).
+    const barradas = nfsBarradasPelaTrava(romaneioGeo, locais)
+    let paradasPropriasPorPlaca: Map<string, UnitracParadaRow[]> | undefined
+    if (barradas.length > 0) {
+      try {
+        paradasPropriasPorPlaca = await paradasCruasParaTrava(
+          [...new Set(barradas.map(l => normPlaca(l.placa)))].filter(p => p !== ''),
+          [...new Set(romaneioGeo.map(l => normPlaca(l.placa)))].filter(p => p !== ''),
+          await obterFrota(), data, paradasDaPlaca,
+        )
+      } catch (err) {
+        console.error(`[KPI ${data}] paradas para a trava de 15 km indisponiveis (trava mantida):`, err)
+      }
+    }
+    const { linhas, aplicados } = aplicarLocaisClientes(romaneioGeo, locais, paradasPropriasPorPlaca)
+    const destravadas = barradas.filter(l => aplicados.includes(l.nf))
+    if (destravadas.length) console.warn(`[KPI ${data}] F1-07: ponto aprendido usado apesar da trava de 15 km (parada da propria placa no ponto): ${destravadas.map(l => `${l.nf}/${normPlaca(l.placa)}`).join(', ')}`)
     romaneioGeo.splice(0, romaneioGeo.length, ...marcarPontosCorroborados(linhas, locais))
     aplicados.forEach(nf => nfsComLocal.add(nf))
   }
@@ -258,7 +319,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   // Alvos antes da ponte: o cadastro Unitrac (pontoLat/pontoLng) casado por
   // placa+NF vira latAlt/lngAlt de cada ponto (coordenada alternativa).
   const [frota, alvosBrutos] = await Promise.all([
-    buscarFrota(COD_USER_NUTRIMAX),
+    obterFrota(),
     buscarAlvosDoDia(placasNorm, { comAlias: true }),
   ])
   marcar('frota+alvos')
@@ -306,18 +367,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   // disso traz paradas incompletas (nuncaSaiuDaBase falso-positivo). Busca a
   // API crua por placa e so' DEPOIS passa pelo snapshot (paradasEfetivas),
   // que mescla com o que o cron noturno ja capturou daquele dia.
-  // Cache do dia (06/10): paradas da Unitrac por placa reaproveitadas entre
-  // gerações (4 min hoje, 6 h dia passado) -- era metade do tempo da geração.
-  const cacheParadas = await lerCacheDia<UnitracParadaRow[]>('paradas', data, hojeBR())
-  const paradasNovas = new Map<string, UnitracParadaRow[]>()
-  const paradasDaPlaca = async (cv: string, placaNorm: string): Promise<UnitracParadaRow[]> => {
-    const k = `${cv}|${placaNorm}`
-    const c = cacheParadas.get(k)
-    if (c) return c
-    const p = await buscarParadasDoDia(cv, placaNorm, data, 48)
-    paradasNovas.set(k, p)
-    return p
-  }
+  // cacheParadas/paradasDaPlaca: definidos antes do cadastro de locais (F1-07).
   const daUnitracPorPlaca = new Map<string, UnitracParadaRow[]>()
   await mapComLimite(placasNorm, LIMITE_CONCORRENCIA_PLACAS, async placaNorm => {
     const cv = cvPorPlaca.get(placaNorm)

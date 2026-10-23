@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { chaveClienteLocal, localUtilizavel, aplicarLocaisClientes, consolidarEvidencias, marcarPontosCorroborados, type LocalCliente } from './locais-clientes'
+import { chaveClienteLocal, localUtilizavel, aplicarLocaisClientes, consolidarEvidencias, marcarPontosCorroborados, nfsBarradasPelaTrava, paradaPropriaNoLocal, type LocalCliente } from './locais-clientes'
 import type { LinhaGeocodificada } from './types'
 
 const linha = (o: Partial<LinhaGeocodificada>): LinhaGeocodificada => ({
@@ -60,6 +60,58 @@ describe('aplicarLocaisClientes', () => {
   it('sem local, ou local ainda não confirmado: deixa como está', () => {
     expect(aplicarLocaisClientes([linha({})], new Map()).aplicados).toEqual([])
     expect(aplicarLocaisClientes([linha({ geoConfiavel: false })], new Map([['5778', local({ fonte: 'entrega_confirmada', confirmacoes: 1 })]])).aplicados).toEqual([])
+  })
+})
+
+describe('trava de 15 km x parada da propria placa no ponto aprendido (F1-07, KN-04 parte 1)', () => {
+  // Caso real: CHURRASCARIA JACARE (163983), RBI0J25, 22/10, NF 2436616. Ponto
+  // aprendido em Aperibe com 5 confirmacoes; geocode do dia 84 km longe (nao
+  // confiavel); a placa parou 11 min a ~85 m do ponto aprendido (api-6).
+  const jacareLocal = local({ chave: '163983', lat: -21.638572, lng: -42.099901, fonte: 'entrega_confirmada', confirmacoes: 5, enderecoRef: 'RODOVIA PRESIDENTE JOAO GOULART, S/N - APERIBÉ, APERIBE - ANEXO - 28495521' })
+  const jacareNf = linha({
+    carga: '100598', placa: 'RBI0J25', nf: '2436616', clienteCodigo: '163983', clienteNome: 'CHURRASCARIA JACARE',
+    endereco: 'RODOVIA PRESIDENTE JOAO GOULART, S/N - APERIBÉ, APERIBE - ANEXO - 28495521',
+    lat: -22.3736899, lng: -42.5470193, geoConfiavel: false,
+  })
+  const paradaApi6 = {
+    lat: -21.6380733, lng: -42.0992783, chegada: '2026-10-22T09:11:39.000Z', saida: '2026-10-22T09:25:40.000Z',
+    fim_real: '2026-10-22T09:22:39.000Z', duracao_seg: 660, classificacao: 'FORA_BASE',
+  }
+  const locais = new Map([['163983', jacareLocal]])
+
+  it('sem parada da placa no ponto aprendido, a trava continua (comportamento antigo)', () => {
+    expect(aplicarLocaisClientes([jacareNf], locais).aplicados).toEqual([])
+    expect(aplicarLocaisClientes([jacareNf], locais, new Map([['RBI0J25', []]])).aplicados).toEqual([])
+  })
+  it('Jacare 22/10: geocode nao confiavel a 84 km + parada propria de 11 min a ~85 m -> usa o ponto aprendido', () => {
+    const r = aplicarLocaisClientes([jacareNf], locais, new Map([['RBI0J25', [paradaApi6]]]))
+    expect(r.aplicados).toEqual(['2436616'])
+    expect(r.linhas[0]).toMatchObject({ lat: -21.638572, lng: -42.099901, geoConfiavel: false })
+    expect(r.linhas[0].geoVerificadoManual).toBeFalsy()
+  })
+  it('parada curta (< 3 min), longe (> 100 m) ou na BASE nao destrava', () => {
+    const curta = { ...paradaApi6, duracao_seg: 120, fim_real: '2026-10-22T09:13:39.000Z' }
+    const longe = { ...paradaApi6, lat: -21.6400, lng: -42.0992783 } // ~165 m
+    const base = { ...paradaApi6, classificacao: 'BASE' }
+    for (const p of [curta, longe, base]) expect(aplicarLocaisClientes([jacareNf], locais, new Map([['RBI0J25', [p]]])).aplicados).toEqual([])
+  })
+  it('parada de OUTRA placa no ponto nao destrava (nao da credito a vizinho)', () => {
+    expect(aplicarLocaisClientes([jacareNf], locais, new Map([['RQS7H76', [paradaApi6]]])).aplicados).toEqual([])
+  })
+  it('VIVACE com geocode confiavel a 20 km continua travado, mesmo com parada da placa no ponto aprendido', () => {
+    const vivaceLocal = local({ chave: '5778', lat: -22.9, lng: -43.2, fonte: 'parada_orfa', confirmacoes: 4 })
+    const vivaceNf = linha({ placa: 'AAA1A11', lat: -22.9, lng: -43.395, geoConfiavel: true }) // ~20 km a oeste
+    const parada = { ...paradaApi6, lat: -22.9003, lng: -43.2003 }
+    expect(aplicarLocaisClientes([vivaceNf], new Map([['5778', vivaceLocal]]), new Map([['AAA1A11', [parada]]])).aplicados).toEqual([])
+  })
+  it('nfsBarradasPelaTrava lista so as NFs com geocode nao confiavel barradas pela distancia', () => {
+    const perto = linha({ nf: '9', geoConfiavel: false })
+    const confiavelLonge = linha({ nf: '8', geoConfiavel: true, lat: -21.75, lng: -41.33 })
+    expect(nfsBarradasPelaTrava([jacareNf, perto, confiavelLonge], new Map([...locais, ['5778', local({ fonte: 'entrega_confirmada', confirmacoes: 3 })]])).map(l => l.nf)).toEqual(['2436616'])
+  })
+  it('paradaPropriaNoLocal: >= 3 min a <= 100 m, fora da base', () => {
+    expect(paradaPropriaNoLocal([paradaApi6], jacareLocal)).toBe(true)
+    expect(paradaPropriaNoLocal([], jacareLocal)).toBe(false)
   })
 })
 

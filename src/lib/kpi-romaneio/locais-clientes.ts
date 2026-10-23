@@ -44,6 +44,48 @@ export function localUtilizavel(l: LocalCliente): boolean {
   return l.fonte === 'manual' || l.confirmacoes >= 2
 }
 
+/** Parada crua da Unitrac, só o que a trava de 15 km precisa. */
+export type ParadaPropria = {
+  lat: number | null
+  lng: number | null
+  chegada: string
+  saida?: string | null
+  fim_real?: string | null
+  duracao_seg?: number | null
+  classificacao?: string | null
+}
+
+const PARADA_PROPRIA_MIN_S = 180
+const PARADA_PROPRIA_RAIO_M = 100
+
+/** F1-07 (KN-04 parte 1): a própria placa parou >= 3 min a <= 100 m do ponto
+ *  aprendido, fora da base. */
+export function paradaPropriaNoLocal(paradas: ParadaPropria[], local: { lat: number; lng: number }): boolean {
+  return paradas.some(p => {
+    if (p.classificacao !== 'FORA_BASE' || p.lat == null || p.lng == null) return false
+    const fim = p.fim_real ?? p.saida ?? p.chegada
+    const dur = p.duracao_seg ?? (new Date(fim).getTime() - new Date(p.chegada).getTime()) / 1000
+    if (!(dur >= PARADA_PROPRIA_MIN_S)) return false
+    return distanciaM({ lat: p.lat, lng: p.lng }, local) <= PARADA_PROPRIA_RAIO_M
+  })
+}
+
+function normPlacaLocal(p: string): string {
+  return (p ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+}
+
+/** NFs com geocode do dia NÃO confiável que a trava de 15 km barra hoje --
+ *  só pra elas vale buscar as paradas da placa antes da ponte (F1-07). */
+export function nfsBarradasPelaTrava(linhas: LinhaGeocodificada[], locais: Map<string, LocalCliente>): LinhaGeocodificada[] {
+  return linhas.filter(l => {
+    const chave = chaveClienteLocal(l)
+    const local = chave ? locais.get(chave) : undefined
+    if (!local || !localUtilizavel(local)) return false
+    if (l.lat == null || l.lng == null || l.geoConfiavel !== false) return false
+    return distanciaM(l as { lat: number; lng: number }, local) > DIST_MAX_DO_GEO_M
+  })
+}
+
 /** Troca a coordenada das NFs cujo cliente tem local utilizável.
  *  Medido 06/10 (01-05/10, com x sem cadastro): trocar geocode BOM piorava
  *  NFs em dois casos -- cliente que entrega em vários endereços (buffet de
@@ -52,8 +94,16 @@ export function localUtilizavel(l: LocalCliente): boolean {
  *  Por isso:
  *   - geocode do dia ruim/ausente: usa o local (qualquer fonte utilizável);
  *   - geocode do dia bom: só manual ou parada órfã, e só no MESMO endereço;
- *     entrega confirmada nunca troca geocode bom. */
-export function aplicarLocaisClientes(linhas: LinhaGeocodificada[], locais: Map<string, LocalCliente>): { linhas: LinhaGeocodificada[]; aplicados: string[] } {
+ *     entrega confirmada nunca troca geocode bom.
+ *  F1-07 (KN-04 parte 1, Jacaré 22/10: geocode a 84 km): com geocode do dia
+ *  NÃO confiável, o local passa da trava de 15 km quando a PRÓPRIA placa
+ *  parou >= 3 min a <= 100 m dele no dia (`paradasPropriasPorPlaca`, chave =
+ *  placa normalizada). Geocode confiável continua travado (VIVACE). */
+export function aplicarLocaisClientes(
+  linhas: LinhaGeocodificada[],
+  locais: Map<string, LocalCliente>,
+  paradasPropriasPorPlaca?: Map<string, ParadaPropria[]>,
+): { linhas: LinhaGeocodificada[]; aplicados: string[] } {
   const aplicados: string[] = []
   const novas = linhas.map(l => {
     const chave = chaveClienteLocal(l)
@@ -62,7 +112,10 @@ export function aplicarLocaisClientes(linhas: LinhaGeocodificada[], locais: Map<
     const temGeo = l.lat != null && l.lng != null
     // Coordenada ruim erra por poucos km, não de cidade: local muito longe é
     // de outro endereço do cliente (VIVACE: Rio x Campos, 156 km).
-    if (temGeo && distanciaM(l as { lat: number; lng: number }, local) > DIST_MAX_DO_GEO_M) return l
+    if (temGeo && distanciaM(l as { lat: number; lng: number }, local) > DIST_MAX_DO_GEO_M) {
+      const destrava = l.geoConfiavel === false && paradaPropriaNoLocal(paradasPropriasPorPlaca?.get(normPlacaLocal(l.placa)) ?? [], local)
+      if (!destrava) return l
+    }
     const geoBom = temGeo && l.geoConfiavel !== false
     if (geoBom) {
       if (local.fonte === 'entrega_confirmada') return l
