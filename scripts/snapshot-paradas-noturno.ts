@@ -94,10 +94,13 @@ async function main() {
   }
 
   // Rio Quality (Task 4): mesma janela hoje/ontem, empresa 'rioquality'.
-  const frotaRq = await buscarFrotaRioQuality()
-  // buscarFrotaRioQuality engole erro de banco e devolve vazio.
+  // F1-12: buscarFrotaRioQuality lanca com erro de banco ou tabela vazia.
+  const frotaRq = await buscarFrotaRioQuality().catch((err: unknown) => {
+    console.error('rioquality: frota indisponivel:', err instanceof Error ? err.message : err)
+    return new Map<string, string>()
+  })
   if (frotaRq.size === 0) {
-    falhas.push('rioquality: frota vazia (kpi_rioquality_frota)')
+    falhas.push('rioquality: frota vazia ou ilegivel (kpi_rioquality_frota)')
   } else {
     const rq = await capturarParadasRioQuality(frotaRq, [hoje, ontem], buscarParadasUnitracRioQuality)
     if (rq.falhas.length > 0) {

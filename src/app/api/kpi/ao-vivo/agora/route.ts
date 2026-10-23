@@ -30,10 +30,16 @@ const frotaCache = new Map<ClienteAoVivo, { em: number; cvPorPlaca: Map<string, 
 async function cvDaPlaca(cliente: ClienteAoVivo, placa: string): Promise<string | null> {
   const c = frotaCache.get(cliente)
   if (!c || Date.now() - c.em > 10 * 60_000) {
-    const cvPorPlaca = cliente === 'rioquality'
-      ? await buscarFrotaRioQuality()
-      : new Map((await buscarFrota(COD_USER_NUTRIMAX)).map(v => [v.placaNorm, v.cv] as [string, string]))
-    frotaCache.set(cliente, { em: Date.now(), cvPorPlaca })
+    // F1-12: frota da RQ ilegivel lanca; aqui (so' a posicao "agora" de uma
+    // placa) vira "sem posicao" e nao entra no cache -- a proxima chamada tenta de novo.
+    if (cliente === 'rioquality') {
+      const frota = await buscarFrotaRioQuality().catch(() => null)
+      if (!frota) return null
+      frotaCache.set(cliente, { em: Date.now(), cvPorPlaca: frota })
+    } else {
+      const cvPorPlaca = new Map((await buscarFrota(COD_USER_NUTRIMAX)).map(v => [v.placaNorm, v.cv] as [string, string]))
+      frotaCache.set(cliente, { em: Date.now(), cvPorPlaca })
+    }
   }
   return frotaCache.get(cliente)!.cvPorPlaca.get(placa) ?? null
 }

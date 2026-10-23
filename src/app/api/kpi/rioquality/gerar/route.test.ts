@@ -12,6 +12,7 @@ const cenario = vi.hoisted(() => ({
   uploads: [] as string[],
   uploadKpiErro: false,
   geracao: null as null | Record<string, string | null>,
+  frotaErro: false,
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -30,7 +31,16 @@ vi.mock('@/lib/supabase/service', () => ({
     download: async () => ({ data: new Blob(['x']), error: null }),
   }) } }),
 }))
-vi.mock('@/lib/kpi-rioquality/frota', () => ({ buscarFrotaRioQuality: async () => new Map([['AAA1A11', '1']]) }))
+vi.mock('@/lib/kpi-rioquality/frota', () => {
+  class FrotaRioQualityIndisponivelError extends Error {}
+  return {
+    FrotaRioQualityIndisponivelError,
+    buscarFrotaRioQuality: async () => {
+      if (cenario.frotaErro) throw new FrotaRioQualityIndisponivelError('Não consegui ler a frota da Rio Quality (statement timeout).')
+      return new Map([['AAA1A11', '1']])
+    },
+  }
+})
 vi.mock('@/lib/kpi-romaneio/paradas-snapshot', () => ({
   lerSnapshotParadas: async (empresa: string, data: string) => {
     cenario.leituras.push(`${empresa}/${data}`)
@@ -64,6 +74,7 @@ beforeEach(() => {
   cenario.uploads = []
   cenario.uploadKpiErro = false
   cenario.geracao = null
+  cenario.frotaErro = false
   vi.mocked(salvarGeracaoMock).mockClear()
 })
 
@@ -127,5 +138,17 @@ describe('POST /api/kpi/rioquality/gerar -- guarda o xlsx gerado', () => {
     const arg = vi.mocked(salvarGeracaoMock).mock.calls[0][0]
     expect(arg.arquivoStoragePath).toMatch(/^rioquality\/2026-09-29\/.+-kpi\.xlsx$/)
     expect(cenario.uploads).toEqual([arg.arquivoStoragePath])
+  })
+})
+
+// F1-12 (KRQ-09): frota ilegivel nao gera KPI com todas as NFs "sem rastreador".
+describe('POST /api/kpi/rioquality/gerar -- frota da RQ ilegivel', () => {
+  it('-> 503 com a mensagem, pipeline nao roda e nada e\' salvo', async () => {
+    cenario.frotaErro = true
+    const res = await POST(req('2026-09-29') as never)
+    expect(res.status).toBe(503)
+    expect(await res.text()).toContain('frota da Rio Quality')
+    expect(cenario.chamadasPipeline).toHaveLength(0)
+    expect(vi.mocked(salvarGeracaoMock)).not.toHaveBeenCalled()
   })
 })

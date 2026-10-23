@@ -8,7 +8,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { guardarXlsxGerado, novoPrefixoGeracao } from '@/lib/kpi-romaneio/xlsx-gerado'
 import { foraDoAlcanceApi } from '@/lib/kpi-romaneio/constants'
 import { gerarKpiRioQuality, EntradaInvalidaError } from '@/lib/kpi-rioquality/pipeline'
-import { buscarFrotaRioQuality } from '@/lib/kpi-rioquality/frota'
+import { buscarFrotaRioQuality, FrotaRioQualityIndisponivelError } from '@/lib/kpi-rioquality/frota'
 import { lerSnapshotParadas } from '@/lib/kpi-romaneio/paradas-snapshot'
 import { EMPRESA_SNAPSHOT_RIOQUALITY } from '@/lib/kpi-rioquality/snapshot-paradas'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
@@ -125,6 +125,8 @@ export async function POST(req: NextRequest) {
       : await gerarKpiRioQuality({ custosBuf: custosBuf!, entregasBuf: entregasBuf!, data, cvPorPlaca: await buscarFrotaRioQuality(), lerSnapshot })
   } catch (e) {
     if (e instanceof EntradaInvalidaError) return new NextResponse(e.message, { status: 422 })
+    // F1-12 (KRQ-09): frota ilegivel nao vira "todas sem rastreador".
+    if (e instanceof FrotaRioQualityIndisponivelError) return new NextResponse(e.message, { status: 503 })
     throw e
   }
 

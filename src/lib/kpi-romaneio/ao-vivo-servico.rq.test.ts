@@ -6,6 +6,8 @@ const c = vi.hoisted(() => ({
   updates: [] as Record<string, unknown>[],
   resultadoAnterior: null as unknown,
   coerenciaFalhou: 0,
+  frotaErro: null as Error | null,
+  pipelineChamado: 0,
 }))
 
 function cadeia(resultado: unknown) {
@@ -31,16 +33,18 @@ vi.mock('@/lib/supabase/service', () => ({
   }),
 }))
 vi.mock('@/lib/kpi-rioquality/pipeline', () => ({
-  gerarKpiRioQuality: async () => ({ xlsx: Buffer.from(''), linhasKpi: [], detalhe: [], avisos: [], coerenciaFalhou: c.coerenciaFalhou }),
+  gerarKpiRioQuality: async () => (c.pipelineChamado++, { xlsx: Buffer.from(''), linhasKpi: [], detalhe: [], avisos: [], coerenciaFalhou: c.coerenciaFalhou }),
 }))
-vi.mock('@/lib/kpi-rioquality/frota', () => ({ buscarFrotaRioQuality: async () => new Map() }))
+vi.mock('@/lib/kpi-rioquality/frota', () => ({
+  buscarFrotaRioQuality: async () => { if (c.frotaErro) throw c.frotaErro; return new Map([['AAA1A11', '1']]) },
+}))
 vi.mock('./resumo-dashboard', () => ({ extrairKpiCompleto: async () => ({ data: null, resumo: { cargas: [] }, nfs: [] }) }))
 
 import { calcularAoVivo } from './ao-vivo-servico'
 
 // Data fixa: '2026-10-20' fora das 48h fazia o calculo ir pelo snapshot
 // (foraDoAlcanceApi) e o teste quebrou sozinho em 23/10.
-beforeEach(() => { c.updates = []; c.resultadoAnterior = null; c.coerenciaFalhou = 0; vi.setSystemTime(new Date('2026-10-20T15:00:00Z')) })
+beforeEach(() => { c.updates = []; c.resultadoAnterior = null; c.coerenciaFalhou = 0; c.frotaErro = null; c.pipelineChamado = 0; vi.setSystemTime(new Date('2026-10-20T15:00:00Z')) })
 afterEach(() => { vi.useRealTimers() })
 
 describe('RQ-08: ponte de coerencia fora nao publica resultado degradado', () => {
@@ -50,5 +54,19 @@ describe('RQ-08: ponte de coerencia fora nao publica resultado degradado', () =>
     expect(await calcularAoVivo('rioquality', '2026-10-20')).toBe('erro')
     expect(c.updates.some(u => 'resultado' in u)).toBe(false)
     expect(String(c.updates.at(-1)?.ultimo_erro)).toContain('coerência')
+  })
+})
+
+// F1-12 (KRQ-09): frota da RQ ilegivel nao pode virar "todas sem rastreador"
+// (contadas como corretas, taxa ~100%). O calculo falha, o resultado anterior
+// fica e o motivo vai para ultimo_erro.
+describe('F1-12: falha ao ler a frota da RQ', () => {
+  it('buscarFrotaRioQuality lancando: calcularAoVivo devolve erro, nao grava taxa e grava ultimo_erro', async () => {
+    c.resultadoAnterior = { placas: [] }
+    c.frotaErro = new Error('frota da Rio Quality indisponivel: statement timeout')
+    expect(await calcularAoVivo('rioquality', '2026-10-20')).toBe('erro')
+    expect(c.pipelineChamado).toBe(0)
+    expect(c.updates.some(u => 'resultado' in u)).toBe(false)
+    expect(String(c.updates.at(-1)?.ultimo_erro)).toContain('frota da Rio Quality')
   })
 })

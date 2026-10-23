@@ -26,6 +26,7 @@ import { reposicionarPorAncoras } from '@/lib/kpi-romaneio/geocode-ancoras'
 import { montarCorredorDaRua, extensaoCorredorM } from './corredor-rua'
 import { gpsCongelado, semComunicarDesde, OBS_GPS_CONGELADO, obsSemComunicarDesde } from './rastreador-status'
 import { buscarPosicoesPorCv } from '@/lib/unitrac-api/posicoes'
+import { FrotaRioQualityIndisponivelError } from './frota'
 
 // Nucleo do KPI Rio Quality -- usado pela rota /api/kpi/rioquality/gerar e
 // pelo script scripts/gerar-rioquality-real-arquivo.ts (mesma pipeline, sem
@@ -183,6 +184,9 @@ export async function gerarKpiRioQuality(params: {
   const buscarUltimaComunicacao = params.buscarUltimaComunicacao
     ?? (async (cvs: string[]) => new Map([...(await buscarPosicoesPorCv(cvs))].map(([cv, p]) => [cv, p.datagps] as [string, string | null])))
   const hoje = params.hoje ?? hojeBR()
+  // F1-12 (KRQ-09): sem frota, toda placa sairia "sem rastreador" (contada
+  // como correta, taxa ~100%). Recusa antes de qualquer consulta.
+  if (cvPorPlaca.size === 0) throw new FrotaRioQualityIndisponivelError('frota vazia')
   // Task 4 (avisos, estudo item 5d): Custos x Entregas e frota.
   const avisosEntrada: AvisoDescasamento[] = []
   // Ruas sem resposta da coerencia do monitoramento (apos as tentativas).

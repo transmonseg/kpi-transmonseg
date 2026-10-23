@@ -725,10 +725,25 @@ describe('RQ-04 no calculo (auditoria 20/10)', () => {
     vi.mocked(geocodificarEnderecos).mockImplementation(async e => e.map(() => ({ ...PONTO, confiavel: true })))
     const r = await gerarKpiRioQuality({
       entregasCompletas: [{ placaNorm: 'XXX5678', clienteNome: 'C', cidade: 'RIO DE JANEIRO', uf: 'RJ', destino: '', motorista: '', rua: 'RUA A', bairro: '', nf: '1', clienteCodigo: '1', romaneio: '9', rota: '' }] as never,
-      data: DATA, cvPorPlaca: new Map(),
+      data: DATA, cvPorPlaca: new Map([['CCC3C33', '3']]),
       buscarParadas: async () => [], medirRastro: async () => ({ km: 0, pontosNoDia: 0 }),
     })
     expect(r.detalhe.every(d => (d.observacao ?? '').startsWith('CARGA SEM PLACA'))).toBe(true)
+  })
+})
+
+// F1-12 (KRQ-09): frota vazia = toda placa "sem rastreador" = contada como
+// correta (taxa ~100%). A pipeline recusa em vez de calcular.
+describe('F1-12: gerarKpiRioQuality sem frota', () => {
+  it('cvPorPlaca vazio -> lanca FrotaRioQualityIndisponivelError, sem consultar paradas', async () => {
+    const { FrotaRioQualityIndisponivelError } = await import('./frota')
+    const buscarParadas = vi.fn(async () => [])
+    await expect(gerarKpiRioQuality({
+      ...formatoAntigo(['RJM5B51', 'CCC3C33']),
+      data: DATA, cvPorPlaca: new Map(),
+      buscarParadas, medirRastro: async () => ({ km: 0, pontosNoDia: 0 }),
+    })).rejects.toBeInstanceOf(FrotaRioQualityIndisponivelError)
+    expect(buscarParadas).not.toHaveBeenCalled()
   })
 })
 
