@@ -14,7 +14,6 @@ import { buscarDiaRioQualityFusion } from '../src/lib/kpi-rioquality/fonte-fusio
 import { linhasParaMonitoramentoRQ, enviarRioQualityAoMonitoramento } from '../src/lib/kpi-rioquality/enviar-monitoramento-rq'
 import { diaAnterior, precisaFecharDia } from '../src/lib/kpi-romaneio/ao-vivo'
 import { limparCacheDia } from '../src/lib/kpi-romaneio/cache-dia'
-import { limparXlsxAoVivo } from '../src/lib/kpi-romaneio/ao-vivo-servico'
 import { repararDia, depsReaisReparo } from '../src/lib/kpi-romaneio/reparar-dia'
 import { sincronizarAcessosMonitoramento } from '../src/lib/acessos-monitoramento'
 
@@ -73,10 +72,12 @@ async function main() {
   await fecharDiaAnterior()
   const horaBR = horaBRAgora()
   // Limpeza 1x por dia (04h BRT, 1o tick da hora): cache do dia e planilhas
-  // do ao vivo com mais de 7 dias -- nada acumula no servidor.
+  // do ao vivo ficam (F0-11, ver abaixo).
   if (horaBR === 4 && new Date().getMinutes() < 10) {
     await limparCacheDia(hojeBR()).catch(err => log(`limpeza cache: ${err}`))
-    await limparXlsxAoVivo(hojeBR()).catch(err => log(`limpeza planilhas ao vivo: ${err}`))
+    // Plano mestre 23/10 (F0-11): planilhas do Ao vivo NAO sao mais apagadas
+    // ate' o KPI final ficar guardado para sempre (F2-12) -- a da RQ e' a
+    // unica prova do fechamento dos dias puxados da Fusion.
     log('limpeza diaria feita')
   }
   if (horaBR < 5 || horaBR >= 21) return
