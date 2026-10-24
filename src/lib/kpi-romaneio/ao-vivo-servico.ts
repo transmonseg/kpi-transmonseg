@@ -13,6 +13,7 @@ import { normPlaca } from '@/lib/unitrac-api'
 import type { LinhaEscala, LinhaRomaneio } from './types'
 import { gerarKpiRioQuality } from '@/lib/kpi-rioquality/pipeline'
 import { buscarFrotaRioQuality } from '@/lib/kpi-rioquality/frota'
+import { placasForaDoCadastro, avisoPlacasForaDoCadastro } from '@/lib/kpi-rioquality/frota-aviso'
 import { foraDoAlcanceApi } from './constants'
 import { lerSnapshotParadas } from './paradas-snapshot'
 import { EMPRESA_SNAPSHOT_RIOQUALITY } from '@/lib/kpi-rioquality/snapshot-paradas'
@@ -202,7 +203,7 @@ export async function gerarKpiDoDia(cliente: ClienteAoVivo, data: string, log: (
   aoMontarDetalheNutry?: Parameters<typeof gerarKpiNutrimax>[1],
   // F2-03 (GEO-22, KRQ-04): a RQ entrega o mesmo que a Nutry (ponto do
   // cliente, detalhe, paradas, trajeto) -- antes so' as paradas.
-  aoMontarDetalheRq?: Parameters<typeof gerarKpiRioQuality>[0]['aoMontarDetalhe']): Promise<{ xlsx: Buffer; qtdCargas: number; degradado?: string; aviso?: string; avisosFonte?: string[] } | null> {
+  aoMontarDetalheRq?: Parameters<typeof gerarKpiRioQuality>[0]['aoMontarDetalhe']): Promise<{ xlsx: Buffer; qtdCargas: number; degradado?: string; aviso?: string; avisosFonte?: string[]; avisoFrota?: string } | null> {
   if (cliente === 'rioquality') {
     const entregas = await entradaRioQualityDoDia(data)
     if (!entregas) return null
@@ -213,8 +214,13 @@ export async function gerarKpiDoDia(cliente: ClienteAoVivo, data: string, log: (
       const snap = await lerSnapshotParadas(EMPRESA_SNAPSHOT_RIOQUALITY, data)
       if (snap.size > 0) lerSnapshot = async () => snap
     }
-    const r = await gerarKpiRioQuality({ entregasCompletas: entregas, data, cvPorPlaca: await buscarFrotaRioQuality(), log, lerSnapshot, aoMontarDetalhe: aoMontarDetalheRq })
+    const cvPorPlaca = await buscarFrotaRioQuality()
+    const r = await gerarKpiRioQuality({ entregasCompletas: entregas, data, cvPorPlaca, log, lerSnapshot, aoMontarDetalhe: aoMontarDetalheRq })
+    // F2-15 (MON-12): placa real fora do cadastro conta como "sem rastreador"
+    // (correta) -- aviso interno na tela; a taxa nao muda.
+    const avisoFrota = avisoPlacasForaDoCadastro(placasForaDoCadastro(entregas, cvPorPlaca))
     return {
+      ...(avisoFrota ? { avisoFrota } : {}),
       xlsx: r.xlsx, qtdCargas: r.linhasKpi.length,
       ...(r.coerenciaFalhou > 0 ? { degradado: `ponte de coerência do monitoramento falhou em ${r.coerenciaFalhou} rua(s)` } : {}),
     }
@@ -373,6 +379,10 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     if (sugestoesTroca.length > 0) resultado.sugestoesTroca = sugestoesTroca
     if (r.aviso) resultado.avisos = [r.aviso]
     if (r.avisosFonte) resultado.avisos = [...(resultado.avisos ?? []), ...r.avisosFonte]
+    if (r.avisoFrota) {
+      resultado.avisos = [...(resultado.avisos ?? []), r.avisoFrota]
+      log(`ao vivo ${cliente} ${data}: ${r.avisoFrota}`)
+    }
     // F2-14 (RQ-08): degradado sem anterior bom sai marcado, com aviso na tela
     // e ultimo_erro (antes saia calado, como se a taxa estivesse completa).
     if (r.degradado) {

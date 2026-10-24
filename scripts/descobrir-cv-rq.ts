@@ -16,14 +16,24 @@
 // Uso:
 //   npx tsx --env-file=.env.production scripts/descobrir-cv-rq.ts <planilha.xlsx>            (so' propoe: CSV)
 //   npx tsx --env-file=.env.production scripts/descobrir-cv-rq.ts <planilha.xlsx> --aplicar   (insere as "ok")
+//   npx tsx --env-file=.env.production scripts/descobrir-cv-rq.ts --dias 3 --aplicar [--saida <dir>]   (cron, F2-15)
 //
 // --aplicar insere em kpi_rioquality_frota SO' as propostas "ok" (as
 // "conferir" ficam pra pessoa decidir) e nunca mexe em placa ja' cadastrada.
+//
+// F2-15 (MON-12, plano mestre 23/10): a frota estava parada desde 02/10 (a
+// descoberta era manual) e o monitoramento tem uma copia de 06/10. Modo cron
+// (--dias N): as placas vem do relatorio da RQ guardado no Ao vivo
+// (kpi_ao_vivo_dia) dos ultimos N dias, sem a placa de preenchimento (XXX).
+// Com --aplicar, depois de inserir, a frota inteira vai ao monitoramento
+// (POST /api/veiculos/rioquality, que so' acrescenta o cv que falta);
+// monitoramento antigo ou fora do ar so' gera aviso no log.
 import { readFileSync, writeFileSync } from 'fs'
 import { haversine } from '../src/lib/utils/geo'
 import { normPlaca } from '../src/lib/unitrac-api/frota'
 import type { PosicaoPorCv } from '../src/lib/unitrac-api/posicoes'
 import { BASE_COORD_RIOQUALITY } from '../src/lib/kpi-rioquality/constants'
+import { placaFicticia } from '../src/lib/kpi-rioquality/fonte-fusion'
 
 export const EMPRESAS_RQ = new Set(['598', '1169', '1194', '1197'])
 export const MAX_CV_PADRAO = 26_000
@@ -109,6 +119,61 @@ export type DepsDescobrirCv = {
   buscarPosicoes: (cvs: string[]) => Promise<Map<string, PosicaoPorCv>>
   inserir: (linhas: { placa_norm: string; cv: string; nome: null }[]) => Promise<number>
   escrever: (caminho: string, conteudo: string) => void
+  /** F2-15: frota inteira ao monitoramento (so' com --aplicar). Devolve o resumo para o log. */
+  enviarMonitoramento?: (frota: Map<string, string>) => Promise<string>
+}
+
+/** F2-15: placas dos relatorios da RQ guardados (um array por dia), sem a de
+ *  preenchimento (XXX5678 em 15/10) e sem vazia. */
+export function placasDoRomaneioRq(dias: { placaNorm?: string | null }[][]): Set<string> {
+  const out = new Set<string>()
+  for (const dia of dias) for (const e of dia) {
+    const p = normPlaca(e.placaNorm ?? '')
+    if (p && !placaFicticia(p)) out.add(p)
+  }
+  return out
+}
+
+export type ArgsDescobrir = { planilha: string | null; dias: number | null; aplicar: boolean; saida: string | null }
+const USO = 'Uso: descobrir-cv-rq.ts <planilha.xlsx> [--aplicar]  |  descobrir-cv-rq.ts --dias N [--aplicar] [--saida <dir>]'
+
+export function lerArgs(argv: string[]): ArgsDescobrir {
+  const r: ArgsDescobrir = { planilha: null, dias: null, aplicar: false, saida: null }
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]
+    if (a === '--aplicar') r.aplicar = true
+    else if (a === '--dias') {
+      const n = Number(argv[++i])
+      if (!Number.isInteger(n) || n < 1 || n > 31) throw new Error(USO)
+      r.dias = n
+    } else if (a === '--saida') r.saida = argv[++i] ?? null
+    else if (!a.startsWith('--') && !r.planilha) r.planilha = a
+  }
+  if (!r.planilha && r.dias == null) throw new Error(USO)
+  return r
+}
+
+/** F2-15: manda a frota (placa -> cv) ao monitoramento. Nunca lanca: rota
+ *  ausente (monitoramento antigo, 404) ou fora do ar vira texto pro log. */
+export async function enviarFrotaMonitoramento(frota: Map<string, string>, o: { base: string; chave: string; fetch?: typeof fetch }): Promise<string> {
+  const f = o.fetch ?? fetch
+  try {
+    const r = await f(`${o.base}/api/veiculos/rioquality`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-motor-key': o.chave },
+      body: JSON.stringify({ veiculos: [...frota].map(([placa, cv]) => ({ placa, cv })) }),
+      signal: AbortSignal.timeout(30_000),
+    })
+    if (r.status === 404) return 'monitoramento sem a rota /api/veiculos/rioquality (versão antiga): frota não enviada'
+    const j = await r.json().catch(() => null) as { ok?: boolean; inseridos?: string[]; jaExistiam?: number; conflitos?: { placa: string; motivo: string }[]; erro?: string } | null
+    if (!r.ok || !j?.ok) return `monitoramento recusou a frota (HTTP ${r.status}${j?.erro ? `: ${j.erro}` : ''})`
+    const ins = j.inseridos ?? []
+    const conf = j.conflitos ?? []
+    return `monitoramento: ${ins.length} inserido(s)${ins.length ? ` (${ins.join(', ')})` : ''}, ${j.jaExistiam ?? 0} já existia(m)`
+      + (conf.length ? `, ${conf.length} conflito(s): ${conf.map(c => `${c.placa} (${c.motivo})`).join('; ')}` : '')
+  } catch (e) {
+    return `monitoramento fora do ar, frota não enviada (${e instanceof Error ? e.message : String(e)})`
+  }
 }
 
 export async function rodar(
@@ -118,7 +183,15 @@ export async function rodar(
   const frota = await deps.lerFrota()
   const semCv = [...opcoes.placas].map(normPlaca).filter(p => p && !frota.has(p)).sort()
   console.log(`${opcoes.placas.size} placa(s) na planilha, ${semCv.length} fora da frota: ${semCv.join(', ')}`)
-  if (semCv.length === 0) return { semCv: 0, ok: 0, conferir: 0, naoEncontradas: 0, inseridos: 0 }
+  // F2-15: com --aplicar a frota (relida se mudou) vai ao monitoramento.
+  const enviar = async (mudou: boolean) => {
+    if (!opcoes.aplicar || !deps.enviarMonitoramento) return
+    console.log(await deps.enviarMonitoramento(mudou ? await deps.lerFrota() : frota))
+  }
+  if (semCv.length === 0) {
+    await enviar(false)
+    return { semCv: 0, ok: 0, conferir: 0, naoEncontradas: 0, inseridos: 0 }
+  }
   const posicoes = await varrerCvs(deps.buscarPosicoes, opcoes.maxCv ?? MAX_CV_PADRAO)
   console.log(`varredura: ${posicoes.size} CV(s) responderam`)
   const propostas = proporCvs(semCv, posicoes)
@@ -130,10 +203,12 @@ export async function rodar(
   console.log(`propostas em ${caminho}`)
   if (!opcoes.aplicar || ok.length === 0) {
     if (!opcoes.aplicar) console.log('(sem --aplicar: nada inserido)')
+    await enviar(false)
     return resumo
   }
   const inseridos = await deps.inserir(ok.map(p => ({ placa_norm: p.placa, cv: p.cv!, nome: null })))
   console.log(`inseridos ${inseridos}/${ok.length} em kpi_rioquality_frota`)
+  await enviar(inseridos > 0)
   return { ...resumo, inseridos }
 }
 
@@ -160,16 +235,38 @@ async function depsReais(): Promise<DepsDescobrirCv> {
       return (data ?? []).length
     },
     escrever: (c, t) => writeFileSync(c, t),
+    enviarMonitoramento: frota => {
+      const chave = process.env.MOTOR_SECRET
+      if (!chave) return Promise.resolve('MOTOR_SECRET ausente: frota não enviada ao monitoramento')
+      return enviarFrotaMonitoramento(frota, { base: process.env.MONITORAMENTO_URL ?? 'http://127.0.0.1:3010', chave })
+    },
   }
 }
 
+/** F2-15: placas do relatorio da RQ guardado no Ao vivo dos ultimos N dias (hoje incluso). */
+async function placasDosUltimosDias(dias: number): Promise<Set<string>> {
+  const { createServiceClient } = await import('../src/lib/supabase/service')
+  const { hojeBR } = await import('../src/lib/data-br')
+  const hoje = hojeBR()
+  const desde = new Date(Date.parse(`${hoje}T12:00:00Z`) - (dias - 1) * 86_400_000).toISOString().slice(0, 10)
+  const { data, error } = await createServiceClient().from('kpi_ao_vivo_dia').select('data, romaneio')
+    .eq('cliente', 'rioquality').gte('data', desde).lte('data', hoje)
+  if (error) throw new Error(`relatórios da RQ não lidos: ${error.message}`)
+  console.log(`relatórios da RQ de ${desde} a ${hoje}: ${(data ?? []).map(d => d.data).join(', ') || 'nenhum'}`)
+  return placasDoRomaneioRq((data ?? []).map(d => (Array.isArray(d.romaneio) ? d.romaneio : []) as { placaNorm?: string }[]))
+}
+
 async function main() {
-  const [planilha] = process.argv.slice(2).filter(a => !a.startsWith('--'))
-  if (!planilha) {
-    console.error('Uso: descobrir-cv-rq.ts <planilha.xlsx> [--aplicar]')
+  let args: ArgsDescobrir
+  try {
+    args = lerArgs(process.argv.slice(2))
+  } catch (e) {
+    console.error(e instanceof Error ? e.message : String(e))
     process.exit(1)
   }
-  await rodar({ placas: await placasDaPlanilha(planilha), aplicar: process.argv.includes('--aplicar'), dirSaida: process.cwd() }, await depsReais())
+  console.log(`[${new Date().toISOString()}] descobrir-cv-rq ${args.planilha ?? `--dias ${args.dias}`}${args.aplicar ? ' --aplicar' : ''}`)
+  const placas = args.planilha ? await placasDaPlanilha(args.planilha) : await placasDosUltimosDias(args.dias!)
+  await rodar({ placas, aplicar: args.aplicar, dirSaida: args.saida ?? process.cwd() }, await depsReais())
 }
 
 const ehEntrypoint = (process.argv[1] ?? '').endsWith('descobrir-cv-rq.ts')

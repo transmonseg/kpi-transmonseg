@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { variantesPlaca, proporCvs, varrerCvs, csvPropostasCv, rodar, EMPRESAS_RQ, type DepsDescobrirCv } from './descobrir-cv-rq'
+import { variantesPlaca, proporCvs, varrerCvs, csvPropostasCv, rodar, EMPRESAS_RQ, placasDoRomaneioRq, lerArgs, enviarFrotaMonitoramento, type DepsDescobrirCv } from './descobrir-cv-rq'
 import type { PosicaoPorCv } from '../src/lib/unitrac-api/posicoes'
 
 // Relatorio rq-mesmo-lugar-e-sem-rastreador.md (01/10), PARTE B: LTU7C95 e
@@ -103,5 +103,68 @@ describe('rodar', () => {
     const r = await rodar({ placas: new Set(['LTU7C95', 'ABC1023']), aplicar: true, dirSaida: '/tmp/x', maxCv: 30_500 }, d)
     expect(d.inserir).toHaveBeenCalledWith([{ placa_norm: 'LTU7C95', cv: '19364', nome: null }])
     expect(r.inseridos).toBe(1)
+  })
+})
+
+// F2-15 (MON-12): a varredura vira cron. Sem planilha: placas do relatorio da
+// RQ guardado no Ao vivo dos ultimos N dias; aplica so' as "ok" e manda a
+// frota inteira ao monitoramento (copia de 06/10 parada). Caso real: placas
+// fora da frota com carga de 14 a 23/10 = KZA2F01 (147 NFs), XXX5678 (108,
+// placa de preenchimento, 15/10), TUP0B49 (104) e TUB7J93 (76).
+describe('placasDoRomaneioRq', () => {
+  it('placas dos dias guardados, sem a de preenchimento (XXX) e sem vazia', () => {
+    const dias = [
+      [{ placaNorm: 'KZA2F01' }, { placaNorm: 'TUP0B49' }, { placaNorm: '' }],
+      [{ placaNorm: 'XXX5678' }, { placaNorm: 'TUB7J93' }, { placaNorm: 'LTU7C96' }, {}],
+    ]
+    expect([...placasDoRomaneioRq(dias)].sort()).toEqual(['KZA2F01', 'LTU7C96', 'TUB7J93', 'TUP0B49'])
+  })
+})
+
+describe('lerArgs', () => {
+  it('planilha (uso antigo) ou --dias N (cron), --aplicar e --saida', () => {
+    expect(lerArgs(['x.xlsx'])).toEqual({ planilha: 'x.xlsx', dias: null, aplicar: false, saida: null })
+    expect(lerArgs(['--dias', '3', '--aplicar', '--saida', '/var/log'])).toEqual({ planilha: null, dias: 3, aplicar: true, saida: '/var/log' })
+    expect(() => lerArgs([])).toThrow(/Uso/)
+    expect(() => lerArgs(['--dias', 'abc'])).toThrow(/Uso/)
+  })
+})
+
+describe('rodar: frota mandada ao monitoramento (F2-15)', () => {
+  it('com --aplicar manda a frota relida depois da insercao, mesmo sem placa nova', async () => {
+    const enviar = vi.fn(async () => 'ok')
+    const d = deps({ enviarMonitoramento: enviar })
+    await rodar({ placas: new Set(['LTU7C96']), aplicar: true, dirSaida: '/tmp/x' }, d)
+    expect(enviar).toHaveBeenCalledTimes(1)
+    expect(enviar.mock.calls[0][0]).toBeInstanceOf(Map)
+    const enviar2 = vi.fn(async () => 'ok')
+    const d2 = deps({ enviarMonitoramento: enviar2 })
+    await rodar({ placas: new Set(['LTU7C95']), aplicar: true, dirSaida: '/tmp/x', maxCv: 30_500 }, d2)
+    expect(d2.lerFrota).toHaveBeenCalledTimes(2) // relida depois de inserir
+    expect(enviar2).toHaveBeenCalledTimes(1)
+  })
+  it('sem --aplicar nunca manda nada ao monitoramento', async () => {
+    const enviar = vi.fn(async () => 'ok')
+    await rodar({ placas: new Set(['LTU7C95']), aplicar: false, dirSaida: '/tmp/x', maxCv: 30_500 }, deps({ enviarMonitoramento: enviar }))
+    expect(enviar).not.toHaveBeenCalled()
+  })
+})
+
+describe('enviarFrotaMonitoramento', () => {
+  const frota = new Map([['LTU7C95', '19364'], ['TUP0B49', '24410']])
+  it('manda {placa, cv} com a chave do motor e resume a resposta', async () => {
+    const f = vi.fn(async () => new Response(JSON.stringify({ ok: true, inseridos: ['TUP-0B49'], jaExistiam: 1, conflitos: [] }), { status: 200 }))
+    const r = await enviarFrotaMonitoramento(frota, { base: 'http://mon', chave: 'k', fetch: f as unknown as typeof fetch })
+    expect(r).toMatch(/1 inserido.*TUP-0B49.*1 já existia/)
+    const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe('http://mon/api/veiculos/rioquality')
+    expect((init.headers as Record<string, string>)['x-motor-key']).toBe('k')
+    expect(JSON.parse(init.body as string)).toEqual({ veiculos: [{ placa: 'LTU7C95', cv: '19364' }, { placa: 'TUP0B49', cv: '24410' }] })
+  })
+  it('monitoramento antigo (404) ou fora do ar: só avisa, nunca lança', async () => {
+    const f404 = vi.fn(async () => new Response('not found', { status: 404 }))
+    expect(await enviarFrotaMonitoramento(frota, { base: 'http://mon', chave: 'k', fetch: f404 as unknown as typeof fetch })).toMatch(/sem a rota/)
+    const fErro = vi.fn(async () => { throw new TypeError('fetch failed') })
+    expect(await enviarFrotaMonitoramento(frota, { base: 'http://mon', chave: 'k', fetch: fErro as unknown as typeof fetch })).toMatch(/fetch failed/)
   })
 })
