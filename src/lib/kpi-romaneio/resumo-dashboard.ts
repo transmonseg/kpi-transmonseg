@@ -155,7 +155,8 @@ export async function extrairKpiCompleto(buf: Buffer | ArrayBuffer): Promise<{ d
   principal.eachRow((row, n) => {
     const v = row.values as ExcelJS.CellValue[] // 1-based
     const c1 = texto(v[1])
-    if (c1.startsWith('TAXA DE CONFIRMAÇÃO')) { linhaTaxa = c1; return }
+    // F3-08: dia corrente com NF aguardando sai "TAXA PARCIAL (n aguardando)".
+    if (c1.startsWith('TAXA DE CONFIRMAÇÃO') || c1.startsWith('TAXA PARCIAL (')) { linhaTaxa = c1; return }
     if (n < 3 || !c1 || c1 === 'CARGA') return
     const placa = texto(v[2])
     if (!placa) return
@@ -176,7 +177,7 @@ export async function extrairKpiCompleto(buf: Buffer | ArrayBuffer): Promise<{ d
     })
   })
 
-  const mTaxa = /TAXA DE CONFIRMAÇÃO:\s*([\d,]+)%\s*\(([\d.]+) de ([\d.]+) NFs/.exec(linhaTaxa)
+  const mTaxa = /TAXA (?:DE CONFIRMAÇÃO|PARCIAL \([\d.]+ aguardando\)):\s*([\d,]+)%\s*\(([\d.]+) de ([\d.]+) NFs/.exec(linhaTaxa)
   const mFora = /([\d.]+) fora da conta[);]/.exec(linhaTaxa.split('|')[1] ?? linhaTaxa)
   const taxa = mTaxa ? Number(mTaxa[1].replace(',', '.')) : null
   const entregues = mTaxa ? inteiroBr(mTaxa[2]) : null

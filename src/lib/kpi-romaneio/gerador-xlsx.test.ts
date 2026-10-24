@@ -926,6 +926,47 @@ describe('gerador-xlsx', () => {
       })
     })
 
+    // F3-08 (KN-12): 21/10 às 14:55 a planilha marcava 99,8% com 546 NFs
+    // aguardando e o dia fechou em 95,7%. A taxa do dia corrente com NF
+    // aguardando sai rotulada "TAXA PARCIAL (n aguardando)" na própria linha,
+    // e o Dashboard/histórico continua lendo o número.
+    describe('TAXA PARCIAL rotulada na linha da taxa (F3-08)', () => {
+      const AG = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
+      const detalhe = [
+        detalheFixture({ nf: 'NF1', status: 'confirmado_gps' }),
+        detalheFixture({ nf: 'NF2', status: 'confirmado_gps' }),
+        detalheFixture({ nf: 'NF3', status: 'pendente' }),
+        detalheFixture({ nf: 'NF4', status: 'pendente', observacao: AG }),
+        detalheFixture({ nf: 'NF5', status: 'pendente', observacao: AG }),
+      ]
+      async function gerar(data: string, hoje: string, d: LinhaDetalheEntrega[]) {
+        return gerarKpiRomaneioXlsx([linhaKpi()], data, [], d, hoje, undefined, { resumoConfirmacao: true })
+      }
+      async function linhaTaxa(buffer: Buffer): Promise<string> {
+        const wb = new ExcelJS.Workbook()
+        await wb.xlsx.load(buffer as unknown as ArrayBuffer)
+        const ws = wb.worksheets[0]
+        return ws.getRow(ws.rowCount).getCell(1).value as string
+      }
+      it('hoje, com NF aguardando: "TAXA PARCIAL (n aguardando)" no lugar de "TAXA DE CONFIRMAÇÃO"', async () => {
+        const t = await linhaTaxa(await gerar('2026-10-21', '2026-10-21', detalhe))
+        expect(t.startsWith('TAXA PARCIAL (2 aguardando): 66,7% (2 de 3 NFs;')).toBe(true)
+        expect(t).not.toContain('TAXA DE CONFIRMAÇÃO')
+        expect(t).toContain('NFs aguardando fim da rota: 2')
+      })
+      it('o leitor do Dashboard/histórico continua lendo a taxa parcial', async () => {
+        const { resumo } = await extrairKpiCompleto(await gerar('2026-10-21', '2026-10-21', detalhe))
+        expect(resumo.taxa).toBe(66.7)
+        expect(resumo.entregues).toBe(2)
+        expect(resumo.nfsNaConta).toBe(3)
+      })
+      it('dia fechado, ou hoje sem NF aguardando: "TAXA DE CONFIRMAÇÃO" de sempre', async () => {
+        expect(await linhaTaxa(await gerar('2026-10-20', '2026-10-21', detalhe))).toMatch(/^TAXA DE CONFIRMAÇÃO: 66,7%/)
+        const semAg = detalhe.slice(0, 3)
+        expect(await linhaTaxa(await gerar('2026-10-21', '2026-10-21', semAg))).toMatch(/^TAXA DE CONFIRMAÇÃO: 66,7%/)
+      })
+    })
+
     it('item 4: AGUARDANDO (dia em andamento) sai do denominador das duas taxas e aparece contado a parte', async () => {
       const AG = 'AGUARDANDO - ROTA EM ANDAMENTO, DIA AINDA NÃO FINALIZADO'
       const detalhe: LinhaDetalheEntrega[] = [

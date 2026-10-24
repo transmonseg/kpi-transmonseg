@@ -924,8 +924,12 @@ export async function gerarKpiRomaneioXlsx(
     const naoEntregueConfirmado = detalhe.filter(d => d.resolucaoManual === 'nao_esteve_no_local').length
     const pendenteAuditoria = resumo.denominadorPosConferencia - resumo.confirmadasPosConferencia - naoEntregueConfirmado
     const niveisTexto = `    |    ENTREGUE: ${formatarInteiroPtBr(resumo.confirmadasPosConferencia)} / PENDENTE DE AUDITORIA: ${formatarInteiroPtBr(Math.max(0, pendenteAuditoria))} / NÃO ENTREGUE CONFIRMADO: ${formatarInteiroPtBr(naoEntregueConfirmado)}`
+    // F3-08 (KN-12): dia corrente com NF aguardando -> a taxa é parcial e sai
+    // rotulada assim na própria linha (21/10 14:55 marcava 99,8% com 546
+    // aguardando e fechou em 95,7%). resumo-dashboard lê os dois rótulos.
+    const rotuloTaxa = aguardandoNoDia > 0 ? `TAXA PARCIAL (${formatarInteiroPtBr(aguardandoNoDia)} aguardando)` : 'TAXA DE CONFIRMAÇÃO'
     const linhaResumoGeral = ws.addRow([
-      `TAXA DE CONFIRMAÇÃO: ${taxaTexto}    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${taxaPosTexto}    |    REVISAR: ${resumo.revisar}    |    NFs sem rastreador: ${resumo.semRastreador} (contadas como corretas)${naoSaiuTexto}    |    NFs aguardando fim da rota: ${resumo.aguardando}${niveisTexto}${notaAvisoNfDivergente(avisos)}`,
+      `${rotuloTaxa}: ${taxaTexto}    |    TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: ${taxaPosTexto}    |    REVISAR: ${resumo.revisar}    |    NFs sem rastreador: ${resumo.semRastreador} (contadas como corretas)${naoSaiuTexto}    |    NFs aguardando fim da rota: ${resumo.aguardando}${niveisTexto}${notaAvisoNfDivergente(avisos)}`,
     ])
     ws.mergeCells(linhaResumoGeral.number, 1, linhaResumoGeral.number, COLUNAS_KPI_ROMANEIO.length)
     const cell = linhaResumoGeral.getCell(1)
