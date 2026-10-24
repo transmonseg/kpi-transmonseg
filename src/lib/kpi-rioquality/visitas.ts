@@ -70,6 +70,9 @@ function haversine(lat1: number, lng1: number, lat2: number, lng2: number): numb
 }
 
 const RAIO_PARADA_COLADA_M = 150
+// F2-14 (RQ-05): a colada so' ganha da mais longa se esta estiver mais de
+// 100 m mais longe do ponto (os 985 casos da auditoria estavam a >250 m).
+const MARGEM_COLADA_M = 100
 // RQ-02 (auditoria 20/10)
 const RAIO_MAX_CORREDOR_SEM_BAIRRO_M = 2_000
 
@@ -152,23 +155,26 @@ export function montarVisitasInclusivas(linhas: LinhaGeocodificada[], paradas: U
   // RQ-02: parada que confirmou DIRETO uma NF -> ruas dessas NFs.
   const ruasPorParadaDireta = new Map<string, Set<string>>()
   for (const linha of comCoord) {
-    let melhor: { parada: UnitracParadaRow; dist: number; dur: number; ampliado: boolean; colada: boolean } | null = null
+    type Cand = { parada: UnitracParadaRow; dist: number; dur: number; ampliado: boolean; colada: boolean }
+    const cands: Cand[] = []
     for (const parada of foraBase) {
       const dist = haversine(parada.lat, parada.lng, linha.lat, linha.lng)
       if (dist > RAIO_CONFIRMACAO_AMPLIADO_METROS) continue
-      const ampliado = dist > RAIO_ENTREGA_METROS
       const fim = parada.fim_real ?? parada.saida ?? parada.chegada
       const dur = new Date(fim).getTime() - new Date(parada.chegada).getTime()
-      // RQ-05 (auditoria 20/10): parada >= 3 min a <= 150 m do ponto ganha de
-      // qualquer outra mais longe (almoco/pernoite a 400 m levava o horario e
-      // o "tempo em loja" -- 12,5% das entregas); entre elas, maior permanencia.
-      const colada = dist <= RAIO_PARADA_COLADA_M && dur >= PERMANENCIA_MIN_COLADA_MS
-      const ganha = !melhor
-        || (melhor.ampliado && !ampliado)
-        || (melhor.ampliado === ampliado && colada && !melhor.colada)
-        || (melhor.ampliado === ampliado && colada === melhor.colada && dur > melhor.dur)
-      if (ganha) melhor = { parada, dist, dur, ampliado, colada }
+      cands.push({ parada, dist, dur, ampliado: dist > RAIO_ENTREGA_METROS, colada: dist <= RAIO_PARADA_COLADA_M && dur >= PERMANENCIA_MIN_COLADA_MS })
     }
+    // A faixa de dentro sempre ganha da de fora.
+    const faixa = cands.some(c => !c.ampliado) ? cands.filter(c => !c.ampliado) : cands
+    const maisLonga = (cs: Cand[]) => cs.reduce<Cand | null>((m, c) => (!m || c.dur > m.dur ? c : m), null)
+    // RQ-05 (auditoria 20/10): parada >= 3 min a <= 150 m do ponto ganha da
+    // mais longa mais longe (almoco/pernoite a 400 m levava o horario e o
+    // "tempo em loja" -- 12,5% das entregas); entre coladas, maior permanencia.
+    // F2-14 (RQ-05): so' quando a mais longa esta' MARGEM_COLADA_M mais longe
+    // -- sem isso, uma curta a 149 m ganhava de uma longa a 151 m (degrau).
+    const longa = maisLonga(faixa)
+    const colada = maisLonga(faixa.filter(c => c.colada))
+    const melhor = colada && longa && !longa.colada && longa.dist - colada.dist > MARGEM_COLADA_M ? colada : longa
     if (melhor) {
       const usadas = ruasPorParadaDireta.get(melhor.parada.id) ?? new Set<string>()
       usadas.add(ruaDaLinha(linha))

@@ -49,6 +49,27 @@ describe('montarVisitasInclusivas', () => {
     expect(montarVisitasInclusivas(linhas, paradas).get('A-1')!.chegada).toBe('2026-09-04T09:00:00Z')
   })
 
+  // F2-14 (RQ-05, revisao Fases 3-4): degrau de 150 m -- parada curta a
+  // 149 m ganhava de uma longa a 151 m (o mesmo lugar, na pratica) e levava
+  // o horario. A colada so' ganha quando a mais longa esta' bem mais longe.
+  it('F2-14 RQ-05: curta a ~145 m x longa a ~155 m (lados opostos): fica a longa (sem degrau em 150 m)', () => {
+    const linhas = [linha('A-1', AUTOMOVEL.lat, AUTOMOVEL.lng)]
+    const paradas = [
+      parada('curta', AUTOMOVEL.lat + 0.0013, AUTOMOVEL.lng, '2026-09-04T09:00:00Z', '2026-09-04T09:03:00Z'),
+      parada('longa', AUTOMOVEL.lat - 0.0014, AUTOMOVEL.lng, '2026-09-04T11:00:00Z', '2026-09-04T12:00:00Z'),
+    ]
+    expect(montarVisitasInclusivas(linhas, paradas).get('A-1')!.chegada).toBe('2026-09-04T11:00:00Z')
+  })
+
+  it('F2-14 RQ-05: colada a 40 m x longa a ~260 m: a colada continua ganhando', () => {
+    const linhas = [linha('A-1', AUTOMOVEL.lat, AUTOMOVEL.lng)]
+    const paradas = [
+      parada('perto', AUTOMOVEL.lat + 0.00036, AUTOMOVEL.lng, '2026-09-04T09:00:00Z', '2026-09-04T09:08:00Z'),
+      parada('longa', AUTOMOVEL.lat - 0.00234, AUTOMOVEL.lng, '2026-09-04T12:00:00Z', '2026-09-04T13:10:00Z'),
+    ]
+    expect(montarVisitasInclusivas(linhas, paradas).get('A-1')!.chegada).toBe('2026-09-04T09:00:00Z')
+  })
+
   it('RQ-05: paradas so a >150 m -> continua a de maior permanencia', () => {
     const linhas = [linha('A-1', AUTOMOVEL.lat, AUTOMOVEL.lng)]
     const paradas = [
