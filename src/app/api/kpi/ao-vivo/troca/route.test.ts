@@ -157,6 +157,43 @@ describe('POST /api/kpi/ao-vivo/troca (modos)', () => {
     expect(escritas()).toEqual([])
   })
 
+  // R1 (revisão Fase 1): "Placas do dia" aceita a placa da escala só pelo
+  // final ("5J17", exemplo do próprio campo). Antes gravava placa_escala
+  // '5J17', que nunca casa com o romaneio (RBG5J17): a troca não valia no KPI.
+  it('R1: placa da escala pelo final ("5J17") é completada pela placa da carga no romaneio', async () => {
+    db.romaneioPorData = { '2026-10-13': { romaneio: [{ placa: 'RBG5J17', nf: 'NF-700', carga: '100700' }], pao: { linhas: [] } } }
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, pontos: 1 })))
+    vi.stubGlobal('fetch', fetchMock)
+    const r = await post({ modo: 'redirecionar', carga: '100700', placaEscala: '5J17', placaReal: 'TOS5E38' })
+    expect(r.status).toBe(200)
+    expect(escritas()).toEqual([expect.objectContaining({ op: 'insert', valor: expect.objectContaining({ carga: '100700', placa_escala: 'RBG5J17', placa_real: 'TOS5E38' }) })])
+    expect(corpos(fetchMock)[0]).toEqual({ data: '2026-10-13', placaDe: 'RBG5J17', placaPara: 'TOS5E38', nfs: ['NF-700'] })
+  })
+
+  it('R1: placa da escala que não é a da carga no romaneio -> 400 citando a placa certa, nada gravado', async () => {
+    db.romaneioPorData = { '2026-10-13': { romaneio: [{ placa: 'RBG5J17', nf: 'NF-700', carga: '100700' }], pao: { linhas: [] } } }
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const r = await post({ modo: 'redirecionar', carga: '100700', placaEscala: '9C84', placaReal: 'TOS5E38' })
+    expect(r.status).toBe(400)
+    expect(r.texto).toMatch(/RBG5J17/)
+    expect(escritas()).toEqual([])
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('R1: carga que veio sem placa e escala digitada -> 400 (placa_escala nunca casaria com o "-")', async () => {
+    const r = await post({ modo: 'redirecionar', carga: 'PAO-6', placaEscala: 'AAA1A11', placaReal: 'TOS5E38' })
+    expect(r.status).toBe(400)
+    expect(escritas()).toEqual([])
+  })
+
+  it('R1: dia sem romaneio no Ao vivo: placa da escala pelo final completa pela frota', async () => {
+    vi.stubGlobal('fetch', vi.fn())
+    const r = await post({ modo: 'redirecionar', data: '2026-09-26', carga: '98808', placaEscala: '5E38', placaReal: 'BBB2B22' })
+    expect(r.status).toBe(200)
+    expect(escritas()).toEqual([expect.objectContaining({ op: 'insert', valor: expect.objectContaining({ carga: '98808', placa_escala: 'TOS5E38', placa_real: 'BBB2B22' }) })])
+  })
+
   // D-28: desfazer pela mesma rota (antes "Placas do dia" só apagava a linha
   // do KPI e o monitoramento ficava com as NFs no carro trocado).
   it('desfazer por id: apaga a troca e devolve as NFs da carga ao carro da escala', async () => {

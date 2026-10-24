@@ -42,7 +42,7 @@ async function redirecionar(
   data: string, quem: string, frota: () => Promise<string[]>,
 ): Promise<NextResponse> {
   const carga = typeof b.carga === 'string' ? b.carga.trim() : ''
-  const placaTela = typeof b.placaEscala === 'string' ? normalizarPlacaDigitada(b.placaEscala) : ''
+  let placaTela = typeof b.placaEscala === 'string' ? normalizarPlacaDigitada(b.placaEscala) : ''
   const digitada = typeof b.placaReal === 'string' ? normalizarPlacaDigitada(b.placaReal) : ''
   // F1-03 (KN-01): placa da escala vazia = carga do pão que veio SEM PLACA;
   // só com a carga (senão pegaria toda carga sem placa do dia).
@@ -55,13 +55,19 @@ async function redirecionar(
   const romaneio = await romaneioDoDia(data, true)
   const linhasCarga = (romaneio ?? []).filter(l => l.carga === carga && l.nf)
   const nfs = [...new Set(linhasCarga.map(l => l.nf as string))]
-  if (placaTela === '') {
-    const comPlaca = [...new Set(linhasCarga.map(l => normalizarPlacaDigitada(l.placa ?? '')).filter(Boolean))]
-    if (comPlaca.length > 0) return new NextResponse(`A carga ${carga} tem placa (${comPlaca.join(', ')}): informe a placa da escala.`, { status: 400 })
-  }
+  const comPlaca = [...new Set(linhasCarga.map(l => normalizarPlacaDigitada(l.placa ?? '')).filter(Boolean))]
+  if (placaTela === '' && comPlaca.length > 0) return new NextResponse(`A carga ${carga} tem placa (${comPlaca.join(', ')}): informe a placa da escala.`, { status: 400 })
   const svc = createServiceClient()
   const { data: ja } = await svc.from('kpi_troca_placa').select('id, placa_escala, placa_real').eq('empresa', EMPRESA_NUTRIMAX).eq('data', data).eq('carga', carga).order('id', { ascending: false }).limit(1)
   const existente = ja?.[0] ? { placaEscala: ja[0].placa_escala as string, placaReal: ja[0].placa_real as string } : null
+  // R1 (revisão Fase 1): sem troca da carga, a placa da escala gravada tem
+  // que ser a do romaneio (aplicarTrocasDePlaca compara com ela). "5J17"
+  // completa pela placa da carga; com troca existente a tela é ignorada.
+  if (!existente && placaTela !== '') {
+    const p = await placaDaEscala(placaTela, linhasCarga.length > 0 ? comPlaca : null, carga, frota)
+    if ('erro' in p) return new NextResponse(p.erro, { status: 400 })
+    placaTela = p.placa
+  }
   const d = decidirTrocaManual(existente, placaTela, rp.placa)
   if ('erro' in d) return new NextResponse(d.erro, { status: 400 })
   if (romaneio && d.acao !== 'desfazer' && nfs.length === 0) return new NextResponse('Não achei as NFs dessa carga no romaneio do dia.', { status: 409 })
@@ -80,6 +86,19 @@ async function redirecionar(
     : nfs.length ? await trocarNoMonitoramento(data, d.moverNoMonitoramentoDe, d.placaReal, nfs) : { ok: true, pontos: 0 }
   void calcularAoVivo('nutrimax', data).catch(() => {})
   return NextResponse.json({ ok: true, modo: 'redirecionar', acao: d.acao, placaReal: d.placaReal, monitoramento })
+}
+
+/** Placa da escala digitada (inteira ou só o final) -> a placa da carga no
+ *  romaneio do dia. `daCarga` null = dia/carga sem romaneio no Ao vivo: aí
+ *  completa pela frota, como a rota antiga de "Placas do dia". */
+async function placaDaEscala(
+  digitada: string, daCarga: string[] | null, carga: string, frota: () => Promise<string[]>,
+): Promise<{ placa: string } | { erro: string }> {
+  if (daCarga == null) return resolverPlacaDigitada(digitada, frota)
+  if (daCarga.length === 0) return { erro: `A carga ${carga} veio sem placa: deixe a placa da escala vazia.` }
+  const achadas = daCarga.filter(p => p === digitada || (digitada.length >= 3 && p.endsWith(digitada)))
+  if (achadas.length === 1) return { placa: achadas[0] }
+  return { erro: `A carga ${carga} está na placa ${daCarga.join(', ')} no romaneio do dia, não em ${digitada}.` }
 }
 
 /** D-28 (F1-05): desfaz uma troca registrada (tela "Placas do dia"): apaga a
