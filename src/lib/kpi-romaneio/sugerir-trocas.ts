@@ -85,6 +85,8 @@ export function sugerirTrocas(pontos: PontoCarga[], paradasPorPlaca: Map<string,
   }
   const porCarga = new Map<string, PontoCarga[]>()
   for (const p of pontos) porCarga.set(p.carga, [...(porCarga.get(p.carga) ?? []), p])
+  const cargasDaPlaca = new Map<string, Set<string>>()
+  for (const p of pontos) if (p.placa) cargasDaPlaca.set(p.placa, (cargasDaPlaca.get(p.placa) ?? new Set()).add(p.carga))
   const paradasFb = new Map<string, (UnitracParadaRow & { lat: number; lng: number })[]>()
   const fb = (placa: string) => {
     let v = paradasFb.get(placa)
@@ -152,8 +154,14 @@ export function sugerirTrocas(pontos: PontoCarga[], paradasPorPlaca: Map<string,
     }
 
     // Troca mutua: o escalado desta carga fez a carga propria do sugerido.
+    // R2 (revisão Fase 1): a mútua grava A<->B sem carga e leva TODAS as
+    // cargas das duas placas (o pão também). Só é mútua quando cada placa tem
+    // uma carga só no dia; senão sai como redirecionamento desta carga (e a
+    // carga do outro lado sai como o seu próprio redirecionamento).
     const propriosSugerido = [...(enderecosProprios.get(melhor.placa)?.values() ?? [])]
+    const umaCargaSo = (placa: string) => (cargasDaPlaca.get(placa)?.size ?? 0) === 1
     const mutua = !!placaEscala && !melhor.pequena && propriosSugerido.length >= MIN_ENDERECOS
+      && umaCargaSo(placaEscala) && umaCargaSo(melhor.placa)
       && visitou(placaEscala, propriosSugerido) >= Math.max(MIN_ENDERECOS, FRACAO_MIN * propriosSugerido.length)
     const motivo: MotivoSugestao = mutua ? 'mutua' : !placaEscala ? 'sem_placa' : foraDaFrota ? 'fora_da_frota' : melhor.pequena ? 'livre' : 'absorvida'
     const dias = confirmadas.get(melhor.placa) ?? 0

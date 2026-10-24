@@ -9,8 +9,16 @@ import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 
 type Dia = { alvos: string[]; pontos: [string, string, number, number, number][]; paradas: Record<string, [number, number][]> }
 
-function sugestoesDo(data: string, opcoes: { semHistorico?: boolean } = {}): SugestaoTroca[] {
-  const dia = (fixture.dias as unknown as Record<string, Dia>)[data]
+type Extra = { pontos: Dia['pontos']; paradas: Record<string, [number, number][]> }
+function sugestoesDo(data: string, opcoes: { semHistorico?: boolean; extra?: Extra } = {}): SugestaoTroca[] {
+  const base = (fixture.dias as unknown as Record<string, Dia>)[data]
+  const ex = opcoes.extra
+  const dia: Dia = !ex ? base : {
+    alvos: [...base.alvos, ...new Set(ex.pontos.map(p => p[0]))],
+    pontos: [...base.pontos, ...ex.pontos],
+    paradas: Object.fromEntries([...new Set([...Object.keys(base.paradas), ...Object.keys(ex.paradas)])]
+      .map(pl => [pl, [...(base.paradas[pl] ?? []), ...(ex.paradas[pl] ?? [])]])),
+  }
   const pontos = dia.pontos.map(([carga, placa, e, lat, lng]) => ({ carga, placa, endereco: `E${e}`, lat, lng }))
   const paradas = new Map(Object.entries(dia.paradas).map(([placa, ps]) => [placa, ps.map(([lat, lng], i) => ({
     id: `${placa}-${i}`, placa_norm: placa, classificacao: 'FORA_BASE', lat, lng, chegada: `${data}T10:00:00Z`, saida: `${data}T10:10:00Z`,
@@ -33,6 +41,24 @@ describe('F1-02 (KN-02): troca mútua e carga absorvida -- casos reais', () => {
     expect(s.map(resumo)).not.toContain('100207 TOS0G53->RBI0J25')
     expect(s.map(resumo)).not.toContain('100224 RBG8J72->RBG4F53')
     expect(s.find(x => x.carga === '100206')).toMatchObject({ motivo: 'mutua', enderecosVisitados: 24, enderecosDaCarga: 27 })
+  })
+
+  // R2 (revisão Fase 1): mútua grava A<->B SEM carga e leva junto TODAS as
+  // cargas das duas placas. Em 22/10, 5 placas tinham carga normal + pão
+  // (RQO1B27 100688 + PAO-8; TOS5E38 100683 + PAO-9...). Aqui o par real de
+  // 16/10 com um pão a mais no RBI0J25, que ele mesmo entregou: a troca é só
+  // das cargas normais -> dois redirecionamentos por carga, nunca mútua.
+  it('R2: 16/10 RBI0J25 com carga + pão (que ele fez) -> dois redirecionamentos, não mútua', () => {
+    const pao: Extra = {
+      pontos: [['PAO-X', 'RBI0J25', 9001, -21.80, -41.90], ['PAO-X', 'RBI0J25', 9002, -21.805, -41.905]],
+      paradas: { RBI0J25: [[-21.80, -41.90], [-21.805, -41.905]] },
+    }
+    const s = sugestoesDo('2026-10-16', { extra: pao })
+    expect(s.map(resumo)).toEqual(expect.arrayContaining(['100206 RBI0J25->TOS0G53', '100207 TOS0G53->RBI0J25']))
+    expect(s.filter(x => x.placaEscala === 'RBI0J25' || x.placaSugerida === 'RBI0J25').every(x => x.modo === 'redirecionar')).toBe(true)
+    expect(s.find(x => x.carga === 'PAO-X')).toBeUndefined()
+    // o outro par do dia (sem pão) continua mútua
+    expect(s.filter(x => x.modo === 'mutua').map(resumo)).toEqual(['100216 RBG4F53<->RBG8J72'])
   })
 
   it('17/10: UNN6G81 <-> RQV5F67 (mútua) e RBG8J72 -> RBG4F53 (carro sem carga)', () => {
