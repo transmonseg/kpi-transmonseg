@@ -5,7 +5,10 @@ import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 
 export type StopApiCru = { _data: string; tempoparada: number; latitude: number; longitude: number }
 
-export type BaseCoord = { lat: number; lng: number }
+/** `nome`: rotulo da parada na base (F2-16, KRQ-14). Sem nome = o rotulo
+ *  antigo "BASE BENASSI - BASE BENASSI" (Benassi e Nutry Max, que nao mudam). */
+export type BaseCoord = { lat: number; lng: number; nome?: string }
+const ROTULO_BASE_PADRAO = 'BASE BENASSI - BASE BENASSI'
 export const BASE_BENASSI: BaseCoord = { lat: -22.8290, lng: -43.3420 }
 export const RAIO_BASE_M = 500      // dentro disso da base → classificacao BASE
 export const RAIO_CLUSTER_M = 150   // eventos a ≤150m do âncora = mesma permanência
@@ -76,7 +79,8 @@ export function consolidaParadasApi(
     const saida = proximo ? proximo.eventos[0]._data : fimReal
     const durSeg = Math.round((new Date(saida).getTime() - new Date(chegada).getTime()) / 1000)
 
-    const naBase = baseCoords.some(bc => haversine(bc.lat, bc.lng, c.lat, c.lng) <= RAIO_BASE_M)
+    const base = baseCoords.find(bc => haversine(bc.lat, bc.lng, c.lat, c.lng) <= RAIO_BASE_M)
+    const naBase = base != null
     const geo = naBase ? null : acharLojaPorCoordenada(c.lat, c.lng, pontos)
     const classificacao = naBase ? 'BASE' : geo ? 'LOJA' : 'FORA_BASE'
 
@@ -100,7 +104,7 @@ export function consolidaParadasApi(
       saida: new Date(saida).toISOString(),
       fim_real: fimReal,
       duracao_seg: durSeg,
-      local_parada: geo ? geo.nome : naBase ? 'BASE BENASSI - BASE BENASSI' : 'FORA DE BASE E LOCAL DE SERVICO',
+      local_parada: geo ? geo.nome : naBase ? (base.nome ?? ROTULO_BASE_PADRAO) : 'FORA DE BASE E LOCAL DE SERVICO',
       codigo_loja: geo?.cod ?? null,
       nome_loja: geo?.nome ?? null,
       lat: c.lat,

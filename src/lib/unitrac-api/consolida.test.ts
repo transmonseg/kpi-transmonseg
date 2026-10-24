@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { clusteriza, consolidaParadasApi, type StopApiCru } from './consolida'
 import type { MapaPontos } from './pontos'
+import { BASES_COORD_RIOQUALITY } from '@/lib/kpi-rioquality/constants'
 
 const pontos: MapaPontos = {
   '3030113': { cod: '3030113', nome: 'SUPERPRIX LJ 13 - NITEROI', lat: -22.90327, lon: -43.11062, raio: 200 },
@@ -120,5 +121,29 @@ describe('consolidaParadasApi', () => {
     ]
     const ps = consolidaParadasApi(ev, pontos, '2026-06-12', 'TUL1C38', [penha, campos])
     expect(ps[0].classificacao).toBe('FORA_BASE')
+  })
+  // F2-16 (KRQ-14): parada na base da RQ (Pavuna) saia "BASE BENASSI" em todos
+  // os dias. Caso real: kpi_paradas_snapshot rioquality 13/10, BKF6I55-api-1
+  // (07:09:46-08:03:08 a -22.8140583,-43.3450466).
+  it('base com nome (Rio Quality) rotula a parada com o nome da base, nao "BASE BENASSI"', () => {
+    const ev: StopApiCru[] = [
+      { _data: '2026-10-13T07:09:46Z', tempoparada: 50, latitude: -22.8140583, longitude: -43.3450466 },
+      { _data: '2026-10-13T08:03:08Z', tempoparada: 30, latitude: -22.80, longitude: -43.50 },
+    ]
+    const ps = consolidaParadasApi(ev, {}, '2026-10-13', 'BKF6I55', BASES_COORD_RIOQUALITY)
+    expect(ps[0].classificacao).toBe('BASE')
+    expect(ps[0].local_parada).toBe('BASE RIO QUALITY')
+    expect(ps[0].local_parada).not.toContain('BENASSI')
+    expect(ps[1].local_parada).toBe('FORA DE BASE E LOCAL DE SERVICO')
+  })
+
+  it('base sem nome (Benassi e Nutry Max) continua com o rotulo antigo', () => {
+    const ev: StopApiCru[] = [
+      { _data: '2026-06-12T04:00:00Z', tempoparada: 600, latitude: -22.8291, longitude: -43.3421 },
+    ]
+    expect(consolidaParadasApi(ev, pontos, '2026-06-12', 'FUM8748')[0].local_parada).toBe('BASE BENASSI - BASE BENASSI')
+    const penha = { lat: -22.816007, lng: -43.277827 }
+    const ev2: StopApiCru[] = [{ _data: '2026-06-12T04:00:00Z', tempoparada: 600, latitude: penha.lat, longitude: penha.lng }]
+    expect(consolidaParadasApi(ev2, {}, '2026-06-12', 'TUL1C38', [penha])[0].local_parada).toBe('BASE BENASSI - BASE BENASSI')
   })
 })

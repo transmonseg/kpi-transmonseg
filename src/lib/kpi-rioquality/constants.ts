@@ -3,7 +3,8 @@
 // (raio maximo de 63m entre eles). Reverse geocode: Rua da Fe / Rua
 // Madagascar, Parque Columbia (Pavuna), Rio de Janeiro, 21535-000. Nao veio
 // de cadastro da Unitrac nem do cliente -- e' o lugar onde a frota dorme.
-export const BASE_COORD_RIOQUALITY = { lat: -22.814247, lng: -43.344567 }
+// F2-16 (KRQ-14): o nome vai junto -- a parada na base saia "BASE BENASSI".
+export const BASE_COORD_RIOQUALITY = { lat: -22.814247, lng: -43.344567, nome: 'BASE RIO QUALITY' }
 export const BASES_COORD_RIOQUALITY = [BASE_COORD_RIOQUALITY]
 
 // Corroboracao por vizinhanca (herdar a visita de uma irma a ate' 800 m):
