@@ -109,3 +109,21 @@ describe('D-03/D-04: Baixar pendentes', () => {
     expect(abas.semRastreador[0].oQueFazer).toMatch(/confirmar a placa real/i)
   })
 })
+
+// F2-REV-07 (revisao independente da Fase 2): os rotulos novos do F2-07 e do
+// F2-09 caiam no "Conferir no mapa se a parada do caminhão foi a entrega",
+// que nao diz o que fazer com sinal perdido. Casos reais: RQV9B26 22/10 NF
+// 2438528 (F2-07) e RQV9B26 15/10 (F2-09).
+describe('F2-REV-07: o que fazer com sem sinal no trecho e rastreador com falha', () => {
+  const padrao = 'Conferir no mapa se a parada do caminhão foi a entrega'
+  it('SEM SINAL NO TRECHO DO CLIENTE tem instrução própria', () => {
+    const [l] = linhasPendentes([placa('RQV9B26', [nf({ nf: '2438528', situacao: 'revisar', status: 'SEM SINAL NO TRECHO DO CLIENTE (12:18–14:11) - CONFERIR' })])])
+    expect(l.oQueFazer).not.toBe(padrao)
+    expect(l.oQueFazer).toMatch(/sinal/i)
+  })
+  it('RASTREADOR COM FALHA NO DIA tem instrução própria', () => {
+    const [l] = linhasPendentes([placa('RQV9B26', [nf({ nf: '2425001', situacao: 'revisar', status: 'RASTREADOR COM FALHA NO DIA - CONFERIR' })])])
+    expect(l.oQueFazer).not.toBe(padrao)
+    expect(l.oQueFazer).toMatch(/rastreador/i)
+  })
+})

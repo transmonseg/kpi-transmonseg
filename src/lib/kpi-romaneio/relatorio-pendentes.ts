@@ -76,6 +76,9 @@ const O_QUE_FAZER: [string, string][] = [
   ['ENDEREÇO COM COORDENADA IMPRECISA', 'Conferir o ponto do cliente no mapa (endereço sem coordenada exata)'],
   ['COORDENADA APROXIMADA', 'Conferir o ponto do cliente no mapa (endereço sem coordenada exata)'],
   ['ENDEREÇO NÃO LOCALIZADO', 'Conferir o endereço do cliente no cadastro'],
+  // F2-REV-07: rotulos do F2-07 e do F2-09.
+  ['SEM SINAL NO TRECHO DO CLIENTE', 'O rastreador ficou sem sinal na hora em que o carro podia estar no cliente: confirmar a entrega com o motorista ou pelo canhoto'],
+  ['RASTREADOR COM FALHA NO DIA', 'O rastreador do carro falhou no dia: confirmar a entrega com o motorista ou pelo canhoto e pedir a revisão do equipamento'],
   ['NÃO FOI AO CLIENTE', 'Confirmar com o motorista e pedir o canhoto, se houve entrega'],
   ['VEÍCULO SEM MOVIMENTO', 'Conferir o rastreador do carro e confirmar com o motorista'],
 ]
