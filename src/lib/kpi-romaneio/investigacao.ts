@@ -57,3 +57,14 @@ export function investigarPlacas(placas: PlacaAoVivo[], paradasPorPlaca: Map<str
     for (const n of p.nfs) if (n.situacao !== 'entregue') n.investigacao = investigarNf(n, paradas, trajetoPorNf.get(n.nf))
   }
 }
+
+/** F2-03 (KRQ-04): alarme de falha silenciosa. Nenhuma NF do cliente com
+ *  ponto (lat) no cálculo = o ponto não chegou ao Ao vivo (RQ de 20 a 23/10:
+ *  0 de 11.382, e a investigação dizia "endereço não localizado" em 100% das
+ *  não entregues sem nenhum erro registrado). null = há ponto em alguma NF. */
+export function alarmeSemCoordenada(placas: PlacaAoVivo[]): string | null {
+  const nfs = placas.flatMap(p => p.nfs)
+  if (nfs.length === 0 || nfs.some(n => n.lat != null && n.lng != null)) return null
+  const investigadas = nfs.filter(n => n.investigacao?.categoria === 'sem_coordenada').length
+  return `Nenhuma NF com ponto do cliente neste cálculo (${nfs.length} NFs sem coordenada; ${investigadas} não entregues saem "Cliente sem coordenada") — o mapa e a investigação estão cegos. Avisar o suporte.`
+}

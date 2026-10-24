@@ -161,6 +161,9 @@ export async function gerarKpiRioQuality(params: {
   cvPorPlaca: Map<string, string>
   /** KPI ao vivo (06/10): paradas por placa do dia, pro aviso de +1 h no cliente. */
   aoParadas?: (paradasPorPlaca: Map<string, UnitracParadaRow[]>) => void
+  /** F2-03 (GEO-22, KRQ-04): mesmo callback da Nutry (gerarKpiNutrimax) -- o
+   *  Ao vivo preenche ponto do cliente, parada da entrega e a investigacao. */
+  aoMontarDetalhe?: (x: { romaneioGeo: LinhaGeocodificada[]; detalhe: LinhaDetalheEntrega[]; paradasPorPlaca: Map<string, UnitracParadaRow[]>; menorDistanciaTrajetoPorNf: Map<string, number> }) => void
   /** injetavel pra teste; padrao = buscarParadasPadraoRioQuality (ponte do
    *  monitoramento primeiro, Unitrac como sinal secundario -- ver
    *  resolverParadas) */
@@ -539,6 +542,10 @@ export async function gerarKpiRioQuality(params: {
   if (travaSemSinal.aviso) log(`${travaSemSinal.aviso} (${placasConsultaSuspeita.size} placa(s) fora da taxa como consulta suspeita)`)
   const temRastreadorPorPlaca = new Map(placasNorm.map(p => [p, cvPorPlaca.has(p) && !travaSemSinal.placas.has(p) && !obsRastreadorPorPlaca.has(p)]))
 
+  // Trajeto continuo por NF: a RQ nao pede pontos a' ponte (buscarHorariosBase
+  // sem NFs), entao fica vazio -- o mesmo Map vai pro detalhe e pro Ao vivo.
+  const menorDistanciaTrajetoPorNf = new Map<string, number>()
+
   // 4) agregacao por carga (= rota) x placa -- sem escala, sem alvos
   const cargasPorChave = agrupar(romaneioGeo, l => `${l.carga}::${normPlaca(l.placa)}`)
   const linhasKpiAgregadas: LinhaKpiRomaneio[] = [...cargasPorChave.entries()]
@@ -604,7 +611,7 @@ export async function gerarKpiRioQuality(params: {
         false, // confirmarPorParadaUnitracPropria (R2 so' Nutry Max)
         undefined, // todasLinhasDaPlacaNoDia
         false, // apagaoDeSinalPropriaPlaca (sem ponte)
-        new Map(), // menorDistanciaTrajetoPorNf (sem ponte)
+        menorDistanciaTrajetoPorNf, // vazio (sem ponte)
         false, // detectarEscalaDivergente (sem escala)
         false, // modoPrecisao: NAO ligado na RQ (vizinhanca <=800m segue ENTREGUE)
         false, // reconhecerRodizio
@@ -678,6 +685,9 @@ export async function gerarKpiRioQuality(params: {
     const paradasReais = confirmadasPorChave.get(`${l.carga}::${l.placa}`) ?? 0
     return { ...l, paradasReais, status: l.nfPlanejado != null && paradasReais < l.nfPlanejado ? 'INCOMPLETO' : 'OK' }
   })
+
+  // F2-03: o Ao vivo recebe o mesmo que a Nutry (ponto, detalhe, paradas).
+  params.aoMontarDetalhe?.({ romaneioGeo, detalhe, paradasPorPlaca, menorDistanciaTrajetoPorNf })
 
   const falhasPonteRq = consumirFalhasPonte()
   if (falhasPonteRq > 0) avisosEntrada.push({ carga: '—', placa: '—', motivo: 'ponte_falhou', placasSemPonte: falhasPonteRq })

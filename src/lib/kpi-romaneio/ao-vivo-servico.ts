@@ -8,7 +8,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { gerarKpiNutrimax, type EntradaKpiNutrimax } from './gerar-nutrimax'
 import { extrairKpiCompleto } from './resumo-dashboard'
 import { resumirPlacas, contarCorretas, paradaDaChegada, paradaEmAndamento, nfProxima, AVISO_TERRITORIO_AO_VIVO, type PlacaAoVivo } from './ao-vivo'
-import { investigarPlacas } from './investigacao'
+import { investigarPlacas, alarmeSemCoordenada } from './investigacao'
 import { normPlaca } from '@/lib/unitrac-api'
 import type { LinhaEscala, LinhaRomaneio } from './types'
 import { gerarKpiRioQuality } from '@/lib/kpi-rioquality/pipeline'
@@ -186,7 +186,9 @@ export async function entradaRioQualityDoDia(data: string): Promise<EntregaRioQu
  *  "Gerar KPI" de cada cliente). null = romaneio do dia não subido. */
 export async function gerarKpiDoDia(cliente: ClienteAoVivo, data: string, log: (m: string) => void = () => {},
   aoMontarDetalheNutry?: Parameters<typeof gerarKpiNutrimax>[1],
-  aoParadasRq?: (paradasPorPlaca: Map<string, UnitracParadaRow[]>) => void): Promise<{ xlsx: Buffer; qtdCargas: number; degradado?: string; aviso?: string; avisosFonte?: string[] } | null> {
+  // F2-03 (GEO-22, KRQ-04): a RQ entrega o mesmo que a Nutry (ponto do
+  // cliente, detalhe, paradas, trajeto) -- antes so' as paradas.
+  aoMontarDetalheRq?: Parameters<typeof gerarKpiRioQuality>[0]['aoMontarDetalhe']): Promise<{ xlsx: Buffer; qtdCargas: number; degradado?: string; aviso?: string; avisosFonte?: string[] } | null> {
   if (cliente === 'rioquality') {
     const entregas = await entradaRioQualityDoDia(data)
     if (!entregas) return null
@@ -197,7 +199,7 @@ export async function gerarKpiDoDia(cliente: ClienteAoVivo, data: string, log: (
       const snap = await lerSnapshotParadas(EMPRESA_SNAPSHOT_RIOQUALITY, data)
       if (snap.size > 0) lerSnapshot = async () => snap
     }
-    const r = await gerarKpiRioQuality({ entregasCompletas: entregas, data, cvPorPlaca: await buscarFrotaRioQuality(), log, lerSnapshot, aoParadas: aoParadasRq })
+    const r = await gerarKpiRioQuality({ entregasCompletas: entregas, data, cvPorPlaca: await buscarFrotaRioQuality(), log, lerSnapshot, aoMontarDetalhe: aoMontarDetalheRq })
     return {
       xlsx: r.xlsx, qtdCargas: r.linhasKpi.length,
       ...(r.coerenciaFalhou > 0 ? { degradado: `ponte de coerência do monitoramento falhou em ${r.coerenciaFalhou} rua(s)` } : {}),
@@ -287,20 +289,31 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     const ctxTroca = cliente === 'nutrimax'
       ? await contextoSugestaoTroca(data, ((temDia as EntradaKpiNutrimax).pao?.linhas ?? []), log)
       : null
+    // Ponto do cliente, parada da entrega e paradas do dia -- igual nos dois
+    // clientes (F2-03: a RQ ficava sem ponto e toda investigacao "sem_coordenada").
+    const registrarDetalhe = ({ romaneioGeo, detalhe, paradasPorPlaca, menorDistanciaTrajetoPorNf }: {
+      romaneioGeo: { nf: string; lat: number | null; lng: number | null }[]
+      detalhe: { nf: string; placa: string; chegada: string | null }[]
+      paradasPorPlaca: Map<string, UnitracParadaRow[]>
+      menorDistanciaTrajetoPorNf: Map<string, number>
+    }) => {
+      paradasDoDia = paradasPorPlaca
+      trajetoPorNf = menorDistanciaTrajetoPorNf
+      for (const l of romaneioGeo) if (l.lat != null && l.lng != null) coords.set(l.nf, { lat: l.lat, lng: l.lng })
+      // Ponto da parada que o KPI contou como entrega ("Ver no monitoramento").
+      for (const d of detalhe) {
+        const p = paradaDaChegada(paradasPorPlaca.get(normPlaca(d.placa)) ?? [], d.chegada)
+        if (p) paradasNf.set(d.nf, p)
+      }
+      // Parada em andamento por placa: aviso de +1 h no cliente (06/10, nos dois).
+      if (ehHoje) for (const [placaNorm, ps] of paradasPorPlaca) {
+        const pa = paradaEmAndamento(ps, Date.now())
+        if (pa) paradaAtualPorPlaca.set(placaNorm, pa)
+      }
+    }
     const r = await gerarKpiDoDia(cliente, data, log, {
       aoMontarDetalhe: ({ romaneioGeo, detalhe, paradasPorPlaca, menorDistanciaTrajetoPorNf, frota }) => {
-        paradasDoDia = paradasPorPlaca
-        trajetoPorNf = menorDistanciaTrajetoPorNf
-        for (const l of romaneioGeo) if (l.lat != null && l.lng != null) coords.set(l.nf, { lat: l.lat, lng: l.lng })
-        // Ponto da parada que o KPI contou como entrega ("Ver no monitoramento").
-        for (const d of detalhe) {
-          const p = paradaDaChegada(paradasPorPlaca.get(normPlaca(d.placa)) ?? [], d.chegada)
-          if (p) paradasNf.set(d.nf, p)
-        }
-        if (ehHoje) for (const [placaNorm, ps] of paradasPorPlaca) {
-          const pa = paradaEmAndamento(ps, Date.now())
-          if (pa) paradaAtualPorPlaca.set(placaNorm, pa)
-        }
+        registrarDetalhe({ romaneioGeo, detalhe, paradasPorPlaca, menorDistanciaTrajetoPorNf })
         // F1-03: tambem em dia fechado (antes so' hoje -- sumia depois das
         // 00:30); a "Placas do dia" le daqui. Sempre so' sugestao.
         const pontos = romaneioGeo.filter(l => l.lat != null && l.lng != null)
@@ -311,14 +324,7 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
         // D-03: a placa fora da frota leva a provavel no rotulo da planilha.
         return { sugestoesTroca }
       },
-    }, paradasRq => {
-      paradasDoDia = paradasRq
-      // Rio Quality (06/10, pedido da tia Érica): mesmo aviso de +1 h no cliente.
-      if (ehHoje) for (const [placaNorm, ps] of paradasRq) {
-        const pa = paradaEmAndamento(ps, Date.now())
-        if (pa) paradaAtualPorPlaca.set(placaNorm, pa)
-      }
-    })
+    }, registrarDetalhe)
     if (!r) throw new Error('romaneio do dia sumiu durante o cálculo')
     // RQ-08 (auditoria 20/10): cálculo degradado (ponte de coerência fora --
     // o corredor da rua some e 80-100 entregues caíam entre ticks) não
@@ -349,9 +355,16 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
       resultado.degradado = r.degradado
       resultado.avisos = [...(resultado.avisos ?? []), `Cálculo incompleto: ${r.degradado}. Entregas confirmadas pela rua podem estar faltando; o próximo cálculo tenta de novo.`]
     }
-    const avisoErro = r.aviso ?? r.degradado
     resultado.versaoRegras = versaoDasRegras()
     investigarPlacas(resultado.placas, paradasDoDia, trajetoPorNf)
+    // F2-03: alarme de falha silenciosa -- nenhuma NF do cliente com ponto
+    // (RQ de 20 a 23/10: 0 de 11.382, sem nenhum erro registrado).
+    const alarmeCoord = alarmeSemCoordenada(resultado.placas)
+    if (alarmeCoord) {
+      resultado.avisos = [...(resultado.avisos ?? []), alarmeCoord]
+      log(`ao vivo ${cliente} ${data}: ${alarmeCoord}`)
+    }
+    const avisoErro = r.aviso ?? r.degradado ?? alarmeCoord
     for (const p of resultado.placas) {
       const pa = paradaAtualPorPlaca.get(normPlaca(p.placa))
       if (!pa) continue
