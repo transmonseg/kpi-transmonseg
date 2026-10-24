@@ -6631,3 +6631,62 @@ describe('Regra A -- parada próxima colada na parada que confirmou outro client
     expect(doNf(d, '2385999').evidencia).not.toBe('parada_proxima_propria')
   })
 })
+
+// Regra B (diagnostico 24/10, gabarito 24/09 -- RQV9E37/2388087 DECK GRILL):
+// ponto do cliente vindo do cadastro Unitrac e identico ao de outro cliente da
+// placa no dia (pontoUnitracRepetido, marcado em gerar-nutrimax) nao confirma
+// ENTREGUE -- a parada de 18 min a 354 m era a entrega da Mercearia do Eduardo
+// (2388078), que continua ENTREGUE.
+describe('Regra B -- ponto Unitrac repetido em outro cliente nao confirma', () => {
+  const placa = 'RQV9E37'
+  const PONTO = { lat: -21.626775, lng: -41.019232 }
+  const t = (hhmm: string) => `2026-09-24T${hhmm}:00.000Z`
+  const deck = linha('2388087', { placa, carga: '98600', clienteCodigo: '164702', clienteNome: 'DECK GRILL', endereco: 'AVENIDA HORMES MAIA, SN - SOLAR DO MARANHAO, SAO JOAO DA BAR - LOJA ESQUINA', ...PONTO, geoConfiavel: true, geoFonte: 'cadastro_unitrac', pontoUnitracRepetido: true })
+  const eduardo = linha('2388078', { placa, carga: '98600', clienteCodigo: '154177', clienteNome: 'MERCEARIA DO EDUARDO', endereco: 'ESTRADA QUIXABA, SN - QUIXABA, SAO JOAO DA BARRA', ...PONTO, geoConfiavel: true, geoFonte: 'verificacao_manual', geoVerificadoManual: true })
+  const vis = (nf: string): [string, Visita] => [nf, { nf, chegada: t('11:59'), saida: t('12:17'), distanciaMetrosDoPonto: 354 }]
+  const pParada = paradaForaBase(`${placa}-1`, PONTO.lat + 354 * M_LAT, PONTO.lng, t('11:59'), t('12:17'), placa)
+  const rodar = (linhas: LinhaGeocodificada[], modoPrecisao = true) => chamarNutryMax(linhas, {
+    placa, modoPrecisao,
+    visitasPorNf: new Map([vis('2388087'), vis('2388078')]),
+    paradasPorOutraPlaca: new Map([[placa, [pParada]]]),
+  })
+
+  it('RQV9E37/2388087 24/09: Deck Grill vira CONFERIR; Eduardo continua ENTREGUE', () => {
+    const d = rodar([eduardo, deck])
+    const dk = d.find(x => x.nf === '2388087')!
+    expect(dk.status).toBe('pendente')
+    expect(dk.observacao).toBe('ENDEREÇO COM COORDENADA IMPRECISA - CONFERIR CADASTRO (não dá pra afirmar se foi ou não)')
+    expect(dk.confianca).toBe('REVISAR')
+    const ed = d.find(x => x.nf === '2388078')!
+    expect(ed.status).toBe('confirmado_gps')
+  })
+
+  it('parada de 10 min a 20 m do ponto generico, com o outro cliente em outra carga: GN-05 nao recredita', () => {
+    const pNoPonto = paradaForaBase(`${placa}-2`, PONTO.lat + 20 * M_LAT, PONTO.lng, t('11:59'), t('12:09'), placa)
+    const d = chamarNutryMax([deck], {
+      placa,
+      visitasPorNf: new Map([[ '2388087', { nf: '2388087', chegada: t('11:59'), saida: t('12:09'), distanciaMetrosDoPonto: 20 } ]]),
+      paradasPorOutraPlaca: new Map([[placa, [pNoPonto]]]),
+    })
+    const dk = d.find(x => x.nf === '2388087')!
+    expect(dk.status).toBe('pendente')
+    expect(dk.observacao).toBe('ENDEREÇO COM COORDENADA IMPRECISA - CONFERIR CADASTRO (não dá pra afirmar se foi ou não)')
+  })
+
+  it('sem a marca, o Deck Grill continuava ENTREGUE (comportamento antigo)', () => {
+    const d = rodar([eduardo, { ...deck, pontoUnitracRepetido: false }])
+    expect(d.find(x => x.nf === '2388087')!.status).toBe('confirmado_gps')
+  })
+
+  it('feito da Unitrac (confirmado_unitrac) nao e derrubado pela marca', () => {
+    const d = chamarNutryMax([eduardo, deck], {
+      placa, alvos: [alvo('2388087', 1, { placaNorm: placa, codigoUnitrac: '164702' })],
+      paradasPorOutraPlaca: new Map([[placa, [pParada]]]),
+    })
+    expect(d.find(x => x.nf === '2388087')!.status).toBe('confirmado_unitrac')
+  })
+
+  it('sem modoPrecisao (Rio Quality): nada muda', () => {
+    expect(rodar([eduardo, deck], false).find(x => x.nf === '2388087')!.status).toBe('confirmado_gps')
+  })
+})

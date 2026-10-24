@@ -34,7 +34,7 @@ export type SugestaoCadastro = {
   latNova: number; lngNova: number; codigoUnitrac: string; distParadaM: number
 }
 export type MotivoRejeicaoCadastro = 'endereco_nao_identificado' | 'correcao_manual' | 'ilha' | 'sem_alvo_feito' | 'cadastro_invalido' | 'cadastro_nao_confirmado' | 'coordenada_atual_ok' | 'cadastros_conflitantes' | 'alvo_duplicado'
-  | 'parada_de_outra_nf' | 'parada_na_coordenada_atual' | 'cadastro_compartilhado' | 'cnefe_confirma_atual'
+  | 'parada_de_outra_nf' | 'parada_na_coordenada_atual' | 'cadastro_compartilhado' | 'cnefe_confirma_atual' | 'cadastro_generico'
 export type RejeicaoCadastro = { endereco: string; nf: string; placaNorm: string; motivo: MotivoRejeicaoCadastro }
 
 const coordValida = (lat: number | null | undefined, lng: number | null | undefined): lat is number =>
@@ -45,6 +45,15 @@ export type OpcoesCadastro = {
   /** endereco do romaneio -> pontos CNEFE com a MESMA rua+numero (match exato,
    *  mesmo municipio). Ausente = filtro (b) nao roda. */
   cnefeRuaNumero?: Map<string, PontoCnefe[]>
+  /** Regra B: chavePontoUnitrac -> codigos Unitrac ja' vistos com esse ponto
+   *  (historico dos alvos). Ausente = so' os alvos do dia contam. */
+  codigosPorPonto?: Map<string, Set<string>>
+}
+
+/** Regra B (diagnostico 24/10): chave do ponto cadastrado na Unitrac (6 casas,
+ *  a precisao que a Unitrac devolve) -- "ponto identico" = mesma chave. */
+export function chavePontoUnitrac(lat: number, lng: number): string {
+  return `${lat.toFixed(6)},${lng.toFixed(6)}`
 }
 
 function normalizarTexto(s: string): string {
@@ -96,6 +105,23 @@ export function sugerirCadastroUnitrac(
   const alvosFeitosPorPlaca = new Map<string, AlvoApi[]>()
   for (const lista of alvoPorChave.values()) for (const a of lista) alvosFeitosPorPlaca.set(a.placaNorm, [...(alvosFeitosPorPlaca.get(a.placaNorm) ?? []), a])
 
+  // Regra B (diagnostico 24/10, DECK GRILL 164702 gravado em 14/10): ponto
+  // Unitrac identico ao de OUTRO codigo (alvos do dia, de outra NF, ou o
+  // historico em opcoes.codigosPorPonto) e' cadastro generico -- o mesmo ponto
+  // pra varios clientes, e o "feito" ali dispara junto pra todos. Nao identifica
+  // o cliente, entao nunca vira coordenada dele.
+  const codigosDoDiaPorPonto = new Map<string, { codigo: string; documento: string | null }[]>()
+  for (const a of alvos) {
+    if (!coordValida(a.pontoLat, a.pontoLng)) continue
+    const k = chavePontoUnitrac(a.pontoLat, a.pontoLng as number)
+    codigosDoDiaPorPonto.set(k, [...(codigosDoDiaPorPonto.get(k) ?? []), { codigo: a.codigoUnitrac, documento: a.documento ?? null }])
+  }
+  const cadastroGenerico = (a: AlvoApi, nf: string): boolean => {
+    const k = chavePontoUnitrac(a.pontoLat as number, a.pontoLng as number)
+    if ((codigosDoDiaPorPonto.get(k) ?? []).some(o => o.codigo !== a.codigoUnitrac && o.documento !== nf)) return true
+    return [...(opcoes.codigosPorPonto?.get(k) ?? [])].some(c => c !== a.codigoUnitrac)
+  }
+
   type Ok = { e: EntregaParaCorrigir; a: AlvoApi; distParadaM: number }
   const porEndereco = new Map<string, Ok[]>()
   for (const e of entregas) {
@@ -113,6 +139,7 @@ export function sugerirCadastroUnitrac(
     if (Math.max(...instantes) - Math.min(...instantes) > TOLERANCIA_FEITO_DUPLICADO_MS) { rejeitar(e, 'alvo_duplicado'); continue }
     const a = alvosNf[0]
     if (!coordValida(a.pontoLat, a.pontoLng)) { rejeitar(e, 'cadastro_invalido'); continue }
+    if (cadastroGenerico(a, e.nf)) { rejeitar(e, 'cadastro_generico'); continue }
     const t = instanteDeFeitoISO(a.feitoISO as string)
     let melhor = Infinity
     let paradaMelhor: ParadaBridge | null = null

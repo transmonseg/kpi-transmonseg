@@ -137,7 +137,7 @@ export function aplicarLocaisClientes(
     // da coordenada do dia -- marcar confiável deixava a NF tirar conclusão
     // negativa e "explicar" parada das vizinhas (RQV9B26 01/10, -4 NFs).
     if (local.fonte !== 'manual') return { ...l, lat: local.lat, lng: local.lng }
-    return { ...l, lat: local.lat, lng: local.lng, geoConfiavel: true, geoMotivo: undefined, geoSemFonte: false, geoVerificadoManual: true }
+    return { ...l, lat: local.lat, lng: local.lng, geoConfiavel: true, geoMotivo: undefined, geoSemFonte: false, geoVerificadoManual: true, geoFonte: 'manual' }
   })
   return { linhas: novas, aplicados }
 }

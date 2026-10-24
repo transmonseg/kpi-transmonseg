@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mesclarAlvos, alvosEfetivos, agruparAlvosPorDia } from './alvos-snapshot'
+import { mesclarAlvos, alvosEfetivos, agruparAlvosPorDia, codigosPorPontoDosAlvos } from './alvos-snapshot'
 
 const mocks = vi.hoisted(() => ({
   upsert: vi.fn(),
@@ -164,5 +164,20 @@ describe('alias de placa no snapshot (RQO9H37 = RQ09H37)', () => {
     mocks.maybeSingle.mockResolvedValue({ data: { alvos: [alvo({ placaNorm: 'RQO9H37', documento: '1' })] }, error: null })
     const r = await alvosEfetivos('nutrimax', '2026-09-29', '2026-09-30', [], ['RQ09H37'])
     expect(r.map(a => a.placaNorm)).toEqual(['RQ09H37'])
+  })
+})
+
+// Regra B (diagnostico 24/10): historico de codigos Unitrac por ponto, pra
+// correcao noturna nao gravar cadastro generico (DECK GRILL 164702 x 160992).
+describe('codigosPorPontoDosAlvos', () => {
+  const a = (codigoUnitrac: string, pontoLat: number | null, pontoLng: number | null) =>
+    ({ placaNorm: 'RQV9E37', codigoUnitrac, nome: '', situacao: 1, feitoISO: null, documento: null, inicioISO: null, ordem: 1, rota: '', pontoLat, pontoLng }) as AlvoApi
+  it('junta os codigos so dos pontos pedidos', () => {
+    const r = codigosPorPontoDosAlvos(
+      [a('164702', -21.626775, -41.019232), a('160992', -21.626775, -41.019232), a('170000', -21.64, -41.05), a('180000', null, null)],
+      new Set(['-21.626775,-41.019232']),
+    )
+    expect([...r.keys()]).toEqual(['-21.626775,-41.019232'])
+    expect([...r.get('-21.626775,-41.019232')!].sort()).toEqual(['160992', '164702'])
   })
 })

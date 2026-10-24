@@ -1110,6 +1110,7 @@ const CONFIRMAR_APESAR_DE_RESSALVA = new Set<string>([
 // transferida"/outra placa, "veiculo sem movimento" nem "tempo em loja" --
 // nenhum desses e' fato que uma parada da propria placa deva sobrepor.
 const PREFIXO_OBS_COORDENADA_IMPRECISA = 'ENDEREÇO COM COORDENADA IMPRECISA'
+const OBS_COORDENADA_IMPRECISA_GENERICA = 'ENDEREÇO COM COORDENADA IMPRECISA - CONFERIR CADASTRO (não dá pra afirmar se foi ou não)'
 /** 09/10: romaneio sem coordenada nenhuma (geocode falhou, nem cadastro da Unitrac): ficava pendente em branco. */
 export const OBS_ENDERECO_NAO_LOCALIZADO = 'ENDEREÇO NÃO LOCALIZADO - CONFERIR CADASTRO (não dá pra afirmar se foi ou não)'
 function elegivelParaConfirmarPorParadaPropria(status: StatusEntrega, observacao: string | null): boolean {
@@ -2467,7 +2468,7 @@ export function montarDetalheEntregas(
         : null
       observacao = detalhe
         ? `ENDEREÇO COM COORDENADA IMPRECISA - ${detalhe} - CONFERIR CADASTRO`
-        : 'ENDEREÇO COM COORDENADA IMPRECISA - CONFERIR CADASTRO (não dá pra afirmar se foi ou não)'
+        : OBS_COORDENADA_IMPRECISA_GENERICA
     }
     // 09/10: pendente sem coordenada do romaneio (geocode falhou) ficava com
     // observacao em branco, sem explicar -- inclusive quando a Unitrac tem um
@@ -3048,6 +3049,16 @@ export function montarDetalheEntregas(
       }
     }
 
+    // Regra B (diagnostico 24/10, RQV9E37/2388087 DECK GRILL 24/09): ponto do
+    // cadastro Unitrac identico ao de outro cliente da placa no dia e' cadastro
+    // generico -- a parada ali (geocode ou cadastro, os dois sao o mesmo ponto)
+    // nao identifica este cliente. Vira conferir o cadastro; o feito da Unitrac
+    // (confirmado_unitrac) continua valendo.
+    if (modoPrecisao && status === 'confirmado_gps' && linha.pontoUnitracRepetido) {
+      status = 'pendente'
+      observacao = OBS_COORDENADA_IMPRECISA_GENERICA
+    }
+
     return {
       carga,
       placa: placaNorm,
@@ -3169,7 +3180,8 @@ export function montarDetalheEntregas(
     for (const d of resultado) {
       if (d.status !== 'pendente' || !d.observacao?.startsWith(PREFIXO_OBS_COORDENADA_IMPRECISA)) continue
       const l = linhaPorNfPonto.get(d.nf)
-      if (!l || l.lat == null || l.lng == null) continue
+      // Regra B: ponto Unitrac generico (repetido em outro cliente) nao prova.
+      if (!l || l.lat == null || l.lng == null || l.pontoUnitracRepetido) continue
       // Cadastro Unitrac longe so' contradiz se o caminhao TAMBEM parou perto
       // dele no dia (ai' ha' duas candidatas). Nos 3 casos reais o cadastro
       // estava a 2-10 km e o caminhao nunca foi la' -- o cadastro e' que esta'

@@ -3,6 +3,7 @@
 // de regeracao e pelo KPI ao vivo (spec 2026-10-06-kpi-ao-vivo-design.md).
 // Movido da rota em 06/10 sem mudanca de comportamento: a rota e' a referencia.
 import { buscarFrota, normPlaca } from '@/lib/unitrac-api'
+import { haversine } from '@/lib/utils/geo'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { hojeBR } from '@/lib/data-br'
 import { geocodificarEnderecosComInfo } from '@/lib/kpi-romaneio/geocode'
@@ -17,7 +18,7 @@ import { paradasEfetivas, lerSnapshotParadas, mesclarParadas } from '@/lib/kpi-r
 import { detectarDescasamentos, detectarMotoristaMultiplasPlacas, detectarCargaMultiRegiao } from '@/lib/kpi-romaneio/avisos'
 import { duplicadoDaEscala } from '@/lib/kpi-romaneio/escala-duplicado'
 import { montarVisitas } from '@/lib/kpi-romaneio/visitas'
-import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, contarConfirmadasPorCarga } from '@/lib/kpi-romaneio/agregacao'
+import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, contarConfirmadasPorCarga, chaveEndereco } from '@/lib/kpi-romaneio/agregacao'
 import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
 import { gerarKpiRomaneioXlsx, cargasEscalaDivergenteInteira } from '@/lib/kpi-romaneio/gerador-xlsx'
 import { detectarTrocasProvaveis } from '@/lib/kpi-romaneio/troca-placa'
@@ -53,6 +54,37 @@ export function aplicarResgateAncora(linha: LinhaGeocodificada, resgate: { lat: 
   if (resgate) return { ...linha, lat: resgate.lat, lng: resgate.lng, geoConfiavel: false, geoPrecisao: 'rua' }
   if (colidida && linha.lat != null) return { ...linha, geoPrecisao: 'rua' }
   return linha
+}
+
+// Regra B: "identico" = mesma coordenada, com folga so' pro arredondamento
+// (a Unitrac devolve 6 casas; 1 m cobre a diferenca de formatacao).
+const PONTO_IDENTICO_M = 1
+
+/** Regra B (diagnostico 24/10, RQV9E37/2388087 DECK GRILL 24/09): marca a NF
+ *  cujo ponto veio do cadastro Unitrac (geoFonte 'cadastro_unitrac') e, na
+ *  coordenada FINAL (depois dos locais aprendidos e do resgate), e' identico
+ *  ao de outro cliente da mesma placa no dia, com OUTRO endereco (rua+numero,
+ *  chaveEndereco). E' cadastro generico da Unitrac (o mesmo ponto para varios
+ *  clientes em lugares diferentes): nao identifica o cliente. Lojas do mesmo
+ *  endereco (shopping, quiosques da mesma orla S/N) dividem o ponto do predio
+ *  de verdade e nao contam (dry run 20/10: 15 entregas reais derrubadas sem
+ *  essa condicao). Comparar no geoPorEndereco deixaria passar o local
+ *  aprendido que repete o mesmo ponto. */
+export function marcarPontoUnitracRepetido(linhas: LinhaGeocodificada[]): LinhaGeocodificada[] {
+  const mesmoCliente = (a: LinhaGeocodificada, b: LinhaGeocodificada) => {
+    const ca = a.clienteCodigo?.trim(), cb = b.clienteCodigo?.trim()
+    return !!ca && !!cb && ca === cb
+  }
+  // rua+numero sem acento; "AMÉRICAS , 4666" = "AMERICAS, 4666".
+  const ruaNumero = (e: string) => chaveEndereco(e).replace(/\s*,\s*/g, ', ')
+  return linhas.map(l => {
+    if (l.geoFonte !== 'cadastro_unitrac' || l.lat == null || l.lng == null) return l
+    const chave = ruaNumero(l.endereco)
+    const repetido = linhas.some(o => o !== l && normPlaca(o.placa) === normPlaca(l.placa) && !mesmoCliente(o, l)
+      && ruaNumero(o.endereco) !== chave
+      && o.lat != null && o.lng != null && haversine(o.lat, o.lng, l.lat as number, l.lng as number) <= PONTO_IDENTICO_M)
+    return repetido ? { ...l, pontoUnitracRepetido: true } : l
+  })
 }
 
 export function narrowGeoMotivo(motivo: string | undefined): 'municipio_divergente' | 'bairro_divergente' | undefined {
@@ -190,7 +222,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   // Task 2 (plano 2026-09-30, item 4): geoSemFonte = cache sem `fonte` (ver guarda 4 da parada proxima em agregacao.ts).
   const romaneioGeo: LinhaGeocodificada[] = romaneioCompleto.map(l => {
     const g = geoPorEndereco.get(l.endereco) ?? null
-    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: narrowGeoMotivo(g?.motivo), geoSemFonte: g != null && !g.fonte, geoVerificadoManual: g != null && FONTES_VERIFICADAS.has(g.fonte ?? ''), ...(g?.precisao ? { geoPrecisao: g.precisao } : {}) }
+    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: narrowGeoMotivo(g?.motivo), geoSemFonte: g != null && !g.fonte, geoVerificadoManual: g != null && FONTES_VERIFICADAS.has(g.fonte ?? ''), ...(g?.precisao ? { geoPrecisao: g.precisao } : {}), ...(g?.fonte ? { geoFonte: g.fonte } : {}) }
   })
 
   // Cache do dia (06/10): paradas da Unitrac por placa reaproveitadas entre
@@ -295,6 +327,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   }
 
   marcar('resgate')
+  romaneioGeo.splice(0, romaneioGeo.length, ...marcarPontoUnitracRepetido(romaneioGeo))
   const linhasPorPlaca = agrupar(romaneioGeo, l => normPlaca(l.placa))
   // Achado Minor #10 da revisão final do plano do pão (15/09): carga do pão
   // sem CARRO no PDF vira placa '' aqui -- montarDetalheEntregas (linha de

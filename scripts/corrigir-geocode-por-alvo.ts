@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'fs'
 import { join } from 'path'
 import { parseRomaneio } from '../src/lib/kpi-romaneio/parse-romaneio'
-import { lerSnapshotAlvos } from '../src/lib/kpi-romaneio/alvos-snapshot'
+import { lerSnapshotAlvos, codigosUnitracPorPonto } from '../src/lib/kpi-romaneio/alvos-snapshot'
 import { alvosDaData } from '../src/lib/kpi-romaneio/alvos-data'
 import { buscarAlvosDoDia } from '../src/lib/kpi-romaneio/unitrac'
 import { buscarHorariosBase, type HorarioBase, type ParadaBridge } from '../src/lib/kpi-romaneio/base-horarios'
@@ -128,7 +128,14 @@ export async function rodarCorrecao(
 
   // Regra 1 primeiro: cadastro Unitrac confirmado por parada real; o resto cai na regra da coordenada da parada.
   if (!opcoes.cnefeRuaNumero) console.log('cadastro_unitrac: sem pontos CNEFE rua+numero -- filtro cnefe_confirma_atual nao roda')
-  const cad = sugerirCadastroUnitrac(entregas, alvos, paradasPorPlaca, { cnefeRuaNumero: opcoes.cnefeRuaNumero })
+  let cad = sugerirCadastroUnitrac(entregas, alvos, paradasPorPlaca, { cnefeRuaNumero: opcoes.cnefeRuaNumero })
+  // Regra B (diagnostico 24/10): ponto Unitrac ja' usado por OUTRO codigo em
+  // dias anteriores (DECK GRILL 14/10 x 160992 em 10/10) e' cadastro generico.
+  // So' leitura; erro aqui derruba a rodada antes de qualquer gravacao.
+  if (cad.sugestoes.length > 0) {
+    const codigosPorPonto = await codigosUnitracPorPonto('nutrimax', cad.sugestoes.map(x => ({ lat: x.latNova, lng: x.lngNova })))
+    cad = sugerirCadastroUnitrac(entregas, alvos, paradasPorPlaca, { cnefeRuaNumero: opcoes.cnefeRuaNumero, codigosPorPonto })
+  }
   const enderecosCadastro = new Set(cad.sugestoes.map(x => x.endereco))
   const { sugestoes, rejeicoes } = sugerirCorrecoesPorAlvo(entregas.filter(e => !enderecosCadastro.has(e.endereco)), alvos, paradasPorPlaca)
   console.log(`cadastro_unitrac=${cad.sugestoes.length} enderecos`)

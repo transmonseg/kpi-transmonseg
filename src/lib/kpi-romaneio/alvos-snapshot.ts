@@ -1,6 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import type { AlvoApi } from '@/lib/unitrac-api'
 import { placaCanonicaAlias } from './alias-placa'
+import { chavePontoUnitrac } from './cadastro-unitrac'
 
 // Revisao 30/09 (B2): o cron noturno grava com a grafia da FROTA (RQ09H37) e
 // o KPI consulta pela da escala (RQO9H37). Snapshot e mescla usam a placa
@@ -95,4 +96,37 @@ export function agruparAlvosPorDia(alvos: AlvoApi[]): Map<string, AlvoApi[]> {
     else porDia.set(dia, [a])
   }
   return porDia
+}
+
+/** Regra B (diagnostico 24/10): codigos Unitrac de cada ponto pedido
+ *  (chavePontoUnitrac), a partir de uma lista de alvos. */
+export function codigosPorPontoDosAlvos(alvos: AlvoApi[], chaves: Set<string>): Map<string, Set<string>> {
+  const r = new Map<string, Set<string>>()
+  for (const a of alvos) {
+    if (typeof a.pontoLat !== 'number' || typeof a.pontoLng !== 'number') continue
+    const k = chavePontoUnitrac(a.pontoLat, a.pontoLng)
+    if (!chaves.has(k)) continue
+    r.set(k, (r.get(k) ?? new Set<string>()).add(a.codigoUnitrac))
+  }
+  return r
+}
+
+/** Regra B: historico (snapshots de alvos, so' leitura) dos codigos Unitrac
+ *  que ja' usaram cada ponto. Erro de leitura propaga -- quem grava no cache
+ *  (correcao noturna) para sem gravar nada. */
+export async function codigosUnitracPorPonto(cliente: string, pontos: { lat: number; lng: number }[]): Promise<Map<string, Set<string>>> {
+  const r = new Map<string, Set<string>>()
+  const svc = createServiceClient()
+  for (const p of pontos) {
+    const k = chavePontoUnitrac(p.lat, p.lng)
+    if (r.has(k)) continue
+    const { data, error } = await svc.from('kpi_alvos_snapshot').select('alvos')
+      .eq('cliente', cliente).contains('alvos', JSON.stringify([{ pontoLat: p.lat, pontoLng: p.lng }])) // string: array vira literal {..} de Postgres
+      .order('data_referencia', { ascending: false }).limit(30)
+    if (error) throw new Error(`historico de alvos por ponto: ${error.message}`)
+    const codigos = new Set<string>()
+    for (const row of data ?? []) for (const c of codigosPorPontoDosAlvos(row.alvos as AlvoApi[], new Set([k])).get(k) ?? []) codigos.add(c)
+    r.set(k, codigos)
+  }
+  return r
 }

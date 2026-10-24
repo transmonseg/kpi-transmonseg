@@ -76,6 +76,15 @@ export type LinhaGeocodificada = LinhaRomaneio & {
   /** Auditoria 20/10 (GEO-01): precisao do ponto informada pela ponte
    *  (exato | interpolado | trecho | rua). Ausente = desconhecida. */
   geoPrecisao?: 'exato' | 'interpolado' | 'trecho' | 'rua'
+  /** Fonte da linha do cache de geocode (cnefe, photon, cadastro_unitrac,
+   *  verificacao_manual...); 'manual' quando o local corrigido a mao foi
+   *  aplicado. Ausente = desconhecida. Preenchido em gerar-nutrimax. */
+  geoFonte?: string
+  /** Regra B (diagnostico 24/10, RQV9E37/2388087 24/09): ponto vindo do
+   *  cadastro Unitrac (geoFonte 'cadastro_unitrac') identico, na coordenada
+   *  final, ao de OUTRO cliente da mesma placa no dia -- cadastro generico
+   *  da Unitrac, nao identifica o cliente. Nao confirma ENTREGUE. */
+  pontoUnitracRepetido?: boolean
   // So' preenchido pela coerencia de grupo (Rio Quality): outros pontos da
   // MESMA rua na zona, alem do escolhido -- pedido 06/09, ver visitas.ts.
   pontosAlternativos?: { lat: number; lng: number }[]

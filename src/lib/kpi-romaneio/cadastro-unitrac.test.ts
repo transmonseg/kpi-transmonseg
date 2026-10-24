@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sugerirCadastroUnitrac, RAIO_CADASTRO_CONFIRMADO_M, LIMITE_NOSSA_COORD_LONGE_M, RAIO_PARADA_NA_COORD_ATUAL_M, RAIO_CNEFE_CONFIRMA_ATUAL_M, LIMITE_SUGESTAO_LONGE_DO_CNEFE_M, MARGEM_OUTRA_NF_MAIS_PERTO_M } from './cadastro-unitrac'
+import { sugerirCadastroUnitrac, chavePontoUnitrac, RAIO_CADASTRO_CONFIRMADO_M, LIMITE_NOSSA_COORD_LONGE_M, RAIO_PARADA_NA_COORD_ATUAL_M, RAIO_CNEFE_CONFIRMA_ATUAL_M, LIMITE_SUGESTAO_LONGE_DO_CNEFE_M, MARGEM_OUTRA_NF_MAIS_PERTO_M } from './cadastro-unitrac'
 import type { EntregaParaCorrigir } from './correcao-por-alvo'
 import type { AlvoApi } from '@/lib/unitrac-api'
 import type { ParadaBridge } from './base-horarios'
@@ -261,5 +261,39 @@ describe('sugerirCadastroUnitrac -- filtros 30/09', () => {
     const r = sugerirCadastroUnitrac([entrega({ endereco: 'RUA PROJETADA, SN - ILHA DA GIPOIA, ANGRA DOS REIS - PRAIA DO VITORINO' })], [alvo()], paradas())
     expect(r.sugestoes).toHaveLength(0)
     expect(r.rejeicoes[0].motivo).toBe('ilha')
+  })
+})
+
+// Regra B (diagnostico 24/10): a correcao noturna de 14/10 gravou no cache do
+// DECK GRILL (164702) o ponto -21.626775,-41.019232, um cadastro generico da
+// Unitrac que tambem e' o dos codigos 154177 (Mercearia do Eduardo), 163800 e
+// 160992. Ponto Unitrac repetido em outro codigo nao vira coordenada do cliente.
+describe('sugerirCadastroUnitrac -- cadastro_generico (regra B)', () => {
+  const GEN = { pontoLat: -21.626775, pontoLng: -41.019232 }
+  const deck = alvo({ placaNorm: 'RQV9E37', codigoUnitrac: '164702', documento: '2421555', feitoISO: '2026-10-14T12:32:44', ...GEN })
+  const pDeck = parada({ chegada: '2026-10-14T12:10:00.000Z', saida: '2026-10-14T12:41:00.000Z', lat: -21.6268, lng: -41.0194 })
+  const eDeck = entrega({ nf: '2421555', placaNorm: 'RQV9E37', endereco: 'AVENIDA HORMES MAIA, SN - SOLAR DO MARANHAO, SAO JOAO DA BAR - LOJA ESQUINA', latAtual: -21.64, lngAtual: -41.05, fonteAtual: 'cnefe' })
+  const par = new Map([['RQV9E37', [pDeck]]])
+
+  it('sem outro codigo no ponto: grava (comportamento de 14/10)', () => {
+    expect(sugerirCadastroUnitrac([eDeck], [deck], par).sugestoes).toHaveLength(1)
+  })
+
+  it('14/10: o mesmo ponto ja apareceu para outro codigo no historico (160992 em 10/10) -> cadastro_generico', () => {
+    const r = sugerirCadastroUnitrac([eDeck], [deck], par, { codigosPorPonto: new Map([[chavePontoUnitrac(GEN.pontoLat, GEN.pontoLng), new Set(['164702', '160992'])]]) })
+    expect(r.sugestoes).toHaveLength(0)
+    expect(r.rejeicoes[0]).toMatchObject({ nf: '2421555', motivo: 'cadastro_generico' })
+  })
+
+  it('outro codigo com o ponto identico nos alvos do proprio dia (24/09: 154177 Eduardo) -> cadastro_generico', () => {
+    const eduardo = alvo({ placaNorm: 'RQV9E37', codigoUnitrac: '154177', documento: '2421599', situacao: 0, feitoISO: null, ...GEN })
+    const r = sugerirCadastroUnitrac([eDeck], [deck, eduardo], par)
+    expect(r.sugestoes).toHaveLength(0)
+    expect(r.rejeicoes[0].motivo).toBe('cadastro_generico')
+  })
+
+  it('historico so com o proprio codigo -> grava', () => {
+    const r = sugerirCadastroUnitrac([eDeck], [deck], par, { codigosPorPonto: new Map([[chavePontoUnitrac(GEN.pontoLat, GEN.pontoLng), new Set(['164702'])]]) })
+    expect(r.sugestoes).toHaveLength(1)
   })
 })
