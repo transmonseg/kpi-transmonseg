@@ -77,30 +77,55 @@ function validar(r: unknown): ResultadoCoerencia {
 // aviso nenhum. Agora tenta de novo e, se ainda falhar, avisa o chamador.
 const TENTATIVAS_COERENCIA = 3
 const ESPERA_ENTRE_TENTATIVAS_MS = 2_000
+// F2-01 (e), achado 23/10: o 500 vem de cnefe_candidatos_por_rua batendo no
+// statement_timeout de 60 s (media 9,97 s). Cada tentativa assim custa ~60 s e
+// 3 delas alongavam o tick em ~200 s. Enquanto a funcao passar de 2 s, falha
+// lenta tenta so' mais 1 vez, depois de uma espera maior (backoff).
+const LIMITE_FUNCAO_LENTA_MS = 2_000
+const TENTATIVAS_FUNCAO_LENTA = 2
+const FATOR_ESPERA_FUNCAO_LENTA = 5
+
+type Tentativa = { ok: Map<string, ResultadoCoerencia[]> } | { ok: null; lenta: boolean }
 
 export async function geocodificarPorCoerencia(
   grupos: GrupoCoerencia[],
-  opcoes: { aoFalhar?: () => void; esperaMs?: number } = {},
+  opcoes: { aoFalhar?: () => void; esperaMs?: number; aoEsperar?: (ms: number) => void } = {},
 ): Promise<Map<string, ResultadoCoerencia[]>> {
   if (grupos.length === 0) return new Map()
-  for (let t = 1; t <= TENTATIVAS_COERENCIA; t++) {
+  const base = opcoes.esperaMs ?? ESPERA_ENTRE_TENTATIVAS_MS
+  let teto = TENTATIVAS_COERENCIA
+  for (let t = 1; t <= teto; t++) {
     const r = await tentarCoerencia(grupos)
-    if (r) return r
-    if (t < TENTATIVAS_COERENCIA) await new Promise(ok => setTimeout(ok, opcoes.esperaMs ?? ESPERA_ENTRE_TENTATIVAS_MS))
+    if (r.ok) return r.ok
+    if (r.lenta) teto = Math.min(teto, TENTATIVAS_FUNCAO_LENTA)
+    if (t < teto) {
+      // backoff: 1x, 2x a espera base; falha lenta espera 5x antes da unica retentativa
+      const espera = r.lenta ? base * FATOR_ESPERA_FUNCAO_LENTA : base * 2 ** (t - 1)
+      opcoes.aoEsperar?.(espera)
+      await new Promise(ok => setTimeout(ok, espera))
+    }
   }
   opcoes.aoFalhar?.()
   return tudoSemCandidato(grupos)
 }
 
-/** Uma chamada; `null` = falhou (rede, status, JSON) e vale tentar de novo. */
-async function tentarCoerencia(grupos: GrupoCoerencia[]): Promise<Map<string, ResultadoCoerencia[]> | null> {
+/** F2-01 (c): linha de log com hora (o tick nao poe hora nas linhas de erro). */
+function logErro(msg: string): void {
+  console.error(`${new Date().toISOString()} [kpi-rioquality/geocode-coerencia] ${msg}`)
+}
+
+/** Uma chamada; `ok: null` = falhou (rede, status, JSON) e vale tentar de
+ *  novo; `lenta` = a funcao do banco (ms no corpo do 500) ou a chamada
+ *  passou de LIMITE_FUNCAO_LENTA_MS. */
+async function tentarCoerencia(grupos: GrupoCoerencia[]): Promise<Tentativa> {
   const chave = process.env.MOTOR_SECRET
   if (!chave) {
-    console.error('[kpi-rioquality/geocode-coerencia] MOTOR_SECRET nao configurado')
-    return null
+    logErro('MOTOR_SECRET nao configurado')
+    return { ok: null, lenta: false }
   }
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
+  const t0 = Date.now()
   let res: Response
   try {
     res = await fetch(url(), {
@@ -110,26 +135,36 @@ async function tentarCoerencia(grupos: GrupoCoerencia[]): Promise<Map<string, Re
       signal: ctrl.signal,
     })
   } catch (e) {
-    console.error('[kpi-rioquality/geocode-coerencia] chamada ao monitoramento falhou:', e instanceof Error ? e.message : String(e))
-    return null
+    logErro(`chamada ao monitoramento falhou em ${Date.now() - t0} ms: ${e instanceof Error ? e.message : String(e)}`)
+    return { ok: null, lenta: Date.now() - t0 > LIMITE_FUNCAO_LENTA_MS }
   } finally {
     clearTimeout(timer)
   }
   if (!res.ok) {
-    console.error(`[kpi-rioquality/geocode-coerencia] monitoramento respondeu ${res.status}`)
-    return null
+    // F2-01 (c): o corpo do erro (codigo do Postgres, mensagem, ms da funcao)
+    // era descartado -- agora vai no log, cortado.
+    const decorrido = Date.now() - t0
+    let corpo = ''
+    try { corpo = (await res.text()).replace(/\s+/g, ' ').slice(0, 500) } catch { /* corpo ilegivel */ }
+    let msFuncao: number | null = null
+    try {
+      const j = JSON.parse(corpo) as { ms?: unknown }
+      if (typeof j?.ms === 'number') msFuncao = j.ms
+    } catch { /* nao e' JSON */ }
+    logErro(`monitoramento respondeu ${res.status} em ${decorrido} ms: ${corpo || '(sem corpo)'}`)
+    return { ok: null, lenta: (msFuncao ?? decorrido) > LIMITE_FUNCAO_LENTA_MS }
   }
   let data: unknown
   try {
     data = await res.json()
   } catch (e) {
-    console.error('[kpi-rioquality/geocode-coerencia] resposta nao e JSON valido:', e instanceof Error ? e.message : String(e))
-    return null
+    logErro(`resposta nao e JSON valido: ${e instanceof Error ? e.message : String(e)}`)
+    return { ok: null, lenta: false }
   }
   const brutos = (data as { grupos?: unknown })?.grupos
   if (!Array.isArray(brutos)) {
-    console.error("[kpi-rioquality/geocode-coerencia] resposta sem campo 'grupos' valido")
-    return null
+    logErro("resposta sem campo 'grupos' valido")
+    return { ok: null, lenta: false }
   }
   const porId = new Map<string, unknown[]>()
   for (const g of brutos as { id?: unknown; resultados?: unknown }[]) {
@@ -141,5 +176,5 @@ async function tentarCoerencia(grupos: GrupoCoerencia[]): Promise<Map<string, Re
     // grupo ausente ou com tamanho diferente do pedido: nao da' pra alinhar -> sem_candidato so' pra ele
     saida.set(g.id, r && r.length === g.ruas.length ? r.map(validar) : g.ruas.map(() => ({ ...SEM_CANDIDATO })))
   }
-  return saida
+  return { ok: saida }
 }

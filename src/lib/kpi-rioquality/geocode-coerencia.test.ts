@@ -98,6 +98,69 @@ describe('geocodificarPorCoerencia', () => {
     ])
   })
 
+  // F2-01 (c): o log de 20-23/10 tinha 63-89 "monitoramento respondeu 500"
+  // por dia, sem hora e sem o motivo -- a causa (statement timeout 57014 em
+  // cnefe_candidatos_por_rua) so' aparecia no log do Postgres.
+  it('F2-01 (c): 500 registra hora ISO e o corpo do erro (codigo, mensagem, ms)', async () => {
+    const corpo = { erro: 'cnefe_candidatos_por_rua: canceling statement due to statement timeout', codigo: '57014', ms: 59812 }
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify(corpo), { status: 500 }))
+    const erro = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await geocodificarPorCoerencia(grupos, { esperaMs: 0 })
+    const linhas = erro.mock.calls.map(c => c.join(' ')).filter(l => l.includes('respondeu 500'))
+    expect(linhas.length).toBeGreaterThan(0)
+    expect(linhas[0]).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
+    expect(linhas[0]).toContain('57014')
+    expect(linhas[0]).toContain('statement timeout')
+    expect(linhas[0]).toContain('59812')
+    erro.mockRestore()
+  })
+
+  it('F2-01 (c): corpo que nao e JSON tambem sai no log (cortado), com a hora', async () => {
+    fetchMock.mockImplementation(async () => new Response('<html>Bad Gateway</html>'.repeat(100), { status: 502 }))
+    const erro = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await geocodificarPorCoerencia(grupos, { esperaMs: 0 })
+    const linha = erro.mock.calls.map(c => c.join(' ')).find(l => l.includes('respondeu 502'))!
+    expect(linha).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+    expect(linha).toContain('Bad Gateway')
+    expect(linha.length).toBeLessThan(800)
+    erro.mockRestore()
+  })
+
+  // F2-01 (e): cada tentativa que bate no statement_timeout leva ~60 s; 3
+  // tentativas alongavam o tick em ~200 s. Funcao lenta (> 2 s) = 1 retentativa so'.
+  it('F2-01 (e): 500 de funcao lenta (ms > 2000 no corpo) -> 1 retentativa so, com espera maior, e avisa a falha', async () => {
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify({ erro: 'timeout', codigo: '57014', ms: 59812 }), { status: 500 }))
+    const aoFalhar = vi.fn()
+    const esperas: number[] = []
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    await geocodificarPorCoerencia(grupos, { aoFalhar, esperaMs: 0, aoEsperar: ms => esperas.push(ms) })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(aoFalhar).toHaveBeenCalledTimes(1)
+    expect(esperas).toHaveLength(1)
+    vi.mocked(console.error).mockRestore()
+  })
+
+  it('F2-01 (e): chamada que demorou > 2 s e falhou (sem ms no corpo) tambem conta como lenta', async () => {
+    let agora = 1_000_000
+    const now = vi.spyOn(Date, 'now').mockImplementation(() => agora)
+    fetchMock.mockImplementation(async () => { agora += 61_000; return new Response('erro', { status: 500 }) })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    await geocodificarPorCoerencia(grupos, { esperaMs: 0 })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    now.mockRestore()
+    vi.mocked(console.error).mockRestore()
+  })
+
+  it('F2-01 (e): 500 rapido (ms <= 2000) continua com as 3 tentativas e espera crescente', async () => {
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify({ erro: 'x', ms: 150 }), { status: 500 }))
+    const esperas: number[] = []
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    await geocodificarPorCoerencia(grupos, { esperaMs: 1, aoEsperar: ms => esperas.push(ms) })
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(esperas).toEqual([1, 2])
+    vi.mocked(console.error).mockRestore()
+  })
+
   it('sem grupos => Map vazio, sem chamar a ponte', async () => {
     const r = await geocodificarPorCoerencia([])
     expect(r.size).toBe(0)

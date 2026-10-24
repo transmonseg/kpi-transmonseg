@@ -20,6 +20,7 @@ import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita, AvisoDescasamento } from '@/lib/kpi-romaneio/types'
 import { parseCustos, parseEntregas, montarLinhasRomaneio, rotaParaZona, parseEntregasCompletas, montarLinhasRomaneioCompleto, CARGA_SEM_ROTA, type EntregaRioQualityCompleta } from './parse-planilhas'
 import { geocodificarPorCoerencia, type ConfiancaCoerencia, type PontoZona } from './geocode-coerencia'
+import { lerCorredorDoCache, gravarCorredorNoCache } from './cache-corredor'
 import { geocodificarEnderecosComInfo } from '@/lib/kpi-romaneio/geocode'
 import { buscarCoordenadasMonitoramentoRQ } from './enviar-monitoramento-rq'
 import { reposicionarPorAncoras } from '@/lib/kpi-romaneio/geocode-ancoras'
@@ -172,6 +173,8 @@ export async function gerarKpiRioQuality(params: {
   buscarUltimaComunicacao?: (cvs: string[]) => Promise<Map<string, string | null>>
   /** injetavel pra teste; padrao = lerSnapshotParadas (kpi_paradas_snapshot) */
   lerSnapshot?: (empresa: string, data: string) => Promise<Map<string, UnitracParadaRow[]>>
+  /** F2-01 (b): injetavel pra teste; padrao = cache-corredor.ts (kpi_cache_dia). */
+  cacheCorredor?: { ler: typeof lerCorredorDoCache; gravar: typeof gravarCorredorNoCache }
   /** injetavel pra teste; padrao = hojeBR() */
   hoje?: string
   log?: (msg: string) => void
@@ -475,17 +478,33 @@ export async function gerarKpiRioQuality(params: {
     })
     const ruasUnicas = [...new Set(pendentes.map(l => ruaPorNfCompleto.get(l.nf)!))]
     const pontosPorRua = new Map<string, PontoZona[]>()
+    // F2-01 (b): ruas cujo lote a ponte nao respondeu (apos as tentativas).
+    const ruasSemPonte: string[] = []
     for (let i = 0; i < ruasUnicas.length; i += MAX_RUAS_CORREDOR_POR_CHAMADA) {
       const lote = ruasUnicas.slice(i, i + MAX_RUAS_CORREDOR_POR_CHAMADA)
       const grupos = []
       for (let j = 0; j < lote.length; j += MAX_RUAS_CORREDOR_POR_GRUPO) {
         grupos.push({ id: `corredor-${i + j}`, zona: null, ruas: lote.slice(j, j + MAX_RUAS_CORREDOR_POR_GRUPO) })
       }
-      const res = await geocodificarPorCoerencia(grupos, { aoFalhar: () => { coerenciaFalhou += lote.length } })
+      let loteFalhou = false
+      const res = await geocodificarPorCoerencia(grupos, { aoFalhar: () => { loteFalhou = true } })
+      if (loteFalhou) { ruasSemPonte.push(...lote); continue }
       for (const g of grupos) {
         const rs = res.get(g.id) ?? []
         g.ruas.forEach((rua, k) => pontosPorRua.set(rua, rs[k]?.pontosZona ?? []))
       }
+    }
+    // F2-01 (b), achado 23/10: com a ponte fora, o corredor sumia do tick e
+    // 7 a 68 entregues caiam. Resposta boa guardada por 1 dia; usada so'
+    // quando a ponte falha. Rua sem cache conta como falha (RQ-08 segura).
+    const cacheCorredor = params.cacheCorredor ?? { ler: lerCorredorDoCache, gravar: gravarCorredorNoCache }
+    if (pontosPorRua.size > 0) await cacheCorredor.gravar(params.data, pontosPorRua)
+    if (ruasSemPonte.length > 0) {
+      const doCache = await cacheCorredor.ler(params.data, ruasSemPonte)
+      for (const [rua, pontos] of doCache) pontosPorRua.set(rua, pontos)
+      const semCache = ruasSemPonte.length - doCache.size
+      coerenciaFalhou += semCache
+      log(`Corredor da rua: ponte de coerência falhou em ${ruasSemPonte.length} rua(s); ${doCache.size} do cache (até 1 dia), ${semCache} sem cache`)
     }
     const placasAfetadas = new Set<string>()
     for (const l of pendentes) {

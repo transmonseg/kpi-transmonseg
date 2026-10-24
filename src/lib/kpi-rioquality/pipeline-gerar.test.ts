@@ -25,6 +25,12 @@ vi.mock('@/lib/kpi-romaneio/geocode', () => {
 vi.mock('@/lib/kpi-romaneio/geocode-ancoras', () => ({ reposicionarPorAncoras: vi.fn(async () => new Map()) }))
 // ultima comunicacao (posicoes/N/N): nada de rede nos testes; sem dado = sem rotulo novo
 vi.mock('@/lib/unitrac-api/posicoes', () => ({ buscarPosicoesPorCv: vi.fn(async () => new Map()) }))
+// F2-01 (b): cache do corredor em memoria (nada de banco nos testes).
+const cacheCorredor = vi.hoisted(() => ({ linhas: new Map<string, unknown>() }))
+vi.mock('./cache-corredor', () => ({
+  lerCorredorDoCache: vi.fn(async (data: string, ruas: string[]) => new Map(ruas.filter(r => cacheCorredor.linhas.has(`${data}|${r}`)).map(r => [r, cacheCorredor.linhas.get(`${data}|${r}`)]))),
+  gravarCorredorNoCache: vi.fn(async (data: string, m: Map<string, unknown>) => { for (const [r, v] of m) cacheCorredor.linhas.set(`${data}|${r}`, v); return m.size }),
+}))
 
 import { geocodificarPorCoerencia } from './geocode-coerencia'
 import { gerarKpiRioQuality, OBS_CONSULTA_FALHOU, OBS_CONSULTA_SUSPEITA } from './pipeline'
@@ -58,6 +64,7 @@ function parada(placa: string, hhmm: string, min: number, classificacao = 'FORA_
 
 beforeEach(() => {
   vi.clearAllMocks()
+  cacheCorredor.linhas.clear()
   vi.mocked(geocodificarPorCoerencia).mockImplementation(async grupos => new Map(grupos.map(g => [
     g.id, g.ruas.map(() => ({ ...PONTO, municipioCodigo: null, confianca: 'alta' as const, candidatos: 1, ancora: false, pontosZona: [] })),
   ])))
@@ -611,6 +618,52 @@ describe('gerarKpiRioQuality -- corredor da rua (endereco sem numero, formatos c
       medirRastro: async () => ({ km: 40, pontosNoDia: 900 }),
     })
     expect(r.detalhe.find(x => x.clienteNome === 'MERCADO A')!.observacao).toBe(OBS_LONGE_DO_PONTO_NAO_CONFIRMADO)
+  })
+
+  // F2-01 (b), achado 23/10 20:34Z: a ponte respondeu 500 nas 3 tentativas,
+  // o corredor sumiu do tick e o resultado caiu de 2385 para 2331 entregues
+  // (mantido so' pela trava do RQ-08). Com a resposta boa guardada por 1 dia,
+  // o tick com a ponte fora confirma igual e nao fica degradado.
+  it('F2-01 (b): ponte em 500 no tick seguinte -> pontos da rua vem do cache de 1 dia, mesma confirmacao, sem coerenciaFalhou', async () => {
+    const completa = await preparar()
+    const entrada = {
+      completaBuf: completa, data: DATA,
+      cvPorPlaca: new Map([['CCC3C33', '3'], ['DDD4D44', '4']]),
+      buscarParadas: async (_cv: string, placa: string) => placa === 'CCC3C33'
+        ? [parada(placa, '10:00', 15), parada(placa, '13:05', 12, 'FORA_BASE', PERTO_C2)]
+        : [parada(placa, '09:00', 20, 'FORA_BASE', { lat: -22.9, lng: -43.5 })],
+      medirRastro: async () => ({ km: 40, pontosNoDia: 900 }),
+    }
+    const tick1 = await gerarKpiRioQuality(entrada)
+    expect(tick1.detalhe.find(x => x.clienteNome === 'MERCADO A')!.observacao).toBe(OBS_CORREDOR)
+    // tick seguinte: a ponte do corredor falha (500 nas tentativas)
+    vi.mocked(geocodificarPorCoerencia).mockImplementation(async (grupos, opcoes) => {
+      opcoes?.aoFalhar?.()
+      return new Map(grupos.map(g => [g.id, g.ruas.map(() => ({ lat: null, lng: null, municipioCodigo: null, confianca: 'sem_candidato' as const, candidatos: 0, ancora: false, pontosZona: [] }))]))
+    })
+    const tick2 = await gerarKpiRioQuality(entrada)
+    for (const cliente of ['MERCADO A', 'MERCADO B']) {
+      const d = tick2.detalhe.find(x => x.clienteNome === cliente)!
+      expect(d.observacao).toBe(OBS_CORREDOR)
+      expect(d.chegada).toBe(`${DATA}T13:05:00.000Z`)
+    }
+    expect(tick2.coerenciaFalhou).toBe(0)
+  })
+
+  it('F2-01 (b): ponte em 500 e rua sem cache -> conta em coerenciaFalhou (o RQ-08 segura o resultado)', async () => {
+    const completa = await preparar()
+    vi.mocked(geocodificarPorCoerencia).mockImplementation(async (grupos, opcoes) => {
+      opcoes?.aoFalhar?.()
+      return new Map(grupos.map(g => [g.id, g.ruas.map(() => ({ lat: null, lng: null, municipioCodigo: null, confianca: 'sem_candidato' as const, candidatos: 0, ancora: false, pontosZona: [] }))]))
+    })
+    const r = await gerarKpiRioQuality({
+      completaBuf: completa, data: DATA,
+      cvPorPlaca: new Map([['CCC3C33', '3'], ['DDD4D44', '4']]),
+      buscarParadas: async (_cv, placa) => [parada(placa, '10:00', 15), parada(placa, '13:05', 12, 'FORA_BASE', PERTO_C2)],
+      medirRastro: async () => ({ km: 40, pontosNoDia: 900 }),
+    })
+    expect(r.coerenciaFalhou).toBe(1)
+    expect(r.detalhe.find(x => x.clienteNome === 'MERCADO A')!.observacao).not.toBe(OBS_CORREDOR)
   })
 
   it('formato antigo (sem cidade) nao usa o corredor novo (coerencia so' + "'" + ' na geocodificacao)', async () => {
