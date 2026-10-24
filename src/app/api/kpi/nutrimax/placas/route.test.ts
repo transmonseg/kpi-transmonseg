@@ -43,16 +43,11 @@ describe('POST /api/kpi/nutrimax/placas', () => {
     expect(c.inserts[0]).toMatchObject({ tabela: 'kpi_placa_sem_rastreador', linha: { empresa: 'NUTRY MAX', placa: 'RQV5F67', inicio: '2026-10-05', responsavel: 'ana@teste.com' } })
   })
 
-  it('troca com placa da escala igual à que rodou: 400', async () => {
-    const res = await POST(req({ tipo: 'troca', data: '2026-10-05', placaEscala: 'RBG-4F53', placaReal: 'rbg4f53' }))
-    expect(res.status).toBe(400)
-    expect(c.inserts).toHaveLength(0)
-  })
-
-  it('troca válida: grava normalizada', async () => {
+  it('D-28: troca pela rota antiga não grava (vai pela rota do Ao vivo)', async () => {
     const res = await POST(req({ tipo: 'troca', data: '2026-10-03', placaEscala: 'RBG-4F53', placaReal: 'rqv5f67', carga: '' }))
-    expect(res.status).toBe(200)
-    expect(c.inserts[0]).toMatchObject({ tabela: 'kpi_troca_placa', linha: { empresa: 'NUTRY MAX', data: '2026-10-03', placa_escala: 'RBG4F53', placa_real: 'RQV5F67', carga: null } })
+    expect(res.status).toBe(400)
+    expect(await res.text()).toMatch(/ao-vivo\/troca/)
+    expect(c.inserts).toHaveLength(0)
   })
 
   it('data inválida: 400', async () => {

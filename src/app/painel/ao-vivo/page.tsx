@@ -12,6 +12,8 @@ import { CATEGORIAS_INVESTIGACAO, ROTULO_INVESTIGACAO, fraseInvestigacao } from 
 import { juntarEstado, mensagemFalhaCarga } from '@/lib/kpi-romaneio/ao-vivo-carga'
 import { SubirRomaneio, type EnvioRomaneio } from './subir-romaneio'
 import { montarPayloadTroca } from './troca-payload'
+import { textoSugestao, corpoSugestao } from './sugestao-texto'
+import { mensagemDaTroca, type RespostaTroca } from '../nutrimax/placas/troca-dia'
 import { baixarPendentes } from './baixar-pendentes'
 import { linhasPendentes } from '@/lib/kpi-romaneio/relatorio-pendentes'
 import type { ModoTroca } from '@/lib/kpi-romaneio/trocas-placa'
@@ -656,21 +658,21 @@ function Mini({ rotulo, valor, destaque, longe, titulo }: { rotulo: string; valo
 }
 
 /** Carro trocado sem aviso (06/10): o carro da escala não passou na carga e
- *  outro, sem carga no dia, parou na maioria dos endereços. A operação
- *  confirma; nada é trocado sozinho. */
+ *  outro parou na maioria dos endereços. F1-02: troca mútua e carga absorvida;
+ *  F1-03: carga do pão sem placa; F1-04: placa fora da frota/troca recorrente.
+ *  A operação confirma; nada é trocado sozinho. */
 function TrocasSugeridas({ sugestoes, onConfirmada }: { sugestoes: SugestaoTroca[]; onConfirmada: () => void }) {
   const [enviando, setEnviando] = useState<string | null>(null)
-  const [aviso, setAviso] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<{ ok: boolean; texto: string } | null>(null)
   // Placa digitada por carga (opcional): vale no lugar da sugerida; vazio mantém a sugestão.
   const [digitadas, setDigitadas] = useState<Record<string, string>>({})
   async function confirmar(s: SugestaoTroca) {
-    const alvo = (digitadas[s.carga] ?? '').trim() || s.placaSugerida
     setEnviando(s.carga); setAviso(null)
     try {
-      const r = await fetch('/api/kpi/ao-vivo/troca', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ carga: s.carga, placaEscala: s.placaEscala, placaReal: alvo }) })
-      if (!r.ok) { setAviso(`Não deu pra trocar: ${await r.text()}`); return }
-      const j = (await r.json()) as { placaReal?: string; monitoramento?: { ok: boolean; erro?: string } }
-      setAviso(`Troca registrada: carga ${s.carga} agora é do ${j.placaReal ?? alvo.toUpperCase()}. O KPI recalcula em instantes.${j.monitoramento && !j.monitoramento.ok ? ` Monitoramento não atualizou (${j.monitoramento.erro}).` : ''}`)
+      const r = await fetch('/api/kpi/ao-vivo/troca', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(corpoSugestao(s, undefined, digitadas[s.carga])) })
+      if (!r.ok) { setAviso({ ok: false, texto: `Não deu pra trocar: ${await r.text()}` }); return }
+      // F1-05: monitoramento que não moveu nada aparece como erro, não "registrada".
+      setAviso(mensagemDaTroca(await r.json() as RespostaTroca))
       onConfirmada()
     } finally { setEnviando(null) }
   }
@@ -682,18 +684,18 @@ function TrocasSugeridas({ sugestoes, onConfirmada }: { sugestoes: SugestaoTroca
       <ul className="flex flex-col gap-1.5">
         {sugestoes.map(s => (
           <li key={s.carga} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-[var(--color-fg-muted)]">
-            <span>Carga <strong className="text-[var(--color-fg)]">{s.carga}</strong>: o <strong className="text-[var(--color-fg)]">{s.placaEscala}</strong> da escala não passou nos clientes; o <strong className="text-[var(--color-fg)]">{s.placaSugerida}</strong> parou em {s.enderecosVisitados} de {s.enderecosDaCarga} endereços.</span>
+            <span>{textoSugestao(s)}</span>
             <input value={digitadas[s.carga] ?? ''} onChange={e => setDigitadas(d => ({ ...d, [s.carga]: e.target.value }))} placeholder="ou digite a placa" maxLength={8} aria-label={`Outra placa para a carga ${s.carga}`}
               onKeyDown={e => { if (e.key === 'Enter' && enviando == null) void confirmar(s) }}
               className="h-8 w-[130px] rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[12.5px] uppercase text-[var(--color-fg)]" />
             <button type="button" disabled={enviando != null} onClick={() => confirmar(s)}
               className="inline-flex h-8 items-center rounded-full bg-[var(--color-navy-700)] px-3.5 text-[12.5px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] disabled:opacity-50">
-              {enviando === s.carga ? 'Trocando…' : `Confirmar ${(digitadas[s.carga] ?? '').trim().toUpperCase() || s.placaSugerida}`}
+              {enviando === s.carga ? 'Trocando…' : (digitadas[s.carga] ?? '').trim() ? `Confirmar ${(digitadas[s.carga] ?? '').trim().toUpperCase()}` : s.modo === 'mutua' ? `Confirmar troca ${s.placaEscala} ↔ ${s.placaSugerida}` : `Confirmar ${s.placaSugerida}`}
             </button>
           </li>
         ))}
       </ul>
-      {aviso && <p className="text-[12.5px] text-[var(--color-fg-muted)]">{aviso}</p>}
+      {aviso && <p role={aviso.ok ? undefined : 'alert'} className={`text-[12.5px] ${aviso.ok ? 'text-[var(--color-fg-muted)]' : 'font-semibold text-[var(--color-danger)]'}`}>{aviso.texto}</p>}
     </section>
   )
 }
@@ -717,6 +719,8 @@ function RedirecionarCarga({ placas, onConfirmada }: { placas: PlacaAoVivo[]; on
   const [placaB, setPlacaB] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
+  // F1-05: falha no monitoramento (pontos=0 com notas) fica em vermelho.
+  const [avisoErro, setAvisoErro] = useState(false)
   const sel = opcoes.find(o => o.carga === carga)
   const dica = MODOS_TROCA.find(m => m.modo === modo)?.dica ?? ''
 
@@ -725,12 +729,13 @@ function RedirecionarCarga({ placas, onConfirmada }: { placas: PlacaAoVivo[]; on
       ? { carga, placaA: sel?.placa, placaB }
       : { placaA, placaB }
     const payload = montarPayloadTroca(modo, entrada)
-    if ('erro' in payload) { setAviso(payload.erro); return }
-    setEnviando(true); setAviso(null)
+    if ('erro' in payload) { setAviso(payload.erro); setAvisoErro(true); return }
+    setEnviando(true); setAviso(null); setAvisoErro(false)
     try {
       const r = await fetch('/api/kpi/ao-vivo/troca', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
-      if (!r.ok) { setAviso(`Não deu pra trocar: ${await r.text()}`); return }
+      if (!r.ok) { setAviso(`Não deu pra trocar: ${await r.text()}`); setAvisoErro(true); return }
       const j = (await r.json()) as { acao?: string; placaReal?: string; monitoramento?: { ok: boolean; erro?: string }; movimentos?: { de: string; para: string; semNotas?: boolean; monitoramento: { ok: boolean; erro?: string } }[] }
+      setAvisoErro(mensagemDaTroca(j).ok === false)
       if (modo === 'redirecionar') {
         setAviso(`${j.acao === 'desfazer' ? 'Troca desfeita' : 'Carga redirecionada'}: carga ${carga} agora é do ${j.placaReal ?? placaB.trim().toUpperCase()}. O KPI recalcula em instantes.${j.monitoramento && !j.monitoramento.ok ? ` Monitoramento não atualizou (${j.monitoramento.erro}).` : ''}`)
       } else {
@@ -782,7 +787,7 @@ function RedirecionarCarga({ placas, onConfirmada }: { placas: PlacaAoVivo[]; on
             {enviando ? 'Trocando…' : 'Confirmar'}
           </button>
         </div>
-        {aviso && <p className="text-[12.5px] text-[var(--color-fg-muted)]">{aviso}</p>}
+        {aviso && <p role={avisoErro ? 'alert' : undefined} className={`text-[12.5px] ${avisoErro ? 'font-semibold text-[var(--color-danger)]' : 'text-[var(--color-fg-muted)]'}`}>{aviso}</p>}
       </div>
     </details>
   )

@@ -16,14 +16,20 @@ export const dynamic = 'force-dynamic'
 // monitoramento e recalcula. Por enquanto só Nutry Max (a RQ não tem o mesmo
 // conceito de carga/frota -- ver plano 2026-10-13, Frente A deferida pra RQ).
 const MODOS: ModoTroca[] = ['redirecionar', 'mutua', 'substituir']
+const DATA_RE = /^\d{4}-\d{2}-\d{2}$/
 
 export async function POST(req: NextRequest) {
   const a = await acessoAoVivo('nutrimax')
   if (!a.ok) return a.resp
-  const b = (await req.json().catch(() => ({}))) as { modo?: unknown; carga?: unknown; placaEscala?: unknown; placaReal?: unknown; placaB?: unknown }
-  const modo: ModoTroca = MODOS.includes(b.modo as ModoTroca) ? (b.modo as ModoTroca) : 'redirecionar'
-  const data = hojeBR()
+  const b = (await req.json().catch(() => ({}))) as { modo?: unknown; data?: unknown; id?: unknown; carga?: unknown; placaEscala?: unknown; placaReal?: unknown; placaB?: unknown }
   const quem = `${a.email ?? 'operador'} (Ao vivo)`
+  // D-28 (F1-05): "Placas do dia" desfaz pela mesma rota (move as NFs de volta).
+  if (b.modo === 'desfazer') return desfazer(b.id, quem)
+  const modo: ModoTroca = MODOS.includes(b.modo as ModoTroca) ? (b.modo as ModoTroca) : 'redirecionar'
+  // D-28: "Placas do dia" registra também dia já passado (dia fechado).
+  const hoje = hojeBR()
+  const data = b.data == null || b.data === '' ? hoje : b.data
+  if (typeof data !== 'string' || !DATA_RE.test(data) || data > hoje) return new NextResponse('Data inválida.', { status: 400 })
   const frota = async () => (await buscarFrota(COD_USER_NUTRIMAX)).map(v => v.placaNorm)
 
   if (modo === 'redirecionar') return redirecionar(b, data, quem, frota)
@@ -38,14 +44,27 @@ async function redirecionar(
   const carga = typeof b.carga === 'string' ? b.carga.trim() : ''
   const placaTela = typeof b.placaEscala === 'string' ? normalizarPlacaDigitada(b.placaEscala) : ''
   const digitada = typeof b.placaReal === 'string' ? normalizarPlacaDigitada(b.placaReal) : ''
-  if (!carga || !placaTela || !digitada) return new NextResponse('Troca inválida.', { status: 400 })
+  // F1-03 (KN-01): placa da escala vazia = carga do pão que veio SEM PLACA;
+  // só com a carga (senão pegaria toda carga sem placa do dia).
+  if (!carga || !digitada) return new NextResponse(placaTela === '' && !carga ? 'Carga sem placa: informe o número da carga.' : 'Troca inválida.', { status: 400 })
   const rp = await resolverPlacaDigitada(digitada, frota)
   if ('erro' in rp) return new NextResponse(rp.erro, { status: 400 })
+  // NFs ANTES de gravar: sem elas a troca não é registrada (antes gravava e
+  // respondia 409, deixando a troca no KPI e nada no monitoramento).
+  // Dia sem romaneio guardado no Ao vivo (antes de 02/10): só o KPI muda.
+  const romaneio = await romaneioDoDia(data, true)
+  const linhasCarga = (romaneio ?? []).filter(l => l.carga === carga && l.nf)
+  const nfs = [...new Set(linhasCarga.map(l => l.nf as string))]
+  if (placaTela === '') {
+    const comPlaca = [...new Set(linhasCarga.map(l => normalizarPlacaDigitada(l.placa ?? '')).filter(Boolean))]
+    if (comPlaca.length > 0) return new NextResponse(`A carga ${carga} tem placa (${comPlaca.join(', ')}): informe a placa da escala.`, { status: 400 })
+  }
   const svc = createServiceClient()
   const { data: ja } = await svc.from('kpi_troca_placa').select('id, placa_escala, placa_real').eq('empresa', EMPRESA_NUTRIMAX).eq('data', data).eq('carga', carga).order('id', { ascending: false }).limit(1)
   const existente = ja?.[0] ? { placaEscala: ja[0].placa_escala as string, placaReal: ja[0].placa_real as string } : null
   const d = decidirTrocaManual(existente, placaTela, rp.placa)
   if ('erro' in d) return new NextResponse(d.erro, { status: 400 })
+  if (romaneio && d.acao !== 'desfazer' && nfs.length === 0) return new NextResponse('Não achei as NFs dessa carga no romaneio do dia.', { status: 409 })
   if (d.acao === 'inserir') {
     const { error } = await svc.from('kpi_troca_placa').insert({ empresa: EMPRESA_NUTRIMAX, data, carga, placa_escala: d.placaEscala, placa_real: d.placaReal, responsavel: quem })
     if (error) return new NextResponse(error.message, { status: 500 })
@@ -56,13 +75,37 @@ async function redirecionar(
       : await q.update({ placa_real: d.placaReal, responsavel: quem }).eq('empresa', EMPRESA_NUTRIMAX).eq('data', data).eq('carga', carga)
     if (error) return new NextResponse(error.message, { status: 500 })
   }
-  const nfs = await nfsDaCarga(data, carga)
-  // Sem as NFs da carga NÃO movemos a placa inteira (fallback antigo embolava a
-  // troca mútua) -- é um erro explícito.
-  if (d.acao !== 'desfazer' && nfs.length === 0) return new NextResponse('Não achei as NFs dessa carga no romaneio do dia.', { status: 409 })
-  const monitoramento = nfs.length ? await trocarNoMonitoramento(data, d.moverNoMonitoramentoDe, d.placaReal, nfs) : { ok: true, pontos: 0 }
+  const monitoramento = !romaneio
+    ? { ok: false, erro: `dia ${data} sem romaneio no Ao vivo: o monitoramento não foi atualizado (gere o KPI do dia de novo)` }
+    : nfs.length ? await trocarNoMonitoramento(data, d.moverNoMonitoramentoDe, d.placaReal, nfs) : { ok: true, pontos: 0 }
   void calcularAoVivo('nutrimax', data).catch(() => {})
   return NextResponse.json({ ok: true, modo: 'redirecionar', acao: d.acao, placaReal: d.placaReal, monitoramento })
+}
+
+/** D-28 (F1-05): desfaz uma troca registrada (tela "Placas do dia"): apaga a
+ *  linha e devolve as NFs ao carro da escala no monitoramento. */
+async function desfazer(idBruto: unknown, quem: string): Promise<NextResponse> {
+  const id = Number(idBruto)
+  if (!Number.isInteger(id) || id <= 0) return new NextResponse('Id inválido.', { status: 400 })
+  const svc = createServiceClient()
+  const { data: linha } = await svc.from('kpi_troca_placa').select('id, data, carga, placa_escala, placa_real').eq('empresa', EMPRESA_NUTRIMAX).eq('id', id).maybeSingle()
+  if (!linha) return new NextResponse('Troca não encontrada.', { status: 404 })
+  const data = linha.data as string
+  const carga = (linha.carga as string | null)?.trim() || null
+  const escala = normalizarPlacaDigitada((linha.placa_escala as string | null) ?? '')
+  const real = normalizarPlacaDigitada(linha.placa_real as string)
+  const nfs = carga ? await nfsDaCarga(data, carga) : await nfsDaPlaca(data, escala)
+  const { error } = await svc.from('kpi_troca_placa').delete().eq('empresa', EMPRESA_NUTRIMAX).eq('id', id)
+  if (error) return new NextResponse(error.message, { status: 500 })
+  const monitoramento = nfs.length === 0
+    ? { ok: true, pontos: 0 }
+    : escala === ''
+      // O monitoramento não tem "carro vazio" pra onde voltar: fica no real.
+      ? { ok: false, erro: `carga sem placa: no monitoramento as ${nfs.length} notas continuam no ${real}` }
+      : await trocarNoMonitoramento(data, real, escala, nfs)
+  void calcularAoVivo('nutrimax', data).catch(() => {})
+  console.log(`[troca] desfeita id ${id} (${data} ${carga ?? 'placa inteira'} ${escala || 'sem placa'}->${real}) por ${quem}`)
+  return NextResponse.json({ ok: true, modo: 'desfazer', data, monitoramento })
 }
 
 /** Modos substituir (A->B placa inteira) e mútua (A<->B). Ancorado nas placas
@@ -116,10 +159,12 @@ async function nfsDaPlaca(data: string, placa: string): Promise<string[]> {
 }
 
 type LinhaRomaneio = { nf?: string; carga?: string; placa?: string }
-async function romaneioDoDia(data: string): Promise<LinhaRomaneio[]> {
+async function romaneioDoDia(data: string): Promise<LinhaRomaneio[]>
+async function romaneioDoDia(data: string, nuloSemDia: true): Promise<LinhaRomaneio[] | null>
+async function romaneioDoDia(data: string, nuloSemDia = false): Promise<LinhaRomaneio[] | null> {
   const { data: d } = await createServiceClient().from('kpi_ao_vivo_dia').select('romaneio, pao')
     .eq('cliente', 'nutrimax').eq('data', data).maybeSingle()
-  if (!d) return []
+  if (!d) return nuloSemDia ? null : []
   return [...((d.romaneio as LinhaRomaneio[] | null) ?? []), ...(((d.pao as { linhas?: LinhaRomaneio[] } | null)?.linhas) ?? [])]
 }
 
@@ -131,8 +176,12 @@ async function trocarNoMonitoramento(data: string, placaDe: string, placaPara: s
       method: 'POST', headers: { 'x-motor-key': chave, 'content-type': 'application/json' },
       body: JSON.stringify({ data, placaDe, placaPara, nfs }), signal: AbortSignal.timeout(20_000),
     })
-    const j = (await r.json().catch(() => ({}))) as { ok?: boolean; pontos?: number; erro?: string }
-    return j.ok ? { ok: true, pontos: j.pontos } : { ok: false, erro: j.erro ?? `HTTP ${r.status}` }
+    const j = (await r.json().catch(() => ({}))) as { ok?: boolean; pontos?: number; jaNoDestino?: number; erro?: string }
+    if (!j.ok) return { ok: false, erro: j.erro ?? `HTTP ${r.status}` }
+    // F1-05 (ING-01): havia NFs e nada mudou de carro = erro visível (o
+    // monitoramento antigo respondia ok:true pontos:0 sem mover nada).
+    if ((j.pontos ?? 0) + (j.jaNoDestino ?? 0) === 0) return { ok: false, erro: `nenhum ponto mudou de carro no monitoramento (${nfs.length} notas de ${placaDe || 'sem placa'})` }
+    return { ok: true, pontos: j.pontos }
   } catch (err) {
     return { ok: false, erro: err instanceof Error ? err.message : String(err) }
   }

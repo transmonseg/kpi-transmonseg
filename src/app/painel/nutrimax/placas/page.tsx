@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { CellSignalSlash, ArrowsLeftRight, Trash, CheckCircle, WarningCircle } from '@phosphor-icons/react/dist/ssr'
+import type { SugestaoTroca } from '@/lib/kpi-romaneio/sugerir-trocas'
+import { payloadTrocaDoDia, mensagemDaTroca, type RespostaTroca } from './troca-dia'
+import { textoSugestao, corpoSugestao } from '../../ao-vivo/sugestao-texto'
 
 type SemRastreador = { id: number; placa: string; inicio: string; fim: string | null; motivo: string | null; responsavel: string }
 type Troca = { id: number; data: string; carga: string | null; placa_escala: string; placa_real: string; responsavel: string }
@@ -23,6 +26,7 @@ export default function PlacasDoDiaPage() {
   const [data, setData] = useState(hoje())
   const [sem, setSem] = useState<SemRastreador[] | null>(null)
   const [trocas, setTrocas] = useState<Troca[] | null>(null)
+  const [sugestoes, setSugestoes] = useState<SugestaoTroca[]>([])
   const [msg, setMsg] = useState<{ ok: boolean; texto: string } | null>(null)
   const [enviando, setEnviando] = useState(false)
   const [fSem, setFSem] = useState({ placa: '', fim: '', motivo: '' })
@@ -31,9 +35,9 @@ export default function PlacasDoDiaPage() {
   const carregar = useCallback(async () => {
     setSem(null); setTrocas(null)
     const r = await fetch(`/api/kpi/nutrimax/placas?data=${data}`)
-    if (!r.ok) { setMsg({ ok: false, texto: await r.text() }); setSem([]); setTrocas([]); return }
-    const j = await r.json() as { semRastreador: SemRastreador[]; trocas: Troca[] }
-    setSem(j.semRastreador); setTrocas(j.trocas)
+    if (!r.ok) { setMsg({ ok: false, texto: await r.text() }); setSem([]); setTrocas([]); setSugestoes([]); return }
+    const j = await r.json() as { semRastreador: SemRastreador[]; trocas: Troca[]; sugestoes?: SugestaoTroca[] }
+    setSem(j.semRastreador); setTrocas(j.trocas); setSugestoes(j.sugestoes ?? [])
   }, [data])
   useEffect(() => { carregar() }, [carregar])
 
@@ -46,6 +50,20 @@ export default function PlacasDoDiaPage() {
     await carregar()
     return true
   }
+
+  // D-28 (F1-05): troca, desfazer e sugestão confirmada vão pela rota do Ao
+  // vivo, que também move as NFs no monitoramento e recalcula o dia.
+  async function trocar(corpo: unknown) {
+    setEnviando(true); setMsg(null)
+    try {
+      const r = await fetch('/api/kpi/ao-vivo/troca', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(corpo) })
+      if (!r.ok) { setMsg({ ok: false, texto: `Não deu pra trocar: ${await r.text()}` }); return false }
+      setMsg(mensagemDaTroca(await r.json() as RespostaTroca))
+      await carregar()
+      return true
+    } finally { setEnviando(false) }
+  }
+  const pendentes = sugestoes.filter(s => !(trocas ?? []).some(t => (t.carga ?? '') === s.carga || (t.carga == null && t.placa_escala === s.placaEscala && s.placaEscala !== '')))
 
   return (
     <div className="mx-auto w-full max-w-[1000px]">
@@ -115,11 +133,28 @@ export default function PlacasDoDiaPage() {
             <span className="dash-icone inline-flex size-8 items-center justify-center rounded-xl"><ArrowsLeftRight size={16} weight="bold" /></span>
             <h2 className="text-[15px] font-semibold text-[var(--color-fg)]">Troca de placa</h2>
           </div>
-          <p className="mb-4 text-[12px] text-[var(--color-fg-muted)]">Quando a carga saiu em outro veículo que não o da escala. Vale só para o dia escolhido. Sem carga, troca todas as cargas da placa nesse dia. Carga que veio sem placa no romaneio (ex.: PAO-9, o romaneio 9 do pão): deixe a placa da escala vazia e informe a carga.</p>
+          <p className="mb-4 text-[12px] text-[var(--color-fg-muted)]">Quando a carga saiu em outro veículo que não o da escala. Vale só para o dia escolhido e também passa as notas para o carro certo no monitoramento. Sem carga, troca todas as cargas da placa nesse dia. Carga que veio sem placa no romaneio (ex.: PAO-9, o romaneio 9 do pão): deixe a placa da escala vazia e informe a carga.</p>
+
+          {pendentes.length > 0 && (
+            <ul className="mb-4 flex flex-col gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-subtle)] p-3">
+              <li className="text-[12px] font-semibold text-[var(--color-fg)]">Carro trocado? Sugestão pelo GPS</li>
+              {pendentes.map(s => (
+                <li key={`${s.carga}-${s.placaSugerida}`} className="flex flex-wrap items-center justify-between gap-2 text-[12.5px] text-[var(--color-fg-muted)]">
+                  <span>{textoSugestao(s)}</span>
+                  <button type="button" disabled={enviando} onClick={() => trocar(corpoSugestao(s, data))}
+                    className="inline-flex h-8 items-center rounded-full bg-[var(--color-navy-700)] px-3.5 text-[12.5px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] disabled:opacity-50">
+                    Confirmar {s.placaSugerida}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
 
           <form className="mb-5 grid grid-cols-2 gap-2" onSubmit={async e => {
             e.preventDefault()
-            if (await enviar('POST', { tipo: 'troca', data, ...fTroca })) setFTroca({ placaEscala: '', placaReal: '', carga: '' })
+            const payload = payloadTrocaDoDia(data, fTroca)
+            if ('erro' in payload) { setMsg({ ok: false, texto: payload.erro }); return }
+            if (await trocar(payload)) setFTroca({ placaEscala: '', placaReal: '', carga: '' })
           }}>
             <input placeholder="Placa da escala (ex.: 5J17; vazia se veio sem)" value={fTroca.placaEscala} onChange={e => setFTroca({ ...fTroca, placaEscala: e.target.value })} className={`${campo} [&:not(:placeholder-shown)]:uppercase`} />
             <input required placeholder="Placa que rodou (ex.: 9C84)" value={fTroca.placaReal} onChange={e => setFTroca({ ...fTroca, placaReal: e.target.value })} className={`${campo} [&:not(:placeholder-shown)]:uppercase`} />
@@ -137,7 +172,7 @@ export default function PlacasDoDiaPage() {
                     <p className="text-[14px] font-semibold text-[var(--color-fg)]">{t.placa_escala || 'Sem placa'} <span className="font-normal text-[var(--color-fg-muted)]">→</span> {t.placa_real}</p>
                     <p className="truncate text-[12px] text-[var(--color-fg-muted)]">{t.carga ? `carga ${t.carga}` : 'todas as cargas da placa'} · {t.responsavel}</p>
                   </div>
-                  <button type="button" title="Remover" disabled={enviando} onClick={() => enviar('DELETE', undefined, `?id=${t.id}`)}
+                  <button type="button" title="Desfazer a troca" aria-label="Desfazer a troca" disabled={enviando} onClick={() => trocar({ modo: 'desfazer', id: t.id })}
                     className="inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-fg-muted)] transition hover:border-[var(--color-danger)] hover:text-[var(--color-danger)]">
                     <Trash size={14} weight="bold" />
                   </button>
