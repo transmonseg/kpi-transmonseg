@@ -17,6 +17,8 @@
 //   npx tsx --env-file=.env.production scripts/descobrir-cv-rq.ts <planilha.xlsx>            (so' propoe: CSV)
 //   npx tsx --env-file=.env.production scripts/descobrir-cv-rq.ts <planilha.xlsx> --aplicar   (insere as "ok")
 //   npx tsx --env-file=.env.production scripts/descobrir-cv-rq.ts --dias 3 --aplicar [--saida <dir>]   (cron, F2-15)
+//   (--dias sem --saida grava o CSV no diretorio temporario; a varredura roda
+//   no maximo 1x por dia para as mesmas placas -- marca em /tmp, F2-REV-10)
 //
 // --aplicar insere em kpi_rioquality_frota SO' as propostas "ok" (as
 // "conferir" ficam pra pessoa decidir) e nunca mexe em placa ja' cadastrada.
@@ -28,7 +30,9 @@
 // Com --aplicar, depois de inserir, a frota inteira vai ao monitoramento
 // (POST /api/veiculos/rioquality, que so' acrescenta o cv que falta);
 // monitoramento antigo ou fora do ar so' gera aviso no log.
-import { readFileSync, writeFileSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync } from 'fs'
+import { tmpdir } from 'os'
+import { join } from 'path'
 import { haversine } from '../src/lib/utils/geo'
 import { normPlaca } from '../src/lib/unitrac-api/frota'
 import type { PosicaoPorCv } from '../src/lib/unitrac-api/posicoes'
@@ -121,6 +125,17 @@ export type DepsDescobrirCv = {
   escrever: (caminho: string, conteudo: string) => void
   /** F2-15: frota inteira ao monitoramento (so' com --aplicar). Devolve o resumo para o log. */
   enviarMonitoramento?: (frota: Map<string, string>) => Promise<string>
+  /** F2-REV-10: marca da ultima varredura completa (dia BRT + placas sem cv varridas). */
+  lerMarca?: () => MarcaVarredura | null
+  gravarMarca?: (m: MarcaVarredura) => void
+}
+
+export type MarcaVarredura = { data: string; placas: string[] }
+
+/** F2-REV-10: --dias (cron) sem --saida grava no diretorio temporario, nunca
+ *  no cwd (/srv/kpi-transmonseg); a planilha (uso manual) continua no cwd. */
+export function dirSaidaPadrao(a: ArgsDescobrir): string {
+  return a.saida ?? (a.dias != null ? tmpdir() : process.cwd())
 }
 
 /** F2-15: placas dos relatorios da RQ guardados (um array por dia), sem a de
@@ -177,7 +192,10 @@ export async function enviarFrotaMonitoramento(frota: Map<string, string>, o: { 
 }
 
 export async function rodar(
-  opcoes: { placas: Set<string>; aplicar: boolean; dirSaida: string; maxCv?: number },
+  opcoes: { placas: Set<string>; aplicar: boolean; dirSaida: string; maxCv?: number
+    /** F2-REV-10: dia BRT de hoje -- liga a marca (no maximo 1 varredura por dia
+     *  para as mesmas placas; placa nova varre na hora). */
+    hoje?: string },
   deps: DepsDescobrirCv,
 ): Promise<{ semCv: number; ok: number; conferir: number; naoEncontradas: number; inseridos: number }> {
   const frota = await deps.lerFrota()
@@ -192,8 +210,20 @@ export async function rodar(
     await enviar(false)
     return { semCv: 0, ok: 0, conferir: 0, naoEncontradas: 0, inseridos: 0 }
   }
+  // F2-REV-10: as placas que sobram sem cv (KZA2F01: sem rastreador de
+  // verdade) nao disparam 52 chamadas a' Unitrac em todo cron -- so' placa
+  // nova desde a ultima varredura ou o primeiro cron do dia.
+  // So' no cron (--aplicar): uma rodada a seco nao segura a que insere.
+  const usaMarca = !!opcoes.hoje && opcoes.aplicar
+  const marca = usaMarca ? deps.lerMarca?.() ?? null : null
+  if (usaMarca && marca?.data === opcoes.hoje && semCv.every(p => marca.placas.includes(p))) {
+    console.log(`varredura pulada: ${semCv.join(', ')} já varrida(s) hoje (${marca.data}) sem placa nova -- próxima varredura amanhã ou com placa nova`)
+    await enviar(false)
+    return { semCv: semCv.length, ok: 0, conferir: 0, naoEncontradas: 0, inseridos: 0 }
+  }
   const posicoes = await varrerCvs(deps.buscarPosicoes, opcoes.maxCv ?? MAX_CV_PADRAO)
   console.log(`varredura: ${posicoes.size} CV(s) responderam`)
+  if (usaMarca) deps.gravarMarca?.({ data: opcoes.hoje!, placas: semCv })
   const propostas = proporCvs(semCv, posicoes)
   const caminho = `${opcoes.dirSaida}/descobrir-cv-rq-propostas.csv`
   deps.escrever(caminho, csvPropostasCv(propostas))
@@ -220,6 +250,8 @@ async function placasDaPlanilha(caminho: string): Promise<Set<string>> {
   return new Set(placas.filter(Boolean))
 }
 
+const ARQ_MARCA = join(tmpdir(), 'descobrir-cv-rq-ultima-varredura.json')
+
 async function depsReais(): Promise<DepsDescobrirCv> {
   const { createServiceClient } = await import('../src/lib/supabase/service')
   const { buscarFrotaRioQuality } = await import('../src/lib/kpi-rioquality/frota')
@@ -235,6 +267,12 @@ async function depsReais(): Promise<DepsDescobrirCv> {
       return (data ?? []).length
     },
     escrever: (c, t) => writeFileSync(c, t),
+    lerMarca: () => {
+      try { return existsSync(ARQ_MARCA) ? JSON.parse(readFileSync(ARQ_MARCA, 'utf8')) as MarcaVarredura : null } catch { return null }
+    },
+    gravarMarca: m => {
+      try { writeFileSync(ARQ_MARCA, JSON.stringify({ ...m, em: new Date().toISOString() })) } catch (e) { console.log(`marca da varredura não gravada (${e instanceof Error ? e.message : String(e)})`) }
+    },
     enviarMonitoramento: frota => {
       const chave = process.env.MOTOR_SECRET
       if (!chave) return Promise.resolve('MOTOR_SECRET ausente: frota não enviada ao monitoramento')
@@ -266,7 +304,8 @@ async function main() {
   }
   console.log(`[${new Date().toISOString()}] descobrir-cv-rq ${args.planilha ?? `--dias ${args.dias}`}${args.aplicar ? ' --aplicar' : ''}`)
   const placas = args.planilha ? await placasDaPlanilha(args.planilha) : await placasDosUltimosDias(args.dias!)
-  await rodar({ placas, aplicar: args.aplicar, dirSaida: args.saida ?? process.cwd() }, await depsReais())
+  const { hojeBR } = await import('../src/lib/data-br')
+  await rodar({ placas, aplicar: args.aplicar, dirSaida: dirSaidaPadrao(args), ...(args.dias != null ? { hoje: hojeBR() } : {}) }, await depsReais())
 }
 
 const ehEntrypoint = (process.argv[1] ?? '').endsWith('descobrir-cv-rq.ts')

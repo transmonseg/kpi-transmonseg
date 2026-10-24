@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { variantesPlaca, proporCvs, varrerCvs, csvPropostasCv, rodar, EMPRESAS_RQ, placasDoRomaneioRq, lerArgs, enviarFrotaMonitoramento, type DepsDescobrirCv } from './descobrir-cv-rq'
+import { variantesPlaca, proporCvs, varrerCvs, csvPropostasCv, rodar, EMPRESAS_RQ, placasDoRomaneioRq, lerArgs, enviarFrotaMonitoramento, dirSaidaPadrao, type DepsDescobrirCv } from './descobrir-cv-rq'
+import { tmpdir } from 'os'
 import type { PosicaoPorCv } from '../src/lib/unitrac-api/posicoes'
 
 // Relatorio rq-mesmo-lugar-e-sem-rastreador.md (01/10), PARTE B: LTU7C95 e
@@ -166,5 +167,51 @@ describe('enviarFrotaMonitoramento', () => {
     expect(await enviarFrotaMonitoramento(frota, { base: 'http://mon', chave: 'k', fetch: f404 as unknown as typeof fetch })).toMatch(/sem a rota/)
     const fErro = vi.fn(async () => { throw new TypeError('fetch failed') })
     expect(await enviarFrotaMonitoramento(frota, { base: 'http://mon', chave: 'k', fetch: fErro as unknown as typeof fetch })).toMatch(/fetch failed/)
+  })
+})
+
+// F2-REV-10 (revisao independente da Fase 2): (1) --dias sem --saida gravava o
+// CSV no cwd (/srv/kpi-transmonseg no cron); (2) a varredura de ate' 26 mil
+// cvs rodava a cada execucao enquanto sobrasse placa sem cv -- KZA2F01 (sem
+// rastreador de verdade, nao_encontrada na varredura de 24/10) faria 52
+// chamadas a' Unitrac em todo cron (06:40 e 13:40).
+describe('F2-REV-10: saída fora do cwd e varredura no máximo 1x por dia', () => {
+  it('--dias sem --saida grava no diretório temporário; --saida e planilha mantêm o comportamento', () => {
+    expect(dirSaidaPadrao(lerArgs(['--dias', '3', '--aplicar']))).toBe(tmpdir())
+    expect(dirSaidaPadrao(lerArgs(['--dias', '3', '--saida', '/var/log']))).toBe('/var/log')
+    expect(dirSaidaPadrao(lerArgs(['x.xlsx']))).toBe(process.cwd())
+  })
+  const marcaDeps = (marca: { data: string; placas: string[] } | null) => {
+    const gravada: { data: string; placas: string[] }[] = []
+    return { gravada, extra: { lerMarca: () => marca, gravarMarca: (m: { data: string; placas: string[] }) => { gravada.push(m) } } }
+  }
+  it('KZA2F01 já varrida hoje e nada novo: não varre de novo (frota ainda vai ao monitoramento)', async () => {
+    const enviar = vi.fn(async () => 'ok')
+    const m = marcaDeps({ data: '2026-10-24', placas: ['KZA2F01'] })
+    const d = deps({ enviarMonitoramento: enviar, ...m.extra })
+    const r = await rodar({ placas: new Set(['KZA2F01', 'LTU7C96']), aplicar: true, dirSaida: '/tmp/x', hoje: '2026-10-24' }, d)
+    expect(d.buscarPosicoes).not.toHaveBeenCalled()
+    expect(r.semCv).toBe(1)
+    expect(enviar).toHaveBeenCalledTimes(1)
+    expect(m.gravada).toEqual([])
+  })
+  it('placa nova desde a última varredura ou outro dia: varre e grava a marca', async () => {
+    const m = marcaDeps({ data: '2026-10-24', placas: ['KZA2F01'] })
+    const d = deps(m.extra)
+    await rodar({ placas: new Set(['KZA2F01', 'LTU7C95']), aplicar: true, dirSaida: '/tmp/x', maxCv: 30_500, hoje: '2026-10-24' }, d)
+    expect(d.buscarPosicoes).toHaveBeenCalled()
+    expect(m.gravada).toEqual([{ data: '2026-10-24', placas: ['KZA2F01', 'LTU7C95'] }])
+    const m2 = marcaDeps({ data: '2026-10-23', placas: ['KZA2F01'] })
+    const d2 = deps(m2.extra)
+    await rodar({ placas: new Set(['KZA2F01']), aplicar: true, dirSaida: '/tmp/x', maxCv: 30_500, hoje: '2026-10-24' }, d2)
+    expect(d2.buscarPosicoes).toHaveBeenCalled()
+    expect(m2.gravada).toEqual([{ data: '2026-10-24', placas: ['KZA2F01'] }])
+  })
+  it('rodada a seco (sem --aplicar) sempre varre e não grava a marca (não segura o cron que insere)', async () => {
+    const m = marcaDeps({ data: '2026-10-24', placas: ['KZA2F01'] })
+    const d = deps(m.extra)
+    await rodar({ placas: new Set(['KZA2F01']), aplicar: false, dirSaida: '/tmp/x', maxCv: 30_500, hoje: '2026-10-24' }, d)
+    expect(d.buscarPosicoes).toHaveBeenCalled()
+    expect(m.gravada).toEqual([])
   })
 })
