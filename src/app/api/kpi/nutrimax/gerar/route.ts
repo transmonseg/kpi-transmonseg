@@ -14,6 +14,8 @@ import { createHash } from 'node:crypto'
 import { lerCacheDia, gravarCacheDia } from '@/lib/kpi-romaneio/cache-dia'
 import { guardarEntradaNutrimax, lerEntradaGuardadaNutrimax } from '@/lib/kpi-romaneio/entrada-guardada'
 import { hojeBR } from '@/lib/data-br'
+import { diaJaFechado, motivoValido, MOTIVO_MINIMO } from '@/lib/kpi-romaneio/versao-oficial'
+import { fmtTaxa } from '@/lib/kpi-romaneio/fechamento-dashboard'
 
 // Leitura de PDF guardada pelo conteúdo (06/10): mesmo arquivo de novo não é
 // lido de novo. Trocar VERSAO_LEITURA quando um parser mudar.
@@ -36,6 +38,20 @@ async function guardarPdf(svc: ReturnType<typeof createServiceClient>, data: str
   return caminho
 }
 
+/** F3-04 (ACH-10): gerar de novo um dia ja' fechado (fechamento das 00:30 ou
+ *  geracao completa) exige motivo -- 20/10 teve 4 versoes e 21/10 cinco, sem
+ *  dizer por que. 428 = a tela abre o campo "Motivo" e reenvia. */
+async function motivoDoDiaFechado(data: string, form: FormData): Promise<{ motivo: string | null } | NextResponse> {
+  const { fechado, fechamento } = await diaJaFechado('nutrimax', data, hojeBR())
+  if (!fechado) return { motivo: null }
+  const motivo = motivoValido(form.get('motivo'))
+  if (motivo) return { motivo }
+  const br = data.split('-').reverse().join('/')
+  const oficial = fechamento?.resumo.taxa != null ? ` (fechamento oficial: ${fmtTaxa(fechamento.resumo.taxa)})` : ''
+  return new NextResponse(`O KPI de ${br} já está fechado${oficial}. Escreva o motivo para gerar de novo (pelo menos ${MOTIVO_MINIMO} letras).`, { status: 428 })
+}
+const comMotivo = <R extends object>(resumo: R | null, motivo: string | null): R | null =>
+  resumo && motivo ? { ...resumo, motivoRegeracao: motivo } : resumo
 
 export const runtime = 'nodejs'
 // A busca de paradas GPS é sequencial por placa (buscarStopsCru + geocode em
@@ -64,6 +80,8 @@ export async function POST(req: NextRequest) {
   if (form.get('usarGuardado') === '1') {
     const dataG = String(form.get('data') ?? '')
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dataG)) return new NextResponse('Data inválida (YYYY-MM-DD)', { status: 400 })
+    const mG = await motivoDoDiaFechado(dataG, form)
+    if (mG instanceof NextResponse) return mG
     const g = await lerEntradaGuardadaNutrimax(dataG)
     if (!g) return new NextResponse('Não há romaneio guardado desse dia — suba os PDFs.', { status: 404 })
     let r: Awaited<ReturnType<typeof gerarKpiNutrimax>>
@@ -76,7 +94,7 @@ export async function POST(req: NextRequest) {
       const arquivoStoragePath = await guardarXlsxGerado(svc, novoPrefixoGeracao('nutrimax', dataG), r.xlsx)
       let resumo = null
       try { resumo = await extrairResumoKpiXlsx(r.xlsx) } catch (err) { console.error('resumo do dashboard falhou:', err) }
-      await salvarGeracao({ cliente: 'nutrimax', dataReferencia: dataG, geradoPor: user?.email ?? null, qtdCargas: r.qtdCargasNutry, arquivoStoragePath, escalaStoragePath: null, romaneioStoragePath: null, paoStoragePath: null, resumo })
+      await salvarGeracao({ cliente: 'nutrimax', dataReferencia: dataG, geradoPor: user?.email ?? null, qtdCargas: r.qtdCargasNutry, arquivoStoragePath, escalaStoragePath: null, romaneioStoragePath: null, paoStoragePath: null, resumo: comMotivo(resumo, mG.motivo) })
     } catch (err) { console.error('Erro ao salvar histórico de geração:', err) }
     return new NextResponse(r.xlsx as unknown as BodyInit, { headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -169,6 +187,9 @@ export async function POST(req: NextRequest) {
     romaneioPaoBuf = romaneioPaoFile instanceof File ? Buffer.from(await romaneioPaoFile.arrayBuffer()) : null
   }
 
+  const m = await motivoDoDiaFechado(data, form)
+  if (m instanceof NextResponse) return m
+
 
   // Fix (revisao final de branch 15/09, Important 3): parsePao lanca erros
   // com mensagem escrita PRO OPERADOR ("Romaneio do Pão é do dia X, mas o
@@ -259,7 +280,7 @@ export async function POST(req: NextRequest) {
       escalaStoragePath,
       romaneioStoragePath,
       paoStoragePath,
-      resumo,
+      resumo: comMotivo(resumo, m.motivo),
     })
   } catch (err) {
     console.error('Erro ao salvar histórico de geração:', err)

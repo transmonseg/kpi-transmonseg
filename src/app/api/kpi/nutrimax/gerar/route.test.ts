@@ -48,6 +48,20 @@ const cenario = vi.hoisted(() => ({
   escala: [] as LinhaEscala[],
   // F1-11 (KN-08): conferencia de territorio sem resposta nas 3 tentativas.
   territorioFora: false,
+  // F3-04 (ACH-10): dia ja' fechado (fechamento das 00:30 ou geracao completa).
+  diaFechado: false,
+}))
+
+vi.mock('@/lib/kpi-romaneio/versao-oficial', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/lib/kpi-romaneio/versao-oficial')>()),
+  diaJaFechado: async (_c: string, data: string) => (cenario.diaFechado
+    ? { fechado: true, fechamento: { data, calculadoEm: '2026-10-21T03:30:34Z', resumo: { taxa: 95.5, entregues: 2161, nfsNaConta: 2263, aguardando: 0 } } }
+    : { fechado: false, fechamento: null }),
+}))
+vi.mock('@/lib/kpi-romaneio/entrada-guardada', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/lib/kpi-romaneio/entrada-guardada')>()),
+  guardarEntradaNutrimax: async () => {},
+  lerEntradaGuardadaNutrimax: async () => null,
 }))
 
 // Task 2 (romaneio do pão): mocks de TODO módulo com efeito colateral
@@ -1070,3 +1084,64 @@ describe('POST /api/kpi/nutrimax/gerar -- conferencia de endereco indisponivel (
   })
 })
 
+
+describe('POST /api/kpi/nutrimax/gerar -- F3-04 (ACH-10): motivo obrigatório ao regerar dia fechado', () => {
+  beforeEach(() => {
+    cenario.diaFechado = false
+    cenario.geracao = null
+    cenario.storage = new Map()
+    vi.mocked(salvarGeracaoMock).mockClear()
+  })
+  afterEach(() => { cenario.diaFechado = false })
+  const req = (fd: FormData) => new Request('http://localhost/api/kpi/nutrimax/gerar', { method: 'POST', body: fd }) as never
+
+  it('20/10 já fechado (fechamento 95,5%) sem motivo: 428, nada gerado nem gravado', async () => {
+    cenario.diaFechado = true
+    const res = await POST(montarRequest(false) as never)
+    expect(res.status).toBe(428)
+    const txt = await res.text()
+    expect(txt).toContain('já está fechado')
+    expect(txt).toContain('95,5%')
+    expect(vi.mocked(salvarGeracaoMock)).not.toHaveBeenCalled()
+  })
+
+  it('dia fechado com motivo curto demais: 428', async () => {
+    cenario.diaFechado = true
+    const fdReq = montarRequest(false)
+    const fd = await fdReq.formData()
+    fd.set('motivo', 'ok')
+    expect((await POST(req(fd))).status).toBe(428)
+  })
+
+  it('dia fechado com motivo: gera e grava o motivo junto da versão', async () => {
+    cenario.diaFechado = true
+    const fd = await montarRequest(false).formData()
+    fd.set('motivo', '  troca de placa confirmada pela Érica  ')
+    const res = await POST(req(fd))
+    expect(res.status).toBe(200)
+    const arg = vi.mocked(salvarGeracaoMock).mock.calls[0][0]
+    expect(arg.resumo).toMatchObject({ motivoRegeracao: 'troca de placa confirmada pela Érica' })
+  })
+
+  it('"Regerar" do histórico em dia fechado também pede o motivo', async () => {
+    cenario.diaFechado = true
+    cenario.geracao = { id: 'g1', dataReferencia: '2026-09-15', escalaStoragePath: null, romaneioStoragePath: 'p-romaneio.pdf', paoStoragePath: null }
+    cenario.storage.set('p-romaneio.pdf', 'romaneio')
+    const fd = new FormData(); fd.set('regenerarDeId', 'g1')
+    expect((await POST(req(fd))).status).toBe(428)
+    fd.set('motivo', 'regra nova de base aplicada')
+    expect((await POST(req(fd))).status).toBe(200)
+  })
+
+  it('"usar o romaneio guardado" em dia fechado também pede o motivo', async () => {
+    cenario.diaFechado = true
+    const fd = new FormData(); fd.set('usarGuardado', '1'); fd.set('data', '2026-09-15')
+    expect((await POST(req(fd))).status).toBe(428)
+  })
+
+  it('dia aberto (sem fechamento): segue sem motivo, como antes', async () => {
+    const res = await POST(montarRequest(false) as never)
+    expect(res.status).toBe(200)
+    expect(vi.mocked(salvarGeracaoMock).mock.calls[0][0].resumo?.motivoRegeracao).toBeUndefined()
+  })
+})

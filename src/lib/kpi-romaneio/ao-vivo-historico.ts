@@ -39,8 +39,9 @@ export async function lerDiaHistorico(cliente: ClienteAoVivo, data: string): Pro
   const svc = createServiceClient()
   const [a, g] = await Promise.all([
     svc.from('kpi_ao_vivo_calculo').select('resultado, calculado_em').eq('cliente', cliente).eq('data', data).maybeSingle(),
+    // F3-04 (D-26): versao escondida (17/10 com o romaneio de 16/10) nunca vira o dia.
     svc.from('kpi_romaneio_geracoes').select('id, gerado_em, arquivo_storage_path').eq('cliente', cliente).eq('data_referencia', data)
-      .not('arquivo_storage_path', 'is', null).order('gerado_em', { ascending: false }).limit(1).maybeSingle(),
+      .not('arquivo_storage_path', 'is', null).is('resumo->oculta', null).order('gerado_em', { ascending: false }).limit(1).maybeSingle(),
   ])
   if (a.error) throw new Error(a.error.message)
   if (g.error) throw new Error(g.error.message)

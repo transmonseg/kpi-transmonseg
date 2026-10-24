@@ -205,6 +205,16 @@ export async function listarFechamentos(cliente: ClienteAoVivo, de: string, ate:
   return ((data ?? []) as unknown as LinhaCalculo[]).map(paraFechamento)
 }
 
+/** F3-04: fechamentos das datas pedidas (historico, trava do motivo). */
+export async function listarFechamentosDasDatas(cliente: ClienteAoVivo, datas: string[]): Promise<FechamentoDia[]> {
+  if (datas.length === 0) return []
+  const { data, error } = await createServiceClient().from('kpi_ao_vivo_calculo')
+    .select('data, calculado_em, resumo:resultado->resumo, degradado:resultado->>degradado')
+    .eq('cliente', cliente).in('data', datas)
+  if (error) throw new Error(`fechamentos ${cliente}: ${error.message}`)
+  return ((data ?? []) as unknown as LinhaCalculo[]).map(paraFechamento)
+}
+
 async function lerDiaDashboard(cliente: ClienteDash, data: string): Promise<DiaKpi | null> {
   const { data: r, error } = await createServiceClient().from('kpi_dashboard_kpis')
     .select('data, resumo, arquivo_nome, inserido_por, inserido_em').eq('cliente', cliente).eq('data', data).maybeSingle()

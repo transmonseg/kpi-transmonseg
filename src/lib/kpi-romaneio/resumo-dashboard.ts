@@ -55,6 +55,10 @@ export type ResumoGeracao = {
   origem?: 'fechamento'
   /** F3-01: calculado_em do fechamento que gerou este resumo. */
   fechamentoEm?: string
+  /** F3-04 (ACH-10): motivo dado ao gerar de novo um dia ja' fechado. */
+  motivoRegeracao?: string
+  /** F3-04 (D-26): versao escondida do historico, sem apagar (ex.: 17/10 com o romaneio de 16/10). */
+  oculta?: { motivo: string; por: string; em: string }
 }
 
 const ABAS_FIXAS = new Set(['Auditoria', 'Avisos'])
