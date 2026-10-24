@@ -304,7 +304,11 @@ export async function gerarKpiRioQuality(params: {
         const c = coordsMon.get(`${normPlaca(l.placa)}|${l.nf}`)
         if (!c) continue
         const idx = indicePorNf.get(l.nf)!
-        romaneioGeo[idx] = { ...romaneioGeo[idx], lat: c.lat, lng: c.lng }
+        // F2-02 (GEO-21): o motor geocodificava sem cidade (o parser lia a
+        // cidade como numero; "AVENIDA SERGIPE, RESENDE" caiu em Sergipe).
+        // O ponto serve de referencia no mapa, mas nao libera o corredor da
+        // rua nem sustenta NAO FOI (precisao de rua, nao confiavel).
+        romaneioGeo[idx] = { ...romaneioGeo[idx], lat: c.lat, lng: c.lng, geoConfiavel: false, geoPrecisao: 'rua' }
         confiancaPorNf.set(l.nf, 'baixa')
         contConf.sem_candidato--
         contConf.baixa++
