@@ -50,16 +50,22 @@ export type VerificarTerritorio = (pontos: CandidatoParadaFora[]) => Promise<Map
 const valida = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && n !== 0
 const fimDa = (p: UnitracParadaRow) => p.fim_real ?? p.saida ?? p.chegada
 
+function paradasDaPlaca(ctx: ContextoParadaForaDoEndereco, placa: string): (UnitracParadaRow & { lat: number; lng: number })[] {
+  return [...(ctx.paradasPorPlaca.get(placa) ?? []), ...(ctx.paradasCruasPorPlaca.get(placa) ?? [])]
+    .filter((p): p is UnitracParadaRow & { lat: number; lng: number } => p.classificacao === 'FORA_BASE' && valida(p.lat) && valida(p.lng))
+}
+
 // F2-08 (KN-07): parada seguida de salto impossivel (GPS congelado, RQV9B26
 // 22/10 api-1 em Penha 13,5 km antes da proxima) nao e' o local da entrega --
-// fora da escolha do ponto (e do "parou no endereco"). Cada fonte e' uma cadeia.
-function paradasDaPlaca(ctx: ContextoParadaForaDoEndereco, placa: string): (UnitracParadaRow & { lat: number; lng: number })[] {
-  const semCongeladas = (lista: UnitracParadaRow[]) => {
-    const suspeitas = paradasSeguidasDeSaltoImpossivel(lista)
-    return lista.filter(p => !suspeitas.has(p))
-  }
-  return [...semCongeladas(ctx.paradasPorPlaca.get(placa) ?? []), ...semCongeladas(ctx.paradasCruasPorPlaca.get(placa) ?? [])]
-    .filter((p): p is UnitracParadaRow & { lat: number; lng: number } => p.classificacao === 'FORA_BASE' && valida(p.lat) && valida(p.lng))
+// fica fora da escolha do ponto. Continua valendo pro "parou no endereco": o
+// comeco dela e' real (o congelamento vem depois) -- a seco 20/10, RQP5I85
+// parou a 107 m do cliente antes de um salto de 7,9 km e, sem ela, ganhava um
+// "corrigir cadastro" novo. Cada fonte e' uma cadeia.
+function paradasCongeladas(ctx: ContextoParadaForaDoEndereco, placa: string): Set<UnitracParadaRow> {
+  return new Set([
+    ...paradasSeguidasDeSaltoImpossivel(ctx.paradasPorPlaca.get(placa) ?? []),
+    ...paradasSeguidasDeSaltoImpossivel(ctx.paradasCruasPorPlaca.get(placa) ?? []),
+  ])
 }
 
 export function candidatosParadaForaDoEndereco(detalhe: LinhaDetalheEntrega[], ctx: ContextoParadaForaDoEndereco): CandidatoParadaFora[] {
@@ -81,7 +87,9 @@ export function candidatosParadaForaDoEndereco(detalhe: LinhaDetalheEntrega[], c
       const ini = Date.parse(d.chegada) - FOLGA_JANELA_MS, fim = Date.parse(d.saida) + FOLGA_JANELA_MS
       janela = [ini, fim]
       let melhor = Infinity
+      const congeladas = paradasCongeladas(ctx, d.placa)
       for (const p of paradas) {
+        if (congeladas.has(p)) continue
         if (Date.parse(fimDa(p)) < ini || Date.parse(p.chegada) > fim) continue
         const dd = haversine(p.lat, p.lng, geo.lat, geo.lng)
         if (dd < melhor) { melhor = dd; ponto = { lat: p.lat, lng: p.lng } }

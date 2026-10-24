@@ -44,6 +44,19 @@ describe('F2-08: parada seguida de salto impossivel nao da local nem "corrigir c
     expect(candidatosParadaForaDoEndereco([detalhe], ctx)).toEqual([])
   })
 
+  it('parada congelada perto do endereco continua provando que o carro parou la (a seco 20/10, RQP5I85)', () => {
+    // A congelada a 100 m do cliente: o comeco dela e' real; sem aviso.
+    // api-0 a ~100 m do cliente seguida de salto de 13 km em 30 s; a parada da
+    // janela da NF (api-1) e' longe -- sem a api-0, viraria candidato.
+    const perto = [
+      rqv('api-0', '07:00:00', '07:30:00', CHURRASCO.lat + 0.0009, CHURRASCO.lng),
+      rqv('api-1', '07:30:30', '09:23:00', -22.8239216, -43.2779583),
+      rqv('api-2', '09:30:00', '09:40:00', -22.8249216, -43.2779583),
+    ]
+    const ctx = { linhaPorNf: new Map([[linha.nf, linha]]), alvoPorNf: new Map(), paradasPorPlaca: new Map([['RQV9B26', perto]]), paradasCruasPorPlaca: new Map(), data: '2026-10-22' }
+    expect(candidatosParadaForaDoEndereco([detalhe], ctx)).toEqual([])
+  })
+
   it('o ponto da parada no Ao vivo nao e' + "' o congelado de Penha (vale a api-2, 4 min depois)", () => {
     expect(paradaDaChegada(PARADAS, '2026-10-22T09:20:15.000Z')).toEqual({ lat: -22.7027633, lng: -43.280775 })
   })
