@@ -5,6 +5,7 @@ import { ArrowsLeftRight, CircleNotch } from '@phosphor-icons/react/dist/ssr'
 import type { ClienteDash } from '@/lib/kpi-romaneio/dashboard-kpis'
 import type { OfertaFechamento } from '@/lib/kpi-romaneio/fechamento-dashboard'
 import { dataCurta, fmtPct, fmtInt } from './calculos'
+import { lerRespostaOfertas } from './ofertas-resposta'
 
 // F3-01 (ACH-01, D-26): dia do Dashboard diferente do fechamento das 00:30
 // (inserido a mao, parcial ou ausente) -> "Fechamento disponível: X% — trocar".
@@ -20,16 +21,20 @@ export function FechamentoOfertas({ cliente, de, ate, recarregar, onTrocou }: {
   const [trocando, setTrocando] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [versao, setVersao] = useState(0)
+  const [erroLista, setErroLista] = useState<string | null>(null)
 
   useEffect(() => {
     let vivo = true
     fetch(`/api/dashboard-kpi/fechamento?cliente=${cliente}&de=${de}&ate=${ate}`)
-      .then(r => (r.ok ? r.json() : { ofertas: [] }))
-      .then(j => { if (vivo) setOfertas(j.ofertas ?? []) })
-      .catch(() => { if (vivo) setOfertas([]) })
+      .then(lerRespostaOfertas)
+      .then(j => { if (vivo) { setOfertas(j.ofertas); setErroLista(j.erro) } })
+      .catch(() => { if (vivo) { setOfertas([]); setErroLista('Falha de conexão ao conferir o fechamento disponível. Recarregue a tela.') } })
     return () => { vivo = false }
   }, [cliente, de, ate, recarregar, versao])
 
+  if (ofertas.length === 0 && erroLista) {
+    return <p className="dash-card px-5 py-3 text-[12px] text-[var(--color-fg-muted)]">{erroLista}</p>
+  }
   if (ofertas.length === 0) return null
 
   const trocar = async (o: OfertaFechamento) => {

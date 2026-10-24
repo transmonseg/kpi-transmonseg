@@ -237,6 +237,9 @@ async function gravarDashboard(l: LinhaDashboard): Promise<void> {
   const nome = `KPI-${NOME_ARQUIVO[l.cliente]}-${l.data}-fechamento.xlsx`
   const caminho = `dashboard/${l.cliente}/${l.data}-fechamento.xlsx`
   const up = await svc.storage.from(BUCKET_KPI_ROMANEIO).upload(caminho, l.xlsx, { contentType: TIPO_XLSX, upsert: true })
+  // F3-R08: o numero vale sem a planilha, mas a falha nao fica calada
+  // ("Baixar planilha" desse dia volta vazio).
+  if (up.error) console.error(`[fechamento-dashboard] ${l.cliente} ${l.data}: planilha do fechamento não guardada (${up.error.message}); dia gravado sem arquivo`)
   const { error } = await svc.from('kpi_dashboard_kpis').upsert({
     cliente: l.cliente, data: l.data, resumo: l.resumo, nfs: l.nfs,
     arquivo_storage_path: up.error ? null : caminho, arquivo_nome: nome,
