@@ -104,10 +104,21 @@ export function checklistDaManha(p: {
 
 // ─── Aviso das 06:30 / 07:30 ───────────────────────────────────────────────
 
-/** emRota null = não consegui perguntar ao monitoramento. */
-export type FaltaRomaneio = { cliente: ClienteAoVivo; emRota: number | null }
+/** emRota/semRomaneio null = não consegui perguntar ao monitoramento.
+ *  Revisão F3-07 (R3): a decisão é pelos carros SEM romaneio no monitoramento
+ *  (semRomaneio), não pela presença do documento no KPI -- romaneio parcial,
+ *  envio ao monitoramento que falhou e romaneio que só está no monitoramento
+ *  enganavam o aviso. kpiTemDocumento fica para o texto e o banner. Estado
+ *  gravado antes da revisão não tem semRomaneio: vale emRota (só clientes
+ *  sem documento eram gravados). */
+export type FaltaRomaneio = { cliente: ClienteAoVivo; emRota: number | null; semRomaneio?: number | null; kpiTemDocumento?: boolean }
 
-export type RegistroMarco = { em: string; faltando: FaltaRomaneio[]; dm: 'enviado' | 'desligado' | 'pulado' | null }
+/** R5: DM que falhou é tentada de novo nos ticks seguintes, até este total. */
+export const MAX_TENTATIVAS_DM = 3
+
+export type RegistroMarco = { em: string; faltando: FaltaRomaneio[]; dm: 'enviado' | 'desligado' | 'pulado' | 'falhou' | null; tentativas?: number }
+
+const marcoFeito = (r: RegistroMarco | undefined) => !!r && !(r.dm === 'falhou' && (r.tentativas ?? 1) < MAX_TENTATIVAS_DM)
 export type EstadoAvisoRomaneio = { marcos: Partial<Record<MarcoAviso, RegistroMarco>> }
 
 /** O marco a avaliar neste tick: o mais recente já vencido e ainda não feito.
@@ -116,15 +127,28 @@ export function marcoDaVez(estado: EstadoAvisoRomaneio | null, agoraMs: number):
   const agora = minutoBR(agoraMs)
   const vencidos = MARCOS_AVISO_ROMANEIO.filter(m => agora >= minutoDoMarco(m))
   const ultimo = vencidos[vencidos.length - 1]
-  if (!ultimo || estado?.marcos[ultimo]) return null
+  if (!ultimo || marcoFeito(estado?.marcos[ultimo])) return null
   return { marco: ultimo, pulados: vencidos.slice(0, -1).filter(m => !estado?.marcos[m]) }
 }
 
-const rodando = (f: FaltaRomaneio) => f.emRota == null || f.emRota >= FROTA_RODANDO_MIN
+/** Carros rodando sem destino no monitoramento (null = não deu para saber). */
+const semDestino = (f: FaltaRomaneio): number | null => f.semRomaneio ?? f.emRota
+
+function rodando(f: FaltaRomaneio): boolean {
+  const n = semDestino(f)
+  // Monitoramento fora: só o documento do KPI diz algo -- sem ele, avisa
+  // dizendo que não conferiu (nunca calado); com ele, nada a afirmar.
+  if (n == null) return !f.kpiTemDocumento
+  return n >= FROTA_RODANDO_MIN
+}
 
 function frase(f: FaltaRomaneio): string {
-  const frota = f.emRota == null ? ' (não consegui conferir a frota no monitoramento)' : ` com ${f.emRota} carros rodando`
-  return `${NOME[f.cliente]} sem ${DOCUMENTO[f.cliente]} de hoje${frota}`
+  const n = semDestino(f)
+  if (n == null) return `${NOME[f.cliente]} sem ${DOCUMENTO[f.cliente]} de hoje (não consegui conferir a frota no monitoramento)`
+  if (f.kpiTemDocumento) {
+    return `${NOME[f.cliente]} com ${n} carros rodando sem romaneio no monitoramento (o ${DOCUMENTO[f.cliente]} de hoje está no KPI: incompleto ou não chegou ao monitoramento)`
+  }
+  return `${NOME[f.cliente]} sem ${DOCUMENTO[f.cliente]} de hoje com ${n} carros rodando`
 }
 
 export function decidirAvisoRomaneio(p: { marco: MarcoAviso; faltando: FaltaRomaneio[] }): { avisar: FaltaRomaneio[]; texto: string | null } {
@@ -140,20 +164,33 @@ export function decidirAvisoRomaneio(p: { marco: MarcoAviso; faltando: FaltaRoma
 export type BannerAvisoRomaneio = { cliente: ClienteAoVivo; texto: string }
 
 /** Banner do Ao vivo: último marco avaliado, só dos clientes do login e só
- *  enquanto o documento ainda não chegou. */
+ *  enquanto o documento ainda não chegou. R3: quando o documento já estava no
+ *  KPI e faltava destino no monitoramento, some com o próximo envio depois
+ *  do aviso (`enviadoEm`, kpi_ao_vivo_dia.enviado_em). */
 export function bannersAvisoRomaneio(
   estado: EstadoAvisoRomaneio | null,
   clientes: ClienteAoVivo[],
   chegou: Partial<Record<ClienteAoVivo, boolean>>,
+  enviadoEm: Partial<Record<ClienteAoVivo, string | null>> = {},
 ): BannerAvisoRomaneio[] {
   if (!estado) return []
   const marco = [...MARCOS_AVISO_ROMANEIO].reverse().find(m => estado.marcos[m] && estado.marcos[m]!.dm !== 'pulado')
   if (!marco) return []
-  return (estado.marcos[marco]!.faltando ?? [])
-    .filter(f => rodando(f) && clientes.includes(f.cliente) && !chegou[f.cliente])
-    .map(f => ({
-      cliente: f.cliente,
-      texto: `Motor de desvio sem ${DOCUMENTO[f.cliente]} da ${NOME[f.cliente]} hoje: `
-        + (f.emRota == null ? `frota não conferida às ${marco}.` : `${f.emRota} carros rodando às ${marco}.`),
-    }))
+  const registro = estado.marcos[marco]!
+  const resolvido = (f: FaltaRomaneio) => f.kpiTemDocumento
+    ? (Date.parse(enviadoEm[f.cliente] ?? '') || 0) > (Date.parse(registro.em) || Infinity)
+    : !!chegou[f.cliente]
+  return (registro.faltando ?? [])
+    .filter(f => rodando(f) && clientes.includes(f.cliente) && !resolvido(f))
+    .map(f => {
+      const n = semDestino(f)
+      if (f.kpiTemDocumento) {
+        return { cliente: f.cliente, texto: `Motor de desvio sem destino de ${n} carros da ${NOME[f.cliente]} às ${marco}: ${DOCUMENTO[f.cliente]} de hoje incompleto ou não chegou ao monitoramento.` }
+      }
+      return {
+        cliente: f.cliente,
+        texto: `Motor de desvio sem ${DOCUMENTO[f.cliente]} da ${NOME[f.cliente]} hoje: `
+          + (n == null ? `frota não conferida às ${marco}.` : `${n} carros rodando às ${marco}.`),
+      }
+    })
 }

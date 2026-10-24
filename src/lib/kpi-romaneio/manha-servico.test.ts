@@ -13,9 +13,10 @@ function deps(over: Partial<DepsAvisoRomaneio> = {}): DepsAvisoRomaneio & { grav
     gravados, enviados, logs,
     lerEstado: async () => null,
     gravarEstado: async (_d, e) => { gravados.push(e); return true },
-    faltando: async () => ['nutrimax', 'rioquality'],
-    frota: async c => (c === 'nutrimax' ? 42 : 30),
-    enviar: async (c, t) => { enviados.push([c, t]) },
+    clientes: ['nutrimax', 'rioquality'],
+    semDocumentoKpi: async () => ['nutrimax', 'rioquality'],
+    frota: async c => (c === 'nutrimax' ? { emRota: 42, semRomaneio: 42 } : { emRota: 30, semRomaneio: 30 }),
+    enviar: async (c, t) => { enviados.push([c, t]); return true },
     agoraMs: AS_0631,
     ligado: false,
     log: m => logs.push(m),
@@ -29,7 +30,7 @@ describe('avisarRomaneioAusente (tick)', () => {
     expect(await avisarRomaneioAusente('2026-10-21', d)).toBe('desligado')
     expect(d.enviados).toEqual([])
     expect(d.logs.join('\n')).toMatch(/KPI_AVISO_ROMANEIO_DM.*Nutry Max sem romaneio de hoje com 42 carros rodando/)
-    expect(d.gravados).toEqual([{ marcos: { '06:30': { em: '2026-10-21T09:31:00.000Z', faltando: [{ cliente: 'nutrimax', emRota: 42 }, { cliente: 'rioquality', emRota: 30 }], dm: 'desligado' } } }])
+    expect(d.gravados).toEqual([{ marcos: { '06:30': { em: '2026-10-21T09:31:00.000Z', faltando: [{ cliente: 'nutrimax', emRota: 42, semRomaneio: 42, kpiTemDocumento: false }, { cliente: 'rioquality', emRota: 30, semRomaneio: 30, kpiTemDocumento: false }], dm: 'desligado' } } }])
   })
 
   it('ligado (KPI_AVISO_ROMANEIO_DM=1): DM ao dono com chave por dia e marco', async () => {
@@ -47,16 +48,45 @@ describe('avisarRomaneioAusente (tick)', () => {
     expect(d.gravados).toEqual([])
   })
 
-  it('romaneio já chegou: grava o marco sem aviso; nem pergunta a frota', async () => {
-    const frota = vi.fn(async () => 42)
-    const d = deps({ faltando: async () => [], frota, ligado: true })
+  it('romaneio já chegou e o monitoramento tem os destinos: grava o marco sem aviso', async () => {
+    const d = deps({ semDocumentoKpi: async () => [], frota: async () => ({ emRota: 70, semRomaneio: 1 }), ligado: true })
     expect(await avisarRomaneioAusente('2026-10-21', d)).toBe('nada')
-    expect(frota).not.toHaveBeenCalled()
-    expect(d.gravados[0].marcos['06:30']).toMatchObject({ faltando: [], dm: null })
+    expect(d.enviados).toEqual([])
+    expect(d.gravados[0].marcos['06:30']).toMatchObject({ dm: null })
+  })
+
+  it('revisão F3-07 (R3): romaneio parcial no KPI, 40 carros sem destino no monitoramento => avisa', async () => {
+    const d = deps({ clientes: ['nutrimax'], semDocumentoKpi: async () => [], frota: async () => ({ emRota: 75, semRomaneio: 40 }) })
+    expect(await avisarRomaneioAusente('2026-10-21', d)).toBe('desligado')
+    expect(d.logs.join('\n')).toMatch(/Nutry Max com 40 carros rodando sem romaneio no monitoramento/)
+  })
+
+  it('R3: romaneio no monitoramento e não no KPI => sem falso "sem romaneio"', async () => {
+    const d = deps({ clientes: ['nutrimax'], semDocumentoKpi: async () => ['nutrimax'], frota: async () => ({ emRota: 70, semRomaneio: 0 }) })
+    expect(await avisarRomaneioAusente('2026-10-21', d)).toBe('nada')
+  })
+
+  it('R3: monitoramento fora e documento no KPI => nada a afirmar; sem documento => avisa "frota não conferida"', async () => {
+    const com = deps({ clientes: ['nutrimax'], semDocumentoKpi: async () => [], frota: async () => null })
+    expect(await avisarRomaneioAusente('2026-10-21', com)).toBe('nada')
+    const sem = deps({ clientes: ['nutrimax'], semDocumentoKpi: async () => ['nutrimax'], frota: async () => null })
+    expect(await avisarRomaneioAusente('2026-10-21', sem)).toBe('desligado')
+    expect(sem.logs.join('\n')).toMatch(/não consegui conferir a frota/)
+  })
+
+  it('revisão F3-07 (R5): DM ligada e o alertar-dm falha => estado "falhou" (não "enviado"), log de falha e nova tentativa no tick seguinte', async () => {
+    const d = deps({ ligado: true, enviar: async () => false })
+    expect(await avisarRomaneioAusente('2026-10-21', d)).toBe('falhou')
+    expect(d.gravados[0].marcos['06:30']).toMatchObject({ dm: 'falhou', tentativas: 1 })
+    expect(d.logs.join('\n')).not.toMatch(/enviado ao dono/)
+    expect(d.logs.join('\n')).toMatch(/falhou/)
+    const segunda = deps({ ligado: true, lerEstado: async () => d.gravados[0], agoraMs: AS_0631 + 10 * 60_000 })
+    expect(await avisarRomaneioAusente('2026-10-21', segunda)).toBe('enviado')
+    expect(segunda.gravados[0].marcos['06:30']).toMatchObject({ dm: 'enviado', tentativas: 2 })
   })
 
   it('domingo com a frota parada: sem aviso (S-06)', async () => {
-    const d = deps({ faltando: async () => ['nutrimax'], frota: async () => 1, ligado: true })
+    const d = deps({ clientes: ['nutrimax'], semDocumentoKpi: async () => ['nutrimax'], frota: async () => ({ emRota: 1, semRomaneio: 1 }), ligado: true })
     expect(await avisarRomaneioAusente('2026-10-19', d)).toBe('nada')
     expect(d.enviados).toEqual([])
   })
@@ -75,8 +105,9 @@ describe('avisarRomaneioAusente (tick)', () => {
 
 describe('ponte frota-em-rota', () => {
   it('pergunta com o cod do cliente e a chave; erro ou resposta estranha => null (desconhecida)', async () => {
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ emRota: 42, semRomaneio: 42 })))
-    expect(await frotaEmRotaNoMonitoramento('nutrimax', '2026-10-21', { fetch: fetchMock as never, env: { MOTOR_SECRET: 's', MONITORAMENTO_URL: 'http://mon' } })).toBe(42)
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ emRota: 42, semRomaneio: 40 })))
+    expect(await frotaEmRotaNoMonitoramento('nutrimax', '2026-10-21', { fetch: fetchMock as never, env: { MOTOR_SECRET: 's', MONITORAMENTO_URL: 'http://mon' } })).toEqual({ emRota: 42, semRomaneio: 40 })
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
     expect(url).toBe('http://mon/api/romaneio/frota-em-rota?data=2026-10-21&cod=4096')
     expect((init.headers as Record<string, string>)['x-motor-key']).toBe('s')
@@ -84,6 +115,28 @@ describe('ponte frota-em-rota', () => {
     expect(await frotaEmRotaNoMonitoramento('rioquality', '2026-10-21', { fetch: rq as never, env: { MOTOR_SECRET: 's' } })).toBeNull()
     expect((rq.mock.calls[0] as unknown as [string])[0]).toContain('cod=598')
     expect(await frotaEmRotaNoMonitoramento('nutrimax', '2026-10-21', { fetch: fetchMock as never, env: {} })).toBeNull()
+    log.mockRestore()
+  })
+
+  it('revisão F3-07 (R6): cada "não sei" registra o motivo (404 MON antigo, 401 chave, 500 com o erro, timeout, sem chave)', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const env = { MOTOR_SECRET: 's' }
+    const resp = (status: number, corpo: unknown) => vi.fn(async () => new Response(JSON.stringify(corpo), { status }))
+    await frotaEmRotaNoMonitoramento('nutrimax', '2026-10-21', { fetch: resp(404, {}) as never, env })
+    await frotaEmRotaNoMonitoramento('nutrimax', '2026-10-21', { fetch: resp(401, { erro: 'nao autorizado' }) as never, env })
+    await frotaEmRotaNoMonitoramento('rioquality', '2026-10-21', { fetch: resp(500, { erro: 'falha na consulta: timeout' }) as never, env })
+    await frotaEmRotaNoMonitoramento('nutrimax', '2026-10-21', { fetch: vi.fn(async () => { throw new Error('The operation was aborted due to timeout') }) as never, env })
+    await frotaEmRotaNoMonitoramento('nutrimax', '2026-10-21', { fetch: resp(200, { emRota: 'x' }) as never, env })
+    await frotaEmRotaNoMonitoramento('nutrimax', '2026-10-21', { env: {} })
+    const linhas = log.mock.calls.map(c => c.join(' '))
+    expect(linhas).toHaveLength(6)
+    expect(linhas[0]).toMatch(/frota-em-rota.*nutrimax.*HTTP 404/)
+    expect(linhas[1]).toMatch(/HTTP 401.*nao autorizado/)
+    expect(linhas[2]).toMatch(/rioquality.*HTTP 500.*falha na consulta: timeout/)
+    expect(linhas[3]).toMatch(/timeout/)
+    expect(linhas[4]).toMatch(/resposta sem emRota/)
+    expect(linhas[5]).toMatch(/MOTOR_SECRET/)
+    log.mockRestore()
   })
 })
 

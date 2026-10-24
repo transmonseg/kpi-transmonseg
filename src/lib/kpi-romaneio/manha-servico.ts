@@ -6,8 +6,8 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { COD_USER_NUTRIMAX } from './constants'
 import type { ClienteAoVivo } from './ao-vivo-servico'
 import {
-  bannersAvisoRomaneio, checklistDaManha, decidirAvisoRomaneio, marcoDaVez, partesPresentes, registrarChegadas,
-  type BannerAvisoRomaneio, type ChegadasDia, type DiaGuardadoManha, type EstadoAvisoRomaneio, type FaltaRomaneio, type ItemChecklist,
+  MAX_TENTATIVAS_DM, bannersAvisoRomaneio, checklistDaManha, decidirAvisoRomaneio, marcoDaVez, partesPresentes, registrarChegadas,
+  type BannerAvisoRomaneio, type ChegadasDia, type DiaGuardadoManha, type EstadoAvisoRomaneio, type FaltaRomaneio, type ItemChecklist, type RegistroMarco,
 } from './manha'
 
 type ClienteBanco = Pick<ReturnType<typeof createServiceClient>, 'from'>
@@ -44,25 +44,34 @@ export async function registrarChegadasDoDia(cliente: ClienteAoVivo, data: strin
   }
 }
 
+export type FrotaMonitoramento = { emRota: number; semRomaneio: number }
+
 /** Carros do cliente em rota agora (monitoramento: GPS fresco, ignição, >5 km
- *  da base). null = não deu para saber -- nunca vira "frota parada". */
+ *  da base) e quantos deles sem romaneio do dia no monitoramento. null = não
+ *  deu para saber -- nunca vira "frota parada". Revisão F3-07 (R6): todo
+ *  "não sei" registra o motivo (404 = monitoramento sem a rota, 401 = chave,
+ *  500 = erro da consulta, timeout, resposta estranha, sem MOTOR_SECRET). */
 export async function frotaEmRotaNoMonitoramento(
   cliente: ClienteAoVivo, data: string,
   opcoes: { fetch?: typeof fetch; env?: Record<string, string | undefined> } = {},
-): Promise<number | null> {
+): Promise<FrotaMonitoramento | null> {
+  const naoSei = (motivo: string) => { logErro(`frota-em-rota ${cliente} ${data}`, motivo); return null }
   const env = opcoes.env ?? process.env
   const chave = env.MOTOR_SECRET
-  if (!chave) return null
+  if (!chave) return naoSei('sem MOTOR_SECRET no ambiente')
   const base = env.MONITORAMENTO_URL ?? 'http://127.0.0.1:3010'
   try {
     const r = await (opcoes.fetch ?? fetch)(`${base}/api/romaneio/frota-em-rota?data=${encodeURIComponent(data)}&cod=${COD_MONITORAMENTO[cliente]}`, {
       headers: { 'x-motor-key': chave }, signal: AbortSignal.timeout(15_000),
     })
-    if (!r.ok) return null
-    const j = (await r.json().catch(() => ({}))) as { emRota?: unknown }
-    return typeof j.emRota === 'number' ? j.emRota : null
-  } catch {
-    return null
+    const j = (await r.json().catch(() => ({}))) as { emRota?: unknown; semRomaneio?: unknown; erro?: unknown }
+    if (!r.ok) return naoSei(`HTTP ${r.status}${typeof j.erro === 'string' ? ` (${j.erro.slice(0, 200)})` : ''}`)
+    if (typeof j.emRota !== 'number') return naoSei('resposta sem emRota')
+    // Monitoramento sem semRomaneio (versão antiga da ponte): trata todos os
+    // carros em rota como sem destino, como antes da revisão.
+    return { emRota: j.emRota, semRomaneio: typeof j.semRomaneio === 'number' ? j.semRomaneio : j.emRota }
+  } catch (err) {
+    return naoSei(err instanceof Error ? err.message : String(err))
   }
 }
 
@@ -93,9 +102,10 @@ export async function lerManha(clientes: ClienteAoVivo[], data: string, opcoes: 
   ])
   const chegadasPor = Object.fromEntries(clientes.map((c, i) => [c, chegadas[i] as ChegadasDia | null]))
   const chegou = Object.fromEntries(clientes.map(c => [c, temDocumento(dias[c])]))
+  const enviadoEm = Object.fromEntries(clientes.map(c => [c, dias[c]?.enviado_em ?? null]))
   return {
     itens: checklistDaManha({ clientes, dias, chegadas: chegadasPor }),
-    banners: bannersAvisoRomaneio(aviso as EstadoAvisoRomaneio | null, clientes, chegou),
+    banners: bannersAvisoRomaneio(aviso as EstadoAvisoRomaneio | null, clientes, chegou, enviadoEm),
   }
 }
 
@@ -107,39 +117,62 @@ export const avisoRomaneioLigado = (env: Record<string, string | undefined> = pr
 export type DepsAvisoRomaneio = {
   lerEstado: (data: string) => Promise<EstadoAvisoRomaneio | null>
   gravarEstado: (data: string, e: EstadoAvisoRomaneio) => Promise<boolean>
-  faltando: (data: string) => Promise<ClienteAoVivo[]>
-  frota: (cliente: ClienteAoVivo, data: string) => Promise<number | null>
-  enviar: (chave: string, texto: string) => Promise<void>
+  /** Clientes ativos do Ao vivo. */
+  clientes: ClienteAoVivo[]
+  /** Clientes sem o documento de hoje no KPI (texto, banner e fallback). */
+  semDocumentoKpi: (data: string) => Promise<ClienteAoVivo[]>
+  frota: (cliente: ClienteAoVivo, data: string) => Promise<FrotaMonitoramento | null>
+  /** true = DM entregue ao alertar-dm (R5). */
+  enviar: (chave: string, texto: string) => Promise<boolean>
   agoraMs: number
   ligado: boolean
   log: (m: string) => void
 }
 
-/** 06:30 e 07:30 BRT: falta romaneio de cliente ativo com a frota rodando ->
- *  grava o aviso (banner da tela) e prepara a DM ao dono. Uma vez por marco. */
-export async function avisarRomaneioAusente(data: string, deps: DepsAvisoRomaneio): Promise<'nada' | 'desligado' | 'enviado'> {
+/** 06:30 e 07:30 BRT: carros do cliente rodando sem romaneio no
+ *  monitoramento (R3: decide pelo monitoramento; o documento do KPI só vale
+ *  quando o monitoramento não responde) -> grava o aviso (banner da tela) e
+ *  prepara a DM ao dono. Uma vez por marco; DM que falhou tenta de novo nos
+ *  ticks seguintes (R5, MAX_TENTATIVAS_DM). */
+export async function avisarRomaneioAusente(data: string, deps: DepsAvisoRomaneio): Promise<'nada' | 'desligado' | 'enviado' | 'falhou'> {
   const estado = await deps.lerEstado(data)
   const vez = marcoDaVez(estado, deps.agoraMs)
   if (!vez) return 'nada'
   const em = new Date(deps.agoraMs).toISOString()
-  const faltam = await deps.faltando(data)
+  const semDocumento = new Set(await deps.semDocumentoKpi(data))
   const faltando: FaltaRomaneio[] = []
-  for (const cliente of faltam) faltando.push({ cliente, emRota: await deps.frota(cliente, data) })
+  for (const cliente of deps.clientes) {
+    const kpiTemDocumento = !semDocumento.has(cliente)
+    const f = await deps.frota(cliente, data)
+    if (f) faltando.push({ cliente, emRota: f.emRota, semRomaneio: f.semRomaneio, kpiTemDocumento })
+    else if (!kpiTemDocumento) faltando.push({ cliente, emRota: null, semRomaneio: null, kpiTemDocumento })
+  }
   const { avisar, texto } = decidirAvisoRomaneio({ marco: vez.marco, faltando })
-  const dm = !texto ? null : deps.ligado ? 'enviado' as const : 'desligado' as const
+  const tentativas = (estado?.marcos[vez.marco]?.tentativas ?? 0) + 1
+  let dm: RegistroMarco['dm'] = !texto ? null : deps.ligado ? 'falhou' : 'desligado'
+  // R5: envia ANTES de gravar e só grava "enviado" se o alertar-dm entregou.
+  // Gravar falhar depois do envio = o próximo tick reavalia e reenvia com a
+  // mesma chave (o alertar-dm segura 1 por chave a cada 6 h).
+  if (texto && deps.ligado) {
+    const ok = await deps.enviar(`romaneio-ausente-${data}-${vez.marco.replace(':', '')}`, texto).catch(() => false)
+    dm = ok ? 'enviado' : 'falhou'
+  }
   const novo: EstadoAvisoRomaneio = { marcos: { ...(estado?.marcos ?? {}) } }
   for (const m of vez.pulados) novo.marcos[m] = { em, faltando: [], dm: 'pulado' }
-  novo.marcos[vez.marco] = { em, faltando, dm }
+  novo.marcos[vez.marco] = { em, faltando, dm, ...(texto && deps.ligado ? { tentativas } : {}) }
   if (!(await deps.gravarEstado(data, novo))) deps.log(`aviso de romaneio ${vez.marco}: não consegui gravar o estado (o próximo tick tenta de novo)`)
   if (!texto) {
-    deps.log(`aviso de romaneio ${vez.marco}: nada a avisar (${faltando.length ? faltando.map(f => `${f.cliente} frota ${f.emRota ?? '?'}`).join(', ') : 'romaneios no lugar'})`)
+    deps.log(`aviso de romaneio ${vez.marco}: nada a avisar (${faltando.length ? faltando.map(f => `${f.cliente} sem romaneio no monitoramento ${f.semRomaneio ?? '?'} de ${f.emRota ?? '?'} em rota`).join(', ') : 'romaneios no lugar'})`)
     return 'nada'
   }
   if (!deps.ligado) {
     deps.log(`aviso de romaneio preparado, envio desligado (KPI_AVISO_ROMANEIO_DM): ${texto}`)
     return 'desligado'
   }
-  await deps.enviar(`romaneio-ausente-${data}-${vez.marco.replace(':', '')}`, texto)
+  if (dm === 'falhou') {
+    deps.log(`aviso de romaneio ${vez.marco}: DM ao dono falhou (tentativa ${tentativas} de ${MAX_TENTATIVAS_DM}${tentativas < MAX_TENTATIVAS_DM ? ', o próximo tick tenta de novo' : ''})`)
+    return 'falhou'
+  }
   deps.log(`aviso de romaneio ${vez.marco} enviado ao dono (${avisar.map(a => a.cliente).join(', ')})`)
   return 'enviado'
 }
@@ -148,7 +181,8 @@ export function depsReaisAvisoRomaneio(clientes: ClienteAoVivo[], enviar: DepsAv
   return {
     lerEstado: d => lerValor<EstadoAvisoRomaneio>(chaveAvisoRomaneio(d), {}),
     gravarEstado: (d, e) => gravarValor(chaveAvisoRomaneio(d), d, e, {}).then(() => true, err => { logErro('gravação do aviso', err); return false }),
-    faltando: d => clientesSemRomaneio(clientes, d),
+    clientes,
+    semDocumentoKpi: d => clientesSemRomaneio(clientes, d),
     frota: (c, d) => frotaEmRotaNoMonitoramento(c, d),
     enviar,
     agoraMs: Date.now(),

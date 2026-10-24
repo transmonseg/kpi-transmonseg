@@ -33,6 +33,11 @@ describe('marcoDaVez (calculado no tick, não em horário fixo do cron)', () => 
     expect(marcoDaVez(null, AS_0631)).toEqual({ marco: '06:30', pulados: [] })
     expect(marcoDaVez(null, AS_0735)).toEqual({ marco: '07:30', pulados: ['06:30'] })
   })
+  it('revisão F3-07 (R5): DM que falhou é tentada de novo no tick seguinte, até 3 vezes', () => {
+    const falhou = (tentativas: number): EstadoAvisoRomaneio => ({ marcos: { '06:30': { em: '2026-10-21T09:31:00Z', faltando: [], dm: 'falhou', tentativas } } })
+    expect(marcoDaVez(falhou(1), ms('2026-10-21T09:41:00Z'))).toEqual({ marco: '06:30', pulados: [] })
+    expect(marcoDaVez(falhou(3), ms('2026-10-21T09:51:00Z'))).toBeNull()
+  })
   it('marco já feito não repete', () => {
     const e: EstadoAvisoRomaneio = { marcos: { '06:30': { em: '2026-10-21T09:31:00Z', faltando: [], dm: null } } }
     expect(marcoDaVez(e, ms('2026-10-21T09:41:00Z'))).toBeNull()
@@ -103,6 +108,18 @@ describe('decidirAvisoRomaneio', () => {
     expect(d.avisar).toEqual([{ cliente: 'nutrimax', emRota: null }])
     expect(d.texto).toMatch(/Nutry Max sem romaneio de hoje \(não consegui conferir a frota no monitoramento\)/)
   })
+  it('revisão F3-07 (R3): romaneio parcial no KPI e 40 carros rodando sem destino no monitoramento => avisa (decide pelo monitoramento, não pelo documento do KPI)', () => {
+    const d = decidirAvisoRomaneio({ marco: '06:30', faltando: [{ cliente: 'nutrimax', emRota: 75, semRomaneio: 40, kpiTemDocumento: true }] })
+    expect(d.avisar.map(a => a.cliente)).toEqual(['nutrimax'])
+    expect(d.texto).toMatch(/^KPI 06:30: Nutry Max com 40 carros rodando sem romaneio no monitoramento \(o romaneio de hoje está no KPI: incompleto ou não chegou ao monitoramento\)\./)
+  })
+  it('R3: romaneio no monitoramento e não no KPI (2 carros sem destino) => sem falso "sem romaneio"', () => {
+    expect(decidirAvisoRomaneio({ marco: '06:30', faltando: [{ cliente: 'nutrimax', emRota: 70, semRomaneio: 2, kpiTemDocumento: false }] }).texto).toBeNull()
+  })
+  it('R3: sem documento no KPI e monitoramento respondeu => conta os carros SEM romaneio', () => {
+    const d = decidirAvisoRomaneio({ marco: '06:30', faltando: [{ cliente: 'rioquality', emRota: 61, semRomaneio: 58, kpiTemDocumento: false }] })
+    expect(d.texto).toMatch(/^KPI 06:30: Rio Quality sem relatório de entregas de hoje com 58 carros rodando\./)
+  })
   it('nada faltando ou frota parada => sem aviso', () => {
     expect(decidirAvisoRomaneio({ marco: '06:30', faltando: [] })).toEqual({ avisar: [], texto: null })
     expect(decidirAvisoRomaneio({ marco: '06:30', faltando: [{ cliente: 'nutrimax', emRota: 0 }] }).texto).toBeNull()
@@ -120,5 +137,11 @@ describe('bannersAvisoRomaneio (tela)', () => {
     ])
     expect(bannersAvisoRomaneio(estado, ['rioquality'], { nutrimax: false, rioquality: true })).toEqual([])
     expect(bannersAvisoRomaneio(null, ['nutrimax'], { nutrimax: false })).toEqual([])
+  })
+  it('revisão F3-07 (R3): documento no KPI mas carros sem destino no monitoramento => banner até o próximo envio depois do aviso', () => {
+    const e: EstadoAvisoRomaneio = { marcos: { '06:30': { em: '2026-10-21T09:31:00Z', faltando: [{ cliente: 'nutrimax', emRota: 75, semRomaneio: 40, kpiTemDocumento: true }, { cliente: 'rioquality', emRota: 61, semRomaneio: 0, kpiTemDocumento: true }], dm: 'desligado' } } }
+    const banner = [{ cliente: 'nutrimax', texto: 'Motor de desvio sem destino de 40 carros da Nutry Max às 06:30: romaneio de hoje incompleto ou não chegou ao monitoramento.' }]
+    expect(bannersAvisoRomaneio(e, ['nutrimax', 'rioquality'], { nutrimax: true, rioquality: true }, { nutrimax: '2026-10-21T09:00:00Z' })).toEqual(banner)
+    expect(bannersAvisoRomaneio(e, ['nutrimax'], { nutrimax: true }, { nutrimax: '2026-10-21T09:45:00Z' })).toEqual([])
   })
 })

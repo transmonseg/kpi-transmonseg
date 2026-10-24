@@ -73,14 +73,21 @@ async function tentarFusionRioQuality(data: string): Promise<'ok' | 'sem_dados' 
 export const alertaFusionLigado = (env: Record<string, string | undefined> = process.env) => env.KPI_ALERTA_FUSION_DM === '1'
 
 /** Mesmo canal dos outros alertas do servidor (alertar-dm.mjs do
- *  monitoramento: DM so' ao dono, no maximo 1 por chave a cada 6 h). */
-function enviarAlertaDm(chave: string, texto: string): Promise<void> {
+ *  monitoramento: DM so' ao dono, no maximo 1 por chave a cada 6 h).
+ *  Revisao F3-07 (R5): devolve se a DM saiu -- o aviso de romaneio so'
+ *  grava "enviado" com true e tenta de novo com false. O alertar-dm sai
+ *  sempre com codigo 0 (nunca derruba o cron), inclusive quando o WhatsApp
+ *  falha: sucesso = sem erro E stdout com "enviado" ("alerta X enviado" ou
+ *  "ja' enviado nas ultimas 6 h"); a falha vai so' pro stderr. */
+export function enviarAlertaDm(chave: string, texto: string): Promise<boolean> {
   const script = process.env.KPI_ALERTAR_DM_SCRIPT ?? '/srv/transmonseg/definitivo/scripts/alertar-dm.mjs'
   return new Promise(resolve => {
     execFile('node', [script, chave, texto], { timeout: 60_000 }, (err, out, errOut) => {
+      const ok = !err && /enviado/.test(String(out))
       if (err) log(`alerta ${chave}: falhou (${err.message}) ${String(errOut).slice(0, 200)}`)
-      else log(String(out).trim() || `alerta ${chave}: enviado`)
-      resolve()
+      else if (!ok) log(`alerta ${chave}: falhou ${String(errOut).trim().slice(0, 200) || '(sem confirmação do alertar-dm)'}`)
+      else log(String(out).trim())
+      resolve(ok)
     })
   })
 }
