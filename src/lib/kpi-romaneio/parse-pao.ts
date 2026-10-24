@@ -9,7 +9,7 @@ import { PAO_PREFIXO } from './constants'
 // secao "Risco tecnico", pras amostras reais que motivaram cada regex.
 const DATA_RE = /^DATA(\d{2})\/(\d{2})\/(\d{4})$/
 const ROMANEIO_RE = /^ROMANEIO(\d+)MOTORISTAAJUDANTE$/
-const CARRO_RE = /^CARRO\d+([A-Z].*)$/
+const CARRO_RE = /^CARRO(\d+)([A-Z].*)$/
 // Fix (revisao final de branch 15/09, Important 5): quando a coluna CARRO
 // vem com a placa EM BRANCO no documento, o pdf-parse emite so' "CARRO36"
 // (nada pra colar depois do numero) -- CARRO_RE nao casa e, sem esta
@@ -17,7 +17,7 @@ const CARRO_RE = /^CARRO\d+([A-Z].*)$/
 // motorista, perdendo o motorista de verdade que vem logo abaixo.
 // Task 2 (plano 2026-09-30, item 3 -- PAO-11 29/09): placa "-" no documento
 // sai "CARRO0-" no pdf-parse; sem o "-?" a linha virava motorista "CARRO0".
-const CARRO_SEM_PLACA_RE = /^CARRO\d*-?$/
+const CARRO_SEM_PLACA_RE = /^CARRO(\d*)-?$/
 // Cabecalho de coluna do bloco de entregas -- marca o fim da area de
 // identificacao (CARRO/motorista). Nunca pode ser lido como motorista.
 const ORDEM_HEADER_RE = /^ORDEM/
@@ -241,7 +241,13 @@ type ContextoPao = {
   motorista: string
   ajudante: string
   motoristaLido: boolean
+  /** F1-04 (KN-03 b): numero do carro no JAC ("CARRO36"); a placa do mesmo
+   *  carro muda de um dia pro outro, o numero e' a pista pro historico. */
+  numeroCarro?: string
 }
+
+/** "36" -> "36"; "" ou "0" (placa "-", "CARRO0-") -> sem numero. */
+const numeroDoCarro = (s: string | undefined) => (s && Number(s) > 0 ? String(Number(s)) : undefined)
 
 export type ResultadoParsePao = { linhas: LinhaRomaneio[]; escala: LinhaEscala[] }
 
@@ -300,7 +306,8 @@ export function parsePaoTexto(texto: string, data: string): ResultadoParsePao {
 
     const c = line.match(CARRO_RE)
     if (c) {
-      const resto = c[1].trim()
+      ctx.numeroCarro = numeroDoCarro(c[1])
+      const resto = c[2].trim()
       // Fix (revisao final 15/09, Important 5): com a placa em branco o
       // pdf-parse pode colar a linha de motorista logo depois do numero do
       // carro ("CARRO36Luis Paulo-"). Placa real NUNCA tem minuscula --
@@ -317,7 +324,9 @@ export function parsePaoTexto(texto: string, data: string): ResultadoParsePao {
       ctx.placaNorm = normPlaca(resto)
       continue
     }
-    if (CARRO_SEM_PLACA_RE.test(line)) {
+    const semPlaca = line.match(CARRO_SEM_PLACA_RE)
+    if (semPlaca) {
+      ctx.numeroCarro = numeroDoCarro(semPlaca[1])
       // Placa em branco no documento: segue com placaRaw '' (a carga sai
       // como "SEM PLACA" no relatorio, ver gerador-xlsx.ts), mas o bloco
       // continua valido -- o motorista da linha seguinte NAO se perde mais.
@@ -397,6 +406,7 @@ export function parsePaoTexto(texto: string, data: string): ResultadoParsePao {
       // estranha, ver spec "Risco tecnico") -- passa adiante como veio,
       // nunca tenta adivinhar onde cortar um numero ambiguo.
       endereco: `${enderecoRua} - ${bairro}, ${municipio} - *`,
+      ...(ctx.numeroCarro ? { numeroCarro: ctx.numeroCarro } : {}),
     })
   }
   fecharContexto(ctx, destinoPrimeiraEntrega, escala)

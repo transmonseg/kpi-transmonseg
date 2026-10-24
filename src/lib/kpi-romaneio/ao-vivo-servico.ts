@@ -1,5 +1,6 @@
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
-import { sugerirTrocas, type SugestaoTroca } from './sugerir-trocas'
+import { sugerirTrocas, placasDoCarroPorCarga, type SugestaoTroca, type TrocaConfirmada } from './sugerir-trocas'
+import { EMPRESA_NUTRIMAX } from './constants'
 // KPI ao vivo: leitura/gravação no banco e o cálculo. O cálculo é a MESMA
 // função da geração normal (gerarKpiNutrimax); a tela lê só o resultado
 // gravado aqui, nunca recalcula por conta própria.
@@ -223,6 +224,35 @@ export function montarResultadoAoVivo(data: string, lido: Awaited<ReturnType<typ
   }
 }
 
+const DIAS_HISTORICO_TROCA = 60
+const DIAS_HISTORICO_CARRO = 14
+const diasAntes = (data: string, n: number) => { const d = new Date(`${data}T12:00:00Z`); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10) }
+
+/** F1-02/F1-03/F1-04: o que a operação já confirmou antes do dia (trocas de
+ *  placa e as placas de cada carro do JAC no pão). Só leitura e fail-open:
+ *  sem isso a sugestão sai só pelo GPS, como antes. */
+export async function contextoSugestaoTroca(data: string, paoHoje: { carga: string; placa: string; numeroCarro?: string }[], log: (m: string) => void = () => {}):
+  Promise<{ historico: TrocaConfirmada[]; porCarro: (frota: string[]) => Map<string, string[]> }> {
+  const svc = createServiceClient()
+  let historico: TrocaConfirmada[] = []
+  let anteriores: { data: string; linhas: { carga: string; placa: string; numeroCarro?: string }[] }[] = []
+  try {
+    const { data: linhas, error } = await svc.from('kpi_troca_placa').select('data, carga, placa_escala, placa_real')
+      .eq('empresa', EMPRESA_NUTRIMAX).lt('data', data).gte('data', diasAntes(data, DIAS_HISTORICO_TROCA)).order('data', { ascending: true })
+    if (error) throw new Error(error.message)
+    historico = (Array.isArray(linhas) ? linhas : []).map(l => ({ data: l.data as string, carga: (l.carga as string | null) ?? null, placaEscala: (l.placa_escala as string | null) ?? '', placaReal: l.placa_real as string }))
+  } catch (err) { log(`sugestao de troca: historico indisponivel (${err instanceof Error ? err.message : String(err)})`) }
+  if (paoHoje.some(l => l.numeroCarro)) {
+    try {
+      const { data: dias, error } = await svc.from('kpi_ao_vivo_dia').select('data, pao')
+        .eq('cliente', 'nutrimax').lt('data', data).gte('data', diasAntes(data, DIAS_HISTORICO_CARRO))
+      if (error) throw new Error(error.message)
+      anteriores = (Array.isArray(dias) ? dias : []).map(d => ({ data: d.data as string, linhas: ((d.pao as { linhas?: LinhaRomaneio[] } | null)?.linhas) ?? [] }))
+    } catch (err) { log(`sugestao de troca: pao dos dias anteriores indisponivel (${err instanceof Error ? err.message : String(err)})`) }
+  }
+  return { historico, porCarro: frota => placasDoCarroPorCarga(paoHoje, anteriores, historico, frota) }
+}
+
 /** Roda o KPI com o romaneio guardado e grava o resultado da tela.
  *  Outro cálculo rodando: não faz nada ('ocupado'). Sem romaneio: 'sem_romaneio'. */
 export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: (m: string) => void = () => {}): Promise<'ok' | 'ocupado' | 'sem_romaneio' | 'erro'> {
@@ -241,8 +271,11 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     let paradasDoDia = new Map<string, UnitracParadaRow[]>()
     let trajetoPorNf = new Map<string, number>()
     const ehHoje = data === hojeBR()
+    const ctxTroca = cliente === 'nutrimax'
+      ? await contextoSugestaoTroca(data, ((temDia as EntradaKpiNutrimax).pao?.linhas ?? []), log)
+      : null
     const r = await gerarKpiDoDia(cliente, data, log, {
-      aoMontarDetalhe: ({ romaneioGeo, detalhe, paradasPorPlaca, menorDistanciaTrajetoPorNf }) => {
+      aoMontarDetalhe: ({ romaneioGeo, detalhe, paradasPorPlaca, menorDistanciaTrajetoPorNf, frota }) => {
         paradasDoDia = paradasPorPlaca
         trajetoPorNf = menorDistanciaTrajetoPorNf
         for (const l of romaneioGeo) if (l.lat != null && l.lng != null) coords.set(l.nf, { lat: l.lat, lng: l.lng })
@@ -255,11 +288,13 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
           const pa = paradaEmAndamento(ps, Date.now())
           if (pa) paradaAtualPorPlaca.set(placaNorm, pa)
         }
-        if (ehHoje) {
-          const pontos = romaneioGeo.filter(l => l.lat != null && l.lng != null)
-            .map(l => ({ carga: l.carga, placa: normPlaca(l.placa), endereco: l.endereco, lat: l.lat as number, lng: l.lng as number }))
-          sugestoesTroca = sugerirTrocas(pontos, paradasPorPlaca)
-        }
+        // F1-03: tambem em dia fechado (antes so' hoje -- sumia depois das
+        // 00:30); a "Placas do dia" le daqui. Sempre so' sugestao.
+        const pontos = romaneioGeo.filter(l => l.lat != null && l.lng != null)
+          .map(l => ({ carga: l.carga, placa: normPlaca(l.placa), endereco: l.endereco, lat: l.lat as number, lng: l.lng as number }))
+        sugestoesTroca = sugerirTrocas(pontos, paradasPorPlaca, {
+          frota, historico: ctxTroca?.historico ?? [], placasDoCarroPorCarga: ctxTroca?.porCarro(frota ?? []),
+        })
       },
     }, paradasRq => {
       paradasDoDia = paradasRq

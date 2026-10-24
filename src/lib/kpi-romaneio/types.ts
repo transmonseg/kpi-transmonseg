@@ -9,6 +9,8 @@ export type LinhaRomaneio = {
   clienteCodigo: string
   clienteNome: string
   endereco: string
+  /** Só no pão (JAC): número do carro ("CARRO36"). F1-04 (KN-03 b). */
+  numeroCarro?: string
 }
 
 /** Uma linha da Escala de Rota -- o planejado. */

@@ -89,7 +89,7 @@ export type OpcoesKpiNutrimax = {
   semCadastroUnitrac?: boolean
   /** Ignora o cadastro de locais dos clientes (comparação antes/depois). */
   semLocaisClientes?: boolean
-  aoMontarDetalhe?: (x: { romaneioGeo: LinhaGeocodificada[]; detalhe: LinhaDetalheEntrega[]; paradasPorPlaca: Map<string, UnitracParadaRow[]>; menorDistanciaTrajetoPorNf: Map<string, number> }) => void
+  aoMontarDetalhe?: (x: { romaneioGeo: LinhaGeocodificada[]; detalhe: LinhaDetalheEntrega[]; paradasPorPlaca: Map<string, UnitracParadaRow[]>; menorDistanciaTrajetoPorNf: Map<string, number>; frota: string[] }) => void
 }
 
 export type ResultadoKpiNutrimax = {
@@ -609,7 +609,8 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
     aoIndisponivel: () => { territorioIndisponivel = true; fontesIndisponiveis.push('territorio') },
   })
   const detalhe: LinhaDetalheEntrega[] = detalheConferido
-  opcoes?.aoMontarDetalhe?.({ romaneioGeo, detalhe, paradasPorPlaca, menorDistanciaTrajetoPorNf })
+  // F1-04: frota vai junto pra sugestao de troca reconhecer placa fora dela.
+  opcoes?.aoMontarDetalhe?.({ romaneioGeo, detalhe, paradasPorPlaca, menorDistanciaTrajetoPorNf, frota: frota.map(v => v.placaNorm) })
 
   // Aviso agregado de descasamento Escala<->Romaneio (ver spec, secao
   // "Tratamento de erro/ambiguidade") -- aditivo, nunca bloqueia o resto do

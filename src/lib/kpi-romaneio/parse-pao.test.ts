@@ -30,6 +30,7 @@ describe('parsePaoTexto', () => {
       clienteCodigo: '215602',
       clienteNome: 'HORTIFRUTI PASSAGEM',
       endereco: 'RUA DA PASSAGEM ,133135 - BOTAFOGO, RIO DE JANEIRO - *',
+      numeroCarro: '36',
     })
     expect(linhas[1].nf).toBe('215609')
     expect(linhas[1].endereco).toBe('RUA VOLUNTARIOS DA PATRIA,323 - BOTAFOGO, RIO DE JANEIRO - *')
@@ -169,6 +170,8 @@ ${ENTREGA}
       expect(linhas[0].nf).toBe('215602')
       expect(escala[0].placaNorm).toBe('')
       expect(escala[0].motorista).toBe('Luis Paulo')
+      // F1-04 (KN-03 b): o numero do carro do JAC fica guardado mesmo sem placa.
+      expect(linhas[0].numeroCarro).toBe('36')
     })
 
     it('motorista colado na propria linha do CARRO: lido como motorista, nunca gravado como placa', () => {
@@ -403,6 +406,8 @@ ORDEMNOTA FISCALCLIENTEENDEREÇOBAIRROQTD CAIXASPESO BRUTO PESO LÍQUIDOVALOR BR
       expect(l.carga).toBe('PAO-11')
       expect(l.placa).toBe('')
       expect(l.motorista).toBe('')
+      // "CARRO0-": sem numero de carro de verdade.
+      expect(l.numeroCarro).toBeUndefined()
     }
     expect(escala).toHaveLength(1)
     expect(escala[0]).toMatchObject({ carga: 'PAO-11', placaNorm: '', motorista: '' })

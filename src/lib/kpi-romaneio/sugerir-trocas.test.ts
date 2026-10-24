@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sugerirTrocas } from './sugerir-trocas'
+import { sugerirTrocas, placasDoCarroPorCarga } from './sugerir-trocas'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 
 const M = 1 / 111_195
@@ -17,7 +17,7 @@ describe('sugerirTrocas', () => {
       ['TOS1I21', [parada('TOS1I21', enderecos[0].lat, enderecos[0].lng)]],
     ])
     expect(sugerirTrocas(enderecos, paradas)).toEqual([
-      { carga: 'PAO-3', placaEscala: 'TTK8A87', placaSugerida: 'RQR2G85', enderecosVisitados: 3, enderecosDaCarga: 4 },
+      { carga: 'PAO-3', placaEscala: 'TTK8A87', placaSugerida: 'RQR2G85', enderecosVisitados: 3, enderecosDaCarga: 4, modo: 'redirecionar', motivo: 'livre' },
     ])
   })
 
@@ -29,14 +29,30 @@ describe('sugerirTrocas', () => {
     expect(sugerirTrocas(enderecos, paradas)).toEqual([])
   })
 
-  it('carro com carga propria GRANDE no dia nao e candidato (so\' o de carga pequena, 08/10)', () => {
+  // F1-02 (plano 23/10, KN-02): antes carro com carga propria grande nunca
+  // era candidato -- 16/10 o RBI0J25 (com carga) fez 23 dos 33 pontos do
+  // TOS0G53 e nada foi sugerido. Agora vale quando o que ele fez na carga do
+  // outro fica LONGE da propria rota (> 1 km): "carga absorvida".
+  it('carro com carga propria GRANDE longe dali que parou nos enderecos: sugere como carga absorvida (F1-02)', () => {
     const outra = [0, 1, 2, 3].map(i => ({ carga: '999', placa: 'RQR2G85', endereco: `RUA X, ${i}`, lat: -21 - i * 0.05, lng: -41 }))
     const paradas = new Map([
       ['TTK8A87', []],
       ['RQR2G85', enderecos.map(e => parada('RQR2G85', e.lat, e.lng))],
       ['TOS1I21', [parada('TOS1I21', enderecos[0].lat, enderecos[0].lng)]],
     ])
-    expect(sugerirTrocas([...enderecos, ...outra], paradas)).toEqual([])
+    expect(sugerirTrocas([...enderecos, ...outra], paradas)).toEqual([
+      { carga: 'PAO-3', placaEscala: 'TTK8A87', placaSugerida: 'RQR2G85', enderecosVisitados: 4, enderecosDaCarga: 4, modo: 'redirecionar', motivo: 'absorvida' },
+    ])
+  })
+
+  it('carro livre e carro de carga grande empatados no topo: fica o livre (regra antiga primeiro)', () => {
+    const outra = [0, 1, 2, 3].map(i => ({ carga: '999', placa: 'TOS1I21', endereco: `RUA X, ${i}`, lat: -21 - i * 0.05, lng: -41 }))
+    const paradas = new Map([
+      ['TTK8A87', []],
+      ['RQR2G85', enderecos.slice(0, 3).map(e => parada('RQR2G85', e.lat, e.lng))],
+      ['TOS1I21', enderecos.slice(0, 3).map(e => parada('TOS1I21', e.lat, e.lng))],
+    ])
+    expect(sugerirTrocas([...enderecos, ...outra], paradas).map(s => s.placaSugerida)).toEqual(['RQR2G85'])
   })
 
   it('escalado andou ate a rua da base (parada fora da base longe da carga): ainda sugere (TTI6E49 06/10)', () => {
@@ -66,7 +82,7 @@ describe('sugerirTrocas', () => {
       ['RQV5F67', [...carga.slice(0, 4).map(e => parada('RQV5F67', e.lat + 30 * M, e.lng)), parada('RQV5F67', propria.lat, propria.lng)]],
     ])
     expect(sugerirTrocas([...carga, propria], paradas)).toEqual([
-      { carga: '99621', placaEscala: 'UNN6G81', placaSugerida: 'RQV5F67', enderecosVisitados: 4, enderecosDaCarga: 5 },
+      { carga: '99621', placaEscala: 'UNN6G81', placaSugerida: 'RQV5F67', enderecosVisitados: 4, enderecosDaCarga: 5, modo: 'redirecionar', motivo: 'livre' },
     ])
   })
   it('carro com carga propria grande (fez a sua) nao e candidato', () => {
@@ -74,5 +90,25 @@ describe('sugerirTrocas', () => {
     const b = [0, 1, 2, 3].map(i => ({ carga: 'B', placa: 'BBB2B22', endereco: `B${i}`, lat: -22.5 + i * 3000 * M, lng: -42.0 + 0.0003 }))
     const paradas = new Map([['AAA1A11', [parada('AAA1A11', -22.8, -43.2, 'BASE')]], ['BBB2B22', [...b.map(e => parada('BBB2B22', e.lat, e.lng))]]])
     expect(sugerirTrocas([...a, ...b], paradas)).toEqual([])
+  })
+})
+
+describe('placasDoCarroPorCarga (F1-04 b: mesmo número de carro do JAC)', () => {
+  it('carro 16 de hoje sem placa válida: placa da frota que o carro 16 usou antes (já com a troca do dia aplicada)', () => {
+    const hoje = [{ carga: 'PAO-7', placa: 'RQO-5E38', numeroCarro: '16' }, { carga: 'PAO-1', placa: '', numeroCarro: '36' }]
+    const anteriores = [
+      { data: '2026-10-15', linhas: [{ carga: 'PAO-9', placa: 'RQO-5E38', numeroCarro: '16' }, { carga: 'PAO-1', placa: 'TTI-9B98', numeroCarro: '36' }] },
+      { data: '2026-10-14', linhas: [{ carga: 'PAO-1', placa: 'RQV-8J31', numeroCarro: '36' }] },
+      { data: '2026-10-13', linhas: [{ carga: 'PAO-1', placa: 'RBI-1J86', numeroCarro: '36' }] },
+    ]
+    const trocas = [{ data: '2026-10-15', carga: 'PAO-9', placaEscala: 'RQO5E38', placaReal: 'TOS5E38' }]
+    const frota = ['TOS5E38', 'RQV8J31', 'RBI1J86']
+    const m = placasDoCarroPorCarga(hoje, anteriores, trocas, frota)
+    expect(m.get('PAO-7')).toEqual(['TOS5E38'])
+    // TTI9B98 fora da frota fica de fora; mais recente primeiro
+    expect(m.get('PAO-1')).toEqual(['RQV8J31', 'RBI1J86'])
+  })
+  it('linha sem número do carro (pão guardado antes do F1-04): nada', () => {
+    expect(placasDoCarroPorCarga([{ carga: 'PAO-1', placa: '' }], [{ data: '2026-10-14', linhas: [{ carga: 'PAO-1', placa: 'RBI1J86' }] }], [], ['RBI1J86']).size).toBe(0)
   })
 })
