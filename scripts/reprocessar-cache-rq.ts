@@ -13,6 +13,10 @@
 // Uso:
 //   npx tsx --env-file=.env.production scripts/reprocessar-cache-rq.ts [--planilha <xlsx>]            (so' propoe: CSV)
 //   npx tsx --env-file=.env.production scripts/reprocessar-cache-rq.ts [--planilha <xlsx>] --aplicar   (grava, com backup antes)
+//   --enderecos <txt>: so' os enderecos listados (um por linha). 23/10: aplicado
+//   so' nos 40 cujo ponto legado reprova na guarda territorial e o novo passa --
+//   nas ruas longas sem numero (Av. das Americas, Ayrton Senna) trocar o ponto
+//   so' embaralha qual placa leva o ENTREGUE (a seco 21-23/10), sem ganho.
 //
 // Sem --aplicar: re-geocodifica cada endereco com a cascata ATUAL + guarda
 // territorial (validarTerritorio), SEM ler/gravar cache, e escreve
@@ -184,7 +188,10 @@ async function main() {
   const args = process.argv.slice(2)
   const aplicar = args.includes('--aplicar')
   const iPlanilha = args.indexOf('--planilha')
-  const enderecosPlanilha = iPlanilha >= 0 && args[iPlanilha + 1] ? await enderecosDaPlanilha(args[iPlanilha + 1]) : undefined
+  const iLista = args.indexOf('--enderecos')
+  const enderecosPlanilha = iPlanilha >= 0 && args[iPlanilha + 1] ? await enderecosDaPlanilha(args[iPlanilha + 1])
+    : iLista >= 0 && args[iLista + 1] ? new Set(readFileSync(args[iLista + 1], 'utf8').split('\n').map(s => s.trim()).filter(Boolean))
+    : undefined
   await rodar({ aplicar, dirSaida: process.cwd(), enderecosPlanilha }, await depsReais())
 }
 
