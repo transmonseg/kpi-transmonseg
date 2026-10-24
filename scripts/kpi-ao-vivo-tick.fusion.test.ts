@@ -18,10 +18,29 @@ vi.mock('../src/lib/kpi-rioquality/status-fusion-banco', () => ({
   gravarStatusFusion: vi.fn(async () => true),
 }))
 
+const enviarRQ = vi.fn(async (..._a: unknown[]) => ({ ok: true }))
+vi.mock('../src/lib/kpi-rioquality/enviar-monitoramento-rq', () => ({
+  linhasComCoordenadasRQ: async (e: { nf: string }[]) => e.map(x => ({ nf: x.nf, lat: -22.8 })),
+  enviarRioQualityAoMonitoramento: (...a: unknown[]) => enviarRQ(...a),
+  linhasParaMonitoramentoRQ: vi.fn(() => []),
+  contarRioQualityNoMonitoramento: vi.fn(async () => null),
+}))
+
 import { buscarDiaRioQualityFusion } from '../src/lib/kpi-rioquality/fonte-fusion'
 
 describe('sincronizarFusionRioQuality', () => {
-  beforeEach(() => guardar.mockClear())
+  beforeEach(() => { guardar.mockClear(); enviarRQ.mockClear() })
+
+  // F2-04: a Fusion tambem substitui o dia no monitoramento (a volta da
+  // planilha manual para a Fusion nao deixa as duas versoes no mapa), com a
+  // coordenada que o KPI ja' resolveu.
+  it('dia da Fusion: guarda e envia ao monitoramento como cron-fusion, com a coordenada do KPI', async () => {
+    vi.mocked(buscarDiaRioQualityFusion).mockResolvedValue([{ nf: '6079976', placaNorm: 'LUI1G55' }] as never)
+    fonteDoDia.mockResolvedValueOnce('fusion')
+    const { sincronizarFusionRioQuality } = await import('./kpi-ao-vivo-tick')
+    expect(await sincronizarFusionRioQuality('2026-10-23')).toBe('ok')
+    expect(enviarRQ).toHaveBeenCalledWith('2026-10-23', [{ nf: '6079976', lat: -22.8 }], { enviadoPor: 'cron-fusion' })
+  })
 
   it('erro na Fusion não derruba o tick', async () => {
     vi.mocked(buscarDiaRioQualityFusion).mockRejectedValue(new Error('timeout'))

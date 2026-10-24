@@ -11,10 +11,10 @@ import { hojeBR } from '../src/lib/data-br'
 import { createServiceClient } from '../src/lib/supabase/service'
 import { CLIENTES_AO_VIVO, calcularAoVivo, guardarDiaAoVivo, fonteDoDiaAoVivo } from '../src/lib/kpi-romaneio/ao-vivo-servico'
 import { buscarDiaRioQualityFusion } from '../src/lib/kpi-rioquality/fonte-fusion'
-import { linhasParaMonitoramentoRQ, enviarRioQualityAoMonitoramento } from '../src/lib/kpi-rioquality/enviar-monitoramento-rq'
+import { linhasComCoordenadasRQ, enviarRioQualityAoMonitoramento } from '../src/lib/kpi-rioquality/enviar-monitoramento-rq'
 import { diaAnterior, precisaFecharDia, precisaReconferirTerritorio } from '../src/lib/kpi-romaneio/ao-vivo'
 import { limparCacheDia } from '../src/lib/kpi-romaneio/cache-dia'
-import { repararDia, depsReaisReparo } from '../src/lib/kpi-romaneio/reparar-dia'
+import { repararDia, depsReaisReparo, repararDiaRQ, depsReaisReparoRQ } from '../src/lib/kpi-romaneio/reparar-dia'
 import { sincronizarAcessosMonitoramento } from '../src/lib/acessos-monitoramento'
 import { registrarSyncFusion, lerStatusFusion, gravarStatusFusion } from '../src/lib/kpi-rioquality/status-fusion-banco'
 import { decidirAlertaFusion, marcarAlertaFusion, type StatusFusion } from '../src/lib/kpi-rioquality/status-fusion'
@@ -46,7 +46,8 @@ async function tentarFusionRioQuality(data: string): Promise<'ok' | 'sem_dados' 
   })
   // Ponte pro Monitoramento: os carros da RQ aparecem no mapa (modo Romaneio)
   // com a data do dia fixa. Fail-open -- não derruba a sincronização.
-  const mon = await enviarRioQualityAoMonitoramento(data, linhasParaMonitoramentoRQ(linhas))
+  // F2-04: substitui o dia da RQ no mapa (modo do envio), com a coordenada do KPI.
+  const mon = await enviarRioQualityAoMonitoramento(data, await linhasComCoordenadasRQ(linhas), { enviadoPor: 'cron-fusion' })
   if (!mon.ok) log(`monitoramento RQ ${data}: erro ${mon.erro}`)
   return 'ok'
 }
@@ -158,6 +159,9 @@ async function main() {
       const s = await sincronizarFusionRioQuality(data)
       if (s !== 'ok' && s !== 'manual') log(`fusion rioquality ${data}: ${s}`)
       await alertarFusionSeParada(data).catch(err => log(`alerta Fusion: ${err}`))
+      // F2-04: dia manual (o tick nao puxa a Fusion) ou envio que falhou --
+      // o monitoramento com outra contagem recebe o dia guardado de novo.
+      await repararDiaRQ(depsReaisReparoRQ, data, log)
     }
     const r = await calcularAoVivo(cliente, data, log)
     if (r !== 'ok') log(`ao vivo ${cliente} ${data}: ${r}`)

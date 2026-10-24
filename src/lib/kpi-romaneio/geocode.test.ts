@@ -5,7 +5,7 @@ vi.mock('@/lib/supabase/service', () => ({
 }))
 
 import { createServiceClient } from '@/lib/supabase/service'
-import { geocodificarEnderecos, geocodificarEnderecosComInfo, TETO_BUSCAS_SIMILARIDADE_POR_GERACAO, separarCep, chaveCacheEndereco, escolherLinhaCache } from './geocode'
+import { geocodificarEnderecos, geocodificarEnderecosComInfo, TETO_BUSCAS_SIMILARIDADE_POR_GERACAO, separarCep, chaveCacheEndereco, escolherLinhaCache, coordenadasConfiaveisDoCache } from './geocode'
 
 // Achado 12/09: ResultadoGeocode ganhou `fonte`/`confiavel` (ver migration
 // 20260912000000). Os testes abaixo se importam com lat/lng -- normaliza pra
@@ -930,5 +930,30 @@ describe('geocodificarEnderecos - F1-06 Photon sem confirmacao de mesma rua', ()
     expect(r[0]).toEqual(expect.objectContaining({ fonte: 'photon', confiavel: false }))
     expect(r[1]).toEqual(expect.objectContaining({ fonte: 'photon', confiavel: true, precisao: 'exato' }))
     expect(fetchSpy).not.toHaveBeenCalled()
+  })
+})
+
+// F2-04 (KRQ-03): o upload manual da RQ manda ao monitoramento a coordenada
+// que o KPI ja' resolveu -- so' leitura do cache, sem rede; so' o que o KPI
+// trata como confiavel e com fonte (legado sem fonte passa pela guarda do F1-06).
+describe('coordenadasConfiaveisDoCache', () => {
+  afterEach(() => { vi.restoreAllMocks() })
+  it("devolve so' as linhas confiaveis e com fonte, sem chamar a ponte", async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    mockSupabaseCache({ linhasNoCache: [
+      { endereco: 'RUA IMBOASSU, - ALCANTARA, SAO GONCALO - RJ', lat: -22.82, lng: -43.0, fonte: 'cnefe', confiavel: true } as never,
+      { endereco: 'RUA LEGADO, - B, RIO DE JANEIRO - RJ', lat: -22.9, lng: -43.2, fonte: null, confiavel: true } as never,
+      { endereco: 'RUA LONGE, - B, MESQUITA - RJ', lat: -22.5, lng: -43.9, fonte: 'nominatim', confiavel: false } as never,
+    ] })
+    const m = await coordenadasConfiaveisDoCache([
+      'RUA IMBOASSU, - ALCANTARA, SAO GONCALO - RJ', 'RUA LEGADO, - B, RIO DE JANEIRO - RJ', 'RUA LONGE, - B, MESQUITA - RJ', 'RUA NOVA, - B, NITEROI - RJ',
+    ])
+    expect([...m]).toEqual([['RUA IMBOASSU, - ALCANTARA, SAO GONCALO - RJ', { lat: -22.82, lng: -43.0 }]])
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+  it('erro de leitura: mapa vazio (o monitoramento geocodifica sozinho)', async () => {
+    mockSupabaseCache({ erroLeitura: { message: 'x' } })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect((await coordenadasConfiaveisDoCache(['RUA A, - B, C - RJ'])).size).toBe(0)
   })
 })

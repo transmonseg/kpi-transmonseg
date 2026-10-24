@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { decidirReparo, repararDia, urlContagem, COD_MONITORAMENTO_NUTRY, type DepsReparo } from './reparar-dia'
+import { decidirReparo, repararDia, repararDiaRQ, urlContagem, COD_MONITORAMENTO_NUTRY, type DepsReparo, type DepsReparoRQ } from './reparar-dia'
 
 describe('decidirReparo', () => {
   it('Ao vivo sem o dia e geração com romaneio: preenche o Ao vivo', () => {
@@ -107,5 +107,57 @@ describe('urlContagem', () => {
   })
   it('sem cod mantem a consulta do dia inteiro', () => {
     expect(urlContagem('http://x', '2026-10-15')).toBe('http://x/api/romaneio/contagem?data=2026-10-15')
+  })
+})
+
+// F2-04 (MON-01, AC-04): o reparo cobre a Rio Quality. 21/10: planilha manual
+// guardada no Ao vivo e 0 linhas da RQ no monitoramento o dia todo; 22 e
+// 23/10: o mapa ficou com a versao da Fusion das 05h (2.803 linhas) e o KPI
+// com a manual (2.824 NFs, outra numeracao).
+describe('repararDiaRQ', () => {
+  const entrega = (nf: string, placaNorm = 'LNH9C10') => ({ placaNorm, nf, rua: 'R', bairro: '', cidade: 'C', uf: 'RJ', clienteNome: 'X', destino: '', motorista: '' })
+  const deps = (o: Partial<DepsReparoRQ> & { linhas?: number | null } = {}) => {
+    const reenviar = vi.fn(async () => ({ ok: true }))
+    const marcar = vi.fn()
+    const d: DepsReparoRQ = {
+      diaGuardado: async () => ({ entregas: [entrega('5557757'), entrega('5557758'), entrega('5557759', '')], enviadoPor: 'erica@x.com', fonte: 'manual' }),
+      linhasNoMonitoramento: async () => (o.linhas === undefined ? 0 : o.linhas),
+      reenviar, jaReenviou: () => false, marcarReenvio: marcar,
+      ...o,
+    }
+    return { d, reenviar, marcar }
+  }
+
+  it('21/10: dia manual guardado e 0 linhas no monitoramento -> reenvia com o e-mail de quem subiu', async () => {
+    const { d, reenviar, marcar } = deps({ linhas: 0 })
+    const log = vi.fn()
+    expect(await repararDiaRQ(d, '2026-10-21', log)).toBe('reenviado')
+    expect(reenviar).toHaveBeenCalledWith('2026-10-21', expect.any(Array), 'erica@x.com')
+    expect(marcar).toHaveBeenCalledWith('2026-10-21', 2, 0)
+    expect(log.mock.calls[0][0]).toContain('rioquality 2026-10-21')
+  })
+
+  it('contagem diverge (2.803 da Fusion x 2 NFs com placa da manual) -> reenvia; igual -> nada', async () => {
+    expect(await repararDiaRQ(deps({ linhas: 2803 }).d, '2026-10-23', () => {})).toBe('reenviado')
+    const igual = deps({ linhas: 2 })
+    expect(await repararDiaRQ(igual.d, '2026-10-23', () => {})).toBe('nada')
+    expect(igual.reenviar).not.toHaveBeenCalled()
+  })
+
+  it('monitoramento indisponivel (null), dia nao guardado, ou ja reenviado com a mesma divergencia -> nada', async () => {
+    expect(await repararDiaRQ(deps({ linhas: null }).d, '2026-10-23', () => {})).toBe('nada')
+    expect(await repararDiaRQ(deps({ diaGuardado: async () => null }).d, '2026-10-23', () => {})).toBe('nada')
+    const ja = deps({ linhas: 5, jaReenviou: (_d, esperado, n) => esperado === 2 && n === 5 })
+    expect(await repararDiaRQ(ja.d, '2026-10-23', () => {})).toBe('nada')
+    expect(ja.reenviar).not.toHaveBeenCalled()
+  })
+
+  it('falha do reenvio vira log, nunca lanca', async () => {
+    const { d } = deps({ linhas: 0, reenviar: async () => ({ ok: false, erro: 'HTTP 500' }) })
+    const log = vi.fn()
+    expect(await repararDiaRQ(d, '2026-10-23', log)).toBe('falhou')
+    expect(log.mock.calls[0][0]).toContain('HTTP 500')
+    const quebra = deps({ diaGuardado: async () => { throw new Error('banco') } })
+    expect(await repararDiaRQ(quebra.d, '2026-10-23', log)).toBe('nada')
   })
 })

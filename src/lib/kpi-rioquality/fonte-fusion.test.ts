@@ -24,6 +24,10 @@ describe('mapearEntregasFusion', () => {
     expect(linhas.find(l => l.clienteNome.includes('DEVOLVIDO'))!.nf).toBe('6059999')
   })
 
+  it('pedidoErp = pedido ERP (D-21b: a mesma chave da planilha manual)', () => {
+    expect(linhas[0].pedidoErp).toBe('6052562')
+  })
+
   it('entregue -> gabarito Entregue com check-in/out', () => {
     const g = linhas[0].gabarito!
     expect(g.status).toBe('Entregue')

@@ -40,6 +40,7 @@ export function mapearEntregasFusion(romaneios: RomaneioFusion[], entregas: Entr
       bairro: '',
       nf: e.t32_seq_pedido_erp,
       clienteCodigo: e.t32_seq_pedido_erp,
+      pedidoErp: e.t32_seq_pedido_erp,
       romaneio: e.t10_id,
       rota: rom?.t10_destino ?? '',
       gabarito: gabaritoFusion(e),

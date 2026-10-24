@@ -205,6 +205,12 @@ describe('formato 55 colunas (NF real + check-in)', () => {
     expect(e[1].gabarito).toMatchObject({ status: 'Faturado', checkIn: false, checkOut: false, dataCheckIn: null })
     expect(e[2].gabarito).toMatchObject({ status: 'Devolvido', checkIn: true, motivoDevolucao: 'PEDIDO EM DESACORDO' })
   })
+  // D-21b (F2-04): o pedido ERP e' a chave que liga a NF real a' versao da Fusion.
+  it('lê o Numero Pedido ERP (chave interna da entrega, D-21b)', () => {
+    const e = parseEntregasCompletas(ARQ_55)
+    expect(e.map(x => x.pedidoErp)).toEqual(LINHAS_55.map(l => String(l[colunaIdx('Numero Pedido ERP')])))
+    expect(e[0].pedidoErp).toMatch(/^\d+$/)
+  })
   it('apara espaços de cidade/bairro/cliente (o arquivo real tem padding)', () => {
     const linha = [...LINHAS_55[0]]
     linha[colunaIdx('Cidade')] = 'RIO DE JANEIRO      '

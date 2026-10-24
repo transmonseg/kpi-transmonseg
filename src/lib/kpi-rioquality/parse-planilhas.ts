@@ -168,6 +168,10 @@ export type EntregaRioQualityCompleta = {
   nf?: string
   /** Cod ERP Cliente */
   clienteCodigo?: string
+  /** Numero Pedido ERP (D-21b, F2-04): chave interna da entrega. A Fusion
+   *  usa o pedido como NF; a planilha manual traz a NF real e o pedido --
+   *  o monitoramento liga as duas versoes do mesmo ponto por ele. */
+  pedidoErp?: string
   /** Romaneio (1 por placa no dia, 92/92 em 30/09) -> carga */
   romaneio?: string
   /** Rota (zona, ex. "SUDOESTE 1") -> destino */
@@ -209,6 +213,7 @@ export function parseEntregasCompletas(buf: Buffer): EntregaRioQualityCompleta[]
   // Terceiro formato: detectado pela coluna Nota Fiscal (o de 8 colunas nao tem).
   const iNf = idx(['NOTA FISCAL'])
   const iCodCliente = idx(['COD ERP CLIENTE'])
+  const iPedidoErp = idx(['NUMERO PEDIDO ERP'])
   const iRomaneio = idx(['ROMANEIO'])
   const iRota = idx(['ROTA'])
   const iStatus = idx(['STATUS DA ENTREGA'])
@@ -236,6 +241,7 @@ export function parseEntregasCompletas(buf: Buffer): EntregaRioQualityCompleta[]
       bairro: iBairro >= 0 ? norm(r?.[iBairro]).toUpperCase() : '',
       ...(iNf >= 0 && celula(r, iNf) ? { nf: celula(r, iNf) } : {}),
       ...(iCodCliente >= 0 ? { clienteCodigo: celula(r, iCodCliente) } : {}),
+      ...(iPedidoErp >= 0 && celula(r, iPedidoErp) ? { pedidoErp: celula(r, iPedidoErp) } : {}),
       ...(iNf >= 0 && iRomaneio >= 0 && celula(r, iRomaneio) ? { romaneio: celula(r, iRomaneio) } : {}),
       ...(iNf >= 0 && iRota >= 0 && celula(r, iRota) ? { rota: celula(r, iRota) } : {}),
       ...(iStatus >= 0

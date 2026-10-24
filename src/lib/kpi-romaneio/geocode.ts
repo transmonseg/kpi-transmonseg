@@ -286,6 +286,21 @@ async function buscarNoCache(enderecos: string[]): Promise<Map<string, { lat: nu
   return encontrados
 }
 
+/** F2-04 (KRQ-03): coordenada que o KPI ja' resolveu, so' do cache (sem
+ *  ponte, sem rede) -- vai junto da RQ para o monitoramento, que entao mostra
+ *  o mesmo ponto do Ao vivo. So' linha confiavel e com fonte (legado sem
+ *  fonte passa pela guarda territorial na geracao). Fail-open: mapa vazio. */
+export async function coordenadasConfiaveisDoCache(enderecosBrutos: string[]): Promise<Map<string, { lat: number; lng: number }>> {
+  const brutos = [...new Set(enderecosBrutos)]
+  const lidos = await buscarNoCache(enderecosParaLerCache(brutos))
+  const escolhidas = mesclarLinhasCache(brutos, [...lidos].map(([endereco, l]) => ({ endereco, ...l })))
+  const out = new Map<string, { lat: number; lng: number }>()
+  for (const [bruto, l] of escolhidas) {
+    if (l.confiavel && l.fonte) out.set(bruto, { lat: l.lat, lng: l.lng })
+  }
+  return out
+}
+
 /** Grava no cache proprio os enderecos recem-resolvidos (nunca os que
  *  vieram null -- endereco que nao geocodificou hoje pode geocodificar
  *  amanha com o mesmo texto, nao vale a pena persistir uma falha).

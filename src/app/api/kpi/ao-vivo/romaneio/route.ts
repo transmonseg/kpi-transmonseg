@@ -7,6 +7,7 @@ import { parsePao } from '@/lib/kpi-romaneio/parse-pao'
 import { guardarDiaAoVivo, calcularAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
 import { parseEntregasCompletas } from '@/lib/kpi-rioquality/parse-planilhas'
 import { enviarAoMonitoramento } from '@/lib/kpi-romaneio/enviar-monitoramento'
+import { enviarRioQualityAoMonitoramento, linhasComCoordenadasRQ } from '@/lib/kpi-rioquality/enviar-monitoramento-rq'
 import { mesclarEnvio, type DiaGuardado, type EnvioNovo } from '@/lib/kpi-romaneio/mesclar-envio'
 import { createServiceClient } from '@/lib/supabase/service'
 import { acessoAoVivo } from '../acesso'
@@ -32,7 +33,15 @@ export async function POST(req: NextRequest) {
     if (entregas.length === 0) return new NextResponse('Nenhuma entrega reconhecida — confira se é o Relatório de Entregas da Rio Quality (colunas Razão Social, Cidade, Placa, Endereço…).', { status: 422 })
     await guardarDiaAoVivo({ cliente: a.cliente, data, escala: [], romaneio: entregas, pao: { linhas: [], escala: [] }, escalaEnviada: false, paoEnviado: false, enviadoPor: a.email })
     void calcularAoVivo(a.cliente, data, m => console.log(`[kpi/ao-vivo] ${m}`)).catch(err => console.error('[kpi/ao-vivo] calculo falhou:', err))
-    return NextResponse.json({ ok: true, nfs: entregas.length, placas: new Set(entregas.map(e => e.placaNorm)).size })
+    // F2-04 (KRQ-03, AC-04): a planilha substitui a versão da Fusion também no
+    // monitoramento (21/10: subida às 15:01, o mapa ficou o dia todo sem a RQ),
+    // com o e-mail de quem subiu e a coordenada que o KPI já resolveu.
+    const mon = await enviarRioQualityAoMonitoramento(data, await linhasComCoordenadasRQ(entregas), { enviadoPor: a.email })
+    if (!mon.ok) console.error(`[kpi/ao-vivo] envio da RQ ao monitoramento falhou: ${mon.erro}`)
+    return NextResponse.json({
+      ok: true, nfs: entregas.length, placas: new Set(entregas.map(e => e.placaNorm)).size,
+      monitoramento: [{ origem: 'romaneio' as const, ok: mon.ok, ...(mon.linhasDoDia != null ? { linhas: mon.linhasDoDia } : {}), ...(mon.erro ? { erro: mon.erro } : {}) }],
+    })
   }
   const romaneioFile = form.get('romaneio')
   const escalaFile = form.get('escala')

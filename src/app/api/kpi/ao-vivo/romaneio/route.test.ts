@@ -1,18 +1,22 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { describe, expect, it, vi, beforeEach, afterAll } from 'vitest'
 
-const est = vi.hoisted(() => ({ guardado: null as null | Record<string, unknown>, gravou: null as null | Record<string, unknown>, monitoramento: [] as string[], dataPdf: null as null | string, escala: [{ carga: 'ESC' }] as { carga: string }[], cargasRomaneio: null as null | string[] }))
-vi.mock('../acesso', () => ({ acessoAoVivo: async () => ({ ok: true, cliente: 'nutrimax', email: 'erica@x.com' }) }))
+const est = vi.hoisted(() => ({ guardado: null as null | Record<string, unknown>, gravou: null as null | Record<string, unknown>, monitoramento: [] as string[], dataPdf: null as null | string, escala: [{ carga: 'ESC' }] as { carga: string }[], cargasRomaneio: null as null | string[], cliente: 'nutrimax', entregasRQ: [] as Record<string, unknown>[], envioRQ: null as null | { data: string; linhas: unknown[]; opcoes: unknown }, ordem: [] as string[] }))
+vi.mock('../acesso', () => ({ acessoAoVivo: async () => ({ ok: true, cliente: est.cliente, email: 'erica@x.com' }) }))
 vi.mock('@/lib/data-br', () => ({ hojeBR: () => '2026-10-09' }))
 vi.mock('@/lib/supabase/service', () => ({ createServiceClient: () => ({ from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: est.guardado }) }) }) }) }) }) }))
 vi.mock('@/lib/kpi-romaneio/parse-romaneio', () => ({ parseRomaneioComData: async () => ({ linhas: est.cargasRomaneio ? est.cargasRomaneio.map(carga => ({ carga, nf: carga, placa: 'AAA1A11' })) : [{ nf: 'NOVA', placa: 'AAA1A11' }], data: est.dataPdf }) }))
 vi.mock('@/lib/kpi-romaneio/parse-escala', () => ({ parseEscala: async () => est.escala, dataImpressaEscala: async () => '2026-10-16' }))
 vi.mock('@/lib/kpi-romaneio/parse-pao', () => ({ parsePao: async () => ({ linhas: [{ nf: 'PAO', placa: 'BBB2B22' }], escala: [{ carga: 'PAO-1' }] }) }))
 vi.mock('@/lib/kpi-romaneio/ao-vivo-servico', () => ({
-  guardarDiaAoVivo: async (p: Record<string, unknown>) => { est.gravou = p },
+  guardarDiaAoVivo: async (p: Record<string, unknown>) => { est.gravou = p; est.ordem.push('guardar') },
   calcularAoVivo: async () => {},
 }))
 vi.mock('@/lib/kpi-romaneio/enviar-monitoramento', () => ({ enviarAoMonitoramento: async (a: { origem: string }[]) => { est.monitoramento = a.map(x => x.origem); return [] } }))
-vi.mock('@/lib/kpi-rioquality/parse-planilhas', () => ({ parseEntregasCompletas: () => [] }))
+vi.mock('@/lib/kpi-rioquality/parse-planilhas', () => ({ parseEntregasCompletas: () => est.entregasRQ }))
+vi.mock('@/lib/kpi-rioquality/enviar-monitoramento-rq', () => ({
+  linhasComCoordenadasRQ: async (e: Record<string, unknown>[]) => e.map(x => ({ placa: x.placaNorm, nf: x.nf, lat: -22.82, lng: -43.0 })),
+  enviarRioQualityAoMonitoramento: async (data: string, linhas: unknown[], opcoes: unknown) => { est.envioRQ = { data, linhas, opcoes }; est.ordem.push('enviar'); return { ok: true, linhasInseridas: linhas.length } },
+}))
 
 import { POST } from './route'
 
@@ -110,3 +114,28 @@ describe('POST /api/kpi/ao-vivo/romaneio -- Escala de Rota conferida (F1-13)', (
   })
 })
 
+
+// F2-04 (KRQ-03, MON-01, AC-04): em 21/10 a planilha da RQ subida as 15:01
+// nunca chegou ao monitoramento (0 pontos, 0 alertas o dia todo).
+describe('POST /api/kpi/ao-vivo/romaneio -- Rio Quality vai ao monitoramento (F2-04)', () => {
+  beforeEach(() => { est.cliente = 'rioquality'; est.envioRQ = null; est.gravou = null; est.ordem = [] })
+  afterAll(() => { est.cliente = 'nutrimax' })
+  const xlsx = () => new File(['x'], 'entregas.xlsx')
+  const reqRQ = () => { const fd = new FormData(); fd.set('cliente', 'rioquality'); fd.set('completo', xlsx()); return new Request('http://x/api/kpi/ao-vivo/romaneio', { method: 'POST', body: fd }) as never }
+
+  it('guarda o dia e envia ao monitoramento com o e-mail de quem subiu e a coordenada resolvida', async () => {
+    est.entregasRQ = [{ placaNorm: 'LNH9C10', nf: '5557757', pedidoErp: '6081346', rua: 'RUA IMBOASSU' }]
+    const r = await POST(reqRQ())
+    expect(r.status).toBe(200)
+    expect(est.ordem).toEqual(['guardar', 'enviar'])
+    expect(est.envioRQ).toEqual({ data: '2026-10-09', linhas: [{ placa: 'LNH9C10', nf: '5557757', lat: -22.82, lng: -43.0 }], opcoes: { enviadoPor: 'erica@x.com' } })
+    expect(await r.json()).toMatchObject({ ok: true, nfs: 1, monitoramento: [{ origem: 'romaneio', ok: true }] })
+  })
+
+  it('planilha sem entregas: 422 e nada vai ao monitoramento', async () => {
+    est.entregasRQ = []
+    const r = await POST(reqRQ())
+    expect(r.status).toBe(422)
+    expect(est.envioRQ).toBeNull()
+  })
+})

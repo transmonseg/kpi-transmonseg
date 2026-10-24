@@ -3,14 +3,20 @@
 // motor de desvio ficou cego ate' alguem corrigir na mao. A cada tick:
 //  1) Ao vivo sem o dia + geracao com romaneio => preenche o Ao vivo;
 //  2) monitoramento sem romaneio do dia => reenvia os PDFs da geracao.
-// So' Nutry Max, so' hoje (BRT), no maximo um reenvio por tick, fail-open.
-import { existsSync, writeFileSync } from 'node:fs'
+// So' hoje (BRT), no maximo um reenvio por tick, fail-open. A Nutry reenvia os
+// PDFs da geracao; a Rio Quality (F2-04) reenvia o dia guardado no Ao vivo
+// (repararDiaRQ, mais abaixo).
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createServiceClient } from '@/lib/supabase/service'
 import { entradaDaGeracao } from './entrada-geracao'
 import { guardarDiaAoVivo } from './ao-vivo-servico'
 import { enviarAoMonitoramento, type ArquivoMonitoramento } from './enviar-monitoramento'
+import type { EntregaRioQualityCompleta } from '@/lib/kpi-rioquality/parse-planilhas'
+import {
+  contarRioQualityNoMonitoramento, enviarRioQualityAoMonitoramento, linhasComCoordenadasRQ, linhasParaMonitoramentoRQ,
+} from '@/lib/kpi-rioquality/enviar-monitoramento-rq'
 
 const BUCKET = 'kpi-romaneio-inputs'
 const CLIENTE = 'nutrimax' as const
@@ -160,5 +166,70 @@ export const depsReaisReparo: DepsReparo = {
     const r = await enviarAoMonitoramento(arquivos, 'reparo-automatico')
     const falha = r.find(x => !x.ok)
     return falha ? { ok: false, erro: `${falha.origem}: ${falha.erro}` } : { ok: true }
+  },
+}
+
+// ---------------------------------------------------------------------------
+// F2-04 (MON-01, AC-04): reparo da Rio Quality. 21/10 a planilha manual ficou
+// so' no Ao vivo (0 linhas da RQ no mapa o dia todo); 22 e 23/10 o mapa ficou
+// com a versao da Fusion das 05h e o KPI com a manual. A cada tick, depois da
+// sincronizacao com a Fusion: o monitoramento com outra contagem de linhas da
+// RQ que o dia guardado no Ao vivo => reenvia o dia guardado (modo
+// substituir, com quem enviou e a coordenada do KPI). Mesma divergencia ja'
+// reenviada uma vez no dia => nao repete (linha que o monitoramento recusa
+// nao vira reenvio a cada 10 min).
+
+export type DepsReparoRQ = {
+  diaGuardado(data: string): Promise<{ entregas: EntregaRioQualityCompleta[]; enviadoPor: string | null; fonte: string | null } | null>
+  /** Linhas da RQ no monitoramento no dia; null = indisponivel (nunca reenvia). */
+  linhasNoMonitoramento(data: string): Promise<number | null>
+  reenviar(data: string, entregas: EntregaRioQualityCompleta[], enviadoPor: string | null): Promise<{ ok: boolean; erro?: string }>
+  jaReenviou(data: string, esperado: number, noMonitoramento: number): boolean
+  marcarReenvio(data: string, esperado: number, noMonitoramento: number): void
+}
+
+export async function repararDiaRQ(deps: DepsReparoRQ, data: string, log: (m: string) => void): Promise<'nada' | 'reenviado' | 'falhou'> {
+  try {
+    const dia = await deps.diaGuardado(data)
+    if (!dia || dia.entregas.length === 0) return 'nada'
+    const esperado = linhasParaMonitoramentoRQ(dia.entregas).length
+    const n = await deps.linhasNoMonitoramento(data)
+    if (n === null || n === esperado) return 'nada'
+    if (deps.jaReenviou(data, esperado, n)) return 'nada'
+    deps.marcarReenvio(data, esperado, n)
+    const r = await deps.reenviar(data, dia.entregas, dia.enviadoPor)
+    log(r.ok
+      ? `[reparo] rioquality ${data}: monitoramento com ${n} linha(s) da RQ e o Ao vivo (${dia.fonte ?? '?'}) com ${esperado} -- dia reenviado`
+      : `[reparo] rioquality ${data}: reenvio ao monitoramento falhou: ${r.erro ?? 'erro desconhecido'}`)
+    return r.ok ? 'reenviado' : 'falhou'
+  } catch (err) {
+    log(`[reparo] rioquality ${data}: erro ignorado: ${err instanceof Error ? err.message : String(err)}`)
+    return 'nada'
+  }
+}
+
+const flagReparoRQ = (data: string) => join(tmpdir(), `kpi-reparo-monitoramento-rq-${data}.json`)
+
+export const depsReaisReparoRQ: DepsReparoRQ = {
+  async diaGuardado(data) {
+    const { data: d, error } = await createServiceClient().from('kpi_ao_vivo_dia').select('romaneio, enviado_por, fonte').eq('cliente', 'rioquality').eq('data', data).maybeSingle()
+    if (error) throw new Error(`ao vivo do dia: ${error.message}`)
+    if (!d) return null
+    return { entregas: (d.romaneio as EntregaRioQualityCompleta[]) ?? [], enviadoPor: (d.enviado_por as string | null) ?? null, fonte: (d.fonte as string | null) ?? null }
+  },
+  linhasNoMonitoramento: contarRioQualityNoMonitoramento,
+  async reenviar(data, entregas, enviadoPor) {
+    return enviarRioQualityAoMonitoramento(data, await linhasComCoordenadasRQ(entregas), { enviadoPor })
+  },
+  jaReenviou(data, esperado, n) {
+    try {
+      const f = flagReparoRQ(data)
+      if (!existsSync(f)) return false
+      const j = JSON.parse(readFileSync(f, 'utf8')) as { esperado?: number; n?: number }
+      return j.esperado === esperado && j.n === n
+    } catch { return false }
+  },
+  marcarReenvio(data, esperado, n) {
+    try { writeFileSync(flagReparoRQ(data), JSON.stringify({ esperado, n, em: new Date().toISOString() })) } catch { /* sem trava, so' reenvia de novo */ }
   },
 }
