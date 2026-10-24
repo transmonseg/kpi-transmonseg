@@ -14,8 +14,7 @@ import { createHash } from 'node:crypto'
 import { lerCacheDia, gravarCacheDia } from '@/lib/kpi-romaneio/cache-dia'
 import { guardarEntradaNutrimax, lerEntradaGuardadaNutrimax } from '@/lib/kpi-romaneio/entrada-guardada'
 import { hojeBR } from '@/lib/data-br'
-import { diaJaFechado, motivoValido, MOTIVO_MINIMO } from '@/lib/kpi-romaneio/versao-oficial'
-import { fmtTaxa } from '@/lib/kpi-romaneio/fechamento-dashboard'
+import { motivoDoDiaFechado as motivoDia, comMotivo } from '@/lib/kpi-romaneio/motivo-dia-fechado'
 import { gravarHojeNutry, cabecalhosPorta, type ResultadoPorta } from '@/lib/kpi-romaneio/porta-do-dia'
 import { depsReaisPortaNutry, depoisDaGeracao } from '@/lib/kpi-romaneio/porta-do-dia-servico'
 
@@ -40,21 +39,7 @@ async function guardarPdf(svc: ReturnType<typeof createServiceClient>, data: str
   return caminho
 }
 
-/** F3-04 (ACH-10): gerar de novo um dia ja' fechado (fechamento das 00:30 ou
- *  geracao completa) exige motivo -- 20/10 teve 4 versoes e 21/10 cinco, sem
- *  dizer por que. 428 = a tela abre o campo "Motivo" e reenvia. */
-async function motivoDoDiaFechado(data: string, form: FormData): Promise<{ motivo: string | null } | NextResponse> {
-  const { fechado, fechamento, falhaLeitura } = await diaJaFechado('nutrimax', data, hojeBR())
-  if (!fechado) return { motivo: null }
-  const motivo = motivoValido(form.get('motivo'))
-  if (motivo) return { motivo }
-  const br = data.split('-').reverse().join('/')
-  if (falhaLeitura) return new NextResponse(`Não consegui conferir se o KPI de ${br} já está fechado. Escreva o motivo para gerar de novo (pelo menos ${MOTIVO_MINIMO} letras).`, { status: 428 })
-  const oficial = fechamento?.resumo.taxa != null ? ` (fechamento oficial: ${fmtTaxa(fechamento.resumo.taxa)})` : ''
-  return new NextResponse(`O KPI de ${br} já está fechado${oficial}. Escreva o motivo para gerar de novo (pelo menos ${MOTIVO_MINIMO} letras).`, { status: 428 })
-}
-const comMotivo = <R extends object>(resumo: R | null, motivo: string | null): R | null =>
-  resumo && motivo ? { ...resumo, motivoRegeracao: motivo } : resumo
+const motivoDoDiaFechado = (data: string, form: FormData) => motivoDia('nutrimax', data, form)
 
 export const runtime = 'nodejs'
 // A busca de paradas GPS é sequencial por placa (buscarStopsCru + geocode em

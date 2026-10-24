@@ -15,6 +15,7 @@ import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { parseEntregasCompletas, type EntregaRioQualityCompleta } from '@/lib/kpi-rioquality/parse-planilhas'
 import { gravarHojeRQ, cabecalhosPorta, type ResultadoPorta } from '@/lib/kpi-romaneio/porta-do-dia'
 import { depsReaisPortaRQ, depoisDaGeracao } from '@/lib/kpi-romaneio/porta-do-dia-servico'
+import { motivoDoDiaFechado, comMotivo } from '@/lib/kpi-romaneio/motivo-dia-fechado'
 
 // KPI Rio Quality -- entrada (2 planilhas xlsx) + auth + historico. A pipeline
 // em si esta' em src/lib/kpi-rioquality/pipeline.ts (compartilhada com o
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest) {
   let completaBuf: Buffer | null = null
   let custosStoragePathExistente: string | null = null
   let entregasStoragePathExistente: string | null = null
+  let motivo: string | null = null
 
   if (typeof regenerarDeId === 'string' && regenerarDeId) {
     const geracao = await buscarGeracaoParaRegenerar(regenerarDeId)
@@ -60,6 +62,10 @@ export async function POST(req: NextRequest) {
       return new NextResponse('Esta geração não guardou as planilhas originais.', { status: 422 })
     }
     data = geracao.dataReferencia
+    // F3-R07: dia fechado (fechamento da RQ no Dashboard, F3-01) pede motivo.
+    const mR = await motivoDoDiaFechado(CLIENTE, data, form)
+    if (mR instanceof NextResponse) return mR
+    motivo = mR.motivo
     const svc = createServiceClient()
     if (geracao.escalaStoragePath) {
       // reaproveita as colunas escala/romaneio da tabela: escala := Custos, romaneio := Entregas
@@ -83,6 +89,9 @@ export async function POST(req: NextRequest) {
   } else {
     data = String(form.get('data') ?? '')
     if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return new NextResponse('Data inválida (YYYY-MM-DD)', { status: 400 })
+    const mU = await motivoDoDiaFechado(CLIENTE, data, form)
+    if (mU instanceof NextResponse) return mU
+    motivo = mU.motivo
     const completaFile = form.get('completo')
     if (completaFile instanceof File) {
       completaBuf = Buffer.from(await completaFile.arrayBuffer())
@@ -185,7 +194,7 @@ export async function POST(req: NextRequest) {
       arquivoStoragePath,
       escalaStoragePath: custosStoragePath,
       romaneioStoragePath: entregasStoragePath,
-      resumo,
+      resumo: comMotivo(resumo, motivo),
     })
   } catch (err) {
     console.error('Erro ao salvar histórico de geração:', err)

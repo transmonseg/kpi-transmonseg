@@ -30,6 +30,10 @@ export default function RioQualityGerarPage() {
   const [erro, setErro] = useState<string | null>(null)
   const [arquivoPronto, setArquivoPronto] = useState<{ blob: Blob; filename: string } | null>(null)
   const [baixado, setBaixado] = useState(false)
+  // F3-R07: gerar de novo um dia ja' fechado pede o motivo (428), como na Nutry.
+  const [pedeMotivo, setPedeMotivo] = useState<{ data: string; texto: string } | null>(null)
+  const [motivo, setMotivo] = useState('')
+  const motivoDoDia = pedeMotivo?.data === data ? motivo : ''
 
   const dataForaDoAlcance = !!data && foraDoAlcanceApi(data, hoje())
   const pronto =
@@ -51,7 +55,9 @@ export default function RioQualityGerarPage() {
         fd.set('entregas', entregas[0])
       }
       fd.set('data', data)
+      if (motivoDoDia) fd.set('motivo', motivoDoDia)
       const res = await fetch('/api/kpi/rioquality/gerar', { method: 'POST', body: fd })
+      if (res.status === 428) { setPedeMotivo({ data, texto: await res.text() }); return }
       if (!res.ok) throw new Error(await res.text())
 
       const blob = await res.blob()
@@ -175,6 +181,16 @@ export default function RioQualityGerarPage() {
           </div>
         </div>
       </section>
+
+      {pedeMotivo?.data === data && !arquivoPronto && (
+        <div className="mt-6 flex flex-col gap-2 rounded-2xl border border-[var(--color-warning)]/30 bg-[var(--color-warning-soft)] px-5 py-4">
+          <p className="text-[13px] leading-relaxed text-[var(--color-warning-soft-fg)]">{pedeMotivo.texto} Depois clique em gerar de novo.</p>
+          <input
+            value={motivo} onChange={e => setMotivo(e.target.value)} placeholder="Motivo (ex.: planilha corrigida pela operação)"
+            className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] text-[var(--color-fg)] outline-none focus:border-[var(--color-navy-700)]"
+          />
+        </div>
+      )}
 
       {erro && (
         <div className="mt-6 flex items-start gap-3 rounded-2xl border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-5 py-4">

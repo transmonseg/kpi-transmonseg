@@ -18,6 +18,23 @@ const cenario = vi.hoisted(() => ({
   portaGuardou: [] as { data: string; n: number; por: string | null }[],
   portaEnviou: [] as { data: string; n: number; por: string | null }[],
   portaLida: null as Record<string, unknown>[] | null,
+  // F3-R07: dia fechado (fechamento das 00:30 no Dashboard) pede motivo.
+  diaFechado: false,
+  falhaLeitura: false,
+  diasConsultados: [] as string[],
+}))
+vi.mock('@/lib/kpi-romaneio/resumo-dashboard', () => ({
+  extrairResumoKpiXlsx: async () => ({ taxa: 92.1, entregues: 2650, nfsNaConta: 2877, aguardando: 0 }),
+}))
+vi.mock('@/lib/kpi-romaneio/versao-oficial', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/lib/kpi-romaneio/versao-oficial')>()),
+  diaJaFechado: async (cliente: string, data: string) => {
+    cenario.diasConsultados.push(`${cliente}/${data}`)
+    if (cenario.falhaLeitura) return { fechado: true, fechamento: null, falhaLeitura: true }
+    return cenario.diaFechado
+      ? { fechado: true, fechamento: { data, calculadoEm: '2026-09-26T03:30:00Z', resumo: { taxa: 91.4, entregues: 2633, nfsNaConta: 2881, aguardando: 0 } } }
+      : { fechado: false, fechamento: null }
+  },
 }))
 vi.mock('@/lib/kpi-rioquality/parse-planilhas', async importOriginal => ({
   ...(await importOriginal<typeof import('@/lib/kpi-rioquality/parse-planilhas')>()),
@@ -92,7 +109,62 @@ beforeEach(() => {
   cenario.uploadKpiErro = false
   cenario.geracao = null
   cenario.frotaErro = false
+  cenario.diaFechado = false
+  cenario.falhaLeitura = false
+  cenario.diasConsultados = []
   vi.mocked(salvarGeracaoMock).mockClear()
+})
+
+describe('POST /api/kpi/rioquality/gerar -- dia fechado pede motivo (F3-R07)', () => {
+  const snapshotOk = () => { cenario.snapshot = new Map([['AAA1A11', [{ id: 'p1' }]]]) }
+  function reqCom(data: string, motivo?: string) {
+    const fd = new FormData()
+    fd.set('data', data)
+    fd.set('completo', new File([new Uint8Array([1])], 'entregas.xlsx'))
+    if (motivo != null) fd.set('motivo', motivo)
+    return new Request('http://localhost/api/kpi/rioquality/gerar', { method: 'POST', body: fd })
+  }
+  it('upload de 25/09 já fechado (fechamento 91,4%) sem motivo: 428, nada gerado nem gravado', async () => {
+    snapshotOk(); cenario.diaFechado = true
+    const res = await POST(reqCom('2026-09-25') as never)
+    expect(res.status).toBe(428)
+    expect(await res.text()).toMatch(/25\/09\/2026 já está fechado \(fechamento oficial: 91,4%\)/)
+    expect(cenario.diasConsultados).toEqual(['rioquality/2026-09-25'])
+    expect(cenario.chamadasPipeline).toHaveLength(0)
+    expect(salvarGeracaoMock).not.toHaveBeenCalled()
+  })
+  it('motivo curto demais: 428', async () => {
+    snapshotOk(); cenario.diaFechado = true
+    expect((await POST(reqCom('2026-09-25', 'ok') as never)).status).toBe(428)
+  })
+  it('com motivo: gera e grava resumo.motivoRegeracao', async () => {
+    snapshotOk(); cenario.diaFechado = true
+    const res = await POST(reqCom('2026-09-25', 'planilha corrigida pela operação') as never)
+    expect(res.status).toBe(200)
+    expect(vi.mocked(salvarGeracaoMock).mock.calls[0][0]).toMatchObject({ dataReferencia: '2026-09-25' })
+    const resumo = (vi.mocked(salvarGeracaoMock).mock.calls[0][0] as { resumo: Record<string, unknown> | null }).resumo
+    expect(resumo).toMatchObject({ taxa: 92.1, motivoRegeracao: 'planilha corrigida pela operação' })
+  })
+  it('Regerar (regenerarDeId) de dia fechado sem motivo: 428, nada baixado nem gerado', async () => {
+    snapshotOk(); cenario.diaFechado = true
+    cenario.geracao = { dataReferencia: '2026-09-25', romaneioStoragePath: 'rioquality/x-completo.xlsx', escalaStoragePath: null }
+    const fd = new FormData(); fd.set('regenerarDeId', 'g1')
+    const res = await POST(new Request('http://localhost/api/kpi/rioquality/gerar', { method: 'POST', body: fd }) as never)
+    expect(res.status).toBe(428)
+    expect(cenario.chamadasPipeline).toHaveLength(0)
+  })
+  it('leitura falhou: pede motivo dizendo que não deu para conferir', async () => {
+    snapshotOk(); cenario.falhaLeitura = true
+    const res = await POST(reqCom('2026-09-25') as never)
+    expect(res.status).toBe(428)
+    expect(await res.text()).toMatch(/Não consegui conferir/)
+  })
+  it('dia aberto: igual a antes, sem motivo', async () => {
+    snapshotOk()
+    expect((await POST(reqCom('2026-09-25') as never)).status).toBe(200)
+    const resumo = (vi.mocked(salvarGeracaoMock).mock.calls[0][0] as { resumo: Record<string, unknown> | null }).resumo
+    expect(resumo).not.toHaveProperty('motivoRegeracao')
+  })
 })
 
 describe('POST /api/kpi/rioquality/gerar -- dia fora das 48h', () => {

@@ -15,6 +15,9 @@ export function RegenerarBotao({ geracaoId, dataReferencia }: { geracaoId: strin
   const [pending, setPending] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [arquivoPronto, setArquivoPronto] = useState<Blob | null>(null)
+  // F3-R07: dia ja' fechado (fechamento da RQ no Dashboard) -> 428 e pede o motivo.
+  const [pedeMotivo, setPedeMotivo] = useState<string | null>(null)
+  const [motivo, setMotivo] = useState('')
 
   async function regenerar() {
     setPending(true)
@@ -23,8 +26,11 @@ export function RegenerarBotao({ geracaoId, dataReferencia }: { geracaoId: strin
     try {
       const fd = new FormData()
       fd.set('regenerarDeId', geracaoId)
+      if (pedeMotivo) fd.set('motivo', motivo)
       const res = await fetch('/api/kpi/rioquality/gerar', { method: 'POST', body: fd })
+      if (res.status === 428) { setPedeMotivo(await res.text()); return }
       if (!res.ok) throw new Error(await res.text())
+      setPedeMotivo(null); setMotivo('')
       setArquivoPronto(await res.blob())
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Erro ao regenerar.')
@@ -59,7 +65,7 @@ export function RegenerarBotao({ geracaoId, dataReferencia }: { geracaoId: strin
         <button
           type="button"
           onClick={regenerar}
-          disabled={pending}
+          disabled={pending || (!!pedeMotivo && motivo.trim().length < 5)}
           title="Baixa as planilhas originais e gera o KPI de novo, com qualquer correção aplicada desde então"
           className={cn(
             'inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 py-1.5 text-[11px] font-medium text-[var(--color-fg-muted)] transition-colors',
@@ -67,8 +73,18 @@ export function RegenerarBotao({ geracaoId, dataReferencia }: { geracaoId: strin
           )}
         >
           {pending ? <CircleNotch size={12} weight="bold" className="animate-spin" /> : <ArrowsClockwise size={12} weight="bold" />}
-          {pending ? 'Regerando…' : 'Regerar'}
+          {pending ? 'Regerando…' : pedeMotivo ? 'Regerar com o motivo' : 'Regerar'}
         </button>
+      )}
+      {pedeMotivo && !arquivoPronto && (
+        <div className="flex max-w-[260px] flex-col items-end gap-1">
+          <span className="whitespace-normal text-right text-[11px] leading-snug text-[var(--color-fg-muted)]">{pedeMotivo}</span>
+          <input
+            value={motivo} onChange={e => setMotivo(e.target.value)} placeholder="Motivo"
+            onKeyDown={e => { if (e.key === 'Enter' && motivo.trim().length >= 5 && !pending) regenerar() }}
+            className="h-8 w-full rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-3 text-[12px] outline-none focus:border-[var(--color-navy-700)]"
+          />
+        </div>
       )}
       {erro && <span className="max-w-[220px] text-right text-[11px] leading-snug text-[var(--color-danger)]">{erro}</span>}
     </div>
