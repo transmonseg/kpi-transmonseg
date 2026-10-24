@@ -709,6 +709,15 @@ describe('geocodificarEnderecos - chave do cache sem o sufixo de CEP', () => {
     expect(gravado.precisao).toBe('exato')
   })
 
+  it('F4-04: exato_nao_confirmado da ponte (rua homonima sem CEP/bairro) chega no resultado e vai pro cache', async () => {
+    const { upsertPositivo } = mockSupabaseTabelas({})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaOk([{ lat: -22.798651, lng: -43.354889, fonte: 'cnefe', precisao: 'exato_nao_confirmado' }]))
+    const [r] = await geocodificarEnderecos([COM])
+    expect(r?.precisao).toBe('exato_nao_confirmado')
+    const gravado = upsertPositivo.mock.calls.flatMap(c => c[0] as Array<{ precisao?: string | null }>)[0]
+    expect(gravado.precisao).toBe('exato_nao_confirmado')
+  })
+
   it('precisao desconhecida da ponte e' + "'" + ' ignorada', async () => {
     mockSupabaseTabelas({})
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaOk([{ lat: 1, lng: 2, precisao: 'chute' }]))

@@ -75,7 +75,9 @@ export type LinhaGeocodificada = LinhaRomaneio & {
   pontoCorroborado?: boolean
   /** Auditoria 20/10 (GEO-01): precisao do ponto informada pela ponte
    *  (exato | interpolado | trecho | rua). Ausente = desconhecida. */
-  geoPrecisao?: 'exato' | 'interpolado' | 'trecho' | 'rua'
+  // F4-04 (GEO-28): 'exato_nao_confirmado' = mesmo numero numa rua homonima
+  // sem CEP nem bairro batendo (ponte do monitoramento); nao confirma o ponto.
+  geoPrecisao?: 'exato' | 'exato_nao_confirmado' | 'interpolado' | 'trecho' | 'rua'
   /** Fonte da linha do cache de geocode (cnefe, photon, cadastro_unitrac,
    *  verificacao_manual...); 'manual' quando o local corrigido a mao foi
    *  aplicado. Ausente = desconhecida. Preenchido em gerar-nutrimax. */

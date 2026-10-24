@@ -926,6 +926,7 @@ function pontoConfirmado(linha: LinhaGeocodificada, geo: { lat: number; lng: num
   // Numero exato (ou interpolado entre vizinhos) no CNEFE, escolhido pelo
   // CEP/bairro do Censo (auditoria 20/10, GEO-01). Na medicao de 6.711
   // enderecos, 100% dos que tinham numero+CEP no IBGE ficaram a <30 m.
+  // F4-04 (GEO-28): 'exato_nao_confirmado' (rua homonima sem CEP/bairro) NAO entra aqui.
   if (geo != null && (linha.geoPrecisao === 'exato' || linha.geoPrecisao === 'interpolado')) return true
   return geo != null && cadastro != null && haversine(geo.lat, geo.lng, cadastro.lat, cadastro.lng) <= RAIO_CADASTRO_CONFIRMA_PONTO_M
 }
@@ -953,6 +954,11 @@ function acharParadaProximaPropriaIsolada(
   // Medido 05-20/10: nos 13 casos assim o caminhao nunca passou a menos de
   // 700 m do ponto.
   if (!pontoAproximadoPorEndereco(linha.endereco) && pontoConfirmado(linha, geo, cadastro)) return null
+  // F4-04 (GEO-28): numero igual numa rua homonima, sem CEP nem bairro
+  // batendo ('exato_nao_confirmado', ex. MARIA SOARES SENDAS 4200 no CEP de
+  // Venda Velha). O ponto pode estar em outro bairro: parada a 500 m-2 km dele
+  // nao prova nada -- vai a conferir (nunca ENTREGUE sem prova, regra 2).
+  if (linha.geoPrecisao === 'exato_nao_confirmado') return null
   const outros = outrosPontosDaPlaca.filter(o => o.endereco !== linha.endereco)
   const janelasOutras = janelasProvaOutrasNfs.filter(j => j.endereco !== linha.endereco)
   const paradasPonte = paradas.filter(ehParadaDaPonte)

@@ -5131,6 +5131,57 @@ describe('GN-01 (auditoria 20/10): parada proxima nao credita cliente urbano com
   })
 })
 
+// F4-04 (GEO-28, plano mestre 23/10): o mesmo numero numa rua homonima, sem
+// CEP nem bairro batendo, chega da ponte como 'exato_nao_confirmado'. Caso
+// real: "RUA MARIA SOARES SENDAS, 4200 - CENTRO, SAO JOAO DE MERITI" (CEP
+// 25575825) caiu no 4200 do CEP 25581325 (VENDA VELHA) e o cache gravou
+// 'exato' (-22.798651, -43.354889). Esse ponto nao confirma NAO FOI e
+// tambem nao libera o credito da parada proxima (vai a conferir): rebaixar
+// para 'rua' daria ENTREGUE sem prova (regra 2 do dono).
+describe('F4-04: exato sem confirmacao (exato_nao_confirmado) nao vale como ponto confirmado', () => {
+  const LAT0 = -22.798651
+  const LNG0 = -43.354889
+  const M_LNG = 1 / (111_195 * Math.cos(LAT0 * Math.PI / 180))
+  const em = (norteM: number) => ({ lat: LAT0 + norteM * M_LAT, lng: LNG0 + 0 * M_LNG })
+  const t = (hhmm: string) => `2026-10-14T${hhmm}:00.000Z`
+  const SENDAS = 'RUA MARIA SOARES SENDAS, 4200 - CENTRO, SÃO JOÃO DE MERITI'
+  const sendas = (geoPrecisao: LinhaGeocodificada['geoPrecisao']) =>
+    linha('NF4200', { endereco: SENDAS, ...em(0), geoConfiavel: true, geoPrecisao })
+  const resumo = { motorista: '', saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }
+  const longe = parada({ id: 'p', placa_norm: 'TTL7D40', classificacao: 'FORA_BASE', lat: em(5000).lat, lng: em(5000).lng })
+  const rodarLonge = (l: LinhaGeocodificada) =>
+    montarDetalheEntregas('93758', 'TTL7D40', [l], [], new Map(), resumo, true, new Map([['TTL7D40', [longe]]]))[0]
+  const pProxima = paradaForaBase('ponte-1', em(1200).lat, em(1200).lng, t('10:00'), t('10:12'), 'TTL7D40')
+  const rodarProxima = (l: LinhaGeocodificada) =>
+    chamarNutryMax([l], { placa: 'TTL7D40', paradasPorOutraPlaca: new Map([['TTL7D40', [pProxima]]]) })[0]
+
+  it('caminhao a 5 km do ponto: exato confirmado afirma NAO FOI (controle)', () => {
+    expect(rodarLonge(sendas('exato')).observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
+  })
+
+  it('caminhao a 5 km do ponto: exato_nao_confirmado NAO afirma NAO FOI -- coordenada a conferir', () => {
+    const d = rodarLonge(sendas('exato_nao_confirmado'))
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe(OBS_LONGE_DO_PONTO_NAO_CONFIRMADO)
+  })
+
+  it('parada de 12 min a 1,2 km: exato_nao_confirmado NAO credita ENTREGUE - PARADA PROXIMA (vai a conferir)', () => {
+    const d = rodarProxima(sendas('exato_nao_confirmado'))
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toBe('PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR')
+  })
+
+  it('parada de 12 min a 1,2 km: ponto de rua (sem confirmacao) segue a decisao de 06/10 (controle)', () => {
+    expect(rodarProxima(sendas('rua')).observacao).toBe('ENTREGUE - PARADA PRÓXIMA (500m-2km)')
+  })
+
+  it('cadastro Unitrac a <= 300 m confirma o ponto mesmo com exato_nao_confirmado (outra fonte)', () => {
+    const d = montarDetalheEntregas('93758', 'TTL7D40', [sendas('exato_nao_confirmado')],
+      [alvo('NF4200', 0, { pontoLat: em(100).lat, pontoLng: em(100).lng })], new Map(), resumo, true, new Map([['TTL7D40', [longe]]]))[0]
+    expect(d.observacao).toBe('NÃO FOI AO CLIENTE (caminhão não esteve na região)')
+  })
+})
+
 describe('Parada proxima propria -- guardas (ja confirmou outra NF, geo confiavel, GPS >=3 min)', () => {
   const OBS_PROXIMA = 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR'
   const LAT0 = -22.0

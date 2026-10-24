@@ -54,9 +54,11 @@ import { chaveCacheEndereco, separarCep } from './endereco-cep'
 // `precisao` (auditoria 20/10, GEO-01): exato | interpolado | trecho | rua,
 // vinda da escolha por CEP/bairro do Censo no monitoramento. Ausente = nao
 // informada (cache antigo, outra fonte) -- nunca sustenta "nao foi".
-export type PrecisaoGeocode = 'exato' | 'interpolado' | 'trecho' | 'rua'
+// F4-04 (GEO-28): 'exato_nao_confirmado' vem da ponte quando o numero bate
+// numa rua homonima sem CEP/bairro batendo. Ponte antiga nunca manda: nada muda.
+export type PrecisaoGeocode = 'exato' | 'exato_nao_confirmado' | 'interpolado' | 'trecho' | 'rua'
 export type ResultadoGeocode = { lat: number; lng: number; fonte?: string; confiavel: boolean; motivo?: string; precisao?: PrecisaoGeocode } | null
-const PRECISOES = new Set<string>(['exato', 'interpolado', 'trecho', 'rua'])
+const PRECISOES = new Set<string>(['exato', 'exato_nao_confirmado', 'interpolado', 'trecho', 'rua'])
 
 // Teto de itens por filtro `.in()` na leitura do cache -- request GET,
 // endereco vai na URL; lote grande demais estoura tamanho de URL e o
