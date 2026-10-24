@@ -82,6 +82,10 @@ export type HorarioBase = {
   // sinal fora da base e a 1a leitura que vale ja' estava fora -- instante
   // dela (mascarado, como o resto). Ausente = ponte antiga ou saida conhecida.
   saidaSemSinalAte?: string | null
+  // F2-09 (D-05): 64 faixas de 15 min (05:00-20:59 BRT), cada uma [total,
+  // atrasadas, total fora da base, atrasadas fora da base]. So' com
+  // incluirParadas; ausente = ponte antiga (nada se conclui).
+  leiturasPorFaixa?: number[][]
 }
 
 /** Parada derivada do historico continuo do monitoramento -- mesma forma
@@ -227,6 +231,7 @@ type ResultadoBruto = {
   leiturasTotal?: unknown
   leiturasAtrasadas?: unknown
   saidaSemSinalAte?: string | null
+  leiturasPorFaixa?: number[][]
 }
 
 function validarParadaBruta(p: unknown): ParadaBridge | null {
@@ -250,6 +255,10 @@ function validarParadaBruta(p: unknown): ParadaBridge | null {
   return null
 }
 
+function faixasValidas(f: unknown): f is number[][] {
+  return Array.isArray(f) && f.length === 64 && f.every(x => Array.isArray(x) && x.length === 4 && x.every(n => typeof n === 'number'))
+}
+
 function validarResultado(r: unknown): ResultadoBruto | null {
   if (
     typeof r === 'object' &&
@@ -259,10 +268,10 @@ function validarResultado(r: unknown): ResultadoBruto | null {
     ((r as { chegadaBase?: unknown }).chegadaBase === null || typeof (r as { chegadaBase?: unknown }).chegadaBase === 'string') &&
     ((r as { kmPercorrido?: unknown }).kmPercorrido === null || typeof (r as { kmPercorrido?: unknown }).kmPercorrido === 'number')
   ) {
-    const obj = r as { placa: string; saidaBase: string | null; chegadaBase: string | null; kmPercorrido: number | null; visitas?: unknown; paradas?: unknown; apagaoDeSinal?: unknown; leiturasTotal?: unknown; leiturasAtrasadas?: unknown; saidaSemSinalAte?: unknown }
+    const obj = r as { placa: string; saidaBase: string | null; chegadaBase: string | null; kmPercorrido: number | null; visitas?: unknown; paradas?: unknown; apagaoDeSinal?: unknown; leiturasTotal?: unknown; leiturasAtrasadas?: unknown; saidaSemSinalAte?: unknown; leiturasPorFaixa?: unknown }
     const visitasBrutas = Array.isArray(obj.visitas) ? obj.visitas.map(validarVisitaBruta).filter((v): v is VisitaBrutaResultado => v !== null) : undefined
     const paradasBrutas = Array.isArray(obj.paradas) ? obj.paradas.map(validarParadaBruta).filter((v): v is ParadaBridge => v !== null) : undefined
-    return { placa: obj.placa, saidaBase: obj.saidaBase, chegadaBase: obj.chegadaBase, kmPercorrido: obj.kmPercorrido, visitas: visitasBrutas, paradas: paradasBrutas, apagaoDeSinal: obj.apagaoDeSinal === true, ...(typeof obj.leiturasTotal === 'number' && typeof obj.leiturasAtrasadas === 'number' ? { leiturasTotal: obj.leiturasTotal, leiturasAtrasadas: obj.leiturasAtrasadas } : {}), ...(typeof obj.saidaSemSinalAte === 'string' ? { saidaSemSinalAte: obj.saidaSemSinalAte } : {}) }
+    return { placa: obj.placa, saidaBase: obj.saidaBase, chegadaBase: obj.chegadaBase, kmPercorrido: obj.kmPercorrido, visitas: visitasBrutas, paradas: paradasBrutas, apagaoDeSinal: obj.apagaoDeSinal === true, ...(typeof obj.leiturasTotal === 'number' && typeof obj.leiturasAtrasadas === 'number' ? { leiturasTotal: obj.leiturasTotal, leiturasAtrasadas: obj.leiturasAtrasadas } : {}), ...(typeof obj.saidaSemSinalAte === 'string' ? { saidaSemSinalAte: obj.saidaSemSinalAte } : {}), ...(faixasValidas(obj.leiturasPorFaixa) ? { leiturasPorFaixa: obj.leiturasPorFaixa } : {}) }
   }
   return null
 }
@@ -400,6 +409,7 @@ async function tentarLote(
         ...(typeof r.leiturasTotal === 'number' && typeof r.leiturasAtrasadas === 'number' ? { leiturasTotal: r.leiturasTotal, leiturasAtrasadas: r.leiturasAtrasadas } : {}),
         ...(incluirParadas ? { consultaPosicoesOk: r.paradas !== undefined } : {}),
         ...(r.saidaSemSinalAte ? { saidaSemSinalAte: paraBrtMascaradoComoUtc(r.saidaSemSinalAte) } : {}),
+        ...(r.leiturasPorFaixa ? { leiturasPorFaixa: r.leiturasPorFaixa } : {}),
       })
     }
   }

@@ -103,6 +103,8 @@ export function categoriaPendencia(status: string): string {
   if (s.startsWith('NÃO FOI AO CLIENTE')) return 'Não foi ao cliente'
   // F2-07 (KN-05): NAO FOI dentro de buraco de sinal (pendente, na conta).
   if (s.startsWith('SEM SINAL NO TRECHO DO CLIENTE')) return 'Sem sinal no trecho'
+  // F2-09 (KN-06, D-05): rastreador com falha no dia (pendente, na conta).
+  if (s.startsWith('RASTREADOR COM FALHA NO DIA')) return 'Rastreador com falha'
   if (s.startsWith('PARADA PRÓXIMA')) return 'Parada próxima'
   if (s.startsWith('PASSOU NO ENDEREÇO') || s.startsWith('PAROU NO ENDEREÇO')) return 'Passou sem registrar'
   if (s.startsWith('PASSOU A 500m-2km')) return 'Passou perto sem parar'

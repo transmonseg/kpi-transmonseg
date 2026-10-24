@@ -28,7 +28,7 @@ import { mapComLimite } from '@/lib/kpi-romaneio/concorrencia'
 import { buscarResolucoes, aplicarResolucoes } from '@/lib/kpi-romaneio/resolucoes'
 import { conferirParadaForaDoEndereco, verificarTerritorioNaPonte } from '@/lib/kpi-romaneio/parada-fora-do-endereco'
 import { resolverAliasPlacas, buscarHorariosBaseComAlias, montarCvPorPlaca, aplicarAliasEmConjunto, placasAliasDaFrota } from '@/lib/kpi-romaneio/alias-placa'
-import { buscarPlacasSemRastreador, placasSemRastreadorNoDia, placasProvisoriasNoDia, montarTemRastreadorPorPlaca, placasSemSinalComTrava } from '@/lib/kpi-romaneio/placas-sem-rastreador'
+import { buscarPlacasSemRastreador, placasSemRastreadorNoDia, placasProvisoriasNoDia, montarTemRastreadorPorPlaca, placasSemSinalComTrava, avaliarRastreadoresNoDia } from '@/lib/kpi-romaneio/placas-sem-rastreador'
 import { marcarSituacaoPlaca } from '@/lib/kpi-romaneio/placa-situacao'
 import { logarNfDuplicadaNaMesmaPlaca } from '@/lib/kpi-romaneio/nf-duplicada'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
@@ -443,6 +443,9 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   if (travaSemSinal.aviso) console.warn(`[KPI ${data}] ${travaSemSinal.aviso}`)
   const placasSemSinal = travaSemSinal.placas
   const temRastreadorPorPlaca = montarTemRastreadorPorPlaca(placasNorm, cvPorPlaca, horarioBasePorPlaca, placasSemRastreador, placasSemSinal)
+  // F2-09 (KN-06, D-05): rastreador com falha no dia (placa) e coletor fora
+  // (frota toda). Ponte antiga sem leiturasPorFaixa: nada conclui.
+  const avaliacaoRastreadores = avaliarRastreadoresNoDia(placasNorm, horarioBasePorPlaca)
 
   // Achado real 22/09 (RBG5G18 21/09): quando a ULTIMA volta a base
   // registrada e' na verdade uma volta extra sem entrega (fim da rota --
@@ -597,6 +600,8 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
           const h = horarioBasePorPlaca.get(placaNorm)
           return h?.leiturasTotal && h.leiturasAtrasadas !== undefined ? h.leiturasAtrasadas / h.leiturasTotal : undefined
         })(),
+        // F2-09 (D-05): sem NAO FOI nem escala divergente com o rastreador falhando.
+        avaliacaoRastreadores.falhas.has(placaNorm),
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
@@ -649,6 +654,11 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   ].sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
   if (travaSemSinal.aviso) {
     avisos.push({ carga: '—', placa: '—', motivo: 'consulta_posicoes_suspeita', semSinal: travaSemSinal.semSinal, totalPlacas: travaSemSinal.totalPlacas })
+  }
+  // F2-09: aviso interno -- coletor fora (dia) e rastreador com falha (placa).
+  for (const c of avaliacaoRastreadores.coletorFora) avisos.push({ carga: '—', placa: '—', motivo: 'coletor_fora', intervalo: `${c.inicio}–${c.fim}` })
+  for (const [placa, fracao] of [...avaliacaoRastreadores.falhas].sort((a, b) => a[0].localeCompare(b[0]))) {
+    avisos.push({ carga: '—', placa, motivo: 'rastreador_com_falha', fracaoAtrasada: fracao })
   }
   const falhasPonte = consumirFalhasPonte()
   if (falhasPonte > 0) avisos.push({ carga: '—', placa: '—', motivo: 'ponte_falhou', placasSemPonte: falhasPonte })

@@ -78,6 +78,8 @@ const LABEL_MOTIVO: Record<AvisoDescasamento['motivo'], string> = {
   motorista_multiplas_placas: 'Motorista em múltiplas placas',
   carga_multiregiao: 'Carga com NFs em regiões distantes',
   fonte_indisponivel: 'Fonte de dados indisponível — gere novamente',
+  coletor_fora: 'Coletor de posições fora do ar — conferir',
+  rastreador_com_falha: 'Rastreador com falha no dia — conferir',
 }
 
 // Task 2 (plano 2026-09-30, item 2): "Escala X × Romaneio Y (Z NFs a
@@ -126,6 +128,13 @@ export function textoAviso(a: AvisoDescasamento): string {
   }
   if (a.motivo === 'motorista_multiplas_placas' && a.motorista && a.placas) {
     return `MOTORISTA EM MÚLTIPLAS PLACAS: ${a.motorista} aparece nas placas ${a.placas.join(', ')} — conferir escala`
+  }
+  // F2-09 (KN-06, D-05).
+  if (a.motivo === 'coletor_fora' && a.intervalo) {
+    return `COLETOR FORA ${a.intervalo}: metade ou mais da frota sem leitura nova do rastreador — aviso da frota, não da placa. Conferir as NFs desse horário`
+  }
+  if (a.motivo === 'rastreador_com_falha' && a.fracaoAtrasada != null) {
+    return `RASTREADOR COM FALHA NO DIA: ${Math.round(a.fracaoAtrasada * 100)}% das leituras fora da base atrasadas (05h–21h) — NFs sem prova ficam "conferir", sem "não foi" nem "escala divergente". Mandar consertar`
   }
   if (a.motivo === 'carga_multiregiao' && a.distanciaKm != null) {
     return `CARGA COM NFs EM REGIÕES DISTANTES: carga ${a.carga} tem entregas separadas por ${a.distanciaKm} km — conferir rota`

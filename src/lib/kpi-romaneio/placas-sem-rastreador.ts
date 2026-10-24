@@ -217,3 +217,67 @@ export function placaSemSinalPelaUnitrac(p: {
   if (p.pontosRastroNoDia == null || p.pontosRastroNoDia >= 2) return false
   return !p.paradas.some(x => x.classificacao !== 'BASE')
 }
+
+// F2-09 (KN-06, D-05, plano mestre 23/10): rastreador com falha no dia.
+// RQV9B26 tem 59-100% das leituras atrasadas (> 15 min) todo dia e o KPI
+// afirmava NAO FOI e "escala divergente" (29 NFs em 15-16/10). A ponte nova
+// manda `leiturasPorFaixa` (64 faixas de 15 min, 05:00-20:59 BRT: total,
+// atrasadas, total fora da base, atrasadas fora da base).
+//  - Coletor fora: faixa em que, entre as placas do dia com leitura nela (no
+//    minimo 10), metade ou mais tem TODAS as leituras atrasadas. Aviso do dia,
+//    nao de placa (20/10 08:00-09:30: 82% da frota).
+//  - Placa com falha: fracao de leituras atrasadas FORA da base, sem as faixas
+//    de coletor fora, acima de 30% (D-05), com pelo menos 1 h de leituras fora
+//    da base. Medido em 15-22/10: RQV9B26 87% (15/10), 78% (16/10), 50%
+//    (22/10); na janela inteira (com a garagem) caminhao sadio que volta cedo
+//    passava de 30% (RQU1B50 48%, TOS1H26 41%, RBH9H53 31% em 22/10) e fora da
+//    base fica abaixo.
+export const LIMIAR_FRACAO_RASTREADOR_COM_FALHA = 0.3
+const MINIMO_LEITURAS_FORA_DA_BASE = 120
+const MINIMO_PLACAS_COLETOR = 10
+const FRACAO_PLACAS_COLETOR_FORA = 0.5
+const FAIXAS_DIA = 64
+
+function horaDaFaixa(i: number): string {
+  const min = 5 * 60 + i * 15
+  return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
+}
+
+export function avaliarRastreadoresNoDia(
+  placasNorm: string[],
+  horarioBasePorPlaca: Map<string, HorarioBase>,
+): { coletorFora: { inicio: string; fim: string }[]; falhas: Map<string, number> } {
+  const faixasPorPlaca = new Map<string, number[][]>()
+  for (const p of new Set(placasNorm)) {
+    const f = horarioBasePorPlaca.get(p)?.leiturasPorFaixa
+    if (f && f.length === FAIXAS_DIA) faixasPorPlaca.set(p, f)
+  }
+  const coletor = new Set<number>()
+  for (let i = 0; i < FAIXAS_DIA; i++) {
+    let com = 0, todasAtrasadas = 0
+    for (const f of faixasPorPlaca.values()) {
+      if (f[i][0] === 0) continue
+      com++
+      if (f[i][1] === f[i][0]) todasAtrasadas++
+    }
+    if (com >= MINIMO_PLACAS_COLETOR && todasAtrasadas / com >= FRACAO_PLACAS_COLETOR_FORA) coletor.add(i)
+  }
+  const coletorFora: { inicio: string; fim: string }[] = []
+  for (let i = 0; i < FAIXAS_DIA; i++) {
+    if (!coletor.has(i) || coletor.has(i - 1)) continue
+    let j = i
+    while (coletor.has(j + 1)) j++
+    coletorFora.push({ inicio: horaDaFaixa(i), fim: horaDaFaixa(j + 1) })
+  }
+  const falhas = new Map<string, number>()
+  for (const [p, f] of faixasPorPlaca) {
+    let total = 0, atrasadas = 0
+    for (let i = 0; i < FAIXAS_DIA; i++) {
+      if (coletor.has(i)) continue
+      total += f[i][2]
+      atrasadas += f[i][3]
+    }
+    if (total >= MINIMO_LEITURAS_FORA_DA_BASE && atrasadas / total > LIMIAR_FRACAO_RASTREADOR_COM_FALHA) falhas.set(p, atrasadas / total)
+  }
+  return { coletorFora, falhas }
+}

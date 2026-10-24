@@ -1783,6 +1783,13 @@ export function montarDetalheEntregas(
   // Rastreador vivo = quase todas frescas; morto/congelado = maioria atrasada.
   // undefined (ponte antiga / sem leituras) mantem o comportamento anterior.
   fracaoLeiturasAtrasadas?: number,
+  // F2-09 (KN-06, D-05): placa com mais de 30% das leituras fora da base
+  // atrasadas na janela 05-21 h (avaliarRastreadoresNoDia). Nada negativo e'
+  // afirmado: sem "escala divergente", e o pendente sem evidencia de posicao
+  // (NAO FOI, PASSOU, LONGE DO PONTO, sem confirmacao) vira "RASTREADOR COM
+  // FALHA NO DIA - CONFERIR" -- continua pendente, na conta (D-05: a placa tem
+  // rastreador, nao conta como correta). Default false = comportamento antigo.
+  rastreadorComFalhaNoDia: boolean = false,
 ): LinhaDetalheEntrega[] {
   const alvoPorNf = new Map(alvos.filter(a => a.documento).map(a => [a.documento as string, a]))
   // Task 2 (R2): pontos de referencia de CADA NF da placa no DIA INTEIRO
@@ -1878,6 +1885,8 @@ export function montarDetalheEntregas(
   // CARGA foi posta na placa certa", nao o dia inteiro da placa.
   const escalaDivergente = (() => {
     if (!detectarEscalaDivergente) return false
+    // F2-09: com o rastreador falhando, "nao passou no cliente" nao tem base.
+    if (rastreadorComFalhaNoDia) return false
     // Achado real 26/09 (correcoes finais pre-deploy, item 1): com o dia
     // ainda em andamento, NFs que faltam visitar nao podem virar "CONFERIR
     // ESCALA" -- a placa da escala ainda pode chegar nelas. Sem este corte,
@@ -3267,9 +3276,10 @@ export function montarDetalheEntregas(
   // F2-07 (KN-05): ultimo passo -- o NAO FOI que sobrou de toda a cadeia
   // (nenhuma regra acima o enxerga trocado) nao e' afirmado dentro de buraco
   // de sinal da propria placa.
-  const semSinalNoTrecho = (r: LinhaDetalheEntrega[]) => marcarSemSinalNoTrecho(r, linhasRomaneio, alvoPorNf, [
-    paradasPorOutraPlaca.get(placaNorm) ?? [], paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? [],
-  ])
+  const semSinalNoTrecho = (r: LinhaDetalheEntrega[]) => marcarSemSinalNoTrecho(
+    rastreadorComFalhaNoDia ? marcarRastreadorComFalha(r) : r, linhasRomaneio, alvoPorNf, [
+      paradasPorOutraPlaca.get(placaNorm) ?? [], paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? [],
+    ])
   if (modoPrecisao && placaComDuasCargasEmRegioesDiferentes(
     carga, placaNorm, linhasRomaneio, todasLinhasDaPlacaNoDia, alvoPorNf, visitasPorNf,
     paradasPorOutraPlaca, paradasUnitracCruasPropriaPlaca, menorDistanciaTrajetoPorNf, resultado,
@@ -3321,6 +3331,25 @@ function marcarSemSinalNoTrecho(
   })
 }
 const OBS_NAO_FOI_AO_CLIENTE = 'NÃO FOI AO CLIENTE (caminhão não esteve na região)'
+
+/** F2-09 (KN-06, D-05): rotulo das NFs pendentes sem evidencia de posicao de
+ *  placa com o rastreador falhando no dia. Contem 'CONFERIR' (REVISAR). */
+export const OBS_RASTREADOR_COM_FALHA = 'RASTREADOR COM FALHA NO DIA - CONFERIR'
+
+/** F2-09: ultimo passo (depois de toda confirmacao possivel): so' o pendente
+ *  que afirmaria ausencia (sem confirmacao, NAO FOI, PASSOU, LONGE DO PONTO). */
+function marcarRastreadorComFalha(resultado: LinhaDetalheEntrega[]): LinhaDetalheEntrega[] {
+  return resultado.map(d => {
+    if (d.status !== 'pendente') return d
+    if (d.observacao != null && !ROTULOS_SEM_EVIDENCIA_DE_POSICAO.some(r => d.observacao!.startsWith(r))) return d
+    const observacao = OBS_RASTREADOR_COM_FALHA
+    return {
+      ...d, observacao, chegada: null, saida: null, tempoParadaMin: null,
+      motivo: 'Rastreador com mais de 30% das leituras atrasadas fora da base no dia — não dá pra afirmar que não foi',
+      confianca: calcularConfianca(d.status, observacao),
+    }
+  })
+}
 
 // Task 2 (plano 2026-09-29): limiares da regra "placa com duas cargas em
 // regioes diferentes" -- ver bloco no fim de montarDetalheEntregas.

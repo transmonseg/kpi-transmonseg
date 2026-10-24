@@ -380,7 +380,11 @@ export type AvisoDescasamento = {
   motivo: 'sem_romaneio' | 'sem_escala' | 'nf_divergente' | 'consulta_posicoes_suspeita' | 'consulta_unitrac_falhou'
     | 'rq_sem_rota_custos' | 'rq_rota_sem_entregas' | 'rq_placa_sem_cv' | 'rq_sem_snapshot'
     | 'geocode_parcial' | 'motorista_multiplas_placas' | 'carga_multiregiao' | 'rq_relatorio_sem_checkin' | 'ponte_falhou'
-    | 'fonte_indisponivel'
+    | 'fonte_indisponivel' | 'coletor_fora' | 'rastreador_com_falha'
+  /** So' em 'coletor_fora' (F2-09): faixa "hh:mm–hh:mm" BRT em que metade ou mais da frota ficou sem leitura nova. */
+  intervalo?: string
+  /** So' em 'rastreador_com_falha' (F2-09, D-05): fracao (0..1) das leituras fora da base atrasadas entre 05h e 21h. */
+  fracaoAtrasada?: number
   /** So' em 'fonte_indisponivel' (GN-06, auditoria 20/10): leitura que falhou nesta geracao. */
   fonte?: 'resolucoes' | 'sem_rastreador' | 'trocas_placa' | 'locais_clientes' | 'territorio'
   /** So' em 'geocode_parcial' (incidente 01/10): enderecos sem resultado porque a
