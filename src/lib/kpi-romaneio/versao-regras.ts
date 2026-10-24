@@ -12,9 +12,21 @@ export const CAMINHOS_REGRAS = [
   'src/lib/fusion', 'src/lib/escalas', 'src/lib/parsers', 'src/lib/utils', 'src/lib/data-br.ts',
 ]
 
-type Deps = { env?: Record<string, string | undefined>; executar?: (args: string[]) => string }
+/** F2-REV-08: dentro das pastas das regras, o que NAO muda a classificacao de
+ *  NF nenhuma -- testes, fixtures, textos e telas (busca/carga/historico do
+ *  Ao vivo, investigacao, "Baixar pendentes", a propria versao). Um deploy so'
+ *  disso nao separa dias com a mesma regra. */
+export const EXCLUIDOS_REGRAS = [
+  ':(exclude,glob)**/*.test.ts', ':(exclude,glob)**/*.fixture*', ':(exclude,glob)**/*.patch', ':(exclude,glob)**/__fixtures__/**',
+  ':(exclude)src/lib/kpi-romaneio/experimentos',
+  ...['relatorio-pendentes', 'investigacao', 'investigacao-rotulos', 'investigacao-resumo', 'versao-regras', 'versao-regras-aviso',
+    'ao-vivo-busca', 'ao-vivo-carga', 'ao-vivo-historico', 'dry-guarda', 'comparar-kpi', 'auditoria-nf'].map(f => `:(exclude)src/lib/kpi-romaneio/${f}.ts`),
+]
 
-const executarGit = (args: string[]) => execFileSync('git', args, { cwd: process.cwd(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 5000 })
+type Deps = { env?: Record<string, string | undefined>; executar?: (args: string[]) => string; avisar?: (m: string) => void }
+
+// stderr capturado: a mensagem do erro traz o motivo (ex.: dubious ownership).
+const executarGit = (args: string[]) => execFileSync('git', args, { cwd: process.cwd(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 5000 })
 
 let cache: string | null | undefined
 
@@ -22,13 +34,18 @@ let cache: string | null | undefined
 export function versaoDasRegras(deps?: Deps): string | null {
   const env = deps?.env ?? process.env
   if (env.KPI_REGRAS_VERSAO?.trim()) return env.KPI_REGRAS_VERSAO.trim()
-  if (!deps && cache !== undefined) return cache
+  if (!deps?.executar && cache !== undefined) return cache
   let v: string | null = null
   try {
-    v = (deps?.executar ?? executarGit)(['log', '-1', '--format=%h', '--', ...CAMINHOS_REGRAS, ':!*.test.ts', ':!*.fixture*']).trim() || null
-  } catch {
+    v = (deps?.executar ?? executarGit)(['log', '-1', '--format=%h', '--', ...CAMINHOS_REGRAS, ...EXCLUIDOS_REGRAS]).trim() || null
+  } catch (err) {
+    // F2-REV-08: git que falha (dubious ownership, git ausente, timeout) nao
+    // e' mais silencioso -- o dia sai sem versao e o log diz por que. Uma vez
+    // por processo (o resultado fica em cache).
+    const motivo = (err instanceof Error ? err.message : String(err)).replace(/\s+/g, ' ').trim().slice(0, 300)
+    ;(deps?.avisar ?? ((m: string) => console.warn(m)))(`AVISO versão das regras: git log falhou em ${process.cwd()} (${motivo}) -- o cálculo sai sem versão; defina KPI_REGRAS_VERSAO ou corrija o git`)
     v = null
   }
-  if (!deps) cache = v
+  if (!deps?.executar) cache = v
   return v
 }
