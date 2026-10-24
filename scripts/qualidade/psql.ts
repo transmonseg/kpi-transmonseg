@@ -1,5 +1,5 @@
-// Leitura do Postgres do servidor para o placar de qualidade (F1-01) e o
-// diagnostico das prioridades (F1-16). SO' LEITURA: toda sessao abre com
+// Postgres do servidor para o placar de qualidade (F1-01) e o
+// diagnostico das prioridades (F1-16). Leitura: toda sessao abre com
 // default_transaction_read_only=on (qualquer INSERT/UPDATE/DDL falha) e
 // statement_timeout de 2 min. No servidor roda como root via sudo -u postgres
 // (igual a scripts/auditoria-diaria.sh); no Mac, PLACAR_SSH=<host> manda o
@@ -14,6 +14,34 @@ export function comandoPsql(db: string, sql: string, ssh?: string): [string, str
   const args = ['-n', '-u', 'postgres', 'env', PGOPTIONS, 'psql', '-X', '-q', '-tA', '-v', 'ON_ERROR_STOP=1', '-d', db, '-c', sql]
   if (!ssh) return ['sudo', args]
   return ['ssh', [ssh, ['sudo', ...args].map(aspasShell).join(' ')]]
+}
+
+/** Sessao de ESCRITA (so' o --gravar do placar, OK do dono 23/10): sem
+ *  read-only, mesmo timeout, SQL pelo stdin (-f -). */
+export function comandoPsqlEscrita(db: string, ssh?: string): [string, string[]] {
+  const args = ['-n', '-u', 'postgres', 'env', 'PGOPTIONS=-c statement_timeout=120000', 'psql', '-X', '-q', '-v', 'ON_ERROR_STOP=1', '-d', db, '-f', '-']
+  if (!ssh) return ['sudo', args]
+  return ['ssh', [ssh, ['sudo', ...args].map(aspasShell).join(' ')]]
+}
+
+/** Upsert das linhas do placar em qualidade_diaria; o JSON vai num
+ *  dollar-quote cuja tag nao aparece no texto. null = nada a gravar. */
+export function sqlGravarPlacar(linhas: { dia: string; cliente: string; metrica: string; valor: number; detalhe: Record<string, unknown> | null }[]): string | null {
+  if (linhas.length === 0) return null
+  const json = JSON.stringify(linhas)
+  let tag = '$placar$'
+  for (let i = 0; json.includes(tag); i++) tag = `$placar_${i}$`
+  return `insert into public.qualidade_diaria (dia, cliente, metrica, valor, detalhe)
+select x.dia, x.cliente, x.metrica, x.valor, x.detalhe
+from jsonb_to_recordset(${tag}${json}${tag}::jsonb) as x(dia date, cliente text, metrica text, valor numeric, detalhe jsonb)
+on conflict (dia, cliente, metrica) do update set valor = excluded.valor, detalhe = excluded.detalhe, medido_em = now();
+`
+}
+
+/** Grava (sessao de escrita); erro do psql sobe como excecao. */
+export function gravarNoBanco(db: string, sql: string): void {
+  const [cmd, args] = comandoPsqlEscrita(db, process.env.PLACAR_SSH || undefined)
+  execFileSync(cmd, args, { input: sql, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['pipe', 'pipe', 'pipe'] })
 }
 
 /** Literal SQL de data (so' AAAA-MM-DD; nada de texto livre na SQL). */

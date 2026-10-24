@@ -1,18 +1,19 @@
 // F1-01 (plano mestre 23/10): placar de qualidade diario, SO' LEITURA.
 // Mede o dia anterior (Brasilia) nos dois bancos e no log do Postgres e grava
 // /srv/kpi-transmonseg/qualidade/AAAA-MM-DD.json com linhas
-// (dia, cliente, metrica, valor, detalhe) -- o formato da futura tabela
-// qualidade_diaria. Nunca vai ao cliente; nao manda mensagem.
+// (dia, cliente, metrica, valor, detalhe); com --gravar tambem faz upsert em
+// qualidade_diaria (unica escrita; OK do dono 23/10). Nunca vai ao cliente;
+// nao manda mensagem.
 // Cada fonte e' independente: se uma falhar, vira "erros" no JSON e o resto sai.
 //
 // Uso (no servidor, como root):
-//   npx tsx --tsconfig tsconfig.json scripts/placar-qualidade.ts [AAAA-MM-DD] [--saida DIR] [--stdout]
+//   npx tsx --tsconfig tsconfig.json scripts/placar-qualidade.ts [AAAA-MM-DD] [--saida DIR] [--stdout] [--gravar]
 // Pelo Mac (lendo o servidor por ssh):
 //   PLACAR_SSH=transmonseg-vps npx tsx scripts/placar-qualidade.ts 2026-10-22 --saida /tmp/q
 import { mkdirSync, writeFileSync } from 'fs'
 import path from 'path'
 import { metricasDoAoVivo, metricasAgregadas, contarTimeoutsDoDia, diaDoPlacar, montarPlacar, type LinhaCalculo, type LinhaPlacar } from '../src/lib/qualidade/placar'
-import { consultarJson, rodarNoServidor, sqlLiteral } from './qualidade/psql'
+import { consultarJson, gravarNoBanco, rodarNoServidor, sqlGravarPlacar, sqlLiteral } from './qualidade/psql'
 
 const CLIENTES = ['nutrimax', 'rioquality'] as const
 const LOGS_PG = ['/var/log/postgresql/postgresql-17-main.log', '/var/log/postgresql/postgresql-17-main.log.1']
@@ -21,14 +22,15 @@ type Agregada = { cliente: string | null; metrica: string; valor: number; detalh
 
 function args() {
   const a = process.argv.slice(2)
-  let dia: string | null = null, saida = '/srv/kpi-transmonseg/qualidade', stdout = false
+  let dia: string | null = null, saida = '/srv/kpi-transmonseg/qualidade', stdout = false, gravar = false
   for (let i = 0; i < a.length; i++) {
     if (a[i] === '--saida') saida = a[++i]
     else if (a[i] === '--stdout') stdout = true
+    else if (a[i] === '--gravar') gravar = true
     else if (/^\d{4}-\d{2}-\d{2}$/.test(a[i])) dia = a[i]
     else { console.error(`argumento desconhecido: ${a[i]}`); process.exit(2) }
   }
-  return { dia: dia ?? diaDoPlacar(Date.now()), saida, stdout }
+  return { dia: dia ?? diaDoPlacar(Date.now()), saida, stdout, gravar }
 }
 
 /** Janela do dia de Brasilia em timestamptz. */
@@ -91,7 +93,7 @@ function sqlMonitoramento(d: string) {
 }
 
 async function main() {
-  const { dia, saida, stdout } = args()
+  const { dia, saida, stdout, gravar } = args()
   const d = sqlLiteral(dia)
   const grupos: LinhaPlacar[][] = []
   const erros: { fonte: string; erro: string }[] = []
@@ -122,6 +124,13 @@ async function main() {
     const arq = path.join(saida, `${dia}.json`)
     writeFileSync(arq, json)
     console.log(`placar ${dia}: ${placar.linhas.length} linhas, ${erros.length} erro(s) -> ${arq}`)
+  }
+  if (gravar) {
+    const sql = sqlGravarPlacar(placar.linhas)
+    try {
+      if (sql) gravarNoBanco('kpi_transmonseg', sql)
+      console.log(`qualidade_diaria: ${placar.linhas.length} linhas gravadas`)
+    } catch (e) { erros.push({ fonte: 'gravar_qualidade_diaria', erro: String((e as Error).message ?? e).slice(0, 500) }) }
   }
   for (const c of CLIENTES) {
     const v = (m: string) => placar.linhas.find(l => l.cliente === c && l.metrica === m)?.valor
