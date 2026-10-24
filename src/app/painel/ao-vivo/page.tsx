@@ -12,6 +12,7 @@ import { CATEGORIAS_INVESTIGACAO, ROTULO_INVESTIGACAO, fraseInvestigacao } from 
 import { juntarEstado, mensagemFalhaCarga } from '@/lib/kpi-romaneio/ao-vivo-carga'
 import { buscarComSessao, lerJson, SessaoVencida } from '@/lib/sessao-fetch'
 import { SubirRomaneio, ReciboEnvio, type EnvioRomaneio } from './subir-romaneio'
+import { useRolarQuandoPronto } from './rolar-quando-pronto'
 import { montarPayloadTroca } from './troca-payload'
 import { textoSugestao, corpoSugestao } from './sugestao-texto'
 import { mensagemDaTroca, type RespostaTroca } from '../nutrimax/placas/troca-dia'
@@ -187,6 +188,9 @@ export default function AoVivoPage() {
     return () => { vivo = false; clearInterval(t) }
   }, [placa?.placa, dataSel]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // F3-07 revisão (R8): rolagem até o envio espera a tela do cliente carregar.
+  const rolarPara = useRolarQuandoPronto(!!estado)
+
 
   async function gerarAgora() {
     setGerando(true)
@@ -256,10 +260,12 @@ export default function AoVivoPage() {
   const trocarDia = (d: string) => { setDataSel(d === estado.hoje ? null : d); setPlacaSel(null); setNfAberta(null); setVendoDetalhe(false); setAgora({}); setBusca(''); setFiltroPlacas('todas') }
 
   // F3-07: "Subir" do checklist da manhã abre o envio do cliente do item.
+  // Revisão (R8): trocarCliente zera o estado; a rolagem espera a carga
+  // (useRolarQuandoPronto) em vez de um setTimeout de 150 ms.
   const subirDoChecklist = (c: Cliente) => {
     if (c !== cliente) trocarCliente(c)
     setSubindo(true)
-    setTimeout(() => document.getElementById('subir-romaneio')?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 150)
+    rolarPara('subir-romaneio')
   }
 
   return (
