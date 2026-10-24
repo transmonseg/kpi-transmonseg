@@ -9,6 +9,7 @@ import { RAIO_CONFIRMACAO_AMPLIADO_METROS } from './constants'
 import type { Investigacao } from './investigacao'
 import { OBS_NAO_SAIU_DA_BASE } from './types'
 import { PREFIXOS_STATUS_PLACA_FORA_DA_CONTA } from './placa-situacao'
+import { paradasSeguidasDeSaltoImpossivel } from './buraco-sinal'
 
 /** pendente = rota ainda rodando; nao_confirmada = a rota acabou e a NF não
  *  foi confirmada (conta como não entregue na taxa). fora_da_conta (F1-10) =
@@ -199,7 +200,10 @@ export function paradaDaChegada(paradas: UnitracParadaRow[], chegadaIso: string 
   if (!chegadaIso) return null
   const t = Date.parse(chegadaIso)
   if (!Number.isFinite(t)) return null
+  // F2-08 (KN-07): parada congelada seguida de salto impossivel nao e' o ponto.
+  const congeladas = paradasSeguidasDeSaltoImpossivel(paradas)
   const comCoord = paradas
+    .filter(p => !congeladas.has(p))
     .map(p => ({ p, lat: (p as UnitracParadaRow & { lat?: number | null }).lat, lng: (p as UnitracParadaRow & { lng?: number | null }).lng }))
     .filter((x): x is { p: UnitracParadaRow; lat: number; lng: number } => x.lat != null && x.lng != null)
   // Na virada entre duas paradas (uma termina quando a outra começa), vale a

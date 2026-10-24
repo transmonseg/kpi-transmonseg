@@ -39,21 +39,36 @@ export type BuracoSinal = {
 type ParadaComPonto = UnitracParadaRow & { lat: number; lng: number }
 const ms = (iso: string | null | undefined) => (iso ? Date.parse(iso) : NaN)
 
-/** Buracos de sinal na cadeia de paradas de UMA fonte (não misturar ponte e
- *  Unitrac: as duas cadeias juntas fabricariam saltos entre fontes). */
-export function acharBuracosDeSinal(paradas: UnitracParadaRow[]): BuracoSinal[] {
+/** Pares (parada, proxima) da cadeia de UMA fonte com salto impossivel entre
+ *  o fim de uma e o comeco da outra. */
+function saltosImpossiveis(paradas: UnitracParadaRow[]): { a: ParadaComPonto; b: ParadaComPonto; saltoM: number }[] {
   const cadeia = paradas
     .filter((p): p is ParadaComPonto => p.lat != null && p.lng != null && Number.isFinite(ms(p.chegada)))
     .sort((x, y) => ms(x.chegada) - ms(y.chegada))
-  const buracos: BuracoSinal[] = []
+  const out: { a: ParadaComPonto; b: ParadaComPonto; saltoM: number }[] = []
   for (let i = 0; i + 1 < cadeia.length; i++) {
     const a = cadeia[i], b = cadeia[i + 1]
     const saltoM = haversine(a.lat, a.lng, b.lat, b.lng)
     if (saltoM <= SALTO_MIN_M) continue
     const fimA = ms(a.fim_real ?? a.saida ?? a.chegada)
     const horas = Math.max(0, ms(b.chegada) - (Number.isFinite(fimA) ? fimA : ms(a.chegada))) / 3_600_000
-    const impossivel = horas === 0 || saltoM / 1000 / horas > VELOCIDADE_IMPOSSIVEL_KMH
-    if (!impossivel) continue
+    if (horas === 0 || saltoM / 1000 / horas > VELOCIDADE_IMPOSSIVEL_KMH) out.push({ a, b, saltoM })
+  }
+  return out
+}
+
+/** F2-08 (KN-07, RQV9B26 22/10 api-1): parada seguida de salto impossivel e'
+ *  posicao congelada -- nao serve de local da entrega (parada-fora-do-
+ *  endereco.ts) nem de ponto da parada no Ao vivo. Uma fonte por chamada. */
+export function paradasSeguidasDeSaltoImpossivel(paradas: UnitracParadaRow[]): Set<UnitracParadaRow> {
+  return new Set(saltosImpossiveis(paradas).map(x => x.a))
+}
+
+/** Buracos de sinal na cadeia de paradas de UMA fonte (não misturar ponte e
+ *  Unitrac: as duas cadeias juntas fabricariam saltos entre fontes). */
+export function acharBuracosDeSinal(paradas: UnitracParadaRow[]): BuracoSinal[] {
+  const buracos: BuracoSinal[] = []
+  for (const { a, b, saltoM } of saltosImpossiveis(paradas)) {
     const duracaoMin = (ms(b.chegada) - ms(a.chegada)) / 60_000
     if (duracaoMin < BURACO_MIN_MIN) continue
     buracos.push({ inicio: a.chegada, fim: b.chegada, duracaoMin: Math.round(duracaoMin), saltoM: Math.round(saltoM), a: { lat: a.lat, lng: a.lng }, b: { lat: b.lat, lng: b.lng } })

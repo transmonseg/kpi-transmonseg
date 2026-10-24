@@ -19,6 +19,7 @@ import { haversine } from '@/lib/utils/geo'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import type { AlvoApi } from '@/lib/unitrac-api/alvos'
 import { acessoSomentePorBarco } from './acesso-restrito'
+import { paradasSeguidasDeSaltoImpossivel } from './buraco-sinal'
 import { calcularConfianca, gerarMotivo, PREFIXO_OBS_PARADA_FORA_DO_ENDERECO } from './agregacao'
 import type { LinhaDetalheEntrega, LinhaGeocodificada } from './types'
 
@@ -49,8 +50,15 @@ export type VerificarTerritorio = (pontos: CandidatoParadaFora[]) => Promise<Map
 const valida = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && n !== 0
 const fimDa = (p: UnitracParadaRow) => p.fim_real ?? p.saida ?? p.chegada
 
+// F2-08 (KN-07): parada seguida de salto impossivel (GPS congelado, RQV9B26
+// 22/10 api-1 em Penha 13,5 km antes da proxima) nao e' o local da entrega --
+// fora da escolha do ponto (e do "parou no endereco"). Cada fonte e' uma cadeia.
 function paradasDaPlaca(ctx: ContextoParadaForaDoEndereco, placa: string): (UnitracParadaRow & { lat: number; lng: number })[] {
-  return [...(ctx.paradasPorPlaca.get(placa) ?? []), ...(ctx.paradasCruasPorPlaca.get(placa) ?? [])]
+  const semCongeladas = (lista: UnitracParadaRow[]) => {
+    const suspeitas = paradasSeguidasDeSaltoImpossivel(lista)
+    return lista.filter(p => !suspeitas.has(p))
+  }
+  return [...semCongeladas(ctx.paradasPorPlaca.get(placa) ?? []), ...semCongeladas(ctx.paradasCruasPorPlaca.get(placa) ?? [])]
     .filter((p): p is UnitracParadaRow & { lat: number; lng: number } => p.classificacao === 'FORA_BASE' && valida(p.lat) && valida(p.lng))
 }
 
