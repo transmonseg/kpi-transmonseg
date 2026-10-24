@@ -16,32 +16,83 @@ import { diaAnterior, precisaFecharDia, precisaReconferirTerritorio } from '../s
 import { limparCacheDia } from '../src/lib/kpi-romaneio/cache-dia'
 import { repararDia, depsReaisReparo } from '../src/lib/kpi-romaneio/reparar-dia'
 import { sincronizarAcessosMonitoramento } from '../src/lib/acessos-monitoramento'
+import { registrarSyncFusion, lerStatusFusion, gravarStatusFusion } from '../src/lib/kpi-rioquality/status-fusion-banco'
+import { decidirAlertaFusion, marcarAlertaFusion, type StatusFusion } from '../src/lib/kpi-rioquality/status-fusion'
+import { execFile } from 'node:child_process'
 
 const log = (m: string) => console.log(`${new Date().toISOString()} ${m}`)
 const horaBRAgora = () => Number(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false })) % 24
 
 // Puxa o dia da Fusion e grava no Ao vivo. Nunca lanca (fail-open): o tick segue pro calculo.
+// F2-05 (KRQ-05): toda tentativa fica registrada (status-fusion-banco.ts),
+// inclusive o dia manual -- a tela mostra o banner e o tick decide o alerta.
 export async function sincronizarFusionRioQuality(data: string): Promise<'ok' | 'sem_dados' | 'manual' | 'erro'> {
-  try {
-    // Auditoria 20/10 (RQ-10): romaneio subido a mao (planilha com bairro e NF
-    // real) vale mais que o da Fusion (sem bairro) -- nao sobrescreve.
-    if ((await fonteDoDiaAoVivo('rioquality', data)) === 'manual') return 'manual'
-    const linhas = await buscarDiaRioQualityFusion(data)
-    if (linhas.length === 0) return 'sem_dados'
-    await guardarDiaAoVivo({
-      cliente: 'rioquality', data, escala: [], romaneio: linhas,
-      pao: { linhas: [], escala: [] }, escalaEnviada: false, paoEnviado: false,
-      enviadoPor: 'cron-fusion', fonte: 'fusion',
+  let erro: string | null = null
+  const s = await tentarFusionRioQuality(data).catch(e => { erro = String(e); log(`Fusion RQ ${data}: ${erro}`); return 'erro' as const })
+  await registrarSyncFusion(data, { situacao: s, em: new Date().toISOString(), erro })
+  return s
+}
+
+async function tentarFusionRioQuality(data: string): Promise<'ok' | 'sem_dados' | 'manual'> {
+  // Auditoria 20/10 (RQ-10): romaneio subido a mao (planilha com bairro e NF
+  // real) vale mais que o da Fusion (sem bairro) -- nao sobrescreve.
+  if ((await fonteDoDiaAoVivo('rioquality', data)) === 'manual') return 'manual'
+  const linhas = await buscarDiaRioQualityFusion(data)
+  if (linhas.length === 0) return 'sem_dados'
+  await guardarDiaAoVivo({
+    cliente: 'rioquality', data, escala: [], romaneio: linhas,
+    pao: { linhas: [], escala: [] }, escalaEnviada: false, paoEnviado: false,
+    enviadoPor: 'cron-fusion', fonte: 'fusion',
+  })
+  // Ponte pro Monitoramento: os carros da RQ aparecem no mapa (modo Romaneio)
+  // com a data do dia fixa. Fail-open -- não derruba a sincronização.
+  const mon = await enviarRioQualityAoMonitoramento(data, linhasParaMonitoramentoRQ(linhas))
+  if (!mon.ok) log(`monitoramento RQ ${data}: erro ${mon.erro}`)
+  return 'ok'
+}
+
+/** F2-05: o alerta interno sai so' com KPI_ALERTA_FUSION_DM=1 (desligado por
+ *  padrao; o dono liga quando quiser). Vai so' ao dono, nunca a cliente. */
+export const alertaFusionLigado = (env: Record<string, string | undefined> = process.env) => env.KPI_ALERTA_FUSION_DM === '1'
+
+/** Mesmo canal dos outros alertas do servidor (alertar-dm.mjs do
+ *  monitoramento: DM so' ao dono, no maximo 1 por chave a cada 6 h). */
+function enviarAlertaDm(chave: string, texto: string): Promise<void> {
+  const script = process.env.KPI_ALERTAR_DM_SCRIPT ?? '/srv/transmonseg/definitivo/scripts/alertar-dm.mjs'
+  return new Promise(resolve => {
+    execFile('node', [script, chave, texto], { timeout: 60_000 }, (err, out, errOut) => {
+      if (err) log(`alerta ${chave}: falhou (${err.message}) ${String(errOut).slice(0, 200)}`)
+      else log(String(out).trim() || `alerta ${chave}: enviado`)
+      resolve()
     })
-    // Ponte pro Monitoramento: os carros da RQ aparecem no mapa (modo Romaneio)
-    // com a data do dia fixa. Fail-open -- não derruba a sincronização.
-    const mon = await enviarRioQualityAoMonitoramento(data, linhasParaMonitoramentoRQ(linhas))
-    if (!mon.ok) log(`monitoramento RQ ${data}: erro ${mon.erro}`)
-    return 'ok'
-  } catch (e) {
-    log(`Fusion RQ ${data}: ${e}`)
-    return 'erro'
+  })
+}
+
+type DepsAlertaFusion = {
+  ler: (data: string) => Promise<StatusFusion | null>
+  gravar: (data: string, s: StatusFusion) => Promise<boolean>
+  enviar: (chave: string, texto: string) => Promise<void>
+  agoraMs: number
+  ligado: boolean
+  log: (m: string) => void
+}
+
+/** 60 min sem a Fusion responder entre 05h e 21h BRT: prepara o alerta ao
+ *  dono, uma vez por queda. Desligado: so' registra no log. */
+export async function alertarFusionSeParada(data: string, deps: DepsAlertaFusion = {
+  ler: d => lerStatusFusion(d), gravar: (d, st) => gravarStatusFusion(d, st), enviar: enviarAlertaDm,
+  agoraMs: Date.now(), ligado: alertaFusionLigado(), log,
+}): Promise<'nada' | 'desligado' | 'enviado'> {
+  const status = await deps.ler(data)
+  const texto = decidirAlertaFusion(status, deps.agoraMs)
+  if (!status || !texto) return 'nada'
+  await deps.gravar(data, marcarAlertaFusion(status, new Date(deps.agoraMs).toISOString()))
+  if (!deps.ligado) {
+    deps.log(`alerta Fusion preparado, envio desligado (KPI_ALERTA_FUSION_DM): ${texto}`)
+    return 'desligado'
   }
+  await deps.enviar('fusion-rq', texto)
+  return 'enviado'
 }
 
 export async function fecharDiaAnterior() {
@@ -106,6 +157,7 @@ async function main() {
     if (cliente === 'rioquality') {
       const s = await sincronizarFusionRioQuality(data)
       if (s !== 'ok' && s !== 'manual') log(`fusion rioquality ${data}: ${s}`)
+      await alertarFusionSeParada(data).catch(err => log(`alerta Fusion: ${err}`))
     }
     const r = await calcularAoVivo(cliente, data, log)
     if (r !== 'ok') log(`ao vivo ${cliente} ${data}: ${r}`)

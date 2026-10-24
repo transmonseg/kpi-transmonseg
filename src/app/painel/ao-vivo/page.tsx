@@ -17,6 +17,7 @@ import { mensagemDaTroca, type RespostaTroca } from '../nutrimax/placas/troca-di
 import { baixarPendentes } from './baixar-pendentes'
 import { linhasPendentes } from '@/lib/kpi-romaneio/relatorio-pendentes'
 import { avisoVersaoRegras } from '@/lib/kpi-romaneio/versao-regras-aviso'
+import { bannerFusion, type StatusFusion } from '@/lib/kpi-rioquality/status-fusion'
 import type { ModoTroca } from '@/lib/kpi-romaneio/trocas-placa'
 
 // Tela "Ao vivo" (spec 2026-10-06-kpi-ao-vivo-design.md). Cor/status de cada
@@ -26,7 +27,7 @@ import type { ModoTroca } from '@/lib/kpi-romaneio/trocas-placa'
 type Cliente = 'nutrimax' | 'rioquality'
 const NOME_CLIENTE: Record<Cliente, string> = { nutrimax: 'Nutry Max', rioquality: 'Rio Quality' }
 type Agora = { posicao: { lat: number | null; lng: number | null; datagps: string | null } | null; parada: { inicio: string } | null; nf: { nf: string; cliente: string } | null; consultadoEm: string }
-type Estado = EstadoAoVivo & { data: string; hoje: string; historico: boolean; dias: string[]; clientes: Cliente[]; fonte?: 'ao_vivo' | 'geracao' | null; geracaoId?: string | null; versaoRegrasAtual?: string | null }
+type Estado = EstadoAoVivo & { data: string; hoje: string; historico: boolean; dias: string[]; clientes: Cliente[]; fonte?: 'ao_vivo' | 'geracao' | null; geracaoId?: string | null; versaoRegrasAtual?: string | null; fusion?: StatusFusion | null }
 
 /** "2026-10-03" -> "sex, 03/10". */
 function rotuloDia(d: string): string {
@@ -188,6 +189,28 @@ export default function AoVivoPage() {
     }
   }
 
+  // F2-05: dia travado no envio manual -> "voltar a puxar da Fusion" (troca a
+  // planilha subida pela da Fusion, que vem sem bairro; por isso confirma).
+  const [voltandoFusion, setVoltandoFusion] = useState(false)
+  const [msgFusion, setMsgFusion] = useState<string | null>(null)
+  async function voltarAPuxarDaFusion() {
+    if (!window.confirm('A planilha subida à mão será trocada pela da Fusion (sem bairro) e a Fusion volta a ser consultada a cada 10 min. Continuar?')) return
+    setVoltandoFusion(true)
+    setMsgFusion(null)
+    try {
+      const r = await fetch('/api/kpi/ao-vivo/fusion?cliente=rioquality', { method: 'POST' })
+      const j = (await r.json().catch(() => ({}))) as { motivo?: string; nfs?: number }
+      setMsgFusion(r.ok ? `Dia voltou para a Fusion: ${j.nfs ?? 0} notas. O KPI recalcula em uns 3 minutos.`
+        : j.motivo === 'sem_dados_fusion' ? 'A Fusion ainda não tem o romaneio de hoje. O dia continua com o envio manual.'
+        : 'A Fusion não respondeu. O dia continua com o envio manual.')
+      await carregar()
+    } catch {
+      setMsgFusion('Não consegui falar com o servidor. O dia continua com o envio manual.')
+    } finally {
+      setVoltandoFusion(false)
+    }
+  }
+
   async function baixarRelatorioPendentes() {
     if (!estado) return
     try {
@@ -282,6 +305,23 @@ export default function AoVivoPage() {
           <WarningCircle size={16} weight="fill" />O último cálculo falhou às {hhmm(estado.ultimoErro.em)}. A tela mostra os dados de {hhmm(r?.calculadoEm)}; o próximo cálculo tenta de novo.
         </p>
       )}
+      {/* F2-05 (KRQ-05): Fusion fora ou dia travado no envio manual (só RQ, só hoje). */}
+      {!historico && cliente === 'rioquality' && (() => {
+        const b = bannerFusion(estado.fusion ?? null, estado.dia ? { fonte: estado.dia.fonte ?? null, enviadoEm: estado.dia.enviadoEm } : null)
+        if (!b) return msgFusion && <p className="text-[13px] text-[var(--color-fg-muted)]">{msgFusion}</p>
+        return (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-[var(--color-warning-soft)] px-4 py-2.5 text-[13px] text-[var(--color-warning-soft-fg)]">
+            <span className="inline-flex items-center gap-2"><WarningCircle size={16} weight="fill" />{b.texto}</span>
+            {b.acao === 'voltar_fusion' && (
+              <button type="button" onClick={voltarAPuxarDaFusion} disabled={voltandoFusion}
+                className="inline-flex h-8 items-center rounded-full border border-current px-3.5 text-[12.5px] font-semibold transition hover:bg-white/40 active:scale-[0.98] disabled:opacity-50">
+                {voltandoFusion ? 'Puxando…' : 'Voltar a puxar da Fusion'}
+              </button>
+            )}
+            {msgFusion && <span className="w-full text-[12.5px]">{msgFusion}</span>}
+          </div>
+        )
+      })()}
       {/* F1-11 (KN-08): aviso do cálculo que não muda a taxa (ex.: conferência de endereço indisponível). */}
       {r?.avisos?.map(a => (
         <p key={a} className="inline-flex items-center gap-2 rounded-2xl bg-[var(--color-warning-soft)] px-4 py-2.5 text-[13px] text-[var(--color-warning-soft-fg)]">

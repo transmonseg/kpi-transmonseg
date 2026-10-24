@@ -12,11 +12,15 @@ vi.mock('@/lib/kpi-romaneio/ao-vivo-servico', () => ({
   calcularAoVivo: (...a: unknown[]) => calcular(...a),
 }))
 
+// F2-05: o botao "voltar a puxar da Fusion" tambem registra a tentativa.
+const registrar = vi.fn(async (..._a: unknown[]) => null)
+vi.mock('@/lib/kpi-rioquality/status-fusion-banco', () => ({ registrarSyncFusion: (...a: unknown[]) => registrar(...a) }))
+
 const req = (cliente = 'rioquality') =>
   new Request(`http://x/api/kpi/ao-vivo/fusion?cliente=${cliente}&data=2026-10-10`, { method: 'POST' })
 
 describe('POST /api/kpi/ao-vivo/fusion', () => {
-  beforeEach(() => { guardar.mockClear(); calcular.mockClear() })
+  beforeEach(() => { guardar.mockClear(); calcular.mockClear(); registrar.mockClear() })
 
   it('grava o dia quando a Fusion retorna entregas', async () => {
     const { buscarDiaRioQualityFusion } = await import('@/lib/kpi-rioquality/fonte-fusion')
@@ -62,5 +66,16 @@ describe('POST /api/kpi/ao-vivo/fusion', () => {
     const res = await POST(req())
     expect(res.status).toBe(502)
     expect(guardar).not.toHaveBeenCalled()
+  })
+
+  it('F2-05: Fusion fora registra o erro no status do dia; sucesso registra ok', async () => {
+    const { buscarDiaRioQualityFusion } = await import('@/lib/kpi-rioquality/fonte-fusion')
+    vi.mocked(buscarDiaRioQualityFusion).mockRejectedValue(new TypeError('fetch failed'))
+    const { POST } = await import('./route')
+    expect((await POST(req())).status).toBe(502)
+    expect(registrar).toHaveBeenCalledWith('2026-10-10', expect.objectContaining({ situacao: 'erro', erro: 'TypeError: fetch failed' }))
+    vi.mocked(buscarDiaRioQualityFusion).mockResolvedValue([{ placaNorm: 'ABC1D23', nf: 'ABC1D23-1', clienteNome: 'X' }] as never)
+    expect((await POST(req())).status).toBe(200)
+    expect(registrar).toHaveBeenLastCalledWith('2026-10-10', expect.objectContaining({ situacao: 'ok' }))
   })
 })

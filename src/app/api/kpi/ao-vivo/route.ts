@@ -5,6 +5,7 @@ import { lerDiaHistorico, listarDiasHistorico } from '@/lib/kpi-romaneio/ao-vivo
 import { semResultadoSeIgual } from '@/lib/kpi-romaneio/ao-vivo-carga'
 import { acessoAoVivo } from './acesso'
 import { versaoDasRegras } from '@/lib/kpi-romaneio/versao-regras'
+import { lerStatusFusion } from '@/lib/kpi-rioquality/status-fusion-banco'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -31,5 +32,7 @@ export async function GET(req: NextRequest) {
   }
   // ?tenho=<calculadoEm>: a tela já tem esse cálculo -> não manda os ~900 KB de novo.
   const estado = semResultadoSeIgual(await lerEstadoAoVivo(a.cliente, hoje), req.nextUrl.searchParams.get('tenho'))
-  return NextResponse.json({ data: hoje, hoje, historico: false, dias, clientes: a.clientes, versaoRegrasAtual, ...estado })
+  // F2-05 (KRQ-05): status da sincronizacao com a Fusion (banner da RQ).
+  const fusion = a.cliente === 'rioquality' ? await lerStatusFusion(hoje) : null
+  return NextResponse.json({ data: hoje, hoje, historico: false, dias, clientes: a.clientes, versaoRegrasAtual, fusion, ...estado })
 }

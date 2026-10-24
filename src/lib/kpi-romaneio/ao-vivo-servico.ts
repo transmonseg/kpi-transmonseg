@@ -87,6 +87,8 @@ export type ResultadoAoVivo = {
 export type DiaAoVivo = {
   enviadoEm: string
   enviadoPor: string | null
+  /** 'manual' (subido na tela) ou 'fusion' (F2-05: banner do dia travado no envio manual). */
+  fonte?: string | null
   nfs: number
   placas: number
   escalaEnviada: boolean
@@ -131,7 +133,7 @@ export async function guardarDiaAoVivo(p: {
 export async function lerEstadoAoVivo(cliente: ClienteAoVivo, data: string): Promise<EstadoAoVivo> {
   const svc = createServiceClient()
   const [d, c] = await Promise.all([
-    svc.from('kpi_ao_vivo_dia').select('romaneio, pao, escala_enviada, pao_enviado, enviado_por, enviado_em').eq('cliente', cliente).eq('data', data).maybeSingle(),
+    svc.from('kpi_ao_vivo_dia').select('romaneio, pao, escala_enviada, pao_enviado, enviado_por, enviado_em, fonte').eq('cliente', cliente).eq('data', data).maybeSingle(),
     svc.from('kpi_ao_vivo_calculo').select('resultado, ultimo_erro, ultimo_erro_em, rodando_desde').eq('cliente', cliente).eq('data', data).maybeSingle(),
   ])
   if (d.error) throw new Error(d.error.message)
@@ -142,6 +144,7 @@ export async function lerEstadoAoVivo(cliente: ClienteAoVivo, data: string): Pro
     dia = {
       enviadoEm: d.data.enviado_em as string,
       enviadoPor: (d.data.enviado_por as string | null) ?? null,
+      fonte: (d.data.fonte as string | null | undefined) ?? null,
       nfs: linhas.length,
       placas: new Set(linhas.map(l => l.placa ?? l.placaNorm)).size,
       escalaEnviada: !!d.data.escala_enviada,
