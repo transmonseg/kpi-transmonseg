@@ -77,6 +77,18 @@ describe('logado abrindo /login (F3-11: volta)', () => {
   })
 })
 
+describe('?volta= com TAB/CR/LF não abre redirect para fora (F3-R02)', () => {
+  for (const cod of ['%09', '%0A', '%0D']) {
+    it(`/login?volta=%2F${cod}%2Fevil.com fica no domínio`, async () => {
+      estado.user = { id: 'u2' }
+      const r = await updateSession(req(`/login?volta=%2F${cod}%2Fevil.com`))
+      const destino = new URL(r.headers.get('location')!)
+      expect(destino.host).toBe('central.transmonseg.com.br')
+      expect(destino.pathname).toBe('/painel')
+    })
+  }
+})
+
 describe('operador logado abrindo /login cai no Ao vivo (F3-12)', () => {
   it('operador da Nutry', async () => {
     estado.user = { id: 'u1' }

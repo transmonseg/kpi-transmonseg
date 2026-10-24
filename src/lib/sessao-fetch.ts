@@ -13,12 +13,26 @@ export class SessaoVencida extends Error {
   }
 }
 
-/** Só caminho interno de tela: nada de outro site, do próprio /login nem de /api. */
+function caminhoInterno(v: string): boolean {
+  if (!v.startsWith('/') || v.startsWith('//') || v.includes('\\')) return false
+  if (v === '/login' || v.startsWith('/login?') || v.startsWith('/login/')) return false
+  if (v === '/api' || v.startsWith('/api/')) return false
+  return true
+}
+
+/**
+ * Só caminho interno de tela: nada de outro site, do próprio /login nem de /api.
+ * F3-R02: o parser de URL apaga TAB/CR/LF ('/\t/evil.com' vira '//evil.com'),
+ * então caractere de controle é recusado e o caminho devolvido é o já
+ * normalizado pelo próprio parser, conferido de novo.
+ */
 export function voltaSegura(v: string | null | undefined): string | null {
-  if (!v || !v.startsWith('/') || v.startsWith('//') || v.includes('\\')) return null
-  if (v === '/login' || v.startsWith('/login?') || v.startsWith('/login/')) return null
-  if (v === '/api' || v.startsWith('/api/')) return null
-  return v
+  if (!v || /[\u0000-\u001F\u007F]/.test(v) || !caminhoInterno(v)) return null
+  let u: URL
+  try { u = new URL(v, 'http://x') } catch { return null }
+  if (u.origin !== 'http://x') return null
+  const n = u.pathname + u.search + u.hash
+  return caminhoInterno(n) ? n : null
 }
 
 export function urlLogin(atual: string): string {

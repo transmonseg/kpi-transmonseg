@@ -25,6 +25,25 @@ describe('urlLogin / voltaSegura', () => {
     expect(voltaSegura(undefined)).toBeNull()
     expect(voltaSegura('')).toBeNull()
   })
+  it('recusa caractere de controle que o parser de URL apaga e vira // (F3-R02)', () => {
+    // /login?volta=%2F%09%2Fevil.com -> '/\t/evil.com'; new URL('/\t/evil.com', origem) = https://evil.com/
+    const volta = new URLSearchParams('volta=%2F%09%2Fevil.com').get('volta')
+    expect(voltaSegura(volta)).toBeNull()
+    expect(voltaSegura('/\n/evil.com')).toBeNull()
+    expect(voltaSegura('/\r/evil.com')).toBeNull()
+    expect(voltaSegura('/\u0000/evil.com')).toBeNull()
+    expect(voltaSegura('/\u007F/evil.com')).toBeNull()
+  })
+  it('o que sai de voltaSegura nunca resolve para outra origem', () => {
+    const casos = ['/\t/evil.com', '/%2F/evil.com', '/ /evil.com', '/.//evil.com', '/painel/../..//evil.com', '/\u000B/evil.com', '/\u000C/evil.com']
+    for (const c of casos) {
+      const v = voltaSegura(c)
+      if (v) expect(new URL(v, 'https://central.transmonseg.com.br').host).toBe('central.transmonseg.com.br')
+    }
+  })
+  it('continua aceitando caminho com busca e acento codificado', () => {
+    expect(voltaSegura('/painel/resumo-dia?cliente=rioquality&data=2026-10-22')).toBe('/painel/resumo-dia?cliente=rioquality&data=2026-10-22')
+  })
 })
 
 describe('buscarComSessao', () => {
