@@ -4064,6 +4064,22 @@ describe('pontoAproximadoPorEndereco', () => {
     ['RUA 12, 45 - JARDIM, MACAE', true],
     ['RUA CANDIDO MENDES, 10 - GLORIA, RIO DE JANEIRO', false],
     ['AV N SRA DE COPACABANA, 898 - COPACABANA, RIO DE JANEIRO', false],
+    // F4-06 (GEO-23/GEO-18, enderecos reais de 20-23/10 e 22-28/09): RODOV e
+    // "KM n" no lugar do numero sao rodovia (o KM e' marco, nunca numero da
+    // casa); numero colado na rua sem virgula e' numero; KM no complemento
+    // (depois da cidade) nao muda nada.
+    ['RODOV BR 101 KM 44, 824 - CENTRO, TANGUÁ - KM 44', true],
+    ['RODOV BR 101, KM 200 - PROFESSOR SOUZA - D, CASIMIRO DE ABR - KM 200 PARTE E ARE', true],
+    ['RUA VICENTE DE LIMA CLETO 744 - NOVA CIDADE, SAO GONCALO', false],
+    ['RUA VICENTE DE LIMA CLETO 744 - NOVA CIDADE, SAO GONCALO - *', false],
+    ['RUA 16 - VILA SANTA CECILIA, VOLTA REDONDA', true],
+    ['AV. B 7 - CAMBOINHAS, NITEROI', true],
+    ['RUA TRINTA E CINCO 27 - JARDIM ITATIAIA, ITATIAIA', false],
+    ['AVENIDA MINISTRO EDGARD ROMERO - DE 118 , 276 - MADUREIRA, RIO DE JANEIRO - * - 21360200', false],
+    ['RUA QUARENTA E UM - C, 963 - VILA SANTA CECILIA, VOLTA REDONDA - CASA 2 - 27255-430', false],
+    ['ESTRADA ANTONIO ACACIO CARDINOT 093 - PARQUE MARIA TERESA, RIO DE JANEIRO', true],
+    ['AVENIDA INDEPENDENCIA, 62 - FLORESTINHA II (TAMOIOS), CABO FRIO - KM 128 LOTE 50', false],
+    ['ALAMEDA SAO BERNARDO, 646 - KM 32, NOVA IGUACU -', false],
   ])('%s -> %s', (end, esperado) => {
     expect(pontoAproximadoPorEndereco(end)).toBe(esperado)
   })
@@ -6532,6 +6548,65 @@ describe('GN-03 (auditoria 20/10): NAO FOI AO CLIENTE so com ponto do cliente co
 // Auditoria 20/10 (GN-05), casos reais 14/10: RQQ5B81 2423185 (parada de 8 min
 // a 4 m), RBI0J25 2421490/91 (7 min a 33 m), RQU0B47 2423215 (25 min a 41 m)
 // -- coordenada marcada imprecisa anulava a prova positiva.
+// F4-06 (GEO-23, plano mestre 23/10): endereco rural (S/N, estrada, rodovia,
+// KM, logradouro generico -- pontoAproximadoPorEndereco) com coordenada
+// marcada imprecisa so' tinha o credito do GN-05 a <= 50 m do ponto. Caso real
+// RQV6G75/2390712 25/09 "RODOVIA RJ 122, SN - TABOADO, CACHOEIRAS DE M - KM 35"
+// (cnefe, bairro_divergente): parada propria de 17 min a 140 m do ponto, sem
+// outro cliente da placa perto, ficava "COORDENADA IMPRECISA". Raio fixo pequeno
+// (200 m), nunca o raio de 1 km da cascata (seria o GN-04). DECK GRILL
+// (RQV9E37/2388087 24/09, gabarito "nao foi ao local") parou a 354 m: fora.
+describe('F4-06: credito rural por parada propria com raio fixo pequeno (200 m)', () => {
+  const LAT0 = -22.4
+  const LNG0 = -42.6
+  const M_LNG = 1 / (111_195 * Math.cos(LAT0 * Math.PI / 180))
+  const em = (norteM: number, lesteM = 0) => ({ lat: LAT0 + norteM * M_LAT, lng: LNG0 + lesteM * M_LNG })
+  const t = (hhmm: string) => `2026-09-25T${hhmm}:00.000Z`
+  const RURAL = 'RODOVIA RJ 122, SN - TABOADO, CACHOEIRAS DE M - KM 35'
+  const nf = (extra: Partial<LinhaGeocodificada> = {}) => linha('2390712', { placa: 'RQV6G75', endereco: RURAL, clienteCodigo: 'C1', ...em(0), geoConfiavel: false, geoMotivo: 'bairro_divergente', ...extra })
+  const stop = (norteM: number, ini: string, fim: string) => paradaForaBase('RQV6G75-api-1', em(norteM).lat, em(norteM).lng, t(ini), t(fim), 'RQV6G75')
+  const rodar = (linhas: LinhaGeocodificada[], paradas: UnitracParadaRow[]) =>
+    chamarNutryMax(linhas, { placa: 'RQV6G75', paradasUnitracCruasPropriaPlaca: new Map([['RQV6G75', paradas]]) }).find(x => x.nf === '2390712')!
+
+  it('caso real 2390712: parada de 17 min a 140 m do ponto rural, sem vizinho -> ENTREGUE com aviso de coordenada', () => {
+    const d = rodar([nf()], [stop(140, '11:00', '11:17')])
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBe('ENTREGUE - PARADA PERTO DO PONTO EM ENDEREÇO RURAL (COORDENADA A CONFERIR)')
+    expect(d.distParadaM).toBe(140)
+  })
+
+  it('a 354 m (distancia do DECK GRILL, gabarito "nao foi ao local"): continua pendente', () => {
+    expect(rodar([nf()], [stop(354, '11:00', '11:18')]).status).toBe('pendente')
+  })
+
+  it('a 30 m: vale o rotulo de sempre do GN-05', () => {
+    expect(rodar([nf()], [stop(30, '11:00', '11:17')]).observacao).toBe('ENTREGUE - PARADA NO PONTO (COORDENADA A CONFERIR)')
+  })
+
+  it('endereco urbano com numero a 140 m: continua pendente (GN-05 so' + "'" + ' a 50 m)', () => {
+    const urbano = nf({ endereco: 'RUA CANDIDO MENDES, 10 - GLORIA, RIO DE JANEIRO' })
+    expect(rodar([urbano], [stop(140, '11:00', '11:17')]).status).toBe('pendente')
+  })
+
+  it('outro cliente da placa a 100 m da parada: continua pendente', () => {
+    const viz = linha('VIZ', { placa: 'RQV6G75', endereco: 'RUA Y, 20 - TABOADO, CACHOEIRAS DE M', clienteCodigo: 'C2', ...em(240), geoConfiavel: true })
+    expect(rodar([nf(), viz], [stop(140, '11:00', '11:17')]).status).toBe('pendente')
+  })
+
+  it('parada de 4 min: continua pendente', () => {
+    expect(rodar([nf()], [stop(140, '11:00', '11:04')]).status).toBe('pendente')
+  })
+
+  it('ponto Unitrac repetido em outro cliente (regra B): continua pendente', () => {
+    expect(rodar([nf({ pontoUnitracRepetido: true })], [stop(140, '11:00', '11:17')]).status).toBe('pendente')
+  })
+
+  it('centroide de bairro (cnefe_bairro, a seco 21/10 RQV3G18/2433887 "RUA 6, 164 - TRAPICHE, MACAE"): parada de 106 min a 51 m continua pendente', () => {
+    const trapiche = nf({ endereco: 'RUA 6, 164 - TRAPICHE, MACAE - LOJA - 27985000', geoFonte: 'cnefe_bairro', geoMotivo: undefined })
+    expect(rodar([trapiche], [stop(51, '10:00', '11:46')]).status).toBe('pendente')
+  })
+})
+
 describe('GN-05: parada no proprio ponto vale mesmo com coordenada marcada imprecisa', () => {
   const LAT0 = -22.9
   const LNG0 = -43.2

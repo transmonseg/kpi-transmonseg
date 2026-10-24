@@ -1060,13 +1060,28 @@ function mesmoClienteOuEndereco(a: { clienteCodigo?: string | null; endereco: st
 export function pontoAproximadoPorEndereco(endereco: string): boolean {
   if (acessoSomentePorBarco(endereco)) return true
   const e = endereco.toUpperCase().replace(/^\s*-?\s*/, '')
-  if (/^(ROD|RODOVIA|EST|ESTR|ESTRADA|BR|RJ)\b/.test(e)) return true
+  if (/^(ROD|RODOV|RODOVIA|EST|ESTR|ESTRADA|BR|RJ)\b/.test(e)) return true
   // Logradouro generico (06/10, gabarito 23-28/09: entregas reais na RUA
   // PROJETADA H, RUA PRINCIPAL, RUA C (LOT ...)) -- o mapa nao sabe onde fica.
   if (/^(R|RUA|AV|AVENIDA|TV|TRAVESSA)\.?\s+(PROJETADA|PRINCIPAL)\b/.test(e)) return true
   if (/^(R|RUA|AV|AVENIDA|TV|TRAVESSA)\.?\s+([A-Z]|\d+)\s*[,(]/.test(e)) return true
-  const numero = e.match(/^[^,]*,\s*([^-]*?)\s*-/)?.[1]?.trim() ?? ''
+  const numero = e.match(/^[^,]*,\s*([^-]*?)\s*-/)?.[1]?.trim() || numeroColadoNaRua(e)
+  // F4-06 (GEO-18): "KM n" no lugar do numero e' marco de rodovia, nunca
+  // numero da casa ("RODOV BR 101, KM 200 - PROFESSOR SOUZA").
+  if (/^KM\b/.test(numero)) return true
   return numero === '' || /^(S\/?N|SN|0+)$/.test(numero)
+}
+
+/** F4-06 (GEO-18): numero colado na rua, sem virgula ("RUA VICENTE DE LIMA
+ *  CLETO 744 - NOVA CIDADE, SAO GONCALO"): so' quando a leitura de sempre nao
+ *  achou nada. Rua cujo nome e' numero ou letra ("RUA 16 - VILA SANTA CECILIA",
+ *  "AV. B 7") nao tem numero da casa aqui. */
+function numeroColadoNaRua(e: string): string {
+  const primeiroTrecho = e.split(' - ')[0]
+  if (primeiroTrecho.includes(',')) return ''
+  const m = primeiroTrecho.match(/^\S+\.?\s+(.*\S)\s+(\d+)\s*$/)
+  if (!m || (m[1].match(/[A-Z]/g) ?? []).length < 3) return ''
+  return m[2]
 }
 
 // Ver bloco "Revisao de falso positivo 06/10" em montarDetalheEntregas.
@@ -1082,6 +1097,14 @@ export const OBS_PARADA_CURTA_VARIOS_LONGE = 'PARADA CURTA PARA VÁRIOS ENDEREÇ
 const DURACAO_MIN_PARADA_NO_PONTO_MIN = 5
 const RAIO_PARADA_NO_PONTO_M = 50
 export const OBS_ENTREGUE_PARADA_NO_PONTO = 'ENTREGUE - PARADA NO PONTO (COORDENADA A CONFERIR)'
+// F4-06 (GEO-23): endereco rural/aproximado por natureza (S/N, estrada,
+// rodovia, KM, logradouro generico; ilha e centroide de bairro fora) -- o ponto e' de trecho, a
+// parada propria >= 5 min a ate' 200 m dele, com as mesmas guardas do GN-05,
+// confirma. Raio fixo pequeno (plano: 150-300 m), nunca o raio de 1 km da
+// cascata (GN-04, retirado). Caso real RQV6G75/2390712 25/09: 17 min a 140 m.
+// DECK GRILL (2388087, gabarito "nao foi ao local") parou a 354 m: fora.
+const RAIO_PARADA_PERTO_DO_PONTO_RURAL_M = 200
+export const OBS_ENTREGUE_PARADA_PERTO_PONTO_RURAL = 'ENTREGUE - PARADA PERTO DO PONTO EM ENDEREÇO RURAL (COORDENADA A CONFERIR)'
 const RAIO_CLIENTE_NA_BASE_M = 300
 export const OBS_CLIENTE_NA_BASE = 'CLIENTE NA BASE - SÓ ESTADIA NA GARAGEM, SEM FEITO DA UNITRAC - CONFERIR'
 export const OBS_PARADA_DE_OUTRO_CLIENTE = 'PARADA DE OUTRO CLIENTE - NÃO CONFIRMA ESTE CLIENTE - CONFERIR'
@@ -3197,15 +3220,20 @@ export function montarDetalheEntregas(
         && paradasProprias.some(q => duracaoParadaMin(q) >= DURACAO_MIN_PARADA_UNITRAC_PROPRIA_MIN
           && haversine(cadastro.lat, cadastro.lng, q.lat as number, q.lng as number) <= RAIO_OUTRO_CLIENTE_EXPLICA_M)) continue
       const vizinhos = linhasRomaneio.filter(o => o.endereco !== l.endereco && o.lat != null && o.lng != null)
+      // Centroide de bairro (cnefe_bairro) nao e' ponto da via: fica no GN-05 de
+      // 50 m (a seco 21/10, RQV3G18/2433887 "RUA 6, 164 - TRAPICHE": parada de
+      // 106 min a 51 m do centroide, mesmo ponto de outro cliente da placa).
+      const rural = pontoAproximadoPorEndereco(l.endereco) && !acessoSomentePorBarco(l.endereco) && l.geoFonte !== 'cnefe_bairro'
+      const raio = rural ? RAIO_PARADA_PERTO_DO_PONTO_RURAL_M : RAIO_PARADA_NO_PONTO_M
       const p = paradasProprias
         .filter(q => duracaoParadaMin(q) >= DURACAO_MIN_PARADA_NO_PONTO_MIN)
         .map(q => ({ q, dist: haversine(l.lat as number, l.lng as number, q.lat as number, q.lng as number) }))
-        .filter(x => x.dist <= RAIO_PARADA_NO_PONTO_M)
+        .filter(x => x.dist <= raio)
         .filter(x => !vizinhos.some(o => haversine(o.lat as number, o.lng as number, x.q.lat as number, x.q.lng as number) <= RAIO_OUTRO_CLIENTE_EXPLICA_M))
         .sort((a, b) => a.dist - b.dist)[0]
       if (!p) continue
       d.status = 'confirmado_gps'
-      d.observacao = OBS_ENTREGUE_PARADA_NO_PONTO
+      d.observacao = p.dist <= RAIO_PARADA_NO_PONTO_M ? OBS_ENTREGUE_PARADA_NO_PONTO : OBS_ENTREGUE_PARADA_PERTO_PONTO_RURAL
       d.chegada = p.q.chegada
       d.saida = p.q.fim_real ?? p.q.saida ?? p.q.chegada
       d.tempoParadaMin = minutosEntre(d.chegada, d.saida)
