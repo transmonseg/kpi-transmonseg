@@ -8,6 +8,10 @@ export const COD_USER_NUTRIMAX = '4096'
  *  duplicar o literal. */
 export const EMPRESA_NUTRIMAX = 'NUTRY MAX'
 
+/** F3-03 (KRQ-10): chave da Rio Quality em `kpi_nf_resolucao` -- o mesmo
+ *  `nomeCliente` que o pipeline da RQ passa ao gerador da planilha. */
+export const EMPRESA_RIOQUALITY = 'RIO QUALITY'
+
 /** Placa PROVISORIA/generica que a Escala/Romaneio da Nutry Max usa quando a
  *  carga ainda nao tem caminhao definido de verdade ("rota generica") --
  *  achado real 26/09 (grupo, KPI de 25/09): XXX0000 saiu com as 8 NFs em

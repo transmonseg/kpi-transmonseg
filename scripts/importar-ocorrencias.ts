@@ -41,6 +41,8 @@ const MAPA_RESOLUCAO: Record<string, ResolucaoNf> = {
   [normalizarTextoOcorrencia('Entregue por outra placa')]: 'entregue_outra_placa',
   [normalizarTextoOcorrencia('Não esteve no local')]: 'nao_esteve_no_local',
   [normalizarTextoOcorrencia('Desatualizado')]: 'desatualizado',
+  // F3-03: rotulo da fila "Conferir" do Ao vivo e da exportacao dela.
+  [normalizarTextoOcorrencia('Ponto do cliente errado')]: 'desatualizado',
 }
 
 /** `null` = texto que a equipe usou e nao reconhecemos -- NUNCA adivinha um

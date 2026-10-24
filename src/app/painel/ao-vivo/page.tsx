@@ -23,6 +23,8 @@ import { bannerFusion, type StatusFusion } from '@/lib/kpi-rioquality/status-fus
 import type { ModoTroca } from '@/lib/kpi-romaneio/trocas-placa'
 import { metaDoCliente } from '@/lib/kpi/metas'
 import { linhaMeta, placaAbaixoDaMeta, placaSemHorarioBase, ordenarPioresPrimeiro } from '@/lib/kpi-romaneio/resumo-dia'
+import { motivoLegivel } from '@/lib/kpi-romaneio/fila-conferir'
+import { FilaConferir } from './fila-conferir'
 
 // Tela "Ao vivo" (spec 2026-10-06-kpi-ao-vivo-design.md). Cor/status de cada
 // NF vem do último cálculo do KPI (a mesma regra da planilha); o cronômetro e
@@ -225,6 +227,14 @@ export default function AoVivoPage() {
     }
   }
 
+  // F3-03: "Entregue por outra placa" na fila leva à troca de carga (só Nutry, hoje).
+  function abrirTrocaDeCarga() {
+    const d = document.getElementById('trocar-carga') as HTMLDetailsElement | null
+    if (!d) return
+    d.open = true
+    d.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }
+
   async function baixarRelatorioPendentes() {
     if (!estado) return
     try {
@@ -389,6 +399,9 @@ export default function AoVivoPage() {
         <TrocasSugeridas sugestoes={r.sugestoesTroca} onConfirmada={carregar} />
       )}
       {!historico && cliente === 'nutrimax' && r && <RedirecionarCarga placas={placas} onConfirmada={carregar} />}
+      {/* F3-03 (ACH-02): fila "Conferir" -- o que conferir primeiro e a conferência por NF. */}
+      {r && <FilaConferir key={`${cliente}-${estado.data}`} cliente={cliente} nomeCliente={NOME_CLIENTE[cliente]} data={estado.data} historico={historico} placas={placas} resumo={r.resumo} meta={meta}
+        onTrocarCarga={cliente === 'nutrimax' && !historico ? abrirTrocaDeCarga : undefined} />}
       {r && <InvestigacaoNaoEntregues placas={placas} onPlaca={pl => { setPlacaSel(pl); setNfAberta(null); setVendoDetalhe(true) }} />}
       {ultimoEnvio?.monitoramento && ultimoEnvio.monitoramento.length > 0 && (
         <p className={`inline-flex flex-wrap items-center gap-2 rounded-2xl px-4 py-2.5 text-[13px] ${ultimoEnvio.monitoramento.every(m => m.ok) ? 'bg-[var(--color-bg-subtle)] text-[var(--color-fg-muted)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-soft-fg)]'}`}>
@@ -697,19 +710,6 @@ function LinhaNf({ n, todas, placa, data, historico, cliente, ordem, aberta, noC
   )
 }
 
-/** "PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR" ->
- *  { motivo: "Passou no endereço mas não registrou parada", acao: "Conferir" }. */
-function motivoLegivel(status: string): { motivo: string; acao: string | null } {
-  const frase = (s: string) => {
-    const t = s.trim().toLowerCase().replace(/\bunitrac\b/g, 'Unitrac').replace(/\bkpi\b/g, 'KPI')
-    return t.charAt(0).toUpperCase() + t.slice(1)
-  }
-  const partes = status.split(/\s+-\s+/).filter(Boolean)
-  const i = partes.findIndex((p, k) => k > 0 && /^(CONFERIR|PERGUNTAR|VERIFICAR)/i.test(p))
-  if (i > 0) return { motivo: frase(partes.slice(0, i).join(', ')), acao: frase(partes.slice(i).join(', ')) }
-  return { motivo: frase(partes.join(', ')), acao: null }
-}
-
 function Mini({ rotulo, valor, destaque, longe, titulo }: { rotulo: string; valor: string; destaque?: boolean; longe?: boolean; titulo?: string }) {
   return (
     <div className="min-w-0">
@@ -809,7 +809,7 @@ function RedirecionarCarga({ placas, onConfirmada }: { placas: PlacaAoVivo[]; on
     } finally { setEnviando(false) }
   }
   return (
-    <details className="group rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
+    <details id="trocar-carga" className="group rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
       <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-[13px] font-semibold text-[var(--color-fg)] [&::-webkit-details-marker]:hidden">
         <ArrowsLeftRight size={16} weight="bold" />Trocar carga entre placas
         <CaretDown size={13} className="ml-auto shrink-0 text-[var(--color-fg-muted)] transition-transform group-open:rotate-180" />

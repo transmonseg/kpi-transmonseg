@@ -1,4 +1,5 @@
 import type { NfAoVivo } from '@/lib/kpi-romaneio/ao-vivo'
+import { URL_MONITORAMENTO, caminhoMonitoramento } from '@/lib/sistema-transmonseg'
 
 export type ClienteMonitoramento = 'nutrimax' | 'rioquality'
 
@@ -28,4 +29,13 @@ export function linkMonitoramento(n: NfAoVivo, todas: NfAoVivo[], placa: string,
   // Botão X da tela de entrega volta pra cá, no mesmo cliente, placa e NF.
   q.set('volta', `/painel/ao-vivo?${new URLSearchParams({ cliente, placa, nf: n.nf, ...(historico ? { data } : {}) }).toString()}`)
   return `/painel/monitoramento/entrega?${q.toString()}`
+}
+
+/** F3-03: mini-mapa da fila "Conferir" -- a mesma tela /entrega do link acima,
+ *  aberta num quadro pequeno pela entrada da Central (passe de quem está
+ *  logado, como /painel/monitoramento faz). */
+export function srcMiniMapa(passe: string, linkPainel: string): string {
+  const [caminho, busca] = linkPainel.split('?')
+  const alvo = caminhoMonitoramento(caminho) + (busca ? `?${busca}` : '')
+  return `${URL_MONITORAMENTO}/api/acessos/entrar-central?p=${encodeURIComponent(passe)}&para=${encodeURIComponent(alvo)}`
 }

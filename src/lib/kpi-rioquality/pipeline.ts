@@ -29,6 +29,8 @@ import { montarCorredorDaRua, extensaoCorredorM } from './corredor-rua'
 import { gpsCongelado, semComunicarDesde, OBS_GPS_CONGELADO, obsSemComunicarDesde } from './rastreador-status'
 import { buscarPosicoesPorCv } from '@/lib/unitrac-api/posicoes'
 import { FrotaRioQualityIndisponivelError } from './frota'
+import { buscarResolucoes as buscarResolucoesPadrao, aplicarResolucoes, type ResolucaoNfRow } from '@/lib/kpi-romaneio/resolucoes'
+import { EMPRESA_RIOQUALITY } from '@/lib/kpi-romaneio/constants'
 
 // Nucleo do KPI Rio Quality -- usado pela rota /api/kpi/rioquality/gerar e
 // pelo script scripts/gerar-rioquality-real-arquivo.ts (mesma pipeline, sem
@@ -230,6 +232,8 @@ export async function gerarKpiRioQuality(params: {
   cacheCorredor?: { ler: typeof lerCorredorDoCache; gravar: typeof gravarCorredorNoCache }
   /** injetavel pra teste; padrao = hojeBR() */
   hoje?: string
+  /** F3-03 (KRQ-10): injetavel pra teste; padrao = kpi_nf_resolucao (resolucoes.ts). */
+  buscarResolucoes?: (empresa: string, data: string) => Promise<ResolucaoNfRow[]>
   log?: (msg: string) => void
 }): Promise<ResultadoPipelineRioQuality> {
   const { custosBuf, entregasBuf, completaBuf, data, cvPorPlaca } = params
@@ -644,7 +648,7 @@ export async function gerarKpiRioQuality(params: {
   const resumoPorChave = new Map(linhasKpiAgregadas.map(l => [`${l.carga}::${l.placa}`, l]))
 
   const contStatus: Record<string, number> = {}
-  const detalhe: LinhaDetalheEntrega[] = [...cargasPorChave.entries()]
+  const detalheAutomatico: LinhaDetalheEntrega[] = [...cargasPorChave.entries()]
     .flatMap(([chave, linhasDaCarga]) => {
       const [carga, placaNorm] = chave.split('::')
       const resumo = resumoPorChave.get(chave)
@@ -752,6 +756,20 @@ export async function gerarKpiRioQuality(params: {
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa) || a.nf.localeCompare(b.nf))
   log(`Status: ${JSON.stringify(contStatus)}`)
 
+  // F3-03 (KRQ-10): resolucao da operacao por NF (kpi_nf_resolucao), igual a
+  // Nutry (gerar-nutrimax.ts): so' enxerta a vigente ao lado do automatico,
+  // que fica intacto -- muda a "TAXA APOS CONFERENCIA", nunca a oficial.
+  // Leitura falhou: a geracao segue sem resolucao, com aviso de fonte.
+  let historicoResolucoes: ResolucaoNfRow[] = []
+  let resolucoesIndisponiveis = false
+  try {
+    historicoResolucoes = await (params.buscarResolucoes ?? buscarResolucoesPadrao)(EMPRESA_RIOQUALITY, data)
+  } catch (err) {
+    resolucoesIndisponiveis = true
+    log(`resolucoes da operacao indisponiveis: ${err instanceof Error ? err.message : String(err)}`)
+  }
+  const detalhe = aplicarResolucoes(detalheAutomatico, historicoResolucoes)
+
   // Task 2 (plano 2026-09-30, estudo item 5a): resumo = detalhe. NF
   // CONFIRMADAS do resumo conta EXATAMENTE as NFs 'ENTREGUE' das abas por
   // placa (mesmo procedimento da Nutry Max, ver contarConfirmadasPorCarga) --
@@ -779,6 +797,7 @@ export async function gerarKpiRioQuality(params: {
   if (travaSemSinal.aviso) {
     avisos.push({ carga: '—', placa: '—', motivo: 'consulta_posicoes_suspeita', semSinal: travaSemSinal.semSinal, totalPlacas: travaSemSinal.totalPlacas })
   }
+  if (resolucoesIndisponiveis) avisos.push({ carga: '—', placa: '—', motivo: 'fonte_indisponivel', fonte: 'resolucoes' })
   // Task 2 (estudo item 5b): linha de TAXA com denominador escrito.
   // Task 4: avisos (Custos x Entregas, frota, consulta, trava) -> aba Avisos.
   const xlsx = await gerarKpiRomaneioXlsx(linhasKpi, data, avisos, detalhe, undefined, 'RIO QUALITY', { resumoConfirmacao: true })

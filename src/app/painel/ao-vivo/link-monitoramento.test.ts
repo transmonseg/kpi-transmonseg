@@ -52,3 +52,20 @@ describe('mostraVerNoMonitoramento', () => {
     expect(mostraVerNoMonitoramento('')).toBe(false)
   })
 })
+
+// F3-03: mini-mapa da fila "Conferir" reaproveita a tela /entrega do
+// monitoramento, num quadro pequeno, entrando com o passe de quem está logado.
+describe('srcMiniMapa', () => {
+  it('a mesma tela "Entrega no mapa" do botão, pela entrada da Central', async () => {
+    const { srcMiniMapa } = await import('./link-monitoramento')
+    const link = linkMonitoramento(nf({}), [nf({})], 'TTU9G22', '2026-10-23', true, 'rioquality')
+    const src = srcMiniMapa('PASSE.1', link)
+    const u = new URL(src)
+    expect(`${u.origin}${u.pathname}`).toBe('https://monitoramento.transmonseg.com.br/api/acessos/entrar-central')
+    expect(u.searchParams.get('p')).toBe('PASSE.1')
+    const para = u.searchParams.get('para')!
+    expect(para.startsWith('/entrega?')).toBe(true)
+    expect(new URLSearchParams(para.split('?')[1]).get('nf')).toBe('5558903')
+    expect(new URLSearchParams(para.split('?')[1]).get('frota')).toBe('rioquality')
+  })
+})

@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs'
 import { OBS_NAO_SAIU_DA_BASE, textoConsultaPosicoesSuspeita, chegadaCdExibivel } from './types'
 import type { TrocaProvavel } from './troca-placa'
-import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega, ResolucaoNf } from './types'
+import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega } from './types'
 // Reusa a MESMA paleta/fonte/logo ja validados no relatorio da Benassi
 // (pedido do usuario 25/08: "deixar esse relatorio nivel o da Benassi") --
 // nunca duplica cor/asset, um unico lugar de verdade pros dois clientes.
@@ -9,6 +9,7 @@ import { KPI_COLORS, KPI_FONTS, KPI_BORDER_THIN } from '@/lib/kpi/kpi-styles'
 import { getLogoBuffer } from '@/lib/kpi/template-loader'
 import { hojeBR } from '@/lib/data-br'
 import { situacaoDaPlaca, STATUS_PLACA_PROVISORIA, STATUS_PLACA_FICTICIA, MOTIVO_PLACA_FORA_DA_FROTA } from './placa-situacao'
+import { LABEL_RESOLUCAO_NF, RESOLUCOES_CONFIRMATORIAS } from './resolucoes-regras'
 
 // STATUS (OK/INCOMPLETO) removido da tela principal (pedido do usuario
 // 25/08: "tira esse status de concluido ou incompleto") -- o campo `status`
@@ -328,28 +329,8 @@ function textoSemRastreadorContada(d: LinhaDetalheEntrega): string {
   return `${ROTULO_SEM_RASTREADOR_CONTADA} - ${motivo}`
 }
 
-// Task 4 (plano 24/09): rotulo exibido pra cada valor do enum de resolucao
-// manual (kpi_nf_resolucao.resolucao) -- MAIUSCULO, mesmo padrao visivel do
-// resto do relatorio (Global Constraint do plano). `entregue_outra_placa`
-// ganha a placa executora ao lado (ver COLUNA_RESOLUCAO abaixo) porque o
-// texto sozinho nao diz QUAL placa entregou de fato.
-const LABEL_RESOLUCAO_NF: Record<ResolucaoNf, string> = {
-  entregue: 'ENTREGUE',
-  entregue_tempo_conferido: 'ENTREGUE - TEMPO DE LOJA CONFERIDO',
-  entregue_rastro_oscilante: 'ENTREGUE - RASTRO OSCILANTE',
-  entregue_outra_placa: 'ENTREGUE POR OUTRA PLACA',
-  nao_esteve_no_local: 'NÃO ESTEVE NO LOCAL',
-  desatualizado: 'DESATUALIZADO',
-}
-
-// Resolucoes que a operacao registra como "de fato aconteceu" -- contam pra
-// taxa "apos conferencia da operacao" mesmo quando o automatico ficou
-// pendente. `nao_esteve_no_local`/`desatualizado` NUNCA contam (mesmo se o
-// automatico tivesse confirmado por engano -- a palavra da operacao vale
-// mais que o GPS/Unitrac nesses dois casos).
-const RESOLUCOES_CONFIRMATORIAS = new Set<ResolucaoNf>([
-  'entregue', 'entregue_tempo_conferido', 'entregue_rastro_oscilante', 'entregue_outra_placa',
-])
+// Task 4 (plano 24/09): rotulos e resolucoes confirmatorias em
+// resolucoes-regras.ts (F3-03: a fila Conferir do Ao vivo usa as mesmas).
 
 function textoResolucaoManual(d: LinhaDetalheEntrega): string {
   if (!d.resolucaoManual) return ''

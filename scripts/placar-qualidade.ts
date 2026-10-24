@@ -13,6 +13,7 @@
 import { mkdirSync, writeFileSync } from 'fs'
 import path from 'path'
 import { metricasDoAoVivo, metricasAgregadas, contarTimeoutsDoDia, diaDoPlacar, montarPlacar, type LinhaCalculo, type LinhaPlacar } from '../src/lib/qualidade/placar'
+import { EMPRESA_NUTRIMAX, EMPRESA_RIOQUALITY } from '../src/lib/kpi-romaneio/constants'
 import { consultarJson, gravarNoBanco, rodarNoServidor, sqlGravarPlacar, sqlLiteral } from './qualidade/psql'
 
 const CLIENTES = ['nutrimax', 'rioquality'] as const
@@ -46,8 +47,10 @@ function sqlKpiOutros(d: string) {
     select c.cliente, 'versoes_kpi_do_dia' as metrica, (select count(*) from kpi_romaneio_geracoes g where g.cliente = c.cliente and g.data_referencia = ${d}) as valor
       from (values ('nutrimax'),('rioquality')) c(cliente)
     union all
-    select c.cliente, 'resolucoes_operacao', (select count(*) from kpi_nf_resolucao r where r.empresa = c.cliente and r.data = ${d})
-      from (values ('nutrimax'),('rioquality')) c(cliente)
+    -- F3-03: a chave da empresa em kpi_nf_resolucao e' o nome (EMPRESA_NUTRIMAX /
+    -- EMPRESA_RIOQUALITY), nao o id do cliente -- antes contava sempre 0.
+    select c.cliente, 'resolucoes_operacao', (select count(*) from kpi_nf_resolucao r where r.empresa = c.empresa and r.data = ${d})
+      from (values ('nutrimax', '${EMPRESA_NUTRIMAX}'),('rioquality', '${EMPRESA_RIOQUALITY}')) c(cliente, empresa)
   ) x`
 }
 

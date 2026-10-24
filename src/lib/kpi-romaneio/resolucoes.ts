@@ -110,10 +110,19 @@ export async function buscarResolucoes(empresa: string, data: string): Promise<R
   return (linhas ?? []) as ResolucaoNfRow[]
 }
 
+/** Uma linha pelo id, só da empresa pedida (F3-03: abrir o comprovante). */
+export async function buscarResolucaoPorId(empresa: string, id: number): Promise<ResolucaoNfRow | null> {
+  const { data, error } = await createServiceClient().from('kpi_nf_resolucao').select('*').eq('empresa', empresa).eq('id', id).maybeSingle()
+  if (error) throw new Error(error.message)
+  return (data as ResolucaoNfRow | null) ?? null
+}
+
 /** INSERT novo -- nunca UPDATE/DELETE (ver comentario do arquivo). Usado pelo
  *  importador (scripts/importar-ocorrencias.ts) quando chamado com
- *  `--aplicar`. */
-export async function registrarResolucao(nova: NovaResolucaoNf): Promise<void> {
-  const { error } = await createServiceClient().from('kpi_nf_resolucao').insert(nova)
+ *  `--aplicar` e pela fila "Conferir" do Ao vivo (F3-03, /api/kpi/resolucao).
+ *  Devolve a linha gravada. */
+export async function registrarResolucao(nova: NovaResolucaoNf): Promise<ResolucaoNfRow> {
+  const { data, error } = await createServiceClient().from('kpi_nf_resolucao').insert(nova).select('*').single()
   if (error) throw new Error(error.message)
+  return data as ResolucaoNfRow
 }

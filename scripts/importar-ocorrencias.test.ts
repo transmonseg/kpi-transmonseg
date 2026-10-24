@@ -32,6 +32,8 @@ describe('mapearResolucao', () => {
     ['nao esteve no local', 'nao_esteve_no_local'],
     ['Desatualizado', 'desatualizado'],
     ['DESATUALIZADO', 'desatualizado'],
+    // F3-03: rotulo da fila "Conferir" do Ao vivo (mesmo enum).
+    ['Ponto do cliente errado', 'desatualizado'],
   ] as const)('%s -> %s', (texto, esperado) => {
     expect(mapearResolucao(texto)).toBe(esperado)
   })
