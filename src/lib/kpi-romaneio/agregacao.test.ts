@@ -6523,3 +6523,111 @@ describe('GN-05: parada no proprio ponto vale mesmo com coordenada marcada impre
   })
 })
 
+
+// Regra A (diagnostico 24/10, gabarito da Ana 22-28/09): 'ENTREGUE - PARADA
+// PRÓXIMA (500m-2km)' nao credita a NF quando a parada fica a <= 500 m e <= 15
+// min de OUTRA parada da mesma placa que ja' confirmou outro cliente. Caso real
+// RQV3G18/2385999 RETAS BAR 23/09: a parada de 14 min (13:40-13:54) a 1,86 km
+// do ponto (CNEFE 'rua' da RJ-162, S/N) estava a 232 m e 2 min da parada que
+// entregou 2385987 em Frade (13:19-13:38). Mesmo padrao em TTM2G02/2394312
+// 28/09 (328 m e 3 min da entrega de 2394301).
+describe('Regra A -- parada próxima colada na parada que confirmou outro cliente', () => {
+  const OBS_PROXIMA = 'PARADA PRÓXIMA (500m-2km) MAS FORA DO ENDEREÇO - CONFERIR'
+  const LAT0 = -22.23786 // ponto CNEFE (rua) do RETAS BAR
+  const LNG0 = -42.091336
+  const M_LNG = 1 / (111_195 * Math.cos(LAT0 * Math.PI / 180))
+  const em = (norteM: number, lesteM = 0) => ({ lat: LAT0 + norteM * M_LAT, lng: LNG0 + lesteM * M_LNG })
+  const t = (hhmm: string) => `2026-09-23T${hhmm}:00.000Z`
+  const placa = 'RQV3G18'
+  const stop = (id: string, norteM: number, ini: string, fim: string) => {
+    const p = em(norteM)
+    return paradaForaBase(`${placa}-${id}`, p.lat, p.lng, t(ini), t(fim), placa)
+  }
+  const retas = linha('2385999', {
+    placa, carga: '98500', clienteCodigo: '164474', clienteNome: 'RETAS BAR',
+    endereco: 'AVENIDA RJ 162, S/N - FRADE, MACAE - *', ...em(0), geoConfiavel: true, geoPrecisao: 'rua',
+  })
+  const entregue = (nf: string, norteM: number) => linha(nf, {
+    placa, carga: '98500', clienteCodigo: `C${nf}`, clienteNome: `CLIENTE ${nf}`,
+    endereco: `RUA ADELINO JOSE MARTINS, ${nf.slice(-3)} - FRADE, MACAE`, ...em(norteM), geoConfiavel: true,
+  })
+  const visita = (nf: string, ini: string, fim: string): [string, Visita] => [nf, { nf, chegada: t(ini), saida: t(fim), distanciaMetrosDoPonto: 0 }]
+  const doNf = (d: ReturnType<typeof chamarNutryMax>, nf: string) => d.find(x => x.nf === nf)!
+
+  function rodar(opts: { entregaNorteM: number; entregaIni: string; entregaFim: string; outroCliente?: boolean }) {
+    const adelino = entregue('2385987', opts.entregaNorteM + 6)
+    const linhas = opts.outroCliente === false
+      ? [retas, { ...adelino, clienteCodigo: retas.clienteCodigo }]
+      : [retas, adelino]
+    return chamarNutryMax(linhas, {
+      placa,
+      visitasPorNf: new Map([visita('2385987', opts.entregaIni, opts.entregaFim)]),
+      paradasPorOutraPlaca: new Map([[placa, [
+        stop('entrega', opts.entregaNorteM, opts.entregaIni, opts.entregaFim),
+        stop('colada', 1864, '13:40', '13:54'),
+      ]]]),
+    })
+  }
+
+  it('RQV3G18/2385999 23/09: parada a 232 m e 2 min da entrega de 2385987 -> nao credita, fica PARADA PRÓXIMA ... CONFERIR', () => {
+    const d = rodar({ entregaNorteM: 2096, entregaIni: '13:19', entregaFim: '13:38' })
+    expect(doNf(d, '2385987').status).toBe('confirmado_gps')
+    expect(doNf(d, '2385987').evidencia).toBe('parada_no_endereco')
+    const r = doNf(d, '2385999')
+    expect(r.status).toBe('pendente')
+    expect(r.observacao).toBe(OBS_PROXIMA)
+    expect(r.evidencia).toBe('parada_proxima_fora_raio')
+    expect(r.chegada).toBeNull()
+  })
+
+  it('TTM2G02/2394312 28/09 (Rancho Inn): parada de 11 min a 328 m e 3 min da entrega de 2394301 -> nao credita', () => {
+    const p = 'TTM2G02'
+    const t28 = (hhmm: string) => `2026-09-28T${hhmm}:00.000Z`
+    const rancho = linha('2394312', {
+      placa: p, carga: '98840', clienteCodigo: '150001', clienteNome: 'RANCHO INN',
+      endereco: 'AVENIDA EPITACIO PESSOA, 00 - LAGOA, RIO DE JANEIRO - DENTRO DO CLUBE CAICARAS', ...em(0), geoConfiavel: true,
+    })
+    const vizinho = linha('2394301', {
+      placa: p, carga: '98840', clienteCodigo: '150002', clienteNome: 'CLIENTE LAGOA',
+      endereco: 'RUA JOAO LIRA, 95 - LEBLON, RIO DE JANEIRO', ...em(1587 + 328 + 20), geoConfiavel: true,
+    })
+    const pp = (id: string, norteM: number, ini: string, fim: string) => { const c = em(norteM); return paradaForaBase(`${p}-${id}`, c.lat, c.lng, t28(ini), t28(fim), p) }
+    const d = chamarNutryMax([rancho, vizinho], {
+      placa: p,
+      visitasPorNf: new Map([['2394301', { nf: '2394301', chegada: t28('12:40'), saida: t28('12:56'), distanciaMetrosDoPonto: 0 }]]),
+      paradasPorOutraPlaca: new Map([[p, [pp('entrega', 1587 + 328, '12:40', '12:56'), pp('colada', 1587, '12:59', '13:10')]]]),
+    })
+    expect(doNf(d, '2394301').status).toBe('confirmado_gps')
+    const r = doNf(d, '2394312')
+    expect(r.status).toBe('pendente')
+    expect(r.observacao).toBe(OBS_PROXIMA)
+  })
+
+  it('a mesma parada a mais de 15 min da entrega do outro cliente continua ENTREGUE - PARADA PRÓXIMA', () => {
+    const r = doNf(rodar({ entregaNorteM: 2096, entregaIni: '12:50', entregaFim: '13:20' }), '2385999')
+    expect(r.status).toBe('confirmado_gps')
+    expect(r.observacao).toBe('ENTREGUE - PARADA PRÓXIMA (500m-2km)')
+    expect(r.evidencia).toBe('parada_proxima_propria')
+  })
+
+  it('a mesma parada a mais de 500 m da entrega do outro cliente continua ENTREGUE - PARADA PRÓXIMA', () => {
+    const r = doNf(rodar({ entregaNorteM: 2464, entregaIni: '13:19', entregaFim: '13:38' }), '2385999')
+    expect(r.status).toBe('confirmado_gps')
+    expect(r.observacao).toBe('ENTREGUE - PARADA PRÓXIMA (500m-2km)')
+  })
+
+  it('a parada vizinha confirmou o MESMO cliente (outra NF dele) -> continua ENTREGUE - PARADA PRÓXIMA', () => {
+    const r = doNf(rodar({ entregaNorteM: 2096, entregaIni: '13:19', entregaFim: '13:38', outroCliente: false }), '2385999')
+    expect(r.status).toBe('confirmado_gps')
+    expect(r.observacao).toBe('ENTREGUE - PARADA PRÓXIMA (500m-2km)')
+  })
+
+  it('sem modoPrecisao (Rio Quality): parada proxima propria nem existe, nada muda', () => {
+    const d = chamarNutryMax([retas, entregue('2385987', 2102)], {
+      placa, modoPrecisao: false,
+      visitasPorNf: new Map([visita('2385987', '13:19', '13:38')]),
+      paradasPorOutraPlaca: new Map([[placa, [stop('entrega', 2096, '13:19', '13:38'), stop('colada', 1864, '13:40', '13:54')]]]),
+    })
+    expect(doNf(d, '2385999').evidencia).not.toBe('parada_proxima_propria')
+  })
+})

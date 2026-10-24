@@ -804,6 +804,27 @@ function fimParadaMs(p: UnitracParadaRow): number {
 /** Janela [ini, fim] (ms) que ja' serviu de prova pra OUTRA NF da placa. */
 type JanelaProvaOutraNf = { endereco: string; iniMs: number; fimMs: number }
 
+// Regra A (diagnostico 24/10, gabarito 22-28/09 -- RQV3G18/2385999 RETAS BAR
+// 23/09 e TTM2G02/2394312 28/09): parada propria a 500 m-2 km colada (<= 500 m
+// e <= 15 min) numa parada da placa que ja' confirmou OUTRO cliente e' a
+// continuacao daquele atendimento (manobra, 2o descarregamento, almoco), nao
+// prova esta NF. 232 m/2 min e 328 m/3 min nos dois casos reais.
+const RAIO_PARADA_COLADA_M = 500
+const JANELA_PARADA_COLADA_MIN = 15
+/** Parada que confirmou outro cliente da placa (evidencia forte, ver
+ *  EVIDENCIAS_PROVA_OUTRO_CLIENTE), com a coordenada casada por horario. */
+type ProvaParadaOutroCliente = { clienteCodigo?: string | null; endereco: string; lat: number; lng: number; iniMs: number; fimMs: number }
+const EVIDENCIAS_PROVA_OUTRO_CLIENTE = new Set<EvidenciaNf>(['parada_no_endereco', 'parada_no_cadastro_unitrac', 'alvo_feito_unitrac'])
+function paradaColadaEmOutroCliente(
+  p: { lat: number; lng: number; iniMs: number; fimMs: number },
+  linha: { clienteCodigo?: string | null; endereco: string },
+  provas: ProvaParadaOutroCliente[],
+): boolean {
+  return provas.some(q => !mesmoClienteOuEndereco(q, linha)
+    && haversine(p.lat, p.lng, q.lat, q.lng) <= RAIO_PARADA_COLADA_M
+    && Math.max(0, p.iniMs - q.fimMs, q.iniMs - p.fimMs) <= JANELA_PARADA_COLADA_MIN * 60_000)
+}
+
 /** Parada propria isolada perto da NF (ver constantes acima). Entre as
  *  validas vence a mais perto da NF (empate: a mais longa). Guardas 29/09:
  *  (1) descarta parada cuja janela ja' e' prova de outra NF da placa
@@ -916,6 +937,7 @@ function acharParadaProximaPropriaIsolada(
   outrosPontosDaPlaca: PontoReferenciaPlacaNf[],
   janelasProvaOutrasNfs: JanelaProvaOutraNf[],
   ponteComSinal: boolean,
+  provasOutrosClientes: ProvaParadaOutroCliente[] = [],
 ): ParadaProvada | null {
   const geo = linha.geoConfiavel !== false && linha.lat != null && linha.lng != null
     ? { lat: linha.lat, lng: linha.lng }
@@ -945,6 +967,7 @@ function acharParadaProximaPropriaIsolada(
     const iniMs = new Date(p.chegada).getTime()
     const fimMs = fimParadaMs(p)
     if (janelasOutras.some(j => j.fimMs >= iniMs && j.iniMs <= fimMs)) continue
+    if (paradaColadaEmOutroCliente({ lat: p.lat, lng: p.lng, iniMs, fimMs }, linha, provasOutrosClientes)) continue
     const distGeo = geo ? haversine(p.lat, p.lng, geo.lat, geo.lng) : Infinity
     const distCad = cadastro ? haversine(p.lat, p.lng, cadastro.lat, cadastro.lng) : Infinity
     const distM = Math.min(distGeo, distCad)
@@ -2073,7 +2096,9 @@ export function montarDetalheEntregas(
     }))
   }
 
-  const resultado = linhasRomaneio.map((linha): LinhaDetalheEntrega => {
+  // Regra A: `provasOutrosClientes` so' e' preenchido na 2a passada (abaixo),
+  // quando ja' se sabe quais paradas confirmaram outro cliente da placa.
+  const montarLinha = (linha: LinhaGeocodificada, provasOutrosClientes: ProvaParadaOutroCliente[] = []): LinhaDetalheEntrega => {
     const alvo = alvoPorNf.get(linha.nf)
     const visita = visitasPorNf.get(linha.nf)
     const confirmadoUnitrac = alvo?.situacao === 1
@@ -2529,7 +2554,7 @@ export function montarDetalheEntregas(
       paradaProximaPropria = acharParadaProximaPropriaIsolada(
         linha, cadastroDoAlvo(alvo),
         [...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []), ...paradasProprias],
-        pontosIsolamentoParadaProxima, janelasProvaOutrasNfs, ponteComSinal,
+        pontosIsolamentoParadaProxima, janelasProvaOutrasNfs, ponteComSinal, provasOutrosClientes,
       )
       if (paradaProximaPropria) {
         const p = paradaProximaPropria.parada
@@ -3053,7 +3078,30 @@ export function montarDetalheEntregas(
       confianca: calcularConfianca(status, observacao),
       ...(nfRodizio ? { placaExecutora: placaRodizio } : {}),
     }
-  })
+  }
+  const resultado = linhasRomaneio.map(l => montarLinha(l))
+
+  // Regra A (2a passada): NF creditada por parada proxima propria colada numa
+  // parada que confirmou outro cliente da placa e' remontada sem essa parada
+  // -- volta pra 'PARADA PRÓXIMA ... CONFERIR' (ou outra candidata isolada).
+  if (modoPrecisao) {
+    const paradasDaPlaca = new Map([[placaNorm, [
+      ...(paradasPorOutraPlaca.get(placaNorm) ?? []), ...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []),
+    ]]])
+    const provas: ProvaParadaOutroCliente[] = []
+    resultado.forEach((d, i) => {
+      if (d.status === 'pendente' || !EVIDENCIAS_PROVA_OUTRO_CLIENTE.has(d.evidencia) || !d.chegada || !d.saida) return
+      const l = linhasRomaneio[i]
+      const coord = acharCoordenadaDaParadaPropria(placaNorm, d.chegada, d.saida, paradasDaPlaca, referenciaParaDesempate(l, alvoPorNf.get(l.nf)))
+      if (coord) provas.push({ clienteCodigo: l.clienteCodigo, endereco: l.endereco, ...coord, iniMs: Date.parse(d.chegada), fimMs: Date.parse(d.saida) })
+    })
+    if (provas.length > 0) {
+      // Remontar e' deterministico: sem parada colada, o resultado e' o mesmo.
+      resultado.forEach((d, i) => {
+        if (d.evidencia === 'parada_proxima_propria') resultado[i] = montarLinha(linhasRomaneio[i], provas)
+      })
+    }
+  }
 
   // Revisao 06/10 (TTY0J84: 1 parada de 4 min confirmou 4 clientes a 670-1090
   // m; RQV5F67: parada de 1 min confirmou 3 a 1-2 km): parada curta (<=
