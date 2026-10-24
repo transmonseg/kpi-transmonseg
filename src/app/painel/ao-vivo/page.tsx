@@ -16,6 +16,7 @@ import { textoSugestao, corpoSugestao } from './sugestao-texto'
 import { mensagemDaTroca, type RespostaTroca } from '../nutrimax/placas/troca-dia'
 import { baixarPendentes } from './baixar-pendentes'
 import { linhasPendentes } from '@/lib/kpi-romaneio/relatorio-pendentes'
+import { avisoVersaoRegras } from '@/lib/kpi-romaneio/versao-regras-aviso'
 import type { ModoTroca } from '@/lib/kpi-romaneio/trocas-placa'
 
 // Tela "Ao vivo" (spec 2026-10-06-kpi-ao-vivo-design.md). Cor/status de cada
@@ -25,7 +26,7 @@ import type { ModoTroca } from '@/lib/kpi-romaneio/trocas-placa'
 type Cliente = 'nutrimax' | 'rioquality'
 const NOME_CLIENTE: Record<Cliente, string> = { nutrimax: 'Nutry Max', rioquality: 'Rio Quality' }
 type Agora = { posicao: { lat: number | null; lng: number | null; datagps: string | null } | null; parada: { inicio: string } | null; nf: { nf: string; cliente: string } | null; consultadoEm: string }
-type Estado = EstadoAoVivo & { data: string; hoje: string; historico: boolean; dias: string[]; clientes: Cliente[]; fonte?: 'ao_vivo' | 'geracao' | null; geracaoId?: string | null }
+type Estado = EstadoAoVivo & { data: string; hoje: string; historico: boolean; dias: string[]; clientes: Cliente[]; fonte?: 'ao_vivo' | 'geracao' | null; geracaoId?: string | null; versaoRegrasAtual?: string | null }
 
 /** "2026-10-03" -> "sex, 03/10". */
 function rotuloDia(d: string): string {
@@ -287,6 +288,15 @@ export default function AoVivoPage() {
           <WarningCircle size={16} weight="fill" />{a}
         </p>
       ))}
+      {/* F2-13 (KRQ-12): dia calculado com outra versão das regras não se compara direto. */}
+      {r && (() => {
+        const aviso = avisoVersaoRegras(r.versaoRegras, estado.versaoRegrasAtual)
+        return aviso && (
+          <p className="inline-flex items-center gap-2 rounded-2xl bg-[var(--color-warning-soft)] px-4 py-2.5 text-[13px] text-[var(--color-warning-soft-fg)]">
+            <WarningCircle size={16} weight="fill" />{aviso}
+          </p>
+        )
+      })()}
       {erroCarga && <p className="text-[13px] text-[var(--color-danger)]">{erroCarga}</p>}
       {!historico && (() => {
         const longas = placas

@@ -17,6 +17,7 @@ import { foraDoAlcanceApi } from './constants'
 import { lerSnapshotParadas } from './paradas-snapshot'
 import { EMPRESA_SNAPSHOT_RIOQUALITY } from '@/lib/kpi-rioquality/snapshot-paradas'
 import { hojeBR } from '@/lib/data-br'
+import { versaoDasRegras } from './versao-regras'
 import type { EntregaRioQualityCompleta } from '@/lib/kpi-rioquality/parse-planilhas'
 
 export const CLIENTES_AO_VIVO = ['nutrimax', 'rioquality'] as const
@@ -64,6 +65,8 @@ export type ResultadoAoVivo = {
   sugestoesTroca?: SugestaoTroca[]
   /** F1-11: avisos do cálculo que não mudam a taxa (ex.: conferência de endereço indisponível). */
   avisos?: string[]
+  /** F2-13 (KRQ-12): commit das regras com que o dia foi calculado (versao-regras.ts). */
+  versaoRegras?: string | null
 }
 
 export type DiaAoVivo = {
@@ -326,6 +329,7 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     const resultado = montarResultadoAoVivo(data, await extrairKpiCompleto(r.xlsx), coords, new Date().toISOString(), paradasNf)
     if (sugestoesTroca.length > 0) resultado.sugestoesTroca = sugestoesTroca
     if (r.aviso) resultado.avisos = [r.aviso]
+    resultado.versaoRegras = versaoDasRegras()
     investigarPlacas(resultado.placas, paradasDoDia, trajetoPorNf)
     for (const p of resultado.placas) {
       const pa = paradaAtualPorPlaca.get(normPlaca(p.placa))

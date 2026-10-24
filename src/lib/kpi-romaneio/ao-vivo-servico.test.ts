@@ -43,6 +43,8 @@ vi.mock('./gerar-nutrimax', () => ({
     return c.resultadoNutry
   },
 }))
+// F2-13: a versao das regras vem do git; no teste, fixa.
+vi.mock('./versao-regras', () => ({ versaoDasRegras: () => '0f495b4' }))
 vi.mock('./resumo-dashboard', () => ({ extrairKpiCompleto: async () => ({ data: null, resumo: { cargas: [], taxa: 96.9, entregues: 0, nfsNaConta: 0 }, nfs: [] }) }))
 
 import { calcularAoVivo } from './ao-vivo-servico'
@@ -89,6 +91,13 @@ describe('calcularAoVivo: conferencia de endereco indisponivel (F1-11)', () => {
     expect(u.resultado.avisos?.[0]).toContain('Conferência de endereço indisponível')
     expect(u.ultimo_erro?.startsWith(AVISO_TERRITORIO_AO_VIVO)).toBe(true)
     expect(u.ultimo_erro_em).toBe(u.resultado.calculadoEm)
+  })
+  it('F2-13: o resultado gravado carrega a versao das regras', async () => {
+    c.travaLinhas = [{ cliente: 'nutrimax' }]
+    c.resultadoNutry = { xlsx: Buffer.from(''), qtdCargasNutry: 0 }
+    expect(await calcularAoVivo('nutrimax', '2026-10-22')).toBe('ok')
+    const u = c.updates.find(x => 'resultado' in x) as { resultado: { versaoRegras?: string | null } }
+    expect(u.resultado.versaoRegras).toBe('0f495b4')
   })
   it('conferencia ok: sem aviso e sem mexer em ultimo_erro', async () => {
     c.travaLinhas = [{ cliente: 'nutrimax' }]

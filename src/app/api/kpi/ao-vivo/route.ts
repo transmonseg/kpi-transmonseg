@@ -4,6 +4,7 @@ import { lerEstadoAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
 import { lerDiaHistorico, listarDiasHistorico } from '@/lib/kpi-romaneio/ao-vivo-historico'
 import { semResultadoSeIgual } from '@/lib/kpi-romaneio/ao-vivo-carga'
 import { acessoAoVivo } from './acesso'
+import { versaoDasRegras } from '@/lib/kpi-romaneio/versao-regras'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -16,16 +17,19 @@ export async function GET(req: NextRequest) {
   const hoje = hojeBR()
   const pedida = req.nextUrl.searchParams.get('data')
   const dias = await listarDiasHistorico(a.cliente, hoje)
+  // F2-13 (KRQ-12): versão das regras no ar -- a tela avisa quando o dia aberto
+  // foi calculado com outra versão.
+  const versaoRegrasAtual = versaoDasRegras()
   if (pedida && pedida !== hoje) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(pedida) || pedida > hoje) return new NextResponse('Data inválida.', { status: 400 })
     const h = await lerDiaHistorico(a.cliente, pedida)
     return NextResponse.json({
-      data: pedida, hoje, historico: true, dias, clientes: a.clientes,
+      data: pedida, hoje, historico: true, dias, clientes: a.clientes, versaoRegrasAtual,
       dia: null, calculando: false, ultimoErro: null,
       resultado: h?.resultado ?? null, fonte: h?.fonte ?? null, geracaoId: h?.geracaoId ?? null,
     })
   }
   // ?tenho=<calculadoEm>: a tela já tem esse cálculo -> não manda os ~900 KB de novo.
   const estado = semResultadoSeIgual(await lerEstadoAoVivo(a.cliente, hoje), req.nextUrl.searchParams.get('tenho'))
-  return NextResponse.json({ data: hoje, hoje, historico: false, dias, clientes: a.clientes, ...estado })
+  return NextResponse.json({ data: hoje, hoje, historico: false, dias, clientes: a.clientes, versaoRegrasAtual, ...estado })
 }
