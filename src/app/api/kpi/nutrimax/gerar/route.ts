@@ -44,11 +44,12 @@ async function guardarPdf(svc: ReturnType<typeof createServiceClient>, data: str
  *  geracao completa) exige motivo -- 20/10 teve 4 versoes e 21/10 cinco, sem
  *  dizer por que. 428 = a tela abre o campo "Motivo" e reenvia. */
 async function motivoDoDiaFechado(data: string, form: FormData): Promise<{ motivo: string | null } | NextResponse> {
-  const { fechado, fechamento } = await diaJaFechado('nutrimax', data, hojeBR())
+  const { fechado, fechamento, falhaLeitura } = await diaJaFechado('nutrimax', data, hojeBR())
   if (!fechado) return { motivo: null }
   const motivo = motivoValido(form.get('motivo'))
   if (motivo) return { motivo }
   const br = data.split('-').reverse().join('/')
+  if (falhaLeitura) return new NextResponse(`Não consegui conferir se o KPI de ${br} já está fechado. Escreva o motivo para gerar de novo (pelo menos ${MOTIVO_MINIMO} letras).`, { status: 428 })
   const oficial = fechamento?.resumo.taxa != null ? ` (fechamento oficial: ${fmtTaxa(fechamento.resumo.taxa)})` : ''
   return new NextResponse(`O KPI de ${br} já está fechado${oficial}. Escreva o motivo para gerar de novo (pelo menos ${MOTIVO_MINIMO} letras).`, { status: 428 })
 }

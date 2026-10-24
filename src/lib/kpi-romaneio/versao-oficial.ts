@@ -91,9 +91,10 @@ export function motivoValido(m: unknown): string | null {
 
 // ---------- I/O real ----------
 
-/** Dados do dia para a trava do motivo (rota Gerar KPI). Falha de leitura =
- *  nao trava (a geracao continua; o historico ainda mostra o oficial). */
-export async function diaJaFechado(cliente: 'nutrimax' | 'rioquality', data: string, hoje: string): Promise<{ fechado: boolean; fechamento: FechamentoDia | null }> {
+/** Dados do dia para a trava do motivo (rota Gerar KPI). F3-R06: falha de
+ *  leitura = na duvida, exige motivo (fail-closed) e registra o erro -- antes
+ *  um timeout liberava regravar dia fechado sem motivo, calado. */
+export async function diaJaFechado(cliente: 'nutrimax' | 'rioquality', data: string, hoje: string): Promise<{ fechado: boolean; fechamento: FechamentoDia | null; falhaLeitura?: boolean }> {
   if (data >= hoje) return { fechado: false, fechamento: null }
   try {
     const svc = createServiceClient()
@@ -101,11 +102,13 @@ export async function diaJaFechado(cliente: 'nutrimax' | 'rioquality', data: str
       listarFechamentosDasDatas(cliente, [data]),
       svc.from('kpi_romaneio_geracoes').select('resumo').eq('cliente', cliente).eq('data_referencia', data),
     ])
+    if (g.error) throw new Error(`geracoes ${cliente} ${data}: ${g.error.message}`)
     const fechamento = fs[0] ?? null
     const geracoes = ((g.data ?? []) as { resumo: ResumoVersao | null }[])
     return { fechado: exigeMotivoRegeracao({ data, hoje, fechamento, geracoes }), fechamento }
-  } catch {
-    return { fechado: false, fechamento: null }
+  } catch (e) {
+    console.error(`[versao-oficial] trava do motivo ${cliente} ${data}: leitura falhou, motivo exigido (${e instanceof Error ? e.message : String(e)})`)
+    return { fechado: true, fechamento: null, falhaLeitura: true }
   }
 }
 
