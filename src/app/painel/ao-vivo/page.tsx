@@ -10,6 +10,7 @@ import { resumirInvestigacao } from '@/lib/kpi-romaneio/investigacao-resumo'
 import { buscarNfs, filtrarNfs, type FiltroNf } from '@/lib/kpi-romaneio/ao-vivo-busca'
 import { CATEGORIAS_INVESTIGACAO, ROTULO_INVESTIGACAO, fraseInvestigacao } from '@/lib/kpi-romaneio/investigacao-rotulos'
 import { juntarEstado, mensagemFalhaCarga } from '@/lib/kpi-romaneio/ao-vivo-carga'
+import { buscarComSessao, lerJson, SessaoVencida } from '@/lib/sessao-fetch'
 import { SubirRomaneio, type EnvioRomaneio } from './subir-romaneio'
 import { montarPayloadTroca } from './troca-payload'
 import { textoSugestao, corpoSugestao } from './sugestao-texto'
@@ -103,11 +104,12 @@ export default function AoVivoPage() {
     const mesmoDia = !!ant && !ant.historico && !dataSel && ant.data === ant.hoje && clienteDoEstado.current === CLIENTE
     const tenho = mesmoDia && ant?.resultado ? `&tenho=${encodeURIComponent(ant.resultado.calculadoEm)}` : ''
     try {
-      const r = await fetch(`/api/kpi/ao-vivo?cliente=${CLIENTE}${dataSel ? `&data=${dataSel}` : ''}${tenho}`, { cache: 'no-store' })
+      // F3-11: sessão vencida leva ao login (sem "Unexpected token <" em loop).
+      const r = await buscarComSessao(`/api/kpi/ao-vivo?cliente=${CLIENTE}${dataSel ? `&data=${dataSel}` : ''}${tenho}`, { cache: 'no-store' })
       // Login só da Rio Quality: abre direto nela.
       if (r.status === 403 && CLIENTE === 'nutrimax') { setCliente('rioquality'); return }
       if (!r.ok) throw new Error(await r.text())
-      const novo = await r.json()
+      const novo = await lerJson<Estado & { resultadoInalterado?: true }>(r)
       setEstado(prev => juntarEstado(mesmoDia ? prev : null, novo))
       clienteDoEstado.current = CLIENTE
       setErroCarga(null)
@@ -115,6 +117,8 @@ export default function AoVivoPage() {
     } catch (e) {
       // Falha de rede não apaga a tela: mantém os últimos dados e tenta de novo em 10 s.
       setErroCarga(mensagemFalhaCarga(e, !!estadoRef.current))
+      // Sessão vencida: a tela já está indo para o login; não agenda nova tentativa.
+      if (e instanceof SessaoVencida) return
       setFalhaSeguida(n => n + 1)
     }
   }, [dataSel, cliente]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -162,8 +166,8 @@ export default function AoVivoPage() {
     if (!placa || dataSel) return
     const alvo = placa.placa
     let vivo = true
-    const buscar = () => fetch(`/api/kpi/ao-vivo/agora?cliente=${CLIENTE}&placa=${alvo}`, { cache: 'no-store' })
-      .then(r => (r.ok ? r.json() : null))
+    const buscar = () => buscarComSessao(`/api/kpi/ao-vivo/agora?cliente=${CLIENTE}&placa=${alvo}`, { cache: 'no-store' })
+      .then(r => (r.ok ? lerJson<Agora>(r) : null))
       .then((a: Agora | null) => { if (vivo && a) setAgora(prev => ({ ...prev, [alvo]: a })) })
       .catch(() => {})
     buscar()

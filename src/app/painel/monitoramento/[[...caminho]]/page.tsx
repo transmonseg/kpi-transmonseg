@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { URL_MONITORAMENTO, caminhoMonitoramento, rotaPainelMonitoramento } from '@/lib/sistema-transmonseg'
+import { urlLogin } from '@/lib/sessao-fetch'
 
 // Monitoramento aberto dentro da Central (05/10). O sistema continua o mesmo
 // (monitoramento.transmonseg.com.br); aqui ele aparece sem a moldura dele e
@@ -37,7 +38,7 @@ function MonitoramentoEmbutido() {
     fetch('/api/monitoramento/passe', { cache: 'no-store' })
       .then(r => {
         // Sessão do painel vencida: login; conta sem monitoramento: painel.
-        if (r.status === 401) { window.location.href = '/login'; return null }
+        if (r.status === 401) { window.location.href = urlLogin(window.location.pathname + window.location.search); return null }
         if (r.status === 403) { router.push('/painel'); return null }
         return r.ok ? r.json() as Promise<{ passe: string }> : Promise.reject(new Error(String(r.status)))
       })

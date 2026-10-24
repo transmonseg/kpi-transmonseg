@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { juntarEstado, mensagemFalhaCarga, semResultadoSeIgual } from './ao-vivo-carga'
+import { SessaoVencida } from '@/lib/sessao-fetch'
 
 type R = { calculadoEm: string; placas: number[] } | null
 const res = (calculadoEm: string): R => ({ calculadoEm, placas: [1, 2, 3] })
@@ -40,6 +41,14 @@ describe('mensagemFalhaCarga', () => {
   it('erro de rede vira texto claro', () => {
     expect(mensagemFalhaCarga(new TypeError('Failed to fetch'), true)).toMatch(/últimos dados/)
     expect(mensagemFalhaCarga(new TypeError('Failed to fetch'), false)).toMatch(/Tentando de novo/)
+  })
+  it('F3-11: JSON quebrado (HTML do /login) nunca aparece como "Unexpected token <"', () => {
+    const m = mensagemFalhaCarga(new SyntaxError(`Unexpected token '<', "<!DOCTYPE "... is not valid JSON`), true)
+    expect(m).not.toMatch(/Unexpected token/)
+    expect(m).toMatch(/servidor/i)
+  })
+  it('F3-11: sessão vencida não mostra mensagem de falha (a tela já vai para o login)', () => {
+    expect(mensagemFalhaCarga(new SessaoVencida(), true)).toMatch(/sessão venceu/i)
   })
   it('erro do servidor mantém a mensagem', () => {
     expect(mensagemFalhaCarga(new Error('Data inválida.'), true)).toBe('Data inválida.')

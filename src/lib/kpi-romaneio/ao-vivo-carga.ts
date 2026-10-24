@@ -5,6 +5,8 @@
 // e o servidor só manda o resultado de novo quando ele mudou; e uma falha de
 // rede mantém os dados que já estão na tela.
 
+import { SessaoVencida } from '@/lib/sessao-fetch'
+
 type ComResultado = { resultado: { calculadoEm: string } | null }
 
 /** Servidor: se a tela já tem este cálculo, devolve sem o resultado (marcado como inalterado). */
@@ -25,6 +27,11 @@ export function juntarEstado<T extends ComResultado>(anterior: T | null, novo: T
 /** Mensagem pra falha da busca: erro de rede vira texto que a pessoa entende. */
 export function mensagemFalhaCarga(e: unknown, temDados: boolean): string {
   const msg = e instanceof Error ? e.message : ''
+  if (e instanceof SessaoVencida) return e.message
+  // F3-11: página HTML lida como JSON (ex.: o /login de um servidor antigo).
+  if (e instanceof SyntaxError || /unexpected token|not valid json/i.test(msg)) {
+    return 'O servidor respondeu fora do esperado. Recarregue a tela; se continuar, entre de novo.'
+  }
   const rede = e instanceof TypeError || /failed to fetch|networkerror|load failed|network/i.test(msg)
   if (rede) {
     return temDados

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { WarningCircle } from '@phosphor-icons/react/dist/ssr'
 import { FileDropzone } from '@/app/painel/file-dropzone'
+import { buscarComSessao, SessaoVencida } from '@/lib/sessao-fetch'
 
 // Romaneio do dia: os mesmos PDFs da tela Gerar KPI, subidos de manhã.
 // O KPI guarda só o que leu deles (não o arquivo) e começa a calcular.
@@ -25,7 +26,9 @@ export function SubirRomaneio({ cliente, compacto, onEnviado }: { cliente: strin
     if (romaneio[0]) fd.set(rq ? 'completo' : 'romaneio', romaneio[0])
     if (escala[0]) fd.set('escala', escala[0])
     if (pao[0]) fd.set('romaneioPao', pao[0])
-    const r = await fetch('/api/kpi/ao-vivo/romaneio', { method: 'POST', body: fd })
+    // F3-11: sessão vencida leva ao login em vez de mostrar o JSON do 401.
+    const r = await buscarComSessao('/api/kpi/ao-vivo/romaneio', { method: 'POST', body: fd }).catch(e => { setEnviando(false); if (!(e instanceof SessaoVencida)) setErro('Sem conexão com o servidor. Tente de novo.'); return null })
+    if (!r) return
     setEnviando(false)
     if (!r.ok) { setErro(await r.text()); return }
     const resp = (await r.json()) as EnvioRomaneio

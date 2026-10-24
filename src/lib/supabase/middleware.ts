@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { resolveUserDesktopAware } from './desktop-auth'
 import { getPerfil } from '@/lib/perfil'
 import { urlSupabaseServidor, nomeCookieSessao } from './url'
+import { voltaSegura } from '@/lib/sessao-fetch'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -52,8 +53,16 @@ export async function updateSession(request: NextRequest) {
   const isPublic = path === '/' || isAuthPage || isDashboardPublico || isConvite || isAcesso || isKpiPublico
 
   if (!user && !isPublic) {
+    // F3-11 (AC-03): API sem usuário responde 401 em JSON. O redirect virava o
+    // HTML do /login lido como JSON ("Unexpected token <" em loop no Ao vivo).
+    if (path.startsWith('/api/')) {
+      return NextResponse.json({ erro: 'Sessão vencida. Entre de novo.' }, { status: 401 })
+    }
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    url.search = ''
+    const volta = voltaSegura(path + request.nextUrl.search)
+    if (volta && volta !== '/painel') url.searchParams.set('volta', volta)
     return NextResponse.redirect(url)
   }
 
@@ -73,10 +82,11 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && isAuthPage) {
-    const url = request.nextUrl.clone()
-    // Desktop cai na tela offline (Gerar KPI); site vai pro painel (dashboard).
-    url.pathname = process.env.DESKTOP_APP === '1' ? '/painel/kpi/simples' : '/painel'
-    return NextResponse.redirect(url)
+    // Desktop cai na tela offline (Gerar KPI); site vai pro painel (dashboard),
+    // ou de volta para a tela onde a sessão venceu (?volta=, F3-11).
+    const volta = process.env.DESKTOP_APP === '1' ? null : voltaSegura(request.nextUrl.searchParams.get('volta'))
+    const destino = volta ?? (process.env.DESKTOP_APP === '1' ? '/painel/kpi/simples' : '/painel')
+    return NextResponse.redirect(new URL(destino, request.nextUrl.origin))
   }
 
   // Login restrito (gerente/visualizador): só a tela de Dashboard (/painel), a

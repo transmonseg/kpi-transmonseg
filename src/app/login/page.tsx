@@ -7,9 +7,9 @@ import { login } from './actions'
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ erro?: string; sucesso?: string }>
+  searchParams: Promise<{ erro?: string; sucesso?: string; volta?: string }>
 }) {
-  const { erro, sucesso } = await searchParams
+  const { erro, sucesso, volta } = await searchParams
 
   return (
     <div className="relative flex min-h-[100dvh] items-center justify-center overflow-hidden bg-[var(--color-bg)] px-6 py-10 text-[var(--color-fg)]">
@@ -62,6 +62,8 @@ export default async function LoginPage({
             className="rounded-[16px] p-6"
           >
             <form action={login} className="flex flex-col gap-5">
+              {/* Tela onde a sessão venceu (F3-11): a action confere se é caminho interno. */}
+              {volta && <input type="hidden" name="volta" value={volta} />}
               <div className="flex flex-col gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
