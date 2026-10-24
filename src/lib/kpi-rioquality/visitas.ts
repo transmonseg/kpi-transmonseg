@@ -1,7 +1,7 @@
 import type { LinhaGeocodificada, Visita } from '@/lib/kpi-romaneio/types'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { RAIO_ENTREGA_METROS } from '@/lib/kpi-romaneio/constants'
-import { RAIO_VIZINHANCA_METROS, RAIO_CONFIRMACAO_AMPLIADO_METROS, RAIO_PARADA_CORREDOR_M, PERMANENCIA_MIN_CORREDOR_MIN } from './constants'
+import { RAIO_CONFIRMACAO_AMPLIADO_METROS, RAIO_PARADA_CORREDOR_M, PERMANENCIA_MIN_CORREDOR_MIN } from './constants'
 
 // Correcao 02/10 (falso positivo massivo no corredor): endereco SEM NUMERO em
 // via longa geocodifica para o MESMO ponto generico e uma unica parada confirma
@@ -55,9 +55,8 @@ export function limiteNfsPorParadaNoCorredor(duracaoMs: number): number {
 // caem na mesma rua/coordenada (romaneio sem numero) e so' uma confirmava.
 // Aqui a pergunta e' feita por ENTREGA: "houve parada a <= 500m de mim?" --
 // todas as que estao no raio confirmam, cada uma com a parada de maior
-// permanencia. Depois, vizinhanca: entrega sem parada propria herda a visita
-// de uma irma confirmada DIRETAMENTE a <= 800m (sem encadear), marcada
-// viaVizinhanca pra sair diferente no relatorio.
+// permanencia. (A vizinhanca -- herdar a visita de uma irma a <= 800 m --
+// foi desligada pelo D-25: creditava NF a 0,8-1,3 km da parada.)
 
 function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6_371_000
@@ -217,29 +216,16 @@ export function montarVisitasInclusivas(linhas: LinhaGeocodificada[], paradas: U
     })
   }
 
-  // 2) vizinhanca: so' irmas confirmadas DIRETAMENTE emprestam (sem encadear).
-  //    RQ-06 (auditoria 20/10): e so' as confirmadas no raio normal (<=500 m)
-  //    -- irma pelo raio ampliado ou por outro trecho da rua levava a heranca
-  //    a 1,6 km da parada (52% a >800 m do ponto validado de 02/10).
-  const diretas = comCoord.filter(l => {
-    const v = visitas.get(l.nf)
-    return v != null && !v.viaRaioAmpliado && !v.viaOutroPontoDaRua
-  })
-  for (const linha of comCoord) {
-    if (visitas.has(linha.nf)) continue
-    let melhor: { irma: LinhaGeocodificada & { lat: number; lng: number }; dist: number } | null = null
-    for (const irma of diretas) {
-      const dist = haversine(irma.lat, irma.lng, linha.lat, linha.lng)
-      if (dist > RAIO_VIZINHANCA_METROS) continue
-      if (!melhor || dist < melhor.dist) melhor = { irma, dist }
-    }
-    if (!melhor) continue
-    const v = visitas.get(melhor.irma.nf)!
-    visitas.set(linha.nf, { nf: linha.nf, chegada: v.chegada, saida: v.saida, distanciaMetrosDoPonto: melhor.dist, viaVizinhanca: true, viaRaioAmpliado: false })
-  }
+  // 2) vizinhanca: DESLIGADA na RQ (D-25, plano mestre 23/10). Herdar a
+  //    visita de uma irma creditava NF entre 0,8 e 1,3 km da parada (irma a
+  //    <=500 m da parada + NF a <=800 m da irma). Com o limite de 500 m da
+  //    parada, nada sobra: NF a <=500 m de qualquer parada propria ja'
+  //    confirmou no passo 1. A NF fica pendente e a agregacao rotula "PARADA
+  //    PROXIMA (500m-2km) MAS FORA DO ENDERECO - CONFERIR" (dentro da taxa,
+  //    fora do numerador) -- precisao acima de cobertura.
 
   // 3) corredor da rua (endereco sem numero, relatorio 01/10): so' quem
-  //    sobrou depois da vizinhanca (que segue como esta'). Parada PROPRIA
+  //    sobrou depois do passo 1 (D-25 desligou a vizinhanca). Parada PROPRIA
   //    (FORA_BASE) de >= PERMANENCIA_MIN_CORREDOR_MIN a <= RAIO_PARADA_
   //    CORREDOR_M de QUALQUER ponto da rua; ganha a de maior permanencia.
   //    Roda por ultimo de proposito: confirmada assim nao empresta horario

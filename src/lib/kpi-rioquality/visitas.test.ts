@@ -79,15 +79,21 @@ describe('montarVisitasInclusivas', () => {
     expect(montarVisitasInclusivas(linhas, paradas).get('A-1')!.chegada).toBe('2026-09-04T12:00:00Z')
   })
 
-  // Geometria numa linha norte-sul (0.001 de lat ~ 111m). RQ-06 (auditoria
-  // 20/10): so' irma confirmada DIRETO (<=500 m, sem raio ampliado) empresta.
-  it('vizinhanca: irma confirmada direto -> NF a <=800 m dela herda, marcada viaVizinhanca', () => {
+  // Geometria numa linha norte-sul (0.001 de lat ~ 111m).
+  // D-25 (plano mestre 23/10, recomendacao seguida): a vizinhanca da RQ
+  // creditava NF entre 0,8 e 1,3 km da parada (irma a <=500 m da parada + NF
+  // a <=800 m da irma). Ex. real 23/10: TTU9G22 5558902 e LTU8D49 5559374,
+  // "ENTREGUE - PARADA COMPARTILHADA COM ENTREGA PROXIMA". Limite de 500 m da
+  // parada -- e NF a <=500 m de qualquer parada ja' confirma direto, entao a
+  // vizinhanca nao credita mais nada: a NF fica pendente e sai "PARADA
+  // PROXIMA (500m-2km) ... - CONFERIR" (precisao acima de cobertura).
+  it('D-25: irma confirmada direto e NF a ~700 m dela (~900 m da parada): NAO herda', () => {
     const norte = { lat: AUTOMOVEL.lat + 0.0063, lng: AUTOMOVEL.lng } // ~700 m de A-1
     const linhas = [linha('A-1', AUTOMOVEL.lat, AUTOMOVEL.lng), linha('N-1', norte.lat, norte.lng)]
     const paradas = [parada('p1', AUTOMOVEL.lat - 0.0018, AUTOMOVEL.lng, '2026-09-04T10:00:00Z', '2026-09-04T10:20:00Z')] // ~200 m de A-1, ~900 m de N-1
     const v = montarVisitasInclusivas(linhas, paradas)
     expect(v.get('A-1')).toMatchObject({ viaVizinhanca: false, viaRaioAmpliado: false })
-    expect(v.get('N-1')).toMatchObject({ chegada: '2026-09-04T10:00:00Z', saida: '2026-09-04T10:20:00Z', viaVizinhanca: true })
+    expect(v.has('N-1')).toBe(false)
   })
 
   it('RQ-06: irma confirmada pelo raio ampliado (500-800 m) NAO empresta', () => {
@@ -99,14 +105,15 @@ describe('montarVisitasInclusivas', () => {
     expect(v.has('N-1')).toBe(false)
   })
 
-  it('vizinhanca NAO encadeia (irma confirmada por vizinhanca nao empresta pra terceira) e respeita o raio', () => {
+  it('D-25: nenhuma NF e creditada por vizinhanca (nem perto da irma, nem encadeada)', () => {
     const viz = { lat: AUTOMOVEL.lat + 0.0063, lng: AUTOMOVEL.lng }
     const meio = { lat: AUTOMOVEL.lat + 0.0145, lng: AUTOMOVEL.lng }
     const linhas = [linha('A-1', AUTOMOVEL.lat, AUTOMOVEL.lng), linha('N-1', viz.lat, viz.lng), linha('M-1', meio.lat, meio.lng), linha('L-1', LONGE.lat, LONGE.lng)]
     const paradas = [parada('p1', AUTOMOVEL.lat - 0.0018, AUTOMOVEL.lng, '2026-09-04T10:00:00Z', '2026-09-04T10:20:00Z')]
     const v = montarVisitasInclusivas(linhas, paradas)
     expect(v.has('A-1')).toBe(true)
-    expect(v.get('N-1')?.viaVizinhanca).toBe(true)
+    expect([...v.values()].some(x => x.viaVizinhanca)).toBe(false)
+    expect(v.has('N-1')).toBe(false)
     expect(v.has('M-1')).toBe(false)
     expect(v.has('L-1')).toBe(false)
   })
@@ -302,9 +309,9 @@ describe('montarVisitasInclusivas', () => {
       expect(montarVisitasInclusivas([comCorredor('NF-1')], paradas).size).toBe(0)
     })
 
-    it('vizinhanca <= 800 m segue como esta: quem herdaria da irma continua viaVizinhanca (corredor so pega o que sobrou)', () => {
-      // irma A-1 confirmada direto; NF-1 a ~700 m dela -> vizinhanca,
-      // mesmo havendo parada propria no corredor
+    it('D-25: quem herdaria da irma (a ~900 m da parada dela) agora so confirma pela propria parada na rua (corredor)', () => {
+      // irma A-1 confirmada direto; NF-1 a ~700 m dela -> antes vizinhanca;
+      // com D-25 sobra para o corredor, que confirma pela parada propria na rua
       const irma = linha('A-1', PONTO.lat, PONTO.lng)
       const nf = comCorredor('NF-1', { lat: PONTO.lat + 0.0063, lng: PONTO.lng })
       const paradas = [
@@ -312,8 +319,7 @@ describe('montarVisitasInclusivas', () => {
         parada('p1', C2.lat + 0.00135, C2.lng, '2026-09-30T13:05:00Z', '2026-09-30T13:17:00Z'),
       ]
       const v = montarVisitasInclusivas([irma, nf], paradas)
-      expect(v.get('NF-1')).toMatchObject({ viaVizinhanca: true })
-      expect(v.get('NF-1')?.viaCorredorDaRua).toBeFalsy()
+      expect(v.get('NF-1')).toMatchObject({ viaVizinhanca: false, viaCorredorDaRua: true, chegada: '2026-09-30T13:05:00Z' })
     })
 
     it('entrega confirmada pelo corredor nao empresta horario por vizinhanca (sem encadear)', () => {

@@ -6,11 +6,8 @@
 export const BASE_COORD_RIOQUALITY = { lat: -22.814247, lng: -43.344567 }
 export const BASES_COORD_RIOQUALITY = [BASE_COORD_RIOQUALITY]
 
-// Corroboracao por vizinhanca (mesma ideia do base-horarios da Nutry Max,
-// que a Rio Quality nao usa porque nao esta' em posicoes_historico): entrega
-// sem parada propria, mas com entrega IRMA (mesma placa) confirmada a ate'
-// este raio, herda a visita dela -- marcada como viaVizinhanca.
-export const RAIO_VIZINHANCA_METROS = 800
+// Corroboracao por vizinhanca (herdar a visita de uma irma a ate' 800 m):
+// desligada na RQ pelo D-25 (plano mestre 23/10) -- ver visitas.ts, passo 2.
 
 // Faixa ampliada de confirmacao (achado 05/09, conferencia manual de 20
 // entregas): o romaneio da Rio Quality nao tem NUMERO, entao a coordenada e'
