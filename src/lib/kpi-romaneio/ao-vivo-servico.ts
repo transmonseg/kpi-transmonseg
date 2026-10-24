@@ -67,6 +67,9 @@ export type ResultadoAoVivo = {
   avisos?: string[]
   /** F2-13 (KRQ-12): commit das regras com que o dia foi calculado (versao-regras.ts). */
   versaoRegras?: string | null
+  /** F2-14 (RQ-08): calculo publicado incompleto (ponte de coerencia fora e
+   *  sem resultado bom do dia pra manter). O proximo calculo bom substitui. */
+  degradado?: string
 }
 
 export type DiaAoVivo = {
@@ -313,9 +316,12 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     // RQ-08 (auditoria 20/10): cálculo degradado (ponte de coerência fora --
     // o corredor da rua some e 80-100 entregues caíam entre ticks) não
     // sobrescreve um resultado bom do dia; fica o anterior e o erro registrado.
+    // F2-14 (RQ-08): so' o ultimo resultado BOM segura -- um anterior que ja'
+    // saiu degradado da' lugar ao calculo mais novo (igualmente degradado).
     if (r.degradado) {
       const { data: atual } = await svc.from('kpi_ao_vivo_calculo').select('resultado').eq('cliente', cliente).eq('data', data).maybeSingle()
-      if (atual?.resultado) {
+      const anterior = atual?.resultado as ResultadoAoVivo | null | undefined
+      if (anterior && !anterior.degradado) {
         await svc.from('kpi_ao_vivo_calculo').update({ ultimo_erro: r.degradado, ultimo_erro_em: new Date().toISOString(), rodando_desde: null }).eq('cliente', cliente).eq('data', data)
         log(`ao vivo ${cliente} ${data}: resultado anterior mantido (${r.degradado})`)
         return 'erro'
@@ -329,6 +335,13 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     const resultado = montarResultadoAoVivo(data, await extrairKpiCompleto(r.xlsx), coords, new Date().toISOString(), paradasNf)
     if (sugestoesTroca.length > 0) resultado.sugestoesTroca = sugestoesTroca
     if (r.aviso) resultado.avisos = [r.aviso]
+    // F2-14 (RQ-08): degradado sem anterior bom sai marcado, com aviso na tela
+    // e ultimo_erro (antes saia calado, como se a taxa estivesse completa).
+    if (r.degradado) {
+      resultado.degradado = r.degradado
+      resultado.avisos = [...(resultado.avisos ?? []), `Cálculo incompleto: ${r.degradado}. Entregas confirmadas pela rua podem estar faltando; o próximo cálculo tenta de novo.`]
+    }
+    const avisoErro = r.aviso ?? r.degradado
     resultado.versaoRegras = versaoDasRegras()
     investigarPlacas(resultado.placas, paradasDoDia, trajetoPorNf)
     for (const p of resultado.placas) {
@@ -349,7 +362,7 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
       resultado, calculado_em: resultado.calculadoEm, duracao_ms: Date.now() - t0, rodando_desde: null,
       // F1-11: mesmo instante do calculo (a tela nao mostra "o calculo falhou"
       // e o tick sabe que ESTE calculo saiu sem a conferencia).
-      ...(r.aviso ? { ultimo_erro: r.aviso.slice(0, 500), ultimo_erro_em: resultado.calculadoEm } : {}),
+      ...(avisoErro ? { ultimo_erro: avisoErro.slice(0, 500), ultimo_erro_em: resultado.calculadoEm } : {}),
     }).eq('cliente', cliente).eq('data', data)
     if (error) throw new Error(error.message)
     log(`ao vivo ${cliente} ${data}: ok em ${Math.round((Date.now() - t0) / 1000)}s (${resultado.resumo.feitas}/${resultado.resumo.totalNfs})`)

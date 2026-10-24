@@ -55,6 +55,39 @@ describe('RQ-08: ponte de coerencia fora nao publica resultado degradado', () =>
     expect(c.updates.some(u => 'resultado' in u)).toBe(false)
     expect(String(c.updates.at(-1)?.ultimo_erro)).toContain('coerência')
   })
+
+  // F2-14 (RQ-08, revisao Fases 3-4): a trava mantinha QUALQUER anterior --
+  // um anterior que ja' tinha saido degradado (primeiro tick do dia com a
+  // ponte fora) ficava preso no lugar de um calculo mais novo e igualmente
+  // degradado. Agora so' o ultimo BOM segura.
+  it('anterior tambem degradado: publica o novo (mais recente), marcado e com o erro', async () => {
+    c.resultadoAnterior = { placas: [], degradado: 'ponte de coerência do monitoramento falhou em 200 rua(s)' }
+    c.coerenciaFalhou = 200
+    expect(await calcularAoVivo('rioquality', '2026-10-20')).toBe('ok')
+    const gravado = c.updates.find(u => 'resultado' in u)!
+    expect((gravado.resultado as { degradado?: string }).degradado).toContain('200 rua(s)')
+    expect(String(gravado.ultimo_erro)).toContain('coerência')
+  })
+
+  // F2-14 (RQ-08): degradado sem anterior saia sem ultimo_erro e sem aviso --
+  // a tela mostrava a taxa baixa como se estivesse completa.
+  it('sem anterior: publica marcado como degradado, com aviso na tela e ultimo_erro no mesmo instante', async () => {
+    c.coerenciaFalhou = 200
+    expect(await calcularAoVivo('rioquality', '2026-10-20')).toBe('ok')
+    const gravado = c.updates.find(u => 'resultado' in u)!
+    const resultado = gravado.resultado as { degradado?: string; avisos?: string[]; calculadoEm: string }
+    expect(resultado.degradado).toContain('coerência')
+    expect(resultado.avisos?.some(a => a.includes('coerência'))).toBe(true)
+    expect(String(gravado.ultimo_erro)).toContain('coerência')
+    expect(gravado.ultimo_erro_em).toBe(resultado.calculadoEm)
+  })
+
+  it('calculo bom nao leva marca de degradado', async () => {
+    c.resultadoAnterior = { placas: [], degradado: 'x' }
+    expect(await calcularAoVivo('rioquality', '2026-10-20')).toBe('ok')
+    const gravado = c.updates.find(u => 'resultado' in u)!
+    expect((gravado.resultado as { degradado?: string }).degradado).toBeUndefined()
+  })
 })
 
 // F1-12 (KRQ-09): frota da RQ ilegivel nao pode virar "todas sem rastreador"
