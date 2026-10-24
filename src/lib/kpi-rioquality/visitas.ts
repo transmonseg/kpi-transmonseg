@@ -72,11 +72,68 @@ function haversine(lat1: number, lng1: number, lat2: number, lng2: number): numb
 const RAIO_PARADA_COLADA_M = 150
 // RQ-02 (auditoria 20/10)
 const RAIO_MAX_CORREDOR_SEM_BAIRRO_M = 2_000
-const RUA_GENERICA = /^(RUA|R|AV|AVENIDA|TRAVESSA|TV|ESTRADA|EST)\.?\s+([A-Z]|\d+)$/
 
 /** Rua do endereco de exibicao da RQ ("RUA - BAIRRO, CIDADE" ou "RUA, CIDADE"). */
 function ruaDoEnderecoRQ(endereco: string): string {
   return endereco.split(/ - |,/)[0].trim().toUpperCase()
+}
+/** F2-14 (RQ-02): rua como veio da planilha/Fusion quando o pipeline manda. */
+function ruaDaLinha(l: LinhaGeocodificada): string {
+  return l.ruaRQ ?? ruaDoEnderecoRQ(l.endereco)
+}
+/** F2-14 (RQ-02): "tem bairro" pelo formato "RUA - BAIRRO, CIDADE" -- com a
+ *  rua conhecida, " - " DENTRO do nome (Fusion: "RUA X QUADRA - DE", sem
+ *  bairro) nao conta como bairro. */
+function linhaSemBairro(l: LinhaGeocodificada): boolean {
+  return l.ruaRQ != null ? !l.endereco.startsWith(`${l.ruaRQ} - `) : !l.endereco.includes(' - ')
+}
+
+// F2-14 (RQ-02, revisao Fases 3-4): comparacao de rua por forma normalizada.
+// Na RQ de 20-23/10, 94 pares placa+cidade tinham a mesma rua escrita de dois
+// jeitos ("AV." x "AVENIDA", "EST" x "ESTRADA", "DO PEPE" x "PEPE", acento).
+const TIPO_VIA: Record<string, string> = {
+  R: 'RUA', RUA: 'RUA', AV: 'AVENIDA', AVEN: 'AVENIDA', AVENIDA: 'AVENIDA', EST: 'ESTRADA', ESTR: 'ESTRADA', ESTRADA: 'ESTRADA',
+  TV: 'TRAVESSA', TRAV: 'TRAVESSA', TRAVESSA: 'TRAVESSA', AL: 'ALAMEDA', ALAMEDA: 'ALAMEDA', PCA: 'PRACA', PC: 'PRACA', PRACA: 'PRACA',
+  ROD: 'RODOVIA', RODOVIA: 'RODOVIA', LGO: 'LARGO', LARGO: 'LARGO', BECO: 'BECO', VILA: 'VILA', VIELA: 'VIELA', SERVIDAO: 'SERVIDAO',
+  LADEIRA: 'LADEIRA', LAD: 'LADEIRA', CAMINHO: 'CAMINHO', PRAIA: 'PRAIA', CAMPO: 'CAMPO',
+}
+// Titulos abreviados (so' com 2+ letras: "RUA D" e' rua generica, nao "DOM").
+const TITULO: Record<string, string> = {
+  DR: 'DOUTOR', PROF: 'PROFESSOR', PROFA: 'PROFESSORA', CEL: 'CORONEL', GAL: 'GENERAL', GEN: 'GENERAL', STA: 'SANTA', STO: 'SANTO',
+  PRES: 'PRESIDENTE', MAL: 'MARECHAL', ENG: 'ENGENHEIRO', CAP: 'CAPITAO', VER: 'VEREADOR', SEN: 'SENADOR', DEP: 'DEPUTADO',
+  DES: 'DESEMBARGADOR', MIN: 'MINISTRO', GOV: 'GOVERNADOR', PE: 'PADRE', SGT: 'SARGENTO', TEN: 'TENENTE', BRIG: 'BRIGADEIRO',
+  ALM: 'ALMIRANTE', COM: 'COMENDADOR', CONS: 'CONSELHEIRO', VISC: 'VISCONDE',
+}
+const LIGACAO = new Set(['DE', 'DA', 'DO', 'DOS', 'DAS', 'E'])
+
+/** Tipo de via (expandido, null se a rua nao comeca por um) e nome sem
+ *  acento, pontuacao, preposicoes e com titulos expandidos. */
+function partesRua(rua: string): { tipo: string | null; nome: string } {
+  const tokens = rua.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/[^A-Z0-9]+/).filter(Boolean)
+  const tipo = tokens.length > 0 ? TIPO_VIA[tokens[0]] ?? null : null
+  const resto = tipo ? tokens.slice(1) : tokens
+  return { tipo, nome: resto.map(t => TITULO[t] ?? t).filter(t => !LIGACAO.has(t)).join(' ') }
+}
+/** Mesma rua: mesmo nome normalizado e mesmo tipo de via (quando os dois
+ *  dizem o tipo -- RUA X e TRAVESSA X sao vias diferentes). */
+function mesmaRua(a: string, b: string): boolean {
+  if (a === b) return true
+  const pa = partesRua(a), pb = partesRua(b)
+  return pa.nome === pb.nome && (pa.tipo == null || pb.tipo == null || pa.tipo === pb.tipo)
+}
+
+// RQ-02 (auditoria 20/10) + F2-14: rua generica junta vias de bairros
+// diferentes. Alem de "RUA A"/"RUA 2", na RQ de 20-23/10: RUA QUATRO (7),
+// RUA CINCO (7), RUA DOIS (5), RUA PROJETADA B, TRAVESSA DOIS, RUA 05.
+const NUMERO_POR_EXTENSO = new Set(['UM', 'UMA', 'DOIS', 'DUAS', 'TRES', 'QUATRO', 'CINCO', 'SEIS', 'SETE', 'OITO', 'NOVE', 'DEZ',
+  'ONZE', 'DOZE', 'TREZE', 'QUATORZE', 'CATORZE', 'QUINZE', 'DEZESSEIS', 'DEZESSETE', 'DEZOITO', 'DEZENOVE', 'VINTE'])
+export function ruaGenerica(rua: string): boolean {
+  const { tipo, nome } = partesRua(rua)
+  if (!tipo) return false
+  if (nome === '') return true // "RUA E" (o E sai como ligacao)
+  if (/^([A-Z]|\d+|[A-Z] ?\d+|\d+ ?[A-Z])$/.test(nome)) return true
+  if (NUMERO_POR_EXTENSO.has(nome)) return true
+  return /^(PROJETADA|SEM NOME|SEM DENOMINACAO)\b/.test(nome)
 }
 const PERMANENCIA_MIN_COLADA_MS = 3 * 60_000
 
@@ -114,7 +171,7 @@ export function montarVisitasInclusivas(linhas: LinhaGeocodificada[], paradas: U
     }
     if (melhor) {
       const usadas = ruasPorParadaDireta.get(melhor.parada.id) ?? new Set<string>()
-      usadas.add(ruaDoEnderecoRQ(linha.endereco))
+      usadas.add(ruaDaLinha(linha))
       ruasPorParadaDireta.set(melhor.parada.id, usadas)
       visitas.set(linha.nf, {
         nf: linha.nf,
@@ -197,9 +254,9 @@ export function montarVisitasInclusivas(linhas: LinhaGeocodificada[], paradas: U
     if (enderecoTemNumero(linha.endereco)) continue
     // RQ-02 (auditoria 20/10): rua generica ("RUA A", "AVENIDA 2") junta vias
     // de bairros diferentes; sem bairro, o corredor vai so' ate' 2 km.
-    const rua = ruaDoEnderecoRQ(linha.endereco)
-    if (RUA_GENERICA.test(rua)) continue
-    const semBairro = !linha.endereco.includes(' - ')
+    const rua = ruaDaLinha(linha)
+    if (ruaGenerica(rua)) continue
+    const semBairro = linhaSemBairro(linha)
     const corredor = linha.pontosCorredorRua!.filter(p => !semBairro || haversine(p.lat, p.lng, linha.lat, linha.lng) <= RAIO_MAX_CORREDOR_SEM_BAIRRO_M)
     if (corredor.length === 0) continue
     let melhorCorr: { parada: UnitracParadaRow; dist: number; dur: number } | null = null
@@ -209,7 +266,7 @@ export function montarVisitasInclusivas(linhas: LinhaGeocodificada[], paradas: U
       if (!(dur >= PERMANENCIA_MIN_CORREDOR_MIN * 60_000)) continue
       // Parada que ja' foi entrega direta de cliente de OUTRA rua nao e' desta.
       const ruasDaParada = ruasPorParadaDireta.get(parada.id)
-      if (ruasDaParada && [...ruasDaParada].some(r => r !== rua)) continue
+      if (ruasDaParada && [...ruasDaParada].some(r => !mesmaRua(r, rua))) continue
       const dist = Math.min(...corredor.map(p => haversine(parada.lat, parada.lng, p.lat, p.lng)))
       if (dist > RAIO_PARADA_CORREDOR_M) continue
       if (!melhorCorr || dur > melhorCorr.dur) melhorCorr = { parada, dist, dur }

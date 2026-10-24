@@ -203,6 +203,64 @@ describe('montarVisitasInclusivas', () => {
       expect(montarVisitasInclusivas([comCorredor('NF-1', PONTO, [PONTO, longe])], paradas).get('NF-1')?.viaCorredorDaRua).toBe(true)
     })
 
+    // F2-14 (RQ-02, revisao Fases 3-4): a rua era comparada crua. Na RQ de
+    // 20-23/10 ha' 94 pares placa+cidade com a mesma rua escrita de dois
+    // jeitos -- ex.: 23/10 KWM9877 "AV. EMBAIXADOR ABELARDO BUENO" e
+    // "AVENIDA EMBAIXADOR ABELARDO BUENO"; LHI9D08 "AVENIDA DO PEPE" e
+    // "AVENIDA PEPE". A parada que entregou a primeira bloqueava a segunda.
+    it('F2-14 RQ-02: variante de grafia da MESMA rua nao bloqueia o corredor (AV. x AVENIDA, DO PEPE x PEPE)', () => {
+      const p1 = parada('p1', C2.lat + 0.00135, C2.lng, '2026-10-23T13:05:00Z', '2026-10-23T13:17:00Z')
+      const casos: [string, string][] = [
+        ['AV. EMBAIXADOR ABELARDO BUENO', 'AVENIDA EMBAIXADOR ABELARDO BUENO'],
+        ['AVENIDA DO PEPE', 'AVENIDA PEPE'],
+        ['EST DE JACAREPAGUA', 'ESTRADA DE JACAREPAGUA'],
+        ['RUA LUIZ BELTRAO', 'RUA LUIZ BELTRÃO'],
+      ]
+      for (const [a, b] of casos) {
+        const direta = { ...linha('Y-1', C2.lat + 0.00135, C2.lng), endereco: `${a} - BARRA DA TIJUCA, RIO DE JANEIRO` }
+        const v = montarVisitasInclusivas([comCorredor('NF-1', PONTO, corredor, `${b} - BARRA DA TIJUCA, RIO DE JANEIRO`), direta], [p1])
+        expect(v.get('Y-1')).toBeTruthy()
+        expect(v.get('NF-1')?.viaCorredorDaRua).toBe(true)
+      }
+    })
+
+    it('F2-14 RQ-02: mesmo nome com tipo de via diferente (RUA x TRAVESSA) continua bloqueando', () => {
+      const p1 = parada('p1', C2.lat + 0.00135, C2.lng, '2026-10-23T13:05:00Z', '2026-10-23T13:17:00Z')
+      const direta = { ...linha('Y-1', C2.lat + 0.00135, C2.lng), endereco: 'TRAVESSA AIRES SALDANHA - COPACABANA, RIO DE JANEIRO' }
+      const v = montarVisitasInclusivas([comCorredor('NF-1', PONTO, corredor, 'RUA AIRES SALDANHA - COPACABANA, RIO DE JANEIRO'), direta], [p1])
+      expect(v.has('NF-1')).toBe(false)
+    })
+
+    // F2-14 (RQ-02): " - " dentro da rua ligava o "tem bairro" e desligava o
+    // teto de 2 km. Caso real 20/10 (Fusion, bairro vazio): "RUA DOUGLAS
+    // MARQUES RIENTI QUADRA - DE", Niteroi.
+    it('F2-14 RQ-02: " - " dentro do nome da rua (Fusion, sem bairro) nao desliga o teto de 2 km', () => {
+      const longe = { lat: -23.0005, lng: -43.4000 } // ~2,6 km a oeste
+      const paradas = [parada('p1', longe.lat + 0.00135, longe.lng, '2026-10-20T13:05:00Z', '2026-10-20T13:17:00Z')]
+      const rua = 'RUA DOUGLAS MARQUES RIENTI QUADRA - DE'
+      const semBairro = { ...comCorredor('NF-1', PONTO, [PONTO, longe], `${rua}, NITEROI`), ruaRQ: rua }
+      expect(montarVisitasInclusivas([semBairro], paradas).size).toBe(0)
+      const comBairro = { ...comCorredor('NF-1', PONTO, [PONTO, longe], `${rua} - ITAIPU, NITEROI`), ruaRQ: rua }
+      expect(montarVisitasInclusivas([comBairro], paradas).get('NF-1')?.viaCorredorDaRua).toBe(true)
+    })
+
+    // F2-14 (RQ-02): a regex so' pegava "RUA A"/"RUA 2". Na RQ de 20-23/10:
+    // RUA QUATRO (7), RUA CINCO (7), RUA DOIS (5), RUA PROJETADA B (2), RUA
+    // PROJETADA 3, TRAVESSA DOIS, RUA 05.
+    it('F2-14 RQ-02: rua generica por extenso, projetada, com zero a esquerda ou letra+numero nao usa corredor', () => {
+      const paradas = [parada('p1', C2.lat + 0.00135, C2.lng, '2026-09-30T13:05:00Z', '2026-09-30T13:17:00Z')]
+      for (const rua of ['RUA QUATRO', 'RUA CINCO', 'RUA DOIS', 'RUA PROJETADA', 'RUA PROJETADA B', 'RUA PROJETADA 3', 'TRAVESSA DOIS', 'RUA 05', 'RUA A1', 'RUA 1-A', 'ALAMEDA B', 'RUA SEM NOME', 'R. C']) {
+        expect(montarVisitasInclusivas([comCorredor('NF-1', PONTO, corredor, `${rua} - CENTRO, MACAE`)], paradas).size, rua).toBe(0)
+      }
+    })
+
+    it('F2-14 RQ-02: nome curto de verdade (RUA VAZ, AVENIDA UBA, RUA RIO) continua usando corredor', () => {
+      const paradas = [parada('p1', C2.lat + 0.00135, C2.lng, '2026-09-30T13:05:00Z', '2026-09-30T13:17:00Z')]
+      for (const rua of ['RUA VAZ', 'AVENIDA UBA', 'RUA RIO']) {
+        expect(montarVisitasInclusivas([comCorredor('NF-1', PONTO, corredor, `${rua} - CENTRO, MACAE`)], paradas).get('NF-1')?.viaCorredorDaRua, rua).toBe(true)
+      }
+    })
+
     it('parada de menos de 2 min no corredor nao confirma', () => {
       const paradas = [parada('p1', C2.lat + 0.00135, C2.lng, '2026-09-30T13:05:00Z', '2026-09-30T13:06:30Z')]
       expect(montarVisitasInclusivas([comCorredor('NF-1')], paradas).size).toBe(0)

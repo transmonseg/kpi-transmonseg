@@ -246,6 +246,8 @@ export async function gerarKpiRioQuality(params: {
         geoConfiavel: r?.confiavel ?? true,
         geoMotivo: r?.motivo === 'municipio_divergente' || r?.motivo === 'bairro_divergente' ? r.motivo : undefined,
         geoSemFonte: r != null && !r.fonte,
+        // F2-14 (RQ-02): rua crua pro corredor (visitas.ts)
+        ruaRQ: ruaPorNf.get(l.nf),
       })
     }
 

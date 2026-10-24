@@ -77,6 +77,10 @@ export type LinhaGeocodificada = LinhaRomaneio & {
    *  da mesma rua no mesmo municipio -- corredor da rua, ver
    *  kpi-rioquality/corredor-rua.ts e visitas.ts. */
   pontosCorredorRua?: { lat: number; lng: number }[]
+  /** So' Rio Quality, formatos com cidade (F2-14 RQ-02): a rua como veio da
+   *  planilha/Fusion. O endereco de exibicao e' "RUA - BAIRRO, CIDADE", e
+   *  rua com " - " no nome (Fusion, sem bairro) confundia o "tem bairro". */
+  ruaRQ?: string
 }
 
 /** Uma visita confirmada por GPS dentro do perimetro PROPRIO (nunca o raio
