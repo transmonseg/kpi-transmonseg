@@ -56,7 +56,7 @@ describe('GET /api/kpi/resumo-dia (F3-02)', () => {
 describe('Resumo do dia não tem ação de envio (regra 6 do dono)', () => {
   const ler = (rel: string) => readFileSync(path.resolve(__dirname, rel), 'utf8')
   const rota = ler('./route.ts')
-  const pagina = ler('../../../painel/resumo-dia/page.tsx')
+  const pagina = ler('../../../painel/resumo-dia/page.tsx') + ler('../../../painel/resumo-dia/resumo-dia-tela.tsx')
   it('a rota só tem GET', () => {
     expect(rota).toMatch(/export async function GET/)
     expect(rota).not.toMatch(/export async function (POST|PUT|PATCH|DELETE)/)
