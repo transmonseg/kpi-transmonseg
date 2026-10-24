@@ -10,6 +10,7 @@ import { enviarAoMonitoramento } from '@/lib/kpi-romaneio/enviar-monitoramento'
 import { enviarRioQualityAoMonitoramento, linhasComCoordenadasRQ, resumoEnvioRQ } from '@/lib/kpi-rioquality/enviar-monitoramento-rq'
 import { mesclarEnvio, type DiaGuardado, type EnvioNovo } from '@/lib/kpi-romaneio/mesclar-envio'
 import { createServiceClient } from '@/lib/supabase/service'
+import { avisosDoRecibo } from '@/lib/kpi-romaneio/recibo-dia'
 import { acessoAoVivo } from '../acesso'
 
 export const runtime = 'nodejs'
@@ -95,5 +96,9 @@ export async function POST(req: NextRequest) {
   const linhasDia = [...(dia.romaneio as { placa: string }[]), ...dia.pao.linhas]
   const nfs = linhasDia.length
   const placas = new Set(linhasDia.map(l => l.placa)).size
-  return NextResponse.json({ ok: true, nfs, placas, monitoramento })
+  // F3-06 (ING-16): divergências escala x romaneio (e placa em 2 cargas) no
+  // recibo, na hora -- antes só dentro da planilha. Não bloqueia.
+  let recibo: { avisos: ReturnType<typeof avisosDoRecibo> } = { avisos: [] }
+  try { recibo = { avisos: avisosDoRecibo(dia) } } catch (err) { console.error('[kpi/ao-vivo] avisos do recibo falharam:', err) }
+  return NextResponse.json({ ok: true, nfs, placas, monitoramento, recibo })
 }

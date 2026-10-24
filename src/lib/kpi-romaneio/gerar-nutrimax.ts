@@ -15,6 +15,7 @@ import { alvosDaData } from '@/lib/kpi-romaneio/alvos-data'
 import { alvosEfetivos } from '@/lib/kpi-romaneio/alvos-snapshot'
 import { paradasEfetivas, lerSnapshotParadas, mesclarParadas } from '@/lib/kpi-romaneio/paradas-snapshot'
 import { detectarDescasamentos, detectarMotoristaMultiplasPlacas, detectarCargaMultiRegiao } from '@/lib/kpi-romaneio/avisos'
+import { duplicadoDaEscala } from '@/lib/kpi-romaneio/escala-duplicado'
 import { montarVisitas } from '@/lib/kpi-romaneio/visitas'
 import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, contarConfirmadasPorCarga } from '@/lib/kpi-romaneio/agregacao'
 import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
@@ -478,10 +479,10 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
         kmPorPlaca.get(placaNorm) ?? null,
         horarioBasePorPlaca.get(placaNorm),
         temRastreadorPorPlaca.get(placaNorm) ?? false,
-        // Task 3 (plano 2026-10-03): status do rastreador declarado na escala.
-        // "SEM RASTRI" na escala vence qualquer fonte de dado e exclui a placa
-        // inteira do denominador da TAXA.
-        escalaDaCarga?.statusRastreador ?? null,
+        // Task 3 (plano 2026-10-03): "SEM RASTRI" na coluna DUPLICADO da escala
+        // (F3-06: nome certo da coluna) vence qualquer fonte de dado e exclui a
+        // placa inteira do denominador da TAXA.
+        duplicadoDaEscala(escalaDaCarga),
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
@@ -590,7 +591,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
         // Task 3 (plano 2026-10-03): placa marcada "SEM RASTRI" na escala ->
         // todas as NFs dessa placa recebem rotulo especifico e sao excluidas
         // do denominador da TAXA. Ver placaSemRastriNaEscala em agregacao.ts.
-        escalaPorChave.get(chave)?.statusRastreador?.trim().toUpperCase() === 'SEM RASTRI',
+        duplicadoDaEscala(escalaPorChave.get(chave))?.trim().toUpperCase() === 'SEM RASTRI',
         // naoSaiuDaBase: na Nutry Max e' o default (= modoPrecisao = true); passado
         // explicito so' pra poder informar o parametro seguinte.
         true,

@@ -192,7 +192,7 @@ export default function NutrimaxGerarPage() {
         <div className="col-span-1 lg:col-span-3">
           <FileDropzone
             eyebrow="Passo 4 · opcional"
-            label="Romaneio do Pão"
+            label="Romaneio do Pão (Programação JAC)"
             hint="PDF · PROGRAMAÇÃO JAC (CONGELADO) — serve como escala e romaneio juntos"
             accept=".pdf"
             files={romaneioPao}

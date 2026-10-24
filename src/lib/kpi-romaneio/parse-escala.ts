@@ -39,10 +39,9 @@ export function linhaParaEscala(items: ItemTexto[]): LinhaEscala | null {
   const nfMotoristaRaw = textoEmFaixa(items, 231, 398)
   const ajudante1 = textoEmFaixa(items, 398, 558) || null
   const ajudante2 = textoEmFaixa(items, 558, 715) || null
-  // Task 3 (plano 2026-10-03): coluna de status do rastreador na escala.
-  // Quando a operacao marca "SEM RASTRI" nesta coluna, todas as NFs da placa
-  // sao excluidas do denominador da TAXA (infraestrutura, nao entrega).
-  const statusRastreadorRaw = textoEmFaixa(items, 715, 820) || null
+  // F3-06 (ING-12): coluna DUPLICADO ("MOT,", "VEICULO", "AJUD1,"). Era lida
+  // como "status do rastreador" (Task 3, plano 2026-10-03); ver types.ts.
+  const duplicadoRaw = textoEmFaixa(items, 715, 820) || null
 
   const nfM = nfMotoristaRaw.match(NF_MOTORISTA_RE)
   const nfPlanejado = nfM ? parseInt(nfM[1], 10) : null
@@ -59,7 +58,7 @@ export function linhaParaEscala(items: ItemTexto[]): LinhaEscala | null {
     pesoKg: pesoRaw ? parseInt(pesoRaw.replace(/\./g, ''), 10) : null,
     entPlanejado: entRaw ? parseInt(entRaw, 10) : null,
     nfPlanejado,
-    statusRastreador: statusRastreadorRaw,
+    duplicado: duplicadoRaw,
   }
 }
 

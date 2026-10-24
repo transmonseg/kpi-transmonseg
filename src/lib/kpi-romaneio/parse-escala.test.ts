@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { linhaParaEscala } from './parse-escala'
+import { duplicadoDaEscala } from './escala-duplicado'
 
 function item(str: string, x: number) { return { str, x } }
 
@@ -26,7 +27,7 @@ describe('linhaParaEscala', () => {
       pesoKg: 1200,
       entPlanejado: 8,
       nfPlanejado: 12,
-      statusRastreador: null,
+      duplicado: null,
     })
   })
 
@@ -36,5 +37,22 @@ describe('linhaParaEscala', () => {
 
   it('linha sem placa reconhecivel volta null', () => {
     expect(linhaParaEscala([item('93758', 10), item('texto qualquer', 40)])).toBeNull()
+  })
+})
+
+// F3-06 (ING-12): a coluna x 715-820 da 8081 tem o cabeçalho DUPLICADO (101 de
+// 102 PDFs). Em 23/10: "MOT," em 5 cargas (100711 RBJ2J67, 100733, 100785,
+// 100772, 100751 LLD4202); "SEM RASTRI" nunca apareceu em 14 dias.
+describe('coluna DUPLICADO da Escala de Rota (F3-06)', () => {
+  it('100751 LLD4202 de 23/10: "MOT," vai para duplicado', () => {
+    const l = linhaParaEscala([item('100751', 10), item('LLD4202', 40), item('JOSE ROBERTO', 90), item('122', 200), item('1', 220), item('2 NELSON REIS MENDES SOARES', 240), item('MOT,', 760)])
+    expect(l?.duplicado).toBe('MOT,')
+    expect(l).not.toHaveProperty('statusRastreador')
+  })
+  it('escala guardada antes da troca de nome (statusRastreador) continua lida', () => {
+    expect(duplicadoDaEscala({ statusRastreador: 'VEICULO' })).toBe('VEICULO')
+    expect(duplicadoDaEscala({ duplicado: 'MOT,', statusRastreador: 'X' })).toBe('MOT,')
+    expect(duplicadoDaEscala({})).toBeNull()
+    expect(duplicadoDaEscala(undefined)).toBeNull()
   })
 })

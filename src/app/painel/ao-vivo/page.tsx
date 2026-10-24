@@ -11,7 +11,7 @@ import { buscarNfs, filtrarNfs, type FiltroNf } from '@/lib/kpi-romaneio/ao-vivo
 import { CATEGORIAS_INVESTIGACAO, ROTULO_INVESTIGACAO, fraseInvestigacao } from '@/lib/kpi-romaneio/investigacao-rotulos'
 import { juntarEstado, mensagemFalhaCarga } from '@/lib/kpi-romaneio/ao-vivo-carga'
 import { buscarComSessao, lerJson, SessaoVencida } from '@/lib/sessao-fetch'
-import { SubirRomaneio, type EnvioRomaneio } from './subir-romaneio'
+import { SubirRomaneio, ReciboEnvio, type EnvioRomaneio } from './subir-romaneio'
 import { montarPayloadTroca } from './troca-payload'
 import { textoSugestao, corpoSugestao } from './sugestao-texto'
 import { mensagemDaTroca, type RespostaTroca } from '../nutrimax/placas/troca-dia'
@@ -403,18 +403,13 @@ export default function AoVivoPage() {
       {r && <FilaConferir key={`${cliente}-${estado.data}`} cliente={cliente} nomeCliente={NOME_CLIENTE[cliente]} data={estado.data} historico={historico} placas={placas} resumo={r.resumo} meta={meta}
         onTrocarCarga={cliente === 'nutrimax' && !historico ? abrirTrocaDeCarga : undefined} />}
       {r && <InvestigacaoNaoEntregues placas={placas} onPlaca={pl => { setPlacaSel(pl); setNfAberta(null); setVendoDetalhe(true) }} />}
-      {ultimoEnvio?.monitoramento && ultimoEnvio.monitoramento.length > 0 && (
-        <p className={`inline-flex flex-wrap items-center gap-2 rounded-2xl px-4 py-2.5 text-[13px] ${ultimoEnvio.monitoramento.every(m => m.ok) ? 'bg-[var(--color-bg-subtle)] text-[var(--color-fg-muted)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-soft-fg)]'}`}>
-          {ultimoEnvio.monitoramento.map(m => (m.ok
-            ? `${m.origem === 'romaneio' ? 'Romaneio' : 'Pão'} enviado também ao Monitoramento${m.linhas != null ? ` (${m.linhas} linhas)` : ''}.`
-            : `${m.origem === 'romaneio' ? 'Romaneio' : 'Pão'} não foi pro Monitoramento: ${m.erro}. Suba lá em Configurar Romaneio.`)).join(' ')}
-        </p>
-      )}
+      {/* F3-06 (ING-10, ING-16): recibo do último envio -- contagens e divergências, sem bloquear. */}
+      {ultimoEnvio && <ReciboEnvio envio={ultimoEnvio} />}
 
       {!historico && (!estado.dia || subindo) && (
         <section className="dash-card p-6">
           <h2 className="mb-1 text-[16px] font-semibold text-[var(--color-fg)]">{cliente === 'rioquality' ? (estado.dia ? 'Trocar o relatório de entregas de hoje' : 'Relatório de entregas de hoje') : (estado.dia ? 'Trocar ou completar o romaneio de hoje' : 'Romaneio de hoje')}</h2>
-          <p className="mb-5 text-[13px] text-[var(--color-fg-muted)]">{cliente === 'rioquality' ? 'A mesma planilha da tela Gerar KPI da Rio Quality.' : 'Os mesmos PDFs da tela Gerar KPI.'} O sistema guarda só o que leu e recalcula o KPI a cada 10 minutos.{cliente !== 'rioquality' && estado.dia ? ' Esqueceu um arquivo? Envie só ele: o que já foi enviado continua.' : ''}</p>
+          <p className="mb-5 text-[13px] text-[var(--color-fg-muted)]">{cliente === 'rioquality' ? 'A mesma planilha da tela Gerar KPI da Rio Quality.' : 'Os mesmos PDFs da tela Gerar KPI, soltos de uma vez.'} O sistema guarda só o que leu e recalcula o KPI a cada 10 minutos.{cliente !== 'rioquality' && estado.dia ? ' Esqueceu um arquivo? Envie só ele: o que já foi enviado continua.' : ''}</p>
           <SubirRomaneio cliente={CLIENTE} compacto={!!estado.dia} onEnviado={r => { setSubindo(false); setUltimoEnvio(r); carregar() }} />
         </section>
       )}

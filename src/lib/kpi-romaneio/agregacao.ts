@@ -1766,7 +1766,7 @@ export function montarDetalheEntregas(
   // classificacao e seta observacao='SEM RASTREADOR - PLACA SEM
   // RASTREAMENTO NA ESCALA - NÃO CONTABILIZADO'. Default false preserva
   // Rio Quality e comportamento antigo; Nutry Max (route.ts) passa true
-  // quando escala.statusRastreador === 'SEM RASTRI'.
+  // quando a coluna DUPLICADO da escala (F3-06, antes statusRastreador) === 'SEM RASTRI'.
   placaSemRastriNaEscala: boolean = false,
   // Task 3 (plano 2026-09-30-rioquality-aprendizados): 'VEÍCULO NÃO SAIU DA
   // BASE' (km CONHECIDO baixo, fora da taxa) separado de `modoPrecisao` --

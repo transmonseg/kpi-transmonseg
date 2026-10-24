@@ -116,6 +116,28 @@ describe('POST /api/kpi/ao-vivo/romaneio -- Escala de Rota conferida (F1-13)', (
 })
 
 
+// F3-06 (ING-16): divergências escala x romaneio no recibo do envio, sem bloquear.
+describe('POST /api/kpi/ao-vivo/romaneio -- recibo com divergências (F3-06)', () => {
+  const R17 = ['100297', '100299', '100300', '100301']
+  beforeEach(() => { est.guardado = null; est.gravou = null; est.monitoramento = []; est.dataPdf = null; est.cargasRomaneio = null })
+
+  it('carga no romaneio sem escala vira aviso no recibo e o envio passa (200, gravado)', async () => {
+    est.cargasRomaneio = R17
+    est.escala = R17.slice(0, 3).map(carga => ({ carga, placaNorm: 'AAA1A11', destino: 'ZONA NORTE 3', nfPlanejado: 1 }))
+    const r = await POST(req({ romaneio: pdf('rom.pdf'), escala: pdf('escala.pdf') }))
+    expect(r.status).toBe(200)
+    expect(est.gravou).not.toBeNull()
+    const j = await r.json() as { recibo: { avisos: { texto: string }[] } }
+    expect(j.recibo.avisos.map(a => a.texto)).toEqual(['Carga 100301 (AAA1A11) está no romaneio e não está na escala.'])
+  })
+
+  it('sem escala enviada: recibo sem avisos', async () => {
+    est.cargasRomaneio = R17
+    const j = await (await POST(req({ romaneio: pdf('rom.pdf') }))).json() as { recibo: { avisos: unknown[] } }
+    expect(j.recibo.avisos).toEqual([])
+  })
+})
+
 // F2-04 (KRQ-03, MON-01, AC-04): em 21/10 a planilha da RQ subida as 15:01
 // nunca chegou ao monitoramento (0 pontos, 0 alertas o dia todo).
 describe('POST /api/kpi/ao-vivo/romaneio -- Rio Quality vai ao monitoramento (F2-04)', () => {

@@ -5891,7 +5891,7 @@ describe('Task 3 (plano 2026-10-03) -- placa SEM RASTRI na escala', () => {
       pesoKg: null,
       entPlanejado: null,
       nfPlanejado: 2,
-      statusRastreador: 'SEM RASTRI',
+      duplicado: 'SEM RASTRI',
     }
     const r = agregarPorCarga('93758', 'TTL7D40', linhas, escalaComSemRastri, [], new Map(), [], null, undefined, true, 'SEM RASTRI')
     // A carga inteira deve ser marcada como sem rastreador pela escala
@@ -5920,7 +5920,7 @@ describe('Task 3 (plano 2026-10-03) -- placa SEM RASTRI na escala', () => {
     }
   })
 
-  it('placa normal na escala (statusRastreador=null) nao e afetada', () => {
+  it('placa normal na escala (duplicado=null) nao e afetada', () => {
     const linhas = [linha('NF1')]
     const escalaNormal: LinhaEscala = {
       carga: '93758',
@@ -5933,7 +5933,7 @@ describe('Task 3 (plano 2026-10-03) -- placa SEM RASTRI na escala', () => {
       pesoKg: null,
       entPlanejado: null,
       nfPlanejado: 1,
-      statusRastreador: null,
+      duplicado: null,
     }
     const r = agregarPorCarga('93758', 'TTL7D40', linhas, escalaNormal, [], new Map(), [], null)
     // Sem marcação na escala, temRastreador segue o default (true quando ha cv/ponte)
@@ -5958,13 +5958,13 @@ describe('Task 3 (plano 2026-10-03) -- placa SEM RASTRI na escala', () => {
     }
   })
 
-  it('statusRastreador case-insensitive e trimmed: "sem rastri" / " Sem Rastri " funcionam', () => {
+  it('coluna DUPLICADO case-insensitive e trimmed: "sem rastri" / " Sem Rastri " funcionam', () => {
     for (const valor of ['sem rastri', ' Sem Rastri ', 'SEM RASTRI']) {
       const escala: LinhaEscala = {
         carga: '93758', placaRaw: 'TTL7D40', placaNorm: 'TTL7D40',
         destino: 'CAMPOS', motorista: 'M', ajudante1: null, ajudante2: null,
         pesoKg: null, entPlanejado: null, nfPlanejado: 1,
-        statusRastreador: valor,
+        duplicado: valor,
       }
       const r = agregarPorCarga('93758', 'TTL7D40', [linha('NF1')], escala, [], new Map(), [], null, undefined, true, valor)
       expect(r.temRastreador).toBe(false)

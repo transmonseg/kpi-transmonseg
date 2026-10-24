@@ -25,10 +25,16 @@ export type LinhaEscala = {
   pesoKg: number | null
   entPlanejado: number | null
   nfPlanejado: number | null
-  /** Task 3 (plano 2026-10-03): status do rastreador na escala (ex: "SEM RASTRI").
-   *  Quando presente e igual a "SEM RASTRI" (case-insensitive, trimmed), todas as
-   *  NFs dessa placa recebem rotulo especifico e sao excluidas do denominador da
-   *  TAXA. Null quando a coluna nao existe ou esta vazia no PDF. */
+  /** F3-06 (ING-12): coluna DUPLICADO da 8081 (x 715-820). Valores reais em 14
+   *  dias: vazio 1001, "MOT," 88, "MOT, VEICULO" 16, "AJUD1," 4, "VEICULO" 3 --
+   *  "VEICULO" = a mesma placa em 2 cargas (aviso do recibo do upload). Antes
+   *  se chamava statusRastreador e era lida como "status do rastreador":
+   *  "SEM RASTRI" nunca apareceu. A regra da Task 3 (plano 2026-10-03: "SEM
+   *  RASTRI" aqui tira a placa da taxa) continua lendo esta coluna, igual a
+   *  antes. Null quando vazia. Ler com duplicadoDaEscala (escala antiga). */
+  duplicado?: string | null
+  /** @deprecated nome antigo de `duplicado`: só em escala guardada antes do
+   *  F3-06 (kpi_ao_vivo_dia, cache do dia). Ler com duplicadoDaEscala. */
   statusRastreador?: string | null
 }
 
