@@ -11,8 +11,9 @@ import { LinhaTaxa, Colunas } from './graficos'
 import type { ClienteDash, DiaKpi } from '@/lib/kpi-romaneio/dashboard-kpis'
 import {
   agregar, intervalo, intervaloAnterior, somarDias, hoje, dataCurta, dataLonga,
-  fmtPct, fmtInt, fmtKm, fmtDur, tom, COR_TOM, type Periodo, type Agregado, type PlacaAgg,
+  fmtPct, fmtInt, fmtKm, fmtDur, tom, COR_TOM, agregarPor, pioresRecorrentes, type Periodo, type Agregado, type PlacaAgg,
 } from './calculos'
+import { SeletorVisao, PioresRecorrentes, TabelaGrupos, type Visao } from './grupos'
 import { PlacaDrawer } from './placa-drawer'
 import { FechamentoOfertas } from './fechamento-ofertas'
 import { metaDoCliente } from '@/lib/kpi/metas'
@@ -213,10 +214,43 @@ function Conteudo({ ag, agAnt, periodo, meta, onPlaca, visaoCliente }: { ag: Agr
         </Painel>
       </div>
 
-      <Painel titulo="Placas" sub="Clique numa placa para ver o dia dela, NF por NF" semPadding>
-        <TabelaPlacas placas={ag.placas} umDia={umDia} meta={meta} onPlaca={onPlaca} />
-      </Painel>
+      <PorPlacaRotaMotorista ag={ag} umDia={umDia} meta={meta} onPlaca={onPlaca} />
     </div>
+  )
+}
+
+// F3-10 (ACH-08): "Por placa | Por rota | Por motorista". Por rota abre com
+// as piores rotas recorrentes (abaixo da meta em 3 dos últimos 5 dias).
+function PorPlacaRotaMotorista({ ag, umDia, meta, onPlaca }: { ag: Agregado; umDia: boolean; meta: number; onPlaca: (p: PlacaAgg) => void }) {
+  const [visao, setVisao] = useState<Visao>('placa')
+  const [aberto, setAberto] = useState<string | null>(null)
+  const grupos = useMemo(() => (visao === 'placa' ? [] : agregarPor(ag.dias, visao)), [ag.dias, visao])
+  const recorrentes = useMemo(() => (visao === 'rota' && !umDia ? pioresRecorrentes(grupos, meta) : []), [grupos, visao, umDia, meta])
+  const trocar = (v: Visao) => { setVisao(v); setAberto(null) }
+  const sub = visao === 'placa'
+    ? 'Clique numa placa para ver o dia dela, NF por NF'
+    : visao === 'rota'
+      ? 'Todas as placas que rodaram cada rota — clique para ver o dia a dia'
+      : 'Rotas e placas de cada motorista — clique para ver o dia a dia'
+  return (
+    <section className="dash-card animate-fade-up overflow-hidden">
+      <div className="flex flex-col gap-3 px-5 pb-3 pt-5 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h3 className="text-[15px] font-semibold tracking-[-0.01em] text-[var(--color-fg)]">{visao === 'placa' ? 'Placas' : visao === 'rota' ? 'Rotas' : 'Motoristas'}</h3>
+          <p className="mt-0.5 text-[12px] text-[var(--color-fg-muted)]">{sub}</p>
+        </div>
+        <SeletorVisao visao={visao} onTrocar={trocar} />
+      </div>
+      {visao === 'rota' && !umDia && (
+        <div>
+          <p className="px-5 pb-2 text-[12px] font-medium text-[var(--color-fg-muted)]">Piores rotas recorrentes · abaixo de {meta}% em 3 dos últimos 5 dias</p>
+          <PioresRecorrentes lista={recorrentes} meta={meta} onAbrir={setAberto} />
+        </div>
+      )}
+      {visao === 'placa'
+        ? <TabelaPlacas placas={ag.placas} umDia={umDia} meta={meta} onPlaca={onPlaca} />
+        : <TabelaGrupos key={visao} grupos={grupos} por={visao} umDia={umDia} meta={meta} aberto={aberto} onAbrir={setAberto} />}
+    </section>
   )
 }
 

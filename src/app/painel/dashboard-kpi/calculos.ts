@@ -144,6 +144,132 @@ export function agregar(dias: DiaKpi[]): Agregado {
   }
 }
 
+// F3-10 (ACH-08): Dashboard por rota e por motorista. A placa troca de rota
+// (em outubro, 100 de 187 rotas rodaram com mais de uma placa); a Érica
+// acompanha pelo nome da rota.
+
+export type AgruparPor = 'rota' | 'motorista'
+
+/** Chave do agrupamento: só tira acento, caixa e espaço sobrando (inclusive
+ *  depois do ponto: "S.A. DE PADUA" = "S.A.DE PADUA"). Erro de digitação
+ *  ("ANGRAS DOS REIS") não é juntado -- não adivinha. */
+export function chaveGrupo(s: string): string {
+  return (s ?? '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toUpperCase().replace(/\s+/g, ' ').replace(/\.\s+/g, '.').trim()
+}
+
+export type GrupoDia = { data: string; placas: string[]; nfConfirmadas: number; naConta: number; taxa: number | null }
+export type GrupoSemana = { semana: string; nfConfirmadas: number; naConta: number; taxa: number | null }
+
+export type GrupoAgg = {
+  chave: string
+  /** Grafia mais usada no período. */
+  nome: string
+  /** Dias (completos) em que o grupo rodou. */
+  dias: number
+  cargas: number
+  nfPlanejado: number
+  nfConfirmadas: number
+  nfForaDaConta: number
+  nfSemRastreador: number
+  taxa: number | null
+  /** Placas distintas, na ordem em que apareceram. */
+  placas: string[]
+  /** Por rota: motoristas; por motorista: rotas (grafia mais usada). */
+  outros: string[]
+  porDia: GrupoDia[]
+  /** Tendência semanal (segunda a domingo). */
+  semanas: GrupoSemana[]
+}
+
+const taxaDe = (conf: number, naConta: number) => (naConta > 0 ? Math.min(100, (conf / naConta) * 100) : null)
+const SEM_MOTORISTA = 'Sem motorista'
+const SEM_ROTA = 'Sem rota'
+
+/** Agrega os dias completos (parcial fica fora, como em agregar) por rota
+ *  (destino da carga) ou por motorista. Taxa = confirmadas / (planejadas -
+ *  fora da conta), a mesma da placa. */
+export function agregarPor(dias: DiaKpi[], por: AgruparPor): GrupoAgg[] {
+  type Acc = GrupoAgg & { grafias: Map<string, number>; outrosAcc: Map<string, Map<string, number>>; diaMap: Map<string, GrupoDia> }
+  const grupos = new Map<string, Acc>()
+  const conta = (m: Map<string, number>, s: string) => m.set(s, (m.get(s) ?? 0) + 1)
+  const maisUsada = (m: Map<string, number>) => [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0]
+
+  for (const d of dias) {
+    if (ehParcial(d)) continue
+    for (const c of d.resumo.cargas) {
+      const original = ((por === 'rota' ? c.destino : c.motorista) ?? '').replace(/\s+/g, ' ').trim()
+      const vazio = por === 'rota' ? SEM_ROTA : SEM_MOTORISTA
+      const nome = original || vazio
+      const chave = original ? chaveGrupo(original) : `\u0000${vazio}`
+      const g: Acc = grupos.get(chave) ?? {
+        chave, nome, dias: 0, cargas: 0, nfPlanejado: 0, nfConfirmadas: 0, nfForaDaConta: 0, nfSemRastreador: 0,
+        taxa: null, placas: [], outros: [], porDia: [], semanas: [],
+        grafias: new Map(), outrosAcc: new Map(), diaMap: new Map(),
+      }
+      conta(g.grafias, nome)
+      const outro = ((por === 'rota' ? c.motorista : c.destino) ?? '').replace(/\s+/g, ' ').trim()
+      if (outro) {
+        const k = chaveGrupo(outro)
+        conta(g.outrosAcc.get(k) ?? g.outrosAcc.set(k, new Map()).get(k)!, outro)
+      }
+      const plan = c.nfPlanejado ?? 0, conf = c.nfConfirmadas ?? 0, fora = c.nfForaDaConta ?? 0
+      g.cargas += 1
+      g.nfPlanejado += plan
+      g.nfConfirmadas += conf
+      g.nfForaDaConta += fora
+      g.nfSemRastreador += c.nfSemRastreador ?? 0
+      if (c.placa && !g.placas.includes(c.placa)) g.placas.push(c.placa)
+      const gd = g.diaMap.get(d.data) ?? { data: d.data, placas: [], nfConfirmadas: 0, naConta: 0, taxa: null }
+      gd.nfConfirmadas += conf
+      gd.naConta += plan - fora
+      if (c.placa && !gd.placas.includes(c.placa)) gd.placas.push(c.placa)
+      g.diaMap.set(d.data, gd)
+      grupos.set(chave, g)
+    }
+  }
+
+  return [...grupos.values()].map(({ grafias, outrosAcc, diaMap, ...g }) => {
+    const porDia = [...diaMap.values()].sort((a, b) => a.data.localeCompare(b.data))
+    for (const x of porDia) x.taxa = taxaDe(x.nfConfirmadas, x.naConta)
+    const sem = new Map<string, GrupoSemana>()
+    for (const x of porDia) {
+      const semana = intervalo('semana', x.data, '', '')[0]
+      const s = sem.get(semana) ?? { semana, nfConfirmadas: 0, naConta: 0, taxa: null }
+      s.nfConfirmadas += x.nfConfirmadas
+      s.naConta += x.naConta
+      sem.set(semana, s)
+    }
+    const semanas = [...sem.values()].sort((a, b) => a.semana.localeCompare(b.semana))
+    for (const s of semanas) s.taxa = taxaDe(s.nfConfirmadas, s.naConta)
+    return {
+      ...g,
+      nome: maisUsada(grafias),
+      dias: porDia.length,
+      taxa: taxaDe(g.nfConfirmadas, g.nfPlanejado - g.nfForaDaConta),
+      outros: [...outrosAcc.values()].map(maisUsada),
+      porDia,
+      semanas,
+    }
+  })
+}
+
+export type Recorrente = { grupo: GrupoAgg; abaixo: number; ultimos: GrupoDia[] }
+
+/** "Piores rotas recorrentes": abaixo da meta em pelo menos `minimo` dos
+ *  últimos `janela` dias em que o grupo rodou com NF na conta (dentro do
+ *  período carregado). Ordem: mais dias abaixo, depois menor taxa. */
+export function pioresRecorrentes(grupos: GrupoAgg[], meta: number, janela = 5, minimo = 3): Recorrente[] {
+  const out: Recorrente[] = []
+  for (const grupo of grupos) {
+    const ultimos = grupo.porDia.filter(d => d.taxa != null).slice(-janela)
+    const abaixo = ultimos.filter(d => (d.taxa as number) < meta).length
+    if (abaixo >= minimo) out.push({ grupo, abaixo, ultimos })
+  }
+  return out.sort((a, b) => b.abaixo - a.abaixo || (a.grupo.taxa ?? 0) - (b.grupo.taxa ?? 0))
+}
+
 export const fmtPct = (n: number | null | undefined) =>
   n == null ? '—' : `${n.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`
 export const fmtInt = (n: number | null | undefined) => (n == null ? '—' : Math.round(n).toLocaleString('pt-BR'))
