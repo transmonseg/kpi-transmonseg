@@ -76,3 +76,18 @@ describe('logado abrindo /login (F3-11: volta)', () => {
     expect(destino.pathname).toBe('/painel')
   })
 })
+
+describe('operador logado abrindo /login cai no Ao vivo (F3-12)', () => {
+  it('operador da Nutry', async () => {
+    estado.user = { id: 'u1' }
+    estado.perfil = { papel: 'operador', redes: [], meses: [], empresas: ['nutrimax'] }
+    const r = await updateSession(req('/login'))
+    expect(new URL(r.headers.get('location')!).pathname).toBe('/painel/ao-vivo')
+  })
+  it('operador só do monitoramento continua no painel', async () => {
+    estado.user = { id: 'u1' }
+    estado.perfil = { papel: 'operador', redes: [], meses: [], empresas: [] }
+    const r = await updateSession(req('/login'))
+    expect(new URL(r.headers.get('location')!).pathname).toBe('/painel')
+  })
+})

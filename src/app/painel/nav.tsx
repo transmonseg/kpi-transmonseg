@@ -23,6 +23,7 @@ import {
   MapTrifold,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
+import { ROTA_INICIO_MONITORAMENTO } from '@/lib/sistema-transmonseg'
 
 type Leaf = { href: string; label: string; Icon: PhosphorIcon; exact?: boolean }
 type Group = { label: string; Icon: PhosphorIcon; href?: string; children: Leaf[]; cor?: string }
@@ -152,11 +153,11 @@ function SeletorSistema({ pathname }: { pathname: string }) {
     {/* Menu recolhido: só os ícones dos dois sistemas, um embaixo do outro. */}
     <div aria-label="Sistema" className="so-recolhido mb-3 flex-col items-center gap-1 rounded-xl bg-white/[0.05] p-1">
       <Link href="/painel" title="KPI" aria-current={!mon ? 'true' : undefined} className={icone(!mon)}><ChartBar size={18} weight={!mon ? 'fill' : 'regular'} /></Link>
-      <Link href="/painel/monitoramento" title="Monitoramento" aria-current={mon ? 'true' : undefined} className={icone(mon)}><MapTrifold size={18} weight={mon ? 'fill' : 'regular'} /></Link>
+      <Link href={ROTA_INICIO_MONITORAMENTO} title="Monitoramento" aria-current={mon ? 'true' : undefined} className={icone(mon)}><MapTrifold size={18} weight={mon ? 'fill' : 'regular'} /></Link>
     </div>
     <div role="tablist" aria-label="Sistema" className="so-aberto mb-3 flex gap-1 rounded-xl bg-white/[0.05] p-1">
       <Link role="tab" aria-selected={!mon} href="/painel" className={opcao(!mon) + ' w-[64px] shrink-0'}>KPI</Link>
-      <Link role="tab" aria-selected={mon} href="/painel/monitoramento" className={opcao(mon) + ' flex-1'}>Monitoramento</Link>
+      <Link role="tab" aria-selected={mon} href={ROTA_INICIO_MONITORAMENTO} className={opcao(mon) + ' flex-1'}>Monitoramento</Link>
     </div>
     </>
   )

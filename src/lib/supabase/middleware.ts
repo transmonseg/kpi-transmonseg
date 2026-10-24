@@ -4,6 +4,7 @@ import { resolveUserDesktopAware } from './desktop-auth'
 import { getPerfil } from '@/lib/perfil'
 import { urlSupabaseServidor, nomeCookieSessao } from './url'
 import { voltaSegura } from '@/lib/sessao-fetch'
+import { destinoAposLogin } from '@/lib/destino-login'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -84,8 +85,11 @@ export async function updateSession(request: NextRequest) {
   if (user && isAuthPage) {
     // Desktop cai na tela offline (Gerar KPI); site vai pro painel (dashboard),
     // ou de volta para a tela onde a sessão venceu (?volta=, F3-11).
-    const volta = process.env.DESKTOP_APP === '1' ? null : voltaSegura(request.nextUrl.searchParams.get('volta'))
-    const destino = volta ?? (process.env.DESKTOP_APP === '1' ? '/painel/kpi/simples' : '/painel')
+    // Operador com Nutry/Rio Quality cai direto no Ao vivo (F3-12).
+    const desktop = process.env.DESKTOP_APP === '1'
+    const volta = request.nextUrl.searchParams.get('volta')
+    const perfil = desktop || voltaSegura(volta) ? null : await getPerfil(user.id)
+    const destino = destinoAposLogin(perfil, volta, desktop)
     return NextResponse.redirect(new URL(destino, request.nextUrl.origin))
   }
 

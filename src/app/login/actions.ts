@@ -3,6 +3,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { voltaSegura } from '@/lib/sessao-fetch'
+import { destinoAposLogin } from '@/lib/destino-login'
+import { getPerfil } from '@/lib/perfil'
 
 export async function login(formData: FormData) {
   const email = String(formData.get('email') ?? '').trim()
@@ -16,7 +18,7 @@ export async function login(formData: FormData) {
   }
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password: senha,
   })
@@ -30,7 +32,8 @@ export async function login(formData: FormData) {
   }
 
   // No app desktop, cai direto na tela que funciona offline (Gerar KPI). No site,
-  // a tela onde a sessão venceu ou /painel.
-  if (process.env.DESKTOP_APP === '1') redirect('/painel/kpi/simples')
-  redirect(volta ?? '/painel')
+  // a tela onde a sessão venceu; sem ela, operador no Ao vivo (F3-12) e o resto no /painel.
+  const desktop = process.env.DESKTOP_APP === '1'
+  const perfil = !desktop && !volta && data.user ? await getPerfil(data.user.id) : null
+  redirect(destinoAposLogin(perfil, volta, desktop))
 }

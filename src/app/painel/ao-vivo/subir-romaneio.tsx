@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { WarningCircle } from '@phosphor-icons/react/dist/ssr'
+import { WarningCircle, Info } from '@phosphor-icons/react/dist/ssr'
 import { FileDropzone } from '@/app/painel/file-dropzone'
 import { buscarComSessao, SessaoVencida } from '@/lib/sessao-fetch'
+import { avisoContaAdmin } from '@/lib/destino-login'
+import { usePapelAoVivo } from './conta-contexto'
 
 // Romaneio do dia: os mesmos PDFs da tela Gerar KPI, subidos de manhã.
 // O KPI guarda só o que leu deles (não o arquivo) e começa a calcular.
@@ -16,6 +18,8 @@ export function SubirRomaneio({ cliente, compacto, onEnviado }: { cliente: strin
   const rq = cliente === 'rioquality'
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  // F3-12 (AC-07): aviso discreto quando a conta admin compartilhada sobe o romaneio.
+  const avisoAdmin = avisoContaAdmin(usePapelAoVivo())
 
   async function enviar() {
     if (!romaneio[0] && !(compacto && !rq && (escala[0] || pao[0]))) return
@@ -80,6 +84,7 @@ export function SubirRomaneio({ cliente, compacto, onEnviado }: { cliente: strin
         </button>
         {erro && <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--color-danger)]"><WarningCircle size={16} weight="fill" />{erro}</span>}
       </div>
+      {avisoAdmin && <p className="inline-flex items-start gap-1.5 text-[12px] leading-relaxed text-[var(--color-fg-muted)]"><Info size={14} className="mt-0.5 shrink-0 text-[var(--color-navy-700)]" />{avisoAdmin}</p>}
     </div>
   )
 }
