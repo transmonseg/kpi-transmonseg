@@ -18,6 +18,7 @@ import { lerSnapshotParadas } from './paradas-snapshot'
 import { EMPRESA_SNAPSHOT_RIOQUALITY } from '@/lib/kpi-rioquality/snapshot-paradas'
 import { hojeBR } from '@/lib/data-br'
 import { versaoDasRegras } from './versao-regras'
+import { NOME_FONTE } from './gerador-xlsx'
 import type { EntregaRioQualityCompleta } from '@/lib/kpi-rioquality/parse-planilhas'
 
 export const CLIENTES_AO_VIVO = ['nutrimax', 'rioquality'] as const
@@ -185,7 +186,7 @@ export async function entradaRioQualityDoDia(data: string): Promise<EntregaRioQu
  *  "Gerar KPI" de cada cliente). null = romaneio do dia não subido. */
 export async function gerarKpiDoDia(cliente: ClienteAoVivo, data: string, log: (m: string) => void = () => {},
   aoMontarDetalheNutry?: Parameters<typeof gerarKpiNutrimax>[1],
-  aoParadasRq?: (paradasPorPlaca: Map<string, UnitracParadaRow[]>) => void): Promise<{ xlsx: Buffer; qtdCargas: number; degradado?: string; aviso?: string } | null> {
+  aoParadasRq?: (paradasPorPlaca: Map<string, UnitracParadaRow[]>) => void): Promise<{ xlsx: Buffer; qtdCargas: number; degradado?: string; aviso?: string; avisosFonte?: string[] } | null> {
   if (cliente === 'rioquality') {
     const entregas = await entradaRioQualityDoDia(data)
     if (!entregas) return null
@@ -205,7 +206,13 @@ export async function gerarKpiDoDia(cliente: ClienteAoVivo, data: string, log: (
   const entrada = await entradaDoDia(cliente, data)
   if (!entrada) return null
   const r = await gerarKpiNutrimax(entrada, aoMontarDetalheNutry)
+  // F2-14 (GN-06): leitura que falhou (resolucoes, sem rastreador, trocas,
+  // locais) so' ia pra aba Avisos -- vai tambem pra tela. Territorio ja' tem
+  // aviso proprio (F1-11) e marca a repeticao das 05:30; nao repete aqui.
+  const fontes = [...new Set((r.avisos ?? []).filter(a => a.motivo === 'fonte_indisponivel' && a.fonte && a.fonte !== 'territorio').map(a => a.fonte!))]
+  const avisosFonte = fontes.map(f => `Não consegui ler ${NOME_FONTE[f]} neste cálculo — o resultado pode estar incompleto. O próximo cálculo tenta de novo.`)
   return {
+    ...(avisosFonte.length > 0 ? { avisosFonte } : {}),
     xlsx: r.xlsx, qtdCargas: r.qtdCargasNutry,
     // F1-11 (KN-08): resultado vale (a taxa nao muda), mas sem os rotulos
     // "CORRIGIR CADASTRO" -- aviso na tela e marca pro tick repetir.
@@ -335,6 +342,7 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     const resultado = montarResultadoAoVivo(data, await extrairKpiCompleto(r.xlsx), coords, new Date().toISOString(), paradasNf)
     if (sugestoesTroca.length > 0) resultado.sugestoesTroca = sugestoesTroca
     if (r.aviso) resultado.avisos = [r.aviso]
+    if (r.avisosFonte) resultado.avisos = [...(resultado.avisos ?? []), ...r.avisosFonte]
     // F2-14 (RQ-08): degradado sem anterior bom sai marcado, com aviso na tela
     // e ultimo_erro (antes saia calado, como se a taxa estivesse completa).
     if (r.degradado) {

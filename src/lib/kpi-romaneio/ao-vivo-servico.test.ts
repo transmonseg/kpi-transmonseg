@@ -99,6 +99,37 @@ describe('calcularAoVivo: conferencia de endereco indisponivel (F1-11)', () => {
     const u = c.updates.find(x => 'resultado' in x) as { resultado: { versaoRegras?: string | null } }
     expect(u.resultado.versaoRegras).toBe('0f495b4')
   })
+  // F2-14 (GN-06, revisao Fases 3-4): leitura que falhou na geracao da Nutry
+  // (resolucoes, sem rastreador, trocas, locais) so' aparecia na aba Avisos
+  // da planilha -- a tela do Ao vivo mostrava a taxa como se estivesse completa.
+  it('F2-14 GN-06: fonte indisponivel na geracao vira aviso na tela (sem repetir o de territorio, sem mexer na trava das 05:30)', async () => {
+    const { AVISO_TERRITORIO_AO_VIVO } = await import('./ao-vivo')
+    c.travaLinhas = [{ cliente: 'nutrimax' }]
+    c.resultadoNutry = {
+      xlsx: Buffer.from(''), qtdCargasNutry: 0, territorioIndisponivel: true,
+      avisos: [
+        { carga: '—', placa: '—', motivo: 'fonte_indisponivel', fonte: 'sem_rastreador' },
+        { carga: '—', placa: '—', motivo: 'fonte_indisponivel', fonte: 'trocas_placa' },
+        { carga: '—', placa: '—', motivo: 'fonte_indisponivel', fonte: 'territorio' },
+        { carga: '1', placa: 'X', motivo: 'sem_escala' },
+      ],
+    }
+    expect(await calcularAoVivo('nutrimax', '2026-10-22')).toBe('ok')
+    const u = c.updates.find(x => 'resultado' in x) as { resultado: { avisos?: string[] }; ultimo_erro?: string }
+    expect(u.resultado.avisos).toHaveLength(3)
+    expect(u.resultado.avisos?.[0]).toContain('Conferência de endereço indisponível')
+    expect(u.resultado.avisos?.some(a => a.includes('cadastro de placas sem rastreador'))).toBe(true)
+    expect(u.resultado.avisos?.some(a => a.includes('trocas de placa'))).toBe(true)
+    expect(u.ultimo_erro?.startsWith(AVISO_TERRITORIO_AO_VIVO)).toBe(true)
+  })
+  it('F2-14 GN-06: so fonte indisponivel (territorio ok): aviso na tela sem ultimo_erro', async () => {
+    c.travaLinhas = [{ cliente: 'nutrimax' }]
+    c.resultadoNutry = { xlsx: Buffer.from(''), qtdCargasNutry: 0, avisos: [{ carga: '—', placa: '—', motivo: 'fonte_indisponivel', fonte: 'resolucoes' }] }
+    expect(await calcularAoVivo('nutrimax', '2026-10-22')).toBe('ok')
+    const u = c.updates.find(x => 'resultado' in x) as { resultado: { avisos?: string[] } }
+    expect(u.resultado.avisos).toEqual([expect.stringContaining('resoluções manuais do operador')])
+    expect('ultimo_erro' in u).toBe(false)
+  })
   it('conferencia ok: sem aviso e sem mexer em ultimo_erro', async () => {
     c.travaLinhas = [{ cliente: 'nutrimax' }]
     c.resultadoNutry = { xlsx: Buffer.from(''), qtdCargasNutry: 0 }
