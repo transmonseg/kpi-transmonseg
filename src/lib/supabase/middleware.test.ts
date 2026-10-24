@@ -91,3 +91,42 @@ describe('operador logado abrindo /login cai no Ao vivo (F3-12)', () => {
     expect(new URL(r.headers.get('location')!).pathname).toBe('/painel')
   })
 })
+
+describe('operador alcança a fila Conferir e o Resumo do dia (F3-R01)', () => {
+  const rotas = [
+    '/api/kpi/resolucao?cliente=nutrimax&data=2026-10-22',
+    '/api/kpi/resolucao/comprovante?cliente=nutrimax&id=x',
+    '/api/kpi/resumo-dia?cliente=nutrimax&data=2026-10-22',
+    '/painel/resumo-dia?cliente=nutrimax&data=2026-10-22',
+  ]
+  for (const empresa of ['nutrimax', 'rioquality']) {
+    for (const rota of rotas) {
+      it(`operador ${empresa}: ${rota.split('?')[0]} passa pelo proxy`, async () => {
+        estado.user = { id: 'erica' }
+        estado.perfil = { papel: 'operador', redes: [], meses: [], empresas: [empresa] }
+        const r = await updateSession(req(rota.replace('nutrimax', empresa)))
+        expect(r.status).toBe(200)
+        expect(r.headers.get('location')).toBeNull()
+      })
+    }
+  }
+  it('operador só do monitoramento continua sem acesso à resolução', async () => {
+    estado.user = { id: 'u1' }
+    estado.perfil = { papel: 'operador', redes: [], meses: [], empresas: [] }
+    const r = await updateSession(req('/api/kpi/resolucao?cliente=nutrimax&data=2026-10-22'))
+    expect(r.status).toBe(403)
+  })
+  it('gerente/visualizador continua sem acesso à resolução e ao resumo', async () => {
+    estado.user = { id: 'u1' }
+    estado.perfil = { papel: 'visualizador', redes: [], meses: [], empresas: ['nutrimax'] }
+    expect((await updateSession(req('/api/kpi/resolucao?cliente=nutrimax&data=2026-10-22'))).status).toBe(403)
+    expect((await updateSession(req('/api/kpi/resumo-dia?cliente=nutrimax&data=2026-10-22'))).status).toBe(403)
+    expect(new URL((await updateSession(req('/painel/resumo-dia'))).headers.get('location')!).pathname).toBe('/painel')
+  })
+  it('caminho parecido não é liberado', async () => {
+    estado.user = { id: 'u1' }
+    estado.perfil = { papel: 'operador', redes: [], meses: [], empresas: ['nutrimax'] }
+    expect((await updateSession(req('/api/kpi/resolucaoX'))).status).toBe(403)
+    expect((await updateSession(req('/api/kpi/resumo-dia-x'))).status).toBe(403)
+  })
+})

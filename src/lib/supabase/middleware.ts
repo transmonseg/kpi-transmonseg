@@ -101,6 +101,11 @@ export async function updateSession(request: NextRequest) {
     const perfil = await getPerfil(user.id)
     if (perfil.papel !== 'admin') {
       const podeBenassi = perfil.empresas.includes('benassi')
+      // F3-R01: fila Conferir (F3-03) e Resumo do dia (F3-02) do Ao vivo. A rota
+      // e o layout rechecam o cliente (acessoAoVivo / podeOperarEmpresa).
+      const rotaConferirResumo =
+        path === '/api/kpi/resolucao' || path.startsWith('/api/kpi/resolucao/') ||
+        path === '/api/kpi/resumo-dia' || path === '/painel/resumo-dia'
       // Operador: gera/vê só as empresas liberadas no perfil (rotas por empresa;
       // cada rota/layout rechecha empresa liberada). Hoje só Nutry Max tem tela
       // e API liberadas pra operador.
@@ -108,7 +113,8 @@ export async function updateSession(request: NextRequest) {
         path === '/painel/nutrimax' || path.startsWith('/painel/nutrimax/') ||
         path === '/painel/ao-vivo' || path.startsWith('/api/kpi/ao-vivo') ||
         path.startsWith('/api/kpi/nutrimax/') ||
-        path.startsWith('/api/kpi/historico/')
+        path.startsWith('/api/kpi/historico/') ||
+        rotaConferirResumo
       )
       // Monitoramento dentro da Central (05/10): equipe toda (o layout confere o papel).
       // Ao vivo da Rio Quality (05/10): operador com a Rio Quality liberada (a rota confere o cliente).
@@ -116,7 +122,8 @@ export async function updateSession(request: NextRequest) {
       // KPI e Histórico da Rio Quality (cada rota/layout rechecha a empresa).
       const operadorAoVivoRq = perfil.papel === 'operador' && perfil.empresas.includes('rioquality') && (
         path === '/painel/ao-vivo' || path.startsWith('/api/kpi/ao-vivo') || path.startsWith('/api/kpi/historico/') ||
-        path === '/painel/rioquality' || path.startsWith('/painel/rioquality/') || path.startsWith('/api/kpi/rioquality/')
+        path === '/painel/rioquality' || path.startsWith('/painel/rioquality/') || path.startsWith('/api/kpi/rioquality/') ||
+        rotaConferirResumo
       )
       // Login unico (08/10): o passe do quadro tambem (a rota confere o papel).
       const operadorMonitoramento = perfil.papel === 'operador' && (path === '/painel/monitoramento' || path.startsWith('/painel/monitoramento/') || path === '/api/monitoramento/passe')
