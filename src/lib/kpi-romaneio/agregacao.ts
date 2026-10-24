@@ -2,6 +2,7 @@ import type { AlvoApi } from '@/lib/unitrac-api'
 // UnitracParadaRow vem de matcher.ts, não de unitrac-api -- mesma ressalva
 // de unitrac.ts (Task 6).
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
+import { acharBuracosDeSinal, buracoCompativel, obsSemSinalNoTrecho, motivoSemSinalNoTrecho } from './buraco-sinal'
 import type { LinhaEscala, LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega, Visita, EvidenciaNf, ConfiancaNf } from './types'
 import { OBS_NAO_SAIU_DA_BASE } from './types'
 import { haversine } from '@/lib/utils/geo'
@@ -3228,11 +3229,17 @@ export function montarDetalheEntregas(
   // precedencia maior (SEM RASTREADOR, NÃO SAIU DA BASE, AGUARDANDO, SINAL DO
   // RASTREADOR da Task 1, CONFERIR ESCALA) ja' ficaram fora da whitelist. So'
   // `modoPrecisao` (Nutry Max), sem nova opcao posicional.
+  // F2-07 (KN-05): ultimo passo -- o NAO FOI que sobrou de toda a cadeia
+  // (nenhuma regra acima o enxerga trocado) nao e' afirmado dentro de buraco
+  // de sinal da propria placa.
+  const semSinalNoTrecho = (r: LinhaDetalheEntrega[]) => marcarSemSinalNoTrecho(r, linhasRomaneio, alvoPorNf, [
+    paradasPorOutraPlaca.get(placaNorm) ?? [], paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? [],
+  ])
   if (modoPrecisao && placaComDuasCargasEmRegioesDiferentes(
     carga, placaNorm, linhasRomaneio, todasLinhasDaPlacaNoDia, alvoPorNf, visitasPorNf,
     paradasPorOutraPlaca, paradasUnitracCruasPropriaPlaca, menorDistanciaTrajetoPorNf, resultado,
   )) {
-    return resultado.map(d => {
+    return semSinalNoTrecho(resultado.map(d => {
       if (d.status !== 'pendente') return d
       if (d.observacao != null && !ROTULOS_SEM_EVIDENCIA_DE_POSICAO.some(r => d.observacao!.startsWith(r))) return d
       const observacao = OBS_DUAS_CARGAS_REGIOES_DIFERENTES
@@ -3245,10 +3252,40 @@ export function montarDetalheEntregas(
         motivo: gerarMotivo({ status: d.status, observacao, evidencia: d.evidencia, distParadaM: d.distParadaM, tempoParadaMin: null }),
         confianca: calcularConfianca(d.status, observacao),
       }
-    })
+    }))
   }
-  return resultado
+  return semSinalNoTrecho(resultado)
 }
+
+/** F2-07 (KN-05): "NÃO FOI AO CLIENTE" com o cliente dentro de um buraco de
+ *  sinal da propria placa (parada seguida de salto impossivel, buraco-sinal.ts)
+ *  vira "SEM SINAL NO TRECHO DO CLIENTE (hh:mm–hh:mm) - CONFERIR". Continua
+ *  pendente, sem horario: a taxa nao muda, so' para de afirmar o negativo.
+ *  Cada fonte de paradas (resolvida e Unitrac crua) e' uma cadeia separada. */
+function marcarSemSinalNoTrecho(
+  resultado: LinhaDetalheEntrega[],
+  linhasRomaneio: LinhaGeocodificada[],
+  alvoPorNf: Map<string, AlvoApi>,
+  fontesDeParadas: UnitracParadaRow[][],
+): LinhaDetalheEntrega[] {
+  if (!resultado.some(d => d.status === 'pendente' && d.observacao === OBS_NAO_FOI_AO_CLIENTE)) return resultado
+  const buracos = fontesDeParadas.flatMap(acharBuracosDeSinal)
+  if (buracos.length === 0) return resultado
+  const linhaPorNf = new Map(linhasRomaneio.map(l => [l.nf, l]))
+  return resultado.map(d => {
+    if (d.status !== 'pendente' || d.observacao !== OBS_NAO_FOI_AO_CLIENTE) return d
+    const l = linhaPorNf.get(d.nf)
+    const pontos = [
+      l && l.geoConfiavel !== false && l.lat != null && l.lng != null ? { lat: l.lat, lng: l.lng } : null,
+      cadastroDoAlvo(alvoPorNf.get(d.nf)),
+    ].filter((x): x is { lat: number; lng: number } => x != null)
+    const buraco = pontos.map(pt => buracoCompativel(pt, buracos)).find(b => b != null)
+    if (!buraco) return d
+    const observacao = obsSemSinalNoTrecho(buraco)
+    return { ...d, observacao, motivo: motivoSemSinalNoTrecho(buraco), confianca: calcularConfianca(d.status, observacao) }
+  })
+}
+const OBS_NAO_FOI_AO_CLIENTE = 'NÃO FOI AO CLIENTE (caminhão não esteve na região)'
 
 // Task 2 (plano 2026-09-29): limiares da regra "placa com duas cargas em
 // regioes diferentes" -- ver bloco no fim de montarDetalheEntregas.

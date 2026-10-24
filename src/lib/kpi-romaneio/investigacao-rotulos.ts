@@ -2,7 +2,7 @@
 import type { CategoriaInvestigacao, Investigacao } from './investigacao'
 
 /** Ordem de exibição: do mais acionável (carro esteve lá) ao menos. */
-export const CATEGORIAS_INVESTIGACAO: CategoriaInvestigacao[] = ['parou_no_cliente', 'parou_perto', 'passou_sem_parar', 'parou_na_regiao', 'nao_chegou_perto', 'sem_gps', 'sem_coordenada']
+export const CATEGORIAS_INVESTIGACAO: CategoriaInvestigacao[] = ['parou_no_cliente', 'parou_perto', 'passou_sem_parar', 'parou_na_regiao', 'nao_chegou_perto', 'sem_sinal_no_trecho', 'sem_gps', 'sem_coordenada']
 
 export const ROTULO_INVESTIGACAO: Record<CategoriaInvestigacao, { titulo: string; dica: string }> = {
   parou_no_cliente: { titulo: 'Parou no cliente (até 150 m)', dica: 'Pode ser entrega que o KPI não contou. Conferir.' },
@@ -10,6 +10,7 @@ export const ROTULO_INVESTIGACAO: Record<CategoriaInvestigacao, { titulo: string
   passou_sem_parar: { titulo: 'Passou sem parar (até 500 m)', dica: 'O carro passou no endereço, mas não parou.' },
   parou_na_regiao: { titulo: 'Parou na região (500 m a 2 km)', dica: 'Passou pela região, mas não parou no endereço.' },
   nao_chegou_perto: { titulo: 'Não chegou perto (mais de 2 km)', dica: 'O carro não passou no cliente.' },
+  sem_sinal_no_trecho: { titulo: 'Sem sinal no trecho do cliente', dica: 'O rastreador ficou sem sinal quando o carro podia estar no cliente. Conferir.' },
   sem_gps: { titulo: 'Sem GPS no dia', dica: 'Rastreador sem paradas registradas.' },
   sem_coordenada: { titulo: 'Cliente sem coordenada', dica: 'Endereço não localizado no mapa.' },
 }

@@ -8,8 +8,9 @@ import type { NfAoVivo, PlacaAoVivo } from './ao-vivo'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { haversine } from '@/lib/utils/geo'
 import { normPlaca } from '@/lib/unitrac-api/frota'
+import { PREFIXO_OBS_SEM_SINAL_NO_TRECHO } from './buraco-sinal'
 
-export type CategoriaInvestigacao = 'parou_no_cliente' | 'parou_perto' | 'passou_sem_parar' | 'parou_na_regiao' | 'nao_chegou_perto' | 'sem_gps' | 'sem_coordenada'
+export type CategoriaInvestigacao = 'parou_no_cliente' | 'parou_perto' | 'passou_sem_parar' | 'parou_na_regiao' | 'nao_chegou_perto' | 'sem_gps' | 'sem_coordenada' | 'sem_sinal_no_trecho'
 
 export type Investigacao = {
   categoria: CategoriaInvestigacao
@@ -30,6 +31,9 @@ const VAZIA = (categoria: CategoriaInvestigacao): Investigacao => ({ categoria, 
 // ("PASSOU NO ENDERECO"). `trajetoM` = menor distancia do GPS continuo.
 export function investigarNf(n: NfAoVivo, paradas: UnitracParadaRow[], trajetoM?: number | null): Investigacao {
   if (n.situacao === 'sem_rastreador') return VAZIA('sem_gps')
+  // F2-07 (KN-05): o KPI viu o buraco de sinal no trecho do cliente -- a
+  // parada mais perto nao diz nada (o carro andou sem ser visto).
+  if (n.status.startsWith(PREFIXO_OBS_SEM_SINAL_NO_TRECHO)) return VAZIA('sem_sinal_no_trecho')
   if (n.lat == null || n.lng == null) return VAZIA('sem_coordenada')
   let melhor: { d: number; p: UnitracParadaRow } | null = null
   for (const p of paradas) {
