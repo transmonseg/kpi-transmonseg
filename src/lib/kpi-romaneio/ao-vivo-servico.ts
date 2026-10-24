@@ -7,6 +7,7 @@ import { EMPRESA_NUTRIMAX } from './constants'
 import { createServiceClient } from '@/lib/supabase/service'
 import { gerarKpiNutrimax, type EntradaKpiNutrimax } from './gerar-nutrimax'
 import { extrairKpiCompleto } from './resumo-dashboard'
+import { publicarFechamentoNoDashboard } from './fechamento-dashboard'
 import { resumirPlacas, contarCorretas, paradaDaChegada, paradaEmAndamento, nfProxima, AVISO_TERRITORIO_AO_VIVO, type PlacaAoVivo } from './ao-vivo'
 import { investigarPlacas, alarmeSemCoordenada } from './investigacao'
 import { normPlaca } from '@/lib/unitrac-api'
@@ -377,7 +378,8 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     // F2-12 (KRQ-06): dia encerrado (fechamento das 00:30, reconferência das
     // 05:30 ou recálculo depois) -- a planilha final fica guardada para sempre.
     if (data < hojeBR()) await guardarXlsxFechado(svc, cliente, data, r.xlsx, log)
-    const resultado = montarResultadoAoVivo(data, await extrairKpiCompleto(r.xlsx), coords, new Date().toISOString(), paradasNf)
+    const lido = await extrairKpiCompleto(r.xlsx)
+    const resultado = montarResultadoAoVivo(data, lido, coords, new Date().toISOString(), paradasNf)
     if (sugestoesTroca.length > 0) resultado.sugestoesTroca = sugestoesTroca
     if (r.aviso) resultado.avisos = [r.aviso]
     if (r.avisosFonte) resultado.avisos = [...(resultado.avisos ?? []), ...r.avisosFonte]
@@ -422,6 +424,13 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
       ...(avisoErro ? { ultimo_erro: avisoErro.slice(0, 500), ultimo_erro_em: resultado.calculadoEm } : {}),
     }).eq('cliente', cliente).eq('data', data)
     if (error) throw new Error(error.message)
+    // F3-01 (ACH-01): dia encerrado completo vai ao Dashboard (ausente ou
+    // parcial grava; inserido a mao e diferente vira "Fechamento disponivel").
+    // Calculo incompleto (degradado, fonte que nao leu) fica fora. Fail-open.
+    if (data < hojeBR() && !r.degradado && !r.avisosFonte) {
+      await publicarFechamentoNoDashboard({ cliente, data, xlsx: r.xlsx, lido, calculadoEm: resultado.calculadoEm, log })
+        .catch(e => log(`dashboard ${cliente} ${data}: fechamento não gravado (${e instanceof Error ? e.message : String(e)})`))
+    }
     log(`ao vivo ${cliente} ${data}: ok em ${Math.round((Date.now() - t0) / 1000)}s (${resultado.resumo.feitas}/${resultado.resumo.totalNfs})`)
     return 'ok'
   } catch (err) {

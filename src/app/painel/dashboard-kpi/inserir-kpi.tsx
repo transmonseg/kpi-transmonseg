@@ -1,11 +1,15 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { UploadSimple, CheckCircle, WarningCircle, FileXls, DownloadSimple, Trash, ArrowRight } from '@phosphor-icons/react/dist/ssr'
+import { UploadSimple, CheckCircle, WarningCircle, FileXls, DownloadSimple, Trash, ArrowRight, ArrowsLeftRight } from '@phosphor-icons/react/dist/ssr'
 import type { ClienteDash, DiaKpi } from '@/lib/kpi-romaneio/dashboard-kpis'
 import { hoje, intervalo, dataCurta, fmtPct, tom, COR_TOM } from './calculos'
 
-type Item = { nome: string; status: 'enviando' | 'ok' | 'erro'; msg?: string; data?: string }
+type Item = {
+  nome: string; status: 'enviando' | 'ok' | 'erro'; msg?: string; data?: string
+  /** F3-01: planilha parcial aceita, com aviso e a oferta do fechamento. */
+  parcial?: { aguardando: number; ofertaFechamento: { taxa: number | null } | null } | null
+}
 
 // Inserir KPI (04/10/2026): igual a Benassi -- o dashboard só analisa o que for
 // inserido aqui. A data vem da própria planilha; reinserir o mesmo dia substitui.
@@ -38,7 +42,7 @@ export function InserirKpi({ cliente, nome, onAbrirDia }: { cliente: ClienteDash
         const j = await r.json().catch(() => ({ ok: false, erro: 'Resposta inválida do servidor.' }))
         setItens(i => i.map(x => x.nome === f.name && x.status === 'enviando'
           ? j.ok
-            ? { nome: f.name, status: 'ok', data: j.data, msg: `${dataCurta(j.data)} · taxa ${fmtPct(j.taxa)} · ${j.nfs.toLocaleString('pt-BR')} NFs · ${j.cargas} cargas${j.substituiu ? ' · substituiu o anterior' : ''}` }
+            ? { nome: f.name, status: 'ok', data: j.data, msg: `${dataCurta(j.data)} · taxa ${fmtPct(j.taxa)} · ${j.nfs.toLocaleString('pt-BR')} NFs · ${j.cargas} cargas${j.substituiu ? ' · substituiu o anterior' : ''}`, parcial: j.parcial ?? null }
             : { nome: f.name, status: 'erro', msg: j.erro }
           : x))
         if (j.ok) { setMes(String(j.data).slice(0, 7)); setRecarregar(n => n + 1) }
@@ -47,6 +51,22 @@ export function InserirKpi({ cliente, nome, onAbrirDia }: { cliente: ClienteDash
       }
     }
   }, [cliente])
+
+  const [trocando, setTrocando] = useState<string | null>(null)
+  // F3-01: troca o dia recem-inserido (parcial) pelo fechamento das 00:30.
+  const trocar = async (data: string) => {
+    setTrocando(data)
+    try {
+      const r = await fetch('/api/dashboard-kpi/fechamento', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cliente, data }) })
+      const j = await r.json().catch(() => ({ ok: false, erro: 'Resposta inválida do servidor.' }))
+      setItens(i => i.map(x => x.data === data && x.status === 'ok'
+        ? j.ok ? { ...x, parcial: null, msg: `${dataCurta(data)} · trocado pelo fechamento: taxa ${fmtPct(j.taxa)} · ${j.nfs.toLocaleString('pt-BR')} NFs` } : { ...x, msg: j.erro }
+        : x))
+      if (j.ok) setRecarregar(n => n + 1)
+    } finally {
+      setTrocando(null)
+    }
+  }
 
   const excluir = async (data: string) => {
     if (!window.confirm(`Remover o KPI de ${dataCurta(data)} do dashboard?`)) return
@@ -90,7 +110,18 @@ export function InserirKpi({ cliente, nome, onAbrirDia }: { cliente: ClienteDash
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[13px] font-medium text-[var(--color-fg)]">{it.nome}</p>
                 <p className="text-[12px] text-[var(--color-fg-muted)]">{it.status === 'enviando' ? 'Lendo a planilha…' : it.msg}</p>
+                {it.parcial && (
+                  <p className="mt-0.5 text-[12px] text-[var(--color-warning)]">
+                    Planilha parcial: {it.parcial.aguardando.toLocaleString('pt-BR')} notas ainda aguardavam o fim da rota.
+                    {it.parcial.ofertaFechamento ? ` Fechamento disponível: ${fmtPct(it.parcial.ofertaFechamento.taxa)}.` : ' O fechamento sai às 00:30.'}
+                  </p>
+                )}
               </div>
+              {it.status === 'ok' && it.data && it.parcial?.ofertaFechamento && (
+                <button type="button" onClick={() => trocar(it.data!)} disabled={trocando === it.data} className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-3 py-1.5 text-[12px] font-medium transition hover:border-[var(--color-navy-700)] hover:text-[var(--color-navy-700)] disabled:opacity-60">
+                  <ArrowsLeftRight size={12} weight="bold" /> Trocar pelo fechamento
+                </button>
+              )}
               {it.status === 'ok' && it.data && (
                 <button type="button" onClick={() => onAbrirDia(it.data!)} className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-3 py-1.5 text-[12px] font-medium transition hover:border-[var(--color-accent)]">
                   Ver no dashboard <ArrowRight size={12} weight="bold" />

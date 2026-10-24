@@ -50,6 +50,11 @@ export type ResumoGeracao = {
   foraDaConta: number | null
   cargas: CargaResumo[]
   motivos: Record<string, number>
+  /** F3-01 (ACH-01): dia do Dashboard gravado a partir do fechamento das
+   *  00:30 (automatico ou pelo botao "trocar"). Ausente = planilha inserida. */
+  origem?: 'fechamento'
+  /** F3-01: calculado_em do fechamento que gerou este resumo. */
+  fechamentoEm?: string
 }
 
 const ABAS_FIXAS = new Set(['Auditoria', 'Avisos'])

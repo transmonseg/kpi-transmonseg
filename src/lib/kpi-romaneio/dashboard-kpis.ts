@@ -1,6 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { BUCKET_KPI_ROMANEIO } from './xlsx-gerado'
 import { extrairKpiCompleto, type NfResumo, type ResumoGeracao } from './resumo-dashboard'
+import { avisoPlanilhaParcial, clienteComFechamento, lerFechamentoDoDia, type NumerosKpi } from './fechamento-dashboard'
 
 // Dashboard por cliente (04/10/2026): só analisa o KPI que alguém INSERE
 // (botão Inserir KPI), igual a Benassi. Um por cliente por dia; reinserir
@@ -59,7 +60,9 @@ export async function historico(cliente: ClienteDash): Promise<DiaKpi[]> {
 }
 
 export type ResultadoInsercao =
-  | { ok: true; data: string; taxa: number | null; nfs: number; cargas: number; substituiu: boolean }
+  | { ok: true; data: string; taxa: number | null; nfs: number; cargas: number; substituiu: boolean
+      /** F3-01: planilha parcial (rota em andamento) -- aceita, com aviso e a oferta do fechamento. */
+      parcial?: { aguardando: number; ofertaFechamento: NumerosKpi | null } | null }
   | { ok: false; erro: string }
 
 /** Lê a planilha, grava o arquivo no Storage e o resumo + NFs no banco. A
@@ -100,7 +103,14 @@ export async function inserirKpi(params: {
     inserido_em: new Date().toISOString(),
   }, { onConflict: 'cliente,data' })
   if (error) return { ok: false, erro: `Falha ao salvar: ${error.message}` }
-  return { ok: true, data, taxa: lido.resumo.taxa, nfs: lido.nfs.length, cargas: lido.resumo.cargas.length, substituiu: !!existente }
+  // F3-01 (ACH-01): planilha de antes do fim das rotas nao e' recusada --
+  // volta o aviso e, se o dia ja' fechou, a oferta do fechamento.
+  let parcial: ReturnType<typeof avisoPlanilhaParcial> = null
+  if ((lido.resumo.aguardando ?? 0) > 0) {
+    const fechamento = clienteComFechamento(params.cliente) ? await lerFechamentoDoDia(params.cliente, data).catch(() => null) : null
+    parcial = avisoPlanilhaParcial(lido.resumo, fechamento)
+  }
+  return { ok: true, data, taxa: lido.resumo.taxa, nfs: lido.nfs.length, cargas: lido.resumo.cargas.length, substituiu: !!existente, parcial }
 }
 
 export async function arquivoDoDia(cliente: ClienteDash, data: string): Promise<{ buf: Buffer; nome: string } | null> {

@@ -14,6 +14,7 @@ import {
   fmtPct, fmtInt, fmtKm, fmtDur, tom, COR_TOM, type Periodo, type Agregado, type PlacaAgg,
 } from './calculos'
 import { PlacaDrawer } from './placa-drawer'
+import { FechamentoOfertas } from './fechamento-ofertas'
 
 const ANO = Number(hoje().slice(0, 4))
 const ANOS = [ANO, ANO - 1, ANO - 2].map(String)
@@ -97,6 +98,9 @@ export function VisaoGeral({ cliente, dataInicial, podeInserir, visaoCliente = f
           </a>
         )}
       </div>
+
+      {/* F3-01: fechamento das 00:30 diferente do Dashboard (só quem insere KPI). */}
+      {podeInserir && <FechamentoOfertas cliente={cliente} de={faixa[0]} ate={faixa[1]} recarregar={tentativa} onTrocou={() => setTentativa(t => t + 1)} />}
 
       {erro ? (
         <div className="dash-card flex flex-col items-center gap-3 py-14 text-center">
