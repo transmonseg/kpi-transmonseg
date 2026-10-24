@@ -1148,6 +1148,25 @@ export function chegadaCdPorParadas(paradas: UnitracParadaRow[], hoje: string = 
   return depoisDaEntrega < 0 ? null : procurarDepois(depoisDaEntrega, true)
 }
 
+/** F2-06 (KN-09 a): saida = fim da ultima parada BASE que termina ate' a 1a
+ *  entrega da carga; chegada = inicio da 1a parada BASE que comeca depois da
+ *  ultima entrega. Entregas = visitas das NFs desta carga (horario de GPS). */
+function baseUnitracEmVoltaDasEntregas(
+  eventosBase: UnitracParadaRow[],
+  visitasPorNf: Map<string, Visita>,
+  linhasRomaneio: LinhaGeocodificada[],
+): { saida: string | null; chegada: string | null } {
+  const nfs = new Set(linhasRomaneio.map(l => l.nf))
+  const visitas = [...visitasPorNf.values()].filter(v => nfs.has(v.nf) && v.chegada && v.saida)
+  if (visitas.length === 0 || eventosBase.length === 0) return { saida: null, chegada: null }
+  const primeira = Math.min(...visitas.map(v => Date.parse(v.chegada)))
+  const ultima = Math.max(...visitas.map(v => Date.parse(v.saida)))
+  const fim = (p: UnitracParadaRow) => p.fim_real ?? p.saida ?? p.chegada
+  const antes = eventosBase.filter(p => Date.parse(fim(p)) <= primeira).sort((a, b) => Date.parse(fim(a)) - Date.parse(fim(b))).pop()
+  const depois = eventosBase.filter(p => Date.parse(p.chegada) >= ultima).sort((a, b) => Date.parse(a.chegada) - Date.parse(b.chegada))[0]
+  return { saida: antes ? fim(antes) : null, chegada: depois ? depois.chegada : null }
+}
+
 export function agregarPorCarga(
   carga: string,
   placaNorm: string,
@@ -1168,7 +1187,7 @@ export function agregarPorCarga(
   // (saida/chegada/km) e' fail-open INDEPENDENTEMENTE: a ponte pode saber
   // a saida mas nao a chegada (dia em andamento) -- nesse caso so' a
   // chegada cai pro fallback antigo.
-  horarioBaseBridge?: { saidaBase: string | null; chegadaBase: string | null; kmPercorrido: number | null },
+  horarioBaseBridge?: { saidaBase: string | null; chegadaBase: string | null; kmPercorrido: number | null; saidaSemSinalAte?: string | null },
   // Pedido do usuário 25/08 (nível Benassi): placa sem NENHUMA fonte de
   // rastreamento no dia (sem cv na Unitrac E sem entrada na ponte do
   // monitoramento) -- default true por conveniência dos testes existentes
@@ -1235,8 +1254,21 @@ export function agregarPorCarga(
   // cluster abaixo (e' exatamente o tipo de guess errado que a ponte foi
   // criada pra evitar). Só cai pro fallback quando a ponte nao respondeu
   // NADA pra essa placa (undefined -- offline, placa nao rastreada la).
-  const saidaCd = horarioBaseBridge ? horarioBaseBridge.saidaBase : saidaCdFallback
-  const chegadaCd = horarioBaseBridge ? horarioBaseBridge.chegadaBase : chegadaCdFallback
+  let saidaCd = horarioBaseBridge ? horarioBaseBridge.saidaBase : saidaCdFallback
+  let chegadaCd = horarioBaseBridge ? horarioBaseBridge.chegadaBase : chegadaCdFallback
+  // F2-06 (KN-09 a): a ponte respondeu mas nao viu a transicao na cerca --
+  // a parada BASE da Unitrac antes da 1a entrega (saida) e depois da ultima
+  // (chegada) entra, marcada "(Unitrac)". Sem entrega da carga, nada.
+  let saidaCdOrigem: 'unitrac' | null = null
+  let chegadaCdOrigem: 'unitrac' | null = null
+  if (horarioBaseBridge) {
+    const doCd = baseUnitracEmVoltaDasEntregas(eventosBase, visitasPorNf, linhasRomaneio)
+    if (saidaCd == null && doCd.saida) { saidaCd = doCd.saida; saidaCdOrigem = 'unitrac' }
+    if (chegadaCd == null && doCd.chegada) { chegadaCd = doCd.chegada; chegadaCdOrigem = 'unitrac' }
+  }
+  // F2-06 (KN-09 c): ainda sem saida, pernoite fora da cerca com o rastreador
+  // sem sinal -- "saida estimada (sem sinal ate' hh:mm)", nunca vazia calada.
+  const saidaCdSemSinalAte = saidaCd == null ? horarioBaseBridge?.saidaSemSinalAte ?? null : null
   // Mesmo raciocinio do saida/chegada acima: confia no km da ponte mesmo
   // quando null (menos de 2 posicoes no dia -- sinal real de "sem dado",
   // nao motivo pra cair pro calculo antigo que so soma reta entre paradas
@@ -1299,6 +1331,9 @@ export function agregarPorCarga(
     kmPercorrido,
     saidaCd,
     chegadaCd,
+    ...(saidaCdOrigem ? { saidaCdOrigem } : {}),
+    ...(chegadaCdOrigem ? { chegadaCdOrigem } : {}),
+    ...(saidaCdSemSinalAte ? { saidaCdSemSinalAte } : {}),
     tempoOperacaoMin: saidaCd && chegadaCd ? minutosEntre(saidaCd, chegadaCd) : null,
     tempoMedioParadaMin,
     status,

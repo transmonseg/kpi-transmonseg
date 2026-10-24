@@ -78,6 +78,10 @@ export type HorarioBase = {
   // "0 posicoes no dia". placaSemSinalNoDia exige true: falha de consulta
   // nunca conclui "sem sinal". Sem `incluirParadas` nao ha como saber: ausente.
   consultaPosicoesOk?: boolean
+  // F2-06 (KN-09 c): sem saida observada, o dia comecou com o rastreador sem
+  // sinal fora da base e a 1a leitura que vale ja' estava fora -- instante
+  // dela (mascarado, como o resto). Ausente = ponte antiga ou saida conhecida.
+  saidaSemSinalAte?: string | null
 }
 
 /** Parada derivada do historico continuo do monitoramento -- mesma forma
@@ -222,6 +226,7 @@ type ResultadoBruto = {
   apagaoDeSinal?: unknown
   leiturasTotal?: unknown
   leiturasAtrasadas?: unknown
+  saidaSemSinalAte?: string | null
 }
 
 function validarParadaBruta(p: unknown): ParadaBridge | null {
@@ -254,10 +259,10 @@ function validarResultado(r: unknown): ResultadoBruto | null {
     ((r as { chegadaBase?: unknown }).chegadaBase === null || typeof (r as { chegadaBase?: unknown }).chegadaBase === 'string') &&
     ((r as { kmPercorrido?: unknown }).kmPercorrido === null || typeof (r as { kmPercorrido?: unknown }).kmPercorrido === 'number')
   ) {
-    const obj = r as { placa: string; saidaBase: string | null; chegadaBase: string | null; kmPercorrido: number | null; visitas?: unknown; paradas?: unknown; apagaoDeSinal?: unknown; leiturasTotal?: unknown; leiturasAtrasadas?: unknown }
+    const obj = r as { placa: string; saidaBase: string | null; chegadaBase: string | null; kmPercorrido: number | null; visitas?: unknown; paradas?: unknown; apagaoDeSinal?: unknown; leiturasTotal?: unknown; leiturasAtrasadas?: unknown; saidaSemSinalAte?: unknown }
     const visitasBrutas = Array.isArray(obj.visitas) ? obj.visitas.map(validarVisitaBruta).filter((v): v is VisitaBrutaResultado => v !== null) : undefined
     const paradasBrutas = Array.isArray(obj.paradas) ? obj.paradas.map(validarParadaBruta).filter((v): v is ParadaBridge => v !== null) : undefined
-    return { placa: obj.placa, saidaBase: obj.saidaBase, chegadaBase: obj.chegadaBase, kmPercorrido: obj.kmPercorrido, visitas: visitasBrutas, paradas: paradasBrutas, apagaoDeSinal: obj.apagaoDeSinal === true, ...(typeof obj.leiturasTotal === 'number' && typeof obj.leiturasAtrasadas === 'number' ? { leiturasTotal: obj.leiturasTotal, leiturasAtrasadas: obj.leiturasAtrasadas } : {}) }
+    return { placa: obj.placa, saidaBase: obj.saidaBase, chegadaBase: obj.chegadaBase, kmPercorrido: obj.kmPercorrido, visitas: visitasBrutas, paradas: paradasBrutas, apagaoDeSinal: obj.apagaoDeSinal === true, ...(typeof obj.leiturasTotal === 'number' && typeof obj.leiturasAtrasadas === 'number' ? { leiturasTotal: obj.leiturasTotal, leiturasAtrasadas: obj.leiturasAtrasadas } : {}), ...(typeof obj.saidaSemSinalAte === 'string' ? { saidaSemSinalAte: obj.saidaSemSinalAte } : {}) }
   }
   return null
 }
@@ -394,6 +399,7 @@ async function tentarLote(
         apagaoDeSinal: r.apagaoDeSinal === true,
         ...(typeof r.leiturasTotal === 'number' && typeof r.leiturasAtrasadas === 'number' ? { leiturasTotal: r.leiturasTotal, leiturasAtrasadas: r.leiturasAtrasadas } : {}),
         ...(incluirParadas ? { consultaPosicoesOk: r.paradas !== undefined } : {}),
+        ...(r.saidaSemSinalAte ? { saidaSemSinalAte: paraBrtMascaradoComoUtc(r.saidaSemSinalAte) } : {}),
       })
     }
   }

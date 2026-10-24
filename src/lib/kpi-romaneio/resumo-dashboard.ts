@@ -137,6 +137,11 @@ function dataDoKpi(wb: ExcelJS.Workbook): string | null {
 
 const hhmm = (s: string) => (/^\d{1,2}:\d{2}$/.test(s.trim()) ? s.trim() : null)
 
+function horaCd(t: string): string | null {
+  const m = /^(\d{1,2}:\d{2})(?: \(Unitrac\))?$/.exec(t.trim())
+  return m ? m[1] : null
+}
+
 export async function extrairKpiCompleto(buf: Buffer | ArrayBuffer): Promise<{ data: string | null; resumo: ResumoGeracao; nfs: NfResumo[] }> {
   const wb = new ExcelJS.Workbook()
   await wb.xlsx.load(buf as ArrayBuffer)
@@ -161,8 +166,9 @@ export async function extrairKpiCompleto(buf: Buffer | ArrayBuffer): Promise<{ d
       nfConfirmadas: numero(v[10]),
       km: numero(v[12]),
       // Só horário (a planilha põe "SEM RASTREADOR" nessas colunas às vezes).
-      saida: /^\d{1,2}:\d{2}$/.test(texto(v[13]).trim()) ? texto(v[13]).trim() : null,
-      chegada: /^\d{1,2}:\d{2}$/.test(texto(v[14]).trim()) ? texto(v[14]).trim() : null,
+      // F2-06: "08:53 (Unitrac)" vale a hora; "ESTIMADA (SEM SINAL ATÉ ..)" nao.
+      saida: horaCd(texto(v[13])),
+      chegada: horaCd(texto(v[14])),
       tempoOperacaoMin: minutosDeDuracao(texto(v[15])),
       tempoMedioMin: minutosDeDuracao(texto(v[16])),
     })

@@ -233,6 +233,21 @@ function celulaHora(iso: string | null, temRastreador: boolean, aindaEmAndamento
   return motivoAusencia(temRastreador, aindaEmAndamento) ?? ''
 }
 
+// F2-06 (KN-09): SAÍDA/CHEGADA CD da carga. Horario da parada BASE da Unitrac
+// (a ponte nao viu a transicao) sai com "(Unitrac)"; sem saida e com o
+// pernoite fora da cerca sem sinal, "ESTIMADA (SEM SINAL ATÉ hh:mm)". O Ao
+// vivo le so' a hora (resumo-dashboard.ts).
+function celulaSaidaCd(l: LinhaKpiRomaneio, aindaEmAndamento: boolean): string {
+  if (!l.saidaCd && l.saidaCdSemSinalAte) return `ESTIMADA (SEM SINAL ATÉ ${formatarHora(l.saidaCdSemSinalAte)})`
+  const c = celulaHora(l.saidaCd, l.temRastreador, aindaEmAndamento)
+  return l.saidaCd && l.saidaCdOrigem === 'unitrac' ? `${c} (Unitrac)` : c
+}
+function celulaChegadaCd(l: LinhaKpiRomaneio, aindaEmAndamento: boolean): string {
+  const exibivel = chegadaCdExibivel(l)
+  const c = celulaHora(exibivel, l.temRastreador, aindaEmAndamento)
+  return exibivel && l.chegadaCdOrigem === 'unitrac' ? `${c} (Unitrac)` : c
+}
+
 // STATUS da entrega: observacao concreta (troca de carro/tempo excessivo,
 // ver agregacao.ts) e' sempre mais informativa que o rotulo generico.
 //
@@ -714,8 +729,6 @@ function nomeAbaPlaca(placa: string): string {
 // da lista de abas vem de `linhas` -- mas o tipo permite, então trata).
 function escreverResumoPlaca(ws: ExcelJS.Worksheet, linhaResumo: number, qtdColunas: number, resumo: LinhaKpiRomaneio | undefined, data: string, hoje: string, qtdNotas: number, cargasNaoRelacionadas: boolean = false, semRastreador: boolean = false): void {
   const emAndamento = data === hoje
-  const horaCd = (iso: string | null, temRastreador: boolean) =>
-    semRastreador ? ROTULO_RESUMO_SEM_RASTREADOR : celulaHora(iso, temRastreador, emAndamento)
   // Fix incidental (code review da Task 3, achado 1): a aba "SEM PLACA"
   // pode juntar 2+ cargas de romaneios diferentes (ex. PAO-9/PAO-10/PAO-12)
   // sem NENHUMA relação entre si -- motorista/horário de UMA delas não
@@ -727,7 +740,7 @@ function escreverResumoPlaca(ws: ExcelJS.Worksheet, linhaResumo: number, qtdColu
   const texto = cargasNaoRelacionadas
     ? `MOTORISTA: MÚLTIPLOS    |    SAÍDA CD: -    |    CHEGADA CD: -    |    TEMPO OPERAÇÃO: -    |    KM PERCORRIDO: -    |    NOTAS: ${qtdNotas}`
     : resumo
-    ? `MOTORISTA: ${resumo.motorista || '-'}    |    SAÍDA CD: ${horaCd(resumo.saidaCd, resumo.temRastreador) || '-'}    |    CHEGADA CD: ${horaCd(chegadaCdExibivel(resumo), resumo.temRastreador) || '-'}    |    TEMPO OPERAÇÃO: ${formatarMinutos(resumo.tempoOperacaoMin) || '-'}    |    KM PERCORRIDO: ${resumo.kmPercorrido != null ? `${Math.round(resumo.kmPercorrido * 10) / 10} km` : '-'}    |    NOTAS: ${qtdNotas}`
+    ? `MOTORISTA: ${resumo.motorista || '-'}    |    SAÍDA CD: ${(semRastreador ? ROTULO_RESUMO_SEM_RASTREADOR : celulaSaidaCd(resumo, emAndamento)) || '-'}    |    CHEGADA CD: ${(semRastreador ? ROTULO_RESUMO_SEM_RASTREADOR : celulaChegadaCd(resumo, emAndamento)) || '-'}    |    TEMPO OPERAÇÃO: ${formatarMinutos(resumo.tempoOperacaoMin) || '-'}    |    KM PERCORRIDO: ${resumo.kmPercorrido != null ? `${Math.round(resumo.kmPercorrido * 10) / 10} km` : '-'}    |    NOTAS: ${qtdNotas}`
     : ''
   ws.mergeCells(linhaResumo, 1, linhaResumo, qtdColunas)
   const cell = ws.getCell(linhaResumo, 1)
@@ -842,8 +855,8 @@ export async function gerarKpiRomaneioXlsx(
       l.carga, l.placa, l.destino, l.motorista, l.ajudante1 ?? '', l.ajudante2 ?? '',
       l.pesoKg ?? '', l.clientesPlanejados ?? '', nfPlanejado ?? '', cont ? cont.corretas : l.paradasReais, l.paradasForaBase,
       l.kmPercorrido != null ? Math.round(l.kmPercorrido * 10) / 10 : '',
-      placasSemRastreadorNoResumo.has(l.placa) ? ROTULO_RESUMO_SEM_RASTREADOR : celulaHora(l.saidaCd, l.temRastreador, data === hoje),
-      placasSemRastreadorNoResumo.has(l.placa) ? ROTULO_RESUMO_SEM_RASTREADOR : celulaHora(chegadaCdExibivel(l), l.temRastreador, data === hoje),
+      placasSemRastreadorNoResumo.has(l.placa) ? ROTULO_RESUMO_SEM_RASTREADOR : celulaSaidaCd(l, data === hoje),
+      placasSemRastreadorNoResumo.has(l.placa) ? ROTULO_RESUMO_SEM_RASTREADOR : celulaChegadaCd(l, data === hoje),
       formatarMinutos(l.tempoOperacaoMin), formatarMinutos(l.tempoMedioParadaMin),
     ])
     estilizarLinhaDado(ws, 2 + 1 + i, COLUNAS_KPI_ROMANEIO.length, i)

@@ -264,6 +264,13 @@ export type LinhaKpiRomaneio = {
   kmPercorrido: number | null
   saidaCd: string | null // ISO
   chegadaCd: string | null // ISO
+  // F2-06 (KN-09): a ponte nao viu a transicao e o horario veio da parada BASE
+  // da Unitrac -- a planilha marca "(Unitrac)". Ausente/null = ponte ou calculo antigo.
+  saidaCdOrigem?: 'unitrac' | null
+  chegadaCdOrigem?: 'unitrac' | null
+  // F2-06: sem saida observada, pernoite fora da cerca com o rastreador sem
+  // sinal ate' este instante (ponte, saidaSemSinalAte) -- "saida estimada".
+  saidaCdSemSinalAte?: string | null
   tempoOperacaoMin: number | null
   tempoMedioParadaMin: number | null
   status: 'OK' | 'INCOMPLETO'
@@ -417,6 +424,8 @@ export const OBS_NAO_SAIU_DA_BASE = 'VEÍCULO NÃO SAIU DA BASE'
  *  bruto continua em `chegadaCd` de proposito -- `calcularDiaEmAndamento`
  *  precisa saber que o veiculo ja' esta' na base (com null, as NFs da carga
  *  virariam AGUARDANDO e sairiam da taxa num relatorio do mesmo dia). */
-export function chegadaCdExibivel(l: { saidaCd: string | null; chegadaCd: string | null }): string | null {
-  return l.saidaCd ? l.chegadaCd : null
+export function chegadaCdExibivel(l: { saidaCd: string | null; chegadaCd: string | null; saidaCdSemSinalAte?: string | null }): string | null {
+  // F2-06 (RQV9B26 22/10): com a saida estimada (pernoite fora da cerca sem
+  // sinal) a volta a' base e' volta da rota -- a chegada aparece.
+  return l.saidaCd || l.saidaCdSemSinalAte ? l.chegadaCd : null
 }

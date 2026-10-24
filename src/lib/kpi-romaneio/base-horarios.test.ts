@@ -44,6 +44,17 @@ describe('buscarHorariosBase', () => {
     expect(mapa.get('XYZ5678')).toEqual({ saidaBase: null, chegadaBase: null, kmPercorrido: null, apagaoDeSinal: false })
   })
 
+  it('F2-06: saidaSemSinalAte da ponte nova vem mascarado (RQV9B26 22/10, 12:20:15Z = 09:20 BRT); ponte antiga sem o campo nao muda nada', async () => {
+    mockFetchOk([
+      { placa: 'RQV9B26', saidaBase: null, chegadaBase: '2026-10-22T18:16:41.109Z', kmPercorrido: 73.9, saidaSemSinalAte: '2026-10-22T12:20:15.032Z' },
+      { placa: 'RQU8D91', saidaBase: '2026-10-22T10:10:41.655Z', chegadaBase: null, kmPercorrido: 43.9 },
+    ])
+    const mapa = await buscarHorariosBase(['RQV9B26', 'RQU8D91'], '2026-10-22')
+    expect(mapa.get('RQV9B26')?.saidaSemSinalAte).toBe('2026-10-22T09:20:15.032Z')
+    expect(mapa.get('RQV9B26')?.chegadaBase).toBe('2026-10-22T15:16:41.109Z')
+    expect(mapa.get('RQU8D91')).not.toHaveProperty('saidaSemSinalAte')
+  })
+
   it('MOTOR_SECRET ausente: nao chama fetch, devolve mapa vazio', async () => {
     delete process.env.MOTOR_SECRET
     const fetchSpy = vi.spyOn(globalThis, 'fetch')

@@ -11,6 +11,7 @@ import { BASES_COORD_RIOQUALITY, EXTENSAO_RUA_LONGA_M } from './constants'
 import { medirRastroDoDia, type MedicaoRastro } from './km-rastro'
 import { placaSemSinalPelaUnitrac, aplicarTravaSemSinal } from '@/lib/kpi-romaneio/placas-sem-rastreador'
 import { buscarHorariosBase, consumirFalhasPonte } from '@/lib/kpi-romaneio/base-horarios'
+import type { HorarioBase } from '@/lib/kpi-romaneio/base-horarios'
 import { resolverParadas, descartarParadaAbertaAlemDoDia } from '@/lib/kpi-romaneio/unitrac'
 import { lerSnapshotParadas, mesclarParadas } from '@/lib/kpi-romaneio/paradas-snapshot'
 import { foraDoAlcanceApi } from '@/lib/kpi-romaneio/constants'
@@ -135,6 +136,20 @@ export async function buscarParadasPadraoRioQuality(
   return resolverParadas(daUnitrac, horario?.paradas, placaNorm, horario?.apagaoDeSinal ?? false)
 }
 
+/** F2-06 (MON-13): carga sem saida pelo pipeline e a ponte viu a saida no
+ *  GPS -- saida e chegada da ponte (chegada so' quando ela tem). Sem saida na
+ *  ponte, mas com o pernoite sem sinal fora da base, a saida fica estimada. */
+export function completarHorariosPelaPonte(l: LinhaKpiRomaneio, h: HorarioBase | undefined): LinhaKpiRomaneio {
+  if (l.saidaCd != null || !h) return l
+  if (h.saidaBase) {
+    const chegadaCd = h.chegadaBase ?? l.chegadaCd
+    const tempoOperacaoMin = chegadaCd ? Math.round((Date.parse(chegadaCd) - Date.parse(h.saidaBase)) / 60_000) : null
+    return { ...l, saidaCd: h.saidaBase, chegadaCd, tempoOperacaoMin }
+  }
+  if (h.saidaSemSinalAte) return { ...l, saidaCdSemSinalAte: h.saidaSemSinalAte, chegadaCd: h.chegadaBase ?? l.chegadaCd }
+  return l
+}
+
 function agrupar<T>(itens: T[], chave: (item: T) => string): Map<string, T[]> {
   const mapa = new Map<string, T[]>()
   for (const item of itens) {
@@ -168,6 +183,9 @@ export async function gerarKpiRioQuality(params: {
    *  monitoramento primeiro, Unitrac como sinal secundario -- ver
    *  resolverParadas) */
   buscarParadas?: (cv: string, placaNorm: string, data: string) => Promise<UnitracParadaRow[]>
+  /** F2-06: injetavel pra teste; padrao = buscarHorariosBase (saida/chegada
+   *  da base pela ponte, fallback de quem ficou sem saida). */
+  buscarHorariosPonte?: (placasNorm: string[], data: string) => Promise<Map<string, HorarioBase>>
   /** injetavel pra teste; padrao = medirRastroDoDia (rastro da Unitrac:
    *  km do dia + pontos do dia, null = desconhecido) */
   medirRastro?: (cv: string, data: string) => Promise<MedicaoRastro>
@@ -186,6 +204,7 @@ export async function gerarKpiRioQuality(params: {
   const log = params.log ?? (() => {})
   const buscarParadas = params.buscarParadas ?? buscarParadasPadraoRioQuality
   const medirRastro = params.medirRastro ?? ((cv: string, d: string) => medirRastroDoDia(cv, d))
+  const buscarHorariosPonte = params.buscarHorariosPonte ?? ((placas: string[], d: string) => buscarHorariosBase(placas, d))
   const lerSnapshot = params.lerSnapshot ?? lerSnapshotParadas
   const buscarUltimaComunicacao = params.buscarUltimaComunicacao
     ?? (async (cvs: string[]) => new Map([...(await buscarPosicoesPorCv(cvs))].map(([cv, p]) => [cv, p.datagps] as [string, string | null])))
@@ -552,7 +571,7 @@ export async function gerarKpiRioQuality(params: {
 
   // 4) agregacao por carga (= rota) x placa -- sem escala, sem alvos
   const cargasPorChave = agrupar(romaneioGeo, l => `${l.carga}::${normPlaca(l.placa)}`)
-  const linhasKpiAgregadas: LinhaKpiRomaneio[] = [...cargasPorChave.entries()]
+  const linhasKpiDoPipeline: LinhaKpiRomaneio[] = [...cargasPorChave.entries()]
     .map(([chave, linhasDaCarga]) => {
       const [carga, placaNorm] = chave.split('::')
       return agregarPorCarga(
@@ -569,6 +588,13 @@ export async function gerarKpiRioQuality(params: {
       )
     })
     .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
+  // F2-06 (MON-13): saida nula pelos eventos BASE (base unica, 51 de 88 placas
+  // em 20/10) -- a ponte do monitoramento (cruzamento da cerca no GPS) entra
+  // como fallback. Uma chamada em lote, so' das placas sem saida.
+  const placasSemSaida = [...new Set(linhasKpiDoPipeline
+    .filter(l => l.saidaCd == null && temRastreadorPorPlaca.get(l.placa)).map(l => l.placa))]
+  const horarioPonte = placasSemSaida.length > 0 ? await buscarHorariosPonte(placasSemSaida, data) : new Map<string, HorarioBase>()
+  const linhasKpiAgregadas = linhasKpiDoPipeline.map(l => completarHorariosPelaPonte(l, horarioPonte.get(l.placa)))
   const resumoPorChave = new Map(linhasKpiAgregadas.map(l => [`${l.carga}::${l.placa}`, l]))
 
   const contStatus: Record<string, number> = {}
