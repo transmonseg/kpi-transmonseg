@@ -139,15 +139,47 @@ export async function buscarParadasPadraoRioQuality(
 /** F2-06 (MON-13): carga sem saida pelo pipeline e a ponte viu a saida no
  *  GPS -- saida e chegada da ponte (chegada so' quando ela tem). Sem saida na
  *  ponte, mas com o pernoite sem sinal fora da base, a saida fica estimada. */
-export function completarHorariosPelaPonte(l: LinhaKpiRomaneio, h: HorarioBase | undefined): LinhaKpiRomaneio {
-  if (l.saidaCd != null || !h) return l
-  if (h.saidaBase) {
-    const chegadaCd = h.chegadaBase ?? l.chegadaCd
+export function completarHorariosPelaPonte(
+  l: LinhaKpiRomaneio, h: HorarioBase | undefined,
+  // F2-REV-05: a saida/chegada da ponte sao do DIA da placa -- com 2+ cargas
+  // no dia, so' a primeira leva a saida e so' a ultima a chegada.
+  papel: { primeira: boolean; ultima: boolean } = { primeira: true, ultima: true },
+): LinhaKpiRomaneio {
+  if (l.saidaCd != null || !h || (!papel.primeira && !papel.ultima)) return l
+  const chegadaCd = (papel.ultima ? h.chegadaBase : null) ?? l.chegadaCd
+  if (h.saidaBase && papel.primeira) {
     const tempoOperacaoMin = chegadaCd ? Math.round((Date.parse(chegadaCd) - Date.parse(h.saidaBase)) / 60_000) : null
     return { ...l, saidaCd: h.saidaBase, chegadaCd, tempoOperacaoMin }
   }
-  if (h.saidaSemSinalAte) return { ...l, saidaCdSemSinalAte: h.saidaSemSinalAte, chegadaCd: h.chegadaBase ?? l.chegadaCd }
+  if (h.saidaSemSinalAte && papel.primeira) return { ...l, saidaCdSemSinalAte: h.saidaSemSinalAte, chegadaCd }
+  if ((h.saidaBase || h.saidaSemSinalAte) && chegadaCd !== l.chegadaCd) return { ...l, chegadaCd }
   return l
+}
+
+/** F2-REV-05: completarHorariosPelaPonte do dia inteiro. Por placa, a carga
+ *  com a entrega mais cedo (janela[chave].primeira) e' a primeira e a com a
+ *  entrega mais tarde (.ultima) e' a ultima -- podem ser a mesma; sem horario
+ *  de entrega, vale o numero do romaneio. As do meio ficam como vieram (a
+ *  ponte nao tem saida/chegada por carga). Chave da janela: `carga::placa`. */
+export function completarHorariosDoDiaPelaPonte(
+  linhas: LinhaKpiRomaneio[], horarioPonte: Map<string, HorarioBase>,
+  janelaPorCarga: Map<string, { primeira: string | null; ultima: string | null }>,
+): LinhaKpiRomaneio[] {
+  const porPlaca = agrupar(linhas, l => l.placa)
+  const primeiraPorPlaca = new Map<string, string>()
+  const ultimaPorPlaca = new Map<string, string>()
+  const cmpCarga = (a: string, b: string) => a.localeCompare(b, 'pt-BR', { numeric: true })
+  for (const [placa, ls] of porPlaca) {
+    const cargas = [...new Set(ls.map(l => l.carga))]
+    const j = (c: string) => janelaPorCarga.get(`${c}::${placa}`)
+    const ini = (c: string) => (j(c)?.primeira ? Date.parse(j(c)!.primeira!) : Infinity)
+    const fim = (c: string) => (j(c)?.ultima ? Date.parse(j(c)!.ultima!) : -Infinity)
+    primeiraPorPlaca.set(placa, [...cargas].sort((a, b) => ini(a) - ini(b) || cmpCarga(a, b))[0])
+    ultimaPorPlaca.set(placa, [...cargas].sort((a, b) => fim(b) - fim(a) || cmpCarga(b, a))[0])
+  }
+  return linhas.map(l => completarHorariosPelaPonte(l, horarioPonte.get(l.placa), {
+    primeira: primeiraPorPlaca.get(l.placa) === l.carga, ultima: ultimaPorPlaca.get(l.placa) === l.carga,
+  }))
 }
 
 function agrupar<T>(itens: T[], chave: (item: T) => string): Map<string, T[]> {
@@ -601,7 +633,14 @@ export async function gerarKpiRioQuality(params: {
   const placasSemSaida = [...new Set(linhasKpiDoPipeline
     .filter(l => l.saidaCd == null && temRastreadorPorPlaca.get(l.placa)).map(l => l.placa))]
   const horarioPonte = placasSemSaida.length > 0 ? await buscarHorariosPonte(placasSemSaida, data) : new Map<string, HorarioBase>()
-  const linhasKpiAgregadas = linhasKpiDoPipeline.map(l => completarHorariosPelaPonte(l, horarioPonte.get(l.placa)))
+  // F2-REV-05: ordem das cargas da placa pelas entregas vistas no GPS.
+  const janelaPorCarga = new Map<string, { primeira: string | null; ultima: string | null }>()
+  for (const [chave, linhasDaCarga] of cargasPorChave) {
+    const visitas = visitasPorPlaca.get(chave.split('::')[1])
+    const horas = linhasDaCarga.map(l => visitas?.get(l.nf)?.chegada).filter((h): h is string => !!h).sort((a, b) => Date.parse(a) - Date.parse(b))
+    janelaPorCarga.set(chave, { primeira: horas[0] ?? null, ultima: horas[horas.length - 1] ?? null })
+  }
+  const linhasKpiAgregadas = completarHorariosDoDiaPelaPonte(linhasKpiDoPipeline, horarioPonte, janelaPorCarga)
   const resumoPorChave = new Map(linhasKpiAgregadas.map(l => [`${l.carga}::${l.placa}`, l]))
 
   const contStatus: Record<string, number> = {}

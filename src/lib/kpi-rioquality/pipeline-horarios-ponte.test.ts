@@ -21,7 +21,7 @@ vi.mock('@/lib/kpi-romaneio/geocode-ancoras', () => ({ reposicionarPorAncoras: v
 vi.mock('./enviar-monitoramento-rq', () => ({ buscarCoordenadasMonitoramentoRQ: vi.fn(async () => new Map()) }))
 vi.mock('./cache-corredor', () => ({ lerCorredorDoCache: vi.fn(async () => new Map()), gravarCorredorNoCache: vi.fn(async () => 0) }))
 
-import { gerarKpiRioQuality, completarHorariosPelaPonte } from './pipeline'
+import { gerarKpiRioQuality, completarHorariosPelaPonte, completarHorariosDoDiaPelaPonte } from './pipeline'
 import type { LinhaKpiRomaneio } from '@/lib/kpi-romaneio/types'
 
 const p = (id: string, chegada: string, fim: string, lat: number, lng: number, classificacao = 'FORA_BASE'): UnitracParadaRow => ({
@@ -70,5 +70,57 @@ describe('completarHorariosPelaPonte', () => {
     const r = completarHorariosPelaPonte(l, { saidaBase: null, chegadaBase: null, kmPercorrido: 1, saidaSemSinalAte: '2026-10-22T07:02:00.000Z' })
     expect(r.saidaCd).toBeNull()
     expect(r.saidaCdSemSinalAte).toBe('2026-10-22T07:02:00.000Z')
+  })
+})
+
+// F2-REV-05 (revisao independente da Fase 2): a saida/chegada da ponte e' do
+// DIA da placa; aplicada a cada carga sem saida, com 2+ romaneios da mesma
+// placa no dia todas ficavam com a saida da manha e a chegada da noite.
+// Casos reais da RQ em 02/10 (kpi_ao_vivo_dia + kpi_ao_vivo_calculo):
+// - RTL4B31: 1160093 (11 NFs, 07:55-10:11) e 1160498 (1 NF, 16:25); ponte
+//   saida 04:35, chegada 20:20.
+// - RUT6A52: 1160456 (2 NFs, 06:18 e 15:22) e 1160116 (7 NFs, 08:31-11:01);
+//   ponte saida 05:57, chegada 18:55.
+describe('F2-REV-05: completarHorariosDoDiaPelaPonte', () => {
+  const linha = (carga: string, placa: string) => ({ carga, placa, saidaCd: null, chegadaCd: null, tempoOperacaoMin: null }) as unknown as LinhaKpiRomaneio
+  const ponte = (saida: string, chegada: string) => ({ saidaBase: `2026-10-02T${saida}:00.000Z`, chegadaBase: `2026-10-02T${chegada}:00.000Z`, kmPercorrido: 1 })
+  const j = (ini: string, fim: string) => ({ primeira: `2026-10-02T${ini}:00.000Z`, ultima: `2026-10-02T${fim}:00.000Z` })
+  it('RTL4B31: só a 1ª carga recebe a saída e só a última a chegada', () => {
+    const r = completarHorariosDoDiaPelaPonte(
+      [linha('1160093', 'RTL4B31'), linha('1160498', 'RTL4B31')],
+      new Map([['RTL4B31', ponte('04:35', '20:20')]]),
+      new Map([['1160093::RTL4B31', j('07:55', '10:11')], ['1160498::RTL4B31', j('16:25', '16:25')]]),
+    )
+    expect(r.map(l => [l.carga, l.saidaCd, l.chegadaCd])).toEqual([
+      ['1160093', '2026-10-02T04:35:00.000Z', null],
+      ['1160498', null, '2026-10-02T20:20:00.000Z'],
+    ])
+    expect(r.map(l => l.tempoOperacaoMin)).toEqual([null, null])
+  })
+  it('RUT6A52: a carga com a 1ª e a última entrega do dia leva as duas; a do meio fica sem', () => {
+    const r = completarHorariosDoDiaPelaPonte(
+      [linha('1160116', 'RUT6A52'), linha('1160456', 'RUT6A52')],
+      new Map([['RUT6A52', ponte('05:57', '18:55')]]),
+      new Map([['1160456::RUT6A52', j('06:18', '15:22')], ['1160116::RUT6A52', j('08:31', '11:01')]]),
+    )
+    expect(r.map(l => [l.carga, l.saidaCd, l.chegadaCd])).toEqual([
+      ['1160116', null, null],
+      ['1160456', '2026-10-02T05:57:00.000Z', '2026-10-02T18:55:00.000Z'],
+    ])
+    expect(r[1].tempoOperacaoMin).toBe(778)
+  })
+  it('carga única da placa no dia: igual a antes (saída e chegada)', () => {
+    const [r] = completarHorariosDoDiaPelaPonte([linha('1168659', 'LTT9C55')], new Map([['LTT9C55', ponte('06:24', '23:10')]]), new Map())
+    expect([r.saidaCd, r.chegadaCd]).toEqual(['2026-10-02T06:24:00.000Z', '2026-10-02T23:10:00.000Z'])
+  })
+  it('sem entrega com horário em nenhuma carga: ordem pelo número do romaneio', () => {
+    const r = completarHorariosDoDiaPelaPonte(
+      [linha('1160498', 'RTL4B31'), linha('1160093', 'RTL4B31')],
+      new Map([['RTL4B31', ponte('04:35', '20:20')]]), new Map(),
+    )
+    expect(r.map(l => [l.carga, l.saidaCd, l.chegadaCd])).toEqual([
+      ['1160498', null, '2026-10-02T20:20:00.000Z'],
+      ['1160093', '2026-10-02T04:35:00.000Z', null],
+    ])
   })
 })
