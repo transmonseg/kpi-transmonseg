@@ -113,3 +113,29 @@ describe('F2-03: Ao vivo da RQ com ponto, parada e investigação', () => {
     expect(g.ultimo_erro).toBeUndefined()
   })
 })
+
+// F2-REV-04 (revisao independente da Fase 2): o ponto do fallback do
+// monitoramento (pipeline.ts: geoConfiavel=false, precisao 'rua' -- nao
+// sustenta NAO FOI no KPI) chegava ao Ao vivo como qualquer outro. A
+// investigacao afirmava "Nao chegou perto (mais de 2 km) -- O carro nao passou
+// no cliente" sobre esse ponto, e o alarme contava o dia como "com coordenada".
+// Caso: a mesma NF 5558931 (TTU9G22 23/10) com o ponto vindo do fallback.
+describe('F2-REV-04: ponto não confiável no Ao vivo da RQ', () => {
+  const geoImpreciso = (todas: boolean) => geo(-22.3842593).map(l => (todas || l.nf === '5558931' ? { ...l, geoConfiavel: false, geoPrecisao: 'rua' } : l))
+  it('5558931 com ponto do fallback (geoConfiavel=false): não afirma "não chegou perto"', async () => {
+    c.detalheRq = { romaneioGeo: geoImpreciso(false), detalhe: DETALHE, paradasPorPlaca: new Map([['TTU9G22', PARADAS]]), menorDistanciaTrajetoPorNf: new Map() }
+    expect(await calcularAoVivo('rioquality', '2026-10-23')).toBe('ok')
+    const g = c.updates.find(u => 'resultado' in u) as unknown as Gravado
+    const pendente = g.resultado.placas[0].nfs.find(n => n.nf === '5558931')!
+    expect(pendente.investigacao?.categoria).not.toBe('nao_chegou_perto')
+    expect(pendente.investigacao?.categoria).toBe('ponto_impreciso')
+    expect(g.ultimo_erro).toBeUndefined()
+  })
+  it('todas as NFs só com ponto não confiável: o alarme dispara (ponto não confiável não conta como "com coordenada")', async () => {
+    c.detalheRq = { romaneioGeo: geoImpreciso(true), detalhe: DETALHE, paradasPorPlaca: new Map([['TTU9G22', PARADAS]]), menorDistanciaTrajetoPorNf: new Map() }
+    expect(await calcularAoVivo('rioquality', '2026-10-23')).toBe('ok')
+    const g = c.updates.find(u => 'resultado' in u) as unknown as Gravado
+    expect(g.resultado.avisos?.some(a => /ponto confiável/i.test(a))).toBe(true)
+    expect(String(g.ultimo_erro)).toMatch(/ponto confiável/i)
+  })
+})

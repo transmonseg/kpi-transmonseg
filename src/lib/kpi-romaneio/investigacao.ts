@@ -10,7 +10,7 @@ import { haversine } from '@/lib/utils/geo'
 import { normPlaca } from '@/lib/unitrac-api/frota'
 import { PREFIXO_OBS_SEM_SINAL_NO_TRECHO } from './buraco-sinal'
 
-export type CategoriaInvestigacao = 'parou_no_cliente' | 'parou_perto' | 'passou_sem_parar' | 'parou_na_regiao' | 'nao_chegou_perto' | 'sem_gps' | 'sem_coordenada' | 'sem_sinal_no_trecho'
+export type CategoriaInvestigacao = 'parou_no_cliente' | 'parou_perto' | 'passou_sem_parar' | 'parou_na_regiao' | 'nao_chegou_perto' | 'sem_gps' | 'sem_coordenada' | 'sem_sinal_no_trecho' | 'ponto_impreciso'
 
 export type Investigacao = {
   categoria: CategoriaInvestigacao
@@ -49,6 +49,10 @@ export function investigarNf(n: NfAoVivo, paradas: UnitracParadaRow[], trajetoM?
   // Horário da Unitrac é Brasília mascarado como UTC: o HH:MM do ISO já é o de Brasília.
   const ini = Date.parse(melhor.p.chegada)
   const fim = Date.parse(melhor.p.fim_real ?? melhor.p.saida ?? melhor.p.chegada)
+  // F2-REV-04: ponto nao confiavel (so' a rua, fallback do monitoramento) nao
+  // sustenta "nao passou"/"so' na regiao" -- mesma regra do KPI, que nunca
+  // afirma NAO FOI com ele. Parada perto continua (e' so' um "conferir").
+  if (n.pontoImpreciso && d > PERTO_M) return VAZIA('ponto_impreciso')
   const categoria: CategoriaInvestigacao = d <= NO_CLIENTE_M ? 'parou_no_cliente' : d <= PERTO_M ? 'parou_perto' : d <= REGIAO_M ? 'parou_na_regiao' : 'nao_chegou_perto'
   return { categoria, distM: d, hora: melhor.p.chegada.slice(11, 16), minutos: Number.isFinite(fim - ini) ? Math.max(0, Math.round((fim - ini) / 60_000)) : null }
 }
@@ -68,7 +72,9 @@ export function investigarPlacas(placas: PlacaAoVivo[], paradasPorPlaca: Map<str
  *  não entregues sem nenhum erro registrado). null = há ponto em alguma NF. */
 export function alarmeSemCoordenada(placas: PlacaAoVivo[]): string | null {
   const nfs = placas.flatMap(p => p.nfs)
-  if (nfs.length === 0 || nfs.some(n => n.lat != null && n.lng != null)) return null
-  const investigadas = nfs.filter(n => n.investigacao?.categoria === 'sem_coordenada').length
-  return `Nenhuma NF com ponto do cliente neste cálculo (${nfs.length} NFs sem coordenada; ${investigadas} não entregues saem "Cliente sem coordenada") — o mapa e a investigação estão cegos. Avisar o suporte.`
+  // F2-REV-04: ponto nao confiavel nao conta como "com coordenada".
+  if (nfs.length === 0 || nfs.some(n => n.lat != null && n.lng != null && !n.pontoImpreciso)) return null
+  const investigadas = nfs.filter(n => n.investigacao?.categoria === 'sem_coordenada' || n.investigacao?.categoria === 'ponto_impreciso').length
+  const imprecisas = nfs.filter(n => n.lat != null && n.pontoImpreciso).length
+  return `Nenhuma NF com ponto confiável do cliente neste cálculo (${nfs.length - imprecisas} NFs sem coordenada${imprecisas ? `, ${imprecisas} só com ponto aproximado` : ''}; ${investigadas} não entregues sem investigação pelo ponto) — o mapa e a investigação estão cegos. Avisar o suporte.`
 }

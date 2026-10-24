@@ -62,3 +62,15 @@ describe('investigarPlacas + resumirInvestigacao', () => {
     expect(r.placas.map(p => [p.placa, p.naoEntregues])).toEqual([['ABC-1D23', 1], ['XYZ9A99', 1]])
   })
 })
+
+// F2-REV-04: ponto nao confiavel (so' a rua) nao sustenta "nao passou".
+describe('F2-REV-04: investigarNf com ponto aproximado', () => {
+  it('parada a mais de 500 m de ponto aproximado: ponto_impreciso, sem distancia', () => {
+    expect(investigarNf(nf({ pontoImpreciso: true }), [parada(5000)])).toEqual({ categoria: 'ponto_impreciso', distM: null, hora: null, minutos: null })
+    expect(investigarNf(nf({ pontoImpreciso: true }), [parada(1500)]).categoria).toBe('ponto_impreciso')
+  })
+  it('parada perto do ponto aproximado continua "conferir" (parou no cliente/perto)', () => {
+    expect(investigarNf(nf({ pontoImpreciso: true }), [parada(120)]).categoria).toBe('parou_no_cliente')
+    expect(investigarNf(nf({ pontoImpreciso: true }), [parada(300)]).categoria).toBe('parou_perto')
+  })
+})
