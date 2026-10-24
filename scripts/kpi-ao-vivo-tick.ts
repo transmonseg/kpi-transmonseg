@@ -127,7 +127,8 @@ export async function fecharDiaAnterior() {
       // Ate' as 06h BRT espera o proximo tick; depois fecha com o que tem.
       if (s === 'erro' && horaBRAgora() < 6) { log(`ao vivo ${cliente} ${ontem}: fechamento adiado (Fusion fora)`); continue }
     }
-    const r = await calcularAoVivo(cliente, ontem, log)
+    // F3-R10: so' o fechamento (e a reconferencia abaixo) publica no Dashboard.
+    const r = await calcularAoVivo(cliente, ontem, log, { publicarFechamento: true })
     if (r !== 'ok') log(`ao vivo ${cliente} ${ontem} (fechamento): ${r}`)
   }
 }
@@ -142,7 +143,7 @@ export async function reconferirTerritorioDiaAnterior() {
     const row = { calculado_em: (data?.calculado_em as string | null) ?? null, ultimo_erro: (data?.ultimo_erro as string | null) ?? null, ultimo_erro_em: (data?.ultimo_erro_em as string | null) ?? null }
     if (!precisaReconferirTerritorio(row, ontem, Date.now())) continue
     log(`ao vivo ${cliente} ${ontem}: fechamento saiu sem a conferencia de endereco -- refazendo`)
-    const r = await calcularAoVivo(cliente, ontem, log)
+    const r = await calcularAoVivo(cliente, ontem, log, { publicarFechamento: true })
     log(`ao vivo ${cliente} ${ontem} (reconferencia de territorio): ${r}`)
   }
 }

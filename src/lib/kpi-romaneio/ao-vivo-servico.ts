@@ -291,7 +291,15 @@ export async function contextoSugestaoTroca(data: string, paoHoje: { carga: stri
 
 /** Roda o KPI com o romaneio guardado e grava o resultado da tela.
  *  Outro cálculo rodando: não faz nada ('ocupado'). Sem romaneio: 'sem_romaneio'. */
-export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: (m: string) => void = () => {}): Promise<'ok' | 'ocupado' | 'sem_romaneio' | 'erro'> {
+export type OpcoesCalculoAoVivo = {
+  /** F3-R10: só o fechamento das 00:30 e a reconferência das 05:30 (tick)
+   *  publicam sozinhos no Dashboard. Recálculo de dia passado vindo da tela
+   *  (troca de placa, "Puxar da Fusion", reenvio do romaneio) vira só a oferta
+   *  "Fechamento disponível" -- trocar o número oficial é clique humano. */
+  publicarFechamento?: boolean
+}
+
+export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: (m: string) => void = () => {}, opcoes: OpcoesCalculoAoVivo = {}): Promise<'ok' | 'ocupado' | 'sem_romaneio' | 'erro'> {
   const temDia = cliente === 'rioquality' ? await entradaRioQualityDoDia(data) : await entradaDoDia(cliente, data)
   if (!temDia) return 'sem_romaneio'
   if (!(await travar(cliente, data))) return 'ocupado'
@@ -428,8 +436,12 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     // parcial grava; inserido a mao e diferente vira "Fechamento disponivel").
     // Calculo incompleto (degradado, fonte que nao leu) fica fora. Fail-open.
     if (data < hojeBR() && !r.degradado && !r.avisosFonte) {
-      await publicarFechamentoNoDashboard({ cliente, data, xlsx: r.xlsx, lido, calculadoEm: resultado.calculadoEm, log })
-        .catch(e => log(`dashboard ${cliente} ${data}: fechamento não gravado (${e instanceof Error ? e.message : String(e)})`))
+      if (opcoes.publicarFechamento) {
+        await publicarFechamentoNoDashboard({ cliente, data, xlsx: r.xlsx, lido, calculadoEm: resultado.calculadoEm, log })
+          .catch(e => log(`dashboard ${cliente} ${data}: fechamento não gravado (${e instanceof Error ? e.message : String(e)})`))
+      } else {
+        log(`dashboard ${cliente} ${data}: recálculo fora do fechamento não grava sozinho; se diferir do Dashboard, aparece "Fechamento disponível" para trocar`)
+      }
     }
     log(`ao vivo ${cliente} ${data}: ok em ${Math.round((Date.now() - t0) / 1000)}s (${resultado.resumo.feitas}/${resultado.resumo.totalNfs})`)
     return 'ok'

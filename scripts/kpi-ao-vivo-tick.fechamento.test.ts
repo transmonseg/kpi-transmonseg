@@ -17,7 +17,7 @@ const fusion = vi.hoisted(() => ({ falha: false }))
 vi.mock('../src/lib/kpi-rioquality/fonte-fusion', () => ({ buscarDiaRioQualityFusion: vi.fn(async (d: string) => { ordem.push(`fusion ${d}`); if (fusion.falha) throw new Error('fetch failed'); return [] }) }))
 vi.mock('../src/lib/kpi-romaneio/ao-vivo-servico', () => ({
   CLIENTES_AO_VIVO: ['rioquality'],
-  calcularAoVivo: vi.fn(async (c: string, d: string) => { ordem.push(`calculo ${c} ${d}`); return 'ok' }),
+  calcularAoVivo: vi.fn(async (c: string, d: string, _l?: unknown, o?: { publicarFechamento?: boolean }) => { ordem.push(`calculo ${c} ${d}${o?.publicarFechamento ? ' (publica)' : ''}`); return 'ok' }),
   guardarDiaAoVivo: vi.fn(),
   fonteDoDiaAoVivo: vi.fn(async () => 'fusion'),
   limparXlsxAoVivo: vi.fn(),
@@ -28,7 +28,7 @@ describe('fecharDiaAnterior', () => {
     vi.setSystemTime(new Date('2026-10-21T04:00:00Z')) // 01:00 BRT
     const { fecharDiaAnterior } = await import('./kpi-ao-vivo-tick')
     await fecharDiaAnterior()
-    expect(ordem).toEqual(['fusion 2026-10-20', 'calculo rioquality 2026-10-20'])
+    expect(ordem).toEqual(['fusion 2026-10-20', 'calculo rioquality 2026-10-20 (publica)'])
     vi.useRealTimers()
   })
   // Revisao final 23/10: com o tunel caido, o fechamento gravava calculado_em
@@ -46,7 +46,7 @@ describe('fecharDiaAnterior', () => {
     vi.setSystemTime(new Date('2026-10-21T09:10:00Z')) // 06:10 BRT
     const { fecharDiaAnterior } = await import('./kpi-ao-vivo-tick')
     await fecharDiaAnterior()
-    expect(ordem).toEqual(['fusion 2026-10-20', 'calculo rioquality 2026-10-20'])
+    expect(ordem).toEqual(['fusion 2026-10-20', 'calculo rioquality 2026-10-20 (publica)'])
     vi.useRealTimers()
   })
 })
@@ -62,7 +62,7 @@ describe('reconferirTerritorioDiaAnterior (F1-11)', () => {
     vi.setSystemTime(new Date('2026-10-23T08:40:00Z'))
     const { reconferirTerritorioDiaAnterior } = await import('./kpi-ao-vivo-tick')
     await reconferirTerritorioDiaAnterior()
-    expect(ordem).toEqual(['calculo rioquality 2026-10-22'])
+    expect(ordem).toEqual(['calculo rioquality 2026-10-22 (publica)'])
     vi.useRealTimers()
   })
   it('04:50 BRT: ainda nao', async () => {

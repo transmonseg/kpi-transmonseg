@@ -64,26 +64,45 @@ afterEach(() => { vi.useRealTimers() })
 
 describe('F3-01: o fechamento das 00:30 vai ao Dashboard', () => {
   it('RQ 22/10 fechado: publica a planilha final com a taxa do fechamento', async () => {
-    expect(await calcularAoVivo('rioquality', '2026-10-22')).toBe('ok')
+    expect(await calcularAoVivo('rioquality', '2026-10-22', undefined, { publicarFechamento: true })).toBe('ok')
     expect(c.publicados).toEqual([{ cliente: 'rioquality', data: '2026-10-22', calculadoEm: '2026-10-23T03:31:15.000Z', xlsx: 'planilha-final', taxa: 91.4 }])
   })
   it('calculo do dia corrente nao mexe no Dashboard', async () => {
-    expect(await calcularAoVivo('rioquality', '2026-10-23')).toBe('ok')
+    expect(await calcularAoVivo('rioquality', '2026-10-23', undefined, { publicarFechamento: true })).toBe('ok')
     expect(c.publicados).toEqual([])
   })
   it('fechamento degradado (ponte de coerencia fora, sem resultado bom): nao vai ao Dashboard', async () => {
     c.coerenciaFalhou = 200
-    await calcularAoVivo('rioquality', '2026-10-22')
+    await calcularAoVivo('rioquality', '2026-10-22', undefined, { publicarFechamento: true })
     expect(c.publicados).toEqual([])
   })
   it('fechamento degradado que mantem o resultado anterior: nao vai ao Dashboard', async () => {
     c.coerenciaFalhou = 200
     c.resultadoAnterior = { placas: [] }
-    expect(await calcularAoVivo('rioquality', '2026-10-22')).toBe('erro')
+    expect(await calcularAoVivo('rioquality', '2026-10-22', undefined, { publicarFechamento: true })).toBe('erro')
     expect(c.publicados).toEqual([])
   })
   it('falha ao gravar no Dashboard nao derruba o calculo do Ao vivo', async () => {
     c.publicarFalha = true
-    expect(await calcularAoVivo('rioquality', '2026-10-22')).toBe('ok')
+    expect(await calcularAoVivo('rioquality', '2026-10-22', undefined, { publicarFechamento: true })).toBe('ok')
+  })
+})
+
+// F3-R10: só o fechamento (00:30) e a reconferência das 05:30 do tick publicam
+// sozinhos. Troca de placa em 22/10 feita em 26/10, "Puxar da Fusion" com
+// ?data= passada ou reenvio do romaneio recalculam o dia mas não trocam o
+// número oficial: viram a oferta "Fechamento disponível" (clique humano).
+describe('F3-R10: recálculo de dia passado fora do fechamento não publica', () => {
+  it('troca de placa em 22/10 feita em 26/10 (sem a marca do fechamento): Dashboard intocado', async () => {
+    vi.setSystemTime(new Date('2026-10-26T15:00:00Z'))
+    const log: string[] = []
+    expect(await calcularAoVivo('rioquality', '2026-10-22', m => log.push(m))).toBe('ok')
+    expect(c.publicados).toEqual([])
+    expect(log.some(l => /Fechamento disponível/.test(l))).toBe(true)
+  })
+  it('a marca explícita do fechamento continua publicando', async () => {
+    vi.setSystemTime(new Date('2026-10-26T15:00:00Z'))
+    await calcularAoVivo('rioquality', '2026-10-22', undefined, { publicarFechamento: true })
+    expect(c.publicados).toHaveLength(1)
   })
 })
