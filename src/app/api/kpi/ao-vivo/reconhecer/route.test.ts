@@ -13,6 +13,8 @@ vi.mock('@/lib/kpi-romaneio/reconhecer-arquivo', async importOriginal => ({
     est.lidos.push(nome)
     if (nome.startsWith('8012')) return { nome, tipo: 'romaneio_entrega', cliente: 'nutrimax', campo: 'romaneio', data: '2026-10-23', contagens: { notas: 2327, cargas: 76 }, resumo: 'Romaneio de Entrega da Nutry de 23/10 — 2.327 notas, 76 cargas' }
     if (nome.startsWith('Escala de rotas')) return { nome, tipo: 'escala_portofrio', cliente: 'portofrio', campo: null, data: null, contagens: { entregas: 273, rotas: 14 }, resumo: 'Escala de rotas da Porto Frio — 273 entregas, 14 rotas' }
+    if (nome.startsWith('8081-vespera')) return { nome, tipo: 'escala_rota', cliente: 'nutrimax', campo: 'escala', data: null, impressaEm: '2026-10-22', contagens: { cargas: 77 }, resumo: 'Escala de Rota da Nutry (impressa em 22/10) — 77 cargas' }
+    if (nome.startsWith('8081-antiga')) return { nome, tipo: 'escala_rota', cliente: 'nutrimax', campo: 'escala', data: '2026-10-22', contagens: { cargas: 77 }, resumo: 'x' }
     if (nome.startsWith('velho')) return { nome, tipo: 'romaneio_entrega', cliente: 'nutrimax', campo: 'romaneio', data: '2026-10-22', contagens: { notas: 1, cargas: 1 }, resumo: 'x' }
     return { nome, tipo: 'desconhecido', cliente: null, campo: null, data: null, contagens: {}, resumo: 'Não reconheci este arquivo' }
   },
@@ -46,6 +48,17 @@ describe('POST /api/kpi/ao-vivo/reconhecer (F3-06)', () => {
   it('documento de outro dia: avisa já no reconhecimento (o envio recusa)', async () => {
     const j = await (await POST(req('nutrimax', ['velho.pdf']))).json() as { arquivos: { serve: boolean; motivo?: string }[] }
     expect(j.arquivos[0]).toMatchObject({ serve: false, motivo: 'É do dia 22/10, não de hoje (23/10).' })
+  })
+
+  it('escala impressa na véspera entra (F3-R05: a conferência é pelas cargas, no envio)', async () => {
+    const j = await (await POST(req('nutrimax', ['8081-vespera.pdf']))).json() as { arquivos: { serve: boolean; motivo?: string }[] }
+    expect(j.arquivos[0]).toMatchObject({ serve: true })
+    expect(j.arquivos[0].motivo).toBeUndefined()
+  })
+
+  it('escala nunca é recusada pela data, mesmo vinda com data de outro leitor', async () => {
+    const j = await (await POST(req('nutrimax', ['8081-antiga.pdf']))).json() as { arquivos: { serve: boolean }[] }
+    expect(j.arquivos[0].serve).toBe(true)
   })
 
   it('sem permissão: 403 e nada é lido', async () => {

@@ -26,7 +26,9 @@ export async function POST(req: NextRequest) {
       const nome = r.cliente === 'nutrimax' || r.cliente === 'rioquality' ? NOME_CLIENTE[r.cliente] : ''
       return { ...r, serve: false, motivo: `É da ${nome} — suba no Ao vivo da ${nome}.` }
     }
-    if (r.data && r.data !== hoje) return { ...r, serve: false, motivo: `É do dia ${br(r.data)}, não de hoje (${br(hoje)}).` }
+    // F3-R05: a Escala 8081 só traz a data de impressão; ela é conferida
+    // pelas cargas do romaneio no envio (F1-13), não pela data.
+    if (r.tipo !== 'escala_rota' && r.data && r.data !== hoje) return { ...r, serve: false, motivo: `É do dia ${br(r.data)}, não de hoje (${br(hoje)}).` }
     return { ...r, serve: true }
   })
   return NextResponse.json({ hoje, arquivos: resposta })

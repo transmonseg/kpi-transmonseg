@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import * as XLSX from 'xlsx'
-import { classificarTexto, contarPortoFrio, reconhecerArquivo, cabeNoAoVivo } from './reconhecer-arquivo'
+import { classificarTexto, contarPortoFrio, reconhecerArquivo, cabeNoAoVivo, dataImpressaDaEscala, resumoDoArquivo } from './reconhecer-arquivo'
 import { CABECALHO_55, LINHAS_55 } from '@/lib/kpi-rioquality/entregas-55col.fixture'
 
 // F3-06 (ING-10): trechos reais (pdf-parse) dos 4 documentos da auditoria de
@@ -12,6 +12,19 @@ const TEXTO_8012 = '\n\n8012 - Romaneio de Entrega\n23/10/2026 06:51\nPLACA/MOTO
 const TEXTO_8081 = '\n\n8081 - Escala de Rota\n23/10/2026 03:38Page 1 of 3\nCAMPOS CROSS\nCARGAVEICULODESTINOPESOENTNFMOTORISTAAJUDANTE 1DUPLICADOAJUDANTE 2\n10071683 - RQV9E37CAMPOS1.4142828HUGO LEONARDO MARQUES PIRES(CAMPOS)\n'
 const TEXTO_JAC = '\n\nDATA23/10/2026\nROMANEIO1MOTORISTAAJUDANTE\nCARRO36RBI-1J86\nLuis Paulo-\nORDEMNOTA FISCALCLIENTEENDEREÇOBAIRROQTD CAIXASPESO BRUTO PESO LÍQUIDOVALOR BRUTO\n5\n217492HORTIFRUTI HUMAITA   RUA DO HUMAITA,150   HUMAITA   751,149922,78R$\n'
 const TEXTO_PORTOFRIO = '\n\nRotaPlacaRomaneioRazão socialEndereçoNúmeroCEPBairroCidadeUFRemetente\nOrdem de\natendimento\n42121TAM6J7442121GPANIC PUB E GASTROBAR LTDARUA FELICIO RICIO1928470000TAVARES\nSANTO ANTONIO DE\nPADUA\nRJ-1\n42121TAM6J7442121ADILSON PINTO NUNES MEPRACA TOLEDO PIZA3628570000CENTROITAOCARARJ-2\n42122RKT3A9342122MERCADO X LTDARUA Y1028470000CENTROPADUARJ-1\n'
+
+describe('Escala 8081: a data do texto é a da IMPRESSÃO, não o dia da operação (F3-R05)', () => {
+  // A escala de 25/10 impressa em 24/10 às 23:40 era marcada "de outro dia" e
+  // ficava fora do envio; o F1-13 valida a escala pelas cargas do romaneio.
+  const impressaNaVespera = TEXTO_8081.replace('23/10/2026 03:38', '24/10/2026 23:40')
+  it('lê a data impressa só como informação', () => {
+    expect(dataImpressaDaEscala(TEXTO_8081)).toBe('2026-10-23')
+    expect(dataImpressaDaEscala(impressaNaVespera)).toBe('2026-10-24')
+  })
+  it('o recibo diz "impressa em", não "de"', () => {
+    expect(resumoDoArquivo('escala_rota', null, { cargas: 77 }, '2026-10-24')).toBe('Escala de Rota da Nutry (impressa em 24/10) — 77 cargas')
+  })
+})
 
 describe('classificarTexto (F3-06): detector por assinatura', () => {
   it('8012 - Romaneio de Entrega', () => expect(classificarTexto(TEXTO_8012)).toBe('romaneio_entrega'))
@@ -72,8 +85,8 @@ describe.skipIf(!Object.values(PDFS).every(existsSync))('os 4 PDFs reais da audi
   })
   it('8081 de 23/10: 77 cargas', async () => {
     const r = await reconhecerArquivo(readFileSync(PDFS.escala), '8081.pdf')
-    expect(r).toMatchObject({ tipo: 'escala_rota', cliente: 'nutrimax', campo: 'escala', data: '2026-10-23', contagens: { cargas: 77 } })
-    expect(r.resumo).toBe('Escala de Rota da Nutry de 23/10 — 77 cargas')
+    expect(r).toMatchObject({ tipo: 'escala_rota', cliente: 'nutrimax', campo: 'escala', data: null, impressaEm: '2026-10-23', contagens: { cargas: 77 } })
+    expect(r.resumo).toBe('Escala de Rota da Nutry (impressa em 23/10) — 77 cargas')
   })
   it('PROGRAMAÇÃO JAC de 23/10: 64 notas, 10 carros, com o nome "Romaneio do Pão (Programação JAC)"', async () => {
     const r = await reconhecerArquivo(readFileSync(PDFS.jac), 'PROGRAMAÇÃO JAC (CONGELADO).pdf')

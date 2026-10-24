@@ -26,8 +26,11 @@ export type ArquivoReconhecido = {
   tipo: TipoArquivo
   cliente: ClienteArquivo | null
   campo: CampoEnvio | null
-  /** YYYY-MM-DD impressa no documento (null = sem data legível). */
+  /** YYYY-MM-DD do dia da operação no documento (null = sem data legível ou,
+   *  na Escala 8081, só a data de impressão -- F3-R05). */
   data: string | null
+  /** Escala 8081: data em que foi IMPRESSA (só informativa; não decide se serve). */
+  impressaEm?: string
   contagens: { notas?: number; cargas?: number; carros?: number; entregas?: number; rotas?: number; placas?: number; romaneios?: number; colunas?: number }
   /** Uma linha para o recibo: "Romaneio de Entrega da Nutry de 23/10 — 2.327 notas, 76 cargas". */
   resumo: string
@@ -79,6 +82,20 @@ const n = (x: number) => x.toLocaleString('pt-BR')
 const plural = (x: number, um: string, varios: string) => `${n(x)} ${x === 1 ? um : varios}`
 const ddmm = (iso: string | null) => (iso ? ` de ${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '')
 
+/** Escala 8081: a 1ª dd/mm/aaaa do texto é a data/hora de IMPRESSÃO
+ *  ("23/10/2026 03:38 Page 1 of 3"), não o dia da operação (F3-R05). */
+export function dataImpressaDaEscala(texto: string): string | null {
+  const m = /(\d{2})\/(\d{2})\/(\d{4})/.exec(texto)
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : null
+}
+
+export function resumoDoArquivo(tipo: TipoArquivo, data: string | null, c: ArquivoReconhecido['contagens'], impressaEm?: string | null): string {
+  const base = montarResumo(tipo, data, c)
+  if (!impressaEm) return base
+  const rotulo = ROTULO_TIPO[tipo] + ddmm(data)
+  return `${rotulo} (impressa em ${impressaEm.slice(8, 10)}/${impressaEm.slice(5, 7)})${base.slice(rotulo.length)}`
+}
+
 function montarResumo(tipo: TipoArquivo, data: string | null, c: ArquivoReconhecido['contagens']): string {
   const partes: string[] = []
   if (c.notas != null) partes.push(plural(c.notas, 'nota', 'notas'))
@@ -95,8 +112,11 @@ function desconhecido(nome: string): ArquivoReconhecido {
   return { nome, tipo: 'desconhecido', cliente: null, campo: null, data: null, contagens: {}, resumo: ROTULO_TIPO.desconhecido }
 }
 
-function reconhecido(nome: string, tipo: TipoArquivo, data: string | null, contagens: ArquivoReconhecido['contagens'], erro?: string): ArquivoReconhecido {
-  return { nome, tipo, cliente: CLIENTE_DO_TIPO[tipo], campo: CAMPO_DO_TIPO[tipo], data, contagens, resumo: montarResumo(tipo, data, contagens), ...(erro ? { erro } : {}) }
+function reconhecido(nome: string, tipo: TipoArquivo, data: string | null, contagens: ArquivoReconhecido['contagens'], erro?: string, impressaEm?: string | null): ArquivoReconhecido {
+  return {
+    nome, tipo, cliente: CLIENTE_DO_TIPO[tipo], campo: CAMPO_DO_TIPO[tipo], data, contagens,
+    resumo: resumoDoArquivo(tipo, data, contagens, impressaEm), ...(impressaEm ? { impressaEm } : {}), ...(erro ? { erro } : {}),
+  }
 }
 
 function reconhecerPlanilha(buf: Buffer, nome: string): ArquivoReconhecido {
@@ -140,8 +160,9 @@ export async function reconhecerArquivo(buf: Buffer, nome: string): Promise<Arqu
       }
       case 'escala_rota': {
         const escala = await parseEscala(buf)
-        const m = /(\d{2})\/(\d{2})\/(\d{4})/.exec(texto)
-        return reconhecido(nome, tipo, m ? `${m[3]}-${m[2]}-${m[1]}` : null, { cargas: new Set(escala.map(e => e.carga)).size })
+        // F3-R05: data impressa não decide se serve; a conferência é pelas
+        // cargas do romaneio (conferirEscala, F1-13) no envio.
+        return reconhecido(nome, tipo, null, { cargas: new Set(escala.map(e => e.carga)).size }, undefined, dataImpressaDaEscala(texto))
       }
       case 'pao_jac': {
         const m = /DATA\s*(\d{2})\/(\d{2})\/(\d{4})/.exec(texto)
