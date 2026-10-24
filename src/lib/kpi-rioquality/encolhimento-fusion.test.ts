@@ -60,3 +60,23 @@ describe('decidirEncolhimentoFusion (F2-REV-02)', () => {
     expect(decidirEncolhimentoFusion([], a.estado)).toEqual({ aceitar: true, estado: null, mensagem: null })
   })
 })
+
+// F4-09: no dia em que o tick troca a grade (NF = pedido) pelo relatorio de
+// 55 colunas (NF real), nenhuma NF "some": o pedido e' o mesmo. Caso real
+// 22/10, romaneio 1168700 (KOB3H38, 4 entregas).
+describe('F4-09: troca da grade pelo relatorio de 55 colunas', () => {
+  const grade = [['6073393'], ['6077221'], ['6078655'], ['6079088']].map(([p]) => ({ romaneio: '1168700', placaNorm: 'KOB3H38', nf: p, pedidoErp: p }))
+  const rel55 = [['5556951', '6073393'], ['5556950', '6077221'], ['5556949', '6078655'], ['5556948', '6079088']]
+    .map(([nf, p]) => ({ romaneio: '1168700', placaNorm: 'KOB3H38', nf, pedidoErp: p }))
+
+  it('grade guardada -> relatorio de 55 colunas: nao encolheu', () => {
+    expect(romaneiosQueEncolheram(grade, rel55)).toEqual([])
+  })
+  it('55 colunas guardado -> 55 colunas com 1 pedido a menos: encolheu', () => {
+    expect(romaneiosQueEncolheram(rel55, rel55.slice(1))).toEqual([{ romaneio: '1168700', placa: 'KOB3H38', antes: 4, agora: 3 }])
+  })
+  it('linha antiga sem pedidoErp continua comparando pela NF', () => {
+    const semPedido = grade.map(({ pedidoErp: _p, ...l }) => l)
+    expect(romaneiosQueEncolheram(semPedido, grade)).toEqual([])
+  })
+})

@@ -1,0 +1,420 @@
+{
+ "success": true,
+ "data": {
+  "titulo": "Relatório de Entregas",
+  "url": "gestaoentrega/relatorio_entregas-json.php",
+  "t121_identificador": "/php/relatorios_flex/gestaoentrega/relatorio_entregas-json.php",
+  "options": {
+   "type": "flat",
+   "defautSort": "unsorted"
+  },
+  "filtros": {
+   "dtPedido_ini": "",
+   "dtPedido_fin": "",
+   "dtFaturamento_ini": "",
+   "dtFaturamento_fin": "",
+   "dtSaida_ini": "2026-10-22",
+   "dtSaida_fin": "2026-10-22",
+   "praca": "",
+   "rota": "",
+   "filiais_ids": "",
+   "filial_expedicao_ids": "",
+   "ignoreCrossdocking": "N"
+  },
+  "dados": [
+   {
+    "Numero Pedido ERP": {
+     "type": "string",
+     "caption": "Numero Pedido ERP"
+    },
+    "Cod ERP Cliente": {
+     "type": "string",
+     "caption": "Cod ERP Cliente"
+    },
+    "Pré-Nota": {
+     "type": "string",
+     "caption": "Pré-Nota"
+    },
+    "Razão Social": {
+     "type": "string",
+     "caption": "Razão Social"
+    },
+    "Nome Fantasia": {
+     "type": "string",
+     "caption": "Nome Fantasia"
+    },
+    "Cidade": {
+     "type": "string",
+     "caption": "Cidade"
+    },
+    "UF": {
+     "type": "string",
+     "caption": "UF"
+    },
+    "Praça": {
+     "type": "string",
+     "caption": "Praça"
+    },
+    "Rota": {
+     "type": "string",
+     "caption": "Rota"
+    },
+    "Peso": {
+     "type": "number",
+     "caption": "Peso"
+    },
+    "Valor do Pedido": {
+     "type": "number",
+     "caption": "Valor do Pedido"
+    },
+    "Destino": {
+     "type": "string",
+     "caption": "Destino"
+    },
+    "Data do Pedido": {
+     "type": "string",
+     "caption": "Data do Pedido"
+    },
+    "Data Saída": {
+     "type": "string",
+     "caption": "Data Saída"
+    },
+    "Data Faturamento": {
+     "type": "string",
+     "caption": "Data Faturamento"
+    },
+    "Filial de Expedição": {
+     "type": "string",
+     "caption": "Filial de Expedição"
+    },
+    "Número da Carga ERP": {
+     "type": "string",
+     "caption": "Número da Carga ERP"
+    },
+    "Romaneio": {
+     "type": "string",
+     "caption": "Romaneio"
+    },
+    "Motorista": {
+     "type": "string",
+     "caption": "Motorista"
+    },
+    "Ajudante 1": {
+     "type": "string",
+     "caption": "Ajudante 1"
+    },
+    "Ajudante 2": {
+     "type": "string",
+     "caption": "Ajudante 2"
+    },
+    "Ajudante 3": {
+     "type": "string",
+     "caption": "Ajudante 3"
+    },
+    "Ajudante 4": {
+     "type": "string",
+     "caption": "Ajudante 4"
+    },
+    "Check-In": {
+     "type": "string",
+     "caption": "Check-In"
+    },
+    "Check-Out": {
+     "type": "string",
+     "caption": "Check-Out"
+    },
+    "Data Check-In": {
+     "type": "string",
+     "caption": "Data Check-In"
+    },
+    "Data Check-Out": {
+     "type": "string",
+     "caption": "Data Check-Out"
+    },
+    "Lead Time": {
+     "type": "string",
+     "caption": "Lead Time"
+    },
+    "Lead Time Entrega": {
+     "type": "string",
+     "caption": "Lead Time Entrega"
+    },
+    "Cód ERP Vendedor": {
+     "type": "string",
+     "caption": "Cód ERP Vendedor"
+    },
+    "RCA": {
+     "type": "string",
+     "caption": "RCA"
+    },
+    "Telefone Vendedor": {
+     "type": "string",
+     "caption": "Telefone Vendedor"
+    },
+    "Saída Planejada": {
+     "type": "string",
+     "caption": "Saída Planejada"
+    },
+    "Saída Real": {
+     "type": "string",
+     "caption": "Saída Real"
+    },
+    "Filial Fatura": {
+     "type": "string",
+     "caption": "Filial Fatura"
+    },
+    "Nota Fiscal": {
+     "type": "string",
+     "caption": "Nota Fiscal"
+    },
+    "Placa": {
+     "type": "string",
+     "caption": "Placa"
+    },
+    "Volume": {
+     "type": "string",
+     "caption": "Volume"
+    },
+    "Endereço": {
+     "type": "string",
+     "caption": "Endereço"
+    },
+    "Bairro": {
+     "type": "string",
+     "caption": "Bairro"
+    },
+    "Tipo": {
+     "type": "string",
+     "caption": "Tipo"
+    },
+    "Status da Entrega": {
+     "type": "string",
+     "caption": "Status da Entrega"
+    },
+    "Motivo Devolução/Reentrega": {
+     "type": "string",
+     "caption": "Motivo Devolução/Reentrega"
+    },
+    "Observação": {
+     "type": "string",
+     "caption": "Observação"
+    },
+    "Janela de Entrega": {
+     "type": "string",
+     "caption": "Janela de Entrega"
+    },
+    "Atendeu no Horario": {
+     "type": "string",
+     "caption": "Atendeu no Horario"
+    },
+    "Transportadora": {
+     "type": "string",
+     "caption": "Transportadora"
+    },
+    "Supervisor": {
+     "type": "string",
+     "caption": "Supervisor"
+    },
+    "Região": {
+     "type": "string",
+     "caption": "Região"
+    },
+    "Data de Entrega Manual": {
+     "type": "string",
+     "caption": "Data de Entrega Manual"
+    },
+    "Peso Coletado": {
+     "type": "number",
+     "caption": "Peso Coletado"
+    },
+    "Nº do Recibo": {
+     "type": "number",
+     "caption": "Nº do Recibo"
+    },
+    "Dias de Expedição da Rota": {
+     "type": "string",
+     "caption": "Dias de Expedição da Rota"
+    },
+    "Tipo de Composição": {
+     "type": "string",
+     "caption": "Tipo de Composição"
+    },
+    "Referência de Entrega": {
+     "type": "string",
+     "caption": "Referência de Entrega"
+    }
+   },
+   {
+    "Numero Pedido ERP": "6072386",
+    "Pré-Nota": "3616674916",
+    "Cod ERP Cliente": "60485",
+    "Razão Social": "VALDES VIDAL DA SILVA JUNIOR",
+    "Nome Fantasia": "RQ MAIS",
+    "Cidade": "CAMPOS DOS GOYTACAZES",
+    "UF": "RJ",
+    "Praça": "NORTE FLU 1.1",
+    "Rota": "NORTE FLU 1",
+    "Peso": "62.23",
+    "Valor do Pedido": "1079.00",
+    "Destino": "FELIZ GAIOLA - CAMPOS 22/10",
+    "Data do Pedido": "19-10-2026 15:38:03",
+    "Data Saída": "22-10-2026",
+    "Data Faturamento": "21-10-2026 00:00:00",
+    "Filial de Expedição": "RIO QUALITY",
+    "Número da Carga ERP": "1469929",
+    "Romaneio": "1168654",
+    "Motorista": "IRANILDO MOTA DA SILVA",
+    "Ajudante 1": "JONATAN DA SILVA RAMOS",
+    "Ajudante 2": "DANIEL DIAS MACHADO",
+    "Ajudante 3": null,
+    "Ajudante 4": null,
+    "Check-In": "SIM",
+    "Check-Out": "SIM",
+    "Data Check-In": "23/10/2026 07:03:48",
+    "Data Check-Out": "23/10/2026 07:04:07",
+    "Lead Time": "2 dia(s)",
+    "Lead Time Entrega": "3 dia(s)",
+    "Cód ERP Vendedor": "212",
+    "RCA": "JONATHA GOMES",
+    "Telefone Vendedor": "0",
+    "Saída Planejada": "22/10/2026 05:07:09",
+    "Saída Real": "22/10/2026 05:07:09",
+    "Filial Fatura": "RIO QUALITY",
+    "Nota Fiscal": "5555374",
+    "Placa": "TTT1J28",
+    "Volume": "0.150",
+    "Endereço": "RUA VIRGILIO DE PAULA",
+    "Bairro": "PARQUE TARCISIO MIRANDA",
+    "Tipo": "Entrega",
+    "Status da Entrega": "Entregue",
+    "Motivo Devolução/Reentrega": null,
+    "Observação": "",
+    "Janela de Entrega": "08:00 - 12:00,13:00 - 16:00",
+    "Atendeu no Horario": "NÃO",
+    "Transportadora": "RIO QUALITY",
+    "Supervisor": "ALLAN RIBEIRO",
+    "Região": "NORTE FLUMINENSE ",
+    "Data de Entrega Manual": null,
+    "Peso Coletado": null,
+    "Nº do Recibo": "30005112",
+    "Dias de Expedição da Rota": "Ter | Qui | Sex",
+    "Tipo de Composição": null,
+    "Referência de Entrega": "ACESSO PELA JOAO SOARES DA SILVA/PROX A PRACA OTACILIO LISBOA\r\nGOYTACAZES"
+   },
+   {
+    "Numero Pedido ERP": "6079258",
+    "Pré-Nota": "0",
+    "Cod ERP Cliente": "18469",
+    "Razão Social": "PATUREBA COMERCIO DE ALIMENTOS LTDA ME",
+    "Nome Fantasia": "RQ B",
+    "Cidade": "RIO DE JANEIRO",
+    "UF": "RJ",
+    "Praça": "SUDOESTE 1.9",
+    "Rota": "SUDOESTE 1",
+    "Peso": "0.00",
+    "Valor do Pedido": "1.00",
+    "Destino": "TROVAO - RECREIO 2 - 22/10",
+    "Data do Pedido": "21-10-2026 15:02:10",
+    "Data Saída": "22-10-2026",
+    "Data Faturamento": "22-10-2026 00:00:00",
+    "Filial de Expedição": "RIO QUALITY",
+    "Número da Carga ERP": "1470097",
+    "Romaneio": "1168798",
+    "Motorista": "LUIZ EDUARDO RIBEIRO",
+    "Ajudante 1": "LEVI PEREIRA",
+    "Ajudante 2": "CHAPA - EXTRA ANO NOVO",
+    "Ajudante 3": null,
+    "Ajudante 4": null,
+    "Check-In": "SIM",
+    "Check-Out": "SIM",
+    "Data Check-In": "22/10/2026 15:37:16",
+    "Data Check-Out": "22/10/2026 15:37:54",
+    "Lead Time": "0 dia(s)",
+    "Lead Time Entrega": "1 dia(s)",
+    "Cód ERP Vendedor": "34",
+    "RCA": "SONIA",
+    "Telefone Vendedor": "0",
+    "Saída Planejada": "22/10/2026 05:12:08",
+    "Saída Real": "22/10/2026 05:12:08",
+    "Filial Fatura": "RIO QUALITY",
+    "Nota Fiscal": "11829",
+    "Placa": "LAT9F36",
+    "Volume": "0.000",
+    "Endereço": "AVENIDA DAS AMERICAS",
+    "Bairro": "RECREIO DOS BANDEIRANTES",
+    "Tipo": "Entrega",
+    "Status da Entrega": "Devolvido Parcial",
+    "Motivo Devolução/Reentrega": "RETIRADA EXECUTADA ",
+    "Observação": "DADOS DE ENTREGA   5546992   1468988   30201   BATATA CHIPS ONDULADA 500GR SUPREMA LISA   1 CX   ENTREGUE   ERRADO TROCA ",
+    "Janela de Entrega": "08:00 - 12:00,13:00 - 16:00",
+    "Atendeu no Horario": "SIM",
+    "Transportadora": "LUIZ EDUARDO R. LTDA (TROVÃO)",
+    "Supervisor": "ANAINA GUARNIERI",
+    "Região": "ZONA SUDOESTE",
+    "Data de Entrega Manual": null,
+    "Peso Coletado": null,
+    "Nº do Recibo": "30034133",
+    "Dias de Expedição da Rota": "Seg | Ter | Qua | Qui | Sex",
+    "Tipo de Composição": null,
+    "Referência de Entrega": "RECREIO DOS BANDEIRANTES/RJ\r\nREF: DENTRO DO RECREIO SHOPPING"
+   },
+   {
+    "Numero Pedido ERP": "6078099",
+    "Pré-Nota": "0",
+    "Cod ERP Cliente": "4064",
+    "Razão Social": "SINGULAR GESTAO DE SERVICOS LTDA",
+    "Nome Fantasia": "RQ B",
+    "Cidade": "VOLTA REDONDA",
+    "UF": "RJ",
+    "Praça": "SUL FLU 1.1",
+    "Rota": "SUL FLU 1",
+    "Peso": "0.00",
+    "Valor do Pedido": "1.00",
+    "Destino": "MAMUTE - VOLTA REDONDA  22/10",
+    "Data do Pedido": "21-10-2026 11:44:39",
+    "Data Saída": "22-10-2026",
+    "Data Faturamento": "22-10-2026 00:00:00",
+    "Filial de Expedição": "RIO QUALITY",
+    "Número da Carga ERP": "1470020",
+    "Romaneio": "1168823",
+    "Motorista": "DANIEL ALEXANDRE DA SILVA",
+    "Ajudante 1": "CLAYTON DA SILVA DE SOUZA",
+    "Ajudante 2": "MARCOS VIEIRA MARTINS ",
+    "Ajudante 3": null,
+    "Ajudante 4": null,
+    "Check-In": "NÃO",
+    "Check-Out": "SIM",
+    "Data Check-In": "",
+    "Data Check-Out": "22/10/2026 10:21:36",
+    "Lead Time": "0 dia(s)",
+    "Lead Time Entrega": "0 dia(s)",
+    "Cód ERP Vendedor": "31",
+    "RCA": "RICARDO",
+    "Telefone Vendedor": "0",
+    "Saída Planejada": "22/10/2026 06:01:23",
+    "Saída Real": "22/10/2026 06:01:23",
+    "Filial Fatura": "RIO QUALITY",
+    "Nota Fiscal": "11819",
+    "Placa": "RJC2D24",
+    "Volume": "0.000",
+    "Endereço": "RUA NOSSA SENHORA DAS GRACAS",
+    "Bairro": "SAO GERALDO",
+    "Tipo": "Entrega",
+    "Status da Entrega": "Devolvido Parcial",
+    "Motivo Devolução/Reentrega": "RETIRADA NÃO CONCLUIDA ",
+    "Observação": "DADOS PARA COLETA   5315414   1442078   56744   PALMITO PUPUNHA INT 1 8KG PALMEIRAL   1 VD   CLIENTE N  O APROVOU QUALIDADE   PRODUTO",
+    "Janela de Entrega": "",
+    "Atendeu no Horario": "NÃO",
+    "Transportadora": "RIO QUALITY",
+    "Supervisor": "ANAINA GUARNIERI",
+    "Região": "SUL FLUMINENSE ",
+    "Data de Entrega Manual": null,
+    "Peso Coletado": null,
+    "Nº do Recibo": "30030573",
+    "Dias de Expedição da Rota": "Ter | Qui | Sex",
+    "Tipo de Composição": null,
+    "Referência de Entrega": "ACESSO PELA R SEN NEREU RAMOS/PROX A HAMBURGUERIA DEU FOME LANCHES\r\nVILA ROSALI-"
+   }
+  ]
+ }
+}

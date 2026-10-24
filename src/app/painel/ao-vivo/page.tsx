@@ -211,17 +211,18 @@ export default function AoVivoPage() {
   }
 
   // F2-05: dia travado no envio manual -> "voltar a puxar da Fusion" (troca a
-  // planilha subida pela da Fusion, que vem sem bairro; por isso confirma).
+  // planilha subida pela da Fusion; por isso confirma). F4-09: vem o mesmo
+  // Relatório de Entregas (55 colunas); só a grade de reserva vem sem bairro.
   const [voltandoFusion, setVoltandoFusion] = useState(false)
   const [msgFusion, setMsgFusion] = useState<string | null>(null)
   async function voltarAPuxarDaFusion() {
-    if (!window.confirm('A planilha subida à mão será trocada pela da Fusion (sem bairro) e a Fusion volta a ser consultada a cada 10 min. Continuar?')) return
+    if (!window.confirm('A planilha subida à mão será trocada pelo Relatório de Entregas puxado da Fusion (o mesmo arquivo, com bairro e NF) e a Fusion volta a ser consultada a cada 10 min. Se o relatório falhar, vem a versão sem bairro, com aviso. Continuar?')) return
     setVoltandoFusion(true)
     setMsgFusion(null)
     try {
       const r = await fetch('/api/kpi/ao-vivo/fusion?cliente=rioquality', { method: 'POST' })
-      const j = (await r.json().catch(() => ({}))) as { motivo?: string; nfs?: number }
-      setMsgFusion(r.ok ? `Dia voltou para a Fusion: ${j.nfs ?? 0} notas. O KPI recalcula em uns 3 minutos.`
+      const j = (await r.json().catch(() => ({}))) as { motivo?: string; nfs?: number; aviso?: string | null }
+      setMsgFusion(r.ok ? `Dia voltou para a Fusion: ${j.nfs ?? 0} notas. O KPI recalcula em uns 3 minutos.${j.aviso ? ` ${j.aviso}` : ''}`
         : j.motivo === 'sem_dados_fusion' ? 'A Fusion ainda não tem o romaneio de hoje. O dia continua com o envio manual.'
         : 'A Fusion não respondeu. O dia continua com o envio manual.')
       await carregar()

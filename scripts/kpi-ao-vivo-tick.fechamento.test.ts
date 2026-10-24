@@ -14,7 +14,8 @@ vi.mock('../src/lib/supabase/service', () => ({
   },
 }))
 const fusion = vi.hoisted(() => ({ falha: false }))
-vi.mock('../src/lib/kpi-rioquality/fonte-fusion', () => ({ buscarDiaRioQualityFusion: vi.fn(async (d: string) => { ordem.push(`fusion ${d}`); if (fusion.falha) throw new Error('fetch failed'); return [] }) }))
+// F4-09: o tick puxa pelo buscarDiaRioQualityFusionCompleto (55 colunas + grade de reserva).
+vi.mock('../src/lib/kpi-rioquality/fonte-fusion', () => ({ buscarDiaRioQualityFusionCompleto: vi.fn(async (d: string) => { ordem.push(`fusion ${d}`); if (fusion.falha) throw new Error('fetch failed'); return { linhas: [], fonte: 'fusion55', aviso: null } }) }))
 vi.mock('../src/lib/kpi-romaneio/ao-vivo-servico', () => ({
   CLIENTES_AO_VIVO: ['rioquality'],
   calcularAoVivo: vi.fn(async (c: string, d: string, _l?: unknown, o?: { publicarFechamento?: boolean }) => { ordem.push(`calculo ${c} ${d}${o?.publicarFechamento ? ' (publica)' : ''}`); return 'ok' }),

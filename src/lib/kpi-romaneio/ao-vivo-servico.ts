@@ -90,7 +90,7 @@ export type ResultadoAoVivo = {
 export type DiaAoVivo = {
   enviadoEm: string
   enviadoPor: string | null
-  /** 'manual' (subido na tela) ou 'fusion' (F2-05: banner do dia travado no envio manual). */
+  /** 'manual' (subido na tela), 'fusion' (grade) ou 'fusion55' (F4-09: relatorio de 55 colunas). */
   fonte?: string | null
   nfs: number
   placas: number
@@ -123,7 +123,8 @@ export async function guardarDiaAoVivo(p: {
   escalaEnviada: boolean
   paoEnviado: boolean
   enviadoPor: string | null
-  fonte?: 'manual' | 'fusion'
+  /** F4-09: 'fusion55' = relatorio de 55 colunas da Fusion; 'fusion' = grade. */
+  fonte?: 'manual' | 'fusion' | 'fusion55'
 }): Promise<void> {
   const { error } = await createServiceClient().from('kpi_ao_vivo_dia').upsert({
     cliente: p.cliente, data: p.data, romaneio: p.romaneio, escala: p.escala, pao: p.pao,

@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-vi.mock('../src/lib/kpi-rioquality/fonte-fusion', () => ({ buscarDiaRioQualityFusion: vi.fn() }))
+// F4-09: o tick chama buscarDiaRioQualityFusionCompleto (55 colunas, grade de
+// reserva). Nos testes antigos ele devolve o que buscarDiaRioQualityFusion
+// devolver, como relatorio de 55 colunas.
+vi.mock('../src/lib/kpi-rioquality/fonte-fusion', () => {
+  const buscarDiaRioQualityFusion = vi.fn()
+  return {
+    buscarDiaRioQualityFusion,
+    buscarDiaRioQualityFusionCompleto: vi.fn(async (d: string) => ({ linhas: await buscarDiaRioQualityFusion(d), fonte: 'fusion55', aviso: null })),
+  }
+})
 const guardar = vi.fn(async () => {})
 const fonteDoDia = vi.fn(async (): Promise<string | null> => null)
 const diaGuardadoRQ = vi.fn(async (): Promise<unknown[] | null> => null)
@@ -29,7 +38,7 @@ vi.mock('../src/lib/kpi-rioquality/enviar-monitoramento-rq', () => ({
   resumoEnvioRQ: () => null,
 }))
 
-import { buscarDiaRioQualityFusion } from '../src/lib/kpi-rioquality/fonte-fusion'
+import { buscarDiaRioQualityFusion, buscarDiaRioQualityFusionCompleto } from '../src/lib/kpi-rioquality/fonte-fusion'
 import { rmSync } from 'node:fs'
 import { arquivoEstadoEncolhimentoFusion } from '../src/lib/kpi-rioquality/encolhimento-fusion'
 
@@ -182,5 +191,67 @@ describe('F2-05: alerta interno da Fusion parada (preparado, desligado por padra
     const r = await alertarFusionSeParada('2026-10-21', { ler: async () => caindo, gravar: async () => true, enviar, agoraMs: Date.parse('2026-10-21T08:50:00.000Z'), ligado: true, log: () => {} })
     expect(r).toBe('nada')
     expect(enviar).not.toHaveBeenCalled()
+  })
+})
+
+// F4-09 (KRQ-02): o dia da Fusion vem do relatorio de 55 colunas (NF real,
+// bairro); a grade so' com aviso e nunca por cima de um dia de 55 colunas.
+describe('F4-09: relatorio de 55 colunas no tick', () => {
+  const l55 = [{ romaneio: '1168700', placaNorm: 'KOB3H38', nf: '5556951', pedidoErp: '6073393', bairro: 'CENTRO' }]
+  beforeEach(() => {
+    guardar.mockClear(); enviarRQ.mockClear(); registrar.mockClear()
+    fonteDoDia.mockReset(); diaGuardadoRQ.mockReset(); diaGuardadoRQ.mockResolvedValue([])
+    vi.mocked(buscarDiaRioQualityFusionCompleto).mockReset()
+    rmSync(arquivoEstadoEncolhimentoFusion('2026-10-22'), { force: true })
+  })
+
+  it('dia novo: guarda com fonte fusion55 e envia ao monitoramento', async () => {
+    fonteDoDia.mockResolvedValue(null)
+    vi.mocked(buscarDiaRioQualityFusionCompleto).mockResolvedValue({ linhas: l55, fonte: 'fusion55', aviso: null } as never)
+    const { sincronizarFusionRioQuality } = await import('./kpi-ao-vivo-tick')
+    expect(await sincronizarFusionRioQuality('2026-10-22')).toBe('ok')
+    expect(buscarDiaRioQualityFusionCompleto).toHaveBeenCalledWith('2026-10-22', { gradeComoReserva: true })
+    expect(guardar).toHaveBeenCalledWith(expect.objectContaining({ fonte: 'fusion55', romaneio: l55, enviadoPor: 'cron-fusion' }))
+    expect(enviarRQ).toHaveBeenCalledTimes(1)
+    expect(registrar).toHaveBeenCalledWith('2026-10-22', expect.objectContaining({ situacao: 'ok', aviso: null }))
+  })
+
+  it('relatorio falhou num dia sem 55 colunas: guarda a grade (fonte fusion) e registra o aviso', async () => {
+    fonteDoDia.mockResolvedValue('fusion')
+    const aviso = 'O relatório de 55 colunas da Fusion falhou (x): o dia veio da grade'
+    vi.mocked(buscarDiaRioQualityFusionCompleto).mockResolvedValue({ linhas: [{ romaneio: '1168700', placaNorm: 'KOB3H38', nf: '6073393', pedidoErp: '6073393' }], fonte: 'fusion', aviso } as never)
+    const { sincronizarFusionRioQuality } = await import('./kpi-ao-vivo-tick')
+    expect(await sincronizarFusionRioQuality('2026-10-22')).toBe('ok')
+    expect(guardar).toHaveBeenCalledWith(expect.objectContaining({ fonte: 'fusion' }))
+    expect(registrar).toHaveBeenCalledWith('2026-10-22', expect.objectContaining({ situacao: 'ok', aviso }))
+  })
+
+  it('dia ja de 55 colunas: pede sem grade de reserva; falha = erro, nao guarda nem envia', async () => {
+    fonteDoDia.mockResolvedValue('fusion55')
+    vi.mocked(buscarDiaRioQualityFusionCompleto).mockRejectedValue(new Error('relatório de 55 colunas da Fusion falhou (TypeError: fetch failed); dia guardado mantido'))
+    const { sincronizarFusionRioQuality } = await import('./kpi-ao-vivo-tick')
+    expect(await sincronizarFusionRioQuality('2026-10-22')).toBe('erro')
+    expect(buscarDiaRioQualityFusionCompleto).toHaveBeenCalledWith('2026-10-22', { gradeComoReserva: false })
+    expect(guardar).not.toHaveBeenCalled()
+    expect(enviarRQ).not.toHaveBeenCalled()
+    expect(registrar).toHaveBeenCalledWith('2026-10-22', expect.objectContaining({ situacao: 'erro', erro: expect.stringContaining('dia guardado mantido') }))
+  })
+
+  it('grade guardada -> 55 colunas do mesmo pedido: nao e encolhimento (caso real 22/10, romaneio 1168700)', async () => {
+    fonteDoDia.mockResolvedValue('fusion')
+    diaGuardadoRQ.mockResolvedValue([{ romaneio: '1168700', placaNorm: 'KOB3H38', nf: '6073393', pedidoErp: '6073393' }])
+    vi.mocked(buscarDiaRioQualityFusionCompleto).mockResolvedValue({ linhas: l55, fonte: 'fusion55', aviso: null } as never)
+    const { sincronizarFusionRioQuality } = await import('./kpi-ao-vivo-tick')
+    expect(await sincronizarFusionRioQuality('2026-10-22')).toBe('ok')
+    expect(guardar).toHaveBeenCalledTimes(1)
+  })
+
+  it('dia de 55 colunas que encolhe tambem e recusado', async () => {
+    fonteDoDia.mockResolvedValue('fusion55')
+    diaGuardadoRQ.mockResolvedValue([...l55, { romaneio: '1168700', placaNorm: 'KOB3H38', nf: '5556950', pedidoErp: '6077221' }])
+    vi.mocked(buscarDiaRioQualityFusionCompleto).mockResolvedValue({ linhas: l55, fonte: 'fusion55', aviso: null } as never)
+    const { sincronizarFusionRioQuality } = await import('./kpi-ao-vivo-tick')
+    expect(await sincronizarFusionRioQuality('2026-10-22')).toBe('erro')
+    expect(guardar).not.toHaveBeenCalled()
   })
 })

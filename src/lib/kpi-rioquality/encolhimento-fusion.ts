@@ -21,19 +21,22 @@ export const LEITURAS_PARA_ACEITAR_ENCOLHIMENTO = 3
 export type RomaneioEncolhido = { romaneio: string; placa: string; antes: number; agora: number }
 export type EstadoEncolhimento = { assinatura: string; vezes: number }
 
-type Linha = Pick<EntregaRioQualityCompleta, 'romaneio' | 'placaNorm' | 'nf'>
+type Linha = Pick<EntregaRioQualityCompleta, 'romaneio' | 'placaNorm' | 'nf' | 'pedidoErp'>
 
 /** Romaneios do dia guardado com NF que sumiu do dia novo (a NF que so' trocou
  *  de romaneio continua no dia e nao conta). agora = antes - sumidas. */
 export function romaneiosQueEncolheram(guardado: Linha[], novo: Linha[]): RomaneioEncolhido[] {
-  const nfsNovas = new Set(novo.map(l => l.nf))
+  // F4-09: a chave e' o pedido ERP (D-21b) -- a grade usa o pedido como NF e
+  // o relatorio de 55 colunas traz a NF real do mesmo pedido; comparar pela NF
+  // faria o dia inteiro "sumir" na troca. Linha sem pedido: pela NF.
+  const chavesNovas = new Set(novo.flatMap(l => [l.nf, l.pedidoErp].filter((x): x is string => !!x)))
   const porRomaneio = new Map<string, RomaneioEncolhido>()
   for (const l of guardado) {
     const r = (l.romaneio ?? '').trim()
     if (!r) continue
     const c = porRomaneio.get(r) ?? { romaneio: r, placa: l.placaNorm ?? '', antes: 0, agora: 0 }
     c.antes++
-    if (nfsNovas.has(l.nf)) c.agora++
+    if (chavesNovas.has(l.pedidoErp || l.nf || '')) c.agora++
     porRomaneio.set(r, c)
   }
   return [...porRomaneio.values()].filter(c => c.agora < c.antes).sort((x, y) => x.romaneio.localeCompare(y.romaneio))

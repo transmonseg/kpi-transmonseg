@@ -1,6 +1,6 @@
 import type { RomaneioFusion, EntregaFusionRaw } from '../fusion/tipos'
 import type { EntregaRioQualityCompleta, GabaritoEntregaRioQuality } from './parse-planilhas'
-import { buscarEntregasDoDia } from '../fusion/entregas'
+import { buscarEntregasDoDia, buscarRelatorioEntregasFusion, placaFicticia } from '../fusion/entregas'
 
 const normPlaca = (p: string) => (p ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '')
 
@@ -17,13 +17,8 @@ function gabaritoFusion(e: EntregaFusionRaw): GabaritoEntregaRioQuality {
   }
 }
 
-/** Auditoria 20/10 (RQ-04): a Fusion aceita placa de preenchimento (XXX5678,
- *  108 NFs em 15/10). Nao e' veiculo nenhum: a regra "sem rastreador conta
- *  como correto" (04/10) e' pra caminhao real sem rastreador. Vira carga sem
- *  placa -- fora da taxa, com aviso pra operacao. */
-export function placaFicticia(placaNorm: string): boolean {
-  return /^XXX/.test(placaNorm)
-}
+// RQ-04 (placa de preenchimento) mora em fusion/entregas.ts: vale para a grade e para o relatorio de 55 colunas.
+export { placaFicticia }
 
 export function mapearEntregasFusion(romaneios: RomaneioFusion[], entregas: EntregaFusionRaw[]): EntregaRioQualityCompleta[] {
   const porId = new Map(romaneios.map(r => [r.t10_id, r]))
@@ -52,4 +47,34 @@ export async function buscarDiaRioQualityFusion(data: string): Promise<EntregaRi
   const { romaneios, entregas } = await buscarEntregasDoDia(data)
   if (romaneios.length === 0) return []
   return mapearEntregasFusion(romaneios, entregas)
+}
+
+/** F4-09: de onde veio o dia da Fusion. 'fusion55' = relatorio de 55 colunas
+ *  (NF real, bairro, codigo do cliente; o mesmo arquivo que a Erica sobe);
+ *  'fusion' = grade de entregas realizadas (pedido como NF, sem bairro). */
+export type FonteDiaFusion = 'fusion55' | 'fusion'
+export type DiaRioQualityFusion = { linhas: EntregaRioQualityCompleta[]; fonte: FonteDiaFusion; aviso: string | null }
+
+/** Dia da RQ pela Fusion: primeiro o relatorio de 55 colunas; se ele falhar
+ *  (ou vier vazio com a grade cheia), a grade com aviso. gradeComoReserva
+ *  false = o dia guardado ja' e' de 55 colunas: trocar NF real e bairro pela
+ *  grade pioraria o dia, entao a falha sobe (status 'erro', dia mantido). */
+export async function buscarDiaRioQualityFusionCompleto(data: string, opcoes: { gradeComoReserva?: boolean } = {}): Promise<DiaRioQualityFusion> {
+  const gradeComoReserva = opcoes.gradeComoReserva ?? true
+  let motivo: string
+  try {
+    const linhas = await buscarRelatorioEntregasFusion(data)
+    if (linhas.length > 0 || !gradeComoReserva) return { linhas, fonte: 'fusion55', aviso: null }
+    motivo = 'veio sem linhas'
+  } catch (e) {
+    const msg = e instanceof Error ? `${e.name === 'Error' ? '' : `${e.name}: `}${e.message}` : String(e)
+    if (!gradeComoReserva) throw new Error(`relatório de 55 colunas da Fusion falhou (${msg}); dia guardado mantido`)
+    motivo = `falhou (${msg})`
+  }
+  const grade = await buscarDiaRioQualityFusion(data)
+  if (grade.length === 0) return { linhas: [], fonte: 'fusion55', aviso: null }
+  return {
+    linhas: grade, fonte: 'fusion',
+    aviso: `O relatório de 55 colunas da Fusion ${motivo}: o dia veio da grade, sem bairro e com o pedido no lugar da NF. O próximo tick tenta o relatório de novo.`,
+  }
 }

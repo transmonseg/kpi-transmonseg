@@ -193,7 +193,13 @@ export type GabaritoEntregaRioQuality = {
 }
 
 export function parseEntregasCompletas(buf: Buffer): EntregaRioQualityCompleta[] {
-  const rows = linhas(buf)
+  return parseEntregasCompletasDeLinhas(linhas(buf))
+}
+
+/** O mesmo parser sobre as linhas ja' lidas (cabecalho + dados). F4-09: o
+ *  relatorio de 55 colunas que a Fusion devolve em JSON passa por aqui, igual
+ *  ao xlsx que a Erica sobe (mesmas colunas, mesmo resultado). */
+export function parseEntregasCompletasDeLinhas(rows: unknown[][]): EntregaRioQualityCompleta[] {
   const h = rows.findIndex(r => {
     const cols = (r ?? []).map(c => semAcentoMaiusculo(norm(c)))
     return cols.includes('RAZAO SOCIAL') && cols.includes('CIDADE') && cols.includes('PLACA')

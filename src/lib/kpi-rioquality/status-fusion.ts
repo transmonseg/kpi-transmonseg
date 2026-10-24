@@ -21,9 +21,12 @@ export type StatusFusion = {
   fonteDoDia: 'fusion' | 'manual' | null
   /** Alerta interno ja' preparado/enviado nesta queda. */
   alertaEm: string | null
+  /** F4-09: a ultima sincronizacao ok veio da grade (relatorio de 55 colunas
+   *  falhou). Ausente nos status gravados antes do F4-09. */
+  aviso?: string | null
 }
 
-export type EventoSyncFusion = { situacao: SituacaoSyncFusion; em: string; erro?: string | null }
+export type EventoSyncFusion = { situacao: SituacaoSyncFusion; em: string; erro?: string | null; aviso?: string | null }
 
 export function proximoStatusFusion(anterior: StatusFusion | null, ev: EventoSyncFusion): StatusFusion {
   const base: StatusFusion = anterior ?? {
@@ -41,6 +44,8 @@ export function proximoStatusFusion(anterior: StatusFusion | null, ev: EventoSyn
     s.alertaEm = null
     if (ev.situacao === 'ok' || ev.situacao === 'sem_dados') s.ultimoSucesso = ev.em
     if (ev.situacao === 'ok') s.fonteDoDia = 'fusion'
+    // F4-09: so' a resposta da Fusion decide o aviso (dia manual mantem o anterior).
+    if (ev.situacao === 'ok' || ev.situacao === 'sem_dados') s.aviso = ev.aviso ?? null
     if (ev.situacao === 'manual') s.fonteDoDia = 'manual'
   }
   return s
@@ -73,7 +78,7 @@ export function decidirAlertaFusion(s: StatusFusion | null, agoraMs: number): st
     + 'O Ao vivo da RQ está parado no último dado; ver a ponte da Fusion no Mac ou subir o Relatório de Entregas.'
 }
 
-export type BannerFusion = { tipo: 'sem_resposta' | 'manual'; texto: string; acao: 'voltar_fusion' | null }
+export type BannerFusion = { tipo: 'sem_resposta' | 'manual' | 'grade'; texto: string; acao: 'voltar_fusion' | null }
 
 /** Banner do Ao vivo da RQ (dia de hoje). O dia subido a mao tem prioridade:
  *  nele a Fusion nao e' consultada. */
@@ -90,5 +95,7 @@ export function bannerFusion(s: StatusFusion | null, dia: { fonte: string | null
       texto: `Fusion sem responder desde ${hhmmBR(s.falhandoDesde)} (última tentativa às ${hhmmBR(s.ultimaTentativa)}). Os números podem estar parados; dá para subir o Relatório de Entregas.`,
     }
   }
+  // F4-09: o dia veio da grade (sem bairro, pedido no lugar da NF).
+  if (s?.situacao === 'ok' && s.aviso) return { tipo: 'grade', texto: s.aviso, acao: null }
   return null
 }

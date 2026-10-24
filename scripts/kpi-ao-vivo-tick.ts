@@ -10,7 +10,7 @@
 import { hojeBR } from '../src/lib/data-br'
 import { createServiceClient } from '../src/lib/supabase/service'
 import { CLIENTES_AO_VIVO, calcularAoVivo, guardarDiaAoVivo, fonteDoDiaAoVivo, entradaRioQualityDoDia } from '../src/lib/kpi-romaneio/ao-vivo-servico'
-import { buscarDiaRioQualityFusion } from '../src/lib/kpi-rioquality/fonte-fusion'
+import { buscarDiaRioQualityFusionCompleto } from '../src/lib/kpi-rioquality/fonte-fusion'
 import { romaneiosQueEncolheram, decidirEncolhimentoFusion, lerEstadoEncolhimentoFusion, gravarEstadoEncolhimentoFusion } from '../src/lib/kpi-rioquality/encolhimento-fusion'
 import { linhasComCoordenadasRQ, enviarRioQualityAoMonitoramento, resumoEnvioRQ } from '../src/lib/kpi-rioquality/enviar-monitoramento-rq'
 import { diaAnterior, precisaFecharDia, precisaReconferirTerritorio } from '../src/lib/kpi-romaneio/ao-vivo'
@@ -30,23 +30,29 @@ const horaBRAgora = () => Number(new Date().toLocaleString('en-US', { timeZone: 
 // inclusive o dia manual -- a tela mostra o banner e o tick decide o alerta.
 export async function sincronizarFusionRioQuality(data: string): Promise<'ok' | 'sem_dados' | 'manual' | 'erro'> {
   let erro: string | null = null
-  const s = await tentarFusionRioQuality(data).catch(e => { erro = String(e); log(`Fusion RQ ${data}: ${erro}`); return 'erro' as const })
-  await registrarSyncFusion(data, { situacao: s, em: new Date().toISOString(), erro })
-  return s
+  const r = await tentarFusionRioQuality(data).catch(e => { erro = String(e); log(`Fusion RQ ${data}: ${erro}`); return { situacao: 'erro' as const, aviso: null } })
+  await registrarSyncFusion(data, { situacao: r.situacao, em: new Date().toISOString(), erro, ...(r.situacao === 'ok' || r.situacao === 'sem_dados' ? { aviso: r.aviso } : {}) })
+  return r.situacao
 }
 
-async function tentarFusionRioQuality(data: string): Promise<'ok' | 'sem_dados' | 'manual'> {
+async function tentarFusionRioQuality(data: string): Promise<{ situacao: 'ok' | 'sem_dados' | 'manual'; aviso: string | null }> {
   // Auditoria 20/10 (RQ-10): romaneio subido a mao (planilha com bairro e NF
-  // real) vale mais que o da Fusion (sem bairro) -- nao sobrescreve.
+  // real) vale mais que o da Fusion -- nao sobrescreve.
   const fonte = await fonteDoDiaAoVivo('rioquality', data)
-  if (fonte === 'manual') return 'manual'
-  const linhas = await buscarDiaRioQualityFusion(data)
-  if (linhas.length === 0) return 'sem_dados'
+  if (fonte === 'manual') return { situacao: 'manual', aviso: null }
+  // F4-09 (KRQ-02): relatorio de 55 colunas (NF real, bairro, codigo do
+  // cliente) e a grade sem bairro so' de reserva -- nunca por cima de um dia
+  // que ja' tem a versao de 55 colunas (ai' a falha vira 'erro' e o dia fica).
+  const dia = await buscarDiaRioQualityFusionCompleto(data, { gradeComoReserva: fonte !== 'fusion55' })
+  const linhas = dia.linhas
+  if (dia.aviso) log(`Fusion RQ ${data}: ${dia.aviso}`)
+  if (linhas.length === 0) return { situacao: 'sem_dados', aviso: dia.aviso }
   // Revisao F2-REV-02: o envio abaixo substitui o dia no mapa. Romaneio que
   // voltou com menos NFs que o dia guardado (resposta anomala da Fusion)
   // apagava os pontos dele com a presenca; agora recusa ate' a mesma leitura
-  // se repetir 3 vezes seguidas (cancelamento de verdade).
-  if (fonte === 'fusion') {
+  // se repetir 3 vezes seguidas (cancelamento de verdade). F4-09: compara
+  // pelo pedido, que e' o mesmo na grade e no relatorio de 55 colunas.
+  if (fonte === 'fusion' || fonte === 'fusion55') {
     const guardado = (await entradaRioQualityDoDia(data)) ?? []
     const d = decidirEncolhimentoFusion(romaneiosQueEncolheram(guardado, linhas), lerEstadoEncolhimentoFusion(data))
     gravarEstadoEncolhimentoFusion(data, d.estado)
@@ -56,16 +62,17 @@ async function tentarFusionRioQuality(data: string): Promise<'ok' | 'sem_dados' 
   await guardarDiaAoVivo({
     cliente: 'rioquality', data, escala: [], romaneio: linhas,
     pao: { linhas: [], escala: [] }, escalaEnviada: false, paoEnviado: false,
-    enviadoPor: 'cron-fusion', fonte: 'fusion',
+    enviadoPor: 'cron-fusion', fonte: dia.fonte,
   })
   // Ponte pro Monitoramento: os carros da RQ aparecem no mapa (modo Romaneio)
   // com a data do dia fixa. Fail-open -- não derruba a sincronização.
   // F2-04: substitui o dia da RQ no mapa (modo do envio), com a coordenada do KPI.
+  // F4-09: com 55 colunas vai a NF real + pedido, como o upload manual.
   const mon = await enviarRioQualityAoMonitoramento(data, await linhasComCoordenadasRQ(linhas), { enviadoPor: 'cron-fusion' })
   // Revisao F2-04-a: linhas apagadas e substituicao recusada tambem vao pro log.
   const resumo = resumoEnvioRQ(data, mon)
   if (resumo) log(resumo)
-  return 'ok'
+  return { situacao: 'ok', aviso: dia.aviso }
 }
 
 /** F2-05: o alerta interno sai so' com KPI_ALERTA_FUSION_DM=1 (desligado por

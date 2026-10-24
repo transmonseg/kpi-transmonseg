@@ -160,3 +160,24 @@ describe('registrarSyncFusion / lerStatusFusion', () => {
     await expect(lerStatusFusion('2026-10-21', { cliente: quebrado })).resolves.toBeNull()
   })
 })
+
+// F4-09: o dia veio da grade porque o relatorio de 55 colunas falhou -- a
+// tela avisa (sem bairro, pedido no lugar da NF); o aviso some quando o
+// relatorio volta.
+describe('F4-09: aviso da queda para a grade', () => {
+  const aviso = 'O relatório de 55 colunas da Fusion falhou (fetch failed): o dia veio da grade, sem bairro e com o pedido no lugar da NF. O próximo tick tenta o relatório de novo.'
+  it('ok com aviso guarda o aviso; ok sem aviso limpa', () => {
+    const a = proximoStatusFusion(null, { situacao: 'ok', em: '2026-10-22T08:00:00.000Z', aviso })
+    expect(a.aviso).toBe(aviso)
+    const b = proximoStatusFusion(a, { situacao: 'ok', em: '2026-10-22T08:10:00.000Z' })
+    expect(b.aviso).toBeNull()
+  })
+  it('banner "grade" com o texto do aviso, sem botão', () => {
+    const s = proximoStatusFusion(null, { situacao: 'ok', em: '2026-10-22T08:00:00.000Z', aviso })
+    expect(bannerFusion(s, { fonte: 'fusion', enviadoEm: '2026-10-22T08:00:00.000Z' })).toEqual({ tipo: 'grade', texto: aviso, acao: null })
+  })
+  it('dia manual continua com prioridade', () => {
+    const s = proximoStatusFusion(null, { situacao: 'ok', em: '2026-10-22T08:00:00.000Z', aviso })
+    expect(bannerFusion(s, { fonte: 'manual', enviadoEm: '2026-10-22T08:00:00.000Z' })?.tipo).toBe('manual')
+  })
+})
