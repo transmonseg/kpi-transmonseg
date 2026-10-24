@@ -252,6 +252,17 @@ class TestVerificarKpiGabaritos(unittest.TestCase):
         self.assertEqual(codigo, 1, saida)
         self.assertIn("NÃO SAIU DA BASE", saida)
 
+    # F1-09 (23/10): o rotulo virou "SEM RASTREADOR - CONTADA COMO CORRETA -
+    # <motivo>" (a taxa ja' contava como correta); o antigo segue valendo.
+    def test_sem_rastreador_rotulo_novo_do_f1_09_passa(self):
+        xlsx_23 = self.tmp / "dia23sr.xlsx"
+        _escrever_xlsx_kpi(xlsx_23, {"TTL5J17": [(
+            "1", "2387462", "CLIENTE Y", "ENDERECO Y", "", "", "",
+            "SEM RASTREADOR - CONTADA COMO CORRETA - VEÍCULO SEM RASTREAMENTO NO DIA",
+        )]})
+        codigo, saida = self._rodar(xlsx_23, [("2026-09-24", "TTL5J17", "2387462", "sem_rastreador", "teste")])
+        self.assertEqual(codigo, 0, saida)
+
     def test_entregue_conta_acerto(self):
         xlsx_24 = self.tmp / "dia24.xlsx"
         _escrever_xlsx_kpi(

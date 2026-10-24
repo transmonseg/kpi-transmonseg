@@ -78,6 +78,8 @@ ROTULO_NAO_SAIU_DA_BASE = "VEÍCULO NÃO SAIU DA BASE"
 ROTULO_SEM_RASTREADOR = (
     "SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO"
 )
+# F1-09 (23/10): rotulo novo, igual ao que a taxa ja' fazia (conta como correta).
+ROTULO_SEM_RASTREADOR_F1_09 = "SEM RASTREADOR - CONTADA COMO CORRETA"
 
 DATA_PARA_ARG = {
     # preenchido em main() a partir dos argumentos posicionais (22/23/24)
@@ -256,8 +258,8 @@ def verificar_caso(caso: dict, kpi_por_nf: dict[str, dict]) -> str | None:
         return None
 
     if esperado == "sem_rastreador":
-        rotulo = _norm(ROTULO_SEM_RASTREADOR)
-        if rotulo not in status and rotulo not in observacao:
+        rotulos = (_norm(ROTULO_SEM_RASTREADOR), _norm(ROTULO_SEM_RASTREADOR_F1_09))
+        if not any(r in status or r in observacao for r in rotulos):
             return (
                 f"FALHA: NF {caso['nf']} (placa {caso['placa']}, {caso['data']}) "
                 f"esperado=sem_rastreador mas nao tem o rotulo "
