@@ -25,6 +25,7 @@ import { metaDoCliente } from '@/lib/kpi/metas'
 import { linhaMeta, placaAbaixoDaMeta, placaSemHorarioBase, ordenarPioresPrimeiro } from '@/lib/kpi-romaneio/resumo-dia'
 import { motivoLegivel } from '@/lib/kpi-romaneio/fila-conferir'
 import { FilaConferir } from './fila-conferir'
+import { ChecklistManha } from './checklist-manha'
 
 // Tela "Ao vivo" (spec 2026-10-06-kpi-ao-vivo-design.md). Cor/status de cada
 // NF vem do último cálculo do KPI (a mesma regra da planilha); o cronômetro e
@@ -254,8 +255,17 @@ export default function AoVivoPage() {
   const trocarCliente = (c: Cliente) => { setCliente(c); setDataSel(null); setPlacaSel(null); setNfAberta(null); setVendoDetalhe(false); setAgora({}); setBusca(''); setFiltroPlacas('todas'); setEstado(null) }
   const trocarDia = (d: string) => { setDataSel(d === estado.hoje ? null : d); setPlacaSel(null); setNfAberta(null); setVendoDetalhe(false); setAgora({}); setBusca(''); setFiltroPlacas('todas') }
 
+  // F3-07: "Subir" do checklist da manhã abre o envio do cliente do item.
+  const subirDoChecklist = (c: Cliente) => {
+    if (c !== cliente) trocarCliente(c)
+    setSubindo(true)
+    setTimeout(() => document.getElementById('subir-romaneio')?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 150)
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-5">
+      {/* F3-07 (ACH-04): checklist da manhã + aviso interno de romaneio ausente. */}
+      {!historico && <ChecklistManha recarga={ultimoEnvio} onSubir={subirDoChecklist} />}
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2.5">
@@ -407,7 +417,7 @@ export default function AoVivoPage() {
       {ultimoEnvio && <ReciboEnvio envio={ultimoEnvio} />}
 
       {!historico && (!estado.dia || subindo) && (
-        <section className="dash-card p-6">
+        <section id="subir-romaneio" className="dash-card p-6">
           <h2 className="mb-1 text-[16px] font-semibold text-[var(--color-fg)]">{cliente === 'rioquality' ? (estado.dia ? 'Trocar o relatório de entregas de hoje' : 'Relatório de entregas de hoje') : (estado.dia ? 'Trocar ou completar o romaneio de hoje' : 'Romaneio de hoje')}</h2>
           <p className="mb-5 text-[13px] text-[var(--color-fg-muted)]">{cliente === 'rioquality' ? 'A mesma planilha da tela Gerar KPI da Rio Quality.' : 'Os mesmos PDFs da tela Gerar KPI, soltos de uma vez.'} O sistema guarda só o que leu e recalcula o KPI a cada 10 minutos.{cliente !== 'rioquality' && estado.dia ? ' Esqueceu um arquivo? Envie só ele: o que já foi enviado continua.' : ''}</p>
           <SubirRomaneio cliente={CLIENTE} compacto={!!estado.dia} onEnviado={r => { setSubindo(false); setUltimoEnvio(r); carregar() }} />

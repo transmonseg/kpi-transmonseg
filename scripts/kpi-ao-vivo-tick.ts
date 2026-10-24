@@ -19,6 +19,7 @@ import { repararDia, depsReaisReparo, repararDiaRQ, depsReaisReparoRQ } from '..
 import { sincronizarAcessosMonitoramento } from '../src/lib/acessos-monitoramento'
 import { registrarSyncFusion, lerStatusFusion, gravarStatusFusion } from '../src/lib/kpi-rioquality/status-fusion-banco'
 import { decidirAlertaFusion, marcarAlertaFusion, type StatusFusion } from '../src/lib/kpi-rioquality/status-fusion'
+import { avisarRomaneioAusente, depsReaisAvisoRomaneio } from '../src/lib/kpi-romaneio/manha-servico'
 import { execFile } from 'node:child_process'
 
 const log = (m: string) => console.log(`${new Date().toISOString()} ${m}`)
@@ -182,6 +183,11 @@ async function main() {
     const r = await calcularAoVivo(cliente, data, log)
     if (r !== 'ok') log(`ao vivo ${cliente} ${data}: ${r}`)
   }
+  // F3-07 (ACH-04): 06:30 e 07:30 BRT, decidido pelo estado gravado (o tick
+  // que passar primeiro do marco avalia). Depois da sync da Fusion acima.
+  // Interno: banner no Ao vivo + DM ao dono (KPI_AVISO_ROMANEIO_DM=1; desligada).
+  await avisarRomaneioAusente(data, depsReaisAvisoRomaneio([...CLIENTES_AO_VIVO], enviarAlertaDm, log))
+    .catch(err => log(`aviso de romaneio ausente: ${err}`))
 }
 
 if (!process.env.VITEST) {

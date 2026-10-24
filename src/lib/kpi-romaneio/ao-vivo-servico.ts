@@ -1,4 +1,5 @@
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
+import { registrarChegadasDoDia } from './manha-servico'
 import { sugerirTrocas, placasDoCarroPorCarga, type SugestaoTroca, type TrocaConfirmada } from './sugerir-trocas'
 import { EMPRESA_NUTRIMAX } from './constants'
 // KPI ao vivo: leitura/gravação no banco e o cálculo. O cálculo é a MESMA
@@ -130,6 +131,10 @@ export async function guardarDiaAoVivo(p: {
     fonte: p.fonte ?? 'manual',
   }, { onConflict: 'cliente,data' })
   if (error) throw new Error(`guardar romaneio do dia: ${error.message}`)
+  // F3-07: horário da primeira chegada de cada parte (checklist da manhã). Fail-open.
+  await registrarChegadasDoDia(p.cliente, p.data, {
+    romaneio: p.romaneio, pao: p.pao, escala_enviada: p.escalaEnviada, pao_enviado: p.paoEnviado,
+  }, new Date().toISOString())
 }
 
 export async function lerEstadoAoVivo(cliente: ClienteAoVivo, data: string): Promise<EstadoAoVivo> {

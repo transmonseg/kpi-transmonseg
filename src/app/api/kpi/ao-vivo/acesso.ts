@@ -13,3 +13,13 @@ export async function acessoAoVivo(cliente: string | null):
   if (!podeOperarEmpresa(perfil, cliente)) return { ok: false, resp: new NextResponse('Sem permissão.', { status: 403 }) }
   return { ok: true, cliente, email: user.email ?? null, clientes: CLIENTES_AO_VIVO.filter(c => podeOperarEmpresa(perfil, c)) }
 }
+
+/** F3-07: telas que cobrem todos os clientes do login (checklist da manhã). */
+export async function clientesDoAoVivo(): Promise<{ ok: true; clientes: ClienteAoVivo[] } | { ok: false; resp: NextResponse }> {
+  const user = await usuarioAtual()
+  if (!user) return { ok: false, resp: new NextResponse('Não autenticado', { status: 401 }) }
+  const perfil = await getPerfil(user.id)
+  const clientes = CLIENTES_AO_VIVO.filter(c => podeOperarEmpresa(perfil, c))
+  if (clientes.length === 0) return { ok: false, resp: new NextResponse('Sem permissão.', { status: 403 }) }
+  return { ok: true, clientes }
+}
