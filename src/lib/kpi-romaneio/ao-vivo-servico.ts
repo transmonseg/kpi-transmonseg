@@ -27,9 +27,20 @@ export type ClienteAoVivo = (typeof CLIENTES_AO_VIVO)[number]
 export const clienteAoVivoValido = (c: string | null): c is ClienteAoVivo => (CLIENTES_AO_VIVO as readonly string[]).includes(c ?? '')
 
 /** Planilha do último cálculo (uma por cliente/dia, sobrescrita a cada 10
- *  min): "Gerar KPI agora" devolve ela na hora. Apagada depois de 7 dias. */
+ *  min): "Gerar KPI agora" devolve ela na hora. A limpeza de 7 dias está
+ *  suspensa desde o F0-11. */
 const BUCKET_AO_VIVO = 'kpi-romaneio-inputs'
 export const caminhoXlsxAoVivo = (cliente: ClienteAoVivo, data: string) => `ao-vivo/${cliente}/${data}.xlsx`
+/** F2-12 (KRQ-06): planilha final do dia encerrado, guardada para sempre,
+ *  fora da pasta que a limpeza do Ao vivo apaga. */
+export const caminhoXlsxFechado = (cliente: ClienteAoVivo, data: string) => `fechados/${cliente}/${data}.xlsx`
+
+async function guardarXlsxFechado(svc: ReturnType<typeof createServiceClient>, cliente: ClienteAoVivo, data: string, xlsx: Buffer, log: (m: string) => void): Promise<void> {
+  const up = await svc.storage.from(BUCKET_AO_VIVO).upload(caminhoXlsxFechado(cliente, data), xlsx, {
+    contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', upsert: true,
+  })
+  if (up.error) log(`ao vivo ${cliente} ${data}: planilha final não guardada em fechados/ (${up.error.message})`)
+}
 const XLSX_AO_VIVO_VALIDO_MS = 10 * 60_000
 
 /** Planilha do último cálculo se ele tem menos de 10 min; senão null. */
@@ -337,6 +348,13 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
       if (anterior && !anterior.degradado) {
         await svc.from('kpi_ao_vivo_calculo').update({ ultimo_erro: r.degradado, ultimo_erro_em: new Date().toISOString(), rodando_desde: null }).eq('cliente', cliente).eq('data', data)
         log(`ao vivo ${cliente} ${data}: resultado anterior mantido (${r.degradado})`)
+        // F2-12: dia encerrado -- o final e' o resultado bom mantido, cuja
+        // planilha e' a do Ao vivo.
+        if (data < hojeBR()) {
+          const { data: arq, error } = await svc.storage.from(BUCKET_AO_VIVO).download(caminhoXlsxAoVivo(cliente, data))
+          if (error || !arq) log(`ao vivo ${cliente} ${data}: planilha do resultado mantido não lida (${error?.message ?? 'sem arquivo'})`)
+          else await guardarXlsxFechado(svc, cliente, data, Buffer.from(await arq.arrayBuffer()), log)
+        }
         return 'erro'
       }
     }
@@ -345,6 +363,9 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', upsert: true,
     })
     if (up.error) log(`ao vivo ${cliente} ${data}: planilha não guardada (${up.error.message})`)
+    // F2-12 (KRQ-06): dia encerrado (fechamento das 00:30, reconferência das
+    // 05:30 ou recálculo depois) -- a planilha final fica guardada para sempre.
+    if (data < hojeBR()) await guardarXlsxFechado(svc, cliente, data, r.xlsx, log)
     const resultado = montarResultadoAoVivo(data, await extrairKpiCompleto(r.xlsx), coords, new Date().toISOString(), paradasNf)
     if (sugestoesTroca.length > 0) resultado.sugestoesTroca = sugestoesTroca
     if (r.aviso) resultado.avisos = [r.aviso]

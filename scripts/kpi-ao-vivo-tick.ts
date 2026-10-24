@@ -91,9 +91,10 @@ async function main() {
   // do ao vivo ficam (F0-11, ver abaixo).
   if (horaBR === 4 && new Date().getMinutes() < 10) {
     await limparCacheDia(hojeBR()).catch(err => log(`limpeza cache: ${err}`))
-    // Plano mestre 23/10 (F0-11): planilhas do Ao vivo NAO sao mais apagadas
-    // ate' o KPI final ficar guardado para sempre (F2-12) -- a da RQ e' a
-    // unica prova do fechamento dos dias puxados da Fusion.
+    // Plano mestre 23/10 (F0-11): planilhas do Ao vivo NAO sao mais apagadas.
+    // O F2-12 ja' guarda o KPI final em fechados/<cliente>/AAAA-MM-DD.xlsx,
+    // mas limparXlsxAoVivo so' volta depois de o dono conferir em producao
+    // que o arquivo de ontem existe e continua la' 8 dias depois.
     log('limpeza diaria feita')
   }
   if (horaBR < 5 || horaBR >= 21) return
