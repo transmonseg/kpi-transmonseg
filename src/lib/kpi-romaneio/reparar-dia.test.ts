@@ -122,7 +122,7 @@ describe('repararDiaRQ', () => {
     const d: DepsReparoRQ = {
       diaGuardado: async () => ({ entregas: [entrega('5557757'), entrega('5557758'), entrega('5557759', '')], enviadoPor: 'erica@x.com', fonte: 'manual' }),
       linhasNoMonitoramento: async () => (o.linhas === undefined ? 0 : o.linhas),
-      reenviar, jaReenviou: () => false, marcarReenvio: marcar,
+      reenviar, lerEstado: () => null, gravarEstado: marcar,
       ...o,
     }
     return { d, reenviar, marcar }
@@ -133,7 +133,7 @@ describe('repararDiaRQ', () => {
     const log = vi.fn()
     expect(await repararDiaRQ(d, '2026-10-21', log)).toBe('reenviado')
     expect(reenviar).toHaveBeenCalledWith('2026-10-21', expect.any(Array), 'erica@x.com')
-    expect(marcar).toHaveBeenCalledWith('2026-10-21', 2, 0)
+    expect(marcar).toHaveBeenCalledWith('2026-10-21', expect.objectContaining({ esperados: [2] }))
     expect(log.mock.calls[0][0]).toContain('rioquality 2026-10-21')
   })
 
@@ -147,7 +147,7 @@ describe('repararDiaRQ', () => {
   it('monitoramento indisponivel (null), dia nao guardado, ou ja reenviado com a mesma divergencia -> nada', async () => {
     expect(await repararDiaRQ(deps({ linhas: null }).d, '2026-10-23', () => {})).toBe('nada')
     expect(await repararDiaRQ(deps({ diaGuardado: async () => null }).d, '2026-10-23', () => {})).toBe('nada')
-    const ja = deps({ linhas: 5, jaReenviou: (_d, esperado, n) => esperado === 2 && n === 5 })
+    const ja = deps({ linhas: 5, lerEstado: () => ({ esperados: [2], residual: null }) })
     expect(await repararDiaRQ(ja.d, '2026-10-23', () => {})).toBe('nada')
     expect(ja.reenviar).not.toHaveBeenCalled()
   })
@@ -159,5 +159,54 @@ describe('repararDiaRQ', () => {
     expect(log.mock.calls[0][0]).toContain('HTTP 500')
     const quebra = deps({ diaGuardado: async () => { throw new Error('banco') } })
     expect(await repararDiaRQ(quebra.d, '2026-10-23', log)).toBe('nada')
+  })
+})
+
+// F2-REV-06 (revisao independente da Fase 2): a contagem do monitoramento so'
+// soma a frota da RQ + linhas sem veiculo. Placa da RQ cadastrada no MON em
+// veiculo de OUTRO cliente nunca entra -- a divergencia e' permanente e cada
+// mudanca da contagem (a Fusion cresce o dia) reenviava o dia inteiro com
+// 'substituir'. Numeros de 22/10 (2.862 linhas da frota + 18 da KZA2F01, que
+// aqui esta' no veiculo de outro cliente). Hoje nenhuma placa da RQ esta' em
+// veiculo de outro cliente no MON (conferido 24/10) -- caso montado.
+describe('F2-REV-06: repararDiaRQ estavel', () => {
+  const entrega = (nf: string, placaNorm: string) => ({ placaNorm, nf, rua: 'R', bairro: '', cidade: 'C', uf: 'RJ', clienteNome: 'X', destino: '', motorista: '' })
+  const dia = (frota: number, kza: number) => [
+    ...Array.from({ length: frota }, (_, i) => entrega(String(5_000_000 + i), 'BKF6I55')),
+    ...Array.from({ length: kza }, (_, i) => entrega(String(6_000_000 + i), 'KZA2F01')),
+  ]
+  // Monitoramento simulado: so' conta a frota (a KZA2F01 esta' em veiculo de outro cliente).
+  function cenario() {
+    let entregas = dia(2862, 18)
+    let noMon = 0
+    const estado = new Map<string, unknown>()
+    const reenviar = vi.fn(async (_d: string, es: { placaNorm: string }[]) => { noMon = es.filter(e => e.placaNorm !== 'KZA2F01').length; return { ok: true } })
+    const log = vi.fn()
+    const d: DepsReparoRQ = {
+      diaGuardado: async () => ({ entregas, enviadoPor: 'cron-fusion', fonte: 'fusion' }),
+      linhasNoMonitoramento: async () => noMon,
+      reenviar,
+      lerEstado: data => (estado.get(data) as ReturnType<DepsReparoRQ['lerEstado']>) ?? null,
+      gravarEstado: (data, e) => { estado.set(data, e) },
+    }
+    return { d, reenviar, log, crescer: (frota: number, kza: number) => { entregas = dia(frota, kza); noMon = frota }, setMon: (n: number) => { noMon = n } }
+  }
+  it('1 reparo; depois a diferença das placas fora da frota é tolerada mesmo com a contagem mudando', async () => {
+    const c = cenario()
+    expect(await repararDiaRQ(c.d, '2026-10-22', c.log)).toBe('reenviado')
+    expect(c.log.mock.calls.map(x => x[0]).join('\n')).toMatch(/18 linha\(s\).*persiste/)
+    // ticks seguintes: mesma divergencia (2.880 x 2.862) -> nada
+    expect(await repararDiaRQ(c.d, '2026-10-22', c.log)).toBe('nada')
+    // a Fusion cresce o dia e o envio dela atualiza o MON (2.900 da frota): diferenca igual -> nada
+    c.crescer(2900, 18)
+    expect(await repararDiaRQ(c.d, '2026-10-22', c.log)).toBe('nada')
+    expect(c.reenviar).toHaveBeenCalledTimes(1)
+  })
+  it('mesma contagem esperada nunca é reparada 2x no dia, mesmo se o MON mudar', async () => {
+    const c = cenario()
+    expect(await repararDiaRQ(c.d, '2026-10-22', c.log)).toBe('reenviado')
+    c.setMon(100)
+    expect(await repararDiaRQ(c.d, '2026-10-22', c.log)).toBe('nada')
+    expect(c.reenviar).toHaveBeenCalledTimes(1)
   })
 })

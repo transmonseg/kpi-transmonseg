@@ -179,13 +179,20 @@ export const depsReaisReparo: DepsReparo = {
 // reenviada uma vez no dia => nao repete (linha que o monitoramento recusa
 // nao vira reenvio a cada 10 min).
 
+/** F2-REV-06: estado do reparo da RQ no dia. `esperados` = contagens do Ao
+ *  vivo ja' reparadas (nunca repara a mesma 2x). `residual` = esperado menos o
+ *  monitoramento logo depois do ultimo reparo: linhas que o monitoramento nao
+ *  conta (placa da RQ em veiculo de outro cliente) -- a mesma diferenca depois
+ *  e' tolerada, sem reenvio. */
+export type EstadoReparoRQ = { esperados: number[]; residual: number | null }
+
 export type DepsReparoRQ = {
   diaGuardado(data: string): Promise<{ entregas: EntregaRioQualityCompleta[]; enviadoPor: string | null; fonte: string | null } | null>
   /** Linhas da RQ no monitoramento no dia; null = indisponivel (nunca reenvia). */
   linhasNoMonitoramento(data: string): Promise<number | null>
   reenviar(data: string, entregas: EntregaRioQualityCompleta[], enviadoPor: string | null): Promise<{ ok: boolean; erro?: string; aviso?: string }>
-  jaReenviou(data: string, esperado: number, noMonitoramento: number): boolean
-  marcarReenvio(data: string, esperado: number, noMonitoramento: number): void
+  lerEstado(data: string): EstadoReparoRQ | null
+  gravarEstado(data: string, estado: EstadoReparoRQ): void
 }
 
 export async function repararDiaRQ(deps: DepsReparoRQ, data: string, log: (m: string) => void): Promise<'nada' | 'reenviado' | 'falhou'> {
@@ -195,13 +202,26 @@ export async function repararDiaRQ(deps: DepsReparoRQ, data: string, log: (m: st
     const esperado = linhasParaMonitoramentoRQ(dia.entregas).length
     const n = await deps.linhasNoMonitoramento(data)
     if (n === null || n === esperado) return 'nada'
-    if (deps.jaReenviou(data, esperado, n)) return 'nada'
-    deps.marcarReenvio(data, esperado, n)
+    const estado = deps.lerEstado(data) ?? { esperados: [], residual: null }
+    // F2-REV-06: diferenca ja' explicada pelo ultimo reparo (placa fora da
+    // frota da RQ no monitoramento) -- a contagem muda com a Fusion, ela nao.
+    if (estado.residual != null && esperado - n === estado.residual) return 'nada'
+    // No maximo 1 reparo por contagem esperada no dia.
+    if (estado.esperados.includes(esperado)) return 'nada'
+    const marcado: EstadoReparoRQ = { esperados: [...estado.esperados, esperado], residual: estado.residual }
+    deps.gravarEstado(data, marcado)
     const r = await deps.reenviar(data, dia.entregas, dia.enviadoPor)
     log(r.ok
       ? `[reparo] rioquality ${data}: monitoramento com ${n} linha(s) da RQ e o Ao vivo (${dia.fonte ?? '?'}) com ${esperado} -- dia reenviado`
       : `[reparo] rioquality ${data}: reenvio ao monitoramento falhou: ${r.erro ?? 'erro desconhecido'}`)
     if (r.ok && r.aviso) log(`[reparo] rioquality ${data}: substituir recusado pelo monitoramento -- ${r.aviso}`)
+    if (r.ok) {
+      const depois = await deps.linhasNoMonitoramento(data)
+      if (depois !== null) {
+        deps.gravarEstado(data, { ...marcado, residual: esperado - depois })
+        if (depois !== esperado) log(`[reparo] rioquality ${data}: divergência de ${esperado - depois} linha(s) persiste depois do reparo (${depois} no monitoramento x ${esperado} no Ao vivo; placa da RQ em veículo de outro cliente no monitoramento?) -- tolerada, sem novo reenvio enquanto a diferença for a mesma`)
+      }
+    }
     return r.ok ? 'reenviado' : 'falhou'
   } catch (err) {
     log(`[reparo] rioquality ${data}: erro ignorado: ${err instanceof Error ? err.message : String(err)}`)
@@ -222,15 +242,17 @@ export const depsReaisReparoRQ: DepsReparoRQ = {
   async reenviar(data, entregas, enviadoPor) {
     return enviarRioQualityAoMonitoramento(data, await linhasComCoordenadasRQ(entregas), { enviadoPor })
   },
-  jaReenviou(data, esperado, n) {
+  lerEstado(data) {
     try {
       const f = flagReparoRQ(data)
-      if (!existsSync(f)) return false
-      const j = JSON.parse(readFileSync(f, 'utf8')) as { esperado?: number; n?: number }
-      return j.esperado === esperado && j.n === n
-    } catch { return false }
+      if (!existsSync(f)) return null
+      const j = JSON.parse(readFileSync(f, 'utf8')) as { esperados?: unknown; residual?: unknown; esperado?: unknown }
+      // formato antigo (F2-04): { esperado, n }
+      const esperados = Array.isArray(j.esperados) ? j.esperados.filter((x): x is number => typeof x === 'number') : typeof j.esperado === 'number' ? [j.esperado] : []
+      return { esperados, residual: typeof j.residual === 'number' ? j.residual : null }
+    } catch { return null }
   },
-  marcarReenvio(data, esperado, n) {
-    try { writeFileSync(flagReparoRQ(data), JSON.stringify({ esperado, n, em: new Date().toISOString() })) } catch { /* sem trava, so' reenvia de novo */ }
+  gravarEstado(data, estado) {
+    try { writeFileSync(flagReparoRQ(data), JSON.stringify({ ...estado, em: new Date().toISOString() })) } catch { /* sem trava, so' reenvia de novo */ }
   },
 }
