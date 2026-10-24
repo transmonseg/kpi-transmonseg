@@ -141,3 +141,11 @@ describe('descontarApagoes (KN-05: apagao do coletor nao e\' falha do rastreador
     expect(r.map(x => x.inicio)).toEqual(['16:57'])
   })
 })
+
+describe('classificarCausa -- D-04 placa provisoria/ficticia', () => {
+  it('22/10 LLD4202 (provisoria) -> troca de placa (falta a operacao informar o carro)', () => {
+    const r = classificarCausa(base({ situacao: 'fora_da_conta', status: 'PLACA PROVISÓRIA - FORA DA CONTA ATÉ A OPERAÇÃO INFORMAR O CARRO', rastreador: { leituras: 0, atrasadas: 0 } }))
+    expect(r.causa).toBe('troca_placa')
+    expect(r.forca).toBe('forte')
+  })
+})

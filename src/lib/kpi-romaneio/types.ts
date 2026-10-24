@@ -339,7 +339,16 @@ export type LinhaDetalheEntrega = {
   responsavelResolucao?: string | null
   placaExecutoraResolucao?: string | null
   documentoResolucao?: string | null
+  // D-03/D-04 (plano mestre 23/10): placa da escala que nao identifica um
+  // carro real da frota (ver placa-situacao.ts). Ausente = placa normal.
+  situacaoPlaca?: SituacaoPlaca | null
+  // D-03: placa real provavel (sugestao do F1-04, confirmada pelo GPS).
+  placaSugerida?: string | null
 }
+
+/** D-03/D-04: fora_da_frota conta como correta (sem rastreador); provisoria e
+ *  ficticia saem da taxa ate a operacao informar o carro. */
+export type SituacaoPlaca = 'fora_da_frota' | 'provisoria' | 'ficticia'
 
 /** Descasamento entre Escala e Romaneio -- carga que só aparece de um dos
  *  dois lados (ver spec, secao "Tratamento de erro/ambiguidade": "aviso

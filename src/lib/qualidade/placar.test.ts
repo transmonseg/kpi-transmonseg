@@ -144,3 +144,27 @@ describe('montarPlacar', () => {
     expect(p.erros).toEqual([{ fonte: 'log_postgres', erro: 'sem permissao' }])
   })
 })
+
+// D-04 (plano mestre 23/10): placa provisoria/ficticia fora da conta, como a
+// carga sem placa. 22/10 depois do D-04: LLD4202 (1 NF) sai -> 2.182 / 2.252.
+describe('metricasDoAoVivo -- D-04 placa provisoria fora da conta', () => {
+  const STATUS_PROV = 'PLACA PROVISÓRIA - FORA DA CONTA ATÉ A OPERAÇÃO INFORMAR O CARRO'
+  const row: LinhaCalculo = {
+    cliente: 'nutrimax', data: '2026-10-22', calculado_em: '2026-10-23T03:31:00.000Z', ultimo_erro: null,
+    resultado: {
+      resumo: { taxa: 50, totalNfs: 3, nfsNaConta: 2, entregues: 1 },
+      placas: [
+        { placa: 'LLD4202', saidaBase: null, chegadaBase: null, nfs: [{ nf: '1', carga: '100689', status: STATUS_PROV, situacao: 'fora_da_conta', chegada: null, lat: null }] },
+        { placa: 'ABC1234', saidaBase: null, chegadaBase: null, nfs: [
+          { nf: '2', carga: '100700', status: 'ENTREGUE', situacao: 'entregue', chegada: '10:00', lat: null },
+          { nf: '3', carga: '100700', status: 'NÃO FOI AO CLIENTE', situacao: 'nao_foi', chegada: null, lat: null },
+        ] },
+      ],
+    },
+  }
+  const m = metricasDoAoVivo('2026-10-22', row)
+  it('conta a provisoria fora da conta e nao acusa divergencia com o resumo', () => {
+    expect(valor(m, 'placa_provisoria_fora')).toBe(1)
+    expect(valor(m, 'divergencia_resumo')).toBe(0)
+  })
+})

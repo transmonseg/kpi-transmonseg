@@ -295,6 +295,8 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
         sugestoesTroca = sugerirTrocas(pontos, paradasPorPlaca, {
           frota, historico: ctxTroca?.historico ?? [], placasDoCarroPorCarga: ctxTroca?.porCarro(frota ?? []),
         })
+        // D-03: a placa fora da frota leva a provavel no rotulo da planilha.
+        return { sugestoesTroca }
       },
     }, paradasRq => {
       paradasDoDia = paradasRq

@@ -8,6 +8,7 @@ import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEn
 import { KPI_COLORS, KPI_FONTS, KPI_BORDER_THIN } from '@/lib/kpi/kpi-styles'
 import { getLogoBuffer } from '@/lib/kpi/template-loader'
 import { hojeBR } from '@/lib/data-br'
+import { situacaoDaPlaca, STATUS_PLACA_PROVISORIA, STATUS_PLACA_FICTICIA, MOTIVO_PLACA_FORA_DA_FROTA } from './placa-situacao'
 
 // STATUS (OK/INCOMPLETO) removido da tela principal (pedido do usuario
 // 25/08: "tira esse status de concluido ou incompleto") -- o campo `status`
@@ -266,6 +267,8 @@ function textoStatus(d: LinhaDetalheEntrega): string {
   // diz o que sabemos de verdade: falta o codigo no cadastro.
   // Task 2 (item 3): carga sem placa nunca e' rotulada "sem rastreador".
   if (ehCargaSemPlaca(d) && (d.observacao == null || d.observacao.startsWith(PREFIXO_OBS_SEM_RASTREADOR))) return ROTULO_CARGA_SEM_PLACA
+  // D-04 (plano mestre 23/10): placa provisoria/ficticia, fora da conta.
+  if (ehPlacaForaDaConta(d)) return situacaoDaPlaca(d) === 'ficticia' ? STATUS_PLACA_FICTICIA : STATUS_PLACA_PROVISORIA
   // F1-09 (KN-10, 22/10): o LLD4202 dizia "NÃO CONTABILIZADO" e a taxa o
   // contava como correto (regra do dono 04/10). O rotulo diz o que a taxa faz.
   if (ehSemRastreador(d)) return textoSemRastreadorContada(d)
@@ -289,6 +292,11 @@ const ROTULO_CARGA_SEM_PLACA = 'CARGA SEM PLACA - NÃO CONTABILIZADO'
 // O prefixo "SEM RASTREADOR" continua (categoriaPendencia/resumo-dashboard).
 const ROTULO_SEM_RASTREADOR_CONTADA = 'SEM RASTREADOR - CONTADA COMO CORRETA'
 function textoSemRastreadorContada(d: LinhaDetalheEntrega): string {
+  // D-03 (plano mestre 23/10): placa que nao existe na frota (RQO5E38) --
+  // continua contada como correta, pedindo a placa real (e a provavel, F1-04).
+  if (situacaoDaPlaca(d) === 'fora_da_frota') {
+    return `${ROTULO_SEM_RASTREADOR_CONTADA} - ${MOTIVO_PLACA_FORA_DA_FROTA}${d.placaSugerida ? ` (PROVÁVEL: ${d.placaSugerida})` : ''}`
+  }
   const obs = d.observacao ?? ''
   const motivo = obs.startsWith('SEM RASTREADOR - ')
     ? obs.slice('SEM RASTREADOR - '.length).replace(/\s+-\s+NÃO CONTABILIZADO$/, '')
@@ -356,8 +364,19 @@ function ehCargaSemPlaca(d: LinhaDetalheEntrega): boolean {
   return d.placa === ''
 }
 
+// D-04 (plano mestre 23/10, OK do dono 23/10): placa provisoria declarada
+// (LLD4202) ou ficticia (XXX0000) nao identifica o carro -- a regra "sem
+// rastreador conta como correta" vale para placa REAL. Fora da taxa (num e
+// denom) ate a operacao informar o carro, como a carga sem placa. NF
+// confirmada (outra placa provou a entrega) continua ENTREGUE e conta.
+function ehPlacaForaDaConta(d: LinhaDetalheEntrega): boolean {
+  if (ehCargaSemPlaca(d) || d.status !== 'pendente') return false
+  const s = situacaoDaPlaca(d)
+  return s === 'provisoria' || s === 'ficticia'
+}
+
 function ehSemRastreador(d: LinhaDetalheEntrega): boolean {
-  if (ehCargaSemPlaca(d)) return false
+  if (ehCargaSemPlaca(d) || ehPlacaForaDaConta(d)) return false
   if (d.observacao?.startsWith(PREFIXO_OBS_SEM_RASTREADOR)) return true
   return d.temRastreador === false && d.evidencia !== 'outra_placa' && d.evidencia !== 'rota_outra_placa'
 }
@@ -367,7 +386,7 @@ function ehSemRastreador(d: LinhaDetalheEntrega): boolean {
 // denom); com resolucao manual conta pela resolucao (ver
 // entraNoDenominadorPosConferencia). Sem rastreador prevalece na contagem.
 function ehNaoSaiuDaBase(d: LinhaDetalheEntrega): boolean {
-  return (d.observacao?.startsWith(OBS_NAO_SAIU_DA_BASE) ?? false) && !ehSemRastreador(d) && !ehCargaSemPlaca(d)
+  return (d.observacao?.startsWith(OBS_NAO_SAIU_DA_BASE) ?? false) && !ehSemRastreador(d) && !ehCargaSemPlaca(d) && !ehPlacaForaDaConta(d)
 }
 
 // Auditoria Ana 02/10 (RQO1B27 01/10, "SUBSTITUICAO NAO INFORMADA, VEICULO
@@ -383,7 +402,7 @@ const PREFIXO_OBS_ESCALA_DIVERGENTE = 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE'
 function temRotuloEscalaDivergente(d: LinhaDetalheEntrega): boolean {
   return d.status === 'pendente'
     && (d.observacao?.startsWith(PREFIXO_OBS_ESCALA_DIVERGENTE) ?? false)
-    && !ehSemRastreador(d) && !ehCargaSemPlaca(d) && !ehNaoSaiuDaBase(d)
+    && !ehSemRastreador(d) && !ehCargaSemPlaca(d) && !ehNaoSaiuDaBase(d) && !ehPlacaForaDaConta(d)
 }
 export function cargasEscalaDivergenteInteira(detalhe: LinhaDetalheEntrega[]): Set<string> {
   const total = new Map<string, number>()
@@ -402,8 +421,20 @@ function ehEscalaDivergente(d: LinhaDetalheEntrega, inteiras: Set<string>): bool
 function avisosDeFrota(detalhe: LinhaDetalheEntrega[], trocas: Map<string, TrocaProvavel> = new Map()): { carga: string; placa: string; texto: string }[] {
   const inteiras = cargasEscalaDivergenteInteira(detalhe)
   const grupos = new Map<string, { carga: string; placa: string; semRastreador: number; escalaDivergente: number; foraDaFrota: boolean }>()
+  // D-03/D-04 (plano mestre 23/10): placa provisoria/ficticia (fora da conta)
+  // e placa que nao existe na frota (contada como correta, com a provavel).
+  const marcadas = new Map<string, { carga: string; placa: string; situacao: string; nfs: number; sugerida: string | null }>()
   for (const d of detalhe) {
     if (ehCargaSemPlaca(d)) continue
+    const situacao = situacaoDaPlaca(d)
+    if (ehPlacaForaDaConta(d) || (situacao === 'fora_da_frota' && ehSemRastreador(d))) {
+      const chave = `${d.carga}::${d.placa}`
+      const m = marcadas.get(chave) ?? { carga: d.carga, placa: d.placa, situacao: situacao!, nfs: 0, sugerida: null }
+      m.nfs++
+      m.sugerida ??= d.placaSugerida ?? null
+      marcadas.set(chave, m)
+      continue
+    }
     const semRastreador = ehSemRastreador(d)
     const escalaDivergente = ehEscalaDivergente(d, inteiras)
     if (!semRastreador && !escalaDivergente) continue
@@ -417,6 +448,11 @@ function avisosDeFrota(detalhe: LinhaDetalheEntrega[], trocas: Map<string, Troca
     grupos.set(chave, g)
   }
   const out: { carga: string; placa: string; texto: string }[] = []
+  for (const m of marcadas.values()) {
+    out.push({ carga: m.carga, placa: m.placa, texto: m.situacao === 'fora_da_frota'
+      ? `placa fora da frota (digitada errada?) -- ${m.nfs} NF(s) contadas como corretas; confirmar a placa real${m.sugerida ? ` (provável: ${m.sugerida})` : ''}`
+      : `placa ${m.situacao === 'ficticia' ? 'fictícia' : 'provisória'} -- ${m.nfs} NF(s) fora da conta até a operação informar o carro que fez a carga (troca de placa no Ao vivo)` })
+  }
   for (const g of grupos.values()) {
     if (g.semRastreador > 0) out.push({ carga: g.carga, placa: g.placa, texto: g.foraDaFrota
       ? `placa não cadastrada na frota rastreada (placa provisória ou veículo novo?) -- ${g.semRastreador} NF(s) contadas como corretas (informar a placa real que fez a carga)`
@@ -468,7 +504,7 @@ function placasSemRastreadorNoDetalhe(detalhe: LinhaDetalheEntrega[]): Set<strin
 // fim da rota: N"). Mesmo prefixo gravado em agregacao.ts.
 const PREFIXO_OBS_AGUARDANDO = 'AGUARDANDO - ROTA EM ANDAMENTO'
 function ehAguardando(d: LinhaDetalheEntrega): boolean {
-  return (d.observacao?.startsWith(PREFIXO_OBS_AGUARDANDO) ?? false) && !ehSemRastreador(d) && !ehNaoSaiuDaBase(d) && !ehCargaSemPlaca(d)
+  return (d.observacao?.startsWith(PREFIXO_OBS_AGUARDANDO) ?? false) && !ehSemRastreador(d) && !ehNaoSaiuDaBase(d) && !ehCargaSemPlaca(d) && !ehPlacaForaDaConta(d)
 }
 
 // Task 2 (plano 2026-09-30, Rio Quality): placa cuja consulta ao rastreador
@@ -481,7 +517,7 @@ const PREFIXO_OBS_CONSULTA_FALHOU = 'CONSULTA AO RASTREADOR FALHOU'
 const PREFIXO_OBS_CONSULTA_SUSPEITA = 'CONSULTA AO RASTREADOR SUSPEITA'
 function ehConsultaFalhou(d: LinhaDetalheEntrega): boolean {
   const obs = d.observacao ?? ''
-  return (obs.startsWith(PREFIXO_OBS_CONSULTA_FALHOU) || obs.startsWith(PREFIXO_OBS_CONSULTA_SUSPEITA)) && !ehCargaSemPlaca(d) && d.status === 'pendente'
+  return (obs.startsWith(PREFIXO_OBS_CONSULTA_FALHOU) || obs.startsWith(PREFIXO_OBS_CONSULTA_SUSPEITA)) && !ehCargaSemPlaca(d) && !ehPlacaForaDaConta(d) && d.status === 'pendente'
 }
 
 // Fix round 1, item 4 (decisao de negocio da Ana): a taxa "apos conferencia
@@ -503,6 +539,7 @@ function entraNoDenominadorPosConferencia(d: LinhaDetalheEntrega, inteiras: Set<
   // denominador e no numerador (ver confirmadaAposConferencia).
   if (ehSemRastreador(d)) return true
   if (ehCargaSemPlaca(d) && !d.resolucaoManual) return false
+  if (ehPlacaForaDaConta(d) && !d.resolucaoManual) return false
   if (ehNaoSaiuDaBase(d) && !d.resolucaoManual) return false
   if (ehEscalaDivergente(d, inteiras) && !d.resolucaoManual) return false
   // Item 4 (revisao final): AGUARDANDO segue a mesma regra de SEM
@@ -516,7 +553,7 @@ function entraNoDenominadorPosConferencia(d: LinhaDetalheEntrega, inteiras: Set<
 // 04/10 (ordem do usuario): SEM RASTREADOR conta como CORRETA -- entra no
 // denominador E no numerador; so' segue marcada como sem rastreador.
 function entraNaTaxa(d: LinhaDetalheEntrega, inteiras: Set<string>): boolean {
-  return ehSemRastreador(d) || (!ehNaoSaiuDaBase(d) && !ehEscalaDivergente(d, inteiras) && !ehAguardando(d) && !ehCargaSemPlaca(d) && !ehConsultaFalhou(d))
+  return ehSemRastreador(d) || (!ehNaoSaiuDaBase(d) && !ehEscalaDivergente(d, inteiras) && !ehAguardando(d) && !ehCargaSemPlaca(d) && !ehConsultaFalhou(d) && !ehPlacaForaDaConta(d))
 }
 // Confirmada = status diferente de 'pendente' (so' ENTREGUE confirmado);
 // REVISAR fica pendente (nunca confirma). SEM RASTREADOR conta como correta.
@@ -561,6 +598,7 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   naoSaiuDaBase: number
   escalaDivergente: number
   cargaSemPlaca: number
+  placaProvisoria: number
   consultaFalhou: number
   aguardando: number
   revisar: number
@@ -570,7 +608,8 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   const inteiras = cargasEscalaDivergenteInteira(detalhe)
   const escalaDivergente = detalhe.filter(d => ehEscalaDivergente(d, inteiras)).length
   const cargaSemPlaca = detalhe.filter(ehCargaSemPlaca).length
-  const revisar = detalhe.filter(d => d.confianca === 'REVISAR' && !ehSemRastreador(d) && !ehCargaSemPlaca(d) && !ehConsultaFalhou(d)).length
+  const placaProvisoria = detalhe.filter(ehPlacaForaDaConta).length
+  const revisar = detalhe.filter(d => d.confianca === 'REVISAR' && !ehSemRastreador(d) && !ehCargaSemPlaca(d) && !ehConsultaFalhou(d) && !ehPlacaForaDaConta(d)).length
   const aguardando = detalhe.filter(ehAguardando).length
   const consultaFalhou = detalhe.filter(d => ehConsultaFalhou(d) && !ehSemRastreador(d)).length
   const base = detalhe.filter(d => entraNaTaxa(d, inteiras))
@@ -589,7 +628,7 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   const taxaPosConferenciaPct = denominadorPosConferencia > 0
     ? Math.round((1000 * confirmadasPosConferencia) / denominadorPosConferencia) / 10 : 0
 
-  return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, denominadorPosConferencia, semRastreador, naoSaiuDaBase, escalaDivergente, cargaSemPlaca, consultaFalhou, aguardando, revisar }
+  return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, denominadorPosConferencia, semRastreador, naoSaiuDaBase, escalaDivergente, cargaSemPlaca, placaProvisoria, consultaFalhou, aguardando, revisar }
 }
 
 // Pedido do usuário 26/09 (linha de TAXA auditável): inteiro com separador
@@ -842,6 +881,7 @@ export async function gerarKpiRomaneioXlsx(
       ...(resumo.naoSaiuDaBase > 0 ? [`${formatarInteiroPtBr(resumo.naoSaiuDaBase)} que não saíram da base`] : []),
       ...(resumo.escalaDivergente > 0 ? [`${formatarInteiroPtBr(resumo.escalaDivergente)} de placa da escala divergente`] : []),
       ...(resumo.cargaSemPlaca > 0 ? [`${formatarInteiroPtBr(resumo.cargaSemPlaca)} de carga sem placa`] : []),
+      ...(resumo.placaProvisoria > 0 ? [`${formatarInteiroPtBr(resumo.placaProvisoria)} de placa provisória ou fictícia`] : []),
       ...(resumo.consultaFalhou > 0 ? [`${formatarInteiroPtBr(resumo.consultaFalhou)} com consulta ao rastreador falha`] : []),
     ]
     const foraTexto = `${partesFora.length === 0 ? '0' : partesFora.length > 1 ? `${partesFora.slice(0, -1).join(', ')} e ${partesFora[partesFora.length - 1]}` : partesFora[0]} fora da conta; ${formatarInteiroPtBr(resumo.semRastreador)} sem rastreador contadas como corretas`
@@ -855,6 +895,7 @@ export async function gerarKpiRomaneioXlsx(
     const naoSaiuTexto = (resumo.naoSaiuDaBase > 0 ? `    |    NFs sem saída da base: ${resumo.naoSaiuDaBase} (fora da conta)` : '')
       + (resumo.escalaDivergente > 0 ? `    |    NFs com placa da escala divergente: ${resumo.escalaDivergente} (fora da conta)` : '')
       + (resumo.cargaSemPlaca > 0 ? `    |    NFs de carga sem placa: ${resumo.cargaSemPlaca} (fora da conta)` : '')
+      + (resumo.placaProvisoria > 0 ? `    |    NFs de placa provisória ou fictícia: ${resumo.placaProvisoria} (fora da conta)` : '')
     const taxaPosTexto = `${formatarPctUmaCasa(resumo.taxaPosConferenciaPct)}% (${formatarInteiroPtBr(resumo.confirmadasPosConferencia)} de ${formatarInteiroPtBr(resumo.denominadorPosConferencia)} NFs; ${formatarInteiroPtBr(foraDaContaPosConferencia)} fora da conta)`
     // Pedido da Ana 02/10: tres niveis -- ENTREGUE confirmado, PENDENTE pra
     // auditoria e NAO ENTREGUE confirmado pela conferencia da operacao.

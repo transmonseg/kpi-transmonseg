@@ -8,6 +8,7 @@ import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { RAIO_CONFIRMACAO_AMPLIADO_METROS } from './constants'
 import type { Investigacao } from './investigacao'
 import { OBS_NAO_SAIU_DA_BASE } from './types'
+import { PREFIXOS_STATUS_PLACA_FORA_DA_CONTA } from './placa-situacao'
 
 /** pendente = rota ainda rodando; nao_confirmada = a rota acabou e a NF não
  *  foi confirmada (conta como não entregue na taxa). fora_da_conta (F1-10) =
@@ -111,7 +112,8 @@ function situacaoDe(n: NfResumo): SituacaoNf {
 // F1-10 (ACH-06): mesma regra de fora da conta da taxa (gerador-xlsx.ts:
 // ehCargaSemPlaca, ehNaoSaiuDaBase, ehConsultaFalhou, ehEscalaDivergente),
 // lida do STATUS da planilha -- serve também pra situação antiga já gravada.
-const PREFIXOS_FORA_DA_CONTA = ['CARGA SEM PLACA', OBS_NAO_SAIU_DA_BASE, 'CONSULTA AO RASTREADOR FALHOU', 'CONSULTA AO RASTREADOR SUSPEITA']
+// D-04 (plano mestre 23/10): placa provisória/fictícia também (gerador-xlsx.ts: ehPlacaForaDaConta).
+const PREFIXOS_FORA_DA_CONTA = ['CARGA SEM PLACA', OBS_NAO_SAIU_DA_BASE, 'CONSULTA AO RASTREADOR FALHOU', 'CONSULTA AO RASTREADOR SUSPEITA', ...PREFIXOS_STATUS_PLACA_FORA_DA_CONTA]
 const PREFIXO_ESCALA_DIVERGENTE = 'PLACA DA ESCALA NÃO PASSOU NO CLIENTE'
 
 /** NFs (carga::nf) de UMA placa que ficam fora da taxa. Escala divergente só

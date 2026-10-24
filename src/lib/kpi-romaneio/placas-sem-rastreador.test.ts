@@ -14,6 +14,7 @@ vi.mock('@/lib/supabase/service', () => ({
 
 import {
   placasSemRastreadorNoDia,
+  placasProvisoriasNoDia,
   buscarPlacasSemRastreador,
   montarTemRastreadorPorPlaca,
   placaSemSinalNoDia,
@@ -61,6 +62,23 @@ describe('placasSemRastreadorNoDia', () => {
   it('normaliza a placa (minusculas/traço)', () => {
     const s = placasSemRastreadorNoDia([linha({ placa: 'ttl-5j17' })], '2026-09-24')
     expect(s.has('TTL5J17')).toBe(true)
+  })
+})
+
+// D-04 (plano mestre 23/10): placa provisoria declarada pela operacao sai da
+// taxa. Linha REAL de kpi_placa_sem_rastreador (id 4).
+describe('placasProvisoriasNoDia (D-04)', () => {
+  const lld = linha({ id: 4, placa: 'LLD4202', inicio: '2026-10-02', fim: null,
+    motivo: 'placa provisória: o Nelson põe nas cargas de RETIRADA quando ainda não sabe o carro (grupo KPI AJUSTES 03/10)' })
+  it('LLD4202 (motivo "placa provisória") e provisoria em 22/10; TTL5J17 nao', () => {
+    const s = placasProvisoriasNoDia([lld, linha({})], '2026-10-22')
+    expect([...s]).toEqual(['LLD4202'])
+  })
+  it('fora da vigencia nao conta', () => {
+    expect(placasProvisoriasNoDia([lld], '2026-10-01').size).toBe(0)
+  })
+  it('motivo sem acento tambem vale', () => {
+    expect(placasProvisoriasNoDia([linha({ placa: 'AAA1A11', motivo: 'placa PROVISORIA' })], '2026-10-22').has('AAA1A11')).toBe(true)
   })
 })
 

@@ -84,6 +84,9 @@ export function minutosDeDuracao(s: string): number | null {
   return m ? Number(m[1]) * 60 + Number(m[2]) : null
 }
 
+/** D-04: categoria da placa provisória/fictícia (fora da conta). */
+export const CATEGORIA_PLACA_PROVISORIA = 'Placa provisória ou fictícia'
+
 /** Categoria curta do STATUS de uma NF não entregue (rótulo do relatório). */
 export function categoriaPendencia(status: string): string {
   const s = status.toUpperCase()
@@ -103,6 +106,8 @@ export function categoriaPendencia(status: string): string {
   if (s.startsWith('PASSOU A 500m-2km')) return 'Passou perto sem parar'
   if (s.startsWith('CLIENTE SEM ACESSO RODOVIÁRIO')) return 'Ilha (sem estrada)'
   if (s.startsWith('CARGA SEM PLACA')) return 'Carga sem placa'
+  // D-04 (plano mestre 23/10): placa provisoria/ficticia, fora da conta.
+  if (s.startsWith('PLACA PROVISÓRIA') || s.startsWith('PLACA FICTÍCIA')) return CATEGORIA_PLACA_PROVISORIA
   if (s.startsWith('PLACA DA ESCALA NÃO PASSOU')) return 'Placa da escala divergente'
   if (s.startsWith('SEM CONFIRMAÇÃO') || s === '') return 'Sem confirmação'
   return 'Outros'
@@ -217,7 +222,7 @@ export async function extrairKpiCompleto(buf: Buffer | ArrayBuffer): Promise<{ d
     const semRast = lista.filter(n => n.categoria === 'Sem rastreador').length
     c.nfSemRastreador = semRast
     if (!confirmadasJaSomamSemRastreador) c.nfConfirmadas = (c.nfConfirmadas ?? 0) + semRast
-    c.nfForaDaConta = lista.filter(n => n.categoria === 'Carga sem placa' || (inteiraDivergente && n.categoria === 'Placa da escala divergente')).length
+    c.nfForaDaConta = lista.filter(n => n.categoria === 'Carga sem placa' || n.categoria === CATEGORIA_PLACA_PROVISORIA || (inteiraDivergente && n.categoria === 'Placa da escala divergente')).length
     // Carga inteira trocada está FORA da taxa: não é pendência (04/10).
     if (inteiraDivergente) {
       const resto = (motivos['Placa da escala divergente'] ?? 0) - lista.length
@@ -226,6 +231,7 @@ export async function extrairKpiCompleto(buf: Buffer | ArrayBuffer): Promise<{ d
     }
   }
   if (motivos['Carga sem placa']) delete motivos['Carga sem placa']
+  delete motivos[CATEGORIA_PLACA_PROVISORIA]
   // Sem rastreador não é pendência (conta como correta): sai do gráfico de motivos.
   delete motivos['Sem rastreador']
 

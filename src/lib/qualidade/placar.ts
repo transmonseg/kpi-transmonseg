@@ -3,7 +3,7 @@
 // (dia, cliente, metrica, valor, detalhe) -- o mesmo formato da futura tabela
 // qualidade_diaria, para importar os JSON ja' gravados sem conversao.
 // Nada aqui muda numero do cliente: o placar so' mede.
-import { categoriaPendencia } from '@/lib/kpi-romaneio/resumo-dashboard'
+import { categoriaPendencia, CATEGORIA_PLACA_PROVISORIA } from '@/lib/kpi-romaneio/resumo-dashboard'
 
 export type LinhaPlacar = {
   dia: string
@@ -82,12 +82,14 @@ export function metricasDoAoVivo(dia: string, row: LinhaCalculo): LinhaPlacar[] 
   // Fora da conta: mesma regra de resumo-dashboard/gerador-xlsx -- carga sem
   // placa sempre; escala divergente so' quando a carga+placa INTEIRA tem o rotulo.
   const semPlaca = nfs.filter(n => cat(n) === 'Carga sem placa').length
+  // D-04 (plano mestre 23/10): placa provisoria/ficticia, fora da conta.
+  const provisoria = nfs.filter(n => cat(n) === CATEGORIA_PLACA_PROVISORIA).length
   const grupos = new Map<string, NfCalc[]>()
   for (const n of nfs) grupos.set(`${n.carga}::${n.placa}`, [...(grupos.get(`${n.carga}::${n.placa}`) ?? []), n])
   let escalaFora = 0
   for (const lista of grupos.values()) if (lista.every(n => cat(n) === 'Placa da escala divergente')) escalaFora += lista.length
 
-  const naConta = nfs.length - semPlaca - escalaFora
+  const naConta = nfs.length - semPlaca - provisoria - escalaFora
   const entregues = porSituacao('entregue') + porSituacao('sem_rastreador')
   const resumo = r.resumo
   add('taxa', resumo.taxa)
@@ -105,6 +107,7 @@ export function metricasDoAoVivo(dia: string, row: LinhaCalculo): LinhaPlacar[] 
   add('aguardando', porSituacao('pendente'))
   add('nao_confirmada', porSituacao('nao_confirmada'))
   add('carga_sem_placa_fora', semPlaca)
+  add('placa_provisoria_fora', provisoria)
   add('escala_divergente_fora', escalaFora)
 
   const meta = META_TAXA[cliente]

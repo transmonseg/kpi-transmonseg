@@ -67,6 +67,10 @@ const O_QUE_FAZER: [string, string][] = [
   ['VEÍCULO NÃO SAIU DA BASE', 'Confirmar com a operação se a carga saiu em outro carro e registrar a troca de placa'],
   ['CONSULTA AO RASTREADOR', 'O rastreador não respondeu: gerar de novo mais tarde'],
   ['AGUARDANDO', 'Rota em andamento: aguardar o fim da rota'],
+  // D-03/D-04 (plano mestre 23/10).
+  ['PLACA PROVISÓRIA', 'Informar o carro que fez a carga (troca de placa no Ao vivo) e gerar de novo; até lá fica fora da conta'],
+  ['PLACA FICTÍCIA', 'Informar o carro que fez a carga (troca de placa no Ao vivo) e gerar de novo; até lá fica fora da conta'],
+  ['SEM RASTREADOR - CONTADA COMO CORRETA - PLACA FORA DA FROTA', 'Conta como correta. Confirmar a placa real (a provável está no rótulo) com a troca de placa no Ao vivo'],
   ['SEM RASTREADOR', 'Conta como correta. Se a placa for provisória, informar a placa real; senão, conferir o equipamento'],
   ['CADASTRO DO CLIENTE NA UNITRAC DIVERGE', 'Corrigir o cadastro do cliente na Unitrac (ponto longe do endereço do romaneio)'],
   ['ENDEREÇO COM COORDENADA IMPRECISA', 'Conferir o ponto do cliente no mapa (endereço sem coordenada exata)'],

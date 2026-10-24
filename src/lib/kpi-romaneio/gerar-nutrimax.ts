@@ -28,7 +28,8 @@ import { mapComLimite } from '@/lib/kpi-romaneio/concorrencia'
 import { buscarResolucoes, aplicarResolucoes } from '@/lib/kpi-romaneio/resolucoes'
 import { conferirParadaForaDoEndereco, verificarTerritorioNaPonte } from '@/lib/kpi-romaneio/parada-fora-do-endereco'
 import { resolverAliasPlacas, buscarHorariosBaseComAlias, montarCvPorPlaca, aplicarAliasEmConjunto, placasAliasDaFrota } from '@/lib/kpi-romaneio/alias-placa'
-import { buscarPlacasSemRastreador, placasSemRastreadorNoDia, montarTemRastreadorPorPlaca, placasSemSinalComTrava } from '@/lib/kpi-romaneio/placas-sem-rastreador'
+import { buscarPlacasSemRastreador, placasSemRastreadorNoDia, placasProvisoriasNoDia, montarTemRastreadorPorPlaca, placasSemSinalComTrava } from '@/lib/kpi-romaneio/placas-sem-rastreador'
+import { marcarSituacaoPlaca } from '@/lib/kpi-romaneio/placa-situacao'
 import { logarNfDuplicadaNaMesmaPlaca } from '@/lib/kpi-romaneio/nf-duplicada'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita } from '@/lib/kpi-romaneio/types'
 import type { LinhaEscala, LinhaRomaneio, AvisoDescasamento } from '@/lib/kpi-romaneio/types'
@@ -89,7 +90,9 @@ export type OpcoesKpiNutrimax = {
   semCadastroUnitrac?: boolean
   /** Ignora o cadastro de locais dos clientes (comparação antes/depois). */
   semLocaisClientes?: boolean
-  aoMontarDetalhe?: (x: { romaneioGeo: LinhaGeocodificada[]; detalhe: LinhaDetalheEntrega[]; paradasPorPlaca: Map<string, UnitracParadaRow[]>; menorDistanciaTrajetoPorNf: Map<string, number>; frota: string[] }) => void
+  /** Pode devolver as sugestoes de troca do F1-04 (Ao vivo): a placa fora da
+   *  frota (D-03) leva a placa provavel no rotulo da planilha. */
+  aoMontarDetalhe?: (x: { romaneioGeo: LinhaGeocodificada[]; detalhe: LinhaDetalheEntrega[]; paradasPorPlaca: Map<string, UnitracParadaRow[]>; menorDistanciaTrajetoPorNf: Map<string, number>; frota: string[] }) => void | { sugestoesTroca?: { carga: string; placaEscala: string; placaSugerida: string }[] }
 }
 
 export type ResultadoKpiNutrimax = {
@@ -340,7 +343,10 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   // ponte respondeu, mas é caminhão sem rastreador de verdade) vence as
   // duas fontes acima -- ver placas-sem-rastreador.ts.
   marcar('ponte monitoramento')
-  const placasSemRastreador = aplicarAliasEmConjunto(placasSemRastreadorNoDia(await buscarPlacasSemRastreador(EMPRESA_NUTRIMAX, () => fontesIndisponiveis.push('sem_rastreador')), data), aliasPlacas)
+  const declaracoesSemRastreador = await buscarPlacasSemRastreador(EMPRESA_NUTRIMAX, () => fontesIndisponiveis.push('sem_rastreador'))
+  const placasSemRastreador = aplicarAliasEmConjunto(placasSemRastreadorNoDia(declaracoesSemRastreador, data), aliasPlacas)
+  // D-04 (plano mestre 23/10): placa declarada provisoria (LLD4202) sai da taxa.
+  const placasProvisorias = aplicarAliasEmConjunto(placasProvisoriasNoDia(declaracoesSemRastreador, data), aliasPlacas)
   // temRastreadorPorPlaca: montado mais abaixo (depois das paradas/alvos), ver placasSemSinal.
 
   // Por placa (não por carga -- as paradas GPS do dia cobrem a placa
@@ -610,7 +616,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   })
   const detalhe: LinhaDetalheEntrega[] = detalheConferido
   // F1-04: frota vai junto pra sugestao de troca reconhecer placa fora dela.
-  opcoes?.aoMontarDetalhe?.({ romaneioGeo, detalhe, paradasPorPlaca, menorDistanciaTrajetoPorNf, frota: frota.map(v => v.placaNorm) })
+  const retornoDetalhe = opcoes?.aoMontarDetalhe?.({ romaneioGeo, detalhe, paradasPorPlaca, menorDistanciaTrajetoPorNf, frota: frota.map(v => v.placaNorm) })
 
   // Aviso agregado de descasamento Escala<->Romaneio (ver spec, secao
   // "Tratamento de erro/ambiguidade") -- aditivo, nunca bloqueia o resto do
@@ -663,7 +669,13 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
     fontesIndisponiveis.push('resolucoes')
   }
   for (const fonte of fontesIndisponiveis) avisos.push({ carga: '—', placa: '—', motivo: 'fonte_indisponivel', fonte })
-  const detalheComResolucao = aplicarResolucoes(detalhe, historicoResolucoes)
+  // D-03/D-04 (plano mestre 23/10): placa fora da frota (contada como correta,
+  // com a provavel do F1-04), provisoria declarada e ficticia (fora da conta).
+  const detalheComResolucao = marcarSituacaoPlaca(aplicarResolucoes(detalhe, historicoResolucoes), {
+    provisorias: placasProvisorias,
+    temCv: p => cvPorPlaca.has(p),
+    sugestoes: retornoDetalhe?.sugestoesTroca,
+  })
 
   // Bug real 25/09 (ver comentário completo de `contarConfirmadasPorCarga`
   // em agregacao.ts): `agregarPorCarga` (linhasKpi acima) so' enxerga

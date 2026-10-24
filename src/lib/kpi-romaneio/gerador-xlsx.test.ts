@@ -1465,3 +1465,101 @@ describe('F1-09 (KN-10): planilha que fecha com a propria taxa (caso 22/10)', ()
     expect(totais).toContain('CONTA: 4 / (8 do romaneio − 2 fora da conta − 1 aguardando fim da rota) = 80,0%')
   })
 })
+
+// D-03/D-04 (plano mestre 23/10, OK do dono 23/10 23:10). Nutry 22/10 real:
+// o LLD4202 (placa provisoria declarada, 1 NF) contava como correto (2.183 /
+// 2.253); com D-04 sai da conta (2.182 / 2.252). XXX0000 (ficticia) idem.
+// RQO5E38 (carro 16, placa fora da frota, 16/10: 9 NFs) continua contada como
+// correta, com o rotulo novo e a sugestao do F1-04 (TOS5E38).
+describe('D-03/D-04: placa fora da frota, provisoria e ficticia', () => {
+  const DATA = '2026-10-22'
+  const OBS_SR = 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO'
+  const linhas: LinhaKpiRomaneio[] = [
+    linhaKpi({ carga: '100689', placa: 'LLD4202', nfPlanejado: 1, paradasReais: 0, temRastreador: false }),
+    linhaKpi({ carga: '100800', placa: 'XXX0000', nfPlanejado: 1, paradasReais: 0, temRastreador: false }),
+    linhaKpi({ carga: 'PAO-7', placa: 'RQO5E38', nfPlanejado: 2, paradasReais: 0, temRastreador: false }),
+    linhaKpi({ carga: '100700', placa: 'ABC1234', nfPlanejado: 2, paradasReais: 1 }),
+  ]
+  const detalhe: LinhaDetalheEntrega[] = [
+    detalheFixture({ carga: '100689', placa: 'LLD4202', nf: '1', temRastreador: false, observacao: OBS_SR, evidencia: 'sem_rastreador', situacaoPlaca: 'provisoria' }),
+    detalheFixture({ carga: '100800', placa: 'XXX0000', nf: '2', temRastreador: false, observacao: OBS_SR, evidencia: 'sem_rastreador' }),
+    detalheFixture({ carga: 'PAO-7', placa: 'RQO5E38', nf: '3', temRastreador: false, observacao: OBS_SR, evidencia: 'sem_rastreador', situacaoPlaca: 'fora_da_frota', placaSugerida: 'TOS5E38' }),
+    detalheFixture({ carga: 'PAO-7', placa: 'RQO5E38', nf: '4', temRastreador: false, observacao: OBS_SR, evidencia: 'sem_rastreador', situacaoPlaca: 'fora_da_frota', placaSugerida: 'TOS5E38' }),
+    detalheFixture({ carga: '100700', placa: 'ABC1234', nf: '5', status: 'confirmado_gps' }),
+    detalheFixture({ carga: '100700', placa: 'ABC1234', nf: '6', observacao: 'NÃO FOI AO CLIENTE (caminhão não esteve a menos de 2 km)' }),
+  ]
+  const gerar = async (det = detalhe) => {
+    const buffer = await gerarKpiRomaneioXlsx(linhas, DATA, [], det, '2026-10-23', undefined, { resumoConfirmacao: true })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+    return { buffer, wb }
+  }
+  const statusDa = (wb: ExcelJS.Workbook, placa: string, i = 0) => String((wb.getWorksheet(placa)!.getSheetValues()[4 + i] as unknown[])[8])
+  const totais = (wb: ExcelJS.Workbook) => wb.worksheets[0].getRow(wb.worksheets[0].rowCount).getCell(1).value as string
+
+  it('provisoria e ficticia ganham rotulo proprio e saem da conta (num e denom)', async () => {
+    const { wb } = await gerar()
+    expect(statusDa(wb, 'LLD4202')).toBe('PLACA PROVISÓRIA - FORA DA CONTA ATÉ A OPERAÇÃO INFORMAR O CARRO')
+    expect(statusDa(wb, 'XXX0000')).toBe('PLACA FICTÍCIA - FORA DA CONTA ATÉ A OPERAÇÃO INFORMAR O CARRO')
+    const t = totais(wb)
+    // 3 corretas (1 ENTREGUE + 2 RQO5E38 sem rastreador) de 4 na conta
+    expect(t).toContain('TAXA DE CONFIRMAÇÃO: 75,0% (3 de 4 NFs; 2 de placa provisória ou fictícia fora da conta; 2 sem rastreador contadas como corretas)')
+    expect(t).toContain('CONTA: 3 / (6 do romaneio − 2 fora da conta) = 75,0%')
+    expect(t).toContain('NFs de placa provisória ou fictícia: 2 (fora da conta)')
+  })
+
+  it('fora da frota continua contada como correta, com o rotulo "PLACA FORA DA FROTA" e a sugestao', async () => {
+    const { wb } = await gerar()
+    expect(statusDa(wb, 'RQO5E38')).toBe('SEM RASTREADOR - CONTADA COMO CORRETA - PLACA FORA DA FROTA — CONFIRMAR A PLACA REAL (PROVÁVEL: TOS5E38)')
+    const sem = detalhe.map(x => x.nf === '3' ? { ...x, placaSugerida: null } : x).filter(x => x.nf !== '4')
+    const { wb: wb2 } = await gerar(sem)
+    expect(statusDa(wb2, 'RQO5E38')).toBe('SEM RASTREADOR - CONTADA COMO CORRETA - PLACA FORA DA FROTA — CONFIRMAR A PLACA REAL')
+  })
+
+  it('NF CONFIRMADAS e PLANEJADO da aba 1 fecham com a conta', async () => {
+    const { wb } = await gerar()
+    const ws = wb.worksheets[0]
+    const idx = COLUNAS_KPI_ROMANEIO.indexOf('NF CONFIRMADAS') + 1
+    const conf = [0, 1, 2, 3].map(i => Number(ws.getRow(LINHA_PRIMEIRO_DADO + i).getCell(idx).value))
+    expect(conf).toEqual([0, 0, 2, 1])
+  })
+
+  it('aba Avisos: provisoria/ficticia "fora da conta" e fora da frota com a placa provavel', async () => {
+    const { wb } = await gerar()
+    const ws = wb.getWorksheet('Avisos')!
+    const textos = (ws.getSheetValues().slice(2) as unknown[][]).filter(Array.isArray).map(v => v.slice(1).join(' | '))
+    expect(textos).toEqual([
+      '100689 | LLD4202 | placa provisória -- 1 NF(s) fora da conta até a operação informar o carro que fez a carga (troca de placa no Ao vivo)',
+      '100800 | XXX0000 | placa fictícia -- 1 NF(s) fora da conta até a operação informar o carro que fez a carga (troca de placa no Ao vivo)',
+      'PAO-7 | RQO5E38 | placa fora da frota (digitada errada?) -- 2 NF(s) contadas como corretas; confirmar a placa real (provável: TOS5E38)',
+    ])
+  })
+
+  it('o resumo lido (Ao vivo/Dashboard) poe a provisoria fora da conta, sem contar como sem rastreador', async () => {
+    const { buffer } = await gerar()
+    const { resumo, nfs } = await extrairKpiCompleto(buffer)
+    expect(resumo.entregues).toBe(3)
+    expect(resumo.nfsNaConta).toBe(4)
+    expect(resumo.semRastreador).toBe(2)
+    expect(nfs.find(n => n.nf === '1')?.categoria).toBe('Placa provisória ou fictícia')
+    expect(resumo.cargas.find(c => c.placa === 'LLD4202')).toMatchObject({ nfConfirmadas: 0, nfSemRastreador: 0, nfForaDaConta: 1 })
+    expect(resumo.motivos['Placa provisória ou fictícia']).toBeUndefined()
+  })
+
+  it('provisoria confirmada por outra placa conta como ENTREGUE normal', async () => {
+    const det = detalhe.map(x => x.nf === '1' ? { ...x, status: 'confirmado_gps' as const, observacao: 'ENTREGUE POR OUTRA PLACA (TUI0H19) - CARGA TRANSFERIDA', evidencia: 'outra_placa' as const } : x)
+    const { wb } = await gerar(det)
+    expect(statusDa(wb, 'LLD4202')).toBe('ENTREGUE POR OUTRA PLACA (TUI0H19) - CARGA TRANSFERIDA')
+    expect(totais(wb)).toContain('80,0% (4 de 5 NFs')
+  })
+
+  it('apos conferencia: provisoria sem resolucao fica fora; com resolucao conta pela resolucao', async () => {
+    const { wb } = await gerar()
+    expect(totais(wb)).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 75,0% (3 de 4 NFs; 2 fora da conta)')
+    const det = detalhe.map(x => x.nf === '1' ? { ...x, resolucaoManual: 'entregue' as const } : x)
+    const { wb: wb2 } = await gerar(det)
+    expect(totais(wb2)).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 80,0% (4 de 5 NFs; 1 fora da conta)')
+    // a taxa automatica nao muda com a resolucao
+    expect(totais(wb2)).toContain('TAXA DE CONFIRMAÇÃO: 75,0% (3 de 4 NFs')
+  })
+})

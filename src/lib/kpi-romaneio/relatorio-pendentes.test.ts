@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { linhasPendentes, linhasPendentesPorAba, COLUNAS_PENDENTES } from './relatorio-pendentes'
 import { resumirPlacas } from './ao-vivo'
 import type { NfAoVivo, PlacaAoVivo, SituacaoNf } from './ao-vivo'
+import type { NfResumo } from './resumo-dashboard'
 
 const nf = (o: Partial<NfAoVivo>): NfAoVivo => ({
   nf: '1', carga: '10', cliente: 'MERCADO A', endereco: 'RUA A, 1', status: 'X', situacao: 'pendente',
@@ -89,5 +90,22 @@ describe('F1-10: linhasPendentesPorAba', () => {
     expect(l.mapa).toBe('https://kpi.exemplo/painel/ao-vivo?placa=AAA1A11&nf=2397193&data=2026-10-22&cliente=nutrimax')
     for (const c of COLUNAS_PENDENTES) expect(l).toHaveProperty(c.chave)
     expect(COLUNAS_PENDENTES.map(c => c.titulo)).toEqual(expect.arrayContaining(['Rota', 'Motivo', 'O que fazer', 'Ver no mapa']))
+  })
+})
+
+describe('D-03/D-04: Baixar pendentes', () => {
+  it('provisoria/ficticia vai para Fora da conta, com "informar o carro"; fora da frota fica em Sem rastreador com "confirmar a placa real"', () => {
+    const nfs: NfResumo[] = [
+      { placa: 'LLD4202', carga: '100689', nf: '1', cliente: 'A', endereco: '', chegada: null, saida: null, tempoMin: null, status: 'PLACA PROVISÓRIA - FORA DA CONTA ATÉ A OPERAÇÃO INFORMAR O CARRO', categoria: 'Placa provisória ou fictícia' },
+      { placa: 'XXX0000', carga: '100800', nf: '2', cliente: 'B', endereco: '', chegada: null, saida: null, tempoMin: null, status: 'PLACA FICTÍCIA - FORA DA CONTA ATÉ A OPERAÇÃO INFORMAR O CARRO', categoria: 'Placa provisória ou fictícia' },
+      { placa: 'RQO5E38', carga: 'PAO-7', nf: '3', cliente: 'C', endereco: '', chegada: null, saida: null, tempoMin: null, status: 'SEM RASTREADOR - CONTADA COMO CORRETA - PLACA FORA DA FROTA — CONFIRMAR A PLACA REAL (PROVÁVEL: TOS5E38)', categoria: 'Sem rastreador' },
+    ]
+    const abas = linhasPendentesPorAba(resumirPlacas('2026-10-22', nfs, [], new Map()))
+    expect(abas.fora.map(l => l.nf)).toEqual(['1', '2'])
+    expect(abas.afetam).toEqual([])
+    expect(abas.fora[0].situacao).toBe('Fora da conta')
+    expect(abas.fora[0].oQueFazer).toMatch(/informar o carro/i)
+    expect(abas.semRastreador.map(l => l.nf)).toEqual(['3'])
+    expect(abas.semRastreador[0].oQueFazer).toMatch(/confirmar a placa real/i)
   })
 })

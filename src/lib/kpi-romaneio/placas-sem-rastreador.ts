@@ -42,6 +42,14 @@ export function placasSemRastreadorNoDia(linhas: PlacaSemRastreadorRow[], data: 
   return placas
 }
 
+/** D-04 (plano mestre 23/10): placas declaradas PROVISORIAS no dia (linha
+ *  vigente com "provisória" no motivo -- LLD4202, "placa provisória: o Nelson
+ *  põe nas cargas de RETIRADA quando ainda não sabe o carro"). Saem da taxa
+ *  ate a operacao informar o carro (placa-situacao.ts). */
+export function placasProvisoriasNoDia(linhas: PlacaSemRastreadorRow[], data: string): Set<string> {
+  return placasSemRastreadorNoDia(linhas.filter(l => /provis[óo]ria/i.test(l.motivo ?? '')), data)
+}
+
 /** Le o cadastro de placas sem rastreador da empresa. Falha de leitura (tabela
  *  ainda nao existe ate' o deploy da migration, Supabase fora do ar, etc) NAO
  *  quebra a geracao -- devolve vazio (nenhuma placa declarada), mesmo padrao

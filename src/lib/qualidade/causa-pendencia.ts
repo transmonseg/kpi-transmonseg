@@ -4,7 +4,7 @@
 // rota que ainda roda. "forte" = ha' evidencia de GPS que sustenta a causa;
 // "fraca" = so' o rotulo do KPI (ou evidencia indireta).
 import { haversine } from '@/lib/utils/geo'
-import { categoriaPendencia } from '@/lib/kpi-romaneio/resumo-dashboard'
+import { categoriaPendencia, CATEGORIA_PLACA_PROVISORIA } from '@/lib/kpi-romaneio/resumo-dashboard'
 
 export type Causa = 'ponto_cadastro' | 'rastreador_sinal' | 'troca_placa' | 'operacao_real' | 'em_andamento'
 export type Forca = 'forte' | 'fraca'
@@ -73,6 +73,8 @@ export function classificarCausa(e: EvidenciaNf): ResultadoCausa {
 
   if (e.situacao === 'pendente') return { causa: 'em_andamento', forca: 'fraca', motivo: 'rota ainda rodando no ultimo calculo (dia em curso)' }
   if (e.situacao === 'sem_rastreador' || cat === 'Sem rastreador') return { causa: 'rastreador_sinal', forca: 'forte', motivo: 'KPI: sem rastreador no dia' }
+  // D-04 (plano mestre 23/10): placa provisoria/ficticia nao identifica o carro.
+  if (cat === CATEGORIA_PLACA_PROVISORIA) return { causa: 'troca_placa', forca: 'forte', motivo: 'placa provisória ou fictícia: falta a operação informar o carro que fez a carga' }
   if (outra?.cobreCarga) return { causa: 'troca_placa', forca: 'forte', motivo: `${descOutra}; a mesma placa parou nos outros clientes desta carga` }
   if (rastreadorComFalha(e.rastreador)) {
     const r = e.rastreador!
