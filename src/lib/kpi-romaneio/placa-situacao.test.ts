@@ -85,3 +85,25 @@ describe('marcarSituacaoPlaca (Nutry 22/10 e 16/10)', () => {
     expect(detalhe[0].situacaoPlaca).toBeUndefined()
   })
 })
+
+// F2-REV-03 (revisao independente da Fase 2): placa REAL declarada sem
+// rastreador em kpi_placa_sem_rastreador com motivo que nao e' "provisória"
+// (linha real id 2: RQV8J31, 29/09 a 05/10, "não está na frota da Unitrac; sem
+// posição alguma em 29/09") nao tem cv e virava "fora da frota" -- pedia para
+// "confirmar a placa real" de uma placa que a operacao ja' declarou. Mantem o
+// rotulo/motivo declarado (sem rastreador = correta), sem situacao de placa.
+describe('F2-REV-03: placa declarada sem rastreador (motivo nao provisorio)', () => {
+  const temCv = (p: string) => ['TOS5E38'].includes(p)
+  it('RQV8J31 em 01/10 (declarada, sem cv) nao vira fora da frota', () => {
+    const [x] = marcarSituacaoPlaca([d({ carga: '98999', placa: 'RQV8J31' })], {
+      provisorias: new Set(), declaradasSemRastreador: new Set(['RQV8J31']), temCv,
+    })
+    expect(x.situacaoPlaca).toBeUndefined()
+  })
+  it('provisoria declarada continua provisoria; placa sem cv e sem declaracao continua fora da frota', () => {
+    const marcado = marcarSituacaoPlaca([d({ placa: 'LLD4202', nf: '1' }), d({ placa: 'RQO5E38', nf: '2' })], {
+      provisorias: new Set(['LLD4202']), declaradasSemRastreador: new Set(['LLD4202', 'RQV8J31']), temCv,
+    })
+    expect(marcado.map(m => m.situacaoPlaca)).toEqual(['provisoria', 'fora_da_frota'])
+  })
+})

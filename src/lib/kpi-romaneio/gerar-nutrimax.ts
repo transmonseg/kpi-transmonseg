@@ -683,6 +683,8 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   // com a provavel do F1-04), provisoria declarada e ficticia (fora da conta).
   const detalheComResolucao = marcarSituacaoPlaca(aplicarResolucoes(detalhe, historicoResolucoes), {
     provisorias: placasProvisorias,
+    // F2-REV-03: placa real declarada sem rastreador fica com o rotulo declarado.
+    declaradasSemRastreador: placasSemRastreador,
     temCv: p => cvPorPlaca.has(p),
     sugestoes: retornoDetalhe?.sugestoesTroca,
   })

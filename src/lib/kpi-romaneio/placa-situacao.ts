@@ -40,6 +40,12 @@ export function situacaoDaPlaca(d: Pick<LinhaDetalheEntrega, 'placa' | 'situacao
 export type ContextoSituacaoPlaca = {
   /** Placas (normalizadas) declaradas provisorias no dia (placasProvisoriasNoDia). */
   provisorias: Set<string>
+  /** F2-REV-03: placas (normalizadas) declaradas sem rastreador no dia em
+   *  kpi_placa_sem_rastreador (placasSemRastreadorNoDia), qualquer motivo. A
+   *  placa REAL declarada (RQV8J31, "não está na frota da Unitrac") nao vira
+   *  "fora da frota": a operacao ja' disse o que ela e' -- fica o rotulo
+   *  declarado (sem rastreador = correta). A provisoria e' checada antes. */
+  declaradasSemRastreador?: Set<string>
   /** A placa tem cv na frota Unitrac (ja' com o alias O/0 e I/1). */
   temCv: (placaNorm: string) => boolean
   /** Sugestoes do F1-04 (sugerir-trocas.ts) do dia. */
@@ -58,7 +64,7 @@ export function marcarSituacaoPlaca(detalhe: LinhaDetalheEntrega[], ctx: Context
     let situacaoPlaca: SituacaoPlaca | null = null
     if (placaFicticia(p)) situacaoPlaca = 'ficticia'
     else if (ctx.provisorias.has(p)) situacaoPlaca = 'provisoria'
-    else if (!ctx.temCv(p)) situacaoPlaca = 'fora_da_frota'
+    else if (!ctx.temCv(p) && !ctx.declaradasSemRastreador?.has(p)) situacaoPlaca = 'fora_da_frota'
     if (!situacaoPlaca) return d
     const sug = situacaoPlaca === 'fora_da_frota' ? sugerida.get(`${d.carga}::${p}`) : undefined
     return { ...d, situacaoPlaca, ...(sug ? { placaSugerida: sug } : {}) }

@@ -3,6 +3,7 @@ import ExcelJS from 'exceljs'
 import { gerarKpiRomaneioXlsx, COLUNAS_KPI_ROMANEIO, COLUNAS_DETALHE_PLACA, COLUNAS_RESOLUCAO, COLUNAS_AVISOS, textoAviso } from './gerador-xlsx'
 import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega } from './types'
 import { extrairKpiCompleto } from './resumo-dashboard'
+import { marcarSituacaoPlaca } from './placa-situacao'
 
 // Achado real 24/08 (pedido do usuário, referência
 // KPI-GUANABARA-2026-08-23-com-chegada-cd.xlsx): banner de título mesclado
@@ -1561,5 +1562,34 @@ describe('D-03/D-04: placa fora da frota, provisoria e ficticia', () => {
     expect(totais(wb2)).toContain('TAXA APÓS CONFERÊNCIA DA OPERAÇÃO: 80,0% (4 de 5 NFs; 1 fora da conta)')
     // a taxa automatica nao muda com a resolucao
     expect(totais(wb2)).toContain('TAXA DE CONFIRMAÇÃO: 75,0% (3 de 4 NFs')
+  })
+})
+
+// F2-REV-03: placa real declarada sem rastreador (kpi_placa_sem_rastreador id 2,
+// RQV8J31, motivo "não está na frota da Unitrac; sem posição alguma em 29/09")
+// mantem o rotulo declarado e conta como correta -- sem "CONFIRMAR A PLACA
+// REAL" nem "digitada errada?".
+describe('F2-REV-03: placa declarada sem rastreador fora da frota', () => {
+  const OBS_SR = 'SEM RASTREADOR - VEÍCULO SEM RASTREAMENTO NO DIA - NÃO CONTABILIZADO'
+  it('RQV8J31 01/10: "SEM RASTREADOR - CONTADA COMO CORRETA - VEÍCULO SEM RASTREAMENTO NO DIA", conta como correta', async () => {
+    const linhas: LinhaKpiRomaneio[] = [
+      linhaKpi({ carga: '98999', placa: 'RQV8J31', nfPlanejado: 2, paradasReais: 0, temRastreador: false }),
+      linhaKpi({ carga: '100700', placa: 'ABC1234', nfPlanejado: 1, paradasReais: 1 }),
+    ]
+    const det = marcarSituacaoPlaca([
+      detalheFixture({ carga: '98999', placa: 'RQV8J31', nf: '1', temRastreador: false, observacao: OBS_SR, evidencia: 'sem_rastreador' }),
+      detalheFixture({ carga: '98999', placa: 'RQV8J31', nf: '2', temRastreador: false, observacao: OBS_SR, evidencia: 'sem_rastreador' }),
+      detalheFixture({ carga: '100700', placa: 'ABC1234', nf: '3', status: 'confirmado_gps' }),
+    ], { provisorias: new Set(), declaradasSemRastreador: new Set(['RQV8J31']), temCv: p => p === 'ABC1234' })
+    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-10-01', [], det, '2026-10-02', undefined, { resumoConfirmacao: true })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer as unknown as ArrayBuffer)
+    const status = String((wb.getWorksheet('RQV8J31')!.getSheetValues()[4] as unknown[])[8])
+    expect(status).toBe('SEM RASTREADOR - CONTADA COMO CORRETA - VEÍCULO SEM RASTREAMENTO NO DIA')
+    const avisos = (wb.getWorksheet('Avisos')!.getSheetValues().slice(2) as unknown[][]).filter(Array.isArray).map(v => v.slice(1).join(' | ')).join('\n')
+    expect(avisos).not.toMatch(/digitada errada|confirmar a placa real/i)
+    const { resumo } = await extrairKpiCompleto(buffer)
+    expect(resumo.entregues).toBe(3)
+    expect(resumo.nfsNaConta).toBe(3)
   })
 })
