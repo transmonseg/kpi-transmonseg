@@ -11,7 +11,7 @@ import { hojeBR } from '../src/lib/data-br'
 import { createServiceClient } from '../src/lib/supabase/service'
 import { CLIENTES_AO_VIVO, calcularAoVivo, guardarDiaAoVivo, fonteDoDiaAoVivo } from '../src/lib/kpi-romaneio/ao-vivo-servico'
 import { buscarDiaRioQualityFusion } from '../src/lib/kpi-rioquality/fonte-fusion'
-import { linhasComCoordenadasRQ, enviarRioQualityAoMonitoramento } from '../src/lib/kpi-rioquality/enviar-monitoramento-rq'
+import { linhasComCoordenadasRQ, enviarRioQualityAoMonitoramento, resumoEnvioRQ } from '../src/lib/kpi-rioquality/enviar-monitoramento-rq'
 import { diaAnterior, precisaFecharDia, precisaReconferirTerritorio } from '../src/lib/kpi-romaneio/ao-vivo'
 import { limparCacheDia } from '../src/lib/kpi-romaneio/cache-dia'
 import { repararDia, depsReaisReparo, repararDiaRQ, depsReaisReparoRQ } from '../src/lib/kpi-romaneio/reparar-dia'
@@ -48,7 +48,9 @@ async function tentarFusionRioQuality(data: string): Promise<'ok' | 'sem_dados' 
   // com a data do dia fixa. Fail-open -- não derruba a sincronização.
   // F2-04: substitui o dia da RQ no mapa (modo do envio), com a coordenada do KPI.
   const mon = await enviarRioQualityAoMonitoramento(data, await linhasComCoordenadasRQ(linhas), { enviadoPor: 'cron-fusion' })
-  if (!mon.ok) log(`monitoramento RQ ${data}: erro ${mon.erro}`)
+  // Revisao F2-04-a: linhas apagadas e substituicao recusada tambem vao pro log.
+  const resumo = resumoEnvioRQ(data, mon)
+  if (resumo) log(resumo)
   return 'ok'
 }
 

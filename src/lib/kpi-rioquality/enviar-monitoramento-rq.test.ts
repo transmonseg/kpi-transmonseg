@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { linhasParaMonitoramentoRQ, enviarRioQualityAoMonitoramento, buscarCoordenadasMonitoramentoRQ, contarRioQualityNoMonitoramento } from './enviar-monitoramento-rq'
+import { linhasParaMonitoramentoRQ, enviarRioQualityAoMonitoramento, buscarCoordenadasMonitoramentoRQ, contarRioQualityNoMonitoramento, resumoEnvioRQ } from './enviar-monitoramento-rq'
 import type { EntregaRioQualityCompleta } from './parse-planilhas'
 
 const entrega = (over: Partial<EntregaRioQualityCompleta>): EntregaRioQualityCompleta => ({
@@ -70,11 +70,30 @@ describe('enviarRioQualityAoMonitoramento', () => {
     expect((fetchMock.mock.calls[0][1] as any).headers['x-enviado-por']).toBe('cron-fusion')
   })
 
+  it('revisao F2-04-a: devolve linhasApagadas e o aviso de substituicao recusada (antes só o erro era visto)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      ok: true, linhasInseridas: 0, linhasApagadas: 0, linhasDoDia: 2824, substituicaoRecusada: true,
+      aviso: 'envio sem linhas: as 2824 NFs da RQ do dia nao foram apagadas',
+    }))))
+    const r = await enviarRioQualityAoMonitoramento('2026-10-23', [])
+    expect(r).toMatchObject({ ok: true, linhasApagadas: 0, linhasDoDia: 2824, aviso: 'envio sem linhas: as 2824 NFs da RQ do dia nao foram apagadas' })
+  })
+
   it('fail-open: não lança se o fetch falha', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('rede')))
     const r = await enviarRioQualityAoMonitoramento('2026-10-13', [])
     expect(r.ok).toBe(false)
     expect(r.erro).toContain('rede')
+  })
+})
+
+describe('resumoEnvioRQ (revisao F2-04-a: apagar e recusar nao sao mais silenciosos)', () => {
+  it('erro, aviso e linhas apagadas viram linha de log; envio limpo nao', () => {
+    expect(resumoEnvioRQ('2026-10-23', { ok: false, erro: 'HTTP 500' })).toBe('monitoramento RQ 2026-10-23: erro HTTP 500')
+    expect(resumoEnvioRQ('2026-10-23', { ok: true, linhasApagadas: 0, aviso: 'envio sem linhas' })).toBe('monitoramento RQ 2026-10-23: substituir recusado -- envio sem linhas')
+    expect(resumoEnvioRQ('2026-10-23', { ok: true, linhasApagadas: 37, linhasDoDia: 2824 })).toBe('monitoramento RQ 2026-10-23: 37 linha(s) apagada(s) (dia com 2824)')
+    expect(resumoEnvioRQ('2026-10-23', { ok: true, linhasApagadas: 0, linhasDoDia: 2824 })).toBeNull()
+    expect(resumoEnvioRQ('2026-10-23', { ok: true })).toBeNull()
   })
 })
 

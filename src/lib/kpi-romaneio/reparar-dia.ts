@@ -183,7 +183,7 @@ export type DepsReparoRQ = {
   diaGuardado(data: string): Promise<{ entregas: EntregaRioQualityCompleta[]; enviadoPor: string | null; fonte: string | null } | null>
   /** Linhas da RQ no monitoramento no dia; null = indisponivel (nunca reenvia). */
   linhasNoMonitoramento(data: string): Promise<number | null>
-  reenviar(data: string, entregas: EntregaRioQualityCompleta[], enviadoPor: string | null): Promise<{ ok: boolean; erro?: string }>
+  reenviar(data: string, entregas: EntregaRioQualityCompleta[], enviadoPor: string | null): Promise<{ ok: boolean; erro?: string; aviso?: string }>
   jaReenviou(data: string, esperado: number, noMonitoramento: number): boolean
   marcarReenvio(data: string, esperado: number, noMonitoramento: number): void
 }
@@ -201,6 +201,7 @@ export async function repararDiaRQ(deps: DepsReparoRQ, data: string, log: (m: st
     log(r.ok
       ? `[reparo] rioquality ${data}: monitoramento com ${n} linha(s) da RQ e o Ao vivo (${dia.fonte ?? '?'}) com ${esperado} -- dia reenviado`
       : `[reparo] rioquality ${data}: reenvio ao monitoramento falhou: ${r.erro ?? 'erro desconhecido'}`)
+    if (r.ok && r.aviso) log(`[reparo] rioquality ${data}: substituir recusado pelo monitoramento -- ${r.aviso}`)
     return r.ok ? 'reenviado' : 'falhou'
   } catch (err) {
     log(`[reparo] rioquality ${data}: erro ignorado: ${err instanceof Error ? err.message : String(err)}`)

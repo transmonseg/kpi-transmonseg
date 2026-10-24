@@ -86,6 +86,19 @@ export async function buscarCoordenadasMonitoramentoRQ(data: string): Promise<Ma
   return m
 }
 
+/** Resposta do envio. Revisao Fase 2 (F2-04-a): linhasApagadas e o aviso de
+ *  substituicao recusada (envio vazio/encolhido) voltam ao chamador -- antes
+ *  so' o erro aparecia, e o monitoramento apagava o dia em silencio. */
+export type ResultadoEnvioRQ = { ok: boolean; linhasInseridas?: number; linhasApagadas?: number; linhasDoDia?: number; aviso?: string; erro?: string }
+
+/** Linha de log do envio, ou null quando nao ha' nada a dizer (envio limpo). */
+export function resumoEnvioRQ(data: string, r: ResultadoEnvioRQ): string | null {
+  if (!r.ok) return `monitoramento RQ ${data}: erro ${r.erro ?? 'desconhecido'}`
+  if (r.aviso) return `monitoramento RQ ${data}: substituir recusado -- ${r.aviso}`
+  if ((r.linhasApagadas ?? 0) > 0) return `monitoramento RQ ${data}: ${r.linhasApagadas} linha(s) apagada(s)${typeof r.linhasDoDia === 'number' ? ` (dia com ${r.linhasDoDia})` : ''}`
+  return null
+}
+
 /** Envia o dia da RQ. modo "substituir" (F2-04): o monitoramento deixa o
  *  dia da RQ igual a estas linhas (a planilha manual troca a versão da
  *  Fusion; a Fusion troca a manual quando o dia volta a ela). O monitoramento
@@ -93,7 +106,7 @@ export async function buscarCoordenadasMonitoramentoRQ(data: string): Promise<Ma
  *  a planilha, ou "cron-fusion". */
 export async function enviarRioQualityAoMonitoramento(
   data: string, linhas: LinhaMonitoramentoRQ[], opcoes: { enviadoPor?: string | null } = {},
-): Promise<{ ok: boolean; linhasInseridas?: number; linhasDoDia?: number; erro?: string }> {
+): Promise<ResultadoEnvioRQ> {
   const chave = process.env.MOTOR_SECRET
   if (!chave) return { ok: false, erro: 'MOTOR_SECRET ausente' }
   // Cabeçalho HTTP só aceita latin1: o que não for ASCII simples vira "?".
@@ -106,9 +119,14 @@ export async function enviarRioQualityAoMonitoramento(
       // 3 mil linhas na primeira troca de versão: o monitoramento grava em lotes.
       signal: AbortSignal.timeout(60_000),
     })
-    const j = (await r.json().catch(() => ({}))) as { ok?: boolean; linhasInseridas?: number; linhasDoDia?: number; erro?: string }
+    const j = (await r.json().catch(() => ({}))) as { ok?: boolean; linhasInseridas?: number; linhasApagadas?: number; linhasDoDia?: number; aviso?: unknown; erro?: string }
     return j.ok
-      ? { ok: true, linhasInseridas: j.linhasInseridas, ...(typeof j.linhasDoDia === 'number' ? { linhasDoDia: j.linhasDoDia } : {}) }
+      ? {
+          ok: true, linhasInseridas: j.linhasInseridas,
+          ...(typeof j.linhasApagadas === 'number' ? { linhasApagadas: j.linhasApagadas } : {}),
+          ...(typeof j.linhasDoDia === 'number' ? { linhasDoDia: j.linhasDoDia } : {}),
+          ...(typeof j.aviso === 'string' && j.aviso ? { aviso: j.aviso } : {}),
+        }
       : { ok: false, erro: j.erro ?? `HTTP ${r.status}` }
   } catch (err) {
     return { ok: false, erro: err instanceof Error ? err.message : String(err) }

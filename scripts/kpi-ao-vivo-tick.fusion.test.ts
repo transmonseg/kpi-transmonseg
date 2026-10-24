@@ -24,6 +24,7 @@ vi.mock('../src/lib/kpi-rioquality/enviar-monitoramento-rq', () => ({
   enviarRioQualityAoMonitoramento: (...a: unknown[]) => enviarRQ(...a),
   linhasParaMonitoramentoRQ: vi.fn(() => []),
   contarRioQualityNoMonitoramento: vi.fn(async () => null),
+  resumoEnvioRQ: () => null,
 }))
 
 import { buscarDiaRioQualityFusion } from '../src/lib/kpi-rioquality/fonte-fusion'

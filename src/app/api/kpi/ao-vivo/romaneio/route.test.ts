@@ -16,6 +16,7 @@ vi.mock('@/lib/kpi-rioquality/parse-planilhas', () => ({ parseEntregasCompletas:
 vi.mock('@/lib/kpi-rioquality/enviar-monitoramento-rq', () => ({
   linhasComCoordenadasRQ: async (e: Record<string, unknown>[]) => e.map(x => ({ placa: x.placaNorm, nf: x.nf, lat: -22.82, lng: -43.0 })),
   enviarRioQualityAoMonitoramento: async (data: string, linhas: unknown[], opcoes: unknown) => { est.envioRQ = { data, linhas, opcoes }; est.ordem.push('enviar'); return { ok: true, linhasInseridas: linhas.length } },
+  resumoEnvioRQ: () => null,
 }))
 
 import { POST } from './route'
