@@ -13,6 +13,23 @@ const cenario = vi.hoisted(() => ({
   uploadKpiErro: false,
   geracao: null as null | Record<string, string | null>,
   frotaErro: false,
+  // F3-05 (AC-13): o que a porta do dia gravou no Ao vivo / mandou ao monitoramento.
+  entregasPlanilha: [] as Record<string, unknown>[],
+  portaGuardou: [] as { data: string; n: number; por: string | null }[],
+  portaEnviou: [] as { data: string; n: number; por: string | null }[],
+  portaLida: null as Record<string, unknown>[] | null,
+}))
+vi.mock('@/lib/kpi-rioquality/parse-planilhas', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/lib/kpi-rioquality/parse-planilhas')>()),
+  parseEntregasCompletas: () => cenario.entregasPlanilha,
+}))
+vi.mock('@/lib/kpi-romaneio/porta-do-dia-servico', () => ({
+  depsReaisPortaRQ: {
+    lerEntregas: async () => cenario.portaLida,
+    guardar: async (data: string, e: unknown[], por: string | null) => { cenario.portaGuardou.push({ data, n: e.length, por }) },
+    enviarMonitoramento: async (data: string, e: unknown[], por: string | null) => { cenario.portaEnviou.push({ data, n: e.length, por }); return { ok: true, linhasDoDia: e.length } },
+  },
+  depoisDaGeracao: () => {},
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -150,5 +167,38 @@ describe('POST /api/kpi/rioquality/gerar -- frota da RQ ilegivel', () => {
     expect(await res.text()).toContain('frota da Rio Quality')
     expect(cenario.chamadasPipeline).toHaveLength(0)
     expect(vi.mocked(salvarGeracaoMock)).not.toHaveBeenCalled()
+  })
+})
+
+// F3-05 (AC-13): RQ 21/10 -- duas gerações (14:49 e 14:59 BRT) e a subida no
+// Ao vivo às 15:01, 3 envios do mesmo dia em 12 min, sem reparo para a RQ.
+describe('POST /api/kpi/rioquality/gerar -- KPI de hoje também entra no Ao vivo e no monitoramento (F3-05)', () => {
+  beforeEach(() => {
+    cenario.entregasPlanilha = [{ placaNorm: 'LNH9C10', nf: '5557757', rua: 'RUA IMBOASSU' }, { placaNorm: 'LNH9C10', nf: '5557758', rua: 'RUA X' }]
+    cenario.portaGuardou = []; cenario.portaEnviou = []; cenario.portaLida = null
+  })
+
+  it('1ª geração de hoje: Ao vivo e monitoramento recebem a planilha com o e-mail de quem gerou', async () => {
+    const res = await POST(req('2026-09-30') as never)
+    expect(res.status).toBe(200)
+    expect(cenario.portaGuardou).toEqual([{ data: '2026-09-30', n: 2, por: 'a@b.c' }])
+    expect(cenario.portaEnviou).toEqual([{ data: '2026-09-30', n: 2, por: 'a@b.c' }])
+    expect(res.headers.get('x-ao-vivo')).toBe('gravado')
+  })
+
+  it('2ª geração com a mesma planilha: nada é reenviado', async () => {
+    cenario.portaLida = cenario.entregasPlanilha
+    const res = await POST(req('2026-09-30') as never)
+    expect(res.status).toBe(200)
+    expect(cenario.portaGuardou).toHaveLength(0)
+    expect(cenario.portaEnviou).toHaveLength(0)
+    expect(res.headers.get('x-ao-vivo')).toBe('igual')
+  })
+
+  it('dia passado: Ao vivo intocado', async () => {
+    const res = await POST(req('2026-09-29') as never)
+    expect(res.status).toBe(200)
+    expect(cenario.portaGuardou).toHaveLength(0)
+    expect(res.headers.get('x-ao-vivo')).toBe('nao')
   })
 })

@@ -16,6 +16,8 @@ import { guardarEntradaNutrimax, lerEntradaGuardadaNutrimax } from '@/lib/kpi-ro
 import { hojeBR } from '@/lib/data-br'
 import { diaJaFechado, motivoValido, MOTIVO_MINIMO } from '@/lib/kpi-romaneio/versao-oficial'
 import { fmtTaxa } from '@/lib/kpi-romaneio/fechamento-dashboard'
+import { gravarHojeNutry, cabecalhosPorta, type ResultadoPorta } from '@/lib/kpi-romaneio/porta-do-dia'
+import { depsReaisPortaNutry, depoisDaGeracao } from '@/lib/kpi-romaneio/porta-do-dia-servico'
 
 // Leitura de PDF guardada pelo conteúdo (06/10): mesmo arquivo de novo não é
 // lido de novo. Trocar VERSAO_LEITURA quando um parser mudar.
@@ -84,6 +86,15 @@ export async function POST(req: NextRequest) {
     if (mG instanceof NextResponse) return mG
     const g = await lerEntradaGuardadaNutrimax(dataG)
     if (!g) return new NextResponse('Não há romaneio guardado desse dia — suba os PDFs.', { status: 404 })
+    // F3-05 (AC-13): guardado só numa geração de hoje (sem Ao vivo) -> vai ao
+    // Ao vivo agora. Sem os PDFs aqui, o monitoramento fica com o reparo do tick.
+    const portaG: Promise<ResultadoPorta> = g.origem === 'geracao'
+      ? gravarHojeNutry(depsReaisPortaNutry, {
+          data: dataG, hoje: hojeBR(), enviadoPor: user.email ?? null,
+          novo: { romaneio: g.entrada.romaneio, escala: g.entrada.escalaEnviada ? g.entrada.escala : undefined, pao: g.entrada.paoEnviado ? g.entrada.pao : undefined },
+          pdfs: {},
+        })
+      : Promise.resolve({ aoVivo: dataG === hojeBR() ? 'igual' : 'nao', monitoramento: [] })
     let r: Awaited<ReturnType<typeof gerarKpiNutrimax>>
     try { r = await gerarKpiNutrimax(g.entrada) } catch (err) {
       if (err instanceof ErroEntradaKpi) return new NextResponse(err.message, { status: 422 })
@@ -96,9 +107,12 @@ export async function POST(req: NextRequest) {
       try { resumo = await extrairResumoKpiXlsx(r.xlsx) } catch (err) { console.error('resumo do dashboard falhou:', err) }
       await salvarGeracao({ cliente: 'nutrimax', dataReferencia: dataG, geradoPor: user?.email ?? null, qtdCargas: r.qtdCargasNutry, arquivoStoragePath, escalaStoragePath: null, romaneioStoragePath: null, paoStoragePath: null, resumo: comMotivo(resumo, mG.motivo) })
     } catch (err) { console.error('Erro ao salvar histórico de geração:', err) }
+    const pG = await portaG
+    depoisDaGeracao('nutrimax', dataG, pG)
     return new NextResponse(r.xlsx as unknown as BodyInit, { headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': `attachment; filename="KPI-Nutry-Max-${dataG}.xlsx"`,
+      ...cabecalhosPorta(pG),
     } })
   }
   // Pedido do usuario 01/09 ("quero um historico das geracoes... pra
@@ -129,6 +143,8 @@ export async function POST(req: NextRequest) {
   let escalaStoragePathExistente: string | null = null
   let romaneioStoragePathExistente: string | null = null
   let paoStoragePathExistente: string | null = null
+  let nomeRomaneio = 'romaneio.pdf'
+  let nomePao = 'pao.pdf'
 
   if (typeof regenerarDeId === 'string' && regenerarDeId) {
     const geracao = await buscarGeracaoParaRegenerar(regenerarDeId)
@@ -185,6 +201,8 @@ export async function POST(req: NextRequest) {
 
     const romaneioPaoFile = form.get('romaneioPao')
     romaneioPaoBuf = romaneioPaoFile instanceof File ? Buffer.from(await romaneioPaoFile.arrayBuffer()) : null
+    nomeRomaneio = romaneioFile.name || nomeRomaneio
+    if (romaneioPaoFile instanceof File && romaneioPaoFile.name) nomePao = romaneioPaoFile.name
   }
 
   const m = await motivoDoDiaFechado(data, form)
@@ -227,6 +245,18 @@ export async function POST(req: NextRequest) {
   // subir os PDFs (tela Gerar KPI mostra "já guardado").
   await guardarEntradaNutrimax({ data, escala, romaneio, pao: resultadoPao, escalaEnviada: escalaBuf != null, paoEnviado: romaneioPaoBuf != null })
     .catch(err => console.error('guardar entrada do dia falhou:', err))
+
+  // F3-05 (AC-13): KPI de HOJE também entra no Ao vivo e no monitoramento,
+  // na mesma requisição (em segundos, antes dos minutos da geração fria);
+  // dia passado não toca em nada. Nunca derruba a geração.
+  const porta = gravarHojeNutry(depsReaisPortaNutry, {
+    data, hoje: hojeBR(), enviadoPor: user.email ?? null,
+    novo: { romaneio, escala: escalaBuf ? escala : undefined, pao: romaneioPaoBuf ? resultadoPao : undefined },
+    pdfs: {
+      romaneio: { buf: romaneioBuf, nome: nomeRomaneio, origem: 'romaneio' },
+      pao: romaneioPaoBuf ? { buf: romaneioPaoBuf, nome: nomePao, origem: 'escala_pao' } : null,
+    },
+  })
 
   let resultado: Awaited<ReturnType<typeof gerarKpiNutrimax>>
   try {
@@ -286,10 +316,13 @@ export async function POST(req: NextRequest) {
     console.error('Erro ao salvar histórico de geração:', err)
   }
 
+  const p = await porta
+  depoisDaGeracao('nutrimax', data, p)
   return new NextResponse(xlsxBuf as unknown as BodyInit, {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': `attachment; filename="KPI-Nutry-Max-${data}.xlsx"`,
+      ...cabecalhosPorta(p),
     },
   })
 }

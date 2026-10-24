@@ -5,6 +5,8 @@ import { ArrowRight, CalendarBlank, WarningCircle, FileArrowDown, CheckCircle } 
 import { cn } from '@/components/ui'
 import { FileDropzone } from '@/app/painel/file-dropzone'
 import { foraDoAlcanceApi } from '@/lib/kpi-romaneio/constants'
+import { textoPortaDoDia, diaAnterior } from '@/lib/kpi-romaneio/porta-do-dia-texto'
+import { PortaHojeAviso } from '@/app/painel/porta-do-dia-aviso'
 
 function hoje(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
@@ -14,7 +16,9 @@ export default function NutrimaxGerarPage() {
   const [escala, setEscala] = useState<File[]>([])
   const [romaneio, setRomaneio] = useState<File[]>([])
   const [romaneioPao, setRomaneioPao] = useState<File[]>([])
-  const [data, setData] = useState(hoje())
+  // F3-05 (AC-13): abre no dia anterior -- o dia de hoje entra pelo Ao vivo.
+  const [data, setData] = useState(() => diaAnterior(hoje()))
+  const [porta, setPorta] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [arquivoPronto, setArquivoPronto] = useState<{ blob: Blob; filename: string } | null>(null)
@@ -37,7 +41,7 @@ export default function NutrimaxGerarPage() {
   }, [data])
 
   async function gerarComGuardado() {
-    setPending(true); setErro(null); setArquivoPronto(null); setBaixado(false)
+    setPending(true); setErro(null); setArquivoPronto(null); setPorta(null); setBaixado(false)
     try {
       const fd = new FormData()
       fd.set('usarGuardado', '1')
@@ -46,6 +50,7 @@ export default function NutrimaxGerarPage() {
       const res = await fetch('/api/kpi/nutrimax/gerar', { method: 'POST', body: fd })
       if (res.status === 428) { setPedeMotivo({ data, texto: await res.text() }); return }
       if (!res.ok) throw new Error(await res.text())
+      setPorta(textoPortaDoDia(res.headers.get('x-ao-vivo'), res.headers.get('x-monitoramento'), 'nutrimax'))
       setArquivoPronto({ blob: await res.blob(), filename: `KPI-Nutry-Max-${data}.xlsx` })
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Erro inesperado.')
@@ -65,7 +70,7 @@ export default function NutrimaxGerarPage() {
     if (!pronto) return
     setPending(true)
     setErro(null)
-    setArquivoPronto(null)
+    setArquivoPronto(null); setPorta(null)
     setBaixado(false)
     try {
       const fd = new FormData()
@@ -79,6 +84,7 @@ export default function NutrimaxGerarPage() {
       if (!res.ok) throw new Error(await res.text())
 
       const blob = await res.blob()
+      setPorta(textoPortaDoDia(res.headers.get('x-ao-vivo'), res.headers.get('x-monitoramento'), 'nutrimax'))
       setArquivoPronto({ blob, filename: `KPI-Nutry-Max-${data}.xlsx` })
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Erro inesperado.')
@@ -117,6 +123,8 @@ export default function NutrimaxGerarPage() {
           de operação.
         </p>
       </header>
+
+      {data === hoje() && <PortaHojeAviso cliente="nutrimax" />}
 
       {guardado && romaneio.length === 0 && (
         <div className="dash-card mb-4 flex flex-wrap items-center justify-between gap-4 p-5">
@@ -215,7 +223,7 @@ export default function NutrimaxGerarPage() {
         <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-[var(--color-success)]/30 bg-[var(--color-success-soft)] px-5 py-4">
           <p className="flex items-center gap-2 text-[13px] leading-relaxed text-[var(--color-success-soft-fg)]">
             <CheckCircle size={18} weight="fill" className="shrink-0 text-[var(--color-success)]" />
-            {arquivoPronto.filename} pronto{baixado ? ' (baixado)' : ''}.
+            {arquivoPronto.filename} pronto{baixado ? ' (baixado)' : ''}.{porta ? ` ${porta}` : ''}
           </p>
           <button
             type="button"

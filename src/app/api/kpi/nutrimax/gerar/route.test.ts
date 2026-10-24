@@ -50,6 +50,27 @@ const cenario = vi.hoisted(() => ({
   territorioFora: false,
   // F3-04 (ACH-10): dia ja' fechado (fechamento das 00:30 ou geracao completa).
   diaFechado: false,
+  // F3-05 (AC-13): "hoje" da rota e o que a porta do dia gravou/enviou.
+  hoje: null as string | null,
+  portaGuardou: [] as Record<string, unknown>[],
+  portaEnviou: [] as { origens: string[]; por: string | null }[],
+  portaDepois: [] as { cliente: string; data: string; aoVivo: string }[],
+}))
+
+vi.mock('@/lib/data-br', async importOriginal => {
+  const real = await importOriginal<typeof import('@/lib/data-br')>()
+  return { ...real, hojeBR: () => cenario.hoje ?? real.hojeBR() }
+})
+vi.mock('@/lib/kpi-romaneio/porta-do-dia-servico', () => ({
+  depsReaisPortaNutry: {
+    lerDia: async () => null,
+    guardar: async (p: Record<string, unknown>) => { cenario.portaGuardou.push(p) },
+    enviarMonitoramento: async (a: { origem: 'romaneio' | 'escala_pao' }[], por: string | null) => {
+      cenario.portaEnviou.push({ origens: a.map(x => x.origem), por })
+      return a.map(x => ({ origem: x.origem, ok: true }))
+    },
+  },
+  depoisDaGeracao: (cliente: string, data: string, r: { aoVivo: string }) => { cenario.portaDepois.push({ cliente, data, aoVivo: r.aoVivo }) },
 }))
 
 vi.mock('@/lib/kpi-romaneio/versao-oficial', async importOriginal => ({
@@ -1143,5 +1164,43 @@ describe('POST /api/kpi/nutrimax/gerar -- F3-04 (ACH-10): motivo obrigatório ao
     const res = await POST(montarRequest(false) as never)
     expect(res.status).toBe(200)
     expect(vi.mocked(salvarGeracaoMock).mock.calls[0][0].resumo?.motivoRegeracao).toBeUndefined()
+  })
+})
+
+// F3-05 (AC-13): em 20 e 21/10 a Nutry entrou só pelo Gerar KPI e o Ao vivo e o
+// monitoramento só vieram pelo reparo automático (16:10 e 15:30 CEST).
+describe('POST /api/kpi/nutrimax/gerar -- KPI de hoje também entra no Ao vivo e no monitoramento (F3-05)', () => {
+  beforeEach(() => { cenario.hoje = null; cenario.portaGuardou = []; cenario.portaEnviou = []; cenario.portaDepois = [] })
+
+  it('gerar HOJE com romaneio e pão: grava o Ao vivo com o e-mail de quem gerou e manda os 2 PDFs ao monitoramento na mesma requisição', async () => {
+    cenario.hoje = '2026-09-15'
+    const res = await POST(montarRequest(true) as never)
+    expect(res.status).toBe(200)
+    expect(cenario.portaGuardou).toHaveLength(1)
+    expect(cenario.portaGuardou[0]).toMatchObject({ data: '2026-09-15', enviadoPor: 'admin@teste.com', paoEnviado: true, escalaEnviada: false })
+    expect((cenario.portaGuardou[0].romaneio as { nf: string }[]).map(l => l.nf)).toEqual(['NF001'])
+    expect(cenario.portaEnviou).toEqual([{ origens: ['romaneio', 'escala_pao'], por: 'admin@teste.com' }])
+    expect(res.headers.get('x-ao-vivo')).toBe('gravado')
+    expect(res.headers.get('x-monitoramento')).toBe('ok')
+    // o Ao vivo calcula logo depois da geração (cache quente), sem esperar o tick
+    expect(cenario.portaDepois).toEqual([{ cliente: 'nutrimax', data: '2026-09-15', aoVivo: 'gravado' }])
+  })
+
+  it('gerar dia PASSADO: Ao vivo e monitoramento intocados', async () => {
+    cenario.hoje = '2026-09-16'
+    const res = await POST(montarRequest(true) as never)
+    expect(res.status).toBe(200)
+    expect(cenario.portaGuardou).toHaveLength(0)
+    expect(cenario.portaEnviou).toHaveLength(0)
+    expect(res.headers.get('x-ao-vivo')).toBe('nao')
+  })
+
+  it('romaneio de outro dia (422): nada vai ao Ao vivo', async () => {
+    cenario.hoje = '2026-09-15'
+    cenario.dataPdfRomaneio = '2026-09-14'
+    const res = await POST(montarRequest(false) as never)
+    cenario.dataPdfRomaneio = null
+    expect(res.status).toBe(422)
+    expect(cenario.portaGuardou).toHaveLength(0)
   })
 })

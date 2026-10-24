@@ -12,6 +12,9 @@ import { buscarFrotaRioQuality, FrotaRioQualityIndisponivelError } from '@/lib/k
 import { lerSnapshotParadas } from '@/lib/kpi-romaneio/paradas-snapshot'
 import { EMPRESA_SNAPSHOT_RIOQUALITY } from '@/lib/kpi-rioquality/snapshot-paradas'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
+import { parseEntregasCompletas, type EntregaRioQualityCompleta } from '@/lib/kpi-rioquality/parse-planilhas'
+import { gravarHojeRQ, cabecalhosPorta, type ResultadoPorta } from '@/lib/kpi-romaneio/porta-do-dia'
+import { depsReaisPortaRQ, depoisDaGeracao } from '@/lib/kpi-romaneio/porta-do-dia-servico'
 
 // KPI Rio Quality -- entrada (2 planilhas xlsx) + auth + historico. A pipeline
 // em si esta' em src/lib/kpi-rioquality/pipeline.ts (compartilhada com o
@@ -118,6 +121,16 @@ export async function POST(req: NextRequest) {
   const snapshot = snapshotForaDaJanela
   const lerSnapshot = snapshot ? async () => snapshot : undefined
 
+  // F3-05 (AC-13): a planilha de HOJE (Relatório de Entregas) também vira o
+  // dia do Ao vivo e vai ao monitoramento, na mesma requisição (21/10: 3
+  // envios em 12 min). Mesma planilha já no Ao vivo = nada. Formato antigo
+  // (2 planilhas) não tem Ao vivo. Nunca derruba a geração.
+  let entregasHoje: EntregaRioQualityCompleta[] = []
+  if (completaBuf && data === hojeBR()) {
+    try { entregasHoje = parseEntregasCompletas(completaBuf) } catch { entregasHoje = [] }
+  }
+  const porta: Promise<ResultadoPorta> = gravarHojeRQ(depsReaisPortaRQ, { data, hoje: hojeBR(), enviadoPor: user.email ?? null, entregas: entregasHoje })
+
   let resultado
   try {
     resultado = completaBuf
@@ -178,10 +191,13 @@ export async function POST(req: NextRequest) {
     console.error('Erro ao salvar histórico de geração:', err)
   }
 
+  const p = await porta
+  depoisDaGeracao('rioquality', data, p)
   return new NextResponse(resultado.xlsx as unknown as BodyInit, {
     headers: {
       'Content-Type': TIPO_XLSX,
       'Content-Disposition': `attachment; filename="KPI-Rio-Quality-${data}.xlsx"`,
+      ...cabecalhosPorta(p),
     },
   })
 }
