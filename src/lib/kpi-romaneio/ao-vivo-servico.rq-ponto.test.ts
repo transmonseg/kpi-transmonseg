@@ -10,6 +10,7 @@ const c = vi.hoisted(() => ({
   updates: [] as Record<string, unknown>[],
   detalheRq: null as null | Record<string, unknown>,
   nfs: [] as Record<string, unknown>[],
+  romaneio: [{ placaNorm: 'TTU9G22', rua: 'RUA RODRIGUES ALVES' }] as Record<string, unknown>[],
 }))
 
 function cadeia(resultado: unknown) {
@@ -23,7 +24,7 @@ function cadeia(resultado: unknown) {
 vi.mock('@/lib/supabase/service', () => ({
   createServiceClient: () => ({
     from: (tabela: string) => {
-      if (tabela === 'kpi_ao_vivo_dia') return cadeia({ data: { romaneio: [{ placaNorm: 'TTU9G22', rua: 'RUA RODRIGUES ALVES' }] }, error: null })
+      if (tabela === 'kpi_ao_vivo_dia') return cadeia({ data: { romaneio: c.romaneio }, error: null })
       const o = cadeia({ data: null, error: null }) as Record<string, (...a: unknown[]) => unknown>
       o.update = (v: unknown) => {
         c.updates.push(v as Record<string, unknown>)
@@ -73,6 +74,7 @@ type Gravado = { resultado: { calculadoEm: string; avisos?: string[]; placas: { 
 
 beforeEach(() => {
   c.updates = []; c.nfs = NFS; c.detalheRq = null
+  c.romaneio = [{ placaNorm: 'TTU9G22', rua: 'RUA RODRIGUES ALVES' }]
   vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date('2026-10-24T10:00:00-03:00'))
 })
 afterEach(() => { vi.useRealTimers() })
@@ -137,5 +139,27 @@ describe('F2-REV-04: ponto não confiável no Ao vivo da RQ', () => {
     const g = c.updates.find(u => 'resultado' in u) as unknown as Gravado
     expect(g.resultado.avisos?.some(a => /ponto confiável/i.test(a))).toBe(true)
     expect(String(g.ultimo_erro)).toMatch(/ponto confiável/i)
+  })
+})
+
+// F4-10 (KRQ-13): o check-in da Fusion (dia de 55 colunas) entra como pista
+// na investigacao da NF nao entregue -- status e categoria nao mudam.
+describe('F4-10: check-in da Fusion como pista', () => {
+  it('TTU9G22 23/10: check-in de 5558931 às 12:50 durante a parada api-13 -> pista a ~17 km; NF continua nao entregue', async () => {
+    c.romaneio = [
+      { placaNorm: 'TTU9G22', rua: 'RUA RODRIGUES ALVES', nf: '5558903', gabarito: { status: 'Entregue', checkIn: true, checkOut: true, dataCheckIn: '23/10/2026 12:49:10', dataCheckOut: null, motivoDevolucao: null } },
+      { placaNorm: 'TTU9G22', rua: 'ESTRADA MURY MACAE DE CIMA', nf: '5558931', gabarito: { status: 'Entregue', checkIn: true, checkOut: true, dataCheckIn: '23/10/2026 12:50:00', dataCheckOut: null, motivoDevolucao: null } },
+    ]
+    c.detalheRq = { romaneioGeo: geo(-22.3842593), detalhe: DETALHE, paradasPorPlaca: new Map([['TTU9G22', PARADAS]]), menorDistanciaTrajetoPorNf: new Map() }
+    expect(await calcularAoVivo('rioquality', '2026-10-23')).toBe('ok')
+    const g = c.updates.find(u => 'resultado' in u) as unknown as Gravado
+    const nfs = g.resultado.placas[0].nfs as unknown as { nf: string; status: string; situacao: string; investigacao?: { categoria: string; pistaCheckIn?: { hora: string; parado: boolean; distM: number | null } } }[]
+    const pendente = nfs.find(n => n.nf === '5558931')!
+    expect(pendente.status).toBe('SEM CONFIRMAÇÃO')
+    expect(pendente.situacao).not.toBe('entregue')
+    expect(pendente.investigacao?.categoria).toBe('nao_chegou_perto')
+    expect(pendente.investigacao?.pistaCheckIn).toMatchObject({ hora: '12:50', parado: true })
+    expect(pendente.investigacao!.pistaCheckIn!.distM!).toBeGreaterThan(15_000)
+    expect(nfs.find(n => n.nf === '5558903')!.investigacao).toBeUndefined()
   })
 })

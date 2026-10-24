@@ -18,7 +18,18 @@ export type Investigacao = {
   distM: number | null
   hora: string | null // HH:MM (Brasília)
   minutos: number | null
+  /** F4-10 (KRQ-13): check-in da Fusion (app do motorista da RQ). PISTA para
+   *  conferir o ponto do cliente -- nunca vale como entrega. */
+  pistaCheckIn?: PistaCheckIn
 }
+
+/** hora = HH:MM (Brasília) do check-in; parado = havia parada da placa fora da
+ *  base no momento (ou ate' 15 min depois do fim dela); distM = dessa parada
+ *  ao ponto do cliente (null sem parada ou sem ponto). */
+export type PistaCheckIn = { hora: string; parado: boolean; distM: number | null }
+
+/** KRQ-13: check-in "durante (ou ate' 15 min depois de) uma parada da propria placa". */
+export const CHECKIN_TOLERANCIA_APOS_PARADA_MIN = 15
 
 const NO_CLIENTE_M = 150
 const PERTO_M = 500
@@ -57,12 +68,39 @@ export function investigarNf(n: NfAoVivo, paradas: UnitracParadaRow[], trajetoM?
   return { categoria, distM: d, hora: melhor.p.chegada.slice(11, 16), minutos: Number.isFinite(fim - ini) ? Math.max(0, Math.round((fim - ini) / 60_000)) : null }
 }
 
+/** F4-10: a parada da placa em que o check-in da Fusion caiu e a distância
+ *  dela ao ponto do cliente. checkInIso no mesmo relógio da Unitrac
+ *  (Brasília mascarado como UTC). Não muda a classificação. */
+export function pistaCheckIn(n: Pick<NfAoVivo, 'lat' | 'lng'>, paradas: UnitracParadaRow[], checkInIso: string): PistaCheckIn {
+  const t = Date.parse(checkInIso)
+  const hora = checkInIso.slice(11, 16)
+  let achou: (UnitracParadaRow & { lat?: number | null; lng?: number | null }) | null = null
+  for (const p of paradas) {
+    const q = p as UnitracParadaRow & { lat?: number | null; lng?: number | null }
+    if (q.classificacao === 'BASE') continue
+    const ini = Date.parse(q.chegada)
+    const fim = Math.max(Date.parse(q.fim_real ?? q.chegada), Date.parse(q.saida ?? q.chegada))
+    if (!Number.isFinite(ini) || !Number.isFinite(fim)) continue
+    if (t >= ini && t <= fim + CHECKIN_TOLERANCIA_APOS_PARADA_MIN * 60_000) { achou = q; break }
+  }
+  if (!achou) return { hora, parado: false, distM: null }
+  const distM = n.lat != null && n.lng != null && achou.lat != null && achou.lng != null ? Math.round(haversine(n.lat, n.lng, achou.lat, achou.lng)) : null
+  return { hora, parado: true, distM }
+}
+
 /** Preenche `investigacao` em toda NF não entregue (pendente também: mostra
  *  no detalhe se o carro já passou por lá). */
-export function investigarPlacas(placas: PlacaAoVivo[], paradasPorPlaca: Map<string, UnitracParadaRow[]>, trajetoPorNf: Map<string, number> = new Map()): void {
+export function investigarPlacas(placas: PlacaAoVivo[], paradasPorPlaca: Map<string, UnitracParadaRow[]>, trajetoPorNf: Map<string, number> = new Map(),
+  // F4-10 (KRQ-13): check-in da Fusion por NF (so' RQ). So' pista.
+  checkInPorNf: Map<string, string> = new Map()): void {
   for (const p of placas) {
     const paradas = paradasPorPlaca.get(normPlaca(p.placa)) ?? []
-    for (const n of p.nfs) if (n.situacao !== 'entregue') n.investigacao = investigarNf(n, paradas, trajetoPorNf.get(n.nf))
+    for (const n of p.nfs) {
+      if (n.situacao === 'entregue') continue
+      n.investigacao = investigarNf(n, paradas, trajetoPorNf.get(n.nf))
+      const ci = checkInPorNf.get(n.nf)
+      if (ci) n.investigacao.pistaCheckIn = pistaCheckIn(n, paradas, ci)
+    }
   }
 }
 

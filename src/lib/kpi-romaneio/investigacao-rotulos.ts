@@ -1,5 +1,5 @@
 // Textos da investigação das não entregues (usados pela tela; sem imports de servidor).
-import type { CategoriaInvestigacao, Investigacao } from './investigacao'
+import type { CategoriaInvestigacao, Investigacao, PistaCheckIn } from './investigacao'
 
 /** Ordem de exibição: do mais acionável (carro esteve lá) ao menos. */
 export const CATEGORIAS_INVESTIGACAO: CategoriaInvestigacao[] = ['parou_no_cliente', 'parou_perto', 'passou_sem_parar', 'parou_na_regiao', 'nao_chegou_perto', 'sem_sinal_no_trecho', 'ponto_impreciso', 'sem_gps', 'sem_coordenada']
@@ -16,10 +16,22 @@ export const ROTULO_INVESTIGACAO: Record<CategoriaInvestigacao, { titulo: string
   sem_coordenada: { titulo: 'Cliente sem coordenada', dica: 'Endereço não localizado no mapa.' },
 }
 
-/** "Parada mais perto: 120 m do cliente às 14:32 (8 min)." */
+const distancia = (m: number) => (m >= 1000 ? `${(m / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km` : `${m} m`)
+
+/** "Parada mais perto: 120 m do cliente às 14:32 (8 min)." (+ a pista do check-in da Fusion, F4-10) */
 export function fraseInvestigacao(i: Investigacao): string {
+  return `${fraseGps(i)}${i.pistaCheckIn ? ` ${frasePistaCheckIn(i.pistaCheckIn)}` : ''}`
+}
+
+function fraseGps(i: Investigacao): string {
   if (i.distM == null) return ROTULO_INVESTIGACAO[i.categoria].dica
   if (i.categoria === 'passou_sem_parar') return `Passou a ${i.distM} m do cliente sem parar.`
-  const dist = i.distM >= 1000 ? `${(i.distM / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km` : `${i.distM} m`
-  return `Parada mais perto: ${dist} do cliente${i.hora ? ` às ${i.hora}` : ''}${i.minutos != null ? ` (${i.minutos} min)` : ''}.`
+  return `Parada mais perto: ${distancia(i.distM)} do cliente${i.hora ? ` às ${i.hora}` : ''}${i.minutos != null ? ` (${i.minutos} min)` : ''}.`
+}
+
+/** F4-10 (KRQ-13): só pista para conferir o ponto; nunca confirma entrega. */
+export function frasePistaCheckIn(p: PistaCheckIn): string {
+  if (!p.parado) return `Pista da Fusion: check-in às ${p.hora} sem o caminhão parado.`
+  if (p.distM == null) return `Pista da Fusion: check-in às ${p.hora} com o caminhão parado (não confirma entrega).`
+  return `Pista da Fusion: check-in às ${p.hora} com o caminhão parado a ${distancia(p.distM)} do ponto (não confirma entrega).`
 }

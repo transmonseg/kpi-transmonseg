@@ -23,6 +23,7 @@ import { hojeBR } from '@/lib/data-br'
 import { versaoDasRegras } from './versao-regras'
 import { NOME_FONTE } from './gerador-xlsx'
 import type { EntregaRioQualityCompleta } from '@/lib/kpi-rioquality/parse-planilhas'
+import { checkInsPorNfRQ } from '@/lib/kpi-rioquality/checkin-pista'
 
 export const CLIENTES_AO_VIVO = ['nutrimax', 'rioquality'] as const
 export const NOME_CLIENTE_AO_VIVO: Record<ClienteAoVivo, string> = { nutrimax: 'Nutry Max', rioquality: 'Rio Quality' }
@@ -408,7 +409,10 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
       resultado.avisos = [...(resultado.avisos ?? []), `Cálculo incompleto: ${r.degradado}. Entregas confirmadas pela rua podem estar faltando; o próximo cálculo tenta de novo.`]
     }
     resultado.versaoRegras = versaoDasRegras()
-    investigarPlacas(resultado.placas, paradasDoDia, trajetoPorNf)
+    // F4-10 (KRQ-13): check-in da Fusion como pista na investigacao (so' RQ;
+    // nunca muda a classificacao).
+    const checkIns = cliente === 'rioquality' ? checkInsPorNfRQ(temDia as EntregaRioQualityCompleta[]) : new Map<string, string>()
+    investigarPlacas(resultado.placas, paradasDoDia, trajetoPorNf, checkIns)
     // F2-03: alarme de falha silenciosa -- nenhuma NF do cliente com ponto
     // (RQ de 20 a 23/10: 0 de 11.382, sem nenhum erro registrado).
     const alarmeCoord = alarmeSemCoordenada(resultado.placas)
