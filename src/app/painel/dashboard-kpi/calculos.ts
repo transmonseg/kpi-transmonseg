@@ -1,4 +1,5 @@
 import { hojeBR } from '@/lib/data-br'
+import { META_KPI_PADRAO } from '@/lib/kpi/metas'
 import type { DiaKpi } from '@/lib/kpi-romaneio/dashboard-kpis'
 
 export type Periodo = 'dia' | 'semana' | 'mes' | 'ano' | 'custom'
@@ -162,8 +163,10 @@ export function dataLonga(s: string) {
   const t = new Date(y, m - 1, d).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   return t.charAt(0).toUpperCase() + t.slice(1)
 }
-export function tom(taxa: number | null | undefined): 'ok' | 'warn' | 'bad' {
+/** F3-02 (D-01): "ok" a partir da meta do cliente (metaDoCliente); sem ela,
+ *  o 95 antigo (META_KPI_PADRAO). */
+export function tom(taxa: number | null | undefined, meta: number = META_KPI_PADRAO): 'ok' | 'warn' | 'bad' {
   if (taxa == null) return 'warn'
-  return taxa >= 95 ? 'ok' : taxa >= 85 ? 'warn' : 'bad'
+  return taxa >= meta ? 'ok' : taxa >= 85 ? 'warn' : 'bad'
 }
 export const COR_TOM = { ok: 'var(--color-success)', warn: 'var(--color-warning)', bad: 'var(--color-danger)' } as const

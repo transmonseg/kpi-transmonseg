@@ -15,10 +15,10 @@ import {
 } from './calculos'
 import { PlacaDrawer } from './placa-drawer'
 import { FechamentoOfertas } from './fechamento-ofertas'
+import { metaDoCliente } from '@/lib/kpi/metas'
 
 const ANO = Number(hoje().slice(0, 4))
 const ANOS = [ANO, ANO - 1, ANO - 2].map(String)
-const META = 95
 
 const CTRL = 'h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] [color-scheme:light] dark:[color-scheme:dark]'
 
@@ -40,6 +40,8 @@ export function VisaoGeral({ cliente, dataInicial, podeInserir, visaoCliente = f
   const [placaAberta, setPlacaAberta] = useState<PlacaAgg | null>(null)
 
   const faixa = useMemo(() => intervalo(periodo, data, de, ate), [periodo, data, de, ate])
+  // F3-02 (D-01): meta do cliente (Nutry 97, RQ 93), não mais o 95 fixo.
+  const meta = metaDoCliente(cliente)
 
   useEffect(() => {
     let vivo = true
@@ -119,7 +121,7 @@ export function VisaoGeral({ cliente, dataInicial, podeInserir, visaoCliente = f
           )}
         </div>
       ) : (
-        <Conteudo ag={ag} agAnt={agAnt} periodo={periodo} onPlaca={setPlacaAberta} visaoCliente={visaoCliente} />
+        <Conteudo meta={meta} ag={ag} agAnt={agAnt} periodo={periodo} onPlaca={setPlacaAberta} visaoCliente={visaoCliente} />
       )}
 
       {placaAberta && ag && (
@@ -154,7 +156,7 @@ function Delta({ atual, anterior, inverso, suf = ' pts', casas = 1 }: { atual: n
   )
 }
 
-function Conteudo({ ag, agAnt, periodo, onPlaca, visaoCliente }: { ag: Agregado; agAnt: Agregado | null; periodo: Periodo; onPlaca: (p: PlacaAgg) => void; visaoCliente: boolean }) {
+function Conteudo({ ag, agAnt, periodo, meta, onPlaca, visaoCliente }: { ag: Agregado; agAnt: Agregado | null; periodo: Periodo; meta: number; onPlaca: (p: PlacaAgg) => void; visaoCliente: boolean }) {
   const umDia = periodo === 'dia'
   const serieComp = ag.serie.filter(s => !s.parcial)
   return (
@@ -166,7 +168,7 @@ function Conteudo({ ag, agAnt, periodo, onPlaca, visaoCliente }: { ag: Agregado;
         </div>
       )}
 
-      <Hero ag={ag} agAnt={agAnt} umDia={umDia} />
+      <Hero ag={ag} agAnt={agAnt} umDia={umDia} meta={meta} />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Tile i={0} Icone={Package} cor="#2a78d6" rotulo="NFs entregues" valor={fmtInt(ag.entregues)} sub={`de ${fmtInt(ag.nfsNaConta)} na conta`} delta={<Delta atual={ag.entregues} anterior={agAnt?.entregues} suf="" casas={0} />} />
@@ -181,11 +183,11 @@ function Conteudo({ ag, agAnt, periodo, onPlaca, visaoCliente }: { ag: Agregado;
 
       {!umDia && (
         <div className="grid gap-4 lg:grid-cols-5">
-          <Painel titulo="Taxa de confirmação" sub={`Dia a dia · meta ${META}%`} className="lg:col-span-3">
+          <Painel titulo="Taxa de confirmação" sub={`Dia a dia · meta ${meta}%`} className="lg:col-span-3">
             {serieComp.length >= 1 ? (
               <LinhaTaxa
                 pontos={serieComp.map(x => ({ chave: x.data, rotulo: dataCurta(x.data), valor: x.taxa }))}
-                meta={META}
+                meta={meta}
                 altura={260}
               />
             ) : <p className="py-16 text-center text-[13px] text-[var(--color-fg-muted)]">Insira mais dias para ver a evolução.</p>}
@@ -207,18 +209,18 @@ function Conteudo({ ag, agAnt, periodo, onPlaca, visaoCliente }: { ag: Agregado;
           </Painel>
         )}
         <Painel titulo={umDia ? 'Piores placas do dia' : 'Piores placas do período'} sub="Menor taxa de confirmação — clique para abrir">
-          <PioresPlacas placas={ag.placas} onPlaca={onPlaca} />
+          <PioresPlacas placas={ag.placas} meta={meta} onPlaca={onPlaca} />
         </Painel>
       </div>
 
       <Painel titulo="Placas" sub="Clique numa placa para ver o dia dela, NF por NF" semPadding>
-        <TabelaPlacas placas={ag.placas} umDia={umDia} onPlaca={onPlaca} />
+        <TabelaPlacas placas={ag.placas} umDia={umDia} meta={meta} onPlaca={onPlaca} />
       </Painel>
     </div>
   )
 }
 
-function Hero({ ag, agAnt, umDia }: { ag: Agregado; agAnt: Agregado | null; umDia: boolean }) {
+function Hero({ ag, agAnt, umDia, meta }: { ag: Agregado; agAnt: Agregado | null; umDia: boolean; meta: number }) {
   const t = ag.taxa
   const pct = Math.max(0, Math.min(100, t ?? 0))
   const r = 52, c = 2 * Math.PI * r
@@ -231,7 +233,7 @@ function Hero({ ag, agAnt, umDia }: { ag: Agregado; agAnt: Agregado | null; umDi
         <div className="flex items-center gap-4 sm:gap-6">
           <svg viewBox="0 0 128 128" className="size-[84px] shrink-0 -rotate-90 sm:size-32">
             <circle cx="64" cy="64" r={r} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="12" />
-            <circle cx="64" cy="64" r={r} fill="none" stroke={t != null && t >= META ? '#5be08a' : t != null && t >= 85 ? '#ffc04d' : '#ff7a72'} strokeWidth="12" strokeLinecap="round"
+            <circle cx="64" cy="64" r={r} fill="none" stroke={t != null && t >= meta ? '#5be08a' : t != null && t >= 85 ? '#ffc04d' : '#ff7a72'} strokeWidth="12" strokeLinecap="round"
               strokeDasharray={c} strokeDashoffset={c * (1 - pct / 100)} style={{ transition: 'stroke-dashoffset 1.1s cubic-bezier(0.32,0.72,0,1)' }} />
           </svg>
           <div>
@@ -250,7 +252,7 @@ function Hero({ ag, agAnt, umDia }: { ag: Agregado; agAnt: Agregado | null; umDi
         </div>
         <div className="grid grid-cols-3 gap-6 lg:min-w-[440px]">
           <HeroMini rotulo="Dias analisados" valor={fmtInt(ag.diasCompletos)} />
-          <HeroMini rotulo="Na meta (≥95%)" valor={`${serie.filter(s => (s.taxa as number) >= META).length}/${serie.length}`} />
+          <HeroMini rotulo={`Na meta (≥${meta}%)`} valor={`${serie.filter(s => (s.taxa as number) >= meta).length}/${serie.length}`} />
           <HeroMini rotulo="Placas" valor={fmtInt(ag.placas.length)} />
           {serie.length >= 2 && (
             <svg viewBox="0 0 100 42" preserveAspectRatio="none" className="col-span-3 h-12 w-full">
@@ -298,13 +300,13 @@ function Painel({ titulo, sub, children, className = '', semPadding }: { titulo:
   )
 }
 
-function PioresPlacas({ placas, onPlaca }: { placas: PlacaAgg[]; onPlaca: (p: PlacaAgg) => void }) {
+function PioresPlacas({ placas, meta, onPlaca }: { placas: PlacaAgg[]; meta: number; onPlaca: (p: PlacaAgg) => void }) {
   const lista = placas.filter(p => p.taxa != null && p.nfPlanejado > 0).sort((a, b) => (a.taxa ?? 0) - (b.taxa ?? 0)).slice(0, 8)
   if (!lista.length) return <p className="py-10 text-center text-[13px] text-[var(--color-fg-muted)]">Sem placas.</p>
   return (
     <ul className="flex flex-col gap-2.5">
       {lista.map(p => {
-        const t = tom(p.taxa)
+        const t = tom(p.taxa, meta)
         return (
           <li key={p.placa}>
             <button type="button" onClick={() => onPlaca(p)} className="group w-full text-left">
@@ -341,7 +343,7 @@ function Resultado({ ag }: { ag: Agregado }) {
 
 type Col = 'placa' | 'taxa' | 'nfs' | 'km' | 'operacao' | 'porEntrega' | 'dias'
 
-function TabelaPlacas({ placas, umDia, onPlaca }: { placas: PlacaAgg[]; umDia: boolean; onPlaca: (p: PlacaAgg) => void }) {
+function TabelaPlacas({ placas, umDia, meta, onPlaca }: { placas: PlacaAgg[]; umDia: boolean; meta: number; onPlaca: (p: PlacaAgg) => void }) {
   const [busca, setBusca] = useState('')
   const [ordem, setOrdem] = useState<{ col: Col; desc: boolean }>({ col: 'taxa', desc: false })
   const linhas = useMemo(() => {
@@ -398,7 +400,7 @@ function TabelaPlacas({ placas, umDia, onPlaca }: { placas: PlacaAgg[]; umDia: b
           </thead>
           <tbody>
             {linhas.map(p => {
-              const t = tom(p.taxa)
+              const t = tom(p.taxa, meta)
               return (
                 <tr key={p.placa} onClick={() => onPlaca(p)} className="group cursor-pointer border-b border-[var(--color-border)] transition-colors hover:bg-[var(--color-bg-subtle)]">
                   <td className="px-4 py-3">

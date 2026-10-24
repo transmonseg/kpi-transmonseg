@@ -38,9 +38,10 @@ function caminhoSuave(pts: [number, number][]): string {
 }
 
 /** Linha de taxa (%) com área, linha de meta e ponto selecionado. */
-export function LinhaTaxa({ pontos, meta = 95, selecionado, aoSelecionar, altura = 220 }: {
+export function LinhaTaxa({ pontos, meta, selecionado, aoSelecionar, altura = 220 }: {
   pontos: Ponto[]
-  meta?: number
+  /** F3-02 (D-01): meta do cliente (metaDoCliente), sem valor fixo. */
+  meta: number
   selecionado?: string
   aoSelecionar?: (chave: string) => void
   altura?: number

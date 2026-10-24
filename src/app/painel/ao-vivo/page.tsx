@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { MagnifyingGlass, DownloadSimple, UploadSimple, MapPin, WarningCircle, CaretDown, CaretLeft, MapTrifold, ArrowsLeftRight } from '@phosphor-icons/react/dist/ssr'
+import { MagnifyingGlass, DownloadSimple, UploadSimple, MapPin, WarningCircle, CaretDown, CaretLeft, MapTrifold, ArrowsLeftRight, Article } from '@phosphor-icons/react/dist/ssr'
 import type { EstadoAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
 import type { SugestaoTroca } from '@/lib/kpi-romaneio/sugerir-trocas'
 import type { PlacaAoVivo, NfAoVivo, SituacaoNf } from '@/lib/kpi-romaneio/ao-vivo'
@@ -21,6 +21,8 @@ import { linhasPendentes } from '@/lib/kpi-romaneio/relatorio-pendentes'
 import { avisoVersaoRegras } from '@/lib/kpi-romaneio/versao-regras-aviso'
 import { bannerFusion, type StatusFusion } from '@/lib/kpi-rioquality/status-fusion'
 import type { ModoTroca } from '@/lib/kpi-romaneio/trocas-placa'
+import { metaDoCliente } from '@/lib/kpi/metas'
+import { linhaMeta, placaAbaixoDaMeta, placaSemHorarioBase, ordenarPioresPrimeiro } from '@/lib/kpi-romaneio/resumo-dia'
 
 // Tela "Ao vivo" (spec 2026-10-06-kpi-ao-vivo-design.md). Cor/status de cada
 // NF vem do último cálculo do KPI (a mesma regra da planilha); o cronômetro e
@@ -82,6 +84,8 @@ export default function AoVivoPage() {
   const [busca, setBusca] = useState('')
   // Notas da placa aberta: todas, só pendentes ou só entregues (pedido 06/10).
   const [filtroNf, setFiltroNf] = useState<FiltroNf>('todas')
+  // F3-02 (AC-06): chips da lista de placas.
+  const [filtroPlacas, setFiltroPlacas] = useState<'todas' | 'abaixo' | 'base'>('todas')
   const [gerando, setGerando] = useState(false)
   const [subindo, setSubindo] = useState(false)
   // Resultado do último envio: romaneio/pão também foram pro Monitoramento?
@@ -146,18 +150,23 @@ export default function AoVivoPage() {
     return () => clearInterval(t)
   }, [])
 
-  // Carga sem placa (pão sem carro no PDF) vai pro fim, não pro topo.
-  const placas = useMemo(() => [...(estado?.resultado?.placas ?? [])].sort((a, b) => Number(a.placa === 'SEM PLACA' || a.placa === '') - Number(b.placa === 'SEM PLACA' || b.placa === '')), [estado])
+  // F3-02 (AC-06): piores primeiro (menor taxa da placa); carga sem placa e
+  // placa só sem rastreador vão pro fim.
+  const placas = useMemo(() => ordenarPioresPrimeiro(estado?.resultado?.placas ?? []), [estado])
+  const meta = metaDoCliente(cliente)
+  const qtdAbaixo = useMemo(() => placas.filter(p => placaAbaixoDaMeta(p, meta)).length, [placas, meta])
+  const qtdSemBase = useMemo(() => placas.filter(placaSemHorarioBase).length, [placas])
 
   // Busca também por cliente e número da nota (06/10, tia Érica).
   const qtdPendentes = useMemo(() => linhasPendentes(placas).length, [placas])
   const achados = useMemo(() => buscarNfs(placas, busca), [placas, busca])
   const filtradas = useMemo(() => {
     const b = busca.trim().toUpperCase()
-    if (!b) return placas
+    const doChip = filtroPlacas === 'abaixo' ? placas.filter(p => placaAbaixoDaMeta(p, meta)) : filtroPlacas === 'base' ? placas.filter(placaSemHorarioBase) : placas
+    if (!b) return doChip
     const comNota = new Set(achados.map(a => a.placa))
-    return placas.filter(p => p.placa.includes(b) || p.motorista.toUpperCase().includes(b) || p.destino.toUpperCase().includes(b) || comNota.has(p.placa))
-  }, [placas, busca, achados])
+    return doChip.filter(p => p.placa.includes(b) || p.motorista.toUpperCase().includes(b) || p.destino.toUpperCase().includes(b) || comNota.has(p.placa))
+  }, [placas, busca, achados, filtroPlacas, meta])
 
   const placa = placas.find(p => p.placa === placaSel) ?? filtradas[0] ?? placas[0] ?? null
 
@@ -232,8 +241,8 @@ export default function AoVivoPage() {
 
   const r = estado.resultado
   const historico = estado.historico
-  const trocarCliente = (c: Cliente) => { setCliente(c); setDataSel(null); setPlacaSel(null); setNfAberta(null); setVendoDetalhe(false); setAgora({}); setBusca(''); setEstado(null) }
-  const trocarDia = (d: string) => { setDataSel(d === estado.hoje ? null : d); setPlacaSel(null); setNfAberta(null); setVendoDetalhe(false); setAgora({}); setBusca('') }
+  const trocarCliente = (c: Cliente) => { setCliente(c); setDataSel(null); setPlacaSel(null); setNfAberta(null); setVendoDetalhe(false); setAgora({}); setBusca(''); setFiltroPlacas('todas'); setEstado(null) }
+  const trocarDia = (d: string) => { setDataSel(d === estado.hoje ? null : d); setPlacaSel(null); setNfAberta(null); setVendoDetalhe(false); setAgora({}); setBusca(''); setFiltroPlacas('todas') }
 
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-5">
@@ -305,6 +314,15 @@ export default function AoVivoPage() {
         </div>
       </header>
 
+      {/* F3-02 (AC-06): "X% · meta Y% · faltam N · K fora da conta" + Resumo do dia. */}
+      {r && (
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-[var(--color-fg-muted)]">
+          <strong className="font-semibold tabular-nums text-[var(--color-fg)]">{linhaMeta(r.resumo, meta).texto}</strong>
+          <Link href={`/painel/resumo-dia?cliente=${cliente}&data=${estado.data}`} className="inline-flex items-center gap-1 font-semibold text-[var(--color-navy-700)] hover:underline">
+            <Article size={14} weight="bold" />Resumo do dia
+          </Link>
+        </p>
+      )}
       {estado.ultimoErro && (!r || Date.parse(estado.ultimoErro.em) > Date.parse(r.calculadoEm)) && (
         <p className="inline-flex items-center gap-2 rounded-2xl bg-[var(--color-warning-soft)] px-4 py-2.5 text-[13px] text-[var(--color-warning-soft-fg)]">
           <WarningCircle size={16} weight="fill" />O último cálculo falhou às {hhmm(estado.ultimoErro.em)}. A tela mostra os dados de {hhmm(r?.calculadoEm)}; o próximo cálculo tenta de novo.
@@ -403,6 +421,15 @@ export default function AoVivoPage() {
                 <MagnifyingGlass size={15} />
                 <input aria-label="Buscar placa, cliente ou nota" value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar placa, cliente ou nota" className="min-w-0 flex-1 bg-transparent text-[13px] text-[var(--color-fg)] outline-none" />
               </label>
+              {/* F3-02 (AC-06): chips que ignoram SEM PLACA e placa sem rastreador. */}
+              <div role="radiogroup" aria-label="Filtrar placas" className="mt-2 flex flex-wrap gap-1.5">
+                {([['todas', 'Todas', null], ['abaixo', 'Abaixo da meta', qtdAbaixo], ['base', 'Sem horário da base', qtdSemBase]] as const).map(([f, rotulo, qtd]) => (
+                  <button key={f} type="button" role="radio" aria-checked={filtroPlacas === f} onClick={() => setFiltroPlacas(f)} disabled={qtd === 0}
+                    className={`h-7 rounded-full px-3 text-[12px] font-semibold transition-colors disabled:opacity-40 ${filtroPlacas === f ? 'bg-[var(--color-navy-700)] text-white' : 'bg-[var(--color-bg-subtle)] text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]'}`}>
+                    {rotulo}{qtd != null ? ` (${qtd})` : ''}
+                  </button>
+                ))}
+              </div>
             </div>
             <ul className="min-h-0 flex-1 overflow-y-auto">
               {achados.length > 0 && (
@@ -428,7 +455,7 @@ export default function AoVivoPage() {
               {filtradas.map(p => (
                 <LinhaPlaca key={p.placa} p={p} ativa={p.placa === placa.placa} agora={historico ? undefined : agora[p.placa]} agoraMs={agoraMs} historico={historico} onClick={() => { setPlacaSel(p.placa); setNfAberta(null); setVendoDetalhe(true) }} />
               ))}
-              {filtradas.length === 0 && <li className="px-4 py-10 text-center text-[13px] text-[var(--color-fg-muted)]">Nenhuma placa com “{busca}”.</li>}
+              {filtradas.length === 0 && <li className="px-4 py-10 text-center text-[13px] text-[var(--color-fg-muted)]">{busca.trim() ? `Nenhuma placa com “${busca}”.` : 'Nenhuma placa neste filtro.'}</li>}
             </ul>
           </aside>
 
