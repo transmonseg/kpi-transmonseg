@@ -245,7 +245,7 @@ describe('geocodificarEnderecos', () => {
 
 /** Mock por tabela: positivo (select.in) e negativo (select.in.gt), com upserts separados. */
 function mockSupabaseTabelas(opts: {
-  positivo?: Array<{ endereco: string; lat: number; lng: number; fonte?: string }>
+  positivo?: Array<{ endereco: string; lat: number; lng: number; fonte?: string | null; confiavel?: boolean; precisao?: string | null }>
   negativo?: string[]
   erroNegativo?: boolean
 }) {
@@ -791,5 +791,144 @@ describe('escolherLinhaCache', () => {
     expect(escolherLinhaCache({ ...linha('cadastro_unitrac'), lat: 1 }, { ...linha('verificacao_manual'), lat: 2 })?.lat).toBe(2)
     expect(escolherLinhaCache({ ...linha('cnefe'), lat: 1 }, { ...linha('cadastro_unitrac'), lat: 2 })?.lat).toBe(2)
     expect(escolherLinhaCache({ ...linha('cadastro_unitrac'), lat: 1 }, { ...linha('gps_dwell'), lat: 2 })?.lat).toBe(1)
+  })
+})
+
+// F1-06 (KRQ-01, plano mestre 23/10): linha do cache SEM fonte e' legado de
+// 24/08-12/09, gravado antes da guarda territorial e nunca validado. Ao LER,
+// passa pela guarda (municipio por poligono + bairro a ate' 1 km, filtrando o
+// municipio -- /api/romaneio/territorio do monitoramento). Reprovou: vira nao
+// confiavel e vai pra cascata; a linha legada NAO e' sobrescrita (substituir
+// o legado e' o --aplicar do reprocessar-cache-rq.ts, com backup e OK do dono).
+describe('geocodificarEnderecos - F1-06 guarda territorial na leitura do cache legado', () => {
+  // Casos reais (cache de producao, 23/10): Av. das Americas/Recreio caiu na
+  // Mare a 29,9 km (35 NFs em 21-23/10); Pinheiro Machado/Botafogo esta' certa.
+  const RECREIO = 'AVENIDA DAS AMERICAS, - RECREIO DOS BANDEIRANTES, RIO DE JANEIRO - RJ'
+  const BOTAFOGO = 'RUA PINHEIRO MACHADO, - BOTAFOGO, RIO DE JANEIRO - RJ'
+  const legadoRecreio = { endereco: RECREIO, lat: -22.858328, lng: -43.242052, fonte: null, confiavel: true }
+  const legadoBotafogo = { endereco: BOTAFOGO, lat: -22.938835, lng: -43.183175, fonte: null, confiavel: true }
+
+  type Ponto = { id: string; lat: number; lng: number; endereco: string }
+  /** fetch por URL: /territorio responde pelo veredito; /geocode pela cascata. */
+  function mockPonte(opts: { reprovados?: Record<string, 'bairro_divergente' | 'municipio_divergente'>; territorioFalha?: boolean; cascata?: Record<string, unknown> }) {
+    const chamadasTerritorio: Ponto[][] = []
+    const chamadasCascata: string[][] = []
+    const spy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+      const corpo = JSON.parse(String((init as RequestInit).body))
+      if (String(url).endsWith('/api/romaneio/territorio')) {
+        chamadasTerritorio.push(corpo.pontos)
+        if (opts.territorioFalha) return new Response('', { status: 502 })
+        return new Response(JSON.stringify({ resultados: (corpo.pontos as Ponto[]).map(p => {
+          const m = opts.reprovados?.[p.endereco]
+          return m ? { id: p.id, ok: false, motivo: m } : { id: p.id, ok: true }
+        }) }), { status: 200 })
+      }
+      chamadasCascata.push(corpo.enderecos)
+      return respostaOk((corpo.enderecos as string[]).map(e => opts.cascata?.[e] ?? null))
+    })
+    return { spy, chamadasTerritorio, chamadasCascata }
+  }
+
+  it('legado fora da guarda (Recreio na Mare) vai pra cascata e usa o ponto novo, sem sobrescrever a linha legada', async () => {
+    const { upsertPositivo } = mockSupabaseTabelas({ positivo: [legadoRecreio] })
+    const { chamadasTerritorio, chamadasCascata } = mockPonte({
+      reprovados: { [RECREIO]: 'bairro_divergente' },
+      cascata: { [RECREIO]: { lat: -23.016408, lng: -43.477795, fonte: 'cnefe', validado: true } },
+    })
+    const [r] = await geocodificarEnderecos([RECREIO], { validarTerritorio: true })
+    expect(r).toEqual(expect.objectContaining({ lat: -23.016408, lng: -43.477795, fonte: 'cnefe', confiavel: true }))
+    expect(chamadasTerritorio).toEqual([[expect.objectContaining({ lat: -22.858328, lng: -43.242052, endereco: RECREIO })]])
+    expect(chamadasCascata).toEqual([[RECREIO]])
+    // a coordenada antiga so' sai do cache pelo --aplicar do script (backup + OK do dono)
+    const gravados = upsertPositivo.mock.calls.flatMap(c => (c[0] as Array<{ endereco: string }>).map(l => l.endereco))
+    expect(gravados).not.toContain(RECREIO)
+  })
+
+  it('legado dentro da guarda (Pinheiro Machado/Botafogo) continua: sem cascata', async () => {
+    mockSupabaseTabelas({ positivo: [legadoBotafogo] })
+    const { chamadasTerritorio, chamadasCascata } = mockPonte({})
+    const [r] = await geocodificarEnderecos([BOTAFOGO], { validarTerritorio: true })
+    expect(r).toEqual(expect.objectContaining({ lat: -22.938835, lng: -43.183175, confiavel: true }))
+    expect(chamadasTerritorio).toHaveLength(1)
+    expect(chamadasCascata).toEqual([])
+  })
+
+  it('legado fora da guarda e a cascata nao resolve: fica a coordenada antiga, nao confiavel, com o motivo da guarda', async () => {
+    mockSupabaseTabelas({ positivo: [legadoRecreio] })
+    mockPonte({ reprovados: { [RECREIO]: 'bairro_divergente' } })
+    const [r] = await geocodificarEnderecos([RECREIO], { validarTerritorio: true })
+    expect(r).toEqual(expect.objectContaining({ lat: -22.858328, lng: -43.242052, confiavel: false, motivo: 'bairro_divergente' }))
+  })
+
+  it('guarda indisponivel (ponte fora): fail-open, o legado segue como antes e nada vai pra cascata', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockSupabaseTabelas({ positivo: [legadoRecreio] })
+    const { chamadasCascata } = mockPonte({ territorioFalha: true })
+    const [r] = await geocodificarEnderecos([RECREIO], { validarTerritorio: true })
+    expect(r).toEqual(expect.objectContaining({ lat: -22.858328, lng: -43.242052, confiavel: true }))
+    expect(chamadasCascata).toEqual([])
+  })
+
+  it('linha com fonte (cnefe) e legado ja nao confiavel nao passam pela guarda', async () => {
+    mockSupabaseTabelas({ positivo: [
+      { endereco: RECREIO, lat: -23.016, lng: -43.477, fonte: 'cnefe', confiavel: true },
+      { endereco: BOTAFOGO, lat: -22.9, lng: -43.1, fonte: null, confiavel: false },
+    ] })
+    const { spy } = mockPonte({})
+    await geocodificarEnderecos([RECREIO, BOTAFOGO], { validarTerritorio: true })
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('sem validarTerritorio (Porte Frio) a leitura do cache nao muda', async () => {
+    mockSupabaseTabelas({ positivo: [legadoRecreio] })
+    const { spy } = mockPonte({ reprovados: { [RECREIO]: 'bairro_divergente' } })
+    const [r] = await geocodificarEnderecos([RECREIO])
+    expect(r).toEqual(expect.objectContaining({ lat: -22.858328, lng: -43.242052, confiavel: true }))
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('legado so na chave antiga (bruto com "AV."): o ponto novo e gravado na chave nova, o legado fica intacto', async () => {
+    const BRUTO = 'AV. DAS AMERICAS, - RECREIO DOS BANDEIRANTES, RIO DE JANEIRO - RJ'
+    const { upsertPositivo } = mockSupabaseTabelas({ positivo: [{ ...legadoRecreio, endereco: BRUTO }] })
+    const chave = chaveCacheEndereco(BRUTO)
+    expect(chave).toBe(RECREIO)
+    mockPonte({
+      reprovados: { [chave]: 'bairro_divergente' },
+      cascata: { [chave]: { lat: -23.016408, lng: -43.477795, fonte: 'cnefe', validado: true } },
+    })
+    const [r] = await geocodificarEnderecos([BRUTO], { validarTerritorio: true })
+    expect(r).toEqual(expect.objectContaining({ lat: -23.016408, lng: -43.477795, confiavel: true }))
+    const gravados = upsertPositivo.mock.calls.flatMap(c => (c[0] as Array<{ endereco: string }>).map(l => l.endereco))
+    expect(gravados).toEqual([RECREIO])
+  })
+})
+
+// F1-06 (3): Photon sem a confirmacao de mesma rua (GEO-09 manda `precisao`
+// so' quando a feature e' a rua pedida) entra com confiavel=false. As 326
+// linhas photon do cache (14-23/10) estao todas sem precisao.
+describe('geocodificarEnderecos - F1-06 Photon sem confirmacao de mesma rua', () => {
+  it('resposta da ponte com fonte photon e sem precisao vira nao confiavel', async () => {
+    const { upsertPositivo } = mockSupabaseTabelas({})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaOk([
+      { lat: -22.9, lng: -43.2, fonte: 'photon', validado: true },
+      { lat: -22.8, lng: -43.1, fonte: 'photon', validado: true, precisao: 'rua' },
+    ]))
+    const r = await geocodificarEnderecos(['RUA TIETA, - X, RIO DE JANEIRO - RJ', 'RUA Y, - X, RIO DE JANEIRO - RJ'])
+    expect(r[0]).toEqual(expect.objectContaining({ fonte: 'photon', confiavel: false }))
+    expect(r[1]).toEqual(expect.objectContaining({ fonte: 'photon', confiavel: true, precisao: 'rua' }))
+    const gravado = upsertPositivo.mock.calls.flatMap(c => c[0] as Array<{ endereco: string; confiavel: boolean }>).find(l => l.endereco.startsWith('RUA TIETA'))
+    expect(gravado?.confiavel).toBe(false)
+  })
+
+  it('linha photon do cache sem precisao vira nao confiavel; com precisao continua', async () => {
+    mockSupabaseTabelas({ positivo: [
+      { endereco: 'RUA A, - B, RIO DE JANEIRO - RJ', lat: -22.9, lng: -43.2, fonte: 'photon', confiavel: true, precisao: null },
+      { endereco: 'RUA C, - D, RIO DE JANEIRO - RJ', lat: -22.8, lng: -43.1, fonte: 'photon', confiavel: true, precisao: 'exato' },
+    ] })
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const r = await geocodificarEnderecos(['RUA A, - B, RIO DE JANEIRO - RJ', 'RUA C, - D, RIO DE JANEIRO - RJ'])
+    expect(r[0]).toEqual(expect.objectContaining({ fonte: 'photon', confiavel: false }))
+    expect(r[1]).toEqual(expect.objectContaining({ fonte: 'photon', confiavel: true, precisao: 'exato' }))
+    expect(fetchSpy).not.toHaveBeenCalled()
   })
 })

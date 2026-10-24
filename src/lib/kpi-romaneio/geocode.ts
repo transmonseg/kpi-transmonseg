@@ -159,6 +159,17 @@ function resultadosVazios(n: number): ResultadoGeocode[] {
   return new Array(n).fill(null)
 }
 
+// F1-06 (3) (KRQ-01, plano mestre 23/10): o Photon so' manda `precisao`
+// quando a feature e' a propria rua pedida (GEO-09, monitoramento 7cdf88b).
+// Photon SEM precisao (cache de 14-23/10, ou hit do cache do monitoramento,
+// que nao guarda precisao) nao tem a confirmacao de mesma rua: entra como
+// nao confiavel (52-62% de "revisar" nos dias manuais da RQ).
+export const MOTIVO_PHOTON_SEM_RUA = 'photon_sem_rua'
+export function aplicarRegraPhoton<T extends { fonte?: string | null; confiavel: boolean; motivo?: string; precisao?: PrecisaoGeocode }>(r: T): T {
+  if (r.fonte !== 'photon' || r.precisao || !r.confiavel) return r
+  return { ...r, confiavel: false, motivo: r.motivo ?? MOTIVO_PHOTON_SEM_RUA }
+}
+
 function validarResultado(r: unknown): ResultadoGeocode {
   if (
     typeof r === 'object' &&
@@ -172,14 +183,14 @@ function validarResultado(r: unknown): ResultadoGeocode {
     const validado = (r as { validado?: unknown }).validado
     const motivo = typeof (r as { motivo?: unknown }).motivo === 'string' ? (r as { motivo: string }).motivo : undefined
     const precisao = (r as { precisao?: unknown }).precisao
-    return {
+    return aplicarRegraPhoton({
       lat: (r as { lat: number }).lat,
       lng: (r as { lng: number }).lng,
       fonte,
       confiavel: typeof validado === 'boolean' ? validado : true,
       motivo,
       ...(typeof precisao === 'string' && PRECISOES.has(precisao) ? { precisao: precisao as PrecisaoGeocode } : {}),
-    }
+    })
   }
   return null
 }
@@ -258,14 +269,14 @@ async function buscarNoCache(enderecos: string[]): Promise<Map<string, { lat: nu
         continue
       }
       for (const row of data ?? []) {
-        encontrados.set(row.endereco as string, {
+        encontrados.set(row.endereco as string, aplicarRegraPhoton({
           lat: row.lat as number,
           lng: row.lng as number,
           fonte: (row as { fonte?: string | null }).fonte ?? undefined,
           confiavel: (row as { confiavel?: boolean }).confiavel ?? true,
           motivo: (row as { motivo?: string | null }).motivo ?? undefined,
           ...(PRECISOES.has(String((row as { precisao?: string | null }).precisao)) ? { precisao: (row as { precisao: PrecisaoGeocode }).precisao } : {}),
-        })
+        }))
       }
     } catch (e) {
       console.error('[kpi-romaneio/geocode] leitura do cache falhou (segue sem cache):', e instanceof Error ? e.message : String(e))
@@ -294,6 +305,70 @@ async function salvarNoCache(enderecos: string[], resultados: ResultadoGeocode[]
   } catch (e) {
     console.error('[kpi-romaneio/geocode] gravação no cache falhou (resultado ja foi calculado, sem impacto):', e instanceof Error ? e.message : String(e))
   }
+}
+
+// F1-06 (2) (KRQ-01, plano mestre 23/10): linha do cache SEM fonte e' legado
+// de 24/08-12/09 (6.971 linhas, 6.466 confiavel=true por DEFAULT da coluna),
+// gravado antes da guarda territorial e nunca validado -- e o cache nunca
+// expira. Ao LER, com validarTerritorio, a linha legada confiavel passa pela
+// mesma guarda do geocode (/api/romaneio/territorio do monitoramento:
+// municipio por poligono IBGE + bairro a ate' 1 km do hull CNEFE, filtrando
+// o municipio). Medido 23/10 nas 6.466: 45 reprovam (38 bairro, 7 municipio),
+// todas da RQ -- Av. das Americas/Recreio caindo na Mare, R. Nestor/Santa Cruz
+// em Acari, Tv. Frederico Pamplona/Copacabana em Olaria; Pinheiro Machado/
+// Botafogo passa. Reprovou: nao confiavel e vai pra cascata. Fail-open (ponte
+// fora = legado segue como antes), igual a guarda do geocode. A linha legada
+// NUNCA e' sobrescrita aqui: substituir o legado e' o --aplicar do
+// scripts/reprocessar-cache-rq.ts (backup + OK do dono).
+const LOTE_TERRITORIO = 500
+const TIMEOUT_TERRITORIO_MS = 30_000
+type MotivoGuarda = 'municipio_divergente' | 'bairro_divergente'
+
+/** id -> motivo de cada ponto reprovado; null = guarda indisponivel. */
+async function reprovadosNaGuarda(pontos: { id: string; lat: number; lng: number; endereco: string }[]): Promise<Map<string, MotivoGuarda> | null> {
+  const chave = process.env.MOTOR_SECRET
+  if (!chave) return null
+  const reprovados = new Map<string, MotivoGuarda>()
+  for (let i = 0; i < pontos.length; i += LOTE_TERRITORIO) {
+    try {
+      const r = await fetch(`${process.env.MONITORAMENTO_URL ?? 'http://127.0.0.1:3010'}/api/romaneio/territorio`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-motor-key': chave },
+        body: JSON.stringify({ pontos: pontos.slice(i, i + LOTE_TERRITORIO) }),
+        signal: AbortSignal.timeout(TIMEOUT_TERRITORIO_MS),
+      })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      const j = (await r.json()) as { resultados?: { id?: unknown; ok?: unknown; motivo?: unknown }[] }
+      for (const x of j.resultados ?? []) {
+        if (x.ok === false && (x.motivo === 'municipio_divergente' || x.motivo === 'bairro_divergente')) reprovados.set(String(x.id), x.motivo)
+      }
+    } catch (e) {
+      console.error('[kpi-romaneio/geocode] guarda do cache legado indisponivel (legado segue como antes):', e instanceof Error ? e.message : String(e))
+      return null
+    }
+  }
+  return reprovados
+}
+
+type LinhaLida = { endereco: string; lat: number; lng: number; fonte?: string; confiavel: boolean; motivo?: string; precisao?: PrecisaoGeocode }
+
+/** Tira de `doCache` (por endereco bruto) as linhas legadas que reprovam na
+ *  guarda e devolve, por chave, a linha legada rebaixada (nao confiavel, com
+ *  o motivo da guarda) -- usada so' se a cascata nao resolver. */
+async function conferirLegadoNaGuarda(doCache: Map<string, LinhaLida>): Promise<Map<string, LinhaLida>> {
+  const legadas = [...doCache].filter(([, l]) => l.fonte == null && l.confiavel)
+  const rebaixadas = new Map<string, LinhaLida>()
+  if (legadas.length === 0) return rebaixadas
+  const reprovados = await reprovadosNaGuarda(legadas.map(([bruto, l], i) => ({ id: String(i), lat: l.lat, lng: l.lng, endereco: chaveCacheEndereco(bruto) })))
+  if (!reprovados) return rebaixadas
+  legadas.forEach(([bruto, l], i) => {
+    const motivo = reprovados.get(String(i))
+    if (!motivo) return
+    doCache.delete(bruto)
+    rebaixadas.set(chaveCacheEndereco(bruto), { ...l, confiavel: false, motivo })
+  })
+  if (rebaixadas.size > 0) console.log(`[kpi-romaneio/geocode] ${rebaixadas.size} endereço(s) do cache legado (sem fonte) fora da guarda territorial -- vão pra cascata`)
+  return rebaixadas
 }
 
 /** Enderecos que a ponte ja respondeu como "nao resolvi" dentro do TTL.
@@ -369,6 +444,10 @@ export async function geocodificarEnderecosComInfo(
   const brutosUnicos = [...new Set(enderecos)]
   const lidos = await buscarNoCache(enderecosParaLerCache(brutosUnicos))
   const doCache = mesclarLinhasCache(brutosUnicos, [...lidos].map(([endereco, l]) => ({ endereco, ...l })))
+  const legadoRebaixado = opcoes.validarTerritorio ? await conferirLegadoNaGuarda(doCache) : new Map<string, LinhaLida>()
+  // Chave cuja linha no cache e' legado reprovado: o resultado da cascata
+  // vale nesta geracao, mas nao sobrescreve a linha (ver conferirLegadoNaGuarda).
+  const naoSobrescrever = new Set([...legadoRebaixado.keys()].filter(c => lidos.has(c) && lidos.get(c)!.fonte == null))
   const chavesSemCache = [...new Set(brutosUnicos.filter(b => !doCache.has(b)).map(chaveCacheEndereco))]
   const negativos = await buscarNegativosRecentes(chavesSemCache)
   if (negativos.size > 0) {
@@ -394,7 +473,8 @@ export async function geocodificarEnderecosComInfo(
     await geocodificarPorLotes(faltantes, { ...opcoes, textoPonte }, async (lote, resultados, confirmado, incompletos) => {
       lote.forEach((e, i) => porFaltante.set(e, resultados[i]))
       parciais += incompletos.size
-      if (resultados.some(r => r !== null)) await salvarNoCache(lote, resultados)
+      const gravaveis = lote.map((e, i) => [e, resultados[i]] as const).filter(([e, r]) => r !== null && !naoSobrescrever.has(e))
+      if (gravaveis.length > 0) await salvarNoCache(gravaveis.map(([e]) => e), gravaveis.map(([, r]) => r))
       if (confirmado) {
         // Incompleto (timeout/pulo da similaridade) nao foi tentado por
         // inteiro -- nunca vira cache negativo.
@@ -412,7 +492,10 @@ export async function geocodificarEnderecosComInfo(
   return {
     resultados: enderecos.map(e => {
       const c = doCache.get(e)
-      return c ? semEndereco(c) : porFaltante.get(chaveCacheEndereco(e)) ?? null
+      if (c) return semEndereco(c)
+      const chave = chaveCacheEndereco(e)
+      const rebaixada = legadoRebaixado.get(chave)
+      return porFaltante.get(chave) ?? (rebaixada ? semEndereco(rebaixada) : null)
     }),
     parciais,
   }
