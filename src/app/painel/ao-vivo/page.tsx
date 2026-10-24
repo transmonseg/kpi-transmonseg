@@ -15,6 +15,7 @@ import { montarPayloadTroca } from './troca-payload'
 import { textoSugestao, corpoSugestao } from './sugestao-texto'
 import { mensagemDaTroca, type RespostaTroca } from '../nutrimax/placas/troca-dia'
 import { baixarPendentes } from './baixar-pendentes'
+import { linkMonitoramento, mostraVerNoMonitoramento, enderecoLimpo } from './link-monitoramento'
 import { linhasPendentes } from '@/lib/kpi-romaneio/relatorio-pendentes'
 import { avisoVersaoRegras } from '@/lib/kpi-romaneio/versao-regras-aviso'
 import { bannerFusion, type StatusFusion } from '@/lib/kpi-rioquality/status-fusion'
@@ -642,9 +643,9 @@ function LinhaNf({ n, todas, placa, data, historico, cliente, ordem, aberta, noC
                 <Mini rotulo="Tempo no cliente" valor={segAgora != null ? relogio(segAgora) : n.tempoMin != null ? `${n.tempoMin} min` : '—'} destaque={segAgora != null} longe={longe} />
               </div>
             )}
-            {placa && placa !== 'SEM PLACA' && cliente === 'nutrimax' && (
+            {mostraVerNoMonitoramento(placa) && (
               <div>
-                <Link href={linkMonitoramento(n, todas, placa, data, historico)}
+                <Link href={linkMonitoramento(n, todas, placa, data, historico, cliente)}
                   className="inline-flex h-9 items-center gap-2 rounded-full bg-[var(--color-navy-700)] px-4 text-[12.5px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] active:scale-[0.98]">
                   <MapTrifold size={15} weight="bold" />Ver no monitoramento
                 </Link>
@@ -676,26 +677,6 @@ function motivoLegivel(status: string): { motivo: string; acao: string | null } 
   const i = partes.findIndex((p, k) => k > 0 && /^(CONFERIR|PERGUNTAR|VERIFICAR)/i.test(p))
   if (i > 0) return { motivo: frase(partes.slice(0, i).join(', ')), acao: frase(partes.slice(i).join(', ')) }
   return { motivo: frase(partes.join(', ')), acao: null }
-}
-
-/** Tela "Entrega no mapa" do monitoramento, aberta dentro da Central: rastro
- *  do dia, ponto do cliente e a parada que o KPI contou como entrega. */
-function linkMonitoramento(n: NfAoVivo, todas: NfAoVivo[], placa: string, data: string, historico: boolean): string {
-  const q = new URLSearchParams({ placa, data, nf: n.nf, cliente: n.cliente, endereco: enderecoLimpo(n.endereco), situacao: n.situacao, status: n.status })
-  if (n.lat != null && n.lng != null) { q.set('lat', String(n.lat)); q.set('lng', String(n.lng)) }
-  if (n.parada) { q.set('plat', n.parada.lat.toFixed(6)); q.set('plng', n.parada.lng.toFixed(6)) }
-  if (n.chegada) q.set('chegada', n.chegada)
-  if (n.saida) q.set('saida', n.saida)
-  // A rota inteira da placa: ordem, NF, situação e ponto de cada entrega.
-  q.set('pts', todas.map((t, i) => `${i + 1}|${t.nf}|${t.situacao}|${t.lat != null ? t.lat.toFixed(5) : ''}|${t.lng != null ? t.lng.toFixed(5) : ''}|${t.cliente.slice(0, 40).replace(/[|;]/g, ' ')}`).join(';'))
-  // Botão X da tela de entrega volta pra cá, na mesma placa e NF.
-  q.set('volta', `/painel/ao-vivo?${new URLSearchParams({ placa, nf: n.nf, ...(historico ? { data } : {}) }).toString()}`)
-  return `/painel/monitoramento/entrega?${q.toString()}`
-}
-
-/** Tira os "- *" (complemento vazio do romaneio) do endereço. */
-function enderecoLimpo(e: string): string {
-  return e.replace(/\s+-\s+\*(?=\s+-|\s*$)/g, '').replace(/\s{2,}/g, ' ').trim()
 }
 
 function Mini({ rotulo, valor, destaque, longe, titulo }: { rotulo: string; valor: string; destaque?: boolean; longe?: boolean; titulo?: string }) {
