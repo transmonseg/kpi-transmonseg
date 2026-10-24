@@ -33,6 +33,11 @@ export type NfAoVivo = {
    *  do monitoramento, resgate por ancora) -- aparece no mapa, mas nao
    *  sustenta "nao passou" na investigacao nem conta como coordenada no alarme. */
   pontoImpreciso?: boolean
+  /** F4-07 (GEO-24): precisão (exato | exato_nao_confirmado | interpolado |
+   *  trecho | rua) e fonte do ponto (cnefe, manual, cadastro_unitrac...), para
+   *  o selo e o círculo de incerteza no mapa. Ausentes em cálculos antigos. */
+  precisao?: string
+  fonte?: string
   /** Onde o caminhão parou na entrega (parada da Unitrac). Opcional: o
    *  histórico lido da planilha guardada não tem. */
   parada?: { lat: number; lng: number } | null
@@ -137,7 +142,7 @@ export function nfsForaDaConta(nfs: { carga: string; nf: string; status: string 
 }
 
 /** Uma entrada por placa, com as NFs na ordem da planilha. "Feitas" = entregues. */
-export function resumirPlacas(data: string, nfs: NfResumo[], cargas: CargaResumo[], coords: Map<string, { lat: number; lng: number; impreciso?: boolean }>, paradas: Map<string, { lat: number; lng: number }> = new Map()): PlacaAoVivo[] {
+export function resumirPlacas(data: string, nfs: NfResumo[], cargas: CargaResumo[], coords: Map<string, { lat: number; lng: number; impreciso?: boolean; precisao?: string; fonte?: string }>, paradas: Map<string, { lat: number; lng: number }> = new Map()): PlacaAoVivo[] {
   const porPlaca = new Map<string, NfResumo[]>()
   for (const n of nfs) porPlaca.set(n.placa, [...(porPlaca.get(n.placa) ?? []), n])
   const placas: PlacaAoVivo[] = []
@@ -149,7 +154,7 @@ export function resumirPlacas(data: string, nfs: NfResumo[], cargas: CargaResumo
     const nfsAoVivo: NfAoVivo[] = lista.map(n => {
       const c = coords.get(n.nf)
       const situacao: SituacaoNf = n.categoria != null && fora.has(`${n.carga}::${n.nf}`) ? 'fora_da_conta' : situacaoDe(n)
-      return { nf: n.nf, carga: n.carga, cliente: n.cliente, endereco: n.endereco, status: n.status, situacao, chegada: n.chegada, saida: n.saida, tempoMin: n.tempoMin, lat: c?.lat ?? null, lng: c?.lng ?? null, ...(c?.impreciso ? { pontoImpreciso: true } : {}), parada: paradas.get(n.nf) ?? null }
+      return { nf: n.nf, carga: n.carga, cliente: n.cliente, endereco: n.endereco, status: n.status, situacao, chegada: n.chegada, saida: n.saida, tempoMin: n.tempoMin, lat: c?.lat ?? null, lng: c?.lng ?? null, ...(c?.impreciso ? { pontoImpreciso: true } : {}), ...(c?.precisao ? { precisao: c.precisao } : {}), ...(c?.fonte ? { fonte: c.fonte } : {}), parada: paradas.get(n.nf) ?? null }
     })
     // Progresso = só entregue (06/10: sem rastreador somava como feito e a placa
     // sem GPS aparecia 100%; a taxa do KPI tem conta própria na planilha).

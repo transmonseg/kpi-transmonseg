@@ -68,4 +68,16 @@ describe('srcMiniMapa', () => {
     expect(new URLSearchParams(para.split('?')[1]).get('nf')).toBe('5558903')
     expect(new URLSearchParams(para.split('?')[1]).get('frota')).toBe('rioquality')
   })
+  it('F4-07: leva o selo de precisão e o raio do ponto (círculo de incerteza no mapa)', () => {
+    const n = nf({ precisao: 'interpolado', fonte: 'cnefe' })
+    const { q } = partes(linkMonitoramento(n, [n], 'RQV9B26', '2026-10-24', false, 'nutrimax'))
+    expect(q.get('prec')).toBe('interpolado')
+    expect(q.get('raio')).toBe('50')
+    const m = nf({ fonte: 'manual' })
+    const p2 = partes(linkMonitoramento(m, [m], 'RQV9B26', '2026-10-24', false, 'nutrimax')).q
+    expect(p2.get('prec')).toBe('manual')
+    expect(p2.get('raio')).toBeNull()
+    const sem = nf({})
+    expect(partes(linkMonitoramento(sem, [sem], 'RQV9B26', '2026-10-24', false, 'nutrimax')).q.get('prec')).toBeNull()
+  })
 })

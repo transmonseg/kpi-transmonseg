@@ -1,5 +1,6 @@
 import type { NfAoVivo } from '@/lib/kpi-romaneio/ao-vivo'
 import { URL_MONITORAMENTO, caminhoMonitoramento } from '@/lib/sistema-transmonseg'
+import { seloPonto } from '@/lib/kpi-romaneio/selo-ponto'
 
 export type ClienteMonitoramento = 'nutrimax' | 'rioquality'
 
@@ -21,6 +22,9 @@ export function enderecoLimpo(e: string): string {
 export function linkMonitoramento(n: NfAoVivo, todas: NfAoVivo[], placa: string, data: string, historico: boolean, cliente: ClienteMonitoramento): string {
   const q = new URLSearchParams({ placa, data, nf: n.nf, cliente: n.cliente, endereco: enderecoLimpo(n.endereco), situacao: n.situacao, status: n.status, frota: cliente })
   if (n.lat != null && n.lng != null) { q.set('lat', String(n.lat)); q.set('lng', String(n.lng)) }
+  // F4-07 (GEO-24): selo de precisão e raio do círculo de incerteza do ponto.
+  const selo = n.lat != null ? seloPonto({ precisao: n.precisao, fonte: n.fonte, impreciso: n.pontoImpreciso }) : null
+  if (selo) { q.set('prec', selo.codigo); if (selo.raioM != null) q.set('raio', String(selo.raioM)) }
   if (n.parada) { q.set('plat', n.parada.lat.toFixed(6)); q.set('plng', n.parada.lng.toFixed(6)) }
   if (n.chegada) q.set('chegada', n.chegada)
   if (n.saida) q.set('saida', n.saida)

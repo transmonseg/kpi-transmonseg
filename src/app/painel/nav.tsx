@@ -21,6 +21,7 @@ import {
   Broadcast,
   ArrowsLeftRight,
   MapTrifold,
+  MapPin,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 import { ROTA_INICIO_MONITORAMENTO } from '@/lib/sistema-transmonseg'
@@ -52,6 +53,8 @@ const GRUPO_NUTRIMAX: Group = {
     { href: '/painel/nutrimax/gerar', label: 'Gerar KPI', Icon: FileArrowUp },
     { href: '/painel/nutrimax/historico', label: 'Histórico', Icon: ClockCounterClockwise },
     { href: '/painel/nutrimax/placas', label: 'Placas do dia', Icon: ArrowsLeftRight },
+    // F4-07 (GEO-24, ACH-07): clientes que falham pelo ponto + Corrigir ponto.
+    { href: '/painel/clientes-falha', label: 'Clientes que sempre falham', Icon: MapPin },
   ],
 }
 

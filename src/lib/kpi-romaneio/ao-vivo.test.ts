@@ -16,6 +16,11 @@ describe('horaParaIso', () => {
 })
 
 describe('resumirPlacas', () => {
+  it('F4-07: a NF leva a precisão e a fonte do ponto (selo no mapa)', () => {
+    const [p] = resumirPlacas('2026-10-06', [{ placa: 'AAA1A11', carga: '1', nf: '1', cliente: 'C', endereco: 'E', status: 'ENTREGUE', categoria: null, chegada: null, saida: null, tempoMin: null } as never],
+      [], new Map([['1', { lat: -22.9, lng: -43.2, precisao: 'exato', fonte: 'cnefe' }]]))
+    expect(p.nfs[0]).toMatchObject({ precisao: 'exato', fonte: 'cnefe' })
+  })
   it('feitas = só entregues (sem rastreador não é feito); % sobre o total; saída da base em ISO', () => {
     const nfs = [
       nf({ nf: '1' }),

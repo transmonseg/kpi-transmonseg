@@ -5,13 +5,14 @@ import { clienteAoVivoValido, CLIENTES_AO_VIVO, type ClienteAoVivo } from '@/lib
 
 /** KPI ao vivo: admin, ou operador com a empresa liberada (mesma regra de gerar). */
 export async function acessoAoVivo(cliente: string | null):
-  Promise<{ ok: true; cliente: ClienteAoVivo; email: string | null; clientes: ClienteAoVivo[] } | { ok: false; resp: NextResponse }> {
+  Promise<{ ok: true; cliente: ClienteAoVivo; email: string | null; clientes: ClienteAoVivo[]; admin?: boolean } | { ok: false; resp: NextResponse }> {
   const user = await usuarioAtual()
   if (!user) return { ok: false, resp: new NextResponse('Não autenticado', { status: 401 }) }
   if (!clienteAoVivoValido(cliente)) return { ok: false, resp: new NextResponse('Cliente inválido', { status: 400 }) }
   const perfil = await getPerfil(user.id)
   if (!podeOperarEmpresa(perfil, cliente)) return { ok: false, resp: new NextResponse('Sem permissão.', { status: 403 }) }
-  return { ok: true, cliente, email: user.email ?? null, clientes: CLIENTES_AO_VIVO.filter(c => podeOperarEmpresa(perfil, c)) }
+  // F4-07 (D-08): só o admin marca o ponto do cliente no mapa.
+  return { ok: true, cliente, email: user.email ?? null, clientes: CLIENTES_AO_VIVO.filter(c => podeOperarEmpresa(perfil, c)), admin: perfil.papel === 'admin' }
 }
 
 /** F3-07: telas que cobrem todos os clientes do login (checklist da manhã). */

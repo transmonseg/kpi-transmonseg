@@ -126,6 +126,21 @@ describe('trava de 15 km x parada da propria placa no ponto aprendido (F1-07, KN
     const parada = { ...paradaApi6, lat: -22.9003, lng: -43.2003 }
     expect(aplicarLocaisClientes([vivaceNf], new Map([['5778', vivaceLocal]]), new Map([['AAA1A11', [parada]]])).aplicados).toEqual([])
   })
+  // F4-07 (GEO-24, D-08): correção da operação na tela ("Corrigir ponto") grava
+  // fonte manual com o endereço da NF, a partir de evidência e com responsável.
+  // Jacaré 07 e 15/10: geocode a 84-92 km; com o ponto confirmado à mão, a NF
+  // do MESMO endereço passa a usá-lo mesmo sem parada da placa no dia.
+  it('F4-07: correção manual do MESMO endereço passa da trava de 15 km (Jacaré, geocode a 84 km, sem parada no dia)', () => {
+    const manual = { ...jacareLocal, fonte: 'manual' as const, confirmacoes: 5 }
+    const r = aplicarLocaisClientes([jacareNf], new Map([['163983', manual]]))
+    expect(r.aplicados).toEqual(['2436616'])
+    expect(r.linhas[0]).toMatchObject({ lat: -21.638572, lng: -42.099901, geoConfiavel: true, geoVerificadoManual: true, geoFonte: 'manual' })
+  })
+  it('F4-07: correção manual de OUTRO endereço continua travada a mais de 15 km (VIVACE Rio x Campos)', () => {
+    const manualRio = local({ chave: '5778', lat: -22.9, lng: -43.2, fonte: 'manual', enderecoRef: 'RUA A, 10 - CENTRO, RIO DE JANEIRO' })
+    const nfCampos = linha({ nf: 'CAMPOS', endereco: 'AV PELINCA, 100 - CENTRO, CAMPOS DOS GOYTACAZES - * - 28000000', lat: -21.75, lng: -41.33, geoConfiavel: false })
+    expect(aplicarLocaisClientes([nfCampos], new Map([['5778', manualRio]])).aplicados).toEqual([])
+  })
   it('nfsBarradasPelaTrava lista so as NFs com geocode nao confiavel barradas pela distancia', () => {
     const perto = linha({ nf: '9', geoConfiavel: false })
     const confiavelLonge = linha({ nf: '8', geoConfiavel: true, lat: -21.75, lng: -41.33 })

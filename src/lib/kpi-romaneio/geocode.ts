@@ -342,7 +342,7 @@ const TIMEOUT_TERRITORIO_MS = 30_000
 type MotivoGuarda = 'municipio_divergente' | 'bairro_divergente'
 
 /** id -> motivo de cada ponto reprovado; null = guarda indisponivel. */
-async function reprovadosNaGuarda(pontos: { id: string; lat: number; lng: number; endereco: string }[]): Promise<Map<string, MotivoGuarda> | null> {
+export async function reprovadosNaGuarda(pontos: { id: string; lat: number; lng: number; endereco: string }[]): Promise<Map<string, MotivoGuarda> | null> {
   const chave = process.env.MOTOR_SECRET
   if (!chave) return null
   const reprovados = new Map<string, MotivoGuarda>()

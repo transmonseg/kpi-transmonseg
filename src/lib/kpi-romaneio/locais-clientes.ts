@@ -120,8 +120,13 @@ export function aplicarLocaisClientes(
     const temGeo = l.lat != null && l.lng != null
     // Coordenada ruim erra por poucos km, não de cidade: local muito longe é
     // de outro endereço do cliente (VIVACE: Rio x Campos, 156 km).
+    // F4-07 (GEO-24, D-08): correção manual (feita com evidência e responsável,
+    // gravada com o endereço da NF) vale para o MESMO endereço mesmo longe do
+    // geocode do dia -- é a pessoa conferindo o ponto. Outro endereço do mesmo
+    // código continua travado (VIVACE).
     if (temGeo && distanciaM(l as { lat: number; lng: number }, local) > DIST_MAX_DO_GEO_M) {
-      const destrava = l.geoConfiavel === false && mesmoEnderecoDoLocal(l, local) && paradaPropriaNoLocal(paradasPropriasPorPlaca?.get(normPlacaLocal(l.placa)) ?? [], local)
+      const destrava = (local.fonte === 'manual' && mesmoEnderecoDoLocal(l, local))
+        || (l.geoConfiavel === false && mesmoEnderecoDoLocal(l, local) && paradaPropriaNoLocal(paradasPropriasPorPlaca?.get(normPlacaLocal(l.placa)) ?? [], local))
       if (!destrava) return l
     }
     const geoBom = temGeo && l.geoConfiavel !== false

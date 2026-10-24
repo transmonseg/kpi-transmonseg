@@ -250,7 +250,7 @@ export async function gerarKpiDoDia(cliente: ClienteAoVivo, data: string, log: (
 
 /** Resultado da tela a partir da planilha do KPI lida (extrairKpiCompleto).
  *  Usado pelo cálculo ao vivo e pelo histórico (planilha guardada). */
-export function montarResultadoAoVivo(data: string, lido: Awaited<ReturnType<typeof extrairKpiCompleto>>, coords: Map<string, { lat: number; lng: number; impreciso?: boolean }>, calculadoEm: string, paradas?: Map<string, { lat: number; lng: number }>): ResultadoAoVivo {
+export function montarResultadoAoVivo(data: string, lido: Awaited<ReturnType<typeof extrairKpiCompleto>>, coords: Map<string, { lat: number; lng: number; impreciso?: boolean; precisao?: string; fonte?: string }>, calculadoEm: string, paradas?: Map<string, { lat: number; lng: number }>): ResultadoAoVivo {
   const placas = resumirPlacas(data, lido.nfs, lido.resumo.cargas, coords, paradas)
   const totalNfs = placas.reduce((s, p) => s + p.total, 0)
   // F1-09: o mesmo número de entregues da taxa (entregue + sem rastreador).
@@ -311,7 +311,7 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
   const svc = createServiceClient()
   const t0 = Date.now()
   try {
-    const coords = new Map<string, { lat: number; lng: number; impreciso?: boolean }>()
+    const coords = new Map<string, { lat: number; lng: number; impreciso?: boolean; precisao?: string; fonte?: string }>()
     const paradasNf = new Map<string, { lat: number; lng: number }>()
     // Parada em andamento por placa (aviso de +1 h no cliente, 06/10).
     const paradaAtualPorPlaca = new Map<string, { inicio: string; lat: number | null; lng: number | null }>()
@@ -326,7 +326,7 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     // Ponto do cliente, parada da entrega e paradas do dia -- igual nos dois
     // clientes (F2-03: a RQ ficava sem ponto e toda investigacao "sem_coordenada").
     const registrarDetalhe = ({ romaneioGeo, detalhe, paradasPorPlaca, menorDistanciaTrajetoPorNf }: {
-      romaneioGeo: { nf: string; lat: number | null; lng: number | null; geoConfiavel?: boolean }[]
+      romaneioGeo: { nf: string; lat: number | null; lng: number | null; geoConfiavel?: boolean; geoPrecisao?: string; geoFonte?: string }[]
       detalhe: { nf: string; placa: string; chegada: string | null }[]
       paradasPorPlaca: Map<string, UnitracParadaRow[]>
       menorDistanciaTrajetoPorNf: Map<string, number>
@@ -335,7 +335,7 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
       trajetoPorNf = menorDistanciaTrajetoPorNf
       // F2-REV-04: ponto nao confiavel (fallback do monitoramento na RQ, resgate
       // por ancora na Nutry) vai ao mapa marcado -- nao sustenta "nao passou".
-      for (const l of romaneioGeo) if (l.lat != null && l.lng != null) coords.set(l.nf, { lat: l.lat, lng: l.lng, ...(l.geoConfiavel === false ? { impreciso: true } : {}) })
+      for (const l of romaneioGeo) if (l.lat != null && l.lng != null) coords.set(l.nf, { lat: l.lat, lng: l.lng, ...(l.geoConfiavel === false ? { impreciso: true } : {}), ...(l.geoPrecisao ? { precisao: l.geoPrecisao } : {}), ...(l.geoFonte ? { fonte: l.geoFonte } : {}) })
       // Ponto da parada que o KPI contou como entrega ("Ver no monitoramento").
       for (const d of detalhe) {
         const p = paradaDaChegada(paradasPorPlaca.get(normPlaca(d.placa)) ?? [], d.chegada)
