@@ -62,7 +62,7 @@ export default function ResumoDiaPage() {
             <CaretLeft size={13} weight="bold" />Ao vivo
           </Link>
           <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-[var(--color-fg)]">Resumo do dia</h1>
-          <p className="text-[14px] text-[var(--color-fg-muted)]">{NOME_CLIENTE[cliente]}{resumo ? ` · ${resumo.data.split('-').reverse().join('/')}${resumo.parcial ? ' · parcial, o dia ainda não fechou' : ''}` : ''}. Montado por regra a partir do KPI, sem IA.</p>
+          <p className="text-[14px] text-[var(--color-fg-muted)]">{NOME_CLIENTE[cliente]}{resumo ? ` · ${resumo.data.split('-').reverse().join('/')}${resumo.ressalvas?.length ? ' · cálculo incompleto, não oficial' : resumo.parcial ? ' · parcial, o dia ainda não fechou' : ''}` : ''}. Montado por regra a partir do KPI, sem IA.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {r && r.clientes.length > 1 && (
@@ -112,7 +112,7 @@ export default function ResumoDiaPage() {
             <Numero rotulo="Comprovadas pelo GPS" valor={resumo.resultado.pctGps != null ? `${resumo.resultado.pctGps.toLocaleString('pt-BR', { minimumFractionDigits: 1 })}%` : '—'} />
             <Numero rotulo="Fora da conta" valor={resumo.resultado.foraDaConta.toLocaleString('pt-BR')} />
           </section>
-          {secoesResumoDia(resumo).filter(s => s.titulo !== 'Resultado').map(s => (
+          {secoesResumoDia(resumo).filter(s => s.titulo !== 'Resultado' && s.titulo !== 'Atenção').map(s => (
             <section key={s.titulo} className="dash-card p-6">
               <h2 className="mb-3 text-[15px] font-semibold text-[var(--color-fg)]">{s.titulo}</h2>
               {s.titulo === 'Conferir primeiro' && resumo.conferirPrimeiro.length > 0 ? (

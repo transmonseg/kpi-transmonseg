@@ -2,7 +2,7 @@
 // (secoesResumoDia), A4 retrato, fonte padrão. Só gera o arquivo: nada é
 // enviado a ninguém.
 import { PDFDocument, StandardFonts, rgb, type PDFFont } from 'pdf-lib'
-import { secoesResumoDia, type ResumoDia } from './resumo-dia'
+import { secoesResumoDia, cabecalhoResumoDia, type ResumoDia } from './resumo-dia'
 
 const W = 595.28, H = 841.89, MX = 44, MT = 52, MB = 48
 const NAVY = rgb(0.122, 0.22, 0.392)
@@ -42,8 +42,9 @@ export async function gerarPdfResumoDia(r: ResumoDia, nomeCliente: string): Prom
       y -= tam * 1.45
     }
   }
-  const [a, m, d] = r.data.split('-')
-  escrever(`Resumo do dia - ${nomeCliente} - ${d}/${m}/${a}${r.parcial ? ' (parcial)' : ''}`, { fonte: negrito, tam: 16, cor: NAVY })
+  const cab = textoSeguroPdf(cabecalhoResumoDia(r, nomeCliente))
+  doc.setSubject(cab)
+  escrever(cab, { fonte: negrito, tam: 16, cor: NAVY })
   escrever(`Montado por regra a partir do KPI calculado em ${new Date(r.calculadoEm).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}.`, { tam: 9, cor: MUTED, antes: 2 })
   for (const s of secoesResumoDia(r)) {
     if (s.titulo === 'Conferir primeiro') continue

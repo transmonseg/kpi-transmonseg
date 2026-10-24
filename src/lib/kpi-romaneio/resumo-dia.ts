@@ -121,6 +121,9 @@ export type EntradaResumoDia = {
   /** RQ: placas com cv em kpi_rioquality_frota. Sem ela (leitura falhou),
    *  ninguém vira "fora da frota". */
   frotaComCv?: Set<string> | null
+  /** F3-R03: ressalvas que não vêm do próprio cálculo (ex.: dia passado cujo
+   *  último cálculo não é o fechamento das 00:30). */
+  ressalvasExtras?: string[]
 }
 
 export type ItemForaDaConta = { motivo: string; acao: string; nfs: number; cargas: string[] }
@@ -136,6 +139,9 @@ export type ResumoDia = {
   data: string
   calculadoEm: string
   parcial: boolean
+  /** F3-R03: por que este número não é o oficial (cálculo degradado, fonte
+   *  que não leu, não é o fechamento). Vazio = completo. */
+  ressalvas: string[]
   resultado: {
     taxa: number | null; entregues: number; naConta: number; gpsComprovadas: number; totalNfs: number; pctGps: number | null
     meta: number; faltam: number; foraDaConta: number; aguardando: number; semRastreadorContadas: number
@@ -200,6 +206,16 @@ function recorrencia(placa: string, presentes: Set<string>[]): Recorrencia {
 }
 
 const ordemNatural = (a: string, b: string) => a.localeCompare(b, 'pt-BR', { numeric: true })
+
+/** Avisos de cálculo incompleto (os mesmos que o F3-01 recusa publicar no
+ *  Dashboard): degradado e fonte que não leu. Aviso que não muda a taxa
+ *  (território, frota) fica de fora. */
+export function ressalvasDoCalculo(r: Pick<ResultadoAoVivo, 'avisos' | 'degradado'>): string[] {
+  const avisos = r.avisos ?? []
+  const out = avisos.filter(a => a.startsWith('Cálculo incompleto:') || a.startsWith('Não consegui ler '))
+  if (r.degradado && !out.some(a => a.includes(r.degradado!))) out.unshift(`Cálculo incompleto: ${r.degradado}.`)
+  return [...new Set(out)]
+}
 
 export function montarResumoDia(e: EntradaResumoDia): ResumoDia {
   const r = e.resultado
@@ -318,6 +334,7 @@ export function montarResumoDia(e: EntradaResumoDia): ResumoDia {
     data: e.data,
     calculadoEm: r.calculadoEm,
     parcial: linha.aguardando > 0,
+    ressalvas: [...new Set([...ressalvasDoCalculo(r), ...(e.ressalvasExtras ?? [])])],
     resultado: {
       taxa: r.resumo.taxa, entregues, naConta: r.resumo.nfsNaConta ?? 0, gpsComprovadas, totalNfs,
       pctGps: totalNfs ? umaCasa((100 * gpsComprovadas) / totalNfs) : null,
@@ -341,6 +358,7 @@ const contadas = (n: number) => (n === 1 ? 'contada como correta' : 'contadas co
 export function secoesResumoDia(r: ResumoDia): { titulo: string; linhas: string[] }[] {
   const x = r.resultado
   const s: { titulo: string; linhas: string[] }[] = []
+  if (r.ressalvas?.length) s.push({ titulo: 'Atenção', linhas: r.ressalvas })
   const res: string[] = []
   if (x.taxa != null) res.push(`${fmtPct(x.taxa)}% no KPI (${fmtInt(x.entregues)} de ${fmtInt(x.naConta)})${r.parcial ? `, até agora — ${notas(x.aguardando)} aguardando o fim da rota` : ''}.`)
   if (x.pctGps != null) res.push(`Comprovadas pelo GPS: ${fmtPct(x.pctGps)}% (${fmtInt(x.gpsComprovadas)} de ${fmtInt(x.totalNfs)}).`)
@@ -392,7 +410,14 @@ export function secoesResumoDia(r: ResumoDia): { titulo: string; linhas: string[
 }
 
 /** Texto do "Copiar texto": só números, placas, rotas e motoristas. */
+/** Cabeçalho do texto e do PDF: "(parcial)" no dia em curso e "(cálculo
+ *  incompleto, não oficial)" quando há ressalva (F3-R03). */
+export function cabecalhoResumoDia(r: ResumoDia, nomeCliente: string): string {
+  const marca = r.ressalvas?.length ? ' (cálculo incompleto, não oficial)' : r.parcial ? ' (parcial)' : ''
+  return `Resumo do dia — ${nomeCliente} — ${dataBR(r.data)}${marca}`
+}
+
 export function textoResumoDia(r: ResumoDia, nomeCliente: string): string {
-  const cab = `Resumo do dia — ${nomeCliente} — ${dataBR(r.data)}${r.parcial ? ' (parcial)' : ''}`
+  const cab = cabecalhoResumoDia(r, nomeCliente)
   return [cab, ...secoesResumoDia(r).filter(s => s.titulo !== 'Conferir primeiro').map(s => `\n${s.titulo}\n${s.linhas.map(l => (l.startsWith('  ') ? l : `- ${l}`)).join('\n')}`)].join('\n')
 }
