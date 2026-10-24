@@ -4,6 +4,7 @@ import fila2210 from './__fixtures__/fila-conferir-nutry-2026-10-22.json'
 import { resumirPlacas, type PlacaAoVivo } from './ao-vivo'
 import type { Investigacao } from './investigacao'
 import {
+  nfSemNumeroReal,
   montarFilaConferir, taxaAposConferencia, ACOES_CONFERENCIA, acaoConferencia, empresaDaResolucao,
   paraTela, rotuloResolucao, motivoLegivel, type ResolucaoTela,
 } from './fila-conferir'
@@ -121,5 +122,21 @@ describe('ações da fila', () => {
   })
   it('motivoLegivel separa o motivo do "conferir"', () => {
     expect(motivoLegivel('PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR')).toEqual({ motivo: 'Passou no endereço mas não registrou parada', acao: 'Conferir' })
+  })
+})
+
+describe('nfSemNumeroReal (F3-R04)', () => {
+  it('RQ sem NF: chave sintética "<placa>-<seq>" (ou "-<seq>" sem placa)', () => {
+    expect(nfSemNumeroReal('rioquality', 'RQU2G47-5')).toBe(true)
+    expect(nfSemNumeroReal('rioquality', 'LTZ7I72-12')).toBe(true)
+    expect(nfSemNumeroReal('rioquality', '-3')).toBe(true)
+  })
+  it('NF real (55 colunas), pedido da Fusion e NF repetida com sufixo: não', () => {
+    expect(nfSemNumeroReal('rioquality', '5555374')).toBe(false)
+    expect(nfSemNumeroReal('rioquality', '5555374-2')).toBe(false)
+    expect(nfSemNumeroReal('rioquality', '6083720')).toBe(false)
+  })
+  it('Nutry nunca', () => {
+    expect(nfSemNumeroReal('nutrimax', 'RQU2G47-5')).toBe(false)
   })
 })

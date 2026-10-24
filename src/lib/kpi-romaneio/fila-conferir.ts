@@ -16,6 +16,14 @@ export function empresaDaResolucao(cliente: ClienteConferencia): string {
   return cliente === 'rioquality' ? EMPRESA_RIOQUALITY : EMPRESA_NUTRIMAX
 }
 
+/** F3-R04: RQ no formato sem a coluna Nota Fiscal -- a "NF" e' sintetica,
+ *  "<placa>-<seq>" pela ordem das linhas (parse-planilhas). Conferir por ela
+ *  prende a resolucao a outra entrega se a ordem mudar entre envios. */
+export function nfSemNumeroReal(cliente: ClienteConferencia, nf: string): boolean {
+  return cliente === 'rioquality' && /^([A-Z]{3}\d[A-Z0-9]\d{2})?-\d+$/.test(nf)
+}
+export const AVISO_NF_SEM_NUMERO = 'Este dia da Rio Quality veio sem o número da nota fiscal (relatório sem a coluna Nota Fiscal): a conferência ficaria presa à ordem das linhas. Suba o relatório de 55 colunas para conferir.'
+
 export type AcaoConferencia = 'comprovante' | 'nao_esteve' | 'ponto_errado' | 'outra_placa'
 
 export type DefinicaoAcao = {

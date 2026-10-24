@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto'
 import { hojeBR } from '@/lib/data-br'
 import { acessoAoVivo } from '../ao-vivo/acesso'
 import { buscarResolucoes, registrarResolucao, vigentesPorNf } from '@/lib/kpi-romaneio/resolucoes'
-import { acaoConferencia, empresaDaResolucao, paraTela } from '@/lib/kpi-romaneio/fila-conferir'
+import { acaoConferencia, empresaDaResolucao, paraTela, nfSemNumeroReal, AVISO_NF_SEM_NUMERO } from '@/lib/kpi-romaneio/fila-conferir'
 import { validarComprovante, caminhoComprovante } from '@/lib/kpi-romaneio/comprovante'
 import { nfDoDia, guardarComprovante, apagarComprovante } from '@/lib/kpi-romaneio/conferencia-servico'
 import { normalizarPlacaDigitada } from '@/lib/kpi-romaneio/trocas-placa'
@@ -48,6 +48,8 @@ export async function POST(req: NextRequest) {
   if (!DATA_RE.test(data) || data > hoje) return new NextResponse('Data inválida.', { status: 400 })
   const nf = texto('nf')
   if (!nf || nf.length > 40) return new NextResponse('NF inválida.', { status: 400 })
+  // F3-R04: NF sintética da RQ ("<placa>-<seq>") não identifica a entrega.
+  if (nfSemNumeroReal(a.cliente, nf)) return new NextResponse(AVISO_NF_SEM_NUMERO, { status: 422 })
   const def = acaoConferencia(texto('acao'))
   if (!def) return new NextResponse('Ação inválida.', { status: 400 })
   const observacao = texto('observacao').slice(0, OBS_MAX) || null

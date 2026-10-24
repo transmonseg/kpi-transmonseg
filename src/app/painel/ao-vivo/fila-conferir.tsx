@@ -11,7 +11,7 @@ import { ListChecks, CaretDown, MapTrifold, Paperclip, DownloadSimple, ArrowsLef
 import type { PlacaAoVivo } from '@/lib/kpi-romaneio/ao-vivo'
 import type { ResultadoAoVivo } from '@/lib/kpi-romaneio/ao-vivo-servico'
 import {
-  montarFilaConferir, taxaAposConferencia, ACOES_CONFERENCIA, rotuloResolucao,
+  montarFilaConferir, taxaAposConferencia, ACOES_CONFERENCIA, rotuloResolucao, nfSemNumeroReal, AVISO_NF_SEM_NUMERO,
   type AcaoConferencia, type ItemFila, type ResolucaoTela,
 } from '@/lib/kpi-romaneio/fila-conferir'
 import { validarComprovante, ACCEPT_COMPROVANTE } from '@/lib/kpi-romaneio/comprovante'
@@ -220,6 +220,9 @@ function FormConferencia({ item, cliente, data, onGravada, onTrocarCarga, mudar 
   const [msg, setMsg] = useState<{ ok: boolean; texto: string } | null>(null)
   const def = ACOES_CONFERENCIA.find(a => a.acao === acao) ?? null
 
+  if (nfSemNumeroReal(cliente, item.nf.nf)) {
+    return <p className="text-[12.5px] text-[var(--color-fg-muted)]">{AVISO_NF_SEM_NUMERO}</p>
+  }
   if (!aberto) {
     return <button type="button" onClick={() => setAberto(true)} className="self-start text-[12.5px] font-semibold text-[var(--color-navy-700)] hover:underline">Mudar a conferência</button>
   }

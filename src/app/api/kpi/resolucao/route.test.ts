@@ -91,6 +91,23 @@ describe('POST /api/kpi/resolucao', () => {
     expect(nfDoDia).toHaveBeenCalledWith('rioquality', '2026-10-22', '2026-10-24', '5558931')
   })
 
+  it('RQ sem número de nota (formato sem NF, chave "<placa>-<seq>"): recusa sem ler nem gravar (F3-R04)', async () => {
+    const { POST } = await import('./route')
+    const res = await POST(post({ data: '2026-10-22', nf: 'RQU2G47-5', acao: 'nao_esteve' }, 'rioquality'))
+    expect(res.status).toBe(422)
+    expect(await res.text()).toMatch(/sem o número da nota fiscal/)
+    expect(nfDoDia).not.toHaveBeenCalled()
+    expect(registrar).not.toHaveBeenCalled()
+    expect(guardar).not.toHaveBeenCalled()
+  })
+
+  it('RQ com NF real duplicada ("5555374-2") continua aceita', async () => {
+    const { POST } = await import('./route')
+    const res = await POST(post({ data: '2026-10-22', nf: '5555374-2', acao: 'nao_esteve' }, 'rioquality'))
+    expect(res.status).not.toBe(422)
+    expect(nfDoDia).toHaveBeenCalled()
+  })
+
   it('só operador e admin gravam: sem permissão, nada é lido nem gravado', async () => {
     acesso.mockResolvedValue({ ok: false, resp: new NextResponse('Sem permissão.', { status: 403 }) })
     const { POST } = await import('./route')
