@@ -98,6 +98,28 @@ describe('trava de 15 km x parada da propria placa no ponto aprendido (F1-07, KN
   it('parada de OUTRA placa no ponto nao destrava (nao da credito a vizinho)', () => {
     expect(aplicarLocaisClientes([jacareNf], locais, new Map([['RQS7H76', [paradaApi6]]])).aplicados).toEqual([])
   })
+  // R3 (revisao Fase 1): o local e' por CODIGO do cliente. Cliente com
+  // varios enderecos (VIVACE: Rio x Campos) e a mesma placa nos dois: a
+  // parada no endereco do Rio (entregando a NF do Rio) destravava a NF de
+  // Campos (geocode nao confiavel a >15 km), que ia pro ponto do Rio e virava
+  // ENTREGUE falso. So' destrava quando a NF e' do MESMO endereco do local.
+  it('R3: VIVACE, geocode nao confiavel de OUTRO endereco (Campos) + parada no endereco do local (Rio) -> continua travado', () => {
+    const vivaceLocal = local({ chave: '5778', lat: -22.9, lng: -43.2, fonte: 'entrega_confirmada', confirmacoes: 4, enderecoRef: 'RUA A, 10 - CENTRO, RIO DE JANEIRO' })
+    const nfRio = linha({ nf: 'RIO', placa: 'AAA1A11', endereco: 'RUA A, 10 - CENTRO, RIO DE JANEIRO - * - 20000000', lat: -22.9001, lng: -43.2001, geoConfiavel: true })
+    const nfCampos = linha({ nf: 'CAMPOS', placa: 'AAA1A11', endereco: 'AV PELINCA, 100 - CENTRO, CAMPOS DOS GOYTACAZES - * - 28000000', lat: -21.75, lng: -41.33, geoConfiavel: false })
+    const parada = { ...paradaApi6, lat: -22.9003, lng: -43.2003 }
+    const r = aplicarLocaisClientes([nfRio, nfCampos], new Map([['5778', vivaceLocal]]), new Map([['AAA1A11', [parada]]]))
+    expect(r.aplicados).not.toContain('CAMPOS')
+    expect(r.linhas[1]).toMatchObject({ lat: -21.75, lng: -41.33 })
+  })
+  it('R3: local sem endereco de referencia nao destrava a trava', () => {
+    const semRef = { ...jacareLocal, enderecoRef: null }
+    expect(aplicarLocaisClientes([jacareNf], new Map([['163983', semRef]]), new Map([['RBI0J25', [paradaApi6]]])).aplicados).toEqual([])
+  })
+  it('R3: mesmo endereco com e sem CEP no fim continua destravando (Jacare 22/10)', () => {
+    const semCep = { ...jacareLocal, enderecoRef: 'RODOVIA PRESIDENTE JOAO GOULART, S/N - APERIBÉ, APERIBE - ANEXO' }
+    expect(aplicarLocaisClientes([jacareNf], new Map([['163983', semCep]]), new Map([['RBI0J25', [paradaApi6]]])).aplicados).toEqual(['2436616'])
+  })
   it('VIVACE com geocode confiavel a 20 km continua travado, mesmo com parada da placa no ponto aprendido', () => {
     const vivaceLocal = local({ chave: '5778', lat: -22.9, lng: -43.2, fonte: 'parada_orfa', confirmacoes: 4 })
     const vivaceNf = linha({ placa: 'AAA1A11', lat: -22.9, lng: -43.395, geoConfiavel: true }) // ~20 km a oeste

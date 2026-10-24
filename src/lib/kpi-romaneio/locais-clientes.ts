@@ -70,6 +70,11 @@ export function paradaPropriaNoLocal(paradas: ParadaPropria[], local: { lat: num
   })
 }
 
+/** NF do MESMO endereço do local (chave do cache: sem o sufixo de CEP). */
+function mesmoEnderecoDoLocal(l: LinhaGeocodificada, local: LocalCliente): boolean {
+  return local.enderecoRef != null && chaveCacheEndereco(l.endereco.trim().toUpperCase()) === chaveCacheEndereco(local.enderecoRef.trim().toUpperCase())
+}
+
 function normPlacaLocal(p: string): string {
   return (p ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '')
 }
@@ -82,7 +87,7 @@ export function nfsBarradasPelaTrava(linhas: LinhaGeocodificada[], locais: Map<s
     const local = chave ? locais.get(chave) : undefined
     if (!local || !localUtilizavel(local)) return false
     if (l.lat == null || l.lng == null || l.geoConfiavel !== false) return false
-    return distanciaM(l as { lat: number; lng: number }, local) > DIST_MAX_DO_GEO_M
+    return distanciaM(l as { lat: number; lng: number }, local) > DIST_MAX_DO_GEO_M && mesmoEnderecoDoLocal(l, local)
   })
 }
 
@@ -98,7 +103,10 @@ export function nfsBarradasPelaTrava(linhas: LinhaGeocodificada[], locais: Map<s
  *  F1-07 (KN-04 parte 1, Jacaré 22/10: geocode a 84 km): com geocode do dia
  *  NÃO confiável, o local passa da trava de 15 km quando a PRÓPRIA placa
  *  parou >= 3 min a <= 100 m dele no dia (`paradasPropriasPorPlaca`, chave =
- *  placa normalizada). Geocode confiável continua travado (VIVACE). */
+ *  placa normalizada). Geocode confiável continua travado (VIVACE).
+ *  R3 (revisão Fase 1): e só quando a NF é do MESMO endereço do local
+ *  (enderecoRef, pela chave do cache): o local é por código do cliente e a
+ *  parada que entregou o endereço do Rio não pode destravar a NF de Campos. */
 export function aplicarLocaisClientes(
   linhas: LinhaGeocodificada[],
   locais: Map<string, LocalCliente>,
@@ -113,14 +121,13 @@ export function aplicarLocaisClientes(
     // Coordenada ruim erra por poucos km, não de cidade: local muito longe é
     // de outro endereço do cliente (VIVACE: Rio x Campos, 156 km).
     if (temGeo && distanciaM(l as { lat: number; lng: number }, local) > DIST_MAX_DO_GEO_M) {
-      const destrava = l.geoConfiavel === false && paradaPropriaNoLocal(paradasPropriasPorPlaca?.get(normPlacaLocal(l.placa)) ?? [], local)
+      const destrava = l.geoConfiavel === false && mesmoEnderecoDoLocal(l, local) && paradaPropriaNoLocal(paradasPropriasPorPlaca?.get(normPlacaLocal(l.placa)) ?? [], local)
       if (!destrava) return l
     }
     const geoBom = temGeo && l.geoConfiavel !== false
     if (geoBom) {
       if (local.fonte === 'entrega_confirmada') return l
-      const mesmoEndereco = local.enderecoRef != null && chaveCacheEndereco(l.endereco.trim().toUpperCase()) === chaveCacheEndereco(local.enderecoRef.trim().toUpperCase())
-      if (!mesmoEndereco) return l
+      if (!mesmoEnderecoDoLocal(l, local)) return l
     }
     aplicados.push(l.nf)
     // "Verificada" (regra de parada compartilhada com vizinho) só pra correção
