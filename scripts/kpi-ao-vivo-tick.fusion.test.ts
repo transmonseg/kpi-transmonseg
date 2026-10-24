@@ -3,9 +3,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 vi.mock('../src/lib/kpi-rioquality/fonte-fusion', () => ({ buscarDiaRioQualityFusion: vi.fn() }))
 const guardar = vi.fn(async () => {})
 const fonteDoDia = vi.fn(async (): Promise<string | null> => null)
+const diaGuardadoRQ = vi.fn(async (): Promise<unknown[] | null> => null)
 vi.mock('../src/lib/kpi-romaneio/ao-vivo-servico', () => ({
   guardarDiaAoVivo: (...a: unknown[]) => (guardar as (...x: unknown[]) => unknown)(...a),
   fonteDoDiaAoVivo: (...a: unknown[]) => (fonteDoDia as (...x: unknown[]) => unknown)(...a),
+  entradaRioQualityDoDia: (...a: unknown[]) => (diaGuardadoRQ as (...x: unknown[]) => unknown)(...a),
   calcularAoVivo: vi.fn(),
   limparXlsxAoVivo: vi.fn(),
   CLIENTES_AO_VIVO: [],
@@ -28,6 +30,8 @@ vi.mock('../src/lib/kpi-rioquality/enviar-monitoramento-rq', () => ({
 }))
 
 import { buscarDiaRioQualityFusion } from '../src/lib/kpi-rioquality/fonte-fusion'
+import { rmSync } from 'node:fs'
+import { arquivoEstadoEncolhimentoFusion } from '../src/lib/kpi-rioquality/encolhimento-fusion'
 
 describe('sincronizarFusionRioQuality', () => {
   beforeEach(() => { guardar.mockClear(); enviarRQ.mockClear() })
@@ -65,6 +69,50 @@ describe('sincronizarFusionRioQuality', () => {
     const { sincronizarFusionRioQuality } = await import('./kpi-ao-vivo-tick')
     expect(await sincronizarFusionRioQuality('2026-10-10')).toBe('manual')
     expect(guardar).not.toHaveBeenCalled()
+  })
+})
+
+// Revisao Fase 2 (F2-REV-02): 20/10 (fonte fusion, 2.450 NFs). O romaneio
+// 1167566 (RKQ4E88, 40 NFs) volta sem rows: o dia novo tem 2.410 (98%), passa
+// pela trava de 50% do monitoramento e o "substituir" apagava os 40 pontos com
+// a presenca. Agora o tick recusa (dia guardado e mapa ficam) ate' a mesma
+// leitura se repetir 3 vezes seguidas (cancelamento de verdade).
+describe('F2-REV-02: dia da Fusion que encolhe nao substitui o mapa', () => {
+  const linha = (romaneio: string, placaNorm: string, nf: string) => ({ romaneio, placaNorm, nf })
+  const outros = Array.from({ length: 2410 }, (_, i) => linha(String(1167000 + (i % 87)), 'LMV8B05', String(6000000 + i)))
+  const guardado = [...Array.from({ length: 40 }, (_, i) => linha('1167566', 'RKQ4E88', String(6072000 + i))), ...outros]
+  beforeEach(() => {
+    guardar.mockClear(); enviarRQ.mockClear(); registrar.mockClear()
+    fonteDoDia.mockReset(); fonteDoDia.mockResolvedValue('fusion')
+    diaGuardadoRQ.mockReset(); diaGuardadoRQ.mockResolvedValue(guardado)
+    rmSync(arquivoEstadoEncolhimentoFusion('2026-10-20'), { force: true })
+  })
+
+  it('romaneio 1167566 sumiu: nao guarda, nao envia, grava erro com o romaneio', async () => {
+    vi.mocked(buscarDiaRioQualityFusion).mockResolvedValue(outros as never)
+    const { sincronizarFusionRioQuality } = await import('./kpi-ao-vivo-tick')
+    expect(await sincronizarFusionRioQuality('2026-10-20')).toBe('erro')
+    expect(guardar).not.toHaveBeenCalled()
+    expect(enviarRQ).not.toHaveBeenCalled()
+    expect(registrar).toHaveBeenCalledWith('2026-10-20', expect.objectContaining({ situacao: 'erro', erro: expect.stringContaining('1167566 (RKQ4E88) 40 -> 0') }))
+  })
+
+  it('3a leitura seguida igual: aceita, guarda e substitui (romaneio cancelado de verdade)', async () => {
+    vi.mocked(buscarDiaRioQualityFusion).mockResolvedValue(outros as never)
+    const { sincronizarFusionRioQuality } = await import('./kpi-ao-vivo-tick')
+    expect(await sincronizarFusionRioQuality('2026-10-20')).toBe('erro')
+    expect(await sincronizarFusionRioQuality('2026-10-20')).toBe('erro')
+    expect(await sincronizarFusionRioQuality('2026-10-20')).toBe('ok')
+    expect(guardar).toHaveBeenCalledTimes(1)
+    expect(enviarRQ).toHaveBeenCalledTimes(1)
+  })
+
+  it('dia que so cresce segue como antes', async () => {
+    vi.mocked(buscarDiaRioQualityFusion).mockResolvedValue([...guardado, linha('1169999', 'NOV1A11', '7000000')] as never)
+    const { sincronizarFusionRioQuality } = await import('./kpi-ao-vivo-tick')
+    expect(await sincronizarFusionRioQuality('2026-10-20')).toBe('ok')
+    expect(guardar).toHaveBeenCalledTimes(1)
+    expect(enviarRQ).toHaveBeenCalledTimes(1)
   })
 })
 

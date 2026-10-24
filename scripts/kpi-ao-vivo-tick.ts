@@ -9,8 +9,9 @@
 // Uso: npx tsx --env-file=.env.production scripts/kpi-ao-vivo-tick.ts
 import { hojeBR } from '../src/lib/data-br'
 import { createServiceClient } from '../src/lib/supabase/service'
-import { CLIENTES_AO_VIVO, calcularAoVivo, guardarDiaAoVivo, fonteDoDiaAoVivo } from '../src/lib/kpi-romaneio/ao-vivo-servico'
+import { CLIENTES_AO_VIVO, calcularAoVivo, guardarDiaAoVivo, fonteDoDiaAoVivo, entradaRioQualityDoDia } from '../src/lib/kpi-romaneio/ao-vivo-servico'
 import { buscarDiaRioQualityFusion } from '../src/lib/kpi-rioquality/fonte-fusion'
+import { romaneiosQueEncolheram, decidirEncolhimentoFusion, lerEstadoEncolhimentoFusion, gravarEstadoEncolhimentoFusion } from '../src/lib/kpi-rioquality/encolhimento-fusion'
 import { linhasComCoordenadasRQ, enviarRioQualityAoMonitoramento, resumoEnvioRQ } from '../src/lib/kpi-rioquality/enviar-monitoramento-rq'
 import { diaAnterior, precisaFecharDia, precisaReconferirTerritorio } from '../src/lib/kpi-romaneio/ao-vivo'
 import { limparCacheDia } from '../src/lib/kpi-romaneio/cache-dia'
@@ -36,9 +37,21 @@ export async function sincronizarFusionRioQuality(data: string): Promise<'ok' | 
 async function tentarFusionRioQuality(data: string): Promise<'ok' | 'sem_dados' | 'manual'> {
   // Auditoria 20/10 (RQ-10): romaneio subido a mao (planilha com bairro e NF
   // real) vale mais que o da Fusion (sem bairro) -- nao sobrescreve.
-  if ((await fonteDoDiaAoVivo('rioquality', data)) === 'manual') return 'manual'
+  const fonte = await fonteDoDiaAoVivo('rioquality', data)
+  if (fonte === 'manual') return 'manual'
   const linhas = await buscarDiaRioQualityFusion(data)
   if (linhas.length === 0) return 'sem_dados'
+  // Revisao F2-REV-02: o envio abaixo substitui o dia no mapa. Romaneio que
+  // voltou com menos NFs que o dia guardado (resposta anomala da Fusion)
+  // apagava os pontos dele com a presenca; agora recusa ate' a mesma leitura
+  // se repetir 3 vezes seguidas (cancelamento de verdade).
+  if (fonte === 'fusion') {
+    const guardado = (await entradaRioQualityDoDia(data)) ?? []
+    const d = decidirEncolhimentoFusion(romaneiosQueEncolheram(guardado, linhas), lerEstadoEncolhimentoFusion(data))
+    gravarEstadoEncolhimentoFusion(data, d.estado)
+    if (!d.aceitar) throw new Error(d.mensagem ?? 'Fusion: dia encolheu')
+    if (d.mensagem) log(`Fusion RQ ${data}: ${d.mensagem}`)
+  }
   await guardarDiaAoVivo({
     cliente: 'rioquality', data, escala: [], romaneio: linhas,
     pao: { linhas: [], escala: [] }, escalaEnviada: false, paoEnviado: false,
