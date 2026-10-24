@@ -1,12 +1,13 @@
-// F3-02 (ACH-03, AC-06): "Resumo do dia" montado
+// F3-02 (ACH-03, AC-06) e F3-09 lado KPI (ACH-09): "Resumo do dia" montado
 // POR REGRA, sem LLM, a partir do resultado do KPI já gravado (o mesmo do Ao
 // vivo e da planilha). Nada daqui é enviado a ninguém: a página só oferece
 // "Copiar texto" e "Baixar PDF". Sem imports de servidor (a tela do Ao vivo usa
 // linhaMeta e os chips).
-import { nfsForaDaConta, type PlacaAoVivo } from './ao-vivo'
+import { nfsForaDaConta, type NfAoVivo, type PlacaAoVivo } from './ao-vivo'
 import type { ResultadoAoVivo } from './ao-vivo-servico'
 import type { CategoriaInvestigacao } from './investigacao'
 import { CATEGORIAS_INVESTIGACAO, ROTULO_INVESTIGACAO, fraseInvestigacao } from './investigacao-rotulos'
+import { MOTIVO_PLACA_FORA_DA_FROTA, placaFicticia } from './placa-situacao'
 import { faltamParaMeta } from '@/lib/kpi/metas'
 
 type ResumoKpi = ResultadoAoVivo['resumo']
@@ -14,6 +15,7 @@ type ResumoKpi = ResultadoAoVivo['resumo']
 const fmtInt = (n: number) => n.toLocaleString('pt-BR')
 const fmtPct = (n: number) => n.toLocaleString('pt-BR', { minimumFractionDigits: n % 1 === 0 && n === 100 ? 0 : 1, maximumFractionDigits: 1 })
 const umaCasa = (n: number) => Math.round(n * 10) / 10
+const norm = (p: string) => (p ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '')
 const semPlaca = (p: PlacaAoVivo) => !p.placa || p.placa === 'SEM PLACA'
 const dataBR = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`
 
@@ -114,11 +116,20 @@ export type EntradaResumoDia = {
   meta: number
   /** Até 6 dias de operação anteriores, do mais novo ao mais velho. */
   anteriores: DiaAnterior[]
+  /** Nutry: placas declaradas provisórias no dia (kpi_placa_sem_rastreador, D-04). */
+  provisorias?: Set<string>
+  /** RQ: placas com cv em kpi_rioquality_frota. Sem ela (leitura falhou),
+   *  ninguém vira "fora da frota". */
+  frotaComCv?: Set<string> | null
 }
 
 export type ItemForaDaConta = { motivo: string; acao: string; nfs: number; cargas: string[] }
 export type CargaResumoDia = { carga: string; placa: string; rota: string; motorista: string; corretas: number; naConta: number; pct: number; faltas: number }
 export type ItemConferir = { nf: string; carga: string; placa: string; cliente: string; categoria: CategoriaInvestigacao; titulo: string; frase: string }
+export type Recorrencia = { diasNaJanela: number; janela: number; diasSeguidos: number }
+export type RastreadorSemSinal = { placa: string; motivo: string; desde: string | null; contadasCorretas: number; aConferir: number } & Recorrencia
+export type RastreadorForaDaFrota = { placa: string; contadasCorretas: number; provavel: string | null } & Recorrencia
+export type RastreadorProvisoria = { placa: string; tipo: 'provisória' | 'fictícia'; nfs: number; foraDaConta: number; contadasCorretas: number }
 
 export type ResumoDia = {
   cliente: string
@@ -137,6 +148,7 @@ export type ResumoDia = {
     semHorarioBase: { placa: string; falta: 'saída' | 'chegada' | 'saída e chegada' }[]
     clientesCronicos: { cliente: string; dias: number; janela: number }[]
   }
+  rastreador: { semSinal: RastreadorSemSinal[]; foraDaFrota: RastreadorForaDaFrota[]; provisoriaFicticia: RastreadorProvisoria[] }
   comparacao: { ontem: { data: string; taxa: number } | null; semana: { media: number; dias: number } | null; outraVersaoRegras: boolean }
 }
 
@@ -155,6 +167,38 @@ function motivoFora(status: string) {
 
 const CATEGORIAS_CONFERIR: CategoriaInvestigacao[] = ['parou_no_cliente', 'parou_perto', 'sem_sinal_no_trecho', 'ponto_impreciso', 'passou_sem_parar']
 const SITUACOES_FALHA = new Set(['nao_confirmada', 'nao_foi', 'revisar'])
+const PREFIXOS_FALHA_RASTREADOR = ['RASTREADOR COM FALHA NO DIA', 'SINAL DO RASTREADOR COM FALHA']
+const ehFalhaRastreador = (status: string) => PREFIXOS_FALHA_RASTREADOR.some(p => status.startsWith(p))
+
+/** "SEM RASTREADOR - CONTADA COMO CORRETA - SEM COMUNICAR DESDE 03/10" -> "SEM COMUNICAR DESDE 03/10". */
+function motivoSemRastreador(status: string): string {
+  if (ehFalhaRastreador(status)) return 'RASTREADOR COM FALHA NO DIA'
+  const resto = status.replace(/^SEM RASTREADOR - /, '').replace(/^CONTADA COMO CORRETA - /, '')
+  return resto.split(' - ')[0].trim() || 'SEM RASTREADOR'
+}
+
+type CasoPlaca = { tipo: 'provisoria' | 'ficticia' | 'fora_da_frota' | 'sem_sinal'; nfs: NfAoVivo[] }
+
+/** Em qual caso de rastreador a placa cai no dia (null = rastreador ok). */
+function casoRastreador(p: PlacaAoVivo, ctx: { provisorias?: Set<string>; frotaComCv?: Set<string> | null }): CasoPlaca | null {
+  if (semPlaca(p)) return null
+  const pn = norm(p.placa)
+  const nfs = p.nfs.filter(n => n.situacao === 'sem_rastreador' || ehFalhaRastreador(n.status) || n.status.startsWith('PLACA PROVISÓRIA') || n.status.startsWith('PLACA FICTÍCIA'))
+  if (nfs.length === 0) return null
+  if (placaFicticia(pn) || nfs.some(n => n.status.startsWith('PLACA FICTÍCIA'))) return { tipo: 'ficticia', nfs }
+  if (ctx.provisorias?.has(pn) || nfs.some(n => n.status.startsWith('PLACA PROVISÓRIA'))) return { tipo: 'provisoria', nfs }
+  if (nfs.some(n => n.status.includes(MOTIVO_PLACA_FORA_DA_FROTA))) return { tipo: 'fora_da_frota', nfs }
+  if (ctx.frotaComCv && !ctx.frotaComCv.has(pn) && nfs.some(n => n.situacao === 'sem_rastreador')) return { tipo: 'fora_da_frota', nfs }
+  return { tipo: 'sem_sinal', nfs }
+}
+
+function recorrencia(placa: string, presentes: Set<string>[]): Recorrencia {
+  // presentes[0] = o próprio dia; depois os anteriores, do mais novo ao mais velho.
+  let seguidos = 0
+  for (const s of presentes) { if (s.has(placa)) seguidos++; else break }
+  return { diasNaJanela: presentes.filter(s => s.has(placa)).length, janela: presentes.length, diasSeguidos: seguidos }
+}
+
 const ordemNatural = (a: string, b: string) => a.localeCompare(b, 'pt-BR', { numeric: true })
 
 export function montarResumoDia(e: EntradaResumoDia): ResumoDia {
@@ -235,6 +279,33 @@ export function montarResumoDia(e: EntradaResumoDia): ResumoDia {
   const clientesCronicos = [...falhasHoje].map(c => ({ cliente: c, dias: 1 + falhasAntes.filter(s => s.has(c)).length, janela: janelaClientes }))
     .filter(c => c.dias >= 3).sort((a, b) => b.dias - a.dias || a.cliente.localeCompare(b.cliente)).slice(0, 8)
 
+  // Rastreador (F3-09): três casos, com a recorrência nos dias anteriores.
+  const ctx = { provisorias: e.provisorias, frotaComCv: e.frotaComCv }
+  const presentes = [placas, ...e.anteriores.map(a => a.placas)].map(ps => new Set(ps.filter(p => casoRastreador(p, ctx)).map(p => norm(p.placa))))
+  const semSinal: RastreadorSemSinal[] = [], foraDaFrota: RastreadorForaDaFrota[] = [], provisoriaFicticia: RastreadorProvisoria[] = []
+  for (const p of placas) {
+    const caso = casoRastreador(p, ctx)
+    if (!caso) continue
+    const fora = foraDaConta(p)
+    const contadas = caso.nfs.filter(n => n.situacao === 'sem_rastreador' && !fora.has(chave(n))).length
+    const rec = recorrencia(norm(p.placa), presentes)
+    if (caso.tipo === 'provisoria' || caso.tipo === 'ficticia') {
+      provisoriaFicticia.push({ placa: p.placa, tipo: caso.tipo === 'provisoria' ? 'provisória' : 'fictícia', nfs: caso.nfs.length, foraDaConta: caso.nfs.filter(n => fora.has(chave(n))).length, contadasCorretas: contadas })
+    } else if (caso.tipo === 'fora_da_frota') {
+      const provavel = caso.nfs.map(n => /PROVÁVEL: ([A-Z0-9]+)/.exec(n.status)?.[1]).find(Boolean) ?? null
+      foraDaFrota.push({ placa: p.placa, contadasCorretas: contadas, provavel, ...rec })
+    } else {
+      const motivos = caso.nfs.map(n => motivoSemRastreador(n.status))
+      const motivo = motivos.find(m => m !== 'RASTREADOR COM FALHA NO DIA') ?? motivos[0]
+      const desde = /DESDE (\d{2}\/\d{2})/.exec(motivo)?.[1] ?? null
+      semSinal.push({ placa: p.placa, motivo, desde, contadasCorretas: contadas, aConferir: caso.nfs.filter(n => ehFalhaRastreador(n.status)).length, ...rec })
+    }
+  }
+  const pesoSinal = (s: { contadasCorretas: number; aConferir?: number }) => s.contadasCorretas + (s.aConferir ?? 0)
+  semSinal.sort((a, b) => pesoSinal(b) - pesoSinal(a) || a.placa.localeCompare(b.placa))
+  foraDaFrota.sort((a, b) => b.contadasCorretas - a.contadasCorretas || a.placa.localeCompare(b.placa))
+  provisoriaFicticia.sort((a, b) => b.nfs - a.nfs || a.placa.localeCompare(b.placa))
+
   // Comparação: dia de operação anterior e média dos 5 anteriores.
   const comTaxa = e.anteriores.filter(a => a.resumo.taxa != null)
   const ontem = comTaxa[0] ? { data: comTaxa[0].data, taxa: comTaxa[0].resumo.taxa as number } : null
@@ -257,10 +328,12 @@ export function montarResumoDia(e: EntradaResumoDia): ResumoDia {
     cargas100,
     conferirPrimeiro,
     qualidade: { semHorarioBase, clientesCronicos },
+    rastreador: { semSinal, foraDaFrota, provisoriaFicticia },
     comparacao: { ontem, semana, outraVersaoRegras },
   }
 }
 
+const rec = (x: Recorrencia) => `${x.diasNaJanela} dos últimos ${x.janela} dias${x.diasSeguidos >= 3 ? `, ${x.diasSeguidos} seguidos` : ''}`
 const notas = (n: number) => `${fmtInt(n)} ${n === 1 ? 'nota' : 'notas'}`
 const contadas = (n: number) => (n === 1 ? 'contada como correta' : 'contadas como corretas')
 
@@ -275,7 +348,7 @@ export function secoesResumoDia(r: ResumoDia): { titulo: string; linhas: string[
   s.push({ titulo: 'Resultado', linhas: res })
 
   const fora = r.foraDaConta.map(f => `${notas(f.nfs)} — ${f.motivo} (${f.cargas.join(', ')}): ${f.acao}.`)
-  if (x.semRastreadorContadas > 0) fora.push(`${notas(x.semRastreadorContadas)} sem rastreador ${contadas(x.semRastreadorContadas)}.`)
+  if (x.semRastreadorContadas > 0) fora.push(`${notas(x.semRastreadorContadas)} sem rastreador ${contadas(x.semRastreadorContadas)} (ver Rastreador).`)
   s.push({ titulo: 'Fora da conta', linhas: fora.length ? fora : ['Nenhuma nota fora da conta.'] })
 
   s.push({ titulo: 'Piores cargas', linhas: r.pioresCargas.length
@@ -293,6 +366,22 @@ export function secoesResumoDia(r: ResumoDia): { titulo: string; linhas: string[
     : 'Todas as placas com saída e chegada da base.')
   if (r.qualidade.clientesCronicos.length) q.push(`Clientes que falham sempre: ${r.qualidade.clientesCronicos.map(c => `${c.cliente} (${c.dias} de ${c.janela} dias)`).join(', ')}.`)
   s.push({ titulo: 'Qualidade do dado', linhas: q })
+
+  const ra: string[] = []
+  const t = r.rastreador
+  if (t.semSinal.length) {
+    ra.push('Placa da frota sem sinal:')
+    for (const p of t.semSinal) ra.push(`  ${p.placa} — ${p.motivo.toLowerCase().replace(/\bgps\b/g, 'GPS')}${p.aConferir ? `, ${notas(p.aConferir)} a conferir` : ''}${p.contadasCorretas ? `, ${notas(p.contadasCorretas)} ${contadas(p.contadasCorretas)}` : ''} (${rec(p)}).`)
+  }
+  if (t.foraDaFrota.length) {
+    ra.push('Fora da frota (confirmar a placa real):')
+    for (const p of t.foraDaFrota) ra.push(`  ${p.placa}${p.provavel ? ` (provável ${p.provavel})` : ''} — ${notas(p.contadasCorretas)} ${contadas(p.contadasCorretas)} (${rec(p)}).`)
+  }
+  if (t.provisoriaFicticia.length) {
+    ra.push('Placa provisória ou fictícia (informar o carro real):')
+    for (const p of t.provisoriaFicticia) ra.push(`  ${p.placa} (${p.tipo}) — ${notas(p.nfs)}${p.foraDaConta ? `, ${p.foraDaConta} fora da conta` : ''}${p.contadasCorretas ? `, ${p.contadasCorretas} ${contadas(p.contadasCorretas)}` : ''}.`)
+  }
+  s.push({ titulo: 'Rastreador', linhas: ra.length ? ra : ['Nenhum problema de rastreador no dia.'] })
 
   const c: string[] = []
   if (r.comparacao.ontem) c.push(`Dia anterior (${dataBR(r.comparacao.ontem.data).slice(0, 5)}): ${fmtPct(r.comparacao.ontem.taxa)}%.`)

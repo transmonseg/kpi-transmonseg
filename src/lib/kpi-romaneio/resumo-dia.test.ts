@@ -9,7 +9,7 @@ import {
   montarResumoDia, textoResumoDia, type DiaAnterior,
 } from './resumo-dia'
 
-// F3-02 (ACH-03, AC-06): Resumo do dia por regra,
+// F3-02 (ACH-03, AC-06) e F3-09 lado KPI (ACH-09): Resumo do dia por regra,
 // sem LLM. Casos reais de kpi_ao_vivo_calculo (fechamento das 05:30 CEST).
 
 function resultadoNutry2210(): ResultadoAoVivo {
@@ -101,7 +101,7 @@ describe('chips do Ao vivo', () => {
 describe('montarResumoDia — Nutry 22/10', () => {
   const resumo = montarResumoDia({
     cliente: 'nutrimax', data: '2026-10-22', resultado: resultadoNutry2210(), meta: 97,
-    anteriores: anterioresNutry,
+    anteriores: anterioresNutry, provisorias: new Set(['LLD4202']),
   })
   it('resultado: KPI 2.183/2.253 = 96,9%, GPS 2.182/2.272 = 96,0%, meta 97, faltam 3', () => {
     expect(resumo.resultado).toMatchObject({ taxa: 96.9, entregues: 2183, naConta: 2253, gpsComprovadas: 2182, totalNfs: 2272, pctGps: 96, meta: 97, faltam: 3, foraDaConta: 19, semRastreadorContadas: 1 })
@@ -126,6 +126,11 @@ describe('montarResumoDia — Nutry 22/10', () => {
     expect(resumo.comparacao.ontem).toEqual({ data: '2026-10-21', taxa: 95.7 })
     expect(resumo.comparacao.semana).toEqual({ media: 95, dias: 5 })
   })
+  it('rastreador: LLD4202 placa provisória (cálculo anterior ao D-04: ainda contada como correta)', () => {
+    expect(resumo.rastreador.semSinal).toEqual([])
+    expect(resumo.rastreador.foraDaFrota).toEqual([])
+    expect(resumo.rastreador.provisoriaFicticia).toEqual([{ placa: 'LLD4202', tipo: 'provisória', nfs: 1, foraDaConta: 0, contadasCorretas: 1 }])
+  })
   it('texto para copiar: conta pronta, sem nome de cliente nem NF', () => {
     const t = textoResumoDia(resumo, 'Nutry Max')
     expect(t).toContain('Resumo do dia — Nutry Max — 22/10/2026')
@@ -138,14 +143,83 @@ describe('montarResumoDia — Nutry 22/10', () => {
   })
 })
 
+describe('bloco Rastreador (F3-09) — RQ 22/10 com os 6 dias anteriores', () => {
+  const resumo = montarResumoDia({
+    cliente: 'rioquality', data: '2026-10-22', resultado: resultadoRq('2026-10-22'), meta: 93,
+    anteriores: anterioresRq('2026-10-22'), frotaComCv: new Set(rq.frotaComCv),
+  })
+  it('placa da frota sem sinal: RJM5B51 (desde 20/08), LTZ7I72 (desde 03/10), LNH8A80 (5 dos últimos 7 dias)', () => {
+    expect(resumo.rastreador.semSinal.map(s => s.placa)).toEqual(['RJM5B51', 'LTZ7I72', 'LNH8A80'])
+    expect(resumo.rastreador.semSinal[0]).toMatchObject({ placa: 'RJM5B51', contadasCorretas: 32, desde: '20/08', diasSeguidos: 3 })
+    expect(resumo.rastreador.semSinal[1]).toMatchObject({ placa: 'LTZ7I72', contadasCorretas: 29, desde: '03/10' })
+    expect(resumo.rastreador.semSinal[2]).toMatchObject({ placa: 'LNH8A80', contadasCorretas: 22, motivo: 'GPS CONGELADO', diasNaJanela: 5, janela: 7, diasSeguidos: 3 })
+  })
+  it('placa fora da frota: KZA2F01 (fora de kpi_rioquality_frota), 6 dos últimos 7 dias', () => {
+    expect(resumo.rastreador.foraDaFrota).toEqual([expect.objectContaining({ placa: 'KZA2F01', contadasCorretas: 18, diasNaJanela: 6, janela: 7, diasSeguidos: 3 })])
+  })
+  it('101 NFs sem rastreador contadas como corretas; comprovadas pelo GPS 2.532/2.881 = 87,9%', () => {
+    expect(resumo.resultado.semRastreadorContadas).toBe(101)
+    expect(resumo.resultado.gpsComprovadas).toBe(2532)
+    expect(resumo.resultado.pctGps).toBe(87.9)
+  })
+  it('texto lista as 4 placas e separa fora da frota', () => {
+    const t = textoResumoDia(resumo, 'Rio Quality')
+    expect(t).toMatch(/LNH8A80.*5 dos últimos 7 dias/)
+    expect(t).toMatch(/Fora da frota[^\n]*\n[^\n]*KZA2F01/)
+  })
+  it('RQ 15/10: XXX5678 é placa fictícia (108 NFs), não "sem sinal"', () => {
+    const r15 = montarResumoDia({ cliente: 'rioquality', data: '2026-10-15', resultado: resultadoRq('2026-10-15'), meta: 93, anteriores: anterioresRq('2026-10-15'), frotaComCv: new Set(rq.frotaComCv) })
+    expect(r15.rastreador.provisoriaFicticia).toEqual([{ placa: 'XXX5678', tipo: 'fictícia', nfs: 108, foraDaConta: 0, contadasCorretas: 108 }])
+    expect(r15.rastreador.semSinal.map(s => s.placa)).not.toContain('XXX5678')
+    expect(r15.rastreador.foraDaFrota.map(s => s.placa)).toEqual(['KZA2F01'])
+  })
+  it('sem a frota (leitura falhou): ninguém vira "fora da frota" por engano', () => {
+    const r = montarResumoDia({ cliente: 'rioquality', data: '2026-10-22', resultado: resultadoRq('2026-10-22'), meta: 93, anteriores: [] })
+    expect(r.rastreador.foraDaFrota).toEqual([])
+    expect(r.rastreador.semSinal.map(s => s.placa)).toContain('KZA2F01')
+  })
+})
 
-
-describe('RQ 22/10 — comprovadas pelo GPS', () => {
-  it('101 NFs sem rastreador contadas como corretas; GPS 2.532/2.881 = 87,9%', () => {
-    const r = montarResumoDia({ cliente: 'rioquality', data: '2026-10-22', resultado: resultadoRq('2026-10-22'), meta: 93, anteriores: anterioresRq('2026-10-22') })
-    expect(r.resultado.semRastreadorContadas).toBe(101)
-    expect(r.resultado.gpsComprovadas).toBe(2532)
-    expect(r.resultado.pctGps).toBe(87.9)
+describe('Nutry: rótulos do D-03, D-04 e F2-09', () => {
+  const nf = (placa: string, situacao: SituacaoNf, status: string, cliente = 'X', investigacao?: PlacaAoVivo['nfs'][number]['investigacao']) =>
+    ({ carga: `C-${placa}`, nf: `${placa}-${Math.random()}`, situacao, status, cliente, endereco: '', chegada: null, saida: null, tempoMin: null, lat: null, lng: null, investigacao })
+  const placa = (p: string, nfs: PlacaAoVivo['nfs']): PlacaAoVivo => ({ placa: p, motorista: 'M', destino: 'D', cargas: [`C-${p}`], saidaBase: '2026-10-23T07:00:00-03:00', chegadaBase: '2026-10-23T18:00:00-03:00', km: null, total: nfs.length, feitas: 0, pct: 0, nfs })
+  const r: ResultadoAoVivo = {
+    calculadoEm: '2026-10-24T03:30:00Z',
+    resumo: { taxa: 90, entregues: 9, nfsNaConta: 10, aguardando: 0, totalNfs: 14, feitas: 9, pct: 64 },
+    placas: [
+      placa('RQO5E38', [nf('RQO5E38', 'sem_rastreador', 'SEM RASTREADOR - CONTADA COMO CORRETA - PLACA FORA DA FROTA — CONFIRMAR A PLACA REAL (PROVÁVEL: TOS5E38)')]),
+      placa('LLD4202', [nf('LLD4202', 'fora_da_conta', 'PLACA PROVISÓRIA - FORA DA CONTA ATÉ A OPERAÇÃO INFORMAR O CARRO'), nf('LLD4202', 'fora_da_conta', 'PLACA PROVISÓRIA - FORA DA CONTA ATÉ A OPERAÇÃO INFORMAR O CARRO')]),
+      placa('XXX0000', [nf('XXX0000', 'fora_da_conta', 'PLACA FICTÍCIA - FORA DA CONTA ATÉ A OPERAÇÃO INFORMAR O CARRO')]),
+      placa('RQV9B26', [
+        nf('RQV9B26', 'revisar', 'RASTREADOR COM FALHA NO DIA - CONFERIR', 'PADARIA A', { categoria: 'parou_no_cliente', distM: 90, hora: '09:21', minutos: 3 }),
+        nf('RQV9B26', 'entregue', 'ENTREGUE'),
+      ]),
+      placa('TOS1H26', [nf('TOS1H26', 'sem_rastreador', 'SEM RASTREADOR - CONTADA COMO CORRETA - NENHUMA POSIÇÃO REPORTADA NO DIA - CONFERIR EQUIPAMENTO'), ...Array.from({ length: 8 }, () => nf('TOS1H26', 'entregue', 'ENTREGUE'))]),
+    ],
+  }
+  const resumo = montarResumoDia({ cliente: 'nutrimax', data: '2026-10-23', resultado: r, meta: 97, anteriores: [], provisorias: new Set() })
+  it('fora da frota pelo rótulo D-03, com a placa provável', () => {
+    expect(resumo.rastreador.foraDaFrota).toEqual([expect.objectContaining({ placa: 'RQO5E38', contadasCorretas: 1, provavel: 'TOS5E38' })])
+  })
+  it('provisória e fictícia pelos rótulos D-04 (fora da conta)', () => {
+    expect(resumo.rastreador.provisoriaFicticia).toEqual([
+      { placa: 'LLD4202', tipo: 'provisória', nfs: 2, foraDaConta: 2, contadasCorretas: 0 },
+      { placa: 'XXX0000', tipo: 'fictícia', nfs: 1, foraDaConta: 1, contadasCorretas: 0 },
+    ])
+  })
+  it('rastreador com falha no dia (F2-09) entra em "sem sinal" com as NFs a conferir', () => {
+    const f = resumo.rastreador.semSinal.find(s => s.placa === 'RQV9B26')!
+    expect(f).toMatchObject({ motivo: 'RASTREADOR COM FALHA NO DIA', contadasCorretas: 0, aConferir: 1 })
+    expect(resumo.rastreador.semSinal.find(s => s.placa === 'TOS1H26')).toMatchObject({ motivo: 'NENHUMA POSIÇÃO REPORTADA NO DIA', contadasCorretas: 1 })
+  })
+  it('fora da conta explica provisória e fictícia com a ação', () => {
+    const m = resumo.foraDaConta.map(f => f.motivo)
+    expect(m).toEqual(['Placa provisória', 'Placa fictícia'])
+    expect(resumo.foraDaConta[0].acao).toMatch(/carro real/)
+  })
+  it('conferir primeiro: a parada no cliente vem no topo', () => {
+    expect(resumo.conferirPrimeiro[0]).toMatchObject({ placa: 'RQV9B26', cliente: 'PADARIA A', categoria: 'parou_no_cliente' })
   })
 })
 

@@ -1,15 +1,18 @@
-// F3-02: carrega o que o Resumo do dia precisa -- só
+// F3-02 / F3-09 (lado KPI): carrega o que o Resumo do dia precisa -- só
 // leitura. O resultado do dia é o mesmo que o Ao vivo mostra (hoje: último
 // cálculo; dia passado: lerDiaHistorico, que já ignora a versão escondida do
 // F3-04). Os dias anteriores vêm só de kpi_ao_vivo_calculo.
 import { createServiceClient } from '@/lib/supabase/service'
 import { hojeBR } from '@/lib/data-br'
 import { metaDoCliente } from '@/lib/kpi/metas'
+import { buscarFrotaRioQuality } from '@/lib/kpi-rioquality/frota'
 import { lerEstadoAoVivo, NOME_CLIENTE_AO_VIVO, type ClienteAoVivo, type ResultadoAoVivo } from './ao-vivo-servico'
 import { lerDiaHistorico } from './ao-vivo-historico'
+import { buscarPlacasSemRastreador, placasProvisoriasNoDia } from './placas-sem-rastreador'
+import { EMPRESA_NUTRIMAX } from './constants'
 import { montarResumoDia, textoResumoDia, type DiaAnterior, type ResumoDia } from './resumo-dia'
 
-/** Dias de operação anteriores lidos (comparação e clientes que falham sempre). */
+/** Dias de operação anteriores lidos (com o dia, janela de 7 do bloco Rastreador). */
 export const DIAS_ANTERIORES_RESUMO = 6
 const DIAS_CORRIDOS_MAX = 14
 
@@ -49,7 +52,17 @@ export async function carregarResumoDia(cliente: ClienteAoVivo, data: string): P
     avisos.push(`Dias anteriores não lidos (${e instanceof Error ? e.message : String(e)}): sem comparação e sem recorrência.`)
     return [] as DiaAnterior[]
   })
-  const resumo = montarResumoDia({ cliente, data, resultado, meta: metaDoCliente(cliente), anteriores })
+  let provisorias: Set<string> | undefined
+  let frotaComCv: Set<string> | null = null
+  if (cliente === 'nutrimax') {
+    provisorias = placasProvisoriasNoDia(await buscarPlacasSemRastreador(EMPRESA_NUTRIMAX, () => avisos.push('Cadastro de placas sem rastreador não lido: placa provisória pode aparecer como "sem sinal".')), data)
+  } else {
+    frotaComCv = await buscarFrotaRioQuality().then(m => new Set(m.keys())).catch(() => {
+      avisos.push('Cadastro de rastreadores da Rio Quality não lido: "fora da frota" não separado de "sem sinal".')
+      return null
+    })
+  }
+  const resumo = montarResumoDia({ cliente, data, resultado, meta: metaDoCliente(cliente), anteriores, provisorias, frotaComCv })
   const nomeCliente = NOME_CLIENTE_AO_VIVO[cliente]
   return { resumo, texto: textoResumoDia(resumo, nomeCliente), nomeCliente, avisos }
 }
