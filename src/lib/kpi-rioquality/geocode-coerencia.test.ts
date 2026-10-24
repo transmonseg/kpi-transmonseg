@@ -161,6 +161,26 @@ describe('geocodificarPorCoerencia', () => {
     vi.mocked(console.error).mockRestore()
   })
 
+  it('revisao F2-01-a: resultado com falhaBusca (similaridade falhou no monitoramento, resposta 200) chega marcado; os outros nao', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({
+      grupos: [
+        { id: 'RJM5B51', resultados: [
+          { lat: -22.79, lng: -43.30, municipioCodigo: '3301702', confianca: 'alta', candidatos: 1, ancora: true, pontosZona: [] },
+          { lat: null, lng: null, municipioCodigo: null, confianca: 'sem_candidato', candidatos: 0, ancora: false, pontosZona: [], falhaBusca: true },
+        ] },
+        { id: 'SRL9A58', resultados: [{ lat: null, lng: null, municipioCodigo: null, confianca: 'sem_candidato', candidatos: 0, ancora: false }] },
+      ],
+      meta: { falhasSimilaridade: 1 },
+    }), { status: 200 }))
+    const aoFalhar = vi.fn()
+    const r = await geocodificarPorCoerencia(grupos, { aoFalhar })
+    expect(r.get('RJM5B51')![0].falhaBusca).toBeUndefined()
+    expect(r.get('RJM5B51')![1]).toMatchObject({ confianca: 'sem_candidato', falhaBusca: true })
+    expect(r.get('SRL9A58')![0].falhaBusca).toBeUndefined()
+    expect(aoFalhar).not.toHaveBeenCalled() // resposta parcial: so' a rua marcada e' falha
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
   it('sem grupos => Map vazio, sem chamar a ponte', async () => {
     const r = await geocodificarPorCoerencia([])
     expect(r.size).toBe(0)

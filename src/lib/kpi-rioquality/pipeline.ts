@@ -371,6 +371,8 @@ export async function gerarKpiRioQuality(params: {
       const res = geo.get(placaNorm) ?? []
       linhas.forEach((l, i) => {
         const r = res[i]
+        // Revisao F2-01-a: similaridade falhou no monitoramento (200 parcial)
+        if (r?.falhaBusca) coerenciaFalhou++
         const conf = r?.confianca ?? 'sem_candidato'
         confiancaPorNf.set(l.nf, conf)
         contConf[conf]++
@@ -519,7 +521,12 @@ export async function gerarKpiRioQuality(params: {
       if (loteFalhou) { ruasSemPonte.push(...lote); continue }
       for (const g of grupos) {
         const rs = res.get(g.id) ?? []
-        g.ruas.forEach((rua, k) => pontosPorRua.set(rua, rs[k]?.pontosZona ?? []))
+        // Revisao F2-01-a: rua com falhaBusca (similaridade falhou, resposta
+        // 200) e' falha da ponte -- vai pro cache, e o [] nao e' gravado.
+        g.ruas.forEach((rua, k) => {
+          if (rs[k]?.falhaBusca) ruasSemPonte.push(rua)
+          else pontosPorRua.set(rua, rs[k]?.pontosZona ?? [])
+        })
       }
     }
     // F2-01 (b), achado 23/10: com a ponte fora, o corredor sumia do tick e

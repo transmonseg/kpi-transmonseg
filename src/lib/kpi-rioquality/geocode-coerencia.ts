@@ -26,6 +26,11 @@ export type ResultadoCoerencia = {
   // 06/09: confirma entrega se o caminhao parou em QUALQUER um deles, nao
   // so' no ponto que a coerencia escolheu. Ver kpi-rioquality/visitas.ts.
   pontosZona: PontoZona[]
+  // Revisao Fase 2 (F2-01-a): a busca por similaridade dessa rua FALHOU no
+  // monitoramento (ex.: statement timeout 57014) e a resposta saiu 200. O
+  // resultado e' "nao sei", nao "sem candidato": quem chama trata como falha
+  // da ponte (cache do corredor, coerenciaFalhou/RQ-08).
+  falhaBusca?: true
 }
 
 export type GrupoCoerencia = { id: string; zona: string | null; ruas: string[] }
@@ -54,6 +59,11 @@ function tudoSemCandidato(grupos: GrupoCoerencia[]): Map<string, ResultadoCoeren
 function validar(r: unknown): ResultadoCoerencia {
   if (typeof r !== 'object' || r === null) return { ...SEM_CANDIDATO }
   const o = r as Record<string, unknown>
+  const v = validarCampos(o)
+  return o.falhaBusca === true ? { ...v, falhaBusca: true } : v
+}
+
+function validarCampos(o: Record<string, unknown>): ResultadoCoerencia {
   const lat = typeof o.lat === 'number' ? o.lat : null
   const lng = typeof o.lng === 'number' ? o.lng : null
   const conf = o.confianca

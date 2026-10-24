@@ -666,6 +666,62 @@ describe('gerarKpiRioQuality -- corredor da rua (endereco sem numero, formatos c
     expect(r.detalhe.find(x => x.clienteNome === 'MERCADO A')!.observacao).not.toBe(OBS_CORREDOR)
   })
 
+  // Revisao Fase 2 (F2-01-a): a similaridade do monitoramento estoura
+  // (57014) e a ponte responde 200 com a rua sem pontos. Antes: [] gravado no
+  // cache por cima da resposta boa, corredor perdido e coerenciaFalhou 0.
+  it('F2-01-a: rua com falhaBusca (200 parcial) -> corredor do cache, cache nao vira [], sem coerenciaFalhou', async () => {
+    const completa = await preparar()
+    const entrada = {
+      completaBuf: completa, data: DATA,
+      cvPorPlaca: new Map([['CCC3C33', '3'], ['DDD4D44', '4']]),
+      buscarParadas: async (_cv: string, placa: string) => placa === 'CCC3C33'
+        ? [parada(placa, '10:00', 15), parada(placa, '13:05', 12, 'FORA_BASE', PERTO_C2)]
+        : [parada(placa, '09:00', 20, 'FORA_BASE', { lat: -22.9, lng: -43.5 })],
+      medirRastro: async () => ({ km: 40, pontosNoDia: 900 }),
+    }
+    const tick1 = await gerarKpiRioQuality(entrada)
+    expect(tick1.detalhe.find(x => x.clienteNome === 'MERCADO A')!.observacao).toBe(OBS_CORREDOR)
+    const antes = new Map(cacheCorredor.linhas)
+    vi.mocked(geocodificarPorCoerencia).mockImplementation(async grupos => new Map(grupos.map(g => [
+      g.id, g.ruas.map(() => ({ lat: null, lng: null, municipioCodigo: null, confianca: 'sem_candidato' as const, candidatos: 0, ancora: false, pontosZona: [], falhaBusca: true })),
+    ])))
+    const tick2 = await gerarKpiRioQuality(entrada)
+    for (const cliente of ['MERCADO A', 'MERCADO B']) {
+      expect(tick2.detalhe.find(x => x.clienteNome === cliente)!.observacao).toBe(OBS_CORREDOR)
+    }
+    expect(tick2.coerenciaFalhou).toBe(0)
+    expect(cacheCorredor.linhas).toEqual(antes)
+  })
+
+  it('F2-01-a: rua com falhaBusca e sem cache -> conta em coerenciaFalhou (RQ-08 segura)', async () => {
+    const completa = await preparar()
+    vi.mocked(geocodificarPorCoerencia).mockImplementation(async grupos => new Map(grupos.map(g => [
+      g.id, g.ruas.map(() => ({ lat: null, lng: null, municipioCodigo: null, confianca: 'sem_candidato' as const, candidatos: 0, ancora: false, pontosZona: [], falhaBusca: true })),
+    ])))
+    const r = await gerarKpiRioQuality({
+      completaBuf: completa, data: DATA,
+      cvPorPlaca: new Map([['CCC3C33', '3'], ['DDD4D44', '4']]),
+      buscarParadas: async (_cv, placa) => [parada(placa, '10:00', 15), parada(placa, '13:05', 12, 'FORA_BASE', PERTO_C2)],
+      medirRastro: async () => ({ km: 40, pontosNoDia: 900 }),
+    })
+    expect(r.coerenciaFalhou).toBe(1)
+    expect(cacheCorredor.linhas.size).toBe(0)
+  })
+
+  it('F2-01-a: formato antigo -- rua com falhaBusca na geocodificacao conta em coerenciaFalhou', async () => {
+    vi.mocked(geocodificarPorCoerencia).mockImplementation(async grupos => new Map(grupos.map(g => [
+      g.id, g.ruas.map((_, k) => ({ lat: null, lng: null, municipioCodigo: null, confianca: 'sem_candidato' as const, candidatos: 0, ancora: false, pontosZona: [], ...(k === 0 ? { falhaBusca: true } : {}) })),
+    ])))
+    const r = await gerarKpiRioQuality({
+      ...formatoAntigo(['AAA1A11']),
+      data: DATA,
+      cvPorPlaca: new Map([['AAA1A11', '1']]),
+      buscarParadas: async (_cv, placa) => [parada(placa, '10:00', 15)],
+      medirRastro: async () => ({ km: 40, pontosNoDia: 900 }),
+    })
+    expect(r.coerenciaFalhou).toBe(1)
+  })
+
   it('formato antigo (sem cidade) nao usa o corredor novo (coerencia so' + "'" + ' na geocodificacao)', async () => {
     const r = await gerarKpiRioQuality({
       ...formatoAntigo(['AAA1A11']),
