@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'fs'
 import path from 'path'
-import { META_KPI_POR_CLIENTE, META_KPI_PADRAO, metaDoCliente, faltamParaMeta } from './metas'
+import { META_KPI_POR_CLIENTE, META_KPI_PADRAO, metaDoCliente, faltamParaMeta, textoFaltamMeta } from './metas'
 
 // F3-02 (ACH-03, AC-06), D-01 (plano mestre 23/10): meta numa constante única
 // por cliente -- Nutry 97 (o que a operação persegue), RQ 93 (provisória).
@@ -46,5 +46,14 @@ describe('Dashboard sem o 95 fixo (F3-02)', () => {
     expect(vg).not.toMatch(/≥95%/)
     expect(vg).toMatch(/metaDoCliente\(cliente\)/)
     expect(gr).not.toMatch(/meta = 95/)
+  })
+})
+
+describe('textoFaltamMeta', () => {
+  it('dia em andamento: explica que conta as que ainda estão aguardando', () => {
+    expect(textoFaltamMeta(884, 97, 941)).toBe('faltam 884 entregas no dia para a meta de 97% (contando as 941 que ainda estão aguardando)')
+  })
+  it('dia fechado: texto curto', () => {
+    expect(textoFaltamMeta(3, 97, 0)).toBe('faltam 3 para a meta de 97%')
   })
 })

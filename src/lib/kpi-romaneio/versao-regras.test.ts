@@ -32,14 +32,11 @@ describe('avisoVersaoRegras', () => {
   it('mesma versao: sem aviso', () => {
     expect(avisoVersaoRegras('0f495b4', '0f495b4')).toBeNull()
   })
-  it('versao diferente: avisa com as duas', () => {
-    const a = avisoVersaoRegras('eb195c4', '0f495b4')!
-    expect(a).toContain('eb195c4')
-    expect(a).toContain('0f495b4')
-    expect(a).toMatch(/não é comparável/i)
+  it('versao diferente: avisa em texto simples, sem hash', () => {
+    expect(avisoVersaoRegras('eb195c4', '0f495b4')).toBe('Este dia foi calculado com regras anteriores às atuais. A taxa dele pode não bater com a dos dias mais novos.')
   })
   it('dia sem registro da versao (calculado antes do F2-13): avisa', () => {
-    expect(avisoVersaoRegras(undefined, '0f495b4')).toMatch(/sem registro da versão/i)
+    expect(avisoVersaoRegras(undefined, '0f495b4')).toBe('Este dia foi calculado antes da atualização das regras de 24/10. A taxa dele pode não bater com a dos dias mais novos.')
   })
   it('versao atual desconhecida: nao da pra comparar, sem aviso', () => {
     expect(avisoVersaoRegras('eb195c4', null)).toBeNull()

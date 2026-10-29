@@ -21,3 +21,12 @@ export function faltamParaMeta(meta: number, naConta: number, entregues: number)
   const alvo = Math.ceil((meta * naConta) / 100 - 1e-9)
   return Math.max(0, alvo - entregues)
 }
+
+/** Texto do "faltam" do Ao vivo. Com notas ainda aguardando, a conta inclui
+ *  elas (grupo KPI AJUSTES 29/10: "taxa 99,6%" ao lado de "faltam 884 para a
+ *  meta" parecia erro). */
+export function textoFaltamMeta(faltam: number, meta: number, aguardando: number): string {
+  const n = faltam.toLocaleString('pt-BR')
+  if (aguardando <= 0) return `faltam ${n} para a meta de ${meta}%`
+  return `faltam ${n} entregas no dia para a meta de ${meta}% (contando as ${aguardando.toLocaleString('pt-BR')} que ainda estão aguardando)`
+}

@@ -381,7 +381,7 @@ export default function AoVivoPage() {
       {r && (() => {
         const aviso = avisoVersaoRegras(r.versaoRegras, estado.versaoRegrasAtual)
         return aviso && (
-          <p className="inline-flex items-center gap-2 rounded-2xl bg-[var(--color-warning-soft)] px-4 py-2.5 text-[13px] text-[var(--color-warning-soft-fg)]">
+          <p title={`Regras do dia: ${r.versaoRegras ?? 'sem registro'} · regras atuais: ${estado.versaoRegrasAtual}`} className="inline-flex items-center gap-2 rounded-2xl bg-[var(--color-warning-soft)] px-4 py-2.5 text-[13px] text-[var(--color-warning-soft-fg)]">
             <WarningCircle size={16} weight="fill" />{aviso}
           </p>
         )

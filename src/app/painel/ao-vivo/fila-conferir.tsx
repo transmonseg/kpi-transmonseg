@@ -16,7 +16,7 @@ import {
 } from '@/lib/kpi-romaneio/fila-conferir'
 import { validarComprovante, ACCEPT_COMPROVANTE } from '@/lib/kpi-romaneio/comprovante'
 import { montarPlanilhaConferencia } from '@/lib/kpi-romaneio/planilha-conferencia'
-import { faltamParaMeta } from '@/lib/kpi/metas'
+import { faltamParaMeta, textoFaltamMeta } from '@/lib/kpi/metas'
 import { buscarComSessao, lerJson } from '@/lib/sessao-fetch'
 import { linkMonitoramento, mostraVerNoMonitoramento, enderecoLimpo, srcMiniMapa } from './link-monitoramento'
 
@@ -95,7 +95,7 @@ export function FilaConferir({ cliente, nomeCliente, data, historico, placas, re
           <ListChecks size={16} weight="bold" />Conferir: {fila.pendentes.length === 1 ? '1 nota' : `${fila.pendentes.length.toLocaleString('pt-BR')} notas`} não entregues que pesam na taxa
         </span>
         <span>
-          {faltam > 0 ? `faltam ${faltam.toLocaleString('pt-BR')} para a meta de ${meta}%` : `meta de ${meta}% batida`}
+          {faltam > 0 ? textoFaltamMeta(faltam, meta, resumo.aguardando ?? 0) : `meta de ${meta}% batida`}
           {apos.conferidas > 0 && apos.taxa != null ? ` · após conferência ${fmtPct(apos.taxa)}% (${apos.conferidas} ${apos.conferidas === 1 ? 'conferida' : 'conferidas'})` : ''}
         </span>
         <CaretDown size={13} className="ml-auto shrink-0 transition-transform group-open:rotate-180" />

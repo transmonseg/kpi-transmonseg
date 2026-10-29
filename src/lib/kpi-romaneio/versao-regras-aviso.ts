@@ -4,7 +4,9 @@
 /** null = mesma versao ou sem como comparar (versao atual desconhecida). */
 export function avisoVersaoRegras(doDia: string | null | undefined, atual: string | null | undefined): string | null {
   if (!atual) return null
-  if (!doDia) return `Dia calculado sem registro da versão das regras (antes de 24/10): a taxa pode não ser comparável com a dos dias calculados com as regras atuais (${atual}).`
+  // Grupo KPI AJUSTES 24/10: a operação não entendia o hash das versões --
+  // texto simples aqui; as versões ficam no title do aviso (page.tsx).
+  if (!doDia) return 'Este dia foi calculado antes da atualização das regras de 24/10. A taxa dele pode não bater com a dos dias mais novos.'
   if (doDia === atual) return null
-  return `Dia calculado com as regras da versão ${doDia}; as regras atuais são da versão ${atual}. A taxa deste dia não é comparável direto com a dos dias calculados com outra versão.`
+  return 'Este dia foi calculado com regras anteriores às atuais. A taxa dele pode não bater com a dos dias mais novos.'
 }
