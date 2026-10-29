@@ -1,5 +1,6 @@
 import { getDocument } from 'pdfjs-serverless'
 import type { LinhaRomaneioPortefrio } from './types'
+import { parseProgramacaoPortefrioTexto } from './parse-programacao'
 
 export type ItemComPagina = { str: string; x: number; y: number; page: number }
 type LinhaVisual = { y: number; page: number; items: ItemComPagina[] }
@@ -281,5 +282,7 @@ export async function parseRomaneioPortefrio(buffer: Buffer): Promise<LinhaRoman
       itens.push({ str: it.str, x: it.transform[4], y: it.transform[5], page: p })
     }
   }
-  return parseRomaneioPortefrioTexto(itens)
+  const formatoAntigo = parseRomaneioPortefrioTexto(itens)
+  // Formato novo (PROGRAMAÇÃO JAC, desde 24/10) quando o antigo nao reconhece nada.
+  return formatoAntigo.length > 0 ? formatoAntigo : parseProgramacaoPortefrioTexto(itens)
 }
