@@ -19,7 +19,7 @@ import { hojeBR } from '@/lib/data-br'
 import { EMPRESA_SNAPSHOT_RIOQUALITY } from './snapshot-paradas'
 import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita, AvisoDescasamento } from '@/lib/kpi-romaneio/types'
-import { parseCustos, parseEntregas, montarLinhasRomaneio, rotaParaZona, parseEntregasCompletas, montarLinhasRomaneioCompleto, CARGA_SEM_ROTA, type EntregaRioQualityCompleta } from './parse-planilhas'
+import { parseCustos, parseEntregas, montarLinhasRomaneio, rotaParaZona, parseEntregasCompletas, montarLinhasRomaneioCompleto, CARGA_SEM_ROTA, mensagemArquivoNaoReconhecido, type EntregaRioQualityCompleta } from './parse-planilhas'
 import { geocodificarPorCoerencia, type ConfiancaCoerencia, type PontoZona } from './geocode-coerencia'
 import { lerCorredorDoCache, gravarCorredorNoCache } from './cache-corredor'
 import { geocodificarEnderecosComInfo } from '@/lib/kpi-romaneio/geocode'
@@ -269,7 +269,9 @@ export async function gerarKpiRioQuality(params: {
       .map(e => (placaFicticia(e.placaNorm) ? { ...e, placaNorm: '' } : e))
     if (entregasCompletas.length === 0) {
       throw new EntradaInvalidaError(
-        'Nenhuma linha reconhecida no arquivo — confira se tem as colunas Razão Social, Cidade, UF, Destino, Motorista, Placa, Endereço e Bairro.',
+        completaBuf
+          ? mensagemArquivoNaoReconhecido(completaBuf)
+          : 'Nenhuma linha reconhecida no arquivo — confira se tem as colunas Razão Social, Cidade, UF, Destino, Motorista, Placa, Endereço e Bairro.',
       )
     }
     // Achado 02/10 (09:01, taxa 32%): arquivo com 29 placas e NENHUM check-in

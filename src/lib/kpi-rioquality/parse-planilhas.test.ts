@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import * as XLSX from 'xlsx'
-import { parseCustos, parseEntregas, rotaParaZona, montarLinhasRomaneio, parseEntregasCompletas, montarLinhasRomaneioCompleto, montarEnderecoBrutoCompleto } from './parse-planilhas'
+import { parseCustos, parseEntregas, rotaParaZona, montarLinhasRomaneio, parseEntregasCompletas, montarLinhasRomaneioCompleto, montarEnderecoBrutoCompleto, mensagemArquivoNaoReconhecido } from './parse-planilhas'
 
 // Reproduz o layout REAL das planilhas que a Rio Quality exporta (achado
 // 05/09, arquivos "Relatório de Custos (3).xlsx" / "Relatório de Entregas
@@ -245,5 +245,24 @@ describe('formato 55 colunas (NF real + check-in)', () => {
     const e = parseEntregasCompletas(COMPLETA)
     expect(e[0].nf).toBeUndefined()
     expect(e[0].gabarito).toBeUndefined()
+  })
+})
+
+describe('mensagemArquivoNaoReconhecido (grupo KPI AJUSTES 24/10: subiram o Relatório de Custos)', () => {
+  it('Relatório de Custos no lugar do de Entregas: diz qual arquivo é e qual subir', () => {
+    expect(mensagemArquivoNaoReconhecido(CUSTOS)).toBe(
+      'Esse arquivo é o Relatório de Custos. Suba o Relatório de Entregas do dia (colunas Razão Social, Cidade, UF, Destino, Motorista, Placa, Endereço e Bairro).',
+    )
+  })
+
+  it('outro arquivo qualquer: mensagem de sempre + as colunas que vieram', () => {
+    const outro = planilha([
+      ['Relatório Qualquer', null, null],
+      ['Data', 'Cliente', 'Valor'],
+      ['29/10/2026', 'X', '10'],
+    ])
+    expect(mensagemArquivoNaoReconhecido(outro)).toBe(
+      'Nenhuma linha reconhecida no arquivo — confira se tem as colunas Razão Social, Cidade, UF, Destino, Motorista, Placa, Endereço e Bairro. Colunas do arquivo enviado: Data, Cliente, Valor.',
+    )
   })
 })

@@ -317,3 +317,19 @@ export function montarLinhasRomaneioCompleto(entregas: EntregaRioQualityCompleta
   })
   return { linhas, enderecoBrutoPorNf, ruaPorNf }
 }
+
+const MSG_NAO_RECONHECIDO =
+  'Nenhuma linha reconhecida no arquivo — confira se tem as colunas Razão Social, Cidade, UF, Destino, Motorista, Placa, Endereço e Bairro.'
+
+/** Erro da tela quando o arquivo único não tem entregas (grupo KPI AJUSTES
+ *  24/10: subiram o "Relatório de Custos (7).xlsx" e a tela só dizia
+ *  "nenhuma linha reconhecida"). Diz qual arquivo é, ou quais colunas vieram. */
+export function mensagemArquivoNaoReconhecido(buf: Buffer): string {
+  if (parseCustos(buf).size > 0) {
+    return 'Esse arquivo é o Relatório de Custos. Suba o Relatório de Entregas do dia (colunas Razão Social, Cidade, UF, Destino, Motorista, Placa, Endereço e Bairro).'
+  }
+  // Cabecalho = primeira das 5 primeiras linhas com 2+ celulas preenchidas.
+  const cabecalho = linhas(buf).slice(0, 5).map(r => (r ?? []).map(norm).filter(Boolean)).find(r => r.length >= 2)
+  if (!cabecalho) return MSG_NAO_RECONHECIDO
+  return `${MSG_NAO_RECONHECIDO} Colunas do arquivo enviado: ${cabecalho.slice(0, 8).join(', ')}.`
+}
