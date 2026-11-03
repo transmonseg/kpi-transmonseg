@@ -288,7 +288,30 @@ function enderecoParaExibir(e: EntregaRioQualityCompleta): string {
  *  de planilha de Custos); motorista e clienteNome sao os de verdade. O
  *  endereco bruto pra geocodificar fica FORA da LinhaRomaneio (so' o texto
  *  de exibicao entra) -- ver enderecoBrutoPorNf em pipeline.ts. */
-export function montarLinhasRomaneioCompleto(entregas: EntregaRioQualityCompleta[]): { linhas: LinhaRomaneio[]; enderecoBrutoPorNf: Map<string, string>; ruaPorNf: Map<string, string> } {
+/** Chave de "linha idêntica": todos os campos, em ordem fixa de chave. */
+function chaveLinha(v: unknown): string {
+  return JSON.stringify(v, (_k, x) => (x && typeof x === 'object' && !Array.isArray(x)
+    ? Object.fromEntries(Object.keys(x).sort().map(k => [k, (x as Record<string, unknown>)[k]]))
+    : x))
+}
+
+/** KPI-01 (auditoria 03/11, RQ 27/10: 116 cópias): entrega repetida byte a
+ *  byte conta uma vez só. Mesma NF com conteúdo diferente fica (vira NF-2 em
+ *  montarLinhasRomaneioCompleto). Mantém a ordem da primeira ocorrência. */
+export function removerEntregasRepetidas<T>(entregas: T[]): { entregas: T[]; removidas: number } {
+  const vistas = new Set<string>()
+  const out: T[] = []
+  for (const e of entregas) {
+    const k = chaveLinha(e)
+    if (vistas.has(k)) continue
+    vistas.add(k)
+    out.push(e)
+  }
+  return { entregas: out, removidas: entregas.length - out.length }
+}
+
+export function montarLinhasRomaneioCompleto(todas: EntregaRioQualityCompleta[]): { linhas: LinhaRomaneio[]; enderecoBrutoPorNf: Map<string, string>; ruaPorNf: Map<string, string>; repetidasRemovidas: number } {
+  const { entregas, removidas: repetidasRemovidas } = removerEntregasRepetidas(todas)
   const seq = new Map<string, number>()
   const enderecoBrutoPorNf = new Map<string, string>()
   const ruaPorNf = new Map<string, string>()
@@ -321,7 +344,7 @@ export function montarLinhasRomaneioCompleto(entregas: EntregaRioQualityCompleta
       endereco: enderecoParaExibir(e),
     }
   })
-  return { linhas, enderecoBrutoPorNf, ruaPorNf }
+  return { linhas, enderecoBrutoPorNf, ruaPorNf, repetidasRemovidas }
 }
 
 const MSG_NAO_RECONHECIDO =

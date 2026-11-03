@@ -5,7 +5,7 @@
 // as linhas estruturadas pro endpoint /api/romaneio/rioquality, com a data do
 // dia FIXA (hojeBR) -- o Monitoramento geocodifica no cron. Fail-open: nunca
 // lança (o tick segue).
-import { montarEnderecoBrutoCompleto, type EntregaRioQualityCompleta } from './parse-planilhas'
+import { montarEnderecoBrutoCompleto, removerEntregasRepetidas, type EntregaRioQualityCompleta } from './parse-planilhas'
 import { normPlaca } from '@/lib/unitrac-api'
 import { coordenadasConfiaveisDoCache } from '@/lib/kpi-romaneio/geocode'
 
@@ -34,7 +34,8 @@ export function linhasParaMonitoramentoRQ(
 ): LinhaMonitoramentoRQ[] {
   const usadas = new Map<string, number>()
   const out: LinhaMonitoramentoRQ[] = []
-  for (const e of entregas) {
+  // KPI-01: a cópia idêntica sai antes do sufixo, como em montarLinhasRomaneioCompleto.
+  for (const e of removerEntregasRepetidas(entregas).entregas) {
     if (!e.nf) continue
     const k = (usadas.get(e.nf) ?? 0) + 1
     usadas.set(e.nf, k)

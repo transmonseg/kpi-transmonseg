@@ -142,3 +142,8 @@ export function detectarRomaneioSemNf(
 export function textoRomaneioSemNf(carga: string, placa: string, n: number): string {
   return `Carga ${carga} (${placa}): o romaneio veio sem o número da NF em ${n} cliente${n === 1 ? '' : 's'}. Entraram no KPI pelo código do cliente (NF "SEMNF-…").`
 }
+
+/** KPI-01 (auditoria 03/11, RQ 27/10): cópia idêntica de entrega tirada da conta. */
+export function textoLinhasRepetidasFusion(n: number): string {
+  return `${n} linhas repetidas da Fusion removidas`
+}

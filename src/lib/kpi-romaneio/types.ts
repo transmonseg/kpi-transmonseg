@@ -397,7 +397,9 @@ export type AvisoDescasamento = {
   motivo: 'sem_romaneio' | 'sem_escala' | 'nf_divergente' | 'consulta_posicoes_suspeita' | 'consulta_unitrac_falhou'
     | 'rq_sem_rota_custos' | 'rq_rota_sem_entregas' | 'rq_placa_sem_cv' | 'rq_sem_snapshot'
     | 'geocode_parcial' | 'motorista_multiplas_placas' | 'carga_multiregiao' | 'rq_relatorio_sem_checkin' | 'ponte_falhou'
-    | 'fonte_indisponivel' | 'coletor_fora' | 'rastreador_com_falha' | 'romaneio_sem_nf'
+    | 'fonte_indisponivel' | 'coletor_fora' | 'rastreador_com_falha' | 'romaneio_sem_nf' | 'linhas_repetidas'
+  /** So' em 'linhas_repetidas' (KPI-01, RQ 27/10): copias identicas da mesma entrega tiradas antes da conta. */
+  linhasRepetidas?: number
   /** So' em 'romaneio_sem_nf' (03/11): clientes da carga que vieram no romaneio sem o numero da NF. */
   clientesSemNf?: number
   /** So' em 'coletor_fora' (F2-09): faixa "hh:mm–hh:mm" BRT em que metade ou mais da frota ficou sem leitura nova. */

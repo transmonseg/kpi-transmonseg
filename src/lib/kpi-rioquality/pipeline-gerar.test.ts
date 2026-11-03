@@ -871,3 +871,23 @@ describe('RQ-01 (auditoria 20/10): dia fora das 48h, rastreador mudo fora do sna
     for (const d of r.detalhe.filter(x => x.placa === 'RJM5B51')) expect(d.observacao).toBe('SEM RASTREADOR - SEM COMUNICAR DESDE 20/08')
   })
 })
+
+describe('gerarKpiRioQuality -- KPI-01 entrega repetida (RQ 27/10)', () => {
+  it('cópia idêntica da entrega conta uma vez na taxa e vira aviso com a contagem', async () => {
+    const { geocodificarEnderecos } = await import('@/lib/kpi-romaneio/geocode')
+    vi.mocked(geocodificarEnderecos).mockImplementation(async enderecos => enderecos.map(() => ({ ...PONTO, confiavel: true, fonte: 'cnefe' })))
+    const base = { placaNorm: 'CCC3C33', clienteNome: 'MERCADO A', cidade: 'RIO DE JANEIRO', uf: 'RJ', destino: 'NORTE 1', motorista: 'JOAO', rua: 'RUA PERTO', bairro: 'CENTRO', romaneio: '1170790', rota: 'NORTE 1' }
+    const a = { ...base, nf: '6085560', clienteCodigo: '1', pedidoErp: '6085560' }
+    const b = { ...base, nf: '6085561', clienteCodigo: '2', pedidoErp: '6085561', clienteNome: 'MERCADO B' }
+    const r = await gerarKpiRioQuality({
+      entregasCompletas: [a, b, { ...a }, { ...b }], data: DATA,
+      cvPorPlaca: new Map([['CCC3C33', '3']]),
+      buscarParadas: async (_cv, placa) => [parada(placa, '10:00', 15)],
+      medirRastro: async () => ({ km: 40, pontosNoDia: 900 }),
+    })
+    expect(r.detalhe.map(d => d.nf).sort()).toEqual(['6085560', '6085561'])
+    expect(r.avisos).toContainEqual(expect.objectContaining({ motivo: 'linhas_repetidas', linhasRepetidas: 2 }))
+    const wb = await abrir(r.xlsx)
+    expect(textos(wb.getWorksheet('Avisos')!).some(t => /2 linhas repetidas da Fusion removidas/.test(t))).toBe(true)
+  })
+})

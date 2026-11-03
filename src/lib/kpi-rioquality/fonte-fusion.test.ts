@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import romaneios from '../fusion/__fixtures__/romaneios.json'
 import entregas from '../fusion/__fixtures__/entregas.json'
-import { mapearEntregasFusion, buscarDiaRioQualityFusion, buscarDiaRioQualityFusionCompleto, placaFicticia } from './fonte-fusion'
+import { mapearEntregasFusion, mapearEntregasFusionComAviso, buscarDiaRioQualityFusion, buscarDiaRioQualityFusionCompleto, placaFicticia } from './fonte-fusion'
 import { buscarEntregasDoDia, buscarRelatorioEntregasFusion } from '../fusion/entregas'
 import type { RomaneioFusion, EntregaFusionRaw } from '../fusion/tipos'
 
@@ -45,6 +45,33 @@ describe('mapearEntregasFusion', () => {
     const dev = linhas.find(l => l.clienteNome.includes('DEVOLVIDO'))!
     expect(dev.gabarito!.status).toBe('Devolvido')
     expect(dev.gabarito!.checkOut).toBe(false)
+  })
+})
+
+describe('KPI-01: Fusion com entrega repetida (RQ 27/10, 116 cópias)', () => {
+  const roms = romaneios.rows as RomaneioFusion[]
+  const ents = entregas.rows as EntregaFusionRaw[]
+  it('romaneio listado 2x e as entregas dele 2x: N entregas, não 2N, e aviso com a contagem', () => {
+    const r = mapearEntregasFusionComAviso([...roms, ...roms], [...ents, ...ents])
+    expect(r.entregas).toHaveLength(ents.length)
+    expect(r.repetidas).toBe(ents.length)
+    expect(r.aviso).toBe(`${ents.length} linhas repetidas da Fusion removidas`)
+  })
+  it('sem repetida: sem aviso', () => {
+    const r = mapearEntregasFusionComAviso(roms, ents)
+    expect(r.entregas).toHaveLength(ents.length)
+    expect(r.aviso).toBeNull()
+  })
+  it('a grade do dia sai sem a cópia', async () => {
+    vi.mocked(buscarEntregasDoDia).mockResolvedValueOnce({ romaneios: [...roms, ...roms], entregas: [...ents, ...ents] })
+    expect(await buscarDiaRioQualityFusion('2026-10-27')).toHaveLength(ents.length)
+  })
+  it('relatório de 55 colunas com linha repetida: sai sem a cópia e com aviso', async () => {
+    const l = mapearEntregasFusion(roms, ents)
+    vi.mocked(buscarRelatorioEntregasFusion).mockResolvedValueOnce([...l, l[0], l[1]])
+    const dia = await buscarDiaRioQualityFusionCompleto('2026-10-27')
+    expect(dia.linhas).toHaveLength(l.length)
+    expect(dia.aviso).toBe('2 linhas repetidas da Fusion removidas')
   })
 })
 

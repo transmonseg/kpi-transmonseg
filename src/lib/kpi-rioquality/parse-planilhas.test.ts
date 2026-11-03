@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import * as XLSX from 'xlsx'
-import { parseCustos, parseEntregas, rotaParaZona, montarLinhasRomaneio, parseEntregasCompletas, montarLinhasRomaneioCompleto, montarEnderecoBrutoCompleto, mensagemArquivoNaoReconhecido } from './parse-planilhas'
+import { parseCustos, parseEntregas, rotaParaZona, montarLinhasRomaneio, parseEntregasCompletas, montarLinhasRomaneioCompleto, montarEnderecoBrutoCompleto, mensagemArquivoNaoReconhecido, removerEntregasRepetidas } from './parse-planilhas'
 
 // Reproduz o layout REAL das planilhas que a Rio Quality exporta (achado
 // 05/09, arquivos "Relatório de Custos (3).xlsx" / "Relatório de Entregas
@@ -237,9 +237,23 @@ describe('formato 55 colunas (NF real + check-in)', () => {
     expect(linhas).toHaveLength(1)
     expect(linhas[0]).toMatchObject({ placa: '', nf: '5512949' })
   })
-  it('NF repetida no arquivo não colide (sufixo), para não fundir visitas', () => {
-    const { linhas } = montarLinhasRomaneioCompleto(parseEntregasCompletas(planilha([['Relatório de Entregas'], CABECALHO_55, LINHAS_55[0], LINHAS_55[0]])))
+  it('KPI-01: linha repetida idêntica conta uma vez só (não vira NF-2) e a contagem volta', () => {
+    const { linhas, repetidasRemovidas } = montarLinhasRomaneioCompleto(parseEntregasCompletas(planilha([['Relatório de Entregas'], CABECALHO_55, LINHAS_55[0], LINHAS_55[0]])))
+    expect(linhas.map(l => l.nf)).toEqual(['5512949'])
+    expect(repetidasRemovidas).toBe(1)
+  })
+  it('mesma NF com conteúdo diferente não colide (sufixo -2), para não fundir visitas', () => {
+    const outra = [...LINHAS_55[0]]
+    outra[colunaIdx('Endereço')] = 'RUA OUTRA'
+    const { linhas, repetidasRemovidas } = montarLinhasRomaneioCompleto(parseEntregasCompletas(planilha([['Relatório de Entregas'], CABECALHO_55, LINHAS_55[0], outra])))
     expect(linhas.map(l => l.nf)).toEqual(['5512949', '5512949-2'])
+    expect(repetidasRemovidas).toBe(0)
+  })
+  it('removerEntregasRepetidas: tira só a cópia byte a byte e mantém a ordem', () => {
+    const e = parseEntregasCompletas(ARQ_55)
+    const r = removerEntregasRepetidas([e[0], e[1], e[0], e[2], e[1]])
+    expect(r.entregas).toEqual([e[0], e[1], e[2]])
+    expect(r.removidas).toBe(2)
   })
   it('formato novo de 8 colunas continua sem NF real nem gabarito', () => {
     const e = parseEntregasCompletas(COMPLETA)

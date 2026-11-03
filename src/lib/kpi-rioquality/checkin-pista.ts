@@ -4,7 +4,7 @@
 // tinham check-in numa parada da placa (336 a mais de 2 km do nosso ponto),
 // mas o local do check-in do mesmo cliente concorda entre dias só em 47% (até
 // 200 m). Aprender ponto com ele fica para depois da medição (2 semanas).
-import { montarLinhasRomaneioCompleto, type EntregaRioQualityCompleta } from './parse-planilhas'
+import { montarLinhasRomaneioCompleto, removerEntregasRepetidas, type EntregaRioQualityCompleta } from './parse-planilhas'
 import { placaFicticia } from '../fusion/entregas'
 
 /** "AAAA-MM-DD HH:MM:SS" (grade) ou "DD/MM/AAAA HH:MM:SS" (55 colunas), hora
@@ -21,7 +21,8 @@ export function checkInComoIsoUnitrac(s: string | null | undefined): string | nu
 /** Check-in por NF, com a MESMA chave de NF da geração (montarLinhasRomaneioCompleto,
  *  depois da regra da placa de preenchimento, como no pipeline). */
 export function checkInsPorNfRQ(entregas: EntregaRioQualityCompleta[]): Map<string, string> {
-  const norm = entregas.map(e => (placaFicticia(e.placaNorm) ? { ...e, placaNorm: '' } : e))
+  // KPI-01: sem a cópia idêntica, como no pipeline (índice de norm = índice de linhas).
+  const norm = removerEntregasRepetidas(entregas.map(e => (placaFicticia(e.placaNorm) ? { ...e, placaNorm: '' } : e))).entregas
   const { linhas } = montarLinhasRomaneioCompleto(norm)
   const out = new Map<string, string>()
   norm.forEach((e, i) => {

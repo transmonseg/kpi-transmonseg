@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs'
 import { OBS_NAO_SAIU_DA_BASE, textoConsultaPosicoesSuspeita, chegadaCdExibivel } from './types'
-import { textoRomaneioSemNf } from './avisos'
+import { textoRomaneioSemNf, textoLinhasRepetidasFusion } from './avisos'
 import type { TrocaProvavel } from './troca-placa'
 import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega, StatusEntrega } from './types'
 // Reusa a MESMA paleta/fonte/logo ja validados no relatorio da Benassi
@@ -83,6 +83,7 @@ const LABEL_MOTIVO: Record<AvisoDescasamento['motivo'], string> = {
   coletor_fora: 'Coletor de posições fora do ar — conferir',
   rastreador_com_falha: 'Rastreador com falha no dia — conferir',
   romaneio_sem_nf: 'Romaneio veio sem número da NF — conferir com a Nutry',
+  linhas_repetidas: 'Linhas repetidas da Fusion removidas',
 }
 
 // Task 2 (plano 2026-09-30, item 2): "Escala X × Romaneio Y (Z NFs a
@@ -111,6 +112,9 @@ export function textoAviso(a: AvisoDescasamento): string {
   }
   if (a.motivo === 'ponte_falhou') {
     return `Monitoramento não respondeu para ${a.placasSemPonte ?? '?'} placa(s) mesmo após novas tentativas — entregas dessas placas podem estar faltando. Gere novamente`
+  }
+  if (a.motivo === 'linhas_repetidas') {
+    return `${textoLinhasRepetidasFusion(a.linhasRepetidas ?? 0)} — cada entrega conta uma vez só na taxa`
   }
   if (a.motivo === 'rq_relatorio_sem_checkin') {
     return `Relatório de Entregas com ${a.placasNoArquivo ?? '?'} placa(s) e nenhum check-in — provavelmente exportado antes do fim do dia ou filtrado; a taxa sai errada. Gere de novo com o relatório completo do dia (modelo combinado)`

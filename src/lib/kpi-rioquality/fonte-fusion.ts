@@ -1,5 +1,6 @@
 import type { RomaneioFusion, EntregaFusionRaw } from '../fusion/tipos'
-import type { EntregaRioQualityCompleta, GabaritoEntregaRioQuality } from './parse-planilhas'
+import { removerEntregasRepetidas, type EntregaRioQualityCompleta, type GabaritoEntregaRioQuality } from './parse-planilhas'
+import { textoLinhasRepetidasFusion } from '../kpi-romaneio/avisos'
 import { buscarEntregasDoDia, buscarRelatorioEntregasFusion, placaFicticia } from '../fusion/entregas'
 
 const normPlaca = (p: string) => (p ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '')
@@ -20,7 +21,20 @@ function gabaritoFusion(e: EntregaFusionRaw): GabaritoEntregaRioQuality {
 // RQ-04 (placa de preenchimento) mora em fusion/entregas.ts: vale para a grade e para o relatorio de 55 colunas.
 export { placaFicticia }
 
+export { textoLinhasRepetidasFusion }
+
+/** KPI-01: grade da Fusion sem cópia (romaneio listado 2x ou entrega repetida)
+ *  e com o aviso da contagem -- nunca some calado. */
+export function mapearEntregasFusionComAviso(romaneios: RomaneioFusion[], entregas: EntregaFusionRaw[]): { entregas: EntregaRioQualityCompleta[]; repetidas: number; aviso: string | null } {
+  const r = removerEntregasRepetidas(mapearEntregasFusionBruto(romaneios, entregas))
+  return { entregas: r.entregas, repetidas: r.removidas, aviso: r.removidas > 0 ? textoLinhasRepetidasFusion(r.removidas) : null }
+}
+
 export function mapearEntregasFusion(romaneios: RomaneioFusion[], entregas: EntregaFusionRaw[]): EntregaRioQualityCompleta[] {
+  return mapearEntregasFusionComAviso(romaneios, entregas).entregas
+}
+
+function mapearEntregasFusionBruto(romaneios: RomaneioFusion[], entregas: EntregaFusionRaw[]): EntregaRioQualityCompleta[] {
   const porId = new Map(romaneios.map(r => [r.t10_id, r]))
   return entregas.map(e => {
     const rom = porId.get(e.t10_id)
@@ -44,9 +58,18 @@ export function mapearEntregasFusion(romaneios: RomaneioFusion[], entregas: Entr
 }
 
 export async function buscarDiaRioQualityFusion(data: string): Promise<EntregaRioQualityCompleta[]> {
+  return (await buscarGradeComAviso(data)).entregas
+}
+
+async function buscarGradeComAviso(data: string): Promise<{ entregas: EntregaRioQualityCompleta[]; aviso: string | null }> {
   const { romaneios, entregas } = await buscarEntregasDoDia(data)
-  if (romaneios.length === 0) return []
-  return mapearEntregasFusion(romaneios, entregas)
+  if (romaneios.length === 0) return { entregas: [], aviso: null }
+  // romaneio listado 2x pela grade: as entregas dele vêm 2x (buscarEntregasDoDia faz um laço por romaneio)
+  const unicos = [...new Map(romaneios.map(r => [r.t10_id, r])).values()]
+  const repetidosNaGrade = romaneios.length - unicos.length
+  if (repetidosNaGrade > 0) console.warn(`[fusion] ${data}: ${repetidosNaGrade} romaneio(s) listado(s) 2x na grade`)
+  const r = mapearEntregasFusionComAviso(unicos, entregas)
+  return { entregas: r.entregas, aviso: r.aviso }
 }
 
 /** F4-09: de onde veio o dia da Fusion. 'fusion55' = relatorio de 55 colunas
@@ -63,18 +86,18 @@ export async function buscarDiaRioQualityFusionCompleto(data: string, opcoes: { 
   const gradeComoReserva = opcoes.gradeComoReserva ?? true
   let motivo: string
   try {
-    const linhas = await buscarRelatorioEntregasFusion(data)
-    if (linhas.length > 0 || !gradeComoReserva) return { linhas, fonte: 'fusion55', aviso: null }
+    const { entregas: linhas, removidas } = removerEntregasRepetidas(await buscarRelatorioEntregasFusion(data))
+    if (linhas.length > 0 || !gradeComoReserva) return { linhas, fonte: 'fusion55', aviso: removidas > 0 ? textoLinhasRepetidasFusion(removidas) : null }
     motivo = 'veio sem linhas'
   } catch (e) {
     const msg = e instanceof Error ? `${e.name === 'Error' ? '' : `${e.name}: `}${e.message}` : String(e)
     if (!gradeComoReserva) throw new Error(`relatório de 55 colunas da Fusion falhou (${msg}); dia guardado mantido`)
     motivo = `falhou (${msg})`
   }
-  const grade = await buscarDiaRioQualityFusion(data)
+  const { entregas: grade, aviso: avisoRepetidas } = await buscarGradeComAviso(data)
   if (grade.length === 0) return { linhas: [], fonte: 'fusion55', aviso: null }
   return {
     linhas: grade, fonte: 'fusion',
-    aviso: `O relatório de 55 colunas da Fusion ${motivo}: o dia veio da grade, sem bairro e com o pedido no lugar da NF. O próximo tick tenta o relatório de novo.`,
+    aviso: `O relatório de 55 colunas da Fusion ${motivo}: o dia veio da grade, sem bairro e com o pedido no lugar da NF. O próximo tick tenta o relatório de novo.${avisoRepetidas ? ` ${avisoRepetidas}.` : ''}`,
   }
 }

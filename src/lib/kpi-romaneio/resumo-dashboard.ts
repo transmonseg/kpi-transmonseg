@@ -153,6 +153,8 @@ function horaCd(t: string): string | null {
   return m ? m[1] : null
 }
 
+const NF_DA_PLANILHA = /^\d+(-\d+)?$|^SEMNF-\d+-\d+$|^[A-Z]{3}\d[A-Z0-9]\d{2}-\d+$/
+
 export async function extrairKpiCompleto(buf: Buffer | ArrayBuffer): Promise<{ data: string | null; resumo: ResumoGeracao; nfs: NfResumo[] }> {
   const wb = new ExcelJS.Workbook()
   await wb.xlsx.load(buf as ArrayBuffer)
@@ -202,7 +204,9 @@ export async function extrairKpiCompleto(buf: Buffer | ArrayBuffer): Promise<{ d
       if (n < 4) return
       const v = row.values as ExcelJS.CellValue[]
       const nf = texto(v[2])
-      if (!/^(\d+|SEMNF-\d+-\d+)$/.test(nf)) return
+      // KPI-01: NF repetida com outra entrega vira NF-2, e a RQ antiga usa
+      // NF sintetica PLACA-n -- as duas estao na conta e nao podem sumir da tela.
+      if (!NF_DA_PLANILHA.test(nf)) return
       const status = texto(v[8]).trim()
       const entregue = status.startsWith('ENTREGUE')
       nfs.push({

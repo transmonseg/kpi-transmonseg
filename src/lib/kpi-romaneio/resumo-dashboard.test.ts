@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import ExcelJS from 'exceljs'
-import { minutosDeDuracao, categoriaPendencia, extrairResumoKpiXlsx } from './resumo-dashboard'
+import { minutosDeDuracao, categoriaPendencia, extrairResumoKpiXlsx, extrairKpiCompleto } from './resumo-dashboard'
 
 describe('resumo do dashboard', () => {
   it('converte duracao do relatorio em minutos', () => {
@@ -82,5 +82,21 @@ describe('resumo do dashboard', () => {
     const r = await extrairResumoKpiXlsx(await wb.xlsx.writeBuffer())
     expect(r.pendentes).toBe(1)
     expect(r.motivos).toEqual({ 'Não foi ao cliente': 1 })
+  })
+
+  it('KPI-01: NF com sufixo (123-2, mesma NF com outra entrega) e NF sintética da RQ (LRT6H89-1) não somem da tela', async () => {
+    const wb = new ExcelJS.Workbook()
+    const p = wb.addWorksheet('KPI 2026-10-27')
+    p.addRow(['RELATÓRIO KPI - RIO QUALITY'])
+    p.addRow(['CARGA', 'PLACA'])
+    p.addRow(['TAXA DE CONFIRMAÇÃO: 100,0% (3 de 3 NFs; 0 fora da conta)'])
+    const a = wb.addWorksheet('KOB3H38')
+    a.addRow(['RELATÓRIO']); a.addRow(['MOTORISTA']); a.addRow(['CARGA', 'NF', 'CLIENTE', 'ENDEREÇO', 'CHEGADA', 'SAÍDA', 'TEMPO', 'STATUS'])
+    a.addRow(['1170790', '6085560', 'A', 'X', '09:36', '10:16', '0h39min', 'ENTREGUE'])
+    a.addRow(['1170790', '6085560-2', 'A', 'Y', '10:36', '10:50', '0h14min', 'ENTREGUE'])
+    a.addRow(['1170790', 'LRT6H89-1', 'B', 'Z', '11:00', '11:20', '0h20min', 'ENTREGUE'])
+    wb.addWorksheet('Avisos').addRow(['CARGA', 'PLACA', 'PROBLEMA'])
+    const r = await extrairKpiCompleto(await wb.xlsx.writeBuffer())
+    expect(r.nfs.map(n => n.nf)).toEqual(['6085560', '6085560-2', 'LRT6H89-1'])
   })
 })

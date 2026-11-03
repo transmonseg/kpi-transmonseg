@@ -281,7 +281,9 @@ export async function gerarKpiRioQuality(params: {
     if (comGabarito.length > 0 && data < hoje && !comGabarito.some(e => e.gabarito!.checkIn)) {
       avisosEntrada.push({ carga: '—', placa: '—', motivo: 'rq_relatorio_sem_checkin', placasNoArquivo: new Set(entregasCompletas.map(e => e.placaNorm)).size })
     }
-    const { linhas: romaneio, enderecoBrutoPorNf, ruaPorNf } = montarLinhasRomaneioCompleto(entregasCompletas)
+    const { linhas: romaneio, enderecoBrutoPorNf, ruaPorNf, repetidasRemovidas } = montarLinhasRomaneioCompleto(entregasCompletas)
+    // KPI-01 (RQ 27/10): copia identica conta uma vez -- e avisa, nunca calado.
+    if (repetidasRemovidas > 0) avisosEntrada.push({ carga: '—', placa: '—', motivo: 'linhas_repetidas', linhasRepetidas: repetidasRemovidas })
     ruaPorNfCompleto = ruaPorNf
     log(`Entregas: ${romaneio.length} linhas (arquivo unico, com cidade)`)
     // cascata PRECISA (rua+bairro+cidade+UF descarta rua homonima em
