@@ -1,5 +1,5 @@
 import { hojeBR } from '@/lib/data-br'
-import { META_KPI_PADRAO } from '@/lib/kpi/metas'
+import { META_KPI_PADRAO, metaDoCliente } from '@/lib/kpi/metas'
 import type { DiaKpi } from '@/lib/kpi-romaneio/dashboard-kpis'
 
 export type Periodo = 'dia' | 'semana' | 'mes' | 'ano' | 'custom'
@@ -294,5 +294,9 @@ export function dataLonga(s: string) {
 export function tom(taxa: number | null | undefined, meta: number = META_KPI_PADRAO): 'ok' | 'warn' | 'bad' {
   if (taxa == null) return 'warn'
   return taxa >= meta ? 'ok' : taxa >= 85 ? 'warn' : 'bad'
+}
+/** KPI-06 (auditoria 03/11): cor pela meta do cliente (Nutry 97, RQ 93). */
+export function tomDoCliente(taxa: number | null | undefined, cliente: string): 'ok' | 'warn' | 'bad' {
+  return tom(taxa, metaDoCliente(cliente))
 }
 export const COR_TOM = { ok: 'var(--color-success)', warn: 'var(--color-warning)', bad: 'var(--color-danger)' } as const

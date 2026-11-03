@@ -602,8 +602,9 @@ function contagemDaTaxaPorCarga(detalhe: LinhaDetalheEntrega[]): Map<string, { r
 // antes so' valia quando `opcoes.motivoConfianca` estava ligado, que era
 // sempre o caso na Nutry Max, unico chamador de resumoConfirmacao).
 function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
-  taxaPct: number
-  taxaPosConferenciaPct: number
+  /** KPI-09: null quando nenhuma NF entra na conta (antes 0, lido como 0,0%). */
+  taxaPct: number | null
+  taxaPosConferenciaPct: number | null
   confirmadas: number
   confirmadasPosConferencia: number
   denominador: number
@@ -634,13 +635,13 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
   // batia contra a conta manual dela -- 1 casa decimal (ver
   // `formatarPctUmaCasa`) + denominador explícito na própria linha (pedido
   // do usuário 26/09) deixam a conta auditável sem abrir o xlsx inteiro.
-  const taxaPct = denominador > 0 ? Math.round((1000 * confirmadas) / denominador) / 10 : 0
+  const taxaPct = denominador > 0 ? Math.round((1000 * confirmadas) / denominador) / 10 : null
 
   const basePosConferencia = detalhe.filter(d => entraNoDenominadorPosConferencia(d, inteiras))
   const denominadorPosConferencia = basePosConferencia.length
   const confirmadasPosConferencia = basePosConferencia.filter(confirmadaAposConferencia).length
   const taxaPosConferenciaPct = denominadorPosConferencia > 0
-    ? Math.round((1000 * confirmadasPosConferencia) / denominadorPosConferencia) / 10 : 0
+    ? Math.round((1000 * confirmadasPosConferencia) / denominadorPosConferencia) / 10 : null
 
   return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, denominadorPosConferencia, semRastreador, naoSaiuDaBase, escalaDivergente, cargaSemPlaca, placaProvisoria, consultaFalhou, aguardando, revisar }
 }
@@ -657,6 +658,11 @@ function formatarInteiroPtBr(n: number): string {
 // aqui é só formatação, nunca um segundo arredondamento.
 function formatarPctUmaCasa(n: number): string {
   return n.toFixed(1).replace('.', ',')
+}
+
+/** KPI-09: taxa sem denominador sai "sem NF na conta" (resumo-dashboard lê como null). */
+function textoTaxa(n: number | null): string {
+  return n == null ? 'sem NF na conta' : `${formatarPctUmaCasa(n)}%`
 }
 
 function formatarMinutos(min: number | null): string {
@@ -902,13 +908,13 @@ export async function gerarKpiRomaneioXlsx(
     // resumo-dashboard le o 2o segmento "|" e usa o " · CONTA:" como marca de
     // que NF CONFIRMADAS ja' inclui o sem rastreador.
     const foraDaContaTaxa = detalhe.length - resumo.denominador - resumo.aguardando
-    const contaTexto = ` · CONTA: ${formatarInteiroPtBr(resumo.confirmadas)} / (${formatarInteiroPtBr(detalhe.length)} do romaneio − ${formatarInteiroPtBr(foraDaContaTaxa)} fora da conta${resumo.aguardando > 0 ? ` − ${formatarInteiroPtBr(resumo.aguardando)} aguardando fim da rota` : ''}) = ${formatarPctUmaCasa(resumo.taxaPct)}%`
-    const taxaTexto = `${formatarPctUmaCasa(resumo.taxaPct)}% (${formatarInteiroPtBr(resumo.confirmadas)} de ${formatarInteiroPtBr(resumo.denominador)} NFs; ${foraTexto})${contaTexto}`
+    const contaTexto = ` · CONTA: ${formatarInteiroPtBr(resumo.confirmadas)} / (${formatarInteiroPtBr(detalhe.length)} do romaneio − ${formatarInteiroPtBr(foraDaContaTaxa)} fora da conta${resumo.aguardando > 0 ? ` − ${formatarInteiroPtBr(resumo.aguardando)} aguardando fim da rota` : ''}) = ${textoTaxa(resumo.taxaPct)}`
+    const taxaTexto = `${textoTaxa(resumo.taxaPct)} (${formatarInteiroPtBr(resumo.confirmadas)} de ${formatarInteiroPtBr(resumo.denominador)} NFs; ${foraTexto})${contaTexto}`
     const naoSaiuTexto = (resumo.naoSaiuDaBase > 0 ? `    |    NFs sem saída da base: ${resumo.naoSaiuDaBase} (fora da conta)` : '')
       + (resumo.escalaDivergente > 0 ? `    |    NFs com placa da escala divergente: ${resumo.escalaDivergente} (fora da conta)` : '')
       + (resumo.cargaSemPlaca > 0 ? `    |    NFs de carga sem placa: ${resumo.cargaSemPlaca} (fora da conta)` : '')
       + (resumo.placaProvisoria > 0 ? `    |    NFs de placa provisória ou fictícia: ${resumo.placaProvisoria} (fora da conta)` : '')
-    const taxaPosTexto = `${formatarPctUmaCasa(resumo.taxaPosConferenciaPct)}% (${formatarInteiroPtBr(resumo.confirmadasPosConferencia)} de ${formatarInteiroPtBr(resumo.denominadorPosConferencia)} NFs; ${formatarInteiroPtBr(foraDaContaPosConferencia)} fora da conta)`
+    const taxaPosTexto = `${textoTaxa(resumo.taxaPosConferenciaPct)} (${formatarInteiroPtBr(resumo.confirmadasPosConferencia)} de ${formatarInteiroPtBr(resumo.denominadorPosConferencia)} NFs; ${formatarInteiroPtBr(foraDaContaPosConferencia)} fora da conta)`
     // Pedido da Ana 02/10: tres niveis -- ENTREGUE confirmado, PENDENTE pra
     // auditoria e NAO ENTREGUE confirmado pela conferencia da operacao.
     const naoEntregueConfirmado = detalhe.filter(d => d.resolucaoManual === 'nao_esteve_no_local').length

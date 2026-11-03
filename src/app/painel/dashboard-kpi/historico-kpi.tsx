@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { DownloadSimple, ArrowRight, Trash, ClockCounterClockwise } from '@phosphor-icons/react/dist/ssr'
 import { fmtInstanteBR } from '@/lib/data-br'
 import type { ClienteDash, DiaKpi } from '@/lib/kpi-romaneio/dashboard-kpis'
-import { dataLonga, fmtKm, fmtInt, fmtPct, tom, COR_TOM, hoje } from './calculos'
+import { dataLonga, fmtKm, fmtInt, fmtPct, tomDoCliente, COR_TOM, hoje } from './calculos'
 
 function nomeMes(ym: string) {
   const [y, m] = ym.split('-').map(Number)
@@ -81,7 +81,7 @@ export function HistoricoKpi({ cliente, podeExcluir, onAbrirDia }: { cliente: Cl
                     <p className="text-[12px] text-[var(--color-fg-subtle)]">Inserido {fmtInstanteBR(d.inseridoEm)}{d.inseridoPor ? ` por ${d.inseridoPor}` : ''}</p>
                   </div>
                   <div className="w-24 text-right">
-                    <p className="text-[16px] font-semibold tabular-nums" style={{ color: parcial ? 'var(--color-warning)' : COR_TOM[tom(d.resumo.taxa)] }}>{fmtPct(d.resumo.taxa)}</p>
+                    <p className="text-[16px] font-semibold tabular-nums" style={{ color: parcial ? 'var(--color-warning)' : COR_TOM[tomDoCliente(d.resumo.taxa, cliente)] }}>{fmtPct(d.resumo.taxa)}</p>
                     {parcial && <p className="text-[11px] font-semibold text-[var(--color-warning)]">parcial</p>}
                   </div>
                   <div className="hidden w-40 text-right text-[12px] tabular-nums text-[var(--color-fg-muted)] md:block">

@@ -1634,3 +1634,46 @@ describe('F2-REV-03: placa declarada sem rastreador fora da frota', () => {
     expect(resumo.nfsNaConta).toBe(3)
   })
 })
+
+// KPI-02 + KPI-09 (auditoria 03/11): o Dashboard por placa/rota/motorista lê
+// o "fora da conta" da mesma regra da taxa do dia; sem NF na conta, sem taxa.
+describe('Dashboard por carga com a regra da taxa (KPI-02, KPI-09)', () => {
+  async function gerarELer(detalhe: LinhaDetalheEntrega[], linhas: LinhaKpiRomaneio[]) {
+    const buffer = await gerarKpiRomaneioXlsx(linhas, '2026-10-30', [], detalhe, undefined, undefined, { resumoConfirmacao: true })
+    return extrairKpiCompleto(buffer)
+  }
+  it('30/10: carga inteira "não saiu da base" (RBG4F53, 36 NFs) e consulta falhou saem da conta da placa; Σcargas = NFs na conta', async () => {
+    const naoSaiu = Array.from({ length: 36 }, (_, i) => detalheFixture({
+      carga: '101254', placa: 'RBG4F53', nf: `${2450000 + i}`, status: 'pendente', observacao: 'VEÍCULO NÃO SAIU DA BASE', evidencia: 'nao_saiu_da_base', confianca: 'SEM BASE',
+    }))
+    const outra = [
+      ...Array.from({ length: 9 }, (_, i) => detalheFixture({ carga: '101255', placa: 'RQU5H30', nf: `${2451000 + i}`, status: 'confirmado_gps' })),
+      detalheFixture({ carga: '101255', placa: 'RQU5H30', nf: '2451009', status: 'pendente' }),
+    ]
+    const falhou = [
+      detalheFixture({ carga: '101256', placa: 'RQV6I51', nf: '2452000', status: 'confirmado_gps' }),
+      detalheFixture({ carga: '101256', placa: 'RQV6I51', nf: '2452001', status: 'pendente', observacao: 'CONSULTA AO RASTREADOR FALHOU - CONFERIR' }),
+    ]
+    const linhas = [linhaKpi({ carga: '101254', placa: 'RBG4F53' }), linhaKpi({ carga: '101255', placa: 'RQU5H30' }), linhaKpi({ carga: '101256', placa: 'RQV6I51' })]
+    const r = await gerarELer([...naoSaiu, ...outra, ...falhou], linhas)
+    const c = (p: string) => r.resumo.cargas.find(x => x.placa === p)!
+    expect(c('RBG4F53').nfForaDaConta).toBe(36)
+    expect(c('RQV6I51').nfForaDaConta).toBe(1)
+    expect(c('RQU5H30').nfForaDaConta).toBe(0)
+    const soma = r.resumo.cargas.reduce((s, x) => s + (x.nfPlanejado ?? 0) - (x.nfForaDaConta ?? 0), 0)
+    expect(soma).toBe(r.resumo.nfsNaConta)
+  })
+  it('KPI-09: sem NF na conta a taxa é null (não 0,0%) e a planilha diz "sem NF na conta"', async () => {
+    const naoSaiu = Array.from({ length: 3 }, (_, i) => detalheFixture({ nf: `${100 + i}`, status: 'pendente', observacao: 'VEÍCULO NÃO SAIU DA BASE', evidencia: 'nao_saiu_da_base', confianca: 'SEM BASE' }))
+    const buffer = await gerarKpiRomaneioXlsx([linhaKpi()], '2026-10-30', [], naoSaiu, undefined, undefined, { resumoConfirmacao: true })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer as unknown as ArrayBuffer)
+    const t = wb.worksheets[0].getRow(wb.worksheets[0].rowCount).getCell(1).value as string
+    expect(t).toContain('TAXA DE CONFIRMAÇÃO: sem NF na conta (0 de 0 NFs;')
+    expect(t).not.toContain('0,0%')
+    const r = await extrairKpiCompleto(buffer)
+    expect(r.resumo.taxa).toBeNull()
+    expect(r.resumo.entregues).toBe(0)
+    expect(r.resumo.nfsNaConta).toBe(0)
+  })
+})

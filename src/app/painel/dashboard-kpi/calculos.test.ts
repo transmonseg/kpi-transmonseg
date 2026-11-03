@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { intervalo, intervaloAnterior, agregar } from './calculos'
+import { intervalo, intervaloAnterior, agregar, tomDoCliente } from './calculos'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import type { DiaKpi } from '@/lib/kpi-romaneio/dashboard-kpis'
 import type { ResumoGeracao } from '@/lib/kpi-romaneio/resumo-dashboard'
 
@@ -51,5 +53,20 @@ describe('dashboard por cliente: calculos', () => {
     const a = agregar([dia('2026-10-01', { cargas: [carga('AAA', 10, 0, 15, 0, 564), carga('BBB', 10, 10, 100, 500, 20)] })])
     expect(a.porEntregaMedia).toBe(20)
     expect(a.placas.find(p => p.placa === 'AAA')?.porEntregaMedia).toBeNull()
+  })
+})
+
+// KPI-06 (auditoria 03/11): Histórico, Inserir e drawer da placa pintavam com 95.
+describe('cor da taxa com a meta do cliente (KPI-06)', () => {
+  it('96,9% na Nutry (meta 97) não sai "ok"; na RQ (meta 93) sai', () => {
+    expect(tomDoCliente(96.9, 'nutrimax')).not.toBe('ok')
+    expect(tomDoCliente(97, 'nutrimax')).toBe('ok')
+    expect(tomDoCliente(96.9, 'rioquality')).toBe('ok')
+  })
+  it('nenhuma tela do Dashboard chama tom() sem a meta', () => {
+    for (const f of ['historico-kpi.tsx', 'inserir-kpi.tsx', 'placa-drawer.tsx']) {
+      const src = readFileSync(join(__dirname, f), 'utf8')
+      expect(src, f).not.toMatch(/\btom\(/)
+    }
   })
 })

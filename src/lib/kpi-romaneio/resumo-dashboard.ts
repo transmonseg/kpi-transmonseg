@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs'
+import { nfsForaDaConta } from './ao-vivo'
 
 // Dashboard (redesign 04/10/2026): resumo de cada geração extraído da PRÓPRIA
 // planilha entregue -- os números do dashboard batem com o que a operação
@@ -188,9 +189,10 @@ export async function extrairKpiCompleto(buf: Buffer | ArrayBuffer): Promise<{ d
     })
   })
 
-  const mTaxa = /TAXA (?:DE CONFIRMAÇÃO|PARCIAL \([\d.]+ aguardando\)):\s*([\d,]+)%\s*\(([\d.]+) de ([\d.]+) NFs/.exec(linhaTaxa)
+  // KPI-09: "sem NF na conta" no lugar do % quando o denominador e' 0 -> taxa null.
+  const mTaxa = /TAXA (?:DE CONFIRMAÇÃO|PARCIAL \([\d.]+ aguardando\)):\s*(?:([\d,]+)%|sem NF na conta)\s*\(([\d.]+) de ([\d.]+) NFs/.exec(linhaTaxa)
   const mFora = /([\d.]+) fora da conta[);]/.exec(linhaTaxa.split('|')[1] ?? linhaTaxa)
-  const taxa = mTaxa ? Number(mTaxa[1].replace(',', '.')) : null
+  const taxa = mTaxa?.[1] ? Number(mTaxa[1].replace(',', '.')) : null
   const entregues = mTaxa ? inteiroBr(mTaxa[2]) : null
   const nfsNaConta = mTaxa ? inteiroBr(mTaxa[3]) : null
 
@@ -246,7 +248,12 @@ export async function extrairKpiCompleto(buf: Buffer | ArrayBuffer): Promise<{ d
     const semRast = lista.filter(n => n.categoria === 'Sem rastreador').length
     c.nfSemRastreador = semRast
     if (!confirmadasJaSomamSemRastreador) c.nfConfirmadas = (c.nfConfirmadas ?? 0) + semRast
-    c.nfForaDaConta = lista.filter(n => n.categoria === 'Carga sem placa' || n.categoria === CATEGORIA_PLACA_PROVISORIA || (inteiraDivergente && n.categoria === 'Placa da escala divergente')).length
+    // KPI-02 (auditoria 03/11): a mesma regra de fora da conta da taxa do dia
+    // (nfsForaDaConta = entraNaTaxa: não saiu da base, consulta falhou/suspeita,
+    // provisória/fictícia, sem placa, escala inteira) + aguardando, que também
+    // sai do denominador. Antes "não saiu da base" contava como falha da placa.
+    const fora = nfsForaDaConta(lista)
+    c.nfForaDaConta = lista.filter(n => fora.has(`${n.carga}::${n.nf}`) || n.categoria === 'Aguardando fim da rota' || n.categoria === 'Carga sem placa' || n.categoria === CATEGORIA_PLACA_PROVISORIA || (inteiraDivergente && n.categoria === 'Placa da escala divergente')).length
     // Carga inteira trocada está FORA da taxa: não é pendência (04/10).
     if (inteiraDivergente) {
       const resto = (motivos['Placa da escala divergente'] ?? 0) - lista.length

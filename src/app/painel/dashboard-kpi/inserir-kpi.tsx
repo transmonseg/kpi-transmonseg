@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { UploadSimple, CheckCircle, WarningCircle, FileXls, DownloadSimple, Trash, ArrowRight, ArrowsLeftRight } from '@phosphor-icons/react/dist/ssr'
 import type { ClienteDash, DiaKpi } from '@/lib/kpi-romaneio/dashboard-kpis'
-import { hoje, intervalo, dataCurta, fmtPct, tom, COR_TOM } from './calculos'
+import { hoje, intervalo, dataCurta, fmtPct, tomDoCliente, COR_TOM } from './calculos'
 
 type Item = {
   nome: string; status: 'enviando' | 'ok' | 'erro'; msg?: string; data?: string
@@ -153,7 +153,7 @@ export function InserirKpi({ cliente, nome, onAbrirDia }: { cliente: ClienteDash
                 <span className="text-[12px] font-semibold text-[var(--color-fg-muted)]">{Number(d.slice(8))}</span>
                 {k ? (
                   <>
-                    <button type="button" onClick={() => onAbrirDia(d)} className="text-[16px] font-semibold tabular-nums" style={{ color: parcial ? 'var(--color-warning)' : COR_TOM[tom(k.resumo.taxa)] }}>
+                    <button type="button" onClick={() => onAbrirDia(d)} className="text-[16px] font-semibold tabular-nums" style={{ color: parcial ? 'var(--color-warning)' : COR_TOM[tomDoCliente(k.resumo.taxa, cliente)] }}>
                       {fmtPct(k.resumo.taxa)}{parcial && <span className="ml-1 text-[10px] font-semibold">parcial</span>}
                     </button>
                     <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">

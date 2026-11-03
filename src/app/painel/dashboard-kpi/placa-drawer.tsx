@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { X, CheckCircle, WarningCircle } from '@phosphor-icons/react/dist/ssr'
 import type { ClienteDash, DiaKpi } from '@/lib/kpi-romaneio/dashboard-kpis'
 import type { NfResumo } from '@/lib/kpi-romaneio/resumo-dashboard'
-import { dataCurta, dataLonga, fmtDur, fmtInt, fmtKm, fmtPct, tom, COR_TOM, type PlacaAgg } from './calculos'
+import { dataCurta, dataLonga, fmtDur, fmtInt, fmtKm, fmtPct, tomDoCliente, COR_TOM, type PlacaAgg } from './calculos'
 
 // Detalhe de uma placa: resumo do período, dia a dia e NF por NF do dia
 // escolhido (busca o detalhe só quando abre).
@@ -43,7 +43,7 @@ export function PlacaDrawer({ cliente, placa, dias, onFechar }: {
 
   const lista = (nfs ?? []).filter(n => filtro === 'todas' || (n.categoria && n.categoria !== 'Sem rastreador'))
   const pendentes = (nfs ?? []).filter(n => n.categoria && n.categoria !== 'Sem rastreador').length
-  const t = tom(placa.taxa)
+  const t = tomDoCliente(placa.taxa, cliente)
   const diaInfo = placa.porDia.find(d => d.data === diaSel)
   const parcial = (dias.find(d => d.data === diaSel)?.resumo.aguardando ?? 0) > 0
 
@@ -86,7 +86,7 @@ export function PlacaDrawer({ cliente, placa, dias, onFechar }: {
                     <button key={d.data} type="button" onClick={() => setDiaSel(d.data)}
                       className={`shrink-0 rounded-2xl border px-3.5 py-2 text-left transition-[background-color,border-color,transform] duration-200 active:scale-[0.97] ${sel ? 'border-[var(--color-navy-700)] bg-[var(--color-navy-700)] text-white' : 'border-[var(--color-border)] bg-[var(--color-bg-elevated)] hover:border-[var(--color-border-strong)]'}`}>
                       <div className={`text-[12px] ${sel ? 'text-white/70' : 'text-[var(--color-fg-muted)]'}`}>{dataCurta(d.data)}</div>
-                      <div className="text-[15px] font-semibold tabular-nums" style={sel ? undefined : { color: COR_TOM[tom(tx)] }}>{fmtPct(tx)}</div>
+                      <div className="text-[15px] font-semibold tabular-nums" style={sel ? undefined : { color: COR_TOM[tomDoCliente(tx, cliente)] }}>{fmtPct(tx)}</div>
                     </button>
                   )
                 })}
