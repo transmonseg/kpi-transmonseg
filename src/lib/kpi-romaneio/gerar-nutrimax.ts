@@ -15,7 +15,7 @@ import { ajustarChegadaAposUltimaEntrega } from '@/lib/kpi-romaneio/fim-rota'
 import { alvosDaData } from '@/lib/kpi-romaneio/alvos-data'
 import { alvosEfetivos } from '@/lib/kpi-romaneio/alvos-snapshot'
 import { paradasEfetivas, lerSnapshotParadas, mesclarParadas } from '@/lib/kpi-romaneio/paradas-snapshot'
-import { detectarDescasamentos, detectarMotoristaMultiplasPlacas, detectarCargaMultiRegiao } from '@/lib/kpi-romaneio/avisos'
+import { detectarDescasamentos, detectarMotoristaMultiplasPlacas, detectarCargaMultiRegiao, detectarRomaneioSemNf } from '@/lib/kpi-romaneio/avisos'
 import { duplicadoDaEscala } from '@/lib/kpi-romaneio/escala-duplicado'
 import { montarVisitas } from '@/lib/kpi-romaneio/visitas'
 import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, contarConfirmadasPorCarga, chaveEndereco } from '@/lib/kpi-romaneio/agregacao'
@@ -685,6 +685,7 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
     ...(entrada.paoEnviado ? detectarDescasamentos(resultadoPao.escala, cargasRomaneioList.filter(c => ehCargaPao(c.carga))) : []),
     ...detectarMotoristaMultiplasPlacas(escalaCompleta),
     ...detectarCargaMultiRegiao(romaneioGeo),
+    ...detectarRomaneioSemNf(romaneioGeo),
   ].sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
   if (travaSemSinal.aviso) {
     avisos.push({ carga: '—', placa: '—', motivo: 'consulta_posicoes_suspeita', semSinal: travaSemSinal.semSinal, totalPlacas: travaSemSinal.totalPlacas })

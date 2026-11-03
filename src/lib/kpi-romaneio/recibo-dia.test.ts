@@ -51,4 +51,12 @@ describe('avisosDoRecibo (F3-06)', () => {
     expect(avisos.map(a => a.texto)).toContain('Carga 199999 (ABC1D23) está no romaneio e não está na escala.')
     expect(avisos.some(a => a.texto.includes('PAO-36'))).toBe(false)
   })
+
+  it('03/11: romaneio com NF vazia vira aviso na hora do envio', () => {
+    const rom: LinhaRomaneio[] = ['2081', '2898'].map(c => ({
+      carga: '101465', destino: 'BAIXADA', placa: 'RBI1E10', motorista: '', ajudantes: [], nf: `SEMNF-101465-${c}`, clienteCodigo: c, clienteNome: '', endereco: '',
+    }))
+    const avisos = avisosDoRecibo({ romaneio: rom, escala: [], pao: vazio, escalaEnviada: false, paoEnviado: false })
+    expect(avisos).toEqual([{ tipo: 'romaneio_sem_nf', texto: 'Carga 101465 (RBI1E10): o romaneio veio sem o número da NF em 2 clientes. Entraram no KPI pelo código do cliente (NF "SEMNF-…").' }])
+  })
 })

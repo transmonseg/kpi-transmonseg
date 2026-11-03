@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { detectarDescasamentos, detectarMotoristaMultiplasPlacas, detectarCargaMultiRegiao } from './avisos'
+import { detectarDescasamentos, detectarMotoristaMultiplasPlacas, detectarCargaMultiRegiao, detectarRomaneioSemNf } from './avisos'
 import type { LinhaEscala, LinhaGeocodificada } from './types'
 
 function escala(overrides: Partial<LinhaEscala> = {}): LinhaEscala {
@@ -209,5 +209,23 @@ describe('detectarCargaMultiRegiao', () => {
     const r = detectarCargaMultiRegiao(linhas)
     expect(r).toHaveLength(1)
     expect(r[0].carga).toBe('2')
+  })
+})
+
+// 03/11/2026: romaneio da carga 101465 (RBI1E10) veio com o campo da NF vazio
+// nos 27 clientes. A carga entra no KPI com NF SEMNF-..., mas a operação
+// precisa saber que o documento veio incompleto.
+describe('detectarRomaneioSemNf', () => {
+  const l = (carga: string, placa: string, nf: string) => ({ carga, placa, nf })
+  it('agrupa por carga+placa e conta os clientes sem número', () => {
+    const avisos = detectarRomaneioSemNf([
+      l('101465', 'RBI1E10', 'SEMNF-101465-2081'),
+      l('101465', 'RBI1E10', 'SEMNF-101465-2898'),
+      l('101466', 'RBI1F75', '2456767'),
+    ])
+    expect(avisos).toEqual([{ carga: '101465', placa: 'RBI1E10', motivo: 'romaneio_sem_nf', clientesSemNf: 2 }])
+  })
+  it('romaneio todo numerado: nenhum aviso', () => {
+    expect(detectarRomaneioSemNf([l('1', 'AAA1A11', '123')])).toEqual([])
   })
 })

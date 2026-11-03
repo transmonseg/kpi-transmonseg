@@ -1,5 +1,6 @@
 import type { AvisoDescasamento, LinhaEscala, LinhaGeocodificada } from './types'
 import { haversine } from '@/lib/utils/geo'
+import { ehNfSemNumero } from './nf-sem-numero'
 
 /** Uma carga do lado do Romaneio, so' com o que basta pra cruzar com a
  *  Escala por carga+placa -- evita acoplar esta funcao ao tipo completo de
@@ -117,4 +118,27 @@ export function detectarCargaMultiRegiao(
     }
   }
   return avisos.sort((a, b) => a.carga.localeCompare(b.carga))
+}
+
+/** Aviso (03/11/2026, carga 101465 RBI1E10): o romaneio veio com o campo da NF
+ *  vazio. O parser ja' nao descarta a linha (NF vira SEMNF-<carga>-<cliente>),
+ *  mas a operacao precisa saber que o documento veio incompleto. Nao muda taxa. */
+export function detectarRomaneioSemNf(
+  linhas: { carga: string; placa: string; nf: string }[],
+): AvisoDescasamento[] {
+  const porChave = new Map<string, { carga: string; placa: string; n: number }>()
+  for (const l of linhas) {
+    if (!ehNfSemNumero(l.nf)) continue
+    const k = `${l.carga}::${l.placa}`
+    const c = porChave.get(k) ?? { carga: l.carga, placa: l.placa, n: 0 }
+    c.n++
+    porChave.set(k, c)
+  }
+  return [...porChave.values()]
+    .map(c => ({ carga: c.carga, placa: c.placa, motivo: 'romaneio_sem_nf' as const, clientesSemNf: c.n }))
+    .sort((a, b) => a.carga.localeCompare(b.carga) || a.placa.localeCompare(b.placa))
+}
+
+export function textoRomaneioSemNf(carga: string, placa: string, n: number): string {
+  return `Carga ${carga} (${placa}): o romaneio veio sem o número da NF em ${n} cliente${n === 1 ? '' : 's'}. Entraram no KPI pelo código do cliente (NF "SEMNF-…").`
 }

@@ -1,9 +1,14 @@
 import type { LinhaRomaneio } from './types'
 import { ENDERECO_NAO_IDENTIFICADO } from './correcao-por-alvo'
+import { nfSemNumero } from './nf-sem-numero'
 
 const HEADER_RE = /^PLACA\/MOTORISTA:(.+?)\s*\/\s*(.+?)CARGA\/DESTINO:(\d+)\s*\/\s*(.+)$/
 const AJUDANTE_RE = /^AJUDANTE\(S\):(.*)$/
-const NF_CLIENTE_RE = /^(\d+)\s*\/\s*(\d+)\s*-\s*(.+)$/
+// NF pode vir vazia: em 03/11/2026 a Nutry mandou a carga 101465 inteira como
+// " / 2081 - ESTRELA DOS PAGOS". A linha NAO pode sumir (a carga ficava fora do
+// KPI); a NF vira um id sintetico estavel, unico por carga+cliente.
+const NF_CLIENTE_RE = /^(\d*)\s*\/\s*(\d+)\s*-\s*(.+)$/
+
 const FIM_CLIENTE_RE = /^NF\s*\/\s*CLIENTE:\s*$/
 const TOTAL_RE = /^Total de \d+ clientes?$/i
 
@@ -57,7 +62,7 @@ export function parseRomaneioTexto(texto: string): LinhaRomaneio[] {
           endereco: ENDERECO_NAO_IDENTIFICADO,
         })
       }
-      pendente = { nf: nfM[1], codigo: nfM[2], nome: nfM[3].trim() }
+      pendente = { nf: nfM[1] || nfSemNumero(ctx.carga, nfM[2]), codigo: nfM[2], nome: nfM[3].trim() }
       continue
     }
     if (pendente) {

@@ -2,14 +2,14 @@
 // Mesma regra da aba Avisos da planilha (detectarDescasamentos, cada escala
 // contra a sua origem e só quando o documento veio), mais a placa marcada
 // "VEICULO" na coluna DUPLICADO da 8081 (mesma placa em 2 cargas).
-import { detectarDescasamentos } from './avisos'
+import { detectarDescasamentos, detectarRomaneioSemNf, textoRomaneioSemNf } from './avisos'
 import { veiculosEmDuasCargas } from './escala-duplicado'
 import { PAO_PREFIXO } from './constants'
 import { normPlaca } from '@/lib/unitrac-api'
 import type { DiaGuardado } from './mesclar-envio'
 import type { LinhaEscala, LinhaRomaneio } from './types'
 
-export type AvisoRecibo = { tipo: 'sem_romaneio' | 'sem_escala' | 'nf_divergente' | 'veiculo_duas_cargas'; texto: string }
+export type AvisoRecibo = { tipo: 'sem_romaneio' | 'sem_escala' | 'nf_divergente' | 'veiculo_duas_cargas' | 'romaneio_sem_nf'; texto: string }
 
 function cargasDoRomaneio(linhas: LinhaRomaneio[]) {
   const m = new Map<string, { carga: string; placaNorm: string; nfs: Set<string> }>()
@@ -48,6 +48,10 @@ export function avisosDoRecibo(dia: DiaGuardado): AvisoRecibo[] {
     for (const v of veiculosEmDuasCargas(dia.escala)) {
       avisos.push({ tipo: 'veiculo_duas_cargas', texto: `Placa ${v.placa} em ${v.cargas.length} cargas na escala (${v.cargas.join(' e ')}).` })
     }
+  }
+  // 03/11: romaneio com o campo da NF vazio (independe da escala ter vindo).
+  for (const a of detectarRomaneioSemNf(dia.romaneio)) {
+    avisos.push({ tipo: 'romaneio_sem_nf', texto: textoRomaneioSemNf(a.carga, a.placa, a.clientesSemNf ?? 0) })
   }
   return avisos
 }

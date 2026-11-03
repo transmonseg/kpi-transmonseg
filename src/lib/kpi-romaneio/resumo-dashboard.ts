@@ -202,7 +202,7 @@ export async function extrairKpiCompleto(buf: Buffer | ArrayBuffer): Promise<{ d
       if (n < 4) return
       const v = row.values as ExcelJS.CellValue[]
       const nf = texto(v[2])
-      if (!/^\d+$/.test(nf)) return
+      if (!/^(\d+|SEMNF-\d+-\d+)$/.test(nf)) return
       const status = texto(v[8]).trim()
       const entregue = status.startsWith('ENTREGUE')
       nfs.push({

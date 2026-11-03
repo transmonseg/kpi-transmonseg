@@ -132,3 +132,48 @@ describe('extrairDataCabecalhoRomaneio', () => {
     expect(extrairDataCabecalhoRomaneio('PLACA/MOTORISTA: X')).toBeNull()
   })
 })
+
+// Romaneio real 03/11/2026, carga 101465 (RBI1E10): a Nutry mandou os 27
+// clientes com o campo da NF vazio. Antes a linha sumia e a carga inteira
+// ficava fora do KPI ("Carga não localizada") e do monitoramento.
+describe('parseRomaneioTexto — NF em branco no romaneio', () => {
+  const TEXTO_SEM_NF = `
+8012 - Romaneio de Entrega
+03/11/2026 07:18
+PLACA/MOTORISTA:RBI1E10 / NEILSON DE SOUZA SILVACARGA/DESTINO:101465 / BAIXADA
+AJUDANTE(S):,
+ / 2081 - ESTRELA DOS PAGOS
+RODOVIA PRESIDENTE DUTRA, 172 - ROCHA SOBRINHO, BELFORD ROXO - KM 9,5 - 26150000
+NF / CLIENTE:
+ / 2898 - AVIARIO DOIS IRMAOS
+RUA PROFESSOR LEOPOLDO MACHADO, 34 - SANTA CECILIA, BELFORD ROXO - * - 26130680
+NF / CLIENTE:
+Total de 2 clientes
+`
+
+  it('não descarta o cliente: NF vira SEMNF-<carga>-<cliente>', () => {
+    const linhas = parseRomaneioTexto(TEXTO_SEM_NF)
+    expect(linhas).toHaveLength(2)
+    expect(linhas[0]).toMatchObject({
+      carga: '101465',
+      placa: 'RBI1E10',
+      nf: 'SEMNF-101465-2081',
+      clienteCodigo: '2081',
+      clienteNome: 'ESTRELA DOS PAGOS',
+      endereco: 'RODOVIA PRESIDENTE DUTRA, 172 - ROCHA SOBRINHO, BELFORD ROXO - KM 9,5 - 26150000',
+    })
+    expect(linhas[1].nf).toBe('SEMNF-101465-2898')
+  })
+
+  it('NF normal continua igual na mesma leitura', () => {
+    const misto = TEXTO_SEM_NF + `
+PLACA/MOTORISTA:RBI1F75 / MARCELO HENRIQUE ALVES SANTOSCARGA/DESTINO:101466 / BAIXADA 2
+AJUDANTE(S):ROMULO FABIANO PEREIRA BENEDICTO,
+2456767 / 3147 - MINIMERCADO SAO JORGE
+AVENIDA ABILIO AUGUSTO TAVORA, 5909 - CABUCU, NOVA IGUACU - JARDIM LARANJEIRAS - 26291200
+`
+    const linhas = parseRomaneioTexto(misto)
+    expect(linhas).toHaveLength(3)
+    expect(linhas[2]).toMatchObject({ nf: '2456767', clienteCodigo: '3147', carga: '101466' })
+  })
+})
