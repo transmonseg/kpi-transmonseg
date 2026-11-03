@@ -179,3 +179,25 @@ describe('marcarPontosCorroborados (GN-01, auditoria 20/10)', () => {
     expect([umaSo[0].pontoCorroborado, longe[0].pontoCorroborado, semGeo[0].pontoCorroborado]).toEqual([undefined, undefined, undefined])
   })
 })
+
+// GEO3-06 (auditoria 03/11): NF sem geocode recebia o local aprendido de OUTRO
+// endereço do mesmo código, como ponto confiável e corroborado. Caso do lab:
+// NUTRIMED 139450, local do HEMORIO (entrega confirmada 16x) aplicado na NF de
+// Saquarema sem coordenada, a 73 km.
+describe('GEO3-06: NF sem geocode e cliente com vários endereços', () => {
+  const hemorio = { chave: '139450', lat: -22.9105, lng: -43.1867, raioM: null, fonte: 'entrega_confirmada' as const, confirmacoes: 16, enderecoRef: 'RUA FREI CANECA, 08 - CENTRO, RIO DE JANEIRO - HEMORIO' }
+  const saquarema = linha({ nf: '9001', clienteCodigo: '139450', endereco: 'RUA MANOEL DOMINGOS DOS SANTOS, 725 - BARREIRA, SAQUAREMA', lat: null, lng: null, geoConfiavel: false })
+  it('outro endereço: mantém sem ponto (não herda o Hemorio)', () => {
+    const r = aplicarLocaisClientes([saquarema], new Map([['139450', hemorio]]))
+    expect(r.aplicados).toEqual([])
+    expect(r.linhas[0]).toMatchObject({ lat: null, lng: null })
+  })
+  it('mesmo endereço sem geocode: usa o local, mas não confiável e não corroborado', () => {
+    const mesmo = linha({ nf: '9003', clienteCodigo: '139450', endereco: 'RUA FREI CANECA, 08 - CENTRO, RIO DE JANEIRO - HEMORIO', lat: null, lng: null })
+    const r = aplicarLocaisClientes([mesmo], new Map([['139450', hemorio]]))
+    expect(r.aplicados).toEqual(['9003'])
+    expect(r.linhas[0]).toMatchObject({ lat: hemorio.lat, lng: hemorio.lng, geoConfiavel: false })
+    const [c] = marcarPontosCorroborados(r.linhas, new Map([['139450', hemorio]]))
+    expect(c.pontoCorroborado).toBeUndefined()
+  })
+})

@@ -63,7 +63,8 @@ export function paradasConfiaveis(horarios: Map<string, HorarioBase>): { paradas
 }
 
 export function montarUpsertCadastro(s: SugestaoCadastro) {
-  return { endereco: chaveCacheEndereco(s.endereco), lat: s.latNova, lng: s.lngNova, confiavel: true as const, motivo: null, fonte: 'cadastro_unitrac' as const }
+  // GEO3-10: sem a precisao da cascata antiga (o upsert so' troca as colunas enviadas).
+  return { endereco: chaveCacheEndereco(s.endereco), lat: s.latNova, lng: s.lngNova, confiavel: true as const, motivo: null, fonte: 'cadastro_unitrac' as const, precisao: null }
 }
 
 export function csvCadastroUnitrac(sugestoes: SugestaoCadastro[], rejeicoes: RejeicaoCadastro[]): string {

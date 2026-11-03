@@ -73,6 +73,8 @@ export type LinhaGeocodificada = LinhaRomaneio & {
    *  outra fonte -- local do cliente utilizavel (manual ou aprendido com 2+
    *  confirmacoes) a <= 150 m. Preenchido em gerar-nutrimax. */
   pontoCorroborado?: boolean
+  /** GEO3-06: ponto veio so' do local aprendido (sem geocode do dia) -- nao se corrobora sozinho. */
+  pontoSoDoLocal?: boolean
   /** Auditoria 20/10 (GEO-01): precisao do ponto informada pela ponte
    *  (exato | interpolado | trecho | rua). Ausente = desconhecida. */
   // F4-04 (GEO-28): 'exato_nao_confirmado' = mesmo numero numa rua homonima

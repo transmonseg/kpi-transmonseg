@@ -82,7 +82,7 @@ describe('montarLoteNoturno', () => {
   it('grava como fonte cadastro_unitrac, confiavel, motivo limpo', () => {
     const r = montarLoteNoturno([sug({})], new Map([['RUA A, 1', linha({})]]))
     expect(r.excedeuTeto).toBe(false)
-    expect(r.gravar).toEqual([{ endereco: 'RUA A, 1', lat: -22.61, lng: -43.21, confiavel: true, motivo: null, fonte: 'cadastro_unitrac' }])
+    expect(r.gravar).toEqual([{ endereco: 'RUA A, 1', lat: -22.61, lng: -43.21, confiavel: true, motivo: null, fonte: 'cadastro_unitrac', precisao: null }]) // GEO3-10
   })
 
   it('endereco ausente do cache entra normalmente', () => {

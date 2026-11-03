@@ -151,7 +151,7 @@ export function ModalDetalhe({ tipo, m, resumo, lojaHref, onClose }: {
       colunas={[colLoja<Metricas['topTempoEmLoja'][number]>(), { chave: 't', titulo: 'Tempo em loja', alinhar: 'right', render: l => fmtMin(l.tempo_loja), ord: l => l.tempo_loja ?? 0 }, { chave: 'n', titulo: 'Visitas', alinhar: 'right', render: l => l.n, ord: l => l.n }]} />
   )
   else if (tipo === 'motoristas') tabela = (
-    <TabelaRanking titulo="Motoristas" ancora="m-mot" buscaPlaceholder="Buscar motorista…" linhas={m.topMotoristas}
+    <TabelaRanking titulo="Motoristas" ancora="m-mot" buscaPlaceholder="Buscar motorista…" linhas={m.topMotoristas ?? []}
       colunas={[
         { chave: 'mot', titulo: 'Motorista', render: l => <span className="font-medium text-[var(--color-fg)]">{l.motorista}</span>, ord: l => l.motorista, busca: l => l.motorista },
         { chave: 'ent', titulo: 'Entregas', alinhar: 'right', render: l => fmtNum(l.entregas), ord: l => l.entregas },

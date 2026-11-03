@@ -30,7 +30,7 @@ const mesmo = (a: unknown, b: unknown) => canonico(a) === canonico(b)
 export type DepsPortaNutry = {
   lerDia(data: string): Promise<DiaGuardado | null>
   guardar(p: DiaGuardado & { data: string; enviadoPor: string | null }): Promise<void>
-  enviarMonitoramento(arquivos: ArquivoMonitoramento[], enviadoPor: string | null): Promise<EnvioMonitoramento[]>
+  enviarMonitoramento(arquivos: ArquivoMonitoramento[], enviadoPor: string | null, romaneio?: DiaGuardado['romaneio']): Promise<EnvioMonitoramento[]>
 }
 
 /** Nutry Max: o que a geração de hoje leu dos PDFs vai ao Ao vivo (mesma
@@ -56,7 +56,7 @@ export async function gravarHojeNutry(deps: DepsPortaNutry, p: {
       ...(!romaneioIgual && p.pdfs.romaneio ? [p.pdfs.romaneio] : []),
       ...(!paoIgual && p.pdfs.pao ? [p.pdfs.pao] : []),
     ]
-    const monitoramento = arquivos.length > 0 ? await deps.enviarMonitoramento(arquivos, p.enviadoPor) : []
+    const monitoramento = arquivos.length > 0 ? await deps.enviarMonitoramento(arquivos, p.enviadoPor, dia.romaneio) : []
     return { aoVivo: 'gravado', monitoramento }
   } catch (err) {
     return { aoVivo: 'falhou', monitoramento: [], erro: err instanceof Error ? err.message : String(err) }

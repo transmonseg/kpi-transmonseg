@@ -99,7 +99,9 @@ describe('paradasConfiaveis', () => {
 describe('cadastro_unitrac (regra 1)', () => {
   const sug = { endereco: 'RUA X, 1', nfs: ['1', '2'], placaNorm: 'AAA1A11', latAtual: -22.5, lngAtual: -43.5, distAtualM: 70000, fonteAtual: 'nominatim', latNova: -22, lngNova: -43, codigoUnitrac: '9', distParadaM: 80 }
   it('upsert grava fonte cadastro_unitrac, confiavel e sem motivo', () => {
-    expect(montarUpsertCadastro(sug)).toEqual({ endereco: 'RUA X, 1', lat: -22, lng: -43, confiavel: true, motivo: null, fonte: 'cadastro_unitrac' })
+    // GEO3-10 (auditoria 03/11): a coordenada vira a do cadastro, entao a
+    // precisao da cascata antiga (rua/exato) nao pode ficar na linha.
+    expect(montarUpsertCadastro(sug)).toEqual({ endereco: 'RUA X, 1', lat: -22, lng: -43, confiavel: true, motivo: null, fonte: 'cadastro_unitrac', precisao: null })
   })
   it('csv de backup guarda o estado anterior sem quebrar em ; e quebra de linha', () => {
     const csv = csvBackupCache([{ endereco: 'A;B\nC', lat: 1, lng: 2, confiavel: false, fonte: 'nominatim', motivo: 'bairro' }])

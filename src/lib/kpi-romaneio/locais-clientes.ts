@@ -129,6 +129,9 @@ export function aplicarLocaisClientes(
         || (l.geoConfiavel === false && mesmoEnderecoDoLocal(l, local) && paradaPropriaNoLocal(paradasPropriasPorPlaca?.get(normPlacaLocal(l.placa)) ?? [], local))
       if (!destrava) return l
     }
+    // GEO3-06 (auditoria 03/11): sem geocode do dia, so' o local do MESMO
+    // endereco -- o codigo do cliente tem varios (NUTRIMED: Hemorio x Saquarema, 73 km).
+    if (!temGeo && !mesmoEnderecoDoLocal(l, local)) return l
     const geoBom = temGeo && l.geoConfiavel !== false
     if (geoBom) {
       if (local.fonte === 'entrega_confirmada') return l
@@ -141,7 +144,8 @@ export function aplicarLocaisClientes(
     // Confiabilidade: só a correção manual vira confiável. O aprendido mantém a
     // da coordenada do dia -- marcar confiável deixava a NF tirar conclusão
     // negativa e "explicar" parada das vizinhas (RQV9B26 01/10, -4 NFs).
-    if (local.fonte !== 'manual') return { ...l, lat: local.lat, lng: local.lng }
+    // GEO3-06: o local sem geocode do dia nao e' confiavel nem se corrobora sozinho.
+    if (local.fonte !== 'manual') return temGeo ? { ...l, lat: local.lat, lng: local.lng } : { ...l, lat: local.lat, lng: local.lng, geoConfiavel: false, pontoSoDoLocal: true }
     return { ...l, lat: local.lat, lng: local.lng, geoConfiavel: true, geoMotivo: undefined, geoSemFonte: false, geoVerificadoManual: true, geoFonte: 'manual' }
   })
   return { linhas: novas, aplicados }
@@ -154,7 +158,7 @@ const DIST_MAX_CORROBORA_M = 150
  *  fonte, então parada a 500 m-2 km dele não é este cliente. */
 export function marcarPontosCorroborados(linhas: LinhaGeocodificada[], locais: Map<string, LocalCliente>): LinhaGeocodificada[] {
   return linhas.map(l => {
-    if (l.lat == null || l.lng == null) return l
+    if (l.lat == null || l.lng == null || l.pontoSoDoLocal) return l
     const chave = chaveClienteLocal(l)
     const local = chave ? locais.get(chave) : undefined
     if (!local || !localUtilizavel(local)) return l

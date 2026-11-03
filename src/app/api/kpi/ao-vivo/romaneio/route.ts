@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
   const monitoramento = await enviarAoMonitoramento([
     ...(romaneioBuf && romaneioFile instanceof File ? [{ buf: romaneioBuf, nome: romaneioFile.name || 'romaneio.pdf', origem: 'romaneio' as const }] : []),
     ...(paoBuf && paoFile instanceof File ? [{ buf: paoBuf, nome: paoFile.name || 'pao.pdf', origem: 'escala_pao' as const }] : []),
-  ], a.email)
+  ], a.email, dia.romaneio)
   for (const m of monitoramento) if (!m.ok) console.error(`[kpi/ao-vivo] envio ao monitoramento (${m.origem}) falhou: ${m.erro}`)
   const linhasDia = [...(dia.romaneio as { placa: string }[]), ...dia.pao.linhas]
   const nfs = linhasDia.length

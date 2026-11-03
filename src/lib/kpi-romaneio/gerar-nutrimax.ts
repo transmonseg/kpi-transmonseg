@@ -87,6 +87,13 @@ export function marcarPontoUnitracRepetido(linhas: LinhaGeocodificada[]): LinhaG
   })
 }
 
+/** Linha do romaneio com o geocode do dia. GEO3-06 (auditoria 03/11): sem
+ *  geocode a NF sai NAO confiavel (antes `?? true`, e o local aprendido de
+ *  outro endereco do mesmo codigo virava ponto confiavel). */
+export function linhaComGeocode(l: LinhaRomaneio, g: { lat: number; lng: number; confiavel?: boolean; motivo?: string; fonte?: string; precisao?: LinhaGeocodificada['geoPrecisao'] } | null): LinhaGeocodificada {
+  return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g ? (g.confiavel ?? true) : false, geoMotivo: narrowGeoMotivo(g?.motivo), geoSemFonte: g != null && !g.fonte, geoVerificadoManual: g != null && FONTES_VERIFICADAS.has(g.fonte ?? ''), ...(g?.precisao ? { geoPrecisao: g.precisao } : {}), ...(g?.fonte ? { geoFonte: g.fonte } : {}) }
+}
+
 export function narrowGeoMotivo(motivo: string | undefined): 'municipio_divergente' | 'bairro_divergente' | undefined {
   return motivo === 'municipio_divergente' || motivo === 'bairro_divergente' ? motivo : undefined
 }
@@ -225,10 +232,7 @@ async function gerarKpiNutrimaxNaGeracao(entrada: EntradaKpiNutrimax, opcoes?: O
   opcoes?.sobreporGeo?.(geoPorEndereco)
 
   // Task 2 (plano 2026-09-30, item 4): geoSemFonte = cache sem `fonte` (ver guarda 4 da parada proxima em agregacao.ts).
-  const romaneioGeo: LinhaGeocodificada[] = romaneioCompleto.map(l => {
-    const g = geoPorEndereco.get(l.endereco) ?? null
-    return { ...l, lat: g?.lat ?? null, lng: g?.lng ?? null, geoConfiavel: g?.confiavel ?? true, geoMotivo: narrowGeoMotivo(g?.motivo), geoSemFonte: g != null && !g.fonte, geoVerificadoManual: g != null && FONTES_VERIFICADAS.has(g.fonte ?? ''), ...(g?.precisao ? { geoPrecisao: g.precisao } : {}), ...(g?.fonte ? { geoFonte: g.fonte } : {}) }
-  })
+  const romaneioGeo: LinhaGeocodificada[] = romaneioCompleto.map(l => linhaComGeocode(l, geoPorEndereco.get(l.endereco) ?? null))
 
   // Cache do dia (06/10): paradas da Unitrac por placa reaproveitadas entre
   // gerações (4 min hoje, 6 h dia passado) -- era metade do tempo da geração.

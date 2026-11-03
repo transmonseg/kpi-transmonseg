@@ -730,7 +730,7 @@ function Conteudo({ m, mAnt, mes, periodo, data, resumoRisco, riscoCarregando, f
           </div>
         )}
 
-        {m.topMotoristas.length > 0 && (
+        {(m.topMotoristas ?? []).length > 0 && (
           <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(420px,1fr))]">
             <TopMotoristas m={m} onVerTodos={() => setDetalhe('motoristas')} />
           </div>
@@ -1427,7 +1427,7 @@ function TopTempoLoja({ m, lojaHref, onVerTodos }: { m: Metricas; lojaHref: (red
 }
 
 function TopMotoristas({ m, onVerTodos }: { m: Metricas; onVerTodos: () => void }) {
-  if (m.topMotoristas.length === 0) return null
+  if (!m.topMotoristas?.length) return null
   const maxEnt = m.topMotoristas[0].entregas
   return (
     <div data-tour="tendencias-motoristas" className={`${CARD} overflow-hidden animate-fade-up`}>

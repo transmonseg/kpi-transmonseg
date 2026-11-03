@@ -484,12 +484,14 @@ export async function geocodificarEnderecosComInfo(
 
   const porFaltante = new Map<string, ResultadoGeocode>()
   let parciais = 0
+  let parciaisRede = 0
   if (faltantes.length > 0) {
     // Grava a cada lote concluido: se um lote posterior falhar (ou a requisicao
     // morrer), o que ja foi resolvido nao se perde.
-    await geocodificarPorLotes(faltantes, { ...opcoes, textoPonte }, async (lote, resultados, confirmado, incompletos) => {
+    await geocodificarPorLotes(faltantes, { ...opcoes, textoPonte }, async (lote, resultados, confirmado, incompletos, incompletosRede) => {
       lote.forEach((e, i) => porFaltante.set(e, resultados[i]))
       parciais += incompletos.size
+      parciaisRede += incompletosRede.size
       const gravaveis = lote.map((e, i) => [e, resultados[i]] as const).filter(([e, r]) => r !== null && !naoSobrescrever.has(e))
       if (gravaveis.length > 0) await salvarNoCache(gravaveis.map(([e]) => e), gravaveis.map(([, r]) => r))
       if (confirmado) {
@@ -501,7 +503,9 @@ export async function geocodificarEnderecosComInfo(
     })
   }
   if (parciais > 0) {
-    console.warn(`[kpi-romaneio/geocode] geocode parcial -- ${parciais} endereço(s) sem a busca por similaridade (timeout ou teto de ${TETO_BUSCAS_SIMILARIDADE_POR_GERACAO} por geração) -- gere novamente`)
+    const rede = parciaisRede > 0 ? `${parciaisRede} por falha de rede no Photon/Nominatim, ` : ''
+    const simil = parciais - parciaisRede
+    console.warn(`[kpi-romaneio/geocode] geocode parcial -- ${parciais} endereço(s) sem a busca completa (${rede}${simil} sem a busca por similaridade: timeout ou teto de ${TETO_BUSCAS_SIMILARIDADE_POR_GERACAO} por geração) -- gere novamente`)
   }
 
   const semEndereco = (l: { endereco: string; lat: number; lng: number; fonte?: string; confiavel: boolean; motivo?: string; precisao?: PrecisaoGeocode }) =>
@@ -535,7 +539,7 @@ export async function geocodificarSemCache(
 async function geocodificarPorLotes(
   enderecos: string[],
   opcoes: { validarTerritorio?: boolean; textoPonte?: Map<string, string> },
-  aoConcluirLote: (lote: string[], resultados: ResultadoGeocode[], confirmado: boolean, incompletos: Set<number>) => Promise<void>,
+  aoConcluirLote: (lote: string[], resultados: ResultadoGeocode[], confirmado: boolean, incompletos: Set<number>, incompletosRede: Set<number>) => Promise<void>,
 ): Promise<void> {
   let buscasSimilaridade = 0
   for (let i = 0; i < enderecos.length; i += LOTE_MAX_ENDERECOS) {
@@ -543,11 +547,11 @@ async function geocodificarPorLotes(
     const semSimilaridade = buscasSimilaridade >= TETO_BUSCAS_SIMILARIDADE_POR_GERACAO
     const r = await geocodificarLote(lote, { ...opcoes, semSimilaridade })
     buscasSimilaridade += r.buscasSimilaridade
-    await aoConcluirLote(lote, r.resultados, r.confirmado, r.incompletos)
+    await aoConcluirLote(lote, r.resultados, r.confirmado, r.incompletos, r.incompletosRede ?? new Set())
   }
 }
 
-type RespostaLote = { resultados: ResultadoGeocode[]; confirmado: boolean; incompletos: Set<number>; buscasSimilaridade: number }
+type RespostaLote = { resultados: ResultadoGeocode[]; confirmado: boolean; incompletos: Set<number>; incompletosRede?: Set<number>; buscasSimilaridade: number }
 
 async function geocodificarLote(enderecos: string[], opcoes: { validarTerritorio?: boolean; semSimilaridade?: boolean; textoPonte?: Map<string, string> }): Promise<RespostaLote> {
   const chave = process.env.MOTOR_SECRET
@@ -617,11 +621,13 @@ async function geocodificarLote(enderecos: string[], opcoes: { validarTerritorio
   const completa = resultadosBrutos.length === enderecos.length
   const todosNull = resultados.length > 1 && resultados.every(r => r === null)
   // Campos da ponte nova (incidente 01/10); ponte antiga sem eles => vazio/0.
-  const brutoIncompletos = (data as { incompletos?: unknown }).incompletos
-  const incompletos = new Set<number>(
-    Array.isArray(brutoIncompletos) ? brutoIncompletos.filter((i): i is number => Number.isInteger(i) && i >= 0 && i < enderecos.length) : [],
-  )
+  const indices = (v: unknown) => Array.isArray(v) ? v.filter((i): i is number => Number.isInteger(i) && i >= 0 && i < enderecos.length) : []
+  // GEO3-05 (frente G, 03/11): `incompletosRede` = indices em que o Photon/
+  // Nominatim falhou por rede (timeout, 429, 5xx). Sao "incompletos" tambem
+  // (nunca viram cache negativo) mesmo se a ponte so' mandar nesta lista.
+  const incompletosRede = new Set<number>(indices((data as { incompletosRede?: unknown }).incompletosRede))
+  const incompletos = new Set<number>([...indices((data as { incompletos?: unknown }).incompletos), ...incompletosRede])
   const brutoBuscas = (data as { buscasSimilaridade?: unknown }).buscasSimilaridade
   const buscasSimilaridade = typeof brutoBuscas === 'number' && Number.isFinite(brutoBuscas) ? brutoBuscas : 0
-  return { resultados, confirmado: completa && !todosNull, incompletos, buscasSimilaridade }
+  return { resultados, confirmado: completa && !todosNull, incompletos, incompletosRede, buscasSimilaridade }
 }

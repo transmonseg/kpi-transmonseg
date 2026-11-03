@@ -565,6 +565,27 @@ describe('geocodificarEnderecos - geocode parcial (busca por similaridade limita
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('geocode parcial'))
   })
 
+  // GEO3-05 (auditoria 03/11, frente G): a ponte põe em `incompletos` o índice
+  // cujo Photon/Nominatim falhou por rede e lista esses em `incompletosRede`.
+  it('GEO3-05: índice com falha de rede (incompletos + incompletosRede) não grava negativo e o aviso cita a rede', async () => {
+    const { upsertNegativo } = mockSupabaseTabelas({})
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaPonte([{ lat: 1, lng: 2 }, null, null], { incompletos: [1], incompletosRede: [1], buscasSimilaridade: 0 }))
+    const { parciais } = await geocodificarEnderecosComInfo(['A', 'Photon Timeout', 'Sitio Perdido'])
+    expect(parciais).toBe(1)
+    expect((upsertNegativo.mock.calls[0][0] as Array<{ endereco: string }>).map(l => l.endereco)).toEqual(['Sitio Perdido'])
+    expect(warn).toHaveBeenCalledWith(expect.stringMatching(/1 por falha de rede/))
+  })
+
+  it('GEO3-05: índice só em incompletosRede (ponte fora do contrato) também não vira negativo', async () => {
+    const { upsertNegativo } = mockSupabaseTabelas({})
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaPonte([{ lat: 1, lng: 2 }, null], { incompletos: [], incompletosRede: [1], buscasSimilaridade: 0 }))
+    const { parciais } = await geocodificarEnderecosComInfo(['A', 'Photon Timeout'])
+    expect(parciais).toBe(1)
+    expect(upsertNegativo).not.toHaveBeenCalled()
+  })
+
   it('teto por geracao: atingido o teto de buscas por similaridade somadas, os proximos lotes vao com semSimilaridade', async () => {
     expect(TETO_BUSCAS_SIMILARIDADE_POR_GERACAO).toBe(600)
     mockSupabaseTabelas({})
