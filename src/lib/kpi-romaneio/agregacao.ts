@@ -867,6 +867,34 @@ const DIVERGENCIA_CADASTRO_ROMANEIO_M = 1_000
 // 14,9 km do real na mediana. Continua pendente (a taxa nao muda), so' para
 // de afirmar o que nao sabe.
 export const OBS_LONGE_DO_PONTO_NAO_CONFIRMADO = 'ENDEREÇO COM COORDENADA IMPRECISA - CAMINHÃO A MAIS DE 2 KM DO PONTO, QUE NÃO FOI CONFIRMADO - CONFERIR CADASTRO'
+/** KPI-03: NF ENTREGUE so' pela parada no cadastro Unitrac longe (>1 km) de
+ *  um endereco sem ponto confirmado (pontoConfirmado) -- o cadastro vence, com rotulo proprio. */
+export const OBS_PAROU_NO_CADASTRO_SEM_PONTO_CONFIAVEL = 'ENTREGUE - PAROU NO CADASTRO UNITRAC (ENDEREÇO SEM PONTO CONFIÁVEL)'
+
+/** KPI-03: alguma parada FORA_BASE da propria placa >= 2 min a <= 800 m do ponto do endereco. */
+function paradaPropriaPertoDoPonto(linha: LinhaGeocodificada, paradas: UnitracParadaRow[]): boolean {
+  if (linha.lat == null || linha.lng == null) return false
+  return paradas.some(p => p.classificacao === 'FORA_BASE' && p.lat != null && p.lng != null && duracaoParadaMin(p) >= 2
+    && haversine(p.lat, p.lng, linha.lat as number, linha.lng as number) <= RAIO_CONFIANCA_CASAMENTO_POR_HORARIO_M)
+}
+
+/** KPI-03: distancia endereco<->cadastro quando a parada que confirmou esta'
+ *  no cadastro (mais perto dele que do endereco e a mais de 800 m do
+ *  endereco) e o cadastro fica a mais de 1 km do endereco; senao null. */
+function creditoSoNoCadastroLonge(
+  linha: LinhaGeocodificada,
+  cad: { lat: number; lng: number } | null,
+  parada: { lat: number | null; lng: number | null } | null,
+): number | null {
+  if (!cad || !parada || parada.lat == null || parada.lng == null || linha.lat == null || linha.lng == null) return null
+  const distEndCad = haversine(linha.lat, linha.lng, cad.lat, cad.lng)
+  if (distEndCad <= DIVERGENCIA_CADASTRO_ROMANEIO_M) return null
+  const dGeo = haversine(parada.lat, parada.lng, linha.lat, linha.lng)
+  const dCad = haversine(parada.lat, parada.lng, cad.lat, cad.lng)
+  if (dCad >= dGeo || dGeo <= RAIO_CONFIANCA_CASAMENTO_POR_HORARIO_M) return null
+  return distEndCad
+}
+
 const ROTULOS_SEM_PROVA_CADASTRO = new Set<string>([
   'PASSOU NO ENDEREÇO MAS NÃO REGISTROU PARADA - CONFERIR',
   'NÃO FOI AO CLIENTE (caminhão não esteve na região)',
@@ -2878,6 +2906,35 @@ export function montarDetalheEntregas(
       }
     } else {
       evidencia = 'sem_evidencia'
+    }
+
+    // KPI-03 (auditoria 03/11, decisao padrao "ponto confiavel"): a parada
+    // que confirmou fica no CADASTRO Unitrac, a mais de 1 km do endereco, e o
+    // alvo nao foi feito. Com o ponto do endereco confiavel isso nao prova a
+    // entrega (31/10: 15 NFs, ex. RQU5H30/2453742 a 4,7 km) -> pendente
+    // "CONFERIR CADASTRO", na conta. Sem ponto confiavel o cadastro vence e a
+    // NF segue ENTREGUE com rotulo proprio. Mesmo teto do pendente abaixo.
+    if (modoPrecisao && status !== 'pendente' && !confirmadoUnitrac && !porOutraPlaca && !(nfRodizio && paradaRodizio) && !visita?.viaVizinhanca) {
+      const coordCredito = paradaPropriaConfirmada?.parada ?? paradaProvada?.parada
+        ?? (visita ? acharCoordenadaDaParadaPropria(placaNorm, visita.chegada, visita.saida, paradasPorOutraPlaca, referenciaParaDesempate(linha, alvo)) : null)
+      const distEndCad = creditoSoNoCadastroLonge(linha, cadastroDoAlvo(alvo), coordCredito)
+      // Teste a seco 31/10: a placa tambem parou no endereco (>= 2 min a <= 800 m)
+      // em outra hora -- ha' prova no ponto, nao rebaixa (RBJ9I44/2453522).
+      // "Ponto confiavel" = o mesmo criterio do "NAO FOI" (GN-03, pontoConfirmado:
+      // manual, corroborado, numero exato/interpolado no CNEFE). So' "confiavel"
+      // da cascata nao basta: no gabarito da Ana, TOS0G53/2388202 (24/09, entregue
+      // no local) tinha geocode confiavel a 2,5 km do cadastro, que era o certo.
+      const pontoDoEnderecoConfirmado = distEndCad != null && geoConfiavel && pontoConfirmado(linha, { lat: linha.lat as number, lng: linha.lng as number }, cadastroDoAlvo(alvo))
+      const provaNoEndereco = pontoDoEnderecoConfirmado && paradaPropriaPertoDoPonto(linha, [...(paradasUnitracCruasPropriaPlaca.get(placaNorm) ?? []), ...paradasProprias])
+      if (distEndCad != null && pontoDoEnderecoConfirmado && !provaNoEndereco) {
+        status = 'pendente'
+        observacao = `${PREFIXO_OBS_CADASTRO_DIVERGENTE} (${(distEndCad / 1000).toFixed(1).replace('.', ',')} km) - PAROU SÓ NO CADASTRO, LONGE DO ENDEREÇO - CONFERIR CADASTRO`
+        chegada = null
+        saida = null
+        tempoParadaMin = null
+      } else if (distEndCad != null && !pontoDoEnderecoConfirmado && observacao == null) {
+        observacao = OBS_PAROU_NO_CADASTRO_SEM_PONTO_CONFIAVEL
+      }
     }
 
     // Pedido da Ana 03/10 ("COORDENADA INCORRETA: separar como problema

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, gerarMotivo, calcularConfianca, contarConfirmadasPorCarga, OBS_COMPARTILHADA_VIZINHO, pontoAproximadoPorEndereco, chaveEndereco, OBS_LONGE_DO_PONTO_NAO_CONFIRMADO } from './agregacao'
+import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, gerarMotivo, calcularConfianca, contarConfirmadasPorCarga, OBS_COMPARTILHADA_VIZINHO, OBS_PAROU_NO_CADASTRO_SEM_PONTO_CONFIAVEL, pontoAproximadoPorEndereco, chaveEndereco, OBS_LONGE_DO_PONTO_NAO_CONFIRMADO } from './agregacao'
 import { resolverParadas } from './unitrac'
 import type { LinhaEscala, LinhaGeocodificada, Visita, StatusEntrega } from './types'
 import type { AlvoApi } from '@/lib/unitrac-api'
@@ -4346,19 +4346,29 @@ describe('Task 3 (plano 28/09) -- R2 tolera parada fundida da Unitrac e usa para
   const crua = (id: string, distM: number, durMin: number, inicio = '2026-09-26T14:00:00.000Z') =>
     paradaForaBase(id, cad.lat - distM * M_LAT, cad.lng, inicio, new Date(Date.parse(inicio) + durMin * 60_000).toISOString(), placa)
 
+  // KPI-03 (decisao 03/11): com o ponto do endereco confiavel, parada so' no
+  // cadastro a 9,3 km nao prova -> CONFERIR CADASTRO. A regra da R2 (parada
+  // fundida) segue valendo quando o endereco nao tem ponto confiavel.
+  const nfSemPonto = { ...nf, geoConfiavel: false }
+  it('KPI-03: ponto do endereco confirmado (numero exato) a 9,3 km do cadastro -> pendente CONFERIR CADASTRO', () => {
+    const [d] = chamarNutryMax([{ ...nf, geoPrecisao: 'exato' }], { placa, alvos, paradasUnitracCruasPropriaPlaca: new Map([[placa, [crua('fundida', 310, 10)]]]) })
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toMatch(/^CADASTRO DO CLIENTE NA UNITRAC DIVERGE .* CONFERIR CADASTRO$/)
+  })
+
   it('(a) parada Unitrac de 10 min com centro a 310 m do cadastro, sem outro cliente perto -> ENTREGUE', () => {
-    const [d] = chamarNutryMax([nf], { placa, alvos, paradasUnitracCruasPropriaPlaca: new Map([[placa, [crua('fundida', 310, 10)]]]) })
+    const [d] = chamarNutryMax([nfSemPonto], { placa, alvos, paradasUnitracCruasPropriaPlaca: new Map([[placa, [crua('fundida', 310, 10)]]]) })
     expect(d.status).toBe('confirmado_gps')
-    expect(d.observacao).toBeNull()
+    expect(d.observacao).toBe(OBS_PAROU_NO_CADASTRO_SEM_PONTO_CONFIAVEL)
     expect(d.evidencia).toBe('parada_unitrac_propria')
     expect(d.chegada).toBe('2026-09-26T14:00:00.000Z')
     expect(d.distParadaM).toBe(310)
   })
 
   it('(a) limite: 8 min a 350 m confirma; 8 min a 360 m nao', () => {
-    const [ok] = chamarNutryMax([nf], { placa, alvos, paradasUnitracCruasPropriaPlaca: new Map([[placa, [crua('f', 349, 8)]]]) })
+    const [ok] = chamarNutryMax([nfSemPonto], { placa, alvos, paradasUnitracCruasPropriaPlaca: new Map([[placa, [crua('f', 349, 8)]]]) })
     expect(ok.status).toBe('confirmado_gps')
-    const [nao] = chamarNutryMax([nf], { placa, alvos, paradasUnitracCruasPropriaPlaca: new Map([[placa, [crua('f', 360, 8)]]]) })
+    const [nao] = chamarNutryMax([nfSemPonto], { placa, alvos, paradasUnitracCruasPropriaPlaca: new Map([[placa, [crua('f', 360, 8)]]]) })
     expect(nao.status).toBe('pendente')
   })
 
@@ -4381,9 +4391,9 @@ describe('Task 3 (plano 28/09) -- R2 tolera parada fundida da Unitrac e usa para
       paradaForaBase('ponte1', cad.lat - 60 * M_LAT, cad.lng, '2026-09-26T13:52:00.000Z', '2026-09-26T13:54:00.000Z', placa),
       paradaForaBase('ponte2', cad.lat - 800 * M_LAT, cad.lng, '2026-09-26T14:00:00.000Z', '2026-09-26T14:15:00.000Z', placa),
     ]]])
-    const [d] = chamarNutryMax([nf], { placa, alvos, paradasUnitracCruasPropriaPlaca: cruas, paradasPorOutraPlaca: ponte })
+    const [d] = chamarNutryMax([nfSemPonto], { placa, alvos, paradasUnitracCruasPropriaPlaca: cruas, paradasPorOutraPlaca: ponte })
     expect(d.status).toBe('confirmado_gps')
-    expect(d.observacao).toBeNull()
+    expect(d.observacao).toBe(OBS_PAROU_NO_CADASTRO_SEM_PONTO_CONFIAVEL)
     expect(d.chegada).toBe('2026-09-26T13:52:00.000Z')
     expect(d.saida).toBe('2026-09-26T13:54:00.000Z')
     expect(d.distParadaM).toBe(60)
@@ -4455,10 +4465,12 @@ describe('Fix round 1 (plano 28/09) -- casos reais da medicao 22-26/09', () => {
     expect(d.evidencia).not.toBe('parada_unitrac_propria')
   })
 
-  it('TP TOS5E38/2393419 26/09 (relatorio Unitrac confirma): parada fundida a 310 m do cadastro, sem ponte independente -> ENTREGUE', () => {
+  // KPI-03 (decisao 03/11, "ponto confiavel" = pontoConfirmado): o relatorio
+  // Unitrac confirma; o ponto da cascata nao e' confirmado, o cadastro vence.
+  it('TP TOS5E38/2393419 26/09: parada fundida a 310 m do cadastro, ponto da cascata nao confirmado -> ENTREGUE pelo cadastro, com rotulo', () => {
     const d = nf('TOS5E38', '2393419')
     expect(d.status).toBe('confirmado_gps')
-    expect(d.observacao).toBeNull()
+    expect(d.observacao).toBe(OBS_PAROU_NO_CADASTRO_SEM_PONTO_CONFIAVEL)
   })
 
   it.each(['2393490', '2393491'])('TP RQV3J99/%s 26/09 (relatorio Unitrac confirma): parada compartilhada com prova forte -> ENTREGUE', (n) => {
@@ -6814,5 +6826,77 @@ describe('Regra B -- ponto Unitrac repetido em outro cliente nao confirma', () =
 
   it('sem modoPrecisao (Rio Quality): nada muda', () => {
     expect(rodar([eduardo, deck], false).find(x => x.nf === '2388087')!.status).toBe('confirmado_gps')
+  })
+})
+
+// KPI-03 (auditoria 03/11, decisão padrão "ponto confiável"): parada no
+// cadastro Unitrac a mais de 1 km do endereço, com o alvo não feito. Caso real
+// 31/10 RQU5H30 NF 2453742 MERCADO DO LEO (ESTRADA DE PONTA NEGRA, 18 - PONTA
+// NEGRA, MARICÁ): ponto do endereço -22,9439/-42,7006; cadastro Unitrac
+// -22,9010/-42,7117 (alvo situação 0); parada 11:46-12:00 a ~255 m do
+// cadastro e ~4,7 km do ponto.
+describe('KPI-03: parada só no cadastro Unitrac longe do endereço', () => {
+  const ponto = { lat: -22.9439, lng: -42.7006 }
+  const cadastro = { lat: -22.9010, lng: -42.7117 }
+  const paradaCad = paradaForaBase('cad1', cadastro.lat + 255 * M_LAT, cadastro.lng, '2026-10-31T11:46:00.000Z', '2026-10-31T12:00:00.000Z', 'RQU5H30')
+  // ponto confiável = confirmado (número exato no CNEFE), como no "NÃO FOI"
+  const nf = (over: Partial<LinhaGeocodificada> = {}) => linha('2453742', { placa: 'RQU5H30', clienteNome: 'MERCADO DO LEO', endereco: 'ESTRADA DE PONTA NEGRA, 18 - PONTA NEGRA, MARICA', ...ponto, geoConfiavel: true, geoPrecisao: 'exato', ...over })
+  const alvos = [alvo('2453742', 0, { placaNorm: 'RQU5H30', pontoLat: cadastro.lat, pontoLng: cadastro.lng })]
+  const visitas = () => new Map<string, Visita>([['2453742', { nf: '2453742', chegada: '2026-10-31T11:46:00.000Z', saida: '2026-10-31T12:00:00.000Z', distanciaMetrosDoPonto: 0 }]])
+  const ponte = new Map([['RQU5H30', [paradaCad]]])
+
+  it('ponto do endereço confiável: não confirma, fica pendente "CONFERIR CADASTRO" (na conta)', () => {
+    const [d] = chamarNutryMax([nf()], { placa: 'RQU5H30', alvos, visitasPorNf: visitas(), paradasPorOutraPlaca: ponte })
+    expect(d.status).toBe('pendente')
+    expect(d.observacao).toMatch(/^CADASTRO DO CLIENTE NA UNITRAC DIVERGE DO ENDEREÇO DO ROMANEIO \(4,\d km\) - .*CONFERIR CADASTRO$/)
+    expect(d.chegada).toBeNull()
+  })
+
+  it('ponto "confiável" da cascata mas não confirmado (sem número exato): o cadastro vence (gabarito TOS0G53/2388202)', () => {
+    const [d] = chamarNutryMax([nf({ geoPrecisao: undefined })], { placa: 'RQU5H30', alvos, visitasPorNf: visitas(), paradasPorOutraPlaca: ponte })
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBe('ENTREGUE - PAROU NO CADASTRO UNITRAC (ENDEREÇO SEM PONTO CONFIÁVEL)')
+  })
+
+  it('ponto do endereço não confiável: o cadastro vence, ENTREGUE com rótulo próprio', () => {
+    const [d] = chamarNutryMax([nf({ geoConfiavel: false })], { placa: 'RQU5H30', alvos, visitasPorNf: visitas(), paradasPorOutraPlaca: ponte })
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBe('ENTREGUE - PAROU NO CADASTRO UNITRAC (ENDEREÇO SEM PONTO CONFIÁVEL)')
+    expect(d.chegada).toBe('2026-10-31T11:46:00.000Z')
+  })
+
+  it('alvo feito na Unitrac (situação 1) continua ENTREGUE (fora desta regra)', () => {
+    const feito = [alvo('2453742', 1, { placaNorm: 'RQU5H30', pontoLat: cadastro.lat, pontoLng: cadastro.lng, feitoISO: '2026-10-31T11:50:00.000Z' })]
+    const [d] = chamarNutryMax([nf()], { placa: 'RQU5H30', alvos: feito, visitasPorNf: visitas(), paradasPorOutraPlaca: ponte })
+    expect(d.status).not.toBe('pendente')
+  })
+
+  it('cadastro a menos de 1 km do endereço: parada no cadastro continua valendo', () => {
+    const perto = [alvo('2453742', 0, { placaNorm: 'RQU5H30', pontoLat: ponto.lat + 700 * M_LAT, pontoLng: ponto.lng })]
+    const p = paradaForaBase('cad2', ponto.lat + 750 * M_LAT, ponto.lng, '2026-10-31T11:46:00.000Z', '2026-10-31T12:00:00.000Z', 'RQU5H30')
+    const [d] = chamarNutryMax([nf()], { placa: 'RQU5H30', alvos: perto, visitasPorNf: visitas(), paradasPorOutraPlaca: new Map([['RQU5H30', [p]]]) })
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.evidencia).toBe('parada_no_cadastro_unitrac')
+  })
+
+  // Teste a seco 31/10 (RBJ9I44/2453522, RQU1G17/2453982): a visita casou
+  // pela parada do cadastro, mas a placa também parou no endereço em outra
+  // hora -- há prova no ponto, continua ENTREGUE.
+  it('placa também parou >= 2 min a <= 800 m do endereço em outra hora: continua ENTREGUE', () => {
+    const noEndereco = paradaForaBase('end2', ponto.lat + 300 * M_LAT, ponto.lng, '2026-10-31T15:00:00.000Z', '2026-10-31T15:05:00.000Z', 'RQU5H30')
+    const [d] = chamarNutryMax([nf()], { placa: 'RQU5H30', alvos, visitasPorNf: visitas(), paradasPorOutraPlaca: new Map([['RQU5H30', [paradaCad, noEndereco]]]) })
+    expect(d.status).toBe('confirmado_gps')
+  })
+  it('parada curta (1 min) perto do endereço não conta como prova', () => {
+    const curta = paradaForaBase('end3', ponto.lat + 300 * M_LAT, ponto.lng, '2026-10-31T15:00:00.000Z', '2026-10-31T15:01:00.000Z', 'RQU5H30')
+    const [d] = chamarNutryMax([nf()], { placa: 'RQU5H30', alvos, visitasPorNf: visitas(), paradasPorOutraPlaca: new Map([['RQU5H30', [paradaCad, curta]]]) })
+    expect(d.status).toBe('pendente')
+  })
+
+  it('parada no próprio endereço (cadastro longe) continua ENTREGUE', () => {
+    const p = paradaForaBase('end1', ponto.lat + 40 * M_LAT, ponto.lng, '2026-10-31T11:46:00.000Z', '2026-10-31T12:00:00.000Z', 'RQU5H30')
+    const [d] = chamarNutryMax([nf()], { placa: 'RQU5H30', alvos, visitasPorNf: visitas(), paradasPorOutraPlaca: new Map([['RQU5H30', [p]]]) })
+    expect(d.status).toBe('confirmado_gps')
+    expect(d.observacao).toBeNull()
   })
 })
