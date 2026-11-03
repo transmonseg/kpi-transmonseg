@@ -116,8 +116,10 @@ describe('calcularAoVivo: conferencia de endereco indisponivel (F1-11)', () => {
     }
     expect(await calcularAoVivo('nutrimax', '2026-10-22')).toBe('ok')
     const u = c.updates.find(x => 'resultado' in x) as { resultado: { avisos?: string[] }; ultimo_erro?: string }
-    expect(u.resultado.avisos).toHaveLength(3)
+    // KPI-05 (03/11): dia encerrado com fonte que não leu fica provisório, com o motivo.
+    expect(u.resultado.avisos).toHaveLength(4)
     expect(u.resultado.avisos?.[0]).toContain('Conferência de endereço indisponível')
+    expect(u.resultado.avisos?.[3]).toMatch(/^Fechamento provisório/)
     expect(u.resultado.avisos?.some(a => a.includes('cadastro de placas sem rastreador'))).toBe(true)
     expect(u.resultado.avisos?.some(a => a.includes('trocas de placa'))).toBe(true)
     expect(u.ultimo_erro?.startsWith(AVISO_TERRITORIO_AO_VIVO)).toBe(true)
@@ -127,8 +129,9 @@ describe('calcularAoVivo: conferencia de endereco indisponivel (F1-11)', () => {
     c.resultadoNutry = { xlsx: Buffer.from(''), qtdCargasNutry: 0, avisos: [{ carga: '—', placa: '—', motivo: 'fonte_indisponivel', fonte: 'resolucoes' }] }
     expect(await calcularAoVivo('nutrimax', '2026-10-22')).toBe('ok')
     const u = c.updates.find(x => 'resultado' in x) as { resultado: { avisos?: string[] } }
-    expect(u.resultado.avisos).toEqual([expect.stringContaining('resoluções manuais do operador')])
-    expect('ultimo_erro' in u).toBe(false)
+    expect(u.resultado.avisos).toEqual([expect.stringContaining('resoluções manuais do operador'), expect.stringMatching(/^Fechamento provisório.*resoluções manuais/)])
+    // KPI-05 (03/11): o provisório marca ultimo_erro para o tick repetir.
+    expect((u as { ultimo_erro?: string }).ultimo_erro).toMatch(/^Fechamento provisório/)
   })
   it('conferencia ok: sem aviso e sem mexer em ultimo_erro', async () => {
     c.travaLinhas = [{ cliente: 'nutrimax' }]

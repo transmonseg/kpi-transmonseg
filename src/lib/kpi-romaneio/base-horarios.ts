@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks'
 // SAÍDA CD/CHEGADA CD via posição contínua real -- ponte HTTP local pro
 // projeto irmão "monitoramento" (POST /api/kpi/base-horarios), mesmo
 // padrão de geocode.ts (ver comentário lá pro raciocínio completo de "por
@@ -281,12 +282,22 @@ function validarResultado(r: unknown): ResultadoBruto | null {
 // aqui e o chamador vira aviso "gere novamente" (consumirFalhasPonte).
 const TENTATIVAS_LOTE = 3
 const ESPERA_ENTRE_TENTATIVAS_LOTE_MS = 2_000
-let falhasPonte = 0
+// KPI-05 (auditoria 03/11): o contador era global no modulo -- duas geracoes
+// ao mesmo tempo no processo Next trocavam ou perdiam o aviso. Cada geracao
+// roda dentro de comContagemDePonte e conta so' as proprias placas.
+const contagemPonte = new AsyncLocalStorage<{ falhas: number }>()
+const semGeracao = { falhas: 0 }
 let esperaEntreTentativasMs = ESPERA_ENTRE_TENTATIVAS_LOTE_MS
+const contadorAtual = () => contagemPonte.getStore() ?? semGeracao
+/** Roda uma geracao com o contador de falhas da ponte so' dela. */
+export function comContagemDePonte<T>(fn: () => Promise<T>): Promise<T> {
+  return contagemPonte.run({ falhas: 0 }, fn)
+}
 /** Placas sem resposta da ponte desde a ultima chamada (e zera o contador). */
 export function consumirFalhasPonte(): number {
-  const n = falhasPonte
-  falhasPonte = 0
+  const c = contadorAtual()
+  const n = c.falhas
+  c.falhas = 0
   return n
 }
 /** So' testes: espera entre tentativas. */
@@ -306,7 +317,7 @@ async function buscarLote(
     if (r) return r
     if (t < TENTATIVAS_LOTE) await new Promise(ok => setTimeout(ok, esperaEntreTentativasMs))
   }
-  falhasPonte += placas.length
+  contadorAtual().falhas += placas.length
   return new Map()
 }
 

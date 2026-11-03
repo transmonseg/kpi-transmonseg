@@ -14,6 +14,7 @@ import { buscarDiaRioQualityFusionCompleto } from '../src/lib/kpi-rioquality/fon
 import { romaneiosQueEncolheram, decidirEncolhimentoFusion, lerEstadoEncolhimentoFusion, gravarEstadoEncolhimentoFusion } from '../src/lib/kpi-rioquality/encolhimento-fusion'
 import { linhasComCoordenadasRQ, enviarRioQualityAoMonitoramento, resumoEnvioRQ } from '../src/lib/kpi-rioquality/enviar-monitoramento-rq'
 import { diaAnterior, precisaFecharDia, precisaReconferirTerritorio } from '../src/lib/kpi-romaneio/ao-vivo'
+import { precisaRepetirFechamentoProvisorio } from '../src/lib/kpi-romaneio/publicacao'
 import { limparCacheDia } from '../src/lib/kpi-romaneio/cache-dia'
 import { repararDia, depsReaisReparo, repararDiaRQ, depsReaisReparoRQ } from '../src/lib/kpi-romaneio/reparar-dia'
 import { sincronizarAcessosMonitoramento } from '../src/lib/acessos-monitoramento'
@@ -163,12 +164,29 @@ export async function reconferirTerritorioDiaAnterior() {
   }
 }
 
+// KPI-05 (auditoria 03/11): fechamento que ficou provisorio (fonte
+// incompleta, nao foi ao Dashboard) e' calculado de novo a cada tick ate'
+// 12h BRT de D+1. Com o territorio tambem fora, a reconferencia das 05:30 cuida.
+export async function repetirFechamentoProvisorioDiaAnterior() {
+  const ontem = diaAnterior(hojeBR())
+  for (const cliente of CLIENTES_AO_VIVO) {
+    const { data } = await createServiceClient().from('kpi_ao_vivo_calculo').select('calculado_em, ultimo_erro, ultimo_erro_em').eq('cliente', cliente).eq('data', ontem).maybeSingle()
+    const row = { calculado_em: (data?.calculado_em as string | null) ?? null, ultimo_erro: (data?.ultimo_erro as string | null) ?? null, ultimo_erro_em: (data?.ultimo_erro_em as string | null) ?? null }
+    if (!precisaRepetirFechamentoProvisorio(row, ontem, Date.now())) continue
+    if (precisaReconferirTerritorio(row, ontem, Date.now())) continue
+    log(`ao vivo ${cliente} ${ontem}: fechamento provisório -- calculando de novo`)
+    const r = await calcularAoVivo(cliente, ontem, log, { publicarFechamento: true })
+    log(`ao vivo ${cliente} ${ontem} (fechamento provisório): ${r}`)
+  }
+}
+
 async function main() {
   // Logins separados (06/10): o monitoramento segue os perfis do KPI.
   const acessos = await sincronizarAcessosMonitoramento().catch(err => `erro: ${err}`)
   if (acessos !== 'sem mudança') log(`acessos monitoramento: ${acessos}`)
   await fecharDiaAnterior()
   await reconferirTerritorioDiaAnterior().catch(err => log(`reconferencia de territorio: ${err}`))
+  await repetirFechamentoProvisorioDiaAnterior().catch(err => log(`fechamento provisório: ${err}`))
   const horaBR = horaBRAgora()
   // Limpeza 1x por dia (04h BRT, 1o tick da hora): cache do dia e planilhas
   // do ao vivo ficam (F0-11, ver abaixo).

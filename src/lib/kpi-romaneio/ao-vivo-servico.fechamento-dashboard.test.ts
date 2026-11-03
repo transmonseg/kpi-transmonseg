@@ -9,6 +9,8 @@ const c = vi.hoisted(() => ({
   publicarFalha: false,
   resultadoAnterior: null as unknown,
   coerenciaFalhou: 0,
+  avisos: [] as unknown[],
+  atualizacoes: [] as Record<string, unknown>[],
 }))
 
 function cadeia(resultado: unknown) {
@@ -24,7 +26,7 @@ vi.mock('@/lib/supabase/service', () => ({
     from: (tabela: string) => {
       if (tabela === 'kpi_ao_vivo_dia') return cadeia({ data: { romaneio: [{ placaNorm: 'AAA1A11', rua: 'RUA A' }] }, error: null })
       const o = cadeia({ data: c.resultadoAnterior ? { resultado: c.resultadoAnterior, calculado_em: '2026-10-23T23:50:00Z' } : null, error: null }) as Record<string, (...a: unknown[]) => unknown>
-      o.update = () => cadeia({ data: [{ cliente: 'rioquality' }], error: null })
+      o.update = (...a: unknown[]) => { c.atualizacoes.push(a[0] as Record<string, unknown>); return cadeia({ data: [{ cliente: 'rioquality' }], error: null }) }
       return o
     },
     storage: {
@@ -36,7 +38,7 @@ vi.mock('@/lib/supabase/service', () => ({
   }),
 }))
 vi.mock('@/lib/kpi-rioquality/pipeline', () => ({
-  gerarKpiRioQuality: async () => ({ xlsx: Buffer.from('planilha-final'), linhasKpi: [], detalhe: [], avisos: [], coerenciaFalhou: c.coerenciaFalhou }),
+  gerarKpiRioQuality: async () => ({ xlsx: Buffer.from('planilha-final'), linhasKpi: [], detalhe: Array.from({ length: 1000 }, () => ({})), avisos: c.avisos, coerenciaFalhou: c.coerenciaFalhou }),
 }))
 vi.mock('@/lib/kpi-rioquality/frota', () => ({ buscarFrotaRioQuality: async () => new Map([['AAA1A11', '1']]) }))
 vi.mock('./paradas-snapshot', () => ({ lerSnapshotParadas: async () => new Map() }))
@@ -55,7 +57,7 @@ vi.mock('./fechamento-dashboard', () => ({
 import { calcularAoVivo } from './ao-vivo-servico'
 
 beforeEach(() => {
-  c.publicados = []; c.publicarFalha = false; c.resultadoAnterior = null; c.coerenciaFalhou = 0
+  c.publicados = []; c.publicarFalha = false; c.resultadoAnterior = null; c.coerenciaFalhou = 0; c.avisos = []; c.atualizacoes = []
   // 23/10 00:30 BRT: fechamento do dia 22/10 (RQ ausente no Dashboard).
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date('2026-10-23T03:31:15Z'))
@@ -104,5 +106,33 @@ describe('F3-R10: recálculo de dia passado fora do fechamento não publica', ()
     vi.setSystemTime(new Date('2026-10-26T15:00:00Z'))
     await calcularAoVivo('rioquality', '2026-10-22', undefined, { publicarFechamento: true })
     expect(c.publicados).toHaveLength(1)
+  })
+})
+
+// KPI-05 (auditoria 03/11): fechamento com a ponte ou o geocode incompletos
+// não publica sozinho como oficial: fica provisório com o motivo e o tick repete.
+describe('KPI-05: fechamento com fonte incompleta fica provisório', () => {
+  const resultadoGravado = () => c.atualizacoes.find(u => u.resultado)?.resultado as { fechamentoProvisorio?: string; avisos?: string[] } | undefined
+  it('ponte sem resposta para 2 placas no fechamento: não publica e grava provisório com o motivo', async () => {
+    c.avisos = [{ carga: '—', placa: '—', motivo: 'ponte_falhou', placasSemPonte: 2 }]
+    expect(await calcularAoVivo('rioquality', '2026-10-22', undefined, { publicarFechamento: true })).toBe('ok')
+    expect(c.publicados).toEqual([])
+    const r = resultadoGravado()!
+    expect(r.fechamentoProvisorio).toMatch(/Monitoramento não respondeu para 2 placa/)
+    expect(r.avisos?.some(t => /provisório/i.test(t))).toBe(true)
+    const u = c.atualizacoes.find(x => x.resultado)!
+    expect(String(u.ultimo_erro)).toMatch(/^Fechamento provisório/)
+  })
+  it('geocode parcial em 1% das NFs: publica, com aviso visível', async () => {
+    c.avisos = [{ carga: '—', placa: '—', motivo: 'geocode_parcial', enderecosParciais: 10 }]
+    await calcularAoVivo('rioquality', '2026-10-22', undefined, { publicarFechamento: true })
+    expect(c.publicados).toHaveLength(1)
+    expect(resultadoGravado()!.avisos?.some(t => /Geocode parcial: 10 endereços/.test(t))).toBe(true)
+  })
+  it('geocode parcial em 3% das NFs: provisório', async () => {
+    c.avisos = [{ carga: '—', placa: '—', motivo: 'geocode_parcial', enderecosParciais: 30 }]
+    await calcularAoVivo('rioquality', '2026-10-22', undefined, { publicarFechamento: true })
+    expect(c.publicados).toEqual([])
+    expect(resultadoGravado()!.fechamentoProvisorio).toMatch(/Geocode parcial/)
   })
 })

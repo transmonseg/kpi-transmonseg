@@ -84,6 +84,7 @@ const LABEL_MOTIVO: Record<AvisoDescasamento['motivo'], string> = {
   rastreador_com_falha: 'Rastreador com falha no dia — conferir',
   romaneio_sem_nf: 'Romaneio veio sem número da NF — conferir com a Nutry',
   linhas_repetidas: 'Linhas repetidas da Fusion removidas',
+  fora_da_conta_alto: 'Muitas NFs fora da conta — conferir',
 }
 
 // Task 2 (plano 2026-09-30, item 2): "Escala X × Romaneio Y (Z NFs a
@@ -112,6 +113,13 @@ export function textoAviso(a: AvisoDescasamento): string {
   }
   if (a.motivo === 'ponte_falhou') {
     return `Monitoramento não respondeu para ${a.placasSemPonte ?? '?'} placa(s) mesmo após novas tentativas — entregas dessas placas podem estar faltando. Gere novamente`
+  }
+  if (a.motivo === 'fora_da_conta_alto' && a.carga === '—' && a.foraDaConta != null && a.totalNfs) {
+    const pct = formatarPctUmaCasa(Math.round((1000 * a.foraDaConta) / a.totalNfs) / 10)
+    return `${formatarInteiroPtBr(a.foraDaConta)} de ${formatarInteiroPtBr(a.totalNfs)} NFs (${pct}%) fora da conta — acima de ${LIMITE_FORA_DA_CONTA_PCT}%${a.taxaComForaComoFalha != null ? `; com elas como falha a taxa seria ${formatarPctUmaCasa(a.taxaComForaComoFalha)}%` : ''}. Conferir se houve troca de placa não informada`
+  }
+  if (a.motivo === 'fora_da_conta_alto' && a.foraDaConta != null) {
+    return `Carga inteira fora da conta (${formatarInteiroPtBr(a.foraDaConta)} NFs) sem troca de placa informada — se outro carro entregou, registre a troca; se não saiu, a falha fica fora do número`
   }
   if (a.motivo === 'linhas_repetidas') {
     return `${textoLinhasRepetidasFusion(a.linhasRepetidas ?? 0)} — cada entrega conta uma vez só na taxa`
@@ -644,6 +652,33 @@ function calcularResumoConfirmacao(detalhe: LinhaDetalheEntrega[]): {
     ? Math.round((1000 * confirmadasPosConferencia) / denominadorPosConferencia) / 10 : null
 
   return { taxaPct, taxaPosConferenciaPct, confirmadas, confirmadasPosConferencia, denominador, denominadorPosConferencia, semRastreador, naoSaiuDaBase, escalaDivergente, cargaSemPlaca, placaProvisoria, consultaFalhou, aguardando, revisar }
+}
+
+/** KPI-04 (auditoria 03/11): acima disso (fora da conta / NFs do dia) vira aviso. */
+export const LIMITE_FORA_DA_CONTA_PCT = 3
+
+/** KPI-04: aviso interno quando muita NF sai da taxa (30/10: 149 de 2.419,
+ *  6,2%) ou quando uma carga inteira sai (não saiu da base / escala
+ *  divergente inteira) -- troca de placa registrada já usa a placa real, então
+ *  carga inteira fora aqui é troca não informada ou carro parado. A taxa não muda. */
+export function avisosForaDaConta(detalhe: LinhaDetalheEntrega[]): AvisoDescasamento[] {
+  if (detalhe.length === 0) return []
+  const r = calcularResumoConfirmacao(detalhe)
+  const fora = detalhe.length - r.denominador - r.aguardando
+  const out: AvisoDescasamento[] = []
+  if (fora > 0 && (100 * fora) / detalhe.length > LIMITE_FORA_DA_CONTA_PCT) {
+    const taxaComForaComoFalha = Math.round((1000 * r.confirmadas) / (r.denominador + fora)) / 10
+    out.push({ carga: '—', placa: '—', motivo: 'fora_da_conta_alto', foraDaConta: fora, totalNfs: detalhe.length, taxaComForaComoFalha })
+  }
+  const inteiras = cargasEscalaDivergenteInteira(detalhe)
+  const porCarga = new Map<string, LinhaDetalheEntrega[]>()
+  for (const d of detalhe) porCarga.set(`${d.carga}::${d.placa}`, [...(porCarga.get(`${d.carga}::${d.placa}`) ?? []), d])
+  for (const lista of porCarga.values()) {
+    if (lista.every(d => (ehNaoSaiuDaBase(d) || ehEscalaDivergente(d, inteiras)) && !d.resolucaoManual)) {
+      out.push({ carga: lista[0].carga, placa: lista[0].placa, motivo: 'fora_da_conta_alto', foraDaConta: lista.length })
+    }
+  }
+  return out
 }
 
 // Pedido do usuário 26/09 (linha de TAXA auditável): inteiro com separador

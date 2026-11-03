@@ -10,14 +10,14 @@ import { BASES_COORD_RIOQUALITY, EXTENSAO_RUA_LONGA_M } from './constants'
 // proposito -- subestima 43% a 65%. Ver km-rastro.ts.
 import { medirRastroDoDia, type MedicaoRastro } from './km-rastro'
 import { placaSemSinalPelaUnitrac, aplicarTravaSemSinal } from '@/lib/kpi-romaneio/placas-sem-rastreador'
-import { buscarHorariosBase, consumirFalhasPonte } from '@/lib/kpi-romaneio/base-horarios'
+import { buscarHorariosBase, consumirFalhasPonte, comContagemDePonte } from '@/lib/kpi-romaneio/base-horarios'
 import type { HorarioBase } from '@/lib/kpi-romaneio/base-horarios'
 import { resolverParadas, descartarParadaAbertaAlemDoDia } from '@/lib/kpi-romaneio/unitrac'
 import { lerSnapshotParadas, mesclarParadas } from '@/lib/kpi-romaneio/paradas-snapshot'
 import { foraDoAlcanceApi } from '@/lib/kpi-romaneio/constants'
 import { hojeBR } from '@/lib/data-br'
 import { EMPRESA_SNAPSHOT_RIOQUALITY } from './snapshot-paradas'
-import { gerarKpiRomaneioXlsx } from '@/lib/kpi-romaneio/gerador-xlsx'
+import { gerarKpiRomaneioXlsx, avisosForaDaConta } from '@/lib/kpi-romaneio/gerador-xlsx'
 import type { LinhaGeocodificada, LinhaKpiRomaneio, LinhaDetalheEntrega, Visita, AvisoDescasamento } from '@/lib/kpi-romaneio/types'
 import { parseCustos, parseEntregas, montarLinhasRomaneio, rotaParaZona, parseEntregasCompletas, montarLinhasRomaneioCompleto, CARGA_SEM_ROTA, mensagemArquivoNaoReconhecido, type EntregaRioQualityCompleta } from './parse-planilhas'
 import { geocodificarPorCoerencia, type ConfiancaCoerencia, type PontoZona } from './geocode-coerencia'
@@ -195,7 +195,14 @@ function agrupar<T>(itens: T[], chave: (item: T) => string): Map<string, T[]> {
   return mapa
 }
 
-export async function gerarKpiRioQuality(params: {
+export type ParamsKpiRioQuality = Parameters<typeof gerarKpiRioQualityNaGeracao>[0]
+
+/** KPI-05: cada geracao com o proprio contador de falhas da ponte. */
+export function gerarKpiRioQuality(params: ParamsKpiRioQuality): Promise<ResultadoPipelineRioQuality> {
+  return comContagemDePonte(() => gerarKpiRioQualityNaGeracao(params))
+}
+
+async function gerarKpiRioQualityNaGeracao(params: {
   // Formato ANTIGO (duas planilhas, sem cidade -- coerencia de grupo).
   custosBuf?: Buffer
   entregasBuf?: Buffer
@@ -804,6 +811,8 @@ export async function gerarKpiRioQuality(params: {
   if (resolucoesIndisponiveis) avisos.push({ carga: '—', placa: '—', motivo: 'fonte_indisponivel', fonte: 'resolucoes' })
   // Task 2 (estudo item 5b): linha de TAXA com denominador escrito.
   // Task 4: avisos (Custos x Entregas, frota, consulta, trava) -> aba Avisos.
+  // KPI-04: muita NF fora da conta, ou carga inteira fora sem troca informada.
+  avisos.push(...avisosForaDaConta(detalhe))
   const xlsx = await gerarKpiRomaneioXlsx(linhasKpi, data, avisos, detalhe, undefined, 'RIO QUALITY', { resumoConfirmacao: true })
   return {
     xlsx,

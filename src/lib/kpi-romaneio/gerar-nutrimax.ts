@@ -10,7 +10,7 @@ import { geocodificarEnderecosComInfo } from '@/lib/kpi-romaneio/geocode'
 import { reposicionarPorAncoras } from '@/lib/kpi-romaneio/geocode-ancoras'
 import { chaveCacheEndereco, enderecosColididosPorCoordenada } from '@/lib/kpi-romaneio/endereco-cep'
 import { buscarAlvosDoDia, buscarParadasDoDia, resolverParadas } from '@/lib/kpi-romaneio/unitrac'
-import { anexarCoordenadaCadastro, montarMenorDistanciaTrajetoPorNf, consumirFalhasPonte } from '@/lib/kpi-romaneio/base-horarios'
+import { anexarCoordenadaCadastro, montarMenorDistanciaTrajetoPorNf, consumirFalhasPonte, comContagemDePonte } from '@/lib/kpi-romaneio/base-horarios'
 import { ajustarChegadaAposUltimaEntrega } from '@/lib/kpi-romaneio/fim-rota'
 import { alvosDaData } from '@/lib/kpi-romaneio/alvos-data'
 import { alvosEfetivos } from '@/lib/kpi-romaneio/alvos-snapshot'
@@ -20,7 +20,7 @@ import { duplicadoDaEscala } from '@/lib/kpi-romaneio/escala-duplicado'
 import { montarVisitas } from '@/lib/kpi-romaneio/visitas'
 import { agregarPorCarga, montarDetalheEntregas, calcularDiaEmAndamento, contarConfirmadasPorCarga, chaveEndereco } from '@/lib/kpi-romaneio/agregacao'
 import { calcularKmPercorrido } from '@/lib/kpi-romaneio/km'
-import { gerarKpiRomaneioXlsx, cargasEscalaDivergenteInteira } from '@/lib/kpi-romaneio/gerador-xlsx'
+import { gerarKpiRomaneioXlsx, cargasEscalaDivergenteInteira, avisosForaDaConta } from '@/lib/kpi-romaneio/gerador-xlsx'
 import { detectarTrocasProvaveis } from '@/lib/kpi-romaneio/troca-placa'
 import { aplicarTrocasDePlaca, buscarTrocasDoDia } from '@/lib/kpi-romaneio/trocas-placa'
 import { aplicarLocaisClientes, buscarLocaisClientes, marcarPontosCorroborados, nfsBarradasPelaTrava } from '@/lib/kpi-romaneio/locais-clientes'
@@ -165,7 +165,12 @@ async function paradasCruasParaTrava(
   return out
 }
 
-export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: OpcoesKpiNutrimax): Promise<ResultadoKpiNutrimax> {
+/** KPI-05: cada geracao com o proprio contador de falhas da ponte. */
+export function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: OpcoesKpiNutrimax): Promise<ResultadoKpiNutrimax> {
+  return comContagemDePonte(() => gerarKpiNutrimaxNaGeracao(entrada, opcoes))
+}
+
+async function gerarKpiNutrimaxNaGeracao(entrada: EntradaKpiNutrimax, opcoes?: OpcoesKpiNutrimax): Promise<ResultadoKpiNutrimax> {
   const data = entrada.data
   // Tempo por etapa (06/10, "a geração demora" é a maior reclamação): vai pro log.
   const tempos: [string, number][] = []
@@ -746,6 +751,8 @@ export async function gerarKpiNutrimax(entrada: EntradaKpiNutrimax, opcoes?: Opc
   const trocasProvaveis = detectarTrocasProvaveis(cargasPorChave, cargasEscalaDivergenteInteira(detalheComResolucao), paradasPorPlaca)
 
   marcar('agregacao')
+  // KPI-04: muita NF fora da conta, ou carga inteira fora sem troca informada.
+  avisos.push(...avisosForaDaConta(detalheComResolucao))
   const xlsxBuf = await gerarKpiRomaneioXlsx(linhasKpiConsistentes, data, avisos, detalheComResolucao, undefined, undefined, {
     trocasProvaveis,
     // Linha de resumo (taxa automatica/apos conferencia) so' na Nutry Max --

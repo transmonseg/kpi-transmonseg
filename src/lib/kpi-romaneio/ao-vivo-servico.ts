@@ -12,7 +12,7 @@ import { publicarFechamentoNoDashboard } from './fechamento-dashboard'
 import { resumirPlacas, contarCorretas, paradaDaChegada, paradaEmAndamento, nfProxima, AVISO_TERRITORIO_AO_VIVO, type PlacaAoVivo } from './ao-vivo'
 import { investigarPlacas, alarmeSemCoordenada } from './investigacao'
 import { normPlaca } from '@/lib/unitrac-api'
-import type { LinhaEscala, LinhaRomaneio } from './types'
+import type { AvisoDescasamento, LinhaEscala, LinhaRomaneio } from './types'
 import { gerarKpiRioQuality } from '@/lib/kpi-rioquality/pipeline'
 import { buscarFrotaRioQuality } from '@/lib/kpi-rioquality/frota'
 import { placasForaDoCadastro, avisoPlacasForaDoCadastro } from '@/lib/kpi-rioquality/frota-aviso'
@@ -21,7 +21,8 @@ import { lerSnapshotParadas } from './paradas-snapshot'
 import { EMPRESA_SNAPSHOT_RIOQUALITY } from '@/lib/kpi-rioquality/snapshot-paradas'
 import { hojeBR } from '@/lib/data-br'
 import { versaoDasRegras } from './versao-regras'
-import { NOME_FONTE } from './gerador-xlsx'
+import { NOME_FONTE, textoAviso } from './gerador-xlsx'
+import { avisosQueBloqueiamPublicacao, motivosDoBloqueio, textoFechamentoProvisorio } from './publicacao'
 import type { EntregaRioQualityCompleta } from '@/lib/kpi-rioquality/parse-planilhas'
 import { checkInsPorNfRQ } from '@/lib/kpi-rioquality/checkin-pista'
 
@@ -86,6 +87,9 @@ export type ResultadoAoVivo = {
   /** F2-14 (RQ-08): calculo publicado incompleto (ponte de coerencia fora e
    *  sem resultado bom do dia pra manter). O proximo calculo bom substitui. */
   degradado?: string
+  /** KPI-05 (auditoria 03/11): dia encerrado calculado com fonte incompleta
+   *  (ponte, coletor, geocode acima do limite): nao foi ao Dashboard; o motivo. */
+  fechamentoProvisorio?: string
 }
 
 export type DiaAoVivo = {
@@ -211,7 +215,7 @@ export async function gerarKpiDoDia(cliente: ClienteAoVivo, data: string, log: (
   aoMontarDetalheNutry?: Parameters<typeof gerarKpiNutrimax>[1],
   // F2-03 (GEO-22, KRQ-04): a RQ entrega o mesmo que a Nutry (ponto do
   // cliente, detalhe, paradas, trajeto) -- antes so' as paradas.
-  aoMontarDetalheRq?: Parameters<typeof gerarKpiRioQuality>[0]['aoMontarDetalhe']): Promise<{ xlsx: Buffer; qtdCargas: number; degradado?: string; aviso?: string; avisosFonte?: string[]; avisoFrota?: string } | null> {
+  aoMontarDetalheRq?: Parameters<typeof gerarKpiRioQuality>[0]['aoMontarDetalhe']): Promise<{ xlsx: Buffer; qtdCargas: number; degradado?: string; aviso?: string; avisosFonte?: string[]; avisoFrota?: string; bloqueios?: string[]; avisosTela?: string[] } | null> {
   if (cliente === 'rioquality') {
     const entregas = await entradaRioQualityDoDia(data)
     if (!entregas) return null
@@ -229,6 +233,7 @@ export async function gerarKpiDoDia(cliente: ClienteAoVivo, data: string, log: (
     const avisoFrota = avisoPlacasForaDoCadastro(placasForaDoCadastro(entregas, cvPorPlaca))
     return {
       ...(avisoFrota ? { avisoFrota } : {}),
+      ...avaliarPublicacao(r.avisos ?? [], r.detalhe?.length ?? 0),
       xlsx: r.xlsx, qtdCargas: r.linhasKpi.length,
       ...(r.coerenciaFalhou > 0 ? { degradado: `ponte de coerência do monitoramento falhou em ${r.coerenciaFalhou} rua(s)` } : {}),
     }
@@ -243,11 +248,21 @@ export async function gerarKpiDoDia(cliente: ClienteAoVivo, data: string, log: (
   const avisosFonte = fontes.map(f => `Não consegui ler ${NOME_FONTE[f]} neste cálculo — o resultado pode estar incompleto. O próximo cálculo tenta de novo.`)
   return {
     ...(avisosFonte.length > 0 ? { avisosFonte } : {}),
+    ...avaliarPublicacao(r.avisos ?? [], r.detalhe?.length ?? 0),
     xlsx: r.xlsx, qtdCargas: r.qtdCargasNutry,
     // F1-11 (KN-08): resultado vale (a taxa nao muda), mas sem os rotulos
     // "CORRIGIR CADASTRO" -- aviso na tela e marca pro tick repetir.
     ...(r.territorioIndisponivel ? { aviso: `${AVISO_TERRITORIO_AO_VIVO}: o monitoramento não respondeu à conferência de território; entregas em outro bairro/município podem estar sem "CORRIGIR CADASTRO" (a taxa não muda). O dia fechado é refeito às 05:30.` } : {}),
   }
+}
+
+// KPI-04/KPI-05 (auditoria 03/11): avisos da geracao que a tela mostra e os
+// que impedem o fechamento de publicar sozinho (publicacao.ts).
+const AVISOS_NA_TELA = new Set<AvisoDescasamento['motivo']>(['ponte_falhou', 'geocode_parcial', 'coletor_fora', 'consulta_posicoes_suspeita', 'fora_da_conta_alto', 'linhas_repetidas'])
+function avaliarPublicacao(avisos: AvisoDescasamento[], totalNfs: number): { bloqueios?: string[]; avisosTela?: string[] } {
+  const bloqueios = motivosDoBloqueio(avisosQueBloqueiamPublicacao(avisos, totalNfs))
+  const avisosTela = [...new Set(avisos.filter(a => AVISOS_NA_TELA.has(a.motivo)).map(textoAviso))]
+  return { ...(bloqueios.length > 0 ? { bloqueios } : {}), ...(avisosTela.length > 0 ? { avisosTela } : {}) }
 }
 
 /** Resultado da tela a partir da planilha do KPI lida (extrairKpiCompleto).
@@ -398,6 +413,14 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     if (sugestoesTroca.length > 0) resultado.sugestoesTroca = sugestoesTroca
     if (r.aviso) resultado.avisos = [r.aviso]
     if (r.avisosFonte) resultado.avisos = [...(resultado.avisos ?? []), ...r.avisosFonte]
+    if (r.avisosTela) resultado.avisos = [...(resultado.avisos ?? []), ...r.avisosTela.filter(t => !(resultado.avisos ?? []).includes(t))]
+    // KPI-05: dia encerrado com fonte incompleta fica provisorio (nao publica).
+    const provisorio = data < hojeBR() && r.bloqueios ? textoFechamentoProvisorio(r.bloqueios) : null
+    if (provisorio) {
+      resultado.fechamentoProvisorio = provisorio
+      resultado.avisos = [...(resultado.avisos ?? []), provisorio]
+      log(`ao vivo ${cliente} ${data}: ${provisorio}`)
+    }
     if (r.avisoFrota) {
       resultado.avisos = [...(resultado.avisos ?? []), r.avisoFrota]
       log(`ao vivo ${cliente} ${data}: ${r.avisoFrota}`)
@@ -420,7 +443,8 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
       resultado.avisos = [...(resultado.avisos ?? []), alarmeCoord]
       log(`ao vivo ${cliente} ${data}: ${alarmeCoord}`)
     }
-    const avisoErro = r.aviso ?? r.degradado ?? alarmeCoord
+    // Territorio fica no inicio (a reconferencia das 05:30 le pelo prefixo).
+    const avisoErro = provisorio ? (r.aviso ? `${r.aviso} | ${provisorio}` : provisorio) : r.aviso ?? r.degradado ?? alarmeCoord
     for (const p of resultado.placas) {
       const pa = paradaAtualPorPlaca.get(normPlaca(p.placa))
       if (!pa) continue
@@ -445,7 +469,7 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     // F3-01 (ACH-01): dia encerrado completo vai ao Dashboard (ausente ou
     // parcial grava; inserido a mao e diferente vira "Fechamento disponivel").
     // Calculo incompleto (degradado, fonte que nao leu) fica fora. Fail-open.
-    if (data < hojeBR() && !r.degradado && !r.avisosFonte) {
+    if (data < hojeBR() && !r.degradado && !r.avisosFonte && !provisorio) {
       if (opcoes.publicarFechamento) {
         await publicarFechamentoNoDashboard({ cliente, data, xlsx: r.xlsx, lido, calculadoEm: resultado.calculadoEm, log })
           .catch(e => log(`dashboard ${cliente} ${data}: fechamento não gravado (${e instanceof Error ? e.message : String(e)})`))

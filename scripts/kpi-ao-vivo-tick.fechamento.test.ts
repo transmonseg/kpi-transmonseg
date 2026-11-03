@@ -78,3 +78,28 @@ describe('reconferirTerritorioDiaAnterior (F1-11)', () => {
   })
 })
 
+
+// KPI-05 (auditoria 03/11): fechamento que ficou provisório (ponte, coletor
+// ou geocode incompletos) é calculado de novo no próximo tick, até 12h de D+1.
+describe('repetirFechamentoProvisorioDiaAnterior (KPI-05)', () => {
+  const fechado = '2026-10-31T03:31:10.000Z' // 00:31 BRT de 31/10
+  it('00:41 BRT com o fechamento de 30/10 provisório: calcula de novo, publicando', async () => {
+    ordem.length = 0
+    const { textoFechamentoProvisorio } = await import('../src/lib/kpi-romaneio/publicacao')
+    linhaCalculo.valor = { calculado_em: fechado, ultimo_erro: textoFechamentoProvisorio(['ponte']), ultimo_erro_em: fechado }
+    vi.setSystemTime(new Date('2026-10-31T03:41:00Z'))
+    const { repetirFechamentoProvisorioDiaAnterior } = await import('./kpi-ao-vivo-tick')
+    await repetirFechamentoProvisorioDiaAnterior()
+    expect(ordem).toEqual(['calculo rioquality 2026-10-30 (publica)'])
+    vi.useRealTimers()
+  })
+  it('fechamento normal: não repete', async () => {
+    ordem.length = 0
+    linhaCalculo.valor = { calculado_em: fechado, ultimo_erro: null, ultimo_erro_em: null }
+    vi.setSystemTime(new Date('2026-10-31T03:41:00Z'))
+    const { repetirFechamentoProvisorioDiaAnterior } = await import('./kpi-ao-vivo-tick')
+    await repetirFechamentoProvisorioDiaAnterior()
+    expect(ordem).toEqual([])
+    vi.useRealTimers()
+  })
+})

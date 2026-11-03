@@ -11,9 +11,29 @@ export function validadeCacheMs(data: string, hoje: string): number {
   return data === hoje ? 4 * 60_000 : 6 * 3600_000
 }
 
+/** 00:00 BRT do dia seguinte a `data` (fim do dia da rota). */
+function fimDoDiaBR(data: string): number {
+  const [a, m, d] = data.split('-').map(Number)
+  return Date.parse(`${new Date(Date.UTC(a, m - 1, d + 1)).toISOString().slice(0, 10)}T00:00:00-03:00`)
+}
+
 export function cacheFresco(gravadoEm: string | null, data: string, hoje: string, agoraMs: number): boolean {
   if (!gravadoEm) return false
+  // KPI-08 (auditoria 03/11): dia passado so' reaproveita o que foi lido
+  // DEPOIS do fim do dia -- o fechamento das 00:30 nao usa as paradas das ~20:50.
+  if (data < hoje && Date.parse(gravadoEm) < fimDoDiaBR(data)) return false
   return agoraMs - Date.parse(gravadoEm) < validadeCacheMs(data, hoje)
+}
+
+/** KPI-08: chave com a data (antes o dia seguinte sobrescrevia a linha). */
+export function chaveCacheDia(prefixo: string, data: string, k: string): string {
+  return `${prefixo}:${data}:${k}`
+}
+
+/** Chave sem o prefixo (e sem a data, no formato novo); aceita a antiga. */
+export function chaveLida(chave: string, prefixo: string, data: string): string {
+  const resto = chave.slice(prefixo.length + 1)
+  return resto.startsWith(`${data}:`) ? resto.slice(data.length + 1) : resto
 }
 
 /** Entradas frescas do prefixo no dia (chave sem o prefixo -> valor). */
@@ -25,7 +45,7 @@ export async function lerCacheDia<T>(prefixo: string, data: string, hoje: string
     const agora = Date.now()
     return new Map((linhas ?? [])
       .filter(l => validadeMs != null ? agora - Date.parse(l.gravado_em as string) < validadeMs : cacheFresco(l.gravado_em as string, data, hoje, agora))
-      .map(l => [(l.chave as string).slice(prefixo.length + 1), l.valor as T]))
+      .map(l => [chaveLida(l.chave as string, prefixo, data), l.valor as T]))
   } catch (err) {
     console.error(`[cache-dia] leitura ${prefixo} falhou:`, err instanceof Error ? err.message : err)
     return new Map()
@@ -36,7 +56,7 @@ export async function gravarCacheDia(prefixo: string, data: string, valores: Map
   if (valores.size === 0) return
   try {
     const gravadoEm = new Date().toISOString()
-    const linhas = [...valores].map(([k, valor]) => ({ chave: `${prefixo}:${k}`, data, valor, gravado_em: gravadoEm }))
+    const linhas = [...valores].map(([k, valor]) => ({ chave: chaveCacheDia(prefixo, data, k), data, valor, gravado_em: gravadoEm }))
     for (let i = 0; i < linhas.length; i += 200) {
       const { error } = await createServiceClient().from('kpi_cache_dia').upsert(linhas.slice(i, i + 200), { onConflict: 'chave' })
       if (error) throw new Error(error.message)

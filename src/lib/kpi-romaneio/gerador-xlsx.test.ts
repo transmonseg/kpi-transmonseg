@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import ExcelJS from 'exceljs'
-import { gerarKpiRomaneioXlsx, COLUNAS_KPI_ROMANEIO, COLUNAS_DETALHE_PLACA, COLUNAS_RESOLUCAO, COLUNAS_AVISOS, textoAviso } from './gerador-xlsx'
+import { gerarKpiRomaneioXlsx, COLUNAS_KPI_ROMANEIO, COLUNAS_DETALHE_PLACA, COLUNAS_RESOLUCAO, COLUNAS_AVISOS, textoAviso, avisosForaDaConta } from './gerador-xlsx'
 import type { AvisoDescasamento, LinhaKpiRomaneio, LinhaDetalheEntrega } from './types'
 import { extrairKpiCompleto } from './resumo-dashboard'
 import { marcarSituacaoPlaca } from './placa-situacao'
@@ -1675,5 +1675,28 @@ describe('Dashboard por carga com a regra da taxa (KPI-02, KPI-09)', () => {
     expect(r.resumo.taxa).toBeNull()
     expect(r.resumo.entregues).toBe(0)
     expect(r.resumo.nfsNaConta).toBe(0)
+  })
+})
+
+// KPI-04 (auditoria 03/11): 30/10 teve 149 de 2.419 NFs (6,2%) fora da conta,
+// 36 de uma carga inteira parada no pátio (RBG4F53), sem troca informada.
+describe('aviso de muita nota fora da conta (KPI-04)', () => {
+  const ok = (n: number, carga = 'C1', placa = 'RQU5H30') => Array.from({ length: n }, (_, i) => detalheFixture({ carga, placa, nf: `${carga}-${i}`, status: 'confirmado_gps' }))
+  const naoSaiu = (n: number, carga: string, placa: string) => Array.from({ length: n }, (_, i) => detalheFixture({ carga, placa, nf: `${carga}-${i}`, status: 'pendente', observacao: 'VEÍCULO NÃO SAIU DA BASE', evidencia: 'nao_saiu_da_base', confianca: 'SEM BASE' }))
+  it('fora > 3% do dia: aviso com a fração e a taxa contando o fora como falha', () => {
+    const d = [...ok(94), ...naoSaiu(6, '101254', 'RBG4F53')]
+    const [av] = avisosForaDaConta(d).filter(a => a.motivo === 'fora_da_conta_alto')
+    expect(av).toMatchObject({ motivo: 'fora_da_conta_alto', foraDaConta: 6, totalNfs: 100 })
+    expect(textoAviso(av)).toMatch(/6 de 100 NFs \(6,0%\) fora da conta/)
+    expect(textoAviso(av)).toMatch(/com elas como falha a taxa seria 94,0%/)
+  })
+  it('carga inteira fora (não saiu da base) avisa mesmo abaixo de 3%', () => {
+    const d = [...ok(1000), ...naoSaiu(10, '101254', 'RBG4F53')]
+    const avs = avisosForaDaConta(d)
+    expect(avs).toContainEqual(expect.objectContaining({ motivo: 'fora_da_conta_alto', carga: '101254', placa: 'RBG4F53', foraDaConta: 10 }))
+  })
+  it('dia normal (fora ≤ 3% e nenhuma carga inteira fora): sem aviso', () => {
+    const d = [...ok(99), detalheFixture({ carga: 'C1', placa: 'RQU5H30', nf: 'x', status: 'pendente', observacao: 'VEÍCULO NÃO SAIU DA BASE', evidencia: 'nao_saiu_da_base' })]
+    expect(avisosForaDaConta(d)).toEqual([])
   })
 })

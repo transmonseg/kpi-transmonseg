@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { buscarHorariosBase, anexarCoordenadaCadastro, montarMenorDistanciaTrajetoPorNf, consumirFalhasPonte, definirEsperaEntreTentativasPonte } from './base-horarios'
+import { buscarHorariosBase, anexarCoordenadaCadastro, montarMenorDistanciaTrajetoPorNf, consumirFalhasPonte, definirEsperaEntreTentativasPonte, comContagemDePonte } from './base-horarios'
 import type { HorarioBase } from './base-horarios'
 
 beforeEach(() => {
@@ -88,6 +88,26 @@ describe('buscarHorariosBase', () => {
     await buscarHorariosBase(['ABC1234', 'XYZ5678'], '2026-08-25')
     expect(spy).toHaveBeenCalledTimes(3)
     expect(consumirFalhasPonte()).toBe(2)
+    expect(consumirFalhasPonte()).toBe(0)
+  })
+
+  // KPI-05 (auditoria 03/11): contador por geração -- duas gerações ao mesmo
+  // tempo no processo Next não trocam nem perdem o aviso da outra.
+  it('duas gerações ao mesmo tempo: cada uma conta só as próprias placas sem resposta', async () => {
+    definirEsperaEntreTentativasPonte(0)
+    consumirFalhasPonte()
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (_u, init) => {
+      const corpo = JSON.parse(String((init as RequestInit).body))
+      await new Promise(ok => setTimeout(ok, 5))
+      if ((corpo.placas as string[]).includes('FALHA01')) return { ok: false, status: 500 } as Response
+      return { ok: true, status: 200, json: async () => ({ resultados: [] }) } as Response
+    })
+    const [a, b] = await Promise.all([
+      comContagemDePonte(async () => { await buscarHorariosBase(['FALHA01', 'FALHA02'], '2026-10-30'); await new Promise(ok => setTimeout(ok, 20)); return consumirFalhasPonte() }),
+      comContagemDePonte(async () => { await new Promise(ok => setTimeout(ok, 10)); await buscarHorariosBase(['BOA0001'], '2026-10-30'); return consumirFalhasPonte() }),
+    ])
+    expect(a).toBe(2)
+    expect(b).toBe(0)
     expect(consumirFalhasPonte()).toBe(0)
   })
 

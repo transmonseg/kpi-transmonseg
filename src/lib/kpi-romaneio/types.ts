@@ -397,7 +397,12 @@ export type AvisoDescasamento = {
   motivo: 'sem_romaneio' | 'sem_escala' | 'nf_divergente' | 'consulta_posicoes_suspeita' | 'consulta_unitrac_falhou'
     | 'rq_sem_rota_custos' | 'rq_rota_sem_entregas' | 'rq_placa_sem_cv' | 'rq_sem_snapshot'
     | 'geocode_parcial' | 'motorista_multiplas_placas' | 'carga_multiregiao' | 'rq_relatorio_sem_checkin' | 'ponte_falhou'
-    | 'fonte_indisponivel' | 'coletor_fora' | 'rastreador_com_falha' | 'romaneio_sem_nf' | 'linhas_repetidas'
+    | 'fonte_indisponivel' | 'coletor_fora' | 'rastreador_com_falha' | 'romaneio_sem_nf' | 'linhas_repetidas' | 'fora_da_conta_alto'
+  /** So' em 'fora_da_conta_alto' (KPI-04): NFs fora da conta (do dia ou da carga) e o total. */
+  foraDaConta?: number
+  totalNfs?: number
+  /** So' em 'fora_da_conta_alto' do dia: taxa com as fora da conta como falha (1 casa). */
+  taxaComForaComoFalha?: number
   /** So' em 'linhas_repetidas' (KPI-01, RQ 27/10): copias identicas da mesma entrega tiradas antes da conta. */
   linhasRepetidas?: number
   /** So' em 'romaneio_sem_nf' (03/11): clientes da carga que vieram no romaneio sem o numero da NF. */
