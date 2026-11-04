@@ -2,11 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import {
-  ArrowDown, ArrowUp, Truck, Package, Warning, MapPinLine, Path, Timer, Clock, CellSignalSlash,
+  ArrowDown, ArrowUp, Truck, Package, Storefront, Path, Timer, Clock, HourglassMedium, SunHorizon,
   MagnifyingGlass, CaretUpDown, UploadSimple, DownloadSimple, CaretRight,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
-import { BarList, type BarItem } from '@/app/painel/charts'
 import { LinhaTaxa, Colunas } from './graficos'
 import type { ClienteDash, DiaKpi } from '@/lib/kpi-romaneio/dashboard-kpis'
 import {
@@ -17,17 +16,19 @@ import { SeletorVisao, PioresRecorrentes, TabelaGrupos, type Visao } from './gru
 import { PlacaDrawer } from './placa-drawer'
 import { FechamentoOfertas } from './fechamento-ofertas'
 import { metaDoCliente } from '@/lib/kpi/metas'
+import { HorariosETempo, RankingLojas, TempoPorDia, fmtHora, type DadosLojas } from './lojas'
 
 const ANO = Number(hoje().slice(0, 4))
 const ANOS = [ANO, ANO - 1, ANO - 2].map(String)
 
 const CTRL = 'h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] text-[var(--color-fg)] outline-none transition-colors hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] [color-scheme:light] dark:[color-scheme:dark]'
 
-export function VisaoGeral({ cliente, dataInicial, podeInserir, visaoCliente = false, onInserir }: {
+// 04/11: o dashboard é do cliente -- nada de cartão de conferência interna
+// (A revisar, Sem rastreador, Não foi ao cliente); isso fica no Ao vivo.
+export function VisaoGeral({ cliente, dataInicial, podeInserir, onInserir }: {
   cliente: ClienteDash
   dataInicial?: string
   podeInserir: boolean
-  visaoCliente?: boolean
   onInserir: () => void
 }) {
   const [periodo, setPeriodo] = useState<Periodo>(dataInicial ? 'dia' : 'mes')
@@ -36,6 +37,7 @@ export function VisaoGeral({ cliente, dataInicial, podeInserir, visaoCliente = f
   const [ate, setAte] = useState(hoje())
   const [dias, setDias] = useState<DiaKpi[] | null>(null)
   const [anteriores, setAnteriores] = useState<DiaKpi[]>([])
+  const [lojas, setLojas] = useState<{ atual: DadosLojas; anterior: DadosLojas | null } | null>(null)
   const [erro, setErro] = useState(false)
   const [tentativa, setTentativa] = useState(0)
   const [placaAberta, setPlacaAberta] = useState<PlacaAgg | null>(null)
@@ -52,6 +54,18 @@ export function VisaoGeral({ cliente, dataInicial, podeInserir, visaoCliente = f
     Promise.all([q(faixa[0], faixa[1]), q(aDe, aAte)])
       .then(([a, b]) => { if (vivo) { setDias(a.dias); setAnteriores(b.dias) } })
       .catch(() => { if (vivo) setErro(true) })
+    return () => { vivo = false }
+  }, [cliente, faixa, tentativa])
+
+  // Lojas/tempo na loja: à parte e sem travar a tela (falhou = some a seção).
+  useEffect(() => {
+    let vivo = true
+    setLojas(null)
+    const [aDe, aAte] = intervaloAnterior(faixa)
+    const q = (x: string, y: string) => fetch(`/api/dashboard-kpi/lojas?cliente=${cliente}&de=${x}&ate=${y}`).then(r => (r.ok ? r.json() as Promise<DadosLojas> : null))
+    Promise.all([q(faixa[0], faixa[1]), q(aDe, aAte).catch(() => null)])
+      .then(([a, b]) => { if (vivo && a) setLojas({ atual: a, anterior: b }) })
+      .catch(() => {})
     return () => { vivo = false }
   }, [cliente, faixa, tentativa])
 
@@ -122,7 +136,7 @@ export function VisaoGeral({ cliente, dataInicial, podeInserir, visaoCliente = f
           )}
         </div>
       ) : (
-        <Conteudo meta={meta} ag={ag} agAnt={agAnt} periodo={periodo} onPlaca={setPlacaAberta} visaoCliente={visaoCliente} />
+        <Conteudo meta={meta} ag={ag} agAnt={agAnt} lojas={lojas} periodo={periodo} onPlaca={setPlacaAberta} podeInserir={podeInserir} />
       )}
 
       {placaAberta && ag && (
@@ -157,12 +171,17 @@ function Delta({ atual, anterior, inverso, suf = ' pts', casas = 1 }: { atual: n
   )
 }
 
-function Conteudo({ ag, agAnt, periodo, meta, onPlaca, visaoCliente }: { ag: Agregado; agAnt: Agregado | null; periodo: Periodo; meta: number; onPlaca: (p: PlacaAgg) => void; visaoCliente: boolean }) {
+function Conteudo({ ag, agAnt, lojas, periodo, meta, onPlaca, podeInserir }: { ag: Agregado; agAnt: Agregado | null; lojas: { atual: DadosLojas; anterior: DadosLojas | null } | null; periodo: Periodo; meta: number; onPlaca: (p: PlacaAgg) => void; podeInserir: boolean }) {
   const umDia = periodo === 'dia'
   const serieComp = ag.serie.filter(s => !s.parcial)
+  const lj = lojas?.atual ?? null
+  const ljAnt = lojas?.anterior ?? null
+  // Total (NFs, lojas, KM) só compara com período do mesmo tamanho: mês em
+  // andamento contra o mês anterior inteiro dava "-46 mil" em vermelho.
+  const mesmoTamanho = agAnt != null && agAnt.diasCompletos === ag.diasCompletos
   return (
     <div className="space-y-6">
-      {ag.diasParciais > 0 && (
+      {podeInserir && ag.diasParciais > 0 && (
         <div className="flex items-center gap-2 rounded-2xl border border-[var(--color-warning)]/30 bg-[var(--color-warning-soft)] px-4 py-3 text-[13px] text-[var(--color-warning-soft-fg)]">
           <span className="size-2 animate-pulse rounded-full bg-[var(--color-warning)]" />
           {ag.diasParciais === 1 ? '1 KPI inserido foi gerado' : `${ag.diasParciais} KPIs inseridos foram gerados`} com a rota ainda em andamento — {umDia ? 'os números deste dia são parciais' : 'fica fora dos totais e médias'}. Insira o KPI do dia fechado para substituir.
@@ -172,14 +191,14 @@ function Conteudo({ ag, agAnt, periodo, meta, onPlaca, visaoCliente }: { ag: Agr
       <Hero ag={ag} agAnt={agAnt} umDia={umDia} meta={meta} />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Tile i={0} Icone={Package} cor="#2a78d6" rotulo="NFs entregues" valor={fmtInt(ag.entregues)} sub={`de ${fmtInt(ag.nfsNaConta)} na conta`} delta={<Delta atual={ag.entregues} anterior={agAnt?.entregues} suf="" casas={0} />} />
-        {!visaoCliente && <Tile i={1} Icone={Warning} cor="#e08a00" rotulo="A revisar" valor={fmtInt(Math.max(0, ag.pendentes - (ag.motivos['Não foi ao cliente'] ?? 0)))} sub="Coordenada ou conferência" />}
-        <Tile i={2} Icone={Path} cor="#1baf7a" rotulo="KM rodados" valor={fmtKm(ag.km)} sub={umDia ? `${fmtInt(ag.cargas)} cargas` : `${fmtKm(ag.km / Math.max(1, ag.diasCompletos))} por dia`} delta={<Delta atual={ag.km} anterior={agAnt?.km} suf=" km" casas={0} />} />
-        <Tile i={3} Icone={Timer} cor="#7a5af0" rotulo="Operação média" valor={fmtDur(ag.operacaoMedia)} sub="Saída até a volta ao CD" delta={<Delta atual={ag.operacaoMedia} anterior={agAnt?.operacaoMedia} inverso suf=" min" casas={0} />} />
-        <Tile i={4} Icone={Clock} cor="#d05a8a" rotulo="Tempo por entrega" valor={fmtDur(ag.porEntregaMedia)} sub="Média das cargas" delta={<Delta atual={ag.porEntregaMedia} anterior={agAnt?.porEntregaMedia} inverso suf=" min" casas={0} />} />
-        <Tile i={5} Icone={Truck} cor="#1f3864" rotulo="Cargas" valor={fmtInt(ag.cargas)} sub={`${ag.placas.length} placas`} />
-        {!visaoCliente && <Tile i={6} Icone={CellSignalSlash} cor="#6b7280" rotulo="Sem rastreador" valor={fmtInt(ag.semRastreador)} sub="Contam como corretas" />}
-        {!visaoCliente && <Tile i={7} Icone={MapPinLine} cor="#d70015" rotulo="Não foi ao cliente" valor={fmtInt(ag.motivos['Não foi ao cliente'] ?? 0)} sub="Caminhão longe do endereço" />}
+        <Tile i={0} Icone={Package} cor="#2a78d6" rotulo="NFs entregues" valor={fmtInt(ag.entregues)} sub={`de ${fmtInt(ag.nfsNaConta)} na conta`} delta={<Delta atual={ag.entregues} anterior={mesmoTamanho ? agAnt?.entregues : null} suf="" casas={0} />} />
+        <Tile i={1} Icone={Storefront} cor="#1f3864" rotulo="Lojas atendidas" valor={lj ? fmtInt(lj.lojasAtendidas) : '…'} sub={umDia ? 'Clientes diferentes no dia' : 'Clientes diferentes no período'} delta={<Delta atual={lj?.lojasAtendidas ?? null} anterior={mesmoTamanho ? ljAnt?.lojasAtendidas : null} suf="" casas={0} />} />
+        <Tile i={2} Icone={HourglassMedium} cor="#e08a00" rotulo="Tempo médio na loja" valor={lj ? fmtDur(lj.tempoMedio) : '…'} sub={lj ? `Metade das entregas em até ${fmtDur(lj.tempoMediano)}` : 'Chegada até a saída do cliente'} delta={<Delta atual={lj?.tempoMedio ?? null} anterior={ljAnt?.tempoMedio} inverso suf=" min" casas={0} />} />
+        <Tile i={3} Icone={SunHorizon} cor="#d05a8a" rotulo="Janela de entregas" valor={lj ? `${fmtHora(lj.primeiraEntrega)}–${fmtHora(lj.ultimaEntrega)}` : '…'} sub="1ª e última entrega · média por carga" />
+        <Tile i={4} Icone={Truck} cor="#1f3864" rotulo="Cargas" valor={fmtInt(ag.cargas)} sub={`${ag.placas.length} placas`} />
+        <Tile i={5} Icone={Path} cor="#1baf7a" rotulo="KM rodados" valor={fmtKm(ag.km)} sub={umDia ? `${fmtInt(ag.cargas)} cargas` : `${fmtKm(ag.km / Math.max(1, ag.diasCompletos))} por dia`} delta={<Delta atual={ag.km} anterior={mesmoTamanho ? agAnt?.km : null} suf=" km" casas={0} />} />
+        <Tile i={6} Icone={Timer} cor="#7a5af0" rotulo="Operação média" valor={fmtDur(ag.operacaoMedia)} sub="Saída até a volta ao CD" delta={<Delta atual={ag.operacaoMedia} anterior={agAnt?.operacaoMedia} inverso suf=" min" casas={0} />} />
+        <Tile i={7} Icone={Clock} cor="#2a78d6" rotulo="Tempo por entrega" valor={fmtDur(ag.porEntregaMedia)} sub="Operação dividida pelas entregas" delta={<Delta atual={ag.porEntregaMedia} anterior={agAnt?.porEntregaMedia} inverso suf=" min" casas={0} />} />
       </div>
 
       {!umDia && (
@@ -203,12 +222,12 @@ function Conteudo({ ag, agAnt, periodo, meta, onPlaca, visaoCliente }: { ag: Agr
         </div>
       )}
 
-      <div className={`grid gap-4 ${visaoCliente ? '' : 'lg:grid-cols-2'}`}>
-        {!visaoCliente && (
-          <Painel titulo="Resultado das entregas" sub="Como terminou cada NF">
-            <Resultado ag={ag} />
-          </Painel>
-        )}
+      {lj && lj.entregas > 0 && <HorariosETempo d={lj} />}
+
+      {lj && !umDia && <TempoPorDia d={lj} />}
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {lj && <RankingLojas d={lj} umDia={umDia} />}
         <Painel titulo={umDia ? 'Piores placas do dia' : 'Piores placas do período'} sub="Menor taxa de confirmação — clique para abrir">
           <PioresPlacas placas={ag.placas} meta={meta} onPlaca={onPlaca} />
         </Painel>
@@ -359,22 +378,6 @@ function PioresPlacas({ placas, meta, onPlaca }: { placas: PlacaAgg[]; meta: num
   )
 }
 
-function Resultado({ ag }: { ag: Agregado }) {
-  const naoFoi = ag.motivos['Não foi ao cliente'] ?? 0
-  const coord = (ag.motivos['Coordenada imprecisa'] ?? 0) + (ag.motivos['Endereço não localizado'] ?? 0)
-  const aRevisar = Math.max(0, ag.pendentes - naoFoi - coord)
-  const entregues = Math.max(0, ag.entregues - ag.semRastreador)
-  const itens: BarItem[] = ([
-    { key: 'e', label: 'Entregues', value: entregues, tone: 'success' },
-    { key: 'r', label: 'Sem rastreador', value: ag.semRastreador, tone: 'muted' },
-    { key: 'n', label: 'Não foi ao cliente', value: naoFoi, tone: 'danger' },
-    { key: 'c', label: 'Coordenada não puxou', value: coord, tone: 'warning' },
-    { key: 'v', label: 'A revisar', value: aRevisar, tone: 'info' },
-  ] as BarItem[]).filter(x => x.value > 0)
-  if (!itens.length) return <p className="py-10 text-center text-[13px] text-[var(--color-fg-muted)]">Sem NFs no período.</p>
-  return <BarList items={itens} format={n => n.toLocaleString('pt-BR')} />
-}
-
 type Col = 'placa' | 'taxa' | 'nfs' | 'km' | 'operacao' | 'porEntrega' | 'dias'
 
 function TabelaPlacas({ placas, umDia, meta, onPlaca }: { placas: PlacaAgg[]; umDia: boolean; meta: number; onPlaca: (p: PlacaAgg) => void }) {
@@ -451,7 +454,6 @@ function TabelaPlacas({ placas, umDia, meta, onPlaca }: { placas: PlacaAgg[]; um
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
                     {fmtInt(p.nfConfirmadas)}<span className="text-[var(--color-fg-subtle)]">/{fmtInt(p.nfPlanejado - p.nfForaDaConta)}</span>
-                    {p.nfSemRastreador > 0 && <span title="Sem rastreador: contam como corretas na taxa" className="ml-1 text-[11px] text-[var(--color-fg-subtle)]">({p.nfSemRastreador} sem rastreador)</span>}
                   </td>
                   {!umDia && <td className="px-4 py-3 text-right tabular-nums">{p.dias}</td>}
                   <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">{fmtKm(p.km)}</td>

@@ -14,13 +14,11 @@ const NOMES: Record<ClienteDash, string> = { nutrimax: 'Nutry Max', rioquality: 
 // Dashboard por cliente (04/10/2026): mesmo funcionamento do da Benassi --
 // Visão geral (período livre), Inserir KPI (só analisa o que for inserido) e
 // Histórico (baixar qualquer dia).
-export function DashboardKpi({ cliente, clientes, aba, podeInserir, visaoCliente = false, dataInicial }: {
+export function DashboardKpi({ cliente, clientes, aba, podeInserir, dataInicial }: {
   cliente: ClienteDash
   clientes: ClienteDash[]
   aba: Aba
   podeInserir: boolean
-  /** Visao do cliente (nao admin): sem os cartoes de problema (A revisar, Sem rastreador, Nao foi ao cliente). */
-  visaoCliente?: boolean
   dataInicial?: string
 }) {
   const router = useRouter()
@@ -63,7 +61,7 @@ export function DashboardKpi({ cliente, clientes, aba, podeInserir, visaoCliente
           <span className="text-overline">{NOMES[cliente]}</span>
           <h1 className="mt-1 text-display text-[34px] leading-none text-[var(--color-fg)] md:text-[40px]">Dashboard</h1>
           <p className="mt-2 max-w-[60ch] text-[13px] leading-relaxed text-[var(--color-fg-muted)]">
-            Performance de entregas, KM e tempos por placa — calculado a partir dos KPIs inseridos.
+            Entregas, lojas, horários, KM e tempos da operação.
           </p>
         </div>
         {podeInserir && aba !== 'inserir' && (
@@ -94,7 +92,7 @@ export function DashboardKpi({ cliente, clientes, aba, podeInserir, visaoCliente
 
       {aba === 'geral' && (
         <div key={`g-${cliente}`} className="animate-fade-up">
-          <VisaoGeral cliente={cliente} dataInicial={dataInicial} podeInserir={podeInserir} visaoCliente={visaoCliente} onInserir={() => ir(cliente, 'inserir')} />
+          <VisaoGeral cliente={cliente} dataInicial={dataInicial} podeInserir={podeInserir} onInserir={() => ir(cliente, 'inserir')} />
         </div>
       )}
       {aba === 'inserir' && podeInserir && (

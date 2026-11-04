@@ -110,7 +110,7 @@ export function PlacaDrawer({ cliente, placa, dias, onFechar }: {
                 {(['todas', 'pendentes'] as const).map(f => (
                   <button key={f} type="button" onClick={() => setFiltro(f)}
                     className={`rounded-full px-3 py-1 transition-colors ${filtro === f ? 'bg-[var(--color-navy-700)] text-white' : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]'}`}>
-                    {f === 'todas' ? `Todas (${nfs?.length ?? '…'})` : `A revisar (${nfs ? pendentes : '…'})`}
+                    {f === 'todas' ? `Todas (${nfs?.length ?? '…'})` : `Não entregues (${nfs ? pendentes : '…'})`}
                   </button>
                 ))}
               </div>
@@ -118,7 +118,7 @@ export function PlacaDrawer({ cliente, placa, dias, onFechar }: {
             {nfs == null ? (
               <div className="space-y-2 px-5 pb-5">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-14 animate-pulse rounded-xl bg-[var(--color-bg-subtle)]" />)}</div>
             ) : lista.length === 0 ? (
-              <p className="px-5 pb-8 pt-4 text-center text-[13px] text-[var(--color-fg-muted)]">{filtro === 'pendentes' ? 'Nada a revisar nesse dia.' : 'Sem NFs dessa placa nesse dia.'}</p>
+              <p className="px-5 pb-8 pt-4 text-center text-[13px] text-[var(--color-fg-muted)]">{filtro === 'pendentes' ? 'Todas as NFs desse dia foram entregues.' : 'Sem NFs dessa placa nesse dia.'}</p>
             ) : (
               <ul>
                 {lista.map(n => (
@@ -151,10 +151,10 @@ export function PlacaDrawer({ cliente, placa, dias, onFechar }: {
 // escala...) fica na planilha. Coordenada que não puxou aparece explícita.
 function rotuloNf(categoria: string | null): string {
   if (!categoria) return 'Entregue'
-  if (categoria === 'Sem rastreador') return 'Sem rastreador'
+  // Sem rastreador conta como entregue no KPI do cliente.
+  if (categoria === 'Sem rastreador') return 'Entregue'
   if (categoria === 'Não foi ao cliente') return 'Não foi ao cliente'
-  if (categoria === 'Coordenada imprecisa' || categoria === 'Endereço não localizado') return 'Coordenada não puxou — revisar'
-  return 'A revisar'
+  return 'Entrega não confirmada'
 }
 
 function Mini({ rotulo, valor, cor }: { rotulo: string; valor: string; cor?: string }) {
