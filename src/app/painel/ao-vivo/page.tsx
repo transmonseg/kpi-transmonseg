@@ -8,7 +8,7 @@ import type { SugestaoTroca } from '@/lib/kpi-romaneio/sugerir-trocas'
 import type { PlacaAoVivo, NfAoVivo, SituacaoNf } from '@/lib/kpi-romaneio/ao-vivo'
 import { resumirInvestigacao } from '@/lib/kpi-romaneio/investigacao-resumo'
 import { buscarNfs, filtrarNfs, type FiltroNf } from '@/lib/kpi-romaneio/ao-vivo-busca'
-import { CATEGORIAS_INVESTIGACAO, ROTULO_INVESTIGACAO, fraseInvestigacao } from '@/lib/kpi-romaneio/investigacao-rotulos'
+import { CATEGORIAS_INVESTIGACAO, GRUPOS_INVESTIGACAO, ROTULO_INVESTIGACAO, fraseInvestigacao, rotuloCurto } from '@/lib/kpi-romaneio/investigacao-rotulos'
 import { juntarEstado, mensagemFalhaCarga } from '@/lib/kpi-romaneio/ao-vivo-carga'
 import { buscarComSessao, lerJson, SessaoVencida } from '@/lib/sessao-fetch'
 import { SubirRomaneio, ReciboEnvio, type EnvioRomaneio } from './subir-romaneio'
@@ -761,7 +761,7 @@ function TrocasSugeridas({ sugestoes, onConfirmada }: { sugestoes: SugestaoTroca
             <span>{textoSugestao(s)}</span>
             <input value={digitadas[s.carga] ?? ''} onChange={e => setDigitadas(d => ({ ...d, [s.carga]: e.target.value }))} placeholder="ou digite a placa" maxLength={8} aria-label={`Outra placa para a carga ${s.carga}`}
               onKeyDown={e => { if (e.key === 'Enter' && enviando == null) void confirmar(s) }}
-              className="h-8 w-[130px] rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[12.5px] uppercase text-[var(--color-fg)]" />
+              className="h-8 w-[130px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 text-[12.5px] uppercase text-[var(--color-fg)]" />
             <button type="button" disabled={enviando != null} onClick={() => confirmar(s)}
               className="inline-flex h-8 items-center rounded-full bg-[var(--color-navy-700)] px-3.5 text-[12.5px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] disabled:opacity-50">
               {enviando === s.carga ? 'Trocando…' : (digitadas[s.carga] ?? '').trim() ? `Confirmar ${(digitadas[s.carga] ?? '').trim().toUpperCase()}` : s.modo === 'mutua' ? `Confirmar troca ${s.placaEscala} ↔ ${s.placaSugerida}` : `Confirmar ${s.placaSugerida}`}
@@ -830,7 +830,7 @@ function RedirecionarCarga({ placas, onConfirmada }: { placas: PlacaAoVivo[]; on
         <div className="flex flex-wrap gap-2">
           {MODOS_TROCA.map(m => (
             <button key={m.modo} type="button" onClick={() => { setModo(m.modo); setAviso(null) }}
-              className={`inline-flex h-8 items-center rounded-full px-3 text-[12.5px] font-semibold transition ${modo === m.modo ? 'bg-[var(--color-navy-700)] text-white' : 'border border-[var(--color-border)] bg-white text-[var(--color-fg)] hover:bg-[var(--color-bg-elevated)]'}`}>
+              className={`inline-flex h-8 items-center rounded-full px-3 text-[12.5px] font-semibold transition ${modo === m.modo ? 'bg-[var(--color-navy-700)] text-white' : 'border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-fg)] hover:bg-[var(--color-bg-elevated)]'}`}>
               {m.rotulo}
             </button>
           ))}
@@ -839,14 +839,14 @@ function RedirecionarCarga({ placas, onConfirmada }: { placas: PlacaAoVivo[]; on
         <div className="flex flex-wrap items-end gap-3">
           {modo === 'redirecionar' ? (
             <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">Carga
-              <select value={carga} onChange={e => setCarga(e.target.value)} className="h-9 min-w-[220px] rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[13px] text-[var(--color-fg)]">
+              <select value={carga} onChange={e => setCarga(e.target.value)} className="h-9 min-w-[220px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 text-[13px] text-[var(--color-fg)]">
                 <option value="">Escolha a carga</option>
                 {opcoes.map(o => <option key={`${o.carga}-${o.placa}`} value={o.carga}>Carga {o.carga} — {o.placa}</option>)}
               </select>
             </label>
           ) : (
             <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">Placa A (da escala)
-              <select value={placaA} onChange={e => setPlacaA(e.target.value)} className="h-9 min-w-[160px] rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[13px] text-[var(--color-fg)]">
+              <select value={placaA} onChange={e => setPlacaA(e.target.value)} className="h-9 min-w-[160px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 text-[13px] text-[var(--color-fg)]">
                 <option value="">Escolha a placa</option>
                 {listaPlacas.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
@@ -854,7 +854,7 @@ function RedirecionarCarga({ placas, onConfirmada }: { placas: PlacaAoVivo[]; on
           )}
           <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">{modo === 'redirecionar' ? 'Placa que fez a carga' : 'Placa B'}
             <input value={placaB} onChange={e => setPlacaB(e.target.value)} placeholder="ex.: RBI1J86 ou 1J86" maxLength={8} onKeyDown={e => { if (e.key === 'Enter') void trocar() }}
-              className="h-9 w-[150px] rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[13px] uppercase text-[var(--color-fg)]" />
+              className="h-9 w-[150px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 text-[13px] uppercase text-[var(--color-fg)]" />
           </label>
           <button type="button" disabled={enviando} onClick={() => void trocar()}
             className="inline-flex h-9 items-center rounded-full bg-[var(--color-navy-700)] px-4 text-[13px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] disabled:opacity-50">
@@ -876,9 +876,23 @@ function InvestigacaoNaoEntregues({ placas, onPlaca }: { placas: PlacaAoVivo[]; 
   return (
     <details className="group rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
       <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-[13px] text-[var(--color-fg-muted)] [&::-webkit-details-marker]:hidden">
-        <span className="inline-flex items-center gap-2 font-semibold text-[var(--color-fg)]"><MagnifyingGlass size={16} weight="bold" />{r.total === 1 ? '1 nota não entregue' : `${r.total.toLocaleString('pt-BR')} notas não entregues`}: o que o GPS mostra</span>
-        <span>{cats.map(c => `${r.porCategoria[c]} ${ROTULO_INVESTIGACAO[c].titulo.replace(/ \(.*\)$/, '').toLowerCase()}`).join(', ')}{r.aguardando ? `. ${r.aguardando} ainda aguardando` : ''}</span>
+        <span className="inline-flex items-center gap-2 font-semibold text-[var(--color-fg)]"><MagnifyingGlass size={16} weight="bold" />{r.total === 1 ? '1 nota não entregue' : `${r.total.toLocaleString('pt-BR')} notas não entregues`}: onde o caminhão estava</span>
         <CaretDown size={13} className="ml-auto shrink-0 transition-transform group-open:rotate-180" />
+        <span className="flex w-full flex-wrap gap-2 pt-1">
+          {GRUPOS_INVESTIGACAO.map(g => {
+            const n = g.categorias.reduce((a, c) => a + (r.porCategoria[c] ?? 0), 0)
+            if (!n) return null
+            const partes = g.categorias.filter(c => r.porCategoria[c]).map(c => `${r.porCategoria[c]} ${rotuloCurto(c)}`)
+            return (
+              <span key={g.chave} title={g.dica} className={`inline-flex items-baseline gap-1.5 rounded-xl border px-3 py-1.5 ${g.chave === 'conferir' ? 'border-[var(--color-warning)]/40 bg-[var(--color-warning-soft)]' : g.chave === 'nao_foi' ? 'border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)]' : 'border-[var(--color-border)] bg-[var(--color-bg)]'}`}>
+                <b className="tabular-nums text-[14px] text-[var(--color-fg)]">{n}</b>
+                <span className="font-semibold text-[var(--color-fg)]">{g.titulo}</span>
+                <span className="text-[12px] text-[var(--color-fg-muted)]">· {partes.join(', ')}</span>
+              </span>
+            )
+          })}
+        </span>
+        {r.aguardando > 0 && <span className="w-full text-[12px]">Mais {r.aguardando.toLocaleString('pt-BR')} {r.aguardando === 1 ? 'nota ainda em rota: entra' : 'notas ainda em rota: entram'} aqui quando a rota fechar.</span>}
       </summary>
       <div className="flex flex-col gap-4 border-t border-[var(--color-border)] px-4 py-4">
         <ul className="grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">

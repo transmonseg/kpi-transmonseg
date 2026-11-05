@@ -117,7 +117,7 @@ export function FilaConferir({ cliente, nomeCliente, data, historico, placas, re
               </button>
             ))}
           </div>
-          <button type="button" onClick={() => void baixarPlanilha()} className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-white px-3.5 text-[12.5px] font-semibold text-[var(--color-fg)] transition hover:border-[var(--color-border-strong)]">
+          <button type="button" onClick={() => void baixarPlanilha()} className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 text-[12.5px] font-semibold text-[var(--color-fg)] transition hover:border-[var(--color-border-strong)]">
             <DownloadSimple size={14} weight="bold" />Baixar planilha da conferência
           </button>
         </div>
@@ -255,7 +255,7 @@ function FormConferencia({ item, cliente, data, onGravada, onTrocarCarga, mudar 
       <div role="radiogroup" aria-label="Conferência" className="flex flex-wrap gap-1.5">
         {ACOES_CONFERENCIA.map(a => (
           <button key={a.acao} type="button" role="radio" aria-checked={acao === a.acao} onClick={() => { setAcao(a.acao); setMsg(null) }}
-            className={`inline-flex h-8 items-center rounded-full px-3 text-[12.5px] font-semibold transition ${acao === a.acao ? 'bg-[var(--color-navy-700)] text-white' : 'border border-[var(--color-border)] bg-white text-[var(--color-fg)] hover:border-[var(--color-border-strong)]'}`}>
+            className={`inline-flex h-8 items-center rounded-full px-3 text-[12.5px] font-semibold transition ${acao === a.acao ? 'bg-[var(--color-navy-700)] text-white' : 'border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-fg)] hover:border-[var(--color-border-strong)]'}`}>
             {a.rotulo}
           </button>
         ))}
@@ -271,7 +271,7 @@ function FormConferencia({ item, cliente, data, onGravada, onTrocarCarga, mudar 
           <div className="flex flex-wrap items-end gap-3">
             {def.exigePlaca && (
               <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">Placa que entregou
-                <input value={placa} onChange={e => setPlaca(e.target.value)} placeholder="ex.: RQV5F67" maxLength={8} className="h-9 w-[140px] rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[13px] uppercase text-[var(--color-fg)]" />
+                <input value={placa} onChange={e => setPlaca(e.target.value)} placeholder="ex.: RQV5F67" maxLength={8} className="h-9 w-[140px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 text-[13px] uppercase text-[var(--color-fg)]" />
               </label>
             )}
             <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">{def.exigeComprovante ? 'Comprovante (foto ou PDF)' : 'Anexo (opcional)'}
@@ -279,7 +279,7 @@ function FormConferencia({ item, cliente, data, onGravada, onTrocarCarga, mudar 
             </label>
           </div>
           <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">Observação (opcional)
-            <textarea value={obs} onChange={e => setObs(e.target.value)} rows={2} maxLength={1000} className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-2 text-[13px] text-[var(--color-fg)]" />
+            <textarea value={obs} onChange={e => setObs(e.target.value)} rows={2} maxLength={1000} className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-2 text-[13px] text-[var(--color-fg)]" />
           </label>
           <button type="button" disabled={enviando} onClick={() => void gravar()}
             className="inline-flex h-9 items-center self-start rounded-full bg-[var(--color-navy-700)] px-4 text-[13px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] disabled:opacity-50">

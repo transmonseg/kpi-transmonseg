@@ -185,7 +185,7 @@ export function PainelClienteView({ p, admin, erro, aviso, setAviso, onVoltar, e
   const botao = (acao: AcaoPonto, id: string | undefined, habilitado: boolean, motivo: string | null) => (
     <button type="button" disabled={!habilitado || protegido || !p.correcaoLiberada} title={motivo ?? undefined}
       onClick={() => { setEscolha({ acao, id }); setErroAcao(null); if (acao === 'pino') setPino(p.local ?? p.pontoAtual ?? null) }}
-      className={`h-8 shrink-0 rounded-full px-3.5 text-[12.5px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${escolha?.acao === acao && escolha.id === id ? 'bg-[var(--color-navy-700)] text-white' : 'border border-[var(--color-border)] bg-white text-[var(--color-fg)] hover:border-[var(--color-border-strong)]'}`}>
+      className={`h-8 shrink-0 rounded-full px-3.5 text-[12.5px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${escolha?.acao === acao && escolha.id === id ? 'bg-[var(--color-navy-700)] text-white' : 'border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-fg)] hover:border-[var(--color-border-strong)]'}`}>
       {ROTULO_ACAO_PONTO[acao]}
     </button>
   )
@@ -261,9 +261,9 @@ export function PainelClienteView({ p, admin, erro, aviso, setAviso, onVoltar, e
             <label className="flex flex-col gap-1 text-[12.5px] font-semibold text-[var(--color-fg)]">
               {escolha.acao === 'pino' ? 'De onde veio o ponto (obrigatório)' : 'Observação (opcional)'}
               <textarea value={observacao} onChange={e => setObservacao(e.target.value)} rows={2} maxLength={500}
-                className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-[13px] font-normal text-[var(--color-fg)]" />
+                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-[13px] font-normal text-[var(--color-fg)]" />
             </label>
-            <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-full border border-[var(--color-border)] bg-white px-3.5 py-1.5 text-[12.5px] font-semibold text-[var(--color-fg)]">
+            <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 py-1.5 text-[12.5px] font-semibold text-[var(--color-fg)]">
               <Paperclip size={14} />{arquivo ? arquivo.name : escolha.acao === 'pino' ? 'Anexar evidência (obrigatório)' : 'Anexar evidência (opcional)'}
               <input type="file" accept={ACCEPT_COMPROVANTE} className="sr-only" onChange={e => setArquivo(e.target.files?.[0] ?? null)} />
             </label>

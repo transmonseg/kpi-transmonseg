@@ -16,6 +16,17 @@ export const ROTULO_INVESTIGACAO: Record<CategoriaInvestigacao, { titulo: string
   sem_coordenada: { titulo: 'Cliente sem coordenada', dica: 'Endereço não localizado no mapa.' },
 }
 
+/** Legenda do Ao vivo (05/11, pedido da Érica: "melhorar essa legenda"):
+ *  as categorias em 3 grupos que dizem o que fazer com a nota. */
+export const GRUPOS_INVESTIGACAO: { chave: 'conferir' | 'nao_foi' | 'sem_dado'; titulo: string; dica: string; categorias: CategoriaInvestigacao[] }[] = [
+  { chave: 'conferir', titulo: 'Conferir', dica: 'O carro esteve no cliente ou o ponto do mapa não é exato: pode ter sido entregue.', categorias: ['parou_no_cliente', 'parou_perto', 'ponto_impreciso', 'sem_sinal_no_trecho'] },
+  { chave: 'nao_foi', titulo: 'Não foi ao cliente', dica: 'O carro não parou no endereço.', categorias: ['passou_sem_parar', 'parou_na_regiao', 'nao_chegou_perto'] },
+  { chave: 'sem_dado', titulo: 'Sem dado', dica: 'Sem GPS no dia ou endereço não achado no mapa.', categorias: ['sem_gps', 'sem_coordenada'] },
+]
+
+/** Nome curto da categoria para a legenda (sem a faixa de distância). */
+export const rotuloCurto = (c: CategoriaInvestigacao) => ROTULO_INVESTIGACAO[c].titulo.replace(/ \(.*\)$/, '').toLowerCase()
+
 const distancia = (m: number) => (m >= 1000 ? `${(m / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km` : `${m} m`)
 
 /** "Parada mais perto: 120 m do cliente às 14:32 (8 min)." (+ a pista do check-in da Fusion, F4-10) */
