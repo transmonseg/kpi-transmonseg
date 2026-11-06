@@ -465,3 +465,29 @@ ${corpo}
 216544SUPERPRIX ESTACIO                                                     RUA HADDOCK LOBO 5A                                                             ESTACIO                                 100,00100.000,00R$                  `)).toEqual(['RIO DE JANEIRO', 'RIO DE JANEIRO'])
   })
 })
+
+// Grupo KPI AJUSTES 06/11: a escala do pao traz "RQO-5E38" (placa que nao
+// existe na frota) pro carro que e' a TOS-5E38 -- 12 dias desde 15/10, a
+// operacao registrou a troca a mao em 8; nos outros 4 a carga ficou sem GPS.
+describe('placa escrita errada na escala do pao', () => {
+  const texto = (placa: string) => `
+DATA06/11/2026
+ROMANEIO7MOTORISTAAJUDANTE
+CARRO16${placa}
+Luis Paulo-
+ORDEMNOTA FISCALCLIENTEENDEREÇOBAIRROQTD CAIXASPESO BRUTO PESO LÍQUIDOVALOR BRUTO
+5
+215602HORTIFRUTI PASSAGEM                                                   RUA DA PASSAGEM ,133135                                                         BOTAFOGO                                38277,42662.741,04R$
+3002162,92073 R$ 20.241,71
+`
+  it('RQO-5E38 vira TOS-5E38 na linha e na escala', () => {
+    const { linhas, escala } = parsePaoTexto(texto('RQO-5E38'), '2026-11-06')
+    expect(linhas[0].placa).toBe('TOS-5E38')
+    expect(escala[0]).toEqual(expect.objectContaining({ placaRaw: 'TOS-5E38', placaNorm: 'TOS5E38' }))
+  })
+  it('outras placas nao mudam', () => {
+    const { linhas, escala } = parsePaoTexto(texto('TTI-9B98'), '2026-11-06')
+    expect(linhas[0].placa).toBe('TTI-9B98')
+    expect(escala[0].placaNorm).toBe('TTI9B98')
+  })
+})

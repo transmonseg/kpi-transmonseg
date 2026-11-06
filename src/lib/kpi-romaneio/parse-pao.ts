@@ -18,6 +18,10 @@ const CARRO_RE = /^CARRO(\d+)([A-Z].*)$/
 // Task 2 (plano 2026-09-30, item 3 -- PAO-11 29/09): placa "-" no documento
 // sai "CARRO0-" no pdf-parse; sem o "-?" a linha virava motorista "CARRO0".
 const CARRO_SEM_PLACA_RE = /^CARRO(\d*)-?$/
+// Placa escrita errada na escala do pao, sempre igual (grupo KPI AJUSTES
+// 06/11): "RQO-5E38" nao existe na frota, o carro e' a TOS-5E38 -- a
+// operacao registrava a troca a mao todo dia (8 de 12 dias desde 15/10).
+const PLACA_ERRADA_NO_PAO: Record<string, string> = { RQO5E38: 'TOS-5E38' }
 // Cabecalho de coluna do bloco de entregas -- marca o fim da area de
 // identificacao (CARRO/motorista). Nunca pode ser lido como motorista.
 const ORDEM_HEADER_RE = /^ORDEM/
@@ -320,8 +324,9 @@ export function parsePaoTexto(texto: string, data: string): ResultadoParsePao {
         console.warn(`[parse-pao] ${ctx.carga}: CARRO sem placa no documento -- motorista lido da propria linha do CARRO: ${JSON.stringify(resto)}`)
         continue
       }
-      ctx.placaRaw = resto
-      ctx.placaNorm = normPlaca(resto)
+      const certa = PLACA_ERRADA_NO_PAO[normPlaca(resto)]
+      ctx.placaRaw = certa ?? resto
+      ctx.placaNorm = normPlaca(ctx.placaRaw)
       continue
     }
     const semPlaca = line.match(CARRO_SEM_PLACA_RE)
