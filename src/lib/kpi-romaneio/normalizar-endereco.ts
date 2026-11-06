@@ -168,6 +168,34 @@ function cidadeRepetidaNoBairro(segmento: string): string | null {
   return bairro != null && bairro === cidade ? cidade : null
 }
 
+// 05/11 (KPI AJUSTES): a planilha do pao escreve "RIO DE JANEIRO" como regiao
+// em toda loja, inclusive fora da capital ("PRACA DR RUFINO GONCALVES ,81 -
+// COELHO DA ROCHA, RIO DE JANEIRO"). A busca procurava a rua na capital e
+// caia no Recreio, a 19 km da loja. So' bairros que NAO existem na capital,
+// conferidos no OpenStreetMap (bairro -> municipio). Chave sem acento.
+const BAIRRO_FORA_DA_CAPITAL: Record<string, string> = {
+  'COELHO DA ROCHA': 'SÃO JOÃO DE MERITI',
+  'GRANDE RIO': 'SÃO JOÃO DE MERITI',
+  'VILAR DOS TELES': 'SÃO JOÃO DE MERITI',
+  'OLINDA': 'NILÓPOLIS',
+  'CAONZE': 'NOVA IGUAÇU',
+  'KAONZE': 'NOVA IGUAÇU',
+  'KM 32': 'NOVA IGUAÇU',
+  'PRATA': 'NOVA IGUAÇU',
+  'MURY': 'NOVA FRIBURGO',
+  'SECRETARIO': 'PETRÓPOLIS',
+  'NOGUEIRA': 'PETRÓPOLIS',
+}
+
+/** "... - BAIRRO, RIO DE JANEIRO" com bairro de outro municipio: troca a
+ *  cidade pelo municipio do bairro. Qualquer outro texto volta igual. */
+export function corrigirCapitalComBairroDeFora(corpo: string): string {
+  const m = corpo.match(/^(.* - )([^,]+), RIO DE JANEIRO(\s+-.*)?$/i)
+  if (!m) return corpo
+  const municipio = BAIRRO_FORA_DA_CAPITAL[semAcento(m[2].trim())]
+  return municipio ? `${m[1]}${m[2]}, ${municipio}${m[3] ?? ''}` : corpo
+}
+
 /** Remove numeros/simbolos antes do tipo de logradouro no inicio do texto. */
 export function limparLixoInicio(endereco: string): string {
   if (!endereco) return endereco
@@ -264,6 +292,7 @@ export function normalizarEndereco(endereco: string): string {
     }
   }
 
+  corpo = corrigirCapitalComBairroDeFora(corpo)
   resultado = uf ? `${corpo} - ${uf}` : corpo
   return resultado
 }

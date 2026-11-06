@@ -232,3 +232,16 @@ describe('propriedade municipio(raw) == municipio(chave) nas NFs de 13-23/10 (F1
     expect(mudaram).toEqual([])
   })
 })
+
+describe('bairro de fora da capital marcado como RIO DE JANEIRO (pao, 05/11)', () => {
+  it('Coelho da Rocha vai pra Sao Joao de Meriti', () => {
+    expect(chaveCacheEndereco('PRACA DR RUFINO GONCALVES ,81 - COELHO DA ROCHA, RIO DE JANEIRO - *')).toBe('PRAÇA DR RUFINO GONCALVES ,81 - COELHO DA ROCHA, SÃO JOÃO DE MERITI')
+    expect(chaveCacheEndereco('AV GETULIO DE MOURA ,411415 - OLINDA, RIO DE JANEIRO - *')).toBe('AVENIDA GETULIO DE MOURA ,411415 - OLINDA, NILÓPOLIS')
+    expect(chaveCacheEndereco('ESTRADA UNIAO E INDUSTRIA ,7046 - NOGUEIRA, RIO DE JANEIRO - *')).toBe('ESTRADA UNIAO E INDUSTRIA ,7046 - NOGUEIRA, PETRÓPOLIS')
+  })
+  it('bairro da capital nao muda', () => {
+    expect(chaveCacheEndereco('RUA X, 10 - TIJUCA, RIO DE JANEIRO - *')).toBe(chaveCacheEndereco('RUA X, 10 - TIJUCA, RIO DE JANEIRO - *'))
+    expect(chaveCacheEndereco('RUA X, 10 - TIJUCA, RIO DE JANEIRO - *')).toContain('TIJUCA, RIO DE JANEIRO')
+    expect(chaveCacheEndereco('RUA X, 10 - CENTRO, RIO DE JANEIRO - *')).toContain('CENTRO, RIO DE JANEIRO')
+  })
+})
