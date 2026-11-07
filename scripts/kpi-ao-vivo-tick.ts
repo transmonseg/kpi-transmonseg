@@ -21,6 +21,7 @@ import { sincronizarAcessosMonitoramento } from '../src/lib/acessos-monitorament
 import { registrarSyncFusion, lerStatusFusion, gravarStatusFusion } from '../src/lib/kpi-rioquality/status-fusion-banco'
 import { decidirAlertaFusion, marcarAlertaFusion, type StatusFusion } from '../src/lib/kpi-rioquality/status-fusion'
 import { avisarRomaneioAusente, depsReaisAvisoRomaneio } from '../src/lib/kpi-romaneio/manha-servico'
+import { entregasParaPresenca, enviarPresencaAoMonitoramento } from '../src/lib/kpi-romaneio/presenca-monitoramento'
 import { execFile } from 'node:child_process'
 
 const log = (m: string) => console.log(`${new Date().toISOString()} ${m}`)
@@ -180,6 +181,16 @@ export async function repetirFechamentoProvisorioDiaAnterior() {
   }
 }
 
+// 07/11: notas entregues viram presenca no monitoramento (desvio da Central
+// Romaneio para de contar cliente ja' atendido como pendente). Fail-open.
+async function enviarPresencaDoDia(cliente: string, data: string) {
+  const { data: linha } = await createServiceClient().from('kpi_ao_vivo_calculo').select('resultado').eq('cliente', cliente).eq('data', data).maybeSingle()
+  const entregas = entregasParaPresenca(linha?.resultado as Parameters<typeof entregasParaPresenca>[0])
+  const r = await enviarPresencaAoMonitoramento(data, entregas)
+  if (!r.ok) log(`presenca monitoramento ${cliente} ${data}: ${r.erro}`)
+  else if (r.gravadas) log(`presenca monitoramento ${cliente} ${data}: ${r.gravadas} nota(s) novas de ${entregas.length}`)
+}
+
 async function main() {
   // Logins separados (06/10): o monitoramento segue os perfis do KPI.
   const acessos = await sincronizarAcessosMonitoramento().catch(err => `erro: ${err}`)
@@ -214,6 +225,7 @@ async function main() {
     }
     const r = await calcularAoVivo(cliente, data, log)
     if (r !== 'ok') log(`ao vivo ${cliente} ${data}: ${r}`)
+    await enviarPresencaDoDia(cliente, data).catch(err => log(`presenca monitoramento ${cliente}: ${err}`))
   }
   // F3-07 (ACH-04): 06:30 e 07:30 BRT, decidido pelo estado gravado (o tick
   // que passar primeiro do marco avalia). Depois da sync da Fusion acima.
