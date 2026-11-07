@@ -26,7 +26,15 @@ if [ -z "${ORF+x}" ]; then
 fi
 case "$ORF" in [0-9]*\|*) ;; *) ORF="";; esac
 echo "romaneio sem veiculo no cadastro: ${ORF:-?}"
-TEXTO=$(DIA="$DIA" SAIDA="$SAIDA" ROM_N="$ROM_N" ORF="$ORF" python3 - <<'PY'
+# 07/11: carro rodando com carga e rastreador mudo (RQQ5B81 parou 03/11, KZA2F01 nunca
+# teve) = notas "SEM RASTREADOR - CONTADA COMO CORRETA", ~70/dia entrando no numero sem
+# prova e ninguem sabia. Lista por placa: notas no dia e em quantos dos ultimos 14.
+# SR="PLACA:n:dias;..." no ambiente pula a consulta (teste em DRY). Fail-open.
+if [ -z "${SR+x}" ]; then
+  SR=$(sudo -n -u postgres psql -d kpi_transmonseg -tAc "WITH n AS (SELECT c.data, replace(p->>'placa','-','') || CASE c.cliente WHEN 'nutrimax' THEN ' Nutry' WHEN 'rioquality' THEN ' Rio Quality' ELSE ' ' || c.cliente END placa FROM kpi_ao_vivo_calculo c, jsonb_array_elements(c.resultado->'placas') p, jsonb_array_elements(p->'nfs') x WHERE c.data BETWEEN date '$DIA' - 13 AND date '$DIA' AND x->>'status' LIKE 'SEM RASTREADOR%') SELECT coalesce(string_agg(placa || ':' || hoje || ':' || dias, ';' ORDER BY hoje DESC), '') FROM (SELECT placa, count(*) FILTER (WHERE data = '$DIA') hoje, count(DISTINCT data) dias FROM n GROUP BY placa) t WHERE hoje > 0" 2>/dev/null | tr -d '\n')
+fi
+echo "rastreador mudo com carga: ${SR:-nenhum}"
+TEXTO=$(DIA="$DIA" SAIDA="$SAIDA" ROM_N="$ROM_N" ORF="$ORF" SR="$SR" python3 - <<'PY'
 import os,re
 d={}
 for l in os.environ["SAIDA"].splitlines():
@@ -35,6 +43,10 @@ for l in os.environ["SAIDA"].splitlines():
 fn=d.get("SUSPEITA_FALSO_NEGATIVO",0); fp=d.get("SUSPEITA_FALSO_POSITIVO",0); hd=d.get("HORARIO_DIVERGE",0); sg=d.get("SEM_GPS",0)
 tot=sum(d.values())
 motivos=[]
+sr=[x.split(":") for x in os.environ.get("SR","").split(";") if x.count(":")==2]
+if sr:
+    tot_sr=sum(int(n) for _,n,_ in sr)
+    motivos.append(f"{tot_sr} notas contadas como entregues SEM PROVA porque o rastreador nao comunica (" + ", ".join(f"{p}: {n} notas, {dd} dos ultimos 14 dias" for p,n,dd in sr) + ") -- mandar consertar o rastreador")
 if os.environ.get("ROM_N")=="0": motivos.append("o monitoramento ficou SEM romaneio nesse dia (o motor de desvio ficou cego)")
 orf=os.environ.get("ORF","")
 if "|" in orf:
