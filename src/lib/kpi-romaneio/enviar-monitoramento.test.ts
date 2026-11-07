@@ -44,4 +44,14 @@ describe('enviarAoMonitoramento com as coordenadas', () => {
     expect(JSON.parse(String(corpos[0].get('coordenadas')))).toEqual(coordenadas)
     expect(corpos[1].get('coordenadas')).toBeNull()
   })
+  it('07/11: o pão também leva o ponto do KPI quando vêm as linhas dele', async () => {
+    const corpos: FormData[] = []
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (_u, init) => { corpos.push((init as RequestInit).body as FormData); return new Response(JSON.stringify({ ok: true, totalLinhas: 1 })) })
+    await enviarAoMonitoramento([
+      { buf: Buffer.from('pdf'), nome: 'r.pdf', origem: 'romaneio' },
+      { buf: Buffer.from('pdf'), nome: 'p.pdf', origem: 'escala_pao' },
+    ], 'ana@x', [l('1', 'RUA CONFIAVEL, 1')], [l('218095', 'RUA CONFIAVEL, 81', 'RQO1B27'), l('218096', 'RUA SEM PONTO, 2', 'RQO1B27')])
+    expect(JSON.parse(String(corpos[0].get('coordenadas')))).toEqual([{ placa: 'RQU5H30', nf: '1', lat: -22.9, lng: -43.2 }])
+    expect(JSON.parse(String(corpos[1].get('coordenadas')))).toEqual([{ placa: 'RQO1B27', nf: '218095', lat: -22.9, lng: -43.2 }])
+  })
 })

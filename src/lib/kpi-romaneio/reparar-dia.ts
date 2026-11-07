@@ -163,8 +163,8 @@ export const depsReaisReparo: DepsReparo = {
     if (!c) return { ok: false, erro: 'geracao sem PDFs' }
     const arquivos: ArquivoMonitoramento[] = [{ buf: await baixarPdf(c.romaneio), nome: 'romaneio.pdf', origem: 'romaneio' }]
     if (c.pao) arquivos.push({ buf: await baixarPdf(c.pao), nome: 'pao.pdf', origem: 'escala_pao' })
-    const romaneio = await entradaDaGeracao(data, CLIENTE).then(e => e?.romaneio).catch(() => undefined)
-    const r = await enviarAoMonitoramento(arquivos, 'reparo-automatico', romaneio)
+    const entrada = await entradaDaGeracao(data, CLIENTE).catch(() => null)
+    const r = await enviarAoMonitoramento(arquivos, 'reparo-automatico', entrada?.romaneio, entrada?.pao?.linhas)
     const falha = r.find(x => !x.ok)
     return falha ? { ok: false, erro: `${falha.origem}: ${falha.erro}` } : { ok: true }
   },

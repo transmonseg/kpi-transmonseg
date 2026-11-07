@@ -25,10 +25,16 @@ export type EnvioMonitoramento = { origem: 'romaneio' | 'escala_pao'; ok: boolea
 
 /** `romaneio` (GEO3-08): linhas do dia -- o PDF do romaneio vai com o ponto
  *  confiavel do KPI por NF (coordenadasNutryParaMonitoramento). */
-export async function enviarAoMonitoramento(arquivos: ArquivoMonitoramento[], enviadoPor: string | null, romaneio?: LinhaRomaneio[]): Promise<EnvioMonitoramento[]> {
-  if (romaneio?.length && arquivos.some(a => a.origem === 'romaneio' && !a.coordenadas)) {
-    const coordenadas = await coordenadasNutryParaMonitoramento(romaneio)
-    arquivos = arquivos.map(a => (a.origem === 'romaneio' && !a.coordenadas ? { ...a, coordenadas } : a))
+export async function enviarAoMonitoramento(arquivos: ArquivoMonitoramento[], enviadoPor: string | null, romaneio?: LinhaRomaneio[], pao?: LinhaRomaneio[]): Promise<EnvioMonitoramento[]> {
+  // 07/11: o pão também leva o ponto do KPI. Sem ele o monitoramento
+  // geocodificava sozinho e errava bairro de fora da capital (Feira Nova
+  // Coelho da Rocha, NF 218095, 05/11: ponto no Recreio, 19 km da loja).
+  const linhasPorOrigem = { romaneio, escala_pao: pao }
+  for (const origem of ['romaneio', 'escala_pao'] as const) {
+    const linhas = linhasPorOrigem[origem]
+    if (!linhas?.length || !arquivos.some(a => a.origem === origem && !a.coordenadas)) continue
+    const coordenadas = await coordenadasNutryParaMonitoramento(linhas)
+    arquivos = arquivos.map(a => (a.origem === origem && !a.coordenadas ? { ...a, coordenadas } : a))
   }
   const base = process.env.MONITORAMENTO_URL ?? 'http://127.0.0.1:3010'
   const chave = process.env.MOTOR_SECRET
@@ -40,7 +46,7 @@ export async function enviarAoMonitoramento(arquivos: ArquivoMonitoramento[], en
       fd.set('origem', a.origem)
       fd.set('modoTeste', 'false')
       // GEO3-08: o monitoramento antigo ignora o campo e geocodifica como antes.
-      if (a.origem === 'romaneio' && a.coordenadas?.length) fd.set('coordenadas', JSON.stringify(a.coordenadas))
+      if (a.coordenadas?.length) fd.set('coordenadas', JSON.stringify(a.coordenadas))
       const r = await fetch(`${base}/api/romaneio/upload`, {
         method: 'POST', body: fd, headers: { 'x-motor-key': chave, 'x-enviado-por': enviadoPor ?? 'KPI' },
         signal: AbortSignal.timeout(90_000),
