@@ -64,3 +64,4 @@ __pycache__/
 /.next-build/
 /.next-anterior/
 .claude/worktrees/
+/deploy.sh
