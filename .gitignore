@@ -63,3 +63,4 @@ __pycache__/
 *.pyc
 /.next-build/
 /.next-anterior/
+.claude/worktrees/
