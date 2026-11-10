@@ -58,7 +58,8 @@ export function vigentesPorNf(historicoResolucoes: ResolucaoNfRow[]): Map<string
   const vigentePorNf = new Map<string, ResolucaoNfRow>()
   for (const [nf, linhas] of porNf) {
     const vigente = resolucaoVigente(linhas)
-    if (vigente) vigentePorNf.set(nf, vigente)
+    // 09/11: "desfeita" = volta a valer o automatico (nenhuma resolucao vigente).
+    if (vigente && vigente.resolucao !== 'desfeita') vigentePorNf.set(nf, vigente)
   }
   return vigentePorNf
 }

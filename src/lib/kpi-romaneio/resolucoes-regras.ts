@@ -14,6 +14,8 @@ export const LABEL_RESOLUCAO_NF: Record<ResolucaoNf, string> = {
   entregue_outra_placa: 'ENTREGUE POR OUTRA PLACA',
   nao_esteve_no_local: 'NÃO ESTEVE NO LOCAL',
   desatualizado: 'DESATUALIZADO',
+  confirmada_operacao: 'ENTREGUE - CONFIRMADA PELA OPERAÇÃO',
+  desfeita: 'CONFERÊNCIA DESFEITA',
 }
 
 // Resolucoes que a operacao registra como "de fato aconteceu" -- contam pra
@@ -22,10 +24,11 @@ export const LABEL_RESOLUCAO_NF: Record<ResolucaoNf, string> = {
 // automatico tivesse confirmado por engano -- a palavra da operacao vale
 // mais que o GPS/Unitrac nesses dois casos).
 export const RESOLUCOES_CONFIRMATORIAS: ReadonlySet<ResolucaoNf> = new Set<ResolucaoNf>([
-  'entregue', 'entregue_tempo_conferido', 'entregue_rastro_oscilante', 'entregue_outra_placa',
+  'entregue', 'entregue_tempo_conferido', 'entregue_rastro_oscilante', 'entregue_outra_placa', 'confirmada_operacao',
 ])
 
 /** Valores aceitos pelo CHECK da migration 20260924000000_kpi_resolucao_nf.sql. */
 export const RESOLUCOES_VALIDAS: readonly ResolucaoNf[] = [
   'entregue', 'entregue_tempo_conferido', 'entregue_rastro_oscilante', 'entregue_outra_placa', 'nao_esteve_no_local', 'desatualizado',
+  'confirmada_operacao', 'desfeita',
 ]

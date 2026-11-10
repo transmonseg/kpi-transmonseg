@@ -76,6 +76,8 @@ const TRAVA_EXPIRA_MIN = 15
 
 export type ResultadoAoVivo = {
   calculadoEm: string
+  /** 09/11: só na resposta da tela -- cálculo + conferências (cache ?tenho=). */
+  marca?: string
   resumo: { taxa: number | null; entregues: number | null; nfsNaConta: number | null; aguardando: number; totalNfs: number; feitas: number; pct: number }
   placas: PlacaAoVivo[]
   /** Carro trocado sem aviso (06/10): sugestões pra operação confirmar. */

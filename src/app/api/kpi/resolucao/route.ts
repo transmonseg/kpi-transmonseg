@@ -7,6 +7,7 @@ import { acaoConferencia, empresaDaResolucao, paraTela, nfSemNumeroReal, AVISO_N
 import { validarComprovante, caminhoComprovante } from '@/lib/kpi-romaneio/comprovante'
 import { nfDoDia, guardarComprovante, apagarComprovante } from '@/lib/kpi-romaneio/conferencia-servico'
 import { normalizarPlacaDigitada } from '@/lib/kpi-romaneio/trocas-placa'
+import { presencaDaConferencia } from '@/lib/kpi-romaneio/conferencia-presenca'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -88,6 +89,8 @@ export async function POST(req: NextRequest) {
       responsavel: a.email ?? 'operador', documento: caminho,
     })
     console.log(`[resolucao] ${a.cliente} ${data} NF ${nf}: ${def.resolucao} por ${a.email ?? 'operador'}`)
+    // 09/11: confirmada vira presença no monitoramento na hora (fail-open).
+    await presencaDaConferencia(data, nf, def.exigePlaca ? placa : achada.placa, achada.nf.chegada, def.resolucao).catch(() => {})
     return NextResponse.json({ ok: true, resolucao: paraTela(linha) })
   } catch (e) {
     console.error('[resolucao] gravação falhou:', e)

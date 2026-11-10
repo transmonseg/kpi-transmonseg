@@ -7,11 +7,12 @@
 
 import { SessaoVencida } from '@/lib/sessao-fetch'
 
-type ComResultado = { resultado: { calculadoEm: string } | null }
+type ComResultado = { resultado: { calculadoEm: string; marca?: string } | null }
 
 /** Servidor: se a tela já tem este cálculo, devolve sem o resultado (marcado como inalterado). */
 export function semResultadoSeIgual<T extends ComResultado>(estado: T, tenho: string | null): T & { resultadoInalterado?: true } {
-  if (tenho && estado.resultado && estado.resultado.calculadoEm === tenho) {
+  // 09/11: "marca" = cálculo + conferências (muda com conferência nova).
+  if (tenho && estado.resultado && (estado.resultado.marca ?? estado.resultado.calculadoEm) === tenho) {
     return { ...estado, resultado: null, resultadoInalterado: true }
   }
   return estado

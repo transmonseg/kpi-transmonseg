@@ -24,7 +24,7 @@ export function nfSemNumeroReal(cliente: ClienteConferencia, nf: string): boolea
 }
 export const AVISO_NF_SEM_NUMERO = 'Este dia da Rio Quality veio sem o número da nota fiscal (relatório sem a coluna Nota Fiscal): a conferência ficaria presa à ordem das linhas. Suba o relatório de 55 colunas para conferir.'
 
-export type AcaoConferencia = 'comprovante' | 'nao_esteve' | 'ponto_errado' | 'outra_placa'
+export type AcaoConferencia = 'confirmar' | 'comprovante' | 'nao_esteve' | 'ponto_errado' | 'outra_placa' | 'desfazer'
 
 export type DefinicaoAcao = {
   acao: AcaoConferencia
@@ -38,13 +38,19 @@ export type DefinicaoAcao = {
 }
 
 export const ACOES_CONFERENCIA: readonly DefinicaoAcao[] = [
+  { acao: 'confirmar', resolucao: 'confirmada_operacao', rotulo: 'Entregue — conferi', dica: 'Conferiu na Unitrac, com o motorista ou com o cliente. A nota vira entregue e entra na taxa na hora; seu nome fica registrado.', exigeComprovante: false, exigePlaca: false },
   { acao: 'comprovante', resolucao: 'entregue', rotulo: 'Entregue — tenho comprovante', dica: 'Anexe o canhoto ou a foto da entrega. Sem anexo não grava.', exigeComprovante: true, exigePlaca: false },
   { acao: 'nao_esteve', resolucao: 'nao_esteve_no_local', rotulo: 'Não esteve no local', dica: 'A nota continua não entregue, agora confirmado pela operação.', exigeComprovante: false, exigePlaca: false },
   { acao: 'ponto_errado', resolucao: 'desatualizado', rotulo: 'Ponto do cliente errado', dica: 'O endereço ou o ponto no mapa está errado. A nota sai da taxa após conferência até o ponto ser corrigido.', exigeComprovante: false, exigePlaca: false },
   { acao: 'outra_placa', resolucao: 'entregue_outra_placa', rotulo: 'Entregue por outra placa', dica: 'Informe a placa que entregou e anexe o comprovante.', exigeComprovante: true, exigePlaca: true },
 ]
 
+/** 09/11: desfaz a conferência (volta a valer o automático). Fora da lista de
+ *  botões da fila; a tela mostra "Desfazer" na nota já conferida. */
+export const ACAO_DESFAZER: DefinicaoAcao = { acao: 'desfazer', resolucao: 'desfeita', rotulo: 'Desfazer conferência', dica: 'Volta a valer o que o GPS calculou.', exigeComprovante: false, exigePlaca: false }
+
 export function acaoConferencia(acao: string | null | undefined): DefinicaoAcao | null {
+  if (acao === 'desfazer') return ACAO_DESFAZER
   return ACOES_CONFERENCIA.find(a => a.acao === acao) ?? null
 }
 
@@ -71,6 +77,8 @@ const ROTULO_RESOLUCAO: Record<ResolucaoNf, string> = {
   entregue_outra_placa: 'Entregue por outra placa',
   nao_esteve_no_local: 'Não esteve no local',
   desatualizado: 'Ponto do cliente errado',
+  confirmada_operacao: 'Entregue (conferida pela operação)',
+  desfeita: 'Conferência desfeita',
 }
 
 export function rotuloResolucao(r: Pick<ResolucaoTela, 'resolucao' | 'placaExecutora'>): string {
@@ -119,6 +127,7 @@ function porNf(resolucoes: ResolucaoTela[]): Map<string, ResolucaoTela> {
     const ja = m.get(r.nf)
     if (!ja || Date.parse(r.criadoEm) >= Date.parse(ja.criadoEm)) m.set(r.nf, r)
   }
+  for (const [nf, r] of m) if (r.resolucao === 'desfeita') m.delete(nf)
   return m
 }
 

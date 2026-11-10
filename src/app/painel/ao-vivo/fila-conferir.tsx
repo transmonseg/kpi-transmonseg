@@ -25,7 +25,7 @@ const PASSO = 15
 const fmtPct = (n: number) => n.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 const quando = (iso: string) => new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', ' às')
 
-export function FilaConferir({ cliente, nomeCliente, data, historico, placas, resumo, meta, onTrocarCarga }: {
+export function FilaConferir({ cliente, nomeCliente, data, historico, placas, resumo, meta, onTrocarCarga, onMudou }: {
   cliente: Cliente
   nomeCliente: string
   data: string
@@ -35,6 +35,8 @@ export function FilaConferir({ cliente, nomeCliente, data, historico, placas, re
   meta: number
   /** Nutry: abre "Trocar carga entre placas" (Entregue por outra placa). */
   onTrocarCarga?: () => void
+  /** 09/11: conferência vale na hora no Ao vivo -> recarrega a tela. */
+  onMudou?: () => void
 }) {
   const [resolucoes, setResolucoes] = useState<ResolucaoTela[]>([])
   const [erroLeitura, setErroLeitura] = useState<string | null>(null)
@@ -83,8 +85,8 @@ export function FilaConferir({ cliente, nomeCliente, data, historico, placas, re
     const novas = [...resolucoes.filter(x => x.nf !== r.nf), r]
     setResolucoes(novas)
     setAberta(null)
-    const t = taxaAposConferencia(placas, novas)
-    setAviso(`NF ${r.nf} gravada: ${rotuloResolucao(r)}. A taxa oficial não muda${t.taxa != null ? `; após conferência: ${fmtPct(t.taxa)}%` : ''}.`)
+    setAviso(`NF ${r.nf} gravada: ${rotuloResolucao(r)}. Já vale na taxa do Ao vivo.`)
+    onMudou?.()
   }
 
   const lista = verConferidas ? fila.conferidas : fila.pendentes
@@ -102,9 +104,8 @@ export function FilaConferir({ cliente, nomeCliente, data, historico, placas, re
       </summary>
       <div className="flex flex-col gap-3 border-t border-[var(--color-border)] px-4 py-4">
         <p className="text-[12.5px] leading-relaxed text-[var(--color-fg-muted)]">
-          Comece pelo topo: o carro esteve no cliente ou perto. Cada nota comprovada conta 1 na taxa após conferência; a taxa oficial é a do GPS
-          {resumo.taxa != null ? ` (${fmtPct(resumo.taxa)}%)` : ''} e não muda.
-          {apos.conferidas > 0 && apos.taxa != null && <> Após conferência: <strong className="font-semibold text-[var(--color-fg)]">{fmtPct(apos.taxa)}%</strong> ({apos.confirmadas.toLocaleString('pt-BR')} de {apos.naConta.toLocaleString('pt-BR')}){faltamApos > 0 ? `, faltam ${faltamApos}` : ', meta batida'}.</>}
+          Comece pelo topo: o carro esteve no cliente ou perto. Cada nota conferida já vale na taxa do Ao vivo
+          {resumo.taxa != null ? ` (agora ${fmtPct(resumo.taxa)}%)` : ''}, com o nome de quem conferiu.
         </p>
         {erroLeitura && <p className="text-[12.5px] text-[var(--color-danger)]">{erroLeitura}</p>}
         {aviso && <p role="status" className="rounded-xl bg-[var(--color-bg-subtle)] px-3.5 py-2 text-[12.5px] text-[var(--color-fg)]">{aviso}</p>}

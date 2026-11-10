@@ -43,6 +43,9 @@ export type NfAoVivo = {
   parada?: { lat: number; lng: number } | null
   /** Só nas não entregues: parada mais perto do cliente no dia (investigacao.ts). */
   investigacao?: Investigacao
+  /** 09/11: conferência da operação aplicada por cima do automático na hora de
+   *  servir a tela (ao-vivo-conferencia.ts). Nunca gravada no cálculo. */
+  conferencia?: { resolucao: string; rotulo: string; responsavel: string; em: string; situacaoAutomatica: SituacaoNf }
 }
 
 export type PlacaAoVivo = {

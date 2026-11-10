@@ -241,6 +241,10 @@ export type ResolucaoNf =
   | 'entregue_outra_placa'
   | 'nao_esteve_no_local'
   | 'desatualizado'
+  // 09/11: conferida pela operacao sem canhoto (botao "Confirmar entrega") e
+  // "desfeita" (volta a valer o automatico).
+  | 'confirmada_operacao'
+  | 'desfeita'
 
 /** Uma linha de saida, cliente dentro de uma carga -- usada internamente
  *  antes da agregacao por carga. */

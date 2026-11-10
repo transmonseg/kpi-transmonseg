@@ -51,7 +51,10 @@ export async function updateSession(request: NextRequest) {
   // Link público do KPI Manual (sem login) — token é a própria permissão,
   // ver /api/kpi-manual/link-publico (onde ele é gerado, isso sim autenticado).
   const isKpiPublico = path.startsWith('/kpi-publico/')
-  const isPublic = path === '/' || isAuthPage || isDashboardPublico || isConvite || isAcesso || isKpiPublico
+  // 09/11: conferência vinda do monitoramento (servidor a servidor, a rota
+  // exige x-motor-key).
+  const isConferenciaExterna = path === '/api/kpi/conferencia-externa'
+  const isPublic = path === '/' || isConferenciaExterna || isAuthPage || isDashboardPublico || isConvite || isAcesso || isKpiPublico
 
   if (!user && !isPublic) {
     // F3-11 (AC-03): API sem usuário responde 401 em JSON. O redirect virava o

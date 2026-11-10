@@ -26,6 +26,7 @@ import { metaDoCliente } from '@/lib/kpi/metas'
 import { linhaMeta, placaAbaixoDaMeta, placaSemHorarioBase, ordenarPioresPrimeiro } from '@/lib/kpi-romaneio/resumo-dia'
 import { motivoLegivel } from '@/lib/kpi-romaneio/fila-conferir'
 import { FilaConferir } from './fila-conferir'
+import { ConfirmarNf } from './confirmar-nf'
 import { ChecklistManha } from './checklist-manha'
 
 // Tela "Ao vivo" (spec 2026-10-06-kpi-ao-vivo-design.md). Cor/status de cada
@@ -110,7 +111,7 @@ export default function AoVivoPage() {
   const carregar = useCallback(async () => {
     const ant = estadoRef.current
     const mesmoDia = !!ant && !ant.historico && !dataSel && ant.data === ant.hoje && clienteDoEstado.current === CLIENTE
-    const tenho = mesmoDia && ant?.resultado ? `&tenho=${encodeURIComponent(ant.resultado.calculadoEm)}` : ''
+    const tenho = mesmoDia && ant?.resultado ? `&tenho=${encodeURIComponent(ant.resultado.marca ?? ant.resultado.calculadoEm)}` : ''
     try {
       // F3-11: sessão vencida leva ao login (sem "Unexpected token <" em loop).
       const r = await buscarComSessao(`/api/kpi/ao-vivo?cliente=${CLIENTE}${dataSel ? `&data=${dataSel}` : ''}${tenho}`, { cache: 'no-store' })
@@ -417,7 +418,7 @@ export default function AoVivoPage() {
       )}
       {!historico && cliente === 'nutrimax' && r && <RedirecionarCarga placas={placas} onConfirmada={carregar} />}
       {/* F3-03 (ACH-02): fila "Conferir" -- o que conferir primeiro e a conferência por NF. */}
-      {r && <FilaConferir key={`${cliente}-${estado.data}`} cliente={cliente} nomeCliente={NOME_CLIENTE[cliente]} data={estado.data} historico={historico} placas={placas} resumo={r.resumo} meta={meta}
+      {r && <FilaConferir key={`${cliente}-${estado.data}`} cliente={cliente} nomeCliente={NOME_CLIENTE[cliente]} data={estado.data} historico={historico} placas={placas} resumo={r.resumo} meta={meta} onMudou={carregar}
         onTrocarCarga={cliente === 'nutrimax' && !historico ? abrirTrocaDeCarga : undefined} />}
       {r && <InvestigacaoNaoEntregues placas={placas} onPlaca={pl => { setPlacaSel(pl); setNfAberta(null); setVendoDetalhe(true) }} />}
       {/* F3-06 (ING-10, ING-16): recibo do último envio -- contagens e divergências, sem bloquear. */}
@@ -488,7 +489,7 @@ export default function AoVivoPage() {
             <button type="button" onClick={() => setVendoDetalhe(false)} className="mb-3 inline-flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-4 text-[13px] font-semibold text-[var(--color-fg)] lg:hidden">
               <CaretLeft size={14} weight="bold" />Todas as placas
             </button>
-          <DetalhePlaca p={placa} data={estado.data} cliente={cliente} agora={historico ? undefined : agora[placa.placa]} agoraMs={agoraMs} historico={historico} nfAberta={nfAberta} onNf={nf => setNfAberta(a => (a === nf ? null : nf))} filtroNf={filtroNf} onFiltroNf={setFiltroNf} />
+          <DetalhePlaca p={placa} data={estado.data} cliente={cliente} agora={historico ? undefined : agora[placa.placa]} agoraMs={agoraMs} historico={historico} nfAberta={nfAberta} onNf={nf => setNfAberta(a => (a === nf ? null : nf))} filtroNf={filtroNf} onFiltroNf={setFiltroNf} onMudou={carregar} />
           </div>
         </div>
       )}
@@ -578,7 +579,7 @@ function LinhaPlaca({ p, ativa, agora, agoraMs, historico, onClick }: { p: Placa
   )
 }
 
-function DetalhePlaca({ p, data, cliente, agora, agoraMs, historico, nfAberta, onNf, filtroNf, onFiltroNf }: { p: PlacaAoVivo; data: string; cliente: Cliente; agora: Agora | undefined; agoraMs: number; historico: boolean; nfAberta: string | null; onNf: (nf: string) => void; filtroNf: FiltroNf; onFiltroNf: (f: FiltroNf) => void }) {
+function DetalhePlaca({ p, data, cliente, agora, agoraMs, historico, nfAberta, onNf, filtroNf, onFiltroNf, onMudou }: { p: PlacaAoVivo; data: string; cliente: Cliente; agora: Agora | undefined; agoraMs: number; historico: boolean; nfAberta: string | null; onNf: (nf: string) => void; filtroNf: FiltroNf; onFiltroNf: (f: FiltroNf) => void; onMudou: () => void }) {
   const s = situacaoAgora(p, agora, agoraMs, historico)
   const nfAgora = agora?.nf?.nf ?? (!historico ? p.paradaAtual?.nf ?? null : null)
   const clienteAgora = agora?.nf?.cliente ?? (!historico ? p.paradaAtual?.cliente ?? null : null)
@@ -627,7 +628,7 @@ function DetalhePlaca({ p, data, cliente, agora, agoraMs, historico, nfAberta, o
         </div>
         <ul>
           {filtrarNfs(p.nfs, filtroNf).map(n => (
-            <LinhaNf key={`${n.carga}-${n.nf}`} n={n} todas={p.nfs} placa={p.placa} data={data} historico={historico} cliente={cliente} ordem={p.nfs.indexOf(n) + 1} aberta={nfAberta === n.nf} noClienteAgora={nfAgora === n.nf ? inicioAgora : null} agoraMs={agoraMs} onClick={() => onNf(n.nf)} posicao={agora?.posicao ?? null} />
+            <LinhaNf key={`${n.carga}-${n.nf}`} n={n} todas={p.nfs} placa={p.placa} data={data} historico={historico} cliente={cliente} ordem={p.nfs.indexOf(n) + 1} aberta={nfAberta === n.nf} noClienteAgora={nfAgora === n.nf ? inicioAgora : null} agoraMs={agoraMs} onClick={() => onNf(n.nf)} posicao={agora?.posicao ?? null} onMudou={onMudou} />
           ))}
           {filtrarNfs(p.nfs, filtroNf).length === 0 && (
             <li className="px-5 py-8 text-center text-[13px] text-[var(--color-fg-muted)]">{filtroNf === 'pendentes' ? 'Nenhuma nota pendente nesta placa.' : 'Nenhuma nota entregue ainda nesta placa.'}</li>
@@ -655,11 +656,11 @@ function Dado({ rotulo, valor, extra }: { rotulo: string; valor: string; extra?:
   )
 }
 
-function LinhaNf({ n, todas, placa, data, historico, cliente, ordem, aberta, noClienteAgora, agoraMs, onClick, posicao }: { n: NfAoVivo; todas: NfAoVivo[]; placa: string; data: string; historico: boolean; cliente: Cliente; ordem: number; aberta: boolean; noClienteAgora: string | null; agoraMs: number; onClick: () => void; posicao: Agora['posicao'] }) {
+function LinhaNf({ n, todas, placa, data, historico, cliente, ordem, aberta, noClienteAgora, agoraMs, onClick, posicao, onMudou }: { n: NfAoVivo; todas: NfAoVivo[]; placa: string; data: string; historico: boolean; cliente: Cliente; ordem: number; aberta: boolean; noClienteAgora: string | null; agoraMs: number; onClick: () => void; posicao: Agora['posicao']; onMudou: () => void }) {
   const segAgora = noClienteAgora ? desde(noClienteAgora, agoraMs) : null
   const longe = segAgora != null && segAgora >= UMA_HORA
   const corPonto = segAgora != null ? (longe ? 'var(--color-warning)' : '#2a6fdb') : COR_SITUACAO[n.situacao]
-  const rotulo = segAgora != null ? (longe ? 'No cliente há +1 h' : 'No cliente agora') : ROTULO_SITUACAO[n.situacao]
+  const rotulo = segAgora != null ? (longe ? 'No cliente há +1 h' : 'No cliente agora') : n.conferencia ? n.conferencia.rotulo : ROTULO_SITUACAO[n.situacao]
   const corRotulo = segAgora != null ? (longe ? 'text-[#b45309]' : 'text-[#1d4fa8]') : n.situacao === 'entregue' ? 'text-[var(--color-success)]' : n.situacao === 'nao_foi' || n.situacao === 'nao_confirmada' ? 'text-[var(--color-danger)]' : n.situacao === 'revisar' ? 'text-[#b45309]' : 'text-[var(--color-fg-muted)]'
   return (
     <li id={`nf-${n.carga}-${n.nf}`} className="scroll-mt-24 border-b border-[var(--color-border)] last:border-b-0">
@@ -692,6 +693,8 @@ function LinhaNf({ n, todas, placa, data, historico, cliente, ordem, aberta, noC
               <p className="leading-relaxed text-[var(--color-fg)]"><span className="font-semibold">GPS: {ROTULO_INVESTIGACAO[n.investigacao.categoria].titulo.toLowerCase()}.</span> {fraseInvestigacao(n.investigacao)}{n.investigacao.distM != null ? ` ${ROTULO_INVESTIGACAO[n.investigacao.categoria].dica}` : ''}</p>
             )}
             <p className="leading-relaxed text-[var(--color-fg-muted)]">NF {n.nf}, carga {n.carga}. {enderecoLimpo(n.endereco)}</p>
+            {/* 09/11: confirmar a entrega aqui mesmo (vale na hora). */}
+            {segAgora == null && <ConfirmarNf n={n} cliente={cliente} data={data} onMudou={onMudou} />}
             {temHorario && (
               <div className="grid grid-cols-3 gap-x-6">
                 <Mini rotulo="Chegou" valor={segAgora != null ? hhmm(noClienteAgora) : n.chegada ?? '—'} />

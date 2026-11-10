@@ -97,8 +97,9 @@ describe('taxaAposConferencia (D-06: separada da oficial)', () => {
 })
 
 describe('ações da fila', () => {
-  it('quatro ações, gravando o enum do importador', () => {
+  it('cinco ações, gravando o enum do importador', () => {
     expect(ACOES_CONFERENCIA.map(a => [a.acao, a.resolucao, a.rotulo])).toEqual([
+      ['confirmar', 'confirmada_operacao', 'Entregue — conferi'],
       ['comprovante', 'entregue', 'Entregue — tenho comprovante'],
       ['nao_esteve', 'nao_esteve_no_local', 'Não esteve no local'],
       ['ponto_errado', 'desatualizado', 'Ponto do cliente errado'],

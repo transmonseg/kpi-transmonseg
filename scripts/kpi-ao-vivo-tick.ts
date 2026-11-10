@@ -22,6 +22,8 @@ import { registrarSyncFusion, lerStatusFusion, gravarStatusFusion } from '../src
 import { decidirAlertaFusion, marcarAlertaFusion, type StatusFusion } from '../src/lib/kpi-rioquality/status-fusion'
 import { avisarRomaneioAusente, depsReaisAvisoRomaneio } from '../src/lib/kpi-romaneio/manha-servico'
 import { entregasParaPresenca, enviarPresencaAoMonitoramento } from '../src/lib/kpi-romaneio/presenca-monitoramento'
+import { comConferencias } from '../src/lib/kpi-romaneio/ao-vivo-conferencia-servidor'
+import type { ResultadoAoVivo } from '../src/lib/kpi-romaneio/ao-vivo-servico'
 import { execFile } from 'node:child_process'
 
 const log = (m: string) => console.log(`${new Date().toISOString()} ${m}`)
@@ -185,7 +187,9 @@ export async function repetirFechamentoProvisorioDiaAnterior() {
 // Romaneio para de contar cliente ja' atendido como pendente). Fail-open.
 async function enviarPresencaDoDia(cliente: string, data: string) {
   const { data: linha } = await createServiceClient().from('kpi_ao_vivo_calculo').select('resultado').eq('cliente', cliente).eq('data', data).maybeSingle()
-  const entregas = entregasParaPresenca(linha?.resultado as Parameters<typeof entregasParaPresenca>[0])
+  // 09/11: nota confirmada pela operação também vira presença.
+  const resultado = await comConferencias(cliente as 'nutrimax' | 'rioquality', data, (linha?.resultado as ResultadoAoVivo | null) ?? null)
+  const entregas = entregasParaPresenca(resultado)
   const r = await enviarPresencaAoMonitoramento(data, entregas)
   if (!r.ok) log(`presenca monitoramento ${cliente} ${data}: ${r.erro}`)
   else if (r.gravadas) log(`presenca monitoramento ${cliente} ${data}: ${r.gravadas} nota(s) novas de ${entregas.length}`)
