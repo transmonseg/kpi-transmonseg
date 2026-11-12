@@ -27,7 +27,19 @@ export function dataDaPrevisao(p: string | null): string | null {
 const semAcento = (v: unknown) => String(v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim()
 const celula = (v: unknown) => { const s = String(v ?? '').trim(); return s === '' || s === '--' ? null : s }
 
+/** 12/11: xlsx com o índice do zip quebrado (ex.: binário que passou por
+ *  texto UTF-8) fazia o XLSX.read rodar por minutos e travar o tick. Confere
+ *  o fim do zip antes de ler. */
+export function xlsxIntegro(buf: Buffer): boolean {
+  if (buf.length < 22 || buf.subarray(0, 2).toString('latin1') !== 'PK') return false
+  const fim = buf.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]))
+  if (fim < 0 || fim + 22 > buf.length) return false
+  const tamanho = buf.readUInt32LE(fim + 12), inicio = buf.readUInt32LE(fim + 16)
+  return inicio + tamanho <= fim && buf.readUInt32LE(inicio) === 0x02014b50
+}
+
 function linhas(buf: Buffer): unknown[][] {
+  if (!xlsxIntegro(buf)) throw new Error('Planilha corrompida ou não é xlsx.')
   const wb = XLSX.read(buf, { type: 'buffer', cellDates: false })
   const ws = wb.Sheets[wb.SheetNames[0]]
   return ws ? (XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: false }) as unknown[][]) : []
@@ -41,7 +53,8 @@ export function ehRelatorioOrdemRota(buf: Buffer): boolean {
 }
 
 export function parseOrdemRota(buf: Buffer): OrdemRotaLinha[] {
-  const rows = linhas(buf)
+  let rows: unknown[][]
+  try { rows = linhas(buf) } catch { return [] }
   const out: OrdemRotaLinha[] = []
   let placa = ''
   let col: { nf: number; ini: number; fim: number } | null = null

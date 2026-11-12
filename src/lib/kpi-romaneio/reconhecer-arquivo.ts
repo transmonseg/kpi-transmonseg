@@ -15,7 +15,7 @@ import { parseRomaneioTexto, extrairDataCabecalhoRomaneio } from './parse-romane
 import { parseEscala } from './parse-escala'
 import { parsePaoTexto } from './parse-pao'
 import { parseEntregasCompletas } from '@/lib/kpi-rioquality/parse-planilhas'
-import { ehRelatorioOrdemRota, parseOrdemRota } from '@/lib/kpi-rioquality/parse-ordem-rota'
+import { ehRelatorioOrdemRota, parseOrdemRota, xlsxIntegro } from '@/lib/kpi-rioquality/parse-ordem-rota'
 
 export type TipoArquivo = 'romaneio_entrega' | 'escala_rota' | 'pao_jac' | 'escala_portofrio' | 'rq_entregas' | 'rq_ordem_rota' | 'desconhecido'
 export type ClienteArquivo = 'nutrimax' | 'rioquality' | 'portofrio'
@@ -122,6 +122,8 @@ function reconhecido(nome: string, tipo: TipoArquivo, data: string | null, conta
 }
 
 function reconhecerPlanilha(buf: Buffer, nome: string): ArquivoReconhecido {
+  // 12/11: zip quebrado travava o XLSX.read por minutos.
+  if (!xlsxIntegro(buf)) return desconhecido(nome)
   // 12/11: relatório das cargas com ORDEM (roteirização da RQ, Fusion).
   if (ehRelatorioOrdemRota(buf)) {
     const o = parseOrdemRota(buf)

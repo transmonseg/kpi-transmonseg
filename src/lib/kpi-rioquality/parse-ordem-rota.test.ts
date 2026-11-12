@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'fs'
 import { join } from 'path'
-import { parseOrdemRota, ehRelatorioOrdemRota, dataDaPrevisao } from './parse-ordem-rota'
+import { parseOrdemRota, ehRelatorioOrdemRota, dataDaPrevisao, xlsxIntegro } from './parse-ordem-rota'
 import { parseEntregasCompletas } from './parse-planilhas'
 
 const buf = readFileSync(join(__dirname, '__fixtures__', 'relatorio-ordem-rota.xlsx'))
@@ -49,5 +49,19 @@ describe('dataDaPrevisao', () => {
     expect(dataDaPrevisao('24/09/2083 10:00:00')).toBe('2083-09-24')
     expect(dataDaPrevisao('24/09/2183 10:00:00')).toBeNull()
     expect(dataDaPrevisao(null)).toBeNull()
+  })
+})
+
+describe('xlsxIntegro (12/11: zip quebrado travava o leitor por minutos)', () => {
+  it('aceita o arquivo bom e recusa o corrompido sem tentar ler', () => {
+    expect(xlsxIntegro(buf)).toBe(true)
+    // o mesmo arquivo passado por texto UTF-8 (bytes > 0x7f viram EF BF BD)
+    const corrompido = Buffer.from(buf.toString('utf8'), 'utf8')
+    expect(xlsxIntegro(corrompido)).toBe(false)
+    const t = Date.now()
+    expect(parseOrdemRota(corrompido)).toEqual([])
+    expect(ehRelatorioOrdemRota(corrompido)).toBe(false)
+    expect(Date.now() - t).toBeLessThan(1000)
+    expect(xlsxIntegro(Buffer.from('PK nada'))).toBe(false)
   })
 })

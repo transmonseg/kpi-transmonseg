@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // F4-09: o tick chama buscarDiaRioQualityFusionCompleto (55 colunas, grade de
 // reserva). Nos testes antigos ele devolve o que buscarDiaRioQualityFusion
 // devolver, como relatorio de 55 colunas.
+vi.mock('../src/lib/kpi-romaneio/ordem-rota-servidor', () => ({ sincronizarOrdemRotaFusion: async () => ({ situacao: 'recente' }) }))
 vi.mock('../src/lib/kpi-rioquality/fonte-fusion', () => {
   const buscarDiaRioQualityFusion = vi.fn()
   return {

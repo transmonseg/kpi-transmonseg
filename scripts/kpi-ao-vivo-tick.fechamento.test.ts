@@ -5,6 +5,7 @@ import { describe, it, expect, vi } from 'vitest'
 // em 20/10 a Fusion tinha 94 romaneios e o KPI gravou 88.
 const ordem = vi.hoisted(() => [] as string[])
 const linhaCalculo = vi.hoisted(() => ({ valor: { calculado_em: '2026-10-20T23:00:00Z' } as Record<string, string | null> }))
+vi.mock('../src/lib/kpi-romaneio/ordem-rota-servidor', () => ({ sincronizarOrdemRotaFusion: async () => ({ situacao: 'recente' }) }))
 vi.mock('../src/lib/supabase/service', () => ({
   createServiceClient: () => {
     const o: Record<string, unknown> = {}

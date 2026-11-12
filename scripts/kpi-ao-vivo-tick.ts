@@ -19,6 +19,7 @@ import { limparCacheDia } from '../src/lib/kpi-romaneio/cache-dia'
 import { repararDia, depsReaisReparo, repararDiaRQ, depsReaisReparoRQ } from '../src/lib/kpi-romaneio/reparar-dia'
 import { sincronizarAcessosMonitoramento } from '../src/lib/acessos-monitoramento'
 import { registrarSyncFusion, lerStatusFusion, gravarStatusFusion } from '../src/lib/kpi-rioquality/status-fusion-banco'
+import { sincronizarOrdemRotaFusion } from '../src/lib/kpi-romaneio/ordem-rota-servidor'
 import { decidirAlertaFusion, marcarAlertaFusion, type StatusFusion } from '../src/lib/kpi-rioquality/status-fusion'
 import { avisarRomaneioAusente, depsReaisAvisoRomaneio } from '../src/lib/kpi-romaneio/manha-servico'
 import { entregasParaPresenca, enviarPresencaAoMonitoramento } from '../src/lib/kpi-romaneio/presenca-monitoramento'
@@ -141,6 +142,9 @@ export async function fecharDiaAnterior() {
     if (cliente === 'rioquality') {
       const s = await sincronizarFusionRioQuality(ontem)
       log(`fusion rioquality ${ontem} (fechamento): ${s}`)
+      // 12/11: ordem da roteirização final do dia (tela Ordem da rota).
+      const o = await sincronizarOrdemRotaFusion(ontem, { forcar: true, hoje: hojeBR() })
+      log(`ordem da rota ${ontem} (fechamento): ${o.situacao}${o.nfs ? ` (${o.nfs} NFs)` : ''}${o.erro ? ` -- ${o.erro}` : ''}`)
       // Revisao final 23/10: com o tunel caido, fechar agora gravava
       // calculado_em e o dia nunca mais era refeito com o romaneio completo.
       // Ate' as 06h BRT espera o proximo tick; depois fecha com o que tem.
@@ -223,6 +227,9 @@ async function main() {
       const s = await sincronizarFusionRioQuality(data)
       if (s !== 'ok' && s !== 'manual') log(`fusion rioquality ${data}: ${s}`)
       await alertarFusionSeParada(data).catch(err => log(`alerta Fusion: ${err}`))
+      // 12/11: ordem da roteirização (no máximo a cada 30 min).
+      const o = await sincronizarOrdemRotaFusion(data)
+      if (o.situacao !== 'recente') log(`ordem da rota ${data}: ${o.situacao}${o.nfs ? ` (${o.nfs} NFs)` : ''}${o.erro ? ` -- ${o.erro}` : ''}`)
       // F2-04: dia manual (o tick nao puxa a Fusion) ou envio que falhou --
       // o monitoramento com outra contagem recebe o dia guardado de novo.
       await repararDiaRQ(depsReaisReparoRQ, data, log)

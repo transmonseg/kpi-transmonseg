@@ -2,6 +2,7 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import type { OrdemRotaLinha } from '@/lib/kpi-rioquality/parse-ordem-rota'
 import { aplicarOrdemRota, type OrdemPlanejada } from './ordem-rota'
+import { buscarOrdemRotaFusion } from '@/lib/kpi-rioquality/ordem-rota-fusion'
 
 const LOTE = 500
 
@@ -22,9 +23,11 @@ export function diasDasLinhas(linhas: OrdemRotaLinha[], diaDoEnvio: string, hoje
 
 /** Grava a ordem do relatório: cada dia que aparece nele é substituído inteiro
  *  (reenvio corrige). Devolve os dias gravados. */
-export async function guardarOrdemRota(cliente: string, diaDoEnvio: string, linhas: OrdemRotaLinha[], enviadoPor: string | null, hoje = diaDoEnvio): Promise<string[]> {
+export async function guardarOrdemRota(cliente: string, diaDoEnvio: string, linhas: OrdemRotaLinha[], enviadoPor: string | null, hoje = diaDoEnvio, opcoes: { diaFixo?: boolean } = {}): Promise<string[]> {
   const svc = createServiceClient()
-  const dia = diasDasLinhas(linhas, diaDoEnvio, hoje)
+  // Busca da Fusion por dia (diaFixo): o relatório já veio filtrado por aquele
+  // dia -- tudo fica nele (senão a busca de ontem apagaria a ordem de hoje).
+  const dia = opcoes.diaFixo ? new Map(linhas.map(l => [l, diaDoEnvio])) : diasDasLinhas(linhas, diaDoEnvio, hoje)
   const dias = [...new Set(dia.values())].sort()
   for (const d of dias) {
     const { error: erroApagar } = await svc.from('kpi_rota_ordem').delete().eq('cliente', cliente).eq('data', d)
@@ -79,5 +82,27 @@ export async function comOrdemRota<R extends Parameters<typeof aplicarOrdemRota>
   } catch (e) {
     console.error(`[ordem-rota] ${cliente} ${data}: leitura falhou, tela sem a ordem:`, e)
     return r
+  }
+}
+
+export const ENVIADO_FUSION = 'Fusion (automático)'
+export const INTERVALO_FUSION_MS = 30 * 60_000
+
+/** 12/11: puxa a ordem do dia da Fusion e grava. No máximo a cada 30 min
+ *  (o relatório tem ~1 MB e ~20 s), a não ser com `forcar` (fechamento do dia
+ *  e o botão da tela). Nunca lança: devolve o que aconteceu. */
+export async function sincronizarOrdemRotaFusion(data: string, opcoes: { forcar?: boolean; agoraMs?: number; hoje?: string } = {}): Promise<{ situacao: 'ok' | 'recente' | 'sem_dados' | 'erro'; nfs?: number; erro?: string }> {
+  const cliente = 'rioquality'
+  try {
+    if (!opcoes.forcar) {
+      const ultimo = (await enviosDeOrdem(cliente, data, data))[0]
+      if (ultimo && (opcoes.agoraMs ?? Date.now()) - Date.parse(ultimo.enviadoEm) < INTERVALO_FUSION_MS) return { situacao: 'recente' }
+    }
+    const linhas = await buscarOrdemRotaFusion(data)
+    if (linhas.length === 0) return { situacao: 'sem_dados' }
+    await guardarOrdemRota(cliente, data, linhas, ENVIADO_FUSION, opcoes.hoje ?? data, { diaFixo: true })
+    return { situacao: 'ok', nfs: linhas.length }
+  } catch (e) {
+    return { situacao: 'erro', erro: e instanceof Error ? e.message : String(e) }
   }
 }

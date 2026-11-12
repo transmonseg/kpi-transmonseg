@@ -5,7 +5,7 @@
 // de motoristas e placas, cada viagem com a sequência completa, e o relatório
 // em planilha. A ordem vem do "Relatório de Entregas das cargas" da Fusion.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowsDownUp, CaretRight, CheckCircle, DownloadSimple, FileXls, MagnifyingGlass, Path, UploadSimple, WarningCircle, X } from '@phosphor-icons/react/dist/ssr'
+import { ArrowsClockwise, ArrowsDownUp, CaretRight, CheckCircle, DownloadSimple, FileXls, MagnifyingGlass, Path, UploadSimple, WarningCircle, X } from '@phosphor-icons/react/dist/ssr'
 import { ColumnChart } from '@/app/painel/charts'
 import { buscarComSessao, SessaoVencida } from '@/lib/sessao-fetch'
 import type { Agregado, Viagem } from '@/lib/kpi-romaneio/relatorio-ordem-rota'
@@ -82,6 +82,22 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
     }
   }
 
+  async function buscarFusion() {
+    setSubindo(true)
+    setAviso(null)
+    try {
+      const resp = await buscarComSessao(`/api/kpi/ordem-rota?fusion=${ate}`, { method: 'POST' })
+      if (!resp.ok) { setAviso({ ok: false, texto: await resp.text() }); return }
+      const j = (await resp.json()) as { nfs: number }
+      setAviso({ ok: true, texto: `Ordem de ${br(ate)} atualizada da Fusion: ${n(j.nfs)} notas.` })
+      void carregar()
+    } catch (e) {
+      if (!(e instanceof SessaoVencida)) setAviso({ ok: false, texto: 'Sem conexão com o servidor. Tente de novo.' })
+    } finally {
+      setSubindo(false)
+    }
+  }
+
   const viagens = useMemo(() => {
     if (!r) return []
     const q = busca.trim().toUpperCase()
@@ -119,7 +135,7 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
         </p>
       </header>
 
-      <AreaSubir subindo={subindo} aviso={aviso} envios={r?.envios ?? []} periodo={periodo} inputRef={inputArquivo} onArquivo={f => void subir(f)} />
+      <AreaSubir subindo={subindo} aviso={aviso} envios={r?.envios ?? []} periodo={periodo} inputRef={inputArquivo} onArquivo={f => void subir(f)} onFusion={() => void buscarFusion()} diaFusion={br(ate)} />
 
       {/* Período */}
       <div className="dash-card flex flex-wrap items-center gap-3 px-4 py-3">
@@ -219,9 +235,9 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
 
 /** Espaço de subir o relatório da Fusion: arrastar ou escolher, envia na hora;
  *  ao lado, o que já entrou em cada dia do período (quando e por quem). */
-function AreaSubir({ subindo, aviso, envios, periodo, inputRef, onArquivo }: {
+function AreaSubir({ subindo, aviso, envios, periodo, inputRef, onArquivo, onFusion, diaFusion }: {
   subindo: boolean; aviso: { ok: boolean; texto: string } | null; envios: Resposta['envios']; periodo: string
-  inputRef: React.RefObject<HTMLInputElement | null>; onArquivo: (f: File) => void
+  inputRef: React.RefObject<HTMLInputElement | null>; onArquivo: (f: File) => void; onFusion: () => void; diaFusion: string
 }) {
   const [arrastando, setArrastando] = useState(false)
   const quando = (iso: string) => new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
@@ -254,7 +270,14 @@ function AreaSubir({ subindo, aviso, envios, periodo, inputRef, onArquivo }: {
       </div>
       </div>
       <div className="dash-card flex min-w-0 flex-col gap-2 p-5">
-        <p className="text-[13px] font-semibold text-[var(--color-fg)]">Enviados · {periodo}</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[13px] font-semibold text-[var(--color-fg)]">Enviados · {periodo}</p>
+          <button type="button" disabled={subindo} onClick={onFusion}
+            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--color-border-strong)] px-3 text-[12px] font-semibold text-[var(--color-fg)] transition hover:bg-[var(--color-bg-subtle)] disabled:opacity-50">
+            <ArrowsClockwise size={13} weight="bold" />Buscar {diaFusion} na Fusion
+          </button>
+        </div>
+        <p className="text-[12px] leading-snug text-[var(--color-fg-muted)]">O sistema busca sozinho na Fusion a cada 30 min durante o dia e de novo ao fechar o dia. Subir o arquivo só é preciso se a Fusion estiver fora.</p>
         {envios.length === 0 ? (
           <p className="text-[12.5px] leading-relaxed text-[var(--color-fg-muted)]">Nenhum relatório de ordem neste período ainda.</p>
         ) : (

@@ -4,7 +4,7 @@ import { acessoAoVivo } from '../ao-vivo/acesso'
 import { periodoValido, relatorioOrdemRota } from '@/lib/kpi-romaneio/relatorio-ordem-rota-servidor'
 import { gerarXlsxOrdemRota } from '@/lib/kpi-romaneio/relatorio-ordem-rota-xlsx'
 import { ehRelatorioOrdemRota, parseOrdemRota } from '@/lib/kpi-rioquality/parse-ordem-rota'
-import { guardarOrdemRota } from '@/lib/kpi-romaneio/ordem-rota-servidor'
+import { guardarOrdemRota, sincronizarOrdemRotaFusion } from '@/lib/kpi-romaneio/ordem-rota-servidor'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -30,6 +30,17 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const a = await acessoAoVivo('rioquality')
   if (!a.ok) return a.resp
+  // "Buscar agora na Fusion": puxa o relatório do dia pedido, sem upload.
+  const doDia = req.nextUrl.searchParams.get('fusion')
+  if (doDia != null) {
+    const hoje = hojeBR()
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(doDia) || doDia > hoje) return new NextResponse('Data inválida.', { status: 400 })
+    const r = await sincronizarOrdemRotaFusion(doDia, { forcar: true, hoje })
+    console.log(`[ordem-rota] busca na Fusion ${doDia} por ${a.email}: ${r.situacao}${r.erro ? ` -- ${r.erro}` : ''}`)
+    if (r.situacao === 'erro') return new NextResponse(`A Fusion não respondeu agora (${r.erro}). Tente de novo ou suba o arquivo.`, { status: 502 })
+    if (r.situacao === 'sem_dados') return new NextResponse('A Fusion não tem cargas com ordem neste dia.', { status: 404 })
+    return NextResponse.json({ ok: true, nfs: r.nfs ?? 0, dias: [doDia], fonte: 'fusion' })
+  }
   const arq = (await req.formData()).get('arquivo')
   if (!(arq instanceof File)) return new NextResponse('Envie o relatório das cargas (xlsx).', { status: 400 })
   const buf = Buffer.from(await arq.arrayBuffer())

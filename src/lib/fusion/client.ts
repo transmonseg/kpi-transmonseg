@@ -54,3 +54,22 @@ export function fusionGet<T>(path: string, query: Record<string, string> = {}): 
   const qs = new URLSearchParams(query).toString()
   return comRetry<T>(qs ? `${path}?${qs}` : path, { method: 'GET' })
 }
+
+/** 12/11: arquivo binário (xlsx) de um relatório da Fusion. Sessão morta (a
+ *  Fusion devolve a tela de login em HTML no lugar do arquivo) refaz o login
+ *  uma vez. Lança se não vier um zip (xlsx). */
+export async function fusionBaixar(path: string): Promise<Buffer> {
+  const tentar = async (): Promise<{ buf: Buffer; morta: boolean }> => {
+    await loginFusion()
+    const res = await fusionFetch(`${BASE()}${path}`, { method: 'GET', redirect: 'manual', headers: { cookie: cookieHeaderFusion() } })
+    absorveCookiesFusion(res)
+    const buf = Buffer.from(await res.arrayBuffer())
+    const ehZip = buf.subarray(0, 2).toString('latin1') === 'PK'
+    const redirectLogin = res.status >= 300 && res.status < 400
+    return { buf, morta: !ehZip && (redirectLogin || pareceLogin(buf.subarray(0, 4000).toString('utf8'))) }
+  }
+  let r = await tentar()
+  if (r.morta) { invalidarSessaoFusion(); r = await tentar() }
+  if (r.buf.subarray(0, 2).toString('latin1') !== 'PK') throw new Error(`Fusion: ${path.split('?')[0]} não devolveu planilha (${r.buf.length} bytes${r.morta ? ', sessão inválida' : ''})`)
+  return r.buf
+}
