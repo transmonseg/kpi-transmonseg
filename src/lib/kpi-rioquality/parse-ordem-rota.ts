@@ -13,6 +13,15 @@ export type OrdemRotaLinha = {
   ordem: number
   previsaoInicio: string | null // "DD/MM/AAAA HH:MM:SS" como veio
   previsaoFim: string | null
+  /** AAAA-MM-DD da previsão de início (o relatório cobre vários dias). */
+  data: string | null
+}
+
+/** "12/11/2026 14:44:29" -> "2026-11-12". */
+export function dataDaPrevisao(p: string | null): string | null {
+  const m = p ? /^(\d{2})\/(\d{2})\/(\d{4})/.exec(p) : null
+  if (!m || Number(m[3]) < 2020 || Number(m[3]) > 2100) return null
+  return `${m[3]}-${m[2]}-${m[1]}`
 }
 
 const semAcento = (v: unknown) => String(v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim()
@@ -52,10 +61,11 @@ export function parseOrdemRota(buf: Buffer): OrdemRotaLinha[] {
     if (!col || col.nf < 0) continue
     const romaneio = celula(r[0]); const ordem = Number(r[1]); const nf = celula(r[col.nf])
     if (!romaneio || !/^\d+$/.test(romaneio) || !Number.isInteger(ordem) || ordem <= 0 || !nf) continue
+    const previsaoInicio = col.ini >= 0 ? celula(r[col.ini]) : null
     out.push({
       nf: nf.replace(/\D/g, ''), romaneio, placa, ordem,
-      previsaoInicio: col.ini >= 0 ? celula(r[col.ini]) : null,
-      previsaoFim: col.fim >= 0 ? celula(r[col.fim]) : null,
+      previsaoInicio, previsaoFim: col.fim >= 0 ? celula(r[col.fim]) : null,
+      data: dataDaPrevisao(previsaoInicio),
     })
   }
   return out

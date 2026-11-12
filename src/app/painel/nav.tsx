@@ -22,6 +22,7 @@ import {
   ArrowsLeftRight,
   MapTrifold,
   MapPin,
+  Path,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 import { ROTA_INICIO_MONITORAMENTO } from '@/lib/sistema-transmonseg'
@@ -85,6 +86,7 @@ const GRUPO_RIOQUALITY: Group = {
   children: [
     { href: '/painel/rioquality/gerar', label: 'Gerar KPI', Icon: FileArrowUp },
     { href: '/painel/rioquality/historico', label: 'Histórico', Icon: ClockCounterClockwise },
+    { href: '/painel/rioquality/ordem-rota', label: 'Ordem da rota', Icon: Path },
   ],
 }
 

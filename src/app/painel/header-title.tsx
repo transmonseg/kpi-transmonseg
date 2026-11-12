@@ -14,6 +14,7 @@ const TITLES: Record<string, string> = {
   '/painel/nutrimax/placas': 'Nutry Max · Placas do dia',
   '/painel/rioquality/gerar': 'Rio Quality · Gerar KPI',
   '/painel/rioquality/historico': 'Rio Quality · Histórico',
+  '/painel/rioquality/ordem-rota': 'Rio Quality · Ordem da rota',
   '/painel/portefrio/gerar': 'Portefrio · Gerar KPI',
   '/painel/portefrio/historico': 'Portefrio · Histórico',
 }

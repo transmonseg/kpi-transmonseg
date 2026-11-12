@@ -5,21 +5,49 @@ import { aplicarOrdemRota, type OrdemPlanejada } from './ordem-rota'
 
 const LOTE = 500
 
-/** Substitui a ordem do dia pela do relatório enviado. */
-export async function guardarOrdemRota(cliente: string, data: string, linhas: OrdemRotaLinha[], enviadoPor: string | null): Promise<void> {
+/** Dia de cada linha: o do romaneio (viagem) -- a previsão mais comum entre as
+ *  entregas dela; viagem sem previsão legível fica no dia do envio. Assim uma
+ *  viagem que atravessa a meia-noite não se parte em dois dias. */
+export function diasDasLinhas(linhas: OrdemRotaLinha[], diaDoEnvio: string, hoje: string): Map<OrdemRotaLinha, string> {
+  const porRomaneio = new Map<string, Map<string, number>>()
+  for (const l of linhas) {
+    if (!l.data || l.data > hoje) continue
+    const c = porRomaneio.get(l.romaneio) ?? new Map<string, number>()
+    c.set(l.data, (c.get(l.data) ?? 0) + 1)
+    porRomaneio.set(l.romaneio, c)
+  }
+  const diaDoRomaneio = new Map([...porRomaneio].map(([r, c]) => [r, [...c].sort((a, b) => b[1] - a[1])[0][0]]))
+  return new Map(linhas.map(l => [l, diaDoRomaneio.get(l.romaneio) ?? diaDoEnvio]))
+}
+
+/** Grava a ordem do relatório: cada dia que aparece nele é substituído inteiro
+ *  (reenvio corrige). Devolve os dias gravados. */
+export async function guardarOrdemRota(cliente: string, diaDoEnvio: string, linhas: OrdemRotaLinha[], enviadoPor: string | null, hoje = diaDoEnvio): Promise<string[]> {
   const svc = createServiceClient()
-  const { error: erroApagar } = await svc.from('kpi_rota_ordem').delete().eq('cliente', cliente).eq('data', data)
-  if (erroApagar) throw new Error(erroApagar.message)
-  // NF repetida no relatório: fica a primeira (menor ordem vem antes).
+  const dia = diasDasLinhas(linhas, diaDoEnvio, hoje)
+  const dias = [...new Set(dia.values())].sort()
+  for (const d of dias) {
+    const { error: erroApagar } = await svc.from('kpi_rota_ordem').delete().eq('cliente', cliente).eq('data', d)
+    if (erroApagar) throw new Error(erroApagar.message)
+  }
+  // NF repetida no mesmo dia: fica a primeira.
   const vistas = new Set<string>()
-  const rows = linhas.filter(l => (vistas.has(l.nf) ? false : (vistas.add(l.nf), true))).map(l => ({
-    cliente, data, nf: l.nf, romaneio: l.romaneio, placa: l.placa, ordem: l.ordem,
+  const rows = linhas.filter(l => { const k = `${dia.get(l)}|${l.nf}`; return vistas.has(k) ? false : (vistas.add(k), true) }).map(l => ({
+    cliente, data: dia.get(l)!, nf: l.nf, romaneio: l.romaneio, placa: l.placa, ordem: l.ordem,
     previsao_inicio: l.previsaoInicio, previsao_fim: l.previsaoFim, enviado_por: enviadoPor,
   }))
   for (let i = 0; i < rows.length; i += LOTE) {
     const { error } = await svc.from('kpi_rota_ordem').insert(rows.slice(i, i + LOTE))
     if (error) throw new Error(error.message)
   }
+  return dias
+}
+
+/** Dias com ordem guardada no intervalo. */
+export async function diasComOrdem(cliente: string, de: string, ate: string): Promise<string[]> {
+  const { data, error } = await createServiceClient().rpc('kpi_rota_ordem_dias', { p_cliente: cliente, p_de: de, p_ate: ate })
+  if (error) throw new Error(error.message)
+  return ((data ?? []) as { data: string }[]).map(r => r.data)
 }
 
 export async function lerOrdemRota(cliente: string, data: string): Promise<{ linhas: OrdemPlanejada[]; enviadoEm: string | null }> {
