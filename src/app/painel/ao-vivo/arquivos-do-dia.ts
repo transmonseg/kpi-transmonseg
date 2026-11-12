@@ -7,7 +7,7 @@ export type ItemArquivo = { id: string; file: File; info: ArquivoNoRecibo | null
 
 export const DOCUMENTOS_DO_CLIENTE: Record<ClienteTela, string> = {
   nutrimax: 'Romaneio de Entrega (8012), Escala de Rota (8081) e Romaneio do Pão (Programação JAC)',
-  rioquality: 'Relatório de Entregas (planilha xlsx)',
+  rioquality: 'Relatório de Entregas (planilha xlsx) e o relatório das cargas com ORDEM (ordem da rota)',
 }
 const NOME: Record<ClienteTela, string> = { nutrimax: 'Nutry Max', rioquality: 'Rio Quality' }
 
@@ -40,7 +40,8 @@ export function montarEnvio(itens: ItemArquivo[], cliente: ClienteTela, diaJaEnv
   const campos = itens.filter(i => i.info?.serve && i.info.campo).map(i => ({ campo: i.info!.campo as string, file: i.file }))
   const tem = (c: string) => campos.some(x => x.campo === c)
   if (cliente === 'rioquality') {
-    return tem('completo') ? { campos, podeEnviar: true, falta: null } : { campos, podeEnviar: false, falta: 'Falta o Relatório de Entregas da Rio Quality.' }
+    // 12/11: a ordem da rota pode ir sozinha (o romaneio do dia já veio da Fusion).
+    return tem('completo') || tem('ordemRota') ? { campos, podeEnviar: true, falta: null } : { campos, podeEnviar: false, falta: 'Falta o Relatório de Entregas da Rio Quality.' }
   }
   if (campos.length === 0) return { campos, podeEnviar: false, falta: itens.length > 0 ? 'Nenhum arquivo do dia da Nutry Max reconhecido.' : null }
   if (!diaJaEnviado && !tem('romaneio')) return { campos, podeEnviar: false, falta: 'Falta o Romaneio de Entrega (8012) — sem ele o dia não começa.' }

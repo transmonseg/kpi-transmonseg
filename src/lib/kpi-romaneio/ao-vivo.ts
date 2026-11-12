@@ -46,6 +46,8 @@ export type NfAoVivo = {
   /** 09/11: conferência da operação aplicada por cima do automático na hora de
    *  servir a tela (ao-vivo-conferencia.ts). Nunca gravada no cálculo. */
   conferencia?: { resolucao: string; rotulo: string; responsavel: string; em: string; situacaoAutomatica: SituacaoNf }
+  /** 12/11: ordem da roteirização (Rio Quality) x ordem real das chegadas (ordem-rota.ts). */
+  ordemRota?: { planejada: number; real: number; naOrdem: boolean; romaneio: string; previsao: string | null }
 }
 
 export type PlacaAoVivo = {
@@ -63,6 +65,8 @@ export type PlacaAoVivo = {
   /** Parada fora da base em andamento no último cálculo (só no dia de hoje):
    *  início em UTC real e a NF mais perto (até 800 m). Aviso de +1 h no cliente. */
   paradaAtual?: { inicio: string; nf: string | null; cliente: string | null } | null
+  /** 12/11: quantas entregas seguiram a ordem da roteirização. */
+  ordemRota?: { entregas: number; naOrdem: number; pct: number; invertidas?: number }
 }
 
 /** "06:30" do dia AAAA-MM-DD (BRT) -> "2026-10-06T06:30:00-03:00". */

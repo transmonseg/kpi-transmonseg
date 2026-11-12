@@ -15,11 +15,12 @@ import { parseRomaneioTexto, extrairDataCabecalhoRomaneio } from './parse-romane
 import { parseEscala } from './parse-escala'
 import { parsePaoTexto } from './parse-pao'
 import { parseEntregasCompletas } from '@/lib/kpi-rioquality/parse-planilhas'
+import { ehRelatorioOrdemRota, parseOrdemRota } from '@/lib/kpi-rioquality/parse-ordem-rota'
 
-export type TipoArquivo = 'romaneio_entrega' | 'escala_rota' | 'pao_jac' | 'escala_portofrio' | 'rq_entregas' | 'desconhecido'
+export type TipoArquivo = 'romaneio_entrega' | 'escala_rota' | 'pao_jac' | 'escala_portofrio' | 'rq_entregas' | 'rq_ordem_rota' | 'desconhecido'
 export type ClienteArquivo = 'nutrimax' | 'rioquality' | 'portofrio'
 /** Campo do formulário do Ao vivo (/api/kpi/ao-vivo/romaneio) que recebe o arquivo. */
-export type CampoEnvio = 'romaneio' | 'escala' | 'romaneioPao' | 'completo'
+export type CampoEnvio = 'romaneio' | 'escala' | 'romaneioPao' | 'completo' | 'ordemRota'
 
 export type ArquivoReconhecido = {
   nome: string
@@ -47,16 +48,17 @@ export const ROTULO_TIPO: Record<TipoArquivo, string> = {
   pao_jac: 'Romaneio do Pão (Programação JAC)',
   escala_portofrio: 'Escala de rotas da Porto Frio',
   rq_entregas: 'Relatório de Entregas da Rio Quality',
+  rq_ordem_rota: 'Ordem da rota da Rio Quality (relatório das cargas com ORDEM)',
   desconhecido: 'Não reconheci este arquivo',
 }
 
 const CLIENTE_DO_TIPO: Record<TipoArquivo, ClienteArquivo | null> = {
   romaneio_entrega: 'nutrimax', escala_rota: 'nutrimax', pao_jac: 'nutrimax',
-  escala_portofrio: 'portofrio', rq_entregas: 'rioquality', desconhecido: null,
+  escala_portofrio: 'portofrio', rq_entregas: 'rioquality', rq_ordem_rota: 'rioquality', desconhecido: null,
 }
 const CAMPO_DO_TIPO: Record<TipoArquivo, CampoEnvio | null> = {
   romaneio_entrega: 'romaneio', escala_rota: 'escala', pao_jac: 'romaneioPao',
-  escala_portofrio: null, rq_entregas: 'completo', desconhecido: null,
+  escala_portofrio: null, rq_entregas: 'completo', rq_ordem_rota: 'ordemRota', desconhecido: null,
 }
 
 const semAcento = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -120,6 +122,11 @@ function reconhecido(nome: string, tipo: TipoArquivo, data: string | null, conta
 }
 
 function reconhecerPlanilha(buf: Buffer, nome: string): ArquivoReconhecido {
+  // 12/11: relatório das cargas com ORDEM (roteirização da RQ, Fusion).
+  if (ehRelatorioOrdemRota(buf)) {
+    const o = parseOrdemRota(buf)
+    return reconhecido(nome, 'rq_ordem_rota', null, { notas: o.length, placas: new Set(o.map(x => x.placa)).size, romaneios: new Set(o.map(x => x.romaneio)).size })
+  }
   let entregas: ReturnType<typeof parseEntregasCompletas>
   try { entregas = parseEntregasCompletas(buf) } catch { return desconhecido(nome) }
   if (entregas.length === 0) return desconhecido(nome)

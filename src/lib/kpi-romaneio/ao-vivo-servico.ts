@@ -80,6 +80,8 @@ export type ResultadoAoVivo = {
   marca?: string
   resumo: { taxa: number | null; entregues: number | null; nfsNaConta: number | null; aguardando: number; totalNfs: number; feitas: number; pct: number }
   placas: PlacaAoVivo[]
+  /** 12/11: ordem da roteirização no dia (só na resposta da tela). */
+  ordemRota?: { entregas: number; naOrdem: number; pct: number }
   /** Carro trocado sem aviso (06/10): sugestões pra operação confirmar. */
   sugestoesTroca?: SugestaoTroca[]
   /** F1-11: avisos do cálculo que não mudam a taxa (ex.: conferência de endereço indisponível). */

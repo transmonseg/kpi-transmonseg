@@ -12,6 +12,8 @@ import { mesclarEnvio, type DiaGuardado, type EnvioNovo } from '@/lib/kpi-romane
 import { createServiceClient } from '@/lib/supabase/service'
 import { avisosDoRecibo } from '@/lib/kpi-romaneio/recibo-dia'
 import { acessoAoVivo } from '../acesso'
+import { ehRelatorioOrdemRota, parseOrdemRota } from '@/lib/kpi-rioquality/parse-ordem-rota'
+import { guardarOrdemRota } from '@/lib/kpi-romaneio/ordem-rota-servidor'
 
 export const runtime = 'nodejs'
 
@@ -25,10 +27,31 @@ export async function POST(req: NextRequest) {
   const data = hojeBR()
   // Rio Quality: um arquivo só, o Relatório de Entregas (xlsx) do dia.
   if (a.cliente === 'rioquality') {
+    // 12/11: relatório das cargas com ORDEM (roteirização da Fusion) -- campo
+    // próprio ou caído no do romaneio. Não troca o romaneio do dia, só guarda
+    // a ordem planejada (a tela compara com a ordem real das chegadas).
+    const arqOrdem = form.get('ordemRota')
     const arq = form.get('completo')
-    if (!(arq instanceof File)) return new NextResponse('Envie o Relatório de Entregas (xlsx).', { status: 400 })
+    let ordemBuf = arqOrdem instanceof File ? Buffer.from(await arqOrdem.arrayBuffer()) : null
+    let buf = arq instanceof File ? Buffer.from(await arq.arrayBuffer()) : null
+    if (!ordemBuf && buf && ehRelatorioOrdemRota(buf)) { ordemBuf = buf; buf = null }
+    let ordemGuardada: { nfs: number; placas: number } | null = null
+    if (ordemBuf) {
+      const ordem = ehRelatorioOrdemRota(ordemBuf) ? parseOrdemRota(ordemBuf) : []
+      if (ordem.length === 0) return new NextResponse('Não reconheci a ordem da rota: confira se é o relatório das cargas com a coluna ORDEM.', { status: 422 })
+      try { await guardarOrdemRota(a.cliente, data, ordem, a.email) } catch (err) {
+        console.error('[kpi/ao-vivo] ordem da rota não gravada:', err)
+        return new NextResponse('Não consegui guardar a ordem da rota. Tente de novo.', { status: 500 })
+      }
+      console.log(`[kpi/ao-vivo] ordem da rota ${a.cliente} ${data}: ${ordem.length} NFs por ${a.email}`)
+      ordemGuardada = { nfs: ordem.length, placas: new Set(ordem.map(o => o.placa)).size }
+    }
+    if (!buf) {
+      if (ordemGuardada) return NextResponse.json({ ok: true, tipo: 'ordem', ...ordemGuardada, monitoramento: [] })
+      return new NextResponse('Envie o Relatório de Entregas (xlsx).', { status: 400 })
+    }
     let entregas: ReturnType<typeof parseEntregasCompletas>
-    try { entregas = parseEntregasCompletas(Buffer.from(await arq.arrayBuffer())) } catch (err) {
+    try { entregas = parseEntregasCompletas(buf) } catch (err) {
       return new NextResponse(err instanceof Error ? err.message : 'Não consegui ler a planilha.', { status: 422 })
     }
     if (entregas.length === 0) return new NextResponse('Nenhuma entrega reconhecida — confira se é o Relatório de Entregas da Rio Quality (colunas Razão Social, Cidade, Placa, Endereço…).', { status: 422 })

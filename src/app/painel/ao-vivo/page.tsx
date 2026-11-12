@@ -499,6 +499,13 @@ export default function AoVivoPage() {
 
 /** Taxa do KPI (a mesma da planilha: fora da conta não entra) e as notas. */
 function FraseResumo({ r, aoVivo = false }: { r: NonNullable<Estado['resultado']>; aoVivo?: boolean }) {
+  const o = r.ordemRota
+  // 12/11: ordem da roteirização (RQ) logo depois da taxa.
+  const ordem = o && o.entregas > 0 ? <> <span className="whitespace-nowrap">Ordem da rota: <strong className="text-[var(--color-fg)] tabular-nums">{o.pct.toLocaleString('pt-BR')}%</strong> das entregas na sequência planejada ({o.naOrdem.toLocaleString('pt-BR')} de {o.entregas.toLocaleString('pt-BR')}).</span></> : null
+  return <><FraseTaxa r={r} aoVivo={aoVivo} />{ordem}</>
+}
+
+function FraseTaxa({ r, aoVivo = false }: { r: NonNullable<Estado['resultado']>; aoVivo?: boolean }) {
   const n = (x: number) => x.toLocaleString('pt-BR')
   // Dia em andamento (06/10, "97% às 9h é impossível"): a taxa do KPI só conta
   // as notas já resolvidas -- de manhã quase tudo está aguardando e ela fica
@@ -574,6 +581,11 @@ function LinhaPlaca({ p, ativa, agora, agoraMs, historico, onClick }: { p: Placa
           <span className="truncate text-[var(--color-fg-muted)]">{s.texto === 'No cliente' ? `No cliente · ${p.destino}` : s.texto}</span>
           {s.tempo && <span className={`shrink-0 font-semibold tabular-nums ${COR_TOM[s.tom]}`}>{s.tempo}</span>}
         </span>
+        {p.ordemRota && (
+          <span className={`mt-1 block text-[12px] tabular-nums ${p.ordemRota.pct < 70 ? 'font-semibold text-[#b45309]' : 'text-[var(--color-fg-muted)]'}`}>
+            Ordem da rota: {p.ordemRota.naOrdem} de {p.ordemRota.entregas} na sequência ({p.ordemRota.pct.toLocaleString('pt-BR')}%){p.ordemRota.invertidas ? ' · de trás pra frente' : ''}
+          </span>
+        )}
       </button>
     </li>
   )
@@ -609,6 +621,8 @@ function DetalhePlaca({ p, data, cliente, agora, agoraMs, historico, nfAberta, o
         )}
       </div>
 
+      {p.ordemRota && <OrdemDaPlaca p={p} />}
+
       <div className="dash-card overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border)] px-5 py-3.5">
           <div className="flex flex-wrap items-center gap-3">
@@ -636,6 +650,47 @@ function DetalhePlaca({ p, data, cliente, agora, agoraMs, historico, nfAberta, o
         </ul>
       </div>
     </section>
+  )
+}
+
+/** 12/11 (ideia da Érica): o motorista seguiu a ordem da roteirização? Lista
+ *  as entregas feitas fora da sequência, na ordem em que aconteceram. */
+function OrdemDaPlaca({ p }: { p: PlacaAoVivo }) {
+  const o = p.ordemRota!
+  const fora = p.nfs.filter(n => n.ordemRota && !n.ordemRota.naOrdem)
+    .sort((a, b) => (a.chegada ?? '').localeCompare(b.chegada ?? ''))
+  const ord = (x: number) => `${x}ª`
+  return (
+    <div className="dash-card flex flex-col gap-3 p-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="text-[14px] font-semibold text-[var(--color-fg)]">Ordem da rota</h3>
+        <p className="text-[13px] text-[var(--color-fg-muted)]"><strong className="text-[var(--color-fg)] tabular-nums">{o.naOrdem} de {o.entregas}</strong> entregas na sequência planejada ({o.pct.toLocaleString('pt-BR')}%)</p>
+      </div>
+      <span className="block h-1.5 overflow-hidden rounded-full bg-[var(--color-border)]">
+        <span className="block h-full rounded-full" style={{ width: `${o.pct}%`, background: o.pct < 70 ? 'var(--color-warning)' : 'var(--color-success)' }} />
+      </span>
+      {o.invertidas ? (
+        <p className="rounded-xl bg-[#fdf3e3] px-3.5 py-2.5 text-[13px] font-semibold text-[#8a4b08]">
+          {o.invertidas === 1 ? 'Fez a rota de trás pra frente' : `Fez ${o.invertidas} viagens de trás pra frente`}: começou pelo último cliente da roteirização.
+        </p>
+      ) : null}
+      {fora.length === 0 ? (
+        <p className="text-[13px] text-[var(--color-fg-muted)]">Todas as entregas feitas até agora seguiram a ordem da roteirização.</p>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          <p className="text-[12.5px] text-[var(--color-fg-muted)]">Fora da ordem: o motorista pulou estes clientes e voltou depois, ou inverteu a sequência.</p>
+          <ul className="flex flex-col divide-y divide-[var(--color-border)] text-[13px]">
+            {fora.map(n => (
+              <li key={`${n.carga}-${n.nf}`} className="flex items-center gap-3 py-1.5">
+                <span className="w-12 shrink-0 tabular-nums text-[var(--color-fg-muted)]">{n.chegada}</span>
+                <span className="min-w-0 flex-1 truncate text-[var(--color-fg)]">{n.cliente || `NF ${n.nf}`}</span>
+                <span className="shrink-0 tabular-nums text-[#b45309]">era a {ord(n.ordemRota!.planejada)}, foi a {ord(n.ordemRota!.real)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -669,6 +724,7 @@ function LinhaNf({ n, todas, placa, data, historico, cliente, ordem, aberta, noC
         <span className="w-6 shrink-0 text-right text-[12px] tabular-nums text-[var(--color-fg-subtle)]">{ordem}</span>
         <span className="size-2.5 shrink-0 rounded-full" style={{ background: corPonto, border: n.situacao === 'pendente' && segAgora == null ? '2px solid var(--color-border-strong)' : undefined }} />
         <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-[var(--color-fg)]">{n.cliente || 'Cliente sem nome'}</span>
+        {n.ordemRota && !n.ordemRota.naOrdem && <span className="hidden shrink-0 rounded-full bg-[#fdf3e3] px-2 py-0.5 text-[11px] font-semibold text-[#8a4b08] sm:inline" title={`Planejada ${n.ordemRota.planejada}ª, feita ${n.ordemRota.real}ª`}>Fora da ordem</span>}
         <span className={`hidden shrink-0 text-[12px] font-semibold sm:inline ${corRotulo}`}>{rotulo}</span>
         <span className="w-24 shrink-0 text-right text-[12px] tabular-nums text-[var(--color-fg-muted)]">
           {segAgora != null ? relogio(segAgora) : n.chegada ? `${n.chegada}${n.tempoMin != null ? ` · ${n.tempoMin} min` : ''}` : ''}
@@ -693,6 +749,11 @@ function LinhaNf({ n, todas, placa, data, historico, cliente, ordem, aberta, noC
               <p className="leading-relaxed text-[var(--color-fg)]"><span className="font-semibold">GPS: {ROTULO_INVESTIGACAO[n.investigacao.categoria].titulo.toLowerCase()}.</span> {fraseInvestigacao(n.investigacao)}{n.investigacao.distM != null ? ` ${ROTULO_INVESTIGACAO[n.investigacao.categoria].dica}` : ''}</p>
             )}
             <p className="leading-relaxed text-[var(--color-fg-muted)]">NF {n.nf}, carga {n.carga}. {enderecoLimpo(n.endereco)}</p>
+            {n.ordemRota && (
+              <p className={`leading-relaxed ${n.ordemRota.naOrdem ? 'text-[var(--color-fg-muted)]' : 'font-semibold text-[#8a4b08]'}`}>
+                Ordem da rota: era a {n.ordemRota.planejada}ª entrega{n.ordemRota.previsao ? ` (previsão ${n.ordemRota.previsao})` : ''}, foi feita como {n.ordemRota.real}ª{n.ordemRota.naOrdem ? ', na sequência.' : ' — fora da ordem.'}
+              </p>
+            )}
             {/* 09/11: confirmar a entrega aqui mesmo (vale na hora). */}
             {segAgora == null && <ConfirmarNf n={n} cliente={cliente} data={data} onMudou={onMudou} />}
             {temHorario && (
