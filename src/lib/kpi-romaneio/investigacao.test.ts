@@ -61,6 +61,15 @@ describe('investigarPlacas + resumirInvestigacao', () => {
     expect(r.porCategoria).toEqual({ parou_no_cliente: 1, nao_chegou_perto: 1 })
     expect(r.placas.map(p => [p.placa, p.naoEntregues])).toEqual([['ABC-1D23', 1], ['XYZ9A99', 1]])
   })
+  it('12/11: sem rastreador (correta) e fora da conta não entram como não entregues', () => {
+    const placas = [placa('RQQ5B81', [
+      nf({ nf: '1', situacao: 'sem_rastreador', investigacao: { categoria: 'sem_gps', distM: null, hora: null, minutos: null } }),
+      nf({ nf: '2', situacao: 'fora_da_conta', investigacao: { categoria: 'sem_gps', distM: null, hora: null, minutos: null } }),
+    ])]
+    const r = resumirInvestigacao(placas)
+    expect(r.total).toBe(0)
+    expect(r.placas).toEqual([])
+  })
 })
 
 // F2-REV-04: ponto nao confiavel (so' a rua) nao sustenta "nao passou".

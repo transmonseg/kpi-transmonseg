@@ -15,7 +15,9 @@ export function resumirInvestigacao(placas: PlacaAoVivo[]): ResumoInvestigacao {
   for (const p of placas) {
     const linha = { placa: p.placa, naoEntregues: 0, porCategoria: {} as Partial<Record<CategoriaInvestigacao, number>> }
     for (const n of p.nfs) {
-      if (n.situacao === 'entregue') continue
+      // 12/11 (Érica): sem rastreador conta como correta e fora da conta nem entra
+      // na taxa -- nenhuma das duas é "não entregue".
+      if (n.situacao === 'entregue' || n.situacao === 'sem_rastreador' || n.situacao === 'fora_da_conta') continue
       if (n.situacao === 'pendente') { r.aguardando++; continue }
       const c = n.investigacao?.categoria
       if (!c) continue
