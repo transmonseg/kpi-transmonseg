@@ -5,12 +5,13 @@
 // de motoristas e placas, cada viagem com a sequência completa, e o relatório
 // em planilha. A ordem vem do "Relatório de Entregas das cargas" da Fusion.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowsDownUp, CaretRight, DownloadSimple, MagnifyingGlass, Path, UploadSimple, WarningCircle, X } from '@phosphor-icons/react/dist/ssr'
+import { ArrowsDownUp, CaretRight, CheckCircle, DownloadSimple, FileXls, MagnifyingGlass, Path, UploadSimple, WarningCircle, X } from '@phosphor-icons/react/dist/ssr'
 import { ColumnChart } from '@/app/painel/charts'
 import { buscarComSessao, SessaoVencida } from '@/lib/sessao-fetch'
-import type { Agregado, RelatorioOrdemRota, Viagem } from '@/lib/kpi-romaneio/relatorio-ordem-rota'
+import type { Agregado, Viagem } from '@/lib/kpi-romaneio/relatorio-ordem-rota'
+import type { RespostaOrdemRota } from '@/lib/kpi-romaneio/relatorio-ordem-rota-servidor'
 
-type Resposta = RelatorioOrdemRota & { semCalculo: string[] }
+type Resposta = RespostaOrdemRota
 type Aba = 'motoristas' | 'placas' | 'viagens'
 type Atalho = 'hoje' | 'ontem' | '7' | '30' | 'livre'
 
@@ -107,11 +108,6 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <h1 className="text-display text-[34px] leading-none text-[var(--color-fg)] md:text-[40px]">Ordem da rota</h1>
           <div className="flex flex-wrap items-center gap-2">
-            <input ref={inputArquivo} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) void subir(f) }} />
-            <button type="button" disabled={subindo} onClick={() => inputArquivo.current?.click()}
-              className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--color-border-strong)] bg-[var(--color-bg-elevated)] px-4 text-[13px] font-semibold text-[var(--color-fg)] transition hover:bg-[var(--color-bg-subtle)] disabled:opacity-50">
-              <UploadSimple size={16} weight="bold" />{subindo ? 'Guardando…' : 'Subir relatório da Fusion'}
-            </button>
             <a href={`/api/kpi/ordem-rota?de=${de}&ate=${ate}&formato=xlsx`} aria-disabled={!r || r.total.viagens === 0}
               className={`inline-flex h-10 items-center gap-2 rounded-full bg-[var(--color-navy-700)] px-4 text-[13px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] ${!r || r.total.viagens === 0 ? 'pointer-events-none opacity-40' : ''}`}>
               <DownloadSimple size={16} weight="bold" />Baixar relatório (Excel)
@@ -121,12 +117,9 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
         <p className="mt-1 max-w-[78ch] text-[13px] leading-relaxed text-[var(--color-fg-muted)]">
           Compara a ordem planejada na roteirização com a ordem em que o caminhão chegou em cada cliente (GPS). Em cada viagem, a maior sequência que respeita o plano conta como <strong className="text-[var(--color-fg)]">na ordem</strong>; as outras entregas foram feitas fora da ordem: o motorista pulou o cliente e voltou depois, ou inverteu a rota.
         </p>
-        {aviso && (
-          <p role={aviso.ok ? 'status' : 'alert'} className={`mt-2 inline-flex items-start gap-2 rounded-xl px-3.5 py-2.5 text-[13px] ${aviso.ok ? 'bg-[var(--color-bg-subtle)] text-[var(--color-fg)]' : 'bg-[var(--color-danger-soft)] font-semibold text-[var(--color-danger)]'}`}>
-            {!aviso.ok && <WarningCircle size={16} className="mt-0.5 shrink-0" />}{aviso.texto}
-          </p>
-        )}
       </header>
+
+      <AreaSubir subindo={subindo} aviso={aviso} envios={r?.envios ?? []} periodo={periodo} inputRef={inputArquivo} onArquivo={f => void subir(f)} />
 
       {/* Período */}
       <div className="dash-card flex flex-wrap items-center gap-3 px-4 py-3">
@@ -153,7 +146,7 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
           <Path size={30} weight="bold" className="text-[var(--color-fg-subtle)]" />
           <p className="text-[15px] font-semibold text-[var(--color-fg)]">Sem ordem da rota em {periodo}</p>
           <p className="max-w-[60ch] text-[13px] leading-relaxed text-[var(--color-fg-muted)]">
-            Suba o <strong>Relatório de Entregas das cargas</strong> da Fusion (o que tem a coluna ORDEM) no botão acima ou na área de arquivos do Ao vivo. Ele pode ser enviado a qualquer hora do dia; vale também para dias anteriores.
+            Solte o <strong>Relatório de Entregas das cargas</strong> da Fusion (o que tem a coluna ORDEM) na área acima. Pode ser enviado a qualquer hora; vale também para dias anteriores.
           </p>
           {r && r.semCalculo.length > 0 && <p className="text-[12px] text-[var(--color-fg-subtle)]">Dias com ordem mas sem cálculo do KPI: {r.semCalculo.map(br).join(', ')}.</p>}
         </div>
@@ -221,6 +214,63 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
         </>
       )}
     </div>
+  )
+}
+
+/** Espaço de subir o relatório da Fusion: arrastar ou escolher, envia na hora;
+ *  ao lado, o que já entrou em cada dia do período (quando e por quem). */
+function AreaSubir({ subindo, aviso, envios, periodo, inputRef, onArquivo }: {
+  subindo: boolean; aviso: { ok: boolean; texto: string } | null; envios: Resposta['envios']; periodo: string
+  inputRef: React.RefObject<HTMLInputElement | null>; onArquivo: (f: File) => void
+}) {
+  const [arrastando, setArrastando] = useState(false)
+  const quando = (iso: string) => new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+  return (
+    <section aria-label="Subir relatório da Fusion" className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <div className="dash-card min-w-0 p-2">
+      <div
+        role="button" tabIndex={0} aria-disabled={subindo}
+        onClick={() => !subindo && inputRef.current?.click()}
+        onKeyDown={e => { if ((e.key === 'Enter' || e.key === ' ') && !subindo) { e.preventDefault(); inputRef.current?.click() } }}
+        onDragOver={e => { e.preventDefault(); setArrastando(true) }}
+        onDragLeave={() => setArrastando(false)}
+        onDrop={e => { e.preventDefault(); setArrastando(false); const f = e.dataTransfer.files?.[0]; if (f && !subindo) onArquivo(f) }}
+        className={`flex h-full min-h-[150px] cursor-pointer flex-col justify-between gap-4 rounded-[14px] border-2 border-dashed p-4 transition-colors focus-visible:outline-2 focus-visible:outline-[var(--color-navy-700)] ${arrastando ? 'border-[var(--color-navy-700)] bg-[var(--color-bg-subtle)]' : 'border-[var(--color-border-strong)] hover:border-[var(--color-navy-700)] hover:bg-[var(--color-bg-subtle)]'} ${subindo ? 'cursor-wait opacity-70' : ''}`}>
+        <input ref={inputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) onArquivo(f) }} />
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--color-bg-subtle)] text-[var(--color-navy-700)]"><UploadSimple size={20} weight="bold" /></span>
+          <div className="min-w-0">
+            <p className="text-[14px] font-semibold text-[var(--color-fg)]">{subindo ? 'Guardando a ordem da rota…' : arrastando ? 'Solte o arquivo aqui' : 'Subir o relatório da Fusion'}</p>
+            <p className="mt-0.5 text-[12.5px] leading-relaxed text-[var(--color-fg-muted)]">Arraste aqui ou clique para escolher o <strong className="text-[var(--color-fg)]">Relatório de Entregas das cargas</strong> (xlsx, com a coluna ORDEM). Entra na hora; reenviar o mesmo dia substitui o anterior.</p>
+          </div>
+        </div>
+        {aviso ? (
+          <p role={aviso.ok ? 'status' : 'alert'} className={`inline-flex items-start gap-2 rounded-xl px-3.5 py-2.5 text-[13px] ${aviso.ok ? 'bg-[var(--color-success-soft)] font-semibold text-[var(--color-success)]' : 'bg-[var(--color-danger-soft)] font-semibold text-[var(--color-danger)]'}`}>
+            {aviso.ok ? <CheckCircle size={16} weight="fill" className="mt-0.5 shrink-0" /> : <WarningCircle size={16} className="mt-0.5 shrink-0" />}{aviso.texto}
+          </p>
+        ) : (
+          <p className="inline-flex items-center gap-2 text-[12px] text-[var(--color-fg-subtle)]"><FileXls size={15} className="shrink-0" />É a planilha com os blocos CARGA / ENTREGAS DETALHADAS e as colunas ID ROMANEIO e ORDEM.</p>
+        )}
+      </div>
+      </div>
+      <div className="dash-card flex min-w-0 flex-col gap-2 p-5">
+        <p className="text-[13px] font-semibold text-[var(--color-fg)]">Enviados · {periodo}</p>
+        {envios.length === 0 ? (
+          <p className="text-[12.5px] leading-relaxed text-[var(--color-fg-muted)]">Nenhum relatório de ordem neste período ainda.</p>
+        ) : (
+          <ul className="flex max-h-[150px] flex-col divide-y divide-[var(--color-border)] overflow-y-auto text-[12.5px]">
+            {[...envios].reverse().map(e => (
+              <li key={e.data} className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 py-1.5">
+                <CheckCircle size={14} weight="fill" className="shrink-0 text-[var(--color-success)]" />
+                <span className="w-11 shrink-0 font-semibold tabular-nums text-[var(--color-fg)]">{br(e.data)}</span>
+                <span className="shrink-0 tabular-nums text-[var(--color-fg-muted)]">{n(e.nfs)} notas, {e.placas} placas</span>
+                <span className="ml-auto min-w-0 truncate text-right text-[var(--color-fg-subtle)]">{e.enviadoPor ?? '—'} · {quando(e.enviadoEm)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
   )
 }
 

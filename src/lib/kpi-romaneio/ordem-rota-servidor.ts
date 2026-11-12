@@ -43,11 +43,14 @@ export async function guardarOrdemRota(cliente: string, diaDoEnvio: string, linh
   return dias
 }
 
-/** Dias com ordem guardada no intervalo. */
-export async function diasComOrdem(cliente: string, de: string, ate: string): Promise<string[]> {
-  const { data, error } = await createServiceClient().rpc('kpi_rota_ordem_dias', { p_cliente: cliente, p_de: de, p_ate: ate })
+export type EnvioOrdem = { data: string; nfs: number; placas: number; enviadoPor: string | null; enviadoEm: string }
+
+/** O que já foi enviado de ordem em cada dia do intervalo. */
+export async function enviosDeOrdem(cliente: string, de: string, ate: string): Promise<EnvioOrdem[]> {
+  const { data, error } = await createServiceClient().rpc('kpi_rota_ordem_envios', { p_cliente: cliente, p_de: de, p_ate: ate })
   if (error) throw new Error(error.message)
-  return ((data ?? []) as { data: string }[]).map(r => r.data)
+  return ((data ?? []) as { data: string; nfs: number; placas: number; enviado_por: string | null; enviado_em: string }[])
+    .map(r => ({ data: r.data, nfs: Number(r.nfs), placas: Number(r.placas), enviadoPor: r.enviado_por, enviadoEm: r.enviado_em }))
 }
 
 export async function lerOrdemRota(cliente: string, data: string): Promise<{ linhas: OrdemPlanejada[]; enviadoEm: string | null }> {
