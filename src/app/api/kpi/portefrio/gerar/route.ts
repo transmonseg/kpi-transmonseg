@@ -51,6 +51,12 @@ export async function POST(req: NextRequest) {
   const romaneio = await parseRomaneioPortefrio(romaneioBuf)
 
   if (romaneio.length === 0) {
+    // 12/11: o PDF recusado ficava perdido (ROMANEIO_PORTE_FRIO_CONVERTIDO.pdf
+    // nunca pôde ser analisado). Agora fica guardado para ajustar o leitor.
+    const recusado = `recusados/portefrio/${data}-${Date.now()}-${(romaneioFile.name || 'romaneio.pdf').replace(/[^\w.-]+/g, '_').slice(0, 80)}`
+    const svcRec = createServiceClient()
+    const { error: erroRec } = await svcRec.storage.from('kpi-romaneio-inputs').upload(recusado, romaneioBuf, { contentType: 'application/pdf', upsert: true })
+    console.error(`[portefrio] romaneio sem linhas reconhecidas (${romaneioFile.name}, ${romaneioBuf.length} bytes, por ${user.email}): ${erroRec ? `não guardado: ${erroRec.message}` : `guardado em kpi-romaneio-inputs/${recusado}`}`)
     return new NextResponse(
       'Nenhuma linha reconhecida no romaneio — confira se o PDF é o romaneio da Portefrio.',
       { status: 422 },
