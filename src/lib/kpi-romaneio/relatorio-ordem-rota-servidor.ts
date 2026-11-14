@@ -34,9 +34,7 @@ export async function relatorioOrdemRota(de: string, ate: string): Promise<Respo
     if (!bruto) { semCalculo.push(data); continue }
     const r = await comConferencias(CLIENTE, data, bruto)
     const { linhas } = await lerOrdemRota(CLIENTE, data)
-    const planejadas: Record<string, number> = {}
-    for (const l of linhas) planejadas[l.romaneio] = (planejadas[l.romaneio] ?? 0) + 1
-    dias.push({ data, planejadas, placas: aplicarOrdemRota(r!, linhas).placas as DiaComOrdem['placas'] })
+    dias.push({ data, plano: linhas.map(l => ({ nf: l.nf, romaneio: l.romaneio, ordem: l.ordem })), placas: aplicarOrdemRota(r!, linhas).placas as DiaComOrdem['placas'] })
   }
   return { ...montarRelatorioOrdemRota(dias, de, ate), semCalculo, envios }
 }

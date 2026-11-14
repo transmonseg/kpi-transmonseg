@@ -3,6 +3,7 @@ import { hojeBR } from '@/lib/data-br'
 import { acessoAoVivo } from '../ao-vivo/acesso'
 import { periodoValido, relatorioOrdemRota } from '@/lib/kpi-romaneio/relatorio-ordem-rota-servidor'
 import { gerarXlsxOrdemRota } from '@/lib/kpi-romaneio/relatorio-ordem-rota-xlsx'
+import { descreverFiltros, filtrarRelatorio, filtrosDaUrl } from '@/lib/kpi-romaneio/relatorio-ordem-rota'
 import { ehRelatorioOrdemRota, parseOrdemRota } from '@/lib/kpi-rioquality/parse-ordem-rota'
 import { guardarOrdemRota, sincronizarOrdemRotaFusion } from '@/lib/kpi-romaneio/ordem-rota-servidor'
 
@@ -19,8 +20,10 @@ export async function GET(req: NextRequest) {
   if (typeof p === 'string') return new NextResponse(p, { status: 400 })
   const r = await relatorioOrdemRota(p.de, p.ate)
   if (sp.get('formato') === 'xlsx') {
+    // 14/11: o Excel sai com o mesmo filtro da tela (motorista, placa, horário...).
+    const f = filtrosDaUrl(sp)
     const nome = p.de === p.ate ? `ordem-da-rota-rio-quality-${p.de}.xlsx` : `ordem-da-rota-rio-quality-${p.de}-a-${p.ate}.xlsx`
-    return new NextResponse(new Uint8Array(gerarXlsxOrdemRota(r)), {
+    return new NextResponse(new Uint8Array(await gerarXlsxOrdemRota(filtrarRelatorio(r, f), descreverFiltros(f))), {
       headers: { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition': `attachment; filename="${nome}"` },
     })
   }
@@ -37,15 +40,15 @@ export async function POST(req: NextRequest) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(doDia) || doDia > hoje) return new NextResponse('Data inválida.', { status: 400 })
     const r = await sincronizarOrdemRotaFusion(doDia, { forcar: true, hoje })
     console.log(`[ordem-rota] busca na Fusion ${doDia} por ${a.email}: ${r.situacao}${r.erro ? ` -- ${r.erro}` : ''}`)
-    if (r.situacao === 'erro') return new NextResponse(`A Fusion não respondeu agora (${r.erro}). Tente de novo ou suba o arquivo.`, { status: 502 })
-    if (r.situacao === 'sem_dados') return new NextResponse('A Fusion não tem cargas com ordem neste dia.', { status: 404 })
+    if (r.situacao === 'erro') return new NextResponse(`O sistema da Rio Quality não respondeu agora (${r.erro}). Tente de novo ou suba o relatório de ordem.`, { status: 502 })
+    if (r.situacao === 'sem_dados') return new NextResponse('O sistema da Rio Quality não tem cargas com ordem neste dia.', { status: 404 })
     return NextResponse.json({ ok: true, nfs: r.nfs ?? 0, dias: [doDia], fonte: 'fusion' })
   }
   const arq = (await req.formData()).get('arquivo')
-  if (!(arq instanceof File)) return new NextResponse('Envie o relatório das cargas (xlsx).', { status: 400 })
+  if (!(arq instanceof File)) return new NextResponse('Envie o relatório de ordem (xlsx).', { status: 400 })
   const buf = Buffer.from(await arq.arrayBuffer())
   const linhas = ehRelatorioOrdemRota(buf) ? parseOrdemRota(buf) : []
-  if (linhas.length === 0) return new NextResponse('Não reconheci a ordem da rota: confira se é o "Relatório de Entregas das cargas" da Fusion, com a coluna ORDEM.', { status: 422 })
+  if (linhas.length === 0) return new NextResponse('Não reconheci o arquivo: confira se é o relatório de ordem (o que tem a coluna ORDEM).', { status: 422 })
   const hoje = hojeBR()
   let dias: string[]
   try { dias = await guardarOrdemRota('rioquality', hoje, linhas, a.email, hoje) } catch (err) {

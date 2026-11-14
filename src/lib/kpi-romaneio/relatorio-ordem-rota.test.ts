@@ -1,15 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 import { aplicarOrdemRota } from './ordem-rota'
-import { montarRelatorioOrdemRota } from './relatorio-ordem-rota'
+import { montarRelatorioOrdemRota, filtrarRelatorio, filtrosDaUrl, filtrosParaUrl, descreverFiltros } from './relatorio-ordem-rota'
 import { gerarXlsxOrdemRota } from './relatorio-ordem-rota-xlsx'
 
-const nf = (nf: string, chegada: string | null, situacao = 'entregue') => ({ nf, cliente: `CLIENTE ${nf}`, chegada, situacao })
+const nf = (nf: string, chegada: string | null, situacao = 'entregue') => ({ nf, carga: 'C1', cliente: `CLIENTE ${nf}`, endereco: `RUA ${nf}`, chegada, saida: chegada, tempoMin: 7, situacao })
 const dia = (data: string) => {
   const r = {
     calculadoEm: 'c',
     placas: [
-      { placa: 'AAA1A11', motorista: 'JOAO', destino: 'NORTE', nfs: [nf('1', '08:00'), nf('2', '10:00'), nf('3', '09:00'), nf('4', '11:30'), nf('5', null, 'nao_foi')] },
+      { placa: 'AAA1A11', motorista: 'JOAO', destino: 'NORTE', saidaBase: `${data}T09:10:00Z`, chegadaBase: `${data}T18:00:00Z`, km: 82.4, nfs: [nf('1', '08:00'), nf('2', '10:00'), nf('3', '09:00'), nf('4', '11:30'), nf('5', null, 'nao_foi')] },
       { placa: 'BBB2B22', motorista: 'MARIA', destino: 'SUL', nfs: [nf('6', '08:00'), nf('7', '09:00'), nf('8', '10:00'), nf('9', '11:00')] },
     ],
   }
@@ -17,7 +17,7 @@ const dia = (data: string) => {
     ...['1', '2', '3', '4', '5'].map((n, i) => ({ nf: n, romaneio: 'R1', ordem: i + 1, previsaoInicio: `${data} ${String(8 + i).padStart(2, '0')}:00:00` })),
     ...['9', '8', '7', '6'].map((n, i) => ({ nf: n, romaneio: 'R2', ordem: i + 1, previsaoInicio: null })),
   ]
-  return { data, planejadas: { R1: 5, R2: 4 }, placas: aplicarOrdemRota(r, plano).placas as never }
+  return { data, plano: plano.map(p => ({ nf: p.nf, romaneio: p.romaneio, ordem: p.ordem })), placas: aplicarOrdemRota(r, plano).placas as never }
 }
 
 describe('montarRelatorioOrdemRota', () => {
@@ -27,23 +27,63 @@ describe('montarRelatorioOrdemRota', () => {
     expect(r.total).toMatchObject({ entregas: 16, naOrdem: 8, pct: 50, viagens: 4, invertidas: 2 })
     expect(r.dias).toEqual([{ data: '2026-11-12', entregas: 8, naOrdem: 4, pct: 50, viagens: 2 }, { data: '2026-11-13', entregas: 8, naOrdem: 4, pct: 50, viagens: 2 }])
     const joao = r.viagens.find(v => v.placa === 'AAA1A11')!
-    expect(joao).toMatchObject({ entregas: 4, naOrdem: 3, pct: 75, invertida: false, naoFeitas: 1, motorista: 'JOAO' })
-    // sequência na ordem real; a 3ª planejada foi feita cedo demais (pulou a
-    // 2ª) -> é ela que fica fora da ordem.
-    expect(joao.sequencia.map(s => [s.real, s.planejada, s.naOrdem, s.previsao])).toEqual([[1, 1, true, '08:00'], [2, 3, false, '10:00'], [3, 2, true, '09:00'], [4, 4, true, '11:00']])
+    expect(joao).toMatchObject({ entregas: 4, naOrdem: 3, pct: 75, invertida: false, naoFeitas: 1, motorista: 'JOAO', saidaBase: '06:10', chegadaBase: '15:00', km: 82.4, primeira: '08:00', ultima: '11:30' })
+    // a 3ª planejada foi feita cedo demais (pulou a 2ª) -> é ela que fica fora da ordem.
+    expect(joao.sequencia.map(s => [s.real, s.planejada, s.naOrdem, s.chegada, s.tempoMin, s.endereco])).toEqual([[1, 1, true, '08:00', 7, 'RUA 1'], [2, 3, false, '09:00', 7, 'RUA 3'], [3, 2, true, '10:00', 7, 'RUA 2'], [4, 4, true, '11:30', 7, 'RUA 4']])
+    expect(joao.naoFeitasLista).toEqual([{ planejada: 5, nf: '5', cliente: 'CLIENTE 5', endereco: 'RUA 5', situacao: 'nao_foi' }])
   })
   it('ranking de motoristas: pior primeiro', () => {
-    expect(r.motoristas.map(m => [m.nome, m.pct, m.viagens, m.invertidas])).toEqual([['MARIA', 25, 2, 2], ['JOAO', 75, 2, 0]])
+    expect(r.motoristas.map(m => [m.nome, m.pct, m.viagens, m.invertidas, m.naoFeitas])).toEqual([['MARIA', 25, 2, 2, 0], ['JOAO', 75, 2, 0, 2]])
     expect(r.placas[0]).toMatchObject({ nome: 'BBB2B22', sub: 'MARIA' })
   })
   it('vazio não quebra', () => {
     expect(montarRelatorioOrdemRota([], '2026-11-12', '2026-11-12').total).toEqual({ entregas: 0, naOrdem: 0, pct: 0, viagens: 0, invertidas: 0 })
   })
-  it('planilha com as 5 abas', () => {
-    const wb = XLSX.read(gerarXlsxOrdemRota(r), { type: 'buffer' })
-    expect(wb.SheetNames).toEqual(['Resumo', 'Motoristas', 'Placas', 'Viagens', 'Sequência'])
-    const seq = XLSX.utils.sheet_to_json(wb.Sheets['Sequência'], { header: 1 }) as unknown[][]
-    expect(seq.length).toBe(1 + 16)
-    expect(seq.some(l => l[6] === 'FORA DA ORDEM')).toBe(true)
+
+  describe('filtros (14/11: "só um motorista ou só tal horário")', () => {
+    it('só um motorista', () => {
+      const f = filtrarRelatorio(r, { motoristas: ['JOAO'] })
+      expect(f.viagens.every(v => v.motorista === 'JOAO')).toBe(true)
+      expect(f.total).toMatchObject({ entregas: 8, naOrdem: 6, viagens: 2 })
+      expect(f.motoristas.map(m => m.nome)).toEqual(['JOAO'])
+    })
+    it('faixa de horário: só as entregas que chegaram no horário, veredito da viagem mantido', () => {
+      const f = filtrarRelatorio(r, { motoristas: ['JOAO'], horaDe: '08:30', horaAte: '10:00' })
+      const v = f.viagens[0]
+      expect(v.sequencia.map(s => [s.chegada, s.naOrdem])).toEqual([['09:00', false], ['10:00', true]])
+      expect(v).toMatchObject({ entregas: 2, naOrdem: 1, pct: 50 })
+    })
+    it('só fora da ordem e só de trás pra frente', () => {
+      expect(filtrarRelatorio(r, { soForaDaOrdem: true }).viagens.flatMap(v => v.sequencia).every(s => !s.naOrdem)).toBe(true)
+      expect(filtrarRelatorio(r, { soInvertidas: true }).viagens.map(v => v.placa)).toEqual(['BBB2B22', 'BBB2B22'])
+    })
+    it('sem filtro devolve o mesmo; filtro que não pega nada dá zero', () => {
+      expect(filtrarRelatorio(r, {})).toBe(r)
+      expect(filtrarRelatorio(r, { placas: ['XXX0X00'] }).total.viagens).toBe(0)
+    })
+    it('URL ida e volta, e a descrição pro Excel', () => {
+      const f = { motoristas: ['JOAO', 'MARIA'], placas: ['AAA1A11'], horaDe: '08:00', horaAte: '12:00', soForaDaOrdem: true, soInvertidas: false }
+      expect(filtrosDaUrl(new URLSearchParams(filtrosParaUrl(f)))).toEqual(f)
+      expect(descreverFiltros(f)).toBe('Motorista: JOAO, MARIA · Placa: AAA1A11 · Horário de chegada: 08:00–12:00 · Só entregas fora da ordem')
+      expect(descreverFiltros({})).toBe('Sem filtro (todas as viagens)')
+    })
+  })
+
+  it('planilha: 6 abas, tabelas com filtro, hora de verdade, fora da ordem marcado', async () => {
+    const buf = await gerarXlsxOrdemRota(filtrarRelatorio(r, { motoristas: ['JOAO'] }), 'Motorista: JOAO')
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buf as unknown as ExcelJS.Buffer)
+    expect(wb.worksheets.map(w => w.name)).toEqual(['Resumo', 'Motoristas', 'Placas', 'Viagens', 'Entregas', 'Não entregues'])
+    const e = wb.getWorksheet('Entregas')!
+    expect(String(e.getCell('A2').value)).toMatch(/Motorista: JOAO/)
+    const cab = (e.getRow(4).values as unknown[]).slice(1)
+    expect(cab).toEqual(['Dia', 'Placa', 'Motorista', 'Romaneio', 'Feita como', 'Era a', 'Situação', 'Chegou', 'Saiu', 'Min. no cliente', 'Cliente', 'Endereço', 'NF', 'Carga'])
+    const linhas = Array.from({ length: 8 }, (_, i) => e.getRow(5 + i))
+    expect(linhas.map(l => l.getCell(3).value)).toEqual(Array(8).fill('JOAO'))
+    expect((linhas[0].getCell(8).value as Date).toISOString()).toBe('1899-12-30T08:00:00.000Z') // 08:00 como hora do Excel
+    expect(linhas[0].getCell(8).numFmt).toBe('hh:mm')
+    expect(linhas.filter(l => l.getCell(7).value === 'FORA DA ORDEM')).toHaveLength(2)
+    expect(e.getTables?.().length ?? 1).toBeGreaterThan(0)
+    expect(wb.getWorksheet('Não entregues')!.getRow(5).getCell(7).value).toBe('CLIENTE 5')
   })
 })

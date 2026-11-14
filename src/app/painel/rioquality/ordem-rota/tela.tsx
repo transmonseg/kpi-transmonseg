@@ -3,12 +3,13 @@
 // 12/11 (ideia da Érica, pedido da Rio Quality): o motorista seguiu a ordem da
 // roteirização? Tela dedicada: período, números do período, por dia, ranking
 // de motoristas e placas, cada viagem com a sequência completa, e o relatório
-// em planilha. A ordem vem do "Relatório de Entregas das cargas" da Fusion.
+// em planilha. A ordem vem do relatório de ordem (sistema da Rio Quality).
+// 14/11: filtros (motorista, placa, horário, só fora da ordem) na tela e no Excel.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowsClockwise, ArrowsDownUp, CaretRight, CheckCircle, DownloadSimple, FileXls, MagnifyingGlass, Path, UploadSimple, WarningCircle, X } from '@phosphor-icons/react/dist/ssr'
+import { ArrowsClockwise, ArrowsDownUp, CaretRight, Funnel, CheckCircle, DownloadSimple, FileXls, MagnifyingGlass, Path, UploadSimple, WarningCircle, X } from '@phosphor-icons/react/dist/ssr'
 import { ColumnChart } from '@/app/painel/charts'
 import { buscarComSessao, SessaoVencida } from '@/lib/sessao-fetch'
-import type { Agregado, Viagem } from '@/lib/kpi-romaneio/relatorio-ordem-rota'
+import { filtrarRelatorio, filtrosParaUrl, filtrosVazios, type Agregado, type FiltrosOrdemRota, type Viagem } from '@/lib/kpi-romaneio/relatorio-ordem-rota'
 import type { RespostaOrdemRota } from '@/lib/kpi-romaneio/relatorio-ordem-rota-servidor'
 
 type Resposta = RespostaOrdemRota
@@ -32,7 +33,7 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
   const [erro, setErro] = useState<string | null>(null)
   const [aba, setAba] = useState<Aba>('motoristas')
   const [busca, setBusca] = useState('')
-  const [filtro, setFiltro] = useState<{ tipo: 'motorista' | 'placa'; valor: string } | null>(null)
+  const [filtros, setFiltros] = useState<FiltrosOrdemRota>({})
   const [aberta, setAberta] = useState<Viagem | null>(null)
   const [subindo, setSubindo] = useState(false)
   const [aviso, setAviso] = useState<{ ok: boolean; texto: string } | null>(null)
@@ -89,7 +90,7 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
       const resp = await buscarComSessao(`/api/kpi/ordem-rota?fusion=${ate}`, { method: 'POST' })
       if (!resp.ok) { setAviso({ ok: false, texto: await resp.text() }); return }
       const j = (await resp.json()) as { nfs: number }
-      setAviso({ ok: true, texto: `Ordem de ${br(ate)} atualizada da Fusion: ${n(j.nfs)} notas.` })
+      setAviso({ ok: true, texto: `Ordem de ${br(ate)} atualizada: ${n(j.nfs)} notas.` })
       void carregar()
     } catch (e) {
       if (!(e instanceof SessaoVencida)) setAviso({ ok: false, texto: 'Sem conexão com o servidor. Tente de novo.' })
@@ -98,22 +99,29 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
     }
   }
 
+  // Relatório com os filtros aplicados (mesma função do Excel).
+  const rf = useMemo(() => (r ? { ...filtrarRelatorio(r, filtros), envios: r.envios, semCalculo: r.semCalculo } : null), [r, filtros])
+  const comFiltro = !filtrosVazios(filtros)
+
   const viagens = useMemo(() => {
-    if (!r) return []
+    if (!rf) return []
     const q = busca.trim().toUpperCase()
-    return r.viagens.filter(v =>
-      (!filtro || (filtro.tipo === 'motorista' ? v.motorista === filtro.valor : v.placa === filtro.valor)) &&
-      (!q || v.placa.includes(q.replace(/[^A-Z0-9]/g, '')) || v.motorista.toUpperCase().includes(q) || v.destino.toUpperCase().includes(q)))
-  }, [r, busca, filtro])
+    return rf.viagens.filter(v => !q || v.placa.includes(q.replace(/[^A-Z0-9]/g, '')) || v.motorista.toUpperCase().includes(q) || v.destino.toUpperCase().includes(q))
+  }, [rf, busca])
 
   const agregados = useMemo(() => {
-    if (!r) return []
+    if (!rf) return []
     const q = busca.trim().toUpperCase()
-    const lista = aba === 'placas' ? r.placas : r.motoristas
+    const lista = aba === 'placas' ? rf.placas : rf.motoristas
     return lista.filter(a => !q || a.nome.toUpperCase().includes(q) || a.sub.toUpperCase().includes(q))
-  }, [r, aba, busca])
+  }, [rf, aba, busca])
 
-  const verViagens = (tipo: 'motorista' | 'placa', valor: string) => { setFiltro({ tipo, valor }); setAba('viagens'); setBusca('') }
+  const mudarFiltros = (f: FiltrosOrdemRota) => { setFiltros(f); setAberta(null) }
+  const verViagens = (tipo: 'motorista' | 'placa', valor: string) => {
+    mudarFiltros(tipo === 'motorista' ? { ...filtros, motoristas: [valor] } : { ...filtros, placas: [valor] })
+    setAba('viagens'); setBusca('')
+  }
+  const qsFiltros = filtrosParaUrl(filtros)
   const periodo = de === ate ? brAno(de) : `${brAno(de)} a ${brAno(ate)}`
   const vazio = !carregando && r && r.total.viagens === 0
 
@@ -124,9 +132,9 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <h1 className="text-display text-[34px] leading-none text-[var(--color-fg)] md:text-[40px]">Ordem da rota</h1>
           <div className="flex flex-wrap items-center gap-2">
-            <a href={`/api/kpi/ordem-rota?de=${de}&ate=${ate}&formato=xlsx`} aria-disabled={!r || r.total.viagens === 0}
-              className={`inline-flex h-10 items-center gap-2 rounded-full bg-[var(--color-navy-700)] px-4 text-[13px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] ${!r || r.total.viagens === 0 ? 'pointer-events-none opacity-40' : ''}`}>
-              <DownloadSimple size={16} weight="bold" />Baixar relatório (Excel)
+            <a href={`/api/kpi/ordem-rota?de=${de}&ate=${ate}&formato=xlsx${qsFiltros ? `&${qsFiltros}` : ''}`} aria-disabled={!rf || rf.total.viagens === 0}
+              className={`inline-flex h-10 items-center gap-2 rounded-full bg-[var(--color-navy-700)] px-4 text-[13px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] ${!rf || rf.total.viagens === 0 ? 'pointer-events-none opacity-40' : ''}`}>
+              <DownloadSimple size={16} weight="bold" />Baixar Excel{comFiltro ? ' (com filtro)' : ''}
             </a>
           </div>
         </div>
@@ -155,6 +163,8 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
         <span className="ml-auto text-[12.5px] text-[var(--color-fg-muted)]">{carregando ? 'Carregando…' : periodo}</span>
       </div>
 
+      {r && r.total.viagens > 0 && <BarraFiltros r={r} filtros={filtros} onMudar={mudarFiltros} />}
+
       {erro && <p role="alert" className="rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-[13px] font-semibold text-[var(--color-danger)]">{erro}</p>}
 
       {vazio && (
@@ -162,33 +172,37 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
           <Path size={30} weight="bold" className="text-[var(--color-fg-subtle)]" />
           <p className="text-[15px] font-semibold text-[var(--color-fg)]">Sem ordem da rota em {periodo}</p>
           <p className="max-w-[60ch] text-[13px] leading-relaxed text-[var(--color-fg-muted)]">
-            Solte o <strong>Relatório de Entregas das cargas</strong> da Fusion (o que tem a coluna ORDEM) na área acima. Pode ser enviado a qualquer hora; vale também para dias anteriores.
+            O relatório de ordem deste período ainda não chegou. Ele chega sozinho do sistema da Rio Quality; se demorar, clique em &quot;Atualizar agora&quot; ou solte o arquivo na área acima.
           </p>
           {r && r.semCalculo.length > 0 && <p className="text-[12px] text-[var(--color-fg-subtle)]">Dias com ordem mas sem cálculo do KPI: {r.semCalculo.map(br).join(', ')}.</p>}
         </div>
       )}
 
-      {r && r.total.viagens > 0 && (
+      {rf && r && r.total.viagens > 0 && rf.total.viagens === 0 && (
+        <div className="dash-card px-6 py-10 text-center text-[13px] text-[var(--color-fg-muted)]">Nenhuma entrega com esses filtros. <button type="button" onClick={() => mudarFiltros({})} className="font-semibold text-[var(--color-fg)] underline">Limpar filtros</button></div>
+      )}
+
+      {rf && rf.total.viagens > 0 && (
         <>
           {/* Números do período */}
           <section aria-label="Resumo do período" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="dash-card flex flex-col gap-3 p-5 sm:col-span-2 lg:col-span-1">
               <span className="text-[12px] font-medium text-[var(--color-fg-muted)]">Entregas na ordem planejada</span>
-              <span className={`text-[40px] font-semibold leading-none tracking-[-0.02em] tabular-nums ${tom(r.total.pct)}`}>{p1(r.total.pct)}</span>
+              <span className={`text-[40px] font-semibold leading-none tracking-[-0.02em] tabular-nums ${tom(rf.total.pct)}`}>{p1(rf.total.pct)}</span>
               <span className="block h-1.5 overflow-hidden rounded-full bg-[var(--color-border)]">
-                <span className="block h-full rounded-full" style={{ width: `${r.total.pct}%`, background: r.total.pct < META ? 'var(--color-warning)' : 'var(--color-success)' }} />
+                <span className="block h-full rounded-full" style={{ width: `${rf.total.pct}%`, background: rf.total.pct < META ? 'var(--color-warning)' : 'var(--color-success)' }} />
               </span>
-              <span className="text-[12.5px] tabular-nums text-[var(--color-fg-muted)]">{n(r.total.naOrdem)} de {n(r.total.entregas)} entregas</span>
+              <span className="text-[12.5px] tabular-nums text-[var(--color-fg-muted)]">{n(rf.total.naOrdem)} de {n(rf.total.entregas)} entregas</span>
             </div>
-            <Numero rotulo="Viagens analisadas" valor={n(r.total.viagens)} extra={`${n(r.motoristas.length)} motoristas, ${n(r.placas.length)} placas`} />
-            <Numero rotulo="Rotas de trás pra frente" valor={n(r.total.invertidas)} extra={r.total.invertidas ? 'Começaram pelo último cliente do plano' : 'Nenhuma viagem invertida'} alerta={r.total.invertidas > 0} />
-            <Numero rotulo="Fora da ordem" valor={n(r.total.entregas - r.total.naOrdem)} extra="Entregas feitas antes ou depois do planejado" alerta={r.total.entregas - r.total.naOrdem > 0} />
+            <Numero rotulo="Viagens analisadas" valor={n(rf.total.viagens)} extra={`${n(rf.motoristas.length)} ${rf.motoristas.length === 1 ? 'motorista' : 'motoristas'}, ${n(rf.placas.length)} ${rf.placas.length === 1 ? 'placa' : 'placas'}`} />
+            <Numero rotulo="Rotas de trás pra frente" valor={n(rf.total.invertidas)} extra={rf.total.invertidas ? 'Começaram pelo último cliente do plano' : 'Nenhuma viagem invertida'} alerta={rf.total.invertidas > 0} />
+            <Numero rotulo="Fora da ordem" valor={n(rf.total.entregas - rf.total.naOrdem)} extra="Entregas feitas antes ou depois do planejado" alerta={rf.total.entregas - rf.total.naOrdem > 0} />
           </section>
 
-          {r.dias.length > 1 && (
+          {rf.dias.length > 1 && (
             <section className="dash-card flex flex-col gap-3 p-5">
               <h2 className="text-[14px] font-semibold text-[var(--color-fg)]">% na ordem por dia</h2>
-              <ColumnChart items={r.dias.map(d => ({ label: br(d.data), value: d.pct }))} format={p1} height={200} labelEvery={r.dias.length > 16 ? 2 : 1} />
+              <ColumnChart items={rf.dias.map(d => ({ label: br(d.data), value: d.pct }))} format={p1} height={200} labelEvery={rf.dias.length > 16 ? 2 : 1} />
             </section>
           )}
 
@@ -198,7 +212,7 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
               <div className="flex flex-wrap items-center gap-3 border-b border-[var(--color-border)] px-4 py-3">
                 <div role="tablist" aria-label="Ver por" className="inline-flex rounded-full bg-[var(--color-bg-subtle)] p-0.5">
                   {([['motoristas', 'Motoristas'], ['placas', 'Placas'], ['viagens', 'Viagens']] as const).map(([v, rot]) => (
-                    <button key={v} type="button" role="tab" aria-selected={aba === v} onClick={() => { setAba(v); if (v !== 'viagens') setFiltro(null) }}
+                    <button key={v} type="button" role="tab" aria-selected={aba === v} onClick={() => setAba(v)}
                       className={`h-7 rounded-full px-3 text-[12px] font-semibold transition-colors ${aba === v ? 'bg-[var(--color-bg-elevated)] text-[var(--color-fg)] shadow-sm' : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]'}`}>{rot}</button>
                   ))}
                 </div>
@@ -208,32 +222,26 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
                     className="h-8 w-full rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] pl-8 pr-3 text-[12.5px] text-[var(--color-fg)]" />
                 </label>
               </div>
-              {aba === 'viagens' && filtro && (
-                <div className="flex items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-4 py-2 text-[12.5px] text-[var(--color-fg)]">
-                  Viagens {filtro.tipo === 'motorista' ? 'de' : 'da placa'} <strong>{filtro.valor}</strong>
-                  <button type="button" onClick={() => setFiltro(null)} className="ml-auto inline-flex items-center gap-1 font-semibold text-[var(--color-navy-700)]"><X size={12} weight="bold" />Ver todas</button>
-                </div>
-              )}
               <div className="max-h-[560px] overflow-y-auto">
                 {aba !== 'viagens' ? (
                   <ListaAgregado itens={agregados} tipo={aba === 'placas' ? 'placa' : 'motorista'} onVer={verViagens} />
                 ) : (
-                  <ListaViagens itens={viagens} aberta={aberta} onAbrir={setAberta} varios={r.dias.length > 1} />
+                  <ListaViagens itens={viagens} aberta={aberta} onAbrir={setAberta} varios={rf.dias.length > 1} />
                 )}
               </div>
               <p className="flex items-center gap-1.5 border-t border-[var(--color-border)] px-4 py-2 text-[11.5px] text-[var(--color-fg-subtle)]"><ArrowsDownUp size={12} />Pior primeiro. Abaixo de {META}% fica em laranja.</p>
             </div>
 
-            <DetalheViagem v={aberta} onFechar={() => setAberta(null)} temViagens={viagens.length > 0} onPrimeira={() => { setAba('viagens'); setAberta(viagens[0] ?? r.viagens[0]) }} />
+            <DetalheViagem v={aberta} onFechar={() => setAberta(null)} temViagens={viagens.length > 0} onPrimeira={() => { setAba('viagens'); setAberta(viagens[0] ?? rf.viagens[0]) }} />
           </section>
-          {r.semCalculo.length > 0 && <p className="text-[12px] text-[var(--color-fg-subtle)]">Dias com ordem guardada mas sem cálculo do KPI (ficaram de fora): {r.semCalculo.map(br).join(', ')}.</p>}
+          {rf.semCalculo.length > 0 && <p className="text-[12px] text-[var(--color-fg-subtle)]">Dias com ordem guardada mas sem cálculo do KPI (ficaram de fora): {rf.semCalculo.map(br).join(', ')}.</p>}
         </>
       )}
     </div>
   )
 }
 
-/** Espaço de subir o relatório da Fusion: arrastar ou escolher, envia na hora;
+/** Espaço de subir o relatório de ordem: arrastar ou escolher, envia na hora;
  *  ao lado, o que já entrou em cada dia do período (quando e por quem). */
 function AreaSubir({ subindo, aviso, envios, periodo, inputRef, onArquivo, onFusion, diaFusion }: {
   subindo: boolean; aviso: { ok: boolean; texto: string } | null; envios: Resposta['envios']; periodo: string
@@ -242,7 +250,7 @@ function AreaSubir({ subindo, aviso, envios, periodo, inputRef, onArquivo, onFus
   const [arrastando, setArrastando] = useState(false)
   const quando = (iso: string) => new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
   return (
-    <section aria-label="Subir relatório da Fusion" className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+    <section aria-label="Subir relatório de ordem" className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
       <div className="dash-card min-w-0 p-2">
       <div
         role="button" tabIndex={0} aria-disabled={subindo}
@@ -256,8 +264,8 @@ function AreaSubir({ subindo, aviso, envios, periodo, inputRef, onArquivo, onFus
         <div className="flex items-start gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--color-bg-subtle)] text-[var(--color-navy-700)]"><UploadSimple size={20} weight="bold" /></span>
           <div className="min-w-0">
-            <p className="text-[14px] font-semibold text-[var(--color-fg)]">{subindo ? 'Guardando a ordem da rota…' : arrastando ? 'Solte o arquivo aqui' : 'Subir o relatório da Fusion'}</p>
-            <p className="mt-0.5 text-[12.5px] leading-relaxed text-[var(--color-fg-muted)]">Arraste aqui ou clique para escolher o <strong className="text-[var(--color-fg)]">Relatório de Entregas das cargas</strong> (xlsx, com a coluna ORDEM). Entra na hora; reenviar o mesmo dia substitui o anterior.</p>
+            <p className="text-[14px] font-semibold text-[var(--color-fg)]">{subindo ? 'Guardando a ordem da rota…' : arrastando ? 'Solte o arquivo aqui' : 'Subir o relatório de ordem'}</p>
+            <p className="mt-0.5 text-[12.5px] leading-relaxed text-[var(--color-fg-muted)]">Arraste aqui ou clique para escolher o <strong className="text-[var(--color-fg)]">relatório de ordem</strong> (o xlsx com a coluna ORDEM, o mesmo que a Ana mandou no grupo). Entra na hora; reenviar o mesmo dia substitui o anterior.</p>
           </div>
         </div>
         {aviso ? (
@@ -274,10 +282,10 @@ function AreaSubir({ subindo, aviso, envios, periodo, inputRef, onArquivo, onFus
           <p className="text-[13px] font-semibold text-[var(--color-fg)]">Enviados · {periodo}</p>
           <button type="button" disabled={subindo} onClick={onFusion}
             className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--color-border-strong)] px-3 text-[12px] font-semibold text-[var(--color-fg)] transition hover:bg-[var(--color-bg-subtle)] disabled:opacity-50">
-            <ArrowsClockwise size={13} weight="bold" />Buscar {diaFusion} na Fusion
+            <ArrowsClockwise size={13} weight="bold" />Atualizar {diaFusion} agora
           </button>
         </div>
-        <p className="text-[12px] leading-snug text-[var(--color-fg-muted)]">O sistema busca sozinho na Fusion a cada 30 min durante o dia e de novo ao fechar o dia. Subir o arquivo só é preciso se a Fusion estiver fora.</p>
+        <p className="text-[12px] leading-snug text-[var(--color-fg-muted)]">Não precisa subir nada: o relatório de ordem chega sozinho do sistema da Rio Quality a cada 30 min e de novo ao fechar o dia. A área ao lado é só para quando esse sistema estiver fora.</p>
         {envios.length === 0 ? (
           <p className="text-[12.5px] leading-relaxed text-[var(--color-fg-muted)]">Nenhum relatório de ordem neste período ainda.</p>
         ) : (
@@ -287,11 +295,73 @@ function AreaSubir({ subindo, aviso, envios, periodo, inputRef, onArquivo, onFus
                 <CheckCircle size={14} weight="fill" className="shrink-0 text-[var(--color-success)]" />
                 <span className="w-11 shrink-0 font-semibold tabular-nums text-[var(--color-fg)]">{br(e.data)}</span>
                 <span className="shrink-0 tabular-nums text-[var(--color-fg-muted)]">{n(e.nfs)} notas, {e.placas} placas</span>
-                <span className="ml-auto min-w-0 truncate text-right text-[var(--color-fg-subtle)]">{e.enviadoPor ?? '—'} · {quando(e.enviadoEm)}</span>
+                <span className="ml-auto min-w-0 truncate text-right text-[var(--color-fg-subtle)]">{e.enviadoPor === 'Fusion (automático)' ? 'automático' : e.enviadoPor ?? '—'} · {quando(e.enviadoEm)}</span>
               </li>
             ))}
           </ul>
         )}
+      </div>
+    </section>
+  )
+}
+
+/** 14/11: filtros do relatório (tela e Excel): motorista, placa, horário de
+ *  chegada, só fora da ordem, só de trás pra frente. */
+function BarraFiltros({ r, filtros, onMudar }: { r: Resposta; filtros: FiltrosOrdemRota; onMudar: (f: FiltrosOrdemRota) => void }) {
+  const motoristas = useMemo(() => [...new Set(r.viagens.map(v => v.motorista))].sort(), [r])
+  const placas = useMemo(() => [...new Set(r.viagens.map(v => v.placa))].sort(), [r])
+  const ativo = !filtrosVazios(filtros)
+  const campo = 'h-9 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 text-[13px] text-[var(--color-fg)]'
+  const lista = (chave: 'motoristas' | 'placas', valores: string[], rotulo: string) => {
+    const sel = filtros[chave] ?? []
+    return (
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <label className="text-[11.5px] font-semibold text-[var(--color-fg-muted)]">{rotulo}</label>
+        <select value="" aria-label={`Adicionar ${rotulo.toLowerCase()}`} className={`${campo} w-full min-w-0`}
+          onChange={e => { const v = e.target.value; if (v && !sel.includes(v)) onMudar({ ...filtros, [chave]: [...sel, v] }) }}>
+          <option value="">{sel.length ? `+ adicionar (${sel.length} escolhido${sel.length > 1 ? 's' : ''})` : `Todos (${valores.length})`}</option>
+          {valores.filter(v => !sel.includes(v)).map(v => <option key={v} value={v}>{v}</option>)}
+        </select>
+        {sel.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {sel.map(v => (
+              <button key={v} type="button" onClick={() => onMudar({ ...filtros, [chave]: sel.filter(x => x !== v) })}
+                className="inline-flex max-w-full items-center gap-1 rounded-full bg-[var(--color-navy-700)] px-2.5 py-1 text-[11.5px] font-semibold text-white">
+                <span className="truncate">{v}</span><X size={11} weight="bold" className="shrink-0" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+  const marca = (chave: 'soForaDaOrdem' | 'soInvertidas', rotulo: string) => (
+    <label className="inline-flex cursor-pointer items-center gap-2 text-[13px] text-[var(--color-fg)]">
+      <input type="checkbox" checked={!!filtros[chave]} onChange={e => onMudar({ ...filtros, [chave]: e.target.checked })} className="size-4 accent-[var(--color-navy-700)]" />
+      {rotulo}
+    </label>
+  )
+  return (
+    <section aria-label="Filtros" className="dash-card flex flex-col gap-4 p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="inline-flex items-center gap-2 text-[14px] font-semibold text-[var(--color-fg)]"><Funnel size={16} weight="bold" />Filtros</h2>
+        {ativo && <button type="button" onClick={() => onMudar({})} className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]"><X size={12} weight="bold" />Limpar filtros</button>}
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_auto_auto]">
+        {lista('motoristas', motoristas, 'Motorista')}
+        {lista('placas', placas, 'Placa')}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11.5px] font-semibold text-[var(--color-fg-muted)]">Chegada no cliente</label>
+          <div className="flex items-center gap-2 text-[13px] text-[var(--color-fg-muted)]">
+            <input type="time" value={filtros.horaDe ?? ''} aria-label="Das" onChange={e => onMudar({ ...filtros, horaDe: e.target.value || null })} className={campo} />
+            até
+            <input type="time" value={filtros.horaAte ?? ''} aria-label="Até" onChange={e => onMudar({ ...filtros, horaAte: e.target.value || null })} className={campo} />
+          </div>
+        </div>
+        <div className="flex flex-col justify-end gap-2 pb-1">
+          {marca('soForaDaOrdem', 'Só fora da ordem')}
+          {marca('soInvertidas', 'Só de trás pra frente')}
+        </div>
       </div>
     </section>
   )
@@ -403,6 +473,9 @@ function DetalheViagem({ v, onFechar, temViagens, onPrimeira }: { v: Viagem | nu
           <div className="min-w-0">
             <h3 className="text-[20px] font-semibold tracking-[-0.01em] text-[var(--color-fg)]">{v.placa}</h3>
             <p className="truncate text-[12.5px] text-[var(--color-fg-muted)]">{v.motorista} · {v.destino} · romaneio {v.romaneio} · {brAno(v.data)}</p>
+            <p className="mt-0.5 text-[12px] tabular-nums text-[var(--color-fg-muted)]">
+              {[v.saidaBase && `Saiu da base ${v.saidaBase}`, v.primeira && `1ª entrega ${v.primeira}`, v.ultima && `última ${v.ultima}`, v.chegadaBase && `voltou ${v.chegadaBase}`, v.km != null && `${v.km.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km`].filter(Boolean).join(' · ')}
+            </p>
           </div>
           <button type="button" onClick={onFechar} aria-label="Fechar" className="rounded-full p-1.5 text-[var(--color-fg-subtle)] hover:bg-[var(--color-bg-subtle)]"><X size={14} weight="bold" /></button>
         </div>
@@ -412,14 +485,21 @@ function DetalheViagem({ v, onFechar, temViagens, onPrimeira }: { v: Viagem | nu
           <Mini rotulo="% na ordem" valor={p1(v.pct)} destaque={v.pct < META} />
         </div>
         {v.invertida && <p className="rounded-xl bg-[var(--color-warning-soft)] px-3.5 py-2.5 text-[12.5px] font-semibold text-[var(--color-warning)]">Fez a rota de trás pra frente: começou pelo último cliente da roteirização.</p>}
-        {v.naoFeitas > 0 && <p className="text-[12px] text-[var(--color-fg-muted)]">{v.naoFeitas} {v.naoFeitas === 1 ? 'entrega planejada ainda não foi feita (ou não foi entregue)' : 'entregas planejadas ainda não foram feitas (ou não foram entregues)'} e não entram na conta.</p>}
+        {v.naoFeitas > 0 && (
+          <details className="text-[12px] text-[var(--color-fg-muted)]">
+            <summary className="cursor-pointer">{v.naoFeitas} {v.naoFeitas === 1 ? 'entrega planejada não foi feita' : 'entregas planejadas não foram feitas'} (não entram na conta) — ver quais</summary>
+            <ul className="mt-1.5 flex flex-col gap-0.5">
+              {v.naoFeitasLista.map(x => <li key={x.nf} className="truncate"><span className="tabular-nums">{x.planejada}ª</span> · {x.cliente || `NF ${x.nf}`}</li>)}
+            </ul>
+          </details>
+        )}
       </div>
       <div className="max-h-[470px] overflow-auto">
         <table className="w-full text-[12.5px]">
           <thead className="sticky top-0 bg-[var(--color-bg-elevated)]">
             <tr className="text-left text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--color-fg-subtle)]">
               <th className="px-4 py-2.5">Feita</th><th className="px-2 py-2.5">Era a</th><th className="px-2 py-2.5">Cliente</th>
-              <th className="px-4 py-2.5 text-right">Chegou (GPS)</th>
+              <th className="px-2 py-2.5 text-right">Chegou</th><th className="px-2 py-2.5 text-right">Saiu</th><th className="px-4 py-2.5 text-right">Min.</th>
             </tr>
           </thead>
           <tbody>
@@ -427,8 +507,10 @@ function DetalheViagem({ v, onFechar, temViagens, onPrimeira }: { v: Viagem | nu
               <tr key={s.real} className={`border-t border-[var(--color-border)] ${s.naOrdem ? '' : 'bg-[var(--color-warning-soft)]'}`}>
                 <td className="px-4 py-2 tabular-nums font-semibold text-[var(--color-fg)]">{s.real}ª</td>
                 <td className={`px-2 py-2 tabular-nums ${s.naOrdem ? 'text-[var(--color-fg-muted)]' : 'font-semibold text-[var(--color-warning)]'}`}>{s.planejada}ª</td>
-                <td className="max-w-[220px] truncate px-2 py-2 text-[var(--color-fg)]" title={`NF ${s.nf}`}>{s.cliente || `NF ${s.nf}`}</td>
-                <td className="px-4 py-2 text-right tabular-nums text-[var(--color-fg)]">{s.chegada ?? '—'}</td>
+                <td className="max-w-[200px] truncate px-2 py-2 text-[var(--color-fg)]" title={`${s.cliente} · NF ${s.nf}${s.endereco ? ` · ${s.endereco}` : ''}`}>{s.cliente || `NF ${s.nf}`}</td>
+                <td className="px-2 py-2 text-right tabular-nums text-[var(--color-fg)]">{s.chegada ?? '—'}</td>
+                <td className="px-2 py-2 text-right tabular-nums text-[var(--color-fg-muted)]">{s.saida ?? '—'}</td>
+                <td className="px-4 py-2 text-right tabular-nums text-[var(--color-fg-muted)]">{s.tempoMin ?? '—'}</td>
               </tr>
             ))}
           </tbody>
