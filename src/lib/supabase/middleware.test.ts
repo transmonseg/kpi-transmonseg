@@ -142,3 +142,23 @@ describe('operador alcança a fila Conferir e o Resumo do dia (F3-R01)', () => {
     expect((await updateSession(req('/api/kpi/resumo-dia-x'))).status).toBe(403)
   })
 })
+
+describe('Ordem da rota (14/11: operador da RQ via "Sem permissão.")', () => {
+  it('operador da Rio Quality alcança a tela e a API (buscar, subir, baixar)', async () => {
+    estado.user = { id: 'erica' }
+    estado.perfil = { papel: 'operador', redes: [], meses: [], empresas: ['rioquality'] }
+    for (const rota of ['/painel/rioquality/ordem-rota', '/api/kpi/ordem-rota?de=2026-11-13', '/api/kpi/ordem-rota?fusion=2026-11-13', '/api/kpi/ordem-rota?de=2026-11-13&formato=xlsx']) {
+      const r = await updateSession(req(rota))
+      expect(r.status, rota).toBe(200)
+      expect(r.headers.get('location'), rota).toBeNull()
+    }
+  })
+  it('operador só da Nutry e visualizador continuam sem acesso', async () => {
+    estado.user = { id: 'u1' }
+    estado.perfil = { papel: 'operador', redes: [], meses: [], empresas: ['nutrimax'] }
+    expect((await updateSession(req('/api/kpi/ordem-rota'))).status).toBe(403)
+    estado.perfil = { papel: 'visualizador', redes: [], meses: [], empresas: ['rioquality'] }
+    expect((await updateSession(req('/api/kpi/ordem-rota'))).status).toBe(403)
+    expect((await updateSession(req('/api/kpi/ordem-rota-x'))).status).toBe(403)
+  })
+})

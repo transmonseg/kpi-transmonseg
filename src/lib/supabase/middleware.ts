@@ -126,6 +126,8 @@ export async function updateSession(request: NextRequest) {
       const operadorAoVivoRq = perfil.papel === 'operador' && perfil.empresas.includes('rioquality') && (
         path === '/painel/ao-vivo' || path.startsWith('/api/kpi/ao-vivo') || path.startsWith('/api/kpi/historico/') ||
         path === '/painel/rioquality' || path.startsWith('/painel/rioquality/') || path.startsWith('/api/kpi/rioquality/') ||
+        // 12/11: tela Ordem da rota (a rota confere a Rio Quality via acessoAoVivo).
+        path === '/api/kpi/ordem-rota' ||
         rotaConferirResumo
       )
       // Login unico (08/10): o passe do quadro tambem (a rota confere o papel).

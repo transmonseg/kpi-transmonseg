@@ -23,6 +23,7 @@ const cenario = vi.hoisted(() => ({
   falhaLeitura: false,
   diasConsultados: [] as string[],
 }))
+vi.mock('@/lib/kpi-romaneio/ordem-rota-servidor', () => ({ guardarOrdemRota: vi.fn(async () => ['2026-09-30']) }))
 vi.mock('@/lib/kpi-romaneio/resumo-dashboard', () => ({
   extrairResumoKpiXlsx: async () => ({ taxa: 92.1, entregues: 2650, nfsNaConta: 2877, aguardando: 0 }),
 }))
@@ -272,5 +273,22 @@ describe('POST /api/kpi/rioquality/gerar -- KPI de hoje também entra no Ao vivo
     expect(res.status).toBe(200)
     expect(cenario.portaGuardou).toHaveLength(0)
     expect(res.headers.get('x-ao-vivo')).toBe('nao')
+  })
+})
+
+describe('POST /api/kpi/rioquality/gerar -- relatório da ORDEM no lugar errado (13/11)', () => {
+  it('guarda a ordem e explica, sem gerar KPI', async () => {
+    const { readFileSync } = await import('fs')
+    const { join } = await import('path')
+    const { guardarOrdemRota } = await import('@/lib/kpi-romaneio/ordem-rota-servidor')
+    const fd = new FormData()
+    fd.set('data', '2026-09-30')
+    fd.set('completo', new File([new Uint8Array(readFileSync(join(__dirname, '../../../../../lib/kpi-rioquality/__fixtures__/relatorio-ordem-rota.xlsx')))], 'Relatório de Entregas (7).xlsx'))
+    const res = await POST(new Request('http://localhost/api/kpi/rioquality/gerar', { method: 'POST', body: fd }) as never)
+    expect(res.status).toBe(422)
+    expect(await res.text()).toMatch(/relatório da ORDEM da rota.*Guardei a ordem \(74 notas, 30\/09\).*sozinho/)
+    expect(vi.mocked(guardarOrdemRota)).toHaveBeenCalledTimes(1)
+    expect(cenario.chamadasPipeline).toHaveLength(0)
+    expect(salvarGeracaoMock).not.toHaveBeenCalled()
   })
 })

@@ -13,6 +13,8 @@ import { lerSnapshotParadas } from '@/lib/kpi-romaneio/paradas-snapshot'
 import { EMPRESA_SNAPSHOT_RIOQUALITY } from '@/lib/kpi-rioquality/snapshot-paradas'
 import type { UnitracParadaRow } from '@/lib/kpi/matcher'
 import { parseEntregasCompletas, type EntregaRioQualityCompleta } from '@/lib/kpi-rioquality/parse-planilhas'
+import { ehRelatorioOrdemRota, parseOrdemRota } from '@/lib/kpi-rioquality/parse-ordem-rota'
+import { guardarOrdemRota } from '@/lib/kpi-romaneio/ordem-rota-servidor'
 import { gravarHojeRQ, cabecalhosPorta, type ResultadoPorta } from '@/lib/kpi-romaneio/porta-do-dia'
 import { depsReaisPortaRQ, depoisDaGeracao } from '@/lib/kpi-romaneio/porta-do-dia-servico'
 import { motivoDoDiaFechado, comMotivo } from '@/lib/kpi-romaneio/motivo-dia-fechado'
@@ -95,6 +97,19 @@ export async function POST(req: NextRequest) {
     const completaFile = form.get('completo')
     if (completaFile instanceof File) {
       completaBuf = Buffer.from(await completaFile.arrayBuffer())
+      // 13/11 (Érica: "não estou conseguindo gerar na Rio Quality"): o relatório
+      // das cargas com ORDEM caía aqui e dava erro de planilha. Guarda a ordem
+      // e explica -- o KPI do dia já sai sozinho da Fusion.
+      if (ehRelatorioOrdemRota(completaBuf)) {
+        const ordem = parseOrdemRota(completaBuf)
+        let dias: string[] = []
+        try { dias = await guardarOrdemRota(CLIENTE, hojeBR(), ordem, user.email ?? null, hojeBR()) } catch (e) { console.error('[rioquality/gerar] ordem não gravada:', e) }
+        const quando = dias.map(d => `${d.slice(8, 10)}/${d.slice(5, 7)}`).join(', ')
+        return new NextResponse(
+          `Este arquivo é o relatório da ORDEM da rota, não o Relatório de Entregas do KPI.${dias.length ? ` Guardei a ordem (${ordem.length.toLocaleString('pt-BR')} notas, ${quando}) — veja em Rio Quality › Ordem da rota.` : ''} O KPI da Rio Quality não precisa ser gerado aqui: o sistema puxa o dia da Fusion sozinho (Ao vivo) e fecha o dia à meia-noite e meia no Dashboard.`,
+          { status: 422 },
+        )
+      }
     } else {
       const custosFile = form.get('custos')
       const entregasFile = form.get('entregas')
