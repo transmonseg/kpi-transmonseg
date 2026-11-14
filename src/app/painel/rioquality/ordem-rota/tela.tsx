@@ -6,7 +6,7 @@
 // em planilha. A ordem vem do relatório de ordem (sistema da Rio Quality).
 // 14/11: filtros (motorista, placa, horário, só fora da ordem) na tela e no Excel.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowsClockwise, ArrowsDownUp, CaretRight, Funnel, CheckCircle, DownloadSimple, FileXls, MagnifyingGlass, Path, UploadSimple, WarningCircle, X } from '@phosphor-icons/react/dist/ssr'
+import { ArrowsDownUp, CaretRight, Funnel, CheckCircle, DownloadSimple, FileXls, MagnifyingGlass, Path, UploadSimple, WarningCircle, X } from '@phosphor-icons/react/dist/ssr'
 import { ColumnChart } from '@/app/painel/charts'
 import { buscarComSessao, SessaoVencida } from '@/lib/sessao-fetch'
 import { filtrarRelatorio, filtrosParaUrl, filtrosVazios, type Agregado, type FiltrosOrdemRota, type Viagem } from '@/lib/kpi-romaneio/relatorio-ordem-rota'
@@ -83,21 +83,6 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
     }
   }
 
-  async function buscarFusion() {
-    setSubindo(true)
-    setAviso(null)
-    try {
-      const resp = await buscarComSessao(`/api/kpi/ordem-rota?fusion=${ate}`, { method: 'POST' })
-      if (!resp.ok) { setAviso({ ok: false, texto: await resp.text() }); return }
-      const j = (await resp.json()) as { nfs: number }
-      setAviso({ ok: true, texto: `Ordem de ${br(ate)} atualizada: ${n(j.nfs)} notas.` })
-      void carregar()
-    } catch (e) {
-      if (!(e instanceof SessaoVencida)) setAviso({ ok: false, texto: 'Sem conexão com o servidor. Tente de novo.' })
-    } finally {
-      setSubindo(false)
-    }
-  }
 
   // Relatório com os filtros aplicados (mesma função do Excel).
   const rf = useMemo(() => (r ? { ...filtrarRelatorio(r, filtros), envios: r.envios, semCalculo: r.semCalculo } : null), [r, filtros])
@@ -143,7 +128,7 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
         </p>
       </header>
 
-      <AreaSubir subindo={subindo} aviso={aviso} envios={r?.envios ?? []} periodo={periodo} inputRef={inputArquivo} onArquivo={f => void subir(f)} onFusion={() => void buscarFusion()} diaFusion={br(ate)} />
+      <AreaSubir subindo={subindo} aviso={aviso} envios={r?.envios ?? []} periodo={periodo} inputRef={inputArquivo} onArquivo={f => void subir(f)} />
 
       {/* Período */}
       <div className="dash-card flex flex-wrap items-center gap-3 px-4 py-3">
@@ -172,7 +157,7 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
           <Path size={30} weight="bold" className="text-[var(--color-fg-subtle)]" />
           <p className="text-[15px] font-semibold text-[var(--color-fg)]">Sem ordem da rota em {periodo}</p>
           <p className="max-w-[60ch] text-[13px] leading-relaxed text-[var(--color-fg-muted)]">
-            O relatório de ordem deste período ainda não chegou. Ele chega sozinho do sistema da Rio Quality; se demorar, clique em &quot;Atualizar agora&quot; ou solte o arquivo na área acima.
+            Ainda não subiram o relatório de ordem deste período. Solte o arquivo na área acima (pode ser de dias anteriores também).
           </p>
           {r && r.semCalculo.length > 0 && <p className="text-[12px] text-[var(--color-fg-subtle)]">Dias com ordem mas sem cálculo do KPI: {r.semCalculo.map(br).join(', ')}.</p>}
         </div>
@@ -243,9 +228,9 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
 
 /** Espaço de subir o relatório de ordem: arrastar ou escolher, envia na hora;
  *  ao lado, o que já entrou em cada dia do período (quando e por quem). */
-function AreaSubir({ subindo, aviso, envios, periodo, inputRef, onArquivo, onFusion, diaFusion }: {
+function AreaSubir({ subindo, aviso, envios, periodo, inputRef, onArquivo }: {
   subindo: boolean; aviso: { ok: boolean; texto: string } | null; envios: Resposta['envios']; periodo: string
-  inputRef: React.RefObject<HTMLInputElement | null>; onArquivo: (f: File) => void; onFusion: () => void; diaFusion: string
+  inputRef: React.RefObject<HTMLInputElement | null>; onArquivo: (f: File) => void
 }) {
   const [arrastando, setArrastando] = useState(false)
   const quando = (iso: string) => new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
@@ -278,14 +263,8 @@ function AreaSubir({ subindo, aviso, envios, periodo, inputRef, onArquivo, onFus
       </div>
       </div>
       <div className="dash-card flex min-w-0 flex-col gap-2 p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-[13px] font-semibold text-[var(--color-fg)]">Enviados · {periodo}</p>
-          <button type="button" disabled={subindo} onClick={onFusion}
-            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--color-border-strong)] px-3 text-[12px] font-semibold text-[var(--color-fg)] transition hover:bg-[var(--color-bg-subtle)] disabled:opacity-50">
-            <ArrowsClockwise size={13} weight="bold" />Atualizar {diaFusion} agora
-          </button>
-        </div>
-        <p className="text-[12px] leading-snug text-[var(--color-fg-muted)]">Não precisa subir nada: o relatório de ordem chega sozinho do sistema da Rio Quality a cada 30 min e de novo ao fechar o dia. A área ao lado é só para quando esse sistema estiver fora.</p>
+        <p className="text-[13px] font-semibold text-[var(--color-fg)]">Enviados · {periodo}</p>
+        <p className="text-[12px] leading-snug text-[var(--color-fg-muted)]">Suba o relatório de ordem de cada dia ao lado. O relatório de cada dia entra no dia dele; reenviar substitui.</p>
         {envios.length === 0 ? (
           <p className="text-[12.5px] leading-relaxed text-[var(--color-fg-muted)]">Nenhum relatório de ordem neste período ainda.</p>
         ) : (
