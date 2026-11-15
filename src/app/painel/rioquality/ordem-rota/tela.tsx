@@ -11,6 +11,7 @@ import { ColumnChart } from '@/app/painel/charts'
 import { buscarComSessao, SessaoVencida } from '@/lib/sessao-fetch'
 import { filtrarRelatorio, filtrosParaUrl, filtrosVazios, type Agregado, type FiltrosOrdemRota, type Viagem } from '@/lib/kpi-romaneio/relatorio-ordem-rota'
 import type { RespostaOrdemRota } from '@/lib/kpi-romaneio/relatorio-ordem-rota-servidor'
+import { VisaoGeral } from './visao-geral'
 
 type Resposta = RespostaOrdemRota
 type Aba = 'motoristas' | 'placas' | 'viagens'
@@ -191,8 +192,11 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
             </section>
           )}
 
+          <VisaoGeral itens={viagens} aberta={aberta} varios={rf.dias.length > 1}
+            onAbrir={v => { setAba('viagens'); setAberta(v); requestAnimationFrame(() => document.getElementById('detalhe-ordem')?.scrollIntoView({ behavior: 'smooth', block: 'start' })) }} />
+
           {/* Ranking + viagens */}
-          <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+          <section id="detalhe-ordem" className="scroll-mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
             <div className="dash-card flex min-w-0 flex-col overflow-hidden">
               <div className="flex flex-wrap items-center gap-3 border-b border-[var(--color-border)] px-4 py-3">
                 <div role="tablist" aria-label="Ver por" className="inline-flex rounded-full bg-[var(--color-bg-subtle)] p-0.5">
