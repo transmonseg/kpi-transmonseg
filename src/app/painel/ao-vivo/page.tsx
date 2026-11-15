@@ -391,7 +391,10 @@ export default function AoVivoPage() {
       {erroCarga && <p className="text-[13px] text-[var(--color-danger)]">{erroCarga}</p>}
       {!historico && (() => {
         const longas = placas
-          .map(p => ({ p, inicio: agora[p.placa]?.parada?.inicio ?? p.paradaAtual?.inicio ?? null, cliente: agora[p.placa]?.nf?.cliente ?? p.paradaAtual?.cliente ?? null }))
+          // 14/11: só entra quem o cálculo deu como parado NO CLIENTE (rota acabou,
+          // parada longe da rota ou depois da volta ficam de fora); o "agora"
+          // da placa aberta só atualiza o relógio.
+          .map(p => ({ p, inicio: !p.paradaAtual ? null : agora[p.placa] ? agora[p.placa].parada?.inicio ?? null : p.paradaAtual.inicio, cliente: agora[p.placa]?.nf?.cliente ?? p.paradaAtual?.cliente ?? null }))
           .filter((x): x is { p: PlacaAoVivo; inicio: string; cliente: string | null } => !!x.inicio && desde(x.inicio, agoraMs) >= UMA_HORA)
           .sort((a, b) => Date.parse(a.inicio) - Date.parse(b.inicio))
         if (!longas.length) return null

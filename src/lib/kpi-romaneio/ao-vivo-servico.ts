@@ -461,6 +461,10 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
       if (!p.nfs.some(n => n.situacao === 'pendente')) continue
       if (p.chegadaBase && Date.parse(pa.inicio) >= Date.parse(p.chegadaBase)) continue
       const n = pa.lat != null && pa.lng != null ? nfProxima(p.nfs, { lat: pa.lat, lng: pa.lng }) : null
+      // 14/11 (KYF9B10 7h, QUR3F92 3h com rota finalizada): parada longe de
+      // todo cliente da rota (casa, patio, posto) nao e' "no cliente" -- a
+      // volta a base nem sempre e' vista. Sem ponto de cliente, segue avisando.
+      if (!n && pa.lat != null && pa.lng != null && p.nfs.some(x => x.lat != null && x.lng != null)) continue
       p.paradaAtual = { inicio: pa.inicio, nf: n?.nf ?? null, cliente: n?.cliente ?? null }
     }
     const { error } = await svc.from('kpi_ao_vivo_calculo').update({
