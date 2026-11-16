@@ -16,6 +16,8 @@ import { SeletorVisao, PioresRecorrentes, TabelaGrupos, type Visao } from './gru
 import { PlacaDrawer } from './placa-drawer'
 import { FechamentoOfertas } from './fechamento-ofertas'
 import { metaDoCliente } from '@/lib/kpi/metas'
+import { SecaoOrdemRota, useOrdemRota, normPlaca, META_ORDEM } from './ordem-rota-dash'
+import type { OrdemDashboard } from '@/lib/kpi-romaneio/relatorio-ordem-rota'
 import { HorariosETempo, RankingLojas, TempoPorDia, fmtHora, type DadosLojas } from './lojas'
 
 const ANO = Number(hoje().slice(0, 4))
@@ -68,6 +70,9 @@ export function VisaoGeral({ cliente, dataInicial, podeInserir, onInserir }: {
       .catch(() => {})
     return () => { vivo = false }
   }, [cliente, faixa, tentativa])
+
+  // 16/11: ordem da rota (só Rio Quality, períodos de até 62 dias).
+  const ordem = useOrdemRota(cliente, faixa[0], faixa[1], tentativa)
 
   const ag = useMemo(() => (dias ? agregar(dias) : null), [dias])
   const agAnt = useMemo(() => (anteriores.length ? agregar(anteriores) : null), [anteriores])
@@ -136,11 +141,11 @@ export function VisaoGeral({ cliente, dataInicial, podeInserir, onInserir }: {
           )}
         </div>
       ) : (
-        <Conteudo meta={meta} ag={ag} agAnt={agAnt} lojas={lojas} periodo={periodo} onPlaca={setPlacaAberta} podeInserir={podeInserir} />
+        <Conteudo meta={meta} ag={ag} agAnt={agAnt} lojas={lojas} periodo={periodo} onPlaca={setPlacaAberta} podeInserir={podeInserir} ordem={ordem} />
       )}
 
       {placaAberta && ag && (
-        <PlacaDrawer cliente={cliente} placa={placaAberta} dias={ag.dias} onFechar={() => setPlacaAberta(null)} />
+        <PlacaDrawer cliente={cliente} placa={placaAberta} dias={ag.dias} onFechar={() => setPlacaAberta(null)} ordem={ordem?.viagens.filter(v => normPlaca(v.placa) === normPlaca(placaAberta.placa)) ?? []} />
       )}
     </div>
   )
@@ -171,7 +176,7 @@ function Delta({ atual, anterior, inverso, suf = ' pts', casas = 1 }: { atual: n
   )
 }
 
-function Conteudo({ ag, agAnt, lojas, periodo, meta, onPlaca, podeInserir }: { ag: Agregado; agAnt: Agregado | null; lojas: { atual: DadosLojas; anterior: DadosLojas | null } | null; periodo: Periodo; meta: number; onPlaca: (p: PlacaAgg) => void; podeInserir: boolean }) {
+function Conteudo({ ag, agAnt, lojas, periodo, meta, onPlaca, podeInserir, ordem }: { ag: Agregado; agAnt: Agregado | null; lojas: { atual: DadosLojas; anterior: DadosLojas | null } | null; periodo: Periodo; meta: number; onPlaca: (p: PlacaAgg) => void; podeInserir: boolean; ordem: OrdemDashboard | null }) {
   const umDia = periodo === 'dia'
   const serieComp = ag.serie.filter(s => !s.parcial)
   const lj = lojas?.atual ?? null
@@ -222,6 +227,13 @@ function Conteudo({ ag, agAnt, lojas, periodo, meta, onPlaca, podeInserir }: { a
         </div>
       )}
 
+      {ordem && ordem.total.viagens > 0 && <SecaoOrdemRota o={ordem} umDia={umDia} podeAbrirRelatorio={podeInserir} />}
+      {ordem && ordem.total.viagens === 0 && podeInserir && (
+        <p className="dash-card px-5 py-4 text-[13px] text-[var(--color-fg-muted)]">
+          <strong className="text-[var(--color-fg)]">Ordem da rota:</strong> ainda não subiram o relatório de ordem {umDia ? 'deste dia' : 'deste período'}. Suba em <a href="/painel/rioquality/ordem-rota" className="font-semibold text-[var(--color-accent)] underline">Rio Quality › Ordem da rota</a> ou troque o romaneio no Ao vivo pelo que tem a ordem.
+        </p>
+      )}
+
       {lj && lj.entregas > 0 && <HorariosETempo d={lj} />}
 
       {lj && !umDia && <TempoPorDia d={lj} />}
@@ -233,14 +245,14 @@ function Conteudo({ ag, agAnt, lojas, periodo, meta, onPlaca, podeInserir }: { a
         </Painel>
       </div>
 
-      <PorPlacaRotaMotorista ag={ag} umDia={umDia} meta={meta} onPlaca={onPlaca} />
+      <PorPlacaRotaMotorista ag={ag} umDia={umDia} meta={meta} onPlaca={onPlaca} ordem={ordem} />
     </div>
   )
 }
 
 // F3-10 (ACH-08): "Por placa | Por rota | Por motorista". Por rota abre com
 // as piores rotas recorrentes (abaixo da meta em 3 dos últimos 5 dias).
-function PorPlacaRotaMotorista({ ag, umDia, meta, onPlaca }: { ag: Agregado; umDia: boolean; meta: number; onPlaca: (p: PlacaAgg) => void }) {
+function PorPlacaRotaMotorista({ ag, umDia, meta, onPlaca, ordem }: { ag: Agregado; umDia: boolean; meta: number; onPlaca: (p: PlacaAgg) => void; ordem: OrdemDashboard | null }) {
   const [visao, setVisao] = useState<Visao>('placa')
   const [aberto, setAberto] = useState<string | null>(null)
   const grupos = useMemo(() => (visao === 'placa' ? [] : agregarPor(ag.dias, visao)), [ag.dias, visao])
@@ -267,7 +279,7 @@ function PorPlacaRotaMotorista({ ag, umDia, meta, onPlaca }: { ag: Agregado; umD
         </div>
       )}
       {visao === 'placa'
-        ? <TabelaPlacas placas={ag.placas} umDia={umDia} meta={meta} onPlaca={onPlaca} />
+        ? <TabelaPlacas placas={ag.placas} umDia={umDia} meta={meta} onPlaca={onPlaca} ordem={ordem} />
         : <TabelaGrupos key={visao} grupos={grupos} por={visao} umDia={umDia} meta={meta} aberto={aberto} onAbrir={setAberto} />}
     </section>
   )
@@ -378,9 +390,14 @@ function PioresPlacas({ placas, meta, onPlaca }: { placas: PlacaAgg[]; meta: num
   )
 }
 
-type Col = 'placa' | 'taxa' | 'nfs' | 'km' | 'operacao' | 'porEntrega' | 'dias'
+type Col = 'placa' | 'taxa' | 'nfs' | 'km' | 'operacao' | 'porEntrega' | 'dias' | 'ordem'
 
-function TabelaPlacas({ placas, umDia, meta, onPlaca }: { placas: PlacaAgg[]; umDia: boolean; meta: number; onPlaca: (p: PlacaAgg) => void }) {
+function TabelaPlacas({ placas, umDia, meta, onPlaca, ordem: ordemRota }: { placas: PlacaAgg[]; umDia: boolean; meta: number; onPlaca: (p: PlacaAgg) => void; ordem: OrdemDashboard | null }) {
+  // 16/11: % na ordem da rota por placa (Rio Quality com ordem no período).
+  const ordemPorPlaca = useMemo(() => {
+    if (!ordemRota || ordemRota.total.viagens === 0) return null
+    return new Map(ordemRota.placas.map(a => [normPlaca(a.nome), a]))
+  }, [ordemRota])
   const [busca, setBusca] = useState('')
   const [ordem, setOrdem] = useState<{ col: Col; desc: boolean }>({ col: 'taxa', desc: false })
   const linhas = useMemo(() => {
@@ -395,6 +412,7 @@ function TabelaPlacas({ placas, umDia, meta, onPlaca }: { placas: PlacaAgg[]; um
         case 'operacao': return p.operacaoMedia ?? -1
         case 'porEntrega': return p.porEntregaMedia ?? -1
         case 'dias': return p.dias
+        case 'ordem': return ordemPorPlaca?.get(normPlaca(p.placa))?.pct ?? 999
       }
     }
     return f.sort((a, b2) => {
@@ -402,11 +420,11 @@ function TabelaPlacas({ placas, umDia, meta, onPlaca }: { placas: PlacaAgg[]; um
       const r = typeof x === 'string' ? x.localeCompare(y as string) : (x as number) - (y as number)
       return ordem.desc ? -r : r
     })
-  }, [placas, busca, ordem])
+  }, [placas, busca, ordem, ordemPorPlaca])
 
   const th = (col: Col, rotulo: string, dir = false) => (
     <th className={`whitespace-nowrap px-4 py-2.5 font-medium ${dir ? 'text-right' : 'text-left'}`}>
-      <button type="button" onClick={() => setOrdem(o => ({ col, desc: o.col === col ? !o.desc : col !== 'placa' && col !== 'taxa' }))}
+      <button type="button" onClick={() => setOrdem(o => ({ col, desc: o.col === col ? !o.desc : col !== 'placa' && col !== 'taxa' && col !== 'ordem' }))}
         className={`inline-flex items-center gap-1 transition-colors hover:text-[var(--color-fg)] ${ordem.col === col ? 'text-[var(--color-fg)]' : ''}`}>
         {rotulo}<CaretUpDown size={11} className={ordem.col === col ? 'opacity-100' : 'opacity-40'} />
       </button>
@@ -427,6 +445,7 @@ function TabelaPlacas({ placas, umDia, meta, onPlaca }: { placas: PlacaAgg[]; um
             <tr className="border-y border-[var(--color-border)]">
               {th('placa', 'Placa')}
               {th('taxa', 'Taxa')}
+              {ordemPorPlaca && th('ordem', 'Na ordem da rota')}
               {th('nfs', 'NFs', true)}
               {!umDia && th('dias', 'Dias', true)}
               {th('km', 'KM', true)}
@@ -452,6 +471,19 @@ function TabelaPlacas({ placas, umDia, meta, onPlaca }: { placas: PlacaAgg[]; um
                         </span>
                       </div>
                   </td>
+                  {ordemPorPlaca && (() => {
+                    const o = ordemPorPlaca.get(normPlaca(p.placa))
+                    return (
+                      <td className="whitespace-nowrap px-4 py-3" title={o ? `${o.naOrdem} de ${o.entregas} entregas na sequência planejada${o.invertidas ? ` · ${o.invertidas} de trás pra frente` : ''}` : 'Sem ordem da rota para esta placa'}>
+                        {o ? (
+                          <span className="flex items-center gap-2">
+                            <span className="w-12 text-right font-semibold tabular-nums" style={{ color: o.pct < META_ORDEM ? 'var(--color-warning)' : 'var(--color-fg)' }}>{fmtPct(o.pct)}</span>
+                            <span className="text-[11.5px] tabular-nums text-[var(--color-fg-subtle)]">{o.naOrdem}/{o.entregas}</span>
+                          </span>
+                        ) : <span className="text-[var(--color-fg-subtle)]">—</span>}
+                      </td>
+                    )
+                  })()}
                   <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
                     {fmtInt(p.nfConfirmadas)}<span className="text-[var(--color-fg-subtle)]">/{fmtInt(p.nfPlanejado - p.nfForaDaConta)}</span>
                   </td>
@@ -464,7 +496,7 @@ function TabelaPlacas({ placas, umDia, meta, onPlaca }: { placas: PlacaAgg[]; um
               )
             })}
             {linhas.length === 0 && (
-              <tr><td colSpan={8} className="px-4 py-10 text-center text-[13px] text-[var(--color-fg-muted)]">Nenhuma placa encontrada.</td></tr>
+              <tr><td colSpan={ordemPorPlaca ? 9 : 8} className="px-4 py-10 text-center text-[13px] text-[var(--color-fg-muted)]">Nenhuma placa encontrada.</td></tr>
             )}
           </tbody>
         </table>

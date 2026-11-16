@@ -184,3 +184,29 @@ export function descreverFiltros(f: FiltrosOrdemRota): string {
   if (f.soInvertidas) partes.push('Só rotas de trás pra frente')
   return partes.length ? partes.join(' · ') : 'Sem filtro (todas as viagens)'
 }
+
+/** Viagem enxuta pro Dashboard: a fila de entregas só com a posição no plano. */
+export type ViagemDash = {
+  data: string; placa: string; motorista: string; destino: string
+  entregas: number; naOrdem: number; pct: number; invertida: boolean
+  /** [posição no plano, na ordem?] na ordem em que foi feita */
+  fila: [number, boolean][]
+  /** posições no plano que não foram entregues */
+  naoFeitas: number[]
+}
+export type OrdemDashboard = Omit<RelatorioOrdemRota, 'viagens'> & { viagens: ViagemDash[] }
+
+/** 16/11: o relatório da Ordem da rota sem endereço/cliente/horários, pro
+ *  Dashboard (um mês inteiro fica leve). */
+export function resumoOrdemDashboard(r: RelatorioOrdemRota): OrdemDashboard {
+  const { de, ate, total, dias, motoristas, placas } = r
+  return {
+    de, ate, total, dias, motoristas, placas,
+    viagens: r.viagens.map(v => ({
+      data: v.data, placa: v.placa, motorista: v.motorista, destino: v.destino,
+      entregas: v.entregas, naOrdem: v.naOrdem, pct: v.pct, invertida: v.invertida,
+      fila: v.sequencia.map(s => [s.planejada, s.naOrdem] as [number, boolean]),
+      naoFeitas: v.naoFeitasLista.map(n => n.planejada),
+    })),
+  }
+}

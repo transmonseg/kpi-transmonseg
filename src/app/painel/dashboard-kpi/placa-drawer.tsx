@@ -5,15 +5,19 @@ import { createPortal } from 'react-dom'
 import { X, CheckCircle, WarningCircle } from '@phosphor-icons/react/dist/ssr'
 import type { ClienteDash, DiaKpi } from '@/lib/kpi-romaneio/dashboard-kpis'
 import type { NfResumo } from '@/lib/kpi-romaneio/resumo-dashboard'
+import { OrdemDaPlaca } from './ordem-rota-dash'
+import type { ViagemDash } from '@/lib/kpi-romaneio/relatorio-ordem-rota'
 import { dataCurta, dataLonga, fmtDur, fmtInt, fmtKm, fmtPct, tomDoCliente, COR_TOM, type PlacaAgg } from './calculos'
 
 // Detalhe de uma placa: resumo do período, dia a dia e NF por NF do dia
 // escolhido (busca o detalhe só quando abre).
-export function PlacaDrawer({ cliente, placa, dias, onFechar }: {
+export function PlacaDrawer({ cliente, placa, dias, onFechar, ordem = [] }: {
   cliente: ClienteDash
   placa: PlacaAgg
   dias: DiaKpi[]
   onFechar: () => void
+  /** 16/11: viagens desta placa com ordem da rota (Rio Quality). */
+  ordem?: ViagemDash[]
 }) {
   const diasDaPlaca = useMemo(() => [...placa.porDia].sort((a, b) => b.data.localeCompare(a.data)), [placa])
   const [diaSel, setDiaSel] = useState(diasDaPlaca[0]?.data ?? '')
@@ -93,6 +97,9 @@ export function PlacaDrawer({ cliente, placa, dias, onFechar }: {
               </div>
             </div>
           )}
+
+          {/* 16/11: ordem da rota da placa no dia escolhido */}
+          <OrdemDaPlaca viagens={ordem.filter(v => v.data === diaSel)} />
 
           {/* Dia selecionado */}
           <div className="dash-card overflow-hidden">

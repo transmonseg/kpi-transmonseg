@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import ExcelJS from 'exceljs'
 import { aplicarOrdemRota } from './ordem-rota'
-import { montarRelatorioOrdemRota, filtrarRelatorio, filtrosDaUrl, filtrosParaUrl, descreverFiltros } from './relatorio-ordem-rota'
+import { montarRelatorioOrdemRota, resumoOrdemDashboard, filtrarRelatorio, filtrosDaUrl, filtrosParaUrl, descreverFiltros } from './relatorio-ordem-rota'
 import { gerarXlsxOrdemRota } from './relatorio-ordem-rota-xlsx'
 
 const nf = (nf: string, chegada: string | null, situacao = 'entregue') => ({ nf, carga: 'C1', cliente: `CLIENTE ${nf}`, endereco: `RUA ${nf}`, chegada, saida: chegada, tempoMin: 7, situacao })
@@ -35,6 +35,14 @@ describe('montarRelatorioOrdemRota', () => {
   it('ranking de motoristas: pior primeiro', () => {
     expect(r.motoristas.map(m => [m.nome, m.pct, m.viagens, m.invertidas, m.naoFeitas])).toEqual([['MARIA', 25, 2, 2, 0], ['JOAO', 75, 2, 0, 2]])
     expect(r.placas[0]).toMatchObject({ nome: 'BBB2B22', sub: 'MARIA' })
+  })
+  it('resumo do Dashboard: fila só com a posição no plano, sem endereço', () => {
+    const d = resumoOrdemDashboard(r)
+    const joao = d.viagens.find(v => v.placa === 'AAA1A11')!
+    expect(joao.fila).toEqual([[1, true], [3, false], [2, true], [4, true]])
+    expect(joao.naoFeitas).toEqual([5])
+    expect(JSON.stringify(d)).not.toContain('RUA ')
+    expect(d.total).toEqual(r.total)
   })
   it('vazio não quebra', () => {
     expect(montarRelatorioOrdemRota([], '2026-11-12', '2026-11-12').total).toEqual({ entregas: 0, naOrdem: 0, pct: 0, viagens: 0, invertidas: 0 })

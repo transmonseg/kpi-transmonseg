@@ -59,7 +59,7 @@ export function VisaoGeral({ itens, aberta, onAbrir, varios }: { itens: Viagem[]
                   <span className="flex items-baseline justify-between gap-2 md:flex-col md:items-end md:gap-0">
                     <span className={`text-[15px] font-semibold tabular-nums ${v.pct < META ? 'text-[var(--color-warning)]' : 'text-[var(--color-fg)]'}`}>{p0(v.pct)}</span>
                     <span className="text-[11px] tabular-nums text-[var(--color-fg-muted)]">{v.naOrdem}/{v.entregas} na ordem</span>
-                    {v.invertida && <span className="text-[10.5px] font-semibold text-[var(--color-warning)]">de trás pra frente</span>}
+                    {v.invertida && <span className="whitespace-nowrap text-[10.5px] font-semibold text-[var(--color-warning)]">de trás pra frente</span>}
                   </span>
                 </button>
               </li>
@@ -71,7 +71,7 @@ export function VisaoGeral({ itens, aberta, onAbrir, varios }: { itens: Viagem[]
   )
 }
 
-function Quadro({ tipo, n, dica }: { tipo: 'ok' | 'fora' | 'nao'; n: number; dica?: string }) {
+export function Quadro({ tipo, n, dica }: { tipo: 'ok' | 'fora' | 'nao'; n: number; dica?: string }) {
   const cls = tipo === 'ok'
     ? 'bg-[var(--color-navy-700)] text-white'
     : tipo === 'fora'
@@ -79,5 +79,25 @@ function Quadro({ tipo, n, dica }: { tipo: 'ok' | 'fora' | 'nao'; n: number; dic
       : 'border border-dashed border-[var(--color-fg-subtle)] text-[var(--color-fg-subtle)]'
   return (
     <span title={dica} className={`inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-[5px] px-1 text-[10.5px] font-semibold tabular-nums ${cls}`}>{n}</span>
+  )
+}
+
+/** Fila de entregas enxuta (Dashboard): posição no plano na ordem feita. */
+export function Fila({ fila, naoFeitas }: { fila: [number, boolean][]; naoFeitas: number[] }) {
+  return (
+    <span className="flex flex-wrap gap-[3px]">
+      {fila.map(([p, ok], i) => <Quadro key={i} tipo={ok ? 'ok' : 'fora'} n={p} dica={`${i + 1}ª entrega feita · era a ${p}ª no plano`} />)}
+      {naoFeitas.map(p => <Quadro key={`n${p}`} tipo="nao" n={p} dica={`Não entregue · era a ${p}ª no plano`} />)}
+    </span>
+  )
+}
+
+export function LegendaOrdem() {
+  return (
+    <span className="flex flex-wrap items-center gap-3 text-[11.5px] text-[var(--color-fg-muted)]">
+      <span className="inline-flex items-center gap-1.5"><Quadro tipo="ok" n={3} />na ordem</span>
+      <span className="inline-flex items-center gap-1.5"><Quadro tipo="fora" n={7} />fora da ordem</span>
+      <span className="inline-flex items-center gap-1.5"><Quadro tipo="nao" n={9} />não entregue</span>
+    </span>
   )
 }
