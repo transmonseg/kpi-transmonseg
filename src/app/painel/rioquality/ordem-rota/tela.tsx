@@ -7,14 +7,14 @@
 // 14/11: filtros (motorista, placa, horário, só fora da ordem) na tela e no Excel.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowsDownUp, CaretRight, Funnel, CheckCircle, DownloadSimple, FileXls, MagnifyingGlass, Path, UploadSimple, WarningCircle, X } from '@phosphor-icons/react/dist/ssr'
-import { ColumnChart } from '@/app/painel/charts'
+import { PorDia } from '@/app/painel/dashboard-kpi/ordem-rota-dash'
 import { buscarComSessao, SessaoVencida } from '@/lib/sessao-fetch'
-import { filtrarRelatorio, filtrosParaUrl, filtrosVazios, type Agregado, type FiltrosOrdemRota, type Viagem } from '@/lib/kpi-romaneio/relatorio-ordem-rota'
+import { filtrarRelatorio, filtrosParaUrl, filtrosVazios, type Agregado, type ClienteOrdem, type FiltrosOrdemRota, type Viagem } from '@/lib/kpi-romaneio/relatorio-ordem-rota'
 import type { RespostaOrdemRota } from '@/lib/kpi-romaneio/relatorio-ordem-rota-servidor'
-import { VisaoGeral } from './visao-geral'
+import { VisaoGeral, DiasMini, KmSelo, kmTxt } from './visao-geral'
 
 type Resposta = RespostaOrdemRota
-type Aba = 'motoristas' | 'placas' | 'viagens'
+type Aba = 'motoristas' | 'placas' | 'viagens' | 'clientes'
 type Atalho = 'hoje' | 'ontem' | '7' | '30' | 'livre'
 
 const META = 70 // abaixo disso a placa/motorista aparece em laranja
@@ -171,7 +171,7 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
       {rf && rf.total.viagens > 0 && (
         <>
           {/* Números do período */}
-          <section aria-label="Resumo do período" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <section aria-label="Resumo do período" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div className="dash-card flex flex-col gap-3 p-5 sm:col-span-2 lg:col-span-1">
               <span className="text-[12px] font-medium text-[var(--color-fg-muted)]">Entregas na ordem planejada</span>
               <span className={`text-[40px] font-semibold leading-none tracking-[-0.02em] tabular-nums ${tom(rf.total.pct)}`}>{p1(rf.total.pct)}</span>
@@ -183,12 +183,13 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
             <Numero rotulo="Viagens analisadas" valor={n(rf.total.viagens)} extra={`${n(rf.motoristas.length)} ${rf.motoristas.length === 1 ? 'motorista' : 'motoristas'}, ${n(rf.placas.length)} ${rf.placas.length === 1 ? 'placa' : 'placas'}`} />
             <Numero rotulo="Rotas de trás pra frente" valor={n(rf.total.invertidas)} extra={rf.total.invertidas ? 'Começaram pelo último cliente do plano' : 'Nenhuma viagem invertida'} alerta={rf.total.invertidas > 0} />
             <Numero rotulo="Fora da ordem" valor={n(rf.total.entregas - rf.total.naOrdem)} extra="Entregas feitas antes ou depois do planejado" alerta={rf.total.entregas - rf.total.naOrdem > 0} />
+            <Numero rotulo="Andaram mais que o plano" valor={rf.total.viagensComKm ? `${n(rf.total.maisLongas)} de ${n(rf.total.viagensComKm)}` : '—'} extra={rf.total.viagensComKm ? `${n(rf.total.maisCurtas)} fizeram caminho mais curto que a roteirização (linha reta entre as paradas do GPS)` : 'Sem as paradas para medir'} alerta={rf.total.maisLongas > 0} />
           </section>
 
           {rf.dias.length > 1 && (
             <section className="dash-card flex flex-col gap-3 p-5">
               <h2 className="text-[14px] font-semibold text-[var(--color-fg)]">% na ordem por dia</h2>
-              <ColumnChart items={rf.dias.map(d => ({ label: br(d.data), value: d.pct }))} format={p1} height={200} labelEvery={rf.dias.length > 16 ? 2 : 1} />
+              <PorDia dias={rf.dias} altura={200} />
             </section>
           )}
 
@@ -200,7 +201,7 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
             <div className="dash-card flex min-w-0 flex-col overflow-hidden">
               <div className="flex flex-wrap items-center gap-3 border-b border-[var(--color-border)] px-4 py-3">
                 <div role="tablist" aria-label="Ver por" className="inline-flex rounded-full bg-[var(--color-bg-subtle)] p-0.5">
-                  {([['motoristas', 'Motoristas'], ['placas', 'Placas'], ['viagens', 'Viagens']] as const).map(([v, rot]) => (
+                  {([['motoristas', 'Motoristas'], ['placas', 'Placas'], ['viagens', 'Viagens'], ['clientes', 'Clientes']] as const).map(([v, rot]) => (
                     <button key={v} type="button" role="tab" aria-selected={aba === v} onClick={() => setAba(v)}
                       className={`h-7 rounded-full px-3 text-[12px] font-semibold transition-colors ${aba === v ? 'bg-[var(--color-bg-elevated)] text-[var(--color-fg)] shadow-sm' : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]'}`}>{rot}</button>
                   ))}
@@ -212,13 +213,15 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
                 </label>
               </div>
               <div className="max-h-[560px] overflow-y-auto">
-                {aba !== 'viagens' ? (
+                {aba === 'clientes' ? (
+                  <ListaClientes itens={rf.clientes.filter(c => !busca.trim() || `${c.cliente} ${c.endereco}`.toUpperCase().includes(busca.trim().toUpperCase()))} />
+                ) : aba !== 'viagens' ? (
                   <ListaAgregado itens={agregados} tipo={aba === 'placas' ? 'placa' : 'motorista'} onVer={verViagens} />
                 ) : (
                   <ListaViagens itens={viagens} aberta={aberta} onAbrir={setAberta} varios={rf.dias.length > 1} />
                 )}
               </div>
-              <p className="flex items-center gap-1.5 border-t border-[var(--color-border)] px-4 py-2 text-[11.5px] text-[var(--color-fg-subtle)]"><ArrowsDownUp size={12} />Pior primeiro. Abaixo de {META}% fica em laranja.</p>
+              <p className="flex items-center gap-1.5 border-t border-[var(--color-border)] px-4 py-2 text-[11.5px] text-[var(--color-fg-subtle)]"><ArrowsDownUp size={12} />{aba === 'clientes' ? 'Clientes mais entregues fora da ordem. Vários motoristas pulando o mesmo cliente costuma ser roteirização ou horário de recebimento.' : `Pior primeiro. Abaixo de ${META}% fica em laranja.`}</p>
             </div>
 
             <DetalheViagem v={aberta} onFechar={() => setAberta(null)} temViagens={viagens.length > 0} onPrimeira={() => { setAba('viagens'); setAberta(viagens[0] ?? rf.viagens[0]) }} />
@@ -385,6 +388,15 @@ function ListaAgregado({ itens, tipo, onVer }: { itens: Agregado[]; tipo: 'motor
                 <span className="truncate">{a.sub}</span>
                 <span className="shrink-0 tabular-nums">{n(a.naOrdem)}/{n(a.entregas)} · {a.viagens} {a.viagens === 1 ? 'viagem' : 'viagens'}{a.invertidas ? ` · ${a.invertidas} de trás pra frente` : ''}</span>
               </span>
+              {(a.porDia.length > 1 || a.kmExtra !== 0) && (
+                <span className="flex items-center justify-between gap-3 text-[11px] text-[var(--color-fg-subtle)]">
+                  <span className="inline-flex items-center gap-2">
+                    <DiasMini porDia={a.porDia} />
+                    {a.porDia.length > 1 && <span className={a.diasAbaixo >= Math.ceil(a.porDia.length / 2) ? 'font-semibold text-[var(--color-warning)]' : ''}>abaixo de {META}% em {a.diasAbaixo} de {a.porDia.length} dias</span>}
+                  </span>
+                  <KmSelo km={a.kmExtra} />
+                </span>
+              )}
             </span>
             <CaretRight size={13} className="shrink-0 text-[var(--color-fg-subtle)]" />
           </button>
@@ -462,11 +474,15 @@ function DetalheViagem({ v, onFechar, temViagens, onPrimeira }: { v: Viagem | nu
           </div>
           <button type="button" onClick={onFechar} aria-label="Fechar" className="rounded-full p-1.5 text-[var(--color-fg-subtle)] hover:bg-[var(--color-bg-subtle)]"><X size={14} weight="bold" /></button>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Mini rotulo="Na ordem" valor={`${v.naOrdem} de ${v.entregas}`} destaque={v.pct < META} />
           <Mini rotulo="Fora da ordem" valor={String(fora)} destaque={fora > 0} />
           <Mini rotulo="% na ordem" valor={p1(v.pct)} destaque={v.pct < META} />
+          <Mini rotulo={(v.kmExtra ?? 0) < 0 ? 'Km a menos que o plano' : 'Km a mais que o plano'} valor={v.kmExtra != null ? kmTxt(v.kmExtra) : '—'} destaque={(v.kmExtra ?? 0) >= 1} />
         </div>
+        {v.kmFeito != null && v.kmPlano != null && (
+          <p className="text-[11.5px] text-[var(--color-fg-subtle)]">Entre as paradas, em linha reta: fez {v.kmFeito.toLocaleString('pt-BR')} km; na ordem do plano seriam {v.kmPlano.toLocaleString('pt-BR')} km.{v.kmExtra! < 0 ? ' Fez um caminho mais curto que a roteirização.' : ''}</p>
+        )}
         {v.invertida && <p className="rounded-xl bg-[var(--color-warning-soft)] px-3.5 py-2.5 text-[12.5px] font-semibold text-[var(--color-warning)]">Fez a rota de trás pra frente: começou pelo último cliente da roteirização.</p>}
         {v.naoFeitas > 0 && (
           <details className="text-[12px] text-[var(--color-fg-muted)]">
@@ -509,5 +525,25 @@ function Mini({ rotulo, valor, destaque }: { rotulo: string; valor: string; dest
       <p className="text-[11px] text-[var(--color-fg-muted)]">{rotulo}</p>
       <p className={`text-[15px] font-semibold tabular-nums ${destaque ? 'text-[var(--color-warning)]' : 'text-[var(--color-fg)]'}`}>{valor}</p>
     </div>
+  )
+}
+
+function ListaClientes({ itens }: { itens: ClienteOrdem[] }) {
+  if (itens.length === 0) return <p className="px-4 py-10 text-center text-[13px] text-[var(--color-fg-muted)]">Nenhum cliente fora da ordem.</p>
+  return (
+    <ul>
+      {itens.slice(0, 200).map(c => (
+        <li key={`${c.cliente}|${c.endereco}`} className="flex items-center gap-3 border-b border-[var(--color-border)] px-4 py-3">
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[13px] font-semibold text-[var(--color-fg)]">{c.cliente || 'Cliente sem nome'}</span>
+            <span className="block truncate text-[11.5px] text-[var(--color-fg-muted)]" title={c.endereco}>{c.endereco || '—'}</span>
+          </span>
+          <span className="shrink-0 text-right">
+            <span className="block text-[14px] font-semibold tabular-nums text-[var(--color-warning)]">{c.fora} de {c.vezes}</span>
+            <span className="block text-[11px] tabular-nums text-[var(--color-fg-muted)]">fora da ordem · {c.motoristas} {c.motoristas === 1 ? 'motorista' : 'motoristas'}</span>
+          </span>
+        </li>
+      ))}
+    </ul>
   )
 }

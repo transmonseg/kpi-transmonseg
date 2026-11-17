@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import ExcelJS from 'exceljs'
 import { aplicarOrdemRota } from './ordem-rota'
-import { montarRelatorioOrdemRota, resumoOrdemDashboard, filtrarRelatorio, filtrosDaUrl, filtrosParaUrl, descreverFiltros } from './relatorio-ordem-rota'
+import { montarRelatorioOrdemRota, resumoOrdemDashboard, kmDaViagem, filtrarRelatorio, filtrosDaUrl, filtrosParaUrl, descreverFiltros } from './relatorio-ordem-rota'
 import { gerarXlsxOrdemRota } from './relatorio-ordem-rota-xlsx'
 
 const nf = (nf: string, chegada: string | null, situacao = 'entregue') => ({ nf, carga: 'C1', cliente: `CLIENTE ${nf}`, endereco: `RUA ${nf}`, chegada, saida: chegada, tempoMin: 7, situacao })
@@ -36,6 +36,23 @@ describe('montarRelatorioOrdemRota', () => {
     expect(r.motoristas.map(m => [m.nome, m.pct, m.viagens, m.invertidas, m.naoFeitas])).toEqual([['MARIA', 25, 2, 2, 0], ['JOAO', 75, 2, 0, 2]])
     expect(r.placas[0]).toMatchObject({ nome: 'BBB2B22', sub: 'MARIA' })
   })
+  it('km a mais: ordem feita x ordem do plano, em linha reta', () => {
+    // plano 1-2-3 numa reta (0, 1, 2 km); feito 1-3-2 = 2 + 1 = 3 km contra 2 km
+    const p = (planejada: number, x: number) => ({ planejada, lat: 0, lng: x / 111.195 })
+    expect(kmDaViagem([p(1, 0), p(3, 2), p(2, 1)])).toEqual({ kmFeito: 3, kmPlano: 2, kmExtra: 1 })
+    // sem ponto confiável da maioria: não calcula
+    expect(kmDaViagem([p(1, 0), { planejada: 2 }, { planejada: 3 }, p(4, 3)])).toBeNull()
+    // ponto de cadastro errado (1.000 km) fica de fora; a parada real do GPS vale mais que o ponto do cliente
+    expect(kmDaViagem([p(1, 0), p(3, 2), p(2, 1), { planejada: 4, lat: 9, lng: 0 }])).toEqual({ kmFeito: 3, kmPlano: 2, kmExtra: 1 })
+    expect(kmDaViagem([p(1, 0), { ...p(3, 50), parada: { lat: 0, lng: 2 / 111.195 } }, p(2, 1)])).toEqual({ kmFeito: 3, kmPlano: 2, kmExtra: 1 })
+  })
+  it('clientes fora da ordem e recorrência do motorista', () => {
+    expect(r.clientes[0]).toMatchObject({ fora: 2, vezes: 2, pctFora: 100, motoristas: 1 })
+    const maria = r.motoristas.find(m => m.nome === 'MARIA')!
+    expect(maria.porDia).toEqual([{ data: '2026-11-12', pct: 25 }, { data: '2026-11-13', pct: 25 }])
+    expect(maria.diasAbaixo).toBe(2)
+    expect(r.motoristas.find(m => m.nome === 'JOAO')!.diasAbaixo).toBe(0)
+  })
   it('resumo do Dashboard: fila só com a posição no plano, sem endereço', () => {
     const d = resumoOrdemDashboard(r)
     const joao = d.viagens.find(v => v.placa === 'AAA1A11')!
@@ -45,7 +62,7 @@ describe('montarRelatorioOrdemRota', () => {
     expect(d.total).toEqual(r.total)
   })
   it('vazio não quebra', () => {
-    expect(montarRelatorioOrdemRota([], '2026-11-12', '2026-11-12').total).toEqual({ entregas: 0, naOrdem: 0, pct: 0, viagens: 0, invertidas: 0 })
+    expect(montarRelatorioOrdemRota([], '2026-11-12', '2026-11-12').total).toEqual({ entregas: 0, naOrdem: 0, pct: 0, viagens: 0, invertidas: 0, kmExtra: 0, viagensComKm: 0, maisLongas: 0, maisCurtas: 0 })
   })
 
   describe('filtros (14/11: "só um motorista ou só tal horário")', () => {
@@ -81,7 +98,7 @@ describe('montarRelatorioOrdemRota', () => {
     const buf = await gerarXlsxOrdemRota(filtrarRelatorio(r, { motoristas: ['JOAO'] }), 'Motorista: JOAO')
     const wb = new ExcelJS.Workbook()
     await wb.xlsx.load(buf as unknown as ExcelJS.Buffer)
-    expect(wb.worksheets.map(w => w.name)).toEqual(['Resumo', 'Motoristas', 'Placas', 'Viagens', 'Entregas', 'Não entregues'])
+    expect(wb.worksheets.map(w => w.name)).toEqual(['Resumo', 'Motoristas', 'Placas', 'Viagens', 'Entregas', 'Clientes fora da ordem', 'Não entregues'])
     const e = wb.getWorksheet('Entregas')!
     expect(String(e.getCell('A2').value)).toMatch(/Motorista: JOAO/)
     const cab = (e.getRow(4).values as unknown[]).slice(1)

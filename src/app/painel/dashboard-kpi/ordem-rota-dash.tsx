@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight, Path } from '@phosphor-icons/react/dist/ssr'
 import { dataCurta } from './calculos'
-import { Fila, LegendaOrdem } from '@/app/painel/rioquality/ordem-rota/visao-geral'
+import { Fila, LegendaOrdem, DiasMini, KmSelo } from '@/app/painel/rioquality/ordem-rota/visao-geral'
 import type { OrdemDashboard, ViagemDash } from '@/lib/kpi-romaneio/relatorio-ordem-rota'
 
 export const META_ORDEM = 70
@@ -67,10 +67,11 @@ export function SecaoOrdemRota({ o, umDia, podeAbrirRelatorio }: { o: OrdemDashb
             </span>
             <p className="mt-2 text-[12.5px] tabular-nums text-[var(--color-fg-muted)]">{n(t.naOrdem)} de {n(t.entregas)} entregas</p>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Mini rotulo="Viagens" valor={n(t.viagens)} />
             <Mini rotulo="Fora da ordem" valor={n(t.entregas - t.naOrdem)} alerta={t.entregas - t.naOrdem > 0} />
             <Mini rotulo="De trás pra frente" valor={n(t.invertidas)} alerta={t.invertidas > 0} />
+            <Mini rotulo="Andaram mais que o plano" valor={t.viagensComKm ? `${n(t.maisLongas)} de ${n(t.viagensComKm)}` : '—'} alerta={t.maisLongas > 0} dica="Viagens em que a ordem feita deu 1 km ou mais a mais que a ordem do plano (linha reta entre as paradas)." />
           </div>
           {!umDia && varios && (
             <div>
@@ -97,6 +98,12 @@ export function SecaoOrdemRota({ o, umDia, podeAbrirRelatorio }: { o: OrdemDashb
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[13px] font-semibold text-[var(--color-fg)]">{a.nome}</span>
                   <span className="block truncate text-[11.5px] text-[var(--color-fg-muted)]">{a.sub} · {a.viagens} {a.viagens === 1 ? 'viagem' : 'viagens'}{a.invertidas ? ` · ${a.invertidas} de trás pra frente` : ''}</span>
+                  {a.porDia.length > 1 && (
+                    <span className="mt-1 flex items-center gap-2 text-[11px] text-[var(--color-fg-subtle)]">
+                      <DiasMini porDia={a.porDia} />
+                      <span className={a.diasAbaixo >= Math.ceil(a.porDia.length / 2) ? 'font-semibold text-[var(--color-warning)]' : ''}>abaixo de {META_ORDEM}% em {a.diasAbaixo} de {a.porDia.length} dias</span>
+                    </span>
+                  )}
                 </span>
                 <span className="hidden h-1.5 w-20 overflow-hidden rounded-full bg-[var(--color-bg-subtle)] sm:block">
                   <span className="block h-full rounded-full" style={{ width: `${a.pct}%`, background: corPct(a.pct) }} />
@@ -110,6 +117,27 @@ export function SecaoOrdemRota({ o, umDia, podeAbrirRelatorio }: { o: OrdemDashb
           </ul>
         </div>
       </div>
+
+      {t.viagensComKm > 0 && (
+        <p className="mx-5 mb-4 rounded-2xl bg-[var(--color-bg-subtle)] px-4 py-3 text-[12.5px] leading-relaxed text-[var(--color-fg-muted)]">
+          <strong className="text-[var(--color-fg)]">Fora da ordem nem sempre é ruim:</strong> em {n(t.maisCurtas)} de {n(t.viagensComKm)} viagens o caminho feito foi <strong style={{ color: 'var(--color-success)' }}>mais curto</strong> que a ordem da roteirização, e em {n(t.maisLongas)} foi <strong style={{ color: 'var(--color-warning)' }}>mais longo</strong> (linha reta entre as paradas do GPS). Mais curto com muita entrega fora da ordem costuma ser roteirização para revisar; mais longo é o motorista que perdeu caminho.
+        </p>
+      )}
+
+      {o.clientes.length > 0 && (
+        <div className="border-t border-[var(--color-border)] px-5 py-4">
+          <p className="text-[12.5px] font-semibold text-[var(--color-fg)]">Clientes mais entregues fora da ordem</p>
+          <p className="mb-3 text-[11.5px] text-[var(--color-fg-muted)]">Quando vários motoristas pulam o mesmo cliente, costuma ser a roteirização ou o horário de recebimento dele.</p>
+          <div className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
+            {o.clientes.slice(0, 10).map(c => (
+              <div key={c.cliente} className="flex items-baseline justify-between gap-3 border-b border-dashed border-[var(--color-border)] pb-1.5 text-[12.5px]">
+                <span className="min-w-0 truncate text-[var(--color-fg)]" title={c.cliente}>{c.cliente || 'Cliente sem nome'}</span>
+                <span className="shrink-0 tabular-nums text-[var(--color-fg-muted)]"><strong className="text-[var(--color-warning)]">{c.fora}/{c.vezes}</strong> · {c.motoristas} mot.</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Todas as viagens */}
       <div className="border-t border-[var(--color-border)]">
@@ -142,6 +170,7 @@ function LinhaViagem({ v, varios }: { v: ViagemDash; varios: boolean }) {
         <span className="text-[14px] font-semibold tabular-nums" style={{ color: v.pct < META_ORDEM ? 'var(--color-warning)' : 'var(--color-fg)' }}>{p1(v.pct)}</span>
         <span className="text-[11px] tabular-nums text-[var(--color-fg-muted)]">{v.naOrdem}/{v.entregas}</span>
         {v.invertida && <span className="whitespace-nowrap text-[10.5px] font-semibold text-[var(--color-warning)]">de trás pra frente</span>}
+        <KmSelo km={v.kmExtra} />
       </span>
     </li>
   )
@@ -169,9 +198,9 @@ export function OrdemDaPlaca({ viagens }: { viagens: ViagemDash[] }) {
   )
 }
 
-function Mini({ rotulo, valor, alerta }: { rotulo: string; valor: string; alerta?: boolean }) {
+function Mini({ rotulo, valor, alerta, dica }: { rotulo: string; valor: string; alerta?: boolean; dica?: string }) {
   return (
-    <div className="rounded-2xl border border-[var(--color-border)] px-3 py-2.5">
+    <div title={dica} className="rounded-2xl border border-[var(--color-border)] px-3 py-2.5">
       <p className="text-[11.5px] text-[var(--color-fg-muted)]">{rotulo}</p>
       <p className="mt-0.5 text-[20px] font-semibold tabular-nums" style={{ color: alerta ? 'var(--color-warning)' : 'var(--color-fg)' }}>{valor}</p>
     </div>
@@ -179,14 +208,14 @@ function Mini({ rotulo, valor, alerta }: { rotulo: string; valor: string; alerta
 }
 
 /** % na ordem por dia: barras com o valor em cima (laranja abaixo da meta). */
-function PorDia({ dias }: { dias: OrdemDashboard['dias'] }) {
+export function PorDia({ dias, altura = 150 }: { dias: OrdemDashboard['dias']; altura?: number }) {
   const muitos = dias.length > 14
   return (
-    <div className="flex h-[150px] items-end gap-1 overflow-x-auto pb-1" role="img" aria-label="% na ordem por dia">
+    <div className="flex items-end gap-1 overflow-x-auto pb-1" style={{ height: altura }} role="img" aria-label="% na ordem por dia">
       {dias.map(d => (
         <div key={d.data} className="flex min-w-[22px] flex-1 flex-col items-center gap-1" title={`${dataCurta(d.data)}: ${p1(d.pct)} (${n(d.naOrdem)} de ${n(d.entregas)} entregas, ${d.viagens} viagens)`}>
           {!muitos && <span className="text-[11px] font-semibold tabular-nums text-[var(--color-fg-muted)]">{Math.round(d.pct)}%</span>}
-          <span className="block w-full max-w-[44px] rounded-t-md" style={{ height: `${Math.max(4, d.pct)}px`, background: corPct(d.pct) }} />
+          <span className="block w-full max-w-[44px] rounded-t-md" style={{ height: `${Math.max(4, (d.pct / 100) * (altura - 40))}px`, background: corPct(d.pct) }} />
           <span className="text-[10.5px] tabular-nums text-[var(--color-fg-subtle)]">{dataCurta(d.data)}</span>
         </div>
       ))}

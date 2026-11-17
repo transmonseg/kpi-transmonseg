@@ -113,8 +113,9 @@ export async function gerarXlsxOrdemRota(r: RelatorioOrdemRota, filtro = 'Sem fi
     ['Viagens', r.total.viagens, '#,##0'],
     ['De trás pra frente', r.total.invertidas, '#,##0'],
     ['Motoristas', r.motoristas.length, '#,##0'],
+    ['Viagens que andaram mais que o plano', r.total.maisLongas, '#,##0'],
   ]
-  ;[1, 2, 3, 4, 5, 6].forEach(c => { res.getColumn(c).width = 19 })
+  ;[1, 2, 3, 4, 5, 6, 7].forEach(c => { res.getColumn(c).width = 19 })
   cartoes.forEach(([rot, val, fmt], i) => {
     const col = 1 + i
     const a = res.getCell(4, col), b = res.getCell(5, col)
@@ -123,15 +124,15 @@ export async function gerarXlsxOrdemRota(r: RelatorioOrdemRota, filtro = 'Sem fi
     a.alignment = { horizontal: 'center', vertical: 'bottom', wrapText: true }
     b.value = val as number
     b.numFmt = fmt
-    b.font = { name: FONTE, size: 20, bold: true, color: { argb: i === 0 ? (r.total.pct < 70 ? LARANJA_TX : VERDE_TX) : (i === 2 || i === 4) && Number(val) > 0 ? LARANJA_TX : KPI_COLORS.TEXT_DEFAULT } }
+    b.font = { name: FONTE, size: 20, bold: true, color: { argb: i === 0 ? (r.total.pct < 70 ? LARANJA_TX : VERDE_TX) : (i === 2 || i === 4 || i === 6) && Number(val) > 0 ? LARANJA_TX : KPI_COLORS.TEXT_DEFAULT } }
     b.alignment = { horizontal: 'center', vertical: 'middle' }
     for (const c of [a, b]) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } }
   })
   res.getRow(4).height = 26
   res.getRow(5).height = 36
-  res.mergeCells(7, 1, 9, 6)
+  res.mergeCells(7, 1, 9, 7)
   const como = res.getCell(7, 1)
-  como.value = 'Como ler: em cada viagem, as entregas são ordenadas pela hora em que o caminhão chegou no cliente (GPS). "Na ordem" é a maior sequência que respeita a ordem planejada no relatório de ordem; as outras entregas foram feitas fora da ordem — o motorista pulou o cliente e voltou depois, ou inverteu a rota. Use as abas abaixo e os filtros (setinhas) do cabeçalho de cada tabela para escolher motorista, placa, dia ou horário.'
+  como.value = 'Como ler: em cada viagem, as entregas são ordenadas pela hora em que o caminhão chegou no cliente (GPS). "Na ordem" é a maior sequência que respeita a ordem planejada no relatório de ordem; as outras entregas foram feitas fora da ordem — o motorista pulou o cliente e voltou depois, ou inverteu a rota. "Km a mais" compara, em linha reta entre as paradas do GPS, o caminho feito com o caminho na ordem do plano: positivo = andou mais; negativo = fez um caminho mais curto que a roteirização (fora da ordem nem sempre é ruim). Use as abas abaixo e os filtros (setinhas) do cabeçalho de cada tabela para escolher motorista, placa, dia ou horário.'
   como.font = { name: FONTE, size: 10, color: { argb: KPI_COLORS.TEXT_MUTED } }
   como.alignment = { wrapText: true, vertical: 'top' }
   const ini = 11
@@ -146,14 +147,16 @@ export async function gerarXlsxOrdemRota(r: RelatorioOrdemRota, filtro = 'Sem fi
   // ---------- Motoristas / Placas ----------
   const ranking = async (nome: string, tituloChave: string, tituloSub: string, lista: RelatorioOrdemRota['motoristas'], tabelaNome: string) => {
     const ws = wb.addWorksheet(nome)
-    const linha = await cabecalho(wb, ws, `${nome.toUpperCase()} — pior primeiro`, sub, 9)
+    const linha = await cabecalho(wb, ws, `${nome.toUpperCase()} — pior primeiro`, sub, 12)
     tabela(ws, tabelaNome, linha, [
       { titulo: tituloChave, largura: 34 }, { titulo: tituloSub, largura: 30 },
       { titulo: '% na ordem', largura: 13, formato: '0.0%' }, { titulo: 'Entregas', largura: 11, formato: '#,##0' },
       { titulo: 'Na ordem', largura: 11, formato: '#,##0' }, { titulo: 'Fora da ordem', largura: 13, formato: '#,##0' },
       { titulo: 'Viagens', largura: 10, formato: '#,##0' }, { titulo: 'De trás pra frente', largura: 14, formato: '#,##0' },
       { titulo: 'Planejadas não entregues', largura: 16, formato: '#,##0' },
-    ], lista.map(a => [a.nome, a.sub, pct(a.pct), a.entregas, a.naOrdem, a.entregas - a.naOrdem, a.viagens, a.invertidas, a.naoFeitas]))
+      { titulo: 'Dias abaixo de 70%', largura: 13, formato: '#,##0' }, { titulo: 'Dias', largura: 8, formato: '#,##0' },
+      { titulo: 'Km a mais', largura: 11, formato: '#,##0.0' },
+    ], lista.map(a => [a.nome, a.sub, pct(a.pct), a.entregas, a.naOrdem, a.entregas - a.naOrdem, a.viagens, a.invertidas, a.naoFeitas, a.diasAbaixo, a.porDia.length, a.kmExtra]))
     barraPct(ws, 'C', linha + 1, linha + lista.length)
   }
   await ranking('Motoristas', 'Motorista', 'Placas', r.motoristas, 'Motoristas')
@@ -161,7 +164,7 @@ export async function gerarXlsxOrdemRota(r: RelatorioOrdemRota, filtro = 'Sem fi
 
   // ---------- Viagens ----------
   const wv = wb.addWorksheet('Viagens')
-  const lv = await cabecalho(wb, wv, 'VIAGENS — uma linha por romaneio', sub, 16)
+  const lv = await cabecalho(wb, wv, 'VIAGENS — uma linha por romaneio', sub, 19)
   tabela(wv, 'Viagens', lv, [
     { titulo: 'Dia', largura: 11, formato: 'dd/mm/yyyy' }, { titulo: 'Placa', largura: 10 }, { titulo: 'Motorista', largura: 30 },
     { titulo: 'Destino', largura: 28 }, { titulo: 'Romaneio', largura: 11 },
@@ -171,10 +174,13 @@ export async function gerarXlsxOrdemRota(r: RelatorioOrdemRota, filtro = 'Sem fi
     { titulo: '% na ordem', largura: 12, formato: '0.0%' }, { titulo: 'Entregas', largura: 10, formato: '#,##0' },
     { titulo: 'Na ordem', largura: 10, formato: '#,##0' }, { titulo: 'Fora da ordem', largura: 11, formato: '#,##0' },
     { titulo: 'De trás pra frente', largura: 11 }, { titulo: 'Planejadas não entregues', largura: 13, formato: '#,##0' },
+    { titulo: 'Km feito (linha reta)', largura: 11, formato: '#,##0.0' }, { titulo: 'Km no plano (linha reta)', largura: 11, formato: '#,##0.0' },
+    { titulo: 'Km a mais', largura: 10, formato: '#,##0.0' },
   ], r.viagens.map(v => [
     dataExcel(v.data), v.placa, v.motorista, v.destino, v.romaneio,
     horaExcel(v.saidaBase), horaExcel(v.primeira), horaExcel(v.ultima), horaExcel(v.chegadaBase), v.km,
     pct(v.pct), v.entregas, v.naOrdem, v.entregas - v.naOrdem, v.invertida ? 'SIM' : '', v.naoFeitas,
+    v.kmFeito, v.kmPlano, v.kmExtra,
   ]))
   barraPct(wv, 'K', lv + 1, lv + r.viagens.length)
 
@@ -197,6 +203,15 @@ export async function gerarXlsxOrdemRota(r: RelatorioOrdemRota, filtro = 'Sem fi
     const c = we.getRow(le + 1 + i).getCell(7)
     c.font = { name: FONTE, size: 10, bold: !entregas[i].s.naOrdem, color: { argb: entregas[i].s.naOrdem ? VERDE_TX : LARANJA_TX } }
   }
+
+  // ---------- Clientes fora da ordem ----------
+  const wc = wb.addWorksheet('Clientes fora da ordem')
+  const lc = await cabecalho(wb, wc, 'CLIENTES MAIS ENTREGUES FORA DA ORDEM — vários motoristas pulando o mesmo cliente = olhar a roteirização', sub, 6)
+  tabela(wc, 'Clientes', lc, [
+    { titulo: 'Cliente', largura: 40 }, { titulo: 'Endereço', largura: 52 },
+    { titulo: 'Entregas', largura: 10, formato: '#,##0' }, { titulo: 'Fora da ordem', largura: 12, formato: '#,##0' },
+    { titulo: '% fora da ordem', largura: 13, formato: '0.0%' }, { titulo: 'Motoristas que pularam', largura: 13, formato: '#,##0' },
+  ], r.clientes.map(c => [c.cliente, c.endereco, c.vezes, c.fora, pct(c.pctFora), c.motoristas]))
 
   // ---------- Não entregues ----------
   const wn = wb.addWorksheet('Não entregues')

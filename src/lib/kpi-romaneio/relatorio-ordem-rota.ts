@@ -10,6 +10,9 @@ import { viagemInvertida } from './ordem-rota'
 type NfDia = {
   nf: string; carga?: string; cliente: string; endereco?: string; situacao: string
   chegada: string | null; saida?: string | null; tempoMin?: number | null
+  lat?: number | null; lng?: number | null; pontoImpreciso?: boolean
+  /** parada do GPS que o KPI contou como a entrega (ponto real do caminhão) */
+  parada?: { lat: number; lng: number } | null
   ordemRota?: { planejada: number; real: number; naOrdem: boolean; romaneio: string; previsao: string | null }
 }
 type PlacaDia = { placa: string; motorista: string; destino?: string; saidaBase?: string | null; chegadaBase?: string | null; km?: number | null; nfs: NfDia[] }
@@ -31,14 +34,32 @@ export type Viagem = {
   naoFeitas: number
   naoFeitasLista: NaoFeita[]
   sequencia: EntregaSequencia[]
+  /** 16/11: km entre clientes em linha reta, na ordem feita e na do plano
+   *  (null sem ponto confiável de >= 60% dos clientes). Extra > 0 = andou mais. */
+  kmFeito: number | null; kmPlano: number | null; kmExtra: number | null
 }
-export type Agregado = { chave: string; nome: string; sub: string; entregas: number; naOrdem: number; pct: number; viagens: number; invertidas: number; naoFeitas: number }
+export type Agregado = {
+  chave: string; nome: string; sub: string; entregas: number; naOrdem: number; pct: number; viagens: number; invertidas: number; naoFeitas: number
+  /** km a mais (linha reta) somado das viagens com ponto */
+  kmExtra: number
+  /** % na ordem de cada dia (recorrência) */
+  porDia: { data: string; pct: number }[]
+  /** dias abaixo da meta da ordem (70%) */
+  diasAbaixo: number
+}
+/** 16/11: clientes que mais ficam fora da ordem (vários motoristas pulando o
+ *  mesmo cliente = pista de roteirização ou horário de recebimento). */
+export type ClienteOrdem = { cliente: string; endereco: string; vezes: number; fora: number; pctFora: number; motoristas: number }
+export const META_ORDEM_PCT = 70
 export type RelatorioOrdemRota = {
   de: string; ate: string
-  total: { entregas: number; naOrdem: number; pct: number; viagens: number; invertidas: number }
+  total: { entregas: number; naOrdem: number; pct: number; viagens: number; invertidas: number; kmExtra: number; viagensComKm: number
+    /** viagens que andaram >= 1 km a mais / a menos que a ordem do plano */
+    maisLongas: number; maisCurtas: number }
   dias: { data: string; entregas: number; naOrdem: number; pct: number; viagens: number }[]
   motoristas: Agregado[]
   placas: Agregado[]
+  clientes: ClienteOrdem[]
   viagens: Viagem[]
 }
 export type FiltrosOrdemRota = {
@@ -49,6 +70,31 @@ export type FiltrosOrdemRota = {
 }
 
 const pct = (a: number, b: number) => (b ? Math.round((a / b) * 1000) / 10 : 0)
+const km1 = (x: number) => Math.round(x * 10) / 10
+function distKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const R = 6371, rad = Math.PI / 180
+  const dLat = (b.lat - a.lat) * rad, dLng = (b.lng - a.lng) * rad
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(h))
+}
+const caminho = (pts: { lat: number; lng: number }[]) => pts.slice(1).reduce((s, p, i) => s + distKm(pts[i], p), 0)
+const mediana = (xs: number[]) => { const o = [...xs].sort((a, b) => a - b); return o[Math.floor(o.length / 2)] }
+/** Km (linha reta) entre os clientes na ordem feita x na ordem do plano. Usa
+ *  a parada real do caminhão (GPS); sem ela, o ponto do cliente (se confiável).
+ *  Ponto a mais de 60 km do meio da viagem é cadastro errado e fica de fora
+ *  (16/11: RTL4B31 dava 1.826 km "no plano" por um endereço mal geocodificado). */
+export function kmDaViagem(feitas: { planejada: number; lat?: number | null; lng?: number | null; pontoImpreciso?: boolean; parada?: { lat: number; lng: number } | null }[]): { kmFeito: number; kmPlano: number; kmExtra: number } | null {
+  const pts = feitas.map(x => {
+    const c = x.parada ?? (x.lat != null && x.lng != null && !x.pontoImpreciso ? { lat: x.lat, lng: x.lng } : null)
+    return c ? { planejada: x.planejada, lat: c.lat, lng: c.lng } : null
+  }).filter((x): x is { planejada: number; lat: number; lng: number } => x != null)
+  if (pts.length < 3) return null
+  const meio = { lat: mediana(pts.map(p => p.lat)), lng: mediana(pts.map(p => p.lng)) }
+  const com = pts.filter(p => distKm(meio, p) <= 60)
+  if (com.length < 3 || com.length < 0.6 * feitas.length) return null
+  const feito = caminho(com), plano = caminho([...com].sort((a, b) => a.planejada - b.planejada))
+  return { kmFeito: km1(feito), kmPlano: km1(plano), kmExtra: km1(feito - plano) }
+}
 const hhmm = (iso: string | null | undefined) => {
   if (!iso) return null
   const d = new Date(iso)
@@ -85,12 +131,14 @@ export function montarRelatorioOrdemRota(dias: DiaComOrdem[], de: string, ate: s
             return { planejada: x.ordem, nf: x.nf, cliente: n?.cliente ?? '', endereco: n?.endereco ?? '', situacao: n?.situacao ?? 'fora do KPI' }
           })
         const ok = seq.filter(s => s.naOrdem).length
+        const km = kmDaViagem(l.map(n => ({ planejada: n.ordemRota!.planejada, lat: n.lat, lng: n.lng, pontoImpreciso: n.pontoImpreciso, parada: n.parada })))
         viagens.push({
           data: d.data, placa: p.placa, motorista: p.motorista || 'Motorista não informado', destino: p.destino ?? '', romaneio,
           saidaBase: hhmm(p.saidaBase), chegadaBase: hhmm(p.chegadaBase), km: p.km ?? null,
           primeira: seq[0]?.chegada ?? null, ultima: seq[seq.length - 1]?.chegada ?? null,
           entregas: seq.length, naOrdem: ok, pct: pct(ok, seq.length), invertida: viagemInvertida(seq.map(s => s.planejada)),
           naoFeitas: naoFeitasLista.length, naoFeitasLista, sequencia: seq,
+          kmFeito: km?.kmFeito ?? null, kmPlano: km?.kmPlano ?? null, kmExtra: km?.kmExtra ?? null,
         })
       }
     }
@@ -108,11 +156,27 @@ export function agregarViagens(viagensEntrada: Viagem[], de: string, ate: string
   const agregar = (chave: (v: Viagem) => string, sub: (vs: Viagem[]) => string): Agregado[] => {
     const g = new Map<string, Viagem[]>()
     for (const v of viagens) { const k = chave(v); g.set(k, [...(g.get(k) ?? []), v]) }
-    return [...g].map(([k, vs]) => ({
-      chave: k, nome: k, sub: sub(vs), ...soma(vs), viagens: vs.length,
-      invertidas: vs.filter(v => v.invertida).length, naoFeitas: vs.reduce((s, v) => s + v.naoFeitas, 0),
-    })).sort((a, b) => a.pct - b.pct || b.entregas - a.entregas)
+    return [...g].map(([k, vs]) => {
+      const porDia = [...new Set(vs.map(v => v.data))].sort().map(data => ({ data, pct: soma(vs.filter(v => v.data === data)).pct }))
+      return {
+        chave: k, nome: k, sub: sub(vs), ...soma(vs), viagens: vs.length,
+        invertidas: vs.filter(v => v.invertida).length, naoFeitas: vs.reduce((s, v) => s + v.naoFeitas, 0),
+        kmExtra: km1(vs.reduce((s, v) => s + (v.kmExtra ?? 0), 0)),
+        porDia, diasAbaixo: porDia.filter(d => d.pct < META_ORDEM_PCT).length,
+      }
+    }).sort((a, b) => a.pct - b.pct || b.entregas - a.entregas)
   }
+  const porCliente = new Map<string, { cliente: string; endereco: string; vezes: number; fora: number; mot: Set<string> }>()
+  for (const v of viagens) for (const e of v.sequencia) {
+    const k = `${e.cliente}|${e.endereco}`
+    const c = porCliente.get(k) ?? { cliente: e.cliente, endereco: e.endereco, vezes: 0, fora: 0, mot: new Set<string>() }
+    c.vezes++
+    if (!e.naOrdem) { c.fora++; c.mot.add(v.motorista) }
+    porCliente.set(k, c)
+  }
+  const clientes: ClienteOrdem[] = [...porCliente.values()].filter(c => c.fora > 0)
+    .map(c => ({ cliente: c.cliente, endereco: c.endereco, vezes: c.vezes, fora: c.fora, pctFora: pct(c.fora, c.vezes), motoristas: c.mot.size }))
+    .sort((a, b) => b.fora - a.fora || b.pctFora - a.pctFora)
   const unicos = (xs: string[]) => [...new Set(xs)].join(', ')
   const diasR = [...new Set(viagens.map(v => v.data))].sort().map(data => {
     const vs = viagens.filter(v => v.data === data)
@@ -120,10 +184,15 @@ export function agregarViagens(viagensEntrada: Viagem[], de: string, ate: string
   })
   return {
     de, ate,
-    total: { ...soma(viagens), viagens: viagens.length, invertidas: viagens.filter(v => v.invertida).length },
+    total: {
+      ...soma(viagens), viagens: viagens.length, invertidas: viagens.filter(v => v.invertida).length,
+      kmExtra: km1(viagens.reduce((s, v) => s + (v.kmExtra ?? 0), 0)), viagensComKm: viagens.filter(v => v.kmExtra != null).length,
+      maisLongas: viagens.filter(v => (v.kmExtra ?? 0) >= 1).length, maisCurtas: viagens.filter(v => (v.kmExtra ?? 0) <= -1).length,
+    },
     dias: diasR,
     motoristas: agregar(v => v.motorista, vs => unicos(vs.map(v => v.placa))),
     placas: agregar(v => v.placa, vs => unicos(vs.map(v => v.motorista))),
+    clientes,
     viagens,
   }
 }
@@ -188,13 +257,13 @@ export function descreverFiltros(f: FiltrosOrdemRota): string {
 /** Viagem enxuta pro Dashboard: a fila de entregas só com a posição no plano. */
 export type ViagemDash = {
   data: string; placa: string; motorista: string; destino: string
-  entregas: number; naOrdem: number; pct: number; invertida: boolean
+  entregas: number; naOrdem: number; pct: number; invertida: boolean; kmExtra: number | null
   /** [posição no plano, na ordem?] na ordem em que foi feita */
   fila: [number, boolean][]
   /** posições no plano que não foram entregues */
   naoFeitas: number[]
 }
-export type OrdemDashboard = Omit<RelatorioOrdemRota, 'viagens'> & { viagens: ViagemDash[] }
+export type OrdemDashboard = Omit<RelatorioOrdemRota, 'viagens' | 'clientes'> & { viagens: ViagemDash[]; clientes: Omit<ClienteOrdem, 'endereco'>[] }
 
 /** 16/11: o relatório da Ordem da rota sem endereço/cliente/horários, pro
  *  Dashboard (um mês inteiro fica leve). */
@@ -202,9 +271,10 @@ export function resumoOrdemDashboard(r: RelatorioOrdemRota): OrdemDashboard {
   const { de, ate, total, dias, motoristas, placas } = r
   return {
     de, ate, total, dias, motoristas, placas,
+    clientes: r.clientes.slice(0, 15).map(({ endereco: _e, ...c }) => c),
     viagens: r.viagens.map(v => ({
       data: v.data, placa: v.placa, motorista: v.motorista, destino: v.destino,
-      entregas: v.entregas, naOrdem: v.naOrdem, pct: v.pct, invertida: v.invertida,
+      entregas: v.entregas, naOrdem: v.naOrdem, pct: v.pct, invertida: v.invertida, kmExtra: v.kmExtra,
       fila: v.sequencia.map(s => [s.planejada, s.naOrdem] as [number, boolean]),
       naoFeitas: v.naoFeitasLista.map(n => n.planejada),
     })),

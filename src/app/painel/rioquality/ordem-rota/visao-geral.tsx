@@ -60,6 +60,7 @@ export function VisaoGeral({ itens, aberta, onAbrir, varios }: { itens: Viagem[]
                     <span className={`text-[15px] font-semibold tabular-nums ${v.pct < META ? 'text-[var(--color-warning)]' : 'text-[var(--color-fg)]'}`}>{p0(v.pct)}</span>
                     <span className="text-[11px] tabular-nums text-[var(--color-fg-muted)]">{v.naOrdem}/{v.entregas} na ordem</span>
                     {v.invertida && <span className="whitespace-nowrap text-[10.5px] font-semibold text-[var(--color-warning)]">de trás pra frente</span>}
+                    <KmSelo km={v.kmExtra} />
                   </span>
                 </button>
               </li>
@@ -98,6 +99,32 @@ export function LegendaOrdem() {
       <span className="inline-flex items-center gap-1.5"><Quadro tipo="ok" n={3} />na ordem</span>
       <span className="inline-flex items-center gap-1.5"><Quadro tipo="fora" n={7} />fora da ordem</span>
       <span className="inline-flex items-center gap-1.5"><Quadro tipo="nao" n={9} />não entregue</span>
+    </span>
+  )
+}
+
+/** Recorrência: um tracinho por dia (altura = % na ordem; laranja abaixo da meta). */
+export function DiasMini({ porDia }: { porDia: { data: string; pct: number }[] }) {
+  if (porDia.length < 2) return null
+  return (
+    <span className="inline-flex h-4 items-end gap-[2px]" aria-label="% na ordem por dia">
+      {porDia.slice(-20).map(d => (
+        <span key={d.data} title={`${d.data.slice(8, 10)}/${d.data.slice(5, 7)}: ${Math.round(d.pct)}%`} className="w-[4px] rounded-[1px]"
+          style={{ height: `${Math.max(15, d.pct)}%`, background: d.pct < META ? 'var(--color-warning)' : 'var(--color-navy-700)' }} />
+      ))}
+    </span>
+  )
+}
+
+export const kmTxt = (x: number) => `${Math.abs(x).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km`
+
+/** Km x plano: laranja = andou mais que a ordem do plano; verde = caminho mais curto. */
+export function KmSelo({ km }: { km: number | null }) {
+  if (km == null || Math.abs(km) < 1) return null
+  return (
+    <span className="whitespace-nowrap text-[10.5px] font-semibold tabular-nums" style={{ color: km > 0 ? 'var(--color-warning)' : 'var(--color-success)' }}
+      title={km > 0 ? 'Andou mais que se seguisse a ordem do plano (linha reta entre os clientes)' : 'Fez um caminho mais curto que a ordem do plano (linha reta entre os clientes)'}>
+      {kmTxt(km)} {km > 0 ? 'a mais' : 'a menos'}
     </span>
   )
 }

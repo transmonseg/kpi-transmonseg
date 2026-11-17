@@ -388,6 +388,13 @@ export default function AoVivoPage() {
           </p>
         )
       })()}
+      {/* 16/11: sem a ordem da rota do dia (RQ) o relatório "quem seguiu a rota" fica vazio. */}
+      {cliente === 'rioquality' && r && !r.ordemRota && (
+        <p className="inline-flex flex-wrap items-center gap-2 rounded-2xl bg-[var(--color-warning-soft)] px-4 py-2.5 text-[13px] text-[var(--color-warning-soft-fg)]">
+          <WarningCircle size={16} weight="fill" />A ordem da rota {historico ? 'deste dia' : 'de hoje'} ainda não entrou: sem ela não dá pra ver quem seguiu a roteirização.
+          <a href="/painel/rioquality/ordem-rota" className="font-semibold underline">Subir o relatório de ordem</a>
+        </p>
+      )}
       {erroCarga && <p className="text-[13px] text-[var(--color-danger)]">{erroCarga}</p>}
       {!historico && (() => {
         const longas = placas
