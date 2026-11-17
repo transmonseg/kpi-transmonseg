@@ -410,9 +410,15 @@ async function tentarLote(
         chegada: paraBrtMascaradoComoUtc(p.chegada) as string,
         saida: paraBrtMascaradoComoUtc(p.saida) as string,
       }))
+      // Achado 17/11 (KOB3H38 saida 07:03, "volta" 06:28): com o carro ainda
+      // na rua, a ponte devolve como chegada a ENTRADA na base de manha.
+      // Volta que nao e' depois da saida nao e' volta -- fica vazia.
+      const saidaBase = paraBrtMascaradoComoUtc(r.saidaBase)
+      const chegadaBruta = paraBrtMascaradoComoUtc(r.chegadaBase)
+      const chegadaBase = saidaBase && chegadaBruta && Date.parse(chegadaBruta) <= Date.parse(saidaBase) ? null : chegadaBruta
       mapa.set(r.placa, {
-        saidaBase: paraBrtMascaradoComoUtc(r.saidaBase),
-        chegadaBase: paraBrtMascaradoComoUtc(r.chegadaBase),
+        saidaBase,
+        chegadaBase,
         kmPercorrido: r.kmPercorrido,
         visitasPorNf,
         paradas,

@@ -55,6 +55,19 @@ describe('buscarHorariosBase', () => {
     expect(mapa.get('RQU8D91')).not.toHaveProperty('saidaSemSinalAte')
   })
 
+  it('KOB3H38 17/11: carro ainda na rua, ponte devolve como chegada a ENTRADA na base de manha (06:28 < saida 07:03) -- chegada vira null', async () => {
+    mockFetchOk([
+      { placa: 'KOB3H38', saidaBase: '2026-11-17T10:03:00.000Z', chegadaBase: '2026-11-17T09:28:00.000Z', kmPercorrido: 120 },
+      { placa: 'LNC3D82', saidaBase: '2026-11-17T07:12:00.000Z', chegadaBase: '2026-11-17T07:12:00.000Z', kmPercorrido: 80 },
+      { placa: 'QUR3F92', saidaBase: '2026-11-17T10:05:00.000Z', chegadaBase: '2026-11-17T22:09:00.000Z', kmPercorrido: 89 },
+    ])
+    const mapa = await buscarHorariosBase(['KOB3H38', 'LNC3D82', 'QUR3F92'], '2026-11-17')
+    expect(mapa.get('KOB3H38')?.saidaBase).toBe('2026-11-17T07:03:00.000Z')
+    expect(mapa.get('KOB3H38')?.chegadaBase).toBeNull()
+    expect(mapa.get('LNC3D82')?.chegadaBase).toBeNull()
+    expect(mapa.get('QUR3F92')?.chegadaBase).toBe('2026-11-17T19:09:00.000Z')
+  })
+
   it('MOTOR_SECRET ausente: nao chama fetch, devolve mapa vazio', async () => {
     delete process.env.MOTOR_SECRET
     const fetchSpy = vi.spyOn(globalThis, 'fetch')

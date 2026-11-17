@@ -35,7 +35,6 @@ import { ChecklistManha } from './checklist-manha'
 
 type Cliente = 'nutrimax' | 'rioquality'
 // 16/11: a partir de quantos clientes pulados o Ao vivo avisa.
-const PULOS_AVISO = 3
 const NOME_CLIENTE: Record<Cliente, string> = { nutrimax: 'Nutry Max', rioquality: 'Rio Quality' }
 type Agora = { posicao: { lat: number | null; lng: number | null; datagps: string | null } | null; parada: { inicio: string } | null; nf: { nf: string; cliente: string } | null; consultadoEm: string }
 type Estado = EstadoAoVivo & { data: string; hoje: string; historico: boolean; dias: string[]; clientes: Cliente[]; fonte?: 'ao_vivo' | 'geracao' | null; geracaoId?: string | null; versaoRegrasAtual?: string | null; fusion?: StatusFusion | null }
@@ -390,29 +389,7 @@ export default function AoVivoPage() {
           </p>
         )
       })()}
-      {/* 16/11: motorista pulando clientes agora (pendentes no meio do trecho já
-          entregue do plano) -- dá pra ligar enquanto ele ainda está na região. */}
-      {!historico && (() => {
-        const pulando = placas.filter(p => (p.ordemRota?.pulados ?? 0) >= PULOS_AVISO).sort((a, b) => (b.ordemRota!.pulados ?? 0) - (a.ordemRota!.pulados ?? 0))
-        if (!pulando.length) return null
-        return (
-          <section role="alert" className="flex flex-col gap-2 rounded-2xl border border-[#f3d9b1] bg-[#fff7ec] px-4 py-3">
-            <p className="inline-flex items-center gap-2 text-[13px] font-semibold text-[#8a4b08]">
-              <WarningCircle size={16} weight="fill" />{pulando.length === 1 ? '1 placa pulando clientes da ordem da rota agora' : `${pulando.length} placas pulando clientes da ordem da rota agora`}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {pulando.map(p => (
-                <button key={p.placa} type="button" onClick={() => { setPlacaSel(p.placa); setNfAberta(null); setVendoDetalhe(true) }}
-                  title={`Ainda não entregues, no meio do que ele já fez: ${p.ordemRota!.puladosPos!.map(x => `${x}ª`).join(', ')}`}
-                  className="inline-flex items-center gap-2 rounded-full border border-[#f3d9b1] bg-white px-3 py-1.5 text-[12.5px] text-[#8a4b08] transition hover:border-[#e8b874]">
-                  <span className="font-semibold">{p.placa}</span>
-                  <span>pulou {p.ordemRota!.pulados}</span>
-                </button>
-              ))}
-            </div>
-          </section>
-        )
-      })()}
+      {/* 17/11 (Érica): ordem da rota é relatório do fim do dia, não aviso na hora -- o banner "placas pulando" saiu. */}
       {/* 16/11: sem a ordem da rota do dia (RQ) o relatório "quem seguiu a rota" fica vazio. */}
       {cliente === 'rioquality' && r && !r.ordemRota && (
         <p className="inline-flex flex-wrap items-center gap-2 rounded-2xl bg-[var(--color-warning-soft)] px-4 py-2.5 text-[13px] text-[var(--color-warning-soft-fg)]">
@@ -618,7 +595,7 @@ function LinhaPlaca({ p, ativa, agora, agoraMs, historico, onClick }: { p: Placa
         </span>
         {p.ordemRota && (
           <span className={`mt-1 block text-[12px] tabular-nums ${p.ordemRota.pct < 70 ? 'font-semibold text-[#b45309]' : 'text-[var(--color-fg-muted)]'}`}>
-            Ordem da rota: {p.ordemRota.naOrdem} de {p.ordemRota.entregas} na sequência ({p.ordemRota.pct.toLocaleString('pt-BR')}%){p.ordemRota.invertidas ? ' · de trás pra frente' : ''}{!historico && (p.ordemRota.pulados ?? 0) >= PULOS_AVISO ? ` · pulou ${p.ordemRota.pulados} clientes` : ''}
+            Ordem da rota: {p.ordemRota.naOrdem} de {p.ordemRota.entregas} na sequência ({p.ordemRota.pct.toLocaleString('pt-BR')}%){p.ordemRota.invertidas ? ' · de trás pra frente' : ''}
           </span>
         )}
       </button>
