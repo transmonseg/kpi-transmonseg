@@ -11,7 +11,15 @@
 export type OrdemPlanejada = { nf: string; romaneio: string; ordem: number; previsaoInicio: string | null }
 
 export type OrdemDaNf = { planejada: number; real: number; naOrdem: boolean; romaneio: string; previsao: string | null }
-export type ResumoOrdem = { entregas: number; naOrdem: number; pct: number; /** viagens feitas de trás pra frente (sequência inversa bate bem melhor) */ invertidas?: number }
+export type ResumoOrdem = {
+  entregas: number; naOrdem: number; pct: number
+  /** viagens feitas de trás pra frente (sequência inversa bate bem melhor) */ invertidas?: number
+  /** 16/11: notas ainda pendentes no meio do trecho já entregue do plano
+   *  (o motorista passou por cima delas). Ao vivo avisa a partir de 3. */
+  pulados?: number
+  /** posições no plano das puladas (para mostrar) */
+  puladosPos?: number[]
+}
 
 /** Viagem feita ao contrário: a sequência inversa cobre >= 70% e mais que a direta. */
 export function viagemInvertida(ordens: number[]): boolean {
@@ -63,7 +71,17 @@ export function aplicarOrdemRota<R extends ComPlacas>(r: R, planejada: OrdemPlan
       porRomaneio.set(o.romaneio, l)
     }
     let e = 0, ok = 0, invertidas = 0
-    for (const lista of porRomaneio.values()) {
+    const pulPos: number[] = []
+    for (const [romaneio, lista] of porRomaneio) {
+      // Pulada = pendente ENTRE a menor e a maior posição já entregue: o
+      // motorista já passou dos dois lados dela (vale também pra quem roda de
+      // trás pra frente -- 30, 29, 28 não deixa buraco).
+      const feitas = lista.map(x => x.o.ordem)
+      const minFeita = Math.min(...feitas), maxFeita = Math.max(...feitas)
+      for (const n of nfs) {
+        const o = porNf.get(n.nf)
+        if (o && o.romaneio === romaneio && n.situacao === 'pendente' && o.ordem > minFeita && o.ordem < maxFeita) pulPos.push(o.ordem)
+      }
       // Mesma chegada (várias notas do mesmo cliente): desempata pela planejada.
       lista.sort((a, b) => (a.n.chegada! < b.n.chegada! ? -1 : a.n.chegada! > b.n.chegada! ? 1 : a.o.ordem - b.o.ordem))
       const certos = naOrdemIndices(lista.map(x => x.o.ordem))
@@ -74,7 +92,8 @@ export function aplicarOrdemRota<R extends ComPlacas>(r: R, planejada: OrdemPlan
       if (viagemInvertida(lista.map(x => x.o.ordem))) invertidas++
     }
     totE += e; totOk += ok
-    return e ? { ...p, nfs, ordemRota: { entregas: e, naOrdem: ok, pct: pct(ok, e), ...(invertidas ? { invertidas } : {}) } } : { ...p, nfs }
+    pulPos.sort((a, b) => a - b)
+    return e ? { ...p, nfs, ordemRota: { entregas: e, naOrdem: ok, pct: pct(ok, e), ...(invertidas ? { invertidas } : {}), ...(pulPos.length ? { pulados: pulPos.length, puladosPos: pulPos } : {}) } } : { ...p, nfs }
   })
   return {
     ...r, placas,

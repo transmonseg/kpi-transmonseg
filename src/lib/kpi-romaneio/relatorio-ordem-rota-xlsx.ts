@@ -132,7 +132,7 @@ export async function gerarXlsxOrdemRota(r: RelatorioOrdemRota, filtro = 'Sem fi
   res.getRow(5).height = 36
   res.mergeCells(7, 1, 9, 7)
   const como = res.getCell(7, 1)
-  como.value = 'Como ler: em cada viagem, as entregas são ordenadas pela hora em que o caminhão chegou no cliente (GPS). "Na ordem" é a maior sequência que respeita a ordem planejada no relatório de ordem; as outras entregas foram feitas fora da ordem — o motorista pulou o cliente e voltou depois, ou inverteu a rota. "Km a mais" compara, em linha reta entre as paradas do GPS, o caminho feito com o caminho na ordem do plano: positivo = andou mais; negativo = fez um caminho mais curto que a roteirização (fora da ordem nem sempre é ruim). Use as abas abaixo e os filtros (setinhas) do cabeçalho de cada tabela para escolher motorista, placa, dia ou horário.'
+  como.value = 'Como ler: em cada viagem, as entregas são ordenadas pela hora em que o caminhão chegou no cliente (GPS). "Na ordem" é a maior sequência que respeita a ordem planejada no relatório de ordem; as outras entregas foram feitas fora da ordem — o motorista pulou o cliente e voltou depois, ou inverteu a rota. "Km a mais" compara, em linha reta entre as paradas do GPS, o caminho feito com o caminho na ordem do plano: positivo = andou mais; negativo = fez um caminho mais curto que a roteirização (fora da ordem nem sempre é ruim). "Km na melhor ordem" é a ordem mais curta entre as mesmas paradas, para comparar com a roteirização. Use as abas abaixo e os filtros (setinhas) do cabeçalho de cada tabela para escolher motorista, placa, dia ou horário.'
   como.font = { name: FONTE, size: 10, color: { argb: KPI_COLORS.TEXT_MUTED } }
   como.alignment = { wrapText: true, vertical: 'top' }
   const ini = 11
@@ -164,7 +164,7 @@ export async function gerarXlsxOrdemRota(r: RelatorioOrdemRota, filtro = 'Sem fi
 
   // ---------- Viagens ----------
   const wv = wb.addWorksheet('Viagens')
-  const lv = await cabecalho(wb, wv, 'VIAGENS — uma linha por romaneio', sub, 19)
+  const lv = await cabecalho(wb, wv, 'VIAGENS — uma linha por romaneio', sub, 20)
   tabela(wv, 'Viagens', lv, [
     { titulo: 'Dia', largura: 11, formato: 'dd/mm/yyyy' }, { titulo: 'Placa', largura: 10 }, { titulo: 'Motorista', largura: 30 },
     { titulo: 'Destino', largura: 28 }, { titulo: 'Romaneio', largura: 11 },
@@ -176,11 +176,12 @@ export async function gerarXlsxOrdemRota(r: RelatorioOrdemRota, filtro = 'Sem fi
     { titulo: 'De trás pra frente', largura: 11 }, { titulo: 'Planejadas não entregues', largura: 13, formato: '#,##0' },
     { titulo: 'Km feito (linha reta)', largura: 11, formato: '#,##0.0' }, { titulo: 'Km no plano (linha reta)', largura: 11, formato: '#,##0.0' },
     { titulo: 'Km a mais', largura: 10, formato: '#,##0.0' },
+    { titulo: 'Km na melhor ordem (sugestão)', largura: 13, formato: '#,##0.0' },
   ], r.viagens.map(v => [
     dataExcel(v.data), v.placa, v.motorista, v.destino, v.romaneio,
     horaExcel(v.saidaBase), horaExcel(v.primeira), horaExcel(v.ultima), horaExcel(v.chegadaBase), v.km,
     pct(v.pct), v.entregas, v.naOrdem, v.entregas - v.naOrdem, v.invertida ? 'SIM' : '', v.naoFeitas,
-    v.kmFeito, v.kmPlano, v.kmExtra,
+    v.kmFeito, v.kmPlano, v.kmExtra, v.kmMelhor,
   ]))
   barraPct(wv, 'K', lv + 1, lv + r.viagens.length)
 

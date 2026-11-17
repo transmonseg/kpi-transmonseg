@@ -128,3 +128,40 @@ export function KmSelo({ km }: { km: number | null }) {
     </span>
   )
 }
+
+/** 16/11: plano x feito x melhor ordem possível (km em linha reta entre as
+ *  paradas do GPS). Mostra se o problema é o motorista ou a roteirização. */
+export function ComparativoKm({ plano, feito, melhor, maisCurtas, maisLongas, viagens }: { plano: number; feito: number; melhor: number; maisCurtas: number; maisLongas: number; viagens: number }) {
+  if (!viagens || !plano) return null
+  const max = Math.max(plano, feito, melhor)
+  const fmt = (x: number) => `${Math.round(x).toLocaleString('pt-BR')} km`
+  const acima = (x: number) => (melhor > 0 ? Math.round(((x - melhor) / melhor) * 100) : 0)
+  const linhas: [string, number, string, string][] = [
+    ['Na ordem da roteirização', plano, 'var(--color-fg-subtle)', `${acima(plano)}% acima da melhor ordem`],
+    ['O que os motoristas fizeram', feito, 'var(--color-navy-700)', `${acima(feito)}% acima da melhor ordem`],
+    ['Melhor ordem possível (sugestão)', melhor, 'var(--color-success)', 'mesmas paradas, ordem mais curta'],
+  ]
+  return (
+    <div className="flex flex-col gap-3">
+      <div>
+        <p className="text-[13px] font-semibold text-[var(--color-fg)]">Quilômetros entre as paradas</p>
+        <p className="text-[11.5px] text-[var(--color-fg-muted)]">Linha reta entre as paradas do GPS de {viagens.toLocaleString('pt-BR')} viagens. A rua real é mais longa, mas a comparação vale.</p>
+      </div>
+      <div className="flex flex-col gap-2.5">
+        {linhas.map(([rot, v, cor, sub]) => (
+          <div key={rot} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 sm:grid-cols-[210px_minmax(0,1fr)_190px]">
+            <span className="text-[12.5px] text-[var(--color-fg)]">{rot}</span>
+            <span className="order-3 col-span-2 block h-2.5 overflow-hidden rounded-full bg-[var(--color-bg-subtle)] sm:order-none sm:col-span-1">
+              <span className="block h-full rounded-full" style={{ width: `${(v / max) * 100}%`, background: cor }} />
+            </span>
+            <span className="text-right text-[12.5px] tabular-nums"><strong className="text-[var(--color-fg)]">{fmt(v)}</strong> <span className="block text-[10.5px] text-[var(--color-fg-subtle)]">{sub}</span></span>
+          </div>
+        ))}
+      </div>
+      <p className="rounded-2xl bg-[var(--color-bg-subtle)] px-4 py-3 text-[12.5px] leading-relaxed text-[var(--color-fg-muted)]">
+        <strong className="text-[var(--color-fg)]">Fora da ordem nem sempre é ruim:</strong> em {maisCurtas.toLocaleString('pt-BR')} viagens o motorista fez um caminho <strong style={{ color: 'var(--color-success)' }}>mais curto</strong> que a roteirização e em {maisLongas.toLocaleString('pt-BR')} <strong style={{ color: 'var(--color-warning)' }}>mais longo</strong>.
+        {plano > feito ? ' No total, seguir a roteirização à risca daria mais km do que o que foi feito: vale revisar a roteirização.' : ' No total, os motoristas andaram mais do que a roteirização pedia.'}
+      </p>
+    </div>
+  )
+}

@@ -66,7 +66,7 @@ export type PlacaAoVivo = {
    *  início em UTC real e a NF mais perto (até 800 m). Aviso de +1 h no cliente. */
   paradaAtual?: { inicio: string; nf: string | null; cliente: string | null } | null
   /** 12/11: quantas entregas seguiram a ordem da roteirização. */
-  ordemRota?: { entregas: number; naOrdem: number; pct: number; invertidas?: number }
+  ordemRota?: { entregas: number; naOrdem: number; pct: number; invertidas?: number; pulados?: number; puladosPos?: number[] }
 }
 
 /** "06:30" do dia AAAA-MM-DD (BRT) -> "2026-10-06T06:30:00-03:00". */

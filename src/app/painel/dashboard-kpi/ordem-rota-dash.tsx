@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight, Path } from '@phosphor-icons/react/dist/ssr'
 import { dataCurta } from './calculos'
-import { Fila, LegendaOrdem, DiasMini, KmSelo } from '@/app/painel/rioquality/ordem-rota/visao-geral'
+import { Fila, LegendaOrdem, DiasMini, KmSelo, ComparativoKm } from '@/app/painel/rioquality/ordem-rota/visao-geral'
 import type { OrdemDashboard, ViagemDash } from '@/lib/kpi-romaneio/relatorio-ordem-rota'
 
 export const META_ORDEM = 70
@@ -119,9 +119,9 @@ export function SecaoOrdemRota({ o, umDia, podeAbrirRelatorio }: { o: OrdemDashb
       </div>
 
       {t.viagensComKm > 0 && (
-        <p className="mx-5 mb-4 rounded-2xl bg-[var(--color-bg-subtle)] px-4 py-3 text-[12.5px] leading-relaxed text-[var(--color-fg-muted)]">
-          <strong className="text-[var(--color-fg)]">Fora da ordem nem sempre é ruim:</strong> em {n(t.maisCurtas)} de {n(t.viagensComKm)} viagens o caminho feito foi <strong style={{ color: 'var(--color-success)' }}>mais curto</strong> que a ordem da roteirização, e em {n(t.maisLongas)} foi <strong style={{ color: 'var(--color-warning)' }}>mais longo</strong> (linha reta entre as paradas do GPS). Mais curto com muita entrega fora da ordem costuma ser roteirização para revisar; mais longo é o motorista que perdeu caminho.
-        </p>
+        <div className="border-t border-[var(--color-border)] px-5 py-4">
+          <ComparativoKm plano={t.kmPlanoTotal} feito={t.kmFeitoTotal} melhor={t.kmMelhorTotal} maisCurtas={t.maisCurtas} maisLongas={t.maisLongas} viagens={t.viagensComKm} />
+        </div>
       )}
 
       {o.clientes.length > 0 && (

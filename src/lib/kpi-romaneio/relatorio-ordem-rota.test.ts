@@ -39,12 +39,14 @@ describe('montarRelatorioOrdemRota', () => {
   it('km a mais: ordem feita x ordem do plano, em linha reta', () => {
     // plano 1-2-3 numa reta (0, 1, 2 km); feito 1-3-2 = 2 + 1 = 3 km contra 2 km
     const p = (planejada: number, x: number) => ({ planejada, lat: 0, lng: x / 111.195 })
-    expect(kmDaViagem([p(1, 0), p(3, 2), p(2, 1)])).toEqual({ kmFeito: 3, kmPlano: 2, kmExtra: 1 })
+    expect(kmDaViagem([p(1, 0), p(3, 2), p(2, 1)])).toEqual({ kmFeito: 3, kmPlano: 2, kmExtra: 1, kmMelhor: 2 })
+    // plano ziguezague (0, 4, 1, 3, 2 km): melhor ordem é a reta 0..4 = 4 km
+    expect(kmDaViagem([p(1, 0), p(2, 4), p(3, 1), p(4, 3), p(5, 2)])).toMatchObject({ kmPlano: 10, kmMelhor: 4 })
     // sem ponto confiável da maioria: não calcula
     expect(kmDaViagem([p(1, 0), { planejada: 2 }, { planejada: 3 }, p(4, 3)])).toBeNull()
     // ponto de cadastro errado (1.000 km) fica de fora; a parada real do GPS vale mais que o ponto do cliente
-    expect(kmDaViagem([p(1, 0), p(3, 2), p(2, 1), { planejada: 4, lat: 9, lng: 0 }])).toEqual({ kmFeito: 3, kmPlano: 2, kmExtra: 1 })
-    expect(kmDaViagem([p(1, 0), { ...p(3, 50), parada: { lat: 0, lng: 2 / 111.195 } }, p(2, 1)])).toEqual({ kmFeito: 3, kmPlano: 2, kmExtra: 1 })
+    expect(kmDaViagem([p(1, 0), p(3, 2), p(2, 1), { planejada: 4, lat: 9, lng: 0 }])).toEqual({ kmFeito: 3, kmPlano: 2, kmExtra: 1, kmMelhor: 2 })
+    expect(kmDaViagem([p(1, 0), { ...p(3, 50), parada: { lat: 0, lng: 2 / 111.195 } }, p(2, 1)])).toEqual({ kmFeito: 3, kmPlano: 2, kmExtra: 1, kmMelhor: 2 })
   })
   it('clientes fora da ordem e recorrência do motorista', () => {
     expect(r.clientes[0]).toMatchObject({ fora: 2, vezes: 2, pctFora: 100, motoristas: 1 })
@@ -62,7 +64,7 @@ describe('montarRelatorioOrdemRota', () => {
     expect(d.total).toEqual(r.total)
   })
   it('vazio não quebra', () => {
-    expect(montarRelatorioOrdemRota([], '2026-11-12', '2026-11-12').total).toEqual({ entregas: 0, naOrdem: 0, pct: 0, viagens: 0, invertidas: 0, kmExtra: 0, viagensComKm: 0, maisLongas: 0, maisCurtas: 0 })
+    expect(montarRelatorioOrdemRota([], '2026-11-12', '2026-11-12').total).toEqual({ entregas: 0, naOrdem: 0, pct: 0, viagens: 0, invertidas: 0, kmExtra: 0, viagensComKm: 0, maisLongas: 0, maisCurtas: 0, kmFeitoTotal: 0, kmPlanoTotal: 0, kmMelhorTotal: 0 })
   })
 
   describe('filtros (14/11: "só um motorista ou só tal horário")', () => {

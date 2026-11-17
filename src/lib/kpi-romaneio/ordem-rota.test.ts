@@ -45,6 +45,15 @@ describe('aplicarOrdemRota', () => {
     expect(o.placas[0].ordemRota).toEqual({ entregas: 4, naOrdem: 4, pct: 100 })
   })
 
+  it('puladas: pendentes no meio do trecho já entregue (aviso na hora)', () => {
+    const r3 = { calculadoEm: 'c', placas: [{ nfs: [nf('1', '08:00'), nf('2', '08:30'), nf('6', '09:00'), nf('3', null, 'pendente'), nf('4', null, 'pendente'), nf('5', null, 'pendente'), nf('7', null, 'pendente')] }] }
+    const pl = ['1', '2', '3', '4', '5', '6', '7'].map((x, i) => plano(x, i + 1))
+    expect(aplicarOrdemRota(r3, pl).placas[0].ordemRota).toMatchObject({ pulados: 3, puladosPos: [3, 4, 5] })
+    // de trás pra frente (7, 6, 5 feitas): o resto ainda vem, não é pulo
+    const r4 = { calculadoEm: 'c', placas: [{ nfs: [nf('7', '08:00'), nf('6', '08:30'), nf('5', '09:00'), ...['1', '2', '3', '4'].map(x => nf(x, null, 'pendente'))] }] }
+    expect(aplicarOrdemRota(r4, pl).placas[0].ordemRota!.pulados).toBeUndefined()
+  })
+
   it('sem plano: devolve igual', () => {
     expect(aplicarOrdemRota(r, [])).toBe(r)
   })

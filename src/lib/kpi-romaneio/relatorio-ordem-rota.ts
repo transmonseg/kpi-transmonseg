@@ -37,6 +37,8 @@ export type Viagem = {
   /** 16/11: km entre clientes em linha reta, na ordem feita e na do plano
    *  (null sem ponto confiável de >= 60% dos clientes). Extra > 0 = andou mais. */
   kmFeito: number | null; kmPlano: number | null; kmExtra: number | null
+  /** 16/11: a ordem mais curta entre as mesmas paradas (sugestão) */
+  kmMelhor: number | null
 }
 export type Agregado = {
   chave: string; nome: string; sub: string; entregas: number; naOrdem: number; pct: number; viagens: number; invertidas: number; naoFeitas: number
@@ -55,7 +57,9 @@ export type RelatorioOrdemRota = {
   de: string; ate: string
   total: { entregas: number; naOrdem: number; pct: number; viagens: number; invertidas: number; kmExtra: number; viagensComKm: number
     /** viagens que andaram >= 1 km a mais / a menos que a ordem do plano */
-    maisLongas: number; maisCurtas: number }
+    maisLongas: number; maisCurtas: number
+    /** soma (viagens com km): feito, plano e a melhor ordem possível */
+    kmFeitoTotal: number; kmPlanoTotal: number; kmMelhorTotal: number }
   dias: { data: string; entregas: number; naOrdem: number; pct: number; viagens: number }[]
   motoristas: Agregado[]
   placas: Agregado[]
@@ -83,7 +87,36 @@ const mediana = (xs: number[]) => { const o = [...xs].sort((a, b) => a - b); ret
  *  a parada real do caminhão (GPS); sem ela, o ponto do cliente (se confiável).
  *  Ponto a mais de 60 km do meio da viagem é cadastro errado e fica de fora
  *  (16/11: RTL4B31 dava 1.826 km "no plano" por um endereço mal geocodificado). */
-export function kmDaViagem(feitas: { planejada: number; lat?: number | null; lng?: number | null; pontoImpreciso?: boolean; parada?: { lat: number; lng: number } | null }[]): { kmFeito: number; kmPlano: number; kmExtra: number } | null {
+/** Ordem mais curta (caminho aberto) entre os pontos: vizinho mais perto a
+ *  partir de cada ponta dada + 2-opt. Heurística -- boa, não perfeita. */
+export function melhorCaminho(pts: { lat: number; lng: number }[], inicios: number[]): number {
+  const n = pts.length
+  if (n < 3) return caminho(pts)
+  const d = pts.map(a => pts.map(b => distKm(a, b)))
+  let melhor = Infinity
+  for (const ini of [...new Set(inicios)]) {
+    const rota = [ini], usado = new Set([ini])
+    while (rota.length < n) {
+      const ult = rota[rota.length - 1]
+      let prox = -1
+      for (let j = 0; j < n; j++) if (!usado.has(j) && (prox < 0 || d[ult][j] < d[ult][prox])) prox = j
+      rota.push(prox); usado.add(prox)
+    }
+    // 2-opt em caminho aberto
+    for (let melhorou = true, voltas = 0; melhorou && voltas < 50; voltas++) {
+      melhorou = false
+      for (let i = 0; i < n - 1; i++) for (let k = i + 1; k < n; k++) {
+        const a = i > 0 ? d[rota[i - 1]][rota[i]] : 0, b = k < n - 1 ? d[rota[k]][rota[k + 1]] : 0
+        const a2 = i > 0 ? d[rota[i - 1]][rota[k]] : 0, b2 = k < n - 1 ? d[rota[i]][rota[k + 1]] : 0
+        if (a2 + b2 < a + b - 1e-9) { rota.splice(i, k - i + 1, ...rota.slice(i, k + 1).reverse()); melhorou = true }
+      }
+    }
+    melhor = Math.min(melhor, rota.slice(1).reduce((s, j, i) => s + d[rota[i]][j], 0))
+  }
+  return melhor
+}
+
+export function kmDaViagem(feitas: { planejada: number; lat?: number | null; lng?: number | null; pontoImpreciso?: boolean; parada?: { lat: number; lng: number } | null }[]): { kmFeito: number; kmPlano: number; kmExtra: number; kmMelhor: number } | null {
   const pts = feitas.map(x => {
     const c = x.parada ?? (x.lat != null && x.lng != null && !x.pontoImpreciso ? { lat: x.lat, lng: x.lng } : null)
     return c ? { planejada: x.planejada, lat: c.lat, lng: c.lng } : null
@@ -92,8 +125,11 @@ export function kmDaViagem(feitas: { planejada: number; lat?: number | null; lng
   const meio = { lat: mediana(pts.map(p => p.lat)), lng: mediana(pts.map(p => p.lng)) }
   const com = pts.filter(p => distKm(meio, p) <= 60)
   if (com.length < 3 || com.length < 0.6 * feitas.length) return null
-  const feito = caminho(com), plano = caminho([...com].sort((a, b) => a.planejada - b.planejada))
-  return { kmFeito: km1(feito), kmPlano: km1(plano), kmExtra: km1(feito - plano) }
+  const ordPlano = [...com].sort((a, b) => a.planejada - b.planejada)
+  const feito = caminho(com), plano = caminho(ordPlano)
+  // Começa onde o motorista começou ou onde o plano começa (a melhor das duas).
+  const melhor = Math.min(feito, plano, melhorCaminho(com, [0, com.indexOf(ordPlano[0])]))
+  return { kmFeito: km1(feito), kmPlano: km1(plano), kmExtra: km1(feito - plano), kmMelhor: km1(melhor) }
 }
 const hhmm = (iso: string | null | undefined) => {
   if (!iso) return null
@@ -138,7 +174,7 @@ export function montarRelatorioOrdemRota(dias: DiaComOrdem[], de: string, ate: s
           primeira: seq[0]?.chegada ?? null, ultima: seq[seq.length - 1]?.chegada ?? null,
           entregas: seq.length, naOrdem: ok, pct: pct(ok, seq.length), invertida: viagemInvertida(seq.map(s => s.planejada)),
           naoFeitas: naoFeitasLista.length, naoFeitasLista, sequencia: seq,
-          kmFeito: km?.kmFeito ?? null, kmPlano: km?.kmPlano ?? null, kmExtra: km?.kmExtra ?? null,
+          kmFeito: km?.kmFeito ?? null, kmPlano: km?.kmPlano ?? null, kmExtra: km?.kmExtra ?? null, kmMelhor: km?.kmMelhor ?? null,
         })
       }
     }
@@ -188,6 +224,9 @@ export function agregarViagens(viagensEntrada: Viagem[], de: string, ate: string
       ...soma(viagens), viagens: viagens.length, invertidas: viagens.filter(v => v.invertida).length,
       kmExtra: km1(viagens.reduce((s, v) => s + (v.kmExtra ?? 0), 0)), viagensComKm: viagens.filter(v => v.kmExtra != null).length,
       maisLongas: viagens.filter(v => (v.kmExtra ?? 0) >= 1).length, maisCurtas: viagens.filter(v => (v.kmExtra ?? 0) <= -1).length,
+      kmFeitoTotal: km1(viagens.reduce((s, v) => s + (v.kmFeito ?? 0), 0)),
+      kmPlanoTotal: km1(viagens.reduce((s, v) => s + (v.kmPlano ?? 0), 0)),
+      kmMelhorTotal: km1(viagens.reduce((s, v) => s + (v.kmMelhor ?? 0), 0)),
     },
     dias: diasR,
     motoristas: agregar(v => v.motorista, vs => unicos(vs.map(v => v.placa))),

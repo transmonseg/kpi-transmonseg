@@ -11,7 +11,7 @@ import { PorDia } from '@/app/painel/dashboard-kpi/ordem-rota-dash'
 import { buscarComSessao, SessaoVencida } from '@/lib/sessao-fetch'
 import { filtrarRelatorio, filtrosParaUrl, filtrosVazios, type Agregado, type ClienteOrdem, type FiltrosOrdemRota, type Viagem } from '@/lib/kpi-romaneio/relatorio-ordem-rota'
 import type { RespostaOrdemRota } from '@/lib/kpi-romaneio/relatorio-ordem-rota-servidor'
-import { VisaoGeral, DiasMini, KmSelo, kmTxt } from './visao-geral'
+import { VisaoGeral, DiasMini, KmSelo, kmTxt, ComparativoKm } from './visao-geral'
 
 type Resposta = RespostaOrdemRota
 type Aba = 'motoristas' | 'placas' | 'viagens' | 'clientes'
@@ -190,6 +190,12 @@ export function TelaOrdemRota({ hoje }: { hoje: string }) {
             <section className="dash-card flex flex-col gap-3 p-5">
               <h2 className="text-[14px] font-semibold text-[var(--color-fg)]">% na ordem por dia</h2>
               <PorDia dias={rf.dias} altura={200} />
+            </section>
+          )}
+
+          {rf.total.viagensComKm > 0 && (
+            <section className="dash-card p-5">
+              <ComparativoKm plano={rf.total.kmPlanoTotal} feito={rf.total.kmFeitoTotal} melhor={rf.total.kmMelhorTotal} maisCurtas={rf.total.maisCurtas} maisLongas={rf.total.maisLongas} viagens={rf.total.viagensComKm} />
             </section>
           )}
 
@@ -481,7 +487,7 @@ function DetalheViagem({ v, onFechar, temViagens, onPrimeira }: { v: Viagem | nu
           <Mini rotulo={(v.kmExtra ?? 0) < 0 ? 'Km a menos que o plano' : 'Km a mais que o plano'} valor={v.kmExtra != null ? kmTxt(v.kmExtra) : '—'} destaque={(v.kmExtra ?? 0) >= 1} />
         </div>
         {v.kmFeito != null && v.kmPlano != null && (
-          <p className="text-[11.5px] text-[var(--color-fg-subtle)]">Entre as paradas, em linha reta: fez {v.kmFeito.toLocaleString('pt-BR')} km; na ordem do plano seriam {v.kmPlano.toLocaleString('pt-BR')} km.{v.kmExtra! < 0 ? ' Fez um caminho mais curto que a roteirização.' : ''}</p>
+          <p className="text-[11.5px] text-[var(--color-fg-subtle)]">Entre as paradas, em linha reta: fez {v.kmFeito.toLocaleString('pt-BR')} km; na ordem do plano seriam {v.kmPlano.toLocaleString('pt-BR')} km{v.kmMelhor != null ? `; a melhor ordem dessas paradas daria ${v.kmMelhor.toLocaleString('pt-BR')} km` : ''}.{v.kmExtra! < 0 ? ' Fez um caminho mais curto que a roteirização.' : ''}</p>
         )}
         {v.invertida && <p className="rounded-xl bg-[var(--color-warning-soft)] px-3.5 py-2.5 text-[12.5px] font-semibold text-[var(--color-warning)]">Fez a rota de trás pra frente: começou pelo último cliente da roteirização.</p>}
         {v.naoFeitas > 0 && (
