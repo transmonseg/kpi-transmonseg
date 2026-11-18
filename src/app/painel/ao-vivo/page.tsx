@@ -876,6 +876,18 @@ function RedirecionarCarga({ placas, onConfirmada }: { placas: PlacaAoVivo[]; on
   const [aviso, setAviso] = useState<string | null>(null)
   // F1-05: falha no monitoramento (pontos=0 com notas) fica em vermelho.
   const [avisoErro, setAvisoErro] = useState(false)
+  // 18/11 (Ana: "são muitas placas"): digitar a placa ou a carga filtra a
+  // lista; se sobrar uma só opção, ela já fica escolhida.
+  const [filtro, setFiltro] = useState('')
+  const norm = (t: string) => t.toUpperCase().replace(/[^A-Z0-9]/g, '')
+  const f = norm(filtro)
+  const opcoesF = f ? opcoes.filter(o => norm(o.placa).includes(f) || norm(o.carga).includes(f)) : opcoes
+  const placasF = f ? listaPlacas.filter(p => norm(p).includes(f)) : listaPlacas
+  useEffect(() => {
+    if (!f) return
+    if (modo === 'redirecionar' && opcoesF.length === 1) setCarga(opcoesF[0].carga)
+    if (modo !== 'redirecionar' && placasF.length === 1) setPlacaA(placasF[0])
+  }, [f, modo]) // eslint-disable-line react-hooks/exhaustive-deps
   const sel = opcoes.find(o => o.carga === carga)
   const dica = MODOS_TROCA.find(m => m.modo === modo)?.dica ?? ''
 
@@ -897,7 +909,7 @@ function RedirecionarCarga({ placas, onConfirmada }: { placas: PlacaAoVivo[]; on
         const falhas = (j.movimentos ?? []).filter(m => !m.monitoramento.ok || m.semNotas)
         setAviso(`${modo === 'mutua' ? 'Troca mútua feita' : 'Placa substituída'}. O KPI recalcula em instantes.${falhas.length ? ` Atenção no monitoramento: ${falhas.map(m => `${m.de}→${m.para}${m.semNotas ? ' (sem notas no romaneio)' : ` (${m.monitoramento.erro})`}`).join(', ')}.` : ''}`)
       }
-      setCarga(''); setPlacaA(''); setPlacaB('')
+      setCarga(''); setPlacaA(''); setPlacaB(''); setFiltro('')
       onConfirmada()
     } finally { setEnviando(false) }
   }
@@ -918,24 +930,31 @@ function RedirecionarCarga({ placas, onConfirmada }: { placas: PlacaAoVivo[]; on
         </div>
         <p className="text-[12.5px] text-[var(--color-fg-muted)]">{dica}</p>
         <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">Buscar placa ou carga
+            <input value={filtro} onChange={e => setFiltro(e.target.value)} placeholder="ex.: 1J86 ou 102683" maxLength={10} aria-label="Buscar placa ou carga"
+              className="h-9 w-[160px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 text-[13px] uppercase text-[var(--color-fg)]" />
+          </label>
           {modo === 'redirecionar' ? (
-            <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">Carga
+            <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">Carga{f ? ` (${opcoesF.length} de ${opcoes.length})` : ''}
               <select value={carga} onChange={e => setCarga(e.target.value)} className="h-9 min-w-[220px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 text-[13px] text-[var(--color-fg)]">
-                <option value="">Escolha a carga</option>
-                {opcoes.map(o => <option key={`${o.carga}-${o.placa}`} value={o.carga}>Carga {o.carga} — {o.placa}</option>)}
+                <option value="">{f && opcoesF.length === 0 ? 'Nenhuma carga com isso' : 'Escolha a carga'}</option>
+                {sel && !opcoesF.includes(sel) && <option value={sel.carga}>Carga {sel.carga} — {sel.placa}</option>}
+                {opcoesF.map(o => <option key={`${o.carga}-${o.placa}`} value={o.carga}>Carga {o.carga} — {o.placa}</option>)}
               </select>
             </label>
           ) : (
             <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">Placa A (da escala)
               <select value={placaA} onChange={e => setPlacaA(e.target.value)} className="h-9 min-w-[160px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 text-[13px] text-[var(--color-fg)]">
-                <option value="">Escolha a placa</option>
-                {listaPlacas.map(p => <option key={p} value={p}>{p}</option>)}
+                <option value="">{f && placasF.length === 0 ? 'Nenhuma placa com isso' : 'Escolha a placa'}</option>
+                {placaA && !placasF.includes(placaA) && <option value={placaA}>{placaA}</option>}
+                {placasF.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </label>
           )}
           <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">{modo === 'redirecionar' ? 'Placa que fez a carga' : 'Placa B'}
-            <input value={placaB} onChange={e => setPlacaB(e.target.value)} placeholder="ex.: RBI1J86 ou 1J86" maxLength={8} onKeyDown={e => { if (e.key === 'Enter') void trocar() }}
+            <input value={placaB} onChange={e => setPlacaB(e.target.value)} placeholder="ex.: RBI1J86 ou 1J86" maxLength={8} list="placas-troca" onKeyDown={e => { if (e.key === 'Enter') void trocar() }}
               className="h-9 w-[150px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 text-[13px] uppercase text-[var(--color-fg)]" />
+            <datalist id="placas-troca">{listaPlacas.map(p => <option key={p} value={p} />)}</datalist>
           </label>
           <button type="button" disabled={enviando} onClick={() => void trocar()}
             className="inline-flex h-9 items-center rounded-full bg-[var(--color-navy-700)] px-4 text-[13px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] disabled:opacity-50">
