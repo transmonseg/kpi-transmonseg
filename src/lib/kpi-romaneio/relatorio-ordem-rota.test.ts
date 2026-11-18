@@ -96,11 +96,11 @@ describe('montarRelatorioOrdemRota', () => {
     })
   })
 
-  it('planilha: 6 abas, tabelas com filtro, hora de verdade, fora da ordem marcado', async () => {
+  it('planilha: 7 abas (com Km × plano), tabelas com filtro, hora de verdade, fora da ordem marcado', async () => {
     const buf = await gerarXlsxOrdemRota(filtrarRelatorio(r, { motoristas: ['JOAO'] }), 'Motorista: JOAO')
     const wb = new ExcelJS.Workbook()
     await wb.xlsx.load(buf as unknown as ExcelJS.Buffer)
-    expect(wb.worksheets.map(w => w.name)).toEqual(['Resumo', 'Motoristas', 'Placas', 'Viagens', 'Entregas', 'Clientes fora da ordem', 'Não entregues'])
+    expect(wb.worksheets.map(w => w.name)).toEqual(['Resumo', 'Motoristas', 'Placas', 'Viagens', 'Km × plano', 'Entregas', 'Clientes fora da ordem', 'Não entregues'])
     const e = wb.getWorksheet('Entregas')!
     expect(String(e.getCell('A2').value)).toMatch(/Motorista: JOAO/)
     const cab = (e.getRow(4).values as unknown[]).slice(1)

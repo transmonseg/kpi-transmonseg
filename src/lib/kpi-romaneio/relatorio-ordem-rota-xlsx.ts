@@ -9,7 +9,7 @@ import { KPI_COLORS } from '@/lib/kpi/kpi-styles'
 import { getLogoBuffer } from '@/lib/kpi/template-loader'
 import type { RelatorioOrdemRota } from './relatorio-ordem-rota'
 
-const LARANJA_BG = 'FFFDEBD3', LARANJA_TX = 'FF9A3412', VERDE_TX = 'FF166534', CINZA = 'FF64748B'
+const LARANJA_BG = 'FFFDEBD3', LARANJA_TX = 'FF9A3412', VERDE_TX = 'FF166534', VERDE_BG = 'FFDCFCE7', CINZA = 'FF64748B'
 const FONTE = 'Calibri'
 
 const dataExcel = (iso: string) => new Date(Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10))))
@@ -95,6 +95,87 @@ function destacarForaDaOrdem(ws: ExcelJS.Worksheet, de: number, ate: number, ult
   })
 }
 
+/** Negativo (andou menos que o plano) em verde, positivo em laranja. */
+function corSinal(ws: ExcelJS.Worksheet, col: string, de: number, ate: number) {
+  if (ate < de) return
+  ws.addConditionalFormatting({
+    ref: `${col}${de}:${col}${ate}`,
+    rules: [
+      { type: 'cellIs', operator: 'lessThan', formulae: ['0'], priority: 4, style: { font: { bold: true, color: { argb: VERDE_TX } } } },
+      { type: 'cellIs', operator: 'greaterThan', formulae: ['0'], priority: 5, style: { font: { bold: true, color: { argb: LARANJA_TX } } } },
+    ],
+  })
+}
+
+/** Bloco "Km × roteirização" do Resumo: cartões + 3 barras (plano, feito,
+ *  melhor ordem) na mesma escala. Devolve a linha onde a próxima tabela começa. */
+function blocoKm(ws: ExcelJS.Worksheet, r: RelatorioOrdemRota, linha: number): number {
+  const t = r.total
+  if (!t.viagensComKm) return linha
+  ws.mergeCells(linha, 1, linha, 7)
+  const tit = ws.getCell(linha, 1)
+  tit.value = 'KM × ROTEIRIZAÇÃO — o caminho feito foi mais curto ou mais longo que o plano?'
+  tit.font = { name: FONTE, size: 12, bold: true, color: { argb: KPI_COLORS.BRAND_BLUE } }
+  tit.border = { bottom: { style: 'medium', color: { argb: KPI_COLORS.BRAND_BLUE } } }
+  ws.getRow(linha).height = 24
+  const iguais = t.viagensComKm - t.maisCurtas - t.maisLongas
+  const dif = t.kmFeitoTotal - t.kmPlanoTotal
+  const cart: [string, number, string, string][] = [
+    ['Km no plano (roteirização)', t.kmPlanoTotal, '#,##0', KPI_COLORS.TEXT_DEFAULT],
+    ['Km feito', t.kmFeitoTotal, '#,##0', KPI_COLORS.TEXT_DEFAULT],
+    ['Feito × plano', t.kmPlanoTotal > 0 ? dif / t.kmPlanoTotal : 0, '+0.0%;-0.0%;0.0%', dif <= 0 ? VERDE_TX : LARANJA_TX],
+    ['Viagens mais curtas que o plano', t.maisCurtas, '#,##0', VERDE_TX],
+    ['Viagens mais longas que o plano', t.maisLongas, '#,##0', t.maisLongas > 0 ? LARANJA_TX : KPI_COLORS.TEXT_DEFAULT],
+    ['Praticamente iguais (até 1 km)', iguais, '#,##0', KPI_COLORS.TEXT_DEFAULT],
+    ['Km na melhor ordem (sugestão)', t.kmMelhorTotal, '#,##0', KPI_COLORS.BRAND_BLUE],
+  ]
+  const lr = linha + 2
+  cart.forEach(([rot, val, fmt, cor], i) => {
+    const a = ws.getCell(lr, i + 1), b = ws.getCell(lr + 1, i + 1)
+    a.value = rot
+    a.font = { name: FONTE, size: 9, bold: true, color: { argb: CINZA } }
+    a.alignment = { horizontal: 'center', vertical: 'bottom', wrapText: true }
+    b.value = val
+    b.numFmt = fmt
+    b.font = { name: FONTE, size: 20, bold: true, color: { argb: cor } }
+    b.alignment = { horizontal: 'center', vertical: 'middle' }
+    for (const c of [a, b]) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: i >= 3 && i <= 5 ? 'FFF0FDF4' : 'FFF1F5F9' } }
+  })
+  ws.getRow(lr).height = 26
+  ws.getRow(lr + 1).height = 36
+  // gráfico de barras dentro das células: mesma escala para comparar de olho
+  const barras: [string, number, string][] = [
+    ['Roteirização (plano)', t.kmPlanoTotal, 'FF94A3B8'],
+    ['Feito pelos motoristas', t.kmFeitoTotal, 'FF22C55E'],
+    ['Melhor ordem possível', t.kmMelhorTotal, 'FF3B82F6'],
+  ]
+  const max = Math.max(...barras.map(b => b[1]), 1)
+  const lb = lr + 3
+  barras.forEach(([rot, val, cor], i) => {
+    const row = lb + i
+    const a = ws.getCell(row, 1)
+    a.value = rot
+    a.font = { name: FONTE, size: 10, bold: true, color: { argb: KPI_COLORS.TEXT_DEFAULT } }
+    a.alignment = { vertical: 'middle', horizontal: 'right', indent: 1 }
+    ws.mergeCells(row, 2, row, 7)
+    const b = ws.getCell(row, 2)
+    b.value = val
+    b.numFmt = '#,##0" km"'
+    b.font = { name: FONTE, size: 10, bold: true, color: { argb: KPI_COLORS.TEXT_DEFAULT } }
+    b.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+    ws.getRow(row).height = 22
+    ws.addConditionalFormatting({
+      ref: `B${row}`,
+      rules: [{ type: 'dataBar', priority: 1, gradient: false, cfvo: [{ type: 'num', value: 0 }, { type: 'num', value: max }], color: { argb: cor } } as unknown as ExcelJS.ConditionalFormattingRule],
+    })
+  })
+  const nota = ws.getCell(lb + 3, 1)
+  ws.mergeCells(lb + 3, 1, lb + 3, 7)
+  nota.value = `Distância em linha reta entre as paradas do GPS, só nas ${t.viagensComKm.toLocaleString('pt-BR')} viagens com ponto confiável. Detalhe por viagem na aba "Km × plano".`
+  nota.font = { name: FONTE, size: 9, italic: true, color: { argb: KPI_COLORS.TEXT_MUTED } }
+  return lb + 5
+}
+
 export async function gerarXlsxOrdemRota(r: RelatorioOrdemRota, filtro = 'Sem filtro (todas as viagens)'): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
   wb.creator = 'Transmonseg KPI'
@@ -105,7 +186,7 @@ export async function gerarXlsxOrdemRota(r: RelatorioOrdemRota, filtro = 'Sem fi
 
   // ---------- Resumo ----------
   const res = wb.addWorksheet('Resumo', { properties: { tabColor: { argb: KPI_COLORS.BRAND_BLUE } } })
-  await cabecalho(wb, res, 'ORDEM DA ROTA — o motorista seguiu a roteirização?', sub, 6)
+  await cabecalho(wb, res, 'ORDEM DA ROTA — o motorista seguiu a roteirização?', sub, 7)
   const cartoes: [string, string | number, string][] = [
     ['Na ordem planejada', pct(r.total.pct), '0.0%'],
     ['Entregas analisadas', r.total.entregas, '#,##0'],
@@ -135,13 +216,25 @@ export async function gerarXlsxOrdemRota(r: RelatorioOrdemRota, filtro = 'Sem fi
   como.value = 'Como ler: em cada viagem, as entregas são ordenadas pela hora em que o caminhão chegou no cliente (GPS). "Na ordem" é a maior sequência que respeita a ordem planejada no relatório de ordem; as outras entregas foram feitas fora da ordem — o motorista pulou o cliente e voltou depois, ou inverteu a rota. "Km a mais" compara, em linha reta entre as paradas do GPS, o caminho feito com o caminho na ordem do plano: positivo = andou mais; negativo = fez um caminho mais curto que a roteirização (fora da ordem nem sempre é ruim). "Km na melhor ordem" é a ordem mais curta entre as mesmas paradas, para comparar com a roteirização. Use as abas abaixo e os filtros (setinhas) do cabeçalho de cada tabela para escolher motorista, placa, dia ou horário.'
   como.font = { name: FONTE, size: 10, color: { argb: KPI_COLORS.TEXT_MUTED } }
   como.alignment = { wrapText: true, vertical: 'top' }
-  const ini = 11
+  const ini = blocoKm(res, r, 11)
+  const kmDia = new Map<string, { plano: number; feito: number }>()
+  for (const v of r.viagens) {
+    if (v.kmPlano == null || v.kmFeito == null) continue
+    const k = kmDia.get(v.data) ?? { plano: 0, feito: 0 }
+    k.plano += v.kmPlano; k.feito += v.kmFeito
+    kmDia.set(v.data, k)
+  }
   tabela(res, 'PorDia', ini, [
     { titulo: 'Dia', largura: 19, formato: 'dd/mm/yyyy' }, { titulo: 'Entregas', largura: 19, formato: '#,##0' },
     { titulo: 'Na ordem', largura: 19, formato: '#,##0' }, { titulo: 'Fora da ordem', largura: 19, formato: '#,##0' },
     { titulo: '% na ordem', largura: 19, formato: '0.0%' }, { titulo: 'Viagens', largura: 19, formato: '#,##0' },
-  ], r.dias.map(d => [dataExcel(d.data), d.entregas, d.naOrdem, d.entregas - d.naOrdem, pct(d.pct), d.viagens]))
+    { titulo: 'Km feito × plano', largura: 19, formato: '+0.0%;-0.0%;0.0%' },
+  ], r.dias.map(d => {
+    const k = kmDia.get(d.data)
+    return [dataExcel(d.data), d.entregas, d.naOrdem, d.entregas - d.naOrdem, pct(d.pct), d.viagens, k && k.plano > 0 ? k.feito / k.plano - 1 : null]
+  }))
   barraPct(res, 'E', ini + 1, ini + r.dias.length)
+  corSinal(res, 'G', ini + 1, ini + r.dias.length)
   res.views = [{ state: 'normal' }]
 
   // ---------- Motoristas / Placas ----------
@@ -184,6 +277,53 @@ export async function gerarXlsxOrdemRota(r: RelatorioOrdemRota, filtro = 'Sem fi
     v.kmFeito, v.kmPlano, v.kmExtra, v.kmMelhor,
   ]))
   barraPct(wv, 'K', lv + 1, lv + r.viagens.length)
+
+  // ---------- Km × plano (uma linha por viagem, mais longas primeiro) ----------
+  // 18/11: o Rastreamento fez essa conta à mão (72 de 85 viagens mais curtas
+  // que a roteirização); agora vem pronta, com cor e barra.
+  const wk = wb.addWorksheet('Km × plano', { properties: { tabColor: { argb: 'FF16A34A' } } })
+  const lk = await cabecalho(wb, wk, 'KM × ROTEIRIZAÇÃO — por viagem (verde = caminho mais curto que o plano, laranja = mais longo)', sub, 13)
+  const comKm = r.viagens.filter(v => v.kmPlano != null && v.kmFeito != null && v.kmExtra != null)
+    .sort((a, b) => b.kmExtra! - a.kmExtra!)
+  tabela(wk, 'KmPlano', lk, [
+    { titulo: 'Dia', largura: 11, formato: 'dd/mm/yyyy' }, { titulo: 'Placa', largura: 10 }, { titulo: 'Motorista', largura: 30 },
+    { titulo: 'Romaneio', largura: 11 }, { titulo: 'Entregas', largura: 10, formato: '#,##0' },
+    { titulo: '% na ordem', largura: 12, formato: '0.0%' },
+    { titulo: 'Km no plano', largura: 12, formato: '#,##0.0' }, { titulo: 'Km feito', largura: 12, formato: '#,##0.0' },
+    { titulo: 'Diferença (km)', largura: 13, formato: '+#,##0.0;-#,##0.0;0.0' }, { titulo: 'Diferença (%)', largura: 13, formato: '+0.0%;-0.0%;0.0%' },
+    { titulo: 'Resultado', largura: 20 },
+    { titulo: 'Km na melhor ordem', largura: 13, formato: '#,##0.0' }, { titulo: 'Dava pra economizar (km)', largura: 14, formato: '#,##0.0' },
+  ], comKm.map(v => [
+    dataExcel(v.data), v.placa, v.motorista, v.romaneio, v.entregas, pct(v.pct),
+    v.kmPlano, v.kmFeito, v.kmExtra, v.kmPlano! > 0 ? v.kmExtra! / v.kmPlano! : null,
+    v.kmExtra! >= 1 ? 'MAIS LONGO' : v.kmExtra! <= -1 ? 'Mais curto' : 'Igual ao plano',
+    v.kmMelhor, v.kmMelhor != null ? Math.max(0, Math.round((v.kmFeito! - v.kmMelhor) * 10) / 10) : null,
+  ]))
+  if (comKm.length) {
+    const de = lk + 1, ate = lk + comKm.length
+    wk.addConditionalFormatting({
+      ref: `A${de}:M${ate}`,
+      rules: [
+        { type: 'expression', priority: 1, formulae: [`$K${de}="MAIS LONGO"`], style: { fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: LARANJA_BG } }, font: { color: { argb: LARANJA_TX } } } },
+      ],
+    })
+    wk.addConditionalFormatting({
+      ref: `K${de}:K${ate}`,
+      rules: [
+        { type: 'cellIs', operator: 'equal', formulae: ['"MAIS LONGO"'], priority: 2, style: { font: { bold: true, color: { argb: LARANJA_TX } } } },
+        { type: 'cellIs', operator: 'equal', formulae: ['"Mais curto"'], priority: 3, style: { font: { bold: true, color: { argb: VERDE_TX } }, fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: VERDE_BG } } } },
+      ],
+    })
+    // cor só a partir de 1 km (mesmo corte do "Resultado"): +0,9 km não é andar mais
+    wk.addConditionalFormatting({
+      ref: `I${de}:J${ate}`,
+      rules: [
+        { type: 'expression', priority: 4, formulae: [`$I${de}<=-1`], style: { font: { bold: true, color: { argb: VERDE_TX } } } },
+        { type: 'expression', priority: 5, formulae: [`$I${de}>=1`], style: { font: { bold: true, color: { argb: LARANJA_TX } } } },
+      ],
+    })
+    barraPct(wk, 'F', de, ate)
+  }
 
   // ---------- Entregas (sequência) ----------
   const we = wb.addWorksheet('Entregas', { properties: { tabColor: { argb: 'FFF59E0B' } } })
