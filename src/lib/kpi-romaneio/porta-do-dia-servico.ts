@@ -30,7 +30,7 @@ export const depsReaisPortaRQ: DepsPortaRQ = {
     await guardarDiaAoVivo({ cliente: 'rioquality', data, escala: [], romaneio: entregas, pao: { linhas: [], escala: [] }, escalaEnviada: false, paoEnviado: false, enviadoPor })
   },
   async enviarMonitoramento(data, entregas, enviadoPor) {
-    return enviarRioQualityAoMonitoramento(data, await linhasComCoordenadasRQ(entregas), { enviadoPor })
+    return enviarRioQualityAoMonitoramento(data, await linhasComCoordenadasRQ(entregas, data), { enviadoPor })
   },
 }
 

@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     // F2-04 (KRQ-03, AC-04): a planilha substitui a versão da Fusion também no
     // monitoramento (21/10: subida às 15:01, o mapa ficou o dia todo sem a RQ),
     // com o e-mail de quem subiu e a coordenada que o KPI já resolveu.
-    const mon = await enviarRioQualityAoMonitoramento(data, await linhasComCoordenadasRQ(entregas), { enviadoPor: a.email })
+    const mon = await enviarRioQualityAoMonitoramento(data, await linhasComCoordenadasRQ(entregas, data), { enviadoPor: a.email })
     const resumoMon = resumoEnvioRQ(data, mon)
     if (resumoMon) console.error(`[kpi/ao-vivo] ${resumoMon}`)
     return NextResponse.json({

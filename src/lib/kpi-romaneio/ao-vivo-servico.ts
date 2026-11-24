@@ -24,6 +24,9 @@ import { versaoDasRegras } from './versao-regras'
 import { NOME_FONTE, textoAviso } from './gerador-xlsx'
 import { avisosQueBloqueiamPublicacao, motivosDoBloqueio, textoFechamentoProvisorio } from './publicacao'
 import type { EntregaRioQualityCompleta } from '@/lib/kpi-rioquality/parse-planilhas'
+import { aplicarTrocasRQ } from '@/lib/kpi-rioquality/trocas-rq'
+import { buscarTrocasDoDia } from './trocas-placa'
+import { EMPRESA_RIOQUALITY } from './constants'
 import { checkInsPorNfRQ } from '@/lib/kpi-rioquality/checkin-pista'
 
 export const CLIENTES_AO_VIVO = ['nutrimax', 'rioquality'] as const
@@ -207,10 +210,14 @@ export async function entradaDoDia(cliente: ClienteAoVivo, data: string): Promis
 }
 
 /** Rio Quality: as entregas lidas de manhã (Relatório de Entregas). */
-export async function entradaRioQualityDoDia(data: string): Promise<EntregaRioQualityCompleta[] | null> {
+export async function entradaRioQualityDoDia(data: string, opcoes: { semTrocas?: boolean } = {}): Promise<EntregaRioQualityCompleta[] | null> {
   const { data: d, error } = await createServiceClient().from('kpi_ao_vivo_dia').select('romaneio').eq('cliente', 'rioquality').eq('data', data).maybeSingle()
   if (error) throw new Error(error.message)
-  return d ? (d.romaneio as EntregaRioQualityCompleta[]) : null
+  if (!d) return null
+  const entregas = d.romaneio as EntregaRioQualityCompleta[]
+  // 24/11: troca de placa da RQ (Ao vivo) vale pra tudo que lê o dia.
+  if (opcoes.semTrocas) return entregas
+  return aplicarTrocasRQ(entregas, await buscarTrocasDoDia(EMPRESA_RIOQUALITY, data))
 }
 
 /** KPI do dia com o que foi guardado de manhã (mesma geração da tela

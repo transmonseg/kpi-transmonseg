@@ -428,10 +428,10 @@ export default function AoVivoPage() {
       {!historico && cliente === 'nutrimax' && r?.sugestoesTroca && r.sugestoesTroca.length > 0 && (
         <TrocasSugeridas sugestoes={r.sugestoesTroca} onConfirmada={carregar} />
       )}
-      {!historico && cliente === 'nutrimax' && r && <RedirecionarCarga placas={placas} onConfirmada={carregar} />}
+      {!historico && r && <RedirecionarCarga cliente={cliente} placas={placas} onConfirmada={carregar} />}
       {/* F3-03 (ACH-02): fila "Conferir" -- o que conferir primeiro e a conferência por NF. */}
       {r && <FilaConferir key={`${cliente}-${estado.data}`} cliente={cliente} nomeCliente={NOME_CLIENTE[cliente]} data={estado.data} historico={historico} placas={placas} resumo={r.resumo} meta={meta} onMudou={carregar}
-        onTrocarCarga={cliente === 'nutrimax' && !historico ? abrirTrocaDeCarga : undefined} />}
+        onTrocarCarga={!historico ? abrirTrocaDeCarga : undefined} />}
       {r && <InvestigacaoNaoEntregues placas={placas} onPlaca={pl => { setPlacaSel(pl); setNfAberta(null); setVendoDetalhe(true) }} />}
       {/* F3-06 (ING-10, ING-16): recibo do último envio -- contagens e divergências, sem bloquear. */}
       {ultimoEnvio && <ReciboEnvio envio={ultimoEnvio} />}
@@ -865,7 +865,9 @@ const MODOS_TROCA: { modo: ModoTroca; rotulo: string; dica: string }[] = [
   { modo: 'substituir', rotulo: 'Substituir placa', dica: 'A placa A não saiu: toda a carga dela passa pra placa B.' },
 ]
 
-function RedirecionarCarga({ placas, onConfirmada }: { placas: PlacaAoVivo[]; onConfirmada: () => void }) {
+function RedirecionarCarga({ cliente, placas, onConfirmada }: { cliente: Cliente; placas: PlacaAoVivo[]; onConfirmada: () => void }) {
+  // 24/11: na Rio Quality a "carga" é o romaneio do dia.
+  const nomeCarga = cliente === 'rioquality' ? 'Romaneio' : 'Carga'
   const opcoes = placas.flatMap(p => p.cargas.map(c => ({ carga: c, placa: p.placa })))
   const listaPlacas = [...new Set(placas.map(p => p.placa))]
   const [modo, setModo] = useState<ModoTroca>('redirecionar')
@@ -899,12 +901,12 @@ function RedirecionarCarga({ placas, onConfirmada }: { placas: PlacaAoVivo[]; on
     if ('erro' in payload) { setAviso(payload.erro); setAvisoErro(true); return }
     setEnviando(true); setAviso(null); setAvisoErro(false)
     try {
-      const r = await fetch('/api/kpi/ao-vivo/troca', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
+      const r = await fetch('/api/kpi/ao-vivo/troca', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...payload, cliente }) })
       if (!r.ok) { setAviso(`Não deu pra trocar: ${await r.text()}`); setAvisoErro(true); return }
       const j = (await r.json()) as { acao?: string; placaReal?: string; monitoramento?: { ok: boolean; erro?: string }; movimentos?: { de: string; para: string; semNotas?: boolean; monitoramento: { ok: boolean; erro?: string } }[] }
       setAvisoErro(mensagemDaTroca(j).ok === false)
       if (modo === 'redirecionar') {
-        setAviso(`${j.acao === 'desfazer' ? 'Troca desfeita' : 'Carga redirecionada'}: carga ${carga} agora é do ${j.placaReal ?? placaB.trim().toUpperCase()}. O KPI recalcula em instantes.${j.monitoramento && !j.monitoramento.ok ? ` Monitoramento não atualizou (${j.monitoramento.erro}).` : ''}`)
+        setAviso(`${j.acao === 'desfazer' ? 'Troca desfeita' : `${nomeCarga} redirecionad${cliente === 'rioquality' ? 'o' : 'a'}`}: ${nomeCarga.toLowerCase()} ${carga} agora é do ${j.placaReal ?? placaB.trim().toUpperCase()}. O KPI recalcula em instantes.${j.monitoramento && !j.monitoramento.ok ? ` Monitoramento não atualizou (${j.monitoramento.erro}).` : ''}`)
       } else {
         const falhas = (j.movimentos ?? []).filter(m => !m.monitoramento.ok || m.semNotas)
         setAviso(`${modo === 'mutua' ? 'Troca mútua feita' : 'Placa substituída'}. O KPI recalcula em instantes.${falhas.length ? ` Atenção no monitoramento: ${falhas.map(m => `${m.de}→${m.para}${m.semNotas ? ' (sem notas no romaneio)' : ` (${m.monitoramento.erro})`}`).join(', ')}.` : ''}`)
@@ -930,16 +932,16 @@ function RedirecionarCarga({ placas, onConfirmada }: { placas: PlacaAoVivo[]; on
         </div>
         <p className="text-[12.5px] text-[var(--color-fg-muted)]">{dica}</p>
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">Buscar placa ou carga
-            <input value={filtro} onChange={e => setFiltro(e.target.value)} placeholder="ex.: 1J86 ou 102683" maxLength={10} aria-label="Buscar placa ou carga"
+          <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">Buscar placa ou {nomeCarga.toLowerCase()}
+            <input value={filtro} onChange={e => setFiltro(e.target.value)} placeholder="ex.: 1J86 ou 102683" maxLength={10} aria-label={`Buscar placa ou ${nomeCarga.toLowerCase()}`}
               className="h-9 w-[160px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 text-[13px] uppercase text-[var(--color-fg)]" />
           </label>
           {modo === 'redirecionar' ? (
-            <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">Carga{f ? ` (${opcoesF.length} de ${opcoes.length})` : ''}
+            <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">{nomeCarga}{f ? ` (${opcoesF.length} de ${opcoes.length})` : ''}
               <select value={carga} onChange={e => setCarga(e.target.value)} className="h-9 min-w-[220px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 text-[13px] text-[var(--color-fg)]">
-                <option value="">{f && opcoesF.length === 0 ? 'Nenhuma carga com isso' : 'Escolha a carga'}</option>
-                {sel && !opcoesF.includes(sel) && <option value={sel.carga}>Carga {sel.carga} — {sel.placa}</option>}
-                {opcoesF.map(o => <option key={`${o.carga}-${o.placa}`} value={o.carga}>Carga {o.carga} — {o.placa}</option>)}
+                <option value="">{f && opcoesF.length === 0 ? `Nenhum${cliente === 'rioquality' ? '' : 'a'} ${nomeCarga.toLowerCase()} com isso` : `Escolha ${cliente === 'rioquality' ? 'o' : 'a'} ${nomeCarga.toLowerCase()}`}</option>
+                {sel && !opcoesF.includes(sel) && <option value={sel.carga}>{nomeCarga} {sel.carga} — {sel.placa}</option>}
+                {opcoesF.map(o => <option key={`${o.carga}-${o.placa}`} value={o.carga}>{nomeCarga} {o.carga} — {o.placa}</option>)}
               </select>
             </label>
           ) : (
@@ -951,7 +953,7 @@ function RedirecionarCarga({ placas, onConfirmada }: { placas: PlacaAoVivo[]; on
               </select>
             </label>
           )}
-          <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">{modo === 'redirecionar' ? 'Placa que fez a carga' : 'Placa B'}
+          <label className="flex flex-col gap-1 text-[12px] text-[var(--color-fg-muted)]">{modo === 'redirecionar' ? `Placa que fez ${cliente === 'rioquality' ? 'o romaneio' : 'a carga'}` : 'Placa B'}
             <input value={placaB} onChange={e => setPlacaB(e.target.value)} placeholder="ex.: RBI1J86 ou 1J86" maxLength={8} list="placas-troca" onKeyDown={e => { if (e.key === 'Enter') void trocar() }}
               className="h-9 w-[150px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 text-[13px] uppercase text-[var(--color-fg)]" />
             <datalist id="placas-troca">{listaPlacas.map(p => <option key={p} value={p} />)}</datalist>

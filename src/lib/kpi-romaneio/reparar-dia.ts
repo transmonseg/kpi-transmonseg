@@ -241,7 +241,7 @@ export const depsReaisReparoRQ: DepsReparoRQ = {
   },
   linhasNoMonitoramento: contarRioQualityNoMonitoramento,
   async reenviar(data, entregas, enviadoPor) {
-    return enviarRioQualityAoMonitoramento(data, await linhasComCoordenadasRQ(entregas), { enviadoPor })
+    return enviarRioQualityAoMonitoramento(data, await linhasComCoordenadasRQ(entregas, data), { enviadoPor })
   },
   lerEstado(data) {
     try {

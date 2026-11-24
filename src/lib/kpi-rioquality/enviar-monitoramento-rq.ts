@@ -8,6 +8,9 @@
 import { montarEnderecoBrutoCompleto, removerEntregasRepetidas, type EntregaRioQualityCompleta } from './parse-planilhas'
 import { normPlaca } from '@/lib/unitrac-api'
 import { coordenadasConfiaveisDoCache } from '@/lib/kpi-romaneio/geocode'
+import { buscarTrocasDoDia } from '@/lib/kpi-romaneio/trocas-placa'
+import { EMPRESA_RIOQUALITY } from '@/lib/kpi-romaneio/constants'
+import { aplicarTrocasRQ } from './trocas-rq'
 
 /** cod_user_unitrac da Rio Quality no monitoramento (clientes). */
 export const COD_MONITORAMENTO_RQ = '598'
@@ -59,7 +62,10 @@ export function linhasParaMonitoramentoRQ(
 
 /** linhasParaMonitoramentoRQ com a coordenada do cache do KPI (só leitura,
  *  sem rede). Fail-open: sem cache, vai sem coordenada (o monitoramento geocodifica). */
-export async function linhasComCoordenadasRQ(entregas: EntregaRioQualityCompleta[]): Promise<LinhaMonitoramentoRQ[]> {
+export async function linhasComCoordenadasRQ(entregasBrutas: EntregaRioQualityCompleta[], data?: string): Promise<LinhaMonitoramentoRQ[]> {
+  // 24/11: com o dia, a troca de placa registrada no Ao vivo vai junto (senão
+  // o reenvio da Fusion devolvia as notas pro carro da escala).
+  const entregas = data ? aplicarTrocasRQ(entregasBrutas, await buscarTrocasDoDia(EMPRESA_RIOQUALITY, data)) : entregasBrutas
   const enderecos = linhasParaMonitoramentoRQ(entregas).map(l => l.enderecoBruto)
   const coords = await coordenadasConfiaveisDoCache(enderecos).catch(() => new Map<string, { lat: number; lng: number }>())
   return linhasParaMonitoramentoRQ(entregas, coords)
