@@ -179,6 +179,25 @@ export function sugerirTrocas(pontos: PontoCarga[], paradasPorPlaca: Map<string,
     : !mutuas.some(m => m.placaEscala === s.placaSugerida && m.placaSugerida === s.placaEscala))
 }
 
+/** Cargas em que o carro da escala passou em no máximo 20% dos endereços (ou
+ *  veio sem placa) -- as únicas em que `sugerirTrocas` procura outro carro.
+ *  A RQ usa pra só buscar o GPS da frota inteira quando há o que procurar
+ *  (24/11). */
+export function cargasSemEscalado(pontos: PontoCarga[], paradasPorPlaca: Map<string, UnitracParadaRow[]>): string[] {
+  const porCarga = new Map<string, PontoCarga[]>()
+  for (const p of pontos) porCarga.set(p.carga, [...(porCarga.get(p.carga) ?? []), p])
+  const out: string[] = []
+  for (const [carga, ps] of porCarga) {
+    const enderecos = [...new Map(ps.map(p => [p.endereco, p])).values()]
+    if (enderecos.length < MIN_ENDERECOS) continue
+    const placa = ps[0].placa
+    const fb = placa ? paradasForaDaBase(paradasPorPlaca.get(placa) ?? []) : []
+    const feitos = enderecos.filter(e => fb.some(s => haversine(e.lat, e.lng, s.lat, s.lng) <= RAIO_ENDERECO_M)).length
+    if (feitos <= FRACAO_MAX_ESCALADO * enderecos.length) out.push(carga)
+  }
+  return out
+}
+
 /** Dias distintos em que a operação confirmou cada placa real pra esta carga:
  *  pela placa da escala (RQO5E38 -> TOS5E38 em 15, 21, 22/10) ou, na carga do
  *  pão sem placa, pelo número da carga (PAO-6 -> RQM4C16 em 08 e 13/10). */

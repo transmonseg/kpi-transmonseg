@@ -28,6 +28,8 @@ import { aplicarTrocasRQ } from '@/lib/kpi-rioquality/trocas-rq'
 import { buscarTrocasDoDia } from './trocas-placa'
 import { EMPRESA_RIOQUALITY } from './constants'
 import { checkInsPorNfRQ } from '@/lib/kpi-rioquality/checkin-pista'
+import { sugerirTrocasRQ } from '@/lib/kpi-rioquality/sugerir-trocas-rq'
+import { buscarParadasPadraoRioQuality } from '@/lib/kpi-rioquality/pipeline'
 
 export const CLIENTES_AO_VIVO = ['nutrimax', 'rioquality'] as const
 export const NOME_CLIENTE_AO_VIVO: Record<ClienteAoVivo, string> = { nutrimax: 'Nutry Max', rioquality: 'Rio Quality' }
@@ -348,19 +350,22 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
     let paradasDoDia = new Map<string, UnitracParadaRow[]>()
     let trajetoPorNf = new Map<string, number>()
     const ehHoje = data === hojeBR()
+    // Linhas do romaneio com ponto (a RQ sugere o carro trocado depois do cálculo, 24/11).
+    let geoDoDia: Parameters<typeof sugerirTrocasRQ>[1] = []
     const ctxTroca = cliente === 'nutrimax'
       ? await contextoSugestaoTroca(data, ((temDia as EntradaKpiNutrimax).pao?.linhas ?? []), log)
       : null
     // Ponto do cliente, parada da entrega e paradas do dia -- igual nos dois
     // clientes (F2-03: a RQ ficava sem ponto e toda investigacao "sem_coordenada").
     const registrarDetalhe = ({ romaneioGeo, detalhe, paradasPorPlaca, menorDistanciaTrajetoPorNf }: {
-      romaneioGeo: { nf: string; lat: number | null; lng: number | null; geoConfiavel?: boolean; geoPrecisao?: string; geoFonte?: string }[]
+      romaneioGeo: { nf: string; carga: string; placa: string; endereco: string; lat: number | null; lng: number | null; geoConfiavel?: boolean; geoPrecisao?: string; geoFonte?: string }[]
       detalhe: { nf: string; placa: string; chegada: string | null }[]
       paradasPorPlaca: Map<string, UnitracParadaRow[]>
       menorDistanciaTrajetoPorNf: Map<string, number>
     }) => {
       paradasDoDia = paradasPorPlaca
       trajetoPorNf = menorDistanciaTrajetoPorNf
+      geoDoDia = romaneioGeo
       // F2-REV-04: ponto nao confiavel (fallback do monitoramento na RQ, resgate
       // por ancora na Nutry) vai ao mapa marcado -- nao sustenta "nao passou".
       for (const l of romaneioGeo) if (l.lat != null && l.lng != null) coords.set(l.nf, { lat: l.lat, lng: l.lng, ...(l.geoConfiavel === false ? { impreciso: true } : {}), ...(l.geoPrecisao ? { precisao: l.geoPrecisao } : {}), ...(l.geoFonte ? { fonte: l.geoFonte } : {}) })
@@ -390,6 +395,15 @@ export async function calcularAoVivo(cliente: ClienteAoVivo, data: string, log: 
       },
     }, registrarDetalhe)
     if (!r) throw new Error('romaneio do dia sumiu durante o cálculo')
+    // 24/11 (Eric): "Carro trocado?" também na RQ, com o GPS da frota inteira.
+    if (cliente === 'rioquality') {
+      try {
+        sugestoesTroca = await sugerirTrocasRQ(data, geoDoDia, paradasDoDia, {
+          frota: await buscarFrotaRioQuality(), buscarParadas: buscarParadasPadraoRioQuality,
+          buscarForaDaEscala: !foraDoAlcanceApi(data, hojeBR()), log,
+        })
+      } catch (e) { log(`carro trocado RQ ${data}: sugestão falhou (${(e as Error).message})`) }
+    }
     // RQ-08 (auditoria 20/10): cálculo degradado (ponte de coerência fora --
     // o corredor da rua some e 80-100 entregues caíam entre ticks) não
     // sobrescreve um resultado bom do dia; fica o anterior e o erro registrado.

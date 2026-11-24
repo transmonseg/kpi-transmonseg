@@ -425,8 +425,8 @@ export default function AoVivoPage() {
           </section>
         )
       })()}
-      {!historico && cliente === 'nutrimax' && r?.sugestoesTroca && r.sugestoesTroca.length > 0 && (
-        <TrocasSugeridas sugestoes={r.sugestoesTroca} onConfirmada={carregar} />
+      {!historico && r?.sugestoesTroca && r.sugestoesTroca.length > 0 && (
+        <TrocasSugeridas cliente={cliente} sugestoes={r.sugestoesTroca} onConfirmada={carregar} />
       )}
       {!historico && r && <RedirecionarCarga cliente={cliente} placas={placas} onConfirmada={carregar} />}
       {/* F3-03 (ACH-02): fila "Conferir" -- o que conferir primeiro e a conferência por NF. */}
@@ -816,7 +816,8 @@ function Mini({ rotulo, valor, destaque, longe, titulo }: { rotulo: string; valo
  *  outro parou na maioria dos endereços. F1-02: troca mútua e carga absorvida;
  *  F1-03: carga do pão sem placa; F1-04: placa fora da frota/troca recorrente.
  *  A operação confirma; nada é trocado sozinho. */
-function TrocasSugeridas({ sugestoes, onConfirmada }: { sugestoes: SugestaoTroca[]; onConfirmada: () => void }) {
+function TrocasSugeridas({ cliente, sugestoes, onConfirmada }: { cliente: Cliente; sugestoes: SugestaoTroca[]; onConfirmada: () => void }) {
+  const nomeCarga = cliente === 'rioquality' ? 'Romaneio' : 'Carga'
   const [enviando, setEnviando] = useState<string | null>(null)
   const [aviso, setAviso] = useState<{ ok: boolean; texto: string } | null>(null)
   // Placa digitada por carga (opcional): vale no lugar da sugerida; vazio mantém a sugestão.
@@ -824,7 +825,7 @@ function TrocasSugeridas({ sugestoes, onConfirmada }: { sugestoes: SugestaoTroca
   async function confirmar(s: SugestaoTroca) {
     setEnviando(s.carga); setAviso(null)
     try {
-      const r = await fetch('/api/kpi/ao-vivo/troca', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(corpoSugestao(s, undefined, digitadas[s.carga])) })
+      const r = await fetch('/api/kpi/ao-vivo/troca', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...corpoSugestao(s, undefined, digitadas[s.carga]), cliente }) })
       if (!r.ok) { setAviso({ ok: false, texto: `Não deu pra trocar: ${await r.text()}` }); return }
       // F1-05: monitoramento que não moveu nada aparece como erro, não "registrada".
       setAviso(mensagemDaTroca(await r.json() as RespostaTroca))
@@ -839,8 +840,8 @@ function TrocasSugeridas({ sugestoes, onConfirmada }: { sugestoes: SugestaoTroca
       <ul className="flex flex-col gap-1.5">
         {sugestoes.map(s => (
           <li key={s.carga} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-[var(--color-fg-muted)]">
-            <span>{textoSugestao(s)}</span>
-            <input value={digitadas[s.carga] ?? ''} onChange={e => setDigitadas(d => ({ ...d, [s.carga]: e.target.value }))} placeholder="ou digite a placa" maxLength={8} aria-label={`Outra placa para a carga ${s.carga}`}
+            <span>{textoSugestao(s, nomeCarga)}</span>
+            <input value={digitadas[s.carga] ?? ''} onChange={e => setDigitadas(d => ({ ...d, [s.carga]: e.target.value }))} placeholder="ou digite a placa" maxLength={8} aria-label={`Outra placa para ${nomeCarga.toLowerCase()} ${s.carga}`}
               onKeyDown={e => { if (e.key === 'Enter' && enviando == null) void confirmar(s) }}
               className="h-8 w-[130px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 text-[12.5px] uppercase text-[var(--color-fg)]" />
             <button type="button" disabled={enviando != null} onClick={() => confirmar(s)}
