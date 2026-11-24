@@ -400,9 +400,14 @@ function TabelaPlacas({ placas, umDia, meta, onPlaca, ordem: ordemRota }: { plac
   }, [ordemRota])
   const [busca, setBusca] = useState('')
   const [ordem, setOrdem] = useState<{ col: Col; desc: boolean }>({ col: 'taxa', desc: false })
+  // 23/11 (gestor: "esses aí não tiveram nota dia 20, fica feio"): placa da
+  // escala sem nenhuma nota na conta (carro trocado ou que não saiu) sai da
+  // tabela e vira uma linha discreta embaixo.
+  const comNota = useMemo(() => placas.filter(p => p.nfPlanejado - p.nfForaDaConta > 0), [placas])
+  const semNota = useMemo(() => placas.filter(p => p.nfPlanejado - p.nfForaDaConta <= 0).map(p => p.placa).sort(), [placas])
   const linhas = useMemo(() => {
     const b = busca.trim().toUpperCase()
-    const f = placas.filter(p => !b || p.placa.includes(b) || p.motorista.toUpperCase().includes(b) || p.destino.toUpperCase().includes(b))
+    const f = comNota.filter(p => !b || p.placa.includes(b) || p.motorista.toUpperCase().includes(b) || p.destino.toUpperCase().includes(b))
     const v = (p: PlacaAgg): number | string => {
       switch (ordem.col) {
         case 'placa': return p.placa
@@ -420,7 +425,7 @@ function TabelaPlacas({ placas, umDia, meta, onPlaca, ordem: ordemRota }: { plac
       const r = typeof x === 'string' ? x.localeCompare(y as string) : (x as number) - (y as number)
       return ordem.desc ? -r : r
     })
-  }, [placas, busca, ordem, ordemPorPlaca])
+  }, [comNota, busca, ordem, ordemPorPlaca])
 
   const th = (col: Col, rotulo: string, dir = false) => (
     <th className={`whitespace-nowrap px-4 py-2.5 font-medium ${dir ? 'text-right' : 'text-left'}`}>
@@ -501,6 +506,11 @@ function TabelaPlacas({ placas, umDia, meta, onPlaca, ordem: ordemRota }: { plac
           </tbody>
         </table>
       </div>
+      {semNota.length > 0 && (
+        <p className="px-5 pt-3 text-[12px] text-[var(--color-fg-subtle)]">
+          {semNota.length === 1 ? '1 placa da escala ficou' : `${semNota.length} placas da escala ficaram`} sem nota na conta (carro trocado ou que não saiu): {semNota.join(', ')}
+        </p>
+      )}
     </div>
   )
 }
