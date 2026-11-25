@@ -33,3 +33,10 @@ describe('corpoSugestao', () => {
       .toEqual({ modo: 'mutua', data: '2026-10-16', placaEscala: 'RBI0J25', placaB: 'TOS0G53' })
   })
 })
+
+describe('textoSugestao na Rio Quality (25/11)', () => {
+  it('diz que a placa veio da Fusion, não da escala', () => {
+    expect(textoSugestao({ carga: '1185279', placaEscala: 'RKC3J00', placaSugerida: 'LTU7C96', enderecosVisitados: 17, enderecosDaCarga: 27, modo: 'redirecionar', motivo: 'livre' }, 'Romaneio'))
+      .toBe('Romaneio 1185279: na Fusion está no RKC3J00, mas ele não passou nos clientes; o LTU7C96 parou em 17 de 27 endereços.')
+  })
+})

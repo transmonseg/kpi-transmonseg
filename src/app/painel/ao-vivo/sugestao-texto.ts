@@ -12,6 +12,8 @@ export function textoSugestao(s: SugestaoTroca, nomeCarga = 'Carga'): string {
   if (s.modo === 'mutua') return `${nomeCarga} ${s.carga}: o ${s.placaEscala} e o ${s.placaSugerida} trocaram as cargas entre si; o ${s.placaSugerida} ${conta} do ${s.placaEscala}${conf}.`
   if (!s.placaEscala) return `${nomeCarga} ${s.carga} veio sem placa; o ${s.placaSugerida} ${conta}${conf}.`
   if (s.motivo === 'fora_da_frota') return `${nomeCarga} ${s.carga}: a placa ${s.placaEscala} não existe na frota; o ${s.placaSugerida} ${conta}${conf}.`
+  // 25/11 (Ana): na RQ a placa vem do cadastro do romaneio na Fusion, não de escala.
+  if (nomeCarga === 'Romaneio') return `${nomeCarga} ${s.carga}: na Fusion está no ${s.placaEscala}, mas ele não passou nos clientes; o ${s.placaSugerida} ${conta}${conf}.`
   return `${nomeCarga} ${s.carga}: o ${s.placaEscala} da escala não passou nos clientes; o ${s.placaSugerida} ${conta}${conf}.`
 }
 
