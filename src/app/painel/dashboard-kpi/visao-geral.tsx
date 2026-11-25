@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   ArrowDown, ArrowUp, Truck, Package, Storefront, Path, Timer, Clock, HourglassMedium, SunHorizon,
-  MagnifyingGlass, CaretUpDown, UploadSimple, DownloadSimple, CaretRight,
+  MagnifyingGlass, CaretUpDown, UploadSimple, DownloadSimple, CaretRight, LinkSimple, Check,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 import { LinhaTaxa, Colunas } from './graficos'
@@ -27,16 +27,21 @@ const CTRL = 'h-9 rounded-[var(--radius-md)] border border-[var(--color-border)]
 
 // 04/11: o dashboard é do cliente -- nada de cartão de conferência interna
 // (A revisar, Sem rastreador, Não foi ao cliente); isso fica no Ao vivo.
-export function VisaoGeral({ cliente, dataInicial, podeInserir, onInserir }: {
+export function VisaoGeral({ cliente, dataInicial, podeInserir, onInserir, link }: {
   cliente: ClienteDash
   dataInicial?: string
   podeInserir: boolean
-  onInserir: () => void
+  onInserir?: () => void
+  /** 25/11: Dashboard compartilhado -- travado no período do link, sem login. */
+  link?: { token: string; de: string; ate: string }
 }) {
-  const [periodo, setPeriodo] = useState<Periodo>(dataInicial ? 'dia' : 'mes')
-  const [data, setData] = useState(dataInicial ?? hoje())
-  const [de, setDe] = useState(somarDias(hoje(), -13))
-  const [ate, setAte] = useState(hoje())
+  const [periodo, setPeriodo] = useState<Periodo>(link ? (link.de === link.ate ? 'dia' : 'custom') : dataInicial ? 'dia' : 'mes')
+  const [data, setData] = useState(link?.de ?? dataInicial ?? hoje())
+  const [de, setDe] = useState(link?.de ?? somarDias(hoje(), -13))
+  const [ate, setAte] = useState(link?.ate ?? hoje())
+  // Com link, toda leitura leva o token e não busca o período anterior (fica
+  // só o que foi compartilhado; sem as setas de comparação).
+  const sufixo = link ? `&link=${link.token}` : ''
   const [dias, setDias] = useState<DiaKpi[] | null>(null)
   const [anteriores, setAnteriores] = useState<DiaKpi[]>([])
   const [lojas, setLojas] = useState<{ atual: DadosLojas; anterior: DadosLojas | null } | null>(null)
@@ -52,27 +57,27 @@ export function VisaoGeral({ cliente, dataInicial, podeInserir, onInserir }: {
     let vivo = true
     setDias(null); setErro(false)
     const [aDe, aAte] = intervaloAnterior(faixa)
-    const q = (x: string, y: string) => fetch(`/api/dashboard-kpi?cliente=${cliente}&de=${x}&ate=${y}`).then(r => { if (!r.ok) throw new Error(); return r.json() })
-    Promise.all([q(faixa[0], faixa[1]), q(aDe, aAte)])
+    const q = (x: string, y: string) => fetch(`/api/dashboard-kpi?cliente=${cliente}&de=${x}&ate=${y}${sufixo}`).then(r => { if (!r.ok) throw new Error(); return r.json() })
+    Promise.all([q(faixa[0], faixa[1]), sufixo ? { dias: [] } : q(aDe, aAte)])
       .then(([a, b]) => { if (vivo) { setDias(a.dias); setAnteriores(b.dias) } })
       .catch(() => { if (vivo) setErro(true) })
     return () => { vivo = false }
-  }, [cliente, faixa, tentativa])
+  }, [cliente, faixa, tentativa, sufixo])
 
   // Lojas/tempo na loja: à parte e sem travar a tela (falhou = some a seção).
   useEffect(() => {
     let vivo = true
     setLojas(null)
     const [aDe, aAte] = intervaloAnterior(faixa)
-    const q = (x: string, y: string) => fetch(`/api/dashboard-kpi/lojas?cliente=${cliente}&de=${x}&ate=${y}`).then(r => (r.ok ? r.json() as Promise<DadosLojas> : null))
-    Promise.all([q(faixa[0], faixa[1]), q(aDe, aAte).catch(() => null)])
+    const q = (x: string, y: string) => fetch(`/api/dashboard-kpi/lojas?cliente=${cliente}&de=${x}&ate=${y}${sufixo}`).then(r => (r.ok ? r.json() as Promise<DadosLojas> : null))
+    Promise.all([q(faixa[0], faixa[1]), sufixo ? null : q(aDe, aAte).catch(() => null)])
       .then(([a, b]) => { if (vivo && a) setLojas({ atual: a, anterior: b }) })
       .catch(() => {})
     return () => { vivo = false }
-  }, [cliente, faixa, tentativa])
+  }, [cliente, faixa, tentativa, sufixo])
 
   // 16/11: ordem da rota (só Rio Quality, períodos de até 62 dias).
-  const ordem = useOrdemRota(cliente, faixa[0], faixa[1], tentativa)
+  const ordem = useOrdemRota(cliente, faixa[0], faixa[1], tentativa, sufixo)
 
   const ag = useMemo(() => (dias ? agregar(dias) : null), [dias])
   const agAnt = useMemo(() => (anteriores.length ? agregar(anteriores) : null), [anteriores])
@@ -81,6 +86,7 @@ export function VisaoGeral({ cliente, dataInicial, podeInserir, onInserir }: {
     <div className="space-y-6">
       {/* Barra de período (mesma da Benassi) */}
       <div className="sticky top-14 z-20 -mx-5 flex flex-wrap items-center gap-2.5 border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 px-5 py-2.5 backdrop-blur sm:-mx-8 sm:px-8">
+        {!link && <>
         <div className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-0.5 shadow-soft">
           {(['dia', 'semana', 'mes', 'ano', 'custom'] as Periodo[]).map(p => (
             <button
@@ -110,12 +116,14 @@ export function VisaoGeral({ cliente, dataInicial, podeInserir, onInserir }: {
               className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[16px] text-[var(--color-fg-muted)] shadow-soft transition active:scale-95 hover:text-[var(--color-fg)] disabled:pointer-events-none disabled:opacity-40">›</button>
           </div>
         )}
-        <span className="text-numeric text-[12px] text-[var(--color-fg-subtle)]">
+        </>}
+        <span className={link ? 'text-[14px] font-semibold text-[var(--color-fg)]' : 'text-numeric text-[12px] text-[var(--color-fg-subtle)]'}>
           {periodo === 'dia' ? dataLonga(faixa[0]) : `${dataCurta(faixa[0])} → ${dataCurta(faixa[1])}`}
         </span>
-        {periodo === 'dia' && dias?.length === 1 && (
+        {!link && podeInserir && <CompartilharPeriodo key={`${cliente}-${faixa[0]}-${faixa[1]}`} cliente={cliente} de={faixa[0]} ate={faixa[1]} />}
+        {!link && periodo === 'dia' && dias?.length === 1 && (
           <a href={`/api/dashboard-kpi/arquivo?cliente=${cliente}&data=${faixa[0]}`}
-            className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3.5 text-[12px] font-medium text-[var(--color-fg)] shadow-soft transition hover:border-[var(--color-accent)] active:scale-[0.97]">
+            className={`${podeInserir ? "" : "ml-auto "}inline-flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3.5 text-[12px] font-medium text-[var(--color-fg)] shadow-soft transition hover:border-[var(--color-accent)] active:scale-[0.97]`}>
             <DownloadSimple size={14} weight="bold" /> Baixar planilha do dia
           </a>
         )}
@@ -134,7 +142,7 @@ export function VisaoGeral({ cliente, dataInicial, podeInserir, onInserir }: {
           <span className="dash-icone mb-4" style={{ ['--dash-tom' as string]: '#1f3864' }}><UploadSimple size={18} weight="bold" /></span>
           <p className="text-[17px] font-semibold text-[var(--color-fg)]">Nenhum KPI inserido {periodo === 'dia' ? 'neste dia' : 'neste período'}</p>
           <p className="mt-1.5 max-w-md text-[13px] text-[var(--color-fg-muted)]">O dashboard analisa os KPIs que forem inseridos. Insira a planilha do KPI e os números aparecem aqui.</p>
-          {podeInserir && (
+          {podeInserir && onInserir && (
             <button type="button" onClick={onInserir} className="mt-5 inline-flex h-10 items-center gap-2 rounded-full bg-[var(--color-navy-700)] px-5 text-[13px] font-semibold text-white transition hover:bg-[var(--color-navy-800)] active:scale-[0.97]">
               <UploadSimple size={16} weight="bold" /> Inserir KPI
             </button>
@@ -145,8 +153,35 @@ export function VisaoGeral({ cliente, dataInicial, podeInserir, onInserir }: {
       )}
 
       {placaAberta && ag && (
-        <PlacaDrawer cliente={cliente} placa={placaAberta} dias={ag.dias} onFechar={() => setPlacaAberta(null)} ordem={ordem?.viagens.filter(v => normPlaca(v.placa) === normPlaca(placaAberta.placa)) ?? []} />
+        <PlacaDrawer cliente={cliente} sufixo={sufixo} placa={placaAberta} dias={ag.dias} onFechar={() => setPlacaAberta(null)} ordem={ordem?.viagens.filter(v => normPlaca(v.placa) === normPlaca(placaAberta.placa)) ?? []} />
       )}
+    </div>
+  )
+}
+
+// 25/11: gera o link do Dashboard só deste dia/período e copia.
+function CompartilharPeriodo({ cliente, de, ate }: { cliente: ClienteDash; de: string; ate: string }) {
+  const [estado, setEstado] = useState<'livre' | 'gerando' | 'copiado' | 'erro'>('livre')
+  const [url, setUrl] = useState<string | null>(null)
+  const gerar = async () => {
+    setEstado('gerando')
+    try {
+      const r = await fetch('/api/dashboard-kpi/link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cliente, de, ate }) })
+      if (!r.ok) throw new Error(await r.text())
+      const u = `${window.location.origin}/compartilhado/${(await r.json()).token}`
+      setUrl(u)
+      await navigator.clipboard.writeText(u).then(() => setEstado('copiado'), () => setEstado('livre'))
+    } catch { setEstado('erro') }
+  }
+  return (
+    <div className="ml-auto flex items-center gap-2">
+      {url && <input readOnly value={url} onFocus={e => e.currentTarget.select()} aria-label="Link do período" className={`${CTRL} w-[min(60vw,300px)] text-[12px]`} />}
+      <button type="button" onClick={gerar} disabled={estado === 'gerando'}
+        title="Gera um link sem login que mostra só este período"
+        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3.5 text-[12px] font-medium text-[var(--color-fg)] shadow-soft transition hover:border-[var(--color-accent)] active:scale-[0.97] disabled:opacity-60">
+        {estado === 'copiado' ? <Check size={14} weight="bold" /> : <LinkSimple size={14} weight="bold" />}
+        {estado === 'gerando' ? 'Gerando…' : estado === 'copiado' ? 'Link copiado' : estado === 'erro' ? 'Erro, tentar de novo' : 'Compartilhar este período'}
+      </button>
     </div>
   )
 }

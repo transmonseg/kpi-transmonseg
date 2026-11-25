@@ -3,13 +3,13 @@
 import { useRouter } from 'next/navigation'
 import { Lock, UploadSimple } from '@phosphor-icons/react/dist/ssr'
 import type { ClienteDash } from '@/lib/kpi-romaneio/dashboard-kpis'
+import { NOMES_CLIENTE } from '@/lib/kpi-romaneio/nomes-cliente-dash'
 import { VisaoGeral } from './visao-geral'
 import { InserirKpi } from './inserir-kpi'
 import { HistoricoKpi } from './historico-kpi'
 
 export type Aba = 'geral' | 'inserir' | 'historico'
 
-const NOMES: Record<ClienteDash, string> = { nutrimax: 'Nutry Max', rioquality: 'Rio Quality', portefrio: 'Portefrio' }
 
 // Dashboard por cliente (04/10/2026): mesmo funcionamento do da Benassi --
 // Visão geral (período livre), Inserir KPI (só analisa o que for inserido) e
@@ -46,7 +46,7 @@ export function DashboardKpi({ cliente, clientes, aba, podeInserir, dataInicial 
                 : 'text-[var(--color-fg-muted)] hover:bg-[var(--color-bg-subtle)] hover:text-[var(--color-fg)]'
             }`}
           >
-            {NOMES[c]}
+            {NOMES_CLIENTE[c]}
           </button>
         ))}
         <span title="Benassi — desativada" className="inline-flex h-9 cursor-not-allowed items-center gap-1.5 rounded-xl px-4 text-[13px] font-medium text-[var(--color-fg-subtle)] opacity-60">
@@ -58,7 +58,7 @@ export function DashboardKpi({ cliente, clientes, aba, podeInserir, dataInicial 
       {/* Cabeçalho */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <span className="text-overline">{NOMES[cliente]}</span>
+          <span className="text-overline">{NOMES_CLIENTE[cliente]}</span>
           <h1 className="mt-1 text-display text-[34px] leading-none text-[var(--color-fg)] md:text-[40px]">Dashboard</h1>
           <p className="mt-2 max-w-[60ch] text-[13px] leading-relaxed text-[var(--color-fg-muted)]">
             Entregas, lojas, horários, KM e tempos da operação.
@@ -97,7 +97,7 @@ export function DashboardKpi({ cliente, clientes, aba, podeInserir, dataInicial 
       )}
       {aba === 'inserir' && podeInserir && (
         <div key={`i-${cliente}`} className="animate-fade-up">
-          <InserirKpi cliente={cliente} nome={NOMES[cliente]} onAbrirDia={d => ir(cliente, 'geral', d)} />
+          <InserirKpi cliente={cliente} nome={NOMES_CLIENTE[cliente]} onAbrirDia={d => ir(cliente, 'geral', d)} />
         </div>
       )}
       {aba === 'historico' && (

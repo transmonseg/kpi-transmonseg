@@ -18,19 +18,19 @@ export const normPlaca = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, ''
 const MAX_DIAS = 62
 
 /** Busca a ordem da rota do período (só Rio Quality, até 62 dias). */
-export function useOrdemRota(cliente: string, de: string, ate: string, recarregar: number): OrdemDashboard | null {
+export function useOrdemRota(cliente: string, de: string, ate: string, recarregar: number, sufixo = ''): OrdemDashboard | null {
   const [o, setO] = useState<OrdemDashboard | null>(null)
   useEffect(() => {
     setO(null)
     const dias = (Date.parse(`${ate}T12:00:00Z`) - Date.parse(`${de}T12:00:00Z`)) / 86_400_000 + 1
     if (cliente !== 'rioquality' || dias > MAX_DIAS) return
     let vivo = true
-    fetch(`/api/dashboard-kpi/ordem-rota?cliente=${cliente}&de=${de}&ate=${ate}`)
+    fetch(`/api/dashboard-kpi/ordem-rota?cliente=${cliente}&de=${de}&ate=${ate}${sufixo}`)
       .then(r => (r.ok ? (r.json() as Promise<OrdemDashboard>) : null))
       .then(j => { if (vivo) setO(j) })
       .catch(() => {})
     return () => { vivo = false }
-  }, [cliente, de, ate, recarregar])
+  }, [cliente, de, ate, recarregar, sufixo])
   return o
 }
 

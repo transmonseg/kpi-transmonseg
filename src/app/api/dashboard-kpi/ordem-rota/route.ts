@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { hojeBR } from '@/lib/data-br'
 import { periodoValido, relatorioOrdemRota } from '@/lib/kpi-romaneio/relatorio-ordem-rota-servidor'
 import { resumoOrdemDashboard } from '@/lib/kpi-romaneio/relatorio-ordem-rota'
-import { checarAcesso } from '../acesso'
+import { checarLeitura } from '../acesso'
 
 export const runtime = 'nodejs'
 
@@ -11,7 +11,7 @@ export const runtime = 'nodejs'
 // Ordem da rota: sem endereço/cliente nem quem subiu o arquivo.
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams
-  const a = await checarAcesso(sp.get('cliente'))
+  const a = await checarLeitura(sp)
   if (!a.ok) return a.resp
   if (a.cliente !== 'rioquality') return new NextResponse('Só a Rio Quality tem ordem da rota.', { status: 404 })
   const p = periodoValido(sp.get('de'), sp.get('ate'), hojeBR())

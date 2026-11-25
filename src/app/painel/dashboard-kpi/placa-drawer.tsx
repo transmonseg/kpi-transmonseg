@@ -11,8 +11,10 @@ import { dataCurta, dataLonga, fmtDur, fmtInt, fmtKm, fmtPct, tomDoCliente, COR_
 
 // Detalhe de uma placa: resumo do período, dia a dia e NF por NF do dia
 // escolhido (busca o detalhe só quando abre).
-export function PlacaDrawer({ cliente, placa, dias, onFechar, ordem = [] }: {
+export function PlacaDrawer({ cliente, placa, dias, onFechar, ordem = [], sufixo = '' }: {
   cliente: ClienteDash
+  /** 25/11: `&link=<token>` no Dashboard compartilhado. */
+  sufixo?: string
   placa: PlacaAgg
   dias: DiaKpi[]
   onFechar: () => void
@@ -38,12 +40,12 @@ export function PlacaDrawer({ cliente, placa, dias, onFechar, ordem = [] }: {
     if (!diaSel) return
     let vivo = true
     setNfs(null)
-    fetch(`/api/dashboard-kpi/dia?cliente=${cliente}&data=${diaSel}`)
+    fetch(`/api/dashboard-kpi/dia?cliente=${cliente}&data=${diaSel}${sufixo}`)
       .then(r => r.json())
       .then(j => { if (vivo) setNfs((j.nfs as NfResumo[]).filter(n => n.placa === placa.placa)) })
       .catch(() => { if (vivo) setNfs([]) })
     return () => { vivo = false }
-  }, [cliente, diaSel, placa.placa])
+  }, [cliente, diaSel, placa.placa, sufixo])
 
   const lista = (nfs ?? []).filter(n => filtro === 'todas' || (n.categoria && n.categoria !== 'Sem rastreador'))
   const pendentes = (nfs ?? []).filter(n => n.categoria && n.categoria !== 'Sem rastreador').length

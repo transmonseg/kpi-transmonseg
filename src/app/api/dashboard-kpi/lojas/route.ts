@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { checarAcesso, dataValida } from '../acesso'
+import { checarLeitura, dataValida } from '../acesso'
 
 export const runtime = 'nodejs'
 
@@ -8,7 +8,7 @@ export const runtime = 'nodejs'
 // de lojas das NFs entregues (função kpi_dashboard_lojas, calcula no banco).
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams
-  const a = await checarAcesso(sp.get('cliente'))
+  const a = await checarLeitura(sp)
   if (!a.ok) return a.resp
   const de = sp.get('de'), ate = sp.get('ate')
   if (!dataValida(de) || !dataValida(ate)) return new NextResponse('Intervalo inválido', { status: 400 })
