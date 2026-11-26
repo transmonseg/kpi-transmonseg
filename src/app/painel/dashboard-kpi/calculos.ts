@@ -108,7 +108,10 @@ export function agregar(dias: DiaKpi[]): Agregado {
         nfPlanejado: 0, nfConfirmadas: 0, nfForaDaConta: 0, nfSemRastreador: 0, taxa: null, km: 0,
         operacaoMedia: null, porEntregaMedia: null, porDia: [],
       }
-      p.dias += 1
+      // 26/11: duas cargas da mesma placa no mesmo dia (troca no meio do dia)
+      // viravam dois chips "25/11" no painel da placa -- junta num dia só.
+      const mesmoDia = p.porDia.find(x => x.data === d.data)
+      if (!mesmoDia) p.dias += 1
       p.nfPlanejado += c.nfPlanejado ?? 0
       p.nfConfirmadas += c.nfConfirmadas ?? 0
       p.nfForaDaConta += c.nfForaDaConta ?? 0
@@ -116,7 +119,15 @@ export function agregar(dias: DiaKpi[]): Agregado {
       p.km += c.km ?? 0
       if (c.motorista) p.motorista = c.motorista
       if (c.destino) p.destino = c.destino
-      p.porDia.push({ data: d.data, nfPlanejado: c.nfPlanejado ?? 0, nfConfirmadas: c.nfConfirmadas ?? 0, nfForaDaConta: c.nfForaDaConta ?? 0, km: c.km, saida: c.saida, chegada: c.chegada, operacao: c.tempoOperacaoMin })
+      if (mesmoDia) {
+        mesmoDia.nfPlanejado += c.nfPlanejado ?? 0
+        mesmoDia.nfConfirmadas += c.nfConfirmadas ?? 0
+        mesmoDia.nfForaDaConta += c.nfForaDaConta ?? 0
+        if (c.km != null) mesmoDia.km = (mesmoDia.km ?? 0) + c.km
+        if (c.saida && (!mesmoDia.saida || c.saida < mesmoDia.saida)) mesmoDia.saida = c.saida
+        if (c.chegada && (!mesmoDia.chegada || c.chegada > mesmoDia.chegada)) mesmoDia.chegada = c.chegada
+        if (c.tempoOperacaoMin) mesmoDia.operacao = (mesmoDia.operacao ?? 0) + c.tempoOperacaoMin
+      } else p.porDia.push({ data: d.data, nfPlanejado: c.nfPlanejado ?? 0, nfConfirmadas: c.nfConfirmadas ?? 0, nfForaDaConta: c.nfForaDaConta ?? 0, km: c.km, saida: c.saida, chegada: c.chegada, operacao: c.tempoOperacaoMin })
       placas.set(c.placa, p)
     }
   }

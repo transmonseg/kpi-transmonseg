@@ -62,6 +62,10 @@ const FRACAO_MAX_PROPRIA = 0.25
 // 08/10 "carro com carga propria grande (fez a sua)": vizinhos de porta).
 const RAIO_PROPRIO_M = 1000
 const RECORRENTE_MIN_DIAS = 2
+// 26/11 (Ana): de manha' o carro trocado ainda nao fez metade da carga e a
+// sugestao so' saia a tarde. Escalado sem NENHUM endereco da carga + outro
+// carro com >= 3 enderecos ja' basta (a operacao confirma).
+const MIN_ENDERECOS_CEDO = 3
 
 const paradasForaDaBase = (ps: UnitracParadaRow[]) =>
   ps.filter((p): p is UnitracParadaRow & { lat: number; lng: number } => p.classificacao === 'FORA_BASE' && p.lat != null && p.lng != null)
@@ -71,7 +75,7 @@ type Endereco = { lat: number; lng: number }
 /** Para cada carga em que o carro da escala passou em no máximo 20% dos
  *  endereços (ou que veio sem placa), procura o carro que parou em mais
  *  endereços da carga (<= RAIO_ENDERECO_M). Sugere só com >= MIN_ENDERECOS e
- *  >= metade dos endereços. Candidato já confirmado pela operação (histórico,
+ *  >= metade dos endereços (ou, com o escalado em 0 endereços, >= 3). Candidato já confirmado pela operação (histórico,
  *  final da placa fora da frota, mesmo carro do JAC) tem prioridade quando o
  *  GPS confirma; senão vale o 1º colocado sem empate. */
 export function sugerirTrocas(pontos: PontoCarga[], paradasPorPlaca: Map<string, UnitracParadaRow[]>, ctx: ContextoSugestao = {}): SugestaoTroca[] {
@@ -111,7 +115,9 @@ export function sugerirTrocas(pontos: PontoCarga[], paradasPorPlaca: Map<string,
     // (F1-03) = escalado nao passou.
     const doEscalado = placaEscala ? visitou(placaEscala, enderecos) : 0
     if (doEscalado > FRACAO_MAX_ESCALADO * total) continue
-    const passa = (v: number) => v >= MIN_ENDERECOS && v >= FRACAO_MIN * total && v >= doEscalado + MIN_ENDERECOS
+    const cedo = doEscalado === 0
+    const basta = (v: number, de: number) => v >= MIN_ENDERECOS && (v >= FRACAO_MIN * de || (cedo && v >= MIN_ENDERECOS_CEDO))
+    const passa = (v: number) => basta(v, total) && v >= doEscalado + MIN_ENDERECOS
 
     // Quanto cada carro fez da carga. Carga propria grande: so' conta o que
     // fica longe da propria rota (F1-02).
@@ -123,7 +129,7 @@ export function sugerirTrocas(pontos: PontoCarga[], paradasPorPlaca: Map<string,
       if (pequena || visitados === 0) return { placa, visitados, pequena }
       const longe = enderecos.filter(e => !proprios.some(o => haversine(e.lat, e.lng, o.lat, o.lng) <= RAIO_PROPRIO_M))
       const foraDaRota = visitou(placa, longe)
-      return { placa, visitados: foraDaRota >= MIN_ENDERECOS && foraDaRota >= FRACAO_MIN * longe.length ? visitados : 0, pequena }
+      return { placa, visitados: basta(foraDaRota, longe.length) ? visitados : 0, pequena }
     }).sort((a, b) => b.visitados - a.visitados || a.placa.localeCompare(b.placa))
 
     // Prioridade: o que a operação ja' confirmou (F1-02/F1-03/F1-04).

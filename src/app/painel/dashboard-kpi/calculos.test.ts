@@ -36,6 +36,14 @@ describe('dashboard por cliente: calculos', () => {
     expect(a.motivos).toEqual({ 'Não foi ao cliente': 10 })
   })
 
+  it('duas cargas da mesma placa no mesmo dia viram um dia so\' no painel (RBJ9I44 25/11)', () => {
+    const a = agregar([dia('2026-11-25', { taxa: 80, entregues: 40, nfsNaConta: 50, cargas: [carga('RBJ9I44', 26, 3, 10, 100, 5), { ...carga('RBJ9I44', 33, 31, 20, 200, 5), carga: '2' }] })])
+    const p = a.placas.find(x => x.placa === 'RBJ9I44')!
+    expect(p.dias).toBe(1)
+    expect(p.porDia).toHaveLength(1)
+    expect(p.porDia[0]).toMatchObject({ nfPlanejado: 59, nfConfirmadas: 34, km: 30, operacao: 300 })
+  })
+
   it('placa com NFs fora da conta (sem rastreador / troca) nao derruba a taxa da placa', () => {
     const a = agregar([
       dia('2026-10-03', { taxa: 100, entregues: 10, nfsNaConta: 10, cargas: [
