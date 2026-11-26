@@ -91,6 +91,28 @@ describe('sugerirTrocas', () => {
     const paradas = new Map([['AAA1A11', [parada('AAA1A11', -22.8, -43.2, 'BASE')]], ['BBB2B22', [...b.map(e => parada('BBB2B22', e.lat, e.lng))]]])
     expect(sugerirTrocas([...a, ...b], paradas)).toEqual([])
   })
+
+  // 26/11 (Ana): 3 trocas de manha', so' 1 sugerida -- o carro trocado ainda
+  // nao tinha feito metade da carga.
+  const dez = Array.from({ length: 10 }, (_, i) => ({ carga: '103272', placa: 'RQV8A12', endereco: `R ${i}`, lat: -22.9 + i * 2000 * M, lng: -43.3 }))
+  it('escalado em 0 enderecos e outro carro ja em 3 de 10: sugere cedo', () => {
+    const paradas = new Map([
+      ['RQV8A12', [parada('RQV8A12', -22.81, -43.27, 'BASE')]],
+      ['RQO1B27', dez.slice(0, 3).map(e => parada('RQO1B27', e.lat, e.lng))],
+    ])
+    expect(sugerirTrocas(dez, paradas).map(s => s.placaSugerida)).toEqual(['RQO1B27'])
+  })
+  it('escalado ja fez 1 endereco: continua exigindo metade', () => {
+    const paradas = new Map([
+      ['RQV8A12', [parada('RQV8A12', dez[9].lat, dez[9].lng)]],
+      ['RQO1B27', dez.slice(0, 3).map(e => parada('RQO1B27', e.lat, e.lng))],
+    ])
+    expect(sugerirTrocas(dez, paradas)).toEqual([])
+  })
+  it('so 2 enderecos de 10 com escalado em 0: ainda nao sugere', () => {
+    const paradas = new Map([['RQV8A12', []], ['RQO1B27', dez.slice(0, 2).map(e => parada('RQO1B27', e.lat, e.lng))]])
+    expect(sugerirTrocas(dez, paradas)).toEqual([])
+  })
 })
 
 describe('placasDoCarroPorCarga (F1-04 b: mesmo número de carro do JAC)', () => {
