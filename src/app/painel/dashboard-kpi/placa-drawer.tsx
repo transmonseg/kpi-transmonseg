@@ -78,7 +78,8 @@ export function PlacaDrawer({ cliente, placa, dias, onFechar, ordem = [], sufixo
           </div>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pb-6">
+        {/* 26/11: shrink-0 nos cartões -- sem isso o flex espremia o cartão das NFs e a lista não rolava (Erica/Ana). */}
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pb-6 [&>*]:shrink-0">
           {/* Dias da placa */}
           {diasDaPlaca.length > 1 && (
             <div className="dash-card p-3">
