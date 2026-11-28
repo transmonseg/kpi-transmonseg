@@ -448,7 +448,7 @@ function TabelaPlacas({ placas, umDia, meta, onPlaca, ordem: ordemRota }: { plac
         case 'placa': return p.placa
         case 'taxa': return p.taxa ?? -1
         case 'nfs': return p.nfPlanejado
-        case 'km': return p.km
+        case 'km': return p.km ?? -1
         case 'operacao': return p.operacaoMedia ?? -1
         case 'porEntrega': return p.porEntregaMedia ?? -1
         case 'dias': return p.dias

@@ -44,6 +44,14 @@ describe('dashboard por cliente: calculos', () => {
     expect(p.porDia[0]).toMatchObject({ nfPlanejado: 59, nfConfirmadas: 34 })
   })
 
+  it('placa sem rastreador (km 0, todas as NFs sem rastreador): km sem dado, nao 0 (RQQ5B81)', () => {
+    const c1 = { ...carga('RQQ5B81', 30, 30, 0, 0, 0), nfSemRastreador: 30 }
+    const a = agregar([dia('2026-11-26', { taxa: 100, entregues: 30, nfsNaConta: 30, cargas: [c1] })])
+    const p = a.placas.find(x => x.placa === 'RQQ5B81')!
+    expect(p.km).toBeNull()
+    expect(p.porDia[0].km).toBeNull()
+  })
+
   it('km e operacao da placa repetidos nas 2 cargas do dia contam 1x (RQO1B27 26/11: 248 km, nao 496)', () => {
     const c1 = { ...carga('RQO1B27', 33, 30, 248.1, 703, 10), carga: '103272' }
     const c2 = { ...carga('RQO1B27', 1, 1, 248.1, 703, 10), carga: 'PAO-9' }

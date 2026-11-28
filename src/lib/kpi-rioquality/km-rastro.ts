@@ -29,13 +29,27 @@ export type PontoRastro = { lat: number; long: number }
 // Alem de 48h: sem rastro (null), nao conclui nada -- o snapshot cobre paradas.
 const HORAS_MAX_RASTRO = 48
 
+// 28/11: SRJ9H01 13/11 saiu com 17.623 km -- ponto de GPS maluco no meio do
+// rastro (vai longe e volta). Ponto fora do Brasil ou "pico" (salto > 20 km
+// pra ir e > 20 km pra voltar, com os vizinhos perto entre si) fica de fora.
+const NO_BRASIL = (p: PontoRastro) => p.lat < 6 && p.lat > -34 && p.long < -28 && p.long > -74
+const PICO_M = 20_000
+
 export function somarKmDoRastro(pontos: PontoRastro[]): number {
   const validos = pontos.filter(
-    p => Number.isFinite(p?.lat) && Number.isFinite(p?.long) && Math.abs(p.lat) > 1 && Math.abs(p.long) > 1,
+    p => Number.isFinite(p?.lat) && Number.isFinite(p?.long) && Math.abs(p.lat) > 1 && Math.abs(p.long) > 1 && NO_BRASIL(p),
   )
+  const d = (a: PontoRastro, b: PontoRastro) => haversine(a.lat, a.long, b.lat, b.long)
   let metros = 0
-  for (let i = 1; i < validos.length; i++) {
-    metros += haversine(validos[i - 1].lat, validos[i - 1].long, validos[i].lat, validos[i].long)
+  let anterior: PontoRastro | undefined
+  for (let i = 0; i < validos.length; i++) {
+    const atual = validos[i], prox = validos[i + 1]
+    if (anterior && prox) {
+      const ida = d(anterior, atual), volta = d(atual, prox)
+      if (ida > PICO_M && volta > PICO_M && d(anterior, prox) < Math.min(ida, volta) / 2) continue
+    }
+    if (anterior) metros += d(anterior, atual)
+    anterior = atual
   }
   return metros / 1000
 }

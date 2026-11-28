@@ -14,6 +14,13 @@ import { somarKmDoRastro, janelasDoDia, calcularKmPorRastro } from './km-rastro'
 // o dia sai por SUBTRACAO de duas janelas ancoradas em "agora".
 
 describe('somarKmDoRastro', () => {
+  it('ponto maluco no meio do rastro (vai longe e volta) fica de fora (SRJ9H01 13/11: 17.623 km)', () => {
+    const pts = [{ lat: -22.9, long: -43.2 }, { lat: -22.901, long: -43.2 }, { lat: 40.7, long: -74.0 }, { lat: -22.902, long: -43.2 }, { lat: -10, long: -43.2 }, { lat: -22.903, long: -43.2 }]
+    expect(somarKmDoRastro(pts)).toBeCloseTo(0.333, 2)
+  })
+  it('viagem longa de verdade (sem volta) continua contando', () => {
+    expect(somarKmDoRastro([{ lat: -22.9, long: -43.2 }, { lat: -22.5, long: -43.2 }, { lat: -22.1, long: -43.2 }])).toBeCloseTo(88.9, 0)
+  })
   it('soma a distancia entre pontos consecutivos', () => {
     // ~111m por 0.001 de latitude
     const pts = [{ lat: -22.900, long: -43.200 }, { lat: -22.901, long: -43.200 }, { lat: -22.902, long: -43.200 }]

@@ -9,6 +9,14 @@ export const hoje = () => hojeBR()
 /** 28/11 (dono da Nutry, RQO1B27 26/11): km e tempo de operação vêm da placa
  *  no dia inteiro e se repetem em cada carga dela (103272 + PAO-9 = 248 km nas
  *  duas). Somar por carga dobrava (496 km, 23:26 de operação). Conta 1x por placa. */
+/** 28/11: carga toda "sem rastreador" vem com km 0 (RQQ5B81 todo dia desde
+ *  04/11) -- é "sem dado", não "não andou". */
+export function kmDaCarga(c: { km?: number | null; nfPlanejado?: number | null; nfSemRastreador?: number | null }): number | null {
+  if (c.km == null) return null
+  if (c.km === 0 && (c.nfSemRastreador ?? 0) > 0 && (c.nfSemRastreador ?? 0) >= (c.nfPlanejado ?? 0)) return null
+  return c.km
+}
+
 export function kmDoDia(cargas: { placa?: string | null; km?: number | null }[]): number {
   const vistas = new Set<string>()
   let km = 0
@@ -65,7 +73,7 @@ export type PlacaAgg = {
   nfForaDaConta: number
   nfSemRastreador: number
   taxa: number | null
-  km: number
+  km: number | null
   operacaoMedia: number | null
   porEntregaMedia: number | null
   porDia: { data: string; nfPlanejado: number; nfConfirmadas: number; nfForaDaConta: number; km: number | null; saida: string | null; chegada: string | null; operacao: number | null }[]
@@ -122,7 +130,7 @@ export function agregar(dias: DiaKpi[]): Agregado {
       }
       const p = placas.get(c.placa) ?? {
         placa: c.placa, motorista: c.motorista, destino: c.destino, dias: 0,
-        nfPlanejado: 0, nfConfirmadas: 0, nfForaDaConta: 0, nfSemRastreador: 0, taxa: null, km: 0,
+        nfPlanejado: 0, nfConfirmadas: 0, nfForaDaConta: 0, nfSemRastreador: 0, taxa: null, km: null,
         operacaoMedia: null, porEntregaMedia: null, porDia: [],
       }
       // 26/11: duas cargas da mesma placa no mesmo dia (troca no meio do dia)
@@ -133,7 +141,8 @@ export function agregar(dias: DiaKpi[]): Agregado {
       p.nfConfirmadas += c.nfConfirmadas ?? 0
       p.nfForaDaConta += c.nfForaDaConta ?? 0
       p.nfSemRastreador += c.nfSemRastreador ?? 0
-      if (!mesmoDia) p.km += c.km ?? 0
+      const kmC = kmDaCarga(c)
+      if (!mesmoDia && kmC != null) p.km = (p.km ?? 0) + kmC
       if (c.motorista) p.motorista = c.motorista
       if (c.destino) p.destino = c.destino
       if (mesmoDia) {
@@ -141,7 +150,7 @@ export function agregar(dias: DiaKpi[]): Agregado {
         mesmoDia.nfConfirmadas += c.nfConfirmadas ?? 0
         mesmoDia.nfForaDaConta += c.nfForaDaConta ?? 0
         // km, saída, volta e operação já são do dia da placa: não somam.
-      } else p.porDia.push({ data: d.data, nfPlanejado: c.nfPlanejado ?? 0, nfConfirmadas: c.nfConfirmadas ?? 0, nfForaDaConta: c.nfForaDaConta ?? 0, km: c.km, saida: c.saida, chegada: c.chegada, operacao: c.tempoOperacaoMin })
+      } else p.porDia.push({ data: d.data, nfPlanejado: c.nfPlanejado ?? 0, nfConfirmadas: c.nfConfirmadas ?? 0, nfForaDaConta: c.nfForaDaConta ?? 0, km: kmC, saida: c.saida, chegada: c.chegada, operacao: c.tempoOperacaoMin })
       placas.set(c.placa, p)
     }
   }
