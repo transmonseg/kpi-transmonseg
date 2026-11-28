@@ -6,6 +6,19 @@ export type Periodo = 'dia' | 'semana' | 'mes' | 'ano' | 'custom'
 
 export const hoje = () => hojeBR()
 
+/** 28/11 (dono da Nutry, RQO1B27 26/11): km e tempo de operação vêm da placa
+ *  no dia inteiro e se repetem em cada carga dela (103272 + PAO-9 = 248 km nas
+ *  duas). Somar por carga dobrava (496 km, 23:26 de operação). Conta 1x por placa. */
+export function kmDoDia(cargas: { placa?: string | null; km?: number | null }[]): number {
+  const vistas = new Set<string>()
+  let km = 0
+  for (const c of cargas) {
+    if (c.placa) { if (vistas.has(c.placa)) continue; vistas.add(c.placa) }
+    km += c.km ?? 0
+  }
+  return km
+}
+
 const iso = (d: Date) => d.toISOString().slice(0, 10)
 const meioDia = (s: string) => new Date(`${s}T12:00:00Z`)
 
@@ -94,9 +107,13 @@ export function agregar(dias: DiaKpi[]): Agregado {
     semRastreador += r.semRastreador
     cargas += r.cargas.length
     for (const [m, n] of Object.entries(r.motivos)) motivos[m] = (motivos[m] ?? 0) + n
+    km += kmDoDia(r.cargas)
+    const placasDoDia = new Set<string>()
     for (const c of r.cargas) {
-      km += c.km ?? 0
-      if (c.tempoOperacaoMin && c.tempoOperacaoMin > 0) ops.push(c.tempoOperacaoMin)
+      // km/operação são da placa no dia (repetidos em cada carga dela): 1x só.
+      const repetida = !!c.placa && placasDoDia.has(c.placa)
+      if (c.placa) placasDoDia.add(c.placa)
+      if (!repetida && c.tempoOperacaoMin && c.tempoOperacaoMin > 0) ops.push(c.tempoOperacaoMin)
       // Carga sem nenhuma NF confirmada (sem rastreador / fora da conta) nao
       // tem tempo por entrega real -- o valor da planilha e' lixo (ex.: 9h24).
       if (c.tempoMedioMin && c.tempoMedioMin > 0 && (c.nfConfirmadas ?? 0) > 0) {
@@ -116,17 +133,14 @@ export function agregar(dias: DiaKpi[]): Agregado {
       p.nfConfirmadas += c.nfConfirmadas ?? 0
       p.nfForaDaConta += c.nfForaDaConta ?? 0
       p.nfSemRastreador += c.nfSemRastreador ?? 0
-      p.km += c.km ?? 0
+      if (!mesmoDia) p.km += c.km ?? 0
       if (c.motorista) p.motorista = c.motorista
       if (c.destino) p.destino = c.destino
       if (mesmoDia) {
         mesmoDia.nfPlanejado += c.nfPlanejado ?? 0
         mesmoDia.nfConfirmadas += c.nfConfirmadas ?? 0
         mesmoDia.nfForaDaConta += c.nfForaDaConta ?? 0
-        if (c.km != null) mesmoDia.km = (mesmoDia.km ?? 0) + c.km
-        if (c.saida && (!mesmoDia.saida || c.saida < mesmoDia.saida)) mesmoDia.saida = c.saida
-        if (c.chegada && (!mesmoDia.chegada || c.chegada > mesmoDia.chegada)) mesmoDia.chegada = c.chegada
-        if (c.tempoOperacaoMin) mesmoDia.operacao = (mesmoDia.operacao ?? 0) + c.tempoOperacaoMin
+        // km, saída, volta e operação já são do dia da placa: não somam.
       } else p.porDia.push({ data: d.data, nfPlanejado: c.nfPlanejado ?? 0, nfConfirmadas: c.nfConfirmadas ?? 0, nfForaDaConta: c.nfForaDaConta ?? 0, km: c.km, saida: c.saida, chegada: c.chegada, operacao: c.tempoOperacaoMin })
       placas.set(c.placa, p)
     }
@@ -151,7 +165,7 @@ export function agregar(dias: DiaKpi[]): Agregado {
     porEntregaMedia: media(porEnt),
     motivos,
     placas: [...placas.values()],
-    serie: dias.map(d => ({ data: d.data, taxa: d.resumo.taxa, km: d.resumo.cargas.reduce((a, c) => a + (c.km ?? 0), 0), parcial: ehParcial(d) })),
+    serie: dias.map(d => ({ data: d.data, taxa: d.resumo.taxa, km: kmDoDia(d.resumo.cargas), parcial: ehParcial(d) })),
   }
 }
 

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { DownloadSimple, ArrowRight, Trash, ClockCounterClockwise } from '@phosphor-icons/react/dist/ssr'
 import { fmtInstanteBR } from '@/lib/data-br'
 import type { ClienteDash, DiaKpi } from '@/lib/kpi-romaneio/dashboard-kpis'
-import { dataLonga, fmtKm, fmtInt, fmtPct, tomDoCliente, COR_TOM, hoje } from './calculos'
+import { dataLonga, fmtKm, fmtInt, fmtPct, tomDoCliente, COR_TOM, hoje, kmDoDia } from './calculos'
 
 function nomeMes(ym: string) {
   const [y, m] = ym.split('-').map(Number)
@@ -73,7 +73,7 @@ export function HistoricoKpi({ cliente, podeExcluir, onAbrirDia }: { cliente: Cl
           <ul>
             {lista.map(d => {
               const parcial = (d.resumo.aguardando ?? 0) > 0
-              const km = d.resumo.cargas.reduce((a, c) => a + (c.km ?? 0), 0)
+              const km = kmDoDia(d.resumo.cargas)
               return (
                 <li key={d.data} className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[var(--color-border)] px-5 py-3 transition-colors hover:bg-[var(--color-bg-subtle)]">
                   <div className="min-w-[220px] flex-1">

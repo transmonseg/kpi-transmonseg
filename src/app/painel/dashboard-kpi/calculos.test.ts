@@ -41,7 +41,21 @@ describe('dashboard por cliente: calculos', () => {
     const p = a.placas.find(x => x.placa === 'RBJ9I44')!
     expect(p.dias).toBe(1)
     expect(p.porDia).toHaveLength(1)
-    expect(p.porDia[0]).toMatchObject({ nfPlanejado: 59, nfConfirmadas: 34, km: 30, operacao: 300 })
+    expect(p.porDia[0]).toMatchObject({ nfPlanejado: 59, nfConfirmadas: 34 })
+  })
+
+  it('km e operacao da placa repetidos nas 2 cargas do dia contam 1x (RQO1B27 26/11: 248 km, nao 496)', () => {
+    const c1 = { ...carga('RQO1B27', 33, 30, 248.1, 703, 10), carga: '103272' }
+    const c2 = { ...carga('RQO1B27', 1, 1, 248.1, 703, 10), carga: 'PAO-9' }
+    const outra = { ...carga('BBB2B22', 10, 10, 50, 400, 10), carga: '9' }
+    const a = agregar([dia('2026-11-26', { taxa: 100, entregues: 41, nfsNaConta: 44, cargas: [c1, c2, outra] })])
+    const p = a.placas.find(x => x.placa === 'RQO1B27')!
+    expect(p.km).toBeCloseTo(248.1)
+    expect(p.operacaoMedia).toBe(703)
+    expect(p.porDia[0]).toMatchObject({ km: 248.1, operacao: 703 })
+    expect(a.km).toBeCloseTo(298.1)
+    expect(a.serie[0].km).toBeCloseTo(298.1)
+    expect(a.operacaoMedia).toBe(551.5)
   })
 
   it('placa com NFs fora da conta (sem rastreador / troca) nao derruba a taxa da placa', () => {
